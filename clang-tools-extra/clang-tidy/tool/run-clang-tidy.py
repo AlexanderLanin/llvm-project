@@ -112,7 +112,7 @@ def merge_replacement_files(tmpdir, mergefile):
   # the top level key 'Diagnostics' in the output yaml files
   mergekey="Diagnostics"
   merged=[]
-  for replacefile in glob.iglob(os.path.join(tmpdir, '*.yaml')):
+  for replacefile in sorted(glob.iglob(os.path.join(tmpdir, '*.yaml'))):
     content = yaml.safe_load(open(replacefile, 'r'))
     if not content:
       continue # Skip empty files.

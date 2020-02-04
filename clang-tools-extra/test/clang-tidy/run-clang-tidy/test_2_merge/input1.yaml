@@ -1,0 +1,16 @@
+Diagnostics:
+- DiagnosticMessage:
+    FileOffset: 2328
+    FilePath: file1.cpp
+    Message: use a trailing return type for this function
+    Replacements:
+    - FilePath: file1.cpp
+      Length: 8
+      Offset: 2319
+      ReplacementText: auto
+    - FilePath: file1.cpp
+      Length: 0
+      Offset: 2348
+      ReplacementText: ' -> uint64_t'
+  DiagnosticName: modernize-use-trailing-return-type
+MainSourceFile: ''

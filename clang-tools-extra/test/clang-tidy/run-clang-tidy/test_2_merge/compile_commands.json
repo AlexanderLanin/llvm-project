@@ -1,0 +1,12 @@
+[
+    {
+      "directory": "test_2_merge",
+      "command": "",
+      "file": "input1.yaml"
+    },
+    {
+      "directory": "test_2_merge",
+      "command": "",
+      "file": "input2.yaml"
+    }
+]

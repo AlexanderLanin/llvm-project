@@ -1,0 +1,18 @@
+Diagnostics:
+- DiagnosticMessage:
+    FileOffset: 2328
+    FilePath: ../src/CacheEntryReader.hpp
+    Message: use a trailing return type for this function
+    Replacements:
+    - FilePath: ../src/CacheEntryReader.hpp
+      Length: 8
+      Offset: 2319
+      ReplacementText: auto
+    - FilePath: ../src/CacheEntryReader.hpp
+      Length: 0
+      Offset: 2348
+      ReplacementText: ' -> uint64_t'
+  DiagnosticName: modernize-use-trailing-return-type
+# Warning4: FIX-IT in notes
+# ToDo
+MainSourceFile: ''

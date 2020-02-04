@@ -1,0 +1,40 @@
+Diagnostics:
+# Warning1, no FIX-IT, no Notes
+- DiagnosticMessage:
+    FileOffset: 1471
+    FilePath: ../src/CacheEntryReader.hpp
+    Message: do not declare C-style arrays, use std::array<> instead
+    Replacements: []
+  DiagnosticName: cppcoreguidelines-avoid-c-arrays
+# Warning2, same as Warning1 but different name, no FIX-IT, no Notes
+- DiagnosticMessage:
+    FileOffset: 1471
+    FilePath: ../src/CacheEntryReader.hpp
+    Message: do not declare C-style arrays, use std::array<> instead
+    Replacements: []
+  DiagnosticName: hicpp-avoid-c-arrays
+# Warning3, same as Warning1 but different location, no FIX-IT, no Notes
+- DiagnosticMessage:
+    FileOffset: 2779
+    FilePath: ../src/CacheEntryReader.hpp
+    Message: do not declare C-style arrays, use std::array<> instead
+    Replacements: []
+  DiagnosticName: cppcoreguidelines-avoid-c-arrays
+# Warning3, with FIX-IT in DiagnosticMessage
+- DiagnosticMessage:
+    FileOffset: 2328
+    FilePath: ../src/CacheEntryReader.hpp
+    Message: use a trailing return type for this function
+    Replacements:
+    - FilePath: ../src/CacheEntryReader.hpp
+      Length: 8
+      Offset: 2319
+      ReplacementText: auto
+    - FilePath: ../src/CacheEntryReader.hpp
+      Length: 0
+      Offset: 2348
+      ReplacementText: ' -> uint64_t'
+  DiagnosticName: modernize-use-trailing-return-type
+# Warning4: FIX-IT in notes
+# ToDo
+MainSourceFile: ''
