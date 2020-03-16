@@ -74,30 +74,41 @@ void test() {
     do_something("for");
   // CHECK-MESSAGES: :[[@LINE-2]]:11: warning: statement should be inside braces
   // CHECK-FIXES: for (;;) {
-  // CHECK-FIXES: }
+  // CHECK-FIXES-NEXT: do_something("for");
+  // CHECK-FIXES-NEXT: }
+
   for (;;) {
-    do_something("for");
+    do_something("for-ok");
   }
   for (;;)
     ;
   // CHECK-MESSAGES: :[[@LINE-2]]:11: warning: statement should be inside braces
   // CHECK-FIXES: for (;;) {
-  // CHECK-FIXES: }
+  // CHECK-FIXES-NEXT: ;
+  // CHECK-FIXES-NEXT: }
 
   int arr[4] = {1, 2, 3, 4};
   for (int a : arr)
     do_something("for-range");
   // CHECK-MESSAGES: :[[@LINE-2]]:20: warning: statement should be inside braces
   // CHECK-FIXES: for (int a : arr) {
-  // CHECK-FIXES: }
-  for (int a : arr) {
+  // CHECK-FIXES-NEXT: do_something("for-range");
+  // CHECK-FIXES-NEXT: }
+  for (int &assign : arr)
+    assign = 7;
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: for (int &assign : arr) {
+  // CHECK-FIXES-NEXT: assign = 7;
+  // CHECK-FIXES-NEXT: }
+  for (int ok : arr) {
     do_something("for-range");
   }
-  for (int a : arr)
+  for (int NullStmt : arr)
     ;
-  // CHECK-MESSAGES: :[[@LINE-2]]:20: warning: statement should be inside braces
-  // CHECK-FIXES: for (int a : arr) {
-  // CHECK-FIXES: }
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: for (int NullStmt : arr) {
+  // CHECK-FIXES-NEXT: ;
+  // CHECK-FIXES-NEXT: }
 
   while (cond("while1"))
     do_something("while");
@@ -143,14 +154,19 @@ void test() {
   // CHECK-FIXES-NEXT: }
 
   if (cond("ifif3"))
-    // comment
+    // comment1
     if (cond("ifif4")) {
-      // comment
-      /*comment*/; // comment
+      // comment2
+      /*comment3*/; // comment4
     }
   // CHECK-MESSAGES: :[[@LINE-6]]:21: warning: statement should be inside braces
   // CHECK-FIXES: if (cond("ifif3")) {
-  // CHECK-FIXES: }
+  // CHECK-FIXES-NEXT: // comment1
+  // CHECK-FIXES-NEXT: if (cond("ifif4")) {
+  // CHECK-FIXES-NEXT: // comment2
+  // CHECK-FIXES-NEXT: /*comment3*/; // comment4
+  // CHECK-FIXES-NEXT: }
+  // CHECK-FIXES-NEXT: }
 
   if (cond("ifif5"))
     ; /* multi-line
@@ -169,6 +185,120 @@ void test() {
   // CHECK-FIXES-NEXT: }
   // CHECK-FIXES-NEXT: }
   // CHECK-FIXES-NEXT: }
+  // CHECK-FIXES-NEXT: }
+
+  int S;
+  if (cond("assign with brackets"))
+    S = {5};
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("assign with brackets")) {
+  // CHECK-FIXES-NEXT: S = {5};
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("assign with brackets 2"))
+    S = {  5  } /* comment1 */ ; /* comment2 */
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("assign with brackets 2")) {
+  // CHECK-FIXES-NEXT: S = {  5  } /* comment1 */ ; /* comment2 */
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("return"))
+    return;
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("return")) {
+  // CHECK-FIXES-NEXT: return;
+  // CHECK-FIXES-NEXT: }
+
+  while (cond("break and continue")) {
+    // CHECK-FIXES: while (cond("break and continue")) {
+    if (true)
+      break;
+    // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+    // CHECK-FIXES: if (true) {
+    // CHECK-FIXES-NEXT: break;
+    // CHECK-FIXES-NEXT: }
+    if (false)
+      continue;
+    // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+    // CHECK-FIXES: if (false) {
+    // CHECK-FIXES-NEXT: continue;
+    // CHECK-FIXES-NEXT: }
+  } //end
+  // CHECK-FIXES: } //end
+
+  if (cond("decl 1"))
+    int s;
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("decl 1")) {
+  // CHECK-FIXES-NEXT: int s;
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("decl 2"))
+    int s = (5);
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("decl 2")) {
+  // CHECK-FIXES-NEXT: int s = (5);
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("decl 3"))
+    int s = {6};
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("decl 3")) {
+  // CHECK-FIXES-NEXT: int s = {6};
+  // CHECK-FIXES-NEXT: }
+
+  #define WRAP(X) { X; }
+  // This is to ensure no other CHECK-FIXES matches the macro definition:
+  // CHECK-FIXES: WRAP
+
+  // Use-case: LLVM_DEBUG({ for(...) do_something(); });
+  WRAP({
+    for (;;)
+      do_something("for in wrapping macro 1");
+    });
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: for (;;) {
+  // CHECK-FIXES-NEXT: do_something("for in wrapping macro 1");
+  // CHECK-FIXES-NEXT: }
+
+  // Use-case: LLVM_DEBUG( for(...) do_something(); );
+  WRAP(
+    for (;;)
+      do_something("for in wrapping macro 2");
+    );
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: for (;;) {
+  // CHECK-FIXES-NEXT: do_something("for in wrapping macro 2");
+  // CHECK-FIXES-NEXT: }
+
+  // Use-case: LLVM_DEBUG( for(...) do_something() );
+  // This is not supported and this test ensure it's correctly not changed.
+  // We don't want to add the `}` into the Macro and there is no other way
+  // to add it except for introduction of a NullStmt.
+  WRAP(
+    for (;;)
+        do_something("for in wrapping macro 3")
+    );
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: WRAP(
+  // CHECK-FIXES-NEXT: for (;;)
+  // CHECK-FIXES-NEXT: do_something("for in wrapping macro 3")
+  // CHECK-FIXES-NEXT: );
+}
+
+int test_return_int() {
+  if (cond("return5"))
+    return 5;
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("return5")) {
+  // CHECK-FIXES-NEXT: return 5;
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("return{6}"))
+    return {6};
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("return{6}")) {
+  // CHECK-FIXES-NEXT: return {6};
   // CHECK-FIXES-NEXT: }
 }
 
