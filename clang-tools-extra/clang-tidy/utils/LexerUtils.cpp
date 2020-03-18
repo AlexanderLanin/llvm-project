@@ -151,8 +151,6 @@ llvm::Optional<Token> getQualifyingToken(tok::TokenKind TK,
 }
 
 static bool breakAndReturnEnd(const Stmt &S) {
-  // Important: InitListExpr does not behave as an Expr.
-  // Call this before breakAndReturnEndPlus1Token.
   return isa<CompoundStmt>(S) || isa<DeclStmt>(S) || isa<NullStmt>(S);
 }
 static bool breakAndReturnEndPlus1Token(const Stmt &S) {

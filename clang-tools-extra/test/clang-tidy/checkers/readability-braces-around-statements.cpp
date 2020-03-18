@@ -246,6 +246,64 @@ void test() {
   // CHECK-FIXES: if (cond("decl 3")) {
   // CHECK-FIXES-NEXT: int s = {6};
   // CHECK-FIXES-NEXT: }
+}
+
+int test_return_int() {
+  if (cond("return5"))
+    return 5;
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("return5")) {
+  // CHECK-FIXES-NEXT: return 5;
+  // CHECK-FIXES-NEXT: }
+
+  if (cond("return{6}"))
+    return {6};
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("return{6}")) {
+  // CHECK-FIXES-NEXT: return {6};
+  // CHECK-FIXES-NEXT: }
+
+  // From https://bugs.llvm.org/show_bug.cgi?id=25970
+  if (cond("25970")) return {25970};
+  return {!25970};
+  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (cond("25970")) { return {25970};
+  // CHECK-FIXES-NEXT: }
+  // CHECK-FIXES-NEXT: return {!25970};
+}
+
+void f(const char *p) {
+  if (!p)
+    f("\
+");
+} // end of f
+// CHECK-MESSAGES: :[[@LINE-4]]:10: warning: statement should be inside braces
+// CHECK-FIXES:      {{^}}  if (!p) {{{$}}
+// CHECK-FIXES-NEXT: {{^}}    f("\{{$}}
+// CHECK-FIXES-NEXT: {{^}}");{{$}}
+// CHECK-FIXES-NEXT: {{^}}}{{$}}
+// CHECK-FIXES-NEXT: {{^}}} // end of f{{$}}
+
+#define M(x) x
+
+int test_macros(bool b) {
+  if (b) {
+    return 1;
+  } else
+    M(return 2);
+  // CHECK-MESSAGES: :[[@LINE-2]]:9: warning: statement should be inside braces
+  // CHECK-FIXES: } else {
+  // CHECK-FIXES-NEXT:   M(return 2);
+  // CHECK-FIXES-NEXT: }
+  M(
+    for (;;)
+      ;
+  );
+  // CHECK-MESSAGES: :[[@LINE-3]]:13: warning: statement should be inside braces
+  // CHECK-FIXES: {{^}}    for (;;) {{{$}}
+  // CHECK-FIXES-NEXT: {{^      ;$}}
+  // CHECK-FIXES-NEXT: {{^}$}}
+
 
   #define WRAP(X) { X; }
   // This is to ensure no other CHECK-FIXES matches the macro definition:
@@ -284,53 +342,47 @@ void test() {
   // CHECK-FIXES-NEXT: for (;;)
   // CHECK-FIXES-NEXT: do_something("for in wrapping macro 3")
   // CHECK-FIXES-NEXT: );
-}
 
-int test_return_int() {
-  if (cond("return5"))
-    return 5;
-  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
-  // CHECK-FIXES: if (cond("return5")) {
-  // CHECK-FIXES-NEXT: return 5;
+  // Taken from https://bugs.llvm.org/show_bug.cgi?id=22785
+  int i;
+  #define MACRO_1 i++
+  #define MACRO_2
+  if( i % 3) i--;
+  else if( i % 2) MACRO_1;
+  else MACRO_2;
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if( i % 3) { i--;
+  // CHECK-FIXES-NEXT: } else if( i % 2) { MACRO_1;
+  // CHECK-FIXES-NEXT: } else { MACRO_2;
   // CHECK-FIXES-NEXT: }
 
-  if (cond("return{6}"))
-    return {6};
-  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
-  // CHECK-FIXES: if (cond("return{6}")) {
-  // CHECK-FIXES-NEXT: return {6};
-  // CHECK-FIXES-NEXT: }
-}
+  // Taken from https://bugs.llvm.org/show_bug.cgi?id=22785
+  #define M(x) x
 
-void f(const char *p) {
-  if (!p)
-    f("\
-");
-} // end of f
-// CHECK-MESSAGES: :[[@LINE-4]]:10: warning: statement should be inside braces
-// CHECK-FIXES:      {{^}}  if (!p) {{{$}}
-// CHECK-FIXES-NEXT: {{^}}    f("\{{$}}
-// CHECK-FIXES-NEXT: {{^}}");{{$}}
-// CHECK-FIXES-NEXT: {{^}}}{{$}}
-// CHECK-FIXES-NEXT: {{^}}} // end of f{{$}}
-
-#define M(x) x
-
-int test_macros(bool b) {
-  if (b) {
+  if (b)
     return 1;
-  } else
-    M(return 2);
-  // CHECK-MESSAGES: :[[@LINE-2]]:9: warning: statement should be inside braces
-  // CHECK-FIXES: } else {
-  // CHECK-FIXES-NEXT:   M(return 2);
+  else
+    return 2;
+  // CHECK-MESSAGES: :[[@LINE-4]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (b) {
+  // CHECK-FIXES-NEXT: return 1;
+  // CHECK-FIXES-NEXT: } else {
+  // CHECK-FIXES-NEXT: return 2;
   // CHECK-FIXES-NEXT: }
-  M(
-    for (;;)
-      ;
-  );
-  // CHECK-MESSAGES: :[[@LINE-3]]:13: warning: statement should be inside braces
-  // CHECK-FIXES: {{^}}    for (;;) {{{$}}
-  // CHECK-FIXES-NEXT: {{^      ;$}}
-  // CHECK-FIXES-NEXT: {{^}$}}
+
+  if (b)
+    return 1;
+  else
+    M(return 2);
+  // CHECK-MESSAGES: :[[@LINE-4]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: if (b) {
+  // CHECK-FIXES-NEXT: return 1;
+  // CHECK-FIXES-NEXT: } else {
+  // CHECK-FIXES-NEXT: M(return 2);
+  // CHECK-FIXES-NEXT: }
+
 }
