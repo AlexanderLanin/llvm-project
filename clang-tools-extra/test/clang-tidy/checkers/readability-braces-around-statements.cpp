@@ -228,23 +228,38 @@ void test() {
 
   if (cond("decl 1"))
     int s;
-  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  else
+    int t;
+  // CHECK-MESSAGES: :[[@LINE-4]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
   // CHECK-FIXES: if (cond("decl 1")) {
   // CHECK-FIXES-NEXT: int s;
+  // CHECK-FIXES-NEXT: } else {
+  // CHECK-FIXES-NEXT: int t;
   // CHECK-FIXES-NEXT: }
 
   if (cond("decl 2"))
     int s = (5);
-  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  else
+    int t = (5);
+  // CHECK-MESSAGES: :[[@LINE-4]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
   // CHECK-FIXES: if (cond("decl 2")) {
   // CHECK-FIXES-NEXT: int s = (5);
+  // CHECK-FIXES-NEXT: } else {
+  // CHECK-FIXES-NEXT: int t = (5);
   // CHECK-FIXES-NEXT: }
 
   if (cond("decl 3"))
     int s = {6};
-  // CHECK-MESSAGES: :[[@LINE-2]]:{{[0-9]+}}: warning: statement should be inside braces
+  else
+    int t = {6};
+  // CHECK-MESSAGES: :[[@LINE-4]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-3]]:{{[0-9]+}}: warning: statement should be inside braces
   // CHECK-FIXES: if (cond("decl 3")) {
   // CHECK-FIXES-NEXT: int s = {6};
+  // CHECK-FIXES-NEXT: } else {
+  // CHECK-FIXES-NEXT: int t = {6};
   // CHECK-FIXES-NEXT: }
 }
 
