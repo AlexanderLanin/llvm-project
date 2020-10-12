@@ -143,14 +143,20 @@ TEST(SparseSetTest, MultipleEntrySet) {
   Set.setUniverse(1000);
 
   // Add more than 256 elements.
-  for (unsigned i = 100; i != 800; ++i)
+  for (unsigned i = 100; i != 800; ++i) {
     Set.insert(i);
 
-  for (unsigned i = 0; i != 10; ++i)
+}
+
+  for (unsigned i = 0; i != 10; ++i) {
     Set.erase(i);
 
-  for (unsigned i = 100; i != 800; ++i)
+}
+
+  for (unsigned i = 100; i != 800; ++i) {
     EXPECT_TRUE(Set.count(i));
+
+}
 
   EXPECT_FALSE(Set.count(99));
   EXPECT_FALSE(Set.count(800));
@@ -187,19 +193,25 @@ TEST(SparseSetTest, PopBack) {
   USet Set;
   const unsigned UpperBound = 300;
   Set.setUniverse(UpperBound);
-  for (unsigned i = 0; i < UpperBound; ++i)
+  for (unsigned i = 0; i < UpperBound; ++i) {
     Set.insert(i);
+
+}
 
   // Make sure pop back returns the values in the reverse order we
   // inserted them.
   unsigned Expected = UpperBound;
-  while (!Set.empty())
+  while (!Set.empty()) {
     ASSERT_TRUE(--Expected == Set.pop_back_val());
+
+}
 
   // Insert again the same elements in the sparse set and make sure
   // each insertion actually inserts the elements. I.e., check
   // that the underlying data structure are properly cleared.
-  for (unsigned i = 0; i < UpperBound; ++i)
+  for (unsigned i = 0; i < UpperBound; ++i) {
     ASSERT_TRUE(Set.insert(i).second);
+
+}
 }
 } // namespace

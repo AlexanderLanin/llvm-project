@@ -28,26 +28,32 @@ std::string stripUTF16(const ArrayRef<UTF16> &UTF16Str) {
     // UTF16Str will have swapped byte order in case of big-endian machines.
     // Swap it back in such a case.
     uint16_t ChValue = support::endian::byte_swap(Ch, support::little);
-    if (ChValue <= 0xFF)
+    if (ChValue <= 0xFF) {
       Result += ChValue;
-    else
+    } else {
       Result += '?';
+
+}
   }
   return Result;
 }
 
 Error Dumper::printData() {
   auto EntryPtrOrErr = WinRes->getHeadEntry();
-  if (!EntryPtrOrErr)
+  if (!EntryPtrOrErr) {
     return EntryPtrOrErr.takeError();
+
+}
   auto EntryPtr = *EntryPtrOrErr;
 
   bool IsEnd = false;
   while (!IsEnd) {
     printEntry(EntryPtr);
 
-    if (auto Err = EntryPtr.moveNext(IsEnd))
+    if (auto Err = EntryPtr.moveNext(IsEnd)) {
       return Err;
+
+}
   }
   return Error::success();
 }
@@ -66,8 +72,10 @@ void Dumper::printEntry(const ResourceEntryRef &Ref) {
   if (Ref.checkNameString()) {
     auto NarrowStr = stripUTF16(Ref.getNameString());
     SW.printString("Resource name (string)", NarrowStr);
-  } else
+  } else {
     SW.printNumber("Resource name (int)", Ref.getNameID());
+
+}
 
   SW.printNumber("Data version", Ref.getDataVersion());
   SW.printHex("Memory flags", Ref.getMemoryFlags());

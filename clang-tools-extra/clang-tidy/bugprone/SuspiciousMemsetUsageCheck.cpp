@@ -64,8 +64,10 @@ void SuspiciousMemsetUsageCheck::check(const MatchFinder::MatchResult &Result) {
                                           "potentially mistaken for int 0");
 
     // Only suggest a fix if no macros are involved.
-    if (CharRange.getBegin().isMacroID())
+    if (CharRange.getBegin().isMacroID()) {
       return;
+
+}
     Diag << FixItHint::CreateReplacement(
         CharSourceRange::getTokenRange(CharRange), "0");
   }
@@ -77,12 +79,16 @@ void SuspiciousMemsetUsageCheck::check(const MatchFinder::MatchResult &Result) {
 
     const auto UCharMax = (1 << Result.Context->getCharWidth()) - 1;
     Expr::EvalResult EVResult;
-    if (!NumFill->EvaluateAsInt(EVResult, *Result.Context))
+    if (!NumFill->EvaluateAsInt(EVResult, *Result.Context)) {
       return;
 
+}
+
     llvm::APSInt NumValue = EVResult.Val.getInt();
-    if (NumValue >= 0 && NumValue <= UCharMax)
+    if (NumValue >= 0 && NumValue <= UCharMax) {
       return;
+
+}
 
     diag(NumFill->getBeginLoc(), "memset fill value is out of unsigned "
                                  "character range, gets truncated");
@@ -99,8 +105,10 @@ void SuspiciousMemsetUsageCheck::check(const MatchFinder::MatchResult &Result) {
     Expr::EvalResult Value2;
     if (ByteCount->isValueDependent() ||
         !ByteCount->EvaluateAsInt(Value2, *Result.Context) ||
-        Value2.Val.getInt() != 0)
+        Value2.Val.getInt() != 0) {
       return;
+
+}
 
     // Return if `fill_char` is known to be zero or negative at compile
     // time. In these cases, swapping the args would be a nop, or
@@ -109,8 +117,10 @@ void SuspiciousMemsetUsageCheck::check(const MatchFinder::MatchResult &Result) {
     if (!FillChar->isValueDependent() &&
         FillChar->EvaluateAsInt(EVResult, *Result.Context)) {
       llvm::APSInt Value1 = EVResult.Val.getInt();
-      if (Value1 == 0 || Value1.isNegative())
+      if (Value1 == 0 || Value1.isNegative()) {
         return;
+
+}
     }
 
     // `byte_count` is known to be zero at compile time, and `fill_char` is
@@ -120,8 +130,10 @@ void SuspiciousMemsetUsageCheck::check(const MatchFinder::MatchResult &Result) {
                   "memset of size zero, potentially swapped arguments");
     StringRef RHSString = tooling::fixit::getText(*ByteCount, *Result.Context);
     StringRef LHSString = tooling::fixit::getText(*FillChar, *Result.Context);
-    if (LHSString.empty() || RHSString.empty())
+    if (LHSString.empty() || RHSString.empty()) {
       return;
+
+}
 
     D << tooling::fixit::createReplacement(*FillChar, RHSString)
       << tooling::fixit::createReplacement(*ByteCount, LHSString);

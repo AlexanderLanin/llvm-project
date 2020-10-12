@@ -39,10 +39,12 @@ bool ConvertUTF8toWide(unsigned WideCharWidth, llvm::StringRef Source,
     result = ConvertUTF8toUTF16(
         &sourceStart, sourceStart + Source.size(),
         &targetStart, targetStart + Source.size(), flags);
-    if (result == conversionOK)
+    if (result == conversionOK) {
       ResultPtr = reinterpret_cast<char*>(targetStart);
-    else
+    } else {
       ErrorPtr = sourceStart;
+
+}
   } else if (WideCharWidth == 4) {
     const UTF8 *sourceStart = (const UTF8*)Source.data();
     // FIXME: Make the type of the result buffer correct instead of
@@ -52,10 +54,12 @@ bool ConvertUTF8toWide(unsigned WideCharWidth, llvm::StringRef Source,
     result = ConvertUTF8toUTF32(
         &sourceStart, sourceStart + Source.size(),
         &targetStart, targetStart + Source.size(), flags);
-    if (result == conversionOK)
+    if (result == conversionOK) {
       ResultPtr = reinterpret_cast<char*>(targetStart);
-    else
+    } else {
       ErrorPtr = sourceStart;
+
+}
   }
   assert((result != targetExhausted)
          && "ConvertUTF8toUTFXX exhausted target buffer");
@@ -70,8 +74,10 @@ bool ConvertCodePointToUTF8(unsigned Source, char *&ResultPtr) {
   ConversionResult CR = ConvertUTF32toUTF8(&SourceStart, SourceEnd,
                                            &TargetStart, TargetEnd,
                                            strictConversion);
-  if (CR != conversionOK)
+  if (CR != conversionOK) {
     return false;
+
+}
 
   ResultPtr = reinterpret_cast<char*>(TargetStart);
   return true;
@@ -87,12 +93,16 @@ bool convertUTF16ToUTF8String(ArrayRef<char> SrcBytes, std::string &Out) {
   assert(Out.empty());
 
   // Error out on an uneven byte count.
-  if (SrcBytes.size() % 2)
+  if (SrcBytes.size() % 2) {
     return false;
 
+}
+
   // Avoid OOB by returning early on empty input.
-  if (SrcBytes.empty())
+  if (SrcBytes.empty()) {
     return true;
+
+}
 
   const UTF16 *Src = reinterpret_cast<const UTF16 *>(SrcBytes.begin());
   const UTF16 *SrcEnd = reinterpret_cast<const UTF16 *>(SrcBytes.end());
@@ -101,15 +111,19 @@ bool convertUTF16ToUTF8String(ArrayRef<char> SrcBytes, std::string &Out) {
   std::vector<UTF16> ByteSwapped;
   if (Src[0] == UNI_UTF16_BYTE_ORDER_MARK_SWAPPED) {
     ByteSwapped.insert(ByteSwapped.end(), Src, SrcEnd);
-    for (unsigned I = 0, E = ByteSwapped.size(); I != E; ++I)
+    for (unsigned I = 0, E = ByteSwapped.size(); I != E; ++I) {
       ByteSwapped[I] = llvm::ByteSwap_16(ByteSwapped[I]);
+
+}
     Src = &ByteSwapped[0];
     SrcEnd = &ByteSwapped[ByteSwapped.size() - 1] + 1;
   }
 
   // Skip the BOM for conversion.
-  if (Src[0] == UNI_UTF16_BYTE_ORDER_MARK_NATIVE)
+  if (Src[0] == UNI_UTF16_BYTE_ORDER_MARK_NATIVE) {
     Src++;
+
+}
 
   // Just allocate enough space up front.  We'll shrink it later.  Allocate
   // enough that we can fit a null terminator without reallocating.
@@ -215,8 +229,10 @@ bool convertWideToUTF8(const std::wstring &Source, std::string &Result) {
     const UTF8 *Start = reinterpret_cast<const UTF8 *>(Source.data());
     const UTF8 *End =
         reinterpret_cast<const UTF8 *>(Source.data() + Source.size());
-    if (!isLegalUTF8String(&Start, End))
+    if (!isLegalUTF8String(&Start, End)) {
       return false;
+
+}
     Result.resize(Source.size());
     memcpy(&Result[0], Source.data(), Source.size());
     return true;

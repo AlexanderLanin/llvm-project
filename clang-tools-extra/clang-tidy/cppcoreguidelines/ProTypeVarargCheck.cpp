@@ -27,28 +27,38 @@ void ProTypeVarargCheck::registerMatchers(MatchFinder *Finder) {
 
 static bool hasSingleVariadicArgumentWithValue(const CallExpr *C, uint64_t I) {
   const auto *FDecl = dyn_cast<FunctionDecl>(C->getCalleeDecl());
-  if (!FDecl)
+  if (!FDecl) {
     return false;
 
+}
+
   auto N = FDecl->getNumParams(); // Number of parameters without '...'
-  if (C->getNumArgs() != N + 1)
+  if (C->getNumArgs() != N + 1) {
     return false; // more/less than one argument passed to '...'
+
+}
 
   const auto *IntLit =
       dyn_cast<IntegerLiteral>(C->getArg(N)->IgnoreParenImpCasts());
-  if (!IntLit)
+  if (!IntLit) {
     return false;
 
-  if (IntLit->getValue() != I)
+}
+
+  if (IntLit->getValue() != I) {
     return false;
+
+}
 
   return true;
 }
 
 void ProTypeVarargCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *Matched = Result.Nodes.getNodeAs<CallExpr>("callvararg")) {
-    if (hasSingleVariadicArgumentWithValue(Matched, 0))
+    if (hasSingleVariadicArgumentWithValue(Matched, 0)) {
       return;
+
+}
     diag(Matched->getExprLoc(), "do not call c-style vararg functions");
   }
 
@@ -60,8 +70,10 @@ void ProTypeVarargCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *Matched = Result.Nodes.getNodeAs<VarDecl>("va_list")) {
     auto SR = Matched->getSourceRange();
-    if (SR.isInvalid())
+    if (SR.isInvalid()) {
       return; // some implicitly generated builtins take va_list
+
+}
     diag(SR.getBegin(), "do not declare variables of type va_list; "
                         "use variadic templates instead");
   }

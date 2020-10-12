@@ -22,8 +22,10 @@ void X86MachineFunctionInfo::setRestoreBasePointer(const MachineFunction *MF) {
     unsigned SlotSize = RegInfo->getSlotSize();
     for (const MCPhysReg *CSR = MF->getRegInfo().getCalleeSavedRegs();
          unsigned Reg = *CSR; ++CSR) {
-      if (X86::GR64RegClass.contains(Reg) || X86::GR32RegClass.contains(Reg))
+      if (X86::GR64RegClass.contains(Reg) || X86::GR32RegClass.contains(Reg)) {
         RestoreBasePointerOffset -= SlotSize;
+
+}
     }
   }
 }

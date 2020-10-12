@@ -59,8 +59,10 @@ char StringError::ID = 0;
 char FileError::ID = 0;
 
 void logAllUnhandledErrors(Error E, raw_ostream &OS, Twine ErrorBanner) {
-  if (!E)
+  if (!E) {
     return;
+
+}
   OS << ErrorBanner;
   handleAllErrors(std::move(E), [&](const ErrorInfoBase &EI) {
     EI.log(OS);
@@ -85,8 +87,10 @@ std::error_code FileError::convertToErrorCode() const {
 }
 
 Error errorCodeToError(std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return Error::success();
+
+}
   return Error(std::make_unique<ECError>(ECError(EC)));
 }
 
@@ -95,8 +99,10 @@ std::error_code errorToErrorCode(Error Err) {
   handleAllErrors(std::move(Err), [&](const ErrorInfoBase &EI) {
     EC = EI.convertToErrorCode();
   });
-  if (EC == inconvertibleErrorCode())
+  if (EC == inconvertibleErrorCode()) {
     report_fatal_error(EC.message());
+
+}
   return EC;
 }
 
@@ -124,8 +130,10 @@ void StringError::log(raw_ostream &OS) const {
     OS << Msg;
   } else {
     OS << EC.message();
-    if (!Msg.empty())
+    if (!Msg.empty()) {
       OS << (" " + Msg);
+
+}
   }
 }
 

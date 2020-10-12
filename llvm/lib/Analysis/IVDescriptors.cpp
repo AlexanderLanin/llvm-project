@@ -41,9 +41,13 @@ using namespace llvm::PatternMatch;
 
 bool RecurrenceDescriptor::areAllUsesIn(Instruction *I,
                                         SmallPtrSetImpl<Instruction *> &Set) {
-  for (User::op_iterator Use = I->op_begin(), E = I->op_end(); Use != E; ++Use)
-    if (!Set.count(dyn_cast<Instruction>(*Use)))
+  for (User::op_iterator Use = I->op_begin(), E = I->op_end(); Use != E; ++Use) {
+    if (!Set.count(dyn_cast<Instruction>(*Use))) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -86,8 +90,10 @@ bool RecurrenceDescriptor::isArithmeticRecurrenceKind(RecurrenceKind Kind) {
 static Instruction *lookThroughAnd(PHINode *Phi, Type *&RT,
                                    SmallPtrSetImpl<Instruction *> &Visited,
                                    SmallPtrSetImpl<Instruction *> &CI) {
-  if (!Phi->hasOneUse())
+  if (!Phi->hasOneUse()) {
     return Phi;
+
+}
 
   const APInt *M = nullptr;
   Instruction *I, *J = cast<Instruction>(Phi->use_begin()->getUser());
@@ -139,16 +145,20 @@ static std::pair<Type *, bool> computeRecurrenceType(Instruction *Exit,
       // meaning that we will use sext instructions instead of zext
       // instructions to restore the original type.
       IsSigned = true;
-      if (!Bits.isNegative())
+      if (!Bits.isNegative()) {
         // If the value is not known to be negative, we don't known what the
         // upper bit is, and therefore, we don't know what kind of extend we
         // will need. In this case, just increase the bit width by one bit and
         // use sext.
         ++MaxBitWidth;
+
+}
     }
   }
-  if (!isPowerOf2_64(MaxBitWidth))
+  if (!isPowerOf2_64(MaxBitWidth)) {
     MaxBitWidth = NextPowerOf2(MaxBitWidth);
+
+}
 
   return std::make_pair(Type::getIntNTy(Exit->getContext(), MaxBitWidth),
                         IsSigned);
@@ -168,7 +178,7 @@ static void collectCastsToIgnore(Loop *TheLoop, Instruction *Exit,
   while (!Worklist.empty()) {
     Instruction *Val = Worklist.pop_back_val();
     Visited.insert(Val);
-    if (auto *Cast = dyn_cast<CastInst>(Val))
+    if (auto *Cast = dyn_cast<CastInst>(Val)) {
       if (Cast->getSrcTy() == RecurrenceType) {
         // If the source type of a cast instruction is equal to the recurrence
         // type, it will be eliminated, and should be ignored in the vectorizer
@@ -177,12 +187,20 @@ static void collectCastsToIgnore(Loop *TheLoop, Instruction *Exit,
         continue;
       }
 
+}
+
     // Add all operands to the work list if they are loop-varying values that
     // we haven't yet visited.
-    for (Value *O : cast<User>(Val)->operands())
-      if (auto *I = dyn_cast<Instruction>(O))
-        if (TheLoop->contains(I) && !Visited.count(I))
+    for (Value *O : cast<User>(Val)->operands()) {
+      if (auto *I = dyn_cast<Instruction>(O)) {
+        if (TheLoop->contains(I) && !Visited.count(I)) {
           Worklist.push_back(I);
+
+}
+
+}
+
+}
   }
 }
 
@@ -192,12 +210,16 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
                                            DemandedBits *DB,
                                            AssumptionCache *AC,
                                            DominatorTree *DT) {
-  if (Phi->getNumIncomingValues() != 2)
+  if (Phi->getNumIncomingValues() != 2) {
     return false;
 
+}
+
   // Reduction variables are only found in the loop header block.
-  if (Phi->getParent() != TheLoop->getHeader())
+  if (Phi->getParent() != TheLoop->getHeader()) {
     return false;
+
+}
 
   // Obtain the reduction start value from the value that comes from the loop
   // preheader.
@@ -238,13 +260,19 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
   // operations are not limited to the legal integer widths, so we may be able
   // to evaluate the reduction in the narrower width.
   if (RecurrenceType->isFloatingPointTy()) {
-    if (!isFloatingPointRecurrenceKind(Kind))
+    if (!isFloatingPointRecurrenceKind(Kind)) {
       return false;
+
+}
   } else {
-    if (!isIntegerRecurrenceKind(Kind))
+    if (!isIntegerRecurrenceKind(Kind)) {
       return false;
-    if (isArithmeticRecurrenceKind(Kind))
+
+}
+    if (isArithmeticRecurrenceKind(Kind)) {
       Start = lookThroughAnd(Phi, RecurrenceType, VisitedInsts, CastInsts);
+
+}
   }
 
   Worklist.push_back(Start);
@@ -276,32 +304,42 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
     // No Users.
     // If the instruction has no users then this is a broken chain and can't be
     // a reduction variable.
-    if (Cur->use_empty())
+    if (Cur->use_empty()) {
       return false;
+
+}
 
     bool IsAPhi = isa<PHINode>(Cur);
 
     // A header PHI use other than the original PHI.
-    if (Cur != Phi && IsAPhi && Cur->getParent() == Phi->getParent())
+    if (Cur != Phi && IsAPhi && Cur->getParent() == Phi->getParent()) {
       return false;
+
+}
 
     // Reductions of instructions such as Div, and Sub is only possible if the
     // LHS is the reduction variable.
     if (!Cur->isCommutative() && !IsAPhi && !isa<SelectInst>(Cur) &&
         !isa<ICmpInst>(Cur) && !isa<FCmpInst>(Cur) &&
-        !VisitedInsts.count(dyn_cast<Instruction>(Cur->getOperand(0))))
+        !VisitedInsts.count(dyn_cast<Instruction>(Cur->getOperand(0)))) {
       return false;
+
+}
 
     // Any reduction instruction must be of one of the allowed kinds. We ignore
     // the starting value (the Phi or an AND instruction if the Phi has been
     // type-promoted).
     if (Cur != Start) {
       ReduxDesc = isRecurrenceInstr(Cur, Kind, ReduxDesc, HasFunNoNaNAttr);
-      if (!ReduxDesc.isRecurrence())
+      if (!ReduxDesc.isRecurrence()) {
         return false;
+
+}
       // FIXME: FMF is allowed on phi, but propagation is not handled correctly.
-      if (isa<FPMathOperator>(ReduxDesc.getPatternInst()) && !IsAPhi)
+      if (isa<FPMathOperator>(ReduxDesc.getPatternInst()) && !IsAPhi) {
         FMF &= ReduxDesc.getPatternInst()->getFastMathFlags();
+
+}
     }
 
     bool IsASelect = isa<SelectInst>(Cur);
@@ -309,23 +347,33 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
     // A conditional reduction operation must only have 2 or less uses in
     // VisitedInsts.
     if (IsASelect && (Kind == RK_FloatAdd || Kind == RK_FloatMult) &&
-        hasMultipleUsesOf(Cur, VisitedInsts, 2))
+        hasMultipleUsesOf(Cur, VisitedInsts, 2)) {
       return false;
+
+}
 
     // A reduction operation must only have one use of the reduction value.
     if (!IsAPhi && !IsASelect && Kind != RK_IntegerMinMax &&
-        Kind != RK_FloatMinMax && hasMultipleUsesOf(Cur, VisitedInsts, 1))
+        Kind != RK_FloatMinMax && hasMultipleUsesOf(Cur, VisitedInsts, 1)) {
       return false;
+
+}
 
     // All inputs to a PHI node must be a reduction value.
-    if (IsAPhi && Cur != Phi && !areAllUsesIn(Cur, VisitedInsts))
+    if (IsAPhi && Cur != Phi && !areAllUsesIn(Cur, VisitedInsts)) {
       return false;
 
+}
+
     if (Kind == RK_IntegerMinMax &&
-        (isa<ICmpInst>(Cur) || isa<SelectInst>(Cur)))
+        (isa<ICmpInst>(Cur) || isa<SelectInst>(Cur))) {
       ++NumCmpSelectPatternInst;
-    if (Kind == RK_FloatMinMax && (isa<FCmpInst>(Cur) || isa<SelectInst>(Cur)))
+
+}
+    if (Kind == RK_FloatMinMax && (isa<FCmpInst>(Cur) || isa<SelectInst>(Cur))) {
       ++NumCmpSelectPatternInst;
+
+}
 
     // Check  whether we found a reduction operator.
     FoundReduxOp |= !IsAPhi && Cur != Start;
@@ -343,21 +391,27 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
       if (!TheLoop->contains(Parent)) {
         // If we already know this instruction is used externally, move on to
         // the next user.
-        if (ExitInstruction == Cur)
+        if (ExitInstruction == Cur) {
           continue;
+
+}
 
         // Exit if you find multiple values used outside or if the header phi
         // node is being used. In this case the user uses the value of the
         // previous iteration, in which case we would loose "VF-1" iterations of
         // the reduction operation if we vectorize.
-        if (ExitInstruction != nullptr || Cur == Phi)
+        if (ExitInstruction != nullptr || Cur == Phi) {
           return false;
+
+}
 
         // The instruction used by an outside user must be the last instruction
         // before we feed back to the reduction phi. Otherwise, we loose VF-1
         // operations on the value.
-        if (!is_contained(Phi->operands(), Cur))
+        if (!is_contained(Phi->operands(), Cur)) {
           return false;
+
+}
 
         ExitInstruction = Cur;
         continue;
@@ -368,20 +422,26 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
       // reductions which are represented as a cmp followed by a select.
       InstDesc IgnoredVal(false, nullptr);
       if (VisitedInsts.insert(UI).second) {
-        if (isa<PHINode>(UI))
+        if (isa<PHINode>(UI)) {
           PHIs.push_back(UI);
-        else
+        } else {
           NonPHIs.push_back(UI);
+
+}
       } else if (!isa<PHINode>(UI) &&
                  ((!isa<FCmpInst>(UI) && !isa<ICmpInst>(UI) &&
                    !isa<SelectInst>(UI)) ||
                   (!isConditionalRdxPattern(Kind, UI).isRecurrence() &&
-                   !isMinMaxSelectCmpPattern(UI, IgnoredVal).isRecurrence())))
+                   !isMinMaxSelectCmpPattern(UI, IgnoredVal).isRecurrence()))) {
         return false;
 
+}
+
       // Remember that we completed the cycle.
-      if (UI == Phi)
+      if (UI == Phi) {
         FoundStartPHI = true;
+
+}
     }
     Worklist.append(PHIs.begin(), PHIs.end());
     Worklist.append(NonPHIs.begin(), NonPHIs.end());
@@ -390,11 +450,15 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
   // This means we have seen one but not the other instruction of the
   // pattern or more than just a select and cmp.
   if ((Kind == RK_IntegerMinMax || Kind == RK_FloatMinMax) &&
-      NumCmpSelectPatternInst != 2)
+      NumCmpSelectPatternInst != 2) {
     return false;
 
-  if (!FoundStartPHI || !FoundReduxOp || !ExitInstruction)
+}
+
+  if (!FoundStartPHI || !FoundReduxOp || !ExitInstruction) {
     return false;
+
+}
 
   if (Start != Phi) {
     // If the starting value is not the same as the phi node, we speculatively
@@ -424,8 +488,10 @@ bool RecurrenceDescriptor::AddReductionVar(PHINode *Phi, RecurrenceKind Kind,
     Type *ComputedType;
     std::tie(ComputedType, IsSigned) =
         computeRecurrenceType(ExitInstruction, DB, AC, DT);
-    if (ComputedType != RecurrenceType)
+    if (ComputedType != RecurrenceType) {
       return false;
+
+}
 
     // The recurrence expression will be represented in a narrower type. If
     // there are any cast instructions that will be unnecessary, collect them
@@ -467,40 +533,50 @@ RecurrenceDescriptor::isMinMaxSelectCmpPattern(Instruction *I, InstDesc &Prev) {
   // We must handle the select(cmp()) as a single instruction. Advance to the
   // select.
   if ((Cmp = dyn_cast<ICmpInst>(I)) || (Cmp = dyn_cast<FCmpInst>(I))) {
-    if (!Cmp->hasOneUse() || !(Select = dyn_cast<SelectInst>(*I->user_begin())))
+    if (!Cmp->hasOneUse() || !(Select = dyn_cast<SelectInst>(*I->user_begin()))) {
       return InstDesc(false, I);
+
+}
     return InstDesc(Select, Prev.getMinMaxKind());
   }
 
   // Only handle single use cases for now.
-  if (!(Select = dyn_cast<SelectInst>(I)))
+  if (!(Select = dyn_cast<SelectInst>(I))) {
     return InstDesc(false, I);
+
+}
   if (!(Cmp = dyn_cast<ICmpInst>(I->getOperand(0))) &&
-      !(Cmp = dyn_cast<FCmpInst>(I->getOperand(0))))
+      !(Cmp = dyn_cast<FCmpInst>(I->getOperand(0)))) {
     return InstDesc(false, I);
-  if (!Cmp->hasOneUse())
+
+}
+  if (!Cmp->hasOneUse()) {
     return InstDesc(false, I);
+
+}
 
   Value *CmpLeft;
   Value *CmpRight;
 
   // Look for a min/max pattern.
-  if (m_UMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  if (m_UMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_UIntMin);
-  else if (m_UMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_UMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_UIntMax);
-  else if (m_SMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_SMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_SIntMax);
-  else if (m_SMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_SMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_SIntMin);
-  else if (m_OrdFMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_OrdFMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_FloatMin);
-  else if (m_OrdFMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_OrdFMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_FloatMax);
-  else if (m_UnordFMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_UnordFMin(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_FloatMin);
-  else if (m_UnordFMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select))
+  } else if (m_UnordFMax(m_Value(CmpLeft), m_Value(CmpRight)).match(Select)) {
     return InstDesc(Select, MRK_FloatMax);
+
+}
 
   return InstDesc(false, I);
 }
@@ -518,36 +594,48 @@ RecurrenceDescriptor::InstDesc
 RecurrenceDescriptor::isConditionalRdxPattern(
     RecurrenceKind Kind, Instruction *I) {
   SelectInst *SI = dyn_cast<SelectInst>(I);
-  if (!SI)
+  if (!SI) {
     return InstDesc(false, I);
+
+}
 
   CmpInst *CI = dyn_cast<CmpInst>(SI->getCondition());
   // Only handle single use cases for now.
-  if (!CI || !CI->hasOneUse())
+  if (!CI || !CI->hasOneUse()) {
     return InstDesc(false, I);
+
+}
 
   Value *TrueVal = SI->getTrueValue();
   Value *FalseVal = SI->getFalseValue();
   // Handle only when either of operands of select instruction is a PHI
   // node for now.
   if ((isa<PHINode>(*TrueVal) && isa<PHINode>(*FalseVal)) ||
-      (!isa<PHINode>(*TrueVal) && !isa<PHINode>(*FalseVal)))
+      (!isa<PHINode>(*TrueVal) && !isa<PHINode>(*FalseVal))) {
     return InstDesc(false, I);
+
+}
 
   Instruction *I1 =
       isa<PHINode>(*TrueVal) ? dyn_cast<Instruction>(FalseVal)
                              : dyn_cast<Instruction>(TrueVal);
-  if (!I1 || !I1->isBinaryOp())
+  if (!I1 || !I1->isBinaryOp()) {
     return InstDesc(false, I);
+
+}
 
   Value *Op1, *Op2;
   if ((m_FAdd(m_Value(Op1), m_Value(Op2)).match(I1)  ||
        m_FSub(m_Value(Op1), m_Value(Op2)).match(I1)) &&
-      I1->isFast())
+      I1->isFast()) {
     return InstDesc(Kind == RK_FloatAdd, SI);
 
-  if (m_FMul(m_Value(Op1), m_Value(Op2)).match(I1) && (I1->isFast()))
+}
+
+  if (m_FMul(m_Value(Op1), m_Value(Op2)).match(I1) && (I1->isFast())) {
     return InstDesc(Kind == RK_FloatMult, SI);
+
+}
 
   return InstDesc(false, I);
 }
@@ -556,8 +644,10 @@ RecurrenceDescriptor::InstDesc
 RecurrenceDescriptor::isRecurrenceInstr(Instruction *I, RecurrenceKind Kind,
                                         InstDesc &Prev, bool HasFunNoNaNAttr) {
   Instruction *UAI = Prev.getUnsafeAlgebraInst();
-  if (!UAI && isa<FPMathOperator>(I) && !I->hasAllowReassoc())
+  if (!UAI && isa<FPMathOperator>(I) && !I->hasAllowReassoc()) {
     UAI = I; // Found an unsafe (unvectorizable) algebra instruction.
+
+}
 
   switch (I->getOpcode()) {
   default:
@@ -581,14 +671,18 @@ RecurrenceDescriptor::isRecurrenceInstr(Instruction *I, RecurrenceKind Kind,
   case Instruction::FAdd:
     return InstDesc(Kind == RK_FloatAdd, I, UAI);
   case Instruction::Select:
-    if (Kind == RK_FloatAdd || Kind == RK_FloatMult)
+    if (Kind == RK_FloatAdd || Kind == RK_FloatMult) {
       return isConditionalRdxPattern(Kind, I);
+
+}
     LLVM_FALLTHROUGH;
   case Instruction::FCmp:
   case Instruction::ICmp:
     if (Kind != RK_IntegerMinMax &&
-        (!HasFunNoNaNAttr || Kind != RK_FloatMinMax))
+        (!HasFunNoNaNAttr || Kind != RK_FloatMinMax)) {
       return InstDesc(false, I);
+
+}
     return isMinMaxSelectCmpPattern(I, Prev);
   }
 }
@@ -599,10 +693,14 @@ bool RecurrenceDescriptor::hasMultipleUsesOf(
   unsigned NumUses = 0;
   for (User::op_iterator Use = I->op_begin(), E = I->op_end(); Use != E;
        ++Use) {
-    if (Insts.count(dyn_cast<Instruction>(*Use)))
+    if (Insts.count(dyn_cast<Instruction>(*Use))) {
       ++NumUses;
-    if (NumUses > MaxNumUses)
+
+}
+    if (NumUses > MaxNumUses) {
       return true;
+
+}
   }
 
   return false;
@@ -673,27 +771,35 @@ bool RecurrenceDescriptor::isFirstOrderRecurrence(
 
   // Ensure the phi node is in the loop header and has two incoming values.
   if (Phi->getParent() != TheLoop->getHeader() ||
-      Phi->getNumIncomingValues() != 2)
+      Phi->getNumIncomingValues() != 2) {
     return false;
+
+}
 
   // Ensure the loop has a preheader and a single latch block. The loop
   // vectorizer will need the latch to set up the next iteration of the loop.
   auto *Preheader = TheLoop->getLoopPreheader();
   auto *Latch = TheLoop->getLoopLatch();
-  if (!Preheader || !Latch)
+  if (!Preheader || !Latch) {
     return false;
+
+}
 
   // Ensure the phi node's incoming blocks are the loop preheader and latch.
   if (Phi->getBasicBlockIndex(Preheader) < 0 ||
-      Phi->getBasicBlockIndex(Latch) < 0)
+      Phi->getBasicBlockIndex(Latch) < 0) {
     return false;
+
+}
 
   // Get the previous value. The previous value comes from the latch edge while
   // the initial value comes form the preheader edge.
   auto *Previous = dyn_cast<Instruction>(Phi->getIncomingValueForBlock(Latch));
   if (!Previous || !TheLoop->contains(Previous) || isa<PHINode>(Previous) ||
-      SinkAfter.count(Previous)) // Cannot rely on dominance due to motion.
+      SinkAfter.count(Previous)) { // Cannot rely on dominance due to motion.
     return false;
+
+}
 
   // Ensure every user of the phi node is dominated by the previous value.
   // The dominance requirement ensures the loop vectorizer will not need to
@@ -713,22 +819,30 @@ bool RecurrenceDescriptor::isFirstOrderRecurrence(
 
     // If the user of the PHI is also the incoming value, we potentially have a
     // reduction and which cannot be handled by sinking.
-    if (Previous == I)
+    if (Previous == I) {
       return false;
 
+}
+
     // We cannot sink terminator instructions.
-    if (I->getParent()->getTerminator() == I)
+    if (I->getParent()->getTerminator() == I) {
       return false;
+
+}
 
     // Do not try to sink an instruction multiple times (if multiple operands
     // are first order recurrences).
     // TODO: We can support this case, by sinking the instruction after the
     // 'deepest' previous instruction.
-    if (SinkAfter.find(I) != SinkAfter.end())
+    if (SinkAfter.find(I) != SinkAfter.end()) {
       return false;
 
-    if (DT->dominates(Previous, I)) // We already are good w/o sinking.
+}
+
+    if (DT->dominates(Previous, I)) { // We already are good w/o sinking.
       return true;
+
+}
 
     // We can sink any instruction without side effects, as long as all users
     // are dominated by the instruction we are sinking after.
@@ -835,14 +949,18 @@ InductionDescriptor::InductionDescriptor(Value *Start, InductionKind K,
 
 int InductionDescriptor::getConsecutiveDirection() const {
   ConstantInt *ConstStep = getConstIntStepValue();
-  if (ConstStep && (ConstStep->isOne() || ConstStep->isMinusOne()))
+  if (ConstStep && (ConstStep->isOne() || ConstStep->isMinusOne())) {
     return ConstStep->getSExtValue();
+
+}
   return 0;
 }
 
 ConstantInt *InductionDescriptor::getConstIntStepValue() const {
-  if (isa<SCEVConstant>(Step))
+  if (isa<SCEVConstant>(Step)) {
     return dyn_cast<ConstantInt>(cast<SCEVConstant>(Step)->getValue());
+
+}
   return nullptr;
 }
 
@@ -853,13 +971,17 @@ bool InductionDescriptor::isFPInductionPHI(PHINode *Phi, const Loop *TheLoop,
   // Here we only handle FP induction variables.
   assert(Phi->getType()->isFloatingPointTy() && "Unexpected Phi type");
 
-  if (TheLoop->getHeader() != Phi->getParent())
+  if (TheLoop->getHeader() != Phi->getParent()) {
     return false;
+
+}
 
   // The loop may have multiple entrances or multiple exits; we can analyze
   // this phi if it has a unique entry value and a unique backedge value.
-  if (Phi->getNumIncomingValues() != 2)
+  if (Phi->getNumIncomingValues() != 2) {
     return false;
+
+}
   Value *BEValue = nullptr, *StartValue = nullptr;
   if (TheLoop->contains(Phi->getIncomingBlock(0))) {
     BEValue = Phi->getIncomingValue(0);
@@ -872,26 +994,40 @@ bool InductionDescriptor::isFPInductionPHI(PHINode *Phi, const Loop *TheLoop,
   }
 
   BinaryOperator *BOp = dyn_cast<BinaryOperator>(BEValue);
-  if (!BOp)
+  if (!BOp) {
     return false;
+
+}
 
   Value *Addend = nullptr;
   if (BOp->getOpcode() == Instruction::FAdd) {
-    if (BOp->getOperand(0) == Phi)
+    if (BOp->getOperand(0) == Phi) {
       Addend = BOp->getOperand(1);
-    else if (BOp->getOperand(1) == Phi)
+    } else if (BOp->getOperand(1) == Phi) {
       Addend = BOp->getOperand(0);
-  } else if (BOp->getOpcode() == Instruction::FSub)
-    if (BOp->getOperand(0) == Phi)
+
+}
+  } else if (BOp->getOpcode() == Instruction::FSub) {
+    if (BOp->getOperand(0) == Phi) {
       Addend = BOp->getOperand(1);
 
-  if (!Addend)
+}
+
+}
+
+  if (!Addend) {
     return false;
 
+}
+
   // The addend should be loop invariant
-  if (auto *I = dyn_cast<Instruction>(Addend))
-    if (TheLoop->contains(I))
+  if (auto *I = dyn_cast<Instruction>(Addend)) {
+    if (TheLoop->contains(I)) {
       return false;
+
+}
+
+}
 
   // FP Step has unknown SCEV
   const SCEV *Step = SE->getUnknown(Addend);
@@ -951,26 +1087,34 @@ static bool getCastsForInductionPHI(PredicatedScalarEvolution &PSE,
 
   auto getDef = [&](const Value *Val) -> Value * {
     const BinaryOperator *BinOp = dyn_cast<BinaryOperator>(Val);
-    if (!BinOp)
+    if (!BinOp) {
       return nullptr;
+
+}
     Value *Op0 = BinOp->getOperand(0);
     Value *Op1 = BinOp->getOperand(1);
     Value *Def = nullptr;
-    if (L->isLoopInvariant(Op0))
+    if (L->isLoopInvariant(Op0)) {
       Def = Op1;
-    else if (L->isLoopInvariant(Op1))
+    } else if (L->isLoopInvariant(Op1)) {
       Def = Op0;
+
+}
     return Def;
   };
 
   // Look for the instruction that defines the induction via the
   // loop backedge.
   BasicBlock *Latch = L->getLoopLatch();
-  if (!Latch)
+  if (!Latch) {
     return false;
+
+}
   Value *Val = PN->getIncomingValueForBlock(Latch);
-  if (!Val)
+  if (!Val) {
     return false;
+
+}
 
   // Follow the def-use chain until the induction phi is reached.
   // If on the way we encounter a Value that has the same SCEV Expr as the
@@ -985,19 +1129,27 @@ static bool getCastsForInductionPHI(PredicatedScalarEvolution &PSE,
       return false;
     }
     auto *AddRec = dyn_cast<SCEVAddRecExpr>(PSE.getSCEV(Val));
-    if (AddRec && PSE.areAddRecsEqualWithPreds(AddRec, AR))
+    if (AddRec && PSE.areAddRecsEqualWithPreds(AddRec, AR)) {
       InCastSequence = true;
+
+}
     if (InCastSequence) {
       // Only the last instruction in the cast sequence is expected to have
       // uses outside the induction def-use chain.
-      if (!CastInsts.empty())
-        if (!Inst->hasOneUse())
+      if (!CastInsts.empty()) {
+        if (!Inst->hasOneUse()) {
           return false;
+
+}
+
+}
       CastInsts.push_back(Inst);
     }
     Val = getDef(Val);
-    if (!Val)
+    if (!Val) {
       return false;
+
+}
     Inst = dyn_cast<Instruction>(Val);
   }
 
@@ -1014,18 +1166,24 @@ bool InductionDescriptor::isInductionPHI(PHINode *Phi, const Loop *TheLoop,
   // recurrent expression from the PHI node in-place.
 
   if (!PhiTy->isIntegerTy() && !PhiTy->isPointerTy() && !PhiTy->isFloatTy() &&
-      !PhiTy->isDoubleTy() && !PhiTy->isHalfTy())
+      !PhiTy->isDoubleTy() && !PhiTy->isHalfTy()) {
     return false;
 
-  if (PhiTy->isFloatingPointTy())
+}
+
+  if (PhiTy->isFloatingPointTy()) {
     return isFPInductionPHI(Phi, TheLoop, PSE.getSE(), D);
+
+}
 
   const SCEV *PhiScev = PSE.getSCEV(Phi);
   const auto *AR = dyn_cast<SCEVAddRecExpr>(PhiScev);
 
   // We need this expression to be an AddRecExpr.
-  if (Assume && !AR)
+  if (Assume && !AR) {
     AR = PSE.getAsAddRec(Phi);
+
+}
 
   if (!AR) {
     LLVM_DEBUG(dbgs() << "LV: PHI is not a poly recurrence.\n");
@@ -1041,8 +1199,10 @@ bool InductionDescriptor::isInductionPHI(PHINode *Phi, const Loop *TheLoop,
   // induction.
   if (PhiScev != AR && SymbolicPhi) {
     SmallVector<Instruction *, 2> Casts;
-    if (getCastsForInductionPHI(PSE, SymbolicPhi, AR, Casts))
+    if (getCastsForInductionPHI(PSE, SymbolicPhi, AR, Casts)) {
       return isInductionPHI(Phi, TheLoop, PSE.getSE(), D, AR, &Casts);
+
+}
   }
 
   return isInductionPHI(Phi, TheLoop, PSE.getSE(), D, AR);
@@ -1054,8 +1214,10 @@ bool InductionDescriptor::isInductionPHI(
     SmallVectorImpl<Instruction *> *CastsToIgnore) {
   Type *PhiTy = Phi->getType();
   // We only handle integer and pointer inductions variables.
-  if (!PhiTy->isIntegerTy() && !PhiTy->isPointerTy())
+  if (!PhiTy->isIntegerTy() && !PhiTy->isPointerTy()) {
     return false;
+
+}
 
   // Check that the PHI is consecutive.
   const SCEV *PhiScev = Expr ? Expr : SE->getSCEV(Phi);
@@ -1078,8 +1240,10 @@ bool InductionDescriptor::isInductionPHI(
       Phi->getIncomingValueForBlock(AR->getLoop()->getLoopPreheader());
 
   BasicBlock *Latch = AR->getLoop()->getLoopLatch();
-  if (!Latch)
+  if (!Latch) {
     return false;
+
+}
   BinaryOperator *BOp =
       dyn_cast<BinaryOperator>(Phi->getIncomingValueForBlock(Latch));
 
@@ -1087,8 +1251,10 @@ bool InductionDescriptor::isInductionPHI(
   // Calculate the pointer stride and check if it is consecutive.
   // The stride may be a constant or a loop invariant integer value.
   const SCEVConstant *ConstStep = dyn_cast<SCEVConstant>(Step);
-  if (!ConstStep && !SE->isLoopInvariant(Step, TheLoop))
+  if (!ConstStep && !SE->isLoopInvariant(Step, TheLoop)) {
     return false;
+
+}
 
   if (PhiTy->isIntegerTy()) {
     D = InductionDescriptor(StartValue, IK_IntInduction, Step, BOp,
@@ -1098,24 +1264,32 @@ bool InductionDescriptor::isInductionPHI(
 
   assert(PhiTy->isPointerTy() && "The PHI must be a pointer");
   // Pointer induction should be a constant.
-  if (!ConstStep)
+  if (!ConstStep) {
     return false;
+
+}
 
   ConstantInt *CV = ConstStep->getValue();
   Type *PointerElementType = PhiTy->getPointerElementType();
   // The pointer stride cannot be determined if the pointer element type is not
   // sized.
-  if (!PointerElementType->isSized())
+  if (!PointerElementType->isSized()) {
     return false;
+
+}
 
   const DataLayout &DL = Phi->getModule()->getDataLayout();
   int64_t Size = static_cast<int64_t>(DL.getTypeAllocSize(PointerElementType));
-  if (!Size)
+  if (!Size) {
     return false;
 
+}
+
   int64_t CVSize = CV->getSExtValue();
-  if (CVSize % Size)
+  if (CVSize % Size) {
     return false;
+
+}
   auto *StepValue =
       SE->getConstant(CV->getType(), CVSize / Size, true /* signed */);
   D = InductionDescriptor(StartValue, IK_PtrInduction, StepValue, BOp);

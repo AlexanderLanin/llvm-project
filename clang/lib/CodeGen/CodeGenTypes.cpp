@@ -39,8 +39,10 @@ CodeGenTypes::~CodeGenTypes() {
   llvm::DeleteContainerSeconds(CGRecordLayouts);
 
   for (llvm::FoldingSet<CGFunctionInfo>::iterator
-       I = FunctionInfos.begin(), E = FunctionInfos.end(); I != E; )
+       I = FunctionInfos.begin(), E = FunctionInfos.end(); I != E; ) {
     delete &*I++;
+
+}
 }
 
 const CodeGenOptions &CodeGenTypes::getCodeGenOpts() const {
@@ -59,22 +61,30 @@ void CodeGenTypes::addRecordTypeName(const RecordDecl *RD,
   if (RD->getIdentifier()) {
     // FIXME: We should not have to check for a null decl context here.
     // Right now we do it because the implicit Obj-C decls don't have one.
-    if (RD->getDeclContext())
+    if (RD->getDeclContext()) {
       RD->printQualifiedName(OS);
-    else
+    } else {
       RD->printName(OS);
+
+}
   } else if (const TypedefNameDecl *TDD = RD->getTypedefNameForAnonDecl()) {
     // FIXME: We should not have to check for a null decl context here.
     // Right now we do it because the implicit Obj-C decls don't have one.
-    if (TDD->getDeclContext())
+    if (TDD->getDeclContext()) {
       TDD->printQualifiedName(OS);
-    else
+    } else {
       TDD->printName(OS);
-  } else
+
+}
+  } else {
     OS << "anon";
 
-  if (!suffix.empty())
+}
+
+  if (!suffix.empty()) {
     OS << suffix;
+
+}
 
   Ty->setName(OS.str());
 }
@@ -87,8 +97,10 @@ llvm::Type *CodeGenTypes::ConvertTypeForMem(QualType T) {
   llvm::Type *R = ConvertType(T);
 
   // If this is a non-bool type, don't map it.
-  if (!R->isIntegerTy(1))
+  if (!R->isIntegerTy(1)) {
     return R;
+
+}
 
   // Otherwise, return an integer of the target-specified size.
   return llvm::IntegerType::get(getLLVMContext(),
@@ -117,34 +129,48 @@ isSafeToConvert(const RecordDecl *RD, CodeGenTypes &CGT,
                 llvm::SmallPtrSet<const RecordDecl*, 16> &AlreadyChecked) {
   // If we have already checked this type (maybe the same type is used by-value
   // multiple times in multiple structure fields, don't check again.
-  if (!AlreadyChecked.insert(RD).second)
+  if (!AlreadyChecked.insert(RD).second) {
     return true;
+
+}
 
   const Type *Key = CGT.getContext().getTagDeclType(RD).getTypePtr();
 
   // If this type is already laid out, converting it is a noop.
-  if (CGT.isRecordLayoutComplete(Key)) return true;
+  if (CGT.isRecordLayoutComplete(Key)) { return true;
+
+}
 
   // If this type is currently being laid out, we can't recursively compile it.
-  if (CGT.isRecordBeingLaidOut(Key))
+  if (CGT.isRecordBeingLaidOut(Key)) {
     return false;
+
+}
 
   // If this type would require laying out bases that are currently being laid
   // out, don't do it.  This includes virtual base classes which get laid out
   // when a class is translated, even though they aren't embedded by-value into
   // the class.
   if (const CXXRecordDecl *CRD = dyn_cast<CXXRecordDecl>(RD)) {
-    for (const auto &I : CRD->bases())
+    for (const auto &I : CRD->bases()) {
       if (!isSafeToConvert(I.getType()->castAs<RecordType>()->getDecl(), CGT,
-                           AlreadyChecked))
+                           AlreadyChecked)) {
         return false;
+
+}
+
+}
   }
 
   // If this type would require laying out members that are currently being laid
   // out, don't do it.
-  for (const auto *I : RD->fields())
-    if (!isSafeToConvert(I->getType(), CGT, AlreadyChecked))
+  for (const auto *I : RD->fields()) {
+    if (!isSafeToConvert(I->getType(), CGT, AlreadyChecked)) {
       return false;
+
+}
+
+}
 
   // If there are no problems, lets do it.
   return true;
@@ -157,16 +183,22 @@ static bool
 isSafeToConvert(QualType T, CodeGenTypes &CGT,
                 llvm::SmallPtrSet<const RecordDecl*, 16> &AlreadyChecked) {
   // Strip off atomic type sugar.
-  if (const auto *AT = T->getAs<AtomicType>())
+  if (const auto *AT = T->getAs<AtomicType>()) {
     T = AT->getValueType();
 
+}
+
   // If this is a record, check it.
-  if (const auto *RT = T->getAs<RecordType>())
+  if (const auto *RT = T->getAs<RecordType>()) {
     return isSafeToConvert(RT->getDecl(), CGT, AlreadyChecked);
 
+}
+
   // If this is an array, check the elements, which are embedded inline.
-  if (const auto *AT = CGT.getContext().getAsArrayType(T))
+  if (const auto *AT = CGT.getContext().getAsArrayType(T)) {
     return isSafeToConvert(AT->getElementType(), CGT, AlreadyChecked);
+
+}
 
   // Otherwise, there is no concern about transforming this.  We only care about
   // things that are contained by-value in a structure that can have another
@@ -180,7 +212,9 @@ isSafeToConvert(QualType T, CodeGenTypes &CGT,
 /// recursive compilation mess.
 static bool isSafeToConvert(const RecordDecl *RD, CodeGenTypes &CGT) {
   // If no structs are being laid out, we can certainly do this one.
-  if (CGT.noRecordsBeingLaidOut()) return true;
+  if (CGT.noRecordsBeingLaidOut()) { return true;
+
+}
 
   llvm::SmallPtrSet<const RecordDecl*, 16> AlreadyChecked;
   return isSafeToConvert(RD, CGT, AlreadyChecked);
@@ -194,20 +228,28 @@ static bool isSafeToConvert(const RecordDecl *RD, CodeGenTypes &CGT) {
 bool CodeGenTypes::isFuncParamTypeConvertible(QualType Ty) {
   // Some ABIs cannot have their member pointers represented in IR unless
   // certain circumstances have been reached.
-  if (const auto *MPT = Ty->getAs<MemberPointerType>())
+  if (const auto *MPT = Ty->getAs<MemberPointerType>()) {
     return getCXXABI().isMemberPointerConvertible(MPT);
+
+}
 
   // If this isn't a tagged type, we can convert it!
   const TagType *TT = Ty->getAs<TagType>();
-  if (!TT) return true;
+  if (!TT) { return true;
+
+}
 
   // Incomplete types cannot be converted.
-  if (TT->isIncompleteType())
+  if (TT->isIncompleteType()) {
     return false;
+
+}
 
   // If this is an enum, then it is always safe to convert.
   const RecordType *RT = dyn_cast<RecordType>(TT);
-  if (!RT) return true;
+  if (!RT) { return true;
+
+}
 
   // Otherwise, we have to be careful.  If it is a struct that we're in the
   // process of expanding, then we can't convert the function type.  That's ok
@@ -226,13 +268,21 @@ bool CodeGenTypes::isFuncParamTypeConvertible(QualType Ty) {
 /// pended.  If so, we don't want to ask the ABI lowering code to handle a type
 /// that cannot be converted to an IR type.
 bool CodeGenTypes::isFuncTypeConvertible(const FunctionType *FT) {
-  if (!isFuncParamTypeConvertible(FT->getReturnType()))
+  if (!isFuncParamTypeConvertible(FT->getReturnType())) {
     return false;
 
-  if (const FunctionProtoType *FPT = dyn_cast<FunctionProtoType>(FT))
-    for (unsigned i = 0, e = FPT->getNumParams(); i != e; i++)
-      if (!isFuncParamTypeConvertible(FPT->getParamType(i)))
+}
+
+  if (const FunctionProtoType *FPT = dyn_cast<FunctionProtoType>(FT)) {
+    for (unsigned i = 0, e = FPT->getNumParams(); i != e; i++) {
+      if (!isFuncParamTypeConvertible(FPT->getParamType(i))) {
         return false;
+
+}
+
+}
+
+}
 
   return true;
 }
@@ -249,30 +299,40 @@ void CodeGenTypes::UpdateCompletedType(const TagDecl *TD) {
       // Okay, we formed some types based on this.  We speculated that the enum
       // would be lowered to i32, so we only need to flush the cache if this
       // didn't happen.
-      if (!ConvertType(ED->getIntegerType())->isIntegerTy(32))
+      if (!ConvertType(ED->getIntegerType())->isIntegerTy(32)) {
         TypeCache.clear();
+
+}
     }
     // If necessary, provide the full definition of a type only used with a
     // declaration so far.
-    if (CGDebugInfo *DI = CGM.getModuleDebugInfo())
+    if (CGDebugInfo *DI = CGM.getModuleDebugInfo()) {
       DI->completeType(ED);
+
+}
     return;
   }
 
   // If we completed a RecordDecl that we previously used and converted to an
   // anonymous type, then go ahead and complete it now.
   const RecordDecl *RD = cast<RecordDecl>(TD);
-  if (RD->isDependentType()) return;
+  if (RD->isDependentType()) { return;
+
+}
 
   // Only complete it if we converted it already.  If we haven't converted it
   // yet, we'll just do it lazily.
-  if (RecordDeclTypes.count(Context.getTagDeclType(RD).getTypePtr()))
+  if (RecordDeclTypes.count(Context.getTagDeclType(RD).getTypePtr())) {
     ConvertRecordDeclType(RD);
+
+}
 
   // If necessary, provide the full definition of a type only used with a
   // declaration so far.
-  if (CGDebugInfo *DI = CGM.getModuleDebugInfo())
+  if (CGDebugInfo *DI = CGM.getModuleDebugInfo()) {
     DI->completeType(RD);
+
+}
 }
 
 void CodeGenTypes::RefreshTypeCacheForClass(const CXXRecordDecl *RD) {
@@ -290,21 +350,33 @@ static llvm::Type *getTypeForFormat(llvm::LLVMContext &VMContext,
                                     const llvm::fltSemantics &format,
                                     bool UseNativeHalf = false) {
   if (&format == &llvm::APFloat::IEEEhalf()) {
-    if (UseNativeHalf)
+    if (UseNativeHalf) {
       return llvm::Type::getHalfTy(VMContext);
-    else
+    } else {
       return llvm::Type::getInt16Ty(VMContext);
+
+}
   }
-  if (&format == &llvm::APFloat::IEEEsingle())
+  if (&format == &llvm::APFloat::IEEEsingle()) {
     return llvm::Type::getFloatTy(VMContext);
-  if (&format == &llvm::APFloat::IEEEdouble())
+
+}
+  if (&format == &llvm::APFloat::IEEEdouble()) {
     return llvm::Type::getDoubleTy(VMContext);
-  if (&format == &llvm::APFloat::IEEEquad())
+
+}
+  if (&format == &llvm::APFloat::IEEEquad()) {
     return llvm::Type::getFP128Ty(VMContext);
-  if (&format == &llvm::APFloat::PPCDoubleDouble())
+
+}
+  if (&format == &llvm::APFloat::PPCDoubleDouble()) {
     return llvm::Type::getPPC_FP128Ty(VMContext);
-  if (&format == &llvm::APFloat::x87DoubleExtended())
+
+}
+  if (&format == &llvm::APFloat::x87DoubleExtended()) {
     return llvm::Type::getX86_FP80Ty(VMContext);
+
+}
   llvm_unreachable("Unknown float format!");
 }
 
@@ -320,12 +392,20 @@ llvm::Type *CodeGenTypes::ConvertFunctionTypeInternal(QualType QFT) {
 
     // Force conversion of all the relevant record types, to make sure
     // we re-convert the FunctionType when appropriate.
-    if (const RecordType *RT = FT->getReturnType()->getAs<RecordType>())
+    if (const RecordType *RT = FT->getReturnType()->getAs<RecordType>()) {
       ConvertRecordDeclType(RT->getDecl());
-    if (const FunctionProtoType *FPT = dyn_cast<FunctionProtoType>(FT))
-      for (unsigned i = 0, e = FPT->getNumParams(); i != e; i++)
-        if (const RecordType *RT = FPT->getParamType(i)->getAs<RecordType>())
+
+}
+    if (const FunctionProtoType *FPT = dyn_cast<FunctionProtoType>(FT)) {
+      for (unsigned i = 0, e = FPT->getNumParams(); i != e; i++) {
+        if (const RecordType *RT = FPT->getParamType(i)->getAs<RecordType>()) {
           ConvertRecordDeclType(RT->getDecl());
+
+}
+
+}
+
+}
 
     SkippedLayout = true;
 
@@ -368,12 +448,18 @@ llvm::Type *CodeGenTypes::ConvertFunctionTypeInternal(QualType QFT) {
 
   RecordsBeingLaidOut.erase(Ty);
 
-  if (SkippedLayout)
+  if (SkippedLayout) {
     TypeCache.clear();
 
-  if (RecordsBeingLaidOut.empty())
-    while (!DeferredRecords.empty())
+}
+
+  if (RecordsBeingLaidOut.empty()) {
+    while (!DeferredRecords.empty()) {
       ConvertRecordDeclType(DeferredRecords.pop_back_val());
+
+}
+
+}
   return ResultType;
 }
 
@@ -384,14 +470,18 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
   const Type *Ty = T.getTypePtr();
 
   // RecordTypes are cached and processed specially.
-  if (const RecordType *RT = dyn_cast<RecordType>(Ty))
+  if (const RecordType *RT = dyn_cast<RecordType>(Ty)) {
     return ConvertRecordDeclType(RT->getDecl());
+
+}
 
   // See if type is already cached.
   llvm::DenseMap<const Type *, llvm::Type *>::iterator TCI = TypeCache.find(Ty);
   // If type is found in map then use it. Otherwise, convert type T.
-  if (TCI != TypeCache.end())
+  if (TCI != TypeCache.end()) {
     return TCI->second;
+
+}
 
   // If we don't have it in the cache, convert it now.
   llvm::Type *ResultType = nullptr;
@@ -579,8 +669,10 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
     const PointerType *PTy = cast<PointerType>(Ty);
     QualType ETy = PTy->getPointeeType();
     llvm::Type *PointeeType = ConvertTypeForMem(ETy);
-    if (PointeeType->isVoidTy())
+    if (PointeeType->isVoidTy()) {
       PointeeType = llvm::Type::getInt8Ty(getLLVMContext());
+
+}
     unsigned AS = Context.getTargetAddressSpace(ETy);
     ResultType = llvm::PointerType::get(PointeeType, AS);
     break;
@@ -643,8 +735,10 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
     // runtime, which can do whatever it likes); we never refine
     // these.
     llvm::Type *&T = InterfaceTypes[cast<ObjCInterfaceType>(Ty)];
-    if (!T)
+    if (!T) {
       T = llvm::StructType::create(getLLVMContext());
+
+}
     ResultType = T;
     break;
   }
@@ -661,8 +755,10 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
 
   case Type::Enum: {
     const EnumDecl *ED = cast<EnumType>(Ty)->getDecl();
-    if (ED->isCompleteDefinition() || ED->isFixed())
+    if (ED->isCompleteDefinition() || ED->isFixed()) {
       return ConvertType(ED->getIntegerType());
+
+}
     // Return a placeholder 'i32' type.  This can be changed later when the
     // type is defined (see UpdateCompletedType), but is likely to be the
     // "right" answer.
@@ -747,8 +843,10 @@ llvm::StructType *CodeGenTypes::ConvertRecordDeclType(const RecordDecl *RD) {
   // If this is still a forward declaration, or the LLVM type is already
   // complete, there's nothing more to do.
   RD = RD->getDefinition();
-  if (!RD || !RD->isCompleteDefinition() || !Ty->isOpaque())
+  if (!RD || !RD->isCompleteDefinition() || !Ty->isOpaque()) {
     return Ty;
+
+}
 
   // If converting this type would cause us to infinitely loop, don't do it!
   if (!isSafeToConvert(RD, *this)) {
@@ -764,7 +862,9 @@ llvm::StructType *CodeGenTypes::ConvertRecordDeclType(const RecordDecl *RD) {
   // Force conversion of non-virtual base classes recursively.
   if (const CXXRecordDecl *CRD = dyn_cast<CXXRecordDecl>(RD)) {
     for (const auto &I : CRD->bases()) {
-      if (I.isVirtual()) continue;
+      if (I.isVirtual()) { continue;
+
+}
       ConvertRecordDeclType(I.getType()->castAs<RecordType>()->getDecl());
     }
   }
@@ -780,14 +880,20 @@ llvm::StructType *CodeGenTypes::ConvertRecordDeclType(const RecordDecl *RD) {
   // If this struct blocked a FunctionType conversion, then recompute whatever
   // was derived from that.
   // FIXME: This is hugely overconservative.
-  if (SkippedLayout)
+  if (SkippedLayout) {
     TypeCache.clear();
+
+}
 
   // If we're done converting the outer-most record, then convert any deferred
   // structs as well.
-  if (RecordsBeingLaidOut.empty())
-    while (!DeferredRecords.empty())
+  if (RecordsBeingLaidOut.empty()) {
+    while (!DeferredRecords.empty()) {
       ConvertRecordDeclType(DeferredRecords.pop_back_val());
+
+}
+
+}
 
   return Ty;
 }
@@ -816,15 +922,23 @@ bool CodeGenTypes::isPointerZeroInitializable(QualType T) {
 }
 
 bool CodeGenTypes::isZeroInitializable(QualType T) {
-  if (T->getAs<PointerType>())
+  if (T->getAs<PointerType>()) {
     return Context.getTargetNullPointerValue(T) == 0;
 
+}
+
   if (const auto *AT = Context.getAsArrayType(T)) {
-    if (isa<IncompleteArrayType>(AT))
+    if (isa<IncompleteArrayType>(AT)) {
       return true;
-    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT))
-      if (Context.getConstantArrayElementCount(CAT) == 0)
+
+}
+    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT)) {
+      if (Context.getConstantArrayElementCount(CAT) == 0) {
         return true;
+
+}
+
+}
     T = Context.getBaseElementType(T);
   }
 
@@ -836,8 +950,10 @@ bool CodeGenTypes::isZeroInitializable(QualType T) {
   }
 
   // We have to ask the ABI about member pointers.
-  if (const MemberPointerType *MPT = T->getAs<MemberPointerType>())
+  if (const MemberPointerType *MPT = T->getAs<MemberPointerType>()) {
     return getCXXABI().isZeroInitializable(MPT);
+
+}
 
   // Everything else is okay.
   return true;

@@ -30,8 +30,10 @@ TEST(MachOTest, UnalignedLC) {
 
   mach_header *Header =
       reinterpret_cast<mach_header *>(Valid32BitMachO);
-  if (!sys::IsLittleEndianHost)
+  if (!sys::IsLittleEndianHost) {
     swapStruct(*Header);
+
+}
   ASSERT_EQ(Header->magic, MH_MAGIC);
   unsigned char *Current = Valid32BitMachO + sizeof(mach_header);
   unsigned char *BufferEnd =
@@ -39,8 +41,10 @@ TEST(MachOTest, UnalignedLC) {
   while (Current < BufferEnd) {
     macho_load_command *LC =
         reinterpret_cast<macho_load_command *>(Current);
-    if (!sys::IsLittleEndianHost)
+    if (!sys::IsLittleEndianHost) {
       swapStruct(LC->load_command_data);
+
+}
     ASSERT_EQ(LC->load_command_data.cmd, LC_SEGMENT);
     Current += LC->load_command_data.cmdsize;
   }

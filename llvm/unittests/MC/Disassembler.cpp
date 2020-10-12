@@ -31,8 +31,10 @@ TEST(Disassembler, X86Test) {
   char OutString[OutStringSize];
   LLVMDisasmContextRef DCR = LLVMCreateDisasm("x86_64-pc-linux", nullptr, 0,
                                               nullptr, symbolLookupCallback);
-  if (!DCR)
+  if (!DCR) {
     return;
+
+}
 
   size_t InstSize;
   unsigned NumBytes = sizeof(Bytes);
@@ -77,8 +79,10 @@ TEST(Disassembler, WebAssemblyTest) {
   char OutString[OutStringSize];
   LLVMDisasmContextRef DCR = LLVMCreateDisasm("wasm32-unknown-unknown", nullptr,
                                               0, nullptr, symbolLookupCallback);
-  if (!DCR)
+  if (!DCR) {
     return;
+
+}
 
   size_t InstSize;
   unsigned NumBytes = sizeof(Bytes);

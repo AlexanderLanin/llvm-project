@@ -45,8 +45,10 @@ public:
     Expr *CEE = E->getCallee()->IgnoreParenImpCasts();
     if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(CEE)) {
       if (FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(DRE->getDecl())) {
-        if (!FD->getDeclContext()->getRedeclContext()->isFileContext())
+        if (!FD->getDeclContext()->getRedeclContext()->isFileContext()) {
           return true;
+
+}
 
         if (FD->getIdentifier() == NSMakeCollectableII) {
           Transaction Trans(TA);

@@ -91,8 +91,10 @@ void RegionInfo::updateStatistics(Region *R) {
   ++numRegions;
 
   // TODO: Slow. Should only be enabled if -stats is used.
-  if (R->isSimple())
+  if (R->isSimple()) {
     ++numSimpleRegions;
+
+}
 }
 
 void RegionInfo::recalculate(Function &F, DominatorTree *DT_,

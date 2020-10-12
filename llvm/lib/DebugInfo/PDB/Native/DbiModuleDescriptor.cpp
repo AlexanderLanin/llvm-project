@@ -21,14 +21,20 @@ using namespace llvm::support;
 Error DbiModuleDescriptor::initialize(BinaryStreamRef Stream,
                                       DbiModuleDescriptor &Info) {
   BinaryStreamReader Reader(Stream);
-  if (auto EC = Reader.readObject(Info.Layout))
+  if (auto EC = Reader.readObject(Info.Layout)) {
     return EC;
 
-  if (auto EC = Reader.readCString(Info.ModuleName))
+}
+
+  if (auto EC = Reader.readCString(Info.ModuleName)) {
     return EC;
 
-  if (auto EC = Reader.readCString(Info.ObjFileName))
+}
+
+  if (auto EC = Reader.readCString(Info.ObjFileName)) {
     return EC;
+
+}
   return Error::success();
 }
 

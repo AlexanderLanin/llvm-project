@@ -38,16 +38,20 @@ std::string aarch64::getAArch64TargetCPU(const ArgList &Args,
   }
 
   // Handle CPU name is 'native'.
-  if (CPU == "native")
+  if (CPU == "native") {
     return std::string(llvm::sys::getHostCPUName());
-  else if (CPU.size())
+  } else if (CPU.size()) {
     return CPU;
+
+}
 
   // Make sure we pick the appropriate Apple CPU if -arch is used or when
   // targetting a Darwin OS.
-  if (Args.getLastArg(options::OPT_arch) || Triple.isOSDarwin())
+  if (Args.getLastArg(options::OPT_arch) || Triple.isOSDarwin()) {
     return Triple.getArch() == llvm::Triple::aarch64_32 ? "apple-s4"
                                                         : "apple-a7";
+
+}
 
   return "generic";
 }
@@ -60,12 +64,14 @@ static bool DecodeAArch64Features(const Driver &D, StringRef text,
 
   for (StringRef Feature : Split) {
     StringRef FeatureName = llvm::AArch64::getArchExtFeature(Feature);
-    if (!FeatureName.empty())
+    if (!FeatureName.empty()) {
       Features.push_back(FeatureName);
-    else if (Feature == "neon" || Feature == "noneon")
+    } else if (Feature == "neon" || Feature == "noneon") {
       D.Diag(clang::diag::err_drv_no_neon_modifier);
-    else
+    } else {
       return false;
+
+}
   }
   return true;
 }
@@ -77,23 +83,31 @@ static bool DecodeAArch64Mcpu(const Driver &D, StringRef Mcpu, StringRef &CPU,
   std::pair<StringRef, StringRef> Split = Mcpu.split("+");
   CPU = Split.first;
 
-  if (CPU == "native")
+  if (CPU == "native") {
     CPU = llvm::sys::getHostCPUName();
+
+}
 
   if (CPU == "generic") {
     Features.push_back("+neon");
   } else {
     llvm::AArch64::ArchKind ArchKind = llvm::AArch64::parseCPUArch(CPU);
-    if (!llvm::AArch64::getArchFeatures(ArchKind, Features))
+    if (!llvm::AArch64::getArchFeatures(ArchKind, Features)) {
       return false;
+
+}
 
     unsigned Extension = llvm::AArch64::getDefaultExtensions(CPU, ArchKind);
-    if (!llvm::AArch64::getExtensionFeatures(Extension, Features))
+    if (!llvm::AArch64::getExtensionFeatures(Extension, Features)) {
       return false;
+
+}
    }
 
-  if (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features))
+  if (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features)) {
     return false;
+
+}
 
   return true;
 }
@@ -108,8 +122,10 @@ getAArch64ArchFeaturesFromMarch(const Driver &D, StringRef March,
   llvm::AArch64::ArchKind ArchKind = llvm::AArch64::parseArch(Split.first);
   if (ArchKind == llvm::AArch64::ArchKind::INVALID ||
       !llvm::AArch64::getArchFeatures(ArchKind, Features) ||
-      (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features)))
+      (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features))) {
     return false;
+
+}
 
   return true;
 }
@@ -120,8 +136,10 @@ getAArch64ArchFeaturesFromMcpu(const Driver &D, StringRef Mcpu,
                                std::vector<StringRef> &Features) {
   StringRef CPU;
   std::string McpuLowerCase = Mcpu.lower();
-  if (!DecodeAArch64Mcpu(D, McpuLowerCase, CPU, Features))
+  if (!DecodeAArch64Mcpu(D, McpuLowerCase, CPU, Features)) {
     return false;
+
+}
 
   return true;
 }
@@ -134,12 +152,16 @@ getAArch64MicroArchFeaturesFromMtune(const Driver &D, StringRef Mtune,
   // Check CPU name is valid
   std::vector<StringRef> MtuneFeatures;
   StringRef Tune;
-  if (!DecodeAArch64Mcpu(D, MtuneLowerCase, Tune, MtuneFeatures))
+  if (!DecodeAArch64Mcpu(D, MtuneLowerCase, Tune, MtuneFeatures)) {
     return false;
 
+}
+
   // Handle CPU name is 'native'.
-  if (MtuneLowerCase == "native")
+  if (MtuneLowerCase == "native") {
     MtuneLowerCase = std::string(llvm::sys::getHostCPUName());
+
+}
   if (MtuneLowerCase == "cyclone" || MtuneLowerCase.find("apple") == 0) {
     Features.push_back("+zcm");
     Features.push_back("+zcz");
@@ -154,8 +176,10 @@ getAArch64MicroArchFeaturesFromMcpu(const Driver &D, StringRef Mcpu,
   StringRef CPU;
   std::vector<StringRef> DecodedFeature;
   std::string McpuLowerCase = Mcpu.lower();
-  if (!DecodeAArch64Mcpu(D, McpuLowerCase, CPU, DecodedFeature))
+  if (!DecodeAArch64Mcpu(D, McpuLowerCase, CPU, DecodedFeature)) {
     return false;
+
+}
 
   return getAArch64MicroArchFeaturesFromMtune(D, CPU, Args, Features);
 }
@@ -168,27 +192,33 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
   bool success = true;
   // Enable NEON by default.
   Features.push_back("+neon");
-  if ((A = Args.getLastArg(options::OPT_march_EQ)))
+  if ((A = Args.getLastArg(options::OPT_march_EQ))) {
     success = getAArch64ArchFeaturesFromMarch(D, A->getValue(), Args, Features);
-  else if ((A = Args.getLastArg(options::OPT_mcpu_EQ)))
+  } else if ((A = Args.getLastArg(options::OPT_mcpu_EQ))) {
     success = getAArch64ArchFeaturesFromMcpu(D, A->getValue(), Args, Features);
-  else if (Args.hasArg(options::OPT_arch) || isCPUDeterminedByTriple(Triple))
+  } else if (Args.hasArg(options::OPT_arch) || isCPUDeterminedByTriple(Triple)) {
     success = getAArch64ArchFeaturesFromMcpu(
         D, getAArch64TargetCPU(Args, Triple, A), Args, Features);
 
-  if (success && (A = Args.getLastArg(clang::driver::options::OPT_mtune_EQ)))
+}
+
+  if (success && (A = Args.getLastArg(clang::driver::options::OPT_mtune_EQ))) {
     success =
         getAArch64MicroArchFeaturesFromMtune(D, A->getValue(), Args, Features);
-  else if (success && (A = Args.getLastArg(options::OPT_mcpu_EQ)))
+  } else if (success && (A = Args.getLastArg(options::OPT_mcpu_EQ))) {
     success =
         getAArch64MicroArchFeaturesFromMcpu(D, A->getValue(), Args, Features);
-  else if (success &&
-           (Args.hasArg(options::OPT_arch) || isCPUDeterminedByTriple(Triple)))
+  } else if (success &&
+           (Args.hasArg(options::OPT_arch) || isCPUDeterminedByTriple(Triple))) {
     success = getAArch64MicroArchFeaturesFromMcpu(
         D, getAArch64TargetCPU(Args, Triple, A), Args, Features);
 
-  if (!success)
+}
+
+  if (!success) {
     D.Diag(diag::err_drv_clang_unsupported) << A->getAsString(Args);
+
+}
 
   if (Args.getLastArg(options::OPT_mgeneral_regs_only)) {
     Features.push_back("-fp-armv8");
@@ -198,22 +228,26 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
 
   if (Arg *A = Args.getLastArg(options::OPT_mtp_mode_EQ)) {
     StringRef Mtp = A->getValue();
-    if (Mtp == "el3")
+    if (Mtp == "el3") {
       Features.push_back("+tpidr-el3");
-    else if (Mtp == "el2")
+    } else if (Mtp == "el2") {
       Features.push_back("+tpidr-el2");
-    else if (Mtp == "el1")
+    } else if (Mtp == "el1") {
       Features.push_back("+tpidr-el1");
-    else if (Mtp != "el0")
+    } else if (Mtp != "el0") {
       D.Diag(diag::err_drv_invalid_mtp) << A->getAsString(Args);
+
+}
   }
 
   // En/disable crc
   if (Arg *A = Args.getLastArg(options::OPT_mcrc, options::OPT_mnocrc)) {
-    if (A->getOption().matches(options::OPT_mcrc))
+    if (A->getOption().matches(options::OPT_mcrc)) {
       Features.push_back("+crc");
-    else
+    } else {
       Features.push_back("-crc");
+
+}
   }
 
   // Handle (arch-dependent) fp16fml/fullfp16 relationship.
@@ -226,19 +260,25 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
     if (ItRFullFP16 < ItRNoFullFP16 && ItRFullFP16 < ItRFP16FML) {
       // Only entangled feature that can be to the right of this +fullfp16 is -fp16fml.
       // Only append the +fp16fml if there is no -fp16fml after the +fullfp16.
-      if (std::find(Features.rbegin(), ItRFullFP16, "-fp16fml") == ItRFullFP16)
+      if (std::find(Features.rbegin(), ItRFullFP16, "-fp16fml") == ItRFullFP16) {
         Features.push_back("+fp16fml");
+
+}
     }
-    else
+    else {
       goto fp16_fml_fallthrough;
+
+}
   } else {
 fp16_fml_fallthrough:
     // In both of these cases, putting the 'other' feature on the end of the vector will
     // result in the same effect as placing it immediately after the current feature.
-    if (ItRNoFullFP16 < ItRFP16FML)
+    if (ItRNoFullFP16 < ItRFP16FML) {
       Features.push_back("-fp16fml");
-    else if (ItRNoFullFP16 > ItRFP16FML)
+    } else if (ItRNoFullFP16 > ItRFP16FML) {
       Features.push_back("+fullfp16");
+
+}
   }
 
   // FIXME: this needs reimplementation too after the TargetParser rewrite
@@ -259,8 +299,10 @@ fp16_fml_fallthrough:
 
   bool NoCrypto = false;
   if (HasCrypto && HasNoCrypto) {
-    if (PosNoCrypto < PosCrypto)
+    if (PosNoCrypto < PosCrypto) {
       NoCrypto = true;
+
+}
   }
 
   if (std::find(ItBegin, ItEnd, "+v8.4a") != ItEnd) {
@@ -272,14 +314,22 @@ fp16_fml_fallthrough:
       const bool HasSHA3 = (std::find(ItBegin, ItEnd, "-sha3") == ItEnd);
       const bool HasSHA2 = (std::find(ItBegin, ItEnd, "-sha2") == ItEnd);
       const bool HasAES  = (std::find(ItBegin, ItEnd, "-aes") == ItEnd);
-      if (HasSM4)
+      if (HasSM4) {
         Features.push_back("+sm4");
-      if (HasSHA3)
+
+}
+      if (HasSHA3) {
         Features.push_back("+sha3");
-      if (HasSHA2)
+
+}
+      if (HasSHA2) {
         Features.push_back("+sha2");
-      if (HasAES)
+
+}
+      if (HasAES) {
         Features.push_back("+aes");
+
+}
     } else if (HasNoCrypto) {
       // Check if we have NOT enabled a crypto algorithm with something like:
       //   -crypto, +algorithm
@@ -288,33 +338,49 @@ fp16_fml_fallthrough:
       const bool HasSHA3 = (std::find(ItBegin, ItEnd, "+sha3") != ItEnd);
       const bool HasSHA2 = (std::find(ItBegin, ItEnd, "+sha2") != ItEnd);
       const bool HasAES  = (std::find(ItBegin, ItEnd, "+aes") != ItEnd);
-      if (!HasSM4)
+      if (!HasSM4) {
         Features.push_back("-sm4");
-      if (!HasSHA3)
+
+}
+      if (!HasSHA3) {
         Features.push_back("-sha3");
-      if (!HasSHA2)
+
+}
+      if (!HasSHA2) {
         Features.push_back("-sha2");
-      if (!HasAES)
+
+}
+      if (!HasAES) {
         Features.push_back("-aes");
+
+}
     }
   } else {
     if (HasCrypto && !NoCrypto) {
       const bool HasSHA2 = (std::find(ItBegin, ItEnd, "-sha2") == ItEnd);
       const bool HasAES = (std::find(ItBegin, ItEnd, "-aes") == ItEnd);
-      if (HasSHA2)
+      if (HasSHA2) {
         Features.push_back("+sha2");
-      if (HasAES)
+
+}
+      if (HasAES) {
         Features.push_back("+aes");
+
+}
     } else if (HasNoCrypto) {
       const bool HasSHA2 = (std::find(ItBegin, ItEnd, "+sha2") != ItEnd);
       const bool HasAES  = (std::find(ItBegin, ItEnd, "+aes") != ItEnd);
       const bool HasV82a = (std::find(ItBegin, ItEnd, "+v8.2a") != ItEnd);
       const bool HasV83a = (std::find(ItBegin, ItEnd, "+v8.3a") != ItEnd);
       const bool HasV84a = (std::find(ItBegin, ItEnd, "+v8.4a") != ItEnd);
-      if (!HasSHA2)
+      if (!HasSHA2) {
         Features.push_back("-sha2");
-      if (!HasAES)
+
+}
+      if (!HasAES) {
         Features.push_back("-aes");
+
+}
       if (HasV82a || HasV83a || HasV84a) {
         Features.push_back("-sm4");
         Features.push_back("-sha3");
@@ -323,109 +389,181 @@ fp16_fml_fallthrough:
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mno_unaligned_access,
-                               options::OPT_munaligned_access))
-    if (A->getOption().matches(options::OPT_mno_unaligned_access))
+                               options::OPT_munaligned_access)) {
+    if (A->getOption().matches(options::OPT_mno_unaligned_access)) {
       Features.push_back("+strict-align");
 
-  if (Args.hasArg(options::OPT_ffixed_x1))
+}
+
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x1)) {
     Features.push_back("+reserve-x1");
 
-  if (Args.hasArg(options::OPT_ffixed_x2))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x2)) {
     Features.push_back("+reserve-x2");
 
-  if (Args.hasArg(options::OPT_ffixed_x3))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x3)) {
     Features.push_back("+reserve-x3");
 
-  if (Args.hasArg(options::OPT_ffixed_x4))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x4)) {
     Features.push_back("+reserve-x4");
 
-  if (Args.hasArg(options::OPT_ffixed_x5))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x5)) {
     Features.push_back("+reserve-x5");
 
-  if (Args.hasArg(options::OPT_ffixed_x6))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x6)) {
     Features.push_back("+reserve-x6");
 
-  if (Args.hasArg(options::OPT_ffixed_x7))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x7)) {
     Features.push_back("+reserve-x7");
 
-  if (Args.hasArg(options::OPT_ffixed_x9))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x9)) {
     Features.push_back("+reserve-x9");
 
-  if (Args.hasArg(options::OPT_ffixed_x10))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x10)) {
     Features.push_back("+reserve-x10");
 
-  if (Args.hasArg(options::OPT_ffixed_x11))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x11)) {
     Features.push_back("+reserve-x11");
 
-  if (Args.hasArg(options::OPT_ffixed_x12))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x12)) {
     Features.push_back("+reserve-x12");
 
-  if (Args.hasArg(options::OPT_ffixed_x13))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x13)) {
     Features.push_back("+reserve-x13");
 
-  if (Args.hasArg(options::OPT_ffixed_x14))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x14)) {
     Features.push_back("+reserve-x14");
 
-  if (Args.hasArg(options::OPT_ffixed_x15))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x15)) {
     Features.push_back("+reserve-x15");
 
-  if (Args.hasArg(options::OPT_ffixed_x18))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x18)) {
     Features.push_back("+reserve-x18");
 
-  if (Args.hasArg(options::OPT_ffixed_x20))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x20)) {
     Features.push_back("+reserve-x20");
 
-  if (Args.hasArg(options::OPT_ffixed_x21))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x21)) {
     Features.push_back("+reserve-x21");
 
-  if (Args.hasArg(options::OPT_ffixed_x22))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x22)) {
     Features.push_back("+reserve-x22");
 
-  if (Args.hasArg(options::OPT_ffixed_x23))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x23)) {
     Features.push_back("+reserve-x23");
 
-  if (Args.hasArg(options::OPT_ffixed_x24))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x24)) {
     Features.push_back("+reserve-x24");
 
-  if (Args.hasArg(options::OPT_ffixed_x25))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x25)) {
     Features.push_back("+reserve-x25");
 
-  if (Args.hasArg(options::OPT_ffixed_x26))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x26)) {
     Features.push_back("+reserve-x26");
 
-  if (Args.hasArg(options::OPT_ffixed_x27))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x27)) {
     Features.push_back("+reserve-x27");
 
-  if (Args.hasArg(options::OPT_ffixed_x28))
+}
+
+  if (Args.hasArg(options::OPT_ffixed_x28)) {
     Features.push_back("+reserve-x28");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x8))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x8)) {
     Features.push_back("+call-saved-x8");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x9))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x9)) {
     Features.push_back("+call-saved-x9");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x10))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x10)) {
     Features.push_back("+call-saved-x10");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x11))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x11)) {
     Features.push_back("+call-saved-x11");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x12))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x12)) {
     Features.push_back("+call-saved-x12");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x13))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x13)) {
     Features.push_back("+call-saved-x13");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x14))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x14)) {
     Features.push_back("+call-saved-x14");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x15))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x15)) {
     Features.push_back("+call-saved-x15");
 
-  if (Args.hasArg(options::OPT_fcall_saved_x18))
+}
+
+  if (Args.hasArg(options::OPT_fcall_saved_x18)) {
     Features.push_back("+call-saved-x18");
 
-  if (Args.hasArg(options::OPT_mno_neg_immediates))
+}
+
+  if (Args.hasArg(options::OPT_mno_neg_immediates)) {
     Features.push_back("+no-neg-immediates");
+
+}
 }

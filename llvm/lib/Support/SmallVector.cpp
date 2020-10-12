@@ -42,8 +42,10 @@ static_assert(sizeof(SmallVector<void *, 1>) ==
 void SmallVectorBase::grow_pod(void *FirstEl, size_t MinCapacity,
                                size_t TSize) {
   // Ensure we can fit the new capacity in 32 bits.
-  if (MinCapacity > UINT32_MAX)
+  if (MinCapacity > UINT32_MAX) {
     report_bad_alloc_error("SmallVector capacity overflow during allocation");
+
+}
 
   size_t NewCapacity = 2 * capacity() + 1; // Always grow.
   NewCapacity =

@@ -111,8 +111,10 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesCFG();
-    if (ConstHoistWithBlockFrequency)
+    if (ConstHoistWithBlockFrequency) {
       AU.addRequired<BlockFrequencyInfoWrapperPass>();
+
+}
     AU.addRequired<DominatorTreeWrapperPass>();
     AU.addRequired<ProfileSummaryInfoWrapperPass>();
     AU.addRequired<TargetTransformInfoWrapperPass>();
@@ -141,8 +143,10 @@ FunctionPass *llvm::createConstantHoistingPass() {
 
 /// Perform the constant hoisting optimization for the given function.
 bool ConstantHoistingLegacyPass::runOnFunction(Function &Fn) {
-  if (skipFunction(Fn))
+  if (skipFunction(Fn)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "********** Begin Constant Hoisting **********\n");
   LLVM_DEBUG(dbgs() << "********** Function: " << Fn.getName() << '\n');
@@ -173,20 +177,28 @@ Instruction *ConstantHoistingPass::findMatInsertPt(Instruction *Inst,
   // constant before the cast instruction.
   if (Idx != ~0U) {
     Value *Opnd = Inst->getOperand(Idx);
-    if (auto CastInst = dyn_cast<Instruction>(Opnd))
-      if (CastInst->isCast())
+    if (auto CastInst = dyn_cast<Instruction>(Opnd)) {
+      if (CastInst->isCast()) {
         return CastInst;
+
+}
+
+}
   }
 
   // The simple and common case. This also includes constant expressions.
-  if (!isa<PHINode>(Inst) && !Inst->isEHPad())
+  if (!isa<PHINode>(Inst) && !Inst->isEHPad()) {
     return Inst;
+
+}
 
   // We can't insert directly before a phi node or an eh pad. Insert before
   // the terminator of the incoming or dominating block.
   assert(Entry != Inst->getParent() && "PHI or landing pad in entry block!");
-  if (Idx != ~0U && isa<PHINode>(Inst))
+  if (Idx != ~0U && isa<PHINode>(Inst)) {
     return cast<PHINode>(Inst)->getIncomingBlock(Idx)->getTerminator();
+
+}
 
   // This must be an EH pad. Iterate over immediate dominators until we find a
   // non-EH pad. We need to skip over catchswitch blocks, which are both EH pads
@@ -215,8 +227,10 @@ static void findBestInsertionSet(DominatorTree &DT, BlockFrequencyInfo &BFI,
   SmallPtrSet<BasicBlock *, 16> Candidates;
   for (auto BB : BBs) {
     // Ignore unreachable basic blocks.
-    if (!DT.isReachableFromEntry(BB))
+    if (!DT.isReachableFromEntry(BB)) {
       continue;
+
+}
     Path.clear();
     // Walk up the dominator tree until Entry or another BB in BBs
     // is reached. Insert the nodes on the way to the Path.
@@ -236,8 +250,10 @@ static void findBestInsertionSet(DominatorTree &DT, BlockFrequencyInfo &BFI,
 
     // If isCandidate is false, Node is another Block in BBs dominating
     // current 'BB'. Drop the nodes on the Path.
-    if (!isCandidate)
+    if (!isCandidate) {
       continue;
+
+}
 
     // Add nodes on the Path into Candidates.
     Candidates.insert(Path.begin(), Path.end());
@@ -251,8 +267,10 @@ static void findBestInsertionSet(DominatorTree &DT, BlockFrequencyInfo &BFI,
   while (Idx != Orders.size()) {
     BasicBlock *Node = Orders[Idx++];
     for (auto ChildDomNode : DT.getNode(Node)->getChildren()) {
-      if (Candidates.count(ChildDomNode->getBlock()))
+      if (Candidates.count(ChildDomNode->getBlock())) {
         Orders.push_back(ChildDomNode->getBlock());
+
+}
     }
   }
 
@@ -274,10 +292,12 @@ static void findBestInsertionSet(DominatorTree &DT, BlockFrequencyInfo &BFI,
     if (Node == Entry) {
       BBs.clear();
       if (InsertPtsFreq > BFI.getBlockFreq(Node) ||
-          (InsertPtsFreq == BFI.getBlockFreq(Node) && InsertPts.size() > 1))
+          (InsertPtsFreq == BFI.getBlockFreq(Node) && InsertPts.size() > 1)) {
         BBs.insert(Entry);
-      else
+      } else {
         BBs.insert(InsertPts.begin(), InsertPts.end());
+
+}
       break;
     }
 
@@ -312,9 +332,13 @@ SetVector<Instruction *> ConstantHoistingPass::findConstantInsertionPoint(
   // Collect all basic blocks.
   SetVector<BasicBlock *> BBs;
   SetVector<Instruction *> InsertPts;
-  for (auto const &RCI : ConstInfo.RebasedConstants)
-    for (auto const &U : RCI.Uses)
+  for (auto const &RCI : ConstInfo.RebasedConstants) {
+    for (auto const &U : RCI.Uses) {
       BBs.insert(findMatInsertPt(U.Inst, U.OpndIdx)->getParent());
+
+}
+
+}
 
   if (BBs.count(Entry)) {
     InsertPts.insert(&Entry->front());
@@ -325,8 +349,10 @@ SetVector<Instruction *> ConstantHoistingPass::findConstantInsertionPoint(
     findBestInsertionSet(*DT, *BFI, Entry, BBs);
     for (auto BB : BBs) {
       BasicBlock::iterator InsertPt = BB->begin();
-      for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt)
+      for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt) {
         ;
+
+}
       InsertPts.insert(&*InsertPt);
     }
     return InsertPts;
@@ -361,12 +387,14 @@ void ConstantHoistingPass::collectConstantCandidates(
   unsigned Cost;
   // Ask the target about the cost of materializing the constant for the given
   // instruction and operand index.
-  if (auto IntrInst = dyn_cast<IntrinsicInst>(Inst))
+  if (auto IntrInst = dyn_cast<IntrinsicInst>(Inst)) {
     Cost = TTI->getIntImmCostIntrin(IntrInst->getIntrinsicID(), Idx,
                                     ConstInt->getValue(), ConstInt->getType());
-  else
+  } else {
     Cost = TTI->getIntImmCostInst(Inst->getOpcode(), Idx, ConstInt->getValue(),
                                   ConstInt->getType());
+
+}
 
   // Ignore cheap integer constants.
   if (Cost > TargetTransformInfo::TCC_Basic) {
@@ -394,23 +422,31 @@ void ConstantHoistingPass::collectConstantCandidates(
     ConstCandMapType &ConstCandMap, Instruction *Inst, unsigned Idx,
     ConstantExpr *ConstExpr) {
   // TODO: Handle vector GEPs
-  if (ConstExpr->getType()->isVectorTy())
+  if (ConstExpr->getType()->isVectorTy()) {
     return;
 
+}
+
   GlobalVariable *BaseGV = dyn_cast<GlobalVariable>(ConstExpr->getOperand(0));
-  if (!BaseGV)
+  if (!BaseGV) {
     return;
+
+}
 
   // Get offset from the base GV.
   PointerType *GVPtrTy = cast<PointerType>(BaseGV->getType());
   IntegerType *PtrIntTy = DL->getIntPtrType(*Ctx, GVPtrTy->getAddressSpace());
   APInt Offset(DL->getTypeSizeInBits(PtrIntTy), /*val*/0, /*isSigned*/true);
   auto *GEPO = cast<GEPOperator>(ConstExpr);
-  if (!GEPO->accumulateConstantOffset(*DL, Offset))
+  if (!GEPO->accumulateConstantOffset(*DL, Offset)) {
     return;
 
-  if (!Offset.isIntN(32))
+}
+
+  if (!Offset.isIntN(32)) {
     return;
+
+}
 
   // A constant GEP expression that has a GlobalVariable as base pointer is
   // usually lowered to a load from constant pool. Such operation is unlikely
@@ -446,8 +482,10 @@ void ConstantHoistingPass::collectConstantCandidates(
   if (auto CastInst = dyn_cast<Instruction>(Opnd)) {
     // Only visit cast instructions, which have been skipped. All other
     // instructions should have already been visited.
-    if (!CastInst->isCast())
+    if (!CastInst->isCast()) {
       return;
+
+}
 
     if (auto *ConstInt = dyn_cast<ConstantInt>(CastInst->getOperand(0))) {
       // Pretend the constant is directly used by the instruction and ignore
@@ -460,12 +498,16 @@ void ConstantHoistingPass::collectConstantCandidates(
   // Visit constant expressions that have constant integers.
   if (auto ConstExpr = dyn_cast<ConstantExpr>(Opnd)) {
     // Handle constant gep expressions.
-    if (ConstHoistGEP && ConstExpr->isGEPWithNoNotionalOverIndexing())
+    if (ConstHoistGEP && ConstExpr->isGEPWithNoNotionalOverIndexing()) {
       collectConstantCandidates(ConstCandMap, Inst, Idx, ConstExpr);
 
+}
+
     // Only visit constant cast expressions.
-    if (!ConstExpr->isCast())
+    if (!ConstExpr->isCast()) {
       return;
+
+}
 
     if (auto ConstInt = dyn_cast<ConstantInt>(ConstExpr->getOperand(0))) {
       // Pretend the constant is directly used by the instruction and ignore
@@ -481,8 +523,10 @@ void ConstantHoistingPass::collectConstantCandidates(
 void ConstantHoistingPass::collectConstantCandidates(
     ConstCandMapType &ConstCandMap, Instruction *Inst) {
   // Skip all cast instructions. They are visited indirectly later on.
-  if (Inst->isCast())
+  if (Inst->isCast()) {
     return;
+
+}
 
   // Scan all operands.
   for (unsigned Idx = 0, E = Inst->getNumOperands(); Idx != E; ++Idx) {
@@ -503,10 +547,14 @@ void ConstantHoistingPass::collectConstantCandidates(Function &Fn) {
   ConstCandMapType ConstCandMap;
   for (BasicBlock &BB : Fn) {
     // Ignore unreachable basic blocks.
-    if (!DT->isReachableFromEntry(&BB))
+    if (!DT->isReachableFromEntry(&BB)) {
       continue;
-    for (Instruction &Inst : BB)
+
+}
+    for (Instruction &Inst : BB) {
       collectConstantCandidates(ConstCandMap, &Inst);
+
+}
   }
 }
 
@@ -521,8 +569,10 @@ static Optional<APInt> calculateOffsetDiff(const APInt &V1, const APInt &V2) {
   uint64_t LimVal1 = V1.getLimitedValue();
   uint64_t LimVal2 = V2.getLimitedValue();
 
-  if (LimVal1 == ~0ULL || LimVal2 == ~0ULL)
+  if (LimVal1 == ~0ULL || LimVal2 == ~0ULL) {
     return Res;
+
+}
 
   uint64_t Diff = LimVal1 - LimVal2;
   return APInt(BW, Diff, true);
@@ -563,8 +613,10 @@ ConstantHoistingPass::maximizeConstantsInRange(ConstCandVecType::iterator S,
   if (!OptForSize || std::distance(S,E) > 100) {
     for (auto ConstCand = S; ConstCand != E; ++ConstCand) {
       NumUses += ConstCand->Uses.size();
-      if (ConstCand->CumulativeCost > MaxCostItr->CumulativeCost)
+      if (ConstCand->CumulativeCost > MaxCostItr->CumulativeCost) {
         MaxCostItr = ConstCand;
+
+}
     }
     return NumUses;
   }
@@ -619,8 +671,10 @@ void ConstantHoistingPass::findAndMakeBaseConstant(
   unsigned NumUses = maximizeConstantsInRange(S, E, MaxCostItr);
 
   // Don't hoist constants that have only one use.
-  if (NumUses <= 1)
+  if (NumUses <= 1) {
     return;
+
+}
 
   ConstantInt *ConstInt = MaxCostItr->ConstInt;
   ConstantExpr *ConstExpr = MaxCostItr->ConstExpr;
@@ -654,9 +708,11 @@ void ConstantHoistingPass::findBaseConstants(GlobalVariable *BaseGV) {
   // Sort the constants by value and type. This invalidates the mapping!
   llvm::stable_sort(ConstCandVec, [](const ConstantCandidate &LHS,
                                      const ConstantCandidate &RHS) {
-    if (LHS.ConstInt->getType() != RHS.ConstInt->getType())
+    if (LHS.ConstInt->getType() != RHS.ConstInt->getType()) {
       return LHS.ConstInt->getType()->getBitWidth() <
              RHS.ConstInt->getType()->getBitWidth();
+
+}
     return LHS.ConstInt->getValue().ult(RHS.ConstInt->getValue());
   });
 
@@ -689,8 +745,10 @@ void ConstantHoistingPass::findBaseConstants(GlobalVariable *BaseGV) {
           // memory instruction.
           (!MemUseValTy || TTI->isLegalAddressingMode(MemUseValTy,
            /*BaseGV*/nullptr, /*BaseOffset*/Diff.getSExtValue(),
-           /*HasBaseReg*/true, /*Scale*/0)))
+           /*HasBaseReg*/true, /*Scale*/0))) {
         continue;
+
+}
     }
     // We either have now a different constant type or the constant is not in
     // range of an add with immediate anymore.
@@ -739,8 +797,10 @@ void ConstantHoistingPass::emitBaseConstants(Instruction *Base,
   Instruction *Mat = Base;
 
   // The same offset can be dereferenced to different types in nested struct.
-  if (!Offset && Ty && Ty != Base->getType())
+  if (!Offset && Ty && Ty != Base->getType()) {
     Offset = ConstantInt::get(Type::getInt32Ty(*Ctx), 0);
+
+}
 
   if (Offset) {
     Instruction *InsertionPt = findMatInsertPt(ConstUser.Inst,
@@ -753,10 +813,12 @@ void ConstantHoistingPass::emitBaseConstants(Instruction *Base,
       Mat = GetElementPtrInst::Create(Int8PtrTy->getElementType(), Base,
           Offset, "mat_gep", InsertionPt);
       Mat = new BitCastInst(Mat, Ty, "mat_bitcast", InsertionPt);
-    } else
+    } else {
       // Constant being rebased is a ConstantInt.
       Mat = BinaryOperator::Create(Instruction::Add, Base, Offset,
                                  "const_mat", InsertionPt);
+
+}
 
     LLVM_DEBUG(dbgs() << "Materialize constant (" << *Base->getOperand(0)
                       << " + " << *Offset << ") in BB "
@@ -769,8 +831,10 @@ void ConstantHoistingPass::emitBaseConstants(Instruction *Base,
   // Visit constant integer.
   if (isa<ConstantInt>(Opnd)) {
     LLVM_DEBUG(dbgs() << "Update: " << *ConstUser.Inst << '\n');
-    if (!updateOperand(ConstUser.Inst, ConstUser.OpndIdx, Mat) && Offset)
+    if (!updateOperand(ConstUser.Inst, ConstUser.OpndIdx, Mat) && Offset) {
       Mat->eraseFromParent();
+
+}
     LLVM_DEBUG(dbgs() << "To    : " << *ConstUser.Inst << '\n');
     return;
   }
@@ -820,8 +884,10 @@ void ConstantHoistingPass::emitBaseConstants(Instruction *Base,
     LLVM_DEBUG(dbgs() << "Update: " << *ConstUser.Inst << '\n');
     if (!updateOperand(ConstUser.Inst, ConstUser.OpndIdx, ConstExprInst)) {
       ConstExprInst->eraseFromParent();
-      if (Offset)
+      if (Offset) {
         Mat->eraseFromParent();
+
+}
     }
     LLVM_DEBUG(dbgs() << "To    : " << *ConstUser.Inst << '\n');
     return;
@@ -837,8 +903,10 @@ bool ConstantHoistingPass::emitBaseConstants(GlobalVariable *BaseGV) {
   for (auto const &ConstInfo : ConstInfoVec) {
     SetVector<Instruction *> IPSet = findConstantInsertionPoint(ConstInfo);
     // We can have an empty set if the function contains unreachable blocks.
-    if (IPSet.empty())
+    if (IPSet.empty()) {
       continue;
+
+}
 
     unsigned UsesNum = 0;
     unsigned ReBasesNum = 0;
@@ -856,8 +924,10 @@ bool ConstantHoistingPass::emitBaseConstants(GlobalVariable *BaseGV) {
           // If Base constant is to be inserted in multiple places,
           // generate rebase for U using the Base dominating U.
           if (IPSet.size() == 1 ||
-              DT->dominates(IP->getParent(), OrigMatInsertBB))
+              DT->dominates(IP->getParent(), OrigMatInsertBB)) {
             ToBeRebased.push_back(RebasedUse(RCI.Offset, RCI.Ty, U));
+
+}
         }
       }
       UsesNum = Uses;
@@ -923,9 +993,13 @@ bool ConstantHoistingPass::emitBaseConstants(GlobalVariable *BaseGV) {
 /// Check all cast instructions we made a copy of and remove them if they
 /// have no more users.
 void ConstantHoistingPass::deleteDeadCastInst() const {
-  for (auto const &I : ClonedCastMap)
-    if (I.first->use_empty())
+  for (auto const &I : ClonedCastMap) {
+    if (I.first->use_empty()) {
       I.first->eraseFromParent();
+
+}
+
+}
 }
 
 /// Optimize expensive integer constants in the given function.
@@ -944,20 +1018,32 @@ bool ConstantHoistingPass::runImpl(Function &Fn, TargetTransformInfo &TTI,
 
   // Combine constants that can be easily materialized with an add from a common
   // base constant.
-  if (!ConstIntCandVec.empty())
+  if (!ConstIntCandVec.empty()) {
     findBaseConstants(nullptr);
-  for (auto &MapEntry : ConstGEPCandMap)
-    if (!MapEntry.second.empty())
+
+}
+  for (auto &MapEntry : ConstGEPCandMap) {
+    if (!MapEntry.second.empty()) {
       findBaseConstants(MapEntry.first);
+
+}
+
+}
 
   // Finally hoist the base constant and emit materialization code for dependent
   // constants.
   bool MadeChange = false;
-  if (!ConstIntInfoVec.empty())
+  if (!ConstIntInfoVec.empty()) {
     MadeChange = emitBaseConstants(nullptr);
-  for (auto MapEntry : ConstGEPInfoMap)
-    if (!MapEntry.second.empty())
+
+}
+  for (auto MapEntry : ConstGEPInfoMap) {
+    if (!MapEntry.second.empty()) {
       MadeChange |= emitBaseConstants(MapEntry.first);
+
+}
+
+}
 
 
   // Cleanup dead instructions.
@@ -977,8 +1063,10 @@ PreservedAnalyses ConstantHoistingPass::run(Function &F,
                  : nullptr;
   auto &MAM = AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
   auto *PSI = MAM.getCachedResult<ProfileSummaryAnalysis>(*F.getParent());
-  if (!runImpl(F, TTI, DT, BFI, F.getEntryBlock(), PSI))
+  if (!runImpl(F, TTI, DT, BFI, F.getEntryBlock(), PSI)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();

@@ -45,8 +45,10 @@ public:
 
   void MacroUndefined(const Token &MacroNameTok, const MacroDefinition &MD,
                       const MacroDirective *Undef) override {
-    if (!MD.getMacroInfo())  // Ignore noop #undef.
+    if (!MD.getMacroInfo()) {  // Ignore noop #undef.
       return;
+
+}
     IndexCtx->handleMacroUndefined(*MacroNameTok.getIdentifierInfo(),
                                    MacroNameTok.getLocation(),
                                    *MD.getMacroInfo());
@@ -149,12 +151,16 @@ static void indexTranslationUnit(ASTUnit &Unit, IndexingContext &IndexCtx) {
 
 static void indexPreprocessorMacros(const Preprocessor &PP,
                                     IndexDataConsumer &DataConsumer) {
-  for (const auto &M : PP.macros())
-    if (MacroDirective *MD = M.second.getLatest())
+  for (const auto &M : PP.macros()) {
+    if (MacroDirective *MD = M.second.getLatest()) {
       DataConsumer.handleMacroOccurrence(
           M.first, MD->getMacroInfo(),
           static_cast<unsigned>(index::SymbolRole::Definition),
           MD->getLocation());
+
+}
+
+}
 }
 
 void index::indexASTUnit(ASTUnit &Unit, IndexDataConsumer &DataConsumer,
@@ -164,8 +170,10 @@ void index::indexASTUnit(ASTUnit &Unit, IndexDataConsumer &DataConsumer,
   DataConsumer.initialize(Unit.getASTContext());
   DataConsumer.setPreprocessor(Unit.getPreprocessorPtr());
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(Unit.getPreprocessor(), DataConsumer);
+
+}
   indexTranslationUnit(Unit, IndexCtx);
   DataConsumer.finish();
 }
@@ -179,11 +187,15 @@ void index::indexTopLevelDecls(ASTContext &Ctx, Preprocessor &PP,
 
   DataConsumer.initialize(Ctx);
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(PP, DataConsumer);
 
-  for (const Decl *D : Decls)
+}
+
+  for (const Decl *D : Decls) {
     IndexCtx.indexTopLevelDecl(D);
+
+}
   DataConsumer.finish();
 }
 
@@ -201,8 +213,10 @@ void index::indexModuleFile(serialization::ModuleFile &Mod, ASTReader &Reader,
   IndexCtx.setASTContext(Ctx);
   DataConsumer.initialize(Ctx);
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(Reader.getPreprocessor(), DataConsumer);
+
+}
 
   for (const Decl *D : Reader.getModuleFileLevelDecls(Mod)) {
     IndexCtx.indexTopLevelDecl(D);

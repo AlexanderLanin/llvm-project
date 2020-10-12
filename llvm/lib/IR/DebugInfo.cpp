@@ -41,8 +41,10 @@ using namespace llvm;
 using namespace llvm::dwarf;
 
 DISubprogram *llvm::getDISubprogram(const MDNode *Scope) {
-  if (auto *LocalScope = dyn_cast_or_null<DILocalScope>(Scope))
+  if (auto *LocalScope = dyn_cast_or_null<DILocalScope>(Scope)) {
     return LocalScope->getSubprogram();
+
+}
   return nullptr;
 }
 
@@ -60,81 +62,113 @@ void DebugInfoFinder::reset() {
 }
 
 void DebugInfoFinder::processModule(const Module &M) {
-  for (auto *CU : M.debug_compile_units())
+  for (auto *CU : M.debug_compile_units()) {
     processCompileUnit(CU);
+
+}
   for (auto &F : M.functions()) {
-    if (auto *SP = cast_or_null<DISubprogram>(F.getSubprogram()))
+    if (auto *SP = cast_or_null<DISubprogram>(F.getSubprogram())) {
       processSubprogram(SP);
+
+}
     // There could be subprograms from inlined functions referenced from
     // instructions only. Walk the function to find them.
-    for (const BasicBlock &BB : F)
-      for (const Instruction &I : BB)
+    for (const BasicBlock &BB : F) {
+      for (const Instruction &I : BB) {
         processInstruction(M, I);
+
+}
+
+}
   }
 }
 
 void DebugInfoFinder::processCompileUnit(DICompileUnit *CU) {
-  if (!addCompileUnit(CU))
+  if (!addCompileUnit(CU)) {
     return;
+
+}
   for (auto DIG : CU->getGlobalVariables()) {
-    if (!addGlobalVariable(DIG))
+    if (!addGlobalVariable(DIG)) {
       continue;
+
+}
     auto *GV = DIG->getVariable();
     processScope(GV->getScope());
     processType(GV->getType());
   }
-  for (auto *ET : CU->getEnumTypes())
+  for (auto *ET : CU->getEnumTypes()) {
     processType(ET);
-  for (auto *RT : CU->getRetainedTypes())
-    if (auto *T = dyn_cast<DIType>(RT))
+
+}
+  for (auto *RT : CU->getRetainedTypes()) {
+    if (auto *T = dyn_cast<DIType>(RT)) {
       processType(T);
-    else
+    } else {
       processSubprogram(cast<DISubprogram>(RT));
+
+}
+
+}
   for (auto *Import : CU->getImportedEntities()) {
     auto *Entity = Import->getEntity();
-    if (auto *T = dyn_cast<DIType>(Entity))
+    if (auto *T = dyn_cast<DIType>(Entity)) {
       processType(T);
-    else if (auto *SP = dyn_cast<DISubprogram>(Entity))
+    } else if (auto *SP = dyn_cast<DISubprogram>(Entity)) {
       processSubprogram(SP);
-    else if (auto *NS = dyn_cast<DINamespace>(Entity))
+    } else if (auto *NS = dyn_cast<DINamespace>(Entity)) {
       processScope(NS->getScope());
-    else if (auto *M = dyn_cast<DIModule>(Entity))
+    } else if (auto *M = dyn_cast<DIModule>(Entity)) {
       processScope(M->getScope());
+
+}
   }
 }
 
 void DebugInfoFinder::processInstruction(const Module &M,
                                          const Instruction &I) {
-  if (auto *DVI = dyn_cast<DbgVariableIntrinsic>(&I))
+  if (auto *DVI = dyn_cast<DbgVariableIntrinsic>(&I)) {
     processVariable(M, *DVI);
 
-  if (auto DbgLoc = I.getDebugLoc())
+}
+
+  if (auto DbgLoc = I.getDebugLoc()) {
     processLocation(M, DbgLoc.get());
+
+}
 }
 
 void DebugInfoFinder::processLocation(const Module &M, const DILocation *Loc) {
-  if (!Loc)
+  if (!Loc) {
     return;
+
+}
   processScope(Loc->getScope());
   processLocation(M, Loc->getInlinedAt());
 }
 
 void DebugInfoFinder::processType(DIType *DT) {
-  if (!addType(DT))
+  if (!addType(DT)) {
     return;
+
+}
   processScope(DT->getScope());
   if (auto *ST = dyn_cast<DISubroutineType>(DT)) {
-    for (DIType *Ref : ST->getTypeArray())
+    for (DIType *Ref : ST->getTypeArray()) {
       processType(Ref);
+
+}
     return;
   }
   if (auto *DCT = dyn_cast<DICompositeType>(DT)) {
     processType(DCT->getBaseType());
     for (Metadata *D : DCT->getElements()) {
-      if (auto *T = dyn_cast<DIType>(D))
+      if (auto *T = dyn_cast<DIType>(D)) {
         processType(T);
-      else if (auto *SP = dyn_cast<DISubprogram>(D))
+      } else if (auto *SP = dyn_cast<DISubprogram>(D)) {
         processSubprogram(SP);
+
+}
     }
     return;
   }
@@ -144,8 +178,10 @@ void DebugInfoFinder::processType(DIType *DT) {
 }
 
 void DebugInfoFinder::processScope(DIScope *Scope) {
-  if (!Scope)
+  if (!Scope) {
     return;
+
+}
   if (auto *Ty = dyn_cast<DIType>(Scope)) {
     processType(Ty);
     return;
@@ -158,8 +194,10 @@ void DebugInfoFinder::processScope(DIScope *Scope) {
     processSubprogram(SP);
     return;
   }
-  if (!addScope(Scope))
+  if (!addScope(Scope)) {
     return;
+
+}
   if (auto *LB = dyn_cast<DILexicalBlockBase>(Scope)) {
     processScope(LB->getScope());
   } else if (auto *NS = dyn_cast<DINamespace>(Scope)) {
@@ -170,8 +208,10 @@ void DebugInfoFinder::processScope(DIScope *Scope) {
 }
 
 void DebugInfoFinder::processSubprogram(DISubprogram *SP) {
-  if (!addSubprogram(SP))
+  if (!addSubprogram(SP)) {
     return;
+
+}
   processScope(SP->getScope());
   // Some of the users, e.g. CloneFunctionInto / CloneModule, need to set up a
   // ValueMap containing identity mappings for all of the DICompileUnit's, not
@@ -195,68 +235,94 @@ void DebugInfoFinder::processSubprogram(DISubprogram *SP) {
 void DebugInfoFinder::processVariable(const Module &M,
                                       const DbgVariableIntrinsic &DVI) {
   auto *N = dyn_cast<MDNode>(DVI.getVariable());
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   auto *DV = dyn_cast<DILocalVariable>(N);
-  if (!DV)
+  if (!DV) {
     return;
 
-  if (!NodesSeen.insert(DV).second)
+}
+
+  if (!NodesSeen.insert(DV).second) {
     return;
+
+}
   processScope(DV->getScope());
   processType(DV->getType());
 }
 
 bool DebugInfoFinder::addType(DIType *DT) {
-  if (!DT)
+  if (!DT) {
     return false;
 
-  if (!NodesSeen.insert(DT).second)
+}
+
+  if (!NodesSeen.insert(DT).second) {
     return false;
+
+}
 
   TYs.push_back(const_cast<DIType *>(DT));
   return true;
 }
 
 bool DebugInfoFinder::addCompileUnit(DICompileUnit *CU) {
-  if (!CU)
+  if (!CU) {
     return false;
-  if (!NodesSeen.insert(CU).second)
+
+}
+  if (!NodesSeen.insert(CU).second) {
     return false;
+
+}
 
   CUs.push_back(CU);
   return true;
 }
 
 bool DebugInfoFinder::addGlobalVariable(DIGlobalVariableExpression *DIG) {
-  if (!NodesSeen.insert(DIG).second)
+  if (!NodesSeen.insert(DIG).second) {
     return false;
+
+}
 
   GVs.push_back(DIG);
   return true;
 }
 
 bool DebugInfoFinder::addSubprogram(DISubprogram *SP) {
-  if (!SP)
+  if (!SP) {
     return false;
 
-  if (!NodesSeen.insert(SP).second)
+}
+
+  if (!NodesSeen.insert(SP).second) {
     return false;
+
+}
 
   SPs.push_back(SP);
   return true;
 }
 
 bool DebugInfoFinder::addScope(DIScope *Scope) {
-  if (!Scope)
+  if (!Scope) {
     return false;
+
+}
   // FIXME: Ocaml binding generates a scope with no content, we treat it
   // as null for now.
-  if (Scope->getNumOperands() == 0)
+  if (Scope->getNumOperands() == 0) {
     return false;
-  if (!NodesSeen.insert(Scope).second)
+
+}
+  if (!NodesSeen.insert(Scope).second) {
     return false;
+
+}
   Scopes.push_back(Scope);
   return true;
 }
@@ -275,10 +341,14 @@ static MDNode *updateLoopMetadataDebugLocationsImpl(
   for (unsigned i = 1; i < OrigLoopID->getNumOperands(); ++i) {
     Metadata *MD = OrigLoopID->getOperand(i);
     if (DILocation *DL = dyn_cast<DILocation>(MD)) {
-      if (DILocation *NewDL = Updater(*DL))
+      if (DILocation *NewDL = Updater(*DL)) {
         MDs.push_back(NewDL);
-    } else
+
+}
+    } else {
       MDs.push_back(MD);
+
+}
   }
 
   MDNode *NewLoopID = MDNode::getDistinct(OrigLoopID->getContext(), MDs);
@@ -290,8 +360,10 @@ static MDNode *updateLoopMetadataDebugLocationsImpl(
 void llvm::updateLoopMetadataDebugLocations(
     Instruction &I, function_ref<DILocation *(const DILocation &)> Updater) {
   MDNode *OrigLoopID = I.getMetadata(LLVMContext::MD_loop);
-  if (!OrigLoopID)
+  if (!OrigLoopID) {
     return;
+
+}
   MDNode *NewLoopID = updateLoopMetadataDebugLocationsImpl(OrigLoopID, Updater);
   I.setMetadata(LLVMContext::MD_loop, NewLoopID);
 }
@@ -302,15 +374,19 @@ static MDNode *stripDebugLocFromLoopID(MDNode *N) {
   // if there is no debug location, we do not have to rewrite this MDNode.
   if (std::none_of(N->op_begin() + 1, N->op_end(), [](const MDOperand &Op) {
         return isa<DILocation>(Op.get());
-      }))
+      })) {
     return N;
+
+}
 
   // If there is only the debug location without any actual loop metadata, we
   // can remove the metadata.
   if (std::none_of(N->op_begin() + 1, N->op_end(), [](const MDOperand &Op) {
         return !isa<DILocation>(Op.get());
-      }))
+      })) {
     return nullptr;
+
+}
 
   auto dropDebugLoc = [](const DILocation &) -> DILocation * {
     return nullptr;
@@ -341,15 +417,21 @@ bool llvm::stripDebugInfo(Function &F) {
     }
 
     auto *TermInst = BB.getTerminator();
-    if (!TermInst)
+    if (!TermInst) {
       // This is invalid IR, but we may not have run the verifier yet
       continue;
+
+}
     if (auto *LoopID = TermInst->getMetadata(LLVMContext::MD_loop)) {
       auto *NewLoopID = LoopIDsMap.lookup(LoopID);
-      if (!NewLoopID)
+      if (!NewLoopID) {
         NewLoopID = LoopIDsMap[LoopID] = stripDebugLocFromLoopID(LoopID);
-      if (NewLoopID != LoopID)
+
+}
+      if (NewLoopID != LoopID) {
         TermInst->setMetadata(LLVMContext::MD_loop, NewLoopID);
+
+}
     }
   }
   return Changed;
@@ -372,15 +454,19 @@ bool llvm::StripDebugInfo(Module &M) {
     }
   }
 
-  for (Function &F : M)
+  for (Function &F : M) {
     Changed |= stripDebugInfo(F);
+
+}
 
   for (auto &GV : M.globals()) {
     Changed |= GV.eraseMetadata(LLVMContext::MD_dbg);
   }
 
-  if (GVMaterializer *Materializer = M.getMaterializer())
+  if (GVMaterializer *Materializer = M.getMaterializer()) {
     Materializer->setStripDebugInfo();
+
+}
 
   return Changed;
 }
@@ -415,11 +501,15 @@ public:
                                                   MDNode::get(C, {}))) {}
 
   Metadata *map(Metadata *M) {
-    if (!M)
+    if (!M) {
       return nullptr;
+
+}
     auto Replacement = Replacements.find(M);
-    if (Replacement != Replacements.end())
+    if (Replacement != Replacements.end()) {
       return Replacement->second;
+
+}
 
     return M;
   }
@@ -452,8 +542,10 @@ private:
           Variables);
     };
 
-    if (MDS->isDistinct())
+    if (MDS->isDistinct()) {
       return distinctMDSubprogram();
+
+}
 
     auto *NewMDS = DISubprogram::get(
         MDS->getContext(), FileAndScope, MDS->getName(), LinkageName,
@@ -466,9 +558,11 @@ private:
     // See if we need to make a distinct one.
     auto OrigLinkage = NewToLinkageName.find(NewMDS);
     if (OrigLinkage != NewToLinkageName.end()) {
-      if (OrigLinkage->second == OldLinkageName)
+      if (OrigLinkage->second == OldLinkageName) {
         // We're good.
         return NewMDS;
+
+}
 
       // Otherwise, need to make a distinct one.
       // TODO: Query the map to see if we already have one.
@@ -482,8 +576,10 @@ private:
   /// Create a new compile unit, to replace the one given
   DICompileUnit *getReplacementCU(DICompileUnit *CU) {
     // Drop skeleton CUs.
-    if (CU->getDWOId())
+    if (CU->getDWOId()) {
       return nullptr;
+
+}
 
     auto *File = cast_or_null<DIFile>(map(CU->getFile()));
     MDTuple *EnumTypes = nullptr;
@@ -503,9 +599,11 @@ private:
   DILocation *getReplacementMDLocation(DILocation *MLD) {
     auto *Scope = map(MLD->getScope());
     auto *InlinedAt = map(MLD->getInlinedAt());
-    if (MLD->isDistinct())
+    if (MLD->isDistinct()) {
       return DILocation::getDistinct(MLD->getContext(), MLD->getLine(),
                                      MLD->getColumn(), Scope, InlinedAt);
+
+}
     return DILocation::get(MLD->getContext(), MLD->getLine(), MLD->getColumn(),
                            Scope, InlinedAt);
   }
@@ -514,41 +612,61 @@ private:
   MDNode *getReplacementMDNode(MDNode *N) {
     SmallVector<Metadata *, 8> Ops;
     Ops.reserve(N->getNumOperands());
-    for (auto &I : N->operands())
-      if (I)
+    for (auto &I : N->operands()) {
+      if (I) {
         Ops.push_back(map(I));
+
+}
+
+}
     auto *Ret = MDNode::get(N->getContext(), Ops);
     return Ret;
   }
 
   /// Attempt to re-map N to a newly created node.
   void remap(MDNode *N) {
-    if (Replacements.count(N))
+    if (Replacements.count(N)) {
       return;
 
+}
+
     auto doRemap = [&](MDNode *N) -> MDNode * {
-      if (!N)
+      if (!N) {
         return nullptr;
+
+}
       if (auto *MDSub = dyn_cast<DISubprogram>(N)) {
         remap(MDSub->getUnit());
         return getReplacementSubprogram(MDSub);
       }
-      if (isa<DISubroutineType>(N))
+      if (isa<DISubroutineType>(N)) {
         return EmptySubroutineType;
-      if (auto *CU = dyn_cast<DICompileUnit>(N))
+
+}
+      if (auto *CU = dyn_cast<DICompileUnit>(N)) {
         return getReplacementCU(CU);
-      if (isa<DIFile>(N))
+
+}
+      if (isa<DIFile>(N)) {
         return N;
-      if (auto *MDLB = dyn_cast<DILexicalBlockBase>(N))
+
+}
+      if (auto *MDLB = dyn_cast<DILexicalBlockBase>(N)) {
         // Remap to our referenced scope (recursively).
         return mapNode(MDLB->getScope());
-      if (auto *MLD = dyn_cast<DILocation>(N))
+
+}
+      if (auto *MLD = dyn_cast<DILocation>(N)) {
         return getReplacementMDLocation(MLD);
+
+}
 
       // Otherwise, if we see these, just drop them now. Not strictly necessary,
       // but this speeds things up a little.
-      if (isa<DINode>(N))
+      if (isa<DINode>(N)) {
         return nullptr;
+
+}
 
       return getReplacementMDNode(N);
     };
@@ -562,14 +680,18 @@ private:
 } // end anonymous namespace
 
 void DebugTypeInfoRemoval::traverse(MDNode *N) {
-  if (!N || Replacements.count(N))
+  if (!N || Replacements.count(N)) {
     return;
+
+}
 
   // To avoid cycles, as well as for efficiency sake, we will sometimes prune
   // parts of the graph.
   auto prune = [](MDNode *Parent, MDNode *Child) {
-    if (auto *MDS = dyn_cast<DISubprogram>(Parent))
+    if (auto *MDS = dyn_cast<DISubprogram>(Parent)) {
       return Child == MDS->getRetainedNodes().get();
+
+}
     return false;
   };
 
@@ -586,11 +708,17 @@ void DebugTypeInfoRemoval::traverse(MDNode *N) {
       ToVisit.pop_back();
       continue;
     }
-    for (auto &I : N->operands())
-      if (auto *MDN = dyn_cast_or_null<MDNode>(I))
+    for (auto &I : N->operands()) {
+      if (auto *MDN = dyn_cast_or_null<MDNode>(I)) {
         if (!Opened.count(MDN) && !Replacements.count(MDN) && !prune(N, MDN) &&
-            !isa<DICompileUnit>(MDN))
+            !isa<DICompileUnit>(MDN)) {
           ToVisit.push_back(MDN);
+
+}
+
+}
+
+}
   }
 }
 
@@ -600,8 +728,10 @@ bool llvm::stripNonLineTableDebugInfo(Module &M) {
   // First off, delete the debug intrinsics.
   auto RemoveUses = [&](StringRef Name) {
     if (auto *DbgVal = M.getFunction(Name)) {
-      while (!DbgVal->use_empty())
+      while (!DbgVal->use_empty()) {
         cast<Instruction>(DbgVal->user_back())->eraseFromParent();
+
+}
       DbgVal->eraseFromParent();
       Changed = true;
     }
@@ -615,18 +745,24 @@ bool llvm::stripNonLineTableDebugInfo(Module &M) {
     NamedMDNode *NMD = &*NMI;
     ++NMI;
     // Specifically keep dbg.cu around.
-    if (NMD->getName() == "llvm.dbg.cu")
+    if (NMD->getName() == "llvm.dbg.cu") {
       continue;
+
+}
   }
 
   // Drop all dbg attachments from global variables.
-  for (auto &GV : M.globals())
+  for (auto &GV : M.globals()) {
     GV.eraseMetadata(LLVMContext::MD_dbg);
+
+}
 
   DebugTypeInfoRemoval Mapper(M.getContext());
   auto remap = [&](MDNode *Node) -> MDNode * {
-    if (!Node)
+    if (!Node) {
       return nullptr;
+
+}
     Mapper.traverseAndRemap(Node);
     auto *NewNode = Mapper.mapNode(Node);
     Changed |= Node != NewNode;
@@ -653,18 +789,30 @@ bool llvm::stripNonLineTableDebugInfo(Module &M) {
           return DebugLoc::get(DL.getLine(), DL.getCol(), Scope, InlinedAt);
         };
 
-        if (I.getDebugLoc() != DebugLoc())
+        if (I.getDebugLoc() != DebugLoc()) {
           I.setDebugLoc(remapDebugLoc(I.getDebugLoc()));
+
+}
 
         // Remap DILocations in untyped MDNodes (e.g., llvm.loop).
         SmallVector<std::pair<unsigned, MDNode *>, 2> MDs;
         I.getAllMetadata(MDs);
-        for (auto Attachment : MDs)
-          if (auto *T = dyn_cast_or_null<MDTuple>(Attachment.second))
-            for (unsigned N = 0; N < T->getNumOperands(); ++N)
-              if (auto *Loc = dyn_cast_or_null<DILocation>(T->getOperand(N)))
-                if (Loc != DebugLoc())
+        for (auto Attachment : MDs) {
+          if (auto *T = dyn_cast_or_null<MDTuple>(Attachment.second)) {
+            for (unsigned N = 0; N < T->getNumOperands(); ++N) {
+              if (auto *Loc = dyn_cast_or_null<DILocation>(T->getOperand(N))) {
+                if (Loc != DebugLoc()) {
                   T->replaceOperandWith(N, remapDebugLoc(Loc));
+
+}
+
+}
+
+}
+
+}
+
+}
       }
     }
   }
@@ -673,24 +821,34 @@ bool llvm::stripNonLineTableDebugInfo(Module &M) {
   // -gline-tables-only would have created.
   for (auto &NMD : M.getNamedMDList()) {
     SmallVector<MDNode *, 8> Ops;
-    for (MDNode *Op : NMD.operands())
+    for (MDNode *Op : NMD.operands()) {
       Ops.push_back(remap(Op));
 
-    if (!Changed)
+}
+
+    if (!Changed) {
       continue;
 
+}
+
     NMD.clearOperands();
-    for (auto *Op : Ops)
-      if (Op)
+    for (auto *Op : Ops) {
+      if (Op) {
         NMD.addOperand(Op);
+
+}
+
+}
   }
   return Changed;
 }
 
 unsigned llvm::getDebugMetadataVersionFromModule(const Module &M) {
   if (auto *Val = mdconst::dyn_extract_or_null<ConstantInt>(
-          M.getModuleFlag("Debug Info Version")))
+          M.getModuleFlag("Debug Info Version"))) {
     return Val->getZExtValue();
+
+}
   return 0;
 }
 
@@ -1444,10 +1602,12 @@ LLVMMetadataRef LLVMInstructionGetDebugLoc(LLVMValueRef Inst) {
 }
 
 void LLVMInstructionSetDebugLoc(LLVMValueRef Inst, LLVMMetadataRef Loc) {
-  if (Loc)
+  if (Loc) {
     unwrap<Instruction>(Inst)->setDebugLoc(DebugLoc(unwrap<MDNode>(Loc)));
-  else
+  } else {
     unwrap<Instruction>(Inst)->setDebugLoc(DebugLoc());
+
+}
 }
 
 LLVMMetadataKind LLVMGetMetadataKind(LLVMMetadataRef Metadata) {

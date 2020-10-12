@@ -16,8 +16,10 @@ void runAddDocument(ClangdServer &Server, PathRef File,
                     llvm::StringRef Contents, llvm::StringRef Version,
                     WantDiagnostics WantDiags, bool ForceRebuild) {
   Server.addDocument(File, Contents, Version, WantDiags, ForceRebuild);
-  if (!Server.blockUntilIdleForTest())
+  if (!Server.blockUntilIdleForTest()) {
     llvm_unreachable("not idle after addDocument");
+
+}
 }
 
 namespace {
@@ -47,8 +49,10 @@ template <typename T> struct CaptureProxy {
   }
 
   ~CaptureProxy() {
-    if (!Target)
+    if (!Target) {
       return;
+
+}
     assert(Future.valid() && "conversion to callback was not called");
     assert(!Target->hasValue());
     Target->emplace(std::move(*Future.get()));

@@ -46,8 +46,10 @@ void Preprocessor::Backtrack() {
 }
 
 void Preprocessor::CachingLex(Token &Result) {
-  if (!InCachingLexMode())
+  if (!InCachingLexMode()) {
     return;
+
+}
 
   // The assert in EnterCachingLexMode should prevent this from happening.
   assert(LexLevel == 1 &&
@@ -127,8 +129,10 @@ void Preprocessor::AnnotatePreviousCachedTokens(const Token &Tok) {
       assert((BacktrackPositions.empty() || BacktrackPositions.back() <= i) &&
              "The backtrack pos points inside the annotated tokens!");
       // Replace the cached tokens with the single annotation token.
-      if (i < CachedLexPos)
+      if (i < CachedLexPos) {
         CachedTokens.erase(AnnotBegin + 1, CachedTokens.begin() + CachedLexPos);
+
+}
       *AnnotBegin = Tok;
       CachedLexPos = i;
       return;
@@ -138,18 +142,24 @@ void Preprocessor::AnnotatePreviousCachedTokens(const Token &Tok) {
 
 bool Preprocessor::IsPreviousCachedToken(const Token &Tok) const {
   // There's currently no cached token...
-  if (!CachedLexPos)
+  if (!CachedLexPos) {
     return false;
 
+}
+
   const Token LastCachedTok = CachedTokens[CachedLexPos - 1];
-  if (LastCachedTok.getKind() != Tok.getKind())
+  if (LastCachedTok.getKind() != Tok.getKind()) {
     return false;
+
+}
 
   int RelOffset = 0;
   if ((!getSourceManager().isInSameSLocAddrSpace(
           Tok.getLocation(), getLastCachedTokenLocation(), &RelOffset)) ||
-      RelOffset)
+      RelOffset) {
     return false;
+
+}
 
   return true;
 }

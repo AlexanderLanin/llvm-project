@@ -112,29 +112,37 @@ const GPUInfo *getArchEntry(AMDGPU::GPUKind AK, ArrayRef<GPUInfo> Table) {
       return A.Kind < B.Kind;
     });
 
-  if (I == Table.end())
+  if (I == Table.end()) {
     return nullptr;
+
+}
   return I;
 }
 
 } // namespace
 
 StringRef llvm::AMDGPU::getArchNameAMDGCN(GPUKind AK) {
-  if (const auto *Entry = getArchEntry(AK, AMDGCNGPUs))
+  if (const auto *Entry = getArchEntry(AK, AMDGCNGPUs)) {
     return Entry->CanonicalName;
+
+}
   return "";
 }
 
 StringRef llvm::AMDGPU::getArchNameR600(GPUKind AK) {
-  if (const auto *Entry = getArchEntry(AK, R600GPUs))
+  if (const auto *Entry = getArchEntry(AK, R600GPUs)) {
     return Entry->CanonicalName;
+
+}
   return "";
 }
 
 AMDGPU::GPUKind llvm::AMDGPU::parseArchAMDGCN(StringRef CPU) {
   for (const auto &C : AMDGCNGPUs) {
-    if (CPU == C.Name)
+    if (CPU == C.Name) {
       return C.Kind;
+
+}
   }
 
   return AMDGPU::GPUKind::GK_NONE;
@@ -142,43 +150,57 @@ AMDGPU::GPUKind llvm::AMDGPU::parseArchAMDGCN(StringRef CPU) {
 
 AMDGPU::GPUKind llvm::AMDGPU::parseArchR600(StringRef CPU) {
   for (const auto &C : R600GPUs) {
-    if (CPU == C.Name)
+    if (CPU == C.Name) {
       return C.Kind;
+
+}
   }
 
   return AMDGPU::GPUKind::GK_NONE;
 }
 
 unsigned AMDGPU::getArchAttrAMDGCN(GPUKind AK) {
-  if (const auto *Entry = getArchEntry(AK, AMDGCNGPUs))
+  if (const auto *Entry = getArchEntry(AK, AMDGCNGPUs)) {
     return Entry->Features;
+
+}
   return FEATURE_NONE;
 }
 
 unsigned AMDGPU::getArchAttrR600(GPUKind AK) {
-  if (const auto *Entry = getArchEntry(AK, R600GPUs))
+  if (const auto *Entry = getArchEntry(AK, R600GPUs)) {
     return Entry->Features;
+
+}
   return FEATURE_NONE;
 }
 
 void AMDGPU::fillValidArchListAMDGCN(SmallVectorImpl<StringRef> &Values) {
   // XXX: Should this only report unique canonical names?
-  for (const auto &C : AMDGCNGPUs)
+  for (const auto &C : AMDGCNGPUs) {
     Values.push_back(C.Name);
+
+}
 }
 
 void AMDGPU::fillValidArchListR600(SmallVectorImpl<StringRef> &Values) {
-  for (const auto &C : R600GPUs)
+  for (const auto &C : R600GPUs) {
     Values.push_back(C.Name);
+
+}
 }
 
 AMDGPU::IsaVersion AMDGPU::getIsaVersion(StringRef GPU) {
   AMDGPU::GPUKind AK = parseArchAMDGCN(GPU);
   if (AK == AMDGPU::GPUKind::GK_NONE) {
-    if (GPU == "generic-hsa")
+    if (GPU == "generic-hsa") {
       return {7, 0, 0};
-    if (GPU == "generic")
+
+}
+    if (GPU == "generic") {
       return {6, 0, 0};
+
+}
     return {0, 0, 0};
   }
 

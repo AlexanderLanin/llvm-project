@@ -56,8 +56,10 @@ private:
 
 /// Lazily initialize cache for required identifier information.
 void NonnullGlobalConstantsChecker::initIdentifierInfo(ASTContext &Ctx) const {
-  if (NSStringII)
+  if (NSStringII) {
     return;
+
+}
 
   NSStringII = &Ctx.Idents.get("NSString");
   CFStringRefII = &Ctx.Idents.get("CFStringRef");
@@ -70,8 +72,10 @@ void NonnullGlobalConstantsChecker::checkLocation(SVal location, bool isLoad,
                                                  const Stmt *S,
                                                  CheckerContext &C) const {
   initIdentifierInfo(C.getASTContext());
-  if (!isLoad || !location.isValid())
+  if (!isLoad || !location.isValid()) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
 
@@ -92,20 +96,28 @@ void NonnullGlobalConstantsChecker::checkLocation(SVal location, bool isLoad,
 /// \return whether {@code val} is a string-like const global.
 bool NonnullGlobalConstantsChecker::isGlobalConstString(SVal V) const {
   Optional<loc::MemRegionVal> RegionVal = V.getAs<loc::MemRegionVal>();
-  if (!RegionVal)
+  if (!RegionVal) {
     return false;
+
+}
   auto *Region = dyn_cast<VarRegion>(RegionVal->getAsRegion());
-  if (!Region)
+  if (!Region) {
     return false;
+
+}
   const VarDecl *Decl = Region->getDecl();
 
-  if (!Decl->hasGlobalStorage())
+  if (!Decl->hasGlobalStorage()) {
     return false;
+
+}
 
   QualType Ty = Decl->getType();
   bool HasConst = Ty.isConstQualified();
-  if (isNonnullType(Ty) && HasConst)
+  if (isNonnullType(Ty) && HasConst) {
     return true;
+
+}
 
   // Look through the typedefs.
   while (const Type *T = Ty.getTypePtr()) {
@@ -114,11 +126,15 @@ bool NonnullGlobalConstantsChecker::isGlobalConstString(SVal V) const {
       // It is sufficient for any intermediate typedef
       // to be classified const.
       HasConst = HasConst || Ty.isConstQualified();
-      if (isNonnullType(Ty) && HasConst)
+      if (isNonnullType(Ty) && HasConst) {
         return true;
+
+}
     } else if (const auto *AT = dyn_cast<AttributedType>(T)) {
-      if (AT->getAttrKind() == attr::TypeNonNull)
+      if (AT->getAttrKind() == attr::TypeNonNull) {
         return true;
+
+}
       Ty = AT->getModifiedType();
     } else {
       return false;
@@ -130,8 +146,10 @@ bool NonnullGlobalConstantsChecker::isGlobalConstString(SVal V) const {
 /// \return whether {@code type} is extremely unlikely to be null
 bool NonnullGlobalConstantsChecker::isNonnullType(QualType Ty) const {
 
-  if (Ty->isPointerType() && Ty->getPointeeType()->isCharType())
+  if (Ty->isPointerType() && Ty->getPointeeType()->isCharType()) {
     return true;
+
+}
 
   if (auto *T = dyn_cast<ObjCObjectPointerType>(Ty)) {
     return T->getInterfaceDecl() &&

@@ -32,15 +32,21 @@ SubtargetFeatureInfo::getAll(const RecordKeeper &Records) {
     //
     // The "AssemblerMatcherPredicate" string should be promoted to an argument
     // if we re-use the machinery for non-assembler purposes in future.
-    if (!Pred->getValueAsBit("AssemblerMatcherPredicate"))
+    if (!Pred->getValueAsBit("AssemblerMatcherPredicate")) {
       continue;
 
-    if (Pred->getName().empty())
+}
+
+    if (Pred->getName().empty()) {
       PrintFatalError(Pred->getLoc(), "Predicate has no name!");
 
+}
+
     // Ignore always true predicates.
-    if (Pred->getValueAsString("CondString").empty())
+    if (Pred->getValueAsString("CondString").empty()) {
       continue;
+
+}
 
     SubtargetFeatures.emplace_back(
         Pred, SubtargetFeatureInfo(Pred, SubtargetFeatures.size()));
@@ -67,19 +73,29 @@ void SubtargetFeatureInfo::emitNameTable(
   // gives the proper name. More specifically, for a feature of value 1<<n,
   // SubtargetFeatureNames[n] should be the name of the feature.
   uint64_t IndexUB = 0;
-  for (const auto &SF : SubtargetFeatures)
-    if (IndexUB <= SF.second.Index)
+  for (const auto &SF : SubtargetFeatures) {
+    if (IndexUB <= SF.second.Index) {
       IndexUB = SF.second.Index+1;
 
+}
+
+}
+
   std::vector<std::string> Names;
-  if (IndexUB > 0)
+  if (IndexUB > 0) {
     Names.resize(IndexUB);
-  for (const auto &SF : SubtargetFeatures)
+
+}
+  for (const auto &SF : SubtargetFeatures) {
     Names[SF.second.Index] = SF.second.getEnumName();
 
+}
+
   OS << "static const char *SubtargetFeatureNames[] = {\n";
-  for (uint64_t I = 0; I < IndexUB; ++I)
+  for (uint64_t I = 0; I < IndexUB; ++I) {
     OS << "  \"" << Names[I] << "\",\n";
+
+}
 
   // A small number of targets have no predicates. Null terminate the array to
   // avoid a zero-length array.
@@ -93,8 +109,10 @@ void SubtargetFeatureInfo::emitComputeAvailableFeatures(
     StringRef ExtraParams) {
   OS << "PredicateBitset " << TargetName << ClassName << "::\n"
      << FuncName << "(const " << TargetName << "Subtarget *Subtarget";
-  if (!ExtraParams.empty())
+  if (!ExtraParams.empty()) {
     OS << ", " << ExtraParams;
+
+}
   OS << ") const {\n";
   OS << "  PredicateBitset Features;\n";
   for (const auto &SF : SubtargetFeatures) {
@@ -122,40 +140,54 @@ void SubtargetFeatureInfo::emitComputeAssemblerAvailableFeatures(
 
     const DagInit *D = SFI.TheDef->getValueAsDag("AssemblerCondDag");
     std::string CombineType = D->getOperator()->getAsString();
-    if (CombineType != "any_of" && CombineType != "all_of")
+    if (CombineType != "any_of" && CombineType != "all_of") {
       PrintFatalError(SFI.TheDef->getLoc(), "Invalid AssemblerCondDag!");
-    if (D->getNumArgs() == 0)
+
+}
+    if (D->getNumArgs() == 0) {
       PrintFatalError(SFI.TheDef->getLoc(), "Invalid AssemblerCondDag!");
+
+}
     bool IsOr = CombineType == "any_of";
 
-    if (IsOr)
+    if (IsOr) {
       OS << "(";
+
+}
 
     bool First = true;
     for (auto *Arg : D->getArgs()) {
       if (!First) {
-        if (IsOr)
+        if (IsOr) {
           OS << " || ";
-        else
+        } else {
           OS << " && ";
+
+}
       }
       if (auto *NotArg = dyn_cast<DagInit>(Arg)) {
         if (NotArg->getOperator()->getAsString() != "not" ||
-            NotArg->getNumArgs() != 1)
+            NotArg->getNumArgs() != 1) {
           PrintFatalError(SFI.TheDef->getLoc(), "Invalid AssemblerCondDag!");
+
+}
         Arg = NotArg->getArg(0);
         OS << "!";
       }
       if (!isa<DefInit>(Arg) ||
-          !cast<DefInit>(Arg)->getDef()->isSubClassOf("SubtargetFeature"))
+          !cast<DefInit>(Arg)->getDef()->isSubClassOf("SubtargetFeature")) {
         PrintFatalError(SFI.TheDef->getLoc(), "Invalid AssemblerCondDag!");
+
+}
       OS << "FB[" << TargetName << "::" << Arg->getAsString() << "]";
 
       First = false;
     }
 
-    if (IsOr)
+    if (IsOr) {
       OS << ")";
+
+}
 
     OS << ")\n";
     OS << "    Features.set(" << SFI.getEnumBitName() << ");\n";

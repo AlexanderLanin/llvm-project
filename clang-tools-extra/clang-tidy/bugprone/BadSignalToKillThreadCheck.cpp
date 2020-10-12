@@ -33,23 +33,29 @@ void BadSignalToKillThreadCheck::check(const MatchFinder::MatchResult &Result) {
   };
   const auto TryExpandAsInteger =
       [](Preprocessor::macro_iterator It) -> Optional<unsigned> {
-    if (It == PP->macro_end())
+    if (It == PP->macro_end()) {
       return llvm::None;
+
+}
     const MacroInfo *MI = PP->getMacroInfo(It->first);
     const Token &T = MI->tokens().back();
     StringRef ValueStr = StringRef(T.getLiteralData(), T.getLength());
 
     llvm::APInt IntValue;
     constexpr unsigned AutoSenseRadix = 0;
-    if (ValueStr.getAsInteger(AutoSenseRadix, IntValue))
+    if (ValueStr.getAsInteger(AutoSenseRadix, IntValue)) {
       return llvm::None;
+
+}
     return IntValue.getZExtValue();
   };
 
   const auto SigtermMacro = llvm::find_if(PP->macros(), IsSigterm);
 
-  if (!SigtermValue && !(SigtermValue = TryExpandAsInteger(SigtermMacro)))
+  if (!SigtermValue && !(SigtermValue = TryExpandAsInteger(SigtermMacro))) {
     return;
+
+}
 
   const auto *MatchedExpr = Result.Nodes.getNodeAs<Expr>("thread-kill");
   const auto *MatchedIntLiteral =

@@ -33,11 +33,15 @@ static bool optimizeSQRT(CallInst *Call, Function *CalledFunc,
                          const TargetTransformInfo *TTI) {
   // There is no need to change the IR, since backend will emit sqrt
   // instruction if the call has already been marked read-only.
-  if (Call->onlyReadsMemory())
+  if (Call->onlyReadsMemory()) {
     return false;
 
-  if (!DebugCounter::shouldExecute(PILCounter))
+}
+
+  if (!DebugCounter::shouldExecute(PILCounter)) {
     return false;
+
+}
 
   // Do the following transformation:
   //
@@ -100,25 +104,33 @@ static bool runPartiallyInlineLibCalls(Function &F, TargetLibraryInfo *TLI,
       CallInst *Call = dyn_cast<CallInst>(&*II);
       Function *CalledFunc;
 
-      if (!Call || !(CalledFunc = Call->getCalledFunction()))
+      if (!Call || !(CalledFunc = Call->getCalledFunction())) {
         continue;
 
-      if (Call->isNoBuiltin())
+}
+
+      if (Call->isNoBuiltin()) {
         continue;
+
+}
 
       // Skip if function either has local linkage or is not a known library
       // function.
       LibFunc LF;
       if (CalledFunc->hasLocalLinkage() ||
-          !TLI->getLibFunc(*CalledFunc, LF) || !TLI->has(LF))
+          !TLI->getLibFunc(*CalledFunc, LF) || !TLI->has(LF)) {
         continue;
+
+}
 
       switch (LF) {
       case LibFunc_sqrtf:
       case LibFunc_sqrt:
         if (TTI->haveFastSqrt(Call->getType()) &&
-            optimizeSQRT(Call, CalledFunc, *CurrBB, BB, TTI))
+            optimizeSQRT(Call, CalledFunc, *CurrBB, BB, TTI)) {
           break;
+
+}
         continue;
       default:
         continue;
@@ -136,8 +148,10 @@ PreservedAnalyses
 PartiallyInlineLibCallsPass::run(Function &F, FunctionAnalysisManager &AM) {
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
   auto &TTI = AM.getResult<TargetIRAnalysis>(F);
-  if (!runPartiallyInlineLibCalls(F, &TLI, &TTI))
+  if (!runPartiallyInlineLibCalls(F, &TLI, &TTI)) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }
 
@@ -158,8 +172,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     TargetLibraryInfo *TLI =
         &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);

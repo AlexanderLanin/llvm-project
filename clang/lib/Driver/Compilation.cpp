@@ -46,23 +46,31 @@ Compilation::Compilation(const Driver &D, const ToolChain &_DefaultToolChain,
 Compilation::~Compilation() {
   // Remove temporary files. This must be done before arguments are freed, as
   // the file names might be derived from the input arguments.
-  if (!TheDriver.isSaveTempsEnabled() && !ForceKeepTempFiles)
+  if (!TheDriver.isSaveTempsEnabled() && !ForceKeepTempFiles) {
     CleanupFileList(TempFiles);
+
+}
 
   delete TranslatedArgs;
   delete Args;
 
   // Free any derived arg lists.
-  for (auto Arg : TCArgs)
-    if (Arg.second != TranslatedArgs)
+  for (auto Arg : TCArgs) {
+    if (Arg.second != TranslatedArgs) {
       delete Arg.second;
+
+}
+
+}
 }
 
 const DerivedArgList &
 Compilation::getArgsForToolChain(const ToolChain *TC, StringRef BoundArch,
                                  Action::OffloadKind DeviceOffloadKind) {
-  if (!TC)
+  if (!TC) {
     TC = &DefaultToolChain;
+
+}
 
   DerivedArgList *&Entry = TCArgs[{TC, BoundArch, DeviceOffloadKind}];
   if (!Entry) {
@@ -78,19 +86,25 @@ Compilation::getArgsForToolChain(const ToolChain *TC, StringRef BoundArch,
 
     if (!OpenMPArgs) {
       Entry = TC->TranslateArgs(*TranslatedArgs, BoundArch, DeviceOffloadKind);
-      if (!Entry)
+      if (!Entry) {
         Entry = TranslatedArgs;
+
+}
     } else {
       Entry = TC->TranslateArgs(*OpenMPArgs, BoundArch, DeviceOffloadKind);
-      if (!Entry)
+      if (!Entry) {
         Entry = OpenMPArgs;
-      else
+      } else {
         delete OpenMPArgs;
+
+}
     }
 
     // Add allocated arguments to the final DAL.
-    for (auto ArgPtr : AllocatedArgs)
+    for (auto ArgPtr : AllocatedArgs) {
       Entry->AddSynthesizedArg(ArgPtr);
+
+}
   }
 
   return *Entry;
@@ -110,17 +124,21 @@ bool Compilation::CleanupFile(const char *File, bool IssueErrors) const {
   // Don't try to remove files which we don't have write access to (but may be
   // able to remove), or non-regular files. Underlying tools may have
   // intentionally not overwritten them.
-  if (!llvm::sys::fs::can_write(File) || !llvm::sys::fs::is_regular_file(File))
+  if (!llvm::sys::fs::can_write(File) || !llvm::sys::fs::is_regular_file(File)) {
     return true;
+
+}
 
   if (std::error_code EC = llvm::sys::fs::remove(File)) {
     // Failure is only failure if the file exists and is "regular". We checked
     // for it being regular before, and llvm::sys::fs::remove ignores ENOENT,
     // so we don't need to check again.
 
-    if (IssueErrors)
+    if (IssueErrors) {
       getDriver().Diag(diag::err_drv_unable_to_remove_file)
         << EC.message();
+
+}
     return false;
   }
   return true;
@@ -129,8 +147,10 @@ bool Compilation::CleanupFile(const char *File, bool IssueErrors) const {
 bool Compilation::CleanupFileList(const llvm::opt::ArgStringList &Files,
                                   bool IssueErrors) const {
   bool Success = true;
-  for (const auto &File: Files)
+  for (const auto &File: Files) {
     Success &= CleanupFile(File, IssueErrors);
+
+}
   return Success;
 }
 
@@ -141,8 +161,10 @@ bool Compilation::CleanupFileMap(const ArgStringMap &Files,
   for (const auto &File : Files) {
     // If specified, only delete the files associated with the JobAction.
     // Otherwise, delete all files in the map.
-    if (JA && File.first != JA)
+    if (JA && File.first != JA) {
       continue;
+
+}
     Success &= CleanupFile(File.second, IssueErrors);
   }
   return Success;
@@ -171,8 +193,10 @@ int Compilation::ExecuteCommand(const Command &C,
       OS = OwnedStream.get();
     }
 
-    if (getDriver().CCPrintOptions)
+    if (getDriver().CCPrintOptions) {
       *OS << "[Logging clang options]\n";
+
+}
 
     C.Print(*OS, "\n", /*Quote=*/getDriver().CCPrintOptions);
   }
@@ -185,8 +209,10 @@ int Compilation::ExecuteCommand(const Command &C,
     getDriver().Diag(diag::err_drv_command_failure) << Error;
   }
 
-  if (Res)
+  if (Res) {
     FailingCommand = &C;
+
+}
 
   return ExecutionFailed ? 1 : Res;
 }
@@ -195,22 +221,34 @@ using FailingCommandList = SmallVectorImpl<std::pair<int, const Command *>>;
 
 static bool ActionFailed(const Action *A,
                          const FailingCommandList &FailingCommands) {
-  if (FailingCommands.empty())
+  if (FailingCommands.empty()) {
     return false;
+
+}
 
   // CUDA/HIP can have the same input source code compiled multiple times so do
   // not compiled again if there are already failures. It is OK to abort the
   // CUDA pipeline on errors.
-  if (A->isOffloading(Action::OFK_Cuda) || A->isOffloading(Action::OFK_HIP))
+  if (A->isOffloading(Action::OFK_Cuda) || A->isOffloading(Action::OFK_HIP)) {
     return true;
 
-  for (const auto &CI : FailingCommands)
-    if (A == &(CI.second->getSource()))
+}
+
+  for (const auto &CI : FailingCommands) {
+    if (A == &(CI.second->getSource())) {
       return true;
 
-  for (const auto *AI : A->inputs())
-    if (ActionFailed(AI, FailingCommands))
+}
+
+}
+
+  for (const auto *AI : A->inputs()) {
+    if (ActionFailed(AI, FailingCommands)) {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -227,14 +265,18 @@ void Compilation::ExecuteJobs(const JobList &Jobs,
   // In all but CLMode, execute all the jobs unless the necessary inputs for the
   // job is missing due to previous failures.
   for (const auto &Job : Jobs) {
-    if (!InputsOk(Job, FailingCommands))
+    if (!InputsOk(Job, FailingCommands)) {
       continue;
+
+}
     const Command *FailingCommand = nullptr;
     if (int Res = ExecuteCommand(Job, FailingCommand)) {
       FailingCommands.push_back(std::make_pair(Res, FailingCommand));
       // Bail as soon as one command fails in cl driver mode.
-      if (TheDriver.IsCLMode())
+      if (TheDriver.IsCLMode()) {
         return;
+
+}
     }
   }
 }
@@ -248,8 +290,10 @@ void Compilation::initCompilationForDiagnostics() {
   Jobs.clear();
 
   // Remove temporary files.
-  if (!TheDriver.isSaveTempsEnabled() && !ForceKeepTempFiles)
+  if (!TheDriver.isSaveTempsEnabled() && !ForceKeepTempFiles) {
     CleanupFileList(TempFiles);
+
+}
 
   // Clear temporary/results file lists.
   TempFiles.clear();
@@ -263,16 +307,22 @@ void Compilation::initCompilationForDiagnostics() {
       options::OPT_MM, options::OPT_MF, options::OPT_MG,  options::OPT_MJ,
       options::OPT_MQ, options::OPT_MT, options::OPT_MV};
   for (unsigned i = 0, e = llvm::array_lengthof(OutputOpts); i != e; ++i) {
-    if (TranslatedArgs->hasArg(OutputOpts[i]))
+    if (TranslatedArgs->hasArg(OutputOpts[i])) {
       TranslatedArgs->eraseArg(OutputOpts[i]);
+
+}
   }
   TranslatedArgs->ClaimAllArgs();
 
   // Force re-creation of the toolchain Args, otherwise our modifications just
   // above will have no effect.
-  for (auto Arg : TCArgs)
-    if (Arg.second != TranslatedArgs)
+  for (auto Arg : TCArgs) {
+    if (Arg.second != TranslatedArgs) {
       delete Arg.second;
+
+}
+
+}
   TCArgs.clear();
 
   // Redirect stdout/stderr to /dev/null.

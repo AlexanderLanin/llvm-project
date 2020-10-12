@@ -51,8 +51,10 @@ void InvalidatedIteratorChecker::checkPreCall(const CallEvent &Call,
                                               CheckerContext &C) const {
   // Check for access of invalidated position
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+
+}
 
   if (Func->isOverloadedOperator() &&
       isAccessOperator(Func->getOverloadedOperator())) {

@@ -52,14 +52,20 @@ REGISTER_TWEAK(RawStringLiteral)
 static bool isNormalString(const StringLiteral &Str, SourceLocation Cursor,
                           SourceManager &SM) {
   // All chunks must be normal ASCII strings, not u8"..." etc.
-  if (!Str.isAscii())
+  if (!Str.isAscii()) {
     return false;
+
+}
   SourceLocation LastTokenBeforeCursor;
   for (auto I = Str.tokloc_begin(), E = Str.tokloc_end(); I != E; ++I) {
-    if (I->isMacroID()) // No tokens in the string may be macro expansions.
+    if (I->isMacroID()) { // No tokens in the string may be macro expansions.
       return false;
-    if (SM.isBeforeInTranslationUnit(*I, Cursor) || *I == Cursor)
+
+}
+    if (SM.isBeforeInTranslationUnit(*I, Cursor) || *I == Cursor) {
       LastTokenBeforeCursor = *I;
+
+}
   }
   // Token we care about must be a normal "string": not raw, u8, etc.
   const char* Data = SM.getCharacterData(LastTokenBeforeCursor);
@@ -71,16 +77,22 @@ static bool needsRaw(llvm::StringRef Content) {
 }
 
 static bool canBeRaw(llvm::StringRef Content) {
-  for (char C : Content)
-    if (!llvm::isPrint(C) && C != '\n' && C != '\t')
+  for (char C : Content) {
+    if (!llvm::isPrint(C) && C != '\n' && C != '\t') {
       return false;
+
+}
+
+}
   return !Content.contains(")\"");
 }
 
 bool RawStringLiteral::prepare(const Selection &Inputs) {
   const SelectionTree::Node *N = Inputs.ASTSelection.commonAncestor();
-  if (!N)
+  if (!N) {
     return false;
+
+}
   Str = dyn_cast_or_null<StringLiteral>(N->ASTNode.get<Stmt>());
   return Str &&
          isNormalString(*Str, Inputs.Cursor, Inputs.AST->getSourceManager()) &&

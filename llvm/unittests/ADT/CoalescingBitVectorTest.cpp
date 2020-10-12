@@ -197,10 +197,14 @@ TEST(CoalescingBitVectorTest, Comparison) {
 UBitVec simpleUnion(UBitVec::Allocator &Alloc, const UBitVec &LHS,
                     const UBitVec &RHS) {
   UBitVec Union(Alloc);
-  for (unsigned Bit : LHS)
+  for (unsigned Bit : LHS) {
     Union.test_and_set(Bit);
-  for (unsigned Bit : RHS)
+
+}
+  for (unsigned Bit : RHS) {
     Union.test_and_set(Bit);
+
+}
   return Union;
 }
 
@@ -291,9 +295,13 @@ TEST(CoalescingBitVectorTest, Union) {
 UBitVec simpleIntersection(UBitVec::Allocator &Alloc, const UBitVec &LHS,
                            const UBitVec &RHS) {
   UBitVec Intersection(Alloc);
-  for (unsigned Bit : LHS)
-    if (RHS.test(Bit))
+  for (unsigned Bit : LHS) {
+    if (RHS.test(Bit)) {
       Intersection.set(Bit);
+
+}
+
+}
   return Intersection;
 }
 
@@ -371,9 +379,13 @@ UBitVec simpleIntersectionWithComplement(UBitVec::Allocator &Alloc,
                                          const UBitVec &LHS,
                                          const UBitVec &RHS) {
   UBitVec Intersection(Alloc);
-  for (unsigned Bit : LHS)
-    if (!RHS.test(Bit))
+  for (unsigned Bit : LHS) {
+    if (!RHS.test(Bit)) {
       Intersection.set(Bit);
+
+}
+
+}
   return Intersection;
 }
 

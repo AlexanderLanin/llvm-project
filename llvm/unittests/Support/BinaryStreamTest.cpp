@@ -34,8 +34,10 @@ public:
 
   Error readBytes(uint32_t Offset, uint32_t Size,
                   ArrayRef<uint8_t> &Buffer) override {
-    if (auto EC = checkOffsetForRead(Offset, Size))
+    if (auto EC = checkOffsetForRead(Offset, Size)) {
       return EC;
+
+}
     uint32_t S = startIndex(Offset);
     auto Ref = Data.drop_front(S);
     if (Ref.size() >= Size) {
@@ -53,8 +55,10 @@ public:
 
   Error readLongestContiguousChunk(uint32_t Offset,
                                    ArrayRef<uint8_t> &Buffer) override {
-    if (auto EC = checkOffsetForRead(Offset, 1))
+    if (auto EC = checkOffsetForRead(Offset, 1)) {
       return EC;
+
+}
     uint32_t S = startIndex(Offset);
     Buffer = Data.drop_front(S);
     return Error::success();
@@ -63,10 +67,14 @@ public:
   uint32_t getLength() override { return Data.size(); }
 
   Error writeBytes(uint32_t Offset, ArrayRef<uint8_t> SrcData) override {
-    if (auto EC = checkOffsetForWrite(Offset, SrcData.size()))
+    if (auto EC = checkOffsetForWrite(Offset, SrcData.size())) {
       return EC;
-    if (SrcData.empty())
+
+}
+    if (SrcData.empty()) {
       return Error::success();
+
+}
 
     uint32_t S = startIndex(Offset);
     MutableArrayRef<uint8_t> Ref(Data);
@@ -115,8 +123,10 @@ public:
   void SetUp() override {
     Streams.clear();
     Streams.resize(NumStreams);
-    for (uint32_t I = 0; I < NumStreams; ++I)
+    for (uint32_t I = 0; I < NumStreams; ++I) {
       Streams[I].IsContiguous = (I % 2 == 0);
+
+}
 
     InputData.clear();
     OutputData.clear();
@@ -137,10 +147,14 @@ protected:
       uint32_t PartitionIndex = alignDown(InputData.size() / 2, Align);
       uint32_t RightBytes = InputData.size() - PartitionIndex;
       uint32_t LeftBytes = PartitionIndex;
-      if (RightBytes > 0)
+      if (RightBytes > 0) {
         ::memcpy(&BrokenInputData[PartitionIndex], Input.data(), RightBytes);
-      if (LeftBytes > 0)
+
+}
+      if (LeftBytes > 0) {
         ::memcpy(&BrokenInputData[0], Input.data() + RightBytes, LeftBytes);
+
+}
     }
 
     for (uint32_t I = 0; I < NumEndians; ++I) {
@@ -228,10 +242,12 @@ TEST_F(BinaryStreamTest, StreamRefBounds) {
 
     // Reading everything from offset 2 on.
     ASSERT_THAT_ERROR(Ref.readLongestContiguousChunk(2, Buffer), Succeeded());
-    if (Stream.IsContiguous)
+    if (Stream.IsContiguous) {
       EXPECT_EQ(makeArrayRef(InputData).slice(2), Buffer);
-    else
+    } else {
       EXPECT_FALSE(Buffer.empty());
+
+}
 
     // Reading 6 bytes from offset 0 is too big.
     EXPECT_THAT_ERROR(Ref.readBytes(0, 6, Buffer), Failed());
@@ -241,17 +257,21 @@ TEST_F(BinaryStreamTest, StreamRefBounds) {
     // 1 byte from offset 3.
     Ref = Ref.drop_front(1);
     ASSERT_THAT_ERROR(Ref.readBytes(2, 1, Buffer), Succeeded());
-    if (Stream.IsContiguous)
+    if (Stream.IsContiguous) {
       EXPECT_EQ(makeArrayRef(InputData).slice(3, 1), Buffer);
-    else
+    } else {
       EXPECT_FALSE(Buffer.empty());
+
+}
 
     // Reading everything from offset 2 on after dropping 1 byte.
     ASSERT_THAT_ERROR(Ref.readLongestContiguousChunk(2, Buffer), Succeeded());
-    if (Stream.IsContiguous)
+    if (Stream.IsContiguous) {
       EXPECT_EQ(makeArrayRef(InputData).slice(3), Buffer);
-    else
+    } else {
       EXPECT_FALSE(Buffer.empty());
+
+}
 
     // Reading 2 bytes from offset 2 after dropping 2 bytes is the same as
     // reading 2 bytes from offset 4, and should fail.
@@ -468,17 +488,21 @@ TEST_F(BinaryStreamTest, VarStreamArray) {
   struct StringExtractor {
   public:
     Error operator()(BinaryStreamRef Stream, uint32_t &Len, StringRef &Item) {
-      if (Index == 0)
+      if (Index == 0) {
         Len = strlen("1. Test");
-      else if (Index == 1)
+      } else if (Index == 1) {
         Len = strlen("2. Longer Test");
-      else if (Index == 2)
+      } else if (Index == 2) {
         Len = strlen("3. Really Long Test");
-      else
+      } else {
         Len = strlen("4. Super Extra Longest Test Of All");
+
+}
       ArrayRef<uint8_t> Bytes;
-      if (auto EC = Stream.readBytes(0, Len, Bytes))
+      if (auto EC = Stream.readBytes(0, Len, Bytes)) {
         return EC;
+
+}
       Item =
           StringRef(reinterpret_cast<const char *>(Bytes.data()), Bytes.size());
       ++Index;
@@ -595,8 +619,10 @@ TEST_F(BinaryStreamTest, StreamReaderEnum) {
   initializeInputFromOutput(alignof(MyEnum));
   for (auto &Stream : Streams) {
     BinaryStreamWriter Writer(*Stream.Output);
-    for (auto Value : Enums)
+    for (auto Value : Enums) {
       ASSERT_THAT_ERROR(Writer.writeEnum(Value), Succeeded());
+
+}
 
     BinaryStreamReader Reader(*Stream.Input);
 
@@ -630,18 +656,24 @@ TEST_F(BinaryStreamTest, StreamReaderULEB128) {
   for (auto &Stream : Streams) {
     // Write fields.
     BinaryStreamWriter Writer(*Stream.Output);
-    for (const auto &Value : TestValues)
+    for (const auto &Value : TestValues) {
       ASSERT_THAT_ERROR(Writer.writeULEB128(Value), Succeeded());
+
+}
 
     // Read fields.
     BinaryStreamReader Reader(*Stream.Input);
     std::vector<uint64_t> Results;
     Results.resize(TestValues.size());
-    for (unsigned I = 0; I != TestValues.size(); ++I)
+    for (unsigned I = 0; I != TestValues.size(); ++I) {
       ASSERT_THAT_ERROR(Reader.readULEB128(Results[I]), Succeeded());
 
-    for (unsigned I = 0; I != TestValues.size(); ++I)
+}
+
+    for (unsigned I = 0; I != TestValues.size(); ++I) {
       EXPECT_EQ(TestValues[I], Results[I]);
+
+}
   }
 }
 
@@ -667,18 +699,24 @@ TEST_F(BinaryStreamTest, StreamReaderSLEB128) {
   for (auto &Stream : Streams) {
     // Write fields.
     BinaryStreamWriter Writer(*Stream.Output);
-    for (const auto &Value : TestValues)
+    for (const auto &Value : TestValues) {
       ASSERT_THAT_ERROR(Writer.writeSLEB128(Value), Succeeded());
+
+}
 
     // Read fields.
     BinaryStreamReader Reader(*Stream.Input);
     std::vector<int64_t> Results;
     Results.resize(TestValues.size());
-    for (unsigned I = 0; I != TestValues.size(); ++I)
+    for (unsigned I = 0; I != TestValues.size(); ++I) {
       ASSERT_THAT_ERROR(Reader.readSLEB128(Results[I]), Succeeded());
 
-    for (unsigned I = 0; I != TestValues.size(); ++I)
+}
+
+    for (unsigned I = 0; I != TestValues.size(); ++I) {
       EXPECT_EQ(TestValues[I], Results[I]);
+
+}
   }
 }
 
@@ -812,15 +850,19 @@ TEST_F(BinaryStreamTest, StringWriterStrings) {
   StringRef Strings[] = {"First", "Second", "Third", "Fourth"};
 
   size_t Length = 0;
-  for (auto S : Strings)
+  for (auto S : Strings) {
     Length += S.size() + 1;
+
+}
   initializeOutput(Length, 1);
   initializeInputFromOutput(1);
 
   for (auto &Stream : Streams) {
     BinaryStreamWriter Writer(*Stream.Output);
-    for (auto S : Strings)
+    for (auto S : Strings) {
       ASSERT_THAT_ERROR(Writer.writeCString(S), Succeeded());
+
+}
     std::vector<StringRef> InStrings;
     BinaryStreamReader Reader(*Stream.Input);
     while (!Reader.empty()) {

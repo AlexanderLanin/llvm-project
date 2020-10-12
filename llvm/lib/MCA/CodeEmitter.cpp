@@ -18,14 +18,18 @@ namespace mca {
 CodeEmitter::EncodingInfo
 CodeEmitter::getOrCreateEncodingInfo(unsigned MCID) {
   EncodingInfo &EI = Encodings[MCID];
-  if (EI.second)
+  if (EI.second) {
     return EI;
+
+}
 
   SmallVector<llvm::MCFixup, 2> Fixups;
   const MCInst &Inst = Sequence[MCID];
   MCInst Relaxed(Sequence[MCID]);
-  if (MAB.mayNeedRelaxation(Inst, STI))
+  if (MAB.mayNeedRelaxation(Inst, STI)) {
     MAB.relaxInstruction(Inst, STI, Relaxed);
+
+}
 
   EI.first = Code.size();
   MCE.encodeInstruction(Relaxed, VecOS, Fixups, STI);

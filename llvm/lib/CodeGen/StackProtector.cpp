@@ -93,18 +93,24 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
   Attribute Attr = Fn.getFnAttribute("stack-protector-buffer-size");
   if (Attr.isStringAttribute() &&
-      Attr.getValueAsString().getAsInteger(10, SSPBufferSize))
+      Attr.getValueAsString().getAsInteger(10, SSPBufferSize)) {
     return false; // Invalid integer string
 
-  if (!RequiresStackProtector())
+}
+
+  if (!RequiresStackProtector()) {
     return false;
+
+}
 
   // TODO(etienneb): Functions with funclets are not correctly supported now.
   // Do nothing if this is funclet-based personality.
   if (Fn.hasPersonalityFn()) {
     EHPersonality Personality = classifyEHPersonality(Fn.getPersonalityFn());
-    if (isFuncletEHPersonality(Personality))
+    if (isFuncletEHPersonality(Personality)) {
       return false;
+
+}
   }
 
   ++NumFunProtected;
@@ -117,16 +123,20 @@ bool StackProtector::runOnFunction(Function &Fn) {
 bool StackProtector::ContainsProtectableArray(Type *Ty, bool &IsLarge,
                                               bool Strong,
                                               bool InStruct) const {
-  if (!Ty)
+  if (!Ty) {
     return false;
+
+}
   if (ArrayType *AT = dyn_cast<ArrayType>(Ty)) {
     if (!AT->getElementType()->isIntegerTy(8)) {
       // If we're on a non-Darwin platform or we're inside of a structure, don't
       // add stack protectors unless the array is a character array.
       // However, in strong mode any array, regardless of type and size,
       // triggers a protector.
-      if (!Strong && (InStruct || !Trip.isOSDarwin()))
+      if (!Strong && (InStruct || !Trip.isOSDarwin())) {
         return false;
+
+}
     }
 
     // If an array has more than SSPBufferSize bytes of allocated space, then we
@@ -136,27 +146,35 @@ bool StackProtector::ContainsProtectableArray(Type *Ty, bool &IsLarge,
       return true;
     }
 
-    if (Strong)
+    if (Strong) {
       // Require a protector for all arrays in strong mode
       return true;
+
+}
   }
 
   const StructType *ST = dyn_cast<StructType>(Ty);
-  if (!ST)
+  if (!ST) {
     return false;
+
+}
 
   bool NeedsProtector = false;
   for (StructType::element_iterator I = ST->element_begin(),
                                     E = ST->element_end();
-       I != E; ++I)
+       I != E; ++I) {
     if (ContainsProtectableArray(*I, IsLarge, Strong, true)) {
       // If the element is a protectable array and is large (>= SSPBufferSize)
       // then we are done.  If the protectable array is not large, then
       // keep looking in case a subsequent element is a large array.
-      if (IsLarge)
+      if (IsLarge) {
         return true;
+
+}
       NeedsProtector = true;
     }
+
+}
 
   return NeedsProtector;
 }
@@ -166,25 +184,33 @@ bool StackProtector::HasAddressTaken(const Instruction *AI) {
     const auto *I = cast<Instruction>(U);
     switch (I->getOpcode()) {
     case Instruction::Store:
-      if (AI == cast<StoreInst>(I)->getValueOperand())
+      if (AI == cast<StoreInst>(I)->getValueOperand()) {
         return true;
+
+}
       break;
     case Instruction::AtomicCmpXchg:
       // cmpxchg conceptually includes both a load and store from the same
       // location. So, like store, the value being stored is what matters.
-      if (AI == cast<AtomicCmpXchgInst>(I)->getNewValOperand())
+      if (AI == cast<AtomicCmpXchgInst>(I)->getNewValOperand()) {
         return true;
+
+}
       break;
     case Instruction::PtrToInt:
-      if (AI == cast<PtrToIntInst>(I)->getOperand(0))
+      if (AI == cast<PtrToIntInst>(I)->getOperand(0)) {
         return true;
+
+}
       break;
     case Instruction::Call: {
       // Ignore intrinsics that do not become real instructions.
       // TODO: Narrow this to intrinsics that have store-like effects.
       const auto *CI = cast<CallInst>(I);
-      if (!isa<DbgInfoIntrinsic>(CI) && !CI->isLifetimeStartOrEnd())
+      if (!isa<DbgInfoIntrinsic>(CI) && !CI->isLifetimeStartOrEnd()) {
         return true;
+
+}
       break;
     }
     case Instruction::Invoke:
@@ -193,16 +219,22 @@ bool StackProtector::HasAddressTaken(const Instruction *AI) {
     case Instruction::GetElementPtr:
     case Instruction::Select:
     case Instruction::AddrSpaceCast:
-      if (HasAddressTaken(I))
+      if (HasAddressTaken(I)) {
         return true;
+
+}
       break;
     case Instruction::PHI: {
       // Keep track of what PHI nodes we have already visited to ensure
       // they are only visited once.
       const auto *PN = cast<PHINode>(I);
-      if (VisitedPHIs.insert(PN).second)
-        if (HasAddressTaken(PN))
+      if (VisitedPHIs.insert(PN).second) {
+        if (HasAddressTaken(PN)) {
           return true;
+
+}
+
+}
       break;
     }
     case Instruction::Load:
@@ -226,12 +258,20 @@ bool StackProtector::HasAddressTaken(const Instruction *AI) {
 /// Search for the first call to the llvm.stackprotector intrinsic and return it
 /// if present.
 static const CallInst *findStackProtectorIntrinsic(Function &F) {
-  for (const BasicBlock &BB : F)
-    for (const Instruction &I : BB)
-      if (const CallInst *CI = dyn_cast<CallInst>(&I))
+  for (const BasicBlock &BB : F) {
+    for (const Instruction &I : BB) {
+      if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
         if (CI->getCalledFunction() ==
-            Intrinsic::getDeclaration(F.getParent(), Intrinsic::stackprotector))
+            Intrinsic::getDeclaration(F.getParent(), Intrinsic::stackprotector)) {
           return CI;
+
+}
+
+}
+
+}
+
+}
   return nullptr;
 }
 
@@ -253,8 +293,10 @@ bool StackProtector::RequiresStackProtector() {
   bool NeedsProtector = false;
   HasPrologue = findStackProtectorIntrinsic(*F);
 
-  if (F->hasFnAttribute(Attribute::SafeStack))
+  if (F->hasFnAttribute(Attribute::SafeStack)) {
     return false;
+
+}
 
   // We are constructing the OptimizationRemarkEmitter on the fly rather than
   // using the analysis pass to avoid building DominatorTree and LoopInfo which
@@ -270,12 +312,14 @@ bool StackProtector::RequiresStackProtector() {
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
-  } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
+  } else if (F->hasFnAttribute(Attribute::StackProtectStrong)) {
     Strong = true;
-  else if (HasPrologue)
+  } else if (HasPrologue) {
     NeedsProtector = true;
-  else if (!F->hasFnAttribute(Attribute::StackProtect))
+  } else if (!F->hasFnAttribute(Attribute::StackProtect)) {
     return false;
+
+}
 
   for (const BasicBlock &BB : *F) {
     for (const Instruction &I : BB) {
@@ -354,8 +398,10 @@ bool StackProtector::RequiresStackProtector() {
 static Value *getStackGuard(const TargetLoweringBase *TLI, Module *M,
                             IRBuilder<> &B,
                             bool *SupportsSelectionDAGSP = nullptr) {
-  if (Value *Guard = TLI->getIRStackGuard(B))
+  if (Value *Guard = TLI->getIRStackGuard(B)) {
     return B.CreateLoad(B.getInt8PtrTy(), Guard, true, "StackGuard");
+
+}
 
   // Use SelectionDAG SSP handling, since there isn't an IR guard.
   //
@@ -368,8 +414,10 @@ static Value *getStackGuard(const TargetLoweringBase *TLI, Module *M,
   // We could have define a new function TLI::supportsSelectionDAGSP(), but that
   // will put more burden on the backends' overriding work, especially when it
   // actually conveys the same information getIRStackGuard() already gives.
-  if (SupportsSelectionDAGSP)
+  if (SupportsSelectionDAGSP) {
     *SupportsSelectionDAGSP = true;
+
+}
   TLI->insertSSPDeclarations(*M);
   return B.CreateCall(Intrinsic::getDeclaration(M, Intrinsic::stackguard));
 }
@@ -416,8 +464,10 @@ bool StackProtector::InsertStackProtectors() {
   for (Function::iterator I = F->begin(), E = F->end(); I != E;) {
     BasicBlock *BB = &*I++;
     ReturnInst *RI = dyn_cast<ReturnInst>(BB->getTerminator());
-    if (!RI)
+    if (!RI) {
       continue;
+
+}
 
     // Generate prologue instrumentation if not already generated.
     if (!HasPrologue) {
@@ -427,8 +477,10 @@ bool StackProtector::InsertStackProtectors() {
 
     // SelectionDAG based code generation. Nothing else needs to be done here.
     // The epilogue instrumentation is postponed to SelectionDAG.
-    if (SupportsSelectionDAGSP)
+    if (SupportsSelectionDAGSP) {
       break;
+
+}
 
     // Find the stack guard slot if the prologue was not created by this pass
     // itself via a previous call to CreatePrologue().
@@ -551,20 +603,28 @@ bool StackProtector::shouldEmitSDCheck(const BasicBlock &BB) const {
 }
 
 void StackProtector::copyToMachineFrameInfo(MachineFrameInfo &MFI) const {
-  if (Layout.empty())
+  if (Layout.empty()) {
     return;
 
+}
+
   for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I) {
-    if (MFI.isDeadObjectIndex(I))
+    if (MFI.isDeadObjectIndex(I)) {
       continue;
+
+}
 
     const AllocaInst *AI = MFI.getObjectAllocation(I);
-    if (!AI)
+    if (!AI) {
       continue;
 
+}
+
     SSPLayoutMap::const_iterator LI = Layout.find(AI);
-    if (LI == Layout.end())
+    if (LI == Layout.end()) {
       continue;
+
+}
 
     MFI.setObjectSSPLayout(I, LI->second);
   }

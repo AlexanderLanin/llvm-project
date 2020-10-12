@@ -26,13 +26,19 @@ void yaml::ScalarTraits<yaml::BinaryRef>::output(
 
 StringRef yaml::ScalarTraits<yaml::BinaryRef>::input(StringRef Scalar, void *,
                                                      yaml::BinaryRef &Val) {
-  if (Scalar.size() % 2 != 0)
+  if (Scalar.size() % 2 != 0) {
     return "BinaryRef hex string must contain an even number of nybbles.";
+
+}
   // TODO: Can we improve YAMLIO to permit a more accurate diagnostic here?
   // (e.g. a caret pointing to the offending character).
-  for (unsigned I = 0, N = Scalar.size(); I != N; ++I)
-    if (!llvm::isHexDigit(Scalar[I]))
+  for (unsigned I = 0, N = Scalar.size(); I != N; ++I) {
+    if (!llvm::isHexDigit(Scalar[I])) {
       return "BinaryRef hex string must contain only hex digits.";
+
+}
+
+}
   Val = yaml::BinaryRef(Scalar);
   return {};
 }
@@ -53,12 +59,16 @@ void yaml::BinaryRef::writeAsBinary(raw_ostream &OS, uint64_t N) const {
 }
 
 void yaml::BinaryRef::writeAsHex(raw_ostream &OS) const {
-  if (binary_size() == 0)
+  if (binary_size() == 0) {
     return;
+
+}
   if (DataIsHexString) {
     OS.write((const char *)Data.data(), Data.size());
     return;
   }
-  for (uint8_t Byte : Data)
+  for (uint8_t Byte : Data) {
     OS << hexdigit(Byte >> 4) << hexdigit(Byte & 0xf);
+
+}
 }

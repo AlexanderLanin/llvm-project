@@ -108,8 +108,10 @@ Constant *ShadowStackGCLowering::GetFrameMap(Function &F) {
   SmallVector<Constant *, 16> Metadata;
   for (unsigned I = 0; I != Roots.size(); ++I) {
     Constant *C = cast<Constant>(Roots[I].first->getArgOperand(1));
-    if (!C->isNullValue())
+    if (!C->isNullValue()) {
       NumMeta = I + 1;
+
+}
     Metadata.push_back(ConstantExpr::getBitCast(C, VoidPtr));
   }
   Metadata.resize(NumMeta);
@@ -157,8 +159,10 @@ Type *ShadowStackGCLowering::GetConcreteStackEntryType(Function &F) {
   // doInitialization creates the generic version of this type.
   std::vector<Type *> EltTys;
   EltTys.push_back(StackEntryTy);
-  for (size_t I = 0; I != Roots.size(); I++)
+  for (size_t I = 0; I != Roots.size(); I++) {
     EltTys.push_back(Roots[I].second->getAllocatedType());
+
+}
 
   return StructType::create(EltTys, ("gc_stackentry." + F.getName()).str());
 }
@@ -173,8 +177,10 @@ bool ShadowStackGCLowering::doInitialization(Module &M) {
       break;
     }
   }
-  if (!Active)
+  if (!Active) {
     return false;
+
+}
 
   // struct FrameMap {
   //   int32_t NumRoots; // Number of roots in stack frame.
@@ -220,8 +226,10 @@ bool ShadowStackGCLowering::doInitialization(Module &M) {
 }
 
 bool ShadowStackGCLowering::IsNullValue(Value *V) {
-  if (Constant *C = dyn_cast<Constant>(V))
+  if (Constant *C = dyn_cast<Constant>(V)) {
     return C->isNullValue();
+
+}
   return false;
 }
 
@@ -234,19 +242,29 @@ void ShadowStackGCLowering::CollectRoots(Function &F) {
 
   SmallVector<std::pair<CallInst *, AllocaInst *>, 16> MetaRoots;
 
-  for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB)
-    for (BasicBlock::iterator II = BB->begin(), E = BB->end(); II != E;)
-      if (IntrinsicInst *CI = dyn_cast<IntrinsicInst>(II++))
-        if (Function *F = CI->getCalledFunction())
+  for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB) {
+    for (BasicBlock::iterator II = BB->begin(), E = BB->end(); II != E;) {
+      if (IntrinsicInst *CI = dyn_cast<IntrinsicInst>(II++)) {
+        if (Function *F = CI->getCalledFunction()) {
           if (F->getIntrinsicID() == Intrinsic::gcroot) {
             std::pair<CallInst *, AllocaInst *> Pair = std::make_pair(
                 CI,
                 cast<AllocaInst>(CI->getArgOperand(0)->stripPointerCasts()));
-            if (IsNullValue(CI->getArgOperand(1)))
+            if (IsNullValue(CI->getArgOperand(1))) {
               Roots.push_back(Pair);
-            else
+            } else {
               MetaRoots.push_back(Pair);
+
+}
           }
+
+}
+
+}
+
+}
+
+}
 
   // Number roots with metadata (usually empty) at the beginning, so that the
   // FrameMap::Meta array can be elided.
@@ -284,8 +302,10 @@ GetElementPtrInst *ShadowStackGCLowering::CreateGEP(LLVMContext &Context,
 bool ShadowStackGCLowering::runOnFunction(Function &F) {
   // Quick exit for functions that do not use the shadow stack GC.
   if (!F.hasGC() ||
-      F.getGC() != std::string("shadow-stack"))
+      F.getGC() != std::string("shadow-stack")) {
     return false;
+
+}
 
   LLVMContext &Context = F.getContext();
 
@@ -294,8 +314,10 @@ bool ShadowStackGCLowering::runOnFunction(Function &F) {
 
   // If there are no roots in this function, then there is no need to add a
   // stack map entry for it.
-  if (Roots.empty())
+  if (Roots.empty()) {
     return false;
+
+}
 
   // Build the constant map and figure the type of the shadow stack entry.
   Value *FrameMap = GetFrameMap(F);
@@ -308,8 +330,10 @@ bool ShadowStackGCLowering::runOnFunction(Function &F) {
   Instruction *StackEntry =
       AtEntry.CreateAlloca(ConcreteStackEntryTy, nullptr, "gc_frame");
 
-  while (isa<AllocaInst>(IP))
+  while (isa<AllocaInst>(IP)) {
     ++IP;
+
+}
   AtEntry.SetInsertPoint(IP->getParent(), IP);
 
   // Initialize the map pointer and load the current head of the shadow stack.
@@ -335,8 +359,10 @@ bool ShadowStackGCLowering::runOnFunction(Function &F) {
   // really necessary (the collector would never see the intermediate state at
   // runtime), but it's nicer not to push the half-initialized entry onto the
   // shadow stack.
-  while (isa<StoreInst>(IP))
+  while (isa<StoreInst>(IP)) {
     ++IP;
+
+}
   AtEntry.SetInsertPoint(IP->getParent(), IP);
 
   // Push the entry onto the shadow stack.

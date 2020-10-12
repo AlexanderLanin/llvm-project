@@ -38,8 +38,10 @@ static void runWithLoopInfoAndSE(
 static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
   SMDiagnostic Err;
   std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("IVDescriptorsTests", errs());
+
+}
   return Mod;
 }
 
@@ -88,8 +90,10 @@ for.end:
         Instruction *Inst_inc = nullptr;
         BasicBlock::iterator BBI = Header->begin();
         do {
-          if ((&*BBI)->getName() == "inc")
+          if ((&*BBI)->getName() == "inc") {
             Inst_inc = &*BBI;
+
+}
           ++BBI;
         } while (!Inst_inc);
         assert(Inst_inc->getName() == "inc");

@@ -61,8 +61,10 @@ public:
 
 static std::string getOutputPath(opt::InputArgList *Args,
                                  const NewArchiveMember &FirstMember) {
-  if (auto *Arg = Args->getLastArg(OPT_out))
+  if (auto *Arg = Args->getLastArg(OPT_out)) {
     return Arg->getValue();
+
+}
   SmallString<128> Val = StringRef(FirstMember.Buf->getBufferIdentifier());
   sys::path::replace_extension(Val, ".lib");
   return std::string(Val.str());
@@ -75,13 +77,17 @@ static std::vector<StringRef> getSearchPaths(opt::InputArgList *Args,
   Ret.push_back("");
 
   // Add /libpath flags.
-  for (auto *Arg : Args->filtered(OPT_libpath))
+  for (auto *Arg : Args->filtered(OPT_libpath)) {
     Ret.push_back(Arg->getValue());
+
+}
 
   // Add $LIB.
   Optional<std::string> EnvOpt = sys::Process::GetEnv("LIB");
-  if (!EnvOpt.hasValue())
+  if (!EnvOpt.hasValue()) {
     return Ret;
+
+}
   StringRef Env = Saver.save(*EnvOpt);
   while (!Env.empty()) {
     StringRef Path;
@@ -95,15 +101,19 @@ static std::string findInputFile(StringRef File, ArrayRef<StringRef> Paths) {
   for (StringRef Dir : Paths) {
     SmallString<128> Path = Dir;
     sys::path::append(Path, File);
-    if (sys::fs::exists(Path))
+    if (sys::fs::exists(Path)) {
       return std::string(Path);
+
+}
   }
   return "";
 }
 
 static void fatalOpenError(llvm::Error E, Twine File) {
-  if (!E)
+  if (!E) {
     return;
+
+}
   handleAllErrors(std::move(E), [&](const llvm::ErrorInfoBase &EIB) {
     llvm::errs() << "error opening '" << File << "': " << EIB.message() << '\n';
     exit(1);
@@ -126,8 +136,10 @@ static void doList(opt::InputArgList& Args) {
   }
 
   // lib.exe doesn't print an error if no .lib files are passed.
-  if (!B)
+  if (!B) {
     return;
+
+}
 
   Error Err = Error::success();
   object::Archive Archive(B.get()->getMemBufferRef(), Err);
@@ -282,9 +294,11 @@ int llvm::libDriverMain(ArrayRef<const char *> ArgsArr) {
                  << (MissingCount == 1 ? " argument.\n" : " arguments.\n");
     return 1;
   }
-  for (auto *Arg : Args.filtered(OPT_UNKNOWN))
+  for (auto *Arg : Args.filtered(OPT_UNKNOWN)) {
     llvm::errs() << "ignoring unknown argument: " << Arg->getAsString(Args)
                  << "\n";
+
+}
 
   // Handle /help
   if (Args.hasArg(OPT_help)) {
@@ -293,8 +307,10 @@ int llvm::libDriverMain(ArrayRef<const char *> ArgsArr) {
   }
 
   // If no input files, silently do nothing to match lib.exe.
-  if (!Args.hasArgNoClaim(OPT_INPUT))
+  if (!Args.hasArgNoClaim(OPT_INPUT)) {
     return 0;
+
+}
 
   if (Args.hasArg(OPT_lst)) {
     doList(Args);
@@ -335,8 +351,10 @@ int llvm::libDriverMain(ArrayRef<const char *> ArgsArr) {
     // something like that to a path to make it look different, and they are
     // handled as if they were different files. This behavior is compatible with
     // Microsoft lib.exe.
-    if (!Seen.insert(Path).second)
+    if (!Seen.insert(Path).second) {
       continue;
+
+}
 
     // Open a file.
     ErrorOr<std::unique_ptr<MemoryBuffer>> MOrErr =
@@ -360,8 +378,10 @@ int llvm::libDriverMain(ArrayRef<const char *> ArgsArr) {
     if (sys::path::is_relative(Member.MemberName)) {
       Expected<std::string> PathOrErr =
           computeArchiveRelativePath(OutputPath, Member.MemberName);
-      if (PathOrErr)
+      if (PathOrErr) {
         Member.MemberName = Saver.save(*PathOrErr);
+
+}
     }
   }
 

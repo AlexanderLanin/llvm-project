@@ -58,17 +58,23 @@ bool PostDominatorTree::dominates(const Instruction *I1,
   const BasicBlock *BB1 = I1->getParent();
   const BasicBlock *BB2 = I2->getParent();
 
-  if (BB1 != BB2)
+  if (BB1 != BB2) {
     return Base::dominates(BB1, BB2);
 
+}
+
   // PHINodes in a block are unordered.
-  if (isa<PHINode>(I1) && isa<PHINode>(I2))
+  if (isa<PHINode>(I1) && isa<PHINode>(I2)) {
     return false;
+
+}
 
   // Loop through the basic block until we find I1 or I2.
   BasicBlock::const_iterator I = BB1->begin();
-  for (; &*I != I1 && &*I != I2; ++I)
+  for (; &*I != I1 && &*I != I2; ++I) {
     /*empty*/;
+
+}
 
   return &*I == I2;
 }
@@ -79,10 +85,12 @@ bool PostDominatorTreeWrapperPass::runOnFunction(Function &F) {
 }
 
 void PostDominatorTreeWrapperPass::verifyAnalysis() const {
-  if (VerifyDomInfo)
+  if (VerifyDomInfo) {
     assert(DT.verify(PostDominatorTree::VerificationLevel::Full));
-  else if (ExpensiveChecksEnabled)
+  } else if (ExpensiveChecksEnabled) {
     assert(DT.verify(PostDominatorTree::VerificationLevel::Basic));
+
+}
 }
 
 void PostDominatorTreeWrapperPass::print(raw_ostream &OS, const Module *) const {

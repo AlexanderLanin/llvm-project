@@ -92,14 +92,20 @@ bool violatesColumnLimit(llvm::StringRef Code, unsigned ColumnLimit,
   StartPos = (StartPos == llvm::StringRef::npos) ? 0 : StartPos + 1;
 
   auto EndPos = Code.find("\n", End);
-  if (EndPos == llvm::StringRef::npos)
+  if (EndPos == llvm::StringRef::npos) {
     EndPos = Code.size();
+
+}
 
   llvm::SmallVector<llvm::StringRef, 8> Lines;
   Code.substr(StartPos, EndPos - StartPos).split(Lines, '\n');
-  for (llvm::StringRef Line : Lines)
-    if (Line.size() > ColumnLimit)
+  for (llvm::StringRef Line : Lines) {
+    if (Line.size() > ColumnLimit) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -108,8 +114,10 @@ getRangesForFormating(llvm::StringRef Code, unsigned ColumnLimit,
                       ApplyChangesSpec::FormatOption Format,
                       const clang::tooling::Replacements &Replaces) {
   // kNone suppresses formatting entirely.
-  if (Format == ApplyChangesSpec::kNone)
+  if (Format == ApplyChangesSpec::kNone) {
     return {};
+
+}
   std::vector<clang::tooling::Range> Ranges;
   // This works assuming that replacements are ordered by offset.
   // FIXME: use `getAffectedRanges()` to calculate when it does not include '\n'
@@ -121,15 +129,19 @@ getRangesForFormating(llvm::StringRef Code, unsigned ColumnLimit,
     if (!R.getReplacementText().empty() &&
         R.getReplacementText().back() == '\n' && R.getLength() == 0 &&
         R.getOffset() > 0 && R.getOffset() <= Code.size() &&
-        Code[R.getOffset() - 1] == '\n')
+        Code[R.getOffset() - 1] == '\n') {
       // If we are inserting at the start of a line and the replacement ends in
       // a newline, we don't need to format the subsequent line.
       --End;
+
+}
     Offset += R.getReplacementText().size() - R.getLength();
 
     if (Format == ApplyChangesSpec::kAll ||
-        violatesColumnLimit(Code, ColumnLimit, Start, End))
+        violatesColumnLimit(Code, ColumnLimit, Start, End)) {
       Ranges.emplace_back(Start, End - Start);
+
+}
   }
   return Ranges;
 }
@@ -158,16 +170,20 @@ createReplacementsForHeaders(llvm::StringRef FilePath, llvm::StringRef Code,
       // insertion.
       llvm::Error Err = HeaderReplacements.add(
           tooling::Replacement(FilePath, UINT_MAX, 0, ReplacementText));
-      if (Err)
+      if (Err) {
         return std::move(Err);
+
+}
     }
     for (const std::string &Header : Change.getRemovedHeaders()) {
       // Offset UINT_MAX and length 1 indicate that the replacement is a header
       // deletion.
       llvm::Error Err =
           HeaderReplacements.add(Replacement(FilePath, UINT_MAX, 1, Header));
-      if (Err)
+      if (Err) {
         return std::move(Err);
+
+}
     }
   }
 
@@ -183,11 +199,17 @@ llvm::Expected<Replacements>
 combineReplacementsInChanges(llvm::StringRef FilePath,
                              llvm::ArrayRef<AtomicChange> Changes) {
   Replacements Replaces;
-  for (const auto &Change : Changes)
-    for (const auto &R : Change.getReplacements())
+  for (const auto &Change : Changes) {
+    for (const auto &R : Change.getReplacements()) {
       if (auto Err = Replaces.add(Replacement(
-              FilePath, R.getOffset(), R.getLength(), R.getReplacementText())))
+              FilePath, R.getOffset(), R.getLength(), R.getReplacementText()))) {
         return std::move(Err);
+
+}
+
+}
+
+}
   return Replaces;
 }
 
@@ -215,10 +237,14 @@ AtomicChange::AtomicChange(std::string Key, std::string FilePath,
 }
 
 bool AtomicChange::operator==(const AtomicChange &Other) const {
-  if (Key != Other.Key || FilePath != Other.FilePath || Error != Other.Error)
+  if (Key != Other.Key || FilePath != Other.FilePath || Error != Other.Error) {
     return false;
-  if (!(Replaces == Other.Replaces))
+
+}
+  if (!(Replaces == Other.Replaces)) {
     return false;
+
+}
   // FXIME: Compare header insertions/removals.
   return true;
 }
@@ -241,9 +267,11 @@ AtomicChange AtomicChange::convertFromYAML(llvm::StringRef YAMLContent) {
                  NE.RemovedHeaders, tooling::Replacements());
   for (const auto &R : NE.Replaces) {
     llvm::Error Err = E.Replaces.add(R);
-    if (Err)
+    if (Err) {
       llvm_unreachable(
           "Failed to add replacement when Converting YAML to AtomicChange.");
+
+}
     llvm::consumeError(std::move(Err));
   }
   return E;
@@ -262,19 +290,25 @@ llvm::Error AtomicChange::replace(const SourceManager &SM, SourceLocation Loc,
 
 llvm::Error AtomicChange::insert(const SourceManager &SM, SourceLocation Loc,
                                  llvm::StringRef Text, bool InsertAfter) {
-  if (Text.empty())
+  if (Text.empty()) {
     return llvm::Error::success();
+
+}
   Replacement R(SM, Loc, 0, Text);
   llvm::Error Err = Replaces.add(R);
   if (Err) {
     return llvm::handleErrors(
         std::move(Err), [&](const ReplacementError &RE) -> llvm::Error {
-          if (RE.get() != replacement_error::insert_conflict)
+          if (RE.get() != replacement_error::insert_conflict) {
             return llvm::make_error<ReplacementError>(RE);
+
+}
           unsigned NewOffset = Replaces.getShiftedCodePosition(R.getOffset());
-          if (!InsertAfter)
+          if (!InsertAfter) {
             NewOffset -=
                 RE.getExistingReplacement()->getReplacementText().size();
+
+}
           Replacement NewR(R.getFilePath(), NewOffset, 0, Text);
           Replaces = Replaces.merge(Replacements(NewR));
           return llvm::Error::success();
@@ -297,41 +331,51 @@ applyAtomicChanges(llvm::StringRef FilePath, llvm::StringRef Code,
                    const ApplyChangesSpec &Spec) {
   llvm::Expected<Replacements> HeaderReplacements =
       createReplacementsForHeaders(FilePath, Code, Changes, Spec.Style);
-  if (!HeaderReplacements)
+  if (!HeaderReplacements) {
     return make_string_error(
         "Failed to create replacements for header changes: " +
         llvm::toString(HeaderReplacements.takeError()));
 
+}
+
   llvm::Expected<Replacements> Replaces =
       combineReplacementsInChanges(FilePath, Changes);
-  if (!Replaces)
+  if (!Replaces) {
     return make_string_error("Failed to combine replacements in all changes: " +
                              llvm::toString(Replaces.takeError()));
+
+}
 
   Replacements AllReplaces = std::move(*Replaces);
   for (const auto &R : *HeaderReplacements) {
     llvm::Error Err = AllReplaces.add(R);
-    if (Err)
+    if (Err) {
       return make_string_error(
           "Failed to combine existing replacements with header replacements: " +
           llvm::toString(std::move(Err)));
+
+}
   }
 
   if (Spec.Cleanup) {
     llvm::Expected<Replacements> CleanReplaces =
         format::cleanupAroundReplacements(Code, AllReplaces, Spec.Style);
-    if (!CleanReplaces)
+    if (!CleanReplaces) {
       return make_string_error("Failed to cleanup around replacements: " +
                                llvm::toString(CleanReplaces.takeError()));
+
+}
     AllReplaces = std::move(*CleanReplaces);
   }
 
   // Apply all replacements.
   llvm::Expected<std::string> ChangedCode =
       applyAllReplacements(Code, AllReplaces);
-  if (!ChangedCode)
+  if (!ChangedCode) {
     return make_string_error("Failed to apply all replacements: " +
                              llvm::toString(ChangedCode.takeError()));
+
+}
 
   // Sort inserted headers. This is done even if other formatting is turned off
   // as incorrectly sorted headers are always just wrong, it's not a matter of
@@ -339,10 +383,12 @@ applyAtomicChanges(llvm::StringRef FilePath, llvm::StringRef Code,
   Replacements HeaderSortingReplacements = format::sortIncludes(
       Spec.Style, *ChangedCode, AllReplaces.getAffectedRanges(), FilePath);
   ChangedCode = applyAllReplacements(*ChangedCode, HeaderSortingReplacements);
-  if (!ChangedCode)
+  if (!ChangedCode) {
     return make_string_error(
         "Failed to apply replacements for sorting includes: " +
         llvm::toString(ChangedCode.takeError()));
+
+}
 
   AllReplaces = AllReplaces.merge(HeaderSortingReplacements);
 
@@ -352,10 +398,12 @@ applyAtomicChanges(llvm::StringRef FilePath, llvm::StringRef Code,
     Replacements FormatReplacements =
         format::reformat(Spec.Style, *ChangedCode, FormatRanges, FilePath);
     ChangedCode = applyAllReplacements(*ChangedCode, FormatReplacements);
-    if (!ChangedCode)
+    if (!ChangedCode) {
       return make_string_error(
           "Failed to apply replacements for formatting changed code: " +
           llvm::toString(ChangedCode.takeError()));
+
+}
   }
   return ChangedCode;
 }

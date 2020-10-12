@@ -31,8 +31,10 @@ getNewMacroName(llvm::StringRef MacroName) {
   };
 
   for (auto &Mapping : ReplacementMap) {
-    if (MacroName == Mapping.first)
+    if (MacroName == Mapping.first) {
       return Mapping.second;
+
+}
   }
 
   return llvm::None;
@@ -53,8 +55,10 @@ public:
 
   void MacroUndefined(const Token &MacroNameTok, const MacroDefinition &MD,
                       const MacroDirective *Undef) override {
-    if (Undef != nullptr)
+    if (Undef != nullptr) {
       macroUsed(MacroNameTok, MD, Undef->getLocation(), CheckAction::Warn);
+
+}
   }
 
   void MacroDefined(const Token &MacroNameTok,
@@ -90,25 +94,33 @@ private:
 
   void macroUsed(const clang::Token &MacroNameTok, const MacroDefinition &MD,
                  SourceLocation Loc, CheckAction Action) {
-    if (!ReplacementFound)
+    if (!ReplacementFound) {
       return;
+
+}
 
     std::string Name = PP->getSpelling(MacroNameTok);
 
     llvm::Optional<llvm::StringRef> Replacement = getNewMacroName(Name);
-    if (!Replacement)
+    if (!Replacement) {
       return;
+
+}
 
     llvm::StringRef FileName = PP->getSourceManager().getFilename(
         MD.getMacroInfo()->getDefinitionLoc());
-    if (!FileName.endswith("gtest/gtest-typed-test.h"))
+    if (!FileName.endswith("gtest/gtest-typed-test.h")) {
       return;
+
+}
 
     DiagnosticBuilder Diag = Check->diag(Loc, RenameCaseToSuiteMessage);
 
-    if (Action == CheckAction::Rename)
+    if (Action == CheckAction::Rename) {
       Diag << FixItHint::CreateReplacement(
           CharSourceRange::getTokenRange(Loc, Loc), *Replacement);
+
+}
   }
 
   bool ReplacementFound;
@@ -211,8 +223,10 @@ static llvm::StringRef getNewMethodName(llvm::StringRef CurrentName) {
       {"GetTestCase", "GetTestSuite"}};
 
   for (auto &Mapping : ReplacementMap) {
-    if (CurrentName == Mapping.first)
+    if (CurrentName == Mapping.first) {
       return Mapping.second;
+
+}
   }
 
   llvm_unreachable("Unexpected function name");
@@ -335,10 +349,12 @@ void UpgradeGoogletestCaseCheck::check(const MatchFinder::MatchResult &Result) {
 
   ReplacementRange = Lexer::makeFileCharRange(
       ReplacementRange, *Result.SourceManager, Result.Context->getLangOpts());
-  if (ReplacementRange.isInvalid())
+  if (ReplacementRange.isInvalid()) {
     // An invalid source range likely means we are inside a macro body. A manual
     // fix is likely needed so we do not create a fix-it hint.
     return;
+
+}
 
   Diag << FixItHint::CreateReplacement(ReplacementRange, ReplacementText);
 }

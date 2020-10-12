@@ -110,8 +110,10 @@ UDTLayoutBase::UDTLayoutBase(const UDTLayoutBase *Parent, const PDBSymbol &Sym,
   UsedBytes.reset(0, Size);
 
   initializeChildren(Sym);
-  if (LayoutSize < Size)
+  if (LayoutSize < Size) {
     UsedBytes.resize(LayoutSize);
+
+}
 }
 
 uint32_t UDTLayoutBase::tailPadding() const {
@@ -119,10 +121,12 @@ uint32_t UDTLayoutBase::tailPadding() const {
   if (!LayoutItems.empty()) {
     const LayoutItemBase *Back = LayoutItems.back();
     uint32_t ChildPadding = Back->LayoutItemBase::tailPadding();
-    if (Abs < ChildPadding)
+    if (Abs < ChildPadding) {
       Abs = 0;
-    else
+    } else {
       Abs -= ChildPadding;
+
+}
   }
   return Abs;
 }
@@ -175,21 +179,25 @@ void UDTLayoutBase::initializeChildren(const PDBSymbol &Sym) {
   auto Children = Sym.findAllChildren();
   while (auto Child = Children->getNext()) {
     if (auto Base = unique_dyn_cast<PDBSymbolTypeBaseClass>(Child)) {
-      if (Base->isVirtualBaseClass())
+      if (Base->isVirtualBaseClass()) {
         VirtualBaseSyms.push_back(std::move(Base));
-      else
+      } else {
         Bases.push_back(std::move(Base));
+
+}
     }
     else if (auto Data = unique_dyn_cast<PDBSymbolData>(Child)) {
-      if (Data->getDataKind() == PDB_DataKind::Member)
+      if (Data->getDataKind() == PDB_DataKind::Member) {
         Members.push_back(std::move(Data));
-      else
+      } else {
         Other.push_back(std::move(Data));
-    } else if (auto VT = unique_dyn_cast<PDBSymbolTypeVTable>(Child))
+
+}
+    } else if (auto VT = unique_dyn_cast<PDBSymbolTypeVTable>(Child)) {
       VTables.push_back(std::move(VT));
-    else if (auto Func = unique_dyn_cast<PDBSymbolFunc>(Child))
+    } else if (auto Func = unique_dyn_cast<PDBSymbolFunc>(Child)) {
       Funcs.push_back(std::move(Func));
-    else {
+    } else {
       Other.push_back(std::move(Child));
     }
   }
@@ -260,16 +268,22 @@ void UDTLayoutBase::initializeChildren(const PDBSymbol &Sym) {
   }
   VirtualBases = makeArrayRef(AllBases).drop_front(NonVirtualBases.size());
 
-  if (Parent != nullptr)
+  if (Parent != nullptr) {
     LayoutSize = UsedBytes.find_last() + 1;
+
+}
 }
 
 bool UDTLayoutBase::hasVBPtrAtOffset(uint32_t Off) const {
-  if (VBPtr && VBPtr->getOffsetInParent() == Off)
+  if (VBPtr && VBPtr->getOffsetInParent() == Off) {
     return true;
+
+}
   for (BaseClassLayout *BL : AllBases) {
-    if (BL->hasVBPtrAtOffset(Off - BL->getOffsetInParent()))
+    if (BL->hasVBPtrAtOffset(Off - BL->getOffsetInParent())) {
       return true;
+
+}
   }
   return false;
 }

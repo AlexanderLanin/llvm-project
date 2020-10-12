@@ -42,9 +42,11 @@ struct FunctionPassPrinter : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (!QuietPass)
+    if (!QuietPass) {
       Out << "Printing analysis '" << PassToPrint->getPassName()
           << "' for function '" << F.getName() << "':\n";
+
+}
 
     // Get and print pass...
     getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out, F.getParent());
@@ -75,15 +77,19 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
   }
 
   bool runOnSCC(CallGraphSCC &SCC) override {
-    if (!QuietPass)
+    if (!QuietPass) {
       Out << "Printing analysis '" << PassToPrint->getPassName() << "':\n";
+
+}
 
     // Get and print pass...
     for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
       Function *F = (*I)->getFunction();
-      if (F)
+      if (F) {
         getAnalysisID<Pass>(PassToPrint->getTypeInfo())
             .print(Out, F->getParent());
+
+}
     }
     return false;
   }
@@ -112,8 +118,10 @@ struct ModulePassPrinter : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
-    if (!QuietPass)
+    if (!QuietPass) {
       Out << "Printing analysis '" << PassToPrint->getPassName() << "':\n";
+
+}
 
     // Get and print pass...
     getAnalysisID<Pass>(PassToPrint->getTypeInfo()).print(Out, &M);
@@ -144,8 +152,10 @@ struct LoopPassPrinter : public LoopPass {
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (!QuietPass)
+    if (!QuietPass) {
       Out << "Printing analysis '" << PassToPrint->getPassName() << "':\n";
+
+}
 
     // Get and print pass...
     getAnalysisID<Pass>(PassToPrint->getTypeInfo())

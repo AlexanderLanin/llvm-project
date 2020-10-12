@@ -34,8 +34,10 @@ WinCFGuard::~WinCFGuard() {}
 void WinCFGuard::endFunction(const MachineFunction *MF) {
 
   // Skip functions without any longjmp targets.
-  if (MF->getLongjmpTargets().empty())
+  if (MF->getLongjmpTargets().empty()) {
     return;
+
+}
 
   // Copy the function's longjmp targets to a module-level list.
   LongjmpTargets.insert(LongjmpTargets.end(), MF->getLongjmpTargets().begin(),
@@ -52,11 +54,15 @@ static bool isPossibleIndirectCallTarget(const Function *F) {
     const Value *FnOrCast = Users.pop_back_val();
     for (const Use &U : FnOrCast->uses()) {
       const User *FnUser = U.getUser();
-      if (isa<BlockAddress>(FnUser))
+      if (isa<BlockAddress>(FnUser)) {
         continue;
+
+}
       if (const auto *Call = dyn_cast<CallBase>(FnUser)) {
-        if (!Call->isCallee(&U))
+        if (!Call->isCallee(&U)) {
           return true;
+
+}
       } else if (isa<Instruction>(FnUser)) {
         // Consider any other instruction to be an escape. This has some weird
         // consequences like no-op intrinsics being an escape or a store *to* a
@@ -68,10 +74,12 @@ static bool isPossibleIndirectCallTarget(const Function *F) {
         // direct calls with mismatched prototypes don't end up in the CFG
         // table. Consider other constants, such as vtable initializers, to
         // escape the function.
-        if (C->stripPointerCasts() == F)
+        if (C->stripPointerCasts() == F) {
           Users.push_back(FnUser);
-        else
+        } else {
           return true;
+
+}
       }
     }
   }
@@ -81,15 +89,23 @@ static bool isPossibleIndirectCallTarget(const Function *F) {
 void WinCFGuard::endModule() {
   const Module *M = Asm->MMI->getModule();
   std::vector<const Function *> Functions;
-  for (const Function &F : *M)
-    if (isPossibleIndirectCallTarget(&F))
+  for (const Function &F : *M) {
+    if (isPossibleIndirectCallTarget(&F)) {
       Functions.push_back(&F);
-  if (Functions.empty() && LongjmpTargets.empty())
+
+}
+
+}
+  if (Functions.empty() && LongjmpTargets.empty()) {
     return;
+
+}
   auto &OS = *Asm->OutStreamer;
   OS.SwitchSection(Asm->OutContext.getObjectFileInfo()->getGFIDsSection());
-  for (const Function *F : Functions)
+  for (const Function *F : Functions) {
     OS.EmitCOFFSymbolIndex(Asm->getSymbol(F));
+
+}
 
   // Emit the symbol index of each longjmp target.
   OS.SwitchSection(Asm->OutContext.getObjectFileInfo()->getGLJMPSection());

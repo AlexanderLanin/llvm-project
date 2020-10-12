@@ -196,8 +196,10 @@ LegalizeActionStep LegalizeRuleSet::apply(const LegalityQuery &Query) const {
              "legality mutation invalid for match");
       assert(hasNoSimpleLoops(Rule, Query, Mutation) && "Simple loop detected");
       return {Rule.getAction(), Mutation.first, Mutation.second};
-    } else
+    } else {
       LLVM_DEBUG(dbgs() << ".. no match\n");
+
+}
   }
   LLVM_DEBUG(dbgs() << ".. unsupported\n");
   return {LegalizeAction::Unsupported, 0, LLT{}};
@@ -303,14 +305,16 @@ void LegalizerInfo::computeTables() {
         const LegalizeAction Action = LLT2Action.second;
 
         auto SizeAction = std::make_pair(Type.getSizeInBits(), Action);
-        if (Type.isPointer())
+        if (Type.isPointer()) {
           AddressSpace2SpecifiedActions[Type.getAddressSpace()].push_back(
               SizeAction);
-        else if (Type.isVector())
+        } else if (Type.isVector()) {
           ElemSize2SpecifiedActions[Type.getElementType().getSizeInBits()]
               .push_back(SizeAction);
-        else
+        } else {
           ScalarSpecifiedActions.push_back(SizeAction);
+
+}
       }
 
       // 1. Handle scalar types
@@ -319,8 +323,10 @@ void LegalizerInfo::computeTables() {
         // was given.
         SizeChangeStrategy S = &unsupportedForDifferentSizes;
         if (TypeIdx < ScalarSizeChangeStrategies[OpcodeIdx].size() &&
-            ScalarSizeChangeStrategies[OpcodeIdx][TypeIdx] != nullptr)
+            ScalarSizeChangeStrategies[OpcodeIdx][TypeIdx] != nullptr) {
           S = ScalarSizeChangeStrategies[OpcodeIdx][TypeIdx];
+
+}
         llvm::sort(ScalarSpecifiedActions);
         checkPartialSizeAndActionsVector(ScalarSpecifiedActions);
         setScalarAction(Opcode, TypeIdx, S(ScalarSpecifiedActions));
@@ -362,9 +368,11 @@ void LegalizerInfo::computeTables() {
       SizeChangeStrategy VectorElementSizeChangeStrategy =
           &unsupportedForDifferentSizes;
       if (TypeIdx < VectorElementSizeChangeStrategies[OpcodeIdx].size() &&
-          VectorElementSizeChangeStrategies[OpcodeIdx][TypeIdx] != nullptr)
+          VectorElementSizeChangeStrategies[OpcodeIdx][TypeIdx] != nullptr) {
         VectorElementSizeChangeStrategy =
             VectorElementSizeChangeStrategies[OpcodeIdx][TypeIdx];
+
+}
       setScalarInVectorAction(
           Opcode, TypeIdx, VectorElementSizeChangeStrategy(ElementSizesSeen));
     }
@@ -382,8 +390,10 @@ LegalizerInfo::getAspectAction(const InstrAspect &Aspect) const {
   assert(TablesInitialized && "backend forgot to call computeTables");
   // These *have* to be implemented for now, they're the fundamental basis of
   // how everything else is transformed.
-  if (Aspect.Type.isScalar() || Aspect.Type.isPointer())
+  if (Aspect.Type.isScalar() || Aspect.Type.isPointer()) {
     return findScalarLegalAction(Aspect);
+
+}
   assert(Aspect.Type.isVector());
   return findVectorLegalAction(Aspect);
 }
@@ -396,8 +406,10 @@ static LLT getTypeFromTypeIdx(const MachineInstr &MI,
   // G_UNMERGE_VALUES has variable number of operands, but there is only
   // one source type and one destination type as all destinations must be the
   // same type. So, get the last operand if TypeIdx == 1.
-  if (MI.getOpcode() == TargetOpcode::G_UNMERGE_VALUES && TypeIdx == 1)
+  if (MI.getOpcode() == TargetOpcode::G_UNMERGE_VALUES && TypeIdx == 1) {
     return MRI.getType(MI.getOperand(MI.getNumOperands() - 1).getReg());
+
+}
   return MRI.getType(MI.getOperand(OpIdx).getReg());
 }
 
@@ -438,8 +450,10 @@ LegalizeRuleSet &LegalizerInfo::getActionDefinitionsBuilder(
   assert(!llvm::empty(Opcodes) && Opcodes.begin() + 1 != Opcodes.end() &&
          "Initializer list must have at least two opcodes");
 
-  for (auto I = Opcodes.begin() + 1, E = Opcodes.end(); I != E; ++I)
+  for (auto I = Opcodes.begin() + 1, E = Opcodes.end(); I != E; ++I) {
     aliasActionDefinitions(Representative, *I);
+
+}
 
   auto &Return = getActionDefinitionsBuilder(Representative);
   Return.setIsAliasedByAnother();
@@ -467,8 +481,10 @@ LegalizerInfo::getAction(const LegalityQuery &Query) const {
       LLVM_DEBUG(dbgs() << ".. (legacy) Type " << i << " Action="
                         << Action.first << ", " << Action.second << "\n");
       return {Action.first, i, Action.second};
-    } else
+    } else {
       LLVM_DEBUG(dbgs() << ".. (legacy) Type " << i << " Legal\n");
+
+}
   }
   LLVM_DEBUG(dbgs() << ".. (legacy) Legal\n");
   return {Legal, 0, LLT{}};
@@ -482,14 +498,18 @@ LegalizerInfo::getAction(const MachineInstr &MI,
   const MCOperandInfo *OpInfo = MI.getDesc().OpInfo;
   // FIXME: probably we'll need to cache the results here somehow?
   for (unsigned i = 0; i < MI.getDesc().getNumOperands(); ++i) {
-    if (!OpInfo[i].isGenericType())
+    if (!OpInfo[i].isGenericType()) {
       continue;
+
+}
 
     // We must only record actions once for each TypeIdx; otherwise we'd
     // try to legalize operands multiple times down the line.
     unsigned TypeIdx = OpInfo[i].getGenericTypeIndex();
-    if (SeenTypes[TypeIdx])
+    if (SeenTypes[TypeIdx]) {
       continue;
+
+}
 
     SeenTypes.set(TypeIdx);
 
@@ -498,10 +518,12 @@ LegalizerInfo::getAction(const MachineInstr &MI,
   }
 
   SmallVector<LegalityQuery::MemDesc, 2> MemDescrs;
-  for (const auto &MMO : MI.memoperands())
+  for (const auto &MMO : MI.memoperands()) {
     MemDescrs.push_back({8 * MMO->getSize() /* in bits */,
                          8 * MMO->getAlignment(),
                          MMO->getOrdering()});
+
+}
 
   return getAction({MI.getOpcode(), Types, MemDescrs});
 }
@@ -531,8 +553,10 @@ LegalizerInfo::increaseToLargerTypesAndDecreaseToLargest(
     LegalizeAction DecreaseAction) {
   SizeAndActionsVec result;
   unsigned LargestSizeSoFar = 0;
-  if (v.size() >= 1 && v[0].first != 1)
+  if (v.size() >= 1 && v[0].first != 1) {
     result.push_back({1, IncreaseAction});
+
+}
   for (size_t i = 0; i < v.size(); ++i) {
     result.push_back(v[i]);
     LargestSizeSoFar = v[i].first;
@@ -550,8 +574,10 @@ LegalizerInfo::decreaseToSmallerTypesAndIncreaseToSmallest(
     const SizeAndActionsVec &v, LegalizeAction DecreaseAction,
     LegalizeAction IncreaseAction) {
   SizeAndActionsVec result;
-  if (v.size() == 0 || v[0].first != 1)
+  if (v.size() == 0 || v[0].first != 1) {
     result.push_back({1, IncreaseAction});
+
+}
   for (size_t i = 0; i < v.size(); ++i) {
     result.push_back(v[i]);
     if (i + 1 == v.size() || v[i + 1].first != v[i].first + 1) {
@@ -582,8 +608,10 @@ LegalizerInfo::findAction(const SizeAndActionsVec &Vec, const uint32_t Size) {
   case FewerElements:
     // FIXME: is this special case still needed and correct?
     // Special case for scalarization:
-    if (Vec == SizeAndActionsVec({{1, FewerElements}}))
+    if (Vec == SizeAndActionsVec({{1, FewerElements}})) {
       return {1, FewerElements};
+
+}
     LLVM_FALLTHROUGH;
   case NarrowScalar: {
     // The following needs to be a loop, as for now, we do allow needing to
@@ -593,19 +621,27 @@ LegalizerInfo::findAction(const SizeAndActionsVec &Vec, const uint32_t Size) {
     // If we want to get rid of the below loop, we should have stronger asserts
     // when building the SizeAndActionsVecs, probably not allowing
     // "Unsupported" unless at the ends of the vector.
-    for (int i = VecIdx - 1; i >= 0; --i)
+    for (int i = VecIdx - 1; i >= 0; --i) {
       if (!needsLegalizingToDifferentSize(Vec[i].second) &&
-          Vec[i].second != Unsupported)
+          Vec[i].second != Unsupported) {
         return {Vec[i].first, Action};
+
+}
+
+}
     llvm_unreachable("");
   }
   case WidenScalar:
   case MoreElements: {
     // See above, the following needs to be a loop, at least for now.
-    for (std::size_t i = VecIdx + 1; i < Vec.size(); ++i)
+    for (std::size_t i = VecIdx + 1; i < Vec.size(); ++i) {
       if (!needsLegalizingToDifferentSize(Vec[i].second) &&
-          Vec[i].second != Unsupported)
+          Vec[i].second != Unsupported) {
         return {Vec[i].first, Action};
+
+}
+
+}
     llvm_unreachable("");
   }
   case Unsupported:
@@ -620,8 +656,10 @@ LegalizerInfo::findAction(const SizeAndActionsVec &Vec, const uint32_t Size) {
 std::pair<LegalizeAction, LLT>
 LegalizerInfo::findScalarLegalAction(const InstrAspect &Aspect) const {
   assert(Aspect.Type.isScalar() || Aspect.Type.isPointer());
-  if (Aspect.Opcode < FirstOp || Aspect.Opcode > LastOp)
+  if (Aspect.Opcode < FirstOp || Aspect.Opcode > LastOp) {
     return {NotFound, LLT()};
+
+}
   const unsigned OpcodeIdx = getOpcodeIdxForOpcode(Aspect.Opcode);
   if (Aspect.Type.isPointer() &&
       AddrSpace2PointerActions[OpcodeIdx].find(Aspect.Type.getAddressSpace()) ==
@@ -634,8 +672,10 @@ LegalizerInfo::findScalarLegalAction(const InstrAspect &Aspect) const {
                 .find(Aspect.Type.getAddressSpace())
                 ->second
           : ScalarActions[OpcodeIdx];
-  if (Aspect.Idx >= Actions.size())
+  if (Aspect.Idx >= Actions.size()) {
     return {NotFound, LLT()};
+
+}
   const SizeAndActionsVec &Vec = Actions[Aspect.Idx];
   // FIXME: speed up this search, e.g. by using a results cache for repeated
   // queries?
@@ -651,12 +691,16 @@ LegalizerInfo::findVectorLegalAction(const InstrAspect &Aspect) const {
   assert(Aspect.Type.isVector());
   // First legalize the vector element size, then legalize the number of
   // lanes in the vector.
-  if (Aspect.Opcode < FirstOp || Aspect.Opcode > LastOp)
+  if (Aspect.Opcode < FirstOp || Aspect.Opcode > LastOp) {
     return {NotFound, Aspect.Type};
+
+}
   const unsigned OpcodeIdx = getOpcodeIdxForOpcode(Aspect.Opcode);
   const unsigned TypeIdx = Aspect.Idx;
-  if (TypeIdx >= ScalarInVectorActions[OpcodeIdx].size())
+  if (TypeIdx >= ScalarInVectorActions[OpcodeIdx].size()) {
     return {NotFound, Aspect.Type};
+
+}
   const SizeAndActionsVec &ElemSizeVec =
       ScalarInVectorActions[OpcodeIdx][TypeIdx];
 
@@ -665,8 +709,10 @@ LegalizerInfo::findVectorLegalAction(const InstrAspect &Aspect) const {
       findAction(ElemSizeVec, Aspect.Type.getScalarSizeInBits());
   IntermediateType =
       LLT::vector(Aspect.Type.getNumElements(), ElementSizeAndAction.first);
-  if (ElementSizeAndAction.second != Legal)
+  if (ElementSizeAndAction.second != Legal) {
     return {ElementSizeAndAction.second, IntermediateType};
+
+}
 
   auto i = NumElements2Actions[OpcodeIdx].find(
       IntermediateType.getScalarSizeInBits());

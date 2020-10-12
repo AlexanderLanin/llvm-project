@@ -146,13 +146,19 @@ void ScalarTraits<GUID>::output(const GUID &G, void *, llvm::raw_ostream &OS) {
 }
 
 StringRef ScalarTraits<GUID>::input(StringRef Scalar, void *Ctx, GUID &S) {
-  if (Scalar.size() != 38)
+  if (Scalar.size() != 38) {
     return "GUID strings are 38 characters long";
-  if (Scalar[0] != '{' || Scalar[37] != '}')
+
+}
+  if (Scalar[0] != '{' || Scalar[37] != '}') {
     return "GUID is not enclosed in {}";
+
+}
   if (Scalar[9] != '-' || Scalar[14] != '-' || Scalar[19] != '-' ||
-      Scalar[24] != '-')
+      Scalar[24] != '-') {
     return "GUID sections are not properly delineated with dashes";
+
+}
 
   uint8_t *OutBuffer = S.Guid;
   for (auto Iter = Scalar.begin(); Iter != Scalar.end();) {
@@ -670,8 +676,10 @@ static inline Expected<LeafRecord> fromCodeViewRecordImpl(CVType Type) {
   LeafRecord Result;
 
   auto Impl = std::make_shared<LeafRecordImpl<T>>(Type.kind());
-  if (auto EC = Impl->fromCodeViewRecord(Type))
+  if (auto EC = Impl->fromCodeViewRecord(Type)) {
     return std::move(EC);
+
+}
   Result.Leaf = Impl;
   return Result;
 }
@@ -714,19 +722,25 @@ template <> struct MappingTraits<MemberRecordBase> {
 template <typename ConcreteType>
 static void mapLeafRecordImpl(IO &IO, const char *Class, TypeLeafKind Kind,
                               LeafRecord &Obj) {
-  if (!IO.outputting())
+  if (!IO.outputting()) {
     Obj.Leaf = std::make_shared<LeafRecordImpl<ConcreteType>>(Kind);
 
-  if (Kind == LF_FIELDLIST)
+}
+
+  if (Kind == LF_FIELDLIST) {
     Obj.Leaf->map(IO);
-  else
+  } else {
     IO.mapRequired(Class, *Obj.Leaf);
+
+}
 }
 
 void MappingTraits<LeafRecord>::mapping(IO &IO, LeafRecord &Obj) {
   TypeLeafKind Kind;
-  if (IO.outputting())
+  if (IO.outputting()) {
     Kind = Obj.Leaf->Kind;
+
+}
   IO.mapRequired("Kind", Kind);
 
 #define TYPE_RECORD(EnumName, EnumVal, ClassName)                              \
@@ -746,16 +760,20 @@ void MappingTraits<LeafRecord>::mapping(IO &IO, LeafRecord &Obj) {
 template <typename ConcreteType>
 static void mapMemberRecordImpl(IO &IO, const char *Class, TypeLeafKind Kind,
                                 MemberRecord &Obj) {
-  if (!IO.outputting())
+  if (!IO.outputting()) {
     Obj.Member = std::make_shared<MemberRecordImpl<ConcreteType>>(Kind);
+
+}
 
   IO.mapRequired(Class, *Obj.Member);
 }
 
 void MappingTraits<MemberRecord>::mapping(IO &IO, MemberRecord &Obj) {
   TypeLeafKind Kind;
-  if (IO.outputting())
+  if (IO.outputting()) {
     Kind = Obj.Member->Kind;
+
+}
   IO.mapRequired("Kind", Kind);
 
 #define MEMBER_RECORD(EnumName, EnumVal, ClassName)                            \

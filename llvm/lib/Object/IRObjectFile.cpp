@@ -28,8 +28,10 @@ using namespace object;
 IRObjectFile::IRObjectFile(MemoryBufferRef Object,
                            std::vector<std::unique_ptr<Module>> Mods)
     : SymbolicFile(Binary::ID_IR, Object), Mods(std::move(Mods)) {
-  for (auto &M : this->Mods)
+  for (auto &M : this->Mods) {
     SymTab.addModule(M.get());
+
+}
 }
 
 IRObjectFile::~IRObjectFile() {}
@@ -75,10 +77,14 @@ IRObjectFile::findBitcodeInObject(const ObjectFile &Obj) {
   for (const SectionRef &Sec : Obj.sections()) {
     if (Sec.isBitcode()) {
       Expected<StringRef> Contents = Sec.getContents();
-      if (!Contents)
+      if (!Contents) {
         return Contents.takeError();
-      if (Contents->size() <= 1)
+
+}
+      if (Contents->size() <= 1) {
         return errorCodeToError(object_error::bitcode_section_not_found);
+
+}
       return MemoryBufferRef(*Contents, Obj.getFileName());
     }
   }
@@ -97,8 +103,10 @@ IRObjectFile::findBitcodeInMemBuffer(MemoryBufferRef Object) {
   case file_magic::coff_object: {
     Expected<std::unique_ptr<ObjectFile>> ObjFile =
         ObjectFile::createObjectFile(Object, Type);
-    if (!ObjFile)
+    if (!ObjFile) {
       return ObjFile.takeError();
+
+}
     return findBitcodeInObject(*ObjFile->get());
   }
   default:
@@ -109,21 +117,27 @@ IRObjectFile::findBitcodeInMemBuffer(MemoryBufferRef Object) {
 Expected<std::unique_ptr<IRObjectFile>>
 IRObjectFile::create(MemoryBufferRef Object, LLVMContext &Context) {
   Expected<MemoryBufferRef> BCOrErr = findBitcodeInMemBuffer(Object);
-  if (!BCOrErr)
+  if (!BCOrErr) {
     return BCOrErr.takeError();
+
+}
 
   Expected<std::vector<BitcodeModule>> BMsOrErr =
       getBitcodeModuleList(*BCOrErr);
-  if (!BMsOrErr)
+  if (!BMsOrErr) {
     return BMsOrErr.takeError();
+
+}
 
   std::vector<std::unique_ptr<Module>> Mods;
   for (auto BM : *BMsOrErr) {
     Expected<std::unique_ptr<Module>> MOrErr =
         BM.getLazyModule(Context, /*ShouldLazyLoadMetadata*/ true,
                          /*IsImporting*/ false);
-    if (!MOrErr)
+    if (!MOrErr) {
       return MOrErr.takeError();
+
+}
 
     Mods.push_back(std::move(*MOrErr));
   }
@@ -136,16 +150,22 @@ Expected<IRSymtabFile> object::readIRSymtab(MemoryBufferRef MBRef) {
   IRSymtabFile F;
   Expected<MemoryBufferRef> BCOrErr =
       IRObjectFile::findBitcodeInMemBuffer(MBRef);
-  if (!BCOrErr)
+  if (!BCOrErr) {
     return BCOrErr.takeError();
 
+}
+
   Expected<BitcodeFileContents> BFCOrErr = getBitcodeFileContents(*BCOrErr);
-  if (!BFCOrErr)
+  if (!BFCOrErr) {
     return BFCOrErr.takeError();
 
+}
+
   Expected<irsymtab::FileContents> FCOrErr = irsymtab::readBitcode(*BFCOrErr);
-  if (!FCOrErr)
+  if (!FCOrErr) {
     return FCOrErr.takeError();
+
+}
 
   F.Mods = std::move(BFCOrErr->Mods);
   F.Symtab = std::move(FCOrErr->Symtab);

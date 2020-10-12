@@ -51,8 +51,10 @@ bool StmtAncestorASTVisitor::TraverseStmt(Stmt *Statement) {
 /// using StmtAncestors.
 bool StmtAncestorASTVisitor::VisitDeclStmt(DeclStmt *Decls) {
   for (const auto *decl : Decls->decls()) {
-    if (const auto *V = dyn_cast<VarDecl>(decl))
+    if (const auto *V = dyn_cast<VarDecl>(decl)) {
       DeclParents.insert(std::make_pair(V, Decls));
+
+}
   }
   return true;
 }
@@ -72,8 +74,10 @@ bool ComponentFinderASTVisitor::VisitMemberExpr(MemberExpr *Member) {
 /// Forward any DeclRefExprs to a check on the referenced variable
 /// declaration.
 bool DependencyFinderASTVisitor::VisitDeclRefExpr(DeclRefExpr *DeclRef) {
-  if (auto *V = dyn_cast_or_null<VarDecl>(DeclRef->getDecl()))
+  if (auto *V = dyn_cast_or_null<VarDecl>(DeclRef->getDecl())) {
     return VisitVarDecl(V);
+
+}
   return true;
 }
 
@@ -125,8 +129,10 @@ bool DeclFinderASTVisitor::VisitNamedDecl(NamedDecl *D) {
 /// Forward any declaration references to the actual check on the
 /// referenced declaration.
 bool DeclFinderASTVisitor::VisitDeclRefExpr(DeclRefExpr *DeclRef) {
-  if (auto *D = dyn_cast<NamedDecl>(DeclRef->getDecl()))
+  if (auto *D = dyn_cast<NamedDecl>(DeclRef->getDecl())) {
     return VisitNamedDecl(D);
+
+}
   return true;
 }
 
@@ -166,18 +172,24 @@ bool DeclFinderASTVisitor::VisitTypeLoc(TypeLoc TL) {
 ///   vector<int>::iterator it(v.begin(), 0); // if this constructor existed
 /// as being initialized from `v.begin()`
 const Expr *digThroughConstructors(const Expr *E) {
-  if (!E)
+  if (!E) {
     return nullptr;
+
+}
   E = E->IgnoreImplicit();
   if (const auto *ConstructExpr = dyn_cast<CXXConstructExpr>(E)) {
     // The initial constructor must take exactly one parameter, but base class
     // and deferred constructors can take more.
     if (ConstructExpr->getNumArgs() != 1 ||
-        ConstructExpr->getConstructionKind() != CXXConstructExpr::CK_Complete)
+        ConstructExpr->getConstructionKind() != CXXConstructExpr::CK_Complete) {
       return nullptr;
+
+}
     E = ConstructExpr->getArg(0);
-    if (const auto *Temp = dyn_cast<MaterializeTemporaryExpr>(E))
+    if (const auto *Temp = dyn_cast<MaterializeTemporaryExpr>(E)) {
       E = Temp->getSubExpr();
+
+}
     return digThroughConstructors(E);
   }
   return E;
@@ -185,8 +197,10 @@ const Expr *digThroughConstructors(const Expr *E) {
 
 /// Returns true when two Exprs are equivalent.
 bool areSameExpr(ASTContext *Context, const Expr *First, const Expr *Second) {
-  if (!First || !Second)
+  if (!First || !Second) {
     return false;
+
+}
 
   llvm::FoldingSetNodeID FirstID, SecondID;
   First->Profile(FirstID, *Context, true);
@@ -208,8 +222,10 @@ bool areSameVariable(const ValueDecl *First, const ValueDecl *Second) {
 /// Determines if an expression is a declaration reference to a
 /// particular variable.
 static bool exprReferencesVariable(const ValueDecl *Target, const Expr *E) {
-  if (!Target || !E)
+  if (!Target || !E) {
     return false;
+
+}
   const DeclRefExpr *Decl = getDeclRef(E);
   return Decl && areSameVariable(Target, Decl->getDecl());
 }
@@ -217,8 +233,10 @@ static bool exprReferencesVariable(const ValueDecl *Target, const Expr *E) {
 /// If the expression is a dereference or call to operator*(), return the
 /// operand. Otherwise, return NULL.
 static const Expr *getDereferenceOperand(const Expr *E) {
-  if (const auto *Uop = dyn_cast<UnaryOperator>(E))
+  if (const auto *Uop = dyn_cast<UnaryOperator>(E)) {
     return Uop->getOpcode() == UO_Deref ? Uop->getSubExpr() : nullptr;
+
+}
 
   if (const auto *OpCall = dyn_cast<CXXOperatorCallExpr>(E)) {
     return OpCall->getOperator() == OO_Star && OpCall->getNumArgs() == 1
@@ -236,8 +254,10 @@ static bool containsExpr(ASTContext *Context, const ContainerT *Container,
   llvm::FoldingSetNodeID ID;
   E->Profile(ID, *Context, true);
   for (const auto &I : *Container) {
-    if (ID == I.second)
+    if (ID == I.second) {
       return true;
+
+}
   }
   return false;
 }
@@ -287,17 +307,25 @@ static bool isIndexInSubscriptExpr(const Expr *IndexExpr,
 static bool isIndexInSubscriptExpr(ASTContext *Context, const Expr *IndexExpr,
                                    const VarDecl *IndexVar, const Expr *Obj,
                                    const Expr *SourceExpr, bool PermitDeref) {
-  if (!SourceExpr || !Obj || !isIndexInSubscriptExpr(IndexExpr, IndexVar))
+  if (!SourceExpr || !Obj || !isIndexInSubscriptExpr(IndexExpr, IndexVar)) {
     return false;
 
+}
+
   if (areSameExpr(Context, SourceExpr->IgnoreParenImpCasts(),
-                  Obj->IgnoreParenImpCasts()))
+                  Obj->IgnoreParenImpCasts())) {
     return true;
 
-  if (const Expr *InnerObj = getDereferenceOperand(Obj->IgnoreParenImpCasts()))
+}
+
+  if (const Expr *InnerObj = getDereferenceOperand(Obj->IgnoreParenImpCasts())) {
     if (PermitDeref && areSameExpr(Context, SourceExpr->IgnoreParenImpCasts(),
-                                   InnerObj->IgnoreParenImpCasts()))
+                                   InnerObj->IgnoreParenImpCasts())) {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -349,10 +377,14 @@ static bool isDereferenceOfUop(const UnaryOperator *Uop,
 static bool isAliasDecl(ASTContext *Context, const Decl *TheDecl,
                         const VarDecl *IndexVar) {
   const auto *VDecl = dyn_cast<VarDecl>(TheDecl);
-  if (!VDecl)
+  if (!VDecl) {
     return false;
-  if (!VDecl->hasInit())
+
+}
+  if (!VDecl->hasInit()) {
     return false;
+
+}
 
   bool OnlyCasts = true;
   const Expr *Init = VDecl->getInit()->IgnoreParenImpCasts();
@@ -360,20 +392,26 @@ static bool isAliasDecl(ASTContext *Context, const Decl *TheDecl,
     Init = digThroughConstructors(Init);
     OnlyCasts = false;
   }
-  if (!Init)
+  if (!Init) {
     return false;
+
+}
 
   // Check that the declared type is the same as (or a reference to) the
   // container type.
   if (!OnlyCasts) {
     QualType InitType = Init->getType();
     QualType DeclarationType = VDecl->getType();
-    if (!DeclarationType.isNull() && DeclarationType->isReferenceType())
+    if (!DeclarationType.isNull() && DeclarationType->isReferenceType()) {
       DeclarationType = DeclarationType.getNonReferenceType();
 
+}
+
     if (InitType.isNull() || DeclarationType.isNull() ||
-        !Context->hasSameUnqualifiedType(DeclarationType, InitType))
+        !Context->hasSameUnqualifiedType(DeclarationType, InitType)) {
       return false;
+
+}
   }
 
   switch (Init->getStmtClass()) {
@@ -389,8 +427,10 @@ static bool isAliasDecl(ASTContext *Context, const Decl *TheDecl,
 
   case Stmt::CXXOperatorCallExprClass: {
     const auto *OpCall = cast<CXXOperatorCallExpr>(Init);
-    if (OpCall->getOperator() == OO_Star)
+    if (OpCall->getOperator() == OO_Star) {
       return isDereferenceOfOpCall(OpCall, IndexVar);
+
+}
     if (OpCall->getOperator() == OO_Subscript) {
       assert(OpCall->getNumArgs() == 2);
       return isIndexInSubscriptExpr(OpCall->getArg(1), IndexVar);
@@ -432,15 +472,21 @@ static bool isAliasDecl(ASTContext *Context, const Decl *TheDecl,
 static bool arrayMatchesBoundExpr(ASTContext *Context,
                                   const QualType &ArrayType,
                                   const Expr *ConditionExpr) {
-  if (!ConditionExpr || ConditionExpr->isValueDependent())
+  if (!ConditionExpr || ConditionExpr->isValueDependent()) {
     return false;
+
+}
   const ConstantArrayType *ConstType =
       Context->getAsConstantArrayType(ArrayType);
-  if (!ConstType)
+  if (!ConstType) {
     return false;
+
+}
   llvm::APSInt ConditionSize;
-  if (!ConditionExpr->isIntegerConstantExpr(ConditionSize, *Context))
+  if (!ConditionExpr->isIntegerConstantExpr(ConditionSize, *Context)) {
     return false;
+
+}
   llvm::APSInt ArraySize(ConstType->getSize());
   return llvm::APSInt::isSameValue(ConditionSize, ArraySize);
 }
@@ -458,8 +504,10 @@ ForLoopIndexUseVisitor::ForLoopIndexUseVisitor(ASTContext *Context,
       ConfidenceLevel(Confidence::CL_Safe), NextStmtParent(nullptr),
       CurrStmtParent(nullptr), ReplaceWithAliasUse(false),
       AliasFromForInit(false) {
-  if (ContainerExpr)
+  if (ContainerExpr) {
     addComponent(ContainerExpr);
+
+}
 }
 
 bool ForLoopIndexUseVisitor::findAndVerifyUsages(const Stmt *Body) {
@@ -469,8 +517,10 @@ bool ForLoopIndexUseVisitor::findAndVerifyUsages(const Stmt *Body) {
 
 void ForLoopIndexUseVisitor::addComponents(const ComponentVector &Components) {
   // FIXME: add sort(on ID)+unique to avoid extra work.
-  for (const auto &I : Components)
+  for (const auto &I : Components) {
     addComponent(I);
+
+}
 }
 
 void ForLoopIndexUseVisitor::addComponent(const Expr *E) {
@@ -482,11 +532,15 @@ void ForLoopIndexUseVisitor::addComponent(const Expr *E) {
 
 void ForLoopIndexUseVisitor::addUsage(const Usage &U) {
   SourceLocation Begin = U.Range.getBegin();
-  if (Begin.isMacroID())
+  if (Begin.isMacroID()) {
     Begin = Context->getSourceManager().getSpellingLoc(Begin);
 
-  if (UsageLocations.insert(Begin).second)
+}
+
+  if (UsageLocations.insert(Begin).second) {
     Usages.push_back(U);
+
+}
 }
 
 /// If the unary operator is a dereference of IndexVar, include it
@@ -566,11 +620,15 @@ bool ForLoopIndexUseVisitor::TraverseMemberExpr(MemberExpr *Member) {
       return true;
     }
 
-    if (ExprType.isNull())
+    if (ExprType.isNull()) {
       ExprType = Obj->getType();
 
-    if (!ExprType->isPointerType())
+}
+
+    if (!ExprType->isPointerType()) {
       return false;
+
+}
 
     // FIXME: This works around not having the location of the arrow operator.
     // Consider adding OperatorLoc to MemberExpr?
@@ -599,8 +657,10 @@ bool ForLoopIndexUseVisitor::TraverseCXXMemberCallExpr(
     CXXMemberCallExpr *MemberCall) {
   auto *Member =
       dyn_cast<MemberExpr>(MemberCall->getCallee()->IgnoreParenImpCasts());
-  if (!Member)
+  if (!Member) {
     return VisitorBase::TraverseCXXMemberCallExpr(MemberCall);
+
+}
 
   // We specifically allow an accessor named "at" to let STL in, though
   // this is restricted to pseudo-arrays by requiring a single, integer
@@ -615,8 +675,10 @@ bool ForLoopIndexUseVisitor::TraverseCXXMemberCallExpr(
     }
   }
 
-  if (containsExpr(Context, &DependentExprs, Member->getBase()))
+  if (containsExpr(Context, &DependentExprs, Member->getBase())) {
     ConfidenceLevel.lowerTo(Confidence::CL_Risky);
+
+}
 
   return VisitorBase::TraverseCXXMemberCallExpr(MemberCall);
 }
@@ -651,8 +713,10 @@ bool ForLoopIndexUseVisitor::TraverseCXXOperatorCallExpr(
     break;
 
   case OO_Subscript:
-    if (OpCall->getNumArgs() != 2)
+    if (OpCall->getNumArgs() != 2) {
       break;
+
+}
     if (isIndexInSubscriptExpr(Context, OpCall->getArg(1), IndexVar,
                                OpCall->getArg(0), ContainerExpr,
                                ContainerNeedsDereference)) {
@@ -688,8 +752,10 @@ bool ForLoopIndexUseVisitor::TraverseCXXOperatorCallExpr(
 /// is referenced.
 bool ForLoopIndexUseVisitor::TraverseArraySubscriptExpr(ArraySubscriptExpr *E) {
   Expr *Arr = E->getBase();
-  if (!isIndexInSubscriptExpr(E->getIdx(), IndexVar))
+  if (!isIndexInSubscriptExpr(E->getIdx(), IndexVar)) {
     return VisitorBase::TraverseArraySubscriptExpr(E);
+
+}
 
   if ((ContainerExpr &&
        !areSameExpr(Context, Arr->IgnoreParenImpCasts(),
@@ -702,8 +768,10 @@ bool ForLoopIndexUseVisitor::TraverseArraySubscriptExpr(ArraySubscriptExpr *E) {
     return VisitorBase::TraverseArraySubscriptExpr(E);
   }
 
-  if (!ContainerExpr)
+  if (!ContainerExpr) {
     ContainerExpr = Arr;
+
+}
 
   addUsage(Usage(E));
   return true;
@@ -745,10 +813,14 @@ bool ForLoopIndexUseVisitor::VisitDeclRefExpr(DeclRefExpr *E) {
   const ValueDecl *TheDecl = E->getDecl();
   if (areSameVariable(IndexVar, TheDecl) ||
       exprReferencesVariable(IndexVar, E) || areSameVariable(EndVar, TheDecl) ||
-      exprReferencesVariable(EndVar, E))
+      exprReferencesVariable(EndVar, E)) {
     OnlyUsedAsIndex = false;
-  if (containsExpr(Context, &DependentExprs, E))
+
+}
+  if (containsExpr(Context, &DependentExprs, E)) {
     ConfidenceLevel.lowerTo(Confidence::CL_Risky);
+
+}
   return true;
 }
 
@@ -802,14 +874,16 @@ bool ForLoopIndexUseVisitor::VisitDeclStmt(DeclStmt *S) {
     AliasDecl = S;
     if (CurrStmtParent) {
       if (isa<IfStmt>(CurrStmtParent) || isa<WhileStmt>(CurrStmtParent) ||
-          isa<SwitchStmt>(CurrStmtParent))
+          isa<SwitchStmt>(CurrStmtParent)) {
         ReplaceWithAliasUse = true;
-      else if (isa<ForStmt>(CurrStmtParent)) {
-        if (cast<ForStmt>(CurrStmtParent)->getConditionVariableDeclStmt() == S)
+      } else if (isa<ForStmt>(CurrStmtParent)) {
+        if (cast<ForStmt>(CurrStmtParent)->getConditionVariableDeclStmt() == S) {
           ReplaceWithAliasUse = true;
-        else
+        } else {
           // It's assumed S came the for loop's init clause.
           AliasFromForInit = true;
+
+}
       }
     }
   }
@@ -846,22 +920,28 @@ std::string VariableNamer::createIndexName() {
   //  - An interactive process for naming.
   std::string IteratorName;
   StringRef ContainerName;
-  if (TheContainer)
+  if (TheContainer) {
     ContainerName = TheContainer->getName();
+
+}
 
   size_t Len = ContainerName.size();
   if (Len > 1 && ContainerName.endswith(Style == NS_UpperCase ? "S" : "s")) {
     IteratorName = std::string(ContainerName.substr(0, Len - 1));
     // E.g.: (auto thing : things)
-    if (!declarationExists(IteratorName) || IteratorName == OldIndex->getName())
+    if (!declarationExists(IteratorName) || IteratorName == OldIndex->getName()) {
       return IteratorName;
+
+}
   }
 
   if (Len > 2 && ContainerName.endswith(Style == NS_UpperCase ? "S_" : "s_")) {
     IteratorName = std::string(ContainerName.substr(0, Len - 2));
     // E.g.: (auto thing : things_)
-    if (!declarationExists(IteratorName) || IteratorName == OldIndex->getName())
+    if (!declarationExists(IteratorName) || IteratorName == OldIndex->getName()) {
       return IteratorName;
+
+}
   }
 
   return std::string(OldIndex->getName());
@@ -878,18 +958,24 @@ bool VariableNamer::declarationExists(StringRef Symbol) {
   IdentifierInfo &Ident = Context->Idents.get(Symbol);
 
   // Check if the symbol is not an identifier (ie. is a keyword or alias).
-  if (!isAnyIdentifier(Ident.getTokenID()))
+  if (!isAnyIdentifier(Ident.getTokenID())) {
     return true;
 
+}
+
   // Check for conflicting macro definitions.
-  if (Ident.hasMacroDefinition())
+  if (Ident.hasMacroDefinition()) {
     return true;
+
+}
 
   // Determine if the symbol was generated in a parent context.
   for (const Stmt *S = SourceStmt; S != nullptr; S = ReverseAST->lookup(S)) {
     StmtGeneratedVarNameMap::const_iterator I = GeneratedDecls->find(S);
-    if (I != GeneratedDecls->end() && I->second == Symbol)
+    if (I != GeneratedDecls->end() && I->second == Symbol) {
       return true;
+
+}
   }
 
   // FIXME: Rather than detecting conflicts at their usages, we should check the

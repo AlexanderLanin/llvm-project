@@ -202,8 +202,10 @@ bool AMDGPUTargetInfo::initFeatureMap(
       llvm_unreachable("Unhandled GPU!");
     }
   } else {
-    if (CPU.empty())
+    if (CPU.empty()) {
       CPU = "r600";
+
+}
 
     switch (llvm::AMDGPU::parseArchR600(CPU)) {
     case GK_CAYMAN:
@@ -239,28 +241,38 @@ void AMDGPUTargetInfo::adjustTargetOptions(const CodeGenOptions &CGOpts,
   bool hasFP64Denormals = false;
 
   for (auto &I : TargetOpts.FeaturesAsWritten) {
-    if (I == "+fp32-denormals" || I == "-fp32-denormals")
+    if (I == "+fp32-denormals" || I == "-fp32-denormals") {
       hasFP32Denormals = true;
-    if (I == "+fp64-fp16-denormals" || I == "-fp64-fp16-denormals")
+
+}
+    if (I == "+fp64-fp16-denormals" || I == "-fp64-fp16-denormals") {
       hasFP64Denormals = true;
+
+}
   }
-  if (!hasFP32Denormals)
+  if (!hasFP32Denormals) {
     TargetOpts.Features.push_back(
       (Twine(hasFastFMAF() && hasFullRateDenormalsF32() &&
              CGOpts.FP32DenormalMode.Output == llvm::DenormalMode::IEEE
              ? '+' : '-') + Twine("fp32-denormals"))
             .str());
+
+}
   // Always do not flush fp64 or fp16 denorms.
-  if (!hasFP64Denormals && hasFP64())
+  if (!hasFP64Denormals && hasFP64()) {
     TargetOpts.Features.push_back("+fp64-fp16-denormals");
+
+}
 }
 
 void AMDGPUTargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  if (isAMDGCN(getTriple()))
+  if (isAMDGCN(getTriple())) {
     llvm::AMDGPU::fillValidArchListAMDGCN(Values);
-  else
+  } else {
     llvm::AMDGPU::fillValidArchListR600(Values);
+
+}
 }
 
 void AMDGPUTargetInfo::setAddressSpaceMap(bool DefaultIsPrivate) {
@@ -318,10 +330,12 @@ void AMDGPUTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__AMD__");
   Builder.defineMacro("__AMDGPU__");
 
-  if (isAMDGCN(getTriple()))
+  if (isAMDGCN(getTriple())) {
     Builder.defineMacro("__AMDGCN__");
-  else
+  } else {
     Builder.defineMacro("__R600__");
+
+}
 
   if (GPUKind != llvm::AMDGPU::GK_NONE) {
     StringRef CanonName = isAMDGCN(getTriple()) ?
@@ -331,16 +345,26 @@ void AMDGPUTargetInfo::getTargetDefines(const LangOptions &Opts,
 
   // TODO: __HAS_FMAF__, __HAS_LDEXPF__, __HAS_FP64__ are deprecated and will be
   // removed in the near future.
-  if (hasFMAF())
+  if (hasFMAF()) {
     Builder.defineMacro("__HAS_FMAF__");
-  if (hasFastFMAF())
+
+}
+  if (hasFastFMAF()) {
     Builder.defineMacro("FP_FAST_FMAF");
-  if (hasLDEXPF())
+
+}
+  if (hasLDEXPF()) {
     Builder.defineMacro("__HAS_LDEXPF__");
-  if (hasFP64())
+
+}
+  if (hasFP64()) {
     Builder.defineMacro("__HAS_FP64__");
-  if (hasFastFMA())
+
+}
+  if (hasFastFMA()) {
     Builder.defineMacro("FP_FAST_FMA");
+
+}
 }
 
 void AMDGPUTargetInfo::setAuxTarget(const TargetInfo *Aux) {

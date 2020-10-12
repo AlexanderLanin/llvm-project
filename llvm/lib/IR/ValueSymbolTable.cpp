@@ -55,15 +55,19 @@ ValueName *ValueSymbolTable::makeUniqueName(Value *V,
       // identifiers. This breaks ABI demangling but at least ptxas accepts and
       // compiles the program.
       const Module *M = GV->getParent();
-      if (!(M && Triple(M->getTargetTriple()).isNVPTX()))
+      if (!(M && Triple(M->getTargetTriple()).isNVPTX())) {
         S << ".";
+
+}
     }
     S << ++LastUnique;
 
     // Try insert the vmap entry with this suffix.
     auto IterBool = vmap.insert(std::make_pair(UniqueName, V));
-    if (IterBool.second)
+    if (IterBool.second) {
       return &*IterBool.first;
+
+}
   }
 }
 

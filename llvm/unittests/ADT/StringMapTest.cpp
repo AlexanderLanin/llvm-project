@@ -466,10 +466,12 @@ TEST(StringMapCustomTest, InitialSizeTest) {
     auto NumBuckets = Map.getNumBuckets();
     CountCtorCopyAndMove::Move = 0;
     CountCtorCopyAndMove::Copy = 0;
-    for (int i = 0; i < Size; ++i)
+    for (int i = 0; i < Size; ++i) {
       Map.insert(std::pair<std::string, CountCtorCopyAndMove>(
           std::piecewise_construct, std::forward_as_tuple(Twine(i).str()),
           std::forward_as_tuple(i)));
+
+}
     // After the initial move, the map will move the Elts in the Entry.
     EXPECT_EQ((unsigned)Size * 2, CountCtorCopyAndMove::Move);
     // We copy once the pair from the Elts vector
@@ -513,10 +515,12 @@ TEST(StringMapCustomTest, StringMapEntryBaseSize) {
   size_t LargeValue;
 
   // Test that the entry can represent max-unsigned.
-  if (sizeof(size_t) <= sizeof(unsigned))
+  if (sizeof(size_t) <= sizeof(unsigned)) {
     LargeValue = std::numeric_limits<unsigned>::max();
-  else
+  } else {
     LargeValue = std::numeric_limits<unsigned>::max() + 1ULL;
+
+}
   StringMapEntryBase LargeBase(LargeValue);
   EXPECT_EQ(LargeValue, LargeBase.getKeyLength());
 
@@ -532,10 +536,12 @@ TEST(StringMapCustomTest, StringMapEntrySize) {
   size_t LargeValue;
 
   // Test that the entry can represent max-unsigned.
-  if (sizeof(size_t) <= sizeof(unsigned))
+  if (sizeof(size_t) <= sizeof(unsigned)) {
     LargeValue = std::numeric_limits<unsigned>::max();
-  else
+  } else {
     LargeValue = std::numeric_limits<unsigned>::max() + 1ULL;
+
+}
   StringMapEntry<int> LargeEntry(LargeValue);
   StringRef Key = LargeEntry.getKey();
   EXPECT_EQ(LargeValue, Key.size());

@@ -24,8 +24,10 @@ uint32_t pdb::hashStringV1(StringRef Str) {
   ArrayRef<ulittle32_t> Longs(reinterpret_cast<const ulittle32_t *>(Str.data()),
                               Size / 4);
 
-  for (auto Value : Longs)
+  for (auto Value : Longs) {
     Result ^= Value;
+
+}
 
   const uint8_t *Remainder = reinterpret_cast<const uint8_t *>(Longs.end());
   uint32_t RemainderSize = Size % 4;

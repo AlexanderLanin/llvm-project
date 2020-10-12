@@ -91,13 +91,17 @@ template <typename T> static bool isSubset(ArrayRef<T> C0, ArrayRef<T> C1) {
   assert(std::is_sorted(C0.begin(), C0.end()) &&
          std::is_sorted(C1.begin(), C1.end()) && "Expected sorted arrays!");
 #endif
-  if (C0.size() > C1.size())
+  if (C0.size() > C1.size()) {
     return false;
+
+}
   auto It0 = C0.begin(), End0 = C0.end();
   auto It1 = C1.begin(), End1 = C1.end();
   while (It0 != End0) {
-    if (It1 == End1)
+    if (It1 == End1) {
       return false;
+
+}
     if (*It0 == *It1) {
       ++It0;
       ++It1;
@@ -112,8 +116,10 @@ template <typename T> static bool isSubset(ArrayRef<T> C0, ArrayRef<T> C1) {
 /// expected to be sorted.
 template <typename T>
 static bool isStrictSubset(ArrayRef<T> C0, ArrayRef<T> C1) {
-  if (C0.size() >= C1.size())
+  if (C0.size() >= C1.size()) {
     return false;
+
+}
   return isSubset<T>(C0, C1);
 }
 
@@ -150,10 +156,14 @@ static int isVariantApplicableInContextHelper(
 
     // Verify the nesting.
     bool FoundInOrder = false;
-    while (!FoundInOrder && ConstructIdx != NoConstructTraits)
+    while (!FoundInOrder && ConstructIdx != NoConstructTraits) {
       FoundInOrder = (Ctx.ConstructTraits[ConstructIdx++] == Property);
-    if (ConstructMatches)
+
+}
+    if (ConstructMatches) {
       ConstructMatches->push_back(ConstructIdx - 1);
+
+}
 
     if (!FoundInOrder) {
       LLVM_DEBUG(dbgs() << "[" << DEBUG_TYPE << "] Construct property "
@@ -209,8 +219,10 @@ static APInt getVariantMatchScore(const VariantMatchInfo &VMI,
     }
 
     // device={kind(any)} is "as if" no kind selector was specified.
-    if (Property == TraitProperty::device_kind_any)
+    if (Property == TraitProperty::device_kind_any) {
       continue;
+
+}
 
     switch (getOpenMPContextTraitSelectorForProperty(Property)) {
     case TraitSelector::device_kind:
@@ -256,20 +268,28 @@ int llvm::omp::getBestVariantMatchForContext(
 
     SmallVector<unsigned, 8> ConstructMatches;
     // If the variant is not applicable its not the best.
-    if (!isVariantApplicableInContextHelper(VMI, Ctx, &ConstructMatches))
+    if (!isVariantApplicableInContextHelper(VMI, Ctx, &ConstructMatches)) {
       continue;
+
+}
     // Check if its clearly not the best.
     APInt Score = getVariantMatchScore(VMI, Ctx, ConstructMatches);
-    if (Score.ult(BestScore))
+    if (Score.ult(BestScore)) {
       continue;
+
+}
     // Equal score need subset checks.
     if (Score.eq(BestScore)) {
       // Strict subset are never best.
-      if (isStrictSubset(VMI, *BestVMI))
+      if (isStrictSubset(VMI, *BestVMI)) {
         continue;
+
+}
       // Same score and the current best is no strict subset so we keep it.
-      if (!isStrictSubset(*BestVMI, VMI))
+      if (!isStrictSubset(*BestVMI, VMI)) {
         continue;
+
+}
     }
     // New best found.
     BestVMI = &VMI;

@@ -35,10 +35,14 @@ bool PrettyClassLayoutGraphicalDumper::start(const UDTLayoutBase &Layout) {
 
   if (RecursionLevel == 1 &&
       opts::pretty::ClassFormat == opts::pretty::ClassDefinitionFormat::All) {
-    for (auto &Other : Layout.other_items())
+    for (auto &Other : Layout.other_items()) {
       Other->dump(*this);
-    for (auto &Func : Layout.funcs())
+
+}
+    for (auto &Func : Layout.funcs()) {
       Func->dump(*this);
+
+}
   }
 
   const BitVector &UseMap = Layout.usedBytes();
@@ -70,14 +74,18 @@ bool PrettyClassLayoutGraphicalDumper::start(const UDTLayoutBase &Layout) {
       VariableDumper VarDumper(Printer);
       VarDumper.startVbptr(CurrentAbsoluteOffset, Layout.getSize());
     } else {
-      if (auto Sym = Item->getSymbol())
+      if (auto Sym = Item->getSymbol()) {
         Sym->dump(*this);
+
+}
     }
 
     if (Item->getLayoutSize() > 0) {
       uint32_t Prev = RelativeOffset + Item->getLayoutSize() - 1;
-      if (Prev < UseMap.size())
+      if (Prev < UseMap.size()) {
         NextPaddingByte = UseMap.find_next_unset(Prev);
+
+}
     }
   }
 
@@ -95,8 +103,10 @@ bool PrettyClassLayoutGraphicalDumper::start(const UDTLayoutBase &Layout) {
 }
 
 void PrettyClassLayoutGraphicalDumper::printPaddingRow(uint32_t Amount) {
-  if (Amount == 0)
+  if (Amount == 0) {
     return;
+
+}
 
   Printer.NewLine();
   WithColor(Printer, PDB_ColorItem::Padding).get() << "<padding> (" << Amount
@@ -114,8 +124,10 @@ void PrettyClassLayoutGraphicalDumper::dump(
   std::string Label = "base";
   if (Layout.isVirtualBase()) {
     Label.insert(Label.begin(), 'v');
-    if (Layout.getBase().isIndirectVirtualBaseClass())
+    if (Layout.getBase().isIndirectVirtualBaseClass()) {
       Label.insert(Label.begin(), 'i');
+
+}
   }
   Printer << Label << " ";
 
@@ -141,8 +153,10 @@ void PrettyClassLayoutGraphicalDumper::dump(
 
 bool PrettyClassLayoutGraphicalDumper::shouldRecurse() const {
   uint32_t Limit = opts::pretty::ClassRecursionDepth;
-  if (Limit == 0)
+  if (Limit == 0) {
     return true;
+
+}
   return RecursionLevel < Limit;
 }
 
@@ -197,13 +211,19 @@ void PrettyClassLayoutGraphicalDumper::dump(
 void PrettyClassLayoutGraphicalDumper::dump(const PDBSymbolTypeUDT &Symbol) {}
 
 void PrettyClassLayoutGraphicalDumper::dump(const PDBSymbolFunc &Symbol) {
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
-  if (Symbol.isCompilerGenerated() && opts::pretty::ExcludeCompilerGenerated)
+
+}
+  if (Symbol.isCompilerGenerated() && opts::pretty::ExcludeCompilerGenerated) {
     return;
+
+}
   if (Symbol.getLength() == 0 && !Symbol.isPureVirtual() &&
-      !Symbol.isIntroVirtualFunction())
+      !Symbol.isIntroVirtualFunction()) {
     return;
+
+}
 
   DumpedAnything = true;
   Printer.NewLine();

@@ -34,8 +34,10 @@ AllocationOrder::AllocationOrder(unsigned VirtReg,
   const MachineFunction &MF = VRM.getMachineFunction();
   const TargetRegisterInfo *TRI = &VRM.getTargetRegInfo();
   Order = RegClassInfo.getOrder(MF.getRegInfo().getRegClass(VirtReg));
-  if (TRI->getRegAllocationHints(VirtReg, Order, Hints, MF, &VRM, Matrix))
+  if (TRI->getRegAllocationHints(VirtReg, Order, Hints, MF, &VRM, Matrix)) {
     HardHints = true;
+
+}
   rewind();
 
   LLVM_DEBUG({

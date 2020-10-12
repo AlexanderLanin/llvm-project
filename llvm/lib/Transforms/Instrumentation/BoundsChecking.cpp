@@ -118,8 +118,10 @@ static void insertBoundsCheck(Value *Or, BuilderTy &IRB, GetTrapBBT GetTrapBB) {
   if (C) {
     ++ChecksSkipped;
     // If non-zero, nothing to do.
-    if (!C->getZExtValue())
+    if (!C->getZExtValue()) {
       return;
+
+}
   }
   ++ChecksAdded;
 
@@ -166,8 +168,10 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
       Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getValOperand(), DL,
                               TLI, ObjSizeEval, IRB, SE);
     }
-    if (Or)
+    if (Or) {
       TrapInfo.push_back(std::make_pair(&I, Or));
+
+}
   }
 
   // Create a trapping basic block on demand using a callback. Depending on
@@ -175,8 +179,10 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
   // will create a fresh block every time it is called.
   BasicBlock *TrapBB = nullptr;
   auto GetTrapBB = [&TrapBB](BuilderTy &IRB) {
-    if (TrapBB && SingleTrapBB)
+    if (TrapBB && SingleTrapBB) {
       return TrapBB;
+
+}
 
     Function *Fn = IRB.GetInsertBlock()->getParent();
     // FIXME: This debug location doesn't make a lot of sense in the
@@ -210,8 +216,10 @@ PreservedAnalyses BoundsCheckingPass::run(Function &F, FunctionAnalysisManager &
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
   auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
 
-  if (!addBoundsChecking(F, TLI, SE))
+  if (!addBoundsChecking(F, TLI, SE)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }

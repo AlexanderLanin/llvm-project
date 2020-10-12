@@ -110,49 +110,71 @@ void MCAssembler::reset() {
   VersionInfo.SDKVersion = VersionTuple();
 
   // reset objects owned by us
-  if (getBackendPtr())
+  if (getBackendPtr()) {
     getBackendPtr()->reset();
-  if (getEmitterPtr())
+
+}
+  if (getEmitterPtr()) {
     getEmitterPtr()->reset();
-  if (getWriterPtr())
+
+}
+  if (getWriterPtr()) {
     getWriterPtr()->reset();
+
+}
   getLOHContainer().reset();
 }
 
 bool MCAssembler::registerSection(MCSection &Section) {
-  if (Section.isRegistered())
+  if (Section.isRegistered()) {
     return false;
+
+}
   Sections.push_back(&Section);
   Section.setIsRegistered(true);
   return true;
 }
 
 bool MCAssembler::isThumbFunc(const MCSymbol *Symbol) const {
-  if (ThumbFuncs.count(Symbol))
+  if (ThumbFuncs.count(Symbol)) {
     return true;
 
-  if (!Symbol->isVariable())
+}
+
+  if (!Symbol->isVariable()) {
     return false;
+
+}
 
   const MCExpr *Expr = Symbol->getVariableValue();
 
   MCValue V;
-  if (!Expr->evaluateAsRelocatable(V, nullptr, nullptr))
+  if (!Expr->evaluateAsRelocatable(V, nullptr, nullptr)) {
     return false;
 
-  if (V.getSymB() || V.getRefKind() != MCSymbolRefExpr::VK_None)
+}
+
+  if (V.getSymB() || V.getRefKind() != MCSymbolRefExpr::VK_None) {
     return false;
+
+}
 
   const MCSymbolRefExpr *Ref = V.getSymA();
-  if (!Ref)
+  if (!Ref) {
     return false;
 
-  if (Ref->getKind() != MCSymbolRefExpr::VK_None)
+}
+
+  if (Ref->getKind() != MCSymbolRefExpr::VK_None) {
     return false;
+
+}
 
   const MCSymbol &Sym = Ref->getSymbol();
-  if (!isThumbFunc(&Sym))
+  if (!isThumbFunc(&Sym)) {
     return false;
+
+}
 
   ThumbFuncs.insert(Symbol); // Cache it.
   return true;
@@ -160,29 +182,39 @@ bool MCAssembler::isThumbFunc(const MCSymbol *Symbol) const {
 
 bool MCAssembler::isSymbolLinkerVisible(const MCSymbol &Symbol) const {
   // Non-temporary labels should always be visible to the linker.
-  if (!Symbol.isTemporary())
+  if (!Symbol.isTemporary()) {
     return true;
 
-  if (Symbol.isUsedInReloc())
+}
+
+  if (Symbol.isUsedInReloc()) {
     return true;
+
+}
 
   return false;
 }
 
 const MCSymbol *MCAssembler::getAtom(const MCSymbol &S) const {
   // Linker visible symbols define atoms.
-  if (isSymbolLinkerVisible(S))
+  if (isSymbolLinkerVisible(S)) {
     return &S;
 
+}
+
   // Absolute and undefined symbols have no defining atom.
-  if (!S.isInSection())
+  if (!S.isInSection()) {
     return nullptr;
+
+}
 
   // Non-linker visible symbols in sections which can't be atomized have no
   // defining atom.
   if (!getContext().getAsmInfo()->isSectionAtomizableBySymbols(
-          *S.getFragment()->getParent()))
+          *S.getFragment()->getParent())) {
     return nullptr;
+
+}
 
   // Otherwise, return the atom for the containing fragment.
   return S.getFragment()->getAtom();
@@ -220,9 +252,11 @@ bool MCAssembler::evaluateFixup(const MCAsmLayout &Layout,
   bool IsTarget = getBackendPtr()->getFixupKindInfo(Fixup.getKind()).Flags &
                   MCFixupKindInfo::FKF_IsTarget;
 
-  if (IsTarget)
+  if (IsTarget) {
     return getBackend().evaluateTargetFixup(*this, Layout, Fixup, DF, Target,
                                             Value, WasForced);
+
+}
 
   unsigned FixupFlags = getBackendPtr()->getFixupKindInfo(Fixup.getKind()).Flags;
   bool IsPCRel = getBackendPtr()->getFixupKindInfo(Fixup.getKind()).Flags &
@@ -253,13 +287,17 @@ bool MCAssembler::evaluateFixup(const MCAsmLayout &Layout,
 
   if (const MCSymbolRefExpr *A = Target.getSymA()) {
     const MCSymbol &Sym = A->getSymbol();
-    if (Sym.isDefined())
+    if (Sym.isDefined()) {
       Value += Layout.getSymbolOffset(Sym);
+
+}
   }
   if (const MCSymbolRefExpr *B = Target.getSymB()) {
     const MCSymbol &Sym = B->getSymbol();
-    if (Sym.isDefined())
+    if (Sym.isDefined()) {
       Value -= Layout.getSymbolOffset(Sym);
+
+}
   }
 
   bool ShouldAlignPC = getBackend().getFixupKindInfo(Fixup.getKind()).Flags &
@@ -272,7 +310,9 @@ bool MCAssembler::evaluateFixup(const MCAsmLayout &Layout,
 
     // A number of ARM fixups in Thumb mode require that the effective PC
     // address be determined as the 32-bit aligned version of the actual offset.
-    if (ShouldAlignPC) Offset &= ~0x3;
+    if (ShouldAlignPC) { Offset &= ~0x3;
+
+}
     Value -= Offset;
   }
 
@@ -328,17 +368,23 @@ uint64_t MCAssembler::computeFragmentSize(const MCAsmLayout &Layout,
     // Insert extra Nops for code alignment if the target define
     // shouldInsertExtraNopBytesForCodeAlign target hook.
     if (AF.getParent()->UseCodeAlign() && AF.hasEmitNops() &&
-        getBackend().shouldInsertExtraNopBytesForCodeAlign(AF, Size))
+        getBackend().shouldInsertExtraNopBytesForCodeAlign(AF, Size)) {
       return Size;
+
+}
 
     // If we are padding with nops, force the padding to be larger than the
     // minimum nop size.
     if (Size > 0 && AF.hasEmitNops()) {
-      while (Size % getBackend().getMinimumNopSize())
+      while (Size % getBackend().getMinimumNopSize()) {
         Size += AF.getAlignment();
+
+}
     }
-    if (Size > AF.getMaxBytesToEmit())
+    if (Size > AF.getMaxBytesToEmit()) {
       return 0;
+
+}
     return Size;
   }
 
@@ -399,10 +445,12 @@ void MCAsmLayout::layoutFragment(MCFragment *F) {
   ++stats::FragmentLayouts;
 
   // Compute fragment offset and size.
-  if (Prev)
+  if (Prev) {
     F->Offset = Prev->Offset + getAssembler().computeFragmentSize(*this, *Prev);
-  else
+  } else {
     F->Offset = 0;
+
+}
   LastValidFragment[F->getParent()] = F;
 
   // If bundling is enabled and this fragment has instructions in it, it has to
@@ -438,13 +486,17 @@ void MCAsmLayout::layoutFragment(MCFragment *F) {
     MCEncodedFragment *EF = cast<MCEncodedFragment>(F);
     uint64_t FSize = Assembler.computeFragmentSize(*this, *EF);
 
-    if (!Assembler.getRelaxAll() && FSize > Assembler.getBundleAlignSize())
+    if (!Assembler.getRelaxAll() && FSize > Assembler.getBundleAlignSize()) {
       report_fatal_error("Fragment can't be larger than a bundle size");
+
+}
 
     uint64_t RequiredBundlePadding =
         computeBundlePadding(Assembler, EF, EF->Offset, FSize);
-    if (RequiredBundlePadding > UINT8_MAX)
+    if (RequiredBundlePadding > UINT8_MAX) {
       report_fatal_error("Padding cannot exceed 255 bytes");
+
+}
     EF->setBundlePadding(static_cast<uint8_t>(RequiredBundlePadding));
     EF->Offset += RequiredBundlePadding;
   }
@@ -452,8 +504,10 @@ void MCAsmLayout::layoutFragment(MCFragment *F) {
 
 void MCAssembler::registerSymbol(const MCSymbol &Symbol, bool *Created) {
   bool New = !Symbol.isRegistered();
-  if (Created)
+  if (Created) {
     *Created = New;
+
+}
   if (New) {
     Symbol.setIsRegistered(true);
     Symbols.push_back(&Symbol);
@@ -483,14 +537,18 @@ void MCAssembler::writeFragmentPadding(raw_ostream &OS,
       // ----------------------------
       //        ^-------------------^   <- TotalLength
       unsigned DistanceToBoundary = TotalLength - getBundleAlignSize();
-      if (!getBackend().writeNopData(OS, DistanceToBoundary))
+      if (!getBackend().writeNopData(OS, DistanceToBoundary)) {
         report_fatal_error("unable to write NOP sequence of " +
                            Twine(DistanceToBoundary) + " bytes");
+
+}
       BundlePadding -= DistanceToBoundary;
     }
-    if (!getBackend().writeNopData(OS, BundlePadding))
+    if (!getBackend().writeNopData(OS, BundlePadding)) {
       report_fatal_error("unable to write NOP sequence of " +
                          Twine(BundlePadding) + " bytes");
+
+}
   }
 }
 
@@ -502,8 +560,10 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
 
   support::endianness Endian = Asm.getBackend().Endian;
 
-  if (const MCEncodedFragment *EF = dyn_cast<MCEncodedFragment>(&F))
+  if (const MCEncodedFragment *EF = dyn_cast<MCEncodedFragment>(&F)) {
     Asm.writeFragmentPadding(OS, *EF, FragmentSize);
+
+}
 
   // This variable (and its dummy usage) is to participate in the assert at
   // the end of the function.
@@ -523,20 +583,24 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
     // FIXME: This error shouldn't actually occur (the front end should emit
     // multiple .align directives to enforce the semantics it wants), but is
     // severe enough that we want to report it. How to handle this?
-    if (Count * AF.getValueSize() != FragmentSize)
+    if (Count * AF.getValueSize() != FragmentSize) {
       report_fatal_error("undefined .align directive, value size '" +
                         Twine(AF.getValueSize()) +
                         "' is not a divisor of padding size '" +
                         Twine(FragmentSize) + "'");
+
+}
 
     // See if we are aligning with nops, and if so do that first to try to fill
     // the Count bytes.  Then if that did not fill any bytes or there are any
     // bytes left to fill use the Value and ValueSize to fill the rest.
     // If we are aligning with nops, ask that target to emit the right data.
     if (AF.hasEmitNops()) {
-      if (!Asm.getBackend().writeNopData(OS, Count))
+      if (!Asm.getBackend().writeNopData(OS, Count)) {
         report_fatal_error("unable to write nop sequence of " +
                           Twine(Count) + " bytes");
+
+}
       break;
     }
 
@@ -588,8 +652,10 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
       unsigned index = Endian == support::little ? I : (VSize - I - 1);
       Data[I] = uint8_t(V >> (index * 8));
     }
-    for (unsigned I = VSize; I < MaxChunkSize; ++I)
+    for (unsigned I = VSize; I < MaxChunkSize; ++I) {
       Data[I] = Data[I - VSize];
+
+}
 
     // Set to largest multiple of VSize in Data.
     const unsigned NumPerChunk = MaxChunkSize / VSize;
@@ -598,13 +664,17 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
 
     // Do copies by chunk.
     StringRef Ref(Data, ChunkSize);
-    for (uint64_t I = 0, E = FragmentSize / ChunkSize; I != E; ++I)
+    for (uint64_t I = 0, E = FragmentSize / ChunkSize; I != E; ++I) {
       OS << Ref;
+
+}
 
     // do remainder if needed.
     unsigned TrailingCount = FragmentSize % ChunkSize;
-    if (TrailingCount)
+    if (TrailingCount) {
       OS.write(Data, TrailingCount);
+
+}
     break;
   }
 
@@ -615,9 +685,11 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
   }
 
   case MCFragment::FT_BoundaryAlign: {
-    if (!Asm.getBackend().writeNopData(OS, FragmentSize))
+    if (!Asm.getBackend().writeNopData(OS, FragmentSize)) {
       report_fatal_error("unable to write nop sequence of " +
                          Twine(FragmentSize) + " bytes");
+
+}
     break;
   }
 
@@ -631,8 +703,10 @@ static void writeFragment(raw_ostream &OS, const MCAssembler &Asm,
     ++stats::EmittedOrgFragments;
     const MCOrgFragment &OF = cast<MCOrgFragment>(F);
 
-    for (uint64_t i = 0, e = FragmentSize; i != e; ++i)
+    for (uint64_t i = 0, e = FragmentSize; i != e; ++i) {
       OS << char(OF.getValue());
+
+}
 
     break;
   }
@@ -682,16 +756,22 @@ void MCAssembler::writeSectionData(raw_ostream &OS, const MCSection *Sec,
         // into a virtual section. This is to support clients which use standard
         // directives to fill the contents of virtual sections.
         const MCDataFragment &DF = cast<MCDataFragment>(F);
-        if (DF.fixup_begin() != DF.fixup_end())
+        if (DF.fixup_begin() != DF.fixup_end()) {
           report_fatal_error("cannot have fixups in virtual section!");
-        for (unsigned i = 0, e = DF.getContents().size(); i != e; ++i)
+
+}
+        for (unsigned i = 0, e = DF.getContents().size(); i != e; ++i) {
           if (DF.getContents()[i]) {
-            if (auto *ELFSec = dyn_cast<const MCSectionELF>(Sec))
+            if (auto *ELFSec = dyn_cast<const MCSectionELF>(Sec)) {
               report_fatal_error("non-zero initializer found in section '" +
                   ELFSec->getSectionName() + "'");
-            else
+            } else {
               report_fatal_error("non-zero initializer found in virtual section");
+
+}
           }
+
+}
         break;
       }
       case MCFragment::FT_Align:
@@ -714,8 +794,10 @@ void MCAssembler::writeSectionData(raw_ostream &OS, const MCSection *Sec,
   uint64_t Start = OS.tell();
   (void)Start;
 
-  for (const MCFragment &F : *Sec)
+  for (const MCFragment &F : *Sec) {
     writeFragment(OS, *this, Layout, F);
+
+}
 
   assert(OS.tell() - Start == Layout.getSectionAddressSize(Sec));
 }
@@ -768,8 +850,10 @@ void MCAssembler::layout(MCAsmLayout &Layout) {
   for (MCSection &Sec : *this) {
     // Create dummy fragments to eliminate any empty sections, this simplifies
     // layout.
-    if (Sec.getFragmentList().empty())
+    if (Sec.getFragmentList().empty()) {
       new MCDataFragment(&Sec);
+
+}
 
     Sec.setOrdinal(SectionIndex++);
   }
@@ -780,14 +864,20 @@ void MCAssembler::layout(MCAsmLayout &Layout) {
     Sec->setLayoutOrder(i);
 
     unsigned FragmentIndex = 0;
-    for (MCFragment &Frag : *Sec)
+    for (MCFragment &Frag : *Sec) {
       Frag.setLayoutOrder(FragmentIndex++);
+
+}
   }
 
   // Layout until everything fits.
-  while (layoutOnce(Layout))
-    if (getContext().hadError())
+  while (layoutOnce(Layout)) {
+    if (getContext().hadError()) {
       return;
+
+}
+
+}
 
   DEBUG_WITH_TYPE("mc-dump", {
       errs() << "assembler backend - post-relaxation\n--\n";
@@ -812,11 +902,15 @@ void MCAssembler::layout(MCAsmLayout &Layout) {
       // FIXME: Is there a better way to do this?  MCEncodedFragmentWithFixups
       // being templated makes this tricky.
       if (isa<MCEncodedFragment>(&Frag) &&
-          isa<MCCompactEncodedInstFragment>(&Frag))
+          isa<MCCompactEncodedInstFragment>(&Frag)) {
         continue;
+
+}
       if (!isa<MCEncodedFragment>(&Frag) && !isa<MCCVDefRangeFragment>(&Frag) &&
-          !isa<MCAlignFragment>(&Frag))
+          !isa<MCAlignFragment>(&Frag)) {
         continue;
+
+}
       ArrayRef<MCFixup> Fixups;
       MutableArrayRef<char> Contents;
       const MCSubtargetInfo *STI = nullptr;
@@ -847,8 +941,10 @@ void MCAssembler::layout(MCAsmLayout &Layout) {
                      dyn_cast<MCDwarfCallFrameFragment>(&Frag)) {
         Fixups = FragWithFixups->getFixups();
         Contents = FragWithFixups->getContents();
-      } else
+      } else {
         llvm_unreachable("Unknown fragment with fixups!");
+
+}
       for (const MCFixup &Fixup : Fixups) {
         uint64_t FixedValue;
         bool IsResolved;
@@ -881,8 +977,10 @@ bool MCAssembler::fixupNeedsRelaxation(const MCFixup &Fixup,
   bool Resolved = evaluateFixup(Layout, Fixup, DF, Target, Value, WasForced);
   if (Target.getSymA() &&
       Target.getSymA()->getKind() == MCSymbolRefExpr::VK_X86_ABS8 &&
-      Fixup.getKind() == FK_Data_1)
+      Fixup.getKind() == FK_Data_1) {
     return false;
+
+}
   return getBackend().fixupNeedsRelaxationAdvanced(Fixup, Resolved, Value, DF,
                                                    Layout, WasForced);
 }
@@ -893,12 +991,18 @@ bool MCAssembler::fragmentNeedsRelaxation(const MCRelaxableFragment *F,
   // If this inst doesn't ever need relaxation, ignore it. This occurs when we
   // are intentionally pushing out inst fragments, or because we relaxed a
   // previous instruction to one that doesn't need relaxation.
-  if (!getBackend().mayNeedRelaxation(F->getInst(), *F->getSubtargetInfo()))
+  if (!getBackend().mayNeedRelaxation(F->getInst(), *F->getSubtargetInfo())) {
     return false;
 
-  for (const MCFixup &Fixup : F->getFixups())
-    if (fixupNeedsRelaxation(Fixup, F, Layout))
+}
+
+  for (const MCFixup &Fixup : F->getFixups()) {
+    if (fixupNeedsRelaxation(Fixup, F, Layout)) {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -907,8 +1011,10 @@ bool MCAssembler::relaxInstruction(MCAsmLayout &Layout,
                                    MCRelaxableFragment &F) {
   assert(getEmitterPtr() &&
          "Expected CodeEmitter defined for relaxInstruction");
-  if (!fragmentNeedsRelaxation(&F, Layout))
+  if (!fragmentNeedsRelaxation(&F, Layout)) {
     return false;
+
+}
 
   ++stats::RelaxedInstructions;
 
@@ -941,8 +1047,10 @@ bool MCAssembler::relaxLEB(MCAsmLayout &Layout, MCLEBFragment &LF) {
   uint64_t OldSize = LF.getContents().size();
   int64_t Value;
   bool Abs = LF.getValue().evaluateKnownAbsolute(Value, Layout);
-  if (!Abs)
+  if (!Abs) {
     report_fatal_error("sleb128 and uleb128 expressions must be absolute");
+
+}
   SmallString<8> &Data = LF.getContents();
   Data.clear();
   raw_svector_ostream OSE(Data);
@@ -950,10 +1058,12 @@ bool MCAssembler::relaxLEB(MCAsmLayout &Layout, MCLEBFragment &LF) {
   // without either adding padding to an LEB fragment or adding extra padding
   // to a later alignment fragment. To accommodate such tables, relaxation can
   // only increase an LEB fragment size here, not decrease it. See PR35809.
-  if (LF.isSigned())
+  if (LF.isSigned()) {
     encodeSLEB128(Value, OSE, OldSize);
-  else
+  } else {
     encodeULEB128(Value, OSE, OldSize);
+
+}
   return OldSize != LF.getContents().size();
 }
 
@@ -998,21 +1108,27 @@ bool MCAssembler::relaxBoundaryAlign(MCAsmLayout &Layout,
                                      MCBoundaryAlignFragment &BF) {
   // BoundaryAlignFragment that doesn't need to align any fragment should not be
   // relaxed.
-  if (!BF.getLastFragment())
+  if (!BF.getLastFragment()) {
     return false;
+
+}
 
   uint64_t AlignedOffset = Layout.getFragmentOffset(&BF);
   uint64_t AlignedSize = 0;
   for (const MCFragment *F = BF.getLastFragment(); F != &BF;
-       F = F->getPrevNode())
+       F = F->getPrevNode()) {
     AlignedSize += computeFragmentSize(Layout, *F);
+
+}
 
   Align BoundaryAlignment = BF.getAlignment();
   uint64_t NewSize = needPadding(AlignedOffset, AlignedSize, BoundaryAlignment)
                          ? offsetToAlignment(AlignedOffset, BoundaryAlignment)
                          : 0U;
-  if (NewSize == BF.getSize())
+  if (NewSize == BF.getSize()) {
     return false;
+
+}
   BF.setSize(NewSize);
   Layout.invalidateFragmentsFrom(&BF);
   return true;
@@ -1138,8 +1254,10 @@ bool MCAssembler::layoutSectionOnce(MCAsmLayout &Layout, MCSection &Sec) {
   for (MCFragment &Frag : Sec) {
     // Check if this is a fragment that needs relaxation.
     bool RelaxedFrag = relaxFragment(Layout, Frag);
-    if (RelaxedFrag && !FirstRelaxedFragment)
+    if (RelaxedFrag && !FirstRelaxedFragment) {
       FirstRelaxedFragment = &Frag;
+
+}
   }
   if (FirstRelaxedFragment) {
     Layout.invalidateFragmentsFrom(FirstRelaxedFragment);
@@ -1153,8 +1271,10 @@ bool MCAssembler::layoutOnce(MCAsmLayout &Layout) {
 
   bool WasRelaxed = false;
   for (MCSection &Sec : *this) {
-    while (layoutSectionOnce(Layout, Sec))
+    while (layoutSectionOnce(Layout, Sec)) {
       WasRelaxed = true;
+
+}
   }
 
   return WasRelaxed;

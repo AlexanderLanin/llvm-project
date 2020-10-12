@@ -33,8 +33,10 @@ using namespace clang;
 
 static bool isEnumConstant(const Expr *Ex) {
   const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(Ex);
-  if (!DR)
+  if (!DR) {
     return false;
+
+}
   return isa<EnumConstantDecl>(DR->getDecl());
 }
 
@@ -59,10 +61,14 @@ static bool isTrivialDoWhile(const CFGBlock *B, const Stmt *S) {
 }
 
 static bool isBuiltinUnreachable(const Stmt *S) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(S))
-    if (const auto *FDecl = dyn_cast<FunctionDecl>(DRE->getDecl()))
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(S)) {
+    if (const auto *FDecl = dyn_cast<FunctionDecl>(DRE->getDecl())) {
       return FDecl->getIdentifier() &&
              FDecl->getBuiltinID() == Builtin::BI__builtin_unreachable;
+
+}
+
+}
   return false;
 }
 
@@ -92,12 +98,16 @@ static bool isDeadReturn(const CFGBlock *B, const Stmt *S) {
          I != E; ++I) {
       if (Optional<CFGStmt> CS = I->getAs<CFGStmt>()) {
         if (const ReturnStmt *RS = dyn_cast<ReturnStmt>(CS->getStmt())) {
-          if (RS == S)
+          if (RS == S) {
             return true;
+
+}
           if (const Expr *RE = RS->getRetValue()) {
             RE = RE->IgnoreParenCasts();
-            if (RE == S)
+            if (RE == S) {
               return true;
+
+}
             ParentMap PM(const_cast<Expr *>(RE));
             // If 'S' is in the ParentMap, it is a subexpression of
             // the return statement.
@@ -162,14 +172,18 @@ static bool isExpandedFromConfigurationMacro(const Stmt *S,
       // as configuration values.
       SourceLocation TopL = getTopMostMacro(L, SM);
       StringRef MacroName = PP.getImmediateMacroName(TopL);
-      if (MacroName == "YES" || MacroName == "NO")
+      if (MacroName == "YES" || MacroName == "NO") {
         return false;
+
+}
     } else if (!PP.getLangOpts().CPlusPlus) {
       // Do not treat C 'false' and 'true' macros as configuration values.
       SourceLocation TopL = getTopMostMacro(L, SM);
       StringRef MacroName = PP.getImmediateMacroName(TopL);
-      if (MacroName == "false" || MacroName == "true")
+      if (MacroName == "false" || MacroName == "true") {
         return false;
+
+}
     }
     return true;
   }
@@ -190,23 +204,35 @@ static bool isConfigurationValue(const Stmt *S,
                                  SourceRange *SilenceableCondVal = nullptr,
                                  bool IncludeIntegers = true,
                                  bool WrappedInParens = false) {
-  if (!S)
+  if (!S) {
     return false;
 
-  if (const auto *Ex = dyn_cast<Expr>(S))
+}
+
+  if (const auto *Ex = dyn_cast<Expr>(S)) {
     S = Ex->IgnoreImplicit();
 
-  if (const auto *Ex = dyn_cast<Expr>(S))
+}
+
+  if (const auto *Ex = dyn_cast<Expr>(S)) {
     S = Ex->IgnoreCasts();
 
+}
+
   // Special case looking for the sigil '()' around an integer literal.
-  if (const ParenExpr *PE = dyn_cast<ParenExpr>(S))
-    if (!PE->getBeginLoc().isMacroID())
+  if (const ParenExpr *PE = dyn_cast<ParenExpr>(S)) {
+    if (!PE->getBeginLoc().isMacroID()) {
       return isConfigurationValue(PE->getSubExpr(), PP, SilenceableCondVal,
                                   IncludeIntegers, true);
 
-  if (const Expr *Ex = dyn_cast<Expr>(S))
+}
+
+}
+
+  if (const Expr *Ex = dyn_cast<Expr>(S)) {
     S = Ex->IgnoreCasts();
+
+}
 
   bool IgnoreYES_NO = false;
 
@@ -225,8 +251,10 @@ static bool isConfigurationValue(const Stmt *S,
     case Stmt::IntegerLiteralClass: {
       const Expr *E = cast<Expr>(S);
       if (IncludeIntegers) {
-        if (SilenceableCondVal && !SilenceableCondVal->getBegin().isValid())
+        if (SilenceableCondVal && !SilenceableCondVal->getBegin().isValid()) {
           *SilenceableCondVal = E->getSourceRange();
+
+}
         return WrappedInParens || isExpandedFromConfigurationMacro(E, PP, IgnoreYES_NO);
       }
       return false;
@@ -248,8 +276,10 @@ static bool isConfigurationValue(const Stmt *S,
     }
     case Stmt::UnaryOperatorClass: {
       const UnaryOperator *UO = cast<UnaryOperator>(S);
-      if (UO->getOpcode() != UO_LNot && UO->getOpcode() != UO_Minus)
+      if (UO->getOpcode() != UO_LNot && UO->getOpcode() != UO_Minus) {
         return false;
+
+}
       bool SilenceableCondValNotSet =
           SilenceableCondVal && SilenceableCondVal->getBegin().isInvalid();
       bool IsSubExprConfigValue =
@@ -260,8 +290,10 @@ static bool isConfigurationValue(const Stmt *S,
       if (SilenceableCondValNotSet &&
           SilenceableCondVal->getBegin().isValid() &&
           *SilenceableCondVal ==
-              UO->getSubExpr()->IgnoreCasts()->getSourceRange())
+              UO->getSubExpr()->IgnoreCasts()->getSourceRange()) {
         *SilenceableCondVal = UO->getSourceRange();
+
+}
       return IsSubExprConfigValue;
     }
     default:
@@ -270,8 +302,10 @@ static bool isConfigurationValue(const Stmt *S,
 }
 
 static bool isConfigurationValue(const ValueDecl *D, Preprocessor &PP) {
-  if (const EnumConstantDecl *ED = dyn_cast<EnumConstantDecl>(D))
+  if (const EnumConstantDecl *ED = dyn_cast<EnumConstantDecl>(D)) {
     return isConfigurationValue(ED->getInitExpr(), PP);
+
+}
   if (const VarDecl *VD = dyn_cast<VarDecl>(D)) {
     // As a heuristic, treat globals as configuration values.  Note
     // that we only will get here if Sema evaluated this
@@ -280,8 +314,10 @@ static bool isConfigurationValue(const ValueDecl *D, Preprocessor &PP) {
     // We could generalize this to local variables, but it isn't
     // clear if those truly represent configuration values that
     // gate unreachable code.
-    if (!VD->hasLocalStorage())
+    if (!VD->hasLocalStorage()) {
       return true;
+
+}
 
     // As a heuristic, locals that have been marked 'const' explicitly
     // can be treated as configuration values as well.
@@ -294,8 +330,10 @@ static bool isConfigurationValue(const ValueDecl *D, Preprocessor &PP) {
 static bool shouldTreatSuccessorsAsReachable(const CFGBlock *B,
                                              Preprocessor &PP) {
   if (const Stmt *Term = B->getTerminatorStmt()) {
-    if (isa<SwitchStmt>(Term))
+    if (isa<SwitchStmt>(Term)) {
       return true;
+
+}
     // Specially handle '||' and '&&'.
     if (isa<BinaryOperator>(Term)) {
       return isConfigurationValue(Term, PP);
@@ -335,16 +373,20 @@ static unsigned scanFromBlock(const CFGBlock *Start,
     // within the "sometimes unreachable" code.
     // Look at the successors and mark then reachable.
     Optional<bool> TreatAllSuccessorsAsReachable;
-    if (!IncludeSometimesUnreachableEdges)
+    if (!IncludeSometimesUnreachableEdges) {
       TreatAllSuccessorsAsReachable = false;
+
+}
 
     for (CFGBlock::const_succ_iterator I = item->succ_begin(),
          E = item->succ_end(); I != E; ++I) {
       const CFGBlock *B = *I;
-      if (!B) do {
+      if (!B) { do {
         const CFGBlock *UB = I->getPossiblyUnreachableBlock();
-        if (!UB)
+        if (!UB) {
           break;
+
+}
 
         if (!TreatAllSuccessorsAsReachable.hasValue()) {
           assert(PP);
@@ -358,6 +400,8 @@ static unsigned scanFromBlock(const CFGBlock *Start,
         }
       }
       while (false);
+
+}
 
       if (B) {
         unsigned blockID = B->getBlockID();
@@ -417,8 +461,10 @@ namespace {
 
 void DeadCodeScan::enqueue(const CFGBlock *block) {
   unsigned blockID = block->getBlockID();
-  if (Reachable[blockID] || Visited[blockID])
+  if (Reachable[blockID] || Visited[blockID]) {
     return;
+
+}
   Visited[blockID] = true;
   WorkList.push_back(block);
 }
@@ -447,26 +493,36 @@ bool DeadCodeScan::isDeadCodeRoot(const clang::CFGBlock *Block) {
 }
 
 static bool isValidDeadStmt(const Stmt *S) {
-  if (S->getBeginLoc().isInvalid())
+  if (S->getBeginLoc().isInvalid()) {
     return false;
-  if (const BinaryOperator *BO = dyn_cast<BinaryOperator>(S))
+
+}
+  if (const BinaryOperator *BO = dyn_cast<BinaryOperator>(S)) {
     return BO->getOpcode() != BO_Comma;
+
+}
   return true;
 }
 
 const Stmt *DeadCodeScan::findDeadCode(const clang::CFGBlock *Block) {
-  for (CFGBlock::const_iterator I = Block->begin(), E = Block->end(); I!=E; ++I)
+  for (CFGBlock::const_iterator I = Block->begin(), E = Block->end(); I!=E; ++I) {
     if (Optional<CFGStmt> CS = I->getAs<CFGStmt>()) {
       const Stmt *S = CS->getStmt();
-      if (isValidDeadStmt(S))
+      if (isValidDeadStmt(S)) {
         return S;
+
+}
     }
+
+}
 
   CFGTerminator T = Block->getTerminator();
   if (T.isStmtBranch()) {
     const Stmt *S = T.getStmt();
-    if (S && isValidDeadStmt(S))
+    if (S && isValidDeadStmt(S)) {
       return S;
+
+}
   }
 
   return nullptr;
@@ -474,10 +530,14 @@ const Stmt *DeadCodeScan::findDeadCode(const clang::CFGBlock *Block) {
 
 static int SrcCmp(const std::pair<const CFGBlock *, const Stmt *> *p1,
                   const std::pair<const CFGBlock *, const Stmt *> *p2) {
-  if (p1->second->getBeginLoc() < p2->second->getBeginLoc())
+  if (p1->second->getBeginLoc() < p2->second->getBeginLoc()) {
     return -1;
-  if (p2->second->getBeginLoc() < p1->second->getBeginLoc())
+
+}
+  if (p2->second->getBeginLoc() < p1->second->getBeginLoc()) {
     return 1;
+
+}
   return 0;
 }
 
@@ -492,8 +552,10 @@ unsigned DeadCodeScan::scanBackwards(const clang::CFGBlock *Start,
 
     // It is possible that this block has been marked reachable after
     // it was enqueued.
-    if (Reachable[Block->getBlockID()])
+    if (Reachable[Block->getBlockID()]) {
       continue;
+
+}
 
     // Look for any dead code within the block.
     const Stmt *S = findDeadCode(Block);
@@ -502,8 +564,10 @@ unsigned DeadCodeScan::scanBackwards(const clang::CFGBlock *Start,
       // No dead code.  Possibly an empty block.  Look at dead predecessors.
       for (CFGBlock::const_pred_iterator I = Block->pred_begin(),
            E = Block->pred_end(); I != E; ++I) {
-        if (const CFGBlock *predBlock = *I)
+        if (const CFGBlock *predBlock = *I) {
           enqueue(predBlock);
+
+}
       }
       continue;
     }
@@ -533,8 +597,10 @@ unsigned DeadCodeScan::scanBackwards(const clang::CFGBlock *Start,
     for (DeferredLocsTy::iterator I = DeferredLocs.begin(),
          E = DeferredLocs.end(); I != E; ++I) {
       const CFGBlock *Block = I->first;
-      if (Reachable[Block->getBlockID()])
+      if (Reachable[Block->getBlockID()]) {
         continue;
+
+}
       reportDeadCode(Block, I->second, CB);
       count += scanMaybeReachableFromBlock(Block, PP, Reachable);
     }
@@ -548,8 +614,10 @@ static SourceLocation GetUnreachableLoc(const Stmt *S,
                                         SourceRange &R2) {
   R1 = R2 = SourceRange();
 
-  if (const Expr *Ex = dyn_cast<Expr>(S))
+  if (const Expr *Ex = dyn_cast<Expr>(S)) {
     S = Ex->IgnoreParenImpCasts();
+
+}
 
   switch (S->getStmtClass()) {
     case Expr::BinaryOperatorClass: {
@@ -680,16 +748,20 @@ void FindUnreachableCode(AnalysisDeclContext &AC, Preprocessor &PP,
                          Callback &CB) {
 
   CFG *cfg = AC.getCFG();
-  if (!cfg)
+  if (!cfg) {
     return;
+
+}
 
   // Scan for reachable blocks from the entrance of the CFG.
   // If there are no unreachable blocks, we're done.
   llvm::BitVector reachable(cfg->getNumBlockIDs());
   unsigned numReachable =
     scanMaybeReachableFromBlock(&cfg->getEntry(), PP, reachable);
-  if (numReachable == cfg->getNumBlockIDs())
+  if (numReachable == cfg->getNumBlockIDs()) {
     return;
+
+}
 
   // If there aren't explicit EH edges, we should include the 'try' dispatch
   // blocks as roots.
@@ -698,8 +770,10 @@ void FindUnreachableCode(AnalysisDeclContext &AC, Preprocessor &PP,
          E = cfg->try_blocks_end() ; I != E; ++I) {
       numReachable += scanMaybeReachableFromBlock(*I, PP, reachable);
     }
-    if (numReachable == cfg->getNumBlockIDs())
+    if (numReachable == cfg->getNumBlockIDs()) {
       return;
+
+}
   }
 
   // There are some unreachable blocks.  We need to find the root blocks that
@@ -707,14 +781,18 @@ void FindUnreachableCode(AnalysisDeclContext &AC, Preprocessor &PP,
   for (CFG::iterator I = cfg->begin(), E = cfg->end(); I != E; ++I) {
     const CFGBlock *block = *I;
     // A block may have been marked reachable during this loop.
-    if (reachable[block->getBlockID()])
+    if (reachable[block->getBlockID()]) {
       continue;
+
+}
 
     DeadCodeScan DS(reachable, PP, AC.getASTContext());
     numReachable += DS.scanBackwards(block, CB);
 
-    if (numReachable == cfg->getNumBlockIDs())
+    if (numReachable == cfg->getNumBlockIDs()) {
       return;
+
+}
   }
 }
 

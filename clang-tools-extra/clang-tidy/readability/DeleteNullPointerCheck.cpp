@@ -57,8 +57,10 @@ void DeleteNullPointerCheck::check(const MatchFinder::MatchResult &Result) {
   auto Diag = diag(
       IfWithDelete->getBeginLoc(),
       "'if' statement is unnecessary; deleting null pointer has no effect");
-  if (IfWithDelete->getElse())
+  if (IfWithDelete->getElse()) {
     return;
+
+}
   // FIXME: generate fixit for this case.
 
   Diag << FixItHint::CreateRemoval(CharSourceRange::getTokenRange(

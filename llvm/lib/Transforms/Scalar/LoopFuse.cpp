@@ -205,10 +205,14 @@ struct FusionCandidate {
             return;
           }
         }
-        if (I.mayWriteToMemory())
+        if (I.mayWriteToMemory()) {
           MemWrites.push_back(&I);
-        if (I.mayReadFromMemory())
+
+}
+        if (I.mayReadFromMemory()) {
           MemReads.push_back(&I);
+
+}
       }
     }
   }
@@ -237,10 +241,12 @@ struct FusionCandidate {
   /// loop guard block. If it represents an unguarded loop, the entry block is
   /// the preheader of the loop.
   BasicBlock *getEntryBlock() const {
-    if (GuardBranch)
+    if (GuardBranch) {
       return GuardBranch->getParent();
-    else
+    } else {
       return Preheader;
+
+}
   }
 
   /// Given a guarded loop, get the successor of the guard that is not in the
@@ -288,18 +294,30 @@ struct FusionCandidate {
   bool isEligibleForFusion(ScalarEvolution &SE) const {
     if (!isValid()) {
       LLVM_DEBUG(dbgs() << "FC has invalid CFG requirements!\n");
-      if (!Preheader)
+      if (!Preheader) {
         ++InvalidPreheader;
-      if (!Header)
+
+}
+      if (!Header) {
         ++InvalidHeader;
-      if (!ExitingBlock)
+
+}
+      if (!ExitingBlock) {
         ++InvalidExitingBlock;
-      if (!ExitBlock)
+
+}
+      if (!ExitBlock) {
         ++InvalidExitBlock;
-      if (!Latch)
+
+}
+      if (!Latch) {
         ++InvalidLatch;
-      if (L->isInvalid())
+
+}
+      if (L->isInvalid()) {
         ++InvalidLoop;
+
+}
 
       return false;
     }
@@ -445,8 +463,10 @@ struct LoopDepthTree {
   using const_iterator = LoopsOnLevelTy::const_iterator;
 
   LoopDepthTree(LoopInfo &LI) : Depth(1) {
-    if (!LI.empty())
+    if (!LI.empty()) {
       LoopsOnLevel.emplace_back(LoopVector(LI.rbegin(), LI.rend()));
+
+}
   }
 
   /// Test whether a given loop has been removed from the function, and thus is
@@ -461,10 +481,16 @@ struct LoopDepthTree {
   void descend() {
     LoopsOnLevelTy LoopsOnNextLevel;
 
-    for (const LoopVector &LV : *this)
-      for (Loop *L : LV)
-        if (!isRemovedLoop(L) && L->begin() != L->end())
+    for (const LoopVector &LV : *this) {
+      for (Loop *L : LV) {
+        if (!isRemovedLoop(L) && L->begin() != L->end()) {
           LoopsOnNextLevel.emplace_back(LoopVector(L->begin(), L->end()));
+
+}
+
+}
+
+}
 
     LoopsOnLevel = LoopsOnNextLevel;
     RemovedLoops.clear();
@@ -546,8 +572,10 @@ public:
 
         // Skip singleton loop sets as they do not offer fusion opportunities on
         // this level.
-        if (LV.size() == 1)
+        if (LV.size() == 1) {
           continue;
+
+}
 #ifndef NDEBUG
         if (VerboseFusionDebugging) {
           LLVM_DEBUG({
@@ -572,8 +600,10 @@ public:
       FusionCandidates.clear();
     }
 
-    if (Changed)
+    if (Changed) {
       LLVM_DEBUG(dbgs() << "Function after Loop Fusion: \n"; F.dump(););
+
+}
 
 #ifndef NDEBUG
     assert(DT.verify());
@@ -607,8 +637,10 @@ private:
   void collectFusionCandidates(const LoopVector &LV) {
     for (Loop *L : LV) {
       FusionCandidate CurrCand(L, &DT, &PDT, ORE);
-      if (!CurrCand.isEligibleForFusion(SE))
+      if (!CurrCand.isEligibleForFusion(SE)) {
         continue;
+
+}
 
       // Go through each list in FusionCandidates and determine if L is control
       // flow equivalent with the first loop in that list. If it is, append LV.
@@ -696,8 +728,10 @@ private:
     bool Fused = false;
     LLVM_DEBUG(printFusionCandidates(FusionCandidates));
     for (auto &CandidateSet : FusionCandidates) {
-      if (CandidateSet.size() < 2)
+      if (CandidateSet.size() < 2) {
         continue;
+
+}
 
       LLVM_DEBUG(dbgs() << "Attempting fusion on Candidate Set:\n"
                         << CandidateSet << "\n");
@@ -865,8 +899,10 @@ private:
         return visit(Expr->getStart());
       }
 
-      for (const SCEV *Op : Expr->operands())
+      for (const SCEV *Op : Expr->operands()) {
         Operands.push_back(visit(Op));
+
+}
       return SE.getAddRecExpr(Operands, ExprL, Expr->getNoWrapFlags());
     }
 
@@ -883,8 +919,10 @@ private:
                             Instruction &I1, bool EqualIsInvalid) {
     Value *Ptr0 = getLoadStorePointerOperand(&I0);
     Value *Ptr1 = getLoadStorePointerOperand(&I1);
-    if (!Ptr0 || !Ptr1)
+    if (!Ptr0 || !Ptr1) {
       return false;
+
+}
 
     const SCEV *SCEVPtr0 = SE.getSCEVAtScope(Ptr0, &L0);
     const SCEV *SCEVPtr1 = SE.getSCEVAtScope(Ptr1, &L1);
@@ -900,8 +938,10 @@ private:
       LLVM_DEBUG(dbgs() << "    Access function after rewrite: " << *SCEVPtr0
                         << " [Valid: " << Rewriter.wasValidSCEV() << "]\n");
 #endif
-    if (!Rewriter.wasValidSCEV())
+    if (!Rewriter.wasValidSCEV()) {
       return false;
+
+}
 
     // TODO: isKnownPredicate doesnt work well when one SCEV is loop carried (by
     //       L0) and the other is not. We could check if it is monotone and test
@@ -910,13 +950,17 @@ private:
     BasicBlock *L0Header = L0.getHeader();
     auto HasNonLinearDominanceRelation = [&](const SCEV *S) {
       const SCEVAddRecExpr *AddRec = dyn_cast<SCEVAddRecExpr>(S);
-      if (!AddRec)
+      if (!AddRec) {
         return false;
+
+}
       return !DT.dominates(L0Header, AddRec->getLoop()->getHeader()) &&
              !DT.dominates(AddRec->getLoop()->getHeader(), L0Header);
     };
-    if (SCEVExprContains(SCEVPtr1, HasNonLinearDominanceRelation))
+    if (SCEVExprContains(SCEVPtr1, HasNonLinearDominanceRelation)) {
       return false;
+
+}
 
     ICmpInst::Predicate Pred =
         EqualIsInvalid ? ICmpInst::ICMP_SGT : ICmpInst::ICMP_SGE;
@@ -948,8 +992,10 @@ private:
       return accessDiffIsPositive(*FC0.L, *FC1.L, I0, I1, AnyDep);
     case FUSION_DEPENDENCE_ANALYSIS_DA: {
       auto DepResult = DI.depends(&I0, &I1, true);
-      if (!DepResult)
+      if (!DepResult) {
         return true;
+
+}
 #ifndef NDEBUG
       if (VerboseFusionDebugging) {
         LLVM_DEBUG(dbgs() << "DA res: "; DepResult->dump(dbgs());
@@ -961,9 +1007,11 @@ private:
       }
 #endif
 
-      if (DepResult->getNextPredecessor() || DepResult->getNextSuccessor())
+      if (DepResult->getNextPredecessor() || DepResult->getNextSuccessor()) {
         LLVM_DEBUG(
             dbgs() << "TODO: Implement pred/succ dependence handling!\n");
+
+}
 
       // TODO: Can we actually use the dependence info analysis here?
       return false;
@@ -988,49 +1036,65 @@ private:
     assert(DT.dominates(FC0.getEntryBlock(), FC1.getEntryBlock()));
 
     for (Instruction *WriteL0 : FC0.MemWrites) {
-      for (Instruction *WriteL1 : FC1.MemWrites)
+      for (Instruction *WriteL1 : FC1.MemWrites) {
         if (!dependencesAllowFusion(FC0, FC1, *WriteL0, *WriteL1,
                                     /* AnyDep */ false,
                                     FusionDependenceAnalysis)) {
           InvalidDependencies++;
           return false;
         }
-      for (Instruction *ReadL1 : FC1.MemReads)
+
+}
+      for (Instruction *ReadL1 : FC1.MemReads) {
         if (!dependencesAllowFusion(FC0, FC1, *WriteL0, *ReadL1,
                                     /* AnyDep */ false,
                                     FusionDependenceAnalysis)) {
           InvalidDependencies++;
           return false;
         }
+
+}
     }
 
     for (Instruction *WriteL1 : FC1.MemWrites) {
-      for (Instruction *WriteL0 : FC0.MemWrites)
+      for (Instruction *WriteL0 : FC0.MemWrites) {
         if (!dependencesAllowFusion(FC0, FC1, *WriteL0, *WriteL1,
                                     /* AnyDep */ false,
                                     FusionDependenceAnalysis)) {
           InvalidDependencies++;
           return false;
         }
-      for (Instruction *ReadL0 : FC0.MemReads)
+
+}
+      for (Instruction *ReadL0 : FC0.MemReads) {
         if (!dependencesAllowFusion(FC0, FC1, *ReadL0, *WriteL1,
                                     /* AnyDep */ false,
                                     FusionDependenceAnalysis)) {
           InvalidDependencies++;
           return false;
         }
+
+}
     }
 
     // Walk through all uses in FC1. For each use, find the reaching def. If the
     // def is located in FC0 then it is is not safe to fuse.
-    for (BasicBlock *BB : FC1.L->blocks())
-      for (Instruction &I : *BB)
-        for (auto &Op : I.operands())
-          if (Instruction *Def = dyn_cast<Instruction>(Op))
+    for (BasicBlock *BB : FC1.L->blocks()) {
+      for (Instruction &I : *BB) {
+        for (auto &Op : I.operands()) {
+          if (Instruction *Def = dyn_cast<Instruction>(Op)) {
             if (FC0.L->contains(Def->getParent())) {
               InvalidDependencies++;
               return false;
             }
+
+}
+
+}
+
+}
+
+}
 
     return true;
   }
@@ -1047,10 +1111,12 @@ private:
   bool isAdjacent(const FusionCandidate &FC0,
                   const FusionCandidate &FC1) const {
     // If the successor of the guard branch is FC1, then the loops are adjacent
-    if (FC0.GuardBranch)
+    if (FC0.GuardBranch) {
       return FC0.getNonLoopBlock() == FC1.getEntryBlock();
-    else
+    } else {
       return FC0.ExitBlock == FC1.getEntryBlock();
+
+}
   }
 
   /// Determine if two fusion candidates have identical guards
@@ -1071,19 +1137,27 @@ private:
            "Expecting FC0 and FC1 to be guarded loops.");
 
     if (auto FC0CmpInst =
-            dyn_cast<Instruction>(FC0.GuardBranch->getCondition()))
+            dyn_cast<Instruction>(FC0.GuardBranch->getCondition())) {
       if (auto FC1CmpInst =
-              dyn_cast<Instruction>(FC1.GuardBranch->getCondition()))
-        if (!FC0CmpInst->isIdenticalTo(FC1CmpInst))
+              dyn_cast<Instruction>(FC1.GuardBranch->getCondition())) {
+        if (!FC0CmpInst->isIdenticalTo(FC1CmpInst)) {
           return false;
+
+}
+
+}
+
+}
 
     // The compare instructions are identical.
     // Now make sure the successor of the guards have the same flow into/around
     // the loop
-    if (FC0.GuardBranch->getSuccessor(0) == FC0.Preheader)
+    if (FC0.GuardBranch->getSuccessor(0) == FC0.Preheader) {
       return (FC1.GuardBranch->getSuccessor(0) == FC1.Preheader);
-    else
+    } else {
       return (FC1.GuardBranch->getSuccessor(1) == FC1.Preheader);
+
+}
   }
 
   /// Simplify the condition of the latch branch of \p FC to true, when both of
@@ -1152,8 +1226,10 @@ private:
     // Fusing guarded loops is handled slightly differently than non-guarded
     // loops and has been broken out into a separate method instead of trying to
     // intersperse the logic within a single method.
-    if (FC0.GuardBranch)
+    if (FC0.GuardBranch) {
       return fuseGuardedLoops(FC0, FC1);
+
+}
 
     assert(FC1.Preheader == FC0.ExitBlock);
     assert(FC1.Preheader->size() == 1 &&
@@ -1169,9 +1245,13 @@ private:
     // anyway as all loop carried values dominate the latch and thereby also the
     // exiting branch.
     SmallVector<PHINode *, 8> OriginalFC0PHIs;
-    if (FC0.ExitingBlock != FC0.Latch)
-      for (PHINode &PHI : FC0.Header->phis())
+    if (FC0.ExitingBlock != FC0.Latch) {
+      for (PHINode &PHI : FC0.Header->phis()) {
         OriginalFC0PHIs.push_back(&PHI);
+
+}
+
+}
 
     // Replace incoming blocks for header PHIs first.
     FC1.Preheader->replaceSuccessorsPhiUsesWith(FC0.Preheader);
@@ -1213,12 +1293,16 @@ private:
 
     // Moves the phi nodes from the second to the first loops header block.
     while (PHINode *PHI = dyn_cast<PHINode>(&FC1.Header->front())) {
-      if (SE.isSCEVable(PHI->getType()))
+      if (SE.isSCEVable(PHI->getType())) {
         SE.forgetValue(PHI);
-      if (PHI->hasNUsesOrMore(1))
+
+}
+      if (PHI->hasNUsesOrMore(1)) {
         PHI->moveBefore(&*FC0.Header->getFirstInsertionPt());
-      else
+      } else {
         PHI->eraseFromParent();
+
+}
     }
 
     // Introduce new phi nodes in the second loop header to ensure
@@ -1252,9 +1336,11 @@ private:
 
     // If FC0.Latch and FC0.ExitingBlock are the same then we have already
     // performed the updates above.
-    if (FC0.Latch != FC0.ExitingBlock)
+    if (FC0.Latch != FC0.ExitingBlock) {
       TreeUpdates.emplace_back(DominatorTree::UpdateType(
           DominatorTree::Insert, FC0.Latch, FC1.Header));
+
+}
 
     TreeUpdates.emplace_back(DominatorTree::UpdateType(DominatorTree::Delete,
                                                        FC0.Latch, FC0.Header));
@@ -1287,8 +1373,10 @@ private:
     for (BasicBlock *BB : Blocks) {
       FC0.L->addBlockEntry(BB);
       FC1.L->removeBlockFromLoop(BB);
-      if (LI.getLoopFor(BB) != FC1.L)
+      if (LI.getLoopFor(BB) != FC1.L) {
         continue;
+
+}
       LI.changeLoopFor(BB, FC0.L);
     }
     while (!FC1.L->empty()) {
@@ -1420,9 +1508,13 @@ private:
     // (because the loops are rotated. Thus, nothing will ever be added to
     // OriginalFC0PHIs.
     SmallVector<PHINode *, 8> OriginalFC0PHIs;
-    if (FC0.ExitingBlock != FC0.Latch)
-      for (PHINode &PHI : FC0.Header->phis())
+    if (FC0.ExitingBlock != FC0.Latch) {
+      for (PHINode &PHI : FC0.Header->phis()) {
         OriginalFC0PHIs.push_back(&PHI);
+
+}
+
+}
 
     assert(OriginalFC0PHIs.empty() && "Expecting OriginalFC0PHIs to be empty!");
 
@@ -1473,12 +1565,16 @@ private:
 
     // Moves the phi nodes from the second to the first loops header block.
     while (PHINode *PHI = dyn_cast<PHINode>(&FC1.Header->front())) {
-      if (SE.isSCEVable(PHI->getType()))
+      if (SE.isSCEVable(PHI->getType())) {
         SE.forgetValue(PHI);
-      if (PHI->hasNUsesOrMore(1))
+
+}
+      if (PHI->hasNUsesOrMore(1)) {
         PHI->moveBefore(&*FC0.Header->getFirstInsertionPt());
-      else
+      } else {
         PHI->eraseFromParent();
+
+}
     }
 
     // Introduce new phi nodes in the second loop header to ensure
@@ -1514,9 +1610,11 @@ private:
 
     // If FC0.Latch and FC0.ExitingBlock are the same then we have already
     // performed the updates above.
-    if (FC0.Latch != FC0.ExitingBlock)
+    if (FC0.Latch != FC0.ExitingBlock) {
       TreeUpdates.emplace_back(DominatorTree::UpdateType(
           DominatorTree::Insert, FC0.Latch, FC1.Header));
+
+}
 
     TreeUpdates.emplace_back(DominatorTree::UpdateType(DominatorTree::Delete,
                                                        FC0.Latch, FC0.Header));
@@ -1558,8 +1656,10 @@ private:
     for (BasicBlock *BB : Blocks) {
       FC0.L->addBlockEntry(BB);
       FC1.L->removeBlockFromLoop(BB);
-      if (LI.getLoopFor(BB) != FC1.L)
+      if (LI.getLoopFor(BB) != FC1.L) {
         continue;
+
+}
       LI.changeLoopFor(BB, FC0.L);
     }
     while (!FC1.L->empty()) {
@@ -1610,8 +1710,10 @@ struct LoopFuseLegacy : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     auto &DI = getAnalysis<DependenceAnalysisWrapperPass>().getDI();
@@ -1637,8 +1739,10 @@ PreservedAnalyses LoopFusePass::run(Function &F, FunctionAnalysisManager &AM) {
   const DataLayout &DL = F.getParent()->getDataLayout();
   LoopFuser LF(LI, DT, DI, SE, PDT, ORE, DL);
   bool Changed = LF.fuseLoops(F);
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserve<DominatorTreeAnalysis>();

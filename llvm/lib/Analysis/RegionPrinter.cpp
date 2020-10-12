@@ -46,12 +46,14 @@ struct DOTGraphTraits<RegionNode*> : public DefaultDOTGraphTraits {
     if (!Node->isSubRegion()) {
       BasicBlock *BB = Node->getNodeAs<BasicBlock>();
 
-      if (isSimple())
+      if (isSimple()) {
         return DOTGraphTraits<const Function*>
           ::getSimpleNodeLabel(BB, BB->getParent());
-      else
+      } else {
         return DOTGraphTraits<const Function*>
           ::getCompleteNodeLabel(BB, BB->getParent());
+
+}
     }
 
     return "Not implemented";
@@ -76,8 +78,10 @@ struct DOTGraphTraits<RegionInfo *> : public DOTGraphTraits<RegionNode *> {
                                 RegionInfo *G) {
     RegionNode *destNode = *CI;
 
-    if (srcNode->isSubRegion() || destNode->isSubRegion())
+    if (srcNode->isSubRegion() || destNode->isSubRegion()) {
       return "";
+
+}
 
     // In case of a backedge, do not use it to define the layout of the nodes.
     BasicBlock *srcBB = srcNode->getNodeAs<BasicBlock>();
@@ -85,14 +89,20 @@ struct DOTGraphTraits<RegionInfo *> : public DOTGraphTraits<RegionNode *> {
 
     Region *R = G->getRegionFor(destBB);
 
-    while (R && R->getParent())
-      if (R->getParent()->getEntry() == destBB)
+    while (R && R->getParent()) {
+      if (R->getParent()->getEntry() == destBB) {
         R = R->getParent();
-      else
+      } else {
         break;
 
-    if (R && R->getEntry() == destBB && R->contains(srcBB))
+}
+
+}
+
+    if (R && R->getEntry() == destBB && R->contains(srcBB)) {
       return "constraint=false";
+
+}
 
     return "";
   }
@@ -117,16 +127,22 @@ struct DOTGraphTraits<RegionInfo *> : public DOTGraphTraits<RegionNode *> {
         << ((R.getDepth() * 2 % 12) + 2) << "\n";
     }
 
-    for (const auto &RI : R)
+    for (const auto &RI : R) {
       printRegionCluster(*RI, GW, depth + 1);
+
+}
 
     const RegionInfo &RI = *static_cast<const RegionInfo*>(R.getRegionInfo());
 
-    for (auto *BB : R.blocks())
-      if (RI.getRegionFor(BB) == &R)
+    for (auto *BB : R.blocks()) {
+      if (RI.getRegionFor(BB) == &R) {
         O.indent(2 * (depth + 1)) << "Node"
           << static_cast<const void*>(RI.getTopLevelRegion()->getBBNode(BB))
           << ";\n";
+
+}
+
+}
 
     O.indent(2 * depth) << "}\n";
   }

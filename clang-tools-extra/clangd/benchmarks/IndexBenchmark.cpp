@@ -68,18 +68,26 @@ std::vector<FuzzyFindRequest> extractQueriesFromLogs() {
 static void MemQueries(benchmark::State &State) {
   const auto Mem = buildMem();
   const auto Requests = extractQueriesFromLogs();
-  for (auto _ : State)
-    for (const auto &Request : Requests)
+  for (auto _ : State) {
+    for (const auto &Request : Requests) {
       Mem->fuzzyFind(Request, [](const Symbol &S) {});
+
+}
+
+}
 }
 BENCHMARK(MemQueries);
 
 static void DexQueries(benchmark::State &State) {
   const auto Dex = buildDex();
   const auto Requests = extractQueriesFromLogs();
-  for (auto _ : State)
-    for (const auto &Request : Requests)
+  for (auto _ : State) {
+    for (const auto &Request : Requests) {
       Dex->fuzzyFind(Request, [](const Symbol &S) {});
+
+}
+
+}
 }
 BENCHMARK(DexQueries);
 

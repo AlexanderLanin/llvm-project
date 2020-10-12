@@ -40,8 +40,10 @@ public:
     // expression (it can be used in other types of expressions if it's cast to
     // an int and passed as an argument.)
     if (!isa<SCEVAddRecExpr>(Expr) && !isa<SCEVAddExpr>(Expr) &&
-        !isa<SCEVUnknown>(Expr))
+        !isa<SCEVUnknown>(Expr)) {
       return Expr;
+
+}
     return SCEVRewriteVisitor<AllocaOffsetRewriter>::visit(Expr);
   }
 
@@ -49,8 +51,10 @@ public:
     // FIXME: look through one or several levels of definitions?
     // This can be inttoptr(AllocaPtr) and SCEV would not unwrap
     // it for us.
-    if (Expr->getValue() == AllocaPtr)
+    if (Expr->getValue() == AllocaPtr) {
       return SE.getZero(Expr->getType());
+
+}
     return Expr;
   }
 };
@@ -93,8 +97,10 @@ struct UseInfo {
 
 raw_ostream &operator<<(raw_ostream &OS, const UseInfo &U) {
   OS << U.Range;
-  for (auto &Call : U.Calls)
+  for (auto &Call : U.Calls) {
     OS << ", " << Call;
+
+}
   return OS;
 }
 
@@ -132,13 +138,17 @@ raw_ostream &operator<<(raw_ostream &OS, const ParamInfo &P) {
 uint64_t getStaticAllocaAllocationSize(const AllocaInst *AI) {
   const DataLayout &DL = AI->getModule()->getDataLayout();
   TypeSize TS = DL.getTypeAllocSize(AI->getAllocatedType());
-  if (TS.isScalable())
+  if (TS.isScalable()) {
     return 0;
+
+}
   uint64_t Size = TS.getFixedSize();
   if (AI->isArrayAllocation()) {
     auto C = dyn_cast<ConstantInt>(AI->getArraySize());
-    if (!C)
+    if (!C) {
       return 0;
+
+}
     Size *= C->getZExtValue();
   }
   return Size;
@@ -179,11 +189,15 @@ struct StackSafetyInfo::FunctionInfo {
     O << "  @" << getName() << (IsDSOLocal() ? "" : " dso_preemptable")
       << (IsInterposable() ? " interposable" : "") << "\n";
     O << "    args uses:\n";
-    for (auto &P : Params)
+    for (auto &P : Params) {
       O << "      " << P << "\n";
+
+}
     O << "    allocas uses:\n";
-    for (auto &AS : Allocas)
+    for (auto &AS : Allocas) {
       O << "      " << AS << "\n";
+
+}
   }
 
 private:
@@ -239,8 +253,10 @@ public:
 ConstantRange
 StackSafetyLocalAnalysis::offsetFromAlloca(Value *Addr,
                                            const Value *AllocaPtr) {
-  if (!SE.isSCEVable(Addr->getType()))
+  if (!SE.isSCEVable(Addr->getType())) {
     return UnknownRange;
+
+}
 
   AllocaOffsetRewriter Rewriter(SE, AllocaPtr);
   const SCEV *Expr = Rewriter.visit(SE.getSCEV(Addr));
@@ -253,11 +269,15 @@ ConstantRange
 StackSafetyLocalAnalysis::getAccessRange(Value *Addr, const Value *AllocaPtr,
                                          ConstantRange SizeRange) {
   // Zero-size loads and stores do not access memory.
-  if (SizeRange.isEmptySet())
+  if (SizeRange.isEmptySet()) {
     return ConstantRange::getEmpty(PointerSize);
 
-  if (!SE.isSCEVable(Addr->getType()))
+}
+
+  if (!SE.isSCEVable(Addr->getType())) {
     return UnknownRange;
+
+}
 
   AllocaOffsetRewriter Rewriter(SE, AllocaPtr);
   const SCEV *Expr = Rewriter.visit(SE.getSCEV(Addr));
@@ -281,16 +301,22 @@ ConstantRange StackSafetyLocalAnalysis::getAccessRange(Value *Addr,
 ConstantRange StackSafetyLocalAnalysis::getMemIntrinsicAccessRange(
     const MemIntrinsic *MI, const Use &U, const Value *AllocaPtr) {
   if (auto MTI = dyn_cast<MemTransferInst>(MI)) {
-    if (MTI->getRawSource() != U && MTI->getRawDest() != U)
+    if (MTI->getRawSource() != U && MTI->getRawDest() != U) {
       return getRange(0, 1);
+
+}
   } else {
-    if (MI->getRawDest() != U)
+    if (MI->getRawDest() != U) {
       return getRange(0, 1);
+
+}
   }
   const auto *Len = dyn_cast<ConstantInt>(MI->getLength());
   // Non-constant size => unsafe. FIXME: try SCEV getRange.
-  if (!Len)
+  if (!Len) {
     return UnknownRange;
+
+}
   ConstantRange AccessRange =
       getAccessRange(U, AllocaPtr, getRange(0, Len->getZExtValue()));
   return AccessRange;
@@ -342,8 +368,10 @@ bool StackSafetyLocalAnalysis::analyzeAllUses(const Value *Ptr, UseInfo &US) {
       case Instruction::Invoke: {
         ImmutableCallSite CS(I);
 
-        if (I->isLifetimeStartOrEnd())
+        if (I->isLifetimeStartOrEnd()) {
           break;
+
+}
 
         if (const MemIntrinsic *MI = dyn_cast<MemIntrinsic>(I)) {
           US.updateRange(getMemIntrinsicAccessRange(MI, UI, Ptr));
@@ -374,8 +402,10 @@ bool StackSafetyLocalAnalysis::analyzeAllUses(const Value *Ptr, UseInfo &US) {
       }
 
       default:
-        if (Visited.insert(I).second)
+        if (Visited.insert(I).second) {
           WorkList.push_back(cast<const Instruction>(I));
+
+}
       }
     }
   }
@@ -431,8 +461,10 @@ class StackSafetyDataFlowAnalysis {
     updateOneNode(Callee, Functions.find(Callee)->second);
   }
   void updateAllNodes() {
-    for (auto &F : Functions)
+    for (auto &F : Functions) {
       updateOneNode(F.first, F.second);
+
+}
   }
   void runDataFlow();
 #ifndef NDEBUG
@@ -451,12 +483,20 @@ StackSafetyDataFlowAnalysis::StackSafetyDataFlowAnalysis(
       UnknownRange(PointerSize, true) {
   // Without ThinLTO, run the local analysis for every function in the TU and
   // then run the DFA.
-  for (auto &F : M.functions())
-    if (!F.isDeclaration())
+  for (auto &F : M.functions()) {
+    if (!F.isDeclaration()) {
       Functions.emplace(&F, FI(F));
-  for (auto &A : M.aliases())
-    if (isa<Function>(A.getBaseObject()))
+
+}
+
+}
+  for (auto &A : M.aliases()) {
+    if (isa<Function>(A.getBaseObject())) {
       Functions.emplace(&A, StackSafetyInfo::FunctionInfo(&A));
+
+}
+
+}
 }
 
 ConstantRange
@@ -464,15 +504,21 @@ StackSafetyDataFlowAnalysis::getArgumentAccessRange(const GlobalValue *Callee,
                                                     unsigned ParamNo) const {
   auto IT = Functions.find(Callee);
   // Unknown callee (outside of LTO domain or an indirect call).
-  if (IT == Functions.end())
+  if (IT == Functions.end()) {
     return UnknownRange;
+
+}
   const StackSafetyInfo::FunctionInfo &FS = IT->second;
   // The definition of this symbol may not be the definition in this linkage
   // unit.
-  if (!FS.IsDSOLocal() || FS.IsInterposable())
+  if (!FS.IsDSOLocal() || FS.IsInterposable()) {
     return UnknownRange;
-  if (ParamNo >= FS.Params.size()) // possibly vararg
+
+}
+  if (ParamNo >= FS.Params.size()) { // possibly vararg
     return UnknownRange;
+
+}
   return FS.Params[ParamNo].Use.Range;
 }
 
@@ -487,10 +533,12 @@ bool StackSafetyDataFlowAnalysis::updateOneUse(UseInfo &US,
     CalleeRange = CalleeRange.add(CS.Offset);
     if (!US.Range.contains(CalleeRange)) {
       Changed = true;
-      if (UpdateToFullSet)
+      if (UpdateToFullSet) {
         US.Range = UnknownRange;
-      else
+      } else {
         US.Range = US.Range.unionWith(CalleeRange);
+
+}
     }
   }
   return Changed;
@@ -500,18 +548,24 @@ void StackSafetyDataFlowAnalysis::updateOneNode(
     const GlobalValue *Callee, StackSafetyInfo::FunctionInfo &FS) {
   bool UpdateToFullSet = FS.UpdateCount > StackSafetyMaxIterations;
   bool Changed = false;
-  for (auto &AS : FS.Allocas)
+  for (auto &AS : FS.Allocas) {
     Changed |= updateOneUse(AS.Use, UpdateToFullSet);
-  for (auto &PS : FS.Params)
+
+}
+  for (auto &PS : FS.Params) {
     Changed |= updateOneUse(PS.Use, UpdateToFullSet);
+
+}
 
   if (Changed) {
     LLVM_DEBUG(dbgs() << "=== update [" << FS.UpdateCount
                       << (UpdateToFullSet ? ", full-set" : "") << "] "
                       << FS.getName() << "\n");
     // Callers of this function may need updating.
-    for (auto &CallerID : Callers[Callee])
+    for (auto &CallerID : Callers[Callee]) {
       WorkList.insert(CallerID);
+
+}
 
     ++FS.UpdateCount;
   }
@@ -525,18 +579,28 @@ void StackSafetyDataFlowAnalysis::runDataFlow() {
   for (auto &F : Functions) {
     Callees.clear();
     StackSafetyInfo::FunctionInfo &FS = F.second;
-    for (auto &AS : FS.Allocas)
-      for (auto &CS : AS.Use.Calls)
+    for (auto &AS : FS.Allocas) {
+      for (auto &CS : AS.Use.Calls) {
         Callees.push_back(CS.Callee);
-    for (auto &PS : FS.Params)
-      for (auto &CS : PS.Use.Calls)
+
+}
+
+}
+    for (auto &PS : FS.Params) {
+      for (auto &CS : PS.Use.Calls) {
         Callees.push_back(CS.Callee);
+
+}
+
+}
 
     llvm::sort(Callees);
     Callees.erase(std::unique(Callees.begin(), Callees.end()), Callees.end());
 
-    for (auto &Callee : Callees)
+    for (auto &Callee : Callees) {
       Callers[Callee].push_back(F.first);
+
+}
   }
 
   updateAllNodes();
@@ -561,19 +625,23 @@ StackSafetyGlobalInfo StackSafetyDataFlowAnalysis::run() {
   LLVM_DEBUG(verifyFixedPoint());
 
   StackSafetyGlobalInfo SSI;
-  for (auto &F : Functions)
+  for (auto &F : Functions) {
     SSI.emplace(F.first, std::move(F.second));
+
+}
   return SSI;
 }
 
 void print(const StackSafetyGlobalInfo &SSI, raw_ostream &O, const Module &M) {
   size_t Count = 0;
-  for (auto &F : M.functions())
+  for (auto &F : M.functions()) {
     if (!F.isDeclaration()) {
       SSI.find(&F)->second.print(O);
       O << "\n";
       ++Count;
     }
+
+}
   for (auto &A : M.aliases()) {
     SSI.find(&A)->second.print(O);
     O << "\n";
@@ -658,11 +726,15 @@ static bool SetStackSafetyMetadata(Module &M,
   bool Changed = false;
   unsigned Width = M.getDataLayout().getPointerSizeInBits();
   for (auto &F : M.functions()) {
-    if (F.isDeclaration() || F.hasOptNone())
+    if (F.isDeclaration() || F.hasOptNone()) {
       continue;
+
+}
     auto Iter = SSGI.find(&F);
-    if (Iter == SSGI.end())
+    if (Iter == SSGI.end()) {
       continue;
+
+}
     StackSafetyInfo::FunctionInfo *Summary = Iter->second.getInfo();
     for (auto &AS : Summary->Allocas) {
       ConstantRange AllocaRange{APInt(Width, 0), APInt(Width, AS.Size)};

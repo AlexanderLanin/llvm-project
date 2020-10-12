@@ -160,12 +160,16 @@ static Error resolveSectionAndAddress(const COFFObjectFile *Obj,
                                       const coff_section *&ResolvedSection,
                                       uint64_t &ResolvedAddr) {
   Expected<uint64_t> ResolvedAddrOrErr = Sym.getAddress();
-  if (!ResolvedAddrOrErr)
+  if (!ResolvedAddrOrErr) {
     return ResolvedAddrOrErr.takeError();
+
+}
   ResolvedAddr = *ResolvedAddrOrErr;
   Expected<section_iterator> Iter = Sym.getSection();
-  if (!Iter)
+  if (!Iter) {
     return Iter.takeError();
+
+}
   ResolvedSection = Obj->getCOFFSection(**Iter);
   return Error::success();
 }
@@ -193,11 +197,15 @@ getSectionContents(const COFFObjectFile *Obj,
                    const std::vector<RelocationRef> &Rels, uint64_t Offset,
                    ArrayRef<uint8_t> &Contents, uint64_t &Addr) {
   SymbolRef Sym;
-  if (Error E = resolveSymbol(Rels, Offset, Sym))
+  if (Error E = resolveSymbol(Rels, Offset, Sym)) {
     return E;
+
+}
   const coff_section *Section;
-  if (Error E = resolveSectionAndAddress(Obj, Sym, Section, Addr))
+  if (Error E = resolveSectionAndAddress(Obj, Sym, Section, Addr)) {
     return E;
+
+}
   return Obj->getSectionContents(Section, Contents);
 }
 
@@ -207,11 +215,15 @@ getSectionContents(const COFFObjectFile *Obj,
 static Error resolveSymbolName(const std::vector<RelocationRef> &Rels,
                                uint64_t Offset, StringRef &Name) {
   SymbolRef Sym;
-  if (Error EC = resolveSymbol(Rels, Offset, Sym))
+  if (Error EC = resolveSymbol(Rels, Offset, Sym)) {
     return EC;
+
+}
   Expected<StringRef> NameOrErr = Sym.getName();
-  if (!NameOrErr)
+  if (!NameOrErr) {
     return NameOrErr.takeError();
+
+}
   Name = *NameOrErr;
   return Error::success();
 }
@@ -222,8 +234,10 @@ static void printCOFFSymbolAddress(raw_ostream &Out,
   StringRef Sym;
   if (!resolveSymbolName(Rels, Offset, Sym)) {
     Out << Sym;
-    if (Disp > 0)
+    if (Disp > 0) {
       Out << format(" + 0x%04x", Disp);
+
+}
   } else {
     Out << format("0x%04x", Disp);
   }
@@ -231,17 +245,23 @@ static void printCOFFSymbolAddress(raw_ostream &Out,
 
 static void
 printSEHTable(const COFFObjectFile *Obj, uint32_t TableVA, int Count) {
-  if (Count == 0)
+  if (Count == 0) {
     return;
 
+}
+
   uintptr_t IntPtr = 0;
-  if (std::error_code EC = Obj->getVaPtr(TableVA, IntPtr))
+  if (std::error_code EC = Obj->getVaPtr(TableVA, IntPtr)) {
     reportError(errorCodeToError(EC), Obj->getFileName());
+
+}
 
   const support::ulittle32_t *P = (const support::ulittle32_t *)IntPtr;
   outs() << "SEH Table:";
-  for (int I = 0; I < Count; ++I)
+  for (int I = 0; I < Count; ++I) {
     outs() << format(" 0x%x", P[I] + Obj->getPE32Header()->ImageBase);
+
+}
   outs() << "\n\n";
 }
 
@@ -271,20 +291,28 @@ static void printTLSDirectory(const COFFObjectFile *Obj) {
   const pe32plus_header *PE32PlusHeader = Obj->getPE32PlusHeader();
 
   // Skip if it's not executable.
-  if (!PE32Header && !PE32PlusHeader)
+  if (!PE32Header && !PE32PlusHeader) {
     return;
+
+}
 
   const data_directory *DataDir;
-  if (std::error_code EC = Obj->getDataDirectory(COFF::TLS_TABLE, DataDir))
+  if (std::error_code EC = Obj->getDataDirectory(COFF::TLS_TABLE, DataDir)) {
     reportError(errorCodeToError(EC), Obj->getFileName());
 
-  if (DataDir->RelativeVirtualAddress == 0)
+}
+
+  if (DataDir->RelativeVirtualAddress == 0) {
     return;
+
+}
 
   uintptr_t IntPtr = 0;
   if (std::error_code EC =
-          Obj->getRvaPtr(DataDir->RelativeVirtualAddress, IntPtr))
+          Obj->getRvaPtr(DataDir->RelativeVirtualAddress, IntPtr)) {
     reportError(errorCodeToError(EC), Obj->getFileName());
+
+}
 
   if (PE32Header) {
     auto *TLSDir = reinterpret_cast<const coff_tls_directory32 *>(IntPtr);
@@ -299,26 +327,36 @@ static void printTLSDirectory(const COFFObjectFile *Obj) {
 
 static void printLoadConfiguration(const COFFObjectFile *Obj) {
   // Skip if it's not executable.
-  if (!Obj->getPE32Header())
+  if (!Obj->getPE32Header()) {
     return;
 
+}
+
   // Currently only x86 is supported
-  if (Obj->getMachine() != COFF::IMAGE_FILE_MACHINE_I386)
+  if (Obj->getMachine() != COFF::IMAGE_FILE_MACHINE_I386) {
     return;
+
+}
 
   const data_directory *DataDir;
 
   if (std::error_code EC =
-          Obj->getDataDirectory(COFF::LOAD_CONFIG_TABLE, DataDir))
+          Obj->getDataDirectory(COFF::LOAD_CONFIG_TABLE, DataDir)) {
     reportError(errorCodeToError(EC), Obj->getFileName());
+
+}
 
   uintptr_t IntPtr = 0;
-  if (DataDir->RelativeVirtualAddress == 0)
+  if (DataDir->RelativeVirtualAddress == 0) {
     return;
 
+}
+
   if (std::error_code EC =
-          Obj->getRvaPtr(DataDir->RelativeVirtualAddress, IntPtr))
+          Obj->getRvaPtr(DataDir->RelativeVirtualAddress, IntPtr)) {
     reportError(errorCodeToError(EC), Obj->getFileName());
+
+}
 
   auto *LoadConf = reinterpret_cast<const coff_load_configuration32 *>(IntPtr);
   outs() << "Load configuration:"
@@ -349,14 +387,20 @@ static void printLoadConfiguration(const COFFObjectFile *Obj) {
 static void printImportTables(const COFFObjectFile *Obj) {
   import_directory_iterator I = Obj->import_directory_begin();
   import_directory_iterator E = Obj->import_directory_end();
-  if (I == E)
+  if (I == E) {
     return;
+
+}
   outs() << "The Import Tables:\n";
   for (const ImportDirectoryEntryRef &DirRef : Obj->import_directories()) {
     const coff_import_directory_table_entry *Dir;
     StringRef Name;
-    if (DirRef.getImportTableEntry(Dir)) return;
-    if (DirRef.getName(Name)) return;
+    if (DirRef.getImportTableEntry(Dir)) { return;
+
+}
+    if (DirRef.getName(Name)) { return;
+
+}
 
     outs() << format("  lookup %08x time %08x fwd %08x name %08x addr %08x\n\n",
                      static_cast<uint32_t>(Dir->ImportLookupTableRVA),
@@ -368,22 +412,30 @@ static void printImportTables(const COFFObjectFile *Obj) {
     outs() << "    Hint/Ord  Name\n";
     for (const ImportedSymbolRef &Entry : DirRef.imported_symbols()) {
       bool IsOrdinal;
-      if (Entry.isOrdinal(IsOrdinal))
+      if (Entry.isOrdinal(IsOrdinal)) {
         return;
+
+}
       if (IsOrdinal) {
         uint16_t Ordinal;
-        if (Entry.getOrdinal(Ordinal))
+        if (Entry.getOrdinal(Ordinal)) {
           return;
+
+}
         outs() << format("      % 6d\n", Ordinal);
         continue;
       }
       uint32_t HintNameRVA;
-      if (Entry.getHintNameRVA(HintNameRVA))
+      if (Entry.getHintNameRVA(HintNameRVA)) {
         return;
+
+}
       uint16_t Hint;
       StringRef Name;
-      if (Obj->getHintName(HintNameRVA, Hint, Name))
+      if (Obj->getHintName(HintNameRVA, Hint, Name)) {
         return;
+
+}
       outs() << format("      % 6d  ", Hint) << Name << "\n";
     }
     outs() << "\n";
@@ -396,27 +448,39 @@ static void printExportTable(const COFFObjectFile *Obj) {
   outs() << "Export Table:\n";
   export_directory_iterator I = Obj->export_directory_begin();
   export_directory_iterator E = Obj->export_directory_end();
-  if (I == E)
+  if (I == E) {
     return;
+
+}
   StringRef DllName;
   uint32_t OrdinalBase;
-  if (I->getDllName(DllName))
+  if (I->getDllName(DllName)) {
     return;
-  if (I->getOrdinalBase(OrdinalBase))
+
+}
+  if (I->getOrdinalBase(OrdinalBase)) {
     return;
+
+}
   outs() << " DLL name: " << DllName << "\n";
   outs() << " Ordinal base: " << OrdinalBase << "\n";
   outs() << " Ordinal      RVA  Name\n";
   for (; I != E; I = ++I) {
     uint32_t Ordinal;
-    if (I->getOrdinal(Ordinal))
+    if (I->getOrdinal(Ordinal)) {
       return;
+
+}
     uint32_t RVA;
-    if (I->getExportRVA(RVA))
+    if (I->getExportRVA(RVA)) {
       return;
+
+}
     bool IsForwarder;
-    if (I->isForwarder(IsForwarder))
+    if (I->isForwarder(IsForwarder)) {
       return;
+
+}
 
     if (IsForwarder) {
       // Export table entries can be used to re-export symbols that
@@ -428,14 +492,20 @@ static void printExportTable(const COFFObjectFile *Obj) {
     }
 
     StringRef Name;
-    if (I->getSymbolName(Name))
+    if (I->getSymbolName(Name)) {
       continue;
-    if (!Name.empty())
+
+}
+    if (!Name.empty()) {
       outs() << "  " << Name;
+
+}
     if (IsForwarder) {
       StringRef S;
-      if (I->getForwardTo(S))
+      if (I->getForwardTo(S)) {
         return;
+
+}
       outs() << " (forwarded to " << S << ")";
     }
     outs() << "\n";
@@ -449,22 +519,30 @@ static bool getPDataSection(const COFFObjectFile *Obj,
                             const RuntimeFunction *&RFStart, int &NumRFs) {
   for (const SectionRef &Section : Obj->sections()) {
     StringRef Name = unwrapOrError(Section.getName(), Obj->getFileName());
-    if (Name != ".pdata")
+    if (Name != ".pdata") {
       continue;
 
+}
+
     const coff_section *Pdata = Obj->getCOFFSection(Section);
-    for (const RelocationRef &Reloc : Section.relocations())
+    for (const RelocationRef &Reloc : Section.relocations()) {
       Rels.push_back(Reloc);
+
+}
 
     // Sort relocations by address.
     llvm::sort(Rels, isRelocAddressLess);
 
     ArrayRef<uint8_t> Contents;
-    if (Error E = Obj->getSectionContents(Pdata, Contents))
+    if (Error E = Obj->getSectionContents(Pdata, Contents)) {
       reportError(std::move(E), Obj->getFileName());
 
-    if (Contents.empty())
+}
+
+    if (Contents.empty()) {
       continue;
+
+}
 
     RFStart = reinterpret_cast<const RuntimeFunction *>(Contents.data());
     NumRFs = Contents.size() / sizeof(RuntimeFunction);
@@ -478,8 +556,10 @@ Error getCOFFRelocationValueString(const COFFObjectFile *Obj,
                                          SmallVectorImpl<char> &Result) {
   symbol_iterator SymI = Rel.getSymbol();
   Expected<StringRef> SymNameOrErr = SymI->getName();
-  if (!SymNameOrErr)
+  if (!SymNameOrErr) {
     return SymNameOrErr.takeError();
+
+}
   StringRef SymName = *SymNameOrErr;
   Result.append(SymName.begin(), SymName.end());
   return Error::success();
@@ -492,12 +572,18 @@ static void printWin64EHUnwindInfo(const Win64EH::UnwindInfo *UI) {
   outs() << "    Version: " << static_cast<int>(UI->getVersion()) << "\n";
   outs() << "    Flags: " << static_cast<int>(UI->getFlags());
   if (UI->getFlags()) {
-    if (UI->getFlags() & UNW_ExceptionHandler)
+    if (UI->getFlags() & UNW_ExceptionHandler) {
       outs() << " UNW_ExceptionHandler";
-    if (UI->getFlags() & UNW_TerminateHandler)
+
+}
+    if (UI->getFlags() & UNW_TerminateHandler) {
       outs() << " UNW_TerminateHandler";
-    if (UI->getFlags() & UNW_ChainInfo)
+
+}
+    if (UI->getFlags() & UNW_ChainInfo) {
       outs() << " UNW_ChainInfo";
+
+}
   }
   outs() << "\n";
   outs() << "    Size of prolog: " << static_cast<int>(UI->PrologSize) << "\n";
@@ -516,8 +602,10 @@ static void printWin64EHUnwindInfo(const Win64EH::UnwindInfo *UI) {
     // FIXME: Output chained unwind info
   }
 
-  if (UI->NumCodes)
+  if (UI->NumCodes) {
     outs() << "    Unwind Codes:\n";
+
+}
 
   printAllUnwindCodes(makeArrayRef(&UI->UnwindCodes[0], UI->NumCodes));
 
@@ -529,8 +617,10 @@ static void printWin64EHUnwindInfo(const Win64EH::UnwindInfo *UI) {
 /// pointing to an executable file.
 static void printRuntimeFunction(const COFFObjectFile *Obj,
                                  const RuntimeFunction &RF) {
-  if (!RF.StartAddress)
+  if (!RF.StartAddress) {
     return;
+
+}
   outs() << "Function Table:\n"
          << format("  Start Address: 0x%04x\n",
                    static_cast<uint32_t>(RF.StartAddress))
@@ -539,8 +629,10 @@ static void printRuntimeFunction(const COFFObjectFile *Obj,
          << format("  Unwind Info Address: 0x%04x\n",
                    static_cast<uint32_t>(RF.UnwindInfoOffset));
   uintptr_t addr;
-  if (Obj->getRvaPtr(RF.UnwindInfoOffset, addr))
+  if (Obj->getRvaPtr(RF.UnwindInfoOffset, addr)) {
     return;
+
+}
   printWin64EHUnwindInfo(reinterpret_cast<const Win64EH::UnwindInfo *>(addr));
 }
 
@@ -582,14 +674,20 @@ static void printRuntimeFunctionRels(const COFFObjectFile *Obj,
           Obj, Rels,
           SectionOffset +
               /*offsetof(RuntimeFunction, UnwindInfoOffset)*/ 8,
-          XContents, UnwindInfoOffset))
+          XContents, UnwindInfoOffset)) {
     reportError(std::move(E), Obj->getFileName());
-  if (XContents.empty())
+
+}
+  if (XContents.empty()) {
     return;
 
+}
+
   UnwindInfoOffset += RF.UnwindInfoOffset;
-  if (UnwindInfoOffset > XContents.size())
+  if (UnwindInfoOffset > XContents.size()) {
     return;
+
+}
 
   auto *UI = reinterpret_cast<const Win64EH::UnwindInfo *>(XContents.data() +
                                                            UnwindInfoOffset);
@@ -607,14 +705,18 @@ void printCOFFUnwindInfo(const COFFObjectFile *Obj) {
   std::vector<RelocationRef> Rels;
   const RuntimeFunction *RFStart;
   int NumRFs;
-  if (!getPDataSection(Obj, Rels, RFStart, NumRFs))
+  if (!getPDataSection(Obj, Rels, RFStart, NumRFs)) {
     return;
+
+}
   ArrayRef<RuntimeFunction> RFs(RFStart, NumRFs);
 
   bool IsExecutable = Rels.empty();
   if (IsExecutable) {
-    for (const RuntimeFunction &RF : RFs)
+    for (const RuntimeFunction &RF : RFs) {
       printRuntimeFunction(Obj, RF);
+
+}
     return;
   }
 
@@ -659,12 +761,16 @@ void printCOFFSymbolTable(const object::COFFImportFile *i) {
 void printCOFFSymbolTable(const COFFObjectFile *coff) {
   for (unsigned SI = 0, SE = coff->getNumberOfSymbols(); SI != SE; ++SI) {
     Expected<COFFSymbolRef> Symbol = coff->getSymbol(SI);
-    if (!Symbol)
+    if (!Symbol) {
       reportError(Symbol.takeError(), coff->getFileName());
 
+}
+
     StringRef Name;
-    if (std::error_code EC = coff->getSymbolName(*Symbol, Name))
+    if (std::error_code EC = coff->getSymbolName(*Symbol, Name)) {
       reportError(errorCodeToError(EC), coff->getFileName());
+
+}
 
     outs() << "[" << format("%2d", SI) << "]"
            << "(sec " << format("%2d", int(Symbol->getSectionNumber())) << ")"
@@ -695,8 +801,10 @@ void printCOFFSymbolTable(const COFFObjectFile *coff) {
       if (Symbol->isSectionDefinition()) {
         const coff_aux_section_definition *asd;
         if (std::error_code EC =
-                coff->getAuxSymbol<coff_aux_section_definition>(SI + 1, asd))
+                coff->getAuxSymbol<coff_aux_section_definition>(SI + 1, asd)) {
           reportError(errorCodeToError(EC), coff->getFileName());
+
+}
 
         int32_t AuxNumber = asd->getNumber(Symbol->isBigObj());
 
@@ -711,8 +819,10 @@ void printCOFFSymbolTable(const COFFObjectFile *coff) {
                          , unsigned(asd->Selection));
       } else if (Symbol->isFileRecord()) {
         const char *FileName;
-        if (std::error_code EC = coff->getAuxSymbol<char>(SI + 1, FileName))
+        if (std::error_code EC = coff->getAuxSymbol<char>(SI + 1, FileName)) {
           reportError(errorCodeToError(EC), coff->getFileName());
+
+}
 
         StringRef Name(FileName, Symbol->getNumberOfAuxSymbols() *
                                      coff->getSymbolTableEntrySize());
@@ -723,8 +833,10 @@ void printCOFFSymbolTable(const COFFObjectFile *coff) {
       } else if (Symbol->isWeakExternal()) {
         const coff_aux_weak_external *awe;
         if (std::error_code EC =
-                coff->getAuxSymbol<coff_aux_weak_external>(SI + 1, awe))
+                coff->getAuxSymbol<coff_aux_weak_external>(SI + 1, awe)) {
           reportError(errorCodeToError(EC), coff->getFileName());
+
+}
 
         outs() << "AUX " << format("indx %d srch %d\n",
                                    static_cast<uint32_t>(awe->TagIndex),

@@ -27,13 +27,17 @@ static constexpr StringLiteral ObjC2IVarPrefix = "_OBJC_IVAR_$_";
 
 static uint32_t getFlags(const Symbol *Sym) {
   uint32_t Flags = BasicSymbolRef::SF_Global;
-  if (Sym->isUndefined())
+  if (Sym->isUndefined()) {
     Flags |= BasicSymbolRef::SF_Undefined;
-  else
+  } else {
     Flags |= BasicSymbolRef::SF_Exported;
 
-  if (Sym->isWeakDefined() || Sym->isWeakReferenced())
+}
+
+  if (Sym->isWeakDefined() || Sym->isWeakReferenced()) {
     Flags |= BasicSymbolRef::SF_Weak;
+
+}
 
   return Flags;
 }
@@ -42,8 +46,10 @@ TapiFile::TapiFile(MemoryBufferRef Source, const InterfaceFile &interface,
                    Architecture Arch)
     : SymbolicFile(ID_TapiFile, Source) {
   for (const auto *Symbol : interface.symbols()) {
-    if (!Symbol->getArchitectures().has(Arch))
+    if (!Symbol->getArchitectures().has(Arch)) {
       continue;
+
+}
 
     switch (Symbol->getKind()) {
     case SymbolKind::GlobalSymbol:

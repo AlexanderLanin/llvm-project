@@ -26,8 +26,10 @@ getAllNamedFields(const CXXRecordDecl *Record) {
   std::set<const FieldDecl *> Result;
   for (const auto *Field : Record->fields()) {
     // Static data members are not in this range.
-    if (Field->isUnnamedBitfield())
+    if (Field->isUnnamedBitfield()) {
       continue;
+
+}
     Result.insert(Field);
   }
   return Result;
@@ -60,8 +62,10 @@ internal::Matcher<Expr> accessToFieldInVar(const FieldDecl *Field,
 static bool isCopyConstructorAndCanBeDefaulted(ASTContext *Context,
                                                const CXXConstructorDecl *Ctor) {
   // An explicitly-defaulted constructor cannot have default arguments.
-  if (Ctor->getMinRequiredArguments() != 1)
+  if (Ctor->getMinRequiredArguments() != 1) {
     return false;
+
+}
 
   const auto *Record = Ctor->getParent();
   const auto *Param = Ctor->getParamDecl(0);
@@ -84,8 +88,10 @@ static bool isCopyConstructorAndCanBeDefaulted(ASTContext *Context,
                     hasArgument(
                         0, declRefExpr(to(varDecl(equalsNode(Param)))))))))),
             *Ctor, *Context)
-            .empty())
+            .empty()) {
       return false;
+
+}
   }
 
   // Ensure that all the members are copied.
@@ -103,8 +109,10 @@ static bool isCopyConstructorAndCanBeDefaulted(ASTContext *Context,
                         argumentCountIs(1),
                         hasArgument(0, AccessToFieldInParam))))))),
             *Ctor, *Context)
-            .empty())
+            .empty()) {
       return false;
+
+}
   }
 
   // Ensure that we don't do anything else, like initializing an indirect base.
@@ -133,8 +141,10 @@ static bool isCopyAssignmentAndCanBeDefaulted(ASTContext *Context,
       match(returnStmt(has(ignoringParenImpCasts(unaryOperator(
                 hasOperatorName("*"), hasUnaryOperand(cxxThisExpr()))))),
             *Compound->body_back(), *Context)
-          .empty())
+          .empty()) {
     return false;
+
+}
 
   // Ensure that all the bases are copied.
   for (const auto *Base : BasesToInit) {
@@ -160,8 +170,10 @@ static bool isCopyAssignmentAndCanBeDefaulted(ASTContext *Context,
                 argumentCountIs(1),
                 hasArgument(0, declRefExpr(to(varDecl(equalsNode(Param))))))))),
             *Compound, *Context)
-            .empty())
+            .empty()) {
       return false;
+
+}
   }
 
   // Ensure that all the members are copied.
@@ -180,8 +192,10 @@ static bool isCopyAssignmentAndCanBeDefaulted(ASTContext *Context,
                                     argumentCountIs(2), hasArgument(0, LHS),
                                     hasArgument(1, RHS))))))),
             *Compound, *Context)
-            .empty())
+            .empty()) {
       return false;
+
+}
   }
 
   // Ensure that we don't do anything else.
@@ -244,8 +258,10 @@ void UseEqualsDefaultCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *SpecialFunctionDecl =
       Result.Nodes.getNodeAs<CXXMethodDecl>(SpecialFunction);
 
-  if (IgnoreMacros && SpecialFunctionDecl->getLocation().isMacroID())
+  if (IgnoreMacros && SpecialFunctionDecl->getLocation().isMacroID()) {
     return;
+
+}
 
   // Discard explicitly deleted/defaulted special member functions and those
   // that are not user-provided (automatically generated).
@@ -253,16 +269,22 @@ void UseEqualsDefaultCheck::check(const MatchFinder::MatchResult &Result) {
       SpecialFunctionDecl->isExplicitlyDefaulted() ||
       SpecialFunctionDecl->isLateTemplateParsed() ||
       SpecialFunctionDecl->isTemplateInstantiation() ||
-      !SpecialFunctionDecl->isUserProvided() || !SpecialFunctionDecl->hasBody())
+      !SpecialFunctionDecl->isUserProvided() || !SpecialFunctionDecl->hasBody()) {
     return;
+
+}
 
   const auto *Body = dyn_cast<CompoundStmt>(SpecialFunctionDecl->getBody());
-  if (!Body)
+  if (!Body) {
     return;
 
+}
+
   // If there is code inside the body, don't warn.
-  if (!SpecialFunctionDecl->isCopyAssignmentOperator() && !Body->body_empty())
+  if (!SpecialFunctionDecl->isCopyAssignmentOperator() && !Body->body_empty()) {
     return;
+
+}
 
   // If there are comments inside the body, don't do the change.
   bool ApplyFix = SpecialFunctionDecl->isCopyAssignmentOperator() ||
@@ -274,8 +296,10 @@ void UseEqualsDefaultCheck::check(const MatchFinder::MatchResult &Result) {
     if (Ctor->getNumParams() == 0) {
       SpecialFunctionName = "default constructor";
     } else {
-      if (!isCopyConstructorAndCanBeDefaulted(Result.Context, Ctor))
+      if (!isCopyConstructorAndCanBeDefaulted(Result.Context, Ctor)) {
         return;
+
+}
       SpecialFunctionName = "copy constructor";
       // If there are constructor initializers, they must be removed.
       for (const auto *Init : Ctor->inits()) {
@@ -286,16 +310,20 @@ void UseEqualsDefaultCheck::check(const MatchFinder::MatchResult &Result) {
   } else if (isa<CXXDestructorDecl>(SpecialFunctionDecl)) {
     SpecialFunctionName = "destructor";
   } else {
-    if (!isCopyAssignmentAndCanBeDefaulted(Result.Context, SpecialFunctionDecl))
+    if (!isCopyAssignmentAndCanBeDefaulted(Result.Context, SpecialFunctionDecl)) {
       return;
+
+}
     SpecialFunctionName = "copy-assignment operator";
   }
 
   // The location of the body is more useful inside a macro as spelling and
   // expansion locations are reported.
   SourceLocation Location = SpecialFunctionDecl->getLocation();
-  if (Location.isMacroID())
+  if (Location.isMacroID()) {
     Location = Body->getBeginLoc();
+
+}
 
   auto Diag = diag(Location, "use '= default' to define a trivial " +
                                  SpecialFunctionName);

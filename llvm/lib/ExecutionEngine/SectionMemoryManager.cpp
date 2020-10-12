@@ -23,9 +23,11 @@ uint8_t *SectionMemoryManager::allocateDataSection(uintptr_t Size,
                                                    unsigned SectionID,
                                                    StringRef SectionName,
                                                    bool IsReadOnly) {
-  if (IsReadOnly)
+  if (IsReadOnly) {
     return allocateSection(SectionMemoryManager::AllocationPurpose::ROData,
                            Size, Alignment);
+
+}
   return allocateSection(SectionMemoryManager::AllocationPurpose::RWData, Size,
                          Alignment);
 }
@@ -41,8 +43,10 @@ uint8_t *SectionMemoryManager::allocateCodeSection(uintptr_t Size,
 uint8_t *SectionMemoryManager::allocateSection(
     SectionMemoryManager::AllocationPurpose Purpose, uintptr_t Size,
     unsigned Alignment) {
-  if (!Alignment)
+  if (!Alignment) {
     Alignment = 16;
+
+}
 
   assert(!(Alignment & (Alignment - 1)) && "Alignment must be a power of two.");
 
@@ -195,9 +199,13 @@ static sys::MemoryBlock trimBlockToPageSize(sys::MemoryBlock M) {
 std::error_code
 SectionMemoryManager::applyMemoryGroupPermissions(MemoryGroup &MemGroup,
                                                   unsigned Permissions) {
-  for (sys::MemoryBlock &MB : MemGroup.PendingMem)
-    if (std::error_code EC = MMapper.protectMappedMemory(MB, Permissions))
+  for (sys::MemoryBlock &MB : MemGroup.PendingMem) {
+    if (std::error_code EC = MMapper.protectMappedMemory(MB, Permissions)) {
       return EC;
+
+}
+
+}
 
   MemGroup.PendingMem.clear();
 
@@ -220,15 +228,19 @@ SectionMemoryManager::applyMemoryGroupPermissions(MemoryGroup &MemGroup,
 }
 
 void SectionMemoryManager::invalidateInstructionCache() {
-  for (sys::MemoryBlock &Block : CodeMem.PendingMem)
+  for (sys::MemoryBlock &Block : CodeMem.PendingMem) {
     sys::Memory::InvalidateInstructionCache(Block.base(),
                                             Block.allocatedSize());
+
+}
 }
 
 SectionMemoryManager::~SectionMemoryManager() {
   for (MemoryGroup *Group : {&CodeMem, &RWDataMem, &RODataMem}) {
-    for (sys::MemoryBlock &Block : Group->AllocatedMem)
+    for (sys::MemoryBlock &Block : Group->AllocatedMem) {
       MMapper.releaseMappedMemory(Block);
+
+}
   }
 }
 

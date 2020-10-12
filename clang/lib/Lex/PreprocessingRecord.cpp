@@ -57,8 +57,10 @@ PreprocessingRecord::PreprocessingRecord(SourceManager &SM) : SourceMgr(SM) {}
 /// that source range \p Range encompasses.
 llvm::iterator_range<PreprocessingRecord::iterator>
 PreprocessingRecord::getPreprocessedEntitiesInRange(SourceRange Range) {
-  if (Range.isInvalid())
+  if (Range.isInvalid()) {
     return llvm::make_range(iterator(), iterator());
+
+}
 
   if (CachedRangeQuery.Range == Range) {
     return llvm::make_range(iterator(this, CachedRangeQuery.Result.first),
@@ -77,12 +79,16 @@ PreprocessingRecord::getPreprocessedEntitiesInRange(SourceRange Range) {
 static bool isPreprocessedEntityIfInFileID(PreprocessedEntity *PPE, FileID FID,
                                            SourceManager &SM) {
   assert(FID.isValid());
-  if (!PPE)
+  if (!PPE) {
     return false;
 
+}
+
   SourceLocation Loc = PPE->getSourceRange().getBegin();
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return false;
+
+}
 
   return SM.isInFileID(SM.getFileLoc(Loc), FID);
 }
@@ -95,8 +101,10 @@ static bool isPreprocessedEntityIfInFileID(PreprocessedEntity *PPE, FileID FID,
 /// and not from files \#included in the range given at
 /// \see getPreprocessedEntitiesInRange.
 bool PreprocessingRecord::isEntityInFileID(iterator PPEI, FileID FID) {
-  if (FID.isInvalid())
+  if (FID.isInvalid()) {
     return false;
+
+}
 
   int Pos = std::distance(iterator(this, 0), PPEI);
   if (Pos < 0) {
@@ -106,15 +114,19 @@ bool PreprocessingRecord::isEntityInFileID(iterator PPEI, FileID FID) {
     }
     assert(ExternalSource && "No external source to load from");
     unsigned LoadedIndex = LoadedPreprocessedEntities.size()+Pos;
-    if (PreprocessedEntity *PPE = LoadedPreprocessedEntities[LoadedIndex])
+    if (PreprocessedEntity *PPE = LoadedPreprocessedEntities[LoadedIndex]) {
       return isPreprocessedEntityIfInFileID(PPE, FID, SourceMgr);
+
+}
 
     // See if the external source can see if the entity is in the file without
     // deserializing it.
     Optional<bool> IsInFile =
         ExternalSource->isPreprocessedEntityInFileID(LoadedIndex, FID);
-    if (IsInFile.hasValue())
+    if (IsInFile.hasValue()) {
       return IsInFile.getValue();
+
+}
 
     // The external source did not provide a definite answer, go and deserialize
     // the entity to check it.
@@ -142,22 +154,28 @@ PreprocessingRecord::getPreprocessedEntitiesInRangeSlow(SourceRange Range) {
     Local = findLocalPreprocessedEntitiesInRange(Range);
 
   // Check if range spans local entities.
-  if (!ExternalSource || SourceMgr.isLocalSourceLocation(Range.getBegin()))
+  if (!ExternalSource || SourceMgr.isLocalSourceLocation(Range.getBegin())) {
     return std::make_pair(Local.first, Local.second);
+
+}
 
   std::pair<unsigned, unsigned>
     Loaded = ExternalSource->findPreprocessedEntitiesInRange(Range);
 
   // Check if range spans local entities.
-  if (Loaded.first == Loaded.second)
+  if (Loaded.first == Loaded.second) {
     return std::make_pair(Local.first, Local.second);
+
+}
 
   unsigned TotalLoaded = LoadedPreprocessedEntities.size();
 
   // Check if range spans loaded entities.
-  if (Local.first == Local.second)
+  if (Local.first == Local.second) {
     return std::make_pair(int(Loaded.first)-TotalLoaded,
                           int(Loaded.second)-TotalLoaded);
+
+}
 
   // Range spands loaded and local entities.
   return std::make_pair(int(Loaded.first)-TotalLoaded, Local.second);
@@ -166,8 +184,10 @@ PreprocessingRecord::getPreprocessedEntitiesInRangeSlow(SourceRange Range) {
 std::pair<unsigned, unsigned>
 PreprocessingRecord::findLocalPreprocessedEntitiesInRange(
                                                       SourceRange Range) const {
-  if (Range.isInvalid())
+  if (Range.isInvalid()) {
     return std::make_pair(0,0);
+
+}
   assert(!SourceMgr.isBeforeInTranslationUnit(Range.getEnd(),Range.getBegin()));
 
   unsigned Begin = findBeginLocalPreprocessedEntity(Range.getBegin());
@@ -209,8 +229,10 @@ struct PPEntityComp {
 
 unsigned PreprocessingRecord::findBeginLocalPreprocessedEntity(
                                                      SourceLocation Loc) const {
-  if (SourceMgr.isLoadedSourceLocation(Loc))
+  if (SourceMgr.isLoadedSourceLocation(Loc)) {
     return 0;
+
+}
 
   size_t Count = PreprocessedEntities.size();
   size_t Half;
@@ -231,8 +253,10 @@ unsigned PreprocessingRecord::findBeginLocalPreprocessedEntity(
       First = I;
       ++First;
       Count = Count - Half - 1;
-    } else
+    } else {
       Count = Half;
+
+}
   }
 
   return First - PreprocessedEntities.begin();
@@ -240,8 +264,10 @@ unsigned PreprocessingRecord::findBeginLocalPreprocessedEntity(
 
 unsigned
 PreprocessingRecord::findEndLocalPreprocessedEntity(SourceLocation Loc) const {
-  if (SourceMgr.isLoadedSourceLocation(Loc))
+  if (SourceMgr.isLoadedSourceLocation(Loc)) {
     return 0;
+
+}
 
   auto I = llvm::upper_bound(PreprocessedEntities, Loc,
                              PPEntityComp<&SourceRange::getBegin>(SourceMgr));
@@ -332,11 +358,15 @@ unsigned PreprocessingRecord::allocateSkippedRanges(unsigned NumRanges) {
 }
 
 void PreprocessingRecord::ensureSkippedRangesLoaded() {
-  if (SkippedRangesAllLoaded || !ExternalSource)
+  if (SkippedRangesAllLoaded || !ExternalSource) {
     return;
+
+}
   for (unsigned Index = 0; Index != SkippedRanges.size(); ++Index) {
-    if (SkippedRanges[Index].isInvalid())
+    if (SkippedRanges[Index].isInvalid()) {
       SkippedRanges[Index] = ExternalSource->ReadSkippedRange(Index);
+
+}
   }
   SkippedRangesAllLoaded = true;
 }
@@ -355,8 +385,10 @@ PreprocessedEntity *PreprocessingRecord::getPreprocessedEntity(PPEntityID PPID){
     return getLoadedPreprocessedEntity(Index);
   }
 
-  if (PPID.ID == 0)
+  if (PPID.ID == 0) {
     return nullptr;
+
+}
   unsigned Index = PPID.ID - 1;
   assert(Index < PreprocessedEntities.size() &&
          "Out-of bounds local preprocessed entity");
@@ -372,9 +404,11 @@ PreprocessingRecord::getLoadedPreprocessedEntity(unsigned Index) {
   PreprocessedEntity *&Entity = LoadedPreprocessedEntities[Index];
   if (!Entity) {
     Entity = ExternalSource->ReadPreprocessedEntity(Index);
-    if (!Entity) // Failed to load.
+    if (!Entity) { // Failed to load.
       Entity = new (*this)
          PreprocessedEntity(PreprocessedEntity::InvalidKind, SourceRange());
+
+}
   }
   return Entity;
 }
@@ -383,8 +417,10 @@ MacroDefinitionRecord *
 PreprocessingRecord::findMacroDefinition(const MacroInfo *MI) {
   llvm::DenseMap<const MacroInfo *, MacroDefinitionRecord *>::iterator Pos =
       MacroDefinitions.find(MI);
-  if (Pos == MacroDefinitions.end())
+  if (Pos == MacroDefinitions.end()) {
     return nullptr;
+
+}
 
   return Pos->second;
 }
@@ -393,39 +429,49 @@ void PreprocessingRecord::addMacroExpansion(const Token &Id,
                                             const MacroInfo *MI,
                                             SourceRange Range) {
   // We don't record nested macro expansions.
-  if (Id.getLocation().isMacroID())
+  if (Id.getLocation().isMacroID()) {
     return;
 
-  if (MI->isBuiltinMacro())
+}
+
+  if (MI->isBuiltinMacro()) {
     addPreprocessedEntity(new (*this)
                               MacroExpansion(Id.getIdentifierInfo(), Range));
-  else if (MacroDefinitionRecord *Def = findMacroDefinition(MI))
+  } else if (MacroDefinitionRecord *Def = findMacroDefinition(MI)) {
     addPreprocessedEntity(new (*this) MacroExpansion(Def, Range));
+
+}
 }
 
 void PreprocessingRecord::Ifdef(SourceLocation Loc, const Token &MacroNameTok,
                                 const MacroDefinition &MD) {
   // This is not actually a macro expansion but record it as a macro reference.
-  if (MD)
+  if (MD) {
     addMacroExpansion(MacroNameTok, MD.getMacroInfo(),
                       MacroNameTok.getLocation());
+
+}
 }
 
 void PreprocessingRecord::Ifndef(SourceLocation Loc, const Token &MacroNameTok,
                                  const MacroDefinition &MD) {
   // This is not actually a macro expansion but record it as a macro reference.
-  if (MD)
+  if (MD) {
     addMacroExpansion(MacroNameTok, MD.getMacroInfo(),
                       MacroNameTok.getLocation());
+
+}
 }
 
 void PreprocessingRecord::Defined(const Token &MacroNameTok,
                                   const MacroDefinition &MD,
                                   SourceRange Range) {
   // This is not actually a macro expansion but record it as a macro reference.
-  if (MD)
+  if (MD) {
     addMacroExpansion(MacroNameTok, MD.getMacroInfo(),
                       MacroNameTok.getLocation());
+
+}
 }
 
 void PreprocessingRecord::SourceRangeSkipped(SourceRange Range,
@@ -496,8 +542,10 @@ void PreprocessingRecord::InclusionDirective(
     EndLoc = FilenameRange.getBegin();
   } else {
     EndLoc = FilenameRange.getEnd();
-    if (FilenameRange.isCharRange())
+    if (FilenameRange.isCharRange()) {
       EndLoc = EndLoc.getLocWithOffset(-1); // the InclusionDirective expects
+
+}
                                             // a token range.
   }
   clang::InclusionDirective *ID =

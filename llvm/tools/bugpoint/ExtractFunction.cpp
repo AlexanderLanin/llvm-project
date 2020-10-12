@@ -48,8 +48,10 @@ cl::opt<bool, true>
            cl::desc("Do not use the -simplifycfg pass to reduce testcases"));
 
 Function *globalInitUsesExternalBA(GlobalVariable *GV) {
-  if (!GV->hasInitializer())
+  if (!GV->hasInitializer()) {
     return nullptr;
+
+}
 
   Constant *I = GV->getInitializer();
 
@@ -66,14 +68,18 @@ Function *globalInitUsesExternalBA(GlobalVariable *GV) {
 
     if (BlockAddress *BA = dyn_cast<BlockAddress>(V)) {
       Function *F = BA->getFunction();
-      if (F->isDeclaration())
+      if (F->isDeclaration()) {
         return F;
+
+}
     }
 
     for (User::op_iterator i = V->op_begin(), e = V->op_end(); i != e; ++i) {
       Constant *C = dyn_cast<Constant>(*i);
-      if (C && !isa<GlobalValue>(C) && !Done.count(C))
+      if (C && !isa<GlobalValue>(C) && !Done.count(C)) {
         Todo.push_back(C);
+
+}
     }
   }
   return nullptr;
@@ -101,8 +107,10 @@ BugDriver::deleteInstructionFromProgram(const Instruction *I,
   Instruction *TheInst = &*RI; // Got the corresponding instruction!
 
   // If this instruction produces a value, replace any users with null values
-  if (!TheInst->getType()->isVoidTy())
+  if (!TheInst->getType()->isVoidTy()) {
     TheInst->replaceAllUsesWith(Constant::getNullValue(TheInst->getType()));
+
+}
 
   // Remove the instruction from the program.
   TheInst->getParent()->getInstList().erase(TheInst);
@@ -111,10 +119,14 @@ BugDriver::deleteInstructionFromProgram(const Instruction *I,
   std::vector<std::string> Passes;
 
   /// Can we get rid of the -disable-* options?
-  if (Simplification > 1 && !NoDCE)
+  if (Simplification > 1 && !NoDCE) {
     Passes.push_back("dce");
-  if (Simplification && !DisableSimplifyCFG)
+
+}
+  if (Simplification && !DisableSimplifyCFG) {
     Passes.push_back("simplifycfg"); // Delete dead control flow
+
+}
 
   Passes.push_back("verify");
   std::unique_ptr<Module> New = runPassesOn(Clone.get(), Passes);
@@ -129,16 +141,20 @@ std::unique_ptr<Module>
 BugDriver::performFinalCleanups(std::unique_ptr<Module> M,
                                 bool MayModifySemantics) {
   // Make all functions external, so GlobalDCE doesn't delete them...
-  for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I)
+  for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
     I->setLinkage(GlobalValue::ExternalLinkage);
+
+}
 
   std::vector<std::string> CleanupPasses;
   CleanupPasses.push_back("globaldce");
 
-  if (MayModifySemantics)
+  if (MayModifySemantics) {
     CleanupPasses.push_back("deadarghaX0r");
-  else
+  } else {
     CleanupPasses.push_back("deadargelim");
+
+}
 
   std::unique_ptr<Module> New = runPassesOn(M.get(), CleanupPasses);
   if (!New) {
@@ -169,8 +185,10 @@ std::unique_ptr<Module> BugDriver::extractLoop(Module *M) {
   } else {
     assert(M->size() < NewM->size() && "Loop extract removed functions?");
     Module::iterator MI = NewM->begin();
-    for (unsigned i = 0, e = M->size(); i != e; ++i)
+    for (unsigned i = 0, e = M->size(); i != e; ++i) {
       ++MI;
+
+}
   }
 
   return NewM;
@@ -184,11 +202,17 @@ static void eliminateAliases(GlobalValue *GV) {
     SmallVector<GlobalAlias *, 1> aliases;
     Module *M = GV->getParent();
     for (Module::alias_iterator I = M->alias_begin(), E = M->alias_end();
-         I != E; ++I)
-      if (I->getAliasee()->stripPointerCasts() == GV)
+         I != E; ++I) {
+      if (I->getAliasee()->stripPointerCasts() == GV) {
         aliases.push_back(&*I);
-    if (aliases.empty())
+
+}
+
+}
+    if (aliases.empty()) {
       break;
+
+}
     // 2. Resolve aliases
     for (unsigned i = 0, e = aliases.size(); i < e; ++i) {
       aliases[i]->replaceAllUsesWith(aliases[i]->getAliasee());
@@ -247,34 +271,46 @@ static Constant *GetTorInit(std::vector<std::pair<Function *, int>> &TorList) {
 static void SplitStaticCtorDtor(const char *GlobalName, Module *M1, Module *M2,
                                 ValueToValueMapTy &VMap) {
   GlobalVariable *GV = M1->getNamedGlobal(GlobalName);
-  if (!GV || GV->isDeclaration() || GV->hasLocalLinkage() || !GV->use_empty())
+  if (!GV || GV->isDeclaration() || GV->hasLocalLinkage() || !GV->use_empty()) {
     return;
+
+}
 
   std::vector<std::pair<Function *, int>> M1Tors, M2Tors;
   ConstantArray *InitList = dyn_cast<ConstantArray>(GV->getInitializer());
-  if (!InitList)
+  if (!InitList) {
     return;
+
+}
 
   for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
     if (ConstantStruct *CS =
             dyn_cast<ConstantStruct>(InitList->getOperand(i))) {
-      if (CS->getNumOperands() != 2)
+      if (CS->getNumOperands() != 2) {
         return; // Not array of 2-element structs.
 
-      if (CS->getOperand(1)->isNullValue())
+}
+
+      if (CS->getOperand(1)->isNullValue()) {
         break; // Found a null terminator, stop here.
+
+}
 
       ConstantInt *CI = dyn_cast<ConstantInt>(CS->getOperand(0));
       int Priority = CI ? CI->getSExtValue() : 0;
 
       Constant *FP = CS->getOperand(1);
-      if (ConstantExpr *CE = dyn_cast<ConstantExpr>(FP))
-        if (CE->isCast())
+      if (ConstantExpr *CE = dyn_cast<ConstantExpr>(FP)) {
+        if (CE->isCast()) {
           FP = CE->getOperand(0);
+
+}
+
+}
       if (Function *F = dyn_cast<Function>(FP)) {
-        if (!F->isDeclaration())
+        if (!F->isDeclaration()) {
           M1Tors.push_back(std::make_pair(F, Priority));
-        else {
+        } else {
           // Map to M2's version of the function.
           F = cast<Function>(VMap[F]);
           M2Tors.push_back(std::make_pair(F, Priority));
@@ -307,12 +343,16 @@ llvm::SplitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
                                 ValueToValueMapTy &VMap) {
   // Make sure functions & globals are all external so that linkage
   // between the two modules will work.
-  for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I)
+  for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
     I->setLinkage(GlobalValue::ExternalLinkage);
+
+}
   for (Module::global_iterator I = M->global_begin(), E = M->global_end();
        I != E; ++I) {
-    if (I->hasName() && I->getName()[0] == '\01')
+    if (I->hasName() && I->getName()[0] == '\01') {
       I->setName(I->getName().substr(1));
+
+}
     I->setLinkage(GlobalValue::ExternalLinkage);
   }
 
@@ -331,9 +371,13 @@ llvm::SplitFunctionsOutOfModule(Module *M, const std::vector<Function *> &F,
   }
 
   // Remove the Safe functions from the Test module
-  for (Function &I : *New)
-    if (!TestFunctions.count(&I))
+  for (Function &I : *New) {
+    if (!TestFunctions.count(&I)) {
       DeleteFunctionBody(&I);
+
+}
+
+}
 
   // Try to split the global initializers evenly
   for (GlobalVariable &I : M->globals()) {
@@ -383,18 +427,26 @@ BugDriver::extractMappedBlocksFromModule(const std::vector<BasicBlock *> &BBs,
 
   // Extract all of the blocks except the ones in BBs.
   SmallVector<BasicBlock *, 32> BlocksToExtract;
-  for (Function &F : *M)
-    for (BasicBlock &BB : F)
+  for (Function &F : *M) {
+    for (BasicBlock &BB : F) {
       // Check if this block is going to be extracted.
-      if (std::find(BBs.begin(), BBs.end(), &BB) == BBs.end())
+      if (std::find(BBs.begin(), BBs.end(), &BB) == BBs.end()) {
         BlocksToExtract.push_back(&BB);
+
+}
+
+}
+
+}
 
   raw_fd_ostream OS(Temp->FD, /*shouldClose*/ false);
   for (BasicBlock *BB : BBs) {
     // If the BB doesn't have a name, give it one so we have something to key
     // off of.
-    if (!BB->hasName())
+    if (!BB->hasName()) {
       BB->setName("tmpbb");
+
+}
     OS << BB->getParent()->getName() << " " << BB->getName() << "\n";
   }
   OS.flush();

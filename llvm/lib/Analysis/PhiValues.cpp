@@ -68,8 +68,10 @@ void PhiValues::processPhi(const PHINode *Phi,
       }
       // If the phi did not become part of a component then this phi and that
       // phi are part of the same component, so adjust the depth number.
-      if (!ReachableMap.count(OpDepthNumber))
+      if (!ReachableMap.count(OpDepthNumber)) {
         DepthMap[Phi] = std::min(DepthMap[Phi], OpDepthNumber);
+
+}
     } else {
       TrackedValues.insert(PhiValuesCallbackVH(PhiOp, this));
     }
@@ -98,28 +100,40 @@ void PhiValues::processPhi(const PHINode *Phi,
           unsigned int OpDepthNumber = DepthMap[PhiOp];
           if (OpDepthNumber != RootDepthNumber) {
             auto It = ReachableMap.find(OpDepthNumber);
-            if (It != ReachableMap.end())
+            if (It != ReachableMap.end()) {
               Reachable.insert(It->second.begin(), It->second.end());
+
+}
           }
-        } else
+        } else {
           Reachable.insert(Op);
+
+}
       }
 
-      if (Stack.empty())
+      if (Stack.empty()) {
         break;
 
+}
+
       unsigned int &ComponentDepthNumber = DepthMap[Stack.back()];
-      if (ComponentDepthNumber < RootDepthNumber)
+      if (ComponentDepthNumber < RootDepthNumber) {
         break;
+
+}
 
       ComponentDepthNumber = RootDepthNumber;
     }
 
     // Filter out phis to get the non-phi reachable values.
     ValueSet &NonPhi = NonPhiReachableMap[RootDepthNumber];
-    for (const Value *V : Reachable)
-      if (!isa<PHINode>(V))
+    for (const Value *V : Reachable) {
+      if (!isa<PHINode>(V)) {
         NonPhi.insert(const_cast<Value *>(V));
+
+}
+
+}
   }
 }
 
@@ -138,21 +152,31 @@ const PhiValues::ValueSet &PhiValues::getValuesForPhi(const PHINode *PN) {
 void PhiValues::invalidateValue(const Value *V) {
   // Components that can reach V are invalid.
   SmallVector<unsigned int, 8> InvalidComponents;
-  for (auto &Pair : ReachableMap)
-    if (Pair.second.count(V))
+  for (auto &Pair : ReachableMap) {
+    if (Pair.second.count(V)) {
       InvalidComponents.push_back(Pair.first);
 
+}
+
+}
+
   for (unsigned int N : InvalidComponents) {
-    for (const Value *V : ReachableMap[N])
-      if (const PHINode *PN = dyn_cast<PHINode>(V))
+    for (const Value *V : ReachableMap[N]) {
+      if (const PHINode *PN = dyn_cast<PHINode>(V)) {
         DepthMap.erase(PN);
+
+}
+
+}
     NonPhiReachableMap.erase(N);
     ReachableMap.erase(N);
   }
   // This value is no longer tracked
   auto It = TrackedValues.find_as(V);
-  if (It != TrackedValues.end())
+  if (It != TrackedValues.end()) {
     TrackedValues.erase(It);
+
+}
 }
 
 void PhiValues::releaseMemory() {
@@ -171,19 +195,25 @@ void PhiValues::print(raw_ostream &OS) const {
       OS << " has values:\n";
       unsigned int N = DepthMap.lookup(&PN);
       auto It = NonPhiReachableMap.find(N);
-      if (It == NonPhiReachableMap.end())
+      if (It == NonPhiReachableMap.end()) {
         OS << "  UNKNOWN\n";
-      else if (It->second.empty())
+      } else if (It->second.empty()) {
         OS << "  NONE\n";
-      else
-        for (Value *V : It->second)
+      } else {
+        for (Value *V : It->second) {
           // Printing of an instruction prints two spaces at the start, so
           // handle instructions and everything else slightly differently in
           // order to get consistent indenting.
-          if (Instruction *I = dyn_cast<Instruction>(V))
+          if (Instruction *I = dyn_cast<Instruction>(V)) {
             OS << *I << "\n";
-          else
+          } else {
             OS << "  " << *V << "\n";
+
+}
+
+}
+
+}
     }
   }
 }
@@ -197,9 +227,13 @@ PreservedAnalyses PhiValuesPrinterPass::run(Function &F,
                                             FunctionAnalysisManager &AM) {
   OS << "PHI Values for function: " << F.getName() << "\n";
   PhiValues &PI = AM.getResult<PhiValuesAnalysis>(F);
-  for (const BasicBlock &BB : F)
-    for (const PHINode &PN : BB.phis())
+  for (const BasicBlock &BB : F) {
+    for (const PHINode &PN : BB.phis()) {
       PI.getValuesForPhi(&PN);
+
+}
+
+}
   PI.print(OS);
   return PreservedAnalyses::all();
 }

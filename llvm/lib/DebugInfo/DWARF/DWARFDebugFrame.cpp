@@ -225,10 +225,12 @@ void CFIProgram::printOperand(raw_ostream &OS, const MCRegisterInfo *MRI,
   case OT_Unset: {
     OS << " Unsupported " << (OperandIdx ? "second" : "first") << " operand to";
     auto OpcodeName = CallFrameString(Opcode, Arch);
-    if (!OpcodeName.empty())
+    if (!OpcodeName.empty()) {
       OS << " " << OpcodeName;
-    else
+    } else {
       OS << format(" Opcode %x",  Opcode);
+
+}
     break;
   }
   case OT_None:
@@ -243,22 +245,28 @@ void CFIProgram::printOperand(raw_ostream &OS, const MCRegisterInfo *MRI,
     OS << format(" %+" PRId64, int64_t(Operand));
     break;
   case OT_FactoredCodeOffset: // Always Unsigned
-    if (CodeAlignmentFactor)
+    if (CodeAlignmentFactor) {
       OS << format(" %" PRId64, Operand * CodeAlignmentFactor);
-    else
+    } else {
       OS << format(" %" PRId64 "*code_alignment_factor" , Operand);
+
+}
     break;
   case OT_SignedFactDataOffset:
-    if (DataAlignmentFactor)
+    if (DataAlignmentFactor) {
       OS << format(" %" PRId64, int64_t(Operand) * DataAlignmentFactor);
-    else
+    } else {
       OS << format(" %" PRId64 "*data_alignment_factor" , int64_t(Operand));
+
+}
     break;
   case OT_UnsignedFactDataOffset:
-    if (DataAlignmentFactor)
+    if (DataAlignmentFactor) {
       OS << format(" %" PRId64, Operand * DataAlignmentFactor);
-    else
+    } else {
       OS << format(" %" PRId64 "*data_alignment_factor" , Operand);
+
+}
     break;
   case OT_Register:
     OS << format(" reg%" PRId64, Operand);
@@ -275,12 +283,16 @@ void CFIProgram::dump(raw_ostream &OS, const MCRegisterInfo *MRI, bool IsEH,
                       unsigned IndentLevel) const {
   for (const auto &Instr : Instructions) {
     uint8_t Opcode = Instr.Opcode;
-    if (Opcode & DWARF_CFI_PRIMARY_OPCODE_MASK)
+    if (Opcode & DWARF_CFI_PRIMARY_OPCODE_MASK) {
       Opcode &= DWARF_CFI_PRIMARY_OPCODE_MASK;
+
+}
     OS.indent(2 * IndentLevel);
     OS << CallFrameString(Opcode, Arch) << ":";
-    for (unsigned i = 0; i < Instr.Ops.size(); ++i)
+    for (unsigned i = 0; i < Instr.Ops.size(); ++i) {
       printOperand(OS, MRI, IsEH, Instr, i, Instr.Ops[i]);
+
+}
     OS << '\n';
   }
 }
@@ -290,10 +302,14 @@ void CFIProgram::dump(raw_ostream &OS, const MCRegisterInfo *MRI, bool IsEH,
 // For CIE ID in .eh_frame sections see
 // https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 constexpr uint64_t getCIEId(bool IsDWARF64, bool IsEH) {
-  if (IsEH)
+  if (IsEH) {
     return 0;
-  if (IsDWARF64)
+
+}
+  if (IsDWARF64) {
     return DW64_CIE_ID;
+
+}
   return DW_CIE_ID;
 }
 
@@ -313,12 +329,16 @@ void CIE::dump(raw_ostream &OS, const MCRegisterInfo *MRI, bool IsEH) const {
   OS << format("  Code alignment factor: %u\n", (uint32_t)CodeAlignmentFactor);
   OS << format("  Data alignment factor: %d\n", (int32_t)DataAlignmentFactor);
   OS << format("  Return address column: %d\n", (int32_t)ReturnAddressRegister);
-  if (Personality)
+  if (Personality) {
     OS << format("  Personality Address: %016" PRIx64 "\n", *Personality);
+
+}
   if (!AugmentationData.empty()) {
     OS << "  Augmentation data:    ";
-    for (uint8_t Byte : AugmentationData)
+    for (uint8_t Byte : AugmentationData) {
       OS << ' ' << hexdigit(Byte >> 4) << hexdigit(Byte & 0xf);
+
+}
     OS << "\n";
   }
   OS << "\n";
@@ -331,14 +351,18 @@ void FDE::dump(raw_ostream &OS, const MCRegisterInfo *MRI, bool IsEH) const {
      << format(" %0*" PRIx64, IsDWARF64 ? 16 : 8, Length)
      << format(" %0*" PRIx64, IsDWARF64 && !IsEH ? 16 : 8, CIEPointer)
      << " FDE cie=";
-  if (LinkedCIE)
+  if (LinkedCIE) {
     OS << format("%08" PRIx64, LinkedCIE->getOffset());
-  else
+  } else {
     OS << "<invalid offset>";
+
+}
   OS << format(" pc=%08" PRIx64 "...%08" PRIx64 "\n", InitialLocation,
                InitialLocation + AddressRange);
-  if (LSDAAddress)
+  if (LSDAAddress) {
     OS << format("  LSDA Address: %016" PRIx64 "\n", *LSDAAddress);
+
+}
   CFIs.dump(OS, MRI, IsEH);
   OS << "\n";
 }
@@ -429,9 +453,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
               LSDAPointerEncoding = Data.getU8(&Offset);
               break;
             case 'P': {
-              if (Personality)
+              if (Personality) {
                 ReportError(StartOffset,
                             "Duplicate personality in entry at %" PRIx64);
+
+}
               PersonalityEncoding = Data.getU8(&Offset);
               Personality = Data.getEncodedPointer(
                   &Offset, *PersonalityEncoding,
@@ -445,9 +471,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
               // Current frame is a signal trampoline.
               break;
             case 'z':
-              if (i)
+              if (i) {
                 ReportError(StartOffset,
                             "'z' must be the first character at %" PRIx64);
+
+}
               // Parse the augmentation length first.  We only parse it if
               // the string contains a 'z'.
               AugmentationLength = Data.getULEB128(&Offset);
@@ -462,9 +490,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
         }
 
         if (AugmentationLength.hasValue()) {
-          if (Offset != EndAugmentationOffset)
+          if (Offset != EndAugmentationOffset) {
             ReportError(StartOffset,
                         "Parsing augmentation data at %" PRIx64 " failed");
+
+}
 
           AugmentationData = Data.getData().slice(StartAugmentationOffset,
                                                   EndAugmentationOffset);
@@ -489,9 +519,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
 
       if (IsEH) {
         // The address size is encoded in the CIE we reference.
-        if (!Cie)
+        if (!Cie) {
           ReportError(StartOffset, "Parsing FDE data at %" PRIx64
                                    " failed due to missing CIE");
+
+}
 
         if (auto Val = Data.getEncodedPointer(
                 &Offset, Cie->getFDEPointerEncoding(),
@@ -517,9 +549,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
                 EHFrameAddress ? Offset + EHFrameAddress : 0);
           }
 
-          if (Offset != EndAugmentationOffset)
+          if (Offset != EndAugmentationOffset) {
             ReportError(StartOffset,
                         "Parsing augmentation data at %" PRIx64 " failed");
+
+}
         }
       } else {
         InitialLocation = Data.getRelocatedAddress(&Offset);
@@ -536,9 +570,11 @@ void DWARFDebugFrame::parse(DWARFDataExtractor Data) {
       report_fatal_error(toString(std::move(E)));
     }
 
-    if (Offset != EndStructureOffset)
+    if (Offset != EndStructureOffset) {
       ReportError(StartOffset,
                   "Parsing entry instructions at %" PRIx64 " failed");
+
+}
   }
 }
 
@@ -546,20 +582,26 @@ FrameEntry *DWARFDebugFrame::getEntryAtOffset(uint64_t Offset) const {
   auto It = partition_point(Entries, [=](const std::unique_ptr<FrameEntry> &E) {
     return E->getOffset() < Offset;
   });
-  if (It != Entries.end() && (*It)->getOffset() == Offset)
+  if (It != Entries.end() && (*It)->getOffset() == Offset) {
     return It->get();
+
+}
   return nullptr;
 }
 
 void DWARFDebugFrame::dump(raw_ostream &OS, const MCRegisterInfo *MRI,
                            Optional<uint64_t> Offset) const {
   if (Offset) {
-    if (auto *Entry = getEntryAtOffset(*Offset))
+    if (auto *Entry = getEntryAtOffset(*Offset)) {
       Entry->dump(OS, MRI, IsEH);
+
+}
     return;
   }
 
   OS << "\n";
-  for (const auto &Entry : Entries)
+  for (const auto &Entry : Entries) {
     Entry->dump(OS, MRI, IsEH);
+
+}
 }

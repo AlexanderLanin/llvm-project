@@ -91,10 +91,12 @@ public:
   }
 
   bool VisitObjCMethodDecl(const ObjCMethodDecl *D) {
-    if (isa<ObjCImplDecl>(LexicalDC) && !D->isThisDeclarationADefinition())
+    if (isa<ObjCImplDecl>(LexicalDC) && !D->isThisDeclarationADefinition()) {
       DataConsumer.handleSynthesizedObjCMethod(D, DeclLoc, LexicalDC);
-    else
+    } else {
       DataConsumer.handleObjCMethod(D, DeclLoc);
+
+}
     return true;
   }
 
@@ -161,8 +163,10 @@ bool CXIndexDataConsumer::handleDeclOccurrence(
 
   if (Roles & (unsigned)SymbolRole::Reference) {
     const NamedDecl *ND = dyn_cast<NamedDecl>(D);
-    if (!ND)
+    if (!ND) {
       return true;
+
+}
 
     if (auto *ObjCID = dyn_cast_or_null<ObjCInterfaceDecl>(ASTNode.OrigD)) {
       if (!ObjCID->isThisDeclarationADefinition() &&
@@ -194,10 +198,12 @@ bool CXIndexDataConsumer::handleDeclOccurrence(
                                       getCXTU());
     } else {
       if (ASTNode.OrigD) {
-        if (auto *OrigND = dyn_cast<NamedDecl>(ASTNode.OrigD))
+        if (auto *OrigND = dyn_cast<NamedDecl>(ASTNode.OrigD)) {
           Cursor = getRefCursor(OrigND, Loc);
-        else
+        } else {
           Cursor = MakeCXCursor(ASTNode.OrigD, CXTU);
+
+}
       } else {
         Cursor = getRefCursor(ND, Loc);
       }
@@ -210,8 +216,10 @@ bool CXIndexDataConsumer::handleDeclOccurrence(
     const DeclContext *LexicalDC = ASTNode.ContainerDC;
     if (!LexicalDC) {
       for (const auto &SymRel : Relations) {
-        if (SymRel.Roles & (unsigned)SymbolRole::RelationChildOf)
+        if (SymRel.Roles & (unsigned)SymbolRole::RelationChildOf) {
           LexicalDC = dyn_cast<DeclContext>(SymRel.RelatedSymbol);
+
+}
       }
     }
     IndexingDeclVisitor(*this, Loc, LexicalDC).Visit(ASTNode.OrigD);
@@ -224,8 +232,10 @@ bool CXIndexDataConsumer::handleModuleOccurrence(const ImportDecl *ImportD,
                                                  const Module *Mod,
                                                  SymbolRoleSet Roles,
                                                  SourceLocation Loc) {
-  if (Roles & (SymbolRoleSet)SymbolRole::Declaration)
+  if (Roles & (SymbolRoleSet)SymbolRole::Declaration) {
     IndexingDeclVisitor(*this, SourceLocation(), nullptr).Visit(ImportD);
+
+}
   return !shouldAbort();
 }
 
@@ -250,15 +260,21 @@ CXIndexDataConsumer::ObjCProtocolListInfo::ObjCProtocolListInfo(
                                 IdxCtx.getIndexLoc(Loc) };
     ProtInfos.push_back(ProtInfo);
 
-    if (IdxCtx.shouldSuppressRefs())
+    if (IdxCtx.shouldSuppressRefs()) {
       IdxCtx.markEntityOccurrenceInFile(PD, Loc);
+
+}
   }
 
-  for (unsigned i = 0, e = ProtInfos.size(); i != e; ++i)
+  for (unsigned i = 0, e = ProtInfos.size(); i != e; ++i) {
     ProtInfos[i].protocol = &ProtEntities[i];
 
-  for (unsigned i = 0, e = ProtInfos.size(); i != e; ++i)
+}
+
+  for (unsigned i = 0, e = ProtInfos.size(); i != e; ++i) {
     Prots.push_back(&ProtInfos[i]);
+
+}
 }
 
 
@@ -272,15 +288,19 @@ IBOutletCollectionInfo::IBOutletCollectionInfo(
   if (other.IBCollInfo.objcClass) {
     ClassInfo = other.ClassInfo;
     IBCollInfo.objcClass = &ClassInfo;
-  } else
+  } else {
     IBCollInfo.objcClass = nullptr;
+
+}
 }
 
 AttrListInfo::AttrListInfo(const Decl *D, CXIndexDataConsumer &IdxCtx)
   : SA(IdxCtx), ref_cnt(0) {
 
-  if (!D->hasAttrs())
+  if (!D->hasAttrs()) {
     return;
+
+}
 
   for (const auto *A : D->attrs()) {
     CXCursor C = MakeCXCursor(A, D, IdxCtx.CXTU);
@@ -324,8 +344,10 @@ AttrListInfo::AttrListInfo(const Decl *D, CXIndexDataConsumer &IdxCtx)
     }
   }
 
-  for (unsigned i = 0, e = Attrs.size(); i != e; ++i)
+  for (unsigned i = 0, e = Attrs.size(); i != e; ++i) {
     CXAttrs.push_back(&Attrs[i]);
+
+}
 }
 
 IntrusiveRefCntPtr<AttrListInfo>
@@ -353,8 +375,10 @@ CXIndexDataConsumer::CXXBasesListInfo::CXXBasesListInfo(const CXXRecordDecl *D,
       BaseD = RT->getDecl();
     }
 
-    if (BaseD)
+    if (BaseD) {
       IdxCtx.getEntityInfo(BaseD, BaseEntities.back(), SA);
+
+}
     CXIdxBaseClassInfo BaseInfo = { nullptr,
                          MakeCursorCXXBaseSpecifier(&Base, IdxCtx.CXTU),
                          IdxCtx.getIndexLoc(Loc) };
@@ -362,42 +386,62 @@ CXIndexDataConsumer::CXXBasesListInfo::CXXBasesListInfo(const CXXRecordDecl *D,
   }
 
   for (unsigned i = 0, e = BaseInfos.size(); i != e; ++i) {
-    if (BaseEntities[i].name && BaseEntities[i].USR)
+    if (BaseEntities[i].name && BaseEntities[i].USR) {
       BaseInfos[i].base = &BaseEntities[i];
+
+}
   }
 
-  for (unsigned i = 0, e = BaseInfos.size(); i != e; ++i)
+  for (unsigned i = 0, e = BaseInfos.size(); i != e; ++i) {
     CXBases.push_back(&BaseInfos[i]);
+
+}
 }
 
 SourceLocation CXIndexDataConsumer::CXXBasesListInfo::getBaseLoc(
                                            const CXXBaseSpecifier &Base) const {
   SourceLocation Loc = Base.getSourceRange().getBegin();
   TypeLoc TL;
-  if (Base.getTypeSourceInfo())
+  if (Base.getTypeSourceInfo()) {
     TL = Base.getTypeSourceInfo()->getTypeLoc();
-  if (TL.isNull())
+
+}
+  if (TL.isNull()) {
     return Loc;
 
-  if (QualifiedTypeLoc QL = TL.getAs<QualifiedTypeLoc>())
+}
+
+  if (QualifiedTypeLoc QL = TL.getAs<QualifiedTypeLoc>()) {
     TL = QL.getUnqualifiedLoc();
 
-  if (ElaboratedTypeLoc EL = TL.getAs<ElaboratedTypeLoc>())
+}
+
+  if (ElaboratedTypeLoc EL = TL.getAs<ElaboratedTypeLoc>()) {
     return EL.getNamedTypeLoc().getBeginLoc();
-  if (DependentNameTypeLoc DL = TL.getAs<DependentNameTypeLoc>())
+
+}
+  if (DependentNameTypeLoc DL = TL.getAs<DependentNameTypeLoc>()) {
     return DL.getNameLoc();
+
+}
   if (DependentTemplateSpecializationTypeLoc DTL =
-          TL.getAs<DependentTemplateSpecializationTypeLoc>())
+          TL.getAs<DependentTemplateSpecializationTypeLoc>()) {
     return DTL.getTemplateNameLoc();
+
+}
 
   return Loc;
 }
 
 const char *ScratchAlloc::toCStr(StringRef Str) {
-  if (Str.empty())
+  if (Str.empty()) {
     return "";
-  if (Str.data()[Str.size()] == '\0')
+
+}
+  if (Str.data()[Str.size()] == '\0') {
     return Str.data();
+
+}
   return copyCStr(Str);
 }
 
@@ -420,8 +464,10 @@ void CXIndexDataConsumer::setPreprocessor(std::shared_ptr<Preprocessor> PP) {
 bool CXIndexDataConsumer::isFunctionLocalDecl(const Decl *D) {
   assert(D);
 
-  if (!D->getParentFunctionOrMethod())
+  if (!D->getParentFunctionOrMethod()) {
     return false;
+
+}
 
   if (const NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
     switch (ND->getFormalLinkage()) {
@@ -442,8 +488,10 @@ bool CXIndexDataConsumer::isFunctionLocalDecl(const Decl *D) {
 }
 
 bool CXIndexDataConsumer::shouldAbort() {
-  if (!CB.abortQuery)
+  if (!CB.abortQuery) {
     return false;
+
+}
   return CB.abortQuery(ClientData, nullptr);
 }
 
@@ -462,8 +510,10 @@ void CXIndexDataConsumer::ppIncludedFile(SourceLocation hashLoc,
                                      const FileEntry *File,
                                      bool isImport, bool isAngled,
                                      bool isModuleImport) {
-  if (!CB.ppIncludedFile)
+  if (!CB.ppIncludedFile) {
     return;
+
+}
 
   ScratchAlloc SA(*this);
   CXIdxIncludedFileInfo Info = { getIndexLoc(hashLoc),
@@ -476,20 +526,28 @@ void CXIndexDataConsumer::ppIncludedFile(SourceLocation hashLoc,
 }
 
 void CXIndexDataConsumer::importedModule(const ImportDecl *ImportD) {
-  if (!CB.importedASTFile)
+  if (!CB.importedASTFile) {
     return;
 
+}
+
   Module *Mod = ImportD->getImportedModule();
-  if (!Mod)
+  if (!Mod) {
     return;
+
+}
 
   // If the imported module is part of the top-level module that we're
   // indexing, it doesn't correspond to an imported AST file.
   // FIXME: This assumes that AST files and top-level modules directly
   // correspond, which is unlikely to remain true forever.
-  if (Module *SrcMod = ImportD->getImportedOwningModule())
-    if (SrcMod->getTopLevelModule() == Mod->getTopLevelModule())
+  if (Module *SrcMod = ImportD->getImportedOwningModule()) {
+    if (SrcMod->getTopLevelModule() == Mod->getTopLevelModule()) {
       return;
+
+}
+
+}
 
   CXIdxImportedASTFileInfo Info = {
                                     static_cast<CXFile>(
@@ -503,8 +561,10 @@ void CXIndexDataConsumer::importedModule(const ImportDecl *ImportD) {
 }
 
 void CXIndexDataConsumer::importedPCH(const FileEntry *File) {
-  if (!CB.importedASTFile)
+  if (!CB.importedASTFile) {
     return;
+
+}
 
   CXIdxImportedASTFileInfo Info = {
                                     static_cast<CXFile>(
@@ -519,22 +579,28 @@ void CXIndexDataConsumer::importedPCH(const FileEntry *File) {
 
 void CXIndexDataConsumer::startedTranslationUnit() {
   CXIdxClientContainer idxCont = nullptr;
-  if (CB.startedTranslationUnit)
+  if (CB.startedTranslationUnit) {
     idxCont = CB.startedTranslationUnit(ClientData, nullptr);
+
+}
   addContainerInMap(Ctx->getTranslationUnitDecl(), idxCont);
 }
 
 void CXIndexDataConsumer::indexDiagnostics() {
-  if (!hasDiagnosticCallback())
+  if (!hasDiagnosticCallback()) {
     return;
+
+}
 
   CXDiagnosticSetImpl *DiagSet = cxdiag::lazyCreateDiags(getCXTU());
   handleDiagnosticSet(DiagSet);
 }
 
 void CXIndexDataConsumer::handleDiagnosticSet(CXDiagnostic CXDiagSet) {
-  if (!CB.diagnostic)
+  if (!CB.diagnostic) {
     return;
+
+}
 
   CB.diagnostic(ClientData, CXDiagSet, nullptr);
 }
@@ -544,22 +610,32 @@ bool CXIndexDataConsumer::handleDecl(const NamedDecl *D,
                                  DeclInfo &DInfo,
                                  const DeclContext *LexicalDC,
                                  const DeclContext *SemaDC) {
-  if (!CB.indexDeclaration || !D)
+  if (!CB.indexDeclaration || !D) {
     return false;
-  if (D->isImplicit() && shouldIgnoreIfImplicit(D))
+
+}
+  if (D->isImplicit() && shouldIgnoreIfImplicit(D)) {
     return false;
+
+}
 
   ScratchAlloc SA(*this);
   getEntityInfo(D, DInfo.EntInfo, SA);
   if ((!shouldIndexFunctionLocalSymbols() && !DInfo.EntInfo.USR)
-      || Loc.isInvalid())
+      || Loc.isInvalid()) {
     return false;
 
-  if (!LexicalDC)
+}
+
+  if (!LexicalDC) {
     LexicalDC = D->getLexicalDeclContext();
 
-  if (shouldSuppressRefs())
+}
+
+  if (shouldSuppressRefs()) {
     markEntityOccurrenceInFile(D, Loc);
+
+}
   
   DInfo.entityInfo = &DInfo.EntInfo;
   DInfo.cursor = Cursor;
@@ -569,8 +645,10 @@ bool CXIndexDataConsumer::handleDecl(const NamedDecl *D,
   DInfo.attributes = DInfo.EntInfo.attributes;
   DInfo.numAttributes = DInfo.EntInfo.numAttributes;
 
-  if (!SemaDC)
+  if (!SemaDC) {
     SemaDC = D->getDeclContext();
+
+}
   getContainerInfo(SemaDC, DInfo.SemanticContainer);
   DInfo.semanticContainer = &DInfo.SemanticContainer;
 
@@ -616,8 +694,10 @@ bool CXIndexDataConsumer::handleFunction(const FunctionDecl *D) {
   }
 
   DeclInfo DInfo(!D->isFirstDecl(), isDef, isContainer);
-  if (isSkipped)
+  if (isSkipped) {
     DInfo.flags |= CXIdxDeclFlag_Skipped;
+
+}
   return handleDecl(D, D->getLocation(), getCursor(D), DInfo);
 }
 
@@ -640,8 +720,10 @@ bool CXIndexDataConsumer::handleEnumerator(const EnumConstantDecl *D) {
 }
 
 bool CXIndexDataConsumer::handleTagDecl(const TagDecl *D) {
-  if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(D))
+  if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(D)) {
     return handleCXXRecordDecl(CXXRD, D);
+
+}
 
   DeclInfo DInfo(!D->isFirstDecl(), D->isThisDeclarationADefinition(),
                  D->isThisDeclarationADefinition());
@@ -657,8 +739,10 @@ bool CXIndexDataConsumer::handleTypedefName(const TypedefNameDecl *D) {
 bool CXIndexDataConsumer::handleObjCInterface(const ObjCInterfaceDecl *D) {
   // For @class forward declarations, suppress them the same way as references.
   if (!D->isThisDeclarationADefinition()) {
-    if (shouldSuppressRefs() && markEntityOccurrenceInFile(D, D->getLocation()))
+    if (shouldSuppressRefs() && markEntityOccurrenceInFile(D, D->getLocation())) {
       return false; // already occurred.
+
+}
 
     // FIXME: This seems like the wrong definition for redeclaration.
     bool isRedeclaration = D->hasDefinition() || D->getPreviousDecl();
@@ -682,8 +766,10 @@ bool CXIndexDataConsumer::handleObjCInterface(const ObjCInterfaceDecl *D) {
     BaseClass.cursor = MakeCursorObjCSuperClassRef(SuperD, SuperLoc, CXTU);
     BaseClass.loc = getIndexLoc(SuperLoc);
 
-    if (shouldSuppressRefs())
+    if (shouldSuppressRefs()) {
       markEntityOccurrenceInFile(SuperD, SuperLoc);
+
+}
   }
   
   ObjCProtocolList EmptyProtoList;
@@ -712,8 +798,10 @@ bool CXIndexDataConsumer::handleObjCImplementation(
 
 bool CXIndexDataConsumer::handleObjCProtocol(const ObjCProtocolDecl *D) {
   if (!D->isThisDeclarationADefinition()) {
-    if (shouldSuppressRefs() && markEntityOccurrenceInFile(D, D->getLocation()))
+    if (shouldSuppressRefs() && markEntityOccurrenceInFile(D, D->getLocation())) {
       return false; // already occurred.
+
+}
     
     // FIXME: This seems like the wrong definition for redeclaration.
     bool isRedeclaration = D->hasDefinition() || D->getPreviousDecl();
@@ -750,8 +838,10 @@ bool CXIndexDataConsumer::handleObjCCategory(const ObjCCategoryDecl *D) {
                                                      : D->getCategoryNameLoc();
   getEntityInfo(IFaceD, ClassEntity, SA);
 
-  if (shouldSuppressRefs())
+  if (shouldSuppressRefs()) {
     markEntityOccurrenceInFile(IFaceD, ClassLoc);
+
+}
 
   ObjCProtocolListInfo ProtInfo(D->getReferencedProtocols(), *this, SA);
   
@@ -782,8 +872,10 @@ bool CXIndexDataConsumer::handleObjCCategoryImpl(const ObjCCategoryImplDecl *D) 
   SourceLocation CategoryLoc = D->getCategoryNameLoc();
   getEntityInfo(IFaceD, ClassEntity, SA);
 
-  if (shouldSuppressRefs())
+  if (shouldSuppressRefs()) {
     markEntityOccurrenceInFile(IFaceD, ClassLoc);
+
+}
 
   CatDInfo.ObjCCatDeclInfo.containerInfo = &CatDInfo.ObjCContDeclInfo;
   if (IFaceD) {
@@ -812,8 +904,10 @@ bool CXIndexDataConsumer::handleObjCMethod(const ObjCMethodDecl *D,
   }
 
   DeclInfo DInfo(!D->isCanonicalDecl(), isDef, isContainer);
-  if (isSkipped)
+  if (isSkipped) {
     DInfo.flags |= CXIdxDeclFlag_Skipped;
+
+}
   return handleDecl(D, Loc, getCursor(D), DInfo);
 }
 
@@ -889,30 +983,46 @@ bool CXIndexDataConsumer::handleReference(const NamedDecl *D, SourceLocation Loc
                                       const Expr *E,
                                       CXIdxEntityRefKind Kind,
                                       CXSymbolRole Role) {
-  if (!CB.indexEntityReference)
+  if (!CB.indexEntityReference) {
     return false;
 
-  if (!D || !DC)
+}
+
+  if (!D || !DC) {
     return false;
-  if (Loc.isInvalid())
+
+}
+  if (Loc.isInvalid()) {
     return false;
-  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalDecl(D))
+
+}
+  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalDecl(D)) {
     return false;
-  if (isNotFromSourceFile(D->getLocation()))
+
+}
+  if (isNotFromSourceFile(D->getLocation())) {
     return false;
-  if (D->isImplicit() && shouldIgnoreIfImplicit(D))
+
+}
+  if (D->isImplicit() && shouldIgnoreIfImplicit(D)) {
     return false;
+
+}
 
   if (shouldSuppressRefs()) {
-    if (markEntityOccurrenceInFile(D, Loc))
+    if (markEntityOccurrenceInFile(D, Loc)) {
       return false; // already occurred.
+
+}
   }
 
   ScratchAlloc SA(*this);
   EntityInfo RefEntity, ParentEntity;
   getEntityInfo(D, RefEntity, SA);
-  if (!RefEntity.USR)
+  if (!RefEntity.USR) {
     return false;
+
+}
 
   getEntityInfo(Parent, ParentEntity, SA);
 
@@ -931,8 +1041,10 @@ bool CXIndexDataConsumer::handleReference(const NamedDecl *D, SourceLocation Loc
 }
 
 bool CXIndexDataConsumer::isNotFromSourceFile(SourceLocation Loc) const {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return true;
+
+}
   SourceManager &SM = Ctx->getSourceManager();
   SourceLocation FileLoc = SM.getFileLoc(Loc);
   FileID FID = SM.getFileID(FileLoc);
@@ -941,35 +1053,47 @@ bool CXIndexDataConsumer::isNotFromSourceFile(SourceLocation Loc) const {
 
 void CXIndexDataConsumer::addContainerInMap(const DeclContext *DC,
                                         CXIdxClientContainer container) {
-  if (!DC)
+  if (!DC) {
     return;
+
+}
 
   ContainerMapTy::iterator I = ContainerMap.find(DC);
   if (I == ContainerMap.end()) {
-    if (container)
+    if (container) {
       ContainerMap[DC] = container;
+
+}
     return;
   }
   // Allow changing the container of a previously seen DeclContext so we
   // can handle invalid user code, like a function re-definition.
-  if (container)
+  if (container) {
     I->second = container;
-  else
+  } else {
     ContainerMap.erase(I);
+
+}
 }
 
 CXIdxClientEntity CXIndexDataConsumer::getClientEntity(const Decl *D) const {
-  if (!D)
+  if (!D) {
     return nullptr;
+
+}
   EntityMapTy::const_iterator I = EntityMap.find(D);
-  if (I == EntityMap.end())
+  if (I == EntityMap.end()) {
     return nullptr;
+
+}
   return I->second;
 }
 
 void CXIndexDataConsumer::setClientEntity(const Decl *D, CXIdxClientEntity client) {
-  if (!D)
+  if (!D) {
     return;
+
+}
   EntityMap[D] = client;
 }
 
@@ -1008,20 +1132,26 @@ bool CXIndexDataConsumer::handleCXXRecordDecl(const CXXRecordDecl *RD,
 
 bool CXIndexDataConsumer::markEntityOccurrenceInFile(const NamedDecl *D,
                                                  SourceLocation Loc) {
-  if (!D || Loc.isInvalid())
+  if (!D || Loc.isInvalid()) {
     return true;
+
+}
 
   SourceManager &SM = Ctx->getSourceManager();
   D = getEntityDecl(D);
   
   std::pair<FileID, unsigned> LocInfo = SM.getDecomposedLoc(SM.getFileLoc(Loc));
   FileID FID = LocInfo.first;
-  if (FID.isInvalid())
+  if (FID.isInvalid()) {
     return true;
+
+}
   
   const FileEntry *FE = SM.getFileEntryForID(FID);
-  if (!FE)
+  if (!FE) {
     return true;
+
+}
   RefFileOccurrence RefOccur(FE, D);
   std::pair<llvm::DenseSet<RefFileOccurrence>::iterator, bool>
   res = RefFileOccurrences.insert(RefOccur);
@@ -1040,11 +1170,15 @@ const NamedDecl *CXIndexDataConsumer::getEntityDecl(const NamedDecl *D) const {
                CatImplD = dyn_cast<ObjCCategoryImplDecl>(D)) {
     return getEntityDecl(CatImplD->getCategoryDecl());
   } else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-    if (FunctionTemplateDecl *TemplD = FD->getDescribedFunctionTemplate())
+    if (FunctionTemplateDecl *TemplD = FD->getDescribedFunctionTemplate()) {
       return getEntityDecl(TemplD);
+
+}
   } else if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D)) {
-    if (ClassTemplateDecl *TemplD = RD->getDescribedClassTemplate())
+    if (ClassTemplateDecl *TemplD = RD->getDescribedClassTemplate()) {
       return getEntityDecl(TemplD);
+
+}
   }
 
   return D;
@@ -1053,8 +1187,10 @@ const NamedDecl *CXIndexDataConsumer::getEntityDecl(const NamedDecl *D) const {
 const DeclContext *
 CXIndexDataConsumer::getEntityContainer(const Decl *D) const {
   const DeclContext *DC = dyn_cast<DeclContext>(D);
-  if (DC)
+  if (DC) {
     return DC;
+
+}
 
   if (const ClassTemplateDecl *ClassTempl = dyn_cast<ClassTemplateDecl>(D)) {
     DC = ClassTempl->getTemplatedDecl();
@@ -1068,31 +1204,41 @@ CXIndexDataConsumer::getEntityContainer(const Decl *D) const {
 
 CXIdxClientContainer
 CXIndexDataConsumer::getClientContainerForDC(const DeclContext *DC) const {
-  if (!DC)
+  if (!DC) {
     return nullptr;
 
+}
+
   ContainerMapTy::const_iterator I = ContainerMap.find(DC);
-  if (I == ContainerMap.end())
+  if (I == ContainerMap.end()) {
     return nullptr;
+
+}
 
   return I->second;
 }
 
 CXIdxClientFile CXIndexDataConsumer::getIndexFile(const FileEntry *File) {
-  if (!File)
+  if (!File) {
     return nullptr;
 
+}
+
   FileMapTy::iterator FI = FileMap.find(File);
-  if (FI != FileMap.end())
+  if (FI != FileMap.end()) {
     return FI->second;
+
+}
 
   return nullptr;
 }
 
 CXIdxLoc CXIndexDataConsumer::getIndexLoc(SourceLocation Loc) const {
   CXIdxLoc idxLoc =  { {nullptr, nullptr}, 0 };
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return idxLoc;
+
+}
 
   idxLoc.ptr_data[0] = const_cast<CXIndexDataConsumer *>(this);
   idxLoc.int_data = Loc.getRawEncoding();
@@ -1103,8 +1249,10 @@ void CXIndexDataConsumer::translateLoc(SourceLocation Loc,
                                    CXIdxClientFile *indexFile, CXFile *file,
                                    unsigned *line, unsigned *column,
                                    unsigned *offset) {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return;
+
+}
 
   SourceManager &SM = Ctx->getSourceManager();
   Loc = SM.getFileLoc(Loc);
@@ -1113,20 +1261,32 @@ void CXIndexDataConsumer::translateLoc(SourceLocation Loc,
   FileID FID = LocInfo.first;
   unsigned FileOffset = LocInfo.second;
 
-  if (FID.isInvalid())
+  if (FID.isInvalid()) {
     return;
+
+}
   
   const FileEntry *FE = SM.getFileEntryForID(FID);
-  if (indexFile)
+  if (indexFile) {
     *indexFile = getIndexFile(FE);
-  if (file)
+
+}
+  if (file) {
     *file = const_cast<FileEntry *>(FE);
-  if (line)
+
+}
+  if (line) {
     *line = SM.getLineNumber(FID, FileOffset);
-  if (column)
+
+}
+  if (column) {
     *column = SM.getColumnNumber(FID, FileOffset);
-  if (offset)
+
+}
+  if (offset) {
     *offset = FileOffset;
+
+}
 }
 
 static CXIdxEntityKind getEntityKindFromSymbolKind(SymbolKind K, SymbolLanguage L);
@@ -1137,8 +1297,10 @@ static CXIdxEntityLanguage getEntityLangFromSymbolLang(SymbolLanguage L);
 void CXIndexDataConsumer::getEntityInfo(const NamedDecl *D,
                                     EntityInfo &EntityInfo,
                                     ScratchAlloc &SA) {
-  if (!D)
+  if (!D) {
     return;
+
+}
 
   D = getEntityDecl(D);
   EntityInfo.cursor = getCursor(D);
@@ -1156,8 +1318,10 @@ void CXIndexDataConsumer::getEntityInfo(const NamedDecl *D,
     EntityInfo.numAttributes = EntityInfo.AttrList->getNumAttrs();
   }
 
-  if (EntityInfo.kind == CXIdxEntity_Unexposed)
+  if (EntityInfo.kind == CXIdxEntity_Unexposed) {
     return;
+
+}
 
   if (IdentifierInfo *II = D->getIdentifier()) {
     EntityInfo.name = SA.toCStr(II->getName());
@@ -1193,37 +1357,63 @@ void CXIndexDataConsumer::getContainerInfo(const DeclContext *DC,
 }
 
 CXCursor CXIndexDataConsumer::getRefCursor(const NamedDecl *D, SourceLocation Loc) {
-  if (const TypeDecl *TD = dyn_cast<TypeDecl>(D))
+  if (const TypeDecl *TD = dyn_cast<TypeDecl>(D)) {
     return MakeCursorTypeRef(TD, Loc, CXTU);
-  if (const ObjCInterfaceDecl *ID = dyn_cast<ObjCInterfaceDecl>(D))
+
+}
+  if (const ObjCInterfaceDecl *ID = dyn_cast<ObjCInterfaceDecl>(D)) {
     return MakeCursorObjCClassRef(ID, Loc, CXTU);
-  if (const ObjCProtocolDecl *PD = dyn_cast<ObjCProtocolDecl>(D))
+
+}
+  if (const ObjCProtocolDecl *PD = dyn_cast<ObjCProtocolDecl>(D)) {
     return MakeCursorObjCProtocolRef(PD, Loc, CXTU);
-  if (const TemplateDecl *Template = dyn_cast<TemplateDecl>(D))
+
+}
+  if (const TemplateDecl *Template = dyn_cast<TemplateDecl>(D)) {
     return MakeCursorTemplateRef(Template, Loc, CXTU);
-  if (const NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(D))
+
+}
+  if (const NamespaceDecl *Namespace = dyn_cast<NamespaceDecl>(D)) {
     return MakeCursorNamespaceRef(Namespace, Loc, CXTU);
-  if (const NamespaceAliasDecl *Namespace = dyn_cast<NamespaceAliasDecl>(D))
+
+}
+  if (const NamespaceAliasDecl *Namespace = dyn_cast<NamespaceAliasDecl>(D)) {
     return MakeCursorNamespaceRef(Namespace, Loc, CXTU);
-  if (const FieldDecl *Field = dyn_cast<FieldDecl>(D))
+
+}
+  if (const FieldDecl *Field = dyn_cast<FieldDecl>(D)) {
     return MakeCursorMemberRef(Field, Loc, CXTU);
-  if (const VarDecl *Var = dyn_cast<VarDecl>(D))
+
+}
+  if (const VarDecl *Var = dyn_cast<VarDecl>(D)) {
     return MakeCursorVariableRef(Var, Loc, CXTU);
+
+}
   
   return clang_getNullCursor();
 }
 
 bool CXIndexDataConsumer::shouldIgnoreIfImplicit(const Decl *D) {
-  if (isa<ObjCInterfaceDecl>(D))
+  if (isa<ObjCInterfaceDecl>(D)) {
     return false;
-  if (isa<ObjCCategoryDecl>(D))
+
+}
+  if (isa<ObjCCategoryDecl>(D)) {
     return false;
-  if (isa<ObjCIvarDecl>(D))
+
+}
+  if (isa<ObjCIvarDecl>(D)) {
     return false;
-  if (isa<ObjCMethodDecl>(D))
+
+}
+  if (isa<ObjCMethodDecl>(D)) {
     return false;
-  if (isa<ImportDecl>(D))
+
+}
+  if (isa<ImportDecl>(D)) {
     return false;
+
+}
   return true;
 }
 
@@ -1254,28 +1444,38 @@ static CXIdxEntityKind getEntityKindFromSymbolKind(SymbolKind K, SymbolLanguage 
   case SymbolKind::Struct: return CXIdxEntity_Struct;
   case SymbolKind::Union: return CXIdxEntity_Union;
   case SymbolKind::TypeAlias:
-    if (Lang == SymbolLanguage::CXX)
+    if (Lang == SymbolLanguage::CXX) {
       return CXIdxEntity_CXXTypeAlias;
+
+}
     return CXIdxEntity_Typedef;
   case SymbolKind::Function: return CXIdxEntity_Function;
   case SymbolKind::Variable: return CXIdxEntity_Variable;
   case SymbolKind::Field:
-    if (Lang == SymbolLanguage::ObjC)
+    if (Lang == SymbolLanguage::ObjC) {
       return CXIdxEntity_ObjCIvar;
+
+}
     return CXIdxEntity_Field;
   case SymbolKind::EnumConstant: return CXIdxEntity_EnumConstant;
   case SymbolKind::Class:
-    if (Lang == SymbolLanguage::ObjC)
+    if (Lang == SymbolLanguage::ObjC) {
       return CXIdxEntity_ObjCClass;
+
+}
     return CXIdxEntity_CXXClass;
   case SymbolKind::Protocol:
-    if (Lang == SymbolLanguage::ObjC)
+    if (Lang == SymbolLanguage::ObjC) {
       return CXIdxEntity_ObjCProtocol;
+
+}
     return CXIdxEntity_CXXInterface;
   case SymbolKind::Extension: return CXIdxEntity_ObjCCategory;
   case SymbolKind::InstanceMethod:
-    if (Lang == SymbolLanguage::ObjC)
+    if (Lang == SymbolLanguage::ObjC) {
       return CXIdxEntity_ObjCInstanceMethod;
+
+}
     return CXIdxEntity_CXXInstanceMethod;
   case SymbolKind::ClassMethod: return CXIdxEntity_ObjCClassMethod;
   case SymbolKind::StaticMethod: return CXIdxEntity_CXXStaticMethod;
@@ -1293,12 +1493,18 @@ static CXIdxEntityKind getEntityKindFromSymbolKind(SymbolKind K, SymbolLanguage 
 
 static CXIdxEntityCXXTemplateKind
 getEntityKindFromSymbolProperties(SymbolPropertySet K) {
-  if (K & (SymbolPropertySet)SymbolProperty::TemplatePartialSpecialization)
+  if (K & (SymbolPropertySet)SymbolProperty::TemplatePartialSpecialization) {
     return CXIdxEntity_TemplatePartialSpecialization;
-  if (K & (SymbolPropertySet)SymbolProperty::TemplateSpecialization)
+
+}
+  if (K & (SymbolPropertySet)SymbolProperty::TemplateSpecialization) {
     return CXIdxEntity_TemplateSpecialization;
-  if (K & (SymbolPropertySet)SymbolProperty::Generic)
+
+}
+  if (K & (SymbolPropertySet)SymbolProperty::Generic) {
     return CXIdxEntity_Template;
+
+}
   return CXIdxEntity_NonTemplate;
 }
 

@@ -24,8 +24,10 @@ using namespace llvm;
 //
 // Emit the contents of the constant pool using the provided streamer.
 void ConstantPool::emitEntries(MCStreamer &Streamer) {
-  if (Entries.empty())
+  if (Entries.empty()) {
     return;
+
+}
   Streamer.emitDataRegion(MCDR_DataRegion);
   for (const ConstantPoolEntry &Entry : Entries) {
     Streamer.emitCodeAlignment(Entry.Size); // align naturally
@@ -42,15 +44,19 @@ const MCExpr *ConstantPool::addEntry(const MCExpr *Value, MCContext &Context,
 
   // Check if there is existing entry for the same constant. If so, reuse it.
   auto Itr = C ? CachedEntries.find(C->getValue()) : CachedEntries.end();
-  if (Itr != CachedEntries.end())
+  if (Itr != CachedEntries.end()) {
     return Itr->second;
+
+}
 
   MCSymbol *CPEntryLabel = Context.createTempSymbol();
 
   Entries.push_back(ConstantPoolEntry(CPEntryLabel, Value, Size, Loc));
   const auto SymRef = MCSymbolRefExpr::create(CPEntryLabel, Context);
-  if (C)
+  if (C) {
     CachedEntries[C->getValue()] = SymRef;
+
+}
   return SymRef;
 }
 
@@ -65,8 +71,10 @@ void ConstantPool::clearCache() {
 //
 ConstantPool *AssemblerConstantPools::getConstantPool(MCSection *Section) {
   ConstantPoolMapTy::iterator CP = ConstantPools.find(Section);
-  if (CP == ConstantPools.end())
+  if (CP == ConstantPools.end()) {
     return nullptr;
+
+}
 
   return &CP->second;
 }
@@ -96,14 +104,18 @@ void AssemblerConstantPools::emitAll(MCStreamer &Streamer) {
 
 void AssemblerConstantPools::emitForCurrentSection(MCStreamer &Streamer) {
   MCSection *Section = Streamer.getCurrentSectionOnly();
-  if (ConstantPool *CP = getConstantPool(Section))
+  if (ConstantPool *CP = getConstantPool(Section)) {
     emitConstantPool(Streamer, Section, *CP);
+
+}
 }
 
 void AssemblerConstantPools::clearCacheForCurrentSection(MCStreamer &Streamer) {
   MCSection *Section = Streamer.getCurrentSectionOnly();
-  if (ConstantPool *CP = getConstantPool(Section))
+  if (ConstantPool *CP = getConstantPool(Section)) {
     CP->clearCache();
+
+}
 }
 
 const MCExpr *AssemblerConstantPools::addEntry(MCStreamer &Streamer,

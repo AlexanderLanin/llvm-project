@@ -48,8 +48,10 @@ LLVMErrorRef LLVMOrcCreateLazyCompileCallback(
   if (auto Addr = J.createLazyCompileCallback(Callback, CallbackCtx)) {
     *RetAddr = *Addr;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Addr.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcCreateIndirectStub(LLVMOrcJITStackRef JITStack,
@@ -77,8 +79,10 @@ LLVMErrorRef LLVMOrcAddEagerlyCompiledIR(LLVMOrcJITStackRef JITStack,
           J.addIRModuleEager(std::move(M), SymbolResolver, SymbolResolverCtx)) {
     *RetHandle = *Handle;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Handle.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcAddLazilyCompiledIR(LLVMOrcJITStackRef JITStack,
@@ -92,8 +96,10 @@ LLVMErrorRef LLVMOrcAddLazilyCompiledIR(LLVMOrcJITStackRef JITStack,
           J.addIRModuleLazy(std::move(M), SymbolResolver, SymbolResolverCtx)) {
     *RetHandle = *Handle;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Handle.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcAddObjectFile(LLVMOrcJITStackRef JITStack,
@@ -107,8 +113,10 @@ LLVMErrorRef LLVMOrcAddObjectFile(LLVMOrcJITStackRef JITStack,
           J.addObject(std::move(O), SymbolResolver, SymbolResolverCtx)) {
     *RetHandle = *Handle;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Handle.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcRemoveModule(LLVMOrcJITStackRef JITStack,
@@ -124,8 +132,10 @@ LLVMErrorRef LLVMOrcGetSymbolAddress(LLVMOrcJITStackRef JITStack,
   if (auto Addr = J.findSymbolAddress(SymbolName, true)) {
     *RetAddr = *Addr;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Addr.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcGetSymbolAddressIn(LLVMOrcJITStackRef JITStack,
@@ -136,8 +146,10 @@ LLVMErrorRef LLVMOrcGetSymbolAddressIn(LLVMOrcJITStackRef JITStack,
   if (auto Addr = J.findSymbolAddressIn(H, SymbolName, true)) {
     *RetAddr = *Addr;
     return LLVMErrorSuccess;
-  } else
+  } else {
     return wrap(Addr.takeError());
+
+}
 }
 
 LLVMErrorRef LLVMOrcDisposeInstance(LLVMOrcJITStackRef JITStack) {

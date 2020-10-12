@@ -57,12 +57,18 @@ HighlightsFrom(const Annotations &Test) {
     Expected.back().range = R;
     Expected.back().kind = K;
   };
-  for (const auto &Range : Test.ranges())
+  for (const auto &Range : Test.ranges()) {
     Add(Range, DocumentHighlightKind::Text);
-  for (const auto &Range : Test.ranges("read"))
+
+}
+  for (const auto &Range : Test.ranges("read")) {
     Add(Range, DocumentHighlightKind::Read);
-  for (const auto &Range : Test.ranges("write"))
+
+}
+  for (const auto &Range : Test.ranges("write")) {
     Add(Range, DocumentHighlightKind::Write);
+
+}
   return UnorderedElementsAreArray(Expected);
 }
 
@@ -534,12 +540,18 @@ TEST(LocateSymbol, All) {
     Annotations T(Test);
     llvm::Optional<Range> WantDecl;
     llvm::Optional<Range> WantDef;
-    if (!T.ranges().empty())
+    if (!T.ranges().empty()) {
       WantDecl = WantDef = T.range();
-    if (!T.ranges("decl").empty())
+
+}
+    if (!T.ranges("decl").empty()) {
       WantDecl = T.range("decl");
-    if (!T.ranges("def").empty())
+
+}
+    if (!T.ranges("def").empty()) {
       WantDef = T.range("def");
+
+}
 
     TestTU TU;
     TU.Code = std::string(T.code());
@@ -557,8 +569,10 @@ TEST(LocateSymbol, All) {
       ASSERT_THAT(Results, ::testing::SizeIs(1)) << Test;
       EXPECT_EQ(Results[0].PreferredDeclaration.range, *WantDecl) << Test;
       llvm::Optional<Range> GotDef;
-      if (Results[0].Definition)
+      if (Results[0].Definition) {
         GotDef = Results[0].Definition->range;
+
+}
       EXPECT_EQ(WantDef, GotDef) << Test;
     }
   }
@@ -589,12 +603,18 @@ TEST(LocateSymbol, Warnings) {
     Annotations T(Test);
     llvm::Optional<Range> WantDecl;
     llvm::Optional<Range> WantDef;
-    if (!T.ranges().empty())
+    if (!T.ranges().empty()) {
       WantDecl = WantDef = T.range();
-    if (!T.ranges("decl").empty())
+
+}
+    if (!T.ranges("decl").empty()) {
       WantDecl = T.range("decl");
-    if (!T.ranges("def").empty())
+
+}
+    if (!T.ranges("def").empty()) {
       WantDef = T.range("def");
+
+}
 
     TestTU TU;
     TU.Code = std::string(T.code());
@@ -608,8 +628,10 @@ TEST(LocateSymbol, Warnings) {
       ASSERT_THAT(Results, ::testing::SizeIs(1)) << Test;
       EXPECT_EQ(Results[0].PreferredDeclaration.range, *WantDecl) << Test;
       llvm::Optional<Range> GotDef;
-      if (Results[0].Definition)
+      if (Results[0].Definition) {
         GotDef = Results[0].Definition->range;
+
+}
       EXPECT_EQ(WantDef, GotDef) << Test;
     }
   }
@@ -669,8 +691,10 @@ TEST(LocateSymbol, Textual) {
   for (const char *Test : Tests) {
     Annotations T(Test);
     llvm::Optional<Range> WantDecl;
-    if (!T.ranges().empty())
+    if (!T.ranges().empty()) {
       WantDecl = T.range();
+
+}
 
     auto TU = TestTU::withCode(T.code());
 
@@ -1104,8 +1128,10 @@ TEST(FindReferences, WithinAST) {
     Annotations T(Test);
     auto AST = TestTU::withCode(T.code()).build();
     std::vector<Matcher<Location>> ExpectedLocations;
-    for (const auto &R : T.ranges())
+    for (const auto &R : T.ranges()) {
       ExpectedLocations.push_back(RangeIs(R));
+
+}
     EXPECT_THAT(findReferences(AST, T.point(), 0).References,
                 ElementsAreArray(ExpectedLocations))
         << Test;
@@ -1164,8 +1190,10 @@ TEST(FindReferences, ExplicitSymbols) {
     Annotations T(Test);
     auto AST = TestTU::withCode(T.code()).build();
     std::vector<Matcher<Location>> ExpectedLocations;
-    for (const auto &R : T.ranges())
+    for (const auto &R : T.ranges()) {
       ExpectedLocations.push_back(RangeIs(R));
+
+}
     ASSERT_THAT(ExpectedLocations, Not(IsEmpty()));
     EXPECT_THAT(findReferences(AST, T.point(), 0).References,
                 ElementsAreArray(ExpectedLocations))
@@ -1273,10 +1301,12 @@ TEST(FindReferences, NoQueryForLocalSymbols) {
     RecordingIndex Rec;
     auto AST = TestTU::withCode(File.code()).build();
     findReferences(AST, File.point(), 0, &Rec);
-    if (T.WantQuery)
+    if (T.WantQuery) {
       EXPECT_NE(Rec.RefIDs, None) << T.AnnotatedCode;
-    else
+    } else {
       EXPECT_EQ(Rec.RefIDs, None) << T.AnnotatedCode;
+
+}
   }
 }
 
@@ -1349,8 +1379,10 @@ TEST(GetNonLocalDeclRefs, All) {
     auto NonLocalDeclRefs = getNonLocalDeclRefs(AST, FD);
     std::vector<std::string> Names;
     for (const Decl *D : NonLocalDeclRefs) {
-      if (const auto *ND = llvm::dyn_cast<NamedDecl>(D))
+      if (const auto *ND = llvm::dyn_cast<NamedDecl>(D)) {
         Names.push_back(ND->getQualifiedNameAsString());
+
+}
     }
     EXPECT_THAT(Names, UnorderedElementsAreArray(C.ExpectedDecls))
         << File.code();

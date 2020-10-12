@@ -58,8 +58,10 @@ getNamespaceNameAsWritten(SourceLocation &Loc, const SourceManager &Sources,
   while (llvm::Optional<Token> T = utils::lexer::findNextTokenSkippingComments(
              Loc, Sources, LangOpts)) {
     Loc = T->getLocation();
-    if (T->is(tok::l_brace))
+    if (T->is(tok::l_brace)) {
       break;
+
+}
 
     if (T->isOneOf(tok::l_square, tok::l_paren)) {
       ++Nesting;
@@ -68,8 +70,10 @@ getNamespaceNameAsWritten(SourceLocation &Loc, const SourceManager &Sources,
     } else if (Nesting == 0) {
       if (T->is(tok::raw_identifier)) {
         StringRef ID = T->getRawIdentifier();
-        if (ID != "namespace" && ID != "inline")
+        if (ID != "namespace" && ID != "inline") {
           Result.append(std::string(ID));
+
+}
       } else if (T->is(tok::coloncolon)) {
         Result.append("::");
       } else { // Any other kind of token is unexpected here.
@@ -86,15 +90,19 @@ void NamespaceCommentCheck::check(const MatchFinder::MatchResult &Result) {
 
   // Ignore namespaces inside macros and namespaces split across files.
   if (ND->getBeginLoc().isMacroID() ||
-      !locationsInSameFile(Sources, ND->getBeginLoc(), ND->getRBraceLoc()))
+      !locationsInSameFile(Sources, ND->getBeginLoc(), ND->getRBraceLoc())) {
     return;
+
+}
 
   // Don't require closing comments for namespaces spanning less than certain
   // number of lines.
   unsigned StartLine = Sources.getSpellingLineNumber(ND->getBeginLoc());
   unsigned EndLine = Sources.getSpellingLineNumber(ND->getRBraceLoc());
-  if (EndLine - StartLine + 1 <= ShortNamespaceLines)
+  if (EndLine - StartLine + 1 <= ShortNamespaceLines) {
     return;
+
+}
 
   // Find next token after the namespace closing brace.
   SourceLocation AfterRBrace = Lexer::getLocForEndOfToken(
@@ -106,14 +114,18 @@ void NamespaceCommentCheck::check(const MatchFinder::MatchResult &Result) {
   // then bar instead of a single match. So if we got a nested namespace we have
   // to skip the next ones.
   for (const auto &EndOfNameLocation : Ends) {
-    if (Sources.isBeforeInTranslationUnit(ND->getLocation(), EndOfNameLocation))
+    if (Sources.isBeforeInTranslationUnit(ND->getLocation(), EndOfNameLocation)) {
       return;
+
+}
   }
 
   llvm::Optional<std::string> NamespaceNameAsWritten =
       getNamespaceNameAsWritten(LBraceLoc, Sources, getLangOpts());
-  if (!NamespaceNameAsWritten)
+  if (!NamespaceNameAsWritten) {
     return;
+
+}
 
   if (NamespaceNameAsWritten->empty() != ND->isAnonymousNamespace()) {
     // Apparently, we didn't find the correct namespace name. Give up.
@@ -129,8 +141,10 @@ void NamespaceCommentCheck::check(const MatchFinder::MatchResult &Result) {
     Loc = Loc.getLocWithOffset(1);
   }
 
-  if (!locationsInSameFile(Sources, ND->getRBraceLoc(), Loc))
+  if (!locationsInSameFile(Sources, ND->getRBraceLoc(), Loc)) {
     return;
+
+}
 
   bool NextTokenIsOnSameLine = Sources.getSpellingLineNumber(Loc) == EndLine;
   // If we insert a line comment before the token in the same line, we need
@@ -184,10 +198,14 @@ void NamespaceCommentCheck::check(const MatchFinder::MatchResult &Result) {
 
   std::string Fix(SpacesBeforeComments, ' ');
   Fix.append("// namespace");
-  if (!ND->isAnonymousNamespace())
+  if (!ND->isAnonymousNamespace()) {
     Fix.append(" ").append(*NamespaceNameAsWritten);
-  if (NeedLineBreak)
+
+}
+  if (NeedLineBreak) {
     Fix.append("\n");
+
+}
 
   // Place diagnostic at an old comment, or closing brace if we did not have it.
   SourceLocation DiagLoc =

@@ -55,27 +55,39 @@ STATISTIC(NumASTLoadThresholdReached,
 bool hasEqualKnownFields(const llvm::Triple &Lhs, const llvm::Triple &Rhs) {
   using llvm::Triple;
   if (Lhs.getArch() != Triple::UnknownArch &&
-      Rhs.getArch() != Triple::UnknownArch && Lhs.getArch() != Rhs.getArch())
+      Rhs.getArch() != Triple::UnknownArch && Lhs.getArch() != Rhs.getArch()) {
     return false;
+
+}
   if (Lhs.getSubArch() != Triple::NoSubArch &&
       Rhs.getSubArch() != Triple::NoSubArch &&
-      Lhs.getSubArch() != Rhs.getSubArch())
+      Lhs.getSubArch() != Rhs.getSubArch()) {
     return false;
+
+}
   if (Lhs.getVendor() != Triple::UnknownVendor &&
       Rhs.getVendor() != Triple::UnknownVendor &&
-      Lhs.getVendor() != Rhs.getVendor())
+      Lhs.getVendor() != Rhs.getVendor()) {
     return false;
+
+}
   if (!Lhs.isOSUnknown() && !Rhs.isOSUnknown() &&
-      Lhs.getOS() != Rhs.getOS())
+      Lhs.getOS() != Rhs.getOS()) {
     return false;
+
+}
   if (Lhs.getEnvironment() != Triple::UnknownEnvironment &&
       Rhs.getEnvironment() != Triple::UnknownEnvironment &&
-      Lhs.getEnvironment() != Rhs.getEnvironment())
+      Lhs.getEnvironment() != Rhs.getEnvironment()) {
     return false;
+
+}
   if (Lhs.getObjectFormat() != Triple::UnknownObjectFormat &&
       Rhs.getObjectFormat() != Triple::UnknownObjectFormat &&
-      Lhs.getObjectFormat() != Rhs.getObjectFormat())
+      Lhs.getObjectFormat() != Rhs.getObjectFormat()) {
     return false;
+
+}
   return true;
 }
 
@@ -131,9 +143,11 @@ std::error_code IndexError::convertToErrorCode() const {
 llvm::Expected<llvm::StringMap<std::string>>
 parseCrossTUIndex(StringRef IndexPath, StringRef CrossTUDir) {
   std::ifstream ExternalMapFile{std::string(IndexPath)};
-  if (!ExternalMapFile)
+  if (!ExternalMapFile) {
     return llvm::make_error<IndexError>(index_error_code::missing_index_file,
                                         IndexPath.str());
+
+}
 
   llvm::StringMap<std::string> Result;
   std::string Line;
@@ -143,16 +157,20 @@ parseCrossTUIndex(StringRef IndexPath, StringRef CrossTUDir) {
     if (Pos > 0 && Pos != std::string::npos) {
       StringRef LineRef{Line};
       StringRef LookupName = LineRef.substr(0, Pos);
-      if (Result.count(LookupName))
+      if (Result.count(LookupName)) {
         return llvm::make_error<IndexError>(
             index_error_code::multiple_definitions, IndexPath.str(), LineNo);
+
+}
       StringRef FileName = LineRef.substr(Pos + 1);
       SmallString<256> FilePath = CrossTUDir;
       llvm::sys::path::append(FilePath, FileName);
       Result[LookupName] = std::string(FilePath);
-    } else
+    } else {
       return llvm::make_error<IndexError>(
           index_error_code::invalid_index_format, IndexPath.str(), LineNo);
+
+}
     LineNo++;
   }
   return Result;
@@ -161,8 +179,10 @@ parseCrossTUIndex(StringRef IndexPath, StringRef CrossTUDir) {
 std::string
 createCrossTUIndexString(const llvm::StringMap<std::string> &Index) {
   std::ostringstream Result;
-  for (const auto &E : Index)
+  for (const auto &E : Index) {
     Result << E.getKey().str() << " " << E.getValue() << '\n';
+
+}
   return Result.str();
 }
 
@@ -170,8 +190,10 @@ bool containsConst(const VarDecl *VD, const ASTContext &ACtx) {
   CanQualType CT = ACtx.getCanonicalType(VD->getType());
   if (!CT.isConstQualified()) {
     const RecordType *RTy = CT->getAs<RecordType>();
-    if (!RTy || !RTy->hasConstFields())
+    if (!RTy || !RTy->hasConstFields()) {
       return false;
+
+}
   }
   return true;
 }
@@ -196,8 +218,10 @@ llvm::Optional<std::string>
 CrossTranslationUnitContext::getLookupName(const NamedDecl *ND) {
   SmallString<128> DeclUSR;
   bool Ret = index::generateUSRForDecl(ND, DeclUSR);
-  if (Ret)
+  if (Ret) {
     return {};
+
+}
   return std::string(DeclUSR.str());
 }
 
@@ -210,17 +234,25 @@ CrossTranslationUnitContext::findDefInDeclContext(const DeclContext *DC,
   assert(DC && "Declaration Context must not be null");
   for (const Decl *D : DC->decls()) {
     const auto *SubDC = dyn_cast<DeclContext>(D);
-    if (SubDC)
-      if (const auto *ND = findDefInDeclContext<T>(SubDC, LookupName))
+    if (SubDC) {
+      if (const auto *ND = findDefInDeclContext<T>(SubDC, LookupName)) {
         return ND;
+
+}
+
+}
 
     const auto *ND = dyn_cast<T>(D);
     const T *ResultDecl;
-    if (!ND || !hasBodyOrInit(ND, ResultDecl))
+    if (!ND || !hasBodyOrInit(ND, ResultDecl)) {
       continue;
+
+}
     llvm::Optional<std::string> ResultLookupName = getLookupName(ResultDecl);
-    if (!ResultLookupName || *ResultLookupName != LookupName)
+    if (!ResultLookupName || *ResultLookupName != LookupName) {
       continue;
+
+}
     return ResultDecl;
   }
   return nullptr;
@@ -235,13 +267,17 @@ llvm::Expected<const T *> CrossTranslationUnitContext::getCrossTUDefinitionImpl(
          "D has a body or init in current translation unit!");
   ++NumGetCTUCalled;
   const llvm::Optional<std::string> LookupName = getLookupName(D);
-  if (!LookupName)
+  if (!LookupName) {
     return llvm::make_error<IndexError>(
         index_error_code::failed_to_generate_usr);
+
+}
   llvm::Expected<ASTUnit *> ASTUnitOrError =
       loadExternalAST(*LookupName, CrossTUDir, IndexName, DisplayCTUProgress);
-  if (!ASTUnitOrError)
+  if (!ASTUnitOrError) {
     return ASTUnitOrError.takeError();
+
+}
   ASTUnit *Unit = *ASTUnitOrError;
   assert(&Unit->getFileManager() ==
          &Unit->getASTContext().getSourceManager().getFileManager());
@@ -295,8 +331,10 @@ llvm::Expected<const T *> CrossTranslationUnitContext::getCrossTUDefinitionImpl(
   }
 
   TranslationUnitDecl *TU = Unit->getASTContext().getTranslationUnitDecl();
-  if (const T *ResultDecl = findDefInDeclContext<T>(TU, *LookupName))
+  if (const T *ResultDecl = findDefInDeclContext<T>(TU, *LookupName)) {
     return importDefinition(ResultDecl, Unit);
+
+}
   return llvm::make_error<IndexError>(index_error_code::failed_import);
 }
 
@@ -391,8 +429,10 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFile(
 
     LoadGuard.indicateLoadSuccess();
 
-    if (DisplayCTUProgress)
+    if (DisplayCTUProgress) {
       llvm::errs() << "CTU loaded AST file: " << FileName << "\n";
+
+}
 
     return Unit;
 
@@ -413,8 +453,10 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFunction(
 
     // Ensure that the Index is loaded, as we need to search in it.
     if (llvm::Error IndexLoadError =
-            ensureCTUIndexLoaded(CrossTUDir, IndexName))
+            ensureCTUIndexLoaded(CrossTUDir, IndexName)) {
       return std::move(IndexLoadError);
+
+}
 
     // Check if there is and entry in the index for the function.
     if (!NameFileMap.count(FunctionName)) {
@@ -443,23 +485,29 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFunction(
 llvm::Expected<std::string>
 CrossTranslationUnitContext::ASTUnitStorage::getFileForFunction(
     StringRef FunctionName, StringRef CrossTUDir, StringRef IndexName) {
-  if (llvm::Error IndexLoadError = ensureCTUIndexLoaded(CrossTUDir, IndexName))
+  if (llvm::Error IndexLoadError = ensureCTUIndexLoaded(CrossTUDir, IndexName)) {
     return std::move(IndexLoadError);
+
+}
   return NameFileMap[FunctionName];
 }
 
 llvm::Error CrossTranslationUnitContext::ASTUnitStorage::ensureCTUIndexLoaded(
     StringRef CrossTUDir, StringRef IndexName) {
   // Dont initialize if the map is filled.
-  if (!NameFileMap.empty())
+  if (!NameFileMap.empty()) {
     return llvm::Error::success();
+
+}
 
   // Get the absolute path to the index file.
   SmallString<256> IndexFile = CrossTUDir;
-  if (llvm::sys::path::is_absolute(IndexName))
+  if (llvm::sys::path::is_absolute(IndexName)) {
     IndexFile = IndexName;
-  else
+  } else {
     llvm::sys::path::append(IndexFile, IndexName);
+
+}
 
   if (auto IndexMapping = parseCrossTUIndex(IndexFile, CrossTUDir)) {
     // Initialize member map.
@@ -483,13 +531,17 @@ llvm::Expected<ASTUnit *> CrossTranslationUnitContext::loadExternalAST(
   llvm::Expected<ASTUnit *> Unit = ASTStorage.getASTUnitForFunction(
       LookupName, CrossTUDir, IndexName, DisplayCTUProgress);
 
-  if (!Unit)
+  if (!Unit) {
     return Unit.takeError();
 
+}
+
   // Check whether the backing pointer of the Expected is a nullptr.
-  if (!*Unit)
+  if (!*Unit) {
     return llvm::make_error<IndexError>(
         index_error_code::failed_to_get_external_ast);
+
+}
 
   return Unit;
 }
@@ -542,8 +594,10 @@ CrossTranslationUnitContext::importDefinition(const VarDecl *VD,
 
 void CrossTranslationUnitContext::lazyInitImporterSharedSt(
     TranslationUnitDecl *ToTU) {
-  if (!ImporterSharedSt)
+  if (!ImporterSharedSt) {
     ImporterSharedSt = std::make_shared<ASTImporterSharedState>(*ToTU);
+
+}
 }
 
 ASTImporter &
@@ -551,8 +605,10 @@ CrossTranslationUnitContext::getOrCreateASTImporter(ASTUnit *Unit) {
   ASTContext &From = Unit->getASTContext();
 
   auto I = ASTUnitImporterMap.find(From.getTranslationUnitDecl());
-  if (I != ASTUnitImporterMap.end())
+  if (I != ASTUnitImporterMap.end()) {
     return *I->second;
+
+}
   lazyInitImporterSharedSt(Context.getTranslationUnitDecl());
   ASTImporter *NewImporter = new ASTImporter(
       Context, Context.getSourceManager().getFileManager(), From,
@@ -573,8 +629,10 @@ CrossTranslationUnitContext::getImportedFromSourceLocation(
   auto DecToLoc = SM.getDecomposedLoc(ToLoc);
 
   auto I = ImportedFileIDs.find(DecToLoc.first);
-  if (I == ImportedFileIDs.end())
+  if (I == ImportedFileIDs.end()) {
     return {};
+
+}
 
   FileID FromID = I->second.first;
   clang::ASTUnit *Unit = I->second.second;

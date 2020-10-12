@@ -43,35 +43,55 @@ YAMLOutputStyle::YAMLOutputStyle(PDBFile &File)
 }
 
 Error YAMLOutputStyle::dump() {
-  if (opts::pdb2yaml::StreamDirectory)
+  if (opts::pdb2yaml::StreamDirectory) {
     opts::pdb2yaml::StreamMetadata = true;
 
-  if (auto EC = dumpFileHeaders())
+}
+
+  if (auto EC = dumpFileHeaders()) {
     return EC;
 
-  if (auto EC = dumpStreamMetadata())
+}
+
+  if (auto EC = dumpStreamMetadata()) {
     return EC;
 
-  if (auto EC = dumpStreamDirectory())
+}
+
+  if (auto EC = dumpStreamDirectory()) {
     return EC;
 
-  if (auto EC = dumpStringTable())
+}
+
+  if (auto EC = dumpStringTable()) {
     return EC;
 
-  if (auto EC = dumpPDBStream())
+}
+
+  if (auto EC = dumpPDBStream()) {
     return EC;
 
-  if (auto EC = dumpDbiStream())
+}
+
+  if (auto EC = dumpDbiStream()) {
     return EC;
 
-  if (auto EC = dumpTpiStream())
+}
+
+  if (auto EC = dumpTpiStream()) {
     return EC;
 
-  if (auto EC = dumpIpiStream())
+}
+
+  if (auto EC = dumpIpiStream()) {
     return EC;
 
-  if (auto EC = dumpPublics())
+}
+
+  if (auto EC = dumpPublics()) {
     return EC;
+
+}
 
   flush();
   return Error::success();
@@ -79,8 +99,10 @@ Error YAMLOutputStyle::dump() {
 
 
 Error YAMLOutputStyle::dumpFileHeaders() {
-  if (opts::pdb2yaml::NoFileHeaders)
+  if (opts::pdb2yaml::NoFileHeaders) {
     return Error::success();
+
+}
 
   yaml::MSFHeaders Headers;
   Obj.Headers.emplace();
@@ -104,29 +126,39 @@ Error YAMLOutputStyle::dumpStringTable() {
   bool RequiresStringTable = opts::pdb2yaml::DumpModuleFiles ||
                              !opts::pdb2yaml::DumpModuleSubsections.empty();
   bool RequestedStringTable = opts::pdb2yaml::StringTable;
-  if (!RequiresStringTable && !RequestedStringTable)
+  if (!RequiresStringTable && !RequestedStringTable) {
     return Error::success();
 
+}
+
   auto ExpectedST = File.getStringTable();
-  if (!ExpectedST)
+  if (!ExpectedST) {
     return ExpectedST.takeError();
+
+}
 
   Obj.StringTable.emplace();
   const auto &ST = ExpectedST.get();
   for (auto ID : ST.name_ids()) {
     auto S = ST.getStringForID(ID);
-    if (!S)
+    if (!S) {
       return S.takeError();
-    if (S->empty())
+
+}
+    if (S->empty()) {
       continue;
+
+}
     Obj.StringTable->push_back(*S);
   }
   return Error::success();
 }
 
 Error YAMLOutputStyle::dumpStreamMetadata() {
-  if (!opts::pdb2yaml::StreamMetadata)
+  if (!opts::pdb2yaml::StreamMetadata) {
     return Error::success();
+
+}
 
   Obj.StreamSizes.emplace();
   Obj.StreamSizes->assign(File.getStreamSizes().begin(),
@@ -135,8 +167,10 @@ Error YAMLOutputStyle::dumpStreamMetadata() {
 }
 
 Error YAMLOutputStyle::dumpStreamDirectory() {
-  if (!opts::pdb2yaml::StreamDirectory)
+  if (!opts::pdb2yaml::StreamDirectory) {
     return Error::success();
+
+}
 
   auto StreamMap = File.getStreamMap();
   Obj.StreamMap.emplace();
@@ -150,12 +184,16 @@ Error YAMLOutputStyle::dumpStreamDirectory() {
 }
 
 Error YAMLOutputStyle::dumpPDBStream() {
-  if (!opts::pdb2yaml::PdbStream)
+  if (!opts::pdb2yaml::PdbStream) {
     return Error::success();
 
+}
+
   auto IS = File.getPDBInfoStream();
-  if (!IS)
+  if (!IS) {
     return IS.takeError();
+
+}
 
   auto &InfoS = IS.get();
   Obj.PdbStream.emplace();
@@ -193,15 +231,21 @@ static opts::ModuleSubsection convertSubsectionKind(DebugSubsectionKind K) {
 }
 
 Error YAMLOutputStyle::dumpDbiStream() {
-  if (!opts::pdb2yaml::DbiStream)
+  if (!opts::pdb2yaml::DbiStream) {
     return Error::success();
 
-  if (!File.hasPDBDbiStream())
+}
+
+  if (!File.hasPDBDbiStream()) {
     return Error::success();
+
+}
 
   auto DbiS = File.getPDBDbiStream();
-  if (!DbiS)
+  if (!DbiS) {
     return DbiS.takeError();
+
+}
 
   auto &DS = DbiS.get();
   Obj.DbiStream.emplace();
@@ -228,35 +272,47 @@ Error YAMLOutputStyle::dumpDbiStream() {
       }
 
       uint16_t ModiStream = MI.getModuleStreamIndex();
-      if (ModiStream == kInvalidStreamIndex)
+      if (ModiStream == kInvalidStreamIndex) {
         continue;
+
+}
 
       auto ModStreamData = File.createIndexedStream(ModiStream);
       pdb::ModuleDebugStreamRef ModS(MI, std::move(ModStreamData));
-      if (auto EC = ModS.reload())
+      if (auto EC = ModS.reload()) {
         return EC;
 
+}
+
       auto ExpectedST = File.getStringTable();
-      if (!ExpectedST)
+      if (!ExpectedST) {
         return ExpectedST.takeError();
+
+}
       if (!opts::pdb2yaml::DumpModuleSubsections.empty() &&
           ModS.hasDebugSubsections()) {
         auto ExpectedChecksums = ModS.findChecksumsSubsection();
-        if (!ExpectedChecksums)
+        if (!ExpectedChecksums) {
           return ExpectedChecksums.takeError();
+
+}
 
         StringsAndChecksumsRef SC(ExpectedST->getStringTable(),
                                   *ExpectedChecksums);
 
         for (const auto &SS : ModS.subsections()) {
           opts::ModuleSubsection OptionKind = convertSubsectionKind(SS.kind());
-          if (!checkModuleSubsection(OptionKind))
+          if (!checkModuleSubsection(OptionKind)) {
             continue;
+
+}
 
           auto Converted =
               CodeViewYAML::YAMLDebugSubsection::fromCodeViewSubection(SC, SS);
-          if (!Converted)
+          if (!Converted) {
             return Converted.takeError();
+
+}
           DMI.Subsections.push_back(*Converted);
         }
       }
@@ -268,8 +324,10 @@ Error YAMLOutputStyle::dumpDbiStream() {
         bool HadError = false;
         for (auto &Sym : ModS.symbols(&HadError)) {
           auto ES = CodeViewYAML::SymbolRecord::fromCodeViewSymbol(Sym);
-          if (!ES)
+          if (!ES) {
             return ES.takeError();
+
+}
 
           DMI.Modi->Symbols.push_back(*ES);
         }
@@ -280,20 +338,26 @@ Error YAMLOutputStyle::dumpDbiStream() {
 }
 
 Error YAMLOutputStyle::dumpTpiStream() {
-  if (!opts::pdb2yaml::TpiStream)
+  if (!opts::pdb2yaml::TpiStream) {
     return Error::success();
 
+}
+
   auto TpiS = File.getPDBTpiStream();
-  if (!TpiS)
+  if (!TpiS) {
     return TpiS.takeError();
+
+}
 
   auto &TS = TpiS.get();
   Obj.TpiStream.emplace();
   Obj.TpiStream->Version = TS.getTpiVersion();
   for (auto &Record : TS.types(nullptr)) {
     auto ExpectedRecord = CodeViewYAML::LeafRecord::fromCodeViewRecord(Record);
-    if (!ExpectedRecord)
+    if (!ExpectedRecord) {
       return ExpectedRecord.takeError();
+
+}
     Obj.TpiStream->Records.push_back(*ExpectedRecord);
   }
 
@@ -301,26 +365,36 @@ Error YAMLOutputStyle::dumpTpiStream() {
 }
 
 Error YAMLOutputStyle::dumpIpiStream() {
-  if (!opts::pdb2yaml::IpiStream)
+  if (!opts::pdb2yaml::IpiStream) {
     return Error::success();
+
+}
 
   auto InfoS = File.getPDBInfoStream();
-  if (!InfoS)
+  if (!InfoS) {
     return InfoS.takeError();
-  if (!InfoS->containsIdStream())
+
+}
+  if (!InfoS->containsIdStream()) {
     return Error::success();
 
+}
+
   auto IpiS = File.getPDBIpiStream();
-  if (!IpiS)
+  if (!IpiS) {
     return IpiS.takeError();
+
+}
 
   auto &IS = IpiS.get();
   Obj.IpiStream.emplace();
   Obj.IpiStream->Version = IS.getTpiVersion();
   for (auto &Record : IS.types(nullptr)) {
     auto ExpectedRecord = CodeViewYAML::LeafRecord::fromCodeViewRecord(Record);
-    if (!ExpectedRecord)
+    if (!ExpectedRecord) {
       return ExpectedRecord.takeError();
+
+}
 
     Obj.IpiStream->Records.push_back(*ExpectedRecord);
   }
@@ -329,8 +403,10 @@ Error YAMLOutputStyle::dumpIpiStream() {
 }
 
 Error YAMLOutputStyle::dumpPublics() {
-  if (!opts::pdb2yaml::PublicsStream)
+  if (!opts::pdb2yaml::PublicsStream) {
     return Error::success();
+
+}
 
   Obj.PublicsStream.emplace();
   auto ExpectedPublics = File.getPDBPublicsStream();
@@ -352,11 +428,15 @@ Error YAMLOutputStyle::dumpPublics() {
       ExpectedSyms->getSymbolArray().getUnderlyingStream();
   for (uint32_t PubSymOff : PublicsTable) {
     Expected<CVSymbol> Sym = readSymbolFromStream(SymStream, PubSymOff);
-    if (!Sym)
+    if (!Sym) {
       return Sym.takeError();
+
+}
     auto ES = CodeViewYAML::SymbolRecord::fromCodeViewSymbol(*Sym);
-    if (!ES)
+    if (!ES) {
       return ES.takeError();
+
+}
 
     Obj.PublicsStream->PubSyms.push_back(*ES);
   }

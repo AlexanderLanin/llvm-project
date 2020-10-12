@@ -55,20 +55,24 @@ void NativeTypePointer::dump(raw_ostream &OS, int Indent,
   dumpSymbolField(OS, "reference", isReference(), Indent);
   dumpSymbolField(OS, "restrictedType", isRestrictedType(), Indent);
   if (isMemberPointer()) {
-    if (isSingleInheritance())
+    if (isSingleInheritance()) {
       dumpSymbolField(OS, "isSingleInheritance", 1, Indent);
-    else if (isMultipleInheritance())
+    } else if (isMultipleInheritance()) {
       dumpSymbolField(OS, "isMultipleInheritance", 1, Indent);
-    else if (isVirtualInheritance())
+    } else if (isVirtualInheritance()) {
       dumpSymbolField(OS, "isVirtualInheritance", 1, Indent);
+
+}
   }
   dumpSymbolField(OS, "unalignedType", isUnalignedType(), Indent);
   dumpSymbolField(OS, "volatileType", isVolatileType(), Indent);
 }
 
 SymIndexId NativeTypePointer::getClassParentId() const {
-  if (!isMemberPointer())
+  if (!isMemberPointer()) {
     return 0;
+
+}
 
   assert(Record);
   const MemberPointerInfo &MPI = Record->getMemberInfo();
@@ -76,8 +80,10 @@ SymIndexId NativeTypePointer::getClassParentId() const {
 }
 
 uint64_t NativeTypePointer::getLength() const {
-  if (Record)
+  if (Record) {
     return Record->getSize();
+
+}
 
   switch (TI.getSimpleMode()) {
   case SimpleTypeMode::NearPointer:
@@ -105,52 +111,68 @@ SymIndexId NativeTypePointer::getTypeId() const {
 }
 
 bool NativeTypePointer::isReference() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return Record->getMode() == PointerMode::LValueReference;
 }
 
 bool NativeTypePointer::isRValueReference() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return Record->getMode() == PointerMode::RValueReference;
 }
 
 bool NativeTypePointer::isPointerToDataMember() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return Record->getMode() == PointerMode::PointerToDataMember;
 }
 
 bool NativeTypePointer::isPointerToMemberFunction() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return Record->getMode() == PointerMode::PointerToMemberFunction;
 }
 
 bool NativeTypePointer::isConstType() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return (Record->getOptions() & PointerOptions::Const) != PointerOptions::None;
 }
 
 bool NativeTypePointer::isRestrictedType() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return (Record->getOptions() & PointerOptions::Restrict) !=
          PointerOptions::None;
 }
 
 bool NativeTypePointer::isVolatileType() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return (Record->getOptions() & PointerOptions::Volatile) !=
          PointerOptions::None;
 }
 
 bool NativeTypePointer::isUnalignedType() const {
-  if (!Record)
+  if (!Record) {
     return false;
+
+}
   return (Record->getOptions() & PointerOptions::Unaligned) !=
          PointerOptions::None;
 }
@@ -162,8 +184,10 @@ static inline bool isInheritanceKind(const MemberPointerInfo &MPI,
 }
 
 bool NativeTypePointer::isSingleInheritance() const {
-  if (!isMemberPointer())
+  if (!isMemberPointer()) {
     return false;
+
+}
   return isInheritanceKind(
       Record->getMemberInfo(),
       PointerToMemberRepresentation::SingleInheritanceData,
@@ -171,8 +195,10 @@ bool NativeTypePointer::isSingleInheritance() const {
 }
 
 bool NativeTypePointer::isMultipleInheritance() const {
-  if (!isMemberPointer())
+  if (!isMemberPointer()) {
     return false;
+
+}
   return isInheritanceKind(
       Record->getMemberInfo(),
       PointerToMemberRepresentation::MultipleInheritanceData,
@@ -180,8 +206,10 @@ bool NativeTypePointer::isMultipleInheritance() const {
 }
 
 bool NativeTypePointer::isVirtualInheritance() const {
-  if (!isMemberPointer())
+  if (!isMemberPointer()) {
     return false;
+
+}
   return isInheritanceKind(
       Record->getMemberInfo(),
       PointerToMemberRepresentation::VirtualInheritanceData,

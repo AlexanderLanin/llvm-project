@@ -23,14 +23,20 @@ AST_MATCHER_P(Stmt, IgnoringTemporaries, ast_matchers::internal::Matcher<Stmt>,
               InnerMatcher) {
   const Stmt *E = &Node;
   while (true) {
-    if (const auto *MTE = dyn_cast<MaterializeTemporaryExpr>(E))
+    if (const auto *MTE = dyn_cast<MaterializeTemporaryExpr>(E)) {
       E = MTE->getSubExpr();
-    if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E))
+
+}
+    if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E)) {
       E = BTE->getSubExpr();
-    if (const auto *ICE = dyn_cast<ImplicitCastExpr>(E))
+
+}
+    if (const auto *ICE = dyn_cast<ImplicitCastExpr>(E)) {
       E = ICE->getSubExpr();
-    else
+    } else {
       break;
+
+}
   }
 
   return InnerMatcher.matches(*E, Finder, Builder);

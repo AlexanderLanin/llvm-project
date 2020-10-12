@@ -75,23 +75,31 @@ public:
     void *Mem =
         ::operator new(totalSizeToAlloc<double, short>(HasDouble, HasShort));
     Class2 *C = new (Mem) Class2(HasShort, HasDouble);
-    if (HasShort)
+    if (HasShort) {
       *C->getTrailingObjects<short>() = S;
-    if (HasDouble)
+
+}
+    if (HasDouble) {
       *C->getTrailingObjects<double>() = D;
+
+}
     return C;
   }
   void operator delete(void *p) { ::operator delete(p); }
 
   short getShort() const {
-    if (!HasShort)
+    if (!HasShort) {
       return 0;
+
+}
     return *getTrailingObjects<short>();
   }
 
   double getDouble() const {
-    if (!HasDouble)
+    if (!HasDouble) {
       return 0.0;
+
+}
     return *getTrailingObjects<double>();
   }
 

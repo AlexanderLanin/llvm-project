@@ -38,12 +38,16 @@ using namespace llvm;
 
 Value *DbgVariableIntrinsic::getVariableLocation(bool AllowNullOp) const {
   Value *Op = getArgOperand(0);
-  if (AllowNullOp && !Op)
+  if (AllowNullOp && !Op) {
     return nullptr;
 
+}
+
   auto *MD = cast<MetadataAsValue>(Op)->getMetadata();
-  if (auto *V = dyn_cast<ValueAsMetadata>(MD))
+  if (auto *V = dyn_cast<ValueAsMetadata>(MD)) {
     return V->getValue();
+
+}
 
   // When the value goes to null, it gets replaced by an empty MDNode.
   assert(!cast<MDNode>(MD)->getNumOperands() && "Expected an empty MDNode");
@@ -51,8 +55,10 @@ Value *DbgVariableIntrinsic::getVariableLocation(bool AllowNullOp) const {
 }
 
 Optional<uint64_t> DbgVariableIntrinsic::getFragmentSizeInBits() const {
-  if (auto Fragment = getExpression()->getFragmentInfo())
+  if (auto Fragment = getExpression()->getFragmentInfo()) {
     return Fragment->SizeInBits;
+
+}
   return getVariable()->getSizeInBits();
 }
 
@@ -81,15 +87,21 @@ int llvm::Intrinsic::lookupLLVMIntrinsicByName(ArrayRef<const char *> NameTable,
     LastLow = Low;
     std::tie(Low, High) = std::equal_range(Low, High, Name.data(), Cmp);
   }
-  if (High - Low > 0)
+  if (High - Low > 0) {
     LastLow = Low;
 
-  if (LastLow == NameTable.end())
+}
+
+  if (LastLow == NameTable.end()) {
     return -1;
+
+}
   StringRef NameFound = *LastLow;
   if (Name == NameFound ||
-      (Name.startswith(NameFound) && Name[NameFound.size()] == '.'))
+      (Name.startswith(NameFound) && Name[NameFound.size()] == '.')) {
     return LastLow - NameTable.begin();
+
+}
   return -1;
 }
 
@@ -106,8 +118,10 @@ Optional<fp::RoundingMode> ConstrainedFPIntrinsic::getRoundingMode() const {
   unsigned NumOperands = getNumArgOperands();
   Metadata *MD =
       cast<MetadataAsValue>(getArgOperand(NumOperands - 2))->getMetadata();
-  if (!MD || !isa<MDString>(MD))
+  if (!MD || !isa<MDString>(MD)) {
     return None;
+
+}
   return StrToRoundingMode(cast<MDString>(MD)->getString());
 }
 
@@ -116,8 +130,10 @@ ConstrainedFPIntrinsic::getExceptionBehavior() const {
   unsigned NumOperands = getNumArgOperands();
   Metadata *MD =
       cast<MetadataAsValue>(getArgOperand(NumOperands - 1))->getMetadata();
-  if (!MD || !isa<MDString>(MD))
+  if (!MD || !isa<MDString>(MD)) {
     return None;
+
+}
   return StrToExceptionBehavior(cast<MDString>(MD)->getString());
 }
 
@@ -125,8 +141,10 @@ FCmpInst::Predicate
 ConstrainedFPCmpIntrinsic::getPredicate() const {
   Metadata *MD =
       cast<MetadataAsValue>(getArgOperand(2))->getMetadata();
-  if (!MD || !isa<MDString>(MD))
+  if (!MD || !isa<MDString>(MD)) {
     return FCmpInst::BAD_FCMP_PREDICATE;
+
+}
   return StringSwitch<FCmpInst::Predicate>(cast<MDString>(MD)->getString())
            .Case("oeq", FCmpInst::FCMP_OEQ)
            .Case("ogt", FCmpInst::FCMP_OGT)
@@ -212,8 +230,10 @@ bool BinaryOpIntrinsic::isSigned() const {
 }
 
 unsigned BinaryOpIntrinsic::getNoWrapKind() const {
-  if (isSigned())
+  if (isSigned()) {
     return OverflowingBinaryOperator::NoSignedWrap;
-  else
+  } else {
     return OverflowingBinaryOperator::NoUnsignedWrap;
+
+}
 }

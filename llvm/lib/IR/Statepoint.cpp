@@ -18,14 +18,18 @@
 using namespace llvm;
 
 bool llvm::isStatepoint(const CallBase *Call) {
-  if (auto *F = Call->getCalledFunction())
+  if (auto *F = Call->getCalledFunction()) {
     return F->getIntrinsicID() == Intrinsic::experimental_gc_statepoint;
+
+}
   return false;
 }
 
 bool llvm::isStatepoint(const Value *V) {
-  if (auto *Call = dyn_cast<CallBase>(V))
+  if (auto *Call = dyn_cast<CallBase>(V)) {
     return isStatepoint(Call);
+
+}
   return false;
 }
 
@@ -38,16 +42,20 @@ bool llvm::isGCRelocate(const CallBase *Call) {
 }
 
 bool llvm::isGCRelocate(const Value *V) {
-  if (auto *Call = dyn_cast<CallBase>(V))
+  if (auto *Call = dyn_cast<CallBase>(V)) {
     return isGCRelocate(Call);
+
+}
   return false;
 }
 
 bool llvm::isGCResult(const CallBase *Call) { return isa<GCResultInst>(Call); }
 
 bool llvm::isGCResult(const Value *V) {
-  if (auto *Call = dyn_cast<CallBase>(V))
+  if (auto *Call = dyn_cast<CallBase>(V)) {
     return isGCResult(Call);
+
+}
   return false;
 }
 
@@ -63,16 +71,24 @@ llvm::parseStatepointDirectivesFromAttrs(AttributeList AS) {
   Attribute AttrID =
       AS.getAttribute(AttributeList::FunctionIndex, "statepoint-id");
   uint64_t StatepointID;
-  if (AttrID.isStringAttribute())
-    if (!AttrID.getValueAsString().getAsInteger(10, StatepointID))
+  if (AttrID.isStringAttribute()) {
+    if (!AttrID.getValueAsString().getAsInteger(10, StatepointID)) {
       Result.StatepointID = StatepointID;
+
+}
+
+}
 
   uint32_t NumPatchBytes;
   Attribute AttrNumPatchBytes = AS.getAttribute(AttributeList::FunctionIndex,
                                                 "statepoint-num-patch-bytes");
-  if (AttrNumPatchBytes.isStringAttribute())
-    if (!AttrNumPatchBytes.getValueAsString().getAsInteger(10, NumPatchBytes))
+  if (AttrNumPatchBytes.isStringAttribute()) {
+    if (!AttrNumPatchBytes.getValueAsString().getAsInteger(10, NumPatchBytes)) {
       Result.NumPatchBytes = NumPatchBytes;
+
+}
+
+}
 
   return Result;
 }

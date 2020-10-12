@@ -164,8 +164,10 @@ bool LowerSwitch::runOnFunction(Function &F) {
 
     // If the block is a dead Default block that will be deleted later, don't
     // waste time processing it.
-    if (DeleteList.count(Cur))
+    if (DeleteList.count(Cur)) {
       continue;
+
+}
 
     if (SwitchInst *SI = dyn_cast<SwitchInst>(Cur->getTerminator())) {
       Changed = true;
@@ -190,8 +192,10 @@ static raw_ostream &operator<<(raw_ostream &O,
   for (LowerSwitch::CaseVector::const_iterator B = C.begin(), E = C.end();
        B != E;) {
     O << "[" << B->Low->getValue() << ", " << B->High->getValue() << "]";
-    if (++B != E)
+    if (++B != E) {
       O << ", ";
+
+}
   }
 
   return O << "]";
@@ -228,15 +232,19 @@ fixPhis(BasicBlock *SuccBB, BasicBlock *OrigBB, BasicBlock *NewBB,
     // Remove additional occurrences coming from condensed cases and keep the
     // number of incoming values equal to the number of branches to SuccBB.
     SmallVector<unsigned, 8> Indices;
-    for (++Idx; LocalNumMergedCases > 0 && Idx < E; ++Idx)
+    for (++Idx; LocalNumMergedCases > 0 && Idx < E; ++Idx) {
       if (PN->getIncomingBlock(Idx) == OrigBB) {
         Indices.push_back(Idx);
         LocalNumMergedCases--;
       }
+
+}
     // Remove incoming values in the reverse order to prevent invalidating
     // *successive* index.
-    for (unsigned III : llvm::reverse(Indices))
+    for (unsigned III : llvm::reverse(Indices)) {
       PN->removeIncomingValue(III);
+
+}
   }
 }
 
@@ -295,8 +303,10 @@ LowerSwitch::switchConvert(CaseItr Begin, CaseItr End, ConstantInt *LowerBound,
     int64_t GapLow = LHS.back().High->getSExtValue() + 1;
     int64_t GapHigh = NewLowerBound->getSExtValue() - 1;
     IntRange Gap = { GapLow, GapHigh };
-    if (GapHigh >= GapLow && IsInRanges(Gap, UnreachableRanges))
+    if (GapHigh >= GapLow && IsInRanges(Gap, UnreachableRanges)) {
       NewUpperBound = LHS.back().High;
+
+}
   }
 
   LLVM_DEBUG(dbgs() << "LHS Bounds ==> [" << LowerBound->getSExtValue() << ", "
@@ -402,8 +412,10 @@ unsigned LowerSwitch::Clusterify(CaseVector& Cases, SwitchInst *SI) {
 
   // Start with "simple" cases
   for (auto Case : SI->cases()) {
-    if (Case.getCaseSuccessor() == SI->getDefaultDest())
+    if (Case.getCaseSuccessor() == SI->getDefaultDest()) {
       continue;
+
+}
     Cases.push_back(CaseRange(Case.getCaseValue(), Case.getCaseValue(),
                               Case.getCaseSuccessor()));
     ++NumSimpleCases;
@@ -563,8 +575,10 @@ void LowerSwitch::processSwitchInst(SwitchInst *SI,
     // As the default block in the switch is unreachable, update the PHI nodes
     // (remove all of the references to the default block) to reflect this.
     const unsigned NumDefaultEdges = SI->getNumCases() + 1 - NumSimpleCases;
-    for (unsigned I = 0; I < NumDefaultEdges; ++I)
+    for (unsigned I = 0; I < NumDefaultEdges; ++I) {
       Default->removePredecessor(OrigBlock);
+
+}
 
     // Use the most popular block as the new default, reducing the number of
     // cases.
@@ -581,8 +595,10 @@ void LowerSwitch::processSwitchInst(SwitchInst *SI,
       SI->eraseFromParent();
       // As all the cases have been replaced with a single branch, only keep
       // one entry in the PHI nodes.
-      for (unsigned I = 0 ; I < (MaxPop - 1) ; ++I)
+      for (unsigned I = 0 ; I < (MaxPop - 1) ; ++I) {
         PopSucc->removePredecessor(OrigBlock);
+
+}
       return;
     }
 
@@ -614,6 +630,8 @@ void LowerSwitch::processSwitchInst(SwitchInst *SI,
   OrigBlock->getInstList().erase(SI);
 
   // If the Default block has no more predecessors just add it to DeleteList.
-  if (pred_begin(OldDefault) == pred_end(OldDefault))
+  if (pred_begin(OldDefault) == pred_end(OldDefault)) {
     DeleteList.insert(OldDefault);
+
+}
 }

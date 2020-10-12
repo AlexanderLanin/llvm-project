@@ -69,11 +69,11 @@ static void addOptLevelArgs(const llvm::opt::ArgList &Args,
   if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
     StringRef OOpt = "3";
     if (A->getOption().matches(options::OPT_O4) ||
-        A->getOption().matches(options::OPT_Ofast))
+        A->getOption().matches(options::OPT_Ofast)) {
       OOpt = "3";
-    else if (A->getOption().matches(options::OPT_O0))
+    } else if (A->getOption().matches(options::OPT_O0)) {
       OOpt = "0";
-    else if (A->getOption().matches(options::OPT_O)) {
+    } else if (A->getOption().matches(options::OPT_O)) {
       // Clang and opt support -Os/-Oz; llc only supports -O0, -O1, -O2 and -O3
       // so we map -Os/-Oz to -O2.
       // Only clang supports -Og, and maps it to -O1.
@@ -98,8 +98,10 @@ const char *AMDGCN::Linker::constructLLVMLinkCommand(
     StringRef OutputFilePrefix) const {
   ArgStringList CmdArgs;
   // Add the input bc's created by compile step.
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+
+}
 
   // Add an intermediate output file.
   CmdArgs.push_back("-o");
@@ -163,11 +165,15 @@ const char *AMDGCN::Linker::constructLlcCommand(
   std::string MAttrString = "-mattr=";
   for(auto OneFeature : Features) {
     MAttrString.append(Args.MakeArgString(OneFeature));
-    if (OneFeature != Features.back())
+    if (OneFeature != Features.back()) {
       MAttrString.append(",");
+
+}
   }
-  if(!Features.empty())
+  if(!Features.empty()) {
     LlcArgs.push_back(Args.MakeArgString(MAttrString));
+
+}
 
   for (const Arg *A : Args.filtered(options::OPT_mllvm)) {
     LlcArgs.push_back(A->getValue(0));
@@ -237,8 +243,10 @@ void AMDGCN::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                    const ArgList &Args,
                                    const char *LinkingOutput) const {
 
-  if (JA.getType() == types::TY_HIP_FATBIN)
+  if (JA.getType() == types::TY_HIP_FATBIN) {
     return constructHIPFatbinCommand(C, JA, Output.getFilename(), Inputs, Args, *this);
+
+}
 
   assert(getToolChain().getTriple().getArch() == llvm::Triple::amdgcn &&
          "Unsupported target");
@@ -248,17 +256,21 @@ void AMDGCN::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   // Prefix for temporary file name.
   std::string Prefix = llvm::sys::path::stem(Inputs[0].getFilename()).str();
-  if (!C.getDriver().isSaveTempsEnabled())
+  if (!C.getDriver().isSaveTempsEnabled()) {
     Prefix += "-" + SubArchName;
+
+}
 
   // Each command outputs different files.
   const char *LLVMLinkCommand =
       constructLLVMLinkCommand(C, JA, Inputs, Args, SubArchName, Prefix);
   const char *OptCommand = constructOptCommand(C, JA, Inputs, Args, SubArchName,
                                                Prefix, LLVMLinkCommand);
-  if (C.getDriver().isSaveTempsEnabled())
+  if (C.getDriver().isSaveTempsEnabled()) {
     constructLlcCommand(C, JA, Inputs, Args, SubArchName, Prefix, OptCommand,
                         /*OutputIsAsm=*/true);
+
+}
   const char *LlcCommand =
       constructLlcCommand(C, JA, Inputs, Args, SubArchName, Prefix, OptCommand);
   constructLldCommand(C, JA, Inputs, Output, Args, LlcCommand);
@@ -289,12 +301,16 @@ void HIPToolChain::addClangTargetOptions(
   CC1Args.push_back("-fcuda-is-device");
 
   if (DriverArgs.hasFlag(options::OPT_fcuda_approx_transcendentals,
-                         options::OPT_fno_cuda_approx_transcendentals, false))
+                         options::OPT_fno_cuda_approx_transcendentals, false)) {
     CC1Args.push_back("-fcuda-approx-transcendentals");
 
+}
+
   if (DriverArgs.hasFlag(options::OPT_fgpu_rdc, options::OPT_fno_gpu_rdc,
-                         false))
+                         false)) {
     CC1Args.push_back("-fgpu-rdc");
+
+}
 
   StringRef MaxThreadsPerBlock =
       DriverArgs.getLastArgValue(options::OPT_gpu_max_threads_per_block_EQ);
@@ -305,8 +321,10 @@ void HIPToolChain::addClangTargetOptions(
   }
 
   if (DriverArgs.hasFlag(options::OPT_fgpu_allow_device_init,
-                         options::OPT_fno_gpu_allow_device_init, false))
+                         options::OPT_fno_gpu_allow_device_init, false)) {
     CC1Args.push_back("-fgpu-allow-device-init");
+
+}
 
   CC1Args.push_back("-fcuda-allow-variadic-functions");
 
@@ -318,14 +336,18 @@ void HIPToolChain::addClangTargetOptions(
     CC1Args.push_back("-fapply-global-visibility-to-externs");
   }
 
-  if (DriverArgs.hasArg(options::OPT_nogpulib))
+  if (DriverArgs.hasArg(options::OPT_nogpulib)) {
     return;
+
+}
   ArgStringList LibraryPaths;
 
   // Find in --hip-device-lib-path and HIP_LIBRARY_PATH.
   for (auto Path :
-       DriverArgs.getAllArgValues(options::OPT_hip_device_lib_path_EQ))
+       DriverArgs.getAllArgValues(options::OPT_hip_device_lib_path_EQ)) {
     LibraryPaths.push_back(DriverArgs.MakeArgString(Path));
+
+}
 
   addDirectoryList(DriverArgs, LibraryPaths, "", "HIP_DEVICE_LIB_PATH");
 
@@ -344,16 +366,20 @@ void HIPToolChain::addClangTargetOptions(
     std::string ISAVerBC = "oclc_isa_version_" + GFXVersion + ".amdgcn.bc";
 
     llvm::StringRef FlushDenormalControlBC;
-    if (DriverArgs.hasArg(options::OPT_fcuda_flush_denormals_to_zero))
+    if (DriverArgs.hasArg(options::OPT_fcuda_flush_denormals_to_zero)) {
       FlushDenormalControlBC = "oclc_daz_opt_on.amdgcn.bc";
-    else
+    } else {
       FlushDenormalControlBC = "oclc_daz_opt_off.amdgcn.bc";
 
+}
+
     llvm::StringRef WaveFrontSizeBC;
-    if (stoi(GFXVersion) < 1000)
+    if (stoi(GFXVersion) < 1000) {
       WaveFrontSizeBC = "oclc_wavefrontsize64_on.amdgcn.bc";
-    else
+    } else {
       WaveFrontSizeBC = "oclc_wavefrontsize64_off.amdgcn.bc";
+
+}
 
     BCLibs.append({"hip.amdgcn.bc", "ocml.amdgcn.bc", "ockl.amdgcn.bc",
                    "oclc_finite_only_off.amdgcn.bc",
@@ -362,8 +388,10 @@ void HIPToolChain::addClangTargetOptions(
                    "oclc_unsafe_math_off.amdgcn.bc", ISAVerBC,
                    std::string(WaveFrontSizeBC)});
   }
-  for (auto Lib : BCLibs)
+  for (auto Lib : BCLibs) {
     addBCLib(getDriver(), DriverArgs, CC1Args, LibraryPaths, Lib);
+
+}
 }
 
 llvm::opt::DerivedArgList *
@@ -372,16 +400,20 @@ HIPToolChain::TranslateArgs(const llvm::opt::DerivedArgList &Args,
                              Action::OffloadKind DeviceOffloadKind) const {
   DerivedArgList *DAL =
       HostTC.TranslateArgs(Args, BoundArch, DeviceOffloadKind);
-  if (!DAL)
+  if (!DAL) {
     DAL = new DerivedArgList(Args.getBaseArgs());
+
+}
 
   const OptTable &Opts = getDriver().getOpts();
 
   for (Arg *A : Args) {
     if (A->getOption().matches(options::OPT_Xarch__)) {
       // Skip this argument unless the architecture matches BoundArch.
-      if (BoundArch.empty() || A->getValue(0) != BoundArch)
+      if (BoundArch.empty() || A->getValue(0) != BoundArch) {
         continue;
+
+}
 
       unsigned Index = Args.getBaseArgs().MakeIndex(A->getValue(1));
       unsigned Prev = Index;

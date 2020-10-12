@@ -32,9 +32,11 @@ class ObjCContainersChecker : public Checker< check::PreStmt<CallExpr>,
                                              check::PointerEscape> {
   mutable std::unique_ptr<BugType> BT;
   inline void initBugType() const {
-    if (!BT)
+    if (!BT) {
       BT.reset(new BugType(this, "CFArray API",
                            categories::CoreFoundationObjectiveC));
+
+}
   }
 
   inline SymbolRef getArraySym(const Expr *E, CheckerContext &C) const {
@@ -70,14 +72,18 @@ void ObjCContainersChecker::addSizeInfo(const Expr *Array, const Expr *Size,
   ProgramStateRef State = C.getState();
   SVal SizeV = C.getSVal(Size);
   // Undefined is reported by another checker.
-  if (SizeV.isUnknownOrUndef())
+  if (SizeV.isUnknownOrUndef()) {
     return;
+
+}
 
   // Get the ArrayRef symbol.
   SVal ArrayRef = C.getSVal(Array);
   SymbolRef ArraySym = ArrayRef.getAsSymbol();
-  if (!ArraySym)
+  if (!ArraySym) {
     return;
+
+}
 
   C.addTransition(
       State->set<ArraySizeMap>(ArraySym, SizeV.castAs<DefinedSVal>()));
@@ -86,13 +92,17 @@ void ObjCContainersChecker::addSizeInfo(const Expr *Array, const Expr *Size,
 void ObjCContainersChecker::checkPostStmt(const CallExpr *CE,
                                           CheckerContext &C) const {
   StringRef Name = C.getCalleeName(CE);
-  if (Name.empty() || CE->getNumArgs() < 1)
+  if (Name.empty() || CE->getNumArgs() < 1) {
     return;
+
+}
 
   // Add array size information to the state.
   if (Name.equals("CFArrayCreate")) {
-    if (CE->getNumArgs() < 3)
+    if (CE->getNumArgs() < 3) {
       return;
+
+}
     // Note, we can visit the Create method in the post-visit because
     // the CFIndex parameter is passed in by value and will not be invalidated
     // by the call.
@@ -109,8 +119,10 @@ void ObjCContainersChecker::checkPostStmt(const CallExpr *CE,
 void ObjCContainersChecker::checkPreStmt(const CallExpr *CE,
                                          CheckerContext &C) const {
   StringRef Name = C.getCalleeName(CE);
-  if (Name.empty() || CE->getNumArgs() < 2)
+  if (Name.empty() || CE->getNumArgs() < 2) {
     return;
+
+}
 
   // Check the array access.
   if (Name.equals("CFArrayGetValueAtIndex")) {
@@ -120,19 +132,25 @@ void ObjCContainersChecker::checkPreStmt(const CallExpr *CE,
     // it.
     const Expr *ArrayExpr = CE->getArg(0);
     SymbolRef ArraySym = getArraySym(ArrayExpr, C);
-    if (!ArraySym)
+    if (!ArraySym) {
       return;
+
+}
 
     const DefinedSVal *Size = State->get<ArraySizeMap>(ArraySym);
 
-    if (!Size)
+    if (!Size) {
       return;
+
+}
 
     // Get the index.
     const Expr *IdxExpr = CE->getArg(1);
     SVal IdxVal = C.getSVal(IdxExpr);
-    if (IdxVal.isUnknownOrUndef())
+    if (IdxVal.isUnknownOrUndef()) {
       return;
+
+}
     DefinedSVal Idx = IdxVal.castAs<DefinedSVal>();
 
     // Now, check if 'Idx in [0, Size-1]'.
@@ -141,8 +159,10 @@ void ObjCContainersChecker::checkPreStmt(const CallExpr *CE,
     ProgramStateRef StOutBound = State->assumeInBound(Idx, *Size, false, T);
     if (StOutBound && !StInBound) {
       ExplodedNode *N = C.generateErrorNode(StOutBound);
-      if (!N)
+      if (!N) {
         return;
+
+}
       initBugType();
       auto R = std::make_unique<PathSensitiveBugReport>(
           *BT, "Index is out of bounds", N);
@@ -174,8 +194,10 @@ ObjCContainersChecker::checkPointerEscape(ProgramStateRef State,
 void ObjCContainersChecker::printState(raw_ostream &OS, ProgramStateRef State,
                                        const char *NL, const char *Sep) const {
   ArraySizeMapTy Map = State->get<ArraySizeMap>();
-  if (Map.isEmpty())
+  if (Map.isEmpty()) {
     return;
+
+}
 
   OS << Sep << "ObjC container sizes :" << NL;
   for (auto I : Map) {

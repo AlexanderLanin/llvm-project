@@ -48,14 +48,18 @@ void RangeSet::IntersectInRange(BasicValueFactory &BV, Factory &F,
         newRanges =
             F.add(newRanges, Range(BV.getValue(Lower), BV.getValue(Upper)));
         break;
-      } else
+      } else {
         newRanges = F.add(newRanges, Range(BV.getValue(Lower), i->To()));
+
+}
     } else {
       if (i->Includes(Upper)) {
         newRanges = F.add(newRanges, Range(i->From(), BV.getValue(Upper)));
         break;
-      } else
+      } else {
         newRanges = F.add(newRanges, *i);
+
+}
     }
   }
 }
@@ -81,8 +85,10 @@ bool RangeSet::pin(llvm::APSInt &Lower, llvm::APSInt &Upper) const {
     case APSIntType::RTR_Below:
       // The entire range is outside the symbol's set of possible values.
       // If this is a conventionally-ordered range, the state is infeasible.
-      if (Lower <= Upper)
+      if (Lower <= Upper) {
         return false;
+
+}
 
       // However, if the range wraps around, it spans all possible values.
       Lower = Type.getMinValue();
@@ -132,8 +138,10 @@ bool RangeSet::pin(llvm::APSInt &Lower, llvm::APSInt &Upper) const {
     case APSIntType::RTR_Above:
       // The entire range is outside the symbol's set of possible values.
       // If this is a conventionally-ordered range, the state is infeasible.
-      if (Lower <= Upper)
+      if (Lower <= Upper) {
         return false;
+
+}
 
       // However, if the range wraps around, it spans all possible values.
       Lower = Type.getMinValue();
@@ -155,15 +163,17 @@ bool RangeSet::pin(llvm::APSInt &Lower, llvm::APSInt &Upper) const {
 // or, alternatively, /removing/ all integers between Upper and Lower.
 RangeSet RangeSet::Intersect(BasicValueFactory &BV, Factory &F,
                              llvm::APSInt Lower, llvm::APSInt Upper) const {
-  if (!pin(Lower, Upper))
+  if (!pin(Lower, Upper)) {
     return F.getEmptySet();
+
+}
 
   PrimRangeSet newRanges = F.getEmptySet();
 
   PrimRangeSet::iterator i = begin(), e = end();
-  if (Lower <= Upper)
+  if (Lower <= Upper) {
     IntersectInRange(BV, F, Lower, Upper, newRanges, i, e);
-  else {
+  } else {
     // The order of the next two statements is important!
     // IntersectInRange() does not reset the iteration state for i and e.
     // Therefore, the lower range most be handled first.
@@ -226,10 +236,12 @@ void RangeSet::print(raw_ostream &os) const {
   bool isFirst = true;
   os << "{ ";
   for (iterator i = begin(), e = end(); i != e; ++i) {
-    if (isFirst)
+    if (isFirst) {
       isFirst = false;
-    else
+    } else {
       os << ", ";
+
+}
 
     os << '[' << i->From().toString(10) << ", " << i->To().toString(10)
        << ']';
@@ -384,20 +396,26 @@ ConditionTruthVal RangeConstraintManager::checkNull(ProgramStateRef State,
   const RangeSet *Ranges = State->get<ConstraintRange>(Sym);
 
   // If we don't have any information about this symbol, it's underconstrained.
-  if (!Ranges)
+  if (!Ranges) {
     return ConditionTruthVal();
 
+}
+
   // If we have a concrete value, see if it's zero.
-  if (const llvm::APSInt *Value = Ranges->getConcreteValue())
+  if (const llvm::APSInt *Value = Ranges->getConcreteValue()) {
     return *Value == 0;
+
+}
 
   BasicValueFactory &BV = getBasicVals();
   APSIntType IntType = BV.getAPSIntType(Sym->getType());
   llvm::APSInt Zero = IntType.getZeroValue();
 
   // Check if zero is in the set of possible values.
-  if (Ranges->Intersect(BV, F, Zero, Zero).isEmpty())
+  if (Ranges->Intersect(BV, F, Zero, Zero).isEmpty()) {
     return false;
+
+}
 
   // Zero is a possible value, but it is not the /only/ possible value.
   return ConditionTruthVal();
@@ -460,18 +478,24 @@ static RangeSet applyBitwiseConstraints(
   BinaryOperator::Opcode Operator = SIE->getOpcode();
 
   // For unsigned types, the output of bitwise-or is bigger-or-equal than RHS.
-  if (Operator == BO_Or && IsUnsigned)
+  if (Operator == BO_Or && IsUnsigned) {
     return Input.Intersect(BV, F, RHS, BV.getMaxValue(T));
 
+}
+
   // Bitwise-or with a non-zero constant is always non-zero.
-  if (Operator == BO_Or && RHS != Zero)
+  if (Operator == BO_Or && RHS != Zero) {
     return assumeNonZero(BV, F, SIE, Input);
+
+}
 
   // For unsigned types, or positive RHS,
   // bitwise-and output is always smaller-or-equal than RHS (assuming two's
   // complement representation of signed types).
-  if (Operator == BO_And && (IsUnsigned || RHS >= Zero))
+  if (Operator == BO_And && (IsUnsigned || RHS >= Zero)) {
     return Input.Intersect(BV, F, BV.getMinValue(T), RHS);
+
+}
 
   return Input;
 }
@@ -488,12 +512,18 @@ RangeSet RangeConstraintManager::getRange(ProgramStateRef State,
   // If we have range set stored for both A - B and B - A then calculate the
   // effective range set by intersecting the range set for A - B and the
   // negated range set of B - A.
-  if (V && R)
+  if (V && R) {
     return V->Intersect(BV, F, R->Negate(BV, F));
-  if (V)
+
+}
+  if (V) {
     return *V;
-  if (R)
+
+}
+  if (R) {
     return R->Negate(BV, F);
+
+}
 
   // Lazily generate a new RangeSet representing all possible values for the
   // given symbol type.
@@ -502,12 +532,16 @@ RangeSet RangeConstraintManager::getRange(ProgramStateRef State,
   RangeSet Result(F, BV.getMinValue(T), BV.getMaxValue(T));
 
   // References are known to be non-zero.
-  if (T->isReferenceType())
+  if (T->isReferenceType()) {
     return assumeNonZero(BV, F, Sym, Result);
 
+}
+
   // Known constraints on ranges of bitwise expressions.
-  if (const SymIntExpr* SIE = dyn_cast<SymIntExpr>(Sym))
+  if (const SymIntExpr* SIE = dyn_cast<SymIntExpr>(Sym)) {
     return applyBitwiseConstraints(BV, F, Result, SIE);
+
+}
 
   return Result;
 }
@@ -530,8 +564,10 @@ RangeConstraintManager::getRangeForMinusSymbol(ProgramStateRef State,
         // Unsigned range set cannot be negated, unless it is [0, 0].
         if ((negV->getConcreteValue() &&
              (*negV->getConcreteValue() == 0)) ||
-            T->isSignedIntegerOrEnumerationType())
+            T->isSignedIntegerOrEnumerationType()) {
           return negV;
+
+}
       }
     }
   }
@@ -556,8 +592,10 @@ RangeConstraintManager::assumeSymNE(ProgramStateRef St, SymbolRef Sym,
                                     const llvm::APSInt &Adjustment) {
   // Before we do any real work, see if the value can even show up.
   APSIntType AdjustmentType(Adjustment);
-  if (AdjustmentType.testInRange(Int, true) != APSIntType::RTR_Within)
+  if (AdjustmentType.testInRange(Int, true) != APSIntType::RTR_Within) {
     return St;
+
+}
 
   llvm::APSInt Lower = AdjustmentType.convert(Int) - Adjustment;
   llvm::APSInt Upper = Lower;
@@ -576,8 +614,10 @@ RangeConstraintManager::assumeSymEQ(ProgramStateRef St, SymbolRef Sym,
                                     const llvm::APSInt &Adjustment) {
   // Before we do any real work, see if the value can even show up.
   APSIntType AdjustmentType(Adjustment);
-  if (AdjustmentType.testInRange(Int, true) != APSIntType::RTR_Within)
+  if (AdjustmentType.testInRange(Int, true) != APSIntType::RTR_Within) {
     return nullptr;
+
+}
 
   // [Int-Adjustment, Int-Adjustment]
   llvm::APSInt AdjInt = AdjustmentType.convert(Int) - Adjustment;
@@ -603,8 +643,10 @@ RangeSet RangeConstraintManager::getSymLTRange(ProgramStateRef St,
   // Special case for Int == Min. This is always false.
   llvm::APSInt ComparisonVal = AdjustmentType.convert(Int);
   llvm::APSInt Min = AdjustmentType.getMinValue();
-  if (ComparisonVal == Min)
+  if (ComparisonVal == Min) {
     return F.getEmptySet();
+
+}
 
   llvm::APSInt Lower = Min - Adjustment;
   llvm::APSInt Upper = ComparisonVal - Adjustment;
@@ -639,8 +681,10 @@ RangeSet RangeConstraintManager::getSymGTRange(ProgramStateRef St,
   // Special case for Int == Max. This is always false.
   llvm::APSInt ComparisonVal = AdjustmentType.convert(Int);
   llvm::APSInt Max = AdjustmentType.getMaxValue();
-  if (ComparisonVal == Max)
+  if (ComparisonVal == Max) {
     return F.getEmptySet();
+
+}
 
   llvm::APSInt Lower = ComparisonVal - Adjustment;
   llvm::APSInt Upper = Max - Adjustment;
@@ -675,8 +719,10 @@ RangeSet RangeConstraintManager::getSymGERange(ProgramStateRef St,
   // Special case for Int == Min. This is always feasible.
   llvm::APSInt ComparisonVal = AdjustmentType.convert(Int);
   llvm::APSInt Min = AdjustmentType.getMinValue();
-  if (ComparisonVal == Min)
+  if (ComparisonVal == Min) {
     return getRange(St, Sym);
+
+}
 
   llvm::APSInt Max = AdjustmentType.getMaxValue();
   llvm::APSInt Lower = ComparisonVal - Adjustment;
@@ -711,8 +757,10 @@ RangeSet RangeConstraintManager::getSymLERange(
   // Special case for Int == Max. This is always feasible.
   llvm::APSInt ComparisonVal = AdjustmentType.convert(Int);
   llvm::APSInt Max = AdjustmentType.getMaxValue();
-  if (ComparisonVal == Max)
+  if (ComparisonVal == Max) {
     return RS();
+
+}
 
   llvm::APSInt Min = AdjustmentType.getMinValue();
   llvm::APSInt Lower = Min - Adjustment;
@@ -740,8 +788,10 @@ ProgramStateRef RangeConstraintManager::assumeSymWithinInclusiveRange(
     ProgramStateRef State, SymbolRef Sym, const llvm::APSInt &From,
     const llvm::APSInt &To, const llvm::APSInt &Adjustment) {
   RangeSet New = getSymGERange(State, Sym, From, Adjustment);
-  if (New.isEmpty())
+  if (New.isEmpty()) {
     return nullptr;
+
+}
   RangeSet Out = getSymLERange([&] { return New; }, To, Adjustment);
   return Out.isEmpty() ? nullptr : State->set<ConstraintRange>(Sym, Out);
 }
@@ -779,8 +829,10 @@ void RangeConstraintManager::printJson(raw_ostream &Out, ProgramStateRef State,
     I.getData().print(Out);
     Out << "\" }";
 
-    if (std::next(I) != Constraints.end())
+    if (std::next(I) != Constraints.end()) {
       Out << ',';
+
+}
     Out << NL;
   }
 

@@ -52,8 +52,10 @@ int main(int argc, char *argv[]) {
 
   auto J = ExitOnErr(LLJITBuilder().create());
 
-  if (DumpJITdObjects)
+  if (DumpJITdObjects) {
     J->getObjTransformLayer().setTransform(DumpObjects(DumpDir, DumpFileStem));
+
+}
 
   auto M = ExitOnErr(parseExampleModule(Add1Example, "add1"));
 

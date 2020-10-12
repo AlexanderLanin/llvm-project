@@ -26,14 +26,18 @@ void Object::addSymbols(ArrayRef<Symbol> NewSymbols) {
 
 void Object::updateSymbols() {
   SymbolMap = DenseMap<size_t, Symbol *>(Symbols.size());
-  for (Symbol &Sym : Symbols)
+  for (Symbol &Sym : Symbols) {
     SymbolMap[Sym.UniqueId] = &Sym;
+
+}
 }
 
 const Symbol *Object::findSymbol(size_t UniqueId) const {
   auto It = SymbolMap.find(UniqueId);
-  if (It == SymbolMap.end())
+  if (It == SymbolMap.end()) {
     return nullptr;
+
+}
   return It->second;
 }
 
@@ -46,14 +50,18 @@ void Object::removeSymbols(function_ref<bool(const Symbol &)> ToRemove) {
 }
 
 Error Object::markSymbols() {
-  for (Symbol &Sym : Symbols)
+  for (Symbol &Sym : Symbols) {
     Sym.Referenced = false;
+
+}
   for (const Section &Sec : Sections) {
     for (const Relocation &R : Sec.Relocs) {
       auto It = SymbolMap.find(R.Target);
-      if (It == SymbolMap.end())
+      if (It == SymbolMap.end()) {
         return createStringError(object_error::invalid_symbol_index,
                                  "relocation target %zu not found", R.Target);
+
+}
       It->second->Referenced = true;
     }
   }
@@ -79,8 +87,10 @@ void Object::updateSections() {
 
 const Section *Object::findSection(ssize_t UniqueId) const {
   auto It = SectionMap.find(UniqueId);
-  if (It == SectionMap.end())
+  if (It == SectionMap.end()) {
     return nullptr;
+
+}
   return It->second;
 }
 
@@ -95,8 +105,10 @@ void Object::removeSections(function_ref<bool(const Section &)> ToRemove) {
         std::remove_if(std::begin(Sections), std::end(Sections),
                        [ToRemove, &RemovedSections](const Section &Sec) {
                          bool Remove = ToRemove(Sec);
-                         if (Remove)
+                         if (Remove) {
                            RemovedSections.insert(Sec.UniqueId);
+
+}
                          return Remove;
                        }),
         std::end(Sections));
@@ -111,8 +123,10 @@ void Object::removeSections(function_ref<bool(const Section &)> ToRemove) {
               // remove those as well as nothing will include them (and we can't
               // leave them dangling).
               if (RemovedSections.count(Sym.AssociativeComdatTargetSectionId) ==
-                  1)
+                  1) {
                 AssociatedSections.insert(Sym.TargetSectionId);
+
+}
               return RemovedSections.count(Sym.TargetSectionId) == 1;
             }),
         std::end(Symbols));

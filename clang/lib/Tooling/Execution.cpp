@@ -61,8 +61,10 @@ createExecutorFromCommandLineArgsImpl(int &argc, const char **argv,
   auto OptionsParser =
       CommonOptionsParser::create(argc, argv, Category, llvm::cl::ZeroOrMore,
                                   /*Overview=*/Overview);
-  if (!OptionsParser)
+  if (!OptionsParser) {
     return OptionsParser.takeError();
+
+}
   for (auto I = ToolExecutorPluginRegistry::begin(),
             E = ToolExecutorPluginRegistry::end();
        I != E; ++I) {

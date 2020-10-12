@@ -26,8 +26,10 @@ using namespace llvm;
 void LiveRegUnits::removeRegsNotPreserved(const uint32_t *RegMask) {
   for (unsigned U = 0, E = TRI->getNumRegUnits(); U != E; ++U) {
     for (MCRegUnitRootIterator RootReg(U, TRI); RootReg.isValid(); ++RootReg) {
-      if (MachineOperand::clobbersPhysReg(RegMask, *RootReg))
+      if (MachineOperand::clobbersPhysReg(RegMask, *RootReg)) {
         Units.reset(U);
+
+}
     }
   }
 }
@@ -35,8 +37,10 @@ void LiveRegUnits::removeRegsNotPreserved(const uint32_t *RegMask) {
 void LiveRegUnits::addRegsInMask(const uint32_t *RegMask) {
   for (unsigned U = 0, E = TRI->getNumRegUnits(); U != E; ++U) {
     for (MCRegUnitRootIterator RootReg(U, TRI); RootReg.isValid(); ++RootReg) {
-      if (MachineOperand::clobbersPhysReg(RegMask, *RootReg))
+      if (MachineOperand::clobbersPhysReg(RegMask, *RootReg)) {
         Units.set(U);
+
+}
     }
   }
 }
@@ -49,14 +53,18 @@ void LiveRegUnits::stepBackward(const MachineInstr &MI) {
       continue;
     }
 
-    if (MOP.isDef())
+    if (MOP.isDef()) {
       removeReg(MOP.getReg());
+
+}
   }
 
   // Add uses to the set.
   for (const MachineOperand &MOP : phys_regs_and_masks(MI)) {
-    if (!MOP.isReg() || !MOP.readsReg())
+    if (!MOP.isReg() || !MOP.readsReg()) {
       continue;
+
+}
     addReg(MOP.getReg());
   }
 }
@@ -68,8 +76,10 @@ void LiveRegUnits::accumulate(const MachineInstr &MI) {
       addRegsInMask(MOP.getRegMask());
       continue;
     }
-    if (!MOP.isDef() && !MOP.readsReg())
+    if (!MOP.isDef() && !MOP.readsReg()) {
       continue;
+
+}
     addReg(MOP.getReg());
   }
 }
@@ -77,22 +87,28 @@ void LiveRegUnits::accumulate(const MachineInstr &MI) {
 /// Add live-in registers of basic block \p MBB to \p LiveUnits.
 static void addBlockLiveIns(LiveRegUnits &LiveUnits,
                             const MachineBasicBlock &MBB) {
-  for (const auto &LI : MBB.liveins())
+  for (const auto &LI : MBB.liveins()) {
     LiveUnits.addRegMasked(LI.PhysReg, LI.LaneMask);
+
+}
 }
 
 /// Adds all callee saved registers to \p LiveUnits.
 static void addCalleeSavedRegs(LiveRegUnits &LiveUnits,
                                const MachineFunction &MF) {
   const MachineRegisterInfo &MRI = MF.getRegInfo();
-  for (const MCPhysReg *CSR = MRI.getCalleeSavedRegs(); CSR && *CSR; ++CSR)
+  for (const MCPhysReg *CSR = MRI.getCalleeSavedRegs(); CSR && *CSR; ++CSR) {
     LiveUnits.addReg(*CSR);
+
+}
 }
 
 void LiveRegUnits::addPristines(const MachineFunction &MF) {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
-  if (!MFI.isCalleeSavedInfoValid())
+  if (!MFI.isCalleeSavedInfoValid()) {
     return;
+
+}
   /// This function will usually be called on an empty object, handle this
   /// as a special case.
   if (empty()) {
@@ -100,8 +116,10 @@ void LiveRegUnits::addPristines(const MachineFunction &MF) {
     /// restored.
     addCalleeSavedRegs(*this, MF);
     /// Remove the ones that are not saved/restored; they are pristine.
-    for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo())
+    for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo()) {
       removeReg(Info.getReg());
+
+}
     return;
   }
   /// If a callee-saved register that is not pristine is already present
@@ -111,8 +129,10 @@ void LiveRegUnits::addPristines(const MachineFunction &MF) {
   LiveRegUnits Pristine(*TRI);
   addCalleeSavedRegs(Pristine, MF);
   /// Remove the ones that are not saved/restored; they are pristine.
-  for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo())
+  for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo()) {
     Pristine.removeReg(Info.getReg());
+
+}
   addUnits(Pristine.getBitVector());
 }
 
@@ -122,14 +142,18 @@ void LiveRegUnits::addLiveOuts(const MachineBasicBlock &MBB) {
   addPristines(MF);
 
   // To get the live-outs we simply merge the live-ins of all successors.
-  for (const MachineBasicBlock *Succ : MBB.successors())
+  for (const MachineBasicBlock *Succ : MBB.successors()) {
     addBlockLiveIns(*this, *Succ);
+
+}
 
   // For the return block: Add all callee saved registers.
   if (MBB.isReturnBlock()) {
     const MachineFrameInfo &MFI = MF.getFrameInfo();
-    if (MFI.isCalleeSavedInfoValid())
+    if (MFI.isCalleeSavedInfoValid()) {
       addCalleeSavedRegs(*this, MF);
+
+}
   }
 }
 

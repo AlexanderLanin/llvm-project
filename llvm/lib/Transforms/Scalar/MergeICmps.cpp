@@ -68,10 +68,14 @@ namespace {
 
 // Returns true if the instruction is a simple load or a simple store
 static bool isSimpleLoadOrStore(const Instruction *I) {
-  if (const LoadInst *LI = dyn_cast<LoadInst>(I))
+  if (const LoadInst *LI = dyn_cast<LoadInst>(I)) {
     return LI->isSimple();
-  if (const StoreInst *SI = dyn_cast<StoreInst>(I))
+
+}
+  if (const StoreInst *SI = dyn_cast<StoreInst>(I)) {
     return SI->isSimple();
+
+}
   return false;
 }
 
@@ -88,8 +92,10 @@ struct BCEAtom {
 
   BCEAtom(BCEAtom &&that) = default;
   BCEAtom &operator=(BCEAtom &&that) {
-    if (this == &that)
+    if (this == &that) {
       return *this;
+
+}
     GEP = that.GEP;
     LoadI = that.LoadI;
     BaseId = that.BaseId;
@@ -126,8 +132,10 @@ public:
   int getBaseId(const Value *Base) {
     assert(Base && "invalid base");
     const auto Insertion = BaseToIndex.try_emplace(Base, Order);
-    if (Insertion.second)
+    if (Insertion.second) {
       ++Order;
+
+}
     return Insertion.first->second;
   }
 
@@ -141,8 +149,10 @@ private:
 // the offset.
 BCEAtom visitICmpLoadOperand(Value *const Val, BaseIdentifier &BaseId) {
   auto *const LoadI = dyn_cast<LoadInst>(Val);
-  if (!LoadI)
+  if (!LoadI) {
     return {};
+
+}
   LLVM_DEBUG(dbgs() << "load\n");
   if (LoadI->isUsedOutsideOfBlock(LoadI->getParent())) {
     LLVM_DEBUG(dbgs() << "used outside of block\n");
@@ -155,8 +165,10 @@ BCEAtom visitICmpLoadOperand(Value *const Val, BaseIdentifier &BaseId) {
   }
   Value *const Addr = LoadI->getOperand(0);
   auto *const GEP = dyn_cast<GetElementPtrInst>(Addr);
-  if (!GEP)
+  if (!GEP) {
     return {};
+
+}
   LLVM_DEBUG(dbgs() << "GEP\n");
   if (GEP->isUsedOutsideOfBlock(LoadI->getParent())) {
     LLVM_DEBUG(dbgs() << "used outside of block\n");
@@ -170,8 +182,10 @@ BCEAtom visitICmpLoadOperand(Value *const Val, BaseIdentifier &BaseId) {
     return {};
   }
   APInt Offset = APInt(DL.getPointerTypeSizeInBits(GEP->getType()), 0);
-  if (!GEP->accumulateConstantOffset(DL, Offset))
+  if (!GEP->accumulateConstantOffset(DL, Offset)) {
     return {};
+
+}
   return BCEAtom(GEP, LoadI, BaseId.getBaseId(GEP->getPointerOperand()),
                  Offset);
 }
@@ -192,7 +206,9 @@ class BCECmpBlock {
 
   BCECmpBlock(BCEAtom L, BCEAtom R, int SizeBits)
       : Lhs_(std::move(L)), Rhs_(std::move(R)), SizeBits_(SizeBits) {
-    if (Rhs_ < Lhs_) std::swap(Rhs_, Lhs_);
+    if (Rhs_ < Lhs_) { std::swap(Rhs_, Lhs_);
+
+}
   }
 
   bool IsValid() const { return Lhs_.BaseId != 0 && Rhs_.BaseId != 0; }
@@ -252,20 +268,26 @@ bool BCECmpBlock::canSinkBCECmpInst(const Instruction *Inst,
   // instructions, then bail for now.
   if (Inst->mayHaveSideEffects()) {
     // Bail if this is not a simple load or store
-    if (!isSimpleLoadOrStore(Inst))
+    if (!isSimpleLoadOrStore(Inst)) {
       return false;
+
+}
     // Disallow stores that might alias the BCE operands
     MemoryLocation LLoc = MemoryLocation::get(Lhs_.LoadI);
     MemoryLocation RLoc = MemoryLocation::get(Rhs_.LoadI);
     if (isModSet(AA.getModRefInfo(Inst, LLoc)) ||
-        isModSet(AA.getModRefInfo(Inst, RLoc)))
+        isModSet(AA.getModRefInfo(Inst, RLoc))) {
       return false;
+
+}
   }
   // Make sure this instruction does not use any of the BCE cmp block
   // instructions as operand.
   for (auto BI : BlockInsts) {
-    if (is_contained(Inst->operands(), BI))
+    if (is_contained(Inst->operands(), BI)) {
       return false;
+
+}
   }
   return true;
 }
@@ -275,8 +297,10 @@ void BCECmpBlock::split(BasicBlock *NewParent, AliasAnalysis &AA) const {
       {Lhs_.GEP, Rhs_.GEP, Lhs_.LoadI, Rhs_.LoadI, CmpI, BranchI});
   llvm::SmallVector<Instruction *, 4> OtherInsts;
   for (Instruction &Inst : *BB) {
-    if (BlockInsts.count(&Inst))
+    if (BlockInsts.count(&Inst)) {
       continue;
+
+}
       assert(canSinkBCECmpInst(&Inst, BlockInsts, AA) &&
              "Split unsplittable block");
     // This is a non-BCE-cmp-block instruction. And it can be separated
@@ -295,8 +319,10 @@ bool BCECmpBlock::canSplit(AliasAnalysis &AA) const {
       {Lhs_.GEP, Rhs_.GEP, Lhs_.LoadI, Rhs_.LoadI, CmpI, BranchI});
   for (Instruction &Inst : *BB) {
     if (!BlockInsts.count(&Inst)) {
-      if (!canSinkBCECmpInst(&Inst, BlockInsts, AA))
+      if (!canSinkBCECmpInst(&Inst, BlockInsts, AA)) {
         return false;
+
+}
     }
   }
   return true;
@@ -312,8 +338,10 @@ bool BCECmpBlock::doesOtherWork() const {
   // effects outside of the basic block.
   // Note: The GEPs and/or loads are not necessarily in the same block.
   for (const Instruction &Inst : *BB) {
-    if (!BlockInsts.count(&Inst))
+    if (!BlockInsts.count(&Inst)) {
       return true;
+
+}
   }
   return false;
 }
@@ -332,17 +360,23 @@ BCECmpBlock visitICmp(const ICmpInst *const CmpI,
     LLVM_DEBUG(dbgs() << "cmp has several uses\n");
     return {};
   }
-  if (CmpI->getPredicate() != ExpectedPredicate)
+  if (CmpI->getPredicate() != ExpectedPredicate) {
     return {};
+
+}
   LLVM_DEBUG(dbgs() << "cmp "
                     << (ExpectedPredicate == ICmpInst::ICMP_EQ ? "eq" : "ne")
                     << "\n");
   auto Lhs = visitICmpLoadOperand(CmpI->getOperand(0), BaseId);
-  if (!Lhs.BaseId)
+  if (!Lhs.BaseId) {
     return {};
+
+}
   auto Rhs = visitICmpLoadOperand(CmpI->getOperand(1), BaseId);
-  if (!Rhs.BaseId)
+  if (!Rhs.BaseId) {
     return {};
+
+}
   const auto &DL = CmpI->getModule()->getDataLayout();
   return BCECmpBlock(std::move(Lhs), std::move(Rhs),
                      DL.getTypeSizeInBits(CmpI->getOperand(0)->getType()));
@@ -353,9 +387,13 @@ BCECmpBlock visitICmp(const ICmpInst *const CmpI,
 BCECmpBlock visitCmpBlock(Value *const Val, BasicBlock *const Block,
                           const BasicBlock *const PhiBlock,
                           BaseIdentifier &BaseId) {
-  if (Block->empty()) return {};
+  if (Block->empty()) { return {};
+
+}
   auto *const BranchI = dyn_cast<BranchInst>(Block->getTerminator());
-  if (!BranchI) return {};
+  if (!BranchI) { return {};
+
+}
   LLVM_DEBUG(dbgs() << "branch\n");
   if (BranchI->isUnconditional()) {
     // In this case, we expect an incoming value which is the result of the
@@ -363,7 +401,9 @@ BCECmpBlock visitCmpBlock(Value *const Val, BasicBlock *const Block,
     // that this does not mean that this is the last incoming value, blocks
     // can be reordered).
     auto *const CmpI = dyn_cast<ICmpInst>(Val);
-    if (!CmpI) return {};
+    if (!CmpI) { return {};
+
+}
     LLVM_DEBUG(dbgs() << "icmp\n");
     auto Result = visitICmp(CmpI, ICmpInst::ICMP_EQ, BaseId);
     Result.CmpI = CmpI;
@@ -374,10 +414,14 @@ BCECmpBlock visitCmpBlock(Value *const Val, BasicBlock *const Block,
     // chained).
     const auto *const Const = dyn_cast<ConstantInt>(Val);
     LLVM_DEBUG(dbgs() << "const\n");
-    if (!Const->isZero()) return {};
+    if (!Const->isZero()) { return {};
+
+}
     LLVM_DEBUG(dbgs() << "false\n");
     auto *const CmpI = dyn_cast<ICmpInst>(BranchI->getCondition());
-    if (!CmpI) return {};
+    if (!CmpI) { return {};
+
+}
     LLVM_DEBUG(dbgs() << "icmp\n");
     assert(BranchI->getNumSuccessors() == 2 && "expecting a cond branch");
     BasicBlock *const FalseBlock = BranchI->getSuccessor(1);
@@ -572,14 +616,18 @@ private:
   StringRef makeName(ArrayRef<BCECmpBlock> Comparisons) {
     assert(!Comparisons.empty() && "no basic block");
     // Fast path: only one block, or no names at all.
-    if (Comparisons.size() == 1)
+    if (Comparisons.size() == 1) {
       return Comparisons[0].BB->getName();
+
+}
     const int size = std::accumulate(Comparisons.begin(), Comparisons.end(), 0,
                                      [](int i, const BCECmpBlock &Cmp) {
                                        return i + Cmp.BB->getName().size();
                                      });
-    if (size == 0)
+    if (size == 0) {
       return StringRef("", 0);
+
+}
 
     // Slow path: at least two blocks, at least one block with a name.
     Scratch.clear();
@@ -682,13 +730,17 @@ bool BCECmpChain::simplify(const TargetLibraryInfo &TLI, AliasAnalysis &AA,
   // anything and we keep analysis passes intact.
   const auto AtLeastOneMerged = [this]() {
     for (size_t I = 1; I < Comparisons_.size(); ++I) {
-      if (IsContiguous(Comparisons_[I - 1], Comparisons_[I]))
+      if (IsContiguous(Comparisons_[I - 1], Comparisons_[I])) {
         return true;
+
+}
     }
     return false;
   };
-  if (!AtLeastOneMerged())
+  if (!AtLeastOneMerged()) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Simplifying comparison chain starting at block "
                     << EntryBlock_->getName() << "\n");
@@ -816,7 +868,9 @@ bool processPhi(PHINode &Phi, const TargetLibraryInfo &TLI, AliasAnalysis &AA,
   // last block and reconstruct the order.
   BasicBlock *LastBlock = nullptr;
   for (unsigned I = 0; I < Phi.getNumIncomingValues(); ++I) {
-    if (isa<ConstantInt>(Phi.getIncomingValue(I))) continue;
+    if (isa<ConstantInt>(Phi.getIncomingValue(I))) { continue;
+
+}
     if (LastBlock) {
       // There are several non-constant values.
       LLVM_DEBUG(dbgs() << "skip: several non-constant values\n");
@@ -849,7 +903,9 @@ bool processPhi(PHINode &Phi, const TargetLibraryInfo &TLI, AliasAnalysis &AA,
 
   const auto Blocks =
       getOrderedBlocks(Phi, LastBlock, Phi.getNumIncomingValues());
-  if (Blocks.empty()) return false;
+  if (Blocks.empty()) { return false;
+
+}
   BCECmpChain CmpChain(Blocks, Phi, AA);
 
   if (CmpChain.size() < 2) {
@@ -867,12 +923,16 @@ static bool runImpl(Function &F, const TargetLibraryInfo &TLI,
 
   // We only try merging comparisons if the target wants to expand memcmp later.
   // The rationale is to avoid turning small chains into memcmp calls.
-  if (!TTI.enableMemCmpExpansion(F.hasOptSize(), true))
+  if (!TTI.enableMemCmpExpansion(F.hasOptSize(), true)) {
     return false;
 
+}
+
   // If we don't have memcmp avaiable we can't emit calls to it.
-  if (!TLI.has(LibFunc_memcmp))
+  if (!TLI.has(LibFunc_memcmp)) {
     return false;
+
+}
 
   DomTreeUpdater DTU(DT, /*PostDominatorTree*/ nullptr,
                      DomTreeUpdater::UpdateStrategy::Eager);
@@ -881,8 +941,10 @@ static bool runImpl(Function &F, const TargetLibraryInfo &TLI,
 
   for (auto BBIt = ++F.begin(); BBIt != F.end(); ++BBIt) {
     // A Phi operation is always first in a basic block.
-    if (auto *const Phi = dyn_cast<PHINode>(&*BBIt->begin()))
+    if (auto *const Phi = dyn_cast<PHINode>(&*BBIt->begin())) {
       MadeChange |= processPhi(*Phi, TLI, AA, DTU);
+
+}
   }
 
   return MadeChange;
@@ -897,7 +959,9 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F)) return false;
+    if (skipFunction(F)) { return false;
+
+}
     const auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     const auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
     // MergeICmps does not need the DominatorTree, but we update it if it's
@@ -937,8 +1001,10 @@ PreservedAnalyses MergeICmpsPass::run(Function &F,
   auto &AA = AM.getResult<AAManager>(F);
   auto *DT = AM.getCachedResult<DominatorTreeAnalysis>(F);
   const bool MadeChanges = runImpl(F, TLI, TTI, AA, DT);
-  if (!MadeChanges)
+  if (!MadeChanges) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<GlobalsAA>();
   PA.preserve<DominatorTreeAnalysis>();

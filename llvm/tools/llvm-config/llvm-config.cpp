@@ -100,8 +100,10 @@ static void VisitComponent(const std::string &Name,
   }
 
   // Only include non-installed components if requested.
-  if (!AC->IsInstalled && !IncludeNonInstalled)
+  if (!AC->IsInstalled && !IncludeNonInstalled) {
     return;
+
+}
 
   // Otherwise, visit all the dependencies.
   for (unsigned i = 0; AC->RequiredLibraries[i]; ++i) {
@@ -122,8 +124,10 @@ static void VisitComponent(const std::string &Name,
       if (DirSep == "\\") {
         std::replace(path.begin(), path.end(), '/', '\\');
       }
-      if (!sys::fs::exists(path))
+      if (!sys::fs::exists(path)) {
         Missing->push_back(path);
+
+}
     }
     RequiredLibs.push_back(AC->Library);
   }
@@ -275,8 +279,10 @@ int main(int argc, char **argv) {
   // If CMAKE_CFG_INTDIR is given, honor it as build mode.
   char const *build_mode = LLVM_BUILDMODE;
 #if defined(CMAKE_CFG_INTDIR)
-  if (!(CMAKE_CFG_INTDIR[0] == '.' && CMAKE_CFG_INTDIR[1] == '\0'))
+  if (!(CMAKE_CFG_INTDIR[0] == '.' && CMAKE_CFG_INTDIR[1] == '\0')) {
     build_mode = CMAKE_CFG_INTDIR;
+
+}
 #endif
 
   // Create an absolute path, and pop up one directory (we expect to be inside a
@@ -513,8 +519,10 @@ int main(int argc, char **argv) {
         std::vector<std::string> Components;
         for (unsigned j = 0; j != array_lengthof(AvailableComponents); ++j) {
           // Only include non-installed components when in a development tree.
-          if (!AvailableComponents[j].IsInstalled && !IsInDevelopmentTree)
+          if (!AvailableComponents[j].IsInstalled && !IsInDevelopmentTree) {
             continue;
+
+}
 
           Components.push_back(AvailableComponents[j].Name);
           if (AvailableComponents[j].Library && !IsInDevelopmentTree) {
@@ -579,8 +587,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (!HasAnyOption)
+  if (!HasAnyOption) {
     usage();
+
+}
 
   if (LinkMode == LinkModeShared && !DyLibExists && !BuiltSharedLibs) {
     WithColor::error(errs(), "llvm-config") << DyLibName << " is missing\n";
@@ -596,8 +606,10 @@ int main(int argc, char **argv) {
     }
 
     // If no components were specified, default to "all".
-    if (Components.empty())
+    if (Components.empty()) {
       Components.push_back("all");
+
+}
 
     // Construct the list of all the required libraries.
     std::function<std::string(const StringRef &)>
@@ -612,11 +624,15 @@ int main(int argc, char **argv) {
     if (!MissingLibs.empty()) {
       switch (LinkMode) {
       case LinkModeShared:
-        if (LinkDyLib && !BuiltSharedLibs)
+        if (LinkDyLib && !BuiltSharedLibs) {
           break;
+
+}
         // Using component shared libraries.
-        for (auto &Lib : MissingLibs)
+        for (auto &Lib : MissingLibs) {
           WithColor::error(errs(), "llvm-config") << "missing: " << Lib << "\n";
+
+}
         return 1;
       case LinkModeAuto:
         if (DyLibExists) {
@@ -627,8 +643,10 @@ int main(int argc, char **argv) {
             << "component libraries and shared library\n\n";
         LLVM_FALLTHROUGH;
       case LinkModeStatic:
-        for (auto &Lib : MissingLibs)
+        for (auto &Lib : MissingLibs) {
           WithColor::error(errs(), "llvm-config") << "missing: " << Lib << "\n";
+
+}
         return 1;
       }
     } else if (LinkMode == LinkModeAuto) {
@@ -693,8 +711,10 @@ int main(int argc, char **argv) {
       } else {
         for (unsigned i = 0, e = RequiredLibs.size(); i != e; ++i) {
           auto Lib = RequiredLibs[i];
-          if (i)
+          if (i) {
             OS << ' ';
+
+}
 
           PrintForLib(Lib);
         }

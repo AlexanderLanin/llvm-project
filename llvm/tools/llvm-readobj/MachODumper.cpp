@@ -72,8 +72,10 @@ std::error_code createMachODumper(const object::ObjectFile *Obj,
                                   ScopedPrinter &Writer,
                                   std::unique_ptr<ObjDumper> &Result) {
   const MachOObjectFile *MachOObj = dyn_cast<MachOObjectFile>(Obj);
-  if (!MachOObj)
+  if (!MachOObj) {
     return readobj_error::unsupported_obj_file_format;
+
+}
 
   Result.reset(new MachODumper(MachOObj, Writer));
   return readobj_error::success;
@@ -486,28 +488,36 @@ void MachODumper::printSectionHeaders(const MachOObjectFile *Obj) {
                  makeArrayRef(MachOSectionAttributes));
     W.printHex("Reserved1", MOSection.Reserved1);
     W.printHex("Reserved2", MOSection.Reserved2);
-    if (Obj->is64Bit())
+    if (Obj->is64Bit()) {
       W.printHex("Reserved3", MOSection.Reserved3);
+
+}
 
     if (opts::SectionRelocations) {
       ListScope D(W, "Relocations");
-      for (const RelocationRef &Reloc : Section.relocations())
+      for (const RelocationRef &Reloc : Section.relocations()) {
         printRelocation(Reloc);
+
+}
     }
 
     if (opts::SectionSymbols) {
       ListScope D(W, "Symbols");
       for (const SymbolRef &Symbol : Obj->symbols()) {
-        if (!Section.containsSymbol(Symbol))
+        if (!Section.containsSymbol(Symbol)) {
           continue;
+
+}
 
         printSymbol(Symbol);
       }
     }
 
-    if (opts::SectionData && !Section.isBSS())
+    if (opts::SectionData && !Section.isBSS()) {
       W.printBinaryBlock("SectionData", unwrapOrError(Obj->getFileName(),
                                                       Section.getContents()));
+
+}
   }
 }
 
@@ -555,17 +565,23 @@ void MachODumper::printRelocation(const MachOObjectFile *Obj,
     symbol_iterator Symbol = Reloc.getSymbol();
     if (Symbol != Obj->symbol_end()) {
       Expected<StringRef> TargetNameOrErr = Symbol->getName();
-      if (!TargetNameOrErr)
+      if (!TargetNameOrErr) {
         reportError(TargetNameOrErr.takeError(), Obj->getFileName());
+
+}
       TargetName = *TargetNameOrErr;
     }
   } else if (!IsScattered) {
     section_iterator SecI = Obj->getRelocationSection(DR);
-    if (SecI != Obj->section_end())
+    if (SecI != Obj->section_end()) {
       TargetName = unwrapOrError(Obj->getFileName(), SecI->getName());
+
+}
   }
-  if (TargetName.empty())
+  if (TargetName.empty()) {
     TargetName = "-";
+
+}
 
   if (opts::ExpandRelocs) {
     DictScope Group(W, "Relocation");
@@ -593,10 +609,12 @@ void MachODumper::printRelocation(const MachOObjectFile *Obj,
     OS << W.hex(Offset)
        << " " << Obj->getAnyRelocationPCRel(RE)
        << " " << Obj->getAnyRelocationLength(RE);
-    if (IsScattered)
+    if (IsScattered) {
       OS << " n/a";
-    else
+    } else {
       OS << " " << Obj->getPlainRelocationExternal(RE);
+
+}
     OS << " " << RelocName
        << " " << IsScattered
        << " " << SymbolNameOrOffset
@@ -622,30 +640,40 @@ void MachODumper::printSymbol(const SymbolRef &Symbol) {
   if (!SymbolNameOrErr) {
     // TODO: Actually report errors helpfully.
     consumeError(SymbolNameOrErr.takeError());
-  } else
+  } else {
     SymbolName = *SymbolNameOrErr;
+
+}
 
   MachOSymbol MOSymbol;
   getSymbol(Obj, Symbol.getRawDataRefImpl(), MOSymbol);
 
   StringRef SectionName = "";
   Expected<section_iterator> SecIOrErr = Symbol.getSection();
-  if (!SecIOrErr)
+  if (!SecIOrErr) {
     reportError(SecIOrErr.takeError(), Obj->getFileName());
 
+}
+
   section_iterator SecI = *SecIOrErr;
-  if (SecI != Obj->section_end())
+  if (SecI != Obj->section_end()) {
     SectionName = unwrapOrError(Obj->getFileName(), SecI->getName());
+
+}
 
   DictScope D(W, "Symbol");
   W.printNumber("Name", SymbolName, MOSymbol.StringIndex);
   if (MOSymbol.Type & MachO::N_STAB) {
     W.printHex("Type", "SymDebugTable", MOSymbol.Type);
   } else {
-    if (MOSymbol.Type & MachO::N_PEXT)
+    if (MOSymbol.Type & MachO::N_PEXT) {
       W.startLine() << "PrivateExtern\n";
-    if (MOSymbol.Type & MachO::N_EXT)
+
+}
+    if (MOSymbol.Type & MachO::N_EXT) {
       W.startLine() << "Extern\n";
+
+}
     W.printEnum("Type", uint8_t(MOSymbol.Type & MachO::N_TYPE),
                 makeArrayRef(MachOSymbolTypes));
   }
@@ -665,10 +693,12 @@ void MachODumper::printStackMap() const {
   object::SectionRef StackMapSection;
   for (auto Sec : Obj->sections()) {
     StringRef Name;
-    if (Expected<StringRef> NameOrErr = Sec.getName())
+    if (Expected<StringRef> NameOrErr = Sec.getName()) {
       Name = *NameOrErr;
-    else
+    } else {
       consumeError(NameOrErr.takeError());
+
+}
 
     if (Name == "__llvm_stackmaps") {
       StackMapSection = Sec;
@@ -676,20 +706,24 @@ void MachODumper::printStackMap() const {
     }
   }
 
-  if (StackMapSection == object::SectionRef())
+  if (StackMapSection == object::SectionRef()) {
     return;
+
+}
 
   StringRef StackMapContents =
       unwrapOrError(Obj->getFileName(), StackMapSection.getContents());
   ArrayRef<uint8_t> StackMapContentsArray =
       arrayRefFromStringRef(StackMapContents);
 
-  if (Obj->isLittleEndian())
+  if (Obj->isLittleEndian()) {
     prettyPrintStackMap(
         W, StackMapParser<support::little>(StackMapContentsArray));
-  else
+  } else {
     prettyPrintStackMap(
         W, StackMapParser<support::big>(StackMapContentsArray));
+
+}
 }
 
 void MachODumper::printNeededLibraries() {
@@ -774,10 +808,12 @@ void MachODumper::printMachOVersionMin() {
       W.printString("Platform",
                     MachOObjectFile::getBuildPlatform(BVC.platform));
       W.printString("Version", MachOObjectFile::getVersionString(BVC.minos));
-      if (BVC.sdk)
+      if (BVC.sdk) {
         W.printString("SDK", MachOObjectFile::getVersionString(BVC.sdk));
-      else
+      } else {
         W.printString("SDK", StringRef("n/a"));
+
+}
       continue;
     }
 
@@ -788,18 +824,22 @@ void MachODumper::printMachOVersionMin() {
     Version = utostr(MachOObjectFile::getVersionMinMajor(VMC, false)) + "." +
               utostr(MachOObjectFile::getVersionMinMinor(VMC, false));
     uint32_t Update = MachOObjectFile::getVersionMinUpdate(VMC, false);
-    if (Update != 0)
+    if (Update != 0) {
       Version += "." + utostr(MachOObjectFile::getVersionMinUpdate(VMC, false));
+
+}
     W.printString("Version", Version);
     SmallString<32> SDK;
-    if (VMC.sdk == 0)
+    if (VMC.sdk == 0) {
       SDK = "n/a";
-    else {
+    } else {
       SDK = utostr(MachOObjectFile::getVersionMinMajor(VMC, true)) + "." +
             utostr(MachOObjectFile::getVersionMinMinor(VMC, true));
       uint32_t Update = MachOObjectFile::getVersionMinUpdate(VMC, true);
-      if (Update != 0)
+      if (Update != 0) {
         SDK += "." + utostr(MachOObjectFile::getVersionMinUpdate(VMC, true));
+
+}
     }
     W.printString("SDK", SDK);
   }

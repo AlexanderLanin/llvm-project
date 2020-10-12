@@ -234,17 +234,23 @@ TEST(CFG, Worklists) {
   auto *CFG = AC.getCFG();
 
   std::vector<const CFGBlock *> ReferenceOrder;
-  for (const auto *B : *AC.getAnalysis<PostOrderCFGView>())
+  for (const auto *B : *AC.getAnalysis<PostOrderCFGView>()) {
     ReferenceOrder.push_back(B);
+
+}
 
   {
     ForwardDataflowWorklist ForwardWorklist(*CFG, AC);
-    for (const auto *B : *CFG)
+    for (const auto *B : *CFG) {
       ForwardWorklist.enqueueBlock(B);
 
+}
+
     std::vector<const CFGBlock *> ForwardNodes;
-    while (const CFGBlock *B = ForwardWorklist.dequeue())
+    while (const CFGBlock *B = ForwardWorklist.dequeue()) {
       ForwardNodes.push_back(B);
+
+}
 
     EXPECT_EQ(ForwardNodes.size(), ReferenceOrder.size());
     EXPECT_TRUE(std::equal(ReferenceOrder.begin(), ReferenceOrder.end(),
@@ -255,12 +261,16 @@ TEST(CFG, Worklists) {
 
   {
     BackwardDataflowWorklist BackwardWorklist(*CFG, AC);
-    for (const auto *B : *CFG)
+    for (const auto *B : *CFG) {
       BackwardWorklist.enqueueBlock(B);
 
+}
+
     std::vector<const CFGBlock *> BackwardNodes;
-    while (const CFGBlock *B = BackwardWorklist.dequeue())
+    while (const CFGBlock *B = BackwardWorklist.dequeue()) {
       BackwardNodes.push_back(B);
+
+}
 
     EXPECT_EQ(BackwardNodes.size(), ReferenceOrder.size());
     EXPECT_TRUE(std::equal(ReferenceOrder.begin(), ReferenceOrder.end(),

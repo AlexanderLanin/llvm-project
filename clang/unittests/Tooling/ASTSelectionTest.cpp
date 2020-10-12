@@ -119,8 +119,10 @@ const SelectedASTNode &checkNode(
         nullptr) {
   checkNodeImpl(isa<T>(DeclNode.Node.get<Decl>()), DeclNode, SelectionKind,
                 NumChildren);
-  if (!Name.empty())
+  if (!Name.empty()) {
     checkDeclName(DeclNode, Name);
+
+}
   return DeclNode;
 }
 

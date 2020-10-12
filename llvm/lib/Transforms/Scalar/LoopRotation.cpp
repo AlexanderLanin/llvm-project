@@ -44,21 +44,29 @@ PreservedAnalyses LoopRotatePass::run(Loop &L, LoopAnalysisManager &AM,
   const SimplifyQuery SQ = getBestSimplifyQuery(AR, DL);
 
   Optional<MemorySSAUpdater> MSSAU;
-  if (AR.MSSA)
+  if (AR.MSSA) {
     MSSAU = MemorySSAUpdater(AR.MSSA);
+
+}
   bool Changed = LoopRotation(&L, &AR.LI, &AR.TTI, &AR.AC, &AR.DT, &AR.SE,
                               MSSAU.hasValue() ? MSSAU.getPointer() : nullptr,
                               SQ, false, Threshold, false);
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
 
-  if (AR.MSSA && VerifyMemorySSA)
+}
+
+  if (AR.MSSA && VerifyMemorySSA) {
     AR.MSSA->verifyMemorySSA();
 
+}
+
   auto PA = getLoopPassPreservedAnalyses();
-  if (AR.MSSA)
+  if (AR.MSSA) {
     PA.preserve<MemorySSAAnalysis>();
+
+}
   return PA;
 }
 
@@ -71,24 +79,30 @@ public:
   static char ID; // Pass ID, replacement for typeid
   LoopRotateLegacyPass(int SpecifiedMaxHeaderSize = -1) : LoopPass(ID) {
     initializeLoopRotateLegacyPassPass(*PassRegistry::getPassRegistry());
-    if (SpecifiedMaxHeaderSize == -1)
+    if (SpecifiedMaxHeaderSize == -1) {
       MaxHeaderSize = DefaultRotationThreshold;
-    else
+    } else {
       MaxHeaderSize = unsigned(SpecifiedMaxHeaderSize);
+
+}
   }
 
   // LCSSA form makes instruction renaming easier.
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<AssumptionCacheTracker>();
     AU.addRequired<TargetTransformInfoWrapperPass>();
-    if (EnableMSSALoopDependency)
+    if (EnableMSSALoopDependency) {
       AU.addPreserved<MemorySSAWrapperPass>();
+
+}
     getLoopAnalysisUsage(AU);
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (skipLoop(L))
+    if (skipLoop(L)) {
       return false;
+
+}
     Function &F = *L->getHeader()->getParent();
 
     auto *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
@@ -102,8 +116,10 @@ public:
       // Not requiring MemorySSA and getting it only if available will split
       // the loop pass pipeline when LoopRotate is being run first.
       auto *MSSAA = getAnalysisIfAvailable<MemorySSAWrapperPass>();
-      if (MSSAA)
+      if (MSSAA) {
         MSSAU = MemorySSAUpdater(&MSSAA->getMSSA());
+
+}
     }
     return LoopRotation(L, LI, TTI, AC, &DT, &SE,
                         MSSAU.hasValue() ? MSSAU.getPointer() : nullptr, SQ,

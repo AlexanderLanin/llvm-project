@@ -15,12 +15,16 @@ DeltaAlgorithm::~DeltaAlgorithm() {
 }
 
 bool DeltaAlgorithm::GetTestResult(const changeset_ty &Changes) {
-  if (FailedTestsCache.count(Changes))
+  if (FailedTestsCache.count(Changes)) {
     return false;
 
+}
+
   bool Result = ExecuteOneTest(Changes);
-  if (!Result)
+  if (!Result) {
     FailedTestsCache.insert(Changes);
+
+}
 
   return Result;
 }
@@ -32,12 +36,18 @@ void DeltaAlgorithm::Split(const changeset_ty &S, changesetlist_ty &Res) {
   changeset_ty LHS, RHS;
   unsigned idx = 0, N = S.size() / 2;
   for (changeset_ty::const_iterator it = S.begin(),
-         ie = S.end(); it != ie; ++it, ++idx)
+         ie = S.end(); it != ie; ++it, ++idx) {
     ((idx < N) ? LHS : RHS).insert(*it);
-  if (!LHS.empty())
+
+}
+  if (!LHS.empty()) {
     Res.push_back(LHS);
-  if (!RHS.empty())
+
+}
+  if (!RHS.empty()) {
     Res.push_back(RHS);
+
+}
 }
 
 DeltaAlgorithm::changeset_ty
@@ -47,21 +57,29 @@ DeltaAlgorithm::Delta(const changeset_ty &Changes,
   UpdatedSearchState(Changes, Sets);
 
   // If there is nothing left we can remove, we are done.
-  if (Sets.size() <= 1)
+  if (Sets.size() <= 1) {
     return Changes;
+
+}
 
   // Look for a passing subset.
   changeset_ty Res;
-  if (Search(Changes, Sets, Res))
+  if (Search(Changes, Sets, Res)) {
     return Res;
+
+}
 
   // Otherwise, partition the sets if possible; if not we are done.
   changesetlist_ty SplitSets;
   for (changesetlist_ty::const_iterator it = Sets.begin(),
-         ie = Sets.end(); it != ie; ++it)
+         ie = Sets.end(); it != ie; ++it) {
     Split(*it, SplitSets);
-  if (SplitSets.size() == Sets.size())
+
+}
+  if (SplitSets.size() == Sets.size()) {
     return Changes;
+
+}
 
   return Delta(Changes, SplitSets);
 }
@@ -103,8 +121,10 @@ bool DeltaAlgorithm::Search(const changeset_ty &Changes,
 
 DeltaAlgorithm::changeset_ty DeltaAlgorithm::Run(const changeset_ty &Changes) {
   // Check empty set first to quickly find poor test functions.
-  if (GetTestResult(changeset_ty()))
+  if (GetTestResult(changeset_ty())) {
     return changeset_ty();
+
+}
 
   // Otherwise run the real delta algorithm.
   changesetlist_ty Sets;

@@ -76,20 +76,26 @@ private:
   bool isStrideLargeEnough(const SCEVAddRecExpr *AR);
 
   unsigned getMinPrefetchStride() {
-    if (MinPrefetchStride.getNumOccurrences() > 0)
+    if (MinPrefetchStride.getNumOccurrences() > 0) {
       return MinPrefetchStride;
+
+}
     return TTI->getMinPrefetchStride();
   }
 
   unsigned getPrefetchDistance() {
-    if (PrefetchDistance.getNumOccurrences() > 0)
+    if (PrefetchDistance.getNumOccurrences() > 0) {
       return PrefetchDistance;
+
+}
     return TTI->getPrefetchDistance();
   }
 
   unsigned getMaxPrefetchIterationsAhead() {
-    if (MaxPrefetchIterationsAhead.getNumOccurrences() > 0)
+    if (MaxPrefetchIterationsAhead.getNumOccurrences() > 0) {
       return MaxPrefetchIterationsAhead;
+
+}
     return TTI->getMaxPrefetchIterationsAhead();
   }
 
@@ -141,14 +147,18 @@ FunctionPass *llvm::createLoopDataPrefetchPass() {
 bool LoopDataPrefetch::isStrideLargeEnough(const SCEVAddRecExpr *AR) {
   unsigned TargetMinStride = getMinPrefetchStride();
   // No need to check if any stride goes.
-  if (TargetMinStride <= 1)
+  if (TargetMinStride <= 1) {
     return true;
+
+}
 
   const auto *ConstStride = dyn_cast<SCEVConstant>(AR->getStepRecurrence(*SE));
   // If MinStride is set, don't prefetch unless we can ensure that stride is
   // larger.
-  if (!ConstStride)
+  if (!ConstStride) {
     return false;
+
+}
 
   unsigned AbsStride = std::abs(ConstStride->getAPInt().getSExtValue());
   return TargetMinStride <= AbsStride;
@@ -177,8 +187,10 @@ PreservedAnalyses LoopDataPrefetchPass::run(Function &F,
 }
 
 bool LoopDataPrefetchLegacyPass::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
@@ -197,15 +209,21 @@ bool LoopDataPrefetch::run() {
   // If PrefetchDistance is not set, don't run the pass.  This gives an
   // opportunity for targets to run this pass for selected subtargets only
   // (whose TTI sets PrefetchDistance).
-  if (getPrefetchDistance() == 0)
+  if (getPrefetchDistance() == 0) {
     return false;
+
+}
   assert(TTI->getCacheLineSize() && "Cache line size is not set for target");
 
   bool MadeChange = false;
 
-  for (Loop *I : *LI)
-    for (auto L = df_begin(I), LE = df_end(I); L != LE; ++L)
+  for (Loop *I : *LI) {
+    for (auto L = df_begin(I), LE = df_end(I); L != LE; ++L) {
       MadeChange |= runOnLoop(*L);
+
+}
+
+}
 
   return MadeChange;
 }
@@ -214,8 +232,10 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
   bool MadeChange = false;
 
   // Only prefetch in the inner-most loop
-  if (!L->empty())
+  if (!L->empty()) {
     return MadeChange;
+
+}
 
   SmallPtrSet<const Value *, 32> EphValues;
   CodeMetrics::collectEphemeralValues(L, AC, EphValues);
@@ -225,24 +245,38 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
   for (const auto BB : L->blocks()) {
     // If the loop already has prefetches, then assume that the user knows
     // what they are doing and don't add any more.
-    for (auto &I : *BB)
-      if (CallInst *CI = dyn_cast<CallInst>(&I))
-        if (Function *F = CI->getCalledFunction())
-          if (F->getIntrinsicID() == Intrinsic::prefetch)
+    for (auto &I : *BB) {
+      if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+        if (Function *F = CI->getCalledFunction()) {
+          if (F->getIntrinsicID() == Intrinsic::prefetch) {
             return MadeChange;
+
+}
+
+}
+
+}
+
+}
 
     Metrics.analyzeBasicBlock(BB, *TTI, EphValues);
   }
   unsigned LoopSize = Metrics.NumInsts;
-  if (!LoopSize)
+  if (!LoopSize) {
     LoopSize = 1;
 
+}
+
   unsigned ItersAhead = getPrefetchDistance() / LoopSize;
-  if (!ItersAhead)
+  if (!ItersAhead) {
     ItersAhead = 1;
 
-  if (ItersAhead > getMaxPrefetchIterationsAhead())
+}
+
+  if (ItersAhead > getMaxPrefetchIterationsAhead()) {
     return MadeChange;
+
+}
 
   LLVM_DEBUG(dbgs() << "Prefetching " << ItersAhead
                     << " iterations ahead (loop size: " << LoopSize << ") in "
@@ -258,27 +292,39 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
         MemI = LMemI;
         PtrValue = LMemI->getPointerOperand();
       } else if (StoreInst *SMemI = dyn_cast<StoreInst>(&I)) {
-        if (!PrefetchWrites) continue;
+        if (!PrefetchWrites) { continue;
+
+}
         MemI = SMemI;
         PtrValue = SMemI->getPointerOperand();
-      } else continue;
+      } else { continue;
+
+}
 
       unsigned PtrAddrSpace = PtrValue->getType()->getPointerAddressSpace();
-      if (PtrAddrSpace)
+      if (PtrAddrSpace) {
         continue;
 
-      if (L->isLoopInvariant(PtrValue))
+}
+
+      if (L->isLoopInvariant(PtrValue)) {
         continue;
+
+}
 
       const SCEV *LSCEV = SE->getSCEV(PtrValue);
       const SCEVAddRecExpr *LSCEVAddRec = dyn_cast<SCEVAddRecExpr>(LSCEV);
-      if (!LSCEVAddRec)
+      if (!LSCEVAddRec) {
         continue;
+
+}
 
       // Check if the stride of the accesses is large enough to warrant a
       // prefetch.
-      if (!isStrideLargeEnough(LSCEVAddRec))
+      if (!isStrideLargeEnough(LSCEVAddRec)) {
         continue;
+
+}
 
       // We don't want to double prefetch individual cache lines. If this load
       // is known to be within one cache line of some other load that has
@@ -295,14 +341,18 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
           }
         }
       }
-      if (DupPref)
+      if (DupPref) {
         continue;
+
+}
 
       const SCEV *NextLSCEV = SE->getAddExpr(LSCEVAddRec, SE->getMulExpr(
         SE->getConstant(LSCEVAddRec->getType(), ItersAhead),
         LSCEVAddRec->getStepRecurrence(*SE)));
-      if (!isSafeToExpand(NextLSCEV, *SE))
+      if (!isSafeToExpand(NextLSCEV, *SE)) {
         continue;
+
+}
 
       PrefLoads.push_back(std::make_pair(MemI, LSCEVAddRec));
 

@@ -194,8 +194,10 @@ public:
 }
 
 static bool GenerateSignBits(Value *V) {
-  if (!isa<Instruction>(V))
+  if (!isa<Instruction>(V)) {
     return false;
+
+}
 
   unsigned Opc = cast<Instruction>(V)->getOpcode();
   return Opc == Instruction::AShr || Opc == Instruction::SDiv ||
@@ -226,20 +228,24 @@ bool TypePromotion::LessThanTypeSize(Value *V) {
 /// Many arguments will have the zeroext attribute too, so those would be free
 /// too.
 bool TypePromotion::isSource(Value *V) {
-  if (!isa<IntegerType>(V->getType()))
+  if (!isa<IntegerType>(V->getType())) {
     return false;
 
+}
+
   // TODO Allow zext to be sources.
-  if (isa<Argument>(V))
+  if (isa<Argument>(V)) {
     return true;
-  else if (isa<LoadInst>(V))
+  } else if (isa<LoadInst>(V)) {
     return true;
-  else if (isa<BitCastInst>(V))
+  } else if (isa<BitCastInst>(V)) {
     return true;
-  else if (auto *Call = dyn_cast<CallInst>(V))
+  } else if (auto *Call = dyn_cast<CallInst>(V)) {
     return Call->hasRetAttr(Attribute::AttrKind::ZExt);
-  else if (auto *Trunc = dyn_cast<TruncInst>(V))
+  } else if (auto *Trunc = dyn_cast<TruncInst>(V)) {
     return EqualTypeSize(Trunc);
+
+}
   return false;
 }
 
@@ -257,16 +263,26 @@ bool TypePromotion::isSink(Value *V) {
   // - points where value types have to match, such as calls and returns.
   // - zext are included to ease the transformation and are generally removed
   //   later on.
-  if (auto *Store = dyn_cast<StoreInst>(V))
+  if (auto *Store = dyn_cast<StoreInst>(V)) {
     return LessOrEqualTypeSize(Store->getValueOperand());
-  if (auto *Return = dyn_cast<ReturnInst>(V))
+
+}
+  if (auto *Return = dyn_cast<ReturnInst>(V)) {
     return LessOrEqualTypeSize(Return->getReturnValue());
-  if (auto *ZExt = dyn_cast<ZExtInst>(V))
+
+}
+  if (auto *ZExt = dyn_cast<ZExtInst>(V)) {
     return GreaterThanTypeSize(ZExt);
-  if (auto *Switch = dyn_cast<SwitchInst>(V))
+
+}
+  if (auto *Switch = dyn_cast<SwitchInst>(V)) {
     return LessThanTypeSize(Switch->getCondition());
-  if (auto *ICmp = dyn_cast<ICmpInst>(V))
+
+}
+  if (auto *ICmp = dyn_cast<ICmpInst>(V)) {
     return ICmp->isSigned() || LessThanTypeSize(ICmp->getOperand(0));
+
+}
 
   return isa<CallInst>(V);
 }
@@ -333,33 +349,43 @@ bool TypePromotion::isSafeWrap(Instruction *I) {
   // (1 < 127) != (256 < 127)
 
   unsigned Opc = I->getOpcode();
-  if (Opc != Instruction::Add && Opc != Instruction::Sub)
+  if (Opc != Instruction::Add && Opc != Instruction::Sub) {
     return false;
+
+}
 
   if (!I->hasOneUse() ||
       !isa<ICmpInst>(*I->user_begin()) ||
-      !isa<ConstantInt>(I->getOperand(1)))
+      !isa<ConstantInt>(I->getOperand(1))) {
     return false;
+
+}
 
   ConstantInt *OverflowConst = cast<ConstantInt>(I->getOperand(1));
   bool NegImm = OverflowConst->isNegative();
   bool IsDecreasing = ((Opc == Instruction::Sub) && !NegImm) ||
                        ((Opc == Instruction::Add) && NegImm);
-  if (!IsDecreasing)
+  if (!IsDecreasing) {
     return false;
+
+}
 
   // Don't support an icmp that deals with sign bits.
   auto *CI = cast<ICmpInst>(*I->user_begin());
-  if (CI->isSigned() || CI->isEquality())
+  if (CI->isSigned() || CI->isEquality()) {
     return false;
 
+}
+
   ConstantInt *ICmpConst = nullptr;
-  if (auto *Const = dyn_cast<ConstantInt>(CI->getOperand(0)))
+  if (auto *Const = dyn_cast<ConstantInt>(CI->getOperand(0))) {
     ICmpConst = Const;
-  else if (auto *Const = dyn_cast<ConstantInt>(CI->getOperand(1)))
+  } else if (auto *Const = dyn_cast<ConstantInt>(CI->getOperand(1))) {
     ICmpConst = Const;
-  else
+  } else {
     return false;
+
+}
 
   // Now check that the result can't wrap on itself.
   APInt Total = ICmpConst->getValue().getBitWidth() < 32 ?
@@ -371,13 +397,19 @@ bool TypePromotion::isSafeWrap(Instruction *I) {
   APInt Max = APInt::getAllOnesValue(TypePromotion::TypeSize);
 
   if (Total.getBitWidth() > Max.getBitWidth()) {
-    if (Total.ugt(Max.zext(Total.getBitWidth())))
+    if (Total.ugt(Max.zext(Total.getBitWidth()))) {
       return false;
+
+}
   } else if (Max.getBitWidth() > Total.getBitWidth()) {
-    if (Total.zext(Max.getBitWidth()).ugt(Max))
+    if (Total.zext(Max.getBitWidth()).ugt(Max)) {
       return false;
-  } else if (Total.ugt(Max))
+
+}
+  } else if (Total.ugt(Max)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "IR Promotion: Allowing safe overflow for "
              << *I << "\n");
@@ -386,18 +418,26 @@ bool TypePromotion::isSafeWrap(Instruction *I) {
 }
 
 bool TypePromotion::shouldPromote(Value *V) {
-  if (!isa<IntegerType>(V->getType()) || isSink(V))
+  if (!isa<IntegerType>(V->getType()) || isSink(V)) {
     return false;
 
-  if (isSource(V))
+}
+
+  if (isSource(V)) {
     return true;
 
+}
+
   auto *I = dyn_cast<Instruction>(V);
-  if (!I)
+  if (!I) {
     return false;
 
-  if (isa<ICmpInst>(I))
+}
+
+  if (isa<ICmpInst>(I)) {
     return false;
+
+}
 
   return true;
 }
@@ -405,14 +445,20 @@ bool TypePromotion::shouldPromote(Value *V) {
 /// Return whether we can safely mutate V's type to ExtTy without having to be
 /// concerned with zero extending or truncation.
 static bool isPromotedResultSafe(Value *V) {
-  if (GenerateSignBits(V))
+  if (GenerateSignBits(V)) {
     return false;
 
-  if (!isa<Instruction>(V))
+}
+
+  if (!isa<Instruction>(V)) {
     return true;
 
-  if (!isa<OverflowingBinaryOperator>(V))
+}
+
+  if (!isa<OverflowingBinaryOperator>(V)) {
     return true;
+
+}
 
   return cast<Instruction>(V)->hasNoUnsignedWrap();
 }
@@ -434,12 +480,18 @@ void IRPromoter::ReplaceAllUsersOfWith(Value *From, Value *To) {
     Users.push_back(User);
   }
 
-  for (auto *U : Users)
+  for (auto *U : Users) {
     U->replaceUsesOfWith(From, To);
 
-  if (ReplacedAll)
-    if (auto *I = dyn_cast<Instruction>(From))
+}
+
+  if (ReplacedAll) {
+    if (auto *I = dyn_cast<Instruction>(From)) {
       InstsToRemove.insert(I);
+
+}
+
+}
 }
 
 void IRPromoter::PrepareWrappingAdds() {
@@ -451,8 +503,10 @@ void IRPromoter::PrepareWrappingAdds() {
   // That positive immediate can then be zext along with all the other
   // immediates later.
   for (auto *I : SafeWrap) {
-    if (I->getOpcode() != Instruction::Add)
+    if (I->getOpcode() != Instruction::Add) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "IR Promotion: Adjusting " << *I << "\n");
     assert((isa<ConstantInt>(I->getOperand(1)) &&
@@ -471,8 +525,10 @@ void IRPromoter::PrepareWrappingAdds() {
     I->replaceAllUsesWith(NewVal);
     LLVM_DEBUG(dbgs() << "IR Promotion: New equivalent: " << *NewVal << "\n");
   }
-  for (auto *I : NewInsts)
+  for (auto *I : NewInsts) {
     Visited.insert(I);
+
+}
 }
 
 void IRPromoter::ExtendSources() {
@@ -482,15 +538,19 @@ void IRPromoter::ExtendSources() {
     assert(V->getType() != ExtTy && "zext already extends to i32");
     LLVM_DEBUG(dbgs() << "IR Promotion: Inserting ZExt for " << *V << "\n");
     Builder.SetInsertPoint(InsertPt);
-    if (auto *I = dyn_cast<Instruction>(V))
+    if (auto *I = dyn_cast<Instruction>(V)) {
       Builder.SetCurrentDebugLocation(I->getDebugLoc());
+
+}
 
     Value *ZExt = Builder.CreateZExt(V, ExtTy);
     if (auto *I = dyn_cast<Instruction>(ZExt)) {
-      if (isa<Argument>(V))
+      if (isa<Argument>(V)) {
         I->moveBefore(InsertPt);
-      else
+      } else {
         I->moveAfter(InsertPt);
+
+}
       NewInsts.insert(I);
     }
 
@@ -501,9 +561,9 @@ void IRPromoter::ExtendSources() {
   LLVM_DEBUG(dbgs() << "IR Promotion: Promoting sources:\n");
   for (auto V : Sources) {
     LLVM_DEBUG(dbgs() << " - " << *V << "\n");
-    if (auto *I = dyn_cast<Instruction>(V))
+    if (auto *I = dyn_cast<Instruction>(V)) {
       InsertZExt(I, I);
-    else if (auto *Arg = dyn_cast<Argument>(V)) {
+    } else if (auto *Arg = dyn_cast<Argument>(V)) {
       BasicBlock &BB = Arg->getParent()->front();
       InsertZExt(Arg, &*BB.getFirstInsertionPt());
     } else {
@@ -521,23 +581,31 @@ void IRPromoter::PromoteTree() {
   // Mutate the types of the instructions within the tree. Here we handle
   // constant operands.
   for (auto *V : Visited) {
-    if (Sources.count(V))
+    if (Sources.count(V)) {
       continue;
 
+}
+
     auto *I = cast<Instruction>(V);
-    if (Sinks.count(I))
+    if (Sinks.count(I)) {
       continue;
+
+}
 
     for (unsigned i = 0, e = I->getNumOperands(); i < e; ++i) {
       Value *Op = I->getOperand(i);
-      if ((Op->getType() == ExtTy) || !isa<IntegerType>(Op->getType()))
+      if ((Op->getType() == ExtTy) || !isa<IntegerType>(Op->getType())) {
         continue;
+
+}
 
       if (auto *Const = dyn_cast<ConstantInt>(Op)) {
         Constant *NewConst = ConstantExpr::getZExt(Const, ExtTy);
         I->setOperand(i, NewConst);
-      } else if (isa<UndefValue>(Op))
+      } else if (isa<UndefValue>(Op)) {
         I->setOperand(i, UndefValue::get(ExtTy));
+
+}
     }
 
     // Mutate the result type, unless this is an icmp.
@@ -554,18 +622,24 @@ void IRPromoter::TruncateSinks() {
   IRBuilder<> Builder{Ctx};
 
   auto InsertTrunc = [&](Value *V, Type *TruncTy) -> Instruction* {
-    if (!isa<Instruction>(V) || !isa<IntegerType>(V->getType()))
+    if (!isa<Instruction>(V) || !isa<IntegerType>(V->getType())) {
       return nullptr;
 
-    if ((!Promoted.count(V) && !NewInsts.count(V)) || Sources.count(V))
+}
+
+    if ((!Promoted.count(V) && !NewInsts.count(V)) || Sources.count(V)) {
       return nullptr;
+
+}
 
     LLVM_DEBUG(dbgs() << "IR Promotion: Creating " << *TruncTy << " Trunc for "
                << *V << "\n");
     Builder.SetInsertPoint(cast<Instruction>(V));
     auto *Trunc = dyn_cast<Instruction>(Builder.CreateTrunc(V, TruncTy));
-    if (Trunc)
+    if (Trunc) {
       NewInsts.insert(Trunc);
+
+}
     return Trunc;
   };
 
@@ -613,12 +687,16 @@ void IRPromoter::Cleanup() {
   // Some zexts will now have become redundant, along with their trunc
   // operands, so remove them
   for (auto V : Visited) {
-    if (!isa<ZExtInst>(V))
+    if (!isa<ZExtInst>(V)) {
       continue;
 
+}
+
     auto ZExt = cast<ZExtInst>(V);
-    if (ZExt->getDestTy() != ExtTy)
+    if (ZExt->getDestTy() != ExtTy) {
       continue;
+
+}
 
     Value *Src = ZExt->getOperand(0);
     if (ZExt->getSrcTy() == ZExt->getDestTy()) {
@@ -652,8 +730,10 @@ void IRPromoter::ConvertTruncs() {
   IRBuilder<> Builder{Ctx};
 
   for (auto *V : Visited) {
-    if (!isa<TruncInst>(V) || Sources.count(V))
+    if (!isa<TruncInst>(V) || Sources.count(V)) {
       continue;
+
+}
 
     auto *Trunc = cast<TruncInst>(V);
     Builder.SetInsertPoint(Trunc);
@@ -665,8 +745,10 @@ void IRPromoter::ConvertTruncs() {
       ConstantInt::get(SrcTy, APInt::getMaxValue(NumBits).getZExtValue());
     Value *Masked = Builder.CreateAnd(Trunc->getOperand(0), Mask);
 
-    if (auto *I = dyn_cast<Instruction>(Masked))
+    if (auto *I = dyn_cast<Instruction>(Masked)) {
       NewInsts.insert(I);
+
+}
 
     ReplaceAllUsersOfWith(Trunc, Masked);
   }
@@ -683,16 +765,20 @@ void IRPromoter::Mutate() {
         Value *Arg = Call->getArgOperand(i);
         TruncTysMap[Call].push_back(Arg->getType());
       }
-    } else if (auto *Switch = dyn_cast<SwitchInst>(I))
+    } else if (auto *Switch = dyn_cast<SwitchInst>(I)) {
       TruncTysMap[I].push_back(Switch->getCondition()->getType());
-    else {
-      for (unsigned i = 0; i < I->getNumOperands(); ++i)
+    } else {
+      for (unsigned i = 0; i < I->getNumOperands(); ++i) {
         TruncTysMap[I].push_back(I->getOperand(i)->getType());
+
+}
     }
   }
   for (auto *V : Visited) {
-    if (!isa<TruncInst>(V) || Sources.count(V))
+    if (!isa<TruncInst>(V) || Sources.count(V)) {
       continue;
+
+}
     auto *Trunc = cast<TruncInst>(V);
     TruncTysMap[Trunc].push_back(Trunc->getDestTy());
   }
@@ -727,13 +813,17 @@ bool TypePromotion::isSupportedType(Value *V) {
   Type *Ty = V->getType();
 
   // Allow voids and pointers, these won't be promoted.
-  if (Ty->isVoidTy() || Ty->isPointerTy())
+  if (Ty->isVoidTy() || Ty->isPointerTy()) {
     return true;
+
+}
 
   if (!isa<IntegerType>(Ty) ||
       cast<IntegerType>(Ty)->getBitWidth() == 1 ||
-      cast<IntegerType>(Ty)->getBitWidth() > RegisterBitWidth)
+      cast<IntegerType>(Ty)->getBitWidth() > RegisterBitWidth) {
     return false;
+
+}
 
   return LessOrEqualTypeSize(V);
 }
@@ -767,8 +857,10 @@ bool TypePromotion::isSupportedValue(Value *V) {
       // TypeSize because they will require a trunc to be legalised.
       // TODO: Allow icmp of smaller types, and calculate at the end
       // whether the transform would be beneficial.
-      if (isa<PointerType>(I->getOperand(0)->getType()))
+      if (isa<PointerType>(I->getOperand(0)->getType())) {
         return true;
+
+}
       return EqualTypeSize(I->getOperand(0));
     case Instruction::Call: {
       // Special cases for calls as we need to check for zeroext
@@ -781,8 +873,10 @@ bool TypePromotion::isSupportedValue(Value *V) {
     }
   } else if (isa<Constant>(V) && !isa<ConstantExpr>(V)) {
     return isSupportedType(V);
-  } else if (isa<Argument>(V))
+  } else if (isa<Argument>(V)) {
     return isSupportedType(V);
+
+}
 
   return isa<BasicBlock>(V);
 }
@@ -793,11 +887,15 @@ bool TypePromotion::isSupportedValue(Value *V) {
 bool TypePromotion::isLegalToPromote(Value *V) {
 
   auto *I = dyn_cast<Instruction>(V);
-  if (!I)
+  if (!I) {
     return true;
 
-  if (SafeToPromote.count(I))
+}
+
+  if (SafeToPromote.count(I)) {
    return true;
+
+}
 
   if (isPromotedResultSafe(V) || isSafeWrap(I)) {
     SafeToPromote.insert(I);
@@ -812,8 +910,10 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
   SafeToPromote.clear();
   SafeWrap.clear();
 
-  if (!isSupportedValue(V) || !shouldPromote(V) || !isLegalToPromote(V))
+  if (!isSupportedValue(V) || !shouldPromote(V) || !isLegalToPromote(V)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "IR Promotion: TryToPromote: " << *V << ", from "
              << TypeSize << " bits to " << PromotedWidth << "\n");
@@ -828,13 +928,17 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
   // if it was already visited, or if we don't need to explore it (e.g.
   // pointer values and GEPs), and false otherwise.
   auto AddLegalInst = [&](Value *V) {
-    if (CurrentVisited.count(V))
+    if (CurrentVisited.count(V)) {
       return true;
+
+}
 
     // Ignore GEPs because they don't need promoting and the constant indices
     // will prevent the transformation.
-    if (isa<GetElementPtrInst>(V))
+    if (isa<GetElementPtrInst>(V)) {
       return true;
+
+}
 
     if (!isSupportedValue(V) || (shouldPromote(V) && !isLegalToPromote(V))) {
       LLVM_DEBUG(dbgs() << "IR Promotion: Can't handle: " << *V << "\n");
@@ -848,36 +952,48 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
   // Iterate through, and add to, a tree of operands and users in the use-def.
   while (!WorkList.empty()) {
     Value *V = WorkList.pop_back_val();
-    if (CurrentVisited.count(V))
+    if (CurrentVisited.count(V)) {
       continue;
 
+}
+
     // Ignore non-instructions, other than arguments.
-    if (!isa<Instruction>(V) && !isSource(V))
+    if (!isa<Instruction>(V) && !isSource(V)) {
       continue;
+
+}
 
     // If we've already visited this value from somewhere, bail now because
     // the tree has already been explored.
     // TODO: This could limit the transform, ie if we try to promote something
     // from an i8 and fail first, before trying an i16.
-    if (AllVisited.count(V))
+    if (AllVisited.count(V)) {
       return false;
+
+}
 
     CurrentVisited.insert(V);
     AllVisited.insert(V);
 
     // Calls can be both sources and sinks.
-    if (isSink(V))
+    if (isSink(V)) {
       Sinks.insert(cast<Instruction>(V));
 
-    if (isSource(V))
+}
+
+    if (isSource(V)) {
       Sources.insert(V);
+
+}
 
     if (!isSink(V) && !isSource(V)) {
       if (auto *I = dyn_cast<Instruction>(V)) {
         // Visit operands of any instruction visited.
         for (auto &U : I->operands()) {
-          if (!AddLegalInst(U))
+          if (!AddLegalInst(U)) {
             return false;
+
+}
         }
       }
     }
@@ -886,8 +1002,10 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
     // source.
     if (isSource(V) || shouldPromote(V)) {
       for (Use &U : V->uses()) {
-        if (!AddLegalInst(U.getUser()))
+        if (!AddLegalInst(U.getUser())) {
           return false;
+
+}
       }
     }
   }
@@ -901,28 +1019,40 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
   unsigned NonFreeArgs = 0;
   SmallPtrSet<BasicBlock*, 4> Blocks;
   for (auto *V : CurrentVisited) {
-    if (auto *I = dyn_cast<Instruction>(V))
+    if (auto *I = dyn_cast<Instruction>(V)) {
       Blocks.insert(I->getParent());
 
+}
+
     if (Sources.count(V)) {
-      if (auto *Arg = dyn_cast<Argument>(V))
-        if (!Arg->hasZExtAttr() && !Arg->hasSExtAttr())
+      if (auto *Arg = dyn_cast<Argument>(V)) {
+        if (!Arg->hasZExtAttr() && !Arg->hasSExtAttr()) {
           ++NonFreeArgs;
+
+}
+
+}
       continue;
     }
 
-    if (Sinks.count(cast<Instruction>(V)))
+    if (Sinks.count(cast<Instruction>(V))) {
       continue;
+
+}
      ++ToPromote;
    }
 
   // DAG optimizations should be able to handle these cases better, especially
   // for function arguments.
-  if (ToPromote < 2 || (Blocks.size() == 1 && (NonFreeArgs > SafeWrap.size())))
+  if (ToPromote < 2 || (Blocks.size() == 1 && (NonFreeArgs > SafeWrap.size()))) {
     return false;
 
-  if (ToPromote < 2)
+}
+
+  if (ToPromote < 2) {
     return false;
+
+}
 
   IRPromoter Promoter(*Ctx, cast<IntegerType>(OrigTy), PromotedWidth,
                       CurrentVisited, Sources, Sinks, SafeWrap);
@@ -931,14 +1061,18 @@ bool TypePromotion::TryToPromote(Value *V, unsigned PromotedWidth) {
 }
 
 bool TypePromotion::runOnFunction(Function &F) {
-  if (skipFunction(F) || DisablePromotion)
+  if (skipFunction(F) || DisablePromotion) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "IR Promotion: Running on " << F.getName() << "\n");
 
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-  if (!TPC)
+  if (!TPC) {
     return false;
+
+}
 
   AllVisited.clear();
   SafeToPromote.clear();
@@ -956,29 +1090,39 @@ bool TypePromotion::runOnFunction(Function &F) {
   // Search up from icmps to try to promote their operands.
   for (BasicBlock &BB : F) {
     for (auto &I : BB) {
-      if (AllVisited.count(&I))
+      if (AllVisited.count(&I)) {
         continue;
 
-      if (!isa<ICmpInst>(&I))
+}
+
+      if (!isa<ICmpInst>(&I)) {
         continue;
+
+}
 
       auto *ICmp = cast<ICmpInst>(&I);
       // Skip signed or pointer compares
       if (ICmp->isSigned() ||
-          !isa<IntegerType>(ICmp->getOperand(0)->getType()))
+          !isa<IntegerType>(ICmp->getOperand(0)->getType())) {
         continue;
+
+}
 
       LLVM_DEBUG(dbgs() << "IR Promotion: Searching from: " << *ICmp << "\n");
 
       for (auto &Op : ICmp->operands()) {
         if (auto *I = dyn_cast<Instruction>(Op)) {
           EVT SrcVT = TLI->getValueType(DL, I->getType());
-          if (SrcVT.isSimple() && TLI->isTypeLegal(SrcVT.getSimpleVT()))
+          if (SrcVT.isSimple() && TLI->isTypeLegal(SrcVT.getSimpleVT())) {
             break;
 
+}
+
           if (TLI->getTypeAction(ICmp->getContext(), SrcVT) !=
-              TargetLowering::TypePromoteInteger)
+              TargetLowering::TypePromoteInteger) {
             break;
+
+}
 
           EVT PromotedVT = TLI->getTypeToTransformTo(ICmp->getContext(), SrcVT);
           if (RegisterBitWidth < PromotedVT.getSizeInBits()) {
@@ -997,8 +1141,10 @@ bool TypePromotion::runOnFunction(Function &F) {
                 report_fatal_error("Broken function after type promotion");
                });
   }
-  if (MadeChange)
+  if (MadeChange) {
     LLVM_DEBUG(dbgs() << "After TypePromotion: " << F << "\n");
+
+}
 
   AllVisited.clear();
   SafeToPromote.clear();

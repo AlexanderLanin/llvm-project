@@ -78,48 +78,60 @@ Error DWARFDebugArangeSet::extract(DWARFDataExtractor data,
   // Perform basic validation of the header fields.
   uint64_t full_length =
       dwarf::getUnitLengthFieldByteSize(format) + HeaderData.Length;
-  if (!data.isValidOffsetForDataOfSize(Offset, full_length))
+  if (!data.isValidOffsetForDataOfSize(Offset, full_length)) {
     return createStringError(errc::invalid_argument,
                              "the length of address range table at offset "
                              "0x%" PRIx64 " exceeds section size",
                              Offset);
-  if (HeaderData.AddrSize != 4 && HeaderData.AddrSize != 8)
+
+}
+  if (HeaderData.AddrSize != 4 && HeaderData.AddrSize != 8) {
     return createStringError(errc::invalid_argument,
                              "address range table at offset 0x%" PRIx64
                              " has unsupported address size: %d "
                              "(4 and 8 supported)",
                              Offset, HeaderData.AddrSize);
-  if (HeaderData.SegSize != 0)
+
+}
+  if (HeaderData.SegSize != 0) {
     return createStringError(errc::not_supported,
                              "non-zero segment selector size in address range "
                              "table at offset 0x%" PRIx64 " is not supported",
                              Offset);
+
+}
 
   // The first tuple following the header in each set begins at an offset that
   // is a multiple of the size of a single tuple (that is, twice the size of
   // an address because we do not support non-zero segment selector sizes).
   // Therefore, the full length should also be a multiple of the tuple size.
   const uint32_t tuple_size = HeaderData.AddrSize * 2;
-  if (full_length % tuple_size != 0)
+  if (full_length % tuple_size != 0) {
     return createStringError(
         errc::invalid_argument,
         "address range table at offset 0x%" PRIx64
         " has length that is not a multiple of the tuple size",
         Offset);
 
+}
+
   // The header is padded, if necessary, to the appropriate boundary.
   const uint32_t header_size = *offset_ptr - Offset;
   uint32_t first_tuple_offset = 0;
-  while (first_tuple_offset < header_size)
+  while (first_tuple_offset < header_size) {
     first_tuple_offset += tuple_size;
 
+}
+
   // There should be space for at least one tuple.
-  if (full_length <= first_tuple_offset)
+  if (full_length <= first_tuple_offset) {
     return createStringError(
         errc::invalid_argument,
         "address range table at offset 0x%" PRIx64
         " has an insufficient length to contain any entries",
         Offset);
+
+}
 
   *offset_ptr = Offset + first_tuple_offset;
 
@@ -138,8 +150,10 @@ Error DWARFDebugArangeSet::extract(DWARFDataExtractor data,
     if (arangeDescriptor.Length == 0) {
       // Each set of tuples is terminated by a 0 for the address and 0
       // for the length.
-      if (arangeDescriptor.Address == 0 && *offset_ptr == end_offset)
+      if (arangeDescriptor.Address == 0 && *offset_ptr == end_offset) {
         return ErrorSuccess();
+
+}
       return createStringError(
           errc::invalid_argument,
           "address range table at offset 0x%" PRIx64

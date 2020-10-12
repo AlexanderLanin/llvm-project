@@ -24,8 +24,10 @@
 using namespace llvm;
 
 std::string llvm::getModeName(unsigned Mode) {
-  if (Mode == DefaultMode)
+  if (Mode == DefaultMode) {
     return "*";
+
+}
   return (Twine('m') + Twine(Mode)).str();
 }
 
@@ -39,17 +41,23 @@ ValueTypeByHwMode::ValueTypeByHwMode(Record *R, const CodeGenHwModes &CGH) {
 }
 
 ValueTypeByHwMode::ValueTypeByHwMode(Record *R, MVT T) : ValueTypeByHwMode(T) {
-  if (R->isSubClassOf("PtrValueType"))
+  if (R->isSubClassOf("PtrValueType")) {
     PtrAddrSpace = R->getValueAsInt("AddrSpace");
+
+}
 }
 
 bool ValueTypeByHwMode::operator== (const ValueTypeByHwMode &T) const {
   assert(isValid() && T.isValid() && "Invalid type in assignment");
   bool Simple = isSimple();
-  if (Simple != T.isSimple())
+  if (Simple != T.isSimple()) {
     return false;
-  if (Simple)
+
+}
+  if (Simple) {
     return getSimple() == T.getSimple();
+
+}
 
   return Map == T.Map;
 }
@@ -62,13 +70,17 @@ bool ValueTypeByHwMode::operator< (const ValueTypeByHwMode &T) const {
 
 MVT &ValueTypeByHwMode::getOrCreateTypeForMode(unsigned Mode, MVT Type) {
   auto F = Map.find(Mode);
-  if (F != Map.end())
+  if (F != Map.end()) {
     return F->second;
+
+}
   // If Mode is not in the map, look up the default mode. If it exists,
   // make a copy of it for Mode and return it.
   auto D = Map.find(DefaultMode);
-  if (D != Map.end())
+  if (D != Map.end()) {
     return Map.insert(std::make_pair(Mode, D->second)).first->second;
+
+}
   // If default mode is not present either, use provided Type.
   return Map.insert(std::make_pair(Mode, Type)).first->second;
 }
@@ -86,8 +98,10 @@ void ValueTypeByHwMode::writeToStream(raw_ostream &OS) const {
   }
 
   std::vector<const PairType*> Pairs;
-  for (const auto &P : Map)
+  for (const auto &P : Map) {
     Pairs.push_back(&P);
+
+}
   llvm::sort(Pairs, deref<std::less<PairType>>());
 
   OS << '{';
@@ -95,8 +109,10 @@ void ValueTypeByHwMode::writeToStream(raw_ostream &OS) const {
     const PairType *P = Pairs[i];
     OS << '(' << getModeName(P->first)
        << ':' << getMVTName(P->second).str() << ')';
-    if (i != e-1)
+    if (i != e-1) {
       OS << ',';
+
+}
   }
   OS << '}';
 }
@@ -114,8 +130,10 @@ ValueTypeByHwMode llvm::getValueTypeByHwMode(Record *Rec,
 #endif
   assert(Rec->isSubClassOf("ValueType") &&
          "Record must be derived from ValueType");
-  if (Rec->isSubClassOf("HwModeSelect"))
+  if (Rec->isSubClassOf("HwModeSelect")) {
     return ValueTypeByHwMode(Rec, CGH);
+
+}
   return ValueTypeByHwMode(Rec, llvm::getValueType(Rec));
 }
 
@@ -178,16 +196,20 @@ bool RegSizeInfoByHwMode::hasStricterSpillThan(const RegSizeInfoByHwMode &I)
 void RegSizeInfoByHwMode::writeToStream(raw_ostream &OS) const {
   typedef typename decltype(Map)::value_type PairType;
   std::vector<const PairType*> Pairs;
-  for (const auto &P : Map)
+  for (const auto &P : Map) {
     Pairs.push_back(&P);
+
+}
   llvm::sort(Pairs, deref<std::less<PairType>>());
 
   OS << '{';
   for (unsigned i = 0, e = Pairs.size(); i != e; ++i) {
     const PairType *P = Pairs[i];
     OS << '(' << getModeName(P->first) << ':' << P->second << ')';
-    if (i != e-1)
+    if (i != e-1) {
       OS << ',';
+
+}
   }
   OS << '}';
 }

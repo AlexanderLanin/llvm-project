@@ -57,20 +57,24 @@ MachineBasicBlock *MachinePostDominatorTree::findNearestCommonDominator(
     NCD = PDT->findNearestCommonDominator(NCD, BB);
 
     // Stop when the root is reached.
-    if (PDT->isVirtualRoot(PDT->getNode(NCD)))
+    if (PDT->isVirtualRoot(PDT->getNode(NCD))) {
       return nullptr;
+
+}
   }
 
   return NCD;
 }
 
 void MachinePostDominatorTree::verifyAnalysis() const {
-  if (PDT && VerifyMachineDomInfo)
+  if (PDT && VerifyMachineDomInfo) {
     if (!PDT->verify(PostDomTreeT::VerificationLevel::Basic)) {
       errs() << "MachinePostDominatorTree verification failed\n";
 
       abort();
     }
+
+}
 }
 
 void MachinePostDominatorTree::print(llvm::raw_ostream &OS,

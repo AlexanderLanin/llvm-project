@@ -58,7 +58,7 @@ static void populateObjCForDestinationSet(
     // FIXME: S is not an expression. We should not be binding values to it.
     ProgramStateRef nextState = state->BindExpr(S, LCtx, hasElementsV);
 
-    if (auto MV = elementV.getAs<loc::MemRegionVal>())
+    if (auto MV = elementV.getAs<loc::MemRegionVal>()) {
       if (const auto *R = dyn_cast<TypedValueRegion>(MV->getRegion())) {
         // FIXME: The proper thing to do is to really iterate over the
         //  container.  We will do this with dispatch logic to the store.
@@ -77,6 +77,8 @@ static void populateObjCForDestinationSet(
 
         nextState = nextState->bindLoc(elementV, V, LCtx);
       }
+
+}
 
     Bldr.generateNode(S, Pred, nextState);
   }
@@ -133,10 +135,12 @@ void ExprEngine::VisitObjCForCollectionStmt(const ObjCForCollectionStmt *S,
   ExplodedNodeSet Tmp;
   StmtNodeBuilder Bldr(Pred, Tmp, *currBldrCtx);
 
-  if (!isContainerNull)
+  if (!isContainerNull) {
     populateObjCForDestinationSet(dstLocation, svalBuilder, S, elem, elementV,
                                   SymMgr, currBldrCtx, Bldr,
                                   /*hasElements=*/true);
+
+}
 
   populateObjCForDestinationSet(dstLocation, svalBuilder, S, elem, elementV,
                                 SymMgr, currBldrCtx, Bldr,
@@ -203,14 +207,18 @@ void ExprEngine::VisitObjCMessage(const ObjCMessageExpr *ME,
                                  ProgramPoint::PreStmtKind);
         assert((Pred || HasTag) && "Should have cached out already!");
         (void)HasTag;
-        if (!Pred)
+        if (!Pred) {
           return;
+
+}
 
         ExplodedNodeSet dstPostCheckers;
         getCheckerManager().runCheckersForObjCMessageNil(dstPostCheckers, Pred,
                                                          *Msg, *this);
-        for (auto I : dstPostCheckers)
+        for (auto I : dstPostCheckers) {
           finishArgumentConstruction(Dst, I, *Msg);
+
+}
         return;
       }
 
@@ -223,8 +231,10 @@ void ExprEngine::VisitObjCMessage(const ObjCMessageExpr *ME,
         Pred = Bldr.generateNode(ME, Pred, notNilState);
         assert((Pred || HasTag) && "Should have cached out already!");
         (void)HasTag;
-        if (!Pred)
+        if (!Pred) {
           return;
+
+}
       }
     }
   }
@@ -273,8 +283,10 @@ void ExprEngine::VisitObjCMessage(const ObjCMessageExpr *ME,
 
   // If there were constructors called for object-type arguments, clean them up.
   ExplodedNodeSet dstArgCleanup;
-  for (auto I : dstEval)
+  for (auto I : dstEval) {
     finishArgumentConstruction(dstArgCleanup, I, *Msg);
+
+}
 
   ExplodedNodeSet dstPostvisit;
   getCheckerManager().runCheckersForPostCall(dstPostvisit, dstArgCleanup,

@@ -45,8 +45,10 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
     unsigned CPUID = SM.getProcessorID();
 
     // Try to solve variant scheduling classes.
-    while (SchedClassID && SM.getSchedClassDesc(SchedClassID)->isVariant())
+    while (SchedClassID && SM.getSchedClassDesc(SchedClassID)->isVariant()) {
       SchedClassID = STI.resolveVariantSchedClass(SchedClassID, &Inst, CPUID);
+
+}
 
     const MCSchedClassDesc &SCDesc = *SM.getSchedClassDesc(SchedClassID);
     unsigned NumMicroOpcodes = SCDesc.NumMicroOps;
@@ -58,23 +60,29 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
         MCSchedModel::getReciprocalThroughput(STI, SCDesc);
 
     TempStream << ' ' << NumMicroOpcodes << "    ";
-    if (NumMicroOpcodes < 10)
+    if (NumMicroOpcodes < 10) {
       TempStream << "  ";
-    else if (NumMicroOpcodes < 100)
+    } else if (NumMicroOpcodes < 100) {
       TempStream << ' ';
+
+}
     TempStream << Latency << "   ";
-    if (Latency < 10)
+    if (Latency < 10) {
       TempStream << "  ";
-    else if (Latency < 100)
+    } else if (Latency < 100) {
       TempStream << ' ';
+
+}
 
     if (RThroughput.hasValue()) {
       double RT = RThroughput.getValue();
       TempStream << format("%.2f", RT) << ' ';
-      if (RT < 10.0)
+      if (RT < 10.0) {
         TempStream << "  ";
-      else if (RT < 100.0)
+      } else if (RT < 100.0) {
         TempStream << ' ';
+
+}
     } else {
       TempStream << " -     ";
     }
@@ -89,8 +97,10 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
                  << (EncodingSize < 10 ? "     " : "    ");
       TempStream.flush();
       formatted_raw_ostream FOS(TempStream);
-      for (unsigned i = 0, e = Encoding.size(); i != e; ++i)
+      for (unsigned i = 0, e = Encoding.size(); i != e; ++i) {
         FOS << format("%02x ", (uint8_t)Encoding[i]);
+
+}
       FOS.PadToColumn(30);
       FOS.flush();
     }

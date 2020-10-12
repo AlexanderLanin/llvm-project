@@ -51,8 +51,10 @@ struct ModuleDependencyPPCallbacks : public PPCallbacks {
                           StringRef SearchPath, StringRef RelativePath,
                           const Module *Imported,
                           SrcMgr::CharacteristicKind FileType) override {
-    if (!File)
+    if (!File) {
       return;
+
+}
     Collector.addFile(File->getName());
   }
 };
@@ -63,8 +65,10 @@ struct ModuleDependencyMMCallbacks : public ModuleMapCallbacks {
       : Collector(Collector) {}
 
   void moduleMapAddHeader(StringRef HeaderPath) override {
-    if (llvm::sys::path::is_absolute(HeaderPath))
+    if (llvm::sys::path::is_absolute(HeaderPath)) {
       Collector.addFile(HeaderPath);
+
+}
   }
   void moduleMapAddUmbrellaHeader(FileManager *FileMgr,
                                   const FileEntry *Header) override {
@@ -90,8 +94,10 @@ struct ModuleDependencyMMCallbacks : public ModuleMapCallbacks {
       SmallString<128> AltHeaderFilename;
       llvm::sys::path::append(AltHeaderFilename, UmbrellaDir,
                               llvm::sys::path::filename(HeaderFilename));
-      if (FileMgr->getFile(AltHeaderFilename))
+      if (FileMgr->getFile(AltHeaderFilename)) {
         moduleMapAddHeader(AltHeaderFilename);
+
+}
     }
   }
 };
@@ -112,24 +118,32 @@ void ModuleDependencyCollector::attachToPreprocessor(Preprocessor &PP) {
 static bool isCaseSensitivePath(StringRef Path) {
   SmallString<256> TmpDest = Path, UpperDest, RealDest;
   // Remove component traversals, links, etc.
-  if (llvm::sys::fs::real_path(Path, TmpDest))
+  if (llvm::sys::fs::real_path(Path, TmpDest)) {
     return true; // Current default value in vfs.yaml
+
+}
   Path = TmpDest;
 
   // Change path to all upper case and ask for its real path, if the latter
   // exists and is equal to Path, it's not case sensitive. Default to case
   // sensitive in the absence of realpath, since this is what the VFSWriter
   // already expects when sensitivity isn't setup.
-  for (auto &C : Path)
+  for (auto &C : Path) {
     UpperDest.push_back(toUppercase(C));
-  if (!llvm::sys::fs::real_path(UpperDest, RealDest) && Path.equals(RealDest))
+
+}
+  if (!llvm::sys::fs::real_path(UpperDest, RealDest) && Path.equals(RealDest)) {
     return false;
+
+}
   return true;
 }
 
 void ModuleDependencyCollector::writeFileMap() {
-  if (Seen.empty())
+  if (Seen.empty()) {
     return;
+
+}
 
   StringRef VFSDir = getDest();
 
@@ -168,8 +182,10 @@ bool ModuleDependencyCollector::getRealPath(StringRef SrcPath,
   // Computing the real path is expensive, cache the search through the
   // parent path directory.
   if (DirWithSymLink == SymLinkMap.end()) {
-    if (llvm::sys::fs::real_path(Dir, RealPath))
+    if (llvm::sys::fs::real_path(Dir, RealPath)) {
       return false;
+
+}
     SymLinkMap[Dir] = std::string(RealPath.str());
   } else {
     RealPath = DirWithSymLink->second;
@@ -200,8 +216,10 @@ std::error_code ModuleDependencyCollector::copyToRoot(StringRef Src,
   // lead to the wrong real destination path. Let the source be canonicalized
   // like that but make sure we always use the real path for the destination.
   SmallString<256> CopyFrom;
-  if (!getRealPath(AbsoluteSrc, CopyFrom))
+  if (!getRealPath(AbsoluteSrc, CopyFrom)) {
     CopyFrom = VirtualPath;
+
+}
   SmallString<256> CacheDst = getDest();
 
   if (Dst.empty()) {
@@ -211,18 +229,24 @@ std::error_code ModuleDependencyCollector::copyToRoot(StringRef Src,
   } else {
     // When collecting entries from input vfsoverlays, copy the external
     // contents into the cache but still map from the source.
-    if (!fs::exists(Dst))
+    if (!fs::exists(Dst)) {
       return std::error_code();
+
+}
     path::append(CacheDst, Dst);
     CopyFrom = Dst;
   }
 
   // Copy the file into place.
   if (std::error_code EC = fs::create_directories(path::parent_path(CacheDst),
-                                                  /*IgnoreExisting=*/true))
+                                                  /*IgnoreExisting=*/true)) {
     return EC;
-  if (std::error_code EC = fs::copy_file(CopyFrom, CacheDst))
+
+}
+  if (std::error_code EC = fs::copy_file(CopyFrom, CacheDst)) {
     return EC;
+
+}
 
   // Always map a canonical src path to its real path into the YAML, by doing
   // this we map different virtual src paths to the same entry in the VFS
@@ -234,7 +258,11 @@ std::error_code ModuleDependencyCollector::copyToRoot(StringRef Src,
 }
 
 void ModuleDependencyCollector::addFile(StringRef Filename, StringRef FileDst) {
-  if (insertSeen(Filename))
-    if (copyToRoot(Filename, FileDst))
+  if (insertSeen(Filename)) {
+    if (copyToRoot(Filename, FileDst)) {
       HasErrors = true;
+
+}
+
+}
 }

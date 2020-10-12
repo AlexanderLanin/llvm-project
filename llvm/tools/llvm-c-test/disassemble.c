@@ -70,8 +70,10 @@ static void handle_line(char **tokens, int ntokens) {
   int i;
 
   printf("triple: %s, features: %s\n", triple, features);
-  if (!strcmp(features, "NULL"))
+  if (!strcmp(features, "NULL")) {
     features = "";
+
+}
 
   for (i = 2; i < ntokens; i++) {
     disbuf[disbuflen++] = strtol(tokens[i], NULL, 16);

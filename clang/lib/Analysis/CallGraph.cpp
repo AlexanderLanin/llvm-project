@@ -53,8 +53,10 @@ public:
   void VisitStmt(Stmt *S) { VisitChildren(S); }
 
   Decl *getDeclFromCall(CallExpr *CE) {
-    if (FunctionDecl *CalleeDecl = CE->getDirectCallee())
+    if (FunctionDecl *CalleeDecl = CE->getDirectCallee()) {
       return CalleeDecl;
+
+}
 
     // Simple detection of a call through a block.
     Expr *CEE = CE->getCallee()->IgnoreParenImpCasts();
@@ -74,29 +76,39 @@ public:
   }
 
   void VisitCallExpr(CallExpr *CE) {
-    if (Decl *D = getDeclFromCall(CE))
+    if (Decl *D = getDeclFromCall(CE)) {
       addCalledDecl(D, CE);
+
+}
     VisitChildren(CE);
   }
 
   void VisitLambdaExpr(LambdaExpr *LE) {
-    if (FunctionTemplateDecl *FTD = LE->getDependentCallOperator())
-      for (FunctionDecl *FD : FTD->specializations())
+    if (FunctionTemplateDecl *FTD = LE->getDependentCallOperator()) {
+      for (FunctionDecl *FD : FTD->specializations()) {
         G->VisitFunctionDecl(FD);
-    else if (CXXMethodDecl *MD = LE->getCallOperator())
+
+}
+    } else if (CXXMethodDecl *MD = LE->getCallOperator()) {
       G->VisitFunctionDecl(MD);
+
+}
   }
 
   void VisitCXXNewExpr(CXXNewExpr *E) {
-    if (FunctionDecl *FD = E->getOperatorNew())
+    if (FunctionDecl *FD = E->getOperatorNew()) {
       addCalledDecl(FD, E);
+
+}
     VisitChildren(E);
   }
 
   void VisitCXXConstructExpr(CXXConstructExpr *E) {
     CXXConstructorDecl *Ctor = E->getConstructor();
-    if (FunctionDecl *Def = Ctor->getDefinition())
+    if (FunctionDecl *Def = Ctor->getDefinition()) {
       addCalledDecl(Def, E);
+
+}
     VisitChildren(E);
   }
 
@@ -117,10 +129,12 @@ public:
 
       // Find the callee definition within the same translation unit.
       Decl *D = nullptr;
-      if (ME->isInstanceMessage())
+      if (ME->isInstanceMessage()) {
         D = IDecl->lookupPrivateMethod(Sel);
-      else
+      } else {
         D = IDecl->lookupPrivateClassMethod(Sel);
+
+}
       if (D) {
         addCalledDecl(D, ME);
         NumObjCCallEdges++;
@@ -129,21 +143,31 @@ public:
   }
 
   void VisitChildren(Stmt *S) {
-    for (Stmt *SubStmt : S->children())
-      if (SubStmt)
+    for (Stmt *SubStmt : S->children()) {
+      if (SubStmt) {
         this->Visit(SubStmt);
+
+}
+
+}
   }
 };
 
 } // namespace
 
 void CallGraph::addNodesForBlocks(DeclContext *D) {
-  if (BlockDecl *BD = dyn_cast<BlockDecl>(D))
+  if (BlockDecl *BD = dyn_cast<BlockDecl>(D)) {
     addNodeForDecl(BD, true);
 
-  for (auto *I : D->decls())
-    if (auto *DC = dyn_cast<DeclContext>(I))
+}
+
+  for (auto *I : D->decls()) {
+    if (auto *DC = dyn_cast<DeclContext>(I)) {
       addNodesForBlocks(DC);
+
+}
+
+}
 }
 
 CallGraph::CallGraph() {
@@ -154,18 +178,24 @@ CallGraph::~CallGraph() = default;
 
 bool CallGraph::includeInGraph(const Decl *D) {
   assert(D);
-  if (!D->hasBody())
+  if (!D->hasBody()) {
     return false;
+
+}
 
   if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
     // We skip function template definitions, as their semantics is
     // only determined when they are instantiated.
-    if (FD->isDependentContext())
+    if (FD->isDependentContext()) {
       return false;
 
+}
+
     IdentifierInfo *II = FD->getIdentifier();
-    if (II && II->getName().startswith("__inline"))
+    if (II && II->getName().startswith("__inline")) {
       return false;
+
+}
   }
 
   return true;
@@ -179,8 +209,10 @@ void CallGraph::addNodeForDecl(Decl* D, bool IsGlobal) {
 
   // Process all the calls by this function as well.
   CGBuilder builder(this, Node);
-  if (Stmt *Body = D->getBody())
+  if (Stmt *Body = D->getBody()) {
     builder.Visit(Body);
+
+}
 
   // Include C++ constructor member initializers.
   if (auto constructor = dyn_cast<CXXConstructorDecl>(D)) {
@@ -192,22 +224,30 @@ void CallGraph::addNodeForDecl(Decl* D, bool IsGlobal) {
 
 CallGraphNode *CallGraph::getNode(const Decl *F) const {
   FunctionMapTy::const_iterator I = FunctionMap.find(F);
-  if (I == FunctionMap.end()) return nullptr;
+  if (I == FunctionMap.end()) { return nullptr;
+
+}
   return I->second.get();
 }
 
 CallGraphNode *CallGraph::getOrInsertNode(Decl *F) {
-  if (F && !isa<ObjCMethodDecl>(F))
+  if (F && !isa<ObjCMethodDecl>(F)) {
     F = F->getCanonicalDecl();
 
+}
+
   std::unique_ptr<CallGraphNode> &Node = FunctionMap[F];
-  if (Node)
+  if (Node) {
     return Node.get();
+
+}
 
   Node = std::make_unique<CallGraphNode>(F);
   // Make Root node a parent of all functions to make sure all are reachable.
-  if (F)
+  if (F) {
     Root->addCallee({Node.get(), /*Call=*/nullptr});
+
+}
   return Node.get();
 }
 
@@ -222,10 +262,12 @@ void CallGraph::print(raw_ostream &OS) const {
     const CallGraphNode *N = *I;
 
     OS << "  Function: ";
-    if (N == Root)
+    if (N == Root) {
       OS << "< root >";
-    else
+    } else {
       N->print(OS);
+
+}
 
     OS << " calls: ";
     for (CallGraphNode::const_iterator CI = N->begin(),
@@ -248,8 +290,10 @@ void CallGraph::viewGraph() const {
 }
 
 void CallGraphNode::print(raw_ostream &os) const {
-  if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(FD))
+  if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(FD)) {
       return ND->printQualifiedName(os);
+
+}
   os << "< >";
 }
 
@@ -268,10 +312,12 @@ struct DOTGraphTraits<const CallGraph*> : public DefaultDOTGraphTraits {
     if (CG->getRoot() == Node) {
       return "< root >";
     }
-    if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Node->getDecl()))
+    if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Node->getDecl())) {
       return ND->getNameAsString();
-    else
+    } else {
       return "< >";
+
+}
   }
 };
 

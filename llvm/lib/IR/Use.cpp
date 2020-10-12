@@ -14,11 +14,15 @@
 namespace llvm {
 
 void Use::swap(Use &RHS) {
-  if (Val == RHS.Val)
+  if (Val == RHS.Val) {
     return;
 
-  if (Val)
+}
+
+  if (Val) {
     removeFromList();
+
+}
 
   Value *OldVal = Val;
   if (RHS.Val) {
@@ -56,8 +60,10 @@ unsigned Use::getOperandNo() const {
 Use *Use::initTags(Use *const Start, Use *Stop) {
   ptrdiff_t Done = 0;
   while (Done < 20) {
-    if (Start == Stop--)
+    if (Start == Stop--) {
       return Start;
+
+}
     static const PrevPtrTag tags[20] = {
         fullStopTag,  oneDigitTag,  stopTag,      oneDigitTag, oneDigitTag,
         stopTag,      zeroDigitTag, oneDigitTag,  oneDigitTag, stopTag,
@@ -84,10 +90,14 @@ Use *Use::initTags(Use *const Start, Use *Stop) {
 }
 
 void Use::zap(Use *Start, const Use *Stop, bool del) {
-  while (Start != Stop)
+  while (Start != Stop) {
     (--Stop)->~Use();
-  if (del)
+
+}
+  if (del) {
     ::operator delete(Start);
+
+}
 }
 
 const Use *Use::getImpliedUser() const {

@@ -58,12 +58,16 @@ static void write_unsigned_impl(raw_ostream &S, T N, size_t MinDigits,
   size_t Len = 0;
   Len = format_to_buffer(N, NumberBuffer);
 
-  if (IsNegative)
+  if (IsNegative) {
     S << '-';
 
+}
+
   if (Len < MinDigits && Style != IntegerStyle::Number) {
-    for (size_t I = Len; I < MinDigits; ++I)
+    for (size_t I = Len; I < MinDigits; ++I) {
       S << '0';
+
+}
   }
 
   if (Style == IntegerStyle::Number) {
@@ -77,11 +81,13 @@ template <typename T>
 static void write_unsigned(raw_ostream &S, T N, size_t MinDigits,
                            IntegerStyle Style, bool IsNegative = false) {
   // Output using 32-bit div/mod if possible.
-  if (N == static_cast<uint32_t>(N))
+  if (N == static_cast<uint32_t>(N)) {
     write_unsigned_impl(S, static_cast<uint32_t>(N), MinDigits, Style,
                         IsNegative);
-  else
+  } else {
     write_unsigned_impl(S, N, MinDigits, Style, IsNegative);
+
+}
 }
 
 template <typename T>
@@ -147,8 +153,10 @@ void llvm::write_hex(raw_ostream &S, uint64_t N, HexPrintStyle Style,
 
   char NumberBuffer[kMaxWidth];
   ::memset(NumberBuffer, '0', llvm::array_lengthof(NumberBuffer));
-  if (Prefix)
+  if (Prefix) {
     NumberBuffer[1] = 'x';
+
+}
   char *EndPtr = NumberBuffer + NumChars;
   char *CurPtr = EndPtr;
   while (N) {
@@ -173,12 +181,14 @@ void llvm::write_double(raw_ostream &S, double N, FloatStyle Style,
   }
 
   char Letter;
-  if (Style == FloatStyle::Exponent)
+  if (Style == FloatStyle::Exponent) {
     Letter = 'e';
-  else if (Style == FloatStyle::ExponentUpper)
+  } else if (Style == FloatStyle::ExponentUpper) {
     Letter = 'E';
-  else
+  } else {
     Letter = 'f';
+
+}
 
   SmallString<8> Spec;
   llvm::raw_svector_ostream Out(Spec);
@@ -236,14 +246,18 @@ void llvm::write_double(raw_ostream &S, double N, FloatStyle Style,
 #endif
   }
 
-  if (Style == FloatStyle::Percent)
+  if (Style == FloatStyle::Percent) {
     N *= 100.0;
+
+}
 
   char Buf[32];
   format(Spec.c_str(), N).snprint(Buf, sizeof(Buf));
   S << Buf;
-  if (Style == FloatStyle::Percent)
+  if (Style == FloatStyle::Percent) {
     S << '%';
+
+}
 }
 
 bool llvm::isPrefixedHexStyle(HexPrintStyle S) {

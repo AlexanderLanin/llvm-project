@@ -36,8 +36,10 @@ DebugStringTableSubsectionRef::getString(uint32_t Offset) const {
   BinaryStreamReader Reader(Stream);
   Reader.setOffset(Offset);
   StringRef Result;
-  if (auto EC = Reader.readCString(Result))
+  if (auto EC = Reader.readCString(Result)) {
     return std::move(EC);
+
+}
   return Result;
 }
 
@@ -66,15 +68,19 @@ Error DebugStringTableSubsection::commit(BinaryStreamWriter &Writer) const {
   uint32_t End = Begin + StringSize;
 
   // Write a null string at the beginning.
-  if (auto EC = Writer.writeCString(StringRef()))
+  if (auto EC = Writer.writeCString(StringRef())) {
     return EC;
+
+}
 
   for (auto &Pair : StringToId) {
     StringRef S = Pair.getKey();
     uint32_t Offset = Begin + Pair.getValue();
     Writer.setOffset(Offset);
-    if (auto EC = Writer.writeCString(S))
+    if (auto EC = Writer.writeCString(S)) {
       return EC;
+
+}
     assert(Writer.getOffset() <= End);
   }
 
@@ -88,8 +94,10 @@ uint32_t DebugStringTableSubsection::size() const { return StringToId.size(); }
 std::vector<uint32_t> DebugStringTableSubsection::sortedIds() const {
   std::vector<uint32_t> Result;
   Result.reserve(IdToString.size());
-  for (const auto &Entry : IdToString)
+  for (const auto &Entry : IdToString) {
     Result.push_back(Entry.first);
+
+}
   llvm::sort(Result);
   return Result;
 }

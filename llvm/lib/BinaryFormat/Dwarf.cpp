@@ -678,8 +678,10 @@ Optional<uint8_t> llvm::dwarf::getFixedFormByteSize(dwarf::Form Form,
                                                     FormParams Params) {
   switch (Form) {
   case DW_FORM_addr:
-    if (Params)
+    if (Params) {
       return Params.AddrSize;
+
+}
     return None;
 
   case DW_FORM_block:          // ULEB128 length L followed by L bytes.
@@ -701,8 +703,10 @@ Optional<uint8_t> llvm::dwarf::getFixedFormByteSize(dwarf::Form Form,
     return None;
 
   case DW_FORM_ref_addr:
-    if (Params)
+    if (Params) {
       return Params.getRefAddrByteSize();
+
+}
     return None;
 
   case DW_FORM_flag:
@@ -734,8 +738,10 @@ Optional<uint8_t> llvm::dwarf::getFixedFormByteSize(dwarf::Form Form,
   case DW_FORM_line_strp:
   case DW_FORM_sec_offset:
   case DW_FORM_strp_sup:
-    if (Params)
+    if (Params) {
       return Params.getDwarfOffsetByteSize();
+
+}
     return None;
 
   case DW_FORM_data8:

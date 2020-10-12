@@ -49,15 +49,21 @@ namespace {
 // FIXME: This is shared with define inline, move them to a common header once
 // we have a place for such.
 const FunctionDecl *getSelectedFunction(const SelectionTree::Node *SelNode) {
-  if (!SelNode)
+  if (!SelNode) {
     return nullptr;
+
+}
   const ast_type_traits::DynTypedNode &AstNode = SelNode->ASTNode;
-  if (const FunctionDecl *FD = AstNode.get<FunctionDecl>())
+  if (const FunctionDecl *FD = AstNode.get<FunctionDecl>()) {
     return FD;
+
+}
   if (AstNode.get<CompoundStmt>() &&
       SelNode->Selected == SelectionTree::Complete) {
-    if (const SelectionTree::Node *P = SelNode->Parent)
+    if (const SelectionTree::Node *P = SelNode->Parent) {
       return P->ASTNode.get<FunctionDecl>();
+
+}
   }
   return nullptr;
 }
@@ -66,8 +72,10 @@ llvm::Optional<Path> getSourceFile(llvm::StringRef FileName,
                                    const Tweak::Selection &Sel) {
   if (auto Source = getCorrespondingHeaderOrSource(
           std::string(FileName),
-          &Sel.AST->getSourceManager().getFileManager().getVirtualFileSystem()))
+          &Sel.AST->getSourceManager().getFileManager().getVirtualFileSystem())) {
     return *Source;
+
+}
   return getCorrespondingHeaderOrSource(std::string(FileName), *Sel.AST,
                                         Sel.Index);
 }
@@ -82,8 +90,10 @@ findContextForNS(llvm::StringRef TargetNS, const DeclContext *CurContext) {
   CurContext = CurContext->getEnclosingNamespaceContext();
   // If TargetNS is empty, it means global ns, which is translation unit.
   if (TargetNS.empty()) {
-    while (!CurContext->isTranslationUnit())
+    while (!CurContext->isTranslationUnit()) {
       CurContext = CurContext->getParent();
+
+}
     return CurContext;
   }
   // Otherwise we need to drop any trailing namespaces from CurContext until
@@ -97,8 +107,10 @@ findContextForNS(llvm::StringRef TargetNS, const DeclContext *CurContext) {
   llvm::StringRef CurrentContextNS(TargetContextNS);
   // If TargetNS is not a prefix of CurrentContext, there's no way to reach
   // it.
-  if (!CurrentContextNS.startswith(TargetNS))
+  if (!CurrentContextNS.startswith(TargetNS)) {
     return llvm::None;
+
+}
 
   while (CurrentContextNS != TargetNS) {
     CurContext = CurContext->getParent();
@@ -119,12 +131,16 @@ getFunctionSourceAfterReplacements(const FunctionDecl *FD,
   const auto &SM = FD->getASTContext().getSourceManager();
   auto OrigFuncRange = toHalfOpenFileRange(
       SM, FD->getASTContext().getLangOpts(), FD->getSourceRange());
-  if (!OrigFuncRange)
+  if (!OrigFuncRange) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "Couldn't get range for function.");
+
+}
   // Include template parameter list.
-  if (auto *FTD = FD->getDescribedFunctionTemplate())
+  if (auto *FTD = FD->getDescribedFunctionTemplate()) {
     OrigFuncRange->setBegin(FTD->getBeginLoc());
+
+}
 
   // Get new begin and end positions for the qualified function definition.
   unsigned FuncBegin = SM.getFileOffset(OrigFuncRange->getBegin());
@@ -134,8 +150,10 @@ getFunctionSourceAfterReplacements(const FunctionDecl *FD,
   // Trim the result to function definition.
   auto QualifiedFunc = tooling::applyAllReplacements(
       SM.getBufferData(SM.getMainFileID()), Replacements);
-  if (!QualifiedFunc)
+  if (!QualifiedFunc) {
     return QualifiedFunc.takeError();
+
+}
   return QualifiedFunc->substr(FuncBegin, FuncEnd - FuncBegin + 1);
 }
 
@@ -151,10 +169,12 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
   auto &AST = FD->getASTContext();
   auto &SM = AST.getSourceManager();
   auto TargetContext = findContextForNS(TargetNamespace, FD->getDeclContext());
-  if (!TargetContext)
+  if (!TargetContext) {
     return llvm::createStringError(
         llvm::inconvertibleErrorCode(),
         "define outline: couldn't find a context for target");
+
+}
 
   llvm::Error Errors = llvm::Error::success();
   tooling::Replacements DeclarationCleanups;
@@ -165,12 +185,16 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
     // It is enough to qualify the first qualifier, so skip references with a
     // qualifier. Also we can't do much if there are no targets or name is
     // inside a macro body.
-    if (Ref.Qualifier || Ref.Targets.empty() || Ref.NameLoc.isMacroID())
+    if (Ref.Qualifier || Ref.Targets.empty() || Ref.NameLoc.isMacroID()) {
       return;
+
+}
     // Only qualify return type and function name.
     if (Ref.NameLoc != FD->getReturnTypeSourceRange().getBegin() &&
-        Ref.NameLoc != FD->getLocation())
+        Ref.NameLoc != FD->getLocation()) {
       return;
+
+}
 
     for (const NamedDecl *ND : Ref.Targets) {
       if (ND->getDeclContext() != Ref.Targets.front()->getDeclContext()) {
@@ -183,8 +207,10 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
     const std::string Qualifier = getQualification(
         AST, *TargetContext, SM.getLocForStartOfFile(SM.getMainFileID()), ND);
     if (auto Err = DeclarationCleanups.add(
-            tooling::Replacement(SM, Ref.NameLoc, 0, Qualifier)))
+            tooling::Replacement(SM, Ref.NameLoc, 0, Qualifier))) {
       Errors = llvm::joinErrors(std::move(Errors), std::move(Err));
+
+}
   });
 
   // Get rid of default arguments, since they should not be specified in
@@ -207,14 +233,18 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
       assert(Tok != Tokens.rend());
       DelRange.setBegin(Tok->location());
       if (auto Err =
-              DeclarationCleanups.add(tooling::Replacement(SM, DelRange, "")))
+              DeclarationCleanups.add(tooling::Replacement(SM, DelRange, ""))) {
         Errors = llvm::joinErrors(std::move(Errors), std::move(Err));
+
+}
     }
   }
 
   auto DelAttr = [&](const Attr *A) {
-    if (!A)
+    if (!A) {
       return;
+
+}
     auto AttrTokens =
         TokBuf.spelledForExpanded(TokBuf.expandedTokens(A->getRange()));
     assert(A->getLocation().isValid());
@@ -232,8 +262,10 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
         syntax::Token::range(SM, AttrTokens->front(), AttrTokens->back())
             .toCharRange(SM);
     if (auto Err =
-            DeclarationCleanups.add(tooling::Replacement(SM, DelRange, "")))
+            DeclarationCleanups.add(tooling::Replacement(SM, DelRange, ""))) {
       Errors = llvm::joinErrors(std::move(Errors), std::move(Err));
+
+}
   };
 
   DelAttr(FD->getAttr<OverrideAttr>());
@@ -246,8 +278,10 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
     // Clang allows duplicating virtual specifiers so check for multiple
     // occurances.
     for (const auto &Tok : TokBuf.expandedTokens(SpecRange)) {
-      if (Tok.kind() != tok::kw_virtual)
+      if (Tok.kind() != tok::kw_virtual) {
         continue;
+
+}
       auto Spelling = TokBuf.spelledForExpanded(llvm::makeArrayRef(Tok));
       if (!Spelling) {
         HasErrors = true;
@@ -258,8 +292,10 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
           syntax::Token::range(SM, Spelling->front(), Spelling->back())
               .toCharRange(SM);
       if (auto Err =
-              DeclarationCleanups.add(tooling::Replacement(SM, DelRange, "")))
+              DeclarationCleanups.add(tooling::Replacement(SM, DelRange, ""))) {
         Errors = llvm::joinErrors(std::move(Errors), std::move(Err));
+
+}
     }
     if (HasErrors) {
       Errors = llvm::joinErrors(
@@ -270,8 +306,10 @@ getFunctionSourceCode(const FunctionDecl *FD, llvm::StringRef TargetNamespace,
     }
   }
 
-  if (Errors)
+  if (Errors) {
     return std::move(Errors);
+
+}
   return getFunctionSourceAfterReplacements(FD, DeclarationCleanups);
 }
 
@@ -295,8 +333,10 @@ llvm::Expected<InsertionPoint> getInsertionPoint(llvm::StringRef Contents,
   // getEligibleRegions only knows about namespace begin/end events so we
   // can't match function start/end positions yet.
   auto Offset = positionToOffset(Contents, Region.EligiblePoints.back());
-  if (!Offset)
+  if (!Offset) {
     return Offset.takeError();
+
+}
   return InsertionPoint{Region.EnclosingNamespace, *Offset};
 }
 
@@ -314,11 +354,15 @@ SourceRange getDeletionRange(const FunctionDecl *FD,
     // Find the first initializer.
     for (const auto *CInit : CD->inits()) {
       // We don't care about in-class initializers.
-      if (CInit->isInClassMemberInitializer())
+      if (CInit->isInClassMemberInitializer()) {
         continue;
+
+}
       if (InitStart.isInvalid() ||
-          SM.isBeforeInTranslationUnit(CInit->getSourceLocation(), InitStart))
+          SM.isBeforeInTranslationUnit(CInit->getSourceLocation(), InitStart)) {
         InitStart = CInit->getSourceLocation();
+
+}
     }
     if (InitStart.isValid()) {
       auto Toks = TokBuf.expandedTokens(CD->getSourceRange());
@@ -370,20 +414,26 @@ public:
     // FIXME: We might want to consider moving method definitions below class
     // definition even if we are inside a source file.
     if (!isHeaderFile(Sel.AST->getSourceManager().getFilename(Sel.Cursor),
-                      Sel.AST->getLangOpts()))
+                      Sel.AST->getLangOpts())) {
       return false;
+
+}
 
     Source = getSelectedFunction(Sel.ASTSelection.commonAncestor());
     // Bail out if the selection is not a in-line function definition.
     if (!Source || !Source->doesThisDeclarationHaveABody() ||
-        Source->isOutOfLine())
+        Source->isOutOfLine()) {
       return false;
+
+}
 
     // Bail out in templated classes, as it is hard to spell the class name, i.e
     // if the template parameter is unnamed.
     if (auto *MD = llvm::dyn_cast<CXXMethodDecl>(Source)) {
-      if (MD->getParent()->isTemplated())
+      if (MD->getParent()->isTemplated()) {
         return false;
+
+}
     }
 
     // Note that we don't check whether an implementation file exists or not in
@@ -396,45 +446,57 @@ public:
     const SourceManager &SM = Sel.AST->getSourceManager();
     auto MainFileName =
         getCanonicalPath(SM.getFileEntryForID(SM.getMainFileID()), SM);
-    if (!MainFileName)
+    if (!MainFileName) {
       return llvm::createStringError(
           llvm::inconvertibleErrorCode(),
           "Couldn't get absolute path for mainfile.");
 
+}
+
     auto CCFile = getSourceFile(*MainFileName, Sel);
-    if (!CCFile)
+    if (!CCFile) {
       return llvm::createStringError(
           llvm::inconvertibleErrorCode(),
           "Couldn't find a suitable implementation file.");
+
+}
 
     auto &FS =
         Sel.AST->getSourceManager().getFileManager().getVirtualFileSystem();
     auto Buffer = FS.getBufferForFile(*CCFile);
     // FIXME: Maybe we should consider creating the implementation file if it
     // doesn't exist?
-    if (!Buffer)
+    if (!Buffer) {
       return llvm::createStringError(Buffer.getError(),
                                      Buffer.getError().message());
+
+}
     auto Contents = Buffer->get()->getBuffer();
     auto LangOpts = format::getFormattingLangOpts(
         getFormatStyleForFile(*CCFile, Contents, &FS));
     auto InsertionPoint = getInsertionPoint(
         Contents, Source->getQualifiedNameAsString(), LangOpts);
-    if (!InsertionPoint)
+    if (!InsertionPoint) {
       return InsertionPoint.takeError();
+
+}
 
     auto FuncDef = getFunctionSourceCode(
         Source, InsertionPoint->EnclosingNamespace, Sel.AST->getTokens());
-    if (!FuncDef)
+    if (!FuncDef) {
       return FuncDef.takeError();
+
+}
 
     SourceManagerForFile SMFF(*CCFile, Contents);
     const tooling::Replacement InsertFunctionDef(
         *CCFile, InsertionPoint->Offset, 0, *FuncDef);
     auto Effect = Effect::mainFileEdit(
         SMFF.get(), tooling::Replacements(InsertFunctionDef));
-    if (!Effect)
+    if (!Effect) {
       return Effect.takeError();
+
+}
 
     // FIXME: We should also get rid of inline qualifier.
     const tooling::Replacement DeleteFuncBody(
@@ -445,8 +507,10 @@ public:
         ";");
     auto HeaderFE = Effect::fileEdit(SM, SM.getMainFileID(),
                                      tooling::Replacements(DeleteFuncBody));
-    if (!HeaderFE)
+    if (!HeaderFE) {
       return HeaderFE.takeError();
+
+}
 
     Effect->ApplyEdits.try_emplace(HeaderFE->first,
                                    std::move(HeaderFE->second));

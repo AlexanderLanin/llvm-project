@@ -265,15 +265,23 @@ StackDuration mergeStackDuration(const StackDuration &Left,
   Data.IntermediateDurations.reserve(Left.IntermediateDurations.size() +
                                      Right.IntermediateDurations.size());
   // Aggregate the durations.
-  for (auto duration : Left.TerminalDurations)
-    Data.TerminalDurations.push_back(duration);
-  for (auto duration : Right.TerminalDurations)
+  for (auto duration : Left.TerminalDurations) {
     Data.TerminalDurations.push_back(duration);
 
-  for (auto duration : Left.IntermediateDurations)
+}
+  for (auto duration : Right.TerminalDurations) {
+    Data.TerminalDurations.push_back(duration);
+
+}
+
+  for (auto duration : Left.IntermediateDurations) {
     Data.IntermediateDurations.push_back(duration);
-  for (auto duration : Right.IntermediateDurations)
+
+}
+  for (auto duration : Right.IntermediateDurations) {
     Data.IntermediateDurations.push_back(duration);
+
+}
   return Data;
 }
 
@@ -332,8 +340,10 @@ class StackTrie {
     NodeStore.push_front(StackTrieNode{FuncId, Parent, {}, {{}, {}}});
     auto I = NodeStore.begin();
     auto *Node = &*I;
-    if (!Parent)
+    if (!Parent) {
       Roots[ThreadId].push_back(Node);
+
+}
     return Node;
   }
 
@@ -425,16 +435,20 @@ public:
         ++FunctionEntryMatch;
       }
       auto I = FunctionEntryMatch.base();
-      for (auto &E : make_range(I, TS.end() - 1))
+      for (auto &E : make_range(I, TS.end() - 1)) {
         E.first->ExtraData.IntermediateDurations.push_back(
             std::max(E.second, R.TSC) - std::min(E.second, R.TSC));
+
+}
       auto &Deepest = TS.back();
-      if (wasLastRecordExit)
+      if (wasLastRecordExit) {
         Deepest.first->ExtraData.IntermediateDurations.push_back(
             std::max(Deepest.second, R.TSC) - std::min(Deepest.second, R.TSC));
-      else
+      } else {
         Deepest.first->ExtraData.TerminalDurations.push_back(
             std::max(Deepest.second, R.TSC) - std::min(Deepest.second, R.TSC));
+
+}
       TS.erase(I, TS.end());
       return status;
     }
@@ -449,8 +463,10 @@ public:
     // Traverse the pointers up to the parent, noting the sums, then print
     // in reverse order (callers at top, callees down bottom).
     SmallVector<const StackTrieNode *, 8> CurrentStack;
-    for (auto *F = Top; F != nullptr; F = F->Parent)
+    for (auto *F = Top; F != nullptr; F = F->Parent) {
       CurrentStack.push_back(F);
+
+}
     int Level = 0;
     OS << formatv("{0,-5} {1,-60} {2,+12} {3,+16}\n", "lvl", "function",
                   "count", "sum");
@@ -509,8 +525,10 @@ public:
     for (const auto &RootNodeRange :
          make_range(map_iterator(Roots.begin(), MapValueFn),
                     map_iterator(Roots.end(), MapValueFn))) {
-      for (auto *RootNode : RootNodeRange)
+      for (auto *RootNode : RootNodeRange) {
         RootValues.push_back(RootNode);
+
+}
     }
 
     print(OS, FN, RootValues);
@@ -568,8 +586,10 @@ public:
       while (!S.empty()) {
         auto *Top = S.pop_back_val();
         printSingleStack<AggType>(OS, FN, ReportThread, ThreadId, Top);
-        for (const auto *C : Top->Callees)
+        for (const auto *C : Top->Callees) {
           S.push_back(C);
+
+}
       }
     }
   }
@@ -583,12 +603,16 @@ public:
   void printSingleStack(raw_ostream &OS, FuncIdConversionHelper &Converter,
                         bool ReportThread, uint32_t ThreadId,
                         const StackTrieNode *Node) {
-    if (ReportThread)
+    if (ReportThread) {
       OS << "thread_" << ThreadId << ";";
+
+}
     SmallVector<const StackTrieNode *, 5> lineage{};
     lineage.push_back(Node);
-    while (lineage.back()->Parent != nullptr)
+    while (lineage.back()->Parent != nullptr) {
       lineage.push_back(lineage.back()->Parent);
+
+}
     while (!lineage.empty()) {
       OS << Converter.SymbolOrNumber(lineage.back()->FuncId) << ";";
       lineage.pop_back();
@@ -632,8 +656,10 @@ public:
             auto E = std::make_pair(Top, TopSum);
             TopStacksBySum.insert(
                 llvm::lower_bound(TopStacksBySum, E, greater_second), E);
-            if (TopStacksBySum.size() == 11)
+            if (TopStacksBySum.size() == 11) {
               TopStacksBySum.pop_back();
+
+}
           }
           {
             auto E =
@@ -642,12 +668,16 @@ public:
                                                      TopStacksByCount.end(), E,
                                                      greater_second),
                                     E);
-            if (TopStacksByCount.size() == 11)
+            if (TopStacksByCount.size() == 11) {
               TopStacksByCount.pop_back();
+
+}
           }
         }
-        for (const auto *C : Top->Callees)
+        for (const auto *C : Top->Callees) {
           S.push_back(C);
+
+}
       }
     }
 
@@ -690,31 +720,39 @@ static CommandRegistration Unused(&Stack, []() -> Error {
   InstrumentationMap Map;
   if (!StacksInstrMap.empty()) {
     auto InstrumentationMapOrError = loadInstrumentationMap(StacksInstrMap);
-    if (!InstrumentationMapOrError)
+    if (!InstrumentationMapOrError) {
       return joinErrors(
           make_error<StringError>(
               Twine("Cannot open instrumentation map: ") + StacksInstrMap,
               std::make_error_code(std::errc::invalid_argument)),
           InstrumentationMapOrError.takeError());
+
+}
     Map = std::move(*InstrumentationMapOrError);
   }
 
-  if (SeparateThreadStacks && AggregateThreads)
+  if (SeparateThreadStacks && AggregateThreads) {
     return make_error<StringError>(
         Twine("Can't specify options for per thread reporting and reporting "
               "that aggregates threads."),
         std::make_error_code(std::errc::invalid_argument));
 
-  if (!DumpAllStacks && StacksOutputFormat != HUMAN)
+}
+
+  if (!DumpAllStacks && StacksOutputFormat != HUMAN) {
     return make_error<StringError>(
         Twine("Can't specify a non-human format without -all-stacks."),
         std::make_error_code(std::errc::invalid_argument));
 
-  if (DumpAllStacks && StacksOutputFormat == HUMAN)
+}
+
+  if (DumpAllStacks && StacksOutputFormat == HUMAN) {
     return make_error<StringError>(
         Twine("You must specify a non-human format when reporting with "
               "-all-stacks."),
         std::make_error_code(std::errc::invalid_argument));
+
+}
 
   symbolize::LLVMSymbolizer Symbolizer;
   FuncIdConversionHelper FuncIdHelper(StacksInstrMap, Symbolizer,
@@ -724,12 +762,14 @@ static CommandRegistration Unused(&Stack, []() -> Error {
   for (const auto &Filename : StackInputs) {
     auto TraceOrErr = loadTraceFile(Filename);
     if (!TraceOrErr) {
-      if (!StackKeepGoing)
+      if (!StackKeepGoing) {
         return joinErrors(
             make_error<StringError>(
                 Twine("Failed loading input file '") + Filename + "'",
                 std::make_error_code(std::errc::invalid_argument)),
             TraceOrErr.takeError());
+
+}
       logAllUnhandledErrors(TraceOrErr.takeError(), errs());
       continue;
     }
@@ -739,10 +779,12 @@ static CommandRegistration Unused(&Stack, []() -> Error {
     for (const auto &Record : T) {
       auto error = ST.accountRecord(Record, &AccountRecordState);
       if (error != StackTrie::AccountRecordStatus::OK) {
-        if (!StackKeepGoing)
+        if (!StackKeepGoing) {
           return make_error<StringError>(
               CreateErrorMessage(error, Record, FuncIdHelper),
               make_error_code(errc::illegal_byte_sequence));
+
+}
         errs() << CreateErrorMessage(error, Record, FuncIdHelper);
       }
     }

@@ -41,15 +41,21 @@ char StripGCRelocates::ID = 0;
 
 bool StripGCRelocates::runOnFunction(Function &F) {
   // Nothing to do for declarations.
-  if (F.isDeclaration())
+  if (F.isDeclaration()) {
     return false;
+
+}
   SmallVector<GCRelocateInst *, 20> GCRelocates;
   // TODO: We currently do not handle gc.relocates that are in landing pads,
   // i.e. not bound to a single statepoint token.
   for (Instruction &I : instructions(F)) {
-    if (auto *GCR = dyn_cast<GCRelocateInst>(&I))
-      if (isStatepoint(GCR->getOperand(0)))
+    if (auto *GCR = dyn_cast<GCRelocateInst>(&I)) {
+      if (isStatepoint(GCR->getOperand(0))) {
         GCRelocates.push_back(GCR);
+
+}
+
+}
   }
   // All gc.relocates are bound to a single statepoint token. The order of
   // visiting gc.relocates for deletion does not matter.
@@ -59,8 +65,10 @@ bool StripGCRelocates::runOnFunction(Function &F) {
 
     // All gc_relocates are i8 addrspace(1)* typed, we need a bitcast from i8
     // addrspace(1)* to the type of the OrigPtr, if the are not the same.
-    if (GCRel->getType() != OrigPtr->getType())
+    if (GCRel->getType() != OrigPtr->getType()) {
       ReplaceGCRel = new BitCastInst(OrigPtr, GCRel->getType(), "cast", GCRel);
+
+}
 
     // Replace all uses of gc.relocate and delete the gc.relocate
     // There maybe unncessary bitcasts back to the OrigPtr type, an instcombine

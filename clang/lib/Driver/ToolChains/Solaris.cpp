@@ -37,8 +37,10 @@ void solaris::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
@@ -82,9 +84,11 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (!Args.hasArg(options::OPT_shared))
+    if (!Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back(
           Args.MakeArgString(getToolChain().GetFilePath("crt1.o")));
+
+}
 
     CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath("crti.o")));
 
@@ -93,20 +97,26 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     const LangStandard *LangStd = nullptr;
     if (Std) {
       HaveAnsi = Std->getOption().matches(options::OPT_ansi);
-      if (!HaveAnsi)
+      if (!HaveAnsi) {
         LangStd = LangStandard::getLangStandardForName(Std->getValue());
+
+}
     }
 
     const char *values_X = "values-Xa.o";
     // Use values-Xc.o for -ansi, -std=c*, -std=iso9899:199409.
-    if (HaveAnsi || (LangStd && !LangStd->isGNUMode()))
+    if (HaveAnsi || (LangStd && !LangStd->isGNUMode())) {
       values_X = "values-Xc.o";
+
+}
     CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath(values_X)));
 
     const char *values_xpg = "values-xpg6.o";
     // Use values-xpg4.o for -std=c90, -std=gnu90, -std=iso9899:199409.
-    if (LangStd && LangStd->getLanguage() == Language::C && !LangStd->isC99())
+    if (LangStd && LangStd->getLanguage() == Language::C && !LangStd->isC99()) {
       values_xpg = "values-xpg4.o";
+
+}
     CmdArgs.push_back(
         Args.MakeArgString(getToolChain().GetFilePath(values_xpg)));
     CmdArgs.push_back(
@@ -122,8 +132,10 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   AddLinkerInputs(getToolChain(), Inputs, Args, CmdArgs, JA);
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-    if (getToolChain().ShouldLinkCXXStdlib(Args))
+    if (getToolChain().ShouldLinkCXXStdlib(Args)) {
       getToolChain().AddCXXStdlibLibArgs(Args, CmdArgs);
+
+}
     if (Args.hasArg(options::OPT_fstack_protector) ||
         Args.hasArg(options::OPT_fstack_protector_strong) ||
         Args.hasArg(options::OPT_fstack_protector_all)) {
@@ -137,8 +149,10 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("-lgcc");
       CmdArgs.push_back("-lm");
     }
-    if (NeedsSanitizerDeps)
+    if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(getToolChain(), CmdArgs);
+
+}
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
@@ -190,8 +204,10 @@ Solaris::Solaris(const Driver &D, const llvm::Triple &Triple,
 
   // If we are currently running Clang inside of the requested system root,
   // add its parent library path to those searched.
-  if (StringRef(D.Dir).startswith(D.SysRoot))
+  if (StringRef(D.Dir).startswith(D.SysRoot)) {
     addPathIfExists(D, D.Dir + "/../lib", Paths);
+
+}
 
   addPathIfExists(D, D.SysRoot + "/usr/lib" + LibSuffix, Paths);
 }
@@ -206,8 +222,10 @@ SanitizerMask Solaris::getSupportedSanitizers() const {
     Res |= SanitizerKind::PointerCompare;
     Res |= SanitizerKind::PointerSubtract;
   }
-  if (IsX86 || IsX86_64)
+  if (IsX86 || IsX86_64) {
     Res |= SanitizerKind::Function;
+
+}
   Res |= SanitizerKind::Vptr;
   return Res;
 }
@@ -222,11 +240,15 @@ void Solaris::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                         ArgStringList &CC1Args) const {
   const Driver &D = getDriver();
 
-  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     return;
 
-  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
+}
+
+  if (!DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     addSystemInclude(DriverArgs, CC1Args, D.SysRoot + "/usr/local/include");
+
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> P(D.ResourceDir);
@@ -234,8 +256,10 @@ void Solaris::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, P);
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   // Check for configure-time C include directories.
   StringRef CIncludeDirs(C_INCLUDE_DIRS);
@@ -255,9 +279,11 @@ void Solaris::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     const MultilibSet::IncludeDirsFunc &Callback =
         Multilibs.includeDirsCallback();
     if (Callback) {
-      for (const auto &Path : Callback(GCCInstallation.getMultilib()))
+      for (const auto &Path : Callback(GCCInstallation.getMultilib())) {
         addExternCSystemIncludeIfExists(
             DriverArgs, CC1Args, GCCInstallation.getInstallPath() + Path);
+
+}
     }
   }
 
@@ -269,8 +295,10 @@ void Solaris::addLibStdCxxIncludePaths(
     llvm::opt::ArgStringList &CC1Args) const {
   // We need a detected GCC installation on Solaris (similar to Linux)
   // to provide libstdc++'s headers.
-  if (!GCCInstallation.isValid())
+  if (!GCCInstallation.isValid()) {
     return;
+
+}
 
   // By default, look for the C++ headers in an include directory adjacent to
   // the lib directory of the GCC installation.

@@ -77,8 +77,10 @@ void HexagonTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__HVX__");
     Builder.defineMacro("__HVX_ARCH__", HVXVersion);
     Builder.defineMacro("__HVX_LENGTH__", "128");
-    if (DefineHvxDbl)
+    if (DefineHvxDbl) {
       Builder.defineMacro("__HVXDBL__");
+
+}
   }
 
   if (hasFeature("audio")) {
@@ -92,8 +94,10 @@ void HexagonTargetInfo::getTargetDefines(const LangOptions &Opts,
 bool HexagonTargetInfo::initFeatureMap(
     llvm::StringMap<bool> &Features, DiagnosticsEngine &Diags, StringRef CPU,
     const std::vector<std::string> &FeaturesVec) const {
-  if (isTinyCore())
+  if (isTinyCore()) {
     Features["audio"] = true;
+
+}
 
   StringRef CPUFeature = CPU;
   CPUFeature.consume_front("hexagon");
@@ -108,21 +112,23 @@ bool HexagonTargetInfo::initFeatureMap(
 bool HexagonTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
                                              DiagnosticsEngine &Diags) {
   for (auto &F : Features) {
-    if (F == "+hvx-length64b")
+    if (F == "+hvx-length64b") {
       HasHVX = HasHVX64B = true;
-    else if (F == "+hvx-length128b")
+    } else if (F == "+hvx-length128b") {
       HasHVX = HasHVX128B = true;
-    else if (F.find("+hvxv") != std::string::npos) {
+    } else if (F.find("+hvxv") != std::string::npos) {
       HasHVX = true;
       HVXVersion = F.substr(std::string("+hvxv").length());
-    } else if (F == "-hvx")
+    } else if (F == "-hvx") {
       HasHVX = HasHVX64B = HasHVX128B = false;
-    else if (F == "+long-calls")
+    } else if (F == "+long-calls") {
       UseLongCalls = true;
-    else if (F == "-long-calls")
+    } else if (F == "-long-calls") {
       UseLongCalls = false;
-    else if (F == "+audio")
+    } else if (F == "+audio") {
       HasAudio = true;
+
+}
   }
   return true;
 }
@@ -164,8 +170,10 @@ const Builtin::Info HexagonTargetInfo::BuiltinInfo[] = {
 
 bool HexagonTargetInfo::hasFeature(StringRef Feature) const {
   std::string VS = "hvxv" + HVXVersion;
-  if (Feature == VS)
+  if (Feature == VS) {
     return true;
+
+}
 
   return llvm::StringSwitch<bool>(Feature)
       .Case("hexagon", true)
@@ -192,15 +200,19 @@ static constexpr CPUSuffix Suffixes[] = {
 const char *HexagonTargetInfo::getHexagonCPUSuffix(StringRef Name) {
   const CPUSuffix *Item = llvm::find_if(
       Suffixes, [Name](const CPUSuffix &S) { return S.Name == Name; });
-  if (Item == std::end(Suffixes))
+  if (Item == std::end(Suffixes)) {
     return nullptr;
+
+}
   return Item->Suffix.data();
 }
 
 void HexagonTargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  for (const CPUSuffix &Suffix : Suffixes)
+  for (const CPUSuffix &Suffix : Suffixes) {
     Values.push_back(Suffix.Name);
+
+}
 }
 
 ArrayRef<Builtin::Info> HexagonTargetInfo::getTargetBuiltins() const {

@@ -42,8 +42,10 @@ void tools::PS4cpu::addProfileRTArgs(const ToolChain &TC, const ArgList &Args,
        Args.hasFlag(options::OPT_fcs_profile_generate_EQ,
                     options::OPT_fno_profile_generate, false) ||
        Args.hasArg(options::OPT_fcreate_profile) ||
-       Args.hasArg(options::OPT_coverage)))
+       Args.hasArg(options::OPT_coverage))) {
     CmdArgs.push_back("--dependent-lib=libclang_rt.profile-x86_64.a");
+
+}
 }
 
 void tools::PS4cpu::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
@@ -82,10 +84,14 @@ static void AddPS4SanitizerArgs(const ToolChain &TC, ArgStringList &CmdArgs) {
 void tools::PS4cpu::addSanitizerArgs(const ToolChain &TC,
                                      ArgStringList &CmdArgs) {
   const SanitizerArgs &SanArgs = TC.getSanitizerArgs();
-  if (SanArgs.needsUbsanRt())
+  if (SanArgs.needsUbsanRt()) {
     CmdArgs.push_back("--dependent-lib=libSceDbgUBSanitizer_stub_weak.a");
-  if (SanArgs.needsAsanRt())
+
+}
+  if (SanArgs.needsAsanRt()) {
     CmdArgs.push_back("--dependent-lib=libSceDbgAddressSanitizer_stub_weak.a");
+
+}
 }
 
 static void ConstructPS4LinkJob(const Tool &T, Compilation &C,
@@ -106,16 +112,24 @@ static void ConstructPS4LinkJob(const Tool &T, Compilation &C,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
 
-  if (Args.hasArg(options::OPT_pie))
+}
+
+  if (Args.hasArg(options::OPT_pie)) {
     CmdArgs.push_back("-pie");
 
-  if (Args.hasArg(options::OPT_rdynamic))
+}
+
+  if (Args.hasArg(options::OPT_rdynamic)) {
     CmdArgs.push_back("-export-dynamic");
-  if (Args.hasArg(options::OPT_shared))
+
+}
+  if (Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("--oformat=so");
+
+}
 
   if (Output.isFilename()) {
     CmdArgs.push_back("-o");
@@ -124,8 +138,10 @@ static void ConstructPS4LinkJob(const Tool &T, Compilation &C,
     assert(Output.isNothing() && "Invalid output.");
   }
 
-  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs))
+  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     AddPS4SanitizerArgs(ToolChain, CmdArgs);
+
+}
 
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   Args.AddAllArgs(CmdArgs, options::OPT_T_Group);
@@ -134,8 +150,10 @@ static void ConstructPS4LinkJob(const Tool &T, Compilation &C,
   Args.AddAllArgs(CmdArgs, options::OPT_t);
   Args.AddAllArgs(CmdArgs, options::OPT_r);
 
-  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle))
+  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle)) {
     CmdArgs.push_back("--no-demangle");
+
+}
 
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
@@ -166,17 +184,23 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
 
-  if (Args.hasArg(options::OPT_pie))
+}
+
+  if (Args.hasArg(options::OPT_pie)) {
     CmdArgs.push_back("-pie");
+
+}
 
   if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
   } else {
-    if (Args.hasArg(options::OPT_rdynamic))
+    if (Args.hasArg(options::OPT_rdynamic)) {
       CmdArgs.push_back("-export-dynamic");
+
+}
     CmdArgs.push_back("--eh-frame-hdr");
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-Bshareable");
@@ -194,31 +218,39 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
     assert(Output.isNothing() && "Invalid output.");
   }
 
-  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs))
+  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     AddPS4SanitizerArgs(ToolChain, CmdArgs);
+
+}
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     const char *crt1 = nullptr;
     if (!Args.hasArg(options::OPT_shared)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         crt1 = "gcrt1.o";
-      else if (Args.hasArg(options::OPT_pie))
+      } else if (Args.hasArg(options::OPT_pie)) {
         crt1 = "Scrt1.o";
-      else
+      } else {
         crt1 = "crt1.o";
+
+}
     }
-    if (crt1)
+    if (crt1) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
+
+}
 
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
 
     const char *crtbegin = nullptr;
-    if (Args.hasArg(options::OPT_static))
+    if (Args.hasArg(options::OPT_static)) {
       crtbegin = "crtbeginT.o";
-    else if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie))
+    } else if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie)) {
       crtbegin = "crtbeginS.o";
-    else
+    } else {
       crtbegin = "crtbegin.o";
+
+}
 
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtbegin)));
   }
@@ -231,8 +263,10 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
   Args.AddAllArgs(CmdArgs, options::OPT_t);
   Args.AddAllArgs(CmdArgs, options::OPT_r);
 
-  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle))
+  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle)) {
     CmdArgs.push_back("--no-demangle");
+
+}
 
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
@@ -241,19 +275,25 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
     // libraries for both C and C++ compilations.
     CmdArgs.push_back("-lkernel");
     if (D.CCCIsCXX()) {
-      if (ToolChain.ShouldLinkCXXStdlib(Args))
+      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
         ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
-      if (Args.hasArg(options::OPT_pg))
+
+}
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lm_p");
-      else
+      } else {
         CmdArgs.push_back("-lm");
+
+}
     }
     // FIXME: For some reason GCC passes -lgcc and -lgcc_s before adding
     // the default system libraries. Just mimic this for now.
-    if (Args.hasArg(options::OPT_pg))
+    if (Args.hasArg(options::OPT_pg)) {
       CmdArgs.push_back("-lgcc_p");
-    else
+    } else {
       CmdArgs.push_back("-lcompiler_rt");
+
+}
     if (Args.hasArg(options::OPT_static)) {
       CmdArgs.push_back("-lstdc++");
     } else if (Args.hasArg(options::OPT_pg)) {
@@ -265,16 +305,18 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
     }
 
     if (Args.hasArg(options::OPT_pthread)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lpthread_p");
-      else
+      } else {
         CmdArgs.push_back("-lpthread");
+
+}
     }
 
     if (Args.hasArg(options::OPT_pg)) {
-      if (Args.hasArg(options::OPT_shared))
+      if (Args.hasArg(options::OPT_shared)) {
         CmdArgs.push_back("-lc");
-      else {
+      } else {
         if (Args.hasArg(options::OPT_static)) {
           CmdArgs.push_back("--start-group");
           CmdArgs.push_back("-lc_p");
@@ -309,10 +351,12 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie))
+    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie)) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtendS.o")));
-    else
+    } else {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtend.o")));
+
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtn.o")));
   }
 
@@ -338,29 +382,37 @@ void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
   StringRef LinkerOptName;
   if (const Arg *A = Args.getLastArg(options::OPT_fuse_ld_EQ)) {
     LinkerOptName = A->getValue();
-    if (LinkerOptName != "ps4" && LinkerOptName != "gold")
+    if (LinkerOptName != "ps4" && LinkerOptName != "gold") {
       D.Diag(diag::err_drv_unsupported_linker) << LinkerOptName;
+
+}
   }
 
-  if (LinkerOptName == "gold")
+  if (LinkerOptName == "gold") {
     PS4Linker = false;
-  else if (LinkerOptName == "ps4")
+  } else if (LinkerOptName == "ps4") {
     PS4Linker = true;
-  else
+  } else {
     PS4Linker = !Args.hasArg(options::OPT_shared);
 
-  if (PS4Linker)
+}
+
+  if (PS4Linker) {
     ConstructPS4LinkJob(*this, C, JA, Output, Inputs, Args, LinkingOutput);
-  else
+  } else {
     ConstructGoldLinkJob(*this, C, JA, Output, Inputs, Args, LinkingOutput);
+
+}
 }
 
 toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
                            const ArgList &Args)
     : Generic_ELF(D, Triple, Args) {
-  if (Args.hasArg(clang::driver::options::OPT_static))
+  if (Args.hasArg(clang::driver::options::OPT_static)) {
     D.Diag(clang::diag::err_drv_unsupported_opt_for_target) << "-static"
                                                             << "PS4";
+
+}
 
   // Determine where to find the PS4 libraries. We use SCE_ORBIS_SDK_DIR
   // if it exists; otherwise use the driver's installation path, which
@@ -368,8 +420,10 @@ toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
 
   SmallString<512> PS4SDKDir;
   if (const char *EnvValue = getenv("SCE_ORBIS_SDK_DIR")) {
-    if (!llvm::sys::fs::exists(EnvValue))
+    if (!llvm::sys::fs::exists(EnvValue)) {
       getDriver().Diag(clang::diag::warn_drv_ps4_sdk_dir) << EnvValue;
+
+}
     PS4SDKDir = EnvValue;
   } else {
     PS4SDKDir = getDriver().Dir;
@@ -383,10 +437,14 @@ toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
   std::string PrefixDir;
   if (const Arg *A = Args.getLastArg(options::OPT_isysroot)) {
     PrefixDir = A->getValue();
-    if (!llvm::sys::fs::exists(PrefixDir))
+    if (!llvm::sys::fs::exists(PrefixDir)) {
       getDriver().Diag(clang::diag::warn_missing_sysroot) << PrefixDir;
-  } else
+
+}
+  } else {
     PrefixDir = std::string(PS4SDKDir.str());
+
+}
 
   SmallString<512> PS4SDKIncludeDir(PrefixDir);
   llvm::sys::path::append(PS4SDKIncludeDir, "target/include");

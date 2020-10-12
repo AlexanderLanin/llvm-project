@@ -37,20 +37,26 @@ void ArrayBoundChecker::checkLocation(SVal l, bool isLoad, const Stmt* LoadS,
                                       CheckerContext &C) const {
   // Check for out of bound array element access.
   const MemRegion *R = l.getAsRegion();
-  if (!R)
+  if (!R) {
     return;
 
+}
+
   const ElementRegion *ER = dyn_cast<ElementRegion>(R);
-  if (!ER)
+  if (!ER) {
     return;
+
+}
 
   // Get the index of the accessed element.
   DefinedOrUnknownSVal Idx = ER->getIndex().castAs<DefinedOrUnknownSVal>();
 
   // Zero index is always in bound, this also passes ElementRegions created for
   // pointer casts.
-  if (Idx.isZeroConstant())
+  if (Idx.isZeroConstant()) {
     return;
+
+}
 
   ProgramStateRef state = C.getState();
 
@@ -62,13 +68,17 @@ void ArrayBoundChecker::checkLocation(SVal l, bool isLoad, const Stmt* LoadS,
   ProgramStateRef StOutBound = state->assumeInBound(Idx, ElementCount, false);
   if (StOutBound && !StInBound) {
     ExplodedNode *N = C.generateErrorNode(StOutBound);
-    if (!N)
+    if (!N) {
       return;
 
-    if (!BT)
+}
+
+    if (!BT) {
       BT.reset(new BuiltinBug(
           this, "Out-of-bound array access",
           "Access out-of-bound array element (buffer overflow)"));
+
+}
 
     // FIXME: It would be nice to eventually make this diagnostic more clear,
     // e.g., by referencing the original declaration or by saying *why* this

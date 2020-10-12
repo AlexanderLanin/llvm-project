@@ -35,10 +35,12 @@ public:
       : FieldNode(FR), IsDereferenced(IsDereferenced) {}
 
   virtual void printNoteMsg(llvm::raw_ostream &Out) const override {
-    if (IsDereferenced)
+    if (IsDereferenced) {
       Out << "uninitialized pointee ";
-    else
+    } else {
       Out << "uninitialized pointer ";
+
+}
   }
 
   virtual void printPrefix(llvm::raw_ostream &Out) const override {}
@@ -48,10 +50,12 @@ public:
   }
 
   virtual void printSeparator(llvm::raw_ostream &Out) const override {
-    if (getDecl()->getType()->isPointerType())
+    if (getDecl()->getType()->isPointerType()) {
       Out << "->";
-    else
+    } else {
       Out << '.';
+
+}
   }
 };
 
@@ -70,11 +74,13 @@ public:
 
   virtual void printPrefix(llvm::raw_ostream &Out) const override {
     // If this object is a nonloc::LocAsInteger.
-    if (getDecl()->getType()->isIntegerType())
+    if (getDecl()->getType()->isIntegerType()) {
       Out << "reinterpret_cast";
     // If this pointer's dynamic type is different then it's static type.
-    else
+    } else {
       Out << "static_cast";
+
+}
     Out << '<' << CastBackType.getAsString() << ">(";
   }
 
@@ -167,8 +173,10 @@ bool FindUninitializedFields::isDereferencableUninit(
     return false;
   }
 
-  if (DerefInfo->IsCyclic)
+  if (DerefInfo->IsCyclic) {
     return addFieldToUninits(LocalChain.add(CyclicLocField(FR)), FR);
+
+}
 
   const TypedValueRegion *R = DerefInfo->R;
   const bool NeedsCastBack = DerefInfo->NeedsCastBack;
@@ -177,16 +185,20 @@ bool FindUninitializedFields::isDereferencableUninit(
   QualType PointeeT = DynT->getPointeeType();
 
   if (PointeeT->isStructureOrClassType()) {
-    if (NeedsCastBack)
+    if (NeedsCastBack) {
       return isNonUnionUninit(R, LocalChain.add(NeedsCastLocField(FR, DynT)));
+
+}
     return isNonUnionUninit(R, LocalChain.add(LocField(FR)));
   }
 
   if (PointeeT->isUnionType()) {
     if (isUnionUninit(R)) {
-      if (NeedsCastBack)
+      if (NeedsCastBack) {
         return addFieldToUninits(LocalChain.add(NeedsCastLocField(FR, DynT)),
                                  R);
+
+}
       return addFieldToUninits(LocalChain.add(LocField(FR)), R);
     } else {
       IsAnyFieldInitialized = true;
@@ -206,8 +218,10 @@ bool FindUninitializedFields::isDereferencableUninit(
   SVal PointeeV = State->getSVal(R);
 
   if (isPrimitiveUninit(PointeeV)) {
-    if (NeedsCastBack)
+    if (NeedsCastBack) {
       return addFieldToUninits(LocalChain.add(NeedsCastLocField(FR, DynT)), R);
+
+}
     return addFieldToUninits(LocalChain.add(LocField(FR)), R);
   }
 
@@ -235,8 +249,10 @@ static llvm::Optional<DereferenceInfo> dereference(ProgramStateRef State,
 
   // The region we'd like to acquire.
   const auto *R = V.getAsRegion()->getAs<TypedValueRegion>();
-  if (!R)
+  if (!R) {
     return None;
+
+}
 
   VisitedRegions.insert(R);
 
@@ -246,25 +262,33 @@ static llvm::Optional<DereferenceInfo> dereference(ProgramStateRef State,
   while (const MemRegion *Tmp = State->getSVal(R, DynT).getAsRegion()) {
 
     R = Tmp->getAs<TypedValueRegion>();
-    if (!R)
+    if (!R) {
       return None;
 
+}
+
     // We found a cyclic pointer, like int *ptr = (int *)&ptr.
-    if (!VisitedRegions.insert(R).second)
+    if (!VisitedRegions.insert(R).second) {
       return DereferenceInfo{R, NeedsCastBack, /*IsCyclic*/ true};
+
+}
 
     DynT = R->getLocationType();
     // In order to ensure that this loop terminates, we're also checking the
     // dynamic type of R, since type hierarchy is finite.
-    if (isDereferencableType(DynT->getPointeeType()))
+    if (isDereferencableType(DynT->getPointeeType())) {
       break;
+
+}
   }
 
   while (isa<CXXBaseObjectRegion>(R)) {
     NeedsCastBack = true;
     const auto *SuperR = dyn_cast<TypedValueRegion>(R->getSuperRegion());
-    if (!SuperR)
+    if (!SuperR) {
       break;
+
+}
 
     R = SuperR;
   }
@@ -274,8 +298,10 @@ static llvm::Optional<DereferenceInfo> dereference(ProgramStateRef State,
 
 static bool isVoidPointer(QualType T) {
   while (!T.isNull()) {
-    if (T->isVoidPointerType())
+    if (T->isVoidPointerType()) {
       return true;
+
+}
     T = T->getPointeeType();
   }
   return false;

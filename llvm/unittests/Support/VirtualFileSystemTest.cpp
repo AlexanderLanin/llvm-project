@@ -55,15 +55,19 @@ public:
 
   ErrorOr<vfs::Status> status(const Twine &Path) override {
     auto I = findEntry(Path);
-    if (I == FilesAndDirs.end())
+    if (I == FilesAndDirs.end()) {
       return make_error_code(llvm::errc::no_such_file_or_directory);
+
+}
     return I->second;
   }
   ErrorOr<std::unique_ptr<vfs::File>>
   openFileForRead(const Twine &Path) override {
     auto S = status(Path);
-    if (S)
+    if (S) {
       return std::unique_ptr<vfs::File>(new DummyFile{*S});
+
+}
     return S.getError();
   }
   llvm::ErrorOr<std::string> getCurrentWorkingDirectory() const override {
@@ -77,8 +81,10 @@ public:
   std::error_code getRealPath(const Twine &Path,
                               SmallVectorImpl<char> &Output) const override {
     auto I = findEntry(Path);
-    if (I == FilesAndDirs.end())
+    if (I == FilesAndDirs.end()) {
       return make_error_code(llvm::errc::no_such_file_or_directory);
+
+}
     if (I->second.isSymlink()) {
       Output.clear();
       Twine("/symlink").toVector(Output);
@@ -96,8 +102,10 @@ public:
     bool isInPath(StringRef S) {
       if (Path.size() < S.size() && S.find(Path) == 0) {
         auto LastSep = S.find_last_of('/');
-        if (LastSep == Path.size() || LastSep == Path.size() - 1)
+        if (LastSep == Path.size() || LastSep == Path.size() - 1) {
           return true;
+
+}
       }
       return false;
     }
@@ -122,8 +130,10 @@ public:
           break;
         }
       }
-      if (I == FilesAndDirs.end())
+      if (I == FilesAndDirs.end()) {
         CurrentEntry = vfs::directory_entry();
+
+}
       return std::error_code();
     }
   };
@@ -426,8 +436,10 @@ struct ScopedDir {
       Path = Name.str();
       EC = llvm::sys::fs::create_directory(Twine(Path));
     }
-    if (EC)
+    if (EC) {
       Path = "";
+
+}
     EXPECT_FALSE(EC) << EC.message();
   }
   ~ScopedDir() {
@@ -443,8 +455,10 @@ struct ScopedLink {
   ScopedLink(const Twine &To, const Twine &From) {
     Path = From.str();
     std::error_code EC = sys::fs::create_link(To, From);
-    if (EC)
+    if (EC) {
       Path = "";
+
+}
     EXPECT_FALSE(EC);
   }
   ~ScopedLink() {
@@ -465,8 +479,10 @@ struct ScopedFile {
     OS << Contents;
     OS.flush();
     EXPECT_FALSE(OS.error());
-    if (EC || OS.error())
+    if (EC || OS.error()) {
       this->Path = "";
+
+}
   }
   ~ScopedFile() {
     if (Path != "") {
@@ -756,16 +772,20 @@ static void checkContents(DirIter I, ArrayRef<StringRef> ExpectedOut) {
 
   // Do not rely on iteration order to check for contents, sort both
   // content vectors before comparison.
-  for (DirIter E; !EC && I != E; I.increment(EC))
+  for (DirIter E; !EC && I != E; I.increment(EC)) {
     InputToCheck.push_back(std::string(I->path()));
+
+}
 
   llvm::sort(InputToCheck);
   llvm::sort(Expected);
   EXPECT_EQ(InputToCheck.size(), Expected.size());
 
   unsigned LastElt = std::min(InputToCheck.size(), Expected.size());
-  for (unsigned Idx = 0; Idx != LastElt; ++Idx)
+  for (unsigned Idx = 0; Idx != LastElt; ++Idx) {
     EXPECT_EQ(StringRef(InputToCheck[Idx]), Expected[Idx]);
+
+}
 }
 
 TEST(VirtualFileSystemTest, OverlayIteration) {
@@ -880,18 +900,26 @@ TEST(VirtualFileSystemTest, HiddenInIteration) {
   {
     std::error_code EC;
     vfs::directory_iterator I = O->dir_begin("/", EC), E;
-    for (; !EC && I != E; I.increment(EC))
-      if (I->path() == "/hiddenByUp")
+    for (; !EC && I != E; I.increment(EC)) {
+      if (I->path() == "/hiddenByUp") {
         break;
+
+}
+
+}
     ASSERT_NE(E, I);
     EXPECT_EQ(sys::fs::file_type::regular_file, I->type());
   }
   {
     std::error_code EC;
     vfs::directory_iterator I = O->dir_begin("/", EC), E;
-    for (; !EC && I != E; I.increment(EC))
-      if (I->path() == "/hiddenByMid")
+    for (; !EC && I != E; I.increment(EC)) {
+      if (I->path() == "/hiddenByMid") {
         break;
+
+}
+
+}
     ASSERT_NE(E, I);
     EXPECT_EQ(sys::fs::file_type::regular_file, I->type());
   }
@@ -1758,8 +1786,10 @@ TEST_F(VFSFromYAMLTest, DirectoryIteration) {
 
 TEST_F(VFSFromYAMLTest, DirectoryIterationSameDirMultipleEntries) {
   // https://llvm.org/bugs/show_bug.cgi?id=27725
-  if (!supportsSameDirMultipleYAMLEntries())
+  if (!supportsSameDirMultipleYAMLEntries()) {
     return;
+
+}
 
   IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
   Lower->addDirectory("//root/zab");

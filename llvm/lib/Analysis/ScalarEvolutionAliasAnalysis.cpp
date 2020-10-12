@@ -27,16 +27,20 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
   // If either of the memory references is empty, it doesn't matter what the
   // pointer values are. This allows the code below to ignore this special
   // case.
-  if (LocA.Size.isZero() || LocB.Size.isZero())
+  if (LocA.Size.isZero() || LocB.Size.isZero()) {
     return NoAlias;
+
+}
 
   // This is SCEVAAResult. Get the SCEVs!
   const SCEV *AS = SE.getSCEV(const_cast<Value *>(LocA.Ptr));
   const SCEV *BS = SE.getSCEV(const_cast<Value *>(LocB.Ptr));
 
   // If they evaluate to the same expression, it's a MustAlias.
-  if (AS == BS)
+  if (AS == BS) {
     return MustAlias;
+
+}
 
   // If something is known about the difference between the two addresses,
   // see if it's enough to prove a NoAlias.
@@ -57,8 +61,10 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
     // the given sizes don't overlap. This assumes that ASizeInt and BSizeInt
     // are non-zero, which is special-cased above.
     if (ASizeInt.ule(SE.getUnsignedRange(BA).getUnsignedMin()) &&
-        (-BSizeInt).uge(SE.getUnsignedRange(BA).getUnsignedMax()))
+        (-BSizeInt).uge(SE.getUnsignedRange(BA).getUnsignedMax())) {
       return NoAlias;
+
+}
 
     // Folding the subtraction while preserving range information can be tricky
     // (because of INT_MIN, etc.); if the prior test failed, swap AS and BS
@@ -71,8 +77,10 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
     // the given sizes don't overlap. This assumes that ASizeInt and BSizeInt
     // are non-zero, which is special-cased above.
     if (BSizeInt.ule(SE.getUnsignedRange(AB).getUnsignedMin()) &&
-        (-ASizeInt).uge(SE.getUnsignedRange(AB).getUnsignedMax()))
+        (-ASizeInt).uge(SE.getUnsignedRange(AB).getUnsignedMax())) {
       return NoAlias;
+
+}
   }
 
   // If ScalarEvolution can find an underlying object, form a new query.
@@ -80,15 +88,19 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
   // inttoptr and ptrtoint operators.
   Value *AO = GetBaseValue(AS);
   Value *BO = GetBaseValue(BS);
-  if ((AO && AO != LocA.Ptr) || (BO && BO != LocB.Ptr))
+  if ((AO && AO != LocA.Ptr) || (BO && BO != LocB.Ptr)) {
     if (alias(MemoryLocation(AO ? AO : LocA.Ptr,
                              AO ? LocationSize::unknown() : LocA.Size,
                              AO ? AAMDNodes() : LocA.AATags),
               MemoryLocation(BO ? BO : LocB.Ptr,
                              BO ? LocationSize::unknown() : LocB.Size,
                              BO ? AAMDNodes() : LocB.AATags),
-              AAQI) == NoAlias)
+              AAQI) == NoAlias) {
       return NoAlias;
+
+}
+
+}
 
   // Forward the query to the next analysis.
   return AAResultBase::alias(LocA, LocB, AAQI);
@@ -105,8 +117,10 @@ Value *SCEVAAResult::GetBaseValue(const SCEV *S) {
   } else if (const SCEVAddExpr *A = dyn_cast<SCEVAddExpr>(S)) {
     // If there's a pointer operand, it'll be sorted at the end of the list.
     const SCEV *Last = A->getOperand(A->getNumOperands() - 1);
-    if (Last->getType()->isPointerTy())
+    if (Last->getType()->isPointerTy()) {
       return GetBaseValue(Last);
+
+}
   } else if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S)) {
     // This is a leaf node.
     return U->getValue();

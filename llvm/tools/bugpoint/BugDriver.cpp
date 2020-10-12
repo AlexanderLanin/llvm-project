@@ -33,12 +33,16 @@ Triple TargetTriple;
 
 DiscardTemp::~DiscardTemp() {
   if (SaveTemps) {
-    if (Error E = File.keep())
+    if (Error E = File.keep()) {
       errs() << "Failed to keep temp file " << toString(std::move(E)) << '\n';
+
+}
     return;
   }
-  if (Error E = File.discard())
+  if (Error E = File.discard()) {
     errs() << "Failed to delete temp file " << toString(std::move(E)) << '\n';
+
+}
 }
 
 // Anonymous namespace to define command line options for debugging.
@@ -67,8 +71,10 @@ void BugDriver::setNewProgram(std::unique_ptr<Module> M) {
 std::string llvm::getPassesString(const std::vector<std::string> &Passes) {
   std::string Result;
   for (unsigned i = 0, e = Passes.size(); i != e; ++i) {
-    if (i)
+    if (i) {
       Result += " ";
+
+}
     Result += "-";
     Result += Passes[i];
   }
@@ -83,8 +89,10 @@ BugDriver::BugDriver(const char *toolname, bool find_bugs, unsigned timeout,
       MemoryLimit(memlimit), UseValgrind(use_valgrind) {}
 
 BugDriver::~BugDriver() {
-  if (Interpreter != SafeInterpreter)
+  if (Interpreter != SafeInterpreter) {
     delete Interpreter;
+
+}
   delete SafeInterpreter;
   delete cc;
 }
@@ -108,8 +116,10 @@ std::unique_ptr<Module> llvm::parseInputFile(StringRef Filename,
   if (TargetTriple.getTriple().empty()) {
     Triple TheTriple(Result->getTargetTriple());
 
-    if (TheTriple.getTriple().empty())
+    if (TheTriple.getTriple().empty()) {
       TheTriple.setTriple(sys::getDefaultTargetTriple());
+
+}
 
     TargetTriple.setTriple(TheTriple.getTriple());
   }
@@ -135,19 +145,25 @@ bool BugDriver::addSources(const std::vector<std::string> &Filenames) {
 
   // Load the first input file.
   Program = parseInputFile(Filenames[0], Context);
-  if (!Program)
+  if (!Program) {
     return true;
+
+}
 
   outs() << "Read input file      : '" << Filenames[0] << "'\n";
 
   for (unsigned i = 1, e = Filenames.size(); i != e; ++i) {
     std::unique_ptr<Module> M = parseInputFile(Filenames[i], Context);
-    if (!M.get())
+    if (!M.get()) {
       return true;
 
+}
+
     outs() << "Linking in input file: '" << Filenames[i] << "'\n";
-    if (Linker::linkModules(*Program, std::move(M)))
+    if (Linker::linkModules(*Program, std::move(M))) {
       return true;
+
+}
   }
 
   outs() << "*** All input ok\n";
@@ -175,13 +191,17 @@ Error BugDriver::run() {
   // miscompilation.
   if (!PassesToRun.empty()) {
     outs() << "Running selected passes on program to test for crash: ";
-    if (runPasses(*Program, PassesToRun))
+    if (runPasses(*Program, PassesToRun)) {
       return debugOptimizerCrash();
+
+}
   }
 
   // Set up the execution environment, selecting a method to run LLVM bitcode.
-  if (Error E = initializeExecutionEnvironment())
+  if (Error E = initializeExecutionEnvironment()) {
     return E;
+
+}
 
   // Test to see if we have a code generator crash.
   outs() << "Running the code generator to test for a crash: ";
@@ -239,22 +259,34 @@ Error BugDriver::run() {
 
 void llvm::PrintFunctionList(const std::vector<Function *> &Funcs) {
   unsigned NumPrint = Funcs.size();
-  if (NumPrint > 10)
+  if (NumPrint > 10) {
     NumPrint = 10;
-  for (unsigned i = 0; i != NumPrint; ++i)
+
+}
+  for (unsigned i = 0; i != NumPrint; ++i) {
     outs() << " " << Funcs[i]->getName();
-  if (NumPrint < Funcs.size())
+
+}
+  if (NumPrint < Funcs.size()) {
     outs() << "... <" << Funcs.size() << " total>";
+
+}
   outs().flush();
 }
 
 void llvm::PrintGlobalVariableList(const std::vector<GlobalVariable *> &GVs) {
   unsigned NumPrint = GVs.size();
-  if (NumPrint > 10)
+  if (NumPrint > 10) {
     NumPrint = 10;
-  for (unsigned i = 0; i != NumPrint; ++i)
+
+}
+  for (unsigned i = 0; i != NumPrint; ++i) {
     outs() << " " << GVs[i]->getName();
-  if (NumPrint < GVs.size())
+
+}
+  if (NumPrint < GVs.size()) {
     outs() << "... <" << GVs.size() << " total>";
+
+}
   outs().flush();
 }

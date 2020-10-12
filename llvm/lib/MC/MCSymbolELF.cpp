@@ -78,14 +78,22 @@ unsigned MCSymbolELF::getBinding() const {
     }
   }
 
-  if (isDefined())
+  if (isDefined()) {
     return ELF::STB_LOCAL;
-  if (isUsedInReloc())
+
+}
+  if (isUsedInReloc()) {
     return ELF::STB_GLOBAL;
-  if (isWeakrefUsedInReloc())
+
+}
+  if (isWeakrefUsedInReloc()) {
     return ELF::STB_WEAK;
-  if (isSignature())
+
+}
+  if (isSignature()) {
     return ELF::STB_LOCAL;
+
+}
   return ELF::STB_GLOBAL;
 }
 

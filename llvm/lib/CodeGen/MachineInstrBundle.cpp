@@ -43,8 +43,10 @@ INITIALIZE_PASS(UnpackMachineBundles, "unpack-mi-bundles",
                 "Unpack machine instruction bundles", false, false)
 
 bool UnpackMachineBundles::runOnMachineFunction(MachineFunction &MF) {
-  if (PredicateFtor && !PredicateFtor(MF))
+  if (PredicateFtor && !PredicateFtor(MF)) {
     return false;
+
+}
 
   bool Changed = false;
   for (MachineFunction::iterator I = MF.begin(), E = MF.end(); I != E; ++I) {
@@ -61,8 +63,10 @@ bool UnpackMachineBundles::runOnMachineFunction(MachineFunction &MF) {
           MII->unbundleFromPred();
           for (unsigned i = 0, e = MII->getNumOperands(); i != e; ++i) {
             MachineOperand &MO = MII->getOperand(i);
-            if (MO.isReg() && MO.isInternalRead())
+            if (MO.isReg() && MO.isInternalRead()) {
               MO.setIsInternalRead(false);
+
+}
           }
         }
         MI->eraseFromParent();
@@ -110,9 +114,13 @@ bool FinalizeMachineBundles::runOnMachineFunction(MachineFunction &MF) {
 /// DILocation is found, then an empty location is returned.
 static DebugLoc getDebugLoc(MachineBasicBlock::instr_iterator FirstMI,
                             MachineBasicBlock::instr_iterator LastMI) {
-  for (auto MII = FirstMI; MII != LastMI; ++MII)
-    if (MII->getDebugLoc().get())
+  for (auto MII = FirstMI; MII != LastMI; ++MII) {
+    if (MII->getDebugLoc().get()) {
       return MII->getDebugLoc();
+
+}
+
+}
   return DebugLoc();
 }
 
@@ -148,39 +156,51 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
   for (auto MII = FirstMI; MII != LastMI; ++MII) {
     for (unsigned i = 0, e = MII->getNumOperands(); i != e; ++i) {
       MachineOperand &MO = MII->getOperand(i);
-      if (!MO.isReg())
+      if (!MO.isReg()) {
         continue;
+
+}
       if (MO.isDef()) {
         Defs.push_back(&MO);
         continue;
       }
 
       Register Reg = MO.getReg();
-      if (!Reg)
+      if (!Reg) {
         continue;
+
+}
 
       if (LocalDefSet.count(Reg)) {
         MO.setIsInternalRead();
-        if (MO.isKill())
+        if (MO.isKill()) {
           // Internal def is now killed.
           KilledDefSet.insert(Reg);
+
+}
       } else {
         if (ExternUseSet.insert(Reg).second) {
           ExternUses.push_back(Reg);
-          if (MO.isUndef())
+          if (MO.isUndef()) {
             UndefUseSet.insert(Reg);
+
+}
         }
-        if (MO.isKill())
+        if (MO.isKill()) {
           // External def is now killed.
           KilledUseSet.insert(Reg);
+
+}
       }
     }
 
     for (unsigned i = 0, e = Defs.size(); i != e; ++i) {
       MachineOperand &MO = *Defs[i];
       Register Reg = MO.getReg();
-      if (!Reg)
+      if (!Reg) {
         continue;
+
+}
 
       if (LocalDefSet.insert(Reg).second) {
         LocalDefs.push_back(Reg);
@@ -190,16 +210,20 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
       } else {
         // Re-defined inside the bundle, it's no longer killed.
         KilledDefSet.erase(Reg);
-        if (!MO.isDead())
+        if (!MO.isDead()) {
           // Previously defined but dead.
           DeadDefSet.erase(Reg);
+
+}
       }
 
       if (!MO.isDead() && Register::isPhysicalRegister(Reg)) {
         for (MCSubRegIterator SubRegs(Reg, TRI); SubRegs.isValid(); ++SubRegs) {
           unsigned SubReg = *SubRegs;
-          if (LocalDefSet.insert(SubReg).second)
+          if (LocalDefSet.insert(SubReg).second) {
             LocalDefs.push_back(SubReg);
+
+}
         }
       }
     }
@@ -229,10 +253,14 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
   // Set FrameSetup/FrameDestroy for the bundle. If any of the instructions got
   // the property, then also set it on the bundle.
   for (auto MII = FirstMI; MII != LastMI; ++MII) {
-    if (MII->getFlag(MachineInstr::FrameSetup))
+    if (MII->getFlag(MachineInstr::FrameSetup)) {
       MIB.setMIFlag(MachineInstr::FrameSetup);
-    if (MII->getFlag(MachineInstr::FrameDestroy))
+
+}
+    if (MII->getFlag(MachineInstr::FrameDestroy)) {
       MIB.setMIFlag(MachineInstr::FrameDestroy);
+
+}
   }
 }
 
@@ -246,8 +274,10 @@ llvm::finalizeBundle(MachineBasicBlock &MBB,
                      MachineBasicBlock::instr_iterator FirstMI) {
   MachineBasicBlock::instr_iterator E = MBB.instr_end();
   MachineBasicBlock::instr_iterator LastMI = std::next(FirstMI);
-  while (LastMI != E && LastMI->isInsideBundle())
+  while (LastMI != E && LastMI->isInsideBundle()) {
     ++LastMI;
+
+}
   finalizeBundle(MBB, FirstMI, LastMI);
   return LastMI;
 }
@@ -260,15 +290,17 @@ bool llvm::finalizeBundles(MachineFunction &MF) {
     MachineBasicBlock &MBB = *I;
     MachineBasicBlock::instr_iterator MII = MBB.instr_begin();
     MachineBasicBlock::instr_iterator MIE = MBB.instr_end();
-    if (MII == MIE)
+    if (MII == MIE) {
       continue;
+
+}
     assert(!MII->isInsideBundle() &&
            "First instr cannot be inside bundle before finalization!");
 
     for (++MII; MII != MIE; ) {
-      if (!MII->isInsideBundle())
+      if (!MII->isInsideBundle()) {
         ++MII;
-      else {
+      } else {
         MII = finalizeBundle(MBB, std::prev(MII));
         Changed = true;
       }
@@ -284,26 +316,34 @@ VirtRegInfo llvm::AnalyzeVirtRegInBundle(
   VirtRegInfo RI = {false, false, false};
   for (MIBundleOperands O(MI); O.isValid(); ++O) {
     MachineOperand &MO = *O;
-    if (!MO.isReg() || MO.getReg() != Reg)
+    if (!MO.isReg() || MO.getReg() != Reg) {
       continue;
 
+}
+
     // Remember each (MI, OpNo) that refers to Reg.
-    if (Ops)
+    if (Ops) {
       Ops->push_back(std::make_pair(MO.getParent(), O.getOperandNo()));
+
+}
 
     // Both defs and uses can read virtual registers.
     if (MO.readsReg()) {
       RI.Reads = true;
-      if (MO.isDef())
+      if (MO.isDef()) {
         RI.Tied = true;
+
+}
     }
 
     // Only defs can write.
-    if (MO.isDef())
+    if (MO.isDef()) {
       RI.Writes = true;
-    else if (!RI.Tied &&
-             MO.getParent()->isRegTiedToDefOperand(O.getOperandNo()))
+    } else if (!RI.Tied &&
+             MO.getParent()->isRegTiedToDefOperand(O.getOperandNo())) {
       RI.Tied = true;
+
+}
   }
   return RI;
 }
@@ -323,38 +363,52 @@ PhysRegInfo llvm::AnalyzePhysRegInBundle(const MachineInstr &MI, unsigned Reg,
       continue;
     }
 
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
+
+}
 
     Register MOReg = MO.getReg();
-    if (!MOReg || !Register::isPhysicalRegister(MOReg))
+    if (!MOReg || !Register::isPhysicalRegister(MOReg)) {
       continue;
 
-    if (!TRI->regsOverlap(MOReg, Reg))
+}
+
+    if (!TRI->regsOverlap(MOReg, Reg)) {
       continue;
+
+}
 
     bool Covered = TRI->isSuperRegisterEq(Reg, MOReg);
     if (MO.readsReg()) {
       PRI.Read = true;
       if (Covered) {
         PRI.FullyRead = true;
-        if (MO.isKill())
+        if (MO.isKill()) {
           PRI.Killed = true;
+
+}
       }
     } else if (MO.isDef()) {
       PRI.Defined = true;
-      if (Covered)
+      if (Covered) {
         PRI.FullyDefined = true;
-      if (!MO.isDead())
+
+}
+      if (!MO.isDead()) {
         AllDefsDead = false;
+
+}
     }
   }
 
   if (AllDefsDead) {
-    if (PRI.FullyDefined || PRI.Clobbered)
+    if (PRI.FullyDefined || PRI.Clobbered) {
       PRI.DeadDef = true;
-    else if (PRI.Defined)
+    } else if (PRI.Defined) {
       PRI.PartialDeadDef = true;
+
+}
   }
 
   return PRI;

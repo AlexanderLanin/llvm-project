@@ -28,18 +28,26 @@ static void replaceBranchTerminator(BasicBlock &BB,
                                     std::set<BasicBlock *> BBsToKeep) {
   auto Term = BB.getTerminator();
   std::vector<BasicBlock *> ChunkSucessors;
-  for (auto Succ : successors(&BB))
-    if (BBsToKeep.count(Succ))
+  for (auto Succ : successors(&BB)) {
+    if (BBsToKeep.count(Succ)) {
       ChunkSucessors.push_back(Succ);
 
+}
+
+}
+
   // BB only references Chunk BBs
-  if (ChunkSucessors.size() == Term->getNumSuccessors())
+  if (ChunkSucessors.size() == Term->getNumSuccessors()) {
     return;
+
+}
 
   bool IsBranch = isa<BranchInst>(Term);
   Value *Address = nullptr;
-  if (auto IndBI = dyn_cast<IndirectBrInst>(Term))
+  if (auto IndBI = dyn_cast<IndirectBrInst>(Term)) {
     Address = IndBI->getAddress();
+
+}
 
   Term->eraseFromParent();
 
@@ -48,14 +56,18 @@ static void replaceBranchTerminator(BasicBlock &BB,
     return;
   }
 
-  if (IsBranch)
+  if (IsBranch) {
     BranchInst::Create(ChunkSucessors[0], &BB);
+
+}
 
   if (Address) {
     auto NewIndBI =
         IndirectBrInst::Create(Address, ChunkSucessors.size(), &BB);
-    for (auto Dest : ChunkSucessors)
+    for (auto Dest : ChunkSucessors) {
       NewIndBI->addDestination(Dest);
+
+}
   }
 }
 
@@ -67,7 +79,7 @@ static void removeUninterestingBBsFromSwitch(SwitchInst &SwInst,
   if (!BBsToKeep.count(SwInst.getDefaultDest())) {
     ReturnInst::Create(SwInst.getContext(), nullptr, SwInst.getParent());
     SwInst.eraseFromParent();
-  } else
+  } else {
     for (int I = 0, E = SwInst.getNumCases(); I != E; ++I) {
       auto Case = SwInst.case_begin() + I;
       if (!BBsToKeep.count(Case->getCaseSuccessor())) {
@@ -76,6 +88,8 @@ static void removeUninterestingBBsFromSwitch(SwitchInst &SwInst,
         --E;
       }
     }
+
+}
 }
 
 /// Removes out-of-chunk arguments from functions, and modifies their calls
@@ -85,40 +99,58 @@ static void extractBasicBlocksFromModule(std::vector<Chunk> ChunksToKeep,
   int I = 0, BBCount = 0;
   std::set<BasicBlock *> BBsToKeep;
 
-  for (auto &F : *Program)
-    for (auto &BB : F)
+  for (auto &F : *Program) {
+    for (auto &BB : F) {
       if (I < (int)ChunksToKeep.size()) {
-        if (ChunksToKeep[I].contains(++BBCount))
+        if (ChunksToKeep[I].contains(++BBCount)) {
           BBsToKeep.insert(&BB);
-        if (ChunksToKeep[I].end == BBCount)
+
+}
+        if (ChunksToKeep[I].end == BBCount) {
           ++I;
+
+}
       }
 
+}
+
+}
+
   std::vector<BasicBlock *> BBsToDelete;
-  for (auto &F : *Program)
+  for (auto &F : *Program) {
     for (auto &BB : F) {
       if (!BBsToKeep.count(&BB)) {
         BBsToDelete.push_back(&BB);
         // Remove out-of-chunk BB from successor phi nodes
-        for (auto *Succ : successors(&BB))
+        for (auto *Succ : successors(&BB)) {
           Succ->removePredecessor(&BB);
+
+}
       }
     }
 
+}
+
   // Replace terminators that reference out-of-chunk BBs
-  for (auto &F : *Program)
+  for (auto &F : *Program) {
     for (auto &BB : F) {
-      if (auto *SwInst = dyn_cast<SwitchInst>(BB.getTerminator()))
+      if (auto *SwInst = dyn_cast<SwitchInst>(BB.getTerminator())) {
         removeUninterestingBBsFromSwitch(*SwInst, BBsToKeep);
-      else
+      } else {
         replaceBranchTerminator(BB, BBsToKeep);
+
+}
     }
+
+}
 
   // Replace out-of-chunk switch uses
   for (auto &BB : BBsToDelete) {
     // Instructions might be referenced in other BBs
-    for (auto &I : *BB)
+    for (auto &I : *BB) {
       I.replaceAllUsesWith(UndefValue::get(I.getType()));
+
+}
     BB->eraseFromParent();
   }
 }
@@ -128,13 +160,17 @@ static int countBasicBlocks(Module *Program) {
   // TODO: Silence index with --quiet flag
   outs() << "----------------------------\n";
   int BBCount = 0;
-  for (auto &F : *Program)
+  for (auto &F : *Program) {
     for (auto &BB : F) {
-      if (BB.hasName())
+      if (BB.hasName()) {
         outs() << "\t" << ++BBCount << ": " << BB.getName() << "\n";
-      else
+      } else {
         outs() << "\t" << ++BBCount << ": Unnamed\n";
+
+}
     }
+
+}
 
   return BBCount;
 }

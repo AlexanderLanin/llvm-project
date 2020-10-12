@@ -352,19 +352,25 @@ ELFFile<ELFT>::android_relas(const Elf_Shdr *Sec) const {
   // This function reads relocations in Android's packed relocation format,
   // which is based on SLEB128 and delta encoding.
   Expected<ArrayRef<uint8_t>> ContentsOrErr = getSectionContents(Sec);
-  if (!ContentsOrErr)
+  if (!ContentsOrErr) {
     return ContentsOrErr.takeError();
+
+}
   const uint8_t *Cur = ContentsOrErr->begin();
   const uint8_t *End = ContentsOrErr->end();
   if (ContentsOrErr->size() < 4 || Cur[0] != 'A' || Cur[1] != 'P' ||
-      Cur[2] != 'S' || Cur[3] != '2')
+      Cur[2] != 'S' || Cur[3] != '2') {
     return createError("invalid packed relocation header");
+
+}
   Cur += 4;
 
   const char *ErrStr = nullptr;
   auto ReadSLEB = [&]() -> int64_t {
-    if (ErrStr)
+    if (ErrStr) {
       return 0;
+
+}
     unsigned Len;
     int64_t Result = decodeSLEB128(Cur, &Len, End, &ErrStr);
     Cur += Len;
@@ -375,15 +381,19 @@ ELFFile<ELFT>::android_relas(const Elf_Shdr *Sec) const {
   uint64_t Offset = ReadSLEB();
   uint64_t Addend = 0;
 
-  if (ErrStr)
+  if (ErrStr) {
     return createError(ErrStr);
+
+}
 
   std::vector<Elf_Rela> Relocs;
   Relocs.reserve(NumRelocs);
   while (NumRelocs) {
     uint64_t NumRelocsInGroup = ReadSLEB();
-    if (NumRelocsInGroup > NumRelocs)
+    if (NumRelocsInGroup > NumRelocs) {
       return createError("relocation group unexpectedly large");
+
+}
     NumRelocs -= NumRelocsInGroup;
 
     uint64_t GroupFlags = ReadSLEB();
@@ -393,35 +403,49 @@ ELFFile<ELFT>::android_relas(const Elf_Shdr *Sec) const {
     bool GroupHasAddend = GroupFlags & ELF::RELOCATION_GROUP_HAS_ADDEND_FLAG;
 
     uint64_t GroupOffsetDelta;
-    if (GroupedByOffsetDelta)
+    if (GroupedByOffsetDelta) {
       GroupOffsetDelta = ReadSLEB();
 
+}
+
     uint64_t GroupRInfo;
-    if (GroupedByInfo)
+    if (GroupedByInfo) {
       GroupRInfo = ReadSLEB();
 
-    if (GroupedByAddend && GroupHasAddend)
+}
+
+    if (GroupedByAddend && GroupHasAddend) {
       Addend += ReadSLEB();
 
-    if (!GroupHasAddend)
+}
+
+    if (!GroupHasAddend) {
       Addend = 0;
+
+}
 
     for (uint64_t I = 0; I != NumRelocsInGroup; ++I) {
       Elf_Rela R;
       Offset += GroupedByOffsetDelta ? GroupOffsetDelta : ReadSLEB();
       R.r_offset = Offset;
       R.r_info = GroupedByInfo ? GroupRInfo : ReadSLEB();
-      if (GroupHasAddend && !GroupedByAddend)
+      if (GroupHasAddend && !GroupedByAddend) {
         Addend += ReadSLEB();
+
+}
       R.r_addend = Addend;
       Relocs.push_back(R);
 
-      if (ErrStr)
+      if (ErrStr) {
         return createError(ErrStr);
+
+}
     }
 
-    if (ErrStr)
+    if (ErrStr) {
       return createError(ErrStr);
+
+}
   }
 
   return Relocs;
@@ -502,8 +526,10 @@ Expected<typename ELFT::DynRange> ELFFile<ELFT>::dynamicEntries() const {
   size_t DynSecSize = 0;
 
   auto ProgramHeadersOrError = program_headers();
-  if (!ProgramHeadersOrError)
+  if (!ProgramHeadersOrError) {
     return ProgramHeadersOrError.takeError();
+
+}
 
   for (const Elf_Phdr &Phdr : *ProgramHeadersOrError) {
     if (Phdr.p_type == ELF::PT_DYNAMIC) {
@@ -519,36 +545,48 @@ Expected<typename ELFT::DynRange> ELFFile<ELFT>::dynamicEntries() const {
   // back on the sections.
   if (Dyn.empty()) {
     auto SectionsOrError = sections();
-    if (!SectionsOrError)
+    if (!SectionsOrError) {
       return SectionsOrError.takeError();
+
+}
 
     for (const Elf_Shdr &Sec : *SectionsOrError) {
       if (Sec.sh_type == ELF::SHT_DYNAMIC) {
         Expected<ArrayRef<Elf_Dyn>> DynOrError =
             getSectionContentsAsArray<Elf_Dyn>(&Sec);
-        if (!DynOrError)
+        if (!DynOrError) {
           return DynOrError.takeError();
+
+}
         Dyn = *DynOrError;
         DynSecSize = Sec.sh_size;
         break;
       }
     }
 
-    if (!Dyn.data())
+    if (!Dyn.data()) {
       return ArrayRef<Elf_Dyn>();
+
+}
   }
 
-  if (Dyn.empty())
+  if (Dyn.empty()) {
     // TODO: this error is untested.
     return createError("invalid empty dynamic section");
 
-  if (DynSecSize % sizeof(Elf_Dyn) != 0)
+}
+
+  if (DynSecSize % sizeof(Elf_Dyn) != 0) {
     // TODO: this error is untested.
     return createError("malformed dynamic section");
 
-  if (Dyn.back().d_tag != ELF::DT_NULL)
+}
+
+  if (Dyn.back().d_tag != ELF::DT_NULL) {
     // TODO: this error is untested.
     return createError("dynamic sections must be DT_NULL terminated");
+
+}
 
   return Dyn;
 }
@@ -556,14 +594,20 @@ Expected<typename ELFT::DynRange> ELFFile<ELFT>::dynamicEntries() const {
 template <class ELFT>
 Expected<const uint8_t *> ELFFile<ELFT>::toMappedAddr(uint64_t VAddr) const {
   auto ProgramHeadersOrError = program_headers();
-  if (!ProgramHeadersOrError)
+  if (!ProgramHeadersOrError) {
     return ProgramHeadersOrError.takeError();
+
+}
 
   llvm::SmallVector<Elf_Phdr *, 4> LoadSegments;
 
-  for (const Elf_Phdr &Phdr : *ProgramHeadersOrError)
-    if (Phdr.p_type == ELF::PT_LOAD)
+  for (const Elf_Phdr &Phdr : *ProgramHeadersOrError) {
+    if (Phdr.p_type == ELF::PT_LOAD) {
       LoadSegments.push_back(const_cast<Elf_Phdr *>(&Phdr));
+
+}
+
+}
 
   const Elf_Phdr *const *I =
       std::upper_bound(LoadSegments.begin(), LoadSegments.end(), VAddr,
@@ -571,15 +615,19 @@ Expected<const uint8_t *> ELFFile<ELFT>::toMappedAddr(uint64_t VAddr) const {
                          return VAddr < Phdr->p_vaddr;
                        });
 
-  if (I == LoadSegments.begin())
+  if (I == LoadSegments.begin()) {
     return createError("virtual address is not in any segment: 0x" +
                        Twine::utohexstr(VAddr));
+
+}
   --I;
   const Elf_Phdr &Phdr = **I;
   uint64_t Delta = VAddr - Phdr.p_vaddr;
-  if (Delta >= Phdr.p_filesz)
+  if (Delta >= Phdr.p_filesz) {
     return createError("virtual address is not in any segment: 0x" +
                        Twine::utohexstr(VAddr));
+
+}
   return base() + Phdr.p_offset + Delta;
 }
 

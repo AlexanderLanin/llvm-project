@@ -350,10 +350,14 @@ PreservedAnalyses HWAddressSanitizerPass::run(Module &M,
                                               ModuleAnalysisManager &MAM) {
   HWAddressSanitizer HWASan(M, CompileKernel, Recover);
   bool Modified = false;
-  for (Function &F : M)
+  for (Function &F : M) {
     Modified |= HWASan.sanitizeFunction(F);
-  if (Modified)
+
+}
+  if (Modified) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 
@@ -407,15 +411,19 @@ void HWAddressSanitizer::initializeModule() {
 
     bool InstrumentGlobals =
         ClGlobals.getNumOccurrences() ? ClGlobals : NewRuntime;
-    if (InstrumentGlobals)
+    if (InstrumentGlobals) {
       instrumentGlobals();
+
+}
 
     bool InstrumentPersonalityFunctions =
         ClInstrumentPersonalityFunctions.getNumOccurrences()
             ? ClInstrumentPersonalityFunctions
             : NewRuntime;
-    if (InstrumentPersonalityFunctions)
+    if (InstrumentPersonalityFunctions) {
       instrumentPersonalityFunctions();
+
+}
   }
 
   if (!TargetTriple.isAndroid()) {
@@ -487,8 +495,10 @@ Value *HWAddressSanitizer::getDynamicShadowIfunc(IRBuilder<> &IRB) {
 
 Value *HWAddressSanitizer::getDynamicShadowNonTls(IRBuilder<> &IRB) {
   // Generate code only when dynamic addressing is needed.
-  if (Mapping.Offset != kDynamicShadowSentinel)
+  if (Mapping.Offset != kDynamicShadowSentinel) {
     return nullptr;
+
+}
 
   if (Mapping.InGlobal) {
     return getDynamicShadowIfunc(IRB);
@@ -506,34 +516,46 @@ Value *HWAddressSanitizer::isInterestingMemoryAccess(Instruction *I,
                                                      unsigned *Alignment,
                                                      Value **MaybeMask) {
   // Skip memory accesses inserted by another instrumentation.
-  if (I->hasMetadata("nosanitize")) return nullptr;
+  if (I->hasMetadata("nosanitize")) { return nullptr;
+
+}
 
   // Do not instrument the load fetching the dynamic shadow address.
-  if (LocalDynamicShadow == I)
+  if (LocalDynamicShadow == I) {
     return nullptr;
+
+}
 
   Value *PtrOperand = nullptr;
   const DataLayout &DL = I->getModule()->getDataLayout();
   if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
-    if (!ClInstrumentReads) return nullptr;
+    if (!ClInstrumentReads) { return nullptr;
+
+}
     *IsWrite = false;
     *TypeSize = DL.getTypeStoreSizeInBits(LI->getType());
     *Alignment = LI->getAlignment();
     PtrOperand = LI->getPointerOperand();
   } else if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
-    if (!ClInstrumentWrites) return nullptr;
+    if (!ClInstrumentWrites) { return nullptr;
+
+}
     *IsWrite = true;
     *TypeSize = DL.getTypeStoreSizeInBits(SI->getValueOperand()->getType());
     *Alignment = SI->getAlignment();
     PtrOperand = SI->getPointerOperand();
   } else if (AtomicRMWInst *RMW = dyn_cast<AtomicRMWInst>(I)) {
-    if (!ClInstrumentAtomics) return nullptr;
+    if (!ClInstrumentAtomics) { return nullptr;
+
+}
     *IsWrite = true;
     *TypeSize = DL.getTypeStoreSizeInBits(RMW->getValOperand()->getType());
     *Alignment = 0;
     PtrOperand = RMW->getPointerOperand();
   } else if (AtomicCmpXchgInst *XCHG = dyn_cast<AtomicCmpXchgInst>(I)) {
-    if (!ClInstrumentAtomics) return nullptr;
+    if (!ClInstrumentAtomics) { return nullptr;
+
+}
     *IsWrite = true;
     *TypeSize = DL.getTypeStoreSizeInBits(XCHG->getCompareOperand()->getType());
     *Alignment = 0;
@@ -544,29 +566,41 @@ Value *HWAddressSanitizer::isInterestingMemoryAccess(Instruction *I,
     // Do not instrument accesses from different address spaces; we cannot deal
     // with them.
     Type *PtrTy = cast<PointerType>(PtrOperand->getType()->getScalarType());
-    if (PtrTy->getPointerAddressSpace() != 0)
+    if (PtrTy->getPointerAddressSpace() != 0) {
       return nullptr;
+
+}
 
     // Ignore swifterror addresses.
     // swifterror memory addresses are mem2reg promoted by instruction
     // selection. As such they cannot have regular uses like an instrumentation
     // function and it makes no sense to track them as memory.
-    if (PtrOperand->isSwiftError())
+    if (PtrOperand->isSwiftError()) {
       return nullptr;
+
+}
   }
 
   return PtrOperand;
 }
 
 static unsigned getPointerOperandIndex(Instruction *I) {
-  if (LoadInst *LI = dyn_cast<LoadInst>(I))
+  if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
     return LI->getPointerOperandIndex();
-  if (StoreInst *SI = dyn_cast<StoreInst>(I))
+
+}
+  if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
     return SI->getPointerOperandIndex();
-  if (AtomicRMWInst *RMW = dyn_cast<AtomicRMWInst>(I))
+
+}
+  if (AtomicRMWInst *RMW = dyn_cast<AtomicRMWInst>(I)) {
     return RMW->getPointerOperandIndex();
-  if (AtomicCmpXchgInst *XCHG = dyn_cast<AtomicCmpXchgInst>(I))
+
+}
+  if (AtomicCmpXchgInst *XCHG = dyn_cast<AtomicCmpXchgInst>(I)) {
     return XCHG->getPointerOperandIndex();
+
+}
   report_fatal_error("Unexpected instruction");
   return -1;
 }
@@ -578,8 +612,10 @@ static size_t TypeSizeToSizeIndex(uint32_t TypeSize) {
 }
 
 void HWAddressSanitizer::untagPointerOperand(Instruction *I, Value *Addr) {
-  if (TargetTriple.isAArch64())
+  if (TargetTriple.isAArch64()) {
     return;
+
+}
 
   IRBuilder<> IRB(I);
   Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
@@ -589,8 +625,10 @@ void HWAddressSanitizer::untagPointerOperand(Instruction *I, Value *Addr) {
 }
 
 Value *HWAddressSanitizer::shadowBase() {
-  if (LocalDynamicShadow)
+  if (LocalDynamicShadow) {
     return LocalDynamicShadow;
+
+}
   return ConstantExpr::getIntToPtr(ConstantInt::get(IntptrTy, Mapping.Offset),
                                    Int8PtrTy);
 }
@@ -598,8 +636,10 @@ Value *HWAddressSanitizer::shadowBase() {
 Value *HWAddressSanitizer::memToShadow(Value *Mem, IRBuilder<> &IRB) {
   // Mem >> Scale
   Value *Shadow = IRB.CreateLShr(Mem, Mapping.Scale);
-  if (Mapping.Offset == 0)
+  if (Mapping.Offset == 0) {
     return IRB.CreateIntToPtr(Shadow, Int8PtrTy);
+
+}
   // (Mem >> Scale) + Offset
   return IRB.CreateGEP(Int8Ty, shadowBase(), Shadow);
 }
@@ -691,8 +731,10 @@ void HWAddressSanitizer::instrumentMemAccessInline(Value *Ptr, bool IsWrite,
       report_fatal_error("unsupported architecture");
   }
   IRB.CreateCall(Asm, PtrLong);
-  if (Recover)
+  if (Recover) {
     cast<BranchInst>(CheckFailTerm)->setSuccessor(0, CheckTerm->getParent());
+
+}
 }
 
 void HWAddressSanitizer::instrumentMemIntrinsic(MemIntrinsic *MI) {
@@ -728,11 +770,15 @@ bool HWAddressSanitizer::instrumentMemAccess(Instruction *I) {
   Value *Addr =
       isInterestingMemoryAccess(I, &IsWrite, &TypeSize, &Alignment, &MaybeMask);
 
-  if (!Addr)
+  if (!Addr) {
     return false;
 
-  if (MaybeMask)
+}
+
+  if (MaybeMask) {
     return false; //FIXME
+
+}
 
   IRBuilder<> IRB(I);
   if (isPowerOf2_64(TypeSize) &&
@@ -771,8 +817,10 @@ static uint64_t getAllocaSizeInBytes(const AllocaInst &AI) {
 bool HWAddressSanitizer::tagAlloca(IRBuilder<> &IRB, AllocaInst *AI,
                                    Value *Tag, size_t Size) {
   size_t AlignedSize = alignTo(Size, Mapping.getObjectAlignment());
-  if (!UseShortGranules)
+  if (!UseShortGranules) {
     Size = AlignedSize;
+
+}
 
   Value *JustTag = IRB.CreateTrunc(Tag, IRB.getInt8Ty());
   if (ClInstrumentWithCalls) {
@@ -788,8 +836,10 @@ bool HWAddressSanitizer::tagAlloca(IRBuilder<> &IRB, AllocaInst *AI,
     // FIXME: the interceptor is not as fast as real memset. Consider lowering
     // llvm.memset right here into either a sequence of stores, or a call to
     // hwasan_tag_memory.
-    if (ShadowSize)
+    if (ShadowSize) {
       IRB.CreateMemSet(ShadowPtr, JustTag, ShadowSize, Align(1));
+
+}
     if (Size != AlignedSize) {
       IRB.CreateStore(
           ConstantInt::get(Int8Ty, Size % Mapping.getObjectAlignment()),
@@ -825,10 +875,14 @@ Value *HWAddressSanitizer::getNextTagWithCall(IRBuilder<> &IRB) {
 }
 
 Value *HWAddressSanitizer::getStackBaseTag(IRBuilder<> &IRB) {
-  if (ClGenerateTagsWithCalls)
+  if (ClGenerateTagsWithCalls) {
     return getNextTagWithCall(IRB);
-  if (StackBaseTag)
+
+}
+  if (StackBaseTag) {
     return StackBaseTag;
+
+}
   // FIXME: use addressofreturnaddress (but implement it in aarch64 backend
   // first).
   Module *M = IRB.GetInsertBlock()->getParent()->getParent();
@@ -850,17 +904,23 @@ Value *HWAddressSanitizer::getStackBaseTag(IRBuilder<> &IRB) {
 
 Value *HWAddressSanitizer::getAllocaTag(IRBuilder<> &IRB, Value *StackTag,
                                         AllocaInst *AI, unsigned AllocaNo) {
-  if (ClGenerateTagsWithCalls)
+  if (ClGenerateTagsWithCalls) {
     return getNextTagWithCall(IRB);
+
+}
   return IRB.CreateXor(StackTag,
                        ConstantInt::get(IntptrTy, RetagMask(AllocaNo)));
 }
 
 Value *HWAddressSanitizer::getUARTag(IRBuilder<> &IRB, Value *StackTag) {
-  if (ClUARRetagToZero)
+  if (ClUARRetagToZero) {
     return ConstantInt::get(IntptrTy, 0);
-  if (ClGenerateTagsWithCalls)
+
+}
+  if (ClGenerateTagsWithCalls) {
     return getNextTagWithCall(IRB);
+
+}
   return IRB.CreateXor(StackTag, ConstantInt::get(IntptrTy, 0xFFU));
 }
 
@@ -910,8 +970,10 @@ Value *HWAddressSanitizer::getHwasanThreadSlotPtr(IRBuilder<> &IRB, Type *Ty) {
         Ty->getPointerTo(0));
     return SlotPtr;
   }
-  if (ThreadPtrGlobal)
+  if (ThreadPtrGlobal) {
     return ThreadPtrGlobal;
+
+}
 
 
   return nullptr;
@@ -942,10 +1004,12 @@ void HWAddressSanitizer::emitPrologue(IRBuilder<> &IRB, bool WithFrameRecord) {
 
     // Prepare ring buffer data.
     Value *PC;
-    if (TargetTriple.getArch() == Triple::aarch64)
+    if (TargetTriple.getArch() == Triple::aarch64) {
       PC = readRegister(IRB, "pc");
-    else
+    } else {
       PC = IRB.CreatePtrToInt(F, IntptrTy);
+
+}
     Module *M = F->getParent();
     auto GetStackPointerFn = Intrinsic::getDeclaration(
         M, Intrinsic::frameaddress,
@@ -1081,11 +1145,15 @@ bool HWAddressSanitizer::isInterestingAlloca(const AllocaInst &AI) {
 }
 
 bool HWAddressSanitizer::sanitizeFunction(Function &F) {
-  if (&F == HwasanCtorFunction)
+  if (&F == HwasanCtorFunction) {
     return false;
 
-  if (!F.hasFnAttribute(Attribute::SanitizeHWAddress))
+}
+
+  if (!F.hasFnAttribute(Attribute::SanitizeHWAddress)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Function: " << F.getName() << "\n");
 
@@ -1096,24 +1164,36 @@ bool HWAddressSanitizer::sanitizeFunction(Function &F) {
   DenseMap<AllocaInst *, std::vector<DbgVariableIntrinsic *>> AllocaDbgMap;
   for (auto &BB : F) {
     for (auto &Inst : BB) {
-      if (ClInstrumentStack)
+      if (ClInstrumentStack) {
         if (AllocaInst *AI = dyn_cast<AllocaInst>(&Inst)) {
-          if (isInterestingAlloca(*AI))
+          if (isInterestingAlloca(*AI)) {
             AllocasToInstrument.push_back(AI);
+
+}
           continue;
         }
 
+}
+
       if (isa<ReturnInst>(Inst) || isa<ResumeInst>(Inst) ||
-          isa<CleanupReturnInst>(Inst))
+          isa<CleanupReturnInst>(Inst)) {
         RetVec.push_back(&Inst);
 
-      if (auto *DDI = dyn_cast<DbgVariableIntrinsic>(&Inst))
+}
+
+      if (auto *DDI = dyn_cast<DbgVariableIntrinsic>(&Inst)) {
         if (auto *Alloca =
-                dyn_cast_or_null<AllocaInst>(DDI->getVariableLocation()))
+                dyn_cast_or_null<AllocaInst>(DDI->getVariableLocation())) {
           AllocaDbgMap[Alloca].push_back(DDI);
 
-      if (InstrumentLandingPads && isa<LandingPadInst>(Inst))
+}
+
+}
+
+      if (InstrumentLandingPads && isa<LandingPadInst>(Inst)) {
         LandingPadVec.push_back(&Inst);
+
+}
 
       Value *MaybeMask = nullptr;
       bool IsWrite;
@@ -1121,15 +1201,19 @@ bool HWAddressSanitizer::sanitizeFunction(Function &F) {
       uint64_t TypeSize;
       Value *Addr = isInterestingMemoryAccess(&Inst, &IsWrite, &TypeSize,
                                               &Alignment, &MaybeMask);
-      if (Addr || isa<MemIntrinsic>(Inst))
+      if (Addr || isa<MemIntrinsic>(Inst)) {
         ToInstrument.push_back(&Inst);
+
+}
     }
   }
 
   initializeCallbacks(*F.getParent());
 
-  if (!LandingPadVec.empty())
+  if (!LandingPadVec.empty()) {
     instrumentLandingPads(LandingPadVec);
+
+}
 
   if (AllocasToInstrument.empty() && F.hasPersonalityFn() &&
       F.getPersonalityFn()->getName() == kHwasanPersonalityThunkName) {
@@ -1138,8 +1222,10 @@ bool HWAddressSanitizer::sanitizeFunction(Function &F) {
     F.setPersonalityFn(nullptr);
   }
 
-  if (AllocasToInstrument.empty() && ToInstrument.empty())
+  if (AllocasToInstrument.empty() && ToInstrument.empty()) {
     return false;
+
+}
 
   assert(!LocalDynamicShadow);
 
@@ -1189,16 +1275,28 @@ bool HWAddressSanitizer::sanitizeFunction(Function &F) {
   }
 
   if (!AllocaToPaddedAllocaMap.empty()) {
-    for (auto &BB : F)
-      for (auto &Inst : BB)
-        if (auto *DVI = dyn_cast<DbgVariableIntrinsic>(&Inst))
+    for (auto &BB : F) {
+      for (auto &Inst : BB) {
+        if (auto *DVI = dyn_cast<DbgVariableIntrinsic>(&Inst)) {
           if (auto *AI =
-                  dyn_cast_or_null<AllocaInst>(DVI->getVariableLocation()))
-            if (auto *NewAI = AllocaToPaddedAllocaMap.lookup(AI))
+                  dyn_cast_or_null<AllocaInst>(DVI->getVariableLocation())) {
+            if (auto *NewAI = AllocaToPaddedAllocaMap.lookup(AI)) {
               DVI->setArgOperand(
                   0, MetadataAsValue::get(*C, LocalAsMetadata::get(NewAI)));
-    for (auto &P : AllocaToPaddedAllocaMap)
+
+}
+
+}
+
+}
+
+}
+
+}
+    for (auto &P : AllocaToPaddedAllocaMap) {
       P.first->eraseFromParent();
+
+}
   }
 
   // If we split the entry block, move any allocas that were originally in the
@@ -1210,14 +1308,20 @@ bool HWAddressSanitizer::sanitizeFunction(Function &F) {
               IE = EntryIRB.GetInsertBlock()->end();
          II != IE;) {
       Instruction *I = &*II++;
-      if (auto *AI = dyn_cast<AllocaInst>(I))
-        if (isa<ConstantInt>(AI->getArraySize()))
+      if (auto *AI = dyn_cast<AllocaInst>(I)) {
+        if (isa<ConstantInt>(AI->getArraySize())) {
           I->moveBefore(InsertPt);
+
+}
+
+}
     }
   }
 
-  for (auto Inst : ToInstrument)
+  for (auto Inst : ToInstrument) {
     Changed |= instrumentMemAccess(Inst);
+
+}
 
   LocalDynamicShadow = nullptr;
   StackBaseTag = nullptr;
@@ -1384,18 +1488,24 @@ void HWAddressSanitizer::instrumentGlobals() {
   std::vector<GlobalVariable *> Globals;
   for (GlobalVariable &GV : M.globals()) {
     if (GV.isDeclarationForLinker() || GV.getName().startswith("llvm.") ||
-        GV.isThreadLocal())
+        GV.isThreadLocal()) {
       continue;
 
+}
+
     // Common symbols can't have aliases point to them, so they can't be tagged.
-    if (GV.hasCommonLinkage())
+    if (GV.hasCommonLinkage()) {
       continue;
+
+}
 
     // Globals with custom sections may be used in __start_/__stop_ enumeration,
     // which would be broken both by adding tags and potentially by the extra
     // padding/alignment that we insert.
-    if (GV.hasSection())
+    if (GV.hasSection()) {
       continue;
+
+}
 
     Globals.push_back(&GV);
   }
@@ -1408,8 +1518,10 @@ void HWAddressSanitizer::instrumentGlobals() {
 
   for (GlobalVariable *GV : Globals) {
     // Skip tag 0 in order to avoid collisions with untagged memory.
-    if (Tag == 0)
+    if (Tag == 0) {
       Tag = 1;
+
+}
     instrumentGlobal(GV, Tag++);
   }
 }
@@ -1423,8 +1535,10 @@ void HWAddressSanitizer::instrumentPersonalityFunctions() {
   // function wrapper in the runtime.
   MapVector<Constant *, std::vector<Function *>> PersonalityFns;
   for (Function &F : M) {
-    if (F.isDeclaration() || !F.hasFnAttribute(Attribute::SanitizeHWAddress))
+    if (F.isDeclaration() || !F.hasFnAttribute(Attribute::SanitizeHWAddress)) {
       continue;
+
+}
 
     if (F.hasPersonalityFn()) {
       PersonalityFns[F.getPersonalityFn()->stripPointerCasts()].push_back(&F);
@@ -1433,8 +1547,10 @@ void HWAddressSanitizer::instrumentPersonalityFunctions() {
     }
   }
 
-  if (PersonalityFns.empty())
+  if (PersonalityFns.empty()) {
     return;
+
+}
 
   FunctionCallee HwasanPersonalityWrapper = M.getOrInsertFunction(
       "__hwasan_personality_wrapper", Int32Ty, Int32Ty, Int32Ty, Int64Ty,
@@ -1444,8 +1560,10 @@ void HWAddressSanitizer::instrumentPersonalityFunctions() {
 
   for (auto &P : PersonalityFns) {
     std::string ThunkName = kHwasanPersonalityThunkName;
-    if (P.first)
+    if (P.first) {
       ThunkName += ("." + P.first->getName()).str();
+
+}
     FunctionType *ThunkFnTy = FunctionType::get(
         Int32Ty, {Int32Ty, Int32Ty, Int64Ty, Int8PtrTy, Int8PtrTy}, false);
     bool IsLocal = P.first && (!isa<GlobalValue>(P.first) ||
@@ -1472,8 +1590,10 @@ void HWAddressSanitizer::instrumentPersonalityFunctions() {
     WrapperCall->setTailCall();
     IRB.CreateRet(WrapperCall);
 
-    for (Function *F : P.second)
+    for (Function *F : P.second) {
       F->setPersonalityFn(ThunkFn);
+
+}
   }
 }
 

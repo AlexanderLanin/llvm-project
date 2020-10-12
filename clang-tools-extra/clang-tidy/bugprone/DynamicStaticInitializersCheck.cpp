@@ -19,8 +19,10 @@ namespace bugprone {
 AST_MATCHER(clang::VarDecl, hasConstantDeclaration) {
   const Expr *Init = Node.getInit();
   if (Init && !Init->isValueDependent()) {
-    if (Node.isConstexpr())
+    if (Node.isConstexpr()) {
       return true;
+
+}
     return Node.checkInitIsICE();
   }
   return false;
@@ -54,8 +56,10 @@ void DynamicStaticInitializersCheck::check(const MatchFinder::MatchResult &Resul
   const auto *Var = Result.Nodes.getNodeAs<VarDecl>("var");
   SourceLocation Loc = Var->getLocation();
   if (!Loc.isValid() || !utils::isPresumedLocInHeaderFile(Loc, *Result.SourceManager,
-                                                          HeaderFileExtensions))
+                                                          HeaderFileExtensions)) {
     return;
+
+}
   // If the initializer is a constant expression, then the compiler
   // doesn't have to dynamically initialize it.
   diag(Loc, "static variable %0 may be dynamically initialized in this header file")

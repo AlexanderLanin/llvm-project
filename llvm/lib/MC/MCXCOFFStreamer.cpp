@@ -94,8 +94,10 @@ MCStreamer *llvm::createXCOFFStreamer(MCContext &Context,
                                       bool RelaxAll) {
   MCXCOFFStreamer *S = new MCXCOFFStreamer(Context, std::move(MAB),
                                            std::move(OW), std::move(CE));
-  if (RelaxAll)
+  if (RelaxAll) {
     S->getAssembler().setRelaxAll(true);
+
+}
   return S;
 }
 

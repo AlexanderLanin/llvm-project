@@ -35,8 +35,10 @@ void BoolPointerImplicitConversionCheck::check(
   auto *Var = Result.Nodes.getNodeAs<DeclRefExpr>("expr");
 
   // Ignore macros.
-  if (Var->getBeginLoc().isMacroID())
+  if (Var->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   // Only allow variable accesses for now, no function calls or member exprs.
   // Check that we don't dereference the variable anywhere within the if. This
@@ -59,8 +61,10 @@ void BoolPointerImplicitConversionCheck::check(
            .empty() ||
       !match(findAll(cxxDeleteExpr(has(ignoringParenImpCasts(expr(DeclRef))))),
              *If, *Result.Context)
-           .empty())
+           .empty()) {
     return;
+
+}
 
   diag(Var->getBeginLoc(), "dubious check of 'bool *' against 'nullptr', did "
                            "you mean to dereference it?")

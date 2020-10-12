@@ -31,8 +31,10 @@ TapiUniversal::TapiUniversal(MemoryBufferRef Source, Error &Err)
   ParsedFile = std::move(Result.get());
 
   auto Archs = ParsedFile->getArchitectures();
-  for (auto Arch : Archs)
+  for (auto Arch : Archs) {
     Architectures.emplace_back(Arch);
+
+}
 }
 
 TapiUniversal::~TapiUniversal() = default;
@@ -48,7 +50,9 @@ Expected<std::unique_ptr<TapiUniversal>>
 TapiUniversal::create(MemoryBufferRef Source) {
   Error Err = Error::success();
   std::unique_ptr<TapiUniversal> Ret(new TapiUniversal(Source, Err));
-  if (Err)
+  if (Err) {
     return std::move(Err);
+
+}
   return std::move(Ret);
 }

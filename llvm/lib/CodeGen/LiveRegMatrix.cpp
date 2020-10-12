@@ -58,8 +58,10 @@ bool LiveRegMatrix::runOnMachineFunction(MachineFunction &MF) {
   VRM = &getAnalysis<VirtRegMap>();
 
   unsigned NumRegUnits = TRI->getNumRegUnits();
-  if (NumRegUnits != Matrix.size())
+  if (NumRegUnits != Matrix.size()) {
     Queries.reset(new LiveIntervalUnion::Query[NumRegUnits]);
+
+}
   Matrix.init(LIUAlloc, NumRegUnits);
 
   // Make sure no stale queries get reused.
@@ -86,16 +88,20 @@ static bool foreachUnit(const TargetRegisterInfo *TRI,
       LaneBitmask Mask = (*Units).second;
       for (LiveInterval::SubRange &S : VRegInterval.subranges()) {
         if ((S.LaneMask & Mask).any()) {
-          if (Func(Unit, S))
+          if (Func(Unit, S)) {
             return true;
+
+}
           break;
         }
       }
     }
   } else {
     for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units) {
-      if (Func(*Units, VRegInterval))
+      if (Func(*Units, VRegInterval)) {
         return true;
+
+}
     }
   }
   return false;
@@ -137,8 +143,10 @@ void LiveRegMatrix::unassign(LiveInterval &VirtReg) {
 
 bool LiveRegMatrix::isPhysRegUsed(unsigned PhysReg) const {
   for (MCRegUnitIterator Unit(PhysReg, TRI); Unit.isValid(); ++Unit) {
-    if (!Matrix[*Unit].empty())
+    if (!Matrix[*Unit].empty()) {
       return true;
+
+}
   }
   return false;
 }
@@ -163,8 +171,10 @@ bool LiveRegMatrix::checkRegMaskInterference(LiveInterval &VirtReg,
 
 bool LiveRegMatrix::checkRegUnitInterference(LiveInterval &VirtReg,
                                              unsigned PhysReg) {
-  if (VirtReg.empty())
+  if (VirtReg.empty()) {
     return false;
+
+}
   CoalescerPair CP(VirtReg.reg, PhysReg, *TRI);
 
   bool Result = foreachUnit(TRI, VirtReg, PhysReg, [&](unsigned Unit,
@@ -184,24 +194,32 @@ LiveIntervalUnion::Query &LiveRegMatrix::query(const LiveRange &LR,
 
 LiveRegMatrix::InterferenceKind
 LiveRegMatrix::checkInterference(LiveInterval &VirtReg, unsigned PhysReg) {
-  if (VirtReg.empty())
+  if (VirtReg.empty()) {
     return IK_Free;
 
+}
+
   // Regmask interference is the fastest check.
-  if (checkRegMaskInterference(VirtReg, PhysReg))
+  if (checkRegMaskInterference(VirtReg, PhysReg)) {
     return IK_RegMask;
 
+}
+
   // Check for fixed interference.
-  if (checkRegUnitInterference(VirtReg, PhysReg))
+  if (checkRegUnitInterference(VirtReg, PhysReg)) {
     return IK_RegUnit;
+
+}
 
   // Check the matrix for virtual register interference.
   bool Interference = foreachUnit(TRI, VirtReg, PhysReg,
                                   [&](unsigned Unit, const LiveRange &LR) {
     return query(LR, Unit).checkInterference();
   });
-  if (Interference)
+  if (Interference) {
     return IK_VirtReg;
+
+}
 
   return IK_Free;
 }
@@ -216,8 +234,10 @@ bool LiveRegMatrix::checkInterference(SlotIndex Start, SlotIndex End,
 
   // Check for interference with that segment
   for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units) {
-    if (query(LR, *Units).checkInterference())
+    if (query(LR, *Units).checkInterference()) {
       return true;
+
+}
   }
   return false;
 }

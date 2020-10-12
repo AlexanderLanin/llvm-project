@@ -106,8 +106,10 @@ size_t BlobAllocator::allocateString(StringRef Str) {
 
 void BlobAllocator::writeTo(raw_ostream &OS) const {
   size_t BeginOffset = OS.tell();
-  for (const auto &Callback : Callbacks)
+  for (const auto &Callback : Callbacks) {
     Callback(OS);
+
+}
   assert(OS.tell() == BeginOffset + NextOffset &&
          "Callbacks wrote an unexpected number of bytes.");
   (void)BeginOffset;
@@ -156,15 +158,19 @@ static size_t layout(BlobAllocator &File,
                      MinidumpYAML::detail::ListStream<EntryT> &S) {
 
   File.allocateNewObject<support::ulittle32_t>(S.Entries.size());
-  for (auto &E : S.Entries)
+  for (auto &E : S.Entries) {
     File.allocateObject(E.Entry);
+
+}
 
   size_t DataEnd = File.tell();
 
   // Lay out the auxiliary data, (which is not a part of the stream).
   DataEnd = File.tell();
-  for (auto &E : S.Entries)
+  for (auto &E : S.Entries) {
     layout(File, E);
+
+}
 
   return DataEnd;
 }
@@ -236,8 +242,10 @@ bool yaml2minidump(MinidumpYAML::Object &Obj, raw_ostream &Out,
       File.allocateArray(makeArrayRef(StreamDirectory));
   Obj.Header.NumberOfStreams = StreamDirectory.size();
 
-  for (auto &Stream : enumerate(Obj.Streams))
+  for (auto &Stream : enumerate(Obj.Streams)) {
     StreamDirectory[Stream.index()] = layout(File, *Stream.value());
+
+}
 
   File.writeTo(Out);
   return true;

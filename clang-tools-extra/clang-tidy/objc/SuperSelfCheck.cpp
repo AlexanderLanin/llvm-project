@@ -94,12 +94,16 @@ void SuperSelfCheck::check(const MatchFinder::MatchResult &Result) {
               << Message->getMethodDecl();
 
   SourceLocation ReceiverLoc = Message->getReceiverRange().getBegin();
-  if (ReceiverLoc.isMacroID() || ReceiverLoc.isInvalid())
+  if (ReceiverLoc.isMacroID() || ReceiverLoc.isInvalid()) {
     return;
 
+}
+
   SourceLocation SelectorLoc = Message->getSelectorStartLoc();
-  if (SelectorLoc.isMacroID() || SelectorLoc.isInvalid())
+  if (SelectorLoc.isMacroID() || SelectorLoc.isInvalid()) {
     return;
+
+}
 
   Diag << FixItHint::CreateReplacement(Message->getSourceRange(),
                                        StringRef("[super init]"));

@@ -77,11 +77,13 @@ StringRef AttrTypeAsString(unsigned Attr, bool HasTagPrefix) {
 
 StringRef AttrTypeAsString(AttrType Attr, bool HasTagPrefix) {
   for (unsigned TI = 0, TE = sizeof(ARMAttributeTags) / sizeof(*ARMAttributeTags);
-       TI != TE; ++TI)
+       TI != TE; ++TI) {
     if (ARMAttributeTags[TI].Attr == Attr) {
       auto TagName = ARMAttributeTags[TI].TagName;
       return HasTagPrefix ? TagName : TagName.drop_front(4);
     }
+
+}
   return "";
 }
 

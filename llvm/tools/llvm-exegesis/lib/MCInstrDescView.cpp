@@ -81,9 +81,13 @@ const MCOperandInfo &Operand::getExplicitOperandInfo() const {
 }
 
 const BitVector *BitVectorCache::getUnique(BitVector &&BV) const {
-  for (const auto &Entry : Cache)
-    if (*Entry == BV)
+  for (const auto &Entry : Cache) {
+    if (*Entry == BV) {
       return Entry.get();
+
+}
+
+}
   Cache.push_back(std::make_unique<BitVector>());
   auto &Entry = Cache.back();
   Entry->swap(BV);
@@ -116,15 +120,19 @@ Instruction::create(const MCInstrInfo &InstrInfo,
     Operand.Index = OpIndex;
     Operand.IsDef = (OpIndex < Description->getNumDefs());
     // TODO(gchatelet): Handle isLookupPtrRegClass.
-    if (OpInfo.RegClass >= 0)
+    if (OpInfo.RegClass >= 0) {
       Operand.Tracker = &RATC.getRegisterClass(OpInfo.RegClass);
+
+}
     int TiedToIndex = Description->getOperandConstraint(OpIndex, MCOI::TIED_TO);
     assert((TiedToIndex == -1 ||
             (0 <= TiedToIndex &&
              TiedToIndex < std::numeric_limits<uint8_t>::max())) &&
            "Unknown Operand Constraint");
-    if (TiedToIndex >= 0)
+    if (TiedToIndex >= 0) {
       Operand.TiedToIndex = TiedToIndex;
+
+}
     Operand.Info = &OpInfo;
     Operands.push_back(Operand);
   }
@@ -148,7 +156,7 @@ Instruction::create(const MCInstrInfo &InstrInfo,
   }
   Variables.reserve(Operands.size()); // Variables.size() <= Operands.size()
   // Assigning Variables to non tied explicit operands.
-  for (auto &Op : Operands)
+  for (auto &Op : Operands) {
     if (Op.isExplicit() && !Op.isTied()) {
       const size_t VariableIndex = Variables.size();
       assert(VariableIndex < std::numeric_limits<uint8_t>::max());
@@ -156,14 +164,24 @@ Instruction::create(const MCInstrInfo &InstrInfo,
       Variables.emplace_back();
       Variables.back().Index = VariableIndex;
     }
+
+}
   // Assigning Variables to tied operands.
-  for (auto &Op : Operands)
-    if (Op.isExplicit() && Op.isTied())
+  for (auto &Op : Operands) {
+    if (Op.isExplicit() && Op.isTied()) {
       Op.VariableIndex = Operands[Op.getTiedToIndex()].getVariableIndex();
+
+}
+
+}
   // Assigning Operands to Variables.
-  for (auto &Op : Operands)
-    if (Op.isVariable())
+  for (auto &Op : Operands) {
+    if (Op.isVariable()) {
       Variables[Op.getVariableIndex()].TiedOperands.push_back(Op.getIndex());
+
+}
+
+}
   // Processing Aliasing.
   BitVector ImplDefRegs = RATC.emptyRegisters();
   BitVector ImplUseRegs = RATC.emptyRegisters();
@@ -172,14 +190,22 @@ Instruction::create(const MCInstrInfo &InstrInfo,
   for (const auto &Op : Operands) {
     if (Op.isReg()) {
       const auto &AliasingBits = Op.getRegisterAliasing().aliasedBits();
-      if (Op.isDef())
+      if (Op.isDef()) {
         AllDefRegs |= AliasingBits;
-      if (Op.isUse())
+
+}
+      if (Op.isUse()) {
         AllUseRegs |= AliasingBits;
-      if (Op.isDef() && Op.isImplicit())
+
+}
+      if (Op.isDef() && Op.isImplicit()) {
         ImplDefRegs |= AliasingBits;
-      if (Op.isUse() && Op.isImplicit())
+
+}
+      if (Op.isUse() && Op.isImplicit()) {
         ImplUseRegs |= AliasingBits;
+
+}
     }
   }
   // Can't use make_unique because constructor is private.
@@ -215,10 +241,14 @@ static bool anyCommonExcludingForbidden(const BitVector &A, const BitVector &B,
   const auto Size = A.size();
   for (int AIndex = A.find_first(); AIndex != -1;) {
     const int BIndex = B.find_first_in(AIndex, Size);
-    if (BIndex == -1)
+    if (BIndex == -1) {
       return false;
-    if (AIndex == BIndex && !Forbidden.test(AIndex))
+
+}
+    if (AIndex == BIndex && !Forbidden.test(AIndex)) {
       return true;
+
+}
     AIndex = A.find_first_in(BIndex + 1, Size);
   }
   return false;
@@ -253,29 +283,45 @@ void Instruction::dump(const MCRegisterInfo &RegInfo,
   Stream << "- " << Name << "\n";
   for (const auto &Op : Operands) {
     Stream << "- Op" << Op.getIndex();
-    if (Op.isExplicit())
+    if (Op.isExplicit()) {
       Stream << " Explicit";
-    if (Op.isImplicit())
+
+}
+    if (Op.isImplicit()) {
       Stream << " Implicit";
-    if (Op.isUse())
+
+}
+    if (Op.isUse()) {
       Stream << " Use";
-    if (Op.isDef())
+
+}
+    if (Op.isDef()) {
       Stream << " Def";
-    if (Op.isImmediate())
+
+}
+    if (Op.isImmediate()) {
       Stream << " Immediate";
-    if (Op.isMemory())
+
+}
+    if (Op.isMemory()) {
       Stream << " Memory";
+
+}
     if (Op.isReg()) {
-      if (Op.isImplicitReg())
+      if (Op.isImplicitReg()) {
         Stream << " Reg(" << RegInfo.getName(Op.getImplicitReg()) << ")";
-      else
+      } else {
         Stream << " RegClass("
                << RegInfo.getRegClassName(
                       &RegInfo.getRegClass(Op.Info->RegClass))
                << ")";
+
+}
     }
-    if (Op.isTied())
+    if (Op.isTied()) {
       Stream << " TiedToOp" << Op.getTiedToIndex();
+
+}
     Stream << "\n";
   }
   for (const auto &Var : Variables) {
@@ -283,22 +329,32 @@ void Instruction::dump(const MCRegisterInfo &RegInfo,
     Stream << " [";
     bool IsFirst = true;
     for (auto OperandIndex : Var.TiedOperands) {
-      if (!IsFirst)
+      if (!IsFirst) {
         Stream << ",";
+
+}
       Stream << "Op" << OperandIndex;
       IsFirst = false;
     }
     Stream << "]";
     Stream << "\n";
   }
-  if (hasMemoryOperands())
+  if (hasMemoryOperands()) {
     Stream << "- hasMemoryOperands\n";
-  if (hasAliasingImplicitRegisters())
+
+}
+  if (hasAliasingImplicitRegisters()) {
     Stream << "- hasAliasingImplicitRegisters (execution is always serial)\n";
-  if (hasTiedRegisters())
+
+}
+  if (hasTiedRegisters()) {
     Stream << "- hasTiedRegisters (execution is always serial)\n";
-  if (hasAliasingRegisters(RATC.emptyRegisters()))
+
+}
+  if (hasAliasingRegisters(RATC.emptyRegisters())) {
     Stream << "- hasAliasingRegisters\n";
+
+}
 }
 
 InstructionsCache::InstructionsCache(const MCInstrInfo &InstrInfo,
@@ -307,8 +363,10 @@ InstructionsCache::InstructionsCache(const MCInstrInfo &InstrInfo,
 
 const Instruction &InstructionsCache::getInstr(unsigned Opcode) const {
   auto &Found = Instructions[Opcode];
-  if (!Found)
+  if (!Found) {
     Found = Instruction::create(InstrInfo, RATC, BVC, Opcode);
+
+}
   return *Found;
 }
 
@@ -329,8 +387,10 @@ addOperandIfAlias(const MCPhysReg Reg, bool SelectDef,
   for (const auto &Op : Operands) {
     if (Op.isReg() && Op.isDef() == SelectDef) {
       const int SourceReg = Op.getRegisterAliasing().getOrigin(Reg);
-      if (SourceReg >= 0)
+      if (SourceReg >= 0) {
         OperandValues.emplace_back(&Op, SourceReg);
+
+}
     }
   }
 }
@@ -360,26 +420,30 @@ AliasingConfigurations::AliasingConfigurations(
       addOperandIfAlias(Reg, true, DefInstruction.Operands, ARO.Defs);
       addOperandIfAlias(Reg, false, UseInstruction.Operands, ARO.Uses);
       if (!ARO.Defs.empty() && !ARO.Uses.empty() &&
-          !is_contained(Configurations, ARO))
+          !is_contained(Configurations, ARO)) {
         Configurations.push_back(std::move(ARO));
+
+}
     }
   }
 }
 
 void DumpMCOperand(const MCRegisterInfo &MCRegisterInfo, const MCOperand &Op,
                    raw_ostream &OS) {
-  if (!Op.isValid())
+  if (!Op.isValid()) {
     OS << "Invalid";
-  else if (Op.isReg())
+  } else if (Op.isReg()) {
     OS << MCRegisterInfo.getName(Op.getReg());
-  else if (Op.isImm())
+  } else if (Op.isImm()) {
     OS << Op.getImm();
-  else if (Op.isFPImm())
+  } else if (Op.isFPImm()) {
     OS << Op.getFPImm();
-  else if (Op.isExpr())
+  } else if (Op.isExpr()) {
     OS << "Expr";
-  else if (Op.isInst())
+  } else if (Op.isInst()) {
     OS << "SubInst";
+
+}
 }
 
 void DumpMCInst(const MCRegisterInfo &MCRegisterInfo,
@@ -387,8 +451,10 @@ void DumpMCInst(const MCRegisterInfo &MCRegisterInfo,
                 raw_ostream &OS) {
   OS << MCInstrInfo.getName(MCInst.getOpcode());
   for (unsigned I = 0, E = MCInst.getNumOperands(); I < E; ++I) {
-    if (I > 0)
+    if (I > 0) {
       OS << ',';
+
+}
     OS << ' ';
     DumpMCOperand(MCRegisterInfo, MCInst.getOperand(I), OS);
   }

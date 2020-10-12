@@ -49,8 +49,10 @@ MDNode *DebugLoc::getInlinedAtScope() const {
 DebugLoc DebugLoc::getFnDebugLoc() const {
   // FIXME: Add a method on \a DILocation that does this work.
   const MDNode *Scope = getInlinedAtScope();
-  if (auto *SP = getDISubprogram(Scope))
+  if (auto *SP = getDISubprogram(Scope)) {
     return DebugLoc::get(SP->getScopeLine(), 0, SP);
+
+}
 
   return DebugLoc();
 }
@@ -71,8 +73,10 @@ void DebugLoc::setImplicitCode(bool ImplicitCode) {
 DebugLoc DebugLoc::get(unsigned Line, unsigned Col, const MDNode *Scope,
                        const MDNode *InlinedAt, bool ImplicitCode) {
   // If no scope is available, this is an unknown location.
-  if (!Scope)
+  if (!Scope) {
     return DebugLoc();
+
+}
 
   return DILocation::get(Scope->getContext(), Line, Col,
                          const_cast<MDNode *>(Scope),
@@ -95,8 +99,10 @@ DebugLoc DebugLoc::appendInlinedAt(DebugLoc DL, DILocation *InlinedAt,
       break;
     }
 
-    if (ReplaceLast && !IA->getInlinedAt())
+    if (ReplaceLast && !IA->getInlinedAt()) {
       break;
+
+}
     InlinedAtLocations.push_back(IA);
     CurInlinedAt = IA;
   }
@@ -104,9 +110,11 @@ DebugLoc DebugLoc::appendInlinedAt(DebugLoc DL, DILocation *InlinedAt,
   // Starting from the top, rebuild the nodes to point to the new inlined-at
   // location (then rebuilding the rest of the chain behind it) and update the
   // map of already-constructed inlined-at nodes.
-  for (const DILocation *MD : reverse(InlinedAtLocations))
+  for (const DILocation *MD : reverse(InlinedAtLocations)) {
     Cache[MD] = Last = DILocation::getDistinct(
         Ctx, MD->getLine(), MD->getColumn(), MD->getScope(), Last);
+
+}
 
   return Last;
 }
@@ -116,15 +124,19 @@ LLVM_DUMP_METHOD void DebugLoc::dump() const { print(dbgs()); }
 #endif
 
 void DebugLoc::print(raw_ostream &OS) const {
-  if (!Loc)
+  if (!Loc) {
     return;
+
+}
 
   // Print source line info.
   auto *Scope = cast<DIScope>(getScope());
   OS << Scope->getFilename();
   OS << ':' << getLine();
-  if (getCol() != 0)
+  if (getCol() != 0) {
     OS << ':' << getCol();
+
+}
 
   if (DebugLoc InlinedAtDL = getInlinedAt()) {
     OS << " @[ ";

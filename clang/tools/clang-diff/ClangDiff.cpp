@@ -71,8 +71,10 @@ static cl::list<std::string> ArgsBefore(
     cl::cat(ClangDiffCategory));
 
 static void addExtraArgs(std::unique_ptr<CompilationDatabase> &Compilations) {
-  if (!Compilations)
+  if (!Compilations) {
     return;
+
+}
   auto AdjustingCompilations =
       std::make_unique<ArgumentsAdjustingCompilations>(
           std::move(Compilations));
@@ -106,8 +108,10 @@ getAST(const std::unique_ptr<CompilationDatabase> &CommonCompilations,
   ClangTool Tool(Compilations ? *Compilations : *CommonCompilations, Files);
   std::vector<std::unique_ptr<ASTUnit>> ASTs;
   Tool.buildASTs(ASTs);
-  if (ASTs.size() != Files.size())
+  if (ASTs.size() != Files.size()) {
     return nullptr;
+
+}
   return std::move(ASTs[0]);
 }
 
@@ -241,8 +245,10 @@ static void printHtml(raw_ostream &OS, char C) {
 }
 
 static void printHtml(raw_ostream &OS, const StringRef Str) {
-  for (char C : Str)
+  for (char C : Str) {
     printHtml(OS, C);
+
+}
 }
 
 static std::string getChangeKindAbbr(diff::ChangeKind Kind) {
@@ -285,8 +291,10 @@ static unsigned printHtmlForNode(raw_ostream &OS, const diff::ASTDiff &Diff,
   std::tie(Begin, End) = Tree.getSourceRangeOffsets(Node);
   const SourceManager &SrcMgr = Tree.getASTContext().getSourceManager();
   auto Code = SrcMgr.getBuffer(SrcMgr.getMainFileID())->getBuffer();
-  for (; Offset < Begin; ++Offset)
+  for (; Offset < Begin; ++Offset) {
     printHtml(OS, Code[Offset]);
+
+}
   OS << "<span id='" << MyTag << Id << "' "
      << "tid='" << OtherTag << TargetId << "' ";
   OS << "title='";
@@ -298,19 +306,27 @@ static unsigned printHtmlForNode(raw_ostream &OS, const diff::ASTDiff &Diff,
     printHtml(OS, Value);
   }
   OS << "'";
-  if (Node.Change != diff::None)
+  if (Node.Change != diff::None) {
     OS << " class='" << getChangeKindAbbr(Node.Change) << "'";
+
+}
   OS << ">";
 
-  for (diff::NodeId Child : Node.Children)
+  for (diff::NodeId Child : Node.Children) {
     Offset = printHtmlForNode(OS, Diff, Tree, IsLeft, Child, Offset);
 
-  for (; Offset < End; ++Offset)
+}
+
+  for (; Offset < End; ++Offset) {
     printHtml(OS, Code[Offset]);
+
+}
   if (Id == Tree.getRootId()) {
     End = Code.size();
-    for (; Offset < End; ++Offset)
+    for (; Offset < End; ++Offset) {
       printHtml(OS, Code[Offset]);
+
+}
   }
   OS << "</span>";
   return Offset;
@@ -393,15 +409,19 @@ static void printNode(raw_ostream &OS, diff::SyntaxTree &Tree,
   }
   OS << Tree.getNode(Id).getTypeLabel();
   std::string Value = Tree.getNodeValue(Id);
-  if (!Value.empty())
+  if (!Value.empty()) {
     OS << ": " << Value;
+
+}
   OS << "(" << Id << ")";
 }
 
 static void printTree(raw_ostream &OS, diff::SyntaxTree &Tree) {
   for (diff::NodeId Id : Tree) {
-    for (int I = 0; I < Tree.getNode(Id).Depth; ++I)
+    for (int I = 0; I < Tree.getNode(Id).Depth; ++I) {
       OS << " ";
+
+}
     printNode(OS, Tree, Id);
     OS << "\n";
   }
@@ -425,12 +445,14 @@ static void printDstChange(raw_ostream &OS, diff::ASTDiff &Diff,
   case diff::Insert:
   case diff::Move:
   case diff::UpdateMove:
-    if (DstNode.Change == diff::Insert)
+    if (DstNode.Change == diff::Insert) {
       OS << "Insert";
-    else if (DstNode.Change == diff::Move)
+    } else if (DstNode.Change == diff::Move) {
       OS << "Move";
-    else if (DstNode.Change == diff::UpdateMove)
+    } else if (DstNode.Change == diff::UpdateMove) {
       OS << "Update and Move";
+
+}
     OS << " ";
     printNode(OS, DstTree, Dst);
     OS << " into ";
@@ -444,8 +466,10 @@ int main(int argc, const char **argv) {
   std::string ErrorMessage;
   std::unique_ptr<CompilationDatabase> CommonCompilations =
       FixedCompilationDatabase::loadFromCommandLine(argc, argv, ErrorMessage);
-  if (!CommonCompilations && !ErrorMessage.empty())
+  if (!CommonCompilations && !ErrorMessage.empty()) {
     llvm::errs() << ErrorMessage;
+
+}
   cl::HideUnrelatedOptions(ClangDiffCategory);
   if (!cl::ParseCommandLineOptions(argc, argv)) {
     cl::PrintOptionValues();
@@ -460,8 +484,10 @@ int main(int argc, const char **argv) {
       return 1;
     }
     std::unique_ptr<ASTUnit> AST = getAST(CommonCompilations, SourcePath);
-    if (!AST)
+    if (!AST) {
       return 1;
+
+}
     diff::SyntaxTree Tree(AST->getASTContext());
     if (ASTDump) {
       printTree(llvm::outs(), Tree);
@@ -482,16 +508,20 @@ int main(int argc, const char **argv) {
 
   std::unique_ptr<ASTUnit> Src = getAST(CommonCompilations, SourcePath);
   std::unique_ptr<ASTUnit> Dst = getAST(CommonCompilations, DestinationPath);
-  if (!Src || !Dst)
+  if (!Src || !Dst) {
     return 1;
 
+}
+
   diff::ComparisonOptions Options;
-  if (MaxSize != -1)
+  if (MaxSize != -1) {
     Options.MaxSize = MaxSize;
+
+}
   if (!StopAfter.empty()) {
-    if (StopAfter == "topdown")
+    if (StopAfter == "topdown") {
       Options.StopAfterTopDown = true;
-    else if (StopAfter != "bottomup") {
+    } else if (StopAfter != "bottomup") {
       llvm::errs() << "Error: Invalid argument for -stop-after\n";
       return 1;
     }

@@ -79,14 +79,18 @@ FunctionPass *llvm::createScalarizeMaskedMemIntrinPass() {
 
 static bool isConstantIntVector(Value *Mask) {
   Constant *C = dyn_cast<Constant>(Mask);
-  if (!C)
+  if (!C) {
     return false;
+
+}
 
   unsigned NumElts = Mask->getType()->getVectorNumElements();
   for (unsigned i = 0; i != NumElts; ++i) {
     Constant *CElt = C->getAggregateElement(i);
-    if (!CElt || !isa<ConstantInt>(CElt))
+    if (!CElt || !isa<ConstantInt>(CElt)) {
       return false;
+
+}
   }
 
   return true;
@@ -164,8 +168,10 @@ static void scalarizeMaskedLoad(CallInst *CI, bool &ModifiedDT) {
 
   if (isConstantIntVector(Mask)) {
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *Gep = Builder.CreateConstInBoundsGEP1_32(EltTy, FirstEltPtr, Idx);
       LoadInst *Load = Builder.CreateAlignedLoad(EltTy, Gep, AdjustedAlignVal);
       VResult = Builder.CreateInsertElement(VResult, Load, Idx);
@@ -298,8 +304,10 @@ static void scalarizeMaskedStore(CallInst *CI, bool &ModifiedDT) {
 
   if (isConstantIntVector(Mask)) {
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *OneElt = Builder.CreateExtractElement(Src, Idx);
       Value *Gep = Builder.CreateConstInBoundsGEP1_32(EltTy, FirstEltPtr, Idx);
       Builder.CreateAlignedStore(OneElt, Gep, AdjustedAlignVal);
@@ -413,8 +421,10 @@ static void scalarizeMaskedGather(CallInst *CI, bool &ModifiedDT) {
   // Shorten the way if the mask is a vector of constants.
   if (isConstantIntVector(Mask)) {
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *Ptr = Builder.CreateExtractElement(Ptrs, Idx, "Ptr" + Twine(Idx));
       LoadInst *Load = Builder.CreateAlignedLoad(
           EltTy, Ptr, MaybeAlign(AlignVal), "Load" + Twine(Idx));
@@ -537,8 +547,10 @@ static void scalarizeMaskedScatter(CallInst *CI, bool &ModifiedDT) {
   // Shorten the way if the mask is a vector of constants.
   if (isConstantIntVector(Mask)) {
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *OneElt =
           Builder.CreateExtractElement(Src, Idx, "Elt" + Twine(Idx));
       Value *Ptr = Builder.CreateExtractElement(Ptrs, Idx, "Ptr" + Twine(Idx));
@@ -623,8 +635,10 @@ static void scalarizeMaskedExpandLoad(CallInst *CI, bool &ModifiedDT) {
   if (isConstantIntVector(Mask)) {
     unsigned MemIndex = 0;
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *NewPtr = Builder.CreateConstInBoundsGEP1_32(EltTy, Ptr, MemIndex);
       LoadInst *Load = Builder.CreateAlignedLoad(EltTy, NewPtr, Align(1),
                                                  "Load" + Twine(Idx));
@@ -677,8 +691,10 @@ static void scalarizeMaskedExpandLoad(CallInst *CI, bool &ModifiedDT) {
 
     // Move the pointer if there are more blocks to come.
     Value *NewPtr;
-    if ((Idx + 1) != VectorWidth)
+    if ((Idx + 1) != VectorWidth) {
       NewPtr = Builder.CreateConstInBoundsGEP1_32(EltTy, Ptr, 1);
+
+}
 
     // Create "else" block, fill it in the next iteration
     BasicBlock *NewIfBlock =
@@ -733,8 +749,10 @@ static void scalarizeMaskedCompressStore(CallInst *CI, bool &ModifiedDT) {
   if (isConstantIntVector(Mask)) {
     unsigned MemIndex = 0;
     for (unsigned Idx = 0; Idx < VectorWidth; ++Idx) {
-      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue())
+      if (cast<Constant>(Mask)->getAggregateElement(Idx)->isNullValue()) {
         continue;
+
+}
       Value *OneElt =
           Builder.CreateExtractElement(Src, Idx, "Elt" + Twine(Idx));
       Value *NewPtr = Builder.CreateConstInBoundsGEP1_32(EltTy, Ptr, MemIndex);
@@ -783,8 +801,10 @@ static void scalarizeMaskedCompressStore(CallInst *CI, bool &ModifiedDT) {
 
     // Move the pointer if there are more blocks to come.
     Value *NewPtr;
-    if ((Idx + 1) != VectorWidth)
+    if ((Idx + 1) != VectorWidth) {
       NewPtr = Builder.CreateConstInBoundsGEP1_32(EltTy, Ptr, 1);
+
+}
 
     // Create "else" block, fill it in the next iteration
     BasicBlock *NewIfBlock =
@@ -823,8 +843,10 @@ bool ScalarizeMaskedMemIntrin::runOnFunction(Function &F) {
       MadeChange |= optimizeBlock(*BB, ModifiedDTOnIteration);
 
       // Restart BB iteration if the dominator tree of the Function was changed
-      if (ModifiedDTOnIteration)
+      if (ModifiedDTOnIteration) {
         break;
+
+}
     }
 
     EverMadeChange |= MadeChange;
@@ -838,10 +860,14 @@ bool ScalarizeMaskedMemIntrin::optimizeBlock(BasicBlock &BB, bool &ModifiedDT) {
 
   BasicBlock::iterator CurInstIterator = BB.begin();
   while (CurInstIterator != BB.end()) {
-    if (CallInst *CI = dyn_cast<CallInst>(&*CurInstIterator++))
+    if (CallInst *CI = dyn_cast<CallInst>(&*CurInstIterator++)) {
       MadeChange |= optimizeCallInst(CI, ModifiedDT);
-    if (ModifiedDT)
+
+}
+    if (ModifiedDT) {
       return true;
+
+}
   }
 
   return MadeChange;
@@ -858,22 +884,28 @@ bool ScalarizeMaskedMemIntrin::optimizeCallInst(CallInst *CI,
       // Scalarize unsupported vector masked load
       if (TTI->isLegalMaskedLoad(
               CI->getType(),
-              cast<ConstantInt>(CI->getArgOperand(1))->getAlignValue()))
+              cast<ConstantInt>(CI->getArgOperand(1))->getAlignValue())) {
         return false;
+
+}
       scalarizeMaskedLoad(CI, ModifiedDT);
       return true;
     case Intrinsic::masked_store:
       if (TTI->isLegalMaskedStore(
               CI->getArgOperand(0)->getType(),
-              cast<ConstantInt>(CI->getArgOperand(2))->getAlignValue()))
+              cast<ConstantInt>(CI->getArgOperand(2))->getAlignValue())) {
         return false;
+
+}
       scalarizeMaskedStore(CI, ModifiedDT);
       return true;
     case Intrinsic::masked_gather: {
       unsigned Alignment =
           cast<ConstantInt>(CI->getArgOperand(1))->getZExtValue();
-      if (TTI->isLegalMaskedGather(CI->getType(), MaybeAlign(Alignment)))
+      if (TTI->isLegalMaskedGather(CI->getType(), MaybeAlign(Alignment))) {
         return false;
+
+}
       scalarizeMaskedGather(CI, ModifiedDT);
       return true;
     }
@@ -881,19 +913,25 @@ bool ScalarizeMaskedMemIntrin::optimizeCallInst(CallInst *CI,
       unsigned Alignment =
           cast<ConstantInt>(CI->getArgOperand(2))->getZExtValue();
       if (TTI->isLegalMaskedScatter(CI->getArgOperand(0)->getType(),
-                                    MaybeAlign(Alignment)))
+                                    MaybeAlign(Alignment))) {
         return false;
+
+}
       scalarizeMaskedScatter(CI, ModifiedDT);
       return true;
     }
     case Intrinsic::masked_expandload:
-      if (TTI->isLegalMaskedExpandLoad(CI->getType()))
+      if (TTI->isLegalMaskedExpandLoad(CI->getType())) {
         return false;
+
+}
       scalarizeMaskedExpandLoad(CI, ModifiedDT);
       return true;
     case Intrinsic::masked_compressstore:
-      if (TTI->isLegalMaskedCompressStore(CI->getArgOperand(0)->getType()))
+      if (TTI->isLegalMaskedCompressStore(CI->getArgOperand(0)->getType())) {
         return false;
+
+}
       scalarizeMaskedCompressStore(CI, ModifiedDT);
       return true;
     }

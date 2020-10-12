@@ -56,13 +56,19 @@ TargetLoweringObjectFile::~TargetLoweringObjectFile() {
 
 static bool isNullOrUndef(const Constant *C) {
   // Check that the constant isn't all zeros or undefs.
-  if (C->isNullValue() || isa<UndefValue>(C))
+  if (C->isNullValue() || isa<UndefValue>(C)) {
     return true;
-  if (!isa<ConstantAggregate>(C))
+
+}
+  if (!isa<ConstantAggregate>(C)) {
     return false;
+
+}
   for (auto Operand : C->operand_values()) {
-    if (!isNullOrUndef(cast<Constant>(Operand)))
+    if (!isNullOrUndef(cast<Constant>(Operand))) {
       return false;
+
+}
   }
   return true;
 }
@@ -71,16 +77,22 @@ static bool isSuitableForBSS(const GlobalVariable *GV) {
   const Constant *C = GV->getInitializer();
 
   // Must have zero initializer.
-  if (!isNullOrUndef(C))
+  if (!isNullOrUndef(C)) {
     return false;
+
+}
 
   // Leave constant zeros in readonly constant sections, so they can be shared.
-  if (GV->isConstant())
+  if (GV->isConstant()) {
     return false;
 
+}
+
   // If the global has an explicit section specified, don't put it in BSS.
-  if (GV->hasSection())
+  if (GV->hasSection()) {
     return false;
+
+}
 
   // Otherwise, put it in BSS!
   return true;
@@ -96,19 +108,27 @@ static bool IsNullTerminatedString(const Constant *C) {
     unsigned NumElts = CDS->getNumElements();
     assert(NumElts != 0 && "Can't have an empty CDS");
 
-    if (CDS->getElementAsInteger(NumElts-1) != 0)
+    if (CDS->getElementAsInteger(NumElts-1) != 0) {
       return false; // Not null terminated.
 
+}
+
     // Verify that the null doesn't occur anywhere else in the string.
-    for (unsigned i = 0; i != NumElts-1; ++i)
-      if (CDS->getElementAsInteger(i) == 0)
+    for (unsigned i = 0; i != NumElts-1; ++i) {
+      if (CDS->getElementAsInteger(i) == 0) {
         return false;
+
+}
+
+}
     return true;
   }
 
   // Another possibility: [1 x i8] zeroinitializer
-  if (isa<ConstantAggregateZero>(C))
+  if (isa<ConstantAggregateZero>(C)) {
     return cast<ArrayType>(C->getType())->getNumElements() == 1;
+
+}
 
   return false;
 }
@@ -146,34 +166,44 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
          "Can only be used for global definitions");
 
   // Functions are classified as text sections.
-  if (isa<Function>(GO))
+  if (isa<Function>(GO)) {
     return SectionKind::getText();
 
+}
+
   // Basic blocks are classified as text sections.
-  if (isa<BasicBlock>(GO))
+  if (isa<BasicBlock>(GO)) {
     return SectionKind::getText();
+
+}
 
   // Global variables require more detailed analysis.
   const auto *GVar = cast<GlobalVariable>(GO);
 
   // Handle thread-local data first.
   if (GVar->isThreadLocal()) {
-    if (isSuitableForBSS(GVar) && !TM.Options.NoZerosInBSS)
+    if (isSuitableForBSS(GVar) && !TM.Options.NoZerosInBSS) {
       return SectionKind::getThreadBSS();
+
+}
     return SectionKind::getThreadData();
   }
 
   // Variables with common linkage always get classified as common.
-  if (GVar->hasCommonLinkage())
+  if (GVar->hasCommonLinkage()) {
     return SectionKind::getCommon();
+
+}
 
   // Most non-mergeable zero data can be put in the BSS section unless otherwise
   // specified.
   if (isSuitableForBSS(GVar) && !TM.Options.NoZerosInBSS) {
-    if (GVar->hasLocalLinkage())
+    if (GVar->hasLocalLinkage()) {
       return SectionKind::getBSSLocal();
-    else if (GVar->hasExternalLinkage())
+    } else if (GVar->hasExternalLinkage()) {
       return SectionKind::getBSSExtern();
+
+}
     return SectionKind::getBSS();
   }
 
@@ -188,8 +218,10 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
       // If the global is required to have a unique address, it can't be put
       // into a mergable section: just drop it into the general read-only
       // section instead.
-      if (!GVar->hasGlobalUnnamedAddr())
+      if (!GVar->hasGlobalUnnamedAddr()) {
         return SectionKind::getReadOnly();
+
+}
 
       // If initializer is a null-terminated string, put it in a "cstring"
       // section of the right width.
@@ -199,10 +231,14 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
           if ((ITy->getBitWidth() == 8 || ITy->getBitWidth() == 16 ||
                ITy->getBitWidth() == 32) &&
               IsNullTerminatedString(C)) {
-            if (ITy->getBitWidth() == 8)
+            if (ITy->getBitWidth() == 8) {
               return SectionKind::getMergeable1ByteCString();
-            if (ITy->getBitWidth() == 16)
+
+}
+            if (ITy->getBitWidth() == 16) {
               return SectionKind::getMergeable2ByteCString();
+
+}
 
             assert(ITy->getBitWidth() == 32 && "Unknown width");
             return SectionKind::getMergeable4ByteCString();
@@ -231,8 +267,10 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
       // consideration when it tries to merge entries in the section.
       Reloc::Model ReloModel = TM.getRelocationModel();
       if (ReloModel == Reloc::Static || ReloModel == Reloc::ROPI ||
-          ReloModel == Reloc::RWPI || ReloModel == Reloc::ROPI_RWPI)
+          ReloModel == Reloc::RWPI || ReloModel == Reloc::ROPI_RWPI) {
         return SectionKind::getReadOnly();
+
+}
 
       // Otherwise, the dynamic linker needs to fix it up, put it in the
       // writable data.rel section.
@@ -250,8 +288,10 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
 MCSection *TargetLoweringObjectFile::SectionForGlobal(
     const GlobalObject *GO, SectionKind Kind, const TargetMachine &TM) const {
   // Select section name.
-  if (GO->hasSection())
+  if (GO->hasSection()) {
     return getExplicitSectionGlobal(GO, Kind, TM);
+
+}
 
   if (auto *GVar = dyn_cast<GlobalVariable>(GO)) {
     auto Attrs = GVar->getAttributes();
@@ -264,8 +304,10 @@ MCSection *TargetLoweringObjectFile::SectionForGlobal(
   }
 
   if (auto *F = dyn_cast<Function>(GO)) {
-    if (F->hasFnAttribute("implicit-section-name"))
+    if (F->hasFnAttribute("implicit-section-name")) {
       return getExplicitSectionGlobal(GO, Kind, TM);
+
+}
   }
 
   // Use default section depending on the 'type' of global
@@ -285,8 +327,10 @@ bool TargetLoweringObjectFile::shouldPutJumpTableInFunctionSection(
   // In PIC mode, we need to emit the jump table to the same section as the
   // function body itself, otherwise the label differences won't make sense.
   // FIXME: Need a better predicate for this: what about custom entries?
-  if (UsesLabelDifference)
+  if (UsesLabelDifference) {
     return true;
+
+}
 
   // We should also do if the section name is NULL or function is declared
   // in discardable section
@@ -300,8 +344,10 @@ bool TargetLoweringObjectFile::shouldPutJumpTableInFunctionSection(
 MCSection *TargetLoweringObjectFile::getSectionForConstant(
     const DataLayout &DL, SectionKind Kind, const Constant *C,
     unsigned &Align) const {
-  if (Kind.isReadOnly() && ReadOnlySection != nullptr)
+  if (Kind.isReadOnly() && ReadOnlySection != nullptr) {
     return ReadOnlySection;
+
+}
 
   return DataSection;
 }

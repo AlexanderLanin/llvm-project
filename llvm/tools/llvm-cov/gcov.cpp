@@ -28,12 +28,14 @@ static void reportCoverage(StringRef SourceFile, StringRef ObjectDir,
     // If no directory was specified with -o, look next to the source file.
     CoverageFileStem = sys::path::parent_path(SourceFile);
     sys::path::append(CoverageFileStem, sys::path::stem(SourceFile));
-  } else if (sys::fs::is_directory(ObjectDir))
+  } else if (sys::fs::is_directory(ObjectDir)) {
     // A directory name was given. Use it and the source file name.
     sys::path::append(CoverageFileStem, sys::path::stem(SourceFile));
-  else
+  } else {
     // A file was given. Ignore the source file and look next to this file.
     sys::path::replace_extension(CoverageFileStem, "");
+
+}
 
   std::string GCNO = InputGCNO.empty()
                          ? std::string(CoverageFileStem.str()) + ".gcno"
@@ -72,8 +74,10 @@ static void reportCoverage(StringRef SourceFile, StringRef ObjectDir,
     }
   }
 
-  if (DumpGCOV)
+  if (DumpGCOV) {
     GF.print(errs());
+
+}
 
   FileInfo FI(Options);
   GF.collectLineCounts(FI);
@@ -143,8 +147,10 @@ int gcovMain(int argc, const char *argv[]) {
                         PreservePaths, UncondBranch, LongNames, NoOutput,
                         HashFilenames);
 
-  for (const auto &SourceFile : SourceFiles)
+  for (const auto &SourceFile : SourceFiles) {
     reportCoverage(SourceFile, ObjectDir, InputGCNO, InputGCDA, DumpGCOV,
                    Options);
+
+}
   return 0;
 }

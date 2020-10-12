@@ -80,8 +80,10 @@ static void clearAssumptionsOfUsers(Instruction *I, DemandedBits &DB) {
       // that in the def-use chain needs to be changed.
       auto *K = dyn_cast<Instruction>(KU);
       if (K && Visited.insert(K).second && K->getType()->isIntOrIntVectorTy() &&
-          !DB.getDemandedBits(K).isAllOnesValue())
+          !DB.getDemandedBits(K).isAllOnesValue()) {
         WorkList.push_back(K);
+
+}
     }
   }
 }
@@ -93,8 +95,10 @@ static bool bitTrackingDCE(Function &F, DemandedBits &DB) {
     // If the instruction has side effects and no non-dbg uses,
     // skip it. This way we avoid computing known bits on an instruction
     // that will not help us.
-    if (I.mayHaveSideEffects() && I.use_empty())
+    if (I.mayHaveSideEffects() && I.use_empty()) {
       continue;
+
+}
 
     // Remove instructions that are dead, either because they were not reached
     // during analysis or have no demanded bits.
@@ -111,14 +115,20 @@ static bool bitTrackingDCE(Function &F, DemandedBits &DB) {
 
     for (Use &U : I.operands()) {
       // DemandedBits only detects dead integer uses.
-      if (!U->getType()->isIntOrIntVectorTy())
+      if (!U->getType()->isIntOrIntVectorTy()) {
         continue;
 
-      if (!isa<Instruction>(U) && !isa<Argument>(U))
+}
+
+      if (!isa<Instruction>(U) && !isa<Argument>(U)) {
         continue;
 
-      if (!DB.isUseDead(&U))
+}
+
+      if (!DB.isUseDead(&U)) {
         continue;
+
+}
 
       LLVM_DEBUG(dbgs() << "BDCE: Trivializing: " << U << " (all bits dead)\n");
 
@@ -143,8 +153,10 @@ static bool bitTrackingDCE(Function &F, DemandedBits &DB) {
 
 PreservedAnalyses BDCEPass::run(Function &F, FunctionAnalysisManager &AM) {
   auto &DB = AM.getResult<DemandedBitsAnalysis>(F);
-  if (!bitTrackingDCE(F, DB))
+  if (!bitTrackingDCE(F, DB)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -160,8 +172,10 @@ struct BDCELegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     auto &DB = getAnalysis<DemandedBitsWrapperPass>().getDemandedBits();
     return bitTrackingDCE(F, DB);
   }

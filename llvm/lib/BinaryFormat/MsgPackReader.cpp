@@ -26,8 +26,10 @@ Reader::Reader(MemoryBufferRef InputBuffer)
 Reader::Reader(StringRef Input) : Reader({Input, "MsgPack"}) {}
 
 Expected<bool> Reader::read(Object &Obj) {
-  if (Current == End)
+  if (Current == End) {
     return false;
+
+}
 
   uint8_t FB = static_cast<uint8_t>(*Current++);
 
@@ -69,19 +71,23 @@ Expected<bool> Reader::read(Object &Obj) {
     return readUInt<uint64_t>(Obj);
   case FirstByte::Float32:
     Obj.Kind = Type::Float;
-    if (sizeof(float) > remainingSpace())
+    if (sizeof(float) > remainingSpace()) {
       return make_error<StringError>(
           "Invalid Float32 with insufficient payload",
           std::make_error_code(std::errc::invalid_argument));
+
+}
     Obj.Float = BitsToFloat(endian::read<uint32_t, Endianness>(Current));
     Current += sizeof(float);
     return true;
   case FirstByte::Float64:
     Obj.Kind = Type::Float;
-    if (sizeof(double) > remainingSpace())
+    if (sizeof(double) > remainingSpace()) {
       return make_error<StringError>(
           "Invalid Float64 with insufficient payload",
           std::make_error_code(std::errc::invalid_argument));
+
+}
     Obj.Float = BitsToDouble(endian::read<uint64_t, Endianness>(Current));
     Current += sizeof(double);
     return true;
@@ -179,75 +185,91 @@ Expected<bool> Reader::read(Object &Obj) {
 }
 
 template <class T> Expected<bool> Reader::readRaw(Object &Obj) {
-  if (sizeof(T) > remainingSpace())
+  if (sizeof(T) > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Raw with insufficient payload",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   T Size = endian::read<T, Endianness>(Current);
   Current += sizeof(T);
   return createRaw(Obj, Size);
 }
 
 template <class T> Expected<bool> Reader::readInt(Object &Obj) {
-  if (sizeof(T) > remainingSpace())
+  if (sizeof(T) > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Int with insufficient payload",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.Int = static_cast<int64_t>(endian::read<T, Endianness>(Current));
   Current += sizeof(T);
   return true;
 }
 
 template <class T> Expected<bool> Reader::readUInt(Object &Obj) {
-  if (sizeof(T) > remainingSpace())
+  if (sizeof(T) > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Int with insufficient payload",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.UInt = static_cast<uint64_t>(endian::read<T, Endianness>(Current));
   Current += sizeof(T);
   return true;
 }
 
 template <class T> Expected<bool> Reader::readLength(Object &Obj) {
-  if (sizeof(T) > remainingSpace())
+  if (sizeof(T) > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Map/Array with invalid length",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.Length = static_cast<size_t>(endian::read<T, Endianness>(Current));
   Current += sizeof(T);
   return true;
 }
 
 template <class T> Expected<bool> Reader::readExt(Object &Obj) {
-  if (sizeof(T) > remainingSpace())
+  if (sizeof(T) > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Ext with invalid length",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   T Size = endian::read<T, Endianness>(Current);
   Current += sizeof(T);
   return createExt(Obj, Size);
 }
 
 Expected<bool> Reader::createRaw(Object &Obj, uint32_t Size) {
-  if (Size > remainingSpace())
+  if (Size > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Raw with insufficient payload",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.Raw = StringRef(Current, Size);
   Current += Size;
   return true;
 }
 
 Expected<bool> Reader::createExt(Object &Obj, uint32_t Size) {
-  if (Current == End)
+  if (Current == End) {
     return make_error<StringError>(
         "Invalid Ext with no type",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.Extension.Type = *Current++;
-  if (Size > remainingSpace())
+  if (Size > remainingSpace()) {
     return make_error<StringError>(
         "Invalid Ext with insufficient payload",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   Obj.Extension.Bytes = StringRef(Current, Size);
   Current += Size;
   return true;

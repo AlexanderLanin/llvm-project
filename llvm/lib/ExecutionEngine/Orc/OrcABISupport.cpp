@@ -157,8 +157,10 @@ Error OrcAArch64::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
       2 * NumPages * PageSize, nullptr,
       sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC));
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Create separate MemoryBlocks representing the stubs and pointers.
   sys::MemoryBlock StubsBlock(StubsMem.base(), NumPages * PageSize);
@@ -171,17 +173,23 @@ Error OrcAArch64::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   uint64_t PtrOffsetField = static_cast<uint64_t>(NumPages * PageSize)
                             << 3;
 
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Stub[I] = 0xd61f020058000010 | PtrOffsetField;
 
+}
+
   if (auto EC = sys::Memory::protectMappedMemory(
-          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
+          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC)) {
     return errorCodeToError(EC);
+
+}
 
   // Initialize all pointers to point at FailureAddress.
   void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Ptr[I] = InitialPtrVal;
+
+}
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 
@@ -199,8 +207,10 @@ void OrcX86_64_Base::writeTrampolines(uint8_t *TrampolineMem,
   uint64_t *Trampolines = reinterpret_cast<uint64_t *>(TrampolineMem);
   uint64_t CallIndirPCRel = 0xf1c40000000015ff;
 
-  for (unsigned I = 0; I < NumTrampolines; ++I, OffsetToPtr -= TrampolineSize)
+  for (unsigned I = 0; I < NumTrampolines; ++I, OffsetToPtr -= TrampolineSize) {
     Trampolines[I] = CallIndirPCRel | ((OffsetToPtr - 6) << 16);
+
+}
 }
 
 Error OrcX86_64_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
@@ -239,8 +249,10 @@ Error OrcX86_64_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
       2 * NumPages * PageSize, nullptr,
       sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC));
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Create separate MemoryBlocks representing the stubs and pointers.
   sys::MemoryBlock StubsBlock(StubsMem.base(), NumPages * PageSize);
@@ -252,17 +264,23 @@ Error OrcX86_64_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   uint64_t *Stub = reinterpret_cast<uint64_t *>(StubsBlock.base());
   uint64_t PtrOffsetField = static_cast<uint64_t>(NumPages * PageSize - 6)
                             << 16;
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Stub[I] = 0xF1C40000000025ff | PtrOffsetField;
 
+}
+
   if (auto EC = sys::Memory::protectMappedMemory(
-          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
+          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC)) {
     return errorCodeToError(EC);
+
+}
 
   // Initialize all pointers to point at FailureAddress.
   void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Ptr[I] = InitialPtrVal;
+
+}
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 
@@ -468,8 +486,10 @@ void OrcI386::writeTrampolines(uint8_t *TrampolineMem, void *ResolverAddr,
       Resolver - reinterpret_cast<uint64_t>(TrampolineMem) - 5;
 
   uint64_t *Trampolines = reinterpret_cast<uint64_t *>(TrampolineMem);
-  for (unsigned I = 0; I < NumTrampolines; ++I, ResolverRel -= TrampolineSize)
+  for (unsigned I = 0; I < NumTrampolines; ++I, ResolverRel -= TrampolineSize) {
     Trampolines[I] = CallRelImm | (ResolverRel << 8);
+
+}
 }
 
 Error OrcI386::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
@@ -507,8 +527,10 @@ Error OrcI386::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
       2 * NumPages * PageSize, nullptr,
       sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC));
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Create separate MemoryBlocks representing the stubs and pointers.
   sys::MemoryBlock StubsBlock(StubsMem.base(), NumPages * PageSize);
@@ -519,17 +541,23 @@ Error OrcI386::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   // Populate the stubs page stubs and mark it executable.
   uint64_t *Stub = reinterpret_cast<uint64_t *>(StubsBlock.base());
   uint64_t PtrAddr = reinterpret_cast<uint64_t>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I, PtrAddr += 4)
+  for (unsigned I = 0; I < NumStubs; ++I, PtrAddr += 4) {
     Stub[I] = 0xF1C40000000025ff | (PtrAddr << 16);
 
+}
+
   if (auto EC = sys::Memory::protectMappedMemory(
-          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
+          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC)) {
     return errorCodeToError(EC);
+
+}
 
   // Initialize all pointers to point at FailureAddress.
   void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Ptr[I] = InitialPtrVal;
+
+}
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 
@@ -693,8 +721,10 @@ Error OrcMips32_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
       2 * NumPages * PageSize, nullptr,
       sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC));
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Create separate MemoryBlocks representing the stubs and pointers.
   sys::MemoryBlock StubsBlock(StubsMem.base(), NumPages * PageSize);
@@ -716,13 +746,17 @@ Error OrcMips32_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   }
 
   if (auto EC = sys::Memory::protectMappedMemory(
-          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
+          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC)) {
     return errorCodeToError(EC);
+
+}
 
   // Initialize all pointers to point at FailureAddress.
   void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Ptr[I] = InitialPtrVal;
+
+}
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 
@@ -939,8 +973,10 @@ Error OrcMips64::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
       2 * NumPages * PageSize, nullptr,
       sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC));
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Create separate MemoryBlocks representing the stubs and pointers.
   sys::MemoryBlock StubsBlock(StubsMem.base(), NumPages * PageSize);
@@ -967,13 +1003,17 @@ Error OrcMips64::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   }
 
   if (auto EC = sys::Memory::protectMappedMemory(
-          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
+          StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC)) {
     return errorCodeToError(EC);
+
+}
 
   // Initialize all pointers to point at FailureAddress.
   void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
-  for (unsigned I = 0; I < NumStubs; ++I)
+  for (unsigned I = 0; I < NumStubs; ++I) {
     Ptr[I] = InitialPtrVal;
+
+}
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 

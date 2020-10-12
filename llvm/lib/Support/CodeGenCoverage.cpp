@@ -32,14 +32,18 @@ static sys::SmartMutex<true> OutputMutex;
 CodeGenCoverage::CodeGenCoverage() {}
 
 void CodeGenCoverage::setCovered(uint64_t RuleID) {
-  if (RuleCoverage.size() <= RuleID)
+  if (RuleCoverage.size() <= RuleID) {
     RuleCoverage.resize(RuleID + 1, 0);
+
+}
   RuleCoverage[RuleID] = true;
 }
 
 bool CodeGenCoverage::isCovered(uint64_t RuleID) const {
-  if (RuleCoverage.size() <= RuleID)
+  if (RuleCoverage.size() <= RuleID) {
     return false;
+
+}
   return RuleCoverage[RuleID];
 }
 
@@ -54,27 +58,37 @@ bool CodeGenCoverage::parse(MemoryBuffer &Buffer, StringRef BackendName) {
   while (CurPtr != Buffer.getBufferEnd()) {
     // Read the backend name from the input.
     const char *LexedBackendName = CurPtr;
-    while (*CurPtr++ != 0)
+    while (*CurPtr++ != 0) {
       ;
-    if (CurPtr == Buffer.getBufferEnd())
+
+}
+    if (CurPtr == Buffer.getBufferEnd()) {
       return false; // Data is invalid, expected rule id's to follow.
+
+}
 
     bool IsForThisBackend = BackendName.equals(LexedBackendName);
     while (CurPtr != Buffer.getBufferEnd()) {
-      if (std::distance(CurPtr, Buffer.getBufferEnd()) < 8)
+      if (std::distance(CurPtr, Buffer.getBufferEnd()) < 8) {
         return false; // Data is invalid. Not enough bytes for another rule id.
+
+}
 
       uint64_t RuleID = support::endian::read64(CurPtr, support::native);
       CurPtr += 8;
 
       // ~0ull terminates the rule id list.
-      if (RuleID == ~0ull)
+      if (RuleID == ~0ull) {
         break;
+
+}
 
       // Anything else, is recorded or ignored depending on whether it's
       // intended for the backend we're interested in.
-      if (IsForThisBackend)
+      if (IsForThisBackend) {
         setCovered(RuleID);
+
+}
     }
   }
 
@@ -104,15 +118,19 @@ bool CodeGenCoverage::emit(StringRef CoveragePrefix,
     sys::fs::OpenFlags OpenFlags = sys::fs::OF_Append;
     std::unique_ptr<ToolOutputFile> CoverageFile =
         std::make_unique<ToolOutputFile>(CoverageFilename, EC, OpenFlags);
-    if (EC)
+    if (EC) {
       return false;
+
+}
 
     uint64_t Zero = 0;
     uint64_t InvZero = ~0ull;
     CoverageFile->os() << BackendName;
     CoverageFile->os().write((const char *)&Zero, sizeof(unsigned char));
-    for (uint64_t I : RuleCoverage.set_bits())
+    for (uint64_t I : RuleCoverage.set_bits()) {
       CoverageFile->os().write((const char *)&I, sizeof(uint64_t));
+
+}
     CoverageFile->os().write((const char *)&InvZero, sizeof(uint64_t));
 
     CoverageFile->keep();

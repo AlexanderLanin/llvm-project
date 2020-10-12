@@ -21,8 +21,10 @@ int LLVMWriteBitcodeToFile(LLVMModuleRef M, const char *Path) {
   std::error_code EC;
   raw_fd_ostream OS(Path, EC, sys::fs::OF_None);
 
-  if (EC)
+  if (EC) {
     return -1;
+
+}
 
   WriteBitcodeToFile(*unwrap(M), OS);
   return 0;

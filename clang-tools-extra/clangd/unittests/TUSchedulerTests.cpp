@@ -102,8 +102,10 @@ protected:
       void reportDiagnostics(PathRef File, llvm::ArrayRef<Diag> Diags,
                              PublishFn Publish) {
         auto D = Context::current().get(DiagsCallbackKey);
-        if (!D)
+        if (!D) {
           return;
+
+}
         Publish([&]() {
           const_cast<
               llvm::unique_function<void(PathRef, std::vector<Diag>)> &> (*D)(
@@ -244,9 +246,13 @@ TEST_F(TUSchedulerTests, Debounce) {
 
 static std::vector<std::string> includes(const PreambleData *Preamble) {
   std::vector<std::string> Result;
-  if (Preamble)
-    for (const auto &Inclusion : Preamble->Includes.MainFileIncludes)
+  if (Preamble) {
+    for (const auto &Inclusion : Preamble->Includes.MainFileIncludes) {
       Result.push_back(Inclusion.Written);
+
+}
+
+}
   return Result;
 }
 
@@ -689,8 +695,10 @@ TEST_F(TUSchedulerTests, NoopOnEmptyChanges) {
     updateWithDiags(S, Source, Contents, WantDiagnostics::Yes,
                     [&Updated](std::vector<Diag>) { Updated = true; });
     bool UpdateFinished = S.blockUntilIdle(timeoutSeconds(10));
-    if (!UpdateFinished)
+    if (!UpdateFinished) {
       ADD_FAILURE() << "Updated has not finished in one second. Threading bug?";
+
+}
     return Updated;
   };
 

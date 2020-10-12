@@ -21,16 +21,20 @@ TypeTableCollection::TypeTableCollection(ArrayRef<ArrayRef<uint8_t>> Records)
 }
 
 Optional<TypeIndex> TypeTableCollection::getFirst() {
-  if (empty())
+  if (empty()) {
     return None;
+
+}
   return TypeIndex::fromArrayIndex(0);
 }
 
 Optional<TypeIndex> TypeTableCollection::getNext(TypeIndex Prev) {
   assert(contains(Prev));
   ++Prev;
-  if (Prev.toArrayIndex() == size())
+  if (Prev.toArrayIndex() == size()) {
     return None;
+
+}
   return Prev;
 }
 
@@ -40,8 +44,10 @@ CVType TypeTableCollection::getType(TypeIndex Index) {
 }
 
 StringRef TypeTableCollection::getTypeName(TypeIndex Index) {
-  if (Index.isNoneType() || Index.isSimple())
+  if (Index.isNoneType() || Index.isSimple()) {
     return TypeIndex::simpleTypeName(Index);
+
+}
 
   uint32_t I = Index.toArrayIndex();
   if (Names[I].data() == nullptr) {

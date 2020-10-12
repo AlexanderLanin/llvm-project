@@ -37,8 +37,10 @@ void InstrProfSummaryBuilder::addRecord(const InstrProfRecord &R) {
   // Eventually MaxFunctionCount will become obsolete and this can be
   // removed.
   addEntryCount(R.Counts[0]);
-  for (size_t I = 1, E = R.Counts.size(); I < E; ++I)
+  for (size_t I = 1, E = R.Counts.size(); I < E; ++I) {
     addInternalCount(R.Counts[I]);
+
+}
 }
 
 // To compute the detailed summary, we consider each line containing samples as
@@ -47,21 +49,31 @@ void SampleProfileSummaryBuilder::addRecord(
     const sampleprof::FunctionSamples &FS, bool isCallsiteSample) {
   if (!isCallsiteSample) {
     NumFunctions++;
-    if (FS.getHeadSamples() > MaxFunctionCount)
+    if (FS.getHeadSamples() > MaxFunctionCount) {
       MaxFunctionCount = FS.getHeadSamples();
+
+}
   }
-  for (const auto &I : FS.getBodySamples())
+  for (const auto &I : FS.getBodySamples()) {
     addCount(I.second.getSamples());
-  for (const auto &I : FS.getCallsiteSamples())
-    for (const auto &CS : I.second)
+
+}
+  for (const auto &I : FS.getCallsiteSamples()) {
+    for (const auto &CS : I.second) {
       addRecord(CS.second, true);
+
+}
+
+}
 }
 
 // The argument to this method is a vector of cutoff percentages and the return
 // value is a vector of (Cutoff, MinCount, NumCounts) triplets.
 void ProfileSummaryBuilder::computeDetailedSummary() {
-  if (DetailedSummaryCutoffs.empty())
+  if (DetailedSummaryCutoffs.empty()) {
     return;
+
+}
   llvm::sort(DetailedSummaryCutoffs);
   auto Iter = CountFrequencies.begin();
   const auto End = CountFrequencies.end();
@@ -108,12 +120,16 @@ std::unique_ptr<ProfileSummary> InstrProfSummaryBuilder::getSummary() {
 void InstrProfSummaryBuilder::addEntryCount(uint64_t Count) {
   addCount(Count);
   NumFunctions++;
-  if (Count > MaxFunctionCount)
+  if (Count > MaxFunctionCount) {
     MaxFunctionCount = Count;
+
+}
 }
 
 void InstrProfSummaryBuilder::addInternalCount(uint64_t Count) {
   addCount(Count);
-  if (Count > MaxInternalBlockCount)
+  if (Count > MaxInternalBlockCount) {
     MaxInternalBlockCount = Count;
+
+}
 }

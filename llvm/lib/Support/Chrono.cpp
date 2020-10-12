@@ -57,11 +57,13 @@ void format_provider<TimePoint<>>::format(const TimePoint<> &T, raw_ostream &OS,
   auto Fractional = T - Truncated;
   struct tm LT = getStructTM(Truncated);
   // Handle extensions first. strftime mangles unknown %x on some platforms.
-  if (Style.empty()) Style = "%Y-%m-%d %H:%M:%S.%N";
+  if (Style.empty()) { Style = "%Y-%m-%d %H:%M:%S.%N";
+
+}
   std::string Format;
   raw_string_ostream FStream(Format);
   for (unsigned I = 0; I < Style.size(); ++I) {
-    if (Style[I] == '%' && Style.size() > I + 1) switch (Style[I + 1]) {
+    if (Style[I] == '%' && Style.size() > I + 1) { switch (Style[I + 1]) {
         case 'L':  // Milliseconds, from Ruby.
           FStream << llvm::format(
               "%.3lu", (long)duration_cast<milliseconds>(Fractional).count());
@@ -82,6 +84,8 @@ void format_provider<TimePoint<>>::format(const TimePoint<> &T, raw_ostream &OS,
           ++I;
           continue;
       }
+
+}
     FStream << Style[I];
   }
   FStream.flush();

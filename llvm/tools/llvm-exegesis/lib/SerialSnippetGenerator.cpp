@@ -46,8 +46,10 @@ computeAliasingInstructions(const LLVMState &State, const Instruction *Instr,
 
   std::vector<const Instruction *> AliasingInstructions;
   for (const unsigned OtherOpcode : Opcodes) {
-    if (OtherOpcode == Instr->Description.getOpcode())
+    if (OtherOpcode == Instr->Description.getOpcode()) {
       continue;
+
+}
     const Instruction &OtherInstr = State.getIC().getInstr(OtherOpcode);
     const MCInstrDesc &OtherInstrDesc = OtherInstr.Description;
     // Ignore instructions that we cannot run.
@@ -56,14 +58,22 @@ computeAliasingInstructions(const LLVMState &State, const Instruction *Instr,
         OtherInstrDesc.isCall() || OtherInstrDesc.isReturn()) {
           continue;
     }
-    if (OtherInstr.hasMemoryOperands())
+    if (OtherInstr.hasMemoryOperands()) {
       continue;
-    if (!State.getExegesisTarget().allowAsBackToBack(OtherInstr))
+
+}
+    if (!State.getExegesisTarget().allowAsBackToBack(OtherInstr)) {
       continue;
-    if (Instr->hasAliasingRegistersThrough(OtherInstr, ForbiddenRegisters))
+
+}
+    if (Instr->hasAliasingRegistersThrough(OtherInstr, ForbiddenRegisters)) {
       AliasingInstructions.push_back(&OtherInstr);
-    if (AliasingInstructions.size() >= MaxAliasingInstructions)
+
+}
+    if (AliasingInstructions.size() >= MaxAliasingInstructions) {
       break;
+
+}
   }
   return AliasingInstructions;
 }
@@ -71,17 +81,25 @@ computeAliasingInstructions(const LLVMState &State, const Instruction *Instr,
 static ExecutionMode getExecutionModes(const Instruction &Instr,
                                        const BitVector &ForbiddenRegisters) {
   ExecutionMode EM = ExecutionMode::UNKNOWN;
-  if (Instr.hasAliasingImplicitRegisters())
+  if (Instr.hasAliasingImplicitRegisters()) {
     EM |= ExecutionMode::ALWAYS_SERIAL_IMPLICIT_REGS_ALIAS;
-  if (Instr.hasTiedRegisters())
+
+}
+  if (Instr.hasTiedRegisters()) {
     EM |= ExecutionMode::ALWAYS_SERIAL_TIED_REGS_ALIAS;
-  if (Instr.hasMemoryOperands())
+
+}
+  if (Instr.hasMemoryOperands()) {
     EM |= ExecutionMode::SERIAL_VIA_MEMORY_INSTR;
-  else {
-    if (Instr.hasAliasingRegisters(ForbiddenRegisters))
+  } else {
+    if (Instr.hasAliasingRegisters(ForbiddenRegisters)) {
       EM |= ExecutionMode::SERIAL_VIA_EXPLICIT_REGS;
-    if (Instr.hasOneUseOrOneDef())
+
+}
+    if (Instr.hasOneUseOrOneDef()) {
       EM |= ExecutionMode::SERIAL_VIA_NON_MEMORY_INSTR;
+
+}
   }
   return EM;
 }
@@ -138,10 +156,14 @@ static void appendCodeTemplates(const LLVMState &State,
       const AliasingConfigurations Back(*OtherInstr, Instr);
       InstructionTemplate ThisIT(Variant);
       InstructionTemplate OtherIT(OtherInstr);
-      if (!Forward.hasImplicitAliasing())
+      if (!Forward.hasImplicitAliasing()) {
         setRandomAliasing(Forward, ThisIT, OtherIT);
-      if (!Back.hasImplicitAliasing())
+
+}
+      if (!Back.hasImplicitAliasing()) {
         setRandomAliasing(Back, OtherIT, ThisIT);
+
+}
       CodeTemplate CT;
       CT.Execution = ExecutionModeBit;
       CT.Info = std::string(ExecutionClassDescription);
@@ -165,15 +187,21 @@ SerialSnippetGenerator::generateCodeTemplates(
   const ExecutionMode EM =
       getExecutionModes(Variant.getInstr(), ForbiddenRegisters);
   for (const auto EC : kExecutionClasses) {
-    for (const auto ExecutionModeBit : getExecutionModeBits(EM & EC.Mask))
+    for (const auto ExecutionModeBit : getExecutionModeBits(EM & EC.Mask)) {
       appendCodeTemplates(State, Variant, ForbiddenRegisters, ExecutionModeBit,
                           EC.Description, Results);
-    if (!Results.empty())
+
+}
+    if (!Results.empty()) {
       break;
+
+}
   }
-  if (Results.empty())
+  if (Results.empty()) {
     return make_error<Failure>(
         "No strategy found to make the execution serial");
+
+}
   return std::move(Results);
 }
 

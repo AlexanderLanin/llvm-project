@@ -44,14 +44,20 @@ BasicBlock::iterator llvm::PrepareToSplitEntryBlock(BasicBlock &BB,
   for (auto I = IP, E = BB.end(); I != E; ++I) {
     bool KeepInEntry = false;
     if (auto *AI = dyn_cast<AllocaInst>(I)) {
-      if (AI->isStaticAlloca())
+      if (AI->isStaticAlloca()) {
         KeepInEntry = true;
+
+}
     } else if (auto *II = dyn_cast<IntrinsicInst>(I)) {
-      if (II->getIntrinsicID() == llvm::Intrinsic::localescape)
+      if (II->getIntrinsicID() == llvm::Intrinsic::localescape) {
         KeepInEntry = true;
+
+}
     }
-    if (KeepInEntry)
+    if (KeepInEntry) {
       IP = moveBeforeInsertPoint(I, IP);
+
+}
   }
   return IP;
 }
@@ -66,8 +72,10 @@ GlobalVariable *llvm::createPrivateGlobalForString(Module &M, StringRef Str,
   GlobalVariable *GV =
       new GlobalVariable(M, StrConst->getType(), true,
                          GlobalValue::PrivateLinkage, StrConst, NamePrefix);
-  if (AllowMerging)
+  if (AllowMerging) {
     GV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
+
+}
   GV->setAlignment(Align(1)); // Strings may not be merged w/o setting
                               // alignment explicitly.
   return GV;
@@ -75,7 +83,9 @@ GlobalVariable *llvm::createPrivateGlobalForString(Module &M, StringRef Str,
 
 Comdat *llvm::GetOrCreateFunctionComdat(Function &F, Triple &T,
                                         const std::string &ModuleId) {
-  if (auto Comdat = F.getComdat()) return Comdat;
+  if (auto Comdat = F.getComdat()) { return Comdat;
+
+}
   assert(F.hasName());
   Module *M = F.getParent();
   std::string Name = std::string(F.getName());
@@ -86,16 +96,20 @@ Comdat *llvm::GetOrCreateFunctionComdat(Function &F, Triple &T,
   // and internal symbols with the same name from different objects will not be
   // merged.
   if (T.isOSBinFormatELF() && F.hasLocalLinkage()) {
-    if (ModuleId.empty())
+    if (ModuleId.empty()) {
       return nullptr;
+
+}
     Name += ModuleId;
   }
 
   // Make a new comdat for the function. Use the "no duplicates" selection kind
   // for non-weak symbols if the object file format supports it.
   Comdat *C = M->getOrInsertComdat(Name);
-  if (T.isOSBinFormatCOFF() && !F.isWeakForLinker())
+  if (T.isOSBinFormatCOFF() && !F.isWeakForLinker()) {
     C->setSelectionKind(Comdat::NoDuplicates);
+
+}
   F.setComdat(C);
   return C;
 }

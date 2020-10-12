@@ -130,8 +130,10 @@ jit_cleanup:
     LLVMErrorRef Err;
     if ((Err = LLVMOrcDisposeLLJIT(J))) {
       int NewFailureResult = handleError(Err);
-      if (MainResult == 0)
+      if (MainResult == 0) {
         MainResult = NewFailureResult;
+
+}
     }
   }
 

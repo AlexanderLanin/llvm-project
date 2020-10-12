@@ -204,12 +204,12 @@ public:
       Value *Addr = cast<StoreInst>(Store)->getPointerOperand();
       Type *Ty = LiveInValue->getType();
       IRBuilder<> Builder(InsertPos);
-      if (AtomicCounterUpdatePromoted)
+      if (AtomicCounterUpdatePromoted) {
         // automic update currently can only be promoted across the current
         // loop, not the whole loop nest.
         Builder.CreateAtomicRMW(AtomicRMWInst::Add, Addr, LiveInValue,
                                 AtomicOrdering::SequentiallyConsistent);
-      else {
+      } else {
         LoadInst *OldVal = Builder.CreateLoad(Ty, Addr, "pgocount.promoted");
         auto *NewVal = Builder.CreateAdd(OldVal, LiveInValue);
         auto *NewStore = Builder.CreateStore(NewVal, Addr);
@@ -217,8 +217,10 @@ public:
         // Now update the parent loop's candidate list:
         if (IterativeCounterPromotion) {
           auto *TargetLoop = LI.getLoopFor(ExitBlock);
-          if (TargetLoop)
+          if (TargetLoop) {
             LoopToCandidates[TargetLoop].emplace_back(OldVal, NewStore);
+
+}
         }
       }
     }
@@ -249,8 +251,10 @@ public:
     SmallPtrSet<BasicBlock *, 8> BlockSet;
 
     L.getExitBlocks(LoopExitBlocks);
-    if (!isPromotionPossible(&L, LoopExitBlocks))
+    if (!isPromotionPossible(&L, LoopExitBlocks)) {
       return;
+
+}
 
     for (BasicBlock *ExitBlock : LoopExitBlocks) {
       if (BlockSet.insert(ExitBlock).second) {
@@ -262,11 +266,15 @@ public:
 
   bool run(int64_t *NumPromoted) {
     // Skip 'infinite' loops:
-    if (ExitBlocks.size() == 0)
+    if (ExitBlocks.size() == 0) {
       return false;
+
+}
     unsigned MaxProm = getMaxNumOfPromotionsInLoop(&L);
-    if (MaxProm == 0)
+    if (MaxProm == 0) {
       return false;
+
+}
 
     unsigned Promoted = 0;
     for (auto &Cand : LoopToCandidates[&L]) {
@@ -279,14 +287,18 @@ public:
       if (BFI) {
         auto *BB = Cand.first->getParent();
         auto InstrCount = BFI->getBlockProfileCount(BB);
-        if (!InstrCount)
+        if (!InstrCount) {
           continue;
+
+}
         auto PreheaderCount = BFI->getBlockProfileCount(L.getLoopPreheader());
         // If the average loop trip count is not greater than 1.5, we skip
         // promotion.
         if (PreheaderCount &&
-            (PreheaderCount.getValue() * 3) >= (InstrCount.getValue() * 2))
+            (PreheaderCount.getValue() * 3) >= (InstrCount.getValue() * 2)) {
           continue;
+
+}
       }
 
       PGOCounterPromoterHelper Promoter(Cand.first, Cand.second, SSA, InitVal,
@@ -294,12 +306,16 @@ public:
                                         InsertPts, LoopToCandidates, LI);
       Promoter.run(SmallVector<Instruction *, 2>({Cand.first, Cand.second}));
       Promoted++;
-      if (Promoted >= MaxProm)
+      if (Promoted >= MaxProm) {
         break;
 
+}
+
       (*NumPromoted)++;
-      if (MaxNumOfPromotions != -1 && *NumPromoted >= MaxNumOfPromotions)
+      if (MaxNumOfPromotions != -1 && *NumPromoted >= MaxNumOfPromotions) {
         break;
+
+}
     }
 
     LLVM_DEBUG(dbgs() << Promoted << " counters promoted for loop (depth="
@@ -312,10 +328,14 @@ private:
     SmallVector<BasicBlock *, 8> ExitingBlocks;
     L.getExitingBlocks(ExitingBlocks);
     // Not considierered speculative.
-    if (ExitingBlocks.size() == 1)
+    if (ExitingBlocks.size() == 1) {
       return true;
-    if (ExitingBlocks.size() > SpeculativeCounterPromotionMaxExiting)
+
+}
+    if (ExitingBlocks.size() > SpeculativeCounterPromotionMaxExiting) {
       return false;
+
+}
     return true;
   }
 
@@ -326,15 +346,21 @@ private:
     // We can't insert into a catchswitch.
     if (llvm::any_of(LoopExitBlocks, [](BasicBlock *Exit) {
           return isa<CatchSwitchInst>(Exit->getTerminator());
-        }))
+        })) {
       return false;
 
-    if (!LP->hasDedicatedExits())
+}
+
+    if (!LP->hasDedicatedExits()) {
       return false;
+
+}
 
     BasicBlock *PH = LP->getLoopPreheader();
-    if (!PH)
+    if (!PH) {
       return false;
+
+}
 
     return true;
   }
@@ -343,33 +369,45 @@ private:
   unsigned getMaxNumOfPromotionsInLoop(Loop *LP) {
     SmallVector<BasicBlock *, 8> LoopExitBlocks;
     LP->getExitBlocks(LoopExitBlocks);
-    if (!isPromotionPossible(LP, LoopExitBlocks))
+    if (!isPromotionPossible(LP, LoopExitBlocks)) {
       return 0;
+
+}
 
     SmallVector<BasicBlock *, 8> ExitingBlocks;
     LP->getExitingBlocks(ExitingBlocks);
 
     // If BFI is set, we do more aggressive promotions based on BFI.
-    if (BFI)
+    if (BFI) {
       return (unsigned)-1;
 
+}
+
     // Not considierered speculative.
-    if (ExitingBlocks.size() == 1)
+    if (ExitingBlocks.size() == 1) {
       return MaxNumOfPromotionsPerLoop;
 
-    if (ExitingBlocks.size() > SpeculativeCounterPromotionMaxExiting)
+}
+
+    if (ExitingBlocks.size() > SpeculativeCounterPromotionMaxExiting) {
       return 0;
 
+}
+
     // Whether the target block is in a loop does not matter:
-    if (SpeculativeCounterPromotionToLoop)
+    if (SpeculativeCounterPromotionToLoop) {
       return MaxNumOfPromotionsPerLoop;
+
+}
 
     // Now check the target block:
     unsigned MaxProm = MaxNumOfPromotionsPerLoop;
     for (auto *TargetBlock : LoopExitBlocks) {
       auto *TargetLoop = LI.getLoopFor(TargetBlock);
-      if (!TargetLoop)
+      if (!TargetLoop) {
         continue;
+
+}
       unsigned MaxPromForTarget = getMaxNumOfPromotionsInLoop(TargetLoop);
       unsigned PendingCandsInTarget = LoopToCandidates[TargetLoop].size();
       MaxProm =
@@ -395,8 +433,10 @@ PreservedAnalyses InstrProfiling::run(Module &M, ModuleAnalysisManager &AM) {
   auto GetTLI = [&FAM](Function &F) -> TargetLibraryInfo & {
     return FAM.getResult<TargetLibraryAnalysis>(F);
   };
-  if (!run(M, GetTLI))
+  if (!run(M, GetTLI)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }
@@ -418,8 +458,10 @@ llvm::createInstrProfilingLegacyPass(const InstrProfOptions &Options,
 
 static InstrProfIncrementInst *castToIncrementInst(Instruction *Instr) {
   InstrProfIncrementInst *Inc = dyn_cast<InstrProfIncrementInstStep>(Instr);
-  if (Inc)
+  if (Inc) {
     return Inc;
+
+}
   return dyn_cast<InstrProfIncrementInst>(Instr);
 }
 
@@ -440,30 +482,38 @@ bool InstrProfiling::lowerIntrinsics(Function *F) {
     }
   }
 
-  if (!MadeChange)
+  if (!MadeChange) {
     return false;
+
+}
 
   promoteCounterLoadStores(F);
   return true;
 }
 
 bool InstrProfiling::isRuntimeCounterRelocationEnabled() const {
-  if (RuntimeCounterRelocation.getNumOccurrences() > 0)
+  if (RuntimeCounterRelocation.getNumOccurrences() > 0) {
     return RuntimeCounterRelocation;
+
+}
 
   return TT.isOSFuchsia();
 }
 
 bool InstrProfiling::isCounterPromotionEnabled() const {
-  if (DoCounterPromotion.getNumOccurrences() > 0)
+  if (DoCounterPromotion.getNumOccurrences() > 0) {
     return DoCounterPromotion;
+
+}
 
   return Options.DoCounterPromotion;
 }
 
 void InstrProfiling::promoteCounterLoadStores(Function *F) {
-  if (!isCounterPromotionEnabled())
+  if (!isCounterPromotionEnabled()) {
     return;
+
+}
 
   DominatorTree DT(*F);
   LoopInfo LI(DT);
@@ -481,8 +531,10 @@ void InstrProfiling::promoteCounterLoadStores(Function *F) {
     auto *CounterStore = LoadStore.second;
     BasicBlock *BB = CounterLoad->getParent();
     Loop *ParentLoop = LI.getLoopFor(BB);
-    if (!ParentLoop)
+    if (!ParentLoop) {
       continue;
+
+}
     LoopPromotionCandidates[ParentLoop].emplace_back(CounterLoad, CounterStore);
   }
 
@@ -499,17 +551,29 @@ void InstrProfiling::promoteCounterLoadStores(Function *F) {
 /// Check if the module contains uses of any profiling intrinsics.
 static bool containsProfilingIntrinsics(Module &M) {
   if (auto *F = M.getFunction(
-          Intrinsic::getName(llvm::Intrinsic::instrprof_increment)))
-    if (!F->use_empty())
+          Intrinsic::getName(llvm::Intrinsic::instrprof_increment))) {
+    if (!F->use_empty()) {
       return true;
+
+}
+
+}
   if (auto *F = M.getFunction(
-          Intrinsic::getName(llvm::Intrinsic::instrprof_increment_step)))
-    if (!F->use_empty())
+          Intrinsic::getName(llvm::Intrinsic::instrprof_increment_step))) {
+    if (!F->use_empty()) {
       return true;
+
+}
+
+}
   if (auto *F = M.getFunction(
-          Intrinsic::getName(llvm::Intrinsic::instrprof_value_profile)))
-    if (!F->use_empty())
+          Intrinsic::getName(llvm::Intrinsic::instrprof_value_profile))) {
+    if (!F->use_empty()) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -531,37 +595,51 @@ bool InstrProfiling::run(
   // Improve compile time by avoiding linear scans when there is no work.
   GlobalVariable *CoverageNamesVar =
       M.getNamedGlobal(getCoverageUnusedNamesVarName());
-  if (!containsProfilingIntrinsics(M) && !CoverageNamesVar)
+  if (!containsProfilingIntrinsics(M) && !CoverageNamesVar) {
     return MadeChange;
+
+}
 
   // We did not know how many value sites there would be inside
   // the instrumented function. This is counting the number of instrumented
   // target value sites to enter it as field in the profile data variable.
   for (Function &F : M) {
     InstrProfIncrementInst *FirstProfIncInst = nullptr;
-    for (BasicBlock &BB : F)
-      for (auto I = BB.begin(), E = BB.end(); I != E; I++)
-        if (auto *Ind = dyn_cast<InstrProfValueProfileInst>(I))
+    for (BasicBlock &BB : F) {
+      for (auto I = BB.begin(), E = BB.end(); I != E; I++) {
+        if (auto *Ind = dyn_cast<InstrProfValueProfileInst>(I)) {
           computeNumValueSiteCounts(Ind);
-        else if (FirstProfIncInst == nullptr)
+        } else if (FirstProfIncInst == nullptr) {
           FirstProfIncInst = dyn_cast<InstrProfIncrementInst>(I);
+
+}
+
+}
+
+}
 
     // Value profiling intrinsic lowering requires per-function profile data
     // variable to be created first.
-    if (FirstProfIncInst != nullptr)
+    if (FirstProfIncInst != nullptr) {
       static_cast<void>(getOrCreateRegionCounters(FirstProfIncInst));
+
+}
   }
 
-  for (Function &F : M)
+  for (Function &F : M) {
     MadeChange |= lowerIntrinsics(&F);
+
+}
 
   if (CoverageNamesVar) {
     lowerCoverageData(CoverageNamesVar);
     MadeChange = true;
   }
 
-  if (!MadeChange)
+  if (!MadeChange) {
     return false;
+
+}
 
   emitVNodes();
   emitNameData();
@@ -578,8 +656,10 @@ getOrInsertValueProfilingCall(Module &M, const TargetLibraryInfo &TLI,
   auto *ReturnTy = Type::getVoidTy(M.getContext());
 
   AttributeList AL;
-  if (auto AK = TLI.getExtAttrForI32Param(false))
+  if (auto AK = TLI.getExtAttrForI32Param(false)) {
     AL = AL.addParamAttribute(M.getContext(), 2, AK);
+
+}
 
   if (!IsRange) {
     Type *ParamTypes[] = {
@@ -613,8 +693,10 @@ void InstrProfiling::computeNumValueSiteCounts(InstrProfValueProfileInst *Ind) {
     PerFunctionProfileData PD;
     PD.NumValueSites[ValueKind] = Index + 1;
     ProfileDataMap[Name] = PD;
-  } else if (It->second.NumValueSites[ValueKind] <= Index)
+  } else if (It->second.NumValueSites[ValueKind] <= Index) {
     It->second.NumValueSites[ValueKind] = Index + 1;
+
+}
 }
 
 void InstrProfiling::lowerValueProfileInst(InstrProfValueProfileInst *Ind) {
@@ -626,8 +708,10 @@ void InstrProfiling::lowerValueProfileInst(InstrProfValueProfileInst *Ind) {
   GlobalVariable *DataVar = It->second.DataVar;
   uint64_t ValueKind = Ind->getValueKind()->getZExtValue();
   uint64_t Index = Ind->getIndex()->getZExtValue();
-  for (uint32_t Kind = IPVK_First; Kind < ValueKind; ++Kind)
+  for (uint32_t Kind = IPVK_First; Kind < ValueKind; ++Kind) {
     Index += It->second.NumValueSites[Kind];
+
+}
 
   IRBuilder<> Builder(Ind);
   bool IsRange = (Ind->getValueKind()->getZExtValue() ==
@@ -658,8 +742,10 @@ void InstrProfiling::lowerValueProfileInst(InstrProfValueProfileInst *Ind) {
     Call = Builder.CreateCall(getOrInsertValueProfilingCall(*M, *TLI, true),
                               Args, OpBundles);
   }
-  if (auto AK = TLI->getExtAttrForI32Param(false))
+  if (auto AK = TLI->getExtAttrForI32Param(false)) {
     Call->addParamAttr(2, AK);
+
+}
   Ind->replaceAllUsesWith(Call);
   Ind->eraseFromParent();
 }
@@ -702,8 +788,10 @@ void InstrProfiling::lowerIncrement(InstrProfIncrementInst *Inc) {
     Value *Load = Builder.CreateLoad(IncStep->getType(), Addr, "pgocount");
     auto *Count = Builder.CreateAdd(Load, Inc->getStep());
     auto *Store = Builder.CreateStore(Count, Addr);
-    if (isCounterPromotionEnabled())
+    if (isCounterPromotionEnabled()) {
       PromotionCandidates.emplace_back(cast<Instruction>(Load), Store);
+
+}
   }
   Inc->eraseFromParent();
 }
@@ -731,12 +819,16 @@ static std::string getVarName(InstrProfIncrementInst *Inc, StringRef Prefix) {
   Function *F = Inc->getParent()->getParent();
   Module *M = F->getParent();
   if (!DoHashBasedCounterSplit || !isIRPGOFlagSet(M) ||
-      !canRenameComdatFunc(*F))
+      !canRenameComdatFunc(*F)) {
     return (Prefix + Name).str();
+
+}
   uint64_t FuncHash = Inc->getHash()->getZExtValue();
   SmallVector<char, 24> HashPostfix;
-  if (Name.endswith((Twine(".") + Twine(FuncHash)).toStringRef(HashPostfix)))
+  if (Name.endswith((Twine(".") + Twine(FuncHash)).toStringRef(HashPostfix))) {
     return (Prefix + Name).str();
+
+}
   return (Prefix + Name + "." + Twine(FuncHash)).str();
 }
 
@@ -744,21 +836,27 @@ static inline bool shouldRecordFunctionAddr(Function *F) {
   // Check the linkage
   bool HasAvailableExternallyLinkage = F->hasAvailableExternallyLinkage();
   if (!F->hasLinkOnceLinkage() && !F->hasLocalLinkage() &&
-      !HasAvailableExternallyLinkage)
+      !HasAvailableExternallyLinkage) {
     return true;
+
+}
 
   // A function marked 'alwaysinline' with available_externally linkage can't
   // have its address taken. Doing so would create an undefined external ref to
   // the function, which would fail to link.
   if (HasAvailableExternallyLinkage &&
-      F->hasFnAttribute(Attribute::AlwaysInline))
+      F->hasFnAttribute(Attribute::AlwaysInline)) {
     return false;
+
+}
 
   // Prohibit function address recording if the function is both internal and
   // COMDAT. This avoids the profile data variable referencing internal symbols
   // in COMDAT.
-  if (F->hasLocalLinkage() && F->hasComdat())
+  if (F->hasLocalLinkage() && F->hasComdat()) {
     return false;
+
+}
 
   // Check uses of this function for other than direct calls or invokes to it.
   // Inline virtual functions have linkeOnceODR linkage. When a key method
@@ -772,13 +870,17 @@ static inline bool shouldRecordFunctionAddr(Function *F) {
 
 static bool needsRuntimeRegistrationOfSectionRange(const Triple &TT) {
   // Don't do this for Darwin.  compiler-rt uses linker magic.
-  if (TT.isOSDarwin())
+  if (TT.isOSDarwin()) {
     return false;
+
+}
   // Use linker script magic to get data/cnts/name start/end.
   if (TT.isOSLinux() || TT.isOSFreeBSD() || TT.isOSNetBSD() ||
       TT.isOSSolaris() || TT.isOSFuchsia() || TT.isPS4CPU() ||
-      TT.isOSWindows())
+      TT.isOSWindows()) {
     return false;
+
+}
 
   return true;
 }
@@ -789,8 +891,10 @@ InstrProfiling::getOrCreateRegionCounters(InstrProfIncrementInst *Inc) {
   auto It = ProfileDataMap.find(NamePtr);
   PerFunctionProfileData PD;
   if (It != ProfileDataMap.end()) {
-    if (It->second.RegionCounters)
+    if (It->second.RegionCounters) {
       return It->second.RegionCounters;
+
+}
     PD = It->second;
   }
 
@@ -823,8 +927,10 @@ InstrProfiling::getOrCreateRegionCounters(InstrProfIncrementInst *Inc) {
     }
   }
   auto MaybeSetComdat = [=](GlobalVariable *GV) {
-    if (NeedComdat)
+    if (NeedComdat) {
       GV->setComdat(M->getOrInsertComdat(GV->getName()));
+
+}
   };
 
   uint64_t NumCounters = Inc->getNumCounters()->getZExtValue();
@@ -849,8 +955,10 @@ InstrProfiling::getOrCreateRegionCounters(InstrProfIncrementInst *Inc) {
   Constant *ValuesPtrExpr = ConstantPointerNull::get(Int8PtrTy);
   if (ValueProfileStaticAlloc && !needsRuntimeRegistrationOfSectionRange(TT)) {
     uint64_t NS = 0;
-    for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+    for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
       NS += PD.NumValueSites[Kind];
+
+}
     if (NS) {
       ArrayType *ValuesTy = ArrayType::get(Type::getInt64Ty(Ctx), NS);
 
@@ -882,8 +990,10 @@ InstrProfiling::getOrCreateRegionCounters(InstrProfIncrementInst *Inc) {
                                : ConstantPointerNull::get(Int8PtrTy);
 
   Constant *Int16ArrayVals[IPVK_Last + 1];
-  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
     Int16ArrayVals[Kind] = ConstantInt::get(Int16Ty, PD.NumValueSites[Kind]);
+
+}
 
   Constant *DataVals[] = {
 #define INSTR_PROF_DATA(Type, LLVMType, Name, Init) Init,
@@ -915,23 +1025,31 @@ InstrProfiling::getOrCreateRegionCounters(InstrProfIncrementInst *Inc) {
 }
 
 void InstrProfiling::emitVNodes() {
-  if (!ValueProfileStaticAlloc)
+  if (!ValueProfileStaticAlloc) {
     return;
+
+}
 
   // For now only support this on platforms that do
   // not require runtime registration to discover
   // named section start/end.
-  if (needsRuntimeRegistrationOfSectionRange(TT))
+  if (needsRuntimeRegistrationOfSectionRange(TT)) {
     return;
+
+}
 
   size_t TotalNS = 0;
   for (auto &PD : ProfileDataMap) {
-    for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+    for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
       TotalNS += PD.second.NumValueSites[Kind];
+
+}
   }
 
-  if (!TotalNS)
+  if (!TotalNS) {
     return;
+
+}
 
   uint64_t NumCounters = TotalNS * NumCountersPerValueSite;
 // Heuristic for small programs with very few total value sites.
@@ -942,8 +1060,10 @@ void InstrProfiling::emitVNodes() {
 // apps with very few sites, this may not be true. Bump up the
 // number of counters in this case.
 #define INSTR_PROF_MIN_VAL_COUNTS 10
-  if (NumCounters < INSTR_PROF_MIN_VAL_COUNTS)
+  if (NumCounters < INSTR_PROF_MIN_VAL_COUNTS) {
     NumCounters = std::max(INSTR_PROF_MIN_VAL_COUNTS, (int)NumCounters * 2);
+
+}
 
   auto &Ctx = M->getContext();
   Type *VNodeTypes[] = {
@@ -964,8 +1084,10 @@ void InstrProfiling::emitVNodes() {
 void InstrProfiling::emitNameData() {
   std::string UncompressedData;
 
-  if (ReferencedNames.empty())
+  if (ReferencedNames.empty()) {
     return;
+
+}
 
   std::string CompressedNameStr;
   if (Error E = collectPGOFuncNameStrings(ReferencedNames, CompressedNameStr,
@@ -988,13 +1110,17 @@ void InstrProfiling::emitNameData() {
   NamesVar->setAlignment(Align(1));
   UsedVars.push_back(NamesVar);
 
-  for (auto *NamePtr : ReferencedNames)
+  for (auto *NamePtr : ReferencedNames) {
     NamePtr->eraseFromParent();
+
+}
 }
 
 void InstrProfiling::emitRegistration() {
-  if (!needsRuntimeRegistrationOfSectionRange(TT))
+  if (!needsRuntimeRegistrationOfSectionRange(TT)) {
     return;
+
+}
 
   // Construct the function.
   auto *VoidTy = Type::getVoidTy(M->getContext());
@@ -1004,8 +1130,10 @@ void InstrProfiling::emitRegistration() {
   auto *RegisterF = Function::Create(RegisterFTy, GlobalValue::InternalLinkage,
                                      getInstrProfRegFuncsName(), M);
   RegisterF->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
-  if (Options.NoRedZone)
+  if (Options.NoRedZone) {
     RegisterF->addFnAttr(Attribute::NoRedZone);
+
+}
 
   auto *RuntimeRegisterTy = FunctionType::get(VoidTy, VoidPtrTy, false);
   auto *RuntimeRegisterF =
@@ -1013,9 +1141,13 @@ void InstrProfiling::emitRegistration() {
                        getInstrProfRegFuncName(), M);
 
   IRBuilder<> IRB(BasicBlock::Create(M->getContext(), "", RegisterF));
-  for (Value *Data : UsedVars)
-    if (Data != NamesVar && !isa<Function>(Data))
+  for (Value *Data : UsedVars) {
+    if (Data != NamesVar && !isa<Function>(Data)) {
       IRB.CreateCall(RuntimeRegisterF, IRB.CreateBitCast(Data, VoidPtrTy));
+
+}
+
+}
 
   if (NamesVar) {
     Type *ParamTypes[] = {VoidPtrTy, Int64Ty};
@@ -1034,12 +1166,16 @@ void InstrProfiling::emitRegistration() {
 bool InstrProfiling::emitRuntimeHook() {
   // We expect the linker to be invoked with -u<hook_var> flag for linux,
   // for which case there is no need to emit the user function.
-  if (TT.isOSLinux())
+  if (TT.isOSLinux()) {
     return false;
 
+}
+
   // If the module's provided its own runtime, we don't need to do anything.
-  if (M->getGlobalVariable(getInstrProfRuntimeHookVarName()))
+  if (M->getGlobalVariable(getInstrProfRuntimeHookVarName())) {
     return false;
+
+}
 
   // Declare an external variable that will pull in the runtime initialization.
   auto *Int32Ty = Type::getInt32Ty(M->getContext());
@@ -1052,11 +1188,15 @@ bool InstrProfiling::emitRuntimeHook() {
                                 GlobalValue::LinkOnceODRLinkage,
                                 getInstrProfRuntimeHookVarUseFuncName(), M);
   User->addFnAttr(Attribute::NoInline);
-  if (Options.NoRedZone)
+  if (Options.NoRedZone) {
     User->addFnAttr(Attribute::NoRedZone);
+
+}
   User->setVisibility(GlobalValue::HiddenVisibility);
-  if (TT.supportsCOMDAT())
+  if (TT.supportsCOMDAT()) {
     User->setComdat(M->getOrInsertComdat(User->getName()));
+
+}
 
   IRBuilder<> IRB(BasicBlock::Create(M->getContext(), "", User));
   auto *Load = IRB.CreateLoad(Int32Ty, Var);
@@ -1068,8 +1208,10 @@ bool InstrProfiling::emitRuntimeHook() {
 }
 
 void InstrProfiling::emitUses() {
-  if (!UsedVars.empty())
+  if (!UsedVars.empty()) {
     appendToUsed(*M, UsedVars);
+
+}
 }
 
 void InstrProfiling::emitInitialization() {
@@ -1077,11 +1219,15 @@ void InstrProfiling::emitInitialization() {
   // context-sensitive instrumentation lowering: This lowering is after
   // LTO/ThinLTO linking. Pass PGOInstrumentationGenCreateVar should
   // have already create the variable before LTO/ThinLTO linking.
-  if (!IsCS)
+  if (!IsCS) {
     createProfileFileNameVar(*M, Options.InstrProfileOutput);
+
+}
   Function *RegisterF = M->getFunction(getInstrProfRegFuncsName());
-  if (!RegisterF)
+  if (!RegisterF) {
     return;
+
+}
 
   // Create the initialization function.
   auto *VoidTy = Type::getVoidTy(M->getContext());
@@ -1090,8 +1236,10 @@ void InstrProfiling::emitInitialization() {
                              getInstrProfInitFuncName(), M);
   F->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
   F->addFnAttr(Attribute::NoInline);
-  if (Options.NoRedZone)
+  if (Options.NoRedZone) {
     F->addFnAttr(Attribute::NoRedZone);
+
+}
 
   // Add the basic block and the necessary calls.
   IRBuilder<> IRB(BasicBlock::Create(M->getContext(), "", F));

@@ -21,8 +21,10 @@ using namespace llvm;
 EHPersonality llvm::classifyEHPersonality(const Value *Pers) {
   const Function *F =
       Pers ? dyn_cast<Function>(Pers->stripPointerCasts()) : nullptr;
-  if (!F)
+  if (!F) {
     return EHPersonality::Unknown;
+
+}
   return StringSwitch<EHPersonality>(F->getName())
     .Case("__gnat_eh_personality",     EHPersonality::GNU_Ada)
     .Case("__gxx_personality_v0",      EHPersonality::GNU_CXX)
@@ -108,10 +110,12 @@ DenseMap<BasicBlock *, ColorVector> llvm::colorEHFunclets(Function &F) {
     }
     // Note that this is a member of the given color.
     ColorVector &Colors = BlockColors[Visiting];
-    if (!is_contained(Colors, Color))
+    if (!is_contained(Colors, Color)) {
       Colors.push_back(Color);
-    else
+    } else {
       continue;
+
+}
 
     DEBUG_WITH_TYPE("winehprepare-coloring",
                     dbgs() << "  Assigned color \'" << Color->getName()
@@ -122,14 +126,18 @@ DenseMap<BasicBlock *, ColorVector> llvm::colorEHFunclets(Function &F) {
     Instruction *Terminator = Visiting->getTerminator();
     if (auto *CatchRet = dyn_cast<CatchReturnInst>(Terminator)) {
       Value *ParentPad = CatchRet->getCatchSwitchParentPad();
-      if (isa<ConstantTokenNone>(ParentPad))
+      if (isa<ConstantTokenNone>(ParentPad)) {
         SuccColor = EntryBlock;
-      else
+      } else {
         SuccColor = cast<Instruction>(ParentPad)->getParent();
+
+}
     }
 
-    for (BasicBlock *Succ : successors(Visiting))
+    for (BasicBlock *Succ : successors(Visiting)) {
       Worklist.push_back({Succ, SuccColor});
+
+}
   }
   return BlockColors;
 }

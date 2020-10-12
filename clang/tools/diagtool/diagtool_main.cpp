@@ -15,9 +15,13 @@
 using namespace diagtool;
 
 int main(int argc, char *argv[]) {
-  if (argc > 1)
-    if (DiagTool *tool = diagTools->getTool(argv[1]))
+  if (argc > 1) {
+    if (DiagTool *tool = diagTools->getTool(argv[1])) {
       return tool->run(argc - 2, &argv[2], llvm::outs());
+
+}
+
+}
 
   llvm::errs() << "usage: diagtool <command> [<args>]\n\n";
   diagTools->printCommands(llvm::errs());

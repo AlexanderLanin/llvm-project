@@ -113,9 +113,11 @@ public:
   bool runOnFunction(Function &F) override;
 
   StringRef getPassName() const override {
-    if (OnlyIfDivergentTarget)
+    if (OnlyIfDivergentTarget) {
       return "Speculatively execute instructions if target has divergent "
              "branches";
+
+}
     return "Speculatively execute instructions";
   }
 
@@ -141,8 +143,10 @@ void SpeculativeExecutionLegacyPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool SpeculativeExecutionLegacyPass::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   auto *TTI = &getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
   return Impl.runImpl(F, TTI);
@@ -167,11 +171,15 @@ bool SpeculativeExecutionPass::runImpl(Function &F, TargetTransformInfo *TTI) {
 
 bool SpeculativeExecutionPass::runOnBasicBlock(BasicBlock &B) {
   BranchInst *BI = dyn_cast<BranchInst>(B.getTerminator());
-  if (BI == nullptr)
+  if (BI == nullptr) {
     return false;
 
-  if (BI->getNumSuccessors() != 2)
+}
+
+  if (BI->getNumSuccessors() != 2) {
     return false;
+
+}
   BasicBlock &Succ0 = *BI->getSuccessor(0);
   BasicBlock &Succ1 = *BI->getSuccessor(1);
 
@@ -200,10 +208,14 @@ bool SpeculativeExecutionPass::runOnBasicBlock(BasicBlock &B) {
       Succ1.getSingleSuccessor() == Succ0.getSingleSuccessor()) {
     // If a block has only one instruction, then that is a terminator
     // instruction so that the block does nothing. This does happen.
-    if (Succ1.size() == 1) // equivalent to if-then
+    if (Succ1.size() == 1) { // equivalent to if-then
       return considerHoistingFromTo(Succ0, B);
-    if (Succ0.size() == 1) // equivalent to if-else
+
+}
+    if (Succ0.size() == 1) { // equivalent to if-else
       return considerHoistingFromTo(Succ1, B);
+
+}
   }
 
   return false;
@@ -257,8 +269,10 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
   const auto AllPrecedingUsesFromBlockHoisted = [&NotHoisted](User *U) {
     for (Value* V : U->operand_values()) {
       if (Instruction *I = dyn_cast<Instruction>(V)) {
-        if (NotHoisted.count(I) > 0)
+        if (NotHoisted.count(I) > 0) {
           return false;
+
+}
       }
     }
     return true;
@@ -270,12 +284,16 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
     if (Cost != UINT_MAX && isSafeToSpeculativelyExecute(&I) &&
         AllPrecedingUsesFromBlockHoisted(&I)) {
       TotalSpeculationCost += Cost;
-      if (TotalSpeculationCost > SpecExecMaxSpeculationCost)
+      if (TotalSpeculationCost > SpecExecMaxSpeculationCost) {
         return false;  // too much to hoist
+
+}
     } else {
       NotHoisted.insert(&I);
-      if (NotHoisted.size() > SpecExecMaxNotHoisted)
+      if (NotHoisted.size() > SpecExecMaxNotHoisted) {
         return false; // too much left behind
+
+}
     }
   }
 
@@ -309,8 +327,10 @@ PreservedAnalyses SpeculativeExecutionPass::run(Function &F,
 
   bool Changed = runImpl(F, TTI);
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<GlobalsAA>();
   PA.preserveSet<CFGAnalyses>();

@@ -37,8 +37,10 @@ ClangTidyCheck::OptionsView::OptionsView(StringRef CheckName,
 std::string ClangTidyCheck::OptionsView::get(StringRef LocalName,
                                              StringRef Default) const {
   const auto &Iter = CheckOptions.find(NamePrefix + LocalName.str());
-  if (Iter != CheckOptions.end())
+  if (Iter != CheckOptions.end()) {
     return Iter->second;
+
+}
   return std::string(Default);
 }
 
@@ -46,12 +48,16 @@ std::string
 ClangTidyCheck::OptionsView::getLocalOrGlobal(StringRef LocalName,
                                               StringRef Default) const {
   auto Iter = CheckOptions.find(NamePrefix + LocalName.str());
-  if (Iter != CheckOptions.end())
+  if (Iter != CheckOptions.end()) {
     return Iter->second;
+
+}
   // Fallback to global setting, if present.
   Iter = CheckOptions.find(LocalName.str());
-  if (Iter != CheckOptions.end())
+  if (Iter != CheckOptions.end()) {
     return Iter->second;
+
+}
   return std::string(Default);
 }
 

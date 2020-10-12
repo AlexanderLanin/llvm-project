@@ -57,17 +57,23 @@ static cl::opt<uint32_t> UnlikelyBranchWeight(
 
 static bool handleSwitchExpect(SwitchInst &SI) {
   CallInst *CI = dyn_cast<CallInst>(SI.getCondition());
-  if (!CI)
+  if (!CI) {
     return false;
 
+}
+
   Function *Fn = CI->getCalledFunction();
-  if (!Fn || Fn->getIntrinsicID() != Intrinsic::expect)
+  if (!Fn || Fn->getIntrinsicID() != Intrinsic::expect) {
     return false;
+
+}
 
   Value *ArgValue = CI->getArgOperand(0);
   ConstantInt *ExpectedValue = dyn_cast<ConstantInt>(CI->getArgOperand(1));
-  if (!ExpectedValue)
+  if (!ExpectedValue) {
     return false;
+
+}
 
   SwitchInst::CaseHandle Case = *SI.findCaseValue(ExpectedValue);
   unsigned n = SI.getNumCases(); // +1 for default case.
@@ -100,8 +106,10 @@ static bool handleSwitchExpect(SwitchInst &SI) {
 static void handlePhiDef(CallInst *Expect) {
   Value &Arg = *Expect->getArgOperand(0);
   ConstantInt *ExpectedValue = dyn_cast<ConstantInt>(Expect->getArgOperand(1));
-  if (!ExpectedValue)
+  if (!ExpectedValue) {
     return;
+
+}
   const APInt &ExpectedPhiValue = ExpectedValue->getValue();
 
   // Walk up in backward a list of instructions that
@@ -130,12 +138,16 @@ static void handlePhiDef(CallInst *Expect) {
     }
 
     BinaryOperator *BinOp = dyn_cast<BinaryOperator>(V);
-    if (!BinOp || BinOp->getOpcode() != Instruction::Xor)
+    if (!BinOp || BinOp->getOpcode() != Instruction::Xor) {
       return;
 
+}
+
     ConstantInt *CInt = dyn_cast<ConstantInt>(BinOp->getOperand(1));
-    if (!CInt)
+    if (!CInt) {
       return;
+
+}
 
     V = BinOp->getOperand(0);
     Operations.push_back(BinOp);
@@ -169,14 +181,20 @@ static void handlePhiDef(CallInst *Expect) {
   auto GetDomConditional = [&](unsigned i) -> BranchInst * {
     BasicBlock *BB = PhiDef->getIncomingBlock(i);
     BranchInst *BI = dyn_cast<BranchInst>(BB->getTerminator());
-    if (BI && BI->isConditional())
+    if (BI && BI->isConditional()) {
       return BI;
+
+}
     BB = BB->getSinglePredecessor();
-    if (!BB)
+    if (!BB) {
       return nullptr;
+
+}
     BI = dyn_cast<BranchInst>(BB->getTerminator());
-    if (!BI || BI->isUnconditional())
+    if (!BI || BI->isUnconditional()) {
       return nullptr;
+
+}
     return BI;
   };
 
@@ -187,18 +205,24 @@ static void handlePhiDef(CallInst *Expect) {
 
     Value *PhiOpnd = PhiDef->getIncomingValue(i);
     ConstantInt *CI = dyn_cast<ConstantInt>(PhiOpnd);
-    if (!CI)
+    if (!CI) {
       continue;
+
+}
 
     // Not an interesting case when IsUnlikely is false -- we can not infer
     // anything useful when the operand value matches the expected phi
     // output.
-    if (ExpectedPhiValue == ApplyOperations(CI->getValue()))
+    if (ExpectedPhiValue == ApplyOperations(CI->getValue())) {
       continue;
 
+}
+
     BranchInst *BI = GetDomConditional(i);
-    if (!BI)
+    if (!BI) {
       continue;
+
+}
 
     MDBuilder MDB(PhiDef->getContext());
 
@@ -212,26 +236,32 @@ static void handlePhiDef(CallInst *Expect) {
     // comes from outgoing edge of BI that leads to Succ block.
     auto *OpndIncomingBB = PhiDef->getIncomingBlock(i);
     auto IsOpndComingFromSuccessor = [&](BasicBlock *Succ) {
-      if (OpndIncomingBB == Succ)
+      if (OpndIncomingBB == Succ) {
         // If this successor is the incoming block for this
         // Phi operand, then this successor does lead to the Phi.
         return true;
-      if (OpndIncomingBB == BI->getParent() && Succ == PhiDef->getParent())
+
+}
+      if (OpndIncomingBB == BI->getParent() && Succ == PhiDef->getParent()) {
         // Otherwise, if the edge is directly from the branch
         // to the Phi, this successor is the one feeding this
         // Phi operand.
         return true;
+
+}
       return false;
     };
 
-    if (IsOpndComingFromSuccessor(BI->getSuccessor(1)))
+    if (IsOpndComingFromSuccessor(BI->getSuccessor(1))) {
       BI->setMetadata(
           LLVMContext::MD_prof,
           MDB.createBranchWeights(LikelyBranchWeight, UnlikelyBranchWeight));
-    else if (IsOpndComingFromSuccessor(BI->getSuccessor(0)))
+    } else if (IsOpndComingFromSuccessor(BI->getSuccessor(0))) {
       BI->setMetadata(
           LLVMContext::MD_prof,
           MDB.createBranchWeights(UnlikelyBranchWeight, LikelyBranchWeight));
+
+}
   }
 }
 
@@ -257,33 +287,45 @@ template <class BrSelInst> static bool handleBrSelExpect(BrSelInst &BSI) {
     Predicate = CmpInst::ICMP_NE;
   } else {
     Predicate = CmpI->getPredicate();
-    if (Predicate != CmpInst::ICMP_NE && Predicate != CmpInst::ICMP_EQ)
+    if (Predicate != CmpInst::ICMP_NE && Predicate != CmpInst::ICMP_EQ) {
       return false;
 
+}
+
     CmpConstOperand = dyn_cast<ConstantInt>(CmpI->getOperand(1));
-    if (!CmpConstOperand)
+    if (!CmpConstOperand) {
       return false;
+
+}
     CI = dyn_cast<CallInst>(CmpI->getOperand(0));
   }
 
-  if (!CI)
+  if (!CI) {
     return false;
+
+}
 
   uint64_t ValueComparedTo = 0;
   if (CmpConstOperand) {
-    if (CmpConstOperand->getBitWidth() > 64)
+    if (CmpConstOperand->getBitWidth() > 64) {
       return false;
+
+}
     ValueComparedTo = CmpConstOperand->getZExtValue();
   }
 
   Function *Fn = CI->getCalledFunction();
-  if (!Fn || Fn->getIntrinsicID() != Intrinsic::expect)
+  if (!Fn || Fn->getIntrinsicID() != Intrinsic::expect) {
     return false;
+
+}
 
   Value *ArgValue = CI->getArgOperand(0);
   ConstantInt *ExpectedValue = dyn_cast<ConstantInt>(CI->getArgOperand(1));
-  if (!ExpectedValue)
+  if (!ExpectedValue) {
     return false;
+
+}
 
   MDBuilder MDB(CI->getContext());
   MDNode *Node;
@@ -300,10 +342,12 @@ template <class BrSelInst> static bool handleBrSelExpect(BrSelInst &BSI) {
 
   BSI.setMetadata(LLVMContext::MD_misexpect, ExpNode);
 
-  if (CmpI)
+  if (CmpI) {
     CmpI->setOperand(0, ArgValue);
-  else
+  } else {
     BSI.setCondition(ArgValue);
+
+}
 
   misexpect::checkFrontendInstrumentation(BSI);
 
@@ -313,8 +357,10 @@ template <class BrSelInst> static bool handleBrSelExpect(BrSelInst &BSI) {
 }
 
 static bool handleBranchExpect(BranchInst &BI) {
-  if (BI.isUnconditional())
+  if (BI.isUnconditional()) {
     return false;
+
+}
 
   return handleBrSelExpect<BranchInst>(BI);
 }
@@ -325,11 +371,15 @@ static bool lowerExpectIntrinsic(Function &F) {
   for (BasicBlock &BB : F) {
     // Create "block_weights" metadata.
     if (BranchInst *BI = dyn_cast<BranchInst>(BB.getTerminator())) {
-      if (handleBranchExpect(*BI))
+      if (handleBranchExpect(*BI)) {
         ExpectIntrinsicsHandled++;
+
+}
     } else if (SwitchInst *SI = dyn_cast<SwitchInst>(BB.getTerminator())) {
-      if (handleSwitchExpect(*SI))
+      if (handleSwitchExpect(*SI)) {
         ExpectIntrinsicsHandled++;
+
+}
     }
 
     // Remove llvm.expect intrinsics. Iterate backwards in order
@@ -340,8 +390,10 @@ static bool lowerExpectIntrinsic(Function &F) {
       CallInst *CI = dyn_cast<CallInst>(Inst);
       if (!CI) {
         if (SelectInst *SI = dyn_cast<SelectInst>(Inst)) {
-          if (handleBrSelExpect(*SI))
+          if (handleBrSelExpect(*SI)) {
             ExpectIntrinsicsHandled++;
+
+}
         }
         continue;
       }
@@ -365,8 +417,10 @@ static bool lowerExpectIntrinsic(Function &F) {
 
 PreservedAnalyses LowerExpectIntrinsicPass::run(Function &F,
                                                 FunctionAnalysisManager &) {
-  if (lowerExpectIntrinsic(F))
+  if (lowerExpectIntrinsic(F)) {
     return PreservedAnalyses::none();
+
+}
 
   return PreservedAnalyses::all();
 }

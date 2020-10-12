@@ -71,10 +71,12 @@ bool CSEConfigConstantOnly::shouldCSEOpc(unsigned Opc) {
 std::unique_ptr<CSEConfigBase>
 llvm::getStandardCSEConfigForOpt(CodeGenOpt::Level Level) {
   std::unique_ptr<CSEConfigBase> Config;
-  if (Level == CodeGenOpt::None)
+  if (Level == CodeGenOpt::None) {
     Config = std::make_unique<CSEConfigConstantOnly>();
-  else
+  } else {
     Config = std::make_unique<CSEConfigFull>();
+
+}
   return Config;
 }
 
@@ -114,8 +116,10 @@ UniqueMachineInstr *GISelCSEInfo::getNodeIfExists(FoldingSetNodeID &ID,
       return nullptr;
     }
 
-    if (Node->MI->getParent() != MBB)
+    if (Node->MI->getParent() != MBB) {
       return nullptr;
+
+}
   }
   return Node;
 }
@@ -124,10 +128,12 @@ void GISelCSEInfo::insertNode(UniqueMachineInstr *UMI, void *InsertPos) {
   handleRecordedInsts();
   assert(UMI);
   UniqueMachineInstr *MaybeNewNode = UMI;
-  if (InsertPos)
+  if (InsertPos) {
     CSEMap.InsertNode(UMI, InsertPos);
-  else
+  } else {
     MaybeNewNode = CSEMap.GetOrInsertNode(UMI);
+
+}
   if (MaybeNewNode != UMI) {
     // A similar node exists in the folding set. Let's ignore this one.
     return;
@@ -218,8 +224,10 @@ void GISelCSEInfo::handleRecordedInsts() {
 
 bool GISelCSEInfo::shouldCSE(unsigned Opc) const {
   // Only GISel opcodes are CSEable
-  if (!isPreISelGenericOpcode(Opc))
+  if (!isPreISelGenericOpcode(Opc)) {
     return false;
+
+}
   assert(CSEOpt.get() && "CSEConfig not set");
   return CSEOpt->shouldCSEOpc(Opc);
 }
@@ -236,11 +244,15 @@ void GISelCSEInfo::changedInstr(MachineInstr &MI) { changingInstr(MI); }
 void GISelCSEInfo::analyze(MachineFunction &MF) {
   setMF(MF);
   for (auto &MBB : MF) {
-    if (MBB.empty())
+    if (MBB.empty()) {
       continue;
+
+}
     for (MachineInstr &MI : MBB) {
-      if (!shouldCSE(MI.getOpcode()))
+      if (!shouldCSE(MI.getOpcode())) {
         continue;
+
+}
       LLVM_DEBUG(dbgs() << "CSEInfo::Add MI: " << MI);
       insertInstr(&MI);
     }
@@ -307,8 +319,10 @@ const GISelInstProfileBuilder &
 GISelInstProfileBuilder::addNodeID(const MachineInstr *MI) const {
   addNodeIDMBB(MI->getParent());
   addNodeIDOpcode(MI->getOpcode());
-  for (auto &Op : MI->operands())
+  for (auto &Op : MI->operands()) {
     addNodeIDMachineOperand(Op);
+
+}
   addNodeIDFlag(MI->getFlags());
   return *this;
 }
@@ -364,8 +378,10 @@ GISelInstProfileBuilder::addNodeIDMBB(const MachineBasicBlock *MBB) const {
 
 const GISelInstProfileBuilder &
 GISelInstProfileBuilder::addNodeIDFlag(unsigned Flag) const {
-  if (Flag)
+  if (Flag) {
     ID.AddInteger(Flag);
+
+}
   return *this;
 }
 
@@ -373,28 +389,38 @@ const GISelInstProfileBuilder &GISelInstProfileBuilder::addNodeIDMachineOperand(
     const MachineOperand &MO) const {
   if (MO.isReg()) {
     Register Reg = MO.getReg();
-    if (!MO.isDef())
+    if (!MO.isDef()) {
       addNodeIDRegNum(Reg);
+
+}
     LLT Ty = MRI.getType(Reg);
-    if (Ty.isValid())
+    if (Ty.isValid()) {
       addNodeIDRegType(Ty);
+
+}
     auto *RB = MRI.getRegBankOrNull(Reg);
-    if (RB)
+    if (RB) {
       addNodeIDRegType(RB);
+
+}
     auto *RC = MRI.getRegClassOrNull(Reg);
-    if (RC)
+    if (RC) {
       addNodeIDRegType(RC);
+
+}
     assert(!MO.isImplicit() && "Unhandled case");
-  } else if (MO.isImm())
+  } else if (MO.isImm()) {
     ID.AddInteger(MO.getImm());
-  else if (MO.isCImm())
+  } else if (MO.isCImm()) {
     ID.AddPointer(MO.getCImm());
-  else if (MO.isFPImm())
+  } else if (MO.isFPImm()) {
     ID.AddPointer(MO.getFPImm());
-  else if (MO.isPredicate())
+  } else if (MO.isPredicate()) {
     ID.AddInteger(MO.getPredicate());
-  else
+  } else {
     llvm_unreachable("Unhandled operand type");
+
+}
   // Handle other types
   return *this;
 }

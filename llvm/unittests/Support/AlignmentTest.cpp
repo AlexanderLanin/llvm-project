@@ -45,8 +45,10 @@ TEST(AlignmentTest, AlignConstexprConstant) {
 
 std::vector<uint64_t> getValidAlignments() {
   std::vector<uint64_t> Out;
-  for (size_t Shift = 0; Shift < 64; ++Shift)
+  for (size_t Shift = 0; Shift < 64; ++Shift) {
     Out.push_back(1ULL << Shift);
+
+}
   return Out;
 }
 

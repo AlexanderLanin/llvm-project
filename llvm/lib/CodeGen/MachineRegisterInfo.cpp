@@ -69,14 +69,20 @@ static const TargetRegisterClass *
 constrainRegClass(MachineRegisterInfo &MRI, Register Reg,
                   const TargetRegisterClass *OldRC,
                   const TargetRegisterClass *RC, unsigned MinNumRegs) {
-  if (OldRC == RC)
+  if (OldRC == RC) {
     return RC;
+
+}
   const TargetRegisterClass *NewRC =
       MRI.getTargetRegisterInfo()->getCommonSubClass(OldRC, RC);
-  if (!NewRC || NewRC == OldRC)
+  if (!NewRC || NewRC == OldRC) {
     return NewRC;
-  if (NewRC->getNumRegs() < MinNumRegs)
+
+}
+  if (NewRC->getNumRegs() < MinNumRegs) {
     return nullptr;
+
+}
   MRI.setRegClass(Reg, NewRC);
   return NewRC;
 }
@@ -95,26 +101,34 @@ MachineRegisterInfo::constrainRegAttrs(Register Reg,
   const LLT RegTy = getType(Reg);
   const LLT ConstrainingRegTy = getType(ConstrainingReg);
   if (RegTy.isValid() && ConstrainingRegTy.isValid() &&
-      RegTy != ConstrainingRegTy)
+      RegTy != ConstrainingRegTy) {
     return false;
+
+}
   const auto ConstrainingRegCB = getRegClassOrRegBank(ConstrainingReg);
   if (!ConstrainingRegCB.isNull()) {
     const auto RegCB = getRegClassOrRegBank(Reg);
-    if (RegCB.isNull())
+    if (RegCB.isNull()) {
       setRegClassOrRegBank(Reg, ConstrainingRegCB);
-    else if (RegCB.is<const TargetRegisterClass *>() !=
-             ConstrainingRegCB.is<const TargetRegisterClass *>())
+    } else if (RegCB.is<const TargetRegisterClass *>() !=
+             ConstrainingRegCB.is<const TargetRegisterClass *>()) {
       return false;
-    else if (RegCB.is<const TargetRegisterClass *>()) {
+    } else if (RegCB.is<const TargetRegisterClass *>()) {
       if (!::constrainRegClass(
               *this, Reg, RegCB.get<const TargetRegisterClass *>(),
-              ConstrainingRegCB.get<const TargetRegisterClass *>(), MinNumRegs))
+              ConstrainingRegCB.get<const TargetRegisterClass *>(), MinNumRegs)) {
         return false;
-    } else if (RegCB != ConstrainingRegCB)
+
+}
+    } else if (RegCB != ConstrainingRegCB) {
       return false;
+
+}
   }
-  if (ConstrainingRegTy.isValid())
+  if (ConstrainingRegTy.isValid()) {
     setType(Reg, ConstrainingRegTy);
+
+}
   return true;
 }
 
@@ -126,8 +140,10 @@ MachineRegisterInfo::recomputeRegClass(Register Reg) {
       getTargetRegisterInfo()->getLargestLegalSuperClass(OldRC, *MF);
 
   // Stop early if there is no room to grow.
-  if (NewRC == OldRC)
+  if (NewRC == OldRC) {
     return false;
+
+}
 
   // Accumulate constraints from all uses.
   for (MachineOperand &MO : reg_nodbg_operands(Reg)) {
@@ -136,8 +152,10 @@ MachineRegisterInfo::recomputeRegClass(Register Reg) {
     unsigned OpNo = &MO - &MI->getOperand(0);
     NewRC = MI->getRegClassConstraintEffect(OpNo, NewRC, TII,
                                             getTargetRegisterInfo());
-    if (!NewRC || NewRC == OldRC)
+    if (!NewRC || NewRC == OldRC) {
       return false;
+
+}
   }
   setRegClass(Reg, NewRC);
   return true;
@@ -164,8 +182,10 @@ MachineRegisterInfo::createVirtualRegister(const TargetRegisterClass *RegClass,
   // New virtual register number.
   Register Reg = createIncompleteVirtualRegister(Name);
   VRegInfo[Reg].first = RegClass;
-  if (TheDelegate)
+  if (TheDelegate) {
     TheDelegate->MRI_NoteNewVirtualRegister(Reg);
+
+}
   return Reg;
 }
 
@@ -174,8 +194,10 @@ Register MachineRegisterInfo::cloneVirtualRegister(Register VReg,
   Register Reg = createIncompleteVirtualRegister(Name);
   VRegInfo[Reg].first = VRegInfo[VReg].first;
   setType(Reg, getType(VReg));
-  if (TheDelegate)
+  if (TheDelegate) {
     TheDelegate->MRI_NoteNewVirtualRegister(Reg);
+
+}
   return Reg;
 }
 
@@ -191,8 +213,10 @@ MachineRegisterInfo::createGenericVirtualRegister(LLT Ty, StringRef Name) {
   // FIXME: Should we use a dummy register class?
   VRegInfo[Reg].first = static_cast<RegisterBank *>(nullptr);
   setType(Reg, Ty);
-  if (TheDelegate)
+  if (TheDelegate) {
     TheDelegate->MRI_NoteNewVirtualRegister(Reg);
+
+}
   return Reg;
 }
 
@@ -210,8 +234,10 @@ void MachineRegisterInfo::clearVirtRegs() {
   }
 #endif
   VRegInfo.clear();
-  for (auto &I : LiveIns)
+  for (auto &I : LiveIns) {
     I.second = 0;
+
+}
 }
 
 void MachineRegisterInfo::verifyUseList(Register Reg) const {
@@ -312,10 +338,12 @@ void MachineRegisterInfo::removeRegOperandFromUseList(MachineOperand *MO) {
   MachineOperand *Prev = MO->Contents.Reg.Prev;
 
   // Prev links are circular, next link is NULL instead of looping back to Head.
-  if (MO == Head)
+  if (MO == Head) {
     HeadRef = Next;
-  else
+  } else {
     Prev->Contents.Reg.Next = Next;
+
+}
 
   (Next ? Next : Head)->Contents.Reg.Prev = Prev;
 
@@ -357,10 +385,12 @@ void MachineRegisterInfo::moveOperands(MachineOperand *Dst,
 
       // Prev links are circular, next link is NULL instead of looping back to
       // Head.
-      if (Src == Head)
+      if (Src == Head) {
         Head = Dst;
-      else
+      } else {
         Prev->Contents.Reg.Next = Dst;
+
+}
 
       // Update Prev pointer. This also works when Src was pointing to itself
       // in a 1-element list. In that case Head == Dst.
@@ -409,24 +439,32 @@ MachineInstr *MachineRegisterInfo::getVRegDef(Register Reg) const {
 /// specified virtual register or null if none is found.  If there are
 /// multiple definitions or no definition, return null.
 MachineInstr *MachineRegisterInfo::getUniqueVRegDef(Register Reg) const {
-  if (def_empty(Reg)) return nullptr;
+  if (def_empty(Reg)) { return nullptr;
+
+}
   def_instr_iterator I = def_instr_begin(Reg);
-  if (std::next(I) != def_instr_end())
+  if (std::next(I) != def_instr_end()) {
     return nullptr;
+
+}
   return &*I;
 }
 
 bool MachineRegisterInfo::hasOneNonDBGUse(Register RegNo) const {
   use_nodbg_iterator UI = use_nodbg_begin(RegNo);
-  if (UI == use_nodbg_end())
+  if (UI == use_nodbg_end()) {
     return false;
+
+}
   return ++UI == use_nodbg_end();
 }
 
 bool MachineRegisterInfo::hasOneNonDBGUser(Register RegNo) const {
   use_instr_nodbg_iterator UI = use_instr_nodbg_begin(RegNo);
-  if (UI == use_instr_nodbg_end())
+  if (UI == use_instr_nodbg_end()) {
     return false;
+
+}
   return ++UI == use_instr_nodbg_end();
 }
 
@@ -435,32 +473,46 @@ bool MachineRegisterInfo::hasOneNonDBGUser(Register RegNo) const {
 /// optimization passes which extend register lifetimes and need only
 /// preserve conservative kill flag information.
 void MachineRegisterInfo::clearKillFlags(Register Reg) const {
-  for (MachineOperand &MO : use_operands(Reg))
+  for (MachineOperand &MO : use_operands(Reg)) {
     MO.setIsKill(false);
+
+}
 }
 
 bool MachineRegisterInfo::isLiveIn(Register Reg) const {
-  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I)
-    if ((Register)I->first == Reg || I->second == Reg)
+  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I) {
+    if ((Register)I->first == Reg || I->second == Reg) {
       return true;
+
+}
+
+}
   return false;
 }
 
 /// getLiveInPhysReg - If VReg is a live-in virtual register, return the
 /// corresponding live-in physical register.
 unsigned MachineRegisterInfo::getLiveInPhysReg(Register VReg) const {
-  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I)
-    if (I->second == VReg)
+  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I) {
+    if (I->second == VReg) {
       return I->first;
+
+}
+
+}
   return 0;
 }
 
 /// getLiveInVirtReg - If PReg is a live-in physical register, return the
 /// corresponding live-in physical register.
 unsigned MachineRegisterInfo::getLiveInVirtReg(MCRegister PReg) const {
-  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I)
-    if (I->first == PReg)
+  for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I) {
+    if (I->first == PReg) {
       return I->second;
+
+}
+
+}
   return 0;
 }
 
@@ -471,7 +523,7 @@ MachineRegisterInfo::EmitLiveInCopies(MachineBasicBlock *EntryMBB,
                                       const TargetRegisterInfo &TRI,
                                       const TargetInstrInfo &TII) {
   // Emit the copies into the top of the block.
-  for (unsigned i = 0, e = LiveIns.size(); i != e; ++i)
+  for (unsigned i = 0, e = LiveIns.size(); i != e; ++i) {
     if (LiveIns[i].second) {
       if (use_nodbg_empty(LiveIns[i].second)) {
         // The livein has no non-dbg uses. Drop it.
@@ -494,6 +546,8 @@ MachineRegisterInfo::EmitLiveInCopies(MachineBasicBlock *EntryMBB,
       // Add the register to the entry block live-in set.
       EntryMBB->addLiveIn(LiveIns[i].first);
     }
+
+}
 }
 
 LaneBitmask MachineRegisterInfo::getMaxLaneMaskForVReg(Register Reg) const {
@@ -520,15 +574,21 @@ bool MachineRegisterInfo::isConstantPhysReg(MCRegister PhysReg) const {
   assert(Register::isPhysicalRegister(PhysReg));
 
   const TargetRegisterInfo *TRI = getTargetRegisterInfo();
-  if (TRI->isConstantPhysReg(PhysReg))
+  if (TRI->isConstantPhysReg(PhysReg)) {
     return true;
+
+}
 
   // Check if any overlapping register is modified, or allocatable so it may be
   // used later.
   for (MCRegAliasIterator AI(PhysReg, TRI, true);
-       AI.isValid(); ++AI)
-    if (!def_empty(*AI) || isAllocatable(*AI))
+       AI.isValid(); ++AI) {
+    if (!def_empty(*AI) || isAllocatable(*AI)) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -549,18 +609,24 @@ void MachineRegisterInfo::markUsesInDebugValueAsUndef(Register Reg) const {
        I != E; I = nextI) {
     nextI = std::next(I);  // I is invalidated by the setReg
     MachineInstr *UseMI = &*I;
-    if (UseMI->isDebugValue())
+    if (UseMI->isDebugValue()) {
       UseMI->getOperand(0).setReg(0U);
+
+}
   }
 }
 
 static const Function *getCalledFunction(const MachineInstr &MI) {
   for (const MachineOperand &MO : MI.operands()) {
-    if (!MO.isGlobal())
+    if (!MO.isGlobal()) {
       continue;
+
+}
     const Function *Func = dyn_cast<Function>(MO.getGlobal());
-    if (Func != nullptr)
+    if (Func != nullptr) {
       return Func;
+
+}
   }
   return nullptr;
 }
@@ -568,16 +634,22 @@ static const Function *getCalledFunction(const MachineInstr &MI) {
 static bool isNoReturnDef(const MachineOperand &MO) {
   // Anything which is not a noreturn function is a real def.
   const MachineInstr &MI = *MO.getParent();
-  if (!MI.isCall())
+  if (!MI.isCall()) {
     return false;
+
+}
   const MachineBasicBlock &MBB = *MI.getParent();
-  if (!MBB.succ_empty())
+  if (!MBB.succ_empty()) {
     return false;
+
+}
   const MachineFunction &MF = *MBB.getParent();
   // We need to keep correct unwind information even if the function will
   // not return, since the runtime may need it.
-  if (MF.getFunction().hasFnAttribute(Attribute::UWTable))
+  if (MF.getFunction().hasFnAttribute(Attribute::UWTable)) {
     return false;
+
+}
   const Function *Called = getCalledFunction(MI);
   return !(Called == nullptr || !Called->hasFnAttribute(Attribute::NoReturn) ||
            !Called->hasFnAttribute(Attribute::NoUnwind));
@@ -585,13 +657,17 @@ static bool isNoReturnDef(const MachineOperand &MO) {
 
 bool MachineRegisterInfo::isPhysRegModified(MCRegister PhysReg,
                                             bool SkipNoReturnDef) const {
-  if (UsedPhysRegMask.test(PhysReg))
+  if (UsedPhysRegMask.test(PhysReg)) {
     return true;
+
+}
   const TargetRegisterInfo *TRI = getTargetRegisterInfo();
   for (MCRegAliasIterator AI(PhysReg, TRI, true); AI.isValid(); ++AI) {
     for (const MachineOperand &MO : make_range(def_begin(*AI), def_end())) {
-      if (!SkipNoReturnDef && isNoReturnDef(MO))
+      if (!SkipNoReturnDef && isNoReturnDef(MO)) {
         continue;
+
+}
       return true;
     }
   }
@@ -599,13 +675,17 @@ bool MachineRegisterInfo::isPhysRegModified(MCRegister PhysReg,
 }
 
 bool MachineRegisterInfo::isPhysRegUsed(MCRegister PhysReg) const {
-  if (UsedPhysRegMask.test(PhysReg))
+  if (UsedPhysRegMask.test(PhysReg)) {
     return true;
+
+}
   const TargetRegisterInfo *TRI = getTargetRegisterInfo();
   for (MCRegAliasIterator AliasReg(PhysReg, TRI, true); AliasReg.isValid();
        ++AliasReg) {
-    if (!reg_nodbg_empty(*AliasReg))
+    if (!reg_nodbg_empty(*AliasReg)) {
       return true;
+
+}
   }
   return false;
 }
@@ -618,8 +698,10 @@ void MachineRegisterInfo::disableCalleeSavedRegister(unsigned Reg) {
 
   if (!IsUpdatedCSRsInitialized) {
     const MCPhysReg *CSR = TRI->getCalleeSavedRegs(MF);
-    for (const MCPhysReg *I = CSR; *I; ++I)
+    for (const MCPhysReg *I = CSR; *I; ++I) {
       UpdatedCSRs.push_back(*I);
+
+}
 
     // Zero value represents the end of the register list
     // (no more registers should be pushed).
@@ -629,24 +711,32 @@ void MachineRegisterInfo::disableCalleeSavedRegister(unsigned Reg) {
   }
 
   // Remove the register (and its aliases from the list).
-  for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI)
+  for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI) {
     UpdatedCSRs.erase(std::remove(UpdatedCSRs.begin(), UpdatedCSRs.end(), *AI),
                       UpdatedCSRs.end());
+
+}
 }
 
 const MCPhysReg *MachineRegisterInfo::getCalleeSavedRegs() const {
-  if (IsUpdatedCSRsInitialized)
+  if (IsUpdatedCSRsInitialized) {
     return UpdatedCSRs.data();
+
+}
 
   return getTargetRegisterInfo()->getCalleeSavedRegs(MF);
 }
 
 void MachineRegisterInfo::setCalleeSavedRegs(ArrayRef<MCPhysReg> CSRs) {
-  if (IsUpdatedCSRsInitialized)
+  if (IsUpdatedCSRsInitialized) {
     UpdatedCSRs.clear();
 
-  for (MCPhysReg Reg : CSRs)
+}
+
+  for (MCPhysReg Reg : CSRs) {
     UpdatedCSRs.push_back(Reg);
+
+}
 
   // Zero value represents the end of the register list
   // (no more registers should be pushed).
@@ -666,8 +756,10 @@ bool MachineRegisterInfo::isReservedRegUnit(unsigned Unit) const {
         break;
       }
     }
-    if (IsRootReserved)
+    if (IsRootReserved) {
       return true;
+
+}
   }
   return false;
 }

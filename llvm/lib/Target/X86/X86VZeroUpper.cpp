@@ -131,35 +131,51 @@ static bool isYmmOrZmmReg(unsigned Reg) {
 }
 
 static bool checkFnHasLiveInYmmOrZmm(MachineRegisterInfo &MRI) {
-  for (std::pair<unsigned, unsigned> LI : MRI.liveins())
-    if (isYmmOrZmmReg(LI.first))
+  for (std::pair<unsigned, unsigned> LI : MRI.liveins()) {
+    if (isYmmOrZmmReg(LI.first)) {
       return true;
+
+}
+
+}
 
   return false;
 }
 
 static bool clobbersAllYmmAndZmmRegs(const MachineOperand &MO) {
   for (unsigned reg = X86::YMM0; reg <= X86::YMM15; ++reg) {
-    if (!MO.clobbersPhysReg(reg))
+    if (!MO.clobbersPhysReg(reg)) {
       return false;
+
+}
   }
   for (unsigned reg = X86::ZMM0; reg <= X86::ZMM15; ++reg) {
-    if (!MO.clobbersPhysReg(reg))
+    if (!MO.clobbersPhysReg(reg)) {
       return false;
+
+}
   }
   return true;
 }
 
 static bool hasYmmOrZmmReg(MachineInstr &MI) {
   for (const MachineOperand &MO : MI.operands()) {
-    if (MI.isCall() && MO.isRegMask() && !clobbersAllYmmAndZmmRegs(MO))
+    if (MI.isCall() && MO.isRegMask() && !clobbersAllYmmAndZmmRegs(MO)) {
       return true;
-    if (!MO.isReg())
+
+}
+    if (!MO.isReg()) {
       continue;
-    if (MO.isDebug())
+
+}
+    if (MO.isDebug()) {
       continue;
-    if (isYmmOrZmmReg(MO.getReg()))
+
+}
+    if (isYmmOrZmmReg(MO.getReg())) {
       return true;
+
+}
   }
   return false;
 }
@@ -168,8 +184,10 @@ static bool hasYmmOrZmmReg(MachineInstr &MI) {
 static bool callHasRegMask(MachineInstr &MI) {
   assert(MI.isCall() && "Can only be called on call instructions.");
   for (const MachineOperand &MO : MI.operands()) {
-    if (MO.isRegMask())
+    if (MO.isRegMask()) {
       return true;
+
+}
   }
   return false;
 }
@@ -206,8 +224,10 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
 
     // No need for vzeroupper before iret in interrupt handler function,
     // epilogue will restore YMM/ZMM registers if needed.
-    if (IsX86INTR && IsReturn)
+    if (IsX86INTR && IsReturn) {
       continue;
+
+}
 
     // An existing VZERO* instruction resets the state.
     if (MI.getOpcode() == X86::VZEROALL || MI.getOpcode() == X86::VZEROUPPER) {
@@ -216,8 +236,10 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
     }
 
     // Shortcut: don't need to check regular instructions in dirty state.
-    if (!IsControlFlow && CurState == EXITS_DIRTY)
+    if (!IsControlFlow && CurState == EXITS_DIRTY) {
       continue;
+
+}
 
     if (hasYmmOrZmmReg(MI)) {
       // We found a ymm/zmm-using instruction; this could be an AVX/AVX512
@@ -228,16 +250,20 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
 
     // Check for control-flow out of the current function (which might
     // indirectly execute SSE instructions).
-    if (!IsControlFlow)
+    if (!IsControlFlow) {
       continue;
+
+}
 
     // If the call has no RegMask, skip it as well. It usually happens on
     // helper function calls (such as '_chkstk', '_ftol2') where standard
     // calling convention is not used (RegMask is not used to mark register
     // clobbered and register usage (def/implicit-def/use) is well-defined and
     // explicitly specified.
-    if (IsCall && !callHasRegMask(MI))
+    if (IsCall && !callHasRegMask(MI)) {
       continue;
+
+}
 
     // The VZEROUPPER instruction resets the upper 128 bits of YMM0-YMM15
     // registers. In addition, the processor changes back to Clean state, after
@@ -266,11 +292,15 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
   LLVM_DEBUG(dbgs() << "MBB #" << MBB.getNumber() << " exit state: "
                     << getBlockExitStateName(CurState) << '\n');
 
-  if (CurState == EXITS_DIRTY)
+  if (CurState == EXITS_DIRTY) {
     for (MachineBasicBlock::succ_iterator SI = MBB.succ_begin(),
                                           SE = MBB.succ_end();
-         SI != SE; ++SI)
+         SI != SE; ++SI) {
       addDirtySuccessor(**SI);
+
+}
+
+}
 
   BlockStates[MBB.getNumber()].ExitState = CurState;
 }
@@ -279,8 +309,10 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
 /// function calls.
 bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
   const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
-  if (!ST.hasAVX() || !ST.insertVZEROUPPER())
+  if (!ST.hasAVX() || !ST.insertVZEROUPPER()) {
     return false;
+
+}
   TII = ST.getInstrInfo();
   MachineRegisterInfo &MRI = MF.getRegInfo();
   EverMadeChange = false;
@@ -303,8 +335,10 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
       }
     }
   }
-  if (!YmmOrZmmUsed)
+  if (!YmmOrZmmUsed) {
     return false;
+
+}
 
   assert(BlockStates.empty() && DirtySuccessors.empty() &&
          "X86VZeroUpper state should be clear");
@@ -313,13 +347,17 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
   // Process all blocks. This will compute block exit states, record the first
   // unguarded call in each block, and add successors of dirty blocks to the
   // DirtySuccessors list.
-  for (MachineBasicBlock &MBB : MF)
+  for (MachineBasicBlock &MBB : MF) {
     processBasicBlock(MBB);
+
+}
 
   // If any YMM/ZMM regs are live-in to this function, add the entry block to
   // the DirtySuccessors list
-  if (FnHasLiveInYmmOrZmm)
+  if (FnHasLiveInYmmOrZmm) {
     addDirtySuccessor(MF.front());
+
+}
 
   // Re-visit all blocks that are successors of EXITS_DIRTY blocks. Add
   // vzeroupper instructions to unguarded calls, and propagate EXITS_DIRTY
@@ -331,8 +369,10 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
 
     // MBB is a successor of a dirty block, so its first call needs to be
     // guarded.
-    if (BBState.FirstUnguardedCall != MBB.end())
+    if (BBState.FirstUnguardedCall != MBB.end()) {
       insertVZeroUpper(BBState.FirstUnguardedCall, MBB);
+
+}
 
     // If this successor was a pass-through block, then it is now dirty. Its
     // successors need to be added to the worklist (if they haven't been
@@ -340,8 +380,10 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
     if (BBState.ExitState == PASS_THROUGH) {
       LLVM_DEBUG(dbgs() << "MBB #" << MBB.getNumber()
                         << " was Pass-through, is now Dirty-out.\n");
-      for (MachineBasicBlock *Succ : MBB.successors())
+      for (MachineBasicBlock *Succ : MBB.successors()) {
         addDirtySuccessor(*Succ);
+
+}
     }
   }
 

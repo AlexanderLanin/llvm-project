@@ -69,8 +69,10 @@ X86Subtarget::classifyGlobalReference(const GlobalValue *GV) const {
 unsigned char
 X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
   // If we're not PIC, it's not very interesting.
-  if (!isPositionIndependent())
+  if (!isPositionIndependent()) {
     return X86II::MO_NO_FLAG;
+
+}
 
   if (is64Bit()) {
     // 64-bit ELF PIC local references may use GOTOFF relocations.
@@ -89,8 +91,10 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
 
       // Medium is a hybrid: RIP-rel for code, GOTOFF for DSO local data.
       case CodeModel::Medium:
-        if (isa<Function>(GV))
+        if (isa<Function>(GV)) {
           return X86II::MO_NO_FLAG; // All code is RIP-relative
+
+}
         return X86II::MO_GOTOFF;    // Local symbols use GOTOFF.
       }
       llvm_unreachable("invalid code model");
@@ -102,16 +106,20 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
   }
 
   // The COFF dynamic linker just patches the executable sections.
-  if (isTargetCOFF())
+  if (isTargetCOFF()) {
     return X86II::MO_NO_FLAG;
+
+}
 
   if (isTargetDarwin()) {
     // 32 bit macho has no relocation for a-b if a is undefined, even if
     // b is in the section that is being relocated.
     // This means we have to use o load even for GVs that are known to be
     // local to the dso.
-    if (GV && (GV->isDeclarationForLinker() || GV->hasCommonLinkage()))
+    if (GV && (GV->isDeclarationForLinker() || GV->hasCommonLinkage())) {
       return X86II::MO_DARWIN_NONLAZY_PIC_BASE;
+
+}
 
     return X86II::MO_PIC_BASE_OFFSET;
   }
@@ -122,8 +130,10 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
 unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
                                                     const Module &M) const {
   // The static large model never uses stubs.
-  if (TM.getCodeModel() == CodeModel::Large && !isPositionIndependent())
+  if (TM.getCodeModel() == CodeModel::Large && !isPositionIndependent()) {
     return X86II::MO_NO_FLAG;
+
+}
 
   // Absolute symbols can be referenced directly.
   if (GV) {
@@ -131,37 +141,49 @@ unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
       // See if we can use the 8-bit immediate form. Note that some instructions
       // will sign extend the immediate operand, so to be conservative we only
       // accept the range [0,128).
-      if (CR->getUnsignedMax().ult(128))
+      if (CR->getUnsignedMax().ult(128)) {
         return X86II::MO_ABS8;
-      else
+      } else {
         return X86II::MO_NO_FLAG;
+
+}
     }
   }
 
-  if (TM.shouldAssumeDSOLocal(M, GV))
+  if (TM.shouldAssumeDSOLocal(M, GV)) {
     return classifyLocalReference(GV);
 
+}
+
   if (isTargetCOFF()) {
-    if (GV->hasDLLImportStorageClass())
+    if (GV->hasDLLImportStorageClass()) {
       return X86II::MO_DLLIMPORT;
+
+}
     return X86II::MO_COFFSTUB;
   }
   // Some JIT users use *-win32-elf triples; these shouldn't use GOT tables.
-  if (isOSWindows())
+  if (isOSWindows()) {
     return X86II::MO_NO_FLAG;
+
+}
 
   if (is64Bit()) {
     // ELF supports a large, truly PIC code model with non-PC relative GOT
     // references. Other object file formats do not. Use the no-flag, 64-bit
     // reference for them.
-    if (TM.getCodeModel() == CodeModel::Large)
+    if (TM.getCodeModel() == CodeModel::Large) {
       return isTargetELF() ? X86II::MO_GOT : X86II::MO_NO_FLAG;
+
+}
     return X86II::MO_GOTPCREL;
   }
 
   if (isTargetDarwin()) {
-    if (!isPositionIndependent())
+    if (!isPositionIndependent()) {
       return X86II::MO_DARWIN_NONLAZY;
+
+}
     return X86II::MO_DARWIN_NONLAZY_PIC_BASE;
   }
 
@@ -176,40 +198,50 @@ X86Subtarget::classifyGlobalFunctionReference(const GlobalValue *GV) const {
 unsigned char
 X86Subtarget::classifyGlobalFunctionReference(const GlobalValue *GV,
                                               const Module &M) const {
-  if (TM.shouldAssumeDSOLocal(M, GV))
+  if (TM.shouldAssumeDSOLocal(M, GV)) {
     return X86II::MO_NO_FLAG;
+
+}
 
   // Functions on COFF can be non-DSO local for two reasons:
   // - They are marked dllimport
   // - They are extern_weak, and a stub is needed
   if (isTargetCOFF()) {
-    if (GV->hasDLLImportStorageClass())
+    if (GV->hasDLLImportStorageClass()) {
       return X86II::MO_DLLIMPORT;
+
+}
     return X86II::MO_COFFSTUB;
   }
 
   const Function *F = dyn_cast_or_null<Function>(GV);
 
   if (isTargetELF()) {
-    if (is64Bit() && F && (CallingConv::X86_RegCall == F->getCallingConv()))
+    if (is64Bit() && F && (CallingConv::X86_RegCall == F->getCallingConv())) {
       // According to psABI, PLT stub clobbers XMM8-XMM15.
       // In Regcall calling convention those registers are used for passing
       // parameters. Thus we need to prevent lazy binding in Regcall.
       return X86II::MO_GOTPCREL;
+
+}
     // If PLT must be avoided then the call should be via GOTPCREL.
     if (((F && F->hasFnAttribute(Attribute::NonLazyBind)) ||
          (!F && M.getRtLibUseGOT())) &&
-        is64Bit())
+        is64Bit()) {
        return X86II::MO_GOTPCREL;
+
+}
     return X86II::MO_PLT;
   }
 
   if (is64Bit()) {
-    if (F && F->hasFnAttribute(Attribute::NonLazyBind))
+    if (F && F->hasFnAttribute(Attribute::NonLazyBind)) {
       // If the function is marked as non-lazy, generate an indirect call
       // which loads from the GOT directly. This avoids runtime overhead
       // at the cost of eager binding (and one extra byte of encoding).
       return X86II::MO_GOTPCREL;
+
+}
     return X86II::MO_NO_FLAG;
   }
 
@@ -221,40 +253,50 @@ bool X86Subtarget::isLegalToCallImmediateAddr() const {
   // FIXME: I386 PE/COFF supports PC relative calls using IMAGE_REL_I386_REL32
   // but WinCOFFObjectWriter::RecordRelocation cannot emit them.  Once it does,
   // the following check for Win32 should be removed.
-  if (In64BitMode || isTargetWin32())
+  if (In64BitMode || isTargetWin32()) {
     return false;
+
+}
   return isTargetELF() || TM.getRelocationModel() == Reloc::Static;
 }
 
 void X86Subtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
   std::string CPUName = std::string(CPU);
-  if (CPUName.empty())
+  if (CPUName.empty()) {
     CPUName = "generic";
+
+}
 
   std::string FullFS = std::string(FS);
   if (In64BitMode) {
     // SSE2 should default to enabled in 64-bit mode, but can be turned off
     // explicitly.
-    if (!FullFS.empty())
+    if (!FullFS.empty()) {
       FullFS = "+sse2," + FullFS;
-    else
+    } else {
       FullFS = "+sse2";
+
+}
 
     // If no CPU was specified, enable 64bit feature to satisy later check.
     if (CPUName == "generic") {
-      if (!FullFS.empty())
+      if (!FullFS.empty()) {
         FullFS = "+64bit," + FullFS;
-      else
+      } else {
         FullFS = "+64bit";
+
+}
     }
   }
 
   // LAHF/SAHF are always supported in non-64-bit mode.
   if (!In64BitMode) {
-    if (!FullFS.empty())
+    if (!FullFS.empty()) {
       FullFS = "+sahf," + FullFS;
-    else
+    } else {
       FullFS = "+sahf";
+
+}
   }
 
   // Parse features string and set the CPU.
@@ -264,34 +306,42 @@ void X86Subtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
   // 16-bytes and under that are reasonably fast. These features were
   // introduced with Intel's Nehalem/Silvermont and AMD's Family10h
   // micro-architectures respectively.
-  if (hasSSE42() || hasSSE4A())
+  if (hasSSE42() || hasSSE4A()) {
     IsUAMem16Slow = false;
+
+}
 
   // It's important to keep the MCSubtargetInfo feature bits in sync with
   // target data structure which is shared with MC code emitter, etc.
-  if (In64BitMode)
+  if (In64BitMode) {
     ToggleFeature(X86::Mode64Bit);
-  else if (In32BitMode)
+  } else if (In32BitMode) {
     ToggleFeature(X86::Mode32Bit);
-  else if (In16BitMode)
+  } else if (In16BitMode) {
     ToggleFeature(X86::Mode16Bit);
-  else
+  } else {
     llvm_unreachable("Not 16-bit, 32-bit or 64-bit mode!");
+
+}
 
   LLVM_DEBUG(dbgs() << "Subtarget features: SSELevel " << X86SSELevel
                     << ", 3DNowLevel " << X863DNowLevel << ", 64bit "
                     << HasX86_64 << "\n");
-  if (In64BitMode && !HasX86_64)
+  if (In64BitMode && !HasX86_64) {
     report_fatal_error("64-bit code requested on a subtarget that doesn't "
                        "support it!");
 
+}
+
   // Stack alignment is 16 bytes on Darwin, Linux, kFreeBSD and Solaris (both
   // 32 and 64 bit) and for all 64-bit targets.
-  if (StackAlignOverride)
+  if (StackAlignOverride) {
     stackAlignment = *StackAlignOverride;
-  else if (isTargetDarwin() || isTargetLinux() || isTargetSolaris() ||
-           isTargetKFreeBSD() || In64BitMode)
+  } else if (isTargetDarwin() || isTargetLinux() || isTargetSolaris() ||
+           isTargetKFreeBSD() || In64BitMode) {
     stackAlignment = Align(16);
+
+}
 
   // Some CPUs have more overhead for gather. The specified overhead is relative
   // to the Load operation. "2" is the number provided by Intel architects. This
@@ -299,18 +349,24 @@ void X86Subtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
   // other alternatives.
   // TODO: Remove the explicit hasAVX512()?, That would mean we would only
   // enable gather with a -march.
-  if (hasAVX512() || (hasAVX2() && hasFastGather()))
+  if (hasAVX512() || (hasAVX2() && hasFastGather())) {
     GatherOverhead = 2;
-  if (hasAVX512())
+
+}
+  if (hasAVX512()) {
     ScatterOverhead = 2;
 
+}
+
   // Consume the vector width attribute or apply any target specific limit.
-  if (PreferVectorWidthOverride)
+  if (PreferVectorWidthOverride) {
     PreferVectorWidth = PreferVectorWidthOverride;
-  else if (Prefer128Bit)
+  } else if (Prefer128Bit) {
     PreferVectorWidth = 128;
-  else if (Prefer256Bit)
+  } else if (Prefer256Bit) {
     PreferVectorWidth = 256;
+
+}
 }
 
 X86Subtarget &X86Subtarget::initializeSubtargetDependencies(StringRef CPU,
@@ -336,16 +392,18 @@ X86Subtarget::X86Subtarget(const Triple &TT, StringRef CPU, StringRef FS,
       InstrInfo(initializeSubtargetDependencies(CPU, FS)), TLInfo(TM, *this),
       FrameLowering(*this, getStackAlignment()) {
   // Determine the PICStyle based on the target selected.
-  if (!isPositionIndependent())
+  if (!isPositionIndependent()) {
     setPICStyle(PICStyles::Style::None);
-  else if (is64Bit())
+  } else if (is64Bit()) {
     setPICStyle(PICStyles::Style::RIPRel);
-  else if (isTargetCOFF())
+  } else if (isTargetCOFF()) {
     setPICStyle(PICStyles::Style::None);
-  else if (isTargetDarwin())
+  } else if (isTargetDarwin()) {
     setPICStyle(PICStyles::Style::StubPIC);
-  else if (isTargetELF())
+  } else if (isTargetELF()) {
     setPICStyle(PICStyles::Style::GOT);
+
+}
 
   CallLoweringInfo.reset(new X86CallLowering(*getTargetLowering()));
   Legalizer.reset(new X86LegalizerInfo(*this, TM));

@@ -50,8 +50,10 @@ struct ExpandedMatch {
 ///   X ?% Y
 static llvm::Optional<ExpandedMatch> matchExpandedRem(Instruction &I) {
   Value *Dividend, *XroundedDownToMultipleOfY;
-  if (!match(&I, m_Sub(m_Value(Dividend), m_Value(XroundedDownToMultipleOfY))))
+  if (!match(&I, m_Sub(m_Value(Dividend), m_Value(XroundedDownToMultipleOfY)))) {
     return llvm::None;
+
+}
 
   Value *Divisor;
   Instruction *Div;
@@ -60,8 +62,10 @@ static llvm::Optional<ExpandedMatch> matchExpandedRem(Instruction &I) {
           XroundedDownToMultipleOfY,
           m_c_Mul(m_CombineAnd(m_IDiv(m_Specific(Dividend), m_Value(Divisor)),
                                m_Instruction(Div)),
-                  m_Deferred(Divisor))))
+                  m_Deferred(Divisor)))) {
     return llvm::None;
+
+}
 
   ExpandedMatch M;
   M.Key.SignedOp = Div->getOpcode() == Instruction::SDiv;
@@ -129,16 +133,18 @@ static DivRemWorklistTy getWorklist(Function &F) {
   MapVector<DivRemMapKey, Instruction *> RemMap;
   for (auto &BB : F) {
     for (auto &I : BB) {
-      if (I.getOpcode() == Instruction::SDiv)
+      if (I.getOpcode() == Instruction::SDiv) {
         DivMap[DivRemMapKey(true, I.getOperand(0), I.getOperand(1))] = &I;
-      else if (I.getOpcode() == Instruction::UDiv)
+      } else if (I.getOpcode() == Instruction::UDiv) {
         DivMap[DivRemMapKey(false, I.getOperand(0), I.getOperand(1))] = &I;
-      else if (I.getOpcode() == Instruction::SRem)
+      } else if (I.getOpcode() == Instruction::SRem) {
         RemMap[DivRemMapKey(true, I.getOperand(0), I.getOperand(1))] = &I;
-      else if (I.getOpcode() == Instruction::URem)
+      } else if (I.getOpcode() == Instruction::URem) {
         RemMap[DivRemMapKey(false, I.getOperand(0), I.getOperand(1))] = &I;
-      else if (auto Match = matchExpandedRem(I))
+      } else if (auto Match = matchExpandedRem(I)) {
         RemMap[Match->Key] = Match->Value;
+
+}
     }
   }
 
@@ -151,8 +157,10 @@ static DivRemWorklistTy getWorklist(Function &F) {
   for (auto &RemPair : RemMap) {
     // Find the matching division instruction from the division map.
     Instruction *DivInst = DivMap[RemPair.first];
-    if (!DivInst)
+    if (!DivInst) {
       continue;
+
+}
 
     // We have a matching pair of div/rem instructions.
     NumPairs++;
@@ -189,8 +197,10 @@ static bool optimizeDivRem(Function &F, const TargetTransformInfo &TTI,
 
   // Process each entry in the worklist.
   for (DivRemPairWorklistEntry &E : Worklist) {
-    if (!DebugCounter::shouldExecute(DRPCounter))
+    if (!DebugCounter::shouldExecute(DRPCounter)) {
       continue;
+
+}
 
     bool HasDivRemOp = TTI.hasDivRemOp(E.getType(), E.isSigned());
 
@@ -229,8 +239,10 @@ static bool optimizeDivRem(Function &F, const TargetTransformInfo &TTI,
     // If the target supports div+rem and the instructions are in the same block
     // already, there's nothing to do. The backend should handle this. If the
     // target does not support div+rem, then we will decompose the rem.
-    if (HasDivRemOp && RemInst->getParent() == DivInst->getParent())
+    if (HasDivRemOp && RemInst->getParent() == DivInst->getParent()) {
       continue;
+
+}
 
     bool DivDominates = DT.dominates(DivInst, RemInst);
     if (!DivDominates && !DT.dominates(RemInst, DivInst)) {
@@ -242,16 +254,20 @@ static bool optimizeDivRem(Function &F, const TargetTransformInfo &TTI,
 
     // The target does not have a single div/rem operation,
     // and the rem is already in expanded form. Nothing to do.
-    if (!HasDivRemOp && E.isRemExpanded())
+    if (!HasDivRemOp && E.isRemExpanded()) {
       continue;
+
+}
 
     if (HasDivRemOp) {
       // The target has a single div/rem operation. Hoist the lower instruction
       // to make the matched pair visible to the backend.
-      if (DivDominates)
+      if (DivDominates) {
         RemInst->moveAfter(DivInst);
-      else
+      } else {
         DivInst->moveAfter(RemInst);
+
+}
       NumHoisted++;
     } else {
       // The target does not have a single div/rem operation,
@@ -298,8 +314,10 @@ static bool optimizeDivRem(Function &F, const TargetTransformInfo &TTI,
       // If the div and rem are in the same block, we do the same transform,
       // but any code movement would be within the same block.
 
-      if (!DivDominates)
+      if (!DivDominates) {
         DivInst->moveBefore(RemInst);
+
+}
       Mul->insertAfter(RemInst);
       Sub->insertAfter(Mul);
 
@@ -339,8 +357,10 @@ struct DivRemPairsLegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
     auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     return optimizeDivRem(F, TTI, DT);
@@ -364,8 +384,10 @@ PreservedAnalyses DivRemPairsPass::run(Function &F,
                                        FunctionAnalysisManager &FAM) {
   TargetTransformInfo &TTI = FAM.getResult<TargetIRAnalysis>(F);
   DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-  if (!optimizeDivRem(F, TTI, DT))
+  if (!optimizeDivRem(F, TTI, DT)) {
     return PreservedAnalyses::all();
+
+}
   // TODO: This pass just hoists/replaces math ops - all analyses are preserved?
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();

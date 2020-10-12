@@ -72,54 +72,70 @@ bool llvm::formDedicatedExitBlocks(Loop *L, DominatorTree *DT, LoopInfo *LI,
     // See if there are any non-loop predecessors of this exit block and
     // keep track of the in-loop predecessors.
     bool IsDedicatedExit = true;
-    for (auto *PredBB : predecessors(BB))
+    for (auto *PredBB : predecessors(BB)) {
       if (L->contains(PredBB)) {
-        if (isa<IndirectBrInst>(PredBB->getTerminator()))
+        if (isa<IndirectBrInst>(PredBB->getTerminator())) {
           // We cannot rewrite exiting edges from an indirectbr.
           return false;
-        if (isa<CallBrInst>(PredBB->getTerminator()))
+
+}
+        if (isa<CallBrInst>(PredBB->getTerminator())) {
           // We cannot rewrite exiting edges from a callbr.
           return false;
+
+}
 
         InLoopPredecessors.push_back(PredBB);
       } else {
         IsDedicatedExit = false;
       }
 
+}
+
     assert(!InLoopPredecessors.empty() && "Must have *some* loop predecessor!");
 
     // Nothing to do if this is already a dedicated exit.
-    if (IsDedicatedExit)
+    if (IsDedicatedExit) {
       return false;
+
+}
 
     auto *NewExitBB = SplitBlockPredecessors(
         BB, InLoopPredecessors, ".loopexit", DT, LI, MSSAU, PreserveLCSSA);
 
-    if (!NewExitBB)
+    if (!NewExitBB) {
       LLVM_DEBUG(
           dbgs() << "WARNING: Can't create a dedicated exit block for loop: "
                  << *L << "\n");
-    else
+    } else {
       LLVM_DEBUG(dbgs() << "LoopSimplify: Creating dedicated exit block "
                         << NewExitBB->getName() << "\n");
+
+}
     return true;
   };
 
   // Walk the exit blocks directly rather than building up a data structure for
   // them, but only visit each one once.
   SmallPtrSet<BasicBlock *, 4> Visited;
-  for (auto *BB : L->blocks())
+  for (auto *BB : L->blocks()) {
     for (auto *SuccBB : successors(BB)) {
       // We're looking for exit blocks so skip in-loop successors.
-      if (L->contains(SuccBB))
+      if (L->contains(SuccBB)) {
         continue;
 
+}
+
       // Visit each exit block exactly once.
-      if (!Visited.insert(SuccBB).second)
+      if (!Visited.insert(SuccBB).second) {
         continue;
+
+}
 
       Changed |= RewriteExit(SuccBB);
     }
+
+}
 
   return Changed;
 }
@@ -128,7 +144,7 @@ bool llvm::formDedicatedExitBlocks(Loop *L, DominatorTree *DT, LoopInfo *LI,
 SmallVector<Instruction *, 8> llvm::findDefsUsedOutsideOfLoop(Loop *L) {
   SmallVector<Instruction *, 8> UsedOutside;
 
-  for (auto *Block : L->getBlocks())
+  for (auto *Block : L->getBlocks()) {
     // FIXME: I believe that this could use copy_if if the Inst reference could
     // be adapted into a pointer.
     for (auto &Inst : *Block) {
@@ -136,9 +152,13 @@ SmallVector<Instruction *, 8> llvm::findDefsUsedOutsideOfLoop(Loop *L) {
       if (any_of(Users, [&](User *U) {
             auto *Use = cast<Instruction>(U);
             return !L->contains(Use->getParent());
-          }))
+          })) {
         UsedOutside.push_back(&Inst);
+
+}
     }
+
+}
 
   return UsedOutside;
 }
@@ -230,9 +250,11 @@ void llvm::addStringMetadataToLoop(Loop *TheLoop, const char *StringMD,
         if (S && S->getString().equals(StringMD)) {
           ConstantInt *IntMD =
               mdconst::extract_or_null<ConstantInt>(Node->getOperand(1));
-          if (IntMD && IntMD->getSExtValue() == V)
+          if (IntMD && IntMD->getSExtValue() == V) {
             // It is already in place. Do nothing.
             return;
+
+}
           // We need to update the value, so just skip it here and it will
           // be added after copying other existed nodes.
           continue;
@@ -259,8 +281,10 @@ void llvm::addStringMetadataToLoop(Loop *TheLoop, const char *StringMD,
 Optional<const MDOperand *> llvm::findStringMetadataForLoop(const Loop *TheLoop,
                                                             StringRef Name) {
   MDNode *MD = findOptionMDForLoop(TheLoop, Name);
-  if (!MD)
+  if (!MD) {
     return None;
+
+}
   switch (MD->getNumOperands()) {
   case 1:
     return nullptr;
@@ -274,16 +298,20 @@ Optional<const MDOperand *> llvm::findStringMetadataForLoop(const Loop *TheLoop,
 static Optional<bool> getOptionalBoolLoopAttribute(const Loop *TheLoop,
                                                    StringRef Name) {
   MDNode *MD = findOptionMDForLoop(TheLoop, Name);
-  if (!MD)
+  if (!MD) {
     return None;
+
+}
   switch (MD->getNumOperands()) {
   case 1:
     // When the value is absent it is interpreted as 'attribute set'.
     return true;
   case 2:
     if (ConstantInt *IntMD =
-            mdconst::extract_or_null<ConstantInt>(MD->getOperand(1).get()))
+            mdconst::extract_or_null<ConstantInt>(MD->getOperand(1).get())) {
       return IntMD->getZExtValue();
+
+}
     return true;
   }
   llvm_unreachable("unexpected number of options");
@@ -297,12 +325,16 @@ llvm::Optional<int> llvm::getOptionalIntLoopAttribute(Loop *TheLoop,
                                                       StringRef Name) {
   const MDOperand *AttrMD =
       findStringMetadataForLoop(TheLoop, Name).getValueOr(nullptr);
-  if (!AttrMD)
+  if (!AttrMD) {
     return None;
 
+}
+
   ConstantInt *IntMD = mdconst::extract_or_null<ConstantInt>(AttrMD->get());
-  if (!IntMD)
+  if (!IntMD) {
     return None;
+
+}
 
   return IntMD->getSExtValue();
 }
@@ -311,8 +343,10 @@ Optional<MDNode *> llvm::makeFollowupLoopID(
     MDNode *OrigLoopID, ArrayRef<StringRef> FollowupOptions,
     const char *InheritOptionsExceptPrefix, bool AlwaysNew) {
   if (!OrigLoopID) {
-    if (AlwaysNew)
+    if (AlwaysNew) {
       return nullptr;
+
+}
     return None;
   }
 
@@ -331,25 +365,33 @@ Optional<MDNode *> llvm::makeFollowupLoopID(
 
       auto InheritThisAttribute = [InheritSomeAttrs,
                                    InheritOptionsExceptPrefix](MDNode *Op) {
-        if (!InheritSomeAttrs)
+        if (!InheritSomeAttrs) {
           return false;
 
+}
+
         // Skip malformatted attribute metadata nodes.
-        if (Op->getNumOperands() == 0)
+        if (Op->getNumOperands() == 0) {
           return true;
+
+}
         Metadata *NameMD = Op->getOperand(0).get();
-        if (!isa<MDString>(NameMD))
+        if (!isa<MDString>(NameMD)) {
           return true;
+
+}
         StringRef AttrName = cast<MDString>(NameMD)->getString();
 
         // Do not inherit excluded attributes.
         return !AttrName.startswith(InheritOptionsExceptPrefix);
       };
 
-      if (InheritThisAttribute(Op))
+      if (InheritThisAttribute(Op)) {
         MDs.push_back(Op);
-      else
+      } else {
         Changed = true;
+
+}
     }
   } else {
     // Modified if we dropped at least one attribute.
@@ -359,8 +401,10 @@ Optional<MDNode *> llvm::makeFollowupLoopID(
   bool HasAnyFollowup = false;
   for (StringRef OptionName : FollowupOptions) {
     MDNode *FollowupNode = findOptionMDForLoopID(OrigLoopID, OptionName);
-    if (!FollowupNode)
+    if (!FollowupNode) {
       continue;
+
+}
 
     HasAnyFollowup = true;
     for (const MDOperand &Option : drop_begin(FollowupNode->operands(), 1)) {
@@ -371,16 +415,22 @@ Optional<MDNode *> llvm::makeFollowupLoopID(
 
   // Attributes of the followup loop not specified explicity, so signal to the
   // transformation pass to add suitable attributes.
-  if (!AlwaysNew && !HasAnyFollowup)
+  if (!AlwaysNew && !HasAnyFollowup) {
     return None;
 
+}
+
   // If no attributes were added or remove, the previous loop Id can be reused.
-  if (!AlwaysNew && !Changed)
+  if (!AlwaysNew && !Changed) {
     return OrigLoopID;
 
+}
+
   // No attributes is equivalent to having no !llvm.loop metadata at all.
-  if (MDs.size() == 1)
+  if (MDs.size() == 1) {
     return nullptr;
+
+}
 
   // Build the new loop ID.
   MDTuple *FollowupLoopID = MDNode::get(OrigLoopID->getContext(), MDs);
@@ -397,40 +447,58 @@ bool llvm::hasDisableLICMTransformsHint(const Loop *L) {
 }
 
 TransformationMode llvm::hasUnrollTransformation(Loop *L) {
-  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.disable"))
+  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.disable")) {
     return TM_SuppressedByUser;
+
+}
 
   Optional<int> Count =
       getOptionalIntLoopAttribute(L, "llvm.loop.unroll.count");
-  if (Count.hasValue())
+  if (Count.hasValue()) {
     return Count.getValue() == 1 ? TM_SuppressedByUser : TM_ForcedByUser;
 
-  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.enable"))
+}
+
+  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.enable")) {
     return TM_ForcedByUser;
 
-  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.full"))
+}
+
+  if (getBooleanLoopAttribute(L, "llvm.loop.unroll.full")) {
     return TM_ForcedByUser;
 
-  if (hasDisableAllTransformsHint(L))
+}
+
+  if (hasDisableAllTransformsHint(L)) {
     return TM_Disable;
+
+}
 
   return TM_Unspecified;
 }
 
 TransformationMode llvm::hasUnrollAndJamTransformation(Loop *L) {
-  if (getBooleanLoopAttribute(L, "llvm.loop.unroll_and_jam.disable"))
+  if (getBooleanLoopAttribute(L, "llvm.loop.unroll_and_jam.disable")) {
     return TM_SuppressedByUser;
+
+}
 
   Optional<int> Count =
       getOptionalIntLoopAttribute(L, "llvm.loop.unroll_and_jam.count");
-  if (Count.hasValue())
+  if (Count.hasValue()) {
     return Count.getValue() == 1 ? TM_SuppressedByUser : TM_ForcedByUser;
 
-  if (getBooleanLoopAttribute(L, "llvm.loop.unroll_and_jam.enable"))
+}
+
+  if (getBooleanLoopAttribute(L, "llvm.loop.unroll_and_jam.enable")) {
     return TM_ForcedByUser;
 
-  if (hasDisableAllTransformsHint(L))
+}
+
+  if (hasDisableAllTransformsHint(L)) {
     return TM_Disable;
+
+}
 
   return TM_Unspecified;
 }
@@ -439,8 +507,10 @@ TransformationMode llvm::hasVectorizeTransformation(Loop *L) {
   Optional<bool> Enable =
       getOptionalBoolLoopAttribute(L, "llvm.loop.vectorize.enable");
 
-  if (Enable == false)
+  if (Enable == false) {
     return TM_SuppressedByUser;
+
+}
 
   Optional<int> VectorizeWidth =
       getOptionalIntLoopAttribute(L, "llvm.loop.vectorize.width");
@@ -449,43 +519,63 @@ TransformationMode llvm::hasVectorizeTransformation(Loop *L) {
 
   // 'Forcing' vector width and interleave count to one effectively disables
   // this tranformation.
-  if (Enable == true && VectorizeWidth == 1 && InterleaveCount == 1)
+  if (Enable == true && VectorizeWidth == 1 && InterleaveCount == 1) {
     return TM_SuppressedByUser;
 
-  if (getBooleanLoopAttribute(L, "llvm.loop.isvectorized"))
+}
+
+  if (getBooleanLoopAttribute(L, "llvm.loop.isvectorized")) {
     return TM_Disable;
 
-  if (Enable == true)
+}
+
+  if (Enable == true) {
     return TM_ForcedByUser;
 
-  if (VectorizeWidth == 1 && InterleaveCount == 1)
+}
+
+  if (VectorizeWidth == 1 && InterleaveCount == 1) {
     return TM_Disable;
 
-  if (VectorizeWidth > 1 || InterleaveCount > 1)
+}
+
+  if (VectorizeWidth > 1 || InterleaveCount > 1) {
     return TM_Enable;
 
-  if (hasDisableAllTransformsHint(L))
+}
+
+  if (hasDisableAllTransformsHint(L)) {
     return TM_Disable;
+
+}
 
   return TM_Unspecified;
 }
 
 TransformationMode llvm::hasDistributeTransformation(Loop *L) {
-  if (getBooleanLoopAttribute(L, "llvm.loop.distribute.enable"))
+  if (getBooleanLoopAttribute(L, "llvm.loop.distribute.enable")) {
     return TM_ForcedByUser;
 
-  if (hasDisableAllTransformsHint(L))
+}
+
+  if (hasDisableAllTransformsHint(L)) {
     return TM_Disable;
+
+}
 
   return TM_Unspecified;
 }
 
 TransformationMode llvm::hasLICMVersioningTransformation(Loop *L) {
-  if (getBooleanLoopAttribute(L, "llvm.loop.licm_versioning.disable"))
+  if (getBooleanLoopAttribute(L, "llvm.loop.licm_versioning.disable")) {
     return TM_SuppressedByUser;
 
-  if (hasDisableAllTransformsHint(L))
+}
+
+  if (hasDisableAllTransformsHint(L)) {
     return TM_Disable;
+
+}
 
   return TM_Unspecified;
 }
@@ -498,15 +588,21 @@ llvm::collectChildrenInLoop(DomTreeNode *N, const Loop *CurLoop) {
   auto AddRegionToWorklist = [&](DomTreeNode *DTN) {
     // Only include subregions in the top level loop.
     BasicBlock *BB = DTN->getBlock();
-    if (CurLoop->contains(BB))
+    if (CurLoop->contains(BB)) {
       Worklist.push_back(DTN);
+
+}
   };
 
   AddRegionToWorklist(N);
 
-  for (size_t I = 0; I < Worklist.size(); I++)
-    for (DomTreeNode *Child : Worklist[I]->getChildren())
+  for (size_t I = 0; I < Worklist.size(); I++) {
+    for (DomTreeNode *Child : Worklist[I]->getChildren()) {
       AddRegionToWorklist(Child);
+
+}
+
+}
 
   return Worklist;
 }
@@ -518,8 +614,10 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
   assert(Preheader && "Preheader should exist!");
 
   std::unique_ptr<MemorySSAUpdater> MSSAU;
-  if (MSSA)
+  if (MSSA) {
     MSSAU = std::make_unique<MemorySSAUpdater>(MSSA);
+
+}
 
   // Now that we know the removal is safe, remove the loop by changing the
   // branch from the preheader to go to the single exit block.
@@ -530,8 +628,10 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
   // Tell ScalarEvolution that the loop is deleted. Do this before
   // deleting the loop so that ScalarEvolution can look at the loop
   // to determine what it needs to clean up.
-  if (SE)
+  if (SE) {
     SE->forgetLoop(L);
+
+}
 
   auto *ExitBlock = L->getUniqueExitBlock();
   assert(ExitBlock && "Should have a unique exit block!");
@@ -585,8 +685,10 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
     // below, to keep the indices valid for deletion (removeIncomingValues
     // updates getNumIncomingValues and shifts all values down into the operand
     // being deleted).
-    for (unsigned i = 0, e = P.getNumIncomingValues() - 1; i != e; ++i)
+    for (unsigned i = 0, e = P.getNumIncomingValues() - 1; i != e; ++i) {
       P.removeIncomingValue(e - i, false);
+
+}
 
     assert((P.getNumIncomingValues() == 1 &&
             P.getIncomingBlock(PredIndex) == Preheader) &&
@@ -598,8 +700,10 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
     DTU.applyUpdates({{DominatorTree::Insert, Preheader, ExitBlock}});
     if (MSSA) {
       MSSAU->applyUpdates({{DominatorTree::Insert, Preheader, ExitBlock}}, *DT);
-      if (VerifyMemorySSA)
+      if (VerifyMemorySSA) {
         MSSA->verifyMemorySSA();
+
+}
     }
   }
 
@@ -614,8 +718,10 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
     if (MSSA) {
       MSSAU->applyUpdates({{DominatorTree::Delete, Preheader, L->getHeader()}},
                           *DT);
-      if (VerifyMemorySSA)
+      if (VerifyMemorySSA) {
         MSSA->verifyMemorySSA();
+
+}
       SmallSetVector<BasicBlock *, 8> DeadBlockSet(L->block_begin(),
                                                    L->block_end());
       MSSAU->removeBlocks(DeadBlockSet);
@@ -634,31 +740,43 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
   // to API doc of User::dropAllReferences only valid operation after dropping
   // references, is deletion. So let's substitute all usages of
   // instruction from the loop with undef value of corresponding type first.
-  for (auto *Block : L->blocks())
+  for (auto *Block : L->blocks()) {
     for (Instruction &I : *Block) {
       auto *Undef = UndefValue::get(I.getType());
       for (Value::use_iterator UI = I.use_begin(), E = I.use_end(); UI != E;) {
         Use &U = *UI;
         ++UI;
-        if (auto *Usr = dyn_cast<Instruction>(U.getUser()))
-          if (L->contains(Usr->getParent()))
+        if (auto *Usr = dyn_cast<Instruction>(U.getUser())) {
+          if (L->contains(Usr->getParent())) {
             continue;
+
+}
+
+}
         // If we have a DT then we can check that uses outside a loop only in
         // unreachable block.
-        if (DT)
+        if (DT) {
           assert(!DT->isReachableFromEntry(U) &&
                  "Unexpected user in reachable block");
+
+}
         U.set(Undef);
       }
       auto *DVI = dyn_cast<DbgVariableIntrinsic>(&I);
-      if (!DVI)
+      if (!DVI) {
         continue;
+
+}
       auto Key = DeadDebugSet.find({DVI->getVariable(), DVI->getExpression()});
-      if (Key != DeadDebugSet.end())
+      if (Key != DeadDebugSet.end()) {
         continue;
+
+}
       DeadDebugSet.insert({DVI->getVariable(), DVI->getExpression()});
       DeadDebugInst.push_back(DVI);
     }
+
+}
 
   // After the loop has been deleted all the values defined and modified
   // inside the loop are going to be unavailable.
@@ -670,18 +788,24 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
   assert(InsertDbgValueBefore &&
          "There should be a non-PHI instruction in exit block, else these "
          "instructions will have no parent.");
-  for (auto *DVI : DeadDebugInst)
+  for (auto *DVI : DeadDebugInst) {
     DIB.insertDbgValueIntrinsic(UndefValue::get(Builder.getInt32Ty()),
                                 DVI->getVariable(), DVI->getExpression(),
                                 DVI->getDebugLoc(), InsertDbgValueBefore);
 
+}
+
   // Remove the block from the reference counting scheme, so that we can
   // delete it freely later.
-  for (auto *Block : L->blocks())
+  for (auto *Block : L->blocks()) {
     Block->dropAllReferences();
 
-  if (MSSA && VerifyMemorySSA)
+}
+
+  if (MSSA && VerifyMemorySSA) {
     MSSA->verifyMemorySSA();
+
+}
 
   if (LI) {
     // Erase the instructions and the blocks without having to worry
@@ -689,16 +813,20 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
     // NOTE: This iteration is safe because erasing the block does not remove
     // its entry from the loop's block list.  We do that in the next section.
     for (Loop::block_iterator LpI = L->block_begin(), LpE = L->block_end();
-         LpI != LpE; ++LpI)
+         LpI != LpE; ++LpI) {
       (*LpI)->eraseFromParent();
+
+}
 
     // Finally, the blocks from loopinfo.  This has to happen late because
     // otherwise our loop iterators won't work.
 
     SmallPtrSet<BasicBlock *, 8> blocks;
     blocks.insert(L->block_begin(), L->block_end());
-    for (BasicBlock *BB : blocks)
+    for (BasicBlock *BB : blocks) {
       LI->removeBlock(BB);
+
+}
 
     // The last step is to update LoopInfo now that we've eliminated this loop.
     // Note: LoopInfo::erase remove the given loop and relink its subloops with
@@ -722,12 +850,16 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
 /// latch if above check is successful, nullptr otherwise.
 static BranchInst *getExpectedExitLoopLatchBranch(Loop *L) {
   BasicBlock *Latch = L->getLoopLatch();
-  if (!Latch)
+  if (!Latch) {
     return nullptr;
 
+}
+
   BranchInst *LatchBR = dyn_cast<BranchInst>(Latch->getTerminator());
-  if (!LatchBR || LatchBR->getNumSuccessors() != 2 || !L->isLoopExiting(Latch))
+  if (!LatchBR || LatchBR->getNumSuccessors() != 2 || !L->isLoopExiting(Latch)) {
     return nullptr;
+
+}
 
   assert((LatchBR->getSuccessor(0) == L->getHeader() ||
           LatchBR->getSuccessor(1) == L->getHeader()) &&
@@ -737,8 +869,10 @@ static BranchInst *getExpectedExitLoopLatchBranch(Loop *L) {
   L->getUniqueNonLatchExitBlocks(ExitBlocks);
   if (any_of(ExitBlocks, [](const BasicBlock *EB) {
         return !EB->getTerminatingDeoptimizeCall();
-      }))
+      })) {
     return nullptr;
+
+}
 
   return LatchBR;
 }
@@ -749,24 +883,34 @@ llvm::getLoopEstimatedTripCount(Loop *L,
   // Support loops with an exiting latch and other existing exists only
   // deoptimize.
   BranchInst *LatchBranch = getExpectedExitLoopLatchBranch(L);
-  if (!LatchBranch)
+  if (!LatchBranch) {
     return None;
+
+}
 
   // To estimate the number of times the loop body was executed, we want to
   // know the number of times the backedge was taken, vs. the number of times
   // we exited the loop.
   uint64_t BackedgeTakenWeight, LatchExitWeight;
-  if (!LatchBranch->extractProfMetadata(BackedgeTakenWeight, LatchExitWeight))
+  if (!LatchBranch->extractProfMetadata(BackedgeTakenWeight, LatchExitWeight)) {
     return None;
 
-  if (LatchBranch->getSuccessor(0) != L->getHeader())
+}
+
+  if (LatchBranch->getSuccessor(0) != L->getHeader()) {
     std::swap(BackedgeTakenWeight, LatchExitWeight);
 
-  if (!LatchExitWeight)
+}
+
+  if (!LatchExitWeight) {
     return None;
 
-  if (EstimatedLoopInvocationWeight)
+}
+
+  if (EstimatedLoopInvocationWeight) {
     *EstimatedLoopInvocationWeight = LatchExitWeight;
+
+}
 
   // Estimated backedge taken count is a ratio of the backedge taken weight by
   // the weight of the edge exiting the loop, rounded to nearest.
@@ -781,8 +925,10 @@ bool llvm::setLoopEstimatedTripCount(Loop *L, unsigned EstimatedTripCount,
   // Support loops with an exiting latch and other existing exists only
   // deoptimize.
   BranchInst *LatchBranch = getExpectedExitLoopLatchBranch(L);
-  if (!LatchBranch)
+  if (!LatchBranch) {
     return false;
+
+}
 
   // Calculate taken and exit weights.
   unsigned LatchExitWeight = 0;
@@ -794,8 +940,10 @@ bool llvm::setLoopEstimatedTripCount(Loop *L, unsigned EstimatedTripCount,
   }
 
   // Make a swap if back edge is taken when condition is "false".
-  if (LatchBranch->getSuccessor(0) != L->getHeader())
+  if (LatchBranch->getSuccessor(0) != L->getHeader()) {
     std::swap(BackedgeTakenWeight, LatchExitWeight);
+
+}
 
   MDBuilder MDB(LatchBranch->getContext());
 
@@ -810,21 +958,27 @@ bool llvm::setLoopEstimatedTripCount(Loop *L, unsigned EstimatedTripCount,
 bool llvm::hasIterationCountInvariantInParent(Loop *InnerLoop,
                                               ScalarEvolution &SE) {
   Loop *OuterL = InnerLoop->getParentLoop();
-  if (!OuterL)
+  if (!OuterL) {
     return true;
+
+}
 
   // Get the backedge taken count for the inner loop
   BasicBlock *InnerLoopLatch = InnerLoop->getLoopLatch();
   const SCEV *InnerLoopBECountSC = SE.getExitCount(InnerLoop, InnerLoopLatch);
   if (isa<SCEVCouldNotCompute>(InnerLoopBECountSC) ||
-      !InnerLoopBECountSC->getType()->isIntegerTy())
+      !InnerLoopBECountSC->getType()->isIntegerTy()) {
     return false;
+
+}
 
   // Get whether count is invariant to the outer loop
   ScalarEvolution::LoopDisposition LD =
       SE.getLoopDisposition(InnerLoopBECountSC, OuterL);
-  if (LD != ScalarEvolution::LoopInvariant)
+  if (LD != ScalarEvolution::LoopInvariant) {
     return false;
+
+}
 
   return true;
 }
@@ -865,10 +1019,12 @@ Value *llvm::createMinMaxOp(IRBuilderBase &Builder,
 
   Value *Cmp;
   if (RK == RecurrenceDescriptor::MRK_FloatMin ||
-      RK == RecurrenceDescriptor::MRK_FloatMax)
+      RK == RecurrenceDescriptor::MRK_FloatMax) {
     Cmp = Builder.CreateFCmp(P, Left, Right, "rdx.minmax.cmp");
-  else
+  } else {
     Cmp = Builder.CreateICmp(P, Left, Right, "rdx.minmax.cmp");
+
+}
 
   Value *Select = Builder.CreateSelect(Cmp, Left, Right, "rdx.minmax.select");
   return Select;
@@ -898,8 +1054,10 @@ llvm::getOrderedReduction(IRBuilderBase &Builder, Value *Acc, Value *Src,
       Result = createMinMaxOp(Builder, MinMaxKind, Result, Ext);
     }
 
-    if (!RedOps.empty())
+    if (!RedOps.empty()) {
       propagateIRFlags(Result, RedOps);
+
+}
   }
 
   return Result;
@@ -920,8 +1078,10 @@ llvm::getShuffleReduction(IRBuilderBase &Builder, Value *Src, unsigned Op,
   SmallVector<Constant *, 32> ShuffleMask(VF, nullptr);
   for (unsigned i = VF; i != 1; i >>= 1) {
     // Move the upper half of the vector to the lower half.
-    for (unsigned j = 0; j != i / 2; ++j)
+    for (unsigned j = 0; j != i / 2; ++j) {
       ShuffleMask[j] = Builder.getInt32(i / 2 + j);
+
+}
 
     // Fill the rest of the mask with undef.
     std::fill(&ShuffleMask[i / 2], ShuffleMask.end(),
@@ -940,13 +1100,17 @@ llvm::getShuffleReduction(IRBuilderBase &Builder, Value *Src, unsigned Op,
              "Invalid min/max");
       TmpVec = createMinMaxOp(Builder, MinMaxKind, TmpVec, Shuf);
     }
-    if (!RedOps.empty())
+    if (!RedOps.empty()) {
       propagateIRFlags(TmpVec, RedOps);
+
+}
 
     // We may compute the reassociated scalar ops in a way that does not
     // preserve nsw/nuw etc. Conservatively, drop those flags.
-    if (auto *ReductionInst = dyn_cast<Instruction>(TmpVec))
+    if (auto *ReductionInst = dyn_cast<Instruction>(TmpVec)) {
       ReductionInst->dropPoisonGeneratingFlags();
+
+}
   }
   // The result is in the first element of the vector.
   return Builder.CreateExtractElement(TmpVec, Builder.getInt32(0));
@@ -1021,8 +1185,10 @@ Value *llvm::createSimpleTargetReduction(
     break;
   }
   if (ForceReductionIntrinsic ||
-      TTI->useReductionIntrinsic(Opcode, Src->getType(), Flags))
+      TTI->useReductionIntrinsic(Opcode, Src->getType(), Flags)) {
     return BuildFunc();
+
+}
   return getShuffleReduction(Builder, Src, Opcode, MinMaxKind, RedOps);
 }
 
@@ -1074,20 +1240,28 @@ Value *llvm::createTargetReduction(IRBuilderBase &B,
 
 void llvm::propagateIRFlags(Value *I, ArrayRef<Value *> VL, Value *OpValue) {
   auto *VecOp = dyn_cast<Instruction>(I);
-  if (!VecOp)
+  if (!VecOp) {
     return;
+
+}
   auto *Intersection = (OpValue == nullptr) ? dyn_cast<Instruction>(VL[0])
                                             : dyn_cast<Instruction>(OpValue);
-  if (!Intersection)
+  if (!Intersection) {
     return;
+
+}
   const unsigned Opcode = Intersection->getOpcode();
   VecOp->copyIRFlags(Intersection);
   for (auto *V : VL) {
     auto *Instr = dyn_cast<Instruction>(V);
-    if (!Instr)
+    if (!Instr) {
       continue;
-    if (OpValue == nullptr || Opcode == Instr->getOpcode())
+
+}
+    if (OpValue == nullptr || Opcode == Instr->getOpcode()) {
       VecOp->andIRFlags(V);
+
+}
   }
 }
 
@@ -1149,16 +1323,22 @@ static bool isValidRewrite(ScalarEvolution *SE, Value *FromVal, Value *ToVal) {
   // because it understands lcssa phis while SCEV does not.
   Value *FromPtr = FromVal;
   Value *ToPtr = ToVal;
-  if (auto *GEP = dyn_cast<GEPOperator>(FromVal))
+  if (auto *GEP = dyn_cast<GEPOperator>(FromVal)) {
     FromPtr = GEP->getPointerOperand();
 
-  if (auto *GEP = dyn_cast<GEPOperator>(ToVal))
+}
+
+  if (auto *GEP = dyn_cast<GEPOperator>(ToVal)) {
     ToPtr = GEP->getPointerOperand();
+
+}
 
   if (FromPtr != FromVal || ToPtr != ToVal) {
     // Quickly check the common case
-    if (FromPtr == ToPtr)
+    if (FromPtr == ToPtr) {
       return true;
+
+}
 
     // SCEV may have rewritten an expression that produces the GEP's pointer
     // operand. That's ok as long as the pointer operand has the same base
@@ -1168,13 +1348,17 @@ static bool isValidRewrite(ScalarEvolution *SE, Value *FromVal, Value *ToVal) {
     // indexed by an integer recurrence.
 
     // If the GEP base pointer is a vector of pointers, abort.
-    if (!FromPtr->getType()->isPointerTy() || !ToPtr->getType()->isPointerTy())
+    if (!FromPtr->getType()->isPointerTy() || !ToPtr->getType()->isPointerTy()) {
       return false;
+
+}
 
     const SCEV *FromBase = SE->getPointerBase(SE->getSCEV(FromPtr));
     const SCEV *ToBase = SE->getPointerBase(SE->getSCEV(ToPtr));
-    if (FromBase == ToBase)
+    if (FromBase == ToBase) {
       return true;
+
+}
 
     LLVM_DEBUG(dbgs() << "rewriteLoopExitValues: GEP rewrite bail out "
                       << *FromBase << " != " << *ToBase << "\n");
@@ -1192,16 +1376,22 @@ static bool hasHardUserWithinLoop(const Loop *L, const Instruction *I) {
   while (!WorkList.empty()) {
     const Instruction *Curr = WorkList.pop_back_val();
     // This use is outside the loop, nothing to do.
-    if (!L->contains(Curr))
+    if (!L->contains(Curr)) {
       continue;
+
+}
     // Do we assume it is a "hard" use which will not be eliminated easily?
-    if (Curr->mayHaveSideEffects())
+    if (Curr->mayHaveSideEffects()) {
       return true;
+
+}
     // Otherwise, add all its users to worklist.
     for (auto U : Curr->users()) {
       auto *UI = cast<Instruction>(U);
-      if (Visited.insert(UI).second)
+      if (Visited.insert(UI).second) {
         WorkList.push_back(UI);
+
+}
     }
   }
   return false;
@@ -1225,8 +1415,10 @@ struct RewritePhi {
 static bool canLoopBeDeleted(Loop *L, SmallVector<RewritePhi, 8> &RewritePhiSet) {
   BasicBlock *Preheader = L->getLoopPreheader();
   // If there is no preheader, the loop will not be deleted.
-  if (!Preheader)
+  if (!Preheader) {
     return false;
+
+}
 
   // In LoopDeletion pass Loop can be deleted when ExitingBlocks.size() > 1.
   // We obviate multiple ExitingBlocks case for simplicity.
@@ -1236,8 +1428,10 @@ static bool canLoopBeDeleted(Loop *L, SmallVector<RewritePhi, 8> &RewritePhiSet)
   L->getExitingBlocks(ExitingBlocks);
   SmallVector<BasicBlock *, 8> ExitBlocks;
   L->getUniqueExitBlocks(ExitBlocks);
-  if (ExitBlocks.size() != 1 || ExitingBlocks.size() != 1)
+  if (ExitBlocks.size() != 1 || ExitingBlocks.size() != 1) {
     return false;
+
+}
 
   BasicBlock *ExitBlock = ExitBlocks[0];
   BasicBlock::iterator BI = ExitBlock->begin();
@@ -1257,18 +1451,26 @@ static bool canLoopBeDeleted(Loop *L, SmallVector<RewritePhi, 8> &RewritePhiSet)
     }
 
     Instruction *I;
-    if (!found && (I = dyn_cast<Instruction>(Incoming)))
-      if (!L->hasLoopInvariantOperands(I))
+    if (!found && (I = dyn_cast<Instruction>(Incoming))) {
+      if (!L->hasLoopInvariantOperands(I)) {
         return false;
+
+}
+
+}
 
     ++BI;
   }
 
-  for (auto *BB : L->blocks())
+  for (auto *BB : L->blocks()) {
     if (llvm::any_of(*BB, [](Instruction &I) {
           return I.mayHaveSideEffects();
-        }))
+        })) {
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -1294,18 +1496,24 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
     // If there are no PHI nodes in this exit block, then no values defined
     // inside the loop are used on this path, skip it.
     PHINode *PN = dyn_cast<PHINode>(ExitBB->begin());
-    if (!PN) continue;
+    if (!PN) { continue;
+
+}
 
     unsigned NumPreds = PN->getNumIncomingValues();
 
     // Iterate over all of the PHI nodes.
     BasicBlock::iterator BBI = ExitBB->begin();
     while ((PN = dyn_cast<PHINode>(BBI++))) {
-      if (PN->use_empty())
+      if (PN->use_empty()) {
         continue; // dead use, don't replace it
 
-      if (!SE->isSCEVable(PN->getType()))
+}
+
+      if (!SE->isSCEVable(PN->getType())) {
         continue;
+
+}
 
       // It's necessary to tell ScalarEvolution about this explicitly so that
       // it can walk the def-use list and forget all SCEVs, as it may not be
@@ -1319,17 +1527,23 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
         // If the value being merged in is not integer or is not defined
         // in the loop, skip it.
         Value *InVal = PN->getIncomingValue(i);
-        if (!isa<Instruction>(InVal))
+        if (!isa<Instruction>(InVal)) {
           continue;
 
+}
+
         // If this pred is for a subloop, not L itself, skip it.
-        if (LI->getLoopFor(PN->getIncomingBlock(i)) != L)
+        if (LI->getLoopFor(PN->getIncomingBlock(i)) != L) {
           continue; // The Block is in a subloop, skip it.
+
+}
 
         // Check that InVal is defined in the loop.
         Instruction *Inst = cast<Instruction>(InVal);
-        if (!L->contains(Inst))
+        if (!L->contains(Inst)) {
           continue;
+
+}
 
         // Okay, this instruction has a user outside of the current loop
         // and varies predictably *inside* the loop.  Evaluate the value it
@@ -1346,15 +1560,23 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
           // most SCEV expressions and other recurrence types (e.g. shift
           // recurrences).  Is there existing code we can reuse?
           const SCEV *ExitCount = SE->getExitCount(L, PN->getIncomingBlock(i));
-          if (isa<SCEVCouldNotCompute>(ExitCount))
+          if (isa<SCEVCouldNotCompute>(ExitCount)) {
             continue;
-          if (auto *AddRec = dyn_cast<SCEVAddRecExpr>(SE->getSCEV(Inst)))
-            if (AddRec->getLoop() == L)
+
+}
+          if (auto *AddRec = dyn_cast<SCEVAddRecExpr>(SE->getSCEV(Inst))) {
+            if (AddRec->getLoop() == L) {
               ExitValue = AddRec->evaluateAtIteration(ExitCount, *SE);
+
+}
+
+}
           if (isa<SCEVCouldNotCompute>(ExitValue) ||
               !SE->isLoopInvariant(ExitValue, L) ||
-              !isSafeToExpand(ExitValue, *SE))
+              !isSafeToExpand(ExitValue, *SE)) {
             continue;
+
+}
         }
 
         // Computing the value outside of the loop brings no benefit if it is
@@ -1366,8 +1588,10 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
         bool HighCost = Rewriter.isHighCostExpansion(
             ExitValue, L, SCEVCheapExpansionBudget, TTI, Inst);
         if (ReplaceExitValue != AlwaysRepl && HighCost &&
-            hasHardUserWithinLoop(L, Inst))
+            hasHardUserWithinLoop(L, Inst)) {
           continue;
+
+}
 
         Value *ExitVal = Rewriter.expandCodeFor(ExitValue, PN->getType(), Inst);
 
@@ -1417,8 +1641,10 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
 
     // If this instruction is dead now, delete it. Don't do it now to avoid
     // invalidating iterators.
-    if (isInstructionTriviallyDead(Inst, TLI))
+    if (isInstructionTriviallyDead(Inst, TLI)) {
       DeadInsts.push_back(Inst);
+
+}
 
     // Replace PN with ExitVal if that is legal and does not break LCSSA.
     if (PN->getNumIncomingValues() == 1 &&
@@ -1446,8 +1672,10 @@ void llvm::setProfileInfoAfterUnrolling(Loop *OrigLoop, Loop *UnrolledLoop,
   unsigned OrigLoopInvocationWeight = 0;
   Optional<unsigned> OrigAverageTripCount =
       getLoopEstimatedTripCount(OrigLoop, &OrigLoopInvocationWeight);
-  if (!OrigAverageTripCount)
+  if (!OrigAverageTripCount) {
     return;
+
+}
 
   // Calculate number of iterations in unrolled loop.
   unsigned UnrolledAverageTripCount = *OrigAverageTripCount / UF;
@@ -1509,23 +1737,33 @@ void llvm::appendLoopsToWorklist(LoopInfo &LI,
 Loop *llvm::cloneLoop(Loop *L, Loop *PL, ValueToValueMapTy &VM,
                       LoopInfo *LI, LPPassManager *LPM) {
   Loop &New = *LI->AllocateLoop();
-  if (PL)
+  if (PL) {
     PL->addChildLoop(&New);
-  else
+  } else {
     LI->addTopLevelLoop(&New);
 
-  if (LPM)
+}
+
+  if (LPM) {
     LPM->addLoop(New);
+
+}
 
   // Add all of the blocks in L to the new loop.
   for (Loop::block_iterator I = L->block_begin(), E = L->block_end();
-       I != E; ++I)
-    if (LI->getLoopFor(*I) == L)
+       I != E; ++I) {
+    if (LI->getLoopFor(*I) == L) {
       New.addBasicBlockToLoop(cast<BasicBlock>(VM[*I]), *LI);
 
+}
+
+}
+
   // Add all of the subloops to the new loop.
-  for (Loop *I : *L)
+  for (Loop *I : *L) {
     cloneLoop(I, &New, VM, LI, LPM);
+
+}
 
   return &New;
 }

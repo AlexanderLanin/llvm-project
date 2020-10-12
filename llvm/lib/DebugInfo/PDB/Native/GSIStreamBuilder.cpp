@@ -68,8 +68,10 @@ struct llvm::pdb::GSIHashStreamBuilder {
   void addSymbol(const CVSymbol &Symbol) {
     if (Symbol.kind() == S_UDT || Symbol.kind() == S_CONSTANT) {
       auto Iter = SymbolHashes.insert(Symbol);
-      if (!Iter.second)
+      if (!Iter.second) {
         return;
+
+}
     }
 
     Records.push_back(Symbol);
@@ -86,8 +88,10 @@ uint32_t GSIHashStreamBuilder::calculateSerializedLength() const {
 
 uint32_t GSIHashStreamBuilder::calculateRecordByteSize() const {
   uint32_t Size = 0;
-  for (const auto &Sym : Records)
+  for (const auto &Sym : Records) {
     Size += Sym.length();
+
+}
   return Size;
 }
 
@@ -98,15 +102,23 @@ Error GSIHashStreamBuilder::commit(BinaryStreamWriter &Writer) {
   Header.HrSize = HashRecords.size() * sizeof(PSHashRecord);
   Header.NumBuckets = HashBitmap.size() * 4 + HashBuckets.size() * 4;
 
-  if (auto EC = Writer.writeObject(Header))
+  if (auto EC = Writer.writeObject(Header)) {
     return EC;
 
-  if (auto EC = Writer.writeArray(makeArrayRef(HashRecords)))
+}
+
+  if (auto EC = Writer.writeArray(makeArrayRef(HashRecords))) {
     return EC;
-  if (auto EC = Writer.writeArray(makeArrayRef(HashBitmap)))
+
+}
+  if (auto EC = Writer.writeArray(makeArrayRef(HashBitmap))) {
     return EC;
-  if (auto EC = Writer.writeArray(makeArrayRef(HashBuckets)))
+
+}
+  if (auto EC = Writer.writeArray(makeArrayRef(HashBuckets))) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -119,12 +131,16 @@ static bool gsiRecordLess(StringRef S1, StringRef S2) {
   size_t LS = S1.size();
   size_t RS = S2.size();
   // Shorter strings always compare less than longer strings.
-  if (LS != RS)
+  if (LS != RS) {
     return LS < RS;
 
+}
+
   // If either string contains non ascii characters, memcmp them.
-  if (LLVM_UNLIKELY(!isAsciiString(S1) || !isAsciiString(S2)))
+  if (LLVM_UNLIKELY(!isAsciiString(S1) || !isAsciiString(S2))) {
     return memcmp(S1.data(), S2.data(), LS) < 0;
+
+}
 
   // Both strings are ascii, perform a case-insenstive comparison.
   return S1.compare_lower(S2.data()) < 0;
@@ -150,12 +166,16 @@ void GSIHashStreamBuilder::finalizeBuckets(uint32_t RecordZeroOffset) {
   // Compute the three tables: the hash records in bucket and chain order, the
   // bucket presence bitmap, and the bucket chain start offsets.
   HashRecords.reserve(Records.size());
-  for (ulittle32_t &Word : HashBitmap)
+  for (ulittle32_t &Word : HashBitmap) {
     Word = 0;
+
+}
   for (size_t BucketIdx = 0; BucketIdx < IPHR_HASH + 1; ++BucketIdx) {
     auto &Bucket = TmpBuckets[BucketIdx];
-    if (Bucket.empty())
+    if (Bucket.empty()) {
       continue;
+
+}
     HashBitmap[BucketIdx / 32] |= 1U << (BucketIdx % 32);
 
     // Calculate what the offset of the first hash record in the chain would
@@ -177,8 +197,10 @@ void GSIHashStreamBuilder::finalizeBuckets(uint32_t RecordZeroOffset) {
       return gsiRecordLess(Left.first, Right.first);
     });
 
-    for (const auto &Entry : Bucket)
+    for (const auto &Entry : Bucket) {
       HashRecords.push_back(Entry.second);
+
+}
   }
 }
 
@@ -211,20 +233,26 @@ Error GSIStreamBuilder::finalizeMsfLayout() {
   GSH->finalizeBuckets(GSHZero);
 
   Expected<uint32_t> Idx = Msf.addStream(calculateGlobalsHashStreamSize());
-  if (!Idx)
+  if (!Idx) {
     return Idx.takeError();
+
+}
   GSH->StreamIndex = *Idx;
   Idx = Msf.addStream(calculatePublicsHashStreamSize());
-  if (!Idx)
+  if (!Idx) {
     return Idx.takeError();
+
+}
   PSH->StreamIndex = *Idx;
 
   uint32_t RecordBytes =
       GSH->calculateRecordByteSize() + PSH->calculateRecordByteSize();
 
   Idx = Msf.addStream(RecordBytes);
-  if (!Idx)
+  if (!Idx) {
     return Idx.takeError();
+
+}
   RecordStreamIdx = *Idx;
   return Error::success();
 }
@@ -232,10 +260,14 @@ Error GSIStreamBuilder::finalizeMsfLayout() {
 static bool comparePubSymByAddrAndName(
     const std::pair<const CVSymbol *, const PublicSym32 *> &LS,
     const std::pair<const CVSymbol *, const PublicSym32 *> &RS) {
-  if (LS.second->Segment != RS.second->Segment)
+  if (LS.second->Segment != RS.second->Segment) {
     return LS.second->Segment < RS.second->Segment;
-  if (LS.second->Offset != RS.second->Offset)
+
+}
+  if (LS.second->Offset != RS.second->Offset) {
     return LS.second->Offset < RS.second->Offset;
+
+}
 
   return LS.second->Name < RS.second->Name;
 }
@@ -318,10 +350,14 @@ Error GSIStreamBuilder::commitSymbolRecordStream(
   // Write public symbol records first, followed by global symbol records.  This
   // must match the order that we assume in finalizeMsfLayout when computing
   // PSHZero and GSHZero.
-  if (auto EC = writeRecords(Writer, PSH->Records))
+  if (auto EC = writeRecords(Writer, PSH->Records)) {
     return EC;
-  if (auto EC = writeRecords(Writer, GSH->Records))
+
+}
+  if (auto EC = writeRecords(Writer, GSH->Records)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -340,15 +376,21 @@ Error GSIStreamBuilder::commitPublicsHashStream(
   memset(Header.Padding, 0, sizeof(Header.Padding));
   Header.OffThunkTable = 0;
   Header.NumSections = 0;
-  if (auto EC = Writer.writeObject(Header))
+  if (auto EC = Writer.writeObject(Header)) {
     return EC;
 
-  if (auto EC = PSH->commit(Writer))
+}
+
+  if (auto EC = PSH->commit(Writer)) {
     return EC;
+
+}
 
   std::vector<ulittle32_t> AddrMap = computeAddrMap(PSH->Records);
-  if (auto EC = Writer.writeArray(makeArrayRef(AddrMap)))
+  if (auto EC = Writer.writeArray(makeArrayRef(AddrMap))) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -368,11 +410,17 @@ Error GSIStreamBuilder::commit(const msf::MSFLayout &Layout,
   auto PRS = WritableMappedBlockStream::createIndexedStream(
       Layout, Buffer, getRecordStreamIdx(), Msf.getAllocator());
 
-  if (auto EC = commitSymbolRecordStream(*PRS))
+  if (auto EC = commitSymbolRecordStream(*PRS)) {
     return EC;
-  if (auto EC = commitGlobalsHashStream(*GS))
+
+}
+  if (auto EC = commitGlobalsHashStream(*GS)) {
     return EC;
-  if (auto EC = commitPublicsHashStream(*PS))
+
+}
+  if (auto EC = commitPublicsHashStream(*PS)) {
     return EC;
+
+}
   return Error::success();
 }

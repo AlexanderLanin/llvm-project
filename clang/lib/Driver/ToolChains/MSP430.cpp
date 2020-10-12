@@ -31,8 +31,10 @@ static bool isSupportedMCU(const StringRef MCU) {
 }
 
 static StringRef getSupportedHWMult(const Arg *MCU) {
-  if (!MCU)
+  if (!MCU) {
     return "none";
+
+}
 
   return llvm::StringSwitch<StringRef>(MCU->getValue())
 #define MSP430_MCU_FEAT(NAME, HWMULT) .Case(NAME, HWMULT)
@@ -62,8 +64,10 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
   }
 
   const Arg *HWMultArg = Args.getLastArg(options::OPT_mhwmult_EQ);
-  if (!MCU && !HWMultArg)
+  if (!MCU && !HWMultArg) {
     return;
+
+}
 
   StringRef HWMult = HWMultArg ? HWMultArg->getValue() : "auto";
   StringRef SupportedHWMult = getSupportedHWMult(MCU);
@@ -71,8 +75,10 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
   if (HWMult == "auto") {
     // 'auto' - deduce hw multiplier support based on mcu name provided.
     // If no mcu name is provided, assume no hw multiplier is supported.
-    if (!MCU)
+    if (!MCU) {
       D.Diag(clang::diag::warn_drv_msp430_hwmult_no_device);
+
+}
     HWMult = SupportedHWMult;
   }
 
@@ -84,11 +90,15 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
     return;
   }
 
-  if (MCU && SupportedHWMult == "none")
+  if (MCU && SupportedHWMult == "none") {
     D.Diag(clang::diag::warn_drv_msp430_hwmult_unsupported) << HWMult;
-  if (MCU && HWMult != SupportedHWMult)
+
+}
+  if (MCU && HWMult != SupportedHWMult) {
     D.Diag(clang::diag::warn_drv_msp430_hwmult_mismatch)
         << SupportedHWMult << HWMult;
+
+}
 
   if (HWMult == "16bit") {
     // '16bit' - for 16-bit only hw multiplier.
@@ -133,15 +143,19 @@ MSP430ToolChain::MSP430ToolChain(const Driver &D, const llvm::Triple &Triple,
 }
 
 std::string MSP430ToolChain::computeSysRoot() const {
-  if (!getDriver().SysRoot.empty())
+  if (!getDriver().SysRoot.empty()) {
     return getDriver().SysRoot;
 
+}
+
   SmallString<128> Dir;
-  if (GCCInstallation.isValid())
+  if (GCCInstallation.isValid()) {
     llvm::sys::path::append(Dir, GCCInstallation.getParentLibPath(), "..",
                             GCCInstallation.getTriple().str());
-  else
+  } else {
     llvm::sys::path::append(Dir, getDriver().Dir, "..", getTriple().str());
+
+}
 
   return std::string(Dir.str());
 }
@@ -149,8 +163,10 @@ std::string MSP430ToolChain::computeSysRoot() const {
 void MSP430ToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                 ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(options::OPT_nostdinc) ||
-      DriverArgs.hasArg(options::OPT_nostdlibinc))
+      DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   SmallString<128> Dir(computeSysRoot());
   llvm::sys::path::append(Dir, "include");
@@ -163,8 +179,10 @@ void MSP430ToolChain::addClangTargetOptions(const ArgList &DriverArgs,
   CC1Args.push_back("-nostdsysteminc");
 
   const auto *MCUArg = DriverArgs.getLastArg(options::OPT_mmcu_EQ);
-  if (!MCUArg)
+  if (!MCUArg) {
     return;
+
+}
 
   const StringRef MCU = MCUArg->getValue();
   if (MCU.startswith("msp430i")) {
@@ -190,16 +208,20 @@ void msp430::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   std::string Linker = ToolChain.GetProgramPath(getShortName());
   ArgStringList CmdArgs;
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+
+}
 
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
 
   if (!Args.hasArg(options::OPT_T)) {
-    if (const Arg *MCUArg = Args.getLastArg(options::OPT_mmcu_EQ))
+    if (const Arg *MCUArg = Args.getLastArg(options::OPT_mmcu_EQ)) {
       CmdArgs.push_back(
           Args.MakeArgString("-T" + StringRef(MCUArg->getValue()) + ".ld"));
+
+}
   } else {
     Args.AddAllArgs(CmdArgs, options::OPT_T);
   }

@@ -34,15 +34,17 @@ LLT::LLT(MVT VT) {
 }
 
 void LLT::print(raw_ostream &OS) const {
-  if (isVector())
+  if (isVector()) {
     OS << "<" << getNumElements() << " x " << getElementType() << ">";
-  else if (isPointer())
+  } else if (isPointer()) {
     OS << "p" << getAddressSpace();
-  else if (isValid()) {
+  } else if (isValid()) {
     assert(isScalar() && "unexpected type");
     OS << "s" << getScalarSizeInBits();
-  } else
+  } else {
     OS << "LLT_invalid";
+
+}
 }
 
 const constexpr LLT::BitFieldInfo LLT::ScalarSizeFieldInfo;

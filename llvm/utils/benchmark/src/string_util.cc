@@ -84,17 +84,23 @@ void ToExponentAndMantissa(double val, double thresh, int precision,
 }
 
 std::string ExponentToPrefix(int64_t exponent, bool iec) {
-  if (exponent == 0) return "";
+  if (exponent == 0) { return "";
+
+}
 
   const int64_t index = (exponent > 0 ? exponent - 1 : -exponent - 1);
-  if (index >= kUnitsSize) return "";
+  if (index >= kUnitsSize) { return "";
+
+}
 
   const char* array =
       (exponent > 0 ? (iec ? kBigIECUnits : kBigSIUnits) : kSmallSIUnits);
-  if (iec)
+  if (iec) {
     return array[index] + std::string("i");
-  else
+  } else {
     return std::string(1, array[index]);
+
+}
 }
 
 std::string ToBinaryStringFullySpecified(double value, double threshold,
@@ -138,9 +144,13 @@ std::string StrFormatImp(const char* msg, va_list args) {
   va_end(args_cp);
 
   // handle empty expansion
-  if (ret == 0) return std::string{};
-  if (static_cast<std::size_t>(ret) < size)
+  if (ret == 0) { return std::string{};
+
+}
+  if (static_cast<std::size_t>(ret) < size) {
     return std::string(local_buff.data());
+
+}
 
   // we did not provide a long enough buffer on our first attempt.
   // add 1 to size to account for null-byte in size cast to prevent overflow

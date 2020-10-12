@@ -149,8 +149,10 @@ LLVMBinaryRef LLVMMachOUniversalBinaryCopyObjectForArch(LLVMBinaryRef BR,
 LLVMSectionIteratorRef LLVMObjectFileCopySectionIterator(LLVMBinaryRef BR) {
   auto OF = cast<ObjectFile>(unwrap(BR));
   auto sections = OF->sections();
-  if (sections.begin() == sections.end())
+  if (sections.begin() == sections.end()) {
     return nullptr;
+
+}
   return wrap(new section_iterator(sections.begin()));
 }
 
@@ -163,8 +165,10 @@ LLVMBool LLVMObjectFileIsSectionIteratorAtEnd(LLVMBinaryRef BR,
 LLVMSymbolIteratorRef LLVMObjectFileCopySymbolIterator(LLVMBinaryRef BR) {
   auto OF = cast<ObjectFile>(unwrap(BR));
   auto symbols = OF->symbols();
-  if (symbols.begin() == symbols.end())
+  if (symbols.begin() == symbols.end()) {
     return nullptr;
+
+}
   return wrap(new symbol_iterator(symbols.begin()));
 }
 
@@ -252,8 +256,10 @@ void LLVMMoveToNextSymbol(LLVMSymbolIteratorRef SI) {
 // SectionRef accessors
 const char *LLVMGetSectionName(LLVMSectionIteratorRef SI) {
   auto NameOrErr = (*unwrap(SI))->getName();
-  if (!NameOrErr)
+  if (!NameOrErr) {
     report_fatal_error(NameOrErr.takeError());
+
+}
   return NameOrErr->data();
 }
 
@@ -262,10 +268,12 @@ uint64_t LLVMGetSectionSize(LLVMSectionIteratorRef SI) {
 }
 
 const char *LLVMGetSectionContents(LLVMSectionIteratorRef SI) {
-  if (Expected<StringRef> E = (*unwrap(SI))->getContents())
+  if (Expected<StringRef> E = (*unwrap(SI))->getContents()) {
     return E->data();
-  else
+  } else {
     report_fatal_error(E.takeError());
+
+}
 }
 
 uint64_t LLVMGetSectionAddress(LLVMSectionIteratorRef SI) {

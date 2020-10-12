@@ -24,8 +24,10 @@ PDBContext::PDBContext(const COFFObjectFile &Object,
                        std::unique_ptr<IPDBSession> PDBSession)
     : DIContext(CK_PDB), Session(std::move(PDBSession)) {
   ErrorOr<uint64_t> ImageBase = Object.getImageBase();
-  if (ImageBase)
+  if (ImageBase) {
     Session->setLoadAddress(ImageBase.get());
+
+}
 }
 
 void PDBContext::dump(raw_ostream &OS, DIDumpOptions DumpOpts){}
@@ -47,16 +49,20 @@ DILineInfo PDBContext::getLineInfoForAddress(object::SectionedAddress Address,
   // If we couldn't find a symbol, then just assume 1 byte, so that we get
   // only the line number of the first instruction.
   auto LineNumbers = Session->findLineNumbersByAddress(Address.Address, Length);
-  if (!LineNumbers || LineNumbers->getChildCount() == 0)
+  if (!LineNumbers || LineNumbers->getChildCount() == 0) {
     return Result;
+
+}
 
   auto LineInfo = LineNumbers->getNext();
   assert(LineInfo);
   auto SourceFile = Session->getSourceFileById(LineInfo->getSourceFileId());
 
   if (SourceFile &&
-      Specifier.FLIKind != DILineInfoSpecifier::FileLineInfoKind::None)
+      Specifier.FLIKind != DILineInfoSpecifier::FileLineInfoKind::None) {
     Result.FileName = SourceFile->getFileName();
+
+}
   Result.Column = LineInfo->getColumnNumber();
   Result.Line = LineInfo->getLineNumber();
   return Result;
@@ -66,13 +72,17 @@ DILineInfoTable
 PDBContext::getLineInfoForAddressRange(object::SectionedAddress Address,
                                        uint64_t Size,
                                        DILineInfoSpecifier Specifier) {
-  if (Size == 0)
+  if (Size == 0) {
     return DILineInfoTable();
+
+}
 
   DILineInfoTable Table;
   auto LineNumbers = Session->findLineNumbersByAddress(Address.Address, Size);
-  if (!LineNumbers || LineNumbers->getChildCount() == 0)
+  if (!LineNumbers || LineNumbers->getChildCount() == 0) {
     return Table;
+
+}
 
   while (auto LineInfo = LineNumbers->getNext()) {
     DILineInfo LineEntry = getLineInfoForAddress(
@@ -98,8 +108,10 @@ PDBContext::getLocalsForAddress(object::SectionedAddress Address) {
 
 std::string PDBContext::getFunctionName(uint64_t Address,
                                         DINameKind NameKind) const {
-  if (NameKind == DINameKind::None)
+  if (NameKind == DINameKind::None) {
     return std::string();
+
+}
 
   std::unique_ptr<PDBSymbol> FuncSymbol =
       Session->findSymbolByAddress(Address, PDB_SymType::Function);
@@ -115,8 +127,10 @@ std::string PDBContext::getFunctionName(uint64_t Address,
       // If we also have a function symbol, prefer the use of public symbol name
       // only if it refers to the same address. The public symbol uses the
       // linkage name while the function does not.
-      if (!Func || Func->getVirtualAddress() == PS->getVirtualAddress())
+      if (!Func || Func->getVirtualAddress() == PS->getVirtualAddress()) {
         return PS->getName();
+
+}
     }
   }
 

@@ -34,16 +34,20 @@ void SubtargetFeatures::Split(std::vector<std::string> &V, StringRef S) {
   SmallVector<StringRef, 3> Tmp;
   S.split(Tmp, ',', -1, false /* KeepEmpty */);
   V.reserve(Tmp.size());
-  for (StringRef T : Tmp)
+  for (StringRef T : Tmp) {
     V.push_back(std::string(T));
+
+}
 }
 
 void SubtargetFeatures::AddFeature(StringRef String, bool Enable) {
   // Don't add empty features.
-  if (!String.empty())
+  if (!String.empty()) {
     // Convert to lowercase, prepend flag if we don't already have a flag.
     Features.push_back(hasFlag(String) ? String.lower()
                                        : (Enable ? "+" : "-") + String.lower());
+
+}
 }
 
 SubtargetFeatures::SubtargetFeatures(StringRef Initial) {
@@ -56,8 +60,10 @@ std::string SubtargetFeatures::getString() const {
 }
 
 void SubtargetFeatures::print(raw_ostream &OS) const {
-  for (auto &F : Features)
+  for (auto &F : Features) {
     OS << F << " ";
+
+}
   OS << "\n";
 }
 

@@ -29,8 +29,10 @@ using namespace llvm::lto;
 
 Expected<NativeObjectCache> lto::localCache(StringRef CacheDirectoryPath,
                                             AddBufferFn AddBuffer) {
-  if (std::error_code EC = sys::fs::create_directories(CacheDirectoryPath))
+  if (std::error_code EC = sys::fs::create_directories(CacheDirectoryPath)) {
     return errorCodeToError(EC);
+
+}
 
   return [=](unsigned Task, StringRef Key) -> AddStreamFn {
     // This choice of file name allows the cache to be pruned (see pruneCache()
@@ -63,9 +65,11 @@ Expected<NativeObjectCache> lto::localCache(StringRef CacheDirectoryPath,
     // process has opened the file without the sharing permissions we need.
     // Since the file is probably being deleted we handle it in the same way as
     // if the file did not exist at all.
-    if (EC != errc::no_such_file_or_directory && EC != errc::permission_denied)
+    if (EC != errc::no_such_file_or_directory && EC != errc::permission_denied) {
       report_fatal_error(Twine("Failed to open cache file ") + EntryPath +
                          ": " + EC.message() + "\n");
+
+}
 
     // This native object stream is responsible for commiting the resulting
     // file to the cache and calling AddBuffer to add it to the link.
@@ -91,10 +95,12 @@ Expected<NativeObjectCache> lto::localCache(StringRef CacheDirectoryPath,
             MemoryBuffer::getOpenFile(
                 sys::fs::convertFDToNativeFile(TempFile.FD), TempFile.TmpName,
                 /*FileSize=*/-1, /*RequiresNullTerminator=*/false);
-        if (!MBOrErr)
+        if (!MBOrErr) {
           report_fatal_error(Twine("Failed to open new cache file ") +
                              TempFile.TmpName + ": " +
                              MBOrErr.getError().message() + "\n");
+
+}
 
         // On POSIX systems, this will atomically replace the destination if
         // it already exists. We try to emulate this on Windows, but this may
@@ -108,8 +114,10 @@ Expected<NativeObjectCache> lto::localCache(StringRef CacheDirectoryPath,
         Error E = TempFile.keep(EntryPath);
         E = handleErrors(std::move(E), [&](const ECError &E) -> Error {
           std::error_code EC = E.convertToErrorCode();
-          if (EC != errc::permission_denied)
+          if (EC != errc::permission_denied) {
             return errorCodeToError(EC);
+
+}
 
           auto MBCopy = MemoryBuffer::getMemBufferCopy((*MBOrErr)->getBuffer(),
                                                        EntryPath);
@@ -121,10 +129,12 @@ Expected<NativeObjectCache> lto::localCache(StringRef CacheDirectoryPath,
           return Error::success();
         });
 
-        if (E)
+        if (E) {
           report_fatal_error(Twine("Failed to rename temporary file ") +
                              TempFile.TmpName + " to " + EntryPath + ": " +
                              toString(std::move(E)) + "\n");
+
+}
 
         AddBuffer(Task, std::move(*MBOrErr));
       }

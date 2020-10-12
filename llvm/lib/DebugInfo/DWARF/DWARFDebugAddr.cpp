@@ -18,12 +18,14 @@ Error DWARFDebugAddrTable::extractAddresses(const DWARFDataExtractor &Data,
   assert(EndOffset >= *OffsetPtr);
   uint64_t DataSize = EndOffset - *OffsetPtr;
   assert(Data.isValidOffsetForDataOfSize(*OffsetPtr, DataSize));
-  if (AddrSize != 4 && AddrSize != 8)
+  if (AddrSize != 4 && AddrSize != 8) {
     return createStringError(errc::not_supported,
                              "address table at offset 0x%" PRIx64
                              " has unsupported address size %" PRIu8
                              " (4 and 8 are supported)",
                              Offset, AddrSize);
+
+}
   if (DataSize % AddrSize != 0) {
     invalidateLength();
     return createStringError(errc::invalid_argument,
@@ -35,8 +37,10 @@ Error DWARFDebugAddrTable::extractAddresses(const DWARFDataExtractor &Data,
   Addrs.clear();
   size_t Count = DataSize / AddrSize;
   Addrs.reserve(Count);
-  while (Count--)
+  while (Count--) {
     Addrs.push_back(Data.getRelocatedValue(AddrSize, OffsetPtr));
+
+}
   return Error::success();
 }
 
@@ -81,20 +85,26 @@ Error DWARFDebugAddrTable::extractV5(const DWARFDataExtractor &Data,
   SegSize = Data.getU8(OffsetPtr);
 
   // Perform a basic validation of the header fields.
-  if (Version != 5)
+  if (Version != 5) {
     return createStringError(errc::not_supported,
                              "address table at offset 0x%" PRIx64
                              " has unsupported version %" PRIu16,
                              Offset, Version);
+
+}
   // TODO: add support for non-zero segment selector size.
-  if (SegSize != 0)
+  if (SegSize != 0) {
     return createStringError(errc::not_supported,
                              "address table at offset 0x%" PRIx64
                              " has unsupported segment selector size %" PRIu8,
                              Offset, SegSize);
 
-  if (Error Err = extractAddresses(Data, OffsetPtr, EndOffset))
+}
+
+  if (Error Err = extractAddresses(Data, OffsetPtr, EndOffset)) {
     return Err;
+
+}
   if (CUAddrSize && AddrSize != CUAddrSize) {
     WarnCallback(createStringError(
         errc::invalid_argument,
@@ -125,18 +135,24 @@ Error DWARFDebugAddrTable::extract(const DWARFDataExtractor &Data,
                                    uint16_t CUVersion,
                                    uint8_t CUAddrSize,
                                    std::function<void(Error)> WarnCallback) {
-  if (CUVersion > 0 && CUVersion < 5)
+  if (CUVersion > 0 && CUVersion < 5) {
     return extractPreStandard(Data, OffsetPtr, CUVersion, CUAddrSize);
-  if (CUVersion == 0)
+
+}
+  if (CUVersion == 0) {
     WarnCallback(createStringError(errc::invalid_argument,
                                    "DWARF version is not defined in CU,"
                                    " assuming version 5"));
+
+}
   return extractV5(Data, OffsetPtr, CUAddrSize, WarnCallback);
 }
 
 void DWARFDebugAddrTable::dump(raw_ostream &OS, DIDumpOptions DumpOpts) const {
-  if (DumpOpts.Verbose)
+  if (DumpOpts.Verbose) {
     OS << format("0x%8.8" PRIx64 ": ", Offset);
+
+}
   if (Length) {
     int LengthFieldWidth = (Format == dwarf::DwarfFormat::DWARF64) ? 16 : 8;
     OS << format("Address table header: length = 0x%0*" PRIx64
@@ -149,15 +165,19 @@ void DWARFDebugAddrTable::dump(raw_ostream &OS, DIDumpOptions DumpOpts) const {
     const char *AddrFmt =
         (AddrSize == 4) ? "0x%8.8" PRIx64 "\n" : "0x%16.16" PRIx64 "\n";
     OS << "Addrs: [\n";
-    for (uint64_t Addr : Addrs)
+    for (uint64_t Addr : Addrs) {
       OS << format(AddrFmt, Addr);
+
+}
     OS << "]\n";
   }
 }
 
 Expected<uint64_t> DWARFDebugAddrTable::getAddrEntry(uint32_t Index) const {
-  if (Index < Addrs.size())
+  if (Index < Addrs.size()) {
     return Addrs[Index];
+
+}
   return createStringError(errc::invalid_argument,
                            "Index %" PRIu32 " is out of range of the "
                            "address table at offset 0x%" PRIx64,
@@ -165,8 +185,10 @@ Expected<uint64_t> DWARFDebugAddrTable::getAddrEntry(uint32_t Index) const {
 }
 
 Optional<uint64_t> DWARFDebugAddrTable::getFullLength() const {
-  if (Length == 0)
+  if (Length == 0) {
     return None;
+
+}
   return Length + dwarf::getUnitLengthFieldByteSize(Format);
 }
 

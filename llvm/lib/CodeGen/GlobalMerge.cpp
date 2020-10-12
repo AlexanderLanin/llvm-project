@@ -310,8 +310,10 @@ bool GlobalMerge::doMerge(SmallVectorImpl<GlobalVariable*> &Globals,
       // users, so look through ConstantExpr...
       Use *UI, *UE;
       if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U.getUser())) {
-        if (CE->use_empty())
+        if (CE->use_empty()) {
           continue;
+
+}
         UI = &*CE->use_begin();
         UE = nullptr;
       } else if (isa<Instruction>(U.getUser())) {
@@ -325,14 +327,18 @@ bool GlobalMerge::doMerge(SmallVectorImpl<GlobalVariable*> &Globals,
       // Note that we iterate on Uses and not on Users to be able to getNext().
       for (; UI != UE; UI = UI->getNext()) {
         Instruction *I = dyn_cast<Instruction>(UI->getUser());
-        if (!I)
+        if (!I) {
           continue;
+
+}
 
         Function *ParentFn = I->getParent()->getParent();
 
         // If we're only optimizing for size, ignore non-minsize functions.
-        if (OnlyOptimizeForSize && !ParentFn->hasMinSize())
+        if (OnlyOptimizeForSize && !ParentFn->hasMinSize()) {
           continue;
+
+}
 
         size_t UGSIdx = GlobalUsesByFunction[ParentFn];
 
@@ -399,10 +405,14 @@ bool GlobalMerge::doMerge(SmallVectorImpl<GlobalVariable*> &Globals,
     BitVector AllGlobals(Globals.size());
     for (size_t i = 0, e = UsedGlobalSets.size(); i != e; ++i) {
       const UsedGlobalSet &UGS = UsedGlobalSets[e - i - 1];
-      if (UGS.UsageCount == 0)
+      if (UGS.UsageCount == 0) {
         continue;
-      if (UGS.Globals.count() > 1)
+
+}
+      if (UGS.Globals.count() > 1) {
         AllGlobals |= UGS.Globals;
+
+}
     }
     return doMerge(Globals, AllGlobals, M, isConst, AddrSpace);
   }
@@ -418,16 +428,22 @@ bool GlobalMerge::doMerge(SmallVectorImpl<GlobalVariable*> &Globals,
 
   for (size_t i = 0, e = UsedGlobalSets.size(); i != e; ++i) {
     const UsedGlobalSet &UGS = UsedGlobalSets[e - i - 1];
-    if (UGS.UsageCount == 0)
+    if (UGS.UsageCount == 0) {
       continue;
-    if (PickedGlobals.anyCommon(UGS.Globals))
+
+}
+    if (PickedGlobals.anyCommon(UGS.Globals)) {
       continue;
+
+}
     PickedGlobals |= UGS.Globals;
     // If the set only contains one global, there's no point in merging.
     // Ignore the global for inclusion in other sets though, so keep it in
     // PickedGlobals.
-    if (UGS.Globals.count() < 2)
+    if (UGS.Globals.count() < 2) {
       continue;
+
+}
     Changed |= doMerge(Globals, UGS.Globals, M, isConst, AddrSpace);
   }
 
@@ -566,15 +582,21 @@ bool GlobalMerge::doMerge(const SmallVectorImpl<GlobalVariable *> &Globals,
 void GlobalMerge::collectUsedGlobalVariables(Module &M, StringRef Name) {
   // Extract global variables from llvm.used array
   const GlobalVariable *GV = M.getGlobalVariable(Name);
-  if (!GV || !GV->hasInitializer()) return;
+  if (!GV || !GV->hasInitializer()) { return;
+
+}
 
   // Should be an array of 'i8*'.
   const ConstantArray *InitList = cast<ConstantArray>(GV->getInitializer());
 
-  for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i)
+  for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
     if (const GlobalVariable *G =
-        dyn_cast<GlobalVariable>(InitList->getOperand(i)->stripPointerCasts()))
+        dyn_cast<GlobalVariable>(InitList->getOperand(i)->stripPointerCasts())) {
       MustKeepGlobalVariables.insert(G);
+
+}
+
+}
 }
 
 void GlobalMerge::setMustKeepGlobalVariables(Module &M) {
@@ -584,22 +606,28 @@ void GlobalMerge::setMustKeepGlobalVariables(Module &M) {
   for (Function &F : M) {
     for (BasicBlock &BB : F) {
       Instruction *Pad = BB.getFirstNonPHI();
-      if (!Pad->isEHPad())
+      if (!Pad->isEHPad()) {
         continue;
+
+}
 
       // Keep globals used by landingpads and catchpads.
       for (const Use &U : Pad->operands()) {
         if (const GlobalVariable *GV =
-                dyn_cast<GlobalVariable>(U->stripPointerCasts()))
+                dyn_cast<GlobalVariable>(U->stripPointerCasts())) {
           MustKeepGlobalVariables.insert(GV);
+
+}
       }
     }
   }
 }
 
 bool GlobalMerge::doInitialization(Module &M) {
-  if (!EnableGlobalMerge)
+  if (!EnableGlobalMerge) {
     return false;
+
+}
 
   IsMachO = Triple(M.getTargetTriple()).isOSBinFormatMachO();
 
@@ -612,16 +640,22 @@ bool GlobalMerge::doInitialization(Module &M) {
   // Grab all non-const globals.
   for (auto &GV : M.globals()) {
     // Merge is safe for "normal" internal or external globals only
-    if (GV.isDeclaration() || GV.isThreadLocal() || GV.hasImplicitSection())
+    if (GV.isDeclaration() || GV.isThreadLocal() || GV.hasImplicitSection()) {
       continue;
+
+}
 
     // It's not safe to merge globals that may be preempted
-    if (TM && !TM->shouldAssumeDSOLocal(M, &GV))
+    if (TM && !TM->shouldAssumeDSOLocal(M, &GV)) {
       continue;
 
+}
+
     if (!(MergeExternalGlobals && GV.hasExternalLinkage()) &&
-        !GV.hasInternalLinkage())
+        !GV.hasInternalLinkage()) {
       continue;
+
+}
 
     PointerType *PT = dyn_cast<PointerType>(GV.getType());
     assert(PT && "Global variable is not a pointer!");
@@ -631,37 +665,57 @@ bool GlobalMerge::doInitialization(Module &M) {
 
     // Ignore all 'special' globals.
     if (GV.getName().startswith("llvm.") ||
-        GV.getName().startswith(".llvm."))
+        GV.getName().startswith(".llvm.")) {
       continue;
 
+}
+
     // Ignore all "required" globals:
-    if (isMustKeepGlobalVariable(&GV))
+    if (isMustKeepGlobalVariable(&GV)) {
       continue;
+
+}
 
     Type *Ty = GV.getValueType();
     if (DL.getTypeAllocSize(Ty) < MaxOffset) {
       if (TM &&
-          TargetLoweringObjectFile::getKindForGlobal(&GV, *TM).isBSS())
+          TargetLoweringObjectFile::getKindForGlobal(&GV, *TM).isBSS()) {
         BSSGlobals[{AddressSpace, Section}].push_back(&GV);
-      else if (GV.isConstant())
+      } else if (GV.isConstant()) {
         ConstGlobals[{AddressSpace, Section}].push_back(&GV);
-      else
+      } else {
         Globals[{AddressSpace, Section}].push_back(&GV);
+
+}
     }
   }
 
-  for (auto &P : Globals)
-    if (P.second.size() > 1)
+  for (auto &P : Globals) {
+    if (P.second.size() > 1) {
       Changed |= doMerge(P.second, M, false, P.first.first);
 
-  for (auto &P : BSSGlobals)
-    if (P.second.size() > 1)
+}
+
+}
+
+  for (auto &P : BSSGlobals) {
+    if (P.second.size() > 1) {
       Changed |= doMerge(P.second, M, false, P.first.first);
 
-  if (EnableGlobalMergeOnConst)
-    for (auto &P : ConstGlobals)
-      if (P.second.size() > 1)
+}
+
+}
+
+  if (EnableGlobalMergeOnConst) {
+    for (auto &P : ConstGlobals) {
+      if (P.second.size() > 1) {
         Changed |= doMerge(P.second, M, true, P.first.first);
+
+}
+
+}
+
+}
 
   return Changed;
 }

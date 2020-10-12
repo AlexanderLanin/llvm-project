@@ -26,19 +26,27 @@ const char *llvm::getMinimalTypeForRange(uint64_t Range, unsigned MaxSize LLVM_A
                          : Range <= 0xFFFFFFFFULL) &&
          "Enum too large");
 
-  if (Range > 0xFFFFFFFFULL)
+  if (Range > 0xFFFFFFFFULL) {
     return "uint64_t";
-  if (Range > 0xFFFF)
+
+}
+  if (Range > 0xFFFF) {
     return "uint32_t";
-  if (Range > 0xFF)
+
+}
+  if (Range > 0xFF) {
     return "uint16_t";
+
+}
   return "uint8_t";
 }
 
 const char *llvm::getMinimalTypeForEnumBitfield(uint64_t Size) {
   uint64_t MaxIndex = Size;
-  if (MaxIndex > 0)
+  if (MaxIndex > 0) {
     MaxIndex--;
+
+}
   assert(MaxIndex <= 64 && "Too many bits");
   return getMinimalTypeForRange(1ULL << MaxIndex);
 }

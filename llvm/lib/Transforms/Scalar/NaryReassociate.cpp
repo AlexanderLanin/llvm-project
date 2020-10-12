@@ -165,8 +165,10 @@ FunctionPass *llvm::createNaryReassociatePass() {
 }
 
 bool NaryReassociateLegacyPass::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   auto *AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
@@ -185,8 +187,10 @@ PreservedAnalyses NaryReassociatePass::run(Function &F,
   auto *TLI = &AM.getResult<TargetLibraryAnalysis>(F);
   auto *TTI = &AM.getResult<TargetIRAnalysis>(F);
 
-  if (!runImpl(F, AC, DT, SE, TLI, TTI))
+  if (!runImpl(F, AC, DT, SE, TLI, TTI)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -275,8 +279,10 @@ bool NaryReassociatePass::doOneIteration(Function &F) {
         // map both SCEV before and after tryReassociate(I) to I.
         //
         // This improvement is exercised in @reassociate_gep_nsw in nary-gep.ll.
-        if (NewSCEV != OldSCEV)
+        if (NewSCEV != OldSCEV) {
           SeenExprs[OldSCEV].push_back(WeakTrackingVH(&*I));
+
+}
       }
     }
   }
@@ -298,16 +304,20 @@ Instruction *NaryReassociatePass::tryReassociate(Instruction *I) {
 static bool isGEPFoldable(GetElementPtrInst *GEP,
                           const TargetTransformInfo *TTI) {
   SmallVector<const Value*, 4> Indices;
-  for (auto I = GEP->idx_begin(); I != GEP->idx_end(); ++I)
+  for (auto I = GEP->idx_begin(); I != GEP->idx_end(); ++I) {
     Indices.push_back(*I);
+
+}
   return TTI->getGEPCost(GEP->getSourceElementType(), GEP->getPointerOperand(),
                          Indices) == TargetTransformInfo::TCC_Free;
 }
 
 Instruction *NaryReassociatePass::tryReassociateGEP(GetElementPtrInst *GEP) {
   // Not worth reassociating GEP if it is foldable.
-  if (isGEPFoldable(GEP, TTI))
+  if (isGEPFoldable(GEP, TTI)) {
     return nullptr;
+
+}
 
   gep_type_iterator GTI = gep_type_begin(*GEP);
   for (unsigned I = 1, E = GEP->getNumOperands(); I != E; ++I, ++GTI) {
@@ -336,8 +346,10 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
     IndexToSplit = SExt->getOperand(0);
   } else if (ZExtInst *ZExt = dyn_cast<ZExtInst>(IndexToSplit)) {
     // zext can be treated as sext if the source is non-negative.
-    if (isKnownNonNegative(ZExt->getOperand(0), *DL, 0, AC, GEP, DT))
+    if (isKnownNonNegative(ZExt->getOperand(0), *DL, 0, AC, GEP, DT)) {
       IndexToSplit = ZExt->getOperand(0);
+
+}
   }
 
   if (AddOperator *AO = dyn_cast<AddOperator>(IndexToSplit)) {
@@ -346,18 +358,24 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
     //   sext(LHS + RHS) != sext(LHS) + sext(RHS).
     if (requiresSignExtension(IndexToSplit, GEP) &&
         computeOverflowForSignedAdd(AO, *DL, AC, GEP, DT) !=
-            OverflowResult::NeverOverflows)
+            OverflowResult::NeverOverflows) {
       return nullptr;
+
+}
 
     Value *LHS = AO->getOperand(0), *RHS = AO->getOperand(1);
     // IndexToSplit = LHS + RHS.
-    if (auto *NewGEP = tryReassociateGEPAtIndex(GEP, I, LHS, RHS, IndexedType))
+    if (auto *NewGEP = tryReassociateGEPAtIndex(GEP, I, LHS, RHS, IndexedType)) {
       return NewGEP;
+
+}
     // Symmetrically, try IndexToSplit = RHS + LHS.
     if (LHS != RHS) {
       if (auto *NewGEP =
-              tryReassociateGEPAtIndex(GEP, I, RHS, LHS, IndexedType))
+              tryReassociateGEPAtIndex(GEP, I, RHS, LHS, IndexedType)) {
         return NewGEP;
+
+}
     }
   }
   return nullptr;
@@ -370,8 +388,10 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
   // Look for GEP's closest dominator that has the same SCEV as GEP except that
   // the I-th index is replaced with LHS.
   SmallVector<const SCEV *, 4> IndexExprs;
-  for (auto Index = GEP->idx_begin(); Index != GEP->idx_end(); ++Index)
+  for (auto Index = GEP->idx_begin(); Index != GEP->idx_end(); ++Index) {
     IndexExprs.push_back(SE->getSCEV(*Index));
+
+}
   // Replace the I-th index with LHS.
   IndexExprs[I] = SE->getSCEV(LHS);
   if (isKnownNonNegative(LHS, *DL, 0, AC, GEP, DT) &&
@@ -388,8 +408,10 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
                                              IndexExprs);
 
   Value *Candidate = findClosestMatchingDominator(CandidateExpr, GEP);
-  if (Candidate == nullptr)
+  if (Candidate == nullptr) {
     return nullptr;
+
+}
 
   IRBuilder<> Builder(GEP);
   // Candidate does not necessarily have the same pointer type as GEP. Use
@@ -416,13 +438,17 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
   // sizeof(S) = 100 is indivisible by sizeof(int64) = 8.
   //
   // TODO: bail out on this case for now. We could emit uglygep.
-  if (IndexedSize % ElementSize != 0)
+  if (IndexedSize % ElementSize != 0) {
     return nullptr;
+
+}
 
   // NewGEP = &Candidate[RHS * (sizeof(IndexedType) / sizeof(Candidate[0])));
   Type *IntPtrTy = DL->getIntPtrType(GEP->getType());
-  if (RHS->getType() != IntPtrTy)
+  if (RHS->getType() != IntPtrTy) {
     RHS = Builder.CreateSExtOrTrunc(RHS, IntPtrTy);
+
+}
   if (IndexedSize != ElementSize) {
     RHS = Builder.CreateMul(
         RHS, ConstantInt::get(IntPtrTy, IndexedSize / ElementSize));
@@ -437,12 +463,18 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
 Instruction *NaryReassociatePass::tryReassociateBinaryOp(BinaryOperator *I) {
   Value *LHS = I->getOperand(0), *RHS = I->getOperand(1);
   // There is no need to reassociate 0.
-  if (SE->getSCEV(I)->isZero())
+  if (SE->getSCEV(I)->isZero()) {
     return nullptr;
-  if (auto *NewI = tryReassociateBinaryOp(LHS, RHS, I))
+
+}
+  if (auto *NewI = tryReassociateBinaryOp(LHS, RHS, I)) {
     return NewI;
-  if (auto *NewI = tryReassociateBinaryOp(RHS, LHS, I))
+
+}
+  if (auto *NewI = tryReassociateBinaryOp(RHS, LHS, I)) {
     return NewI;
+
+}
   return nullptr;
 }
 
@@ -458,13 +490,17 @@ Instruction *NaryReassociatePass::tryReassociateBinaryOp(Value *LHS, Value *RHS,
     const SCEV *RHSExpr = SE->getSCEV(RHS);
     if (BExpr != RHSExpr) {
       if (auto *NewI =
-              tryReassociatedBinaryOp(getBinarySCEV(I, AExpr, RHSExpr), B, I))
+              tryReassociatedBinaryOp(getBinarySCEV(I, AExpr, RHSExpr), B, I)) {
         return NewI;
+
+}
     }
     if (AExpr != RHSExpr) {
       if (auto *NewI =
-              tryReassociatedBinaryOp(getBinarySCEV(I, BExpr, RHSExpr), A, I))
+              tryReassociatedBinaryOp(getBinarySCEV(I, BExpr, RHSExpr), A, I)) {
         return NewI;
+
+}
     }
   }
   return nullptr;
@@ -476,8 +512,10 @@ Instruction *NaryReassociatePass::tryReassociatedBinaryOp(const SCEV *LHSExpr,
   // Look for the closest dominator LHS of I that computes LHSExpr, and replace
   // I with LHS op RHS.
   auto *LHS = findClosestMatchingDominator(LHSExpr, I);
-  if (LHS == nullptr)
+  if (LHS == nullptr) {
     return nullptr;
+
+}
 
   Instruction *NewI = nullptr;
   switch (I->getOpcode()) {
@@ -525,8 +563,10 @@ Instruction *
 NaryReassociatePass::findClosestMatchingDominator(const SCEV *CandidateExpr,
                                                   Instruction *Dominatee) {
   auto Pos = SeenExprs.find(CandidateExpr);
-  if (Pos == SeenExprs.end())
+  if (Pos == SeenExprs.end()) {
     return nullptr;
+
+}
 
   auto &Candidates = Pos->second;
   // Because we process the basic blocks in pre-order of the dominator tree, a
@@ -539,8 +579,10 @@ NaryReassociatePass::findClosestMatchingDominator(const SCEV *CandidateExpr,
     // during rewriting.
     if (Value *Candidate = Candidates.back()) {
       Instruction *CandidateInstruction = cast<Instruction>(Candidate);
-      if (DT->dominates(CandidateInstruction, Dominatee))
+      if (DT->dominates(CandidateInstruction, Dominatee)) {
         return CandidateInstruction;
+
+}
     }
     Candidates.pop_back();
   }

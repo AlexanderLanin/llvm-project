@@ -39,11 +39,13 @@ static void check(remarks::SerializerMode Mode, const remarks::Remark &R,
   std::string InputBuf;
   raw_string_ostream InputOS(InputBuf);
   Expected<std::unique_ptr<remarks::RemarkSerializer>> MaybeSerializer = [&] {
-    if (StrTab)
+    if (StrTab) {
       return createRemarkSerializer(remarks::Format::Bitstream, Mode, InputOS,
                                     std::move(*StrTab));
-    else
+    } else {
       return createRemarkSerializer(remarks::Format::Bitstream, Mode, InputOS);
+
+}
   }();
   EXPECT_FALSE(errorToBool(MaybeSerializer.takeError()));
   std::unique_ptr<remarks::RemarkSerializer> Serializer =

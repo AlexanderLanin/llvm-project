@@ -66,11 +66,15 @@ std::string getClangFullRepositoryVersion() {
   std::string Revision = getClangRevision();
   if (!Path.empty() || !Revision.empty()) {
     OS << '(';
-    if (!Path.empty())
+    if (!Path.empty()) {
       OS << Path;
+
+}
     if (!Revision.empty()) {
-      if (!Path.empty())
+      if (!Path.empty()) {
         OS << ' ';
+
+}
       OS << Revision;
     }
     OS << ')';
@@ -80,8 +84,10 @@ std::string getClangFullRepositoryVersion() {
   if (!LLVMRev.empty() && LLVMRev != Revision) {
     OS << " (";
     std::string LLVMRepo = getLLVMRepositoryPath();
-    if (!LLVMRepo.empty())
+    if (!LLVMRepo.empty()) {
       OS << LLVMRepo << ' ';
+
+}
     OS << LLVMRev << ')';
   }
   return OS.str();

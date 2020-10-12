@@ -52,8 +52,10 @@ bool MergedIndex::fuzzyFind(
   More |= Static->fuzzyFind(Req, [&](const Symbol &S) {
     auto DynS = Dyn.find(S.ID);
     ++StaticCount;
-    if (DynS == Dyn.end())
+    if (DynS == Dyn.end()) {
       return Callback(S);
+
+}
     ++MergedCount;
     SeenDynamicSymbols.insert(S.ID);
     Callback(mergeSymbol(*DynS, S));
@@ -61,9 +63,13 @@ bool MergedIndex::fuzzyFind(
   SPAN_ATTACH(Tracer, "dynamic", DynamicCount);
   SPAN_ATTACH(Tracer, "static", StaticCount);
   SPAN_ATTACH(Tracer, "merged", MergedCount);
-  for (const Symbol &S : Dyn)
-    if (!SeenDynamicSymbols.count(S.ID))
+  for (const Symbol &S : Dyn) {
+    if (!SeenDynamicSymbols.count(S.ID)) {
       Callback(S);
+
+}
+
+}
   return More;
 }
 
@@ -79,14 +85,20 @@ void MergedIndex::lookup(
   Static->lookup(Req, [&](const Symbol &S) {
     const Symbol *Sym = B.find(S.ID);
     RemainingIDs.erase(S.ID);
-    if (!Sym)
+    if (!Sym) {
       Callback(S);
-    else
+    } else {
       Callback(mergeSymbol(*Sym, S));
+
+}
   });
-  for (const auto &ID : RemainingIDs)
-    if (const Symbol *Sym = B.find(ID))
+  for (const auto &ID : RemainingIDs) {
+    if (const Symbol *Sym = B.find(ID)) {
       Callback(*Sym);
+
+}
+
+}
 }
 
 bool MergedIndex::refs(const RefsRequest &Req,
@@ -110,13 +122,17 @@ bool MergedIndex::refs(const RefsRequest &Req,
     assert(Remaining != 0);
     --Remaining;
   });
-  if (Remaining == 0 && More)
+  if (Remaining == 0 && More) {
     return More;
+
+}
   // We return less than Req.Limit if static index returns more refs for dirty
   // files.
   bool StaticHadMore =  Static->refs(Req, [&](const Ref &O) {
-    if (DynamicIndexFileURIs.count(O.Location.FileURI))
+    if (DynamicIndexFileURIs.count(O.Location.FileURI)) {
       return; // ignore refs that have been seen from dynamic index.
+
+}
     if (Remaining == 0) {
       More = true;
       return;
@@ -141,8 +157,10 @@ void MergedIndex::relations(
     SeenRelations.insert(std::make_pair(Subject, Object.ID));
     --Remaining;
   });
-  if (Remaining == 0)
+  if (Remaining == 0) {
     return;
+
+}
   Static->relations(Req, [&](const SymbolID &Subject, const Symbol &Object) {
     if (Remaining > 0 &&
         !SeenRelations.count(std::make_pair(Subject, Object.ID))) {
@@ -155,10 +173,14 @@ void MergedIndex::relations(
 // Returns true if \p L is (strictly) preferred to \p R (e.g. by file paths). If
 // neither is preferred, this returns false.
 bool prefer(const SymbolLocation &L, const SymbolLocation &R) {
-  if (!L)
+  if (!L) {
     return false;
-  if (!R)
+
+}
+  if (!R) {
     return true;
+
+}
   auto HasCodeGenSuffix = [](const SymbolLocation &Loc) {
     constexpr static const char *CodegenSuffixes[] = {".proto"};
     return std::any_of(std::begin(CodegenSuffixes), std::end(CodegenSuffixes),
@@ -184,15 +206,23 @@ Symbol mergeSymbol(const Symbol &L, const Symbol &R) {
   const Symbol &O = PreferR ? L : R; // The "other" less-preferred symbol.
 
   // Only use locations in \p O if it's (strictly) preferred.
-  if (prefer(O.CanonicalDeclaration, S.CanonicalDeclaration))
+  if (prefer(O.CanonicalDeclaration, S.CanonicalDeclaration)) {
     S.CanonicalDeclaration = O.CanonicalDeclaration;
-  if (prefer(O.Definition, S.Definition))
+
+}
+  if (prefer(O.Definition, S.Definition)) {
     S.Definition = O.Definition;
+
+}
   S.References += O.References;
-  if (S.Signature == "")
+  if (S.Signature == "") {
     S.Signature = O.Signature;
-  if (S.CompletionSnippetSuffix == "")
+
+}
+  if (S.CompletionSnippetSuffix == "") {
     S.CompletionSnippetSuffix = O.CompletionSnippetSuffix;
+
+}
   if (S.Documentation == "") {
     // Don't accept documentation from bare forward class declarations, if there
     // is a definition and it didn't provide one. S is often an undocumented
@@ -201,13 +231,19 @@ Symbol mergeSymbol(const Symbol &L, const Symbol &R) {
     bool IsClass = S.SymInfo.Kind == index::SymbolKind::Class ||
                    S.SymInfo.Kind == index::SymbolKind::Struct ||
                    S.SymInfo.Kind == index::SymbolKind::Union;
-    if (!IsClass || !S.Definition)
+    if (!IsClass || !S.Definition) {
       S.Documentation = O.Documentation;
+
+}
   }
-  if (S.ReturnType == "")
+  if (S.ReturnType == "") {
     S.ReturnType = O.ReturnType;
-  if (S.Type == "")
+
+}
+  if (S.Type == "") {
     S.Type = O.Type;
+
+}
   for (const auto &OI : O.IncludeHeaders) {
     bool Found = false;
     for (auto &SI : S.IncludeHeaders) {
@@ -217,8 +253,10 @@ Symbol mergeSymbol(const Symbol &L, const Symbol &R) {
         break;
       }
     }
-    if (!Found && MergeIncludes)
+    if (!Found && MergeIncludes) {
       S.IncludeHeaders.emplace_back(OI.IncludeHeader, OI.References);
+
+}
   }
 
   S.Origin |= O.Origin | SymbolOrigin::Merge;

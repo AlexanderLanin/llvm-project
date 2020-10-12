@@ -77,14 +77,18 @@ static std::string generateReproducerMetaInfo(const ClangInvocationInfo &Info) {
   OS << '{';
   bool NeedComma = false;
   auto EmitKey = [&](StringRef Key) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ", ";
+
+}
     NeedComma = true;
     OS << '"' << Key << "\": ";
   };
   auto EmitStringKey = [&](StringRef Key, StringRef Value) {
-    if (Value.empty())
+    if (Value.empty()) {
       return;
+
+}
     EmitKey(Key);
     OS << '"' << Value << '"';
   };
@@ -94,16 +98,20 @@ static std::string generateReproducerMetaInfo(const ClangInvocationInfo &Info) {
     EmitKey("invocation-args");
     OS << '[';
     for (const auto &Arg : llvm::enumerate(Info.InvocationArguments)) {
-      if (Arg.index())
+      if (Arg.index()) {
         OS << ',';
+
+}
       OS << '"' << Arg.value() << '"';
     }
     OS << ']';
   }
   OS << '}';
   // FIXME: Compare unsaved file hashes and report mismatch in the reproducer.
-  if (Info.Dump)
+  if (Info.Dump) {
     llvm::outs() << "REPRODUCER METAINFO: " << OS.str() << "\n";
+
+}
   return std::move(OS.str());
 }
 
@@ -146,8 +154,10 @@ static void printReproducerInformation(
   OS << "{\n";
   OS << R"("files":[)";
   for (const auto &File : llvm::enumerate(Report.TemporaryFiles)) {
-    if (File.index())
+    if (File.index()) {
       OS << ',';
+
+}
     OS << '"' << File.value() << '"';
   }
   OS << "]\n}\n";
@@ -171,13 +181,17 @@ int cc1gen_reproducer_main(ArrayRef<const char *> Argv, const char *Argv0,
   llvm::yaml::Input YAML(Buffer.get()->getBuffer());
   ClangInvocationInfo InvocationInfo;
   YAML >> InvocationInfo;
-  if (Argv.size() > 1 && Argv[1] == StringRef("-v"))
+  if (Argv.size() > 1 && Argv[1] == StringRef("-v")) {
     InvocationInfo.Dump = true;
+
+}
 
   // Create an invocation that will produce the reproducer.
   std::vector<const char *> DriverArgs;
-  for (const auto &Arg : InvocationInfo.Arguments)
+  for (const auto &Arg : InvocationInfo.Arguments) {
     DriverArgs.push_back(Arg.c_str());
+
+}
   std::string Path = GetExecutablePath(Argv0, /*CanonicalPrefixes=*/true);
   DriverArgs[0] = Path.c_str();
   llvm::Optional<driver::Driver::CompilationDiagnosticReport> Report =

@@ -28,8 +28,10 @@
 using namespace llvm;
 
 static bool lowerLoadRelative(Function &F) {
-  if (F.use_empty())
+  if (F.use_empty()) {
     return false;
+
+}
 
   bool Changed = false;
   Type *Int32Ty = Type::getInt32Ty(F.getContext());
@@ -39,8 +41,10 @@ static bool lowerLoadRelative(Function &F) {
   for (auto I = F.use_begin(), E = F.use_end(); I != E;) {
     auto CI = dyn_cast<CallInst>(I->getUser());
     ++I;
-    if (!CI || CI->getCalledValue() != &F)
+    if (!CI || CI->getCalledValue() != &F) {
       continue;
+
+}
 
     IRBuilder<> B(CI);
     Value *OffsetPtr =
@@ -62,17 +66,21 @@ static bool lowerLoadRelative(Function &F) {
 // always tail-called or never tail-called.
 static CallInst::TailCallKind getOverridingTailCallKind(const Function &F) {
   objcarc::ARCInstKind Kind = objcarc::GetFunctionClass(&F);
-  if (objcarc::IsAlwaysTail(Kind))
+  if (objcarc::IsAlwaysTail(Kind)) {
     return CallInst::TCK_Tail;
-  else if (objcarc::IsNeverTail(Kind))
+  } else if (objcarc::IsNeverTail(Kind)) {
     return CallInst::TCK_NoTail;
+
+}
   return CallInst::TCK_None;
 }
 
 static bool lowerObjCCall(Function &F, const char *NewFn,
                           bool setNonLazyBind = false) {
-  if (F.use_empty())
+  if (F.use_empty()) {
     return false;
+
+}
 
   // If we haven't already looked up this function, check to see if the
   // program already contains a function with this name.
@@ -110,8 +118,10 @@ static bool lowerObjCCall(Function &F, const char *NewFn,
     CallInst::TailCallKind TCK = CI->getTailCallKind();
     NewCI->setTailCallKind(std::max(TCK, OverridingTCK));
 
-    if (!CI->use_empty())
+    if (!CI->use_empty()) {
       CI->replaceAllUsesWith(NewCI);
+
+}
     CI->eraseFromParent();
   }
 
@@ -233,8 +243,10 @@ ModulePass *llvm::createPreISelIntrinsicLoweringPass() {
 
 PreservedAnalyses PreISelIntrinsicLoweringPass::run(Module &M,
                                                     ModuleAnalysisManager &AM) {
-  if (!lowerIntrinsics(M))
+  if (!lowerIntrinsics(M)) {
     return PreservedAnalyses::all();
-  else
+  } else {
     return PreservedAnalyses::none();
+
+}
 }

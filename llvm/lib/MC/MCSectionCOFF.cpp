@@ -18,12 +18,16 @@ using namespace llvm;
 // should be printed before the section name
 bool MCSectionCOFF::ShouldOmitSectionDirective(StringRef Name,
                                                const MCAsmInfo &MAI) const {
-  if (COMDATSymbol)
+  if (COMDATSymbol) {
     return false;
 
+}
+
   // FIXME: Does .section .bss/.data/.text work everywhere??
-  if (Name == ".text" || Name == ".data" || Name == ".bss")
+  if (Name == ".text" || Name == ".data" || Name == ".bss") {
     return true;
+
+}
 
   return false;
 }
@@ -44,32 +48,48 @@ void MCSectionCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   }
 
   OS << "\t.section\t" << getSectionName() << ",\"";
-  if (getCharacteristics() & COFF::IMAGE_SCN_CNT_INITIALIZED_DATA)
+  if (getCharacteristics() & COFF::IMAGE_SCN_CNT_INITIALIZED_DATA) {
     OS << 'd';
-  if (getCharacteristics() & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA)
+
+}
+  if (getCharacteristics() & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA) {
     OS << 'b';
-  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_EXECUTE)
+
+}
+  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_EXECUTE) {
     OS << 'x';
-  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_WRITE)
+
+}
+  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_WRITE) {
     OS << 'w';
-  else if (getCharacteristics() & COFF::IMAGE_SCN_MEM_READ)
+  } else if (getCharacteristics() & COFF::IMAGE_SCN_MEM_READ) {
     OS << 'r';
-  else
+  } else {
     OS << 'y';
-  if (getCharacteristics() & COFF::IMAGE_SCN_LNK_REMOVE)
+
+}
+  if (getCharacteristics() & COFF::IMAGE_SCN_LNK_REMOVE) {
     OS << 'n';
-  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_SHARED)
+
+}
+  if (getCharacteristics() & COFF::IMAGE_SCN_MEM_SHARED) {
     OS << 's';
+
+}
   if ((getCharacteristics() & COFF::IMAGE_SCN_MEM_DISCARDABLE) &&
-      !isImplicitlyDiscardable(SectionName))
+      !isImplicitlyDiscardable(SectionName)) {
     OS << 'D';
+
+}
   OS << '"';
 
   if (getCharacteristics() & COFF::IMAGE_SCN_LNK_COMDAT) {
-    if (COMDATSymbol)
+    if (COMDATSymbol) {
       OS << ",";
-    else
+    } else {
       OS << "\n\t.linkonce\t";
+
+}
     switch (Selection) {
       case COFF::IMAGE_COMDAT_SELECT_NODUPLICATES:
         OS << "one_only";

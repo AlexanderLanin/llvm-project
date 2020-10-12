@@ -278,8 +278,10 @@ TEST_F(MDNodeTest, Print) {
     S->printAsOperand(OS);
     OS << ", null";
     MDNode *Nodes[] = {N0, N1, N2};
-    for (auto *Node : Nodes)
+    for (auto *Node : Nodes) {
       OS << ", <" << (void *)Node << ">";
+
+}
     OS << "}";
   }
 

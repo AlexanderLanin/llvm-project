@@ -111,12 +111,16 @@ static constexpr SparcCPUInfo CPUInfo[] = {
 
 SparcTargetInfo::CPUGeneration
 SparcTargetInfo::getCPUGeneration(CPUKind Kind) const {
-  if (Kind == CK_GENERIC)
+  if (Kind == CK_GENERIC) {
     return CG_V8;
+
+}
   const SparcCPUInfo *Item = llvm::find_if(
       CPUInfo, [Kind](const SparcCPUInfo &Info) { return Info.Kind == Kind; });
-  if (Item == std::end(CPUInfo))
+  if (Item == std::end(CPUInfo)) {
     llvm_unreachable("Unexpected CPU kind");
+
+}
   return Item->Generation;
 }
 
@@ -124,15 +128,19 @@ SparcTargetInfo::CPUKind SparcTargetInfo::getCPUKind(StringRef Name) const {
   const SparcCPUInfo *Item = llvm::find_if(
       CPUInfo, [Name](const SparcCPUInfo &Info) { return Info.Name == Name; });
 
-  if (Item == std::end(CPUInfo))
+  if (Item == std::end(CPUInfo)) {
     return CK_GENERIC;
+
+}
   return Item->Kind;
 }
 
 void SparcTargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  for (const SparcCPUInfo &Info : CPUInfo)
+  for (const SparcCPUInfo &Info : CPUInfo) {
     Values.push_back(Info.Name);
+
+}
 }
 
 void SparcTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -140,8 +148,10 @@ void SparcTargetInfo::getTargetDefines(const LangOptions &Opts,
   DefineStd(Builder, "sparc", Opts);
   Builder.defineMacro("__REGISTER_PREFIX__", "");
 
-  if (SoftFloat)
+  if (SoftFloat) {
     Builder.defineMacro("SOFT_FLOAT", "1");
+
+}
 }
 
 void SparcV8TargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -150,8 +160,10 @@ void SparcV8TargetInfo::getTargetDefines(const LangOptions &Opts,
   switch (getCPUGeneration(CPU)) {
   case CG_V8:
     Builder.defineMacro("__sparcv8");
-    if (getTriple().getOS() != llvm::Triple::Solaris)
+    if (getTriple().getOS() != llvm::Triple::Solaris) {
       Builder.defineMacro("__sparcv8__");
+
+}
     break;
   case CG_V9:
     Builder.defineMacro("__sparcv9");
@@ -244,7 +256,11 @@ void SparcV9TargetInfo::getTargetDefines(const LangOptions &Opts,
 
 void SparcV9TargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  for (const SparcCPUInfo &Info : CPUInfo)
-    if (Info.Generation == CG_V9)
+  for (const SparcCPUInfo &Info : CPUInfo) {
+    if (Info.Generation == CG_V9) {
       Values.push_back(Info.Name);
+
+}
+
+}
 }

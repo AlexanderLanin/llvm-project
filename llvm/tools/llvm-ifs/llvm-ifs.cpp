@@ -95,8 +95,10 @@ template <> struct ScalarEnumerationTraits<IFSSymbolType> {
     IO.enumCase(SymbolType, "Object", IFSSymbolType::Object);
     IO.enumCase(SymbolType, "Unknown", IFSSymbolType::Unknown);
     // Treat other symbol types as noise, and map to Unknown.
-    if (!IO.outputting() && IO.matchEnumFallback())
+    if (!IO.outputting() && IO.matchEnumFallback()) {
       SymbolType = IFSSymbolType::Unknown;
+
+}
   }
 };
 
@@ -107,11 +109,15 @@ template <> struct ScalarTraits<VersionTuple> {
   }
 
   static StringRef input(StringRef Scalar, void *, VersionTuple &Value) {
-    if (Value.tryParse(Scalar))
+    if (Value.tryParse(Scalar)) {
       return StringRef("Can't parse version: invalid version format.");
 
-    if (Value > IFSVersionCurrent)
+}
+
+    if (Value > IFSVersionCurrent) {
       return StringRef("Unsupported IFS version.");
+
+}
 
     // Returning empty StringRef indicates successful parse.
     return StringRef();
@@ -126,12 +132,14 @@ template <> struct MappingTraits<IFSSymbol> {
   static void mapping(IO &IO, IFSSymbol &Symbol) {
     IO.mapRequired("Type", Symbol.Type);
     // The need for symbol size depends on the symbol type.
-    if (Symbol.Type == IFSSymbolType::NoType)
+    if (Symbol.Type == IFSSymbolType::NoType) {
       IO.mapOptional("Size", Symbol.Size, (uint64_t)0);
-    else if (Symbol.Type == IFSSymbolType::Func)
+    } else if (Symbol.Type == IFSSymbolType::Func) {
       Symbol.Size = 0;
-    else
+    } else {
       IO.mapRequired("Size", Symbol.Size);
+
+}
     IO.mapOptional("Weak", Symbol.Weak, false);
     IO.mapOptional("Warning", Symbol.Warning);
   }
@@ -150,8 +158,10 @@ template <> struct CustomMappingTraits<std::set<IFSSymbol>> {
   }
 
   static void output(IO &IO, std::set<IFSSymbol> &Set) {
-    for (auto &Sym : Set)
+    for (auto &Sym : Set) {
       IO.mapRequired(Sym.Name.c_str(), const_cast<IFSSymbol &>(Sym));
+
+}
   }
 };
 } // namespace yaml
@@ -186,8 +196,10 @@ namespace yaml {
 /// YAML traits for IFSStub objects.
 template <> struct MappingTraits<IFSStub> {
   static void mapping(IO &IO, IFSStub &Stub) {
-    if (!IO.mapTag("!experimental-ifs-v1", true))
+    if (!IO.mapTag("!experimental-ifs-v1", true)) {
       IO.setError("Not a .ifs YAML file.");
+
+}
     IO.mapRequired("IfsVersion", Stub.IfsVersion);
     IO.mapOptional("Triple", Stub.Triple);
     IO.mapOptional("ObjectFileFormat", Stub.ObjectFileFormat);
@@ -203,17 +215,21 @@ static Expected<std::unique_ptr<IFSStub>> readInputFile(StringRef FilePath) {
   // Read in file.
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrError =
       MemoryBuffer::getFileOrSTDIN(FilePath);
-  if (!BufOrError)
+  if (!BufOrError) {
     return createStringError(BufOrError.getError(), "Could not open `%s`",
                              FilePath.data());
+
+}
 
   std::unique_ptr<MemoryBuffer> FileReadBuffer = std::move(*BufOrError);
   yaml::Input YamlIn(FileReadBuffer->getBuffer());
   std::unique_ptr<IFSStub> Stub(new IFSStub());
   YamlIn >> *Stub;
 
-  if (std::error_code Err = YamlIn.error())
+  if (std::error_code Err = YamlIn.error()) {
     return createStringError(Err, "Failed reading Interface Stub File.");
+
+}
 
   return std::move(Stub);
 }
@@ -223,26 +239,38 @@ int writeTbdStub(const llvm::Triple &T, const std::set<IFSSymbol> &Symbols,
 
   auto PlatformKindOrError =
       [](const llvm::Triple &T) -> llvm::Expected<llvm::MachO::PlatformKind> {
-    if (T.isMacOSX())
+    if (T.isMacOSX()) {
       return llvm::MachO::PlatformKind::macOS;
-    if (T.isTvOS())
+
+}
+    if (T.isTvOS()) {
       return llvm::MachO::PlatformKind::tvOS;
-    if (T.isWatchOS())
+
+}
+    if (T.isWatchOS()) {
       return llvm::MachO::PlatformKind::watchOS;
+
+}
     // Note: put isiOS last because tvOS and watchOS are also iOS according
     // to the Triple.
-    if (T.isiOS())
+    if (T.isiOS()) {
       return llvm::MachO::PlatformKind::iOS;
 
+}
+
     // TODO: Add an option for ForceTriple, but keep ForceFormat for now.
-    if (ForceFormat == "TBD")
+    if (ForceFormat == "TBD") {
       return llvm::MachO::PlatformKind::macOS;
+
+}
 
     return createStringError(errc::not_supported, "Invalid Platform.\n");
   }(T);
 
-  if (!PlatformKindOrError)
+  if (!PlatformKindOrError) {
     return -1;
+
+}
 
   PlatformKind Plat = PlatformKindOrError.get();
   TargetList Targets({Target(llvm::MachO::mapToArchitecture(T), Plat)});
@@ -266,16 +294,20 @@ int writeTbdStub(const llvm::Triple &T, const std::set<IFSSymbol> &Symbols,
       Kind = SymbolKind::GlobalSymbol;
       break;
     }
-    if (Symbol.Weak)
+    if (Symbol.Weak) {
       File.addSymbol(Kind, Name, Targets, SymbolFlags::WeakDefined);
-    else
+    } else {
       File.addSymbol(Kind, Name, Targets);
+
+}
   }
 
   SmallString<4096> Buffer;
   raw_svector_ostream OS(Buffer);
-  if (Error Result = TextAPIWriter::writeToStream(OS, File))
+  if (Error Result = TextAPIWriter::writeToStream(OS, File)) {
     return -1;
+
+}
   Out << OS.str();
   return 0;
 }
@@ -373,12 +405,16 @@ int writeIfso(const IFSStub &Stub, bool IsWriteIfs, raw_ostream &Out) {
   std::string ObjectFileFormat =
       ForceFormat.empty() ? Stub.ObjectFileFormat : ForceFormat;
 
-  if (ObjectFileFormat == "ELF" || ForceFormat == "ELFOBJYAML")
+  if (ObjectFileFormat == "ELF" || ForceFormat == "ELFOBJYAML") {
     return writeElfStub(llvm::Triple(Stub.Triple), Stub.Symbols,
                         Stub.ObjectFileFormat, Out);
-  if (ObjectFileFormat == "TBD")
+
+}
+  if (ObjectFileFormat == "TBD") {
     return writeTbdStub(llvm::Triple(Stub.Triple), Stub.Symbols,
                         Stub.ObjectFileFormat, Out);
+
+}
 
   WithColor::error()
       << "Invalid ObjectFileFormat: Only ELF and TBD are supported.\n";
@@ -399,8 +435,10 @@ int main(int argc, char *argv[]) {
   // Parse arguments.
   cl::ParseCommandLineOptions(argc, argv);
 
-  if (InputFilenames.empty())
+  if (InputFilenames.empty()) {
     InputFilenames.push_back("-");
+
+}
 
   IFSStub Stub;
   std::map<std::string, IFSSymbol> SymbolMap;
@@ -435,8 +473,10 @@ int main(int argc, char *argv[]) {
               << " " << TargetStub->IfsVersion << "\n";
           return -1;
         }
-        if (TargetStub->IfsVersion > Stub.IfsVersion)
+        if (TargetStub->IfsVersion > Stub.IfsVersion) {
           Stub.IfsVersion = TargetStub->IfsVersion;
+
+}
       }
       if (Stub.ObjectFileFormat != TargetStub->ObjectFileFormat &&
           !TargetStub->ObjectFileFormat.empty()) {
@@ -508,7 +548,7 @@ int main(int argc, char *argv[]) {
     PreviousInputFilePath = InputFilePath;
   }
 
-  if (Stub.IfsVersion != IFSVersionCurrent)
+  if (Stub.IfsVersion != IFSVersionCurrent) {
     if (Stub.IfsVersion.getMajor() != IFSVersionCurrent.getMajor()) {
       WithColor::error() << "Interface Stub: Bad IfsVersion: "
                          << Stub.IfsVersion << ", llvm-ifs supported version: "
@@ -516,8 +556,12 @@ int main(int argc, char *argv[]) {
       return -1;
     }
 
-  for (auto &Entry : SymbolMap)
+}
+
+  for (auto &Entry : SymbolMap) {
     Stub.Symbols.insert(Entry.second);
+
+}
 
   std::error_code SysErr;
 

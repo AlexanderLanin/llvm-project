@@ -32,10 +32,14 @@ public:
   // The action does not call methods of ATContext.
   void ExecuteAction() override {
     CompilerInstance &CI = getCompilerInstance();
-    if (!CI.hasPreprocessor())
+    if (!CI.hasPreprocessor()) {
       return;
-    if (!CI.hasSema())
+
+}
+    if (!CI.hasSema()) {
       CI.createSema(getTranslationUnitKind(), nullptr);
+
+}
   }
 };
 

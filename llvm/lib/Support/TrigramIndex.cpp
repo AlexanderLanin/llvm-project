@@ -30,7 +30,9 @@ static bool isAdvancedMetachar(unsigned Char) {
 }
 
 void TrigramIndex::insert(std::string Regex) {
-  if (Defeated) return;
+  if (Defeated) { return;
+
+}
   std::set<unsigned> Was;
   unsigned Cnt = 0;
   unsigned Tri = 0;
@@ -62,14 +64,18 @@ void TrigramIndex::insert(std::string Regex) {
     Escaped = false;
     Tri = ((Tri << 8) + Char) & 0xFFFFFF;
     Len++;
-    if (Len < 3)
+    if (Len < 3) {
       continue;
+
+}
     // We don't want the index to grow too much for the popular trigrams,
     // as they are weak signals. It's ok to still require them for the
     // rules we have already processed. It's just a small additional
     // computational cost.
-    if (Index[Tri].size() >= 4)
+    if (Index[Tri].size() >= 4) {
       continue;
+
+}
     Cnt++;
     if (!Was.count(Tri)) {
       // Adding the current rule to the index.
@@ -87,23 +93,31 @@ void TrigramIndex::insert(std::string Regex) {
 }
 
 bool TrigramIndex::isDefinitelyOut(StringRef Query) const {
-  if (Defeated)
+  if (Defeated) {
     return false;
+
+}
   std::vector<unsigned> CurCounts(Counts.size());
   unsigned Tri = 0;
   for (size_t I = 0; I < Query.size(); I++) {
     Tri = ((Tri << 8) + Query[I]) & 0xFFFFFF;
-    if (I < 2)
+    if (I < 2) {
       continue;
+
+}
     const auto &II = Index.find(Tri);
-    if (II == Index.end())
+    if (II == Index.end()) {
       continue;
+
+}
     for (size_t J : II->second) {
       CurCounts[J]++;
       // If we have reached a desired limit, we have to look at the query
       // more closely by running a full regex.
-      if (CurCounts[J] >= Counts[J])
+      if (CurCounts[J] >= Counts[J]) {
         return false;
+
+}
     }
   }
   return true;

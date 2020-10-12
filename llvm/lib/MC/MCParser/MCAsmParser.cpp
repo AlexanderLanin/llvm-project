@@ -45,24 +45,32 @@ bool MCAsmParser::parseTokenLoc(SMLoc &Loc) {
 }
 
 bool MCAsmParser::parseEOL(const Twine &Msg) {
-  if (getTok().getKind() != AsmToken::EndOfStatement)
+  if (getTok().getKind() != AsmToken::EndOfStatement) {
     return Error(getTok().getLoc(), Msg);
+
+}
   Lex();
   return false;
 }
 
 bool MCAsmParser::parseToken(AsmToken::TokenKind T, const Twine &Msg) {
-  if (T == AsmToken::EndOfStatement)
+  if (T == AsmToken::EndOfStatement) {
     return parseEOL(Msg);
-  if (getTok().getKind() != T)
+
+}
+  if (getTok().getKind() != T) {
     return Error(getTok().getLoc(), Msg);
+
+}
   Lex();
   return false;
 }
 
 bool MCAsmParser::parseIntToken(int64_t &V, const Twine &Msg) {
-  if (getTok().getKind() != AsmToken::Integer)
+  if (getTok().getKind() != AsmToken::Integer) {
     return TokError(Msg);
+
+}
   V = getTok().getIntVal();
   Lex();
   return false;
@@ -70,8 +78,10 @@ bool MCAsmParser::parseIntToken(int64_t &V, const Twine &Msg) {
 
 bool MCAsmParser::parseOptionalToken(AsmToken::TokenKind T) {
   bool Present = (getTok().getKind() == T);
-  if (Present)
+  if (Present) {
     parseToken(T);
+
+}
   return Present;
 }
 
@@ -80,8 +90,10 @@ bool MCAsmParser::check(bool P, const Twine &Msg) {
 }
 
 bool MCAsmParser::check(bool P, SMLoc Loc, const Twine &Msg) {
-  if (P)
+  if (P) {
     return Error(Loc, Msg);
+
+}
   return false;
 }
 
@@ -100,30 +112,44 @@ bool MCAsmParser::Error(SMLoc L, const Twine &Msg, SMRange Range) {
   // If we threw this parsing error after a lexing error, this should
   // supercede the lexing error and so we remove it from the Lexer
   // before it can propagate
-  if (getTok().is(AsmToken::Error))
+  if (getTok().is(AsmToken::Error)) {
     getLexer().Lex();
+
+}
   return true;
 }
 
 bool MCAsmParser::addErrorSuffix(const Twine &Suffix) {
   // Make sure lexing errors have propagated to the parser.
-  if (getTok().is(AsmToken::Error))
+  if (getTok().is(AsmToken::Error)) {
     Lex();
-  for (auto &PErr : PendingErrors)
+
+}
+  for (auto &PErr : PendingErrors) {
     Suffix.toVector(PErr.Msg);
+
+}
   return true;
 }
 
 bool MCAsmParser::parseMany(function_ref<bool()> parseOne, bool hasComma) {
-  if (parseOptionalToken(AsmToken::EndOfStatement))
+  if (parseOptionalToken(AsmToken::EndOfStatement)) {
     return false;
+
+}
   while (true) {
-    if (parseOne())
+    if (parseOne()) {
       return true;
-    if (parseOptionalToken(AsmToken::EndOfStatement))
+
+}
+    if (parseOptionalToken(AsmToken::EndOfStatement)) {
       return false;
-    if (hasComma && parseToken(AsmToken::Comma))
+
+}
+    if (hasComma && parseToken(AsmToken::Comma)) {
       return true;
+
+}
   }
   return false;
 }

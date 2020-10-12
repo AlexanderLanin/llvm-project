@@ -106,9 +106,13 @@ void LowerIntrinsics::getAnalysisUsage(AnalysisUsage &AU) const {
 bool LowerIntrinsics::doInitialization(Module &M) {
   GCModuleInfo *MI = getAnalysisIfAvailable<GCModuleInfo>();
   assert(MI && "LowerIntrinsics didn't require GCModuleInfo!?");
-  for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
-    if (!I->isDeclaration() && I->hasGC())
+  for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I) {
+    if (!I->isDeclaration() && I->hasGC()) {
       MI->getFunctionInfo(*I); // Instantiate the GC strategy.
+
+}
+
+}
 
   return false;
 }
@@ -128,15 +132,25 @@ static bool CouldBecomeSafePoint(Instruction *I) {
   // it is necessary to take a conservative approach.
 
   if (isa<AllocaInst>(I) || isa<GetElementPtrInst>(I) || isa<StoreInst>(I) ||
-      isa<LoadInst>(I))
+      isa<LoadInst>(I)) {
     return false;
 
+}
+
   // llvm.gcroot is safe because it doesn't do anything at runtime.
-  if (CallInst *CI = dyn_cast<CallInst>(I))
-    if (Function *F = CI->getCalledFunction())
-      if (Intrinsic::ID IID = F->getIntrinsicID())
-        if (IID == Intrinsic::gcroot)
+  if (CallInst *CI = dyn_cast<CallInst>(I)) {
+    if (Function *F = CI->getCalledFunction()) {
+      if (Intrinsic::ID IID = F->getIntrinsicID()) {
+        if (IID == Intrinsic::gcroot) {
           return false;
+
+}
+
+}
+
+}
+
+}
 
   return true;
 }
@@ -144,21 +158,29 @@ static bool CouldBecomeSafePoint(Instruction *I) {
 static bool InsertRootInitializers(Function &F, ArrayRef<AllocaInst *> Roots) {
   // Scroll past alloca instructions.
   BasicBlock::iterator IP = F.getEntryBlock().begin();
-  while (isa<AllocaInst>(IP))
+  while (isa<AllocaInst>(IP)) {
     ++IP;
+
+}
 
   // Search for initializers in the initial BB.
   SmallPtrSet<AllocaInst *, 16> InitedRoots;
-  for (; !CouldBecomeSafePoint(&*IP); ++IP)
-    if (StoreInst *SI = dyn_cast<StoreInst>(IP))
+  for (; !CouldBecomeSafePoint(&*IP); ++IP) {
+    if (StoreInst *SI = dyn_cast<StoreInst>(IP)) {
       if (AllocaInst *AI =
-              dyn_cast<AllocaInst>(SI->getOperand(1)->stripPointerCasts()))
+              dyn_cast<AllocaInst>(SI->getOperand(1)->stripPointerCasts())) {
         InitedRoots.insert(AI);
+
+}
+
+}
+
+}
 
   // Add root initializers.
   bool MadeChange = false;
 
-  for (AllocaInst *Root : Roots)
+  for (AllocaInst *Root : Roots) {
     if (!InitedRoots.count(Root)) {
       StoreInst *SI = new StoreInst(
           ConstantPointerNull::get(cast<PointerType>(Root->getAllocatedType())),
@@ -167,6 +189,8 @@ static bool InsertRootInitializers(Function &F, ArrayRef<AllocaInst *> Roots) {
       MadeChange = true;
     }
 
+}
+
   return MadeChange;
 }
 
@@ -174,8 +198,10 @@ static bool InsertRootInitializers(Function &F, ArrayRef<AllocaInst *> Roots) {
 /// Leave gcroot intrinsics; the code generator needs to see those.
 bool LowerIntrinsics::runOnFunction(Function &F) {
   // Quick exit for functions that do not use GC.
-  if (!F.hasGC())
+  if (!F.hasGC()) {
     return false;
+
+}
 
   GCFunctionInfo &FI = getAnalysis<GCModuleInfo>().getFunctionInfo(F);
   GCStrategy &S = FI.getStrategy();
@@ -194,11 +220,13 @@ bool LowerIntrinsics::DoLowering(Function &F, GCStrategy &S) {
   SmallVector<AllocaInst *, 32> Roots;
 
   bool MadeChange = false;
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : F) {
     for (BasicBlock::iterator II = BB.begin(), E = BB.end(); II != E;) {
       IntrinsicInst *CI = dyn_cast<IntrinsicInst>(II++);
-      if (!CI)
+      if (!CI) {
         continue;
+
+}
 
       Function *F = CI->getCalledFunction();
       switch (F->getIntrinsicID()) {
@@ -231,8 +259,12 @@ bool LowerIntrinsics::DoLowering(Function &F, GCStrategy &S) {
       }
     }
 
-  if (Roots.size())
+}
+
+  if (Roots.size()) {
     MadeChange |= InsertRootInitializers(F, Roots);
+
+}
 
   return MadeChange;
 }
@@ -273,18 +305,24 @@ void GCMachineCodeAnalysis::VisitCallPoint(MachineBasicBlock::iterator CI) {
 }
 
 void GCMachineCodeAnalysis::FindSafePoints(MachineFunction &MF) {
-  for (MachineBasicBlock &MBB : MF)
+  for (MachineBasicBlock &MBB : MF) {
     for (MachineBasicBlock::iterator MI = MBB.begin(), ME = MBB.end();
-         MI != ME; ++MI)
+         MI != ME; ++MI) {
       if (MI->isCall()) {
         // Do not treat tail or sibling call sites as safe points.  This is
         // legal since any arguments passed to the callee which live in the
         // remnants of the callers frame will be owned and updated by the
         // callee if required.
-        if (MI->isTerminator())
+        if (MI->isTerminator()) {
           continue;
+
+}
         VisitCallPoint(MI);
       }
+
+}
+
+}
 }
 
 void GCMachineCodeAnalysis::FindStackOffsets(MachineFunction &MF) {
@@ -307,8 +345,10 @@ void GCMachineCodeAnalysis::FindStackOffsets(MachineFunction &MF) {
 
 bool GCMachineCodeAnalysis::runOnMachineFunction(MachineFunction &MF) {
   // Quick exit for functions that do not use GC.
-  if (!MF.getFunction().hasGC())
+  if (!MF.getFunction().hasGC()) {
     return false;
+
+}
 
   FI = &getAnalysis<GCModuleInfo>().getFunctionInfo(MF.getFunction());
   MMI = &getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
@@ -323,8 +363,10 @@ bool GCMachineCodeAnalysis::runOnMachineFunction(MachineFunction &MF) {
   FI->setFrameSize(DynamicFrameSize ? UINT64_MAX : MFI.getStackSize());
 
   // Find all safe points.
-  if (FI->getStrategy().needsSafePoints())
+  if (FI->getStrategy().needsSafePoints()) {
     FindSafePoints(MF);
+
+}
 
   // Find the concrete stack offsets for all roots (stack slots)
   FindStackOffsets(MF);

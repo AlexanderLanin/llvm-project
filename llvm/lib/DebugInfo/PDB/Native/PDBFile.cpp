@@ -107,8 +107,10 @@ Expected<ArrayRef<uint8_t>> PDBFile::getBlockData(uint32_t BlockIndex,
   uint64_t StreamBlockOffset = msf::blockToOffset(BlockIndex, getBlockSize());
 
   ArrayRef<uint8_t> Result;
-  if (auto EC = Buffer->readBytes(StreamBlockOffset, NumBytes, Result))
+  if (auto EC = Buffer->readBytes(StreamBlockOffset, NumBytes, Result)) {
     return std::move(EC);
+
+}
   return Result;
 }
 
@@ -129,12 +131,16 @@ Error PDBFile::parseFileHeaders() {
                                 "MSF superblock is missing");
   }
 
-  if (auto EC = msf::validateSuperBlock(*SB))
+  if (auto EC = msf::validateSuperBlock(*SB)) {
     return EC;
 
-  if (Buffer->getLength() % SB->BlockSize != 0)
+}
+
+  if (Buffer->getLength() % SB->BlockSize != 0) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "File size is not a multiple of block size");
+
+}
   ContainerLayout.SB = SB;
 
   // Initialize Free Page Map.
@@ -156,15 +162,19 @@ Error PDBFile::parseFileHeaders() {
       MappedBlockStream::createFpmStream(ContainerLayout, *Buffer, Allocator);
   BinaryStreamReader FpmReader(*FpmStream);
   ArrayRef<uint8_t> FpmBytes;
-  if (auto EC = FpmReader.readBytes(FpmBytes, FpmReader.bytesRemaining()))
+  if (auto EC = FpmReader.readBytes(FpmBytes, FpmReader.bytesRemaining())) {
     return EC;
+
+}
   uint32_t BlocksRemaining = getBlockCount();
   uint32_t BI = 0;
   for (auto Byte : FpmBytes) {
     uint32_t BlocksThisByte = std::min(BlocksRemaining, 8U);
     for (uint32_t I = 0; I < BlocksThisByte; ++I) {
-      if (Byte & (1 << I))
+      if (Byte & (1 << I)) {
         ContainerLayout.FreePageMap[BI] = true;
+
+}
       --BlocksRemaining;
       ++BI;
     }
@@ -172,16 +182,20 @@ Error PDBFile::parseFileHeaders() {
 
   Reader.setOffset(getBlockMapOffset());
   if (auto EC = Reader.readArray(ContainerLayout.DirectoryBlocks,
-                                 getNumDirectoryBlocks()))
+                                 getNumDirectoryBlocks())) {
     return EC;
+
+}
 
   return Error::success();
 }
 
 Error PDBFile::parseStreamData() {
   assert(ContainerLayout.SB);
-  if (DirectoryStream)
+  if (DirectoryStream) {
     return Error::success();
+
+}
 
   uint32_t NumStreams = 0;
 
@@ -193,11 +207,15 @@ Error PDBFile::parseStreamData() {
   auto DS = MappedBlockStream::createDirectoryStream(ContainerLayout, *Buffer,
                                                      Allocator);
   BinaryStreamReader Reader(*DS);
-  if (auto EC = Reader.readInteger(NumStreams))
+  if (auto EC = Reader.readInteger(NumStreams)) {
     return EC;
 
-  if (auto EC = Reader.readArray(ContainerLayout.StreamSizes, NumStreams))
+}
+
+  if (auto EC = Reader.readArray(ContainerLayout.StreamSizes, NumStreams)) {
     return EC;
+
+}
   for (uint32_t I = 0; I < NumStreams; ++I) {
     uint32_t StreamSize = getStreamByteSize(I);
     // FIXME: What does StreamSize ~0U mean?
@@ -213,14 +231,18 @@ Error PDBFile::parseStreamData() {
     // class, we can be guaranteed that readArray() will return a stable
     // reference, even if it has to allocate from its internal pool.
     ArrayRef<support::ulittle32_t> Blocks;
-    if (auto EC = Reader.readArray(Blocks, NumExpectedStreamBlocks))
+    if (auto EC = Reader.readArray(Blocks, NumExpectedStreamBlocks)) {
       return EC;
+
+}
     for (uint32_t Block : Blocks) {
       uint64_t BlockEndOffset =
           (uint64_t)(Block + 1) * ContainerLayout.SB->BlockSize;
-      if (BlockEndOffset > getFileSize())
+      if (BlockEndOffset > getFileSize()) {
         return make_error<RawError>(raw_error_code::corrupt_file,
                                     "Stream block map is corrupt.");
+
+}
     }
     ContainerLayout.StreamMap.push_back(Blocks);
   }
@@ -237,8 +259,10 @@ ArrayRef<support::ulittle32_t> PDBFile::getDirectoryBlockArray() const {
 
 std::unique_ptr<MappedBlockStream>
 PDBFile::createIndexedStream(uint16_t SN) const {
-  if (SN == kInvalidStreamIndex)
+  if (SN == kInvalidStreamIndex) {
     return nullptr;
+
+}
   return MappedBlockStream::createIndexedStream(ContainerLayout, *Buffer, SN,
                                                 Allocator);
 }
@@ -258,16 +282,22 @@ msf::MSFStreamLayout PDBFile::getFpmStreamLayout() const {
 Expected<GlobalsStream &> PDBFile::getPDBGlobalsStream() {
   if (!Globals) {
     auto DbiS = getPDBDbiStream();
-    if (!DbiS)
+    if (!DbiS) {
       return DbiS.takeError();
+
+}
 
     auto GlobalS =
         safelyCreateIndexedStream(DbiS->getGlobalSymbolStreamIndex());
-    if (!GlobalS)
+    if (!GlobalS) {
       return GlobalS.takeError();
+
+}
     auto TempGlobals = std::make_unique<GlobalsStream>(std::move(*GlobalS));
-    if (auto EC = TempGlobals->reload())
+    if (auto EC = TempGlobals->reload()) {
       return std::move(EC);
+
+}
     Globals = std::move(TempGlobals);
   }
   return *Globals;
@@ -276,11 +306,15 @@ Expected<GlobalsStream &> PDBFile::getPDBGlobalsStream() {
 Expected<InfoStream &> PDBFile::getPDBInfoStream() {
   if (!Info) {
     auto InfoS = safelyCreateIndexedStream(StreamPDB);
-    if (!InfoS)
+    if (!InfoS) {
       return InfoS.takeError();
+
+}
     auto TempInfo = std::make_unique<InfoStream>(std::move(*InfoS));
-    if (auto EC = TempInfo->reload())
+    if (auto EC = TempInfo->reload()) {
       return std::move(EC);
+
+}
     Info = std::move(TempInfo);
   }
   return *Info;
@@ -289,11 +323,15 @@ Expected<InfoStream &> PDBFile::getPDBInfoStream() {
 Expected<DbiStream &> PDBFile::getPDBDbiStream() {
   if (!Dbi) {
     auto DbiS = safelyCreateIndexedStream(StreamDBI);
-    if (!DbiS)
+    if (!DbiS) {
       return DbiS.takeError();
+
+}
     auto TempDbi = std::make_unique<DbiStream>(std::move(*DbiS));
-    if (auto EC = TempDbi->reload(this))
+    if (auto EC = TempDbi->reload(this)) {
       return std::move(EC);
+
+}
     Dbi = std::move(TempDbi);
   }
   return *Dbi;
@@ -302,11 +340,15 @@ Expected<DbiStream &> PDBFile::getPDBDbiStream() {
 Expected<TpiStream &> PDBFile::getPDBTpiStream() {
   if (!Tpi) {
     auto TpiS = safelyCreateIndexedStream(StreamTPI);
-    if (!TpiS)
+    if (!TpiS) {
       return TpiS.takeError();
+
+}
     auto TempTpi = std::make_unique<TpiStream>(*this, std::move(*TpiS));
-    if (auto EC = TempTpi->reload())
+    if (auto EC = TempTpi->reload()) {
       return std::move(EC);
+
+}
     Tpi = std::move(TempTpi);
   }
   return *Tpi;
@@ -314,15 +356,21 @@ Expected<TpiStream &> PDBFile::getPDBTpiStream() {
 
 Expected<TpiStream &> PDBFile::getPDBIpiStream() {
   if (!Ipi) {
-    if (!hasPDBIpiStream())
+    if (!hasPDBIpiStream()) {
       return make_error<RawError>(raw_error_code::no_stream);
 
+}
+
     auto IpiS = safelyCreateIndexedStream(StreamIPI);
-    if (!IpiS)
+    if (!IpiS) {
       return IpiS.takeError();
+
+}
     auto TempIpi = std::make_unique<TpiStream>(*this, std::move(*IpiS));
-    if (auto EC = TempIpi->reload())
+    if (auto EC = TempIpi->reload()) {
       return std::move(EC);
+
+}
     Ipi = std::move(TempIpi);
   }
   return *Ipi;
@@ -331,16 +379,22 @@ Expected<TpiStream &> PDBFile::getPDBIpiStream() {
 Expected<PublicsStream &> PDBFile::getPDBPublicsStream() {
   if (!Publics) {
     auto DbiS = getPDBDbiStream();
-    if (!DbiS)
+    if (!DbiS) {
       return DbiS.takeError();
+
+}
 
     auto PublicS =
         safelyCreateIndexedStream(DbiS->getPublicSymbolStreamIndex());
-    if (!PublicS)
+    if (!PublicS) {
       return PublicS.takeError();
+
+}
     auto TempPublics = std::make_unique<PublicsStream>(std::move(*PublicS));
-    if (auto EC = TempPublics->reload())
+    if (auto EC = TempPublics->reload()) {
       return std::move(EC);
+
+}
     Publics = std::move(TempPublics);
   }
   return *Publics;
@@ -349,17 +403,23 @@ Expected<PublicsStream &> PDBFile::getPDBPublicsStream() {
 Expected<SymbolStream &> PDBFile::getPDBSymbolStream() {
   if (!Symbols) {
     auto DbiS = getPDBDbiStream();
-    if (!DbiS)
+    if (!DbiS) {
       return DbiS.takeError();
+
+}
 
     uint32_t SymbolStreamNum = DbiS->getSymRecordStreamIndex();
     auto SymbolS = safelyCreateIndexedStream(SymbolStreamNum);
-    if (!SymbolS)
+    if (!SymbolS) {
       return SymbolS.takeError();
 
+}
+
     auto TempSymbols = std::make_unique<SymbolStream>(std::move(*SymbolS));
-    if (auto EC = TempSymbols->reload())
+    if (auto EC = TempSymbols->reload()) {
       return std::move(EC);
+
+}
     Symbols = std::move(TempSymbols);
   }
   return *Symbols;
@@ -368,13 +428,17 @@ Expected<SymbolStream &> PDBFile::getPDBSymbolStream() {
 Expected<PDBStringTable &> PDBFile::getStringTable() {
   if (!Strings) {
     auto NS = safelyCreateNamedStream("/names");
-    if (!NS)
+    if (!NS) {
       return NS.takeError();
+
+}
 
     auto N = std::make_unique<PDBStringTable>();
     BinaryStreamReader Reader(**NS);
-    if (auto EC = N->reload(Reader))
+    if (auto EC = N->reload(Reader)) {
       return std::move(EC);
+
+}
     assert(Reader.bytesRemaining() == 0);
     StringTableStream = std::move(*NS);
     Strings = std::move(N);
@@ -385,16 +449,22 @@ Expected<PDBStringTable &> PDBFile::getStringTable() {
 Expected<InjectedSourceStream &> PDBFile::getInjectedSourceStream() {
   if (!InjectedSources) {
     auto IJS = safelyCreateNamedStream("/src/headerblock");
-    if (!IJS)
+    if (!IJS) {
       return IJS.takeError();
 
+}
+
     auto Strings = getStringTable();
-    if (!Strings)
+    if (!Strings) {
       return Strings.takeError();
 
+}
+
     auto IJ = std::make_unique<InjectedSourceStream>(std::move(*IJS));
-    if (auto EC = IJ->reload(*Strings))
+    if (auto EC = IJ->reload(*Strings)) {
       return std::move(EC);
+
+}
     InjectedSources = std::move(IJ);
   }
   return *InjectedSources;
@@ -402,11 +472,15 @@ Expected<InjectedSourceStream &> PDBFile::getInjectedSourceStream() {
 
 uint32_t PDBFile::getPointerSize() {
   auto DbiS = getPDBDbiStream();
-  if (!DbiS)
+  if (!DbiS) {
     return 0;
+
+}
   PDB_Machine Machine = DbiS->getMachineType();
-  if (Machine == PDB_Machine::Amd64)
+  if (Machine == PDB_Machine::Amd64) {
     return 8;
+
+}
   return 4;
 }
 
@@ -427,11 +501,15 @@ bool PDBFile::hasPDBGlobalsStream() {
 bool PDBFile::hasPDBInfoStream() const { return StreamPDB < getNumStreams(); }
 
 bool PDBFile::hasPDBIpiStream() const {
-  if (!hasPDBInfoStream())
+  if (!hasPDBInfoStream()) {
     return false;
 
-  if (StreamIPI >= getNumStreams())
+}
+
+  if (StreamIPI >= getNumStreams()) {
     return false;
+
+}
 
   auto &InfoStream = cantFail(const_cast<PDBFile *>(this)->getPDBInfoStream());
   return InfoStream.containsIdStream();
@@ -448,8 +526,10 @@ bool PDBFile::hasPDBPublicsStream() {
 
 bool PDBFile::hasPDBSymbolStream() {
   auto DbiS = getPDBDbiStream();
-  if (!DbiS)
+  if (!DbiS) {
     return false;
+
+}
   return DbiS->getSymRecordStreamIndex() < getNumStreams();
 }
 
@@ -457,8 +537,10 @@ bool PDBFile::hasPDBTpiStream() const { return StreamTPI < getNumStreams(); }
 
 bool PDBFile::hasPDBStringTable() {
   auto IS = getPDBInfoStream();
-  if (!IS)
+  if (!IS) {
     return false;
+
+}
   Expected<uint32_t> ExpectedNSI = IS->getNamedStreamIndex("/names");
   if (!ExpectedNSI) {
     consumeError(ExpectedNSI.takeError());
@@ -470,8 +552,10 @@ bool PDBFile::hasPDBStringTable() {
 
 bool PDBFile::hasPDBInjectedSourceStream() {
   auto IS = getPDBInfoStream();
-  if (!IS)
+  if (!IS) {
     return false;
+
+}
   Expected<uint32_t> ExpectedNSI = IS->getNamedStreamIndex("/src/headerblock");
   if (!ExpectedNSI) {
     consumeError(ExpectedNSI.takeError());
@@ -487,21 +571,27 @@ bool PDBFile::hasPDBInjectedSourceStream() {
 /// value will contain the stream returned by createIndexedStream().
 Expected<std::unique_ptr<MappedBlockStream>>
 PDBFile::safelyCreateIndexedStream(uint32_t StreamIndex) const {
-  if (StreamIndex >= getNumStreams())
+  if (StreamIndex >= getNumStreams()) {
     // This rejects kInvalidStreamIndex with an error as well.
     return make_error<RawError>(raw_error_code::no_stream);
+
+}
   return createIndexedStream(StreamIndex);
 }
 
 Expected<std::unique_ptr<MappedBlockStream>>
 PDBFile::safelyCreateNamedStream(StringRef Name) {
   auto IS = getPDBInfoStream();
-  if (!IS)
+  if (!IS) {
     return IS.takeError();
 
+}
+
   Expected<uint32_t> ExpectedNSI = IS->getNamedStreamIndex(Name);
-  if (!ExpectedNSI)
+  if (!ExpectedNSI) {
     return ExpectedNSI.takeError();
+
+}
   uint32_t NameStreamIndex = *ExpectedNSI;
 
   return safelyCreateIndexedStream(NameStreamIndex);

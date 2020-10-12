@@ -40,16 +40,22 @@ CXString clang_getCursorUSR(CXCursor C) {
 
   if (clang_isDeclaration(K)) {
     const Decl *D = cxcursor::getCursorDecl(C);
-    if (!D)
+    if (!D) {
       return cxstring::createEmpty();
+
+}
 
     CXTranslationUnit TU = cxcursor::getCursorTU(C);
-    if (!TU)
+    if (!TU) {
       return cxstring::createEmpty();
 
+}
+
     cxstring::CXStringBuf *buf = cxstring::getCXStringBuf(TU);
-    if (!buf)
+    if (!buf) {
       return cxstring::createEmpty();
+
+}
 
     bool Ignore = cxcursor::getDeclCursorUSR(D, buf->Data);
     if (Ignore) {
@@ -65,12 +71,16 @@ CXString clang_getCursorUSR(CXCursor C) {
 
   if (K == CXCursor_MacroDefinition) {
     CXTranslationUnit TU = cxcursor::getCursorTU(C);
-    if (!TU)
+    if (!TU) {
       return cxstring::createEmpty();
 
+}
+
     cxstring::CXStringBuf *buf = cxstring::getCXStringBuf(TU);
-    if (!buf)
+    if (!buf) {
       return cxstring::createEmpty();
+
+}
 
     bool Ignore = generateUSRForMacro(cxcursor::getCursorMacroDefinition(C),
                                       cxtu::getASTUnit(TU)->getSourceManager(),

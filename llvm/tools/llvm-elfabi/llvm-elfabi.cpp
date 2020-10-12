@@ -57,13 +57,17 @@ static Error writeTBE(StringRef FilePath, ELFStub &Stub) {
 
   // Open file for writing.
   raw_fd_ostream Out(FilePath, SysErr);
-  if (SysErr)
+  if (SysErr) {
     return createStringError(SysErr, "Couldn't open `%s` for writing",
                              FilePath.data());
+
+}
   // Write file.
   Error YAMLErr = writeTBEToOutputStream(Out, Stub);
-  if (YAMLErr)
+  if (YAMLErr) {
     return YAMLErr;
+
+}
 
   return Error::success();
 }

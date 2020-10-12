@@ -102,10 +102,14 @@ void TrackingStatistic::RegisterStatistic() {
     StatisticInfo &SI = *StatInfo;
     sys::SmartScopedLock<true> Writer(Lock);
     // Check Initialized again after acquiring the lock.
-    if (Initialized.load(std::memory_order_relaxed))
+    if (Initialized.load(std::memory_order_relaxed)) {
       return;
-    if (EnableStats || Enabled)
+
+}
+    if (EnableStats || Enabled) {
       SI.addStatistic(this);
+
+}
 
     // Remember we have been registered.
     Initialized.store(true, std::memory_order_release);
@@ -119,8 +123,10 @@ StatisticInfo::StatisticInfo() {
 
 // Print information when destroyed, iff command line option is specified.
 StatisticInfo::~StatisticInfo() {
-  if (EnableStats || PrintOnExit)
+  if (EnableStats || PrintOnExit) {
     llvm::PrintStatistics();
+
+}
 }
 
 void llvm::EnableStatistics(bool DoPrintOnExit) {
@@ -135,11 +141,15 @@ bool llvm::AreStatisticsEnabled() {
 void StatisticInfo::sort() {
   llvm::stable_sort(
       Stats, [](const TrackingStatistic *LHS, const TrackingStatistic *RHS) {
-        if (int Cmp = std::strcmp(LHS->getDebugType(), RHS->getDebugType()))
+        if (int Cmp = std::strcmp(LHS->getDebugType(), RHS->getDebugType())) {
           return Cmp < 0;
 
-        if (int Cmp = std::strcmp(LHS->getName(), RHS->getName()))
+}
+
+        if (int Cmp = std::strcmp(LHS->getName(), RHS->getName())) {
           return Cmp < 0;
+
+}
 
         return std::strcmp(LHS->getDesc(), RHS->getDesc()) < 0;
       });
@@ -187,11 +197,13 @@ void llvm::PrintStatistics(raw_ostream &OS) {
      << "===" << std::string(73, '-') << "===\n\n";
 
   // Print all of the statistics.
-  for (size_t i = 0, e = Stats.Stats.size(); i != e; ++i)
+  for (size_t i = 0, e = Stats.Stats.size(); i != e; ++i) {
     OS << format("%*u %-*s - %s\n",
                  MaxValLen, Stats.Stats[i]->getValue(),
                  MaxDebugTypeLen, Stats.Stats[i]->getDebugType(),
                  Stats.Stats[i]->getDesc());
+
+}
 
   OS << '\n';  // Flush the output stream.
   OS.flush();
@@ -255,8 +267,10 @@ const std::vector<std::pair<StringRef, unsigned>> llvm::GetStatistics() {
   sys::SmartScopedLock<true> Reader(*StatLock);
   std::vector<std::pair<StringRef, unsigned>> ReturnStats;
 
-  for (const auto &Stat : StatInfo->statistics())
+  for (const auto &Stat : StatInfo->statistics()) {
     ReturnStats.emplace_back(Stat->getName(), Stat->getValue());
+
+}
   return ReturnStats;
 }
 

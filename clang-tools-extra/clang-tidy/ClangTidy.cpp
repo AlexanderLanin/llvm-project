@@ -135,8 +135,10 @@ public:
           for (const auto &Repl : FileAndReplacements.second) {
             ++TotalFixes;
             bool CanBeApplied = false;
-            if (!Repl.isApplicable())
+            if (!Repl.isApplicable()) {
               continue;
+
+}
             SourceLocation FixLoc;
             SmallString<128> FixAbsoluteFilePath = Repl.getFilePath();
             Files.makeAbsolutePath(FixAbsoluteFilePath);
@@ -178,8 +180,10 @@ public:
       Diags.Report(Fix.first, Fix.second ? diag::note_fixit_applied
                                          : diag::note_fixit_failed);
     }
-    for (const auto &Note : Error.Notes)
+    for (const auto &Note : Error.Notes) {
       reportNote(Note);
+
+}
   }
 
   void Finish() {
@@ -212,8 +216,10 @@ public:
         if (llvm::Expected<tooling::Replacements> FormattedReplacements =
                 format::formatReplacements(Code, *Replacements, *Style)) {
           Replacements = std::move(FormattedReplacements);
-          if (!Replacements)
+          if (!Replacements) {
             llvm_unreachable("!Replacements");
+
+}
         } else {
           llvm::errs() << llvm::toString(FormattedReplacements.takeError())
                        << ". Skipping formatting.\n";
@@ -235,12 +241,16 @@ public:
 
 private:
   SourceLocation getLocation(StringRef FilePath, unsigned Offset) {
-    if (FilePath.empty())
+    if (FilePath.empty()) {
       return SourceLocation();
 
+}
+
     auto File = SourceMgr.getFileManager().getFile(FilePath);
-    if (!File)
+    if (!File) {
       return SourceLocation();
+
+}
 
     FileID ID = SourceMgr.getOrCreateFileID(*File, SrcMgr::C_User);
     return SourceMgr.getLocForStartOfFile(ID).getLocWithOffset(Offset);
@@ -250,8 +260,10 @@ private:
                  const llvm::StringMap<Replacements> &Fix) {
     for (const auto &FileAndReplacements : Fix) {
       for (const auto &Repl : FileAndReplacements.second) {
-        if (!Repl.isApplicable())
+        if (!Repl.isApplicable()) {
           continue;
+
+}
         SmallString<128> FixAbsoluteFilePath = Repl.getFilePath();
         Files.makeAbsolutePath(FixAbsoluteFilePath);
         SourceLocation FixLoc =
@@ -326,8 +338,10 @@ static void setStaticAnalyzerCheckerOpts(const ClangTidyOptions &Opts,
   StringRef AnalyzerPrefix(AnalyzerCheckNamePrefix);
   for (const auto &Opt : Opts.CheckOptions) {
     StringRef OptName(Opt.first);
-    if (!OptName.startswith(AnalyzerPrefix))
+    if (!OptName.startswith(AnalyzerPrefix)) {
       continue;
+
+}
     AnalyzerOptions->Config[OptName.substr(AnalyzerPrefix.size())] = Opt.second;
   }
 }
@@ -346,8 +360,10 @@ static CheckersList getAnalyzerCheckersAndPackages(ClangTidyContext &Context,
     AnalyzerChecksEnabled |= Context.isCheckEnabled(ClangTidyCheckName);
   }
 
-  if (!AnalyzerChecksEnabled)
+  if (!AnalyzerChecksEnabled) {
     return List;
+
+}
 
   // List all static analyzer checkers that our filter enables.
   //
@@ -380,8 +396,10 @@ ClangTidyASTConsumerFactory::CreateASTConsumer(
                         .getFileManager()
                         .getVirtualFileSystem()
                         .getCurrentWorkingDirectory();
-  if (WorkingDir)
+  if (WorkingDir) {
     Context.setCurrentBuildDirectory(WorkingDir.get());
+
+}
 
   std::vector<std::unique_ptr<ClangTidyCheck>> Checks =
       CheckFactories->createChecks(&Context);
@@ -409,15 +427,19 @@ ClangTidyASTConsumerFactory::CreateASTConsumer(
   }
 
   for (auto &Check : Checks) {
-    if (!Check->isLanguageVersionSupported(Context.getLangOpts()))
+    if (!Check->isLanguageVersionSupported(Context.getLangOpts())) {
       continue;
+
+}
     Check->registerMatchers(&*Finder);
     Check->registerPPCallbacks(*SM, PP, ModuleExpanderPP);
   }
 
   std::vector<std::unique_ptr<ASTConsumer>> Consumers;
-  if (!Checks.empty())
+  if (!Checks.empty()) {
     Consumers.push_back(Finder->newASTConsumer());
+
+}
 
 #if CLANG_ENABLE_STATIC_ANALYZER
   AnalyzerOptionsRef AnalyzerOptions = Compiler.getAnalyzerOpts();
@@ -444,14 +466,18 @@ ClangTidyASTConsumerFactory::CreateASTConsumer(
 std::vector<std::string> ClangTidyASTConsumerFactory::getCheckNames() {
   std::vector<std::string> CheckNames;
   for (const auto &CheckFactory : *CheckFactories) {
-    if (Context.isCheckEnabled(CheckFactory.first))
+    if (Context.isCheckEnabled(CheckFactory.first)) {
       CheckNames.push_back(CheckFactory.first);
+
+}
   }
 
 #if CLANG_ENABLE_STATIC_ANALYZER
   for (const auto &AnalyzerCheck : getAnalyzerCheckersAndPackages(
-           Context, Context.canEnableAnalyzerAlphaCheckers()))
+           Context, Context.canEnableAnalyzerAlphaCheckers())) {
     CheckNames.push_back(AnalyzerCheckNamePrefix + AnalyzerCheck.first);
+
+}
 #endif // CLANG_ENABLE_STATIC_ANALYZER
 
   std::sort(CheckNames.begin(), CheckNames.end());
@@ -462,8 +488,10 @@ ClangTidyOptions::OptionMap ClangTidyASTConsumerFactory::getCheckOptions() {
   ClangTidyOptions::OptionMap Options;
   std::vector<std::unique_ptr<ClangTidyCheck>> Checks =
       CheckFactories->createChecks(&Context);
-  for (const auto &Check : Checks)
+  for (const auto &Check : Checks) {
     Check->storeOptions(Options);
+
+}
   return Options;
 }
 
@@ -505,14 +533,18 @@ runClangTidy(clang::tidy::ClangTidyContext &Context,
         CommandLineArguments AdjustedArgs = Args;
         if (Opts.ExtraArgsBefore) {
           auto I = AdjustedArgs.begin();
-          if (I != AdjustedArgs.end() && !StringRef(*I).startswith("-"))
+          if (I != AdjustedArgs.end() && !StringRef(*I).startswith("-")) {
             ++I; // Skip compiler binary name, if it is there.
+
+}
           AdjustedArgs.insert(I, Opts.ExtraArgsBefore->begin(),
                               Opts.ExtraArgsBefore->end());
         }
-        if (Opts.ExtraArgs)
+        if (Opts.ExtraArgs) {
           AdjustedArgs.insert(AdjustedArgs.end(), Opts.ExtraArgs->begin(),
                               Opts.ExtraArgs->end());
+
+}
         return AdjustedArgs;
       };
 
@@ -575,8 +607,10 @@ void handleErrors(llvm::ArrayRef<ClangTidyError> Errors,
   llvm::vfs::FileSystem &FileSystem =
       Reporter.getSourceManager().getFileManager().getVirtualFileSystem();
   auto InitialWorkingDir = FileSystem.getCurrentWorkingDirectory();
-  if (!InitialWorkingDir)
+  if (!InitialWorkingDir) {
     llvm::report_fatal_error("Cannot get current working path.");
+
+}
 
   for (const ClangTidyError &Error : Errors) {
     if (!Error.BuildDirectory.empty()) {

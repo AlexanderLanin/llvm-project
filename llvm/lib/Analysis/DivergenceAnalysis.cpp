@@ -108,8 +108,10 @@ void DivergenceAnalysis::addUniformOverride(const Value &UniVal) {
 }
 
 bool DivergenceAnalysis::updateTerminator(const Instruction &Term) const {
-  if (Term.getNumSuccessors() <= 1)
+  if (Term.getNumSuccessors() <= 1) {
     return false;
+
+}
   if (auto *BranchTerm = dyn_cast<BranchInst>(&Term)) {
     assert(BranchTerm->isConditional());
     return isDivergent(*BranchTerm->getCondition());
@@ -127,8 +129,10 @@ bool DivergenceAnalysis::updateTerminator(const Instruction &Term) const {
 bool DivergenceAnalysis::updateNormalInstruction(const Instruction &I) const {
   // TODO function calls with side effects, etc
   for (const auto &Op : I.operands()) {
-    if (isDivergent(*Op))
+    if (isDivergent(*Op)) {
       return true;
+
+}
   }
   return false;
 }
@@ -136,15 +140,19 @@ bool DivergenceAnalysis::updateNormalInstruction(const Instruction &I) const {
 bool DivergenceAnalysis::isTemporalDivergent(const BasicBlock &ObservingBlock,
                                              const Value &Val) const {
   const auto *Inst = dyn_cast<const Instruction>(&Val);
-  if (!Inst)
+  if (!Inst) {
     return false;
+
+}
   // check whether any divergent loop carrying Val terminates before control
   // proceeds to ObservingBlock
   for (const auto *Loop = LI.getLoopFor(Inst->getParent());
        Loop != RegionLoop && !Loop->contains(&ObservingBlock);
        Loop = Loop->getParentLoop()) {
-    if (DivergentLoops.find(Loop) != DivergentLoops.end())
+    if (DivergentLoops.find(Loop) != DivergentLoops.end()) {
       return true;
+
+}
   }
 
   return false;
@@ -206,8 +214,10 @@ void DivergenceAnalysis::taintLoopLiveOuts(const BasicBlock &LoopHeader) {
     TaintStack.pop_back();
 
     // don't spread divergence beyond the region
-    if (!inRegion(*UserBlock))
+    if (!inRegion(*UserBlock)) {
       continue;
+
+}
 
     assert(!DivLoop->contains(UserBlock) &&
            "irreducible control flow detected");
@@ -223,15 +233,21 @@ void DivergenceAnalysis::taintLoopLiveOuts(const BasicBlock &LoopHeader) {
 
     // taint outside users of values carried by DivLoop
     for (auto &I : *UserBlock) {
-      if (isAlwaysUniform(I))
+      if (isAlwaysUniform(I)) {
         continue;
-      if (isDivergent(I))
+
+}
+      if (isDivergent(I)) {
         continue;
+
+}
 
       for (auto &Op : I.operands()) {
         auto *OpInst = dyn_cast<Instruction>(&Op);
-        if (!OpInst)
+        if (!OpInst) {
           continue;
+
+}
         if (DivLoop->contains(OpInst->getParent())) {
           markDivergent(I);
           pushUsers(I);
@@ -252,8 +268,10 @@ void DivergenceAnalysis::taintLoopLiveOuts(const BasicBlock &LoopHeader) {
 
 void DivergenceAnalysis::pushPHINodes(const BasicBlock &Block) {
   for (const auto &Phi : Block.phis()) {
-    if (isDivergent(Phi))
+    if (isDivergent(Phi)) {
       continue;
+
+}
     Worklist.push_back(&Phi);
   }
 }
@@ -261,15 +279,21 @@ void DivergenceAnalysis::pushPHINodes(const BasicBlock &Block) {
 void DivergenceAnalysis::pushUsers(const Value &V) {
   for (const auto *User : V.users()) {
     const auto *UserInst = dyn_cast<const Instruction>(User);
-    if (!UserInst)
+    if (!UserInst) {
       continue;
 
-    if (isDivergent(*UserInst))
+}
+
+    if (isDivergent(*UserInst)) {
       continue;
+
+}
 
     // only compute divergent inside loop
-    if (!inRegion(*UserInst))
+    if (!inRegion(*UserInst)) {
       continue;
+
+}
     Worklist.push_back(UserInst);
   }
 }
@@ -302,8 +326,10 @@ void DivergenceAnalysis::propagateBranchDivergence(const Instruction &Term) {
   markDivergent(Term);
 
   // Don't propagate divergence from unreachable blocks.
-  if (!DT.isReachableFromEntry(Term.getParent()))
+  if (!DT.isReachableFromEntry(Term.getParent())) {
     return;
+
+}
 
   const auto *BranchLoop = LI.getLoopFor(Term.getParent());
 
@@ -330,8 +356,10 @@ void DivergenceAnalysis::propagateLoopDivergence(const Loop &ExitingLoop) {
   LLVM_DEBUG(dbgs() << "propLoopDiv " << ExitingLoop.getName() << "\n");
 
   // don't propagate beyond region
-  if (!inRegion(*ExitingLoop.getHeader()))
+  if (!inRegion(*ExitingLoop.getHeader())) {
     return;
+
+}
 
   const auto *BranchLoop = ExitingLoop.getParentLoop();
 
@@ -341,8 +369,10 @@ void DivergenceAnalysis::propagateLoopDivergence(const Loop &ExitingLoop) {
   // Thus all users have to be in the dominance region of the loop header,
   // except PHI nodes that can also live at the fringes of the dom region
   // (incoming defining value).
-  if (!IsLCSSAForm)
+  if (!IsLCSSAForm) {
     taintLoopLiveOuts(*ExitingLoop.getHeader());
+
+}
 
   // whether there is a divergent loop exit from BranchLoop (if any)
   bool IsBranchLoopDivergent = false;
@@ -375,12 +405,16 @@ void DivergenceAnalysis::compute() {
     Worklist.pop_back();
 
     // maintain uniformity of overrides
-    if (isAlwaysUniform(I))
+    if (isAlwaysUniform(I)) {
       continue;
 
+}
+
     bool WasDivergent = isDivergent(I);
-    if (WasDivergent)
+    if (WasDivergent) {
       continue;
+
+}
 
     // propagate divergence caused by terminator
     if (I.isTerminator()) {
@@ -423,12 +457,16 @@ bool DivergenceAnalysis::isDivergentUse(const Use &U) const {
 }
 
 void DivergenceAnalysis::print(raw_ostream &OS, const Module *) const {
-  if (DivergentValues.empty())
+  if (DivergentValues.empty()) {
     return;
+
+}
   // iterate instructions using instructions() to ensure a deterministic order.
   for (auto &I : instructions(F)) {
-    if (isDivergent(I))
+    if (isDivergent(I)) {
       OS << "DIVERGENT:" << I << '\n';
+
+}
   }
 }
 

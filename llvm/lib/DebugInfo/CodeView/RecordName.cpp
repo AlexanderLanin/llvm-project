@@ -80,8 +80,10 @@ Error TypeNameComputer::visitKnownRecord(CVType &CVR, ArgListRecord &Args) {
     assert(Indices[I] < CurrentTypeIndex);
 
     Name.append(Types.getTypeName(Indices[I]));
-    if (I + 1 != Size)
+    if (I + 1 != Size) {
       Name.append(", ");
+
+}
   }
   Name.push_back(')');
   return Error::success();
@@ -94,8 +96,10 @@ Error TypeNameComputer::visitKnownRecord(CVType &CVR,
   Name = "\"";
   for (uint32_t I = 0; I < Size; ++I) {
     Name.append(Types.getTypeName(Indices[I]));
-    if (I + 1 != Size)
+    if (I + 1 != Size) {
       Name.append("\" \"");
+
+}
   }
   Name.push_back('\"');
   return Error::success();
@@ -168,23 +172,33 @@ Error TypeNameComputer::visitKnownRecord(CVType &CVR, PointerRecord &Ptr) {
   } else {
     Name.append(Types.getTypeName(Ptr.getReferentType()));
 
-    if (Ptr.getMode() == PointerMode::LValueReference)
+    if (Ptr.getMode() == PointerMode::LValueReference) {
       Name.append("&");
-    else if (Ptr.getMode() == PointerMode::RValueReference)
+    } else if (Ptr.getMode() == PointerMode::RValueReference) {
       Name.append("&&");
-    else if (Ptr.getMode() == PointerMode::Pointer)
+    } else if (Ptr.getMode() == PointerMode::Pointer) {
       Name.append("*");
+
+}
 
     // Qualifiers in pointer records apply to the pointer, not the pointee, so
     // they go on the right.
-    if (Ptr.isConst())
+    if (Ptr.isConst()) {
       Name.append(" const");
-    if (Ptr.isVolatile())
+
+}
+    if (Ptr.isVolatile()) {
       Name.append(" volatile");
-    if (Ptr.isUnaligned())
+
+}
+    if (Ptr.isUnaligned()) {
       Name.append(" __unaligned");
-    if (Ptr.isRestrict())
+
+}
+    if (Ptr.isRestrict()) {
       Name.append(" __restrict");
+
+}
   }
   return Error::success();
 }
@@ -192,12 +206,18 @@ Error TypeNameComputer::visitKnownRecord(CVType &CVR, PointerRecord &Ptr) {
 Error TypeNameComputer::visitKnownRecord(CVType &CVR, ModifierRecord &Mod) {
   uint16_t Mods = static_cast<uint16_t>(Mod.getModifiers());
 
-  if (Mods & uint16_t(ModifierOptions::Const))
+  if (Mods & uint16_t(ModifierOptions::Const)) {
     Name.append("const ");
-  if (Mods & uint16_t(ModifierOptions::Volatile))
+
+}
+  if (Mods & uint16_t(ModifierOptions::Volatile)) {
     Name.append("volatile ");
-  if (Mods & uint16_t(ModifierOptions::Unaligned))
+
+}
+  if (Mods & uint16_t(ModifierOptions::Unaligned)) {
     Name.append("__unaligned ");
+
+}
   Name.append(Types.getTypeName(Mod.getModifiedType()));
   return Error::success();
 }
@@ -329,8 +349,10 @@ StringRef llvm::codeview::getSymbolName(CVSymbol Sym) {
   }
 
   int Offset = getSymbolNameOffset(Sym);
-  if (Offset == -1)
+  if (Offset == -1) {
     return StringRef();
+
+}
 
   StringRef StringData = toStringRef(Sym.content()).drop_front(Offset);
   return StringData.split('\0').first;

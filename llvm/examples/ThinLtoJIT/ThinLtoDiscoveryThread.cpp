@@ -32,8 +32,10 @@ void ThinLtoDiscoveryThread::operator()() {
         }
       }
 
-      if (GlobalIndex.getNumDiscoveredModules() > 0)
+      if (GlobalIndex.getNumDiscoveredModules() > 0) {
         spawnLookupForHighRankModules();
+
+}
     }
   }
 }
@@ -47,13 +49,17 @@ void ThinLtoDiscoveryThread::spawnLookupForHighRankModules() {
     ES.runSessionLocked([this, Paths = std::move(Paths)]() mutable {
       for (const std::string &Path : Paths) {
         ThreadSafeModule TSM = GlobalIndex.takeModule(Path);
-        if (!TSM)
+        if (!TSM) {
           // In the meantime the module was added synchronously.
           continue;
 
-        if (Error LoadErr = AddModule(std::move(TSM)))
+}
+
+        if (Error LoadErr = AddModule(std::move(TSM))) {
           // Failed to add the module to the session.
           ES.reportError(std::move(LoadErr));
+
+}
 
         ++NumModulesSubmitted;
       }

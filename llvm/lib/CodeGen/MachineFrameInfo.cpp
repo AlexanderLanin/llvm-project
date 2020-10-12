@@ -29,18 +29,24 @@
 using namespace llvm;
 
 void MachineFrameInfo::ensureMaxAlignment(Align Alignment) {
-  if (!StackRealignable)
+  if (!StackRealignable) {
     assert(Alignment <= StackAlignment &&
            "For targets without stack realignment, Alignment is out of limit!");
-  if (MaxAlignment < Alignment)
+
+}
+  if (MaxAlignment < Alignment) {
     MaxAlignment = Alignment;
+
+}
 }
 
 /// Clamp the alignment if requested and emit a warning.
 static inline Align clampStackAlignment(bool ShouldClamp, Align Alignment,
                                         Align StackAlignment) {
-  if (!ShouldClamp || Alignment <= StackAlignment)
+  if (!ShouldClamp || Alignment <= StackAlignment) {
     return Alignment;
+
+}
   LLVM_DEBUG(dbgs() << "Warning: requested alignment " << Alignment.value()
                     << " exceeds the stack alignment " << StackAlignment.value()
                     << " when stack realignment is off" << '\n');
@@ -57,8 +63,10 @@ int MachineFrameInfo::CreateStackObject(uint64_t Size, Align Alignment,
                                 !IsSpillSlot, StackID));
   int Index = (int)Objects.size() - NumFixedObjects - 1;
   assert(Index >= 0 && "Bad frame index!");
-  if (StackID == 0)
+  if (StackID == 0) {
     ensureMaxAlignment(Alignment);
+
+}
   return Index;
 }
 
@@ -117,18 +125,26 @@ BitVector MachineFrameInfo::getPristineRegs(const MachineFunction &MF) const {
 
   // Before CSI is calculated, no registers are considered pristine. They can be
   // freely used and PEI will make sure they are saved.
-  if (!isCalleeSavedInfoValid())
+  if (!isCalleeSavedInfoValid()) {
     return BV;
+
+}
 
   const MachineRegisterInfo &MRI = MF.getRegInfo();
   for (const MCPhysReg *CSR = MRI.getCalleeSavedRegs(); CSR && *CSR;
-       ++CSR)
+       ++CSR) {
     BV.set(*CSR);
 
+}
+
   // Saved CSRs are not pristine.
-  for (auto &I : getCalleeSavedInfo())
-    for (MCSubRegIterator S(I.getReg(), TRI, true); S.isValid(); ++S)
+  for (auto &I : getCalleeSavedInfo()) {
+    for (MCSubRegIterator S(I.getReg(), TRI, true); S.isValid(); ++S) {
       BV.reset(*S);
+
+}
+
+}
 
   return BV;
 }
@@ -145,15 +161,21 @@ uint64_t MachineFrameInfo::estimateStackSize(const MachineFunction &MF) const {
 
   for (int i = getObjectIndexBegin(); i != 0; ++i) {
     // Only estimate stack size of default stack.
-    if (getStackID(i) != TargetStackID::Default)
+    if (getStackID(i) != TargetStackID::Default) {
       continue;
+
+}
     int64_t FixedOff = -getObjectOffset(i);
-    if (FixedOff > Offset) Offset = FixedOff;
+    if (FixedOff > Offset) { Offset = FixedOff;
+
+}
   }
   for (unsigned i = 0, e = getObjectIndexEnd(); i != e; ++i) {
     // Only estimate stack size of live objects on default stack.
-    if (isDeadObjectIndex(i) || getStackID(i) != TargetStackID::Default)
+    if (isDeadObjectIndex(i) || getStackID(i) != TargetStackID::Default) {
       continue;
+
+}
     Offset += getObjectSize(i);
     unsigned Align = getObjectAlignment(i);
     // Adjust to alignment boundary
@@ -162,8 +184,10 @@ uint64_t MachineFrameInfo::estimateStackSize(const MachineFunction &MF) const {
     MaxAlign = std::max(Align, MaxAlign);
   }
 
-  if (adjustsStack() && TFI->hasReservedCallFrame(MF))
+  if (adjustsStack() && TFI->hasReservedCallFrame(MF)) {
     Offset += getMaxCallFrameSize();
+
+}
 
   // Round up the size to a multiple of the alignment.  If the function has
   // any calls or alloca's, align to the target's StackAlignment value to
@@ -172,10 +196,12 @@ uint64_t MachineFrameInfo::estimateStackSize(const MachineFunction &MF) const {
   // value.
   unsigned StackAlign;
   if (adjustsStack() || hasVarSizedObjects() ||
-      (RegInfo->needsStackRealignment(MF) && getObjectIndexEnd() != 0))
+      (RegInfo->needsStackRealignment(MF) && getObjectIndexEnd() != 0)) {
     StackAlign = TFI->getStackAlignment();
-  else
+  } else {
     StackAlign = TFI->getTransientStackAlignment();
+
+}
 
   // If the frame pointer is eliminated, all frame offsets will be relative to
   // SP not FP. Align to MaxAlign so this works.
@@ -204,15 +230,19 @@ void MachineFrameInfo::computeMaxCallFrameSize(const MachineFunction &MF) {
       } else if (MI.isInlineAsm()) {
         // Some inline asm's need a stack frame, as indicated by operand 1.
         unsigned ExtraInfo = MI.getOperand(InlineAsm::MIOp_ExtraInfo).getImm();
-        if (ExtraInfo & InlineAsm::Extra_IsAlignStack)
+        if (ExtraInfo & InlineAsm::Extra_IsAlignStack) {
           AdjustsStack = true;
+
+}
       }
     }
   }
 }
 
 void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
-  if (Objects.empty()) return;
+  if (Objects.empty()) { return;
+
+}
 
   const TargetFrameLowering *FI = MF.getSubtarget().getFrameLowering();
   int ValOffset = (FI ? FI->getOffsetOfLocalArea() : 0);
@@ -223,28 +253,36 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
     const StackObject &SO = Objects[i];
     OS << "  fi#" << (int)(i-NumFixedObjects) << ": ";
 
-    if (SO.StackID != 0)
+    if (SO.StackID != 0) {
       OS << "id=" << static_cast<unsigned>(SO.StackID) << ' ';
+
+}
 
     if (SO.Size == ~0ULL) {
       OS << "dead\n";
       continue;
     }
-    if (SO.Size == 0)
+    if (SO.Size == 0) {
       OS << "variable sized";
-    else
+    } else {
       OS << "size=" << SO.Size;
+
+}
     OS << ", align=" << SO.Alignment.value();
 
-    if (i < NumFixedObjects)
+    if (i < NumFixedObjects) {
       OS << ", fixed";
+
+}
     if (i < NumFixedObjects || SO.SPOffset != -1) {
       int64_t Off = SO.SPOffset - ValOffset;
       OS << ", at location [SP";
-      if (Off > 0)
+      if (Off > 0) {
         OS << "+" << Off;
-      else if (Off < 0)
+      } else if (Off < 0) {
         OS << Off;
+
+}
       OS << "]";
     }
     OS << "\n";

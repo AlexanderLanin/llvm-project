@@ -74,8 +74,10 @@ TEST_F(SourceManagerTest, isBeforeInTranslationUnit) {
   while (1) {
     Token tok;
     PP.Lex(tok);
-    if (tok.is(tok::eof))
+    if (tok.is(tok::eof)) {
       break;
+
+}
     toks.push_back(tok);
   }
 
@@ -305,8 +307,10 @@ TEST_F(SourceManagerTest, getMacroArgExpandedLocation) {
   while (1) {
     Token tok;
     PP.Lex(tok);
-    if (tok.is(tok::eof))
+    if (tok.is(tok::eof)) {
       break;
+
+}
     toks.push_back(tok);
   }
 
@@ -427,8 +431,10 @@ TEST_F(SourceManagerTest, isBeforeInTranslationUnitWithMacroInInclude) {
   while (1) {
     Token tok;
     PP.Lex(tok);
-    if (tok.is(tok::eof))
+    if (tok.is(tok::eof)) {
       break;
+
+}
     toks.push_back(tok);
   }
 

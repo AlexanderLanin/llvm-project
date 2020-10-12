@@ -45,17 +45,25 @@ static bool lowerWidenableCondition(Function &F) {
   // do.
   auto *WCDecl = F.getParent()->getFunction(
       Intrinsic::getName(Intrinsic::experimental_widenable_condition));
-  if (!WCDecl || WCDecl->use_empty())
+  if (!WCDecl || WCDecl->use_empty()) {
     return false;
+
+}
 
   using namespace llvm::PatternMatch;
   SmallVector<CallInst *, 8> ToLower;
-  for (auto &I : instructions(F))
-    if (match(&I, m_Intrinsic<Intrinsic::experimental_widenable_condition>()))
+  for (auto &I : instructions(F)) {
+    if (match(&I, m_Intrinsic<Intrinsic::experimental_widenable_condition>())) {
       ToLower.push_back(cast<CallInst>(&I));
 
-  if (ToLower.empty())
+}
+
+}
+
+  if (ToLower.empty()) {
     return false;
+
+}
 
   for (auto *CI : ToLower) {
     CI->replaceAllUsesWith(ConstantInt::getTrue(CI->getContext()));
@@ -79,8 +87,10 @@ Pass *llvm::createLowerWidenableConditionPass() {
 
 PreservedAnalyses LowerWidenableConditionPass::run(Function &F,
                                                FunctionAnalysisManager &AM) {
-  if (lowerWidenableCondition(F))
+  if (lowerWidenableCondition(F)) {
     return PreservedAnalyses::none();
+
+}
 
   return PreservedAnalyses::all();
 }

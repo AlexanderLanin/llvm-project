@@ -46,15 +46,21 @@ void MoveConstructorInitCheck::check(const MatchFinder::MatchResult &Result) {
   // Do not diagnose if the expression used to perform the initialization is a
   // trivially-copyable type.
   QualType QT = Initializer->getInit()->getType();
-  if (QT.isTriviallyCopyableType(*Result.Context))
+  if (QT.isTriviallyCopyableType(*Result.Context)) {
     return;
 
-  if (QT.isConstQualified())
+}
+
+  if (QT.isConstQualified()) {
     return;
+
+}
 
   const auto *RD = QT->getAsCXXRecordDecl();
-  if (RD && RD->isTriviallyCopyable())
+  if (RD && RD->isTriviallyCopyable()) {
     return;
+
+}
 
   // Diagnose when the class type has a move constructor available, but the
   // ctor-initializer uses the copy constructor instead.

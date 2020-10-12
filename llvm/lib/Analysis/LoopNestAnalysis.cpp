@@ -42,8 +42,10 @@ static bool checkLoopsStructure(const Loop &OuterLoop, const Loop &InnerLoop,
 
 LoopNest::LoopNest(Loop &Root, ScalarEvolution &SE)
     : MaxPerfectDepth(getMaxPerfectDepth(Root, SE)) {
-  for (Loop *L : breadth_first(&Root))
+  for (Loop *L : breadth_first(&Root)) {
     Loops.push_back(L);
+
+}
 }
 
 std::unique_ptr<LoopNest> LoopNest::getLoopNest(Loop &Root,
@@ -164,8 +166,10 @@ LoopNest::getPerfectLoops(ScalarEvolution &SE) const {
   LoopVectorTy PerfectNest;
 
   for (Loop *L : depth_first(const_cast<Loop *>(Loops.front()))) {
-    if (PerfectNest.empty())
+    if (PerfectNest.empty()) {
       PerfectNest.push_back(L);
+
+}
 
     auto &SubLoops = L->getSubLoops();
     if (SubLoops.size() == 1 && arePerfectlyNested(*L, *SubLoops.front(), SE)) {
@@ -210,12 +214,16 @@ static bool checkLoopsStructure(const Loop &OuterLoop, const Loop &InnerLoop,
                                 ScalarEvolution &SE) {
   // The inner loop must be the only outer loop's child.
   if ((OuterLoop.getSubLoops().size() != 1) ||
-      (InnerLoop.getParentLoop() != &OuterLoop))
+      (InnerLoop.getParentLoop() != &OuterLoop)) {
     return false;
 
+}
+
   // We expect loops in normal form which have a preheader, header, latch...
-  if (!OuterLoop.isLoopSimplifyForm() || !InnerLoop.isLoopSimplifyForm())
+  if (!OuterLoop.isLoopSimplifyForm() || !InnerLoop.isLoopSimplifyForm()) {
     return false;
+
+}
 
   const BasicBlock *OuterLoopHeader = OuterLoop.getHeader();
   const BasicBlock *OuterLoopLatch = OuterLoop.getLoopLatch();
@@ -225,8 +233,10 @@ static bool checkLoopsStructure(const Loop &OuterLoop, const Loop &InnerLoop,
 
   // We expect rotated loops. The inner loop should have a single exit block.
   if (OuterLoop.getExitingBlock() != OuterLoopLatch ||
-      InnerLoop.getExitingBlock() != InnerLoopLatch || !InnerLoopExit)
+      InnerLoop.getExitingBlock() != InnerLoopLatch || !InnerLoopExit) {
     return false;
+
+}
 
   // Ensure the only branch that may exist between the loops is the inner loop
   // guard.
@@ -234,16 +244,22 @@ static bool checkLoopsStructure(const Loop &OuterLoop, const Loop &InnerLoop,
     const BranchInst *BI =
         dyn_cast<BranchInst>(OuterLoopHeader->getTerminator());
 
-    if (!BI || BI != InnerLoop.getLoopGuardBranch())
+    if (!BI || BI != InnerLoop.getLoopGuardBranch()) {
       return false;
+
+}
 
     // The successors of the inner loop guard should be the inner loop
     // preheader and the outer loop latch.
     for (const BasicBlock *Succ : BI->successors()) {
-      if (Succ == InnerLoopPreHeader)
+      if (Succ == InnerLoopPreHeader) {
         continue;
-      if (Succ == OuterLoopLatch)
+
+}
+      if (Succ == OuterLoopLatch) {
         continue;
+
+}
 
       DEBUG_WITH_TYPE(VerboseDebug, {
         dbgs() << "Inner loop guard successor " << Succ->getName()
@@ -268,15 +284,19 @@ static bool checkLoopsStructure(const Loop &OuterLoop, const Loop &InnerLoop,
 
 raw_ostream &llvm::operator<<(raw_ostream &OS, const LoopNest &LN) {
   OS << "IsPerfect=";
-  if (LN.getMaxPerfectDepth() == LN.getNestDepth())
+  if (LN.getMaxPerfectDepth() == LN.getNestDepth()) {
     OS << "true";
-  else
+  } else {
     OS << "false";
+
+}
   OS << ", Depth=" << LN.getNestDepth();
   OS << ", OutermostLoop: " << LN.getOutermostLoop().getName();
   OS << ", Loops: ( ";
-  for (const Loop *L : LN.getLoops())
+  for (const Loop *L : LN.getLoops()) {
     OS << L->getName() << " ";
+
+}
   OS << ")";
 
   return OS;
@@ -289,8 +309,10 @@ raw_ostream &llvm::operator<<(raw_ostream &OS, const LoopNest &LN) {
 PreservedAnalyses LoopNestPrinterPass::run(Loop &L, LoopAnalysisManager &AM,
                                            LoopStandardAnalysisResults &AR,
                                            LPMUpdater &U) {
-  if (auto LN = LoopNest::getLoopNest(L, AR.SE))
+  if (auto LN = LoopNest::getLoopNest(L, AR.SE)) {
     OS << *LN << "\n";
+
+}
 
   return PreservedAnalyses::all();
 }

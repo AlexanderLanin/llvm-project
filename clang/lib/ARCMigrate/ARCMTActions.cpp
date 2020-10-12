@@ -16,8 +16,10 @@ using namespace arcmt;
 bool CheckAction::BeginInvocation(CompilerInstance &CI) {
   if (arcmt::checkForManualIssues(CI.getInvocation(), getCurrentInput(),
                                   CI.getPCHContainerOperations(),
-                                  CI.getDiagnostics().getClient()))
+                                  CI.getDiagnostics().getClient())) {
     return false; // errors, stop the action.
+
+}
 
   // We only want to see warnings reported from arcmt::checkForManualIssues.
   CI.getDiagnostics().setIgnoreAllWarnings(true);
@@ -40,8 +42,10 @@ bool MigrateAction::BeginInvocation(CompilerInstance &CI) {
   if (arcmt::migrateWithTemporaryFiles(
           CI.getInvocation(), getCurrentInput(), CI.getPCHContainerOperations(),
           CI.getDiagnostics().getClient(), MigrateDir, EmitPremigrationARCErros,
-          PlistOut))
+          PlistOut)) {
     return false; // errors, stop the action.
+
+}
 
   // We only want to see diagnostics emitted by migrateWithTemporaryFiles.
   CI.getDiagnostics().setIgnoreAllWarnings(true);
@@ -54,6 +58,8 @@ MigrateAction::MigrateAction(std::unique_ptr<FrontendAction> WrappedAction,
                              bool emitPremigrationARCErrors)
   : WrapperFrontendAction(std::move(WrappedAction)), MigrateDir(migrateDir),
     PlistOut(plistOut), EmitPremigrationARCErros(emitPremigrationARCErrors) {
-  if (MigrateDir.empty())
+  if (MigrateDir.empty()) {
     MigrateDir = "."; // user current directory if none is given.
+
+}
 }

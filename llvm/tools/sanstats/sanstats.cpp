@@ -49,19 +49,27 @@ uint64_t ReadLE(char Size, const char *Begin, const char *End) {
 
 const char *ReadModule(char SizeofPtr, const char *Begin, const char *End) {
   const char *FilenameBegin = Begin;
-  while (Begin != End && *Begin)
+  while (Begin != End && *Begin) {
     ++Begin;
-  if (Begin == End)
+
+}
+  if (Begin == End) {
     return nullptr;
+
+}
   std::string Filename(FilenameBegin, Begin - FilenameBegin);
 
-  if (!llvm::sys::fs::exists(Filename))
+  if (!llvm::sys::fs::exists(Filename)) {
     Filename = std::string(llvm::sys::path::parent_path(ClInputFile)) +
                std::string(llvm::sys::path::filename(Filename));
 
+}
+
   ++Begin;
-  if (Begin == End)
+  if (Begin == End) {
     return nullptr;
+
+}
 
   symbolize::LLVMSymbolizer::Options SymbolizerOptions;
   SymbolizerOptions.Demangle = ClDemangle;
@@ -74,12 +82,18 @@ const char *ReadModule(char SizeofPtr, const char *Begin, const char *End) {
     uint64_t Data = ReadLE(SizeofPtr, Begin, End);
     Begin += SizeofPtr;
 
-    if (Begin > End)
+    if (Begin > End) {
       return nullptr;
-    if (Addr == 0 && Data == 0)
+
+}
+    if (Addr == 0 && Data == 0) {
       return Begin;
-    if (Begin == End)
+
+}
+    if (Begin == End) {
       return nullptr;
+
+}
 
     // As the instrumentation tracks the return address and not
     // the address of the call to `__sanitizer_stat_report` we

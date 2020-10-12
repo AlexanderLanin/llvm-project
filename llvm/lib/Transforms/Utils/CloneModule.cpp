@@ -20,8 +20,10 @@ using namespace llvm;
 
 static void copyComdat(GlobalObject *Dst, const GlobalObject *Src) {
   const Comdat *SC = Src->getComdat();
-  if (!SC)
+  if (!SC) {
     return;
+
+}
   Comdat *DC = Dst->getParent()->getOrInsertComdat(SC->getName());
   DC->setSelectionKind(SC->getSelectionKind());
   Dst->setComdat(DC);
@@ -89,15 +91,17 @@ std::unique_ptr<Module> llvm::CloneModule(
       // FIXME: Once pointee types are gone we can probably pick one or the
       // other.
       GlobalValue *GV;
-      if (I->getValueType()->isFunctionTy())
+      if (I->getValueType()->isFunctionTy()) {
         GV = Function::Create(cast<FunctionType>(I->getValueType()),
                               GlobalValue::ExternalLinkage,
                               I->getAddressSpace(), I->getName(), New.get());
-      else
+      } else {
         GV = new GlobalVariable(
             *New, I->getValueType(), false, GlobalValue::ExternalLinkage,
             nullptr, I->getName(), nullptr,
             I->getThreadLocalMode(), I->getType()->getAddressSpace());
+
+}
       VMap[&*I] = GV;
       // We do not copy attributes (mainly because copying between different
       // kinds of globals is forbidden), but this is generally not required for
@@ -117,8 +121,10 @@ std::unique_ptr<Module> llvm::CloneModule(
   //
   for (Module::const_global_iterator I = M.global_begin(), E = M.global_end();
        I != E; ++I) {
-    if (I->isDeclaration())
+    if (I->isDeclaration()) {
       continue;
+
+}
 
     GlobalVariable *GV = cast<GlobalVariable>(VMap[&*I]);
     if (!ShouldCloneDefinition(&*I)) {
@@ -126,14 +132,18 @@ std::unique_ptr<Module> llvm::CloneModule(
       GV->setLinkage(GlobalValue::ExternalLinkage);
       continue;
     }
-    if (I->hasInitializer())
+    if (I->hasInitializer()) {
       GV->setInitializer(MapValue(I->getInitializer(), VMap));
+
+}
 
     SmallVector<std::pair<unsigned, MDNode *>, 1> MDs;
     I->getAllMetadata(MDs);
-    for (auto MD : MDs)
+    for (auto MD : MDs) {
       GV->addMetadata(MD.first,
                       *MapMetadata(MD.second, VMap, RF_MoveDistinctMDs));
+
+}
 
     copyComdat(GV, &*I);
   }
@@ -141,8 +151,10 @@ std::unique_ptr<Module> llvm::CloneModule(
   // Similarly, copy over function bodies now...
   //
   for (const Function &I : M) {
-    if (I.isDeclaration())
+    if (I.isDeclaration()) {
       continue;
+
+}
 
     Function *F = cast<Function>(VMap[&I]);
     if (!ShouldCloneDefinition(&I)) {
@@ -163,8 +175,10 @@ std::unique_ptr<Module> llvm::CloneModule(
     SmallVector<ReturnInst *, 8> Returns; // Ignore returns cloned.
     CloneFunctionInto(F, &I, VMap, /*ModuleLevelChanges=*/true, Returns);
 
-    if (I.hasPersonalityFn())
+    if (I.hasPersonalityFn()) {
       F->setPersonalityFn(MapValue(I.getPersonalityFn(), VMap));
+
+}
 
     copyComdat(F, &I);
   }
@@ -173,11 +187,15 @@ std::unique_ptr<Module> llvm::CloneModule(
   for (Module::const_alias_iterator I = M.alias_begin(), E = M.alias_end();
        I != E; ++I) {
     // We already dealt with undefined aliases above.
-    if (!ShouldCloneDefinition(&*I))
+    if (!ShouldCloneDefinition(&*I)) {
       continue;
+
+}
     GlobalAlias *GA = cast<GlobalAlias>(VMap[&*I]);
-    if (const Constant *C = I->getAliasee())
+    if (const Constant *C = I->getAliasee()) {
       GA->setAliasee(MapValue(C, VMap));
+
+}
   }
 
   // And named metadata....
@@ -190,16 +208,24 @@ std::unique_ptr<Module> llvm::CloneModule(
     if (&NMD == LLVM_DBG_CU) {
       // Do not insert duplicate operands.
       SmallPtrSet<const void*, 8> Visited;
-      for (const auto* Operand : NewNMD->operands())
+      for (const auto* Operand : NewNMD->operands()) {
         Visited.insert(Operand);
+
+}
       for (const auto* Operand : NMD.operands()) {
         auto* MappedOperand = MapMetadata(Operand, VMap);
-        if (Visited.insert(MappedOperand).second)
+        if (Visited.insert(MappedOperand).second) {
           NewNMD->addOperand(MappedOperand);
+
+}
       }
-    } else
-      for (unsigned i = 0, e = NMD.getNumOperands(); i != e; ++i)
+    } else {
+      for (unsigned i = 0, e = NMD.getNumOperands(); i != e; ++i) {
         NewNMD->addOperand(MapMetadata(NMD.getOperand(i), VMap));
+
+}
+
+}
   }
 
   return New;

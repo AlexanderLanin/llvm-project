@@ -178,13 +178,17 @@ static void fail(const llvm::Twine &E) {
 }
 
 static void failIf(bool B, const llvm::Twine &E) {
-  if (B)
+  if (B) {
     fail(E);
+
+}
 }
 
 static void failIfError(std::error_code Error) {
-  if (!Error)
+  if (!Error) {
     return;
+
+}
   errs() << "ERROR: " << Error.message() << "(" << Error.value() << ")\n";
   exit(1);
 }
@@ -205,16 +209,20 @@ template <typename T> static void failIfError(Expected<T> &E) {
 }
 
 static void failIfNotEmpty(const llvm::Twine &E) {
-  if (E.str().empty())
+  if (E.str().empty()) {
     return;
+
+}
   fail(E);
 }
 
 template <typename T>
 static void failIfEmpty(const std::unique_ptr<T> &Ptr,
                         const std::string &Message) {
-  if (Ptr.get())
+  if (Ptr.get()) {
     return;
+
+}
   fail(Message);
 }
 
@@ -231,8 +239,10 @@ ErrorOr<std::unique_ptr<RawCoverage>>
 RawCoverage::read(const std::string &FileName) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
       MemoryBuffer::getFile(FileName);
-  if (!BufOrErr)
+  if (!BufOrErr) {
     return BufOrErr.getError();
+
+}
   std::unique_ptr<MemoryBuffer> Buf = std::move(BufOrErr.get());
   if (Buf->getBufferSize() < 8) {
     errs() << "File too small (<8): " << Buf->getBufferSize() << '\n';
@@ -325,10 +335,14 @@ static void operator<<(json::OStream &W,
         W.attributeObject(FunctionName, [&] {
           for (const CoveragePoint *Point : P.second) {
             for (const auto &Loc : Point->Locs) {
-              if (Loc.FileName != FileName || Loc.FunctionName != FunctionName)
+              if (Loc.FileName != FileName || Loc.FunctionName != FunctionName) {
                 continue;
-              if (WrittenIds.find(Point->Id) != WrittenIds.end())
+
+}
+              if (WrittenIds.find(Point->Id) != WrittenIds.end()) {
                 continue;
+
+}
 
               // Output <point_id> : "<line>:<col>".
               WrittenIds.insert(Point->Id);
@@ -422,8 +436,10 @@ SymbolizedCoverage::read(const std::string &InputFile) {
             auto LineStr = Loc.substr(0, ColonPos);
             auto ColStr = Loc.substr(ColonPos + 1, Loc.size());
 
-            if (Points.find(PointId) == Points.end())
+            if (Points.find(PointId) == Points.end()) {
               Points.insert(std::make_pair(PointId, CoveragePoint(PointId)));
+
+}
 
             DILineInfo LineInfo;
             LineInfo.FileName = Filename;
@@ -452,11 +468,15 @@ SymbolizedCoverage::read(const std::string &InputFile) {
 // ---------- MAIN FUNCTIONALITY ----------
 
 std::string stripPathPrefix(std::string Path) {
-  if (ClStripPathPrefix.empty())
+  if (ClStripPathPrefix.empty()) {
     return Path;
+
+}
   size_t Pos = Path.find(ClStripPathPrefix);
-  if (Pos == std::string::npos)
+  if (Pos == std::string::npos) {
     return Path;
+
+}
   return Path.substr(Pos + ClStripPathPrefix.size());
 }
 
@@ -482,23 +502,33 @@ public:
 
   bool isBlacklisted(const DILineInfo &I) {
     if (DefaultBlacklist &&
-        DefaultBlacklist->inSection("sancov", "fun", I.FunctionName))
+        DefaultBlacklist->inSection("sancov", "fun", I.FunctionName)) {
       return true;
+
+}
     if (DefaultBlacklist &&
-        DefaultBlacklist->inSection("sancov", "src", I.FileName))
+        DefaultBlacklist->inSection("sancov", "src", I.FileName)) {
       return true;
+
+}
     if (UserBlacklist &&
-        UserBlacklist->inSection("sancov", "fun", I.FunctionName))
+        UserBlacklist->inSection("sancov", "fun", I.FunctionName)) {
       return true;
-    if (UserBlacklist && UserBlacklist->inSection("sancov", "src", I.FileName))
+
+}
+    if (UserBlacklist && UserBlacklist->inSection("sancov", "src", I.FileName)) {
       return true;
+
+}
     return false;
   }
 
 private:
   static std::unique_ptr<SpecialCaseList> createDefaultBlacklist() {
-    if (!ClUseDefaultBlacklist)
+    if (!ClUseDefaultBlacklist) {
       return std::unique_ptr<SpecialCaseList>();
+
+}
     std::unique_ptr<MemoryBuffer> MB =
         MemoryBuffer::getMemBuffer(DefaultBlacklistStr);
     std::string Error;
@@ -508,8 +538,10 @@ private:
   }
 
   static std::unique_ptr<SpecialCaseList> createUserBlacklist() {
-    if (ClBlacklist.empty())
+    if (ClBlacklist.empty()) {
       return std::unique_ptr<SpecialCaseList>();
+
+}
 
     return SpecialCaseList::createOrDie({{ClBlacklist}},
                                         *vfs::getRealFileSystem());
@@ -559,11 +591,15 @@ getCoveragePoints(const std::string &ObjectFile,
     auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, ModuleAddress);
     failIfError(LineInfo);
     if (ClSkipDeadFiles &&
-        CoveredFiles.find(LineInfo->FileName) == CoveredFiles.end())
+        CoveredFiles.find(LineInfo->FileName) == CoveredFiles.end()) {
       continue;
+
+}
     LineInfo->FileName = normalizeFilename(LineInfo->FileName);
-    if (B.isBlacklisted(*LineInfo))
+    if (B.isBlacklisted(*LineInfo)) {
       continue;
+
+}
 
     auto Id = utohexstr(Addr, true);
     auto Point = CoveragePoint(Id);
@@ -576,11 +612,15 @@ getCoveragePoints(const std::string &ObjectFile,
     for (uint32_t I = 0; I < InliningInfo->getNumberOfFrames(); ++I) {
       auto FrameInfo = InliningInfo->getFrame(I);
       if (ClSkipDeadFiles &&
-          CoveredFiles.find(FrameInfo.FileName) == CoveredFiles.end())
+          CoveredFiles.find(FrameInfo.FileName) == CoveredFiles.end()) {
         continue;
+
+}
       FrameInfo.FileName = normalizeFilename(FrameInfo.FileName);
-      if (B.isBlacklisted(FrameInfo))
+      if (B.isBlacklisted(FrameInfo)) {
         continue;
+
+}
       if (Infos.find(FrameInfo) == Infos.end()) {
         Infos.insert(FrameInfo);
         Point.Locs.push_back(FrameInfo);
@@ -674,8 +714,10 @@ findSanitizerCovFunctions(const object::ObjectFile &O) {
       EC = Export.getSymbolName(Name);
       failIfError(EC);
 
-      if (isCoveragePointSymbol(Name))
+      if (isCoveragePointSymbol(Name)) {
         Result.insert(CO->getImageBase() + RVA);
+
+}
     }
   }
 
@@ -739,16 +781,22 @@ static void getObjectCoveragePoints(const object::ObjectFile &O,
   failIfEmpty(MIA, "no instruction analysis info for target " + TripleName);
 
   auto SanCovAddrs = findSanitizerCovFunctions(O);
-  if (SanCovAddrs.empty())
+  if (SanCovAddrs.empty()) {
     fail("__sanitizer_cov* functions not found");
 
+}
+
   for (object::SectionRef Section : O.sections()) {
-    if (Section.isVirtual() || !Section.isText()) // llvm-objdump does the same.
+    if (Section.isVirtual() || !Section.isText()) { // llvm-objdump does the same.
       continue;
+
+}
     uint64_t SectionAddr = Section.getAddress();
     uint64_t SectSize = Section.getSize();
-    if (!SectSize)
+    if (!SectSize) {
       continue;
+
+}
 
     Expected<StringRef> BytesStr = Section.getContents();
     failIfError(BytesStr);
@@ -759,8 +807,10 @@ static void getObjectCoveragePoints(const object::ObjectFile &O,
       MCInst Inst;
       if (!DisAsm->getInstruction(Inst, Size, Bytes.slice(Index),
                                   SectionAddr + Index, nulls())) {
-        if (Size == 0)
+        if (Size == 0) {
           Size = 1;
+
+}
         continue;
       }
       uint64_t Addr = Index + SectionAddr;
@@ -769,8 +819,10 @@ static void getObjectCoveragePoints(const object::ObjectFile &O,
       uint64_t Target;
       if (MIA->isCall(Inst) &&
           MIA->evaluateBranch(Inst, SectionAddr + Index, Size, Target) &&
-          SanCovAddrs.find(Target) != SanCovAddrs.end())
+          SanCovAddrs.find(Target) != SanCovAddrs.end()) {
         Addrs->insert(CovPoint);
+
+}
     }
   }
 }
@@ -782,10 +834,12 @@ visitObjectFiles(const object::Archive &A,
   for (auto &C : A.children(Err)) {
     Expected<std::unique_ptr<object::Binary>> ChildOrErr = C.getAsBinary();
     failIfError(ChildOrErr);
-    if (auto *O = dyn_cast<object::ObjectFile>(&*ChildOrErr.get()))
+    if (auto *O = dyn_cast<object::ObjectFile>(&*ChildOrErr.get())) {
       Fn(*O);
-    else
+    } else {
       failIfError(object::object_error::invalid_file_type);
+
+}
   }
   failIfError(std::move(Err));
 }
@@ -795,16 +849,20 @@ visitObjectFiles(const std::string &FileName,
                  function_ref<void(const object::ObjectFile &)> Fn) {
   Expected<object::OwningBinary<object::Binary>> BinaryOrErr =
       object::createBinary(FileName);
-  if (!BinaryOrErr)
+  if (!BinaryOrErr) {
     failIfError(BinaryOrErr);
 
+}
+
   object::Binary &Binary = *BinaryOrErr.get().getBinary();
-  if (object::Archive *A = dyn_cast<object::Archive>(&Binary))
+  if (object::Archive *A = dyn_cast<object::Archive>(&Binary)) {
     visitObjectFiles(*A, Fn);
-  else if (object::ObjectFile *O = dyn_cast<object::ObjectFile>(&Binary))
+  } else if (object::ObjectFile *O = dyn_cast<object::ObjectFile>(&Binary)) {
     Fn(*O);
-  else
+  } else {
     failIfError(object::object_error::invalid_file_type);
+
+}
 }
 
 static std::set<uint64_t>
@@ -838,8 +896,10 @@ static void printCovPoints(const std::string &ObjFile, raw_ostream &OS) {
 
 static ErrorOr<bool> isCoverageFile(const std::string &FileName) {
   auto ShortFileName = llvm::sys::path::filename(FileName);
-  if (!SancovFileRegex.match(ShortFileName))
+  if (!SancovFileRegex.match(ShortFileName)) {
     return false;
+
+}
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
       MemoryBuffer::getFile(FileName);
@@ -883,8 +943,10 @@ symbolize(const RawCoverage &Data, const std::string ObjectFile) {
     auto LineInfo = Symbolizer->symbolizeCode(
         ObjectFile, {Addr, object::SectionedAddress::UndefSection});
     failIfError(LineInfo);
-    if (B.isBlacklisted(*LineInfo))
+    if (B.isBlacklisted(*LineInfo)) {
       continue;
+
+}
 
     Coverage->CoveredIds.insert(utohexstr(Addr, true));
   }
@@ -924,8 +986,10 @@ computeNotCoveredFunctions(const SymbolizedCoverage &Coverage) {
   auto Fns = computeFunctions(Coverage.Points);
 
   for (const auto &Point : Coverage.Points) {
-    if (Coverage.CoveredIds.find(Point.Id) == Coverage.CoveredIds.end())
+    if (Coverage.CoveredIds.find(Point.Id) == Coverage.CoveredIds.end()) {
       continue;
+
+}
 
     for (const auto &Loc : Point.Locs) {
       Fns.erase(FileFn{Loc.FileName, Loc.FunctionName});
@@ -941,8 +1005,10 @@ computeCoveredFunctions(const SymbolizedCoverage &Coverage) {
   std::set<FileFn> Result;
 
   for (const auto &Point : Coverage.Points) {
-    if (Coverage.CoveredIds.find(Point.Id) == Coverage.CoveredIds.end())
+    if (Coverage.CoveredIds.find(Point.Id) == Coverage.CoveredIds.end()) {
       continue;
+
+}
 
     for (const auto &Loc : Point.Locs) {
       Result.insert(FileFn{Loc.FileName, Loc.FunctionName});
@@ -960,8 +1026,10 @@ static FunctionLocs resolveFunctions(const SymbolizedCoverage &Coverage,
   for (const auto &Point : Coverage.Points) {
     for (const auto &Loc : Point.Locs) {
       FileFn Fn = FileFn{Loc.FileName, Loc.FunctionName};
-      if (Fns.find(Fn) == Fns.end())
+      if (Fns.find(Fn) == Fns.end()) {
         continue;
+
+}
 
       auto P = std::make_pair(Loc.Line, Loc.Column);
       auto I = Result.find(Fn);
@@ -1008,16 +1076,20 @@ static void readAndPrintRawCoverage(const std::vector<std::string> &FileNames,
   std::vector<std::unique_ptr<RawCoverage>> Covs;
   for (const auto &FileName : FileNames) {
     auto Cov = RawCoverage::read(FileName);
-    if (!Cov)
+    if (!Cov) {
       continue;
+
+}
     OS << *Cov.get();
   }
 }
 
 static std::unique_ptr<SymbolizedCoverage>
 merge(const std::vector<std::unique_ptr<SymbolizedCoverage>> &Coverages) {
-  if (Coverages.empty())
+  if (Coverages.empty()) {
     return nullptr;
+
+}
 
   auto Result = std::make_unique<SymbolizedCoverage>();
 
@@ -1064,8 +1136,10 @@ readSymbolizeAndMergeCmdArguments(std::vector<std::string> FileNames) {
       }
 
       auto ErrorOrIsCoverage = isCoverageFile(FileName);
-      if (!ErrorOrIsCoverage)
+      if (!ErrorOrIsCoverage) {
         continue;
+
+}
       if (ErrorOrIsCoverage.get()) {
         CovFiles.insert(FileName);
       } else {
@@ -1075,8 +1149,10 @@ readSymbolizeAndMergeCmdArguments(std::vector<std::string> FileNames) {
         }
 
         ObjFiles[std::string(ShortFileName)] = FileName;
-        if (FirstObjFile.empty())
+        if (FirstObjFile.empty()) {
           FirstObjFile = FileName;
+
+}
       }
     }
 
@@ -1103,8 +1179,10 @@ readSymbolizeAndMergeCmdArguments(std::vector<std::string> FileNames) {
 
     for (const auto &Pair : ObjFiles) {
       auto FileName = Pair.second;
-      if (CoverageByObjFile.find(FileName) == CoverageByObjFile.end())
+      if (CoverageByObjFile.find(FileName) == CoverageByObjFile.end()) {
         errs() << "WARNING: No coverage file for " << FileName << "\n";
+
+}
     }
 
     // Read raw coverage and symbolize it.

@@ -38,16 +38,20 @@ public:
 
   Error readBytes(uint32_t Offset, uint32_t Size,
                   ArrayRef<uint8_t> &Buffer) override {
-    if (auto EC = checkOffsetForRead(Offset, Size))
+    if (auto EC = checkOffsetForRead(Offset, Size)) {
       return EC;
+
+}
     Buffer = Data.slice(Offset, Size);
     return Error::success();
   }
 
   Error readLongestContiguousChunk(uint32_t Offset,
                                    ArrayRef<uint8_t> &Buffer) override {
-    if (auto EC = checkOffsetForRead(Offset, 1))
+    if (auto EC = checkOffsetForRead(Offset, 1)) {
       return EC;
+
+}
     Buffer = Data.drop_front(Offset);
     return Error::success();
   }
@@ -55,8 +59,10 @@ public:
   uint32_t getLength() override { return Data.size(); }
 
   Error writeBytes(uint32_t Offset, ArrayRef<uint8_t> SrcData) override {
-    if (auto EC = checkOffsetForWrite(Offset, SrcData.size()))
+    if (auto EC = checkOffsetForWrite(Offset, SrcData.size())) {
       return EC;
+
+}
     ::memcpy(&Data[Offset], SrcData.data(), SrcData.size());
     return Error::success();
   }

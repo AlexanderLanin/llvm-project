@@ -38,8 +38,10 @@ Register SwiftErrorValueTracking::getOrCreateVReg(const MachineBasicBlock *MBB,
     VRegDefMap[Key] = VReg;
     VRegUpwardsUse[Key] = VReg;
     return VReg;
-  } else
+  } else {
     return It->second;
+
+}
 }
 
 void SwiftErrorValueTracking::setCurrentVReg(const MachineBasicBlock *MBB,
@@ -51,8 +53,10 @@ Register SwiftErrorValueTracking::getOrCreateVRegDefAt(
     const Instruction *I, const MachineBasicBlock *MBB, const Value *Val) {
   auto Key = PointerIntPair<const Instruction *, 1, bool>(I, true);
   auto It = VRegDefUses.find(Key);
-  if (It != VRegDefUses.end())
+  if (It != VRegDefUses.end()) {
     return It->second;
+
+}
 
   auto &DL = MF->getDataLayout();
   const TargetRegisterClass *RC = TLI->getRegClassFor(TLI->getPointerTy(DL));
@@ -66,8 +70,10 @@ Register SwiftErrorValueTracking::getOrCreateVRegUseAt(
     const Instruction *I, const MachineBasicBlock *MBB, const Value *Val) {
   auto Key = PointerIntPair<const Instruction *, 1, bool>(I, false);
   auto It = VRegDefUses.find(Key);
-  if (It != VRegDefUses.end())
+  if (It != VRegDefUses.end()) {
     return It->second;
+
+}
 
   Register VReg = getOrCreateVReg(MBB, Val);
   VRegDefUses[Key] = VReg;
@@ -82,8 +88,10 @@ void SwiftErrorValueTracking::setFunction(MachineFunction &mf) {
   TLI = MF->getSubtarget().getTargetLowering();
   TII = MF->getSubtarget().getInstrInfo();
 
-  if (!TLI->supportSwiftError())
+  if (!TLI->supportSwiftError()) {
     return;
+
+}
 
   SwiftErrorVals.clear();
   VRegDefMap.clear();
@@ -94,7 +102,7 @@ void SwiftErrorValueTracking::setFunction(MachineFunction &mf) {
   // Check if function has a swifterror argument.
   bool HaveSeenSwiftErrorArg = false;
   for (Function::const_arg_iterator AI = Fn->arg_begin(), AE = Fn->arg_end();
-       AI != AE; ++AI)
+       AI != AE; ++AI) {
     if (AI->hasSwiftErrorAttr()) {
       assert(!HaveSeenSwiftErrorArg &&
              "Must have only one swifterror parameter");
@@ -104,22 +112,34 @@ void SwiftErrorValueTracking::setFunction(MachineFunction &mf) {
       SwiftErrorVals.push_back(&*AI);
     }
 
-  for (const auto &LLVMBB : *Fn)
+}
+
+  for (const auto &LLVMBB : *Fn) {
     for (const auto &Inst : LLVMBB) {
-      if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(&Inst))
-        if (Alloca->isSwiftError())
+      if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(&Inst)) {
+        if (Alloca->isSwiftError()) {
           SwiftErrorVals.push_back(Alloca);
+
+}
+
+}
     }
+
+}
 }
 
 bool SwiftErrorValueTracking::createEntriesInEntryBlock(DebugLoc DbgLoc) {
-  if (!TLI->supportSwiftError())
+  if (!TLI->supportSwiftError()) {
     return false;
+
+}
 
   // We only need to do this when we have swifterror parameter or swifterror
   // alloc.
-  if (SwiftErrorVals.empty())
+  if (SwiftErrorVals.empty()) {
     return false;
+
+}
 
   MachineBasicBlock *MBB = &*MF->begin();
   auto &DL = MF->getDataLayout();
@@ -128,8 +148,10 @@ bool SwiftErrorValueTracking::createEntriesInEntryBlock(DebugLoc DbgLoc) {
   for (const auto *SwiftErrorVal : SwiftErrorVals) {
     // We will always generate a copy from the argument. It is always used at
     // least by the 'return' of the swifterror.
-    if (SwiftErrorArg && SwiftErrorArg == SwiftErrorVal)
+    if (SwiftErrorArg && SwiftErrorArg == SwiftErrorVal) {
       continue;
+
+}
     Register VReg = MF->getRegInfo().createVirtualRegister(RC);
     // Assign Undef to Vreg. We construct MI directly to make sure it works
     // with FastISel.
@@ -145,13 +167,17 @@ bool SwiftErrorValueTracking::createEntriesInEntryBlock(DebugLoc DbgLoc) {
 
 /// Propagate swifterror values through the machine function CFG.
 void SwiftErrorValueTracking::propagateVRegs() {
-  if (!TLI->supportSwiftError())
+  if (!TLI->supportSwiftError()) {
     return;
+
+}
 
   // We only need to do this when we have swifterror parameter or swifterror
   // alloc.
-  if (SwiftErrorVals.empty())
+  if (SwiftErrorVals.empty()) {
     return;
+
+}
 
   // For each machine basic block in reverse post order.
   ReversePostOrderTraversal<MachineFunction *> RPOT(MF);
@@ -170,8 +196,10 @@ void SwiftErrorValueTracking::propagateVRegs() {
       // If there is no upwards exposed use and an entry for the swifterror in
       // the def map for this value we don't need to do anything: We already
       // have a downward def for this basic block.
-      if (!UpwardsUse && DownwardDef)
+      if (!UpwardsUse && DownwardDef) {
         continue;
+
+}
 
       // Otherwise we either have an upwards exposed use vreg that we need to
       // materialize or need to forward the downward def from predecessors.
@@ -181,12 +209,16 @@ void SwiftErrorValueTracking::propagateVRegs() {
       SmallVector<std::pair<MachineBasicBlock *, Register>, 4> VRegs;
       SmallSet<const MachineBasicBlock *, 8> Visited;
       for (auto *Pred : MBB->predecessors()) {
-        if (!Visited.insert(Pred).second)
+        if (!Visited.insert(Pred).second) {
           continue;
+
+}
         VRegs.push_back(std::make_pair(
             Pred, getOrCreateVReg(Pred, SwiftErrorVal)));
-        if (Pred != MBB)
+        if (Pred != MBB) {
           continue;
+
+}
         // We have a self-edge.
         // If there was no upwards use in this basic block there is now one: the
         // phi needs to use it self.
@@ -250,8 +282,10 @@ void SwiftErrorValueTracking::propagateVRegs() {
 
       // We did not have a definition in this block before: store the phi's vreg
       // as this block downward exposed def.
-      if (!UpwardsUse)
+      if (!UpwardsUse) {
         setCurrentVReg(MBB, SwiftErrorVal, PHIVReg);
+
+}
     }
   }
 }
@@ -259,8 +293,10 @@ void SwiftErrorValueTracking::propagateVRegs() {
 void SwiftErrorValueTracking::preassignVRegs(
     MachineBasicBlock *MBB, BasicBlock::const_iterator Begin,
     BasicBlock::const_iterator End) {
-  if (!TLI->supportSwiftError() || SwiftErrorVals.empty())
+  if (!TLI->supportSwiftError() || SwiftErrorVals.empty()) {
     return;
+
+}
 
   // Iterator over instructions and assign vregs to swifterror defs and uses.
   for (auto It = Begin; It != End; ++It) {
@@ -269,8 +305,10 @@ void SwiftErrorValueTracking::preassignVRegs(
       // A call-site with a swifterror argument is both use and def.
       const Value *SwiftErrorAddr = nullptr;
       for (auto &Arg : CS.args()) {
-        if (!Arg->isSwiftError())
+        if (!Arg->isSwiftError()) {
           continue;
+
+}
         // Use of swifterror.
         assert(!SwiftErrorAddr && "Cannot have multiple swifterror arguments");
         SwiftErrorAddr = &*Arg;
@@ -278,8 +316,10 @@ void SwiftErrorValueTracking::preassignVRegs(
                "Must have a swifterror value argument");
         getOrCreateVRegUseAt(&*It, MBB, SwiftErrorAddr);
       }
-      if (!SwiftErrorAddr)
+      if (!SwiftErrorAddr) {
         continue;
+
+}
 
       // Def of swifterror.
       getOrCreateVRegDefAt(&*It, MBB, SwiftErrorAddr);
@@ -287,16 +327,20 @@ void SwiftErrorValueTracking::preassignVRegs(
       // A load is a use.
     } else if (const LoadInst *LI = dyn_cast<const LoadInst>(&*It)) {
       const Value *V = LI->getOperand(0);
-      if (!V->isSwiftError())
+      if (!V->isSwiftError()) {
         continue;
+
+}
 
       getOrCreateVRegUseAt(LI, MBB, V);
 
       // A store is a def.
     } else if (const StoreInst *SI = dyn_cast<const StoreInst>(&*It)) {
       const Value *SwiftErrorAddr = SI->getOperand(1);
-      if (!SwiftErrorAddr->isSwiftError())
+      if (!SwiftErrorAddr->isSwiftError()) {
         continue;
+
+}
 
       // Def of swifterror.
       getOrCreateVRegDefAt(&*It, MBB, SwiftErrorAddr);
@@ -304,8 +348,10 @@ void SwiftErrorValueTracking::preassignVRegs(
       // A return in a swiferror returning function is a use.
     } else if (const ReturnInst *R = dyn_cast<const ReturnInst>(&*It)) {
       const Function *F = R->getParent()->getParent();
-      if (!F->getAttributes().hasAttrSomewhere(Attribute::SwiftError))
+      if (!F->getAttributes().hasAttrSomewhere(Attribute::SwiftError)) {
         continue;
+
+}
 
       getOrCreateVRegUseAt(R, MBB, SwiftErrorArg);
     }

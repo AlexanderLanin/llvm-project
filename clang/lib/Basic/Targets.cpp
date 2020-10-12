@@ -57,8 +57,10 @@ void DefineStd(MacroBuilder &Builder, StringRef MacroName,
 
   // If in GNU mode (e.g. -std=gnu99 but not -std=c99) define the raw identifier
   // in the user's namespace.
-  if (Opts.GNUMode)
+  if (Opts.GNUMode) {
     Builder.defineMacro(MacroName);
+
+}
 
   // Define __unix.
   Builder.defineMacro("__" + MacroName);
@@ -70,18 +72,22 @@ void DefineStd(MacroBuilder &Builder, StringRef MacroName,
 void defineCPUMacros(MacroBuilder &Builder, StringRef CPUName, bool Tuning) {
   Builder.defineMacro("__" + CPUName);
   Builder.defineMacro("__" + CPUName + "__");
-  if (Tuning)
+  if (Tuning) {
     Builder.defineMacro("__tune_" + CPUName + "__");
+
+}
 }
 
 void addCygMingDefines(const LangOptions &Opts, MacroBuilder &Builder) {
   // Mingw and cygwin define __declspec(a) to __attribute__((a)).  Clang
   // supports __declspec natively under -fms-extensions, but we define a no-op
   // __declspec macro anyway for pre-processor compatibility.
-  if (Opts.MicrosoftExt)
+  if (Opts.MicrosoftExt) {
     Builder.defineMacro("__declspec", "__declspec");
-  else
+  } else {
     Builder.defineMacro("__declspec(a)", "__attribute__((a))");
+
+}
 
   if (!Opts.MicrosoftExt) {
     // Provide macros for all the calling convention keywords.  Provide both
@@ -123,13 +129,17 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     return new LanaiTargetInfo(Triple, Opts);
 
   case llvm::Triple::aarch64_32:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinAArch64TargetInfo(Triple, Opts);
+
+}
 
     return nullptr;
   case llvm::Triple::aarch64:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinAArch64TargetInfo(Triple, Opts);
+
+}
 
     switch (os) {
     case llvm::Triple::CloudABI:
@@ -172,8 +182,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
 
   case llvm::Triple::arm:
   case llvm::Triple::thumb:
-    if (Triple.isOSBinFormatMachO())
+    if (Triple.isOSBinFormatMachO()) {
       return new DarwinARMTargetInfo(Triple, Opts);
+
+}
 
     switch (os) {
     case llvm::Triple::CloudABI:
@@ -208,8 +220,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
 
   case llvm::Triple::armeb:
   case llvm::Triple::thumbeb:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinARMTargetInfo(Triple, Opts);
+
+}
 
     switch (os) {
     case llvm::Triple::Linux:
@@ -311,8 +325,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     return new Le64TargetInfo(Triple, Opts);
 
   case llvm::Triple::ppc:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinPPC32TargetInfo(Triple, Opts);
+
+}
     switch (os) {
     case llvm::Triple::Linux:
       return new LinuxTargetInfo<PPC32TargetInfo>(Triple, Opts);
@@ -331,8 +347,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     }
 
   case llvm::Triple::ppc64:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinPPC64TargetInfo(Triple, Opts);
+
+}
     switch (os) {
     case llvm::Triple::Linux:
       return new LinuxTargetInfo<PPC64TargetInfo>(Triple, Opts);
@@ -453,8 +471,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     return new TCELETargetInfo(Triple, Opts);
 
   case llvm::Triple::x86:
-    if (Triple.isOSDarwin())
+    if (Triple.isOSDarwin()) {
       return new DarwinI386TargetInfo(Triple, Opts);
+
+}
 
     switch (os) {
     case llvm::Triple::Ananas:
@@ -510,8 +530,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
     }
 
   case llvm::Triple::x86_64:
-    if (Triple.isOSDarwin() || Triple.isOSBinFormatMachO())
+    if (Triple.isOSDarwin() || Triple.isOSBinFormatMachO()) {
       return new DarwinX86_64TargetInfo(Triple, Opts);
+
+}
 
     switch (os) {
     case llvm::Triple::Ananas:
@@ -563,21 +585,27 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
 
   case llvm::Triple::spir: {
     if (Triple.getOS() != llvm::Triple::UnknownOS ||
-        Triple.getEnvironment() != llvm::Triple::UnknownEnvironment)
+        Triple.getEnvironment() != llvm::Triple::UnknownEnvironment) {
       return nullptr;
+
+}
     return new SPIR32TargetInfo(Triple, Opts);
   }
   case llvm::Triple::spir64: {
     if (Triple.getOS() != llvm::Triple::UnknownOS ||
-        Triple.getEnvironment() != llvm::Triple::UnknownEnvironment)
+        Triple.getEnvironment() != llvm::Triple::UnknownEnvironment) {
       return nullptr;
+
+}
     return new SPIR64TargetInfo(Triple, Opts);
   }
   case llvm::Triple::wasm32:
     if (Triple.getSubArch() != llvm::Triple::NoSubArch ||
         Triple.getVendor() != llvm::Triple::UnknownVendor ||
-        !Triple.isOSBinFormatWasm())
+        !Triple.isOSBinFormatWasm()) {
       return nullptr;
+
+}
     switch (Triple.getOS()) {
       case llvm::Triple::WASI:
         return new WASITargetInfo<WebAssembly32TargetInfo>(Triple, Opts);
@@ -591,8 +619,10 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::wasm64:
     if (Triple.getSubArch() != llvm::Triple::NoSubArch ||
         Triple.getVendor() != llvm::Triple::UnknownVendor ||
-        !Triple.isOSBinFormatWasm())
+        !Triple.isOSBinFormatWasm()) {
       return nullptr;
+
+}
     switch (Triple.getOS()) {
       case llvm::Triple::WASI:
         return new WASITargetInfo<WebAssembly64TargetInfo>(Triple, Opts);
@@ -634,8 +664,10 @@ TargetInfo::CreateTargetInfo(DiagnosticsEngine &Diags,
     Diags.Report(diag::err_target_unknown_cpu) << Opts->CPU;
     SmallVector<StringRef, 32> ValidList;
     Target->fillValidCPUList(ValidList);
-    if (!ValidList.empty())
+    if (!ValidList.empty()) {
       Diags.Report(diag::note_valid_options) << llvm::join(ValidList, ", ");
+
+}
     return nullptr;
   }
 
@@ -655,26 +687,34 @@ TargetInfo::CreateTargetInfo(DiagnosticsEngine &Diags,
   // because features may have dependencies on one another.
   llvm::StringMap<bool> Features;
   if (!Target->initFeatureMap(Features, Diags, Opts->CPU,
-                              Opts->FeaturesAsWritten))
+                              Opts->FeaturesAsWritten)) {
     return nullptr;
+
+}
 
   // Add the features to the compile options.
   Opts->Features.clear();
-  for (const auto &F : Features)
+  for (const auto &F : Features) {
     Opts->Features.push_back((F.getValue() ? "+" : "-") + F.getKey().str());
+
+}
   // Sort here, so we handle the features in a predictable order. (This matters
   // when we're dealing with features that overlap.)
   llvm::sort(Opts->Features);
 
-  if (!Target->handleTargetFeatures(Opts->Features, Diags))
+  if (!Target->handleTargetFeatures(Opts->Features, Diags)) {
     return nullptr;
+
+}
 
   Target->setSupportedOpenCLOpts();
   Target->setOpenCLExtensionOpts();
   Target->setMaxAtomicWidth();
 
-  if (!Target->validateTarget(Diags))
+  if (!Target->validateTarget(Diags)) {
     return nullptr;
+
+}
 
   Target->CheckFixedPointBits();
 

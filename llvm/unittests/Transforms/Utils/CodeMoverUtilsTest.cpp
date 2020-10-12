@@ -23,8 +23,10 @@ using namespace llvm;
 static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
   SMDiagnostic Err;
   std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("CodeMoverUtilsTests", errs());
+
+}
   return Mod;
 }
 
@@ -46,17 +48,27 @@ static void run(Module &M, StringRef FuncName,
 }
 
 static BasicBlock *getBasicBlockByName(Function &F, StringRef Name) {
-  for (BasicBlock &BB : F)
-    if (BB.getName() == Name)
+  for (BasicBlock &BB : F) {
+    if (BB.getName() == Name) {
       return &BB;
+
+}
+
+}
   llvm_unreachable("Expected to find basic block!");
 }
 
 static Instruction *getInstructionByName(Function &F, StringRef Name) {
-  for (BasicBlock &BB : F)
-    for (Instruction &I : BB)
-      if (I.getName() == Name)
+  for (BasicBlock &BB : F) {
+    for (Instruction &I : BB) {
+      if (I.getName() == Name) {
         return &I;
+
+}
+
+}
+
+}
   llvm_unreachable("Expected to find instruction!");
 }
 

@@ -27,20 +27,26 @@ PassManager<Loop, LoopAnalysisManager, LoopStandardAnalysisResults &,
                                LoopStandardAnalysisResults &AR, LPMUpdater &U) {
   PreservedAnalyses PA = PreservedAnalyses::all();
 
-  if (DebugLogging)
+  if (DebugLogging) {
     dbgs() << "Starting Loop pass manager run.\n";
+
+}
 
   // Request PassInstrumentation from analysis manager, will use it to run
   // instrumenting callbacks for the passes later.
   PassInstrumentation PI = AM.getResult<PassInstrumentationAnalysis>(L, AR);
   for (auto &Pass : Passes) {
-    if (DebugLogging)
+    if (DebugLogging) {
       dbgs() << "Running pass: " << Pass->name() << " on " << L;
+
+}
 
     // Check the PassInstrumentation's BeforePass callbacks before running the
     // pass, skip its execution completely if asked to (callback returns false).
-    if (!PI.runBeforePass<Loop>(*Pass, L))
+    if (!PI.runBeforePass<Loop>(*Pass, L)) {
       continue;
+
+}
 
     PreservedAnalyses PassPA;
     {
@@ -49,10 +55,12 @@ PassManager<Loop, LoopAnalysisManager, LoopStandardAnalysisResults &,
     }
 
     // do not pass deleted Loop into the instrumentation
-    if (U.skipCurrentLoop())
+    if (U.skipCurrentLoop()) {
       PI.runAfterPassInvalidated<Loop>(*Pass);
-    else
+    } else {
       PI.runAfterPass<Loop>(*Pass, L);
+
+}
 
     // If the loop was deleted, abort the run and return to the outer walk.
     if (U.skipCurrentLoop()) {
@@ -91,8 +99,10 @@ PassManager<Loop, LoopAnalysisManager, LoopStandardAnalysisResults &,
   // be preserved, but unrolling should invalidate the parent loop's analyses.
   PA.preserveSet<AllAnalysesOn<Loop>>();
 
-  if (DebugLogging)
+  if (DebugLogging) {
     dbgs() << "Finished Loop pass manager run.\n";
+
+}
 
   return PA;
 }

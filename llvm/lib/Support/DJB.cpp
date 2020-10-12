@@ -52,8 +52,10 @@ static UTF32 foldCharDwarf(UTF32 C) {
   // DWARF v5 addition to the unicode folding rules.
   // Fold "Latin Small Letter Dotless I" and "Latin Capital Letter I With Dot
   // Above" into "i".
-  if (C == 0x130 || C == 0x131)
+  if (C == 0x130 || C == 0x131) {
     return 'i';
+
+}
   return sys::unicode::foldCharSimple(C);
 }
 
@@ -63,14 +65,18 @@ static Optional<uint32_t> fastCaseFoldingDjbHash(StringRef Buffer, uint32_t H) {
     H = H * 33 + ('A' <= C && C <= 'Z' ? C - 'A' + 'a' : C);
     AllASCII &= C <= 0x7f;
   }
-  if (AllASCII)
+  if (AllASCII) {
     return H;
+
+}
   return None;
 }
 
 uint32_t llvm::caseFoldingDjbHash(StringRef Buffer, uint32_t H) {
-  if (Optional<uint32_t> Result = fastCaseFoldingDjbHash(Buffer, H))
+  if (Optional<uint32_t> Result = fastCaseFoldingDjbHash(Buffer, H)) {
     return *Result;
+
+}
 
   std::array<UTF8, UNI_MAX_UTF8_BYTES_PER_CODE_POINT> Storage;
   while (!Buffer.empty()) {

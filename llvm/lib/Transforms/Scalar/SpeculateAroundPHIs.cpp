@@ -100,8 +100,10 @@ isSafeToSpeculatePHIUsers(PHINode &PN, DominatorTree &DT,
         // Increment to the next operand for whenever we continue.
         ++OpIt;
         // No need to visit non-instructions, which can't form dependencies.
-        if (!OpI)
+        if (!OpI) {
           continue;
+
+}
 
         // Now do the main pre-order checks that this operand is a viable
         // dependency of something we want to speculate.
@@ -126,8 +128,10 @@ isSafeToSpeculatePHIUsers(PHINode &PN, DominatorTree &DT,
 
         // Once we know that we're considering speculating the operand, check
         // if we've already explored this subgraph and found it to be safe.
-        if (PotentialSpecSet.count(OpI))
+        if (PotentialSpecSet.count(OpI)) {
           continue;
+
+}
 
         // If we've already explored this subgraph and found it unsafe, bail.
         // If when we directly test whether this is safe it fails, bail.
@@ -146,8 +150,10 @@ isSafeToSpeculatePHIUsers(PHINode &PN, DominatorTree &DT,
         }
 
         // Skip any operands we're already recursively checking.
-        if (!Visited.insert(OpI).second)
+        if (!Visited.insert(OpI).second) {
           continue;
+
+}
 
         // Push onto the stack and descend. We can directly continue this
         // loop when ascending.
@@ -217,19 +223,25 @@ static bool isSafeAndProfitableToSpeculateAroundPHI(
   SmallPtrSet<BasicBlock *, 16> IncomingConstantBlocks;
   for (int i : llvm::seq<int>(0, PN.getNumIncomingValues())) {
     auto *IncomingC = dyn_cast<ConstantInt>(PN.getIncomingValue(i));
-    if (!IncomingC)
+    if (!IncomingC) {
       continue;
 
+}
+
     // Only visit each incoming edge with a constant input once.
-    if (!IncomingConstantBlocks.insert(PN.getIncomingBlock(i)).second)
+    if (!IncomingConstantBlocks.insert(PN.getIncomingBlock(i)).second) {
       continue;
+
+}
 
     auto InsertResult = CostsAndCounts.insert({IncomingC, {}});
     // Count how many edges share a given incoming costant.
     ++InsertResult.first->second.Count;
     // Only compute the cost the first time we see a particular constant.
-    if (!InsertResult.second)
+    if (!InsertResult.second) {
       continue;
+
+}
 
     int &MatCost = InsertResult.first->second.MatCost;
     MatCost = TTI.getIntImmCost(IncomingC->getValue(), IncomingC->getType());
@@ -269,26 +281,32 @@ static bool isSafeAndProfitableToSpeculateAroundPHI(
     // seems fine to be "optimistic" in our cost modeling, because when the
     // incoming operand from the PHI node is also a constant, we will end up
     // constant folding.
-    if (UserI->isBinaryOp() && UserI->isCommutative() && Idx != 1)
+    if (UserI->isBinaryOp() && UserI->isCommutative() && Idx != 1) {
       // Assume we will commute the constant to the RHS to be canonical.
       Idx = 1;
 
+}
+
     // Get the intrinsic ID if this user is an intrinsic.
     Intrinsic::ID IID = Intrinsic::not_intrinsic;
-    if (auto *UserII = dyn_cast<IntrinsicInst>(UserI))
+    if (auto *UserII = dyn_cast<IntrinsicInst>(UserI)) {
       IID = UserII->getIntrinsicID();
+
+}
 
     for (auto &IncomingConstantAndCostsAndCount : CostsAndCounts) {
       ConstantInt *IncomingC = IncomingConstantAndCostsAndCount.first;
       int MatCost = IncomingConstantAndCostsAndCount.second.MatCost;
       int &FoldedCost = IncomingConstantAndCostsAndCount.second.FoldedCost;
-      if (IID)
+      if (IID) {
         FoldedCost += TTI.getIntImmCostIntrin(IID, Idx, IncomingC->getValue(),
                                               IncomingC->getType());
-      else
+      } else {
         FoldedCost +=
             TTI.getIntImmCostInst(UserI->getOpcode(), Idx,
                                   IncomingC->getValue(), IncomingC->getType());
+
+}
 
       // If we accumulate more folded cost for this incoming constant than
       // materialized cost, then we'll regress any edge with this constant so
@@ -344,12 +362,14 @@ static void visitPHIUsersAndDepsInPostOrder(ArrayRef<PHINode *> PNs,
                                             IsVisitedT IsVisited,
                                             VisitT Visit) {
   SmallVector<std::pair<Instruction *, User::value_op_iterator>, 16> DFSStack;
-  for (auto *PN : PNs)
+  for (auto *PN : PNs) {
     for (Use &U : PN->uses()) {
       auto *UI = cast<Instruction>(U.getUser());
-      if (IsVisited(UI))
+      if (IsVisited(UI)) {
         // Already visited this user, continue across the roots.
         continue;
+
+}
 
       // Otherwise, walk the operand graph depth-first and visit each
       // dependency in postorder.
@@ -365,8 +385,10 @@ static void visitPHIUsersAndDepsInPostOrder(ArrayRef<PHINode *> PNs,
           // or instructions outside of our potential dependency set that we
           // were given. Finally, if we've already visited the node, continue
           // to the next.
-          if (!OpI || IsVisited(OpI))
+          if (!OpI || IsVisited(OpI)) {
             continue;
+
+}
 
           // Push onto the stack and descend. We can directly continue this
           // loop when ascending.
@@ -380,6 +402,8 @@ static void visitPHIUsersAndDepsInPostOrder(ArrayRef<PHINode *> PNs,
         Visit(UI);
       } while (!DFSStack.empty());
     }
+
+}
 }
 
 /// Find profitable PHIs to speculate.
@@ -432,11 +456,15 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
   SmallPtrSet<Instruction *, 16> UserSet;
   for (auto *PN : PNs) {
     assert(UserSet.empty() && "Must start with an empty user set!");
-    for (Use &U : PN->uses())
+    for (Use &U : PN->uses()) {
       UserSet.insert(cast<Instruction>(U.getUser()));
+
+}
     PNUserCountMap[PN] = UserSet.size();
-    for (auto *UI : UserSet)
+    for (auto *UI : UserSet) {
       UserToPNMap.insert({UI, {}}).first->second.push_back(PN);
+
+}
     UserSet.clear();
   }
 
@@ -459,12 +487,16 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
         // We've fully visited the operands, so sum their cost with this node
         // and update the cost map.
         int Cost = TTI.TCC_Free;
-        for (Value *OpV : I->operand_values())
+        for (Value *OpV : I->operand_values()) {
           if (auto *OpI = dyn_cast<Instruction>(OpV)) {
             auto CostMapIt = SpecCostMap.find(OpI);
-            if (CostMapIt != SpecCostMap.end())
+            if (CostMapIt != SpecCostMap.end()) {
               Cost += CostMapIt->second;
+
+}
           }
+
+}
         Cost += TTI.getUserCost(I);
         bool Inserted = SpecCostMap.insert({I, Cost}).second;
         (void)Inserted;
@@ -473,8 +505,10 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
         // Now check if this node had a corresponding PHI node using it. If so,
         // we need to decrement the outstanding user count for it.
         auto UserPNsIt = UserToPNMap.find(I);
-        if (UserPNsIt == UserToPNMap.end())
+        if (UserPNsIt == UserToPNMap.end()) {
           return;
+
+}
         auto &UserPNs = UserPNsIt->second;
         auto UserPNsSplitIt = std::stable_partition(
             UserPNs.begin(), UserPNs.end(), [&](PHINode *UserPN) {
@@ -491,9 +525,11 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
         SmallVector<Instruction *, 16> SpecWorklist;
         for (auto *PN : llvm::make_range(UserPNsSplitIt, UserPNs.end())) {
           int SpecCost = TTI.TCC_Free;
-          for (Use &U : PN->uses())
+          for (Use &U : PN->uses()) {
             SpecCost +=
                 SpecCostMap.find(cast<Instruction>(U.getUser()))->second;
+
+}
           SpecCost *= (NumPreds - 1);
           // When the user count of a PHI node hits zero, we should check its
           // profitability. If profitable, we should mark it for speculation
@@ -516,8 +552,10 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
           for (Use &U : PN->uses()) {
             auto *UI = cast<Instruction>(U.getUser());
             auto CostMapIt = SpecCostMap.find(UI);
-            if (CostMapIt->second == 0)
+            if (CostMapIt->second == 0) {
               continue;
+
+}
             // Zero out this cost entry to avoid duplicates.
             CostMapIt->second = 0;
             SpecWorklist.push_back(UI);
@@ -534,11 +572,15 @@ findProfitablePHIs(ArrayRef<PHINode *> PNs,
           // Walk the operands recursively to zero out their cost as well.
           for (auto *OpV : SpecI->operand_values()) {
             auto *OpI = dyn_cast<Instruction>(OpV);
-            if (!OpI)
+            if (!OpI) {
               continue;
+
+}
             auto CostMapIt = SpecCostMap.find(OpI);
-            if (CostMapIt == SpecCostMap.end() || CostMapIt->second == 0)
+            if (CostMapIt == SpecCostMap.end() || CostMapIt->second == 0) {
               continue;
+
+}
             CostMapIt->second = 0;
             SpecWorklist.push_back(OpI);
           }
@@ -623,15 +665,19 @@ static void speculatePHIs(ArrayRef<PHINode *> SpecPNs,
   // Inject the synthetic mappings to rewrite PHIs to the appropriate incoming
   // value. This handles both the PHIs we are speculating around and any other
   // PHIs that happen to be used.
-  for (auto *OrigI : SpecList)
+  for (auto *OrigI : SpecList) {
     for (auto *OpV : OrigI->operand_values()) {
       auto *OpPN = dyn_cast<PHINode>(OpV);
-      if (!OpPN || OpPN->getParent() != ParentBB)
+      if (!OpPN || OpPN->getParent() != ParentBB) {
         continue;
 
+}
+
       auto InsertResult = SpeculatedValueMap.insert({OpPN, {}});
-      if (!InsertResult.second)
+      if (!InsertResult.second) {
         continue;
+
+}
 
       auto &SpeculatedVals = InsertResult.first->second;
 
@@ -641,12 +687,18 @@ static void speculatePHIs(ArrayRef<PHINode *> SpecPNs,
       // a map for this PHI node's incoming values and then translate it into
       // the more compact representation used below.
       SmallDenseMap<BasicBlock *, Value *, 16> IncomingValueMap;
-      for (int i : llvm::seq<int>(0, OpPN->getNumIncomingValues()))
+      for (int i : llvm::seq<int>(0, OpPN->getNumIncomingValues())) {
         IncomingValueMap[OpPN->getIncomingBlock(i)] = OpPN->getIncomingValue(i);
 
-      for (auto *PredBB : SpecPreds)
+}
+
+      for (auto *PredBB : SpecPreds) {
         SpeculatedVals.push_back(IncomingValueMap.find(PredBB)->second);
+
+}
     }
+
+}
 
   // Speculate into each predecessor.
   for (int PredIdx : llvm::seq<int>(0, SpecPreds.size())) {
@@ -664,11 +716,15 @@ static void speculatePHIs(ArrayRef<PHINode *> SpecPNs,
       // should already have these mappings.
       for (Use &U : NewI->operands()) {
         auto *OpI = dyn_cast<Instruction>(U.get());
-        if (!OpI)
+        if (!OpI) {
           continue;
+
+}
         auto MapIt = SpeculatedValueMap.find(OpI);
-        if (MapIt == SpeculatedValueMap.end())
+        if (MapIt == SpeculatedValueMap.end()) {
           continue;
+
+}
         const auto &SpeculatedVals = MapIt->second;
         assert(SpeculatedVals[PredIdx] &&
                "Must have a speculated value for this predecessor!");
@@ -683,8 +739,10 @@ static void speculatePHIs(ArrayRef<PHINode *> SpecPNs,
       // RHS.
       if (NewI->isBinaryOp() && NewI->isCommutative() &&
           isa<Constant>(NewI->getOperand(0)) &&
-          !isa<Constant>(NewI->getOperand(1)))
+          !isa<Constant>(NewI->getOperand(1))) {
         NewI->getOperandUse(0).swap(NewI->getOperandUse(1));
+
+}
 
       SpeculatedValueMap[OrigI].push_back(NewI);
       assert(SpeculatedValueMap[OrigI][PredIdx] == NewI &&
@@ -705,8 +763,10 @@ static void speculatePHIs(ArrayRef<PHINode *> SpecPNs,
                                     Twine(OrigI->getName()) + ".phi");
       // Add the incoming values we speculated.
       auto &SpeculatedVals = SpeculatedValueMap.find(OrigI)->second;
-      for (int PredIdx : llvm::seq<int>(0, SpecPreds.size()))
+      for (int PredIdx : llvm::seq<int>(0, SpecPreds.size())) {
         SpecIPN->addIncoming(SpeculatedVals[PredIdx], SpecPreds[PredIdx]);
+
+}
 
       // And replace the uses with the PHI node.
       OrigI->replaceAllUsesWith(SpecIPN);
@@ -769,8 +829,10 @@ static bool tryToSpeculatePHIs(SmallVectorImpl<PHINode *> &PNs,
   // many incoming edges will need a copy of each speculated instruction.
   SmallSetVector<BasicBlock *, 16> PredSet;
   for (auto *PredBB : PNs[0]->blocks()) {
-    if (!PredSet.insert(PredBB))
+    if (!PredSet.insert(PredBB)) {
       continue;
+
+}
 
     // We cannot speculate when a predecessor is an indirect branch.
     // FIXME: We also can't reliably create a non-critical edge block for
@@ -793,9 +855,11 @@ static bool tryToSpeculatePHIs(SmallVectorImpl<PHINode *> &PNs,
 
   SmallVector<PHINode *, 16> SpecPNs = findProfitablePHIs(
       PNs, CostSavingsMap, PotentialSpecSet, PredSet.size(), DT, TTI);
-  if (SpecPNs.empty())
+  if (SpecPNs.empty()) {
     // Nothing to do.
     return false;
+
+}
 
   speculatePHIs(SpecPNs, PotentialSpecSet, PredSet, DT);
   return true;
@@ -815,14 +879,18 @@ PreservedAnalyses SpeculateAroundPHIsPass::run(Function &F,
       ++BBI;
     }
 
-    if (PNs.empty())
+    if (PNs.empty()) {
       continue;
+
+}
 
     Changed |= tryToSpeculatePHIs(PNs, DT, TTI);
   }
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   return PA;

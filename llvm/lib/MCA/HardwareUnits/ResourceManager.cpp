@@ -34,14 +34,18 @@ static uint64_t selectImpl(uint64_t CandidateMask,
 uint64_t DefaultResourceStrategy::select(uint64_t ReadyMask) {
   // This method assumes that ReadyMask cannot be zero.
   uint64_t CandidateMask = ReadyMask & NextInSequenceMask;
-  if (CandidateMask)
+  if (CandidateMask) {
     return selectImpl(CandidateMask, NextInSequenceMask);
+
+}
 
   NextInSequenceMask = ResourceUnitMask ^ RemovedFromNextInSequence;
   RemovedFromNextInSequence = 0;
   CandidateMask = ReadyMask & NextInSequenceMask;
-  if (CandidateMask)
+  if (CandidateMask) {
     return selectImpl(CandidateMask, NextInSequenceMask);
+
+}
 
   NextInSequenceMask = ResourceUnitMask;
   CandidateMask = ReadyMask & NextInSequenceMask;
@@ -55,8 +59,10 @@ void DefaultResourceStrategy::used(uint64_t Mask) {
   }
 
   NextInSequenceMask &= (~Mask);
-  if (NextInSequenceMask)
+  if (NextInSequenceMask) {
     return;
+
+}
 
   NextInSequenceMask = ResourceUnitMask ^ RemovedFromNextInSequence;
   RemovedFromNextInSequence = 0;
@@ -83,10 +89,14 @@ bool ResourceState::isReady(unsigned NumUnits) const {
 }
 
 ResourceStateEvent ResourceState::isBufferAvailable() const {
-  if (isADispatchHazard() && isReserved())
+  if (isADispatchHazard() && isReserved()) {
     return RS_RESERVED;
-  if (!isBuffered() || AvailableSlots)
+
+}
+  if (!isBuffered() || AvailableSlots) {
     return RS_BUFFER_AVAILABLE;
+
+}
   return RS_BUFFER_UNAVAILABLE;
 }
 
@@ -103,8 +113,10 @@ void ResourceState::dump() const {
 
 static std::unique_ptr<ResourceStrategy>
 getStrategyFor(const ResourceState &RS) {
-  if (RS.isAResourceGroup() || RS.getNumUnits() > 1)
+  if (RS.isAResourceGroup() || RS.getNumUnits() > 1) {
     return std::make_unique<DefaultResourceStrategy>(RS.getReadyMask());
+
+}
   return std::unique_ptr<ResourceStrategy>(nullptr);
 }
 
@@ -182,12 +194,16 @@ ResourceRef ResourceManager::selectPipe(uint64_t ResourceID) {
 
   // Special case where RS is not a group, and it only declares a single
   // resource unit.
-  if (!RS.isAResourceGroup() && RS.getNumUnits() == 1)
+  if (!RS.isAResourceGroup() && RS.getNumUnits() == 1) {
     return std::make_pair(ResourceID, RS.getReadyMask());
 
+}
+
   uint64_t SubResourceID = Strategies[Index]->select(RS.getReadyMask());
-  if (RS.isAResourceGroup())
+  if (RS.isAResourceGroup()) {
     return selectPipe(SubResourceID);
+
+}
   return std::make_pair(ResourceID, SubResourceID);
 }
 
@@ -198,13 +214,17 @@ void ResourceManager::use(const ResourceRef &RR) {
   RS.markSubResourceAsUsed(RR.second);
   // Remember to update the resource strategy for non-group resources with
   // multiple units.
-  if (RS.getNumUnits() > 1)
+  if (RS.getNumUnits() > 1) {
     Strategies[RSID]->used(RR.second);
+
+}
 
   // If there are still available units in RR.first,
   // then we are done.
-  if (RS.isReady())
+  if (RS.isReady()) {
     return;
+
+}
 
   AvailableProcResUnits ^= RR.first;
 
@@ -226,8 +246,10 @@ void ResourceManager::release(const ResourceRef &RR) {
   ResourceState &RS = *Resources[RSID];
   bool WasFullyUsed = !RS.isReady();
   RS.releaseSubResource(RR.second);
-  if (!WasFullyUsed)
+  if (!WasFullyUsed) {
     return;
+
+}
 
   AvailableProcResUnits ^= RR.first;
 
@@ -243,10 +265,14 @@ void ResourceManager::release(const ResourceRef &RR) {
 
 ResourceStateEvent
 ResourceManager::canBeDispatched(uint64_t ConsumedBuffers) const {
-  if (ConsumedBuffers & ReservedBuffers)
+  if (ConsumedBuffers & ReservedBuffers) {
     return ResourceStateEvent::RS_RESERVED;
-  if (ConsumedBuffers & (~AvailableBuffers))
+
+}
+  if (ConsumedBuffers & (~AvailableBuffers)) {
     return ResourceStateEvent::RS_BUFFER_UNAVAILABLE;
+
+}
   return ResourceStateEvent::RS_BUFFER_AVAILABLE;
 }
 
@@ -256,8 +282,10 @@ void ResourceManager::reserveBuffers(uint64_t ConsumedBuffers) {
     ResourceState &RS = *Resources[getResourceStateIndex(CurrentBuffer)];
     ConsumedBuffers ^= CurrentBuffer;
     assert(RS.isBufferAvailable() == ResourceStateEvent::RS_BUFFER_AVAILABLE);
-    if (!RS.reserveBuffer())
+    if (!RS.reserveBuffer()) {
       AvailableBuffers ^= CurrentBuffer;
+
+}
     if (RS.isADispatchHazard()) {
       // Reserve this buffer now, and release it once pipeline resources
       // consumed by the instruction become available again.
@@ -284,13 +312,17 @@ uint64_t ResourceManager::checkAvailability(const InstrDesc &Desc) const {
   for (const std::pair<uint64_t, ResourceUsage> &E : Desc.Resources) {
     unsigned NumUnits = E.second.isReserved() ? 0U : E.second.NumUnits;
     unsigned Index = getResourceStateIndex(E.first);
-    if (!Resources[Index]->isReady(NumUnits))
+    if (!Resources[Index]->isReady(NumUnits)) {
       BusyResourceMask |= E.first;
+
+}
   }
 
   BusyResourceMask &= ProcResUnitMask;
-  if (BusyResourceMask)
+  if (BusyResourceMask) {
     return BusyResourceMask;
+
+}
   return Desc.UsedProcResGroups & ReservedResourceGroups;
 }
 
@@ -323,21 +355,27 @@ void ResourceManager::issueInstruction(
 
 void ResourceManager::cycleEvent(SmallVectorImpl<ResourceRef> &ResourcesFreed) {
   for (std::pair<ResourceRef, unsigned> &BR : BusyResources) {
-    if (BR.second)
+    if (BR.second) {
       BR.second--;
+
+}
     if (!BR.second) {
       // Release this resource.
       const ResourceRef &RR = BR.first;
 
-      if (countPopulation(RR.first) == 1)
+      if (countPopulation(RR.first) == 1) {
         release(RR);
+
+}
       releaseResource(RR.first);
       ResourcesFreed.push_back(RR);
     }
   }
 
-  for (const ResourceRef &RF : ResourcesFreed)
+  for (const ResourceRef &RF : ResourcesFreed) {
     BusyResources.erase(RF);
+
+}
 }
 
 void ResourceManager::reserveResource(uint64_t ResourceID) {
@@ -353,11 +391,15 @@ void ResourceManager::releaseResource(uint64_t ResourceID) {
   const unsigned Index = getResourceStateIndex(ResourceID);
   ResourceState &Resource = *Resources[Index];
   Resource.clearReserved();
-  if (Resource.isAResourceGroup())
+  if (Resource.isAResourceGroup()) {
     ReservedResourceGroups ^= 1ULL << Index;
+
+}
   // Now it is safe to release dispatch/issue resources.
-  if (Resource.isADispatchHazard())
+  if (Resource.isADispatchHazard()) {
     ReservedBuffers ^= 1ULL << Index;
+
+}
 }
 
 } // namespace mca

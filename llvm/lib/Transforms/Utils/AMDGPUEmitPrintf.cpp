@@ -28,12 +28,16 @@ using namespace llvm;
 static bool isCString(const Value *Arg) {
   auto Ty = Arg->getType();
   auto PtrTy = dyn_cast<PointerType>(Ty);
-  if (!PtrTy)
+  if (!PtrTy) {
     return false;
 
+}
+
   auto IntTy = dyn_cast<IntegerType>(PtrTy->getElementType());
-  if (!IntTy)
+  if (!IntTy) {
     return false;
+
+}
 
   return IntTy->getBitWidth() == 8;
 }
@@ -195,8 +199,10 @@ static Value *processArg(IRBuilder<> &Builder, Value *Desc, Value *Arg,
 // specify a string, i.e, the "%s" specifier with optional '*' characters.
 static void locateCStrings(SparseBitVector<8> &BV, Value *Fmt) {
   StringRef Str;
-  if (!getConstantStringInfo(Fmt, Str) || Str.empty())
+  if (!getConstantStringInfo(Fmt, Str) || Str.empty()) {
     return;
+
+}
 
   static const char ConvSpecifiers[] = "diouxXfFeEgGaAcspn";
   size_t SpecPos = 0;
@@ -209,8 +215,10 @@ static void locateCStrings(SparseBitVector<8> &BV, Value *Fmt) {
       continue;
     }
     auto SpecEnd = Str.find_first_of(ConvSpecifiers, SpecPos);
-    if (SpecEnd == StringRef::npos)
+    if (SpecEnd == StringRef::npos) {
       return;
+
+}
     auto Spec = Str.slice(SpecPos, SpecEnd + 1);
     ArgIdx += Spec.count('*');
     if (Str[SpecEnd] == 's') {

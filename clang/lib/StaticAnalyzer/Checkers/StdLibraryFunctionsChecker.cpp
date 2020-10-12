@@ -265,8 +265,10 @@ ProgramStateRef StdLibraryFunctionsChecker::ValueRange::applyAsOutOfRange(
       const llvm::APSInt &Max = BVF.getValue(R[I].second, T);
       assert(Min <= Max);
       State = CM.assumeInclusiveRange(State, *N, Min, Max, false);
-      if (!State)
+      if (!State) {
         break;
+
+}
     }
   }
 
@@ -304,16 +306,20 @@ ProgramStateRef StdLibraryFunctionsChecker::ValueRange::applyAsWithinRange(
     if (Left != PlusInf) {
       assert(MinusInf <= Left);
       State = CM.assumeInclusiveRange(State, *N, MinusInf, Left, false);
-      if (!State)
+      if (!State) {
         return nullptr;
+
+}
     }
 
     const llvm::APSInt &Right = BVF.getValue(R[E - 1].second + 1ULL, T);
     if (Right != MinusInf) {
       assert(Right <= PlusInf);
       State = CM.assumeInclusiveRange(State, *N, Right, PlusInf, false);
-      if (!State)
+      if (!State) {
         return nullptr;
+
+}
     }
 
     for (size_t I = 1; I != E; ++I) {
@@ -321,8 +327,10 @@ ProgramStateRef StdLibraryFunctionsChecker::ValueRange::applyAsWithinRange(
       const llvm::APSInt &Max = BVF.getValue(R[I].first - 1ULL, T);
       if (Min <= Max) {
         State = CM.assumeInclusiveRange(State, *N, Min, Max, false);
-        if (!State)
+        if (!State) {
           return nullptr;
+
+}
       }
     }
   }
@@ -348,24 +356,32 @@ StdLibraryFunctionsChecker::ValueRange::applyAsComparesToArgument(
   // Note: we avoid integral promotion for comparison.
   OtherV = SVB.evalCast(OtherV, T, OtherT);
   if (auto CompV = SVB.evalBinOp(State, Op, V, OtherV, CondT)
-                       .getAs<DefinedOrUnknownSVal>())
+                       .getAs<DefinedOrUnknownSVal>()) {
     State = State->assume(*CompV, true);
+
+}
   return State;
 }
 
 void StdLibraryFunctionsChecker::checkPostCall(const CallEvent &Call,
                                                CheckerContext &C) const {
   const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return;
+
+}
 
   const CallExpr *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
 
+}
+
   Optional<Summary> FoundSummary = findFunctionSummary(FD, CE, C);
-  if (!FoundSummary)
+  if (!FoundSummary) {
     return;
+
+}
 
   // Now apply ranges.
   const Summary &Summary = *FoundSummary;
@@ -376,28 +392,38 @@ void StdLibraryFunctionsChecker::checkPostCall(const CallEvent &Call,
     ProgramStateRef NewState = State;
     for (const auto &VR: VRS) {
       NewState = VR.apply(NewState, Call, Summary);
-      if (!NewState)
+      if (!NewState) {
         break;
+
+}
     }
 
-    if (NewState && NewState != State)
+    if (NewState && NewState != State) {
       C.addTransition(NewState);
+
+}
   }
 }
 
 bool StdLibraryFunctionsChecker::evalCall(const CallEvent &Call,
                                           CheckerContext &C) const {
   const auto *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return false;
+
+}
 
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return false;
 
+}
+
   Optional<Summary> FoundSummary = findFunctionSummary(FD, CE, C);
-  if (!FoundSummary)
+  if (!FoundSummary) {
     return false;
+
+}
 
   const Summary &Summary = *FoundSummary;
   switch (Summary.InvalidationKd) {
@@ -421,26 +447,34 @@ bool StdLibraryFunctionsChecker::evalCall(const CallEvent &Call,
 bool StdLibraryFunctionsChecker::Summary::matchesCall(
     const CallExpr *CE) const {
   // Check number of arguments:
-  if (CE->getNumArgs() != ArgTys.size())
+  if (CE->getNumArgs() != ArgTys.size()) {
     return false;
 
+}
+
   // Check return type if relevant:
-  if (!RetTy.isNull() && RetTy != CE->getType().getCanonicalType())
+  if (!RetTy.isNull() && RetTy != CE->getType().getCanonicalType()) {
     return false;
+
+}
 
   // Check argument types when relevant:
   for (size_t I = 0, E = ArgTys.size(); I != E; ++I) {
     QualType FormalT = ArgTys[I];
     // Null type marks irrelevant arguments.
-    if (FormalT.isNull())
+    if (FormalT.isNull()) {
       continue;
+
+}
 
     assertTypeSuitableForSummary(FormalT);
 
     QualType ActualT = StdLibraryFunctionsChecker::getArgType(CE, I);
     assert(ActualT.isCanonical());
-    if (ActualT != FormalT)
+    if (ActualT != FormalT) {
       return false;
+
+}
   }
 
   return true;
@@ -454,21 +488,29 @@ StdLibraryFunctionsChecker::findFunctionSummary(const FunctionDecl *FD,
   // (eg. virtual call, or call by pointer).
   assert(CE);
 
-  if (!FD)
+  if (!FD) {
     return None;
+
+}
 
   initFunctionSummaries(C);
 
   IdentifierInfo *II = FD->getIdentifier();
-  if (!II)
-    return None;
-  StringRef Name = II->getName();
-  if (Name.empty() || !C.isCLibraryFunction(FD, Name))
+  if (!II) {
     return None;
 
-  auto FSMI = FunctionSummaryMap.find(Name);
-  if (FSMI == FunctionSummaryMap.end())
+}
+  StringRef Name = II->getName();
+  if (Name.empty() || !C.isCLibraryFunction(FD, Name)) {
     return None;
+
+}
+
+  auto FSMI = FunctionSummaryMap.find(Name);
+  if (FSMI == FunctionSummaryMap.end()) {
+    return None;
+
+}
 
   // Verify that function signature matches the spec in advance.
   // Otherwise we might be modeling the wrong function.
@@ -476,17 +518,23 @@ StdLibraryFunctionsChecker::findFunctionSummary(const FunctionDecl *FD,
   // very integral-type-sensitive operations on arguments and
   // return values.
   const Summaries &SpecVariants = FSMI->second;
-  for (const Summary &Spec : SpecVariants)
-    if (Spec.matchesCall(CE))
+  for (const Summary &Spec : SpecVariants) {
+    if (Spec.matchesCall(CE)) {
       return Spec;
+
+}
+
+}
 
   return None;
 }
 
 void StdLibraryFunctionsChecker::initFunctionSummaries(
     CheckerContext &C) const {
-  if (!FunctionSummaryMap.empty())
+  if (!FunctionSummaryMap.empty()) {
     return;
+
+}
 
   SValBuilder &SVB = C.getSValBuilder();
   BasicValueFactory &BVF = SVB.getBasicValueFactory();
@@ -523,8 +571,10 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   // Try our best to parse this from the Preprocessor, otherwise fallback to -1.
   const auto EOFv = [&C]() -> RangeInt {
     if (const llvm::Optional<int> OptInt =
-            tryExpandAsInteger("EOF", C.getPreprocessor()))
+            tryExpandAsInteger("EOF", C.getPreprocessor())) {
       return *OptInt;
+
+}
     return -1;
   }();
 

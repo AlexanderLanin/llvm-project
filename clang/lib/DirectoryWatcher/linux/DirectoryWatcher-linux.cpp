@@ -73,8 +73,10 @@ struct SemaphorePipe {
 
   static llvm::Optional<SemaphorePipe> create() {
     int InotifyPollingStopperFDs[2];
-    if (pipe2(InotifyPollingStopperFDs, O_CLOEXEC) == -1)
+    if (pipe2(InotifyPollingStopperFDs, O_CLOEXEC) == -1) {
       return llvm::None;
+
+}
     return SemaphorePipe(InotifyPollingStopperFDs);
   }
 };
@@ -324,15 +326,19 @@ llvm::Expected<std::unique_ptr<DirectoryWatcher>> clang::DirectoryWatcher::creat
     StringRef Path,
     std::function<void(llvm::ArrayRef<DirectoryWatcher::Event>, bool)> Receiver,
     bool WaitForInitialSync) {
-  if (Path.empty())
+  if (Path.empty()) {
     llvm::report_fatal_error(
         "DirectoryWatcher::create can not accept an empty Path.");
 
+}
+
   const int InotifyFD = inotify_init1(IN_CLOEXEC);
-  if (InotifyFD == -1)
+  if (InotifyFD == -1) {
     return llvm::make_error<llvm::StringError>(
         std::string("inotify_init1() error: ") + strerror(errno),
         llvm::inconvertibleErrorCode());
+
+}
 
   const int InotifyWD = inotify_add_watch(
       InotifyFD, Path.str().c_str(),
@@ -342,17 +348,21 @@ llvm::Expected<std::unique_ptr<DirectoryWatcher>> clang::DirectoryWatcher::creat
       | IN_EXCL_UNLINK
 #endif
       );
-  if (InotifyWD == -1)
+  if (InotifyWD == -1) {
     return llvm::make_error<llvm::StringError>(
         std::string("inotify_add_watch() error: ") + strerror(errno),
         llvm::inconvertibleErrorCode());
 
+}
+
   auto InotifyPollingStopper = SemaphorePipe::create();
 
-  if (!InotifyPollingStopper)
+  if (!InotifyPollingStopper) {
     return llvm::make_error<llvm::StringError>(
         std::string("SemaphorePipe::create() error: ") + strerror(errno),
         llvm::inconvertibleErrorCode());
+
+}
 
   return std::make_unique<DirectoryWatcherLinux>(
       Path, Receiver, WaitForInitialSync, InotifyFD, InotifyWD,

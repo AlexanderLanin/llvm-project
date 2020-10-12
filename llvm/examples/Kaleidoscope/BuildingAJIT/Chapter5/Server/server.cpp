@@ -38,10 +38,12 @@ void printExprResult(double Val) {
 
 // --- LAZY COMPILE TEST ---
 int main(int argc, char* argv[]) {
-  if (argc == 0)
+  if (argc == 0) {
     ExitOnErr.setBanner("jit_server: ");
-  else
+  } else {
     ExitOnErr.setBanner(std::string(argv[0]) + ": ");
+
+}
 
   // --- Initialize LLVM ---
   cl::ParseCommandLineOptions(argc, argv, "LLVM lazy JIT example.\n");
@@ -104,8 +106,10 @@ int main(int argc, char* argv[]) {
 
   MyServerT Server(TCPChannel, SymbolLookup, RegisterEHFrames, DeregisterEHFrames);
 
-  while (!Server.receivedTerminate())
+  while (!Server.receivedTerminate()) {
     ExitOnErr(Server.handleOne());
+
+}
 
   return 0;
 }

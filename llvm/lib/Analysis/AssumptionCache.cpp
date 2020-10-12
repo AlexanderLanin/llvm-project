@@ -46,8 +46,10 @@ AssumptionCache::getOrInsertAffectedValues(Value *V) {
   // Try using find_as first to avoid creating extra value handles just for the
   // purpose of doing the lookup.
   auto AVI = AffectedValues.find_as(V);
-  if (AVI != AffectedValues.end())
+  if (AVI != AffectedValues.end()) {
     return AVI->second;
+
+}
 
   auto AVIP = AffectedValues.insert(
       {AffectedValueCallbackVH(V, this), SmallVector<WeakTrackingVH, 1>()});
@@ -70,8 +72,10 @@ static void findAffectedValues(CallInst *CI,
       if (match(I, m_BitCast(m_Value(Op))) ||
           match(I, m_PtrToInt(m_Value(Op))) ||
           match(I, m_Not(m_Value(Op)))) {
-        if (isa<Instruction>(Op) || isa<Argument>(Op))
+        if (isa<Instruction>(Op) || isa<Argument>(Op)) {
           Affected.push_back(Op);
+
+}
       }
     }
   };
@@ -117,8 +121,10 @@ void AssumptionCache::updateAffectedValues(CallInst *CI) {
 
   for (auto &AV : Affected) {
     auto &AVV = getOrInsertAffectedValues(AV);
-    if (std::find(AVV.begin(), AVV.end(), CI) == AVV.end())
+    if (std::find(AVV.begin(), AVV.end(), CI) == AVV.end()) {
       AVV.push_back(CI);
+
+}
   }
 }
 
@@ -128,8 +134,10 @@ void AssumptionCache::unregisterAssumption(CallInst *CI) {
 
   for (auto &AV : Affected) {
     auto AVI = AffectedValues.find_as(AV);
-    if (AVI != AffectedValues.end())
+    if (AVI != AffectedValues.end()) {
       AffectedValues.erase(AVI);
+
+}
   }
 
   AssumeHandles.erase(
@@ -139,26 +147,36 @@ void AssumptionCache::unregisterAssumption(CallInst *CI) {
 
 void AssumptionCache::AffectedValueCallbackVH::deleted() {
   auto AVI = AC->AffectedValues.find(getValPtr());
-  if (AVI != AC->AffectedValues.end())
+  if (AVI != AC->AffectedValues.end()) {
     AC->AffectedValues.erase(AVI);
+
+}
   // 'this' now dangles!
 }
 
 void AssumptionCache::transferAffectedValuesInCache(Value *OV, Value *NV) {
   auto &NAVV = getOrInsertAffectedValues(NV);
   auto AVI = AffectedValues.find(OV);
-  if (AVI == AffectedValues.end())
+  if (AVI == AffectedValues.end()) {
     return;
 
-  for (auto &A : AVI->second)
-    if (std::find(NAVV.begin(), NAVV.end(), A) == NAVV.end())
+}
+
+  for (auto &A : AVI->second) {
+    if (std::find(NAVV.begin(), NAVV.end(), A) == NAVV.end()) {
       NAVV.push_back(A);
+
+}
+
+}
   AffectedValues.erase(OV);
 }
 
 void AssumptionCache::AffectedValueCallbackVH::allUsesReplacedWith(Value *NV) {
-  if (!isa<Instruction>(NV) && !isa<Argument>(NV))
+  if (!isa<Instruction>(NV) && !isa<Argument>(NV)) {
     return;
+
+}
 
   // Any assumptions that affected this value now affect the new value.
 
@@ -174,17 +192,25 @@ void AssumptionCache::scanFunction() {
 
   // Go through all instructions in all blocks, add all calls to @llvm.assume
   // to this cache.
-  for (BasicBlock &B : F)
-    for (Instruction &II : B)
-      if (match(&II, m_Intrinsic<Intrinsic::assume>()))
+  for (BasicBlock &B : F) {
+    for (Instruction &II : B) {
+      if (match(&II, m_Intrinsic<Intrinsic::assume>())) {
         AssumeHandles.push_back(&II);
+
+}
+
+}
+
+}
 
   // Mark the scan as complete.
   Scanned = true;
 
   // Update affected values.
-  for (auto &A : AssumeHandles)
+  for (auto &A : AssumeHandles) {
     updateAffectedValues(cast<CallInst>(A));
+
+}
 }
 
 void AssumptionCache::registerAssumption(CallInst *CI) {
@@ -193,8 +219,10 @@ void AssumptionCache::registerAssumption(CallInst *CI) {
 
   // If we haven't scanned the function yet, just drop this assumption. It will
   // be found when we scan later.
-  if (!Scanned)
+  if (!Scanned) {
     return;
+
+}
 
   AssumeHandles.push_back(CI);
 
@@ -231,17 +259,23 @@ PreservedAnalyses AssumptionPrinterPass::run(Function &F,
   AssumptionCache &AC = AM.getResult<AssumptionAnalysis>(F);
 
   OS << "Cached assumptions for function: " << F.getName() << "\n";
-  for (auto &VH : AC.assumptions())
-    if (VH)
+  for (auto &VH : AC.assumptions()) {
+    if (VH) {
       OS << "  " << *cast<CallInst>(VH)->getArgOperand(0) << "\n";
+
+}
+
+}
 
   return PreservedAnalyses::all();
 }
 
 void AssumptionCacheTracker::FunctionCallbackVH::deleted() {
   auto I = ACT->AssumptionCaches.find_as(cast<Function>(getValPtr()));
-  if (I != ACT->AssumptionCaches.end())
+  if (I != ACT->AssumptionCaches.end()) {
     ACT->AssumptionCaches.erase(I);
+
+}
   // 'this' now dangles!
 }
 
@@ -251,8 +285,10 @@ AssumptionCache &AssumptionCacheTracker::getAssumptionCache(Function &F) {
   // but if we have to insert we're going to scan the whole function so that
   // shouldn't matter.
   auto I = AssumptionCaches.find_as(&F);
-  if (I != AssumptionCaches.end())
+  if (I != AssumptionCaches.end()) {
     return *I->second;
+
+}
 
   // Ok, build a new cache by scanning the function, insert it and the value
   // handle into our map, and return the newly populated cache.
@@ -264,8 +300,10 @@ AssumptionCache &AssumptionCacheTracker::getAssumptionCache(Function &F) {
 
 AssumptionCache *AssumptionCacheTracker::lookupAssumptionCache(Function &F) {
   auto I = AssumptionCaches.find_as(&F);
-  if (I != AssumptionCaches.end())
+  if (I != AssumptionCaches.end()) {
     return I->second.get();
+
+}
   return nullptr;
 }
 
@@ -274,20 +312,32 @@ void AssumptionCacheTracker::verifyAnalysis() const {
   // flag. We should either fix all passes to correctly update the assumption
   // cache and enable the verifier unconditionally or somehow arrange for the
   // assumption list to be updated automatically by passes.
-  if (!VerifyAssumptionCache)
+  if (!VerifyAssumptionCache) {
     return;
+
+}
 
   SmallPtrSet<const CallInst *, 4> AssumptionSet;
   for (const auto &I : AssumptionCaches) {
-    for (auto &VH : I.second->assumptions())
-      if (VH)
+    for (auto &VH : I.second->assumptions()) {
+      if (VH) {
         AssumptionSet.insert(cast<CallInst>(VH));
 
-    for (const BasicBlock &B : cast<Function>(*I.first))
-      for (const Instruction &II : B)
+}
+
+}
+
+    for (const BasicBlock &B : cast<Function>(*I.first)) {
+      for (const Instruction &II : B) {
         if (match(&II, m_Intrinsic<Intrinsic::assume>()) &&
-            !AssumptionSet.count(cast<CallInst>(&II)))
+            !AssumptionSet.count(cast<CallInst>(&II))) {
           report_fatal_error("Assumption in scanned function not in cache");
+
+}
+
+}
+
+}
   }
 }
 

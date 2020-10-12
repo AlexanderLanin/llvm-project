@@ -32,8 +32,10 @@ CallGraph::CallGraph(Module &M)
     : M(M), ExternalCallingNode(getOrInsertFunction(nullptr)),
       CallsExternalNode(std::make_unique<CallGraphNode>(nullptr)) {
   // Add every function to the call graph.
-  for (Function &F : M)
+  for (Function &F : M) {
     addToCallGraph(&F);
+
+}
 }
 
 CallGraph::CallGraph(CallGraph &&Arg)
@@ -46,8 +48,10 @@ CallGraph::CallGraph(CallGraph &&Arg)
 
 CallGraph::~CallGraph() {
   // CallsExternalNode is not in the function map, delete it explicitly.
-  if (CallsExternalNode)
+  if (CallsExternalNode) {
     CallsExternalNode->allReferencesDropped();
+
+}
 
 // Reset all node's use counts to zero before deleting them to prevent an
 // assertion from firing.
@@ -71,8 +75,10 @@ void CallGraph::addToCallGraph(Function *F) {
 
   // If this function has external linkage or has its address taken, anything
   // could call it.
-  if (!F->hasLocalLinkage() || F->hasAddressTaken())
+  if (!F->hasLocalLinkage() || F->hasAddressTaken()) {
     ExternalCallingNode->addCalledFunction(nullptr, Node);
+
+}
 
   populateCallGraphNode(Node);
 }
@@ -82,23 +88,29 @@ void CallGraph::populateCallGraphNode(CallGraphNode *Node) {
 
   // If this function is not defined in this translation unit, it could call
   // anything.
-  if (F->isDeclaration() && !F->isIntrinsic())
+  if (F->isDeclaration() && !F->isIntrinsic()) {
     Node->addCalledFunction(nullptr, CallsExternalNode.get());
 
+}
+
   // Look for calls by this function.
-  for (BasicBlock &BB : *F)
+  for (BasicBlock &BB : *F) {
     for (Instruction &I : BB) {
       if (auto *Call = dyn_cast<CallBase>(&I)) {
         const Function *Callee = Call->getCalledFunction();
-        if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID()))
+        if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID())) {
           // Indirect calls of intrinsics are not allowed so no need to check.
           // We can be more precise here by using TargetArg returned by
           // Intrinsic::isLeaf.
           Node->addCalledFunction(Call, CallsExternalNode.get());
-        else if (!Callee->isIntrinsic())
+        } else if (!Callee->isIntrinsic()) {
           Node->addCalledFunction(Call, getOrInsertFunction(Callee));
+
+}
       }
     }
+
+}
 }
 
 void CallGraph::print(raw_ostream &OS) const {
@@ -108,19 +120,27 @@ void CallGraph::print(raw_ostream &OS) const {
   SmallVector<CallGraphNode *, 16> Nodes;
   Nodes.reserve(FunctionMap.size());
 
-  for (const auto &I : *this)
+  for (const auto &I : *this) {
     Nodes.push_back(I.second.get());
 
+}
+
   llvm::sort(Nodes, [](CallGraphNode *LHS, CallGraphNode *RHS) {
-    if (Function *LF = LHS->getFunction())
-      if (Function *RF = RHS->getFunction())
+    if (Function *LF = LHS->getFunction()) {
+      if (Function *RF = RHS->getFunction()) {
         return LF->getName() < RF->getName();
+
+}
+
+}
 
     return RHS->getFunction() != nullptr;
   });
 
-  for (CallGraphNode *CN : Nodes)
+  for (CallGraphNode *CN : Nodes) {
     CN->print(OS);
+
+}
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
@@ -162,8 +182,10 @@ void CallGraph::spliceFunction(const Function *From, const Function *To) {
 // not already exist.
 CallGraphNode *CallGraph::getOrInsertFunction(const Function *F) {
   auto &CGN = FunctionMap[F];
-  if (CGN)
+  if (CGN) {
     return CGN.get();
+
+}
 
   assert((!F || F->getParent() == &M) && "Function not in current module!");
   CGN = std::make_unique<CallGraphNode>(const_cast<Function *>(F));
@@ -175,19 +197,23 @@ CallGraphNode *CallGraph::getOrInsertFunction(const Function *F) {
 //
 
 void CallGraphNode::print(raw_ostream &OS) const {
-  if (Function *F = getFunction())
+  if (Function *F = getFunction()) {
     OS << "Call graph node for function: '" << F->getName() << "'";
-  else
+  } else {
     OS << "Call graph node <<null function>>";
+
+}
 
   OS << "<<" << this << ">>  #uses=" << getNumReferences() << '\n';
 
   for (const auto &I : *this) {
     OS << "  CS<" << I.first << "> calls ";
-    if (Function *FI = I.second->getFunction())
+    if (Function *FI = I.second->getFunction()) {
       OS << "function '" << FI->getName() <<"'\n";
-    else
+    } else {
       OS << "external node\n";
+
+}
   }
   OS << '\n';
 }
@@ -215,13 +241,15 @@ void CallGraphNode::removeCallEdgeFor(CallBase &Call) {
 // the specified callee function.  This takes more time to execute than
 // removeCallEdgeTo, so it should not be used unless necessary.
 void CallGraphNode::removeAnyCallEdgeTo(CallGraphNode *Callee) {
-  for (unsigned i = 0, e = CalledFunctions.size(); i != e; ++i)
+  for (unsigned i = 0, e = CalledFunctions.size(); i != e; ++i) {
     if (CalledFunctions[i].second == Callee) {
       Callee->DropRef();
       CalledFunctions[i] = CalledFunctions.back();
       CalledFunctions.pop_back();
       --i; --e;
     }
+
+}
 }
 
 /// removeOneAbstractEdgeTo - Remove one edge associated with a null callsite

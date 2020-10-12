@@ -41,8 +41,10 @@ removeNamespaces(const std::vector<std::string> &Names) {
 static const CXXConstructExpr *
 getConstructExpr(const CXXCtorInitializer &CtorInit) {
   const Expr *InitExpr = CtorInit.getInit();
-  if (const auto *CleanUpExpr = dyn_cast<ExprWithCleanups>(InitExpr))
+  if (const auto *CleanUpExpr = dyn_cast<ExprWithCleanups>(InitExpr)) {
     InitExpr = CleanUpExpr->getSubExpr();
+
+}
   return dyn_cast<CXXConstructExpr>(InitExpr);
 }
 
@@ -50,13 +52,19 @@ static llvm::Optional<SourceRange>
 getConstructExprArgRange(const CXXConstructExpr &Construct) {
   SourceLocation B, E;
   for (const Expr *Arg : Construct.arguments()) {
-    if (B.isInvalid())
+    if (B.isInvalid()) {
       B = Arg->getBeginLoc();
-    if (Arg->getEndLoc().isValid())
+
+}
+    if (Arg->getEndLoc().isValid()) {
       E = Arg->getEndLoc();
+
+}
   }
-  if (B.isInvalid() || E.isInvalid())
+  if (B.isInvalid() || E.isInvalid()) {
     return llvm::None;
+
+}
   return SourceRange(B, E);
 }
 
@@ -157,12 +165,16 @@ void RedundantStringInitCheck::check(const MatchFinder::MatchResult &Result) {
       }
     }
     const CXXConstructExpr *Construct = getConstructExpr(*CtorInit);
-    if (!Construct)
+    if (!Construct) {
       return;
+
+}
     if (llvm::Optional<SourceRange> RemovalRange =
-            getConstructExprArgRange(*Construct))
+            getConstructExprArgRange(*Construct)) {
       diag(CtorInit->getMemberLocation(), "redundant string initialization")
           << FixItHint::CreateRemoval(*RemovalRange);
+
+}
   }
 }
 

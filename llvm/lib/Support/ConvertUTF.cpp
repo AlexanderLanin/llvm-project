@@ -384,22 +384,42 @@ static Boolean isLegalUTF8(const UTF8 *source, int length) {
     switch (length) {
     default: return false;
         /* Everything else falls through when "true"... */
-    case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
-    case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
-    case 2: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+    case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) { return false;
+
+}
+    case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) { return false;
+
+}
+    case 2: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) { return false;
+
+}
 
         switch (*source) {
             /* no fall-through in this inner switch */
-            case 0xE0: if (a < 0xA0) return false; break;
-            case 0xED: if (a > 0x9F) return false; break;
-            case 0xF0: if (a < 0x90) return false; break;
-            case 0xF4: if (a > 0x8F) return false; break;
-            default:   if (a < 0x80) return false;
+            case 0xE0: if (a < 0xA0) { return false; 
+
+}break;
+            case 0xED: if (a > 0x9F) { return false; 
+
+}break;
+            case 0xF0: if (a < 0x90) { return false; 
+
+}break;
+            case 0xF4: if (a > 0x8F) { return false; 
+
+}break;
+            default:   if (a < 0x80) { return false;
+
+}
         }
 
-    case 1: if (*source >= 0x80 && *source < 0xC2) return false;
+    case 1: if (*source >= 0x80 && *source < 0xC2) { return false;
+
+}
     }
-    if (*source > 0xF4) return false;
+    if (*source > 0xF4) { return false;
+
+}
     return true;
 }
 
@@ -435,8 +455,10 @@ findMaximalSubpartOfIllFormedUTF8Sequence(const UTF8 *source,
    *   b. a subsequence of length one.
    */
 
-  if (source == sourceEnd)
+  if (source == sourceEnd) {
     return 0;
+
+}
 
   /*
    * Perform case analysis.  See Unicode 6.3.0, Table 3-7. Well-Formed UTF-8
@@ -453,8 +475,10 @@ findMaximalSubpartOfIllFormedUTF8Sequence(const UTF8 *source,
     return 1;
   }
 
-  if (source == sourceEnd)
+  if (source == sourceEnd) {
     return 1;
+
+}
 
   b2 = *source;
   ++source;
@@ -473,8 +497,10 @@ findMaximalSubpartOfIllFormedUTF8Sequence(const UTF8 *source,
   }
   if (b1 == 0xF0) {
     if (b2 >= 0x90 && b2 <= 0xBF) {
-      if (source == sourceEnd)
+      if (source == sourceEnd) {
         return 2;
+
+}
 
       b3 = *source;
       return (b3 >= 0x80 && b3 <= 0xBF) ? 3 : 2;
@@ -483,8 +509,10 @@ findMaximalSubpartOfIllFormedUTF8Sequence(const UTF8 *source,
   }
   if (b1 >= 0xF1 && b1 <= 0xF3) {
     if (b2 >= 0x80 && b2 <= 0xBF) {
-      if (source == sourceEnd)
+      if (source == sourceEnd) {
         return 2;
+
+}
 
       b3 = *source;
       return (b3 >= 0x80 && b3 <= 0xBF) ? 3 : 2;
@@ -493,8 +521,10 @@ findMaximalSubpartOfIllFormedUTF8Sequence(const UTF8 *source,
   }
   if (b1 == 0xF4) {
     if (b2 >= 0x80 && b2 <= 0x8F) {
-      if (source == sourceEnd)
+      if (source == sourceEnd) {
         return 2;
+
+}
 
       b3 = *source;
       return (b3 >= 0x80 && b3 <= 0xBF) ? 3 : 2;
@@ -529,8 +559,10 @@ unsigned getNumBytesForUTF8(UTF8 first) {
 Boolean isLegalUTF8String(const UTF8 **source, const UTF8 *sourceEnd) {
     while (*source != sourceEnd) {
         int length = trailingBytesForUTF8[**source] + 1;
-        if (length > sourceEnd - *source || !isLegalUTF8(*source, length))
+        if (length > sourceEnd - *source || !isLegalUTF8(*source, length)) {
             return false;
+
+}
         *source += length;
     }
     return true;

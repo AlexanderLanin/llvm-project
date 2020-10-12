@@ -45,16 +45,20 @@ MCSymbol *AddressPool::emitHeader(AsmPrinter &Asm, MCSection *Section) {
 
 // Emit addresses into the section given.
 void AddressPool::emit(AsmPrinter &Asm, MCSection *AddrSection) {
-  if (isEmpty())
+  if (isEmpty()) {
     return;
+
+}
 
   // Start the dwarf addr section.
   Asm.OutStreamer->SwitchSection(AddrSection);
 
   MCSymbol *EndLabel = nullptr;
 
-  if (Asm.getDwarfVersion() >= 5)
+  if (Asm.getDwarfVersion() >= 5) {
     EndLabel = emitHeader(Asm, AddrSection);
+
+}
 
   // Define the symbol that marks the start of the contribution.
   // It is referenced via DW_AT_addr_base.
@@ -63,15 +67,21 @@ void AddressPool::emit(AsmPrinter &Asm, MCSection *AddrSection) {
   // Order the address pool entries by ID
   SmallVector<const MCExpr *, 64> Entries(Pool.size());
 
-  for (const auto &I : Pool)
+  for (const auto &I : Pool) {
     Entries[I.second.Number] =
         I.second.TLS
             ? Asm.getObjFileLowering().getDebugThreadLocalSymbol(I.first)
             : MCSymbolRefExpr::create(I.first, Asm.OutContext);
 
-  for (const MCExpr *Entry : Entries)
+}
+
+  for (const MCExpr *Entry : Entries) {
     Asm.OutStreamer->emitValue(Entry, Asm.getDataLayout().getPointerSize());
 
-  if (EndLabel)
+}
+
+  if (EndLabel) {
     Asm.OutStreamer->emitLabel(EndLabel);
+
+}
 }

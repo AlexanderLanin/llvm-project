@@ -67,13 +67,17 @@ getCommentsInRange(ASTContext *Ctx, CharSourceRange Range) {
   std::pair<FileID, unsigned> BeginLoc = SM.getDecomposedLoc(Range.getBegin()),
                               EndLoc = SM.getDecomposedLoc(Range.getEnd());
 
-  if (BeginLoc.first != EndLoc.first)
+  if (BeginLoc.first != EndLoc.first) {
     return Comments;
+
+}
 
   bool Invalid = false;
   StringRef Buffer = SM.getBufferData(BeginLoc.first, &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return Comments;
+
+}
 
   const char *StrData = Buffer.data() + BeginLoc.second;
 
@@ -83,10 +87,14 @@ getCommentsInRange(ASTContext *Ctx, CharSourceRange Range) {
 
   while (true) {
     Token Tok;
-    if (TheLexer.LexFromRawLexer(Tok))
+    if (TheLexer.LexFromRawLexer(Tok)) {
       break;
-    if (Tok.getLocation() == Range.getEnd() || Tok.is(tok::eof))
+
+}
+    if (Tok.getLocation() == Range.getEnd() || Tok.is(tok::eof)) {
       break;
+
+}
 
     if (Tok.is(tok::comment)) {
       std::pair<FileID, unsigned> CommentLoc =
@@ -111,8 +119,10 @@ getCommentsBeforeLoc(ASTContext *Ctx, SourceLocation Loc) {
     clang::Token Tok = utils::lexer::getPreviousToken(
         Loc, Ctx->getSourceManager(), Ctx->getLangOpts(),
         /*SkipComments=*/false);
-    if (Tok.isNot(tok::comment))
+    if (Tok.isNot(tok::comment)) {
       break;
+
+}
     Loc = Tok.getLocation();
     Comments.emplace_back(
         Loc,
@@ -132,15 +142,21 @@ static bool isLikelyTypo(llvm::ArrayRef<ParmVarDecl *> Params,
   unsigned ThisED = ArgNameLower.edit_distance(
       Params[ArgIndex]->getIdentifier()->getName().lower(),
       /*AllowReplacements=*/true, UpperBound);
-  if (ThisED >= UpperBound)
+  if (ThisED >= UpperBound) {
     return false;
 
+}
+
   for (unsigned I = 0, E = Params.size(); I != E; ++I) {
-    if (I == ArgIndex)
+    if (I == ArgIndex) {
       continue;
+
+}
     IdentifierInfo *II = Params[I]->getIdentifier();
-    if (!II)
+    if (!II) {
       continue;
+
+}
 
     const unsigned Threshold = 2;
     // Other parameters must be an edit distance at least Threshold more away
@@ -149,16 +165,20 @@ static bool isLikelyTypo(llvm::ArrayRef<ParmVarDecl *> Params,
     unsigned OtherED = ArgNameLower.edit_distance(II->getName().lower(),
                                                   /*AllowReplacements=*/true,
                                                   ThisED + Threshold);
-    if (OtherED < ThisED + Threshold)
+    if (OtherED < ThisED + Threshold) {
       return false;
+
+}
   }
 
   return true;
 }
 
 static bool sameName(StringRef InComment, StringRef InDecl, bool StrictMode) {
-  if (StrictMode)
+  if (StrictMode) {
     return InComment == InDecl;
+
+}
   InComment = InComment.trim('_');
   InDecl = InDecl.trim('_');
   // FIXME: compare_lower only works for ASCII.
@@ -188,8 +208,10 @@ static bool areMockAndExpectMethods(const CXXMethodDecl *Mock,
 static const CXXMethodDecl *findMockedMethod(const CXXMethodDecl *Method) {
   if (looksLikeExpectMethod(Method)) {
     const DeclContext *Ctx = Method->getDeclContext();
-    if (Ctx == nullptr || !Ctx->isRecord())
+    if (Ctx == nullptr || !Ctx->isRecord()) {
       return nullptr;
+
+}
     for (const auto *D : Ctx->decls()) {
       if (D->getNextDeclInContext() == Method) {
         const auto *Previous = dyn_cast<CXXMethodDecl>(D);
@@ -200,8 +222,10 @@ static const CXXMethodDecl *findMockedMethod(const CXXMethodDecl *Method) {
   }
   if (const auto *Next =
           dyn_cast_or_null<CXXMethodDecl>(Method->getNextDeclInContext())) {
-    if (looksLikeExpectMethod(Next) && areMockAndExpectMethods(Method, Next))
+    if (looksLikeExpectMethod(Next) && areMockAndExpectMethods(Method, Next)) {
       return Method;
+
+}
   }
   return nullptr;
 }
@@ -228,10 +252,14 @@ static const FunctionDecl *resolveMocks(const FunctionDecl *Func) {
 // be adding an argument comment.
 bool ArgumentCommentCheck::shouldAddComment(const Expr *Arg) const {
   Arg = Arg->IgnoreImpCasts();
-  if (isa<UnaryOperator>(Arg))
+  if (isa<UnaryOperator>(Arg)) {
     Arg = cast<UnaryOperator>(Arg)->getSubExpr();
-  if (Arg->getExprLoc().isMacroID())
+
+}
+  if (Arg->getExprLoc().isMacroID()) {
     return false;
+
+}
   return (CommentBoolLiterals && isa<CXXBoolLiteralExpr>(Arg)) ||
          (CommentIntegerLiterals && isa<IntegerLiteral>(Arg)) ||
          (CommentFloatLiterals && isa<FloatingLiteral>(Arg)) ||
@@ -246,13 +274,17 @@ void ArgumentCommentCheck::checkCallArgs(ASTContext *Ctx,
                                          SourceLocation ArgBeginLoc,
                                          llvm::ArrayRef<const Expr *> Args) {
   const FunctionDecl *Callee = resolveMocks(OriginalCallee);
-  if (!Callee)
+  if (!Callee) {
     return;
+
+}
 
   Callee = Callee->getFirstDecl();
   unsigned NumArgs = std::min<unsigned>(Args.size(), Callee->getNumParams());
-  if ((NumArgs == 0) || (IgnoreSingleArgument && NumArgs == 1))
+  if ((NumArgs == 0) || (IgnoreSingleArgument && NumArgs == 1)) {
     return;
+
+}
 
   auto MakeFileCharRange = [Ctx](SourceLocation Begin, SourceLocation End) {
     return Lexer::makeFileCharRange(CharSourceRange::getCharRange(Begin, End),
@@ -263,8 +295,10 @@ void ArgumentCommentCheck::checkCallArgs(ASTContext *Ctx,
   for (unsigned I = 0; I < NumArgs; ++I) {
     const ParmVarDecl *PVD = Callee->getParamDecl(I);
     IdentifierInfo *II = PVD->getIdentifier();
-    if (!II)
+    if (!II) {
       continue;
+
+}
     if (auto Template = Callee->getTemplateInstantiationPattern()) {
       // Don't warn on arguments for parameters instantiated from template
       // parameter packs. If we find more arguments than the template
@@ -330,8 +364,10 @@ void ArgumentCommentCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *E = Result.Nodes.getNodeAs<Expr>("expr");
   if (const auto *Call = dyn_cast<CallExpr>(E)) {
     const FunctionDecl *Callee = Call->getDirectCallee();
-    if (!Callee)
+    if (!Callee) {
       return;
+
+}
 
     checkCallArgs(Result.Context, Callee, Call->getCallee()->getEndLoc(),
                   llvm::makeArrayRef(Call->getArgs(), Call->getNumArgs()));

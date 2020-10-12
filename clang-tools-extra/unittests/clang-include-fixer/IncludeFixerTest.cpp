@@ -102,13 +102,17 @@ static std::string runIncludeFixer(
   std::string FakeFileName = "input.cc";
   runOnCode(&Factory, Code, FakeFileName, ExtraArgs);
   assert(FixerContexts.size() == 1);
-  if (FixerContexts.front().getHeaderInfos().empty())
+  if (FixerContexts.front().getHeaderInfos().empty()) {
     return std::string(Code);
+
+}
   auto Replaces = createIncludeFixerReplacements(Code, FixerContexts.front());
   EXPECT_TRUE(static_cast<bool>(Replaces))
       << llvm::toString(Replaces.takeError()) << "\n";
-  if (!Replaces)
+  if (!Replaces) {
     return "";
+
+}
   RewriterTestContext Context;
   FileID ID = Context.createInMemoryFile(FakeFileName, Code);
   tooling::applyAllReplacements(*Replaces, Context.Rewrite);

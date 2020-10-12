@@ -39,8 +39,10 @@ public:
         AllowNudgeIntoDiscovery(AllowNudge), PrintStats(PrintStats) {}
 
   ~ThinLtoDefinitionGenerator() {
-    if (PrintStats)
+    if (PrintStats) {
       dump(errs());
+
+}
   }
 
   Error tryToGenerate(LookupKind K, JITDylib &JD,
@@ -96,9 +98,11 @@ Error ThinLtoDefinitionGenerator::tryToGenerate(
     ThreadSafeModule TSM = GlobalIndex.takeModule(Path);
     assert(TSM && "We own the session lock, no asynchronous access possible");
 
-    if (Error LoadErr = AddModule(std::move(TSM)))
+    if (Error LoadErr = AddModule(std::move(TSM))) {
       // Failed to add the module to the session.
       return LoadErr;
+
+}
 
     LLVM_DEBUG(dbgs() << "Generator: added " << Path << " synchronously\n");
   }
@@ -131,8 +135,10 @@ ThinLtoJIT::ThinLtoJIT(ArrayRef<std::string> InputFiles,
   // the one that defines the main function.
   GlobalIndex = std::make_unique<ThinLtoModuleIndex>(ES, NumLoadThreads);
   for (StringRef F : InputFiles) {
-    if (auto Err = GlobalIndex->add(F))
+    if (auto Err = GlobalIndex->add(F)) {
       ES.reportError(std::move(Err));
+
+}
   }
 
   // Load the module that defines the main function.
@@ -161,15 +167,19 @@ ThinLtoJIT::ThinLtoJIT(ArrayRef<std::string> InputFiles,
   // symbol generators.
   MainJD = &ES.createBareJITDylib("main");
   Err = setupJITDylib(MainJD, AllowNudgeIntoDiscovery, PrintStats);
-  if (Err)
+  if (Err) {
     return;
+
+}
 
   // Spawn discovery thread and let it add newly discovered modules to the JIT.
   setupDiscovery(MainJD, LookaheadLevels, PrintStats);
 
   Err = AddModule(std::move(MainModule));
-  if (Err)
+  if (Err) {
     return;
+
+}
 
   if (AllowNudgeIntoDiscovery) {
     auto MainFunctionGuid = GlobalValue::getGUID(MainFunctionName);
@@ -184,14 +194,18 @@ Expected<ThreadSafeModule> ThinLtoJIT::setupMainModule(StringRef MainFunction) {
     raw_string_ostream OS(Buffer);
     OS << "No ValueInfo for symbol '" << MainFunction;
     OS << "' in provided modules: ";
-    for (StringRef P : GlobalIndex->getAllModulePaths())
+    for (StringRef P : GlobalIndex->getAllModulePaths()) {
       OS << P << " ";
+
+}
     OS << "\n";
     return createStringError(inconvertibleErrorCode(), OS.str());
   }
 
-  if (auto TSM = GlobalIndex->parseModuleFromFile(*M))
+  if (auto TSM = GlobalIndex->parseModuleFromFile(*M)) {
     return TSM;
+
+}
 
   return createStringError(inconvertibleErrorCode(),
                            "Failed to parse main module");
@@ -205,19 +219,25 @@ Expected<JITTargetMachineBuilder> ThinLtoJIT::setupTargetUtils(Module *M) {
   auto LCTM = createLocalLazyCallThroughManager(
       JTMB.getTargetTriple(), ES,
       pointerToJITTargetAddress(exitOnLazyCallThroughFailure));
-  if (!LCTM)
+  if (!LCTM) {
     return LCTM.takeError();
+
+}
   CallThroughManager = std::move(*LCTM);
 
   // Use DataLayout or the given module or fall back to the host's default.
   DL = DataLayout(M);
   if (DL.getStringRepresentation().empty()) {
     auto HostDL = JTMB.getDefaultDataLayoutForTarget();
-    if (!HostDL)
+    if (!HostDL) {
       return HostDL.takeError();
+
+}
     DL = std::move(*HostDL);
-    if (Error Err = applyDataLayout(M))
+    if (Error Err = applyDataLayout(M)) {
       return std::move(Err);
+
+}
   }
 
   // Now that we know the target data layout we can setup the mangler.
@@ -226,13 +246,17 @@ Expected<JITTargetMachineBuilder> ThinLtoJIT::setupTargetUtils(Module *M) {
 }
 
 Error ThinLtoJIT::applyDataLayout(Module *M) {
-  if (M->getDataLayout().isDefault())
+  if (M->getDataLayout().isDefault()) {
     M->setDataLayout(DL);
 
-  if (M->getDataLayout() != DL)
+}
+
+  if (M->getDataLayout() != DL) {
     return make_error<StringError>(
         "Added modules have incompatible data layouts",
         inconvertibleErrorCode());
+
+}
 
   return Error::success();
 }
@@ -282,8 +306,10 @@ void ThinLtoJIT::setupLayers(JITTargetMachineBuilder JTMB,
   AddModule = [this](ThreadSafeModule TSM) -> Error {
     assert(MainJD && "Setup MainJD JITDylib before calling");
     Module *M = TSM.getModuleUnlocked();
-    if (Error Err = applyDataLayout(M))
+    if (Error Err = applyDataLayout(M)) {
       return Err;
+
+}
     VModuleKey Id = GlobalIndex->getModuleId(M->getName());
     return OnDemandLayer->add(*MainJD, std::move(TSM), Id);
   };
@@ -304,8 +330,10 @@ Error ThinLtoJIT::setupJITDylib(JITDylib *JD, bool AllowNudge,
   // Register symbols for C++ static destructors.
   LocalCXXRuntimeOverrides CXXRuntimeoverrides;
   Error Err = CXXRuntimeoverrides.enable(*JD, *Mangle);
-  if (Err)
+  if (Err) {
     return Err;
+
+}
 
   // Lookup symbol names in the global ThinLTO module index first
   char Prefix = DL.getGlobalPrefix();
@@ -315,8 +343,10 @@ Error ThinLtoJIT::setupJITDylib(JITDylib *JD, bool AllowNudge,
 
   // Then try lookup in the host process.
   auto HostLookup = DynamicLibrarySearchGenerator::GetForCurrentProcess(Prefix);
-  if (!HostLookup)
+  if (!HostLookup) {
     return HostLookup.takeError();
+
+}
   JD->addGenerator(std::move(*HostLookup));
 
   return Error::success();

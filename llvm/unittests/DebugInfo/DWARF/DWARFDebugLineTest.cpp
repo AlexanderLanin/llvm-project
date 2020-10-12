@@ -40,11 +40,15 @@ struct CommonFixture {
     AddressSize = AddrSize;
     Triple T =
         getDefaultTargetTripleForAddrSize(AddressSize == 0 ? 8 : AddressSize);
-    if (!isConfigurationSupported(T))
+    if (!isConfigurationSupported(T)) {
       return false;
+
+}
     auto ExpectedGenerator = Generator::create(T, Version);
-    if (ExpectedGenerator)
+    if (ExpectedGenerator) {
       Gen.reset(ExpectedGenerator->release());
+
+}
     return true;
   }
 
@@ -60,13 +64,17 @@ struct CommonFixture {
   }
 
   std::unique_ptr<DWARFContext> createContext() {
-    if (!Gen)
+    if (!Gen) {
       return nullptr;
+
+}
     StringRef FileBytes = Gen->generate();
     MemoryBufferRef FileBuffer(FileBytes, "dwarf");
     auto Obj = object::ObjectFile::createObjectFile(FileBuffer);
-    if (Obj)
+    if (Obj) {
       return DWARFContext::create(**Obj);
+
+}
     return nullptr;
   }
 
@@ -179,8 +187,10 @@ void checkDefaultPrologue(uint16_t Version, DwarfFormat Format,
 }
 
 TEST_F(DebugLineBasicFixture, GetOrParseLineTableAtInvalidOffset) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
   generate();
 
   EXPECT_THAT_EXPECTED(
@@ -201,8 +211,10 @@ TEST_F(DebugLineBasicFixture, GetOrParseLineTableAtInvalidOffset) {
 }
 
 TEST_F(DebugLineBasicFixture, GetOrParseLineTableAtInvalidOffsetAfterData) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue({{0, LineTable::Byte}});
@@ -221,8 +233,10 @@ TEST_F(DebugLineBasicFixture, GetOrParseLineTableAtInvalidOffsetAfterData) {
 }
 
 TEST_P(DebugLineParameterisedFixture, PrologueGetLength) {
-  if (!setupGenerator(Version))
+  if (!setupGenerator(Version)) {
     return;
+
+}
   LineTable &LT = Gen->addLineTable(Format);
   DWARFDebugLine::Prologue Prologue = LT.createBasicPrologue();
   LT.setPrologue(Prologue);
@@ -230,12 +244,16 @@ TEST_P(DebugLineParameterisedFixture, PrologueGetLength) {
 
   // + 10 for sizes of DWARF-32 unit length, version, prologue length.
   uint64_t ExpectedLength = Prologue.PrologueLength + 10;
-  if (Version == 5)
+  if (Version == 5) {
     // Add address and segment selector size fields.
     ExpectedLength += 2;
-  if (Format == DWARF64)
+
+}
+  if (Format == DWARF64) {
     // Unit length grows by 8, prologue length by 4.
     ExpectedLength += 12;
+
+}
 
   auto ExpectedLineTable = Line.getOrParseLineTable(LineData, 0, *Context,
                                                     nullptr, RecordRecoverable);
@@ -244,8 +262,10 @@ TEST_P(DebugLineParameterisedFixture, PrologueGetLength) {
 }
 
 TEST_P(DebugLineParameterisedFixture, GetOrParseLineTableValidTable) {
-  if (!setupGenerator(Version))
+  if (!setupGenerator(Version)) {
     return;
+
+}
 
   SCOPED_TRACE("Checking Version " + std::to_string(Version) + ", Format " +
                (Format == DWARF64 ? "DWARF64" : "DWARF32"));
@@ -310,8 +330,10 @@ TEST_P(DebugLineParameterisedFixture, GetOrParseLineTableValidTable) {
 }
 
 TEST_F(DebugLineBasicFixture, ErrorForReservedLength) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue({{0xfffffff0, LineTable::Long}});
@@ -333,8 +355,10 @@ struct DebugLineUnsupportedVersionFixture : public TestWithParam<uint16_t>,
 };
 
 TEST_P(DebugLineUnsupportedVersionFixture, ErrorForUnsupportedVersion) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue(
@@ -355,8 +379,10 @@ INSTANTIATE_TEST_CASE_P(UnsupportedVersionTestParams,
                                /* Maximum possible */ 0xffff), );
 
 TEST_F(DebugLineBasicFixture, ErrorForInvalidV5IncludeDirTable) {
-  if (!setupGenerator(5))
+  if (!setupGenerator(5)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue({
@@ -396,8 +422,10 @@ TEST_F(DebugLineBasicFixture, ErrorForInvalidV5IncludeDirTable) {
 }
 
 TEST_P(DebugLineParameterisedFixture, ErrorForTooLargePrologueLength) {
-  if (!setupGenerator(Version))
+  if (!setupGenerator(Version)) {
     return;
+
+}
 
   SCOPED_TRACE("Checking Version " + std::to_string(Version) + ", Format " +
                (Format == DWARF64 ? "DWARF64" : "DWARF32"));
@@ -431,8 +459,10 @@ TEST_P(DebugLineParameterisedFixture, ErrorForTooLargePrologueLength) {
 }
 
 TEST_P(DebugLineParameterisedFixture, ErrorForTooShortPrologueLength) {
-  if (!setupGenerator(Version))
+  if (!setupGenerator(Version)) {
     return;
+
+}
 
   SCOPED_TRACE("Checking Version " + std::to_string(Version) + ", Format " +
                (Format == DWARF64 ? "DWARF64" : "DWARF32"));
@@ -489,8 +519,10 @@ INSTANTIATE_TEST_CASE_P(
            std::make_pair(5, DWARF32), std::make_pair(5, DWARF64)), );
 
 TEST_F(DebugLineBasicFixture, ErrorForExtendedOpcodeLengthSmallerThanExpected) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.addByte(0xaa);
@@ -518,8 +550,10 @@ TEST_F(DebugLineBasicFixture, ErrorForExtendedOpcodeLengthSmallerThanExpected) {
 }
 
 TEST_F(DebugLineBasicFixture, ErrorForExtendedOpcodeLengthLargerThanExpected) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.addByte(0xaa);
@@ -547,8 +581,10 @@ TEST_F(DebugLineBasicFixture, ErrorForExtendedOpcodeLengthLargerThanExpected) {
 }
 
 TEST_F(DebugLineBasicFixture, ErrorForUnitLengthTooLarge) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &Padding = Gen->addLineTable();
   // Add some padding to show that a non-zero offset is handled correctly.
@@ -576,8 +612,10 @@ TEST_F(DebugLineBasicFixture, ErrorForUnitLengthTooLarge) {
 }
 
 TEST_F(DebugLineBasicFixture, ErrorForMismatchedAddressSize) {
-  if (!setupGenerator(4, 8))
+  if (!setupGenerator(4, 8)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   // The line data extractor expects size 8 (Quad) addresses.
@@ -606,8 +644,10 @@ TEST_F(DebugLineBasicFixture, ErrorForMismatchedAddressSize) {
 
 TEST_F(DebugLineBasicFixture,
        ErrorForMismatchedAddressSizeUnsetInitialAddress) {
-  if (!setupGenerator(4, 0))
+  if (!setupGenerator(4, 0)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   uint64_t Addr1 = 0x11223344;
@@ -635,8 +675,10 @@ TEST_F(DebugLineBasicFixture,
        ErrorForUnsupportedAddressSizeInSetAddressLength) {
   // Use DWARF v4, and 0 for data extractor address size so that the address
   // size is derived from the opcode length.
-  if (!setupGenerator(4, 0))
+  if (!setupGenerator(4, 0)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   // 4 == length of the extended opcode, i.e. 1 for the opcode itself and 3 for
@@ -667,8 +709,10 @@ TEST_F(DebugLineBasicFixture,
 TEST_F(DebugLineBasicFixture, ErrorForAddressSizeGreaterThanByteSize) {
   // Use DWARF v4, and 0 for data extractor address size so that the address
   // size is derived from the opcode length.
-  if (!setupGenerator(4, 0))
+  if (!setupGenerator(4, 0)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   // Specifically use an operand size that has a trailing byte of a supported
@@ -691,8 +735,10 @@ TEST_F(DebugLineBasicFixture, ErrorForAddressSizeGreaterThanByteSize) {
 TEST_F(DebugLineBasicFixture, ErrorForUnsupportedAddressSizeDefinedInHeader) {
   // Use 0 for data extractor address size so that it does not clash with the
   // header address size.
-  if (!setupGenerator(5, 0))
+  if (!setupGenerator(5, 0)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   // AddressSize + 1 == length of the extended opcode, i.e. 1 for the opcode
@@ -726,8 +772,10 @@ TEST_F(DebugLineBasicFixture, ErrorForUnsupportedAddressSizeDefinedInHeader) {
 }
 
 TEST_F(DebugLineBasicFixture, CallbackUsedForUnterminatedSequence) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.addExtendedOpcode(9, DW_LNE_set_address,
@@ -838,8 +886,10 @@ struct AdjustAddressFixtureBase : public CommonFixture {
 
     // Show that the warning is emitted for the first DW_LNS_advance_pc opcode
     // (if requested) and then not again.
-    if (AddAdvancePCFirstTable)
+    if (AddAdvancePCFirstTable) {
       setupAdvancePcFirstTable();
+
+}
   }
 
   Expected<const DWARFDebugLine::LineTable *>
@@ -850,8 +900,10 @@ struct AdjustAddressFixtureBase : public CommonFixture {
     if (!IsErrorExpected) {
       EXPECT_THAT_ERROR(std::move(Recoverable), Succeeded());
     } else {
-      if (!ExpectedTable)
+      if (!ExpectedTable) {
         return ExpectedTable;
+
+}
       uint64_t ExpectedOffset = Offset +
                                 (*ExpectedTable)->Prologue.getLength() +
                                 11; // 11 == size of DW_LNE_set_address.
@@ -871,8 +923,10 @@ struct AdjustAddressFixtureBase : public CommonFixture {
   }
 
   void runTest(bool CheckAdvancePC, Twine MsgSuffix) {
-    if (!setupGenerator(Version))
+    if (!setupGenerator(Version)) {
       return;
+
+}
 
     setupTables(/*AddAdvancePCFirstTable=*/CheckAdvancePC);
 
@@ -904,8 +958,10 @@ struct AdjustAddressFixtureBase : public CommonFixture {
     EXPECT_EQ((*ExpectedSpecial)->Rows[1].Line, getAdjustedLine(1, 5));
     EXPECT_THAT_ERROR(std::move(Unrecoverable), Succeeded());
 
-    if (!CheckAdvancePC)
+    if (!CheckAdvancePC) {
       return;
+
+}
 
     auto ExpectedAdvancePC =
         checkTable(AdvancePCOffset, "DW_LNS_advance_pc", MsgSuffix);
@@ -975,8 +1031,10 @@ struct LineRangeFixture : TestWithParam<std::tuple<uint8_t, bool>>,
   uint64_t getAdjustedAddr(uint64_t Base, uint64_t ConstIncr,
                            uint64_t SpecialIncr,
                            uint64_t AdvanceIncr) override {
-    if (LineRange == 0)
+    if (LineRange == 0) {
       return Base + AdvanceIncr;
+
+}
     return AdjustAddressFixtureBase::getAdjustedAddr(Base, ConstIncr,
                                                      SpecialIncr, AdvanceIncr);
   }
@@ -1037,8 +1095,10 @@ INSTANTIATE_TEST_CASE_P(
            std::make_tuple(1, false)), ); // Test non-zero value (no error).
 
 TEST_F(DebugLineBasicFixture, ParserParsesCorrectly) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   DWARFDebugLine::SectionParser Parser = setupParser();
 
@@ -1064,8 +1124,10 @@ TEST_F(DebugLineBasicFixture, ParserParsesCorrectly) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserSkipsCorrectly) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   DWARFDebugLine::SectionParser Parser = setupParser();
 
@@ -1085,8 +1147,10 @@ TEST_F(DebugLineBasicFixture, ParserSkipsCorrectly) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserAlwaysDoneForEmptySection) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   generate();
   DWARFDebugLine::SectionParser Parser(LineData, *Context, CUs, TUs);
@@ -1095,8 +1159,10 @@ TEST_F(DebugLineBasicFixture, ParserAlwaysDoneForEmptySection) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserMarkedAsDoneForBadLengthWhenParsing) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue({{0xfffffff0, LineTable::Long}});
@@ -1118,8 +1184,10 @@ TEST_F(DebugLineBasicFixture, ParserMarkedAsDoneForBadLengthWhenParsing) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserMarkedAsDoneForBadLengthWhenSkipping) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   LT.setCustomPrologue({{0xfffffff0, LineTable::Long}});
@@ -1141,8 +1209,10 @@ TEST_F(DebugLineBasicFixture, ParserMarkedAsDoneForBadLengthWhenSkipping) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserReportsFirstErrorInEachTableWhenParsing) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable(DWARF32);
   LT.setCustomPrologue({{2, LineTable::Long}, {0, LineTable::Half}});
@@ -1167,8 +1237,10 @@ TEST_F(DebugLineBasicFixture, ParserReportsFirstErrorInEachTableWhenParsing) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserReportsNonPrologueProblemsWhenParsing) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable(DWARF32);
   LT.addExtendedOpcode(0x42, DW_LNE_end_sequence, {});
@@ -1200,8 +1272,10 @@ TEST_F(DebugLineBasicFixture, ParserReportsNonPrologueProblemsWhenParsing) {
 
 TEST_F(DebugLineBasicFixture,
        ParserReportsPrologueErrorsInEachTableWhenSkipping) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable(DWARF32);
   LT.setCustomPrologue({{2, LineTable::Long}, {0, LineTable::Half}});
@@ -1226,8 +1300,10 @@ TEST_F(DebugLineBasicFixture,
 }
 
 TEST_F(DebugLineBasicFixture, ParserIgnoresNonPrologueErrorsWhenSkipping) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable(DWARF32);
   LT.addExtendedOpcode(42, DW_LNE_end_sequence, {});
@@ -1242,8 +1318,10 @@ TEST_F(DebugLineBasicFixture, ParserIgnoresNonPrologueErrorsWhenSkipping) {
 }
 
 TEST_F(DebugLineBasicFixture, ParserPrintsStandardOpcodesWhenRequested) {
-  if (!setupGenerator())
+  if (!setupGenerator()) {
     return;
+
+}
 
   using ValLen = dwarfgen::LineTable::ValueAndLength;
   LineTable &LT = Gen->addLineTable(DWARF32);
@@ -1294,8 +1372,10 @@ TEST_F(DebugLineBasicFixture, ParserPrintsStandardOpcodesWhenRequested) {
 }
 
 TEST_F(DebugLineBasicFixture, PrintPathsProperly) {
-  if (!setupGenerator(5))
+  if (!setupGenerator(5)) {
     return;
+
+}
 
   LineTable &LT = Gen->addLineTable();
   DWARFDebugLine::Prologue P = LT.createBasicPrologue();

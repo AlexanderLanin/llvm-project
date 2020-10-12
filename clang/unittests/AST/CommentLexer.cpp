@@ -68,8 +68,10 @@ void CommentLexerTest::lexString(const char *Source,
   while (1) {
     Token Tok;
     L.lex(Tok);
-    if (Tok.is(tok::eof))
+    if (Tok.is(tok::eof)) {
       break;
+
+}
     Toks.push_back(Tok);
   }
 }

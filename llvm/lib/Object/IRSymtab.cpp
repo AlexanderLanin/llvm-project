@@ -57,8 +57,10 @@ const char *getExpectedProducerName() {
       ;
   // Allows for testing of the irsymtab writer and upgrade mechanism. This
   // environment variable should not be set by users.
-  if (char *OverrideName = getenv("LLVM_OVERRIDE_PRODUCER"))
+  if (char *OverrideName = getenv("LLVM_OVERRIDE_PRODUCER")) {
     return OverrideName;
+
+}
   return DefaultName;
 }
 
@@ -115,9 +117,11 @@ struct Builder {
 };
 
 Error Builder::addModule(Module *M) {
-  if (M->getDataLayoutStr().empty())
+  if (M->getDataLayoutStr().empty()) {
     return make_error<StringError>("input module has no datalayout",
                                    inconvertibleErrorCode());
+
+}
 
   SmallPtrSet<GlobalValue *, 8> Used;
   collectUsedGlobalVariables(*M, Used, /*CompilerUsed*/ false);
@@ -132,19 +136,27 @@ Error Builder::addModule(Module *M) {
   Mods.push_back(Mod);
 
   if (TT.isOSBinFormatCOFF()) {
-    if (auto E = M->materializeMetadata())
+    if (auto E = M->materializeMetadata()) {
       return E;
+
+}
     if (NamedMDNode *LinkerOptions =
             M->getNamedMetadata("llvm.linker.options")) {
-      for (MDNode *MDOptions : LinkerOptions->operands())
-        for (const MDOperand &MDOption : cast<MDNode>(MDOptions)->operands())
+      for (MDNode *MDOptions : LinkerOptions->operands()) {
+        for (const MDOperand &MDOption : cast<MDNode>(MDOptions)->operands()) {
           COFFLinkerOptsOS << " " << cast<MDString>(MDOption)->getString();
+
+}
+
+}
     }
   }
 
   if (TT.isOSBinFormatELF()) {
-    if (auto E = M->materializeMetadata())
+    if (auto E = M->materializeMetadata()) {
       return E;
+
+}
     if (NamedMDNode *N = M->getNamedMetadata("llvm.dependent-libraries")) {
       for (MDNode *MDOptions : N->operands()) {
         const auto OperandStr =
@@ -156,9 +168,13 @@ Error Builder::addModule(Module *M) {
     }
   }
 
-  for (ModuleSymbolTable::Symbol Msym : Msymtab.symbols())
-    if (Error Err = addSymbol(Msymtab, Used, Msym))
+  for (ModuleSymbolTable::Symbol Msym : Msymtab.symbols()) {
+    if (Error Err = addSymbol(Msymtab, Used, Msym)) {
       return Err;
+
+}
+
+}
 
   return Error::success();
 }
@@ -169,9 +185,11 @@ Expected<int> Builder::getComdatIndex(const Comdat *C, const Module *M) {
     std::string Name;
     if (TT.isOSBinFormatCOFF()) {
       const GlobalValue *GV = M->getNamedValue(C->getName());
-      if (!GV)
+      if (!GV) {
         return make_error<StringError>("Could not find leader",
                                        inconvertibleErrorCode());
+
+}
       // Internal leaders do not affect symbol resolution, therefore they do not
       // appear in the symbol table.
       if (GV->hasLocalLinkage()) {
@@ -201,8 +219,10 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
 
   storage::Uncommon *Unc = nullptr;
   auto Uncommon = [&]() -> storage::Uncommon & {
-    if (Unc)
+    if (Unc) {
       return *Unc;
+
+}
     Sym.Flags |= 1 << storage::Symbol::FB_has_uncommon;
     Uncommons.emplace_back();
     Unc = &Uncommons.back();
@@ -220,27 +240,43 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
   setStr(Sym.Name, Saver.save(StringRef(Name)));
 
   auto Flags = Msymtab.getSymbolFlags(Msym);
-  if (Flags & object::BasicSymbolRef::SF_Undefined)
+  if (Flags & object::BasicSymbolRef::SF_Undefined) {
     Sym.Flags |= 1 << storage::Symbol::FB_undefined;
-  if (Flags & object::BasicSymbolRef::SF_Weak)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_Weak) {
     Sym.Flags |= 1 << storage::Symbol::FB_weak;
-  if (Flags & object::BasicSymbolRef::SF_Common)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_Common) {
     Sym.Flags |= 1 << storage::Symbol::FB_common;
-  if (Flags & object::BasicSymbolRef::SF_Indirect)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_Indirect) {
     Sym.Flags |= 1 << storage::Symbol::FB_indirect;
-  if (Flags & object::BasicSymbolRef::SF_Global)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_Global) {
     Sym.Flags |= 1 << storage::Symbol::FB_global;
-  if (Flags & object::BasicSymbolRef::SF_FormatSpecific)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_FormatSpecific) {
     Sym.Flags |= 1 << storage::Symbol::FB_format_specific;
-  if (Flags & object::BasicSymbolRef::SF_Executable)
+
+}
+  if (Flags & object::BasicSymbolRef::SF_Executable) {
     Sym.Flags |= 1 << storage::Symbol::FB_executable;
+
+}
 
   Sym.ComdatIndex = -1;
   auto *GV = Msym.dyn_cast<GlobalValue *>();
   if (!GV) {
     // Undefined module asm symbols act as GC roots and are implicitly used.
-    if (Flags & object::BasicSymbolRef::SF_Undefined)
+    if (Flags & object::BasicSymbolRef::SF_Undefined) {
       Sym.Flags |= 1 << storage::Symbol::FB_used;
+
+}
     setStr(Sym.IRName, "");
     return Error::success();
   }
@@ -249,18 +285,30 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
 
   bool IsBuiltinFunc = false;
 
-  for (const char *LibcallName : LibcallRoutineNames)
-    if (GV->getName() == LibcallName)
+  for (const char *LibcallName : LibcallRoutineNames) {
+    if (GV->getName() == LibcallName) {
       IsBuiltinFunc = true;
 
-  if (Used.count(GV) || IsBuiltinFunc)
+}
+
+}
+
+  if (Used.count(GV) || IsBuiltinFunc) {
     Sym.Flags |= 1 << storage::Symbol::FB_used;
-  if (GV->isThreadLocal())
+
+}
+  if (GV->isThreadLocal()) {
     Sym.Flags |= 1 << storage::Symbol::FB_tls;
-  if (GV->hasGlobalUnnamedAddr())
+
+}
+  if (GV->hasGlobalUnnamedAddr()) {
     Sym.Flags |= 1 << storage::Symbol::FB_unnamed_addr;
-  if (GV->canBeOmittedFromSymbolTable())
+
+}
+  if (GV->canBeOmittedFromSymbolTable()) {
     Sym.Flags |= 1 << storage::Symbol::FB_may_omit;
+
+}
   Sym.Flags |= unsigned(GV->getVisibility()) << storage::Symbol::FB_visibility;
 
   if (Flags & object::BasicSymbolRef::SF_Common) {
@@ -270,13 +318,17 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
   }
 
   const GlobalObject *Base = GV->getBaseObject();
-  if (!Base)
+  if (!Base) {
     return make_error<StringError>("Unable to determine comdat of alias!",
                                    inconvertibleErrorCode());
+
+}
   if (const Comdat *C = Base->getComdat()) {
     Expected<int> ComdatIndexOrErr = getComdatIndex(C, GV->getParent());
-    if (!ComdatIndexOrErr)
+    if (!ComdatIndexOrErr) {
       return ComdatIndexOrErr.takeError();
+
+}
     Sym.ComdatIndex = *ComdatIndexOrErr;
   }
 
@@ -287,9 +339,11 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
         (Flags & object::BasicSymbolRef::SF_Indirect)) {
       auto *Fallback = dyn_cast<GlobalValue>(
           cast<GlobalAlias>(GV)->getAliasee()->stripPointerCasts());
-      if (!Fallback)
+      if (!Fallback) {
         return make_error<StringError>("Invalid weak external",
                                        inconvertibleErrorCode());
+
+}
       std::string FallbackName;
       raw_string_ostream OS(FallbackName);
       Msymtab.printSymbolName(OS, Fallback);
@@ -298,8 +352,10 @@ Error Builder::addSymbol(const ModuleSymbolTable &Msymtab,
     }
   }
 
-  if (!Base->getSection().empty())
+  if (!Base->getSection().empty()) {
     setStr(Uncommon().SectionName, Saver.save(Base->getSection()));
+
+}
 
   return Error::success();
 }
@@ -314,9 +370,13 @@ Error Builder::build(ArrayRef<Module *> IRMods) {
   setStr(Hdr.SourceFileName, IRMods[0]->getSourceFileName());
   TT = Triple(IRMods[0]->getTargetTriple());
 
-  for (auto *M : IRMods)
-    if (Error Err = addModule(M))
+  for (auto *M : IRMods) {
+    if (Error Err = addModule(M)) {
       return Err;
+
+}
+
+}
 
   COFFLinkerOptsOS.flush();
   setStr(Hdr.COFFLinkerOpts, Saver.save(COFFLinkerOpts));
@@ -353,8 +413,10 @@ static Expected<FileContents> upgrade(ArrayRef<BitcodeModule> BMs) {
     Expected<std::unique_ptr<Module>> MOrErr =
         BM.getLazyModule(Ctx, /*ShouldLazyLoadMetadata*/ true,
                          /*IsImporting*/ false);
-    if (!MOrErr)
+    if (!MOrErr) {
       return MOrErr.takeError();
+
+}
 
     Mods.push_back(MOrErr->get());
     OwnedMods.push_back(std::move(*MOrErr));
@@ -362,8 +424,10 @@ static Expected<FileContents> upgrade(ArrayRef<BitcodeModule> BMs) {
 
   StringTableBuilder StrtabBuilder(StringTableBuilder::RAW);
   BumpPtrAllocator Alloc;
-  if (Error E = build(Mods, FC.Symtab, StrtabBuilder, Alloc))
+  if (Error E = build(Mods, FC.Symtab, StrtabBuilder, Alloc)) {
     return std::move(E);
+
+}
 
   StrtabBuilder.finalizeInOrder();
   FC.Strtab.resize(StrtabBuilder.getSize());
@@ -375,13 +439,17 @@ static Expected<FileContents> upgrade(ArrayRef<BitcodeModule> BMs) {
 }
 
 Expected<FileContents> irsymtab::readBitcode(const BitcodeFileContents &BFC) {
-  if (BFC.Mods.empty())
+  if (BFC.Mods.empty()) {
     return make_error<StringError>("Bitcode file does not contain any modules",
                                    inconvertibleErrorCode());
 
+}
+
   if (BFC.StrtabForSymtab.empty() ||
-      BFC.Symtab.size() < sizeof(storage::Header))
+      BFC.Symtab.size() < sizeof(storage::Header)) {
     return upgrade(BFC.Mods);
+
+}
 
   // We cannot use the regular reader to read the version and producer, because
   // it will expect the header to be in the current format. The only thing we
@@ -391,8 +459,10 @@ Expected<FileContents> irsymtab::readBitcode(const BitcodeFileContents &BFC) {
   unsigned Version = Hdr->Version;
   StringRef Producer = Hdr->Producer.get(BFC.StrtabForSymtab);
   if (Version != storage::Header::kCurrentVersion ||
-      Producer != kExpectedProducerName)
+      Producer != kExpectedProducerName) {
     return upgrade(BFC.Mods);
+
+}
 
   FileContents FC;
   FC.TheReader = {{BFC.Symtab.data(), BFC.Symtab.size()},
@@ -402,8 +472,10 @@ Expected<FileContents> irsymtab::readBitcode(const BitcodeFileContents &BFC) {
   // the number of modules in the bitcode file. If they differ, it may mean that
   // the bitcode file was created by binary concatenation, so we need to create
   // a new symbol table from scratch.
-  if (FC.TheReader.getNumModules() != BFC.Mods.size())
+  if (FC.TheReader.getNumModules() != BFC.Mods.size()) {
     return upgrade(std::move(BFC.Mods));
+
+}
 
   return std::move(FC);
 }

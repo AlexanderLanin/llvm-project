@@ -103,14 +103,20 @@ FunctionPass *llvm::createX86PadShortFunctions() {
 /// runOnMachineFunction - Loop over all of the basic blocks, inserting
 /// NOOP instructions before early exits.
 bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
 
-  if (MF.getFunction().hasOptSize())
+}
+
+  if (MF.getFunction().hasOptSize()) {
     return false;
 
-  if (!MF.getSubtarget<X86Subtarget>().padShortFunctions())
+}
+
+  if (!MF.getSubtarget<X86Subtarget>().padShortFunctions()) {
     return false;
+
+}
 
   TSM.init(&MF.getSubtarget());
 
@@ -135,8 +141,10 @@ bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
 
     // Function::hasOptSize is already checked above.
     bool OptForSize = llvm::shouldOptimizeForSize(MBB, PSI, MBFI);
-    if (OptForSize)
+    if (OptForSize) {
       continue;
+
+}
 
     if (Cycles < Threshold) {
       // BB ends in a return. Skip over any DBG_VALUE instructions
@@ -145,8 +153,10 @@ bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
              "Basic block should contain at least a RET but is empty");
       MachineBasicBlock::iterator ReturnLoc = --MBB->end();
 
-      while (ReturnLoc->isDebugInstr())
+      while (ReturnLoc->isDebugInstr()) {
         --ReturnLoc;
+
+}
       assert(ReturnLoc->isReturn() && !ReturnLoc->isCall() &&
              "Basic block does not end with RET");
 
@@ -164,8 +174,10 @@ bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
 void PadShortFunc::findReturns(MachineBasicBlock *MBB, unsigned int Cycles) {
   // If this BB has a return, note how many cycles it takes to get there.
   bool hasReturn = cyclesUntilReturn(MBB, Cycles);
-  if (Cycles >= Threshold)
+  if (Cycles >= Threshold) {
     return;
+
+}
 
   if (hasReturn) {
     ReturnBBs[MBB] = std::max(ReturnBBs[MBB], Cycles);
@@ -175,8 +187,10 @@ void PadShortFunc::findReturns(MachineBasicBlock *MBB, unsigned int Cycles) {
   // Follow branches in BB and look for returns
   for (MachineBasicBlock::succ_iterator I = MBB->succ_begin();
        I != MBB->succ_end(); ++I) {
-    if (*I == MBB)
+    if (*I == MBB) {
       continue;
+
+}
     findReturns(*I, Cycles);
   }
 }
@@ -224,6 +238,8 @@ void PadShortFunc::addPadding(MachineBasicBlock *MBB,
   DebugLoc DL = MBBI->getDebugLoc();
   unsigned IssueWidth = TSM.getIssueWidth();
 
-  for (unsigned i = 0, e = IssueWidth * NOOPsToAdd; i != e; ++i)
+  for (unsigned i = 0, e = IssueWidth * NOOPsToAdd; i != e; ++i) {
     BuildMI(*MBB, MBBI, DL, TSM.getInstrInfo()->get(X86::NOOP));
+
+}
 }

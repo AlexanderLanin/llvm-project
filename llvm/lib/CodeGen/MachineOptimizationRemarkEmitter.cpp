@@ -33,8 +33,10 @@ DiagnosticInfoMIROptimization::MachineArgument::MachineArgument(
 
 Optional<uint64_t>
 MachineOptimizationRemarkEmitter::computeHotness(const MachineBasicBlock &MBB) {
-  if (!MBFI)
+  if (!MBFI) {
     return None;
+
+}
 
   return MBFI->getBlockProfileCount(&MBB);
 }
@@ -42,8 +44,10 @@ MachineOptimizationRemarkEmitter::computeHotness(const MachineBasicBlock &MBB) {
 void MachineOptimizationRemarkEmitter::computeHotness(
     DiagnosticInfoMIROptimization &Remark) {
   const MachineBasicBlock *MBB = Remark.getBlock();
-  if (MBB)
+  if (MBB) {
     Remark.setHotness(computeHotness(*MBB));
+
+}
 }
 
 void MachineOptimizationRemarkEmitter::emit(
@@ -72,10 +76,12 @@ bool MachineOptimizationRemarkEmitterPass::runOnMachineFunction(
     MachineFunction &MF) {
   MachineBlockFrequencyInfo *MBFI;
 
-  if (MF.getFunction().getContext().getDiagnosticsHotnessRequested())
+  if (MF.getFunction().getContext().getDiagnosticsHotnessRequested()) {
     MBFI = &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI();
-  else
+  } else {
     MBFI = nullptr;
+
+}
 
   ORE = std::make_unique<MachineOptimizationRemarkEmitter>(MF, MBFI);
   return false;

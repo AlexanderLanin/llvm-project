@@ -36,8 +36,10 @@ static constexpr llvm::StringLiteral ValidCPUNames[] = {
 StringRef WebAssemblyTargetInfo::getABI() const { return ABI; }
 
 bool WebAssemblyTargetInfo::setABI(const std::string &Name) {
-  if (Name != "mvp" && Name != "experimental-mv")
+  if (Name != "mvp" && Name != "experimental-mv") {
     return false;
+
+}
 
   ABI = Name;
   return true;
@@ -71,28 +73,50 @@ void WebAssemblyTargetInfo::fillValidCPUList(
 void WebAssemblyTargetInfo::getTargetDefines(const LangOptions &Opts,
                                              MacroBuilder &Builder) const {
   defineCPUMacros(Builder, "wasm", /*Tuning=*/false);
-  if (SIMDLevel >= SIMD128)
+  if (SIMDLevel >= SIMD128) {
     Builder.defineMacro("__wasm_simd128__");
-  if (SIMDLevel >= UnimplementedSIMD128)
+
+}
+  if (SIMDLevel >= UnimplementedSIMD128) {
     Builder.defineMacro("__wasm_unimplemented_simd128__");
-  if (HasNontrappingFPToInt)
+
+}
+  if (HasNontrappingFPToInt) {
     Builder.defineMacro("__wasm_nontrapping_fptoint__");
-  if (HasSignExt)
+
+}
+  if (HasSignExt) {
     Builder.defineMacro("__wasm_sign_ext__");
-  if (HasExceptionHandling)
+
+}
+  if (HasExceptionHandling) {
     Builder.defineMacro("__wasm_exception_handling__");
-  if (HasBulkMemory)
+
+}
+  if (HasBulkMemory) {
     Builder.defineMacro("__wasm_bulk_memory__");
-  if (HasAtomics)
+
+}
+  if (HasAtomics) {
     Builder.defineMacro("__wasm_atomics__");
-  if (HasMutableGlobals)
+
+}
+  if (HasMutableGlobals) {
     Builder.defineMacro("__wasm_mutable_globals__");
-  if (HasMultivalue)
+
+}
+  if (HasMultivalue) {
     Builder.defineMacro("__wasm_multivalue__");
-  if (HasTailCall)
+
+}
+  if (HasTailCall) {
     Builder.defineMacro("__wasm_tail_call__");
-  if (HasReferenceTypes)
+
+}
+  if (HasReferenceTypes) {
     Builder.defineMacro("__wasm_reference_types__");
+
+}
 }
 
 void WebAssemblyTargetInfo::setSIMDLevel(llvm::StringMap<bool> &Features,
@@ -125,24 +149,42 @@ bool WebAssemblyTargetInfo::initFeatureMap(
   // are actively developing new features it is useful to let user-configured
   // features control availability of builtins
   setSIMDLevel(Features, SIMDLevel);
-  if (HasNontrappingFPToInt)
+  if (HasNontrappingFPToInt) {
     Features["nontrapping-fptoint"] = true;
-  if (HasSignExt)
+
+}
+  if (HasSignExt) {
     Features["sign-ext"] = true;
-  if (HasExceptionHandling)
+
+}
+  if (HasExceptionHandling) {
     Features["exception-handling"] = true;
-  if (HasBulkMemory)
+
+}
+  if (HasBulkMemory) {
     Features["bulk-memory"] = true;
-  if (HasAtomics)
+
+}
+  if (HasAtomics) {
     Features["atomics"] = true;
-  if (HasMutableGlobals)
+
+}
+  if (HasMutableGlobals) {
     Features["mutable-globals"] = true;
-  if (HasMultivalue)
+
+}
+  if (HasMultivalue) {
     Features["multivalue"] = true;
-  if (HasTailCall)
+
+}
+  if (HasTailCall) {
     Features["tail-call"] = true;
-  if (HasReferenceTypes)
+
+}
+  if (HasReferenceTypes) {
     Features["reference-types"] = true;
+
+}
 
   return TargetInfo::initFeatureMap(Features, Diags, CPU, FeaturesVec);
 }

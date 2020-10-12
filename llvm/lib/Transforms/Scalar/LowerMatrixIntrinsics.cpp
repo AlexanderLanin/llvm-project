@@ -52,8 +52,10 @@ static cl::opt<bool> AllowContractEnabled(
 /// Helper function to either return Scope, if it is a subprogram or the
 /// attached subprogram for a local scope.
 static DISubprogram *getSubprogram(DIScope *Scope) {
-  if (auto *Subprogram = dyn_cast<DISubprogram>(Scope))
+  if (auto *Subprogram = dyn_cast<DISubprogram>(Scope)) {
     return Subprogram;
+
+}
   return cast<DILocalScope>(Scope)->getSubprogram();
 }
 
@@ -108,10 +110,12 @@ Value *computeColumnAddr(Value *BasePtr, Value *Col, Value *Stride,
 
   // Get pointer to the start of the selected column. Skip GEP creation,
   // if we select column 0.
-  if (isa<ConstantInt>(ColumnStart) && cast<ConstantInt>(ColumnStart)->isZero())
+  if (isa<ConstantInt>(ColumnStart) && cast<ConstantInt>(ColumnStart)->isZero()) {
     ColumnStart = BasePtr;
-  else
+  } else {
     ColumnStart = Builder.CreateGEP(EltType, BasePtr, ColumnStart, "col.gep");
+
+}
 
   // Cast elementwise column start pointer to a pointer to a column
   // (EltType x NumRows)*.
@@ -312,8 +316,10 @@ public:
       ColumnMatrixTy &M = Found->second;
       // Return the found matrix, if its shape matches the requested shape
       // information
-      if (SI.NumRows == M.getNumRows() && SI.NumColumns == M.getNumColumns())
+      if (SI.NumRows == M.getNumRows() && SI.NumColumns == M.getNumColumns()) {
         return M;
+
+}
 
       MatrixVal = M.embedInVector(Builder);
     }
@@ -335,8 +341,10 @@ public:
   /// for instructions that support it.
   bool setShapeInfo(Value *V, ShapeInfo Shape) {
     assert(Shape && "Shape not set");
-    if (isa<UndefValue>(V) || !supportsShapeInfo(V))
+    if (isa<UndefValue>(V) || !supportsShapeInfo(V)) {
       return false;
+
+}
 
     auto SIter = ShapeMap.find(V);
     if (SIter != ShapeMap.end()) {
@@ -354,8 +362,10 @@ public:
 
   bool isUniformShape(Value *V) {
     Instruction *I = dyn_cast<Instruction>(V);
-    if (!I)
+    if (!I) {
       return true;
+
+}
 
     switch (I->getOpcode()) {
     case Instruction::FAdd:
@@ -374,11 +384,13 @@ public:
   /// instructions must match the instructions that can be lowered by this pass.
   bool supportsShapeInfo(Value *V) {
     Instruction *Inst = dyn_cast<Instruction>(V);
-    if (!Inst)
+    if (!Inst) {
       return false;
 
+}
+
     IntrinsicInst *II = dyn_cast<IntrinsicInst>(Inst);
-    if (II)
+    if (II) {
       switch (II->getIntrinsicID()) {
       case Intrinsic::matrix_multiply:
       case Intrinsic::matrix_transpose:
@@ -388,6 +400,8 @@ public:
       default:
         return false;
       }
+
+}
     return isUniformShape(V) || isa<StoreInst>(V) || isa<LoadInst>(V);
   }
 
@@ -432,8 +446,10 @@ public:
         Propagate = setShapeInfo(Inst, {M, N});
       } else if (match(Inst, m_Store(m_Value(MatrixA), m_Value()))) {
         auto OpShape = ShapeMap.find(MatrixA);
-        if (OpShape != ShapeMap.end())
+        if (OpShape != ShapeMap.end()) {
           setShapeInfo(Inst, OpShape->second);
+
+}
         continue;
       } else if (isUniformShape(Inst)) {
         // Find the first operand that has a known shape and use that.
@@ -448,9 +464,13 @@ public:
 
       if (Propagate) {
         NewWorkList.push_back(Inst);
-        for (auto *User : Inst->users())
-          if (ShapeMap.count(User) == 0)
+        for (auto *User : Inst->users()) {
+          if (ShapeMap.count(User) == 0) {
             WorkList.push_back(cast<Instruction>(User));
+
+}
+
+}
       }
     }
 
@@ -466,8 +486,10 @@ public:
     auto pushInstruction = [](Value *V,
                               SmallVectorImpl<Instruction *> &WorkList) {
       Instruction *I = dyn_cast<Instruction>(V);
-      if (I)
+      if (I) {
         WorkList.push_back(I);
+
+}
     };
     // Pop an element with known shape.  Traverse the operands, if their shape
     // derives from the result shape and is unknown, add it and add them to the
@@ -478,8 +500,10 @@ public:
       WorkList.pop_back();
 
       size_t BeforeProcessingV = WorkList.size();
-      if (!isa<Instruction>(V))
+      if (!isa<Instruction>(V)) {
         continue;
+
+}
 
       Value *MatrixA;
       Value *MatrixB;
@@ -489,17 +513,23 @@ public:
       if (match(V, m_Intrinsic<Intrinsic::matrix_multiply>(
                        m_Value(MatrixA), m_Value(MatrixB), m_Value(M),
                        m_Value(N), m_Value(K)))) {
-        if (setShapeInfo(MatrixA, {M, N}))
+        if (setShapeInfo(MatrixA, {M, N})) {
           pushInstruction(MatrixA, WorkList);
 
-        if (setShapeInfo(MatrixB, {N, K}))
+}
+
+        if (setShapeInfo(MatrixB, {N, K})) {
           pushInstruction(MatrixB, WorkList);
+
+}
 
       } else if (match(V, m_Intrinsic<Intrinsic::matrix_transpose>(
                               m_Value(MatrixA), m_Value(M), m_Value(N)))) {
         // Flip dimensions.
-        if (setShapeInfo(MatrixA, {M, N}))
+        if (setShapeInfo(MatrixA, {M, N})) {
           pushInstruction(MatrixA, WorkList);
+
+}
       } else if (match(V, m_Intrinsic<Intrinsic::matrix_columnwise_store>(
                               m_Value(MatrixA), m_Value(), m_Value(),
                               m_Value(M), m_Value(N)))) {
@@ -516,17 +546,25 @@ public:
         // Propagate to all operands.
         ShapeInfo Shape = ShapeMap[V];
         for (Use &U : cast<Instruction>(V)->operands()) {
-          if (setShapeInfo(U.get(), Shape))
+          if (setShapeInfo(U.get(), Shape)) {
             pushInstruction(U.get(), WorkList);
+
+}
         }
       }
       // After we discovered new shape info for new instructions in the
       // worklist, we use their users as seeds for the next round of forward
       // propagation.
-      for (size_t I = BeforeProcessingV; I != WorkList.size(); I++)
-        for (User *U : WorkList[I]->users())
-          if (isa<Instruction>(U) && V != U)
+      for (size_t I = BeforeProcessingV; I != WorkList.size(); I++) {
+        for (User *U : WorkList[I]->users()) {
+          if (isa<Instruction>(U) && V != U) {
             NewWorkList.push_back(cast<Instruction>(U));
+
+}
+
+}
+
+}
     }
     return NewWorkList;
   }
@@ -537,11 +575,13 @@ public:
 
       // Initially only the shape of matrix intrinsics is known.
       // Initialize the work list with ops carrying shape information.
-      for (BasicBlock &BB : Func)
+      for (BasicBlock &BB : Func) {
         for (Instruction &Inst : BB) {
           IntrinsicInst *II = dyn_cast<IntrinsicInst>(&Inst);
-          if (!II)
+          if (!II) {
             continue;
+
+}
 
           switch (II->getIntrinsicID()) {
           case Intrinsic::matrix_multiply:
@@ -554,6 +594,8 @@ public:
             break;
           }
         }
+
+}
       // Propagate shapes until nothing changes any longer.
       while (!WorkList.empty()) {
         WorkList = propagateShapeForward(WorkList);
@@ -567,25 +609,33 @@ public:
       for (Instruction &Inst : make_early_inc_range(*BB)) {
         IRBuilder<> Builder(&Inst);
 
-        if (CallInst *CInst = dyn_cast<CallInst>(&Inst))
+        if (CallInst *CInst = dyn_cast<CallInst>(&Inst)) {
           Changed |= VisitCallInst(CInst);
+
+}
 
         Value *Op1;
         Value *Op2;
-        if (auto *BinOp = dyn_cast<BinaryOperator>(&Inst))
+        if (auto *BinOp = dyn_cast<BinaryOperator>(&Inst)) {
           Changed |= VisitBinaryOperator(BinOp);
-        if (match(&Inst, m_Load(m_Value(Op1))))
+
+}
+        if (match(&Inst, m_Load(m_Value(Op1)))) {
           Changed |= VisitLoad(&Inst, Op1, Builder);
-        else if (match(&Inst, m_Store(m_Value(Op1), m_Value(Op2))))
+        } else if (match(&Inst, m_Store(m_Value(Op1), m_Value(Op2)))) {
           Changed |= VisitStore(&Inst, Op1, Op2, Builder);
+
+}
       }
     }
 
     RemarkGenerator RemarkGen(Inst2ColumnMatrix, ORE, Func);
     RemarkGen.emitRemarks();
 
-    for (Instruction *Inst : reverse(ToRemove))
+    for (Instruction *Inst : reverse(ToRemove)) {
       Inst->eraseFromParent();
+
+}
 
     return Changed;
   }
@@ -612,8 +662,10 @@ public:
 
   /// Replace intrinsic calls
   bool VisitCallInst(CallInst *Inst) {
-    if (!Inst->getCalledFunction() || !Inst->getCalledFunction()->isIntrinsic())
+    if (!Inst->getCalledFunction() || !Inst->getCalledFunction()->isIntrinsic()) {
       return false;
+
+}
 
     switch (Inst->getCalledFunction()->getIntrinsicID()) {
     case Intrinsic::matrix_multiply:
@@ -723,15 +775,21 @@ public:
     // 8, 4, 5, 6
     SmallVector<Constant *, 16> Mask;
     unsigned i;
-    for (i = 0; i < I; i++)
+    for (i = 0; i < I; i++) {
       Mask.push_back(Builder.getInt32(i));
+
+}
 
     unsigned VecNumElts = cast<VectorType>(Col->getType())->getNumElements();
-    for (; i < I + BlockNumElts; i++)
+    for (; i < I + BlockNumElts; i++) {
       Mask.push_back(Builder.getInt32(i - I + VecNumElts));
 
-    for (; i < VecNumElts; i++)
+}
+
+    for (; i < VecNumElts; i++) {
       Mask.push_back(Builder.getInt32(i));
+
+}
 
     Value *MaskVal = ConstantVector::get(Mask);
 
@@ -742,8 +800,10 @@ public:
                       IRBuilder<> &Builder, bool AllowContraction,
                       unsigned &NumComputeOps) {
     NumComputeOps += getNumOps(A->getType());
-    if (!Sum)
+    if (!Sum) {
       return UseFPOp ? Builder.CreateFMul(A, B) : Builder.CreateMul(A, B);
+
+}
 
     if (UseFPOp) {
       if (AllowContraction) {
@@ -777,8 +837,10 @@ public:
     for (auto I = Inst->use_begin(), E = Inst->use_end(); I != E;) {
       Use &U = *I++;
       if (ShapeMap.find(U.getUser()) == ShapeMap.end()) {
-        if (!Flattened)
+        if (!Flattened) {
           Flattened = Matrix.embedInVector(Builder);
+
+}
         U.set(Flattened);
       }
     }
@@ -803,8 +865,10 @@ public:
 
     // Initialize the output
     ColumnMatrixTy Result;
-    for (unsigned J = 0; J < C; ++J)
+    for (unsigned J = 0; J < C; ++J) {
       Result.addColumn(UndefValue::get(VectorType::get(EltType, R)));
+
+}
 
     const unsigned VF = std::max(TTI.getRegisterBitWidth(true) /
                                      EltType->getPrimitiveSizeInBits(),
@@ -820,8 +884,10 @@ public:
       unsigned BlockSize = VF;
       for (unsigned I = 0; I < R; I += BlockSize) {
         // Gradually lower the vectorization factor to cover the remainder.
-        while (I + BlockSize > R)
+        while (I + BlockSize > R) {
           BlockSize /= 2;
+
+}
 
         Value *Sum = nullptr;
         for (unsigned K = 0; K < M; ++K) {
@@ -876,8 +942,10 @@ public:
   /// Lower load instructions, if shape information is available.
   bool VisitLoad(Instruction *Inst, Value *Ptr, IRBuilder<> &Builder) {
     auto I = ShapeMap.find(Inst);
-    if (I == ShapeMap.end())
+    if (I == ShapeMap.end()) {
       return false;
+
+}
 
     LowerLoad(Inst, Ptr, Builder.getInt32(I->second.NumRows), I->second);
     return true;
@@ -886,8 +954,10 @@ public:
   bool VisitStore(Instruction *Inst, Value *StoredVal, Value *Ptr,
                   IRBuilder<> &Builder) {
     auto I = ShapeMap.find(StoredVal);
-    if (I == ShapeMap.end())
+    if (I == ShapeMap.end()) {
       return false;
+
+}
 
     LowerStore(Inst, StoredVal, Ptr, Builder.getInt32(I->second.NumRows), I->second);
     return true;
@@ -896,8 +966,10 @@ public:
   /// Lower binary operators, if shape information is available.
   bool VisitBinaryOperator(BinaryOperator *Inst) {
     auto I = ShapeMap.find(Inst);
-    if (I == ShapeMap.end())
+    if (I == ShapeMap.end()) {
       return false;
+
+}
 
     Value *Lhs = Inst->getOperand(0);
     Value *Rhs = Inst->getOperand(1);
@@ -928,9 +1000,11 @@ public:
         llvm_unreachable("Unsupported binary operator for matrix");
       }
     };
-    for (unsigned C = 0; C < Shape.NumColumns; ++C)
+    for (unsigned C = 0; C < Shape.NumColumns; ++C) {
       Result.addColumn(
           BuildColumnOp(LoweredLhs.getColumn(C), LoweredRhs.getColumn(C)));
+
+}
 
     finalizeLowering(Inst,
                      Result.addNumComputeOps(getNumOps(Result.getColumnTy()) *
@@ -977,8 +1051,10 @@ public:
 
     void indent(unsigned N) {
       LineLength += N;
-      for (unsigned i = 0; i < N; i++)
+      for (unsigned i = 0; i < N; i++) {
         Stream << " ";
+
+}
     }
 
     void lineBreak() {
@@ -987,11 +1063,15 @@ public:
     }
 
     void maybeIndent(unsigned Indent) {
-      if (LineLength >= LengthToBreak)
+      if (LineLength >= LengthToBreak) {
         lineBreak();
 
-      if (LineLength == 0)
+}
+
+      if (LineLength == 0) {
         indent(Indent);
+
+}
     }
 
     void write(StringRef S) {
@@ -1000,10 +1080,12 @@ public:
     }
 
     Value *getUnderlyingObjectThroughLoads(Value *V) {
-      if (Value *Ptr = getPointerOperand(V))
+      if (Value *Ptr = getPointerOperand(V)) {
         return getUnderlyingObjectThroughLoads(Ptr);
-      else if (V->getType()->isPointerTy())
+      } else if (V->getType()->isPointerTy()) {
         return GetUnderlyingObject(V, DL);
+
+}
       return V;
     }
 
@@ -1014,9 +1096,9 @@ public:
     /// \p SS.
     void prettyPrintMatrixType(Value *V, raw_string_ostream &SS) {
       auto M = Inst2ColumnMatrix.find(V);
-      if (M == Inst2ColumnMatrix.end())
+      if (M == Inst2ColumnMatrix.end()) {
         SS << "unknown";
-      else {
+      } else {
         SS << M->second.getNumRows();
         SS << "x";
         SS << M->second.getNumColumns();
@@ -1027,9 +1109,9 @@ public:
     /// specially: we write the name, followed by the dimensions of the input
     /// matrixes, followed by the scalar type name.
     void writeFnName(CallInst *CI) {
-      if (!CI->getCalledFunction())
+      if (!CI->getCalledFunction()) {
         write("<no called fn>");
-      else {
+      } else {
         StringRef Name = CI->getCalledFunction()->getName();
         if (!Name.startswith("llvm.matrix")) {
           write(Name);
@@ -1108,15 +1190,17 @@ public:
       std::string Tmp;
       raw_string_ostream TmpStream(Tmp);
 
-      if (auto *CI = dyn_cast<ConstantInt>(V))
+      if (auto *CI = dyn_cast<ConstantInt>(V)) {
         TmpStream << CI->getValue();
-      else if (isa<Constant>(V))
+      } else if (isa<Constant>(V)) {
         TmpStream << "constant";
-      else {
-        if (isMatrix(V))
+      } else {
+        if (isMatrix(V)) {
           TmpStream << "matrix";
-        else
+        } else {
           TmpStream << "scalar";
+
+}
       }
       TmpStream.flush();
       Tmp = std::string(StringRef(Tmp).trim());
@@ -1142,8 +1226,10 @@ public:
         assert(SI != Shared.end() && SI->second.find(Leaf) != SI->second.end());
 
         for (Value *S : SI->second) {
-          if (S == Leaf)
+          if (S == Leaf) {
             continue;
+
+}
           DebugLoc DL = cast<Instruction>(S)->getDebugLoc();
           write("shared with remark at line " + std::to_string(DL.getLine()) +
                 " column " + std::to_string(DL.getCol()) + " (");
@@ -1152,8 +1238,10 @@ public:
       }
 
       bool Reused = !ReusedExprs.insert(Expr).second;
-      if (Reused && !ParentReused)
+      if (Reused && !ParentReused) {
         write("(reused) ");
+
+}
 
       if (auto *CI = dyn_cast<CallInst>(I)) {
         writeFnName(CI);
@@ -1173,20 +1261,28 @@ public:
       write(std::string("("));
 
       unsigned NumOpsToBreak = 1;
-      if (match(Expr, m_Intrinsic<Intrinsic::matrix_columnwise_load>()))
+      if (match(Expr, m_Intrinsic<Intrinsic::matrix_columnwise_load>())) {
         NumOpsToBreak = 2;
 
+}
+
       for (Value *Op : Ops) {
-        if (Ops.size() > NumOpsToBreak)
+        if (Ops.size() > NumOpsToBreak) {
           lineBreak();
 
+}
+
         maybeIndent(Indent + 1);
-        if (isMatrix(Op))
+        if (isMatrix(Op)) {
           linearizeExpr(Op, Indent + 1, Reused, ExprShared);
-        else
+        } else {
           write(Op);
-        if (Op != Ops.back())
+
+}
+        if (Op != Ops.back()) {
           write(", ");
+
+}
       }
 
       write(")");
@@ -1228,12 +1324,16 @@ public:
     SmallVector<Value *, 4>
     getExpressionLeaves(const SmallSetVector<Value *, 32> &ExprsInSubprogram) {
       SmallVector<Value *, 4> Leaves;
-      for (auto *Expr : ExprsInSubprogram)
+      for (auto *Expr : ExprsInSubprogram) {
         if (Expr->getType()->isVoidTy() ||
             !any_of(Expr->users(), [&ExprsInSubprogram](User *U) {
               return ExprsInSubprogram.count(U);
-            }))
+            })) {
           Leaves.push_back(Expr);
+
+}
+
+}
       return Leaves;
     }
 
@@ -1244,14 +1344,18 @@ public:
                            const SmallSetVector<Value *, 32> &ExprsInSubprogram,
                            DenseMap<Value *, SmallPtrSet<Value *, 2>> &Shared) {
 
-      if (!ExprsInSubprogram.count(V))
+      if (!ExprsInSubprogram.count(V)) {
         return;
+
+}
 
       auto I = Shared.insert({V, {}});
       I.first->second.insert(Leaf);
 
-      for (Value *Op : cast<Instruction>(V)->operand_values())
+      for (Value *Op : cast<Instruction>(V)->operand_values()) {
         collectSharedInfo(Leaf, Op, ExprsInSubprogram, Shared);
+
+}
       return;
     }
 
@@ -1262,22 +1366,28 @@ public:
     sumOpInfos(Value *Root, SmallPtrSetImpl<Value *> &ReusedExprs,
                const SmallSetVector<Value *, 32> &ExprsInSubprogram,
                DenseMap<Value *, SmallPtrSet<Value *, 2>> &Shared) const {
-      if (!ExprsInSubprogram.count(Root))
+      if (!ExprsInSubprogram.count(Root)) {
         return {};
 
+}
+
       // Already counted this expression. Stop.
-      if (!ReusedExprs.insert(Root).second)
+      if (!ReusedExprs.insert(Root).second) {
         return {};
+
+}
 
       OpInfoTy SharedCount;
       OpInfoTy Count;
 
       auto I = Shared.find(Root);
       auto CM = Inst2ColumnMatrix.find(Root);
-      if (I->second.size() == 1)
+      if (I->second.size() == 1) {
         Count = CM->second.getOpInfo();
-      else
+      } else {
         SharedCount = CM->second.getOpInfo();
+
+}
 
       for (Value *Op : cast<Instruction>(Root)->operand_values()) {
         auto C = sumOpInfos(Op, ReusedExprs, ExprsInSubprogram, Shared);
@@ -1288,8 +1398,10 @@ public:
     }
 
     void emitRemarks() {
-      if (!ORE.allowExtraAnalysis(DEBUG_TYPE))
+      if (!ORE.allowExtraAnalysis(DEBUG_TYPE)) {
         return;
+
+}
 
       // Map matrix operations to their containting subprograms, by traversing
       // the inlinedAt chain. If the function does not have a DISubprogram, we
@@ -1316,8 +1428,10 @@ public:
         auto Leaves = getExpressionLeaves(ExprsInSubprogram);
 
         DenseMap<Value *, SmallPtrSet<Value *, 2>> Shared;
-        for (Value *Leaf : Leaves)
+        for (Value *Leaf : Leaves) {
           collectSharedInfo(Leaf, Leaf, ExprsInSubprogram, Shared);
+
+}
 
         // Generate remarks for each leaf.
         for (auto *L : Leaves) {

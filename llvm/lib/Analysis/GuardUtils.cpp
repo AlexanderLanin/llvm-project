@@ -30,13 +30,19 @@ bool llvm::isGuardAsWidenableBranch(const User *U) {
   Value *Condition, *WidenableCondition;
   BasicBlock *GuardedBB, *DeoptBB;
   if (!parseWidenableBranch(U, Condition, WidenableCondition, GuardedBB,
-                            DeoptBB))
+                            DeoptBB)) {
     return false;
+
+}
   for (auto &Insn : *DeoptBB) {
-    if (match(&Insn, m_Intrinsic<Intrinsic::experimental_deoptimize>()))
+    if (match(&Insn, m_Intrinsic<Intrinsic::experimental_deoptimize>())) {
       return true;
-    if (Insn.mayHaveSideEffects())
+
+}
+    if (Insn.mayHaveSideEffects()) {
       return false;
+
+}
   }
   return false;
 }
@@ -47,10 +53,12 @@ bool llvm::parseWidenableBranch(const User *U, Value *&Condition,
 
   Use *C, *WC;
   if (parseWidenableBranch(const_cast<User*>(U), C, WC, IfTrueBB, IfFalseBB)) {
-    if (C)
+    if (C) {
       Condition = C->get();
-    else
+    } else {
       Condition = ConstantInt::getTrue(IfTrueBB->getContext());
+
+}
     WidenableCondition = WC->get();
     return true;
   }
@@ -61,11 +69,15 @@ bool llvm::parseWidenableBranch(User *U, Use *&C,Use *&WC,
                                 BasicBlock *&IfTrueBB, BasicBlock *&IfFalseBB) {
 
   auto *BI = dyn_cast<BranchInst>(U);
-  if (!BI || !BI->isConditional())
+  if (!BI || !BI->isConditional()) {
     return false;
+
+}
   auto *Cond = BI->getCondition();
-  if (!Cond->hasOneUse())
+  if (!Cond->hasOneUse()) {
     return false;
+
+}
 
   IfTrueBB = BI->getSuccessor(0);
   IfFalseBB = BI->getSuccessor(1);
@@ -82,12 +94,16 @@ bool llvm::parseWidenableBranch(User *U, Use *&C,Use *&WC,
   // We do not check for more generalized and trees as we should canonicalize
   // to the form above in instcombine. (TODO)
   Value *A, *B;
-  if (!match(Cond, m_And(m_Value(A), m_Value(B))))
+  if (!match(Cond, m_And(m_Value(A), m_Value(B)))) {
     return false;
+
+}
   auto *And = dyn_cast<Instruction>(Cond);
-  if (!And)
+  if (!And) {
     // Could be a constexpr
     return false;
+
+}
 
   if (match(A, m_Intrinsic<Intrinsic::experimental_widenable_condition>()) &&
       A->hasOneUse()) {

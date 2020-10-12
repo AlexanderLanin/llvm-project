@@ -95,11 +95,17 @@ struct OpenMPOpt {
       SmallVector<Use *, 8> ToBeDeleted;
       for (auto &It : UsesMap) {
         ToBeDeleted.clear();
-        for (Use *U : It.second)
-          if (CB(*U, *It.first))
+        for (Use *U : It.second) {
+          if (CB(*U, *It.first)) {
             ToBeDeleted.push_back(U);
-        for (Use *U : ToBeDeleted)
+
+}
+
+}
+        for (Use *U : ToBeDeleted) {
           It.second.erase(U);
+
+}
       }
     }
   };
@@ -124,22 +130,32 @@ private:
     const unsigned CallbackCalleeOperand = 2;
 
     RuntimeFunctionInfo &RFI = RFIs[OMPRTL___kmpc_fork_call];
-    if (!RFI.Declaration)
+    if (!RFI.Declaration) {
       return false;
+
+}
 
     bool Changed = false;
     auto DeleteCallCB = [&](Use &U, Function &) {
       CallInst *CI = getCallIfRegularCall(U);
-      if (!CI)
+      if (!CI) {
         return false;
+
+}
       auto *Fn = dyn_cast<Function>(
           CI->getArgOperand(CallbackCalleeOperand)->stripPointerCasts());
-      if (!Fn)
+      if (!Fn) {
         return false;
-      if (!Fn->onlyReadsMemory())
+
+}
+      if (!Fn->onlyReadsMemory()) {
         return false;
-      if (!Fn->hasFnAttribute(Attribute::WillReturn))
+
+}
+      if (!Fn->hasFnAttribute(Attribute::WillReturn)) {
         return false;
+
+}
 
       LLVM_DEBUG(dbgs() << TAG << "Delete read-only parallel region in "
                         << CI->getCaller()->getName() << "\n");
@@ -183,17 +199,21 @@ private:
                       << " global thread ID arguments\n");
 
     for (Function *F : SCC) {
-      for (auto DeduplicableRuntimeCallID : DeduplicableRuntimeCallIDs)
+      for (auto DeduplicableRuntimeCallID : DeduplicableRuntimeCallIDs) {
         deduplicateRuntimeCalls(*F, RFIs[DeduplicableRuntimeCallID]);
+
+}
 
       // __kmpc_global_thread_num is special as we can replace it with an
       // argument in enough cases to make it worth trying.
       Value *GTIdArg = nullptr;
-      for (Argument &Arg : F->args())
+      for (Argument &Arg : F->args()) {
         if (GTIdArgs.count(&Arg)) {
           GTIdArg = &Arg;
           break;
         }
+
+}
       Changed |= deduplicateRuntimeCalls(
           *F, RFIs[OMPRTL___kmpc_global_thread_num], GTIdArg);
     }
@@ -205,10 +225,14 @@ private:
                                     bool GlobalOnly) {
     // TODO: Figure out how to actually combine multiple debug locations. For
     //       now we just keep the first we find.
-    if (Ident0)
+    if (Ident0) {
       return Ident0;
-    if (!GlobalOnly || isa<GlobalValue>(Ident1))
+
+}
+    if (!GlobalOnly || isa<GlobalValue>(Ident1)) {
       return Ident1;
+
+}
     return nullptr;
   }
 
@@ -222,8 +246,10 @@ private:
     Value *Ident = nullptr;
     auto CombineIdentStruct = [&](Use &U, Function &Caller) {
       CallInst *CI = getCallIfRegularCall(U, &RFI);
-      if (!CI || &F != &Caller)
+      if (!CI || &F != &Caller) {
         return false;
+
+}
       Ident = combinedIdentStruct(Ident, CI->getArgOperand(0),
                                   /* GlobalOnly */ true);
       return false;
@@ -233,9 +259,11 @@ private:
     if (!Ident) {
       // The IRBuilder uses the insertion block to get to the module, this is
       // unfortunate but we work around it for now.
-      if (!OMPBuilder.getInsertionPoint().getBlock())
+      if (!OMPBuilder.getInsertionPoint().getBlock()) {
         OMPBuilder.updateToLocation(OpenMPIRBuilder::InsertPointTy(
             &F.getEntryBlock(), F.getEntryBlock().begin()));
+
+}
       // Create a fallback location if non was found.
       // TODO: Use the debug locations of the calls instead.
       Constant *Loc = OMPBuilder.getOrCreateDefaultSrcLocStr();
@@ -249,8 +277,10 @@ private:
   bool deduplicateRuntimeCalls(Function &F, RuntimeFunctionInfo &RFI,
                                Value *ReplVal = nullptr) {
     auto &Uses = RFI.UsesMap[&F];
-    if (Uses.size() + (ReplVal != nullptr) < 2)
+    if (Uses.size() + (ReplVal != nullptr) < 2) {
       return false;
+
+}
 
     LLVM_DEBUG(dbgs() << TAG << "Deduplicate " << Uses.size() << " uses of "
                       << RFI.Name
@@ -263,27 +293,41 @@ private:
     // TODO: Use dominance to find a good position instead.
     auto CanBeMoved = [](CallBase &CB) {
       unsigned NumArgs = CB.getNumArgOperands();
-      if (NumArgs == 0)
+      if (NumArgs == 0) {
         return true;
-      if (CB.getArgOperand(0)->getType() != IdentPtr)
+
+}
+      if (CB.getArgOperand(0)->getType() != IdentPtr) {
         return false;
-      for (unsigned u = 1; u < NumArgs; ++u)
-        if (isa<Instruction>(CB.getArgOperand(u)))
+
+}
+      for (unsigned u = 1; u < NumArgs; ++u) {
+        if (isa<Instruction>(CB.getArgOperand(u))) {
           return false;
+
+}
+
+}
       return true;
     };
 
     if (!ReplVal) {
-      for (Use *U : Uses)
+      for (Use *U : Uses) {
         if (CallInst *CI = getCallIfRegularCall(*U, &RFI)) {
-          if (!CanBeMoved(*CI))
+          if (!CanBeMoved(*CI)) {
             continue;
+
+}
           CI->moveBefore(&*F.getEntryBlock().getFirstInsertionPt());
           ReplVal = CI;
           break;
         }
-      if (!ReplVal)
+
+}
+      if (!ReplVal) {
         return false;
+
+}
     }
 
     // If we use a call as a replacement value we need to make sure the ident is
@@ -301,8 +345,10 @@ private:
     bool Changed = false;
     auto ReplaceAndDeleteCB = [&](Use &U, Function &Caller) {
       CallInst *CI = getCallIfRegularCall(U, &RFI);
-      if (!CI || CI == ReplVal || &F != &Caller)
+      if (!CI || CI == ReplVal || &F != &Caller) {
         return false;
+
+}
       assert(CI->getCaller() == &F && "Unexpected call!");
       CGUpdater.removeCallSite(*CI);
       CI->replaceAllUsesWith(ReplVal);
@@ -325,15 +371,19 @@ private:
     // Helper to check the argument \p ArgNo at all call sites of \p F for
     // a GTId.
     auto CallArgOpIsGTId = [&](Function &F, unsigned ArgNo, CallInst &RefCI) {
-      if (!F.hasLocalLinkage())
+      if (!F.hasLocalLinkage()) {
         return false;
+
+}
       for (Use &U : F.uses()) {
         if (CallInst *CI = getCallIfRegularCall(U)) {
           Value *ArgOp = CI->getArgOperand(ArgNo);
           if (CI == &RefCI || GTIdArgs.count(ArgOp) ||
               getCallIfRegularCall(*ArgOp,
-                                   &RFIs[OMPRTL___kmpc_global_thread_num]))
+                                   &RFIs[OMPRTL___kmpc_global_thread_num])) {
             continue;
+
+}
         }
         return false;
       }
@@ -342,27 +392,45 @@ private:
 
     // Helper to identify uses of a GTId as GTId arguments.
     auto AddUserArgs = [&](Value &GTId) {
-      for (Use &U : GTId.uses())
-        if (CallInst *CI = dyn_cast<CallInst>(U.getUser()))
-          if (CI->isArgOperand(&U))
-            if (Function *Callee = CI->getCalledFunction())
-              if (CallArgOpIsGTId(*Callee, U.getOperandNo(), *CI))
+      for (Use &U : GTId.uses()) {
+        if (CallInst *CI = dyn_cast<CallInst>(U.getUser())) {
+          if (CI->isArgOperand(&U)) {
+            if (Function *Callee = CI->getCalledFunction()) {
+              if (CallArgOpIsGTId(*Callee, U.getOperandNo(), *CI)) {
                 GTIdArgs.insert(Callee->getArg(U.getOperandNo()));
+
+}
+
+}
+
+}
+
+}
+
+}
     };
 
     // The argument users of __kmpc_global_thread_num calls are GTIds.
     RuntimeFunctionInfo &GlobThreadNumRFI =
         RFIs[OMPRTL___kmpc_global_thread_num];
-    for (auto &It : GlobThreadNumRFI.UsesMap)
-      for (Use *U : It.second)
-        if (CallInst *CI = getCallIfRegularCall(*U, &GlobThreadNumRFI))
+    for (auto &It : GlobThreadNumRFI.UsesMap) {
+      for (Use *U : It.second) {
+        if (CallInst *CI = getCallIfRegularCall(*U, &GlobThreadNumRFI)) {
           AddUserArgs(*CI);
+
+}
+
+}
+
+}
 
     // Transitively search for more arguments by looking at the users of the
     // ones we know already. During the search the GTIdArgs vector is extended
     // so we cannot cache the size nor can we use a range based for.
-    for (unsigned u = 0; u < GTIdArgs.size(); ++u)
+    for (unsigned u = 0; u < GTIdArgs.size(); ++u) {
       AddUserArgs(*GTIdArgs[u]);
+
+}
   }
 
   /// Return the call if \p U is a callee use in a regular call. If \p RFI is
@@ -370,8 +438,10 @@ private:
   CallInst *getCallIfRegularCall(Use &U, RuntimeFunctionInfo *RFI = nullptr) {
     CallInst *CI = dyn_cast<CallInst>(U.getUser());
     if (CI && CI->isCallee(&U) && !CI->hasOperandBundles() &&
-        (!RFI || CI->getCalledFunction() == RFI->Declaration))
+        (!RFI || CI->getCalledFunction() == RFI->Declaration)) {
       return CI;
+
+}
     return nullptr;
   }
 
@@ -380,8 +450,10 @@ private:
   CallInst *getCallIfRegularCall(Value &V, RuntimeFunctionInfo *RFI = nullptr) {
     CallInst *CI = dyn_cast<CallInst>(&V);
     if (CI && !CI->hasOperandBundles() &&
-        (!RFI || CI->getCalledFunction() == RFI->Declaration))
+        (!RFI || CI->getCalledFunction() == RFI->Declaration)) {
       return CI;
+
+}
     return nullptr;
   }
 
@@ -391,8 +463,10 @@ private:
     // Helper to collect all uses of the decleration in the UsesMap.
     auto CollectUses = [&](RuntimeFunctionInfo &RFI) {
       unsigned NumUses = 0;
-      if (!RFI.Declaration)
+      if (!RFI.Declaration) {
         return NumUses;
+
+}
       OMPBuilder.addAttributes(RFI.Kind, *RFI.Declaration);
 
       NumOpenMPRuntimeFunctionsIdentified += 1;
@@ -464,18 +538,26 @@ private:
 PreservedAnalyses OpenMPOptPass::run(LazyCallGraph::SCC &C,
                                      CGSCCAnalysisManager &AM,
                                      LazyCallGraph &CG, CGSCCUpdateResult &UR) {
-  if (!containsOpenMP(*C.begin()->getFunction().getParent(), OMPInModule))
+  if (!containsOpenMP(*C.begin()->getFunction().getParent(), OMPInModule)) {
     return PreservedAnalyses::all();
 
-  if (DisableOpenMPOptimizations)
+}
+
+  if (DisableOpenMPOptimizations) {
     return PreservedAnalyses::all();
+
+}
 
   SmallPtrSet<Function *, 16> SCC;
-  for (LazyCallGraph::Node &N : C)
+  for (LazyCallGraph::Node &N : C) {
     SCC.insert(&N.getFunction());
 
-  if (SCC.empty())
+}
+
+  if (SCC.empty()) {
     return PreservedAnalyses::all();
+
+}
 
   CallGraphUpdater CGUpdater;
   CGUpdater.initialize(CG, C, AM, UR);
@@ -508,19 +590,31 @@ struct OpenMPOptLegacyPass : public CallGraphSCCPass {
   }
 
   bool runOnSCC(CallGraphSCC &CGSCC) override {
-    if (!containsOpenMP(CGSCC.getCallGraph().getModule(), OMPInModule))
+    if (!containsOpenMP(CGSCC.getCallGraph().getModule(), OMPInModule)) {
       return false;
-    if (DisableOpenMPOptimizations || skipSCC(CGSCC))
+
+}
+    if (DisableOpenMPOptimizations || skipSCC(CGSCC)) {
       return false;
+
+}
 
     SmallPtrSet<Function *, 16> SCC;
-    for (CallGraphNode *CGN : CGSCC)
-      if (Function *Fn = CGN->getFunction())
-        if (!Fn->isDeclaration())
+    for (CallGraphNode *CGN : CGSCC) {
+      if (Function *Fn = CGN->getFunction()) {
+        if (!Fn->isDeclaration()) {
           SCC.insert(Fn);
 
-    if (SCC.empty())
+}
+
+}
+
+}
+
+    if (SCC.empty()) {
       return false;
+
+}
 
     CallGraph &CG = getAnalysis<CallGraphWrapperPass>().getCallGraph();
     CGUpdater.initialize(CG, CGSCC);
@@ -536,8 +630,10 @@ struct OpenMPOptLegacyPass : public CallGraphSCCPass {
 } // end anonymous namespace
 
 bool llvm::omp::containsOpenMP(Module &M, OpenMPInModule &OMPInModule) {
-  if (OMPInModule.isKnown())
+  if (OMPInModule.isKnown()) {
     return OMPInModule;
+
+}
 
 #define OMP_RTL(_Enum, _Name, ...)                                             \
   if (M.getFunction(_Name))                                                    \

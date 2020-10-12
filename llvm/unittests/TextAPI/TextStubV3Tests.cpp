@@ -77,8 +77,10 @@ TEST(TBDv3, ReadFile) {
   auto Archs = AK_armv7 | AK_arm64;
   auto Platform = PlatformKind::iOS;
   TargetList Targets;
-  for (auto &&arch : Archs)
+  for (auto &&arch : Archs) {
     Targets.emplace_back(Target(arch, Platform));
+
+}
   EXPECT_EQ(Archs, File->getArchitectures());
   UUIDs Uuids = {{Target(AK_armv7, PlatformKind::unknown),
                   "00000000-0000-0000-0000-000000000000"},
@@ -141,8 +143,10 @@ TEST(TBDv3, WriteFile) {
 
   InterfaceFile File;
   TargetList Targets;
-  for (auto &&arch : AK_i386 | AK_x86_64)
+  for (auto &&arch : AK_i386 | AK_x86_64) {
     Targets.emplace_back(Target(arch, PlatformKind::macOS));
+
+}
   File.setPath("libfoo.dylib");
   File.setInstallName("/usr/lib/libfoo.dylib");
   File.setFileType(FileType::TBD_V3);
@@ -326,8 +330,10 @@ TEST(TBDv3, Platform_zippered) {
   Platforms.insert(PlatformKind::macOS);
   Platforms.insert(PlatformKind::macCatalyst);
   EXPECT_EQ(Platforms.size(), File->getPlatforms().size());
-  for (auto Platform : File->getPlatforms())
+  for (auto Platform : File->getPlatforms()) {
 	    EXPECT_EQ(Platforms.count(Platform), 1U);
+
+}
 
   SmallString<4096> Buffer;
   raw_svector_ostream OS(Buffer);

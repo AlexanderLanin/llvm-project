@@ -18,8 +18,10 @@ static bool isCaseSensitivePath(StringRef Path) {
   SmallString<256> TmpDest = Path, UpperDest, RealDest;
 
   // Remove component traversals, links, etc.
-  if (!sys::fs::real_path(Path, TmpDest))
+  if (!sys::fs::real_path(Path, TmpDest)) {
     return true; // Current default value in vfs.yaml
+
+}
   Path = TmpDest;
 
   // Change path to all upper case and ask for its real path, if the latter
@@ -27,8 +29,10 @@ static bool isCaseSensitivePath(StringRef Path) {
   // sensitive in the absence of real_path, since this is the YAMLVFSWriter
   // default.
   UpperDest = Path.upper();
-  if (sys::fs::real_path(UpperDest, RealDest) && Path.equals(RealDest))
+  if (sys::fs::real_path(UpperDest, RealDest) && Path.equals(RealDest)) {
     return false;
+
+}
   return true;
 }
 
@@ -49,8 +53,10 @@ bool FileCollector::getRealPath(StringRef SrcPath,
   // path Directory.
   if (DirWithSymlink == SymlinkMap.end()) {
     auto EC = sys::fs::real_path(Directory, RealPath);
-    if (EC)
+    if (EC) {
       return false;
+
+}
     SymlinkMap[Directory] = std::string(RealPath.str());
   } else {
     RealPath = DirWithSymlink->second;
@@ -64,8 +70,10 @@ bool FileCollector::getRealPath(StringRef SrcPath,
 void FileCollector::addFile(const Twine &file) {
   std::lock_guard<std::mutex> lock(Mutex);
   std::string FileStr = file.str();
-  if (markAsSeen(FileStr))
+  if (markAsSeen(FileStr)) {
     addFileImpl(FileStr);
+
+}
 }
 
 void FileCollector::addFileImpl(StringRef SrcPath) {
@@ -87,8 +95,10 @@ void FileCollector::addFileImpl(StringRef SrcPath) {
   // lead to the wrong real destination path. Let the source be canonicalized
   // like that but make sure we always use the real path for the destination.
   SmallString<256> CopyFrom;
-  if (!getRealPath(AbsoluteSrc, CopyFrom))
+  if (!getRealPath(AbsoluteSrc, CopyFrom)) {
     CopyFrom = VirtualPath;
+
+}
 
   SmallString<256> DstPath = StringRef(Root);
   sys::path::append(DstPath, sys::path::relative_path(CopyFrom));
@@ -109,15 +119,21 @@ copyAccessAndModificationTime(StringRef Filename,
   int FD;
 
   if (auto EC =
-          sys::fs::openFileForWrite(Filename, FD, sys::fs::CD_OpenExisting))
+          sys::fs::openFileForWrite(Filename, FD, sys::fs::CD_OpenExisting)) {
     return EC;
+
+}
 
   if (auto EC = sys::fs::setLastAccessAndModificationTime(
-          FD, Stat.getLastAccessedTime(), Stat.getLastModificationTime()))
+          FD, Stat.getLastAccessedTime(), Stat.getLastModificationTime())) {
     return EC;
 
-  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+}
+
+  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD)) {
     return EC;
+
+}
 
   return {};
 }
@@ -128,15 +144,19 @@ std::error_code FileCollector::copyFiles(bool StopOnError) {
     if (std::error_code EC =
             sys::fs::create_directories(sys::path::parent_path(entry.RPath),
                                         /*IgnoreExisting=*/true)) {
-      if (StopOnError)
+      if (StopOnError) {
         return EC;
+
+}
     }
 
     // Get the status of the original file/directory.
     sys::fs::file_status Stat;
     if (std::error_code EC = sys::fs::status(entry.VPath, Stat)) {
-      if (StopOnError)
+      if (StopOnError) {
         return EC;
+
+}
       continue;
     }
 
@@ -145,23 +165,29 @@ std::error_code FileCollector::copyFiles(bool StopOnError) {
       if (std::error_code EC =
               sys::fs::create_directories(entry.RPath,
                                           /*IgnoreExisting=*/true)) {
-        if (StopOnError)
+        if (StopOnError) {
           return EC;
+
+}
       }
       continue;
     }
 
     // Copy file over.
     if (std::error_code EC = sys::fs::copy_file(entry.VPath, entry.RPath)) {
-      if (StopOnError)
+      if (StopOnError) {
         return EC;
+
+}
     }
 
     // Copy over permissions.
     if (auto perms = sys::fs::getPermissions(entry.VPath)) {
       if (std::error_code EC = sys::fs::setPermissions(entry.RPath, *perms)) {
-        if (StopOnError)
+        if (StopOnError) {
           return EC;
+
+}
       }
     }
 
@@ -180,8 +206,10 @@ std::error_code FileCollector::writeMapping(StringRef mapping_file) {
 
   std::error_code EC;
   raw_fd_ostream os(mapping_file, EC, sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     return EC;
+
+}
 
   VFSWriter.write(os);
 
@@ -198,24 +226,30 @@ public:
 
   llvm::ErrorOr<llvm::vfs::Status> status(const Twine &Path) override {
     auto Result = FS->status(Path);
-    if (Result && Result->exists())
+    if (Result && Result->exists()) {
       Collector->addFile(Path);
+
+}
     return Result;
   }
 
   llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>>
   openFileForRead(const Twine &Path) override {
     auto Result = FS->openFileForRead(Path);
-    if (Result && *Result)
+    if (Result && *Result) {
       Collector->addFile(Path);
+
+}
     return Result;
   }
 
   llvm::vfs::directory_iterator dir_begin(const llvm::Twine &Dir,
                                           std::error_code &EC) override {
     auto It = FS->dir_begin(Dir, EC);
-    if (EC)
+    if (EC) {
       return It;
+
+}
     // Collect everything that's listed in case the user needs it.
     Collector->addFile(Dir);
     for (; !EC && It != llvm::vfs::directory_iterator(); It.increment(EC)) {
@@ -225,8 +259,10 @@ public:
         Collector->addFile(It->path());
       }
     }
-    if (EC)
+    if (EC) {
       return It;
+
+}
     // Return a new iterator.
     return FS->dir_begin(Dir, EC);
   }
@@ -236,8 +272,10 @@ public:
     auto EC = FS->getRealPath(Path, Output);
     if (!EC) {
       Collector->addFile(Path);
-      if (Output.size() > 0)
+      if (Output.size() > 0) {
         Collector->addFile(Output);
+
+}
     }
     return EC;
   }

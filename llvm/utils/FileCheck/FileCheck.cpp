@@ -141,8 +141,10 @@ typedef cl::list<std::string>::const_iterator prefix_iterator;
 
 static void DumpCommandLine(int argc, char **argv) {
   errs() << "FileCheck command line: ";
-  for (int I = 0; I < argc; I++)
+  for (int I = 0; I < argc; I++) {
     errs() << " " << argv[I];
+
+}
   errs() << "\n";
 }
 
@@ -266,8 +268,10 @@ struct InputAnnotation {
 std::string GetCheckTypeAbbreviation(Check::FileCheckType Ty) {
   switch (Ty) {
   case Check::CheckPlain:
-    if (Ty.getCount() > 1)
+    if (Ty.getCount() > 1) {
       return "count";
+
+}
     return "check";
   case Check::CheckNext:
     return "next";
@@ -312,16 +316,18 @@ static void BuildInputAnnotations(const std::vector<FileCheckDiag> &Diags,
     A.CheckDiagIndex = UINT_MAX;
     auto DiagNext = std::next(DiagItr);
     if (DiagNext != DiagEnd && DiagItr->CheckTy == DiagNext->CheckTy &&
-        DiagItr->CheckLine == DiagNext->CheckLine)
+        DiagItr->CheckLine == DiagNext->CheckLine) {
       A.CheckDiagIndex = CheckDiagCount++;
-    else if (CheckDiagCount) {
+    } else if (CheckDiagCount) {
       A.CheckDiagIndex = CheckDiagCount;
       CheckDiagCount = 0;
     }
-    if (A.CheckDiagIndex != UINT_MAX)
+    if (A.CheckDiagIndex != UINT_MAX) {
       Label << "'" << A.CheckDiagIndex;
-    else
+    } else {
       A.CheckDiagIndex = 0;
+
+}
     Label.flush();
     LabelWidth = std::max((std::string::size_type)LabelWidth, A.Label.size());
 
@@ -349,8 +355,10 @@ static void BuildInputAnnotations(const std::vector<FileCheckDiag> &Diags,
            L <= E; ++L) {
         // If a range ends before the first column on a line, then it has no
         // characters on that line, so there's nothing to render.
-        if (DiagItr->InputEndCol == 1 && L == E)
+        if (DiagItr->InputEndCol == 1 && L == E) {
           break;
+
+}
         InputAnnotation B;
         B.CheckLine = A.CheckLine;
         B.CheckDiagIndex = A.CheckDiagIndex;
@@ -360,10 +368,12 @@ static void BuildInputAnnotations(const std::vector<FileCheckDiag> &Diags,
         B.Marker.Lead = '~';
         B.Marker.Note = "";
         B.InputStartCol = 1;
-        if (L != E)
+        if (L != E) {
           B.InputEndCol = UINT_MAX;
-        else
+        } else {
           B.InputEndCol = DiagItr->InputEndCol;
+
+}
         B.FoundAndExpectedMatch = A.FoundAndExpectedMatch;
         Annotations.push_back(B);
       }
@@ -393,10 +403,14 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
   // easier to track from one line to the next when they span multiple lines.
   std::sort(Annotations.begin(), Annotations.end(),
             [](const InputAnnotation &A, const InputAnnotation &B) {
-              if (A.InputLine != B.InputLine)
+              if (A.InputLine != B.InputLine) {
                 return A.InputLine < B.InputLine;
-              if (A.CheckLine != B.CheckLine)
+
+}
+              if (A.CheckLine != B.CheckLine) {
                 return A.CheckLine < B.CheckLine;
+
+}
               // FIXME: Sometimes CHECK-LABEL reports its match twice with
               // other diagnostics in between, and then diag index incrementing
               // fails to work properly, and then this assert fails.  We should
@@ -413,8 +427,10 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
   const unsigned char *InputFilePtr = InputFileText.bytes_begin(),
                       *InputFileEnd = InputFileText.bytes_end();
   unsigned LineCount = InputFileText.count('\n');
-  if (InputFileEnd[-1] != '\n')
+  if (InputFileEnd[-1] != '\n') {
     ++LineCount;
+
+}
   unsigned LineNoWidth = std::log10(LineCount) + 1;
   // +3 below adds spaces (1) to the left of the (right-aligned) line numbers
   // on input lines and (2) to the right of the (left-aligned) labels on
@@ -444,8 +460,10 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
     if (Req.Verbose && WithColor(OS).colorsEnabled()) {
       for (auto I = AnnotationItr; I != AnnotationEnd && I->InputLine == Line;
            ++I) {
-        if (I->FoundAndExpectedMatch)
+        if (I->FoundAndExpectedMatch) {
           FoundAndExpectedMatches.push_back(*I);
+
+}
       }
     }
 
@@ -455,8 +473,10 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
     {
       WithColor COS(OS);
       bool InMatch = false;
-      if (Req.Verbose)
+      if (Req.Verbose) {
         COS.changeColor(raw_ostream::CYAN, true, true);
+
+}
       for (unsigned Col = 1; InputFilePtr != InputFileEnd && !Newline; ++Col) {
         bool WasInMatch = InMatch;
         InMatch = false;
@@ -466,14 +486,18 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
             break;
           }
         }
-        if (!WasInMatch && InMatch)
+        if (!WasInMatch && InMatch) {
           COS.resetColor();
-        else if (WasInMatch && !InMatch)
+        } else if (WasInMatch && !InMatch) {
           COS.changeColor(raw_ostream::CYAN, true, true);
-        if (*InputFilePtr == '\n')
+
+}
+        if (*InputFilePtr == '\n') {
           Newline = true;
-        else
+        } else {
           COS << *InputFilePtr;
+
+}
         ++InputFilePtr;
       }
     }
@@ -487,21 +511,27 @@ static void DumpAnnotatedInput(raw_ostream &OS, const FileCheckRequest &Req,
       // The two spaces below are where the ": " appears on input lines.
       COS << left_justify(AnnotationItr->Label, LabelWidth) << "  ";
       unsigned Col;
-      for (Col = 1; Col < AnnotationItr->InputStartCol; ++Col)
+      for (Col = 1; Col < AnnotationItr->InputStartCol; ++Col) {
         COS << ' ';
+
+}
       COS << AnnotationItr->Marker.Lead;
       // If InputEndCol=UINT_MAX, stop at InputLineWidth.
       for (++Col; Col < AnnotationItr->InputEndCol && Col <= InputLineWidth;
-           ++Col)
+           ++Col) {
         COS << '~';
+
+}
       const std::string &Note = AnnotationItr->Marker.Note;
       if (!Note.empty()) {
         // Put the note at the end of the input line.  If we were to instead
         // put the note right after the marker, subsequent annotations for the
         // same input line might appear to mark this note instead of the input
         // line.
-        for (; Col <= InputLineWidth; ++Col)
+        for (; Col <= InputLineWidth; ++Col) {
           COS << ' ';
+
+}
         COS << ' ' << Note;
       }
       COS << '\n';
@@ -534,11 +564,15 @@ int main(int argc, char **argv) {
   }
 
   FileCheckRequest Req;
-  for (auto Prefix : CheckPrefixes)
+  for (auto Prefix : CheckPrefixes) {
     Req.CheckPrefixes.push_back(Prefix);
 
-  for (auto CheckNot : ImplicitCheckNot)
+}
+
+  for (auto CheckNot : ImplicitCheckNot) {
     Req.ImplicitCheckNot.push_back(CheckNot);
+
+}
 
   bool GlobalDefineError = false;
   for (auto G : GlobalDefines) {
@@ -557,8 +591,10 @@ int main(int argc, char **argv) {
     }
     Req.GlobalDefines.push_back(G);
   }
-  if (GlobalDefineError)
+  if (GlobalDefineError) {
     return 2;
+
+}
 
   Req.AllowEmptyInput = AllowEmptyInput;
   Req.EnableVarScope = EnableVarScope;
@@ -569,8 +605,10 @@ int main(int argc, char **argv) {
   Req.MatchFullLines = MatchFullLines;
   Req.IgnoreCase = IgnoreCase;
 
-  if (VerboseVerbose)
+  if (VerboseVerbose) {
     Req.Verbose = true;
+
+}
 
   FileCheck FC(Req);
   if (!FC.ValidateCheckPrefixes()) {
@@ -610,14 +648,18 @@ int main(int argc, char **argv) {
                             CheckFileText, CheckFile.getBufferIdentifier()),
                         SMLoc());
 
-  if (FC.readCheckFile(SM, CheckFileText, PrefixRE))
+  if (FC.readCheckFile(SM, CheckFileText, PrefixRE)) {
     return 2;
+
+}
 
   // Open the file to check and add it to SourceMgr.
   ErrorOr<std::unique_ptr<MemoryBuffer>> InputFileOrErr =
       MemoryBuffer::getFileOrSTDIN(InputFilename);
-  if (InputFilename == "-")
+  if (InputFilename == "-") {
     InputFilename = "<stdin>"; // Overwrite for improved diagnostic messages
+
+}
   if (std::error_code EC = InputFileOrErr.getError()) {
     errs() << "Could not open input file '" << InputFilename
            << "': " << EC.message() << '\n';
@@ -638,8 +680,10 @@ int main(int argc, char **argv) {
                             InputFileText, InputFile.getBufferIdentifier()),
                         SMLoc());
 
-  if (DumpInput == DumpInputDefault)
+  if (DumpInput == DumpInputDefault) {
     DumpInput = DumpInputOnFailure ? DumpInputFail : DumpInputNever;
+
+}
 
   std::vector<FileCheckDiag> Diags;
   int ExitCode = FC.checkInput(SM, InputFileText,

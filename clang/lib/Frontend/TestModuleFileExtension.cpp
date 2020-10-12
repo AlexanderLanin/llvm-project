@@ -50,8 +50,10 @@ TestModuleFileExtension::Reader::Reader(ModuleFileExtension *Ext,
   while (true) {
     llvm::Expected<llvm::BitstreamEntry> MaybeEntry =
         Stream.advanceSkippingSubblocks();
-    if (!MaybeEntry)
+    if (!MaybeEntry) {
       (void)MaybeEntry.takeError();
+
+}
     llvm::BitstreamEntry Entry = MaybeEntry.get();
 
     switch (Entry.Kind) {
@@ -68,9 +70,11 @@ TestModuleFileExtension::Reader::Reader(ModuleFileExtension *Ext,
     StringRef Blob;
     Expected<unsigned> MaybeRecCode =
         Stream.readRecord(Entry.ID, Record, &Blob);
-    if (!MaybeRecCode)
+    if (!MaybeRecCode) {
       fprintf(stderr, "Failed reading rec code: %s\n",
               toString(MaybeRecCode.takeError()).c_str());
+
+}
     switch (MaybeRecCode.get()) {
     case FIRST_EXTENSION_RECORD_ID: {
       StringRef Message = Blob.substr(0, Record[0]);

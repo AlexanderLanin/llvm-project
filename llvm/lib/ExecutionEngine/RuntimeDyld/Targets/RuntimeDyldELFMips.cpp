@@ -14,16 +14,18 @@
 void RuntimeDyldELFMips::resolveRelocation(const RelocationEntry &RE,
                                            uint64_t Value) {
   const SectionEntry &Section = Sections[RE.SectionID];
-  if (IsMipsO32ABI)
+  if (IsMipsO32ABI) {
     resolveMIPSO32Relocation(Section, RE.Offset, Value, RE.RelType, RE.Addend);
-  else if (IsMipsN32ABI) {
+  } else if (IsMipsN32ABI) {
     resolveMIPSN32Relocation(Section, RE.Offset, Value, RE.RelType, RE.Addend,
                              RE.SymOffset, RE.SectionID);
-  } else if (IsMipsN64ABI)
+  } else if (IsMipsN64ABI) {
     resolveMIPSN64Relocation(Section, RE.Offset, Value, RE.RelType, RE.Addend,
                              RE.SymOffset, RE.SectionID);
-  else
+  } else {
     llvm_unreachable("Mips ABI not handled");
+
+}
 }
 
 uint64_t RuntimeDyldELFMips::evaluateRelocation(const RelocationEntry &RE,
@@ -155,14 +157,18 @@ int64_t RuntimeDyldELFMips::evaluateMIPS64Relocation(
     uint64_t GOTEntry = readBytesUnaligned(LocalGOTAddr, getGOTEntrySize());
 
     Value += Addend;
-    if (Type == ELF::R_MIPS_GOT_PAGE)
+    if (Type == ELF::R_MIPS_GOT_PAGE) {
       Value = (Value + 0x8000) & ~0xffff;
 
-    if (GOTEntry)
+}
+
+    if (GOTEntry) {
       assert(GOTEntry == Value &&
                    "GOT entry has two different addresses.");
-    else
+    } else {
       writeBytesUnaligned(Value, LocalGOTAddr, getGOTEntrySize());
+
+}
 
     return (SymOffset - 0x7ff0) & 0xffff;
   }

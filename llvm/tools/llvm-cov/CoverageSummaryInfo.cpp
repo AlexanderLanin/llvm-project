@@ -22,22 +22,30 @@ FunctionCoverageSummary::get(const CoverageMapping &CM,
   // Compute the region coverage.
   size_t NumCodeRegions = 0, CoveredRegions = 0;
   for (auto &CR : Function.CountedRegions) {
-    if (CR.Kind != CounterMappingRegion::CodeRegion)
+    if (CR.Kind != CounterMappingRegion::CodeRegion) {
       continue;
+
+}
     ++NumCodeRegions;
-    if (CR.ExecutionCount != 0)
+    if (CR.ExecutionCount != 0) {
       ++CoveredRegions;
+
+}
   }
 
   // Compute the line coverage
   size_t NumLines = 0, CoveredLines = 0;
   CoverageData CD = CM.getCoverageForFunction(Function);
   for (const auto &LCS : getLineCoverageStats(CD)) {
-    if (!LCS.isMapped())
+    if (!LCS.isMapped()) {
       continue;
+
+}
     ++NumLines;
-    if (LCS.getExecutionCount())
+    if (LCS.getExecutionCount()) {
       ++CoveredLines;
+
+}
   }
 
   return FunctionCoverageSummary(

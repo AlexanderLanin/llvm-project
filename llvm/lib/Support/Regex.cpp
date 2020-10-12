@@ -30,12 +30,18 @@ Regex::Regex(StringRef regex, unsigned Flags) {
   unsigned flags = 0;
   preg = new llvm_regex();
   preg->re_endp = regex.end();
-  if (Flags & IgnoreCase)
+  if (Flags & IgnoreCase) {
     flags |= REG_ICASE;
-  if (Flags & Newline)
+
+}
+  if (Flags & Newline) {
     flags |= REG_NEWLINE;
-  if (!(Flags & BasicRegex))
+
+}
+  if (!(Flags & BasicRegex)) {
     flags |= REG_EXTENDED;
+
+}
   error = llvm_regcomp(preg, regex.data(), flags|REG_PEND);
 }
 
@@ -67,8 +73,10 @@ void RegexErrorToString(int error, struct llvm_regex *preg,
 } // namespace
 
 bool Regex::isValid(std::string &Error) const {
-  if (!error)
+  if (!error) {
     return true;
+
+}
 
   RegexErrorToString(error, preg, Error);
   return false;
@@ -83,12 +91,16 @@ unsigned Regex::getNumMatches() const {
 bool Regex::match(StringRef String, SmallVectorImpl<StringRef> *Matches,
                   std::string *Error) const {
   // Reset error, if given.
-  if (Error && !Error->empty())
+  if (Error && !Error->empty()) {
     *Error = "";
 
+}
+
   // Check if the regex itself didn't successfully compile.
-  if (Error ? !isValid(*Error) : !isValid())
+  if (Error ? !isValid(*Error) : !isValid()) {
     return false;
+
+}
 
   unsigned nmatch = Matches ? preg->re_nsub+1 : 0;
 
@@ -102,11 +114,15 @@ bool Regex::match(StringRef String, SmallVectorImpl<StringRef> *Matches,
 
   // Failure to match is not an error, it's just a normal return value.
   // Any other error code is considered abnormal, and is logged in the Error.
-  if (rc == REG_NOMATCH)
+  if (rc == REG_NOMATCH) {
     return false;
+
+}
   if (rc != 0) {
-    if (Error)
+    if (Error) {
       RegexErrorToString(error, preg, *Error);
+
+}
     return false;
   }
 
@@ -135,8 +151,10 @@ std::string Regex::sub(StringRef Repl, StringRef String,
   SmallVector<StringRef, 8> Matches;
 
   // Return the input if there was no match.
-  if (!match(String, &Matches, Error))
+  if (!match(String, &Matches, Error)) {
     return std::string(String);
+
+}
 
   // Otherwise splice in the replacement string, starting with the prefix before
   // the match.
@@ -153,8 +171,10 @@ std::string Regex::sub(StringRef Repl, StringRef String,
     // Check for terminimation and trailing backslash.
     if (Split.second.empty()) {
       if (Repl.size() != Split.first.size() &&
-          Error && Error->empty())
+          Error && Error->empty()) {
         *Error = "replacement string contained trailing backslash";
+
+}
       break;
     }
 
@@ -188,10 +208,12 @@ std::string Regex::sub(StringRef Repl, StringRef String,
 
       unsigned RefValue;
       if (!Ref.getAsInteger(10, RefValue) &&
-          RefValue < Matches.size())
+          RefValue < Matches.size()) {
         Res += Matches[RefValue];
-      else if (Error && Error->empty())
+      } else if (Error && Error->empty()) {
         *Error = ("invalid backreference string '" + Twine(Ref) + "'").str();
+
+}
       break;
     }
     }
@@ -216,8 +238,10 @@ bool Regex::isLiteralERE(StringRef Str) {
 std::string Regex::escape(StringRef String) {
   std::string RegexStr;
   for (unsigned i = 0, e = String.size(); i != e; ++i) {
-    if (strchr(RegexMetachars, String[i]))
+    if (strchr(RegexMetachars, String[i])) {
       RegexStr += '\\';
+
+}
     RegexStr += String[i];
   }
 

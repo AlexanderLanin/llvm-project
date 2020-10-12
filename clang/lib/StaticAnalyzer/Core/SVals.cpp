@@ -44,16 +44,20 @@ using namespace ento;
 bool SVal::hasConjuredSymbol() const {
   if (Optional<nonloc::SymbolVal> SV = getAs<nonloc::SymbolVal>()) {
     SymbolRef sym = SV->getSymbol();
-    if (isa<SymbolConjured>(sym))
+    if (isa<SymbolConjured>(sym)) {
       return true;
+
+}
   }
 
   if (Optional<loc::MemRegionVal> RV = getAs<loc::MemRegionVal>()) {
     const MemRegion *R = RV->getRegion();
     if (const auto *SR = dyn_cast<SymbolicRegion>(R)) {
       SymbolRef sym = SR->getSymbol();
-      if (isa<SymbolConjured>(sym))
+      if (isa<SymbolConjured>(sym)) {
         return true;
+
+}
     }
   }
 
@@ -63,14 +67,20 @@ bool SVal::hasConjuredSymbol() const {
 const FunctionDecl *SVal::getAsFunctionDecl() const {
   if (Optional<loc::MemRegionVal> X = getAs<loc::MemRegionVal>()) {
     const MemRegion* R = X->getRegion();
-    if (const FunctionCodeRegion *CTR = R->getAs<FunctionCodeRegion>())
-      if (const auto *FD = dyn_cast<FunctionDecl>(CTR->getDecl()))
+    if (const FunctionCodeRegion *CTR = R->getAs<FunctionCodeRegion>()) {
+      if (const auto *FD = dyn_cast<FunctionDecl>(CTR->getDecl())) {
         return FD;
+
+}
+
+}
   }
 
   if (auto X = getAs<nonloc::PointerToMember>()) {
-    if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(X->getDecl()))
+    if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(X->getDecl())) {
       return MD;
+
+}
   }
   return nullptr;
 }
@@ -84,15 +94,19 @@ const FunctionDecl *SVal::getAsFunctionDecl() const {
 /// the first symbolic parent region is returned.
 SymbolRef SVal::getAsLocSymbol(bool IncludeBaseRegions) const {
   // FIXME: should we consider SymbolRef wrapped in CodeTextRegion?
-  if (Optional<nonloc::LocAsInteger> X = getAs<nonloc::LocAsInteger>())
+  if (Optional<nonloc::LocAsInteger> X = getAs<nonloc::LocAsInteger>()) {
     return X->getLoc().getAsLocSymbol(IncludeBaseRegions);
+
+}
 
   if (Optional<loc::MemRegionVal> X = getAs<loc::MemRegionVal>()) {
     const MemRegion *R = X->getRegion();
     if (const SymbolicRegion *SymR = IncludeBaseRegions ?
                                       R->getSymbolicBase() :
-                                      dyn_cast<SymbolicRegion>(R->StripCasts()))
+                                      dyn_cast<SymbolicRegion>(R->StripCasts())) {
       return SymR->getSymbol();
+
+}
   }
   return nullptr;
 }
@@ -101,16 +115,20 @@ SymbolRef SVal::getAsLocSymbol(bool IncludeBaseRegions) const {
 SymbolRef SVal::getLocSymbolInBase() const {
   Optional<loc::MemRegionVal> X = getAs<loc::MemRegionVal>();
 
-  if (!X)
+  if (!X) {
     return nullptr;
+
+}
 
   const MemRegion *R = X->getRegion();
 
   while (const auto *SR = dyn_cast<SubRegion>(R)) {
-    if (const auto *SymR = dyn_cast<SymbolicRegion>(SR))
+    if (const auto *SymR = dyn_cast<SymbolicRegion>(SR)) {
       return SymR->getSymbol();
-    else
+    } else {
       R = SR->getSuperRegion();
+
+}
   }
 
   return nullptr;
@@ -126,8 +144,10 @@ SymbolRef SVal::getLocSymbolInBase() const {
 /// should continue to the base regions if the region is not symbolic.
 SymbolRef SVal::getAsSymbol(bool IncludeBaseRegions) const {
   // FIXME: should we consider SymbolRef wrapped in CodeTextRegion?
-  if (Optional<nonloc::SymbolVal> X = getAs<nonloc::SymbolVal>())
+  if (Optional<nonloc::SymbolVal> X = getAs<nonloc::SymbolVal>()) {
     return X->getSymbol();
+
+}
 
   return getAsLocSymbol(IncludeBaseRegions);
 }
@@ -135,25 +155,33 @@ SymbolRef SVal::getAsSymbol(bool IncludeBaseRegions) const {
 /// getAsSymbolicExpression - If this Sval wraps a symbolic expression then
 ///  return that expression.  Otherwise return NULL.
 const SymExpr *SVal::getAsSymbolicExpression() const {
-  if (Optional<nonloc::SymbolVal> X = getAs<nonloc::SymbolVal>())
+  if (Optional<nonloc::SymbolVal> X = getAs<nonloc::SymbolVal>()) {
     return X->getSymbol();
+
+}
 
   return getAsSymbol();
 }
 
 const SymExpr* SVal::getAsSymExpr() const {
   const SymExpr* Sym = getAsSymbol();
-  if (!Sym)
+  if (!Sym) {
     Sym = getAsSymbolicExpression();
+
+}
   return Sym;
 }
 
 const MemRegion *SVal::getAsRegion() const {
-  if (Optional<loc::MemRegionVal> X = getAs<loc::MemRegionVal>())
+  if (Optional<loc::MemRegionVal> X = getAs<loc::MemRegionVal>()) {
     return X->getRegion();
 
-  if (Optional<nonloc::LocAsInteger> X = getAs<nonloc::LocAsInteger>())
+}
+
+  if (Optional<nonloc::LocAsInteger> X = getAs<nonloc::LocAsInteger>()) {
     return X->getLoc().getAsRegion();
+
+}
 
   return nullptr;
 }
@@ -177,14 +205,18 @@ bool nonloc::PointerToMember::isNullMemberPointer() const {
 
 const DeclaratorDecl *nonloc::PointerToMember::getDecl() const {
   const auto PTMD = this->getPTMData();
-  if (PTMD.isNull())
+  if (PTMD.isNull()) {
     return nullptr;
 
+}
+
   const DeclaratorDecl *DD = nullptr;
-  if (PTMD.is<const DeclaratorDecl *>())
+  if (PTMD.is<const DeclaratorDecl *>()) {
     DD = PTMD.get<const DeclaratorDecl *>();
-  else
+  } else {
     DD = PTMD.get<const PointerToMemberData *>()->getDeclaratorDecl();
+
+}
 
   return DD;
 }
@@ -203,15 +235,19 @@ nonloc::CompoundVal::iterator nonloc::CompoundVal::end() const {
 
 nonloc::PointerToMember::iterator nonloc::PointerToMember::begin() const {
   const PTMDataType PTMD = getPTMData();
-  if (PTMD.is<const DeclaratorDecl *>())
+  if (PTMD.is<const DeclaratorDecl *>()) {
     return {};
+
+}
   return PTMD.get<const PointerToMemberData *>()->begin();
 }
 
 nonloc::PointerToMember::iterator nonloc::PointerToMember::end() const {
   const PTMDataType PTMD = getPTMData();
-  if (PTMD.is<const DeclaratorDecl *>())
+  if (PTMD.is<const DeclaratorDecl *>()) {
     return {};
+
+}
   return PTMD.get<const PointerToMemberData *>()->end();
 }
 
@@ -224,10 +260,14 @@ bool SVal::isConstant() const {
 }
 
 bool SVal::isConstant(int I) const {
-  if (Optional<loc::ConcreteInt> LV = getAs<loc::ConcreteInt>())
+  if (Optional<loc::ConcreteInt> LV = getAs<loc::ConcreteInt>()) {
     return LV->getValue() == I;
-  if (Optional<nonloc::ConcreteInt> NV = getAs<nonloc::ConcreteInt>())
+
+}
+  if (Optional<nonloc::ConcreteInt> NV = getAs<nonloc::ConcreteInt>()) {
     return NV->getValue() == I;
+
+}
   return false;
 }
 
@@ -245,10 +285,12 @@ SVal nonloc::ConcreteInt::evalBinOp(SValBuilder &svalBuilder,
   const llvm::APSInt* X =
     svalBuilder.getBasicValueFactory().evalAPSInt(Op, getValue(), R.getValue());
 
-  if (X)
+  if (X) {
     return nonloc::ConcreteInt(*X);
-  else
+  } else {
     return UndefinedVal();
+
+}
 }
 
 nonloc::ConcreteInt
@@ -272,10 +314,12 @@ SVal loc::ConcreteInt::evalBinOp(BasicValueFactory& BasicVals,
 
   const llvm::APSInt *X = BasicVals.evalAPSInt(Op, getValue(), R.getValue());
 
-  if (X)
+  if (X) {
     return nonloc::ConcreteInt(*X);
-  else
+  } else {
     return UndefinedVal();
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -335,8 +379,10 @@ void NonLoc::dumpToStream(raw_ostream &os) const {
         if (first) {
           os << ' '; first = false;
         }
-        else
+        else {
           os << ", ";
+
+}
 
         I.dumpToStream(os);
       }
@@ -354,15 +400,19 @@ void NonLoc::dumpToStream(raw_ostream &os) const {
       os << "pointerToMember{";
       const nonloc::PointerToMember &CastRes =
           castAs<nonloc::PointerToMember>();
-      if (CastRes.getDecl())
+      if (CastRes.getDecl()) {
         os << "|" << CastRes.getDecl()->getQualifiedNameAsString() << "|";
+
+}
       bool first = true;
       for (const auto &I : CastRes) {
         if (first) {
           os << ' '; first = false;
         }
-        else
+        else {
           os << ", ";
+
+}
 
         os << (*I).getType().getAsString();
       }

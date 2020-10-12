@@ -39,8 +39,10 @@ Error getWasmRelocationValueString(const WasmObjectFile *Obj,
     Fmt << Rel.Index;
   } else {
     Expected<StringRef> SymNameOrErr = SI->getName();
-    if (!SymNameOrErr)
+    if (!SymNameOrErr) {
       return SymNameOrErr.takeError();
+
+}
     StringRef SymName = *SymNameOrErr;
     Result.append(SymName.begin(), SymName.end());
   }

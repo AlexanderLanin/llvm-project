@@ -65,10 +65,14 @@ static cl::extrahelp
     HelpResponse("\nPass @FILE as argument to read options from FILE.\n");
 
 static bool shouldStripUnderscore() {
-  if (StripUnderscore)
+  if (StripUnderscore) {
     return true;
-  if (NoStripUnderscore)
+
+}
+  if (NoStripUnderscore) {
     return false;
+
+}
   // If none of them are set, use the default value for platform.
   // macho has symbols prefix with "_" so strip by default.
   return Triple(sys::getProcessTriple()).isOSBinFormatMachO();
@@ -79,17 +83,23 @@ static std::string demangle(const std::string &Mangled) {
   std::string Prefix;
 
   const char *DecoratedStr = Mangled.c_str();
-  if (shouldStripUnderscore())
-    if (DecoratedStr[0] == '_')
+  if (shouldStripUnderscore()) {
+    if (DecoratedStr[0] == '_') {
       ++DecoratedStr;
+
+}
+
+}
   size_t DecoratedLength = strlen(DecoratedStr);
 
   char *Undecorated = nullptr;
 
   if (Types ||
       ((DecoratedLength >= 2 && strncmp(DecoratedStr, "_Z", 2) == 0) ||
-       (DecoratedLength >= 4 && strncmp(DecoratedStr, "___Z", 4) == 0)))
+       (DecoratedLength >= 4 && strncmp(DecoratedStr, "___Z", 4) == 0))) {
     Undecorated = itaniumDemangle(DecoratedStr, nullptr, nullptr, &Status);
+
+}
 
   if (!Undecorated &&
       (DecoratedLength > 6 && strncmp(DecoratedStr, "__imp_", 6) == 0)) {
@@ -114,8 +124,10 @@ static void SplitStringDelims(
 
   // Obtain any leading delimiters.
   auto Start = std::find_if(Head, Source.end(), IsLegalChar);
-  if (Start != Head)
+  if (Start != Head) {
     OutFragments.push_back({"", Source.slice(0, Start - Head)});
+
+}
 
   // Capture each word and the delimiters following that word.
   while (Start != Source.end()) {
@@ -144,10 +156,14 @@ static void demangleLine(llvm::raw_ostream &OS, StringRef Mangled, bool Split) {
   if (Split) {
     SmallVector<std::pair<StringRef, StringRef>, 16> Words;
     SplitStringDelims(Mangled, Words, IsLegalItaniumChar);
-    for (const auto &Word : Words)
+    for (const auto &Word : Words) {
       Result += ::demangle(std::string(Word.first)) + Word.second.str();
-  } else
+
+}
+  } else {
     Result = ::demangle(std::string(Mangled));
+
+}
   OS << Result << '\n';
   OS.flush();
 }
@@ -157,12 +173,18 @@ int main(int argc, char **argv) {
 
   cl::ParseCommandLineOptions(argc, argv, "llvm symbol undecoration tool\n");
 
-  if (Decorated.empty())
-    for (std::string Mangled; std::getline(std::cin, Mangled);)
+  if (Decorated.empty()) {
+    for (std::string Mangled; std::getline(std::cin, Mangled);) {
       demangleLine(llvm::outs(), Mangled, true);
-  else
-    for (const auto &Symbol : Decorated)
+
+}
+  } else {
+    for (const auto &Symbol : Decorated) {
       demangleLine(llvm::outs(), Symbol, false);
+
+}
+
+}
 
   return EXIT_SUCCESS;
 }

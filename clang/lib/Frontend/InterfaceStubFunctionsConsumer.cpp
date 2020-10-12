@@ -50,79 +50,117 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
     };
 
     auto ignoreDecl = [this, isVisible](const NamedDecl *ND) -> bool {
-      if (!isVisible(ND))
+      if (!isVisible(ND)) {
         return true;
 
+}
+
       if (const VarDecl *VD = dyn_cast<VarDecl>(ND)) {
-        if (const auto *Parent = VD->getParentFunctionOrMethod())
-          if (isa<BlockDecl>(Parent) || isa<CXXMethodDecl>(Parent))
+        if (const auto *Parent = VD->getParentFunctionOrMethod()) {
+          if (isa<BlockDecl>(Parent) || isa<CXXMethodDecl>(Parent)) {
             return true;
+
+}
+
+}
 
         if ((VD->getStorageClass() == StorageClass::SC_Extern) ||
             (VD->getStorageClass() == StorageClass::SC_Static &&
-             VD->getParentFunctionOrMethod() == nullptr))
+             VD->getParentFunctionOrMethod() == nullptr)) {
           return true;
+
+}
       }
 
       if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND)) {
         if (FD->isInlined() && !isa<CXXMethodDecl>(FD) &&
-            !Instance.getLangOpts().GNUInline)
+            !Instance.getLangOpts().GNUInline) {
           return true;
+
+}
         if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD)) {
-          if (const auto *RC = dyn_cast<CXXRecordDecl>(MD->getParent()))
-            if (isa<ClassTemplateDecl>(RC->getParent()) || !isVisible(RC))
+          if (const auto *RC = dyn_cast<CXXRecordDecl>(MD->getParent())) {
+            if (isa<ClassTemplateDecl>(RC->getParent()) || !isVisible(RC)) {
               return true;
-          if (MD->isDependentContext() || !MD->hasBody())
+
+}
+
+}
+          if (MD->isDependentContext() || !MD->hasBody()) {
             return true;
+
+}
         }
-        if (FD->getStorageClass() == StorageClass::SC_Static)
+        if (FD->getStorageClass() == StorageClass::SC_Static) {
           return true;
+
+}
       }
       return false;
     };
 
     auto getParentFunctionDecl = [](const NamedDecl *ND) -> const NamedDecl * {
-      if (const VarDecl *VD = dyn_cast<VarDecl>(ND))
+      if (const VarDecl *VD = dyn_cast<VarDecl>(ND)) {
         if (const auto *FD =
-                dyn_cast_or_null<FunctionDecl>(VD->getParentFunctionOrMethod()))
+                dyn_cast_or_null<FunctionDecl>(VD->getParentFunctionOrMethod())) {
           return FD;
+
+}
+
+}
       return nullptr;
     };
 
     auto getMangledNames = [](const NamedDecl *ND) -> std::vector<std::string> {
-      if (!ND)
+      if (!ND) {
         return {""};
+
+}
       ASTNameGenerator NameGen(ND->getASTContext());
       std::vector<std::string> MangledNames = NameGen.getAllManglings(ND);
-      if (isa<CXXConstructorDecl>(ND) || isa<CXXDestructorDecl>(ND))
+      if (isa<CXXConstructorDecl>(ND) || isa<CXXDestructorDecl>(ND)) {
         return MangledNames;
+
+}
 #ifdef EXPENSIVE_CHECKS
       assert(MangledNames.size() <= 1 && "Expected only one name mangling.");
 #endif
       return {NameGen.getName(ND)};
     };
 
-    if (!(RDO & FromTU))
-      return true;
-    if (Symbols.find(ND) != Symbols.end())
-      return true;
-    // - Currently have not figured out how to produce the names for FieldDecls.
-    // - Do not want to produce symbols for function paremeters.
-    if (isa<FieldDecl>(ND) || isa<ParmVarDecl>(ND))
+    if (!(RDO & FromTU)) {
       return true;
 
-    const NamedDecl *ParentDecl = getParentFunctionDecl(ND);
-    if ((ParentDecl && ignoreDecl(ParentDecl)) || ignoreDecl(ND))
+}
+    if (Symbols.find(ND) != Symbols.end()) {
       return true;
+
+}
+    // - Currently have not figured out how to produce the names for FieldDecls.
+    // - Do not want to produce symbols for function paremeters.
+    if (isa<FieldDecl>(ND) || isa<ParmVarDecl>(ND)) {
+      return true;
+
+}
+
+    const NamedDecl *ParentDecl = getParentFunctionDecl(ND);
+    if ((ParentDecl && ignoreDecl(ParentDecl)) || ignoreDecl(ND)) {
+      return true;
+
+}
 
     if (RDO & IsLate) {
       Instance.getDiagnostics().Report(diag::err_asm_invalid_type_in_input)
           << "Generating Interface Stubs is not supported with "
              "delayed template parsing.";
     } else {
-      if (const auto *FD = dyn_cast<FunctionDecl>(ND))
-        if (FD->isDependentContext())
+      if (const auto *FD = dyn_cast<FunctionDecl>(ND)) {
+        if (FD->isDependentContext()) {
           return true;
+
+}
+
+}
 
       const bool IsWeak = (ND->hasAttr<WeakAttr>() ||
                            ND->hasAttr<WeakRefAttr>() || ND->isWeakImported());
@@ -143,25 +181,33 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
   void
   HandleDecls(const llvm::iterator_range<DeclContext::decl_iterator> &Decls,
               MangledSymbols &Symbols, int RDO) {
-    for (const auto *D : Decls)
+    for (const auto *D : Decls) {
       HandleNamedDecl(dyn_cast<NamedDecl>(D), Symbols, RDO);
+
+}
   }
 
   void HandleTemplateSpecializations(const FunctionTemplateDecl &FTD,
                                      MangledSymbols &Symbols, int RDO) {
-    for (const auto *D : FTD.specializations())
+    for (const auto *D : FTD.specializations()) {
       HandleNamedDecl(dyn_cast<NamedDecl>(D), Symbols, RDO);
+
+}
   }
 
   void HandleTemplateSpecializations(const ClassTemplateDecl &CTD,
                                      MangledSymbols &Symbols, int RDO) {
-    for (const auto *D : CTD.specializations())
+    for (const auto *D : CTD.specializations()) {
       HandleNamedDecl(dyn_cast<NamedDecl>(D), Symbols, RDO);
+
+}
   }
 
   bool HandleNamedDecl(const NamedDecl *ND, MangledSymbols &Symbols, int RDO) {
-    if (!ND)
+    if (!ND) {
       return false;
+
+}
 
     switch (ND->getKind()) {
     default:
@@ -208,14 +254,20 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
       return true;
     case Decl::Kind::Var: {
       // Bail on any VarDecl that either has no named symbol.
-      if (!ND->getIdentifier())
+      if (!ND->getIdentifier()) {
         return true;
+
+}
       const auto *VD = cast<VarDecl>(ND);
       // Bail on any VarDecl that is a dependent or templated type.
-      if (VD->isTemplated() || VD->getType()->isDependentType())
+      if (VD->isTemplated() || VD->getType()->isDependentType()) {
         return true;
-      if (WriteNamedDecl(ND, Symbols, RDO))
+
+}
+      if (WriteNamedDecl(ND, Symbols, RDO)) {
         return true;
+
+}
       break;
     }
     case Decl::Kind::ParmVar:
@@ -224,8 +276,10 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
     case Decl::Kind::CXXDestructor:
     case Decl::Kind::Function:
     case Decl::Kind::Field:
-      if (WriteNamedDecl(ND, Symbols, RDO))
+      if (WriteNamedDecl(ND, Symbols, RDO)) {
         return true;
+
+}
     }
 
     // While interface stubs are in the development stage, it's probably best to
@@ -243,11 +297,13 @@ public:
   void HandleTranslationUnit(ASTContext &context) override {
     struct Visitor : public RecursiveASTVisitor<Visitor> {
       bool VisitNamedDecl(NamedDecl *ND) {
-        if (const auto *FD = dyn_cast<FunctionDecl>(ND))
+        if (const auto *FD = dyn_cast<FunctionDecl>(ND)) {
           if (FD->isLateTemplateParsed()) {
             LateParsedDecls.insert(FD);
             return true;
           }
+
+}
 
         if (const auto *VD = dyn_cast<ValueDecl>(ND)) {
           ValueDecls.insert(VD);
@@ -267,8 +323,10 @@ public:
 
     MangledSymbols Symbols;
     auto OS = Instance.createDefaultOutputFile(/*Binary=*/false, InFile, "ifs");
-    if (!OS)
+    if (!OS) {
       return;
+
+}
 
     if (Instance.getLangOpts().DelayedTemplateParsing) {
       clang::Sema &S = Instance.getSema();
@@ -280,10 +338,14 @@ public:
       }
     }
 
-    for (const NamedDecl *ND : v.ValueDecls)
+    for (const NamedDecl *ND : v.ValueDecls) {
       HandleNamedDecl(ND, Symbols, FromTU);
-    for (const NamedDecl *ND : v.NamedDecls)
+
+}
+    for (const NamedDecl *ND : v.NamedDecls) {
       HandleNamedDecl(ND, Symbols, FromTU);
+
+}
 
     auto writeIfsV1 = [this](const llvm::Triple &T,
                              const MangledSymbols &Symbols,
@@ -321,8 +383,10 @@ public:
             OS << "Func";
             break;
           }
-          if (Symbol.Binding == llvm::ELF::STB_WEAK)
+          if (Symbol.Binding == llvm::ELF::STB_WEAK) {
             OS << ", Weak: true";
+
+}
           OS << " }\n";
         }
       }

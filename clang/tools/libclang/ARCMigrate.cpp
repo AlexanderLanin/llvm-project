@@ -40,8 +40,10 @@ CXRemapping clang_getRemappings(const char *migrate_dir_path) {
   bool Logging = ::getenv("LIBCLANG_LOGGING");
 
   if (!migrate_dir_path) {
-    if (Logging)
+    if (Logging) {
       llvm::errs() << "clang_getRemappings was called with NULL parameter\n";
+
+}
     return nullptr;
   }
 
@@ -64,8 +66,10 @@ CXRemapping clang_getRemappings(const char *migrate_dir_path) {
       llvm::errs() << "Error by clang_getRemappings(\"" << migrate_dir_path
                    << "\")\n";
       for (TextDiagnosticBuffer::const_iterator
-             I = diagBuffer.err_begin(), E = diagBuffer.err_end(); I != E; ++I)
+             I = diagBuffer.err_begin(), E = diagBuffer.err_end(); I != E; ++I) {
         llvm::errs() << I->second << '\n';
+
+}
     }
     return nullptr;
   }
@@ -85,16 +89,20 @@ CXRemapping clang_getRemappingsFromFileList(const char **filePaths,
   std::unique_ptr<Remap> remap(new Remap());
 
   if (numFiles == 0) {
-    if (Logging)
+    if (Logging) {
       llvm::errs() << "clang_getRemappingsFromFileList was called with "
                       "numFiles=0\n";
+
+}
     return remap.release();
   }
 
   if (!filePaths) {
-    if (Logging)
+    if (Logging) {
       llvm::errs() << "clang_getRemappingsFromFileList was called with "
                       "NULL filePaths\n";
+
+}
     return nullptr;
   }
 
@@ -108,8 +116,10 @@ CXRemapping clang_getRemappingsFromFileList(const char **filePaths,
     if (Logging) {
       llvm::errs() << "Error by clang_getRemappingsFromFileList\n";
       for (TextDiagnosticBuffer::const_iterator
-             I = diagBuffer.err_begin(), E = diagBuffer.err_end(); I != E; ++I)
+             I = diagBuffer.err_begin(), E = diagBuffer.err_end(); I != E; ++I) {
         llvm::errs() << I->second << '\n';
+
+}
     }
     return remap.release();
   }
@@ -125,12 +135,16 @@ unsigned clang_remap_getNumFiles(CXRemapping map) {
 
 void clang_remap_getFilenames(CXRemapping map, unsigned index,
                               CXString *original, CXString *transformed) {
-  if (original)
+  if (original) {
     *original = cxstring::createDup(
                     static_cast<Remap *>(map)->Vec[index].first);
-  if (transformed)
+
+}
+  if (transformed) {
     *transformed = cxstring::createDup(
                     static_cast<Remap *>(map)->Vec[index].second);
+
+}
 }
 
 void clang_remap_dispose(CXRemapping map) {

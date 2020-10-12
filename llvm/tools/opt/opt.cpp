@@ -375,8 +375,10 @@ static inline void addPass(legacy::PassManagerBase &PM, Pass *P) {
   PM.add(P);
 
   // If we are verifying all of the intermediate steps, add the verifier...
-  if (VerifyEach)
+  if (VerifyEach) {
     PM.add(createVerifierPass());
+
+}
 }
 
 /// This routine adds optimization passes based on selected optimization level,
@@ -387,8 +389,10 @@ static void AddOptimizationPasses(legacy::PassManagerBase &MPM,
                                   legacy::FunctionPassManager &FPM,
                                   TargetMachine *TM, unsigned OptLevel,
                                   unsigned SizeLevel) {
-  if (!NoVerify || VerifyEach)
+  if (!NoVerify || VerifyEach) {
     FPM.add(createVerifierPass()); // Verify that input is correct
+
+}
 
   PassManagerBuilder Builder;
   Builder.OptLevel = OptLevel;
@@ -410,18 +414,24 @@ static void AddOptimizationPasses(legacy::PassManagerBase &MPM,
   // Another flag that exists: -loop-vectorize, controls adding the pass to the
   // pass manager. If set, the pass is added, and there is no additional check
   // here for it.
-  if (Builder.LoopVectorize)
+  if (Builder.LoopVectorize) {
     Builder.LoopVectorize = OptLevel > 1 && SizeLevel < 2;
+
+}
 
   // When #pragma vectorize is on for SLP, do the same as above
   Builder.SLPVectorize =
       DisableSLPVectorization ? false : OptLevel > 1 && SizeLevel < 2;
 
-  if (TM)
+  if (TM) {
     TM->adjustPassManager(Builder);
 
-  if (Coroutines)
+}
+
+  if (Coroutines) {
     addCoroutinePassesToExtensionPoints(Builder);
+
+}
 
   switch (PGOKindFlag) {
   case InstrGen:
@@ -456,11 +466,15 @@ static void AddOptimizationPasses(legacy::PassManagerBase &MPM,
 static void AddStandardLinkPasses(legacy::PassManagerBase &PM) {
   PassManagerBuilder Builder;
   Builder.VerifyInput = true;
-  if (DisableOptimizations)
+  if (DisableOptimizations) {
     Builder.OptLevel = 0;
 
-  if (!DisableInline)
+}
+
+  if (!DisableInline) {
     Builder.Inliner = createFunctionInliningPass();
+
+}
   Builder.populateLTOPassManager(PM);
 }
 
@@ -469,14 +483,22 @@ static void AddStandardLinkPasses(legacy::PassManagerBase &PM) {
 //
 
 static CodeGenOpt::Level GetCodeGenOptLevel() {
-  if (CodeGenOptLevel.getNumOccurrences())
+  if (CodeGenOptLevel.getNumOccurrences()) {
     return static_cast<CodeGenOpt::Level>(unsigned(CodeGenOptLevel));
-  if (OptLevelO1)
+
+}
+  if (OptLevelO1) {
     return CodeGenOpt::Less;
-  if (OptLevelO2)
+
+}
+  if (OptLevelO2) {
     return CodeGenOpt::Default;
-  if (OptLevelO3)
+
+}
+  if (OptLevelO3) {
     return CodeGenOpt::Aggressive;
+
+}
   return CodeGenOpt::None;
 }
 
@@ -525,8 +547,10 @@ void exportDebugifyStats(llvm::StringRef Path, const DebugifyStatsMap &Map) {
 
 struct TimeTracerRAII {
   TimeTracerRAII(StringRef ProgramName) {
-    if (TimeTrace)
+    if (TimeTrace) {
       timeTraceProfilerInitialize(TimeTraceGranularity, ProgramName);
+
+}
   }
   ~TimeTracerRAII() {
     if (TimeTrace) {
@@ -613,8 +637,10 @@ int main(int argc, char **argv) {
   SMDiagnostic Err;
 
   Context.setDiscardValueNames(DiscardValueNames);
-  if (!DisableDITypeMap)
+  if (!DisableDITypeMap) {
     Context.enableDebugTypeODRUniquing();
+
+}
 
   Expected<std::unique_ptr<ToolOutputFile>> RemarksFileOrErr =
       setupLLVMOptimizationRemarks(Context, RemarksFilename, RemarksPasses,
@@ -636,8 +662,10 @@ int main(int argc, char **argv) {
   }
 
   // Strip debug info before running the verifier.
-  if (StripDebug)
+  if (StripDebug) {
     StripDebugInfo(*M);
+
+}
 
   // Erase module-level named metadata, if requested.
   if (StripNamedMetadata) {
@@ -648,8 +676,10 @@ int main(int argc, char **argv) {
   }
 
   // If we are supposed to override the target triple or data layout, do so now.
-  if (!TargetTriple.empty())
+  if (!TargetTriple.empty()) {
     M->setTargetTriple(Triple::normalize(TargetTriple));
+
+}
 
   // Immediately run the verifier to catch any problems before starting up the
   // pass pipelines.  Otherwise we can crash on broken code during
@@ -671,13 +701,17 @@ int main(int argc, char **argv) {
   std::unique_ptr<ToolOutputFile> Out;
   std::unique_ptr<ToolOutputFile> ThinLinkOut;
   if (NoOutput) {
-    if (!OutputFilename.empty())
+    if (!OutputFilename.empty()) {
       errs() << "WARNING: The -o (output filename) option is ignored when\n"
                 "the --disable-output option is used.\n";
+
+}
   } else {
     // Default to standard output.
-    if (OutputFilename.empty())
+    if (OutputFilename.empty()) {
       OutputFilename = "-";
+
+}
 
     std::error_code EC;
     sys::fs::OpenFlags Flags = OutputAssembly ? sys::fs::OF_Text
@@ -723,25 +757,35 @@ int main(int argc, char **argv) {
   // If the output is set to be emitted to standard out, and standard out is a
   // console, print out a warning message and refuse to do it.  We don't
   // impress anyone by spewing tons of binary goo to a terminal.
-  if (!Force && !NoOutput && !AnalyzeOnly && !OutputAssembly)
-    if (CheckBitcodeOutputToConsole(Out->os(), !Quiet))
+  if (!Force && !NoOutput && !AnalyzeOnly && !OutputAssembly) {
+    if (CheckBitcodeOutputToConsole(Out->os(), !Quiet)) {
       NoOutput = true;
 
-  if (OutputThinLTOBC)
+}
+
+}
+
+  if (OutputThinLTOBC) {
     M->addModuleFlag(Module::Error, "EnableSplitLTOUnit", SplitLTOUnit);
+
+}
 
   if (PassPipeline.getNumOccurrences() > 0) {
     OutputKind OK = OK_NoOutput;
-    if (!NoOutput)
+    if (!NoOutput) {
       OK = OutputAssembly
                ? OK_OutputAssembly
                : (OutputThinLTOBC ? OK_OutputThinLTOBitcode : OK_OutputBitcode);
 
+}
+
     VerifierKind VK = VK_VerifyInAndOut;
-    if (NoVerify)
+    if (NoVerify) {
       VK = VK_NoVerifier;
-    else if (VerifyEach)
+    } else if (VerifyEach) {
       VK = VK_VerifyEachPass;
+
+}
 
     // The user has asked to use the new pass manager and provided a pipeline
     // string. Hand off the rest of the functionality to the new code for that
@@ -764,19 +808,21 @@ int main(int argc, char **argv) {
   TargetLibraryInfoImpl TLII(ModuleTriple);
 
   // The -disable-simplify-libcalls flag actually disables all builtin optzns.
-  if (DisableSimplifyLibCalls)
+  if (DisableSimplifyLibCalls) {
     TLII.disableAllFunctions();
-  else {
+  } else {
     // Disable individual builtin functions in TargetLibraryInfo.
     LibFunc F;
-    for (auto &FuncName : DisableBuiltins)
-      if (TLII.getLibFunc(FuncName, F))
+    for (auto &FuncName : DisableBuiltins) {
+      if (TLII.getLibFunc(FuncName, F)) {
         TLII.setUnavailable(F);
-      else {
+      } else {
         errs() << argv[0] << ": cannot disable nonexistent builtin function "
                << FuncName << '\n';
         return 1;
       }
+
+}
   }
 
   Passes.add(new TargetLibraryInfoWrapperPass(TLII));
@@ -785,8 +831,10 @@ int main(int argc, char **argv) {
   Passes.add(createTargetTransformInfoWrapperPass(TM ? TM->getTargetIRAnalysis()
                                                      : TargetIRAnalysis()));
 
-  if (AddOneTimeDebugifyPasses)
+  if (AddOneTimeDebugifyPasses) {
     Passes.add(createDebugifyModulePass());
+
+}
 
   std::unique_ptr<legacy::FunctionPassManager> FPasses;
   if (OptLevelO0 || OptLevelO1 || OptLevelO2 || OptLevelOs || OptLevelOz ||
@@ -799,8 +847,10 @@ int main(int argc, char **argv) {
   if (PrintBreakpoints) {
     // Default to standard output.
     if (!Out) {
-      if (OutputFilename.empty())
+      if (OutputFilename.empty()) {
         OutputFilename = "-";
+
+}
 
       std::error_code EC;
       Out = std::make_unique<ToolOutputFile>(OutputFilename, EC,
@@ -861,11 +911,13 @@ int main(int argc, char **argv) {
 
     const PassInfo *PassInf = PassList[i];
     Pass *P = nullptr;
-    if (PassInf->getNormalCtor())
+    if (PassInf->getNormalCtor()) {
       P = PassInf->getNormalCtor()();
-    else
+    } else {
       errs() << argv[0] << ": cannot create pass: "
              << PassInf->getPassName() << "\n";
+
+}
     if (P) {
       PassKind Kind = P->getPassKind();
       addPass(Passes, P);
@@ -891,9 +943,11 @@ int main(int argc, char **argv) {
       }
     }
 
-    if (PrintEachXForm)
+    if (PrintEachXForm) {
       Passes.add(
           createPrintModulePass(errs(), "", PreserveAssemblyUseListOrder));
+
+}
   }
 
   if (StandardLinkOpts) {
@@ -901,37 +955,55 @@ int main(int argc, char **argv) {
     StandardLinkOpts = false;
   }
 
-  if (OptLevelO0)
+  if (OptLevelO0) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 0, 0);
 
-  if (OptLevelO1)
+}
+
+  if (OptLevelO1) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 1, 0);
 
-  if (OptLevelO2)
+}
+
+  if (OptLevelO2) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 2, 0);
 
-  if (OptLevelOs)
+}
+
+  if (OptLevelOs) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 2, 1);
 
-  if (OptLevelOz)
+}
+
+  if (OptLevelOz) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 2, 2);
 
-  if (OptLevelO3)
+}
+
+  if (OptLevelO3) {
     AddOptimizationPasses(Passes, *FPasses, TM.get(), 3, 0);
+
+}
 
   if (FPasses) {
     FPasses->doInitialization();
-    for (Function &F : *M)
+    for (Function &F : *M) {
       FPasses->run(F);
+
+}
     FPasses->doFinalization();
   }
 
   // Check that the module is well formed on completion of optimization
-  if (!NoVerify && !VerifyEach)
+  if (!NoVerify && !VerifyEach) {
     Passes.add(createVerifierPass());
 
-  if (AddOneTimeDebugifyPasses)
+}
+
+  if (AddOneTimeDebugifyPasses) {
     Passes.add(createCheckDebugifyModulePass(false));
+
+}
 
   // In run twice mode, we want to make sure the output is bit-by-bit
   // equivalent if we run the pass manager again, so setup two buffers and
@@ -953,17 +1025,23 @@ int main(int argc, char **argv) {
       OS = BOS.get();
     }
     if (OutputAssembly) {
-      if (EmitSummaryIndex)
+      if (EmitSummaryIndex) {
         report_fatal_error("Text output is incompatible with -module-summary");
-      if (EmitModuleHash)
+
+}
+      if (EmitModuleHash) {
         report_fatal_error("Text output is incompatible with -module-hash");
+
+}
       Passes.add(createPrintModulePass(*OS, "", PreserveAssemblyUseListOrder));
-    } else if (OutputThinLTOBC)
+    } else if (OutputThinLTOBC) {
       Passes.add(createWriteThinLTOBitcodePass(
           *OS, ThinLinkOut ? &ThinLinkOut->os() : nullptr));
-    else
+    } else {
       Passes.add(createBitcodeWriterPass(*OS, PreserveBitcodeUseListOrder,
                                          EmitSummaryIndex, EmitModuleHash));
+
+}
   }
 
   // Before executing passes, print the final values of the LLVM options.
@@ -997,26 +1075,38 @@ int main(int argc, char **argv) {
         Out->os() << BOS->str();
         Out->keep();
       }
-      if (RemarksFile)
+      if (RemarksFile) {
         RemarksFile->keep();
+
+}
       return 1;
     }
-    if (ShouldEmitOutput)
+    if (ShouldEmitOutput) {
       Out->os() << BOS->str();
+
+}
   }
 
-  if (DebugifyEach && !DebugifyExport.empty())
+  if (DebugifyEach && !DebugifyExport.empty()) {
     exportDebugifyStats(DebugifyExport, Passes.getDebugifyStatsMap());
 
+}
+
   // Declare success.
-  if (!NoOutput || PrintBreakpoints)
+  if (!NoOutput || PrintBreakpoints) {
     Out->keep();
 
-  if (RemarksFile)
+}
+
+  if (RemarksFile) {
     RemarksFile->keep();
 
-  if (ThinLinkOut)
+}
+
+  if (ThinLinkOut) {
     ThinLinkOut->keep();
+
+}
 
   return 0;
 }

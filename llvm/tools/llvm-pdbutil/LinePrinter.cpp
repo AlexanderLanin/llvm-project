@@ -31,18 +31,24 @@ namespace {
 bool IsItemExcluded(llvm::StringRef Item,
                     std::list<llvm::Regex> &IncludeFilters,
                     std::list<llvm::Regex> &ExcludeFilters) {
-  if (Item.empty())
+  if (Item.empty()) {
     return false;
+
+}
 
   auto match_pred = [Item](llvm::Regex &R) { return R.match(Item); };
 
   // Include takes priority over exclude.  If the user specified include
   // filters, and none of them include this item, them item is gone.
-  if (!IncludeFilters.empty() && !any_of(IncludeFilters, match_pred))
+  if (!IncludeFilters.empty() && !any_of(IncludeFilters, match_pred)) {
     return true;
 
-  if (any_of(ExcludeFilters, match_pred))
+}
+
+  if (any_of(ExcludeFilters, match_pred)) {
     return true;
+
+}
 
   return false;
 }
@@ -68,14 +74,18 @@ LinePrinter::LinePrinter(int Indent, bool UseColor, llvm::raw_ostream &Stream)
 }
 
 void LinePrinter::Indent(uint32_t Amount) {
-  if (Amount == 0)
+  if (Amount == 0) {
     Amount = IndentSpaces;
+
+}
   CurrentIndent += Amount;
 }
 
 void LinePrinter::Unindent(uint32_t Amount) {
-  if (Amount == 0)
+  if (Amount == 0) {
     Amount = IndentSpaces;
+
+}
   CurrentIndent = std::max<int>(0, CurrentIndent - Amount);
 }
 
@@ -92,10 +102,14 @@ void LinePrinter::printLine(const Twine &T) {
 }
 
 bool LinePrinter::IsClassExcluded(const ClassLayout &Class) {
-  if (IsTypeExcluded(Class.getName(), Class.getSize()))
+  if (IsTypeExcluded(Class.getName(), Class.getSize())) {
     return true;
-  if (Class.deepPaddingSize() < opts::pretty::PaddingThreshold)
+
+}
+  if (Class.deepPaddingSize() < opts::pretty::PaddingThreshold) {
     return true;
+
+}
   return false;
 }
 
@@ -138,8 +152,10 @@ struct Run {
 static std::vector<Run> computeBlockRuns(uint32_t BlockSize,
                                          const msf::MSFStreamLayout &Layout) {
   std::vector<Run> Runs;
-  if (Layout.Length == 0)
+  if (Layout.Length == 0) {
     return Runs;
+
+}
 
   ArrayRef<support::ulittle32_t> Blocks = Layout.Blocks;
   assert(!Blocks.empty());
@@ -164,8 +180,10 @@ static std::vector<Run> computeBlockRuns(uint32_t BlockSize,
 
 static std::pair<Run, uint32_t> findRun(uint32_t Offset, ArrayRef<Run> Runs) {
   for (const auto &R : Runs) {
-    if (Offset < R.ByteLen)
+    if (Offset < R.ByteLen) {
       return std::make_pair(R, Offset);
+
+}
     Offset -= R.ByteLen;
   }
   llvm_unreachable("Invalid offset!");
@@ -268,10 +286,14 @@ void LinePrinter::formatMsfStreamBlocks(
 }
 
 bool LinePrinter::IsTypeExcluded(llvm::StringRef TypeName, uint32_t Size) {
-  if (IsItemExcluded(TypeName, IncludeTypeFilters, ExcludeTypeFilters))
+  if (IsItemExcluded(TypeName, IncludeTypeFilters, ExcludeTypeFilters)) {
     return true;
-  if (Size < opts::pretty::SizeThreshold)
+
+}
+  if (Size < opts::pretty::SizeThreshold) {
     return true;
+
+}
   return false;
 }
 
@@ -286,13 +308,17 @@ bool LinePrinter::IsCompilandExcluded(llvm::StringRef CompilandName) {
 
 WithColor::WithColor(LinePrinter &P, PDB_ColorItem C)
     : OS(P.OS), UseColor(P.hasColor()) {
-  if (UseColor)
+  if (UseColor) {
     applyColor(C);
+
+}
 }
 
 WithColor::~WithColor() {
-  if (UseColor)
+  if (UseColor) {
     OS.resetColor();
+
+}
 }
 
 void WithColor::applyColor(PDB_ColorItem C) {

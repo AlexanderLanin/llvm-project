@@ -40,8 +40,10 @@ TimelineView::TimelineView(const MCSubtargetInfo &sti, MCInstPrinter &Printer,
 
 void TimelineView::onReservedBuffers(const InstRef &IR,
                                      ArrayRef<unsigned> Buffers) {
-  if (IR.getSourceIndex() >= Source.size())
+  if (IR.getSourceIndex() >= Source.size()) {
     return;
+
+}
 
   const MCSchedModel &SM = STI.getSchedModel();
   std::pair<unsigned, int> BufferInfo = {0, -1};
@@ -58,14 +60,18 @@ void TimelineView::onReservedBuffers(const InstRef &IR,
 
 void TimelineView::onEvent(const HWInstructionEvent &Event) {
   const unsigned Index = Event.IR.getSourceIndex();
-  if (Index >= Timeline.size())
+  if (Index >= Timeline.size()) {
     return;
+
+}
 
   switch (Event.Type) {
   case HWInstructionEvent::Retired: {
     TimelineViewEntry &TVEntry = Timeline[Index];
-    if (CurrentCycle < MaxCycle)
+    if (CurrentCycle < MaxCycle) {
       TVEntry.CycleRetired = CurrentCycle;
+
+}
 
     // Update the WaitTime entry which corresponds to this Index.
     assert(TVEntry.CycleDispatched >= 0 && "Invalid TVEntry found!");
@@ -94,32 +100,44 @@ void TimelineView::onEvent(const HWInstructionEvent &Event) {
     // There may be multiple dispatch events. Microcoded instructions that are
     // expanded into multiple uOps may require multiple dispatch cycles. Here,
     // we want to capture the first dispatch cycle.
-    if (Timeline[Index].CycleDispatched == -1)
+    if (Timeline[Index].CycleDispatched == -1) {
       Timeline[Index].CycleDispatched = static_cast<int>(CurrentCycle);
+
+}
     break;
   default:
     return;
   }
-  if (CurrentCycle < MaxCycle)
+  if (CurrentCycle < MaxCycle) {
     LastCycle = std::max(LastCycle, CurrentCycle);
+
+}
 }
 
 static raw_ostream::Colors chooseColor(unsigned CumulativeCycles,
                                        unsigned Executions, int BufferSize) {
-  if (CumulativeCycles && BufferSize < 0)
+  if (CumulativeCycles && BufferSize < 0) {
     return raw_ostream::MAGENTA;
+
+}
   unsigned Size = static_cast<unsigned>(BufferSize);
-  if (CumulativeCycles >= Size * Executions)
+  if (CumulativeCycles >= Size * Executions) {
     return raw_ostream::RED;
-  if ((CumulativeCycles * 2) >= Size * Executions)
+
+}
+  if ((CumulativeCycles * 2) >= Size * Executions) {
     return raw_ostream::YELLOW;
+
+}
   return raw_ostream::SAVEDCOLOR;
 }
 
 static void tryChangeColor(raw_ostream &OS, unsigned Cycles,
                            unsigned Executions, int BufferSize) {
-  if (!OS.has_colors())
+  if (!OS.has_colors()) {
     return;
+
+}
 
   raw_ostream::Colors Color = chooseColor(Cycles, Executions, BufferSize);
   if (Color == raw_ostream::SAVEDCOLOR) {
@@ -136,8 +154,10 @@ void TimelineView::printWaitTimeEntry(formatted_raw_ostream &OS,
   bool PrintingTotals = SourceIndex == Source.size();
   unsigned CumulativeExecutions = PrintingTotals ? Timeline.size() : Executions;
 
-  if (!PrintingTotals)
+  if (!PrintingTotals) {
     OS << SourceIndex << '.';
+
+}
 
   OS.PadToColumn(7);
 
@@ -152,23 +172,31 @@ void TimelineView::printWaitTimeEntry(formatted_raw_ostream &OS,
   OS.PadToColumn(13);
 
   int BufferSize = PrintingTotals ? 0 : UsedBuffer[SourceIndex].second;
-  if (!PrintingTotals)
+  if (!PrintingTotals) {
     tryChangeColor(OS, Entry.CyclesSpentInSchedulerQueue, CumulativeExecutions,
                    BufferSize);
+
+}
   OS << format("%.1f", floor((AverageTime1 * 10) + 0.5) / 10);
   OS.PadToColumn(20);
-  if (!PrintingTotals)
+  if (!PrintingTotals) {
     tryChangeColor(OS, Entry.CyclesSpentInSQWhileReady, CumulativeExecutions,
                    BufferSize);
+
+}
   OS << format("%.1f", floor((AverageTime2 * 10) + 0.5) / 10);
   OS.PadToColumn(27);
-  if (!PrintingTotals)
+  if (!PrintingTotals) {
     tryChangeColor(OS, Entry.CyclesSpentAfterWBAndBeforeRetire,
                    CumulativeExecutions, STI.getSchedModel().MicroOpBufferSize);
+
+}
   OS << format("%.1f", floor((AverageTime3 * 10) + 0.5) / 10);
 
-  if (OS.has_colors())
+  if (OS.has_colors()) {
     OS.resetColor();
+
+}
   OS.PadToColumn(34);
 }
 
@@ -228,39 +256,53 @@ void TimelineView::printTimelineViewEntry(formatted_raw_ostream &OS,
                                           const TimelineViewEntry &Entry,
                                           unsigned Iteration,
                                           unsigned SourceIndex) const {
-  if (Iteration == 0 && SourceIndex == 0)
+  if (Iteration == 0 && SourceIndex == 0) {
     OS << '\n';
+
+}
   OS << '[' << Iteration << ',' << SourceIndex << ']';
   OS.PadToColumn(10);
   assert(Entry.CycleDispatched >= 0 && "Invalid TimelineViewEntry!");
   unsigned CycleDispatched = static_cast<unsigned>(Entry.CycleDispatched);
-  for (unsigned I = 0, E = CycleDispatched; I < E; ++I)
+  for (unsigned I = 0, E = CycleDispatched; I < E; ++I) {
     OS << ((I % 5 == 0) ? '.' : ' ');
+
+}
   OS << TimelineView::DisplayChar::Dispatched;
   if (CycleDispatched != Entry.CycleExecuted) {
     // Zero latency instructions have the same value for CycleDispatched,
     // CycleIssued and CycleExecuted.
-    for (unsigned I = CycleDispatched + 1, E = Entry.CycleIssued; I < E; ++I)
+    for (unsigned I = CycleDispatched + 1, E = Entry.CycleIssued; I < E; ++I) {
       OS << TimelineView::DisplayChar::Waiting;
-    if (Entry.CycleIssued == Entry.CycleExecuted)
+
+}
+    if (Entry.CycleIssued == Entry.CycleExecuted) {
       OS << TimelineView::DisplayChar::DisplayChar::Executed;
-    else {
-      if (CycleDispatched != Entry.CycleIssued)
+    } else {
+      if (CycleDispatched != Entry.CycleIssued) {
         OS << TimelineView::DisplayChar::Executing;
+
+}
       for (unsigned I = Entry.CycleIssued + 1, E = Entry.CycleExecuted; I < E;
-           ++I)
+           ++I) {
         OS << TimelineView::DisplayChar::Executing;
+
+}
       OS << TimelineView::DisplayChar::Executed;
     }
   }
 
-  for (unsigned I = Entry.CycleExecuted + 1, E = Entry.CycleRetired; I < E; ++I)
+  for (unsigned I = Entry.CycleExecuted + 1, E = Entry.CycleRetired; I < E; ++I) {
     OS << TimelineView::DisplayChar::RetireLag;
+
+}
   OS << TimelineView::DisplayChar::Retired;
 
   // Skip other columns.
-  for (unsigned I = Entry.CycleRetired + 1, E = LastCycle; I <= E; ++I)
+  for (unsigned I = Entry.CycleRetired + 1, E = LastCycle; I <= E; ++I) {
     OS << ((I % 5 == 0 || I == LastCycle) ? '.' : ' ');
+
+}
 }
 
 static void printTimelineHeader(formatted_raw_ostream &OS, unsigned Cycles) {
@@ -268,10 +310,12 @@ static void printTimelineHeader(formatted_raw_ostream &OS, unsigned Cycles) {
   if (Cycles >= 10) {
     OS.PadToColumn(10);
     for (unsigned I = 0; I <= Cycles; ++I) {
-      if (((I / 10) & 1) == 0)
+      if (((I / 10) & 1) == 0) {
         OS << ' ';
-      else
+      } else {
         OS << I % 10;
+
+}
     }
     OS << '\n';
   }
@@ -279,10 +323,12 @@ static void printTimelineHeader(formatted_raw_ostream &OS, unsigned Cycles) {
   OS << "Index";
   OS.PadToColumn(10);
   for (unsigned I = 0; I <= Cycles; ++I) {
-    if (((I / 10) & 1) == 0)
+    if (((I / 10) & 1) == 0) {
       OS << I % 10;
-    else
+    } else {
       OS << ' ';
+
+}
   }
   OS << '\n';
 }
@@ -301,8 +347,10 @@ void TimelineView::printTimeline(raw_ostream &OS) const {
   for (unsigned Iteration = 0; Iteration < Iterations; ++Iteration) {
     for (const MCInst &Inst : Source) {
       const TimelineViewEntry &Entry = Timeline[IID];
-      if (Entry.CycleRetired == 0)
+      if (Entry.CycleRetired == 0) {
         return;
+
+}
 
       unsigned SourceIndex = IID % Source.size();
       printTimelineViewEntry(FOS, Entry, Iteration, SourceIndex);

@@ -63,9 +63,11 @@ static LLVM_THREAD_LOCAL unsigned ThreadLocalSigInfoGenerationCounter = 0;
 namespace llvm {
 PrettyStackTraceEntry *ReverseStackTrace(PrettyStackTraceEntry *Head) {
   PrettyStackTraceEntry *Prev = nullptr;
-  while (Head)
+  while (Head) {
     std::tie(Prev, Head, Head->NextEntry) =
         std::make_tuple(Head, Head->NextEntry, Prev);
+
+}
   return Prev;
 }
 }
@@ -93,7 +95,9 @@ static void PrintStack(raw_ostream &OS) {
 LLVM_ATTRIBUTE_NOINLINE
 static void PrintCurStackTrace(raw_ostream &OS) {
   // Don't print an empty trace.
-  if (!PrettyStackTraceHead) return;
+  if (!PrettyStackTraceHead) { return;
+
+}
 
   // If there are pretty stack frames registered, walk and emit them.
   OS << "Stack dump:\n";
@@ -239,8 +243,10 @@ void PrettyStackTraceFormat::print(raw_ostream &OS) const { OS << Str << "\n"; }
 void PrettyStackTraceProgram::print(raw_ostream &OS) const {
   OS << "Program arguments: ";
   // Print the argument list.
-  for (unsigned i = 0, e = ArgC; i != e; ++i)
+  for (unsigned i = 0, e = ArgC; i != e; ++i) {
     OS << ArgV[i] << ' ';
+
+}
   OS << '\n';
 }
 

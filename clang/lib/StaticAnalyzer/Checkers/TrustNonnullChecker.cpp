@@ -66,8 +66,10 @@ public:
                              SVal Cond,
                              bool Assumption) const {
     const SymbolRef CondS = Cond.getAsSymbol();
-    if (!CondS || CondS->computeComplexity() > ComplexityThreshold)
+    if (!CondS || CondS->computeComplexity() > ComplexityThreshold) {
       return State;
+
+}
 
     for (auto B=CondS->symbol_begin(), E=CondS->symbol_end(); B != E; ++B) {
       const SymbolRef Antecedent = *B;
@@ -80,14 +82,20 @@ public:
 
   void checkPostCall(const CallEvent &Call, CheckerContext &C) const {
     // Only trust annotations for system headers for non-protocols.
-    if (!Call.isInSystemHeader())
+    if (!Call.isInSystemHeader()) {
       return;
+
+}
 
     ProgramStateRef State = C.getState();
 
-    if (isNonNullPtr(Call, C))
-      if (auto L = Call.getReturnValue().getAs<Loc>())
+    if (isNonNullPtr(Call, C)) {
+      if (auto L = Call.getReturnValue().getAs<Loc>()) {
         State = State->assume(*L, /*assumption=*/true);
+
+}
+
+}
 
     C.addTransition(State);
   }
@@ -95,8 +103,10 @@ public:
   void checkPostObjCMessage(const ObjCMethodCall &Msg,
                             CheckerContext &C) const {
     const ObjCInterfaceDecl *ID = Msg.getReceiverInterface();
-    if (!ID)
+    if (!ID) {
       return;
+
+}
 
     ProgramStateRef State = C.getState();
 
@@ -105,8 +115,10 @@ public:
     if (interfaceHasSuperclass(ID, "NSMutableDictionary") &&
         (Msg.getSelector() == SetObjectForKeyedSubscriptSel ||
          Msg.getSelector() == SetObjectForKeySel)) {
-      if (auto L = Msg.getArgSVal(1).getAs<Loc>())
+      if (auto L = Msg.getArgSVal(1).getAs<Loc>()) {
         State = State->assume(*L, /*assumption=*/true);
+
+}
     }
 
     // Record an implication: index is non-null if the output is non-null.
@@ -146,9 +158,13 @@ private:
   template <typename MapName>
   ProgramStateRef dropDeadFromGDM(SymbolReaper &SymReaper,
                                   ProgramStateRef State) const {
-    for (const std::pair<SymbolRef, SymbolRef> &P : State->get<MapName>())
-      if (!SymReaper.isLive(P.first) || !SymReaper.isLive(P.second))
+    for (const std::pair<SymbolRef, SymbolRef> &P : State->get<MapName>()) {
+      if (!SymReaper.isLive(P.first) || !SymReaper.isLive(P.second)) {
         State = State->remove<MapName>(P.first);
+
+}
+
+}
     return State;
   }
 
@@ -156,38 +172,52 @@ private:
   /// a non-null pointer.
   bool isNonNullPtr(const CallEvent &Call, CheckerContext &C) const {
     QualType ExprRetType = Call.getResultType();
-    if (!ExprRetType->isAnyPointerType())
+    if (!ExprRetType->isAnyPointerType()) {
       return false;
 
-    if (getNullabilityAnnotation(ExprRetType) == Nullability::Nonnull)
+}
+
+    if (getNullabilityAnnotation(ExprRetType) == Nullability::Nonnull) {
       return true;
+
+}
 
     // The logic for ObjC instance method calls is more complicated,
     // as the return value is nil when the receiver is nil.
-    if (!isa<ObjCMethodCall>(&Call))
+    if (!isa<ObjCMethodCall>(&Call)) {
       return false;
+
+}
 
     const auto *MCall = cast<ObjCMethodCall>(&Call);
     const ObjCMethodDecl *MD = MCall->getDecl();
 
     // Distrust protocols.
-    if (isa<ObjCProtocolDecl>(MD->getDeclContext()))
+    if (isa<ObjCProtocolDecl>(MD->getDeclContext())) {
       return false;
 
+}
+
     QualType DeclRetType = MD->getReturnType();
-    if (getNullabilityAnnotation(DeclRetType) != Nullability::Nonnull)
+    if (getNullabilityAnnotation(DeclRetType) != Nullability::Nonnull) {
       return false;
+
+}
 
     // For class messages it is sufficient for the declaration to be
     // annotated _Nonnull.
-    if (!MCall->isInstanceMessage())
+    if (!MCall->isInstanceMessage()) {
       return true;
+
+}
 
     // Alternatively, the analyzer could know that the receiver is not null.
     SVal Receiver = MCall->getReceiverSVal();
     ConditionTruthVal TV = C.getState()->isNonNull(Receiver);
-    if (TV.isConstrainedTrue())
+    if (TV.isConstrainedTrue()) {
       return true;
+
+}
 
     return false;
   }
@@ -195,11 +225,15 @@ private:
   /// \return Whether \p ID has a superclass by the name \p ClassName.
   bool interfaceHasSuperclass(const ObjCInterfaceDecl *ID,
                          StringRef ClassName) const {
-    if (ID->getIdentifier()->getName() == ClassName)
+    if (ID->getIdentifier()->getName() == ClassName) {
       return true;
 
-    if (const ObjCInterfaceDecl *Super = ID->getSuperClass())
+}
+
+    if (const ObjCInterfaceDecl *Super = ID->getSuperClass()) {
       return interfaceHasSuperclass(Super, ClassName);
+
+}
 
     return false;
   }
@@ -213,14 +247,18 @@ private:
   ProgramStateRef addImplication(SymbolRef Antecedent,
                                  ProgramStateRef InputState,
                                  bool Negated) const {
-    if (!InputState)
+    if (!InputState) {
       return nullptr;
+
+}
     SValBuilder &SVB = InputState->getStateManager().getSValBuilder();
     const SymbolRef *Consequent =
         Negated ? InputState->get<NonNullImplicationMap>(Antecedent)
                 : InputState->get<NullImplicationMap>(Antecedent);
-    if (!Consequent)
+    if (!Consequent) {
       return InputState;
+
+}
 
     SVal AntecedentV = SVB.makeSymbolVal(Antecedent);
     ProgramStateRef State = InputState;
@@ -229,8 +267,10 @@ private:
         || (!Negated && InputState->isNull(AntecedentV).isConstrainedTrue())) {
       SVal ConsequentS = SVB.makeSymbolVal(*Consequent);
       State = InputState->assume(ConsequentS.castAs<DefinedSVal>(), Negated);
-      if (!State)
+      if (!State) {
         return nullptr;
+
+}
 
       // Drop implications from the map.
       if (Negated) {

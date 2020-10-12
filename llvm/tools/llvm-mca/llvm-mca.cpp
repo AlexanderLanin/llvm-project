@@ -216,8 +216,10 @@ static cl::opt<bool> ShowEncoding(
 namespace {
 
 const Target *getTarget(const char *ProgName) {
-  if (TripleName.empty())
+  if (TripleName.empty()) {
     TripleName = Triple::normalize(sys::getDefaultTargetTriple());
+
+}
   Triple TheTriple(TripleName);
 
   // Get the target specific parser.
@@ -234,26 +236,34 @@ const Target *getTarget(const char *ProgName) {
 }
 
 ErrorOr<std::unique_ptr<ToolOutputFile>> getOutputStream() {
-  if (OutputFilename == "")
+  if (OutputFilename == "") {
     OutputFilename = "-";
+
+}
   std::error_code EC;
   auto Out =
       std::make_unique<ToolOutputFile>(OutputFilename, EC, sys::fs::OF_Text);
-  if (!EC)
+  if (!EC) {
     return std::move(Out);
+
+}
   return EC;
 }
 } // end of anonymous namespace
 
 static void processOptionImpl(cl::opt<bool> &O, const cl::opt<bool> &Default) {
-  if (!O.getNumOccurrences() || O.getPosition() < Default.getPosition())
+  if (!O.getNumOccurrences() || O.getPosition() < Default.getPosition()) {
     O = Default.getValue();
+
+}
 }
 
 static void processViewOptions() {
   if (!EnableAllViews.getNumOccurrences() &&
-      !EnableAllStats.getNumOccurrences())
+      !EnableAllStats.getNumOccurrences()) {
     return;
+
+}
 
   if (EnableAllViews.getNumOccurrences()) {
     processOptionImpl(PrintSummaryView, EnableAllViews);
@@ -306,8 +316,10 @@ int main(int argc, char **argv) {
   // registered target, then exit with an error message.
   const char *ProgName = argv[0];
   const Target *TheTarget = getTarget(ProgName);
-  if (!TheTarget)
+  if (!TheTarget) {
     return 1;
+
+}
 
   // GetTarget() may replaced TripleName with a default triple.
   // For safety, reconstruct the Triple object.
@@ -323,13 +335,17 @@ int main(int argc, char **argv) {
   // Apply overrides to llvm-mca specific options.
   processViewOptions();
 
-  if (!MCPU.compare("native"))
+  if (!MCPU.compare("native")) {
     MCPU = std::string(llvm::sys::getHostCPUName());
+
+}
 
   std::unique_ptr<MCSubtargetInfo> STI(
       TheTarget->createMCSubtargetInfo(TripleName, MCPU, MATTR));
-  if (!STI->isCPUStringValid(MCPU))
+  if (!STI->isCPUStringValid(MCPU)) {
     return 1;
+
+}
 
   if (!PrintInstructionTables && !STI->getSchedModel().isOutOfOrder()) {
     WithColor::error() << "please specify an out-of-order cpu. '" << MCPU
@@ -343,10 +359,12 @@ int main(int argc, char **argv) {
         << " target triple '" << TheTriple.normalize() << "' and cpu '" << MCPU
         << "'.\n";
 
-    if (STI->getSchedModel().InstrItineraries)
+    if (STI->getSchedModel().InstrItineraries) {
       WithColor::note()
           << "cpu '" << MCPU << "' provides itineraries. However, "
           << "instruction itineraries are currently unsupported.\n";
+
+}
     return 1;
   }
 
@@ -391,8 +409,10 @@ int main(int argc, char **argv) {
   const mca::CodeRegions &Regions = *RegionsOrErr;
 
   // Early exit if errors were found by the code region parsing logic.
-  if (!Regions.isValid())
+  if (!Regions.isValid()) {
     return 1;
+
+}
 
   if (Regions.empty()) {
     WithColor::error() << "no assembly instructions found.\n";
@@ -407,8 +427,10 @@ int main(int argc, char **argv) {
   }
 
   unsigned AssemblerDialect = CRG.getAssemblerDialect();
-  if (OutputAsmVariant >= 0)
+  if (OutputAsmVariant >= 0) {
     AssemblerDialect = static_cast<unsigned>(OutputAsmVariant);
+
+}
   std::unique_ptr<MCInstPrinter> IP(TheTarget->createMCInstPrinter(
       Triple(TripleName), AssemblerDialect, *MAI, *MCII, *MRI));
   if (!IP) {
@@ -447,16 +469,20 @@ int main(int argc, char **argv) {
 
   for (const std::unique_ptr<mca::CodeRegion> &Region : Regions) {
     // Skip empty code regions.
-    if (Region->empty())
+    if (Region->empty()) {
       continue;
+
+}
 
     // Don't print the header of this region if it is the default region, and
     // it doesn't have an end location.
     if (Region->startLoc().isValid() || Region->endLoc().isValid()) {
       TOF->os() << "\n[" << RegionIdx++ << "] Code Region";
       StringRef Desc = Region->getDescription();
-      if (!Desc.empty())
+      if (!Desc.empty()) {
         TOF->os() << " - " << Desc;
+
+}
       TOF->os() << "\n\n";
     }
 
@@ -505,8 +531,10 @@ int main(int argc, char **argv) {
       Printer.addView(
           std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
 
-      if (!runPipeline(*P))
+      if (!runPipeline(*P)) {
         return 1;
+
+}
 
       Printer.printReport(TOF->os());
       continue;
@@ -516,34 +544,48 @@ int main(int argc, char **argv) {
     auto P = MCA.createDefaultPipeline(PO, S);
     mca::PipelinePrinter Printer(*P);
 
-    if (PrintSummaryView)
+    if (PrintSummaryView) {
       Printer.addView(
           std::make_unique<mca::SummaryView>(SM, Insts, DispatchWidth));
+
+}
 
     if (EnableBottleneckAnalysis) {
       Printer.addView(std::make_unique<mca::BottleneckAnalysis>(
           *STI, *IP, Insts, S.getNumIterations()));
     }
 
-    if (PrintInstructionInfoView)
+    if (PrintInstructionInfoView) {
       Printer.addView(std::make_unique<mca::InstructionInfoView>(
           *STI, *MCII, CE, ShowEncoding, Insts, *IP));
 
-    if (PrintDispatchStats)
+}
+
+    if (PrintDispatchStats) {
       Printer.addView(std::make_unique<mca::DispatchStatistics>());
 
-    if (PrintSchedulerStats)
+}
+
+    if (PrintSchedulerStats) {
       Printer.addView(std::make_unique<mca::SchedulerStatistics>(*STI));
 
-    if (PrintRetireStats)
+}
+
+    if (PrintRetireStats) {
       Printer.addView(std::make_unique<mca::RetireControlUnitStatistics>(SM));
 
-    if (PrintRegisterFileStats)
+}
+
+    if (PrintRegisterFileStats) {
       Printer.addView(std::make_unique<mca::RegisterFileStatistics>(*STI));
 
-    if (PrintResourcePressureView)
+}
+
+    if (PrintResourcePressureView) {
       Printer.addView(
           std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
+
+}
 
     if (PrintTimelineView) {
       unsigned TimelineIterations =
@@ -553,8 +595,10 @@ int main(int argc, char **argv) {
           TimelineMaxCycles));
     }
 
-    if (!runPipeline(*P))
+    if (!runPipeline(*P)) {
       return 1;
+
+}
 
     Printer.printReport(TOF->os());
 

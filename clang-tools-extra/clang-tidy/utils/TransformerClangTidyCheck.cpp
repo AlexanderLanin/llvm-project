@@ -31,10 +31,12 @@ TransformerClangTidyCheck::TransformerClangTidyCheck(
         MakeRule,
     StringRef Name, ClangTidyContext *Context)
     : ClangTidyCheck(Name, Context), Rule(MakeRule(getLangOpts(), Options)) {
-  if (Rule)
+  if (Rule) {
     assert(llvm::all_of(Rule->Cases, hasExplanation) &&
            "clang-tidy checks must have an explanation by default;"
            " explicitly provide an empty explanation if none is desired");
+
+}
 }
 
 TransformerClangTidyCheck::TransformerClangTidyCheck(RewriteRule R,
@@ -61,15 +63,21 @@ void TransformerClangTidyCheck::registerPPCallbacks(
 
 void TransformerClangTidyCheck::registerMatchers(
     ast_matchers::MatchFinder *Finder) {
-  if (Rule)
-    for (auto &Matcher : transformer::detail::buildMatchers(*Rule))
+  if (Rule) {
+    for (auto &Matcher : transformer::detail::buildMatchers(*Rule)) {
       Finder->addDynamicMatcher(Matcher, this);
+
+}
+
+}
 }
 
 void TransformerClangTidyCheck::check(
     const ast_matchers::MatchFinder::MatchResult &Result) {
-  if (Result.Context->getDiagnostics().hasErrorOccurred())
+  if (Result.Context->getDiagnostics().hasErrorOccurred()) {
     return;
+
+}
 
   assert(Rule && "check() should not fire if Rule is None");
   RewriteRule::Case Case = transformer::detail::findSelectedCase(Result, *Rule);
@@ -82,8 +90,10 @@ void TransformerClangTidyCheck::check(
   }
 
   // No rewrite applied, but no error encountered either.
-  if (Transformations->empty())
+  if (Transformations->empty()) {
     return;
+
+}
 
   Expected<std::string> Explanation = Case.Explanation->eval(Result);
   if (!Explanation) {
@@ -95,8 +105,10 @@ void TransformerClangTidyCheck::check(
   // Associate the diagnostic with the location of the first change.
   DiagnosticBuilder Diag =
       diag((*Transformations)[0].Range.getBegin(), *Explanation);
-  for (const auto &T : *Transformations)
+  for (const auto &T : *Transformations) {
     Diag << FixItHint::CreateReplacement(T.Range, T.Replacement);
+
+}
 
   for (const auto &I : Case.AddedIncludes) {
     auto &Header = I.first;

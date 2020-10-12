@@ -42,18 +42,22 @@ static void removeLValueToRValueCast(Expr *E) {
 
     Expr *Child = nullptr;
     CastExpr *ParentCast = dyn_cast<CastExpr>(Parent);
-    if (ParentCast)
+    if (ParentCast) {
       Child = ParentCast->getSubExpr();
-    else
+    } else {
       return;
 
-    if (auto *CastE = dyn_cast<CastExpr>(Child))
+}
+
+    if (auto *CastE = dyn_cast<CastExpr>(Child)) {
       if (CastE->getCastKind() == CK_LValueToRValue) {
         ExprUnderCast = CastE->getSubExpr();
         // LValueToRValue cast inside GCCAsmStmt requires an explicit cast.
         ParentCast->setSubExpr(ExprUnderCast);
         break;
       }
+
+}
     Parent = Child;
   }
 
@@ -61,8 +65,10 @@ static void removeLValueToRValueCast(Expr *E) {
   assert(ExprUnderCast &&
          "Should be reachable only if LValueToRValue cast was found!");
   auto ValueKind = ExprUnderCast->getValueKind();
-  for (Expr *E : ParentsToUpdate)
+  for (Expr *E : ParentsToUpdate) {
     E->setValueKind(ValueKind);
+
+}
 }
 
 /// Emit a warning about usage of "noop"-like casts for lvalues (GNU extension)
@@ -88,11 +94,15 @@ static void emitAndFixInvalidAsmCastLValue(const Expr *LVal, Expr *BadArgument,
 /// returns false if it is a case we can handle.
 static bool CheckAsmLValue(Expr *E, Sema &S) {
   // Type dependent expressions will be checked during instantiation.
-  if (E->isTypeDependent())
+  if (E->isTypeDependent()) {
     return false;
 
-  if (E->isLValue())
+}
+
+  if (E->isLValue()) {
     return false;  // Cool, this is an lvalue.
+
+}
 
   // Okay, this is not an lvalue, but perhaps it is the result of a cast that we
   // are supposed to allow.
@@ -114,23 +124,31 @@ isOperandMentioned(unsigned OpNo,
                    ArrayRef<GCCAsmStmt::AsmStringPiece> AsmStrPieces) {
   for (unsigned p = 0, e = AsmStrPieces.size(); p != e; ++p) {
     const GCCAsmStmt::AsmStringPiece &Piece = AsmStrPieces[p];
-    if (!Piece.isOperand())
+    if (!Piece.isOperand()) {
       continue;
+
+}
 
     // If this is a reference to the input and if the input was the smaller
     // one, then we have to reject this asm.
-    if (Piece.getOperandNo() == OpNo)
+    if (Piece.getOperandNo() == OpNo) {
       return true;
+
+}
   }
   return false;
 }
 
 static bool CheckNakedParmReference(Expr *E, Sema &S) {
   FunctionDecl *Func = dyn_cast<FunctionDecl>(S.CurContext);
-  if (!Func)
+  if (!Func) {
     return false;
-  if (!Func->hasAttr<NakedAttr>())
+
+}
+  if (!Func->hasAttr<NakedAttr>()) {
     return false;
+
+}
 
   SmallVector<Expr*, 4> WorkList;
   WorkList.push_back(E);
@@ -149,8 +167,10 @@ static bool CheckNakedParmReference(Expr *E, Sema &S) {
       }
     }
     for (Stmt *Child : E->children()) {
-      if (Expr *E = dyn_cast_or_null<Expr>(Child))
+      if (Expr *E = dyn_cast_or_null<Expr>(Child)) {
         WorkList.push_back(E);
+
+}
     }
   }
   return false;
@@ -170,12 +190,14 @@ static bool checkExprMemoryConstraintCompat(Sema &S, Expr *E,
 
   // Bitfields, vector elements and global register variables are not
   // compatible.
-  if (E->refersToBitField())
+  if (E->refersToBitField()) {
     EType = ExprBitfield;
-  else if (E->refersToVectorElement())
+  } else if (E->refersToVectorElement()) {
     EType = ExprVectorElt;
-  else if (E->refersToGlobalRegisterVar())
+  } else if (E->refersToGlobalRegisterVar()) {
     EType = ExprGlobalRegVar;
+
+}
 
   if (EType != ExprSafeType) {
     S.Diag(E->getBeginLoc(), diag::err_asm_non_addr_value_in_memory_constraint)
@@ -196,9 +218,13 @@ static StringRef extractRegisterName(const Expr *Expression,
     // Handle cases where the expression is a variable
     const VarDecl *Variable = dyn_cast<VarDecl>(AsmDeclRef->getDecl());
     if (Variable && Variable->getStorageClass() == SC_Register) {
-      if (AsmLabelAttr *Attr = Variable->getAttr<AsmLabelAttr>())
-        if (Target.isValidGCCRegisterName(Attr->getLabel()))
+      if (AsmLabelAttr *Attr = Variable->getAttr<AsmLabelAttr>()) {
+        if (Target.isValidGCCRegisterName(Attr->getLabel())) {
           return Target.getNormalizedGCCRegisterName(Attr->getLabel(), true);
+
+}
+
+}
     }
   }
   return "";
@@ -219,8 +245,10 @@ getClobberConflictLocation(MultiExprArg Exprs, StringLiteral **Constraints,
     StringRef Constraint = Constraints[i]->getString();
     StringRef InOutReg = Target.getConstraintRegister(
         Constraint, extractRegisterName(Exprs[i], Target));
-    if (InOutReg != "")
+    if (InOutReg != "") {
       InOutVars.insert(InOutReg);
+
+}
   }
   // Check for each item in the clobber list if it conflicts with the input
   // or output
@@ -228,12 +256,16 @@ getClobberConflictLocation(MultiExprArg Exprs, StringLiteral **Constraints,
     StringRef Clobber = Clobbers[i]->getString();
     // We only check registers, therefore we don't check cc and memory
     // clobbers
-    if (Clobber == "cc" || Clobber == "memory")
+    if (Clobber == "cc" || Clobber == "memory") {
       continue;
+
+}
     Clobber = Target.getNormalizedGCCRegisterName(Clobber, true);
     // Go over the output's registers we collected
-    if (InOutVars.count(Clobber))
+    if (InOutVars.count(Clobber)) {
       return Clobbers[i]->getBeginLoc();
+
+}
   }
   return SourceLocation();
 }
@@ -265,8 +297,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     assert(Literal->isAscii());
 
     StringRef OutputName;
-    if (Names[i])
+    if (Names[i]) {
       OutputName = Names[i]->getName();
+
+}
 
     TargetInfo::ConstraintInfo Info(Literal->getString(), OutputName);
     if (!Context.getTargetInfo().validateOutputConstraint(Info)) {
@@ -280,27 +314,35 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     }
 
     ExprResult ER = CheckPlaceholderExpr(Exprs[i]);
-    if (ER.isInvalid())
+    if (ER.isInvalid()) {
       return StmtError();
+
+}
     Exprs[i] = ER.get();
 
     // Check that the output exprs are valid lvalues.
     Expr *OutputExpr = Exprs[i];
 
     // Referring to parameters is not allowed in naked functions.
-    if (CheckNakedParmReference(OutputExpr, *this))
+    if (CheckNakedParmReference(OutputExpr, *this)) {
       return StmtError();
+
+}
 
     // Check that the output expression is compatible with memory constraint.
     if (Info.allowsMemory() &&
-        checkExprMemoryConstraintCompat(*this, OutputExpr, Info, false))
+        checkExprMemoryConstraintCompat(*this, OutputExpr, Info, false)) {
       return StmtError();
+
+}
 
     OutputConstraintInfos.push_back(Info);
 
     // If this is dependent, just continue.
-    if (OutputExpr->isTypeDependent())
+    if (OutputExpr->isTypeDependent()) {
       continue;
+
+}
 
     Expr::isModifiableLvalueResult IsLV =
         OutputExpr->isModifiableLvalue(Context, /*Loc=*/nullptr);
@@ -320,8 +362,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     case Expr::MLV_IncompleteType:
     case Expr::MLV_IncompleteVoidType:
       if (RequireCompleteType(OutputExpr->getBeginLoc(), Exprs[i]->getType(),
-                              diag::err_dereference_incomplete_type))
+                              diag::err_dereference_incomplete_type)) {
         return StmtError();
+
+}
       LLVM_FALLTHROUGH;
     default:
       return StmtError(Diag(OutputExpr->getBeginLoc(),
@@ -348,8 +392,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     assert(Literal->isAscii());
 
     StringRef InputName;
-    if (Names[i])
+    if (Names[i]) {
       InputName = Names[i]->getName();
+
+}
 
     TargetInfo::ConstraintInfo Info(Literal->getString(), InputName);
     if (!Context.getTargetInfo().validateInputConstraint(OutputConstraintInfos,
@@ -363,28 +409,36 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     }
 
     ExprResult ER = CheckPlaceholderExpr(Exprs[i]);
-    if (ER.isInvalid())
+    if (ER.isInvalid()) {
       return StmtError();
+
+}
     Exprs[i] = ER.get();
 
     Expr *InputExpr = Exprs[i];
 
     // Referring to parameters is not allowed in naked functions.
-    if (CheckNakedParmReference(InputExpr, *this))
+    if (CheckNakedParmReference(InputExpr, *this)) {
       return StmtError();
+
+}
 
     // Check that the input expression is compatible with memory constraint.
     if (Info.allowsMemory() &&
-        checkExprMemoryConstraintCompat(*this, InputExpr, Info, true))
+        checkExprMemoryConstraintCompat(*this, InputExpr, Info, true)) {
       return StmtError();
+
+}
 
     // Only allow void types for memory constraints.
     if (Info.allowsMemory() && !Info.allowsRegister()) {
-      if (CheckAsmLValue(InputExpr, *this))
+      if (CheckAsmLValue(InputExpr, *this)) {
         return StmtError(Diag(InputExpr->getBeginLoc(),
                               diag::err_asm_invalid_lvalue_in_input)
                          << Info.getConstraintStr()
                          << InputExpr->getSourceRange());
+
+}
     } else if (Info.requiresImmediateConstant() && !Info.allowsRegister()) {
       if (!InputExpr->isValueDependent()) {
         Expr::EvalResult EVResult;
@@ -393,20 +447,26 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
           // integral constant expressions if they were cast to int.
           llvm::APSInt IntResult;
           if (EVResult.Val.toIntegralConstant(IntResult, InputExpr->getType(),
-                                               Context))
-            if (!Info.isValidAsmImmediate(IntResult))
+                                               Context)) {
+            if (!Info.isValidAsmImmediate(IntResult)) {
               return StmtError(Diag(InputExpr->getBeginLoc(),
                                     diag::err_invalid_asm_value_for_constraint)
                                << IntResult.toString(10)
                                << Info.getConstraintStr()
                                << InputExpr->getSourceRange());
+
+}
+
+}
         }
       }
 
     } else {
       ExprResult Result = DefaultFunctionArrayLvalueConversion(Exprs[i]);
-      if (Result.isInvalid())
+      if (Result.isInvalid()) {
         return StmtError();
+
+}
 
       Exprs[i] = Result.get();
     }
@@ -423,20 +483,28 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     InputConstraintInfos.push_back(Info);
 
     const Type *Ty = Exprs[i]->getType().getTypePtr();
-    if (Ty->isDependentType())
+    if (Ty->isDependentType()) {
       continue;
 
-    if (!Ty->isVoidType() || !Info.allowsMemory())
+}
+
+    if (!Ty->isVoidType() || !Info.allowsMemory()) {
       if (RequireCompleteType(InputExpr->getBeginLoc(), Exprs[i]->getType(),
-                              diag::err_dereference_incomplete_type))
+                              diag::err_dereference_incomplete_type)) {
         return StmtError();
+
+}
+
+}
 
     unsigned Size = Context.getTypeSize(Ty);
     if (!Context.getTargetInfo().validateInputSize(FeatureMap,
-                                                   Literal->getString(), Size))
+                                                   Literal->getString(), Size)) {
       return StmtResult(
           targetDiag(InputExpr->getBeginLoc(), diag::err_asm_invalid_input_size)
           << Info.getConstraintStr());
+
+}
   }
 
   // Check that the clobbers are valid.
@@ -474,24 +542,30 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
   // Validate constraints and modifiers.
   for (unsigned i = 0, e = Pieces.size(); i != e; ++i) {
     GCCAsmStmt::AsmStringPiece &Piece = Pieces[i];
-    if (!Piece.isOperand()) continue;
+    if (!Piece.isOperand()) { continue;
+
+}
 
     // Look for the correct constraint index.
     unsigned ConstraintIdx = Piece.getOperandNo();
     unsigned NumOperands = NS->getNumOutputs() + NS->getNumInputs();
     // Labels are the last in the Exprs list.
-    if (NS->isAsmGoto() && ConstraintIdx >= NumOperands)
+    if (NS->isAsmGoto() && ConstraintIdx >= NumOperands) {
       continue;
+
+}
     // Look for the (ConstraintIdx - NumOperands + 1)th constraint with
     // modifier '+'.
     if (ConstraintIdx >= NumOperands) {
       unsigned I = 0, E = NS->getNumOutputs();
 
-      for (unsigned Cnt = ConstraintIdx - NumOperands; I != E; ++I)
+      for (unsigned Cnt = ConstraintIdx - NumOperands; I != E; ++I) {
         if (OutputConstraintInfos[I].isReadWrite() && Cnt-- == 0) {
           ConstraintIdx = I;
           break;
         }
+
+}
 
       assert(I != E && "Invalid operand number should have been caught in "
                        " AnalyzeAsmString");
@@ -500,8 +574,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     // Now that we have the right indexes go ahead and check.
     StringLiteral *Literal = Constraints[ConstraintIdx];
     const Type *Ty = Exprs[ConstraintIdx]->getType().getTypePtr();
-    if (Ty->isDependentType() || Ty->isIncompleteType())
+    if (Ty->isDependentType() || Ty->isIncompleteType()) {
       continue;
+
+}
 
     unsigned Size = Context.getTypeSize(Ty);
     std::string SuggestedModifier;
@@ -554,7 +630,9 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     // If this is a tied constraint, verify that the output and input have
     // either exactly the same type, or that they are int/ptr operands with the
     // same size (int/long, int*/long, are ok etc).
-    if (!Info.hasTiedOperand()) continue;
+    if (!Info.hasTiedOperand()) { continue;
+
+}
 
     unsigned TiedTo = Info.getTiedOperand();
     unsigned InputOpNo = i+NumOutputs;
@@ -574,13 +652,17 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     }
     InputMatchedToOutput[TiedTo] = i;
 
-    if (OutputExpr->isTypeDependent() || InputExpr->isTypeDependent())
+    if (OutputExpr->isTypeDependent() || InputExpr->isTypeDependent()) {
       continue;
+
+}
 
     QualType InTy = InputExpr->getType();
     QualType OutTy = OutputExpr->getType();
-    if (Context.hasSameType(InTy, OutTy))
+    if (Context.hasSameType(InTy, OutTy)) {
       continue;  // All types can be tied to themselves.
+
+}
 
     // Decide if the input and output are in the same domain (integer/ptr or
     // floating point.
@@ -588,19 +670,23 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
       AD_Int, AD_FP, AD_Other
     } InputDomain, OutputDomain;
 
-    if (InTy->isIntegerType() || InTy->isPointerType())
+    if (InTy->isIntegerType() || InTy->isPointerType()) {
       InputDomain = AD_Int;
-    else if (InTy->isRealFloatingType())
+    } else if (InTy->isRealFloatingType()) {
       InputDomain = AD_FP;
-    else
+    } else {
       InputDomain = AD_Other;
 
-    if (OutTy->isIntegerType() || OutTy->isPointerType())
+}
+
+    if (OutTy->isIntegerType() || OutTy->isPointerType()) {
       OutputDomain = AD_Int;
-    else if (OutTy->isRealFloatingType())
+    } else if (OutTy->isRealFloatingType()) {
       OutputDomain = AD_FP;
-    else
+    } else {
       OutputDomain = AD_Other;
+
+}
 
     // They are ok if they are the same size and in the same domain.  This
     // allows tying things like:
@@ -611,8 +697,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     uint64_t OutSize = Context.getTypeSize(OutTy);
     uint64_t InSize = Context.getTypeSize(InTy);
     if (OutSize == InSize && InputDomain == OutputDomain &&
-        InputDomain != AD_Other)
+        InputDomain != AD_Other) {
       continue;
+
+}
 
     // If the smaller input/output operand is not mentioned in the asm string,
     // then we can promote the smaller one to a larger input and the asm string
@@ -637,8 +725,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     // output was a register, just extend the shorter one to the size of the
     // larger one.
     if (!SmallerValueMentioned && InputDomain != AD_Other &&
-        OutputConstraintInfos[TiedTo].allowsRegister())
+        OutputConstraintInfos[TiedTo].allowsRegister()) {
       continue;
+
+}
 
     // Either both of the operands were mentioned or the smaller one was
     // mentioned.  One more special case that we'll allow: if the tied input is
@@ -666,16 +756,22 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
       getClobberConflictLocation(Exprs, Constraints, Clobbers, NumClobbers,
                                  NumLabels,
                                  Context.getTargetInfo(), Context);
-  if (ConstraintLoc.isValid())
+  if (ConstraintLoc.isValid()) {
     targetDiag(ConstraintLoc, diag::error_inoutput_conflict_with_clobber);
+
+}
 
   // Check for duplicate asm operand name between input, output and label lists.
   typedef std::pair<StringRef , Expr *> NamedOperand;
   SmallVector<NamedOperand, 4> NamedOperandList;
-  for (unsigned i = 0, e = NumOutputs + NumInputs + NumLabels; i != e; ++i)
-    if (Names[i])
+  for (unsigned i = 0, e = NumOutputs + NumInputs + NumLabels; i != e; ++i) {
+    if (Names[i]) {
       NamedOperandList.emplace_back(
           std::make_pair(Names[i]->getName(), Exprs[i]));
+
+}
+
+}
   // Sort NamedOperandList.
   std::stable_sort(NamedOperandList.begin(), NamedOperandList.end(),
               [](const NamedOperand &LHS, const NamedOperand &RHS) {
@@ -695,8 +791,10 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
         << Found->first;
     return StmtError();
   }
-  if (NS->isAsmGoto())
+  if (NS->isAsmGoto()) {
     setFunctionHasBranchIntoScope();
+
+}
   return NS;
 }
 
@@ -704,25 +802,37 @@ void Sema::FillInlineAsmIdentifierInfo(Expr *Res,
                                        llvm::InlineAsmIdentifierInfo &Info) {
   QualType T = Res->getType();
   Expr::EvalResult Eval;
-  if (T->isFunctionType() || T->isDependentType())
+  if (T->isFunctionType() || T->isDependentType()) {
     return Info.setLabel(Res);
+
+}
   if (Res->isRValue()) {
     bool IsEnum = isa<clang::EnumType>(T);
-    if (DeclRefExpr *DRE = dyn_cast<clang::DeclRefExpr>(Res))
-      if (DRE->getDecl()->getKind() == Decl::EnumConstant)
+    if (DeclRefExpr *DRE = dyn_cast<clang::DeclRefExpr>(Res)) {
+      if (DRE->getDecl()->getKind() == Decl::EnumConstant) {
         IsEnum = true;
-    if (IsEnum && Res->EvaluateAsRValue(Eval, Context))
+
+}
+
+}
+    if (IsEnum && Res->EvaluateAsRValue(Eval, Context)) {
       return Info.setEnum(Eval.Val.getInt().getSExtValue());
+
+}
 
     return Info.setLabel(Res);
   }
   unsigned Size = Context.getTypeSizeInChars(T).getQuantity();
   unsigned Type = Size;
-  if (const auto *ATy = Context.getAsArrayType(T))
+  if (const auto *ATy = Context.getAsArrayType(T)) {
     Type = Context.getTypeSizeInChars(ATy->getElementType()).getQuantity();
+
+}
   bool IsGlobalLV = false;
-  if (Res->EvaluateAsLValue(Eval, Context))
+  if (Res->EvaluateAsLValue(Eval, Context)) {
     IsGlobalLV = Eval.isGlobalLValue();
+
+}
   Info.setVar(Res, IsGlobalLV, Size, Type);
 }
 
@@ -731,10 +841,12 @@ ExprResult Sema::LookupInlineAsmIdentifier(CXXScopeSpec &SS,
                                            UnqualifiedId &Id,
                                            bool IsUnevaluatedContext) {
 
-  if (IsUnevaluatedContext)
+  if (IsUnevaluatedContext) {
     PushExpressionEvaluationContext(
         ExpressionEvaluationContext::UnevaluatedAbstract,
         ReuseLambdaContextDecl);
+
+}
 
   ExprResult Result = ActOnIdExpression(getCurScope(), SS, TemplateKWLoc, Id,
                                         /*trailing lparen*/ false,
@@ -742,17 +854,25 @@ ExprResult Sema::LookupInlineAsmIdentifier(CXXScopeSpec &SS,
                                         /*CorrectionCandidateCallback=*/nullptr,
                                         /*IsInlineAsmIdentifier=*/ true);
 
-  if (IsUnevaluatedContext)
+  if (IsUnevaluatedContext) {
     PopExpressionEvaluationContext();
 
-  if (!Result.isUsable()) return Result;
+}
+
+  if (!Result.isUsable()) { return Result;
+
+}
 
   Result = CheckPlaceholderExpr(Result.get());
-  if (!Result.isUsable()) return Result;
+  if (!Result.isUsable()) { return Result;
+
+}
 
   // Referring to parameters is not allowed in naked functions.
-  if (CheckNakedParmReference(Result.get(), *this))
+  if (CheckNakedParmReference(Result.get(), *this)) {
     return ExprError();
+
+}
 
   QualType T = Result.get()->getType();
 
@@ -783,54 +903,74 @@ bool Sema::LookupInlineAsmField(StringRef Base, StringRef Member,
 
   // MS InlineAsm uses 'this' as a base
   if (getLangOpts().CPlusPlus && Base.equals("this")) {
-    if (const Type *PT = getCurrentThisType().getTypePtrOrNull())
+    if (const Type *PT = getCurrentThisType().getTypePtrOrNull()) {
       FoundDecl = PT->getPointeeType()->getAsTagDecl();
+
+}
   } else {
     LookupResult BaseResult(*this, &Context.Idents.get(Base), SourceLocation(),
                             LookupOrdinaryName);
-    if (LookupName(BaseResult, getCurScope()) && BaseResult.isSingleResult())
+    if (LookupName(BaseResult, getCurScope()) && BaseResult.isSingleResult()) {
       FoundDecl = BaseResult.getFoundDecl();
+
+}
   }
 
-  if (!FoundDecl)
+  if (!FoundDecl) {
     return true;
+
+}
 
   for (StringRef NextMember : Members) {
     const RecordType *RT = nullptr;
-    if (VarDecl *VD = dyn_cast<VarDecl>(FoundDecl))
+    if (VarDecl *VD = dyn_cast<VarDecl>(FoundDecl)) {
       RT = VD->getType()->getAs<RecordType>();
-    else if (TypedefNameDecl *TD = dyn_cast<TypedefNameDecl>(FoundDecl)) {
+    } else if (TypedefNameDecl *TD = dyn_cast<TypedefNameDecl>(FoundDecl)) {
       MarkAnyDeclReferenced(TD->getLocation(), TD, /*OdrUse=*/false);
       // MS InlineAsm often uses struct pointer aliases as a base
       QualType QT = TD->getUnderlyingType();
-      if (const auto *PT = QT->getAs<PointerType>())
+      if (const auto *PT = QT->getAs<PointerType>()) {
         QT = PT->getPointeeType();
+
+}
       RT = QT->getAs<RecordType>();
-    } else if (TypeDecl *TD = dyn_cast<TypeDecl>(FoundDecl))
+    } else if (TypeDecl *TD = dyn_cast<TypeDecl>(FoundDecl)) {
       RT = TD->getTypeForDecl()->getAs<RecordType>();
-    else if (FieldDecl *TD = dyn_cast<FieldDecl>(FoundDecl))
+    } else if (FieldDecl *TD = dyn_cast<FieldDecl>(FoundDecl)) {
       RT = TD->getType()->getAs<RecordType>();
-    if (!RT)
+
+}
+    if (!RT) {
       return true;
 
+}
+
     if (RequireCompleteType(AsmLoc, QualType(RT, 0),
-                            diag::err_asm_incomplete_type))
+                            diag::err_asm_incomplete_type)) {
       return true;
+
+}
 
     LookupResult FieldResult(*this, &Context.Idents.get(NextMember),
                              SourceLocation(), LookupMemberName);
 
-    if (!LookupQualifiedName(FieldResult, RT->getDecl()))
+    if (!LookupQualifiedName(FieldResult, RT->getDecl())) {
       return true;
 
-    if (!FieldResult.isSingleResult())
+}
+
+    if (!FieldResult.isSingleResult()) {
       return true;
+
+}
     FoundDecl = FieldResult.getFoundDecl();
 
     // FIXME: Handle IndirectFieldDecl?
     FieldDecl *FD = dyn_cast<FieldDecl>(FoundDecl);
-    if (!FD)
+    if (!FD) {
       return true;
+
+}
 
     const ASTRecordLayout &RL = Context.getASTRecordLayout(RT->getDecl());
     unsigned i = FD->getFieldIndex();
@@ -858,21 +998,29 @@ Sema::LookupInlineAsmVarDeclField(Expr *E, StringRef Member,
 
   const RecordType *RT = T->getAs<RecordType>();
   // FIXME: Diagnose this as field access into a scalar type.
-  if (!RT)
+  if (!RT) {
     return ExprResult();
+
+}
 
   LookupResult FieldResult(*this, &Context.Idents.get(Member), AsmLoc,
                            LookupMemberName);
 
-  if (!LookupQualifiedName(FieldResult, RT->getDecl()))
+  if (!LookupQualifiedName(FieldResult, RT->getDecl())) {
     return ExprResult();
+
+}
 
   // Only normal and indirect field results will work.
   ValueDecl *FD = dyn_cast<FieldDecl>(FieldResult.getFoundDecl());
-  if (!FD)
+  if (!FD) {
     FD = dyn_cast<IndirectFieldDecl>(FieldResult.getFoundDecl());
-  if (!FD)
+
+}
+  if (!FD) {
     return ExprResult();
+
+}
 
   // Make an Expr to thread through OpDecl.
   ExprResult Result = BuildMemberReferenceExpr(
@@ -922,8 +1070,10 @@ LabelDecl *Sema::GetOrCreateMSAsmLabel(StringRef ExternalLabelName,
     for (char C : ExternalLabelName) {
       OS << C;
       // We escape '$' in asm strings by replacing it with "$$"
-      if (C == '$')
+      if (C == '$') {
         OS << '$';
+
+}
     }
     Label->setMSAsmLabel(OS.str());
   }

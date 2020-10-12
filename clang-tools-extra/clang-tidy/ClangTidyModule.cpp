@@ -24,8 +24,10 @@ std::vector<std::unique_ptr<ClangTidyCheck>>
 ClangTidyCheckFactories::createChecks(ClangTidyContext *Context) {
   std::vector<std::unique_ptr<ClangTidyCheck>> Checks;
   for (const auto &Factory : Factories) {
-    if (Context->isCheckEnabled(Factory.first))
+    if (Context->isCheckEnabled(Factory.first)) {
       Checks.emplace_back(Factory.second(Factory.first, Context));
+
+}
   }
   return Checks;
 }

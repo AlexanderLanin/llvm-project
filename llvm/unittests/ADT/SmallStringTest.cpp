@@ -178,8 +178,10 @@ TEST_F(SmallStringTest, Realloc) {
   EXPECT_EQ("abcd", theString);
   unsigned const N = 100000;
   theString.reserve(N);
-  for (unsigned i = 0; i < N - 4; ++i)
+  for (unsigned i = 0; i < N - 4; ++i) {
     theString.push_back('y');
+
+}
   EXPECT_EQ("abcdyyy", theString.slice(0, 7));
 }
 

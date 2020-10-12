@@ -24,15 +24,21 @@ Error VarStreamArrayExtractor<InlineeSourceLine>::
 operator()(BinaryStreamRef Stream, uint32_t &Len, InlineeSourceLine &Item) {
   BinaryStreamReader Reader(Stream);
 
-  if (auto EC = Reader.readObject(Item.Header))
+  if (auto EC = Reader.readObject(Item.Header)) {
     return EC;
+
+}
 
   if (HasExtraFiles) {
     uint32_t ExtraFileCount;
-    if (auto EC = Reader.readInteger(ExtraFileCount))
+    if (auto EC = Reader.readInteger(ExtraFileCount)) {
       return EC;
-    if (auto EC = Reader.readArray(Item.ExtraFiles, ExtraFileCount))
+
+}
+    if (auto EC = Reader.readArray(Item.ExtraFiles, ExtraFileCount)) {
       return EC;
+
+}
   }
 
   Len = Reader.getOffset();
@@ -43,12 +49,16 @@ DebugInlineeLinesSubsectionRef::DebugInlineeLinesSubsectionRef()
     : DebugSubsectionRef(DebugSubsectionKind::InlineeLines) {}
 
 Error DebugInlineeLinesSubsectionRef::initialize(BinaryStreamReader Reader) {
-  if (auto EC = Reader.readEnum(Signature))
+  if (auto EC = Reader.readEnum(Signature)) {
     return EC;
 
+}
+
   Lines.getExtractor().HasExtraFiles = hasExtraFiles();
-  if (auto EC = Reader.readArray(Lines, Reader.bytesRemaining()))
+  if (auto EC = Reader.readArray(Lines, Reader.bytesRemaining())) {
     return EC;
+
+}
 
   assert(Reader.bytesRemaining() == 0);
   return Error::success();
@@ -82,23 +92,35 @@ uint32_t DebugInlineeLinesSubsection::calculateSerializedSize() const {
 
 Error DebugInlineeLinesSubsection::commit(BinaryStreamWriter &Writer) const {
   InlineeLinesSignature Sig = InlineeLinesSignature::Normal;
-  if (HasExtraFiles)
+  if (HasExtraFiles) {
     Sig = InlineeLinesSignature::ExtraFiles;
 
-  if (auto EC = Writer.writeEnum(Sig))
+}
+
+  if (auto EC = Writer.writeEnum(Sig)) {
     return EC;
 
+}
+
   for (const auto &E : Entries) {
-    if (auto EC = Writer.writeObject(E.Header))
+    if (auto EC = Writer.writeObject(E.Header)) {
       return EC;
 
-    if (!HasExtraFiles)
+}
+
+    if (!HasExtraFiles) {
       continue;
 
-    if (auto EC = Writer.writeInteger<uint32_t>(E.ExtraFiles.size()))
+}
+
+    if (auto EC = Writer.writeInteger<uint32_t>(E.ExtraFiles.size())) {
       return EC;
-    if (auto EC = Writer.writeArray(makeArrayRef(E.ExtraFiles)))
+
+}
+    if (auto EC = Writer.writeArray(makeArrayRef(E.ExtraFiles))) {
       return EC;
+
+}
   }
 
   return Error::success();

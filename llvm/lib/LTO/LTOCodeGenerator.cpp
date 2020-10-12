@@ -153,8 +153,10 @@ void LTOCodeGenerator::initializeLTOPasses() {
 
 void LTOCodeGenerator::setAsmUndefinedRefs(LTOModule *Mod) {
   const std::vector<StringRef> &undefs = Mod->getAsmUndefinedRefs();
-  for (int i = 0, e = undefs.size(); i != e; ++i)
+  for (int i = 0, e = undefs.size(); i != e; ++i) {
     AsmUndefinedRefs.insert(undefs[i]);
+
+}
 }
 
 bool LTOCodeGenerator::addModule(LTOModule *Mod) {
@@ -221,8 +223,10 @@ void LTOCodeGenerator::setOptLevel(unsigned Level) {
 }
 
 bool LTOCodeGenerator::writeMergedModules(StringRef Path) {
-  if (!determineTarget())
+  if (!determineTarget()) {
     return false;
+
+}
 
   // We always run the verifier once on the merged module.
   verifyMergedModuleOnce();
@@ -299,8 +303,10 @@ bool LTOCodeGenerator::compileOptimizedToFile(const char **Name) {
 std::unique_ptr<MemoryBuffer>
 LTOCodeGenerator::compileOptimized() {
   const char *name;
-  if (!compileOptimizedToFile(&name))
+  if (!compileOptimizedToFile(&name)) {
     return nullptr;
+
+}
 
   // read .o file into memory buffer
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufferOrErr =
@@ -322,8 +328,10 @@ bool LTOCodeGenerator::compile_to_file(const char **Name, bool DisableVerify,
                                        bool DisableGVNLoadPRE,
                                        bool DisableVectorization) {
   if (!optimize(DisableVerify, DisableInline, DisableGVNLoadPRE,
-                DisableVectorization))
+                DisableVectorization)) {
     return false;
+
+}
 
   return compileOptimizedToFile(Name);
 }
@@ -332,15 +340,19 @@ std::unique_ptr<MemoryBuffer>
 LTOCodeGenerator::compile(bool DisableVerify, bool DisableInline,
                           bool DisableGVNLoadPRE, bool DisableVectorization) {
   if (!optimize(DisableVerify, DisableInline, DisableGVNLoadPRE,
-                DisableVectorization))
+                DisableVectorization)) {
     return nullptr;
+
+}
 
   return compileOptimized();
 }
 
 bool LTOCodeGenerator::determineTarget() {
-  if (TargetMach)
+  if (TargetMach) {
     return true;
+
+}
 
   TripleStr = MergedModule->getTargetTriple();
   if (TripleStr.empty()) {
@@ -364,13 +376,15 @@ bool LTOCodeGenerator::determineTarget() {
   FeatureStr = Features.getString();
   // Set a default CPU for Darwin triples.
   if (MCpu.empty() && Triple.isOSDarwin()) {
-    if (Triple.getArch() == llvm::Triple::x86_64)
+    if (Triple.getArch() == llvm::Triple::x86_64) {
       MCpu = "core2";
-    else if (Triple.getArch() == llvm::Triple::x86)
+    } else if (Triple.getArch() == llvm::Triple::x86) {
       MCpu = "yonah";
-    else if (Triple.getArch() == llvm::Triple::aarch64 ||
-             Triple.getArch() == llvm::Triple::aarch64_32)
+    } else if (Triple.getArch() == llvm::Triple::aarch64 ||
+             Triple.getArch() == llvm::Triple::aarch64_32) {
       MCpu = "cyclone";
+
+}
   }
 
   TargetMach = createTargetMachine();
@@ -391,33 +405,49 @@ void LTOCodeGenerator::preserveDiscardableGVs(
   std::vector<GlobalValue *> Used;
   auto mayPreserveGlobal = [&](GlobalValue &GV) {
     if (!GV.isDiscardableIfUnused() || GV.isDeclaration() ||
-        !mustPreserveGV(GV))
+        !mustPreserveGV(GV)) {
       return;
-    if (GV.hasAvailableExternallyLinkage())
+
+}
+    if (GV.hasAvailableExternallyLinkage()) {
       return emitWarning(
           (Twine("Linker asked to preserve available_externally global: '") +
            GV.getName() + "'").str());
-    if (GV.hasInternalLinkage())
+
+}
+    if (GV.hasInternalLinkage()) {
       return emitWarning((Twine("Linker asked to preserve internal global: '") +
                    GV.getName() + "'").str());
+
+}
     Used.push_back(&GV);
   };
-  for (auto &GV : TheModule)
-    mayPreserveGlobal(GV);
-  for (auto &GV : TheModule.globals())
-    mayPreserveGlobal(GV);
-  for (auto &GV : TheModule.aliases())
+  for (auto &GV : TheModule) {
     mayPreserveGlobal(GV);
 
-  if (Used.empty())
+}
+  for (auto &GV : TheModule.globals()) {
+    mayPreserveGlobal(GV);
+
+}
+  for (auto &GV : TheModule.aliases()) {
+    mayPreserveGlobal(GV);
+
+}
+
+  if (Used.empty()) {
     return;
+
+}
 
   appendToCompilerUsed(TheModule, Used);
 }
 
 void LTOCodeGenerator::applyScopeRestrictions() {
-  if (ScopeRestrictionsDone)
+  if (ScopeRestrictionsDone) {
     return;
+
+}
 
   // Declare a callback for the internalize pass that will ask for every
   // candidate GlobalValue if it can be internalized or not.
@@ -425,8 +455,10 @@ void LTOCodeGenerator::applyScopeRestrictions() {
   SmallString<64> MangledName;
   auto mustPreserveGV = [&](const GlobalValue &GV) -> bool {
     // Unnamed globals can't be mangled, but they can't be preserved either.
-    if (!GV.hasName())
+    if (!GV.hasName()) {
       return false;
+
+}
 
     // Need to mangle the GV as the "MustPreserveSymbols" StringSet is filled
     // with the linker supplied name, which on Darwin includes a leading
@@ -440,8 +472,10 @@ void LTOCodeGenerator::applyScopeRestrictions() {
   // Preserve linkonce value on linker request
   preserveDiscardableGVs(*MergedModule, mustPreserveGV);
 
-  if (!ShouldInternalize)
+  if (!ShouldInternalize) {
     return;
+
+}
 
   if (ShouldRestoreGlobalsLinkage) {
     // Record the linkage type of non-local symbols so they can be restored
@@ -449,15 +483,23 @@ void LTOCodeGenerator::applyScopeRestrictions() {
     // to module splitting.
     auto RecordLinkage = [&](const GlobalValue &GV) {
       if (!GV.hasAvailableExternallyLinkage() && !GV.hasLocalLinkage() &&
-          GV.hasName())
+          GV.hasName()) {
         ExternalSymbols.insert(std::make_pair(GV.getName(), GV.getLinkage()));
+
+}
     };
-    for (auto &GV : *MergedModule)
+    for (auto &GV : *MergedModule) {
       RecordLinkage(GV);
-    for (auto &GV : MergedModule->globals())
+
+}
+    for (auto &GV : MergedModule->globals()) {
       RecordLinkage(GV);
-    for (auto &GV : MergedModule->aliases())
+
+}
+    for (auto &GV : MergedModule->aliases()) {
       RecordLinkage(GV);
+
+}
   }
 
   // Update the llvm.compiler_used globals to force preserving libcalls and
@@ -473,22 +515,30 @@ void LTOCodeGenerator::applyScopeRestrictions() {
 
 /// Restore original linkage for symbols that may have been internalized
 void LTOCodeGenerator::restoreLinkageForExternals() {
-  if (!ShouldInternalize || !ShouldRestoreGlobalsLinkage)
+  if (!ShouldInternalize || !ShouldRestoreGlobalsLinkage) {
     return;
+
+}
 
   assert(ScopeRestrictionsDone &&
          "Cannot externalize without internalization!");
 
-  if (ExternalSymbols.empty())
+  if (ExternalSymbols.empty()) {
     return;
 
+}
+
   auto externalize = [this](GlobalValue &GV) {
-    if (!GV.hasLocalLinkage() || !GV.hasName())
+    if (!GV.hasLocalLinkage() || !GV.hasName()) {
       return;
 
+}
+
     auto I = ExternalSymbols.find(GV.getName());
-    if (I == ExternalSymbols.end())
+    if (I == ExternalSymbols.end()) {
       return;
+
+}
 
     GV.setLinkage(I->second);
   };
@@ -500,13 +550,17 @@ void LTOCodeGenerator::restoreLinkageForExternals() {
 
 void LTOCodeGenerator::verifyMergedModuleOnce() {
   // Only run on the first call.
-  if (HasVerifiedInput)
+  if (HasVerifiedInput) {
     return;
+
+}
   HasVerifiedInput = true;
 
   bool BrokenDebugInfo = false;
-  if (verifyModule(*MergedModule, &dbgs(), &BrokenDebugInfo))
+  if (verifyModule(*MergedModule, &dbgs(), &BrokenDebugInfo)) {
     report_fatal_error("Broken module found, compilation aborted!");
+
+}
   if (BrokenDebugInfo) {
     emitWarning("Invalid debug info found, debug info will be stripped");
     StripDebugInfo(*MergedModule);
@@ -525,8 +579,10 @@ void LTOCodeGenerator::finishOptimizationRemarks() {
 bool LTOCodeGenerator::optimize(bool DisableVerify, bool DisableInline,
                                 bool DisableGVNLoadPRE,
                                 bool DisableVectorization) {
-  if (!this->determineTarget())
+  if (!this->determineTarget()) {
     return false;
+
+}
 
   auto DiagFileOrErr =
       lto::setupLLVMOptimizationRemarks(Context, RemarksFilename, RemarksPasses,
@@ -573,11 +629,15 @@ bool LTOCodeGenerator::optimize(bool DisableVerify, bool DisableInline,
   PMB.DisableGVNLoadPRE = DisableGVNLoadPRE;
   PMB.LoopVectorize = !DisableVectorization;
   PMB.SLPVectorize = !DisableVectorization;
-  if (!DisableInline)
+  if (!DisableInline) {
     PMB.Inliner = createFunctionInliningPass();
+
+}
   PMB.LibraryInfo = new TargetLibraryInfoImpl(TargetTriple);
-  if (Freestanding)
+  if (Freestanding) {
     PMB.LibraryInfo->disableAllFunctions();
+
+}
   PMB.OptLevel = OptLevel;
   PMB.VerifyInput = !DisableVerify;
   PMB.VerifyOutput = !DisableVerify;
@@ -591,8 +651,10 @@ bool LTOCodeGenerator::optimize(bool DisableVerify, bool DisableInline,
 }
 
 bool LTOCodeGenerator::compileOptimized(ArrayRef<raw_pwrite_stream *> Out) {
-  if (!this->determineTarget())
+  if (!this->determineTarget()) {
     return false;
+
+}
 
   // We always run the verifier once on the merged module.  If it has already
   // been called in optimize(), this call will return early.
@@ -620,10 +682,12 @@ bool LTOCodeGenerator::compileOptimized(ArrayRef<raw_pwrite_stream *> Out) {
 
   // If statistics were requested, save them to the specified file or
   // print them out after codegen.
-  if (StatsFile)
+  if (StatsFile) {
     PrintStatisticsJSON(StatsFile->os());
-  else if (AreStatisticsEnabled())
+  } else if (AreStatisticsEnabled()) {
     PrintStatistics();
+
+}
 
   reportAndResetTimings();
 
@@ -633,8 +697,10 @@ bool LTOCodeGenerator::compileOptimized(ArrayRef<raw_pwrite_stream *> Out) {
 }
 
 void LTOCodeGenerator::setCodeGenDebugOptions(ArrayRef<const char *> Options) {
-  for (StringRef Option : Options)
+  for (StringRef Option : Options) {
     CodegenOptions.push_back(std::string(Option));
+
+}
 }
 
 void LTOCodeGenerator::parseCodeGenDebugOptions() {
@@ -642,8 +708,10 @@ void LTOCodeGenerator::parseCodeGenDebugOptions() {
   if (!CodegenOptions.empty()) {
     // ParseCommandLineOptions() expects argv[0] to be program name.
     std::vector<const char *> CodegenArgv(1, "libLLVMLTO");
-    for (std::string &Arg : CodegenOptions)
+    for (std::string &Arg : CodegenOptions) {
       CodegenArgv.push_back(Arg.c_str());
+
+}
     cl::ParseCommandLineOptions(CodegenArgv.size(), CodegenArgv.data());
   }
 }
@@ -696,8 +764,10 @@ LTOCodeGenerator::setDiagnosticHandler(lto_diagnostic_handler_t DiagHandler,
                                        void *Ctxt) {
   this->DiagHandler = DiagHandler;
   this->DiagContext = Ctxt;
-  if (!DiagHandler)
+  if (!DiagHandler) {
     return Context.setDiagnosticHandler(nullptr);
+
+}
   // Register the LTOCodeGenerator stub in the LLVMContext to forward the
   // diagnostic to the external DiagHandler.
   Context.setDiagnosticHandler(std::make_unique<LTODiagnosticHandler>(this),
@@ -715,15 +785,19 @@ public:
 }
 
 void LTOCodeGenerator::emitError(const std::string &ErrMsg) {
-  if (DiagHandler)
+  if (DiagHandler) {
     (*DiagHandler)(LTO_DS_ERROR, ErrMsg.c_str(), DiagContext);
-  else
+  } else {
     Context.diagnose(LTODiagnosticInfo(ErrMsg));
+
+}
 }
 
 void LTOCodeGenerator::emitWarning(const std::string &ErrMsg) {
-  if (DiagHandler)
+  if (DiagHandler) {
     (*DiagHandler)(LTO_DS_WARNING, ErrMsg.c_str(), DiagContext);
-  else
+  } else {
     Context.diagnose(LTODiagnosticInfo(ErrMsg, DS_Warning));
+
+}
 }

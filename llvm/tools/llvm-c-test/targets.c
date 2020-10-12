@@ -21,8 +21,10 @@ int llvm_targets_list(void) {
 
   for (t = LLVMGetFirstTarget(); t; t = LLVMGetNextTarget(t)) {
     printf("%s", LLVMGetTargetName(t));
-    if (LLVMTargetHasJIT(t))
+    if (LLVMTargetHasJIT(t)) {
       printf(" (+jit)");
+
+}
     printf("\n - %s\n", LLVMGetTargetDescription(t));
   }
 

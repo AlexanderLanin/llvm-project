@@ -20,15 +20,19 @@ Pointer::Pointer(const Pointer &P) : Pointer(P.Pointee, P.Base, P.Offset) {}
 
 Pointer::Pointer(Pointer &&P)
     : Pointee(P.Pointee), Base(P.Base), Offset(P.Offset) {
-  if (Pointee)
+  if (Pointee) {
     Pointee->movePointer(&P, this);
+
+}
 }
 
 Pointer::Pointer(Block *Pointee, unsigned Base, unsigned Offset)
     : Pointee(Pointee), Base(Base), Offset(Offset) {
   assert((Base == RootPtrMark || Base % alignof(void *) == 0) && "wrong base");
-  if (Pointee)
+  if (Pointee) {
     Pointee->addPointer(this);
+
+}
 }
 
 Pointer::~Pointer() {
@@ -41,35 +45,47 @@ Pointer::~Pointer() {
 void Pointer::operator=(const Pointer &P) {
   Block *Old = Pointee;
 
-  if (Pointee)
+  if (Pointee) {
     Pointee->removePointer(this);
+
+}
 
   Offset = P.Offset;
   Base = P.Base;
 
   Pointee = P.Pointee;
-  if (Pointee)
+  if (Pointee) {
     Pointee->addPointer(this);
 
-  if (Old)
+}
+
+  if (Old) {
     Old->cleanup();
+
+}
 }
 
 void Pointer::operator=(Pointer &&P) {
   Block *Old = Pointee;
 
-  if (Pointee)
+  if (Pointee) {
     Pointee->removePointer(this);
+
+}
 
   Offset = P.Offset;
   Base = P.Base;
 
   Pointee = P.Pointee;
-  if (Pointee)
+  if (Pointee) {
     Pointee->movePointer(&P, this);
 
-  if (Old)
+}
+
+  if (Old) {
     Old->cleanup();
+
+}
 }
 
 APValue Pointer::toAPValue() const {
@@ -87,12 +103,14 @@ APValue Pointer::toAPValue() const {
   } else {
     // Build the lvalue base from the block.
     Descriptor *Desc = getDeclDesc();
-    if (auto *VD = Desc->asValueDecl())
+    if (auto *VD = Desc->asValueDecl()) {
       Base = VD;
-    else if (auto *E = Desc->asExpr())
+    } else if (auto *E = Desc->asExpr()) {
       Base = E;
-    else
+    } else {
       llvm_unreachable("Invalid allocation type");
+
+}
 
     // Not a null pointer.
     IsNullPtr = false;
@@ -136,14 +154,20 @@ bool Pointer::isInitialized() const {
   assert(Pointee && "Cannot check if null pointer was initialized");
   Descriptor *Desc = getFieldDesc();
   if (Desc->isPrimitiveArray()) {
-    if (Pointee->IsStatic)
+    if (Pointee->IsStatic) {
       return true;
+
+}
     // Primitive array field are stored in a bitset.
     InitMap *Map = getInitMap();
-    if (!Map)
+    if (!Map) {
       return false;
-    if (Map == (InitMap *)-1)
+
+}
+    if (Map == (InitMap *)-1) {
       return true;
+
+}
     return Map->isInitialized(getIndex());
   } else {
     // Field has its bit in an inline descriptor.
@@ -158,10 +182,14 @@ void Pointer::initialize() const {
     if (!Pointee->IsStatic) {
       // Primitive array initializer.
       InitMap *&Map = getInitMap();
-      if (Map == (InitMap *)-1)
+      if (Map == (InitMap *)-1) {
         return;
-      if (Map == nullptr)
+
+}
+      if (Map == nullptr) {
         Map = InitMap::allocate(Desc->getNumElems());
+
+}
       if (Map->initialize(getIndex())) {
         free(Map);
         Map = (InitMap *)-1;

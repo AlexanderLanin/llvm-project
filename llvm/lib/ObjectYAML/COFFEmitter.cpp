@@ -128,10 +128,14 @@ struct COFFParser {
   }
 
   bool parse() {
-    if (!parseSections())
+    if (!parseSections()) {
       return false;
-    if (!parseSymbols())
+
+}
+    if (!parseSymbols()) {
       return false;
+
+}
     return true;
   }
 
@@ -166,8 +170,10 @@ enum { DOSStubSize = 128 };
 // Take a CP and assign addresses and sizes to everything. Returns false if the
 // layout is not valid to do.
 static bool layoutOptionalHeader(COFFParser &CP) {
-  if (!CP.isPE())
+  if (!CP.isPE()) {
     return true;
+
+}
   unsigned PEHeaderSize = CP.is64Bit() ? sizeof(object::pe32plus_header)
                                        : sizeof(object::pe32_header);
   CP.Obj.Header.SizeOfOptionalHeader =
@@ -209,8 +215,10 @@ static bool layoutCOFF(COFFParser &CP) {
   // optional header.
   CP.SectionTableStart =
       CP.getHeaderSize() + CP.Obj.Header.SizeOfOptionalHeader;
-  if (CP.isPE())
+  if (CP.isPE()) {
     CP.SectionTableStart += DOSStubSize + sizeof(COFF::PEMagic);
+
+}
   CP.SectionTableSize = COFF::SectionSize * CP.Obj.Sections.size();
 
   uint32_t CurrentSectionDataOffset =
@@ -223,8 +231,10 @@ static bool layoutCOFF(COFFParser &CP) {
       CodeViewYAML::initializeStringsAndChecksums(S.DebugS,
                                                   CP.StringsAndChecksums);
       if (CP.StringsAndChecksums.hasChecksums() &&
-          CP.StringsAndChecksums.hasStrings())
+          CP.StringsAndChecksums.hasStrings()) {
         break;
+
+}
     }
   }
 
@@ -239,23 +249,31 @@ static bool layoutCOFF(COFFParser &CP) {
             toDebugS(S.DebugS, CP.StringsAndChecksums, CP.Allocator);
       }
     } else if (S.Name == ".debug$T") {
-      if (S.SectionData.binary_size() == 0)
+      if (S.SectionData.binary_size() == 0) {
         S.SectionData = CodeViewYAML::toDebugT(S.DebugT, CP.Allocator, S.Name);
+
+}
     } else if (S.Name == ".debug$P") {
-      if (S.SectionData.binary_size() == 0)
+      if (S.SectionData.binary_size() == 0) {
         S.SectionData = CodeViewYAML::toDebugT(S.DebugP, CP.Allocator, S.Name);
+
+}
     } else if (S.Name == ".debug$H") {
-      if (S.DebugH.hasValue() && S.SectionData.binary_size() == 0)
+      if (S.DebugH.hasValue() && S.SectionData.binary_size() == 0) {
         S.SectionData = CodeViewYAML::toDebugH(*S.DebugH, CP.Allocator);
+
+}
     }
 
     if (S.SectionData.binary_size() > 0) {
       CurrentSectionDataOffset = alignTo(CurrentSectionDataOffset,
                                          CP.isPE() ? CP.getFileAlignment() : 4);
       S.Header.SizeOfRawData = S.SectionData.binary_size();
-      if (CP.isPE())
+      if (CP.isPE()) {
         S.Header.SizeOfRawData =
             alignTo(S.Header.SizeOfRawData, CP.getFileAlignment());
+
+}
       S.Header.PointerToRawData = CurrentSectionDataOffset;
       CurrentSectionDataOffset += S.Header.SizeOfRawData;
       if (!S.Relocations.empty()) {
@@ -263,8 +281,10 @@ static bool layoutCOFF(COFFParser &CP) {
         if (S.Header.Characteristics & COFF::IMAGE_SCN_LNK_NRELOC_OVFL) {
           S.Header.NumberOfRelocations = 0xffff;
           CurrentSectionDataOffset += COFF::RelocationSize;
-        } else
+        } else {
           S.Header.NumberOfRelocations = S.Relocations.size();
+
+}
         CurrentSectionDataOffset += S.Relocations.size() * COFF::RelocationSize;
       }
     } else {
@@ -282,19 +302,31 @@ static bool layoutCOFF(COFFParser &CP) {
                                                e = CP.Obj.Symbols.end();
        i != e; ++i) {
     uint32_t NumberOfAuxSymbols = 0;
-    if (i->FunctionDefinition)
+    if (i->FunctionDefinition) {
       NumberOfAuxSymbols += 1;
-    if (i->bfAndefSymbol)
+
+}
+    if (i->bfAndefSymbol) {
       NumberOfAuxSymbols += 1;
-    if (i->WeakExternal)
+
+}
+    if (i->WeakExternal) {
       NumberOfAuxSymbols += 1;
-    if (!i->File.empty())
+
+}
+    if (!i->File.empty()) {
       NumberOfAuxSymbols +=
           (i->File.size() + CP.getSymbolSize() - 1) / CP.getSymbolSize();
-    if (i->SectionDefinition)
+
+}
+    if (i->SectionDefinition) {
       NumberOfAuxSymbols += 1;
-    if (i->CLRToken)
+
+}
+    if (i->CLRToken) {
       NumberOfAuxSymbols += 1;
+
+}
     i->Header.NumberOfAuxSymbols = NumberOfAuxSymbols;
     NumberOfSymbols += 1 + NumberOfAuxSymbols;
   }
@@ -302,10 +334,12 @@ static bool layoutCOFF(COFFParser &CP) {
   // Store all the allocated start addresses in the header.
   CP.Obj.Header.NumberOfSections = CP.Obj.Sections.size();
   CP.Obj.Header.NumberOfSymbols = NumberOfSymbols;
-  if (NumberOfSymbols > 0 || CP.StringTable.size() > 4)
+  if (NumberOfSymbols > 0 || CP.StringTable.size() > 4) {
     CP.Obj.Header.PointerToSymbolTable = SymbolTableStart;
-  else
+  } else {
     CP.Obj.Header.PointerToSymbolTable = 0;
+
+}
 
   *reinterpret_cast<support::ulittle32_t *>(&CP.StringTable[0]) =
       CP.StringTable.size();
@@ -361,18 +395,28 @@ static uint32_t initializeOptionalHeader(COFFParser &CP, uint16_t Magic,
   uint32_t SizeOfImage = alignTo(SizeOfHeaders, Header->SectionAlignment);
   uint32_t BaseOfData = 0;
   for (const COFFYAML::Section &S : CP.Obj.Sections) {
-    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_CODE)
+    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_CODE) {
       SizeOfCode += S.Header.SizeOfRawData;
-    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_INITIALIZED_DATA)
+
+}
+    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_INITIALIZED_DATA) {
       SizeOfInitializedData += S.Header.SizeOfRawData;
-    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA)
+
+}
+    if (S.Header.Characteristics & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA) {
       SizeOfUninitializedData += S.Header.SizeOfRawData;
-    if (S.Name.equals(".text"))
+
+}
+    if (S.Name.equals(".text")) {
       Header->BaseOfCode = S.Header.VirtualAddress; // RVA
-    else if (S.Name.equals(".data"))
+    } else if (S.Name.equals(".data")) {
       BaseOfData = S.Header.VirtualAddress; // RVA
-    if (S.Header.VirtualAddress)
+
+}
+    if (S.Header.VirtualAddress) {
       SizeOfImage += alignTo(S.Header.VirtualSize, Header->SectionAlignment);
+
+}
   }
   Header->SizeOfCode = SizeOfCode;
   Header->SizeOfInitializedData = SizeOfInitializedData;
@@ -502,23 +546,29 @@ static bool writeCOFF(COFFParser &CP, raw_ostream &OS) {
 
   // Output section data.
   for (const COFFYAML::Section &S : CP.Obj.Sections) {
-    if (S.Header.SizeOfRawData == 0 || S.Header.PointerToRawData == 0)
+    if (S.Header.SizeOfRawData == 0 || S.Header.PointerToRawData == 0) {
       continue;
+
+}
     assert(S.Header.PointerToRawData >= OS.tell());
     OS.write_zeros(S.Header.PointerToRawData - OS.tell());
     S.SectionData.writeAsBinary(OS);
     assert(S.Header.SizeOfRawData >= S.SectionData.binary_size());
     OS.write_zeros(S.Header.SizeOfRawData - S.SectionData.binary_size());
-    if (S.Header.Characteristics & COFF::IMAGE_SCN_LNK_NRELOC_OVFL)
+    if (S.Header.Characteristics & COFF::IMAGE_SCN_LNK_NRELOC_OVFL) {
       OS << binary_le<uint32_t>(/*VirtualAddress=*/ S.Relocations.size() + 1)
          << binary_le<uint32_t>(/*SymbolTableIndex=*/ 0)
          << binary_le<uint16_t>(/*Type=*/ 0);
+
+}
     for (const COFFYAML::Relocation &R : S.Relocations) {
       uint32_t SymbolTableIndex;
       if (R.SymbolTableIndex) {
-        if (!R.SymbolName.empty())
+        if (!R.SymbolName.empty()) {
           WithColor::error()
               << "Both SymbolName and SymbolTableIndex specified\n";
+
+}
         SymbolTableIndex = *R.SymbolTableIndex;
       } else {
         SymbolTableIndex = SymbolTableIndexMap[R.SymbolName];
@@ -535,10 +585,12 @@ static bool writeCOFF(COFFParser &CP, raw_ostream &OS) {
        i != e; ++i) {
     OS.write(i->Header.Name, COFF::NameSize);
     OS << binary_le(i->Header.Value);
-    if (CP.useBigObj())
+    if (CP.useBigObj()) {
       OS << binary_le(i->Header.SectionNumber);
-    else
+    } else {
       OS << binary_le(static_cast<int16_t>(i->Header.SectionNumber));
+
+}
     OS << binary_le(i->Header.Type) << binary_le(i->Header.StorageClass)
        << binary_le(i->Header.NumberOfAuxSymbols);
 
@@ -593,8 +645,10 @@ static bool writeCOFF(COFFParser &CP, raw_ostream &OS) {
   }
 
   // Output string table.
-  if (CP.Obj.Header.PointerToSymbolTable)
+  if (CP.Obj.Header.PointerToSymbolTable) {
     OS.write(&CP.StringTable[0], CP.StringTable.size());
+
+}
   return true;
 }
 

@@ -75,33 +75,43 @@ public:
 void MCACommentConsumer::HandleComment(SMLoc Loc, StringRef CommentText) {
   // Skip empty comments.
   StringRef Comment(CommentText);
-  if (Comment.empty())
+  if (Comment.empty()) {
     return;
+
+}
 
   // Skip spaces and tabs.
   unsigned Position = Comment.find_first_not_of(" \t");
-  if (Position >= Comment.size())
+  if (Position >= Comment.size()) {
     // We reached the end of the comment. Bail out.
     return;
+
+}
 
   Comment = Comment.drop_front(Position);
   if (Comment.consume_front("LLVM-MCA-END")) {
     // Skip spaces and tabs.
     Position = Comment.find_first_not_of(" \t");
-    if (Position < Comment.size())
+    if (Position < Comment.size()) {
       Comment = Comment.drop_front(Position);
+
+}
     Regions.endRegion(Comment, Loc);
     return;
   }
 
   // Try to parse the LLVM-MCA-BEGIN comment.
-  if (!Comment.consume_front("LLVM-MCA-BEGIN"))
+  if (!Comment.consume_front("LLVM-MCA-BEGIN")) {
     return;
+
+}
 
   // Skip spaces and tabs.
   Position = Comment.find_first_not_of(" \t");
-  if (Position < Comment.size())
+  if (Position < Comment.size()) {
     Comment = Comment.drop_front(Position);
+
+}
   // Use the rest of the string as a descriptor for this code snippet.
   Regions.beginRegion(Comment, Loc);
 }
@@ -123,10 +133,12 @@ Expected<const CodeRegions &> AsmCodeRegionGenerator::parseCodeRegions() {
 
   std::unique_ptr<MCTargetAsmParser> TAP(
       TheTarget.createMCAsmParser(STI, *Parser, MCII, Opts));
-  if (!TAP)
+  if (!TAP) {
     return make_error<StringError>(
         "This target does not support assembly parsing.",
         inconvertibleErrorCode());
+
+}
   Parser->setTargetParser(*TAP);
   Parser->Run(false);
 

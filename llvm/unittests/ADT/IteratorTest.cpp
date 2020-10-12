@@ -152,8 +152,10 @@ TEST(PointeeIteratorTest, Range) {
   SmallVector<int *, 4> V{&A[0], &A[1], &A[2], &A[3]};
 
   int I = 0;
-  for (int II : make_pointee_range(V))
+  for (int II : make_pointee_range(V)) {
     EXPECT_EQ(A[I++], II);
+
+}
 }
 
 TEST(PointeeIteratorTest, PointeeType) {
@@ -293,8 +295,10 @@ TEST(PointerIterator, Const) {
 TEST(PointerIterator, Range) {
   int A[] = {1, 2, 3, 4};
   int I = 0;
-  for (int *P : make_pointer_range(A))
+  for (int *P : make_pointer_range(A)) {
     EXPECT_EQ(A + I++, P);
+
+}
 }
 
 TEST(ZipIteratorTest, Basic) {

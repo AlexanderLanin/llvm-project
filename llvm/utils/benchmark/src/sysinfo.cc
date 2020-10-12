@@ -198,14 +198,18 @@ template <class ArgT>
 bool ReadFromFile(std::string const& fname, ArgT* arg) {
   *arg = ArgT();
   std::ifstream f(fname.c_str());
-  if (!f.is_open()) return false;
+  if (!f.is_open()) { return false;
+
+}
   f >> *arg;
   return f.good();
 }
 
 bool CpuScalingEnabled(int num_cpus) {
   // We don't have a valid CPU count, so don't even bother.
-  if (num_cpus <= 0) return false;
+  if (num_cpus <= 0) { return false;
+
+}
 #ifndef BENCHMARK_OS_WINDOWS
   // On Linux, the CPUfreq subsystem exposes CPU information as files on the
   // local file system. If reading the exported files fails, then we may not be
@@ -214,7 +218,9 @@ bool CpuScalingEnabled(int num_cpus) {
   for (int cpu = 0; cpu < num_cpus; ++cpu) {
     std::string governor_file =
         StrCat("/sys/devices/system/cpu/cpu", cpu, "/cpufreq/scaling_governor");
-    if (ReadFromFile(governor_file, &res) && res != "performance") return true;
+    if (ReadFromFile(governor_file, &res) && res != "performance") { return true;
+
+}
   }
 #endif
   return false;
@@ -248,28 +254,40 @@ std::vector<CPUInfo::CacheInfo> GetCacheSizesFromKVFS() {
     CPUInfo::CacheInfo info;
     std::string FPath = StrCat(dir, "index", Idx++, "/");
     std::ifstream f(StrCat(FPath, "size").c_str());
-    if (!f.is_open()) break;
+    if (!f.is_open()) { break;
+
+}
     std::string suffix;
     f >> info.size;
-    if (f.fail())
+    if (f.fail()) {
       PrintErrorAndDie("Failed while reading file '", FPath, "size'");
+
+}
     if (f.good()) {
       f >> suffix;
-      if (f.bad())
+      if (f.bad()) {
         PrintErrorAndDie(
             "Invalid cache size format: failed to read size suffix");
-      else if (f && suffix != "K")
+      } else if (f && suffix != "K") {
         PrintErrorAndDie("Invalid cache size format: Expected bytes ", suffix);
-      else if (suffix == "K")
+      } else if (suffix == "K") {
         info.size *= 1000;
+
+}
     }
-    if (!ReadFromFile(StrCat(FPath, "type"), &info.type))
+    if (!ReadFromFile(StrCat(FPath, "type"), &info.type)) {
       PrintErrorAndDie("Failed to read from file ", FPath, "type");
-    if (!ReadFromFile(StrCat(FPath, "level"), &info.level))
+
+}
+    if (!ReadFromFile(StrCat(FPath, "level"), &info.level)) {
       PrintErrorAndDie("Failed to read from file ", FPath, "level");
+
+}
     std::string map_str;
-    if (!ReadFromFile(StrCat(FPath, "shared_cpu_map"), &map_str))
+    if (!ReadFromFile(StrCat(FPath, "shared_cpu_map"), &map_str)) {
       PrintErrorAndDie("Failed to read from file ", FPath, "shared_cpu_map");
+
+}
     info.num_sharing = CountSetBitsInCPUMap(map_str);
     res.push_back(info);
   }
@@ -398,10 +416,14 @@ int GetNumCPUs() {
   const std::string Key = "processor";
   std::string ln;
   while (std::getline(f, ln)) {
-    if (ln.empty()) continue;
+    if (ln.empty()) { continue;
+
+}
     size_t SplitIdx = ln.find(':');
     std::string value;
-    if (SplitIdx != std::string::npos) value = ln.substr(SplitIdx + 1);
+    if (SplitIdx != std::string::npos) { value = ln.substr(SplitIdx + 1);
+
+}
     if (ln.size() >= Key.size() && ln.compare(0, Key.size(), Key) == 0) {
       NumCPUs++;
       if (!value.empty()) {
@@ -460,7 +482,9 @@ double GetCPUCyclesPerSecond() {
   }
 
   auto startsWithKey = [](std::string const& Value, std::string const& Key) {
-    if (Key.size() > Value.size()) return false;
+    if (Key.size() > Value.size()) { return false;
+
+}
     auto Cmp = [&](char X, char Y) {
       return std::tolower(X) == std::tolower(Y);
     };
@@ -469,22 +493,30 @@ double GetCPUCyclesPerSecond() {
 
   std::string ln;
   while (std::getline(f, ln)) {
-    if (ln.empty()) continue;
+    if (ln.empty()) { continue;
+
+}
     size_t SplitIdx = ln.find(':');
     std::string value;
-    if (SplitIdx != std::string::npos) value = ln.substr(SplitIdx + 1);
+    if (SplitIdx != std::string::npos) { value = ln.substr(SplitIdx + 1);
+
+}
     // When parsing the "cpu MHz" and "bogomips" (fallback) entries, we only
     // accept positive values. Some environments (virtual machines) report zero,
     // which would cause infinite looping in WallTime_Init.
     if (startsWithKey(ln, "cpu MHz")) {
       if (!value.empty()) {
         double cycles_per_second = std::stod(value) * 1000000.0;
-        if (cycles_per_second > 0) return cycles_per_second;
+        if (cycles_per_second > 0) { return cycles_per_second;
+
+}
       }
     } else if (startsWithKey(ln, "bogomips")) {
       if (!value.empty()) {
         bogo_clock = std::stod(value) * 1000000.0;
-        if (bogo_clock < 0.0) bogo_clock = error_value;
+        if (bogo_clock < 0.0) { bogo_clock = error_value;
+
+}
       }
     }
   }
@@ -500,7 +532,9 @@ double GetCPUCyclesPerSecond() {
   // If we found the bogomips clock, but nothing better, we'll use it (but
   // we're not happy about it); otherwise, fallback to the rough estimation
   // below.
-  if (bogo_clock >= 0.0) return bogo_clock;
+  if (bogo_clock >= 0.0) { return bogo_clock;
+
+}
 
 #elif defined BENCHMARK_HAS_SYSCTL
   constexpr auto* FreqStr =

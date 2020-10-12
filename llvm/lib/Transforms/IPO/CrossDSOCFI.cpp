@@ -66,12 +66,18 @@ ModulePass *llvm::createCrossDSOCFIPass() { return new CrossDSOCFI; }
 ConstantInt *CrossDSOCFI::extractNumericTypeId(MDNode *MD) {
   // This check excludes vtables for classes inside anonymous namespaces.
   auto TM = dyn_cast<ValueAsMetadata>(MD->getOperand(1));
-  if (!TM)
+  if (!TM) {
     return nullptr;
+
+}
   auto C = dyn_cast_or_null<ConstantInt>(TM->getValue());
-  if (!C) return nullptr;
+  if (!C) { return nullptr;
+
+}
   // We are looking for i64 constants.
-  if (C->getBitWidth() != 64) return nullptr;
+  if (C->getBitWidth() != 64) { return nullptr;
+
+}
 
   return C;
 }
@@ -85,19 +91,27 @@ void CrossDSOCFI::buildCFICheck(Module &M) {
   for (GlobalObject &GO : M.global_objects()) {
     Types.clear();
     GO.getMetadata(LLVMContext::MD_type, Types);
-    for (MDNode *Type : Types)
-      if (ConstantInt *TypeId = extractNumericTypeId(Type))
+    for (MDNode *Type : Types) {
+      if (ConstantInt *TypeId = extractNumericTypeId(Type)) {
         TypeIds.insert(TypeId->getZExtValue());
+
+}
+
+}
   }
 
   NamedMDNode *CfiFunctionsMD = M.getNamedMetadata("cfi.functions");
   if (CfiFunctionsMD) {
     for (auto Func : CfiFunctionsMD->operands()) {
       assert(Func->getNumOperands() >= 2);
-      for (unsigned I = 2; I < Func->getNumOperands(); ++I)
+      for (unsigned I = 2; I < Func->getNumOperands(); ++I) {
         if (ConstantInt *TypeId =
-                extractNumericTypeId(cast<MDNode>(Func->getOperand(I).get())))
+                extractNumericTypeId(cast<MDNode>(Func->getOperand(I).get()))) {
           TypeIds.insert(TypeId->getZExtValue());
+
+}
+
+}
     }
   }
 
@@ -112,8 +126,10 @@ void CrossDSOCFI::buildCFICheck(Module &M) {
   F->setAlignment(Align(4096));
 
   Triple T(M.getTargetTriple());
-  if (T.isARM() || T.isThumb())
+  if (T.isARM() || T.isThumb()) {
     F->addFnAttr("target-features", "+thumb-mode");
+
+}
 
   auto args = F->arg_begin();
   Value &CallSiteTypeId = *(args++);
@@ -160,8 +176,10 @@ void CrossDSOCFI::buildCFICheck(Module &M) {
 bool CrossDSOCFI::runOnModule(Module &M) {
   VeryLikelyWeights =
     MDBuilder(M.getContext()).createBranchWeights((1U << 20) - 1, 1);
-  if (M.getModuleFlag("Cross-DSO CFI") == nullptr)
+  if (M.getModuleFlag("Cross-DSO CFI") == nullptr) {
     return false;
+
+}
   buildCFICheck(M);
   return true;
 }
@@ -169,7 +187,9 @@ bool CrossDSOCFI::runOnModule(Module &M) {
 PreservedAnalyses CrossDSOCFIPass::run(Module &M, ModuleAnalysisManager &AM) {
   CrossDSOCFI Impl;
   bool Changed = Impl.runOnModule(M);
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }

@@ -35,20 +35,24 @@ void AccelTableBase::computeBucketCount() {
   // First get the number of unique hashes.
   std::vector<uint32_t> Uniques;
   Uniques.reserve(Entries.size());
-  for (const auto &E : Entries)
+  for (const auto &E : Entries) {
     Uniques.push_back(E.second.HashValue);
+
+}
   array_pod_sort(Uniques.begin(), Uniques.end());
   std::vector<uint32_t>::iterator P =
       std::unique(Uniques.begin(), Uniques.end());
 
   UniqueHashCount = std::distance(Uniques.begin(), P);
 
-  if (UniqueHashCount > 1024)
+  if (UniqueHashCount > 1024) {
     BucketCount = UniqueHashCount / 4;
-  else if (UniqueHashCount > 16)
+  } else if (UniqueHashCount > 16) {
     BucketCount = UniqueHashCount / 2;
-  else
+  } else {
     BucketCount = std::max<uint32_t>(UniqueHashCount, 1);
+
+}
 }
 
 void AccelTableBase::finalize(AsmPrinter *Asm, StringRef Prefix) {
@@ -80,10 +84,12 @@ void AccelTableBase::finalize(AsmPrinter *Asm, StringRef Prefix) {
 
   // Sort the contents of the buckets by hash value so that hash collisions end
   // up together. Stable sort makes testing easier and doesn't cost much more.
-  for (auto &Bucket : Buckets)
+  for (auto &Bucket : Buckets) {
     llvm::stable_sort(Bucket, [](HashData *LHS, HashData *RHS) {
       return LHS->HashValue < RHS->HashValue;
     });
+
+}
 }
 
 namespace {
@@ -251,8 +257,10 @@ void AccelTableWriter::emitHashes() const {
   for (auto &Bucket : Contents.getBuckets()) {
     for (auto &Hash : Bucket) {
       uint32_t HashValue = Hash->HashValue;
-      if (SkipIdenticalHashes && PrevHash == HashValue)
+      if (SkipIdenticalHashes && PrevHash == HashValue) {
         continue;
+
+}
       Asm->OutStreamer->AddComment("Hash in Bucket " + Twine(BucketIdx));
       Asm->emitInt32(HashValue);
       PrevHash = HashValue;
@@ -267,8 +275,10 @@ void AccelTableWriter::emitOffsets(const MCSymbol *Base) const {
   for (size_t i = 0, e = Buckets.size(); i < e; ++i) {
     for (auto *Hash : Buckets[i]) {
       uint32_t HashValue = Hash->HashValue;
-      if (SkipIdenticalHashes && PrevHash == HashValue)
+      if (SkipIdenticalHashes && PrevHash == HashValue) {
         continue;
+
+}
       PrevHash = HashValue;
       Asm->OutStreamer->AddComment("Offset in Bucket " + Twine(i));
       Asm->emitLabelDifference(Hash->Sym, Base, sizeof(uint32_t));
@@ -310,17 +320,21 @@ void AppleAccelTableWriter::emitBuckets() const {
   unsigned index = 0;
   for (size_t i = 0, e = Buckets.size(); i < e; ++i) {
     Asm->OutStreamer->AddComment("Bucket " + Twine(i));
-    if (!Buckets[i].empty())
+    if (!Buckets[i].empty()) {
       Asm->emitInt32(index);
-    else
+    } else {
       Asm->emitInt32(std::numeric_limits<uint32_t>::max());
+
+}
     // Buckets point in the list of hashes, not to the data. Do not increment
     // the index multiple times in case of hash collisions.
     uint64_t PrevHash = std::numeric_limits<uint64_t>::max();
     for (auto *HD : Buckets[i]) {
       uint32_t HashValue = HD->HashValue;
-      if (PrevHash != HashValue)
+      if (PrevHash != HashValue) {
         ++index;
+
+}
       PrevHash = HashValue;
     }
   }
@@ -334,21 +348,27 @@ void AppleAccelTableWriter::emitData() const {
       // Terminate the previous entry if there is no hash collision with the
       // current one.
       if (PrevHash != std::numeric_limits<uint64_t>::max() &&
-          PrevHash != Hash->HashValue)
+          PrevHash != Hash->HashValue) {
         Asm->emitInt32(0);
+
+}
       // Remember to emit the label for our offset.
       Asm->OutStreamer->emitLabel(Hash->Sym);
       Asm->OutStreamer->AddComment(Hash->Name.getString());
       Asm->emitDwarfStringOffset(Hash->Name);
       Asm->OutStreamer->AddComment("Num DIEs");
       Asm->emitInt32(Hash->Values.size());
-      for (const auto *V : Hash->Values)
+      for (const auto *V : Hash->Values) {
         static_cast<const AppleAccelTableData *>(V)->emit(Asm);
+
+}
       PrevHash = Hash->HashValue;
     }
     // Emit the final end marker for the bucket.
-    if (!Buckets[i].empty())
+    if (!Buckets[i].empty()) {
       Asm->emitInt32(0);
+
+}
   }
 }
 
@@ -503,8 +523,10 @@ template <typename DataT> void Dwarf5AccelTableWriter<DataT>::emitData() const {
     for (auto *Hash : Bucket) {
       // Remember to emit the label for our offset.
       Asm->OutStreamer->emitLabel(Hash->Sym);
-      for (const auto *Value : Hash->Values)
+      for (const auto *Value : Hash->Values) {
         emitEntry(*static_cast<const DataT *>(Value));
+
+}
       Asm->OutStreamer->AddComment("End of list: " + Hash->Name.getString());
       Asm->emitInt32(0);
     }
@@ -524,8 +546,10 @@ Dwarf5AccelTableWriter<DataT>::Dwarf5AccelTableWriter(
   SmallVector<AttributeEncoding, 2> UniformAttributes = getUniformAttributes();
 
   Abbreviations.reserve(UniqueTags.size());
-  for (uint32_t Tag : UniqueTags)
+  for (uint32_t Tag : UniqueTags) {
     Abbreviations.try_emplace(Tag, UniformAttributes);
+
+}
 }
 
 template <typename DataT> void Dwarf5AccelTableWriter<DataT>::emit() const {
@@ -556,8 +580,10 @@ void llvm::emitDWARF5AccelTable(
   int Count = 0;
   for (const auto &CU : enumerate(CUs)) {
     if (CU.value()->getCUNode()->getNameTableKind() !=
-        DICompileUnit::DebugNameTableKind::Default)
+        DICompileUnit::DebugNameTableKind::Default) {
       continue;
+
+}
     CUIndex[CU.index()] = Count++;
     assert(CU.index() == CU.value()->getUniqueID());
     const DwarfCompileUnit *MainCU =
@@ -565,8 +591,10 @@ void llvm::emitDWARF5AccelTable(
     CompUnits.push_back(MainCU->getLabelBegin());
   }
 
-  if (CompUnits.empty())
+  if (CompUnits.empty()) {
     return;
+
+}
 
   Asm->OutStreamer->SwitchSection(
       Asm->getObjFileLowering().getDwarfDebugNamesSection());

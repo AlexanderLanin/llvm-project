@@ -28,8 +28,10 @@ public:
       : Iterator(Kind::And), Children(std::move(AllChildren)) {
     assert(!Children.empty() && "AND iterator should have at least one child.");
     // Establish invariants.
-    for (const auto &Child : Children)
+    for (const auto &Child : Children) {
       ReachedEnd |= Child->reachedEnd();
+
+}
     sync();
     // When children are sorted by the estimateSize(), sync() calls are more
     // effective. Each sync() starts with the first child and makes sure all
@@ -65,8 +67,10 @@ public:
   float consume() override {
     assert(!reachedEnd() && "AND iterator can't consume() at the end.");
     float Boost = 1;
-    for (const auto &Child : Children)
+    for (const auto &Child : Children) {
       Boost *= Child->consume();
+
+}
     return Boost;
   }
 
@@ -90,8 +94,10 @@ private:
   /// sync.
   void sync() {
     ReachedEnd |= Children.front()->reachedEnd();
-    if (ReachedEnd)
+    if (ReachedEnd) {
       return;
+
+}
     auto SyncID = Children.front()->peek();
     // Indicates whether any child needs to be advanced to new SyncID.
     bool NeedsAdvance = false;
@@ -102,8 +108,10 @@ private:
         ReachedEnd |= Child->reachedEnd();
         // If any child reaches end And iterator can not match any other items.
         // In this case, just terminate the process.
-        if (ReachedEnd)
+        if (ReachedEnd) {
           return;
+
+}
         // If any child goes beyond given ID (i.e. ID is not the common item),
         // all children should be advanced to the next common item.
         if (Child->peek() > SyncID) {
@@ -140,9 +148,13 @@ public:
 
   /// Returns true if all children are exhausted.
   bool reachedEnd() const override {
-    for (const auto &Child : Children)
-      if (!Child->reachedEnd())
+    for (const auto &Child : Children) {
+      if (!Child->reachedEnd()) {
         return false;
+
+}
+
+}
     return true;
   }
 
@@ -150,17 +162,25 @@ public:
   void advance() override {
     assert(!reachedEnd() && "OR iterator can't advance() at the end.");
     const auto SmallestID = peek();
-    for (const auto &Child : Children)
-      if (!Child->reachedEnd() && Child->peek() == SmallestID)
+    for (const auto &Child : Children) {
+      if (!Child->reachedEnd() && Child->peek() == SmallestID) {
         Child->advance();
+
+}
+
+}
   }
 
   /// Advances each child to the next existing element with DocumentID >= ID.
   void advanceTo(DocID ID) override {
     assert(!reachedEnd() && "OR iterator can't advanceTo() at the end.");
-    for (const auto &Child : Children)
-      if (!Child->reachedEnd())
+    for (const auto &Child : Children) {
+      if (!Child->reachedEnd()) {
         Child->advanceTo(ID);
+
+}
+
+}
   }
 
   /// Returns the element under cursor of the child with smallest Child->peek()
@@ -169,9 +189,13 @@ public:
     assert(!reachedEnd() && "OR iterator can't peek() at the end.");
     DocID Result = std::numeric_limits<DocID>::max();
 
-    for (const auto &Child : Children)
-      if (!Child->reachedEnd())
+    for (const auto &Child : Children) {
+      if (!Child->reachedEnd()) {
         Result = std::min(Result, Child->peek());
+
+}
+
+}
 
     return Result;
   }
@@ -182,16 +206,22 @@ public:
     assert(!reachedEnd() && "OR iterator can't consume() at the end.");
     const DocID ID = peek();
     float Boost = 1;
-    for (const auto &Child : Children)
-      if (!Child->reachedEnd() && Child->peek() == ID)
+    for (const auto &Child : Children) {
+      if (!Child->reachedEnd() && Child->peek() == ID) {
         Boost = std::max(Boost, Child->consume());
+
+}
+
+}
     return Boost;
   }
 
   size_t estimateSize() const override {
     size_t Size = 0;
-    for (const auto &Child : Children)
+    for (const auto &Child : Children) {
       Size = std::max(Size, Child->estimateSize());
+
+}
     return Size;
   }
 
@@ -349,8 +379,10 @@ private:
 
 std::vector<std::pair<DocID, float>> consume(Iterator &It) {
   std::vector<std::pair<DocID, float>> Result;
-  for (; !It.reachedEnd(); It.advance())
+  for (; !It.reachedEnd(); It.advance()) {
     Result.emplace_back(It.peek(), It.consume());
+
+}
   return Result;
 }
 
@@ -424,17 +456,23 @@ std::unique_ptr<Iterator> Corpus::none() const {
 
 std::unique_ptr<Iterator> Corpus::boost(std::unique_ptr<Iterator> Child,
                                         float Factor) const {
-  if (Factor == 1)
+  if (Factor == 1) {
     return Child;
-  if (Child->kind() == Iterator::Kind::False)
+
+}
+  if (Child->kind() == Iterator::Kind::False) {
     return Child;
+
+}
   return std::make_unique<BoostIterator>(std::move(Child), Factor);
 }
 
 std::unique_ptr<Iterator> Corpus::limit(std::unique_ptr<Iterator> Child,
                                         size_t Limit) const {
-  if (Child->kind() == Iterator::Kind::False)
+  if (Child->kind() == Iterator::Kind::False) {
     return Child;
+
+}
   return std::make_unique<LimitIterator>(std::move(Child), Limit);
 }
 

@@ -68,14 +68,18 @@ static bool removeDeadBlocks_v1(Function &F) {
     // Skip blocks we know to not be trivially dead. We know a block is
     // guaranteed to be dead, iff it is neither the entry block nor
     // has any predecessors.
-    if (&F.getEntryBlock() == &BB || !pred_empty(&BB))
+    if (&F.getEntryBlock() == &BB || !pred_empty(&BB)) {
       continue;
+
+}
 
     // Notify successors of BB that BB is going to be removed. This removes
     // incoming values from BB from PHIs in the successors. Note that this will
     // not actually remove BB from the predecessor lists of its successors.
-    for (BasicBlock *Succ : successors(&BB))
+    for (BasicBlock *Succ : successors(&BB)) {
       Succ->removePredecessor(&BB);
+
+}
     // TODO: Find a better place to put such small variations.
     // Alternatively, we can update the PHI nodes manually:
     // for (PHINode &PN : make_early_inc_range(Succ->phis()))
@@ -109,8 +113,10 @@ static bool removeDeadBlocks_v2(Function &F, DominatorTree &DT) {
     // Skip blocks we know to not be trivially dead. We know a block is
     // guaranteed to be dead, iff it is neither the entry block nor
     // has any predecessors.
-    if (&F.getEntryBlock() == &BB || !pred_empty(&BB))
+    if (&F.getEntryBlock() == &BB || !pred_empty(&BB)) {
       continue;
+
+}
 
     // Notify successors of BB that BB is going to be removed. This removes
     // incoming values from BB from PHIs in the successors. Note that this will
@@ -143,13 +149,17 @@ static bool eliminateCondBranches_v1(Function &F) {
   for (BasicBlock &BB : F) {
     // Skip blocks without conditional branches as terminators.
     BranchInst *BI = dyn_cast<BranchInst>(BB.getTerminator());
-    if (!BI || !BI->isConditional())
+    if (!BI || !BI->isConditional()) {
       continue;
+
+}
 
     // Skip blocks with conditional branches without ConstantInt conditions.
     ConstantInt *CI = dyn_cast<ConstantInt>(BI->getCondition());
-    if (!CI)
+    if (!CI) {
       continue;
+
+}
 
     // We use the branch condition (CI), to select the successor we remove:
     // if CI == 1 (true), we remove the second successor, otherwise the first.
@@ -179,13 +189,17 @@ static bool eliminateCondBranches_v2(Function &F, DominatorTree &DT) {
   for (BasicBlock &BB : F) {
     // Skip blocks without conditional branches as terminators.
     BranchInst *BI = dyn_cast<BranchInst>(BB.getTerminator());
-    if (!BI || !BI->isConditional())
+    if (!BI || !BI->isConditional()) {
       continue;
+
+}
 
     // Skip blocks with conditional branches without ConstantInt conditions.
     ConstantInt *CI = dyn_cast<ConstantInt>(BI->getCondition());
-    if (!CI)
+    if (!CI) {
       continue;
+
+}
 
     // We use the branch condition (CI), to select the successor we remove:
     // if CI == 1 (true), we remove the second successor, otherwise the first.
@@ -203,8 +217,10 @@ static bool eliminateCondBranches_v2(Function &F, DominatorTree &DT) {
     // Delete the edge between BB and RemovedSucc in the DominatorTree, iff
     // the conditional branch did not use RemovedSucc as both the true and false
     // branches.
-    if (NewBranch->getSuccessor(0) != RemovedSucc)
+    if (NewBranch->getSuccessor(0) != RemovedSucc) {
       DTUpdates.push_back({DominatorTree::Delete, &BB, RemovedSucc});
+
+}
     Changed = true;
   }
 
@@ -230,12 +246,16 @@ static bool eliminateCondBranches_v3(Function &F, DominatorTree &DT) {
     // RemovedSucc.
     if (!match(BB.getTerminator(),
                m_Br(m_ConstantInt(CI), m_BasicBlock(TakenSucc),
-                    m_BasicBlock(RemovedSucc))))
+                    m_BasicBlock(RemovedSucc)))) {
       continue;
 
+}
+
     // If the condition is false, swap TakenSucc and RemovedSucc.
-    if (CI->isZero())
+    if (CI->isZero()) {
       std::swap(TakenSucc, RemovedSucc);
+
+}
 
     // Tell RemovedSucc we will remove BB from its predecessors.
     RemovedSucc->removePredecessor(&BB);
@@ -250,8 +270,10 @@ static bool eliminateCondBranches_v3(Function &F, DominatorTree &DT) {
     // Delete the edge between BB and RemovedSucc in the DominatorTree, iff
     // the conditional branch did not use RemovedSucc as both the true and false
     // branches.
-    if (NewBranch->getSuccessor(0) != RemovedSucc)
+    if (NewBranch->getSuccessor(0) != RemovedSucc) {
       DTUpdates.push_back({DominatorTree::Delete, &BB, RemovedSucc});
+
+}
     Changed = true;
   }
 
@@ -271,12 +293,16 @@ static bool mergeIntoSinglePredecessor_v1(Function &F) {
     BasicBlock *Pred = BB.getSinglePredecessor();
     // Make sure  BB has a single predecessor Pred and BB is the single
     // successor of Pred.
-    if (!Pred || Pred->getSingleSuccessor() != &BB)
+    if (!Pred || Pred->getSingleSuccessor() != &BB) {
       continue;
 
+}
+
     // Do not try to merge self loops. That can happen in dead blocks.
-    if (Pred == &BB)
+    if (Pred == &BB) {
       continue;
+
+}
 
     // Need to replace it before nuking the branch.
     BB.replaceAllUsesWith(Pred);
@@ -286,8 +312,10 @@ static bool mergeIntoSinglePredecessor_v1(Function &F) {
       PN.eraseFromParent();
     }
     // Move all instructions from BB to Pred.
-    for (Instruction &I : make_early_inc_range(BB))
+    for (Instruction &I : make_early_inc_range(BB)) {
       I.moveBefore(Pred->getTerminator());
+
+}
 
     // Remove the Pred's terminator (which jumped to BB). BB's terminator
     // will become Pred's terminator.
@@ -313,12 +341,16 @@ static bool mergeIntoSinglePredecessor_v2(Function &F, DominatorTree &DT) {
     BasicBlock *Pred = BB.getSinglePredecessor();
     // Make sure  BB has a single predecessor Pred and BB is the single
     // successor of Pred.
-    if (!Pred || Pred->getSingleSuccessor() != &BB)
+    if (!Pred || Pred->getSingleSuccessor() != &BB) {
       continue;
 
+}
+
     // Do not try to merge self loops. That can happen in dead blocks.
-    if (Pred == &BB)
+    if (Pred == &BB) {
       continue;
+
+}
 
     // Tell DTU about the changes to the CFG: All edges from BB to its
     // successors get removed and we add edges between Pred and BB's successors.
@@ -337,8 +369,10 @@ static bool mergeIntoSinglePredecessor_v2(Function &F, DominatorTree &DT) {
       PN.eraseFromParent();
     }
     // Move all instructions from BB to Pred.
-    for (Instruction &I : make_early_inc_range(BB))
+    for (Instruction &I : make_early_inc_range(BB)) {
       I.moveBefore(Pred->getTerminator());
+
+}
 
     // Remove the Pred's terminator (which jumped to BB). BB's terminator
     // will become Pred's terminator.
@@ -378,15 +412,19 @@ struct SimplifyCFGLegacyPass : public FunctionPass {
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<DominatorTreeWrapperPass>();
     // Version 1 of the implementation does not preserve the dominator tree.
-    if (Version != V1)
+    if (Version != V1) {
       AU.addPreserved<DominatorTreeWrapperPass>();
+
+}
 
     FunctionPass::getAnalysisUsage(AU);
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     switch (Version) {
     case V1:

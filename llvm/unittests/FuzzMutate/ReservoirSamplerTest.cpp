@@ -48,8 +48,10 @@ TEST(ReservoirSamplerTest, Uniform) {
     // $V = \frac{1}{n} \sum_{s=1}^{k} \left(\frac{Y_s^2}{p_s}\right) - n$
     double Ps = 1.0 / Items.size();
     double Sum = 0.0;
-    for (int Ys : Counts)
+    for (int Ys : Counts) {
       Sum += Ys * Ys / Ps;
+
+}
     double V = (Sum / N) - N;
 
     assert(Items.size() == 10 && "Our chi-squared values assume 10 items");
@@ -61,8 +63,10 @@ TEST(ReservoirSamplerTest, Uniform) {
     //
     // Check that we're in the likely range of results.
     //if (V < 2.088 || V > 21.67)
-    if (V < 2.088 || V > 21.67)
+    if (V < 2.088 || V > 21.67) {
       ++Failures;
+
+}
   }
   EXPECT_LT(Failures, 3) << "Non-uniform distribution?";
 }

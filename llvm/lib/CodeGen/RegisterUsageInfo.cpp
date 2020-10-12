@@ -49,8 +49,10 @@ bool PhysicalRegisterUsageInfo::doInitialization(Module &M) {
 }
 
 bool PhysicalRegisterUsageInfo::doFinalization(Module &M) {
-  if (DumpRegUsage)
+  if (DumpRegUsage) {
     print(errs());
+
+}
 
   RegMasks.shrink_and_clear();
   return false;
@@ -64,8 +66,10 @@ void PhysicalRegisterUsageInfo::storeUpdateRegUsageInfo(
 ArrayRef<uint32_t>
 PhysicalRegisterUsageInfo::getRegUsageInfo(const Function &FP) {
   auto It = RegMasks.find(&FP);
-  if (It != RegMasks.end())
+  if (It != RegMasks.end()) {
     return makeArrayRef<uint32_t>(It->second);
+
+}
   return ArrayRef<uint32_t>();
 }
 
@@ -75,8 +79,10 @@ void PhysicalRegisterUsageInfo::print(raw_ostream &OS, const Module *M) const {
   SmallVector<const FuncPtrRegMaskPair *, 64> FPRMPairVector;
 
   // Create a vector of pointer to RegMasks entries
-  for (const auto &RegMask : RegMasks)
+  for (const auto &RegMask : RegMasks) {
     FPRMPairVector.push_back(&RegMask);
+
+}
 
   // sort the vector to print analysis in alphabatic order of function name.
   llvm::sort(
@@ -93,8 +99,10 @@ void PhysicalRegisterUsageInfo::print(raw_ostream &OS, const Module *M) const {
           .getRegisterInfo();
 
     for (unsigned PReg = 1, PRegE = TRI->getNumRegs(); PReg < PRegE; ++PReg) {
-      if (MachineOperand::clobbersPhysReg(&(FPRMPair->second[0]), PReg))
+      if (MachineOperand::clobbersPhysReg(&(FPRMPair->second[0]), PReg)) {
         OS << printReg(PReg, TRI) << " ";
+
+}
     }
     OS << "\n";
   }

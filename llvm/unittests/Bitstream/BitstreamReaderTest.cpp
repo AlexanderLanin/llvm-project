@@ -84,8 +84,10 @@ TEST(BitstreamReaderTest, getPointerToBit) {
 
 TEST(BitstreamReaderTest, readRecordWithBlobWhileStreaming) {
   SmallVector<uint8_t, 1> BlobData;
-  for (unsigned I = 0, E = 1024; I != E; ++I)
+  for (unsigned I = 0, E = 1024; I != E; ++I) {
     BlobData.push_back(I);
+
+}
 
   // Try a bunch of different sizes.
   const unsigned Magic = 0x12345678;

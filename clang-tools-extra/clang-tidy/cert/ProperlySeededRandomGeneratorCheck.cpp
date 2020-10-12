@@ -78,16 +78,22 @@ void ProperlySeededRandomGeneratorCheck::registerMatchers(MatchFinder *Finder) {
 void ProperlySeededRandomGeneratorCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *Ctor = Result.Nodes.getNodeAs<CXXConstructExpr>("ctor");
-  if (Ctor)
+  if (Ctor) {
     checkSeed(Result, Ctor);
 
+}
+
   const auto *Func = Result.Nodes.getNodeAs<CXXMemberCallExpr>("seed");
-  if (Func)
+  if (Func) {
     checkSeed(Result, Func);
 
+}
+
   const auto *Srand = Result.Nodes.getNodeAs<CallExpr>("srand");
-  if (Srand)
+  if (Srand) {
     checkSeed(Result, Srand);
+
+}
 }
 
 template <class T>

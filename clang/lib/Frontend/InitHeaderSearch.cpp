@@ -173,9 +173,11 @@ bool InitHeaderSearch::AddUnmappedPath(const Twine &Path, IncludeDirGroup Group,
     }
   }
 
-  if (Verbose)
+  if (Verbose) {
     llvm::errs() << "ignoring nonexistent directory \""
                  << MappedPathStr << "\"\n";
+
+}
   return false;
 }
 
@@ -190,10 +192,12 @@ bool InitHeaderSearch::AddGnuCPlusPlusIncludePaths(StringRef Base,
   // Add the multilib dirs
   llvm::Triple::ArchType arch = triple.getArch();
   bool is64bit = arch == llvm::Triple::ppc64 || arch == llvm::Triple::x86_64;
-  if (is64bit)
+  if (is64bit) {
     AddPath(Base + "/" + ArchDir + "/" + Dir64, CXXSystem, false);
-  else
+  } else {
     AddPath(Base + "/" + ArchDir + "/" + Dir32, CXXSystem, false);
+
+}
 
   // Add the backward dir
   AddPath(Base + "/backward", CXXSystem, false);
@@ -231,8 +235,10 @@ void InitHeaderSearch::AddDefaultCIncludePaths(const llvm::Triple &triple,
     case llvm::Triple::Fuchsia:
       break;
     case llvm::Triple::Win32:
-      if (triple.getEnvironment() != llvm::Triple::Cygnus)
+      if (triple.getEnvironment() != llvm::Triple::Cygnus) {
         break;
+
+}
       LLVM_FALLTHROUGH;
     default:
       // FIXME: temporary hack: hard-coded paths.
@@ -253,16 +259,20 @@ void InitHeaderSearch::AddDefaultCIncludePaths(const llvm::Triple &triple,
 
   // All remaining additions are for system include directories, early exit if
   // we aren't using them.
-  if (!HSOpts.UseStandardSystemIncludes)
+  if (!HSOpts.UseStandardSystemIncludes) {
     return;
+
+}
 
   // Add dirs specified via 'configure --with-c-include-dirs'.
   StringRef CIncludeDirs(C_INCLUDE_DIRS);
   if (CIncludeDirs != "") {
     SmallVector<StringRef, 5> dirs;
     CIncludeDirs.split(dirs, ":");
-    for (StringRef dir : dirs)
+    for (StringRef dir : dirs) {
       AddPath(dir, ExternCSystem, false);
+
+}
     return;
   }
 
@@ -343,9 +353,9 @@ void InitHeaderSearch::AddDefaultCIncludePaths(const llvm::Triple &triple,
     std::string BaseSDKPath = "";
     if (!HasSysroot) {
       const char *envValue = getenv("SCE_ORBIS_SDK_DIR");
-      if (envValue)
+      if (envValue) {
         BaseSDKPath = envValue;
-      else {
+      } else {
         // HSOpts.ResourceDir variable contains the location of Clang's
         // resource files.
         // Assuming that Clang is configured for PS4 without
@@ -357,8 +367,10 @@ void InitHeaderSearch::AddDefaultCIncludePaths(const llvm::Triple &triple,
       }
     }
     AddPath(BaseSDKPath + "/target/include", System, false);
-    if (triple.isPS4CPU())
+    if (triple.isPS4CPU()) {
       AddPath(BaseSDKPath + "/target/include_common", System, false);
+
+}
     LLVM_FALLTHROUGH;
   }
   default:
@@ -428,13 +440,17 @@ void InitHeaderSearch::AddDefaultIncludePaths(const LangOptions &Lang,
 
   case llvm::Triple::Win32:
     if (triple.getEnvironment() != llvm::Triple::Cygnus ||
-        triple.isOSBinFormatMachO())
+        triple.isOSBinFormatMachO()) {
       return;
+
+}
     break;
 
   case llvm::Triple::UnknownOS:
-    if (triple.isWasm())
+    if (triple.isWasm()) {
       return;
+
+}
     break;
   }
 
@@ -476,17 +492,23 @@ static unsigned RemoveDuplicates(std::vector<DirectoryLookup> &SearchList,
 
     if (CurEntry.isNormalDir()) {
       // If this isn't the first time we've seen this dir, remove it.
-      if (SeenDirs.insert(CurEntry.getDir()).second)
+      if (SeenDirs.insert(CurEntry.getDir()).second) {
         continue;
+
+}
     } else if (CurEntry.isFramework()) {
       // If this isn't the first time we've seen this framework dir, remove it.
-      if (SeenFrameworkDirs.insert(CurEntry.getFrameworkDir()).second)
+      if (SeenFrameworkDirs.insert(CurEntry.getFrameworkDir()).second) {
         continue;
+
+}
     } else {
       assert(CurEntry.isHeaderMap() && "Not a headermap or normal dir?");
       // If this isn't the first time we've seen this headermap, remove it.
-      if (SeenHeaderMaps.insert(CurEntry.getHeaderMap()).second)
+      if (SeenHeaderMaps.insert(CurEntry.getHeaderMap()).second) {
         continue;
+
+}
     }
 
     // If we have a normal #include dir/framework/headermap that is shadowed
@@ -505,38 +527,48 @@ static unsigned RemoveDuplicates(std::vector<DirectoryLookup> &SearchList,
         const DirectoryLookup &SearchEntry = SearchList[FirstDir];
 
         // If these are different lookup types, then they can't be the dupe.
-        if (SearchEntry.getLookupType() != CurEntry.getLookupType())
+        if (SearchEntry.getLookupType() != CurEntry.getLookupType()) {
           continue;
 
+}
+
         bool isSame;
-        if (CurEntry.isNormalDir())
+        if (CurEntry.isNormalDir()) {
           isSame = SearchEntry.getDir() == CurEntry.getDir();
-        else if (CurEntry.isFramework())
+        } else if (CurEntry.isFramework()) {
           isSame = SearchEntry.getFrameworkDir() == CurEntry.getFrameworkDir();
-        else {
+        } else {
           assert(CurEntry.isHeaderMap() && "Not a headermap or normal dir?");
           isSame = SearchEntry.getHeaderMap() == CurEntry.getHeaderMap();
         }
 
-        if (isSame)
+        if (isSame) {
           break;
+
+}
       }
 
       // If the first dir in the search path is a non-system dir, zap it
       // instead of the system one.
-      if (SearchList[FirstDir].getDirCharacteristic() == SrcMgr::C_User)
+      if (SearchList[FirstDir].getDirCharacteristic() == SrcMgr::C_User) {
         DirToRemove = FirstDir;
+
+}
     }
 
     if (Verbose) {
       llvm::errs() << "ignoring duplicate directory \""
                    << CurEntry.getName() << "\"\n";
-      if (DirToRemove != i)
+      if (DirToRemove != i) {
         llvm::errs() << "  as it is a non-system directory that duplicates "
                      << "a system directory\n";
+
+}
     }
-    if (DirToRemove != i)
+    if (DirToRemove != i) {
       ++NonSystemRemoved;
+
+}
 
     // This is reached if the current entry is a duplicate.  Remove the
     // DirToRemove (usually the current dir).
@@ -553,33 +585,49 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
   SearchList.reserve(IncludePath.size());
 
   // Quoted arguments go first.
-  for (auto &Include : IncludePath)
-    if (Include.first == Quoted)
+  for (auto &Include : IncludePath) {
+    if (Include.first == Quoted) {
       SearchList.push_back(Include.second);
+
+}
+
+}
 
   // Deduplicate and remember index.
   RemoveDuplicates(SearchList, 0, Verbose);
   unsigned NumQuoted = SearchList.size();
 
-  for (auto &Include : IncludePath)
-    if (Include.first == Angled || Include.first == IndexHeaderMap)
+  for (auto &Include : IncludePath) {
+    if (Include.first == Angled || Include.first == IndexHeaderMap) {
       SearchList.push_back(Include.second);
+
+}
+
+}
 
   RemoveDuplicates(SearchList, NumQuoted, Verbose);
   unsigned NumAngled = SearchList.size();
 
-  for (auto &Include : IncludePath)
+  for (auto &Include : IncludePath) {
     if (Include.first == System || Include.first == ExternCSystem ||
         (!Lang.ObjC && !Lang.CPlusPlus && Include.first == CSystem) ||
         (/*FIXME !Lang.ObjC && */ Lang.CPlusPlus &&
          Include.first == CXXSystem) ||
         (Lang.ObjC && !Lang.CPlusPlus && Include.first == ObjCSystem) ||
-        (Lang.ObjC && Lang.CPlusPlus && Include.first == ObjCXXSystem))
+        (Lang.ObjC && Lang.CPlusPlus && Include.first == ObjCXXSystem)) {
       SearchList.push_back(Include.second);
 
-  for (auto &Include : IncludePath)
-    if (Include.first == After)
+}
+
+}
+
+  for (auto &Include : IncludePath) {
+    if (Include.first == After) {
       SearchList.push_back(Include.second);
+
+}
+
+}
 
   // Remove duplicates across both the Angled and System directories.  GCC does
   // this and failing to remove duplicates across these two groups breaks
@@ -596,15 +644,17 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
   if (Verbose) {
     llvm::errs() << "#include \"...\" search starts here:\n";
     for (unsigned i = 0, e = SearchList.size(); i != e; ++i) {
-      if (i == NumQuoted)
+      if (i == NumQuoted) {
         llvm::errs() << "#include <...> search starts here:\n";
+
+}
       StringRef Name = SearchList[i].getName();
       const char *Suffix;
-      if (SearchList[i].isNormalDir())
+      if (SearchList[i].isNormalDir()) {
         Suffix = "";
-      else if (SearchList[i].isFramework())
+      } else if (SearchList[i].isFramework()) {
         Suffix = " (framework directory)";
-      else {
+      } else {
         assert(SearchList[i].isHeaderMap() && "Unknown DirectoryLookup");
         Suffix = " (headermap)";
       }
@@ -632,16 +682,20 @@ void clang::ApplyHeaderSearchOptions(HeaderSearch &HS,
 
   Init.AddDefaultIncludePaths(Lang, Triple, HSOpts);
 
-  for (unsigned i = 0, e = HSOpts.SystemHeaderPrefixes.size(); i != e; ++i)
+  for (unsigned i = 0, e = HSOpts.SystemHeaderPrefixes.size(); i != e; ++i) {
     Init.AddSystemHeaderPrefix(HSOpts.SystemHeaderPrefixes[i].Prefix,
                                HSOpts.SystemHeaderPrefixes[i].IsSystemHeader);
+
+}
 
   if (HSOpts.UseBuiltinIncludes) {
     // Set up the builtin include directory in the module map.
     SmallString<128> P = StringRef(HSOpts.ResourceDir);
     llvm::sys::path::append(P, "include");
-    if (auto Dir = HS.getFileMgr().getDirectory(P))
+    if (auto Dir = HS.getFileMgr().getDirectory(P)) {
       HS.getModuleMap().setBuiltinIncludeDir(*Dir);
+
+}
   }
 
   Init.Realize(Lang);

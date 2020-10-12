@@ -19,8 +19,10 @@ using namespace llvm::codeview;
 using namespace llvm::pdb;
 
 std::string llvm::pdb::truncateStringBack(StringRef S, uint32_t MaxLen) {
-  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3)
+  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3) {
     return std::string(S);
+
+}
 
   assert(MaxLen >= 3);
   uint32_t FinalLen = std::min<size_t>(S.size(), MaxLen - 3);
@@ -29,8 +31,10 @@ std::string llvm::pdb::truncateStringBack(StringRef S, uint32_t MaxLen) {
 }
 
 std::string llvm::pdb::truncateStringMiddle(StringRef S, uint32_t MaxLen) {
-  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3)
+  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3) {
     return std::string(S);
+
+}
 
   assert(MaxLen >= 3);
   uint32_t FinalLen = std::min<size_t>(S.size(), MaxLen - 3);
@@ -40,8 +44,10 @@ std::string llvm::pdb::truncateStringMiddle(StringRef S, uint32_t MaxLen) {
 }
 
 std::string llvm::pdb::truncateStringFront(StringRef S, uint32_t MaxLen) {
-  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3)
+  if (MaxLen == 0 || S.size() <= MaxLen || S.size() <= 3) {
     return std::string(S);
+
+}
 
   assert(MaxLen >= 3);
   S = S.take_back(MaxLen - 3);
@@ -51,8 +57,10 @@ std::string llvm::pdb::truncateStringFront(StringRef S, uint32_t MaxLen) {
 std::string llvm::pdb::truncateQuotedNameFront(StringRef Label, StringRef Name,
                                                uint32_t MaxLen) {
   uint32_t RequiredExtraChars = Label.size() + 1 + 2;
-  if (MaxLen == 0 || RequiredExtraChars + Name.size() <= MaxLen)
+  if (MaxLen == 0 || RequiredExtraChars + Name.size() <= MaxLen) {
     return formatv("{0} \"{1}\"", Label, Name).str();
+
+}
 
   assert(MaxLen >= RequiredExtraChars);
   std::string TN = truncateStringFront(Name, MaxLen - RequiredExtraChars);
@@ -62,8 +70,10 @@ std::string llvm::pdb::truncateQuotedNameFront(StringRef Label, StringRef Name,
 std::string llvm::pdb::truncateQuotedNameBack(StringRef Label, StringRef Name,
                                               uint32_t MaxLen) {
   uint32_t RequiredExtraChars = Label.size() + 1 + 2;
-  if (MaxLen == 0 || RequiredExtraChars + Name.size() <= MaxLen)
+  if (MaxLen == 0 || RequiredExtraChars + Name.size() <= MaxLen) {
     return formatv("{0} \"{1}\"", Label, Name).str();
+
+}
 
   assert(MaxLen >= RequiredExtraChars);
   std::string TN = truncateStringBack(Name, MaxLen - RequiredExtraChars);
@@ -191,10 +201,14 @@ std::string llvm::pdb::formatSectionCharacteristics(uint32_t IndentLevel,
                                                     CharacteristicStyle Style) {
   using SC = COFF::SectionCharacteristics;
   std::vector<std::string> Opts;
-  if (C == COFF::SC_Invalid)
+  if (C == COFF::SC_Invalid) {
     return "invalid";
-  if (C == 0)
+
+}
+  if (C == 0) {
     return "none";
+
+}
   PUSH_CHARACTERISTIC_FLAG(SC, IMAGE_SCN_TYPE_NOLOAD, C, Style, "noload");
   PUSH_CHARACTERISTIC_FLAG(SC, IMAGE_SCN_TYPE_NO_PAD, C, Style, "no padding");
   PUSH_CHARACTERISTIC_FLAG(SC, IMAGE_SCN_CNT_CODE, C, Style, "code");

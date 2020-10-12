@@ -27,8 +27,10 @@ using namespace llvm::codeview;
 
 static void error(Error &&EC) {
   assert(!static_cast<bool>(EC));
-  if (EC)
+  if (EC) {
     consumeError(std::move(EC));
+
+}
 }
 
 LazyRandomTypeCollection::LazyRandomTypeCollection(uint32_t RecordCountHint)
@@ -98,8 +100,10 @@ CVType LazyRandomTypeCollection::getType(TypeIndex Index) {
 }
 
 Optional<CVType> LazyRandomTypeCollection::tryGetType(TypeIndex Index) {
-  if (Index.isSimple())
+  if (Index.isSimple()) {
     return None;
+
+}
 
   if (auto EC = ensureTypeExists(Index)) {
     consumeError(std::move(EC));
@@ -111,8 +115,10 @@ Optional<CVType> LazyRandomTypeCollection::tryGetType(TypeIndex Index) {
 }
 
 StringRef LazyRandomTypeCollection::getTypeName(TypeIndex Index) {
-  if (Index.isNoneType() || Index.isSimple())
+  if (Index.isNoneType() || Index.isSimple()) {
     return TypeIndex::simpleTypeName(Index);
+
+}
 
   // Try to make sure the type exists.  Even if it doesn't though, it may be
   // because we're dumping a symbol stream with no corresponding type stream
@@ -133,13 +139,19 @@ StringRef LazyRandomTypeCollection::getTypeName(TypeIndex Index) {
 }
 
 bool LazyRandomTypeCollection::contains(TypeIndex Index) {
-  if (Index.isSimple() || Index.isNoneType())
+  if (Index.isSimple() || Index.isNoneType()) {
     return false;
 
-  if (Records.size() <= Index.toArrayIndex())
+}
+
+  if (Records.size() <= Index.toArrayIndex()) {
     return false;
-  if (!Records[Index.toArrayIndex()].Type.valid())
+
+}
+  if (!Records[Index.toArrayIndex()].Type.valid()) {
     return false;
+
+}
   return true;
 }
 
@@ -148,8 +160,10 @@ uint32_t LazyRandomTypeCollection::size() { return Count; }
 uint32_t LazyRandomTypeCollection::capacity() { return Records.size(); }
 
 Error LazyRandomTypeCollection::ensureTypeExists(TypeIndex TI) {
-  if (contains(TI))
+  if (contains(TI)) {
     return Error::success();
+
+}
 
   return visitRangeForType(TI);
 }
@@ -158,8 +172,10 @@ void LazyRandomTypeCollection::ensureCapacityFor(TypeIndex Index) {
   assert(!Index.isSimple());
   uint32_t MinSize = Index.toArrayIndex() + 1;
 
-  if (MinSize <= capacity())
+  if (MinSize <= capacity()) {
     return;
+
+}
 
   uint32_t NewCapacity = MinSize * 3 / 2;
 
@@ -169,8 +185,10 @@ void LazyRandomTypeCollection::ensureCapacityFor(TypeIndex Index) {
 
 Error LazyRandomTypeCollection::visitRangeForType(TypeIndex TI) {
   assert(!TI.isSimple());
-  if (PartialOffsets.empty())
+  if (PartialOffsets.empty()) {
     return fullScanForType(TI);
+
+}
 
   auto Next = std::upper_bound(PartialOffsets.begin(), PartialOffsets.end(), TI,
                                [](TypeIndex Value, const TypeIndexOffset &IO) {

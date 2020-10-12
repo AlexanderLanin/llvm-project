@@ -67,8 +67,10 @@ PatchPointOpers::PatchPointOpers(const MachineInstr *MI)
 }
 
 unsigned PatchPointOpers::getNextScratchIdx(unsigned StartIdx) const {
-  if (!StartIdx)
+  if (!StartIdx) {
     StartIdx = getVarIdx();
+
+}
 
   // Find the next scratch register (implicit def and early clobber)
   unsigned ScratchIdx = StartIdx, e = MI->getNumOperands();
@@ -76,23 +78,29 @@ unsigned PatchPointOpers::getNextScratchIdx(unsigned StartIdx) const {
          !(MI->getOperand(ScratchIdx).isReg() &&
            MI->getOperand(ScratchIdx).isDef() &&
            MI->getOperand(ScratchIdx).isImplicit() &&
-           MI->getOperand(ScratchIdx).isEarlyClobber()))
+           MI->getOperand(ScratchIdx).isEarlyClobber())) {
     ++ScratchIdx;
+
+}
 
   assert(ScratchIdx != e && "No scratch register available");
   return ScratchIdx;
 }
 
 StackMaps::StackMaps(AsmPrinter &AP) : AP(AP) {
-  if (StackMapVersion != 3)
+  if (StackMapVersion != 3) {
     llvm_unreachable("Unsupported stackmap version!");
+
+}
 }
 
 /// Go up the super-register chain until we hit a valid dwarf register number.
 static unsigned getDwarfRegNum(unsigned Reg, const TargetRegisterInfo *TRI) {
   int RegNum = TRI->getDwarfRegNum(Reg, false);
-  for (MCSuperRegIterator SR(Reg, TRI); SR.isValid() && RegNum < 0; ++SR)
+  for (MCSuperRegIterator SR(Reg, TRI); SR.isValid() && RegNum < 0; ++SR) {
     RegNum = TRI->getDwarfRegNum(*SR, false);
+
+}
 
   assert(RegNum >= 0 && "Invalid Dwarf register number.");
   return (unsigned)RegNum;
@@ -145,8 +153,10 @@ StackMaps::parseOperand(MachineInstr::const_mop_iterator MOI,
   // if it needs to.)
   if (MOI->isReg()) {
     // Skip implicit registers (this includes our scratch registers)
-    if (MOI->isImplicit())
+    if (MOI->isImplicit()) {
       return ++MOI;
+
+}
 
     assert(Register::isPhysicalRegister(MOI->getReg()) &&
            "Virtreg operands should have been rewritten before now.");
@@ -157,16 +167,20 @@ StackMaps::parseOperand(MachineInstr::const_mop_iterator MOI,
     unsigned DwarfRegNum = getDwarfRegNum(MOI->getReg(), TRI);
     unsigned LLVMRegNum = *TRI->getLLVMRegNum(DwarfRegNum, false);
     unsigned SubRegIdx = TRI->getSubRegIndex(LLVMRegNum, MOI->getReg());
-    if (SubRegIdx)
+    if (SubRegIdx) {
       Offset = TRI->getSubRegIdxOffset(SubRegIdx);
+
+}
 
     Locs.emplace_back(Location::Register, TRI->getSpillSize(*RC),
                       DwarfRegNum, Offset);
     return ++MOI;
   }
 
-  if (MOI->isRegLiveOut())
+  if (MOI->isRegLiveOut()) {
     LiveOuts = parseRegisterLiveOutMask(MOI->getRegLiveOut());
+
+}
 
   return ++MOI;
 }
@@ -191,26 +205,34 @@ void StackMaps::print(raw_ostream &OS) {
         break;
       case Location::Register:
         OS << "Register ";
-        if (TRI)
+        if (TRI) {
           OS << printReg(Loc.Reg, TRI);
-        else
+        } else {
           OS << Loc.Reg;
+
+}
         break;
       case Location::Direct:
         OS << "Direct ";
-        if (TRI)
+        if (TRI) {
           OS << printReg(Loc.Reg, TRI);
-        else
+        } else {
           OS << Loc.Reg;
-        if (Loc.Offset)
+
+}
+        if (Loc.Offset) {
           OS << " + " << Loc.Offset;
+
+}
         break;
       case Location::Indirect:
         OS << "Indirect ";
-        if (TRI)
+        if (TRI) {
           OS << printReg(Loc.Reg, TRI);
-        else
+        } else {
           OS << Loc.Reg;
+
+}
         OS << "+" << Loc.Offset;
         break;
       case Location::Constant:
@@ -231,10 +253,12 @@ void StackMaps::print(raw_ostream &OS) {
     Idx = 0;
     for (const auto &LO : LiveOuts) {
       OS << WSMP << "\t\tLO " << Idx << ": ";
-      if (TRI)
+      if (TRI) {
         OS << printReg(LO.Reg, TRI);
-      else
+      } else {
         OS << LO.Reg;
+
+}
       OS << "\t[encoding: .short " << LO.DwarfRegNum << ", .byte 0, .byte "
          << LO.Size << "]\n";
       Idx++;
@@ -259,9 +283,13 @@ StackMaps::parseRegisterLiveOutMask(const uint32_t *Mask) const {
   LiveOutVec LiveOuts;
 
   // Create a LiveOutReg for each bit that is set in the register mask.
-  for (unsigned Reg = 0, NumRegs = TRI->getNumRegs(); Reg != NumRegs; ++Reg)
-    if ((Mask[Reg / 32] >> (Reg % 32)) & 1)
+  for (unsigned Reg = 0, NumRegs = TRI->getNumRegs(); Reg != NumRegs; ++Reg) {
+    if ((Mask[Reg / 32] >> (Reg % 32)) & 1) {
       LiveOuts.push_back(createLiveOutReg(Reg, TRI));
+
+}
+
+}
 
   // We don't need to keep track of a register if its super-register is already
   // in the list. Merge entries that refer to the same dwarf register and use
@@ -280,8 +308,10 @@ StackMaps::parseRegisterLiveOutMask(const uint32_t *Mask) const {
         break;
       }
       I->Size = std::max(I->Size, II->Size);
-      if (TRI->isSuperRegister(I->Reg, II->Reg))
+      if (TRI->isSuperRegister(I->Reg, II->Reg)) {
         I->Reg = II->Reg;
+
+}
       II->Reg = 0; // mark for deletion.
     }
   }
@@ -353,10 +383,12 @@ void StackMaps::recordStackMapOpers(const MCSymbol &MILabel,
   uint64_t FrameSize = HasDynamicFrameSize ? UINT64_MAX : MFI.getStackSize();
 
   auto CurrentIt = FnInfos.find(AP.CurrentFnSym);
-  if (CurrentIt != FnInfos.end())
+  if (CurrentIt != FnInfos.end()) {
     CurrentIt->second.RecordCount++;
-  else
+  } else {
     FnInfos.insert(std::make_pair(AP.CurrentFnSym, FunctionInfo(FrameSize)));
+
+}
 }
 
 void StackMaps::recordStackMap(const MCSymbol &L, const MachineInstr &MI) {
@@ -552,8 +584,10 @@ void StackMaps::serializeToStackMapSection() {
          "Expected empty constant pool too!");
   assert((!CSInfos.empty() || FnInfos.empty()) &&
          "Expected empty function record too!");
-  if (CSInfos.empty())
+  if (CSInfos.empty()) {
     return;
+
+}
 
   MCContext &OutContext = AP.OutStreamer->getContext();
   MCStreamer &OS = *AP.OutStreamer;

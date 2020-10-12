@@ -32,8 +32,10 @@ public:
       const FunctionDecl *FD = nullptr;
       for (const Decl *D : TU->decls()) {
         FD = dyn_cast<FunctionDecl>(D);
-        if (FD && FD->getName() == "f")
+        if (FD && FD->getName() == "f") {
           break;
+
+}
       }
       return FD;
     };
@@ -169,8 +171,10 @@ TEST(CrossTranslationUnit, IndexFormatCanBeParsed) {
     EXPECT_TRUE(ParsedIndex.count(E.getKey()));
     EXPECT_EQ(ParsedIndex[E.getKey()], E.getValue());
   }
-  for (const auto &E : ParsedIndex)
+  for (const auto &E : ParsedIndex) {
     EXPECT_TRUE(Index.count(E.getKey()));
+
+}
 }
 
 TEST(CrossTranslationUnit, CTUDirIsHandledCorrectly) {

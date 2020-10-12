@@ -39,9 +39,13 @@ struct UnrollAnalyzerTest : public FunctionPass {
     for (unsigned Iteration = 0; Iteration < TripCount; Iteration++) {
       DenseMap<Value *, Constant *> SimplifiedValues;
       UnrolledInstAnalyzer Analyzer(Iteration, SimplifiedValues, *SE, L);
-      for (auto *BB : L->getBlocks())
-        for (Instruction &I : *BB)
+      for (auto *BB : L->getBlocks()) {
+        for (Instruction &I : *BB) {
           Analyzer.visit(I);
+
+}
+
+}
       SimplifiedValuesVector.push_back(SimplifiedValues);
     }
     return false;

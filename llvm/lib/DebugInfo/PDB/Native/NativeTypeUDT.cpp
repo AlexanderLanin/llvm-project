@@ -44,13 +44,17 @@ void NativeTypeUDT::dump(raw_ostream &OS, int Indent,
   dumpSymbolIdField(OS, "lexicalParentId", 0, Indent, Session,
                     PdbSymbolIdField::LexicalParent, ShowIdFields,
                     RecurseIdFields);
-  if (Modifiers.hasValue())
+  if (Modifiers.hasValue()) {
     dumpSymbolIdField(OS, "unmodifiedTypeId", getUnmodifiedTypeId(), Indent,
                       Session, PdbSymbolIdField::UnmodifiedType, ShowIdFields,
                       RecurseIdFields);
-  if (getUdtKind() != PDB_UdtType::Union)
+
+}
+  if (getUdtKind() != PDB_UdtType::Union) {
     dumpSymbolField(OS, "virtualTableShapeId", getVirtualTableShapeId(),
                     Indent);
+
+}
   dumpSymbolField(OS, "length", getLength(), Indent);
   dumpSymbolField(OS, "udtKind", getUdtKind(), Indent);
   dumpSymbolField(OS, "constructor", hasConstructor(), Indent);
@@ -71,8 +75,10 @@ void NativeTypeUDT::dump(raw_ostream &OS, int Indent,
 }
 
 std::string NativeTypeUDT::getName() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getName();
+
+}
 
   return std::string(Tag->getName());
 }
@@ -80,35 +86,47 @@ std::string NativeTypeUDT::getName() const {
 SymIndexId NativeTypeUDT::getLexicalParentId() const { return 0; }
 
 SymIndexId NativeTypeUDT::getUnmodifiedTypeId() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getSymIndexId();
+
+}
 
   return 0;
 }
 
 SymIndexId NativeTypeUDT::getVirtualTableShapeId() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getVirtualTableShapeId();
 
-  if (Class)
+}
+
+  if (Class) {
     return Session.getSymbolCache().findSymbolByTypeIndex(Class->VTableShape);
+
+}
 
   return 0;
 }
 
 uint64_t NativeTypeUDT::getLength() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getLength();
 
-  if (Class)
+}
+
+  if (Class) {
     return Class->getSize();
+
+}
 
   return Union->getSize();
 }
 
 PDB_UdtType NativeTypeUDT::getUdtKind() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getUdtKind();
+
+}
 
   switch (Tag->Kind) {
   case TypeRecordKind::Class:
@@ -125,47 +143,59 @@ PDB_UdtType NativeTypeUDT::getUdtKind() const {
 }
 
 bool NativeTypeUDT::hasConstructor() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasConstructor();
+
+}
 
   return (Tag->Options & ClassOptions::HasConstructorOrDestructor) !=
          ClassOptions::None;
 }
 
 bool NativeTypeUDT::isConstType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return (Modifiers->Modifiers & ModifierOptions::Const) !=
          ModifierOptions::None;
 }
 
 bool NativeTypeUDT::hasAssignmentOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasAssignmentOperator();
+
+}
 
   return (Tag->Options & ClassOptions::HasOverloadedAssignmentOperator) !=
          ClassOptions::None;
 }
 
 bool NativeTypeUDT::hasCastOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasCastOperator();
+
+}
 
   return (Tag->Options & ClassOptions::HasConversionOperator) !=
          ClassOptions::None;
 }
 
 bool NativeTypeUDT::hasNestedTypes() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasNestedTypes();
+
+}
 
   return (Tag->Options & ClassOptions::ContainsNestedClass) !=
          ClassOptions::None;
 }
 
 bool NativeTypeUDT::hasOverloadedOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasOverloadedOperator();
+
+}
 
   return (Tag->Options & ClassOptions::HasOverloadedOperator) !=
          ClassOptions::None;
@@ -174,22 +204,28 @@ bool NativeTypeUDT::hasOverloadedOperator() const {
 bool NativeTypeUDT::isInterfaceUdt() const { return false; }
 
 bool NativeTypeUDT::isIntrinsic() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isIntrinsic();
+
+}
 
   return (Tag->Options & ClassOptions::Intrinsic) != ClassOptions::None;
 }
 
 bool NativeTypeUDT::isNested() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isNested();
+
+}
 
   return (Tag->Options & ClassOptions::Nested) != ClassOptions::None;
 }
 
 bool NativeTypeUDT::isPacked() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isPacked();
+
+}
 
   return (Tag->Options & ClassOptions::Packed) != ClassOptions::None;
 }
@@ -197,8 +233,10 @@ bool NativeTypeUDT::isPacked() const {
 bool NativeTypeUDT::isRefUdt() const { return false; }
 
 bool NativeTypeUDT::isScoped() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isScoped();
+
+}
 
   return (Tag->Options & ClassOptions::Scoped) != ClassOptions::None;
 }
@@ -206,15 +244,19 @@ bool NativeTypeUDT::isScoped() const {
 bool NativeTypeUDT::isValueUdt() const { return false; }
 
 bool NativeTypeUDT::isUnalignedType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return (Modifiers->Modifiers & ModifierOptions::Unaligned) !=
          ModifierOptions::None;
 }
 
 bool NativeTypeUDT::isVolatileType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return (Modifiers->Modifiers & ModifierOptions::Volatile) !=
          ModifierOptions::None;
 }

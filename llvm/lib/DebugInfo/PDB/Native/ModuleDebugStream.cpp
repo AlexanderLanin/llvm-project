@@ -38,12 +38,16 @@ Error ModuleDebugStreamRef::reload() {
   BinaryStreamReader Reader(*Stream);
 
   if (Mod.getModuleStreamIndex() != llvm::pdb::kInvalidStreamIndex) {
-    if (Error E = reloadSerialize(Reader))
+    if (Error E = reloadSerialize(Reader)) {
       return E;
+
+}
   }
-  if (Reader.bytesRemaining() > 0)
+  if (Reader.bytesRemaining() > 0) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Unexpected bytes in module stream.");
+
+}
   return Error::success();
 }
 
@@ -52,37 +56,55 @@ Error ModuleDebugStreamRef::reloadSerialize(BinaryStreamReader &Reader) {
   uint32_t C11Size = Mod.getC11LineInfoByteSize();
   uint32_t C13Size = Mod.getC13LineInfoByteSize();
 
-  if (C11Size > 0 && C13Size > 0)
+  if (C11Size > 0 && C13Size > 0) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Module has both C11 and C13 line info");
 
+}
+
   BinaryStreamRef S;
 
-  if (auto EC = Reader.readInteger(Signature))
+  if (auto EC = Reader.readInteger(Signature)) {
     return EC;
+
+}
   Reader.setOffset(0);
-  if (auto EC = Reader.readSubstream(SymbolsSubstream, SymbolSize))
+  if (auto EC = Reader.readSubstream(SymbolsSubstream, SymbolSize)) {
     return EC;
-  if (auto EC = Reader.readSubstream(C11LinesSubstream, C11Size))
+
+}
+  if (auto EC = Reader.readSubstream(C11LinesSubstream, C11Size)) {
     return EC;
-  if (auto EC = Reader.readSubstream(C13LinesSubstream, C13Size))
+
+}
+  if (auto EC = Reader.readSubstream(C13LinesSubstream, C13Size)) {
     return EC;
+
+}
 
   BinaryStreamReader SymbolReader(SymbolsSubstream.StreamData);
   if (auto EC = SymbolReader.readArray(
-          SymbolArray, SymbolReader.bytesRemaining(), sizeof(uint32_t)))
+          SymbolArray, SymbolReader.bytesRemaining(), sizeof(uint32_t))) {
     return EC;
+
+}
 
   BinaryStreamReader SubsectionsReader(C13LinesSubstream.StreamData);
   if (auto EC = SubsectionsReader.readArray(Subsections,
-                                            SubsectionsReader.bytesRemaining()))
+                                            SubsectionsReader.bytesRemaining())) {
     return EC;
 
+}
+
   uint32_t GlobalRefsSize;
-  if (auto EC = Reader.readInteger(GlobalRefsSize))
+  if (auto EC = Reader.readInteger(GlobalRefsSize)) {
     return EC;
-  if (auto EC = Reader.readSubstream(GlobalRefsSubstream, GlobalRefsSize))
+
+}
+  if (auto EC = Reader.readSubstream(GlobalRefsSubstream, GlobalRefsSize)) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -133,11 +155,15 @@ Expected<codeview::DebugChecksumsSubsectionRef>
 ModuleDebugStreamRef::findChecksumsSubsection() const {
   codeview::DebugChecksumsSubsectionRef Result;
   for (const auto &SS : subsections()) {
-    if (SS.kind() != DebugSubsectionKind::FileChecksums)
+    if (SS.kind() != DebugSubsectionKind::FileChecksums) {
       continue;
 
-    if (auto EC = Result.initialize(SS.getRecordData()))
+}
+
+    if (auto EC = Result.initialize(SS.getRecordData())) {
       return std::move(EC);
+
+}
     return Result;
   }
   return Result;

@@ -157,8 +157,10 @@ struct DivergencePropagator {
   // set the definition at @block and mark @block as pending for a visit
   void addPending(const BasicBlock &Block, const BasicBlock &DefBlock) {
     bool WasAdded = DefMap.emplace(&Block, &DefBlock).second;
-    if (WasAdded)
+    if (WasAdded) {
       PendingUpdates.insert(&Block);
+
+}
   }
 
   void printDefs(raw_ostream &Out) {
@@ -198,8 +200,10 @@ struct DivergencePropagator {
     // a join of at least two definitions
     if (ItLastDef->second != &DefBlock) {
       // do we know this join already?
-      if (!JoinBlocks->insert(&SuccBlock).second)
+      if (!JoinBlocks->insert(&SuccBlock).second) {
         return;
+
+}
 
       // update the definition
       addPending(SuccBlock, SuccBlock);
@@ -260,8 +264,10 @@ struct DivergencePropagator {
 
       // skip Block if not pending update
       auto ItPending = PendingUpdates.find(Block);
-      if (ItPending == PendingUpdates.end())
+      if (ItPending == PendingUpdates.end()) {
         continue;
+
+}
       PendingUpdates.erase(ItPending);
 
       // propagate definition at Block to its successors
@@ -363,8 +369,10 @@ SyncDependenceAnalysis::join_blocks(const Instruction &Term) {
 
   // already available in cache?
   auto ItCached = CachedBranchJoins.find(&Term);
-  if (ItCached != CachedBranchJoins.end())
+  if (ItCached != CachedBranchJoins.end()) {
     return *ItCached->second;
+
+}
 
   // compute all join points
   DivergencePropagator Propagator{FuncRPOT, DT, PDT, LI};

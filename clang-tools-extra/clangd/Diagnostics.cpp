@@ -63,14 +63,20 @@ const char *getDiagnosticCode(unsigned ID) {
 }
 
 bool mentionsMainFile(const Diag &D) {
-  if (D.InsideMainFile)
+  if (D.InsideMainFile) {
     return true;
+
+}
   // Fixes are always in the main file.
-  if (!D.Fixes.empty())
+  if (!D.Fixes.empty()) {
     return true;
+
+}
   for (auto &N : D.Notes) {
-    if (N.InsideMainFile)
+    if (N.InsideMainFile) {
       return true;
+
+}
   }
   return false;
 }
@@ -78,8 +84,10 @@ bool mentionsMainFile(const Diag &D) {
 bool isBlacklisted(const Diag &D) {
   // clang will always fail parsing MS ASM, we don't link in desc + asm parser.
   if (D.ID == clang::diag::err_msasm_unable_to_create_target ||
-      D.ID == clang::diag::err_msasm_unsupported_arch)
+      D.ID == clang::diag::err_msasm_unsupported_arch) {
     return true;
+
+}
   return false;
 }
 
@@ -89,8 +97,10 @@ bool locationInRange(SourceLocation L, CharSourceRange R,
                      const SourceManager &M) {
   assert(R.isCharRange());
   if (!R.isValid() || M.getFileID(R.getBegin()) != M.getFileID(R.getEnd()) ||
-      M.getFileID(R.getBegin()) != M.getFileID(L))
+      M.getFileID(R.getBegin()) != M.getFileID(L)) {
     return false;
+
+}
   return L != R.getEnd() && M.isPointWithin(L, R.getBegin(), R.getEnd());
 }
 
@@ -101,14 +111,18 @@ Range diagnosticRange(const clang::Diagnostic &D, const LangOptions &L) {
   auto Loc = M.getFileLoc(D.getLocation());
   for (const auto &CR : D.getRanges()) {
     auto R = Lexer::makeFileCharRange(CR, M, L);
-    if (locationInRange(Loc, R, M))
+    if (locationInRange(Loc, R, M)) {
       return halfOpenToRange(M, R);
+
+}
   }
   // The range may be given as a fixit hint instead.
   for (const auto &F : D.getFixItHints()) {
     auto R = Lexer::makeFileCharRange(F.RemoveRange, M, L);
-    if (locationInRange(Loc, R, M))
+    if (locationInRange(Loc, R, M)) {
       return halfOpenToRange(M, R);
+
+}
   }
   // If the token at the location is not a comment, we use the token.
   // If we can't get the token at the location, fall back to using the location
@@ -124,8 +138,10 @@ Range diagnosticRange(const clang::Diagnostic &D, const LangOptions &L) {
 bool adjustDiagFromHeader(Diag &D, const clang::Diagnostic &Info,
                           const LangOptions &LangOpts) {
   // We only report diagnostics with at least error severity from headers.
-  if (D.Severity < DiagnosticsEngine::Level::Error)
+  if (D.Severity < DiagnosticsEngine::Level::Error) {
     return false;
+
+}
 
   const SourceManager &SM = Info.getSourceManager();
   const SourceLocation &DiagLoc = SM.getExpansionLoc(Info.getLocation());
@@ -140,8 +156,10 @@ bool adjustDiagFromHeader(Diag &D, const clang::Diagnostic &Info,
       break;
     }
   }
-  if (IncludeInMainFile.isInvalid())
+  if (IncludeInMainFile.isInvalid()) {
     return false;
+
+}
 
   // Update diag to point at include inside main file.
   D.File = SM.getFileEntryForID(SM.getMainFileID())->getName().str();
@@ -165,8 +183,10 @@ bool adjustDiagFromHeader(Diag &D, const clang::Diagnostic &Info,
 }
 
 bool isInsideMainFile(const clang::Diagnostic &D) {
-  if (!D.hasSourceManager())
+  if (!D.hasSourceManager()) {
     return false;
+
+}
 
   return clangd::isInsideMainFile(D.getLocation(), D.getSourceManager());
 }
@@ -219,17 +239,21 @@ void printDiag(llvm::raw_string_ostream &OS, const DiagBase &D) {
   OS << (Pos.line + 1) << ":" << (Pos.character + 1) << ":";
   // The non-main-file paths are often too long, putting them on a separate
   // line improves readability.
-  if (D.InsideMainFile)
+  if (D.InsideMainFile) {
     OS << " ";
-  else
+  } else {
     OS << "\n";
+
+}
   OS << diagLeveltoString(D.Severity) << ": " << D.Message;
 }
 
 /// Capitalizes the first word in the diagnostic's message.
 std::string capitalize(std::string Message) {
-  if (!Message.empty())
+  if (!Message.empty()) {
     Message[0] = llvm::toUpper(Message[0]);
+
+}
   return Message;
 }
 
@@ -247,14 +271,18 @@ std::string mainMessage(const Diag &D, const ClangdDiagnosticOptions &Opts) {
   std::string Result;
   llvm::raw_string_ostream OS(Result);
   OS << D.Message;
-  if (Opts.DisplayFixesCount && !D.Fixes.empty())
+  if (Opts.DisplayFixesCount && !D.Fixes.empty()) {
     OS << " (" << (D.Fixes.size() > 1 ? "fixes" : "fix") << " available)";
+
+}
   // If notes aren't emitted as structured info, add them to the message.
-  if (!Opts.EmitRelatedLocations)
+  if (!Opts.EmitRelatedLocations) {
     for (auto &Note : D.Notes) {
       OS << "\n\n";
       printDiag(OS, Note);
     }
+
+}
   OS.flush();
   return capitalize(std::move(Result));
 }
@@ -278,8 +306,10 @@ std::string noteMessage(const Diag &Main, const DiagBase &Note,
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const DiagBase &D) {
   OS << "[";
-  if (!D.InsideMainFile)
+  if (!D.InsideMainFile) {
     OS << D.File << ":";
+
+}
   OS << D.Range.start << "-" << D.Range.end << "] ";
 
   return OS << D.Message;
@@ -359,11 +389,15 @@ void toLSPDiags(
   }
   if (Opts.EmbedFixesInDiagnostics) {
     Main.codeActions.emplace();
-    for (const auto &Fix : D.Fixes)
+    for (const auto &Fix : D.Fixes) {
       Main.codeActions->push_back(toCodeAction(Fix, File));
+
+}
   }
-  if (Opts.SendDiagnosticCategory && !D.Category.empty())
+  if (Opts.SendDiagnosticCategory && !D.Category.empty()) {
     Main.category = D.Category;
+
+}
 
   Main.message = mainMessage(D, Opts);
   if (Opts.EmitRelatedLocations) {
@@ -385,16 +419,20 @@ void toLSPDiags(
 
   // If we didn't emit the notes as relatedLocations, emit separate diagnostics
   // so the user can find the locations easily.
-  if (!Opts.EmitRelatedLocations)
+  if (!Opts.EmitRelatedLocations) {
     for (auto &Note : D.Notes) {
-      if (!Note.InsideMainFile)
+      if (!Note.InsideMainFile) {
         continue;
+
+}
       clangd::Diagnostic Res;
       Res.severity = getSeverity(Note.Severity);
       Res.range = Note.Range;
       Res.message = noteMessage(D, Note, Opts);
       OutFn(std::move(Res), llvm::ArrayRef<Fix>());
     }
+
+}
 }
 
 int getSeverity(DiagnosticsEngine::Level L) {
@@ -445,14 +483,20 @@ std::vector<Diag> StoreDiags::take(const clang::tidy::ClangTidyContext *Tidy) {
         auto CleanMessage = [&](std::string &Msg) {
           StringRef Rest(Msg);
           if (Rest.consume_back("]") && Rest.consume_back(Diag.Name) &&
-              Rest.consume_back(" ["))
+              Rest.consume_back(" [")) {
             Msg.resize(Rest.size());
+
+}
         };
         CleanMessage(Diag.Message);
-        for (auto &Note : Diag.Notes)
+        for (auto &Note : Diag.Notes) {
           CleanMessage(Note.Message);
-        for (auto &Fix : Diag.Fixes)
+
+}
+        for (auto &Fix : Diag.Fixes) {
           CleanMessage(Fix.Message);
+
+}
         continue;
       }
     }
@@ -487,8 +531,10 @@ static void writeCodeToFixMessage(llvm::raw_ostream &OS, llvm::StringRef Code) {
   R = R.take_front(MaxLen);
 
   OS << R;
-  if (R.size() != Code.size())
+  if (R.size() != Code.size()) {
     OS << "…";
+
+}
 }
 
 /// Fills \p D with all information, except the location-related bits.
@@ -553,18 +599,24 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
   auto AddFix = [&](bool SyntheticMessage) -> bool {
     assert(!Info.getFixItHints().empty() &&
            "diagnostic does not have attached fix-its");
-    if (!InsideMainFile)
+    if (!InsideMainFile) {
       return false;
+
+}
 
     llvm::SmallVector<TextEdit, 1> Edits;
     for (auto &FixIt : Info.getFixItHints()) {
       // Follow clang's behavior, don't apply FixIt to the code in macros,
       // we are less certain it is the right fix.
       if (FixIt.RemoveRange.getBegin().isMacroID() ||
-          FixIt.RemoveRange.getEnd().isMacroID())
+          FixIt.RemoveRange.getEnd().isMacroID()) {
         return false;
-      if (!isInsideMainFile(FixIt.RemoveRange.getBegin(), SM))
+
+}
+      if (!isInsideMainFile(FixIt.RemoveRange.getBegin(), SM)) {
         return false;
+
+}
       Edits.push_back(toTextEdit(FixIt, SM, *LangOpts));
     }
 
@@ -597,8 +649,10 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
         std::replace(Message.begin(), Message.end(), '\n', ' ');
       }
     }
-    if (Message.empty()) // either !SytheticMessage, or we failed to make one.
+    if (Message.empty()) { // either !SytheticMessage, or we failed to make one.
       Info.FormatDiagnostic(Message);
+
+}
     LastDiag->Fixes.push_back(
         Fix{std::string(Message.str()), std::move(Edits)});
     return true;
@@ -620,11 +674,15 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
     LastDiag = Diag();
     LastDiag->ID = Info.getID();
     FillDiagBase(*LastDiag);
-    if (!InsideMainFile)
+    if (!InsideMainFile) {
       LastDiagWasAdjusted = adjustDiagFromHeader(*LastDiag, Info, *LangOpts);
 
-    if (!Info.getFixItHints().empty())
+}
+
+    if (!Info.getFixItHints().empty()) {
       AddFix(true /* try to invent a message instead of repeating the diag */);
+
+}
     if (Fixer) {
       auto ExtraFixes = Fixer(DiagLevel, Info);
       LastDiag->Fixes.insert(LastDiag->Fixes.end(), ExtraFixes.begin(),
@@ -648,8 +706,10 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
     if (!Info.getFixItHints().empty()) {
       // A clang note with fix-it is not a separate diagnostic in clangd. We
       // attach it as a Fix to the main diagnostic instead.
-      if (!AddFix(false /* use the note as the message */))
+      if (!AddFix(false /* use the note as the message */)) {
         IgnoreDiagnostics::log(DiagLevel, Info);
+
+}
     } else {
       // A clang note without fix-its corresponds to clangd::Note.
       Note N;
@@ -661,8 +721,10 @@ void StoreDiags::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
 }
 
 void StoreDiags::flushLastDiag() {
-  if (!LastDiag)
+  if (!LastDiag) {
     return;
+
+}
   if (!isBlacklisted(*LastDiag) && mentionsMainFile(*LastDiag) &&
       (!LastDiagWasAdjusted ||
        // Only report the first diagnostic coming from each particular header.

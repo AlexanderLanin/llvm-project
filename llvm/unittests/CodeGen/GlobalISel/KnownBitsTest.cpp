@@ -14,8 +14,10 @@ TEST_F(GISelMITest, TestKnownBitsCst) {
   StringRef MIRString = "  %3:_(s8) = G_CONSTANT i8 1\n"
                         "  %4:_(s8) = COPY %3\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   unsigned CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   unsigned SrcReg = FinalCopy->getOperand(1).getReg();
@@ -34,8 +36,10 @@ TEST_F(GISelMITest, TestKnownBitsCstWithClass) {
   StringRef MIRString = "  %10:gpr32 = MOVi32imm 1\n"
                         "  %4:_(s32) = COPY %10\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   unsigned CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   unsigned SrcReg = FinalCopy->getOperand(1).getReg();
@@ -73,8 +77,10 @@ TEST_F(GISelMITest, TestKnownBitsCstPHI) {
                         "  %13:_(s8) = PHI %10(s8), %bb.10, %12(s8), %bb.11\n"
                         "  %14:_(s8) = COPY %13\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   Register SrcReg = FinalCopy->getOperand(1).getReg();
@@ -107,8 +113,10 @@ TEST_F(GISelMITest, TestKnownBitsCstPHIToNonGenericReg) {
                         "  %13:_(s8) = PHI %10, %bb.10, %12(s8), %bb.11\n"
                         "  %14:_(s8) = COPY %13\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   Register SrcReg = FinalCopy->getOperand(1).getReg();
@@ -145,8 +153,10 @@ TEST_F(GISelMITest, TestKnownBitsUnknownPHI) {
       "  %13:_(s64) = PHI %10(s64), %bb.10, %12(s64), %bb.11\n"
       "  %14:_(s64) = COPY %13\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   Register SrcReg = FinalCopy->getOperand(1).getReg();
@@ -182,8 +192,10 @@ TEST_F(GISelMITest, TestKnownBitsCstPHIWithLoop) {
       "  %14:_(s8) = COPY %13\n"
       "  G_BR %bb.12\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   Register SrcReg = FinalCopy->getOperand(1).getReg();
@@ -221,8 +233,10 @@ TEST_F(GISelMITest, TestKnownBitsDecreasingCstPHIWithLoop) {
                         "  %15:_(s8) = COPY %14\n"
                         "  G_BR %bb.12\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   Register SrcReg = FinalCopy->getOperand(1).getReg();
@@ -249,8 +263,10 @@ TEST_F(GISelMITest, TestKnownBitsPtrToIntViceVersa) {
                         "  %5:_(s32) = G_PTRTOINT %4\n"
                         "  %6:_(s32) = COPY %5\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   unsigned CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   unsigned SrcReg = FinalCopy->getOperand(1).getReg();
@@ -265,8 +281,10 @@ TEST_F(GISelMITest, TestKnownBitsXOR) {
                         "  %5:_(s8) = G_XOR %3, %4\n"
                         "  %6:_(s8) = COPY %5\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   unsigned CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   unsigned SrcReg = FinalCopy->getOperand(1).getReg();
@@ -292,8 +310,10 @@ TEST_F(GISelMITest, TestKnownBits) {
                   "  %12:_(s32) = G_MUL %10, %11\n"
                   "  %13:_(s32) = COPY %12\n";
   setUp(MIR);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   unsigned CopyReg = Copies[Copies.size() - 1];
   MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
   unsigned SrcReg = FinalCopy->getOperand(1).getReg();
@@ -308,8 +328,10 @@ TEST_F(GISelMITest, TestKnownBits) {
 
 TEST_F(GISelMITest, TestSignBitIsZero) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   const LLT S32 = LLT::scalar(32);
   auto SignBit = B.buildConstant(S32, 0x80000000);
@@ -337,8 +359,10 @@ TEST_F(GISelMITest, TestNumSignBitsConstant) {
                         "  %11:_(s8) = G_CONSTANT i8 -32\n"
                         "  %12:_(s8) = COPY %11\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyReg1 = Copies[Copies.size() - 5];
   Register CopyRegNeg1 = Copies[Copies.size() - 4];
   Register CopyReg127 = Copies[Copies.size() - 3];
@@ -363,8 +387,10 @@ TEST_F(GISelMITest, TestNumSignBitsSext) {
                         "  %8:_(s32) = G_SEXT %7\n"
                         "  %9:_(s32) = COPY %8\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopySextLoad = Copies[Copies.size() - 2];
   Register CopySextNeg1 = Copies[Copies.size() - 1];
 
@@ -387,8 +413,10 @@ TEST_F(GISelMITest, TestNumSignBitsTrunc) {
                         "  %11:_(s8) = G_TRUNC %10\n"
                         "  %12:_(s8) = COPY %11\n";
   setUp(MIRString);
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   Register CopyTruncLoad = Copies[Copies.size() - 3];
   Register CopyTruncNeg1 = Copies[Copies.size() - 2];
   Register CopyTrunc7 = Copies[Copies.size() - 1];

@@ -38,15 +38,19 @@ LLVMModuleRef llvm_load_module(bool Lazy, bool New) {
   if (New) {
     LLVMContextRef C = LLVMGetGlobalContext();
     LLVMContextSetDiagnosticHandler(C, diagnosticHandler, NULL);
-    if (Lazy)
+    if (Lazy) {
       Ret = LLVMGetBitcodeModule2(MB, &M);
-    else
+    } else {
       Ret = LLVMParseBitcode2(MB, &M);
+
+}
   } else {
-    if (Lazy)
+    if (Lazy) {
       Ret = LLVMGetBitcodeModule(MB, &M, &msg);
-    else
+    } else {
       Ret = LLVMParseBitcode(MB, &M, &msg);
+
+}
   }
 
   if (Ret) {
@@ -55,8 +59,10 @@ LLVMModuleRef llvm_load_module(bool Lazy, bool New) {
     exit(1);
   }
 
-  if (!Lazy)
+  if (!Lazy) {
     LLVMDisposeMemoryBuffer(MB);
+
+}
 
   return M;
 }

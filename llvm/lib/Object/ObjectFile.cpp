@@ -34,8 +34,10 @@ using namespace object;
 
 raw_ostream &object::operator<<(raw_ostream &OS, const SectionedAddress &Addr) {
   OS << "SectionedAddress{" << format_hex(Addr.Address, 10);
-  if (Addr.SectionIndex != SectionedAddress::UndefSection)
+  if (Addr.SectionIndex != SectionedAddress::UndefSection) {
     OS << ", " << Addr.SectionIndex;
+
+}
   return OS << "}";
 }
 
@@ -56,17 +58,23 @@ bool SectionRef::containsSymbol(SymbolRef S) const {
 
 uint64_t ObjectFile::getSymbolValue(DataRefImpl Ref) const {
   uint32_t Flags = getSymbolFlags(Ref);
-  if (Flags & SymbolRef::SF_Undefined)
+  if (Flags & SymbolRef::SF_Undefined) {
     return 0;
-  if (Flags & SymbolRef::SF_Common)
+
+}
+  if (Flags & SymbolRef::SF_Common) {
     return getCommonSymbolSize(Ref);
+
+}
   return getSymbolValueImpl(Ref);
 }
 
 Error ObjectFile::printSymbolName(raw_ostream &OS, DataRefImpl Symb) const {
   Expected<StringRef> Name = getSymbolName(Symb);
-  if (!Name)
+  if (!Name) {
     return Name.takeError();
+
+}
   OS << *Name;
   return Error::success();
 }
@@ -75,8 +83,10 @@ uint32_t ObjectFile::getSymbolAlignment(DataRefImpl DRI) const { return 0; }
 
 bool ObjectFile::isSectionBitcode(DataRefImpl Sec) const {
   Expected<StringRef> NameOrErr = getSectionName(Sec);
-  if (NameOrErr)
+  if (NameOrErr) {
     return *NameOrErr == ".llvmbc";
+
+}
   consumeError(NameOrErr.takeError());
   return false;
 }
@@ -104,18 +114,24 @@ Triple ObjectFile::makeTriple() const {
   // For ARM targets, try to use the build attributes to build determine
   // the build target. Target features are also added, but later during
   // disassembly.
-  if (Arch == Triple::arm || Arch == Triple::armeb)
+  if (Arch == Triple::arm || Arch == Triple::armeb) {
     setARMSubArch(TheTriple);
+
+}
 
   // TheTriple defaults to ELF, and COFF doesn't have an environment:
   // the best we can do here is indicate that it is mach-o.
-  if (isMachO())
+  if (isMachO()) {
     TheTriple.setObjectFormat(Triple::MachO);
+
+}
 
   if (isCOFF()) {
     const auto COFFObj = cast<COFFObjectFile>(this);
-    if (COFFObj->getArch() == Triple::thumb)
+    if (COFFObj->getArch() == Triple::thumb) {
       TheTriple.setTriple("thumbv7-windows");
+
+}
   }
 
   return TheTriple;
@@ -124,8 +140,10 @@ Triple ObjectFile::makeTriple() const {
 Expected<std::unique_ptr<ObjectFile>>
 ObjectFile::createObjectFile(MemoryBufferRef Object, file_magic Type) {
   StringRef Data = Object.getBuffer();
-  if (Type == file_magic::unknown)
+  if (Type == file_magic::unknown) {
     Type = identify_magic(Data);
+
+}
 
   switch (Type) {
   case file_magic::unknown:
@@ -175,14 +193,18 @@ Expected<OwningBinary<ObjectFile>>
 ObjectFile::createObjectFile(StringRef ObjectPath) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr =
       MemoryBuffer::getFile(ObjectPath);
-  if (std::error_code EC = FileOrErr.getError())
+  if (std::error_code EC = FileOrErr.getError()) {
     return errorCodeToError(EC);
+
+}
   std::unique_ptr<MemoryBuffer> Buffer = std::move(FileOrErr.get());
 
   Expected<std::unique_ptr<ObjectFile>> ObjOrErr =
       createObjectFile(Buffer->getMemBufferRef());
-  if (Error Err = ObjOrErr.takeError())
+  if (Error Err = ObjOrErr.takeError()) {
     return std::move(Err);
+
+}
   std::unique_ptr<ObjectFile> Obj = std::move(ObjOrErr.get());
 
   return OwningBinary<ObjectFile>(std::move(Obj), std::move(Buffer));

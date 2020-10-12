@@ -32,8 +32,10 @@ namespace {
 using ScoredSymbolInfo = std::pair<float, SymbolInformation>;
 struct ScoredSymbolGreater {
   bool operator()(const ScoredSymbolInfo &L, const ScoredSymbolInfo &R) {
-    if (L.first != R.first)
+    if (L.first != R.first) {
       return L.first > R.first;
+
+}
     return L.second.name < R.second.name; // Earlier name is better.
   }
 };
@@ -71,8 +73,10 @@ llvm::Expected<std::vector<SymbolInformation>>
 getWorkspaceSymbols(llvm::StringRef Query, int Limit,
                     const SymbolIndex *const Index, llvm::StringRef HintPath) {
   std::vector<SymbolInformation> Result;
-  if (Query.empty() || !Index)
+  if (Query.empty() || !Index) {
     return Result;
+
+}
 
   auto Names = splitQualifiedName(Query);
 
@@ -83,12 +87,16 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
   bool IsGlobalQuery = Names.first.consume_front("::");
   // Restrict results to the scope in the query string if present (global or
   // not).
-  if (IsGlobalQuery || !Names.first.empty())
+  if (IsGlobalQuery || !Names.first.empty()) {
     Req.Scopes = {std::string(Names.first)};
-  else
+  } else {
     Req.AnyScope = true;
-  if (Limit)
+
+}
+  if (Limit) {
     Req.Limit = Limit;
+
+}
   TopN<ScoredSymbolInfo, ScoredSymbolGreater> Top(
       Req.Limit ? *Req.Limit : std::numeric_limits<size_t>::max());
   FuzzyMatcher Filter(Req.Query);
@@ -111,9 +119,9 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
     SymbolRelevanceSignals Relevance;
     Relevance.Name = Sym.Name;
     Relevance.Query = SymbolRelevanceSignals::Generic;
-    if (auto NameMatch = Filter.match(Sym.Name))
+    if (auto NameMatch = Filter.match(Sym.Name)) {
       Relevance.NameMatch = *NameMatch;
-    else {
+    } else {
       log("Workspace symbol: {0} didn't match query {1}", Sym.Name,
           Filter.pattern());
       return;
@@ -126,8 +134,10 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
 
     Top.push({Score, std::move(Info)});
   });
-  for (auto &R : std::move(Top).items())
+  for (auto &R : std::move(Top).items()) {
     Result.push_back(std::move(R.second));
+
+}
   return Result;
 }
 
@@ -142,12 +152,16 @@ llvm::Optional<DocumentSymbol> declToSym(ASTContext &Ctx, const NamedDecl &ND) {
   // FIXME: sourceLocToPosition should not switch files!
   SourceLocation BeginLoc = SM.getSpellingLoc(SM.getFileLoc(ND.getBeginLoc()));
   SourceLocation EndLoc = SM.getSpellingLoc(SM.getFileLoc(ND.getEndLoc()));
-  if (NameLoc.isInvalid() || BeginLoc.isInvalid() || EndLoc.isInvalid())
+  if (NameLoc.isInvalid() || BeginLoc.isInvalid() || EndLoc.isInvalid()) {
     return llvm::None;
 
+}
+
   if (!SM.isWrittenInMainFile(NameLoc) || !SM.isWrittenInMainFile(BeginLoc) ||
-      !SM.isWrittenInMainFile(EndLoc))
+      !SM.isWrittenInMainFile(EndLoc)) {
     return llvm::None;
+
+}
 
   Position NameBegin = sourceLocToPosition(SM, NameLoc);
   Position NameEnd = sourceLocToPosition(
@@ -188,8 +202,10 @@ public:
   /// Builds the document outline for the generated AST.
   std::vector<DocumentSymbol> build() {
     std::vector<DocumentSymbol> Results;
-    for (auto &TopLevel : AST.getLocalTopLevelDecls())
+    for (auto &TopLevel : AST.getLocalTopLevelDecls()) {
       traverseDecl(TopLevel, Results);
+
+}
     return Results;
   }
 
@@ -199,41 +215,59 @@ private:
   void traverseDecl(Decl *D, std::vector<DocumentSymbol> &Results) {
     if (auto *Templ = llvm::dyn_cast<TemplateDecl>(D)) {
       // TemplatedDecl might be null, e.g. concepts.
-      if (auto *TD = Templ->getTemplatedDecl())
+      if (auto *TD = Templ->getTemplatedDecl()) {
         D = TD;
+
+}
     }
     auto *ND = llvm::dyn_cast<NamedDecl>(D);
-    if (!ND)
+    if (!ND) {
       return;
+
+}
     VisitKind Visit = shouldVisit(ND);
-    if (Visit == VisitKind::No)
+    if (Visit == VisitKind::No) {
       return;
+
+}
     llvm::Optional<DocumentSymbol> Sym = declToSym(AST.getASTContext(), *ND);
-    if (!Sym)
+    if (!Sym) {
       return;
-    if (Visit == VisitKind::DeclAndChildren)
+
+}
+    if (Visit == VisitKind::DeclAndChildren) {
       traverseChildren(D, Sym->children);
+
+}
     Results.push_back(std::move(*Sym));
   }
 
   void traverseChildren(Decl *D, std::vector<DocumentSymbol> &Results) {
     auto *Scope = llvm::dyn_cast<DeclContext>(D);
-    if (!Scope)
+    if (!Scope) {
       return;
-    for (auto *C : Scope->decls())
+
+}
+    for (auto *C : Scope->decls()) {
       traverseDecl(C, Results);
+
+}
   }
 
   VisitKind shouldVisit(NamedDecl *D) {
-    if (D->isImplicit())
+    if (D->isImplicit()) {
       return VisitKind::No;
+
+}
 
     if (auto Func = llvm::dyn_cast<FunctionDecl>(D)) {
       // Some functions are implicit template instantiations, those should be
       // ignored.
       if (auto *Info = Func->getTemplateSpecializationInfo()) {
-        if (!Info->isExplicitInstantiationOrSpecialization())
+        if (!Info->isExplicitInstantiationOrSpecialization()) {
           return VisitKind::No;
+
+}
       }
       // Only visit the function itself, do not visit the children (i.e.
       // function parameters, etc.)
@@ -248,17 +282,21 @@ private:
     //   - explicit specialization, e.g. 'template <> class vector<bool> {};'
     //     Visit both the decl and its children, both are written in the code.
     if (auto *TemplSpec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(D)) {
-      if (TemplSpec->isExplicitInstantiationOrSpecialization())
+      if (TemplSpec->isExplicitInstantiationOrSpecialization()) {
         return TemplSpec->isExplicitSpecialization()
                    ? VisitKind::DeclAndChildren
                    : VisitKind::OnlyDecl;
+
+}
       return VisitKind::No;
     }
     if (auto *TemplSpec = llvm::dyn_cast<VarTemplateSpecializationDecl>(D)) {
-      if (TemplSpec->isExplicitInstantiationOrSpecialization())
+      if (TemplSpec->isExplicitInstantiationOrSpecialization()) {
         return TemplSpec->isExplicitSpecialization()
                    ? VisitKind::DeclAndChildren
                    : VisitKind::OnlyDecl;
+
+}
       return VisitKind::No;
     }
     // For all other cases, visit both the children and the decl.

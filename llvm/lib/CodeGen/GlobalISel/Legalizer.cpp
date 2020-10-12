@@ -101,10 +101,12 @@ public:
     // Legalization process could generate Target specific pseudo
     // instructions with generic types. Don't record them
     if (isPreISelGenericOpcode(MI.getOpcode())) {
-      if (isArtifact(MI))
+      if (isArtifact(MI)) {
         ArtifactList.insert(&MI);
-      else
+      } else {
         InstList.insert(&MI);
+
+}
     }
   }
 
@@ -155,17 +157,23 @@ Legalizer::legalizeMachineFunction(MachineFunction &MF, const LegalizerInfo &LI,
   // Traverse BB in RPOT and within each basic block, add insts top down,
   // so when we pop_back_val in the legalization process, we traverse bottom-up.
   for (auto *MBB : RPOT) {
-    if (MBB->empty())
+    if (MBB->empty()) {
       continue;
+
+}
     for (MachineInstr &MI : *MBB) {
       // Only legalize pre-isel generic instructions: others don't have types
       // and are assumed to be legal.
-      if (!isPreISelGenericOpcode(MI.getOpcode()))
+      if (!isPreISelGenericOpcode(MI.getOpcode())) {
         continue;
-      if (isArtifact(MI))
+
+}
+      if (isArtifact(MI)) {
         ArtifactList.deferred_insert(&MI);
-      else
+      } else {
         InstList.deferred_insert(&MI);
+
+}
     }
   }
   ArtifactList.finalize();
@@ -176,8 +184,10 @@ Legalizer::legalizeMachineFunction(MachineFunction &MF, const LegalizerInfo &LI,
   // We want both WorkListObserver as well as all the auxiliary observers (e.g.
   // CSEInfo) to observe all changes. Use the wrapper observer.
   GISelObserverWrapper WrapperObserver(&WorkListObserver);
-  for (GISelChangeObserver *Observer : AuxObservers)
+  for (GISelChangeObserver *Observer : AuxObservers) {
     WrapperObserver.addObserver(Observer);
+
+}
 
   // Now install the observer as the delegate to MF.
   // This will keep all the observers notified about new insertions/deletions.
@@ -231,8 +241,10 @@ Legalizer::legalizeMachineFunction(MachineFunction &MF, const LegalizerInfo &LI,
     // are new artifacts. If not, stop legalizing.
     if (!RetryList.empty()) {
       if (!ArtifactList.empty()) {
-        while (!RetryList.empty())
+        while (!RetryList.empty()) {
           ArtifactList.insert(RetryList.pop_back_val());
+
+}
       } else {
         LLVM_DEBUG(dbgs() << "No new artifacts created, not retrying!\n");
         Helper.MIRBuilder.stopObservingChanges();
@@ -278,8 +290,10 @@ Legalizer::legalizeMachineFunction(MachineFunction &MF, const LegalizerInfo &LI,
 bool Legalizer::runOnMachineFunction(MachineFunction &MF) {
   // If the ISel pipeline failed, do not bother running that pass.
   if (MF.getProperties().hasProperty(
-          MachineFunctionProperties::Property::FailedISel))
+          MachineFunctionProperties::Property::FailedISel)) {
     return false;
+
+}
   LLVM_DEBUG(dbgs() << "Legalize Machine IR for: " << MF.getName() << '\n');
   init(MF);
   const TargetPassConfig &TPC = getAnalysis<TargetPassConfig>();
@@ -298,8 +312,10 @@ bool Legalizer::runOnMachineFunction(MachineFunction &MF) {
     MIRBuilder = std::make_unique<CSEMIRBuilder>();
     CSEInfo = &Wrapper.get(TPC.getCSEConfig());
     MIRBuilder->setCSEInfo(CSEInfo);
-  } else
+  } else {
     MIRBuilder = std::make_unique<MachineIRBuilder>();
+
+}
 
   SmallVector<GISelChangeObserver *, 1> AuxObservers;
   if (EnableCSE && CSEInfo) {
@@ -330,7 +346,9 @@ bool Legalizer::runOnMachineFunction(MachineFunction &MF) {
   // CSEInfo object (as we currently declare that the analysis is preserved).
   // The next time get on the wrapper is called, it will force it to recompute
   // the analysis.
-  if (!EnableCSE)
+  if (!EnableCSE) {
     Wrapper.setComputed(false);
+
+}
   return Result.Changed;
 }

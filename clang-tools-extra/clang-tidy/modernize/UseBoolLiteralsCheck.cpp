@@ -48,23 +48,29 @@ void UseBoolLiteralsCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Cast = Result.Nodes.getNodeAs<Expr>("cast");
   bool LiteralBooleanValue = Literal->getValue().getBoolValue();
 
-  if (Literal->isInstantiationDependent())
+  if (Literal->isInstantiationDependent()) {
     return;
+
+}
 
   const Expr *Expression = Cast ? Cast : Literal;
 
   bool InMacro = Expression->getBeginLoc().isMacroID();
 
-  if (InMacro && IgnoreMacros)
+  if (InMacro && IgnoreMacros) {
     return;
+
+}
 
   auto Diag =
       diag(Expression->getExprLoc(),
            "converting integer literal to bool, use bool literal instead");
 
-  if (!InMacro)
+  if (!InMacro) {
     Diag << FixItHint::CreateReplacement(
         Expression->getSourceRange(), LiteralBooleanValue ? "true" : "false");
+
+}
 }
 
 } // namespace modernize

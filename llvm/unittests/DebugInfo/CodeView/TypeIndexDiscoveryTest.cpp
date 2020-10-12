@@ -46,8 +46,10 @@ protected:
     if (Symbols.empty()) {
       CVRecords = TTB->records();
     } else {
-      for (const CVSymbol &S : Symbols)
+      for (const CVSymbol &S : Symbols) {
         CVRecords.push_back(S.data());
+
+}
     }
 
     return checkTypeReferencesImpl(RecordIndex, CVRecords,
@@ -97,8 +99,10 @@ private:
       ArrayRef<TypeIndex> Indices(
           reinterpret_cast<const TypeIndex *>(Loc.data()), Ref.Count);
       if (llvm::any_of(Indices,
-                       [TI](const TypeIndex &Other) { return Other == TI; }))
+                       [TI](const TypeIndex &Other) { return Other == TI; })) {
         return true;
+
+}
     }
     return false;
   }
@@ -130,8 +134,10 @@ private:
 
   void discoverTypeIndicesInSymbols() {
     Refs.resize(Symbols.size());
-    for (uint32_t I = 0; I < Symbols.size(); ++I)
+    for (uint32_t I = 0; I < Symbols.size(); ++I) {
       discoverTypeIndicesInSymbol(Symbols[I], Refs[I]);
+
+}
   }
 
   // Helper function to write out a field list record with the given list

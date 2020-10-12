@@ -140,22 +140,32 @@ void UninitializedObjectChecker::checkEndFunction(
 
   const auto *CtorDecl = dyn_cast_or_null<CXXConstructorDecl>(
       Context.getLocationContext()->getDecl());
-  if (!CtorDecl)
+  if (!CtorDecl) {
     return;
 
-  if (!CtorDecl->isUserProvided())
+}
+
+  if (!CtorDecl->isUserProvided()) {
     return;
 
-  if (CtorDecl->getParent()->isUnion())
+}
+
+  if (CtorDecl->getParent()->isUnion()) {
     return;
+
+}
 
   // This avoids essentially the same error being reported multiple times.
-  if (willObjectBeAnalyzedLater(CtorDecl, Context))
+  if (willObjectBeAnalyzedLater(CtorDecl, Context)) {
     return;
 
+}
+
   const TypedValueRegion *R = getConstructedRegion(CtorDecl, Context);
-  if (!R)
+  if (!R) {
     return;
+
+}
 
   FindUninitializedFields F(Context.getState(), R, Opts);
 
@@ -173,14 +183,18 @@ void UninitializedObjectChecker::checkEndFunction(
   // There are uninitialized fields in the record.
 
   ExplodedNode *Node = Context.generateNonFatalErrorNode(UpdatedState);
-  if (!Node)
+  if (!Node) {
     return;
+
+}
 
   PathDiagnosticLocation LocUsedForUniqueing;
   const Stmt *CallSite = Context.getStackFrame()->getCallSite();
-  if (CallSite)
+  if (CallSite) {
     LocUsedForUniqueing = PathDiagnosticLocation::createBegin(
         CallSite, Context.getSourceManager(), Node->getLocationContext());
+
+}
 
   // For Plist consumers that don't support notes just yet, we'll convert notes
   // to warnings.
@@ -217,8 +231,10 @@ void UninitializedObjectChecker::checkDeadSymbols(SymbolReaper &SR,
                                                   CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   for (const MemRegion *R : State->get<AnalyzedRegions>()) {
-    if (!SR.isLiveRegion(R))
+    if (!SR.isLiveRegion(R)) {
       State = State->remove<AnalyzedRegions>(R);
+
+}
   }
 }
 
@@ -235,8 +251,10 @@ FindUninitializedFields::FindUninitializedFields(
 
   // In non-pedantic mode, if ObjectR doesn't contain a single initialized
   // field, we'll assume that Object was intentionally left uninitialized.
-  if (!Opts.IsPedantic && !isAnyFieldInitialized())
+  if (!Opts.IsPedantic && !isAnyFieldInitialized()) {
     UninitFields.clear();
+
+}
 }
 
 bool FindUninitializedFields::addFieldToUninits(FieldChainInfo Chain,
@@ -248,14 +266,20 @@ bool FindUninitializedFields::addFieldToUninits(FieldChainInfo Chain,
          "dereferenceable fields!");
 
   if (State->getStateManager().getContext().getSourceManager().isInSystemHeader(
-          FR->getDecl()->getLocation()))
+          FR->getDecl()->getLocation())) {
     return false;
 
-  if (Opts.IgnoreGuardedFields && !hasUnguardedAccess(FR->getDecl(), State))
+}
+
+  if (Opts.IgnoreGuardedFields && !hasUnguardedAccess(FR->getDecl(), State)) {
     return false;
 
-  if (State->contains<AnalyzedRegions>(FR))
+}
+
+  if (State->contains<AnalyzedRegions>(FR)) {
     return false;
+
+}
 
   if (PointeeR) {
     if (State->contains<AnalyzedRegions>(PointeeR)) {
@@ -305,21 +329,29 @@ bool FindUninitializedFields::isNonUnionUninit(const TypedValueRegion *R,
     // If LocalChain already contains FR, then we encountered a cyclic
     // reference. In this case, region FR is already under checking at an
     // earlier node in the directed tree.
-    if (LocalChain.contains(FR))
+    if (LocalChain.contains(FR)) {
       return false;
 
+}
+
     if (T->isStructureOrClassType()) {
-      if (isNonUnionUninit(FR, LocalChain.add(RegularField(FR))))
+      if (isNonUnionUninit(FR, LocalChain.add(RegularField(FR)))) {
         ContainsUninitField = true;
+
+}
       continue;
     }
 
     if (T->isUnionType()) {
       if (isUnionUninit(FR)) {
-        if (addFieldToUninits(LocalChain.add(RegularField(FR))))
+        if (addFieldToUninits(LocalChain.add(RegularField(FR)))) {
           ContainsUninitField = true;
-      } else
+
+}
+      } else {
         IsAnyFieldInitialized = true;
+
+}
       continue;
     }
 
@@ -331,15 +363,19 @@ bool FindUninitializedFields::isNonUnionUninit(const TypedValueRegion *R,
     SVal V = State->getSVal(FieldVal);
 
     if (isDereferencableType(T) || V.getAs<nonloc::LocAsInteger>()) {
-      if (isDereferencableUninit(FR, LocalChain))
+      if (isDereferencableUninit(FR, LocalChain)) {
         ContainsUninitField = true;
+
+}
       continue;
     }
 
     if (isPrimitiveType(T)) {
       if (isPrimitiveUninit(V)) {
-        if (addFieldToUninits(LocalChain.add(RegularField(FR))))
+        if (addFieldToUninits(LocalChain.add(RegularField(FR)))) {
           ContainsUninitField = true;
+
+}
       }
       continue;
     }
@@ -350,8 +386,10 @@ bool FindUninitializedFields::isNonUnionUninit(const TypedValueRegion *R,
   // Checking bases. The checker will regard inherited data members as direct
   // fields.
   const auto *CXXRD = dyn_cast<CXXRecordDecl>(RD);
-  if (!CXXRD)
+  if (!CXXRD) {
     return ContainsUninitField;
+
+}
 
   for (const CXXBaseSpecifier &BaseSpec : CXXRD->bases()) {
     const auto *BaseRegion = State->getLValue(BaseSpec, R)
@@ -362,12 +400,16 @@ bool FindUninitializedFields::isNonUnionUninit(const TypedValueRegion *R,
     // note messages like 'this->A::B::x'.
     if (!LocalChain.isEmpty() && LocalChain.getHead().isBase()) {
       if (isNonUnionUninit(BaseRegion, LocalChain.replaceHead(
-                                           BaseClass(BaseSpec.getType()))))
+                                           BaseClass(BaseSpec.getType())))) {
         ContainsUninitField = true;
+
+}
     } else {
       if (isNonUnionUninit(BaseRegion,
-                           LocalChain.add(BaseClass(BaseSpec.getType()))))
+                           LocalChain.add(BaseClass(BaseSpec.getType())))) {
         ContainsUninitField = true;
+
+}
     }
   }
 
@@ -382,8 +424,10 @@ bool FindUninitializedFields::isUnionUninit(const TypedValueRegion *R) {
 }
 
 bool FindUninitializedFields::isPrimitiveUninit(const SVal &V) {
-  if (V.isUndef())
+  if (V.isUndef()) {
     return true;
+
+}
 
   IsAnyFieldInitialized = true;
   return false;
@@ -395,8 +439,10 @@ bool FindUninitializedFields::isPrimitiveUninit(const SVal &V) {
 
 bool FieldChainInfo::contains(const FieldRegion *FR) const {
   for (const FieldNode &Node : Chain) {
-    if (Node.isSameRegion(FR))
+    if (Node.isSameRegion(FR)) {
       return true;
+
+}
   }
   return false;
 }
@@ -422,16 +468,20 @@ static void printTail(llvm::raw_ostream &Out,
 // we need an explicit namespace resolution whether the uninit field was
 // 'D1::x' or 'D2::x'.
 void FieldChainInfo::printNoteMsg(llvm::raw_ostream &Out) const {
-  if (Chain.isEmpty())
+  if (Chain.isEmpty()) {
     return;
+
+}
 
   const FieldNode &LastField = getHead();
 
   LastField.printNoteMsg(Out);
   Out << '\'';
 
-  for (const FieldNode &Node : Chain)
+  for (const FieldNode &Node : Chain) {
     Node.printPrefix(Out);
+
+}
 
   Out << "this->";
   printTail(Out, Chain.getTail());
@@ -441,8 +491,10 @@ void FieldChainInfo::printNoteMsg(llvm::raw_ostream &Out) const {
 
 static void printTail(llvm::raw_ostream &Out,
                       const FieldChainInfo::FieldChain L) {
-  if (L.isEmpty())
+  if (L.isEmpty()) {
     return;
+
+}
 
   printTail(Out, L.getTail());
 
@@ -464,8 +516,10 @@ getConstructedRegion(const CXXConstructorDecl *CtorDecl,
   SVal ObjectV = Context.getState()->getSVal(ThisLoc);
 
   auto *R = ObjectV.getAsRegion()->getAs<TypedValueRegion>();
-  if (R && !R->getValueType()->getAsCXXRecordDecl())
+  if (R && !R->getValueType()->getAsCXXRecordDecl()) {
     return nullptr;
+
+}
 
   return R;
 }
@@ -474,26 +528,34 @@ static bool willObjectBeAnalyzedLater(const CXXConstructorDecl *Ctor,
                                       CheckerContext &Context) {
 
   const TypedValueRegion *CurrRegion = getConstructedRegion(Ctor, Context);
-  if (!CurrRegion)
+  if (!CurrRegion) {
     return false;
+
+}
 
   const LocationContext *LC = Context.getLocationContext();
   while ((LC = LC->getParent())) {
 
     // If \p Ctor was called by another constructor.
     const auto *OtherCtor = dyn_cast<CXXConstructorDecl>(LC->getDecl());
-    if (!OtherCtor)
+    if (!OtherCtor) {
       continue;
+
+}
 
     const TypedValueRegion *OtherRegion =
         getConstructedRegion(OtherCtor, Context);
-    if (!OtherRegion)
+    if (!OtherRegion) {
       continue;
+
+}
 
     // If the CurrRegion is a subregion of OtherRegion, it will be analyzed
     // during the analysis of OtherRegion.
-    if (CurrRegion->isSubRegionOf(OtherRegion))
+    if (CurrRegion->isSubRegionOf(OtherRegion)) {
       return true;
+
+}
   }
 
   return false;
@@ -503,34 +565,46 @@ static bool shouldIgnoreRecord(const RecordDecl *RD, StringRef Pattern) {
   llvm::Regex R(Pattern);
 
   for (const FieldDecl *FD : RD->fields()) {
-    if (R.match(FD->getType().getAsString()))
+    if (R.match(FD->getType().getAsString())) {
       return true;
-    if (R.match(FD->getName()))
+
+}
+    if (R.match(FD->getName())) {
       return true;
+
+}
   }
 
   return false;
 }
 
 static const Stmt *getMethodBody(const CXXMethodDecl *M) {
-  if (isa<CXXConstructorDecl>(M))
+  if (isa<CXXConstructorDecl>(M)) {
     return nullptr;
 
-  if (!M->isDefined())
+}
+
+  if (!M->isDefined()) {
     return nullptr;
+
+}
 
   return M->getDefinition()->getBody();
 }
 
 static bool hasUnguardedAccess(const FieldDecl *FD, ProgramStateRef State) {
 
-  if (FD->getAccess() == AccessSpecifier::AS_public)
+  if (FD->getAccess() == AccessSpecifier::AS_public) {
     return true;
+
+}
 
   const auto *Parent = dyn_cast<CXXRecordDecl>(FD->getParent());
 
-  if (!Parent)
+  if (!Parent) {
     return true;
+
+}
 
   Parent = Parent->getDefinition();
   assert(Parent && "The record's definition must be avaible if an uninitialized"
@@ -559,23 +633,31 @@ static bool hasUnguardedAccess(const FieldDecl *FD, ProgramStateRef State) {
 
   for (const CXXMethodDecl *M : Parent->methods()) {
     const Stmt *MethodBody = getMethodBody(M);
-    if (!MethodBody)
+    if (!MethodBody) {
       continue;
 
+}
+
     auto Accesses = match(stmt(hasDescendant(FieldAccessM)), *MethodBody, AC);
-    if (Accesses.empty())
+    if (Accesses.empty()) {
       continue;
+
+}
     const auto *FirstAccess = Accesses[0].getNodeAs<MemberExpr>("access");
     assert(FirstAccess);
 
     auto Guards = match(stmt(hasDescendant(GuardM)), *MethodBody, AC);
-    if (Guards.empty())
+    if (Guards.empty()) {
       return true;
+
+}
     const auto *FirstGuard = Guards[0].getNodeAs<Stmt>("guard");
     assert(FirstGuard);
 
-    if (FirstAccess->getBeginLoc() < FirstGuard->getBeginLoc())
+    if (FirstAccess->getBeginLoc() < FirstGuard->getBeginLoc()) {
       return true;
+
+}
   }
 
   return false;
@@ -591,13 +673,17 @@ std::string clang::ento::getVariableName(const FieldDecl *Field) {
     assert(CXXParent->captures_begin());
     auto It = CXXParent->captures_begin() + Field->getFieldIndex();
 
-    if (It->capturesVariable())
+    if (It->capturesVariable()) {
       return llvm::Twine("/*captured variable*/" +
                          It->getCapturedVar()->getName())
           .str();
 
-    if (It->capturesThis())
+}
+
+    if (It->capturesThis()) {
       return "/*'this' capture*/";
+
+}
 
     llvm_unreachable("No other capture type is expected!");
   }
@@ -622,10 +708,12 @@ void ento::registerUninitializedObjectChecker(CheckerManager &Mgr) {
       AnOpts.getCheckerBooleanOption(Chk, "IgnoreGuardedFields");
 
   std::string ErrorMsg;
-  if (!llvm::Regex(ChOpts.IgnoredRecordsWithFieldPattern).isValid(ErrorMsg))
+  if (!llvm::Regex(ChOpts.IgnoredRecordsWithFieldPattern).isValid(ErrorMsg)) {
     Mgr.reportInvalidCheckerOptionValue(Chk, "IgnoreRecordsWithField",
         "a valid regex, building failed with error message "
         "\"" + ErrorMsg + "\"");
+
+}
 }
 
 bool ento::shouldRegisterUninitializedObjectChecker(const LangOptions &LO) {

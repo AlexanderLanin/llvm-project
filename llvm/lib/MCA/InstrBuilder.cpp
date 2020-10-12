@@ -100,10 +100,14 @@ static void initializeUsedResources(InstrDesc &ID,
   sort(Worklist, [](const ResourcePlusCycles &A, const ResourcePlusCycles &B) {
     unsigned popcntA = countPopulation(A.first);
     unsigned popcntB = countPopulation(B.first);
-    if (popcntA < popcntB)
+    if (popcntA < popcntB) {
       return true;
-    if (popcntA > popcntB)
+
+}
+    if (popcntA > popcntB) {
       return false;
+
+}
     return A.first < B.first;
   });
 
@@ -133,8 +137,10 @@ static void initializeUsedResources(InstrDesc &ID,
       ResourcePlusCycles &B = Worklist[J];
       if ((NormalizedMask & B.first) == NormalizedMask) {
         B.second.CS.subtract(A.second.size() - SuperResources[A.first]);
-        if (countPopulation(B.first) > 1)
+        if (countPopulation(B.first) > 1) {
           B.second.NumUnits++;
+
+}
       }
     }
   }
@@ -160,8 +166,10 @@ static void initializeUsedResources(InstrDesc &ID,
     if (countPopulation(RPC.first) > 1 && !RPC.second.isReserved()) {
       // Remove the leading 1 from the resource group mask.
       uint64_t Mask = RPC.first ^ PowerOf2Floor(RPC.first);
-      if ((Mask & UsedResourceUnits) == Mask)
+      if ((Mask & UsedResourceUnits) == Mask) {
         RPC.second.setReserved();
+
+}
     }
   }
 
@@ -169,12 +177,16 @@ static void initializeUsedResources(InstrDesc &ID,
   for (const std::pair<uint64_t, unsigned> &SR : SuperResources) {
     for (unsigned I = 1, E = NumProcResources; I < E; ++I) {
       const MCProcResourceDesc &PR = *SM.getProcResource(I);
-      if (PR.BufferSize == -1)
+      if (PR.BufferSize == -1) {
         continue;
 
+}
+
       uint64_t Mask = ProcResourceMasks[I];
-      if (Mask != SR.first && ((Mask & SR.first) == SR.first))
+      if (Mask != SR.first && ((Mask & SR.first) == SR.first)) {
         Buffers.setBit(getResourceStateIndex(Mask));
+
+}
     }
   }
 
@@ -221,8 +233,10 @@ static Error verifyOperands(const MCInstrDesc &MCDesc, const MCInst &MCI) {
   unsigned NumExplicitDefs = MCDesc.getNumDefs();
   for (I = 0, E = MCI.getNumOperands(); NumExplicitDefs && I < E; ++I) {
     const MCOperand &Op = MCI.getOperand(I);
-    if (Op.isReg())
+    if (Op.isReg()) {
       --NumExplicitDefs;
+
+}
   }
 
   if (NumExplicitDefs) {
@@ -296,8 +310,10 @@ void InstrBuilder::populateWrites(InstrDesc &ID, const MCInst &MCI,
   unsigned NumImplicitDefs = MCDesc.getNumImplicitDefs();
   unsigned NumWriteLatencyEntries = SCDesc.NumWriteLatencyEntries;
   unsigned TotalDefs = NumExplicitDefs + NumImplicitDefs;
-  if (MCDesc.hasOptionalDef())
+  if (MCDesc.hasOptionalDef()) {
     TotalDefs++;
+
+}
 
   unsigned NumVariadicOps = MCI.getNumOperands() - MCDesc.getNumOperands();
   ID.Writes.resize(TotalDefs + NumVariadicOps);
@@ -308,8 +324,10 @@ void InstrBuilder::populateWrites(InstrDesc &ID, const MCInst &MCI,
   unsigned i = 0;
   for (; i < MCI.getNumOperands() && CurrentDef < NumExplicitDefs; ++i) {
     const MCOperand &Op = MCI.getOperand(i);
-    if (!Op.isReg())
+    if (!Op.isReg()) {
       continue;
+
+}
 
     WriteDescriptor &Write = ID.Writes[CurrentDef];
     Write.OpIndex = i;
@@ -378,8 +396,10 @@ void InstrBuilder::populateWrites(InstrDesc &ID, const MCInst &MCI,
     });
   }
 
-  if (!NumVariadicOps)
+  if (!NumVariadicOps) {
     return;
+
+}
 
   // FIXME: if an instruction opcode is flagged 'mayStore', and it has no
   // "unmodeledSideEffects', then this logic optimistically assumes that any
@@ -394,8 +414,10 @@ void InstrBuilder::populateWrites(InstrDesc &ID, const MCInst &MCI,
   for (unsigned I = 0, OpIndex = MCDesc.getNumOperands();
        I < NumVariadicOps && !AssumeUsesOnly; ++I, ++OpIndex) {
     const MCOperand &Op = MCI.getOperand(OpIndex);
-    if (!Op.isReg())
+    if (!Op.isReg()) {
       continue;
+
+}
 
     WriteDescriptor &Write = ID.Writes[CurrentDef];
     Write.OpIndex = OpIndex;
@@ -420,8 +442,10 @@ void InstrBuilder::populateReads(InstrDesc &ID, const MCInst &MCI,
   unsigned NumExplicitUses = MCDesc.getNumOperands() - MCDesc.getNumDefs();
   unsigned NumImplicitUses = MCDesc.getNumImplicitUses();
   // Remove the optional definition.
-  if (MCDesc.hasOptionalDef())
+  if (MCDesc.hasOptionalDef()) {
     --NumExplicitUses;
+
+}
   unsigned NumVariadicOps = MCI.getNumOperands() - MCDesc.getNumOperands();
   unsigned TotalUses = NumExplicitUses + NumImplicitUses + NumVariadicOps;
   ID.Reads.resize(TotalUses);
@@ -429,8 +453,10 @@ void InstrBuilder::populateReads(InstrDesc &ID, const MCInst &MCI,
   for (unsigned I = 0, OpIndex = MCDesc.getNumDefs(); I < NumExplicitUses;
        ++I, ++OpIndex) {
     const MCOperand &Op = MCI.getOperand(OpIndex);
-    if (!Op.isReg())
+    if (!Op.isReg()) {
       continue;
+
+}
 
     ReadDescriptor &Read = ID.Reads[CurrentUse];
     Read.OpIndex = OpIndex;
@@ -465,8 +491,10 @@ void InstrBuilder::populateReads(InstrDesc &ID, const MCInst &MCI,
   for (unsigned I = 0, OpIndex = MCDesc.getNumOperands();
        I < NumVariadicOps && !AssumeDefsOnly; ++I, ++OpIndex) {
     const MCOperand &Op = MCI.getOperand(OpIndex);
-    if (!Op.isReg())
+    if (!Op.isReg()) {
       continue;
+
+}
 
     ReadDescriptor &Read = ID.Reads[CurrentUse];
     Read.OpIndex = OpIndex;
@@ -482,13 +510,17 @@ void InstrBuilder::populateReads(InstrDesc &ID, const MCInst &MCI,
 
 Error InstrBuilder::verifyInstrDesc(const InstrDesc &ID,
                                     const MCInst &MCI) const {
-  if (ID.NumMicroOps != 0)
+  if (ID.NumMicroOps != 0) {
     return ErrorSuccess();
+
+}
 
   bool UsesBuffers = ID.UsedBuffers;
   bool UsesResources = !ID.Resources.empty();
-  if (!UsesBuffers && !UsesResources)
+  if (!UsesBuffers && !UsesResources) {
     return ErrorSuccess();
+
+}
 
   // FIXME: see PR44797. We should revisit these checks and possibly move them
   // in CodeGenSchedule.cpp.
@@ -514,8 +546,10 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI) {
   // Try to solve variant scheduling classes.
   if (IsVariant) {
     unsigned CPUID = SM.getProcessorID();
-    while (SchedClassID && SM.getSchedClassDesc(SchedClassID)->isVariant())
+    while (SchedClassID && SM.getSchedClassDesc(SchedClassID)->isVariant()) {
       SchedClassID = STI.resolveVariantSchedClass(SchedClassID, &MCI, CPUID);
+
+}
 
     if (!SchedClassID) {
       return make_error<InstructionError<MCInst>>(
@@ -563,8 +597,10 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI) {
   initializeUsedResources(*ID, SCDesc, STI, ProcResourceMasks);
   computeMaxLatency(*ID, MCDesc, SCDesc, STI);
 
-  if (Error Err = verifyOperands(MCDesc, MCI))
+  if (Error Err = verifyOperands(MCDesc, MCI)) {
     return std::move(Err);
+
+}
 
   populateWrites(*ID, MCI, SchedClassID);
   populateReads(*ID, MCI, SchedClassID);
@@ -573,8 +609,10 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI) {
   LLVM_DEBUG(dbgs() << "\t\tNumMicroOps=" << ID->NumMicroOps << '\n');
 
   // Sanity check on the instruction descriptor.
-  if (Error Err = verifyInstrDesc(*ID, MCI))
+  if (Error Err = verifyInstrDesc(*ID, MCI)) {
     return std::move(Err);
+
+}
 
   // Now add the new descriptor.
   bool IsVariadic = MCDesc.isVariadic();
@@ -589,11 +627,15 @@ InstrBuilder::createInstrDescImpl(const MCInst &MCI) {
 
 Expected<const InstrDesc &>
 InstrBuilder::getOrCreateInstrDesc(const MCInst &MCI) {
-  if (Descriptors.find_as(MCI.getOpcode()) != Descriptors.end())
+  if (Descriptors.find_as(MCI.getOpcode()) != Descriptors.end()) {
     return *Descriptors[MCI.getOpcode()];
 
-  if (VariantDescriptors.find(&MCI) != VariantDescriptors.end())
+}
+
+  if (VariantDescriptors.find(&MCI) != VariantDescriptors.end()) {
     return *VariantDescriptors[&MCI];
+
+}
 
   return createInstrDescImpl(MCI);
 }
@@ -601,8 +643,10 @@ InstrBuilder::getOrCreateInstrDesc(const MCInst &MCI) {
 Expected<std::unique_ptr<Instruction>>
 InstrBuilder::createInstruction(const MCInst &MCI) {
   Expected<const InstrDesc &> DescOrErr = getOrCreateInstrDesc(MCI);
-  if (!DescOrErr)
+  if (!DescOrErr) {
     return DescOrErr.takeError();
+
+}
   const InstrDesc &D = *DescOrErr;
   std::unique_ptr<Instruction> NewIS = std::make_unique<Instruction>(D);
 
@@ -616,8 +660,10 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
     IsZeroIdiom = MCIA->isZeroIdiom(MCI, Mask, ProcID);
     IsDepBreaking =
         IsZeroIdiom || MCIA->isDependencyBreaking(MCI, Mask, ProcID);
-    if (MCIA->isOptimizableRegisterMove(MCI, ProcID))
+    if (MCIA->isOptimizableRegisterMove(MCI, ProcID)) {
       NewIS->setOptimizableMove();
+
+}
   }
 
   // Initialize Reads first.
@@ -627,8 +673,10 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
       // explicit read.
       const MCOperand &Op = MCI.getOperand(RD.OpIndex);
       // Skip non-register operands.
-      if (!Op.isReg())
+      if (!Op.isReg()) {
         continue;
+
+}
       RegID = Op.getReg();
     } else {
       // Implicit read.
@@ -636,8 +684,10 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
     }
 
     // Skip invalid register operands.
-    if (!RegID)
+    if (!RegID) {
       continue;
+
+}
 
     // Okay, this is a register operand. Create a ReadState for it.
     NewIS->getUses().emplace_back(RD, RegID);
@@ -647,8 +697,10 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
       // A mask of all zeroes means: explicit input operands are not
       // independent.
       if (Mask.isNullValue()) {
-        if (!RD.isImplicitRead())
+        if (!RD.isImplicitRead()) {
           RS.setIndependentFromDef();
+
+}
       } else {
         // Check if this register operand is independent according to `Mask`.
         // Note that Mask may not have enough bits to describe all explicit and
@@ -657,16 +709,20 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
         // dependent.
         if (Mask.getBitWidth() > RD.UseIndex) {
           // Okay. This map describe register use `RD.UseIndex`.
-          if (Mask[RD.UseIndex])
+          if (Mask[RD.UseIndex]) {
             RS.setIndependentFromDef();
+
+}
         }
       }
     }
   }
 
   // Early exit if there are no writes.
-  if (D.Writes.empty())
+  if (D.Writes.empty()) {
     return std::move(NewIS);
+
+}
 
   // Track register writes that implicitly clear the upper portion of the
   // underlying super-registers using an APInt.
@@ -674,8 +730,10 @@ InstrBuilder::createInstruction(const MCInst &MCI) {
 
   // Now query the MCInstrAnalysis object to obtain information about which
   // register writes implicitly clear the upper portion of a super-register.
-  if (MCIA)
+  if (MCIA) {
     MCIA->clearsSuperRegisters(MRI, MCI, WriteMask);
+
+}
 
   // Initialize writes.
   unsigned WriteIndex = 0;

@@ -32,58 +32,76 @@ Error llvm::codeview::visitDebugSubsection(
   switch (R.kind()) {
   case DebugSubsectionKind::Lines: {
     DebugLinesSubsectionRef Fragment;
-    if (auto EC = Fragment.initialize(Reader))
+    if (auto EC = Fragment.initialize(Reader)) {
       return EC;
+
+}
 
     return V.visitLines(Fragment, State);
   }
   case DebugSubsectionKind::FileChecksums: {
     DebugChecksumsSubsectionRef Fragment;
-    if (auto EC = Fragment.initialize(Reader))
+    if (auto EC = Fragment.initialize(Reader)) {
       return EC;
+
+}
 
     return V.visitFileChecksums(Fragment, State);
   }
   case DebugSubsectionKind::InlineeLines: {
     DebugInlineeLinesSubsectionRef Fragment;
-    if (auto EC = Fragment.initialize(Reader))
+    if (auto EC = Fragment.initialize(Reader)) {
       return EC;
+
+}
     return V.visitInlineeLines(Fragment, State);
   }
   case DebugSubsectionKind::CrossScopeExports: {
     DebugCrossModuleExportsSubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitCrossModuleExports(Section, State);
   }
   case DebugSubsectionKind::CrossScopeImports: {
     DebugCrossModuleImportsSubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitCrossModuleImports(Section, State);
   }
   case DebugSubsectionKind::Symbols: {
     DebugSymbolsSubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitSymbols(Section, State);
   }
   case DebugSubsectionKind::StringTable: {
     DebugStringTableSubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitStringTable(Section, State);
   }
   case DebugSubsectionKind::FrameData: {
     DebugFrameDataSubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitFrameData(Section, State);
   }
   case DebugSubsectionKind::CoffSymbolRVA: {
     DebugSymbolRVASubsectionRef Section;
-    if (auto EC = Section.initialize(Reader))
+    if (auto EC = Section.initialize(Reader)) {
       return EC;
+
+}
     return V.visitCOFFSymbolRVAs(Section, State);
   }
   default: {

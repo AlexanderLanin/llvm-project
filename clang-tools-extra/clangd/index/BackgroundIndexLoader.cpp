@@ -55,8 +55,10 @@ BackgroundIndexLoader::loadShard(PathRef StartSourceFile, PathRef DependentTU) {
   LoadedShard &LS = It.first->getValue();
   std::vector<Path> Edges = {};
   // Return the cached shard.
-  if (!It.second)
+  if (!It.second) {
     return {LS, Edges};
+
+}
 
   LS.AbsolutePath = StartSourceFile.str();
   LS.DependentTU = std::string(DependentTU);
@@ -104,8 +106,10 @@ void BackgroundIndexLoader::load(PathRef MainFile) {
     auto ShardAndEdges = loadShard(SourceFile, MainFile);
     for (PathRef Edge : ShardAndEdges.second) {
       auto It = InQueue.insert(Edge);
-      if (It.second)
+      if (It.second) {
         ToVisit.push(It.first->getKey());
+
+}
     }
   }
 }
@@ -113,8 +117,10 @@ void BackgroundIndexLoader::load(PathRef MainFile) {
 std::vector<LoadedShard> BackgroundIndexLoader::takeResult() && {
   std::vector<LoadedShard> Result;
   Result.reserve(LoadedShards.size());
-  for (auto &It : LoadedShards)
+  for (auto &It : LoadedShards) {
     Result.push_back(std::move(It.getValue()));
+
+}
   return Result;
 }
 } // namespace

@@ -127,19 +127,23 @@ public:
     ListInit *ColValList = MapRec->getValueAsListInit("ValueCols");
 
     // Each instruction map must specify at least one column for it to be valid.
-    if (ColValList->empty())
+    if (ColValList->empty()) {
       PrintFatalError(MapRec->getLoc(), "InstrMapping record `" +
         MapRec->getName() + "' has empty " + "`ValueCols' field!");
+
+}
 
     for (Init *I : ColValList->getValues()) {
       auto *ColI = cast<ListInit>(I);
 
       // Make sure that all the sub-lists in 'ValueCols' have same number of
       // elements as the fields in 'ColFields'.
-      if (ColI->size() != ColFields->size())
+      if (ColI->size() != ColFields->size()) {
         PrintFatalError(MapRec->getLoc(), "Record `" + MapRec->getName() +
           "', field `ValueCols' entries don't match with " +
           " the entries in 'ColFields'!");
+
+}
       ValueCols.push_back(ColI);
     }
   }
@@ -243,10 +247,12 @@ void MapTableEmitter::buildRowInstrMap() {
     ListInit *RowFields = InstrMapDesc.getRowFields();
     for (Init *RowField : RowFields->getValues()) {
       RecordVal *RecVal = CurInstr->getValue(RowField);
-      if (RecVal == nullptr)
+      if (RecVal == nullptr) {
         PrintFatalError(CurInstr->getLoc(), "No value " +
                         RowField->getAsString() + " found in \"" +
                         CurInstr->getName() + "\" instruction description.");
+
+}
       Init *CurInstrVal = RecVal->getValue();
       KeyValue.push_back(CurInstrVal);
     }
@@ -254,8 +260,10 @@ void MapTableEmitter::buildRowInstrMap() {
     // Collect key instructions into KeyInstrVec. Later, these instructions are
     // processed to assign column position to the instructions sharing
     // their KeyValue in RowInstrMap.
-    if (isKeyColInstr(CurInstr))
+    if (isKeyColInstr(CurInstr)) {
       KeyInstrVec.push_back(CurInstr);
+
+}
 
     RowInstrMap[KeyValue].push_back(CurInstr);
   }
@@ -346,8 +354,10 @@ Record *MapTableEmitter::getInstrForColumn(Record *KeyInstr,
         // Error if multiple matches are found for a column.
         std::string KeyValueStr;
         for (Init *Value : KeyValue) {
-          if (!KeyValueStr.empty())
+          if (!KeyValueStr.empty()) {
             KeyValueStr += ", ";
+
+}
           KeyValueStr += Value->getAsString();
         }
 
@@ -458,16 +468,20 @@ void MapTableEmitter::emitMapFuncBody(raw_ostream &OS,
         OS << "  if (in" << ColName;
         OS << " == ";
         OS << ColName << "_" << ColumnI->getElement(j)->getAsUnquotedString();
-        if (j < ColumnI->size() - 1) OS << " && ";
-        else OS << ")\n";
+        if (j < ColumnI->size() - 1) { OS << " && ";
+        } else { OS << ")\n";
+
+}
       }
       OS << "    return " << InstrMapDesc.getName();
       OS << "Table[mid]["<<i+1<<"];\n";
     }
     OS << "  return -1;";
   }
-  else
+  else {
     OS << "  return " << InstrMapDesc.getName() << "Table[mid][1];\n";
+
+}
 
   OS <<"}\n\n";
 }
@@ -523,9 +537,11 @@ static void emitEnums(raw_ostream &OS, RecordKeeper &Records) {
     for (unsigned j = 0; j < ListSize; j++) {
       auto *ListJ = cast<ListInit>(List->getElement(j));
 
-      if (ListJ->size() != ColFields->size())
+      if (ListJ->size() != ColFields->size()) {
         PrintFatalError("Record `" + CurMap->getName() + "', field "
           "`ValueCols' entries don't match with the entries in 'ColFields' !");
+
+}
       ValueCols.push_back(ListJ);
     }
 
@@ -555,10 +571,12 @@ static void emitEnums(raw_ostream &OS, RecordKeeper &Records) {
     OS << "enum " << Entry.first << " {\n";
     for (unsigned i = 0, endFV = FieldValues.size(); i < endFV; i++) {
       OS << "\t" << Entry.first << "_" << FieldValues[i]->getAsUnquotedString();
-      if (i != endFV - 1)
+      if (i != endFV - 1) {
         OS << ",\n";
-      else
+      } else {
         OS << "\n};\n\n";
+
+}
     }
   }
 }
@@ -575,8 +593,10 @@ void EmitMapTable(RecordKeeper &Records, raw_ostream &OS) {
   std::vector<Record*> InstrMapVec;
   InstrMapVec = Records.getAllDerivedDefinitions("InstrMapping");
 
-  if (InstrMapVec.empty())
+  if (InstrMapVec.empty()) {
     return;
+
+}
 
   OS << "#ifdef GET_INSTRMAP_INFO\n";
   OS << "#undef GET_INSTRMAP_INFO\n";

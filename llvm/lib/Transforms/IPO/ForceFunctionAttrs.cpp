@@ -73,8 +73,10 @@ static Attribute::AttrKind parseAttrKind(StringRef Kind) {
 static void addForcedAttributes(Function &F) {
   for (auto &S : ForceAttributes) {
     auto KV = StringRef(S).split(':');
-    if (KV.first != F.getName())
+    if (KV.first != F.getName()) {
       continue;
+
+}
 
     auto Kind = parseAttrKind(KV.second);
     if (Kind == Attribute::None) {
@@ -82,19 +84,25 @@ static void addForcedAttributes(Function &F) {
                         << " unknown or not handled!\n");
       continue;
     }
-    if (F.hasFnAttribute(Kind))
+    if (F.hasFnAttribute(Kind)) {
       continue;
+
+}
     F.addFnAttr(Kind);
   }
 }
 
 PreservedAnalyses ForceFunctionAttrsPass::run(Module &M,
                                               ModuleAnalysisManager &) {
-  if (ForceAttributes.empty())
+  if (ForceAttributes.empty()) {
     return PreservedAnalyses::all();
 
-  for (Function &F : M.functions())
+}
+
+  for (Function &F : M.functions()) {
     addForcedAttributes(F);
+
+}
 
   // Just conservatively invalidate analyses, this isn't likely to be important.
   return PreservedAnalyses::none();
@@ -109,11 +117,15 @@ struct ForceFunctionAttrsLegacyPass : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
-    if (ForceAttributes.empty())
+    if (ForceAttributes.empty()) {
       return false;
 
-    for (Function &F : M.functions())
+}
+
+    for (Function &F : M.functions()) {
       addForcedAttributes(F);
+
+}
 
     // Conservatively assume we changed something.
     return true;

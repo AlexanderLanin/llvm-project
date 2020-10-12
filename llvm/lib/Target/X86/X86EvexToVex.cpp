@@ -95,8 +95,10 @@ bool EvexToVexInstPass::runOnMachineFunction(MachineFunction &MF) {
   TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
 
   const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
-  if (!ST.hasAVX512())
+  if (!ST.hasAVX512()) {
     return false;
+
+}
 
   bool Changed = false;
 
@@ -105,8 +107,10 @@ bool EvexToVexInstPass::runOnMachineFunction(MachineFunction &MF) {
   for (MachineBasicBlock &MBB : MF) {
 
     // Traverse the basic block.
-    for (MachineInstr &MI : MBB)
+    for (MachineInstr &MI : MBB) {
       Changed |= CompressEvexToVexImpl(MI);
+
+}
   }
 
   return Changed;
@@ -115,12 +119,16 @@ bool EvexToVexInstPass::runOnMachineFunction(MachineFunction &MF) {
 static bool usesExtendedRegister(const MachineInstr &MI) {
   auto isHiRegIdx = [](unsigned Reg) {
     // Check for XMM register with indexes between 16 - 31.
-    if (Reg >= X86::XMM16 && Reg <= X86::XMM31)
+    if (Reg >= X86::XMM16 && Reg <= X86::XMM31) {
       return true;
 
+}
+
     // Check for YMM register with indexes between 16 - 31.
-    if (Reg >= X86::YMM16 && Reg <= X86::YMM31)
+    if (Reg >= X86::YMM16 && Reg <= X86::YMM31) {
       return true;
+
+}
 
     return false;
   };
@@ -128,16 +136,20 @@ static bool usesExtendedRegister(const MachineInstr &MI) {
   // Check that operands are not ZMM regs or
   // XMM/YMM regs with hi indexes between 16 - 31.
   for (const MachineOperand &MO : MI.explicit_operands()) {
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
+
+}
 
     Register Reg = MO.getReg();
 
     assert(!(Reg >= X86::ZMM0 && Reg <= X86::ZMM31) &&
            "ZMM instructions should not be in the EVEX->VEX tables");
 
-    if (isHiRegIdx(Reg))
+    if (isHiRegIdx(Reg)) {
       return true;
+
+}
   }
 
   return false;
@@ -196,8 +208,10 @@ static bool performCustomAdjustments(MachineInstr &MI, unsigned NewOpc) {
     const MachineOperand &Imm = MI.getOperand(MI.getNumExplicitOperands()-1);
     int64_t ImmVal = Imm.getImm();
     // Ensure that only bits 3:0 of the immediate are used.
-    if ((ImmVal & 0xf) != ImmVal)
+    if ((ImmVal & 0xf) != ImmVal) {
       return false;
+
+}
     break;
   }
 
@@ -219,19 +233,25 @@ bool EvexToVexInstPass::CompressEvexToVexImpl(MachineInstr &MI) const {
   const MCInstrDesc &Desc = MI.getDesc();
 
   // Check for EVEX instructions only.
-  if ((Desc.TSFlags & X86II::EncodingMask) != X86II::EVEX)
+  if ((Desc.TSFlags & X86II::EncodingMask) != X86II::EVEX) {
     return false;
+
+}
 
   // Check for EVEX instructions with mask or broadcast as in these cases
   // the EVEX prefix is needed in order to carry this information
   // thus preventing the transformation to VEX encoding.
-  if (Desc.TSFlags & (X86II::EVEX_K | X86II::EVEX_B))
+  if (Desc.TSFlags & (X86II::EVEX_K | X86II::EVEX_B)) {
     return false;
+
+}
 
   // Check for EVEX instructions with L2 set. These instructions are 512-bits
   // and can't be converted to VEX.
-  if (Desc.TSFlags & X86II::EVEX_L2)
+  if (Desc.TSFlags & X86II::EVEX_L2) {
     return false;
+
+}
 
 #ifndef NDEBUG
   // Make sure the tables are sorted.
@@ -253,16 +273,22 @@ bool EvexToVexInstPass::CompressEvexToVexImpl(MachineInstr &MI) const {
                                   : makeArrayRef(X86EvexToVex128CompressTable);
 
   auto I = llvm::lower_bound(Table, MI.getOpcode());
-  if (I == Table.end() || I->EvexOpcode != MI.getOpcode())
+  if (I == Table.end() || I->EvexOpcode != MI.getOpcode()) {
     return false;
+
+}
 
   unsigned NewOpc = I->VexOpcode;
 
-  if (usesExtendedRegister(MI))
+  if (usesExtendedRegister(MI)) {
     return false;
 
-  if (!performCustomAdjustments(MI, NewOpc))
+}
+
+  if (!performCustomAdjustments(MI, NewOpc)) {
     return false;
+
+}
 
   MI.setDesc(TII->get(NewOpc));
   MI.setAsmPrinterFlag(X86::AC_EVEX_2_VEX);

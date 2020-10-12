@@ -73,8 +73,10 @@ static void ctorArrayDesc(Block *B, char *Ptr, bool IsConst, bool IsMutable,
     Desc->IsActive = IsActive;
     Desc->IsConst = IsConst || D->IsConst;
     Desc->IsMutable = IsMutable || D->IsMutable;
-    if (auto Fn = D->ElemDesc->CtorFn)
+    if (auto Fn = D->ElemDesc->CtorFn) {
       Fn(B, ElemLoc, Desc->IsConst, Desc->IsMutable, IsActive, D->ElemDesc);
+
+}
   }
 }
 
@@ -88,8 +90,10 @@ static void dtorArrayDesc(Block *B, char *Ptr, Descriptor *D) {
     auto *ElemPtr = Ptr + ElemOffset;
     auto *Desc = reinterpret_cast<InlineDescriptor *>(ElemPtr);
     auto *ElemLoc = reinterpret_cast<char *>(Desc + 1);
-    if (auto Fn = D->ElemDesc->DtorFn)
+    if (auto Fn = D->ElemDesc->DtorFn) {
       Fn(B, ElemLoc, D->ElemDesc);
+
+}
   }
 }
 
@@ -109,8 +113,10 @@ static void moveArrayDesc(Block *B, char *Src, char *Dst, Descriptor *D) {
     auto *DstElemLoc = reinterpret_cast<char *>(DstDesc + 1);
 
     *DstDesc = *SrcDesc;
-    if (auto Fn = D->ElemDesc->MoveFn)
+    if (auto Fn = D->ElemDesc->MoveFn) {
       Fn(B, SrcElemLoc, DstElemLoc, D->ElemDesc);
+
+}
   }
 }
 
@@ -126,28 +132,44 @@ static void ctorRecord(Block *B, char *Ptr, bool IsConst, bool IsMutable,
     Desc->IsActive = IsActive && !IsUnion;
     Desc->IsConst = IsConst || F->IsConst;
     Desc->IsMutable = IsMutable || F->IsMutable;
-    if (auto Fn = F->CtorFn)
+    if (auto Fn = F->CtorFn) {
       Fn(B, Ptr + SubOff, Desc->IsConst, Desc->IsMutable, Desc->IsActive, F);
+
+}
   };
-  for (const auto &B : D->ElemRecord->bases())
+  for (const auto &B : D->ElemRecord->bases()) {
     CtorSub(B.Offset, B.Desc, /*isBase=*/true);
-  for (const auto &F : D->ElemRecord->fields())
+
+}
+  for (const auto &F : D->ElemRecord->fields()) {
     CtorSub(F.Offset, F.Desc, /*isBase=*/false);
-  for (const auto &V : D->ElemRecord->virtual_bases())
+
+}
+  for (const auto &V : D->ElemRecord->virtual_bases()) {
     CtorSub(V.Offset, V.Desc, /*isBase=*/true);
+
+}
 }
 
 static void dtorRecord(Block *B, char *Ptr, Descriptor *D) {
   auto DtorSub = [=](unsigned SubOff, Descriptor *F) {
-    if (auto Fn = F->DtorFn)
+    if (auto Fn = F->DtorFn) {
       Fn(B, Ptr + SubOff, F);
+
+}
   };
-  for (const auto &F : D->ElemRecord->bases())
+  for (const auto &F : D->ElemRecord->bases()) {
     DtorSub(F.Offset, F.Desc);
-  for (const auto &F : D->ElemRecord->fields())
+
+}
+  for (const auto &F : D->ElemRecord->fields()) {
     DtorSub(F.Offset, F.Desc);
-  for (const auto &F : D->ElemRecord->virtual_bases())
+
+}
+  for (const auto &F : D->ElemRecord->virtual_bases()) {
     DtorSub(F.Offset, F.Desc);
+
+}
 }
 
 static void moveRecord(Block *B, char *Src, char *Dst, Descriptor *D) {
@@ -156,8 +178,10 @@ static void moveRecord(Block *B, char *Src, char *Dst, Descriptor *D) {
     auto FieldDesc = F.Desc;
 
     *(reinterpret_cast<Descriptor **>(Dst + FieldOff) - 1) = FieldDesc;
-    if (auto Fn = FieldDesc->MoveFn)
+    if (auto Fn = FieldDesc->MoveFn) {
       Fn(B, Src + FieldOff, Dst + FieldOff, FieldDesc);
+
+}
   }
 }
 
@@ -243,18 +267,26 @@ Descriptor::Descriptor(const DeclTy &D, Record *R, bool IsConst,
 }
 
 QualType Descriptor::getType() const {
-  if (auto *E = asExpr())
+  if (auto *E = asExpr()) {
     return E->getType();
-  if (auto *D = asValueDecl())
+
+}
+  if (auto *D = asValueDecl()) {
     return D->getType();
+
+}
   llvm_unreachable("Invalid descriptor type");
 }
 
 SourceLocation Descriptor::getLocation() const {
-  if (auto *D = Source.dyn_cast<const Decl *>())
+  if (auto *D = Source.dyn_cast<const Decl *>()) {
     return D->getLocation();
-  if (auto *E = Source.dyn_cast<const Expr *>())
+
+}
+  if (auto *E = Source.dyn_cast<const Expr *>()) {
     return E->getExprLoc();
+
+}
   llvm_unreachable("Invalid descriptor type");
 }
 

@@ -208,16 +208,20 @@ static const ExplodedNode *getAcquireSite(const ExplodedNode *N, SymbolRef Sym,
   ProgramStateRef State = N->getState();
   // When bug type is handle leak, exploded node N does not have state info for
   // leaking handle. Get the predecessor of N instead.
-  if (!State->get<HStateMap>(Sym))
+  if (!State->get<HStateMap>(Sym)) {
     N = N->getFirstPred();
+
+}
 
   const ExplodedNode *Pred = N;
   while (N) {
     State = N->getState();
     if (!State->get<HStateMap>(Sym)) {
       const HandleState *HState = Pred->getState()->get<HStateMap>(Sym);
-      if (HState && (HState->isAllocated() || HState->maybeAllocated()))
+      if (HState && (HState->isAllocated() || HState->maybeAllocated())) {
         return N;
+
+}
     }
     Pred = N;
     N = N->getFirstPred();
@@ -235,8 +239,10 @@ static SymbolRef getFuchsiaHandleSymbol(QualType QT, SVal Arg,
     QT = QT->getPointeeType();
   }
   if (const auto *HandleType = QT->getAs<TypedefType>()) {
-    if (HandleType->getDecl()->getName() != HandleTypeName)
+    if (HandleType->getDecl()->getName() != HandleTypeName) {
       return nullptr;
+
+}
     if (PtrToHandleLevel > 1) {
       // Not supported yet.
       return nullptr;
@@ -246,8 +252,10 @@ static SymbolRef getFuchsiaHandleSymbol(QualType QT, SVal Arg,
       return Arg.getAsSymbol();
     } else {
       assert(PtrToHandleLevel == 1);
-      if (Optional<Loc> ArgLoc = Arg.getAs<Loc>())
+      if (Optional<Loc> ArgLoc = Arg.getAs<Loc>()) {
         return State->getSVal(*ArgLoc).getAsSymbol();
+
+}
     }
   }
   return nullptr;
@@ -261,30 +269,40 @@ void FuchsiaHandleChecker::checkPreCall(const CallEvent &Call,
     // Unknown call, escape by value handles. They are not covered by
     // PointerEscape callback.
     for (unsigned Arg = 0; Arg < Call.getNumArgs(); ++Arg) {
-      if (SymbolRef Handle = Call.getArgSVal(Arg).getAsSymbol())
+      if (SymbolRef Handle = Call.getArgSVal(Arg).getAsSymbol()) {
         State = State->set<HStateMap>(Handle, HandleState::getEscaped());
+
+}
     }
     C.addTransition(State);
     return;
   }
 
   for (unsigned Arg = 0; Arg < Call.getNumArgs(); ++Arg) {
-    if (Arg >= FuncDecl->getNumParams())
+    if (Arg >= FuncDecl->getNumParams()) {
       break;
+
+}
     const ParmVarDecl *PVD = FuncDecl->getParamDecl(Arg);
     SymbolRef Handle =
         getFuchsiaHandleSymbol(PVD->getType(), Call.getArgSVal(Arg), State);
-    if (!Handle)
+    if (!Handle) {
       continue;
+
+}
 
     // Handled in checkPostCall.
     if (hasFuchsiaAttr<ReleaseHandleAttr>(PVD) ||
-        hasFuchsiaAttr<AcquireHandleAttr>(PVD))
+        hasFuchsiaAttr<AcquireHandleAttr>(PVD)) {
       continue;
 
+}
+
     const HandleState *HState = State->get<HStateMap>(Handle);
-    if (!HState || HState->isEscaped())
+    if (!HState || HState->isEscaped()) {
       continue;
+
+}
 
     if (hasFuchsiaAttr<UseHandleAttr>(PVD) || PVD->getType()->isIntegerType()) {
       if (HState->isReleased()) {
@@ -304,16 +322,22 @@ void FuchsiaHandleChecker::checkPreCall(const CallEvent &Call,
 void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
                                          CheckerContext &C) const {
   const FunctionDecl *FuncDecl = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FuncDecl)
+  if (!FuncDecl) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
 
   std::vector<std::function<std::string(BugReport & BR)>> Notes;
   SymbolRef ResultSymbol = nullptr;
-  if (const auto *TypeDefTy = FuncDecl->getReturnType()->getAs<TypedefType>())
-    if (TypeDefTy->getDecl()->getName() == ErrorTypeName)
+  if (const auto *TypeDefTy = FuncDecl->getReturnType()->getAs<TypedefType>()) {
+    if (TypeDefTy->getDecl()->getName() == ErrorTypeName) {
       ResultSymbol = Call.getReturnValue().getAsSymbol();
+
+}
+
+}
 
   // Function returns an open handle.
   if (hasFuchsiaAttr<AcquireHandleAttr>(FuncDecl)) {
@@ -326,26 +350,34 @@ void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
         OS << "Function '" << FuncDecl->getNameAsString()
            << "' returns an open handle";
         return OS.str();
-      } else
+      } else {
         return "";
+
+}
     });
     State =
         State->set<HStateMap>(RetSym, HandleState::getMaybeAllocated(nullptr));
   }
 
   for (unsigned Arg = 0; Arg < Call.getNumArgs(); ++Arg) {
-    if (Arg >= FuncDecl->getNumParams())
+    if (Arg >= FuncDecl->getNumParams()) {
       break;
+
+}
     const ParmVarDecl *PVD = FuncDecl->getParamDecl(Arg);
     unsigned ParamDiagIdx = PVD->getFunctionScopeIndex() + 1;
     SymbolRef Handle =
         getFuchsiaHandleSymbol(PVD->getType(), Call.getArgSVal(Arg), State);
-    if (!Handle)
+    if (!Handle) {
       continue;
 
+}
+
     const HandleState *HState = State->get<HStateMap>(Handle);
-    if (HState && HState->isEscaped())
+    if (HState && HState->isEscaped()) {
       continue;
+
+}
     if (hasFuchsiaAttr<ReleaseHandleAttr>(PVD)) {
       if (HState && HState->isReleased()) {
         reportDoubleRelease(Handle, Call.getArgSourceRange(Arg), C);
@@ -359,8 +391,10 @@ void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
             OS << "Handle released through " << ParamDiagIdx
                << llvm::getOrdinalSuffix(ParamDiagIdx) << " parameter";
             return OS.str();
-          } else
+          } else {
             return "";
+
+}
         });
         State = State->set<HStateMap>(Handle, HandleState::getReleased());
       }
@@ -373,8 +407,10 @@ void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
           OS << "Handle allocated through " << ParamDiagIdx
              << llvm::getOrdinalSuffix(ParamDiagIdx) << " parameter";
           return OS.str();
-        } else
+        } else {
           return "";
+
+}
       });
       State = State->set<HStateMap>(
           Handle, HandleState::getMaybeAllocated(ResultSymbol));
@@ -386,12 +422,16 @@ void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
                          PathSensitiveBugReport &BR) -> std::string {
           if (&BR.getBugType() != &UseAfterReleaseBugType &&
               &BR.getBugType() != &LeakBugType &&
-              &BR.getBugType() != &DoubleReleaseBugType)
+              &BR.getBugType() != &DoubleReleaseBugType) {
             return "";
+
+}
           for (auto &Note : Notes) {
             std::string Text = Note(BR);
-            if (!Text.empty())
+            if (!Text.empty()) {
               return Text;
+
+}
           }
           return "";
         });
@@ -411,16 +451,22 @@ void FuchsiaHandleChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     // we find out later from the status code that the handle allocation failed
     // in the first place).
     if (!SymReaper.isDead(CurItem.first) ||
-        (ErrorSym && !SymReaper.isDead(ErrorSym)))
+        (ErrorSym && !SymReaper.isDead(ErrorSym))) {
       continue;
-    if (CurItem.second.isAllocated() || CurItem.second.maybeAllocated())
+
+}
+    if (CurItem.second.isAllocated() || CurItem.second.maybeAllocated()) {
       LeakedSyms.push_back(CurItem.first);
+
+}
     State = State->remove<HStateMap>(CurItem.first);
   }
 
   ExplodedNode *N = C.getPredecessor();
-  if (!LeakedSyms.empty())
+  if (!LeakedSyms.empty()) {
     N = reportLeaks(LeakedSyms, C, N);
+
+}
 
   C.addTransition(State, N);
 }
@@ -448,18 +494,24 @@ ProgramStateRef FuchsiaHandleChecker::evalAssume(ProgramStateRef State,
       State = State->remove<HStateMap>(CurItem.first);
     }
     SymbolRef ErrorSym = CurItem.second.getErrorSym();
-    if (!ErrorSym)
+    if (!ErrorSym) {
       continue;
+
+}
     ConditionTruthVal ErrorVal = Cmr.isNull(State, ErrorSym);
     if (ErrorVal.isConstrainedTrue()) {
       // Allocation succeeded.
-      if (CurItem.second.maybeAllocated())
+      if (CurItem.second.maybeAllocated()) {
         State = State->set<HStateMap>(
             CurItem.first, HandleState::getAllocated(State, CurItem.second));
+
+}
     } else if (ErrorVal.isConstrainedFalse()) {
       // Allocation failed.
-      if (CurItem.second.maybeAllocated())
+      if (CurItem.second.maybeAllocated()) {
         State = State->remove<HStateMap>(CurItem.first);
+
+}
     }
   }
   return State;
@@ -477,28 +529,38 @@ ProgramStateRef FuchsiaHandleChecker::checkPointerEscape(
       (Kind == PSK_DirectEscapeOnCall || Kind == PSK_IndirectEscapeOnCall ||
        Kind == PSK_EscapeOutParameters)) {
     for (unsigned Arg = 0; Arg < Call->getNumArgs(); ++Arg) {
-      if (Arg >= FuncDecl->getNumParams())
+      if (Arg >= FuncDecl->getNumParams()) {
         break;
+
+}
       const ParmVarDecl *PVD = FuncDecl->getParamDecl(Arg);
       SymbolRef Handle =
           getFuchsiaHandleSymbol(PVD->getType(), Call->getArgSVal(Arg), State);
-      if (!Handle)
+      if (!Handle) {
         continue;
+
+}
       if (hasFuchsiaAttr<UseHandleAttr>(PVD) ||
-          hasFuchsiaAttr<ReleaseHandleAttr>(PVD))
+          hasFuchsiaAttr<ReleaseHandleAttr>(PVD)) {
         UnEscaped.insert(Handle);
+
+}
     }
   }
 
   // For out params, we have to deal with derived symbols. See
   // MacOSKeychainAPIChecker for details.
   for (auto I : State->get<HStateMap>()) {
-    if (Escaped.count(I.first) && !UnEscaped.count(I.first))
+    if (Escaped.count(I.first) && !UnEscaped.count(I.first)) {
       State = State->set<HStateMap>(I.first, HandleState::getEscaped());
+
+}
     if (const auto *SD = dyn_cast<SymbolDerived>(I.first)) {
       auto ParentSym = SD->getParentSymbol();
-      if (Escaped.count(ParentSym))
+      if (Escaped.count(ParentSym)) {
         State = State->set<HStateMap>(I.first, HandleState::getEscaped());
+
+}
     }
   }
 
@@ -536,8 +598,10 @@ void FuchsiaHandleChecker::reportBug(SymbolRef Sym, ExplodedNode *ErrorNode,
                                      CheckerContext &C,
                                      const SourceRange *Range,
                                      const BugType &Type, StringRef Msg) const {
-  if (!ErrorNode)
+  if (!ErrorNode) {
     return;
+
+}
 
   std::unique_ptr<PathSensitiveBugReport> R;
   if (Type.isSuppressOnSink()) {
@@ -553,10 +617,14 @@ void FuchsiaHandleChecker::reportBug(SymbolRef Sym, ExplodedNode *ErrorNode,
           AcquireNode->getLocationContext()->getDecl());
     }
   }
-  if (!R)
+  if (!R) {
     R = std::make_unique<PathSensitiveBugReport>(Type, Msg, ErrorNode);
-  if (Range)
+
+}
+  if (Range) {
     R->addRange(*Range);
+
+}
   R->markInteresting(Sym);
   C.emitReport(std::move(R));
 }

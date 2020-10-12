@@ -37,25 +37,33 @@ protected:
     // FIXME: These tests do not depend on AArch64 specifically, but we have to
     // initialize a target. A skeleton Target for unittests would allow us to
     // always run these tests.
-    if (!T)
+    if (!T) {
       return;
+
+}
 
     TargetOptions Options;
     TM = std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine*>(
         T->createTargetMachine("AArch64", "", "", Options, None, None,
                                CodeGenOpt::Aggressive)));
-    if (!TM)
+    if (!TM) {
       return;
+
+}
 
     SMDiagnostic SMError;
     M = parseAssemblyString(Assembly, SMError, Context);
-    if (!M)
+    if (!M) {
       report_fatal_error(SMError.getMessage());
+
+}
     M->setDataLayout(TM->createDataLayout());
 
     F = M->getFunction("f");
-    if (!F)
+    if (!F) {
       report_fatal_error("F?");
+
+}
 
     MachineModuleInfo MMI(TM.get());
 
@@ -63,8 +71,10 @@ protected:
                                       MMI);
 
     DAG = std::make_unique<SelectionDAG>(*TM, CodeGenOpt::None);
-    if (!DAG)
+    if (!DAG) {
       report_fatal_error("DAG?");
+
+}
     OptimizationRemarkEmitter ORE(F);
     DAG->init(*MF, ORE, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
@@ -78,8 +88,10 @@ protected:
 };
 
 TEST_F(AArch64SelectionDAGTest, computeKnownBits_ZERO_EXTEND_VECTOR_INREG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   auto Int16VT = EVT::getIntegerVT(Context, 16);
@@ -93,8 +105,10 @@ TEST_F(AArch64SelectionDAGTest, computeKnownBits_ZERO_EXTEND_VECTOR_INREG) {
 }
 
 TEST_F(AArch64SelectionDAGTest, computeKnownBits_EXTRACT_SUBVECTOR) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto IntVT = EVT::getIntegerVT(Context, 8);
   auto VecVT = EVT::getVectorVT(Context, IntVT, 3);
@@ -108,8 +122,10 @@ TEST_F(AArch64SelectionDAGTest, computeKnownBits_EXTRACT_SUBVECTOR) {
 }
 
 TEST_F(AArch64SelectionDAGTest, ComputeNumSignBits_SIGN_EXTEND_VECTOR_INREG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto Int8VT = EVT::getIntegerVT(Context, 8);
   auto Int16VT = EVT::getIntegerVT(Context, 16);
@@ -122,8 +138,10 @@ TEST_F(AArch64SelectionDAGTest, ComputeNumSignBits_SIGN_EXTEND_VECTOR_INREG) {
 }
 
 TEST_F(AArch64SelectionDAGTest, ComputeNumSignBits_EXTRACT_SUBVECTOR) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto IntVT = EVT::getIntegerVT(Context, 8);
   auto VecVT = EVT::getVectorVT(Context, IntVT, 3);
@@ -136,8 +154,10 @@ TEST_F(AArch64SelectionDAGTest, ComputeNumSignBits_EXTRACT_SUBVECTOR) {
 }
 
 TEST_F(AArch64SelectionDAGTest, SimplifyDemandedVectorElts_EXTRACT_SUBVECTOR) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   TargetLowering TL(*TM);
 
@@ -159,8 +179,10 @@ TEST_F(AArch64SelectionDAGTest, SimplifyDemandedVectorElts_EXTRACT_SUBVECTOR) {
 
 // Piggy-backing on the AArch64 tests to verify SelectionDAG::computeKnownBits.
 TEST_F(AArch64SelectionDAGTest, ComputeKnownBits_ADD) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto IntVT = EVT::getIntegerVT(Context, 8);
   auto UnknownOp = DAG->getRegister(0, IntVT);
@@ -180,8 +202,10 @@ TEST_F(AArch64SelectionDAGTest, ComputeKnownBits_ADD) {
 
 // Piggy-backing on the AArch64 tests to verify SelectionDAG::computeKnownBits.
 TEST_F(AArch64SelectionDAGTest, ComputeKnownBits_SUB) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   SDLoc Loc;
   auto IntVT = EVT::getIntegerVT(Context, 8);
   auto N0 = DAG->getConstant(0x55, Loc, IntVT);

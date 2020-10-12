@@ -306,21 +306,29 @@ static const Expr *getContainerFromBeginEndCall(const Expr *Init, bool IsBegin,
   // FIXME: Maybe allow declaration/initialization outside of the for loop.
   const auto *TheCall =
       dyn_cast_or_null<CXXMemberCallExpr>(digThroughConstructors(Init));
-  if (!TheCall || TheCall->getNumArgs() != 0)
+  if (!TheCall || TheCall->getNumArgs() != 0) {
     return nullptr;
 
+}
+
   const auto *Member = dyn_cast<MemberExpr>(TheCall->getCallee());
-  if (!Member)
+  if (!Member) {
     return nullptr;
+
+}
   StringRef Name = Member->getMemberDecl()->getName();
   StringRef TargetName = IsBegin ? "begin" : "end";
   StringRef ConstTargetName = IsBegin ? "cbegin" : "cend";
-  if (Name != TargetName && Name != ConstTargetName)
+  if (Name != TargetName && Name != ConstTargetName) {
     return nullptr;
 
+}
+
   const Expr *SourceExpr = Member->getBase();
-  if (!SourceExpr)
+  if (!SourceExpr) {
     return nullptr;
+
+}
 
   *IsArrow = Member->isArrow();
   return SourceExpr;
@@ -340,16 +348,20 @@ static const Expr *findContainer(ASTContext *Context, const Expr *BeginExpr,
   bool EndIsArrow = false;
   const Expr *BeginContainerExpr =
       getContainerFromBeginEndCall(BeginExpr, /*IsBegin=*/true, &BeginIsArrow);
-  if (!BeginContainerExpr)
+  if (!BeginContainerExpr) {
     return nullptr;
+
+}
 
   const Expr *EndContainerExpr =
       getContainerFromBeginEndCall(EndExpr, /*IsBegin=*/false, &EndIsArrow);
   // Disallow loops that try evil things like this (note the dot and arrow):
   //  for (IteratorType It = Obj.begin(), E = Obj->end(); It != E; ++It) { }
   if (!EndContainerExpr || BeginIsArrow != EndIsArrow ||
-      !areSameExpr(Context, EndContainerExpr, BeginContainerExpr))
+      !areSameExpr(Context, EndContainerExpr, BeginContainerExpr)) {
     return nullptr;
+
+}
 
   *ContainerNeedsDereference = BeginIsArrow;
   return BeginContainerExpr;
@@ -371,18 +383,24 @@ static StringRef getStringFromRange(SourceManager &SourceMgr,
 /// If the given expression is actually a DeclRefExpr or a MemberExpr,
 /// find and return the underlying ValueDecl; otherwise, return NULL.
 static const ValueDecl *getReferencedVariable(const Expr *E) {
-  if (const DeclRefExpr *DRE = getDeclRef(E))
+  if (const DeclRefExpr *DRE = getDeclRef(E)) {
     return dyn_cast<VarDecl>(DRE->getDecl());
-  if (const auto *Mem = dyn_cast<MemberExpr>(E->IgnoreParenImpCasts()))
+
+}
+  if (const auto *Mem = dyn_cast<MemberExpr>(E->IgnoreParenImpCasts())) {
     return dyn_cast<FieldDecl>(Mem->getMemberDecl());
+
+}
   return nullptr;
 }
 
 /// Returns true when the given expression is a member expression
 /// whose base is `this` (implicitly or not).
 static bool isDirectMemberExpr(const Expr *E) {
-  if (const auto *Member = dyn_cast<MemberExpr>(E->IgnoreParenImpCasts()))
+  if (const auto *Member = dyn_cast<MemberExpr>(E->IgnoreParenImpCasts())) {
     return isa<CXXThisExpr>(Member->getBase()->IgnoreParenImpCasts());
+
+}
   return false;
 }
 
@@ -390,17 +408,23 @@ static bool isDirectMemberExpr(const Expr *E) {
 /// containter that we are iterating over, returns false when it can be
 /// guaranteed this element cannot be modified as a result of this usage.
 static bool canBeModified(ASTContext *Context, const Expr *E) {
-  if (E->getType().isConstQualified())
+  if (E->getType().isConstQualified()) {
     return false;
+
+}
   auto Parents = Context->getParents(*E);
-  if (Parents.size() != 1)
+  if (Parents.size() != 1) {
     return true;
+
+}
   if (const auto *Cast = Parents[0].get<ImplicitCastExpr>()) {
     if ((Cast->getCastKind() == CK_NoOp &&
          Cast->getType() == E->getType().withConst()) ||
         (Cast->getCastKind() == CK_LValueToRValue &&
-         !Cast->getType().isNull() && Cast->getType()->isFundamentalType()))
+         !Cast->getType().isNull() && Cast->getType()->isFundamentalType())) {
       return false;
+
+}
   }
   // FIXME: Make this function more generic.
   return true;
@@ -416,8 +440,10 @@ static bool usagesAreConst(ASTContext *Context, const UsageResult &Usages) {
     // to find the expression corresponding to that particular usage, later in
     // this loop.
     if (U.Kind != Usage::UK_CaptureByCopy && U.Kind != Usage::UK_CaptureByRef &&
-        canBeModified(Context, U.Expression))
+        canBeModified(Context, U.Expression)) {
       return false;
+
+}
   }
   return true;
 }
@@ -426,8 +452,10 @@ static bool usagesAreConst(ASTContext *Context, const UsageResult &Usages) {
 /// by reference.
 static bool usagesReturnRValues(const UsageResult &Usages) {
   for (const auto &U : Usages) {
-    if (U.Expression && !U.Expression->isRValue())
+    if (U.Expression && !U.Expression->isRValue()) {
       return false;
+
+}
   }
   return true;
 }
@@ -437,8 +465,10 @@ static bool containerIsConst(const Expr *ContainerExpr, bool Dereference) {
   if (const auto *VDec = getReferencedVariable(ContainerExpr)) {
     QualType CType = VDec->getType();
     if (Dereference) {
-      if (!CType->isPointerType())
+      if (!CType->isPointerType()) {
         return false;
+
+}
       CType = CType->getPointeeType();
     }
     // If VDec is a reference to a container, Dereference is false,
@@ -502,8 +532,10 @@ void LoopConvertCheck::getAliasRange(SourceManager &SM, SourceRange &Range) {
   bool Invalid = false;
   const char *TextAfter =
       SM.getCharacterData(Range.getEnd().getLocWithOffset(1), &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return;
+
+}
   unsigned Offset = std::strspn(TextAfter, " \t\r\n");
   Range =
       SourceRange(Range.getBegin(), Range.getEnd().getLocWithOffset(Offset));
@@ -535,8 +567,10 @@ void LoopConvertCheck::doConversion(
       AliasVarIsRef = true;
     }
     if (Descriptor.ElemType.isNull() ||
-        !Context->hasSameUnqualifiedType(AliasVarType, Descriptor.ElemType))
+        !Context->hasSameUnqualifiedType(AliasVarType, Descriptor.ElemType)) {
       Descriptor.ElemType = AliasVarType;
+
+}
 
     // We keep along the entire DeclStmt to keep the correct range here.
     SourceRange ReplaceRange = AliasDecl->getSourceRange();
@@ -588,8 +622,10 @@ void LoopConvertCheck::doConversion(
             // of the loop's body (for instance, in a function that got the
             // loop's index as a const reference parameter), or where we take
             // the address of a member (like "&Arr[i].A.B.C").
-            if (UOP->getOpcode() == UO_AddrOf)
+            if (UOP->getOpcode() == UO_AddrOf) {
               CanCopy = false;
+
+}
           }
         }
       } else {
@@ -609,8 +645,10 @@ void LoopConvertCheck::doConversion(
   SourceRange ParenRange(Loop->getLParenLoc(), Loop->getRParenLoc());
 
   QualType Type = Context->getAutoDeductType();
-  if (!Descriptor.ElemType.isNull() && Descriptor.ElemType->isFundamentalType())
+  if (!Descriptor.ElemType.isNull() && Descriptor.ElemType->isFundamentalType()) {
     Type = Descriptor.ElemType.getUnqualifiedType();
+
+}
 
   // If the new variable name is from the aliased variable, then the reference
   // type for the new variable should only be used if the aliased variable was
@@ -627,8 +665,10 @@ void LoopConvertCheck::doConversion(
     if (Descriptor.DerefByConstRef) {
       Type = Context->getLValueReferenceType(Context->getConstType(Type));
     } else if (Descriptor.DerefByValue) {
-      if (!IsCheapToCopy)
+      if (!IsCheapToCopy) {
         Type = Context->getRValueReferenceType(Type);
+
+}
     } else {
       Type = Context->getLValueReferenceType(Type);
     }
@@ -655,8 +695,10 @@ StringRef LoopConvertCheck::getContainerString(ASTContext *Context,
   } else {
     // For CXXOperatorCallExpr (e.g. vector_ptr->size()), its first argument is
     // the class object (vector_ptr) we are targeting.
-    if (const auto* E = dyn_cast<CXXOperatorCallExpr>(ContainerExpr))
+    if (const auto* E = dyn_cast<CXXOperatorCallExpr>(ContainerExpr)) {
       ContainerExpr = E->getArg(0);
+
+}
     ContainerString =
         getStringFromRange(Context->getSourceManager(), Context->getLangOpts(),
                            ContainerExpr->getSourceRange());
@@ -687,8 +729,10 @@ void LoopConvertCheck::getArrayLoopQualifiers(ASTContext *Context,
   // Try to find the type of the elements on the container, to check if
   // they are trivially copyable.
   for (const Usage &U : Usages) {
-    if (!U.Expression || U.Expression->getType().isNull())
+    if (!U.Expression || U.Expression->getType().isNull()) {
       continue;
+
+}
     QualType Type = U.Expression->getType().getCanonicalType();
     if (U.Kind == Usage::UK_MemberThroughArrow) {
       if (!Type->isPointerType()) {
@@ -750,10 +794,12 @@ void LoopConvertCheck::determineRangeDescriptor(
   Descriptor.ContainerString =
       std::string(getContainerString(Context, Loop, ContainerExpr));
 
-  if (FixerKind == LFK_Iterator)
+  if (FixerKind == LFK_Iterator) {
     getIteratorLoopQualifiers(Context, Nodes, Descriptor);
-  else
+  } else {
     getArrayLoopQualifiers(Context, Nodes, ContainerExpr, Usages, Descriptor);
+
+}
 }
 
 /// Check some of the conditions that must be met for the loop to be
@@ -764,19 +810,25 @@ bool LoopConvertCheck::isConvertible(ASTContext *Context,
                                      LoopFixerKind FixerKind) {
   // If we already modified the range of this for loop, don't do any further
   // updates on this iteration.
-  if (TUInfo->getReplacedVars().count(Loop))
+  if (TUInfo->getReplacedVars().count(Loop)) {
     return false;
+
+}
 
   // Check that we have exactly one index variable and at most one end variable.
   const auto *LoopVar = Nodes.getNodeAs<VarDecl>(IncrementVarName);
   const auto *CondVar = Nodes.getNodeAs<VarDecl>(ConditionVarName);
   const auto *InitVar = Nodes.getNodeAs<VarDecl>(InitVarName);
-  if (!areSameVariable(LoopVar, CondVar) || !areSameVariable(LoopVar, InitVar))
+  if (!areSameVariable(LoopVar, CondVar) || !areSameVariable(LoopVar, InitVar)) {
     return false;
+
+}
   const auto *EndVar = Nodes.getNodeAs<VarDecl>(EndVarName);
   const auto *ConditionEndVar = Nodes.getNodeAs<VarDecl>(ConditionEndVarName);
-  if (EndVar && !areSameVariable(EndVar, ConditionEndVar))
+  if (EndVar && !areSameVariable(EndVar, ConditionEndVar)) {
     return false;
+
+}
 
   // FIXME: Try to put most of this logic inside a matcher.
   if (FixerKind == LFK_Iterator) {
@@ -793,14 +845,18 @@ bool LoopConvertCheck::isConvertible(ASTContext *Context,
       // un-qualified pointee types match, otherwise we don't use auto.
       if (!Context->hasSameUnqualifiedType(
               CanonicalBeginType->getPointeeType(),
-              CanonicalInitVarType->getPointeeType()))
+              CanonicalInitVarType->getPointeeType())) {
         return false;
+
+}
     }
   } else if (FixerKind == LFK_PseudoArray) {
     // This call is required to obtain the container.
     const auto *EndCall = Nodes.getNodeAs<CXXMemberCallExpr>(EndCallName);
-    if (!EndCall || !dyn_cast<MemberExpr>(EndCall->getCallee()))
+    if (!EndCall || !dyn_cast<MemberExpr>(EndCall->getCallee())) {
       return false;
+
+}
   }
   return true;
 }
@@ -824,16 +880,20 @@ void LoopConvertCheck::check(const MatchFinder::MatchResult &Result) {
     FixerKind = LFK_PseudoArray;
   }
 
-  if (!isConvertible(Context, Nodes, Loop, FixerKind))
+  if (!isConvertible(Context, Nodes, Loop, FixerKind)) {
     return;
+
+}
 
   const auto *LoopVar = Nodes.getNodeAs<VarDecl>(IncrementVarName);
   const auto *EndVar = Nodes.getNodeAs<VarDecl>(EndVarName);
 
   // If the loop calls end()/size() after each iteration, lower our confidence
   // level.
-  if (FixerKind != LFK_Array && !EndVar)
+  if (FixerKind != LFK_Array && !EndVar) {
     ConfidenceLevel.lowerTo(Confidence::CL_Reasonable);
+
+}
 
   // If the end comparison isn't a variable, we can try to work with the
   // expression the loop variable is being tested against instead.
@@ -856,8 +916,10 @@ void LoopConvertCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   // We must know the container or an array length bound.
-  if (!ContainerExpr && !BoundExpr)
+  if (!ContainerExpr && !BoundExpr) {
     return;
+
+}
 
   ForLoopIndexUseVisitor Finder(Context, LoopVar, EndVar, ContainerExpr,
                                 BoundExpr,
@@ -872,8 +934,10 @@ void LoopConvertCheck::check(const MatchFinder::MatchResult &Result) {
 
   // Find usages of the loop index. If they are not used in a convertible way,
   // stop here.
-  if (!Finder.findAndVerifyUsages(Loop->getBody()))
+  if (!Finder.findAndVerifyUsages(Loop->getBody())) {
     return;
+
+}
   ConfidenceLevel.lowerTo(Finder.getConfidenceLevel());
 
   // Obtain the container expression, if we don't have it yet.
@@ -884,8 +948,10 @@ void LoopConvertCheck::check(const MatchFinder::MatchResult &Result) {
     // array variables. Consider loops over arrays that aren't just represented
     // by a variable to be risky conversions.
     if (!getReferencedVariable(ContainerExpr) &&
-        !isDirectMemberExpr(ContainerExpr))
+        !isDirectMemberExpr(ContainerExpr)) {
       ConfidenceLevel.lowerTo(Confidence::CL_Risky);
+
+}
   }
 
   // Find out which qualifiers we have to use in the loop range.
@@ -905,8 +971,10 @@ void LoopConvertCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (DependencyFinder.dependsOnInsideVariable(ContainerExpr) ||
       Descriptor.ContainerString.empty() || Usages.empty() ||
-      ConfidenceLevel.getLevel() < MinConfidence)
+      ConfidenceLevel.getLevel() < MinConfidence) {
     return;
+
+}
 
   doConversion(Context, LoopVar, getReferencedVariable(ContainerExpr), Usages,
                Finder.getAliasDecl(), Finder.aliasUseRequired(),

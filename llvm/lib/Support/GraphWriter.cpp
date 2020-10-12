@@ -34,7 +34,7 @@ static cl::opt<bool> ViewBackground("view-background", cl::Hidden,
 
 std::string llvm::DOT::EscapeString(const std::string &Label) {
   std::string Str(Label);
-  for (unsigned i = 0; i != Str.length(); ++i)
+  for (unsigned i = 0; i != Str.length(); ++i) {
   switch (Str[i]) {
     case '\n':
       Str.insert(Str.begin()+i, '\\');  // Escape character...
@@ -47,13 +47,15 @@ std::string llvm::DOT::EscapeString(const std::string &Label) {
       Str[i] = ' ';
       break;
     case '\\':
-      if (i+1 != Str.length())
+      if (i+1 != Str.length()) {
         switch (Str[i+1]) {
           case 'l': continue; // don't disturb \l
           case '|': case '{': case '}':
             Str.erase(Str.begin()+i); continue;
           default: break;
         }
+
+}
         LLVM_FALLTHROUGH;
     case '{': case '}':
     case '<': case '>':
@@ -62,6 +64,8 @@ std::string llvm::DOT::EscapeString(const std::string &Label) {
       ++i;  // don't infinite loop
       break;
   }
+
+}
   return Str;
 }
 
@@ -170,8 +174,10 @@ bool llvm::DisplayGraph(StringRef FilenameRef, bool wait,
     args.push_back(ViewerPath);
     args.push_back(Filename);
     errs() << "Trying 'xdg-open' program... ";
-    if (!ExecGraphViewer(ViewerPath, args, Filename, wait, ErrMsg))
+    if (!ExecGraphViewer(ViewerPath, args, Filename, wait, ErrMsg)) {
       return false;
+
+}
   }
 
   // Graphviz
@@ -209,10 +215,14 @@ bool llvm::DisplayGraph(StringRef FilenameRef, bool wait,
   if (!Viewer && S.TryFindProgram("open", ViewerPath))
     Viewer = VK_OSXOpen;
 #endif
-  if (!Viewer && S.TryFindProgram("gv", ViewerPath))
+  if (!Viewer && S.TryFindProgram("gv", ViewerPath)) {
     Viewer = VK_Ghostview;
-  if (!Viewer && S.TryFindProgram("xdg-open", ViewerPath))
+
+}
+  if (!Viewer && S.TryFindProgram("xdg-open", ViewerPath)) {
     Viewer = VK_XDGOpen;
+
+}
 #ifdef _WIN32
   if (!Viewer && S.TryFindProgram("cmd", ViewerPath)) {
     Viewer = VK_CmdStart;
@@ -229,10 +239,12 @@ bool llvm::DisplayGraph(StringRef FilenameRef, bool wait,
 
     std::vector<StringRef> args;
     args.push_back(GeneratorPath);
-    if (Viewer == VK_CmdStart)
+    if (Viewer == VK_CmdStart) {
       args.push_back("-Tpdf");
-    else
+    } else {
       args.push_back("-Tps");
+
+}
     args.push_back("-Nfontname=Courier");
     args.push_back("-Gsize=7.5,10");
     args.push_back(Filename);
@@ -241,8 +253,10 @@ bool llvm::DisplayGraph(StringRef FilenameRef, bool wait,
 
     errs() << "Running '" << GeneratorPath << "' program... ";
 
-    if (ExecGraphViewer(GeneratorPath, args, Filename, true, ErrMsg))
+    if (ExecGraphViewer(GeneratorPath, args, Filename, true, ErrMsg)) {
       return true;
+
+}
 
     // The lifetime of StartArg must include the call of ExecGraphViewer
     // because the args are passed as vector of char*.

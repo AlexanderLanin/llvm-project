@@ -181,8 +181,10 @@ Error TypeDumpVisitor::visitTypeBegin(CVType &Record, TypeIndex Index) {
 }
 
 Error TypeDumpVisitor::visitTypeEnd(CVType &Record) {
-  if (PrintRecordBytes)
+  if (PrintRecordBytes) {
     W->printBinaryBlock("LeafData", getBytesAsCharacters(Record.content()));
+
+}
 
   W->unindent();
   W->startLine() << "}\n";
@@ -199,8 +201,10 @@ Error TypeDumpVisitor::visitMemberBegin(CVMemberRecord &Record) {
 }
 
 Error TypeDumpVisitor::visitMemberEnd(CVMemberRecord &Record) {
-  if (PrintRecordBytes)
+  if (PrintRecordBytes) {
     W->printBinaryBlock("LeafData", getBytesAsCharacters(Record.Data));
+
+}
 
   W->unindent();
   W->startLine() << "}\n";
@@ -209,8 +213,10 @@ Error TypeDumpVisitor::visitMemberEnd(CVMemberRecord &Record) {
 
 Error TypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                         FieldListRecord &FieldList) {
-  if (auto EC = codeview::visitMemberRecordStream(FieldList.Data, *this))
+  if (auto EC = codeview::visitMemberRecordStream(FieldList.Data, *this)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -252,8 +258,10 @@ Error TypeDumpVisitor::visitKnownRecord(CVType &CVR, ClassRecord &Class) {
   printTypeIndex("VShape", Class.getVTableShape());
   W->printNumber("SizeOf", Class.getSize());
   W->printString("Name", Class.getName());
-  if (Props & uint16_t(ClassOptions::HasUniqueName))
+  if (Props & uint16_t(ClassOptions::HasUniqueName)) {
     W->printString("LinkageName", Class.getUniqueName());
+
+}
   return Error::success();
 }
 
@@ -264,8 +272,10 @@ Error TypeDumpVisitor::visitKnownRecord(CVType &CVR, UnionRecord &Union) {
   printTypeIndex("FieldList", Union.getFieldList());
   W->printNumber("SizeOf", Union.getSize());
   W->printString("Name", Union.getName());
-  if (Props & uint16_t(ClassOptions::HasUniqueName))
+  if (Props & uint16_t(ClassOptions::HasUniqueName)) {
     W->printString("LinkageName", Union.getUniqueName());
+
+}
   return Error::success();
 }
 
@@ -277,8 +287,10 @@ Error TypeDumpVisitor::visitKnownRecord(CVType &CVR, EnumRecord &Enum) {
   printTypeIndex("UnderlyingType", Enum.getUnderlyingType());
   printTypeIndex("FieldListType", Enum.getFieldList());
   W->printString("Name", Enum.getName());
-  if (Props & uint16_t(ClassOptions::HasUniqueName))
+  if (Props & uint16_t(ClassOptions::HasUniqueName)) {
     W->printString("LinkageName", Enum.getUniqueName());
+
+}
   return Error::success();
 }
 
@@ -295,8 +307,10 @@ Error TypeDumpVisitor::visitKnownRecord(CVType &CVR, VFTableRecord &VFT) {
   printTypeIndex("OverriddenVFTable", VFT.getOverriddenVTable());
   W->printHex("VFPtrOffset", VFT.getVFPtrOffset());
   W->printString("VFTableName", VFT.getName());
-  for (auto N : VFT.getMethodNames())
+  for (auto N : VFT.getMethodNames()) {
     W->printString("MethodName", N);
+
+}
   return Error::success();
 }
 
@@ -338,8 +352,10 @@ Error TypeDumpVisitor::visitKnownRecord(CVType &CVR,
     ListScope S(*W, "Method");
     printMemberAttributes(M.getAccess(), M.getMethodKind(), M.getOptions());
     printTypeIndex("Type", M.getType());
-    if (M.isIntroducingVirtual())
+    if (M.isIntroducingVirtual()) {
       W->printHex("VFTableOffset", M.getVFTableOffset());
+
+}
   }
   return Error::success();
 }
@@ -443,8 +459,10 @@ void TypeDumpVisitor::printMemberAttributes(MemberAccess Access,
   W->printEnum("AccessSpecifier", uint8_t(Access),
                makeArrayRef(MemberAccessNames));
   // Data members will be vanilla. Don't try to print a method kind for them.
-  if (Kind != MethodKind::Vanilla)
+  if (Kind != MethodKind::Vanilla) {
     W->printEnum("MethodKind", unsigned(Kind), makeArrayRef(MemberKindNames));
+
+}
   if (Options != MethodOptions::None) {
     W->printFlags("MethodOptions", unsigned(Options),
                   makeArrayRef(MethodOptionNames));
@@ -475,8 +493,10 @@ Error TypeDumpVisitor::visitKnownMember(CVMemberRecord &CVR,
   printMemberAttributes(Method.getAccess(), K, Method.getOptions());
   printTypeIndex("Type", Method.getType());
   // If virtual, then read the vftable offset.
-  if (Method.isIntroducingVirtual())
+  if (Method.isIntroducingVirtual()) {
     W->printHex("VFTableOffset", Method.getVFTableOffset());
+
+}
   W->printString("Name", Method.getName());
   return Error::success();
 }

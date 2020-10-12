@@ -217,8 +217,10 @@ void SHA1::update(ArrayRef<uint8_t> Data) {
   if (InternalState.BufferOffset > 0) {
     const size_t Remainder = std::min<size_t>(
         Data.size(), BLOCK_LENGTH - InternalState.BufferOffset);
-    for (size_t I = 0; I < Remainder; ++I)
+    for (size_t I = 0; I < Remainder; ++I) {
       addUncounted(Data[I]);
+
+}
     Data = Data.drop_front(Remainder);
   }
 
@@ -227,15 +229,19 @@ void SHA1::update(ArrayRef<uint8_t> Data) {
     assert(InternalState.BufferOffset == 0);
     assert(BLOCK_LENGTH % 4 == 0);
     constexpr size_t BLOCK_LENGTH_32 = BLOCK_LENGTH / 4;
-    for (size_t I = 0; I < BLOCK_LENGTH_32; ++I)
+    for (size_t I = 0; I < BLOCK_LENGTH_32; ++I) {
       InternalState.Buffer.L[I] = support::endian::read32be(&Data[I * 4]);
+
+}
     hashBlock();
     Data = Data.drop_front(BLOCK_LENGTH);
   }
 
   // Finish the remainder.
-  for (uint8_t C : Data)
+  for (uint8_t C : Data) {
     addUncounted(C);
+
+}
 }
 
 void SHA1::pad() {
@@ -243,8 +249,10 @@ void SHA1::pad() {
 
   // Pad with 0x80 followed by 0x00 until the end of the block
   addUncounted(0x80);
-  while (InternalState.BufferOffset != 56)
+  while (InternalState.BufferOffset != 56) {
     addUncounted(0x00);
+
+}
 
   // Append length in the last 8 bytes
   addUncounted(0); // We're only using 32 bit lengths

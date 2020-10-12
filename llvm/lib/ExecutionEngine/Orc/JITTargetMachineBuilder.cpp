@@ -30,8 +30,10 @@ Expected<JITTargetMachineBuilder> JITTargetMachineBuilder::detectHost() {
   // values.
   llvm::StringMap<bool> FeatureMap;
   llvm::sys::getHostCPUFeatures(FeatureMap);
-  for (auto &Feature : FeatureMap)
+  for (auto &Feature : FeatureMap) {
     TMBuilder.getFeatures().AddFeature(Feature.first(), Feature.second);
+
+}
 
   TMBuilder.setCPU(std::string(llvm::sys::getHostCPUName()));
 
@@ -43,23 +45,29 @@ JITTargetMachineBuilder::createTargetMachine() {
 
   std::string ErrMsg;
   auto *TheTarget = TargetRegistry::lookupTarget(TT.getTriple(), ErrMsg);
-  if (!TheTarget)
+  if (!TheTarget) {
     return make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode());
+
+}
 
   auto *TM =
       TheTarget->createTargetMachine(TT.getTriple(), CPU, Features.getString(),
                                      Options, RM, CM, OptLevel, /*JIT*/ true);
-  if (!TM)
+  if (!TM) {
     return make_error<StringError>("Could not allocate target machine",
                                    inconvertibleErrorCode());
+
+}
 
   return std::unique_ptr<TargetMachine>(TM);
 }
 
 JITTargetMachineBuilder &JITTargetMachineBuilder::addFeatures(
     const std::vector<std::string> &FeatureVec) {
-  for (const auto &F : FeatureVec)
+  for (const auto &F : FeatureVec) {
     Features.AddFeature(F);
+
+}
   return *this;
 }
 

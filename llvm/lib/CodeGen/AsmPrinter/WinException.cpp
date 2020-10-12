@@ -51,9 +51,13 @@ WinException::~WinException() {}
 void WinException::endModule() {
   auto &OS = *Asm->OutStreamer;
   const Module *M = MMI->getModule();
-  for (const Function &F : *M)
-    if (F.hasFnAttribute("safeseh"))
+  for (const Function &F : *M) {
+    if (F.hasFnAttribute("safeseh")) {
       OS.EmitCOFFSafeSEH(Asm->getSymbol(&F));
+
+}
+
+}
 }
 
 void WinException::beginFunction(const MachineFunction *MF) {
@@ -111,20 +115,26 @@ void WinException::beginFunction(const MachineFunction *MF) {
 
 void WinException::markFunctionEnd() {
   if (isAArch64 && CurrentFuncletEntry &&
-      (shouldEmitMoves || shouldEmitPersonality))
+      (shouldEmitMoves || shouldEmitPersonality)) {
     Asm->OutStreamer->EmitWinCFIFuncletOrFuncEnd();
+
+}
 }
 
 /// endFunction - Gather and emit post-function exception information.
 ///
 void WinException::endFunction(const MachineFunction *MF) {
-  if (!shouldEmitPersonality && !shouldEmitMoves && !shouldEmitLSDA)
+  if (!shouldEmitPersonality && !shouldEmitMoves && !shouldEmitLSDA) {
     return;
+
+}
 
   const Function &F = MF->getFunction();
   EHPersonality Per = EHPersonality::Unknown;
-  if (F.hasPersonalityFn())
+  if (F.hasPersonalityFn()) {
     Per = classifyEHPersonality(F.getPersonalityFn()->stripPointerCasts());
+
+}
 
   // Get rid of any dead landing pads if we're not using funclets. In funclet
   // schemes, the landing pad is not actually reachable. It only exists so
@@ -137,8 +147,10 @@ void WinException::endFunction(const MachineFunction *MF) {
   endFuncletImpl();
 
   // endFunclet will emit the necessary .xdata tables for x64 SEH.
-  if (Per == EHPersonality::MSVC_Win64SEH && MF->hasEHFunclets())
+  if (Per == EHPersonality::MSVC_Win64SEH && MF->hasEHFunclets()) {
     return;
+
+}
 
   if (shouldEmitPersonality || shouldEmitLSDA) {
     Asm->OutStreamer->PushSection();
@@ -150,16 +162,18 @@ void WinException::endFunction(const MachineFunction *MF) {
 
     // Emit the tables appropriate to the personality function in use. If we
     // don't recognize the personality, assume it uses an Itanium-style LSDA.
-    if (Per == EHPersonality::MSVC_Win64SEH)
+    if (Per == EHPersonality::MSVC_Win64SEH) {
       emitCSpecificHandlerTable(MF);
-    else if (Per == EHPersonality::MSVC_X86SEH)
+    } else if (Per == EHPersonality::MSVC_X86SEH) {
       emitExceptHandlerTable(MF);
-    else if (Per == EHPersonality::MSVC_CXX)
+    } else if (Per == EHPersonality::MSVC_CXX) {
       emitCXXFrameHandler3Table(MF);
-    else if (Per == EHPersonality::CoreCLR)
+    } else if (Per == EHPersonality::CoreCLR) {
       emitCLRExceptionTable(MF);
-    else
+    } else {
       emitExceptionTable();
+
+}
 
     Asm->OutStreamer->PopSection();
   }
@@ -168,8 +182,10 @@ void WinException::endFunction(const MachineFunction *MF) {
 /// Retrieve the MCSymbol for a GlobalValue or MachineBasicBlock.
 static MCSymbol *getMCSymbolForMBB(AsmPrinter *Asm,
                                    const MachineBasicBlock *MBB) {
-  if (!MBB)
+  if (!MBB) {
     return nullptr;
+
+}
 
   assert(MBB->isEHFuncletEntry());
 
@@ -221,8 +237,10 @@ void WinException::beginFunclet(const MachineBasicBlock &MBB,
     const Function *PerFn = nullptr;
 
     // Determine which personality routine we are using for this funclet.
-    if (F.hasPersonalityFn())
+    if (F.hasPersonalityFn()) {
       PerFn = dyn_cast<Function>(F.getPersonalityFn()->stripPointerCasts());
+
+}
     const MCSymbol *PersHandlerSym =
         TLOF.getCFIPersonalitySymbol(PerFn, Asm->TM, MMI);
 
@@ -231,8 +249,10 @@ void WinException::beginFunclet(const MachineBasicBlock &MBB,
     // Clang doesn't produce EH constructs inside cleanup funclets and LLVM's
     // inliner doesn't allow inlining them, this isn't a major problem in
     // practice.
-    if (!CurrentFuncletEntry->isCleanupFuncletEntry())
+    if (!CurrentFuncletEntry->isCleanupFuncletEntry()) {
       Asm->OutStreamer->EmitWinEHHandler(PersHandlerSym, true, true);
+
+}
   }
 }
 
@@ -247,15 +267,19 @@ void WinException::endFunclet() {
 
 void WinException::endFuncletImpl() {
   // No funclet to process?  Great, we have nothing to do.
-  if (!CurrentFuncletEntry)
+  if (!CurrentFuncletEntry) {
     return;
+
+}
 
   const MachineFunction *MF = Asm->MF;
   if (shouldEmitMoves || shouldEmitPersonality) {
     const Function &F = MF->getFunction();
     EHPersonality Per = EHPersonality::Unknown;
-    if (F.hasPersonalityFn())
+    if (F.hasPersonalityFn()) {
       Per = classifyEHPersonality(F.getPersonalityFn()->stripPointerCasts());
+
+}
 
     // On funclet exit, we emit a fake "function" end marker, so that the call
     // to EmitWinEHHandlerData below can calculate the size of the funclet or
@@ -296,8 +320,10 @@ void WinException::endFuncletImpl() {
 }
 
 const MCExpr *WinException::create32bitRef(const MCSymbol *Value) {
-  if (!Value)
+  if (!Value) {
     return MCConstantExpr::create(0, Asm->OutContext);
+
+}
   return MCSymbolRefExpr::create(Value, useImageRel32
                                             ? MCSymbolRefExpr::VK_COFF_IMGREL32
                                             : MCSymbolRefExpr::VK_None,
@@ -305,15 +331,19 @@ const MCExpr *WinException::create32bitRef(const MCSymbol *Value) {
 }
 
 const MCExpr *WinException::create32bitRef(const GlobalValue *GV) {
-  if (!GV)
+  if (!GV) {
     return MCConstantExpr::create(0, Asm->OutContext);
+
+}
   return create32bitRef(Asm->getSymbol(GV));
 }
 
 const MCExpr *WinException::getLabel(const MCSymbol *Label) {
-  if (isAArch64)
+  if (isAArch64) {
     return MCSymbolRefExpr::create(Label, MCSymbolRefExpr::VK_COFF_IMGREL32,
                                    Asm->OutContext);
+
+}
   return MCBinaryExpr::createAdd(create32bitRef(Label),
                                  MCConstantExpr::create(1, Asm->OutContext),
                                  Asm->OutContext);
@@ -414,11 +444,15 @@ public:
   bool operator==(const InvokeStateChangeIterator &O) const {
     assert(BaseState == O.BaseState);
     // Must be visiting same block.
-    if (MFI != O.MFI)
+    if (MFI != O.MFI) {
       return false;
+
+}
     // Must be visiting same isntr.
-    if (MBBI != O.MBBI)
+    if (MBBI != O.MBBI) {
       return false;
+
+}
     // At end of block/instr iteration, we can still have two distinct states:
     // one to report the final EndLabel, and another indicating the end of the
     // state change iteration.  Check for CurrentEndLabel equality to
@@ -451,8 +485,10 @@ private:
 InvokeStateChangeIterator &InvokeStateChangeIterator::scan() {
   bool IsNewBlock = false;
   for (; MFI != MFE; ++MFI, IsNewBlock = true) {
-    if (IsNewBlock)
+    if (IsNewBlock) {
       MBBI = MFI->begin();
+
+}
     for (auto MBBE = MFI->end(); MBBI != MBBE; ++MBBI) {
       const MachineInstr &MI = *MBBI;
       if (!VisitingInvoke && LastStateChange.NewState != BaseState &&
@@ -470,8 +506,10 @@ InvokeStateChangeIterator &InvokeStateChangeIterator::scan() {
       }
 
       // All other state changes are at EH labels before/after invokes.
-      if (!MI.isEHLabel())
+      if (!MI.isEHLabel()) {
         continue;
+
+}
       MCSymbol *Label = MI.getOperand(0).getMCSymbol();
       if (Label == CurrentEndLabel) {
         VisitingInvoke = false;
@@ -479,8 +517,10 @@ InvokeStateChangeIterator &InvokeStateChangeIterator::scan() {
       }
       auto InvokeMapIter = EHInfo.LabelToStateMap.find(Label);
       // Ignore EH labels that aren't the ones inserted before an invoke
-      if (InvokeMapIter == EHInfo.LabelToStateMap.end())
+      if (InvokeMapIter == EHInfo.LabelToStateMap.end()) {
         continue;
+
+}
       auto &StateAndEnd = InvokeMapIter->second;
       int NewState = StateAndEnd.first;
       // Keep track of the fact that we're between EH start/end labels so
@@ -553,8 +593,10 @@ void WinException::emitCSpecificHandlerTable(const MachineFunction *MF) {
 
   bool VerboseAsm = OS.isVerboseAsm();
   auto AddComment = [&](const Twine &Comment) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       OS.AddComment(Comment);
+
+}
   };
 
   if (!isAArch64) {
@@ -596,15 +638,19 @@ void WinException::emitCSpecificHandlerTable(const MachineFunction *MF) {
   // FIXME: We need to emit separate EH tables for cleanups.
   MachineFunction::const_iterator End = MF->end();
   MachineFunction::const_iterator Stop = std::next(MF->begin());
-  while (Stop != End && !Stop->isEHFuncletEntry())
+  while (Stop != End && !Stop->isEHFuncletEntry()) {
     ++Stop;
+
+}
   for (const auto &StateChange :
        InvokeStateChangeIterator::range(FuncInfo, MF->begin(), Stop)) {
     // Emit all the actions for the state we just transitioned out of
     // if it was not the null state
-    if (LastEHState != -1)
+    if (LastEHState != -1) {
       emitSEHActionsForRange(FuncInfo, LastStartLabel,
                              StateChange.PreviousEndLabel, LastEHState);
+
+}
     LastStartLabel = StateChange.NewStartLabel;
     LastEHState = StateChange.NewState;
   }
@@ -619,8 +665,10 @@ void WinException::emitSEHActionsForRange(const WinEHFuncInfo &FuncInfo,
   MCContext &Ctx = Asm->OutContext;
   bool VerboseAsm = OS.isVerboseAsm();
   auto AddComment = [&](const Twine &Comment) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       OS.AddComment(Comment);
+
+}
   };
 
   assert(BeginLabel && EndLabel);
@@ -675,27 +723,37 @@ void WinException::emitCXXFrameHandler3Table(const MachineFunction *MF) {
   }
 
   int UnwindHelpOffset = 0;
-  if (Asm->MAI->usesWindowsCFI())
+  if (Asm->MAI->usesWindowsCFI()) {
     UnwindHelpOffset =
         getFrameIndexOffset(FuncInfo.UnwindHelpFrameIdx, FuncInfo);
+
+}
 
   MCSymbol *UnwindMapXData = nullptr;
   MCSymbol *TryBlockMapXData = nullptr;
   MCSymbol *IPToStateXData = nullptr;
-  if (!FuncInfo.CxxUnwindMap.empty())
+  if (!FuncInfo.CxxUnwindMap.empty()) {
     UnwindMapXData = Asm->OutContext.getOrCreateSymbol(
         Twine("$stateUnwindMap$", FuncLinkageName));
-  if (!FuncInfo.TryBlockMap.empty())
+
+}
+  if (!FuncInfo.TryBlockMap.empty()) {
     TryBlockMapXData =
         Asm->OutContext.getOrCreateSymbol(Twine("$tryMap$", FuncLinkageName));
-  if (!IPToStateTable.empty())
+
+}
+  if (!IPToStateTable.empty()) {
     IPToStateXData =
         Asm->OutContext.getOrCreateSymbol(Twine("$ip2state$", FuncLinkageName));
 
+}
+
   bool VerboseAsm = OS.isVerboseAsm();
   auto AddComment = [&](const Twine &Comment) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       OS.AddComment(Comment);
+
+}
   };
 
   // FuncInfo {
@@ -779,12 +837,14 @@ void WinException::emitCXXFrameHandler3Table(const MachineFunction *MF) {
       const WinEHTryBlockMapEntry &TBME = FuncInfo.TryBlockMap[I];
 
       MCSymbol *HandlerMapXData = nullptr;
-      if (!TBME.HandlerArray.empty())
+      if (!TBME.HandlerArray.empty()) {
         HandlerMapXData =
             Asm->OutContext.getOrCreateSymbol(Twine("$handlerMap$")
                                                   .concat(Twine(I))
                                                   .concat("$")
                                                   .concat(FuncLinkageName));
+
+}
       HandlerMaps.push_back(HandlerMapXData);
 
       // TBMEs should form intervals.
@@ -820,8 +880,10 @@ void WinException::emitCXXFrameHandler3Table(const MachineFunction *MF) {
     for (size_t I = 0, E = FuncInfo.TryBlockMap.size(); I != E; ++I) {
       const WinEHTryBlockMapEntry &TBME = FuncInfo.TryBlockMap[I];
       MCSymbol *HandlerMapXData = HandlerMaps[I];
-      if (!HandlerMapXData)
+      if (!HandlerMapXData) {
         continue;
+
+}
       // HandlerType {
       //   int32_t         Adjectives;
       //   TypeDescriptor *Type;
@@ -899,8 +961,10 @@ void WinException::computeIP2StateTable(
     // Don't emit ip2state entries for cleanup funclets. Any interesting
     // exceptional actions in cleanups must be handled in a separate IR
     // function.
-    if (FuncletStart->isCleanupFuncletEntry())
+    if (FuncletStart->isCleanupFuncletEntry()) {
       continue;
+
+}
 
     MCSymbol *StartLabel;
     int BaseState;
@@ -925,8 +989,10 @@ void WinException::computeIP2StateTable(
       // which may unwind to our caller and does not have an EH start label, so)
       // use the previous end label.
       const MCSymbol *ChangeLabel = StateChange.NewStartLabel;
-      if (!ChangeLabel)
+      if (!ChangeLabel) {
         ChangeLabel = StateChange.PreviousEndLabel;
+
+}
       // Emit an entry indicating that PCs after 'Label' have this EH state.
       IPToStateTable.push_back(
           std::make_pair(getLabel(ChangeLabel), StateChange.NewState));
@@ -970,8 +1036,10 @@ void WinException::emitExceptHandlerTable(const MachineFunction *MF) {
 
   bool VerboseAsm = OS.isVerboseAsm();
   auto AddComment = [&](const Twine &Comment) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       OS.AddComment(Comment);
+
+}
   };
 
   const WinEHFuncInfo &FuncInfo = *MF->getWinEHFuncInfo();
@@ -1190,8 +1258,10 @@ void WinException::emitCLRExceptionTable(const MachineFunction *MF) {
         CurrentState = FuncInfo.ClrEHUnwindMap[CurrentState].TryParentState;
         // Pop the new start label from the handler stack if we've exited all
         // inner try regions of the corresponding try region.
-        if (HandlerStack.back().second == CurrentState)
+        if (HandlerStack.back().second == CurrentState) {
           CurrentStartLabel = HandlerStack.pop_back_val().first;
+
+}
       }
 
       if (StateChange.NewState != CurrentState) {
@@ -1203,8 +1273,10 @@ void WinException::emitCLRExceptionTable(const MachineFunction *MF) {
              EnteredState =
                  FuncInfo.ClrEHUnwindMap[EnteredState].TryParentState) {
           int &MinEnclosingState = MinClauseMap[EnteredState];
-          if (FuncletState < MinEnclosingState)
+          if (FuncletState < MinEnclosingState) {
             MinEnclosingState = FuncletState;
+
+}
         }
         // Save the previous current start/label on the stack and update to
         // the newly-current start/state.

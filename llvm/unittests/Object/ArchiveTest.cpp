@@ -38,14 +38,18 @@ struct ArchiveTestsFixture : Test {
   Expected<Archive::child_iterator> createChild(StringRef Src) {
     MemoryBufferRef Source(Src, "archive");
     Expected<std::unique_ptr<Archive>> AOrErr = Archive::create(Source);
-    if (!AOrErr)
+    if (!AOrErr) {
       return AOrErr.takeError();
+
+}
     A = std::move(*AOrErr);
 
     Error ChildErr = Error::success();
     auto Child = A->child_begin(ChildErr);
-    if (ChildErr)
+    if (ChildErr) {
       return std::move(ChildErr);
+
+}
     return Child;
   }
 
@@ -55,8 +59,10 @@ struct ArchiveTestsFixture : Test {
 TEST_F(ArchiveTestsFixture, ArchiveChildGetSizeRegularArchive) {
   // This test relies on a StringRef being able to hold the appropriate amount
   // of data.
-  if (std::numeric_limits<StringRef::size_type>::max() < MemberSize)
+  if (std::numeric_limits<StringRef::size_type>::max() < MemberSize) {
     return;
+
+}
 
   auto Child = createChild(ArchiveWithMember);
   ASSERT_THAT_EXPECTED(Child, Succeeded());
@@ -78,8 +84,10 @@ TEST_F(ArchiveTestsFixture, ArchiveChildGetSizeThinArchive) {
 TEST_F(ArchiveTestsFixture, ArchiveChildGetBuffer) {
   // This test relies on a StringRef being able to hold the appropriate amount
   // of data.
-  if (std::numeric_limits<StringRef::size_type>::max() < MemberSize)
+  if (std::numeric_limits<StringRef::size_type>::max() < MemberSize) {
     return;
+
+}
 
   auto Child = createChild(ArchiveWithMember);
   ASSERT_THAT_EXPECTED(Child, Succeeded());

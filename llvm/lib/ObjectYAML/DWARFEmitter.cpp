@@ -36,23 +36,27 @@ using namespace llvm;
 
 template <typename T>
 static void writeInteger(T Integer, raw_ostream &OS, bool IsLittleEndian) {
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     sys::swapByteOrder(Integer);
+
+}
   OS.write(reinterpret_cast<char *>(&Integer), sizeof(T));
 }
 
 static void writeVariableSizedInteger(uint64_t Integer, size_t Size,
                                       raw_ostream &OS, bool IsLittleEndian) {
-  if (8 == Size)
+  if (8 == Size) {
     writeInteger((uint64_t)Integer, OS, IsLittleEndian);
-  else if (4 == Size)
+  } else if (4 == Size) {
     writeInteger((uint32_t)Integer, OS, IsLittleEndian);
-  else if (2 == Size)
+  } else if (2 == Size) {
     writeInteger((uint16_t)Integer, OS, IsLittleEndian);
-  else if (1 == Size)
+  } else if (1 == Size) {
     writeInteger((uint8_t)Integer, OS, IsLittleEndian);
-  else
+  } else {
     assert(false && "Invalid integer write size.");
+
+}
 }
 
 static void ZeroFillBytes(raw_ostream &OS, size_t Size) {
@@ -64,8 +68,10 @@ static void ZeroFillBytes(raw_ostream &OS, size_t Size) {
 static void writeInitialLength(const DWARFYAML::InitialLength &Length,
                                raw_ostream &OS, bool IsLittleEndian) {
   writeInteger((uint32_t)Length.TotalLength, OS, IsLittleEndian);
-  if (Length.isDWARF64())
+  if (Length.isDWARF64()) {
     writeInteger((uint64_t)Length.TotalLength64, OS, IsLittleEndian);
+
+}
 }
 
 void DWARFYAML::EmitDebugStr(raw_ostream &OS, const DWARFYAML::Data &DI) {
@@ -83,8 +89,10 @@ void DWARFYAML::EmitDebugAbbrev(raw_ostream &OS, const DWARFYAML::Data &DI) {
     for (auto Attr : AbbrevDecl.Attributes) {
       encodeULEB128(Attr.Attribute, OS);
       encodeULEB128(Attr.Form, OS);
-      if (Attr.Form == dwarf::DW_FORM_implicit_const)
+      if (Attr.Form == dwarf::DW_FORM_implicit_const) {
         encodeSLEB128(Attr.Value, OS);
+
+}
     }
     encodeULEB128(0, OS);
     encodeULEB128(0, OS);
@@ -123,8 +131,10 @@ void DWARFYAML::EmitPubSection(raw_ostream &OS,
   writeInteger((uint32_t)Sect.UnitSize, OS, IsLittleEndian);
   for (auto Entry : Sect.Entries) {
     writeInteger((uint32_t)Entry.DieOffset, OS, IsLittleEndian);
-    if (Sect.IsGNUStyle)
+    if (Sect.IsGNUStyle) {
       writeInteger((uint32_t)Entry.Descriptor, OS, IsLittleEndian);
+
+}
     OS.write(Entry.Name.data(), Entry.Name.size());
     OS.write('\0');
   }
@@ -168,17 +178,21 @@ protected:
   }
 
   void onValue(const uint64_t U, const bool LEB = false) override {
-    if (LEB)
+    if (LEB) {
       encodeULEB128(U, OS);
-    else
+    } else {
       writeInteger(U, OS, DebugInfo.IsLittleEndian);
+
+}
   }
 
   void onValue(const int64_t S, const bool LEB = false) override {
-    if (LEB)
+    if (LEB) {
       encodeSLEB128(S, OS);
-    else
+    } else {
       writeInteger(S, OS, DebugInfo.IsLittleEndian);
+
+}
   }
 
   void onValue(const StringRef String) override {
@@ -217,15 +231,19 @@ void DWARFYAML::EmitDebugLine(raw_ostream &OS, const DWARFYAML::Data &DI) {
     writeVariableSizedInteger(LineTable.PrologueLength, SizeOfPrologueLength,
                               OS, DI.IsLittleEndian);
     writeInteger((uint8_t)LineTable.MinInstLength, OS, DI.IsLittleEndian);
-    if (LineTable.Version >= 4)
+    if (LineTable.Version >= 4) {
       writeInteger((uint8_t)LineTable.MaxOpsPerInst, OS, DI.IsLittleEndian);
+
+}
     writeInteger((uint8_t)LineTable.DefaultIsStmt, OS, DI.IsLittleEndian);
     writeInteger((uint8_t)LineTable.LineBase, OS, DI.IsLittleEndian);
     writeInteger((uint8_t)LineTable.LineRange, OS, DI.IsLittleEndian);
     writeInteger((uint8_t)LineTable.OpcodeBase, OS, DI.IsLittleEndian);
 
-    for (auto OpcodeLength : LineTable.StandardOpcodeLengths)
+    for (auto OpcodeLength : LineTable.StandardOpcodeLengths) {
       writeInteger((uint8_t)OpcodeLength, OS, DI.IsLittleEndian);
+
+}
 
     for (auto IncludeDir : LineTable.IncludeDirs) {
       OS.write(IncludeDir.data(), IncludeDir.size());
@@ -233,8 +251,10 @@ void DWARFYAML::EmitDebugLine(raw_ostream &OS, const DWARFYAML::Data &DI) {
     }
     OS.write('\0');
 
-    for (auto File : LineTable.Files)
+    for (auto File : LineTable.Files) {
       EmitFileEntry(OS, File);
+
+}
     OS.write('\0');
 
     for (auto Op : LineTable.Opcodes) {
@@ -254,8 +274,10 @@ void DWARFYAML::EmitDebugLine(raw_ostream &OS, const DWARFYAML::Data &DI) {
         case dwarf::DW_LNE_end_sequence:
           break;
         default:
-          for (auto OpByte : Op.UnknownOpcodeData)
+          for (auto OpByte : Op.UnknownOpcodeData) {
             writeInteger((uint8_t)OpByte, OS, DI.IsLittleEndian);
+
+}
         }
       } else if (Op.Opcode < LineTable.OpcodeBase) {
         switch (Op.Opcode) {
@@ -302,8 +324,10 @@ EmitDebugSectionImpl(const DWARFYAML::Data &DI, EmitFuncType EmitFunc,
   raw_string_ostream DebugInfoStream(Data);
   EmitFunc(DebugInfoStream, DI);
   DebugInfoStream.flush();
-  if (!Data.empty())
+  if (!Data.empty()) {
     OutputBuffers[Sec] = MemoryBuffer::getMemBufferCopy(Data);
+
+}
 }
 
 namespace {
@@ -331,16 +355,20 @@ private:
   virtual void onValue(const uint16_t U) { Length += 2; }
   virtual void onValue(const uint32_t U) { Length += 4; }
   virtual void onValue(const uint64_t U, const bool LEB = false) {
-    if (LEB)
+    if (LEB) {
       Length += getULEB128Size(U);
-    else
+    } else {
       Length += 8;
+
+}
   }
   virtual void onValue(const int64_t S, const bool LEB = false) {
-    if (LEB)
+    if (LEB) {
       Length += getSLEB128Size(S);
-    else
+    } else {
       Length += 8;
+
+}
   }
   virtual void onValue(const StringRef String) { Length += String.size() + 1; }
 
@@ -358,8 +386,10 @@ DWARFYAML::EmitDebugSections(StringRef YAMLString, bool ApplyFixups,
   DWARFYAML::Data DI;
   DI.IsLittleEndian = IsLittleEndian;
   YIn >> DI;
-  if (YIn.error())
+  if (YIn.error()) {
     return errorCodeToError(YIn.error());
+
+}
 
   if (ApplyFixups) {
     DIEFixupVisitor DIFixer(DI);

@@ -89,23 +89,31 @@ llvm_regerror(int errcode, const llvm_regex_t *preg, char *errbuf, size_t errbuf
 	const char *s;
 	char convbuf[50];
 
-	if (errcode == REG_ATOI)
+	if (errcode == REG_ATOI) {
 		s = regatoi(preg, convbuf, sizeof convbuf);
-	else {
-		for (r = rerrs; r->code != 0; r++)
-			if (r->code == target)
+	} else {
+		for (r = rerrs; r->code != 0; r++) {
+			if (r->code == target) {
 				break;
+
+}
+
+}
 	
 		if (errcode&REG_ITOA) {
 			if (r->code != 0) {
 				assert(strlen(r->name) < sizeof(convbuf));
 				(void) llvm_strlcpy(convbuf, r->name, sizeof convbuf);
-			} else
+			} else {
 				(void)snprintf(convbuf, sizeof convbuf,
 				    "REG_0x%x", target);
+
+}
 			s = convbuf;
-		} else
+		} else {
 			s = r->explain;
+
+}
 	}
 
 	len = strlen(s) + 1;
@@ -124,11 +132,17 @@ regatoi(const llvm_regex_t *preg, char *localbuf, int localbufsize)
 {
 	struct rerr *r;
 
-	for (r = rerrs; r->code != 0; r++)
-		if (strcmp(r->name, preg->re_endp) == 0)
+	for (r = rerrs; r->code != 0; r++) {
+		if (strcmp(r->name, preg->re_endp) == 0) {
 			break;
-	if (r->code == 0)
+
+}
+
+}
+	if (r->code == 0) {
 		return("0");
+
+}
 
 	(void)snprintf(localbuf, localbufsize, "%d", r->code);
 	return(localbuf);

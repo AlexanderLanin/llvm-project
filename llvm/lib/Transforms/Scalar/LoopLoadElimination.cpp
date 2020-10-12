@@ -111,8 +111,10 @@ struct StoreToLoadForwardingCandidate {
     // able to handle non unit stirde as well as long as the stride is equal to
     // the dependence distance.
     if (getPtrStride(PSE, LoadPtr, L) != 1 ||
-        getPtrStride(PSE, StorePtr, L) != 1)
+        getPtrStride(PSE, StorePtr, L) != 1) {
       return false;
+
+}
 
     auto &DL = Load->getParent()->getModule()->getDataLayout();
     unsigned TypeByteSize = DL.getTypeAllocSize(const_cast<Type *>(LoadType));
@@ -178,8 +180,10 @@ public:
     std::forward_list<StoreToLoadForwardingCandidate> Candidates;
 
     const auto *Deps = LAI.getDepChecker().getDependences();
-    if (!Deps)
+    if (!Deps) {
       return Candidates;
+
+}
 
     // Find store->load dependences (consequently true dep).  Both lexically
     // forward and backward dependences qualify.  Disqualify loads that have
@@ -192,39 +196,53 @@ public:
       Instruction *Destination = Dep.getDestination(LAI);
 
       if (Dep.Type == MemoryDepChecker::Dependence::Unknown) {
-        if (isa<LoadInst>(Source))
+        if (isa<LoadInst>(Source)) {
           LoadsWithUnknownDepedence.insert(Source);
-        if (isa<LoadInst>(Destination))
+
+}
+        if (isa<LoadInst>(Destination)) {
           LoadsWithUnknownDepedence.insert(Destination);
+
+}
         continue;
       }
 
-      if (Dep.isBackward())
+      if (Dep.isBackward()) {
         // Note that the designations source and destination follow the program
         // order, i.e. source is always first.  (The direction is given by the
         // DepType.)
         std::swap(Source, Destination);
-      else
+      } else {
         assert(Dep.isForward() && "Needs to be a forward dependence");
 
+}
+
       auto *Store = dyn_cast<StoreInst>(Source);
-      if (!Store)
-        continue;
-      auto *Load = dyn_cast<LoadInst>(Destination);
-      if (!Load)
+      if (!Store) {
         continue;
 
-      // Only progagate the value if they are of the same type.
-      if (Store->getPointerOperandType() != Load->getPointerOperandType())
+}
+      auto *Load = dyn_cast<LoadInst>(Destination);
+      if (!Load) {
         continue;
+
+}
+
+      // Only progagate the value if they are of the same type.
+      if (Store->getPointerOperandType() != Load->getPointerOperandType()) {
+        continue;
+
+}
 
       Candidates.emplace_front(Load, Store);
     }
 
-    if (!LoadsWithUnknownDepedence.empty())
+    if (!LoadsWithUnknownDepedence.empty()) {
       Candidates.remove_if([&](const StoreToLoadForwardingCandidate &C) {
         return LoadsWithUnknownDepedence.count(C.Load);
       });
+
+}
 
     return Candidates;
   }
@@ -272,8 +290,10 @@ public:
       if (!NewElt) {
         const StoreToLoadForwardingCandidate *&OtherCand = Iter->second;
         // Already multiple stores forward to this load.
-        if (OtherCand == nullptr)
+        if (OtherCand == nullptr) {
           continue;
+
+}
 
         // Handle the very basic case when the two stores are in the same block
         // so deciding which one forwards is easy.  The later one forwards as
@@ -282,10 +302,14 @@ public:
             Cand.isDependenceDistanceOfOne(PSE, L) &&
             OtherCand->isDependenceDistanceOfOne(PSE, L)) {
           // They are in the same block, the later one will forward to the load.
-          if (getInstrIndex(OtherCand->Store) < getInstrIndex(Cand.Store))
+          if (getInstrIndex(OtherCand->Store) < getInstrIndex(Cand.Store)) {
             OtherCand = &Cand;
-        } else
+
+}
+        } else {
           OtherCand = nullptr;
+
+}
       }
     }
 
@@ -363,8 +387,10 @@ public:
     SmallPtrSet<Value *, 4> PtrsWrittenOnFwdingPath;
 
     auto InsertStorePtr = [&](Instruction *I) {
-      if (auto *S = dyn_cast<StoreInst>(I))
+      if (auto *S = dyn_cast<StoreInst>(I)) {
         PtrsWrittenOnFwdingPath.insert(S->getPointerOperand());
+
+}
     };
     const auto &MemInstrs = LAI.getDepChecker().getMemoryInstructions();
     std::for_each(MemInstrs.begin() + getInstrIndex(FirstStore) + 1,
@@ -395,11 +421,17 @@ public:
 
     copy_if(AllChecks, std::back_inserter(Checks),
             [&](const RuntimePointerChecking::PointerCheck &Check) {
-              for (auto PtrIdx1 : Check.first->Members)
-                for (auto PtrIdx2 : Check.second->Members)
+              for (auto PtrIdx1 : Check.first->Members) {
+                for (auto PtrIdx2 : Check.second->Members) {
                   if (needsChecking(PtrIdx1, PtrIdx2, PtrsWrittenOnFwdingPath,
-                                    CandLoadPtrs))
+                                    CandLoadPtrs)) {
                     return true;
+
+}
+
+}
+
+}
               return false;
             });
 
@@ -473,8 +505,10 @@ public:
 
     // First start with store->load dependences.
     auto StoreToLoadDependences = findStoreToLoadDependences(LAI);
-    if (StoreToLoadDependences.empty())
+    if (StoreToLoadDependences.empty()) {
       return false;
+
+}
 
     // Generate an index for each load and store according to the original
     // program order.  This will be used later.
@@ -483,8 +517,10 @@ public:
     // To keep things simple for now, remove those where the load is potentially
     // fed by multiple stores.
     removeDependencesFromMultipleStores(StoreToLoadDependences);
-    if (StoreToLoadDependences.empty())
+    if (StoreToLoadDependences.empty()) {
       return false;
+
+}
 
     // Filter the candidates further.
     SmallVector<StoreToLoadForwardingCandidate, 4> Candidates;
@@ -494,19 +530,25 @@ public:
 
       // Make sure that the stored values is available everywhere in the loop in
       // the next iteration.
-      if (!doesStoreDominatesAllLatches(Cand.Store->getParent(), L, DT))
+      if (!doesStoreDominatesAllLatches(Cand.Store->getParent(), L, DT)) {
         continue;
+
+}
 
       // If the load is conditional we can't hoist its 0-iteration instance to
       // the preheader because that would make it unconditional.  Thus we would
       // access a memory location that the original loop did not access.
-      if (isLoadConditional(Cand.Load, L))
+      if (isLoadConditional(Cand.Load, L)) {
         continue;
+
+}
 
       // Check whether the SCEV difference is the same as the induction step,
       // thus we load the value in the next iteration.
-      if (!Cand.isDependenceDistanceOfOne(PSE, L))
+      if (!Cand.isDependenceDistanceOfOne(PSE, L)) {
         continue;
+
+}
 
       ++NumForwarding;
       LLVM_DEBUG(
@@ -515,8 +557,10 @@ public:
           << ". Valid store-to-load forwarding across the loop backedge\n");
       Candidates.push_back(Cand);
     }
-    if (Candidates.empty())
+    if (Candidates.empty()) {
       return false;
+
+}
 
     // Check intervening may-alias stores.  These need runtime checks for alias
     // disambiguation.
@@ -572,8 +616,10 @@ public:
     // Also for the first iteration, generate the initial value of the load.
     SCEVExpander SEE(*PSE.getSE(), L->getHeader()->getModule()->getDataLayout(),
                      "storeforward");
-    for (const auto &Cand : Candidates)
+    for (const auto &Cand : Candidates) {
       propagateStoredValueToLoadUsers(Cand, SEE);
+
+}
     NumLoopLoadEliminted += NumForwarding;
 
     return true;
@@ -608,11 +654,17 @@ eliminateLoadsAcrossLoops(Function &F, LoopInfo &LI, DominatorTree &DT,
   // which merely optimizes the use of loads in a loop.
   SmallVector<Loop *, 8> Worklist;
 
-  for (Loop *TopLevelLoop : LI)
-    for (Loop *L : depth_first(TopLevelLoop))
+  for (Loop *TopLevelLoop : LI) {
+    for (Loop *L : depth_first(TopLevelLoop)) {
       // We only handle inner-most loops.
-      if (L->empty())
+      if (L->empty()) {
         Worklist.push_back(L);
+
+}
+
+}
+
+}
 
   // Now walk the identified inner loops.
   bool Changed = false;
@@ -637,8 +689,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     auto &LAA = getAnalysis<LoopAccessLegacyAnalysis>();
@@ -712,8 +766,10 @@ PreservedAnalyses LoopLoadEliminationPass::run(Function &F,
         return LAM.getResult<LoopAccessAnalysis>(L, AR);
       });
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   return PA;

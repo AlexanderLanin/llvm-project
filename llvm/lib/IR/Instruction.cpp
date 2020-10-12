@@ -43,8 +43,10 @@ Instruction::Instruction(Type *ty, unsigned it, Use *Ops, unsigned NumOps,
 
 Instruction::~Instruction() {
   assert(!Parent && "Instruction still linked in the program!");
-  if (hasMetadataHashEntry())
+  if (hasMetadataHashEntry()) {
     clearMetadataHashEntries();
+
+}
 }
 
 
@@ -101,8 +103,10 @@ bool Instruction::comesBefore(const Instruction *Other) const {
   assert(Parent && Other->Parent &&
          "instructions without BB parents have no order");
   assert(Parent == Other->Parent && "cross-BB instruction order comparison");
-  if (!Parent->isInstrOrderValid())
+  if (!Parent->isInstrOrderValid()) {
     Parent->renumberInstructions();
+
+}
   return Order < Other->Order;
 }
 
@@ -259,18 +263,30 @@ void Instruction::copyIRFlags(const Value *V, bool IncludeWrapFlags) {
   }
 
   // Copy the exact flag.
-  if (auto *PE = dyn_cast<PossiblyExactOperator>(V))
-    if (isa<PossiblyExactOperator>(this))
+  if (auto *PE = dyn_cast<PossiblyExactOperator>(V)) {
+    if (isa<PossiblyExactOperator>(this)) {
       setIsExact(PE->isExact());
 
+}
+
+}
+
   // Copy the fast-math flags.
-  if (auto *FP = dyn_cast<FPMathOperator>(V))
-    if (isa<FPMathOperator>(this))
+  if (auto *FP = dyn_cast<FPMathOperator>(V)) {
+    if (isa<FPMathOperator>(this)) {
       copyFastMathFlags(FP->getFastMathFlags());
 
-  if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V))
-    if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this))
+}
+
+}
+
+  if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V)) {
+    if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this)) {
       DestGEP->setIsInBounds(SrcGEP->isInBounds() | DestGEP->isInBounds());
+
+}
+
+}
 }
 
 void Instruction::andIRFlags(const Value *V) {
@@ -281,9 +297,13 @@ void Instruction::andIRFlags(const Value *V) {
     }
   }
 
-  if (auto *PE = dyn_cast<PossiblyExactOperator>(V))
-    if (isa<PossiblyExactOperator>(this))
+  if (auto *PE = dyn_cast<PossiblyExactOperator>(V)) {
+    if (isa<PossiblyExactOperator>(this)) {
       setIsExact(isExact() & PE->isExact());
+
+}
+
+}
 
   if (auto *FP = dyn_cast<FPMathOperator>(V)) {
     if (isa<FPMathOperator>(this)) {
@@ -293,9 +313,13 @@ void Instruction::andIRFlags(const Value *V) {
     }
   }
 
-  if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V))
-    if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this))
+  if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V)) {
+    if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this)) {
       DestGEP->setIsInBounds(SrcGEP->isInBounds() & DestGEP->isInBounds());
+
+}
+
+}
 }
 
 const char *Instruction::getOpcodeName(unsigned OpCode) {
@@ -391,45 +415,65 @@ static bool haveSameSpecialState(const Instruction *I1, const Instruction *I2,
   assert(I1->getOpcode() == I2->getOpcode() &&
          "Can not compare special state of different instructions");
 
-  if (const AllocaInst *AI = dyn_cast<AllocaInst>(I1))
+  if (const AllocaInst *AI = dyn_cast<AllocaInst>(I1)) {
     return AI->getAllocatedType() == cast<AllocaInst>(I2)->getAllocatedType() &&
            (AI->getAlignment() == cast<AllocaInst>(I2)->getAlignment() ||
             IgnoreAlignment);
-  if (const LoadInst *LI = dyn_cast<LoadInst>(I1))
+
+}
+  if (const LoadInst *LI = dyn_cast<LoadInst>(I1)) {
     return LI->isVolatile() == cast<LoadInst>(I2)->isVolatile() &&
            (LI->getAlignment() == cast<LoadInst>(I2)->getAlignment() ||
             IgnoreAlignment) &&
            LI->getOrdering() == cast<LoadInst>(I2)->getOrdering() &&
            LI->getSyncScopeID() == cast<LoadInst>(I2)->getSyncScopeID();
-  if (const StoreInst *SI = dyn_cast<StoreInst>(I1))
+
+}
+  if (const StoreInst *SI = dyn_cast<StoreInst>(I1)) {
     return SI->isVolatile() == cast<StoreInst>(I2)->isVolatile() &&
            (SI->getAlignment() == cast<StoreInst>(I2)->getAlignment() ||
             IgnoreAlignment) &&
            SI->getOrdering() == cast<StoreInst>(I2)->getOrdering() &&
            SI->getSyncScopeID() == cast<StoreInst>(I2)->getSyncScopeID();
-  if (const CmpInst *CI = dyn_cast<CmpInst>(I1))
+
+}
+  if (const CmpInst *CI = dyn_cast<CmpInst>(I1)) {
     return CI->getPredicate() == cast<CmpInst>(I2)->getPredicate();
-  if (const CallInst *CI = dyn_cast<CallInst>(I1))
+
+}
+  if (const CallInst *CI = dyn_cast<CallInst>(I1)) {
     return CI->isTailCall() == cast<CallInst>(I2)->isTailCall() &&
            CI->getCallingConv() == cast<CallInst>(I2)->getCallingConv() &&
            CI->getAttributes() == cast<CallInst>(I2)->getAttributes() &&
            CI->hasIdenticalOperandBundleSchema(*cast<CallInst>(I2));
-  if (const InvokeInst *CI = dyn_cast<InvokeInst>(I1))
+
+}
+  if (const InvokeInst *CI = dyn_cast<InvokeInst>(I1)) {
     return CI->getCallingConv() == cast<InvokeInst>(I2)->getCallingConv() &&
            CI->getAttributes() == cast<InvokeInst>(I2)->getAttributes() &&
            CI->hasIdenticalOperandBundleSchema(*cast<InvokeInst>(I2));
-  if (const CallBrInst *CI = dyn_cast<CallBrInst>(I1))
+
+}
+  if (const CallBrInst *CI = dyn_cast<CallBrInst>(I1)) {
     return CI->getCallingConv() == cast<CallBrInst>(I2)->getCallingConv() &&
            CI->getAttributes() == cast<CallBrInst>(I2)->getAttributes() &&
            CI->hasIdenticalOperandBundleSchema(*cast<CallBrInst>(I2));
-  if (const InsertValueInst *IVI = dyn_cast<InsertValueInst>(I1))
+
+}
+  if (const InsertValueInst *IVI = dyn_cast<InsertValueInst>(I1)) {
     return IVI->getIndices() == cast<InsertValueInst>(I2)->getIndices();
-  if (const ExtractValueInst *EVI = dyn_cast<ExtractValueInst>(I1))
+
+}
+  if (const ExtractValueInst *EVI = dyn_cast<ExtractValueInst>(I1)) {
     return EVI->getIndices() == cast<ExtractValueInst>(I2)->getIndices();
-  if (const FenceInst *FI = dyn_cast<FenceInst>(I1))
+
+}
+  if (const FenceInst *FI = dyn_cast<FenceInst>(I1)) {
     return FI->getOrdering() == cast<FenceInst>(I2)->getOrdering() &&
            FI->getSyncScopeID() == cast<FenceInst>(I2)->getSyncScopeID();
-  if (const AtomicCmpXchgInst *CXI = dyn_cast<AtomicCmpXchgInst>(I1))
+
+}
+  if (const AtomicCmpXchgInst *CXI = dyn_cast<AtomicCmpXchgInst>(I1)) {
     return CXI->isVolatile() == cast<AtomicCmpXchgInst>(I2)->isVolatile() &&
            CXI->isWeak() == cast<AtomicCmpXchgInst>(I2)->isWeak() &&
            CXI->getSuccessOrdering() ==
@@ -438,11 +482,15 @@ static bool haveSameSpecialState(const Instruction *I1, const Instruction *I2,
                cast<AtomicCmpXchgInst>(I2)->getFailureOrdering() &&
            CXI->getSyncScopeID() ==
                cast<AtomicCmpXchgInst>(I2)->getSyncScopeID();
-  if (const AtomicRMWInst *RMWI = dyn_cast<AtomicRMWInst>(I1))
+
+}
+  if (const AtomicRMWInst *RMWI = dyn_cast<AtomicRMWInst>(I1)) {
     return RMWI->getOperation() == cast<AtomicRMWInst>(I2)->getOperation() &&
            RMWI->isVolatile() == cast<AtomicRMWInst>(I2)->isVolatile() &&
            RMWI->getOrdering() == cast<AtomicRMWInst>(I2)->getOrdering() &&
            RMWI->getSyncScopeID() == cast<AtomicRMWInst>(I2)->getSyncScopeID();
+
+}
 
   return true;
 }
@@ -455,17 +503,23 @@ bool Instruction::isIdenticalTo(const Instruction *I) const {
 bool Instruction::isIdenticalToWhenDefined(const Instruction *I) const {
   if (getOpcode() != I->getOpcode() ||
       getNumOperands() != I->getNumOperands() ||
-      getType() != I->getType())
+      getType() != I->getType()) {
     return false;
 
+}
+
   // If both instructions have no operands, they are identical.
-  if (getNumOperands() == 0 && I->getNumOperands() == 0)
+  if (getNumOperands() == 0 && I->getNumOperands() == 0) {
     return haveSameSpecialState(this, I);
+
+}
 
   // We have two instructions of identical opcode and #operands.  Check to see
   // if all operands are the same.
-  if (!std::equal(op_begin(), op_end(), I->op_begin()))
+  if (!std::equal(op_begin(), op_end(), I->op_begin())) {
     return false;
+
+}
 
   if (const PHINode *thisPHI = dyn_cast<PHINode>(this)) {
     const PHINode *otherPHI = cast<PHINode>(I);
@@ -487,17 +541,23 @@ bool Instruction::isSameOperationAs(const Instruction *I,
       getNumOperands() != I->getNumOperands() ||
       (UseScalarTypes ?
        getType()->getScalarType() != I->getType()->getScalarType() :
-       getType() != I->getType()))
+       getType() != I->getType())) {
     return false;
+
+}
 
   // We have two instructions of identical opcode and #operands.  Check to see
   // if all operands are the same type
-  for (unsigned i = 0, e = getNumOperands(); i != e; ++i)
+  for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     if (UseScalarTypes ?
         getOperand(i)->getType()->getScalarType() !=
           I->getOperand(i)->getType()->getScalarType() :
-        getOperand(i)->getType() != I->getOperand(i)->getType())
+        getOperand(i)->getType() != I->getOperand(i)->getType()) {
       return false;
+
+}
+
+}
 
   return haveSameSpecialState(this, I, IgnoreAlignment);
 }
@@ -509,13 +569,17 @@ bool Instruction::isUsedOutsideOfBlock(const BasicBlock *BB) const {
     const Instruction *I = cast<Instruction>(U.getUser());
     const PHINode *PN = dyn_cast<PHINode>(I);
     if (!PN) {
-      if (I->getParent() != BB)
+      if (I->getParent() != BB) {
         return true;
+
+}
       continue;
     }
 
-    if (PN->getIncomingBlock(U) != BB)
+    if (PN->getIncomingBlock(U) != BB) {
       return true;
+
+}
   }
   return false;
 }
@@ -600,12 +664,18 @@ bool Instruction::hasAtomicStore() const {
 }
 
 bool Instruction::mayThrow() const {
-  if (const CallInst *CI = dyn_cast<CallInst>(this))
+  if (const CallInst *CI = dyn_cast<CallInst>(this)) {
     return !CI->doesNotThrow();
-  if (const auto *CRI = dyn_cast<CleanupReturnInst>(this))
+
+}
+  if (const auto *CRI = dyn_cast<CleanupReturnInst>(this)) {
     return CRI->unwindsToCaller();
-  if (const auto *CatchSwitch = dyn_cast<CatchSwitchInst>(this))
+
+}
+  if (const auto *CatchSwitch = dyn_cast<CatchSwitchInst>(this)) {
     return CatchSwitch->unwindsToCaller();
+
+}
   return isa<ResumeInst>(this);
 }
 
@@ -616,30 +686,42 @@ bool Instruction::isSafeToRemove() const {
 
 bool Instruction::isLifetimeStartOrEnd() const {
   auto II = dyn_cast<IntrinsicInst>(this);
-  if (!II)
+  if (!II) {
     return false;
+
+}
   Intrinsic::ID ID = II->getIntrinsicID();
   return ID == Intrinsic::lifetime_start || ID == Intrinsic::lifetime_end;
 }
 
 const Instruction *Instruction::getNextNonDebugInstruction() const {
-  for (const Instruction *I = getNextNode(); I; I = I->getNextNode())
-    if (!isa<DbgInfoIntrinsic>(I))
+  for (const Instruction *I = getNextNode(); I; I = I->getNextNode()) {
+    if (!isa<DbgInfoIntrinsic>(I)) {
       return I;
+
+}
+
+}
   return nullptr;
 }
 
 const Instruction *Instruction::getPrevNonDebugInstruction() const {
-  for (const Instruction *I = getPrevNode(); I; I = I->getPrevNode())
-    if (!isa<DbgInfoIntrinsic>(I))
+  for (const Instruction *I = getPrevNode(); I; I = I->getPrevNode()) {
+    if (!isa<DbgInfoIntrinsic>(I)) {
       return I;
+
+}
+
+}
   return nullptr;
 }
 
 bool Instruction::isAssociative() const {
   unsigned Opcode = getOpcode();
-  if (isAssociative(Opcode))
+  if (isAssociative(Opcode)) {
     return true;
+
+}
 
   switch (Opcode) {
   case FMul:
@@ -689,9 +771,13 @@ void Instruction::setSuccessor(unsigned idx, BasicBlock *B) {
 
 void Instruction::replaceSuccessorWith(BasicBlock *OldBB, BasicBlock *NewBB) {
   for (unsigned Idx = 0, NumSuccessors = Instruction::getNumSuccessors();
-       Idx != NumSuccessors; ++Idx)
-    if (getSuccessor(Idx) == OldBB)
+       Idx != NumSuccessors; ++Idx) {
+    if (getSuccessor(Idx) == OldBB) {
       setSuccessor(Idx, NewBB);
+
+}
+
+}
 }
 
 Instruction *Instruction::cloneImpl() const {
@@ -701,12 +787,16 @@ Instruction *Instruction::cloneImpl() const {
 void Instruction::swapProfMetadata() {
   MDNode *ProfileData = getMetadata(LLVMContext::MD_prof);
   if (!ProfileData || ProfileData->getNumOperands() != 3 ||
-      !isa<MDString>(ProfileData->getOperand(0)))
+      !isa<MDString>(ProfileData->getOperand(0))) {
     return;
 
+}
+
   MDString *MDName = cast<MDString>(ProfileData->getOperand(0));
-  if (MDName->getString() != "branch_weights")
+  if (MDName->getString() != "branch_weights") {
     return;
+
+}
 
   // The first operand is the name. Fetch them backwards and build a new one.
   Metadata *Ops[] = {ProfileData->getOperand(0), ProfileData->getOperand(2),
@@ -717,23 +807,31 @@ void Instruction::swapProfMetadata() {
 
 void Instruction::copyMetadata(const Instruction &SrcInst,
                                ArrayRef<unsigned> WL) {
-  if (!SrcInst.hasMetadata())
+  if (!SrcInst.hasMetadata()) {
     return;
 
+}
+
   DenseSet<unsigned> WLS;
-  for (unsigned M : WL)
+  for (unsigned M : WL) {
     WLS.insert(M);
+
+}
 
   // Otherwise, enumerate and copy over metadata from the old instruction to the
   // new one.
   SmallVector<std::pair<unsigned, MDNode *>, 4> TheMDs;
   SrcInst.getAllMetadataOtherThanDebugLoc(TheMDs);
   for (const auto &MD : TheMDs) {
-    if (WL.empty() || WLS.count(MD.first))
+    if (WL.empty() || WLS.count(MD.first)) {
       setMetadata(MD.first, MD.second);
+
+}
   }
-  if (WL.empty() || WLS.count(LLVMContext::MD_dbg))
+  if (WL.empty() || WLS.count(LLVMContext::MD_dbg)) {
     setDebugLoc(SrcInst.getDebugLoc());
+
+}
 }
 
 Instruction *Instruction::clone() const {

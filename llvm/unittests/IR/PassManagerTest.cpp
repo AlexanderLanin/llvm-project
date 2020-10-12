@@ -39,10 +39,14 @@ public:
   Result run(Function &F, FunctionAnalysisManager &AM) {
     ++Runs;
     int Count = 0;
-    for (Function::iterator BBI = F.begin(), BBE = F.end(); BBI != BBE; ++BBI)
+    for (Function::iterator BBI = F.begin(), BBE = F.end(); BBI != BBE; ++BBI) {
       for (BasicBlock::iterator II = BBI->begin(), IE = BBI->end(); II != IE;
-           ++II)
+           ++II) {
         ++Count;
+
+}
+
+}
     return Result(Count);
   }
 
@@ -74,8 +78,10 @@ public:
   Result run(Module &M, ModuleAnalysisManager &AM) {
     ++Runs;
     int Count = 0;
-    for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
+    for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I) {
       ++Count;
+
+}
     return Result(Count);
   }
 
@@ -119,14 +125,18 @@ struct TestFunctionPass : PassInfoMixin<TestFunctionPass> {
     const ModuleAnalysisManager &MAM =
         AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
     if (TestModuleAnalysis::Result *TMA =
-            MAM.getCachedResult<TestModuleAnalysis>(*F.getParent()))
+            MAM.getCachedResult<TestModuleAnalysis>(*F.getParent())) {
       AnalyzedFunctionCount += TMA->FunctionCount;
+
+}
 
     if (OnlyUseCachedResults) {
       // Hack to force the use of the cached interface.
       if (TestFunctionAnalysis::Result *AR =
-              AM.getCachedResult<TestFunctionAnalysis>(F))
+              AM.getCachedResult<TestFunctionAnalysis>(F)) {
         AnalyzedInstrCount += AR->InstructionCount;
+
+}
     } else {
       // Typical path just runs the analysis as needed.
       TestFunctionAnalysis::Result &AR = AM.getResult<TestFunctionAnalysis>(F);
@@ -585,8 +595,10 @@ TEST_F(PassManagerTest, CustomizedPassManagerArgs) {
       CustomizedPass([](CustomizedAnalysis::Result &R, int &O) { O += R.I; }));
 
   // Run this over every function with the input of 42.
-  for (Function &F : *M)
+  for (Function &F : *M) {
     PM.run(F, AM, 42, Result);
+
+}
 
   // And ensure that we accumulated the correct result.
   EXPECT_EQ(42 * (int)M->size(), Result);
@@ -735,10 +747,12 @@ TEST_F(PassManagerTest, IndirectAnalysisInvalidation) {
     InstrCount += IndirectResult.FDep.InstructionCount;
     FunctionCount += IndirectResult.MDep.FunctionCount;
     auto PA = PreservedAnalyses::none();
-    if (F.getName() == "g")
+    if (F.getName() == "g") {
       PA.preserve<TestFunctionAnalysis>();
-    else if (F.getName() == "h")
+    } else if (F.getName() == "h") {
       PA.preserve<TestIndirectFunctionAnalysis>();
+
+}
     return PA;
   }));
   // Finally, use the analysis again on each function, forcing re-computation

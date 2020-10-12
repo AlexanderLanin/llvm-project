@@ -21,8 +21,10 @@ LLT llvm::getLLTForType(Type &Ty, const DataLayout &DL) {
   if (auto VTy = dyn_cast<VectorType>(&Ty)) {
     auto NumElements = VTy->getNumElements();
     LLT ScalarTy = getLLTForType(*VTy->getElementType(), DL);
-    if (NumElements == 1)
+    if (NumElements == 1) {
       return ScalarTy;
+
+}
     return LLT::vector(NumElements, ScalarTy);
   }
 
@@ -43,8 +45,10 @@ LLT llvm::getLLTForType(Type &Ty, const DataLayout &DL) {
 }
 
 MVT llvm::getMVTForLLT(LLT Ty) {
-  if (!Ty.isVector())
+  if (!Ty.isVector()) {
     return MVT::getIntegerVT(Ty.getSizeInBits());
+
+}
 
   return MVT::getVectorVT(
       MVT::getIntegerVT(Ty.getElementType().getSizeInBits()),
@@ -52,8 +56,10 @@ MVT llvm::getMVTForLLT(LLT Ty) {
 }
 
 LLT llvm::getLLTForMVT(MVT Ty) {
-  if (!Ty.isVector())
+  if (!Ty.isVector()) {
     return LLT::scalar(Ty.getSizeInBits());
+
+}
 
   return LLT::vector(Ty.getVectorNumElements(),
                      Ty.getVectorElementType().getSizeInBits());

@@ -103,19 +103,27 @@ static ExFunc lookupFunction(const Function *F) {
   std::string ExtName = "lle_";
   FunctionType *FT = F->getFunctionType();
   ExtName += getTypeID(FT->getReturnType());
-  for (Type *T : FT->params())
+  for (Type *T : FT->params()) {
     ExtName += getTypeID(T);
+
+}
   ExtName += ("_" + F->getName()).str();
 
   sys::ScopedLock Writer(*FunctionsLock);
   ExFunc FnPtr = (*FuncNames)[ExtName];
-  if (!FnPtr)
+  if (!FnPtr) {
     FnPtr = (*FuncNames)[("lle_X_" + F->getName()).str()];
-  if (!FnPtr)  // Try calling a generic function... if it exists...
+
+}
+  if (!FnPtr) {  // Try calling a generic function... if it exists...
     FnPtr = (ExFunc)(intptr_t)sys::DynamicLibrary::SearchForAddressOfSymbol(
         ("lle_X_" + F->getName()).str());
-  if (FnPtr)
+
+}
+  if (FnPtr) {
     ExportedFunctions->insert(std::make_pair(F, FnPtr));  // Cache for later
+
+}
   return FnPtr;
 }
 
@@ -290,12 +298,14 @@ GenericValue Interpreter::callExternalFunction(Function *F,
     return Result;
 #endif // USE_LIBFFI
 
-  if (F->getName() == "__main")
+  if (F->getName() == "__main") {
     errs() << "Tried to execute an unknown external function: "
       << *F->getType() << " __main\n";
-  else
+  } else {
     report_fatal_error("Tried to execute an unknown external function: " +
                        F->getName());
+
+}
 #ifndef USE_LIBFFI
   errs() << "Recompiling LLVM with --enable-libffi might help.\n";
 #endif
@@ -363,7 +373,9 @@ static GenericValue lle_X_sprintf(FunctionType *FT,
              Last != 'o' && Last != 'x' && Last != 'X' && Last != 'e' &&
              Last != 'E' && Last != 'g' && Last != 'G' && Last != 'f' &&
              Last != 'p' && Last != 's' && Last != '%') {
-        if (Last == 'l' || Last == 'L') HowLong++;  // Keep track of l's
+        if (Last == 'l' || Last == 'L') { HowLong++;  // Keep track of l's
+
+}
         Last = *FB++ = *FmtStr++;
       }
       *FB = 0;
@@ -389,8 +401,10 @@ static GenericValue lle_X_sprintf(FunctionType *FT,
             FmtBuf[Size-1] = 'l';
           }
           sprintf(Buffer, FmtBuf, Args[ArgNo++].IntVal.getZExtValue());
-        } else
+        } else {
           sprintf(Buffer, FmtBuf,uint32_t(Args[ArgNo++].IntVal.getZExtValue()));
+
+}
         break;
       case 'e': case 'E': case 'g': case 'G': case 'f':
         sprintf(Buffer, FmtBuf, Args[ArgNo++].DoubleVal); break;
@@ -431,8 +445,10 @@ static GenericValue lle_X_sscanf(FunctionType *FT,
   assert(args.size() < 10 && "Only handle up to 10 args to sscanf right now!");
 
   char *Args[10];
-  for (unsigned i = 0; i < args.size(); ++i)
+  for (unsigned i = 0; i < args.size(); ++i) {
     Args[i] = (char*)GVTOP(args[i]);
+
+}
 
   GenericValue GV;
   GV.IntVal = APInt(32, sscanf(Args[0], Args[1], Args[2], Args[3], Args[4],
@@ -445,8 +461,10 @@ static GenericValue lle_X_scanf(FunctionType *FT, ArrayRef<GenericValue> args) {
   assert(args.size() < 10 && "Only handle up to 10 args to scanf right now!");
 
   char *Args[10];
-  for (unsigned i = 0; i < args.size(); ++i)
+  for (unsigned i = 0; i < args.size(); ++i) {
     Args[i] = (char*)GVTOP(args[i]);
+
+}
 
   GenericValue GV;
   GV.IntVal = APInt(32, scanf( Args[0], Args[1], Args[2], Args[3], Args[4],

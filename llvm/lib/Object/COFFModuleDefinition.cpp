@@ -91,8 +91,10 @@ public:
 
   Token lex() {
     Buf = Buf.trim();
-    if (Buf.empty())
+    if (Buf.empty()) {
       return Token(Eof);
+
+}
 
     switch (Buf[0]) {
     case '\0':
@@ -150,8 +152,10 @@ public:
 
   Expected<COFFModuleDefinition> parse() {
     do {
-      if (Error Err = parseOne())
+      if (Error Err = parseOne()) {
         return std::move(Err);
+
+}
     } while (Tok.K != Eof);
     return Info;
   }
@@ -168,15 +172,19 @@ private:
 
   Error readAsInt(uint64_t *I) {
     read();
-    if (Tok.K != Identifier || Tok.Value.getAsInteger(10, *I))
+    if (Tok.K != Identifier || Tok.Value.getAsInteger(10, *I)) {
       return createError("integer expected");
+
+}
     return Error::success();
   }
 
   Error expect(Kind Expected, StringRef Msg) {
     read();
-    if (Tok.K != Expected)
+    if (Tok.K != Expected) {
       return createError(Msg);
+
+}
     return Error::success();
   }
 
@@ -194,8 +202,10 @@ private:
           unget();
           return Error::success();
         }
-        if (Error Err = parseExport())
+        if (Error Err = parseExport()) {
           return Err;
+
+}
       }
     case KwHeapsize:
       return parseNumbers(&Info.HeapReserve, &Info.HeapCommit);
@@ -205,8 +215,10 @@ private:
     case KwName: {
       bool IsDll = Tok.K == KwLibrary; // Check before parseName.
       std::string Name;
-      if (Error Err = parseName(&Name, &Info.ImageBase))
+      if (Error Err = parseName(&Name, &Info.ImageBase)) {
         return Err;
+
+}
 
       Info.ImportName = Name;
 
@@ -214,8 +226,10 @@ private:
       if (Info.OutputFile.empty()) {
         Info.OutputFile = Name;
         // Append the appropriate file extension if not already present.
-        if (!sys::path::has_extension(Name))
+        if (!sys::path::has_extension(Name)) {
           Info.OutputFile += IsDll ? ".dll" : ".exe";
+
+}
       }
 
       return Error::success();
@@ -233,8 +247,10 @@ private:
     read();
     if (Tok.K == Equal) {
       read();
-      if (Tok.K != Identifier)
+      if (Tok.K != Identifier) {
         return createError("identifier expected, but got " + Tok.Value);
+
+}
       E.ExtName = E.Name;
       E.Name = std::string(Tok.Value);
     } else {
@@ -242,10 +258,14 @@ private:
     }
 
     if (Machine == IMAGE_FILE_MACHINE_I386) {
-      if (!isDecorated(E.Name, MingwDef))
+      if (!isDecorated(E.Name, MingwDef)) {
         E.Name = (std::string("_").append(E.Name));
-      if (!E.ExtName.empty() && !isDecorated(E.ExtName, MingwDef))
+
+}
+      if (!E.ExtName.empty() && !isDecorated(E.ExtName, MingwDef)) {
         E.ExtName = (std::string("_").append(E.ExtName));
+
+}
     }
 
     for (;;) {
@@ -286,8 +306,10 @@ private:
       if (Tok.K == EqualEqual) {
         read();
         E.AliasTarget = std::string(Tok.Value);
-        if (Machine == IMAGE_FILE_MACHINE_I386 && !isDecorated(E.AliasTarget, MingwDef))
+        if (Machine == IMAGE_FILE_MACHINE_I386 && !isDecorated(E.AliasTarget, MingwDef)) {
           E.AliasTarget = std::string("_").append(E.AliasTarget);
+
+}
         continue;
       }
       unget();
@@ -298,16 +320,20 @@ private:
 
   // HEAPSIZE/STACKSIZE reserve[,commit]
   Error parseNumbers(uint64_t *Reserve, uint64_t *Commit) {
-    if (Error Err = readAsInt(Reserve))
+    if (Error Err = readAsInt(Reserve)) {
       return Err;
+
+}
     read();
     if (Tok.K != Comma) {
       unget();
       Commit = nullptr;
       return Error::success();
     }
-    if (Error Err = readAsInt(Commit))
+    if (Error Err = readAsInt(Commit)) {
       return Err;
+
+}
     return Error::success();
   }
 
@@ -323,10 +349,14 @@ private:
     }
     read();
     if (Tok.K == KwBase) {
-      if (Error Err = expect(Equal, "'=' expected"))
+      if (Error Err = expect(Equal, "'=' expected")) {
         return Err;
-      if (Error Err = readAsInt(Baseaddr))
+
+}
+      if (Error Err = readAsInt(Baseaddr)) {
         return Err;
+
+}
     } else {
       unget();
       *Baseaddr = 0;
@@ -337,16 +367,22 @@ private:
   // VERSION major[.minor]
   Error parseVersion(uint32_t *Major, uint32_t *Minor) {
     read();
-    if (Tok.K != Identifier)
+    if (Tok.K != Identifier) {
       return createError("identifier expected, but got " + Tok.Value);
+
+}
     StringRef V1, V2;
     std::tie(V1, V2) = Tok.Value.split('.');
-    if (V1.getAsInteger(10, *Major))
+    if (V1.getAsInteger(10, *Major)) {
       return createError("integer expected, but got " + Tok.Value);
-    if (V2.empty())
+
+}
+    if (V2.empty()) {
       *Minor = 0;
-    else if (V2.getAsInteger(10, *Minor))
+    } else if (V2.getAsInteger(10, *Minor)) {
       return createError("integer expected, but got " + Tok.Value);
+
+}
     return Error::success();
   }
 

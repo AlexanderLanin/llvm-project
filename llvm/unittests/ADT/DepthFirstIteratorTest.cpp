@@ -45,8 +45,10 @@ TEST(DepthFirstIteratorTest, ActuallyUpdateIterator) {
   G.AddEdge(0, 1);
   G.AddEdge(0, 2);
   StorageT S;
-  for (auto N : make_range(DFIter::begin(G, S), DFIter::end(G, S)))
+  for (auto N : make_range(DFIter::begin(G, S), DFIter::end(G, S))) {
     (void)N;
+
+}
 
   EXPECT_EQ(3, S.InsertVisited);
 }

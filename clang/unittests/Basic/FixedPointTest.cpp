@@ -364,8 +364,10 @@ void CheckUnsaturatedConversion(FixedPointSemantics Src,
                                 FixedPointSemantics Dst, int64_t TestVal) {
   int64_t ScaledVal = TestVal;
   bool IsNegative = ScaledVal < 0;
-  if (IsNegative)
+  if (IsNegative) {
     ScaledVal = -ScaledVal;
+
+}
 
   if (Dst.getScale() > Src.getScale()) {
     ScaledVal <<= (Dst.getScale() - Src.getScale());
@@ -373,8 +375,10 @@ void CheckUnsaturatedConversion(FixedPointSemantics Src,
     ScaledVal >>= (Src.getScale() - Dst.getScale());
   }
 
-  if (IsNegative)
+  if (IsNegative) {
     ScaledVal = -ScaledVal;
+
+}
 
   APFixedPoint Fixed(TestVal, Src);
   APFixedPoint Expected(ScaledVal, Dst);

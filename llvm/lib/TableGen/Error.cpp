@@ -27,16 +27,22 @@ static void PrintMessage(ArrayRef<SMLoc> Loc, SourceMgr::DiagKind Kind,
                          const Twine &Msg) {
   // Count the total number of errors printed.
   // This is used to exit with an error code if there were any errors.
-  if (Kind == SourceMgr::DK_Error)
+  if (Kind == SourceMgr::DK_Error) {
     ++ErrorsPrinted;
 
+}
+
   SMLoc NullLoc;
-  if (Loc.empty())
+  if (Loc.empty()) {
     Loc = NullLoc;
+
+}
   SrcMgr.PrintMessage(Loc.front(), Kind, Msg);
-  for (unsigned i = 1; i < Loc.size(); ++i)
+  for (unsigned i = 1; i < Loc.size(); ++i) {
     SrcMgr.PrintMessage(Loc[i], SourceMgr::DK_Note,
                         "instantiated from multiclass");
+
+}
 }
 
 void PrintNote(const Twine &Msg) { WithColor::note() << Msg << "\n"; }

@@ -46,8 +46,10 @@ public:
   void advanceTo(DocID ID) override {
     assert(!reachedEnd() &&
            "Posting List iterator can't advance() at the end.");
-    if (ID <= peek())
+    if (ID <= peek()) {
       return;
+
+}
     advanceToChunk(ID);
     // Try to find ID within current chunk.
     CurrentID = std::partition_point(CurrentID, DecompressedChunk.end(),
@@ -72,15 +74,19 @@ public:
 
 private:
   llvm::raw_ostream &dump(llvm::raw_ostream &OS) const override {
-    if (Tok != nullptr)
+    if (Tok != nullptr) {
       return OS << *Tok;
+
+}
     OS << '[';
     const char *Sep = "";
-    for (const Chunk &C : Chunks)
+    for (const Chunk &C : Chunks) {
       for (const DocID Doc : C.decompress()) {
         OS << Sep << Doc;
         Sep = " ";
       }
+
+}
     return OS << ']';
   }
 
@@ -88,12 +94,16 @@ private:
   /// chunk.
   void normalizeCursor() {
     // Invariant is already established if examined chunk is not exhausted.
-    if (CurrentID != std::end(DecompressedChunk))
+    if (CurrentID != std::end(DecompressedChunk)) {
       return;
+
+}
     // Advance to next chunk if current one is exhausted.
     ++CurrentChunk;
-    if (CurrentChunk == Chunks.end()) // Reached the end of PostingList.
+    if (CurrentChunk == Chunks.end()) { // Reached the end of PostingList.
       return;
+
+}
     DecompressedChunk = CurrentChunk->decompress();
     CurrentID = DecompressedChunk.begin();
   }
@@ -134,8 +144,10 @@ bool encodeVByte(DocID Delta, llvm::MutableArrayRef<uint8_t> &Payload) {
   // Calculate number of bytes Delta encoding would take by examining the
   // meaningful bits.
   unsigned Width = 1 + llvm::findLastSet(Delta) / BitsPerEncodingByte;
-  if (Width > Payload.size())
+  if (Width > Payload.size()) {
     return false;
+
+}
 
   do {
     uint8_t Encoding = Delta & 0x7f;
@@ -185,16 +197,20 @@ std::vector<Chunk> encodeStream(llvm::ArrayRef<DocID> Documents) {
 /// Reads variable length DocID from the buffer and updates the buffer size. If
 /// the stream is terminated, return None.
 llvm::Optional<DocID> readVByte(llvm::ArrayRef<uint8_t> &Bytes) {
-  if (Bytes.front() == 0 || Bytes.empty())
+  if (Bytes.front() == 0 || Bytes.empty()) {
     return None;
+
+}
   DocID Result = 0;
   bool HasNextByte = true;
   for (size_t Length = 0; HasNextByte && !Bytes.empty(); ++Length) {
     assert(Length <= 5 && "Malformed VByte encoding sequence.");
     // Write meaningful bits to the correct place in the document decoding.
     Result |= (Bytes.front() & 0x7f) << (BitsPerEncodingByte * Length);
-    if ((Bytes.front() & 0x80) == 0)
+    if ((Bytes.front() & 0x80) == 0) {
       HasNextByte = false;
+
+}
     Bytes = Bytes.drop_front();
   }
   return Result;
@@ -208,8 +224,10 @@ llvm::SmallVector<DocID, Chunk::PayloadSize + 1> Chunk::decompress() const {
   DocID Delta;
   for (DocID Current = Head; !Bytes.empty(); Current += Delta) {
     auto MaybeDelta = readVByte(Bytes);
-    if (!MaybeDelta)
+    if (!MaybeDelta) {
       break;
+
+}
     Delta = *MaybeDelta;
     Result.push_back(Current + Delta);
   }

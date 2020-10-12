@@ -41,23 +41,31 @@ AliasAttrs getAttrEscaped() { return AttrEscaped; }
 bool hasEscapedAttr(AliasAttrs Attr) { return Attr.test(AttrEscapedIndex); }
 
 static AliasAttr argNumberToAttr(unsigned ArgNum) {
-  if (ArgNum >= AttrMaxNumArgs)
+  if (ArgNum >= AttrMaxNumArgs) {
     return AttrUnknown;
+
+}
   // N.B. MSVC complains if we use `1U` here, since AliasAttr' ctor takes
   // an unsigned long long.
   return AliasAttr(1ULL << (ArgNum + AttrFirstArgIndex));
 }
 
 AliasAttrs getGlobalOrArgAttrFromValue(const Value &Val) {
-  if (isa<GlobalValue>(Val))
+  if (isa<GlobalValue>(Val)) {
     return AttrGlobal;
 
-  if (auto *Arg = dyn_cast<Argument>(&Val))
+}
+
+  if (auto *Arg = dyn_cast<Argument>(&Val)) {
     // Only pointer arguments should have the argument attribute,
     // because things can't escape through scalars without us seeing a
     // cast, and thus, interaction with them doesn't matter.
-    if (!Arg->hasNoAliasAttr() && Arg->getType()->isPointerTy())
+    if (!Arg->hasNoAliasAttr() && Arg->getType()->isPointerTy()) {
       return argNumberToAttr(Arg->getArgNo());
+
+}
+
+}
   return AttrNone;
 }
 
@@ -76,27 +84,35 @@ Optional<InstantiatedValue> instantiateInterfaceValue(InterfaceValue IValue,
                                                       CallBase &Call) {
   auto Index = IValue.Index;
   auto *V = (Index == 0) ? &Call : Call.getArgOperand(Index - 1);
-  if (V->getType()->isPointerTy())
+  if (V->getType()->isPointerTy()) {
     return InstantiatedValue{V, IValue.DerefLevel};
+
+}
   return None;
 }
 
 Optional<InstantiatedRelation>
 instantiateExternalRelation(ExternalRelation ERelation, CallBase &Call) {
   auto From = instantiateInterfaceValue(ERelation.From, Call);
-  if (!From)
+  if (!From) {
     return None;
+
+}
   auto To = instantiateInterfaceValue(ERelation.To, Call);
-  if (!To)
+  if (!To) {
     return None;
+
+}
   return InstantiatedRelation{*From, *To, ERelation.Offset};
 }
 
 Optional<InstantiatedAttr> instantiateExternalAttribute(ExternalAttribute EAttr,
                                                         CallBase &Call) {
   auto Value = instantiateInterfaceValue(EAttr.IValue, Call);
-  if (!Value)
+  if (!Value) {
     return None;
+
+}
   return InstantiatedAttr{*Value, EAttr.Attr};
 }
 }

@@ -32,9 +32,13 @@ RegisterAliasingTracker::RegisterAliasingTracker(
     const MCRegisterInfo &RegInfo, const BitVector &ReservedReg,
     const MCRegisterClass &RegClass)
     : RegisterAliasingTracker(RegInfo) {
-  for (MCPhysReg PhysReg : RegClass)
-    if (!ReservedReg[PhysReg]) // Removing reserved registers.
+  for (MCPhysReg PhysReg : RegClass) {
+    if (!ReservedReg[PhysReg]) { // Removing reserved registers.
       SourceBits.set(PhysReg);
+
+}
+
+}
   FillOriginAndAliasedBits(RegInfo, SourceBits);
 }
 
@@ -65,8 +69,10 @@ RegisterAliasingTrackerCache::RegisterAliasingTrackerCache(
 const RegisterAliasingTracker &
 RegisterAliasingTrackerCache::getRegister(MCPhysReg PhysReg) const {
   auto &Found = Registers[PhysReg];
-  if (!Found)
+  if (!Found) {
     Found.reset(new RegisterAliasingTracker(RegInfo, PhysReg));
+
+}
   return *Found;
 }
 
@@ -74,8 +80,10 @@ const RegisterAliasingTracker &
 RegisterAliasingTrackerCache::getRegisterClass(unsigned RegClassIndex) const {
   auto &Found = RegisterClasses[RegClassIndex];
   const auto &RegClass = RegInfo.getRegClass(RegClassIndex);
-  if (!Found)
+  if (!Found) {
     Found.reset(new RegisterAliasingTracker(RegInfo, ReservedReg, RegClass));
+
+}
   return *Found;
 }
 

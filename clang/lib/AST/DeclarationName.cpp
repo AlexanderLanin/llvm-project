@@ -43,17 +43,23 @@ static int compareInt(unsigned A, unsigned B) {
 }
 
 int DeclarationName::compare(DeclarationName LHS, DeclarationName RHS) {
-  if (LHS.getNameKind() != RHS.getNameKind())
+  if (LHS.getNameKind() != RHS.getNameKind()) {
     return (LHS.getNameKind() < RHS.getNameKind() ? -1 : 1);
+
+}
 
   switch (LHS.getNameKind()) {
   case DeclarationName::Identifier: {
     IdentifierInfo *LII = LHS.castAsIdentifierInfo();
     IdentifierInfo *RII = RHS.castAsIdentifierInfo();
-    if (!LII)
+    if (!LII) {
       return RII ? -1 : 0;
-    if (!RII)
+
+}
+    if (!RII) {
       return 1;
+
+}
 
     return LII->getName().compare(RII->getName());
   }
@@ -88,10 +94,14 @@ int DeclarationName::compare(DeclarationName LHS, DeclarationName RHS) {
   case DeclarationName::CXXConstructorName:
   case DeclarationName::CXXDestructorName:
   case DeclarationName::CXXConversionFunctionName:
-    if (QualTypeOrdering()(LHS.getCXXNameType(), RHS.getCXXNameType()))
+    if (QualTypeOrdering()(LHS.getCXXNameType(), RHS.getCXXNameType())) {
       return -1;
-    if (QualTypeOrdering()(RHS.getCXXNameType(), LHS.getCXXNameType()))
+
+}
+    if (QualTypeOrdering()(RHS.getCXXNameType(), LHS.getCXXNameType())) {
       return 1;
+
+}
     return 0;
 
   case DeclarationName::CXXDeductionGuideName:
@@ -138,8 +148,10 @@ void DeclarationName::print(raw_ostream &OS,
                             const PrintingPolicy &Policy) const {
   switch (getNameKind()) {
   case DeclarationName::Identifier:
-    if (const IdentifierInfo *II = getAsIdentifierInfo())
+    if (const IdentifierInfo *II = getAsIdentifierInfo()) {
       OS << II->getName();
+
+}
     return;
 
   case DeclarationName::ObjCZeroArgSelector:
@@ -166,8 +178,10 @@ void DeclarationName::print(raw_ostream &OS,
     assert(OpName && "not an overloaded operator");
 
     OS << "operator";
-    if (OpName[0] >= 'a' && OpName[0] <= 'z')
+    if (OpName[0] >= 'a' && OpName[0] <= 'z') {
       OS << ' ';
+
+}
     OS << OpName;
     return;
   }
@@ -209,13 +223,17 @@ raw_ostream &operator<<(raw_ostream &OS, DeclarationName N) {
 
 bool DeclarationName::isDependentName() const {
   QualType T = getCXXNameType();
-  if (!T.isNull() && T->isDependentType())
+  if (!T.isNull() && T->isDependentType()) {
     return true;
+
+}
 
   // A class-scope deduction guide in a dependent context has a dependent name.
   auto *TD = getCXXDeductionGuideTemplate();
-  if (TD && TD->getDeclContext()->isDependentContext())
+  if (TD && TD->getDeclContext()->isDependentContext()) {
     return true;
+
+}
 
   return false;
 }
@@ -275,8 +293,10 @@ LLVM_DUMP_METHOD void DeclarationName::dump() const {
 
 DeclarationNameTable::DeclarationNameTable(const ASTContext &C) : Ctx(C) {
   // Initialize the overloaded operator names.
-  for (unsigned Op = 0; Op < NUM_OVERLOADED_OPERATORS; ++Op)
+  for (unsigned Op = 0; Op < NUM_OVERLOADED_OPERATORS; ++Op) {
     CXXOperatorNames[Op].Kind = static_cast<OverloadedOperatorKind>(Op);
+
+}
 }
 
 DeclarationName
@@ -287,8 +307,10 @@ DeclarationNameTable::getCXXDeductionGuideName(TemplateDecl *Template) {
   ID.AddPointer(Template);
 
   void *InsertPos = nullptr;
-  if (auto *Name = CXXDeductionGuideNames.FindNodeOrInsertPos(ID, InsertPos))
+  if (auto *Name = CXXDeductionGuideNames.FindNodeOrInsertPos(ID, InsertPos)) {
     return DeclarationName(Name);
+
+}
 
   auto *Name = new (Ctx) detail::CXXDeductionGuideNameExtra(Template);
   CXXDeductionGuideNames.InsertNode(Name, InsertPos);
@@ -302,8 +324,10 @@ DeclarationName DeclarationNameTable::getCXXConstructorName(CanQualType Ty) {
   llvm::FoldingSetNodeID ID;
   ID.AddPointer(Ty.getAsOpaquePtr());
   void *InsertPos = nullptr;
-  if (auto *Name = CXXConstructorNames.FindNodeOrInsertPos(ID, InsertPos))
+  if (auto *Name = CXXConstructorNames.FindNodeOrInsertPos(ID, InsertPos)) {
     return {Name, DeclarationName::StoredCXXConstructorName};
+
+}
 
   // We have to create it.
   auto *SpecialName = new (Ctx) detail::CXXSpecialNameExtra(Ty);
@@ -318,8 +342,10 @@ DeclarationName DeclarationNameTable::getCXXDestructorName(CanQualType Ty) {
   llvm::FoldingSetNodeID ID;
   ID.AddPointer(Ty.getAsOpaquePtr());
   void *InsertPos = nullptr;
-  if (auto *Name = CXXDestructorNames.FindNodeOrInsertPos(ID, InsertPos))
+  if (auto *Name = CXXDestructorNames.FindNodeOrInsertPos(ID, InsertPos)) {
     return {Name, DeclarationName::StoredCXXDestructorName};
+
+}
 
   // We have to create it.
   auto *SpecialName = new (Ctx) detail::CXXSpecialNameExtra(Ty);
@@ -334,8 +360,10 @@ DeclarationNameTable::getCXXConversionFunctionName(CanQualType Ty) {
   ID.AddPointer(Ty.getAsOpaquePtr());
   void *InsertPos = nullptr;
   if (auto *Name =
-          CXXConversionFunctionNames.FindNodeOrInsertPos(ID, InsertPos))
+          CXXConversionFunctionNames.FindNodeOrInsertPos(ID, InsertPos)) {
     return {Name, DeclarationName::StoredCXXConversionFunctionName};
+
+}
 
   // We have to create it.
   auto *SpecialName = new (Ctx) detail::CXXSpecialNameExtra(Ty);
@@ -364,8 +392,10 @@ DeclarationNameTable::getCXXLiteralOperatorName(IdentifierInfo *II) {
   ID.AddPointer(II);
 
   void *InsertPos = nullptr;
-  if (auto *Name = CXXLiteralOperatorNames.FindNodeOrInsertPos(ID, InsertPos))
+  if (auto *Name = CXXLiteralOperatorNames.FindNodeOrInsertPos(ID, InsertPos)) {
     return DeclarationName(Name);
+
+}
 
   auto *LiteralName = new (Ctx) detail::CXXLiteralOperatorIdName(II);
   CXXLiteralOperatorNames.InsertNode(LiteralName, InsertPos);
@@ -414,8 +444,10 @@ bool DeclarationNameInfo::containsUnexpandedParameterPack() const {
   case DeclarationName::CXXConstructorName:
   case DeclarationName::CXXDestructorName:
   case DeclarationName::CXXConversionFunctionName:
-    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo)
+    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo) {
       return TInfo->getType()->containsUnexpandedParameterPack();
+
+}
 
     return Name.getCXXNameType()->containsUnexpandedParameterPack();
   }
@@ -437,8 +469,10 @@ bool DeclarationNameInfo::isInstantiationDependent() const {
   case DeclarationName::CXXConstructorName:
   case DeclarationName::CXXDestructorName:
   case DeclarationName::CXXConversionFunctionName:
-    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo)
+    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo) {
       return TInfo->getType()->isInstantiationDependentType();
+
+}
 
     return Name.getCXXNameType()->isInstantiationDependentType();
   }
@@ -475,16 +509,20 @@ void DeclarationNameInfo::printName(raw_ostream &OS, PrintingPolicy Policy) cons
   case DeclarationName::CXXDestructorName:
   case DeclarationName::CXXConversionFunctionName:
     if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo) {
-      if (Name.getNameKind() == DeclarationName::CXXDestructorName)
+      if (Name.getNameKind() == DeclarationName::CXXDestructorName) {
         OS << '~';
-      else if (Name.getNameKind() == DeclarationName::CXXConversionFunctionName)
+      } else if (Name.getNameKind() == DeclarationName::CXXConversionFunctionName) {
         OS << "operator ";
+
+}
       LangOptions LO;
       Policy.adjustForCPlusPlus();
       Policy.SuppressScope = true;
       OS << TInfo->getType().getAsString(Policy);
-    } else
+    } else {
       Name.print(OS, Policy);
+
+}
     return;
   }
   llvm_unreachable("Unexpected declaration name kind");
@@ -509,10 +547,12 @@ SourceLocation DeclarationNameInfo::getEndLocPrivate() const {
   case DeclarationName::CXXConstructorName:
   case DeclarationName::CXXDestructorName:
   case DeclarationName::CXXConversionFunctionName:
-    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo)
+    if (TypeSourceInfo *TInfo = LocInfo.NamedType.TInfo) {
       return TInfo->getTypeLoc().getEndLoc();
-    else
+    } else {
       return NameLoc;
+
+}
 
     // DNInfo work in progress: FIXME.
   case DeclarationName::ObjCZeroArgSelector:

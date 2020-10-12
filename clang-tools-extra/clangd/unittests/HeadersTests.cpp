@@ -82,8 +82,10 @@ protected:
     EXPECT_TRUE(
         Action.BeginSourceFile(*Clang, Clang->getFrontendOpts().Inputs[0]));
 
-    if (Preferred.empty())
+    if (Preferred.empty()) {
       Preferred = Original;
+
+}
     auto ToHeaderFile = [](llvm::StringRef Header) {
       return HeaderFile{std::string(Header),
                         /*Verbatim=*/!llvm::sys::path::is_absolute(Header)};
@@ -92,11 +94,15 @@ protected:
     IncludeInserter Inserter(MainFile, /*Code=*/"", format::getLLVMStyle(),
                              CDB.getCompileCommand(MainFile)->Directory,
                              &Clang->getPreprocessor().getHeaderSearchInfo());
-    for (const auto &Inc : Inclusions)
+    for (const auto &Inc : Inclusions) {
       Inserter.addExisting(Inc);
+
+}
     auto Inserted = ToHeaderFile(Preferred);
-    if (!Inserter.shouldInsertInclude(Original, Inserted))
+    if (!Inserter.shouldInsertInclude(Original, Inserted)) {
       return "";
+
+}
     auto Path = Inserter.calculateIncludePath(Inserted, MainFile);
     Action.EndSourceFile();
     return Path.getValueOr("");
@@ -129,10 +135,14 @@ MATCHER_P(Resolved, Name, "") { return arg.Resolved == Name; }
 MATCHER_P(IncludeLine, N, "") { return arg.R.start.line == N; }
 
 MATCHER_P2(Distance, File, D, "") {
-  if (arg.getKey() != File)
+  if (arg.getKey() != File) {
     *result_listener << "file =" << arg.getKey().str();
-  if (arg.getValue() != D)
+
+}
+  if (arg.getValue() != D) {
     *result_listener << "distance =" << arg.getValue();
+
+}
   return arg.getKey() == File && arg.getValue() == D;
 }
 

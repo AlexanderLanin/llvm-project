@@ -135,8 +135,10 @@ class LiveStatementsDumper : public Checker<check::ASTCodeBody> {
 public:
   void checkASTCodeBody(const Decl *D, AnalysisManager& Mgr,
                         BugReporter &BR) const {
-    if (LiveVariables *L = Mgr.getAnalysis<RelaxedLiveVariables>(D))
+    if (LiveVariables *L = Mgr.getAnalysis<RelaxedLiveVariables>(D)) {
       L->dumpStmtLiveness(Mgr.getSourceManager());
+
+}
   }
 };
 }
@@ -272,15 +274,19 @@ public:
 
     SmallVector<const Table::MapEntryTy *, 32> Keys;
     for (Table::const_iterator I = Config.begin(), E = Config.end(); I != E;
-         ++I)
+         ++I) {
       Keys.push_back(&*I);
+
+}
     llvm::array_pod_sort(Keys.begin(), Keys.end(), compareEntry);
 
     llvm::errs() << "[config]\n";
-    for (unsigned I = 0, E = Keys.size(); I != E; ++I)
+    for (unsigned I = 0, E = Keys.size(); I != E; ++I) {
       llvm::errs() << Keys[I]->getKey() << " = "
                    << (Keys[I]->second.empty() ? "\"\"" : Keys[I]->second)
                    << '\n';
+
+}
 
     llvm::errs() << "[stats]\n" << "num-entries = " << Keys.size() << '\n';
   }
@@ -330,8 +336,10 @@ class ReportStmts : public Checker<check::PreStmt<Stmt>> {
 public:
   void checkPreStmt(const Stmt *S, CheckerContext &C) const {
     ExplodedNode *Node = C.generateNonFatalErrorNode();
-    if (!Node)
+    if (!Node) {
       return;
+
+}
 
     auto Report =
         std::make_unique<PathSensitiveBugReport>(BT_stmtLoc, "Statement", Node);

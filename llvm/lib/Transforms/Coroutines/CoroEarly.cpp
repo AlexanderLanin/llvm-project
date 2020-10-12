@@ -69,8 +69,10 @@ void Lowerer::lowerCoroPromise(CoroPromiseInst *Intrin) {
   const DataLayout &DL = TheModule.getDataLayout();
   int64_t Offset = alignTo(
       DL.getStructLayout(SampleStruct)->getElementOffset(2), Alignement);
-  if (Intrin->isFromPromise())
+  if (Intrin->isFromPromise()) {
     Offset = -Offset;
+
+}
 
   Builder.SetInsertPoint(Intrin);
   Value *Replacement =
@@ -142,9 +144,13 @@ void Lowerer::lowerCoroNoop(IntrinsicInst *II) {
 // NoDuplicate attribute will be removed from coro.begin otherwise, it will
 // interfere with inlining.
 static void setCannotDuplicate(CoroIdInst *CoroId) {
-  for (User *U : CoroId->users())
-    if (auto *CB = dyn_cast<CoroBeginInst>(U))
+  for (User *U : CoroId->users()) {
+    if (auto *CB = dyn_cast<CoroBeginInst>(U)) {
       CB->setCannotDuplicate();
+
+}
+
+}
 }
 
 bool Lowerer::lowerEarlyIntrinsics(Function &F) {
@@ -163,14 +169,18 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
       case Intrinsic::coro_suspend:
         // Make sure that final suspend point is not duplicated as CoroSplit
         // pass expects that there is at most one final suspend point.
-        if (cast<CoroSuspendInst>(&I)->isFinal())
+        if (cast<CoroSuspendInst>(&I)->isFinal()) {
           CS.setCannotDuplicate();
+
+}
         break;
       case Intrinsic::coro_end:
         // Make sure that fallthrough coro.end is not duplicated as CoroSplit
         // pass expects that there is at most one fallthrough coro.end.
-        if (cast<CoroEndInst>(&I)->isFallthrough())
+        if (cast<CoroEndInst>(&I)->isFallthrough()) {
           CS.setCannotDuplicate();
+
+}
         break;
       case Intrinsic::coro_noop:
         lowerCoroNoop(cast<IntrinsicInst>(&I));
@@ -210,9 +220,13 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
   // Make sure that all CoroFree reference the coro.id intrinsic.
   // Token type is not exposed through coroutine C/C++ builtins to plain C, so
   // we allow specifying none and fixing it up here.
-  if (CoroId)
-    for (CoroFreeInst *CF : CoroFrees)
+  if (CoroId) {
+    for (CoroFreeInst *CF : CoroFrees) {
       CF->setArgOperand(0, CoroId);
+
+}
+
+}
   return Changed;
 }
 
@@ -226,8 +240,10 @@ static bool declaresCoroEarlyIntrinsics(const Module &M) {
 
 PreservedAnalyses CoroEarlyPass::run(Function &F, FunctionAnalysisManager &) {
   Module &M = *F.getParent();
-  if (!declaresCoroEarlyIntrinsics(M) || !Lowerer(M).lowerEarlyIntrinsics(F))
+  if (!declaresCoroEarlyIntrinsics(M) || !Lowerer(M).lowerEarlyIntrinsics(F)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -247,14 +263,18 @@ struct CoroEarlyLegacy : public FunctionPass {
   // This pass has work to do only if we find intrinsics we are going to lower
   // in the module.
   bool doInitialization(Module &M) override {
-    if (declaresCoroEarlyIntrinsics(M))
+    if (declaresCoroEarlyIntrinsics(M)) {
       L = std::make_unique<Lowerer>(M);
+
+}
     return false;
   }
 
   bool runOnFunction(Function &F) override {
-    if (!L)
+    if (!L) {
       return false;
+
+}
 
     return L->lowerEarlyIntrinsics(F);
   }

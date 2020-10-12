@@ -37,8 +37,10 @@ struct FEntryInserter : public MachineFunctionPass {
 bool FEntryInserter::runOnMachineFunction(MachineFunction &MF) {
   const std::string FEntryName = std::string(
       MF.getFunction().getFnAttribute("fentry-call").getValueAsString());
-  if (FEntryName != "true")
+  if (FEntryName != "true") {
     return false;
+
+}
 
   auto &FirstMBB = *MF.begin();
   auto *TII = MF.getSubtarget().getInstrInfo();

@@ -26,8 +26,10 @@ BinaryStreamWriter::BinaryStreamWriter(MutableArrayRef<uint8_t> Data,
     : Stream(Data, Endian) {}
 
 Error BinaryStreamWriter::writeBytes(ArrayRef<uint8_t> Buffer) {
-  if (auto EC = Stream.writeBytes(Offset, Buffer))
+  if (auto EC = Stream.writeBytes(Offset, Buffer)) {
     return EC;
+
+}
   Offset += Buffer.size();
   return Error::success();
 }
@@ -45,10 +47,14 @@ Error BinaryStreamWriter::writeSLEB128(int64_t Value) {
 }
 
 Error BinaryStreamWriter::writeCString(StringRef Str) {
-  if (auto EC = writeFixedString(Str))
+  if (auto EC = writeFixedString(Str)) {
     return EC;
-  if (auto EC = writeObject('\0'))
+
+}
+  if (auto EC = writeObject('\0')) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -71,10 +77,14 @@ Error BinaryStreamWriter::writeStreamRef(BinaryStreamRef Ref, uint32_t Length) {
   // we iterate over each contiguous chunk, writing each one in succession.
   while (SrcReader.bytesRemaining() > 0) {
     ArrayRef<uint8_t> Chunk;
-    if (auto EC = SrcReader.readLongestContiguousChunk(Chunk))
+    if (auto EC = SrcReader.readLongestContiguousChunk(Chunk)) {
       return EC;
-    if (auto EC = writeBytes(Chunk))
+
+}
+    if (auto EC = writeBytes(Chunk)) {
       return EC;
+
+}
   }
   return Error::success();
 }
@@ -94,10 +104,16 @@ BinaryStreamWriter::split(uint32_t Off) const {
 
 Error BinaryStreamWriter::padToAlignment(uint32_t Align) {
   uint32_t NewOffset = alignTo(Offset, Align);
-  if (NewOffset > getLength())
+  if (NewOffset > getLength()) {
     return make_error<BinaryStreamError>(stream_error_code::stream_too_short);
-  while (Offset < NewOffset)
-    if (auto EC = writeInteger('\0'))
+
+}
+  while (Offset < NewOffset) {
+    if (auto EC = writeInteger('\0')) {
       return EC;
+
+}
+
+}
   return Error::success();
 }

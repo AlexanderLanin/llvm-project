@@ -194,8 +194,10 @@ void MD5::update(ArrayRef<uint8_t> Data) {
   unsigned long Size = Data.size();
 
   saved_lo = lo;
-  if ((lo = (saved_lo + Size) & 0x1fffffff) < saved_lo)
+  if ((lo = (saved_lo + Size) & 0x1fffffff) < saved_lo) {
     hi++;
+
+}
   hi += Size >> 29;
 
   used = saved_lo & 0x3f;
@@ -265,8 +267,10 @@ void MD5::final(MD5Result &Result) {
 SmallString<32> MD5::MD5Result::digest() const {
   SmallString<32> Str;
   raw_svector_ostream Res(Str);
-  for (int i = 0; i < 16; ++i)
+  for (int i = 0; i < 16; ++i) {
     Res << format("%.2x", Bytes[i]);
+
+}
   return Str;
 }
 

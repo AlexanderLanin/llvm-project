@@ -71,8 +71,10 @@ TEST_F(BranchProbabilityInfoTest, StressUnreachableHeuristic) {
   auto *I32 = IntegerType::get(C, 32);
   auto *Undef = UndefValue::get(I32);
   auto *Switch = SwitchInst::Create(Undef, ExitBB, NumCases, EntryBB);
-  for (unsigned I = 0; I < NumCases; ++I)
+  for (unsigned I = 0; I < NumCases; ++I) {
     Switch->addCase(ConstantInt::get(I32, I), PreExitBB);
+
+}
 
   BranchProbabilityInfo &BPI = buildBPI(*F);
 

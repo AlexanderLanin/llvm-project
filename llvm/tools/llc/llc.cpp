@@ -166,12 +166,16 @@ static ManagedStatic<std::vector<std::string>> RunPassNames;
 
 struct RunPassOption {
   void operator=(const std::string &Val) const {
-    if (Val.empty())
+    if (Val.empty()) {
       return;
+
+}
     SmallVector<StringRef, 8> PassNames;
     StringRef(Val).split(PassNames, ',', -1, false);
-    for (auto PassName : PassNames)
+    for (auto PassName : PassNames) {
       RunPassNames->push_back(std::string(PassName));
+
+}
   }
 };
 }
@@ -190,35 +194,43 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(const char *TargetName,
                                                        const char *ProgName) {
   // If we don't yet have an output filename, make one.
   if (OutputFilename.empty()) {
-    if (InputFilename == "-")
+    if (InputFilename == "-") {
       OutputFilename = "-";
-    else {
+    } else {
       // If InputFilename ends in .bc or .ll, remove it.
       StringRef IFN = InputFilename;
-      if (IFN.endswith(".bc") || IFN.endswith(".ll"))
+      if (IFN.endswith(".bc") || IFN.endswith(".ll")) {
         OutputFilename = std::string(IFN.drop_back(3));
-      else if (IFN.endswith(".mir"))
+      } else if (IFN.endswith(".mir")) {
         OutputFilename = std::string(IFN.drop_back(4));
-      else
+      } else {
         OutputFilename = std::string(IFN);
+
+}
 
       switch (FileType) {
       case CGFT_AssemblyFile:
         if (TargetName[0] == 'c') {
-          if (TargetName[1] == 0)
+          if (TargetName[1] == 0) {
             OutputFilename += ".cbe.c";
-          else if (TargetName[1] == 'p' && TargetName[2] == 'p')
+          } else if (TargetName[1] == 'p' && TargetName[2] == 'p') {
             OutputFilename += ".cpp";
-          else
+          } else {
             OutputFilename += ".s";
-        } else
+
+}
+        } else {
           OutputFilename += ".s";
+
+}
         break;
       case CGFT_ObjectFile:
-        if (OS == Triple::Win32)
+        if (OS == Triple::Win32) {
           OutputFilename += ".obj";
-        else
+        } else {
           OutputFilename += ".o";
+
+}
         break;
       case CGFT_Null:
         OutputFilename += ".null";
@@ -241,8 +253,10 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(const char *TargetName,
   // Open the file.
   std::error_code EC;
   sys::fs::OpenFlags OpenFlags = sys::fs::OF_None;
-  if (!Binary)
+  if (!Binary) {
     OpenFlags |= sys::fs::OF_Text;
+
+}
   auto FDOut = std::make_unique<ToolOutputFile>(OutputFilename, EC, OpenFlags);
   if (EC) {
     WithColor::error() << EC.message() << '\n';
@@ -256,12 +270,18 @@ struct LLCDiagnosticHandler : public DiagnosticHandler {
   bool *HasError;
   LLCDiagnosticHandler(bool *HasErrorPtr) : HasError(HasErrorPtr) {}
   bool handleDiagnostics(const DiagnosticInfo &DI) override {
-    if (DI.getSeverity() == DS_Error)
+    if (DI.getSeverity() == DS_Error) {
       *HasError = true;
 
-    if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI))
-      if (!Remark->isEnabled())
+}
+
+    if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI)) {
+      if (!Remark->isEnabled()) {
         return true;
+
+}
+
+}
 
     DiagnosticPrinterRawOStream DP(errs());
     errs() << LLVMContext::getDiagnosticMessagePrefix(DI.getSeverity()) << ": ";
@@ -274,14 +294,18 @@ struct LLCDiagnosticHandler : public DiagnosticHandler {
 static void InlineAsmDiagHandler(const SMDiagnostic &SMD, void *Context,
                                  unsigned LocCookie) {
   bool *HasError = static_cast<bool *>(Context);
-  if (SMD.getKind() == SourceMgr::DK_Error)
+  if (SMD.getKind() == SourceMgr::DK_Error) {
     *HasError = true;
+
+}
 
   SMD.print(nullptr, errs());
 
   // For testing purposes, we print the LocCookie here.
-  if (LocCookie)
+  if (LocCookie) {
     WithColor::note() << "!srcloc = " << LocCookie << "\n";
+
+}
 }
 
 // main - Entry point for the llc compiler.
@@ -352,19 +376,27 @@ int main(int argc, char **argv) {
 
   // Compile the module TimeCompilations times to give better compile time
   // metrics.
-  for (unsigned I = TimeCompilations; I; --I)
-    if (int RetVal = compileModule(argv, Context))
+  for (unsigned I = TimeCompilations; I; --I) {
+    if (int RetVal = compileModule(argv, Context)) {
       return RetVal;
 
-  if (RemarksFile)
+}
+
+}
+
+  if (RemarksFile) {
     RemarksFile->keep();
+
+}
   return 0;
 }
 
 static bool addPass(PassManagerBase &PM, const char *argv0,
                     StringRef PassName, TargetPassConfig &TPC) {
-  if (PassName == "none")
+  if (PassName == "none") {
     return false;
+
+}
 
   const PassRegistry *PR = PassRegistry::getPassRegistry();
   const PassInfo *PI = PR->getPassInfo(PassName);
@@ -375,9 +407,9 @@ static bool addPass(PassManagerBase &PM, const char *argv0,
   }
 
   Pass *P;
-  if (PI->getNormalCtor())
+  if (PI->getNormalCtor()) {
     P = PI->getNormalCtor()();
-  else {
+  } else {
     WithColor::error(errs(), argv0)
         << "cannot create pass: " << PI->getPassName() << "\n";
     return true;
@@ -411,25 +443,33 @@ static int compileModule(char **argv, LLVMContext &Context) {
         (InputLanguage == "" && StringRef(InputFilename).endswith(".mir"))) {
       MIR = createMIRParserFromFile(InputFilename, Err, Context,
                                     setMIRFunctionAttributes);
-      if (MIR)
+      if (MIR) {
         M = MIR->parseIRModule();
-    } else
+
+}
+    } else {
       M = parseIRFile(InputFilename, Err, Context, false);
+
+}
     if (!M) {
       Err.print(argv[0], WithColor::error(errs(), argv[0]));
       return 1;
     }
 
     // If we are supposed to override the target triple, do so now.
-    if (!TargetTriple.empty())
+    if (!TargetTriple.empty()) {
       M->setTargetTriple(Triple::normalize(TargetTriple));
+
+}
     TheTriple = Triple(M->getTargetTriple());
   } else {
     TheTriple = Triple(Triple::normalize(TargetTriple));
   }
 
-  if (TheTriple.getTriple().empty())
+  if (TheTriple.getTriple().empty()) {
     TheTriple.setTriple(sys::getDefaultTargetTriple());
+
+}
 
   // Get the target specific parser.
   std::string Error;
@@ -479,17 +519,23 @@ static int compileModule(char **argv, LLVMContext &Context) {
   // If we don't have a module then just exit now. We do this down
   // here since the CPU/Feature help is underneath the target machine
   // creation.
-  if (SkipModule)
+  if (SkipModule) {
     return 0;
 
+}
+
   assert(M && "Should have exited if we didn't have a module!");
-  if (FloatABIForCalls != FloatABI::Default)
+  if (FloatABIForCalls != FloatABI::Default) {
     Options.FloatABIType = FloatABIForCalls;
+
+}
 
   // Figure out where we are going to send the output.
   std::unique_ptr<ToolOutputFile> Out =
       GetOutputStream(TheTarget->getName(), TheTriple.getOS(), argv[0]);
-  if (!Out) return 1;
+  if (!Out) { return 1;
+
+}
 
   std::unique_ptr<ToolOutputFile> DwoOut;
   if (!SplitDwarfOutputFile.empty()) {
@@ -509,8 +555,10 @@ static int compileModule(char **argv, LLVMContext &Context) {
   TargetLibraryInfoImpl TLII(Triple(M->getTargetTriple()));
 
   // The -disable-simplify-libcalls flag actually disables all builtin optzns.
-  if (DisableSimplifyLibCalls)
+  if (DisableSimplifyLibCalls) {
     TLII.disableAllFunctions();
+
+}
   PM.add(new TargetLibraryInfoWrapperPass(TLII));
 
   // Add the target data from the target machine, if it exists, or the module.
@@ -534,9 +582,11 @@ static int compileModule(char **argv, LLVMContext &Context) {
   setFunctionAttributes(CPUStr, FeaturesStr, *M);
 
   if (RelaxAll.getNumOccurrences() > 0 &&
-      FileType != CGFT_ObjectFile)
+      FileType != CGFT_ObjectFile) {
     WithColor::warning(errs(), argv[0])
         << ": warning: ignoring -mc-relax-all because filetype != obj";
+
+}
 
   {
     raw_pwrite_stream *OS = &Out->os();
@@ -578,8 +628,10 @@ static int compileModule(char **argv, LLVMContext &Context) {
       PM.add(MMIWP);
       TPC.printAndVerify("");
       for (const std::string &RunPassName : *RunPassNames) {
-        if (addPass(PM, argv0, RunPassName, TPC))
+        if (addPass(PM, argv0, RunPassName, TPC)) {
           return 1;
+
+}
       }
       TPC.setInitialized();
       PM.add(createPrintMIRPass(*OS));
@@ -595,8 +647,10 @@ static int compileModule(char **argv, LLVMContext &Context) {
 
     if (MIR) {
       assert(MMIWP && "Forgot to create MMIWP?");
-      if (MIR->parseMachineFunctions(*M, MMIWP->getMMI()))
+      if (MIR->parseMachineFunctions(*M, MMIWP->getMMI())) {
         return 1;
+
+}
     }
 
     // Before executing passes, print the final values of the LLVM options.
@@ -618,8 +672,10 @@ static int compileModule(char **argv, LLVMContext &Context) {
 
     auto HasError =
         ((const LLCDiagnosticHandler *)(Context.getDiagHandlerPtr()))->HasError;
-    if (*HasError)
+    if (*HasError) {
       return 1;
+
+}
 
     // Compare the two outputs and make sure they're the same
     if (CompileTwice) {
@@ -644,8 +700,10 @@ static int compileModule(char **argv, LLVMContext &Context) {
 
   // Declare success.
   Out->keep();
-  if (DwoOut)
+  if (DwoOut) {
     DwoOut->keep();
+
+}
 
   return 0;
 }

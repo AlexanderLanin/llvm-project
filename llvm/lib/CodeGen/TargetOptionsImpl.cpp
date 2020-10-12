@@ -23,20 +23,30 @@ using namespace llvm;
 /// optimization should be disabled for the given machine function.
 bool TargetOptions::DisableFramePointerElim(const MachineFunction &MF) const {
   // Check to see if the target want to forcably keep frame pointer.
-  if (MF.getSubtarget().getFrameLowering()->keepFramePointer(MF))
+  if (MF.getSubtarget().getFrameLowering()->keepFramePointer(MF)) {
     return true;
+
+}
 
   const Function &F = MF.getFunction();
 
-  if (!F.hasFnAttribute("frame-pointer"))
+  if (!F.hasFnAttribute("frame-pointer")) {
     return false;
+
+}
   StringRef FP = F.getFnAttribute("frame-pointer").getValueAsString();
-  if (FP == "all")
+  if (FP == "all") {
     return true;
-  if (FP == "non-leaf")
+
+}
+  if (FP == "non-leaf") {
     return MF.getFrameInfo().hasCalls();
-  if (FP == "none")
+
+}
+  if (FP == "none") {
     return false;
+
+}
   llvm_unreachable("unknown frame pointer flag");
 }
 

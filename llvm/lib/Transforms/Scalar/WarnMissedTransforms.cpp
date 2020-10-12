@@ -52,7 +52,7 @@ static void warnAboutLeftoverTransformations(Loop *L,
     Optional<int> InterleaveCount =
         getOptionalIntLoopAttribute(L, "llvm.loop.interleave.count");
 
-    if (VectorizeWidth.getValueOr(0) != 1)
+    if (VectorizeWidth.getValueOr(0) != 1) {
       ORE->emit(
           DiagnosticInfoOptimizationFailure(DEBUG_TYPE,
                                             "FailedRequestedVectorization",
@@ -60,7 +60,7 @@ static void warnAboutLeftoverTransformations(Loop *L,
           << "loop not vectorized: the optimizer was unable to perform the "
              "requested transformation; the transformation might be disabled "
              "or specified as part of an unsupported transformation ordering");
-    else if (InterleaveCount.getValueOr(0) != 1)
+    } else if (InterleaveCount.getValueOr(0) != 1) {
       ORE->emit(
           DiagnosticInfoOptimizationFailure(DEBUG_TYPE,
                                             "FailedRequestedInterleaving",
@@ -68,6 +68,8 @@ static void warnAboutLeftoverTransformations(Loop *L,
           << "loop not interleaved: the optimizer was unable to perform the "
              "requested transformation; the transformation might be disabled "
              "or specified as part of an unsupported transformation ordering");
+
+}
   }
 
   if (hasDistributeTransformation(L) == TM_ForcedByUser) {
@@ -84,8 +86,10 @@ static void warnAboutLeftoverTransformations(Loop *L,
 
 static void warnAboutLeftoverTransformations(Function *F, LoopInfo *LI,
                                              OptimizationRemarkEmitter *ORE) {
-  for (auto *L : LI->getLoopsInPreorder())
+  for (auto *L : LI->getLoopsInPreorder()) {
     warnAboutLeftoverTransformations(L, ORE);
+
+}
 }
 
 // New pass manager boilerplate
@@ -93,8 +97,10 @@ PreservedAnalyses
 WarnMissedTransformationsPass::run(Function &F, FunctionAnalysisManager &AM) {
   // Do not warn about not applied transformations if optimizations are
   // disabled.
-  if (F.hasOptNone())
+  if (F.hasOptNone()) {
     return PreservedAnalyses::all();
+
+}
 
   auto &ORE = AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
   auto &LI = AM.getResult<LoopAnalysis>(F);
@@ -116,8 +122,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     auto &ORE = getAnalysis<OptimizationRemarkEmitterWrapperPass>().getORE();
     auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();

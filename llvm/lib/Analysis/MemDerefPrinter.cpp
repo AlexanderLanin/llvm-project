@@ -54,11 +54,15 @@ bool MemDerefPrinter::runOnFunction(Function &F) {
   for (auto &I: instructions(F)) {
     if (LoadInst *LI = dyn_cast<LoadInst>(&I)) {
       Value *PO = LI->getPointerOperand();
-      if (isDereferenceablePointer(PO, LI->getType(), DL))
+      if (isDereferenceablePointer(PO, LI->getType(), DL)) {
         Deref.push_back(PO);
+
+}
       if (isDereferenceableAndAlignedPointer(
-              PO, LI->getType(), MaybeAlign(LI->getAlignment()), DL))
+              PO, LI->getType(), MaybeAlign(LI->getAlignment()), DL)) {
         DerefAndAligned.insert(PO);
+
+}
     }
   }
   return false;
@@ -68,10 +72,12 @@ void MemDerefPrinter::print(raw_ostream &OS, const Module *M) const {
   OS << "The following are dereferenceable:\n";
   for (Value *V: Deref) {
     V->print(OS);
-    if (DerefAndAligned.count(V))
+    if (DerefAndAligned.count(V)) {
       OS << "\t(aligned)";
-    else
+    } else {
       OS << "\t(unaligned)";
+
+}
     OS << "\n\n";
   }
 }

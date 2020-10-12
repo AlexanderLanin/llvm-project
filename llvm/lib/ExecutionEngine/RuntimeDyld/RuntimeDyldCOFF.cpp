@@ -101,8 +101,10 @@ uint64_t RuntimeDyldCOFF::getDLLImportOffset(unsigned SectionID, StubMap &Stubs,
   RelocationEntry RE(SectionID, EntryOffset, PointerReloc, 0, false,
                      Log2_64(PointerSize));
   // Hack to tell I386/Thumb resolveRelocation that this isn't section relative.
-  if (SetSectionIDMinus1)
+  if (SetSectionIDMinus1) {
     RE.Sections.SectionA = -1;
+
+}
   addRelocationForSymbol(RE, Name.drop_front(getImportSymbolPrefix().size()));
 
   LLVM_DEBUG({

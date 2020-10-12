@@ -135,13 +135,17 @@ INITIALIZE_PASS(BBSectionsPrepare, "bbsections-prepare",
 static void insertUnconditionalFallthroughBranch(MachineBasicBlock &MBB) {
   MachineBasicBlock *Fallthrough = MBB.getFallThrough();
 
-  if (Fallthrough == nullptr)
+  if (Fallthrough == nullptr) {
     return;
+
+}
 
   // If this basic block and the Fallthrough basic block are in the same
   // section then do not insert the jump.
-  if (MBB.sameSection(Fallthrough))
+  if (MBB.sameSection(Fallthrough)) {
     return;
+
+}
 
   const TargetInstrInfo *TII = MBB.getParent()->getSubtarget().getInstrInfo();
   SmallVector<MachineOperand, 4> Cond;
@@ -203,8 +207,10 @@ static bool assignSectionsAndSortBasicBlocks(
   // section as we require that all EH Pads be in a single section.
   if (HasHotEHPads) {
     std::for_each(MF.begin(), MF.end(), [&](MachineBasicBlock &MBB) {
-      if (MBB.isEHPad())
+      if (MBB.isEHPad()) {
         MBB.setSectionType(MachineBasicBlockSection::MBBS_Exception);
+
+}
     });
   }
 
@@ -244,8 +250,10 @@ bool BBSectionsPrepare::runOnMachineFunction(MachineFunction &MF) {
   }
 
   if (BBSectionsType == BasicBlockSection::List &&
-      BBSectionsList.find(MF.getName()) == BBSectionsList.end())
+      BBSectionsList.find(MF.getName()) == BBSectionsList.end()) {
     return true;
+
+}
 
   MF.setBBSectionsType(BBSectionsType);
   MF.createBBLabels();
@@ -268,8 +276,10 @@ bool BBSectionsPrepare::runOnMachineFunction(MachineFunction &MF) {
 // !!4
 static bool getBBSectionsList(const MemoryBuffer *MBuf,
                               StringMap<SmallSet<unsigned, 4>> &bbMap) {
-  if (!MBuf)
+  if (!MBuf) {
     return false;
+
+}
 
   line_iterator LineIt(*MBuf, /*SkipBlanks=*/true, /*CommentMarker=*/'#');
 
@@ -277,17 +287,23 @@ static bool getBBSectionsList(const MemoryBuffer *MBuf,
 
   for (; !LineIt.is_at_eof(); ++LineIt) {
     StringRef s(*LineIt);
-    if (s[0] == '@')
+    if (s[0] == '@') {
       continue;
+
+}
     // Check for the leading "!"
-    if (!s.consume_front("!") || s.empty())
+    if (!s.consume_front("!") || s.empty()) {
       break;
+
+}
     // Check for second "!" which encodes basic block ids.
     if (s.consume_front("!")) {
-      if (fi != bbMap.end())
+      if (fi != bbMap.end()) {
         fi->second.insert(std::stoi(s.str()));
-      else
+      } else {
         return false;
+
+}
     } else {
       // Start a new function.
       auto R = bbMap.try_emplace(s.split('/').first);
@@ -299,8 +315,10 @@ static bool getBBSectionsList(const MemoryBuffer *MBuf,
 }
 
 bool BBSectionsPrepare::doInitialization(Module &M) {
-  if (MBuf)
+  if (MBuf) {
     getBBSectionsList(MBuf, BBSectionsList);
+
+}
   return true;
 }
 

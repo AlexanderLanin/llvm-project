@@ -27,8 +27,10 @@ using namespace llvm;
 using namespace sampleprof;
 
 static ::testing::AssertionResult NoError(std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return ::testing::AssertionSuccess();
+
+}
   return ::testing::AssertionFailure() << "error " << EC.value() << ": "
                                        << EC.message();
 }
@@ -273,11 +275,15 @@ struct SampleProfTest : ::testing::Test {
   StringMap<FunctionSamples> setupFcnSamplesForElisionTest(StringRef Policy) {
     StringMap<FunctionSamples> Smap;
     addFunctionSamples(&Smap, "foo", uint64_t(20301), uint64_t(1437));
-    if (Policy == "" || Policy == "all")
+    if (Policy == "" || Policy == "all") {
       return Smap;
+
+}
     addFunctionSamples(&Smap, "foo.bar", uint64_t(20303), uint64_t(1439));
-    if (Policy == "selected")
+    if (Policy == "selected") {
       return Smap;
+
+}
     addFunctionSamples(&Smap, "foo.llvm.2465", uint64_t(20305), uint64_t(1441));
     return Smap;
   }
@@ -289,8 +295,10 @@ struct SampleProfTest : ::testing::Test {
         FunctionType::get(Type::getVoidTy(Context), {}, false);
     auto Inserted = M->getOrInsertFunction(Fname, FnType);
     auto Fcn = cast<Function>(Inserted.getCallee());
-    if (Policy != "")
+    if (Policy != "") {
       Fcn->addFnAttr("sample-profile-suffix-elision-policy", Policy);
+
+}
   }
 
   void setupModuleForElisionTest(Module *M, StringRef Policy) {
@@ -325,8 +333,10 @@ struct SampleProfTest : ::testing::Test {
     for (auto I = Expected.begin(); I != Expected.end(); ++I) {
       uint64_t Esamples = uint64_t(-1);
       FunctionSamples *Samples = Reader->getSamplesFor(I->getKey());
-      if (Samples != nullptr)
+      if (Samples != nullptr) {
         Esamples = Samples->getTotalSamples();
+
+}
       ASSERT_EQ(I->getValue(), Esamples);
     }
   }

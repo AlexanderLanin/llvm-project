@@ -86,10 +86,14 @@ convertToHSV(const std::tuple<uint8_t, uint8_t, uint8_t> &Color) {
   int Min = 0;
   int Max = 0;
   for (int i = 1; i < 3; ++i) {
-    if (Scaled[i] < Scaled[Min])
+    if (Scaled[i] < Scaled[Min]) {
       Min = i;
-    if (Scaled[i] > Scaled[Max])
+
+}
+    if (Scaled[i] > Scaled[Max]) {
       Max = i;
+
+}
   }
 
   double C = Scaled[Max] - Scaled[Min];
@@ -182,10 +186,14 @@ ColorHelper::getColorTuple(double Point) const {
   assert(!ColorMap.empty() && "ColorMap must not be empty!");
   assert(!BoundMap.empty() && "BoundMap must not be empty!");
 
-  if (Point < MinIn)
+  if (Point < MinIn) {
     return BoundMap[0];
-  if (Point > MaxIn)
+
+}
+  if (Point > MaxIn) {
     return BoundMap[1];
+
+}
 
   size_t MaxIndex = ColorMap.size() - 1;
   double IntervalWidth = MaxIn - MinIn;

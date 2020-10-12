@@ -114,8 +114,10 @@ private:
   Value *createCond(IRBuilder<> &BBBuilder, Value *Arg, CmpInst::Predicate Cmp,
                     float Val) {
     Constant *V = ConstantFP::get(BBBuilder.getContext(), APFloat(Val));
-    if (!Arg->getType()->isFloatTy())
+    if (!Arg->getType()->isFloatTy()) {
       V = ConstantExpr::getFPExtend(V, Arg->getType());
+
+}
     return BBBuilder.CreateFCmp(Cmp, Arg, V);
   }
 
@@ -273,8 +275,10 @@ bool LibCallsShrinkWrap::performCallErrors(CallInst *CI,
   case LibFunc_powf:
   case LibFunc_powl: {
     Cond = generateCondForPow(CI, Func);
-    if (Cond == nullptr)
+    if (Cond == nullptr) {
       return false;
+
+}
     break;
   }
   default:
@@ -288,29 +292,41 @@ bool LibCallsShrinkWrap::performCallErrors(CallInst *CI,
 // Checks if CI is a candidate for shrinkwrapping and put it into work list if
 // true.
 void LibCallsShrinkWrap::checkCandidate(CallInst &CI) {
-  if (CI.isNoBuiltin())
+  if (CI.isNoBuiltin()) {
     return;
+
+}
   // A possible improvement is to handle the calls with the return value being
   // used. If there is API for fast libcall implementation without setting
   // errno, we can use the same framework to direct/wrap the call to the fast
   // API in the error free path, and leave the original call in the slow path.
-  if (!CI.use_empty())
+  if (!CI.use_empty()) {
     return;
+
+}
 
   LibFunc Func;
   Function *Callee = CI.getCalledFunction();
-  if (!Callee)
-    return;
-  if (!TLI.getLibFunc(*Callee, Func) || !TLI.has(Func))
+  if (!Callee) {
     return;
 
-  if (CI.getNumArgOperands() == 0)
+}
+  if (!TLI.getLibFunc(*Callee, Func) || !TLI.has(Func)) {
     return;
+
+}
+
+  if (CI.getNumArgOperands() == 0) {
+    return;
+
+}
   // TODO: Handle long double in other formats.
   Type *ArgType = CI.getArgOperand(0)->getType();
   if (!(ArgType->isFloatTy() || ArgType->isDoubleTy() ||
-        ArgType->isX86_FP80Ty()))
+        ArgType->isX86_FP80Ty())) {
     return;
+
+}
 
   WorkList.push_back(&CI);
 }
@@ -439,8 +455,10 @@ Value *LibCallsShrinkWrap::generateCondForPow(CallInst *CI,
 
     ++NumWrappedOneCond;
     Constant *V = ConstantFP::get(CI->getContext(), APFloat(127.0f));
-    if (!Exp->getType()->isFloatTy())
+    if (!Exp->getType()->isFloatTy()) {
       V = ConstantExpr::getFPExtend(V, Exp->getType());
+
+}
     return BBBuilder.CreateFCmp(CmpInst::FCMP_OGT, Exp, V);
   }
 
@@ -454,13 +472,13 @@ Value *LibCallsShrinkWrap::generateCondForPow(CallInst *CI,
   if (Opcode == Instruction::UIToFP || Opcode == Instruction::SIToFP) {
     unsigned BW = I->getOperand(0)->getType()->getPrimitiveSizeInBits();
     float UpperV = 0.0f;
-    if (BW == 8)
+    if (BW == 8) {
       UpperV = 128.0f;
-    else if (BW == 16)
+    } else if (BW == 16) {
       UpperV = 64.0f;
-    else if (BW == 32)
+    } else if (BW == 32) {
       UpperV = 32.0f;
-    else {
+    } else {
       LLVM_DEBUG(dbgs() << "Not handled pow(): type too wide\n");
       return nullptr;
     }
@@ -468,10 +486,14 @@ Value *LibCallsShrinkWrap::generateCondForPow(CallInst *CI,
     ++NumWrappedTwoCond;
     Constant *V = ConstantFP::get(CI->getContext(), APFloat(UpperV));
     Constant *V0 = ConstantFP::get(CI->getContext(), APFloat(0.0f));
-    if (!Exp->getType()->isFloatTy())
+    if (!Exp->getType()->isFloatTy()) {
       V = ConstantExpr::getFPExtend(V, Exp->getType());
-    if (!Base->getType()->isFloatTy())
+
+}
+    if (!Base->getType()->isFloatTy()) {
       V0 = ConstantExpr::getFPExtend(V0, Exp->getType());
+
+}
 
     Value *Cond = BBBuilder.CreateFCmp(CmpInst::FCMP_OGT, Exp, V);
     Value *Cond0 = BBBuilder.CreateFCmp(CmpInst::FCMP_OLE, Base, V0);
@@ -509,8 +531,10 @@ bool LibCallsShrinkWrap::perform(CallInst *CI) {
   TLI.getLibFunc(*Callee, Func);
   assert(Func && "perform() is not expecting an empty function");
 
-  if (performCallDomainErrorOnly(CI, Func) || performCallRangeErrorOnly(CI, Func))
+  if (performCallDomainErrorOnly(CI, Func) || performCallRangeErrorOnly(CI, Func)) {
     return true;
+
+}
   return performCallErrors(CI, Func);
 }
 
@@ -522,8 +546,10 @@ void LibCallsShrinkWrapLegacyPass::getAnalysisUsage(AnalysisUsage &AU) const {
 
 static bool runImpl(Function &F, const TargetLibraryInfo &TLI,
                     DominatorTree *DT) {
-  if (F.hasFnAttribute(Attribute::OptimizeForSize))
+  if (F.hasFnAttribute(Attribute::OptimizeForSize)) {
     return false;
+
+}
   LibCallsShrinkWrap CCDCE(TLI, DT);
   CCDCE.visit(F);
   bool Changed = CCDCE.perform();
@@ -552,8 +578,10 @@ PreservedAnalyses LibCallsShrinkWrapPass::run(Function &F,
                                               FunctionAnalysisManager &FAM) {
   auto &TLI = FAM.getResult<TargetLibraryAnalysis>(F);
   auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
-  if (!runImpl(F, TLI, DT))
+  if (!runImpl(F, TLI, DT)) {
     return PreservedAnalyses::all();
+
+}
   auto PA = PreservedAnalyses();
   PA.preserve<GlobalsAA>();
   PA.preserve<DominatorTreeAnalysis>();

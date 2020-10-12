@@ -239,8 +239,10 @@ void ScheduleDAGVLIW::listScheduleTopDown() {
 
       // If this is a pseudo-op node, we don't want to increment the current
       // cycle.
-      if (FoundSUnit->Latency)  // Don't increment CurCycle for pseudo-ops!
+      if (FoundSUnit->Latency) {  // Don't increment CurCycle for pseudo-ops!
         ++CurCycle;
+
+}
     } else if (!HasNoopHazards) {
       // Otherwise, we have a pipeline stall, but no other problem, just advance
       // the current cycle and try again.

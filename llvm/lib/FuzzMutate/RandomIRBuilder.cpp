@@ -33,8 +33,10 @@ Value *RandomIRBuilder::findOrCreateSource(BasicBlock &BB,
   auto RS = makeSampler(Rand, make_filter_range(Insts, MatchesPred));
   // Also consider choosing no source, meaning we want a new one.
   RS.sample(nullptr, /*Weight=*/1);
-  if (Instruction *Src = RS.getSelection())
+  if (Instruction *Src = RS.getSelection()) {
     return Src;
+
+}
   return newSource(BB, Insts, Srcs, Pred);
 }
 
@@ -57,10 +59,12 @@ Value *RandomIRBuilder::newSource(BasicBlock &BB, ArrayRef<Instruction *> Insts,
         cast<PointerType>(Ptr->getType())->getElementType(), Ptr, "L", &*IP);
 
     // Only sample this load if it really matches the descriptor
-    if (Pred.matches(Srcs, NewLoad))
+    if (Pred.matches(Srcs, NewLoad)) {
       RS.sample(NewLoad, RS.totalWeight());
-    else
+    } else {
       NewLoad->eraseFromParent();
+
+}
   }
 
   assert(!RS.isEmpty() && "Failed to generate sources");
@@ -69,22 +73,28 @@ Value *RandomIRBuilder::newSource(BasicBlock &BB, ArrayRef<Instruction *> Insts,
 
 static bool isCompatibleReplacement(const Instruction *I, const Use &Operand,
                                     const Value *Replacement) {
-  if (Operand->getType() != Replacement->getType())
+  if (Operand->getType() != Replacement->getType()) {
     return false;
+
+}
   switch (I->getOpcode()) {
   case Instruction::GetElementPtr:
   case Instruction::ExtractElement:
   case Instruction::ExtractValue:
     // TODO: We could potentially validate these, but for now just leave indices
     // alone.
-    if (Operand.getOperandNo() >= 1)
+    if (Operand.getOperandNo() >= 1) {
       return false;
+
+}
     break;
   case Instruction::InsertValue:
   case Instruction::InsertElement:
   case Instruction::ShuffleVector:
-    if (Operand.getOperandNo() >= 2)
+    if (Operand.getOperandNo() >= 2) {
       return false;
+
+}
     break;
   default:
     break;
@@ -96,14 +106,20 @@ void RandomIRBuilder::connectToSink(BasicBlock &BB,
                                     ArrayRef<Instruction *> Insts, Value *V) {
   auto RS = makeSampler<Use *>(Rand);
   for (auto &I : Insts) {
-    if (isa<IntrinsicInst>(I))
+    if (isa<IntrinsicInst>(I)) {
       // TODO: Replacing operands of intrinsics would be interesting, but
       // there's no easy way to verify that a given replacement is valid given
       // that intrinsics can impose arbitrary constraints.
       continue;
-    for (Use &U : I->operands())
-      if (isCompatibleReplacement(I, U, V))
+
+}
+    for (Use &U : I->operands()) {
+      if (isCompatibleReplacement(I, U, V)) {
         RS.sample(&U, 1);
+
+}
+
+}
   }
   // Also consider choosing no sink, meaning we want a new one.
   RS.sample(nullptr, /*Weight=*/1);
@@ -121,10 +137,12 @@ void RandomIRBuilder::newSink(BasicBlock &BB, ArrayRef<Instruction *> Insts,
                               Value *V) {
   Value *Ptr = findPointer(BB, Insts, {V}, matchFirstType());
   if (!Ptr) {
-    if (uniform(Rand, 0, 1))
+    if (uniform(Rand, 0, 1)) {
       Ptr = new AllocaInst(V->getType(), 0, "A", &*BB.getFirstInsertionPt());
-    else
+    } else {
       Ptr = UndefValue::get(PointerType::get(V->getType(), 0));
+
+}
   }
 
   new StoreInst(V, Ptr, Insts.back());
@@ -136,21 +154,27 @@ Value *RandomIRBuilder::findPointer(BasicBlock &BB,
   auto IsMatchingPtr = [&Srcs, &Pred](Instruction *Inst) {
     // Invoke instructions sometimes produce valid pointers but currently
     // we can't insert loads or stores from them
-    if (Inst->isTerminator())
+    if (Inst->isTerminator()) {
       return false;
+
+}
 
     if (auto PtrTy = dyn_cast<PointerType>(Inst->getType())) {
       // We can never generate loads from non first class or non sized types
       if (!PtrTy->getElementType()->isSized() ||
-          !PtrTy->getElementType()->isFirstClassType())
+          !PtrTy->getElementType()->isFirstClassType()) {
         return false;
+
+}
 
       // TODO: Check if this is horribly expensive.
       return Pred.matches(Srcs, UndefValue::get(PtrTy->getElementType()));
     }
     return false;
   };
-  if (auto RS = makeSampler(Rand, make_filter_range(Insts, IsMatchingPtr)))
+  if (auto RS = makeSampler(Rand, make_filter_range(Insts, IsMatchingPtr))) {
     return RS.getSelection();
+
+}
   return nullptr;
 }

@@ -52,8 +52,10 @@ void CoverageFilenamesSectionWriter::write(raw_ostream &OS, bool Compress) {
   if (doCompression) {
     auto E =
         zlib::compress(FilenamesStr, CompressedStr, zlib::BestSizeCompression);
-    if (E)
+    if (E) {
       report_bad_alloc_error("Failed to zlib compress coverage data");
+
+}
   }
 
   // ::= <num-filenames>
@@ -80,15 +82,21 @@ public:
                               ArrayRef<CounterMappingRegion> MappingRegions)
       : Expressions(Expressions) {
     AdjustedExpressionIDs.resize(Expressions.size(), 0);
-    for (const auto &I : MappingRegions)
+    for (const auto &I : MappingRegions) {
       mark(I.Count);
-    for (const auto &I : MappingRegions)
+
+}
+    for (const auto &I : MappingRegions) {
       gatherUsed(I.Count);
+
+}
   }
 
   void mark(Counter C) {
-    if (!C.isExpression())
+    if (!C.isExpression()) {
       return;
+
+}
     unsigned ID = C.getExpressionID();
     AdjustedExpressionIDs[ID] = 1;
     mark(Expressions[ID].LHS);
@@ -96,8 +104,10 @@ public:
   }
 
   void gatherUsed(Counter C) {
-    if (!C.isExpression() || !AdjustedExpressionIDs[C.getExpressionID()])
+    if (!C.isExpression() || !AdjustedExpressionIDs[C.getExpressionID()]) {
       return;
+
+}
     AdjustedExpressionIDs[C.getExpressionID()] = UsedExpressions.size();
     const auto &E = Expressions[C.getExpressionID()];
     UsedExpressions.push_back(E);
@@ -110,8 +120,10 @@ public:
   /// Adjust the given counter to correctly transition from the old
   /// expression ids to the new expression ids.
   Counter adjust(Counter C) const {
-    if (C.isExpression())
+    if (C.isExpression()) {
       C = Counter::getExpression(AdjustedExpressionIDs[C.getExpressionID()]);
+
+}
     return C;
   }
 };
@@ -135,8 +147,10 @@ public:
 static unsigned encodeCounter(ArrayRef<CounterExpression> Expressions,
                               Counter C) {
   unsigned Tag = unsigned(C.getKind());
-  if (C.isExpression())
+  if (C.isExpression()) {
     Tag += Expressions[C.getExpressionID()].Kind;
+
+}
   unsigned ID = C.getCounterID();
   assert(ID <=
          (std::numeric_limits<unsigned>::max() >> Counter::EncodingTagBits));
@@ -160,17 +174,23 @@ void CoverageMappingWriter::write(raw_ostream &OS) {
   // location. Sort by region kinds to ensure stable order for tests.
   llvm::stable_sort(MappingRegions, [](const CounterMappingRegion &LHS,
                                        const CounterMappingRegion &RHS) {
-    if (LHS.FileID != RHS.FileID)
+    if (LHS.FileID != RHS.FileID) {
       return LHS.FileID < RHS.FileID;
-    if (LHS.startLoc() != RHS.startLoc())
+
+}
+    if (LHS.startLoc() != RHS.startLoc()) {
       return LHS.startLoc() < RHS.startLoc();
+
+}
     return LHS.Kind < RHS.Kind;
   });
 
   // Write out the fileid -> filename mapping.
   encodeULEB128(VirtualFileMapping.size(), OS);
-  for (const auto &FileID : VirtualFileMapping)
+  for (const auto &FileID : VirtualFileMapping) {
     encodeULEB128(FileID, OS);
+
+}
 
   // Write out the expressions.
   CounterExpressionsMinimizer Minimizer(Expressions, MappingRegions);
@@ -192,8 +212,10 @@ void CoverageMappingWriter::write(raw_ostream &OS) {
       assert(I->FileID == (CurrentFileID + 1));
       // Find the number of regions with this file id.
       unsigned RegionCount = 1;
-      for (auto J = I + 1; J != E && I->FileID == J->FileID; ++J)
+      for (auto J = I + 1; J != E && I->FileID == J->FileID; ++J) {
         ++RegionCount;
+
+}
       // Start a new region sub-array.
       encodeULEB128(RegionCount, OS);
 

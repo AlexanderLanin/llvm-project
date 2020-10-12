@@ -117,17 +117,25 @@ namespace {
 bool ObjCARCContract::optimizeRetainCall(Function &F, Instruction *Retain) {
   ImmutableCallSite CS(GetArgRCIdentityRoot(Retain));
   const Instruction *Call = CS.getInstruction();
-  if (!Call)
+  if (!Call) {
     return false;
-  if (Call->getParent() != Retain->getParent())
+
+}
+  if (Call->getParent() != Retain->getParent()) {
     return false;
+
+}
 
   // Check that the call is next to the retain.
   BasicBlock::const_iterator I = ++Call->getIterator();
-  while (IsNoopInstruction(&*I))
+  while (IsNoopInstruction(&*I)) {
     ++I;
-  if (&*I != Retain)
+
+}
+  if (&*I != Retain) {
     return false;
+
+}
 
   // Turn it to an objc_retainAutoreleasedReturnValue.
   Changed = true;
@@ -158,14 +166,16 @@ bool ObjCARCContract::contractAutorelease(
   // Check that there are no instructions between the retain and the autorelease
   // (such as an autorelease_pop) which may change the count.
   CallInst *Retain = nullptr;
-  if (Class == ARCInstKind::AutoreleaseRV)
+  if (Class == ARCInstKind::AutoreleaseRV) {
     FindDependencies(RetainAutoreleaseRVDep, Arg,
                      Autorelease->getParent(), Autorelease,
                      DependingInstructions, Visited, PA);
-  else
+  } else {
     FindDependencies(RetainAutoreleaseDep, Arg,
                      Autorelease->getParent(), Autorelease,
                      DependingInstructions, Visited, PA);
+
+}
 
   Visited.clear();
   if (DependingInstructions.size() != 1) {
@@ -177,8 +187,10 @@ bool ObjCARCContract::contractAutorelease(
   DependingInstructions.clear();
 
   if (!Retain || GetBasicARCInstKind(Retain) != ARCInstKind::Retain ||
-      GetArgRCIdentityRoot(Retain) != Arg)
+      GetArgRCIdentityRoot(Retain) != Arg) {
     return false;
+
+}
 
   Changed = true;
   ++NumPeeps;
@@ -218,8 +230,10 @@ static StoreInst *findSafeStoreForStoreStrongContraction(LoadInst *Load,
        I != E; ++I) {
     // If we found the store we were looking for and saw the release,
     // break. There is no more work to be done.
-    if (Store && SawRelease)
+    if (Store && SawRelease) {
       break;
+
+}
 
     // Now we know that we have not seen either the store or the release. If I
     // is the release, mark that we saw the release and continue.
@@ -237,8 +251,10 @@ static StoreInst *findSafeStoreForStoreStrongContraction(LoadInst *Load,
     //
     // TODO: This is one area where the optimization could be made more
     // aggressive.
-    if (IsRetain(Class))
+    if (IsRetain(Class)) {
       continue;
+
+}
 
     // If we have seen the store, but not the release...
     if (Store) {
@@ -257,8 +273,10 @@ static StoreInst *findSafeStoreForStoreStrongContraction(LoadInst *Load,
 
     // Ok, now we know we have not seen a store yet. See if Inst can write to
     // our load location, if it can not, just ignore the instruction.
-    if (!isModSet(AA->getModRefInfo(Inst, Loc)))
+    if (!isModSet(AA->getModRefInfo(Inst, Loc))) {
       continue;
+
+}
 
     Store = dyn_cast<StoreInst>(Inst);
 
@@ -266,13 +284,17 @@ static StoreInst *findSafeStoreForStoreStrongContraction(LoadInst *Load,
     // store or a store that is not simple, then we have some we do not
     // understand writing to this memory implying we can not move the load
     // over the write to any subsequent store that we may find.
-    if (!Store || !Store->isSimple())
+    if (!Store || !Store->isSimple()) {
       return nullptr;
+
+}
 
     // Then make sure that the pointer we are storing to is Ptr. If so, we
     // found our Store!
-    if (Store->getPointerOperand()->stripPointerCasts() == LocPtr)
+    if (Store->getPointerOperand()->stripPointerCasts() == LocPtr) {
       continue;
+
+}
 
     // Otherwise, we have an unknown store to some other ptr that clobbers
     // Loc.Ptr. Bail!
@@ -280,8 +302,10 @@ static StoreInst *findSafeStoreForStoreStrongContraction(LoadInst *Load,
   }
 
   // If we did not find the store or did not see the release, fail.
-  if (!Store || !SawRelease)
+  if (!Store || !SawRelease) {
     return nullptr;
+
+}
 
   // We succeeded!
   return Store;
@@ -300,15 +324,21 @@ findRetainForStoreStrongContraction(Value *New, StoreInst *Store,
     // It is only safe to move the retain to the store if we can prove
     // conservatively that nothing besides the release can decrement reference
     // counts in between the retain and the store.
-    if (CanDecrementRefCount(Inst, New, PA) && Inst != Release)
+    if (CanDecrementRefCount(Inst, New, PA) && Inst != Release) {
       return nullptr;
+
+}
     --I;
   }
   Instruction *Retain = &*I;
-  if (GetBasicARCInstKind(Retain) != ARCInstKind::Retain)
+  if (GetBasicARCInstKind(Retain) != ARCInstKind::Retain) {
     return nullptr;
-  if (GetArgRCIdentityRoot(Retain) != New)
+
+}
+  if (GetArgRCIdentityRoot(Retain) != New) {
     return nullptr;
+
+}
   return Retain;
 }
 
@@ -323,8 +353,10 @@ createCallInst(FunctionType *FTy, Value *Func, ArrayRef<Value *> Args,
     const ColorVector &CV = BlockColors.find(InsertBefore->getParent())->second;
     assert(CV.size() == 1 && "non-unique color for block!");
     Instruction *EHPad = CV.front()->getFirstNonPHI();
-    if (EHPad->isEHPad())
+    if (EHPad->isEHPad()) {
       OpBundles.emplace_back("funclet", EHPad);
+
+}
   }
 
   return CallInst::Create(FTy, Func, Args, OpBundles, NameStr, InsertBefore);
@@ -370,21 +402,27 @@ void ObjCARCContract::tryToContractReleaseIntoStoreStrong(
     const DenseMap<BasicBlock *, ColorVector> &BlockColors) {
   // See if we are releasing something that we just loaded.
   auto *Load = dyn_cast<LoadInst>(GetArgRCIdentityRoot(Release));
-  if (!Load || !Load->isSimple())
+  if (!Load || !Load->isSimple()) {
     return;
+
+}
 
   // For now, require everything to be in one basic block.
   BasicBlock *BB = Release->getParent();
-  if (Load->getParent() != BB)
+  if (Load->getParent() != BB) {
     return;
+
+}
 
   // First scan down the BB from Load, looking for a store of the RCIdentityRoot
   // of Load's
   StoreInst *Store =
       findSafeStoreForStoreStrongContraction(Load, Release, PA, AA);
   // If we fail, bail.
-  if (!Store)
+  if (!Store) {
     return;
+
+}
 
   // Then find what new_value's RCIdentity Root is.
   Value *New = GetRCIdentityRoot(Store->getValueOperand());
@@ -395,8 +433,10 @@ void ObjCARCContract::tryToContractReleaseIntoStoreStrong(
       findRetainForStoreStrongContraction(New, Store, Release, PA);
 
   // If we fail, bail.
-  if (!Retain)
+  if (!Retain) {
     return;
+
+}
 
   Changed = true;
   ++NumStoreStrongs;
@@ -414,10 +454,14 @@ void ObjCARCContract::tryToContractReleaseIntoStoreStrong(
   Type *I8XX = PointerType::getUnqual(I8X);
 
   Value *Args[] = { Load->getPointerOperand(), New };
-  if (Args[0]->getType() != I8XX)
+  if (Args[0]->getType() != I8XX) {
     Args[0] = new BitCastInst(Args[0], I8XX, "", Store);
-  if (Args[1]->getType() != I8X)
+
+}
+  if (Args[1]->getType() != I8X) {
     Args[1] = new BitCastInst(Args[1], I8X, "", Store);
+
+}
   Function *Decl = EP.get(ARCRuntimeEntryPointKind::StoreStrong);
   CallInst *StoreStrong = createCallInst(Decl, Args, "", Store, BlockColors);
   StoreStrong->setDoesNotThrow();
@@ -431,13 +475,19 @@ void ObjCARCContract::tryToContractReleaseIntoStoreStrong(
   LLVM_DEBUG(llvm::dbgs() << "        New Store Strong: " << *StoreStrong
                           << "\n");
 
-  if (&*Iter == Retain) ++Iter;
-  if (&*Iter == Store) ++Iter;
+  if (&*Iter == Retain) { ++Iter;
+
+}
+  if (&*Iter == Store) { ++Iter;
+
+}
   Store->eraseFromParent();
   Release->eraseFromParent();
   EraseInstruction(Retain);
-  if (Load->use_empty())
+  if (Load->use_empty()) {
     Load->eraseFromParent();
+
+}
 }
 
 bool ObjCARCContract::tryToPeepholeInstruction(
@@ -458,16 +508,20 @@ bool ObjCARCContract::tryToPeepholeInstruction(
   case ARCInstKind::Retain:
     // Attempt to convert retains to retainrvs if they are next to function
     // calls.
-    if (!optimizeRetainCall(F, Inst))
+    if (!optimizeRetainCall(F, Inst)) {
       return false;
+
+}
     // If we succeed in our optimization, fall through.
     LLVM_FALLTHROUGH;
   case ARCInstKind::RetainRV:
   case ARCInstKind::ClaimRV: {
     // If we're compiling for a target which needs a special inline-asm
     // marker to do the return value optimization, insert it now.
-    if (!RVInstMarker)
+    if (!RVInstMarker) {
       return false;
+
+}
     BasicBlock::iterator BBI = Inst->getIterator();
     BasicBlock *InstParent = Inst->getParent();
 
@@ -477,8 +531,10 @@ bool ObjCARCContract::tryToPeepholeInstruction(
     do {
       if (BBI == InstParent->begin()) {
         BasicBlock *Pred = InstParent->getSinglePredecessor();
-        if (!Pred)
+        if (!Pred) {
           goto decline_rv_optimization;
+
+}
         BBI = Pred->getTerminator()->getIterator();
         break;
       }
@@ -525,8 +581,10 @@ bool ObjCARCContract::tryToPeepholeInstruction(
     // Be conservative if the function has any alloca instructions.
     // Technically we only care about escaping alloca instructions,
     // but this is sufficient to handle some interesting cases.
-    if (isa<AllocaInst>(Inst))
+    if (isa<AllocaInst>(Inst)) {
       TailOkForStoreStrongs = false;
+
+}
     return true;
   case ARCInstKind::IntrinsicUser:
     // Remove calls to @llvm.objc.clang.arc.use(...).
@@ -542,12 +600,16 @@ bool ObjCARCContract::tryToPeepholeInstruction(
 //===----------------------------------------------------------------------===//
 
 bool ObjCARCContract::runOnFunction(Function &F) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return false;
 
+}
+
   // If nothing in the Module uses ARC, don't do anything.
-  if (!Run)
+  if (!Run) {
     return false;
+
+}
 
   Changed = false;
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
@@ -557,8 +619,10 @@ bool ObjCARCContract::runOnFunction(Function &F) {
 
   DenseMap<BasicBlock *, ColorVector> BlockColors;
   if (F.hasPersonalityFn() &&
-      isScopedEHPersonality(classifyEHPersonality(F.getPersonalityFn())))
+      isScopedEHPersonality(classifyEHPersonality(F.getPersonalityFn()))) {
     BlockColors = colorEHFunclets(F);
+
+}
 
   LLVM_DEBUG(llvm::dbgs() << "**** ObjCARC Contract ****\n");
 
@@ -584,8 +648,10 @@ bool ObjCARCContract::runOnFunction(Function &F) {
     // First try to peephole Inst. If there is nothing further we can do in
     // terms of undoing objc-arc-expand, process the next inst.
     if (tryToPeepholeInstruction(F, Inst, I, DependingInstructions, Visited,
-                                 TailOkForStoreStrongs, BlockColors))
+                                 TailOkForStoreStrongs, BlockColors)) {
       continue;
+
+}
 
     // Otherwise, try to undo objc-arc-expand.
 
@@ -595,8 +661,10 @@ bool ObjCARCContract::runOnFunction(Function &F) {
     // Function for replacing uses of Arg dominated by Inst.
     auto ReplaceArgUses = [Inst, this](Value *Arg) {
       // If we're compiling bugpointed code, don't get in trouble.
-      if (!isa<Instruction>(Arg) && !isa<Argument>(Arg))
+      if (!isa<Instruction>(Arg) && !isa<Argument>(Arg)) {
         return;
+
+}
 
       // Look through the uses of the pointer.
       for (Value::use_iterator UI = Arg->use_begin(), UE = Arg->use_end();
@@ -611,8 +679,10 @@ bool ObjCARCContract::runOnFunction(Function &F) {
         // trivially dominate itself, which would lead us to rewriting its
         // argument in terms of its return value, which would lead to
         // infinite loops in GetArgRCIdentityRoot.
-        if (!DT->isReachableFromEntry(U) || !DT->dominates(Inst, U))
+        if (!DT->isReachableFromEntry(U) || !DT->dominates(Inst, U)) {
           continue;
+
+}
 
         Changed = true;
         Instruction *Replacement = Inst;
@@ -639,19 +709,25 @@ bool ObjCARCContract::runOnFunction(Function &F) {
           // While we're here, rewrite all edges for this PHI, rather
           // than just one use at a time, to minimize the number of
           // bitcasts we emit.
-          for (unsigned i = 0, e = PHI->getNumIncomingValues(); i != e; ++i)
+          for (unsigned i = 0, e = PHI->getNumIncomingValues(); i != e; ++i) {
             if (PHI->getIncomingBlock(i) == IncomingBB) {
               // Keep the UI iterator valid.
               if (UI != UE &&
                   &PHI->getOperandUse(
-                      PHINode::getOperandNumForIncomingValue(i)) == &*UI)
+                      PHINode::getOperandNumForIncomingValue(i)) == &*UI) {
                 ++UI;
+
+}
               PHI->setIncomingValue(i, Replacement);
             }
+
+}
         } else {
-          if (Replacement->getType() != UseTy)
+          if (Replacement->getType() != UseTy) {
             Replacement = new BitCastInst(Replacement, UseTy, "",
                                           cast<Instruction>(U.getUser()));
+
+}
           U.set(Replacement);
         }
       }
@@ -665,22 +741,24 @@ bool ObjCARCContract::runOnFunction(Function &F) {
       ReplaceArgUses(Arg);
 
       // If Arg is a no-op casted pointer, strip one level of casts and iterate.
-      if (const BitCastInst *BI = dyn_cast<BitCastInst>(Arg))
+      if (const BitCastInst *BI = dyn_cast<BitCastInst>(Arg)) {
         Arg = BI->getOperand(0);
-      else if (isa<GEPOperator>(Arg) &&
-               cast<GEPOperator>(Arg)->hasAllZeroIndices())
+      } else if (isa<GEPOperator>(Arg) &&
+               cast<GEPOperator>(Arg)->hasAllZeroIndices()) {
         Arg = cast<GEPOperator>(Arg)->getPointerOperand();
-      else if (isa<GlobalAlias>(Arg) &&
-               !cast<GlobalAlias>(Arg)->isInterposable())
+      } else if (isa<GlobalAlias>(Arg) &&
+               !cast<GlobalAlias>(Arg)->isInterposable()) {
         Arg = cast<GlobalAlias>(Arg)->getAliasee();
-      else {
+      } else {
         // If Arg is a PHI node, get PHIs that are equivalent to it and replace
         // their uses.
         if (PHINode *PN = dyn_cast<PHINode>(Arg)) {
           SmallVector<Value *, 1> PHIList;
           getEquivalentPHIs(*PN, PHIList);
-          for (Value *PHI : PHIList)
+          for (Value *PHI : PHIList) {
             ReplaceArgUses(PHI);
+
+}
         }
         break;
       }
@@ -690,16 +768,24 @@ bool ObjCARCContract::runOnFunction(Function &F) {
     SmallVector<BitCastInst *, 2> BitCastUsers;
 
     // Add all bitcast users of the function argument first.
-    for (User *U : OrigArg->users())
-      if (auto *BC = dyn_cast<BitCastInst>(U))
+    for (User *U : OrigArg->users()) {
+      if (auto *BC = dyn_cast<BitCastInst>(U)) {
         BitCastUsers.push_back(BC);
+
+}
+
+}
 
     // Replace the bitcasts with the call return. Iterate until list is empty.
     while (!BitCastUsers.empty()) {
       auto *BC = BitCastUsers.pop_back_val();
-      for (User *U : BC->users())
-        if (auto *B = dyn_cast<BitCastInst>(U))
+      for (User *U : BC->users()) {
+        if (auto *B = dyn_cast<BitCastInst>(U)) {
           BitCastUsers.push_back(B);
+
+}
+
+}
 
       ReplaceArgUses(BC);
     }
@@ -707,9 +793,13 @@ bool ObjCARCContract::runOnFunction(Function &F) {
 
   // If this function has no escaping allocas or suspicious vararg usage,
   // objc_storeStrong calls can be marked with the "tail" keyword.
-  if (TailOkForStoreStrongs)
-    for (CallInst *CI : StoreStrongCalls)
+  if (TailOkForStoreStrongs) {
+    for (CallInst *CI : StoreStrongCalls) {
       CI->setTailCall();
+
+}
+
+}
   StoreStrongCalls.clear();
 
   return Changed;
@@ -738,8 +828,10 @@ Pass *llvm::createObjCARCContractPass() { return new ObjCARCContract(); }
 bool ObjCARCContract::doInitialization(Module &M) {
   // If nothing in the Module uses ARC, don't do anything.
   Run = ModuleHasARC(M);
-  if (!Run)
+  if (!Run) {
     return false;
+
+}
 
   EP.init(&M);
 

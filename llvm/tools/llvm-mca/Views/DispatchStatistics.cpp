@@ -19,13 +19,17 @@ namespace llvm {
 namespace mca {
 
 void DispatchStatistics::onEvent(const HWStallEvent &Event) {
-  if (Event.Type < HWStallEvent::LastGenericEvent)
+  if (Event.Type < HWStallEvent::LastGenericEvent) {
     HWStalls[Event.Type]++;
+
+}
 }
 
 void DispatchStatistics::onEvent(const HWInstructionEvent &Event) {
-  if (Event.Type != HWInstructionEvent::Dispatched)
+  if (Event.Type != HWInstructionEvent::Dispatched) {
     return;
+
+}
 
   const auto &DE = static_cast<const HWInstructionDispatchedEvent &>(Event);
   NumDispatched += DE.MicroOpcodes;

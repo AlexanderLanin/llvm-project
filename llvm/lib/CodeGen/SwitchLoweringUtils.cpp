@@ -55,16 +55,20 @@ void SwitchCG::SwitchLowering::findJumpTables(CaseClusterVector &Clusters,
 #endif
 
   assert(TLI && "TLI not set!");
-  if (!TLI->areJTsAllowed(SI->getParent()->getParent()))
+  if (!TLI->areJTsAllowed(SI->getParent()->getParent())) {
     return;
+
+}
 
   const unsigned MinJumpTableEntries = TLI->getMinimumJumpTableEntries();
   const unsigned SmallNumberOfEntries = MinJumpTableEntries / 2;
 
   // Bail if not enough cases.
   const int64_t N = Clusters.size();
-  if (N < 2 || N < MinJumpTableEntries)
+  if (N < 2 || N < MinJumpTableEntries) {
     return;
+
+}
 
   // Accumulated number of cases in each cluster and those prior to it.
   SmallVector<unsigned, 8> TotalCases(N);
@@ -72,8 +76,10 @@ void SwitchCG::SwitchLowering::findJumpTables(CaseClusterVector &Clusters,
     const APInt &Hi = Clusters[i].High->getValue();
     const APInt &Lo = Clusters[i].Low->getValue();
     TotalCases[i] = (Hi - Lo).getLimitedValue() + 1;
-    if (i != 0)
+    if (i != 0) {
       TotalCases[i] += TotalCases[i - 1];
+
+}
   }
 
   uint64_t Range = getJumpTableRange(Clusters,0, N - 1);
@@ -92,8 +98,10 @@ void SwitchCG::SwitchLowering::findJumpTables(CaseClusterVector &Clusters,
   }
 
   // The algorithm below is not suitable for -O0.
-  if (TM->getOptLevel() == CodeGenOpt::None)
+  if (TM->getOptLevel() == CodeGenOpt::None) {
     return;
+
+}
 
   // Split Clusters into minimum number of dense partitions. The algorithm uses
   // the same idea as Kannan & Proebsting "Correction to 'Producing Good Code
@@ -145,12 +153,14 @@ void SwitchCG::SwitchLowering::findJumpTables(CaseClusterVector &Clusters,
         unsigned Score = j == N - 1 ? 0 : PartitionsScore[j + 1];
         int64_t NumEntries = j - i + 1;
 
-        if (NumEntries == 1)
+        if (NumEntries == 1) {
           Score += PartitionScores::SingleCase;
-        else if (NumEntries <= SmallNumberOfEntries)
+        } else if (NumEntries <= SmallNumberOfEntries) {
           Score += PartitionScores::FewCases;
-        else if (NumEntries >= MinJumpTableEntries)
+        } else if (NumEntries >= MinJumpTableEntries) {
           Score += PartitionScores::Table;
+
+}
 
         // If this leads to fewer partitions, or to the same number of
         // partitions with better score, it is a better partitioning.
@@ -177,8 +187,10 @@ void SwitchCG::SwitchLowering::findJumpTables(CaseClusterVector &Clusters,
         buildJumpTable(Clusters, First, Last, SI, DefaultMBB, JTCluster)) {
       Clusters[DstIndex++] = JTCluster;
     } else {
-      for (unsigned I = First; I <= Last; ++I)
+      for (unsigned I = First; I <= Last; ++I) {
         std::memmove(&Clusters[DstIndex++], &Clusters[I], sizeof(Clusters[I]));
+
+}
     }
   }
   Clusters.resize(DstIndex);
@@ -197,8 +209,10 @@ bool SwitchCG::SwitchLowering::buildJumpTable(const CaseClusterVector &Clusters,
   DenseMap<MachineBasicBlock*, BranchProbability> JTProbs;
 
   // Initialize probabilities in JTProbs.
-  for (unsigned I = First; I <= Last; ++I)
+  for (unsigned I = First; I <= Last; ++I) {
     JTProbs[Clusters[I].MBB] = BranchProbability::getZero();
+
+}
 
   for (unsigned I = First; I <= Last; ++I) {
     assert(Clusters[I].Kind == CC_Range);
@@ -211,12 +225,16 @@ bool SwitchCG::SwitchLowering::buildJumpTable(const CaseClusterVector &Clusters,
       const APInt &PreviousHigh = Clusters[I - 1].High->getValue();
       assert(PreviousHigh.slt(Low));
       uint64_t Gap = (Low - PreviousHigh).getLimitedValue() - 1;
-      for (uint64_t J = 0; J < Gap; J++)
+      for (uint64_t J = 0; J < Gap; J++) {
         Table.push_back(DefaultMBB);
+
+}
     }
     uint64_t ClusterSize = (High - Low).getLimitedValue() + 1;
-    for (uint64_t J = 0; J < ClusterSize; ++J)
+    for (uint64_t J = 0; J < ClusterSize; ++J) {
       Table.push_back(Clusters[I].MBB);
+
+}
     JTProbs[Clusters[I].MBB] += Clusters[I].Prob;
   }
 
@@ -237,8 +255,10 @@ bool SwitchCG::SwitchLowering::buildJumpTable(const CaseClusterVector &Clusters,
   // Add successors. Note: use table order for determinism.
   SmallPtrSet<MachineBasicBlock *, 8> Done;
   for (MachineBasicBlock *Succ : Table) {
-    if (Done.count(Succ))
+    if (Done.count(Succ)) {
       continue;
+
+}
     addSuccessorWithProb(JumpTableMBB, Succ, JTProbs[Succ]);
     Done.insert(Succ);
   }
@@ -275,13 +295,17 @@ void SwitchCG::SwitchLowering::findBitTestClusters(CaseClusterVector &Clusters,
 #endif
 
   // The algorithm below is not suitable for -O0.
-  if (TM->getOptLevel() == CodeGenOpt::None)
+  if (TM->getOptLevel() == CodeGenOpt::None) {
     return;
+
+}
 
   // If target does not have legal shift left, do not emit bit tests at all.
   EVT PTy = TLI->getPointerTy(*DL);
-  if (!TLI->isOperationLegal(ISD::SHL, PTy))
+  if (!TLI->isOperationLegal(ISD::SHL, PTy)) {
     return;
+
+}
 
   int BitWidth = PTy.getSizeInBits();
   const int64_t N = Clusters.size();
@@ -311,8 +335,10 @@ void SwitchCG::SwitchLowering::findBitTestClusters(CaseClusterVector &Clusters,
 
       // Check the range.
       if (!TLI->rangeFitsInWord(Clusters[i].Low->getValue(),
-                                Clusters[j].High->getValue(), *DL))
+                                Clusters[j].High->getValue(), *DL)) {
         continue;
+
+}
 
       // Check nbr of destinations and cluster types.
       // FIXME: This works, but doesn't seem very efficient.
@@ -325,8 +351,10 @@ void SwitchCG::SwitchLowering::findBitTestClusters(CaseClusterVector &Clusters,
         }
         Dests.set(Clusters[k].MBB->getNumber());
       }
-      if (!RangesOnly || Dests.count() > 3)
+      if (!RangesOnly || Dests.count() > 3) {
         break;
+
+}
 
       // Check if it's a better partition.
       unsigned NumPartitions = 1 + (j == N - 1 ? 0 : MinPartitions[j + 1]);
@@ -363,8 +391,10 @@ bool SwitchCG::SwitchLowering::buildBitTests(CaseClusterVector &Clusters,
                                              const SwitchInst *SI,
                                              CaseCluster &BTCluster) {
   assert(First <= Last);
-  if (First == Last)
+  if (First == Last) {
     return false;
+
+}
 
   BitVector Dests(FuncInfo.MF->getNumBlockIDs());
   unsigned NumCmps = 0;
@@ -379,8 +409,10 @@ bool SwitchCG::SwitchLowering::buildBitTests(CaseClusterVector &Clusters,
   APInt High = Clusters[Last].High->getValue();
   assert(Low.slt(High));
 
-  if (!TLI->isSuitableForBitTests(NumDests, NumCmps, Low, High, *DL))
+  if (!TLI->isSuitableForBitTests(NumDests, NumCmps, Low, High, *DL)) {
     return false;
+
+}
 
   APInt LowBound;
   APInt CmpRange;
@@ -415,12 +447,18 @@ bool SwitchCG::SwitchLowering::buildBitTests(CaseClusterVector &Clusters,
   for (unsigned i = First; i <= Last; ++i) {
     // Find the CaseBits for this destination.
     unsigned j;
-    for (j = 0; j < CBV.size(); ++j)
-      if (CBV[j].BB == Clusters[i].MBB)
+    for (j = 0; j < CBV.size(); ++j) {
+      if (CBV[j].BB == Clusters[i].MBB) {
         break;
-    if (j == CBV.size())
+
+}
+
+}
+    if (j == CBV.size()) {
       CBV.push_back(
           CaseBits(0, Clusters[i].MBB, 0, BranchProbability::getZero()));
+
+}
     CaseBits *CB = &CBV[j];
 
     // Update Mask, Bits and ExtraProb.
@@ -436,10 +474,14 @@ bool SwitchCG::SwitchLowering::buildBitTests(CaseClusterVector &Clusters,
   BitTestInfo BTI;
   llvm::sort(CBV, [](const CaseBits &a, const CaseBits &b) {
     // Sort by probability first, number of bits second, bit mask third.
-    if (a.ExtraProb != b.ExtraProb)
+    if (a.ExtraProb != b.ExtraProb) {
       return a.ExtraProb > b.ExtraProb;
-    if (a.Bits != b.Bits)
+
+}
+    if (a.Bits != b.Bits) {
       return a.Bits > b.Bits;
+
+}
     return a.Mask < b.Mask;
   });
 

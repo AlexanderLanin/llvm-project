@@ -21,15 +21,19 @@ ExternalSymbolDumper::ExternalSymbolDumper(LinePrinter &P)
 
 void ExternalSymbolDumper::start(const PDBSymbolExe &Symbol) {
   if (auto Vars = Symbol.findAllChildren<PDBSymbolPublicSymbol>()) {
-    while (auto Var = Vars->getNext())
+    while (auto Var = Vars->getNext()) {
       Var->dump(*this);
+
+}
   }
 }
 
 void ExternalSymbolDumper::dump(const PDBSymbolPublicSymbol &Symbol) {
   std::string LinkageName = Symbol.getName();
-  if (Printer.IsSymbolExcluded(LinkageName))
+  if (Printer.IsSymbolExcluded(LinkageName)) {
     return;
+
+}
 
   Printer.NewLine();
   uint64_t Addr = Symbol.getVirtualAddress();

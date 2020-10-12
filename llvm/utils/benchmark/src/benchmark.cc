@@ -209,7 +209,9 @@ std::vector<BenchmarkReporter::Run> RunBenchmark(
       }
       RunInThread(&b, iters, 0, manager.get());
       manager->WaitForAllThreads();
-      for (std::thread& thread : pool) thread.join();
+      for (std::thread& thread : pool) { thread.join();
+
+}
       internal::ThreadManager::Result results;
       {
         MutexLock l(manager->GetBenchmarkMutex());
@@ -248,8 +250,10 @@ std::vector<BenchmarkReporter::Run> RunBenchmark(
 
       if (should_report) {
         BenchmarkReporter::Run report = CreateRunReport(b, results, seconds);
-        if (!report.error_occurred && b.complexity != oNone)
+        if (!report.error_occurred && b.complexity != oNone) {
           complexity_reports->push_back(report);
+
+}
         reports.push_back(report);
         break;
       }
@@ -264,7 +268,9 @@ std::vector<BenchmarkReporter::Run> RunBenchmark(
       // expansion should be 14x.
       bool is_significant = (seconds / min_time) > 0.1;
       multiplier = is_significant ? multiplier : std::min(10.0, multiplier);
-      if (multiplier <= 1.0) multiplier = 2.0;
+      if (multiplier <= 1.0) { multiplier = 2.0;
+
+}
       double next_iters = std::max(multiplier * iters, iters + 1.0);
       if (next_iters > kMaxIterations) {
         next_iters = kMaxIterations;
@@ -282,7 +288,9 @@ std::vector<BenchmarkReporter::Run> RunBenchmark(
     complexity_reports->clear();
   }
 
-  if (report_aggregates_only) reports.clear();
+  if (report_aggregates_only) { reports.clear();
+
+}
   reports.insert(reports.end(), stat_reports.begin(), stat_reports.end());
   return reports;
 }
@@ -352,7 +360,9 @@ void State::SkipWithError(const char* msg) {
     }
   }
   total_iterations_ = 0;
-  if (timer_->running()) timer_->StopTimer();
+  if (timer_->running()) { timer_->StopTimer();
+
+}
 }
 
 void State::SetIterationTime(double seconds) {
@@ -369,7 +379,9 @@ void State::StartKeepRunning() {
   started_ = true;
   total_iterations_ = error_occurred_ ? 0 : max_iterations;
   manager_->StartStopBarrier();
-  if (!error_occurred_) ResumeTiming();
+  if (!error_occurred_) { ResumeTiming();
+
+}
 }
 
 void State::FinishKeepRunning() {
@@ -401,10 +413,14 @@ void RunBenchmarks(const std::vector<Benchmark::Instance>& benchmarks,
         std::max<size_t>(name_field_width, benchmark.name.size());
     has_repetitions |= benchmark.repetitions > 1;
 
-    for(const auto& Stat : *benchmark.statistics)
+    for(const auto& Stat : *benchmark.statistics) {
       stat_field_width = std::max<size_t>(stat_field_width, Stat.name_.size());
+
+}
   }
-  if (has_repetitions) name_field_width += 1 + stat_field_width;
+  if (has_repetitions) { name_field_width += 1 + stat_field_width;
+
+}
 
   // Print header here
   BenchmarkReporter::Context context;
@@ -416,7 +432,9 @@ void RunBenchmarks(const std::vector<Benchmark::Instance>& benchmarks,
   // We flush streams after invoking reporter methods that write to them. This
   // ensures users get timely updates even when streams are not line-buffered.
   auto flushStreams = [](BenchmarkReporter* reporter) {
-    if (!reporter) return;
+    if (!reporter) { return;
+
+}
     std::flush(reporter->GetOutputStream());
     std::flush(reporter->GetErrorStream());
   };
@@ -429,13 +447,17 @@ void RunBenchmarks(const std::vector<Benchmark::Instance>& benchmarks,
       std::vector<BenchmarkReporter::Run> reports =
           RunBenchmark(benchmark, &complexity_reports);
       console_reporter->ReportRuns(reports);
-      if (file_reporter) file_reporter->ReportRuns(reports);
+      if (file_reporter) { file_reporter->ReportRuns(reports);
+
+}
       flushStreams(console_reporter);
       flushStreams(file_reporter);
     }
   }
   console_reporter->Finalize();
-  if (file_reporter) file_reporter->Finalize();
+  if (file_reporter) { file_reporter->Finalize();
+
+}
   flushStreams(console_reporter);
   flushStreams(file_reporter);
 }
@@ -493,8 +515,10 @@ size_t RunSpecifiedBenchmarks(BenchmarkReporter* console_reporter) {
 size_t RunSpecifiedBenchmarks(BenchmarkReporter* console_reporter,
                               BenchmarkReporter* file_reporter) {
   std::string spec = FLAGS_benchmark_filter;
-  if (spec.empty() || spec == "all")
+  if (spec.empty() || spec == "all") {
     spec = ".";  // Regexp that matches all benchmarks
+
+}
 
   // Setup the reporters
   std::ofstream output_file;
@@ -531,7 +555,9 @@ size_t RunSpecifiedBenchmarks(BenchmarkReporter* console_reporter,
   }
 
   std::vector<internal::Benchmark::Instance> benchmarks;
-  if (!FindBenchmarksInternal(spec, &benchmarks, &Err)) return 0;
+  if (!FindBenchmarksInternal(spec, &benchmarks, &Err)) { return 0;
+
+}
 
   if (benchmarks.empty()) {
     Err << "Failed to match any benchmarks against regex: " << spec << "\n";
@@ -539,7 +565,9 @@ size_t RunSpecifiedBenchmarks(BenchmarkReporter* console_reporter,
   }
 
   if (FLAGS_benchmark_list_tests) {
-    for (auto const& benchmark : benchmarks) Out << benchmark.name << "\n";
+    for (auto const& benchmark : benchmarks) { Out << benchmark.name << "\n";
+
+}
   } else {
     internal::RunBenchmarks(benchmarks, console_reporter, file_reporter);
   }
@@ -590,7 +618,9 @@ void ParseCommandLineFlags(int* argc, char** argv) {
         ParseBoolFlag(argv[i], "benchmark_counters_tabular",
                         &FLAGS_benchmark_counters_tabular) ||
         ParseInt32Flag(argv[i], "v", &FLAGS_v)) {
-      for (int j = i; j != *argc - 1; ++j) argv[j] = argv[j + 1];
+      for (int j = i; j != *argc - 1; ++j) { argv[j] = argv[j + 1];
+
+}
 
       --(*argc);
       --i;
@@ -599,10 +629,12 @@ void ParseCommandLineFlags(int* argc, char** argv) {
     }
   }
   for (auto const* flag :
-       {&FLAGS_benchmark_format, &FLAGS_benchmark_out_format})
+       {&FLAGS_benchmark_format, &FLAGS_benchmark_out_format}) {
     if (*flag != "console" && *flag != "json" && *flag != "csv") {
       PrintUsageAndExit();
     }
+
+}
   if (FLAGS_benchmark_color.empty()) {
     PrintUsageAndExit();
   }

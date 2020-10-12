@@ -70,8 +70,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
     Record *Inst = II->TheDef;
 
     // Don't print the target-independent instructions.
-    if (II->Namespace == "TargetOpcode")
+    if (II->Namespace == "TargetOpcode") {
       continue;
+
+}
 
     // Heading (instruction name).
     writeHeader(escapeForRST(Inst->getName()), OS, '=');
@@ -82,8 +84,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
       for (unsigned VarNum = 0; VarNum < VariantCount; ++VarNum) {
         Record *AsmVariant = Target.getAsmParserVariant(VarNum);
         OS << "Assembly string";
-        if (VariantCount != 1)
+        if (VariantCount != 1) {
           OS << " (" << AsmVariant->getValueAsString("Name") << ")";
+
+}
         std::string AsmString =
             CodeGenInstruction::FlattenAsmStringVariants(II->AsmString, VarNum);
         // We trim spaces at each end of the asm string because rst needs the
@@ -143,8 +147,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
       OS << "Flags: ";
       bool IsFirst = true;
       for (auto FlagString : FlagStrings) {
-        if (!IsFirst)
+        if (!IsFirst) {
           OS << ", ";
+
+}
         OS << "``" << FlagString << "``";
         IsFirst = false;
       }
@@ -170,10 +176,12 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
           OS << "* " << (IsDef ? "DEF" : "USE") << " ``" << Op.Rec->getName()
              << "/" << SubOpTypeName << ":$" << Op.Name << ".";
           // Not all sub-operands are named, make up a name for these.
-          if (SubOpName.empty())
+          if (SubOpName.empty()) {
             OS << "anon" << SubOpIdx;
-          else
+          } else {
             OS << SubOpName;
+
+}
           OS << "``\n\n";
         }
       } else {
@@ -194,8 +202,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
       OS << "Implicit defs: ";
       bool IsFirst = true;
       for (Record *Def : II->ImplicitDefs) {
-        if (!IsFirst)
+        if (!IsFirst) {
           OS << ", ";
+
+}
         OS << "``" << Def->getName() << "``";
         IsFirst = false;
       }
@@ -207,8 +217,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
       OS << "Implicit uses: ";
       bool IsFirst = true;
       for (Record *Use : II->ImplicitUses) {
-        if (!IsFirst)
+        if (!IsFirst) {
           OS << ", ";
+
+}
         OS << "``" << Use->getName() << "``";
         IsFirst = false;
       }
@@ -222,8 +234,10 @@ void EmitInstrDocs(RecordKeeper &RK, raw_ostream &OS) {
       OS << "Predicates: ";
       bool IsFirst = true;
       for (Record *P : Predicates) {
-        if (!IsFirst)
+        if (!IsFirst) {
           OS << ", ";
+
+}
         OS << "``" << P->getName() << "``";
         IsFirst = false;
       }

@@ -83,8 +83,10 @@ public:
 void PlainCFGBuilder::setVPBBPredsFromBB(VPBasicBlock *VPBB, BasicBlock *BB) {
   SmallVector<VPBlockBase *, 8> VPBBPreds;
   // Collect VPBB predecessors.
-  for (BasicBlock *Pred : predecessors(BB))
+  for (BasicBlock *Pred : predecessors(BB)) {
     VPBBPreds.push_back(getOrCreateVPBB(Pred));
+
+}
 
   VPBB->setPredecessors(VPBBPreds);
 }
@@ -99,8 +101,10 @@ void PlainCFGBuilder::fixPhiNodes() {
     assert(VPPhi->getNumOperands() == 0 &&
            "Expected VPInstruction with no operands.");
 
-    for (Value *Op : Phi->operands())
+    for (Value *Op : Phi->operands()) {
       VPPhi->addOperand(getOrCreateVPOperand(Op));
+
+}
   }
 }
 
@@ -108,9 +112,11 @@ void PlainCFGBuilder::fixPhiNodes() {
 // existing one if it was already created.
 VPBasicBlock *PlainCFGBuilder::getOrCreateVPBB(BasicBlock *BB) {
   auto BlockIt = BB2VPBB.find(BB);
-  if (BlockIt != BB2VPBB.end())
+  if (BlockIt != BB2VPBB.end()) {
     // Retrieve existing VPBB.
     return BlockIt->second;
+
+}
 
   // Create new VPBB.
   LLVM_DEBUG(dbgs() << "Creating VPBasicBlock for " << BB->getName() << "\n");
@@ -164,10 +170,12 @@ bool PlainCFGBuilder::isExternalDef(Value *Val) {
 // the latter, please, look at 'createVPInstructionsForVPBB'.
 VPValue *PlainCFGBuilder::getOrCreateVPOperand(Value *IRVal) {
   auto VPValIt = IRDef2VPValue.find(IRVal);
-  if (VPValIt != IRDef2VPValue.end())
+  if (VPValIt != IRDef2VPValue.end()) {
     // Operand has an associated VPInstruction or VPValue that was previously
     // created.
     return VPValIt->second;
+
+}
 
   // Operand doesn't have a previously created VPInstruction/VPValue. This
   // means that operand is:
@@ -203,8 +211,10 @@ void PlainCFGBuilder::createVPInstructionsForVPBB(VPBasicBlock *VPBB,
     if (auto *Br = dyn_cast<BranchInst>(Inst)) {
       // Branch instruction is not explicitly represented in VPlan but we need
       // to represent its condition bit when it's conditional.
-      if (Br->isConditional())
+      if (Br->isConditional()) {
         getOrCreateVPOperand(Br->getCondition());
+
+}
 
       // Skip the rest of the Instruction processing for Branch instructions.
       continue;
@@ -222,8 +232,10 @@ void PlainCFGBuilder::createVPInstructionsForVPBB(VPBasicBlock *VPBB,
       // Translate LLVM-IR operands into VPValue operands and set them in the
       // new VPInstruction.
       SmallVector<VPValue *, 4> VPOperands;
-      for (Value *Op : Inst->operands())
+      for (Value *Op : Inst->operands()) {
         VPOperands.push_back(getOrCreateVPOperand(Op));
+
+}
 
       // Build VPInstruction for any arbitraty Instruction without specific
       // representation in VPlan.
@@ -297,8 +309,10 @@ VPRegionBlock *PlainCFGBuilder::buildPlainCFG() {
 
       // Link successors using condition bit.
       VPBB->setTwoSuccessors(SuccVPBB0, SuccVPBB1, VPCondBit);
-    } else
+    } else {
       llvm_unreachable("Number of successors not supported.");
+
+}
 
     // Set VPBB predecessors in the same order as they are in the incoming BB.
     setVPBBPredsFromBB(VPBB, BB);

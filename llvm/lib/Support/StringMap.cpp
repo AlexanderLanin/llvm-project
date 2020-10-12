@@ -23,8 +23,10 @@ using namespace llvm;
 /// accommodate \p NumEntries without need to grow().
 static unsigned getMinBucketToReserveForEntries(unsigned NumEntries) {
   // Ensure that "NumEntries * 4 < NumBuckets * 3"
-  if (NumEntries == 0)
+  if (NumEntries == 0) {
     return 0;
+
+}
   // +1 is required because of the strict equality.
   // For example if NumEntries is 48, we need to return 401.
   return NextPowerOf2(NumEntries * 4 / 3 + 1);
@@ -103,7 +105,9 @@ unsigned StringMapImpl::LookupBucketFor(StringRef Name) {
 
     if (BucketItem == getTombstoneVal()) {
       // Skip over tombstones.  However, remember the first one we see.
-      if (FirstTombstone == -1) FirstTombstone = BucketNo;
+      if (FirstTombstone == -1) { FirstTombstone = BucketNo;
+
+}
     } else if (LLVM_LIKELY(HashTable[BucketNo] == FullHashValue)) {
       // If the full hash value matches, check deeply for a match.  The common
       // case here is that we are only looking at the buckets (for item info
@@ -133,7 +137,9 @@ unsigned StringMapImpl::LookupBucketFor(StringRef Name) {
 /// This does not modify the map.
 int StringMapImpl::FindKey(StringRef Key) const {
   unsigned HTSize = NumBuckets;
-  if (HTSize == 0) return -1;  // Really empty table?
+  if (HTSize == 0) { return -1;  // Really empty table?
+
+}
   unsigned FullHashValue = djbHash(Key, 0);
   unsigned BucketNo = FullHashValue & (HTSize-1);
   unsigned *HashTable = (unsigned *)(TheTable + NumBuckets + 1);
@@ -142,8 +148,10 @@ int StringMapImpl::FindKey(StringRef Key) const {
   while (true) {
     StringMapEntryBase *BucketItem = TheTable[BucketNo];
     // If we found an empty bucket, this key isn't in the table yet, return.
-    if (LLVM_LIKELY(!BucketItem))
+    if (LLVM_LIKELY(!BucketItem)) {
       return -1;
+
+}
 
     if (BucketItem == getTombstoneVal()) {
       // Ignore tombstones.
@@ -184,7 +192,9 @@ void StringMapImpl::RemoveKey(StringMapEntryBase *V) {
 /// table, returning it.  If the key is not in the table, this returns null.
 StringMapEntryBase *StringMapImpl::RemoveKey(StringRef Key) {
   int Bucket = FindKey(Key);
-  if (Bucket == -1) return nullptr;
+  if (Bucket == -1) { return nullptr;
+
+}
 
   StringMapEntryBase *Result = TheTable[Bucket];
   TheTable[Bucket] = getTombstoneVal();
@@ -233,8 +243,10 @@ unsigned StringMapImpl::RehashTable(unsigned BucketNo) {
       if (!NewTableArray[NewBucket]) {
         NewTableArray[FullHash & (NewSize-1)] = Bucket;
         NewHashArray[FullHash & (NewSize-1)] = FullHash;
-        if (I == BucketNo)
+        if (I == BucketNo) {
           NewBucketNo = NewBucket;
+
+}
         continue;
       }
 
@@ -247,8 +259,10 @@ unsigned StringMapImpl::RehashTable(unsigned BucketNo) {
       // Finally found a slot.  Fill it in.
       NewTableArray[NewBucket] = Bucket;
       NewHashArray[NewBucket] = FullHash;
-      if (I == BucketNo)
+      if (I == BucketNo) {
         NewBucketNo = NewBucket;
+
+}
     }
   }
 

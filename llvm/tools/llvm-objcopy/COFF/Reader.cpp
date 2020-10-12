@@ -26,14 +26,18 @@ using namespace COFF;
 Error COFFReader::readExecutableHeaders(Object &Obj) const {
   const dos_header *DH = COFFObj.getDOSHeader();
   Obj.Is64 = COFFObj.is64();
-  if (!DH)
+  if (!DH) {
     return Error::success();
+
+}
 
   Obj.IsPE = true;
   Obj.DosHeader = *DH;
-  if (DH->AddressOfNewExeHeader > sizeof(*DH))
+  if (DH->AddressOfNewExeHeader > sizeof(*DH)) {
     Obj.DosStub = ArrayRef<uint8_t>(reinterpret_cast<const uint8_t *>(&DH[1]),
                                     DH->AddressOfNewExeHeader - sizeof(*DH));
+
+}
 
   if (COFFObj.is64()) {
     Obj.PeHeader = *COFFObj.getPE32PlusHeader();
@@ -46,8 +50,10 @@ Error COFFReader::readExecutableHeaders(Object &Obj) const {
 
   for (size_t I = 0; I < Obj.PeHeader.NumberOfRvaAndSize; I++) {
     const data_directory *Dir;
-    if (auto EC = COFFObj.getDataDirectory(I, Dir))
+    if (auto EC = COFFObj.getDataDirectory(I, Dir)) {
       return errorCodeToError(EC);
+
+}
     Obj.DataDirectories.emplace_back(*Dir);
   }
   return Error::success();
@@ -58,23 +64,31 @@ Error COFFReader::readSections(Object &Obj) const {
   // Section indexing starts from 1.
   for (size_t I = 1, E = COFFObj.getNumberOfSections(); I <= E; I++) {
     const coff_section *Sec;
-    if (auto EC = COFFObj.getSection(I, Sec))
+    if (auto EC = COFFObj.getSection(I, Sec)) {
       return errorCodeToError(EC);
+
+}
     Sections.push_back(Section());
     Section &S = Sections.back();
     S.Header = *Sec;
     S.Header.Characteristics &= ~COFF::IMAGE_SCN_LNK_NRELOC_OVFL;
     ArrayRef<uint8_t> Contents;
-    if (Error E = COFFObj.getSectionContents(Sec, Contents))
+    if (Error E = COFFObj.getSectionContents(Sec, Contents)) {
       return E;
+
+}
     S.setContentsRef(Contents);
     ArrayRef<coff_relocation> Relocs = COFFObj.getRelocations(Sec);
-    for (const coff_relocation &R : Relocs)
+    for (const coff_relocation &R : Relocs) {
       S.Relocs.push_back(R);
-    if (Expected<StringRef> NameOrErr = COFFObj.getSectionName(Sec))
+
+}
+    if (Expected<StringRef> NameOrErr = COFFObj.getSectionName(Sec)) {
       S.Name = *NameOrErr;
-    else
+    } else {
       return NameOrErr.takeError();
+
+}
   }
   Obj.addSections(Sections);
   return Error::success();
@@ -86,21 +100,27 @@ Error COFFReader::readSymbols(Object &Obj, bool IsBigObj) const {
   ArrayRef<Section> Sections = Obj.getSections();
   for (uint32_t I = 0, E = COFFObj.getRawNumberOfSymbols(); I < E;) {
     Expected<COFFSymbolRef> SymOrErr = COFFObj.getSymbol(I);
-    if (!SymOrErr)
+    if (!SymOrErr) {
       return SymOrErr.takeError();
+
+}
     COFFSymbolRef SymRef = *SymOrErr;
 
     Symbols.push_back(Symbol());
     Symbol &Sym = Symbols.back();
     // Copy symbols from the original form into an intermediate coff_symbol32.
-    if (IsBigObj)
+    if (IsBigObj) {
       copySymbol(Sym.Sym,
                  *reinterpret_cast<const coff_symbol32 *>(SymRef.getRawPtr()));
-    else
+    } else {
       copySymbol(Sym.Sym,
                  *reinterpret_cast<const coff_symbol16 *>(SymRef.getRawPtr()));
-    if (auto EC = COFFObj.getSymbolName(SymRef, Sym.Name))
+
+}
+    if (auto EC = COFFObj.getSymbolName(SymRef, Sym.Name)) {
       return errorCodeToError(EC);
+
+}
 
     ArrayRef<uint8_t> AuxData = COFFObj.getSymbolAuxData(SymRef);
     size_t SymSize = IsBigObj ? sizeof(coff_symbol32) : sizeof(coff_symbol16);
@@ -111,33 +131,41 @@ Error COFFReader::readSymbols(Object &Obj, bool IsBigObj) const {
     // auxillary symbol to the Sym.AuxData vector. For file symbols,
     // the whole range of aux symbols are interpreted as one null padded
     // string instead.
-    if (SymRef.isFileRecord())
+    if (SymRef.isFileRecord()) {
       Sym.AuxFile = StringRef(reinterpret_cast<const char *>(AuxData.data()),
                               AuxData.size())
                         .rtrim('\0');
-    else
-      for (size_t I = 0; I < SymRef.getNumberOfAuxSymbols(); I++)
+    } else {
+      for (size_t I = 0; I < SymRef.getNumberOfAuxSymbols(); I++) {
         Sym.AuxData.push_back(AuxData.slice(I * SymSize, sizeof(AuxSymbol)));
+
+}
+
+}
 
     // Find the unique id of the section
     if (SymRef.getSectionNumber() <=
-        0) // Special symbol (undefined/absolute/debug)
+        0) { // Special symbol (undefined/absolute/debug)
       Sym.TargetSectionId = SymRef.getSectionNumber();
-    else if (static_cast<uint32_t>(SymRef.getSectionNumber() - 1) <
-             Sections.size())
+    } else if (static_cast<uint32_t>(SymRef.getSectionNumber() - 1) <
+             Sections.size()) {
       Sym.TargetSectionId = Sections[SymRef.getSectionNumber() - 1].UniqueId;
-    else
+    } else {
       return createStringError(object_error::parse_failed,
                                "section number out of range");
+
+}
     // For section definitions, check if it is comdat associative, and if
     // it is, find the target section unique id.
     const coff_aux_section_definition *SD = SymRef.getSectionDefinition();
     const coff_aux_weak_external *WE = SymRef.getWeakExternal();
     if (SD && SD->Selection == IMAGE_COMDAT_SELECT_ASSOCIATIVE) {
       int32_t Index = SD->getNumber(IsBigObj);
-      if (Index <= 0 || static_cast<uint32_t>(Index - 1) >= Sections.size())
+      if (Index <= 0 || static_cast<uint32_t>(Index - 1) >= Sections.size()) {
         return createStringError(object_error::parse_failed,
                                  "unexpected associative section index");
+
+}
       Sym.AssociativeComdatTargetSectionId = Sections[Index - 1].UniqueId;
     } else if (WE) {
       // This is a raw symbol index for now, but store it in the Symbol
@@ -155,32 +183,42 @@ Error COFFReader::setSymbolTargets(Object &Obj) const {
   std::vector<const Symbol *> RawSymbolTable;
   for (const Symbol &Sym : Obj.getSymbols()) {
     RawSymbolTable.push_back(&Sym);
-    for (size_t I = 0; I < Sym.Sym.NumberOfAuxSymbols; I++)
+    for (size_t I = 0; I < Sym.Sym.NumberOfAuxSymbols; I++) {
       RawSymbolTable.push_back(nullptr);
+
+}
   }
   for (Symbol &Sym : Obj.getMutableSymbols()) {
     // Convert WeakTargetSymbolId from the original raw symbol index to
     // a proper unique id.
     if (Sym.WeakTargetSymbolId) {
-      if (*Sym.WeakTargetSymbolId >= RawSymbolTable.size())
+      if (*Sym.WeakTargetSymbolId >= RawSymbolTable.size()) {
         return createStringError(object_error::parse_failed,
                                  "weak external reference out of range");
+
+}
       const Symbol *Target = RawSymbolTable[*Sym.WeakTargetSymbolId];
-      if (Target == nullptr)
+      if (Target == nullptr) {
         return createStringError(object_error::parse_failed,
                                  "invalid SymbolTableIndex");
+
+}
       Sym.WeakTargetSymbolId = Target->UniqueId;
     }
   }
   for (Section &Sec : Obj.getMutableSections()) {
     for (Relocation &R : Sec.Relocs) {
-      if (R.Reloc.SymbolTableIndex >= RawSymbolTable.size())
+      if (R.Reloc.SymbolTableIndex >= RawSymbolTable.size()) {
         return createStringError(object_error::parse_failed,
                                  "SymbolTableIndex out of range");
+
+}
       const Symbol *Sym = RawSymbolTable[R.Reloc.SymbolTableIndex];
-      if (Sym == nullptr)
+      if (Sym == nullptr) {
         return createStringError(object_error::parse_failed,
                                  "invalid SymbolTableIndex");
+
+}
       R.Target = Sym->UniqueId;
       R.TargetName = Sym->Name;
     }
@@ -196,9 +234,11 @@ Expected<std::unique_ptr<Object>> COFFReader::create() const {
     Obj->CoffFileHeader = *CFH;
   } else {
     const coff_bigobj_file_header *CBFH = COFFObj.getCOFFBigObjHeader();
-    if (!CBFH)
+    if (!CBFH) {
       return createStringError(object_error::parse_failed,
                                "no COFF file header returned");
+
+}
     // Only copying the few fields from the bigobj header that we need
     // and won't recreate in the end.
     Obj->CoffFileHeader.Machine = CBFH->Machine;
@@ -206,14 +246,22 @@ Expected<std::unique_ptr<Object>> COFFReader::create() const {
     IsBigObj = true;
   }
 
-  if (Error E = readExecutableHeaders(*Obj))
+  if (Error E = readExecutableHeaders(*Obj)) {
     return std::move(E);
-  if (Error E = readSections(*Obj))
+
+}
+  if (Error E = readSections(*Obj)) {
     return std::move(E);
-  if (Error E = readSymbols(*Obj, IsBigObj))
+
+}
+  if (Error E = readSymbols(*Obj, IsBigObj)) {
     return std::move(E);
-  if (Error E = setSymbolTargets(*Obj))
+
+}
+  if (Error E = setSymbolTargets(*Obj)) {
     return std::move(E);
+
+}
 
   return std::move(Obj);
 }

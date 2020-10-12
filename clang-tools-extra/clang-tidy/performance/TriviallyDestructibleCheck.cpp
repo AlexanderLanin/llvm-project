@@ -27,8 +27,10 @@ AST_MATCHER(Decl, isFirstDecl) { return Node.isFirstDecl(); }
 AST_MATCHER_P(CXXRecordDecl, hasBase, Matcher<QualType>, InnerMatcher) {
   for (const CXXBaseSpecifier &BaseSpec : Node.bases()) {
     QualType BaseType = BaseSpec.getType();
-    if (InnerMatcher.matches(BaseType, Finder, Builder))
+    if (InnerMatcher.matches(BaseType, Finder, Builder)) {
       return true;
+
+}
   }
   return false;
 }
@@ -60,8 +62,10 @@ void TriviallyDestructibleCheck::check(const MatchFinder::MatchResult &Result) {
       MatchedDecl->getBeginLoc(),
       utils::lexer::findNextTerminator(MatchedDecl->getEndLoc(), SM,
                                        getLangOpts()));
-  if (FirstDeclEnd.isInvalid() || SecondDeclRange.isInvalid())
+  if (FirstDeclEnd.isInvalid() || SecondDeclRange.isInvalid()) {
     return;
+
+}
 
   // Report diagnostic.
   diag(FirstDecl->getLocation(),

@@ -250,8 +250,10 @@ syntax::Leaf *syntax::CompoundStatement::lbrace() {
 std::vector<syntax::Statement *> syntax::CompoundStatement::statements() {
   std::vector<syntax::Statement *> Children;
   for (auto *C = firstChild(); C; C = C->nextSibling()) {
-    if (C->role() == syntax::NodeRole::CompoundStatement_statement)
+    if (C->role() == syntax::NodeRole::CompoundStatement_statement) {
       Children.push_back(llvm::cast<syntax::Statement>(C));
+
+}
   }
   return Children;
 }
@@ -275,8 +277,10 @@ std::vector<syntax::SimpleDeclarator *>
 syntax::SimpleDeclaration::declarators() {
   std::vector<syntax::SimpleDeclarator *> Children;
   for (auto *C = firstChild(); C; C = C->nextSibling()) {
-    if (C->role() == syntax::NodeRole::SimpleDeclaration_declarator)
+    if (C->role() == syntax::NodeRole::SimpleDeclaration_declarator) {
       Children.push_back(llvm::cast<syntax::SimpleDeclarator>(C));
+
+}
   }
   return Children;
 }
@@ -325,8 +329,10 @@ std::vector<syntax::SimpleDeclaration *>
 syntax::ParametersAndQualifiers::parameters() {
   std::vector<syntax::SimpleDeclaration *> Children;
   for (auto *C = firstChild(); C; C = C->nextSibling()) {
-    if (C->role() == syntax::NodeRole::ParametersAndQualifiers_parameter)
+    if (C->role() == syntax::NodeRole::ParametersAndQualifiers_parameter) {
       Children.push_back(llvm::cast<syntax::SimpleDeclaration>(C));
+
+}
   }
   return Children;
 }

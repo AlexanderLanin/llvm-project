@@ -20,8 +20,10 @@ struct SegmentInjection {
 
 static void addPadding(BinaryStreamWriter &Writer) {
   uint32_t Align = Writer.getOffset() % 4;
-  if (Align == 0)
+  if (Align == 0) {
     return;
+
+}
 
   int PaddingBytes = 4 - Align;
   while (PaddingBytes > 0) {

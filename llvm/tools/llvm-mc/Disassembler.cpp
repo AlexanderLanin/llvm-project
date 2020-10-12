@@ -53,11 +53,15 @@ static bool PrintInsts(const MCDisassembler &DisAsm,
                       SourceMgr::DK_Warning,
                       "invalid instruction encoding");
       // Don't try to resynchronise the stream in a block
-      if (InAtomicBlock)
+      if (InAtomicBlock) {
         return true;
 
-      if (Size == 0)
+}
+
+      if (Size == 0) {
         Size = 1; // skip illegible bytes
+
+}
 
       break;
 
@@ -78,8 +82,10 @@ static bool PrintInsts(const MCDisassembler &DisAsm,
 
 static bool SkipToToken(StringRef &Str) {
   for (;;) {
-    if (Str.empty())
+    if (Str.empty()) {
       return false;
+
+}
 
     // Strip horizontal whitespace and commas.
     if (size_t Pos = Str.find_first_not_of(" \t\r\n,")) {
@@ -102,8 +108,10 @@ static bool ByteArrayFromString(ByteArrayTy &ByteArray,
                                 SourceMgr &SM) {
   while (SkipToToken(Str)) {
     // Handled by higher level
-    if (Str[0] == '[' || Str[0] == ']')
+    if (Str[0] == '[' || Str[0] == ']') {
       return false;
+
+}
 
     // Get the current token.
     size_t Next = Str.find_first_of(" \t\n\r,#[]");
@@ -192,9 +200,11 @@ int Disassembler::disassemble(const Target &T, const std::string &Triple,
     // It's a real token, get the bytes and emit them
     ErrorOccurred |= ByteArrayFromString(ByteArray, Str, SM);
 
-    if (!ByteArray.first.empty())
+    if (!ByteArray.first.empty()) {
       ErrorOccurred |= PrintInsts(*DisAsm, ByteArray, SM, Out, Streamer,
                                   InAtomicBlock, STI);
+
+}
   }
 
   if (InAtomicBlock) {

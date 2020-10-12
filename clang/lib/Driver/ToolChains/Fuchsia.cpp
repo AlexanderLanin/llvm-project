@@ -58,17 +58,25 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("separate-loadable-segments");
   }
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
 
-  if (!Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_r))
+}
+
+  if (!Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_r)) {
     CmdArgs.push_back("-pie");
 
-  if (Args.hasArg(options::OPT_rdynamic))
+}
+
+  if (Args.hasArg(options::OPT_rdynamic)) {
     CmdArgs.push_back("-export-dynamic");
 
-  if (Args.hasArg(options::OPT_s))
+}
+
+  if (Args.hasArg(options::OPT_s)) {
     CmdArgs.push_back("-s");
+
+}
 
   if (Args.hasArg(options::OPT_r)) {
     CmdArgs.push_back("-r");
@@ -79,17 +87,21 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   CmdArgs.push_back("--eh-frame-hdr");
 
-  if (Args.hasArg(options::OPT_static))
+  if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
-  else if (Args.hasArg(options::OPT_shared))
+  } else if (Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("-shared");
+
+}
 
   const SanitizerArgs &SanArgs = ToolChain.getSanitizerArgs();
 
   if (!Args.hasArg(options::OPT_shared)) {
     std::string Dyld = D.DyldPrefix;
-    if (SanArgs.needsAsanRt() && SanArgs.needsSharedRt())
+    if (SanArgs.needsAsanRt() && SanArgs.needsSharedRt()) {
       Dyld += "asan/";
+
+}
     Dyld += "ld.so.1";
     CmdArgs.push_back("-dynamic-linker");
     CmdArgs.push_back(Args.MakeArgString(Dyld));
@@ -121,8 +133,10 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   ToolChain.addProfileRTLibs(Args, CmdArgs);
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-    if (Args.hasArg(options::OPT_static))
+    if (Args.hasArg(options::OPT_static)) {
       CmdArgs.push_back("-Bdynamic");
+
+}
 
     if (D.CCCIsCXX()) {
       if (ToolChain.ShouldLinkCXXStdlib(Args)) {
@@ -130,33 +144,47 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                    !Args.hasArg(options::OPT_static);
         CmdArgs.push_back("--push-state");
         CmdArgs.push_back("--as-needed");
-        if (OnlyLibstdcxxStatic)
+        if (OnlyLibstdcxxStatic) {
           CmdArgs.push_back("-Bstatic");
+
+}
         ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
-        if (OnlyLibstdcxxStatic)
+        if (OnlyLibstdcxxStatic) {
           CmdArgs.push_back("-Bdynamic");
+
+}
         CmdArgs.push_back("-lm");
         CmdArgs.push_back("--pop-state");
       }
     }
 
-    if (NeedsSanitizerDeps)
+    if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(ToolChain, CmdArgs);
 
-    if (NeedsXRayDeps)
+}
+
+    if (NeedsXRayDeps) {
       linkXRayRuntimeDeps(ToolChain, CmdArgs);
+
+}
 
     AddRunTimeLibs(ToolChain, D, CmdArgs, Args);
 
     if (Args.hasArg(options::OPT_pthread) ||
-        Args.hasArg(options::OPT_pthreads))
+        Args.hasArg(options::OPT_pthreads)) {
       CmdArgs.push_back("-lpthread");
 
-    if (Args.hasArg(options::OPT_fsplit_stack))
+}
+
+    if (Args.hasArg(options::OPT_fsplit_stack)) {
       CmdArgs.push_back("--wrap=pthread_create");
 
-    if (!Args.hasArg(options::OPT_nolibc))
+}
+
+    if (!Args.hasArg(options::OPT_nolibc)) {
       CmdArgs.push_back("-lc");
+
+}
   }
 
   C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
@@ -168,8 +196,10 @@ Fuchsia::Fuchsia(const Driver &D, const llvm::Triple &Triple,
                  const ArgList &Args)
     : ToolChain(D, Triple, Args) {
   getProgramPaths().push_back(getDriver().getInstalledDir());
-  if (getDriver().getInstalledDir() != D.Dir)
+  if (getDriver().getInstalledDir() != D.Dir) {
     getProgramPaths().push_back(D.Dir);
+
+}
 
   if (!D.SysRoot.empty()) {
     SmallString<128> P(D.SysRoot);
@@ -216,12 +246,20 @@ Fuchsia::Fuchsia(const Driver &D, const llvm::Triple &Triple,
   addMultilibFlag(getSanitizerArgs().needsAsanRt(), "fsanitize=address", Flags);
   Multilibs.setFilePathsCallback(FilePaths);
 
-  if (Multilibs.select(Flags, SelectedMultilib))
-    if (!SelectedMultilib.isDefault())
-      if (const auto &PathsCallback = Multilibs.filePathsCallback())
-        for (const auto &Path : PathsCallback(SelectedMultilib))
+  if (Multilibs.select(Flags, SelectedMultilib)) {
+    if (!SelectedMultilib.isDefault()) {
+      if (const auto &PathsCallback = Multilibs.filePathsCallback()) {
+        for (const auto &Path : PathsCallback(SelectedMultilib)) {
           // Prepend the multilib path to ensure it takes the precedence.
           getFilePaths().insert(getFilePaths().begin(), Path);
+
+}
+
+}
+
+}
+
+}
 }
 
 std::string Fuchsia::ComputeEffectiveClangTriple(const ArgList &Args,
@@ -238,9 +276,11 @@ ToolChain::RuntimeLibType Fuchsia::GetRuntimeLibType(
     const ArgList &Args) const {
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_rtlib_EQ)) {
     StringRef Value = A->getValue();
-    if (Value != "compiler-rt")
+    if (Value != "compiler-rt") {
       getDriver().Diag(clang::diag::err_drv_invalid_rtlib_name)
           << A->getAsString(Args);
+
+}
   }
 
   return ToolChain::RLT_CompilerRT;
@@ -250,9 +290,11 @@ ToolChain::CXXStdlibType
 Fuchsia::GetCXXStdlibType(const ArgList &Args) const {
   if (Arg *A = Args.getLastArg(options::OPT_stdlib_EQ)) {
     StringRef Value = A->getValue();
-    if (Value != "libc++")
+    if (Value != "libc++") {
       getDriver().Diag(diag::err_drv_invalid_stdlib_name)
         << A->getAsString(Args);
+
+}
   }
 
   return ToolChain::CST_Libcxx;
@@ -262,16 +304,20 @@ void Fuchsia::addClangTargetOptions(const ArgList &DriverArgs,
                                     ArgStringList &CC1Args,
                                     Action::OffloadKind) const {
   if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
-                          options::OPT_fno_use_init_array, true))
+                          options::OPT_fno_use_init_array, true)) {
     CC1Args.push_back("-fno-use-init-array");
+
+}
 }
 
 void Fuchsia::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                         ArgStringList &CC1Args) const {
   const Driver &D = getDriver();
 
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> P(D.ResourceDir);
@@ -279,8 +325,10 @@ void Fuchsia::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, P);
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   // Check for configure-time C include directories.
   StringRef CIncludeDirs(C_INCLUDE_DIRS);
@@ -305,8 +353,10 @@ void Fuchsia::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
 void Fuchsia::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
                                            ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
-      DriverArgs.hasArg(options::OPT_nostdincxx))
+      DriverArgs.hasArg(options::OPT_nostdincxx)) {
     return;
+
+}
 
   switch (GetCXXStdlibType(DriverArgs)) {
   case ToolChain::CST_Libcxx: {

@@ -50,20 +50,26 @@ static Constant *canonicalizeAlias(Constant *C, bool &Changed) {
   }
 
   auto *CE = dyn_cast<ConstantExpr>(C);
-  if (!CE)
+  if (!CE) {
     return C;
 
+}
+
   std::vector<Constant *> Ops;
-  for (Use &U : CE->operands())
+  for (Use &U : CE->operands()) {
     Ops.push_back(canonicalizeAlias(cast<Constant>(U), Changed));
+
+}
   return CE->getWithOperands(Ops);
 }
 
 /// Convert aliases to canonical form.
 static bool canonicalizeAliases(Module &M) {
   bool Changed = false;
-  for (auto &GA : M.aliases())
+  for (auto &GA : M.aliases()) {
     canonicalizeAlias(&GA, Changed);
+
+}
   return Changed;
 }
 
@@ -87,8 +93,10 @@ char CanonicalizeAliasesLegacyPass::ID = 0;
 
 PreservedAnalyses CanonicalizeAliasesPass::run(Module &M,
                                                ModuleAnalysisManager &AM) {
-  if (!canonicalizeAliases(M))
+  if (!canonicalizeAliases(M)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }

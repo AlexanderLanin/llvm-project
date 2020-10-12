@@ -25,10 +25,12 @@ void llvm::dumpBytes(ArrayRef<uint8_t> bytes, raw_ostream &OS) {
   static const char hex_rep[] = "0123456789abcdef";
   bool First = true;
   for (char i: bytes) {
-    if (First)
+    if (First) {
       First = false;
-    else
+    } else {
       OS << ' ';
+
+}
     OS << hex_rep[(i & 0xF0) >> 4];
     OS << hex_rep[i & 0xF];
   }
@@ -52,10 +54,14 @@ void MCInstPrinter::printAnnotation(raw_ostream &OS, StringRef Annot) {
       (*CommentStream) << Annot;
       // By definition (see MCInstPrinter.h), CommentStream must end with
       // a newline after each comment.
-      if (Annot.back() != '\n')
+      if (Annot.back() != '\n') {
         (*CommentStream) << '\n';
-    } else
+
+}
+    } else {
       OS << " " << MAI.getCommentString() << " " << Annot;
+
+}
   }
 }
 
@@ -65,10 +71,14 @@ static bool matchAliasCondition(const MCInst &MI, const MCSubtargetInfo *STI,
                                 const AliasPatternCond &C,
                                 bool &OrPredicateResult) {
   // Feature tests are special, they don't consume operands.
-  if (C.Kind == AliasPatternCond::K_Feature)
+  if (C.Kind == AliasPatternCond::K_Feature) {
     return STI->getFeatureBits().test(C.Value);
-  if (C.Kind == AliasPatternCond::K_NegFeature)
+
+}
+  if (C.Kind == AliasPatternCond::K_NegFeature) {
     return !STI->getFeatureBits().test(C.Value);
+
+}
   // For feature tests where just one feature is required in a list, set the
   // predicate result bit to whether the expression will return true, and only
   // return the real result at the end of list marker.
@@ -129,8 +139,10 @@ const char *MCInstPrinter::matchAliasPatterns(const MCInst *MI,
                         [](const PatternsForOpcode &L, unsigned Opcode) {
                           return L.Opcode < Opcode;
                         });
-  if (It == M.OpToPatterns.end() || It->Opcode != MI->getOpcode())
+  if (It == M.OpToPatterns.end() || It->Opcode != MI->getOpcode()) {
     return nullptr;
+
+}
 
   // Try all patterns for this opcode.
   uint32_t AsmStrOffset = ~0U;
@@ -138,8 +150,10 @@ const char *MCInstPrinter::matchAliasPatterns(const MCInst *MI,
       M.Patterns.slice(It->PatternStart, It->NumPatterns);
   for (const AliasPattern &P : Patterns) {
     // Check operand count first.
-    if (MI->getNumOperands() != P.NumOperands)
+    if (MI->getNumOperands() != P.NumOperands) {
       return nullptr;
+
+}
 
     // Test all conditions for this pattern.
     ArrayRef<AliasPatternCond> Conds =
@@ -157,8 +171,10 @@ const char *MCInstPrinter::matchAliasPatterns(const MCInst *MI,
   }
 
   // If no alias matched, don't print an alias.
-  if (AsmStrOffset == ~0U)
+  if (AsmStrOffset == ~0U) {
     return nullptr;
+
+}
 
   // Go to offset AsmStrOffset and use the null terminated string there. The
   // offset should point to the beginning of an alias string, so it should
@@ -171,10 +187,12 @@ const char *MCInstPrinter::matchAliasPatterns(const MCInst *MI,
 
 /// Utility functions to make adding mark ups simpler.
 StringRef MCInstPrinter::markup(StringRef s) const {
-  if (getUseMarkup())
+  if (getUseMarkup()) {
     return s;
-  else
+  } else {
     return "";
+
+}
 }
 
 // For asm-style hex (e.g. 0ffh) the first digit always has to be a number.
@@ -183,8 +201,10 @@ static bool needsLeadingZero(uint64_t Value)
   while (Value)
   {
     uint64_t digit = (Value >> 60) & 0xf;
-    if (digit != 0)
+    if (digit != 0) {
       return (digit >= 0xa);
+
+}
     Value <<= 4;
   }
   return false;
@@ -198,21 +218,29 @@ format_object<int64_t> MCInstPrinter::formatHex(int64_t Value) const {
   switch (PrintHexStyle) {
   case HexStyle::C:
     if (Value < 0) {
-      if (Value == std::numeric_limits<int64_t>::min())
+      if (Value == std::numeric_limits<int64_t>::min()) {
         return format<int64_t>("-0x8000000000000000", Value);
+
+}
       return format("-0x%" PRIx64, -Value);
     }
     return format("0x%" PRIx64, Value);
   case HexStyle::Asm:
     if (Value < 0) {
-      if (Value == std::numeric_limits<int64_t>::min())
+      if (Value == std::numeric_limits<int64_t>::min()) {
         return format<int64_t>("-8000000000000000h", Value);
-      if (needsLeadingZero(-(uint64_t)(Value)))
+
+}
+      if (needsLeadingZero(-(uint64_t)(Value))) {
         return format("-0%" PRIx64 "h", -Value);
+
+}
       return format("-%" PRIx64 "h", -Value);
     }
-    if (needsLeadingZero((uint64_t)(Value)))
+    if (needsLeadingZero((uint64_t)(Value))) {
       return format("0%" PRIx64 "h", Value);
+
+}
     return format("%" PRIx64 "h", Value);
   }
   llvm_unreachable("unsupported print style");
@@ -223,10 +251,12 @@ format_object<uint64_t> MCInstPrinter::formatHex(uint64_t Value) const {
   case HexStyle::C:
      return format("0x%" PRIx64, Value);
   case HexStyle::Asm:
-    if (needsLeadingZero(Value))
+    if (needsLeadingZero(Value)) {
       return format("0%" PRIx64 "h", Value);
-    else
+    } else {
       return format("%" PRIx64 "h", Value);
+
+}
   }
   llvm_unreachable("unsupported print style");
 }

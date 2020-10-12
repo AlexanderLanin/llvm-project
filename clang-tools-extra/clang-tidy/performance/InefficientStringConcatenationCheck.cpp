@@ -73,10 +73,12 @@ void InefficientStringConcatenationCheck::check(
       "string concatenation results in allocation of unnecessary temporary "
       "strings; consider using 'operator+=' or 'string::append()' instead";
 
-  if (LhsStr)
+  if (LhsStr) {
     diag(LhsStr->getExprLoc(), DiagMsg);
-  else if (PlusOperator)
+  } else if (PlusOperator) {
     diag(PlusOperator->getExprLoc(), DiagMsg);
+
+}
 }
 
 } // namespace performance

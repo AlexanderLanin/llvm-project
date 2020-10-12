@@ -453,8 +453,10 @@ public:
   void VerifyUnknownDyncasts() {
     for (auto item = SymbolMap.begin(); item != SymbolMap.end(); ++item) {
       bool should_match = false;
-      if (item->first == PDB_SymType::None || item->first >= PDB_SymType::Max)
+      if (item->first == PDB_SymType::None || item->first >= PDB_SymType::Max) {
         should_match = true;
+
+}
 
       EXPECT_EQ(should_match, llvm::isa<PDBSymbolUnknown>(*item->second));
     }

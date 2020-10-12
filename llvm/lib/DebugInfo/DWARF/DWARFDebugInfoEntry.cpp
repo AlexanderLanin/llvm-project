@@ -30,8 +30,10 @@ bool DWARFDebugInfoEntry::extractFast(const DWARFUnit &U, uint64_t *OffsetPtr,
                                       uint64_t UEndOffset, uint32_t D) {
   Offset = *OffsetPtr;
   Depth = D;
-  if (Offset >= UEndOffset || !DebugInfoData.isValidOffset(Offset))
+  if (Offset >= UEndOffset || !DebugInfoData.isValidOffset(Offset)) {
     return false;
+
+}
   uint64_t AbbrCode = DebugInfoData.getULEB128(OffsetPtr);
   if (0 == AbbrCode) {
     // NULL debug tag entry.

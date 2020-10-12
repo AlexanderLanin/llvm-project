@@ -20,8 +20,10 @@ void llvm::createMemCpyLoopKnownSize(Instruction *InsertBefore, Value *SrcAddr,
                                      bool SrcIsVolatile, bool DstIsVolatile,
                                      const TargetTransformInfo &TTI) {
   // No need to expand zero length copies.
-  if (CopyLen->isZero())
+  if (CopyLen->isZero()) {
     return;
+
+}
 
   BasicBlock *PreLoopBB = InsertBefore->getParent();
   BasicBlock *PostLoopBB = nullptr;

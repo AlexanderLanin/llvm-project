@@ -27,8 +27,10 @@ public:
 // in which case it becomes CTTZ_ZERO_UNDEF with select.
 TEST_F(GISelMITest, LowerBitCountingCTTZ0) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -59,8 +61,10 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ0) {
 // CTTZ expansion in terms of CTLZ
 TEST_F(GISelMITest, LowerBitCountingCTTZ1) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -93,8 +97,10 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ1) {
 // CTLZ scalar narrowing
 TEST_F(GISelMITest, NarrowScalarCTLZ) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -128,8 +134,10 @@ TEST_F(GISelMITest, NarrowScalarCTLZ) {
 // CTTZ scalar narrowing
 TEST_F(GISelMITest, NarrowScalarCTTZ) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -163,8 +171,10 @@ TEST_F(GISelMITest, NarrowScalarCTTZ) {
 // CTTZ expansion in terms of CTPOP
 TEST_F(GISelMITest, LowerBitCountingCTTZ2) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -193,8 +203,10 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ2) {
 
 // CTPOP widening.
 TEST_F(GISelMITest, WidenBitCountingCTPOP1) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -225,8 +237,10 @@ TEST_F(GISelMITest, WidenBitCountingCTPOP1) {
 
 // Test a strange case where the result is wider than the source
 TEST_F(GISelMITest, WidenBitCountingCTPOP2) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -259,8 +273,10 @@ TEST_F(GISelMITest, WidenBitCountingCTPOP2) {
 // CTTZ_ZERO_UNDEF expansion in terms of CTTZ
 TEST_F(GISelMITest, LowerBitCountingCTTZ3) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -286,8 +302,10 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ3) {
 // CTLZ expansion in terms of CTLZ_ZERO_UNDEF
 TEST_F(GISelMITest, LowerBitCountingCTLZ0) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -317,8 +335,10 @@ TEST_F(GISelMITest, LowerBitCountingCTLZ0) {
 // CTLZ expansion in terms of CTLZ_ZERO_UNDEF if the latter is a libcall
 TEST_F(GISelMITest, LowerBitCountingCTLZLibcall) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -348,8 +368,10 @@ TEST_F(GISelMITest, LowerBitCountingCTLZLibcall) {
 // CTLZ expansion
 TEST_F(GISelMITest, LowerBitCountingCTLZ1) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -389,8 +411,10 @@ TEST_F(GISelMITest, LowerBitCountingCTLZ1) {
 // CTLZ widening.
 TEST_F(GISelMITest, WidenBitCountingCTLZ) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -424,8 +448,10 @@ TEST_F(GISelMITest, WidenBitCountingCTLZ) {
 // CTLZ_ZERO_UNDEF widening.
 TEST_F(GISelMITest, WidenBitCountingCTLZZeroUndef) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -460,8 +486,10 @@ TEST_F(GISelMITest, WidenBitCountingCTLZZeroUndef) {
 // CTPOP widening.
 TEST_F(GISelMITest, WidenBitCountingCTPOP) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -493,8 +521,10 @@ TEST_F(GISelMITest, WidenBitCountingCTPOP) {
 // CTTZ_ZERO_UNDEF widening.
 TEST_F(GISelMITest, WidenBitCountingCTTZ_ZERO_UNDEF) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -527,8 +557,10 @@ TEST_F(GISelMITest, WidenBitCountingCTTZ_ZERO_UNDEF) {
 // CTTZ widening.
 TEST_F(GISelMITest, WidenBitCountingCTTZ) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -561,8 +593,10 @@ TEST_F(GISelMITest, WidenBitCountingCTTZ) {
 // UADDO widening.
 TEST_F(GISelMITest, WidenUADDO) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -600,8 +634,10 @@ TEST_F(GISelMITest, WidenUADDO) {
 // USUBO widening.
 TEST_F(GISelMITest, WidenUSUBO) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -637,8 +673,10 @@ TEST_F(GISelMITest, WidenUSUBO) {
 }
 
 TEST_F(GISelMITest, FewerElementsAnd) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   const LLT V2S32 = LLT::vector(2, 32);
   const LLT V5S32 = LLT::vector(5, 32);
@@ -684,8 +722,10 @@ TEST_F(GISelMITest, FewerElementsAnd) {
 }
 
 TEST_F(GISelMITest, MoreElementsAnd) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s32 = LLT::scalar(32);
   LLT v2s32 = LLT::vector(2, 32);
@@ -725,8 +765,10 @@ TEST_F(GISelMITest, MoreElementsAnd) {
 }
 
 TEST_F(GISelMITest, FewerElementsPhi) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s1 = LLT::scalar(1);
   LLT s32 = LLT::scalar(32);
@@ -820,8 +862,10 @@ TEST_F(GISelMITest, FewerElementsPhi) {
 
 // FNEG expansion in terms of FSUB
 TEST_F(GISelMITest, LowerFNEG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -865,8 +909,10 @@ TEST_F(GISelMITest, LowerFNEG) {
 }
 
 TEST_F(GISelMITest, LowerMinMax) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s64 = LLT::scalar(64);
   LLT v2s32 = LLT::vector(2, 32);
@@ -943,8 +989,10 @@ TEST_F(GISelMITest, LowerMinMax) {
 }
 
 TEST_F(GISelMITest, WidenScalarBuildVector) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S32 = LLT::scalar(32);
   LLT S16 = LLT::scalar(16);
@@ -989,8 +1037,10 @@ TEST_F(GISelMITest, WidenScalarBuildVector) {
 }
 
 TEST_F(GISelMITest, LowerMergeValues) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   const LLT S32 = LLT::scalar(32);
   const LLT S24 = LLT::scalar(24);
@@ -1015,8 +1065,10 @@ TEST_F(GISelMITest, LowerMergeValues) {
   //
   // This can do 3 merges, but need an extra implicit_def.
   SmallVector<Register, 8> Merge0Ops;
-  for (int I = 0; I != 8; ++I)
+  for (int I = 0; I != 8; ++I) {
     Merge0Ops.push_back(B.buildConstant(S3, I).getReg(0));
+
+}
 
   auto Merge0 = B.buildMerge(S24, Merge0Ops);
 
@@ -1024,14 +1076,18 @@ TEST_F(GISelMITest, LowerMergeValues) {
   //     => 9, 2 extra implicit_def needed
   //
   SmallVector<Register, 8> Merge1Ops;
-  for (int I = 0; I != 7; ++I)
+  for (int I = 0; I != 7; ++I) {
     Merge1Ops.push_back(B.buildConstant(S3, I).getReg(0));
+
+}
 
   auto Merge1 = B.buildMerge(S21, Merge1Ops);
 
   SmallVector<Register, 8> Merge2Ops;
-  for (int I = 0; I != 2; ++I)
+  for (int I = 0; I != 2; ++I) {
     Merge2Ops.push_back(B.buildConstant(S8, I).getReg(0));
+
+}
 
   auto Merge2 = B.buildMerge(S16, Merge2Ops);
 
@@ -1090,8 +1146,10 @@ TEST_F(GISelMITest, LowerMergeValues) {
 }
 
 TEST_F(GISelMITest, WidenScalarMergeValuesPointer) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   DefineLegalizerInfo(A, {});
 
@@ -1127,8 +1185,10 @@ TEST_F(GISelMITest, WidenScalarMergeValuesPointer) {
 }
 
 TEST_F(GISelMITest, WidenSEXTINREG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1158,8 +1218,10 @@ TEST_F(GISelMITest, WidenSEXTINREG) {
 }
 
 TEST_F(GISelMITest, NarrowSEXTINREG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info, these aren't actually relevant to the test.
   DefineLegalizerInfo(A, {
@@ -1189,8 +1251,10 @@ TEST_F(GISelMITest, NarrowSEXTINREG) {
 }
 
 TEST_F(GISelMITest, NarrowSEXTINREG2) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info, these aren't actually relevant to the test.
   DefineLegalizerInfo(
@@ -1221,8 +1285,10 @@ TEST_F(GISelMITest, NarrowSEXTINREG2) {
 }
 
 TEST_F(GISelMITest, LowerSEXTINREG) {
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info, these aren't actually relevant to the test.
   DefineLegalizerInfo(
@@ -1252,8 +1318,10 @@ TEST_F(GISelMITest, LowerSEXTINREG) {
 
 TEST_F(GISelMITest, LibcallFPExt) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1291,8 +1359,10 @@ TEST_F(GISelMITest, LibcallFPExt) {
 
 TEST_F(GISelMITest, LibcallFPTrunc) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1333,8 +1403,10 @@ TEST_F(GISelMITest, LibcallFPTrunc) {
 
 TEST_F(GISelMITest, LibcallSimple) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1356,8 +1428,10 @@ TEST_F(GISelMITest, LibcallSimple) {
 
 TEST_F(GISelMITest, LibcallSRem) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1413,8 +1487,10 @@ TEST_F(GISelMITest, LibcallSRem) {
 
 TEST_F(GISelMITest, LibcallURem) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1470,8 +1546,10 @@ TEST_F(GISelMITest, LibcallURem) {
 
 TEST_F(GISelMITest, LibcallCtlzZeroUndef) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1523,8 +1601,10 @@ TEST_F(GISelMITest, LibcallCtlzZeroUndef) {
 
 TEST_F(GISelMITest, LibcallFAdd) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1575,8 +1655,10 @@ TEST_F(GISelMITest, LibcallFAdd) {
 
 TEST_F(GISelMITest, LibcallFSub) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1627,8 +1709,10 @@ TEST_F(GISelMITest, LibcallFSub) {
 
 TEST_F(GISelMITest, LibcallFMul) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1679,8 +1763,10 @@ TEST_F(GISelMITest, LibcallFMul) {
 
 TEST_F(GISelMITest, LibcallFDiv) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1731,8 +1817,10 @@ TEST_F(GISelMITest, LibcallFDiv) {
 
 TEST_F(GISelMITest, LibcallFExp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1778,8 +1866,10 @@ TEST_F(GISelMITest, LibcallFExp) {
 
 TEST_F(GISelMITest, LibcallFExp2) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1825,8 +1915,10 @@ TEST_F(GISelMITest, LibcallFExp2) {
 
 TEST_F(GISelMITest, LibcallFRem) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1872,8 +1964,10 @@ TEST_F(GISelMITest, LibcallFRem) {
 
 TEST_F(GISelMITest, LibcallFPow) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1919,8 +2013,10 @@ TEST_F(GISelMITest, LibcallFPow) {
 
 TEST_F(GISelMITest, LibcallFMa) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -1967,8 +2063,10 @@ TEST_F(GISelMITest, LibcallFMa) {
 
 TEST_F(GISelMITest, LibcallFCeil) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2014,8 +2112,10 @@ TEST_F(GISelMITest, LibcallFCeil) {
 
 TEST_F(GISelMITest, LibcallFFloor) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2061,8 +2161,10 @@ TEST_F(GISelMITest, LibcallFFloor) {
 
 TEST_F(GISelMITest, LibcallFMinNum) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2111,8 +2213,10 @@ TEST_F(GISelMITest, LibcallFMinNum) {
 
 TEST_F(GISelMITest, LibcallFMaxNum) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2161,8 +2265,10 @@ TEST_F(GISelMITest, LibcallFMaxNum) {
 
 TEST_F(GISelMITest, LibcallFSqrt) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2208,8 +2314,10 @@ TEST_F(GISelMITest, LibcallFSqrt) {
 
 TEST_F(GISelMITest, LibcallFRint) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2255,8 +2363,10 @@ TEST_F(GISelMITest, LibcallFRint) {
 
 TEST_F(GISelMITest, LibcallFNearbyInt) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2305,8 +2415,10 @@ TEST_F(GISelMITest, LibcallFNearbyInt) {
 
 TEST_F(GISelMITest, NarrowScalarExtract) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {
@@ -2344,8 +2456,10 @@ TEST_F(GISelMITest, NarrowScalarExtract) {
 
 TEST_F(GISelMITest, LowerInsert) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, { getActionDefinitionsBuilder(G_INSERT).lower(); });
@@ -2445,8 +2559,10 @@ TEST_F(GISelMITest, LowerInsert) {
 // Test lowering of G_FFLOOR
 TEST_F(GISelMITest, LowerFFloor) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Declare your legalization info
   DefineLegalizerInfo(A, {});
@@ -2477,8 +2593,10 @@ TEST_F(GISelMITest, LowerFFloor) {
 // Test lowering of G_BSWAP
 TEST_F(GISelMITest, LowerBSWAP) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   DefineLegalizerInfo(A, {});
 

@@ -23,43 +23,65 @@ namespace V3 {
 bool MetadataVerifier::verifyScalar(
     msgpack::DocNode &Node, msgpack::Type SKind,
     function_ref<bool(msgpack::DocNode &)> verifyValue) {
-  if (!Node.isScalar())
+  if (!Node.isScalar()) {
     return false;
+
+}
   if (Node.getKind() != SKind) {
-    if (Strict)
+    if (Strict) {
       return false;
+
+}
     // If we are not strict, we interpret string values as "implicitly typed"
     // and attempt to coerce them to the expected type here.
-    if (Node.getKind() != msgpack::Type::String)
+    if (Node.getKind() != msgpack::Type::String) {
       return false;
+
+}
     StringRef StringValue = Node.getString();
     Node.fromString(StringValue);
-    if (Node.getKind() != SKind)
+    if (Node.getKind() != SKind) {
       return false;
+
+}
   }
-  if (verifyValue)
+  if (verifyValue) {
     return verifyValue(Node);
+
+}
   return true;
 }
 
 bool MetadataVerifier::verifyInteger(msgpack::DocNode &Node) {
-  if (!verifyScalar(Node, msgpack::Type::UInt))
-    if (!verifyScalar(Node, msgpack::Type::Int))
+  if (!verifyScalar(Node, msgpack::Type::UInt)) {
+    if (!verifyScalar(Node, msgpack::Type::Int)) {
       return false;
+
+}
+
+}
   return true;
 }
 
 bool MetadataVerifier::verifyArray(
     msgpack::DocNode &Node, function_ref<bool(msgpack::DocNode &)> verifyNode,
     Optional<size_t> Size) {
-  if (!Node.isArray())
+  if (!Node.isArray()) {
     return false;
+
+}
   auto &Array = Node.getArray();
-  if (Size && Array.size() != *Size)
+  if (Size && Array.size() != *Size) {
     return false;
-  for (auto &Item : Array)
-    if (!verifyNode(Item))
+
+}
+  for (auto &Item : Array) {
+    if (!verifyNode(Item)) {
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -68,8 +90,10 @@ bool MetadataVerifier::verifyEntry(
     msgpack::MapDocNode &MapNode, StringRef Key, bool Required,
     function_ref<bool(msgpack::DocNode &)> verifyNode) {
   auto Entry = MapNode.find(Key);
-  if (Entry == MapNode.end())
+  if (Entry == MapNode.end()) {
     return !Required;
+
+}
   return verifyNode(Entry->second);
 }
 
@@ -90,20 +114,30 @@ bool MetadataVerifier::verifyIntegerEntry(msgpack::MapDocNode &MapNode,
 }
 
 bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
-  if (!Node.isMap())
+  if (!Node.isMap()) {
     return false;
+
+}
   auto &ArgsMap = Node.getMap();
 
   if (!verifyScalarEntry(ArgsMap, ".name", false,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".type_name", false,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
-  if (!verifyIntegerEntry(ArgsMap, ".size", true))
+
+}
+  if (!verifyIntegerEntry(ArgsMap, ".size", true)) {
     return false;
-  if (!verifyIntegerEntry(ArgsMap, ".offset", true))
+
+}
+  if (!verifyIntegerEntry(ArgsMap, ".offset", true)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".value_kind", true,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -125,8 +159,10 @@ bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
                                .Case("hidden_completion_action", true)
                                .Case("hidden_multigrid_sync_arg", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".value_type", true,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -144,10 +180,14 @@ bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
                                .Case("u64", true)
                                .Case("f64", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
-  if (!verifyIntegerEntry(ArgsMap, ".pointee_align", false))
+
+}
+  if (!verifyIntegerEntry(ArgsMap, ".pointee_align", false)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".address_space", false,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -159,8 +199,10 @@ bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
                                .Case("generic", true)
                                .Case("region", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".access", false,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -169,8 +211,10 @@ bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
                                .Case("write_only", true)
                                .Case("read_write", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".actual_access", false,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -179,35 +223,51 @@ bool MetadataVerifier::verifyKernelArgs(msgpack::DocNode &Node) {
                                .Case("write_only", true)
                                .Case("read_write", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".is_const", false,
-                         msgpack::Type::Boolean))
+                         msgpack::Type::Boolean)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".is_restrict", false,
-                         msgpack::Type::Boolean))
+                         msgpack::Type::Boolean)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".is_volatile", false,
-                         msgpack::Type::Boolean))
+                         msgpack::Type::Boolean)) {
     return false;
+
+}
   if (!verifyScalarEntry(ArgsMap, ".is_pipe", false,
-                         msgpack::Type::Boolean))
+                         msgpack::Type::Boolean)) {
     return false;
+
+}
 
   return true;
 }
 
 bool MetadataVerifier::verifyKernel(msgpack::DocNode &Node) {
-  if (!Node.isMap())
+  if (!Node.isMap()) {
     return false;
+
+}
   auto &KernelMap = Node.getMap();
 
   if (!verifyScalarEntry(KernelMap, ".name", true,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
+
+}
   if (!verifyScalarEntry(KernelMap, ".symbol", true,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
+
+}
   if (!verifyScalarEntry(KernelMap, ".language", false,
                          msgpack::Type::String,
                          [](msgpack::DocNode &SNode) {
@@ -219,21 +279,27 @@ bool MetadataVerifier::verifyKernel(msgpack::DocNode &Node) {
                                .Case("OpenMP", true)
                                .Case("Assembler", true)
                                .Default(false);
-                         }))
+                         })) {
     return false;
+
+}
   if (!verifyEntry(
           KernelMap, ".language_version", false, [this](msgpack::DocNode &Node) {
             return verifyArray(
                 Node,
                 [this](msgpack::DocNode &Node) { return verifyInteger(Node); }, 2);
-          }))
+          })) {
     return false;
+
+}
   if (!verifyEntry(KernelMap, ".args", false, [this](msgpack::DocNode &Node) {
         return verifyArray(Node, [this](msgpack::DocNode &Node) {
           return verifyKernelArgs(Node);
         });
-      }))
+      })) {
     return false;
+
+}
   if (!verifyEntry(KernelMap, ".reqd_workgroup_size", false,
                    [this](msgpack::DocNode &Node) {
                      return verifyArray(Node,
@@ -241,8 +307,10 @@ bool MetadataVerifier::verifyKernel(msgpack::DocNode &Node) {
                                           return verifyInteger(Node);
                                         },
                                         3);
-                   }))
+                   })) {
     return false;
+
+}
   if (!verifyEntry(KernelMap, ".workgroup_size_hint", false,
                    [this](msgpack::DocNode &Node) {
                      return verifyArray(Node,
@@ -250,41 +318,69 @@ bool MetadataVerifier::verifyKernel(msgpack::DocNode &Node) {
                                           return verifyInteger(Node);
                                         },
                                         3);
-                   }))
+                   })) {
     return false;
+
+}
   if (!verifyScalarEntry(KernelMap, ".vec_type_hint", false,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
+
+}
   if (!verifyScalarEntry(KernelMap, ".device_enqueue_symbol", false,
-                         msgpack::Type::String))
+                         msgpack::Type::String)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".kernarg_segment_size", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".kernarg_segment_size", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".group_segment_fixed_size", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".group_segment_fixed_size", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".private_segment_fixed_size", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".private_segment_fixed_size", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".kernarg_segment_align", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".kernarg_segment_align", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".wavefront_size", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".wavefront_size", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".sgpr_count", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".sgpr_count", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".vgpr_count", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".vgpr_count", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".max_flat_workgroup_size", true))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".max_flat_workgroup_size", true)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".sgpr_spill_count", false))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".sgpr_spill_count", false)) {
     return false;
-  if (!verifyIntegerEntry(KernelMap, ".vgpr_spill_count", false))
+
+}
+  if (!verifyIntegerEntry(KernelMap, ".vgpr_spill_count", false)) {
     return false;
+
+}
 
   return true;
 }
 
 bool MetadataVerifier::verify(msgpack::DocNode &HSAMetadataRoot) {
-  if (!HSAMetadataRoot.isMap())
+  if (!HSAMetadataRoot.isMap()) {
     return false;
+
+}
   auto &RootMap = HSAMetadataRoot.getMap();
 
   if (!verifyEntry(
@@ -292,22 +388,28 @@ bool MetadataVerifier::verify(msgpack::DocNode &HSAMetadataRoot) {
             return verifyArray(
                 Node,
                 [this](msgpack::DocNode &Node) { return verifyInteger(Node); }, 2);
-          }))
+          })) {
     return false;
+
+}
   if (!verifyEntry(
           RootMap, "amdhsa.printf", false, [this](msgpack::DocNode &Node) {
             return verifyArray(Node, [this](msgpack::DocNode &Node) {
               return verifyScalar(Node, msgpack::Type::String);
             });
-          }))
+          })) {
     return false;
+
+}
   if (!verifyEntry(RootMap, "amdhsa.kernels", true,
                    [this](msgpack::DocNode &Node) {
                      return verifyArray(Node, [this](msgpack::DocNode &Node) {
                        return verifyKernel(Node);
                      });
-                   }))
+                   })) {
     return false;
+
+}
 
   return true;
 }

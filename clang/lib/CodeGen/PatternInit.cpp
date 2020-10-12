@@ -37,8 +37,10 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
     unsigned BitWidth = cast<llvm::IntegerType>(
                             Ty->isVectorTy() ? Ty->getVectorElementType() : Ty)
                             ->getBitWidth();
-    if (BitWidth <= 64)
+    if (BitWidth <= 64) {
       return llvm::ConstantInt::get(Ty, IntValue);
+
+}
     return llvm::ConstantInt::get(
         Ty, llvm::APInt::getSplat(BitWidth, llvm::APInt(64, IntValue)));
   }
@@ -47,8 +49,10 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
         Ty->isVectorTy() ? Ty->getVectorElementType() : Ty);
     unsigned PtrWidth = CGM.getContext().getTargetInfo().getPointerWidth(
         PtrTy->getAddressSpace());
-    if (PtrWidth > 64)
+    if (PtrWidth > 64) {
       llvm_unreachable("pattern initialization of unsupported pointer width");
+
+}
     llvm::Type *IntTy = llvm::IntegerType::get(CGM.getLLVMContext(), PtrWidth);
     auto *Int = llvm::ConstantInt::get(IntTy, IntValue);
     return llvm::ConstantExpr::getIntToPtr(Int, PtrTy);
@@ -58,8 +62,10 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
         (Ty->isVectorTy() ? Ty->getVectorElementType() : Ty)
             ->getFltSemantics());
     llvm::APInt Payload(64, NaNPayload);
-    if (BitWidth >= 64)
+    if (BitWidth >= 64) {
       Payload = llvm::APInt::getSplat(BitWidth, Payload);
+
+}
     return llvm::ConstantFP::getQNaN(Ty, NegativeNaN, &Payload);
   }
   if (Ty->isArrayTy()) {
@@ -80,7 +86,9 @@ llvm::Constant *clang::CodeGen::initializationPatternFor(CodeGenModule &CGM,
   // anyways, and the initialization shouldn't be observable.
   auto *StructTy = cast<llvm::StructType>(Ty);
   llvm::SmallVector<llvm::Constant *, 8> Struct(StructTy->getNumElements());
-  for (unsigned El = 0; El != Struct.size(); ++El)
+  for (unsigned El = 0; El != Struct.size(); ++El) {
     Struct[El] = initializationPatternFor(CGM, StructTy->getElementType(El));
+
+}
   return llvm::ConstantStruct::get(StructTy, Struct);
 }

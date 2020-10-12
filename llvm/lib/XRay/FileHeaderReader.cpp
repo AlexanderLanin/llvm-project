@@ -27,38 +27,46 @@ Expected<XRayFileHeader> readBinaryFormatHeader(DataExtractor &HeaderExtractor,
   XRayFileHeader FileHeader;
   auto PreReadOffset = OffsetPtr;
   FileHeader.Version = HeaderExtractor.getU16(&OffsetPtr);
-  if (OffsetPtr == PreReadOffset)
+  if (OffsetPtr == PreReadOffset) {
     return createStringError(
         std::make_error_code(std::errc::invalid_argument),
         "Failed reading version from file header at offset %" PRId64 ".",
         OffsetPtr);
 
+}
+
   PreReadOffset = OffsetPtr;
   FileHeader.Type = HeaderExtractor.getU16(&OffsetPtr);
-  if (OffsetPtr == PreReadOffset)
+  if (OffsetPtr == PreReadOffset) {
     return createStringError(
         std::make_error_code(std::errc::invalid_argument),
         "Failed reading file type from file header at offset %" PRId64 ".",
         OffsetPtr);
 
+}
+
   PreReadOffset = OffsetPtr;
   uint32_t Bitfield = HeaderExtractor.getU32(&OffsetPtr);
-  if (OffsetPtr == PreReadOffset)
+  if (OffsetPtr == PreReadOffset) {
     return createStringError(
         std::make_error_code(std::errc::invalid_argument),
         "Failed reading flag bits from file header at offset %" PRId64 ".",
         OffsetPtr);
 
+}
+
   FileHeader.ConstantTSC = Bitfield & 1uL;
   FileHeader.NonstopTSC = Bitfield & 1uL << 1;
   PreReadOffset = OffsetPtr;
   FileHeader.CycleFrequency = HeaderExtractor.getU64(&OffsetPtr);
-  if (OffsetPtr == PreReadOffset)
+  if (OffsetPtr == PreReadOffset) {
     return createStringError(
         std::make_error_code(std::errc::invalid_argument),
         "Failed reading cycle frequency from file header at offset %" PRId64
         ".",
         OffsetPtr);
+
+}
 
   std::memcpy(&FileHeader.FreeFormData,
               HeaderExtractor.getData().bytes_begin() + OffsetPtr, 16);

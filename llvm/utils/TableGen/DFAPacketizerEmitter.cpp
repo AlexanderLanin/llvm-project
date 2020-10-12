@@ -103,8 +103,10 @@ int DFAPacketizerEmitter::collectAllFuncUnits(
   LLVM_DEBUG(dbgs() << " (" << ProcModels.size() << " itineraries)\n");
 
   std::set<Record *> ProcItinList;
-  for (const CodeGenProcModel *Model : ProcModels)
+  for (const CodeGenProcModel *Model : ProcModels) {
     ProcItinList.insert(Model->ItinsDef);
+
+}
 
   int totalFUs = 0;
   // Parse functional units for all the itineraries.
@@ -183,8 +185,10 @@ DFAPacketizerEmitter::getResourcesForItinerary(Record *Itinerary) {
     for (Record *Unit : StageDef->getValueAsListOfDefs("Units")) {
       StageResources |= FUNameToBitsMap[std::string(Unit->getName())];
     }
-    if (StageResources != 0)
+    if (StageResources != 0) {
       Resources.push_back(StageResources);
+
+}
   }
   return Resources;
 }
@@ -223,8 +227,10 @@ void DFAPacketizerEmitter::run(raw_ostream &OS) {
     }
   }
 
-  for (auto &KV : ItinsByNamespace)
+  for (auto &KV : ItinsByNamespace) {
     emitForItineraries(OS, KV.second, KV.first);
+
+}
   OS << "} // end namespace llvm\n";
 }
 
@@ -249,8 +255,10 @@ void DFAPacketizerEmitter::emitForItineraries(
   OS << "constexpr unsigned " << TargetName << DFAName
      << "ResourceIndices[] = {";
   for (const ScheduleClass &SC : ScheduleClasses) {
-    if (Idx++ % 32 == 0)
+    if (Idx++ % 32 == 0) {
       OS << "\n  ";
+
+}
     OS << SC.ResourcesIdx << ", ";
   }
   OS << "\n};\n\n";
@@ -284,16 +292,22 @@ void DFAPacketizerEmitter::emitForItineraries(
         // For this stage, state combination, try all possible resources.
         for (unsigned J = 0; J < DFA_MAX_RESOURCES; ++J) {
           NfaStateTy ResourceMask = 1ULL << J;
-          if ((ResourceMask & Stage) == 0)
+          if ((ResourceMask & Stage) == 0) {
             // This resource isn't required by this stage.
             continue;
+
+}
           NfaStateTy Combo = ComboBitToBitsMap[ResourceMask];
-          if (Combo && ((~S & Combo) != Combo))
+          if (Combo && ((~S & Combo) != Combo)) {
             // This combo units bits are not available.
             continue;
+
+}
           NfaStateTy ResultingResourceState = S | ResourceMask | Combo;
-          if (ResultingResourceState == S)
+          if (ResultingResourceState == S) {
             continue;
+
+}
           V.push_back(ResultingResourceState);
         }
       }
@@ -307,8 +321,10 @@ void DFAPacketizerEmitter::emitForItineraries(
   auto canApplyInsnClass = [](const ResourceVector &InsnClass,
                               NfaStateTy State) -> bool {
     for (NfaStateTy Resources : InsnClass) {
-      if ((State | Resources) == State)
+      if ((State | Resources) == State) {
         return false;
+
+}
     }
     return true;
   };
@@ -321,12 +337,16 @@ void DFAPacketizerEmitter::emitForItineraries(
     NfaStateTy State = Worklist.front();
     Worklist.pop_front();
     for (const ResourceVector &Resources : UniqueResources) {
-      if (!canApplyInsnClass(Resources, State))
+      if (!canApplyInsnClass(Resources, State)) {
         continue;
+
+}
       unsigned ResourcesID = UniqueResources.idFor(Resources);
       for (uint64_t NewState : applyInsnClass(Resources, State)) {
-        if (SeenStates.emplace(NewState).second)
+        if (SeenStates.emplace(NewState).second) {
           Worklist.emplace_back(NewState);
+
+}
         Emitter.addTransition(State, NewState, ResourcesID);
       }
     }

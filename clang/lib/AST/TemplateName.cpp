@@ -80,49 +80,71 @@ TemplateName::TemplateName(DependentTemplateName *Dep) : Storage(Dep) {}
 bool TemplateName::isNull() const { return Storage.isNull(); }
 
 TemplateName::NameKind TemplateName::getKind() const {
-  if (Storage.is<TemplateDecl *>())
+  if (Storage.is<TemplateDecl *>()) {
     return Template;
-  if (Storage.is<DependentTemplateName *>())
+
+}
+  if (Storage.is<DependentTemplateName *>()) {
     return DependentTemplate;
-  if (Storage.is<QualifiedTemplateName *>())
+
+}
+  if (Storage.is<QualifiedTemplateName *>()) {
     return QualifiedTemplate;
+
+}
 
   UncommonTemplateNameStorage *uncommon
     = Storage.get<UncommonTemplateNameStorage*>();
-  if (uncommon->getAsOverloadedStorage())
+  if (uncommon->getAsOverloadedStorage()) {
     return OverloadedTemplate;
-  if (uncommon->getAsAssumedTemplateName())
+
+}
+  if (uncommon->getAsAssumedTemplateName()) {
     return AssumedTemplate;
-  if (uncommon->getAsSubstTemplateTemplateParm())
+
+}
+  if (uncommon->getAsSubstTemplateTemplateParm()) {
     return SubstTemplateTemplateParm;
+
+}
   return SubstTemplateTemplateParmPack;
 }
 
 TemplateDecl *TemplateName::getAsTemplateDecl() const {
-  if (TemplateDecl *Template = Storage.dyn_cast<TemplateDecl *>())
+  if (TemplateDecl *Template = Storage.dyn_cast<TemplateDecl *>()) {
     return Template;
 
-  if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName())
+}
+
+  if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName()) {
     return QTN->getTemplateDecl();
 
-  if (SubstTemplateTemplateParmStorage *sub = getAsSubstTemplateTemplateParm())
+}
+
+  if (SubstTemplateTemplateParmStorage *sub = getAsSubstTemplateTemplateParm()) {
     return sub->getReplacement().getAsTemplateDecl();
+
+}
 
   return nullptr;
 }
 
 OverloadedTemplateStorage *TemplateName::getAsOverloadedTemplate() const {
   if (UncommonTemplateNameStorage *Uncommon =
-          Storage.dyn_cast<UncommonTemplateNameStorage *>())
+          Storage.dyn_cast<UncommonTemplateNameStorage *>()) {
     return Uncommon->getAsOverloadedStorage();
+
+}
 
   return nullptr;
 }
 
 AssumedTemplateStorage *TemplateName::getAsAssumedTemplateName() const {
   if (UncommonTemplateNameStorage *Uncommon =
-          Storage.dyn_cast<UncommonTemplateNameStorage *>())
+          Storage.dyn_cast<UncommonTemplateNameStorage *>()) {
     return Uncommon->getAsAssumedTemplateName();
+
+}
 
   return nullptr;
 }
@@ -130,8 +152,10 @@ AssumedTemplateStorage *TemplateName::getAsAssumedTemplateName() const {
 SubstTemplateTemplateParmStorage *
 TemplateName::getAsSubstTemplateTemplateParm() const {
   if (UncommonTemplateNameStorage *uncommon =
-          Storage.dyn_cast<UncommonTemplateNameStorage *>())
+          Storage.dyn_cast<UncommonTemplateNameStorage *>()) {
     return uncommon->getAsSubstTemplateTemplateParm();
+
+}
 
   return nullptr;
 }
@@ -139,8 +163,10 @@ TemplateName::getAsSubstTemplateTemplateParm() const {
 SubstTemplateTemplateParmPackStorage *
 TemplateName::getAsSubstTemplateTemplateParmPack() const {
   if (UncommonTemplateNameStorage *Uncommon =
-          Storage.dyn_cast<UncommonTemplateNameStorage *>())
+          Storage.dyn_cast<UncommonTemplateNameStorage *>()) {
     return Uncommon->getAsSubstTemplateTemplateParmPack();
+
+}
 
   return nullptr;
 }
@@ -157,8 +183,10 @@ TemplateName TemplateName::getNameToSubstitute() const {
   TemplateDecl *Decl = getAsTemplateDecl();
 
   // Substituting a dependent template name: preserve it as written.
-  if (!Decl)
+  if (!Decl) {
     return *this;
+
+}
 
   // If we have a template declaration, use the most recent non-friend
   // declaration of that template.
@@ -192,16 +220,20 @@ TemplateNameDependence TemplateName::getDependence() const {
   if (TemplateDecl *Template = getAsTemplateDecl()) {
     if (auto *TTP = dyn_cast<TemplateTemplateParmDecl>(Template)) {
       D |= TemplateNameDependence::DependentInstantiation;
-      if (TTP->isParameterPack())
+      if (TTP->isParameterPack()) {
         D |= TemplateNameDependence::UnexpandedPack;
+
+}
     }
     // FIXME: Hack, getDeclContext() can be null if Template is still
     // initializing due to PCH reading, so we check it before using it.
     // Should probably modify TemplateSpecializationType to allow constructing
     // it without the isDependent() checking.
     if (Template->getDeclContext() &&
-        Template->getDeclContext()->isDependentContext())
+        Template->getDeclContext()->isDependentContext()) {
       D |= TemplateNameDependence::DependentInstantiation;
+
+}
   } else {
     D |= TemplateNameDependence::DependentInstantiation;
   }
@@ -223,30 +255,38 @@ bool TemplateName::containsUnexpandedParameterPack() const {
 void
 TemplateName::print(raw_ostream &OS, const PrintingPolicy &Policy,
                     bool SuppressNNS) const {
-  if (TemplateDecl *Template = Storage.dyn_cast<TemplateDecl *>())
+  if (TemplateDecl *Template = Storage.dyn_cast<TemplateDecl *>()) {
     OS << *Template;
-  else if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName()) {
-    if (!SuppressNNS)
+  } else if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName()) {
+    if (!SuppressNNS) {
       QTN->getQualifier()->print(OS, Policy);
-    if (QTN->hasTemplateKeyword())
+
+}
+    if (QTN->hasTemplateKeyword()) {
       OS << "template ";
+
+}
     OS << *QTN->getDecl();
   } else if (DependentTemplateName *DTN = getAsDependentTemplateName()) {
-    if (!SuppressNNS && DTN->getQualifier())
+    if (!SuppressNNS && DTN->getQualifier()) {
       DTN->getQualifier()->print(OS, Policy);
+
+}
     OS << "template ";
 
-    if (DTN->isIdentifier())
+    if (DTN->isIdentifier()) {
       OS << DTN->getIdentifier()->getName();
-    else
+    } else {
       OS << "operator " << getOperatorSpelling(DTN->getOperator());
+
+}
   } else if (SubstTemplateTemplateParmStorage *subst
                = getAsSubstTemplateTemplateParm()) {
     subst->getReplacement().print(OS, Policy, SuppressNNS);
   } else if (SubstTemplateTemplateParmPackStorage *SubstPack
-                                        = getAsSubstTemplateTemplateParmPack())
+                                        = getAsSubstTemplateTemplateParmPack()) {
     OS << *SubstPack->getParameterPack();
-  else if (AssumedTemplateStorage *Assumed = getAsAssumedTemplateName()) {
+  } else if (AssumedTemplateStorage *Assumed = getAsAssumedTemplateName()) {
     Assumed->getDeclName().print(OS, Policy);
   } else {
     OverloadedTemplateStorage *OTS = getAsOverloadedTemplate();

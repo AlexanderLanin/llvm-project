@@ -415,10 +415,12 @@ public:
     using namespace llvm::sys;
     // Still require "/" in body to mimic file scheme, as we want lengths of an
     // equivalent URI in both schemes to be the same.
-    if (!Body.startswith("/"))
+    if (!Body.startswith("/")) {
       return llvm::make_error<llvm::StringError>(
           "Expect URI body to be an absolute path starting with '/': " + Body,
           llvm::inconvertibleErrorCode());
+
+}
     Body = Body.ltrim('/');
     llvm::SmallVector<char, 16> Path(Body.begin(), Body.end());
     path::native(Path);
@@ -487,11 +489,13 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
     LogLevel = Logger::Verbose;
     PrettyPrint = true;
     // Disable background index on lit tests by default to prevent disk writes.
-    if (!EnableBackgroundIndex.getNumOccurrences())
+    if (!EnableBackgroundIndex.getNumOccurrences()) {
       EnableBackgroundIndex = false;
     // Ensure background index makes progress.
-    else if (EnableBackgroundIndex)
+    } else if (EnableBackgroundIndex) {
       BackgroundQueue::preventThreadStarvationInTests();
+
+}
   }
   if (Test || EnableTestScheme) {
     static URISchemeRegistry::Add<TestScheme> X(
@@ -505,12 +509,16 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
   }
 
   if (Sync) {
-    if (WorkerThreadsCount.getNumOccurrences())
+    if (WorkerThreadsCount.getNumOccurrences()) {
       llvm::errs() << "Ignoring -j because -sync is set.\n";
+
+}
     WorkerThreadsCount = 0;
   }
-  if (FallbackStyle.getNumOccurrences())
+  if (FallbackStyle.getNumOccurrences()) {
     clang::format::DefaultFallbackStyle = FallbackStyle.c_str();
+
+}
 
   // Validate command line arguments.
   llvm::Optional<llvm::raw_fd_ostream> InputMirrorStream;
@@ -546,14 +554,18 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
   }
 
   llvm::Optional<trace::Session> TracingSession;
-  if (Tracer)
+  if (Tracer) {
     TracingSession.emplace(*Tracer);
+
+}
 
   // If a user ran `clangd` in a terminal without redirecting anything,
   // it's somewhat likely they're confused about how to use clangd.
   // Show them the help overview, which explains.
-  if (llvm::outs().is_displayed() && llvm::errs().is_displayed())
+  if (llvm::outs().is_displayed() && llvm::errs().is_displayed()) {
     llvm::errs() << Overview << "\n";
+
+}
   // Use buffered stream to stderr (we still flush each log message). Unbuffered
   // stream can cause significant (non-deterministic) latency for the logger.
   llvm::errs().SetBuffered();
@@ -567,15 +579,21 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
 #endif
   {
     SmallString<128> CWD;
-    if (auto Err = llvm::sys::fs::current_path(CWD))
+    if (auto Err = llvm::sys::fs::current_path(CWD)) {
       log("Working directory unknown: {0}", Err.message());
-    else
+    } else {
       log("Working directory: {0}", CWD);
+
+}
   }
-  for (int I = 0; I < argc; ++I)
+  for (int I = 0; I < argc; ++I) {
     log("argv[{0}]: {1}", I, argv[I]);
-  if (auto EnvFlags = llvm::sys::Process::GetEnv(FlagsEnvVar))
+
+}
+  if (auto EnvFlags = llvm::sys::Process::GetEnv(FlagsEnvVar)) {
     log("{0}: {1}", FlagsEnvVar, *EnvFlags);
+
+}
 
   // If --compile-commands-dir arg was invoked, check value and override default
   // path.
@@ -610,8 +628,10 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
     Opts.StorePreamblesInMemory = false;
     break;
   }
-  if (!ResourceDir.empty())
+  if (!ResourceDir.empty()) {
     Opts.ResourceDir = ResourceDir;
+
+}
   Opts.BuildDynamicSymbolIndex = EnableIndex;
   Opts.BackgroundIndex = EnableBackgroundIndex;
   std::unique_ptr<SymbolIndex> StaticIdx;
@@ -621,11 +641,15 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
     SwapIndex *Placeholder;
     StaticIdx.reset(Placeholder = new SwapIndex(std::make_unique<MemIndex>()));
     AsyncIndexLoad = runAsync<void>([Placeholder] {
-      if (auto Idx = loadIndex(IndexFile, /*UseDex=*/true))
+      if (auto Idx = loadIndex(IndexFile, /*UseDex=*/true)) {
         Placeholder->reset(std::move(Idx));
+
+}
     });
-    if (Sync)
+    if (Sync) {
       AsyncIndexLoad.wait();
+
+}
   }
   Opts.StaticIndex = StaticIdx.get();
   Opts.AsyncThreadsCount = WorkerThreadsCount;
@@ -633,8 +657,10 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
   clangd::CodeCompleteOptions CCOpts;
   CCOpts.IncludeIneligibleResults = IncludeIneligibleResults;
   CCOpts.Limit = LimitResults;
-  if (CompletionStyle.getNumOccurrences())
+  if (CompletionStyle.getNumOccurrences()) {
     CCOpts.BundleOverloads = CompletionStyle != Detailed;
+
+}
   CCOpts.ShowOrigins = ShowOrigins;
   CCOpts.InsertIncludes = HeaderInsertion;
   if (!HeaderInsertionDecorators) {
@@ -699,15 +725,21 @@ clangd accepts flags on the commandline, and in the CLANGD_FLAGS environment var
   Opts.QueryDriverGlobs = std::move(QueryDriverGlobs);
 
   Opts.TweakFilter = [&](const Tweak &T) {
-    if (T.hidden() && !HiddenFeatures)
+    if (T.hidden() && !HiddenFeatures) {
       return false;
-    if (TweakList.getNumOccurrences())
+
+}
+    if (TweakList.getNumOccurrences()) {
       return llvm::is_contained(TweakList, T.id());
+
+}
     return true;
   };
   llvm::Optional<OffsetEncoding> OffsetEncodingFromFlag;
-  if (ForceOffsetEncoding != OffsetEncoding::UnsupportedEncoding)
+  if (ForceOffsetEncoding != OffsetEncoding::UnsupportedEncoding) {
     OffsetEncodingFromFlag = ForceOffsetEncoding;
+
+}
 
   clangd::RenameOptions RenameOpts;
   // Shall we allow to custimize the file limit?

@@ -58,8 +58,10 @@ namespace {
 class PreserveAPIList {
 public:
   PreserveAPIList() {
-    if (!APIFile.empty())
+    if (!APIFile.empty()) {
       LoadFile(APIFile);
+
+}
     ExternalNames.insert(APIList.begin(), APIList.end());
   }
 
@@ -80,32 +82,44 @@ private:
              << "'! Continuing as if it's empty.\n";
       return; // Just continue as if the file were empty
     }
-    for (line_iterator I(*Buf->get(), true), E; I != E; ++I)
+    for (line_iterator I(*Buf->get(), true), E; I != E; ++I) {
       ExternalNames.insert(*I);
+
+}
   }
 };
 } // end anonymous namespace
 
 bool InternalizePass::shouldPreserveGV(const GlobalValue &GV) {
   // Function must be defined here
-  if (GV.isDeclaration())
+  if (GV.isDeclaration()) {
     return true;
+
+}
 
   // Available externally is really just a "declaration with a body".
-  if (GV.hasAvailableExternallyLinkage())
+  if (GV.hasAvailableExternallyLinkage()) {
     return true;
+
+}
 
   // Assume that dllexported symbols are referenced elsewhere
-  if (GV.hasDLLExportStorageClass())
+  if (GV.hasDLLExportStorageClass()) {
     return true;
+
+}
 
   // Already local, has nothing to do.
-  if (GV.hasLocalLinkage())
+  if (GV.hasLocalLinkage()) {
     return false;
 
+}
+
   // Check some special cases
-  if (AlwaysPreserved.count(GV.getName()))
+  if (AlwaysPreserved.count(GV.getName())) {
     return true;
+
+}
 
   return MustPreserveGV(GV);
 }
@@ -113,21 +127,31 @@ bool InternalizePass::shouldPreserveGV(const GlobalValue &GV) {
 bool InternalizePass::maybeInternalize(
     GlobalValue &GV, const DenseSet<const Comdat *> &ExternalComdats) {
   if (Comdat *C = GV.getComdat()) {
-    if (ExternalComdats.count(C))
+    if (ExternalComdats.count(C)) {
       return false;
+
+}
 
     // If a comdat is not externally visible we can drop it.
-    if (auto GO = dyn_cast<GlobalObject>(&GV))
+    if (auto GO = dyn_cast<GlobalObject>(&GV)) {
       GO->setComdat(nullptr);
 
-    if (GV.hasLocalLinkage())
-      return false;
-  } else {
-    if (GV.hasLocalLinkage())
+}
+
+    if (GV.hasLocalLinkage()) {
       return false;
 
-    if (shouldPreserveGV(GV))
+}
+  } else {
+    if (GV.hasLocalLinkage()) {
       return false;
+
+}
+
+    if (shouldPreserveGV(GV)) {
+      return false;
+
+}
   }
 
   GV.setVisibility(GlobalValue::DefaultVisibility);
@@ -140,11 +164,15 @@ bool InternalizePass::maybeInternalize(
 void InternalizePass::checkComdatVisibility(
     GlobalValue &GV, DenseSet<const Comdat *> &ExternalComdats) {
   Comdat *C = GV.getComdat();
-  if (!C)
+  if (!C) {
     return;
 
-  if (shouldPreserveGV(GV))
+}
+
+  if (shouldPreserveGV(GV)) {
     ExternalComdats.insert(C);
+
+}
 }
 
 bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
@@ -157,12 +185,18 @@ bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
   // Collect comdat visiblity information for the module.
   DenseSet<const Comdat *> ExternalComdats;
   if (!M.getComdatSymbolTable().empty()) {
-    for (Function &F : M)
+    for (Function &F : M) {
       checkComdatVisibility(F, ExternalComdats);
-    for (GlobalVariable &GV : M.globals())
+
+}
+    for (GlobalVariable &GV : M.globals()) {
       checkComdatVisibility(GV, ExternalComdats);
-    for (GlobalAlias &GA : M.aliases())
+
+}
+    for (GlobalAlias &GA : M.aliases()) {
       checkComdatVisibility(GA, ExternalComdats);
+
+}
   }
 
   // We must assume that globals in llvm.used have a reference that not even
@@ -180,13 +214,17 @@ bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
 
   // Mark all functions not in the api as internal.
   for (Function &I : M) {
-    if (!maybeInternalize(I, ExternalComdats))
+    if (!maybeInternalize(I, ExternalComdats)) {
       continue;
+
+}
     Changed = true;
 
-    if (ExternalNode)
+    if (ExternalNode) {
       // Remove a callgraph edge from the external node to this function.
       ExternalNode->removeOneAbstractEdgeTo((*CG)[&I]);
+
+}
 
     ++NumFunctions;
     LLVM_DEBUG(dbgs() << "Internalizing func " << I.getName() << "\n");
@@ -213,8 +251,10 @@ bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
   // Mark all global variables with initializers that are not in the api as
   // internal as well.
   for (auto &GV : M.globals()) {
-    if (!maybeInternalize(GV, ExternalComdats))
+    if (!maybeInternalize(GV, ExternalComdats)) {
       continue;
+
+}
     Changed = true;
 
     ++NumGlobals;
@@ -223,8 +263,10 @@ bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
 
   // Mark all aliases that are not in the api as internal as well.
   for (auto &GA : M.aliases()) {
-    if (!maybeInternalize(GA, ExternalComdats))
+    if (!maybeInternalize(GA, ExternalComdats)) {
       continue;
+
+}
     Changed = true;
 
     ++NumAliases;
@@ -237,8 +279,10 @@ bool InternalizePass::internalizeModule(Module &M, CallGraph *CG) {
 InternalizePass::InternalizePass() : MustPreserveGV(PreserveAPIList()) {}
 
 PreservedAnalyses InternalizePass::run(Module &M, ModuleAnalysisManager &AM) {
-  if (!internalizeModule(M, AM.getCachedResult<CallGraphAnalysis>(M)))
+  if (!internalizeModule(M, AM.getCachedResult<CallGraphAnalysis>(M))) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserve<CallGraphAnalysis>();
@@ -261,8 +305,10 @@ public:
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
 
     CallGraphWrapperPass *CGPass =
         getAnalysisIfAvailable<CallGraphWrapperPass>();

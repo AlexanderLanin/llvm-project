@@ -35,10 +35,14 @@ VariableDumper::VariableDumper(LinePrinter &P)
     : PDBSymDumper(true), Printer(P) {}
 
 void VariableDumper::start(const PDBSymbolData &Var, uint32_t Offset) {
-  if (Var.isCompilerGenerated() && opts::pretty::ExcludeCompilerGenerated)
+  if (Var.isCompilerGenerated() && opts::pretty::ExcludeCompilerGenerated) {
     return;
-  if (Printer.IsSymbolExcluded(Var.getName()))
+
+}
+  if (Printer.IsSymbolExcluded(Var.getName())) {
     return;
+
+}
 
   auto VarType = Var.getType();
 
@@ -55,8 +59,10 @@ void VariableDumper::start(const PDBSymbolData &Var, uint32_t Offset) {
     dumpSymbolTypeAndName(*VarType, Var.getName());
     break;
   case PDB_LocType::Constant:
-    if (isa<PDBSymbolTypeEnum>(*VarType))
+    if (isa<PDBSymbolTypeEnum>(*VarType)) {
       break;
+
+}
     Printer.NewLine();
     Printer << "data [sizeof=" << Length << "] ";
     dumpSymbolTypeAndName(*VarType, Var.getName());
@@ -112,16 +118,20 @@ void VariableDumper::start(const PDBSymbolTypeVTable &Var, uint32_t Offset) {
 void VariableDumper::dump(const PDBSymbolTypeArray &Symbol) {
   auto ElementType = Symbol.getElementType();
   assert(ElementType);
-  if (!ElementType)
+  if (!ElementType) {
     return;
+
+}
   ElementType->dump(*this);
 }
 
 void VariableDumper::dumpRight(const PDBSymbolTypeArray &Symbol) {
   auto ElementType = Symbol.getElementType();
   assert(ElementType);
-  if (!ElementType)
+  if (!ElementType) {
     return;
+
+}
   Printer << '[' << Symbol.getCount() << ']';
   ElementType->dumpRight(*this);
 }
@@ -158,25 +168,35 @@ void VariableDumper::dumpRight(const PDBSymbolTypeFunctionSig &Symbol) {
     uint32_t Index = 0;
     while (auto Arg = Arguments->getNext()) {
       Arg->dump(*this);
-      if (++Index < Arguments->getChildCount())
+      if (++Index < Arguments->getChildCount()) {
         Printer << ", ";
+
+}
     }
   }
   Printer << ")";
 
-  if (Symbol.isConstType())
+  if (Symbol.isConstType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " const";
-  if (Symbol.isVolatileType())
+
+}
+  if (Symbol.isVolatileType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " volatile";
 
-  if (Symbol.getRawSymbol().isRestrictedType())
+}
+
+  if (Symbol.getRawSymbol().isRestrictedType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " __restrict";
+
+}
 }
 
 void VariableDumper::dump(const PDBSymbolTypePointer &Symbol) {
   auto PointeeType = Symbol.getPointeeType();
-  if (!PointeeType)
+  if (!PointeeType) {
     return;
+
+}
   PointeeType->dump(*this);
   if (auto FuncSig = unique_dyn_cast<PDBSymbolTypeFunctionSig>(PointeeType)) {
     // A hack to get the calling convention in the right spot.
@@ -187,20 +207,28 @@ void VariableDumper::dump(const PDBSymbolTypePointer &Symbol) {
     Printer << " (";
   }
   Printer << (Symbol.isReference() ? "&" : "*");
-  if (Symbol.isConstType())
+  if (Symbol.isConstType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " const ";
-  if (Symbol.isVolatileType())
+
+}
+  if (Symbol.isVolatileType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " volatile ";
 
-  if (Symbol.getRawSymbol().isRestrictedType())
+}
+
+  if (Symbol.getRawSymbol().isRestrictedType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << " __restrict ";
+
+}
 }
 
 void VariableDumper::dumpRight(const PDBSymbolTypePointer &Symbol) {
   auto PointeeType = Symbol.getPointeeType();
   assert(PointeeType);
-  if (!PointeeType)
+  if (!PointeeType) {
     return;
+
+}
   if (isa<PDBSymbolTypeFunctionSig>(PointeeType) ||
       isa<PDBSymbolTypeArray>(PointeeType)) {
     Printer << ")";

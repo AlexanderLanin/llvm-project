@@ -39,8 +39,10 @@ Expected<Target> Target::create(StringRef TargetValue) {
     if (PlatformStr.startswith("<") && PlatformStr.endswith(">")) {
       PlatformStr = PlatformStr.drop_front().drop_back();
       unsigned long long RawValue;
-      if (!PlatformStr.getAsInteger(10, RawValue))
+      if (!PlatformStr.getAsInteger(10, RawValue)) {
         Platform = (PlatformKind)RawValue;
+
+}
     }
   }
 
@@ -59,15 +61,19 @@ raw_ostream &operator<<(raw_ostream &OS, const Target &Target) {
 
 PlatformSet mapToPlatformSet(ArrayRef<Target> Targets) {
   PlatformSet Result;
-  for (const auto &Target : Targets)
+  for (const auto &Target : Targets) {
     Result.insert(Target.Platform);
+
+}
   return Result;
 }
 
 ArchitectureSet mapToArchitectureSet(ArrayRef<Target> Targets) {
   ArchitectureSet Result;
-  for (const auto &Target : Targets)
+  for (const auto &Target : Targets) {
     Result.set(Target.Arch);
+
+}
   return Result;
 }
 

@@ -96,8 +96,10 @@ static Register isDbgValueDescribedByReg(const MachineInstr &MI) {
 static bool isRegOtherThanSPAndFP(const MachineOperand &Op,
                                   const MachineInstr &MI,
                                   const TargetRegisterInfo *TRI) {
-  if (!Op.isReg())
+  if (!Op.isReg()) {
     return false;
+
+}
 
   const MachineFunction *MF = MI.getParent()->getParent();
   const TargetLowering *TLI = MF->getSubtarget().getTargetLowering();
@@ -176,8 +178,10 @@ private:
     /// Return true if current scope dominates at least one machine
     /// instruction in a given machine basic block.
     bool dominates(MachineBasicBlock *MBB) {
-      if (LBlocks.empty())
+      if (LBlocks.empty()) {
         LS.getMachineBasicBlocks(DL, LBlocks);
+
+}
       return LBlocks.count(MBB) != 0 || LS.dominates(DL, MBB);
     }
   };
@@ -375,24 +379,30 @@ private:
     /// If this variable is described by a register holding the entry value,
     /// return it, otherwise return 0.
     unsigned getEntryValueBackupReg() const {
-      if (Kind == EntryValueBackupKind)
+      if (Kind == EntryValueBackupKind) {
         return Loc.RegNo;
+
+}
       return 0;
     }
 
     /// If this variable is described by a register holding the copy of the
     /// entry value, return it, otherwise return 0.
     unsigned getEntryValueCopyBackupReg() const {
-      if (Kind == EntryValueCopyBackupKind)
+      if (Kind == EntryValueCopyBackupKind) {
         return Loc.RegNo;
+
+}
       return 0;
     }
 
     /// If this variable is described by a register, return it,
     /// otherwise return 0.
     unsigned isDescribedByReg() const {
-      if (Kind == RegisterKind)
+      if (Kind == RegisterKind) {
         return Loc.RegNo;
+
+}
       return 0;
     }
 
@@ -735,8 +745,10 @@ void LiveDebugValues::OpenRangesSet::erase(const VarLoc &VL) {
   if (MapIt != OverlappingFragments.end()) {
     for (auto Fragment : MapIt->second) {
       LiveDebugValues::OptFragmentInfo FragmentHolder;
-      if (!DebugVariable::isDefaultFragment(Fragment))
+      if (!DebugVariable::isDefaultFragment(Fragment)) {
         FragmentHolder = LiveDebugValues::OptFragmentInfo(Fragment);
+
+}
       DoErase({Var.getVariable(), FragmentHolder, Var.getInlinedAt()});
     }
   }
@@ -764,8 +776,10 @@ void LiveDebugValues::OpenRangesSet::insert(LocIndex VarLocID,
 llvm::Optional<LocIndex>
 LiveDebugValues::OpenRangesSet::getEntryValueBackup(DebugVariable Var) {
   auto It = EntryValuesBackupVars.find(Var);
-  if (It != EntryValuesBackupVars.end())
+  if (It != EntryValuesBackupVars.end()) {
     return It->second;
+
+}
 
   return llvm::None;
 }
@@ -778,8 +792,10 @@ void LiveDebugValues::collectIDsForReg(VarLocSet &Collected, uint32_t Reg,
   uint64_t FirstInvalidIndex = LocIndex::rawIndexForReg(Reg + 1);
   // Iterate through that half-open interval and collect all the set IDs.
   for (auto It = CollectFrom.find(FirstIndexForReg), End = CollectFrom.end();
-       It != End && *It < FirstInvalidIndex; ++It)
+       It != End && *It < FirstInvalidIndex; ++It) {
     Collected.set(*It);
+
+}
 }
 
 void LiveDebugValues::getUsedRegs(const VarLocSet &CollectFrom,
@@ -856,16 +872,20 @@ bool LiveDebugValues::removeEntryValue(const MachineInstr &MI,
                                        VarLocMap &VarLocIDs,
                                        const VarLoc &EntryVL) {
   // Skip the DBG_VALUE which is the debug entry value itself.
-  if (MI.isIdenticalTo(EntryVL.MI))
+  if (MI.isIdenticalTo(EntryVL.MI)) {
     return false;
+
+}
 
   // If the parameter's location is not register location, we can not track
   // the entry value any more. In addition, if the debug expression from the
   // DBG_VALUE is not empty, we can assume the parameter's value has changed
   // indicating that we should stop tracking its entry value as well.
   if (!MI.getOperand(0).isReg() ||
-      MI.getDebugExpression()->getNumElements() != 0)
+      MI.getDebugExpression()->getNumElements() != 0) {
     return true;
+
+}
 
   // If the DBG_VALUE comes from a copy instruction that copies the entry value,
   // it means the parameter's value has not changed and we should be able to use
@@ -879,25 +899,33 @@ bool LiveDebugValues::removeEntryValue(const MachineInstr &MI,
     // DBG_VALUE describing the copy of the entry value. (Propagated entry value
     // does not indicate the parameter modification.)
     auto DestSrc = TII->isCopyInstr(*I);
-    if (!DestSrc)
+    if (!DestSrc) {
       return true;
+
+}
 
     SrcRegOp = DestSrc->Source;
     DestRegOp = DestSrc->Destination;
-    if (Reg != DestRegOp->getReg())
+    if (Reg != DestRegOp->getReg()) {
       return true;
+
+}
     TrySalvageEntryValue = true;
   }
 
   if (TrySalvageEntryValue) {
     for (uint64_t ID : OpenRanges.getVarLocs()) {
       const VarLoc &VL = VarLocIDs[LocIndex::fromRawInteger(ID)];
-      if (!VL.isEntryBackupLoc())
+      if (!VL.isEntryBackupLoc()) {
         continue;
 
+}
+
       if (VL.getEntryValueCopyBackupReg() == Reg &&
-          VL.MI.getOperand(0).getReg() == SrcRegOp->getReg())
+          VL.MI.getOperand(0).getReg() == SrcRegOp->getReg()) {
         return false;
+
+}
     }
   }
 
@@ -909,8 +937,10 @@ bool LiveDebugValues::removeEntryValue(const MachineInstr &MI,
 void LiveDebugValues::transferDebugValue(const MachineInstr &MI,
                                          OpenRangesSet &OpenRanges,
                                          VarLocMap &VarLocIDs) {
-  if (!MI.isDebugValue())
+  if (!MI.isDebugValue()) {
     return;
+
+}
   const DILocalVariable *Var = MI.getDebugVariable();
   const DIExpression *Expr = MI.getDebugExpression();
   const DILocation *DebugLoc = MI.getDebugLoc();
@@ -960,14 +990,18 @@ void LiveDebugValues::emitEntryValues(MachineInstr &MI,
                                       TransferMap &Transfers,
                                       VarLocSet &KillSet) {
   // Do not insert entry value locations after a terminator.
-  if (MI.isTerminator())
+  if (MI.isTerminator()) {
     return;
+
+}
 
   for (uint64_t ID : KillSet) {
     LocIndex Idx = LocIndex::fromRawInteger(ID);
     const VarLoc &VL = VarLocIDs[Idx];
-    if (!VL.Var.getVariable()->isParameter())
+    if (!VL.Var.getVariable()->isParameter()) {
       continue;
+
+}
 
     auto DebugVar = VL.Var;
     Optional<LocIndex> EntryValBackupID =
@@ -975,8 +1009,10 @@ void LiveDebugValues::emitEntryValues(MachineInstr &MI,
 
     // If the parameter has the entry value backup, it means we should
     // be able to use its entry value.
-    if (!EntryValBackupID)
+    if (!EntryValBackupID) {
       continue;
+
+}
 
     const VarLoc &EntryVL = VarLocIDs[*EntryValBackupID];
     VarLoc EntryLoc =
@@ -1065,8 +1101,10 @@ void LiveDebugValues::transferRegisterDef(
 
   // Meta Instructions do not affect the debug liveness of any register they
   // define.
-  if (MI.isMetaInstruction())
+  if (MI.isMetaInstruction()) {
     return;
+
+}
 
   MachineFunction *MF = MI.getMF();
   const TargetLowering *TLI = MF->getSubtarget().getTargetLowering();
@@ -1083,9 +1121,11 @@ void LiveDebugValues::transferRegisterDef(
         Register::isPhysicalRegister(MO.getReg()) &&
         !(MI.isCall() && MO.getReg() == SP)) {
       // Remove ranges of all aliased registers.
-      for (MCRegAliasIterator RAI(MO.getReg(), TRI, true); RAI.isValid(); ++RAI)
+      for (MCRegAliasIterator RAI(MO.getReg(), TRI, true); RAI.isValid(); ++RAI) {
         // FIXME: Can we break out of this loop early if no insertion occurs?
         DeadRegs.insert(*RAI);
+
+}
     } else if (MO.isRegMask()) {
       RegMasks.push_back(MO.getRegMask());
     }
@@ -1095,15 +1135,19 @@ void LiveDebugValues::transferRegisterDef(
   // reasons, it's critical to not iterate over the full set of open VarLocs.
   // Iterate over the set of dying/used regs instead.
   VarLocSet KillSet(Alloc);
-  for (uint32_t DeadReg : DeadRegs)
+  for (uint32_t DeadReg : DeadRegs) {
     collectIDsForReg(KillSet, DeadReg, OpenRanges.getVarLocs());
+
+}
   if (!RegMasks.empty()) {
     SmallVector<uint32_t, 32> UsedRegs;
     getUsedRegs(OpenRanges.getVarLocs(), UsedRegs);
     for (uint32_t Reg : UsedRegs) {
       // The VarLocs residing in this register are already in the kill set.
-      if (DeadRegs.count(Reg))
+      if (DeadRegs.count(Reg)) {
         continue;
+
+}
 
       // Remove ranges of all clobbered registers. Register masks don't usually
       // list SP as preserved. Assume that call instructions never clobber SP,
@@ -1111,33 +1155,43 @@ void LiveDebugValues::transferRegisterDef(
       // While the debug info may be off for an instruction or two around
       // callee-cleanup calls, transferring the DEBUG_VALUE across the call is
       // still a better user experience.
-      if (Reg == SP)
+      if (Reg == SP) {
         continue;
+
+}
       bool AnyRegMaskKillsReg =
           any_of(RegMasks, [Reg](const uint32_t *RegMask) {
             return MachineOperand::clobbersPhysReg(RegMask, Reg);
           });
-      if (AnyRegMaskKillsReg)
+      if (AnyRegMaskKillsReg) {
         collectIDsForReg(KillSet, Reg, OpenRanges.getVarLocs());
+
+}
     }
   }
   OpenRanges.erase(KillSet, VarLocIDs);
 
   if (auto *TPC = getAnalysisIfAvailable<TargetPassConfig>()) {
     auto &TM = TPC->getTM<TargetMachine>();
-    if (TM.Options.EnableDebugEntryValues)
+    if (TM.Options.EnableDebugEntryValues) {
       emitEntryValues(MI, OpenRanges, VarLocIDs, Transfers, KillSet);
+
+}
   }
 }
 
 bool LiveDebugValues::isSpillInstruction(const MachineInstr &MI,
                                          MachineFunction *MF) {
   // TODO: Handle multiple stores folded into one.
-  if (!MI.hasOneMemOperand())
+  if (!MI.hasOneMemOperand()) {
     return false;
 
-  if (!MI.getSpillSize(TII) && !MI.getFoldedSpillSize(TII))
+}
+
+  if (!MI.getSpillSize(TII) && !MI.getFoldedSpillSize(TII)) {
     return false; // This is not a spill instruction, since no valid size was
+
+}
                   // returned from either function.
 
   return true;
@@ -1145,8 +1199,10 @@ bool LiveDebugValues::isSpillInstruction(const MachineInstr &MI,
 
 bool LiveDebugValues::isLocationSpill(const MachineInstr &MI,
                                       MachineFunction *MF, unsigned &Reg) {
-  if (!isSpillInstruction(MI, MF))
+  if (!isSpillInstruction(MI, MF)) {
     return false;
+
+}
 
   auto isKilledReg = [&](const MachineOperand MO, unsigned &Reg) {
     if (!MO.isReg() || !MO.isUse()) {
@@ -1160,22 +1216,28 @@ bool LiveDebugValues::isLocationSpill(const MachineInstr &MI,
   for (const MachineOperand &MO : MI.operands()) {
     // In a spill instruction generated by the InlineSpiller the spilled
     // register has its kill flag set.
-    if (isKilledReg(MO, Reg))
+    if (isKilledReg(MO, Reg)) {
       return true;
+
+}
     if (Reg != 0) {
       // Check whether next instruction kills the spilled register.
       // FIXME: Current solution does not cover search for killed register in
       // bundles and instructions further down the chain.
       auto NextI = std::next(MI.getIterator());
       // Skip next instruction that points to basic block end iterator.
-      if (MI.getParent()->end() == NextI)
+      if (MI.getParent()->end() == NextI) {
         continue;
+
+}
       unsigned RegNext;
       for (const MachineOperand &MONext : NextI->operands()) {
         // Return true if we came across the register from the
         // previous spill instruction that is killed in NextI.
-        if (isKilledReg(MONext, RegNext) && RegNext == Reg)
+        if (isKilledReg(MONext, RegNext) && RegNext == Reg) {
           return true;
+
+}
       }
     }
   }
@@ -1186,8 +1248,10 @@ bool LiveDebugValues::isLocationSpill(const MachineInstr &MI,
 Optional<LiveDebugValues::VarLoc::SpillLoc>
 LiveDebugValues::isRestoreInstruction(const MachineInstr &MI,
                                       MachineFunction *MF, unsigned &Reg) {
-  if (!MI.hasOneMemOperand())
+  if (!MI.hasOneMemOperand()) {
     return None;
+
+}
 
   // FIXME: Handle folded restore instructions with more than one memory
   // operand.
@@ -1253,8 +1317,10 @@ void LiveDebugValues::transferSpillOrRestoreInst(MachineInstr &MI,
     LLVM_DEBUG(dbgs() << "Register: " << Reg << " " << printReg(Reg, TRI)
                       << "\n");
   } else {
-    if (!(Loc = isRestoreInstruction(MI, MF, Reg)))
+    if (!(Loc = isRestoreInstruction(MI, MF, Reg))) {
       return;
+
+}
     TKind = TransferKind::TransferRestore;
     LLVM_DEBUG(dbgs() << "Recognized as restore: "; MI.dump(););
     LLVM_DEBUG(dbgs() << "Register: " << Reg << " " << printReg(Reg, TRI)
@@ -1272,8 +1338,10 @@ void LiveDebugValues::transferSpillOrRestoreInst(MachineInstr &MI,
                VL.Loc.SpillLocation == *Loc) {
       LLVM_DEBUG(dbgs() << "Restoring Register " << printReg(Reg, TRI) << '('
                         << VL.Var.getVariable()->getName() << ")\n");
-    } else
+    } else {
       continue;
+
+}
     insertTransferDebugPair(MI, OpenRanges, Transfers, VarLocIDs, Idx, TKind,
                             Reg);
     return;
@@ -1288,19 +1356,27 @@ void LiveDebugValues::transferRegisterCopy(MachineInstr &MI,
                                            VarLocMap &VarLocIDs,
                                            TransferMap &Transfers) {
   auto DestSrc = TII->isCopyInstr(MI);
-  if (!DestSrc)
+  if (!DestSrc) {
     return;
+
+}
 
   const MachineOperand *DestRegOp = DestSrc->Destination;
   const MachineOperand *SrcRegOp = DestSrc->Source;
 
-  if (!DestRegOp->isDef())
+  if (!DestRegOp->isDef()) {
     return;
 
+}
+
   auto isCalleeSavedReg = [&](unsigned Reg) {
-    for (MCRegAliasIterator RAI(Reg, TRI, true); RAI.isValid(); ++RAI)
-      if (CalleeSavedRegs.test(*RAI))
+    for (MCRegAliasIterator RAI(Reg, TRI, true); RAI.isValid(); ++RAI) {
+      if (CalleeSavedRegs.test(*RAI)) {
         return true;
+
+}
+
+}
     return false;
   };
 
@@ -1312,8 +1388,10 @@ void LiveDebugValues::transferRegisterCopy(MachineInstr &MI,
   // included, there would be a great chance that it is going to be clobbered
   // soon. It is more likely that previous register location, which is callee
   // saved, is going to stay unclobbered longer, even if it is killed.
-  if (!isCalleeSavedReg(DestReg))
+  if (!isCalleeSavedReg(DestReg)) {
     return;
+
+}
 
   // Remember an entry value movement. If we encounter a new debug value of
   // a parameter describing only a moving of the value around, rather then
@@ -1338,8 +1416,10 @@ void LiveDebugValues::transferRegisterCopy(MachineInstr &MI,
     }
   }
 
-  if (!SrcRegOp->isKill())
+  if (!SrcRegOp->isKill()) {
     return;
+
+}
 
   for (uint64_t ID : OpenRanges.getVarLocs()) {
     LocIndex Idx = LocIndex::fromRawInteger(ID);
@@ -1368,8 +1448,10 @@ bool LiveDebugValues::transferTerminator(MachineBasicBlock *CurMBB,
   Changed = VLS != OpenRanges.getVarLocs();
   // New OutLocs set may be different due to spill, restore or register
   // copy instruction processing.
-  if (Changed)
+  if (Changed) {
     VLS = OpenRanges.getVarLocs();
+
+}
   OpenRanges.clear();
   return Changed;
 }
@@ -1408,8 +1490,10 @@ void LiveDebugValues::accumulateFragmentMap(MachineInstr &MI,
   // map, it has already been accounted for.
   auto IsInOLapMap =
       OverlappingFragments.insert({{MIVar.getVariable(), ThisFragment}, {}});
-  if (!IsInOLapMap.second)
+  if (!IsInOLapMap.second) {
     return;
+
+}
 
   auto &ThisFragmentsOverlaps = IsInOLapMap.first->second;
   auto &AllSeenFragments = SeenIt->second;
@@ -1474,15 +1558,19 @@ bool LiveDebugValues::join(
     }
     auto OL = OutLocs.find(p);
     // Join is null in case of empty OutLocs from any of the pred.
-    if (OL == OutLocs.end())
+    if (OL == OutLocs.end()) {
       return false;
+
+}
 
     // Just copy over the Out locs to incoming locs for the first visited
     // predecessor, and for all other predecessors join the Out locs.
-    if (!NumVisited)
+    if (!NumVisited) {
       InLocsT = OL->second;
-    else
+    } else {
       InLocsT &= OL->second;
+
+}
 
     LLVM_DEBUG({
       if (!InLocsT.empty()) {
@@ -1560,8 +1648,10 @@ void LiveDebugValues::flushPendingLocs(VarLocInMBB &PendingInLocs,
       // The ID location is live-in to MBB -- work out what kind of machine
       // location it is and create a DBG_VALUE.
       const VarLoc &DiffIt = VarLocIDs[LocIndex::fromRawInteger(ID)];
-      if (DiffIt.isEntryBackupLoc())
+      if (DiffIt.isEntryBackupLoc()) {
         continue;
+
+}
       MachineInstr *MI = DiffIt.BuildDbgValue(*MBB.getParent());
       MBB.insert(MBB.instr_begin(), MI);
 
@@ -1580,34 +1670,46 @@ bool LiveDebugValues::isEntryValueCandidate(
   // TODO: Add support for modified arguments that can be expressed
   // by using its entry value.
   auto *DIVar = MI.getDebugVariable();
-  if (!DIVar->isParameter())
+  if (!DIVar->isParameter()) {
     return false;
+
+}
 
   // Do not consider parameters that belong to an inlined function.
-  if (MI.getDebugLoc()->getInlinedAt())
+  if (MI.getDebugLoc()->getInlinedAt()) {
     return false;
 
+}
+
   // Do not consider indirect debug values (TODO: explain why).
-  if (MI.isIndirectDebugValue())
+  if (MI.isIndirectDebugValue()) {
     return false;
+
+}
 
   // Only consider parameters that are described using registers. Parameters
   // that are passed on the stack are not yet supported, so ignore debug
   // values that are described by the frame or stack pointer.
-  if (!isRegOtherThanSPAndFP(MI.getOperand(0), MI, TRI))
+  if (!isRegOtherThanSPAndFP(MI.getOperand(0), MI, TRI)) {
     return false;
+
+}
 
   // If a parameter's value has been propagated from the caller, then the
   // parameter's DBG_VALUE may be described using a register defined by some
   // instruction in the entry block, in which case we shouldn't create an
   // entry value.
-  if (DefinedRegs.count(MI.getOperand(0).getReg()))
+  if (DefinedRegs.count(MI.getOperand(0).getReg())) {
     return false;
+
+}
 
   // TODO: Add support for parameters that have a pre-existing debug expressions
   // (e.g. fragments, or indirect parameters using DW_OP_deref).
-  if (MI.getDebugExpression()->getNumElements() > 0)
+  if (MI.getDebugExpression()->getNumElements() > 0) {
     return false;
+
+}
 
   return true;
 }
@@ -1615,10 +1717,16 @@ bool LiveDebugValues::isEntryValueCandidate(
 /// Collect all register defines (including aliases) for the given instruction.
 static void collectRegDefs(const MachineInstr &MI, DefinedRegsSet &Regs,
                            const TargetRegisterInfo *TRI) {
-  for (const MachineOperand &MO : MI.operands())
-    if (MO.isReg() && MO.isDef() && MO.getReg())
-      for (MCRegAliasIterator AI(MO.getReg(), TRI, true); AI.isValid(); ++AI)
+  for (const MachineOperand &MO : MI.operands()) {
+    if (MO.isReg() && MO.isDef() && MO.getReg()) {
+      for (MCRegAliasIterator AI(MO.getReg(), TRI, true); AI.isValid(); ++AI) {
         Regs.insert(*AI);
+
+}
+
+}
+
+}
 }
 
 /// This routine records the entry values of function parameters. The values
@@ -1630,16 +1738,20 @@ void LiveDebugValues::recordEntryValue(const MachineInstr &MI,
                                        VarLocMap &VarLocIDs) {
   if (auto *TPC = getAnalysisIfAvailable<TargetPassConfig>()) {
     auto &TM = TPC->getTM<TargetMachine>();
-    if (!TM.Options.EnableDebugEntryValues)
+    if (!TM.Options.EnableDebugEntryValues) {
       return;
+
+}
   }
 
   DebugVariable V(MI.getDebugVariable(), MI.getDebugExpression(),
                   MI.getDebugLoc()->getInlinedAt());
 
   if (!isEntryValueCandidate(MI, DefinedRegs) ||
-      OpenRanges.getEntryValueBackup(V))
+      OpenRanges.getEntryValueBackup(V)) {
     return;
+
+}
 
   LLVM_DEBUG(dbgs() << "Creating the backup entry location: "; MI.dump(););
 
@@ -1697,8 +1809,10 @@ bool LiveDebugValues::ExtendRanges(MachineFunction &MF) {
   MachineBasicBlock &First_MBB = *(MF.begin());
   for (auto &MI : First_MBB) {
     collectRegDefs(MI, DefinedRegs, TRI);
-      if (MI.isDebugValue())
+      if (MI.isDebugValue()) {
         recordEntryValue(MI, DefinedRegs, OpenRanges, VarLocIDs);
+
+}
   }
 
   // Initialize per-block structures and scan for fragment overlaps.
@@ -1706,19 +1820,27 @@ bool LiveDebugValues::ExtendRanges(MachineFunction &MF) {
     PendingInLocs.try_emplace(&MBB, Alloc);
 
     for (auto &MI : MBB) {
-      if (MI.isDebugValue())
+      if (MI.isDebugValue()) {
         accumulateFragmentMap(MI, SeenFragments, OverlapFragments);
+
+}
     }
   }
 
   auto hasNonArtificialLocation = [](const MachineInstr &MI) -> bool {
-    if (const DebugLoc &DL = MI.getDebugLoc())
+    if (const DebugLoc &DL = MI.getDebugLoc()) {
       return DL.getLine() != 0;
+
+}
     return false;
   };
-  for (auto &MBB : MF)
-    if (none_of(MBB.instrs(), hasNonArtificialLocation))
+  for (auto &MBB : MF) {
+    if (none_of(MBB.instrs(), hasNonArtificialLocation)) {
       ArtificialBlocks.insert(&MBB);
+
+}
+
+}
 
   LLVM_DEBUG(printVarLocInMBB(MF, OutLocs, VarLocIDs,
                               "OutLocs after initialization", dbgs()));
@@ -1757,8 +1879,10 @@ bool LiveDebugValues::ExtendRanges(MachineFunction &MF) {
         // First load any pending inlocs.
         OpenRanges.insertFromLocSet(getVarLocsInMBB(MBB, PendingInLocs),
                                     VarLocIDs);
-        for (auto &MI : *MBB)
+        for (auto &MI : *MBB) {
           process(MI, OpenRanges, VarLocIDs, Transfers);
+
+}
         OLChanged |= transferTerminator(MBB, OpenRanges, OutLocs, VarLocIDs);
 
         LLVM_DEBUG(printVarLocInMBB(MF, OutLocs, VarLocIDs,
@@ -1768,10 +1892,12 @@ bool LiveDebugValues::ExtendRanges(MachineFunction &MF) {
 
         if (OLChanged) {
           OLChanged = false;
-          for (auto s : MBB->successors())
+          for (auto s : MBB->successors()) {
             if (OnPending.insert(s).second) {
               Pending.push(BBToOrder[s]);
             }
+
+}
         }
       }
     }
@@ -1802,14 +1928,18 @@ bool LiveDebugValues::ExtendRanges(MachineFunction &MF) {
 }
 
 bool LiveDebugValues::runOnMachineFunction(MachineFunction &MF) {
-  if (!MF.getFunction().getSubprogram())
+  if (!MF.getFunction().getSubprogram()) {
     // LiveDebugValues will already have removed all DBG_VALUEs.
     return false;
 
+}
+
   // Skip functions from NoDebug compilation units.
   if (MF.getFunction().getSubprogram()->getUnit()->getEmissionKind() ==
-      DICompileUnit::NoDebug)
+      DICompileUnit::NoDebug) {
     return false;
+
+}
 
   TRI = MF.getSubtarget().getRegisterInfo();
   TII = MF.getSubtarget().getInstrInfo();

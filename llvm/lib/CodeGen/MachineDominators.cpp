@@ -72,22 +72,28 @@ void MachineDominatorTree::releaseMemory() {
 }
 
 void MachineDominatorTree::verifyAnalysis() const {
-  if (DT && VerifyMachineDomInfo)
+  if (DT && VerifyMachineDomInfo) {
     if (!DT->verify(DomTreeT::VerificationLevel::Basic)) {
       errs() << "MachineDominatorTree verification failed\n";
       abort();
     }
+
+}
 }
 
 void MachineDominatorTree::print(raw_ostream &OS, const Module*) const {
-  if (DT)
+  if (DT) {
     DT->print(OS);
+
+}
 }
 
 void MachineDominatorTree::applySplitCriticalEdges() const {
   // Bail out early if there is nothing to do.
-  if (CriticalEdgesToSplit.empty())
+  if (CriticalEdgesToSplit.empty()) {
     return;
+
+}
 
   // For each element in CriticalEdgesToSplit, remember whether or not element
   // is the new immediate domminator of its successor. The mapping is done by
@@ -104,8 +110,10 @@ void MachineDominatorTree::applySplitCriticalEdges() const {
     MachineDomTreeNode *SuccDTNode = DT->getNode(Succ);
 
     for (MachineBasicBlock *PredBB : Succ->predecessors()) {
-      if (PredBB == Edge.NewBB)
+      if (PredBB == Edge.NewBB) {
         continue;
+
+}
       // If we are in this situation:
       // FromBB1        FromBB2
       //    +              +
@@ -141,8 +149,10 @@ void MachineDominatorTree::applySplitCriticalEdges() const {
     // If all the other predecessors of "Succ" are dominated by "Succ" itself
     // then the new block is the new immediate dominator of "Succ". Otherwise,
     // the new block doesn't dominate anything.
-    if (IsNewIDom[Idx])
+    if (IsNewIDom[Idx]) {
       DT->changeImmediateDominator(DT->getNode(Edge.ToBB), NewDTNode);
+
+}
     ++Idx;
   }
   NewBBs.clear();

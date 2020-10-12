@@ -92,9 +92,13 @@ public:
 
   bool operator==(const MemOpKey &Other) const {
     // Addresses' bases, scales, indices and segments must be identical.
-    for (int i = 0; i < 4; ++i)
-      if (!isIdenticalOp(*Operands[i], *Other.Operands[i]))
+    for (int i = 0; i < 4; ++i) {
+      if (!isIdenticalOp(*Operands[i], *Other.Operands[i])) {
         return false;
+
+}
+
+}
 
     // Addresses' displacements don't have to be exactly the same. It only
     // matters that they use the same symbol/index/address. Immediates' or
@@ -176,10 +180,14 @@ template <> struct DenseMapInfo<MemOpKey> {
   static bool isEqual(const MemOpKey &LHS, const MemOpKey &RHS) {
     // Checking any field of MemOpKey is enough to determine if the key is
     // empty or tombstone.
-    if (RHS.Disp == PtrInfo::getEmptyKey())
+    if (RHS.Disp == PtrInfo::getEmptyKey()) {
       return LHS.Disp == PtrInfo::getEmptyKey();
-    if (RHS.Disp == PtrInfo::getTombstoneKey())
+
+}
+    if (RHS.Disp == PtrInfo::getTombstoneKey()) {
       return LHS.Disp == PtrInfo::getTombstoneKey();
+
+}
     return LHS == RHS;
   }
 };
@@ -354,8 +362,10 @@ bool X86OptimizeLEAPass::chooseBestLEA(
     int64_t AddrDispShiftTemp = getAddrDispShift(MI, MemOpNo, *DefMI, 1);
 
     // Make sure address displacement fits 4 bytes.
-    if (!isInt<32>(AddrDispShiftTemp))
+    if (!isInt<32>(AddrDispShiftTemp)) {
       continue;
+
+}
 
     // Check that LEA def register can be used as MI address base. Some
     // instructions can use a limited set of registers as address base, for
@@ -363,8 +373,10 @@ bool X86OptimizeLEAPass::chooseBestLEA(
     // def to suit MI, however since this case is very rare and hard to
     // reproduce in a test it's just more reliable to skip the LEA.
     if (TII->getRegClass(Desc, MemOpNo + X86::AddrBaseReg, TRI, *MF) !=
-        MRI->getRegClass(DefMI->getOperand(0).getReg()))
+        MRI->getRegClass(DefMI->getOperand(0).getReg())) {
       continue;
+
+}
 
     // Choose the closest LEA instruction from the list, prior to MI if
     // possible. Note that we took into account resulting address displacement
@@ -377,8 +389,10 @@ bool X86OptimizeLEAPass::chooseBestLEA(
       // Do not update return LEA, if the current one provides a displacement
       // which fits in 1 byte, while the new candidate does not.
       if (BestLEA != nullptr && !isInt<8>(AddrDispShiftTemp) &&
-          isInt<8>(AddrDispShift))
+          isInt<8>(AddrDispShift)) {
         continue;
+
+}
 
       BestLEA = DefMI;
       AddrDispShift = AddrDispShiftTemp;
@@ -386,8 +400,10 @@ bool X86OptimizeLEAPass::chooseBestLEA(
     }
 
     // FIXME: Maybe we should not always stop at the first LEA after MI.
-    if (DistTemp < 0)
+    if (DistTemp < 0) {
       break;
+
+}
   }
 
   return BestLEA != nullptr;
@@ -409,8 +425,10 @@ int64_t X86OptimizeLEAPass::getAddrDispShift(const MachineInstr &MI1,
   // After the assert above we can be sure that both operands are of the same
   // valid type and use the same symbol/index/address, thus displacement shift
   // calculation is rather simple.
-  if (Op1.isJTI())
+  if (Op1.isJTI()) {
     return 0;
+
+}
   return Op1.isImm() ? Op1.getImm() - Op2.getImm()
                      : Op1.getOffset() - Op2.getOffset();
 }
@@ -432,8 +450,10 @@ bool X86OptimizeLEAPass::isReplaceable(const MachineInstr &First,
   // be used as their operands, so we must be sure that replacing one LEA
   // with another won't lead to putting a wrong register in the instruction.
   if (MRI->getRegClass(First.getOperand(0).getReg()) !=
-      MRI->getRegClass(Last.getOperand(0).getReg()))
+      MRI->getRegClass(Last.getOperand(0).getReg())) {
     return false;
+
+}
 
   // Get new address displacement.
   AddrDispShift = getAddrDispShift(Last, 1, First, 1);
@@ -450,28 +470,38 @@ bool X86OptimizeLEAPass::isReplaceable(const MachineInstr &First,
 
     // If the use instruction has no memory operand - the LEA is not
     // replaceable.
-    if (MemOpNo < 0)
+    if (MemOpNo < 0) {
       return false;
+
+}
 
     MemOpNo += X86II::getOperandBias(Desc);
 
     // If the address base of the use instruction is not the LEA def register -
     // the LEA is not replaceable.
-    if (!isIdenticalOp(MI.getOperand(MemOpNo + X86::AddrBaseReg), MO))
+    if (!isIdenticalOp(MI.getOperand(MemOpNo + X86::AddrBaseReg), MO)) {
       return false;
+
+}
 
     // If the LEA def register is used as any other operand of the use
     // instruction - the LEA is not replaceable.
-    for (unsigned i = 0; i < MI.getNumOperands(); i++)
+    for (unsigned i = 0; i < MI.getNumOperands(); i++) {
       if (i != (unsigned)(MemOpNo + X86::AddrBaseReg) &&
-          isIdenticalOp(MI.getOperand(i), MO))
+          isIdenticalOp(MI.getOperand(i), MO)) {
         return false;
+
+}
+
+}
 
     // Check that the new address displacement will fit 4 bytes.
     if (MI.getOperand(MemOpNo + X86::AddrDisp).isImm() &&
         !isInt<32>(MI.getOperand(MemOpNo + X86::AddrDisp).getImm() +
-                   AddrDispShift))
+                   AddrDispShift)) {
       return false;
+
+}
   }
 
   return true;
@@ -488,8 +518,10 @@ void X86OptimizeLEAPass::findLEAs(const MachineBasicBlock &MBB,
     // counter by two leaving a free space for instructions which will be moved.
     InstrPos[&MI] = Pos += 2;
 
-    if (isLEA(MI))
+    if (isLEA(MI)) {
       LEAs[getMemOpKey(MI, 1)].push_back(const_cast<MachineInstr *>(&MI));
+
+}
   }
 }
 
@@ -507,30 +539,38 @@ bool X86OptimizeLEAPass::removeRedundantAddrCalc(MemOpMap &LEAs) {
     MachineInstr &MI = *I++;
 
     // Instruction must be load or store.
-    if (!MI.mayLoadOrStore())
+    if (!MI.mayLoadOrStore()) {
       continue;
+
+}
 
     // Get the number of the first memory operand.
     const MCInstrDesc &Desc = MI.getDesc();
     int MemOpNo = X86II::getMemoryOperandNo(Desc.TSFlags);
 
     // If instruction has no memory operand - skip it.
-    if (MemOpNo < 0)
+    if (MemOpNo < 0) {
       continue;
+
+}
 
     MemOpNo += X86II::getOperandBias(Desc);
 
     // Do not call chooseBestLEA if there was no matching LEA
     auto Insns = LEAs.find(getMemOpKey(MI, MemOpNo));
-    if (Insns == LEAs.end())
+    if (Insns == LEAs.end()) {
       continue;
+
+}
 
     // Get the best LEA instruction to replace address calculation.
     MachineInstr *DefMI;
     int64_t AddrDispShift;
     int Dist;
-    if (!chooseBestLEA(Insns->second, MI, DefMI, AddrDispShift, Dist))
+    if (!chooseBestLEA(Insns->second, MI, DefMI, AddrDispShift, Dist)) {
       continue;
+
+}
 
     // If LEA occurs before current instruction, we can freely replace
     // the instruction. If LEA occurs after, we can lift LEA above the
@@ -579,16 +619,20 @@ MachineInstr *X86OptimizeLEAPass::replaceDebugValue(MachineInstr &MI,
                                                     unsigned VReg,
                                                     int64_t AddrDispShift) {
   DIExpression *Expr = const_cast<DIExpression *>(MI.getDebugExpression());
-  if (AddrDispShift != 0)
+  if (AddrDispShift != 0) {
     Expr = DIExpression::prepend(Expr, DIExpression::StackValue, AddrDispShift);
+
+}
 
   // Replace DBG_VALUE instruction with modified version.
   MachineBasicBlock *MBB = MI.getParent();
   DebugLoc DL = MI.getDebugLoc();
   bool IsIndirect = MI.isIndirectDebugValue();
   const MDNode *Var = MI.getDebugVariable();
-  if (IsIndirect)
+  if (IsIndirect) {
     assert(MI.getOperand(1).getImm() == 0 && "DBG_VALUE with nonzero offset");
+
+}
   return BuildMI(*MBB, MBB->erase(&MI), DL, TII->get(TargetOpcode::DBG_VALUE),
                  IsIndirect, VReg, Var, Expr);
 }
@@ -650,10 +694,12 @@ bool X86OptimizeLEAPass::removeRedundantLEAs(MemOpMap &LEAs) {
 
           // Update address disp.
           MachineOperand &Op = MI.getOperand(MemOpNo + X86::AddrDisp);
-          if (Op.isImm())
+          if (Op.isImm()) {
             Op.setImm(Op.getImm() + AddrDispShift);
-          else if (!Op.isJTI())
+          } else if (!Op.isJTI()) {
             Op.setOffset(Op.getOffset() + AddrDispShift);
+
+}
         }
 
         // Since we can possibly extend register lifetime, clear kill flags.
@@ -684,8 +730,10 @@ bool X86OptimizeLEAPass::removeRedundantLEAs(MemOpMap &LEAs) {
 bool X86OptimizeLEAPass::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
 
-  if (DisableX86LEAOpt || skipFunction(MF.getFunction()))
+  if (DisableX86LEAOpt || skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   MRI = &MF.getRegInfo();
   TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
@@ -705,8 +753,10 @@ bool X86OptimizeLEAPass::runOnMachineFunction(MachineFunction &MF) {
     findLEAs(MBB, LEAs);
 
     // If current basic block has no LEAs, move on to the next one.
-    if (LEAs.empty())
+    if (LEAs.empty()) {
       continue;
+
+}
 
     // Remove redundant LEA instructions.
     Changed |= removeRedundantLEAs(LEAs);
@@ -715,8 +765,10 @@ bool X86OptimizeLEAPass::runOnMachineFunction(MachineFunction &MF) {
     // a code size gain is expected from this part of the pass.
     bool OptForSize = MF.getFunction().hasOptSize() ||
                       llvm::shouldOptimizeForSize(&MBB, PSI, MBFI);
-    if (OptForSize)
+    if (OptForSize) {
       Changed |= removeRedundantAddrCalc(LEAs);
+
+}
   }
 
   return Changed;

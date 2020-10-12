@@ -47,8 +47,10 @@ void CompilandDumper::dump(const PDBSymbolCompilandEnv &Symbol) {}
 void CompilandDumper::start(const PDBSymbolCompiland &Symbol,
                             CompilandDumpFlags opts) {
   std::string FullName = Symbol.getName();
-  if (Printer.IsCompilandExcluded(FullName))
+  if (Printer.IsCompilandExcluded(FullName)) {
     return;
+
+}
 
   Printer.NewLine();
   WithColor(Printer, PDB_ColorItem::Path).get() << FullName;
@@ -68,8 +70,10 @@ void CompilandDumper::start(const PDBSymbolCompiland &Symbol,
         }
 
         auto Lines = Session.findLineNumbers(Symbol, *File);
-        if (!Lines)
+        if (!Lines) {
           continue;
+
+}
 
         Printer.Indent();
         while (auto Line = Lines->getNext()) {
@@ -82,16 +86,20 @@ void CompilandDumper::start(const PDBSymbolCompiland &Symbol,
             ? PDB_ColorItem::Keyword
             : PDB_ColorItem::LiteralValue;
           WithColor(Printer, StatementColor).get() << LineStart;
-          if (LineStart != LineEnd)
+          if (LineStart != LineEnd) {
             WithColor(Printer, StatementColor).get() << " - " << LineEnd;
+
+}
 
           uint32_t ColumnStart = Line->getColumnNumber();
           uint32_t ColumnEnd = Line->getColumnNumberEnd();
           if (ColumnStart != 0 || ColumnEnd != 0) {
             Printer << ", Column: ";
             WithColor(Printer, StatementColor).get() << ColumnStart;
-            if (ColumnEnd != ColumnStart)
+            if (ColumnEnd != ColumnStart) {
               WithColor(Printer, StatementColor).get() << " - " << ColumnEnd;
+
+}
           }
 
           Printer << ", Address: ";
@@ -118,18 +126,24 @@ void CompilandDumper::start(const PDBSymbolCompiland &Symbol,
   if (opts & Flags::Children) {
     if (auto ChildrenEnum = Symbol.findAllChildren()) {
       Printer.Indent();
-      while (auto Child = ChildrenEnum->getNext())
+      while (auto Child = ChildrenEnum->getNext()) {
         Child->dump(*this);
+
+}
       Printer.Unindent();
     }
   }
 }
 
 void CompilandDumper::dump(const PDBSymbolData &Symbol) {
-  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Data))
+  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Data)) {
     return;
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+
+}
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
+
+}
 
   Printer.NewLine();
 
@@ -159,12 +173,18 @@ void CompilandDumper::dump(const PDBSymbolData &Symbol) {
 }
 
 void CompilandDumper::dump(const PDBSymbolFunc &Symbol) {
-  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Functions))
+  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Functions)) {
     return;
-  if (Symbol.getLength() == 0)
+
+}
+  if (Symbol.getLength() == 0) {
     return;
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+
+}
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
+
+}
 
   Printer.NewLine();
   FunctionDumper Dumper(Printer);
@@ -172,8 +192,10 @@ void CompilandDumper::dump(const PDBSymbolFunc &Symbol) {
 }
 
 void CompilandDumper::dump(const PDBSymbolLabel &Symbol) {
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
+
+}
 
   Printer.NewLine();
   Printer << "label ";
@@ -183,10 +205,14 @@ void CompilandDumper::dump(const PDBSymbolLabel &Symbol) {
 }
 
 void CompilandDumper::dump(const PDBSymbolThunk &Symbol) {
-  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Thunks))
+  if (!shouldDumpSymLevel(opts::pretty::SymLevel::Thunks)) {
     return;
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+
+}
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
+
+}
 
   Printer.NewLine();
   Printer << "thunk ";
@@ -206,8 +232,10 @@ void CompilandDumper::dump(const PDBSymbolThunk &Symbol) {
   WithColor(Printer, PDB_ColorItem::Register).get() << Ordinal;
   Printer << ") ";
   std::string Name = Symbol.getName();
-  if (!Name.empty())
+  if (!Name.empty()) {
     WithColor(Printer, PDB_ColorItem::Identifier).get() << Name;
+
+}
 }
 
 void CompilandDumper::dump(const PDBSymbolTypeTypedef &Symbol) {}
@@ -218,8 +246,10 @@ void CompilandDumper::dump(const PDBSymbolUnknown &Symbol) {
 }
 
 void CompilandDumper::dump(const PDBSymbolUsingNamespace &Symbol) {
-  if (Printer.IsSymbolExcluded(Symbol.getName()))
+  if (Printer.IsSymbolExcluded(Symbol.getName())) {
     return;
+
+}
 
   Printer.NewLine();
   Printer << "using namespace ";

@@ -60,9 +60,13 @@ void RegisterClassInfo::runOnMachineFunction(const MachineFunction &mf) {
     // Build a CSRAlias map. Every CSR alias saves the last
     // overlapping CSR.
     CalleeSavedAliases.assign(TRI->getNumRegs(), 0);
-    for (const MCPhysReg *I = CSR; *I; ++I)
-      for (MCRegAliasIterator AI(*I, TRI, true); AI.isValid(); ++AI)
+    for (const MCPhysReg *I = CSR; *I; ++I) {
+      for (MCRegAliasIterator AI(*I, TRI, true); AI.isValid(); ++AI) {
         CalleeSavedAliases[*AI] = *I;
+
+}
+
+}
 
     Update = true;
   }
@@ -95,8 +99,10 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
   // Raw register count, including all reserved regs.
   unsigned NumRegs = RC->getNumRegs();
 
-  if (!RCI.Order)
+  if (!RCI.Order) {
     RCI.Order.reset(new MCPhysReg[NumRegs]);
+
+}
 
   unsigned N = 0;
   SmallVector<MCPhysReg, 16> CSRAlias;
@@ -110,18 +116,22 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
   for (unsigned i = 0; i != RawOrder.size(); ++i) {
     unsigned PhysReg = RawOrder[i];
     // Remove reserved registers from the allocation order.
-    if (Reserved.test(PhysReg))
+    if (Reserved.test(PhysReg)) {
       continue;
+
+}
     unsigned Cost = TRI->getCostPerUse(PhysReg);
     MinCost = std::min(MinCost, Cost);
 
     if (CalleeSavedAliases[PhysReg] &&
-        !STI.ignoreCSRForAllocationOrder(*MF, PhysReg))
+        !STI.ignoreCSRForAllocationOrder(*MF, PhysReg)) {
       // PhysReg aliases a CSR, save it for later.
       CSRAlias.push_back(PhysReg);
-    else {
-      if (Cost != LastCost)
+    } else {
+      if (Cost != LastCost) {
         LastCostChange = N;
+
+}
       RCI.Order[N++] = PhysReg;
       LastCost = Cost;
     }
@@ -133,21 +143,29 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
   for (unsigned i = 0, e = CSRAlias.size(); i != e; ++i) {
     unsigned PhysReg = CSRAlias[i];
     unsigned Cost = TRI->getCostPerUse(PhysReg);
-    if (Cost != LastCost)
+    if (Cost != LastCost) {
       LastCostChange = N;
+
+}
     RCI.Order[N++] = PhysReg;
     LastCost = Cost;
   }
 
   // Register allocator stress test.  Clip register class to N registers.
-  if (StressRA && RCI.NumRegs > StressRA)
+  if (StressRA && RCI.NumRegs > StressRA) {
     RCI.NumRegs = StressRA;
+
+}
 
   // Check if RC is a proper sub-class.
   if (const TargetRegisterClass *Super =
-          TRI->getLargestLegalSuperClass(RC, *MF))
-    if (Super != RC && getNumAllocatableRegs(Super) > RCI.NumRegs)
+          TRI->getLargestLegalSuperClass(RC, *MF)) {
+    if (Super != RC && getNumAllocatableRegs(Super) > RCI.NumRegs) {
       RCI.ProperSubClass = true;
+
+}
+
+}
 
   RCI.MinCost = uint8_t(MinCost);
   RCI.LastCostChange = LastCostChange;
@@ -172,11 +190,15 @@ unsigned RegisterClassInfo::computePSetLimit(unsigned Idx) const {
   for (const TargetRegisterClass *C : TRI->regclasses()) {
     const int *PSetID = TRI->getRegClassPressureSets(C);
     for (; *PSetID != -1; ++PSetID) {
-      if ((unsigned)*PSetID == Idx)
+      if ((unsigned)*PSetID == Idx) {
         break;
+
+}
     }
-    if (*PSetID == -1)
+    if (*PSetID == -1) {
       continue;
+
+}
 
     // Found a register class that counts against this pressure set.
     // For efficiency, only compute the set order for the largest set.

@@ -49,7 +49,7 @@ ASTImporterTestBase::TU::TU(StringRef Code, StringRef FileName, ArgVector Args,
 
   // If the test doesn't need a specific ASTImporter, we just create a
   // normal ASTImporter with it.
-  if (!Creator)
+  if (!Creator) {
     Creator = [](ASTContext &ToContext, FileManager &ToFileManager,
                  ASTContext &FromContext, FileManager &FromFileManager,
                  bool MinimalImport,
@@ -57,6 +57,8 @@ ASTImporterTestBase::TU::TU(StringRef Code, StringRef FileName, ArgVector Args,
       return new ASTImporter(ToContext, ToFileManager, FromContext,
                              FromFileManager, MinimalImport, SharedState);
     };
+
+}
 }
 
 ASTImporterTestBase::TU::~TU() {}
@@ -79,9 +81,9 @@ Decl *ASTImporterTestBase::TU::import(
     const std::shared_ptr<ASTImporterSharedState> &SharedState, ASTUnit *ToAST,
     Decl *FromDecl) {
   lazyInitImporter(SharedState, ToAST);
-  if (auto ImportedOrErr = Importer->Import(FromDecl))
+  if (auto ImportedOrErr = Importer->Import(FromDecl)) {
     return *ImportedOrErr;
-  else {
+  } else {
     llvm::consumeError(ImportedOrErr.takeError());
     return nullptr;
   }
@@ -98,9 +100,9 @@ QualType ASTImporterTestBase::TU::import(
     const std::shared_ptr<ASTImporterSharedState> &SharedState, ASTUnit *ToAST,
     QualType FromType) {
   lazyInitImporter(SharedState, ToAST);
-  if (auto ImportedOrErr = Importer->Import(FromType))
+  if (auto ImportedOrErr = Importer->Import(FromType)) {
     return *ImportedOrErr;
-  else {
+  } else {
     llvm::consumeError(ImportedOrErr.takeError());
     return QualType{};
   }
@@ -108,14 +110,18 @@ QualType ASTImporterTestBase::TU::import(
 
 void ASTImporterTestBase::lazyInitSharedState(TranslationUnitDecl *ToTU) {
   assert(ToTU);
-  if (!SharedStatePtr)
+  if (!SharedStatePtr) {
     SharedStatePtr = std::make_shared<ASTImporterSharedState>(*ToTU);
+
+}
 }
 
 void ASTImporterTestBase::lazyInitToAST(Language ToLang, StringRef ToSrcCode,
                                         StringRef FileName) {
-  if (ToAST)
+  if (ToAST) {
     return;
+
+}
   ArgVector ToArgs = getArgVectorForLanguage(ToLang);
   // Source code must be a valid live buffer through the tests lifetime.
   ToCode = std::string(ToSrcCode);
@@ -218,8 +224,10 @@ QualType ASTImporterTestBase::ImportType(QualType FromType, Decl *TUDecl,
 }
 
 ASTImporterTestBase::~ASTImporterTestBase() {
-  if (!::testing::Test::HasFailure())
+  if (!::testing::Test::HasFailure()) {
     return;
+
+}
 
   for (auto &Tu : FromTUs) {
     assert(Tu.Unit);

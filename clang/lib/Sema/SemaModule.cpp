@@ -27,8 +27,10 @@ static void checkModuleImportContext(Sema &S, Module *M,
   if (auto *LSD = dyn_cast<LinkageSpecDecl>(DC)) {
     switch (LSD->getLanguage()) {
     case LinkageSpecDecl::lang_c:
-      if (ExternCLoc.isInvalid())
+      if (ExternCLoc.isInvalid()) {
         ExternCLoc = LSD->getBeginLoc();
+
+}
       break;
     case LinkageSpecDecl::lang_cxx:
       break;
@@ -36,8 +38,10 @@ static void checkModuleImportContext(Sema &S, Module *M,
     DC = LSD->getParent();
   }
 
-  while (isa<LinkageSpecDecl>(DC) || isa<ExportDecl>(DC))
+  while (isa<LinkageSpecDecl>(DC) || isa<ExportDecl>(DC)) {
     DC = DC->getParent();
+
+}
 
   if (!isa<TranslationUnitDecl>(DC)) {
     S.Diag(ImportLoc, (FromInclude && S.isModuleVisible(M))
@@ -102,8 +106,10 @@ Sema::ActOnModuleDecl(SourceLocation StartLoc, SourceLocation ModuleLoc,
     break;
 
   case LangOptions::CMK_ModuleInterface:
-    if (MDK != ModuleDeclKind::Implementation)
+    if (MDK != ModuleDeclKind::Implementation) {
       break;
+
+}
 
     // We were asked to compile a module interface unit but this is a module
     // implementation unit. That indicates the 'export' is missing.
@@ -138,8 +144,10 @@ Sema::ActOnModuleDecl(SourceLocation StartLoc, SourceLocation ModuleLoc,
   // Find the global module fragment we're adopting into this module, if any.
   Module *GlobalModuleFragment = nullptr;
   if (!ModuleScopes.empty() &&
-      ModuleScopes.back().Module->Kind == Module::GlobalModuleFragment)
+      ModuleScopes.back().Module->Kind == Module::GlobalModuleFragment) {
     GlobalModuleFragment = ModuleScopes.back().Module;
+
+}
 
   // In C++20, the module-declaration must be the first declaration if there
   // is no global module fragment.
@@ -160,8 +168,10 @@ Sema::ActOnModuleDecl(SourceLocation StartLoc, SourceLocation ModuleLoc,
   // module name.
   std::string ModuleName;
   for (auto &Piece : Path) {
-    if (!ModuleName.empty())
+    if (!ModuleName.empty()) {
       ModuleName += ".";
+
+}
     ModuleName += Piece.first->getName();
   }
 
@@ -185,11 +195,13 @@ Sema::ActOnModuleDecl(SourceLocation StartLoc, SourceLocation ModuleLoc,
     // module map defining it already.
     if (auto *M = Map.findModule(ModuleName)) {
       Diag(Path[0].second, diag::err_module_redefinition) << ModuleName;
-      if (M->DefinitionLoc.isValid())
+      if (M->DefinitionLoc.isValid()) {
         Diag(M->DefinitionLoc, diag::note_prev_module_definition);
-      else if (const auto *FE = M->getASTFile())
+      } else if (const auto *FE = M->getASTFile()) {
         Diag(M->DefinitionLoc, diag::note_prev_module_definition_from_ast_file)
             << FE->getName();
+
+}
       Mod = M;
       break;
     }
@@ -218,8 +230,10 @@ Sema::ActOnModuleDecl(SourceLocation StartLoc, SourceLocation ModuleLoc,
 
   if (!GlobalModuleFragment) {
     ModuleScopes.push_back({});
-    if (getLangOpts().ModulesLocalVisibility)
+    if (getLangOpts().ModulesLocalVisibility) {
       ModuleScopes.back().OuterVisibleModules = std::move(VisibleModules);
+
+}
   } else {
     // We're done with the global module fragment now.
     ActOnEndOfTranslationUnitFragment(TUFragmentKind::Global);
@@ -313,8 +327,10 @@ DeclResult Sema::ActOnModuleImport(SourceLocation StartLoc,
   if (getLangOpts().ModulesTS) {
     std::string ModuleName;
     for (auto &Piece : Path) {
-      if (!ModuleName.empty())
+      if (!ModuleName.empty()) {
         ModuleName += ".";
+
+}
       ModuleName += Piece.first->getName();
     }
     ModuleNameLoc = {PP.getIdentifierInfo(ModuleName), Path[0].second};
@@ -324,17 +340,23 @@ DeclResult Sema::ActOnModuleImport(SourceLocation StartLoc,
   Module *Mod =
       getModuleLoader().loadModule(ImportLoc, Path, Module::AllVisible,
                                    /*IsInclusionDirective=*/false);
-  if (!Mod)
+  if (!Mod) {
     return true;
+
+}
 
   return ActOnModuleImport(StartLoc, ExportLoc, ImportLoc, Mod, Path);
 }
 
 /// Determine whether \p D is lexically within an export-declaration.
 static const ExportDecl *getEnclosingExportDecl(const Decl *D) {
-  for (auto *DC = D->getLexicalDeclContext(); DC; DC = DC->getLexicalParent())
-    if (auto *ED = dyn_cast<ExportDecl>(DC))
+  for (auto *DC = D->getLexicalDeclContext(); DC; DC = DC->getLexicalParent()) {
+    if (auto *ED = dyn_cast<ExportDecl>(DC)) {
       return ED;
+
+}
+
+}
   return nullptr;
 }
 
@@ -366,8 +388,10 @@ DeclResult Sema::ActOnModuleImport(SourceLocation StartLoc,
   for (unsigned I = 0, N = Path.size(); I != N; ++I) {
     // If we've run out of module parents, just drop the remaining identifiers.
     // We need the length to be consistent.
-    if (!ModCheck)
+    if (!ModCheck) {
       break;
+
+}
     ModCheck = ModCheck->Parent;
 
     IdentifierLocs.push_back(Path[I].second);
@@ -387,13 +411,17 @@ DeclResult Sema::ActOnModuleImport(SourceLocation StartLoc,
 
   // Sequence initialization of the imported module before that of the current
   // module, if any.
-  if (!ModuleScopes.empty())
+  if (!ModuleScopes.empty()) {
     Context.addModuleInitializer(ModuleScopes.back().Module, Import);
+
+}
 
   // Re-export the module if needed.
   if (!ModuleScopes.empty() && ModuleScopes.back().ModuleInterface) {
-    if (ExportLoc.isValid() || getEnclosingExportDecl(Import))
+    if (ExportLoc.isValid() || getEnclosingExportDecl(Import)) {
       getCurrentModule()->Exports.emplace_back(Mod, false);
+
+}
   } else if (ExportLoc.isValid()) {
     Diag(ExportLoc, diag::err_export_not_in_module_interface);
   }
@@ -425,8 +453,10 @@ void Sema::BuildModuleInclude(SourceLocation DirectiveLoc, Module *Mod) {
     ImportDecl *ImportD = ImportDecl::CreateImplicit(getASTContext(), TU,
                                                      DirectiveLoc, Mod,
                                                      DirectiveLoc);
-    if (!ModuleScopes.empty())
+    if (!ModuleScopes.empty()) {
       Context.addModuleInitializer(ModuleScopes.back().Module, ImportD);
+
+}
     TU->addDecl(ImportD);
     Consumer.HandleImplicitImportDecl(ImportD);
   }
@@ -440,8 +470,10 @@ void Sema::ActOnModuleBegin(SourceLocation DirectiveLoc, Module *Mod) {
 
   ModuleScopes.push_back({});
   ModuleScopes.back().Module = Mod;
-  if (getLangOpts().ModulesLocalVisibility)
+  if (getLangOpts().ModulesLocalVisibility) {
     ModuleScopes.back().OuterVisibleModules = std::move(VisibleModules);
+
+}
 
   VisibleModules.setVisible(Mod, DirectiveLoc);
 
@@ -492,9 +524,11 @@ void Sema::ActOnModuleEnd(SourceLocation EomLoc, Module *Mod) {
     // the module within.
     for (auto *DC = CurContext; DC; DC = DC->getLexicalParent()) {
       cast<Decl>(DC)->setLocalOwningModule(getCurrentModule());
-      if (!getCurrentModule())
+      if (!getCurrentModule()) {
         cast<Decl>(DC)->setModuleOwnershipKind(
             Decl::ModuleOwnershipKind::Unowned);
+
+}
     }
   }
 }
@@ -503,8 +537,10 @@ void Sema::createImplicitModuleImportForErrorRecovery(SourceLocation Loc,
                                                       Module *Mod) {
   // Bail if we're not allowed to implicitly import a module here.
   if (isSFINAEContext() || !getLangOpts().ModulesErrorRecovery ||
-      VisibleModules.isVisible(Mod))
+      VisibleModules.isVisible(Mod)) {
     return;
+
+}
 
   // Create the implicit import declaration.
   TranslationUnitDecl *TU = getASTContext().getTranslationUnitDecl();
@@ -561,8 +597,10 @@ Decl *Sema::ActOnStartExportDecl(Scope *S, SourceLocation ExportLoc,
       //
       // Defer exporting the namespace until after we leave it, in order to
       // avoid marking all subsequent declarations in the namespace as exported.
-      if (!DeferredExportedNamespaces.insert(ND).second)
+      if (!DeferredExportedNamespaces.insert(ND).second) {
         break;
+
+}
     }
   }
 
@@ -570,8 +608,10 @@ Decl *Sema::ActOnStartExportDecl(Scope *S, SourceLocation ExportLoc,
   //   export-declaration.
   if (auto *ED = getEnclosingExportDecl(D)) {
     Diag(ExportLoc, diag::err_export_within_export);
-    if (ED->hasBraces())
+    if (ED->hasBraces()) {
       Diag(ED->getLocation(), diag::note_export);
+
+}
   }
 
   CurContext->addDecl(D);
@@ -594,14 +634,22 @@ enum class UnnamedDeclKind {
 }
 
 static llvm::Optional<UnnamedDeclKind> getUnnamedDeclKind(Decl *D) {
-  if (isa<EmptyDecl>(D))
+  if (isa<EmptyDecl>(D)) {
     return UnnamedDeclKind::Empty;
-  if (isa<StaticAssertDecl>(D))
+
+}
+  if (isa<StaticAssertDecl>(D)) {
     return UnnamedDeclKind::StaticAssert;
-  if (isa<FileScopeAsmDecl>(D))
+
+}
+  if (isa<FileScopeAsmDecl>(D)) {
     return UnnamedDeclKind::Asm;
-  if (isa<UsingDirectiveDecl>(D))
+
+}
+  if (isa<UsingDirectiveDecl>(D)) {
     return UnnamedDeclKind::UsingDirective;
+
+}
   // Everything else either introduces one or more names or is ill-formed.
   return llvm::None;
 }
@@ -633,16 +681,20 @@ static void diagExportedUnnamedDecl(Sema &S, UnnamedDeclKind UDK, Decl *D,
                                     SourceLocation BlockStart) {
   S.Diag(D->getLocation(), getUnnamedDeclDiag(UDK, BlockStart.isValid()))
       << (unsigned)UDK;
-  if (BlockStart.isValid())
+  if (BlockStart.isValid()) {
     S.Diag(BlockStart, diag::note_export);
+
+}
 }
 
 /// Check that it's valid to export \p D.
 static bool checkExportedDecl(Sema &S, Decl *D, SourceLocation BlockStart) {
   // C++2a [module.interface]p3:
   //   An exported declaration shall declare at least one name
-  if (auto UDK = getUnnamedDeclKind(D))
+  if (auto UDK = getUnnamedDeclKind(D)) {
     diagExportedUnnamedDecl(S, *UDK, D, BlockStart);
+
+}
 
   //   [...] shall not declare a name with internal linkage.
   if (auto *ND = dyn_cast<NamedDecl>(D)) {
@@ -650,8 +702,10 @@ static bool checkExportedDecl(Sema &S, Decl *D, SourceLocation BlockStart) {
     // instead.
     if (ND->getDeclName() && ND->getFormalLinkage() == InternalLinkage) {
       S.Diag(ND->getLocation(), diag::err_export_internal) << ND;
-      if (BlockStart.isValid())
+      if (BlockStart.isValid()) {
         S.Diag(BlockStart, diag::note_export);
+
+}
     }
   }
 
@@ -663,16 +717,22 @@ static bool checkExportedDecl(Sema &S, Decl *D, SourceLocation BlockStart) {
     if (Target->getFormalLinkage() == InternalLinkage) {
       S.Diag(USD->getLocation(), diag::err_export_using_internal) << Target;
       S.Diag(Target->getLocation(), diag::note_using_decl_target);
-      if (BlockStart.isValid())
+      if (BlockStart.isValid()) {
         S.Diag(BlockStart, diag::note_export);
+
+}
     }
   }
 
   // Recurse into namespace-scope DeclContexts. (Only namespace-scope
   // declarations are exported.)
-  if (auto *DC = dyn_cast<DeclContext>(D))
-    if (DC->getRedeclContext()->isFileContext() && !isa<EnumDecl>(D))
+  if (auto *DC = dyn_cast<DeclContext>(D)) {
+    if (DC->getRedeclContext()->isFileContext() && !isa<EnumDecl>(D)) {
       return checkExportedDeclContext(S, DC, BlockStart);
+
+}
+
+}
   return false;
 }
 
@@ -680,16 +740,20 @@ static bool checkExportedDecl(Sema &S, Decl *D, SourceLocation BlockStart) {
 static bool checkExportedDeclContext(Sema &S, DeclContext *DC,
                                      SourceLocation BlockStart) {
   bool AllUnnamed = true;
-  for (auto *D : DC->decls())
+  for (auto *D : DC->decls()) {
     AllUnnamed &= checkExportedDecl(S, D, BlockStart);
+
+}
   return AllUnnamed;
 }
 
 /// Complete the definition of an export declaration.
 Decl *Sema::ActOnFinishExportDecl(Scope *S, Decl *D, SourceLocation RBraceLoc) {
   auto *ED = cast<ExportDecl>(D);
-  if (RBraceLoc.isValid())
+  if (RBraceLoc.isValid()) {
     ED->setRBraceLoc(RBraceLoc);
+
+}
 
   PopDeclContext();
 

@@ -32,8 +32,10 @@ static void normalizePathSegment(std::string &Segment) {
   // Prune trailing "/" or "./"
   while (true) {
     StringRef last = path::filename(seg);
-    if (last != ".")
+    if (last != ".") {
       break;
+
+}
     seg = path::parent_path(seg);
   }
 
@@ -83,15 +85,17 @@ LLVM_DUMP_METHOD void Multilib::dump() const {
 
 void Multilib::print(raw_ostream &OS) const {
   assert(GCCSuffix.empty() || (StringRef(GCCSuffix).front() == '/'));
-  if (GCCSuffix.empty())
+  if (GCCSuffix.empty()) {
     OS << ".";
-  else {
+  } else {
     OS << StringRef(GCCSuffix).drop_front();
   }
   OS << ";";
   for (StringRef Flag : Flags) {
-    if (Flag.front() == '+')
+    if (Flag.front() == '+') {
       OS << "@" << Flag.substr(1);
+
+}
   }
 }
 
@@ -103,10 +107,12 @@ bool Multilib::isValid() const {
 
     assert(StringRef(Flag).front() == '+' || StringRef(Flag).front() == '-');
 
-    if (SI == FlagSet.end())
+    if (SI == FlagSet.end()) {
       FlagSet[Flag.substr(1)] = I;
-    else if (Flags[I] != Flags[SI->getValue()])
+    } else if (Flags[I] != Flags[SI->getValue()]) {
       return false;
+
+}
   }
   return true;
 }
@@ -115,21 +121,33 @@ bool Multilib::operator==(const Multilib &Other) const {
   // Check whether the flags sets match
   // allowing for the match to be order invariant
   llvm::StringSet<> MyFlags;
-  for (const auto &Flag : Flags)
+  for (const auto &Flag : Flags) {
     MyFlags.insert(Flag);
 
-  for (const auto &Flag : Other.Flags)
-    if (MyFlags.find(Flag) == MyFlags.end())
+}
+
+  for (const auto &Flag : Other.Flags) {
+    if (MyFlags.find(Flag) == MyFlags.end()) {
       return false;
 
-  if (osSuffix() != Other.osSuffix())
+}
+
+}
+
+  if (osSuffix() != Other.osSuffix()) {
     return false;
 
-  if (gccSuffix() != Other.gccSuffix())
+}
+
+  if (gccSuffix() != Other.gccSuffix()) {
     return false;
 
-  if (includeSuffix() != Other.includeSuffix())
+}
+
+  if (includeSuffix() != Other.includeSuffix()) {
     return false;
+
+}
 
   return true;
 }
@@ -143,8 +161,10 @@ MultilibSet &MultilibSet::Maybe(const Multilib &M) {
   Multilib Opposite;
   // Negate any '+' flags
   for (StringRef Flag : M.flags()) {
-    if (Flag.front() == '+')
+    if (Flag.front() == '+') {
       Opposite.flags().push_back(("-" + Flag.substr(1)).str());
+
+}
   }
   return Either(M, Opposite);
 }
@@ -191,15 +211,17 @@ static Multilib compose(const Multilib &Base, const Multilib &New) {
 MultilibSet &MultilibSet::Either(ArrayRef<Multilib> MultilibSegments) {
   multilib_list Composed;
 
-  if (Multilibs.empty())
+  if (Multilibs.empty()) {
     Multilibs.insert(Multilibs.end(), MultilibSegments.begin(),
                      MultilibSegments.end());
-  else {
+  } else {
     for (const auto &New : MultilibSegments) {
       for (const auto &Base : *this) {
         Multilib MO = compose(Base, New);
-        if (MO.isValid())
+        if (MO.isValid()) {
           Composed.push_back(MO);
+
+}
       }
     }
 
@@ -246,21 +268,29 @@ bool MultilibSet::select(const Multilib::flags_list &Flags, Multilib &M) const {
 
   // Stuff all of the flags into the FlagSet such that a true mappend indicates
   // the flag was enabled, and a false mappend indicates the flag was disabled.
-  for (StringRef Flag : Flags)
+  for (StringRef Flag : Flags) {
     FlagSet[Flag.substr(1)] = isFlagEnabled(Flag);
+
+}
 
   multilib_list Filtered = filterCopy([&FlagSet](const Multilib &M) {
     for (StringRef Flag : M.flags()) {
       llvm::StringMap<bool>::const_iterator SI = FlagSet.find(Flag.substr(1));
-      if (SI != FlagSet.end())
-        if (SI->getValue() != isFlagEnabled(Flag))
+      if (SI != FlagSet.end()) {
+        if (SI->getValue() != isFlagEnabled(Flag)) {
           return true;
+
+}
+
+}
     }
     return false;
   }, Multilibs);
 
-  if (Filtered.empty())
+  if (Filtered.empty()) {
     return false;
+
+}
   if (Filtered.size() == 1) {
     M = Filtered[0];
     return true;
@@ -287,8 +317,10 @@ LLVM_DUMP_METHOD void MultilibSet::dump() const {
 }
 
 void MultilibSet::print(raw_ostream &OS) const {
-  for (const auto &M : *this)
+  for (const auto &M : *this) {
     OS << M << "\n";
+
+}
 }
 
 MultilibSet::multilib_list MultilibSet::filterCopy(FilterCallback F,

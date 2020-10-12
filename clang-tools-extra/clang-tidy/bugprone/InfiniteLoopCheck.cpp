@@ -26,8 +26,10 @@ loopEndingStmt(internal::Matcher<Stmt> Internal) {
 
 /// Return whether `S` is a reference to the declaration of `Var`.
 static bool isAccessForVar(const Stmt *S, const VarDecl *Var) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(S))
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(S)) {
     return DRE->getDecl() == Var;
+
+}
 
   return false;
 }
@@ -43,8 +45,10 @@ static bool isPtrOrReferenceForVar(const Stmt *S, const VarDecl *Var) {
       }
     }
   } else if (const auto *UnOp = dyn_cast<UnaryOperator>(S)) {
-    if (UnOp->getOpcode() == UO_AddrOf)
+    if (UnOp->getOpcode() == UO_AddrOf) {
       return isAccessForVar(UnOp->getSubExpr(), Var);
+
+}
   }
 
   return false;
@@ -52,15 +56,21 @@ static bool isPtrOrReferenceForVar(const Stmt *S, const VarDecl *Var) {
 
 /// Return whether `Var` has a pointer or reference in `S`.
 static bool hasPtrOrReferenceInStmt(const Stmt *S, const VarDecl *Var) {
-  if (isPtrOrReferenceForVar(S, Var))
+  if (isPtrOrReferenceForVar(S, Var)) {
     return true;
 
+}
+
   for (const Stmt *Child : S->children()) {
-    if (!Child)
+    if (!Child) {
       continue;
 
-    if (hasPtrOrReferenceInStmt(Child, Var))
+}
+
+    if (hasPtrOrReferenceInStmt(Child, Var)) {
       return true;
+
+}
   }
 
   return false;
@@ -75,7 +85,7 @@ static bool hasPtrOrReferenceInFunc(const FunctionDecl *Func,
 /// Return whether `Var` was changed in `LoopStmt`.
 static bool isChanged(const Stmt *LoopStmt, const VarDecl *Var,
                       ASTContext *Context) {
-  if (const auto *ForLoop = dyn_cast<ForStmt>(LoopStmt))
+  if (const auto *ForLoop = dyn_cast<ForStmt>(LoopStmt)) {
     return (ForLoop->getInc() &&
             ExprMutationAnalyzer(*ForLoop->getInc(), *Context)
                 .isMutated(Var)) ||
@@ -84,6 +94,8 @@ static bool isChanged(const Stmt *LoopStmt, const VarDecl *Var,
                 .isMutated(Var)) ||
            (ForLoop->getCond() &&
             ExprMutationAnalyzer(*ForLoop->getCond(), *Context).isMutated(Var));
+
+}
 
   return ExprMutationAnalyzer(*LoopStmt, *Context).isMutated(Var);
 }
@@ -94,14 +106,20 @@ static bool isVarThatIsPossiblyChanged(const FunctionDecl *Func,
                                        ASTContext *Context) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond)) {
     if (const auto *Var = dyn_cast<VarDecl>(DRE->getDecl())) {
-      if (!Var->isLocalVarDeclOrParm())
+      if (!Var->isLocalVarDeclOrParm()) {
         return true;
 
-      if (Var->getType().isVolatileQualified())
+}
+
+      if (Var->getType().isVolatileQualified()) {
         return true;
 
-      if (!Var->getType().getTypePtr()->isIntegerType())
+}
+
+      if (!Var->getType().getTypePtr()->isIntegerType()) {
         return true;
+
+}
 
       return hasPtrOrReferenceInFunc(Func, Var) ||
              isChanged(LoopStmt, Var, Context);
@@ -119,15 +137,21 @@ static bool isVarThatIsPossiblyChanged(const FunctionDecl *Func,
 static bool isAtLeastOneCondVarChanged(const FunctionDecl *Func,
                                        const Stmt *LoopStmt, const Stmt *Cond,
                                        ASTContext *Context) {
-  if (isVarThatIsPossiblyChanged(Func, LoopStmt, Cond, Context))
+  if (isVarThatIsPossiblyChanged(Func, LoopStmt, Cond, Context)) {
     return true;
 
+}
+
   for (const Stmt *Child : Cond->children()) {
-    if (!Child)
+    if (!Child) {
       continue;
 
-    if (isAtLeastOneCondVarChanged(Func, LoopStmt, Child, Context))
+}
+
+    if (isAtLeastOneCondVarChanged(Func, LoopStmt, Child, Context)) {
       return true;
+
+}
   }
   return false;
 }
@@ -135,29 +159,39 @@ static bool isAtLeastOneCondVarChanged(const FunctionDecl *Func,
 /// Return the variable names in `Cond`.
 static std::string getCondVarNames(const Stmt *Cond) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(Cond)) {
-    if (const auto *Var = dyn_cast<VarDecl>(DRE->getDecl()))
+    if (const auto *Var = dyn_cast<VarDecl>(DRE->getDecl())) {
       return std::string(Var->getName());
+
+}
   }
 
   std::string Result;
   for (const Stmt *Child : Cond->children()) {
-    if (!Child)
+    if (!Child) {
       continue;
 
+}
+
     std::string NewNames = getCondVarNames(Child);
-    if (!Result.empty() && !NewNames.empty())
+    if (!Result.empty() && !NewNames.empty()) {
       Result += ", ";
+
+}
     Result += NewNames;
   }
   return Result;
 }
 
 static bool isKnownFalse(const Expr &Cond, const ASTContext &Ctx) {
-  if (Cond.isValueDependent())
+  if (Cond.isValueDependent()) {
     return false;
+
+}
   bool Result = false;
-  if (Cond.EvaluateAsBooleanCondition(Result, Ctx))
+  if (Cond.EvaluateAsBooleanCondition(Result, Ctx)) {
     return !Result;
+
+}
   return false;
 }
 
@@ -179,8 +213,10 @@ void InfiniteLoopCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *LoopStmt = Result.Nodes.getNodeAs<Stmt>("loop-stmt");
   const auto *Func = Result.Nodes.getNodeAs<FunctionDecl>("func");
 
-  if (isKnownFalse(*Cond, *Result.Context))
+  if (isKnownFalse(*Cond, *Result.Context)) {
     return;
+
+}
 
   bool ShouldHaveConditionVariables = true;
   if (const auto *While = dyn_cast<WhileStmt>(LoopStmt)) {
@@ -192,12 +228,16 @@ void InfiniteLoopCheck::check(const MatchFinder::MatchResult &Result) {
     }
   }
 
-  if (isAtLeastOneCondVarChanged(Func, LoopStmt, Cond, Result.Context))
+  if (isAtLeastOneCondVarChanged(Func, LoopStmt, Cond, Result.Context)) {
     return;
 
+}
+
   std::string CondVarNames = getCondVarNames(Cond);
-  if (ShouldHaveConditionVariables && CondVarNames.empty())
+  if (ShouldHaveConditionVariables && CondVarNames.empty()) {
     return;
+
+}
 
   if (CondVarNames.empty()) {
     diag(LoopStmt->getBeginLoc(),

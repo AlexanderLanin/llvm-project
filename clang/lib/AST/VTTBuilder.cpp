@@ -61,8 +61,10 @@ void VTTBuilder::LayoutSecondaryVTTs(BaseSubobject Base) {
 
   for (const auto &I : RD->bases()) {
     // Don't layout virtual bases.
-    if (I.isVirtual())
+    if (I.isVirtual()) {
         continue;
+
+}
 
     const auto *BaseDecl =
         cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
@@ -86,8 +88,10 @@ VTTBuilder::LayoutSecondaryVirtualPointers(BaseSubobject Base,
 
   // We're not interested in bases that don't have virtual bases, and not
   // morally virtual bases.
-  if (!RD->getNumVBases() && !BaseIsMorallyVirtual)
+  if (!RD->getNumVBases() && !BaseIsMorallyVirtual) {
     return;
+
+}
 
   for (const auto &I : RD->bases()) {
     const auto *BaseDecl =
@@ -100,16 +104,20 @@ VTTBuilder::LayoutSecondaryVirtualPointers(BaseSubobject Base,
     //
     // If the base class is not dynamic, we don't want to add it, nor any
     // of its base classes.
-    if (!BaseDecl->isDynamicClass())
+    if (!BaseDecl->isDynamicClass()) {
       continue;
+
+}
 
     bool BaseDeclIsMorallyVirtual = BaseIsMorallyVirtual;
     bool BaseDeclIsNonVirtualPrimaryBase = false;
     CharUnits BaseOffset;
     if (I.isVirtual()) {
       // Ignore virtual bases that we've already visited.
-      if (!VBases.insert(BaseDecl).second)
+      if (!VBases.insert(BaseDecl).second) {
         continue;
+
+}
 
       BaseOffset = MostDerivedClassLayout.getVBaseClassOffset(BaseDecl);
       BaseDeclIsMorallyVirtual = true;
@@ -120,8 +128,10 @@ VTTBuilder::LayoutSecondaryVirtualPointers(BaseSubobject Base,
         Layout.getBaseClassOffset(BaseDecl);
 
       if (!Layout.isPrimaryBaseVirtual() &&
-          Layout.getPrimaryBase() == BaseDecl)
+          Layout.getPrimaryBase() == BaseDecl) {
         BaseDeclIsNonVirtualPrimaryBase = true;
+
+}
     }
 
     // Itanium C++ ABI 2.6.2:
@@ -160,8 +170,10 @@ void VTTBuilder::LayoutVirtualVTTs(const CXXRecordDecl *RD,
     // Check if this is a virtual base.
     if (I.isVirtual()) {
       // Check if we've seen this base before.
-      if (!VBases.insert(BaseDecl).second)
+      if (!VBases.insert(BaseDecl).second) {
         continue;
+
+}
 
       CharUnits BaseOffset =
         MostDerivedClassLayout.getVBaseClassOffset(BaseDecl);
@@ -171,8 +183,10 @@ void VTTBuilder::LayoutVirtualVTTs(const CXXRecordDecl *RD,
 
     // We only need to layout virtual VTTs for this base if it actually has
     // virtual bases.
-    if (BaseDecl->getNumVBases())
+    if (BaseDecl->getNumVBases()) {
       LayoutVirtualVTTs(BaseDecl, VBases);
+
+}
   }
 }
 
@@ -182,8 +196,10 @@ void VTTBuilder::LayoutVTT(BaseSubobject Base, bool BaseIsVirtual) {
   // Itanium C++ ABI 2.6.2:
   //   An array of virtual table addresses, called the VTT, is declared for
   //   each class type that has indirect or direct virtual base classes.
-  if (RD->getNumVBases() == 0)
+  if (RD->getNumVBases() == 0) {
     return;
+
+}
 
   bool IsPrimaryVTT = Base.getBase() == MostDerivedClass;
 

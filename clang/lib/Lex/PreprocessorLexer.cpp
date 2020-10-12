@@ -23,8 +23,10 @@ void PreprocessorLexer::anchor() {}
 
 PreprocessorLexer::PreprocessorLexer(Preprocessor *pp, FileID fid)
     : PP(pp), FID(fid) {
-  if (pp)
+  if (pp) {
     InitialNumSLocEntries = pp->getSourceManager().local_sloc_entry_size();
+
+}
 }
 
 /// After the preprocessor has parsed a \#include, lex and
@@ -36,10 +38,12 @@ void PreprocessorLexer::LexIncludeFilename(Token &FilenameTok) {
   ParsingFilename = true;
 
   // Lex the filename.
-  if (LexingRawMode)
+  if (LexingRawMode) {
     IndirectLex(FilenameTok);
-  else
+  } else {
     PP->Lex(FilenameTok);
+
+}
 
   // We should have obtained the filename now.
   ParsingFilename = false;

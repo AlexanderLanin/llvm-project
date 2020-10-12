@@ -107,11 +107,15 @@ static Error deepWriteArchive(StringRef ArcName,
                               bool WriteSymtab, object::Archive::Kind Kind,
                               bool Deterministic, bool Thin) {
   if (Error E = writeArchive(ArcName, NewMembers, WriteSymtab, Kind,
-                             Deterministic, Thin))
+                             Deterministic, Thin)) {
     return createFileError(ArcName, std::move(E));
 
-  if (!Thin)
+}
+
+  if (!Thin) {
     return Error::success();
+
+}
 
   for (const NewArchiveMember &Member : NewMembers) {
     // Internally, FileBuffer will use the buffer created by
@@ -123,12 +127,16 @@ static Error deepWriteArchive(StringRef ArcName,
     // NewArchiveMember still requires them even though writeArchive does not
     // write them on disk.
     FileBuffer FB(Member.MemberName);
-    if (Error E = FB.allocate(Member.Buf->getBufferSize()))
+    if (Error E = FB.allocate(Member.Buf->getBufferSize())) {
       return E;
+
+}
     std::copy(Member.Buf->getBufferStart(), Member.Buf->getBufferEnd(),
               FB.getBufferStart());
-    if (Error E = FB.commit())
+    if (Error E = FB.commit()) {
       return E;
+
+}
   }
   return Error::success();
 }
@@ -138,8 +146,10 @@ static Error deepWriteArchive(StringRef ArcName,
 static Error executeObjcopyOnIHex(CopyConfig &Config, MemoryBuffer &In,
                                   Buffer &Out) {
   // TODO: support output formats other than ELF.
-  if (Error E = Config.parseELFConfig())
+  if (Error E = Config.parseELFConfig()) {
     return E;
+
+}
   return elf::executeObjcopyOnIHex(Config, In, Out);
 }
 
@@ -155,8 +165,10 @@ static Error executeObjcopyOnRawBinary(CopyConfig &Config, MemoryBuffer &In,
   case FileFormat::Binary:
   case FileFormat::IHex:
   case FileFormat::Unspecified:
-    if (Error E = Config.parseELFConfig())
+    if (Error E = Config.parseELFConfig()) {
       return E;
+
+}
     return elf::executeObjcopyOnRawBinary(Config, In, Out);
   }
 
@@ -168,18 +180,22 @@ static Error executeObjcopyOnRawBinary(CopyConfig &Config, MemoryBuffer &In,
 static Error executeObjcopyOnBinary(CopyConfig &Config, object::Binary &In,
                                     Buffer &Out) {
   if (auto *ELFBinary = dyn_cast<object::ELFObjectFileBase>(&In)) {
-    if (Error E = Config.parseELFConfig())
+    if (Error E = Config.parseELFConfig()) {
       return E;
+
+}
     return elf::executeObjcopyOnBinary(Config, *ELFBinary, Out);
-  } else if (auto *COFFBinary = dyn_cast<object::COFFObjectFile>(&In))
+  } else if (auto *COFFBinary = dyn_cast<object::COFFObjectFile>(&In)) {
     return coff::executeObjcopyOnBinary(Config, *COFFBinary, Out);
-  else if (auto *MachOBinary = dyn_cast<object::MachOObjectFile>(&In))
+  } else if (auto *MachOBinary = dyn_cast<object::MachOObjectFile>(&In)) {
     return macho::executeObjcopyOnBinary(Config, *MachOBinary, Out);
-  else if (auto *WasmBinary = dyn_cast<object::WasmObjectFile>(&In))
+  } else if (auto *WasmBinary = dyn_cast<object::WasmObjectFile>(&In)) {
     return objcopy::wasm::executeObjcopyOnBinary(Config, *WasmBinary, Out);
-  else
+  } else {
     return createStringError(object_error::invalid_file_type,
                              "unsupported object file format");
+
+}
 }
 
 static Error executeObjcopyOnArchive(CopyConfig &Config, const Archive &Ar) {
@@ -187,28 +203,38 @@ static Error executeObjcopyOnArchive(CopyConfig &Config, const Archive &Ar) {
   Error Err = Error::success();
   for (const Archive::Child &Child : Ar.children(Err)) {
     Expected<StringRef> ChildNameOrErr = Child.getName();
-    if (!ChildNameOrErr)
+    if (!ChildNameOrErr) {
       return createFileError(Ar.getFileName(), ChildNameOrErr.takeError());
 
+}
+
     Expected<std::unique_ptr<Binary>> ChildOrErr = Child.getAsBinary();
-    if (!ChildOrErr)
+    if (!ChildOrErr) {
       return createFileError(Ar.getFileName() + "(" + *ChildNameOrErr + ")",
                              ChildOrErr.takeError());
 
+}
+
     MemBuffer MB(ChildNameOrErr.get());
-    if (Error E = executeObjcopyOnBinary(Config, *ChildOrErr->get(), MB))
+    if (Error E = executeObjcopyOnBinary(Config, *ChildOrErr->get(), MB)) {
       return E;
+
+}
 
     Expected<NewArchiveMember> Member =
         NewArchiveMember::getOldMember(Child, Config.DeterministicArchives);
-    if (!Member)
+    if (!Member) {
       return createFileError(Ar.getFileName(), Member.takeError());
+
+}
     Member->Buf = MB.releaseMemoryBuffer();
     Member->MemberName = Member->Buf->getBufferIdentifier();
     NewArchiveMembers.push_back(std::move(*Member));
   }
-  if (Err)
+  if (Err) {
     return createFileError(Config.InputFilename, std::move(Err));
+
+}
 
   return deepWriteArchive(Config.OutputFilename, NewArchiveMembers,
                           Ar.hasSymbolTable(), Ar.kind(),
@@ -222,22 +248,32 @@ static Error restoreStatOnFile(StringRef Filename,
 
   // Writing to stdout should not be treated as an error here, just
   // do not set access/modification times or permissions.
-  if (Filename == "-")
+  if (Filename == "-") {
     return Error::success();
 
+}
+
   if (auto EC =
-          sys::fs::openFileForWrite(Filename, FD, sys::fs::CD_OpenExisting))
+          sys::fs::openFileForWrite(Filename, FD, sys::fs::CD_OpenExisting)) {
     return createFileError(Filename, EC);
 
-  if (PreserveDates)
+}
+
+  if (PreserveDates) {
     if (auto EC = sys::fs::setLastAccessAndModificationTime(
-            FD, Stat.getLastAccessedTime(), Stat.getLastModificationTime()))
+            FD, Stat.getLastAccessedTime(), Stat.getLastModificationTime())) {
       return createFileError(Filename, EC);
 
+}
+
+}
+
   sys::fs::file_status OStat;
-  if (std::error_code EC = sys::fs::status(FD, OStat))
+  if (std::error_code EC = sys::fs::status(FD, OStat)) {
     return createFileError(Filename, EC);
-  if (OStat.type() == sys::fs::file_type::regular_file)
+
+}
+  if (OStat.type() == sys::fs::file_type::regular_file) {
 #ifdef _WIN32
     if (auto EC = sys::fs::setPermissions(
             Filename, static_cast<sys::fs::perms>(Stat.permissions() &
@@ -245,12 +281,18 @@ static Error restoreStatOnFile(StringRef Filename,
 #else
     if (auto EC = sys::fs::setPermissions(
             FD, static_cast<sys::fs::perms>(Stat.permissions() &
-                                            ~sys::fs::getUmask())))
+                                            ~sys::fs::getUmask()))) {
 #endif
       return createFileError(Filename, EC);
 
-  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+}
+
+}
+
+  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD)) {
     return createFileError(Filename, EC);
+
+}
 
   return Error::success();
 }
@@ -261,8 +303,10 @@ static Error restoreStatOnFile(StringRef Filename,
 static Error executeObjcopy(CopyConfig &Config) {
   sys::fs::file_status Stat;
   if (Config.InputFilename != "-") {
-    if (auto EC = sys::fs::status(Config.InputFilename, Stat))
+    if (auto EC = sys::fs::status(Config.InputFilename, Stat)) {
       return createFileError(Config.InputFilename, EC);
+
+}
   } else {
     Stat.permissions(static_cast<sys::fs::perms>(0777));
   }
@@ -282,37 +326,51 @@ static Error executeObjcopy(CopyConfig &Config) {
 
   if (ProcessRaw) {
     auto BufOrErr = MemoryBuffer::getFileOrSTDIN(Config.InputFilename);
-    if (!BufOrErr)
+    if (!BufOrErr) {
       return createFileError(Config.InputFilename, BufOrErr.getError());
+
+}
     FileBuffer FB(Config.OutputFilename);
-    if (Error E = ProcessRaw(Config, *BufOrErr->get(), FB))
+    if (Error E = ProcessRaw(Config, *BufOrErr->get(), FB)) {
       return E;
+
+}
   } else {
     Expected<OwningBinary<llvm::object::Binary>> BinaryOrErr =
         createBinary(Config.InputFilename);
-    if (!BinaryOrErr)
+    if (!BinaryOrErr) {
       return createFileError(Config.InputFilename, BinaryOrErr.takeError());
 
+}
+
     if (Archive *Ar = dyn_cast<Archive>(BinaryOrErr.get().getBinary())) {
-      if (Error E = executeObjcopyOnArchive(Config, *Ar))
+      if (Error E = executeObjcopyOnArchive(Config, *Ar)) {
         return E;
+
+}
     } else {
       FileBuffer FB(Config.OutputFilename);
       if (Error E = executeObjcopyOnBinary(Config,
-                                           *BinaryOrErr.get().getBinary(), FB))
+                                           *BinaryOrErr.get().getBinary(), FB)) {
         return E;
+
+}
     }
   }
 
   if (Error E =
-          restoreStatOnFile(Config.OutputFilename, Stat, Config.PreserveDates))
+          restoreStatOnFile(Config.OutputFilename, Stat, Config.PreserveDates)) {
     return E;
+
+}
 
   if (!Config.SplitDWO.empty()) {
     Stat.permissions(static_cast<sys::fs::perms>(0666));
     if (Error E =
-            restoreStatOnFile(Config.SplitDWO, Stat, Config.PreserveDates))
+            restoreStatOnFile(Config.SplitDWO, Stat, Config.PreserveDates)) {
       return E;
+
+}
   }
 
   return Error::success();

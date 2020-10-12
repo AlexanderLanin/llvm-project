@@ -204,8 +204,10 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
     break;
   case PrintEnums:
   {
-    for (Record *Rec : Records.getAllDerivedDefinitions(Class))
+    for (Record *Rec : Records.getAllDerivedDefinitions(Class)) {
       OS << Rec->getName() << ", ";
+
+}
     OS << "\n";
     break;
   }
@@ -217,8 +219,10 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
       OS << Rec->getName() << " = [";
       const std::vector<Record*> *Elts = Sets.expand(Rec);
       assert(Elts && "Couldn't expand Set instance");
-      for (Record *Elt : *Elts)
+      for (Record *Elt : *Elts) {
         OS << ' ' << Elt->getName();
+
+}
       OS << " ]\n";
     }
     break;

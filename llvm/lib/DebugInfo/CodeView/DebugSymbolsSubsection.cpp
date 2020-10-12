@@ -21,8 +21,10 @@ uint32_t DebugSymbolsSubsection::calculateSerializedSize() const {
 
 Error DebugSymbolsSubsection::commit(BinaryStreamWriter &Writer) const {
   for (const auto &Record : Records) {
-    if (auto EC = Writer.writeBytes(Record.RecordData))
+    if (auto EC = Writer.writeBytes(Record.RecordData)) {
       return EC;
+
+}
   }
   return Error::success();
 }

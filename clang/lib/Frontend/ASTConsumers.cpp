@@ -44,8 +44,10 @@ namespace {
     void HandleTranslationUnit(ASTContext &Context) override {
       TranslationUnitDecl *D = Context.getTranslationUnitDecl();
 
-      if (FilterString.empty())
+      if (FilterString.empty()) {
         return print(D);
+
+}
 
       TraverseDecl(D);
     }
@@ -55,12 +57,16 @@ namespace {
     bool TraverseDecl(Decl *D) {
       if (D && filterMatches(D)) {
         bool ShowColors = Out.has_colors();
-        if (ShowColors)
+        if (ShowColors) {
           Out.changeColor(raw_ostream::BLUE);
+
+}
         Out << (OutputKind != Print ? "Dumping " : "Printing ") << getName(D)
             << ":\n";
-        if (ShowColors)
+        if (ShowColors) {
           Out.resetColor();
+
+}
         print(D);
         Out << "\n";
         // Don't traverse child nodes to avoid output duplication.
@@ -71,8 +77,10 @@ namespace {
 
   private:
     std::string getName(Decl *D) {
-      if (isa<NamedDecl>(D))
+      if (isa<NamedDecl>(D)) {
         return cast<NamedDecl>(D)->getQualifiedNameAsString();
+
+}
       return "";
     }
     bool filterMatches(Decl *D) {
@@ -81,18 +89,24 @@ namespace {
     void print(Decl *D) {
       if (DumpLookups) {
         if (DeclContext *DC = dyn_cast<DeclContext>(D)) {
-          if (DC == DC->getPrimaryContext())
+          if (DC == DC->getPrimaryContext()) {
             DC->dumpLookups(Out, OutputKind != None, OutputKind == DumpFull);
-          else
+          } else {
             Out << "Lookup map is in primary DeclContext "
                 << DC->getPrimaryContext() << "\n";
-        } else
+
+}
+        } else {
           Out << "Not a DeclContext\n";
+
+}
       } else if (OutputKind == Print) {
         PrintingPolicy Policy(D->getASTContext().getLangOpts());
         D->print(Out, Policy, /*Indentation=*/0, /*PrintInstantiation=*/true);
-      } else if (OutputKind != None)
+      } else if (OutputKind != None) {
         D->dump(Out, OutputKind == DumpFull, OutputFormat);
+
+}
     }
 
     raw_ostream &Out;
@@ -171,8 +185,10 @@ namespace {
     }
 
     bool HandleTopLevelDecl(DeclGroupRef D) override {
-      for (DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I)
+      for (DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
         HandleTopLevelSingleDecl(*I);
+
+}
       return true;
     }
 

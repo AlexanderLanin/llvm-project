@@ -156,10 +156,14 @@ void X86CmovConverterPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool X86CmovConverterPass::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
-  if (!EnableCmovConverter)
+
+}
+  if (!EnableCmovConverter) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "********** " << getPassName() << " : " << MF.getName()
                     << "**********\n");
@@ -180,13 +184,17 @@ bool X86CmovConverterPass::runOnMachineFunction(MachineFunction &MF) {
   if (ForceMemOperand) {
     CmovGroups AllCmovGroups;
     SmallVector<MachineBasicBlock *, 4> Blocks;
-    for (auto &MBB : MF)
+    for (auto &MBB : MF) {
       Blocks.push_back(&MBB);
+
+}
     if (collectCmovCandidates(Blocks, AllCmovGroups, /*IncludeLoads*/ true)) {
       for (auto &Group : AllCmovGroups) {
         // Skip any group that doesn't do at least one memory operand cmov.
-        if (!llvm::any_of(Group, [&](MachineInstr *I) { return I->mayLoad(); }))
+        if (!llvm::any_of(Group, [&](MachineInstr *I) { return I->mayLoad(); })) {
           continue;
+
+}
 
         // For CMOV groups which we can rewrite and which contain a memory load,
         // always rewrite them. On x86, a CMOV will dramatically amplify any
@@ -224,28 +232,40 @@ bool X86CmovConverterPass::runOnMachineFunction(MachineFunction &MF) {
   SmallVector<MachineLoop *, 4> Loops(MLI.begin(), MLI.end());
   // Note that we need to check size on each iteration as we accumulate child
   // loops.
-  for (int i = 0; i < (int)Loops.size(); ++i)
-    for (MachineLoop *Child : Loops[i]->getSubLoops())
+  for (int i = 0; i < (int)Loops.size(); ++i) {
+    for (MachineLoop *Child : Loops[i]->getSubLoops()) {
       Loops.push_back(Child);
+
+}
+
+}
 
   for (MachineLoop *CurrLoop : Loops) {
     // Optimize only inner most loops.
-    if (!CurrLoop->getSubLoops().empty())
+    if (!CurrLoop->getSubLoops().empty()) {
       continue;
+
+}
 
     // List of consecutive CMOV instructions to be processed.
     CmovGroups CmovInstGroups;
 
-    if (!collectCmovCandidates(CurrLoop->getBlocks(), CmovInstGroups))
+    if (!collectCmovCandidates(CurrLoop->getBlocks(), CmovInstGroups)) {
       continue;
+
+}
 
     if (!checkForProfitableCmovCandidates(CurrLoop->getBlocks(),
-                                          CmovInstGroups))
+                                          CmovInstGroups)) {
       continue;
 
+}
+
     Changed = true;
-    for (auto &Group : CmovInstGroups)
+    for (auto &Group : CmovInstGroups) {
       convertCmovInstsToBranches(Group);
+
+}
   }
 
   return Changed;
@@ -288,8 +308,10 @@ bool X86CmovConverterPass::collectCmovCandidates(
 
     for (auto &I : *MBB) {
       // Skip debug instructions.
-      if (I.isDebugInstr())
+      if (I.isDebugInstr()) {
         continue;
+
+}
       X86::CondCode CC = X86::getCondFromCMov(I);
       // Check if we found a X86::CMOVrr instruction.
       if (CC != X86::COND_INVALID && (IncludeLoads || !I.mayLoad())) {
@@ -305,16 +327,20 @@ bool X86CmovConverterPass::collectCmovCandidates(
         Group.push_back(&I);
         // Check if it is a non-consecutive CMOV instruction or it has different
         // condition code than FirstCC or FirstOppCC.
-        if (FoundNonCMOVInst || (CC != FirstCC && CC != FirstOppCC))
+        if (FoundNonCMOVInst || (CC != FirstCC && CC != FirstOppCC)) {
           // Mark the SKipGroup indicator to skip current processed CMOV-Group.
           SkipGroup = true;
+
+}
         if (I.mayLoad()) {
-          if (MemOpCC == X86::COND_INVALID)
+          if (MemOpCC == X86::COND_INVALID) {
             // The first memory operand CMOV.
             MemOpCC = CC;
-          else if (CC != MemOpCC)
+          } else if (CC != MemOpCC) {
             // Can't handle mixed conditions with memory operands.
             SkipGroup = true;
+
+}
         }
         // Check if we were relying on zero-extending behavior of the CMOV.
         if (!SkipGroup &&
@@ -322,15 +348,19 @@ bool X86CmovConverterPass::collectCmovCandidates(
                 MRI->use_nodbg_instructions(I.defs().begin()->getReg()),
                 [&](MachineInstr &UseI) {
                   return UseI.getOpcode() == X86::SUBREG_TO_REG;
-                }))
+                })) {
           // FIXME: We should model the cost of using an explicit MOV to handle
           // the zero-extension rather than just refusing to handle this.
           SkipGroup = true;
+
+}
         continue;
       }
       // If Group is empty, keep looking for first CMOV in the range.
-      if (Group.empty())
+      if (Group.empty()) {
         continue;
+
+}
 
       // We found a non X86::CMOVrr instruction.
       FoundNonCMOVInst = true;
@@ -339,21 +369,27 @@ bool X86CmovConverterPass::collectCmovCandidates(
       if (I.definesRegister(X86::EFLAGS)) {
         // Check if current processed CMOV-group should not be skipped and add
         // it as a CMOV-group-candidate.
-        if (!SkipGroup)
+        if (!SkipGroup) {
           CmovInstGroups.push_back(Group);
-        else
+        } else {
           ++NumOfSkippedCmovGroups;
+
+}
         Group.clear();
       }
     }
     // End of basic block is considered end of range, check if current processed
     // CMOV-group should not be skipped and add it as a CMOV-group-candidate.
-    if (Group.empty())
+    if (Group.empty()) {
       continue;
-    if (!SkipGroup)
+
+}
+    if (!SkipGroup) {
       CmovInstGroups.push_back(Group);
-    else
+    } else {
       ++NumOfSkippedCmovGroups;
+
+}
   }
 
   NumOfCmovGroupCandidate += CmovInstGroups.size();
@@ -396,8 +432,10 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
   DepthMap[nullptr] = {0, 0};
 
   SmallPtrSet<MachineInstr *, 4> CmovInstructions;
-  for (auto &Group : CmovInstGroups)
+  for (auto &Group : CmovInstGroups) {
     CmovInstructions.insert(Group.begin(), Group.end());
+
+}
 
   //===--------------------------------------------------------------------===//
   // Step 1: Calculate instruction depth and loop depth.
@@ -429,35 +467,45 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
       RegDefMaps[PhyRegType].clear();
       for (MachineInstr &MI : *MBB) {
         // Skip debug instructions.
-        if (MI.isDebugInstr())
+        if (MI.isDebugInstr()) {
           continue;
+
+}
         unsigned MIDepth = 0;
         unsigned MIDepthOpt = 0;
         bool IsCMOV = CmovInstructions.count(&MI);
         for (auto &MO : MI.uses()) {
           // Checks for "isUse()" as "uses()" returns also implicit definitions.
-          if (!MO.isReg() || !MO.isUse())
+          if (!MO.isReg() || !MO.isUse()) {
             continue;
+
+}
           Register Reg = MO.getReg();
           auto &RDM = RegDefMaps[Register::isVirtualRegister(Reg)];
           if (MachineInstr *DefMI = RDM.lookup(Reg)) {
             OperandToDefMap[&MO] = DefMI;
             DepthInfo Info = DepthMap.lookup(DefMI);
             MIDepth = std::max(MIDepth, Info.Depth);
-            if (!IsCMOV)
+            if (!IsCMOV) {
               MIDepthOpt = std::max(MIDepthOpt, Info.OptDepth);
+
+}
           }
         }
 
-        if (IsCMOV)
+        if (IsCMOV) {
           MIDepthOpt = getDepthOfOptCmov(
               DepthMap[OperandToDefMap.lookup(&MI.getOperand(1))].OptDepth,
               DepthMap[OperandToDefMap.lookup(&MI.getOperand(2))].OptDepth);
 
+}
+
         // Iterates over all operands to handle implicit definitions as well.
         for (auto &MO : MI.operands()) {
-          if (!MO.isReg() || !MO.isDef())
+          if (!MO.isReg() || !MO.isDef()) {
             continue;
+
+}
           Register Reg = MO.getReg();
           RegDefMaps[Register::isVirtualRegister(Reg)][Reg] = &MI;
         }
@@ -500,19 +548,25 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
   //
   // If loop is not worth optimizing, remove all CMOV-group-candidates.
   //===--------------------------------------------------------------------===//
-  if (Diff[1] < GainCycleThreshold)
+  if (Diff[1] < GainCycleThreshold) {
     return false;
 
+}
+
   bool WorthOptLoop = false;
-  if (Diff[1] == Diff[0])
+  if (Diff[1] == Diff[0]) {
     WorthOptLoop = Diff[0] * 8 >= LoopDepth[0].Depth;
-  else if (Diff[1] > Diff[0])
+  } else if (Diff[1] > Diff[0]) {
     WorthOptLoop =
         (Diff[1] - Diff[0]) * 2 >= (LoopDepth[1].Depth - LoopDepth[0].Depth) &&
         (Diff[1] * 8 >= LoopDepth[1].Depth);
 
-  if (!WorthOptLoop)
+}
+
+  if (!WorthOptLoop) {
     return false;
+
+}
 
   ++NumOfLoopCandidate;
 
@@ -556,16 +610,20 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
       }
     }
 
-    if (WorthOpGroup)
+    if (WorthOpGroup) {
       CmovInstGroups.push_back(Group);
+
+}
   }
 
   return !CmovInstGroups.empty();
 }
 
 static bool checkEFLAGSLive(MachineInstr *MI) {
-  if (MI->killsRegister(X86::EFLAGS))
+  if (MI->killsRegister(X86::EFLAGS)) {
     return false;
+
+}
 
   // The EFLAGS operand of MI might be missing a kill marker.
   // Figure out whether EFLAGS operand should LIVE after MI instruction.
@@ -574,16 +632,22 @@ static bool checkEFLAGSLive(MachineInstr *MI) {
 
   // Scan forward through BB for a use/def of EFLAGS.
   for (auto I = std::next(ItrMI), E = BB->end(); I != E; ++I) {
-    if (I->readsRegister(X86::EFLAGS))
+    if (I->readsRegister(X86::EFLAGS)) {
       return true;
-    if (I->definesRegister(X86::EFLAGS))
+
+}
+    if (I->definesRegister(X86::EFLAGS)) {
       return false;
+
+}
   }
 
   // We hit the end of the block, check whether EFLAGS is live into a successor.
   for (auto I = BB->succ_begin(), E = BB->succ_end(); I != E; ++I) {
-    if ((*I)->isLiveIn(X86::EFLAGS))
+    if ((*I)->isLiveIn(X86::EFLAGS)) {
       return true;
+
+}
   }
 
   return false;
@@ -599,14 +663,18 @@ static void packCmovGroup(MachineInstr *First, MachineInstr *Last) {
 
   SmallVector<MachineInstr *, 2> DBGInstructions;
   for (auto I = First->getIterator(), E = Last->getIterator(); I != E; I++) {
-    if (I->isDebugInstr())
+    if (I->isDebugInstr()) {
       DBGInstructions.push_back(&*I);
+
+}
   }
 
   // Splice the debug instruction after the cmov group.
   MachineBasicBlock *MBB = First->getParent();
-  for (auto *MI : DBGInstructions)
+  for (auto *MI : DBGInstructions) {
     MBB->insertAfter(Last, MI->removeFromParent());
+
+}
 }
 
 void X86CmovConverterPass::convertCmovInstsToBranches(
@@ -660,8 +728,10 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
   // memory operand CMOVs are only included with a single condition code.
   if (llvm::any_of(Group, [&](MachineInstr *I) {
         return I->mayLoad() && X86::getCondFromCMov(*I) == CC;
-      }))
+      })) {
     std::swap(CC, OppCC);
+
+}
 
   MachineBasicBlock *MBB = MI.getParent();
   MachineFunction::iterator It = ++MBB->getIterator();
@@ -717,8 +787,10 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
       // Walk back through any intermediate cmovs referenced.
       while (true) {
         auto FRIt = FalseBBRegRewriteTable.find(FalseReg);
-        if (FRIt == FalseBBRegRewriteTable.end())
+        if (FRIt == FalseBBRegRewriteTable.end()) {
           break;
+
+}
         FalseReg = FRIt->second;
       }
       FalseBBRegRewriteTable[MI.getOperand(0).getReg()] = FalseReg;
@@ -771,8 +843,10 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
            "Last new instruction isn't the expected CMOV!");
     LLVM_DEBUG(dbgs() << "\tRewritten cmov: "; NewCMOV->dump());
     MBB->insert(MachineBasicBlock::iterator(MI), NewCMOV);
-    if (&*MIItBegin == &MI)
+    if (&*MIItBegin == &MI) {
       MIItBegin = MachineBasicBlock::iterator(NewCMOV);
+
+}
 
     // Sink whatever instructions were needed to produce the unfolded operand
     // into the false block.
@@ -781,11 +855,15 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
       FalseMBB->insert(FalseInsertionPoint, NewMI);
       // Re-map any operands that are from other cmovs to the inputs for this block.
       for (auto &MOp : NewMI->uses()) {
-        if (!MOp.isReg())
+        if (!MOp.isReg()) {
           continue;
+
+}
         auto It = FalseBBRegRewriteTable.find(MOp.getReg());
-        if (It == FalseBBRegRewriteTable.end())
+        if (It == FalseBBRegRewriteTable.end()) {
           continue;
+
+}
 
         MOp.setReg(It->second);
         // This might have been a kill when it referenced the cmov result, but
@@ -819,16 +897,22 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
     // If this CMOV we are processing is the opposite condition from the jump we
     // generated, then we have to swap the operands for the PHI that is going to
     // be generated.
-    if (X86::getCondFromCMov(*MIIt) == OppCC)
+    if (X86::getCondFromCMov(*MIIt) == OppCC) {
       std::swap(Op1Reg, Op2Reg);
 
+}
+
     auto Op1Itr = RegRewriteTable.find(Op1Reg);
-    if (Op1Itr != RegRewriteTable.end())
+    if (Op1Itr != RegRewriteTable.end()) {
       Op1Reg = Op1Itr->second.first;
 
+}
+
     auto Op2Itr = RegRewriteTable.find(Op2Reg);
-    if (Op2Itr != RegRewriteTable.end())
+    if (Op2Itr != RegRewriteTable.end()) {
       Op2Reg = Op2Itr->second.second;
+
+}
 
     //  SinkMBB:
     //   %Result = phi [ %FalseValue, FalseMBB ], [ %TrueValue, MBB ]

@@ -70,8 +70,10 @@ ConversionKind ClassifyFormatString(StringRef Fmt, const LangOptions &LO,
                               unsigned specifierLen) override {
       // If we just consume the argument without assignment, we don't care
       // about it having conversion errors.
-      if (!FS.consumesDataArgument())
+      if (!FS.consumesDataArgument()) {
         return true;
+
+}
 
       // Get the conversion specifier and use it to determine the conversion
       // kind.
@@ -198,8 +200,10 @@ void StrToNumCheck::check(const MatchFinder::MatchResult &Result) {
 
     // Given the index, see if the call expression argument at that index is
     // a string literal.
-    if (Call->getNumArgs() < Idx)
+    if (Call->getNumArgs() < Idx) {
       return;
+
+}
 
     if (const Expr *Arg = Call->getArg(Idx)->IgnoreParenImpCasts()) {
       if (const auto *SL = dyn_cast<StringLiteral>(Arg)) {
@@ -208,19 +212,25 @@ void StrToNumCheck::check(const MatchFinder::MatchResult &Result) {
     }
 
     // If we could not get the format string, bail out.
-    if (FmtStr.empty())
+    if (FmtStr.empty()) {
       return;
+
+}
 
     // Formatted input functions need further checking of the format string to
     // determine whether a problematic conversion may be happening.
     Conversion = ClassifyFormatString(FmtStr, getLangOpts(),
                                       Result.Context->getTargetInfo());
-    if (Conversion != ConversionKind::None)
+    if (Conversion != ConversionKind::None) {
       FuncDecl = FFD;
+
+}
   }
 
-  if (!FuncDecl)
+  if (!FuncDecl) {
     return;
+
+}
 
   diag(Call->getExprLoc(),
        "%0 used to convert a string to %1, but function will not report "

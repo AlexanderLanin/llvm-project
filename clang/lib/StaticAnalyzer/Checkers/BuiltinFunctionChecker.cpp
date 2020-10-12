@@ -34,8 +34,10 @@ bool BuiltinFunctionChecker::evalCall(const CallEvent &Call,
                                       CheckerContext &C) const {
   ProgramStateRef state = C.getState();
   const auto *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return false;
+
+}
 
   const LocationContext *LCtx = C.getLocationContext();
   const Expr *CE = Call.getOriginExpr();
@@ -47,8 +49,10 @@ bool BuiltinFunctionChecker::evalCall(const CallEvent &Call,
   case Builtin::BI__builtin_assume: {
     assert (Call.getNumArgs() > 0);
     SVal Arg = Call.getArgSVal(0);
-    if (Arg.isUndef())
+    if (Arg.isUndef()) {
       return true; // Return true to model purity.
+
+}
 
     state = state->assume(Arg.castAs<DefinedOrUnknownSVal>(), true);
     // FIXME: do we want to warn here? Not right now. The most reports might
@@ -87,8 +91,10 @@ bool BuiltinFunctionChecker::evalCall(const CallEvent &Call,
     // SVal of the argument directly. If we save the extent in bits, we
     // cannot represent values like symbol*8.
     auto Size = Call.getArgSVal(0);
-    if (Size.isUndef())
+    if (Size.isUndef()) {
       return true; // Return true to model purity.
+
+}
 
     SValBuilder& svalBuilder = C.getSValBuilder();
     DefinedOrUnknownSVal DynSize = getDynamicSize(state, R, svalBuilder);
@@ -121,8 +127,10 @@ bool BuiltinFunctionChecker::evalCall(const CallEvent &Call,
       // If we didn't manage to figure out if the value is constant or not,
       // it is safe to assume that it's not constant and unsafe to assume
       // that it's constant.
-      if (V.isUnknown())
+      if (V.isUnknown()) {
         V = SVB.makeIntVal(0, CE->getType());
+
+}
     }
 
     C.addTransition(state->BindExpr(CE, LCtx, V));

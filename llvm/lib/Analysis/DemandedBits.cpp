@@ -97,8 +97,10 @@ void DemandedBits::determineLiveOperandBits(
   // provided here.
   auto ComputeKnownBits =
       [&](unsigned BitWidth, const Value *V1, const Value *V2) {
-        if (KnownBitsComputed)
+        if (KnownBitsComputed) {
           return;
+
+}
         KnownBitsComputed = true;
 
         const DataLayout &DL = UserI->getModule()->getDataLayout();
@@ -115,7 +117,7 @@ void DemandedBits::determineLiveOperandBits(
   default: break;
   case Instruction::Call:
   case Instruction::Invoke:
-    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(UserI))
+    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(UserI)) {
       switch (II->getIntrinsicID()) {
       default: break;
       case Intrinsic::bswap:
@@ -154,23 +156,31 @@ void DemandedBits::determineLiveOperandBits(
         if (OperandNo == 2) {
           // Shift amount is modulo the bitwidth. For powers of two we have
           // SA % BW == SA & (BW - 1).
-          if (isPowerOf2_32(BitWidth))
+          if (isPowerOf2_32(BitWidth)) {
             AB = BitWidth - 1;
+
+}
         } else if (match(II->getOperand(2), m_APInt(SA))) {
           // Normalize to funnel shift left. APInt shifts of BitWidth are well-
           // defined, so no need to special-case zero shifts here.
           uint64_t ShiftAmt = SA->urem(BitWidth);
-          if (II->getIntrinsicID() == Intrinsic::fshr)
+          if (II->getIntrinsicID() == Intrinsic::fshr) {
             ShiftAmt = BitWidth - ShiftAmt;
 
-          if (OperandNo == 0)
+}
+
+          if (OperandNo == 0) {
             AB = AOut.lshr(ShiftAmt);
-          else if (OperandNo == 1)
+          } else if (OperandNo == 1) {
             AB = AOut.shl(BitWidth - ShiftAmt);
+
+}
         }
         break;
       }
       }
+
+}
     break;
   case Instruction::Add:
   case Instruction::Sub:
@@ -190,10 +200,12 @@ void DemandedBits::determineLiveOperandBits(
         // If the shift is nuw/nsw, then the high bits are not dead
         // (because we've promised that they *must* be zero).
         const ShlOperator *S = cast<ShlOperator>(UserI);
-        if (S->hasNoSignedWrap())
+        if (S->hasNoSignedWrap()) {
           AB |= APInt::getHighBitsSet(BitWidth, ShiftAmt+1);
-        else if (S->hasNoUnsignedWrap())
+        } else if (S->hasNoUnsignedWrap()) {
           AB |= APInt::getHighBitsSet(BitWidth, ShiftAmt);
+
+}
       }
     }
     break;
@@ -206,8 +218,10 @@ void DemandedBits::determineLiveOperandBits(
 
         // If the shift is exact, then the low bits are not dead
         // (they must be zero).
-        if (cast<LShrOperator>(UserI)->isExact())
+        if (cast<LShrOperator>(UserI)->isExact()) {
           AB |= APInt::getLowBitsSet(BitWidth, ShiftAmt);
+
+}
       }
     }
     break;
@@ -221,13 +235,17 @@ void DemandedBits::determineLiveOperandBits(
         // high-order bits of the result, if we need any of those
         // bits, then we must keep the highest input bit.
         if ((AOut & APInt::getHighBitsSet(BitWidth, ShiftAmt))
-            .getBoolValue())
+            .getBoolValue()) {
           AB.setSignBit();
+
+}
 
         // If the shift is exact, then the low bits are not dead
         // (they must be zero).
-        if (cast<AShrOperator>(UserI)->isExact())
+        if (cast<AShrOperator>(UserI)->isExact()) {
           AB |= APInt::getLowBitsSet(BitWidth, ShiftAmt);
+
+}
       }
     }
     break;
@@ -239,10 +257,12 @@ void DemandedBits::determineLiveOperandBits(
     // case they can't both be dead, so just mark the LHS bits as
     // dead).
     ComputeKnownBits(BitWidth, UserI->getOperand(0), UserI->getOperand(1));
-    if (OperandNo == 0)
+    if (OperandNo == 0) {
       AB &= ~Known2.Zero;
-    else
+    } else {
       AB &= ~(Known.Zero & ~Known2.Zero);
+
+}
     break;
   case Instruction::Or:
     AB = AOut;
@@ -252,10 +272,12 @@ void DemandedBits::determineLiveOperandBits(
     // case they can't both be dead, so just mark the LHS bits as
     // dead).
     ComputeKnownBits(BitWidth, UserI->getOperand(0), UserI->getOperand(1));
-    if (OperandNo == 0)
+    if (OperandNo == 0) {
       AB &= ~Known2.One;
-    else
+    } else {
       AB &= ~(Known.One & ~Known2.One);
+
+}
     break;
   case Instruction::Xor:
   case Instruction::PHI:
@@ -274,21 +296,29 @@ void DemandedBits::determineLiveOperandBits(
     // bits, then we must keep the highest input bit.
     if ((AOut & APInt::getHighBitsSet(AOut.getBitWidth(),
                                       AOut.getBitWidth() - BitWidth))
-        .getBoolValue())
+        .getBoolValue()) {
       AB.setSignBit();
+
+}
     break;
   case Instruction::Select:
-    if (OperandNo != 0)
+    if (OperandNo != 0) {
       AB = AOut;
+
+}
     break;
   case Instruction::ExtractElement:
-    if (OperandNo == 0)
+    if (OperandNo == 0) {
       AB = AOut;
+
+}
     break;
   case Instruction::InsertElement:
   case Instruction::ShuffleVector:
-    if (OperandNo == 0 || OperandNo == 1)
+    if (OperandNo == 0 || OperandNo == 1) {
       AB = AOut;
+
+}
     break;
   }
 }
@@ -305,9 +335,11 @@ void DemandedBitsWrapperPass::releaseMemory() {
 }
 
 void DemandedBits::performAnalysis() {
-  if (Analyzed)
+  if (Analyzed) {
     // Analysis already completed for this function.
     return;
+
+}
   Analyzed = true;
 
   Visited.clear();
@@ -318,8 +350,10 @@ void DemandedBits::performAnalysis() {
 
   // Collect the set of "root" instructions that are known live.
   for (Instruction &I : instructions(F)) {
-    if (!isAlwaysLive(&I))
+    if (!isAlwaysLive(&I)) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "DemandedBits: Root: " << I << "\n");
     // For integer-valued instructions, set up an initial empty set of alive
@@ -328,8 +362,10 @@ void DemandedBits::performAnalysis() {
     // all bits as live).
     Type *T = I.getType();
     if (T->isIntOrIntVectorTy()) {
-      if (AliveBits.try_emplace(&I, T->getScalarSizeInBits(), 0).second)
+      if (AliveBits.try_emplace(&I, T->getScalarSizeInBits(), 0).second) {
         Worklist.insert(&I);
+
+}
 
       continue;
     }
@@ -338,10 +374,12 @@ void DemandedBits::performAnalysis() {
     for (Use &OI : I.operands()) {
       if (Instruction *J = dyn_cast<Instruction>(OI)) {
         Type *T = J->getType();
-        if (T->isIntOrIntVectorTy())
+        if (T->isIntOrIntVectorTy()) {
           AliveBits[J] = APInt::getAllOnesValue(T->getScalarSizeInBits());
-        else
+        } else {
           Visited.insert(J);
+
+}
         Worklist.insert(J);
       }
     }
@@ -378,8 +416,10 @@ void DemandedBits::performAnalysis() {
       // We also want to detect dead uses of arguments, but will only store
       // demanded bits for instructions.
       Instruction *I = dyn_cast<Instruction>(OI);
-      if (!I && !isa<Argument>(OI))
+      if (!I && !isa<Argument>(OI)) {
         continue;
+
+}
 
       Type *T = OI->getType();
       if (T->isIntOrIntVectorTy()) {
@@ -394,10 +434,12 @@ void DemandedBits::performAnalysis() {
                                    Known, Known2, KnownBitsComputed);
 
           // Keep track of uses which have no demanded bits.
-          if (AB.isNullValue())
+          if (AB.isNullValue()) {
             DeadUses.insert(&OI);
-          else
+          } else {
             DeadUses.erase(&OI);
+
+}
         }
 
         if (I) {
@@ -421,8 +463,10 @@ APInt DemandedBits::getDemandedBits(Instruction *I) {
   performAnalysis();
 
   auto Found = AliveBits.find(I);
-  if (Found != AliveBits.end())
+  if (Found != AliveBits.end()) {
     return Found->second;
+
+}
 
   const DataLayout &DL = I->getModule()->getDataLayout();
   return APInt::getAllOnesValue(
@@ -438,24 +482,32 @@ bool DemandedBits::isInstructionDead(Instruction *I) {
 
 bool DemandedBits::isUseDead(Use *U) {
   // We only track integer uses, everything else is assumed live.
-  if (!(*U)->getType()->isIntOrIntVectorTy())
+  if (!(*U)->getType()->isIntOrIntVectorTy()) {
     return false;
+
+}
 
   // Uses by always-live instructions are never dead.
   Instruction *UserI = cast<Instruction>(U->getUser());
-  if (isAlwaysLive(UserI))
+  if (isAlwaysLive(UserI)) {
     return false;
 
+}
+
   performAnalysis();
-  if (DeadUses.count(U))
+  if (DeadUses.count(U)) {
     return true;
+
+}
 
   // If no output bits are demanded, no input bits are demanded and the use
   // is dead. These uses might not be explicitly present in the DeadUses map.
   if (UserI->getType()->isIntOrIntVectorTy()) {
     auto Found = AliveBits.find(UserI);
-    if (Found != AliveBits.end() && Found->second.isNullValue())
+    if (Found != AliveBits.end() && Found->second.isNullValue()) {
       return true;
+
+}
   }
 
   return false;

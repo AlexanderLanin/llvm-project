@@ -61,8 +61,10 @@ static SlabTuple indexSymbols(ASTContext &AST, std::shared_ptr<Preprocessor> PP,
 
   SymbolCollector Collector(std::move(CollectorOpts));
   Collector.setPreprocessor(PP);
-  if (MacroRefsToIndex)
+  if (MacroRefsToIndex) {
     Collector.handleMacros(*MacroRefsToIndex);
+
+}
   index::indexTopLevelDecls(AST, *PP, DeclsToIndex, Collector, IndexOpts);
 
   const auto &SM = AST.getSourceManager();
@@ -108,10 +110,12 @@ void FileSymbols::update(PathRef Path, std::unique_ptr<SymbolSlab> Symbols,
                          std::unique_ptr<RelationSlab> Relations,
                          bool CountReferences) {
   std::lock_guard<std::mutex> Lock(Mutex);
-  if (!Symbols)
+  if (!Symbols) {
     FileToSymbols.erase(Path);
-  else
+  } else {
     FileToSymbols[Path] = std::move(Symbols);
+
+}
   if (!Refs) {
     FileToRefs.erase(Path);
   } else {
@@ -120,10 +124,12 @@ void FileSymbols::update(PathRef Path, std::unique_ptr<SymbolSlab> Symbols,
     Item.Slab = std::move(Refs);
     FileToRefs[Path] = std::move(Item);
   }
-  if (!Relations)
+  if (!Relations) {
     FileToRelations.erase(Path);
-  else
+  } else {
     FileToRelations[Path] = std::move(Relations);
+
+}
 }
 
 std::unique_ptr<SymbolIndex>
@@ -134,15 +140,21 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle) {
   std::vector<RefSlab *> MainFileRefs;
   {
     std::lock_guard<std::mutex> Lock(Mutex);
-    for (const auto &FileAndSymbols : FileToSymbols)
+    for (const auto &FileAndSymbols : FileToSymbols) {
       SymbolSlabs.push_back(FileAndSymbols.second);
+
+}
     for (const auto &FileAndRefs : FileToRefs) {
       RefSlabs.push_back(FileAndRefs.second.Slab);
-      if (FileAndRefs.second.CountReferences)
+      if (FileAndRefs.second.CountReferences) {
         MainFileRefs.push_back(RefSlabs.back().get());
+
+}
     }
-    for (const auto &FileAndRelations : FileToRelations)
+    for (const auto &FileAndRelations : FileToRelations) {
       RelationSlabs.push_back(FileAndRelations.second);
+
+}
   }
   std::vector<const Symbol *> AllSymbols;
   std::vector<Symbol> SymsStorage;
@@ -154,18 +166,24 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle) {
         assert(Sym.References == 0 &&
                "Symbol with non-zero references sent to FileSymbols");
         auto I = Merged.try_emplace(Sym.ID, Sym);
-        if (!I.second)
+        if (!I.second) {
           I.first->second = mergeSymbol(I.first->second, Sym);
+
+}
       }
     }
-    for (const RefSlab *Refs : MainFileRefs)
+    for (const RefSlab *Refs : MainFileRefs) {
       for (const auto &Sym : *Refs) {
         auto It = Merged.find(Sym.first);
         // This might happen while background-index is still running.
-        if (It == Merged.end())
+        if (It == Merged.end()) {
           continue;
+
+}
         It->getSecond().References += Sym.second.size();
       }
+
+}
     SymsStorage.reserve(Merged.size());
     for (auto &Sym : Merged) {
       SymsStorage.push_back(std::move(Sym.second));
@@ -175,13 +193,17 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle) {
   }
   case DuplicateHandling::PickOne: {
     llvm::DenseSet<SymbolID> AddedSymbols;
-    for (const auto &Slab : SymbolSlabs)
+    for (const auto &Slab : SymbolSlabs) {
       for (const auto &Sym : *Slab) {
         assert(Sym.References == 0 &&
                "Symbol with non-zero references sent to FileSymbols");
-        if (AddedSymbols.insert(Sym.ID).second)
+        if (AddedSymbols.insert(Sym.ID).second) {
           AllSymbols.push_back(&Sym);
+
+}
       }
+
+}
     break;
   }
   }
@@ -191,11 +213,13 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle) {
   {
     llvm::DenseMap<SymbolID, llvm::SmallVector<Ref, 4>> MergedRefs;
     size_t Count = 0;
-    for (const auto &RefSlab : RefSlabs)
+    for (const auto &RefSlab : RefSlabs) {
       for (const auto &Sym : *RefSlab) {
         MergedRefs[Sym.first].append(Sym.second.begin(), Sym.second.end());
         Count += Sym.second.size();
       }
+
+}
     RefsStorage.reserve(Count);
     AllRefs.reserve(MergedRefs.size());
     for (auto &Sym : MergedRefs) {
@@ -212,18 +236,26 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle) {
 
   std::vector<Relation> AllRelations;
   for (const auto &RelationSlab : RelationSlabs) {
-    for (const auto &R : *RelationSlab)
+    for (const auto &R : *RelationSlab) {
       AllRelations.push_back(R);
+
+}
   }
 
   size_t StorageSize =
       RefsStorage.size() * sizeof(Ref) + SymsStorage.size() * sizeof(Symbol);
-  for (const auto &Slab : SymbolSlabs)
+  for (const auto &Slab : SymbolSlabs) {
     StorageSize += Slab->bytes();
-  for (const auto &RefSlab : RefSlabs)
+
+}
+  for (const auto &RefSlab : RefSlabs) {
     StorageSize += RefSlab->bytes();
-  for (const auto &RelationSlab : RelationSlabs)
+
+}
+  for (const auto &RelationSlab : RelationSlabs) {
     StorageSize += RelationSlab->bytes();
+
+}
 
   // Index must keep the slabs and contiguous ranges alive.
   switch (Type) {

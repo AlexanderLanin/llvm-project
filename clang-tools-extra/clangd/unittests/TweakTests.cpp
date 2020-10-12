@@ -58,8 +58,10 @@ TEST(FileEdits, AbsolutePath) {
   llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> MemFS(
       new llvm::vfs::InMemoryFileSystem);
   MemFS->setCurrentWorkingDirectory(testRoot());
-  for (auto Path : RelPaths)
+  for (auto Path : RelPaths) {
     MemFS->addFile(Path, 0, llvm::MemoryBuffer::getMemBuffer("", Path));
+
+}
   FileManager FM(FileSystemOptions(), MemFS);
   DiagnosticsEngine DE(new DiagnosticIDs, new DiagnosticOptions);
   SourceManager SM(DE, FM);
@@ -952,8 +954,10 @@ TEST_F(RemoveUsingNamespaceTest, All) {
         std::vector V;
       }
     )cpp"}};
-  for (auto C : Cases)
+  for (auto C : Cases) {
     EXPECT_EQ(C.second, apply(C.first)) << C.first;
+
+}
 }
 
 TWEAK_TEST(DefineInline);
@@ -1447,8 +1451,10 @@ TEST_F(DefineInlineTest, TransformFunctionTempls) {
   // Template body is not parsed until instantiation time on windows, which
   // results in arbitrary failures as function body becomes NULL.
   ExtraArgs.push_back("-fno-delayed-template-parsing");
-  for (const auto &Case : Cases)
+  for (const auto &Case : Cases) {
     EXPECT_EQ(apply(Case.first), Case.second) << Case.first;
+
+}
 }
 
 TEST_F(DefineInlineTest, TransformTypeLocs) {
@@ -1591,8 +1597,10 @@ est);
         )cpp"},
   };
   ExtraArgs.push_back("-fno-delayed-template-parsing");
-  for (const auto &Case : Cases)
+  for (const auto &Case : Cases) {
     EXPECT_EQ(apply(Case.first), Case.second) << Case.first;
+
+}
 }
 
 TEST_F(DefineInlineTest, TransformTemplParamNames) {
@@ -1663,8 +1671,10 @@ TEST_F(DefineInlineTest, TokensBeforeSemicolon) {
           void fo^o() { return ; })cpp",
        "fail: Couldn't find semicolon for target declaration."},
   };
-  for (const auto &Case : Cases)
+  for (const auto &Case : Cases) {
     EXPECT_EQ(apply(Case.first), Case.second) << Case.first;
+
+}
 }
 
 TEST_F(DefineInlineTest, HandleMacros) {
@@ -1721,8 +1731,10 @@ TEST_F(DefineInlineTest, HandleMacros) {
           void TARGET(){ return; }
           )cpp"},
   };
-  for (const auto &Case : Cases)
+  for (const auto &Case : Cases) {
     EXPECT_EQ(apply(Case.first), Case.second) << Case.first;
+
+}
 }
 
 TEST_F(DefineInlineTest, DropCommonNameSpecifiers) {
@@ -1815,8 +1827,10 @@ TEST_F(DefineInlineTest, DropCommonNameSpecifiers) {
         using namespace ns1::qq;
         )cpp"},
   };
-  for (const auto &Case : Cases)
+  for (const auto &Case : Cases) {
     EXPECT_EQ(apply(Case.Test), Case.Expected) << Case.Test;
+
+}
 }
 
 TEST_F(DefineInlineTest, QualifyWithUsingDirectives) {

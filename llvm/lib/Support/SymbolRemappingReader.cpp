@@ -36,15 +36,19 @@ Error SymbolRemappingReader::read(MemoryBuffer &B) {
     StringRef Line = *LineIt;
     Line = Line.ltrim(' ');
     // line_iterator only detects comments starting in column 1.
-    if (Line.startswith("#") || Line.empty())
+    if (Line.startswith("#") || Line.empty()) {
       continue;
+
+}
 
     SmallVector<StringRef, 4> Parts;
     Line.split(Parts, ' ', /*MaxSplits*/-1, /*KeepEmpty*/false);
 
-    if (Parts.size() != 3)
+    if (Parts.size() != 3) {
       return ReportError("Expected 'kind mangled_name mangled_name', "
                          "found '" + Line + "'");
+
+}
 
     using FK = ItaniumManglingCanonicalizer::FragmentKind;
     Optional<FK> FragmentKind = StringSwitch<Optional<FK>>(Parts[0])
@@ -52,9 +56,11 @@ Error SymbolRemappingReader::read(MemoryBuffer &B) {
                                     .Case("type", FK::Type)
                                     .Case("encoding", FK::Encoding)
                                     .Default(None);
-    if (!FragmentKind)
+    if (!FragmentKind) {
       return ReportError("Invalid kind, expected 'name', 'type', or 'encoding',"
                          " found '" + Parts[0] + "'");
+
+}
 
     using EE = ItaniumManglingCanonicalizer::EquivalenceError;
     switch (Canonicalizer.addEquivalence(*FragmentKind, Parts[1], Parts[2])) {

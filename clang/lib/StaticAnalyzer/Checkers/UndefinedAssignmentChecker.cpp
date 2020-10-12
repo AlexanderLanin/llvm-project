@@ -34,26 +34,36 @@ public:
 void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
                                            const Stmt *StoreE,
                                            CheckerContext &C) const {
-  if (!val.isUndef())
+  if (!val.isUndef()) {
     return;
+
+}
 
   // Do not report assignments of uninitialized values inside swap functions.
   // This should allow to swap partially uninitialized structs
   // (radar://14129997)
   if (const FunctionDecl *EnclosingFunctionDecl =
-      dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()))
-    if (C.getCalleeName(EnclosingFunctionDecl) == "swap")
+      dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl())) {
+    if (C.getCalleeName(EnclosingFunctionDecl) == "swap") {
       return;
+
+}
+
+}
 
   ExplodedNode *N = C.generateErrorNode();
 
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   static const char *const DefaultMsg =
       "Assigned value is garbage or undefined";
-  if (!BT)
+  if (!BT) {
     BT.reset(new BuiltinBug(this, DefaultMsg));
+
+}
 
   // Generate a report for this bug.
   llvm::SmallString<128> Str;
@@ -105,8 +115,10 @@ void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
     break;
   }
 
-  if (OS.str().empty())
+  if (OS.str().empty()) {
     OS << DefaultMsg;
+
+}
 
   auto R = std::make_unique<PathSensitiveBugReport>(*BT, OS.str(), N);
   if (ex) {

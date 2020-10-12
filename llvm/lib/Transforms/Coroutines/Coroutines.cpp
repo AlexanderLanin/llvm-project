@@ -155,8 +155,10 @@ bool coro::declaresIntrinsics(const Module &M,
                               const std::initializer_list<StringRef> List) {
   for (StringRef Name : List) {
     assert(isCoroutineIntrinsicName(Name) && "not a coroutine intrinsic");
-    if (M.getNamedValue(Name))
+    if (M.getNamedValue(Name)) {
       return true;
+
+}
   }
 
   return false;
@@ -166,12 +168,18 @@ bool coro::declaresIntrinsics(const Module &M,
 // if Elide is true and with its frame parameter otherwise.
 void coro::replaceCoroFree(CoroIdInst *CoroId, bool Elide) {
   SmallVector<CoroFreeInst *, 4> CoroFrees;
-  for (User *U : CoroId->users())
-    if (auto CF = dyn_cast<CoroFreeInst>(U))
+  for (User *U : CoroId->users()) {
+    if (auto CF = dyn_cast<CoroFreeInst>(U)) {
       CoroFrees.push_back(CF);
 
-  if (CoroFrees.empty())
+}
+
+}
+
+  if (CoroFrees.empty()) {
     return;
+
+}
 
   Value *Replacement =
       Elide ? ConstantPointerNull::get(Type::getInt8PtrTy(CoroId->getContext()))
@@ -190,17 +198,21 @@ static void buildCGN(CallGraph &CG, CallGraphNode *Node) {
   Function *F = Node->getFunction();
 
   // Look for calls by this function.
-  for (Instruction &I : instructions(F))
+  for (Instruction &I : instructions(F)) {
     if (auto *Call = dyn_cast<CallBase>(&I)) {
       const Function *Callee = Call->getCalledFunction();
-      if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID()))
+      if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID())) {
         // Indirect calls of intrinsics are not allowed so no need to check.
         // We can be more precise here by using TargetArg returned by
         // Intrinsic::isLeaf.
         Node->addCalledFunction(Call, CG.getCallsExternalNode());
-      else if (!Callee->isIntrinsic())
+      } else if (!Callee->isIntrinsic()) {
         Node->addCalledFunction(Call, CG.getOrInsertFunction(Callee));
+
+}
     }
+
+}
 }
 
 // Rebuild CGN after we extracted parts of the code from ParentFunc into
@@ -267,8 +279,10 @@ void coro::Shape::buildFrom(Function &F) {
       case Intrinsic::coro_save:
         // After optimizations, coro_suspends using this coro_save might have
         // been removed, remember orphaned coro_saves to remove them later.
-        if (II->use_empty())
+        if (II->use_empty()) {
           UnusedCoroSaves.push_back(cast<CoroSaveInst>(II));
+
+}
         break;
       case Intrinsic::coro_suspend_retcon: {
         auto Suspend = cast<CoroSuspendRetconInst>(II);
@@ -279,9 +293,11 @@ void coro::Shape::buildFrom(Function &F) {
         auto Suspend = cast<CoroSuspendInst>(II);
         CoroSuspends.push_back(Suspend);
         if (Suspend->isFinal()) {
-          if (HasFinalSuspend)
+          if (HasFinalSuspend) {
             report_fatal_error(
               "Only one suspend point can be marked as final");
+
+}
           HasFinalSuspend = true;
           FinalSuspendIndex = CoroSuspends.size() - 1;
         }
@@ -292,12 +308,16 @@ void coro::Shape::buildFrom(Function &F) {
 
         // Ignore coro id's that aren't pre-split.
         auto Id = dyn_cast<CoroIdInst>(CB->getId());
-        if (Id && !Id->getInfo().isPreSplit())
+        if (Id && !Id->getInfo().isPreSplit()) {
           break;
 
-        if (CoroBegin)
+}
+
+        if (CoroBegin) {
           report_fatal_error(
                 "coroutine should have exactly one defining @llvm.coro.begin");
+
+}
         CB->addAttribute(AttributeList::ReturnIndex, Attribute::NonNull);
         CB->addAttribute(AttributeList::ReturnIndex, Attribute::NoAlias);
         CB->removeAttribute(AttributeList::FunctionIndex,
@@ -311,9 +331,11 @@ void coro::Shape::buildFrom(Function &F) {
           // Make sure that the fallthrough coro.end is the first element in the
           // CoroEnds vector.
           if (CoroEnds.size() > 1) {
-            if (CoroEnds.front()->isFallthrough())
+            if (CoroEnds.front()->isFallthrough()) {
               report_fatal_error(
                   "Only one coro.end can be marked as fallthrough");
+
+}
             std::swap(CoroEnds.front(), CoroEnds.back());
           }
         }
@@ -337,13 +359,17 @@ void coro::Shape::buildFrom(Function &F) {
     for (AnyCoroSuspendInst *CS : CoroSuspends) {
       CS->replaceAllUsesWith(UndefValue::get(CS->getType()));
       CS->eraseFromParent();
-      if (auto *CoroSave = CS->getCoroSave())
+      if (auto *CoroSave = CS->getCoroSave()) {
         CoroSave->eraseFromParent();
+
+}
     }
 
     // Replace all coro.ends with unreachable instruction.
-    for (CoroEndInst *CE : CoroEnds)
+    for (CoroEndInst *CE : CoroEnds) {
       changeToUnreachable(CE, /*UseLLVMTrap=*/false);
+
+}
 
     return;
   }
@@ -367,8 +393,10 @@ void coro::Shape::buildFrom(Function &F) {
         report_fatal_error("coro.id must be paired with coro.suspend");
       }
 
-      if (!Suspend->getCoroSave())
+      if (!Suspend->getCoroSave()) {
         createCoroSave(CoroBegin, Suspend);
+
+}
     }
     break;
   }
@@ -478,12 +506,16 @@ void coro::Shape::buildFrom(Function &F) {
   // Move final suspend to be the last element in the CoroSuspends vector.
   if (ABI == coro::ABI::Switch &&
       SwitchLowering.HasFinalSuspend &&
-      FinalSuspendIndex != CoroSuspends.size() - 1)
+      FinalSuspendIndex != CoroSuspends.size() - 1) {
     std::swap(CoroSuspends[FinalSuspendIndex], CoroSuspends.back());
 
+}
+
   // Remove orphaned coro.saves.
-  for (CoroSaveInst *CoroSave : UnusedCoroSaves)
+  for (CoroSaveInst *CoroSave : UnusedCoroSaves) {
     CoroSave->eraseFromParent();
+
+}
 }
 
 static void propagateCallAttrsFromCallee(CallInst *Call, Function *Callee) {
@@ -492,8 +524,10 @@ static void propagateCallAttrsFromCallee(CallInst *Call, Function *Callee) {
 }
 
 static void addCallToCallGraph(CallGraph *CG, CallInst *Call, Function *Callee){
-  if (CG)
+  if (CG) {
     (*CG)[Call->getFunction()]->addCalledFunction(Call, (*CG)[Callee]);
+
+}
 }
 
 Value *coro::Shape::emitAlloc(IRBuilder<> &Builder, Value *Size,
@@ -554,8 +588,10 @@ static void fail(const Instruction *I, const char *Reason, Value *V) {
 /// llvm.coro.id.retcon.* intrinsics.
 static void checkWFRetconPrototype(const AnyCoroIdRetconInst *I, Value *V) {
   auto F = dyn_cast<Function>(V->stripPointerCasts());
-  if (!F)
+  if (!F) {
     fail(I, "llvm.coro.id.retcon.* prototype not a Function", V);
+
+}
 
   auto FT = F->getFunctionType();
 
@@ -570,51 +606,69 @@ static void checkWFRetconPrototype(const AnyCoroIdRetconInst *I, Value *V) {
     } else {
       ResultOkay = false;
     }
-    if (!ResultOkay)
+    if (!ResultOkay) {
       fail(I, "llvm.coro.id.retcon prototype must return pointer as first "
               "result", F);
 
+}
+
     if (FT->getReturnType() !=
-          I->getFunction()->getFunctionType()->getReturnType())
+          I->getFunction()->getFunctionType()->getReturnType()) {
       fail(I, "llvm.coro.id.retcon prototype return type must be same as"
               "current function return type", F);
+
+}
   } else {
     // No meaningful validation to do here for llvm.coro.id.unique.once.
   }
 
-  if (FT->getNumParams() == 0 || !FT->getParamType(0)->isPointerTy())
+  if (FT->getNumParams() == 0 || !FT->getParamType(0)->isPointerTy()) {
     fail(I, "llvm.coro.id.retcon.* prototype must take pointer as "
             "its first parameter", F);
+
+}
 }
 
 /// Check that the given value is a well-formed allocator.
 static void checkWFAlloc(const Instruction *I, Value *V) {
   auto F = dyn_cast<Function>(V->stripPointerCasts());
-  if (!F)
+  if (!F) {
     fail(I, "llvm.coro.* allocator not a Function", V);
 
+}
+
   auto FT = F->getFunctionType();
-  if (!FT->getReturnType()->isPointerTy())
+  if (!FT->getReturnType()->isPointerTy()) {
     fail(I, "llvm.coro.* allocator must return a pointer", F);
 
+}
+
   if (FT->getNumParams() != 1 ||
-      !FT->getParamType(0)->isIntegerTy())
+      !FT->getParamType(0)->isIntegerTy()) {
     fail(I, "llvm.coro.* allocator must take integer as only param", F);
+
+}
 }
 
 /// Check that the given value is a well-formed deallocator.
 static void checkWFDealloc(const Instruction *I, Value *V) {
   auto F = dyn_cast<Function>(V->stripPointerCasts());
-  if (!F)
+  if (!F) {
     fail(I, "llvm.coro.* deallocator not a Function", V);
 
+}
+
   auto FT = F->getFunctionType();
-  if (!FT->getReturnType()->isVoidTy())
+  if (!FT->getReturnType()->isVoidTy()) {
     fail(I, "llvm.coro.* deallocator must return void", F);
 
+}
+
   if (FT->getNumParams() != 1 ||
-      !FT->getParamType(0)->isPointerTy())
+      !FT->getParamType(0)->isPointerTy()) {
     fail(I, "llvm.coro.* deallocator must take pointer as only param", F);
+
+}
 }
 
 static void checkConstantInt(const Instruction *I, Value *V,

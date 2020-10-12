@@ -77,11 +77,11 @@ sparc::FloatABI sparc::getSparcFloatABI(const Driver &D,
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_msoft_float,
                                options::OPT_mhard_float,
                                options::OPT_mfloat_abi_EQ)) {
-    if (A->getOption().matches(clang::driver::options::OPT_msoft_float))
+    if (A->getOption().matches(clang::driver::options::OPT_msoft_float)) {
       ABI = sparc::FloatABI::Soft;
-    else if (A->getOption().matches(options::OPT_mhard_float))
+    } else if (A->getOption().matches(options::OPT_mhard_float)) {
       ABI = sparc::FloatABI::Hard;
-    else {
+    } else {
       ABI = llvm::StringSwitch<sparc::FloatABI>(A->getValue())
                 .Case("soft", sparc::FloatABI::Soft)
                 .Case("hard", sparc::FloatABI::Hard)
@@ -109,6 +109,8 @@ sparc::FloatABI sparc::getSparcFloatABI(const Driver &D,
 void sparc::getSparcTargetFeatures(const Driver &D, const ArgList &Args,
                                    std::vector<StringRef> &Features) {
   sparc::FloatABI FloatABI = sparc::getSparcFloatABI(D, Args);
-  if (FloatABI == sparc::FloatABI::Soft)
+  if (FloatABI == sparc::FloatABI::Soft) {
     Features.push_back("+soft-float");
+
+}
 }

@@ -63,8 +63,10 @@ public:
   getExplictlySpecifiedRegisterClasses(
       CodeGenRegBank &RegisterClassHierarchy) const {
     std::vector<const CodeGenRegisterClass *> RCs;
-    for (const auto &RCDef : getDef().getValueAsListOfDefs("RegisterClasses"))
+    for (const auto &RCDef : getDef().getValueAsListOfDefs("RegisterClasses")) {
       RCs.push_back(RegisterClassHierarchy.getRegClass(RCDef));
+
+}
     return RCs;
   }
 
@@ -73,8 +75,10 @@ public:
     if (std::find_if(RCs.begin(), RCs.end(),
                      [&RC](const CodeGenRegisterClass *X) {
                        return X == RC;
-                     }) != RCs.end())
+                     }) != RCs.end()) {
       return;
+
+}
 
     // FIXME? We really want the register size rather than the spill size
     //        since the spill size may be bigger on some targets with
@@ -82,11 +86,13 @@ public:
     //        register size anywhere (we could sum the sizes of the subregisters
     //        but there may be additional bits too) and we can't derive it from
     //        the VT's reliably due to Untyped.
-    if (RCWithLargestRegsSize == nullptr)
+    if (RCWithLargestRegsSize == nullptr) {
       RCWithLargestRegsSize = RC;
-    else if (RCWithLargestRegsSize->RSI.get(DefaultMode).SpillSize <
-             RC->RSI.get(DefaultMode).SpillSize)
+    } else if (RCWithLargestRegsSize->RSI.get(DefaultMode).SpillSize <
+             RC->RSI.get(DefaultMode).SpillSize) {
       RCWithLargestRegsSize = RC;
+
+}
     assert(RCWithLargestRegsSize && "RC was nullptr?");
 
     RCs.emplace_back(RC);
@@ -132,8 +138,10 @@ void RegisterBankEmitter::emitHeader(raw_ostream &OS,
   OS << "namespace llvm {\n"
      << "namespace " << TargetName << " {\n"
      << "enum {\n";
-  for (const auto &Bank : Banks)
+  for (const auto &Bank : Banks) {
     OS << "  " << Bank.getEnumeratorName() << ",\n";
+
+}
   OS << "  NumRegisterBanks,\n"
      << "};\n"
      << "} // end namespace " << TargetName << "\n"
@@ -173,8 +181,10 @@ static void visitRegisterBankClasses(
     SmallPtrSetImpl<const CodeGenRegisterClass *> &VisitedRCs) {
 
   // Make sure we only visit each class once to avoid infinite loops.
-  if (VisitedRCs.count(RC))
+  if (VisitedRCs.count(RC)) {
     return;
+
+}
   VisitedRCs.insert(RC);
 
   // Visit each explicitly named class.
@@ -185,10 +195,12 @@ static void visitRegisterBankClasses(
         (Twine(Kind) + " (" + PossibleSubclass.getName() + ")").str();
 
     // Visit each subclass of an explicitly named class.
-    if (RC != &PossibleSubclass && RC->hasSubClass(&PossibleSubclass))
+    if (RC != &PossibleSubclass && RC->hasSubClass(&PossibleSubclass)) {
       visitRegisterBankClasses(RegisterClassHierarchy, &PossibleSubclass,
                                TmpKind + " " + RC->getName() + " subclass",
                                VisitFn, VisitedRCs);
+
+}
 
     // Visit each class that contains only subregisters of RC with a common
     // subregister-index.
@@ -219,8 +231,10 @@ void RegisterBankEmitter::emitBaseClassImplementation(
     std::vector<std::vector<const CodeGenRegisterClass *>> RCsGroupedByWord(
         (RegisterClassHierarchy.getRegClasses().size() + 31) / 32);
 
-    for (const auto &RC : Bank.register_classes())
+    for (const auto &RC : Bank.register_classes()) {
       RCsGroupedByWord[RC->EnumValue / 32].push_back(RC);
+
+}
 
     OS << "const uint32_t " << Bank.getCoverageArrayName() << "[] = {\n";
     unsigned LowestIdxInWord = 0;
@@ -256,8 +270,10 @@ void RegisterBankEmitter::emitBaseClassImplementation(
 
   OS << "RegisterBank *" << TargetName
      << "GenRegisterBankInfo::RegBanks[] = {\n";
-  for (const auto &Bank : Banks)
+  for (const auto &Bank : Banks) {
     OS << "    &" << TargetName << "::" << Bank.getInstanceVarName() << ",\n";
+
+}
   OS << "};\n\n";
 
   OS << TargetName << "GenRegisterBankInfo::" << TargetName
@@ -276,8 +292,10 @@ void RegisterBankEmitter::emitBaseClassImplementation(
 
 void RegisterBankEmitter::run(raw_ostream &OS) {
   std::vector<Record*> Targets = Records.getAllDerivedDefinitions("Target");
-  if (Targets.size() != 1)
+  if (Targets.size() != 1) {
     PrintFatalError("ERROR: Too many or too few subclasses of Target defined!");
+
+}
   StringRef TargetName = Targets[0]->getName();
 
   std::vector<RegisterBank> Banks;

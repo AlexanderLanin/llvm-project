@@ -32,9 +32,13 @@ FindFirstNonCommonLetter(const std::vector<const
     // Check to see if letter i is the same across the set.
     char Letter = Matches[0]->first[i];
 
-    for (unsigned str = 0, e = Matches.size(); str != e; ++str)
-      if (Matches[str]->first[i] != Letter)
+    for (unsigned str = 0, e = Matches.size(); str != e; ++str) {
+      if (Matches[str]->first[i] != Letter) {
         return i;
+
+}
+
+}
   }
 
   return Matches[0]->first.size();
@@ -54,8 +58,10 @@ bool StringMatcher::EmitStringMatcherForChar(
   // If we have verified that the entire string matches, we're done: output the
   // matching code.
   if (CharNo == Matches[0]->first.size()) {
-    if (Matches.size() > 1 && !IgnoreDuplicates)
+    if (Matches.size() > 1 && !IgnoreDuplicates) {
       report_fatal_error("Had duplicate keys to match on");
+
+}
 
     // If the to-execute code has \n's in it, indent each subsequent line.
     StringRef Code = Matches[0]->second;
@@ -75,8 +81,10 @@ bool StringMatcher::EmitStringMatcherForChar(
   // Bucket the matches by the character we are comparing.
   std::map<char, std::vector<const StringPair*>> MatchesByLetter;
 
-  for (unsigned i = 0, e = Matches.size(); i != e; ++i)
+  for (unsigned i = 0, e = Matches.size(); i != e; ++i) {
     MatchesByLetter[Matches[i]->first[CharNo]].push_back(Matches[i]);
+
+}
 
 
   // If we have exactly one bucket to match, see how many characters are common
@@ -115,11 +123,15 @@ bool StringMatcher::EmitStringMatcherForChar(
     // TODO: escape hard stuff (like \n) if we ever care about it.
     OS << Indent << "case '" << LI->first << "':\t // "
        << LI->second.size() << " string";
-    if (LI->second.size() != 1) OS << 's';
+    if (LI->second.size() != 1) { OS << 's';
+
+}
     OS << " to match.\n";
     if (EmitStringMatcherForChar(LI->second, CharNo + 1, IndentCount + 1,
-                                 IgnoreDuplicates))
+                                 IgnoreDuplicates)) {
       OS << Indent << "  break;\n";
+
+}
   }
 
   OS << Indent << "}\n";
@@ -130,13 +142,17 @@ bool StringMatcher::EmitStringMatcherForChar(
 ///
 void StringMatcher::Emit(unsigned Indent, bool IgnoreDuplicates) const {
   // If nothing to match, just fall through.
-  if (Matches.empty()) return;
+  if (Matches.empty()) { return;
+
+}
 
   // First level categorization: group strings by length.
   std::map<unsigned, std::vector<const StringPair*>> MatchesByLength;
 
-  for (unsigned i = 0, e = Matches.size(); i != e; ++i)
+  for (unsigned i = 0, e = Matches.size(); i != e; ++i) {
     MatchesByLength[Matches[i].first.size()].push_back(&Matches[i]);
+
+}
 
   // Output a switch statement on length and categorize the elements within each
   // bin.
@@ -148,8 +164,10 @@ void StringMatcher::Emit(unsigned Indent, bool IgnoreDuplicates) const {
     OS.indent(Indent*2+2) << "case " << LI->first << ":\t // "
        << LI->second.size()
        << " string" << (LI->second.size() == 1 ? "" : "s") << " to match.\n";
-    if (EmitStringMatcherForChar(LI->second, 0, Indent, IgnoreDuplicates))
+    if (EmitStringMatcherForChar(LI->second, 0, Indent, IgnoreDuplicates)) {
       OS.indent(Indent*2+4) << "break;\n";
+
+}
   }
 
   OS.indent(Indent*2+2) << "}\n";

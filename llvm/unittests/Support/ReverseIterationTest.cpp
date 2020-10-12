@@ -36,8 +36,10 @@ TEST(ReverseIterationTest, DenseMapTest1) {
   int Keys[] = { 1, 2, 3, 4 };
 
   // Insert keys into the DenseMap.
-  for (auto Key: Keys)
+  for (auto Key: Keys) {
     Map[Key] = 0;
+
+}
 
   // Note: This is the observed order of keys in the DenseMap.
   // If there is any change in the behavior of the DenseMap, this order
@@ -45,13 +47,17 @@ TEST(ReverseIterationTest, DenseMapTest1) {
   int IterKeys[] = { 2, 4, 1, 3 };
 
   // Check that the DenseMap is iterated in the expected order.
-  for (auto Tuple : zip(Map, IterKeys))
+  for (auto Tuple : zip(Map, IterKeys)) {
     ASSERT_EQ(std::get<0>(Tuple).first, std::get<1>(Tuple));
+
+}
 
   // Check operator++ (post-increment).
   int i = 0;
-  for (auto iter = Map.begin(), end = Map.end(); iter != end; iter++, ++i)
+  for (auto iter = Map.begin(), end = Map.end(); iter != end; iter++, ++i) {
     ASSERT_EQ(iter->first, IterKeys[i]);
+
+}
 }
 
 // Define a pointer-like int.
@@ -90,20 +96,28 @@ TEST(ReverseIterationTest, DenseMapTest2) {
 
   // Insert keys into the DenseMap.
   DenseMap<PtrLikeInt *, int> Map;
-  for (auto *Key : Keys)
+  for (auto *Key : Keys) {
     Map[Key] = Key->value;
+
+}
 
   // Note: If there is any change in the behavior of the DenseMap,
   // the observed order of keys would need to be adjusted accordingly.
-  if (shouldReverseIterate<PtrLikeInt *>())
+  if (shouldReverseIterate<PtrLikeInt *>()) {
     std::reverse(&Keys[0], &Keys[4]);
 
+}
+
   // Check that the DenseMap is iterated in the expected order.
-  for (auto Tuple : zip(Map, Keys))
+  for (auto Tuple : zip(Map, Keys)) {
     ASSERT_EQ(std::get<0>(Tuple).second, std::get<1>(Tuple)->value);
+
+}
 
   // Check operator++ (post-increment).
   int i = 0;
-  for (auto iter = Map.begin(), end = Map.end(); iter != end; iter++, ++i)
+  for (auto iter = Map.begin(), end = Map.end(); iter != end; iter++, ++i) {
     ASSERT_EQ(iter->second, Keys[i]->value);
+
+}
 }

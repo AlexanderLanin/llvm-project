@@ -80,18 +80,24 @@ cl::opt<std::string> WhiteListFile(
 
 llvm::ErrorOr<std::vector<std::string>> GetWhiteListedSymbolPatterns() {
   std::vector<std::string> Patterns;
-  if (WhiteListFile.empty())
+  if (WhiteListFile.empty()) {
     return Patterns;
+
+}
 
   llvm::SmallVector<StringRef, 8> Lines;
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> File =
       llvm::MemoryBuffer::getFile(WhiteListFile);
-  if (!File)
+  if (!File) {
     return File.getError();
+
+}
   llvm::StringRef Content = File.get()->getBuffer();
   Content.split(Lines, '\n', /*MaxSplit=*/-1, /*KeepEmpty=*/false);
-  for (auto Line : Lines)
+  for (auto Line : Lines) {
     Patterns.push_back(std::string(Line.trim()));
+
+}
   return Patterns;
 }
 
@@ -118,8 +124,10 @@ int main(int argc, const char **argv) {
   std::unique_ptr<tooling::FrontendActionFactory> Factory =
       tooling::newFrontendActionFactory(&Finder);
 
-  if (int Result = Tool.run(Factory.get()))
+  if (int Result = Tool.run(Factory.get())) {
     return Result;
+
+}
   LangOptions DefaultLangOptions;
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   clang::TextDiagnosticPrinter DiagnosticPrinter(errs(), &*DiagOpts);
@@ -134,12 +142,16 @@ int main(int argc, const char **argv) {
     llvm::errs() << "Failed applying all replacements.\n";
     return 1;
   }
-  if (Inplace)
+  if (Inplace) {
     return Rewrite.overwriteChangedFiles();
 
+}
+
   std::set<llvm::StringRef> ChangedFiles;
-  for (const auto &it : Tool.getReplacements())
+  for (const auto &it : Tool.getReplacements()) {
     ChangedFiles.insert(it.first);
+
+}
 
   if (DumpYAML) {
     auto WriteToYAML = [&](llvm::raw_ostream &OS) {
@@ -155,8 +167,10 @@ int main(int argc, const char **argv) {
         OS << "    \"SourceText\": \""
            << llvm::yaml::escape(ContentStream.str()) << "\"\n";
         OS << "  }";
-        if (I != std::prev(E))
+        if (I != std::prev(E)) {
           OS << ",\n";
+
+}
       }
       OS << "\n]\n";
     };

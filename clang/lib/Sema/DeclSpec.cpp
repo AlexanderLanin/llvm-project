@@ -47,8 +47,10 @@ void UnqualifiedId::setConstructorTemplateId(TemplateIdAnnotation *TemplateId) {
 void CXXScopeSpec::Extend(ASTContext &Context, SourceLocation TemplateKWLoc,
                           TypeLoc TL, SourceLocation ColonColonLoc) {
   Builder.Extend(Context, TemplateKWLoc, TL, ColonColonLoc);
-  if (Range.getBegin().isInvalid())
+  if (Range.getBegin().isInvalid()) {
     Range.setBegin(TL.getBeginLoc());
+
+}
   Range.setEnd(ColonColonLoc);
 
   assert(Range == Builder.getSourceRange() &&
@@ -60,8 +62,10 @@ void CXXScopeSpec::Extend(ASTContext &Context, IdentifierInfo *Identifier,
                           SourceLocation ColonColonLoc) {
   Builder.Extend(Context, Identifier, IdentifierLoc, ColonColonLoc);
 
-  if (Range.getBegin().isInvalid())
+  if (Range.getBegin().isInvalid()) {
     Range.setBegin(IdentifierLoc);
+
+}
   Range.setEnd(ColonColonLoc);
 
   assert(Range == Builder.getSourceRange() &&
@@ -73,8 +77,10 @@ void CXXScopeSpec::Extend(ASTContext &Context, NamespaceDecl *Namespace,
                           SourceLocation ColonColonLoc) {
   Builder.Extend(Context, Namespace, NamespaceLoc, ColonColonLoc);
 
-  if (Range.getBegin().isInvalid())
+  if (Range.getBegin().isInvalid()) {
     Range.setBegin(NamespaceLoc);
+
+}
   Range.setEnd(ColonColonLoc);
 
   assert(Range == Builder.getSourceRange() &&
@@ -86,8 +92,10 @@ void CXXScopeSpec::Extend(ASTContext &Context, NamespaceAliasDecl *Alias,
                           SourceLocation ColonColonLoc) {
   Builder.Extend(Context, Alias, AliasLoc, ColonColonLoc);
 
-  if (Range.getBegin().isInvalid())
+  if (Range.getBegin().isInvalid()) {
     Range.setBegin(AliasLoc);
+
+}
   Range.setEnd(ColonColonLoc);
 
   assert(Range == Builder.getSourceRange() &&
@@ -136,15 +144,19 @@ void CXXScopeSpec::Adopt(NestedNameSpecifierLoc Other) {
 }
 
 SourceLocation CXXScopeSpec::getLastQualifierNameLoc() const {
-  if (!Builder.getRepresentation())
+  if (!Builder.getRepresentation()) {
     return SourceLocation();
+
+}
   return Builder.getTemporary().getLocalBeginLoc();
 }
 
 NestedNameSpecifierLoc
 CXXScopeSpec::getWithLocInContext(ASTContext &Context) const {
-  if (!Builder.getRepresentation())
+  if (!Builder.getRepresentation()) {
     return NestedNameSpecifierLoc();
+
+}
 
   return Builder.getWithLocInContext(Context);
 }
@@ -237,8 +249,10 @@ DeclaratorChunk DeclaratorChunk::getFunction(bool hasProto,
       I.Fun.Params = new DeclaratorChunk::ParamInfo[NumParams];
       I.Fun.DeleteParams = true;
     }
-    for (unsigned i = 0; i < NumParams; i++)
+    for (unsigned i = 0; i < NumParams; i++) {
       I.Fun.Params[i] = std::move(Params[i]);
+
+}
   }
 
   // Check what exception specification information we should actually store.
@@ -273,8 +287,10 @@ DeclaratorChunk DeclaratorChunk::getFunction(bool hasProto,
     I.Fun.NumExceptionsOrDecls = DeclsInPrototype.size();
     // Copy the array of decls into stable heap storage.
     I.Fun.DeclsInPrototype = new NamedDecl *[DeclsInPrototype.size()];
-    for (size_t J = 0; J < DeclsInPrototype.size(); ++J)
+    for (size_t J = 0; J < DeclsInPrototype.size(); ++J) {
       I.Fun.DeclsInPrototype[J] = DeclsInPrototype[J];
+
+}
   }
 
   return I;
@@ -372,22 +388,30 @@ bool Declarator::isDeclarationOfFunction() const {
 
     case TST_decltype:
     case TST_typeofExpr:
-      if (Expr *E = DS.getRepAsExpr())
+      if (Expr *E = DS.getRepAsExpr()) {
         return E->getType()->isFunctionType();
+
+}
       return false;
 
     case TST_underlyingType:
     case TST_typename:
     case TST_typeofType: {
       QualType QT = DS.getRepAsType().get();
-      if (QT.isNull())
+      if (QT.isNull()) {
         return false;
 
-      if (const LocInfoType *LIT = dyn_cast<LocInfoType>(QT))
+}
+
+      if (const LocInfoType *LIT = dyn_cast<LocInfoType>(QT)) {
         QT = LIT->getType();
 
-      if (QT.isNull())
+}
+
+      if (QT.isNull()) {
         return false;
+
+}
 
       return QT->isFunctionType();
     }
@@ -411,14 +435,22 @@ bool Declarator::isCtorOrDtor() {
 
 void DeclSpec::forEachCVRUQualifier(
     llvm::function_ref<void(TQ, StringRef, SourceLocation)> Handle) {
-  if (TypeQualifiers & TQ_const)
+  if (TypeQualifiers & TQ_const) {
     Handle(TQ_const, "const", TQ_constLoc);
-  if (TypeQualifiers & TQ_volatile)
+
+}
+  if (TypeQualifiers & TQ_volatile) {
     Handle(TQ_volatile, "volatile", TQ_volatileLoc);
-  if (TypeQualifiers & TQ_restrict)
+
+}
+  if (TypeQualifiers & TQ_restrict) {
     Handle(TQ_restrict, "restrict", TQ_restrictLoc);
-  if (TypeQualifiers & TQ_unaligned)
+
+}
+  if (TypeQualifiers & TQ_unaligned) {
     Handle(TQ_unaligned, "unaligned", TQ_unalignedLoc);
+
+}
 }
 
 void DeclSpec::forEachQualifier(
@@ -428,8 +460,10 @@ void DeclSpec::forEachQualifier(
 }
 
 bool DeclSpec::hasTagDefinition() const {
-  if (!TypeSpecOwned)
+  if (!TypeSpecOwned) {
     return false;
+
+}
   return cast<TagDecl>(getRepAsDecl())->isCompleteDefinition();
 }
 
@@ -439,18 +473,26 @@ bool DeclSpec::hasTagDefinition() const {
 unsigned DeclSpec::getParsedSpecifiers() const {
   unsigned Res = 0;
   if (StorageClassSpec != SCS_unspecified ||
-      ThreadStorageClassSpec != TSCS_unspecified)
+      ThreadStorageClassSpec != TSCS_unspecified) {
     Res |= PQ_StorageClassSpecifier;
 
-  if (TypeQualifiers != TQ_unspecified)
+}
+
+  if (TypeQualifiers != TQ_unspecified) {
     Res |= PQ_TypeQualifier;
 
-  if (hasTypeSpecifier())
+}
+
+  if (hasTypeSpecifier()) {
     Res |= PQ_TypeSpecifier;
 
+}
+
   if (FS_inline_specified || FS_virtual_specified || hasExplicitSpecifier() ||
-      FS_noreturn_specified || FS_forceinline_specified)
+      FS_noreturn_specified || FS_forceinline_specified) {
     Res |= PQ_FunctionSpecifier;
+
+}
   return Res;
 }
 
@@ -459,11 +501,13 @@ template <class T> static bool BadSpecifier(T TNew, T TPrev,
                                             unsigned &DiagID,
                                             bool IsExtension = true) {
   PrevSpec = DeclSpec::getSpecifierName(TPrev);
-  if (TNew != TPrev)
+  if (TNew != TPrev) {
     DiagID = diag::err_invalid_decl_spec_combination;
-  else
+  } else {
     DiagID = IsExtension ? diag::ext_warn_duplicate_declspec :
                            diag::warn_duplicate_declspec;
+
+}
   return true;
 }
 
@@ -627,8 +671,10 @@ bool DeclSpec::SetStorageClassSpec(Sema &S, SCS SC, SourceLocation Loc,
     // Maybe this is an attempt to use C++11 'auto' outside of C++11 mode.
     bool isInvalid = true;
     if (TypeSpecType == TST_unspecified && S.getLangOpts().CPlusPlus) {
-      if (SC == SCS_auto)
+      if (SC == SCS_auto) {
         return SetTypeSpecType(TST_auto, Loc, PrevSpec, DiagID, Policy);
+
+}
       if (StorageClassSpec == SCS_auto) {
         isInvalid = SetTypeSpecType(TST_auto, StorageClassSpecLoc,
                                     PrevSpec, DiagID, Policy);
@@ -642,8 +688,10 @@ bool DeclSpec::SetStorageClassSpec(Sema &S, SCS SC, SourceLocation Loc,
     if (isInvalid &&
         !(SCS_extern_in_linkage_spec &&
           StorageClassSpec == SCS_extern &&
-          SC == SCS_typedef))
+          SC == SCS_typedef)) {
       return BadSpecifier(SC, (SCS)StorageClassSpec, PrevSpec, DiagID);
+
+}
   }
   StorageClassSpec = SC;
   StorageClassSpecLoc = Loc;
@@ -654,8 +702,10 @@ bool DeclSpec::SetStorageClassSpec(Sema &S, SCS SC, SourceLocation Loc,
 bool DeclSpec::SetStorageClassSpecThread(TSCS TSC, SourceLocation Loc,
                                          const char *&PrevSpec,
                                          unsigned &DiagID) {
-  if (ThreadStorageClassSpec != TSCS_unspecified)
+  if (ThreadStorageClassSpec != TSCS_unspecified) {
     return BadSpecifier(TSC, (TSCS)ThreadStorageClassSpec, PrevSpec, DiagID);
+
+}
 
   ThreadStorageClassSpec = TSC;
   ThreadStorageClassSpecLoc = Loc;
@@ -671,11 +721,13 @@ bool DeclSpec::SetTypeSpecWidth(TSW W, SourceLocation Loc,
                                 const PrintingPolicy &Policy) {
   // Overwrite TSWRange.Begin only if TypeSpecWidth was unspecified, so that
   // for 'long long' we will keep the source location of the first 'long'.
-  if (TypeSpecWidth == TSW_unspecified)
+  if (TypeSpecWidth == TSW_unspecified) {
     TSWRange.setBegin(Loc);
   // Allow turning long -> long long.
-  else if (W != TSW_longlong || TypeSpecWidth != TSW_long)
+  } else if (W != TSW_longlong || TypeSpecWidth != TSW_long) {
     return BadSpecifier(W, (TSW)TypeSpecWidth, PrevSpec, DiagID);
+
+}
   TypeSpecWidth = W;
   // Remember location of the last 'long'
   TSWRange.setEnd(Loc);
@@ -685,8 +737,10 @@ bool DeclSpec::SetTypeSpecWidth(TSW W, SourceLocation Loc,
 bool DeclSpec::SetTypeSpecComplex(TSC C, SourceLocation Loc,
                                   const char *&PrevSpec,
                                   unsigned &DiagID) {
-  if (TypeSpecComplex != TSC_unspecified)
+  if (TypeSpecComplex != TSC_unspecified) {
     return BadSpecifier(C, (TSC)TypeSpecComplex, PrevSpec, DiagID);
+
+}
   TypeSpecComplex = C;
   TSCLoc = Loc;
   return false;
@@ -695,8 +749,10 @@ bool DeclSpec::SetTypeSpecComplex(TSC C, SourceLocation Loc,
 bool DeclSpec::SetTypeSpecSign(TSS S, SourceLocation Loc,
                                const char *&PrevSpec,
                                unsigned &DiagID) {
-  if (TypeSpecSign != TSS_unspecified)
+  if (TypeSpecSign != TSS_unspecified) {
     return BadSpecifier(S, (TSS)TypeSpecSign, PrevSpec, DiagID);
+
+}
   TypeSpecSign = S;
   TSSLoc = Loc;
   return false;
@@ -718,8 +774,10 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation TagKwLoc,
                                const PrintingPolicy &Policy) {
   assert(isTypeRep(T) && "T does not store a type");
   assert(Rep && "no type provided!");
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
     DiagID = diag::err_invalid_decl_spec_combination;
@@ -740,8 +798,10 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation Loc,
                                const PrintingPolicy &Policy) {
   assert(isExprRep(T) && "T does not store an expr");
   assert(Rep && "no expression provided!");
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
     DiagID = diag::err_invalid_decl_spec_combination;
@@ -772,8 +832,10 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation TagKwLoc,
   assert(isDeclRep(T) && "T does not store a decl");
   // Unlike the other cases, we don't assert that we actually get a decl.
 
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
     DiagID = diag::err_invalid_decl_spec_combination;
@@ -802,8 +864,10 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation Loc,
                                const PrintingPolicy &Policy) {
   assert(!isDeclRep(T) && !isTypeRep(T) && !isExprRep(T) &&
          "rep required for these type-spec kinds!");
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
     DiagID = diag::err_invalid_decl_spec_combination;
@@ -836,8 +900,10 @@ bool DeclSpec::SetTypeSpecSat(SourceLocation Loc, const char *&PrevSpec,
 bool DeclSpec::SetTypeAltiVecVector(bool isAltiVecVector, SourceLocation Loc,
                           const char *&PrevSpec, unsigned &DiagID,
                           const PrintingPolicy &Policy) {
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
     DiagID = diag::err_invalid_vector_decl_spec_combination;
@@ -851,8 +917,10 @@ bool DeclSpec::SetTypeAltiVecVector(bool isAltiVecVector, SourceLocation Loc,
 bool DeclSpec::SetTypePipe(bool isPipe, SourceLocation Loc,
                            const char *&PrevSpec, unsigned &DiagID,
                            const PrintingPolicy &Policy) {
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (TypeSpecType != TST_unspecified) {
     PrevSpec = DeclSpec::getSpecifierName((TST)TypeSpecType, Policy);
     DiagID = diag::err_invalid_decl_spec_combination;
@@ -868,8 +936,10 @@ bool DeclSpec::SetTypePipe(bool isPipe, SourceLocation Loc,
 bool DeclSpec::SetTypeAltiVecPixel(bool isAltiVecPixel, SourceLocation Loc,
                           const char *&PrevSpec, unsigned &DiagID,
                           const PrintingPolicy &Policy) {
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (!TypeAltiVecVector || TypeAltiVecPixel ||
       (TypeSpecType != TST_unspecified)) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
@@ -885,8 +955,10 @@ bool DeclSpec::SetTypeAltiVecPixel(bool isAltiVecPixel, SourceLocation Loc,
 bool DeclSpec::SetTypeAltiVecBool(bool isAltiVecBool, SourceLocation Loc,
                                   const char *&PrevSpec, unsigned &DiagID,
                                   const PrintingPolicy &Policy) {
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return false;
+
+}
   if (!TypeAltiVecVector || TypeAltiVecBool ||
       (TypeSpecType != TST_unspecified)) {
     PrevSpec = DeclSpec::getSpecifierName((TST) TypeSpecType, Policy);
@@ -915,8 +987,10 @@ bool DeclSpec::SetTypeQual(TQ T, SourceLocation Loc, const char *&PrevSpec,
   // already have it.
   if (TypeQualifiers & T) {
     bool IsExtension = true;
-    if (Lang.C99)
+    if (Lang.C99) {
       IsExtension = false;
+
+}
     return BadSpecifier(T, T, PrevSpec, DiagID, IsExtension);
   }
 
@@ -1049,9 +1123,11 @@ bool DeclSpec::setModulePrivateSpec(SourceLocation Loc, const char *&PrevSpec,
 bool DeclSpec::SetConstexprSpec(ConstexprSpecKind ConstexprKind,
                                 SourceLocation Loc, const char *&PrevSpec,
                                 unsigned &DiagID) {
-  if (getConstexprSpecifier() != CSK_unspecified)
+  if (getConstexprSpecifier() != CSK_unspecified) {
     return BadSpecifier(ConstexprKind, getConstexprSpecifier(), PrevSpec,
                         DiagID);
+
+}
   ConstexprSpecifier = ConstexprKind;
   ConstexprLoc = Loc;
   return false;
@@ -1075,8 +1151,10 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
 
   // Check the type specifier components first. No checking for an invalid
   // type.
-  if (TypeSpecType == TST_error)
+  if (TypeSpecType == TST_error) {
     return;
+
+}
 
   // If decltype(auto) is used, no other type specifiers are permitted.
   if (TypeSpecType == TST_decltype_auto &&
@@ -1096,8 +1174,10 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
       if (ExtraLocs[I].isValid()) {
         if (FirstLoc.isInvalid() ||
             S.getSourceManager().isBeforeInTranslationUnit(ExtraLocs[I],
-                                                           FirstLoc))
+                                                           FirstLoc)) {
           FirstLoc = ExtraLocs[I];
+
+}
         Hints[I] = FixItHint::CreateRemoval(ExtraLocs[I]);
       }
     }
@@ -1130,44 +1210,56 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
 
       // Only 'short' and 'long long' are valid with vector bool. (PIM 2.1)
       if ((TypeSpecWidth != TSW_unspecified) && (TypeSpecWidth != TSW_short) &&
-          (TypeSpecWidth != TSW_longlong))
+          (TypeSpecWidth != TSW_longlong)) {
         S.Diag(TSWRange.getBegin(), diag::err_invalid_vector_bool_decl_spec)
             << getSpecifierName((TSW)TypeSpecWidth);
+
+}
 
       // vector bool long long requires VSX support or ZVector.
       if ((TypeSpecWidth == TSW_longlong) &&
           (!S.Context.getTargetInfo().hasFeature("vsx")) &&
           (!S.Context.getTargetInfo().hasFeature("power8-vector")) &&
-          !S.getLangOpts().ZVector)
+          !S.getLangOpts().ZVector) {
         S.Diag(TSTLoc, diag::err_invalid_vector_long_long_decl_spec);
+
+}
 
       // Elements of vector bool are interpreted as unsigned. (PIM 2.1)
       if ((TypeSpecType == TST_char) || (TypeSpecType == TST_int) ||
-          (TypeSpecWidth != TSW_unspecified))
+          (TypeSpecWidth != TSW_unspecified)) {
         TypeSpecSign = TSS_unsigned;
+
+}
     } else if (TypeSpecType == TST_double) {
       // vector long double and vector long long double are never allowed.
       // vector double is OK for Power7 and later, and ZVector.
-      if (TypeSpecWidth == TSW_long || TypeSpecWidth == TSW_longlong)
+      if (TypeSpecWidth == TSW_long || TypeSpecWidth == TSW_longlong) {
         S.Diag(TSWRange.getBegin(),
                diag::err_invalid_vector_long_double_decl_spec);
-      else if (!S.Context.getTargetInfo().hasFeature("vsx") &&
-               !S.getLangOpts().ZVector)
+      } else if (!S.Context.getTargetInfo().hasFeature("vsx") &&
+               !S.getLangOpts().ZVector) {
         S.Diag(TSTLoc, diag::err_invalid_vector_double_decl_spec);
+
+}
     } else if (TypeSpecType == TST_float) {
       // vector float is unsupported for ZVector unless we have the
       // vector-enhancements facility 1 (ISA revision 12).
       if (S.getLangOpts().ZVector &&
-          !S.Context.getTargetInfo().hasFeature("arch12"))
+          !S.Context.getTargetInfo().hasFeature("arch12")) {
         S.Diag(TSTLoc, diag::err_invalid_vector_float_decl_spec);
+
+}
     } else if (TypeSpecWidth == TSW_long) {
       // vector long is unsupported for ZVector and deprecated for AltiVec.
-      if (S.getLangOpts().ZVector)
+      if (S.getLangOpts().ZVector) {
         S.Diag(TSWRange.getBegin(), diag::err_invalid_vector_long_decl_spec);
-      else
+      } else {
         S.Diag(TSWRange.getBegin(),
                diag::warn_vector_long_decl_spec_combination)
             << getSpecifierName((TST)TypeSpecType, Policy);
+
+}
     }
 
     if (TypeAltiVecPixel) {
@@ -1184,9 +1276,9 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
 
   // signed/unsigned are only valid with int/char/wchar_t/_Accum.
   if (TypeSpecSign != TSS_unspecified) {
-    if (TypeSpecType == TST_unspecified)
+    if (TypeSpecType == TST_unspecified) {
       TypeSpecType = TST_int; // unsigned -> unsigned int, signed -> signed int.
-    else if (TypeSpecType != TST_int && TypeSpecType != TST_int128 &&
+    } else if (TypeSpecType != TST_int && TypeSpecType != TST_int128 &&
              TypeSpecType != TST_char && TypeSpecType != TST_wchar &&
              !IsFixedPointType) {
       S.Diag(TSSLoc, diag::err_invalid_sign_spec)
@@ -1201,9 +1293,9 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
   case TSW_unspecified: break;
   case TSW_short:    // short int
   case TSW_longlong: // long long int
-    if (TypeSpecType == TST_unspecified)
+    if (TypeSpecType == TST_unspecified) {
       TypeSpecType = TST_int; // short -> short int, long long -> long long int.
-    else if (!(TypeSpecType == TST_int ||
+    } else if (!(TypeSpecType == TST_int ||
                (IsFixedPointType && TypeSpecWidth != TSW_longlong))) {
       S.Diag(TSWRange.getBegin(), diag::err_invalid_width_spec)
           << (int)TypeSpecWidth << getSpecifierName((TST)TypeSpecType, Policy);
@@ -1213,9 +1305,9 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
     }
     break;
   case TSW_long:  // long double, long int
-    if (TypeSpecType == TST_unspecified)
+    if (TypeSpecType == TST_unspecified) {
       TypeSpecType = TST_int;  // long -> long int.
-    else if (TypeSpecType != TST_int && TypeSpecType != TST_double &&
+    } else if (TypeSpecType != TST_int && TypeSpecType != TST_double &&
              !IsFixedPointType) {
       S.Diag(TSWRange.getBegin(), diag::err_invalid_width_spec)
           << (int)TypeSpecWidth << getSpecifierName((TST)TypeSpecType, Policy);
@@ -1237,8 +1329,10 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
       TypeSpecType = TST_double;   // _Complex -> _Complex double.
     } else if (TypeSpecType == TST_int || TypeSpecType == TST_char) {
       // Note that this intentionally doesn't include _Complex _Bool.
-      if (!S.getLangOpts().CPlusPlus)
+      if (!S.getLangOpts().CPlusPlus) {
         S.Diag(TSTLoc, diag::ext_integer_complex);
+
+}
     } else if (TypeSpecType != TST_float && TypeSpecType != TST_double) {
       S.Diag(TSCLoc, diag::err_invalid_complex_spec)
         << getSpecifierName((TST)TypeSpecType, Policy);
@@ -1258,16 +1352,18 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
       break;
     default:
       if (S.getSourceManager().isBeforeInTranslationUnit(
-            getThreadStorageClassSpecLoc(), getStorageClassSpecLoc()))
+            getThreadStorageClassSpecLoc(), getStorageClassSpecLoc())) {
         S.Diag(getStorageClassSpecLoc(),
              diag::err_invalid_decl_spec_combination)
           << DeclSpec::getSpecifierName(getThreadStorageClassSpec())
           << SourceRange(getThreadStorageClassSpecLoc());
-      else
+      } else {
         S.Diag(getThreadStorageClassSpecLoc(),
              diag::err_invalid_decl_spec_combination)
           << DeclSpec::getSpecifierName(getStorageClassSpec())
           << SourceRange(getStorageClassSpecLoc());
+
+}
       // Discard the thread storage class specifier to recover.
       ThreadStorageClassSpec = TSCS_unspecified;
       ThreadStorageClassSpecLoc = SourceLocation();
@@ -1287,23 +1383,31 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
   }
   // Diagnose if we've recovered from an ill-formed 'auto' storage class
   // specifier in a pre-C++11 dialect of C++.
-  if (!S.getLangOpts().CPlusPlus11 && TypeSpecType == TST_auto)
+  if (!S.getLangOpts().CPlusPlus11 && TypeSpecType == TST_auto) {
     S.Diag(TSTLoc, diag::ext_auto_type_specifier);
+
+}
   if (S.getLangOpts().CPlusPlus && !S.getLangOpts().CPlusPlus11 &&
-      StorageClassSpec == SCS_auto)
+      StorageClassSpec == SCS_auto) {
     S.Diag(StorageClassSpecLoc, diag::warn_auto_storage_class)
       << FixItHint::CreateRemoval(StorageClassSpecLoc);
-  if (TypeSpecType == TST_char8)
+
+}
+  if (TypeSpecType == TST_char8) {
     S.Diag(TSTLoc, diag::warn_cxx17_compat_unicode_type);
-  else if (TypeSpecType == TST_char16 || TypeSpecType == TST_char32)
+  } else if (TypeSpecType == TST_char16 || TypeSpecType == TST_char32) {
     S.Diag(TSTLoc, diag::warn_cxx98_compat_unicode_type)
       << (TypeSpecType == TST_char16 ? "char16_t" : "char32_t");
-  if (getConstexprSpecifier() == CSK_constexpr)
+
+}
+  if (getConstexprSpecifier() == CSK_constexpr) {
     S.Diag(ConstexprLoc, diag::warn_cxx98_compat_constexpr);
-  else if (getConstexprSpecifier() == CSK_consteval)
+  } else if (getConstexprSpecifier() == CSK_consteval) {
     S.Diag(ConstexprLoc, diag::warn_cxx20_compat_consteval);
-  else if (getConstexprSpecifier() == CSK_constinit)
+  } else if (getConstexprSpecifier() == CSK_constinit) {
     S.Diag(ConstexprLoc, diag::warn_cxx20_compat_constinit);
+
+}
   // C++ [class.friend]p6:
   //   No storage-class-specifier shall appear in the decl-specifier-seq
   //   of a friend declaration.
@@ -1320,7 +1424,9 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
     }
 
     if (DeclSpec::TSCS TSC = getThreadStorageClassSpec()) {
-      if (!SpecName.empty()) SpecName += " ";
+      if (!SpecName.empty()) { SpecName += " ";
+
+}
       SpecName += getSpecifierName(TSC);
       SCLoc = getThreadStorageClassSpecLoc();
       ThreadHint = FixItHint::CreateRemoval(SCLoc);
@@ -1387,15 +1493,19 @@ void UnqualifiedId::setOperatorFunctionId(SourceLocation OperatorLoc,
   for (unsigned I = 0; I != 3; ++I) {
     OperatorFunctionId.SymbolLocations[I] = SymbolLocations[I].getRawEncoding();
 
-    if (SymbolLocations[I].isValid())
+    if (SymbolLocations[I].isValid()) {
       EndLocation = SymbolLocations[I];
+
+}
   }
 }
 
 bool VirtSpecifiers::SetSpecifier(Specifier VS, SourceLocation Loc,
                                   const char *&PrevSpec) {
-  if (!FirstLocation.isValid())
+  if (!FirstLocation.isValid()) {
     FirstLocation = Loc;
+
+}
   LastLocation = Loc;
   LastSpecifier = VS;
 

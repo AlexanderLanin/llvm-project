@@ -24,8 +24,10 @@ DumpObjects::DumpObjects(std::string DumpDir, std::string IdentifierOverride)
 
   /// Discard any trailing separators.
   while (!this->DumpDir.empty() &&
-         sys::path::is_separator(this->DumpDir.back()))
+         sys::path::is_separator(this->DumpDir.back())) {
     this->DumpDir.pop_back();
+
+}
 }
 
 Expected<std::unique_ptr<MemoryBuffer>>
@@ -50,16 +52,20 @@ DumpObjects::operator()(std::unique_ptr<MemoryBuffer> Obj) {
 
   std::error_code EC;
   raw_fd_ostream DumpStream(DumpPath, EC);
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
   DumpStream.write(Obj->getBufferStart(), Obj->getBufferSize());
 
   return std::move(Obj);
 }
 
 StringRef DumpObjects::getBufferIdentifier(MemoryBuffer &B) {
-  if (!IdentifierOverride.empty())
+  if (!IdentifierOverride.empty()) {
     return IdentifierOverride;
+
+}
   StringRef Identifier = B.getBufferIdentifier();
   Identifier.consume_back(".o");
   return Identifier;

@@ -92,15 +92,19 @@ static const Expr *getDereferenceExpr(const Stmt *S, bool IsBind=false){
 
   // Walk through lvalue casts to get the original expression
   // that syntactically caused the load.
-  if (const Expr *expr = dyn_cast<Expr>(S))
+  if (const Expr *expr = dyn_cast<Expr>(S)) {
     E = expr->IgnoreParenLValueCasts();
+
+}
 
   if (IsBind) {
     const VarDecl *VD;
     const Expr *Init;
     std::tie(VD, Init) = parseAssignment(S);
-    if (VD && Init)
+    if (VD && Init) {
       E = Init;
+
+}
   }
   return E;
 }
@@ -111,8 +115,10 @@ static bool suppressReport(const Expr *E) {
 }
 
 static bool isDeclRefExprToReference(const Expr *E) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(E))
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(E)) {
     return DRE->getDecl()->getType()->isReferenceType();
+
+}
   return false;
 }
 
@@ -120,13 +126,17 @@ void DereferenceChecker::reportBug(ProgramStateRef State, const Stmt *S,
                                    CheckerContext &C) const {
   // Generate an error node.
   ExplodedNode *N = C.generateErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   // We know that 'location' cannot be non-null.  This is what
   // we call an "explicit" null dereference.
-  if (!BT_null)
+  if (!BT_null) {
     BT_null.reset(new BuiltinBug(this, "Dereference of null pointer"));
+
+}
 
   SmallString<100> buf;
   llvm::raw_svector_ostream os(buf);
@@ -185,8 +195,10 @@ void DereferenceChecker::reportBug(ProgramStateRef State, const Stmt *S,
   bugreporter::trackExpressionValue(N, bugreporter::getDerefExpr(S), *report);
 
   for (SmallVectorImpl<SourceRange>::iterator
-       I = Ranges.begin(), E = Ranges.end(); I!=E; ++I)
+       I = Ranges.begin(), E = Ranges.end(); I!=E; ++I) {
     report->addRange(*I);
+
+}
 
   C.emitReport(std::move(report));
 }
@@ -196,9 +208,11 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
   // Check for dereference of an undefined value.
   if (l.isUndef()) {
     if (ExplodedNode *N = C.generateErrorNode()) {
-      if (!BT_undef)
+      if (!BT_undef) {
         BT_undef.reset(
             new BuiltinBug(this, "Dereference of undefined pointer value"));
+
+}
 
       auto report = std::make_unique<PathSensitiveBugReport>(
           *BT_undef, BT_undef->getDescription(), N);
@@ -211,8 +225,10 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
   DefinedOrUnknownSVal location = l.castAs<DefinedOrUnknownSVal>();
 
   // Check for null dereferences.
-  if (!location.getAs<Loc>())
+  if (!location.getAs<Loc>()) {
     return;
+
+}
 
   ProgramStateRef state = C.getState();
 
@@ -246,16 +262,22 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
 void DereferenceChecker::checkBind(SVal L, SVal V, const Stmt *S,
                                    CheckerContext &C) const {
   // If we're binding to a reference, check if the value is known to be null.
-  if (V.isUndef())
+  if (V.isUndef()) {
     return;
+
+}
 
   const MemRegion *MR = L.getAsRegion();
   const TypedValueRegion *TVR = dyn_cast_or_null<TypedValueRegion>(MR);
-  if (!TVR)
+  if (!TVR) {
     return;
 
-  if (!TVR->getValueType()->isReferenceType())
+}
+
+  if (!TVR->getValueType()->isReferenceType()) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
 

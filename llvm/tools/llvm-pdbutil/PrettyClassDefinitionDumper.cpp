@@ -50,12 +50,18 @@ void ClassDefinitionDumper::prettyPrintClassIntro(const ClassLayout &Layout) {
   uint32_t Size = Layout.getSize();
   const PDBSymbolTypeUDT &Class = Layout.getClass();
 
-  if (Layout.getClass().isConstType())
+  if (Layout.getClass().isConstType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "const ";
-  if (Layout.getClass().isVolatileType())
+
+}
+  if (Layout.getClass().isVolatileType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "volatile ";
-  if (Layout.getClass().isUnalignedType())
+
+}
+  if (Layout.getClass().isUnalignedType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "unaligned ";
+
+}
 
   WithColor(Printer, PDB_ColorItem::Keyword).get() << Class.getUdtKind() << " ";
   WithColor(Printer, PDB_ColorItem::Type).get() << Class.getName();
@@ -67,14 +73,18 @@ void ClassDefinitionDumper::prettyPrintClassIntro(const ClassLayout &Layout) {
     char NextSeparator = ':';
     for (auto BC : Layout.bases()) {
       const auto &Base = BC->getBase();
-      if (Base.isIndirectVirtualBaseClass())
+      if (Base.isIndirectVirtualBaseClass()) {
         continue;
+
+}
 
       Printer.NewLine();
       Printer << NextSeparator << " ";
       WithColor(Printer, PDB_ColorItem::Keyword).get() << Base.getAccess();
-      if (BC->isVirtualBase())
+      if (BC->isVirtualBase()) {
         WithColor(Printer, PDB_ColorItem::Keyword).get() << " virtual";
+
+}
 
       WithColor(Printer, PDB_ColorItem::Type).get() << " " << Base.getName();
       NextSeparator = ',';
@@ -89,8 +99,10 @@ void ClassDefinitionDumper::prettyPrintClassIntro(const ClassLayout &Layout) {
 
 void ClassDefinitionDumper::prettyPrintClassOutro(const ClassLayout &Layout) {
   Printer.Unindent();
-  if (DumpedAnything)
+  if (DumpedAnything) {
     Printer.NewLine();
+
+}
   Printer << "}";
   Printer.NewLine();
   if (Layout.deepPaddingSize() > 0) {

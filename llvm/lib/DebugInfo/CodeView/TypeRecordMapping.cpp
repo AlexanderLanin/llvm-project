@@ -44,14 +44,18 @@ static bool compEnumNames(const EnumEntry<T> &lhs, const EnumEntry<T> &rhs) {
 template <typename T, typename TFlag>
 static std::string getFlagNames(CodeViewRecordIO &IO, T Value,
                                 ArrayRef<EnumEntry<TFlag>> Flags) {
-  if (!IO.isStreaming())
+  if (!IO.isStreaming()) {
     return std::string("");
+
+}
   typedef EnumEntry<TFlag> FlagEntry;
   typedef SmallVector<FlagEntry, 10> FlagVector;
   FlagVector SetFlags;
   for (const auto &Flag : Flags) {
-    if (Flag.Value == 0)
+    if (Flag.Value == 0) {
       continue;
+
+}
     if ((Value & Flag.Value) == Flag.Value) {
       SetFlags.push_back(Flag);
     }
@@ -62,10 +66,12 @@ static std::string getFlagNames(CodeViewRecordIO &IO, T Value,
   std::string FlagLabel;
   bool FirstOcc = true;
   for (const auto &Flag : SetFlags) {
-    if (FirstOcc)
+    if (FirstOcc) {
       FirstOcc = false;
-    else
+    } else {
       FlagLabel += (" | ");
+
+}
 
     FlagLabel += (Flag.Name.str() + " (0x" + utohexstr(Flag.Value) + ")");
   }
@@ -74,15 +80,19 @@ static std::string getFlagNames(CodeViewRecordIO &IO, T Value,
     std::string LabelWithBraces(" ( ");
     LabelWithBraces += FlagLabel + " )";
     return LabelWithBraces;
-  } else
+  } else {
     return FlagLabel;
+
+}
 }
 
 template <typename T, typename TEnum>
 static StringRef getEnumName(CodeViewRecordIO &IO, T Value,
                              ArrayRef<EnumEntry<TEnum>> EnumValues) {
-  if (!IO.isStreaming())
+  if (!IO.isStreaming()) {
     return "";
+
+}
   StringRef Name;
   for (const auto &EnumItem : EnumValues) {
     if (EnumItem.Value == Value) {
@@ -97,8 +107,10 @@ static StringRef getEnumName(CodeViewRecordIO &IO, T Value,
 static std::string getMemberAttributes(CodeViewRecordIO &IO,
                                        MemberAccess Access, MethodKind Kind,
                                        MethodOptions Options) {
-  if (!IO.isStreaming())
+  if (!IO.isStreaming()) {
     return "";
+
+}
   std::string AccessSpecifier = std::string(
       getEnumName(IO, uint8_t(Access), makeArrayRef(getMemberAccessNames())));
   std::string MemberAttrs(AccessSpecifier);
@@ -130,8 +142,10 @@ struct MapOneMethodRecord {
     error(IO.mapInteger(Method.Type, "Type"));
     if (Method.isIntroducingVirtual()) {
       error(IO.mapInteger(Method.VFTableOffset, "VFTableOffset"));
-    } else if (IO.isReading())
+    } else if (IO.isReading()) {
       Method.VFTableOffset = -1;
+
+}
 
     if (!IsFromOverloadList)
       error(IO.mapStringZ(Method.Name, "Name"));
@@ -193,8 +207,10 @@ Error TypeRecordMapping::visitTypeBegin(CVType &CVR) {
   // longer than the maximum record length.
   Optional<uint32_t> MaxLen;
   if (CVR.kind() != TypeLeafKind::LF_FIELDLIST &&
-      CVR.kind() != TypeLeafKind::LF_METHODLIST)
+      CVR.kind() != TypeLeafKind::LF_METHODLIST) {
     MaxLen = MaxRecordLength - sizeof(RecordPrefix);
+
+}
   error(IO.beginRecord(MaxLen));
   TypeKind = CVR.kind();
 
@@ -210,9 +226,11 @@ Error TypeRecordMapping::visitTypeBegin(CVType &CVR) {
 }
 
 Error TypeRecordMapping::visitTypeBegin(CVType &CVR, TypeIndex Index) {
-  if (IO.isStreaming())
+  if (IO.isStreaming()) {
     IO.emitRawComment(" " + getLeafTypeName(CVR.kind()) + " (0x" +
                       utohexstr(Index.getIndex()) + ")");
+
+}
   return visitTypeBegin(CVR);
 }
 
@@ -257,8 +275,10 @@ Error TypeRecordMapping::visitMemberEnd(CVMemberRecord &Record) {
   assert(MemberKind.hasValue() && "Not in a member mapping!");
 
   if (IO.isReading()) {
-    if (auto EC = IO.skipPadding())
+    if (auto EC = IO.skipPadding()) {
       return EC;
+
+}
   }
 
   MemberKind.reset();
@@ -349,20 +369,34 @@ Error TypeRecordMapping::visitKnownRecord(CVType &CVR, PointerRecord &Record) {
     auto PtrSizeOf = Record.getSize();
     Attr += ", SizeOf: " + itostr(PtrSizeOf);
 
-    if (Record.isFlat())
+    if (Record.isFlat()) {
       Attr += ", isFlat";
-    if (Record.isConst())
+
+}
+    if (Record.isConst()) {
       Attr += ", isConst";
-    if (Record.isVolatile())
+
+}
+    if (Record.isVolatile()) {
       Attr += ", isVolatile";
-    if (Record.isUnaligned())
+
+}
+    if (Record.isUnaligned()) {
       Attr += ", isUnaligned";
-    if (Record.isRestrict())
+
+}
+    if (Record.isRestrict()) {
       Attr += ", isRestricted";
-    if (Record.isLValueReferenceThisPtr())
+
+}
+    if (Record.isLValueReferenceThisPtr()) {
       Attr += ", isThisPtr&";
-    if (Record.isRValueReferenceThisPtr())
+
+}
+    if (Record.isRValueReferenceThisPtr()) {
       Attr += ", isThisPtr&&";
+
+}
     Attr += " ]";
   }
 
@@ -370,8 +404,10 @@ Error TypeRecordMapping::visitKnownRecord(CVType &CVR, PointerRecord &Record) {
   error(IO.mapInteger(Record.Attrs, Attr));
 
   if (Record.isPointerToMember()) {
-    if (IO.isReading())
+    if (IO.isReading()) {
       Record.MemberInfo.emplace();
+
+}
 
     MemberPointerInfo &M = *Record.MemberInfo;
     error(IO.mapInteger(M.ContainingType, "ClassType"));
@@ -470,8 +506,10 @@ Error TypeRecordMapping::visitKnownRecord(CVType &CVR,
       uint8_t Byte;
       error(IO.mapInteger(Byte));
       Record.Slots.push_back(static_cast<VFTableSlotKind>(Byte & 0xF));
-      if ((I + 1) < Size)
+      if ((I + 1) < Size) {
         Record.Slots.push_back(static_cast<VFTableSlotKind>(Byte >> 4));
+
+}
     }
   }
 
@@ -484,8 +522,10 @@ Error TypeRecordMapping::visitKnownRecord(CVType &CVR, VFTableRecord &Record) {
   error(IO.mapInteger(Record.VFPtrOffset, "VFPtrOffset"));
   uint32_t NamesLen = 0;
   if (!IO.isReading()) {
-    for (auto Name : Record.MethodNames)
+    for (auto Name : Record.MethodNames) {
       NamesLen += Name.size() + 1;
+
+}
   }
   error(IO.mapInteger(NamesLen));
   error(IO.mapVectorTail(
@@ -565,8 +605,10 @@ Error TypeRecordMapping::visitKnownRecord(CVType &CVR,
 Error TypeRecordMapping::visitKnownRecord(CVType &CVR,
                                           FieldListRecord &Record) {
   if (IO.isStreaming()) {
-    if (auto EC = codeview::visitMemberRecordStream(Record.Data, *this))
+    if (auto EC = codeview::visitMemberRecordStream(Record.Data, *this)) {
       return EC;
+
+}
   } else
     error(IO.mapByteVectorTail(Record.Data));
 

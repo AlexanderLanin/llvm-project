@@ -18,8 +18,10 @@ using namespace llvm;
 LLVM_DUMP_METHOD void
 GIMatchDagPredicateDependencyEdge::print(raw_ostream &OS) const {
   OS << getRequiredMI()->getName();
-  if (getRequiredMO())
+  if (getRequiredMO()) {
     OS << "[" << getRequiredMO()->getName() << "]";
+
+}
   OS << " ==> " << getPredicate()->getName() << "["
      << getPredicateOp()->getName() << "]";
 }

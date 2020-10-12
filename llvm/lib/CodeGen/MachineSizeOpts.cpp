@@ -81,12 +81,20 @@ bool isFunctionColdInCallGraph(
     const MachineFunction *MF,
     ProfileSummaryInfo *PSI,
     const MachineBlockFrequencyInfo &MBFI) {
-  if (auto FunctionCount = MF->getFunction().getEntryCount())
-    if (!PSI->isColdCount(FunctionCount.getCount()))
+  if (auto FunctionCount = MF->getFunction().getEntryCount()) {
+    if (!PSI->isColdCount(FunctionCount.getCount())) {
       return false;
-  for (const auto &MBB : *MF)
-    if (!isColdBlock(&MBB, PSI, &MBFI))
+
+}
+
+}
+  for (const auto &MBB : *MF) {
+    if (!isColdBlock(&MBB, PSI, &MBFI)) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -97,26 +105,42 @@ bool isFunctionHotInCallGraphNthPercentile(
     const MachineFunction *MF,
     ProfileSummaryInfo *PSI,
     const MachineBlockFrequencyInfo &MBFI) {
-  if (auto FunctionCount = MF->getFunction().getEntryCount())
+  if (auto FunctionCount = MF->getFunction().getEntryCount()) {
     if (PSI->isHotCountNthPercentile(PercentileCutoff,
-                                     FunctionCount.getCount()))
+                                     FunctionCount.getCount())) {
       return true;
-  for (const auto &MBB : *MF)
-    if (isHotBlockNthPercentile(PercentileCutoff, &MBB, PSI, &MBFI))
+
+}
+
+}
+  for (const auto &MBB : *MF) {
+    if (isHotBlockNthPercentile(PercentileCutoff, &MBB, PSI, &MBFI)) {
       return true;
+
+}
+
+}
   return false;
 }
 
 bool isFunctionColdInCallGraphNthPercentile(
     int PercentileCutoff, const MachineFunction *MF, ProfileSummaryInfo *PSI,
     const MachineBlockFrequencyInfo &MBFI) {
-  if (auto FunctionCount = MF->getFunction().getEntryCount())
+  if (auto FunctionCount = MF->getFunction().getEntryCount()) {
     if (!PSI->isColdCountNthPercentile(PercentileCutoff,
-                                       FunctionCount.getCount()))
+                                       FunctionCount.getCount())) {
       return false;
-  for (const auto &MBB : *MF)
-    if (!isColdBlockNthPercentile(PercentileCutoff, &MBB, PSI, &MBFI))
+
+}
+
+}
+  for (const auto &MBB : *MF) {
+    if (!isColdBlockNthPercentile(PercentileCutoff, &MBB, PSI, &MBFI)) {
       return false;
+
+}
+
+}
   return true;
 }
 } // namespace machine_size_opts_detail
@@ -202,8 +226,10 @@ bool llvm::shouldOptimizeForSize(const MachineBasicBlock *MBB,
                                  MBFIWrapper *MBFIW,
                                  PGSOQueryType QueryType) {
   assert(MBB);
-  if (!PSI || !MBFIW)
+  if (!PSI || !MBFIW) {
     return false;
+
+}
   BlockFrequency BlockFreq = MBFIW->getBlockFreq(MBB);
   return shouldOptimizeForSizeImpl<MachineBasicBlockBFIAdapter>(
       BlockFreq, PSI, &MBFIW->getMBFI(), QueryType);

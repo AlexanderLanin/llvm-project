@@ -52,10 +52,12 @@ MachineSSAUpdater::~MachineSSAUpdater() {
 /// Initialize - Reset this object to get ready for a new set of SSA
 /// updates.  ProtoValue is the value used to name PHI nodes.
 void MachineSSAUpdater::Initialize(unsigned V) {
-  if (!AV)
+  if (!AV) {
     AV = new AvailableValsTy();
-  else
+  } else {
     getAvailableVals(AV).clear();
+
+}
 
   VR = V;
   VRC = MRI->getRegClass(VR);
@@ -82,16 +84,22 @@ unsigned MachineSSAUpdater::GetValueAtEndOfBlock(MachineBasicBlock *BB) {
 static
 unsigned LookForIdenticalPHI(MachineBasicBlock *BB,
         SmallVectorImpl<std::pair<MachineBasicBlock *, unsigned>> &PredValues) {
-  if (BB->empty())
+  if (BB->empty()) {
     return 0;
+
+}
 
   MachineBasicBlock::iterator I = BB->begin();
-  if (!I->isPHI())
+  if (!I->isPHI()) {
     return 0;
 
+}
+
   AvailableValsTy AVals;
-  for (unsigned i = 0, e = PredValues.size(); i != e; ++i)
+  for (unsigned i = 0, e = PredValues.size(); i != e; ++i) {
     AVals[PredValues[i].first] = PredValues[i].second;
+
+}
   while (I != BB->end() && I->isPHI()) {
     bool Same = true;
     for (unsigned i = 1, e = I->getNumOperands(); i != e; i += 2) {
@@ -102,8 +110,10 @@ unsigned LookForIdenticalPHI(MachineBasicBlock *BB,
         break;
       }
     }
-    if (Same)
+    if (Same) {
       return I->getOperand(0).getReg();
+
+}
     ++I;
   }
   return 0;
@@ -143,8 +153,10 @@ MachineInstrBuilder InsertNewDef(unsigned Opcode,
 unsigned MachineSSAUpdater::GetValueInMiddleOfBlock(MachineBasicBlock *BB) {
   // If there is no definition of the renamed variable in this block, just use
   // GetValueAtEndOfBlock to do our work.
-  if (!HasValueForBlock(BB))
+  if (!HasValueForBlock(BB)) {
     return GetValueAtEndOfBlockInternal(BB);
+
+}
 
   // If there are no predecessors, just return undef.
   if (BB->pred_empty()) {
@@ -171,18 +183,24 @@ unsigned MachineSSAUpdater::GetValueInMiddleOfBlock(MachineBasicBlock *BB) {
     if (isFirstPred) {
       SingularValue = PredVal;
       isFirstPred = false;
-    } else if (PredVal != SingularValue)
+    } else if (PredVal != SingularValue) {
       SingularValue = 0;
+
+}
   }
 
   // Otherwise, if all the merged values are the same, just use it.
-  if (SingularValue != 0)
+  if (SingularValue != 0) {
     return SingularValue;
+
+}
 
   // If an identical PHI is already in BB, just reuse it.
   unsigned DupPHI = LookForIdenticalPHI(BB, PredValues);
-  if (DupPHI)
+  if (DupPHI) {
     return DupPHI;
+
+}
 
   // Otherwise, we do need a PHI: insert one now.
   MachineBasicBlock::iterator Loc = BB->empty() ? BB->end() : BB->begin();
@@ -190,8 +208,10 @@ unsigned MachineSSAUpdater::GetValueInMiddleOfBlock(MachineBasicBlock *BB) {
                                                  Loc, VRC, MRI, TII);
 
   // Fill in all the predecessors of the PHI.
-  for (unsigned i = 0, e = PredValues.size(); i != e; ++i)
+  for (unsigned i = 0, e = PredValues.size(); i != e; ++i) {
     InsertedPHI.addReg(PredValues[i].second).addMBB(PredValues[i].first);
+
+}
 
   // See if the PHI node can be merged to a single value.  This can happen in
   // loop cases when we get a PHI of itself and one other value.
@@ -201,7 +221,9 @@ unsigned MachineSSAUpdater::GetValueInMiddleOfBlock(MachineBasicBlock *BB) {
   }
 
   // If the client wants to know about all new instructions, tell it.
-  if (InsertedPHIs) InsertedPHIs->push_back(InsertedPHI);
+  if (InsertedPHIs) { InsertedPHIs->push_back(InsertedPHI);
+
+}
 
   LLVM_DEBUG(dbgs() << "  Inserted PHI: " << *InsertedPHI << "\n");
   return InsertedPHI.getReg(0);
@@ -211,8 +233,10 @@ static
 MachineBasicBlock *findCorrespondingPred(const MachineInstr *MI,
                                          MachineOperand *U) {
   for (unsigned i = 1, e = MI->getNumOperands(); i != e; i += 2) {
-    if (&MI->getOperand(i) == U)
+    if (&MI->getOperand(i) == U) {
       return MI->getOperand(i+1).getMBB();
+
+}
   }
 
   llvm_unreachable("MachineOperand::getParent() failure?");
@@ -282,8 +306,10 @@ public:
   static void FindPredecessorBlocks(MachineBasicBlock *BB,
                                     SmallVectorImpl<MachineBasicBlock*> *Preds){
     for (MachineBasicBlock::pred_iterator PI = BB->pred_begin(),
-           E = BB->pred_end(); PI != E; ++PI)
+           E = BB->pred_end(); PI != E; ++PI) {
       Preds->push_back(*PI);
+
+}
   }
 
   /// GetUndefVal - Create an IMPLICIT_DEF instruction with a new register.
@@ -318,8 +344,10 @@ public:
 
   /// InstrIsPHI - Check if an instruction is a PHI.
   static MachineInstr *InstrIsPHI(MachineInstr *I) {
-    if (I && I->isPHI())
+    if (I && I->isPHI()) {
       return I;
+
+}
     return nullptr;
   }
 
@@ -333,8 +361,10 @@ public:
   /// operands, i.e., it was just added.
   static MachineInstr *ValueIsNewPHI(unsigned Val, MachineSSAUpdater *Updater) {
     MachineInstr *PHI = ValueIsPHI(Val, Updater);
-    if (PHI && PHI->getNumOperands() <= 1)
+    if (PHI && PHI->getNumOperands() <= 1) {
       return PHI;
+
+}
     return nullptr;
   }
 
@@ -353,8 +383,10 @@ public:
 /// PHIs where needed.
 unsigned MachineSSAUpdater::GetValueAtEndOfBlockInternal(MachineBasicBlock *BB){
   AvailableValsTy &AvailableVals = getAvailableVals(AV);
-  if (unsigned V = AvailableVals[BB])
+  if (unsigned V = AvailableVals[BB]) {
     return V;
+
+}
 
   SSAUpdaterImpl<MachineSSAUpdater> Impl(this, &AvailableVals, InsertedPHIs);
   return Impl.GetValue(BB);

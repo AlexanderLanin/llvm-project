@@ -19,8 +19,10 @@ namespace {
 static void traverse(const syntax::Node *N,
                      llvm::function_ref<void(const syntax::Node *)> Visit) {
   if (auto *T = dyn_cast<syntax::Tree>(N)) {
-    for (auto *C = T->firstChild(); C; C = C->nextSibling())
+    for (auto *C = T->firstChild(); C; C = C->nextSibling()) {
       traverse(C, Visit);
+
+}
   }
   Visit(N);
 }
@@ -97,17 +99,21 @@ void syntax::Tree::replaceChildRangeLowLevel(Node *BeforeBegin, Node *End,
     N->Role = static_cast<unsigned>(NodeRole::Detached);
     N->Parent = nullptr;
     N->NextSibling = nullptr;
-    if (N->Original)
+    if (N->Original) {
       traverse(N, [&](Node *C) { C->Original = false; });
+
+}
 
     N = Next;
   }
 
   // Attach new nodes.
-  if (BeforeBegin)
+  if (BeforeBegin) {
     BeforeBegin->NextSibling = New ? New : End;
-  else
+  } else {
     FirstChild = New ? New : End;
+
+}
 
   if (New) {
     auto *Last = New;
@@ -119,8 +125,10 @@ void syntax::Tree::replaceChildRangeLowLevel(Node *BeforeBegin, Node *End,
   }
 
   // Mark the node as modified.
-  for (auto *T = this; T && T->Original; T = T->Parent)
+  for (auto *T = this; T && T->Original; T = T->Parent) {
     T->Original = false;
+
+}
 }
 
 namespace {
@@ -129,10 +137,12 @@ static void dumpTokens(llvm::raw_ostream &OS, ArrayRef<syntax::Token> Tokens,
   assert(!Tokens.empty());
   bool First = true;
   for (const auto &T : Tokens) {
-    if (!First)
+    if (!First) {
       OS << " ";
-    else
+    } else {
       First = false;
+
+}
     // Handle 'eof' separately, calling text() on it produces an empty string.
     if (T.kind() == tok::eof) {
       OS << "<eof>";
@@ -145,14 +155,22 @@ static void dumpTokens(llvm::raw_ostream &OS, ArrayRef<syntax::Token> Tokens,
 static void dumpTree(llvm::raw_ostream &OS, const syntax::Node *N,
                      const syntax::Arena &A, std::vector<bool> IndentMask) {
   std::string Marks;
-  if (!N->isOriginal())
+  if (!N->isOriginal()) {
     Marks += "M";
-  if (N->role() == syntax::NodeRole::Detached)
+
+}
+  if (N->role() == syntax::NodeRole::Detached) {
     Marks += "*"; // FIXME: find a nice way to print other roles.
-  if (!N->canModify())
+
+}
+  if (!N->canModify()) {
     Marks += "I";
-  if (!Marks.empty())
+
+}
+  if (!Marks.empty()) {
     OS << Marks << ": ";
+
+}
 
   if (auto *L = llvm::dyn_cast<syntax::Leaf>(N)) {
     dumpTokens(OS, *L->token(), A.sourceManager());
@@ -165,10 +183,12 @@ static void dumpTree(llvm::raw_ostream &OS, const syntax::Node *N,
 
   for (auto It = T->firstChild(); It != nullptr; It = It->nextSibling()) {
     for (bool Filled : IndentMask) {
-      if (Filled)
+      if (Filled) {
         OS << "| ";
-      else
+      } else {
         OS << "  ";
+
+}
     }
     if (!It->nextSibling()) {
       OS << "`-";
@@ -195,8 +215,10 @@ std::string syntax::Node::dumpTokens(const Arena &A) const {
   llvm::raw_string_ostream OS(Storage);
   traverse(this, [&](const syntax::Node *N) {
     auto *L = llvm::dyn_cast<syntax::Leaf>(N);
-    if (!L)
+    if (!L) {
       return;
+
+}
     ::dumpTokens(OS, *L->token(), A.sourceManager());
     OS << " ";
   });
@@ -231,8 +253,10 @@ void syntax::Node::assertInvariantsRecursive() const {
 syntax::Leaf *syntax::Tree::firstLeaf() {
   auto *T = this;
   while (auto *C = T->firstChild()) {
-    if (auto *L = dyn_cast<syntax::Leaf>(C))
+    if (auto *L = dyn_cast<syntax::Leaf>(C)) {
       return L;
+
+}
     T = cast<syntax::Tree>(C);
   }
   return nullptr;
@@ -242,11 +266,15 @@ syntax::Leaf *syntax::Tree::lastLeaf() {
   auto *T = this;
   while (auto *C = T->firstChild()) {
     // Find the last child.
-    while (auto *Next = C->nextSibling())
+    while (auto *Next = C->nextSibling()) {
       C = Next;
 
-    if (auto *L = dyn_cast<syntax::Leaf>(C))
+}
+
+    if (auto *L = dyn_cast<syntax::Leaf>(C)) {
       return L;
+
+}
     T = cast<syntax::Tree>(C);
   }
   return nullptr;
@@ -254,8 +282,10 @@ syntax::Leaf *syntax::Tree::lastLeaf() {
 
 syntax::Node *syntax::Tree::findChild(NodeRole R) {
   for (auto *C = FirstChild; C; C = C->nextSibling()) {
-    if (C->role() == R)
+    if (C->role() == R) {
       return C;
+
+}
   }
   return nullptr;
 }

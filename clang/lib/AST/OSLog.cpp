@@ -60,13 +60,17 @@ public:
                                      unsigned SpecifierLen) {
     if (!FS.consumesDataArgument() &&
         FS.getConversionSpecifier().getKind() !=
-            clang::analyze_format_string::ConversionSpecifier::PrintErrno)
+            clang::analyze_format_string::ConversionSpecifier::PrintErrno) {
       return true;
+
+}
 
     ArgsData.emplace_back();
     unsigned ArgIndex = FS.getArgIndex();
-    if (ArgIndex < Args.size())
+    if (ArgIndex < Args.size()) {
       ArgsData.back().E = Args[ArgIndex];
+
+}
 
     // First get the Kind
     ArgsData.back().Kind = getKind(FS.getConversionSpecifier().getKind());
@@ -121,12 +125,14 @@ public:
       ArgsData.back().FieldWidth = Args[FS.getFieldWidth().getArgIndex()];
     }
 
-    if (FS.isSensitive())
+    if (FS.isSensitive()) {
       ArgsData.back().Flags |= OSLogBufferItem::IsSensitive;
-    else if (FS.isPrivate())
+    } else if (FS.isPrivate()) {
       ArgsData.back().Flags |= OSLogBufferItem::IsPrivate;
-    else if (FS.isPublic())
+    } else if (FS.isPublic()) {
       ArgsData.back().Flags |= OSLogBufferItem::IsPublic;
+
+}
 
     ArgsData.back().MaskType = FS.getMaskType();
     return true;
@@ -157,15 +163,19 @@ public:
         Layout.Items.emplace_back(OSLogBufferItem::CountKind, *Data.Count, Size,
                                   0);
       }
-      if (Data.Size)
+      if (Data.Size) {
         Layout.Items.emplace_back(Ctx, CharUnits::fromQuantity(*Data.Size),
                                   Data.Flags);
+
+}
       if (Data.Kind) {
         CharUnits Size;
-        if (*Data.Kind == OSLogBufferItem::ErrnoKind)
+        if (*Data.Kind == OSLogBufferItem::ErrnoKind) {
           Size = CharUnits::Zero();
-        else
+        } else {
           Size = Ctx.getTypeSizeInChars(Data.E->getType());
+
+}
         Layout.Items.emplace_back(*Data.Kind, Data.E, Size, Data.Flags);
       } else {
         auto Size = Ctx.getTypeSizeInChars(Data.E->getType());

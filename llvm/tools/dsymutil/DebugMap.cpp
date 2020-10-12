@@ -48,8 +48,10 @@ bool DebugMapObject::addSymbol(StringRef Name, Optional<uint64_t> ObjectAddress,
   auto InsertResult = Symbols.insert(
       std::make_pair(Name, SymbolMapping(ObjectAddress, LinkedAddress, Size)));
 
-  if (ObjectAddress && InsertResult.second)
+  if (ObjectAddress && InsertResult.second) {
     AddressToMapping[*ObjectAddress] = &*InsertResult.first;
+
+}
   return InsertResult.second;
 }
 
@@ -60,16 +62,20 @@ void DebugMapObject::print(raw_ostream &OS) const {
   using Entry = std::pair<StringRef, SymbolMapping>;
   std::vector<Entry> Entries;
   Entries.reserve(Symbols.getNumItems());
-  for (const auto &Sym : make_range(Symbols.begin(), Symbols.end()))
+  for (const auto &Sym : make_range(Symbols.begin(), Symbols.end())) {
     Entries.push_back(std::make_pair(Sym.getKey(), Sym.getValue()));
+
+}
   llvm::sort(Entries, [](const Entry &LHS, const Entry &RHS) {
     return LHS.first < RHS.first;
   });
   for (const auto &Sym : Entries) {
-    if (Sym.second.ObjectAddress)
+    if (Sym.second.ObjectAddress) {
       OS << format("\t%016" PRIx64, uint64_t(*Sym.second.ObjectAddress));
-    else
+    } else {
       OS << "\t????????????????";
+
+}
     OS << format(" => %016" PRIx64 "+0x%x\t%s\n",
                  uint64_t(Sym.second.BinaryAddress), uint32_t(Sym.second.Size),
                  Sym.first.data());
@@ -92,16 +98,20 @@ DebugMap::addDebugMapObject(StringRef ObjectFilePath,
 const DebugMapObject::DebugMapEntry *
 DebugMapObject::lookupSymbol(StringRef SymbolName) const {
   StringMap<SymbolMapping>::const_iterator Sym = Symbols.find(SymbolName);
-  if (Sym == Symbols.end())
+  if (Sym == Symbols.end()) {
     return nullptr;
+
+}
   return &*Sym;
 }
 
 const DebugMapObject::DebugMapEntry *
 DebugMapObject::lookupObjectAddress(uint64_t Address) const {
   auto Mapping = AddressToMapping.find(Address);
-  if (Mapping == AddressToMapping.end())
+  if (Mapping == AddressToMapping.end()) {
     return nullptr;
+
+}
   return Mapping->getSecond();
 }
 
@@ -127,8 +137,10 @@ ErrorOr<std::vector<std::unique_ptr<DebugMap>>>
 DebugMap::parseYAMLDebugMap(StringRef InputFile, StringRef PrependPath,
                             bool Verbose) {
   auto ErrOrFile = MemoryBuffer::getFileOrSTDIN(InputFile);
-  if (auto Err = ErrOrFile.getError())
+  if (auto Err = ErrOrFile.getError()) {
     return Err;
+
+}
 
   YAMLContext Ctxt;
 
@@ -138,8 +150,10 @@ DebugMap::parseYAMLDebugMap(StringRef InputFile, StringRef PrependPath,
   yaml::Input yin((*ErrOrFile)->getBuffer(), &Ctxt);
   yin >> Res;
 
-  if (auto EC = yin.error())
+  if (auto EC = yin.error()) {
     return EC;
+
+}
   std::vector<std::unique_ptr<DebugMap>> Result;
   Result.push_back(std::move(Res));
   return std::move(Result);
@@ -206,19 +220,25 @@ void MappingTraits<dsymutil::DebugMap>::mapping(IO &io,
                                                 dsymutil::DebugMap &DM) {
   io.mapRequired("triple", DM.BinaryTriple);
   io.mapOptional("binary-path", DM.BinaryPath);
-  if (void *Ctxt = io.getContext())
+  if (void *Ctxt = io.getContext()) {
     reinterpret_cast<YAMLContext *>(Ctxt)->BinaryTriple = DM.BinaryTriple;
+
+}
   io.mapOptional("objects", DM.Objects);
 }
 
 void MappingTraits<std::unique_ptr<dsymutil::DebugMap>>::mapping(
     IO &io, std::unique_ptr<dsymutil::DebugMap> &DM) {
-  if (!DM)
+  if (!DM) {
     DM.reset(new DebugMap());
+
+}
   io.mapRequired("triple", DM->BinaryTriple);
   io.mapOptional("binary-path", DM->BinaryPath);
-  if (void *Ctxt = io.getContext())
+  if (void *Ctxt = io.getContext()) {
     reinterpret_cast<YAMLContext *>(Ctxt)->BinaryTriple = DM->BinaryTriple;
+
+}
   io.mapOptional("objects", DM->Objects);
 }
 
@@ -227,9 +247,11 @@ MappingTraits<dsymutil::DebugMapObject>::YamlDMO::YamlDMO(
   Filename = Obj.Filename;
   Timestamp = sys::toTimeT(Obj.getTimestamp());
   Entries.reserve(Obj.Symbols.size());
-  for (auto &Entry : Obj.Symbols)
+  for (auto &Entry : Obj.Symbols) {
     Entries.push_back(
         std::make_pair(std::string(Entry.getKey()), Entry.getValue()));
+
+}
 }
 
 dsymutil::DebugMapObject
@@ -259,8 +281,10 @@ MappingTraits<dsymutil::DebugMapObject>::YamlDMO::denormalize(IO &IO) {
         if (!Name || (Sym.getFlags() &
                       (SymbolRef::SF_Absolute | SymbolRef::SF_Common))) {
           // TODO: Actually report errors helpfully.
-          if (!Name)
+          if (!Name) {
             consumeError(Name.takeError());
+
+}
           continue;
         }
         SymbolAddresses[*Name] = Address;
@@ -272,11 +296,15 @@ MappingTraits<dsymutil::DebugMapObject>::YamlDMO::denormalize(IO &IO) {
   for (auto &Entry : Entries) {
     auto &Mapping = Entry.second;
     Optional<uint64_t> ObjAddress;
-    if (Mapping.ObjectAddress)
+    if (Mapping.ObjectAddress) {
       ObjAddress = *Mapping.ObjectAddress;
+
+}
     auto AddressIt = SymbolAddresses.find(Entry.first);
-    if (AddressIt != SymbolAddresses.end())
+    if (AddressIt != SymbolAddresses.end()) {
       ObjAddress = AddressIt->getValue();
+
+}
     Res.addSymbol(Entry.first, ObjAddress, Mapping.BinaryAddress, Mapping.Size);
   }
   return Res;

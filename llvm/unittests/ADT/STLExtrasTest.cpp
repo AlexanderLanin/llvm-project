@@ -280,15 +280,19 @@ TEST(STLExtrasTest, ConcatRange) {
 
   // Use concat across different sized ranges of different types with different
   // iterators.
-  for (int &i : concat<int>(V1234, L56, SV78))
+  for (int &i : concat<int>(V1234, L56, SV78)) {
     Test.push_back(i);
+
+}
   EXPECT_EQ(Expected, Test);
 
   // Use concat between a temporary, an L-value, and an R-value to make sure
   // complex lifetimes work well.
   Test.clear();
-  for (int &i : concat<int>(std::vector<int>(V1234), L56, std::move(SV78)))
+  for (int &i : concat<int>(std::vector<int>(V1234), L56, std::move(SV78))) {
     Test.push_back(i);
+
+}
   EXPECT_EQ(Expected, Test);
 }
 

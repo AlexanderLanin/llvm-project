@@ -278,14 +278,22 @@ template <> std::string getName(const StringRef &name) {
 }
 
 template <> std::string getName(const llvm::Any &WrappedIR) {
-  if (any_isa<const Module *>(WrappedIR))
+  if (any_isa<const Module *>(WrappedIR)) {
     return any_cast<const Module *>(WrappedIR)->getName().str();
-  if (any_isa<const Function *>(WrappedIR))
+
+}
+  if (any_isa<const Function *>(WrappedIR)) {
     return any_cast<const Function *>(WrappedIR)->getName().str();
-  if (any_isa<const Loop *>(WrappedIR))
+
+}
+  if (any_isa<const Loop *>(WrappedIR)) {
     return any_cast<const Loop *>(WrappedIR)->getName().str();
-  if (any_isa<const LazyCallGraph::SCC *>(WrappedIR))
+
+}
+  if (any_isa<const LazyCallGraph::SCC *>(WrappedIR)) {
     return any_cast<const LazyCallGraph::SCC *>(WrappedIR)->getName();
+
+}
   return "<UNKNOWN>";
 }
 /// Define a custom matcher for objects which support a 'getName' method.
@@ -445,8 +453,10 @@ protected:
           /// Handle parsing of the names of analysis utilities such as
           /// require<test-analysis> and invalidate<test-analysis> for our
           /// analysis mock handle
-          if (parseAnalysisUtilityPasses<AnalysisT>("test-analysis", Name, PM))
+          if (parseAnalysisUtilityPasses<AnalysisT>("test-analysis", Name, PM)) {
             return true;
+
+}
 
           /// Parse the name of our pass mock handle
           if (Name == "test-transform") {
@@ -958,8 +968,10 @@ TEST_F(ModuleCallbacksTest, ParseTopLevelPipeline) {
     auto &InnerPipeline = Pipeline.front().InnerPipeline;
     if (FirstName == "another-pipeline") {
       for (auto &E : InnerPipeline) {
-        if (parseAnalysisUtilityPasses<AnalysisT>("test-analysis", E.Name, PM))
+        if (parseAnalysisUtilityPasses<AnalysisT>("test-analysis", E.Name, PM)) {
           continue;
+
+}
 
         if (E.Name == "test-transform") {
           PM.addPass(PassHandle.getPass());

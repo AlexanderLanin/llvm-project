@@ -46,12 +46,20 @@ using namespace llvm;
 /// PHI nodes or outside of the basic block that defines it, or used by a
 /// switch or atomic instruction, which may expand to multiple basic blocks.
 static bool isUsedOutsideOfDefiningBlock(const Instruction *I) {
-  if (I->use_empty()) return false;
-  if (isa<PHINode>(I)) return true;
+  if (I->use_empty()) { return false;
+
+}
+  if (isa<PHINode>(I)) { return true;
+
+}
   const BasicBlock *BB = I->getParent();
-  for (const User *U : I->users())
-    if (cast<Instruction>(U)->getParent() != BB || isa<PHINode>(U))
+  for (const User *U : I->users()) {
+    if (cast<Instruction>(U)->getParent() != BB || isa<PHINode>(U)) {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -72,8 +80,10 @@ static ISD::NodeType getPreferredExtendForValue(const Value *V) {
       NumOfUnsigned += CI->isUnsigned();
     }
   }
-  if (NumOfSigned > NumOfUnsigned)
+  if (NumOfSigned > NumOfUnsigned) {
     ExtendKind = ISD::SIGN_EXTEND;
+
+}
 
   return ExtendKind;
 }
@@ -104,21 +114,25 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
   if (isFuncletEHPersonality(Personality)) {
     // Calculate state numbers if we haven't already.
     WinEHFuncInfo &EHInfo = *MF->getWinEHFuncInfo();
-    if (Personality == EHPersonality::MSVC_CXX)
+    if (Personality == EHPersonality::MSVC_CXX) {
       calculateWinCXXEHStateNumbers(&fn, EHInfo);
-    else if (isAsynchronousEHPersonality(Personality))
+    } else if (isAsynchronousEHPersonality(Personality)) {
       calculateSEHStateNumbers(&fn, EHInfo);
-    else if (Personality == EHPersonality::CoreCLR)
+    } else if (Personality == EHPersonality::CoreCLR) {
       calculateClrEHStateNumbers(&fn, EHInfo);
+
+}
 
     // Map all BB references in the WinEH data to MBBs.
     for (WinEHTryBlockMapEntry &TBME : EHInfo.TryBlockMap) {
       for (WinEHHandlerType &H : TBME.HandlerArray) {
-        if (const AllocaInst *AI = H.CatchObj.Alloca)
+        if (const AllocaInst *AI = H.CatchObj.Alloca) {
           CatchObjects.insert({AI, {}}).first->second.push_back(
               &H.CatchObj.FrameIndex);
-        else
+        } else {
           H.CatchObj.FrameIndex = INT_MAX;
+
+}
       }
     }
   }
@@ -148,7 +162,9 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
               MF->getDataLayout().getTypeAllocSize(Ty).getKnownMinSize();
 
           TySize *= CUI->getZExtValue();   // Get total allocated size.
-          if (TySize == 0) TySize = 1; // Don't create zero-sized stack objects.
+          if (TySize == 0) { TySize = 1; // Don't create zero-sized stack objects.
+
+}
           int FrameIndex = INT_MAX;
           auto Iter = CatchObjects.find(AI);
           if (Iter != CatchObjects.end() && TLI->needsFixedCatchObjects()) {
@@ -162,22 +178,28 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
 
           // Scalable vectors may need a special StackID to distinguish
           // them from other (fixed size) stack objects.
-          if (Ty->isVectorTy() && Ty->getVectorIsScalable())
+          if (Ty->isVectorTy() && Ty->getVectorIsScalable()) {
             MF->getFrameInfo().setStackID(FrameIndex,
                                           TFI->getStackIDForScalableVectors());
+
+}
 
           StaticAllocaMap[AI] = FrameIndex;
           // Update the catch handler information.
           if (Iter != CatchObjects.end()) {
-            for (int *CatchObjPtr : Iter->second)
+            for (int *CatchObjPtr : Iter->second) {
               *CatchObjPtr = FrameIndex;
+
+}
           }
         } else {
           // FIXME: Overaligned static allocas should be grouped into
           // a single dynamic allocation instead of using a separate
           // stack allocation for each one.
-          if (Align <= StackAlign)
+          if (Align <= StackAlign) {
             Align = 0;
+
+}
           // Inform the Frame Information that we have variable-sized objects.
           MF->getFrameInfo().CreateVariableSizedObject(Align ? Align : 1, AI);
         }
@@ -198,8 +220,10 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
               std::pair<unsigned, const TargetRegisterClass *> PhysReg =
                   TLI->getRegForInlineAsmConstraint(TRI, Op.ConstraintCode,
                                                     Op.ConstraintVT);
-              if (PhysReg.first == SP)
+              if (PhysReg.first == SP) {
                 MF->getFrameInfo().setHasOpaqueSPAdjustment(true);
+
+}
             }
           }
         }
@@ -209,22 +233,30 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
       // prologue boilerplate for variadic functions that don't examine their
       // arguments.
       if (const auto *II = dyn_cast<IntrinsicInst>(&I)) {
-        if (II->getIntrinsicID() == Intrinsic::vastart)
+        if (II->getIntrinsicID() == Intrinsic::vastart) {
           MF->getFrameInfo().setHasVAStart(true);
+
+}
       }
 
       // If we have a musttail call in a variadic function, we need to ensure we
       // forward implicit register parameters.
       if (const auto *CI = dyn_cast<CallInst>(&I)) {
-        if (CI->isMustTailCall() && Fn->isVarArg())
+        if (CI->isMustTailCall() && Fn->isVarArg()) {
           MF->getFrameInfo().setHasMustTailInVarArgFunc(true);
+
+}
       }
 
       // Mark values used outside their block as exported, by allocating
       // a virtual register for them.
-      if (isUsedOutsideOfDefiningBlock(&I))
-        if (!isa<AllocaInst>(I) || !StaticAllocaMap.count(cast<AllocaInst>(&I)))
+      if (isUsedOutsideOfDefiningBlock(&I)) {
+        if (!isa<AllocaInst>(I) || !StaticAllocaMap.count(cast<AllocaInst>(&I))) {
           InitializeRegForValue(&I);
+
+}
+
+}
 
       // Decide the preferred extend type for a value.
       PreferredExtendType[&I] = getPreferredExtendForValue(&I);
@@ -253,8 +285,10 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
                "WinEHPrepare failed to remove PHIs from imaginary BBs");
         continue;
       }
-      if (isa<FuncletPadInst>(PadInst))
+      if (isa<FuncletPadInst>(PadInst)) {
         assert(&*BB.begin() == PadInst && "WinEHPrepare failed to demote PHIs");
+
+}
     }
 
     MachineBasicBlock *MBB = mf.CreateMachineBasicBlock(&BB);
@@ -264,22 +298,30 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
     // Transfer the address-taken flag. This is necessary because there could
     // be multiple MachineBasicBlocks corresponding to one BasicBlock, and only
     // the first one should be marked.
-    if (BB.hasAddressTaken())
+    if (BB.hasAddressTaken()) {
       MBB->setHasAddressTaken();
 
+}
+
     // Mark landing pad blocks.
-    if (BB.isEHPad())
+    if (BB.isEHPad()) {
       MBB->setIsEHPad();
+
+}
 
     // Create Machine PHI nodes for LLVM PHI nodes, lowering them as
     // appropriate.
     for (const PHINode &PN : BB.phis()) {
-      if (PN.use_empty())
+      if (PN.use_empty()) {
         continue;
 
+}
+
       // Skip empty types
-      if (PN.getType()->isEmptyTy())
+      if (PN.getType()->isEmptyTy()) {
         continue;
+
+}
 
       DebugLoc DL = PN.getDebugLoc();
       unsigned PHIReg = ValueMap[&PN];
@@ -290,8 +332,10 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
       for (EVT VT : ValueVTs) {
         unsigned NumRegisters = TLI->getNumRegisters(Fn->getContext(), VT);
         const TargetInstrInfo *TII = MF->getSubtarget().getInstrInfo();
-        for (unsigned i = 0; i != NumRegisters; ++i)
+        for (unsigned i = 0; i != NumRegisters; ++i) {
           BuildMI(MBB, DL, TII->get(TargetOpcode::PHI), PHIReg + i);
+
+}
         PHIReg += NumRegisters;
       }
     }
@@ -303,13 +347,19 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
     // Map all BB references in the WinEH data to MBBs.
     for (WinEHTryBlockMapEntry &TBME : EHInfo.TryBlockMap) {
       for (WinEHHandlerType &H : TBME.HandlerArray) {
-        if (H.Handler)
+        if (H.Handler) {
           H.Handler = MBBMap[H.Handler.get<const BasicBlock *>()];
+
+}
       }
     }
-    for (CxxUnwindMapEntry &UME : EHInfo.CxxUnwindMap)
-      if (UME.Cleanup)
+    for (CxxUnwindMapEntry &UME : EHInfo.CxxUnwindMap) {
+      if (UME.Cleanup) {
         UME.Cleanup = MBBMap[UME.Cleanup.get<const BasicBlock *>()];
+
+}
+
+}
     for (SEHUnwindMapEntry &UME : EHInfo.SEHUnwindMap) {
       const auto *BB = UME.Handler.get<const BasicBlock *>();
       UME.Handler = MBBMap[BB];
@@ -380,7 +430,9 @@ unsigned FunctionLoweringInfo::CreateRegs(Type *Ty, bool isDivergent) {
     unsigned NumRegs = TLI->getNumRegisters(Ty->getContext(), ValueVT);
     for (unsigned i = 0; i != NumRegs; ++i) {
       unsigned R = CreateReg(RegisterVT, isDivergent);
-      if (!FirstReg) FirstReg = R;
+      if (!FirstReg) { FirstReg = R;
+
+}
     }
   }
   return FirstReg;
@@ -398,12 +450,16 @@ unsigned FunctionLoweringInfo::CreateRegs(const Value *V) {
 /// than the LiveOutInfo's existing bit width.
 const FunctionLoweringInfo::LiveOutInfo *
 FunctionLoweringInfo::GetLiveOutRegInfo(unsigned Reg, unsigned BitWidth) {
-  if (!LiveOutRegInfo.inBounds(Reg))
+  if (!LiveOutRegInfo.inBounds(Reg)) {
     return nullptr;
 
+}
+
   LiveOutInfo *LOI = &LiveOutRegInfo[Reg];
-  if (!LOI->IsValid)
+  if (!LOI->IsValid) {
     return nullptr;
+
+}
 
   if (BitWidth > LOI->Known.getBitWidth()) {
     LOI->NumSignBits = 1;
@@ -417,8 +473,10 @@ FunctionLoweringInfo::GetLiveOutRegInfo(unsigned Reg, unsigned BitWidth) {
 /// register based on the LiveOutInfo of its operands.
 void FunctionLoweringInfo::ComputePHILiveOutRegInfo(const PHINode *PN) {
   Type *Ty = PN->getType();
-  if (!Ty->isIntegerTy() || Ty->isVectorTy())
+  if (!Ty->isIntegerTy() || Ty->isVectorTy()) {
     return;
+
+}
 
   SmallVector<EVT, 1> ValueVTs;
   ComputeValueVTs(*TLI, MF->getDataLayout(), Ty, ValueVTs);
@@ -426,14 +484,18 @@ void FunctionLoweringInfo::ComputePHILiveOutRegInfo(const PHINode *PN) {
          "PHIs with non-vector integer types should have a single VT.");
   EVT IntVT = ValueVTs[0];
 
-  if (TLI->getNumRegisters(PN->getContext(), IntVT) != 1)
+  if (TLI->getNumRegisters(PN->getContext(), IntVT) != 1) {
     return;
+
+}
   IntVT = TLI->getTypeToTransformTo(PN->getContext(), IntVT);
   unsigned BitWidth = IntVT.getSizeInBits();
 
   unsigned DestReg = ValueMap[PN];
-  if (!Register::isVirtualRegister(DestReg))
+  if (!Register::isVirtualRegister(DestReg)) {
     return;
+
+}
   LiveOutRegInfo.grow(DestReg);
   LiveOutInfo &DestLOI = LiveOutRegInfo[DestReg];
 
@@ -516,8 +578,10 @@ void FunctionLoweringInfo::setArgumentFrameIndex(const Argument *A,
 /// returned.
 int FunctionLoweringInfo::getArgumentFrameIndex(const Argument *A) {
   auto I = ByValArgFrameIndexMap.find(A);
-  if (I != ByValArgFrameIndexMap.end())
+  if (I != ByValArgFrameIndexMap.end()) {
     return I->second;
+
+}
   LLVM_DEBUG(dbgs() << "Argument does not have assigned frame index!\n");
   return INT_MAX;
 }
@@ -527,8 +591,10 @@ unsigned FunctionLoweringInfo::getCatchPadExceptionPointerVReg(
   MachineRegisterInfo &MRI = MF->getRegInfo();
   auto I = CatchPadExceptionPointers.insert({CPI, 0});
   unsigned &VReg = I.first->second;
-  if (I.second)
+  if (I.second) {
     VReg = MRI.createVirtualRegister(RC);
+
+}
   assert(VReg && "null vreg in exception pointer table!");
   return VReg;
 }
@@ -544,8 +610,10 @@ FunctionLoweringInfo::getValueFromVirtualReg(unsigned Vreg) {
       unsigned Reg = P.second;
       for (EVT VT : ValueVTs) {
         unsigned NumRegisters = TLI->getNumRegisters(Fn->getContext(), VT);
-        for (unsigned i = 0, e = NumRegisters; i != e; ++i)
+        for (unsigned i = 0, e = NumRegisters; i != e; ++i) {
           VirtReg2Value[Reg++] = P.first;
+
+}
       }
     }
   }

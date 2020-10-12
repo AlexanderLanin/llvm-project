@@ -112,8 +112,10 @@ public:
     printSymbolNameAndUSR(D, Ctx, OS);
     OS << " | ";
 
-    if (ASTNameGen->writeName(D, OS))
+    if (ASTNameGen->writeName(D, OS)) {
       OS << "<no-cgname>";
+
+}
     OS << " | ";
 
     printSymbolRoles(Roles, OS);
@@ -214,8 +216,10 @@ static bool printSourceSymbols(const char *Executable,
   IntrusiveRefCntPtr<DiagnosticsEngine>
     Diags(CompilerInstance::createDiagnostics(new DiagnosticOptions));
   auto CInvok = createInvocationFromCommandLine(ArgsWithProgName, Diags);
-  if (!CInvok)
+  if (!CInvok) {
     return true;
+
+}
 
   raw_ostream &OS = outs();
   auto DataConsumer = std::make_shared<PrintIndexDataConsumer>(OS);
@@ -228,8 +232,10 @@ static bool printSourceSymbols(const char *Executable,
   std::unique_ptr<ASTUnit> Unit(ASTUnit::LoadFromCompilerInvocationAction(
       std::move(CInvok), PCHContainerOps, Diags, IndexAction.get()));
 
-  if (!Unit)
+  if (!Unit) {
     return true;
+
+}
 
   if (dumpModuleImports) {
     if (auto Reader = Unit->getASTReader()) {
@@ -283,8 +289,10 @@ static bool printSourceSymbolsFromModule(StringRef modulePath,
 
 static void printSymbolInfo(SymbolInfo SymInfo, raw_ostream &OS) {
   OS << getSymbolKindString(SymInfo.Kind);
-  if (SymInfo.SubKind != SymbolSubKind::None)
+  if (SymInfo.SubKind != SymbolSubKind::None) {
     OS << '/' << getSymbolSubKindString(SymInfo.SubKind);
+
+}
   if (SymInfo.Properties) {
     OS << '(';
     printSymbolProperties(SymInfo.Properties, OS);

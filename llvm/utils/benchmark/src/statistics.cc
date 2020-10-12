@@ -30,12 +30,16 @@ auto StatisticsSum = [](const std::vector<double>& v) {
 };
 
 double StatisticsMean(const std::vector<double>& v) {
-  if (v.empty()) return 0.0;
+  if (v.empty()) { return 0.0;
+
+}
   return StatisticsSum(v) * (1.0 / v.size());
 }
 
 double StatisticsMedian(const std::vector<double>& v) {
-  if (v.size() < 3) return StatisticsMean(v);
+  if (v.size() < 3) { return StatisticsMean(v);
+
+}
   std::vector<double> copy(v);
 
   auto center = copy.begin() + v.size() / 2;
@@ -44,8 +48,10 @@ double StatisticsMedian(const std::vector<double>& v) {
   // did we have an odd number of samples?
   // if yes, then center is the median
   // it no, then we are looking for the average between center and the value before
-  if(v.size() % 2 == 1)
+  if(v.size() % 2 == 1) {
     return *center;
+
+}
   auto center2 = copy.begin() + v.size() / 2 - 1;
   std::nth_element(copy.begin(), center2, copy.end());
   return (*center + *center2) / 2.0;
@@ -59,17 +65,23 @@ auto SumSquares = [](const std::vector<double>& v) {
 auto Sqr = [](const double dat) { return dat * dat; };
 auto Sqrt = [](const double dat) {
   // Avoid NaN due to imprecision in the calculations
-  if (dat < 0.0) return 0.0;
+  if (dat < 0.0) { return 0.0;
+
+}
   return std::sqrt(dat);
 };
 
 double StatisticsStdDev(const std::vector<double>& v) {
   const auto mean = StatisticsMean(v);
-  if (v.empty()) return mean;
+  if (v.empty()) { return mean;
+
+}
 
   // Sample standard deviation is undefined for n = 1
-  if (v.size() == 1)
+  if (v.size() == 1) {
     return 0.0;
+
+}
 
   const double avg_squares = SumSquares(v) * (1.0 / v.size());
   return Sqrt(v.size() / (v.size() - 1.0) * (avg_squares - Sqr(mean)));
@@ -126,7 +138,9 @@ std::vector<BenchmarkReporter::Run> ComputeStats(
   for (Run const& run : reports) {
     CHECK_EQ(reports[0].benchmark_name, run.benchmark_name);
     CHECK_EQ(run_iterations, run.iterations);
-    if (run.error_occurred) continue;
+    if (run.error_occurred) { continue;
+
+}
     real_accumulated_time_stat.emplace_back(run.real_accumulated_time);
     cpu_accumulated_time_stat.emplace_back(run.cpu_accumulated_time);
     items_per_second_stat.emplace_back(run.items_per_second);

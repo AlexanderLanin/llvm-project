@@ -49,16 +49,20 @@ void UndefinedMemoryManipulationCheck::check(
     const MatchFinder::MatchResult &Result) {
   if (const auto *Call = Result.Nodes.getNodeAs<CallExpr>("dest")) {
     QualType DestType = Call->getArg(0)->IgnoreImplicit()->getType();
-    if (!DestType->getPointeeType().isNull())
+    if (!DestType->getPointeeType().isNull()) {
       DestType = DestType->getPointeeType();
+
+}
     diag(Call->getBeginLoc(), "undefined behavior, destination object type %0 "
                               "is not TriviallyCopyable")
         << DestType;
   }
   if (const auto *Call = Result.Nodes.getNodeAs<CallExpr>("src")) {
     QualType SourceType = Call->getArg(1)->IgnoreImplicit()->getType();
-    if (!SourceType->getPointeeType().isNull())
+    if (!SourceType->getPointeeType().isNull()) {
       SourceType = SourceType->getPointeeType();
+
+}
     diag(Call->getBeginLoc(),
          "undefined behavior, source object type %0 is not TriviallyCopyable")
         << SourceType;

@@ -23,9 +23,13 @@ using llvm::SmallPtrSet;
 namespace {
 
 template <typename S> bool isSetDifferenceEmpty(const S &S1, const S &S2) {
-  for (auto E : S1)
-    if (S2.count(E) == 0)
+  for (auto E : S1) {
+    if (S2.count(E) == 0) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -33,8 +37,10 @@ template <typename S> bool isSetDifferenceEmpty(const S &S1, const S &S2) {
 template <typename Node>
 void extractNodesByIdTo(ArrayRef<BoundNodes> Matches, StringRef ID,
                         SmallPtrSet<const Node *, 16> &Nodes) {
-  for (const auto &Match : Matches)
+  for (const auto &Match : Matches) {
     Nodes.insert(Match.getNodeAs<Node>(ID));
+
+}
 }
 
 } // namespace

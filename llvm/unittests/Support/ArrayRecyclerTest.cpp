@@ -30,10 +30,12 @@ TEST(ArrayRecyclerTest, Capacity) {
   for (unsigned N = 1; N != 100; ++N) {
     Cap = ARO::Capacity::get(N);
     EXPECT_LE(N, Cap.getSize());
-    if (PrevSize >= N)
+    if (PrevSize >= N) {
       EXPECT_EQ(PrevSize, Cap.getSize());
-    else
+    } else {
       EXPECT_LT(PrevSize, Cap.getSize());
+
+}
     PrevSize = Cap.getSize();
   }
 

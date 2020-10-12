@@ -15,18 +15,22 @@ using namespace llvm;
 
 void GIMatchDagInstr::print(raw_ostream &OS) const {
   OS << "(";
-  if (const auto *Annotation = getOpcodeAnnotation())
+  if (const auto *Annotation = getOpcodeAnnotation()) {
     OS << Annotation->TheDef->getName();
-  else
+  } else {
     OS << "<unknown>";
+
+}
   OS << " ";
   OperandInfo.print(OS);
   OS << "):$" << Name;
   if (!UserAssignedNamesForOperands.empty()) {
     OS << " // ";
     SmallVector<std::pair<unsigned, StringRef>, 8> ToPrint;
-    for (const auto &Assignment : UserAssignedNamesForOperands)
+    for (const auto &Assignment : UserAssignedNamesForOperands) {
       ToPrint.emplace_back(Assignment.first, Assignment.second);
+
+}
     llvm::sort(ToPrint.begin(), ToPrint.end());
     StringRef Separator = "";
     for (const auto &Assignment : ToPrint) {

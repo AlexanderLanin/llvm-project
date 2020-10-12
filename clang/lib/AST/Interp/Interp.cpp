@@ -36,8 +36,10 @@ static bool Ret(InterpState &S, CodePtr &PC, APValue &Result) {
   const T &Ret = S.Stk.pop<T>();
 
   assert(S.Current->getFrameOffset() == S.Stk.size() && "Invalid frame");
-  if (!S.checkingPotentialConstantExpression())
+  if (!S.checkingPotentialConstantExpression()) {
     S.Current->popArgs();
+
+}
 
   if (InterpFrame *Caller = S.Current->Caller) {
     PC = S.Current->getRetPC();
@@ -47,8 +49,10 @@ static bool Ret(InterpState &S, CodePtr &PC, APValue &Result) {
   } else {
     delete S.Current;
     S.Current = nullptr;
-    if (!ReturnValue<T>(Ret, Result))
+    if (!ReturnValue<T>(Ret, Result)) {
       return false;
+
+}
   }
   return true;
 }
@@ -57,8 +61,10 @@ static bool RetVoid(InterpState &S, CodePtr &PC, APValue &Result) {
   S.CallStackDepth--;
 
   assert(S.Current->getFrameOffset() == S.Stk.size() && "Invalid frame");
-  if (!S.checkingPotentialConstantExpression())
+  if (!S.checkingPotentialConstantExpression()) {
     S.Current->popArgs();
+
+}
 
   if (InterpFrame *Caller = S.Current->Caller) {
     PC = S.Current->getRetPC();
@@ -100,8 +106,10 @@ static bool Jf(InterpState &S, CodePtr &PC, int32_t Offset) {
 
 static bool CheckInitialized(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                              AccessKinds AK) {
-  if (Ptr.isInitialized())
+  if (Ptr.isInitialized()) {
     return true;
+
+}
   if (!S.checkingPotentialConstantExpression()) {
     const SourceInfo &Loc = S.Current->getSource(OpPC);
     S.FFDiag(Loc, diag::note_constexpr_access_uninit) << AK << false;
@@ -111,8 +119,10 @@ static bool CheckInitialized(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
 static bool CheckActive(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                         AccessKinds AK) {
-  if (Ptr.isActive())
+  if (Ptr.isActive()) {
     return true;
+
+}
 
   // Get the inactive field descriptor.
   const FieldDecl *InactiveField = Ptr.getField();
@@ -144,14 +154,20 @@ static bool CheckActive(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 static bool CheckTemporary(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                            AccessKinds AK) {
   if (auto ID = Ptr.getDeclID()) {
-    if (!Ptr.isStaticTemporary())
+    if (!Ptr.isStaticTemporary()) {
       return true;
 
-    if (Ptr.getDeclDesc()->getType().isConstQualified())
+}
+
+    if (Ptr.getDeclDesc()->getType().isConstQualified()) {
       return true;
 
-    if (S.P.getCurrentDecl() == ID)
+}
+
+    if (S.P.getCurrentDecl() == ID) {
       return true;
+
+}
 
     const SourceInfo &E = S.Current->getSource(OpPC);
     S.FFDiag(E, diag::note_constexpr_access_static_temporary, 1) << AK;
@@ -163,11 +179,15 @@ static bool CheckTemporary(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
 static bool CheckGlobal(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
   if (auto ID = Ptr.getDeclID()) {
-    if (!Ptr.isStatic())
+    if (!Ptr.isStatic()) {
       return true;
 
-    if (S.P.getCurrentDecl() == ID)
+}
+
+    if (S.P.getCurrentDecl() == ID) {
       return true;
+
+}
 
     S.FFDiag(S.Current->getLocation(OpPC), diag::note_constexpr_modify_global);
     return false;
@@ -179,8 +199,10 @@ namespace clang {
 namespace interp {
 
 bool CheckExtern(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!Ptr.isExtern())
+  if (!Ptr.isExtern()) {
     return true;
+
+}
 
   if (!S.checkingPotentialConstantExpression()) {
     auto *VD = Ptr.getDeclDesc()->asValueDecl();
@@ -192,8 +214,10 @@ bool CheckExtern(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
 }
 
 bool CheckArray(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!Ptr.isUnknownSizeArray())
+  if (!Ptr.isUnknownSizeArray()) {
     return true;
+
+}
   const SourceInfo &E = S.Current->getSource(OpPC);
   S.FFDiag(E, diag::note_constexpr_unsized_array_indexed);
   return false;
@@ -204,10 +228,12 @@ bool CheckLive(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
   const auto &Src = S.Current->getSource(OpPC);
   if (Ptr.isZero()) {
 
-    if (Ptr.isField())
+    if (Ptr.isField()) {
       S.FFDiag(Src, diag::note_constexpr_null_subobject) << CSK_Field;
-    else
+    } else {
       S.FFDiag(Src, diag::note_constexpr_access_null) << AK;
+
+}
 
     return false;
   }
@@ -217,10 +243,12 @@ bool CheckLive(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
     S.FFDiag(Src, diag::note_constexpr_lifetime_ended, 1) << AK << !IsTemp;
 
-    if (IsTemp)
+    if (IsTemp) {
       S.Note(Ptr.getDeclLoc(), diag::note_constexpr_temporary_here);
-    else
+    } else {
       S.Note(Ptr.getDeclLoc(), diag::note_declared_at);
+
+}
 
     return false;
   }
@@ -230,8 +258,10 @@ bool CheckLive(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
 bool CheckNull(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                CheckSubobjectKind CSK) {
-  if (!Ptr.isZero())
+  if (!Ptr.isZero()) {
     return true;
+
+}
   const SourceInfo &Loc = S.Current->getSource(OpPC);
   S.FFDiag(Loc, diag::note_constexpr_null_subobject) << CSK;
   return false;
@@ -239,8 +269,10 @@ bool CheckNull(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
 bool CheckRange(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                 AccessKinds AK) {
-  if (!Ptr.isOnePastEnd())
+  if (!Ptr.isOnePastEnd()) {
     return true;
+
+}
   const SourceInfo &Loc = S.Current->getSource(OpPC);
   S.FFDiag(Loc, diag::note_constexpr_access_past_end) << AK;
   return false;
@@ -248,8 +280,10 @@ bool CheckRange(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
 
 bool CheckRange(InterpState &S, CodePtr OpPC, const Pointer &Ptr,
                 CheckSubobjectKind CSK) {
-  if (!Ptr.isElementPastEnd())
+  if (!Ptr.isElementPastEnd()) {
     return true;
+
+}
   const SourceInfo &Loc = S.Current->getSource(OpPC);
   S.FFDiag(Loc, diag::note_constexpr_past_end_subobject) << CSK;
   return false;
@@ -281,52 +315,86 @@ bool CheckMutable(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
 }
 
 bool CheckLoad(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!CheckLive(S, OpPC, Ptr, AK_Read))
+  if (!CheckLive(S, OpPC, Ptr, AK_Read)) {
     return false;
-  if (!CheckExtern(S, OpPC, Ptr))
+
+}
+  if (!CheckExtern(S, OpPC, Ptr)) {
     return false;
-  if (!CheckRange(S, OpPC, Ptr, AK_Read))
+
+}
+  if (!CheckRange(S, OpPC, Ptr, AK_Read)) {
     return false;
-  if (!CheckInitialized(S, OpPC, Ptr, AK_Read))
+
+}
+  if (!CheckInitialized(S, OpPC, Ptr, AK_Read)) {
     return false;
-  if (!CheckActive(S, OpPC, Ptr, AK_Read))
+
+}
+  if (!CheckActive(S, OpPC, Ptr, AK_Read)) {
     return false;
-  if (!CheckTemporary(S, OpPC, Ptr, AK_Read))
+
+}
+  if (!CheckTemporary(S, OpPC, Ptr, AK_Read)) {
     return false;
-  if (!CheckMutable(S, OpPC, Ptr))
+
+}
+  if (!CheckMutable(S, OpPC, Ptr)) {
     return false;
+
+}
   return true;
 }
 
 bool CheckStore(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!CheckLive(S, OpPC, Ptr, AK_Assign))
+  if (!CheckLive(S, OpPC, Ptr, AK_Assign)) {
     return false;
-  if (!CheckExtern(S, OpPC, Ptr))
+
+}
+  if (!CheckExtern(S, OpPC, Ptr)) {
     return false;
-  if (!CheckRange(S, OpPC, Ptr, AK_Assign))
+
+}
+  if (!CheckRange(S, OpPC, Ptr, AK_Assign)) {
     return false;
-  if (!CheckGlobal(S, OpPC, Ptr))
+
+}
+  if (!CheckGlobal(S, OpPC, Ptr)) {
     return false;
-  if (!CheckConst(S, OpPC, Ptr))
+
+}
+  if (!CheckConst(S, OpPC, Ptr)) {
     return false;
+
+}
   return true;
 }
 
 bool CheckInvoke(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!CheckLive(S, OpPC, Ptr, AK_MemberCall))
+  if (!CheckLive(S, OpPC, Ptr, AK_MemberCall)) {
     return false;
-  if (!CheckExtern(S, OpPC, Ptr))
+
+}
+  if (!CheckExtern(S, OpPC, Ptr)) {
     return false;
-  if (!CheckRange(S, OpPC, Ptr, AK_MemberCall))
+
+}
+  if (!CheckRange(S, OpPC, Ptr, AK_MemberCall)) {
     return false;
+
+}
   return true;
 }
 
 bool CheckInit(InterpState &S, CodePtr OpPC, const Pointer &Ptr) {
-  if (!CheckLive(S, OpPC, Ptr, AK_Assign))
+  if (!CheckLive(S, OpPC, Ptr, AK_Assign)) {
     return false;
-  if (!CheckRange(S, OpPC, Ptr, AK_Assign))
+
+}
+  if (!CheckRange(S, OpPC, Ptr, AK_Assign)) {
     return false;
+
+}
   return true;
 }
 
@@ -349,19 +417,23 @@ bool CheckCallable(InterpState &S, CodePtr OpPC, Function *F) {
       auto *CD = dyn_cast<CXXConstructorDecl>(DiagDecl);
       if (CD && CD->isInheritingConstructor()) {
         auto *Inherited = CD->getInheritedConstructor().getConstructor();
-        if (!Inherited->isConstexpr())
+        if (!Inherited->isConstexpr()) {
           DiagDecl = CD = Inherited;
+
+}
       }
 
       // FIXME: If DiagDecl is an implicitly-declared special member function
       // or an inheriting constructor, we should be much more explicit about why
       // it's not constexpr.
-      if (CD && CD->isInheritingConstructor())
+      if (CD && CD->isInheritingConstructor()) {
         S.FFDiag(Loc, diag::note_constexpr_invalid_inhctor, 1)
           << CD->getInheritedConstructor().getConstructor()->getParent();
-      else
+      } else {
         S.FFDiag(Loc, diag::note_constexpr_invalid_function, 1)
           << DiagDecl->isConstexpr() << (bool)CD << DiagDecl;
+
+}
       S.Note(DiagDecl->getLocation(), diag::note_declared_at);
     } else {
       S.FFDiag(Loc, diag::note_invalid_subexpr_in_const_expr);
@@ -373,26 +445,34 @@ bool CheckCallable(InterpState &S, CodePtr OpPC, Function *F) {
 }
 
 bool CheckThis(InterpState &S, CodePtr OpPC, const Pointer &This) {
-  if (!This.isZero())
+  if (!This.isZero()) {
     return true;
+
+}
 
   const SourceInfo &Loc = S.Current->getSource(OpPC);
 
   bool IsImplicit = false;
-  if (auto *E = dyn_cast_or_null<CXXThisExpr>(Loc.asExpr()))
+  if (auto *E = dyn_cast_or_null<CXXThisExpr>(Loc.asExpr())) {
     IsImplicit = E->isImplicit();
 
-  if (S.getLangOpts().CPlusPlus11)
+}
+
+  if (S.getLangOpts().CPlusPlus11) {
     S.FFDiag(Loc, diag::note_constexpr_this) << IsImplicit;
-  else
+  } else {
     S.FFDiag(Loc);
+
+}
 
   return false;
 }
 
 bool CheckPure(InterpState &S, CodePtr OpPC, const CXXMethodDecl *MD) {
-  if (!MD->isPure())
+  if (!MD->isPure()) {
     return true;
+
+}
   const SourceInfo &E = S.Current->getSource(OpPC);
   S.FFDiag(E, diag::note_constexpr_pure_virtual_call, 1) << MD;
   S.Note(MD->getLocation(), diag::note_declared_at);

@@ -31,8 +31,10 @@ Error CoveragePrinterText::createIndexFile(
     ArrayRef<std::string> SourceFiles, const CoverageMapping &Coverage,
     const CoverageFiltersMatchAll &Filters) {
   auto OSOrErr = createOutputStream("index", "txt", /*InToplevel=*/true);
-  if (Error E = OSOrErr.takeError())
+  if (Error E = OSOrErr.takeError()) {
     return E;
+
+}
   auto OS = std::move(OSOrErr.get());
   raw_ostream &OSRef = *OS.get();
 
@@ -75,8 +77,10 @@ void SourceCoverageViewText::renderSourceName(raw_ostream &OS, bool WholeFile) {
 
 void SourceCoverageViewText::renderLinePrefix(raw_ostream &OS,
                                               unsigned ViewDepth) {
-  for (unsigned I = 0; I < ViewDepth; ++I)
+  for (unsigned I = 0; I < ViewDepth; ++I) {
     OS << "  |";
+
+}
 }
 
 void SourceCoverageViewText::renderLineSuffix(raw_ostream &, unsigned) {}
@@ -87,8 +91,10 @@ void SourceCoverageViewText::renderViewDivider(raw_ostream &OS,
   renderLinePrefix(OS, ViewDepth - 1);
   OS.indent(2);
   unsigned Length = getDividerWidth(getOptions());
-  for (unsigned I = 0; I < Length; ++I)
+  for (unsigned I = 0; I < Length; ++I) {
     OS << '-';
+
+}
   OS << '\n';
 }
 
@@ -106,8 +112,10 @@ void SourceCoverageViewText::renderLine(raw_ostream &OS, LineRef L,
 
   // The first segment overlaps from a previous line, so we treat it specially.
   if (WrappedSegment && !WrappedSegment->IsGapRegion &&
-      WrappedSegment->HasCount && WrappedSegment->Count == 0)
+      WrappedSegment->HasCount && WrappedSegment->Count == 0) {
     Highlight = raw_ostream::RED;
+
+}
 
   // Output each segment of the line, possibly highlighted.
   unsigned Col = 1;
@@ -117,16 +125,20 @@ void SourceCoverageViewText::renderLine(raw_ostream &OS, LineRef L,
                     getOptions().Colors && Highlight, /*Bold=*/false,
                     /*BG=*/true)
         << Line.substr(Col - 1, End - Col);
-    if (getOptions().Debug && Highlight)
+    if (getOptions().Debug && Highlight) {
       HighlightedRanges.push_back(std::make_pair(Col, End));
+
+}
     Col = End;
     if ((!S->IsGapRegion || (Highlight && *Highlight == raw_ostream::RED)) &&
-        S->HasCount && S->Count == 0)
+        S->HasCount && S->Count == 0) {
       Highlight = raw_ostream::RED;
-    else if (Col == ExpansionCol)
+    } else if (Col == ExpansionCol) {
       Highlight = raw_ostream::CYAN;
-    else
+    } else {
       Highlight = None;
+
+}
   }
 
   // Show the rest of the line.
@@ -136,11 +148,15 @@ void SourceCoverageViewText::renderLine(raw_ostream &OS, LineRef L,
   OS << '\n';
 
   if (getOptions().Debug) {
-    for (const auto &Range : HighlightedRanges)
+    for (const auto &Range : HighlightedRanges) {
       errs() << "Highlighted line " << LineNumber << ", " << Range.first
              << " -> " << Range.second << '\n';
-    if (Highlight)
+
+}
+    if (Highlight) {
       errs() << "Highlighted line " << LineNumber << ", " << Col << " -> ?\n";
+
+}
   }
 }
 
@@ -178,26 +194,36 @@ void SourceCoverageViewText::renderRegionMarkers(raw_ostream &OS,
   CoverageSegmentArray Segments = Line.getLineSegments();
 
   // Just consider the segments which start *and* end on this line.
-  if (Segments.size() > 1)
+  if (Segments.size() > 1) {
     Segments = Segments.drop_back();
+
+}
 
   unsigned PrevColumn = 1;
   for (const auto *S : Segments) {
-    if (!S->IsRegionEntry)
+    if (!S->IsRegionEntry) {
       continue;
-    if (S->Count == Line.getExecutionCount())
+
+}
+    if (S->Count == Line.getExecutionCount()) {
       continue;
+
+}
     // Skip to the new region.
-    if (S->Col > PrevColumn)
+    if (S->Col > PrevColumn) {
       OS.indent(S->Col - PrevColumn);
+
+}
     PrevColumn = S->Col + 1;
     std::string C = formatCount(S->Count);
     PrevColumn += C.size();
     OS << '^' << C;
 
-    if (getOptions().Debug)
+    if (getOptions().Debug) {
       errs() << "Marker at " << S->Line << ":" << S->Col << " = "
             << formatCount(S->Count) << "\n";
+
+}
   }
   OS << '\n';
 }
@@ -215,9 +241,11 @@ void SourceCoverageViewText::renderExpansionView(raw_ostream &OS,
                                                  ExpansionView &ESV,
                                                  unsigned ViewDepth) {
   // Render the child subview.
-  if (getOptions().Debug)
+  if (getOptions().Debug) {
     errs() << "Expansion at line " << ESV.getLine() << ", " << ESV.getStartCol()
            << " -> " << ESV.getEndCol() << '\n';
+
+}
   ESV.View->print(OS, /*WholeFile=*/false, /*ShowSourceName=*/false,
                   /*ShowTitle=*/false, ViewDepth + 1);
 }
@@ -227,24 +255,30 @@ void SourceCoverageViewText::renderInstantiationView(raw_ostream &OS,
                                                      unsigned ViewDepth) {
   renderLinePrefix(OS, ViewDepth);
   OS << ' ';
-  if (!ISV.View)
+  if (!ISV.View) {
     getOptions().colored_ostream(OS, raw_ostream::RED)
         << "Unexecuted instantiation: " << ISV.FunctionName << "\n";
-  else
+  } else {
     ISV.View->print(OS, /*WholeFile=*/false, /*ShowSourceName=*/true,
                     /*ShowTitle=*/false, ViewDepth);
+
+}
 }
 
 void SourceCoverageViewText::renderTitle(raw_ostream &OS, StringRef Title) {
-  if (getOptions().hasProjectTitle())
+  if (getOptions().hasProjectTitle()) {
     getOptions().colored_ostream(OS, raw_ostream::CYAN)
         << getOptions().ProjectTitle << "\n";
 
+}
+
   getOptions().colored_ostream(OS, raw_ostream::CYAN) << Title << "\n";
 
-  if (getOptions().hasCreatedTime())
+  if (getOptions().hasCreatedTime()) {
     getOptions().colored_ostream(OS, raw_ostream::CYAN)
         << getOptions().CreatedTimeStr << "\n";
+
+}
 }
 
 void SourceCoverageViewText::renderTableHeader(raw_ostream &, unsigned,

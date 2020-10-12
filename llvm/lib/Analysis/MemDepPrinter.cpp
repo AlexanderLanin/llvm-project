@@ -60,12 +60,18 @@ namespace {
 
   private:
     static InstTypePair getInstTypePair(MemDepResult dep) {
-      if (dep.isClobber())
+      if (dep.isClobber()) {
         return InstTypePair(dep.getInst(), Clobber);
-      if (dep.isDef())
+
+}
+      if (dep.isDef()) {
         return InstTypePair(dep.getInst(), Def);
-      if (dep.isNonFuncLocal())
+
+}
+      if (dep.isNonFuncLocal()) {
         return InstTypePair(dep.getInst(), NonFuncLocal);
+
+}
       assert(dep.isUnknown() && "unexpected dependence type");
       return InstTypePair(dep.getInst(), Unknown);
     }
@@ -98,8 +104,10 @@ bool MemDepPrinter::runOnFunction(Function &F) {
   for (auto &I : instructions(F)) {
     Instruction *Inst = &I;
 
-    if (!Inst->mayReadFromMemory() && !Inst->mayWriteToMemory())
+    if (!Inst->mayReadFromMemory() && !Inst->mayWriteToMemory()) {
       continue;
+
+}
 
     MemDepResult Res = MDA.getDependency(Inst);
     if (!Res.isNonLocal()) {
@@ -136,8 +144,10 @@ void MemDepPrinter::print(raw_ostream &OS, const Module *M) const {
     const Instruction *Inst = &I;
 
     DepSetMap::const_iterator DI = Deps.find(Inst);
-    if (DI == Deps.end())
+    if (DI == Deps.end()) {
       continue;
+
+}
 
     const DepSet &InstDeps = DI->second;
 

@@ -151,12 +151,16 @@ bool RISCVCompressInstEmitter::validateRegister(Record *Reg, Record *RegClass) {
 bool RISCVCompressInstEmitter::validateTypes(Record *DagOpType,
                                              Record *InstOpType,
                                              bool IsSourceInst) {
-  if (DagOpType == InstOpType)
+  if (DagOpType == InstOpType) {
     return true;
+
+}
   // Only source instruction operands are allowed to not match Input Dag
   // operands.
-  if (!IsSourceInst)
+  if (!IsSourceInst) {
     return false;
+
+}
 
   if (DagOpType->isSubClassOf("RegisterClass") &&
       InstOpType->isSubClassOf("RegisterClass")) {
@@ -167,8 +171,10 @@ bool RISCVCompressInstEmitter::validateTypes(Record *DagOpType,
 
   // At this point either or both types are not registers, reject the pattern.
   if (DagOpType->isSubClassOf("RegisterClass") ||
-      InstOpType->isSubClassOf("RegisterClass"))
+      InstOpType->isSubClassOf("RegisterClass")) {
     return false;
+
+}
 
   // Let further validation happen when compress()/uncompress() functions are
   // invoked.
@@ -208,12 +214,14 @@ void RISCVCompressInstEmitter::addDagOperandMapping(
     if (DefInit *DI = dyn_cast<DefInit>(Dag->getArg(i - TiedCount))) {
       if (DI->getDef()->isSubClassOf("Register")) {
         // Check if the fixed register belongs to the Register class.
-        if (!validateRegister(DI->getDef(), Inst.Operands[i].Rec))
+        if (!validateRegister(DI->getDef(), Inst.Operands[i].Rec)) {
           PrintFatalError(Rec->getLoc(),
                           "Error in Dag '" + Dag->getAsString() +
                               "'Register: '" + DI->getDef()->getName() +
                               "' is not in register class '" +
                               Inst.Operands[i].Rec->getName() + "'");
+
+}
         OperandMap[i].Kind = OpData::Reg;
         OperandMap[i].Data.Reg = DI->getDef();
         continue;
@@ -222,7 +230,7 @@ void RISCVCompressInstEmitter::addDagOperandMapping(
       // corresponding instruction. Operands in the input Dag pattern are
       // allowed to be a subclass of the type specified in corresponding
       // instruction operand instead of being an exact match.
-      if (!validateTypes(DI->getDef(), Inst.Operands[i].Rec, IsSourceInst))
+      if (!validateTypes(DI->getDef(), Inst.Operands[i].Rec, IsSourceInst)) {
         PrintFatalError(Rec->getLoc(),
                         "Error in Dag '" + Dag->getAsString() + "'. Operand '" +
                             Dag->getArgNameStr(i - TiedCount) + "' has type '" +
@@ -231,15 +239,19 @@ void RISCVCompressInstEmitter::addDagOperandMapping(
                             Inst.Operands[i].Rec->getName() +
                             "' in the corresponding instruction operand!");
 
+}
+
       OperandMap[i].Kind = OpData::Operand;
     } else if (IntInit *II = dyn_cast<IntInit>(Dag->getArg(i - TiedCount))) {
       // Validate that corresponding instruction operand expects an immediate.
-      if (Inst.Operands[i].Rec->isSubClassOf("RegisterClass"))
+      if (Inst.Operands[i].Rec->isSubClassOf("RegisterClass")) {
         PrintFatalError(
             Rec->getLoc(),
             ("Error in Dag '" + Dag->getAsString() + "' Found immediate: '" +
              II->getAsString() +
              "' but corresponding instruction operand expected a register!"));
+
+}
       // No pattern validation check possible for values of fixed immediate.
       OperandMap[i].Kind = OpData::Imm;
       OperandMap[i].Data.Imm = II->getValue();
@@ -248,39 +260,53 @@ void RISCVCompressInstEmitter::addDagOperandMapping(
                  << (IsSourceInst ? "input " : "output ")
                  << "Dag. No validation time check possible for values of "
                     "fixed immediate.\n");
-    } else
+    } else {
       llvm_unreachable("Unhandled CompressPat argument type!");
+
+}
   }
 }
 
 // Verify the Dag operand count is enough to build an instruction.
 static bool verifyDagOpCount(CodeGenInstruction &Inst, DagInit *Dag,
                              bool IsSource) {
-  if (Dag->getNumArgs() == Inst.Operands.size())
+  if (Dag->getNumArgs() == Inst.Operands.size()) {
     return true;
+
+}
   // Source instructions are non compressed instructions and don't have tied
   // operands.
-  if (IsSource)
+  if (IsSource) {
     PrintFatalError(Inst.TheDef->getLoc(),
                     "Input operands for Inst '" + Inst.TheDef->getName() +
                         "' and input Dag operand count mismatch");
+
+}
   // The Dag can't have more arguments than the Instruction.
-  if (Dag->getNumArgs() > Inst.Operands.size())
+  if (Dag->getNumArgs() > Inst.Operands.size()) {
     PrintFatalError(Inst.TheDef->getLoc(),
                     "Inst '" + Inst.TheDef->getName() +
                         "' and Dag operand count mismatch");
+
+}
 
   // The Instruction might have tied operands so the Dag might have
   //  a fewer operand count.
   unsigned RealCount = Inst.Operands.size();
-  for (unsigned i = 0; i < Inst.Operands.size(); i++)
-    if (Inst.Operands[i].getTiedRegister() != -1)
+  for (unsigned i = 0; i < Inst.Operands.size(); i++) {
+    if (Inst.Operands[i].getTiedRegister() != -1) {
       --RealCount;
 
-  if (Dag->getNumArgs() != RealCount)
+}
+
+}
+
+  if (Dag->getNumArgs() != RealCount) {
     PrintFatalError(Inst.TheDef->getLoc(),
                     "Inst '" + Inst.TheDef->getName() +
                         "' and Dag operand count mismatch");
+
+}
   return true;
 }
 
@@ -304,16 +330,20 @@ void RISCVCompressInstEmitter::createDagOperandMapping(
   for (unsigned i = 0; i < DestDag->getNumArgs(); ++i) {
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if ("" == DestDag->getArgNameStr(i))
+    if ("" == DestDag->getArgNameStr(i)) {
       continue;
+
+}
     DestOperands[DestDag->getArgNameStr(i)] = i;
   }
 
   for (unsigned i = 0; i < SourceDag->getNumArgs(); ++i) {
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if ("" == SourceDag->getArgNameStr(i))
+    if ("" == SourceDag->getArgNameStr(i)) {
       continue;
+
+}
 
     StringMap<unsigned>::iterator it =
         SourceOperands.find(SourceDag->getArgNameStr(i));
@@ -321,22 +351,28 @@ void RISCVCompressInstEmitter::createDagOperandMapping(
       // Operand sharing the same name in the Dag should be mapped as tied.
       SourceOperandMap[i].TiedOpIdx = it->getValue();
       if (!validateArgsTypes(SourceDag->getArg(it->getValue()),
-                             SourceDag->getArg(i)))
+                             SourceDag->getArg(i))) {
         PrintFatalError(Rec->getLoc(),
                         "Input Operand '" + SourceDag->getArgNameStr(i) +
                             "' has a mismatched tied operand!\n");
+
+}
     }
     it = DestOperands.find(SourceDag->getArgNameStr(i));
-    if (it == DestOperands.end())
+    if (it == DestOperands.end()) {
       PrintFatalError(Rec->getLoc(), "Operand " + SourceDag->getArgNameStr(i) +
                                          " defined in Input Dag but not used in"
                                          " Output Dag!\n");
+
+}
     // Input Dag operand types must match output Dag operand type.
     if (!validateArgsTypes(DestDag->getArg(it->getValue()),
-                           SourceDag->getArg(i)))
+                           SourceDag->getArg(i))) {
       PrintFatalError(Rec->getLoc(), "Type mismatch between Input and "
                                      "Output Dag operand '" +
                                          SourceDag->getArgNameStr(i) + "'!");
+
+}
     SourceOperands[SourceDag->getArgNameStr(i)] = i;
   }
 }
@@ -358,28 +394,34 @@ void RISCVCompressInstEmitter::createInstOperandMapping(
       ++TiedCount;
       DestOperandMap[i].Data = DestOperandMap[TiedInstOpIdx].Data;
       DestOperandMap[i].Kind = DestOperandMap[TiedInstOpIdx].Kind;
-      if (DestOperandMap[i].Kind == OpData::Operand)
+      if (DestOperandMap[i].Kind == OpData::Operand) {
         // No need to fill the SourceOperandMap here since it was mapped to
         // destination operand 'TiedInstOpIdx' in a previous iteration.
         LLVM_DEBUG(dbgs() << "    " << DestOperandMap[i].Data.Operand
                           << " ====> " << i
                           << "  Dest operand tied with operand '"
                           << TiedInstOpIdx << "'\n");
+
+}
       continue;
     }
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if (DestOperandMap[i].Kind != OpData::Operand)
+    if (DestOperandMap[i].Kind != OpData::Operand) {
       continue;
+
+}
 
     unsigned DagArgIdx = i - TiedCount;
     StringMap<unsigned>::iterator SourceOp =
         SourceOperands.find(DestDag->getArgNameStr(DagArgIdx));
-    if (SourceOp == SourceOperands.end())
+    if (SourceOp == SourceOperands.end()) {
       PrintFatalError(Rec->getLoc(),
                       "Output Dag operand '" +
                           DestDag->getArgNameStr(DagArgIdx) +
                           "' has no matching input Dag operand.");
+
+}
 
     assert(DestDag->getArgNameStr(DagArgIdx) ==
                SourceDag->getArgNameStr(SourceOp->getValue()) &&
@@ -421,9 +463,11 @@ void RISCVCompressInstEmitter::evaluateCompressPat(Record *Rec) {
 
   // Checking we are transforming from compressed to uncompressed instructions.
   Record *Operator = SourceDag->getOperatorAsDef(Rec->getLoc());
-  if (!Operator->isSubClassOf("RVInst"))
+  if (!Operator->isSubClassOf("RVInst")) {
     PrintFatalError(Rec->getLoc(), "Input instruction '" + Operator->getName() +
                                        "' is not a 32 bit wide instruction!");
+
+}
   CodeGenInstruction SourceInst(Operator);
   verifyDagOpCount(SourceInst, SourceDag, true);
 
@@ -433,10 +477,12 @@ void RISCVCompressInstEmitter::evaluateCompressPat(Record *Rec) {
   LLVM_DEBUG(dbgs() << "Output: " << *DestDag << "\n");
 
   Record *DestOperator = DestDag->getOperatorAsDef(Rec->getLoc());
-  if (!DestOperator->isSubClassOf("RVInst16"))
+  if (!DestOperator->isSubClassOf("RVInst16")) {
     PrintFatalError(Rec->getLoc(), "Output instruction  '" +
                                        DestOperator->getName() +
                                        "' is not a 16 bit wide instruction!");
+
+}
   CodeGenInstruction DestInst(DestOperator);
   verifyDagOpCount(DestInst, DestDag, false);
 
@@ -481,10 +527,14 @@ getReqFeatures(std::set<std::pair<bool, StringRef>> &FeaturesSet,
   for (auto &R : ReqFeatures) {
     const DagInit *D = R->getValueAsDag("AssemblerCondDag");
     std::string CombineType = D->getOperator()->getAsString();
-    if (CombineType != "any_of" && CombineType != "all_of")
+    if (CombineType != "any_of" && CombineType != "all_of") {
       PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
-    if (D->getNumArgs() == 0)
+
+}
+    if (D->getNumArgs() == 0) {
       PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
+
+}
     bool IsOr = CombineType == "any_of";
     std::set<std::pair<bool, StringRef>> AnyOfSet;
 
@@ -492,22 +542,30 @@ getReqFeatures(std::set<std::pair<bool, StringRef>> &FeaturesSet,
       bool IsNot = false;
       if (auto *NotArg = dyn_cast<DagInit>(Arg)) {
         if (NotArg->getOperator()->getAsString() != "not" ||
-            NotArg->getNumArgs() != 1)
+            NotArg->getNumArgs() != 1) {
           PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
+
+}
         Arg = NotArg->getArg(0);
         IsNot = true;
       }
       if (!isa<DefInit>(Arg) ||
-          !cast<DefInit>(Arg)->getDef()->isSubClassOf("SubtargetFeature"))
+          !cast<DefInit>(Arg)->getDef()->isSubClassOf("SubtargetFeature")) {
         PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
-      if (IsOr)
+
+}
+      if (IsOr) {
         AnyOfSet.insert({IsNot, cast<DefInit>(Arg)->getDef()->getName()});
-      else
+      } else {
         FeaturesSet.insert({IsNot, cast<DefInit>(Arg)->getDef()->getName()});
+
+}
     }
 
-    if (IsOr)
+    if (IsOr) {
       AnyOfFeatureSets.insert(AnyOfSet);
+
+}
   }
 }
 
@@ -515,8 +573,10 @@ static unsigned getPredicates(DenseMap<const Record *, unsigned> &PredicateMap,
                               std::vector<const Record *> &Predicates,
                               Record *Rec, StringRef Name) {
   unsigned Entry = PredicateMap[Rec];
-  if (Entry)
+  if (Entry) {
     return Entry;
+
+}
 
   if (!Rec->isValueUnset(Name)) {
     Predicates.push_back(Rec);
@@ -534,13 +594,15 @@ static void printPredicates(std::vector<const Record *> &Predicates,
                             StringRef Name, raw_ostream &o) {
   for (unsigned i = 0; i < Predicates.size(); ++i) {
     Init *Pred = Predicates[i]->getValueInit(Name);
-    if (CodeInit *SI = dyn_cast<CodeInit>(Pred))
+    if (CodeInit *SI = dyn_cast<CodeInit>(Pred)) {
       o << "  case " << i + 1 << ": {\n"
         << "  // " << Predicates[i]->getName().str() << "\n"
         << "  " << SI->getValue() << "\n"
         << "  }\n";
-    else
+    } else {
       llvm_unreachable("Unexpected predicate field!");
+
+}
   }
 }
 
@@ -563,10 +625,12 @@ static std::string mergeCondAndCode(raw_string_ostream &CondStream,
 void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
                                                        EmitterType EType) {
   Record *AsmWriter = Target.getAsmWriter();
-  if (!AsmWriter->getValueAsInt("PassSubtarget"))
+  if (!AsmWriter->getValueAsInt("PassSubtarget")) {
     PrintFatalError(AsmWriter->getLoc(),
                     "'PassSubtarget' is false. SubTargetInfo object is needed "
                     "for target features.\n");
+
+}
 
   std::string Namespace = std::string(Target.getName());
 
@@ -578,12 +642,14 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   llvm::stable_sort(CompressPatterns,
                     [EType](const CompressPat &LHS, const CompressPat &RHS) {
                       if (EType == EmitterType::Compress ||
-                        EType == EmitterType::CheckCompress)
+                        EType == EmitterType::CheckCompress) {
                         return (LHS.Source.TheDef->getName().str() <
                                 RHS.Source.TheDef->getName().str());
-                      else
+                      } else {
                         return (LHS.Dest.TheDef->getName().str() <
                                 RHS.Dest.TheDef->getName().str());
+
+}
                     });
 
   // A list of MCOperandPredicates for all operands in use, and the reverse map.
@@ -599,15 +665,17 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   raw_string_ostream FuncH(FH);
   bool NeedMRI = false;
 
-  if (EType == EmitterType::Compress)
+  if (EType == EmitterType::Compress) {
     o << "\n#ifdef GEN_COMPRESS_INSTR\n"
       << "#undef GEN_COMPRESS_INSTR\n\n";
-  else if (EType == EmitterType::Uncompress)
+  } else if (EType == EmitterType::Uncompress) {
     o << "\n#ifdef GEN_UNCOMPRESS_INSTR\n"
       << "#undef GEN_UNCOMPRESS_INSTR\n\n";
-  else if (EType == EmitterType::CheckCompress)
+  } else if (EType == EmitterType::CheckCompress) {
     o << "\n#ifdef GEN_CHECK_COMPRESS_INSTR\n"
       << "#undef GEN_CHECK_COMPRESS_INSTR\n\n";
+
+}
 
   if (EType == EmitterType::Compress) {
     FuncH << "static bool compressInst(MCInst& OutInst,\n";
@@ -629,12 +697,14 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   if (CompressPatterns.empty()) {
     o << FuncH.str();
     o.indent(2) << "return false;\n}\n";
-    if (EType == EmitterType::Compress)
+    if (EType == EmitterType::Compress) {
       o << "\n#endif //GEN_COMPRESS_INSTR\n";
-    else if (EType == EmitterType::Uncompress)
+    } else if (EType == EmitterType::Uncompress) {
       o << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
-    else if (EType == EmitterType::CheckCompress)
+    } else if (EType == EmitterType::CheckCompress) {
       o << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
+
+}
     return;
   }
 
@@ -667,8 +737,10 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
     CurOp = Source.TheDef->getName().str();
     // Check current and previous opcode to decide to continue or end a case.
     if (CurOp != PrevOp) {
-      if (PrevOp != "")
+      if (PrevOp != "") {
         CaseStream.indent(6) << "break;\n    } // case " + PrevOp + "\n";
+
+}
       CaseStream.indent(4) << "case " + Namespace + "::" + CurOp + ": {\n";
     }
 
@@ -701,8 +773,10 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
         StringRef Not = Op.first ? "!" : "";
         CondStream << Not << ("STI.getFeatureBits()[" + Namespace + "::" + Op.second +
                           "]").str();
-        if (!isLast)
+        if (!isLast) {
           CondStream << " || ";
+
+}
       }
       CondStream << ") &&\n";
     }
@@ -711,14 +785,16 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
     unsigned OpNo = 0;
     for (OpNo = 0; OpNo < Source.Operands.size(); ++OpNo) {
       if (SourceOperandMap[OpNo].TiedOpIdx != -1) {
-        if (Source.Operands[OpNo].Rec->isSubClassOf("RegisterClass"))
+        if (Source.Operands[OpNo].Rec->isSubClassOf("RegisterClass")) {
           CondStream.indent(6)
               << "(MI.getOperand("
               << std::to_string(OpNo) + ").getReg() ==  MI.getOperand("
               << std::to_string(SourceOperandMap[OpNo].TiedOpIdx)
               << ").getReg()) &&\n";
-        else
+        } else {
           PrintFatalError("Unexpected tied operand types!\n");
+
+}
       }
       // Check for fixed immediates\registers in the source instruction.
       switch (SourceOperandMap[OpNo].Kind) {
@@ -742,9 +818,11 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
       }
     }
     CodeStream.indent(6) << "// " + Dest.AsmString + "\n";
-    if (CompressOrUncompress)
+    if (CompressOrUncompress) {
       CodeStream.indent(6) << "OutInst.setOpcode(" + Namespace +
                                 "::" + Dest.TheDef->getName().str() + ");\n";
+
+}
     OpNo = 0;
     for (const auto &DestOperand : Dest.Operands) {
       CodeStream.indent(6) << "// Operand: " + DestOperand.Name + "\n";
@@ -758,16 +836,20 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
           // This is a register operand. Check the register class.
           // Don't check register class if this is a tied operand, it was done
           // for the operand its tied to.
-          if (DestOperand.getTiedRegister() == -1)
+          if (DestOperand.getTiedRegister() == -1) {
             CondStream.indent(6)
                 << "(MRI.getRegClass(" + Namespace +
                        "::" + DestOperand.Rec->getName().str() +
                        "RegClassID).contains(" + "MI.getOperand(" +
                        std::to_string(OpIdx) + ").getReg())) &&\n";
 
-          if (CompressOrUncompress)
+}
+
+          if (CompressOrUncompress) {
             CodeStream.indent(6) << "OutInst.addOperand(MI.getOperand(" +
                                         std::to_string(OpIdx) + "));\n";
+
+}
         } else {
           // Handling immediate operands.
           if (CompressOrUncompress) {
@@ -787,9 +869,11 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
                                         "), Subtarget, " + std::to_string(Entry) +
                                         ") &&\n";
           }
-          if (CompressOrUncompress)
+          if (CompressOrUncompress) {
             CodeStream.indent(6) << "OutInst.addOperand(MI.getOperand(" +
                                         std::to_string(OpIdx) + "));\n";
+
+}
         }
         break;
       }
@@ -809,10 +893,12 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
                      std::to_string(DestOperandMap[OpNo].Data.Imm) + "), SubTarget, " +
                      std::to_string(Entry) + ") &&\n";
         }
-        if (CompressOrUncompress)
+        if (CompressOrUncompress) {
           CodeStream.indent(6)
               << "OutInst.addOperand(MCOperand::createImm(" +
                      std::to_string(DestOperandMap[OpNo].Data.Imm) + "));\n";
+
+}
       } break;
       case OpData::Reg: {
         if (CompressOrUncompress) {
@@ -826,8 +912,10 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
       }
       ++OpNo;
     }
-    if (CompressOrUncompress)
+    if (CompressOrUncompress) {
       CodeStream.indent(6) << "OutInst.setLoc(MI.getLoc());\n";
+
+}
     CaseStream << mergeCondAndCode(CondStream, CodeStream);
     PrevOp = CurOp;
   }
@@ -871,16 +959,20 @@ void RISCVCompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   }
 
   o << FuncH.str();
-  if (NeedMRI && EType == EmitterType::Compress)
+  if (NeedMRI && EType == EmitterType::Compress) {
     o.indent(2) << "const MCRegisterInfo &MRI = *Context.getRegisterInfo();\n";
+
+}
   o << Func.str();
 
-  if (EType == EmitterType::Compress)
+  if (EType == EmitterType::Compress) {
     o << "\n#endif //GEN_COMPRESS_INSTR\n";
-  else if (EType == EmitterType::Uncompress)
+  } else if (EType == EmitterType::Uncompress) {
     o << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
-  else if (EType == EmitterType::CheckCompress)
+  } else if (EType == EmitterType::CheckCompress) {
     o << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
+
+}
 }
 
 void RISCVCompressInstEmitter::run(raw_ostream &o) {
@@ -888,13 +980,17 @@ void RISCVCompressInstEmitter::run(raw_ostream &o) {
   assert(CompressClass && "Compress class definition missing!");
   std::vector<Record *> Insts;
   for (const auto &D : Records.getDefs()) {
-    if (D.second->isSubClassOf(CompressClass))
+    if (D.second->isSubClassOf(CompressClass)) {
       Insts.push_back(D.second.get());
+
+}
   }
 
   // Process the CompressPat definitions, validating them as we do so.
-  for (unsigned i = 0, e = Insts.size(); i != e; ++i)
+  for (unsigned i = 0, e = Insts.size(); i != e; ++i) {
     evaluateCompressPat(Insts[i]);
+
+}
 
   // Emit file header.
   emitSourceFileHeader("Compress instruction Source Fragment", o);

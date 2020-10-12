@@ -66,11 +66,13 @@ extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
     uint8_t *Data, size_t Size, size_t MaxSize, unsigned int Seed) {
   LLVMContext Context;
   std::unique_ptr<Module> M;
-  if (Size <= 1)
+  if (Size <= 1) {
     // We get bogus data given an empty corpus - just create a new module.
     M.reset(new Module("M", Context));
-  else
+  } else {
     M = parseModule(Data, Size, Context);
+
+}
 
   Mutator->mutateModule(*M, Seed, Size, MaxSize);
 
@@ -78,9 +80,11 @@ extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
-  if (Size <= 1)
+  if (Size <= 1) {
     // We get bogus data given an empty corpus - ignore it.
     return 0;
+
+}
 
   LLVMContext Context;
   auto M = parseAndVerify(Data, Size, Context);

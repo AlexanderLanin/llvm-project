@@ -25,8 +25,10 @@ using namespace llvm;
 /// address (i.e. SCEVUnknown) - in this case we compute the offset and save
 /// it along with the base address instead.
 bool UnrolledInstAnalyzer::simplifyInstWithSCEV(Instruction *I) {
-  if (!SE.isSCEVable(I->getType()))
+  if (!SE.isSCEVable(I->getType())) {
     return false;
+
+}
 
   const SCEV *S = SE.getSCEV(I);
   if (auto *SC = dyn_cast<SCEVConstant>(S)) {
@@ -35,8 +37,10 @@ bool UnrolledInstAnalyzer::simplifyInstWithSCEV(Instruction *I) {
   }
 
   auto *AR = dyn_cast<SCEVAddRecExpr>(S);
-  if (!AR || AR->getLoop() != L)
+  if (!AR || AR->getLoop() != L) {
     return false;
+
+}
 
   const SCEV *ValueAtIteration = AR->evaluateAtIteration(IterationNumber, SE);
   // Check if the AddRec expression becomes a constant.
@@ -47,12 +51,16 @@ bool UnrolledInstAnalyzer::simplifyInstWithSCEV(Instruction *I) {
 
   // Check if the offset from the base address becomes a constant.
   auto *Base = dyn_cast<SCEVUnknown>(SE.getPointerBase(S));
-  if (!Base)
+  if (!Base) {
     return false;
+
+}
   auto *Offset =
       dyn_cast<SCEVConstant>(SE.getMinusSCEV(ValueAtIteration, Base));
-  if (!Offset)
+  if (!Offset) {
     return false;
+
+}
   SimplifiedAddress Address;
   Address.Base = Base->getValue();
   Address.Offset = Offset->getValue();
@@ -67,26 +75,40 @@ bool UnrolledInstAnalyzer::simplifyInstWithSCEV(Instruction *I) {
 /// code in InlineCost already.
 bool UnrolledInstAnalyzer::visitBinaryOperator(BinaryOperator &I) {
   Value *LHS = I.getOperand(0), *RHS = I.getOperand(1);
-  if (!isa<Constant>(LHS))
-    if (Constant *SimpleLHS = SimplifiedValues.lookup(LHS))
+  if (!isa<Constant>(LHS)) {
+    if (Constant *SimpleLHS = SimplifiedValues.lookup(LHS)) {
       LHS = SimpleLHS;
-  if (!isa<Constant>(RHS))
-    if (Constant *SimpleRHS = SimplifiedValues.lookup(RHS))
+
+}
+
+}
+  if (!isa<Constant>(RHS)) {
+    if (Constant *SimpleRHS = SimplifiedValues.lookup(RHS)) {
       RHS = SimpleRHS;
+
+}
+
+}
 
   Value *SimpleV = nullptr;
   const DataLayout &DL = I.getModule()->getDataLayout();
-  if (auto FI = dyn_cast<FPMathOperator>(&I))
+  if (auto FI = dyn_cast<FPMathOperator>(&I)) {
     SimpleV =
         SimplifyBinOp(I.getOpcode(), LHS, RHS, FI->getFastMathFlags(), DL);
-  else
+  } else {
     SimpleV = SimplifyBinOp(I.getOpcode(), LHS, RHS, DL);
 
-  if (Constant *C = dyn_cast_or_null<Constant>(SimpleV))
+}
+
+  if (Constant *C = dyn_cast_or_null<Constant>(SimpleV)) {
     SimplifiedValues[&I] = C;
 
-  if (SimpleV)
+}
+
+  if (SimpleV) {
     return true;
+
+}
   return Base::visitBinaryOperator(I);
 }
 
@@ -95,30 +117,40 @@ bool UnrolledInstAnalyzer::visitLoad(LoadInst &I) {
   Value *AddrOp = I.getPointerOperand();
 
   auto AddressIt = SimplifiedAddresses.find(AddrOp);
-  if (AddressIt == SimplifiedAddresses.end())
+  if (AddressIt == SimplifiedAddresses.end()) {
     return false;
+
+}
   ConstantInt *SimplifiedAddrOp = AddressIt->second.Offset;
 
   auto *GV = dyn_cast<GlobalVariable>(AddressIt->second.Base);
   // We're only interested in loads that can be completely folded to a
   // constant.
-  if (!GV || !GV->hasDefinitiveInitializer() || !GV->isConstant())
+  if (!GV || !GV->hasDefinitiveInitializer() || !GV->isConstant()) {
     return false;
+
+}
 
   ConstantDataSequential *CDS =
       dyn_cast<ConstantDataSequential>(GV->getInitializer());
-  if (!CDS)
+  if (!CDS) {
     return false;
+
+}
 
   // We might have a vector load from an array. FIXME: for now we just bail
   // out in this case, but we should be able to resolve and simplify such
   // loads.
-  if (CDS->getElementType() != I.getType())
+  if (CDS->getElementType() != I.getType()) {
     return false;
 
+}
+
   unsigned ElemSize = CDS->getElementType()->getPrimitiveSizeInBits() / 8U;
-  if (SimplifiedAddrOp->getValue().getActiveBits() > 64)
+  if (SimplifiedAddrOp->getValue().getActiveBits() > 64) {
     return false;
+
+}
   int64_t SimplifiedAddrOpV = SimplifiedAddrOp->getSExtValue();
   if (SimplifiedAddrOpV < 0) {
     // FIXME: For now we conservatively ignore out of bound accesses, but
@@ -143,8 +175,10 @@ bool UnrolledInstAnalyzer::visitLoad(LoadInst &I) {
 bool UnrolledInstAnalyzer::visitCastInst(CastInst &I) {
   // Propagate constants through casts.
   Constant *COp = dyn_cast<Constant>(I.getOperand(0));
-  if (!COp)
+  if (!COp) {
     COp = SimplifiedValues.lookup(I.getOperand(0));
+
+}
 
   // If we know a simplified value for this operand and cast is valid, save the
   // result to SimplifiedValues.
@@ -167,12 +201,20 @@ bool UnrolledInstAnalyzer::visitCmpInst(CmpInst &I) {
   Value *LHS = I.getOperand(0), *RHS = I.getOperand(1);
 
   // First try to handle simplified comparisons.
-  if (!isa<Constant>(LHS))
-    if (Constant *SimpleLHS = SimplifiedValues.lookup(LHS))
+  if (!isa<Constant>(LHS)) {
+    if (Constant *SimpleLHS = SimplifiedValues.lookup(LHS)) {
       LHS = SimpleLHS;
-  if (!isa<Constant>(RHS))
-    if (Constant *SimpleRHS = SimplifiedValues.lookup(RHS))
+
+}
+
+}
+  if (!isa<Constant>(RHS)) {
+    if (Constant *SimpleRHS = SimplifiedValues.lookup(RHS)) {
       RHS = SimpleRHS;
+
+}
+
+}
 
   if (!isa<Constant>(LHS) && !isa<Constant>(RHS)) {
     auto SimplifiedLHS = SimplifiedAddresses.find(LHS);
@@ -206,8 +248,10 @@ bool UnrolledInstAnalyzer::visitCmpInst(CmpInst &I) {
 bool UnrolledInstAnalyzer::visitPHINode(PHINode &PN) {
   // Run base visitor first. This way we can gather some useful for later
   // analysis information.
-  if (Base::visitPHINode(PN))
+  if (Base::visitPHINode(PN)) {
     return true;
+
+}
 
   // The loop induction PHI nodes are definitionally free.
   return PN.getParent() == L->getHeader();

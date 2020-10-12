@@ -54,21 +54,27 @@ static bool isNumberChar(char C) {
 
 static const char *BackupNumber(const char *Pos, const char *FirstChar) {
   // If we didn't stop in the middle of a number, don't backup.
-  if (!isNumberChar(*Pos)) return Pos;
+  if (!isNumberChar(*Pos)) { return Pos;
+
+}
 
   // Otherwise, return to the start of the number.
   bool HasPeriod = false;
   while (Pos > FirstChar && isNumberChar(Pos[-1])) {
     // Backup over at most one period.
     if (Pos[-1] == '.') {
-      if (HasPeriod)
+      if (HasPeriod) {
         break;
+
+}
       HasPeriod = true;
     }
 
     --Pos;
-    if (Pos > FirstChar && isSignedChar(Pos[0]) && !isExponentChar(Pos[-1]))
+    if (Pos > FirstChar && isSignedChar(Pos[0]) && !isExponentChar(Pos[-1])) {
       break;
+
+}
   }
   return Pos;
 }
@@ -77,8 +83,10 @@ static const char *BackupNumber(const char *Pos, const char *FirstChar) {
 /// number.  This assumes that the buffer is null terminated, so it won't fall
 /// off the end.
 static const char *EndOfNumber(const char *Pos) {
-  while (isNumberChar(*Pos))
+  while (isNumberChar(*Pos)) {
     ++Pos;
+
+}
   return Pos;
 }
 
@@ -92,10 +100,14 @@ static bool CompareNumbers(const char *&F1P, const char *&F2P,
 
   // If one of the positions is at a space and the other isn't, chomp up 'til
   // the end of the space.
-  while (isspace(static_cast<unsigned char>(*F1P)) && F1P != F1End)
+  while (isspace(static_cast<unsigned char>(*F1P)) && F1P != F1End) {
     ++F1P;
-  while (isspace(static_cast<unsigned char>(*F2P)) && F2P != F2End)
+
+}
+  while (isspace(static_cast<unsigned char>(*F2P)) && F2P != F2End) {
     ++F2P;
+
+}
 
   // If we stop on numbers, compare their difference.
   if (!isNumberChar(*F1P) || !isNumberChar(*F2P)) {
@@ -145,12 +157,14 @@ static bool CompareNumbers(const char *&F1P, const char *&F2P,
   if (AbsTolerance < std::abs(V1-V2)) {
     // Nope, check the relative tolerance...
     double Diff;
-    if (V2)
+    if (V2) {
       Diff = std::abs(V1/V2 - 1.0);
-    else if (V1)
+    } else if (V1) {
       Diff = std::abs(V2/V1 - 1.0);
-    else
+    } else {
       Diff = 0;  // Both zero.
+
+}
     if (Diff > RelTolerance) {
       if (ErrorMsg) {
         raw_string_ostream(*ErrorMsg)
@@ -184,16 +198,20 @@ int llvm::DiffFilesWithTolerance(StringRef NameA,
   // have a non-zero size.
   ErrorOr<std::unique_ptr<MemoryBuffer>> F1OrErr = MemoryBuffer::getFile(NameA);
   if (std::error_code EC = F1OrErr.getError()) {
-    if (Error)
+    if (Error) {
       *Error = EC.message();
+
+}
     return 2;
   }
   MemoryBuffer &F1 = *F1OrErr.get();
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> F2OrErr = MemoryBuffer::getFile(NameB);
   if (std::error_code EC = F2OrErr.getError()) {
-    if (Error)
+    if (Error) {
       *Error = EC.message();
+
+}
     return 2;
   }
   MemoryBuffer &F2 = *F2OrErr.get();
@@ -210,13 +228,17 @@ int llvm::DiffFilesWithTolerance(StringRef NameA,
 
   // Are the buffers identical?  Common case: Handle this efficiently.
   if (A_size == B_size &&
-      std::memcmp(File1Start, File2Start, A_size) == 0)
+      std::memcmp(File1Start, File2Start, A_size) == 0) {
     return 0;
+
+}
 
   // Otherwise, we are done a tolerances are set.
   if (AbsTol == 0 && RelTol == 0) {
-    if (Error)
+    if (Error) {
       *Error = "Files differ without tolerance allowance";
+
+}
     return 1;   // Files different!
   }
 
@@ -228,7 +250,9 @@ int llvm::DiffFilesWithTolerance(StringRef NameA,
       ++F2P;
     }
 
-    if (F1P >= File1End || F2P >= File2End) break;
+    if (F1P >= File1End || F2P >= File2End) { break;
+
+}
 
     // Okay, we must have found a difference.  Backup to the start of the
     // current number each stream is at so that we can compare from the
@@ -250,19 +274,27 @@ int llvm::DiffFilesWithTolerance(StringRef NameA,
   bool F2AtEnd = F2P >= File2End;
   if (!CompareFailed && (!F1AtEnd || !F2AtEnd)) {
     // Else, we might have run off the end due to a number: backup and retry.
-    if (F1AtEnd && isNumberChar(F1P[-1])) --F1P;
-    if (F2AtEnd && isNumberChar(F2P[-1])) --F2P;
+    if (F1AtEnd && isNumberChar(F1P[-1])) { --F1P;
+
+}
+    if (F2AtEnd && isNumberChar(F2P[-1])) { --F2P;
+
+}
     F1P = BackupNumber(F1P, File1Start);
     F2P = BackupNumber(F2P, File2Start);
 
     // Now that we are at the start of the numbers, compare them, exiting if
     // they don't match.
-    if (CompareNumbers(F1P, F2P, File1End, File2End, AbsTol, RelTol, Error))
+    if (CompareNumbers(F1P, F2P, File1End, File2End, AbsTol, RelTol, Error)) {
       CompareFailed = true;
 
+}
+
     // If we found the end, we succeeded.
-    if (F1P < File1End || F2P < File2End)
+    if (F1P < File1End || F2P < File2End) {
       CompareFailed = true;
+
+}
   }
 
   return CompareFailed;

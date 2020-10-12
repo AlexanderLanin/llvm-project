@@ -89,16 +89,20 @@ addDagOperandMapping(Record *Rec, DagInit *Dag, CodeGenInstruction &Insn,
       // problem.
       // FIXME: We probably shouldn't ever get a non-zero BaseIdx here.
       assert(BaseIdx == 0 && "Named subargument in pseudo expansion?!");
-      if (DI->getDef() != Insn.Operands[BaseIdx + i].Rec)
+      if (DI->getDef() != Insn.Operands[BaseIdx + i].Rec) {
         PrintFatalError(Rec->getLoc(),
                       "Pseudo operand type '" + DI->getDef()->getName() +
                       "' does not match expansion operand type '" +
                       Insn.Operands[BaseIdx + i].Rec->getName() + "'");
+
+}
       // Source operand maps to destination operand. The Data element
       // will be filled in later, just set the Kind for now. Do it
       // for each corresponding MachineInstr operand, not just the first.
-      for (unsigned I = 0, E = Insn.Operands[i].MINumOperands; I != E; ++I)
+      for (unsigned I = 0, E = Insn.Operands[i].MINumOperands; I != E; ++I) {
         OperandMap[BaseIdx + i + I].Kind = OpData::Operand;
+
+}
       OpsAdded += Insn.Operands[i].MINumOperands;
     } else if (IntInit *II = dyn_cast<IntInit>(Dag->getArg(i))) {
       OperandMap[BaseIdx + i].Kind = OpData::Imm;
@@ -112,8 +116,10 @@ addDagOperandMapping(Record *Rec, DagInit *Dag, CodeGenInstruction &Insn,
       OpsAdded += NewOps;
       // Since we added more than one, we also need to adjust the base.
       BaseIdx += NewOps - 1;
-    } else
+    } else {
       llvm_unreachable("Unhandled pseudo-expansion argument type!");
+
+}
   }
   return OpsAdded;
 }
@@ -128,27 +134,37 @@ void PseudoLoweringEmitter::evaluateExpansion(Record *Rec) {
   LLVM_DEBUG(dbgs() << "  Result: " << *Dag << "\n");
 
   DefInit *OpDef = dyn_cast<DefInit>(Dag->getOperator());
-  if (!OpDef)
+  if (!OpDef) {
     PrintFatalError(Rec->getLoc(), Rec->getName() +
                   " has unexpected operator type!");
+
+}
   Record *Operator = OpDef->getDef();
-  if (!Operator->isSubClassOf("Instruction"))
+  if (!Operator->isSubClassOf("Instruction")) {
     PrintFatalError(Rec->getLoc(), "Pseudo result '" + Operator->getName() +
                     "' is not an instruction!");
 
+}
+
   CodeGenInstruction Insn(Operator);
 
-  if (Insn.isCodeGenOnly || Insn.isPseudo)
+  if (Insn.isCodeGenOnly || Insn.isPseudo) {
     PrintFatalError(Rec->getLoc(), "Pseudo result '" + Operator->getName() +
                     "' cannot be another pseudo instruction!");
 
-  if (Insn.Operands.size() != Dag->getNumArgs())
+}
+
+  if (Insn.Operands.size() != Dag->getNumArgs()) {
     PrintFatalError(Rec->getLoc(), "Pseudo result '" + Operator->getName() +
                     "' operand count mismatch");
 
+}
+
   unsigned NumMIOperands = 0;
-  for (unsigned i = 0, e = Insn.Operands.size(); i != e; ++i)
+  for (unsigned i = 0, e = Insn.Operands.size(); i != e; ++i) {
     NumMIOperands += Insn.Operands[i].MINumOperands;
+
+}
   IndexedMap<OpData> OperandMap;
   OperandMap.grow(NumMIOperands);
 
@@ -166,26 +182,34 @@ void PseudoLoweringEmitter::evaluateExpansion(Record *Rec) {
   // the lowering emitter.
   CodeGenInstruction SourceInsn(Rec);
   StringMap<unsigned> SourceOperands;
-  for (unsigned i = 0, e = SourceInsn.Operands.size(); i != e; ++i)
+  for (unsigned i = 0, e = SourceInsn.Operands.size(); i != e; ++i) {
     SourceOperands[SourceInsn.Operands[i].Name] = i;
+
+}
 
   LLVM_DEBUG(dbgs() << "  Operand mapping:\n");
   for (unsigned i = 0, e = Insn.Operands.size(); i != e; ++i) {
     // We've already handled constant values. Just map instruction operands
     // here.
-    if (OperandMap[Insn.Operands[i].MIOperandNo].Kind != OpData::Operand)
+    if (OperandMap[Insn.Operands[i].MIOperandNo].Kind != OpData::Operand) {
       continue;
+
+}
     StringMap<unsigned>::iterator SourceOp =
       SourceOperands.find(Dag->getArgNameStr(i));
-    if (SourceOp == SourceOperands.end())
+    if (SourceOp == SourceOperands.end()) {
       PrintFatalError(Rec->getLoc(),
                       "Pseudo output operand '" + Dag->getArgNameStr(i) +
                       "' has no matching source operand.");
+
+}
     // Map the source operand to the destination operand index for each
     // MachineInstr operand.
-    for (unsigned I = 0, E = Insn.Operands[i].MINumOperands; I != E; ++I)
+    for (unsigned I = 0, E = Insn.Operands[i].MINumOperands; I != E; ++I) {
       OperandMap[Insn.Operands[i].MIOperandNo + I].Data.Operand =
         SourceOp->getValue();
+
+}
 
     LLVM_DEBUG(dbgs() << "    " << SourceOp->getValue() << " ==> " << i
                       << "\n");
@@ -239,11 +263,13 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
               Record *Reg = Expansion.OperandMap[MIOpNo + i].Data.Reg;
               o << "      TmpInst.addOperand(MCOperand::createReg(";
               // "zero_reg" is special.
-              if (Reg->getName() == "zero_reg")
+              if (Reg->getName() == "zero_reg") {
                 o << "0";
-              else
+              } else {
                 o << Reg->getValueAsString("Namespace") << "::"
                   << Reg->getName();
+
+}
               o << "));\n";
               break;
             }
@@ -264,8 +290,10 @@ void PseudoLoweringEmitter::emitLoweringEmitter(raw_ostream &o) {
         << "    }\n";
     }
     o << "  }\n  return true;";
-  } else
+  } else {
     o << "  return false;";
+
+}
 
   o << "\n}\n\n";
 }
@@ -279,13 +307,17 @@ void PseudoLoweringEmitter::run(raw_ostream &o) {
   std::vector<Record*> Insts;
   for (const auto &D : Records.getDefs()) {
     if (D.second->isSubClassOf(ExpansionClass) &&
-        D.second->isSubClassOf(InstructionClass))
+        D.second->isSubClassOf(InstructionClass)) {
       Insts.push_back(D.second.get());
+
+}
   }
 
   // Process the pseudo expansion definitions, validating them as we do so.
-  for (unsigned i = 0, e = Insts.size(); i != e; ++i)
+  for (unsigned i = 0, e = Insts.size(); i != e; ++i) {
     evaluateExpansion(Insts[i]);
+
+}
 
   // Generate expansion code to lower the pseudo to an MCInst of the real
   // instruction.

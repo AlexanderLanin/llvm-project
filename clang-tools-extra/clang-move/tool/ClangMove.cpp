@@ -30,8 +30,10 @@ namespace {
 std::error_code CreateNewFile(const llvm::Twine &path) {
   int fd = 0;
   if (std::error_code ec = llvm::sys::fs::openFileForWrite(
-          path, fd, llvm::sys::fs::CD_CreateAlways, llvm::sys::fs::OF_Text))
+          path, fd, llvm::sys::fs::CD_CreateAlways, llvm::sys::fs::OF_Text)) {
     return ec;
+
+}
 
   return llvm::sys::Process::SafelyCloseFileDescriptor(fd);
 }
@@ -119,9 +121,11 @@ int main(int argc, const char **argv) {
   Spec.NewDependOnOld = NewDependOnOld;
 
   llvm::SmallString<128> InitialDirectory;
-  if (std::error_code EC = llvm::sys::fs::current_path(InitialDirectory))
+  if (std::error_code EC = llvm::sys::fs::current_path(InitialDirectory)) {
     llvm::report_fatal_error("Cannot detect current path: " +
                              Twine(EC.message()));
+
+}
 
   move::ClangMoveContext Context{Spec, Tool.getReplacements(),
                                  std::string(InitialDirectory.str()), Style,
@@ -130,8 +134,10 @@ int main(int argc, const char **argv) {
   move::ClangMoveActionFactory Factory(&Context, &Reporter);
 
   int CodeStatus = Tool.run(&Factory);
-  if (CodeStatus)
+  if (CodeStatus) {
     return CodeStatus;
+
+}
 
   if (DumpDecls) {
     llvm::outs() << "[\n";
@@ -145,8 +151,10 @@ int main(int argc, const char **argv) {
                    << "\n";
       llvm::outs() << "  }";
       // Don't print trailing "," at the end of last element.
-      if (I != std::prev(E))
+      if (I != std::prev(E)) {
         llvm::outs() << ",\n";
+
+}
     }
     llvm::outs() << "\n]\n";
     return 0;
@@ -185,8 +193,10 @@ int main(int argc, const char **argv) {
 
   if (Dump) {
     std::set<llvm::StringRef> Files;
-    for (const auto &it : Tool.getReplacements())
+    for (const auto &it : Tool.getReplacements()) {
       Files.insert(it.first);
+
+}
     auto WriteToJson = [&](llvm::raw_ostream &OS) {
       OS << "[\n";
       for (auto I = Files.begin(), E = Files.end(); I != E; ++I) {
@@ -200,8 +210,10 @@ int main(int argc, const char **argv) {
         OS << "    \"SourceText\": \""
            << llvm::yaml::escape(ContentStream.str()) << "\"\n";
         OS << "  }";
-        if (I != std::prev(E))
+        if (I != std::prev(E)) {
           OS << ",\n";
+
+}
       }
       OS << "\n]\n";
     };

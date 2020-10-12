@@ -24,8 +24,10 @@ StringPool::~StringPool() {
 
 PooledStringPtr StringPool::intern(StringRef Key) {
   table_t::iterator I = InternTable.find(Key);
-  if (I != InternTable.end())
+  if (I != InternTable.end()) {
     return PooledStringPtr(&*I);
+
+}
 
   entry_t *S = entry_t::Create(Key);
   S->getValue().Pool = this;

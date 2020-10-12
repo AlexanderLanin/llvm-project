@@ -69,10 +69,14 @@ using PrefetchHints = SampleRecord::CallTargetMap;
 // are returned as pairs (name, delta).
 ErrorOr<PrefetchHints> getPrefetchHints(const FunctionSamples *TopSamples,
                                         const MachineInstr &MI) {
-  if (const auto &Loc = MI.getDebugLoc())
-    if (const auto *Samples = TopSamples->findFunctionSamples(Loc))
+  if (const auto &Loc = MI.getDebugLoc()) {
+    if (const auto *Samples = TopSamples->findFunctionSamples(Loc)) {
       return Samples->findCallTargetMapAt(FunctionSamples::getOffset(Loc),
                                           Loc->getBaseDiscriminator());
+
+}
+
+}
   return std::error_code();
 }
 
@@ -117,8 +121,10 @@ bool X86InsertPrefetch::findPrefetchInfo(const FunctionSamples *TopSamples,
   static const char *SerializedPrefetchPrefix = "__prefetch";
 
   const ErrorOr<PrefetchHints> T = getPrefetchHints(TopSamples, MI);
-  if (!T)
+  if (!T) {
     return false;
+
+}
   int16_t max_index = -1;
   // Convert serialized prefetch hints into PrefetchInfo objects, and populate
   // the Prefetches vector.
@@ -134,13 +140,17 @@ bool X86InsertPrefetch::findPrefetchInfo(const FunctionSamples *TopSamples,
           break;
         }
       }
-      if (IID == 0)
+      if (IID == 0) {
         return false;
+
+}
       uint8_t index = 0;
       Name.consumeInteger(10, index);
 
-      if (index >= Prefetches.size())
+      if (index >= Prefetches.size()) {
         Prefetches.resize(index + 1);
+
+}
       Prefetches[index] = {IID, D};
       max_index = std::max(max_index, static_cast<int16_t>(index));
     }
@@ -154,8 +164,10 @@ bool X86InsertPrefetch::findPrefetchInfo(const FunctionSamples *TopSamples,
 }
 
 bool X86InsertPrefetch::doInitialization(Module &M) {
-  if (Filename.empty())
+  if (Filename.empty()) {
     return false;
+
+}
 
   LLVMContext &Ctx = M.getContext();
   ErrorOr<std::unique_ptr<SampleProfileReader>> ReaderOrErr =
@@ -177,11 +189,15 @@ void X86InsertPrefetch::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool X86InsertPrefetch::runOnMachineFunction(MachineFunction &MF) {
-  if (!Reader)
+  if (!Reader) {
     return false;
+
+}
   const FunctionSamples *Samples = Reader->getSamplesFor(MF.getFunction());
-  if (!Samples)
+  if (!Samples) {
     return false;
+
+}
 
   bool Changed = false;
 
@@ -193,16 +209,22 @@ bool X86InsertPrefetch::runOnMachineFunction(MachineFunction &MF) {
       ++MI;
 
       int Offset = X86II::getMemoryOperandNo(Current->getDesc().TSFlags);
-      if (Offset < 0)
+      if (Offset < 0) {
         continue;
+
+}
       unsigned Bias = X86II::getOperandBias(Current->getDesc());
       int MemOpOffset = Offset + Bias;
       // FIXME(mtrofin): ORE message when the recommendation cannot be taken.
-      if (!IsMemOpCompatibleWithPrefetch(*Current, MemOpOffset))
+      if (!IsMemOpCompatibleWithPrefetch(*Current, MemOpOffset)) {
         continue;
+
+}
       Prefetches.clear();
-      if (!findPrefetchInfo(Samples, *Current, Prefetches))
+      if (!findPrefetchInfo(Samples, *Current, Prefetches)) {
         continue;
+
+}
       assert(!Prefetches.empty() &&
              "The Prefetches vector should contain at least a value if "
              "findPrefetchInfo returned true.");

@@ -22,68 +22,94 @@ Value &Object::operator[](ObjectKey &&K) {
 }
 Value *Object::get(StringRef K) {
   auto I = find(K);
-  if (I == end())
+  if (I == end()) {
     return nullptr;
+
+}
   return &I->second;
 }
 const Value *Object::get(StringRef K) const {
   auto I = find(K);
-  if (I == end())
+  if (I == end()) {
     return nullptr;
+
+}
   return &I->second;
 }
 llvm::Optional<std::nullptr_t> Object::getNull(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsNull();
+
+}
   return llvm::None;
 }
 llvm::Optional<bool> Object::getBoolean(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsBoolean();
+
+}
   return llvm::None;
 }
 llvm::Optional<double> Object::getNumber(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsNumber();
+
+}
   return llvm::None;
 }
 llvm::Optional<int64_t> Object::getInteger(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsInteger();
+
+}
   return llvm::None;
 }
 llvm::Optional<llvm::StringRef> Object::getString(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsString();
+
+}
   return llvm::None;
 }
 const json::Object *Object::getObject(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsObject();
+
+}
   return nullptr;
 }
 json::Object *Object::getObject(StringRef K) {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsObject();
+
+}
   return nullptr;
 }
 const json::Array *Object::getArray(StringRef K) const {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsArray();
+
+}
   return nullptr;
 }
 json::Array *Object::getArray(StringRef K) {
-  if (auto *V = get(K))
+  if (auto *V = get(K)) {
     return V->getAsArray();
+
+}
   return nullptr;
 }
 bool operator==(const Object &LHS, const Object &RHS) {
-  if (LHS.size() != RHS.size())
+  if (LHS.size() != RHS.size()) {
     return false;
+
+}
   for (const auto &L : LHS) {
     auto R = RHS.find(L.first);
-    if (R == RHS.end() || L.second != R->second)
+    if (R == RHS.end() || L.second != R->second) {
       return false;
+
+}
   }
   return true;
 }
@@ -173,8 +199,10 @@ void Value::destroy() {
 }
 
 bool operator==(const Value &L, const Value &R) {
-  if (L.kind() != R.kind())
+  if (L.kind() != R.kind()) {
     return false;
+
+}
   switch (L.kind()) {
   case Value::Null:
     return *L.getAsNull() == *R.getAsNull();
@@ -185,8 +213,10 @@ bool operator==(const Value &L, const Value &R) {
     // The same integer must convert to the same double, per the standard.
     // However we see 64-vs-80-bit precision comparisons with gcc-7 -O3 -m32.
     // So we avoid floating point promotion for exact comparisons.
-    if (L.Type == Value::T_Integer || R.Type == Value::T_Integer)
+    if (L.Type == Value::T_Integer || R.Type == Value::T_Integer) {
       return L.getAsInteger() == R.getAsInteger();
+
+}
     return *L.getAsNumber() == *R.getAsNumber();
   case Value::String:
     return *L.getAsString() == *R.getAsString();
@@ -207,8 +237,10 @@ public:
 
   bool checkUTF8() {
     size_t ErrOffset;
-    if (isUTF8(StringRef(Start, End - Start), &ErrOffset))
+    if (isUTF8(StringRef(Start, End - Start), &ErrOffset)) {
       return true;
+
+}
     P = Start + ErrOffset; // For line/column calculation.
     return parseError("Invalid UTF-8 sequence");
   }
@@ -217,8 +249,10 @@ public:
 
   bool assertEnd() {
     eatWhitespace();
-    if (P == End)
+    if (P == End) {
       return true;
+
+}
     return parseError("Text after end of document");
   }
 
@@ -229,8 +263,10 @@ public:
 
 private:
   void eatWhitespace() {
-    while (P != End && (*P == ' ' || *P == '\r' || *P == '\n' || *P == '\t'))
+    while (P != End && (*P == ' ' || *P == '\r' || *P == '\n' || *P == '\t')) {
       ++P;
+
+}
   }
 
   // On invalid syntax, parseX() functions return false and set Err.
@@ -253,8 +289,10 @@ private:
 
 bool Parser::parseValue(Value &Out) {
   eatWhitespace();
-  if (P == End)
+  if (P == End) {
     return parseError("Unexpected EOF");
+
+}
   switch (char C = next()) {
   // Bare null/true/false are easy - first char identifies them.
   case 'n':
@@ -287,8 +325,10 @@ bool Parser::parseValue(Value &Out) {
     }
     for (;;) {
       A.emplace_back(nullptr);
-      if (!parseValue(A.back()))
+      if (!parseValue(A.back())) {
         return false;
+
+}
       eatWhitespace();
       switch (next()) {
       case ',':
@@ -310,17 +350,25 @@ bool Parser::parseValue(Value &Out) {
       return true;
     }
     for (;;) {
-      if (next() != '"')
+      if (next() != '"') {
         return parseError("Expected object key");
+
+}
       std::string K;
-      if (!parseString(K))
+      if (!parseString(K)) {
         return false;
+
+}
       eatWhitespace();
-      if (next() != ':')
+      if (next() != ':') {
         return parseError("Expected : after object key");
+
+}
       eatWhitespace();
-      if (!parseValue(O[std::move(K)]))
+      if (!parseValue(O[std::move(K)])) {
         return false;
+
+}
       eatWhitespace();
       switch (next()) {
       case ',':
@@ -334,8 +382,10 @@ bool Parser::parseValue(Value &Out) {
     }
   }
   default:
-    if (isNumber(C))
+    if (isNumber(C)) {
       return parseNumber(C, Out);
+
+}
     return parseError("Invalid JSON value");
   }
 }
@@ -344,8 +394,10 @@ bool Parser::parseNumber(char First, Value &Out) {
   // Read the number into a string. (Must be null-terminated for strto*).
   SmallString<24> S;
   S.push_back(First);
-  while (isNumber(peek()))
+  while (isNumber(peek())) {
     S.push_back(next());
+
+}
   char *End;
   // Try first to parse as integer, and if so preserve full 64 bits.
   // strtoll returns long long >= 64 bits, so check it's in range too.
@@ -363,10 +415,14 @@ bool Parser::parseNumber(char First, Value &Out) {
 bool Parser::parseString(std::string &Out) {
   // leading quote was already consumed.
   for (char C = next(); C != '"'; C = next()) {
-    if (LLVM_UNLIKELY(P == End))
+    if (LLVM_UNLIKELY(P == End)) {
       return parseError("Unterminated string");
-    if (LLVM_UNLIKELY((C & 0x1f) == C))
+
+}
+    if (LLVM_UNLIKELY((C & 0x1f) == C)) {
       return parseError("Control character in string");
+
+}
     if (LLVM_LIKELY(C != '\\')) {
       Out.push_back(C);
       continue;
@@ -394,8 +450,10 @@ bool Parser::parseString(std::string &Out) {
       Out.push_back('\t');
       break;
     case 'u':
-      if (!parseUnicode(Out))
+      if (!parseUnicode(Out)) {
         return false;
+
+}
       break;
     default:
       return parseError("Invalid escape sequence");
@@ -445,16 +503,20 @@ bool Parser::parseUnicode(std::string &Out) {
     Out = 0;
     char Bytes[] = {next(), next(), next(), next()};
     for (unsigned char C : Bytes) {
-      if (!std::isxdigit(C))
+      if (!std::isxdigit(C)) {
         return parseError("Invalid \\u escape sequence");
+
+}
       Out <<= 4;
       Out |= (C > '9') ? (C & ~0x20) - 'A' + 10 : (C - '0');
     }
     return true;
   };
   uint16_t First; // UTF-16 code unit from the first \u escape.
-  if (!Parse4Hex(First))
+  if (!Parse4Hex(First)) {
     return false;
+
+}
 
   // We loop to allow proper surrogate-pair error handling.
   while (true) {
@@ -478,8 +540,10 @@ bool Parser::parseUnicode(std::string &Out) {
     }
     P += 2;
     uint16_t Second;
-    if (!Parse4Hex(Second))
+    if (!Parse4Hex(Second)) {
       return false;
+
+}
     // Case 3b: there was another \u escape, but it wasn't a trailing surrogate.
     if (LLVM_UNLIKELY(Second < 0xDC00 || Second >= 0xE000)) {
       Invalid();      // Leading surrogate was unpaired.
@@ -510,18 +574,26 @@ bool Parser::parseError(const char *Msg) {
 Expected<Value> parse(StringRef JSON) {
   Parser P(JSON);
   Value E = nullptr;
-  if (P.checkUTF8())
-    if (P.parseValue(E))
-      if (P.assertEnd())
+  if (P.checkUTF8()) {
+    if (P.parseValue(E)) {
+      if (P.assertEnd()) {
         return std::move(E);
+
+}
+
+}
+
+}
   return P.takeError();
 }
 char ParseError::ID = 0;
 
 static std::vector<const Object::value_type *> sortedElements(const Object &O) {
   std::vector<const Object::value_type *> Elements;
-  for (const auto &E : O)
+  for (const auto &E : O) {
     Elements.push_back(&E);
+
+}
   llvm::sort(Elements,
              [](const Object::value_type *L, const Object::value_type *R) {
                return L->first < R->first;
@@ -531,15 +603,21 @@ static std::vector<const Object::value_type *> sortedElements(const Object &O) {
 
 bool isUTF8(llvm::StringRef S, size_t *ErrOffset) {
   // Fast-path for ASCII, which is valid UTF-8.
-  if (LLVM_LIKELY(isASCII(S)))
+  if (LLVM_LIKELY(isASCII(S))) {
     return true;
+
+}
 
   const UTF8 *Data = reinterpret_cast<const UTF8 *>(S.data()), *Rest = Data;
-  if (LLVM_LIKELY(isLegalUTF8String(&Rest, Data + S.size())))
+  if (LLVM_LIKELY(isLegalUTF8String(&Rest, Data + S.size()))) {
     return true;
 
-  if (ErrOffset)
+}
+
+  if (ErrOffset) {
     *ErrOffset = Rest - Data;
+
+}
   return false;
 }
 
@@ -563,8 +641,10 @@ std::string fixUTF8(llvm::StringRef S) {
 static void quote(llvm::raw_ostream &OS, llvm::StringRef S) {
   OS << '\"';
   for (unsigned char C : S) {
-    if (C == 0x22 || C == 0x5C)
+    if (C == 0x22 || C == 0x5C) {
       OS << '\\';
+
+}
     if (C >= 0x20) {
       OS << C;
       continue;
@@ -602,11 +682,13 @@ void llvm::json::OStream::value(const Value &V) {
     return;
   case Value::Number:
     valueBegin();
-    if (V.Type == Value::T_Integer)
+    if (V.Type == Value::T_Integer) {
       OS << *V.getAsInteger();
-    else
+    } else {
       OS << format("%.*g", std::numeric_limits<double>::max_digits10,
                    *V.getAsNumber());
+
+}
     return;
   case Value::String:
     valueBegin();
@@ -614,13 +696,17 @@ void llvm::json::OStream::value(const Value &V) {
     return;
   case Value::Array:
     return array([&] {
-      for (const Value &E : *V.getAsArray())
+      for (const Value &E : *V.getAsArray()) {
         value(E);
+
+}
     });
   case Value::Object:
     return object([&] {
-      for (const Object::value_type *E : sortedElements(*V.getAsObject()))
+      for (const Object::value_type *E : sortedElements(*V.getAsObject())) {
         attribute(E->first, E->second);
+
+}
     });
   }
 }
@@ -631,8 +717,10 @@ void llvm::json::OStream::valueBegin() {
     assert(Stack.back().Ctx != Singleton && "Only one value allowed here");
     OS << ',';
   }
-  if (Stack.back().Ctx == Array)
+  if (Stack.back().Ctx == Array) {
     newline();
+
+}
   Stack.back().HasValue = true;
 }
 
@@ -654,8 +742,10 @@ void llvm::json::OStream::arrayBegin() {
 void llvm::json::OStream::arrayEnd() {
   assert(Stack.back().Ctx == Array);
   Indent -= IndentSize;
-  if (Stack.back().HasValue)
+  if (Stack.back().HasValue) {
     newline();
+
+}
   OS << ']';
   Stack.pop_back();
   assert(!Stack.empty());
@@ -672,8 +762,10 @@ void llvm::json::OStream::objectBegin() {
 void llvm::json::OStream::objectEnd() {
   assert(Stack.back().Ctx == Object);
   Indent -= IndentSize;
-  if (Stack.back().HasValue)
+  if (Stack.back().HasValue) {
     newline();
+
+}
   OS << '}';
   Stack.pop_back();
   assert(!Stack.empty());
@@ -681,8 +773,10 @@ void llvm::json::OStream::objectEnd() {
 
 void llvm::json::OStream::attributeBegin(llvm::StringRef Key) {
   assert(Stack.back().Ctx == Object);
-  if (Stack.back().HasValue)
+  if (Stack.back().HasValue) {
     OS << ',';
+
+}
   newline();
   Stack.back().HasValue = true;
   Stack.emplace_back();
@@ -694,8 +788,10 @@ void llvm::json::OStream::attributeBegin(llvm::StringRef Key) {
     quote(OS, fixUTF8(Key));
   }
   OS.write(':');
-  if (IndentSize)
+  if (IndentSize) {
     OS.write(' ');
+
+}
 }
 
 void llvm::json::OStream::attributeEnd() {
@@ -711,8 +807,10 @@ void llvm::json::OStream::attributeEnd() {
 void llvm::format_provider<llvm::json::Value>::format(
     const llvm::json::Value &E, raw_ostream &OS, StringRef Options) {
   unsigned IndentAmount = 0;
-  if (!Options.empty() && Options.getAsInteger(/*Radix=*/10, IndentAmount))
+  if (!Options.empty() && Options.getAsInteger(/*Radix=*/10, IndentAmount)) {
     llvm_unreachable("json::Value format options should be an integer");
+
+}
   json::OStream(OS, IndentAmount).value(E);
 }
 

@@ -20,10 +20,14 @@ void PDBSymbolExe::dump(PDBSymDumper &Dumper) const { Dumper.dump(*this); }
 
 uint32_t PDBSymbolExe::getPointerByteSize() const {
   auto Pointer = findOneChild<PDBSymbolTypePointer>();
-  if (Pointer)
+  if (Pointer) {
     return Pointer->getLength();
 
-  if (getMachineType() == PDB_Machine::x86)
+}
+
+  if (getMachineType() == PDB_Machine::x86) {
     return 4;
+
+}
   return 8;
 }

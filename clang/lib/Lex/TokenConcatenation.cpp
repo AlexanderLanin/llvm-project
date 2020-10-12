@@ -24,18 +24,26 @@ static bool IsStringPrefix(StringRef Str, bool CPlusPlus11) {
   if (Str[0] == 'L' ||
       (CPlusPlus11 && (Str[0] == 'u' || Str[0] == 'U' || Str[0] == 'R'))) {
 
-    if (Str.size() == 1)
+    if (Str.size() == 1) {
       return true; // "L", "u", "U", and "R"
+
+}
 
     // Check for raw flavors. Need to make sure the first character wasn't
     // already R. Need CPlusPlus11 check for "LR".
-    if (Str[1] == 'R' && Str[0] != 'R' && Str.size() == 2 && CPlusPlus11)
+    if (Str[1] == 'R' && Str[0] != 'R' && Str.size() == 2 && CPlusPlus11) {
       return true; // "LR", "uR", "UR"
+
+}
 
     // Check for "u8" and "u8R"
     if (Str[0] == 'u' && Str[1] == '8') {
-      if (Str.size() == 2) return true; // "u8"
-      if (Str.size() == 3 && Str[2] == 'R') return true; // "u8R"
+      if (Str.size() == 2) { return true; // "u8"
+
+}
+      if (Str.size() == 3 && Str[2] == 'R') { return true; // "u8R"
+
+}
     }
   }
 
@@ -48,8 +56,10 @@ bool TokenConcatenation::IsIdentifierStringPrefix(const Token &Tok) const {
   const LangOptions &LangOpts = PP.getLangOpts();
 
   if (!Tok.needsCleaning()) {
-    if (Tok.getLength() < 1 || Tok.getLength() > 3)
+    if (Tok.getLength() < 1 || Tok.getLength() > 3) {
       return false;
+
+}
     SourceManager &SM = PP.getSourceManager();
     const char *Ptr = SM.getCharacterData(SM.getSpellingLoc(Tok.getLocation()));
     return IsStringPrefix(StringRef(Ptr, Tok.getLength()),
@@ -99,12 +109,16 @@ TokenConcatenation::TokenConcatenation(const Preprocessor &pp) : PP(pp) {
   }
 
   // These tokens have custom code in C++17 mode.
-  if (PP.getLangOpts().CPlusPlus17)
+  if (PP.getLangOpts().CPlusPlus17) {
     TokenInfo[tok::utf8_char_constant] |= aci_custom;
 
+}
+
   // These tokens have custom code in C++2a mode.
-  if (PP.getLangOpts().CPlusPlus2a)
+  if (PP.getLangOpts().CPlusPlus2a) {
     TokenInfo[tok::lessequal ] |= aci_custom_firstchar;
+
+}
 
   // These tokens change behavior if followed by an '='.
   TokenInfo[tok::amp         ] |= aci_avoid_equal;           // &=
@@ -162,8 +176,10 @@ bool TokenConcatenation::AvoidConcat(const Token &PrevPrevTok,
                                      const Token &Tok) const {
   // Conservatively assume that every annotation token that has a printable
   // form requires whitespace.
-  if (PrevTok.isAnnotation())
+  if (PrevTok.isAnnotation()) {
     return true;
+
+}
 
   // First, check to see if the tokens were directly adjacent in the original
   // source.  If they were, it must be okay to stick them together: if there
@@ -171,23 +187,31 @@ bool TokenConcatenation::AvoidConcat(const Token &PrevPrevTok,
   SourceManager &SM = PP.getSourceManager();
   SourceLocation PrevSpellLoc = SM.getSpellingLoc(PrevTok.getLocation());
   SourceLocation SpellLoc = SM.getSpellingLoc(Tok.getLocation());
-  if (PrevSpellLoc.getLocWithOffset(PrevTok.getLength()) == SpellLoc)
+  if (PrevSpellLoc.getLocWithOffset(PrevTok.getLength()) == SpellLoc) {
     return false;
 
+}
+
   tok::TokenKind PrevKind = PrevTok.getKind();
-  if (!PrevTok.isAnnotation() && PrevTok.getIdentifierInfo())
+  if (!PrevTok.isAnnotation() && PrevTok.getIdentifierInfo()) {
     PrevKind = tok::identifier; // Language keyword or named operator.
+
+}
 
   // Look up information on when we should avoid concatenation with prevtok.
   unsigned ConcatInfo = TokenInfo[PrevKind];
 
   // If prevtok never causes a problem for anything after it, return quickly.
-  if (ConcatInfo == 0) return false;
+  if (ConcatInfo == 0) { return false;
+
+}
 
   if (ConcatInfo & aci_avoid_equal) {
     // If the next token is '=' or '==', avoid concatenation.
-    if (Tok.isOneOf(tok::equal, tok::equalequal))
+    if (Tok.isOneOf(tok::equal, tok::equalequal)) {
       return true;
+
+}
     ConcatInfo &= ~aci_avoid_equal;
   }
   if (Tok.isAnnotation()) {
@@ -198,8 +222,10 @@ bool TokenConcatenation::AvoidConcat(const Token &PrevPrevTok,
     ConcatInfo = 0;
   }
 
-  if (ConcatInfo == 0)
+  if (ConcatInfo == 0) {
     return false;
+
+}
 
   // Basic algorithm: we look at the first character of the second token, and
   // determine whether it, if appended to the first token, would form (or
@@ -228,34 +254,46 @@ bool TokenConcatenation::AvoidConcat(const Token &PrevPrevTok,
   case tok::utf8_char_constant:
   case tok::utf16_char_constant:
   case tok::utf32_char_constant:
-    if (!PP.getLangOpts().CPlusPlus11)
+    if (!PP.getLangOpts().CPlusPlus11) {
       return false;
+
+}
 
     // In C++11, a string or character literal followed by an identifier is a
     // single token.
-    if (Tok.getIdentifierInfo())
+    if (Tok.getIdentifierInfo()) {
       return true;
+
+}
 
     // A ud-suffix is an identifier. If the previous token ends with one, treat
     // it as an identifier.
-    if (!PrevTok.hasUDSuffix())
+    if (!PrevTok.hasUDSuffix()) {
       return false;
+
+}
     LLVM_FALLTHROUGH;
   case tok::identifier:   // id+id or id+number or id+L"foo".
     // id+'.'... will not append.
-    if (Tok.is(tok::numeric_constant))
+    if (Tok.is(tok::numeric_constant)) {
       return GetFirstChar(PP, Tok) != '.';
+
+}
 
     if (Tok.getIdentifierInfo() ||
         Tok.isOneOf(tok::wide_string_literal, tok::utf8_string_literal,
                     tok::utf16_string_literal, tok::utf32_string_literal,
                     tok::wide_char_constant, tok::utf8_char_constant,
-                    tok::utf16_char_constant, tok::utf32_char_constant))
+                    tok::utf16_char_constant, tok::utf32_char_constant)) {
       return true;
 
+}
+
     // If this isn't identifier + string, we're done.
-    if (Tok.isNot(tok::char_constant) && Tok.isNot(tok::string_literal))
+    if (Tok.isNot(tok::char_constant) && Tok.isNot(tok::string_literal)) {
       return false;
+
+}
 
     // Otherwise, this is a narrow character or string.  If the *identifier*
     // is a literal 'L', 'u8', 'u' or 'U', avoid pasting L "foo" -> L"foo".

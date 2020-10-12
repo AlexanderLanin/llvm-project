@@ -64,8 +64,10 @@ class OverlayCDBTest : public ::testing::Test {
   public:
     llvm::Optional<tooling::CompileCommand>
     getCompileCommand(llvm::StringRef File) const override {
-      if (File == testPath("foo.cc"))
+      if (File == testPath("foo.cc")) {
         return cmd(File, "-DA=1");
+
+}
       return None;
     }
 

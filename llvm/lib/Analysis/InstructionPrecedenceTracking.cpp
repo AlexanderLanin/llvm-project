@@ -64,11 +64,13 @@ bool InstructionPrecedenceTracking::isPreceededBySpecialInstruction(
 
 void InstructionPrecedenceTracking::fill(const BasicBlock *BB) {
   FirstSpecialInsts.erase(BB);
-  for (auto &I : *BB)
+  for (auto &I : *BB) {
     if (isSpecialInstruction(&I)) {
       FirstSpecialInsts[BB] = &I;
       return;
     }
+
+}
 
   // Mark this block as having no special instructions.
   FirstSpecialInsts[BB] = nullptr;
@@ -102,13 +104,17 @@ void InstructionPrecedenceTracking::validateAll() const {
 
 void InstructionPrecedenceTracking::insertInstructionTo(const Instruction *Inst,
                                                         const BasicBlock *BB) {
-  if (isSpecialInstruction(Inst))
+  if (isSpecialInstruction(Inst)) {
     FirstSpecialInsts.erase(BB);
+
+}
 }
 
 void InstructionPrecedenceTracking::removeInstruction(const Instruction *Inst) {
-  if (isSpecialInstruction(Inst))
+  if (isSpecialInstruction(Inst)) {
     FirstSpecialInsts.erase(Inst->getParent());
+
+}
 }
 
 void InstructionPrecedenceTracking::clear() {
@@ -133,8 +139,10 @@ bool ImplicitControlFlowTracking::isSpecialInstruction(
   // of this logic in the future. Anyways, trapping instructions shouldn't
   // introduce implicit control flow, so we explicitly allow them here. This
   // must be removed once isGuaranteedToTransferExecutionToSuccessor is fixed.
-  if (isGuaranteedToTransferExecutionToSuccessor(Insn))
+  if (isGuaranteedToTransferExecutionToSuccessor(Insn)) {
     return false;
+
+}
   if (isa<LoadInst>(Insn)) {
     assert(cast<LoadInst>(Insn)->isVolatile() &&
            "Non-volatile load should transfer execution to successor!");
@@ -151,7 +159,9 @@ bool ImplicitControlFlowTracking::isSpecialInstruction(
 bool MemoryWriteTracking::isSpecialInstruction(
     const Instruction *Insn) const {
   using namespace PatternMatch;
-  if (match(Insn, m_Intrinsic<Intrinsic::experimental_widenable_condition>()))
+  if (match(Insn, m_Intrinsic<Intrinsic::experimental_widenable_condition>())) {
     return false;
+
+}
   return Insn->mayWriteToMemory();
 }

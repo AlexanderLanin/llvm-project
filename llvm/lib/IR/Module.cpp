@@ -147,8 +147,10 @@ FunctionCallee Module::getOrInsertFunction(StringRef Name, FunctionType *Ty,
     // Nope, add it
     Function *New = Function::Create(Ty, GlobalVariable::ExternalLinkage,
                                      DL.getProgramAddressSpace(), Name);
-    if (!New->isIntrinsic())       // Intrinsics get attrs set on construction
+    if (!New->isIntrinsic()) {       // Intrinsics get attrs set on construction
       New->setAttributes(AttributeList);
+
+}
     FunctionList.push_back(New);
     return {Ty, New}; // Return the new prototype.
   }
@@ -156,8 +158,10 @@ FunctionCallee Module::getOrInsertFunction(StringRef Name, FunctionType *Ty,
   // If the function exists but has the wrong type, return a bitcast to the
   // right type.
   auto *PTy = PointerType::get(Ty, F->getAddressSpace());
-  if (F->getType() != PTy)
+  if (F->getType() != PTy) {
     return {Ty, ConstantExpr::getBitCast(F, PTy)};
+
+}
 
   // Otherwise, we just found the existing function or a prototype.
   return {Ty, F};
@@ -188,9 +192,13 @@ Function *Module::getFunction(StringRef Name) const {
 GlobalVariable *Module::getGlobalVariable(StringRef Name,
                                           bool AllowLocal) const {
   if (GlobalVariable *Result =
-      dyn_cast_or_null<GlobalVariable>(getNamedValue(Name)))
-    if (AllowLocal || !Result->hasLocalLinkage())
+      dyn_cast_or_null<GlobalVariable>(getNamedValue(Name))) {
+    if (AllowLocal || !Result->hasLocalLinkage()) {
       return Result;
+
+}
+
+}
   return nullptr;
 }
 
@@ -205,16 +213,20 @@ Constant *Module::getOrInsertGlobal(
     function_ref<GlobalVariable *()> CreateGlobalCallback) {
   // See if we have a definition for the specified global already.
   GlobalVariable *GV = dyn_cast_or_null<GlobalVariable>(getNamedValue(Name));
-  if (!GV)
+  if (!GV) {
     GV = CreateGlobalCallback();
+
+}
   assert(GV && "The CreateGlobalCallback is expected to create a global");
 
   // If the variable exists but has the wrong type, return a bitcast to the
   // right type.
   Type *GVTy = GV->getType();
   PointerType *PTy = PointerType::get(Ty, GVTy->getPointerAddressSpace());
-  if (GVTy != PTy)
+  if (GVTy != PTy) {
     return ConstantExpr::getBitCast(GV, PTy);
+
+}
 
   // Otherwise, we just found the existing function or a prototype.
   return GV;
@@ -287,7 +299,9 @@ bool Module::isValidModFlagBehavior(Metadata *MD, ModFlagBehavior &MFB) {
 void Module::
 getModuleFlagsMetadata(SmallVectorImpl<ModuleFlagEntry> &Flags) const {
   const NamedMDNode *ModFlags = getModuleFlagsMetadata();
-  if (!ModFlags) return;
+  if (!ModFlags) { return;
+
+}
 
   for (const MDNode *Flag : ModFlags->operands()) {
     ModFlagBehavior MFB;
@@ -309,8 +323,10 @@ Metadata *Module::getModuleFlag(StringRef Key) const {
   SmallVector<Module::ModuleFlagEntry, 8> ModuleFlags;
   getModuleFlagsMetadata(ModuleFlags);
   for (const ModuleFlagEntry &MFE : ModuleFlags) {
-    if (Key == MFE.Key->getString())
+    if (Key == MFE.Key->getString()) {
       return MFE.Val;
+
+}
   }
   return nullptr;
 }
@@ -375,8 +391,10 @@ DICompileUnit *Module::debug_compile_units_iterator::operator->() const {
 
 void Module::debug_compile_units_iterator::SkipNoDebugCUs() {
   while (CUs && (Idx < CUs->getNumOperands()) &&
-         ((*this)->getEmissionKind() == DICompileUnit::NoDebug))
+         ((*this)->getEmissionKind() == DICompileUnit::NoDebug)) {
     ++Idx;
+
+}
 }
 
 iterator_range<Module::global_object_iterator> Module::global_objects() {
@@ -406,22 +424,28 @@ void Module::setMaterializer(GVMaterializer *GVM) {
 }
 
 Error Module::materialize(GlobalValue *GV) {
-  if (!Materializer)
+  if (!Materializer) {
     return Error::success();
+
+}
 
   return Materializer->materialize(GV);
 }
 
 Error Module::materializeAll() {
-  if (!Materializer)
+  if (!Materializer) {
     return Error::success();
+
+}
   std::unique_ptr<GVMaterializer> M = std::move(Materializer);
   return M->materializeModule();
 }
 
 Error Module::materializeMetadata() {
-  if (!Materializer)
+  if (!Materializer) {
     return Error::success();
+
+}
   return Materializer->materializeMetadata();
 }
 
@@ -433,8 +457,10 @@ std::vector<StructType *> Module::getIdentifiedStructTypes() const {
   // If we have a materializer, it is possible that some unread function
   // uses a type that is currently not visible to a TypeFinder, so ask
   // the materializer which types it created.
-  if (Materializer)
+  if (Materializer) {
     return Materializer->getIdentifiedStructTypes();
+
+}
 
   std::vector<StructType *> Ret;
   TypeFinder SrcStructTypes;
@@ -451,45 +477,61 @@ std::vector<StructType *> Module::getIdentifiedStructTypes() const {
 // has "dropped all references", except operator delete.
 //
 void Module::dropAllReferences() {
-  for (Function &F : *this)
+  for (Function &F : *this) {
     F.dropAllReferences();
 
-  for (GlobalVariable &GV : globals())
+}
+
+  for (GlobalVariable &GV : globals()) {
     GV.dropAllReferences();
 
-  for (GlobalAlias &GA : aliases())
+}
+
+  for (GlobalAlias &GA : aliases()) {
     GA.dropAllReferences();
 
-  for (GlobalIFunc &GIF : ifuncs())
+}
+
+  for (GlobalIFunc &GIF : ifuncs()) {
     GIF.dropAllReferences();
+
+}
 }
 
 unsigned Module::getNumberRegisterParameters() const {
   auto *Val =
       cast_or_null<ConstantAsMetadata>(getModuleFlag("NumRegisterParameters"));
-  if (!Val)
+  if (!Val) {
     return 0;
+
+}
   return cast<ConstantInt>(Val->getValue())->getZExtValue();
 }
 
 unsigned Module::getDwarfVersion() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("Dwarf Version"));
-  if (!Val)
+  if (!Val) {
     return 0;
+
+}
   return cast<ConstantInt>(Val->getValue())->getZExtValue();
 }
 
 unsigned Module::getCodeViewFlag() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("CodeView"));
-  if (!Val)
+  if (!Val) {
     return 0;
+
+}
   return cast<ConstantInt>(Val->getValue())->getZExtValue();
 }
 
 unsigned Module::getInstructionCount() {
   unsigned NumInstrs = 0;
-  for (Function &F : FunctionList)
+  for (Function &F : FunctionList) {
     NumInstrs += F.getInstructionCount();
+
+}
   return NumInstrs;
 }
 
@@ -502,8 +544,10 @@ Comdat *Module::getOrInsertComdat(StringRef Name) {
 PICLevel::Level Module::getPICLevel() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("PIC Level"));
 
-  if (!Val)
+  if (!Val) {
     return PICLevel::NotPIC;
+
+}
 
   return static_cast<PICLevel::Level>(
       cast<ConstantInt>(Val->getValue())->getZExtValue());
@@ -516,8 +560,10 @@ void Module::setPICLevel(PICLevel::Level PL) {
 PIELevel::Level Module::getPIELevel() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("PIE Level"));
 
-  if (!Val)
+  if (!Val) {
     return PIELevel::Default;
+
+}
 
   return static_cast<PIELevel::Level>(
       cast<ConstantInt>(Val->getValue())->getZExtValue());
@@ -530,8 +576,10 @@ void Module::setPIELevel(PIELevel::Level PL) {
 Optional<CodeModel::Model> Module::getCodeModel() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("Code Model"));
 
-  if (!Val)
+  if (!Val) {
     return None;
+
+}
 
   return static_cast<CodeModel::Model>(
       cast<ConstantInt>(Val->getValue())->getZExtValue());
@@ -546,10 +594,12 @@ void Module::setCodeModel(CodeModel::Model CL) {
 }
 
 void Module::setProfileSummary(Metadata *M, ProfileSummary::Kind Kind) {
-  if (Kind == ProfileSummary::PSK_CSInstr)
+  if (Kind == ProfileSummary::PSK_CSInstr) {
     addModuleFlag(ModFlagBehavior::Error, "CSProfileSummary", M);
-  else
+  } else {
     addModuleFlag(ModFlagBehavior::Error, "ProfileSummary", M);
+
+}
 }
 
 Metadata *Module::getProfileSummary(bool IsCS) {
@@ -561,8 +611,10 @@ bool Module::getSemanticInterposition() const {
   Metadata *MF = getModuleFlag("SemanticInterposition");
 
   auto *Val = cast_or_null<ConstantAsMetadata>(MF);
-  if (!Val)
+  if (!Val) {
     return false;
+
+}
 
   return cast<ConstantInt>(Val->getValue())->getZExtValue();
 }
@@ -589,8 +641,10 @@ void Module::setSDKVersion(const VersionTuple &V) {
   Entries.push_back(V.getMajor());
   if (auto Minor = V.getMinor()) {
     Entries.push_back(*Minor);
-    if (auto Subminor = V.getSubminor())
+    if (auto Subminor = V.getSubminor()) {
       Entries.push_back(*Subminor);
+
+}
     // Ignore the 'build' component as it can't be represented in the object
     // file.
   }
@@ -600,19 +654,27 @@ void Module::setSDKVersion(const VersionTuple &V) {
 
 VersionTuple Module::getSDKVersion() const {
   auto *CM = dyn_cast_or_null<ConstantAsMetadata>(getModuleFlag("SDK Version"));
-  if (!CM)
+  if (!CM) {
     return {};
+
+}
   auto *Arr = dyn_cast_or_null<ConstantDataArray>(CM->getValue());
-  if (!Arr)
+  if (!Arr) {
     return {};
+
+}
   auto getVersionComponent = [&](unsigned Index) -> Optional<unsigned> {
-    if (Index >= Arr->getNumElements())
+    if (Index >= Arr->getNumElements()) {
       return None;
+
+}
     return (unsigned)Arr->getElementAsInteger(Index);
   };
   auto Major = getVersionComponent(0);
-  if (!Major)
+  if (!Major) {
     return {};
+
+}
   VersionTuple Result = VersionTuple(*Major);
   if (auto Minor = getVersionComponent(1)) {
     Result = VersionTuple(*Major, *Minor);
@@ -627,8 +689,10 @@ GlobalVariable *llvm::collectUsedGlobalVariables(
     const Module &M, SmallPtrSetImpl<GlobalValue *> &Set, bool CompilerUsed) {
   const char *Name = CompilerUsed ? "llvm.compiler.used" : "llvm.used";
   GlobalVariable *GV = M.getGlobalVariable(Name);
-  if (!GV || !GV->hasInitializer())
+  if (!GV || !GV->hasInitializer()) {
     return GV;
+
+}
 
   const ConstantArray *Init = cast<ConstantArray>(GV->getInitializer());
   for (Value *Op : Init->operands()) {

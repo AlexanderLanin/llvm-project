@@ -20,14 +20,18 @@
 
 namespace llvm {
 Type *GEPOperator::getSourceElementType() const {
-  if (auto *I = dyn_cast<GetElementPtrInst>(this))
+  if (auto *I = dyn_cast<GetElementPtrInst>(this)) {
     return I->getSourceElementType();
+
+}
   return cast<GetElementPtrConstantExpr>(this)->getSourceElementType();
 }
 
 Type *GEPOperator::getResultElementType() const {
-  if (auto *I = dyn_cast<GetElementPtrInst>(this))
+  if (auto *I = dyn_cast<GetElementPtrInst>(this)) {
     return I->getResultElementType();
+
+}
   return cast<GetElementPtrConstantExpr>(this)->getResultElementType();
 }
 
@@ -40,10 +44,14 @@ bool GEPOperator::accumulateConstantOffset(const DataLayout &DL,
   for (gep_type_iterator GTI = gep_type_begin(this), GTE = gep_type_end(this);
        GTI != GTE; ++GTI) {
     ConstantInt *OpC = dyn_cast<ConstantInt>(GTI.getOperand());
-    if (!OpC)
+    if (!OpC) {
       return false;
-    if (OpC->isZero())
+
+}
+    if (OpC->isZero()) {
       continue;
+
+}
 
     // Handle a struct index, which adds its field offset to the pointer.
     if (StructType *STy = GTI.getStructTypeOrNull()) {

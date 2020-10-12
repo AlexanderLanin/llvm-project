@@ -63,18 +63,26 @@ isSimpleEnoughValueToCommitHelper(Constant *C,
                                   const DataLayout &DL) {
   // Simple global addresses are supported, do not allow dllimport or
   // thread-local globals.
-  if (auto *GV = dyn_cast<GlobalValue>(C))
+  if (auto *GV = dyn_cast<GlobalValue>(C)) {
     return !GV->hasDLLImportStorageClass() && !GV->isThreadLocal();
 
+}
+
   // Simple integer, undef, constant aggregate zero, etc are all supported.
-  if (C->getNumOperands() == 0 || isa<BlockAddress>(C))
+  if (C->getNumOperands() == 0 || isa<BlockAddress>(C)) {
     return true;
+
+}
 
   // Aggregate values are safe if all their elements are.
   if (isa<ConstantAggregate>(C)) {
-    for (Value *Op : C->operands())
-      if (!isSimpleEnoughValueToCommit(cast<Constant>(Op), SimpleConstants, DL))
+    for (Value *Op : C->operands()) {
+      if (!isSimpleEnoughValueToCommit(cast<Constant>(Op), SimpleConstants, DL)) {
         return false;
+
+}
+
+}
     return true;
   }
 
@@ -92,21 +100,29 @@ isSimpleEnoughValueToCommitHelper(Constant *C,
     // int <=> ptr is fine if the int type is the same size as the
     // pointer type.
     if (DL.getTypeSizeInBits(CE->getType()) !=
-        DL.getTypeSizeInBits(CE->getOperand(0)->getType()))
+        DL.getTypeSizeInBits(CE->getOperand(0)->getType())) {
       return false;
+
+}
     return isSimpleEnoughValueToCommit(CE->getOperand(0), SimpleConstants, DL);
 
   // GEP is fine if it is simple + constant offset.
   case Instruction::GetElementPtr:
-    for (unsigned i = 1, e = CE->getNumOperands(); i != e; ++i)
-      if (!isa<ConstantInt>(CE->getOperand(i)))
+    for (unsigned i = 1, e = CE->getNumOperands(); i != e; ++i) {
+      if (!isa<ConstantInt>(CE->getOperand(i))) {
         return false;
+
+}
+
+}
     return isSimpleEnoughValueToCommit(CE->getOperand(0), SimpleConstants, DL);
 
   case Instruction::Add:
     // We allow simple+cst.
-    if (!isa<ConstantInt>(CE->getOperand(1)))
+    if (!isa<ConstantInt>(CE->getOperand(1))) {
       return false;
+
+}
     return isSimpleEnoughValueToCommit(CE->getOperand(0), SimpleConstants, DL);
   }
   return false;
@@ -117,8 +133,10 @@ isSimpleEnoughValueToCommit(Constant *C,
                             SmallPtrSetImpl<Constant *> &SimpleConstants,
                             const DataLayout &DL) {
   // If we already checked this constant, we win.
-  if (!SimpleConstants.insert(C).second)
+  if (!SimpleConstants.insert(C).second) {
     return true;
+
+}
   // Check the constant.
   return isSimpleEnoughValueToCommitHelper(C, SimpleConstants, DL);
 }
@@ -131,12 +149,16 @@ isSimpleEnoughValueToCommit(Constant *C,
 static bool isSimpleEnoughPointerToCommit(Constant *C) {
   // Conservatively, avoid aggregate types. This is because we don't
   // want to worry about them partially overlapping other stores.
-  if (!cast<PointerType>(C->getType())->getElementType()->isSingleValueType())
+  if (!cast<PointerType>(C->getType())->getElementType()->isSingleValueType()) {
     return false;
 
-  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C))
+}
+
+  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
     // Do not allow weak/*_odr/linkonce linkage or external globals.
     return GV->hasUniqueInitializer();
+
+}
 
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
     // Handle a constantexpr gep.
@@ -146,17 +168,23 @@ static bool isSimpleEnoughPointerToCommit(Constant *C) {
       GlobalVariable *GV = cast<GlobalVariable>(CE->getOperand(0));
       // Do not allow weak/*_odr/linkonce/dllimport/dllexport linkage or
       // external globals.
-      if (!GV->hasUniqueInitializer())
+      if (!GV->hasUniqueInitializer()) {
         return false;
+
+}
 
       // The first index must be zero.
       ConstantInt *CI = dyn_cast<ConstantInt>(*std::next(CE->op_begin()));
-      if (!CI || !CI->isZero()) return false;
+      if (!CI || !CI->isZero()) { return false;
+
+}
 
       // The remaining indices must be compile-time known integers within the
       // notional bounds of the corresponding static array types.
-      if (!CE->isGEPWithNoNotionalOverIndexing())
+      if (!CE->isGEPWithNoNotionalOverIndexing()) {
         return false;
+
+}
 
       return ConstantFoldLoadThroughGEPConstantExpr(GV->getInitializer(), CE);
 
@@ -188,8 +216,10 @@ evaluateBitcastFromPtr(Constant *Ptr, const DataLayout &DL,
     // into a pointer to its first member.
     // FIXME: This could be extended to support arrays as well.
     Type *Ty = cast<PointerType>(Ptr->getType())->getElementType();
-    if (!isa<StructType>(Ty))
+    if (!isa<StructType>(Ty)) {
       break;
+
+}
 
     IntegerType *IdxTy = IntegerType::get(Ty->getContext(), 32);
     Constant *IdxZero = ConstantInt::get(IdxTy, 0, false);
@@ -217,13 +247,17 @@ Constant *Evaluator::ComputeLoadResult(Constant *P) {
     return I != MutatedMemory.end() ? I->second : nullptr;
   };
 
-  if (Constant *Val = findMemLoc(P))
+  if (Constant *Val = findMemLoc(P)) {
     return Val;
+
+}
 
   // Access it.
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(P)) {
-    if (GV->hasDefinitiveInitializer())
+    if (GV->hasDefinitiveInitializer()) {
       return GV->getInitializer();
+
+}
     return nullptr;
   }
 
@@ -231,8 +265,10 @@ Constant *Evaluator::ComputeLoadResult(Constant *P) {
     switch (CE->getOpcode()) {
     // Handle a constantexpr getelementptr.
     case Instruction::GetElementPtr:
-      if (auto *I = getInitializer(CE->getOperand(0)))
+      if (auto *I = getInitializer(CE->getOperand(0))) {
         return ConstantFoldLoadThroughGEPConstantExpr(I, CE);
+
+}
       break;
     // Handle a constantexpr bitcast.
     case Instruction::BitCast:
@@ -242,11 +278,15 @@ Constant *Evaluator::ComputeLoadResult(Constant *P) {
       // introspecting the type.
       Constant *Val =
           evaluateBitcastFromPtr(CE->getOperand(0), DL, TLI, findMemLoc);
-      if (!Val)
+      if (!Val) {
         Val = getInitializer(CE->getOperand(0));
-      if (Val)
+
+}
+      if (Val) {
         return ConstantFoldLoadThroughBitcast(
             Val, P->getType()->getPointerElementType(), DL);
+
+}
       break;
     }
   }
@@ -255,12 +295,18 @@ Constant *Evaluator::ComputeLoadResult(Constant *P) {
 }
 
 static Function *getFunction(Constant *C) {
-  if (auto *Fn = dyn_cast<Function>(C))
+  if (auto *Fn = dyn_cast<Function>(C)) {
     return Fn;
 
-  if (auto *Alias = dyn_cast<GlobalAlias>(C))
-    if (auto *Fn = dyn_cast<Function>(Alias->getAliasee()))
+}
+
+  if (auto *Alias = dyn_cast<GlobalAlias>(C)) {
+    if (auto *Fn = dyn_cast<Function>(Alias->getAliasee())) {
       return Fn;
+
+}
+
+}
   return nullptr;
 }
 
@@ -268,13 +314,17 @@ Function *
 Evaluator::getCalleeWithFormalArgs(CallSite &CS,
                                    SmallVector<Constant *, 8> &Formals) {
   auto *V = CS.getCalledValue();
-  if (auto *Fn = getFunction(getVal(V)))
+  if (auto *Fn = getFunction(getVal(V))) {
     return getFormalParams(CS, Fn, Formals) ? Fn : nullptr;
+
+}
 
   auto *CE = dyn_cast<ConstantExpr>(V);
   if (!CE || CE->getOpcode() != Instruction::BitCast ||
-      !getFormalParams(CS, getFunction(CE->getOperand(0)), Formals))
+      !getFormalParams(CS, getFunction(CE->getOperand(0)), Formals)) {
     return nullptr;
+
+}
 
   return dyn_cast<Function>(
       ConstantFoldLoadThroughBitcast(CE, CE->getOperand(0)->getType(), DL));
@@ -282,8 +332,10 @@ Evaluator::getCalleeWithFormalArgs(CallSite &CS,
 
 bool Evaluator::getFormalParams(CallSite &CS, Function *F,
                                 SmallVector<Constant *, 8> &Formals) {
-  if (!F)
+  if (!F) {
     return false;
+
+}
 
   auto *FTy = F->getFunctionType();
   if (FTy->getNumParams() > CS.getNumArgOperands()) {
@@ -309,14 +361,18 @@ bool Evaluator::getFormalParams(CallSite &CS, Function *F,
 /// evaluated return value to a type of the call expression.
 Constant *Evaluator::castCallResultIfNeeded(Value *CallExpr, Constant *RV) {
   ConstantExpr *CE = dyn_cast<ConstantExpr>(CallExpr);
-  if (!RV || !CE || CE->getOpcode() != Instruction::BitCast)
+  if (!RV || !CE || CE->getOpcode() != Instruction::BitCast) {
     return RV;
+
+}
 
   if (auto *FT =
           dyn_cast<FunctionType>(CE->getType()->getPointerElementType())) {
     RV = ConstantFoldLoadThroughBitcast(RV, FT->getReturnType(), DL);
-    if (!RV)
+    if (!RV) {
       LLVM_DEBUG(dbgs() << "Failed to fold bitcast call expr\n");
+
+}
   }
   return RV;
 }
@@ -434,8 +490,10 @@ bool Evaluator::EvaluateBlock(BasicBlock::iterator CurInst,
       Constant *P = getVal(GEP->getOperand(0));
       SmallVector<Constant*, 8> GEPOps;
       for (User::op_iterator i = GEP->op_begin() + 1, e = GEP->op_end();
-           i != e; ++i)
+           i != e; ++i) {
         GEPOps.push_back(getVal(*i));
+
+}
       InstResult =
           ConstantExpr::getGetElementPtr(GEP->getSourceElementType(), P, GEPOps,
                                          cast<GEPOperator>(GEP)->isInBounds());
@@ -571,8 +629,10 @@ bool Evaluator::EvaluateBlock(BasicBlock::iterator CurInst,
         if (Constant *C = ConstantFoldCall(cast<CallBase>(CS.getInstruction()),
                                            Callee, Formals, TLI)) {
           InstResult = castCallResultIfNeeded(CS.getCalledValue(), C);
-          if (!InstResult)
+          if (!InstResult) {
             return false;
+
+}
           LLVM_DEBUG(dbgs() << "Constant folded function call. Result: "
                             << *InstResult << "\n");
         } else {
@@ -594,8 +654,10 @@ bool Evaluator::EvaluateBlock(BasicBlock::iterator CurInst,
         }
         ValueStack.pop_back();
         InstResult = castCallResultIfNeeded(CS.getCalledValue(), RetVal);
-        if (RetVal && !InstResult)
+        if (RetVal && !InstResult) {
           return false;
+
+}
 
         if (InstResult) {
           LLVM_DEBUG(dbgs() << "Successfully evaluated function. Result: "
@@ -614,21 +676,27 @@ bool Evaluator::EvaluateBlock(BasicBlock::iterator CurInst,
         } else {
           ConstantInt *Cond =
             dyn_cast<ConstantInt>(getVal(BI->getCondition()));
-          if (!Cond) return false;  // Cannot determine.
+          if (!Cond) { return false;  // Cannot determine.
+
+}
 
           NextBB = BI->getSuccessor(!Cond->getZExtValue());
         }
       } else if (SwitchInst *SI = dyn_cast<SwitchInst>(CurInst)) {
         ConstantInt *Val =
           dyn_cast<ConstantInt>(getVal(SI->getCondition()));
-        if (!Val) return false;  // Cannot determine.
+        if (!Val) { return false;  // Cannot determine.
+
+}
         NextBB = SI->findCaseValue(Val)->getCaseSuccessor();
       } else if (IndirectBrInst *IBI = dyn_cast<IndirectBrInst>(CurInst)) {
         Value *Val = getVal(IBI->getAddress())->stripPointerCasts();
-        if (BlockAddress *BA = dyn_cast<BlockAddress>(Val))
+        if (BlockAddress *BA = dyn_cast<BlockAddress>(Val)) {
           NextBB = BA->getBasicBlock();
-        else
+        } else {
           return false;  // Cannot determine.
+
+}
       } else if (isa<ReturnInst>(CurInst)) {
         NextBB = nullptr;
       } else {
@@ -672,16 +740,20 @@ bool Evaluator::EvaluateFunction(Function *F, Constant *&RetVal,
                                  const SmallVectorImpl<Constant*> &ActualArgs) {
   // Check to see if this function is already executing (recursion).  If so,
   // bail out.  TODO: we might want to accept limited recursion.
-  if (is_contained(CallStack, F))
+  if (is_contained(CallStack, F)) {
     return false;
+
+}
 
   CallStack.push_back(F);
 
   // Initialize arguments to the incoming values specified.
   unsigned ArgNo = 0;
   for (Function::arg_iterator AI = F->arg_begin(), E = F->arg_end(); AI != E;
-       ++AI, ++ArgNo)
+       ++AI, ++ArgNo) {
     setVal(&*AI, ActualArgs[ArgNo]);
+
+}
 
   // ExecutedBlocks - We only handle non-looping, non-recursive code.  As such,
   // we can only evaluate any one basic block at most once.  This set keeps
@@ -697,15 +769,19 @@ bool Evaluator::EvaluateFunction(Function *F, Constant *&RetVal,
     BasicBlock *NextBB = nullptr; // Initialized to avoid compiler warnings.
     LLVM_DEBUG(dbgs() << "Trying to evaluate BB: " << *CurBB << "\n");
 
-    if (!EvaluateBlock(CurInst, NextBB))
+    if (!EvaluateBlock(CurInst, NextBB)) {
       return false;
+
+}
 
     if (!NextBB) {
       // Successfully running until there's no next block means that we found
       // the return.  Fill it the return value and pop the call stack.
       ReturnInst *RI = cast<ReturnInst>(CurBB->getTerminator());
-      if (RI->getNumOperands())
+      if (RI->getNumOperands()) {
         RetVal = getVal(RI->getOperand(0));
+
+}
       CallStack.pop_back();
       return true;
     }
@@ -713,16 +789,20 @@ bool Evaluator::EvaluateFunction(Function *F, Constant *&RetVal,
     // Okay, we succeeded in evaluating this control flow.  See if we have
     // executed the new block before.  If so, we have a looping function,
     // which we cannot evaluate in reasonable time.
-    if (!ExecutedBlocks.insert(NextBB).second)
+    if (!ExecutedBlocks.insert(NextBB).second) {
       return false;  // looped!
+
+}
 
     // Okay, we have never been in this block before.  Check to see if there
     // are any PHI nodes.  If so, evaluate them with information about where
     // we came from.
     PHINode *PN = nullptr;
     for (CurInst = NextBB->begin();
-         (PN = dyn_cast<PHINode>(CurInst)); ++CurInst)
+         (PN = dyn_cast<PHINode>(CurInst)); ++CurInst) {
       setVal(PN, getVal(PN->getIncomingValueForBlock(CurBB)));
+
+}
 
     // Advance to the next block.
     CurBB = NextBB;

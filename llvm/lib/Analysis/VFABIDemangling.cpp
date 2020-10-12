@@ -25,8 +25,10 @@ enum class ParseRet {
 /// Extracts the `<isa>` information from the mangled string, and
 /// sets the `ISA` accordingly.
 ParseRet tryParseISA(StringRef &MangledName, VFISAKind &ISA) {
-  if (MangledName.empty())
+  if (MangledName.empty()) {
     return ParseRet::Error;
+
+}
 
   if (MangledName.startswith(VFABI::_LLVM_)) {
     MangledName = MangledName.drop_front(strlen(VFABI::_LLVM_));
@@ -78,12 +80,16 @@ ParseRet tryParseVLEN(StringRef &ParseString, unsigned &VF, bool &IsScalable) {
     return ParseRet::OK;
   }
 
-  if (ParseString.consumeInteger(10, VF))
+  if (ParseString.consumeInteger(10, VF)) {
     return ParseRet::Error;
 
+}
+
   // The token `0` is invalid for VLEN.
-  if (VF == 0)
+  if (VF == 0) {
     return ParseRet::Error;
+
+}
 
   IsScalable = false;
   return ParseRet::OK;
@@ -106,8 +112,10 @@ ParseRet tryParseLinearTokenWithRuntimeStep(StringRef &ParseString,
                                             const StringRef Token) {
   if (ParseString.consume_front(Token)) {
     PKind = VFABI::getVFParamKindFromString(Token);
-    if (ParseString.consumeInteger(10, Pos))
+    if (ParseString.consumeInteger(10, Pos)) {
       return ParseRet::Error;
+
+}
     return ParseRet::OK;
   }
 
@@ -131,23 +139,31 @@ ParseRet tryParseLinearWithRuntimeStep(StringRef &ParseString,
 
   // "ls" <RuntimeStepPos>
   Ret = tryParseLinearTokenWithRuntimeStep(ParseString, PKind, StepOrPos, "ls");
-  if (Ret != ParseRet::None)
+  if (Ret != ParseRet::None) {
     return Ret;
+
+}
 
   // "Rs" <RuntimeStepPos>
   Ret = tryParseLinearTokenWithRuntimeStep(ParseString, PKind, StepOrPos, "Rs");
-  if (Ret != ParseRet::None)
+  if (Ret != ParseRet::None) {
     return Ret;
+
+}
 
   // "Ls" <RuntimeStepPos>
   Ret = tryParseLinearTokenWithRuntimeStep(ParseString, PKind, StepOrPos, "Ls");
-  if (Ret != ParseRet::None)
+  if (Ret != ParseRet::None) {
     return Ret;
+
+}
 
   // "Us" <RuntimeStepPos>
   Ret = tryParseLinearTokenWithRuntimeStep(ParseString, PKind, StepOrPos, "Us");
-  if (Ret != ParseRet::None)
+  if (Ret != ParseRet::None) {
     return Ret;
+
+}
 
   return ParseRet::None;
 }
@@ -170,10 +186,14 @@ ParseRet tryParseCompileTimeLinearToken(StringRef &ParseString,
   if (ParseString.consume_front(Token)) {
     PKind = VFABI::getVFParamKindFromString(Token);
     const bool Negate = ParseString.consume_front("n");
-    if (ParseString.consumeInteger(10, LinearStep))
+    if (ParseString.consumeInteger(10, LinearStep)) {
       LinearStep = 1;
-    if (Negate)
+
+}
+    if (Negate) {
       LinearStep *= -1;
+
+}
     return ParseRet::OK;
   }
 
@@ -193,23 +213,31 @@ ParseRet tryParseLinearWithCompileTimeStep(StringRef &ParseString,
                                            VFParamKind &PKind, int &StepOrPos) {
   // "l" {"n"} <CompileTimeStep>
   if (tryParseCompileTimeLinearToken(ParseString, PKind, StepOrPos, "l") ==
-      ParseRet::OK)
+      ParseRet::OK) {
     return ParseRet::OK;
+
+}
 
   // "R" {"n"} <CompileTimeStep>
   if (tryParseCompileTimeLinearToken(ParseString, PKind, StepOrPos, "R") ==
-      ParseRet::OK)
+      ParseRet::OK) {
     return ParseRet::OK;
+
+}
 
   // "L" {"n"} <CompileTimeStep>
   if (tryParseCompileTimeLinearToken(ParseString, PKind, StepOrPos, "L") ==
-      ParseRet::OK)
+      ParseRet::OK) {
     return ParseRet::OK;
+
+}
 
   // "U" {"n"} <CompileTimeStep>
   if (tryParseCompileTimeLinearToken(ParseString, PKind, StepOrPos, "U") ==
-      ParseRet::OK)
+      ParseRet::OK) {
     return ParseRet::OK;
+
+}
 
   return ParseRet::None;
 }
@@ -228,8 +256,10 @@ ParseRet tryParseUniform(StringRef &ParseString, VFParamKind &PKind, int &Pos) {
   const char *UniformToken = "u";
   if (ParseString.consume_front(UniformToken)) {
     PKind = VFABI::getVFParamKindFromString(UniformToken);
-    if (ParseString.consumeInteger(10, Pos))
+    if (ParseString.consumeInteger(10, Pos)) {
       return ParseRet::Error;
+
+}
 
     return ParseRet::OK;
   }
@@ -254,17 +284,23 @@ ParseRet tryParseParameter(StringRef &ParseString, VFParamKind &PKind,
 
   const ParseRet HasLinearRuntime =
       tryParseLinearWithRuntimeStep(ParseString, PKind, StepOrPos);
-  if (HasLinearRuntime != ParseRet::None)
+  if (HasLinearRuntime != ParseRet::None) {
     return HasLinearRuntime;
+
+}
 
   const ParseRet HasLinearCompileTime =
       tryParseLinearWithCompileTimeStep(ParseString, PKind, StepOrPos);
-  if (HasLinearCompileTime != ParseRet::None)
+  if (HasLinearCompileTime != ParseRet::None) {
     return HasLinearCompileTime;
 
+}
+
   const ParseRet HasUniform = tryParseUniform(ParseString, PKind, StepOrPos);
-  if (HasUniform != ParseRet::None)
+  if (HasUniform != ParseRet::None) {
     return HasUniform;
+
+}
 
   return ParseRet::None;
 }
@@ -281,11 +317,15 @@ ParseRet tryParseAlign(StringRef &ParseString, Align &Alignment) {
   uint64_t Val;
   //    "a" <number>
   if (ParseString.consume_front("a")) {
-    if (ParseString.consumeInteger(10, Val))
+    if (ParseString.consumeInteger(10, Val)) {
       return ParseRet::Error;
 
-    if (!isPowerOf2_64(Val))
+}
+
+    if (!isPowerOf2_64(Val)) {
       return ParseRet::Error;
+
+}
 
     Alignment = Align(Val);
 
@@ -324,11 +364,17 @@ ElementCount getECFromSignature(FunctionType *Signature) {
   assert(verifyAllVectorsHaveSameWidth(Signature) &&
          "Invalid vector signature.");
 
-  if (auto *RetTy = dyn_cast<VectorType>(Signature->getReturnType()))
+  if (auto *RetTy = dyn_cast<VectorType>(Signature->getReturnType())) {
     return RetTy->getElementCount();
-  for (auto *Ty : Signature->params())
-    if (auto *VTy = dyn_cast<VectorType>(Ty))
+
+}
+  for (auto *Ty : Signature->params()) {
+    if (auto *VTy = dyn_cast<VectorType>(Ty)) {
       return VTy->getElementCount();
+
+}
+
+}
 
   return ElementCount(/*Min=*/1, /*Scalable=*/false);
 }
@@ -345,25 +391,33 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
   StringRef VectorName = MangledName;
 
   // Parse the fixed size part of the manled name
-  if (!MangledName.consume_front("_ZGV"))
+  if (!MangledName.consume_front("_ZGV")) {
     return None;
+
+}
 
   // Extract ISA. An unknow ISA is also supported, so we accept all
   // values.
   VFISAKind ISA;
-  if (tryParseISA(MangledName, ISA) != ParseRet::OK)
+  if (tryParseISA(MangledName, ISA) != ParseRet::OK) {
     return None;
+
+}
 
   // Extract <mask>.
   bool IsMasked;
-  if (tryParseMask(MangledName, IsMasked) != ParseRet::OK)
+  if (tryParseMask(MangledName, IsMasked) != ParseRet::OK) {
     return None;
+
+}
 
   // Parse the variable size, starting from <vlen>.
   unsigned VF;
   bool IsScalable;
-  if (tryParseVLEN(MangledName, VF, IsScalable) != ParseRet::OK)
+  if (tryParseVLEN(MangledName, VF, IsScalable) != ParseRet::OK) {
     return None;
+
+}
 
   // Parse the <parameters>.
   ParseRet ParamFound;
@@ -375,16 +429,20 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
     ParamFound = tryParseParameter(MangledName, PKind, StepOrPos);
 
     // Bail off if there is a parsing error in the parsing of the parameter.
-    if (ParamFound == ParseRet::Error)
+    if (ParamFound == ParseRet::Error) {
       return None;
+
+}
 
     if (ParamFound == ParseRet::OK) {
       Align Alignment;
       // Look for the alignment token "a <number>".
       const ParseRet AlignFound = tryParseAlign(MangledName, Alignment);
       // Bail off if there is a syntax error in the align token.
-      if (AlignFound == ParseRet::Error)
+      if (AlignFound == ParseRet::Error) {
         return None;
+
+}
 
       // Add the parameter.
       Parameters.push_back({ParameterPos, PKind, StepOrPos, Alignment});
@@ -393,39 +451,51 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
 
   // A valid MangledName must have at least one valid entry in the
   // <parameters>.
-  if (Parameters.empty())
+  if (Parameters.empty()) {
     return None;
+
+}
 
   // Check for the <scalarname> and the optional <redirection>, which
   // are separated from the prefix with "_"
-  if (!MangledName.consume_front("_"))
+  if (!MangledName.consume_front("_")) {
     return None;
+
+}
 
   // The rest of the string must be in the format:
   // <scalarname>[(<redirection>)]
   const StringRef ScalarName =
       MangledName.take_while([](char In) { return In != '('; });
 
-  if (ScalarName.empty())
+  if (ScalarName.empty()) {
     return None;
+
+}
 
   // Reduce MangledName to [(<redirection>)].
   MangledName = MangledName.ltrim(ScalarName);
   // Find the optional custom name redirection.
   if (MangledName.consume_front("(")) {
-    if (!MangledName.consume_back(")"))
+    if (!MangledName.consume_back(")")) {
       return None;
+
+}
     // Update the vector variant with the one specified by the user.
     VectorName = MangledName;
     // If the vector name is missing, bail out.
-    if (VectorName.empty())
+    if (VectorName.empty()) {
       return None;
+
+}
   }
 
   // LLVM internal mapping via the TargetLibraryInfo (TLI) must be
   // redirected to an existing name.
-  if (ISA == VFISAKind::LLVM && VectorName == OriginalName)
+  if (ISA == VFISAKind::LLVM && VectorName == OriginalName) {
     return None;
+
+}
 
   // When <mask> is "M", we need to add a parameter that is used as
   // global predicate for the function.
@@ -444,9 +514,11 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
         return PK.ParamKind == VFParamKind::GlobalPredicate;
       });
   assert(NGlobalPreds < 2 && "Cannot have more than one global predicate.");
-  if (NGlobalPreds)
+  if (NGlobalPreds) {
     assert(Parameters.back().ParamKind == VFParamKind::GlobalPredicate &&
            "The global predicate must be the last parameter");
+
+}
 
   // Adjust the VF for scalable signatures. The EC.Min is not encoded
   // in the name of the function, but it is encoded in the IR
@@ -459,8 +531,10 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
     const Function *F = M.getFunction(VectorName);
     // The declaration of the function must be present in the module
     // to be able to retrieve its signature.
-    if (!F)
+    if (!F) {
       return None;
+
+}
     const ElementCount EC = getECFromSignature(F->getFunctionType());
     VF = EC.Min;
   }
@@ -469,10 +543,14 @@ Optional<VFInfo> VFABI::tryDemangleForVFABI(StringRef MangledName,
   // 1. We don't accept a zero lanes vectorization factor.
   // 2. We don't accept the demangling if the vector function is not
   // present in the module.
-  if (VF == 0)
+  if (VF == 0) {
     return None;
-  if (!M.getFunction(VectorName))
+
+}
+  if (!M.getFunction(VectorName)) {
     return None;
+
+}
 
   const VFShape Shape({VF, IsScalable, Parameters});
   return VFInfo({Shape, std::string(ScalarName), std::string(VectorName), ISA});
@@ -492,8 +570,10 @@ VFParamKind VFABI::getVFParamKindFromString(const StringRef Token) {
                                     .Case("u", VFParamKind::OMP_Uniform)
                                     .Default(VFParamKind::Unknown);
 
-  if (ParamKind != VFParamKind::Unknown)
+  if (ParamKind != VFParamKind::Unknown) {
     return ParamKind;
+
+}
 
   // This function should never be invoked with an invalid input.
   llvm_unreachable("This fuction should be invoken only on parameters"

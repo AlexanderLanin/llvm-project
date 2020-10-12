@@ -29,8 +29,10 @@ struct LegacyBye : public FunctionPass {
 
 struct Bye : PassInfoMixin<Bye> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    if (!runBye(F))
+    if (!runBye(F)) {
       return PreservedAnalyses::all();
+
+}
     return PreservedAnalyses::none();
   }
 };

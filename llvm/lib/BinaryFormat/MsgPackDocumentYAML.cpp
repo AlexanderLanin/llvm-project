@@ -49,10 +49,12 @@ std::string DocNode::toString() const {
     OS << Int;
     break;
   case msgpack::Type::UInt:
-    if (getDocument()->getHexMode())
+    if (getDocument()->getHexMode()) {
       OS << format("%#llx", (unsigned long long)UInt);
-    else
+    } else {
       OS << UInt;
+
+}
     break;
   case msgpack::Type::Float:
     OS << Float;
@@ -68,8 +70,10 @@ std::string DocNode::toString() const {
 /// it is a string, copy the string into the Document's strings list so we do
 /// not rely on S having a lifetime beyond this call. Tag is "" or a YAML tag.
 StringRef DocNode::fromString(StringRef S, StringRef Tag) {
-  if (Tag == "tag:yaml.org,2002:str")
+  if (Tag == "tag:yaml.org,2002:str") {
     Tag = "";
+
+}
   if (Tag == "!int" || Tag == "") {
     // Try unsigned int then signed int.
     *this = getDocument()->getNode(uint64_t(0));
@@ -78,8 +82,10 @@ StringRef DocNode::fromString(StringRef S, StringRef Tag) {
       *this = getDocument()->getNode(int64_t(0));
       Err = yaml::ScalarTraits<int64_t>::input(S, nullptr, getInt());
     }
-    if (Err == "" || Tag != "")
+    if (Err == "" || Tag != "") {
       return Err;
+
+}
   }
   if (Tag == "!nil") {
     *this = getDocument()->getNode();
@@ -88,20 +94,26 @@ StringRef DocNode::fromString(StringRef S, StringRef Tag) {
   if (Tag == "!bool" || Tag == "") {
     *this = getDocument()->getNode(false);
     StringRef Err = yaml::ScalarTraits<bool>::input(S, nullptr, getBool());
-    if (Err == "" || Tag != "")
+    if (Err == "" || Tag != "") {
       return Err;
+
+}
   }
   if (Tag == "!float" || Tag == "") {
     *this = getDocument()->getNode(0.0);
     StringRef Err = yaml::ScalarTraits<double>::input(S, nullptr, getFloat());
-    if (Err == "" || Tag != "")
+    if (Err == "" || Tag != "") {
       return Err;
+
+}
   }
   assert((Tag == "!str" || Tag == "") && "unsupported tag");
   std::string V;
   StringRef Err = yaml::ScalarTraits<std::string>::input(S, nullptr, V);
-  if (Err == "")
+  if (Err == "") {
     *this = getDocument()->getNode(V, /*Copy=*/true);
+
+}
   return Err;
 }
 
@@ -109,20 +121,28 @@ StringRef DocNode::fromString(StringRef S, StringRef Tag) {
 /// returns something else if the result of toString would be ambiguous, e.g.
 /// a string that parses as a number or boolean.
 StringRef ScalarDocNode::getYAMLTag() const {
-  if (getKind() == msgpack::Type::Nil)
+  if (getKind() == msgpack::Type::Nil) {
     return "!nil";
+
+}
   // Try converting both ways and see if we get the same kind. If not, we need
   // a tag.
   ScalarDocNode N = getDocument()->getNode();
   N.fromString(toString(), "");
-  if (N.getKind() == getKind())
+  if (N.getKind() == getKind()) {
     return "";
+
+}
   // Tolerate signedness of int changing, as tags do not differentiate between
   // them anyway.
-  if (N.getKind() == msgpack::Type::UInt && getKind() == msgpack::Type::Int)
+  if (N.getKind() == msgpack::Type::UInt && getKind() == msgpack::Type::Int) {
     return "";
-  if (N.getKind() == msgpack::Type::Int && getKind() == msgpack::Type::UInt)
+
+}
+  if (N.getKind() == msgpack::Type::Int && getKind() == msgpack::Type::UInt) {
     return "";
+
+}
   // We do need a tag.
   switch (getKind()) {
   case msgpack::Type::String:

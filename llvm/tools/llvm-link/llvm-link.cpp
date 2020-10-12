@@ -118,13 +118,17 @@ static std::unique_ptr<Module> loadFile(const char *argv0,
                                         LLVMContext &Context,
                                         bool MaterializeMetadata = true) {
   SMDiagnostic Err;
-  if (Verbose)
+  if (Verbose) {
     errs() << "Loading '" << FN << "'\n";
+
+}
   std::unique_ptr<Module> Result;
-  if (DisableLazyLoad)
+  if (DisableLazyLoad) {
     Result = parseIRFile(FN, Err, Context);
-  else
+  } else {
     Result = getLazyIRFileModule(FN, Err, Context, !MaterializeMetadata);
+
+}
 
   if (!Result) {
     Err.print(argv0, errs());
@@ -175,8 +179,10 @@ public:
 Module &ModuleLazyLoaderCache::operator()(const char *argv0,
                                           const std::string &Identifier) {
   auto &Module = ModuleMap[Identifier];
-  if (!Module)
+  if (!Module) {
     Module = createLazyModule(argv0, Identifier);
+
+}
   return *Module;
 }
 } // anonymous namespace
@@ -190,8 +196,10 @@ struct LLVMLinkDiagnosticHandler : public DiagnosticHandler {
       WithColor::error();
       break;
     case DS_Warning:
-      if (SuppressWarnings)
+      if (SuppressWarnings) {
         return true;
+
+}
       WithColor::warning();
       break;
     case DS_Remark:
@@ -209,8 +217,10 @@ struct LLVMLinkDiagnosticHandler : public DiagnosticHandler {
 
 /// Import any functions requested via the -import option.
 static bool importFunctions(const char *argv0, Module &DestModule) {
-  if (SummaryIndex.empty())
+  if (SummaryIndex.empty()) {
     return true;
+
+}
   std::unique_ptr<ModuleSummaryIndex> Index =
       ExitOnErr(llvm::getModuleSummaryIndexForFile(SummaryIndex));
 
@@ -257,8 +267,10 @@ static bool importFunctions(const char *argv0, Module &DestModule) {
       continue;
     }
 
-    if (Verbose)
+    if (Verbose) {
       errs() << "Importing " << FunctionName << " from " << FileName << "\n";
+
+}
 
     auto &Entry = ImportList[FileName];
     Entry.insert(F->getGUID());
@@ -307,18 +319,24 @@ static bool linkFiles(const char *argv0, LLVMContext &Context, Linker &L,
       // promote.
       for (auto &I : *Index) {
         for (auto &S : I.second.SummaryList) {
-          if (GlobalValue::isLocalLinkage(S->linkage()))
+          if (GlobalValue::isLocalLinkage(S->linkage())) {
             S->setLinkage(GlobalValue::ExternalLinkage);
+
+}
         }
       }
 
       // Promotion
-      if (renameModuleForThinLTO(*M, *Index))
+      if (renameModuleForThinLTO(*M, *Index)) {
         return true;
+
+}
     }
 
-    if (Verbose)
+    if (Verbose) {
       errs() << "Linking in '" << File << "'\n";
+
+}
 
     bool Err = false;
     if (InternalizeLinkedSymbols) {
@@ -332,8 +350,10 @@ static bool linkFiles(const char *argv0, LLVMContext &Context, Linker &L,
       Err = L.linkInModule(std::move(M), ApplicableFlags);
     }
 
-    if (Err)
+    if (Err) {
       return false;
+
+}
 
     // Internalization applies to linking of subsequent files.
     InternalizeLinkedSymbols = Internalize;
@@ -354,31 +374,43 @@ int main(int argc, char **argv) {
     std::make_unique<LLVMLinkDiagnosticHandler>(), true);
   cl::ParseCommandLineOptions(argc, argv, "llvm linker\n");
 
-  if (!DisableDITypeMap)
+  if (!DisableDITypeMap) {
     Context.enableDebugTypeODRUniquing();
+
+}
 
   auto Composite = std::make_unique<Module>("llvm-link", Context);
   Linker L(*Composite);
 
   unsigned Flags = Linker::Flags::None;
-  if (OnlyNeeded)
+  if (OnlyNeeded) {
     Flags |= Linker::Flags::LinkOnlyNeeded;
 
+}
+
   // First add all the regular input files
-  if (!linkFiles(argv[0], Context, L, InputFilenames, Flags))
+  if (!linkFiles(argv[0], Context, L, InputFilenames, Flags)) {
     return 1;
+
+}
 
   // Next the -override ones.
   if (!linkFiles(argv[0], Context, L, OverridingInputs,
-                 Flags | Linker::Flags::OverrideFromSrc))
+                 Flags | Linker::Flags::OverrideFromSrc)) {
     return 1;
+
+}
 
   // Import any functions requested via -import
-  if (!importFunctions(argv[0], *Composite))
+  if (!importFunctions(argv[0], *Composite)) {
     return 1;
 
-  if (DumpAsm)
+}
+
+  if (DumpAsm) {
     errs() << "Here's the assembly:\n" << *Composite;
+
+}
 
   std::error_code EC;
   ToolOutputFile Out(OutputFilename, EC, sys::fs::OF_None);
@@ -393,12 +425,16 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (Verbose)
+  if (Verbose) {
     errs() << "Writing bitcode...\n";
+
+}
   if (OutputAssembly) {
     Composite->print(Out.os(), nullptr, PreserveAssemblyUseListOrder);
-  } else if (Force || !CheckBitcodeOutputToConsole(Out.os(), true))
+  } else if (Force || !CheckBitcodeOutputToConsole(Out.os(), true)) {
     WriteBitcodeToFile(*Composite, Out.os(), PreserveBitcodeUseListOrder);
+
+}
 
   // Declare success.
   Out.keep();

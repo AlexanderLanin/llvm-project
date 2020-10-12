@@ -28,18 +28,24 @@ static int ascii_strncasecmp(const char *LHS, const char *RHS, size_t Length) {
   for (size_t I = 0; I < Length; ++I) {
     unsigned char LHC = toLower(LHS[I]);
     unsigned char RHC = toLower(RHS[I]);
-    if (LHC != RHC)
+    if (LHC != RHC) {
       return LHC < RHC ? -1 : 1;
+
+}
   }
   return 0;
 }
 
 /// compare_lower - Compare strings, ignoring case.
 int StringRef::compare_lower(StringRef RHS) const {
-  if (int Res = ascii_strncasecmp(Data, RHS.Data, std::min(Length, RHS.Length)))
+  if (int Res = ascii_strncasecmp(Data, RHS.Data, std::min(Length, RHS.Length))) {
     return Res;
-  if (Length == RHS.Length)
+
+}
+  if (Length == RHS.Length) {
     return 0;
+
+}
   return Length < RHS.Length ? -1 : 1;
 }
 
@@ -71,23 +77,33 @@ int StringRef::compare_numeric(StringRef RHS) const {
       for (J = I + 1; J != E + 1; ++J) {
         bool ld = J < Length && isDigit(Data[J]);
         bool rd = J < RHS.Length && isDigit(RHS.Data[J]);
-        if (ld != rd)
+        if (ld != rd) {
           return rd ? -1 : 1;
-        if (!rd)
+
+}
+        if (!rd) {
           break;
+
+}
       }
       // The two number sequences have the same length (J-I), just memcmp them.
-      if (int Res = compareMemory(Data + I, RHS.Data + I, J - I))
+      if (int Res = compareMemory(Data + I, RHS.Data + I, J - I)) {
         return Res < 0 ? -1 : 1;
+
+}
       // Identical number sequences, continue search after the numbers.
       I = J - 1;
       continue;
     }
-    if (Data[I] != RHS.Data[I])
+    if (Data[I] != RHS.Data[I]) {
       return (unsigned char)Data[I] < (unsigned char)RHS.Data[I] ? -1 : 1;
+
+}
   }
-  if (Length == RHS.Length)
+  if (Length == RHS.Length) {
     return 0;
+
+}
   return Length < RHS.Length ? -1 : 1;
 }
 
@@ -131,18 +147,24 @@ std::string StringRef::upper() const {
 /// \return - The index of the first occurrence of \arg Str, or npos if not
 /// found.
 size_t StringRef::find(StringRef Str, size_t From) const {
-  if (From > Length)
+  if (From > Length) {
     return npos;
+
+}
 
   const char *Start = Data + From;
   size_t Size = Length - From;
 
   const char *Needle = Str.data();
   size_t N = Str.size();
-  if (N == 0)
+  if (N == 0) {
     return From;
-  if (Size < N)
+
+}
+  if (Size < N) {
     return npos;
+
+}
   if (N == 1) {
     const char *Ptr = (const char *)::memchr(Start, Needle[0], Size);
     return Ptr == nullptr ? npos : Ptr - Data;
@@ -153,8 +175,10 @@ size_t StringRef::find(StringRef Str, size_t From) const {
   // For short haystacks or unsupported needles fall back to the naive algorithm
   if (Size < 16 || N > 255) {
     do {
-      if (std::memcmp(Start, Needle, N) == 0)
+      if (std::memcmp(Start, Needle, N) == 0) {
         return Start - Data;
+
+}
       ++Start;
     } while (Start < Stop);
     return npos;
@@ -163,14 +187,20 @@ size_t StringRef::find(StringRef Str, size_t From) const {
   // Build the bad char heuristic table, with uint8_t to reduce cache thrashing.
   uint8_t BadCharSkip[256];
   std::memset(BadCharSkip, N, 256);
-  for (unsigned i = 0; i != N-1; ++i)
+  for (unsigned i = 0; i != N-1; ++i) {
     BadCharSkip[(uint8_t)Str[i]] = N-1-i;
+
+}
 
   do {
     uint8_t Last = Start[N - 1];
-    if (LLVM_UNLIKELY(Last == (uint8_t)Needle[N - 1]))
-      if (std::memcmp(Start, Needle, N - 1) == 0)
+    if (LLVM_UNLIKELY(Last == (uint8_t)Needle[N - 1])) {
+      if (std::memcmp(Start, Needle, N - 1) == 0) {
         return Start - Data;
+
+}
+
+}
 
     // Otherwise skip the appropriate number of bytes.
     Start += BadCharSkip[Last];
@@ -182,8 +212,10 @@ size_t StringRef::find(StringRef Str, size_t From) const {
 size_t StringRef::find_lower(StringRef Str, size_t From) const {
   StringRef This = substr(From);
   while (This.size() >= Str.size()) {
-    if (This.startswith_lower(Str))
+    if (This.startswith_lower(Str)) {
       return From;
+
+}
     This = This.drop_front();
     ++From;
   }
@@ -195,8 +227,10 @@ size_t StringRef::rfind_lower(char C, size_t From) const {
   size_t i = From;
   while (i != 0) {
     --i;
-    if (toLower(Data[i]) == toLower(C))
+    if (toLower(Data[i]) == toLower(C)) {
       return i;
+
+}
   }
   return npos;
 }
@@ -207,24 +241,32 @@ size_t StringRef::rfind_lower(char C, size_t From) const {
 /// found.
 size_t StringRef::rfind(StringRef Str) const {
   size_t N = Str.size();
-  if (N > Length)
+  if (N > Length) {
     return npos;
+
+}
   for (size_t i = Length - N + 1, e = 0; i != e;) {
     --i;
-    if (substr(i, N).equals(Str))
+    if (substr(i, N).equals(Str)) {
       return i;
+
+}
   }
   return npos;
 }
 
 size_t StringRef::rfind_lower(StringRef Str) const {
   size_t N = Str.size();
-  if (N > Length)
+  if (N > Length) {
     return npos;
+
+}
   for (size_t i = Length - N + 1, e = 0; i != e;) {
     --i;
-    if (substr(i, N).equals_lower(Str))
+    if (substr(i, N).equals_lower(Str)) {
       return i;
+
+}
   }
   return npos;
 }
@@ -236,21 +278,31 @@ size_t StringRef::rfind_lower(StringRef Str) const {
 StringRef::size_type StringRef::find_first_of(StringRef Chars,
                                               size_t From) const {
   std::bitset<1 << CHAR_BIT> CharBits;
-  for (size_type i = 0; i != Chars.size(); ++i)
+  for (size_type i = 0; i != Chars.size(); ++i) {
     CharBits.set((unsigned char)Chars[i]);
 
-  for (size_type i = std::min(From, Length), e = Length; i != e; ++i)
-    if (CharBits.test((unsigned char)Data[i]))
+}
+
+  for (size_type i = std::min(From, Length), e = Length; i != e; ++i) {
+    if (CharBits.test((unsigned char)Data[i])) {
       return i;
+
+}
+
+}
   return npos;
 }
 
 /// find_first_not_of - Find the first character in the string that is not
 /// \arg C or npos if not found.
 StringRef::size_type StringRef::find_first_not_of(char C, size_t From) const {
-  for (size_type i = std::min(From, Length), e = Length; i != e; ++i)
-    if (Data[i] != C)
+  for (size_type i = std::min(From, Length), e = Length; i != e; ++i) {
+    if (Data[i] != C) {
       return i;
+
+}
+
+}
   return npos;
 }
 
@@ -261,12 +313,18 @@ StringRef::size_type StringRef::find_first_not_of(char C, size_t From) const {
 StringRef::size_type StringRef::find_first_not_of(StringRef Chars,
                                                   size_t From) const {
   std::bitset<1 << CHAR_BIT> CharBits;
-  for (size_type i = 0; i != Chars.size(); ++i)
+  for (size_type i = 0; i != Chars.size(); ++i) {
     CharBits.set((unsigned char)Chars[i]);
 
-  for (size_type i = std::min(From, Length), e = Length; i != e; ++i)
-    if (!CharBits.test((unsigned char)Data[i]))
+}
+
+  for (size_type i = std::min(From, Length), e = Length; i != e; ++i) {
+    if (!CharBits.test((unsigned char)Data[i])) {
       return i;
+
+}
+
+}
   return npos;
 }
 
@@ -277,21 +335,31 @@ StringRef::size_type StringRef::find_first_not_of(StringRef Chars,
 StringRef::size_type StringRef::find_last_of(StringRef Chars,
                                              size_t From) const {
   std::bitset<1 << CHAR_BIT> CharBits;
-  for (size_type i = 0; i != Chars.size(); ++i)
+  for (size_type i = 0; i != Chars.size(); ++i) {
     CharBits.set((unsigned char)Chars[i]);
 
-  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i)
-    if (CharBits.test((unsigned char)Data[i]))
+}
+
+  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i) {
+    if (CharBits.test((unsigned char)Data[i])) {
       return i;
+
+}
+
+}
   return npos;
 }
 
 /// find_last_not_of - Find the last character in the string that is not
 /// \arg C, or npos if not found.
 StringRef::size_type StringRef::find_last_not_of(char C, size_t From) const {
-  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i)
-    if (Data[i] != C)
+  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i) {
+    if (Data[i] != C) {
       return i;
+
+}
+
+}
   return npos;
 }
 
@@ -302,12 +370,18 @@ StringRef::size_type StringRef::find_last_not_of(char C, size_t From) const {
 StringRef::size_type StringRef::find_last_not_of(StringRef Chars,
                                                  size_t From) const {
   std::bitset<1 << CHAR_BIT> CharBits;
-  for (size_type i = 0, e = Chars.size(); i != e; ++i)
+  for (size_type i = 0, e = Chars.size(); i != e; ++i) {
     CharBits.set((unsigned char)Chars[i]);
 
-  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i)
-    if (!CharBits.test((unsigned char)Data[i]))
+}
+
+  for (size_type i = std::min(From, Length) - 1, e = -1; i != e; --i) {
+    if (!CharBits.test((unsigned char)Data[i])) {
       return i;
+
+}
+
+}
   return npos;
 }
 
@@ -322,20 +396,26 @@ void StringRef::split(SmallVectorImpl<StringRef> &A,
   // but that seems unlikely to be useful.
   while (MaxSplit-- != 0) {
     size_t Idx = S.find(Separator);
-    if (Idx == npos)
+    if (Idx == npos) {
       break;
 
+}
+
     // Push this split.
-    if (KeepEmpty || Idx > 0)
+    if (KeepEmpty || Idx > 0) {
       A.push_back(S.slice(0, Idx));
+
+}
 
     // Jump forward.
     S = S.slice(Idx + Separator.size(), npos);
   }
 
   // Push the tail.
-  if (KeepEmpty || !S.empty())
+  if (KeepEmpty || !S.empty()) {
     A.push_back(S);
+
+}
 }
 
 void StringRef::split(SmallVectorImpl<StringRef> &A, char Separator,
@@ -348,20 +428,26 @@ void StringRef::split(SmallVectorImpl<StringRef> &A, char Separator,
   // but that seems unlikely to be useful.
   while (MaxSplit-- != 0) {
     size_t Idx = S.find(Separator);
-    if (Idx == npos)
+    if (Idx == npos) {
       break;
 
+}
+
     // Push this split.
-    if (KeepEmpty || Idx > 0)
+    if (KeepEmpty || Idx > 0) {
       A.push_back(S.slice(0, Idx));
+
+}
 
     // Jump forward.
     S = S.slice(Idx + 1, npos);
   }
 
   // Push the tail.
-  if (KeepEmpty || !S.empty())
+  if (KeepEmpty || !S.empty()) {
     A.push_back(S);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -373,22 +459,28 @@ void StringRef::split(SmallVectorImpl<StringRef> &A, char Separator,
 size_t StringRef::count(StringRef Str) const {
   size_t Count = 0;
   size_t N = Str.size();
-  if (!N || N > Length)
+  if (!N || N > Length) {
     return 0;
+
+}
   for (size_t i = 0, e = Length - N + 1; i < e;) {
     if (substr(i, N).equals(Str)) {
       ++Count;
       i += N;
     }
-    else
+    else {
       ++i;
+
+}
   }
   return Count;
 }
 
 static unsigned GetAutoSenseRadix(StringRef &Str) {
-  if (Str.empty())
+  if (Str.empty()) {
     return 10;
+
+}
 
   if (Str.startswith("0x") || Str.startswith("0X")) {
     Str = Str.substr(2);
@@ -416,46 +508,58 @@ static unsigned GetAutoSenseRadix(StringRef &Str) {
 bool llvm::consumeUnsignedInteger(StringRef &Str, unsigned Radix,
                                   unsigned long long &Result) {
   // Autosense radix if not specified.
-  if (Radix == 0)
+  if (Radix == 0) {
     Radix = GetAutoSenseRadix(Str);
 
+}
+
   // Empty strings (after the radix autosense) are invalid.
-  if (Str.empty()) return true;
+  if (Str.empty()) { return true;
+
+}
 
   // Parse all the bytes of the string given this radix.  Watch for overflow.
   StringRef Str2 = Str;
   Result = 0;
   while (!Str2.empty()) {
     unsigned CharVal;
-    if (Str2[0] >= '0' && Str2[0] <= '9')
+    if (Str2[0] >= '0' && Str2[0] <= '9') {
       CharVal = Str2[0] - '0';
-    else if (Str2[0] >= 'a' && Str2[0] <= 'z')
+    } else if (Str2[0] >= 'a' && Str2[0] <= 'z') {
       CharVal = Str2[0] - 'a' + 10;
-    else if (Str2[0] >= 'A' && Str2[0] <= 'Z')
+    } else if (Str2[0] >= 'A' && Str2[0] <= 'Z') {
       CharVal = Str2[0] - 'A' + 10;
-    else
+    } else {
       break;
+
+}
 
     // If the parsed value is larger than the integer radix, we cannot
     // consume any more characters.
-    if (CharVal >= Radix)
+    if (CharVal >= Radix) {
       break;
+
+}
 
     // Add in this character.
     unsigned long long PrevResult = Result;
     Result = Result * Radix + CharVal;
 
     // Check for overflow by shifting back and seeing if bits were lost.
-    if (Result / Radix < PrevResult)
+    if (Result / Radix < PrevResult) {
       return true;
+
+}
 
     Str2 = Str2.substr(1);
   }
 
   // We consider the operation a failure if no characters were consumed
   // successfully.
-  if (Str.size() == Str2.size())
+  if (Str.size() == Str2.size()) {
     return true;
+
+}
 
   Str = Str2;
   return false;
@@ -469,8 +573,10 @@ bool llvm::consumeSignedInteger(StringRef &Str, unsigned Radix,
   if (Str.empty() || Str.front() != '-') {
     if (consumeUnsignedInteger(Str, Radix, ULLVal) ||
         // Check for value so large it overflows a signed value.
-        (long long)ULLVal < 0)
+        (long long)ULLVal < 0) {
       return true;
+
+}
     Result = ULLVal;
     return false;
   }
@@ -481,8 +587,10 @@ bool llvm::consumeSignedInteger(StringRef &Str, unsigned Radix,
       // Reject values so large they'd overflow as negative signed, but allow
       // "-0".  This negates the unsigned so that the negative isn't undefined
       // on signed overflow.
-      (long long)-ULLVal > 0)
+      (long long)-ULLVal > 0) {
     return true;
+
+}
 
   Str = Str2;
   Result = -ULLVal;
@@ -493,8 +601,10 @@ bool llvm::consumeSignedInteger(StringRef &Str, unsigned Radix,
 /// sequence of radix up to 36 to an unsigned long long value.
 bool llvm::getAsUnsignedInteger(StringRef Str, unsigned Radix,
                                 unsigned long long &Result) {
-  if (consumeUnsignedInteger(Str, Radix, Result))
+  if (consumeUnsignedInteger(Str, Radix, Result)) {
     return true;
+
+}
 
   // For getAsUnsignedInteger, we require the whole string to be consumed or
   // else we consider it a failure.
@@ -503,8 +613,10 @@ bool llvm::getAsUnsignedInteger(StringRef Str, unsigned Radix,
 
 bool llvm::getAsSignedInteger(StringRef Str, unsigned Radix,
                               long long &Result) {
-  if (consumeSignedInteger(Str, Radix, Result))
+  if (consumeSignedInteger(Str, Radix, Result)) {
     return true;
+
+}
 
   // For getAsSignedInteger, we require the whole string to be consumed or else
   // we consider it a failure.
@@ -515,18 +627,24 @@ bool StringRef::getAsInteger(unsigned Radix, APInt &Result) const {
   StringRef Str = *this;
 
   // Autosense radix if not specified.
-  if (Radix == 0)
+  if (Radix == 0) {
     Radix = GetAutoSenseRadix(Str);
+
+}
 
   assert(Radix > 1 && Radix <= 36);
 
   // Empty strings (after the radix autosense) are invalid.
-  if (Str.empty()) return true;
+  if (Str.empty()) { return true;
+
+}
 
   // Skip leading zeroes.  This can be a significant improvement if
   // it means we don't need > 64 bits.
-  while (!Str.empty() && Str.front() == '0')
+  while (!Str.empty() && Str.front() == '0') {
     Str = Str.substr(1);
+
+}
 
   // If it was nothing but zeroes....
   if (Str.empty()) {
@@ -536,14 +654,18 @@ bool StringRef::getAsInteger(unsigned Radix, APInt &Result) const {
 
   // (Over-)estimate the required number of bits.
   unsigned Log2Radix = 0;
-  while ((1U << Log2Radix) < Radix) Log2Radix++;
+  while ((1U << Log2Radix) < Radix) { Log2Radix++;
+
+}
   bool IsPowerOf2Radix = ((1U << Log2Radix) == Radix);
 
   unsigned BitWidth = Log2Radix * Str.size();
-  if (BitWidth < Result.getBitWidth())
+  if (BitWidth < Result.getBitWidth()) {
     BitWidth = Result.getBitWidth(); // don't shrink the result
-  else if (BitWidth > Result.getBitWidth())
+  } else if (BitWidth > Result.getBitWidth()) {
     Result = Result.zext(BitWidth);
+
+}
 
   APInt RadixAP, CharAP; // unused unless !IsPowerOf2Radix
   if (!IsPowerOf2Radix) {
@@ -556,19 +678,23 @@ bool StringRef::getAsInteger(unsigned Radix, APInt &Result) const {
   Result = 0;
   while (!Str.empty()) {
     unsigned CharVal;
-    if (Str[0] >= '0' && Str[0] <= '9')
+    if (Str[0] >= '0' && Str[0] <= '9') {
       CharVal = Str[0]-'0';
-    else if (Str[0] >= 'a' && Str[0] <= 'z')
+    } else if (Str[0] >= 'a' && Str[0] <= 'z') {
       CharVal = Str[0]-'a'+10;
-    else if (Str[0] >= 'A' && Str[0] <= 'Z')
+    } else if (Str[0] >= 'A' && Str[0] <= 'Z') {
       CharVal = Str[0]-'A'+10;
-    else
+    } else {
       return true;
+
+}
 
     // If the parsed value is larger than the integer radix, the string is
     // invalid.
-    if (CharVal >= Radix)
+    if (CharVal >= Radix) {
       return true;
+
+}
 
     // Add in this character.
     if (IsPowerOf2Radix) {
@@ -589,13 +715,17 @@ bool StringRef::getAsInteger(unsigned Radix, APInt &Result) const {
 bool StringRef::getAsDouble(double &Result, bool AllowInexact) const {
   APFloat F(0.0);
   auto StatusOrErr = F.convertFromString(*this, APFloat::rmNearestTiesToEven);
-  if (errorToBool(StatusOrErr.takeError()))
+  if (errorToBool(StatusOrErr.takeError())) {
     return true;
+
+}
 
   APFloat::opStatus Status = *StatusOrErr;
   if (Status != APFloat::opOK) {
-    if (!AllowInexact || !(Status & APFloat::opInexact))
+    if (!AllowInexact || !(Status & APFloat::opInexact)) {
       return true;
+
+}
   }
 
   Result = F.convertToDouble();

@@ -50,16 +50,20 @@ class CFIInstrInserter : public MachineFunctionPass {
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override {
-    if (!MF.needsFrameMoves())
+    if (!MF.needsFrameMoves()) {
       return false;
+
+}
 
     MBBVector.resize(MF.getNumBlockIDs());
     calculateCFAInfo(MF);
 
     if (VerifyCFI) {
-      if (unsigned ErrorNum = verify(MF))
+      if (unsigned ErrorNum = verify(MF)) {
         report_fatal_error("Found " + Twine(ErrorNum) +
                            " in/out CFI information errors.");
+
+}
     }
     bool insertedCFI = insertCFIInstrs(MF);
     MBBVector.clear();
@@ -159,7 +163,9 @@ void CFIInstrInserter::calculateCFAInfo(MachineFunction &MF) {
   // i.e. that it has initial cfa offset and register values as incoming CFA
   // information.
   for (MachineBasicBlock &MBB : MF) {
-    if (MBBVector[MBB.getNumber()].Processed) continue;
+    if (MBBVector[MBB.getNumber()].Processed) { continue;
+
+}
     updateSuccCFAInfo(MBBVector[MBB.getNumber()]);
   }
 }
@@ -249,8 +255,10 @@ void CFIInstrInserter::updateSuccCFAInfo(MBBCFAInfo &MBBInfo) {
   do {
     MachineBasicBlock *Current = Stack.pop_back_val();
     MBBCFAInfo &CurrentInfo = MBBVector[Current->getNumber()];
-    if (CurrentInfo.Processed)
+    if (CurrentInfo.Processed) {
       continue;
+
+}
 
     calculateOutgoingCFAInfo(CurrentInfo);
     for (auto *Succ : CurrentInfo.MBB->successors()) {
@@ -272,7 +280,9 @@ bool CFIInstrInserter::insertCFIInstrs(MachineFunction &MF) {
 
   for (MachineBasicBlock &MBB : MF) {
     // Skip the first MBB in a function
-    if (MBB.getNumber() == MF.front().getNumber()) continue;
+    if (MBB.getNumber() == MF.front().getNumber()) { continue;
+
+}
 
     const MBBCFAInfo &MBBInfo = MBBVector[MBB.getNumber()];
     auto MBBI = MBBInfo.MBB->begin();
@@ -347,13 +357,17 @@ void CFIInstrInserter::reportCSRError(const MBBCFAInfo &Pred,
          << Pred.MBB->getParent()->getName() << " ***\n";
   errs() << "Pred: " << Pred.MBB->getName() << " #" << Pred.MBB->getNumber()
          << " outgoing CSR Saved: ";
-  for (int Reg : Pred.OutgoingCSRSaved.set_bits())
+  for (int Reg : Pred.OutgoingCSRSaved.set_bits()) {
     errs() << Reg << " ";
+
+}
   errs() << "\n";
   errs() << "Succ: " << Succ.MBB->getName() << " #" << Succ.MBB->getNumber()
          << " incoming CSR Saved: ";
-  for (int Reg : Succ.IncomingCSRSaved.set_bits())
+  for (int Reg : Succ.IncomingCSRSaved.set_bits()) {
     errs() << Reg << " ";
+
+}
   errs() << "\n";
 }
 
@@ -369,8 +383,10 @@ unsigned CFIInstrInserter::verify(MachineFunction &MF) {
           SuccMBBInfo.IncomingCFARegister != CurrMBBInfo.OutgoingCFARegister) {
         // Inconsistent offsets/registers are ok for 'noreturn' blocks because
         // we don't generate epilogues inside such blocks.
-        if (SuccMBBInfo.MBB->succ_empty() && !SuccMBBInfo.MBB->isReturnBlock())
+        if (SuccMBBInfo.MBB->succ_empty() && !SuccMBBInfo.MBB->isReturnBlock()) {
           continue;
+
+}
         reportCFAError(CurrMBBInfo, SuccMBBInfo);
         ErrorNum++;
       }

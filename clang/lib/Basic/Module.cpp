@@ -46,16 +46,26 @@ Module::Module(StringRef Name, SourceLocation DefinitionLoc, Module *Parent,
       NoUndeclaredIncludes(false), ModuleMapIsPrivate(false),
       HasUmbrellaDir(false), NameVisibility(Hidden) {
   if (Parent) {
-    if (!Parent->isAvailable())
+    if (!Parent->isAvailable()) {
       IsAvailable = false;
-    if (Parent->IsSystem)
+
+}
+    if (Parent->IsSystem) {
       IsSystem = true;
-    if (Parent->IsExternC)
+
+}
+    if (Parent->IsExternC) {
       IsExternC = true;
-    if (Parent->NoUndeclaredIncludes)
+
+}
+    if (Parent->NoUndeclaredIncludes) {
       NoUndeclaredIncludes = true;
-    if (Parent->ModuleMapIsPrivate)
+
+}
+    if (Parent->ModuleMapIsPrivate) {
       ModuleMapIsPrivate = true;
+
+}
     IsMissingRequirement = Parent->IsMissingRequirement;
 
     Parent->SubModuleIndex[Name] = Parent->SubModules.size();
@@ -76,13 +86,17 @@ static bool isPlatformEnvironment(const TargetInfo &Target, StringRef Feature) {
 
   // Attempt to match platform and environment.
   if (Platform == Feature || Target.getTriple().getOSName() == Feature ||
-      Env == Feature)
+      Env == Feature) {
     return true;
+
+}
 
   auto CmpPlatformEnv = [](StringRef LHS, StringRef RHS) {
     auto Pos = LHS.find("-");
-    if (Pos == StringRef::npos)
+    if (Pos == StringRef::npos) {
       return false;
+
+}
     SmallString<128> NewLHS = LHS.slice(0, Pos);
     NewLHS += LHS.slice(Pos+1, LHS.size());
     return NewLHS == RHS;
@@ -95,8 +109,10 @@ static bool isPlatformEnvironment(const TargetInfo &Target, StringRef Feature) {
   // where both are valid examples of the same platform+environment but in the
   // variant (2) the simulator is hardcoded as part of the platform name. Both
   // forms above should match for "iossimulator" requirement.
-  if (Target.getTriple().isOSDarwin() && PlatformEnv.endswith("simulator"))
+  if (Target.getTriple().isOSDarwin() && PlatformEnv.endswith("simulator")) {
     return PlatformEnv == Feature || CmpPlatformEnv(PlatformEnv, Feature);
+
+}
 
   return PlatformEnv == Feature;
 }
@@ -125,10 +141,12 @@ static bool hasFeature(StringRef Feature, const LangOptions &LangOpts,
                         .Case("zvector", LangOpts.ZVector)
                         .Default(Target.hasFeature(Feature) ||
                                  isPlatformEnvironment(Target, Feature));
-  if (!HasFeature)
+  if (!HasFeature) {
     HasFeature = std::find(LangOpts.ModuleFeatures.begin(),
                            LangOpts.ModuleFeatures.end(),
                            Feature) != LangOpts.ModuleFeatures.end();
+
+}
   return HasFeature;
 }
 
@@ -136,8 +154,10 @@ bool Module::isAvailable(const LangOptions &LangOpts, const TargetInfo &Target,
                          Requirement &Req,
                          UnresolvedHeaderDirective &MissingHeader,
                          Module *&ShadowingModule) const {
-  if (IsAvailable)
+  if (IsAvailable) {
     return true;
+
+}
 
   for (const Module *Current = this; Current; Current = Current->Parent) {
     if (Current->ShadowingModule) {
@@ -163,8 +183,10 @@ bool Module::isAvailable(const LangOptions &LangOpts, const TargetInfo &Target,
 bool Module::isSubModuleOf(const Module *Other) const {
   const Module *This = this;
   do {
-    if (This == Other)
+    if (This == Other) {
       return true;
+
+}
 
     This = This->Parent;
   } while (This);
@@ -174,8 +196,10 @@ bool Module::isSubModuleOf(const Module *Other) const {
 
 const Module *Module::getTopLevelModule() const {
   const Module *Result = this;
-  while (Result->Parent)
+  while (Result->Parent) {
     Result = Result->Parent;
+
+}
 
   return Result;
 }
@@ -191,13 +215,15 @@ template<typename InputIter>
 static void printModuleId(raw_ostream &OS, InputIter Begin, InputIter End,
                           bool AllowStringLiterals = true) {
   for (InputIter It = Begin; It != End; ++It) {
-    if (It != Begin)
+    if (It != Begin) {
       OS << ".";
 
+}
+
     StringRef Name = getModuleNameFromComponent(*It);
-    if (!AllowStringLiterals || isValidIdentifier(Name))
+    if (!AllowStringLiterals || isValidIdentifier(Name)) {
       OS << Name;
-    else {
+    } else {
       OS << '"';
       OS.write_escaped(Name);
       OS << '"';
@@ -214,8 +240,10 @@ std::string Module::getFullModuleName(bool AllowStringLiterals) const {
   SmallVector<StringRef, 2> Names;
 
   // Build up the set of module names (from innermost to outermost).
-  for (const Module *M = this; M; M = M->Parent)
+  for (const Module *M = this; M; M = M->Parent) {
     Names.push_back(M->Name);
+
+}
 
   std::string Result;
 
@@ -228,16 +256,20 @@ std::string Module::getFullModuleName(bool AllowStringLiterals) const {
 
 bool Module::fullModuleNameIs(ArrayRef<StringRef> nameParts) const {
   for (const Module *M = this; M; M = M->Parent) {
-    if (nameParts.empty() || M->Name != nameParts.back())
+    if (nameParts.empty() || M->Name != nameParts.back()) {
       return false;
+
+}
     nameParts = nameParts.drop_back();
   }
   return nameParts.empty();
 }
 
 Module::DirectoryName Module::getUmbrellaDir() const {
-  if (Header U = getUmbrellaHeader())
+  if (Header U = getUmbrellaHeader()) {
     return {"", U.Entry->getDir()};
+
+}
 
   return {UmbrellaAsWritten, static_cast<const DirectoryEntry *>(Umbrella)};
 }
@@ -251,8 +283,10 @@ ArrayRef<const FileEntry *> Module::getTopHeaders(FileManager &FileMgr) {
   if (!TopHeaderNames.empty()) {
     for (std::vector<std::string>::iterator
            I = TopHeaderNames.begin(), E = TopHeaderNames.end(); I != E; ++I) {
-      if (auto FE = FileMgr.getFile(*I))
+      if (auto FE = FileMgr.getFile(*I)) {
         TopHeaders.insert(*FE);
+
+}
     }
     TopHeaderNames.clear();
   }
@@ -264,16 +298,24 @@ bool Module::directlyUses(const Module *Requested) const {
   auto *Top = getTopLevelModule();
 
   // A top-level module implicitly uses itself.
-  if (Requested->isSubModuleOf(Top))
+  if (Requested->isSubModuleOf(Top)) {
     return true;
 
-  for (auto *Use : Top->DirectUses)
-    if (Requested->isSubModuleOf(Use))
+}
+
+  for (auto *Use : Top->DirectUses) {
+    if (Requested->isSubModuleOf(Use)) {
       return true;
 
+}
+
+}
+
   // Anyone is allowed to use our builtin stddef.h and its accompanying module.
-  if (!Requested->Parent && Requested->Name == "_Builtin_stddef_max_align_t")
+  if (!Requested->Parent && Requested->Name == "_Builtin_stddef_max_align_t") {
     return true;
+
+}
 
   return false;
 }
@@ -284,8 +326,10 @@ void Module::addRequirement(StringRef Feature, bool RequiredState,
   Requirements.push_back(Requirement(std::string(Feature), RequiredState));
 
   // If this feature is currently available, we're done.
-  if (hasFeature(Feature, LangOpts, Target) == RequiredState)
+  if (hasFeature(Feature, LangOpts, Target) == RequiredState) {
     return;
+
+}
 
   markUnavailable(/*MissingRequirement*/true);
 }
@@ -295,8 +339,10 @@ void Module::markUnavailable(bool MissingRequirement) {
     return M->IsAvailable || (!M->IsMissingRequirement && MissingRequirement);
   };
 
-  if (!needUpdate(this))
+  if (!needUpdate(this)) {
     return;
+
+}
 
   SmallVector<Module *, 2> Stack;
   Stack.push_back(this);
@@ -304,40 +350,52 @@ void Module::markUnavailable(bool MissingRequirement) {
     Module *Current = Stack.back();
     Stack.pop_back();
 
-    if (!needUpdate(Current))
+    if (!needUpdate(Current)) {
       continue;
+
+}
 
     Current->IsAvailable = false;
     Current->IsMissingRequirement |= MissingRequirement;
     for (submodule_iterator Sub = Current->submodule_begin(),
                          SubEnd = Current->submodule_end();
          Sub != SubEnd; ++Sub) {
-      if (needUpdate(*Sub))
+      if (needUpdate(*Sub)) {
         Stack.push_back(*Sub);
+
+}
     }
   }
 }
 
 Module *Module::findSubmodule(StringRef Name) const {
   llvm::StringMap<unsigned>::const_iterator Pos = SubModuleIndex.find(Name);
-  if (Pos == SubModuleIndex.end())
+  if (Pos == SubModuleIndex.end()) {
     return nullptr;
+
+}
 
   return SubModules[Pos->getValue()];
 }
 
 Module *Module::findOrInferSubmodule(StringRef Name) {
   llvm::StringMap<unsigned>::const_iterator Pos = SubModuleIndex.find(Name);
-  if (Pos != SubModuleIndex.end())
+  if (Pos != SubModuleIndex.end()) {
     return SubModules[Pos->getValue()];
-  if (!InferSubmodules)
+
+}
+  if (!InferSubmodules) {
     return nullptr;
+
+}
   Module *Result = new Module(Name, SourceLocation(), this, false, InferExplicitSubmodules, 0);
   Result->InferExplicitSubmodules = InferExplicitSubmodules;
   Result->InferSubmodules = InferSubmodules;
   Result->InferExportWildcard = InferExportWildcard;
-  if (Result->InferExportWildcard)
+  if (Result->InferExportWildcard) {
     Result->Exports.push_back(Module::ExportDecl(nullptr, true));
+
+}
   return Result;
 }
 
@@ -347,8 +405,10 @@ void Module::getExportedModules(SmallVectorImpl<Module *> &Exported) const {
                                              E = SubModules.end();
        I != E; ++I) {
     Module *Mod = *I;
-    if (!Mod->IsExplicit)
+    if (!Mod->IsExplicit) {
       Exported.push_back(Mod);
+
+}
   }
 
   // Find re-exported modules by filtering the list of imported modules.
@@ -367,12 +427,14 @@ void Module::getExportedModules(SmallVectorImpl<Module *> &Exported) const {
     // Wildcard export: export all of the imported modules that match
     // the given pattern.
     AnyWildcard = true;
-    if (UnrestrictedWildcard)
+    if (UnrestrictedWildcard) {
       continue;
 
-    if (Module *Restriction = Exports[I].getPointer())
+}
+
+    if (Module *Restriction = Exports[I].getPointer()) {
       WildcardRestrictions.push_back(Restriction);
-    else {
+    } else {
       WildcardRestrictions.clear();
       UnrestrictedWildcard = true;
     }
@@ -380,8 +442,10 @@ void Module::getExportedModules(SmallVectorImpl<Module *> &Exported) const {
 
   // If there were any wildcards, push any imported modules that were
   // re-exported by the wildcard restriction.
-  if (!AnyWildcard)
+  if (!AnyWildcard) {
     return;
+
+}
 
   for (unsigned I = 0, N = Imports.size(); I != N; ++I) {
     Module *Mod = Imports[I];
@@ -397,8 +461,10 @@ void Module::getExportedModules(SmallVectorImpl<Module *> &Exported) const {
       }
     }
 
-    if (!Acceptable)
+    if (!Acceptable) {
       continue;
+
+}
 
     Exported.push_back(Mod);
   }
@@ -416,26 +482,36 @@ void Module::buildVisibleModulesCache() const {
     Module *CurrModule = Stack.pop_back_val();
 
     // Every module transitively exported by an imported module is visible.
-    if (VisibleModulesCache.insert(CurrModule).second)
+    if (VisibleModulesCache.insert(CurrModule).second) {
       CurrModule->getExportedModules(Stack);
+
+}
   }
 }
 
 void Module::print(raw_ostream &OS, unsigned Indent) const {
   OS.indent(Indent);
-  if (IsFramework)
+  if (IsFramework) {
     OS << "framework ";
-  if (IsExplicit)
+
+}
+  if (IsExplicit) {
     OS << "explicit ";
+
+}
   OS << "module ";
   printModuleId(OS, &Name, &Name + 1);
 
   if (IsSystem || IsExternC) {
     OS.indent(Indent + 2);
-    if (IsSystem)
+    if (IsSystem) {
       OS << " [system]";
-    if (IsExternC)
+
+}
+    if (IsExternC) {
       OS << " [extern_c]";
+
+}
   }
 
   OS << " {\n";
@@ -444,10 +520,14 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
     OS.indent(Indent + 2);
     OS << "requires ";
     for (unsigned I = 0, N = Requirements.size(); I != N; ++I) {
-      if (I)
+      if (I) {
         OS << ", ";
-      if (!Requirements[I].second)
+
+}
+      if (!Requirements[I].second) {
         OS << "!";
+
+}
       OS << Requirements[I].first;
     }
     OS << "\n";
@@ -468,11 +548,15 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
   if (!ConfigMacros.empty() || ConfigMacrosExhaustive) {
     OS.indent(Indent + 2);
     OS << "config_macros ";
-    if (ConfigMacrosExhaustive)
+    if (ConfigMacrosExhaustive) {
       OS << "[exhaustive]";
+
+}
     for (unsigned I = 0, N = ConfigMacros.size(); I != N; ++I) {
-      if (I)
+      if (I) {
         OS << ", ";
+
+}
       OS << ConfigMacros[I];
     }
     OS << "\n";
@@ -505,10 +589,14 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
       OS << "\"";
       if (U.Size || U.ModTime) {
         OS << " {";
-        if (U.Size)
+        if (U.Size) {
           OS << " size " << *U.Size;
-        if (U.ModTime)
+
+}
+        if (U.ModTime) {
           OS << " mtime " << *U.ModTime;
+
+}
         OS << " }";
       }
       OS << "\n";
@@ -521,21 +609,27 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
   }
 
   for (submodule_const_iterator MI = submodule_begin(), MIEnd = submodule_end();
-       MI != MIEnd; ++MI)
+       MI != MIEnd; ++MI) {
     // Print inferred subframework modules so that we don't need to re-infer
     // them (requires expensive directory iteration + stat calls) when we build
     // the module. Regular inferred submodules are OK, as we need to look at all
     // those header files anyway.
-    if (!(*MI)->IsInferred || (*MI)->IsFramework)
+    if (!(*MI)->IsInferred || (*MI)->IsFramework) {
       (*MI)->print(OS, Indent + 2);
+
+}
+
+}
 
   for (unsigned I = 0, N = Exports.size(); I != N; ++I) {
     OS.indent(Indent + 2);
     OS << "export ";
     if (Module *Restriction = Exports[I].getPointer()) {
       OS << Restriction->getFullModuleName(true);
-      if (Exports[I].getInt())
+      if (Exports[I].getInt()) {
         OS << ".*";
+
+}
     } else {
       OS << "*";
     }
@@ -546,8 +640,10 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
     OS.indent(Indent + 2);
     OS << "export ";
     printModuleId(OS, UnresolvedExports[I].Id);
-    if (UnresolvedExports[I].Wildcard)
+    if (UnresolvedExports[I].Wildcard) {
       OS << (UnresolvedExports[I].Id.empty() ? "*" : ".*");
+
+}
     OS << "\n";
   }
 
@@ -568,8 +664,10 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
   for (unsigned I = 0, N = LinkLibraries.size(); I != N; ++I) {
     OS.indent(Indent + 2);
     OS << "link ";
-    if (LinkLibraries[I].IsFramework)
+    if (LinkLibraries[I].IsFramework) {
       OS << "framework ";
+
+}
     OS << "\"";
     OS.write_escaped(LinkLibraries[I].Library);
     OS << "\"";
@@ -595,8 +693,10 @@ void Module::print(raw_ostream &OS, unsigned Indent) const {
 
   if (InferSubmodules) {
     OS.indent(Indent + 2);
-    if (InferExplicitSubmodules)
+    if (InferExplicitSubmodules) {
       OS << "explicit ";
+
+}
     OS << "module * {\n";
     if (InferExportWildcard) {
       OS.indent(Indent + 4);
@@ -617,8 +717,10 @@ LLVM_DUMP_METHOD void Module::dump() const {
 void VisibleModuleSet::setVisible(Module *M, SourceLocation Loc,
                                   VisibleCallback Vis, ConflictCallback Cb) {
   assert(Loc.isValid() && "setVisible expects a valid import location");
-  if (isVisible(M))
+  if (isVisible(M)) {
     return;
+
+}
 
   ++Generation;
 
@@ -630,10 +732,12 @@ void VisibleModuleSet::setVisible(Module *M, SourceLocation Loc,
   std::function<void(Visiting)> VisitModule = [&](Visiting V) {
     // Nothing to do for a module that's already visible.
     unsigned ID = V.M->getVisibilityID();
-    if (ImportLocs.size() <= ID)
+    if (ImportLocs.size() <= ID) {
       ImportLocs.resize(ID + 1);
-    else if (ImportLocs[ID].isValid())
+    } else if (ImportLocs[ID].isValid()) {
       return;
+
+}
 
     ImportLocs[ID] = Loc;
     Vis(M);
@@ -643,15 +747,19 @@ void VisibleModuleSet::setVisible(Module *M, SourceLocation Loc,
     V.M->getExportedModules(Exports);
     for (Module *E : Exports) {
       // Don't recurse to unavailable submodules.
-      if (E->isAvailable())
+      if (E->isAvailable()) {
         VisitModule({E, &V});
+
+}
     }
 
     for (auto &C : V.M->Conflicts) {
       if (isVisible(C.Other)) {
         llvm::SmallVector<Module*, 8> Path;
-        for (Visiting *I = &V; I; I = I->ExportedBy)
+        for (Visiting *I = &V; I; I = I->ExportedBy) {
           Path.push_back(I->M);
+
+}
         Cb(Path, C.Other, C.Message);
       }
     }
@@ -661,15 +769,21 @@ void VisibleModuleSet::setVisible(Module *M, SourceLocation Loc,
 
 ASTSourceDescriptor::ASTSourceDescriptor(const Module &M)
     : Signature(M.Signature), ClangModule(&M) {
-  if (M.Directory)
+  if (M.Directory) {
     Path = M.Directory->getName();
-  if (auto *File = M.getASTFile())
+
+}
+  if (auto *File = M.getASTFile()) {
     ASTFile = File->getName();
+
+}
 }
 
 std::string ASTSourceDescriptor::getModuleName() const {
-  if (ClangModule)
+  if (ClangModule) {
     return ClangModule->Name;
-  else
+  } else {
     return std::string(PCHModuleName);
+
+}
 }

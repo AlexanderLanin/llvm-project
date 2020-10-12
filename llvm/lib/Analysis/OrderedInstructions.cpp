@@ -27,8 +27,10 @@ bool OrderedInstructions::dominates(const Instruction *InstA,
                                     const Instruction *InstB) const {
   // Use ordered basic block to do dominance check in case the 2 instructions
   // are in the same basic block.
-  if (InstA->getParent() == InstB->getParent())
+  if (InstA->getParent() == InstB->getParent()) {
     return localDominates(InstA, InstB);
+
+}
   return DT->dominates(InstA->getParent(), InstB->getParent());
 }
 
@@ -36,8 +38,10 @@ bool OrderedInstructions::dfsBefore(const Instruction *InstA,
                                     const Instruction *InstB) const {
   // Use ordered basic block in case the 2 instructions are in the same basic
   // block.
-  if (InstA->getParent() == InstB->getParent())
+  if (InstA->getParent() == InstB->getParent()) {
     return localDominates(InstA, InstB);
+
+}
 
   DomTreeNode *DA = DT->getNode(InstA->getParent());
   DomTreeNode *DB = DT->getNode(InstB->getParent());

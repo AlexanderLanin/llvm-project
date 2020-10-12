@@ -100,12 +100,14 @@ protected:
                                 "!13 = !{{i32 999000, i64 300, i32 3}"
                                 "!14 = !{{i32 999999, i64 5, i32 10}";
     SMDiagnostic Err;
-    if (ProfKind)
+    if (ProfKind) {
       return parseAssemblyString(
           formatv(ModuleString, formatv(SummaryString, ProfKind).str()).str(),
           Err, C);
-    else
+    } else {
       return parseAssemblyString(formatv(ModuleString, "").str(), Err, C);
+
+}
   }
 };
 

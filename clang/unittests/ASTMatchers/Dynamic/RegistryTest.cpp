@@ -41,11 +41,15 @@ public:
   VariantMatcher constructMatcher(StringRef MatcherName,
                                   Diagnostics *Error = nullptr) {
     Diagnostics DummyError;
-    if (!Error) Error = &DummyError;
+    if (!Error) { Error = &DummyError;
+
+}
     llvm::Optional<MatcherCtor> Ctor = lookupMatcherCtor(MatcherName);
     VariantMatcher Out;
-    if (Ctor)
+    if (Ctor) {
       Out = Registry::constructMatcher(*Ctor, SourceRange(), Args(), Error);
+
+}
     EXPECT_EQ("", DummyError.toStringFull());
     return Out;
   }
@@ -54,11 +58,15 @@ public:
                                   const VariantValue &Arg1,
                                   Diagnostics *Error = nullptr) {
     Diagnostics DummyError;
-    if (!Error) Error = &DummyError;
+    if (!Error) { Error = &DummyError;
+
+}
     llvm::Optional<MatcherCtor> Ctor = lookupMatcherCtor(MatcherName);
     VariantMatcher Out;
-    if (Ctor)
+    if (Ctor) {
       Out = Registry::constructMatcher(*Ctor, SourceRange(), Args(Arg1), Error);
+
+}
     EXPECT_EQ("", DummyError.toStringFull()) << MatcherName;
     return Out;
   }
@@ -68,12 +76,16 @@ public:
                                   const VariantValue &Arg2,
                                   Diagnostics *Error = nullptr) {
     Diagnostics DummyError;
-    if (!Error) Error = &DummyError;
+    if (!Error) { Error = &DummyError;
+
+}
     llvm::Optional<MatcherCtor> Ctor = lookupMatcherCtor(MatcherName);
     VariantMatcher Out;
-    if (Ctor)
+    if (Ctor) {
       Out = Registry::constructMatcher(*Ctor, SourceRange(), Args(Arg1, Arg2),
                                        Error);
+
+}
     EXPECT_EQ("", DummyError.toStringFull());
     return Out;
   }
@@ -89,8 +101,10 @@ public:
   CompVector getCompletions(StringRef MatcherName1, unsigned ArgNo1) {
     std::vector<std::pair<MatcherCtor, unsigned> > Context;
     llvm::Optional<MatcherCtor> Ctor = lookupMatcherCtor(MatcherName1);
-    if (!Ctor)
+    if (!Ctor) {
       return CompVector();
+
+}
     Context.push_back(std::make_pair(*Ctor, ArgNo1));
     return Registry::getMatcherCompletions(
         Registry::getAcceptedCompletionTypes(Context));
@@ -100,12 +114,16 @@ public:
                             StringRef MatcherName2, unsigned ArgNo2) {
     std::vector<std::pair<MatcherCtor, unsigned> > Context;
     llvm::Optional<MatcherCtor> Ctor = lookupMatcherCtor(MatcherName1);
-    if (!Ctor)
+    if (!Ctor) {
       return CompVector();
+
+}
     Context.push_back(std::make_pair(*Ctor, ArgNo1));
     Ctor = lookupMatcherCtor(MatcherName2);
-    if (!Ctor)
+    if (!Ctor) {
       return CompVector();
+
+}
     Context.push_back(std::make_pair(*Ctor, ArgNo2));
     return Registry::getMatcherCompletions(
         Registry::getAcceptedCompletionTypes(Context));

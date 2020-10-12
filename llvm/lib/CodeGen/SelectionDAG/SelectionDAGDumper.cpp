@@ -59,19 +59,29 @@ VerboseDAGDumping("dag-dump-verbose", cl::Hidden,
 std::string SDNode::getOperationName(const SelectionDAG *G) const {
   switch (getOpcode()) {
   default:
-    if (getOpcode() < ISD::BUILTIN_OP_END)
+    if (getOpcode() < ISD::BUILTIN_OP_END) {
       return "<<Unknown DAG Node>>";
+
+}
     if (isMachineOpcode()) {
-      if (G)
-        if (const TargetInstrInfo *TII = G->getSubtarget().getInstrInfo())
-          if (getMachineOpcode() < TII->getNumOpcodes())
+      if (G) {
+        if (const TargetInstrInfo *TII = G->getSubtarget().getInstrInfo()) {
+          if (getMachineOpcode() < TII->getNumOpcodes()) {
             return std::string(TII->getName(getMachineOpcode()));
+
+}
+
+}
+
+}
       return "<<Unknown Machine Node #" + utostr(getOpcode()) + ">>";
     }
     if (G) {
       const TargetLowering &TLI = G->getTargetLoweringInfo();
       const char *Name = TLI.getTargetNodeName(getOpcode());
-      if (Name) return Name;
+      if (Name) { return Name;
+
+}
       return "<<Unknown Target Node #" + utostr(getOpcode()) + ">>";
     }
     return "<<Unknown Node #" + utostr(getOpcode()) + ">>";
@@ -112,8 +122,10 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
   case ISD::Register:                   return "Register";
   case ISD::RegisterMask:               return "RegisterMask";
   case ISD::Constant:
-    if (cast<ConstantSDNode>(this)->isOpaque())
+    if (cast<ConstantSDNode>(this)->isOpaque()) {
       return "OpaqueConstant";
+
+}
     return "Constant";
   case ISD::ConstantFP:                 return "ConstantFP";
   case ISD::GlobalAddress:              return "GlobalAddress";
@@ -143,19 +155,23 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
   case ISD::INTRINSIC_W_CHAIN: {
     unsigned OpNo = getOpcode() == ISD::INTRINSIC_WO_CHAIN ? 0 : 1;
     unsigned IID = cast<ConstantSDNode>(getOperand(OpNo))->getZExtValue();
-    if (IID < Intrinsic::num_intrinsics)
+    if (IID < Intrinsic::num_intrinsics) {
       return Intrinsic::getName((Intrinsic::ID)IID, None);
-    else if (!G)
+    } else if (!G) {
       return "Unknown intrinsic";
-    else if (const TargetIntrinsicInfo *TII = G->getTarget().getIntrinsicInfo())
+    } else if (const TargetIntrinsicInfo *TII = G->getTarget().getIntrinsicInfo()) {
       return TII->getName(IID);
+
+}
     llvm_unreachable("Invalid intrinsic ID");
   }
 
   case ISD::BUILD_VECTOR:               return "BUILD_VECTOR";
   case ISD::TargetConstant:
-    if (cast<ConstantSDNode>(this)->isOpaque())
+    if (cast<ConstantSDNode>(this)->isOpaque()) {
       return "OpaqueTargetConstant";
+
+}
     return "TargetConstant";
   case ISD::TargetConstantFP:           return "TargetConstantFP";
   case ISD::TargetGlobalAddress:        return "TargetGlobalAddress";
@@ -482,8 +498,10 @@ static void printMemOperand(raw_ostream &OS, const MachineMemOperand &MMO,
                             const MachineFrameInfo *MFI,
                             const TargetInstrInfo *TII, LLVMContext &Ctx) {
   ModuleSlotTracker MST(M);
-  if (MF)
+  if (MF) {
     MST.incorporateFunction(MF->getFunction());
+
+}
   SmallVector<StringRef, 0> SSNs;
   MMO.print(OS, MST, SSNs, Ctx, MFI, TII);
 }
@@ -513,50 +531,78 @@ LLVM_DUMP_METHOD void SDNode::dump(const SelectionDAG *G) const {
 
 void SDNode::print_types(raw_ostream &OS, const SelectionDAG *G) const {
   for (unsigned i = 0, e = getNumValues(); i != e; ++i) {
-    if (i) OS << ",";
-    if (getValueType(i) == MVT::Other)
+    if (i) { OS << ",";
+
+}
+    if (getValueType(i) == MVT::Other) {
       OS << "ch";
-    else
+    } else {
       OS << getValueType(i).getEVTString();
+
+}
   }
 }
 
 void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
-  if (getFlags().hasNoUnsignedWrap())
+  if (getFlags().hasNoUnsignedWrap()) {
     OS << " nuw";
 
-  if (getFlags().hasNoSignedWrap())
+}
+
+  if (getFlags().hasNoSignedWrap()) {
     OS << " nsw";
 
-  if (getFlags().hasExact())
+}
+
+  if (getFlags().hasExact()) {
     OS << " exact";
 
-  if (getFlags().hasNoNaNs())
+}
+
+  if (getFlags().hasNoNaNs()) {
     OS << " nnan";
 
-  if (getFlags().hasNoInfs())
+}
+
+  if (getFlags().hasNoInfs()) {
     OS << " ninf";
 
-  if (getFlags().hasNoSignedZeros())
+}
+
+  if (getFlags().hasNoSignedZeros()) {
     OS << " nsz";
 
-  if (getFlags().hasAllowReciprocal())
+}
+
+  if (getFlags().hasAllowReciprocal()) {
     OS << " arcp";
 
-  if (getFlags().hasAllowContract())
+}
+
+  if (getFlags().hasAllowContract()) {
     OS << " contract";
 
-  if (getFlags().hasApproximateFuncs())
+}
+
+  if (getFlags().hasApproximateFuncs()) {
     OS << " afn";
 
-  if (getFlags().hasAllowReassociation())
+}
+
+  if (getFlags().hasAllowReassociation()) {
     OS << " reassoc";
 
-  if (getFlags().hasVectorReduction())
+}
+
+  if (getFlags().hasVectorReduction()) {
     OS << " vector-reduction";
 
-  if (getFlags().hasNoFPExcept())
+}
+
+  if (getFlags().hasNoFPExcept()) {
     OS << " nofpexcept";
+
+}
 
   if (const MachineSDNode *MN = dyn_cast<MachineSDNode>(this)) {
     if (!MN->memoperands_empty()) {
@@ -565,8 +611,10 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
       for (MachineSDNode::mmo_iterator i = MN->memoperands_begin(),
            e = MN->memoperands_end(); i != e; ++i) {
         printMemOperand(OS, **i, G);
-        if (std::next(i) != e)
+        if (std::next(i) != e) {
           OS << " ";
+
+}
       }
       OS << ">";
     }
@@ -575,21 +623,25 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     OS << "<";
     for (unsigned i = 0, e = ValueList[0].getVectorNumElements(); i != e; ++i) {
       int Idx = SVN->getMaskElt(i);
-      if (i) OS << ",";
-      if (Idx < 0)
+      if (i) { OS << ",";
+
+}
+      if (Idx < 0) {
         OS << "u";
-      else
+      } else {
         OS << Idx;
+
+}
     }
     OS << ">";
   } else if (const ConstantSDNode *CSDN = dyn_cast<ConstantSDNode>(this)) {
     OS << '<' << CSDN->getAPIntValue() << '>';
   } else if (const ConstantFPSDNode *CSDN = dyn_cast<ConstantFPSDNode>(this)) {
-    if (&CSDN->getValueAPF().getSemantics() == &APFloat::IEEEsingle())
+    if (&CSDN->getValueAPF().getSemantics() == &APFloat::IEEEsingle()) {
       OS << '<' << CSDN->getValueAPF().convertToFloat() << '>';
-    else if (&CSDN->getValueAPF().getSemantics() == &APFloat::IEEEdouble())
+    } else if (&CSDN->getValueAPF().getSemantics() == &APFloat::IEEEdouble()) {
       OS << '<' << CSDN->getValueAPF().convertToDouble() << '>';
-    else {
+    } else {
       OS << "<APFloat(";
       CSDN->getValueAPF().bitcastToAPInt().print(OS, false);
       OS << ")>";
@@ -600,39 +652,55 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     OS << '<';
     GADN->getGlobal()->printAsOperand(OS);
     OS << '>';
-    if (offset > 0)
+    if (offset > 0) {
       OS << " + " << offset;
-    else
+    } else {
       OS << " " << offset;
-    if (unsigned int TF = GADN->getTargetFlags())
+
+}
+    if (unsigned int TF = GADN->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const FrameIndexSDNode *FIDN = dyn_cast<FrameIndexSDNode>(this)) {
     OS << "<" << FIDN->getIndex() << ">";
   } else if (const JumpTableSDNode *JTDN = dyn_cast<JumpTableSDNode>(this)) {
     OS << "<" << JTDN->getIndex() << ">";
-    if (unsigned int TF = JTDN->getTargetFlags())
+    if (unsigned int TF = JTDN->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const ConstantPoolSDNode *CP = dyn_cast<ConstantPoolSDNode>(this)){
     int offset = CP->getOffset();
-    if (CP->isMachineConstantPoolEntry())
+    if (CP->isMachineConstantPoolEntry()) {
       OS << "<" << *CP->getMachineCPVal() << ">";
-    else
+    } else {
       OS << "<" << *CP->getConstVal() << ">";
-    if (offset > 0)
+
+}
+    if (offset > 0) {
       OS << " + " << offset;
-    else
+    } else {
       OS << " " << offset;
-    if (unsigned int TF = CP->getTargetFlags())
+
+}
+    if (unsigned int TF = CP->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const TargetIndexSDNode *TI = dyn_cast<TargetIndexSDNode>(this)) {
     OS << "<" << TI->getIndex() << '+' << TI->getOffset() << ">";
-    if (unsigned TF = TI->getTargetFlags())
+    if (unsigned TF = TI->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const BasicBlockSDNode *BBDN = dyn_cast<BasicBlockSDNode>(this)) {
     OS << "<";
     const Value *LBB = (const Value*)BBDN->getBasicBlock()->getBasicBlock();
-    if (LBB)
+    if (LBB) {
       OS << LBB->getName() << " ";
+
+}
     OS << (const void*)BBDN->getBasicBlock() << ">";
   } else if (const RegisterSDNode *R = dyn_cast<RegisterSDNode>(this)) {
     OS << ' ' << printReg(R->getReg(),
@@ -640,18 +708,24 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
   } else if (const ExternalSymbolSDNode *ES =
              dyn_cast<ExternalSymbolSDNode>(this)) {
     OS << "'" << ES->getSymbol() << "'";
-    if (unsigned int TF = ES->getTargetFlags())
+    if (unsigned int TF = ES->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const SrcValueSDNode *M = dyn_cast<SrcValueSDNode>(this)) {
-    if (M->getValue())
+    if (M->getValue()) {
       OS << "<" << M->getValue() << ">";
-    else
+    } else {
       OS << "<null>";
+
+}
   } else if (const MDNodeSDNode *MD = dyn_cast<MDNodeSDNode>(this)) {
-    if (MD->getMD())
+    if (MD->getMD()) {
       OS << "<" << MD->getMD() << ">";
-    else
+    } else {
       OS << "<null>";
+
+}
   } else if (const VTSDNode *N = dyn_cast<VTSDNode>(this)) {
     OS << ":" << N->getVT().getEVTString();
   }
@@ -667,24 +741,32 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     case ISD::SEXTLOAD: OS << ", sext"; break;
     case ISD::ZEXTLOAD: OS << ", zext"; break;
     }
-    if (doExt)
+    if (doExt) {
       OS << " from " << LD->getMemoryVT().getEVTString();
 
+}
+
     const char *AM = getIndexedModeName(LD->getAddressingMode());
-    if (*AM)
+    if (*AM) {
       OS << ", " << AM;
+
+}
 
     OS << ">";
   } else if (const StoreSDNode *ST = dyn_cast<StoreSDNode>(this)) {
     OS << "<";
     printMemOperand(OS, *ST->getMemOperand(), G);
 
-    if (ST->isTruncatingStore())
+    if (ST->isTruncatingStore()) {
       OS << ", trunc to " << ST->getMemoryVT().getEVTString();
 
+}
+
     const char *AM = getIndexedModeName(ST->getAddressingMode());
-    if (*AM)
+    if (*AM) {
       OS << ", " << AM;
+
+}
 
     OS << ">";
   } else if (const MaskedLoadSDNode *MLd = dyn_cast<MaskedLoadSDNode>(this)) {
@@ -699,30 +781,42 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     case ISD::SEXTLOAD: OS << ", sext"; break;
     case ISD::ZEXTLOAD: OS << ", zext"; break;
     }
-    if (doExt)
+    if (doExt) {
       OS << " from " << MLd->getMemoryVT().getEVTString();
 
+}
+
     const char *AM = getIndexedModeName(MLd->getAddressingMode());
-    if (*AM)
+    if (*AM) {
       OS << ", " << AM;
 
-    if (MLd->isExpandingLoad())
+}
+
+    if (MLd->isExpandingLoad()) {
       OS << ", expanding";
+
+}
 
     OS << ">";
   } else if (const MaskedStoreSDNode *MSt = dyn_cast<MaskedStoreSDNode>(this)) {
     OS << "<";
     printMemOperand(OS, *MSt->getMemOperand(), G);
 
-    if (MSt->isTruncatingStore())
+    if (MSt->isTruncatingStore()) {
       OS << ", trunc to " << MSt->getMemoryVT().getEVTString();
 
+}
+
     const char *AM = getIndexedModeName(MSt->getAddressingMode());
-    if (*AM)
+    if (*AM) {
       OS << ", " << AM;
 
-    if (MSt->isCompressingStore())
+}
+
+    if (MSt->isCompressingStore()) {
       OS << ", compressing";
+
+}
 
     OS << ">";
   } else if (const MemSDNode* M = dyn_cast<MemSDNode>(this)) {
@@ -737,12 +831,16 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     OS << ", ";
     BA->getBlockAddress()->getBasicBlock()->printAsOperand(OS, false);
     OS << ">";
-    if (offset > 0)
+    if (offset > 0) {
       OS << " + " << offset;
-    else
+    } else {
       OS << " " << offset;
-    if (unsigned int TF = BA->getTargetFlags())
+
+}
+    if (unsigned int TF = BA->getTargetFlags()) {
       OS << " [TF=" << TF << ']';
+
+}
   } else if (const AddrSpaceCastSDNode *ASC =
                dyn_cast<AddrSpaceCastSDNode>(this)) {
     OS << '['
@@ -751,39 +849,59 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
        << ASC->getDestAddressSpace()
        << ']';
   } else if (const LifetimeSDNode *LN = dyn_cast<LifetimeSDNode>(this)) {
-    if (LN->hasOffset())
+    if (LN->hasOffset()) {
       OS << "<" << LN->getOffset() << " to " << LN->getOffset() + LN->getSize() << ">";
+
+}
   }
 
   if (VerboseDAGDumping) {
-    if (unsigned Order = getIROrder())
+    if (unsigned Order = getIROrder()) {
         OS << " [ORD=" << Order << ']';
 
-    if (getNodeId() != -1)
+}
+
+    if (getNodeId() != -1) {
       OS << " [ID=" << getNodeId() << ']';
-    if (!(isa<ConstantSDNode>(this) || (isa<ConstantFPSDNode>(this))))
+
+}
+    if (!(isa<ConstantSDNode>(this) || (isa<ConstantFPSDNode>(this)))) {
       OS << " # D:" << isDivergent();
+
+}
 
     if (G && !G->GetDbgValues(this).empty()) {
       OS << " [NoOfDbgValues=" << G->GetDbgValues(this).size() << ']';
-      for (SDDbgValue *Dbg : G->GetDbgValues(this))
-        if (!Dbg->isInvalidated())
+      for (SDDbgValue *Dbg : G->GetDbgValues(this)) {
+        if (!Dbg->isInvalidated()) {
           Dbg->print(OS);
-    } else if (getHasDebugValue())
+
+}
+
+}
+    } else if (getHasDebugValue()) {
       OS << " [NoOfDbgValues>0]";
+
+}
   }
 }
 
 LLVM_DUMP_METHOD void SDDbgValue::print(raw_ostream &OS) const {
   OS << " DbgVal(Order=" << getOrder() << ')';
-  if (isInvalidated()) OS << "(Invalidated)";
-  if (isEmitted()) OS << "(Emitted)";
+  if (isInvalidated()) { OS << "(Invalidated)";
+
+}
+  if (isEmitted()) { OS << "(Emitted)";
+
+}
   switch (getKind()) {
   case SDNODE:
-    if (getSDNode())
+    if (getSDNode()) {
       OS << "(SDNODE=" << PrintNodeId(*getSDNode()) << ':' <<  getResNo() << ')';
-    else
+    } else {
       OS << "(SDNODE)";
+
+}
     break;
   case CONST:
     OS << "(CONST)";
@@ -795,7 +913,9 @@ LLVM_DUMP_METHOD void SDDbgValue::print(raw_ostream &OS) const {
     OS << "(VREG=" << getVReg() << ')';
     break;
   }
-  if (isIndirect()) OS << "(Indirect)";
+  if (isIndirect()) { OS << "(Indirect)";
+
+}
   OS << ":\"" << Var->getName() << '"';
 #ifndef NDEBUG
   if (Expr->getNumElements())
@@ -817,10 +937,14 @@ LLVM_DUMP_METHOD void SDDbgValue::dump() const {
 static bool shouldPrintInline(const SDNode &Node, const SelectionDAG *G) {
   // Avoid lots of cluttering when inline printing nodes with associated
   // DbgValues in verbose mode.
-  if (VerboseDAGDumping && G && !G->GetDbgValues(&Node).empty())
+  if (VerboseDAGDumping && G && !G->GetDbgValues(&Node).empty()) {
     return false;
-  if (Node.getOpcode() == ISD::EntryToken)
+
+}
+  if (Node.getOpcode() == ISD::EntryToken) {
     return false;
+
+}
   return Node.getNumOperands() == 0;
 }
 
@@ -884,8 +1008,10 @@ static bool printOperand(raw_ostream &OS, const SelectionDAG *G,
     return true;
   } else {
     OS << PrintNodeId(*Value.getNode());
-    if (unsigned RN = Value.getResNo())
+    if (unsigned RN = Value.getResNo()) {
       OS << ':' << RN;
+
+}
     return false;
   }
 }
@@ -934,20 +1060,26 @@ LLVM_DUMP_METHOD void SDNode::dumpr(const SelectionDAG *G) const {
 static void printrWithDepthHelper(raw_ostream &OS, const SDNode *N,
                                   const SelectionDAG *G, unsigned depth,
                                   unsigned indent) {
-  if (depth == 0)
+  if (depth == 0) {
     return;
+
+}
 
   OS.indent(indent);
 
   N->print(OS, G);
 
-  if (depth < 1)
+  if (depth < 1) {
     return;
+
+}
 
   for (const SDValue &Op : N->op_values()) {
     // Don't follow chain operands.
-    if (Op.getValueType() == MVT::Other)
+    if (Op.getValueType() == MVT::Other) {
       continue;
+
+}
     OS << '\n';
     printrWithDepthHelper(OS, Op.getNode(), G, depth-1, indent+2);
   }
@@ -978,7 +1110,9 @@ LLVM_DUMP_METHOD void SDNode::dumprFull(const SelectionDAG *G) const {
 void SDNode::print(raw_ostream &OS, const SelectionDAG *G) const {
   printr(OS, G);
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
-    if (i) OS << ", "; else OS << " ";
+    if (i) { OS << ", "; } else { OS << " ";
+
+}
     printOperand(OS, G, getOperand(i));
   }
   if (DebugLoc DL = getDebugLoc()) {

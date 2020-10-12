@@ -569,20 +569,24 @@ void MappingTraits<COFFYAML::Section>::mapping(IO &IO, COFFYAML::Section &Sec) {
   // semantic representation of the symbols/types.  If it is any other kind
   // of section, just deal in raw bytes.
   IO.mapOptional("SectionData", Sec.SectionData);
-  if (Sec.Name == ".debug$S")
+  if (Sec.Name == ".debug$S") {
     IO.mapOptional("Subsections", Sec.DebugS);
-  else if (Sec.Name == ".debug$T")
+  } else if (Sec.Name == ".debug$T") {
     IO.mapOptional("Types", Sec.DebugT);
-  else if (Sec.Name == ".debug$P")
+  } else if (Sec.Name == ".debug$P") {
     IO.mapOptional("PrecompTypes", Sec.DebugP);
-  else if (Sec.Name == ".debug$H")
+  } else if (Sec.Name == ".debug$H") {
     IO.mapOptional("GlobalHashes", Sec.DebugH);
+
+}
 
   // Uninitialized sections, such as .bss, typically have no data, but the size
   // is carried in SizeOfRawData, even though PointerToRawData is zero.
   if (Sec.SectionData.binary_size() == 0 &&
-      NC->Characteristics & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA)
+      NC->Characteristics & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA) {
     IO.mapOptional("SizeOfRawData", Sec.Header.SizeOfRawData);
+
+}
 
   IO.mapOptional("Relocations", Sec.Relocations);
 }

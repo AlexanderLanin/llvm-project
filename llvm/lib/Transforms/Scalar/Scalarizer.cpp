@@ -250,23 +250,29 @@ Scatterer::Scatterer(BasicBlock *bb, BasicBlock::iterator bbi, Value *v,
   : BB(bb), BBI(bbi), V(v), CachePtr(cachePtr) {
   Type *Ty = V->getType();
   PtrTy = dyn_cast<PointerType>(Ty);
-  if (PtrTy)
+  if (PtrTy) {
     Ty = PtrTy->getElementType();
+
+}
   Size = Ty->getVectorNumElements();
-  if (!CachePtr)
+  if (!CachePtr) {
     Tmp.resize(Size, nullptr);
-  else if (CachePtr->empty())
+  } else if (CachePtr->empty()) {
     CachePtr->resize(Size, nullptr);
-  else
+  } else {
     assert(Size == CachePtr->size() && "Inconsistent vector sizes");
+
+}
 }
 
 // Return component I, creating a new Value for it if necessary.
 Value *Scatterer::operator[](unsigned I) {
   ValueVector &CV = (CachePtr ? *CachePtr : Tmp);
   // Try to reuse a previous value.
-  if (CV[I])
+  if (CV[I]) {
     return CV[I];
+
+}
   IRBuilder<> Builder(BB, BBI);
   if (PtrTy) {
     Type *ElTy = PtrTy->getElementType()->getVectorElementType();
@@ -274,20 +280,26 @@ Value *Scatterer::operator[](unsigned I) {
       Type *NewPtrTy = PointerType::get(ElTy, PtrTy->getAddressSpace());
       CV[0] = Builder.CreateBitCast(V, NewPtrTy, V->getName() + ".i0");
     }
-    if (I != 0)
+    if (I != 0) {
       CV[I] = Builder.CreateConstGEP1_32(ElTy, CV[0], I,
                                          V->getName() + ".i" + Twine(I));
+
+}
   } else {
     // Search through a chain of InsertElementInsts looking for element I.
     // Record other elements in the cache.  The new V is still suitable
     // for all uncached indices.
     while (true) {
       InsertElementInst *Insert = dyn_cast<InsertElementInst>(V);
-      if (!Insert)
+      if (!Insert) {
         break;
+
+}
       ConstantInt *Idx = dyn_cast<ConstantInt>(Insert->getOperand(2));
-      if (!Idx)
+      if (!Idx) {
         break;
+
+}
       unsigned J = Idx->getZExtValue();
       V = Insert->getOperand(0);
       if (I == J) {
@@ -307,8 +319,10 @@ Value *Scatterer::operator[](unsigned I) {
 }
 
 bool ScalarizerLegacyPass::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   Module &M = *F.getParent();
   unsigned ParallelLoopAccessMDKind =
@@ -333,8 +347,10 @@ bool ScalarizerVisitor::visit(Function &F) {
       Instruction *I = &*II;
       bool Done = InstVisitor::visit(I);
       ++II;
-      if (Done && I->getType()->isVoidTy())
+      if (Done && I->getType()->isVoidTy()) {
         I->eraseFromParent();
+
+}
     }
   }
   return finish();
@@ -357,9 +373,11 @@ Scatterer ScalarizerVisitor::scatter(Instruction *Point, Value *V) {
     // infinite loops in Scatterer::operator[]. By simply treating values
     // originating from instructions in unreachable blocks as undef we do not
     // need to analyse them further.
-    if (!DT->isReachableFromEntry(VOp->getParent()))
+    if (!DT->isReachableFromEntry(VOp->getParent())) {
       return Scatterer(Point->getParent(), Point->getIterator(),
                        UndefValue::get(V->getType()));
+
+}
     // Put the scattered form of an instruction directly after the
     // instruction.
     BasicBlock *BB = VOp->getParent();
@@ -378,8 +396,10 @@ Scatterer ScalarizerVisitor::scatter(Instruction *Point, Value *V) {
 void ScalarizerVisitor::gather(Instruction *Op, const ValueVector &CV) {
   // Since we're not deleting Op yet, stub out its operands, so that it
   // doesn't make anything live unnecessarily.
-  for (unsigned I = 0, E = Op->getNumOperands(); I != E; ++I)
+  for (unsigned I = 0, E = Op->getNumOperands(); I != E; ++I) {
     Op->setOperand(I, UndefValue::get(Op->getOperand(I)->getType()));
+
+}
 
   transferMetadataAndIRFlags(Op, CV);
 
@@ -389,8 +409,10 @@ void ScalarizerVisitor::gather(Instruction *Op, const ValueVector &CV) {
   if (!SV.empty()) {
     for (unsigned I = 0, E = SV.size(); I != E; ++I) {
       Value *V = SV[I];
-      if (V == nullptr)
+      if (V == nullptr) {
         continue;
+
+}
 
       Instruction *Old = cast<Instruction>(V);
       CV[I]->takeName(Old);
@@ -423,12 +445,18 @@ void ScalarizerVisitor::transferMetadataAndIRFlags(Instruction *Op,
   Op->getAllMetadataOtherThanDebugLoc(MDs);
   for (unsigned I = 0, E = CV.size(); I != E; ++I) {
     if (Instruction *New = dyn_cast<Instruction>(CV[I])) {
-      for (const auto &MD : MDs)
-        if (canTransferMetadata(MD.first))
+      for (const auto &MD : MDs) {
+        if (canTransferMetadata(MD.first)) {
           New->setMetadata(MD.first, MD.second);
+
+}
+
+}
       New->copyIRFlags(Op);
-      if (Op->getDebugLoc() && !New->getDebugLoc())
+      if (Op->getDebugLoc() && !New->getDebugLoc()) {
         New->setDebugLoc(Op->getDebugLoc());
+
+}
     }
   }
 }
@@ -439,18 +467,24 @@ bool ScalarizerVisitor::getVectorLayout(Type *Ty, unsigned Alignment,
                                  VectorLayout &Layout, const DataLayout &DL) {
   // Make sure we're dealing with a vector.
   Layout.VecTy = dyn_cast<VectorType>(Ty);
-  if (!Layout.VecTy)
+  if (!Layout.VecTy) {
     return false;
+
+}
 
   // Check that we're dealing with full-byte elements.
   Layout.ElemTy = Layout.VecTy->getElementType();
-  if (!DL.typeSizeEqualsStoreSize(Layout.ElemTy))
+  if (!DL.typeSizeEqualsStoreSize(Layout.ElemTy)) {
     return false;
 
-  if (Alignment)
+}
+
+  if (Alignment) {
     Layout.VecAlign = Alignment;
-  else
+  } else {
     Layout.VecAlign = DL.getABITypeAlignment(Layout.VecTy);
+
+}
   Layout.ElemSize = DL.getTypeStoreSize(Layout.ElemTy);
   return true;
 }
@@ -460,8 +494,10 @@ bool ScalarizerVisitor::getVectorLayout(Type *Ty, unsigned Alignment,
 template<typename Splitter>
 bool ScalarizerVisitor::splitUnary(Instruction &I, const Splitter &Split) {
   VectorType *VT = dyn_cast<VectorType>(I.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   IRBuilder<> Builder(&I);
@@ -469,8 +505,10 @@ bool ScalarizerVisitor::splitUnary(Instruction &I, const Splitter &Split) {
   assert(Op.size() == NumElems && "Mismatched unary operation");
   ValueVector Res;
   Res.resize(NumElems);
-  for (unsigned Elem = 0; Elem < NumElems; ++Elem)
+  for (unsigned Elem = 0; Elem < NumElems; ++Elem) {
     Res[Elem] = Split(Builder, Op[Elem], I.getName() + ".i" + Twine(Elem));
+
+}
   gather(&I, Res);
   return true;
 }
@@ -480,8 +518,10 @@ bool ScalarizerVisitor::splitUnary(Instruction &I, const Splitter &Split) {
 template<typename Splitter>
 bool ScalarizerVisitor::splitBinary(Instruction &I, const Splitter &Split) {
   VectorType *VT = dyn_cast<VectorType>(I.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   IRBuilder<> Builder(&I);
@@ -491,9 +531,11 @@ bool ScalarizerVisitor::splitBinary(Instruction &I, const Splitter &Split) {
   assert(Op1.size() == NumElems && "Mismatched binary operation");
   ValueVector Res;
   Res.resize(NumElems);
-  for (unsigned Elem = 0; Elem < NumElems; ++Elem)
+  for (unsigned Elem = 0; Elem < NumElems; ++Elem) {
     Res[Elem] = Split(Builder, Op0[Elem], Op1[Elem],
                       I.getName() + ".i" + Twine(Elem));
+
+}
   gather(&I, Res);
   return true;
 }
@@ -513,16 +555,22 @@ static Function *getScalarIntrinsicDeclaration(Module *M,
 /// element if possible for the intrinsic.
 bool ScalarizerVisitor::splitCall(CallInst &CI) {
   VectorType *VT = dyn_cast<VectorType>(CI.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   Function *F = CI.getCalledFunction();
-  if (!F)
+  if (!F) {
     return false;
 
+}
+
   Intrinsic::ID ID = F->getIntrinsicID();
-  if (ID == Intrinsic::not_intrinsic || !isTriviallyScalariable(ID))
+  if (ID == Intrinsic::not_intrinsic || !isTriviallyScalariable(ID)) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   unsigned NumArgs = CI.getNumArgOperands();
@@ -555,10 +603,12 @@ bool ScalarizerVisitor::splitCall(CallInst &CI) {
     ScalarCallOps.clear();
 
     for (unsigned J = 0; J != NumArgs; ++J) {
-      if (hasVectorInstrinsicScalarOpd(ID, J))
+      if (hasVectorInstrinsicScalarOpd(ID, J)) {
         ScalarCallOps.push_back(ScalarOperands[J]);
-      else
+      } else {
         ScalarCallOps.push_back(Scattered[J][Elem]);
+
+}
     }
 
     Res[Elem] = Builder.CreateCall(NewIntrin, ScalarCallOps,
@@ -571,8 +621,10 @@ bool ScalarizerVisitor::splitCall(CallInst &CI) {
 
 bool ScalarizerVisitor::visitSelectInst(SelectInst &SI) {
   VectorType *VT = dyn_cast<VectorType>(SI.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   IRBuilder<> Builder(&SI);
@@ -586,14 +638,18 @@ bool ScalarizerVisitor::visitSelectInst(SelectInst &SI) {
   if (SI.getOperand(0)->getType()->isVectorTy()) {
     Scatterer Op0 = scatter(&SI, SI.getOperand(0));
     assert(Op0.size() == NumElems && "Mismatched select");
-    for (unsigned I = 0; I < NumElems; ++I)
+    for (unsigned I = 0; I < NumElems; ++I) {
       Res[I] = Builder.CreateSelect(Op0[I], Op1[I], Op2[I],
                                     SI.getName() + ".i" + Twine(I));
+
+}
   } else {
     Value *Op0 = SI.getOperand(0);
-    for (unsigned I = 0; I < NumElems; ++I)
+    for (unsigned I = 0; I < NumElems; ++I) {
       Res[I] = Builder.CreateSelect(Op0, Op1[I], Op2[I],
                                     SI.getName() + ".i" + Twine(I));
+
+}
   }
   gather(&SI, Res);
   return true;
@@ -617,8 +673,10 @@ bool ScalarizerVisitor::visitBinaryOperator(BinaryOperator &BO) {
 
 bool ScalarizerVisitor::visitGetElementPtrInst(GetElementPtrInst &GEPI) {
   VectorType *VT = dyn_cast<VectorType>(GEPI.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   IRBuilder<> Builder(&GEPI);
   unsigned NumElems = VT->getNumElements();
@@ -627,8 +685,10 @@ bool ScalarizerVisitor::visitGetElementPtrInst(GetElementPtrInst &GEPI) {
   // The base pointer might be scalar even if it's a vector GEP. In those cases,
   // splat the pointer into a vector value, and scatter that vector.
   Value *Op0 = GEPI.getOperand(0);
-  if (!Op0->getType()->isVectorTy())
+  if (!Op0->getType()->isVectorTy()) {
     Op0 = Builder.CreateVectorSplat(NumElems, Op0);
+
+}
   Scatterer Base = scatter(&GEPI, Op0);
 
   SmallVector<Scatterer, 8> Ops;
@@ -638,8 +698,10 @@ bool ScalarizerVisitor::visitGetElementPtrInst(GetElementPtrInst &GEPI) {
 
     // The indices might be scalars even if it's a vector GEP. In those cases,
     // splat the scalar into a vector value, and scatter that vector.
-    if (!Op->getType()->isVectorTy())
+    if (!Op->getType()->isVectorTy()) {
       Op = Builder.CreateVectorSplat(NumElems, Op);
+
+}
 
     Ops[I] = scatter(&GEPI, Op);
   }
@@ -649,13 +711,19 @@ bool ScalarizerVisitor::visitGetElementPtrInst(GetElementPtrInst &GEPI) {
   for (unsigned I = 0; I < NumElems; ++I) {
     SmallVector<Value *, 8> Indices;
     Indices.resize(NumIndices);
-    for (unsigned J = 0; J < NumIndices; ++J)
+    for (unsigned J = 0; J < NumIndices; ++J) {
       Indices[J] = Ops[J][I];
+
+}
     Res[I] = Builder.CreateGEP(GEPI.getSourceElementType(), Base[I], Indices,
                                GEPI.getName() + ".i" + Twine(I));
-    if (GEPI.isInBounds())
-      if (GetElementPtrInst *NewGEPI = dyn_cast<GetElementPtrInst>(Res[I]))
+    if (GEPI.isInBounds()) {
+      if (GetElementPtrInst *NewGEPI = dyn_cast<GetElementPtrInst>(Res[I])) {
         NewGEPI->setIsInBounds();
+
+}
+
+}
   }
   gather(&GEPI, Res);
   return true;
@@ -663,8 +731,10 @@ bool ScalarizerVisitor::visitGetElementPtrInst(GetElementPtrInst &GEPI) {
 
 bool ScalarizerVisitor::visitCastInst(CastInst &CI) {
   VectorType *VT = dyn_cast<VectorType>(CI.getDestTy());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   IRBuilder<> Builder(&CI);
@@ -672,9 +742,11 @@ bool ScalarizerVisitor::visitCastInst(CastInst &CI) {
   assert(Op0.size() == NumElems && "Mismatched cast");
   ValueVector Res;
   Res.resize(NumElems);
-  for (unsigned I = 0; I < NumElems; ++I)
+  for (unsigned I = 0; I < NumElems; ++I) {
     Res[I] = Builder.CreateCast(CI.getOpcode(), Op0[I], VT->getElementType(),
                                 CI.getName() + ".i" + Twine(I));
+
+}
   gather(&CI, Res);
   return true;
 }
@@ -682,8 +754,10 @@ bool ScalarizerVisitor::visitCastInst(CastInst &CI) {
 bool ScalarizerVisitor::visitBitCastInst(BitCastInst &BCI) {
   VectorType *DstVT = dyn_cast<VectorType>(BCI.getDestTy());
   VectorType *SrcVT = dyn_cast<VectorType>(BCI.getSrcTy());
-  if (!DstVT || !SrcVT)
+  if (!DstVT || !SrcVT) {
     return false;
+
+}
 
   unsigned DstNumElems = DstVT->getNumElements();
   unsigned SrcNumElems = SrcVT->getNumElements();
@@ -693,9 +767,11 @@ bool ScalarizerVisitor::visitBitCastInst(BitCastInst &BCI) {
   Res.resize(DstNumElems);
 
   if (DstNumElems == SrcNumElems) {
-    for (unsigned I = 0; I < DstNumElems; ++I)
+    for (unsigned I = 0; I < DstNumElems; ++I) {
       Res[I] = Builder.CreateBitCast(Op0[I], DstVT->getElementType(),
                                      BCI.getName() + ".i" + Twine(I));
+
+}
   } else if (DstNumElems > SrcNumElems) {
     // <M x t1> -> <N*M x t2>.  Convert each t1 to <N x t2> and copy the
     // individual elements to the destination.
@@ -708,12 +784,16 @@ bool ScalarizerVisitor::visitBitCastInst(BitCastInst &BCI) {
       // Look through any existing bitcasts before converting to <N x t2>.
       // In the best case, the resulting conversion might be a no-op.
       while ((VI = dyn_cast<Instruction>(V)) &&
-             VI->getOpcode() == Instruction::BitCast)
+             VI->getOpcode() == Instruction::BitCast) {
         V = VI->getOperand(0);
+
+}
       V = Builder.CreateBitCast(V, MidTy, V->getName() + ".cast");
       Scatterer Mid = scatter(&BCI, V);
-      for (unsigned MidI = 0; MidI < FanOut; ++MidI)
+      for (unsigned MidI = 0; MidI < FanOut; ++MidI) {
         Res[ResI++] = Mid[MidI];
+
+}
     }
   } else {
     // <N*M x t1> -> <M x t2>.  Convert each group of <N x t1> into a t2.
@@ -722,10 +802,12 @@ bool ScalarizerVisitor::visitBitCastInst(BitCastInst &BCI) {
     unsigned Op0I = 0;
     for (unsigned ResI = 0; ResI < DstNumElems; ++ResI) {
       Value *V = UndefValue::get(MidTy);
-      for (unsigned MidI = 0; MidI < FanIn; ++MidI)
+      for (unsigned MidI = 0; MidI < FanIn; ++MidI) {
         V = Builder.CreateInsertElement(V, Op0[Op0I++], Builder.getInt32(MidI),
                                         BCI.getName() + ".i" + Twine(ResI)
                                         + ".upto" + Twine(MidI));
+
+}
       Res[ResI] = Builder.CreateBitCast(V, DstVT->getElementType(),
                                         BCI.getName() + ".i" + Twine(ResI));
     }
@@ -736,8 +818,10 @@ bool ScalarizerVisitor::visitBitCastInst(BitCastInst &BCI) {
 
 bool ScalarizerVisitor::visitShuffleVectorInst(ShuffleVectorInst &SVI) {
   VectorType *VT = dyn_cast<VectorType>(SVI.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   Scatterer Op0 = scatter(&SVI, SVI.getOperand(0));
@@ -747,12 +831,14 @@ bool ScalarizerVisitor::visitShuffleVectorInst(ShuffleVectorInst &SVI) {
 
   for (unsigned I = 0; I < NumElems; ++I) {
     int Selector = SVI.getMaskValue(I);
-    if (Selector < 0)
+    if (Selector < 0) {
       Res[I] = UndefValue::get(VT->getElementType());
-    else if (unsigned(Selector) < Op0.size())
+    } else if (unsigned(Selector) < Op0.size()) {
       Res[I] = Op0[Selector];
-    else
+    } else {
       Res[I] = Op1[Selector - Op0.size()];
+
+}
   }
   gather(&SVI, Res);
   return true;
@@ -760,8 +846,10 @@ bool ScalarizerVisitor::visitShuffleVectorInst(ShuffleVectorInst &SVI) {
 
 bool ScalarizerVisitor::visitPHINode(PHINode &PHI) {
   VectorType *VT = dyn_cast<VectorType>(PHI.getType());
-  if (!VT)
+  if (!VT) {
     return false;
+
+}
 
   unsigned NumElems = VT->getNumElements();
   IRBuilder<> Builder(&PHI);
@@ -769,30 +857,40 @@ bool ScalarizerVisitor::visitPHINode(PHINode &PHI) {
   Res.resize(NumElems);
 
   unsigned NumOps = PHI.getNumOperands();
-  for (unsigned I = 0; I < NumElems; ++I)
+  for (unsigned I = 0; I < NumElems; ++I) {
     Res[I] = Builder.CreatePHI(VT->getElementType(), NumOps,
                                PHI.getName() + ".i" + Twine(I));
+
+}
 
   for (unsigned I = 0; I < NumOps; ++I) {
     Scatterer Op = scatter(&PHI, PHI.getIncomingValue(I));
     BasicBlock *IncomingBlock = PHI.getIncomingBlock(I);
-    for (unsigned J = 0; J < NumElems; ++J)
+    for (unsigned J = 0; J < NumElems; ++J) {
       cast<PHINode>(Res[J])->addIncoming(Op[J], IncomingBlock);
+
+}
   }
   gather(&PHI, Res);
   return true;
 }
 
 bool ScalarizerVisitor::visitLoadInst(LoadInst &LI) {
-  if (!ScalarizeLoadStore)
+  if (!ScalarizeLoadStore) {
     return false;
-  if (!LI.isSimple())
+
+}
+  if (!LI.isSimple()) {
     return false;
+
+}
 
   VectorLayout Layout;
   if (!getVectorLayout(LI.getType(), LI.getAlignment(), Layout,
-                       LI.getModule()->getDataLayout()))
+                       LI.getModule()->getDataLayout())) {
     return false;
+
+}
 
   unsigned NumElems = Layout.VecTy->getNumElements();
   IRBuilder<> Builder(&LI);
@@ -800,25 +898,33 @@ bool ScalarizerVisitor::visitLoadInst(LoadInst &LI) {
   ValueVector Res;
   Res.resize(NumElems);
 
-  for (unsigned I = 0; I < NumElems; ++I)
+  for (unsigned I = 0; I < NumElems; ++I) {
     Res[I] = Builder.CreateAlignedLoad(Layout.VecTy->getElementType(), Ptr[I],
                                        Align(Layout.getElemAlign(I)),
                                        LI.getName() + ".i" + Twine(I));
+
+}
   gather(&LI, Res);
   return true;
 }
 
 bool ScalarizerVisitor::visitStoreInst(StoreInst &SI) {
-  if (!ScalarizeLoadStore)
+  if (!ScalarizeLoadStore) {
     return false;
-  if (!SI.isSimple())
+
+}
+  if (!SI.isSimple()) {
     return false;
+
+}
 
   VectorLayout Layout;
   Value *FullValue = SI.getValueOperand();
   if (!getVectorLayout(FullValue->getType(), SI.getAlignment(), Layout,
-                       SI.getModule()->getDataLayout()))
+                       SI.getModule()->getDataLayout())) {
     return false;
+
+}
 
   unsigned NumElems = Layout.VecTy->getNumElements();
   IRBuilder<> Builder(&SI);
@@ -844,8 +950,10 @@ bool ScalarizerVisitor::visitCallInst(CallInst &CI) {
 bool ScalarizerVisitor::finish() {
   // The presence of data in Gathered or Scattered indicates changes
   // made to the Function.
-  if (Gathered.empty() && Scattered.empty())
+  if (Gathered.empty() && Scattered.empty()) {
     return false;
+
+}
   for (const auto &GMI : Gathered) {
     Instruction *Op = GMI.first;
     ValueVector &CV = *GMI.second;
@@ -857,11 +965,15 @@ bool ScalarizerVisitor::finish() {
       BasicBlock *BB = Op->getParent();
       unsigned Count = Ty->getVectorNumElements();
       IRBuilder<> Builder(Op);
-      if (isa<PHINode>(Op))
+      if (isa<PHINode>(Op)) {
         Builder.SetInsertPoint(BB, BB->getFirstInsertionPt());
-      for (unsigned I = 0; I < Count; ++I)
+
+}
+      for (unsigned I = 0; I < Count; ++I) {
         Res = Builder.CreateInsertElement(Res, CV[I], Builder.getInt32(I),
                                           Op->getName() + ".upto" + Twine(I));
+
+}
       Res->takeName(Op);
       Op->replaceAllUsesWith(Res);
     }

@@ -23,9 +23,9 @@ void ObjectTransformLayer::emit(MaterializationResponsibility R,
 
   // If there is a transform set then apply it.
   if (Transform) {
-    if (auto TransformedObj = Transform(std::move(O)))
+    if (auto TransformedObj = Transform(std::move(O))) {
       O = std::move(*TransformedObj);
-    else {
+    } else {
       R.failMaterialization();
       getExecutionSession().reportError(TransformedObj.takeError());
       return;

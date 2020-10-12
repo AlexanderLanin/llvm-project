@@ -49,8 +49,10 @@ MCAsmInfo::MCAsmInfo() {
   Data64bitsDirective = "\t.quad\t";
   GlobalDirective = "\t.globl\t";
   WeakDirective = "\t.weak\t";
-  if (DwarfExtendedLoc != Default)
+  if (DwarfExtendedLoc != Default) {
     SupportsExtendedDwarfLocDirective = DwarfExtendedLoc == Enable;
+
+}
 
   // FIXME: Clang's logic should be synced with the logic used to initialize
   //        this member and the two implementations should be merged.
@@ -89,8 +91,10 @@ const MCExpr *
 MCAsmInfo::getExprForFDESymbol(const MCSymbol *Sym,
                                unsigned Encoding,
                                MCStreamer &Streamer) const {
-  if (!(Encoding & dwarf::DW_EH_PE_pcrel))
+  if (!(Encoding & dwarf::DW_EH_PE_pcrel)) {
     return MCSymbolRefExpr::create(Sym, Streamer.getContext());
+
+}
 
   MCContext &Context = Streamer.getContext();
   const MCExpr *Res = MCSymbolRefExpr::create(Sym, Context);
@@ -106,14 +110,18 @@ bool MCAsmInfo::isAcceptableChar(char C) const {
 }
 
 bool MCAsmInfo::isValidUnquotedName(StringRef Name) const {
-  if (Name.empty())
+  if (Name.empty()) {
     return false;
+
+}
 
   // If any of the characters in the string is an unacceptable character, force
   // quotes.
   for (char C : Name) {
-    if (!isAcceptableChar(C))
+    if (!isAcceptableChar(C)) {
       return false;
+
+}
   }
 
   return true;

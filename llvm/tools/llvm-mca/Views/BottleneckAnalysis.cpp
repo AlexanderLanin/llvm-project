@@ -53,8 +53,10 @@ void PressureTracker::getResourceUsers(uint64_t ResourceMask,
   const MCProcResourceDesc &PRDesc = *SM.getProcResource(ProcResID);
   for (unsigned I = 0, E = PRDesc.NumUnits; I < E; ++I) {
     const User U = getResourceUser(ProcResID, I);
-    if (U.second && IPI.find(U.first) != IPI.end())
+    if (U.second && IPI.find(U.first) != IPI.end()) {
       Users.emplace_back(U);
+
+}
   }
 }
 
@@ -119,8 +121,10 @@ void PressureTracker::handlePressureEvent(const HWPressureEvent &Event) {
     for (const InstRef &IR : Event.AffectedInstructions) {
       const Instruction &IS = *IR.getInstruction();
       unsigned BusyResources = IS.getCriticalResourceMask() & ResourceMask;
-      if (!BusyResources)
+      if (!BusyResources) {
         continue;
+
+}
 
       unsigned IID = IR.getSourceIndex();
       IPI[IID].ResourcePressureCycles++;
@@ -176,19 +180,25 @@ void DependencyGraph::pruneEdges(unsigned Iterations) {
     // Use a cut-off threshold to prune edges with a low frequency.
     for (unsigned I = 0, E = Size; I < E; ++I) {
       DependencyEdge &Edge = N.OutgoingEdges[I];
-      if (Edge.Frequency == Iterations)
+      if (Edge.Frequency == Iterations) {
         continue;
+
+}
       double Factor = (double)Edge.Frequency / Iterations;
-      if (0.10 < Factor)
+      if (0.10 < Factor) {
         continue;
+
+}
       Nodes[Edge.ToIID].NumPredecessors--;
       std::swap(Edge, N.OutgoingEdges[E - 1]);
       --E;
       ++NumPruned;
     }
 
-    if (NumPruned)
+    if (NumPruned) {
       N.OutgoingEdges.resize(Size - NumPruned);
+
+}
   }
 }
 
@@ -196,8 +206,10 @@ void DependencyGraph::initializeRootSet(
     SmallVectorImpl<unsigned> &RootSet) const {
   for (unsigned I = 0, E = Nodes.size(); I < E; ++I) {
     const DGNode &N = Nodes[I];
-    if (N.NumPredecessors == 0 && !N.OutgoingEdges.empty())
+    if (N.NumPredecessors == 0 && !N.OutgoingEdges.empty()) {
       RootSet.emplace_back(I);
+
+}
   }
 }
 
@@ -251,8 +263,10 @@ void DependencyGraph::propagateThroughEdges(
           To.Depth = N.Depth + 1;
         }
         To.NumVisitedPredecessors++;
-        if (To.NumVisitedPredecessors == To.NumPredecessors)
+        if (To.NumVisitedPredecessors == To.NumPredecessors) {
           ToVisit.emplace_back(ToIID);
+
+}
       }
     }
 
@@ -296,22 +310,30 @@ static void printInstruction(formatted_raw_ostream &FOS,
   MCIP.printInst(&MCI, 0, "", STI, InstrStream);
   InstrStream.flush();
 
-  if (UseDifferentColor)
+  if (UseDifferentColor) {
     FOS.changeColor(raw_ostream::CYAN, true, false);
+
+}
   FOS << StringRef(Instruction).ltrim();
-  if (UseDifferentColor)
+  if (UseDifferentColor) {
     FOS.resetColor();
+
+}
 }
 
 void BottleneckAnalysis::printCriticalSequence(raw_ostream &OS) const {
   // Early exit if no bottlenecks were found during the simulation.
-  if (!SeenStallCycles || !BPI.PressureIncreaseCycles)
+  if (!SeenStallCycles || !BPI.PressureIncreaseCycles) {
     return;
+
+}
 
   SmallVector<const DependencyEdge *, 16> Seq;
   DG.getCriticalSequence(Seq);
-  if (Seq.empty())
+  if (Seq.empty()) {
     return;
+
+}
 
   OS << "\nCritical sequence based on the simulation:\n\n";
 
@@ -366,13 +388,17 @@ void BottleneckAnalysis::printCriticalSequence(raw_ostream &OS) const {
     FOS.PadToColumn(58);
 
     const DependencyEdge::Dependency &Dep = DE->Dep;
-    if (HasColors)
+    if (HasColors) {
       FOS.changeColor(raw_ostream::SAVEDCOLOR, true, false);
+
+}
 
     if (Dep.Type == DependencyEdge::DT_REGISTER) {
       FOS << "## REGISTER dependency:  ";
-      if (HasColors)
+      if (HasColors) {
         FOS.changeColor(raw_ostream::MAGENTA, true, false);
+
+}
       MCIP.printRegName(FOS, Dep.ResourceOrRegID);
     } else if (Dep.Type == DependencyEdge::DT_MEMORY) {
       FOS << "## MEMORY dependency.";
@@ -380,8 +406,10 @@ void BottleneckAnalysis::printCriticalSequence(raw_ostream &OS) const {
       assert(Dep.Type == DependencyEdge::DT_RESOURCE &&
              "Unsupported dependency type!");
       FOS << "## RESOURCE interference:  ";
-      if (HasColors)
+      if (HasColors) {
         FOS.changeColor(raw_ostream::MAGENTA, true, false);
+
+}
       FOS << Tracker.resolveResourceName(Dep.ResourceOrRegID);
       if (HasColors) {
         FOS.resetColor();
@@ -390,8 +418,10 @@ void BottleneckAnalysis::printCriticalSequence(raw_ostream &OS) const {
       FOS << " [ probability: " << ((DE->Frequency * 100) / Iterations)
           << "% ]";
     }
-    if (HasColors)
+    if (HasColors) {
       FOS.resetColor();
+
+}
     ++CurrentIID;
   }
 
@@ -505,8 +535,10 @@ void BottleneckAnalysis::onEvent(const HWInstructionEvent &Event) {
     return;
   }
 
-  if (Event.Type != HWInstructionEvent::Issued)
+  if (Event.Type != HWInstructionEvent::Issued) {
     return;
+
+}
 
   const Instruction &IS = *Event.IR.getInstruction();
   unsigned To = IID % Source.size();
@@ -517,8 +549,10 @@ void BottleneckAnalysis::onEvent(const HWInstructionEvent &Event) {
   while (ResourceMask) {
     uint64_t Current = ResourceMask & (-ResourceMask);
     Tracker.getResourceUsers(Current, Users);
-    for (const std::pair<unsigned, unsigned> &U : Users)
+    for (const std::pair<unsigned, unsigned> &U : Users) {
       addResourceDep(U.first % Source.size(), To, Current, U.second + Cycles);
+
+}
     Users.clear();
     ResourceMask ^= Current;
   }
@@ -541,8 +575,10 @@ void BottleneckAnalysis::onEvent(const HWInstructionEvent &Event) {
       static_cast<const HWInstructionIssuedEvent &>(Event));
 
   // Check if this is the last simulated instruction.
-  if (IID == ((Iterations * Source.size()) - 1))
+  if (IID == ((Iterations * Source.size()) - 1)) {
     DG.finalizeGraph(Iterations);
+
+}
 }
 
 void BottleneckAnalysis::onEvent(const HWPressureEvent &Event) {
@@ -574,18 +610,28 @@ void BottleneckAnalysis::onCycleEnd() {
       PressureIncreasedBecauseOfRegisterDependencies ||
       PressureIncreasedBecauseOfMemoryDependencies;
   if (!PressureIncreasedBecauseOfResources &&
-      !PressureIncreasedBecauseOfDataDependencies)
+      !PressureIncreasedBecauseOfDataDependencies) {
     return;
 
+}
+
   ++BPI.PressureIncreaseCycles;
-  if (PressureIncreasedBecauseOfRegisterDependencies)
+  if (PressureIncreasedBecauseOfRegisterDependencies) {
     ++BPI.RegisterDependencyCycles;
-  if (PressureIncreasedBecauseOfMemoryDependencies)
+
+}
+  if (PressureIncreasedBecauseOfMemoryDependencies) {
     ++BPI.MemoryDependencyCycles;
-  if (PressureIncreasedBecauseOfDataDependencies)
+
+}
+  if (PressureIncreasedBecauseOfDataDependencies) {
     ++BPI.DataDependencyCycles;
-  if (PressureIncreasedBecauseOfResources)
+
+}
+  if (PressureIncreasedBecauseOfResources) {
     ++BPI.ResourcePressureCycles;
+
+}
   PressureIncreasedBecauseOfResources = false;
   PressureIncreasedBecauseOfRegisterDependencies = false;
   PressureIncreasedBecauseOfMemoryDependencies = false;

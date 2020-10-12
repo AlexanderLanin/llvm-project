@@ -27,8 +27,10 @@ TEST(Parallel, sort) {
   std::mt19937 randEngine;
   std::uniform_int_distribution<uint32_t> dist;
 
-  for (auto &i : array)
+  for (auto &i : array) {
     i = dist(randEngine);
+
+}
 
   sort(parallel::par, std::begin(array), std::end(array));
   ASSERT_TRUE(std::is_sorted(std::begin(array), std::end(array)));

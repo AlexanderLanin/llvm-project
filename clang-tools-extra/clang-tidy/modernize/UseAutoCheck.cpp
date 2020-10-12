@@ -33,10 +33,12 @@ size_t GetTypeNameLength(bool RemoveStars, StringRef Text) {
   size_t NumChars = 0;
   int TemplateTypenameCntr = 0;
   for (const unsigned char C : Text) {
-    if (C == '<')
+    if (C == '<') {
       ++TemplateTypenameCntr;
-    else if (C == '>')
+    } else if (C == '>') {
       --TemplateTypenameCntr;
+
+}
     const CharType NextChar =
         isAlphanumeric(C)
             ? Alpha
@@ -46,8 +48,10 @@ size_t GetTypeNameLength(bool RemoveStars, StringRef Text) {
                   : Punctuation;
     if (NextChar != Space) {
       ++NumChars; // Count the non-space character.
-      if (LastChar == Space && NextChar == Alpha && BeforeSpace == Alpha)
+      if (LastChar == Space && NextChar == Alpha && BeforeSpace == Alpha) {
         ++NumChars; // Count a single space character between two words.
+
+}
       BeforeSpace = NextChar;
     }
     LastChar = NextChar;
@@ -70,8 +74,10 @@ size_t GetTypeNameLength(bool RemoveStars, StringRef Text) {
 /// or \c C.
 AST_MATCHER(VarDecl, hasWrittenNonListInitializer) {
   const Expr *Init = Node.getAnyInitializer();
-  if (!Init)
+  if (!Init) {
     return false;
+
+}
 
   Init = Init->IgnoreImplicit();
 
@@ -99,12 +105,16 @@ AST_MATCHER(VarDecl, hasWrittenNonListInitializer) {
 AST_MATCHER_P(QualType, isSugarFor, Matcher<QualType>, SugarMatcher) {
   QualType QT = Node;
   while (true) {
-    if (SugarMatcher.matches(QT, Finder, Builder))
+    if (SugarMatcher.matches(QT, Finder, Builder)) {
       return true;
 
+}
+
     QualType NewQT = QT.getSingleStepDesugaredType(Finder->getASTContext());
-    if (NewQT == QT)
+    if (NewQT == QT) {
       return false;
+
+}
     QT = NewQT;
   }
 }
@@ -125,8 +135,10 @@ AST_MATCHER(NamedDecl, hasStdIteratorName) {
                                               "const_reverse_iterator"};
 
   for (const char *Name : IteratorNames) {
-    if (hasName(Name).matches(Node, Finder, Builder))
+    if (hasName(Name).matches(Node, Finder, Builder)) {
       return true;
+
+}
   }
   return false;
 }
@@ -159,8 +171,10 @@ AST_MATCHER(NamedDecl, hasStdContainerName) {
       "stack"};
 
   for (const char *Name : ContainerNames) {
-    if (hasName(Name).matches(Node, Finder, Builder))
+    if (hasName(Name).matches(Node, Finder, Builder)) {
       return true;
+
+}
   }
   return false;
 }
@@ -188,11 +202,15 @@ AST_MATCHER(NamedDecl, hasStdContainerName) {
 AST_MATCHER(Decl, isFromStdNamespace) {
   const DeclContext *D = Node.getDeclContext();
 
-  while (D->isInlineNamespace())
+  while (D->isInlineNamespace()) {
     D = D->getParent();
 
-  if (!D->isNamespace() || !D->getParent()->isTranslationUnit())
+}
+
+  if (!D->isNamespace() || !D->getParent()->isTranslationUnit()) {
     return false;
+
+}
 
   const IdentifierInfo *Info = cast<NamespaceDecl>(D)->getIdentifier();
 
@@ -334,16 +352,22 @@ void UseAutoCheck::replaceIterators(const DeclStmt *D, ASTContext *Context) {
     const Expr *ExprInit = V->getInit();
 
     // Skip expressions with cleanups from the intializer expression.
-    if (const auto *E = dyn_cast<ExprWithCleanups>(ExprInit))
+    if (const auto *E = dyn_cast<ExprWithCleanups>(ExprInit)) {
       ExprInit = E->getSubExpr();
 
+}
+
     const auto *Construct = dyn_cast<CXXConstructExpr>(ExprInit);
-    if (!Construct)
+    if (!Construct) {
       continue;
 
+}
+
     // Ensure that the constructor receives a single argument.
-    if (Construct->getNumArgs() != 1)
+    if (Construct->getNumArgs() != 1) {
       return;
+
+}
 
     // Drill down to the as-written initializer.
     const Expr *E = (*Construct->arg_begin())->IgnoreParenImpCasts();
@@ -360,11 +384,15 @@ void UseAutoCheck::replaceIterators(const DeclStmt *D, ASTContext *Context) {
       // FIXME: The following only checks if the constructor can be used
       // implicitly, not if it actually was. Cases where the converting
       // constructor was used explicitly won't get converted.
-      if (NestedConstruct->getConstructor()->isConvertingConstructor(false))
+      if (NestedConstruct->getConstructor()->isConvertingConstructor(false)) {
         return;
+
+}
     }
-    if (!Context->hasSameType(V->getType(), E->getType()))
+    if (!Context->hasSameType(V->getType(), E->getType())) {
       return;
+
+}
   }
 
   // Get the type location using the first declaration.
@@ -384,8 +412,10 @@ void UseAutoCheck::replaceExpr(
     llvm::function_ref<QualType(const Expr *)> GetType, StringRef Message) {
   const auto *FirstDecl = dyn_cast<VarDecl>(*D->decl_begin());
   // Ensure that there is at least one VarDecl within the DeclStmt.
-  if (!FirstDecl)
+  if (!FirstDecl) {
     return;
+
+}
 
   const QualType FirstDeclType = FirstDecl->getType().getCanonicalType();
 
@@ -393,29 +423,39 @@ void UseAutoCheck::replaceExpr(
   for (const auto *Dec : D->decls()) {
     const auto *V = cast<VarDecl>(Dec);
     // Ensure that every DeclStmt child is a VarDecl.
-    if (!V)
+    if (!V) {
       return;
+
+}
 
     const auto *Expr = V->getInit()->IgnoreParenImpCasts();
     // Ensure that every VarDecl has an initializer.
-    if (!Expr)
+    if (!Expr) {
       return;
 
+}
+
     // If VarDecl and Initializer have mismatching unqualified types.
-    if (!Context->hasSameUnqualifiedType(V->getType(), GetType(Expr)))
+    if (!Context->hasSameUnqualifiedType(V->getType(), GetType(Expr))) {
       return;
+
+}
 
     // All subsequent variables in this declaration should have the same
     // canonical type.  For example, we don't want to use `auto` in
     // `T *p = new T, **pp = new T*;`.
-    if (FirstDeclType != V->getType().getCanonicalType())
+    if (FirstDeclType != V->getType().getCanonicalType()) {
       return;
+
+}
 
     if (RemoveStars) {
       // Remove explicitly written '*' from declarations where there's more than
       // one declaration in the declaration list.
-      if (Dec == *D->decl_begin())
+      if (Dec == *D->decl_begin()) {
         continue;
+
+}
 
       auto Q = V->getTypeSourceInfo()->getTypeLoc().getAs<PointerTypeLoc>();
       while (!Q.isNull()) {
@@ -432,8 +472,10 @@ void UseAutoCheck::replaceExpr(
   TypeLoc Loc = FirstDecl->getTypeSourceInfo()->getTypeLoc();
   if (!RemoveStars) {
     while (Loc.getTypeLocClass() == TypeLoc::Pointer ||
-           Loc.getTypeLocClass() == TypeLoc::Qualified)
+           Loc.getTypeLocClass() == TypeLoc::Qualified) {
       Loc = Loc.getNextTypeLoc();
+
+}
   }
   while (Loc.getTypeLocClass() == TypeLoc::LValueReference ||
          Loc.getTypeLocClass() == TypeLoc::RValueReference ||
@@ -446,8 +488,10 @@ void UseAutoCheck::replaceExpr(
       GetTypeNameLength(RemoveStars,
                         tooling::fixit::getText(Loc.getSourceRange(),
                                                 FirstDecl->getASTContext())) <
-          MinTypeNameLength)
+          MinTypeNameLength) {
     return;
+
+}
 
   auto Diag = diag(Range.getBegin(), Message);
 

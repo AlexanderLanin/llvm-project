@@ -20,8 +20,10 @@ using Error = llvm::Error;
 
 Expected<Function *> ByteCodeEmitter::compileFunc(const FunctionDecl *F) {
   // Do not try to compile undefined functions.
-  if (!F->isDefined(F) || (!F->hasBody() && F->willHaveBody()))
+  if (!F->isDefined(F) || (!F->hasBody() && F->willHaveBody())) {
     return nullptr;
+
+}
 
   // Set up argument indices.
   unsigned ParamOffset = 0;
@@ -59,10 +61,12 @@ Expected<Function *> ByteCodeEmitter::compileFunc(const FunctionDecl *F) {
   // Compile the function body.
   if (!F->isConstexpr() || !visitFunc(F)) {
     // Return a dummy function if compilation failed.
-    if (BailLocation)
+    if (BailLocation) {
       return llvm::make_error<ByteCodeGenError>(*BailLocation);
-    else
+    } else {
       return Func;
+
+}
   } else {
     // Create scopes from descriptors.
     llvm::SmallVector<Scope, 2> Scopes;
@@ -117,8 +121,10 @@ int32_t ByteCodeEmitter::getOffset(LabelTy Label) {
 }
 
 bool ByteCodeEmitter::bail(const SourceLocation &Loc) {
-  if (!BailLocation)
+  if (!BailLocation) {
     BailLocation = Loc;
+
+}
   return false;
 }
 
@@ -138,8 +144,10 @@ bool ByteCodeEmitter::emitOp(Opcode Op, const Tys &... Args, const SourceInfo &S
   /// The opcode is followed by arguments. The source info is
   /// attached to the address after the opcode.
   emit(reinterpret_cast<const char *>(&Op), sizeof(Opcode));
-  if (SI)
+  if (SI) {
     SrcMap.emplace_back(Code.size(), SI);
+
+}
 
   /// The initializer list forces the expression to be evaluated
   /// for each argument in the variadic template, in order.

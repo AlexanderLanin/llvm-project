@@ -96,10 +96,12 @@ namespace llvm {
                                          const SelectionDAG *Graph) {
       SDValue Op = EI.getNode()->getOperand(EI.getOperand());
       EVT VT = Op.getValueType();
-      if (VT == MVT::Glue)
+      if (VT == MVT::Glue) {
         return "color=red,style=bold";
-      else if (VT == MVT::Other)
+      } else if (VT == MVT::Other) {
         return "color=blue,style=dashed";
+
+}
       return "";
     }
 
@@ -131,9 +133,11 @@ namespace llvm {
     static void addCustomGraphFeatures(SelectionDAG *G,
                                        GraphWriter<SelectionDAG*> &GW) {
       GW.emitSimpleNode(nullptr, "plaintext=circle", "GraphRoot");
-      if (G->getRoot().getNode())
+      if (G->getRoot().getNode()) {
         GW.emitEdge(nullptr, -1, G->getRoot().getNode(), G->getRoot().getResNo(),
                     "color=blue,style=dashed");
+
+}
     }
   };
 }
@@ -277,14 +281,18 @@ std::string ScheduleDAGSDNodes::getGraphNodeLabel(const SUnit *SU) const {
   O << "SU(" << SU->NodeNum << "): ";
   if (SU->getNode()) {
     SmallVector<SDNode *, 4> GluedNodes;
-    for (SDNode *N = SU->getNode(); N; N = N->getGluedNode())
+    for (SDNode *N = SU->getNode(); N; N = N->getGluedNode()) {
       GluedNodes.push_back(N);
+
+}
     while (!GluedNodes.empty()) {
       O << DOTGraphTraits<SelectionDAG*>
         ::getSimpleNodeLabel(GluedNodes.back(), DAG);
       GluedNodes.pop_back();
-      if (!GluedNodes.empty())
+      if (!GluedNodes.empty()) {
         O << "\n    ";
+
+}
     }
   } else {
     O << "CROSS RC COPY";
@@ -297,8 +305,10 @@ void ScheduleDAGSDNodes::getCustomGraphFeatures(GraphWriter<ScheduleDAG*> &GW) c
     // Draw a special "GraphRoot" node to indicate the root of the graph.
     GW.emitSimpleNode(nullptr, "plaintext=circle", "GraphRoot");
     const SDNode *N = DAG->getRoot().getNode();
-    if (N && N->getNodeId() != -1)
+    if (N && N->getNodeId() != -1) {
       GW.emitEdge(nullptr, -1, &SUnits[N->getNodeId()], -1,
                   "color=blue,style=dashed");
+
+}
   }
 }

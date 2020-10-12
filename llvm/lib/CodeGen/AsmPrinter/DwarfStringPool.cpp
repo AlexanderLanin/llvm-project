@@ -47,16 +47,20 @@ DwarfStringPool::EntryRef DwarfStringPool::getEntry(AsmPrinter &Asm,
 DwarfStringPool::EntryRef DwarfStringPool::getIndexedEntry(AsmPrinter &Asm,
                                                            StringRef Str) {
   auto &MapEntry = getEntryImpl(Asm, Str);
-  if (!MapEntry.getValue().isIndexed())
+  if (!MapEntry.getValue().isIndexed()) {
     MapEntry.getValue().Index = NumIndexedStrings++;
+
+}
   return EntryRef(MapEntry, true);
 }
 
 void DwarfStringPool::emitStringOffsetsTableHeader(AsmPrinter &Asm,
                                                    MCSection *Section,
                                                    MCSymbol *StartSym) {
-  if (getNumIndexedStrings() == 0)
+  if (getNumIndexedStrings() == 0) {
     return;
+
+}
   Asm.OutStreamer->SwitchSection(Section);
   unsigned EntrySize = 4;
   // FIXME: DWARF64
@@ -70,14 +74,18 @@ void DwarfStringPool::emitStringOffsetsTableHeader(AsmPrinter &Asm,
   // Define the symbol that marks the start of the contribution. It is
   // referenced by most unit headers via DW_AT_str_offsets_base.
   // Split units do not use the attribute.
-  if (StartSym)
+  if (StartSym) {
     Asm.OutStreamer->emitLabel(StartSym);
+
+}
 }
 
 void DwarfStringPool::emit(AsmPrinter &Asm, MCSection *StrSection,
                            MCSection *OffsetSection, bool UseRelativeOffsets) {
-  if (Pool.empty())
+  if (Pool.empty()) {
     return;
+
+}
 
   // Start the dwarf str section.
   Asm.OutStreamer->SwitchSection(StrSection);
@@ -86,8 +94,10 @@ void DwarfStringPool::emit(AsmPrinter &Asm, MCSection *StrSection,
   SmallVector<const StringMapEntry<EntryTy> *, 64> Entries;
   Entries.reserve(Pool.size());
 
-  for (const auto &E : Pool)
+  for (const auto &E : Pool) {
     Entries.push_back(&E);
+
+}
 
   llvm::sort(Entries, [](const StringMapEntry<EntryTy> *A,
                          const StringMapEntry<EntryTy> *B) {
@@ -99,8 +109,10 @@ void DwarfStringPool::emit(AsmPrinter &Asm, MCSection *StrSection,
            "Mismatch between setting and entry");
 
     // Emit a label for reference from debug information entries.
-    if (ShouldCreateSymbols)
+    if (ShouldCreateSymbols) {
       Asm.OutStreamer->emitLabel(Entry->getValue().Symbol);
+
+}
 
     // Emit the string itself with a terminating null byte.
     Asm.OutStreamer->AddComment("string offset=" +
@@ -115,16 +127,22 @@ void DwarfStringPool::emit(AsmPrinter &Asm, MCSection *StrSection,
     // we can emit them in order.
     Entries.resize(NumIndexedStrings);
     for (const auto &Entry : Pool) {
-      if (Entry.getValue().isIndexed())
+      if (Entry.getValue().isIndexed()) {
         Entries[Entry.getValue().Index] = &Entry;
+
+}
     }
 
     Asm.OutStreamer->SwitchSection(OffsetSection);
     unsigned size = 4; // FIXME: DWARF64 is 8.
-    for (const auto &Entry : Entries)
-      if (UseRelativeOffsets)
+    for (const auto &Entry : Entries) {
+      if (UseRelativeOffsets) {
         Asm.emitDwarfStringOffset(Entry->getValue());
-      else
+      } else {
         Asm.OutStreamer->emitIntValue(Entry->getValue().Offset, size);
+
+}
+
+}
   }
 }

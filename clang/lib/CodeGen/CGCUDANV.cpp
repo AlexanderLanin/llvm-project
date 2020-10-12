@@ -92,8 +92,10 @@ private:
       // merged and we will really have it in the object file.
       GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::None);
     }
-    if (Alignment)
+    if (Alignment) {
       GV->setAlignment(llvm::Align(Alignment));
+
+}
 
     return llvm::ConstantExpr::getGetElementPtr(ConstStr.getElementType(),
                                                 ConstStr.getPointer(), Zeros);
@@ -137,14 +139,18 @@ public:
 }
 
 std::string CGNVCUDARuntime::addPrefixToName(StringRef FuncName) const {
-  if (CGM.getLangOpts().HIP)
+  if (CGM.getLangOpts().HIP) {
     return ((Twine("hip") + Twine(FuncName)).str());
+
+}
   return ((Twine("cuda") + Twine(FuncName)).str());
 }
 std::string
 CGNVCUDARuntime::addUnderscoredPrefixToName(StringRef FuncName) const {
-  if (CGM.getLangOpts().HIP)
+  if (CGM.getLangOpts().HIP) {
     return ((Twine("__hip") + Twine(FuncName)).str());
+
+}
   return ((Twine("__cuda") + Twine(FuncName)).str());
 }
 
@@ -205,18 +211,22 @@ llvm::FunctionType *CGNVCUDARuntime::getRegisterLinkedBinaryFnTy() const {
 std::string CGNVCUDARuntime::getDeviceSideName(const NamedDecl *ND) {
   GlobalDecl GD;
   // D could be either a kernel or a variable.
-  if (auto *FD = dyn_cast<FunctionDecl>(ND))
+  if (auto *FD = dyn_cast<FunctionDecl>(ND)) {
     GD = GlobalDecl(FD, KernelReferenceKind::Kernel);
-  else
+  } else {
     GD = GlobalDecl(ND);
+
+}
   std::string DeviceSideName;
   if (DeviceMC->shouldMangleDeclName(ND)) {
     SmallString<256> Buffer;
     llvm::raw_svector_ostream Out(Buffer);
     DeviceMC->mangleName(GD, Out);
     DeviceSideName = std::string(Out.str());
-  } else
+  } else {
     DeviceSideName = std::string(ND->getIdentifier()->getName());
+
+}
   return DeviceSideName;
 }
 
@@ -225,10 +235,12 @@ void CGNVCUDARuntime::emitDeviceStub(CodeGenFunction &CGF,
   EmittedKernels.push_back({CGF.CurFn, CGF.CurFuncDecl});
   if (CudaFeatureEnabled(CGM.getTarget().getSDKVersion(),
                          CudaFeature::CUDA_USES_NEW_LAUNCH) ||
-      CGF.getLangOpts().HIPUseNewLaunchAPI)
+      CGF.getLangOpts().HIPUseNewLaunchAPI) {
     emitDeviceStubBodyNew(CGF, Args);
-  else
+  } else {
     emitDeviceStubBodyLegacy(CGF, Args);
+
+}
 }
 
 // CUDA 9.0+ uses new way to launch kernels. Parameters are packed in a local
@@ -267,8 +279,10 @@ void CGNVCUDARuntime::emitDeviceStubBodyNew(CodeGenFunction &CGF,
       CGM.getContext().Idents.get(LaunchKernelName);
   FunctionDecl *cudaLaunchKernelFD = nullptr;
   for (const auto &Result : DC->lookup(&cudaLaunchKernelII)) {
-    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(Result))
+    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(Result)) {
       cudaLaunchKernelFD = FD;
+
+}
   }
 
   if (cudaLaunchKernelFD == nullptr) {
@@ -381,8 +395,10 @@ void CGNVCUDARuntime::emitDeviceStubBodyLegacy(CodeGenFunction &CGF,
 /// \endcode
 llvm::Function *CGNVCUDARuntime::makeRegisterGlobalsFn() {
   // No need to register anything
-  if (EmittedKernels.empty() && DeviceVars.empty())
+  if (EmittedKernels.empty() && DeviceVars.empty()) {
     return nullptr;
+
+}
 
   llvm::Function *RegisterKernelsFunc = llvm::Function::Create(
       getRegisterGlobalsFnTy(), llvm::GlobalValue::InternalLinkage,
@@ -477,18 +493,24 @@ llvm::Function *CGNVCUDARuntime::makeModuleCtorFunction() {
   bool IsCUDA = CGM.getLangOpts().CUDA;
   // No need to generate ctors/dtors if there is no GPU binary.
   StringRef CudaGpuBinaryFileName = CGM.getCodeGenOpts().CudaGpuBinaryFileName;
-  if (CudaGpuBinaryFileName.empty() && !IsHIP)
+  if (CudaGpuBinaryFileName.empty() && !IsHIP) {
     return nullptr;
+
+}
   if ((IsHIP || (IsCUDA && !RelocatableDeviceCode)) && EmittedKernels.empty() &&
-      DeviceVars.empty())
+      DeviceVars.empty()) {
     return nullptr;
+
+}
 
   // void __{cuda|hip}_register_globals(void* handle);
   llvm::Function *RegisterGlobalsFunc = makeRegisterGlobalsFn();
   // We always need a function to pass in as callback. Create a dummy
   // implementation if we don't need to register anything.
-  if (RelocatableDeviceCode && !RegisterGlobalsFunc)
+  if (RelocatableDeviceCode && !RegisterGlobalsFunc) {
     RegisterGlobalsFunc = makeDummyFunction(getRegisterGlobalsFnTy());
+
+}
 
   // void ** __{cuda|hip}RegisterFatBinary(void *);
   llvm::FunctionCallee RegisterFatbinFunc = CGM.CreateRuntimeFunction(
@@ -557,13 +579,15 @@ llvm::Function *CGNVCUDARuntime::makeModuleCtorFunction() {
 
     FatMagic = HIPFatMagic;
   } else {
-    if (RelocatableDeviceCode)
+    if (RelocatableDeviceCode) {
       FatbinConstantName = CGM.getTriple().isMacOSX()
                                ? "__NV_CUDA,__nv_relfatbin"
                                : "__nv_relfatbin";
-    else
+    } else {
       FatbinConstantName =
           CGM.getTriple().isMacOSX() ? "__NV_CUDA,__nv_fatbin" : ".nv_fatbin";
+
+}
     // NVIDIA's cuobjdump looks for fatbins in this section.
     FatbinSectionName =
         CGM.getTriple().isMacOSX() ? "__NV_CUDA,__fatbin" : ".nvFatBinSegment";
@@ -619,8 +643,10 @@ llvm::Function *CGNVCUDARuntime::makeModuleCtorFunction() {
         "__hip_gpubin_handle");
     GpuBinaryHandle->setAlignment(CGM.getPointerAlign().getAsAlign());
     // Prevent the weak symbol in different shared libraries being merged.
-    if (Linkage != llvm::GlobalValue::InternalLinkage)
+    if (Linkage != llvm::GlobalValue::InternalLinkage) {
       GpuBinaryHandle->setVisibility(llvm::GlobalValue::HiddenVisibility);
+
+}
     Address GpuBinaryAddr(
         GpuBinaryHandle,
         CharUnits::fromQuantity(GpuBinaryHandle->getAlignment()));
@@ -663,8 +689,10 @@ llvm::Function *CGNVCUDARuntime::makeModuleCtorFunction() {
                                    CGM.getPointerAlign());
 
     // Call __cuda_register_globals(GpuBinaryHandle);
-    if (RegisterGlobalsFunc)
+    if (RegisterGlobalsFunc) {
       CtorBuilder.CreateCall(RegisterGlobalsFunc, RegisterFatbinCall);
+
+}
 
     // Call __cudaRegisterFatBinaryEnd(Handle) if this CUDA version needs it.
     if (CudaFeatureEnabled(CGM.getTarget().getSDKVersion(),
@@ -740,8 +768,10 @@ llvm::Function *CGNVCUDARuntime::makeModuleCtorFunction() {
 /// \endcode
 llvm::Function *CGNVCUDARuntime::makeModuleDtorFunction() {
   // No need for destructor if we don't have a handle to unregister.
-  if (!GpuBinaryHandle)
+  if (!GpuBinaryHandle) {
     return nullptr;
+
+}
 
   // void __cudaUnregisterFatBinary(void ** handle);
   llvm::FunctionCallee UnregisterFatbinFunc = CGM.CreateRuntimeFunction(

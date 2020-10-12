@@ -173,8 +173,10 @@ TEST(AllocatorTest, TestSlowerSlabGrowthDelay) {
 
   // Allocate 256 slabs. We should keep getting slabs with the original size
   // as we haven't hit our growth delay on the last allocation.
-  for (std::size_t i = 0; i < GrowthDelay; ++i)
+  for (std::size_t i = 0; i < GrowthDelay; ++i) {
     Alloc.Allocate(SlabSize, 1);
+
+}
   EXPECT_EQ(SlabSize * GrowthDelay, Alloc.getTotalMemory());
   // Allocate another slab. This time we should get another slab allocated
   // that is twice as large as the normal slab size.

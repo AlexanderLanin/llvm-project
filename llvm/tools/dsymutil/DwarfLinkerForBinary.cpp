@@ -111,9 +111,11 @@ static Error copySwiftInterfaces(
   SmallString<128> Path;
   sys::path::append(Path, *Options.ResourceDir, "Swift", Architecture);
   if ((EC = sys::fs::create_directories(Path.str(), true,
-                                        sys::fs::perms::all_all)))
+                                        sys::fs::perms::all_all))) {
     return make_error<StringError>(
         "cannot create directory: " + toString(errorCodeToError(EC)), EC);
+
+}
   unsigned BaseLength = Path.size();
 
   for (auto &I : ParseableSwiftInterfaces) {
@@ -126,14 +128,18 @@ static Error copySwiftInterfaces(
     }
     sys::path::append(Path, ModuleName);
     Path.append(".swiftinterface");
-    if (Options.Verbose)
+    if (Options.Verbose) {
       outs() << "copy parseable Swift interface " << InterfaceFile << " -> "
              << Path.str() << '\n';
 
+}
+
     // copy_file attempts an APFS clone first, so this should be cheap.
-    if ((EC = sys::fs::copy_file(InterfaceFile, Path.str())))
+    if ((EC = sys::fs::copy_file(InterfaceFile, Path.str()))) {
       warn(Twine("cannot copy parseable Swift interface ") + InterfaceFile +
            ": " + toString(errorCodeToError(EC)));
+
+}
     Path.resize(BaseLength);
   }
   return Error::success();
@@ -147,8 +153,10 @@ void DwarfLinkerForBinary::reportWarning(const Twine &Warning,
 
   warn(Warning, Context);
 
-  if (!Options.Verbose || !DIE)
+  if (!Options.Verbose || !DIE) {
     return;
+
+}
 
   DIDumpOptions DumpOpts;
   DumpOpts.ChildRecurseDepth = 0;
@@ -160,8 +168,10 @@ void DwarfLinkerForBinary::reportWarning(const Twine &Warning,
 
 bool DwarfLinkerForBinary::createStreamer(const Triple &TheTriple,
                                           raw_fd_ostream &OutFile) {
-  if (Options.NoOutput)
+  if (Options.NoOutput) {
     return true;
+
+}
 
   Streamer = std::make_unique<DwarfStreamer>(OutFile, Options);
   return Streamer->init(TheTriple);
@@ -198,21 +208,27 @@ static Error remarksErrorHandler(const DebugMapObject &DMO,
   bool IsArchive = DMO.getObjectFilename().endswith(")");
   // Don't report errors for missing remark files from static
   // archives.
-  if (!IsArchive)
+  if (!IsArchive) {
     return Error(std::move(FE));
+
+}
 
   std::string Message = FE->message();
   Error E = FE->takeError();
   Error NewE = handleErrors(std::move(E), [&](std::unique_ptr<ECError> EC) {
-    if (EC->convertToErrorCode() != std::errc::no_such_file_or_directory)
+    if (EC->convertToErrorCode() != std::errc::no_such_file_or_directory) {
       return Error(std::move(EC));
+
+}
 
     Linker.reportWarning(Message, DMO.getObjectFilename());
     return Error(Error::success());
   });
 
-  if (!NewE)
+  if (!NewE) {
     return Error::success();
+
+}
 
   return createFileError(FE->getFileName(), std::move(NewE));
 }
@@ -221,16 +237,20 @@ static Error emitRemarks(const LinkOptions &Options, StringRef BinaryPath,
                          StringRef ArchName, const remarks::RemarkLinker &RL) {
   // Make sure we don't create the directories and the file if there is nothing
   // to serialize.
-  if (RL.empty())
+  if (RL.empty()) {
     return Error::success();
+
+}
 
   SmallString<128> InputPath;
   SmallString<128> Path;
   // Create the "Remarks" directory in the "Resources" directory.
   sys::path::append(Path, *Options.ResourceDir, "Remarks");
   if (std::error_code EC = sys::fs::create_directories(Path.str(), true,
-                                                       sys::fs::perms::all_all))
+                                                       sys::fs::perms::all_all)) {
     return errorCodeToError(EC);
+
+}
 
   // Append the file name.
   // For fat binaries, also append a dash and the architecture name.
@@ -243,11 +263,15 @@ static Error emitRemarks(const LinkOptions &Options, StringRef BinaryPath,
 
   std::error_code EC;
   raw_fd_ostream OS(Options.NoOutput ? "-" : Path.str(), EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
 
-  if (Error E = RL.serialize(OS, Options.RemarksFormat))
+}
+
+  if (Error E = RL.serialize(OS, Options.RemarksFormat)) {
     return E;
+
+}
 
   return Error::success();
 }
@@ -273,8 +297,10 @@ DwarfLinkerForBinary::loadObject(const DebugMapObject &Obj,
     if (Error NewE = handleErrors(
             std::move(E), [&](std::unique_ptr<FileError> EC) -> Error {
               return remarksErrorHandler(Obj, *this, std::move(EC));
-            }))
+            })) {
       return errorToErrorCode(std::move(NewE));
+
+}
 
     return *ObjectsForLinking.back();
   }
@@ -283,8 +309,10 @@ DwarfLinkerForBinary::loadObject(const DebugMapObject &Obj,
 }
 
 bool DwarfLinkerForBinary::link(const DebugMap &Map) {
-  if (!createStreamer(Map.getTriple(), OutFile))
+  if (!createStreamer(Map.getTriple(), OutFile)) {
     return false;
+
+}
 
   ObjectsForLinking.clear();
   ContextForLinking.clear();
@@ -295,8 +323,10 @@ bool DwarfLinkerForBinary::link(const DebugMap &Map) {
   DWARFLinker GeneralLinker(Streamer.get(), DwarfLinkerClient::Dsymutil);
 
   remarks::RemarkLinker RL;
-  if (!Options.RemarksPrependPath.empty())
+  if (!Options.RemarksPrependPath.empty()) {
     RL.setExternalFilePrependPath(Options.RemarksPrependPath);
+
+}
 
   std::function<StringRef(StringRef)> TranslationLambda = [&](StringRef Input) {
     assert(Options.Translator);
@@ -310,8 +340,10 @@ bool DwarfLinkerForBinary::link(const DebugMap &Map) {
   GeneralLinker.setNumThreads(Options.Threads);
   GeneralLinker.setAccelTableKind(Options.TheAccelTableKind);
   GeneralLinker.setPrependPath(Options.PrependPath);
-  if (Options.Translator)
+  if (Options.Translator) {
     GeneralLinker.setStringsTranslator(TranslationLambda);
+
+}
   GeneralLinker.setWarningHandler(
       [&](const Twine &Warning, StringRef Context, const DWARFDie *DIE) {
         reportWarning(Warning, Context, DIE);
@@ -378,8 +410,10 @@ bool DwarfLinkerForBinary::link(const DebugMap &Map) {
     // N_AST objects (swiftmodule files) should get dumped directly into the
     // appropriate DWARF section.
     if (Obj->getType() == MachO::N_AST) {
-      if (Options.Verbose)
+      if (Options.Verbose) {
         outs() << "DEBUG MAP OBJECT: " << Obj->getObjectFilename() << "\n";
+
+}
 
       StringRef File = Obj->getObjectFilename();
       auto ErrorOrMem = MemoryBuffer::getFile(File);
@@ -408,15 +442,17 @@ bool DwarfLinkerForBinary::link(const DebugMap &Map) {
       }
 
       // Copy the module into the .swift_ast section.
-      if (!Options.NoOutput)
+      if (!Options.NoOutput) {
         Streamer->emitSwiftAST((*ErrorOrMem)->getBuffer());
+
+}
 
       continue;
     }
 
-    if (auto ErrorOrObj = loadObject(*Obj, Map, RL))
+    if (auto ErrorOrObj = loadObject(*Obj, Map, RL)) {
       GeneralLinker.addObjectFile(*ErrorOrObj);
-    else {
+    } else {
       ObjectsForLinking.push_back(std::make_unique<DwarfFile>(
           Obj->getObjectFilename(), nullptr, nullptr,
           Obj->empty() ? Obj->getWarnings() : EmptyWarnings));
@@ -428,17 +464,23 @@ bool DwarfLinkerForBinary::link(const DebugMap &Map) {
   GeneralLinker.link();
 
   StringRef ArchName = Map.getTriple().getArchName();
-  if (Error E = emitRemarks(Options, Map.getBinaryPath(), ArchName, RL))
+  if (Error E = emitRemarks(Options, Map.getBinaryPath(), ArchName, RL)) {
     return error(toString(std::move(E)));
 
-  if (Options.NoOutput)
+}
+
+  if (Options.NoOutput) {
     return true;
+
+}
 
   if (Options.ResourceDir && !ParseableSwiftInterfaces.empty()) {
     StringRef ArchName = Triple::getArchTypeName(Map.getTriple().getArch());
     if (auto E =
-            copySwiftInterfaces(ParseableSwiftInterfaces, ArchName, Options))
+            copySwiftInterfaces(ParseableSwiftInterfaces, ArchName, Options)) {
       return error(toString(std::move(E)));
+
+}
   }
 
   return Streamer->finish(Map, Options.Translator);
@@ -529,8 +571,10 @@ void DwarfLinkerForBinary::AddressManager::findValidRelocsMachO(
                              DMO.getObjectFilename());
         continue;
       }
-      if (const auto *Mapping = DMO.lookupSymbol(*SymbolName))
+      if (const auto *Mapping = DMO.lookupSymbol(*SymbolName)) {
         ValidRelocs.emplace_back(Offset64, RelocSize, Addend, Mapping);
+
+}
     } else if (const auto *Mapping = DMO.lookupObjectAddress(SymAddress)) {
       // Do not store the addend. The addend was the address of the symbol in
       // the object file, the address in the binary that is stored in the debug
@@ -546,14 +590,18 @@ bool DwarfLinkerForBinary::AddressManager::findValidRelocs(
     const object::SectionRef &Section, const object::ObjectFile &Obj,
     const DebugMapObject &DMO) {
   // Dispatch to the right handler depending on the file type.
-  if (auto *MachOObj = dyn_cast<object::MachOObjectFile>(&Obj))
+  if (auto *MachOObj = dyn_cast<object::MachOObjectFile>(&Obj)) {
     findValidRelocsMachO(Section, *MachOObj, DMO);
-  else
+  } else {
     Linker.reportWarning(Twine("unsupported object file type: ") +
                              Obj.getFileName(),
                          DMO.getObjectFilename());
-  if (ValidRelocs.empty())
+
+}
+  if (ValidRelocs.empty()) {
     return false;
+
+}
 
   // Sort the relocations by offset. We will walk the DIEs linearly in
   // the file, this allows us to just keep an index in the relocation
@@ -573,14 +621,18 @@ bool DwarfLinkerForBinary::AddressManager::findValidRelocsInDebugInfo(
   // Find the debug_info section.
   for (const object::SectionRef &Section : Obj.sections()) {
     StringRef SectionName;
-    if (Expected<StringRef> NameOrErr = Section.getName())
+    if (Expected<StringRef> NameOrErr = Section.getName()) {
       SectionName = *NameOrErr;
-    else
+    } else {
       consumeError(NameOrErr.takeError());
 
+}
+
     SectionName = SectionName.substr(SectionName.find_first_not_of("._"));
-    if (SectionName != "debug_info")
+    if (SectionName != "debug_info") {
       continue;
+
+}
     return findValidRelocs(Section, Obj, DMO);
   }
   return false;
@@ -596,8 +648,10 @@ bool DwarfLinkerForBinary::AddressManager::hasValidRelocationAt(
     uint64_t StartOffset, uint64_t EndOffset, CompileUnit::DIEInfo &Info) {
   assert(NextValidReloc == 0 ||
          StartOffset > ValidRelocs[NextValidReloc - 1].Offset);
-  if (NextValidReloc >= ValidRelocs.size())
+  if (NextValidReloc >= ValidRelocs.size()) {
     return false;
+
+}
 
   uint64_t RelocOffset = ValidRelocs[NextValidReloc].Offset;
 
@@ -605,11 +659,15 @@ bool DwarfLinkerForBinary::AddressManager::hasValidRelocationAt(
   // example the high_pc of a discarded DIE might contain a reloc that
   // is in the list because it actually corresponds to the start of a
   // function that is in the debug map.
-  while (RelocOffset < StartOffset && NextValidReloc < ValidRelocs.size() - 1)
+  while (RelocOffset < StartOffset && NextValidReloc < ValidRelocs.size() - 1) {
     RelocOffset = ValidRelocs[++NextValidReloc].Offset;
 
-  if (RelocOffset < StartOffset || RelocOffset >= EndOffset)
+}
+
+  if (RelocOffset < StartOffset || RelocOffset >= EndOffset) {
     return false;
+
+}
 
   const auto &ValidReloc = ValidRelocs[NextValidReloc++];
   const auto &Mapping = ValidReloc.Mapping->getValue();
@@ -617,15 +675,19 @@ bool DwarfLinkerForBinary::AddressManager::hasValidRelocationAt(
   const uint64_t ObjectAddress = Mapping.ObjectAddress
                                      ? uint64_t(*Mapping.ObjectAddress)
                                      : std::numeric_limits<uint64_t>::max();
-  if (Linker.Options.Verbose)
+  if (Linker.Options.Verbose) {
     outs() << "Found valid debug map entry: " << ValidReloc.Mapping->getKey()
            << "\t"
            << format("0x%016" PRIx64 " => 0x%016" PRIx64 "\n", ObjectAddress,
                      BinaryAddress);
 
+}
+
   Info.AddrAdjust = BinaryAddress + ValidReloc.Addend;
-  if (Mapping.ObjectAddress)
+  if (Mapping.ObjectAddress) {
     Info.AddrAdjust -= ObjectAddress;
+
+}
   Info.InDebugMap = true;
   return true;
 }
@@ -644,13 +706,17 @@ bool DwarfLinkerForBinary::AddressManager::applyValidRelocs(
   assert((NextValidReloc == 0 ||
           BaseOffset > ValidRelocs[NextValidReloc - 1].Offset) &&
          "BaseOffset should only be increasing.");
-  if (NextValidReloc >= ValidRelocs.size())
+  if (NextValidReloc >= ValidRelocs.size()) {
     return false;
+
+}
 
   // Skip relocs that haven't been applied.
   while (NextValidReloc < ValidRelocs.size() &&
-         ValidRelocs[NextValidReloc].Offset < BaseOffset)
+         ValidRelocs[NextValidReloc].Offset < BaseOffset) {
     ++NextValidReloc;
+
+}
 
   bool Applied = false;
   uint64_t EndOffset = BaseOffset + Data.size();

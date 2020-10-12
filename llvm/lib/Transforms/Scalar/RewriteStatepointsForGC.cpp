@@ -131,21 +131,27 @@ PreservedAnalyses RewriteStatepointsForGC::run(Module &M,
   auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
   for (Function &F : M) {
     // Nothing to do for declarations.
-    if (F.isDeclaration() || F.empty())
+    if (F.isDeclaration() || F.empty()) {
       continue;
+
+}
 
     // Policy choice says not to rewrite - the most common reason is that we're
     // compiling code without a GCStrategy.
-    if (!shouldRewriteStatepointsIn(F))
+    if (!shouldRewriteStatepointsIn(F)) {
       continue;
+
+}
 
     auto &DT = FAM.getResult<DominatorTreeAnalysis>(F);
     auto &TTI = FAM.getResult<TargetIRAnalysis>(F);
     auto &TLI = FAM.getResult<TargetLibraryAnalysis>(F);
     Changed |= runOnFunction(F, DT, TTI, TLI);
   }
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   // stripNonValidData asserts that shouldRewriteStatepointsIn
   // returns true for at least one function in the module.  Since at least
@@ -175,13 +181,17 @@ public:
     bool Changed = false;
     for (Function &F : M) {
       // Nothing to do for declarations.
-      if (F.isDeclaration() || F.empty())
+      if (F.isDeclaration() || F.empty()) {
         continue;
+
+}
 
       // Policy choice says not to rewrite - the most common reason is that
       // we're compiling code without a GCStrategy.
-      if (!shouldRewriteStatepointsIn(F))
+      if (!shouldRewriteStatepointsIn(F)) {
         continue;
+
+}
 
       TargetTransformInfo &TTI =
           getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
@@ -192,8 +202,10 @@ public:
       Changed |= Impl.runOnFunction(F, DT, TTI, TLI);
     }
 
-    if (!Changed)
+    if (!Changed) {
       return false;
+
+}
 
     // stripNonValidData asserts that shouldRewriteStatepointsIn
     // returns true for at least one function in the module.  Since at least
@@ -311,11 +323,13 @@ static void findLiveSetAtInst(Instruction *inst, GCPtrLivenessData &Data,
 // Optional<bool> isGCManagedPointer(const Type *Ty) const override {
 
 static bool isGCPointerType(Type *T) {
-  if (auto *PT = dyn_cast<PointerType>(T))
+  if (auto *PT = dyn_cast<PointerType>(T)) {
     // For the sake of this example GC, we arbitrarily pick addrspace(1) as our
     // GC managed heap.  We know that a pointer into this heap needs to be
     // updated and that no other pointer does.
     return PT->getAddressSpace() == 1;
+
+}
   return false;
 }
 
@@ -325,13 +339,19 @@ static bool isGCPointerType(Type *T) {
 // is not encountered.)
 static bool isHandledGCPointerType(Type *T) {
   // We fully support gc pointers
-  if (isGCPointerType(T))
+  if (isGCPointerType(T)) {
     return true;
+
+}
   // We partially support vectors of gc pointers. The code will assert if it
   // can't handle something.
-  if (auto VT = dyn_cast<VectorType>(T))
-    if (isGCPointerType(VT->getElementType()))
+  if (auto VT = dyn_cast<VectorType>(T)) {
+    if (isGCPointerType(VT->getElementType())) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -377,8 +397,10 @@ static void analyzeParsePointLiveness(
 
   if (PrintLiveSet) {
     dbgs() << "Live Variables:\n";
-    for (Value *V : LiveSet)
+    for (Value *V : LiveSet) {
       dbgs() << " " << V->getName() << " " << *V << "\n";
+
+}
   }
   if (PrintLiveSetSize) {
     dbgs() << "Safepoint For: " << Call->getCalledValue()->getName() << "\n";
@@ -436,26 +458,34 @@ findBaseDefiningValueOfVector(Value *I) {
   // Each case parallels findBaseDefiningValue below, see that code for
   // detailed motivation.
 
-  if (isa<Argument>(I))
+  if (isa<Argument>(I)) {
     // An incoming argument to the function is a base pointer
     return BaseDefiningValueResult(I, true);
 
-  if (isa<Constant>(I))
+}
+
+  if (isa<Constant>(I)) {
     // Base of constant vector consists only of constant null pointers.
     // For reasoning see similar case inside 'findBaseDefiningValue' function.
     return BaseDefiningValueResult(ConstantAggregateZero::get(I->getType()),
                                    true);
 
-  if (isa<LoadInst>(I))
+}
+
+  if (isa<LoadInst>(I)) {
     return BaseDefiningValueResult(I, true);
 
-  if (isa<InsertElementInst>(I))
+}
+
+  if (isa<InsertElementInst>(I)) {
     // We don't know whether this vector contains entirely base pointers or
     // not.  To be conservatively correct, we treat it as a BDV and will
     // duplicate code as needed to construct a parallel vector of bases.
     return BaseDefiningValueResult(I, false);
 
-  if (isa<ShuffleVectorInst>(I))
+}
+
+  if (isa<ShuffleVectorInst>(I)) {
     // We don't know whether this vector contains entirely base pointers or
     // not.  To be conservatively correct, we treat it as a BDV and will
     // duplicate code as needed to construct a parallel vector of bases.
@@ -463,21 +493,29 @@ findBaseDefiningValueOfVector(Value *I) {
     // for particular sufflevector patterns.
     return BaseDefiningValueResult(I, false);
 
+}
+
   // The behavior of getelementptr instructions is the same for vector and
   // non-vector data types.
-  if (auto *GEP = dyn_cast<GetElementPtrInst>(I))
+  if (auto *GEP = dyn_cast<GetElementPtrInst>(I)) {
     return findBaseDefiningValue(GEP->getPointerOperand());
+
+}
 
   // If the pointer comes through a bitcast of a vector of pointers to
   // a vector of another type of pointer, then look through the bitcast
-  if (auto *BC = dyn_cast<BitCastInst>(I))
+  if (auto *BC = dyn_cast<BitCastInst>(I)) {
     return findBaseDefiningValue(BC->getOperand(0));
+
+}
 
   // We assume that functions in the source language only return base
   // pointers.  This should probably be generalized via attributes to support
   // both source language and internal functions.
-  if (isa<CallInst>(I) || isa<InvokeInst>(I))
+  if (isa<CallInst>(I) || isa<InvokeInst>(I)) {
     return BaseDefiningValueResult(I, true);
+
+}
 
   // A PHI or Select is a base defining value.  The outer findBasePointer
   // algorithm is responsible for constructing a base value for this BDV.
@@ -494,13 +532,17 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
   assert(I->getType()->isPtrOrPtrVectorTy() &&
          "Illegal to ask for the base pointer of a non-pointer type");
 
-  if (I->getType()->isVectorTy())
+  if (I->getType()->isVectorTy()) {
     return findBaseDefiningValueOfVector(I);
 
-  if (isa<Argument>(I))
+}
+
+  if (isa<Argument>(I)) {
     // An incoming argument to the function is a base pointer
     // We should have never reached here if this argument isn't an gc value
     return BaseDefiningValueResult(I, true);
+
+}
 
   if (isa<Constant>(I)) {
     // We assume that objects with a constant base (e.g. a global) can't move
@@ -531,13 +573,17 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
     return findBaseDefiningValue(Def);
   }
 
-  if (isa<LoadInst>(I))
+  if (isa<LoadInst>(I)) {
     // The value loaded is an gc base itself
     return BaseDefiningValueResult(I, true);
 
-  if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(I))
+}
+
+  if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(I)) {
     // The base of this GEP is the base
     return findBaseDefiningValue(GEP->getPointerOperand());
+
+}
 
   if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
     switch (II->getIntrinsicID()) {
@@ -562,18 +608,22 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
   // We assume that functions in the source language only return base
   // pointers.  This should probably be generalized via attributes to support
   // both source language and internal functions.
-  if (isa<CallInst>(I) || isa<InvokeInst>(I))
+  if (isa<CallInst>(I) || isa<InvokeInst>(I)) {
     return BaseDefiningValueResult(I, true);
+
+}
 
   // TODO: I have absolutely no idea how to implement this part yet.  It's not
   // necessarily hard, I just haven't really looked at it yet.
   assert(!isa<LandingPadInst>(I) && "Landing Pad is unimplemented");
 
-  if (isa<AtomicCmpXchgInst>(I))
+  if (isa<AtomicCmpXchgInst>(I)) {
     // A CAS is effectively a atomic store and load combined under a
     // predicate.  From the perspective of base pointers, we just treat it
     // like a load.
     return BaseDefiningValueResult(I, true);
+
+}
 
   assert(!isa<AtomicRMWInst>(I) && "Xchg handled above, all others are "
                                    "binary ops which don't apply to pointers");
@@ -581,8 +631,10 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
   // The aggregate ops.  Aggregates can either be in the heap or on the
   // stack, but in either case, this is simply a field load.  As a result,
   // this is a defining definition of the base just like a load is.
-  if (isa<ExtractValueInst>(I))
+  if (isa<ExtractValueInst>(I)) {
     return BaseDefiningValueResult(I, true);
+
+}
 
   // We should never see an insert vector since that would require we be
   // tracing back a struct value not a pointer value.
@@ -593,11 +645,13 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
   // We may need to insert a parallel instruction to extract the appropriate
   // element out of the base vector corresponding to the input. Given this,
   // it's analogous to the phi and select case even though it's not a merge.
-  if (isa<ExtractElementInst>(I))
+  if (isa<ExtractElementInst>(I)) {
     // Note: There a lot of obvious peephole cases here.  This are deliberately
     // handled after the main base pointer inference algorithm to make writing
     // test cases to exercise that code easier.
     return BaseDefiningValueResult(I, false);
+
+}
 
   // The last two cases here don't return a base pointer.  Instead, they
   // return a value which dynamically selects from among several base
@@ -727,8 +781,10 @@ static BDVState meetBDVStateImpl(const BDVState &LHS, const BDVState &RHS) {
 
   case BDVState::Base:
     assert(LHS.getBaseValue() && "can't be null");
-    if (RHS.isUnknown())
+    if (RHS.isUnknown()) {
       return LHS;
+
+}
 
     if (RHS.isBase()) {
       if (LHS.getBaseValue() == RHS.getBaseValue()) {
@@ -762,8 +818,10 @@ static BDVState meetBDVState(const BDVState &LHS, const BDVState &RHS) {
 static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
   Value *Def = findBaseOrBDV(I, Cache);
 
-  if (isKnownBaseResult(Def))
+  if (isKnownBaseResult(Def)) {
     return Def;
+
+}
 
   // Here's the rough algorithm:
   // - For every SSA value, construct a mapping to either an actual base
@@ -814,18 +872,24 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
 
       auto visitIncomingValue = [&](Value *InVal) {
         Value *Base = findBaseOrBDV(InVal, Cache);
-        if (isKnownBaseResult(Base))
+        if (isKnownBaseResult(Base)) {
           // Known bases won't need new instructions introduced and can be
           // ignored safely
           return;
+
+}
         assert(isExpectedBDVType(Base) && "the only non-base values "
                "we see should be base defining values");
-        if (States.insert(std::make_pair(Base, BDVState())).second)
+        if (States.insert(std::make_pair(Base, BDVState())).second) {
           Worklist.push_back(Base);
+
+}
       };
       if (PHINode *PN = dyn_cast<PHINode>(Current)) {
-        for (Value *InVal : PN->incoming_values())
+        for (Value *InVal : PN->incoming_values()) {
           visitIncomingValue(InVal);
+
+}
       } else if (SelectInst *SI = dyn_cast<SelectInst>(Current)) {
         visitIncomingValue(SI->getTrueValue());
         visitIncomingValue(SI->getFalseValue());
@@ -854,8 +918,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
   // Return a phi state for a base defining value.  We'll generate a new
   // base state for known bases and expect to find a cached state otherwise.
   auto getStateForBDV = [&](Value *baseValue) {
-    if (isKnownBaseResult(baseValue))
+    if (isKnownBaseResult(baseValue)) {
       return BDVState(baseValue);
+
+}
     auto I = States.find(baseValue);
     assert(I != States.end() && "lookup failed!");
     return I->second;
@@ -888,8 +954,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
         NewState =
             meetBDVState(NewState, getStateForInput(SI->getFalseValue()));
       } else if (PHINode *PN = dyn_cast<PHINode>(BDV)) {
-        for (Value *Val : PN->incoming_values())
+        for (Value *Val : PN->incoming_values()) {
           NewState = meetBDVState(NewState, getStateForInput(Val));
+
+}
       } else if (auto *EE = dyn_cast<ExtractElementInst>(BDV)) {
         // The 'meet' for an extractelement is slightly trivial, but it's still
         // useful in that it drives us to conflict if our input is.
@@ -938,8 +1006,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
     // The problem is that we need to convert from a vector base to a scalar
     // base for the particular indice we're interested in.
     if (!State.isBase() || !isa<ExtractElementInst>(I) ||
-        !isa<VectorType>(State.getBaseValue()->getType()))
+        !isa<VectorType>(State.getBaseValue()->getType())) {
       continue;
+
+}
     auto *EE = cast<ExtractElementInst>(I);
     // TODO: In many cases, the new instruction is just EE itself.  We should
     // exploit this, but can't do it here since it would break the invariant
@@ -957,10 +1027,14 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
     // which traverses States.
     for (User *U : I->users()) {
       auto *UseI = dyn_cast<Instruction>(U);
-      if (!UseI || !States.count(UseI))
+      if (!UseI || !States.count(UseI)) {
         continue;
-      if (!isa<VectorType>(UseI->getType()) && States[UseI] == State)
+
+}
+      if (!isa<VectorType>(UseI->getType()) && States[UseI] == State) {
         States[UseI] = BDVState(BDVState::Conflict);
+
+}
     }
   }
 
@@ -977,8 +1051,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
     // the conflict state.
     assert(!isa<InsertElementInst>(I) || State.isConflict());
 
-    if (!State.isConflict())
+    if (!State.isConflict()) {
       continue;
+
+}
 
     /// Create and insert a new instruction which will represent the base of
     /// the given instruction 'I'.
@@ -1039,8 +1115,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
     }
     assert(Base && "Can't be null");
     // The cast is needed since base traversal may strip away bitcasts
-    if (Base->getType() != Input->getType() && InsertPt)
+    if (Base->getType() != Input->getType() && InsertPt) {
       Base = new BitCastInst(Base, Input->getType(), "cast", InsertPt);
+
+}
     return Base;
   };
 
@@ -1053,8 +1131,10 @@ static Value *findBasePointer(Value *I, DefiningValueMapTy &Cache) {
 
     assert(!isKnownBaseResult(BDV) && "why did it get added?");
     assert(!State.isUnknown() && "Optimistic algorithm didn't complete!");
-    if (!State.isConflict())
+    if (!State.isConflict()) {
       continue;
+
+}
 
     if (PHINode *BasePHI = dyn_cast<PHINode>(State.getBaseValue())) {
       PHINode *PN = cast<PHINode>(BDV);
@@ -1244,8 +1324,10 @@ static BasicBlock *
 normalizeForInvokeSafepoint(BasicBlock *BB, BasicBlock *InvokeParent,
                             DominatorTree &DT) {
   BasicBlock *Ret = BB;
-  if (!BB->getUniquePredecessor())
+  if (!BB->getUniquePredecessor()) {
     Ret = SplitBlockPredecessors(BB, InvokeParent, "", &DT);
+
+}
 
   // Now that 'Ret' has unique predecessor we can safely remove all phi nodes
   // from it
@@ -1261,16 +1343,20 @@ normalizeForInvokeSafepoint(BasicBlock *BB, BasicBlock *InvokeParent,
 // Create new attribute set containing only attributes which can be transferred
 // from original call to the safepoint.
 static AttributeList legalizeCallAttributes(AttributeList AL) {
-  if (AL.isEmpty())
+  if (AL.isEmpty()) {
     return AL;
+
+}
 
   // Remove the readonly, readnone, and statepoint function attributes.
   AttrBuilder FnAttrs = AL.getFnAttributes();
   FnAttrs.removeAttribute(Attribute::ReadNone);
   FnAttrs.removeAttribute(Attribute::ReadOnly);
   for (Attribute A : AL.getFnAttributes()) {
-    if (isStatepointDirectiveAttr(A))
+    if (isStatepointDirectiveAttr(A)) {
       FnAttrs.remove(A);
+
+}
   }
 
   // Just skip parameter and return attributes for now
@@ -1293,8 +1379,10 @@ static void CreateGCRelocates(ArrayRef<Value *> LiveVariables,
                               ArrayRef<Value *> BasePtrs,
                               Instruction *StatepointToken,
                               IRBuilder<> &Builder) {
-  if (LiveVariables.empty())
+  if (LiveVariables.empty()) {
     return;
+
+}
 
   auto FindIndex = [](ArrayRef<Value *> LiveVec, Value *Val) {
     auto ValIt = llvm::find(LiveVec, Val);
@@ -1316,8 +1404,10 @@ static void CreateGCRelocates(ArrayRef<Value *> LiveVariables,
     assert(isHandledGCPointerType(Ty));
     auto AS = Ty->getScalarType()->getPointerAddressSpace();
     Type *NewTy = Type::getInt8PtrTy(M->getContext(), AS);
-    if (auto *VT = dyn_cast<VectorType>(Ty))
+    if (auto *VT = dyn_cast<VectorType>(Ty)) {
       NewTy = VectorType::get(NewTy, VT->getNumElements());
+
+}
     return Intrinsic::getDeclaration(M, Intrinsic::experimental_gc_relocate,
                                      {NewTy});
   };
@@ -1334,8 +1424,10 @@ static void CreateGCRelocates(ArrayRef<Value *> LiveVariables,
     Value *LiveIdx = Builder.getInt32(LiveStart + i);
 
     Type *Ty = LiveVariables[i]->getType();
-    if (!TypeToDeclMap.count(Ty))
+    if (!TypeToDeclMap.count(Ty)) {
       TypeToDeclMap[Ty] = getGCRelocateDecl(Ty);
+
+}
     Function *GCRelocateDecl = TypeToDeclMap[Ty];
 
     // only specify a debug name if we can give a useful one
@@ -1400,8 +1492,10 @@ public:
     Old = nullptr;
     New = nullptr;
 
-    if (NewI)
+    if (NewI) {
       OldI->replaceAllUsesWith(NewI);
+
+}
 
     if (IsDeoptimize) {
       // Note: we've inserted instructions, so the call to llvm.deoptimize may
@@ -1423,9 +1517,11 @@ static StringRef getDeoptLowering(CallBase *Call) {
     // FIXME: Calls have a *really* confusing interface around attributes
     // with values.
     const AttributeList &CSAS = Call->getAttributes();
-    if (CSAS.hasAttribute(AttributeList::FunctionIndex, DeoptLowering))
+    if (CSAS.hasAttribute(AttributeList::FunctionIndex, DeoptLowering)) {
       return CSAS.getAttribute(AttributeList::FunctionIndex, DeoptLowering)
           .getValueAsString();
+
+}
     Function *F = Call->getCalledFunction();
     assert(F && F->hasFnAttribute(DeoptLowering));
     return F->getFnAttribute(DeoptLowering).getValueAsString();
@@ -1468,16 +1564,20 @@ makeStatepointExplicitImpl(CallBase *Call, /* to replace */
 
   StatepointDirectives SD =
       parseStatepointDirectivesFromAttrs(Call->getAttributes());
-  if (SD.NumPatchBytes)
+  if (SD.NumPatchBytes) {
     NumPatchBytes = *SD.NumPatchBytes;
-  if (SD.StatepointID)
+
+}
+  if (SD.StatepointID) {
     StatepointID = *SD.StatepointID;
+
+}
 
   // Pass through the requested lowering if any.  The default is live-through.
   StringRef DeoptLowering = getDeoptLowering(Call);
-  if (DeoptLowering.equals("live-in"))
+  if (DeoptLowering.equals("live-in")) {
     Flags |= uint32_t(StatepointFlags::DeoptLiveIn);
-  else {
+  } else {
     assert(DeoptLowering.equals("live-through") && "Unsupported value!");
   }
 
@@ -1489,8 +1589,10 @@ makeStatepointExplicitImpl(CallBase *Call, /* to replace */
       // verifier does not allow taking the address of an intrinsic function.
 
       SmallVector<Type *, 8> DomainTy;
-      for (Value *Arg : CallArgs)
+      for (Value *Arg : CallArgs) {
         DomainTy.push_back(Arg->getType());
+
+}
       auto *FTy = FunctionType::get(Type::getVoidTy(F->getContext()), DomainTy,
                                     /* isVarArg = */ false);
 
@@ -1655,8 +1757,10 @@ insertRelocationStores(iterator_range<Value::user_iterator> GCRelocs,
                        DenseSet<Value *> &VisitedLiveValues) {
   for (User *U : GCRelocs) {
     GCRelocateInst *Relocate = dyn_cast<GCRelocateInst>(U);
-    if (!Relocate)
+    if (!Relocate) {
       continue;
+
+}
 
     Value *OriginalValue = Relocate->getDerivedPtr();
     assert(AllocaMap.count(OriginalValue));
@@ -1737,19 +1841,25 @@ static void relocationViaAlloca(
   };
 
   // Emit alloca for each live gc pointer
-  for (Value *V : Live)
+  for (Value *V : Live) {
     emitAllocaFor(V);
 
+}
+
   // Emit allocas for rematerialized values
-  for (const auto &Info : Records)
+  for (const auto &Info : Records) {
     for (auto RematerializedValuePair : Info.RematerializedValues) {
       Value *OriginalValue = RematerializedValuePair.second;
-      if (AllocaMap.count(OriginalValue) != 0)
+      if (AllocaMap.count(OriginalValue) != 0) {
         continue;
+
+}
 
       emitAllocaFor(OriginalValue);
       ++NumRematerializedValues;
     }
+
+}
 
   // The next two loops are part of the same conceptual operation.  We need to
   // insert a store to the alloca after the original def and at each
@@ -1912,9 +2022,11 @@ template <typename T> static void unique_unsorted(SmallVectorImpl<T> &Vec) {
 /// lifetime of the call.
 static void insertUseHolderAfter(CallBase *Call, const ArrayRef<Value *> Values,
                                  SmallVectorImpl<CallInst *> &Holders) {
-  if (Values.empty())
+  if (Values.empty()) {
     // No values to hold live, might as well not insert the empty holder
     return;
+
+}
 
   Module *M = Call->getModule();
   // Use a dummy vararg function to actually hold the values live
@@ -1962,8 +2074,10 @@ static Value* findRematerializableChainToBasePointer(
   }
 
   if (CastInst *CI = dyn_cast<CastInst>(CurrentValue)) {
-    if (!CI->isNoopCast(CI->getModule()->getDataLayout()))
+    if (!CI->isNoopCast(CI->getModule()->getDataLayout())) {
       return CI;
+
+}
 
     ChainToBase.push_back(CI);
     return findRematerializableChainToBasePointer(ChainToBase,
@@ -1998,8 +2112,10 @@ chainToBasePointerCost(SmallVectorImpl<Instruction*> &Chain,
       // And cost of the GEP itself
       // TODO: Use TTI->getGEPCost here (it exists, but appears to be not
       //       allowed for the external usage)
-      if (!GEP->hasAllConstantIndices())
+      if (!GEP->hasAllConstantIndices()) {
         Cost += 2;
+
+}
 
     } else {
       llvm_unreachable("unsupported instruction type during rematerialization");
@@ -2012,25 +2128,33 @@ chainToBasePointerCost(SmallVectorImpl<Instruction*> &Chain,
 static bool AreEquivalentPhiNodes(PHINode &OrigRootPhi, PHINode &AlternateRootPhi) {
   unsigned PhiNum = OrigRootPhi.getNumIncomingValues();
   if (PhiNum != AlternateRootPhi.getNumIncomingValues() ||
-      OrigRootPhi.getParent() != AlternateRootPhi.getParent())
+      OrigRootPhi.getParent() != AlternateRootPhi.getParent()) {
     return false;
+
+}
   // Map of incoming values and their corresponding basic blocks of
   // OrigRootPhi.
   SmallDenseMap<Value *, BasicBlock *, 8> CurrentIncomingValues;
-  for (unsigned i = 0; i < PhiNum; i++)
+  for (unsigned i = 0; i < PhiNum; i++) {
     CurrentIncomingValues[OrigRootPhi.getIncomingValue(i)] =
         OrigRootPhi.getIncomingBlock(i);
+
+}
 
   // Both current and base PHIs should have same incoming values and
   // the same basic blocks corresponding to the incoming values.
   for (unsigned i = 0; i < PhiNum; i++) {
     auto CIVI =
         CurrentIncomingValues.find(AlternateRootPhi.getIncomingValue(i));
-    if (CIVI == CurrentIncomingValues.end())
+    if (CIVI == CurrentIncomingValues.end()) {
       return false;
+
+}
     BasicBlock *CurrentIncomingBB = CIVI->second;
-    if (CurrentIncomingBB != AlternateRootPhi.getIncomingBlock(i))
+    if (CurrentIncomingBB != AlternateRootPhi.getIncomingBlock(i)) {
       return false;
+
+}
   }
   return true;
 }
@@ -2058,16 +2182,20 @@ static void rematerializeLiveValues(CallBase *Call,
 
     // Nothing to do, or chain is too long
     if ( ChainToBase.size() == 0 ||
-        ChainToBase.size() > ChainLengthThreshold)
+        ChainToBase.size() > ChainLengthThreshold) {
       continue;
+
+}
 
     // Handle the scenario where the RootOfChain is not equal to the
     // Base Value, but they are essentially the same phi values.
     if (RootOfChain != Info.PointerToBase[LiveValue]) {
       PHINode *OrigRootPhi = dyn_cast<PHINode>(RootOfChain);
       PHINode *AlternateRootPhi = dyn_cast<PHINode>(Info.PointerToBase[LiveValue]);
-      if (!OrigRootPhi || !AlternateRootPhi)
+      if (!OrigRootPhi || !AlternateRootPhi) {
         continue;
+
+}
       // PHI nodes that have the same incoming values, and belonging to the same
       // basic blocks are essentially the same SSA value.  When the original phi
       // has incoming values with different base pointers, the original phi is
@@ -2077,8 +2205,10 @@ static void rematerializeLiveValues(CallBase *Call,
       // and RootOfChain (the original phi node itself) are the same, so that we
       // can rematerialize the gep and casts. This is a workaround for the
       // deficiency in the findBasePointer algorithm.
-      if (!AreEquivalentPhiNodes(*OrigRootPhi, *AlternateRootPhi))
+      if (!AreEquivalentPhiNodes(*OrigRootPhi, *AlternateRootPhi)) {
         continue;
+
+}
       // Now that the phi nodes are proved to be the same, assert that
       // findBasePointer's newly generated AlternateRootPhi is present in the
       // liveset of the call.
@@ -2097,8 +2227,10 @@ static void rematerializeLiveValues(CallBase *Call,
       Cost *= 2;
     }
     // If it's too expensive - skip it
-    if (Cost >= RematerializationThreshold)
+    if (Cost >= RematerializationThreshold) {
       continue;
+
+}
 
     // Remove value from the live set
     LiveValuesToBeDeleted.push_back(LiveValue);
@@ -2148,8 +2280,10 @@ static void rematerializeLiveValues(CallBase *Call,
           // live set. They have been proved to be the same PHI nodes.  Note
           // that the *only* use of the RootOfChain in the ChainToBase list is
           // the first Value in the list.
-          if (RootOfChain != AlternateLiveBase)
+          if (RootOfChain != AlternateLiveBase) {
             ClonedValue->replaceUsesOfWith(RootOfChain, AlternateLiveBase);
+
+}
         }
 
         LastClonedValue = ClonedValue;
@@ -2210,8 +2344,10 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
   // may restructure the CFG.
   for (CallBase *Call : ToUpdate) {
     auto *II = dyn_cast<InvokeInst>(Call);
-    if (!II)
+    if (!II) {
       continue;
+
+}
     normalizeForInvokeSafepoint(II->getNormalDest(), II->getParent(), DT);
     normalizeForInvokeSafepoint(II->getUnwindDest(), II->getParent(), DT);
   }
@@ -2230,8 +2366,10 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
     for (Value *Arg : GetDeoptBundleOperands(Call)) {
       assert(!isUnhandledGCPointerType(Arg->getType()) &&
              "support for FCA unimplemented");
-      if (isHandledGCPointerType(Arg->getType()))
+      if (isHandledGCPointerType(Arg->getType())) {
         DeoptValues.push_back(Arg);
+
+}
     }
 
     insertUseHolderAfter(Call, DeoptValues, Holders);
@@ -2274,8 +2412,10 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
     PartiallyConstructedSafepointRecord &Info = Records[i];
 
     SmallVector<Value *, 128> Bases;
-    for (auto Pair : Info.PointerToBase)
+    for (auto Pair : Info.PointerToBase) {
       Bases.push_back(Pair.second);
+
+}
 
     insertUseHolderAfter(ToUpdate[i], Bases, Holders);
   }
@@ -2306,21 +2446,31 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
   // Note that the relocation placement code relies on this filtering for
   // correctness as it expects the base to be in the liveset, which isn't true
   // if the base is constant.
-  for (auto &Info : Records)
-    for (auto &BasePair : Info.PointerToBase)
-      if (isa<Constant>(BasePair.second))
+  for (auto &Info : Records) {
+    for (auto &BasePair : Info.PointerToBase) {
+      if (isa<Constant>(BasePair.second)) {
         Info.LiveSet.remove(BasePair.first);
 
-  for (CallInst *CI : Holders)
+}
+
+}
+
+}
+
+  for (CallInst *CI : Holders) {
     CI->eraseFromParent();
+
+}
 
   Holders.clear();
 
   // In order to reduce live set of statepoint we might choose to rematerialize
   // some values instead of relocating them. This is purely an optimization and
   // does not influence correctness.
-  for (size_t i = 0; i < Records.size(); i++)
+  for (size_t i = 0; i < Records.size(); i++) {
     rematerializeLiveValues(ToUpdate[i], Records[i], TTI);
+
+}
 
   // We need this to safely RAUW and delete call or invoke return values that
   // may themselves be live over a statepoint.  For details, please see usage in
@@ -2333,13 +2483,17 @@ static bool insertParsePoints(Function &F, DominatorTree &DT,
   // survive to the last iteration of this loop.  (By construction, the
   // previous statepoint can not be a live variable, thus we can and remove
   // the old statepoint calls as we go.)
-  for (size_t i = 0; i < Records.size(); i++)
+  for (size_t i = 0; i < Records.size(); i++) {
     makeStatepointExplicit(DT, ToUpdate[i], Records[i], Replacements);
+
+}
 
   ToUpdate.clear(); // prevent accident use of invalid calls.
 
-  for (auto &PR : Replacements)
+  for (auto &PR : Replacements) {
     PR.doReplacement();
+
+}
 
   Replacements.clear();
 
@@ -2406,37 +2560,53 @@ template <typename AttrHolder>
 static void RemoveNonValidAttrAtIndex(LLVMContext &Ctx, AttrHolder &AH,
                                       unsigned Index) {
   AttrBuilder R;
-  if (AH.getDereferenceableBytes(Index))
+  if (AH.getDereferenceableBytes(Index)) {
     R.addAttribute(Attribute::get(Ctx, Attribute::Dereferenceable,
                                   AH.getDereferenceableBytes(Index)));
-  if (AH.getDereferenceableOrNullBytes(Index))
+
+}
+  if (AH.getDereferenceableOrNullBytes(Index)) {
     R.addAttribute(Attribute::get(Ctx, Attribute::DereferenceableOrNull,
                                   AH.getDereferenceableOrNullBytes(Index)));
-  if (AH.getAttributes().hasAttribute(Index, Attribute::NoAlias))
+
+}
+  if (AH.getAttributes().hasAttribute(Index, Attribute::NoAlias)) {
     R.addAttribute(Attribute::NoAlias);
 
-  if (!R.empty())
+}
+
+  if (!R.empty()) {
     AH.setAttributes(AH.getAttributes().removeAttributes(Ctx, Index, R));
+
+}
 }
 
 static void stripNonValidAttributesFromPrototype(Function &F) {
   LLVMContext &Ctx = F.getContext();
 
-  for (Argument &A : F.args())
-    if (isa<PointerType>(A.getType()))
+  for (Argument &A : F.args()) {
+    if (isa<PointerType>(A.getType())) {
       RemoveNonValidAttrAtIndex(Ctx, F,
                                 A.getArgNo() + AttributeList::FirstArgIndex);
 
-  if (isa<PointerType>(F.getReturnType()))
+}
+
+}
+
+  if (isa<PointerType>(F.getReturnType())) {
     RemoveNonValidAttrAtIndex(Ctx, F, AttributeList::ReturnIndex);
+
+}
 }
 
 /// Certain metadata on instructions are invalid after running RS4GC.
 /// Optimizations that run after RS4GC can incorrectly use this metadata to
 /// optimize functions. We drop such metadata on the instruction.
 static void stripInvalidMetadataFromInstruction(Instruction &I) {
-  if (!isa<LoadInst>(I) && !isa<StoreInst>(I))
+  if (!isa<LoadInst>(I) && !isa<StoreInst>(I)) {
     return;
+
+}
   // These are the attributes that are still valid on loads and stores after
   // RS4GC.
   // The metadata implying dereferenceability and noalias are (conservatively)
@@ -2463,8 +2633,10 @@ static void stripInvalidMetadataFromInstruction(Instruction &I) {
 }
 
 static void stripNonValidDataFromBody(Function &F) {
-  if (F.empty())
+  if (F.empty()) {
     return;
+
+}
 
   LLVMContext &Ctx = F.getContext();
   MDBuilder Builder(Ctx);
@@ -2480,11 +2652,13 @@ static void stripNonValidDataFromBody(Function &F) {
     // which frees the entire heap and the presence of invariant.start allows
     // the optimizer to sink the load of a memory location past a statepoint,
     // which is incorrect.
-    if (auto *II = dyn_cast<IntrinsicInst>(&I))
+    if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
       if (II->getIntrinsicID() == Intrinsic::invariant_start) {
         InvariantStartInstructions.push_back(II);
         continue;
       }
+
+}
 
     if (MDNode *Tag = I.getMetadata(LLVMContext::MD_tbaa)) {
       MDNode *MutableTBAA = Builder.createMutableTBAAAccessTag(Tag);
@@ -2494,12 +2668,18 @@ static void stripNonValidDataFromBody(Function &F) {
     stripInvalidMetadataFromInstruction(I);
 
     if (auto *Call = dyn_cast<CallBase>(&I)) {
-      for (int i = 0, e = Call->arg_size(); i != e; i++)
-        if (isa<PointerType>(Call->getArgOperand(i)->getType()))
+      for (int i = 0, e = Call->arg_size(); i != e; i++) {
+        if (isa<PointerType>(Call->getArgOperand(i)->getType())) {
           RemoveNonValidAttrAtIndex(Ctx, *Call,
                                     i + AttributeList::FirstArgIndex);
-      if (isa<PointerType>(Call->getType()))
+
+}
+
+}
+      if (isa<PointerType>(Call->getType())) {
         RemoveNonValidAttrAtIndex(Ctx, *Call, AttributeList::ReturnIndex);
+
+}
     }
   }
 
@@ -2520,8 +2700,10 @@ static bool shouldRewriteStatepointsIn(Function &F) {
     const StringRef CoreCLRName("coreclr");
     return (StatepointExampleName == FunctionGCName) ||
            (CoreCLRName == FunctionGCName);
-  } else
+  } else {
     return false;
+
+}
 }
 
 static void stripNonValidData(Module &M) {
@@ -2529,11 +2711,15 @@ static void stripNonValidData(Module &M) {
   assert(llvm::any_of(M, shouldRewriteStatepointsIn) && "precondition!");
 #endif
 
-  for (Function &F : M)
+  for (Function &F : M) {
     stripNonValidAttributesFromPrototype(F);
 
-  for (Function &F : M)
+}
+
+  for (Function &F : M) {
     stripNonValidDataFromBody(F);
+
+}
 }
 
 bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
@@ -2544,8 +2730,10 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
   assert(shouldRewriteStatepointsIn(F) && "mismatch in rewrite decision");
 
   auto NeedsRewrite = [&TLI](Instruction &I) {
-    if (const auto *Call = dyn_cast<CallBase>(&I))
+    if (const auto *Call = dyn_cast<CallBase>(&I)) {
       return !callsGCLeafFunction(Call, TLI) && !isStatepoint(Call);
+
+}
     return false;
   };
 
@@ -2575,18 +2763,22 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
   }
 
   // Return early if no work to do.
-  if (ParsePointNeeded.empty())
+  if (ParsePointNeeded.empty()) {
     return MadeChange;
+
+}
 
   // As a prepass, go ahead and aggressively destroy single entry phi nodes.
   // These are created by LCSSA.  They have the effect of increasing the size
   // of liveness sets for no good reason.  It may be harder to do this post
   // insertion since relocations and base phis can confuse things.
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : F) {
     if (BB.getUniquePredecessor()) {
       MadeChange = true;
       FoldSingleEntryPHINodes(&BB);
     }
+
+}
 
   // Before we start introducing relocations, we want to tweak the IR a bit to
   // avoid unfortunate code generation effects.  The main example is that we
@@ -2602,21 +2794,27 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
   // as long as all statepoints are in rare blocks.  If we had in-register
   // lowering for live values this would be a much safer transform.
   auto getConditionInst = [](Instruction *TI) -> Instruction * {
-    if (auto *BI = dyn_cast<BranchInst>(TI))
-      if (BI->isConditional())
+    if (auto *BI = dyn_cast<BranchInst>(TI)) {
+      if (BI->isConditional()) {
         return dyn_cast<Instruction>(BI->getCondition());
+
+}
+
+}
     // TODO: Extend this to handle switches
     return nullptr;
   };
   for (BasicBlock &BB : F) {
     Instruction *TI = BB.getTerminator();
-    if (auto *Cond = getConditionInst(TI))
+    if (auto *Cond = getConditionInst(TI)) {
       // TODO: Handle more than just ICmps here.  We should be able to move
       // most instructions without side effects or memory access.
       if (isa<ICmpInst>(Cond) && Cond->hasOneUse()) {
         MadeChange = true;
         Cond->moveBefore(TI);
       }
+
+}
   }
 
   // Nasty workaround - The base computation code in the main algorithm doesn't
@@ -2625,16 +2823,20 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
   // algorithm properly, this is just a short term workaround to prevent
   // crashes by canonicalizing such GEPs into fully vector GEPs.
   for (Instruction &I : instructions(F)) {
-    if (!isa<GetElementPtrInst>(I))
+    if (!isa<GetElementPtrInst>(I)) {
       continue;
 
+}
+
     unsigned VF = 0;
-    for (unsigned i = 0; i < I.getNumOperands(); i++)
+    for (unsigned i = 0; i < I.getNumOperands(); i++) {
       if (I.getOperand(i)->getType()->isVectorTy()) {
         assert(VF == 0 ||
                VF == I.getOperand(i)->getType()->getVectorNumElements());
         VF = I.getOperand(i)->getType()->getVectorNumElements();
       }
+
+}
 
     // It's the vector to scalar traversal through the pointer operand which
     // confuses base pointer rewriting, so limit ourselves to that case.
@@ -2667,8 +2869,10 @@ static void computeLiveInValues(BasicBlock::reverse_iterator Begin,
 
     // Don't consider *uses* in PHI nodes, we handle their contribution to
     // predecessor blocks when we seed the LiveOut sets
-    if (isa<PHINode>(I))
+    if (isa<PHINode>(I)) {
       continue;
+
+}
 
     // USE - Add to the LiveIn set for this instruction
     for (Value *V : I.operands()) {
@@ -2695,23 +2899,31 @@ static void computeLiveOutSeed(BasicBlock *BB, SetVector<Value *> &LiveTmp) {
   for (BasicBlock *Succ : successors(BB)) {
     for (auto &I : *Succ) {
       PHINode *PN = dyn_cast<PHINode>(&I);
-      if (!PN)
+      if (!PN) {
         break;
+
+}
 
       Value *V = PN->getIncomingValueForBlock(BB);
       assert(!isUnhandledGCPointerType(V->getType()) &&
              "support for FCA unimplemented");
-      if (isHandledGCPointerType(V->getType()) && !isa<Constant>(V))
+      if (isHandledGCPointerType(V->getType()) && !isa<Constant>(V)) {
         LiveTmp.insert(V);
+
+}
     }
   }
 }
 
 static SetVector<Value *> computeKillSet(BasicBlock *BB) {
   SetVector<Value *> KillSet;
-  for (Instruction &I : *BB)
-    if (isHandledGCPointerType(I.getType()))
+  for (Instruction &I : *BB) {
+    if (isHandledGCPointerType(I.getType())) {
       KillSet.insert(&I);
+
+}
+
+}
   return KillSet;
 }
 
@@ -2764,8 +2976,10 @@ static void computeLiveInValues(DominatorTree &DT, Function &F,
     Data.LiveIn[&BB] = Data.LiveSet[&BB];
     Data.LiveIn[&BB].set_union(Data.LiveOut[&BB]);
     Data.LiveIn[&BB].set_subtract(Data.KillSet[&BB]);
-    if (!Data.LiveIn[&BB].empty())
+    if (!Data.LiveIn[&BB].empty()) {
       Worklist.insert(pred_begin(&BB), pred_end(&BB));
+
+}
   }
 
   // Propagate that liveness until stable
@@ -2837,12 +3051,14 @@ static void recomputeLiveInValues(GCPtrLivenessData &RevisedLivenessData,
 
   // We may have base pointers which are now live that weren't before.  We need
   // to update the PointerToBase structure to reflect this.
-  for (auto V : Updated)
+  for (auto V : Updated) {
     if (Info.PointerToBase.insert({V, V}).second) {
       assert(isKnownBaseResult(V) &&
              "Can't find base for unexpected live value!");
       continue;
     }
+
+}
 
 #ifndef NDEBUG
   for (auto V : Updated)
@@ -2853,12 +3069,18 @@ static void recomputeLiveInValues(GCPtrLivenessData &RevisedLivenessData,
   // Remove any stale base mappings - this can happen since our liveness is
   // more precise then the one inherent in the base pointer analysis.
   DenseSet<Value *> ToErase;
-  for (auto KVPair : Info.PointerToBase)
-    if (!Updated.count(KVPair.first))
+  for (auto KVPair : Info.PointerToBase) {
+    if (!Updated.count(KVPair.first)) {
       ToErase.insert(KVPair.first);
 
-  for (auto *V : ToErase)
+}
+
+}
+
+  for (auto *V : ToErase) {
     Info.PointerToBase.erase(V);
+
+}
 
 #ifndef NDEBUG
   for (auto KVPair : Info.PointerToBase)

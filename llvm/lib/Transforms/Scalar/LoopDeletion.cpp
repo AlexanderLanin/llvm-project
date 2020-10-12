@@ -64,28 +64,40 @@ static bool isLoopDead(Loop *L, ScalarEvolution &SE,
           return incoming == P.getIncomingValueForBlock(BB);
         });
 
-    if (!AllOutgoingValuesSame)
+    if (!AllOutgoingValuesSame) {
       break;
 
-    if (Instruction *I = dyn_cast<Instruction>(incoming))
+}
+
+    if (Instruction *I = dyn_cast<Instruction>(incoming)) {
       if (!L->makeLoopInvariant(I, Changed, Preheader->getTerminator())) {
         AllEntriesInvariant = false;
         break;
       }
+
+}
   }
 
-  if (Changed)
+  if (Changed) {
     SE.forgetLoopDispositions(L);
 
-  if (!AllEntriesInvariant || !AllOutgoingValuesSame)
+}
+
+  if (!AllEntriesInvariant || !AllOutgoingValuesSame) {
     return false;
+
+}
 
   // Make sure that no instructions in the block have potential side-effects.
   // This includes instructions that could write to memory, and loads that are
   // marked volatile.
-  for (auto &I : L->blocks())
-    if (any_of(*I, [](Instruction &I) { return I.mayHaveSideEffects(); }))
+  for (auto &I : L->blocks()) {
+    if (any_of(*I, [](Instruction &I) { return I.mayHaveSideEffects(); })) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -100,20 +112,28 @@ static bool isLoopNeverExecuted(Loop *L) {
   // predecessor.
   assert(Preheader && "Needs preheader!");
 
-  if (Preheader == &Preheader->getParent()->getEntryBlock())
+  if (Preheader == &Preheader->getParent()->getEntryBlock()) {
     return false;
+
+}
   // All predecessors of the preheader should have a constant conditional
   // branch, with the loop's preheader as not-taken.
   for (auto *Pred: predecessors(Preheader)) {
     BasicBlock *Taken, *NotTaken;
     ConstantInt *Cond;
     if (!match(Pred->getTerminator(),
-               m_Br(m_ConstantInt(Cond), Taken, NotTaken)))
+               m_Br(m_ConstantInt(Cond), Taken, NotTaken))) {
       return false;
-    if (!Cond->getZExtValue())
+
+}
+    if (!Cond->getZExtValue()) {
       std::swap(Taken, NotTaken);
-    if (Taken == Preheader)
+
+}
+    if (Taken == Preheader) {
       return false;
+
+}
   }
   assert(!pred_empty(Preheader) &&
          "Preheader should have predecessors at this point!");
@@ -216,15 +236,21 @@ PreservedAnalyses LoopDeletionPass::run(Loop &L, LoopAnalysisManager &AM,
   LLVM_DEBUG(L.dump());
   std::string LoopName = std::string(L.getName());
   auto Result = deleteLoopIfDead(&L, AR.DT, AR.SE, AR.LI, AR.MSSA);
-  if (Result == LoopDeletionResult::Unmodified)
+  if (Result == LoopDeletionResult::Unmodified) {
     return PreservedAnalyses::all();
 
-  if (Result == LoopDeletionResult::Deleted)
+}
+
+  if (Result == LoopDeletionResult::Deleted) {
     Updater.markLoopAsDeleted(L, LoopName);
 
+}
+
   auto PA = getLoopPassPreservedAnalyses();
-  if (AR.MSSA)
+  if (AR.MSSA) {
     PA.preserve<MemorySSAAnalysis>();
+
+}
   return PA;
 }
 
@@ -256,23 +282,29 @@ INITIALIZE_PASS_END(LoopDeletionLegacyPass, "loop-deletion",
 Pass *llvm::createLoopDeletionPass() { return new LoopDeletionLegacyPass(); }
 
 bool LoopDeletionLegacyPass::runOnLoop(Loop *L, LPPassManager &LPM) {
-  if (skipLoop(L))
+  if (skipLoop(L)) {
     return false;
+
+}
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   ScalarEvolution &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
   LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   auto *MSSAAnalysis = getAnalysisIfAvailable<MemorySSAWrapperPass>();
   MemorySSA *MSSA = nullptr;
-  if (MSSAAnalysis)
+  if (MSSAAnalysis) {
     MSSA = &MSSAAnalysis->getMSSA();
+
+}
 
   LLVM_DEBUG(dbgs() << "Analyzing Loop for deletion: ");
   LLVM_DEBUG(L->dump());
 
   LoopDeletionResult Result = deleteLoopIfDead(L, DT, SE, LI, MSSA);
 
-  if (Result == LoopDeletionResult::Deleted)
+  if (Result == LoopDeletionResult::Deleted) {
     LPM.markLoopAsDeleted(*L);
+
+}
 
   return Result != LoopDeletionResult::Unmodified;
 }

@@ -29,8 +29,10 @@ static Expected<BitVector> expand(StringRef S, StringRef Original) {
 
   // Expand X-Y.
   for (;;) {
-    if (S.size() < 3)
+    if (S.size() < 3) {
       break;
+
+}
 
     uint8_t Start = S[0];
     uint8_t End = S[2];
@@ -45,17 +47,23 @@ static Expected<BitVector> expand(StringRef S, StringRef Original) {
 
     // It must be in the form of X-Y.
     // Validate it and then interpret the range.
-    if (Start > End)
+    if (Start > End) {
       return make_error<StringError>("invalid glob pattern: " + Original,
                                      errc::invalid_argument);
 
-    for (int C = Start; C <= End; ++C)
+}
+
+    for (int C = Start; C <= End; ++C) {
       BV[(uint8_t)C] = true;
+
+}
     S = S.substr(3);
   }
 
-  for (char C : S)
+  for (char C : S) {
     BV[(uint8_t)C] = true;
+
+}
   return BV;
 }
 
@@ -78,16 +86,20 @@ static Expected<BitVector> scan(StringRef &S, StringRef Original) {
     // ']' is allowed as the first character of a character class. '[]' is
     // invalid. So, just skip the first character.
     size_t End = S.find(']', 2);
-    if (End == StringRef::npos)
+    if (End == StringRef::npos) {
       return make_error<StringError>("invalid glob pattern: " + Original,
                                      errc::invalid_argument);
+
+}
 
     StringRef Chars = S.substr(1, End - 1);
     S = S.substr(End + 1);
     if (Chars.startswith("^") || Chars.startswith("!")) {
       Expected<BitVector> BV = expand(Chars.substr(1), Original);
-      if (!BV)
+      if (!BV) {
         return BV.takeError();
+
+}
       return BV->flip();
     }
     return expand(Chars, Original);
@@ -133,45 +145,63 @@ Expected<GlobPattern> GlobPattern::create(StringRef S) {
   StringRef Original = S;
   while (!S.empty()) {
     Expected<BitVector> BV = scan(S, Original);
-    if (!BV)
+    if (!BV) {
       return BV.takeError();
+
+}
     Pat.Tokens.push_back(*BV);
   }
   return Pat;
 }
 
 bool GlobPattern::match(StringRef S) const {
-  if (Exact)
+  if (Exact) {
     return S == *Exact;
-  if (Prefix)
+
+}
+  if (Prefix) {
     return S.startswith(*Prefix);
-  if (Suffix)
+
+}
+  if (Suffix) {
     return S.endswith(*Suffix);
+
+}
   return matchOne(Tokens, S);
 }
 
 // Runs glob pattern Pats against string S.
 bool GlobPattern::matchOne(ArrayRef<BitVector> Pats, StringRef S) const {
   for (;;) {
-    if (Pats.empty())
+    if (Pats.empty()) {
       return S.empty();
+
+}
 
     // If Pats[0] is '*', try to match Pats[1..] against all possible
     // tail strings of S to see at least one pattern succeeds.
     if (Pats[0].size() == 0) {
       Pats = Pats.slice(1);
-      if (Pats.empty())
+      if (Pats.empty()) {
         // Fast path. If a pattern is '*', it matches anything.
         return true;
-      for (size_t I = 0, E = S.size(); I < E; ++I)
-        if (matchOne(Pats, S.substr(I)))
+
+}
+      for (size_t I = 0, E = S.size(); I < E; ++I) {
+        if (matchOne(Pats, S.substr(I))) {
           return true;
+
+}
+
+}
       return false;
     }
 
     // If Pats[0] is not '*', it must consume one character.
-    if (S.empty() || !Pats[0][(uint8_t)S[0]])
+    if (S.empty() || !Pats[0][(uint8_t)S[0]]) {
       return false;
+
+}
     Pats = Pats.slice(1);
     S = S.substr(1);
   }

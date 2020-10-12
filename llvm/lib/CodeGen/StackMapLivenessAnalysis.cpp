@@ -103,8 +103,10 @@ void StackMapLiveness::getAnalysisUsage(AnalysisUsage &AU) const {
 
 /// Calculate the liveness information for the given machine function.
 bool StackMapLiveness::runOnMachineFunction(MachineFunction &MF) {
-  if (!EnablePatchPointLiveness)
+  if (!EnablePatchPointLiveness) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "********** COMPUTING STACKMAP LIVENESS: "
                     << MF.getName() << " **********\n");
@@ -142,8 +144,10 @@ bool StackMapLiveness::calculateLiveness(MachineFunction &MF) {
       LiveRegs.stepBackward(*I);
     }
     ++NumBBsVisited;
-    if (!HasStackMap)
+    if (!HasStackMap) {
       ++NumBBsHaveNoStackmap;
+
+}
   }
   return HasChanged;
 }
@@ -161,8 +165,10 @@ void StackMapLiveness::addLiveOutSetToMI(MachineFunction &MF,
 uint32_t *StackMapLiveness::createRegisterMask(MachineFunction &MF) const {
   // The mask is owned and cleaned up by the Machine Function.
   uint32_t *Mask = MF.allocateRegMask();
-  for (auto Reg : LiveRegs)
+  for (auto Reg : LiveRegs) {
     Mask[Reg / 32] |= 1U << (Reg % 32);
+
+}
 
   // Give the target a chance to adjust the mask.
   TRI->adjustStackMapLiveOutMask(Mask);

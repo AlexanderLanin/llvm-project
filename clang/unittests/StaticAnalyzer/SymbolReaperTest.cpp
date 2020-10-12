@@ -44,8 +44,10 @@ public:
   ~SuperRegionLivenessConsumer() override {}
 
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
-    for (const auto *D : DG)
+    for (const auto *D : DG) {
       performTest(D);
+
+}
     return true;
   }
 };

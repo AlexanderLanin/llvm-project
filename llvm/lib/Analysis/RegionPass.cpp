@@ -39,8 +39,10 @@ RGPassManager::RGPassManager()
 // Recurse through all subregions and all regions  into RQ.
 static void addRegionIntoQueue(Region &R, std::deque<Region *> &RQ) {
   RQ.push_back(&R);
-  for (const auto &E : R)
+  for (const auto &E : R) {
     addRegionIntoQueue(*E, RQ);
+
+}
 }
 
 /// Pass Manager itself does not invalidate any analysis info.
@@ -60,8 +62,10 @@ bool RGPassManager::runOnFunction(Function &F) {
 
   addRegionIntoQueue(*RI->getTopLevelRegion(), RQ);
 
-  if (RQ.empty()) // No regions, skip calling finalizers
+  if (RQ.empty()) { // No regions, skip calling finalizers
     return false;
+
+}
 
   // Initialization
   for (Region *R : RQ) {
@@ -98,10 +102,12 @@ bool RGPassManager::runOnFunction(Function &F) {
       }
 
       if (isPassDebuggingExecutionsOrMore()) {
-        if (Changed)
+        if (Changed) {
           dumpPassInfo(P, MODIFICATION_MSG, ON_REGION_MSG,
                        skipThisRegion ? "<deleted>" :
                                       CurrentRegion->getNameStr());
+
+}
         dumpPreservedSet(P);
       }
 
@@ -127,25 +133,31 @@ bool RGPassManager::runOnFunction(Function &F) {
                        "<deleted>" :  CurrentRegion->getNameStr(),
                        ON_REGION_MSG);
 
-      if (skipThisRegion)
+      if (skipThisRegion) {
         // Do not run other passes on this region.
         break;
+
+}
     }
 
     // If the region was deleted, release all the region passes. This frees up
     // some memory, and avoids trouble with the pass manager trying to call
     // verifyAnalysis on them.
-    if (skipThisRegion)
+    if (skipThisRegion) {
       for (unsigned Index = 0; Index < getNumContainedPasses(); ++Index) {
         Pass *P = getContainedPass(Index);
         freePass(P, "<deleted>", ON_REGION_MSG);
       }
 
+}
+
     // Pop the region from queue after running all passes.
     RQ.pop_back();
 
-    if (redoThisRegion)
+    if (redoThisRegion) {
       RQ.push_back(CurrentRegion);
+
+}
 
     // Free all region nodes created in region passes.
     RI->clearNodeCache();
@@ -195,10 +207,12 @@ public:
   bool runOnRegion(Region *R, RGPassManager &RGM) override {
     Out << Banner;
     for (const auto *BB : R->blocks()) {
-      if (BB)
+      if (BB) {
         BB->print(Out);
-      else
+      } else {
         Out << "Printing <null> Block";
+
+}
     }
 
     return false;
@@ -223,16 +237,20 @@ void RegionPass::preparePassManager(PMStack &PMS) {
 
   // Find RGPassManager
   while (!PMS.empty() &&
-         PMS.top()->getPassManagerType() > PMT_RegionPassManager)
+         PMS.top()->getPassManagerType() > PMT_RegionPassManager) {
     PMS.pop();
+
+}
 
 
   // If this pass is destroying high level information that is used
   // by other passes that are managed by LPM then do not insert
   // this pass in current LPM. Use new RGPassManager.
   if (PMS.top()->getPassManagerType() == PMT_RegionPassManager &&
-    !PMS.top()->preserveHigherLevelAnalysis(this))
+    !PMS.top()->preserveHigherLevelAnalysis(this)) {
     PMS.pop();
+
+}
 }
 
 /// Assign pass manager to manage this pass.
@@ -240,15 +258,17 @@ void RegionPass::assignPassManager(PMStack &PMS,
                                  PassManagerType PreferredType) {
   // Find RGPassManager
   while (!PMS.empty() &&
-         PMS.top()->getPassManagerType() > PMT_RegionPassManager)
+         PMS.top()->getPassManagerType() > PMT_RegionPassManager) {
     PMS.pop();
+
+}
 
   RGPassManager *RGPM;
 
   // Create new Region Pass Manager if it does not exist.
-  if (PMS.top()->getPassManagerType() == PMT_RegionPassManager)
+  if (PMS.top()->getPassManagerType() == PMT_RegionPassManager) {
     RGPM = (RGPassManager*)PMS.top();
-  else {
+  } else {
 
     assert (!PMS.empty() && "Unable to create Region Pass Manager");
     PMDataManager *PMD = PMS.top();
@@ -285,14 +305,18 @@ static std::string getDescription(const Region &R) {
 bool RegionPass::skipRegion(Region &R) const {
   Function &F = *R.getEntry()->getParent();
   OptPassGate &Gate = F.getContext().getOptPassGate();
-  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(R)))
+  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(R))) {
     return true;
+
+}
 
   if (F.hasOptNone()) {
     // Report this only once per function.
-    if (R.getEntry() == &F.getEntryBlock())
+    if (R.getEntry() == &F.getEntryBlock()) {
       LLVM_DEBUG(dbgs() << "Skipping pass '" << getPassName()
                         << "' on function " << F.getName() << "\n");
+
+}
     return true;
   }
   return false;

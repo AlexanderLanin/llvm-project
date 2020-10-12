@@ -28,8 +28,10 @@ void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
 
   // AddressSanitizer doesn't play well with source fortification, which is on
   // by default on Darwin.
-  if (Opts.Sanitize.has(SanitizerKind::Address))
+  if (Opts.Sanitize.has(SanitizerKind::Address)) {
     Builder.defineMacro("_FORTIFY_SOURCE", "0");
+
+}
 
   // Darwin defines __weak, __strong, and __unsafe_unretained even in C mode.
   if (!Opts.ObjC) {
@@ -39,13 +41,17 @@ void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
     Builder.defineMacro("__unsafe_unretained", "");
   }
 
-  if (Opts.Static)
+  if (Opts.Static) {
     Builder.defineMacro("__STATIC__");
-  else
+  } else {
     Builder.defineMacro("__DYNAMIC__");
 
-  if (Opts.POSIXThreads)
+}
+
+  if (Opts.POSIXThreads) {
     Builder.defineMacro("_REENTRANT");
+
+}
 
   // Get the platform type and version number from the triple.
   unsigned Maj, Min, Rev;
@@ -86,11 +92,13 @@ void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
       Str[5] = '0' + (Rev % 10);
       Str[6] = '\0';
     }
-    if (Triple.isTvOS())
+    if (Triple.isTvOS()) {
       Builder.defineMacro("__ENVIRONMENT_TV_OS_VERSION_MIN_REQUIRED__", Str);
-    else
+    } else {
       Builder.defineMacro("__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__",
                           Str);
+
+}
 
   } else if (Triple.isWatchOS()) {
     assert(Maj < 10 && Min < 100 && Rev < 100 && "Invalid version!");
@@ -129,8 +137,10 @@ void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
   }
 
   // Tell users about the kernel if there is one.
-  if (Triple.isOSDarwin())
+  if (Triple.isOSDarwin()) {
     Builder.defineMacro("__MACH__");
+
+}
 
   PlatformMinVersion = VersionTuple(Maj, Min, Rev);
 }
@@ -150,23 +160,33 @@ static void addMinGWDefines(const llvm::Triple &Triple, const LangOptions &Opts,
 
 static void addVisualCDefines(const LangOptions &Opts, MacroBuilder &Builder) {
   if (Opts.CPlusPlus) {
-    if (Opts.RTTIData)
+    if (Opts.RTTIData) {
       Builder.defineMacro("_CPPRTTI");
 
-    if (Opts.CXXExceptions)
+}
+
+    if (Opts.CXXExceptions) {
       Builder.defineMacro("_CPPUNWIND");
+
+}
   }
 
-  if (Opts.Bool)
+  if (Opts.Bool) {
     Builder.defineMacro("__BOOL_DEFINED");
 
-  if (!Opts.CharIsSigned)
+}
+
+  if (!Opts.CharIsSigned) {
     Builder.defineMacro("_CHAR_UNSIGNED");
+
+}
 
   // FIXME: POSIXThreads isn't exactly the option this should be defined for,
   //        but it works for now.
-  if (Opts.POSIXThreads)
+  if (Opts.POSIXThreads) {
     Builder.defineMacro("_MT");
+
+}
 
   if (Opts.MSCompatibilityVersion) {
     Builder.defineMacro("_MSC_VER",
@@ -175,16 +195,20 @@ static void addVisualCDefines(const LangOptions &Opts, MacroBuilder &Builder) {
     // FIXME We cannot encode the revision information into 32-bits
     Builder.defineMacro("_MSC_BUILD", Twine(1));
 
-    if (Opts.CPlusPlus11 && Opts.isCompatibleWithMSVC(LangOptions::MSVC2015))
+    if (Opts.CPlusPlus11 && Opts.isCompatibleWithMSVC(LangOptions::MSVC2015)) {
       Builder.defineMacro("_HAS_CHAR16_T_LANGUAGE_SUPPORT", Twine(1));
 
+}
+
     if (Opts.isCompatibleWithMSVC(LangOptions::MSVC2015)) {
-      if (Opts.CPlusPlus2a)
+      if (Opts.CPlusPlus2a) {
         Builder.defineMacro("_MSVC_LANG", "201705L");
-      else if (Opts.CPlusPlus17)
+      } else if (Opts.CPlusPlus17) {
         Builder.defineMacro("_MSVC_LANG", "201703L");
-      else if (Opts.CPlusPlus14)
+      } else if (Opts.CPlusPlus14) {
         Builder.defineMacro("_MSVC_LANG", "201402L");
+
+}
     }
   }
 
@@ -204,13 +228,17 @@ static void addVisualCDefines(const LangOptions &Opts, MacroBuilder &Builder) {
 void addWindowsDefines(const llvm::Triple &Triple, const LangOptions &Opts,
                        MacroBuilder &Builder) {
   Builder.defineMacro("_WIN32");
-  if (Triple.isArch64Bit())
+  if (Triple.isArch64Bit()) {
     Builder.defineMacro("_WIN64");
-  if (Triple.isWindowsGNUEnvironment())
+
+}
+  if (Triple.isWindowsGNUEnvironment()) {
     addMinGWDefines(Triple, Opts, Builder);
-  else if (Triple.isKnownWindowsMSVCEnvironment() ||
-           (Triple.isWindowsItaniumEnvironment() && Opts.MSVCCompat))
+  } else if (Triple.isKnownWindowsMSVCEnvironment() ||
+           (Triple.isWindowsItaniumEnvironment() && Opts.MSVCCompat)) {
     addVisualCDefines(Opts, Builder);
+
+}
 }
 
 } // namespace targets

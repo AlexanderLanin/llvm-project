@@ -49,9 +49,11 @@ MSFBuilder::MSFBuilder(uint32_t BlockSize, uint32_t MinBlockCount, bool CanGrow,
 Expected<MSFBuilder> MSFBuilder::create(BumpPtrAllocator &Allocator,
                                         uint32_t BlockSize,
                                         uint32_t MinBlockCount, bool CanGrow) {
-  if (!isValidBlockSize(BlockSize))
+  if (!isValidBlockSize(BlockSize)) {
     return make_error<MSFError>(msf_error_code::invalid_format,
                                 "The requested block size is unsupported");
+
+}
 
   return MSFBuilder(BlockSize,
                     std::max(MinBlockCount, msf::getMinimumBlockCount()),
@@ -59,20 +61,26 @@ Expected<MSFBuilder> MSFBuilder::create(BumpPtrAllocator &Allocator,
 }
 
 Error MSFBuilder::setBlockMapAddr(uint32_t Addr) {
-  if (Addr == BlockMapAddr)
+  if (Addr == BlockMapAddr) {
     return Error::success();
 
+}
+
   if (Addr >= FreeBlocks.size()) {
-    if (!IsGrowable)
+    if (!IsGrowable) {
       return make_error<MSFError>(msf_error_code::insufficient_buffer,
                                   "Cannot grow the number of blocks");
+
+}
     FreeBlocks.resize(Addr + 1, true);
   }
 
-  if (!isBlockFree(Addr))
+  if (!isBlockFree(Addr)) {
     return make_error<MSFError>(
         msf_error_code::block_in_use,
         "Requested block map address is already in use");
+
+}
   FreeBlocks[BlockMapAddr] = true;
   FreeBlocks[Addr] = false;
   BlockMapAddr = Addr;
@@ -84,8 +92,10 @@ void MSFBuilder::setFreePageMap(uint32_t Fpm) { FreePageMap = Fpm; }
 void MSFBuilder::setUnknown1(uint32_t Unk1) { Unknown1 = Unk1; }
 
 Error MSFBuilder::setDirectoryBlocksHint(ArrayRef<uint32_t> DirBlocks) {
-  for (auto B : DirectoryBlocks)
+  for (auto B : DirectoryBlocks) {
     FreeBlocks[B] = true;
+
+}
   for (auto B : DirBlocks) {
     if (!isBlockFree(B)) {
       return make_error<MSFError>(msf_error_code::unspecified,
@@ -100,14 +110,18 @@ Error MSFBuilder::setDirectoryBlocksHint(ArrayRef<uint32_t> DirBlocks) {
 
 Error MSFBuilder::allocateBlocks(uint32_t NumBlocks,
                                  MutableArrayRef<uint32_t> Blocks) {
-  if (NumBlocks == 0)
+  if (NumBlocks == 0) {
     return Error::success();
+
+}
 
   uint32_t NumFreeBlocks = FreeBlocks.count();
   if (NumFreeBlocks < NumBlocks) {
-    if (!IsGrowable)
+    if (!IsGrowable) {
       return make_error<MSFError>(msf_error_code::insufficient_buffer,
                                   "There are no free Blocks in the file");
+
+}
     uint32_t AllocBlocks = NumBlocks - NumFreeBlocks;
     uint32_t OldBlockCount = FreeBlocks.size();
     uint32_t NewBlockCount = AllocBlocks + OldBlockCount;
@@ -157,18 +171,24 @@ Expected<uint32_t> MSFBuilder::addStream(uint32_t Size,
   // blocks are both necessary and sufficient for holding the requested number
   // of bytes, and verify that all requested blocks are free.
   uint32_t ReqBlocks = bytesToBlocks(Size, BlockSize);
-  if (ReqBlocks != Blocks.size())
+  if (ReqBlocks != Blocks.size()) {
     return make_error<MSFError>(
         msf_error_code::invalid_format,
         "Incorrect number of blocks for requested stream size");
+
+}
   for (auto Block : Blocks) {
-    if (Block >= FreeBlocks.size())
+    if (Block >= FreeBlocks.size()) {
       FreeBlocks.resize(Block + 1, true);
 
-    if (!FreeBlocks.test(Block))
+}
+
+    if (!FreeBlocks.test(Block)) {
       return make_error<MSFError>(
           msf_error_code::unspecified,
           "Attempt to re-use an already allocated block");
+
+}
   }
   // Mark all the blocks occupied by the new stream as not free.
   for (auto Block : Blocks) {
@@ -182,16 +202,20 @@ Expected<uint32_t> MSFBuilder::addStream(uint32_t Size) {
   uint32_t ReqBlocks = bytesToBlocks(Size, BlockSize);
   std::vector<uint32_t> NewBlocks;
   NewBlocks.resize(ReqBlocks);
-  if (auto EC = allocateBlocks(ReqBlocks, NewBlocks))
+  if (auto EC = allocateBlocks(ReqBlocks, NewBlocks)) {
     return std::move(EC);
+
+}
   StreamData.push_back(std::make_pair(Size, NewBlocks));
   return StreamData.size() - 1;
 }
 
 Error MSFBuilder::setStreamSize(uint32_t Idx, uint32_t Size) {
   uint32_t OldSize = getStreamSize(Idx);
-  if (OldSize == Size)
+  if (OldSize == Size) {
     return Error::success();
+
+}
 
   uint32_t NewBlocks = bytesToBlocks(Size, BlockSize);
   uint32_t OldBlocks = bytesToBlocks(OldSize, BlockSize);
@@ -201,8 +225,10 @@ Error MSFBuilder::setStreamSize(uint32_t Idx, uint32_t Size) {
     // If we're growing, we have to allocate new Blocks.
     std::vector<uint32_t> AddedBlockList;
     AddedBlockList.resize(AddedBlocks);
-    if (auto EC = allocateBlocks(AddedBlocks, AddedBlockList))
+    if (auto EC = allocateBlocks(AddedBlocks, AddedBlockList)) {
       return EC;
+
+}
     auto &CurrentBlocks = StreamData[Idx].second;
     CurrentBlocks.insert(CurrentBlocks.end(), AddedBlockList.begin(),
                          AddedBlockList.end());
@@ -212,8 +238,10 @@ Error MSFBuilder::setStreamSize(uint32_t Idx, uint32_t Size) {
     uint32_t RemovedBlocks = OldBlocks - NewBlocks;
     auto CurrentBlocks = ArrayRef<uint32_t>(StreamData[Idx].second);
     auto RemovedBlockList = CurrentBlocks.drop_front(NewBlocks);
-    for (auto P : RemovedBlockList)
+    for (auto P : RemovedBlockList) {
       FreeBlocks[P] = true;
+
+}
     StreamData[Idx].second = CurrentBlocks.drop_back(RemovedBlocks);
   }
 
@@ -266,15 +294,19 @@ Expected<MSFLayout> MSFBuilder::generateLayout() {
     std::vector<uint32_t> ExtraBlocks;
     uint32_t NumExtraBlocks = NumDirectoryBlocks - DirectoryBlocks.size();
     ExtraBlocks.resize(NumExtraBlocks);
-    if (auto EC = allocateBlocks(NumExtraBlocks, ExtraBlocks))
+    if (auto EC = allocateBlocks(NumExtraBlocks, ExtraBlocks)) {
       return std::move(EC);
+
+}
     DirectoryBlocks.insert(DirectoryBlocks.end(), ExtraBlocks.begin(),
                            ExtraBlocks.end());
   } else if (NumDirectoryBlocks < DirectoryBlocks.size()) {
     uint32_t NumUnnecessaryBlocks = DirectoryBlocks.size() - NumDirectoryBlocks;
     for (auto B :
-         ArrayRef<uint32_t>(DirectoryBlocks).drop_back(NumUnnecessaryBlocks))
+         ArrayRef<uint32_t>(DirectoryBlocks).drop_back(NumUnnecessaryBlocks)) {
       FreeBlocks[B] = true;
+
+}
     DirectoryBlocks.resize(NumDirectoryBlocks);
   }
 
@@ -338,43 +370,57 @@ static void commitFpm(WritableBinaryStream &MsfBuffer, const MSFLayout &Layout,
 Expected<FileBufferByteStream> MSFBuilder::commit(StringRef Path,
                                                   MSFLayout &Layout) {
   Expected<MSFLayout> L = generateLayout();
-  if (!L)
+  if (!L) {
     return L.takeError();
+
+}
 
   Layout = std::move(*L);
 
   uint64_t FileSize = Layout.SB->BlockSize * Layout.SB->NumBlocks;
   auto OutFileOrError = FileOutputBuffer::create(Path, FileSize);
-  if (auto EC = OutFileOrError.takeError())
+  if (auto EC = OutFileOrError.takeError()) {
     return std::move(EC);
+
+}
 
   FileBufferByteStream Buffer(std::move(*OutFileOrError),
                               llvm::support::little);
   BinaryStreamWriter Writer(Buffer);
 
-  if (auto EC = Writer.writeObject(*Layout.SB))
+  if (auto EC = Writer.writeObject(*Layout.SB)) {
     return std::move(EC);
+
+}
 
   commitFpm(Buffer, Layout, Allocator);
 
   uint32_t BlockMapOffset =
       msf::blockToOffset(Layout.SB->BlockMapAddr, Layout.SB->BlockSize);
   Writer.setOffset(BlockMapOffset);
-  if (auto EC = Writer.writeArray(Layout.DirectoryBlocks))
+  if (auto EC = Writer.writeArray(Layout.DirectoryBlocks)) {
     return std::move(EC);
+
+}
 
   auto DirStream = WritableMappedBlockStream::createDirectoryStream(
       Layout, Buffer, Allocator);
   BinaryStreamWriter DW(*DirStream);
-  if (auto EC = DW.writeInteger<uint32_t>(Layout.StreamSizes.size()))
+  if (auto EC = DW.writeInteger<uint32_t>(Layout.StreamSizes.size())) {
     return std::move(EC);
 
-  if (auto EC = DW.writeArray(Layout.StreamSizes))
+}
+
+  if (auto EC = DW.writeArray(Layout.StreamSizes)) {
     return std::move(EC);
+
+}
 
   for (const auto &Blocks : Layout.StreamMap) {
-    if (auto EC = DW.writeArray(Blocks))
+    if (auto EC = DW.writeArray(Blocks)) {
       return std::move(EC);
+
+}
   }
 
   return std::move(Buffer);

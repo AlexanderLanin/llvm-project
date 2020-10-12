@@ -109,8 +109,10 @@ bool BlockInCriticalSectionChecker::isBlockingFunction(const CallEvent &Call) co
 bool BlockInCriticalSectionChecker::isLockFunction(const CallEvent &Call) const {
   if (const auto *Ctor = dyn_cast<CXXConstructorCall>(&Call)) {
     auto IdentifierInfo = Ctor->getDecl()->getParent()->getIdentifier();
-    if (IdentifierInfo == IILockGuard || IdentifierInfo == IIUniqueLock)
+    if (IdentifierInfo == IILockGuard || IdentifierInfo == IIUniqueLock) {
       return true;
+
+}
   }
 
   if (Call.isCalled(LockFn)
@@ -128,8 +130,10 @@ bool BlockInCriticalSectionChecker::isUnlockFunction(const CallEvent &Call) cons
   if (const auto *Dtor = dyn_cast<CXXDestructorCall>(&Call)) {
     const auto *DRecordDecl = cast<CXXRecordDecl>(Dtor->getDecl()->getParent());
     auto IdentifierInfo = DRecordDecl->getIdentifier();
-    if (IdentifierInfo == IILockGuard || IdentifierInfo == IIUniqueLock)
+    if (IdentifierInfo == IILockGuard || IdentifierInfo == IIUniqueLock) {
       return true;
+
+}
   }
 
   if (Call.isCalled(UnlockFn)
@@ -146,8 +150,10 @@ void BlockInCriticalSectionChecker::checkPostCall(const CallEvent &Call,
 
   if (!isBlockingFunction(Call)
       && !isLockFunction(Call)
-      && !isUnlockFunction(Call))
+      && !isUnlockFunction(Call)) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
   unsigned mutexCount = State->get<MutexCounter>();
@@ -166,8 +172,10 @@ void BlockInCriticalSectionChecker::checkPostCall(const CallEvent &Call,
 void BlockInCriticalSectionChecker::reportBlockInCritSection(
     SymbolRef BlockDescSym, const CallEvent &Call, CheckerContext &C) const {
   ExplodedNode *ErrNode = C.generateNonFatalErrorNode();
-  if (!ErrNode)
+  if (!ErrNode) {
     return;
+
+}
 
   std::string msg;
   llvm::raw_string_ostream os(msg);

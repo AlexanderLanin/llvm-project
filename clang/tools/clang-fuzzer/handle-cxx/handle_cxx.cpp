@@ -25,8 +25,10 @@ void clang_fuzzer::HandleCXX(const std::string &S,
                              const std::vector<const char *> &ExtraArgs) {
   llvm::opt::ArgStringList CC1Args;
   CC1Args.push_back("-cc1");
-  for (auto &A : ExtraArgs)
+  for (auto &A : ExtraArgs) {
     CC1Args.push_back(A);
+
+}
   CC1Args.push_back(FileName);
 
   llvm::IntrusiveRefCntPtr<FileManager> Files(

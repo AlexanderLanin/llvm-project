@@ -81,22 +81,28 @@ INITIALIZE_PASS(EarlyTailDuplicate, "early-tailduplication",
                 "Early Tail Duplication", false, false)
 
 bool TailDuplicateBase::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   auto MBPI = &getAnalysis<MachineBranchProbabilityInfo>();
   auto *PSI = &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
   auto *MBFI = (PSI && PSI->hasProfileSummary()) ?
                &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI() :
                nullptr;
-  if (MBFI)
+  if (MBFI) {
     MBFIW = std::make_unique<MBFIWrapper>(*MBFI);
+
+}
   Duplicator.initMF(MF, PreRegAlloc, MBPI, MBFI ? MBFIW.get() : nullptr, PSI,
                     /*LayoutMode=*/false);
 
   bool MadeChange = false;
-  while (Duplicator.tailDuplicateBlocks())
+  while (Duplicator.tailDuplicateBlocks()) {
     MadeChange = true;
+
+}
 
   return MadeChange;
 }

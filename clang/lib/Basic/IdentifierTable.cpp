@@ -119,33 +119,81 @@ namespace {
 /// in the given language standard.
 static KeywordStatus getKeywordStatus(const LangOptions &LangOpts,
                                       unsigned Flags) {
-  if (Flags == KEYALL) return KS_Enabled;
-  if (LangOpts.CPlusPlus && (Flags & KEYCXX)) return KS_Enabled;
-  if (LangOpts.CPlusPlus11 && (Flags & KEYCXX11)) return KS_Enabled;
-  if (LangOpts.CPlusPlus2a && (Flags & KEYCXX2A)) return KS_Enabled;
-  if (LangOpts.C99 && (Flags & KEYC99)) return KS_Enabled;
-  if (LangOpts.GNUKeywords && (Flags & KEYGNU)) return KS_Extension;
-  if (LangOpts.MicrosoftExt && (Flags & KEYMS)) return KS_Extension;
-  if (LangOpts.MSVCCompat && (Flags & KEYMSCOMPAT)) return KS_Enabled;
-  if (LangOpts.Borland && (Flags & KEYBORLAND)) return KS_Extension;
-  if (LangOpts.Bool && (Flags & BOOLSUPPORT)) return KS_Enabled;
-  if (LangOpts.Half && (Flags & HALFSUPPORT)) return KS_Enabled;
-  if (LangOpts.WChar && (Flags & WCHARSUPPORT)) return KS_Enabled;
-  if (LangOpts.Char8 && (Flags & CHAR8SUPPORT)) return KS_Enabled;
-  if (LangOpts.AltiVec && (Flags & KEYALTIVEC)) return KS_Enabled;
-  if (LangOpts.ZVector && (Flags & KEYZVECTOR)) return KS_Enabled;
-  if (LangOpts.OpenCL && !LangOpts.OpenCLCPlusPlus && (Flags & KEYOPENCLC))
+  if (Flags == KEYALL) { return KS_Enabled;
+
+}
+  if (LangOpts.CPlusPlus && (Flags & KEYCXX)) { return KS_Enabled;
+
+}
+  if (LangOpts.CPlusPlus11 && (Flags & KEYCXX11)) { return KS_Enabled;
+
+}
+  if (LangOpts.CPlusPlus2a && (Flags & KEYCXX2A)) { return KS_Enabled;
+
+}
+  if (LangOpts.C99 && (Flags & KEYC99)) { return KS_Enabled;
+
+}
+  if (LangOpts.GNUKeywords && (Flags & KEYGNU)) { return KS_Extension;
+
+}
+  if (LangOpts.MicrosoftExt && (Flags & KEYMS)) { return KS_Extension;
+
+}
+  if (LangOpts.MSVCCompat && (Flags & KEYMSCOMPAT)) { return KS_Enabled;
+
+}
+  if (LangOpts.Borland && (Flags & KEYBORLAND)) { return KS_Extension;
+
+}
+  if (LangOpts.Bool && (Flags & BOOLSUPPORT)) { return KS_Enabled;
+
+}
+  if (LangOpts.Half && (Flags & HALFSUPPORT)) { return KS_Enabled;
+
+}
+  if (LangOpts.WChar && (Flags & WCHARSUPPORT)) { return KS_Enabled;
+
+}
+  if (LangOpts.Char8 && (Flags & CHAR8SUPPORT)) { return KS_Enabled;
+
+}
+  if (LangOpts.AltiVec && (Flags & KEYALTIVEC)) { return KS_Enabled;
+
+}
+  if (LangOpts.ZVector && (Flags & KEYZVECTOR)) { return KS_Enabled;
+
+}
+  if (LangOpts.OpenCL && !LangOpts.OpenCLCPlusPlus && (Flags & KEYOPENCLC)) {
     return KS_Enabled;
-  if (LangOpts.OpenCLCPlusPlus && (Flags & KEYOPENCLCXX)) return KS_Enabled;
-  if (!LangOpts.CPlusPlus && (Flags & KEYNOCXX)) return KS_Enabled;
-  if (LangOpts.C11 && (Flags & KEYC11)) return KS_Enabled;
+
+}
+  if (LangOpts.OpenCLCPlusPlus && (Flags & KEYOPENCLCXX)) { return KS_Enabled;
+
+}
+  if (!LangOpts.CPlusPlus && (Flags & KEYNOCXX)) { return KS_Enabled;
+
+}
+  if (LangOpts.C11 && (Flags & KEYC11)) { return KS_Enabled;
+
+}
   // We treat bridge casts as objective-C keywords so we can warn on them
   // in non-arc mode.
-  if (LangOpts.ObjC && (Flags & KEYOBJC)) return KS_Enabled;
-  if (LangOpts.CPlusPlus2a && (Flags & KEYCONCEPTS)) return KS_Enabled;
-  if (LangOpts.Coroutines && (Flags & KEYCOROUTINES)) return KS_Enabled;
-  if (LangOpts.ModulesTS && (Flags & KEYMODULES)) return KS_Enabled;
-  if (LangOpts.CPlusPlus && (Flags & KEYALLCXX)) return KS_Future;
+  if (LangOpts.ObjC && (Flags & KEYOBJC)) { return KS_Enabled;
+
+}
+  if (LangOpts.CPlusPlus2a && (Flags & KEYCONCEPTS)) { return KS_Enabled;
+
+}
+  if (LangOpts.Coroutines && (Flags & KEYCOROUTINES)) { return KS_Enabled;
+
+}
+  if (LangOpts.ModulesTS && (Flags & KEYMODULES)) { return KS_Enabled;
+
+}
+  if (LangOpts.CPlusPlus && (Flags & KEYALLCXX)) { return KS_Future;
+
+}
   return KS_Disabled;
 }
 
@@ -159,15 +207,21 @@ static void AddKeyword(StringRef Keyword,
 
   // Don't add this keyword under MSVCCompat.
   if (LangOpts.MSVCCompat && (Flags & KEYNOMS18) &&
-      !LangOpts.isCompatibleWithMSVC(LangOptions::MSVC2015))
+      !LangOpts.isCompatibleWithMSVC(LangOptions::MSVC2015)) {
     return;
+
+}
 
   // Don't add this keyword under OpenCL.
-  if (LangOpts.OpenCL && (Flags & KEYNOOPENCL))
+  if (LangOpts.OpenCL && (Flags & KEYNOOPENCL)) {
     return;
 
+}
+
   // Don't add this keyword if disabled in this language.
-  if (AddResult == KS_Disabled) return;
+  if (AddResult == KS_Disabled) { return;
+
+}
 
   IdentifierInfo &Info =
       Table.get(Keyword, AddResult == KS_Future ? tok::identifier : TokenCode);
@@ -211,12 +265,16 @@ void IdentifierTable::AddKeywords(const LangOptions &LangOpts) {
 #define TESTING_KEYWORD(NAME, FLAGS)
 #include "clang/Basic/TokenKinds.def"
 
-  if (LangOpts.ParseUnknownAnytype)
+  if (LangOpts.ParseUnknownAnytype) {
     AddKeyword("__unknown_anytype", tok::kw___unknown_anytype, KEYALL,
                LangOpts, *this);
 
-  if (LangOpts.DeclSpecKeyword)
+}
+
+  if (LangOpts.DeclSpecKeyword) {
     AddKeyword("__declspec", tok::kw___declspec, KEYALL, LangOpts, *this);
+
+}
 
   // Add the 'import' contextual keyword.
   get("import").setModulesImport(true);
@@ -250,8 +308,10 @@ bool IdentifierInfo::isKeyword(const LangOptions &LangOpts) const {
 /// Returns true if the identifier represents a C++ keyword in the
 /// specified language.
 bool IdentifierInfo::isCPlusPlusKeyword(const LangOptions &LangOpts) const {
-  if (!LangOpts.CPlusPlus || !isKeyword(LangOpts))
+  if (!LangOpts.CPlusPlus || !isKeyword(LangOpts)) {
     return false;
+
+}
   // This is a C++ keyword if this identifier is not a keyword when checked
   // using LangOptions without C++ support.
   LangOptions LangOptsNoCPP = LangOpts;
@@ -274,7 +334,9 @@ tok::PPKeywordKind IdentifierInfo::getPPKeywordID() const {
     return memcmp(Name, #NAME, LEN) ? tok::pp_not_keyword : tok::pp_ ## NAME
 
   unsigned Len = getLength();
-  if (Len < 2) return tok::pp_not_keyword;
+  if (Len < 2) { return tok::pp_not_keyword;
+
+}
   const char *Name = getNameStart();
   switch (HASH(Len, Name[0], Name[2])) {
   default: return tok::pp_not_keyword;
@@ -330,8 +392,10 @@ void IdentifierTable::PrintStats() const {
        I = HashTable.begin(), E = HashTable.end(); I != E; ++I) {
     unsigned IdLen = I->getKeyLength();
     AverageIdentifierSize += IdLen;
-    if (MaxIdentifierLength < IdLen)
+    if (MaxIdentifierLength < IdLen) {
       MaxIdentifierLength = IdLen;
+
+}
   }
 
   fprintf(stderr, "\n*** Identifier Table Stats:\n");
@@ -374,8 +438,10 @@ public:
 
     // Fill in the trailing keyword array.
     IdentifierInfo **KeyInfo = reinterpret_cast<IdentifierInfo **>(this + 1);
-    for (unsigned i = 0; i != nKeys; ++i)
+    for (unsigned i = 0; i != nKeys; ++i) {
       KeyInfo[i] = IIV[i];
+
+}
   }
 
   // getName - Derive the full selector name and return it.
@@ -401,8 +467,10 @@ public:
   static void Profile(llvm::FoldingSetNodeID &ID, keyword_iterator ArgTys,
                       unsigned NumArgs) {
     ID.AddInteger(NumArgs);
-    for (unsigned i = 0; i != NumArgs; ++i)
+    for (unsigned i = 0; i != NumArgs; ++i) {
       ID.AddPointer(ArgTys[i]);
+
+}
   }
 
   void Profile(llvm::FoldingSetNodeID &ID) {
@@ -414,11 +482,15 @@ public:
 
 bool Selector::isKeywordSelector(ArrayRef<StringRef> Names) const {
   assert(!Names.empty() && "must have >= 1 selector slots");
-  if (getNumArgs() != Names.size())
+  if (getNumArgs() != Names.size()) {
     return false;
+
+}
   for (unsigned I = 0, E = Names.size(); I != E; ++I) {
-    if (getNameForSlot(I) != Names[I])
+    if (getNameForSlot(I) != Names[I]) {
       return false;
+
+}
   }
   return true;
 }
@@ -429,10 +501,14 @@ bool Selector::isUnarySelector(StringRef Name) const {
 
 unsigned Selector::getNumArgs() const {
   unsigned IIF = getIdentifierInfoFlag();
-  if (IIF <= ZeroArg)
+  if (IIF <= ZeroArg) {
     return 0;
-  if (IIF == OneArg)
+
+}
+  if (IIF == OneArg) {
     return 1;
+
+}
   // We point to a MultiKeywordSelector.
   MultiKeywordSelector *SI = getMultiKeywordSelector();
   return SI->getNumArgs();
@@ -458,8 +534,10 @@ std::string MultiKeywordSelector::getName() const {
   SmallString<256> Str;
   llvm::raw_svector_ostream OS(Str);
   for (keyword_iterator I = keyword_begin(), E = keyword_end(); I != E; ++I) {
-    if (*I)
+    if (*I) {
       OS << (*I)->getName();
+
+}
     OS << ':';
   }
 
@@ -467,8 +545,10 @@ std::string MultiKeywordSelector::getName() const {
 }
 
 std::string Selector::getAsString() const {
-  if (InfoPtr == 0)
+  if (InfoPtr == 0) {
     return "<null selector>";
+
+}
 
   if (getIdentifierInfoFlag() < MultiArg) {
     IdentifierInfo *II = getAsIdentifierInfo();
@@ -479,8 +559,10 @@ std::string Selector::getAsString() const {
       return std::string(II->getName());
     }
 
-    if (!II)
+    if (!II) {
       return ":";
+
+}
 
     return II->getName().str() + ":";
   }
@@ -499,51 +581,87 @@ LLVM_DUMP_METHOD void Selector::dump() const { print(llvm::errs()); }
 /// conventions, determine whether the given string starts with the
 /// given "word", which is assumed to end in a lowercase letter.
 static bool startsWithWord(StringRef name, StringRef word) {
-  if (name.size() < word.size()) return false;
+  if (name.size() < word.size()) { return false;
+
+}
   return ((name.size() == word.size() || !isLowercase(name[word.size()])) &&
           name.startswith(word));
 }
 
 ObjCMethodFamily Selector::getMethodFamilyImpl(Selector sel) {
   IdentifierInfo *first = sel.getIdentifierInfoForSlot(0);
-  if (!first) return OMF_None;
+  if (!first) { return OMF_None;
+
+}
 
   StringRef name = first->getName();
   if (sel.isUnarySelector()) {
-    if (name == "autorelease") return OMF_autorelease;
-    if (name == "dealloc") return OMF_dealloc;
-    if (name == "finalize") return OMF_finalize;
-    if (name == "release") return OMF_release;
-    if (name == "retain") return OMF_retain;
-    if (name == "retainCount") return OMF_retainCount;
-    if (name == "self") return OMF_self;
-    if (name == "initialize") return OMF_initialize;
+    if (name == "autorelease") { return OMF_autorelease;
+
+}
+    if (name == "dealloc") { return OMF_dealloc;
+
+}
+    if (name == "finalize") { return OMF_finalize;
+
+}
+    if (name == "release") { return OMF_release;
+
+}
+    if (name == "retain") { return OMF_retain;
+
+}
+    if (name == "retainCount") { return OMF_retainCount;
+
+}
+    if (name == "self") { return OMF_self;
+
+}
+    if (name == "initialize") { return OMF_initialize;
+
+}
   }
 
   if (name == "performSelector" || name == "performSelectorInBackground" ||
-      name == "performSelectorOnMainThread")
+      name == "performSelectorOnMainThread") {
     return OMF_performSelector;
 
+}
+
   // The other method families may begin with a prefix of underscores.
-  while (!name.empty() && name.front() == '_')
+  while (!name.empty() && name.front() == '_') {
     name = name.substr(1);
 
-  if (name.empty()) return OMF_None;
+}
+
+  if (name.empty()) { return OMF_None;
+
+}
   switch (name.front()) {
   case 'a':
-    if (startsWithWord(name, "alloc")) return OMF_alloc;
+    if (startsWithWord(name, "alloc")) { return OMF_alloc;
+
+}
     break;
   case 'c':
-    if (startsWithWord(name, "copy")) return OMF_copy;
+    if (startsWithWord(name, "copy")) { return OMF_copy;
+
+}
     break;
   case 'i':
-    if (startsWithWord(name, "init")) return OMF_init;
+    if (startsWithWord(name, "init")) { return OMF_init;
+
+}
     break;
   case 'm':
-    if (startsWithWord(name, "mutableCopy")) return OMF_mutableCopy;
+    if (startsWithWord(name, "mutableCopy")) { return OMF_mutableCopy;
+
+}
     break;
   case 'n':
-    if (startsWithWord(name, "new")) return OMF_new;
+    if (startsWithWord(name, "new")) { return OMF_new;
+
+}
     break;
   default:
     break;
@@ -554,25 +672,41 @@ ObjCMethodFamily Selector::getMethodFamilyImpl(Selector sel) {
 
 ObjCInstanceTypeFamily Selector::getInstTypeMethodFamily(Selector sel) {
   IdentifierInfo *first = sel.getIdentifierInfoForSlot(0);
-  if (!first) return OIT_None;
+  if (!first) { return OIT_None;
+
+}
 
   StringRef name = first->getName();
 
-  if (name.empty()) return OIT_None;
+  if (name.empty()) { return OIT_None;
+
+}
   switch (name.front()) {
     case 'a':
-      if (startsWithWord(name, "array")) return OIT_Array;
+      if (startsWithWord(name, "array")) { return OIT_Array;
+
+}
       break;
     case 'd':
-      if (startsWithWord(name, "default")) return OIT_ReturnsSelf;
-      if (startsWithWord(name, "dictionary")) return OIT_Dictionary;
+      if (startsWithWord(name, "default")) { return OIT_ReturnsSelf;
+
+}
+      if (startsWithWord(name, "dictionary")) { return OIT_Dictionary;
+
+}
       break;
     case 's':
-      if (startsWithWord(name, "shared")) return OIT_ReturnsSelf;
-      if (startsWithWord(name, "standard")) return OIT_Singleton;
+      if (startsWithWord(name, "shared")) { return OIT_ReturnsSelf;
+
+}
+      if (startsWithWord(name, "standard")) { return OIT_Singleton;
+
+}
       break;
     case 'i':
-      if (startsWithWord(name, "init")) return OIT_Init;
+      if (startsWithWord(name, "init")) { return OIT_Init;
+
+}
       break;
     default:
       break;
@@ -582,26 +716,36 @@ ObjCInstanceTypeFamily Selector::getInstTypeMethodFamily(Selector sel) {
 
 ObjCStringFormatFamily Selector::getStringFormatFamilyImpl(Selector sel) {
   IdentifierInfo *first = sel.getIdentifierInfoForSlot(0);
-  if (!first) return SFF_None;
+  if (!first) { return SFF_None;
+
+}
 
   StringRef name = first->getName();
 
   switch (name.front()) {
     case 'a':
-      if (name == "appendFormat") return SFF_NSString;
+      if (name == "appendFormat") { return SFF_NSString;
+
+}
       break;
 
     case 'i':
-      if (name == "initWithFormat") return SFF_NSString;
+      if (name == "initWithFormat") { return SFF_NSString;
+
+}
       break;
 
     case 'l':
-      if (name == "localizedStringWithFormat") return SFF_NSString;
+      if (name == "localizedStringWithFormat") { return SFF_NSString;
+
+}
       break;
 
     case 's':
       if (name == "stringByAppendingFormat" ||
-          name == "stringWithFormat") return SFF_NSString;
+          name == "stringWithFormat") { return SFF_NSString;
+
+}
       break;
   }
   return SFF_None;
@@ -649,8 +793,10 @@ size_t SelectorTable::getTotalMemory() const {
 }
 
 Selector SelectorTable::getSelector(unsigned nKeys, IdentifierInfo **IIV) {
-  if (nKeys < 2)
+  if (nKeys < 2) {
     return Selector(IIV[0], nKeys);
+
+}
 
   SelectorTableImpl &SelTabImpl = getSelectorTableImpl(Impl);
 
@@ -660,8 +806,10 @@ Selector SelectorTable::getSelector(unsigned nKeys, IdentifierInfo **IIV) {
 
   void *InsertPos = nullptr;
   if (MultiKeywordSelector *SI =
-        SelTabImpl.Table.FindNodeOrInsertPos(ID, InsertPos))
+        SelTabImpl.Table.FindNodeOrInsertPos(ID, InsertPos)) {
     return Selector(SI);
+
+}
 
   // MultiKeywordSelector objects are not allocated with new because they have a
   // variable size array (for parameter types) at the end of them.

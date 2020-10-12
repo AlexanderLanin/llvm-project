@@ -71,8 +71,10 @@ JITCompileCallbackManager::getCompileCallback(CompileFunction Compile) {
             std::move(CallbackName), std::move(Compile),
             ES.allocateVModule())));
     return *TrampolineAddr;
-  } else
+  } else {
     return TrampolineAddr.takeError();
+
+}
 }
 
 JITTargetAddress JITCompileCallbackManager::executeCompileCallback(
@@ -97,16 +99,18 @@ JITTargetAddress JITCompileCallbackManager::executeCompileCallback(
       ES.reportError(
           make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode()));
       return ErrorHandlerAddress;
-    } else
+    } else {
       Name = I->second;
+
+}
   }
 
   if (auto Sym =
           ES.lookup(makeJITDylibSearchOrder(
                         &CallbacksJD, JITDylibLookupFlags::MatchAllSymbols),
-                    Name))
+                    Name)) {
     return Sym->getAddress();
-  else {
+  } else {
     llvm::dbgs() << "Didn't find callback.\n";
     // If anything goes wrong materializing Sym then report it to the session
     // and return the ErrorHandlerAddress;
@@ -245,15 +249,19 @@ void makeStub(Function &F, Value &ImplPointer) {
   IRBuilder<> Builder(EntryBlock);
   LoadInst *ImplAddr = Builder.CreateLoad(F.getType(), &ImplPointer);
   std::vector<Value*> CallArgs;
-  for (auto &A : F.args())
+  for (auto &A : F.args()) {
     CallArgs.push_back(&A);
+
+}
   CallInst *Call = Builder.CreateCall(F.getFunctionType(), ImplAddr, CallArgs);
   Call->setTailCall();
   Call->setAttributes(F.getAttributes());
-  if (F.getReturnType()->isVoidTy())
+  if (F.getReturnType()->isVoidTy()) {
     Builder.CreateRetVoid();
-  else
+  } else {
     Builder.CreateRet(Call);
+
+}
 }
 
 std::vector<GlobalValue *> SymbolLinkagePromoter::operator()(Module &M) {
@@ -263,14 +271,16 @@ std::vector<GlobalValue *> SymbolLinkagePromoter::operator()(Module &M) {
     bool Promoted = true;
 
     // Rename if necessary.
-    if (!GV.hasName())
+    if (!GV.hasName()) {
       GV.setName("__orc_anon." + Twine(NextId++));
-    else if (GV.getName().startswith("\01L"))
+    } else if (GV.getName().startswith("\01L")) {
       GV.setName("__" + GV.getName().substr(1) + "." + Twine(NextId++));
-    else if (GV.hasLocalLinkage())
+    } else if (GV.hasLocalLinkage()) {
       GV.setName("__orc_lcl." + GV.getName() + "." + Twine(NextId++));
-    else
+    } else {
       Promoted = false;
+
+}
 
     if (GV.hasLocalLinkage()) {
       GV.setLinkage(GlobalValue::ExternalLinkage);
@@ -279,8 +289,10 @@ std::vector<GlobalValue *> SymbolLinkagePromoter::operator()(Module &M) {
     }
     GV.setUnnamedAddr(GlobalValue::UnnamedAddr::None);
 
-    if (Promoted)
+    if (Promoted) {
       PromotedGlobals.push_back(&GV);
+
+}
   }
 
   return PromotedGlobals;
@@ -297,8 +309,10 @@ Function* cloneFunctionDecl(Module &Dst, const Function &F,
     (*VMap)[&F] = NewF;
     auto NewArgI = NewF->arg_begin();
     for (auto ArgI = F.arg_begin(), ArgE = F.arg_end(); ArgI != ArgE;
-         ++ArgI, ++NewArgI)
+         ++ArgI, ++NewArgI) {
       (*VMap)[&*ArgI] = &*NewArgI;
+
+}
   }
 
   return NewF;
@@ -308,10 +322,12 @@ void moveFunctionBody(Function &OrigF, ValueToValueMapTy &VMap,
                       ValueMaterializer *Materializer,
                       Function *NewF) {
   assert(!OrigF.isDeclaration() && "Nothing to move");
-  if (!NewF)
+  if (!NewF) {
     NewF = cast<Function>(VMap[&OrigF]);
-  else
+  } else {
     assert(VMap[&OrigF] == NewF && "Incorrect function mapping in VMap.");
+
+}
   assert(NewF && "Function mapping missing from VMap.");
   assert(NewF->getParent() != OrigF.getParent() &&
          "moveFunctionBody should only be used to move bodies between "
@@ -330,8 +346,10 @@ GlobalVariable* cloneGlobalVariableDecl(Module &Dst, const GlobalVariable &GV,
       GV.getLinkage(), nullptr, GV.getName(), nullptr,
       GV.getThreadLocalMode(), GV.getType()->getAddressSpace());
   NewGV->copyAttributesFrom(&GV);
-  if (VMap)
+  if (VMap) {
     (*VMap)[&GV] = NewGV;
+
+}
   return NewGV;
 }
 
@@ -340,11 +358,13 @@ void moveGlobalVariableInitializer(GlobalVariable &OrigGV,
                                    ValueMaterializer *Materializer,
                                    GlobalVariable *NewGV) {
   assert(OrigGV.hasInitializer() && "Nothing to move");
-  if (!NewGV)
+  if (!NewGV) {
     NewGV = cast<GlobalVariable>(VMap[&OrigGV]);
-  else
+  } else {
     assert(VMap[&OrigGV] == NewGV &&
            "Incorrect global variable mapping in VMap.");
+
+}
   assert(NewGV->getParent() != OrigGV.getParent() &&
          "moveGlobalVariableInitializer should only be used to move "
          "initializers between modules");
@@ -367,10 +387,14 @@ GlobalAlias* cloneGlobalAliasDecl(Module &Dst, const GlobalAlias &OrigA,
 void cloneModuleFlagsMetadata(Module &Dst, const Module &Src,
                               ValueToValueMapTy &VMap) {
   auto *MFs = Src.getModuleFlagsMetadata();
-  if (!MFs)
+  if (!MFs) {
     return;
-  for (auto *MF : MFs->operands())
+
+}
+  for (auto *MF : MFs->operands()) {
     Dst.addModuleFlag(MapMetadata(MF, VMap));
+
+}
 }
 
 } // End namespace orc.

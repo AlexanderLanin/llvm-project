@@ -37,8 +37,10 @@ void BenchmarkReporter::PrintBasicContext(std::ostream *out,
 
   Out << LocalDateTimeString() << "\n";
 
-  if (context.executable_name)
+  if (context.executable_name) {
     Out << "Running " << context.executable_name << "\n";
+
+}
 
   const CPUInfo &info = context.cpu_info;
   Out << "Run on (" << info.num_cpus << " X "
@@ -49,8 +51,10 @@ void BenchmarkReporter::PrintBasicContext(std::ostream *out,
     for (auto &CInfo : info.caches) {
       Out << "  L" << CInfo.level << " " << CInfo.type << " "
           << (CInfo.size / 1000) << "K";
-      if (CInfo.num_sharing != 0)
+      if (CInfo.num_sharing != 0) {
         Out << " (x" << (info.num_cpus / CInfo.num_sharing) << ")";
+
+}
       Out << "\n";
     }
   }
@@ -74,13 +78,17 @@ BenchmarkReporter::Context::Context() : cpu_info(CPUInfo::Get()) {}
 
 double BenchmarkReporter::Run::GetAdjustedRealTime() const {
   double new_time = real_accumulated_time * GetTimeUnitMultiplier(time_unit);
-  if (iterations != 0) new_time /= static_cast<double>(iterations);
+  if (iterations != 0) { new_time /= static_cast<double>(iterations);
+
+}
   return new_time;
 }
 
 double BenchmarkReporter::Run::GetAdjustedCPUTime() const {
   double new_time = cpu_accumulated_time * GetTimeUnitMultiplier(time_unit);
-  if (iterations != 0) new_time /= static_cast<double>(iterations);
+  if (iterations != 0) { new_time /= static_cast<double>(iterations);
+
+}
   return new_time;
 }
 

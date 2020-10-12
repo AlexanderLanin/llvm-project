@@ -99,8 +99,10 @@ struct TimeTraceProfiler {
     DurationType Duration = E.End - E.Start;
 
     // Only include sections longer or equal to TimeTraceGranularity msec.
-    if (duration_cast<microseconds>(Duration).count() >= TimeTraceGranularity)
+    if (duration_cast<microseconds>(Duration).count() >= TimeTraceGranularity) {
       Entries.emplace_back(E);
+
+}
 
     // Track total time taken by each "name", but only the topmost levels of
     // them; e.g. if there's a template instantiation that instantiates other
@@ -189,8 +191,10 @@ struct TimeTraceProfiler {
 
     std::vector<NameAndCountAndDurationType> SortedTotals;
     SortedTotals.reserve(AllCountAndTotalPerName.size());
-    for (const auto &Total : AllCountAndTotalPerName)
+    for (const auto &Total : AllCountAndTotalPerName) {
       SortedTotals.emplace_back(std::string(Total.getKey()), Total.getValue());
+
+}
 
     llvm::sort(SortedTotals.begin(), SortedTotals.end(),
                [](const NameAndCountAndDurationType &A,
@@ -260,8 +264,10 @@ void timeTraceProfilerInitialize(unsigned TimeTraceGranularity,
 void timeTraceProfilerCleanup() {
   delete TimeTraceProfilerInstance;
   std::lock_guard<std::mutex> Lock(Mu);
-  for (auto TTP : ThreadTimeTraceProfilerInstances)
+  for (auto TTP : ThreadTimeTraceProfilerInstances) {
     delete TTP;
+
+}
   ThreadTimeTraceProfilerInstances.clear();
 }
 
@@ -292,28 +298,36 @@ Error timeTraceProfilerWrite(StringRef PreferredFileName,
 
   std::error_code EC;
   raw_fd_ostream OS(Path, EC, sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     return createStringError(EC, "Could not open " + Path);
+
+}
 
   timeTraceProfilerWrite(OS);
   return Error::success();
 }
 
 void timeTraceProfilerBegin(StringRef Name, StringRef Detail) {
-  if (TimeTraceProfilerInstance != nullptr)
+  if (TimeTraceProfilerInstance != nullptr) {
     TimeTraceProfilerInstance->begin(std::string(Name),
                                      [&]() { return std::string(Detail); });
+
+}
 }
 
 void timeTraceProfilerBegin(StringRef Name,
                             llvm::function_ref<std::string()> Detail) {
-  if (TimeTraceProfilerInstance != nullptr)
+  if (TimeTraceProfilerInstance != nullptr) {
     TimeTraceProfilerInstance->begin(std::string(Name), Detail);
+
+}
 }
 
 void timeTraceProfilerEnd() {
-  if (TimeTraceProfilerInstance != nullptr)
+  if (TimeTraceProfilerInstance != nullptr) {
     TimeTraceProfilerInstance->end();
+
+}
 }
 
 } // namespace llvm

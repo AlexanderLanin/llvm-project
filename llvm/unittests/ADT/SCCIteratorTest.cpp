@@ -31,17 +31,21 @@ TEST(SCCIteratorTest, AllSmallGraphs) {
 
     // Add edges as specified by the descriptor.
     unsigned DescriptorCopy = GraphDescriptor;
-    for (unsigned i = 0; i != NUM_NODES; ++i)
+    for (unsigned i = 0; i != NUM_NODES; ++i) {
       for (unsigned j = 0; j != NUM_NODES; ++j) {
         // Always add a self-edge.
         if (i == j) {
           G.AddEdge(i, j);
           continue;
         }
-        if (DescriptorCopy & 1)
+        if (DescriptorCopy & 1) {
           G.AddEdge(i, j);
+
+}
         DescriptorCopy >>= 1;
       }
+
+}
 
     // Test the SCC logic on this graph.
 
@@ -53,39 +57,47 @@ TEST(SCCIteratorTest, AllSmallGraphs) {
 
       // Get the nodes in this SCC as a NodeSubset rather than a vector.
       GT::NodeSubset NodesInThisSCC;
-      for (unsigned i = 0, e = SCC.size(); i != e; ++i)
+      for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
         NodesInThisSCC.AddNode(SCC[i]->first);
+
+}
 
       // There should be at least one node in every SCC.
       EXPECT_FALSE(NodesInThisSCC.isEmpty());
 
       // Check that every node in the SCC is reachable from every other node in
       // the SCC.
-      for (unsigned i = 0; i != NUM_NODES; ++i)
+      for (unsigned i = 0; i != NUM_NODES; ++i) {
         if (NodesInThisSCC.count(i)) {
           EXPECT_TRUE(NodesInThisSCC.isSubsetOf(G.NodesReachableFrom(i)));
         }
+
+}
 
       // OK, now that we now that every node in the SCC is reachable from every
       // other, this means that the set of nodes reachable from any node in the
       // SCC is the same as the set of nodes reachable from every node in the
       // SCC.  Check that for every node N not in the SCC but reachable from the
       // SCC, no element of the SCC is reachable from N.
-      for (unsigned i = 0; i != NUM_NODES; ++i)
+      for (unsigned i = 0; i != NUM_NODES; ++i) {
         if (NodesInThisSCC.count(i)) {
           GT::NodeSubset NodesReachableFromSCC = G.NodesReachableFrom(i);
           GT::NodeSubset ReachableButNotInSCC =
             NodesReachableFromSCC.Meet(NodesInThisSCC.Complement());
 
-          for (unsigned j = 0; j != NUM_NODES; ++j)
+          for (unsigned j = 0; j != NUM_NODES; ++j) {
             if (ReachableButNotInSCC.count(j)) {
               EXPECT_TRUE(G.NodesReachableFrom(j).Meet(NodesInThisSCC).isEmpty());
             }
+
+}
 
           // The result must be the same for all other nodes in this SCC, so
           // there is no point in checking them.
           break;
         }
+
+}
 
       // This is indeed a SCC: a maximal set of nodes for which each node is
       // reachable from every other.
@@ -101,7 +113,7 @@ TEST(SCCIteratorTest, AllSmallGraphs) {
       // of nodes reachable from this SCC must be contained either in the
       // union of this SCC and all previously visited SCC's.
 
-      for (unsigned i = 0; i != NUM_NODES; ++i)
+      for (unsigned i = 0; i != NUM_NODES; ++i) {
         if (NodesInThisSCC.count(i)) {
           GT::NodeSubset NodesReachableFromSCC = G.NodesReachableFrom(i);
           EXPECT_TRUE(NodesReachableFromSCC.isSubsetOf(NodesInSomeSCC));
@@ -109,6 +121,8 @@ TEST(SCCIteratorTest, AllSmallGraphs) {
           // there is no point in checking them.
           break;
         }
+
+}
     }
 
     // Finally, check that the nodes in some SCC are exactly those that are

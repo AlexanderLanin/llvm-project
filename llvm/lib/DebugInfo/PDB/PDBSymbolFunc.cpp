@@ -38,8 +38,10 @@ public:
     while (auto Child = DataChildren->getNext()) {
       if (Child->getDataKind() == PDB_DataKind::Param) {
         std::string Name = Child->getName();
-        if (SeenNames.find(Name) != SeenNames.end())
+        if (SeenNames.find(Name) != SeenNames.end()) {
           continue;
+
+}
         Args.push_back(std::move(Child));
         SeenNames.insert(Name);
       }
@@ -51,16 +53,20 @@ public:
 
   std::unique_ptr<PDBSymbolData>
   getChildAtIndex(uint32_t Index) const override {
-    if (Index >= Args.size())
+    if (Index >= Args.size()) {
       return nullptr;
+
+}
 
     return Session.getConcreteSymbolById<PDBSymbolData>(
         Args[Index]->getSymIndexId());
   }
 
   std::unique_ptr<PDBSymbolData> getNext() override {
-    if (CurIter == Args.end())
+    if (CurIter == Args.end()) {
       return nullptr;
+
+}
     const auto &Result = **CurIter;
     ++CurIter;
     return Session.getConcreteSymbolById<PDBSymbolData>(Result.getSymIndexId());
@@ -86,12 +92,18 @@ void PDBSymbolFunc::dump(PDBSymDumper &Dumper) const { Dumper.dump(*this); }
 
 bool PDBSymbolFunc::isDestructor() const {
   std::string Name = getName();
-  if (Name.empty())
+  if (Name.empty()) {
     return false;
-  if (Name[0] == '~')
+
+}
+  if (Name[0] == '~') {
     return true;
-  if (Name == "__vecDelDtor")
+
+}
+  if (Name == "__vecDelDtor") {
     return true;
+
+}
   return false;
 }
 

@@ -20,8 +20,10 @@ ThreadSafeModule cloneToNewContext(ThreadSafeModule &TSM,
                                    GVModifier UpdateClonedDefSource) {
   assert(TSM && "Can not clone null module");
 
-  if (!ShouldCloneDef)
+  if (!ShouldCloneDef) {
     ShouldCloneDef = [](const GlobalValue &) { return true; };
+
+}
 
   return TSM.withModuleDo([&](Module &M) {
     SmallVector<char, 1> ClonedModuleBuffer;
@@ -37,9 +39,13 @@ ThreadSafeModule cloneToNewContext(ThreadSafeModule &TSM,
         return false;
       });
 
-      if (UpdateClonedDefSource)
-        for (auto *GV : ClonedDefsInSrc)
+      if (UpdateClonedDefSource) {
+        for (auto *GV : ClonedDefsInSrc) {
           UpdateClonedDefSource(*GV);
+
+}
+
+}
 
       BitcodeWriter BCWriter(ClonedModuleBuffer);
 

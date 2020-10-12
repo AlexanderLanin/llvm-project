@@ -57,8 +57,10 @@ StringRef llvm::omp::getOpenMPDirectiveName(Directive Kind) {
 ///}
 
 void llvm::omp::types::initializeTypes(Module &M) {
-  if (Void)
+  if (Void) {
     return;
+
+}
 
   LLVMContext &Ctx = M.getContext();
   // Create all simple and struct types exposed by the runtime and remember

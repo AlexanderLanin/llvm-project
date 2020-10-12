@@ -81,16 +81,22 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
 
   bool Changed = false;
   for (;;) {
-    if (MSSAU && VerifyMemorySSA)
+    if (MSSAU && VerifyMemorySSA) {
       MSSA->verifyMemorySSA();
+
+}
     for (BasicBlock *BB : RPOT) {
       for (Instruction &I : *BB) {
-        if (auto *PI = dyn_cast<PHINode>(&I))
+        if (auto *PI = dyn_cast<PHINode>(&I)) {
           VisitedPHIs.insert(PI);
 
+}
+
         if (I.use_empty()) {
-          if (isInstructionTriviallyDead(&I, &TLI))
+          if (isInstructionTriviallyDead(&I, &TLI)) {
             DeadInsts.push_back(&I);
+
+}
           continue;
         }
 
@@ -98,12 +104,16 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
         // empty `ToSimplify` set.
         bool IsFirstIteration = ToSimplify->empty();
 
-        if (!IsFirstIteration && !ToSimplify->count(&I))
+        if (!IsFirstIteration && !ToSimplify->count(&I)) {
           continue;
 
+}
+
         Value *V = SimplifyInstruction(&I, SQ.getWithInstruction(&I));
-        if (!V || !LI.replacementPreservesLCSSAForm(&I, V))
+        if (!V || !LI.replacementPreservesLCSSAForm(&I, V)) {
           continue;
+
+}
 
         for (Value::use_iterator UI = I.use_begin(), UE = I.use_end();
              UI != UE;) {
@@ -114,11 +124,13 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
           // If the instruction is used by a PHI node we have already processed
           // we'll need to iterate on the loop body to converge, so add it to
           // the next set.
-          if (auto *UserPI = dyn_cast<PHINode>(UserI))
+          if (auto *UserPI = dyn_cast<PHINode>(UserI)) {
             if (VisitedPHIs.count(UserPI)) {
               Next->insert(UserPI);
               continue;
             }
+
+}
 
           // If we are only simplifying targeted instructions and the user is an
           // instruction in the loop body, add it to our set of targeted
@@ -130,19 +142,31 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
           // try to simplify those away.
           assert((L.contains(UserI) || isa<PHINode>(UserI)) &&
                  "Uses outside the loop should be PHI nodes due to LCSSA!");
-          if (!IsFirstIteration && L.contains(UserI))
+          if (!IsFirstIteration && L.contains(UserI)) {
             ToSimplify->insert(UserI);
+
+}
         }
 
-        if (MSSAU)
-          if (Instruction *SimpleI = dyn_cast_or_null<Instruction>(V))
-            if (MemoryAccess *MA = MSSA->getMemoryAccess(&I))
-              if (MemoryAccess *ReplacementMA = MSSA->getMemoryAccess(SimpleI))
+        if (MSSAU) {
+          if (Instruction *SimpleI = dyn_cast_or_null<Instruction>(V)) {
+            if (MemoryAccess *MA = MSSA->getMemoryAccess(&I)) {
+              if (MemoryAccess *ReplacementMA = MSSA->getMemoryAccess(SimpleI)) {
                 MA->replaceAllUsesWith(ReplacementMA);
 
+}
+
+}
+
+}
+
+}
+
         assert(I.use_empty() && "Should always have replaced all uses!");
-        if (isInstructionTriviallyDead(&I, &TLI))
+        if (isInstructionTriviallyDead(&I, &TLI)) {
           DeadInsts.push_back(&I);
+
+}
         ++NumSimplified;
         Changed = true;
       }
@@ -155,13 +179,17 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
       RecursivelyDeleteTriviallyDeadInstructions(DeadInsts, &TLI, MSSAU);
     }
 
-    if (MSSAU && VerifyMemorySSA)
+    if (MSSAU && VerifyMemorySSA) {
       MSSA->verifyMemorySSA();
+
+}
 
     // If we never found a PHI that needs to be simplified in the next
     // iteration, we're done.
-    if (Next->empty())
+    if (Next->empty()) {
       break;
+
+}
 
     // Otherwise, put the next set in place for the next iteration and reset it
     // and the visited PHIs for that iteration.
@@ -185,8 +213,10 @@ public:
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (skipLoop(L))
+    if (skipLoop(L)) {
       return false;
+
+}
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     AssumptionCache &AC =
@@ -227,17 +257,23 @@ PreservedAnalyses LoopInstSimplifyPass::run(Loop &L, LoopAnalysisManager &AM,
   Optional<MemorySSAUpdater> MSSAU;
   if (AR.MSSA) {
     MSSAU = MemorySSAUpdater(AR.MSSA);
-    if (VerifyMemorySSA)
+    if (VerifyMemorySSA) {
       AR.MSSA->verifyMemorySSA();
+
+}
   }
   if (!simplifyLoopInst(L, AR.DT, AR.LI, AR.AC, AR.TLI,
-                        MSSAU.hasValue() ? MSSAU.getPointer() : nullptr))
+                        MSSAU.hasValue() ? MSSAU.getPointer() : nullptr)) {
     return PreservedAnalyses::all();
+
+}
 
   auto PA = getLoopPassPreservedAnalyses();
   PA.preserveSet<CFGAnalyses>();
-  if (AR.MSSA)
+  if (AR.MSSA) {
     PA.preserve<MemorySSAAnalysis>();
+
+}
   return PA;
 }
 

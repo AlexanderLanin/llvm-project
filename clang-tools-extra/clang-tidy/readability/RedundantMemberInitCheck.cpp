@@ -54,8 +54,10 @@ void RedundantMemberInitCheck::check(const MatchFinder::MatchResult &Result) {
       Result.Nodes.getNodeAs<CXXConstructorDecl>("constructor");
 
   if (IgnoreBaseInCopyConstructors && ConstructorDecl->isCopyConstructor() &&
-      Init->isBaseInitializer())
+      Init->isBaseInitializer()) {
     return;
+
+}
 
   if (Construct->getNumArgs() == 0 ||
       Construct->getArg(0)->isDefaultArgument()) {

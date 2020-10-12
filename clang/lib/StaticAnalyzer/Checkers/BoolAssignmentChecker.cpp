@@ -32,8 +32,10 @@ namespace {
 void BoolAssignmentChecker::emitReport(ProgramStateRef state,
                                        CheckerContext &C) const {
   if (ExplodedNode *N = C.generateNonFatalErrorNode(state)) {
-    if (!BT)
+    if (!BT) {
       BT.reset(new BuiltinBug(this, "Assignment of a non-Boolean value"));
+
+}
 
     C.emitReport(
         std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N));
@@ -41,13 +43,17 @@ void BoolAssignmentChecker::emitReport(ProgramStateRef state,
 }
 
 static bool isBooleanType(QualType Ty) {
-  if (Ty->isBooleanType()) // C++ or C99
+  if (Ty->isBooleanType()) { // C++ or C99
     return true;
 
-  if (const TypedefType *TT = Ty->getAs<TypedefType>())
+}
+
+  if (const TypedefType *TT = Ty->getAs<TypedefType>()) {
     return TT->getDecl()->getName() == "BOOL"   || // Objective-C
            TT->getDecl()->getName() == "_Bool"  || // stdbool.h < C99
            TT->getDecl()->getName() == "Boolean";  // MacTypes.h
+
+}
 
   return false;
 }
@@ -59,20 +65,26 @@ void BoolAssignmentChecker::checkBind(SVal loc, SVal val, const Stmt *S,
   const TypedValueRegion *TR =
     dyn_cast_or_null<TypedValueRegion>(loc.getAsRegion());
 
-  if (!TR)
+  if (!TR) {
     return;
+
+}
 
   QualType valTy = TR->getValueType();
 
-  if (!isBooleanType(valTy))
+  if (!isBooleanType(valTy)) {
     return;
+
+}
 
   // Get the value of the right-hand side.  We only care about values
   // that are defined (UnknownVals and UndefinedVals are handled by other
   // checkers).
   Optional<NonLoc> NV = val.getAs<NonLoc>();
-  if (!NV)
+  if (!NV) {
     return;
+
+}
 
   // Check if the assigned value meets our criteria for correctness.  It must
   // be a value that is either 0 or 1.  One way to check this is to see if
@@ -88,8 +100,10 @@ void BoolAssignmentChecker::checkBind(SVal loc, SVal val, const Stmt *S,
   ProgramStateRef StIn, StOut;
   std::tie(StIn, StOut) = CM.assumeInclusiveRangeDual(state, *NV, Zero, One);
 
-  if (!StIn)
+  if (!StIn) {
     emitReport(StOut, C);
+
+}
 }
 
 void ento::registerBoolAssignmentChecker(CheckerManager &mgr) {

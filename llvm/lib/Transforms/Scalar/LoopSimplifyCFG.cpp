@@ -58,23 +58,35 @@ STATISTIC(NumLoopExitsDeleted,
 static BasicBlock *getOnlyLiveSuccessor(BasicBlock *BB) {
   Instruction *TI = BB->getTerminator();
   if (BranchInst *BI = dyn_cast<BranchInst>(TI)) {
-    if (BI->isUnconditional())
+    if (BI->isUnconditional()) {
       return nullptr;
-    if (BI->getSuccessor(0) == BI->getSuccessor(1))
+
+}
+    if (BI->getSuccessor(0) == BI->getSuccessor(1)) {
       return BI->getSuccessor(0);
+
+}
     ConstantInt *Cond = dyn_cast<ConstantInt>(BI->getCondition());
-    if (!Cond)
+    if (!Cond) {
       return nullptr;
+
+}
     return Cond->isZero() ? BI->getSuccessor(1) : BI->getSuccessor(0);
   }
 
   if (SwitchInst *SI = dyn_cast<SwitchInst>(TI)) {
     auto *CI = dyn_cast<ConstantInt>(SI->getCondition());
-    if (!CI)
+    if (!CI) {
       return nullptr;
-    for (auto Case : SI->cases())
-      if (Case.getCaseValue() == CI)
+
+}
+    for (auto Case : SI->cases()) {
+      if (Case.getCaseValue() == CI) {
         return Case.getCaseSuccessor();
+
+}
+
+}
     return SI->getDefaultDest();
   }
 
@@ -88,8 +100,10 @@ static void removeBlockFromLoops(BasicBlock *BB, Loop *FirstLoop,
          "First loop is supposed to be inside of last loop!");
   assert(FirstLoop->contains(BB) && "Must be a loop block!");
   for (Loop *Current = FirstLoop; Current != LastLoop;
-       Current = Current->getParentLoop())
+       Current = Current->getParentLoop()) {
     Current->removeBlockFromLoop(BB);
+
+}
 }
 
 /// Find innermost loop that contains at least one block from \p BBs and
@@ -99,14 +113,22 @@ static Loop *getInnermostLoopFor(SmallPtrSetImpl<BasicBlock *> &BBs,
   Loop *Innermost = nullptr;
   for (BasicBlock *BB : BBs) {
     Loop *BBL = LI.getLoopFor(BB);
-    while (BBL && !BBL->contains(L.getHeader()))
+    while (BBL && !BBL->contains(L.getHeader())) {
       BBL = BBL->getParentLoop();
-    if (BBL == &L)
+
+}
+    if (BBL == &L) {
       BBL = BBL->getParentLoop();
-    if (!BBL)
+
+}
+    if (!BBL) {
       continue;
-    if (!Innermost || BBL->getLoopDepth() > Innermost->getLoopDepth())
+
+}
+    if (!Innermost || BBL->getLoopDepth() > Innermost->getLoopDepth()) {
       Innermost = BBL;
+
+}
   }
   return Innermost;
 }
@@ -159,20 +181,26 @@ private:
   void dump() const {
     dbgs() << "Constant terminator folding for loop " << L << "\n";
     dbgs() << "After terminator constant-folding, the loop will";
-    if (!DeleteCurrentLoop)
+    if (!DeleteCurrentLoop) {
       dbgs() << " not";
+
+}
     dbgs() << " be destroyed\n";
     auto PrintOutVector = [&](const char *Message,
                            const SmallVectorImpl<BasicBlock *> &S) {
       dbgs() << Message << "\n";
-      for (const BasicBlock *BB : S)
+      for (const BasicBlock *BB : S) {
         dbgs() << "\t" << BB->getName() << "\n";
+
+}
     };
     auto PrintOutSet = [&](const char *Message,
                            const SmallPtrSetImpl<BasicBlock *> &S) {
       dbgs() << Message << "\n";
-      for (const BasicBlock *BB : S)
+      for (const BasicBlock *BB : S) {
         dbgs() << "\t" << BB->getName() << "\n";
+
+}
     };
     PrintOutVector("Blocks in which we can constant-fold terminator:",
                    FoldCandidates);
@@ -180,9 +208,11 @@ private:
     PrintOutVector("Dead blocks from the original loop:", DeadLoopBlocks);
     PrintOutSet("Live exit blocks:", LiveExitBlocks);
     PrintOutVector("Dead exit blocks:", DeadExitBlocks);
-    if (!DeleteCurrentLoop)
+    if (!DeleteCurrentLoop) {
       PrintOutSet("The following blocks will still be part of the loop:",
                   BlocksInLoopAfterFolding);
+
+}
   }
 
   /// Whether or not the current loop has irreducible CFG.
@@ -191,17 +221,23 @@ private:
     // Index of a basic block in RPO traversal.
     DenseMap<const BasicBlock *, unsigned> RPO;
     unsigned Current = 0;
-    for (auto I = DFS.beginRPO(), E = DFS.endRPO(); I != E; ++I)
+    for (auto I = DFS.beginRPO(), E = DFS.endRPO(); I != E; ++I) {
       RPO[*I] = Current++;
+
+}
 
     for (auto I = DFS.beginRPO(), E = DFS.endRPO(); I != E; ++I) {
       BasicBlock *BB = *I;
-      for (auto *Succ : successors(BB))
-        if (L.contains(Succ) && !LI.isLoopHeader(Succ) && RPO[BB] > RPO[Succ])
+      for (auto *Succ : successors(BB)) {
+        if (L.contains(Succ) && !LI.isLoopHeader(Succ) && RPO[BB] > RPO[Succ]) {
           // If an edge goes from a block with greater order number into a block
           // with lesses number, and it is not a loop backedge, then it can only
           // be a part of irreducible non-loop cycle.
           return true;
+
+}
+
+}
     }
     return false;
   }
@@ -242,17 +278,23 @@ private:
       // are skipped because if they can be folded, they should be folded during
       // the processing of child loops.
       bool TakeFoldCandidate = TheOnlySucc && LI.getLoopFor(BB) == &L;
-      if (TakeFoldCandidate)
+      if (TakeFoldCandidate) {
         FoldCandidates.push_back(BB);
 
+}
+
       // Handle successors.
-      for (BasicBlock *Succ : successors(BB))
+      for (BasicBlock *Succ : successors(BB)) {
         if (!TakeFoldCandidate || TheOnlySucc == Succ) {
-          if (L.contains(Succ))
+          if (L.contains(Succ)) {
             LiveLoopBlocks.insert(Succ);
-          else
+          } else {
             LiveExitBlocks.insert(Succ);
+
+}
         }
+
+}
     }
 
     // Sanity check: amount of dead and live loop blocks should match the total
@@ -264,16 +306,22 @@ private:
     SmallVector<BasicBlock *, 8> ExitBlocks;
     L.getExitBlocks(ExitBlocks);
     SmallPtrSet<BasicBlock *, 8> UniqueDeadExits;
-    for (auto *ExitBlock : ExitBlocks)
+    for (auto *ExitBlock : ExitBlocks) {
       if (!LiveExitBlocks.count(ExitBlock) &&
-          UniqueDeadExits.insert(ExitBlock).second)
+          UniqueDeadExits.insert(ExitBlock).second) {
         DeadExitBlocks.push_back(ExitBlock);
+
+}
+
+}
 
     // Whether or not the edge From->To will still be present in graph after the
     // folding.
     auto IsEdgeLive = [&](BasicBlock *From, BasicBlock *To) {
-      if (!LiveLoopBlocks.count(From))
+      if (!LiveLoopBlocks.count(From)) {
         return false;
+
+}
       BasicBlock *TheOnlySucc = getOnlyLiveSuccessor(From);
       return !TheOnlySucc || TheOnlySucc == To || LI.getLoopFor(From) != &L;
     };
@@ -283,8 +331,10 @@ private:
 
     // If we are going to delete the current loop completely, no extra analysis
     // is needed.
-    if (DeleteCurrentLoop)
+    if (DeleteCurrentLoop) {
       return;
+
+}
 
     // Otherwise, we should check which blocks will still be a part of the
     // current loop after the transform.
@@ -300,8 +350,10 @@ private:
     };
     for (auto I = DFS.beginPostorder(), E = DFS.endPostorder(); I != E; ++I) {
       BasicBlock *BB = *I;
-      if (BlockIsInLoop(BB))
+      if (BlockIsInLoop(BB)) {
         BlocksInLoopAfterFolding.insert(BB);
+
+}
     }
 
     // Sanity check: header must be in loop.
@@ -348,8 +400,10 @@ private:
   /// remove edges from the loop to these blocks.
   void handleDeadExits() {
     // If no dead exits, nothing to do.
-    if (DeadExitBlocks.empty())
+    if (DeadExitBlocks.empty()) {
       return;
+
+}
 
     // Construct split preheader and the dummy switch to thread edges from it to
     // dead exits.
@@ -365,8 +419,10 @@ private:
     unsigned DummyIdx = 1;
     for (BasicBlock *BB : DeadExitBlocks) {
       SmallVector<Instruction *, 4> DeadPhis;
-      for (auto &PN : BB->phis())
+      for (auto &PN : BB->phis()) {
         DeadPhis.push_back(&PN);
+
+}
 
       // Eliminate all Phis from dead exits.
       for (Instruction *PN : DeadPhis) {
@@ -392,25 +448,33 @@ private:
       if (StillReachable != OuterLoop) {
         LI.changeLoopFor(NewPreheader, StillReachable);
         removeBlockFromLoops(NewPreheader, OuterLoop, StillReachable);
-        for (auto *BB : L.blocks())
+        for (auto *BB : L.blocks()) {
           removeBlockFromLoops(BB, OuterLoop, StillReachable);
+
+}
         OuterLoop->removeChildLoop(&L);
-        if (StillReachable)
+        if (StillReachable) {
           StillReachable->addChildLoop(&L);
-        else
+        } else {
           LI.addTopLevelLoop(&L);
+
+}
 
         // Some values from loops in [OuterLoop, StillReachable) could be used
         // in the current loop. Now it is not their child anymore, so such uses
         // require LCSSA Phis.
         Loop *FixLCSSALoop = OuterLoop;
-        while (FixLCSSALoop->getParentLoop() != StillReachable)
+        while (FixLCSSALoop->getParentLoop() != StillReachable) {
           FixLCSSALoop = FixLCSSALoop->getParentLoop();
+
+}
         assert(FixLCSSALoop && "Should be a loop!");
         // We need all DT updates to be done before forming LCSSA.
         DTU.applyUpdates(DTUpdates);
-        if (MSSAU)
+        if (MSSAU) {
           MSSAU->applyUpdates(DTUpdates, DT);
+
+}
         DTUpdates.clear();
         formLCSSARecursively(*FixLCSSALoop, DT, &LI, &SE);
       }
@@ -421,8 +485,10 @@ private:
       DTU.applyUpdates(DTUpdates);
       MSSAU->applyUpdates(DTUpdates, DT);
       DTUpdates.clear();
-      if (VerifyMemorySSA)
+      if (VerifyMemorySSA) {
         MSSAU->getMemorySSA()->verifyMemorySSA();
+
+}
     }
   }
 
@@ -441,19 +507,25 @@ private:
     // just remove blocks one by one, because after removal of preheader we may
     // break this invariant for the dead loop. So we detatch and erase all dead
     // loops beforehand.
-    for (auto *BB : DeadLoopBlocks)
+    for (auto *BB : DeadLoopBlocks) {
       if (LI.isLoopHeader(BB)) {
         assert(LI.getLoopFor(BB) != &L && "Attempt to remove current loop!");
         Loop *DL = LI.getLoopFor(BB);
         if (DL->getParentLoop()) {
-          for (auto *PL = DL->getParentLoop(); PL; PL = PL->getParentLoop())
-            for (auto *BB : DL->getBlocks())
+          for (auto *PL = DL->getParentLoop(); PL; PL = PL->getParentLoop()) {
+            for (auto *BB : DL->getBlocks()) {
               PL->removeBlockFromLoop(BB);
+
+}
+
+}
           DL->getParentLoop()->removeChildLoop(DL);
           LI.addTopLevelLoop(DL);
         }
         LI.erase(DL);
       }
+
+}
 
     for (auto *BB : DeadLoopBlocks) {
       assert(BB != L.getHeader() &&
@@ -466,8 +538,10 @@ private:
     DetatchDeadBlocks(DeadLoopBlocks, &DTUpdates, /*KeepOneInputPHIs*/true);
     DTU.applyUpdates(DTUpdates);
     DTUpdates.clear();
-    for (auto *BB : DeadLoopBlocks)
+    for (auto *BB : DeadLoopBlocks) {
       DTU.deleteBB(BB);
+
+}
 
     NumLoopBlocksDeleted += DeadLoopBlocks.size();
   }
@@ -487,27 +561,37 @@ private:
       SmallPtrSet<BasicBlock *, 2> DeadSuccessors;
       // Remove all BB's successors except for the live one.
       unsigned TheOnlySuccDuplicates = 0;
-      for (auto *Succ : successors(BB))
+      for (auto *Succ : successors(BB)) {
         if (Succ != TheOnlySucc) {
           DeadSuccessors.insert(Succ);
           // If our successor lies in a different loop, we don't want to remove
           // the one-input Phi because it is a LCSSA Phi.
           bool PreserveLCSSAPhi = !L.contains(Succ);
           Succ->removePredecessor(BB, PreserveLCSSAPhi);
-          if (MSSAU)
+          if (MSSAU) {
             MSSAU->removeEdge(BB, Succ);
-        } else
+
+}
+        } else {
           ++TheOnlySuccDuplicates;
+
+}
+
+}
 
       assert(TheOnlySuccDuplicates > 0 && "Should be!");
       // If TheOnlySucc was BB's successor more than once, after transform it
       // will be its successor only once. Remove redundant inputs from
       // TheOnlySucc's Phis.
       bool PreserveLCSSAPhi = !L.contains(TheOnlySucc);
-      for (unsigned Dup = 1; Dup < TheOnlySuccDuplicates; ++Dup)
+      for (unsigned Dup = 1; Dup < TheOnlySuccDuplicates; ++Dup) {
         TheOnlySucc->removePredecessor(BB, PreserveLCSSAPhi);
-      if (MSSAU && TheOnlySuccDuplicates > 1)
+
+}
+      if (MSSAU && TheOnlySuccDuplicates > 1) {
         MSSAU->removeDuplicatePhiEdgesBetween(BB, TheOnlySucc);
+
+}
 
       IRBuilder<> Builder(BB->getContext());
       Instruction *Term = BB->getTerminator();
@@ -515,8 +599,10 @@ private:
       Builder.CreateBr(TheOnlySucc);
       Term->eraseFromParent();
 
-      for (auto *DeadSucc : DeadSuccessors)
+      for (auto *DeadSucc : DeadSuccessors) {
         DTUpdates.push_back({DominatorTree::Delete, BB, DeadSucc});
+
+}
 
       ++NumTerminatorsFolded;
     }
@@ -595,8 +681,10 @@ public:
       DTUpdates.clear();
     }
 
-    if (MSSAU && VerifyMemorySSA)
+    if (MSSAU && VerifyMemorySSA) {
       MSSAU->getMemorySSA()->verifyMemorySSA();
+
+}
 
 #ifndef NDEBUG
     // Make sure that we have preserved all data structures after the transform.
@@ -626,13 +714,17 @@ static bool constantFoldTerminators(Loop &L, DominatorTree &DT, LoopInfo &LI,
                                     ScalarEvolution &SE,
                                     MemorySSAUpdater *MSSAU,
                                     bool &IsLoopDeleted) {
-  if (!EnableTermFolding)
+  if (!EnableTermFolding) {
     return false;
+
+}
 
   // To keep things simple, only process loops with single latch. We
   // canonicalize most loops to this form. We can support multi-latch if needed.
-  if (!L.getLoopLatch())
+  if (!L.getLoopLatch()) {
     return false;
+
+}
 
   ConstantTerminatorFoldingImpl BranchFolder(L, LI, DT, SE, MSSAU);
   bool Changed = BranchFolder.run();
@@ -652,18 +744,24 @@ static bool mergeBlocksIntoPredecessors(Loop &L, DominatorTree &DT,
     // Attempt to merge blocks in the trivial case. Don't modify blocks which
     // belong to other loops.
     BasicBlock *Succ = cast_or_null<BasicBlock>(Block);
-    if (!Succ)
+    if (!Succ) {
       continue;
 
+}
+
     BasicBlock *Pred = Succ->getSinglePredecessor();
-    if (!Pred || !Pred->getSingleSuccessor() || LI.getLoopFor(Pred) != &L)
+    if (!Pred || !Pred->getSingleSuccessor() || LI.getLoopFor(Pred) != &L) {
       continue;
+
+}
 
     // Merge Succ into Pred and delete it.
     MergeBlockIntoPredecessor(Succ, &DTU, &LI, MSSAU);
 
-    if (MSSAU && VerifyMemorySSA)
+    if (MSSAU && VerifyMemorySSA) {
       MSSAU->getMemorySSA()->verifyMemorySSA();
+
+}
 
     Changed = true;
   }
@@ -679,14 +777,18 @@ static bool simplifyLoopCFG(Loop &L, DominatorTree &DT, LoopInfo &LI,
   // Constant-fold terminators with known constant conditions.
   Changed |= constantFoldTerminators(L, DT, LI, SE, MSSAU, IsLoopDeleted);
 
-  if (IsLoopDeleted)
+  if (IsLoopDeleted) {
     return true;
+
+}
 
   // Eliminate unconditional branches by merging blocks into their predecessors.
   Changed |= mergeBlocksIntoPredecessors(L, DT, LI, MSSAU);
 
-  if (Changed)
+  if (Changed) {
     SE.forgetTopmostLoop(&L);
+
+}
 
   return Changed;
 }
@@ -695,20 +797,28 @@ PreservedAnalyses LoopSimplifyCFGPass::run(Loop &L, LoopAnalysisManager &AM,
                                            LoopStandardAnalysisResults &AR,
                                            LPMUpdater &LPMU) {
   Optional<MemorySSAUpdater> MSSAU;
-  if (AR.MSSA)
+  if (AR.MSSA) {
     MSSAU = MemorySSAUpdater(AR.MSSA);
+
+}
   bool DeleteCurrentLoop = false;
   if (!simplifyLoopCFG(L, AR.DT, AR.LI, AR.SE,
                        MSSAU.hasValue() ? MSSAU.getPointer() : nullptr,
-                       DeleteCurrentLoop))
+                       DeleteCurrentLoop)) {
     return PreservedAnalyses::all();
 
-  if (DeleteCurrentLoop)
+}
+
+  if (DeleteCurrentLoop) {
     LPMU.markLoopAsDeleted(L, "loop-simplifycfg");
 
+}
+
   auto PA = getLoopPassPreservedAnalyses();
-  if (AR.MSSA)
+  if (AR.MSSA) {
     PA.preserve<MemorySSAAnalysis>();
+
+}
   return PA;
 }
 
@@ -721,8 +831,10 @@ public:
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (skipLoop(L))
+    if (skipLoop(L)) {
       return false;
+
+}
 
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
@@ -731,15 +843,19 @@ public:
     if (EnableMSSALoopDependency) {
       MemorySSA *MSSA = &getAnalysis<MemorySSAWrapperPass>().getMSSA();
       MSSAU = MemorySSAUpdater(MSSA);
-      if (VerifyMemorySSA)
+      if (VerifyMemorySSA) {
         MSSA->verifyMemorySSA();
+
+}
     }
     bool DeleteCurrentLoop = false;
     bool Changed = simplifyLoopCFG(
         *L, DT, LI, SE, MSSAU.hasValue() ? MSSAU.getPointer() : nullptr,
         DeleteCurrentLoop);
-    if (DeleteCurrentLoop)
+    if (DeleteCurrentLoop) {
       LPM.markLoopAsDeleted(*L);
+
+}
     return Changed;
   }
 

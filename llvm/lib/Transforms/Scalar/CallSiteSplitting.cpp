@@ -88,8 +88,10 @@ static cl::opt<unsigned>
 static void addNonNullAttribute(CallSite CS, Value *Op) {
   unsigned ArgNo = 0;
   for (auto &I : CS.args()) {
-    if (&*I == Op)
+    if (&*I == Op) {
       CS.addParamAttr(ArgNo, Attribute::NonNull);
+
+}
     ++ArgNo;
   }
 }
@@ -115,11 +117,15 @@ static bool isCondRelevantToAnyCallArgument(ICmpInst *Cmp, CallSite CS) {
   for (CallSite::arg_iterator I = CS.arg_begin(), E = CS.arg_end(); I != E;
        ++I, ++ArgNo) {
     // Don't consider constant or arguments that are already known non-null.
-    if (isa<Constant>(*I) || CS.paramHasAttr(ArgNo, Attribute::NonNull))
+    if (isa<Constant>(*I) || CS.paramHasAttr(ArgNo, Attribute::NonNull)) {
       continue;
 
-    if (*I == Op0)
+}
+
+    if (*I == Op0) {
       return true;
+
+}
   }
   return false;
 }
@@ -132,20 +138,28 @@ typedef SmallVector<ConditionTy, 2> ConditionsTy;
 static void recordCondition(CallSite CS, BasicBlock *From, BasicBlock *To,
                             ConditionsTy &Conditions) {
   auto *BI = dyn_cast<BranchInst>(From->getTerminator());
-  if (!BI || !BI->isConditional())
+  if (!BI || !BI->isConditional()) {
     return;
+
+}
 
   CmpInst::Predicate Pred;
   Value *Cond = BI->getCondition();
-  if (!match(Cond, m_ICmp(Pred, m_Value(), m_Constant())))
+  if (!match(Cond, m_ICmp(Pred, m_Value(), m_Constant()))) {
     return;
 
+}
+
   ICmpInst *Cmp = cast<ICmpInst>(Cond);
-  if (Pred == ICmpInst::ICMP_EQ || Pred == ICmpInst::ICMP_NE)
-    if (isCondRelevantToAnyCallArgument(Cmp, CS))
+  if (Pred == ICmpInst::ICMP_EQ || Pred == ICmpInst::ICMP_NE) {
+    if (isCondRelevantToAnyCallArgument(Cmp, CS)) {
       Conditions.push_back({Cmp, From->getTerminator()->getSuccessor(0) == To
                                      ? Pred
                                      : Cmp->getInversePredicate()});
+
+}
+
+}
 }
 
 /// Record ICmp conditions relevant to any argument in CS following Pred's
@@ -169,9 +183,9 @@ static void addConditions(CallSite CS, const ConditionsTy &Conditions) {
   for (auto &Cond : Conditions) {
     Value *Arg = Cond.first->getOperand(0);
     Constant *ConstVal = cast<Constant>(Cond.first->getOperand(1));
-    if (Cond.second == ICmpInst::ICMP_EQ)
+    if (Cond.second == ICmpInst::ICMP_EQ) {
       setConstantInArgument(CS, Arg, ConstVal);
-    else if (ConstVal->getType()->isPointerTy() && ConstVal->isNullValue()) {
+    } else if (ConstVal->getType()->isPointerTy() && ConstVal->isNullValue()) {
       assert(Cond.second == ICmpInst::ICMP_NE);
       addNonNullAttribute(CS, Arg);
     }
@@ -185,26 +199,34 @@ static SmallVector<BasicBlock *, 2> getTwoPredecessors(BasicBlock *BB) {
 }
 
 static bool canSplitCallSite(CallSite CS, TargetTransformInfo &TTI) {
-  if (CS.isConvergent() || CS.cannotDuplicate())
+  if (CS.isConvergent() || CS.cannotDuplicate()) {
     return false;
+
+}
 
   // FIXME: As of now we handle only CallInst. InvokeInst could be handled
   // without too much effort.
   Instruction *Instr = CS.getInstruction();
-  if (!isa<CallInst>(Instr))
+  if (!isa<CallInst>(Instr)) {
     return false;
+
+}
 
   BasicBlock *CallSiteBB = Instr->getParent();
   // Need 2 predecessors and cannot split an edge from an IndirectBrInst.
   SmallVector<BasicBlock *, 2> Preds(predecessors(CallSiteBB));
   if (Preds.size() != 2 || isa<IndirectBrInst>(Preds[0]->getTerminator()) ||
-      isa<IndirectBrInst>(Preds[1]->getTerminator()))
+      isa<IndirectBrInst>(Preds[1]->getTerminator())) {
     return false;
+
+}
 
   // BasicBlock::canSplitPredecessors is more aggressive, so checking for
   // BasicBlock::isEHPad as well.
-  if (!CallSiteBB->canSplitPredecessors() || CallSiteBB->isEHPad())
+  if (!CallSiteBB->canSplitPredecessors() || CallSiteBB->isEHPad()) {
     return false;
+
+}
 
   // Allow splitting a call-site only when the CodeSize cost of the
   // instructions before the call is less then DuplicationThreshold. The
@@ -215,8 +237,10 @@ static bool canSplitCallSite(CallSite CS, TargetTransformInfo &TTI) {
        llvm::make_range(CallSiteBB->begin(), Instr->getIterator())) {
     Cost += TTI.getInstructionCost(&InstBeforeCall,
                                    TargetTransformInfo::TCK_CodeSize);
-    if (Cost >= DuplicationThreshold)
+    if (Cost >= DuplicationThreshold) {
       return false;
+
+}
   }
 
   return true;
@@ -227,8 +251,10 @@ static Instruction *cloneInstForMustTail(Instruction *I, Instruction *Before,
   Instruction *Copy = I->clone();
   Copy->setName(I->getName());
   Copy->insertBefore(Before);
-  if (V)
+  if (V) {
     Copy->setOperand(0, V);
+
+}
   return Copy;
 }
 
@@ -246,16 +272,20 @@ static void copyMustTailReturn(BasicBlock *SplitBB, Instruction *CI,
   auto II = std::next(CI->getIterator());
 
   BitCastInst* BCI = dyn_cast<BitCastInst>(&*II);
-  if (BCI)
+  if (BCI) {
     ++II;
+
+}
 
   ReturnInst* RI = dyn_cast<ReturnInst>(&*II);
   assert(RI && "`musttail` call must be followed by `ret` instruction");
 
   Instruction *TI = SplitBB->getTerminator();
   Value *V = NewCI;
-  if (BCI)
+  if (BCI) {
     V = cloneInstForMustTail(BCI, TI, V);
+
+}
   cloneInstForMustTail(RI, TI, IsVoid ? nullptr : V);
 
   // FIXME: remove TI here, `DuplicateInstructionsInSplitBetween` has a bug
@@ -351,12 +381,16 @@ static void splitCallSite(
     }
     LLVM_DEBUG(dbgs() << "    " << *NewCI << " in " << SplitBlock->getName()
                       << "\n");
-    if (CallPN)
+    if (CallPN) {
       CallPN->addIncoming(NewCI, SplitBlock);
 
+}
+
     // Clone and place bitcast and return instructions before `TI`
-    if (IsMustTailCall)
+    if (IsMustTailCall) {
       copyMustTailReturn(SplitBlock, Instr, NewCI);
+
+}
   }
 
   NumCallSiteSplit++;
@@ -399,20 +433,26 @@ static void splitCallSite(
     if (!CurrentI->use_empty()) {
       // If an existing PHI has users after the call, there is no need to create
       // a new one.
-      if (isa<PHINode>(CurrentI))
+      if (isa<PHINode>(CurrentI)) {
         continue;
+
+}
       PHINode *NewPN = PHINode::Create(CurrentI->getType(), Preds.size());
       NewPN->setDebugLoc(CurrentI->getDebugLoc());
-      for (auto &Mapping : ValueToValueMaps)
+      for (auto &Mapping : ValueToValueMaps) {
         NewPN->addIncoming(Mapping[CurrentI],
                            cast<Instruction>(Mapping[CurrentI])->getParent());
+
+}
       NewPN->insertBefore(&*TailBB->begin());
       CurrentI->replaceAllUsesWith(NewPN);
     }
     CurrentI->eraseFromParent();
     // We are done once we handled the first original instruction in TailBB.
-    if (CurrentI == OriginalBegin)
+    if (CurrentI == OriginalBegin) {
       break;
+
+}
   }
 }
 
@@ -421,23 +461,33 @@ static void splitCallSite(
 static bool isPredicatedOnPHI(CallSite CS) {
   Instruction *Instr = CS.getInstruction();
   BasicBlock *Parent = Instr->getParent();
-  if (Instr != Parent->getFirstNonPHIOrDbg())
+  if (Instr != Parent->getFirstNonPHIOrDbg()) {
     return false;
+
+}
 
   for (auto &BI : *Parent) {
     if (PHINode *PN = dyn_cast<PHINode>(&BI)) {
-      for (auto &I : CS.args())
+      for (auto &I : CS.args()) {
         if (&*I == PN) {
           assert(PN->getNumIncomingValues() == 2 &&
                  "Unexpected number of incoming values");
-          if (PN->getIncomingBlock(0) == PN->getIncomingBlock(1))
+          if (PN->getIncomingBlock(0) == PN->getIncomingBlock(1)) {
             return false;
-          if (PN->getIncomingValue(0) == PN->getIncomingValue(1))
+
+}
+          if (PN->getIncomingValue(0) == PN->getIncomingValue(1)) {
             continue;
+
+}
           if (isa<Constant>(PN->getIncomingValue(0)) &&
-              isa<Constant>(PN->getIncomingValue(1)))
+              isa<Constant>(PN->getIncomingValue(1))) {
             return true;
+
+}
         }
+
+}
     }
     break;
   }
@@ -449,8 +499,10 @@ using PredsWithCondsTy = SmallVector<std::pair<BasicBlock *, ConditionsTy>, 2>;
 // Check if any of the arguments in CS are predicated on a PHI node and return
 // the set of predecessors we should use for splitting.
 static PredsWithCondsTy shouldSplitOnPHIPredicatedArgument(CallSite CS) {
-  if (!isPredicatedOnPHI(CS))
+  if (!isPredicatedOnPHI(CS)) {
     return {};
+
+}
 
   auto Preds = getTwoPredecessors(CS.getInstruction()->getParent());
   return {{Preds[0], {}}, {Preds[1], {}}};
@@ -462,8 +514,10 @@ static PredsWithCondsTy shouldSplitOnPHIPredicatedArgument(CallSite CS) {
 static PredsWithCondsTy shouldSplitOnPredicatedArgument(CallSite CS,
                                                         DomTreeUpdater &DTU) {
   auto Preds = getTwoPredecessors(CS.getInstruction()->getParent());
-  if (Preds[0] == Preds[1])
+  if (Preds[0] == Preds[1]) {
     return {};
+
+}
 
   // We can stop recording conditions once we reached the immediate dominator
   // for the block containing the call site. Conditions in predecessors of the
@@ -485,8 +539,10 @@ static PredsWithCondsTy shouldSplitOnPredicatedArgument(CallSite CS,
 
   if (all_of(PredsCS, [](const std::pair<BasicBlock *, ConditionsTy> &P) {
         return P.second.empty();
-      }))
+      })) {
     return {};
+
+}
 
   return PredsCS;
 }
@@ -494,14 +550,20 @@ static PredsWithCondsTy shouldSplitOnPredicatedArgument(CallSite CS,
 static bool tryToSplitCallSite(CallSite CS, TargetTransformInfo &TTI,
                                DomTreeUpdater &DTU) {
   // Check if we can split the call site.
-  if (!CS.arg_size() || !canSplitCallSite(CS, TTI))
+  if (!CS.arg_size() || !canSplitCallSite(CS, TTI)) {
     return false;
 
+}
+
   auto PredsWithConds = shouldSplitOnPredicatedArgument(CS, DTU);
-  if (PredsWithConds.empty())
+  if (PredsWithConds.empty()) {
     PredsWithConds = shouldSplitOnPHIPredicatedArgument(CS);
-  if (PredsWithConds.empty())
+
+}
+  if (PredsWithConds.empty()) {
     return false;
+
+}
 
   splitCallSite(CS, PredsWithConds, DTU);
   return true;
@@ -523,12 +585,16 @@ static bool doCallSiteSplitting(Function &F, TargetLibraryInfo &TLI,
     while (II != IE && &*II != BB.getTerminator()) {
       Instruction *I = &*II++;
       CallSite CS(cast<Value>(I));
-      if (!CS || isa<IntrinsicInst>(I) || isInstructionTriviallyDead(I, &TLI))
+      if (!CS || isa<IntrinsicInst>(I) || isInstructionTriviallyDead(I, &TLI)) {
         continue;
 
+}
+
       Function *Callee = CS.getCalledFunction();
-      if (!Callee || Callee->isDeclaration())
+      if (!Callee || Callee->isDeclaration()) {
         continue;
+
+}
 
       // Successful musttail call-site splits result in erased CI and erased BB.
       // Check if such path is possible before attempting the splitting.
@@ -538,8 +604,10 @@ static bool doCallSiteSplitting(Function &F, TargetLibraryInfo &TLI,
 
       // There're no interesting instructions after this. The call site
       // itself might have been erased on splitting.
-      if (IsMustTail)
+      if (IsMustTail) {
         break;
+
+}
     }
   }
   return Changed;
@@ -561,8 +629,10 @@ struct CallSiteSplittingLegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
@@ -590,8 +660,10 @@ PreservedAnalyses CallSiteSplittingPass::run(Function &F,
   auto &TTI = AM.getResult<TargetIRAnalysis>(F);
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
 
-  if (!doCallSiteSplitting(F, TLI, TTI, DT))
+  if (!doCallSiteSplitting(F, TLI, TTI, DT)) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<DominatorTreeAnalysis>();
   return PA;

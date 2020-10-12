@@ -18,10 +18,14 @@ namespace tidy {
 namespace performance {
 
 static bool areTypesCompatible(QualType Left, QualType Right) {
-  if (const auto *LeftRefType = Left->getAs<ReferenceType>())
+  if (const auto *LeftRefType = Left->getAs<ReferenceType>()) {
     Left = LeftRefType->getPointeeType();
-  if (const auto *RightRefType = Right->getAs<ReferenceType>())
+
+}
+  if (const auto *RightRefType = Right->getAs<ReferenceType>()) {
     Right = RightRefType->getPointeeType();
+
+}
   return Left->getCanonicalTypeUnqualified() ==
          Right->getCanonicalTypeUnqualified();
 }
@@ -100,11 +104,15 @@ void InefficientAlgorithmCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   const auto *AlgDecl = AlgCall->getDirectCallee();
-  if (!AlgDecl)
+  if (!AlgDecl) {
     return;
 
-  if (Unordered && AlgDecl->getName().find("bound") != llvm::StringRef::npos)
+}
+
+  if (Unordered && AlgDecl->getName().find("bound") != llvm::StringRef::npos) {
     return;
+
+}
 
   const auto *AlgParam = Result.Nodes.getNodeAs<Expr>("AlgParam");
   const auto *IneffContExpr = Result.Nodes.getNodeAs<Expr>("IneffContExpr");

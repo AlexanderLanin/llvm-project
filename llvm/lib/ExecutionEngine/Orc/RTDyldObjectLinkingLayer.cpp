@@ -23,8 +23,10 @@ public:
     SymbolLookupSet InternedSymbols;
 
     // Intern the requested symbols: lookup takes interned strings.
-    for (auto &S : Symbols)
+    for (auto &S : Symbols) {
       InternedSymbols.add(ES.intern(S));
+
+}
 
     // Build an OnResolve callback to unwrap the interned strings and pass them
     // to the OnResolved callback.
@@ -37,8 +39,10 @@ public:
           }
 
           LookupResult Result;
-          for (auto &KV : *InternedResult)
+          for (auto &KV : *InternedResult) {
             Result[*KV.first] = std::move(KV.second);
+
+}
           OnResolved(Result);
         };
 
@@ -59,8 +63,10 @@ public:
     LookupSet Result;
 
     for (auto &KV : MR.getSymbols()) {
-      if (Symbols.count(*KV.first))
+      if (Symbols.count(*KV.first)) {
         Result.insert(*KV.first);
+
+}
     }
 
     return Result;
@@ -81,8 +87,10 @@ RTDyldObjectLinkingLayer::RTDyldObjectLinkingLayer(
 
 RTDyldObjectLinkingLayer::~RTDyldObjectLinkingLayer() {
   std::lock_guard<std::mutex> Lock(RTDyldLayerMutex);
-  for (auto &MemMgr : MemMgrs)
+  for (auto &MemMgr : MemMgrs) {
     MemMgr->deregisterEHFrames();
+
+}
 }
 
 void RTDyldObjectLinkingLayer::emit(MaterializationResponsibility R,
@@ -119,8 +127,10 @@ void RTDyldObjectLinkingLayer::emit(MaterializationResponsibility R,
 
       // Skip file symbols.
       if (auto SymType = Sym.getType()) {
-        if (*SymType == object::SymbolRef::ST_File)
+        if (*SymType == object::SymbolRef::ST_File) {
           continue;
+
+}
       } else {
         ES.reportError(SymType.takeError());
         R.failMaterialization();
@@ -129,9 +139,9 @@ void RTDyldObjectLinkingLayer::emit(MaterializationResponsibility R,
 
       // Don't include symbols that aren't global.
       if (!(Sym.getFlags() & object::BasicSymbolRef::SF_Global)) {
-        if (auto SymName = Sym.getName())
+        if (auto SymName = Sym.getName()) {
           InternalSymbols->insert(*SymName);
-        else {
+        } else {
           ES.reportError(SymName.takeError());
           R.failMaterialization();
           return;
@@ -183,26 +193,38 @@ Error RTDyldObjectLinkingLayer::onObjLoad(
     // check whether the symbol is in a comdat section and if so mark it as
     // weak.
     for (auto &Sym : COFFObj->symbols()) {
-      if (Sym.getFlags() & object::BasicSymbolRef::SF_Undefined)
+      if (Sym.getFlags() & object::BasicSymbolRef::SF_Undefined) {
         continue;
+
+}
       auto Name = Sym.getName();
-      if (!Name)
+      if (!Name) {
         return Name.takeError();
+
+}
       auto I = Resolved.find(*Name);
 
       // Skip unresolved symbols, internal symbols, and symbols that are
       // already in the responsibility set.
       if (I == Resolved.end() || InternalSymbols.count(*Name) ||
-          R.getSymbols().count(ES.intern(*Name)))
+          R.getSymbols().count(ES.intern(*Name))) {
         continue;
+
+}
       auto Sec = Sym.getSection();
-      if (!Sec)
+      if (!Sec) {
         return Sec.takeError();
-      if (*Sec == COFFObj->section_end())
+
+}
+      if (*Sec == COFFObj->section_end()) {
         continue;
+
+}
       auto &COFFSec = *COFFObj->getCOFFSection(**Sec);
-      if (COFFSec.Characteristics & COFF::IMAGE_SCN_LNK_COMDAT)
+      if (COFFSec.Characteristics & COFF::IMAGE_SCN_LNK_COMDAT) {
         I->second.setFlags(I->second.getFlags() | JITSymbolFlags::Weak);
+
+}
     }
   }
 
@@ -210,8 +232,10 @@ Error RTDyldObjectLinkingLayer::onObjLoad(
     // Scan the symbols and add them to the Symbols map for resolution.
 
     // We never claim internal symbols.
-    if (InternalSymbols.count(KV.first))
+    if (InternalSymbols.count(KV.first)) {
       continue;
+
+}
 
     auto InternedName = getExecutionSession().intern(KV.first);
     auto Flags = KV.second.getFlags();
@@ -221,36 +245,48 @@ Error RTDyldObjectLinkingLayer::onObjLoad(
     if (OverrideObjectFlags || AutoClaimObjectSymbols) {
       auto I = R.getSymbols().find(InternedName);
 
-      if (OverrideObjectFlags && I != R.getSymbols().end())
+      if (OverrideObjectFlags && I != R.getSymbols().end()) {
         Flags = I->second;
-      else if (AutoClaimObjectSymbols && I == R.getSymbols().end())
+      } else if (AutoClaimObjectSymbols && I == R.getSymbols().end()) {
         ExtraSymbolsToClaim[InternedName] = Flags;
+
+}
     }
 
     Symbols[InternedName] = JITEvaluatedSymbol(KV.second.getAddress(), Flags);
   }
 
   if (!ExtraSymbolsToClaim.empty()) {
-    if (auto Err = R.defineMaterializing(ExtraSymbolsToClaim))
+    if (auto Err = R.defineMaterializing(ExtraSymbolsToClaim)) {
       return Err;
+
+}
 
     // If we claimed responsibility for any weak symbols but were rejected then
     // we need to remove them from the resolved set.
-    for (auto &KV : ExtraSymbolsToClaim)
-      if (KV.second.isWeak() && !R.getSymbols().count(KV.first))
+    for (auto &KV : ExtraSymbolsToClaim) {
+      if (KV.second.isWeak() && !R.getSymbols().count(KV.first)) {
         Symbols.erase(KV.first);
+
+}
+
+}
   }
 
-  if (const auto &InitSym = R.getInitializerSymbol())
+  if (const auto &InitSym = R.getInitializerSymbol()) {
     Symbols[InitSym] = JITEvaluatedSymbol();
+
+}
 
   if (auto Err = R.notifyResolved(Symbols)) {
     R.failMaterialization();
     return Err;
   }
 
-  if (NotifyLoaded)
+  if (NotifyLoaded) {
     NotifyLoaded(K, Obj, *LoadedObjInfo);
+
+}
 
   return Error::success();
 }
@@ -270,8 +306,10 @@ void RTDyldObjectLinkingLayer::onObjEmit(
     return;
   }
 
-  if (NotifyEmitted)
+  if (NotifyEmitted) {
     NotifyEmitted(K, std::move(ObjBuffer));
+
+}
 }
 
 LegacyRTDyldObjectLinkingLayer::LegacyRTDyldObjectLinkingLayer(

@@ -48,18 +48,22 @@ public:
           // Merge as we go.
           std::lock_guard<std::mutex> Lock(SymbolsMu);
           for (const auto &Sym : S) {
-            if (const auto *Existing = Symbols.find(Sym.ID))
+            if (const auto *Existing = Symbols.find(Sym.ID)) {
               Symbols.insert(mergeSymbol(*Existing, Sym));
-            else
+            } else {
               Symbols.insert(Sym);
+
+}
           }
         },
         [&](RefSlab S) {
           std::lock_guard<std::mutex> Lock(SymbolsMu);
           for (const auto &Sym : S) {
             // Deduplication happens during insertion.
-            for (const auto &Ref : Sym.second)
+            for (const auto &Ref : Sym.second) {
               Refs.insert(Sym.first, Ref);
+
+}
           }
         },
         [&](RelationSlab S) {

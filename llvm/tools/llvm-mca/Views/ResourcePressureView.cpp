@@ -29,8 +29,10 @@ ResourcePressureView::ResourcePressureView(const llvm::MCSubtargetInfo &sti,
     const MCProcResourceDesc &ProcResource = *SM.getProcResource(I);
     unsigned NumUnits = ProcResource.NumUnits;
     // Skip groups and invalid resources with zero units.
-    if (ProcResource.SubUnitsIdxBegin || !NumUnits)
+    if (ProcResource.SubUnitsIdxBegin || !NumUnits) {
       continue;
+
+}
 
     Resource2VecIndex.insert(std::pair<unsigned, unsigned>(I, R2VIndex));
     R2VIndex += ProcResource.NumUnits;
@@ -48,8 +50,10 @@ void ResourcePressureView::onEvent(const HWInstructionEvent &Event) {
   }
 
   // We're only interested in Issue events.
-  if (Event.Type != HWInstructionEvent::Issued)
+  if (Event.Type != HWInstructionEvent::Issued) {
     return;
+
+}
 
   const auto &IssueEvent = static_cast<const HWInstructionIssuedEvent &>(Event);
   const unsigned SourceIdx = Event.IR.getSourceIndex() % Source.size();
@@ -72,14 +76,18 @@ static void printColumnNames(formatted_raw_ostream &OS,
     const MCProcResourceDesc &ProcResource = *SM.getProcResource(I);
     unsigned NumUnits = ProcResource.NumUnits;
     // Skip groups and invalid resources with zero units.
-    if (ProcResource.SubUnitsIdxBegin || !NumUnits)
+    if (ProcResource.SubUnitsIdxBegin || !NumUnits) {
       continue;
+
+}
 
     for (unsigned J = 0; J < NumUnits; ++J) {
       Column += 7;
       OS << "[" << ResourceIndex;
-      if (NumUnits > 1)
+      if (NumUnits > 1) {
         OS << '.' << J;
+
+}
       OS << ']';
       OS.PadToColumn(Column);
     }
@@ -111,13 +119,17 @@ void ResourcePressureView::printResourcePressurePerIter(raw_ostream &OS) const {
     const MCProcResourceDesc &ProcResource = *SM.getProcResource(I);
     unsigned NumUnits = ProcResource.NumUnits;
     // Skip groups and invalid resources with zero units.
-    if (ProcResource.SubUnitsIdxBegin || !NumUnits)
+    if (ProcResource.SubUnitsIdxBegin || !NumUnits) {
       continue;
+
+}
 
     for (unsigned J = 0; J < NumUnits; ++J) {
       FOS << '[' << ResourceIndex;
-      if (NumUnits > 1)
+      if (NumUnits > 1) {
         FOS << '.' << J;
+
+}
       FOS << ']';
       FOS.PadToColumn(6);
       FOS << "- " << ProcResource.Name << '\n';

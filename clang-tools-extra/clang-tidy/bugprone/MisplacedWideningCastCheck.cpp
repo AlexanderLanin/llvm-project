@@ -56,14 +56,20 @@ static unsigned getMaxCalculationWidth(const ASTContext &Context,
   if (const auto *Bop = dyn_cast<BinaryOperator>(E)) {
     unsigned LHSWidth = getMaxCalculationWidth(Context, Bop->getLHS());
     unsigned RHSWidth = getMaxCalculationWidth(Context, Bop->getRHS());
-    if (Bop->getOpcode() == BO_Mul)
+    if (Bop->getOpcode() == BO_Mul) {
       return LHSWidth + RHSWidth;
-    if (Bop->getOpcode() == BO_Add)
+
+}
+    if (Bop->getOpcode() == BO_Add) {
       return std::max(LHSWidth, RHSWidth) + 1;
+
+}
     if (Bop->getOpcode() == BO_Rem) {
       Expr::EvalResult Result;
-      if (Bop->getRHS()->EvaluateAsInt(Result, Context))
+      if (Bop->getRHS()->EvaluateAsInt(Result, Context)) {
         return Result.Val.getInt().getActiveBits();
+
+}
     } else if (Bop->getOpcode() == BO_Shl) {
       Expr::EvalResult Result;
       if (Bop->getRHS()->EvaluateAsInt(Result, Context)) {
@@ -78,8 +84,10 @@ static unsigned getMaxCalculationWidth(const ASTContext &Context,
     }
   } else if (const auto *Uop = dyn_cast<UnaryOperator>(E)) {
     // There is truncation when ~ is used.
-    if (Uop->getOpcode() == UO_Not)
+    if (Uop->getOpcode() == UO_Not) {
       return 1024U;
+
+}
 
     QualType T = Uop->getType();
     return T->isIntegerType() ? Context.getIntWidth(T) : 1024U;
@@ -166,31 +174,45 @@ static int relativeCharSizesW(BuiltinType::Kind Kind) {
 static bool isFirstWider(BuiltinType::Kind First, BuiltinType::Kind Second) {
   int FirstSize, SecondSize;
   if ((FirstSize = relativeIntSizes(First)) != 0 &&
-      (SecondSize = relativeIntSizes(Second)) != 0)
+      (SecondSize = relativeIntSizes(Second)) != 0) {
     return FirstSize > SecondSize;
+
+}
   if ((FirstSize = relativeCharSizes(First)) != 0 &&
-      (SecondSize = relativeCharSizes(Second)) != 0)
+      (SecondSize = relativeCharSizes(Second)) != 0) {
     return FirstSize > SecondSize;
+
+}
   if ((FirstSize = relativeCharSizesW(First)) != 0 &&
-      (SecondSize = relativeCharSizesW(Second)) != 0)
+      (SecondSize = relativeCharSizesW(Second)) != 0) {
     return FirstSize > SecondSize;
+
+}
   return false;
 }
 
 void MisplacedWideningCastCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Cast = Result.Nodes.getNodeAs<CastExpr>("Cast");
-  if (!CheckImplicitCasts && isa<ImplicitCastExpr>(Cast))
+  if (!CheckImplicitCasts && isa<ImplicitCastExpr>(Cast)) {
     return;
-  if (Cast->getBeginLoc().isMacroID())
+
+}
+  if (Cast->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   const auto *Calc = Result.Nodes.getNodeAs<Expr>("Calc");
-  if (Calc->getBeginLoc().isMacroID())
+  if (Calc->getBeginLoc().isMacroID()) {
     return;
 
+}
+
   if (Cast->isTypeDependent() || Cast->isValueDependent() ||
-      Calc->isTypeDependent() || Calc->isValueDependent())
+      Calc->isTypeDependent() || Calc->isValueDependent()) {
     return;
+
+}
 
   ASTContext &Context = *Result.Context;
 
@@ -198,8 +220,10 @@ void MisplacedWideningCastCheck::check(const MatchFinder::MatchResult &Result) {
   QualType CalcType = Calc->getType();
 
   // Explicit truncation using cast.
-  if (Context.getIntWidth(CastType) < Context.getIntWidth(CalcType))
+  if (Context.getIntWidth(CastType) < Context.getIntWidth(CalcType)) {
     return;
+
+}
 
   // If CalcType and CastType have same size then there is no real danger, but
   // there can be a portability problem.
@@ -209,16 +233,22 @@ void MisplacedWideningCastCheck::check(const MatchFinder::MatchResult &Result) {
         dyn_cast<BuiltinType>(CastType->getUnqualifiedDesugaredType());
     const auto *CalcBuiltinType =
         dyn_cast<BuiltinType>(CalcType->getUnqualifiedDesugaredType());
-    if (!CastBuiltinType || !CalcBuiltinType)
+    if (!CastBuiltinType || !CalcBuiltinType) {
       return;
-    if (!isFirstWider(CastBuiltinType->getKind(), CalcBuiltinType->getKind()))
+
+}
+    if (!isFirstWider(CastBuiltinType->getKind(), CalcBuiltinType->getKind())) {
       return;
+
+}
   }
 
   // Don't write a warning if we can easily see that the result is not
   // truncated.
-  if (Context.getIntWidth(CalcType) >= getMaxCalculationWidth(Context, Calc))
+  if (Context.getIntWidth(CalcType) >= getMaxCalculationWidth(Context, Calc)) {
     return;
+
+}
 
   diag(Cast->getBeginLoc(), "either cast from %0 to %1 is ineffective, or "
                             "there is loss of precision before the conversion")

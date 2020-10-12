@@ -80,8 +80,10 @@ void Option::print(raw_ostream &O) const {
     Alias.print(O);
   }
 
-  if (getKind() == MultiArgClass)
+  if (getKind() == MultiArgClass) {
     O << " NumArgs:" << getNumArgs();
+
+}
 
   O << ">\n";
 }
@@ -93,16 +95,22 @@ LLVM_DUMP_METHOD void Option::dump() const { print(dbgs()); }
 bool Option::matches(OptSpecifier Opt) const {
   // Aliases are never considered in matching, look through them.
   const Option Alias = getAlias();
-  if (Alias.isValid())
+  if (Alias.isValid()) {
     return Alias.matches(Opt);
 
+}
+
   // Check exact match.
-  if (getID() == Opt.getID())
+  if (getID() == Opt.getID()) {
     return true;
 
+}
+
   const Option Group = getGroup();
-  if (Group.isValid())
+  if (Group.isValid()) {
     return Group.matches(Opt);
+
+}
   return false;
 }
 
@@ -111,8 +119,10 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
   StringRef Spelling = StringRef(Args.getArgString(Index), ArgSize);
   switch (getKind()) {
   case FlagClass: {
-    if (ArgSize != strlen(Args.getArgString(Index)))
+    if (ArgSize != strlen(Args.getArgString(Index))) {
       return nullptr;
+
+}
     return new Arg(*this, Spelling, Index++);
   }
   case JoinedClass: {
@@ -137,8 +147,10 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
           A->getValues().push_back(Value);
         }
 
-        if (!c)
+        if (!c) {
           break;
+
+}
 
         Prev = Str + 1;
       }
@@ -150,29 +162,39 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
   case SeparateClass:
     // Matches iff this is an exact match.
     // FIXME: Avoid strlen.
-    if (ArgSize != strlen(Args.getArgString(Index)))
+    if (ArgSize != strlen(Args.getArgString(Index))) {
       return nullptr;
+
+}
 
     Index += 2;
     if (Index > Args.getNumInputArgStrings() ||
-        Args.getArgString(Index - 1) == nullptr)
+        Args.getArgString(Index - 1) == nullptr) {
       return nullptr;
+
+}
 
     return new Arg(*this, Spelling, Index - 2, Args.getArgString(Index - 1));
   case MultiArgClass: {
     // Matches iff this is an exact match.
     // FIXME: Avoid strlen.
-    if (ArgSize != strlen(Args.getArgString(Index)))
+    if (ArgSize != strlen(Args.getArgString(Index))) {
       return nullptr;
 
+}
+
     Index += 1 + getNumArgs();
-    if (Index > Args.getNumInputArgStrings())
+    if (Index > Args.getNumInputArgStrings()) {
       return nullptr;
+
+}
 
     Arg *A = new Arg(*this, Spelling, Index - 1 - getNumArgs(),
                      Args.getArgString(Index - getNumArgs()));
-    for (unsigned i = 1; i != getNumArgs(); ++i)
+    for (unsigned i = 1; i != getNumArgs(); ++i) {
       A->getValues().push_back(Args.getArgString(Index - getNumArgs() + i));
+
+}
     return A;
   }
   case JoinedOrSeparateClass: {
@@ -186,8 +208,10 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
     // Otherwise it must be separate.
     Index += 2;
     if (Index > Args.getNumInputArgStrings() ||
-        Args.getArgString(Index - 1) == nullptr)
+        Args.getArgString(Index - 1) == nullptr) {
       return nullptr;
+
+}
 
     return new Arg(*this, Spelling, Index - 2, Args.getArgString(Index - 1));
   }
@@ -195,8 +219,10 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
     // Always matches.
     Index += 2;
     if (Index > Args.getNumInputArgStrings() ||
-        Args.getArgString(Index - 1) == nullptr)
+        Args.getArgString(Index - 1) == nullptr) {
       return nullptr;
+
+}
 
     return new Arg(*this, Spelling, Index - 2,
                    Args.getArgString(Index - 2) + ArgSize,
@@ -204,12 +230,16 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
   case RemainingArgsClass: {
     // Matches iff this is an exact match.
     // FIXME: Avoid strlen.
-    if (ArgSize != strlen(Args.getArgString(Index)))
+    if (ArgSize != strlen(Args.getArgString(Index))) {
       return nullptr;
+
+}
     Arg *A = new Arg(*this, Spelling, Index++);
     while (Index < Args.getNumInputArgStrings() &&
-           Args.getArgString(Index) != nullptr)
+           Args.getArgString(Index) != nullptr) {
       A->getValues().push_back(Args.getArgString(Index++));
+
+}
     return A;
   }
   case RemainingArgsJoinedClass: {
@@ -220,8 +250,10 @@ Arg *Option::acceptInternal(const ArgList &Args, unsigned &Index,
     }
     Index++;
     while (Index < Args.getNumInputArgStrings() &&
-           Args.getArgString(Index) != nullptr)
+           Args.getArgString(Index) != nullptr) {
       A->getValues().push_back(Args.getArgString(Index++));
+
+}
     return A;
   }
 
@@ -234,12 +266,16 @@ Arg *Option::accept(const ArgList &Args,
                     unsigned &Index,
                     unsigned ArgSize) const {
   std::unique_ptr<Arg> A(acceptInternal(Args, Index, ArgSize));
-  if (!A)
+  if (!A) {
     return nullptr;
 
+}
+
   const Option &UnaliasedOption = getUnaliasedOption();
-  if (getID() == UnaliasedOption.getID())
+  if (getID() == UnaliasedOption.getID()) {
     return A.release();
+
+}
 
   // "A" is an alias for a different flag. For most clients it's more convenient
   // if this function returns unaliased Args, so create an unaliased arg for
@@ -283,8 +319,10 @@ Arg *Option::accept(const ArgList &Args,
       Val += strlen(Val) + 1;
     }
   }
-  if (UnaliasedOption.getKind() == JoinedClass && !getAliasArgs())
+  if (UnaliasedOption.getKind() == JoinedClass && !getAliasArgs()) {
     // A Flag alias for a Joined option must provide an argument.
     UnaliasedA->getValues().push_back("");
+
+}
   return UnaliasedA;
 }

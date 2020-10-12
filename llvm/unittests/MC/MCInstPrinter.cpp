@@ -37,8 +37,10 @@ public:
         TargetRegistry::lookupTarget(TripleName, ErrorStr);
 
     // If we didn't build x86, do not run the test.
-    if (!TheTarget)
+    if (!TheTarget) {
       return;
+
+}
 
     MRI.reset(TheTarget->createMCRegInfo(TripleName));
     MCTargetOptions MCOptions;
@@ -59,8 +61,10 @@ public:
 } // namespace
 
 TEST_F(MCInstPrinterTest, formatHex) {
-  if (!Printer)
+  if (!Printer) {
     return;
+
+}
 
   EXPECT_EQ("0x1", formatHex<int64_t>(1));
   EXPECT_EQ("0x7fffffffffffffff",

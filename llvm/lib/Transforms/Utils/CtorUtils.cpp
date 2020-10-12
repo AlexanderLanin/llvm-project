@@ -28,9 +28,13 @@ static void removeGlobalCtors(GlobalVariable *GCL, const BitVector &CtorsToRemov
   // Filter out the initializer elements to remove.
   ConstantArray *OldCA = cast<ConstantArray>(GCL->getInitializer());
   SmallVector<Constant *, 10> CAList;
-  for (unsigned I = 0, E = OldCA->getNumOperands(); I < E; ++I)
-    if (!CtorsToRemove.test(I))
+  for (unsigned I = 0, E = OldCA->getNumOperands(); I < E; ++I) {
+    if (!CtorsToRemove.test(I)) {
       CAList.push_back(OldCA->getOperand(I));
+
+}
+
+}
 
   // Create the new array initializer.
   ArrayType *ATy =
@@ -53,8 +57,10 @@ static void removeGlobalCtors(GlobalVariable *GCL, const BitVector &CtorsToRemov
   // Nuke the old list, replacing any uses with the new one.
   if (!GCL->use_empty()) {
     Constant *V = NGV;
-    if (V->getType() != GCL->getType())
+    if (V->getType() != GCL->getType()) {
       V = ConstantExpr::getBitCast(V, GCL->getType());
+
+}
     GCL->replaceAllUsesWith(V);
   }
   GCL->eraseFromParent();
@@ -63,8 +69,10 @@ static void removeGlobalCtors(GlobalVariable *GCL, const BitVector &CtorsToRemov
 /// Given a llvm.global_ctors list that we can understand,
 /// return a list of the functions and null terminator as a vector.
 static std::vector<Function *> parseGlobalCtors(GlobalVariable *GV) {
-  if (GV->getInitializer()->isNullValue())
+  if (GV->getInitializer()->isNullValue()) {
     return std::vector<Function *>();
+
+}
   ConstantArray *CA = cast<ConstantArray>(GV->getInitializer());
   std::vector<Function *> Result;
   Result.reserve(CA->getNumOperands());
@@ -79,33 +87,47 @@ static std::vector<Function *> parseGlobalCtors(GlobalVariable *GV) {
 /// init priority of 65535.
 static GlobalVariable *findGlobalCtors(Module &M) {
   GlobalVariable *GV = M.getGlobalVariable("llvm.global_ctors");
-  if (!GV)
+  if (!GV) {
     return nullptr;
+
+}
 
   // Verify that the initializer is simple enough for us to handle. We are
   // only allowed to optimize the initializer if it is unique.
-  if (!GV->hasUniqueInitializer())
+  if (!GV->hasUniqueInitializer()) {
     return nullptr;
 
-  if (isa<ConstantAggregateZero>(GV->getInitializer()))
+}
+
+  if (isa<ConstantAggregateZero>(GV->getInitializer())) {
     return GV;
+
+}
   ConstantArray *CA = cast<ConstantArray>(GV->getInitializer());
 
   for (auto &V : CA->operands()) {
-    if (isa<ConstantAggregateZero>(V))
-      continue;
-    ConstantStruct *CS = cast<ConstantStruct>(V);
-    if (isa<ConstantPointerNull>(CS->getOperand(1)))
+    if (isa<ConstantAggregateZero>(V)) {
       continue;
 
+}
+    ConstantStruct *CS = cast<ConstantStruct>(V);
+    if (isa<ConstantPointerNull>(CS->getOperand(1))) {
+      continue;
+
+}
+
     // Must have a function or null ptr.
-    if (!isa<Function>(CS->getOperand(1)))
+    if (!isa<Function>(CS->getOperand(1))) {
       return nullptr;
+
+}
 
     // Init priority must be standard.
     ConstantInt *CI = cast<ConstantInt>(CS->getOperand(0));
-    if (CI->getZExtValue() != 65535)
+    if (CI->getZExtValue() != 65535) {
       return nullptr;
+
+}
   }
 
   return GV;
@@ -116,12 +138,16 @@ static GlobalVariable *findGlobalCtors(Module &M) {
 bool llvm::optimizeGlobalCtorsList(
     Module &M, function_ref<bool(Function *)> ShouldRemove) {
   GlobalVariable *GlobalCtors = findGlobalCtors(M);
-  if (!GlobalCtors)
+  if (!GlobalCtors) {
     return false;
 
+}
+
   std::vector<Function *> Ctors = parseGlobalCtors(GlobalCtors);
-  if (Ctors.empty())
+  if (Ctors.empty()) {
     return false;
+
+}
 
   bool MadeChange = false;
 
@@ -132,14 +158,18 @@ bool llvm::optimizeGlobalCtorsList(
     Function *F = Ctors[i];
     // Found a null terminator in the middle of the list, prune off the rest of
     // the list.
-    if (!F)
+    if (!F) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "Optimizing Global Constructor: " << *F << "\n");
 
     // We cannot simplify external ctor functions.
-    if (F->empty())
+    if (F->empty()) {
       continue;
+
+}
 
     // If we can evaluate the ctor at compile time, do.
     if (ShouldRemove(F)) {
@@ -151,8 +181,10 @@ bool llvm::optimizeGlobalCtorsList(
     }
   }
 
-  if (!MadeChange)
+  if (!MadeChange) {
     return false;
+
+}
 
   removeGlobalCtors(GlobalCtors, CtorsToRemove);
   return true;

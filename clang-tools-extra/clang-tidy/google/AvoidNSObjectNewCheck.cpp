@@ -25,12 +25,16 @@ namespace objc {
 
 static bool isMessageExpressionInsideMacro(const ObjCMessageExpr *Expr) {
   SourceLocation ReceiverLocation = Expr->getReceiverRange().getBegin();
-  if (ReceiverLocation.isMacroID())
+  if (ReceiverLocation.isMacroID()) {
     return true;
 
+}
+
   SourceLocation SelectorLocation = Expr->getSelectorStartLoc();
-  if (SelectorLocation.isMacroID())
+  if (SelectorLocation.isMacroID()) {
     return true;
+
+}
 
   return false;
 }
@@ -40,8 +44,10 @@ static bool isMessageExpressionInsideMacro(const ObjCMessageExpr *Expr) {
 static bool isInitMethodAvailable(const ObjCInterfaceDecl *ClassDecl) {
   while (ClassDecl != nullptr) {
     for (const auto *MethodDecl : ClassDecl->instance_methods()) {
-      if (MethodDecl->getSelector().getAsString() == "init")
+      if (MethodDecl->getSelector().getAsString() == "init") {
         return !MethodDecl->isUnavailable();
+
+}
     }
     ClassDecl = ClassDecl->getSuperClass();
   }
@@ -108,8 +114,10 @@ void AvoidNSObjectNewCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *CallExpr =
           Result.Nodes.getNodeAs<ObjCMessageExpr>("new_call")) {
     // Don't warn if the call expression originates from a macro expansion.
-    if (isMessageExpressionInsideMacro(CallExpr))
+    if (isMessageExpressionInsideMacro(CallExpr)) {
       return;
+
+}
 
     diag(CallExpr->getExprLoc(), "do not create objects with +new")
         << getCallFixItHint(CallExpr, *Result.SourceManager,

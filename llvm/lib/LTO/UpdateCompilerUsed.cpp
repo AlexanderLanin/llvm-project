@@ -32,12 +32,18 @@ public:
 
   void findInModule(Module &TheModule) {
     initializeLibCalls(TheModule);
-    for (Function &F : TheModule)
+    for (Function &F : TheModule) {
       findLibCallsAndAsm(F);
-    for (GlobalVariable &GV : TheModule.globals())
+
+}
+    for (GlobalVariable &GV : TheModule.globals()) {
       findLibCallsAndAsm(GV);
-    for (GlobalAlias &GA : TheModule.aliases())
+
+}
+    for (GlobalAlias &GA : TheModule.aliases()) {
       findLibCallsAndAsm(GA);
+
+}
   }
 
 private:
@@ -64,8 +70,10 @@ private:
     for (unsigned I = 0, E = static_cast<unsigned>(LibFunc::NumLibFuncs);
          I != E; ++I) {
       LibFunc F = static_cast<LibFunc>(I);
-      if (TLI.has(F))
+      if (TLI.has(F)) {
         Libcalls.insert(TLI.getName(F));
+
+}
     }
 
     SmallPtrSet<const TargetLowering *, 1> TLSet;
@@ -74,25 +82,35 @@ private:
       const TargetLowering *Lowering =
           TM.getSubtargetImpl(F)->getTargetLowering();
 
-      if (Lowering && TLSet.insert(Lowering).second)
+      if (Lowering && TLSet.insert(Lowering).second) {
         // TargetLowering has info on library calls that CodeGen expects to be
         // available, both from the C runtime and compiler-rt.
         for (unsigned I = 0, E = static_cast<unsigned>(RTLIB::UNKNOWN_LIBCALL);
-             I != E; ++I)
+             I != E; ++I) {
           if (const char *Name =
-                  Lowering->getLibcallName(static_cast<RTLIB::Libcall>(I)))
+                  Lowering->getLibcallName(static_cast<RTLIB::Libcall>(I))) {
             Libcalls.insert(Name);
+
+}
+
+}
+
+}
     }
   }
 
   void findLibCallsAndAsm(GlobalValue &GV) {
     // There are no restrictions to apply to declarations.
-    if (GV.isDeclaration())
+    if (GV.isDeclaration()) {
       return;
 
+}
+
     // There is nothing more restrictive than private linkage.
-    if (GV.hasPrivateLinkage())
+    if (GV.hasPrivateLinkage()) {
       return;
+
+}
 
     // Conservatively append user-supplied runtime library functions (supplied
     // either directly, or via a function alias) to llvm.compiler.used.  These
@@ -112,8 +130,10 @@ private:
 
     SmallString<64> Buffer;
     TM.getNameWithPrefix(Buffer, &GV, Mangler);
-    if (AsmUndefinedRefs.count(Buffer))
+    if (AsmUndefinedRefs.count(Buffer)) {
       LLVMUsed.push_back(&GV);
+
+}
   }
 };
 
@@ -125,8 +145,10 @@ void llvm::updateCompilerUsed(Module &TheModule, const TargetMachine &TM,
   PreserveLibCallsAndAsmUsed(AsmUndefinedRefs, TM, UsedValues)
       .findInModule(TheModule);
 
-  if (UsedValues.empty())
+  if (UsedValues.empty()) {
     return;
+
+}
 
   appendToCompilerUsed(TheModule, UsedValues);
 }

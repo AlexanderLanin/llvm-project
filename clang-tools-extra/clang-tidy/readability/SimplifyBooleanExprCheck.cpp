@@ -74,12 +74,16 @@ internal::Matcher<Stmt> returnsBool(bool Value, StringRef Id = "ignored") {
 
 bool needsParensAfterUnaryNegation(const Expr *E) {
   E = E->IgnoreImpCasts();
-  if (isa<BinaryOperator>(E) || isa<ConditionalOperator>(E))
+  if (isa<BinaryOperator>(E) || isa<ConditionalOperator>(E)) {
     return true;
 
-  if (const auto *Op = dyn_cast<CXXOperatorCallExpr>(E))
+}
+
+  if (const auto *Op = dyn_cast<CXXOperatorCallExpr>(E)) {
     return Op->getNumArgs() == 2 && Op->getOperator() != OO_Call &&
            Op->getOperator() != OO_Subscript;
+
+}
 
   return false;
 }
@@ -90,10 +94,14 @@ std::pair<BinaryOperatorKind, BinaryOperatorKind> Opposites[] = {
 StringRef negatedOperator(const BinaryOperator *BinOp) {
   const BinaryOperatorKind Opcode = BinOp->getOpcode();
   for (auto NegatableOp : Opposites) {
-    if (Opcode == NegatableOp.first)
+    if (Opcode == NegatableOp.first) {
       return BinOp->getOpcodeStr(NegatableOp.second);
-    if (Opcode == NegatableOp.second)
+
+}
+    if (Opcode == NegatableOp.second) {
       return BinOp->getOpcodeStr(NegatableOp.first);
+
+}
   }
   return StringRef();
 }
@@ -104,8 +112,10 @@ std::pair<OverloadedOperatorKind, StringRef> OperatorNames[] = {
 
 StringRef getOperatorName(OverloadedOperatorKind OpKind) {
   for (auto Name : OperatorNames) {
-    if (Name.first == OpKind)
+    if (Name.first == OpKind) {
       return Name.second;
+
+}
   }
 
   return StringRef();
@@ -119,32 +129,42 @@ std::pair<OverloadedOperatorKind, OverloadedOperatorKind> OppositeOverloads[] =
 StringRef negatedOperator(const CXXOperatorCallExpr *OpCall) {
   const OverloadedOperatorKind Opcode = OpCall->getOperator();
   for (auto NegatableOp : OppositeOverloads) {
-    if (Opcode == NegatableOp.first)
+    if (Opcode == NegatableOp.first) {
       return getOperatorName(NegatableOp.second);
-    if (Opcode == NegatableOp.second)
+
+}
+    if (Opcode == NegatableOp.second) {
       return getOperatorName(NegatableOp.first);
+
+}
   }
   return StringRef();
 }
 
 std::string asBool(StringRef text, bool NeedsStaticCast) {
-  if (NeedsStaticCast)
+  if (NeedsStaticCast) {
     return ("static_cast<bool>(" + text + ")").str();
+
+}
 
   return std::string(text);
 }
 
 bool needsNullPtrComparison(const Expr *E) {
-  if (const auto *ImpCast = dyn_cast<ImplicitCastExpr>(E))
+  if (const auto *ImpCast = dyn_cast<ImplicitCastExpr>(E)) {
     return ImpCast->getCastKind() == CK_PointerToBoolean ||
            ImpCast->getCastKind() == CK_MemberPointerToBoolean;
+
+}
 
   return false;
 }
 
 bool needsZeroComparison(const Expr *E) {
-  if (const auto *ImpCast = dyn_cast<ImplicitCastExpr>(E))
+  if (const auto *ImpCast = dyn_cast<ImplicitCastExpr>(E)) {
     return ImpCast->getCastKind() == CK_IntegralToBoolean;
+
+}
 
   return false;
 }
@@ -157,8 +177,10 @@ bool needsStaticCast(const Expr *E) {
               dyn_cast<CXXMemberCallExpr>(ImpCast->getSubExpr())) {
         if (const auto *MemDecl =
                 dyn_cast<CXXConversionDecl>(MemCall->getMethodDecl())) {
-          if (MemDecl->isExplicit())
+          if (MemDecl->isExplicit()) {
             return true;
+
+}
         }
       }
     }
@@ -194,28 +216,38 @@ std::string compareExpressionToZero(const MatchFinder::MatchResult &Result,
 std::string replacementExpression(const MatchFinder::MatchResult &Result,
                                   bool Negated, const Expr *E) {
   E = E->ignoreParenBaseCasts();
-  if (const auto *EC = dyn_cast<ExprWithCleanups>(E))
+  if (const auto *EC = dyn_cast<ExprWithCleanups>(E)) {
     E = EC->getSubExpr();
+
+}
 
   const bool NeedsStaticCast = needsStaticCast(E);
   if (Negated) {
     if (const auto *UnOp = dyn_cast<UnaryOperator>(E)) {
       if (UnOp->getOpcode() == UO_LNot) {
-        if (needsNullPtrComparison(UnOp->getSubExpr()))
+        if (needsNullPtrComparison(UnOp->getSubExpr())) {
           return compareExpressionToNullPtr(Result, UnOp->getSubExpr(), true);
 
-        if (needsZeroComparison(UnOp->getSubExpr()))
+}
+
+        if (needsZeroComparison(UnOp->getSubExpr())) {
           return compareExpressionToZero(Result, UnOp->getSubExpr(), true);
+
+}
 
         return replacementExpression(Result, false, UnOp->getSubExpr());
       }
     }
 
-    if (needsNullPtrComparison(E))
+    if (needsNullPtrComparison(E)) {
       return compareExpressionToNullPtr(Result, E, false);
 
-    if (needsZeroComparison(E))
+}
+
+    if (needsZeroComparison(E)) {
       return compareExpressionToZero(Result, E, false);
+
+}
 
     StringRef NegatedOperator;
     const Expr *LHS = nullptr;
@@ -231,64 +263,88 @@ std::string replacementExpression(const MatchFinder::MatchResult &Result,
         RHS = OpExpr->getArg(1);
       }
     }
-    if (!NegatedOperator.empty() && LHS && RHS)
+    if (!NegatedOperator.empty() && LHS && RHS) {
       return (asBool((getText(Result, *LHS) + " " + NegatedOperator + " " +
                       getText(Result, *RHS))
                          .str(),
                      NeedsStaticCast));
 
+}
+
     StringRef Text = getText(Result, *E);
-    if (!NeedsStaticCast && needsParensAfterUnaryNegation(E))
+    if (!NeedsStaticCast && needsParensAfterUnaryNegation(E)) {
       return ("!(" + Text + ")").str();
 
-    if (needsNullPtrComparison(E))
+}
+
+    if (needsNullPtrComparison(E)) {
       return compareExpressionToNullPtr(Result, E, false);
 
-    if (needsZeroComparison(E))
+}
+
+    if (needsZeroComparison(E)) {
       return compareExpressionToZero(Result, E, false);
+
+}
 
     return ("!" + asBool(Text, NeedsStaticCast));
   }
 
   if (const auto *UnOp = dyn_cast<UnaryOperator>(E)) {
     if (UnOp->getOpcode() == UO_LNot) {
-      if (needsNullPtrComparison(UnOp->getSubExpr()))
+      if (needsNullPtrComparison(UnOp->getSubExpr())) {
         return compareExpressionToNullPtr(Result, UnOp->getSubExpr(), false);
 
-      if (needsZeroComparison(UnOp->getSubExpr()))
+}
+
+      if (needsZeroComparison(UnOp->getSubExpr())) {
         return compareExpressionToZero(Result, UnOp->getSubExpr(), false);
+
+}
     }
   }
 
-  if (needsNullPtrComparison(E))
+  if (needsNullPtrComparison(E)) {
     return compareExpressionToNullPtr(Result, E, true);
 
-  if (needsZeroComparison(E))
+}
+
+  if (needsZeroComparison(E)) {
     return compareExpressionToZero(Result, E, true);
+
+}
 
   return asBool(getText(Result, *E), NeedsStaticCast);
 }
 
 const CXXBoolLiteralExpr *stmtReturnsBool(const ReturnStmt *Ret, bool Negated) {
   if (const auto *Bool = dyn_cast<CXXBoolLiteralExpr>(Ret->getRetValue())) {
-    if (Bool->getValue() == !Negated)
+    if (Bool->getValue() == !Negated) {
       return Bool;
+
+}
   }
 
   return nullptr;
 }
 
 const CXXBoolLiteralExpr *stmtReturnsBool(const IfStmt *IfRet, bool Negated) {
-  if (IfRet->getElse() != nullptr)
+  if (IfRet->getElse() != nullptr) {
     return nullptr;
 
-  if (const auto *Ret = dyn_cast<ReturnStmt>(IfRet->getThen()))
+}
+
+  if (const auto *Ret = dyn_cast<ReturnStmt>(IfRet->getThen())) {
     return stmtReturnsBool(Ret, Negated);
+
+}
 
   if (const auto *Compound = dyn_cast<CompoundStmt>(IfRet->getThen())) {
     if (Compound->size() == 1) {
-      if (const auto *CompoundRet = dyn_cast<ReturnStmt>(Compound->body_back()))
+      if (const auto *CompoundRet = dyn_cast<ReturnStmt>(Compound->body_back())) {
         return stmtReturnsBool(CompoundRet, Negated);
+
+}
     }
   }
 
@@ -308,8 +364,10 @@ bool containsDiscardedTokens(const MatchFinder::MatchResult &Result,
 
   Token Tok;
   while (!Lex.LexFromRawLexer(Tok)) {
-    if (Tok.is(tok::TokenKind::comment) || Tok.is(tok::TokenKind::hash))
+    if (Tok.is(tok::TokenKind::comment) || Tok.is(tok::TokenKind::hash)) {
       return true;
+
+}
   }
 
   return false;
@@ -342,16 +400,24 @@ SimplifyBooleanExprCheck::SimplifyBooleanExprCheck(StringRef Name,
           Options.get("ChainedConditionalAssignment", 0U)) {}
 
 bool containsBoolLiteral(const Expr *E) {
-  if (!E)
+  if (!E) {
     return false;
+
+}
   E = E->IgnoreParenImpCasts();
-  if (isa<CXXBoolLiteralExpr>(E))
+  if (isa<CXXBoolLiteralExpr>(E)) {
     return true;
-  if (const auto *BinOp = dyn_cast<BinaryOperator>(E))
+
+}
+  if (const auto *BinOp = dyn_cast<BinaryOperator>(E)) {
     return containsBoolLiteral(BinOp->getLHS()) ||
            containsBoolLiteral(BinOp->getRHS());
-  if (const auto *UnaryOp = dyn_cast<UnaryOperator>(E))
+
+}
+  if (const auto *UnaryOp = dyn_cast<UnaryOperator>(E)) {
     return containsBoolLiteral(UnaryOp->getSubExpr());
+
+}
   return false;
 }
 
@@ -362,19 +428,25 @@ void SimplifyBooleanExprCheck::reportBinOp(
 
   const CXXBoolLiteralExpr *Bool;
   const Expr *Other = nullptr;
-  if ((Bool = dyn_cast<CXXBoolLiteralExpr>(LHS)))
+  if ((Bool = dyn_cast<CXXBoolLiteralExpr>(LHS))) {
     Other = RHS;
-  else if ((Bool = dyn_cast<CXXBoolLiteralExpr>(RHS)))
+  } else if ((Bool = dyn_cast<CXXBoolLiteralExpr>(RHS))) {
     Other = LHS;
-  else
+  } else {
     return;
 
-  if (Bool->getBeginLoc().isMacroID())
+}
+
+  if (Bool->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   // FIXME: why do we need this?
-  if (!isa<CXXBoolLiteralExpr>(Other) && containsBoolLiteral(Other))
+  if (!isa<CXXBoolLiteralExpr>(Other) && containsBoolLiteral(Other)) {
     return;
+
+}
 
   bool BoolValue = Bool->getValue();
 
@@ -442,19 +514,21 @@ void SimplifyBooleanExprCheck::matchTernaryResult(MatchFinder *Finder,
 
 void SimplifyBooleanExprCheck::matchIfReturnsBool(MatchFinder *Finder,
                                                   bool Value, StringRef Id) {
-  if (ChainedConditionalReturn)
+  if (ChainedConditionalReturn) {
     Finder->addMatcher(ifStmt(isExpansionInMainFile(),
                               hasThen(returnsBool(Value, ThenLiteralId)),
                               hasElse(returnsBool(!Value)))
                            .bind(Id),
                        this);
-  else
+  } else {
     Finder->addMatcher(ifStmt(isExpansionInMainFile(),
                               unless(hasParent(ifStmt())),
                               hasThen(returnsBool(Value, ThenLiteralId)),
                               hasElse(returnsBool(!Value)))
                            .bind(Id),
                        this);
+
+}
 }
 
 void SimplifyBooleanExprCheck::matchIfAssignsBool(MatchFinder *Finder,
@@ -474,13 +548,15 @@ void SimplifyBooleanExprCheck::matchIfAssignsBool(MatchFinder *Finder,
                      hasRHS(cxxBoolLiteral(equals(!Value))));
   auto Else = anyOf(SimpleElse, compoundStmt(statementCountIs(1),
                                              hasAnySubstatement(SimpleElse)));
-  if (ChainedConditionalAssignment)
+  if (ChainedConditionalAssignment) {
     Finder->addMatcher(ifStmt(hasThen(Then), hasElse(Else)).bind(Id), this);
-  else
+  } else {
     Finder->addMatcher(
         ifStmt(unless(hasParent(ifStmt())), hasThen(Then), hasElse(Else))
             .bind(Id),
         this);
+
+}
 }
 
 void SimplifyBooleanExprCheck::matchCompoundIfReturnsBool(MatchFinder *Finder,
@@ -523,37 +599,39 @@ void SimplifyBooleanExprCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void SimplifyBooleanExprCheck::check(const MatchFinder::MatchResult &Result) {
-  if (Result.Nodes.getNodeAs<TranslationUnitDecl>("top"))
+  if (Result.Nodes.getNodeAs<TranslationUnitDecl>("top")) {
     Visitor(this, Result).TraverseAST(*Result.Context);
-  else if (const CXXBoolLiteralExpr *TrueConditionRemoved =
-               getBoolLiteral(Result, ConditionThenStmtId))
+  } else if (const CXXBoolLiteralExpr *TrueConditionRemoved =
+               getBoolLiteral(Result, ConditionThenStmtId)) {
     replaceWithThenStatement(Result, TrueConditionRemoved);
-  else if (const CXXBoolLiteralExpr *FalseConditionRemoved =
-               getBoolLiteral(Result, ConditionElseStmtId))
+  } else if (const CXXBoolLiteralExpr *FalseConditionRemoved =
+               getBoolLiteral(Result, ConditionElseStmtId)) {
     replaceWithElseStatement(Result, FalseConditionRemoved);
-  else if (const auto *Ternary =
-               Result.Nodes.getNodeAs<ConditionalOperator>(TernaryId))
+  } else if (const auto *Ternary =
+               Result.Nodes.getNodeAs<ConditionalOperator>(TernaryId)) {
     replaceWithCondition(Result, Ternary);
-  else if (const auto *TernaryNegated =
-               Result.Nodes.getNodeAs<ConditionalOperator>(TernaryNegatedId))
+  } else if (const auto *TernaryNegated =
+               Result.Nodes.getNodeAs<ConditionalOperator>(TernaryNegatedId)) {
     replaceWithCondition(Result, TernaryNegated, true);
-  else if (const auto *If = Result.Nodes.getNodeAs<IfStmt>(IfReturnsBoolId))
+  } else if (const auto *If = Result.Nodes.getNodeAs<IfStmt>(IfReturnsBoolId)) {
     replaceWithReturnCondition(Result, If);
-  else if (const auto *IfNot =
-               Result.Nodes.getNodeAs<IfStmt>(IfReturnsNotBoolId))
+  } else if (const auto *IfNot =
+               Result.Nodes.getNodeAs<IfStmt>(IfReturnsNotBoolId)) {
     replaceWithReturnCondition(Result, IfNot, true);
-  else if (const auto *IfAssign =
-               Result.Nodes.getNodeAs<IfStmt>(IfAssignBoolId))
+  } else if (const auto *IfAssign =
+               Result.Nodes.getNodeAs<IfStmt>(IfAssignBoolId)) {
     replaceWithAssignment(Result, IfAssign);
-  else if (const auto *IfAssignNot =
-               Result.Nodes.getNodeAs<IfStmt>(IfAssignNotBoolId))
+  } else if (const auto *IfAssignNot =
+               Result.Nodes.getNodeAs<IfStmt>(IfAssignNotBoolId)) {
     replaceWithAssignment(Result, IfAssignNot, true);
-  else if (const auto *Compound =
-               Result.Nodes.getNodeAs<CompoundStmt>(CompoundBoolId))
+  } else if (const auto *Compound =
+               Result.Nodes.getNodeAs<CompoundStmt>(CompoundBoolId)) {
     replaceCompoundReturnWithCondition(Result, Compound);
-  else if (const auto *Compound =
-               Result.Nodes.getNodeAs<CompoundStmt>(CompoundNotBoolId))
+  } else if (const auto *Compound =
+               Result.Nodes.getNodeAs<CompoundStmt>(CompoundNotBoolId)) {
     replaceCompoundReturnWithCondition(Result, Compound, true);
+
+}
 }
 
 void SimplifyBooleanExprCheck::issueDiag(
@@ -565,8 +643,10 @@ void SimplifyBooleanExprCheck::issueDiag(
                                *Result.SourceManager, getLangOpts());
 
   DiagnosticBuilder Diag = diag(Loc, Description);
-  if (!containsDiscardedTokens(Result, CharRange))
+  if (!containsDiscardedTokens(Result, CharRange)) {
     Diag << FixItHint::CreateReplacement(CharRange, Replacement);
+
+}
 }
 
 void SimplifyBooleanExprCheck::replaceWithThenStatement(
@@ -629,8 +709,10 @@ void SimplifyBooleanExprCheck::replaceCompoundReturnWithCondition(
     if (const auto *If = dyn_cast<IfStmt>(*Current)) {
       if (const CXXBoolLiteralExpr *Lit = stmtReturnsBool(If, Negated)) {
         if (*After == Ret) {
-          if (!ChainedConditionalReturn && BeforeIf)
+          if (!ChainedConditionalReturn && BeforeIf) {
             continue;
+
+}
 
           const Expr *Condition = If->getCond();
           std::string Replacement =

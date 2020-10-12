@@ -21,16 +21,22 @@ bool MCObjectWriter::isSymbolRefDifferenceFullyResolved(
     bool InSet) const {
   // Modified symbol references cannot be resolved.
   if (A->getKind() != MCSymbolRefExpr::VK_None ||
-      B->getKind() != MCSymbolRefExpr::VK_None)
+      B->getKind() != MCSymbolRefExpr::VK_None) {
     return false;
+
+}
 
   const MCSymbol &SA = A->getSymbol();
   const MCSymbol &SB = B->getSymbol();
-  if (SA.isUndefined() || SB.isUndefined())
+  if (SA.isUndefined() || SB.isUndefined()) {
     return false;
 
-  if (!SA.getFragment() || !SB.getFragment())
+}
+
+  if (!SA.getFragment() || !SB.getFragment()) {
     return false;
+
+}
 
   return isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, SB, InSet);
 }

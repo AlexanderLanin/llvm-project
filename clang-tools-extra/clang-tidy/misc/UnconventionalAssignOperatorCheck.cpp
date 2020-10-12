@@ -80,10 +80,12 @@ void UnconventionalAssignOperatorCheck::check(
 
     const auto *Method = Result.Nodes.getNodeAs<CXXMethodDecl>("method");
     for (const auto &Message : Messages) {
-      if (Result.Nodes.getNodeAs<Decl>(Message[0]))
+      if (Result.Nodes.getNodeAs<Decl>(Message[0])) {
         diag(Method->getBeginLoc(), Message[1])
             << Method->getParent()->getName()
             << (Method->isConst() ? "const" : "virtual");
+
+}
     }
   }
 }

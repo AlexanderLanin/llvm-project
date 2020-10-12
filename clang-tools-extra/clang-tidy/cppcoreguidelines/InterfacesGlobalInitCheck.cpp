@@ -37,8 +37,10 @@ void InterfacesGlobalInitCheck::registerMatchers(MatchFinder *Finder) {
 void InterfacesGlobalInitCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *const Var = Result.Nodes.getNodeAs<VarDecl>("var");
   // For now assume that people who write macros know what they're doing.
-  if (Var->getLocation().isMacroID())
+  if (Var->getLocation().isMacroID()) {
     return;
+
+}
   const auto *const Referencee = Result.Nodes.getNodeAs<VarDecl>("referencee");
   // If the variable has been defined, we're good.
   const auto *const ReferenceeDef = Referencee->getDefinition();

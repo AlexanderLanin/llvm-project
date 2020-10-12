@@ -108,8 +108,10 @@ void MachineFunction::Delegate::anchor() {}
 void MachineFunctionProperties::print(raw_ostream &OS) const {
   const char *Separator = "";
   for (BitVector::size_type I = 0; I < Properties.size(); ++I) {
-    if (!Properties[I])
+    if (!Properties[I]) {
       continue;
+
+}
     OS << Separator << getPropertyName(static_cast<Property>(I));
     Separator = ", ";
   }
@@ -128,8 +130,10 @@ void ilist_alloc_traits<MachineBasicBlock>::deleteNode(MachineBasicBlock *MBB) {
 
 static inline unsigned getFnStackAlignment(const TargetSubtargetInfo *STI,
                                            const Function &F) {
-  if (F.hasFnAttribute(Attribute::StackAlignment))
+  if (F.hasFnAttribute(Attribute::StackAlignment)) {
     return F.getFnStackAlignment();
+
+}
   return STI->getFrameLowering()->getStackAlignment();
 }
 
@@ -143,23 +147,29 @@ MachineFunction::MachineFunction(const Function &F,
 }
 
 void MachineFunction::handleInsertion(MachineInstr &MI) {
-  if (TheDelegate)
+  if (TheDelegate) {
     TheDelegate->MF_HandleInsertion(MI);
+
+}
 }
 
 void MachineFunction::handleRemoval(MachineInstr &MI) {
-  if (TheDelegate)
+  if (TheDelegate) {
     TheDelegate->MF_HandleRemoval(MI);
+
+}
 }
 
 void MachineFunction::init() {
   // Assume the function starts in SSA form with correct liveness.
   Properties.set(MachineFunctionProperties::Property::IsSSA);
   Properties.set(MachineFunctionProperties::Property::TracksLiveness);
-  if (STI->getRegisterInfo())
+  if (STI->getRegisterInfo()) {
     RegInfo = new (Allocator) MachineRegisterInfo(this);
-  else
+  } else {
     RegInfo = nullptr;
+
+}
 
   MFInfo = nullptr;
   // We can realign the stack if the target supports it and the user hasn't
@@ -171,20 +181,26 @@ void MachineFunction::init() {
       /*ForcedRealign=*/CanRealignSP &&
           F.hasFnAttribute(Attribute::StackAlignment));
 
-  if (F.hasFnAttribute(Attribute::StackAlignment))
+  if (F.hasFnAttribute(Attribute::StackAlignment)) {
     FrameInfo->ensureMaxAlignment(F.getFnStackAlignment());
+
+}
 
   ConstantPool = new (Allocator) MachineConstantPool(getDataLayout());
   Alignment = STI->getTargetLowering()->getMinFunctionAlignment();
 
   // FIXME: Shouldn't use pref alignment if explicit alignment is set on F.
   // FIXME: Use Function::hasOptSize().
-  if (!F.hasFnAttribute(Attribute::OptimizeForSize))
+  if (!F.hasFnAttribute(Attribute::OptimizeForSize)) {
     Alignment = std::max(Alignment,
                          STI->getTargetLowering()->getPrefFunctionAlignment());
 
-  if (AlignAllFunctions)
+}
+
+  if (AlignAllFunctions) {
     Alignment = Align(1ULL << AlignAllFunctions);
+
+}
 
   JumpTableInfo = nullptr;
 
@@ -217,8 +233,10 @@ void MachineFunction::clear() {
   // memory comes from the BumpPtrAllocator which is about to be purged.
   //
   // Do call MachineBasicBlock destructors, it contains std::vectors.
-  for (iterator I = begin(), E = end(); I != E; I = BasicBlocks.erase(I))
+  for (iterator I = begin(), E = end(); I != E; I = BasicBlocks.erase(I)) {
     I->Insts.clearAndLeakNodesUnsafely();
+
+}
   MBBNumbering.clear();
 
   InstructionRecycler.clear(Allocator);
@@ -265,7 +283,9 @@ const DataLayout &MachineFunction::getDataLayout() const {
 /// If it does not already exist, allocate one.
 MachineJumpTableInfo *MachineFunction::
 getOrCreateJumpTableInfo(unsigned EntryKind) {
-  if (JumpTableInfo) return JumpTableInfo;
+  if (JumpTableInfo) { return JumpTableInfo;
+
+}
 
   JumpTableInfo = new (Allocator)
     MachineJumpTableInfo((MachineJumpTableInfo::JTEntryKind)EntryKind);
@@ -276,8 +296,10 @@ DenormalMode MachineFunction::getDenormalMode(const fltSemantics &FPType) const 
   if (&FPType == &APFloat::IEEEsingle()) {
     Attribute Attr = F.getFnAttribute("denormal-fp-math-f32");
     StringRef Val = Attr.getValueAsString();
-    if (!Val.empty())
+    if (!Val.empty()) {
       return parseDenormalFPAttribute(Val);
+
+}
 
     // If the f32 variant of the attribute isn't specified, try to use the
     // generic one.
@@ -307,15 +329,19 @@ MachineFunction::addFrameInst(const MCCFIInstruction &Inst) {
 void MachineFunction::RenumberBlocks(MachineBasicBlock *MBB) {
   if (empty()) { MBBNumbering.clear(); return; }
   MachineFunction::iterator MBBI, E = end();
-  if (MBB == nullptr)
+  if (MBB == nullptr) {
     MBBI = begin();
-  else
+  } else {
     MBBI = MBB->getIterator();
+
+}
 
   // Figure out the block number this should have.
   unsigned BlockNo = 0;
-  if (MBBI != begin())
+  if (MBBI != begin()) {
     BlockNo = std::prev(MBBI)->getNumber() + 1;
+
+}
 
   for (; MBBI != E; ++MBBI, ++BlockNo) {
     if (MBBI->getNumber() != (int)BlockNo) {
@@ -327,8 +353,10 @@ void MachineFunction::RenumberBlocks(MachineBasicBlock *MBB) {
       }
 
       // If BlockNo is already taken, set that block's number to -1.
-      if (MBBNumbering[BlockNo])
+      if (MBBNumbering[BlockNo]) {
         MBBNumbering[BlockNo]->setNumber(-1);
+
+}
 
       MBBNumbering[BlockNo] = &*MBBI;
       MBBI->setNumber(BlockNo);
@@ -352,8 +380,10 @@ void MachineFunction::setSectionRange() {
             std::find_if(begin(), end(), [&](MachineBasicBlock &MBB) -> bool {
               return MBB.getSectionType() == S;
             });
-        if (MBBP == end())
+        if (MBBP == end()) {
           return std::make_pair(-1, -1);
+
+}
 
         auto MBBQ =
             std::find_if(rbegin(), rend(), [&](MachineBasicBlock &MBB) -> bool {
@@ -384,12 +414,14 @@ void MachineFunction::createBBLabels() {
     bool isEHPad = MBBI->isEHPad();
     bool isRetBlock = MBBI->isReturnBlock() && !TII->isTailCall(MBBI->back());
     char type = 'a';
-    if (isEHPad && isRetBlock)
+    if (isEHPad && isRetBlock) {
       type = 'L';
-    else if (isEHPad)
+    } else if (isEHPad) {
       type = 'l';
-    else if (isRetBlock)
+    } else if (isRetBlock) {
       type = 'r';
+
+}
     BBSectionsSymbolPrefix[MBBI->getNumber()] = type;
   }
 }
@@ -423,8 +455,10 @@ MachineInstr &MachineFunction::CloneMachineInstrBundle(MachineBasicBlock &MBB,
       Cloned->bundleWithPred();
     }
 
-    if (!I->isBundledWithSucc())
+    if (!I->isBundledWithSucc()) {
       break;
+
+}
     ++I;
   }
   return *FirstClone;
@@ -445,8 +479,10 @@ MachineFunction::DeleteMachineInstr(MachineInstr *MI) {
          "Call site info was not updated!");
   // Strip it for parts. The operand array and the MI object itself are
   // independently recyclable.
-  if (MI->Operands)
+  if (MI->Operands) {
     deallocateOperandArray(MI->CapOperands, MI->Operands);
+
+}
   // Don't call ~MachineInstr() which must be trivial anyway because
   // ~MachineFunction drops whole lists of MachineInstrs wihout calling their
   // destructors.
@@ -566,8 +602,10 @@ void MachineFunction::print(raw_ostream &OS, const SlotIndexes *Indexes) const {
   FrameInfo->print(*this, OS);
 
   // Print JumpTable Information
-  if (JumpTableInfo)
+  if (JumpTableInfo) {
     JumpTableInfo->print(OS);
+
+}
 
   // Print Constant Pool
   ConstantPool->print(OS);
@@ -579,10 +617,14 @@ void MachineFunction::print(raw_ostream &OS, const SlotIndexes *Indexes) const {
     for (MachineRegisterInfo::livein_iterator
          I = RegInfo->livein_begin(), E = RegInfo->livein_end(); I != E; ++I) {
       OS << printReg(I->first, TRI);
-      if (I->second)
+      if (I->second) {
         OS << " in " << printReg(I->second, TRI);
-      if (std::next(I) != E)
+
+}
+      if (std::next(I) != E) {
         OS << ", ";
+
+}
     }
     OS << '\n';
   }
@@ -623,20 +665,28 @@ namespace llvm {
 
         if (isSimple()) {
           OSS << printMBBReference(*Node);
-          if (const BasicBlock *BB = Node->getBasicBlock())
+          if (const BasicBlock *BB = Node->getBasicBlock()) {
             OSS << ": " << BB->getName();
-        } else
+
+}
+        } else {
           Node->print(OSS);
+
+}
       }
 
-      if (OutStr[0] == '\n') OutStr.erase(OutStr.begin());
+      if (OutStr[0] == '\n') { OutStr.erase(OutStr.begin());
+
+}
 
       // Process string output to make it nicer...
-      for (unsigned i = 0; i != OutStr.length(); ++i)
+      for (unsigned i = 0; i != OutStr.length(); ++i) {
         if (OutStr[i] == '\n') {                            // Left justify
           OutStr[i] = '\\';
           OutStr.insert(OutStr.begin()+i+1, 'l');
         }
+
+}
       return OutStr;
     }
   };
@@ -719,8 +769,10 @@ MachineFunction::getOrCreateLandingPadInfo(MachineBasicBlock *LandingPad) {
   unsigned N = LandingPads.size();
   for (unsigned i = 0; i < N; ++i) {
     LandingPadInfo &LP = LandingPads[i];
-    if (LP.LandingPadBlock == LandingPad)
+    if (LP.LandingPadBlock == LandingPad) {
       return LP;
+
+}
   }
 
   LandingPads.push_back(LandingPadInfo(LandingPad));
@@ -742,11 +794,15 @@ MCSymbol *MachineFunction::addLandingPad(MachineBasicBlock *LandingPad) {
   const Instruction *FirstI = LandingPad->getBasicBlock()->getFirstNonPHI();
   if (const auto *LPI = dyn_cast<LandingPadInst>(FirstI)) {
     if (const auto *PF =
-            dyn_cast<Function>(F.getPersonalityFn()->stripPointerCasts()))
+            dyn_cast<Function>(F.getPersonalityFn()->stripPointerCasts())) {
       getMMI().addPersonality(PF);
 
-    if (LPI->isCleanup())
+}
+
+    if (LPI->isCleanup()) {
       addCleanup(LandingPad);
+
+}
 
     // FIXME: New EH - Add the clauses in reverse order. This isn't 100%
     //        correct, but we need to do it this way because of how the DWARF EH
@@ -761,8 +817,10 @@ MCSymbol *MachineFunction::addLandingPad(MachineBasicBlock *LandingPad) {
         auto *CVal = cast<Constant>(Val);
         SmallVector<const GlobalValue *, 4> FilterList;
         for (User::op_iterator II = CVal->op_begin(), IE = CVal->op_end();
-             II != IE; ++II)
+             II != IE; ++II) {
           FilterList.push_back(cast<GlobalValue>((*II)->stripPointerCasts()));
+
+}
 
         addFilterTypeInfo(LandingPad, FilterList);
       }
@@ -784,16 +842,20 @@ MCSymbol *MachineFunction::addLandingPad(MachineBasicBlock *LandingPad) {
 void MachineFunction::addCatchTypeInfo(MachineBasicBlock *LandingPad,
                                        ArrayRef<const GlobalValue *> TyInfo) {
   LandingPadInfo &LP = getOrCreateLandingPadInfo(LandingPad);
-  for (unsigned N = TyInfo.size(); N; --N)
+  for (unsigned N = TyInfo.size(); N; --N) {
     LP.TypeIds.push_back(getTypeIDFor(TyInfo[N - 1]));
+
+}
 }
 
 void MachineFunction::addFilterTypeInfo(MachineBasicBlock *LandingPad,
                                         ArrayRef<const GlobalValue *> TyInfo) {
   LandingPadInfo &LP = getOrCreateLandingPadInfo(LandingPad);
   std::vector<unsigned> IdsInFilter(TyInfo.size());
-  for (unsigned I = 0, E = TyInfo.size(); I != E; ++I)
+  for (unsigned I = 0, E = TyInfo.size(); I != E; ++I) {
     IdsInFilter[I] = getTypeIDFor(TyInfo[I]);
+
+}
   LP.TypeIds.push_back(getFilterIDFor(IdsInFilter));
 }
 
@@ -803,8 +865,10 @@ void MachineFunction::tidyLandingPads(DenseMap<MCSymbol *, uintptr_t> *LPMap,
     LandingPadInfo &LandingPad = LandingPads[i];
     if (LandingPad.LandingPadLabel &&
         !LandingPad.LandingPadLabel->isDefined() &&
-        (!LPMap || (*LPMap)[LandingPad.LandingPadLabel] == 0))
+        (!LPMap || (*LPMap)[LandingPad.LandingPadLabel] == 0)) {
       LandingPad.LandingPadLabel = nullptr;
+
+}
 
     // Special case: we *should* emit LPs with null LP MBB. This indicates
     // "nounwind" case.
@@ -818,8 +882,10 @@ void MachineFunction::tidyLandingPads(DenseMap<MCSymbol *, uintptr_t> *LPMap,
         MCSymbol *BeginLabel = LandingPad.BeginLabels[j];
         MCSymbol *EndLabel = LandingPad.EndLabels[j];
         if ((BeginLabel->isDefined() || (LPMap && (*LPMap)[BeginLabel] != 0)) &&
-            (EndLabel->isDefined() || (LPMap && (*LPMap)[EndLabel] != 0)))
+            (EndLabel->isDefined() || (LPMap && (*LPMap)[EndLabel] != 0))) {
           continue;
+
+}
 
         LandingPad.BeginLabels.erase(LandingPad.BeginLabels.begin() + j);
         LandingPad.EndLabels.erase(LandingPad.EndLabels.begin() + j);
@@ -837,8 +903,10 @@ void MachineFunction::tidyLandingPads(DenseMap<MCSymbol *, uintptr_t> *LPMap,
     // If there is no landing pad, ensure that the list of typeids is empty.
     // If the only typeid is a cleanup, this is the same as having no typeids.
     if (!LandingPad.LandingPadBlock ||
-        (LandingPad.TypeIds.size() == 1 && !LandingPad.TypeIds[0]))
+        (LandingPad.TypeIds.size() == 1 && !LandingPad.TypeIds[0])) {
       LandingPad.TypeIds.clear();
+
+}
     ++i;
   }
 }
@@ -873,8 +941,12 @@ void MachineFunction::setCallSiteLandingPad(MCSymbol *Sym,
 }
 
 unsigned MachineFunction::getTypeIDFor(const GlobalValue *TI) {
-  for (unsigned i = 0, N = TypeInfos.size(); i != N; ++i)
-    if (TypeInfos[i] == TI) return i + 1;
+  for (unsigned i = 0, N = TypeInfos.size(); i != N; ++i) {
+    if (TypeInfos[i] == TI) { return i + 1;
+
+}
+
+}
 
   TypeInfos.push_back(TI);
   return TypeInfos.size();
@@ -888,13 +960,19 @@ int MachineFunction::getFilterIDFor(std::vector<unsigned> &TyIds) {
        E = FilterEnds.end(); I != E; ++I) {
     unsigned i = *I, j = TyIds.size();
 
-    while (i && j)
-      if (FilterIds[--i] != TyIds[--j])
+    while (i && j) {
+      if (FilterIds[--i] != TyIds[--j]) {
         goto try_next;
 
-    if (!j)
+}
+
+}
+
+    if (!j) {
       // The new filter coincides with range [i, end) of the existing filter.
       return -(1 + i);
+
+}
 
 try_next:;
   }
@@ -913,20 +991,28 @@ MachineFunction::getCallSiteInfo(const MachineInstr *MI) {
   assert(MI->isCandidateForCallSiteEntry() &&
          "Call site info refers only to call (MI) candidates");
 
-  if (!Target.Options.EmitCallSiteInfo)
+  if (!Target.Options.EmitCallSiteInfo) {
     return CallSitesInfo.end();
+
+}
   return CallSitesInfo.find(MI);
 }
 
 /// Return the call machine instruction or find a call within bundle.
 static const MachineInstr *getCallInstr(const MachineInstr *MI) {
-  if (!MI->isBundle())
+  if (!MI->isBundle()) {
     return MI;
 
+}
+
   for (auto &BMI : make_range(getBundleStart(MI->getIterator()),
-                              getBundleEnd(MI->getIterator())))
-    if (BMI.isCandidateForCallSiteEntry())
+                              getBundleEnd(MI->getIterator()))) {
+    if (BMI.isCandidateForCallSiteEntry()) {
       return &BMI;
+
+}
+
+}
 
   llvm_unreachable("Unexpected bundle without a call site candidate");
 }
@@ -938,8 +1024,10 @@ void MachineFunction::eraseCallSiteInfo(const MachineInstr *MI) {
 
   const MachineInstr *CallMI = getCallInstr(MI);
   CallSiteInfoMap::iterator CSIt = getCallSiteInfo(CallMI);
-  if (CSIt == CallSitesInfo.end())
+  if (CSIt == CallSitesInfo.end()) {
     return;
+
+}
   CallSitesInfo.erase(CSIt);
 }
 
@@ -949,13 +1037,17 @@ void MachineFunction::copyCallSiteInfo(const MachineInstr *Old,
          "Call site info refers only to call (MI) candidates or "
          "candidates inside bundles");
 
-  if (!New->isCandidateForCallSiteEntry())
+  if (!New->isCandidateForCallSiteEntry()) {
     return eraseCallSiteInfo(Old);
+
+}
 
   const MachineInstr *OldCallMI = getCallInstr(Old);
   CallSiteInfoMap::iterator CSIt = getCallSiteInfo(OldCallMI);
-  if (CSIt == CallSitesInfo.end())
+  if (CSIt == CallSitesInfo.end()) {
     return;
+
+}
 
   CallSiteInfo CSInfo = CSIt->second;
   CallSitesInfo[New] = CSInfo;
@@ -967,13 +1059,17 @@ void MachineFunction::moveCallSiteInfo(const MachineInstr *Old,
          "Call site info refers only to call (MI) candidates or "
          "candidates inside bundles");
 
-  if (!New->isCandidateForCallSiteEntry())
+  if (!New->isCandidateForCallSiteEntry()) {
     return eraseCallSiteInfo(Old);
+
+}
 
   const MachineInstr *OldCallMI = getCallInstr(Old);
   CallSiteInfoMap::iterator CSIt = getCallSiteInfo(OldCallMI);
-  if (CSIt == CallSitesInfo.end())
+  if (CSIt == CallSitesInfo.end()) {
     return;
+
+}
 
   CallSiteInfo CSInfo = std::move(CSIt->second);
   CallSitesInfo.erase(CSIt);
@@ -1039,8 +1135,10 @@ bool MachineJumpTableInfo::ReplaceMBBInJumpTables(MachineBasicBlock *Old,
                                                   MachineBasicBlock *New) {
   assert(Old != New && "Not making a change?");
   bool MadeChange = false;
-  for (size_t i = 0, e = JumpTables.size(); i != e; ++i)
+  for (size_t i = 0, e = JumpTables.size(); i != e; ++i) {
     ReplaceMBBInJumpTable(i, Old, New);
+
+}
   return MadeChange;
 }
 
@@ -1052,25 +1150,33 @@ bool MachineJumpTableInfo::ReplaceMBBInJumpTable(unsigned Idx,
   assert(Old != New && "Not making a change?");
   bool MadeChange = false;
   MachineJumpTableEntry &JTE = JumpTables[Idx];
-  for (size_t j = 0, e = JTE.MBBs.size(); j != e; ++j)
+  for (size_t j = 0, e = JTE.MBBs.size(); j != e; ++j) {
     if (JTE.MBBs[j] == Old) {
       JTE.MBBs[j] = New;
       MadeChange = true;
     }
+
+}
   return MadeChange;
 }
 
 void MachineJumpTableInfo::print(raw_ostream &OS) const {
-  if (JumpTables.empty()) return;
+  if (JumpTables.empty()) { return;
+
+}
 
   OS << "Jump Tables:\n";
 
   for (unsigned i = 0, e = JumpTables.size(); i != e; ++i) {
     OS << printJumpTableEntryReference(i) << ':';
-    for (unsigned j = 0, f = JumpTables[i].MBBs.size(); j != f; ++j)
+    for (unsigned j = 0, f = JumpTables[i].MBBs.size(); j != f; ++j) {
       OS << ' ' << printMBBReference(*JumpTables[i].MBBs[j]);
-    if (i != e)
+
+}
+    if (i != e) {
       OS << '\n';
+
+}
   }
 
   OS << '\n';
@@ -1091,21 +1197,27 @@ Printable llvm::printJumpTableEntryReference(unsigned Idx) {
 void MachineConstantPoolValue::anchor() {}
 
 Type *MachineConstantPoolEntry::getType() const {
-  if (isMachineConstantPoolEntry())
+  if (isMachineConstantPoolEntry()) {
     return Val.MachineCPVal->getType();
+
+}
   return Val.ConstVal->getType();
 }
 
 bool MachineConstantPoolEntry::needsRelocation() const {
-  if (isMachineConstantPoolEntry())
+  if (isMachineConstantPoolEntry()) {
     return true;
+
+}
   return Val.ConstVal->needsRelocation();
 }
 
 SectionKind
 MachineConstantPoolEntry::getSectionKind(const DataLayout *DL) const {
-  if (needsRelocation())
+  if (needsRelocation()) {
     return SectionKind::getReadOnlyWithRel();
+
+}
   switch (DL->getTypeAllocSize(getType())) {
   case 4:
     return SectionKind::getMergeableConst4();
@@ -1124,16 +1236,20 @@ MachineConstantPool::~MachineConstantPool() {
   // A constant may be a member of both Constants and MachineCPVsSharingEntries,
   // so keep track of which we've deleted to avoid double deletions.
   DenseSet<MachineConstantPoolValue*> Deleted;
-  for (unsigned i = 0, e = Constants.size(); i != e; ++i)
+  for (unsigned i = 0, e = Constants.size(); i != e; ++i) {
     if (Constants[i].isMachineConstantPoolEntry()) {
       Deleted.insert(Constants[i].Val.MachineCPVal);
       delete Constants[i].Val.MachineCPVal;
     }
+
+}
   for (DenseSet<MachineConstantPoolValue*>::iterator I =
        MachineCPVsSharingEntries.begin(), E = MachineCPVsSharingEntries.end();
        I != E; ++I) {
-    if (Deleted.count(*I) == 0)
+    if (Deleted.count(*I) == 0) {
       delete *I;
+
+}
   }
 }
 
@@ -1142,21 +1258,29 @@ MachineConstantPool::~MachineConstantPool() {
 static bool CanShareConstantPoolEntry(const Constant *A, const Constant *B,
                                       const DataLayout &DL) {
   // Handle the trivial case quickly.
-  if (A == B) return true;
+  if (A == B) { return true;
+
+}
 
   // If they have the same type but weren't the same constant, quickly
   // reject them.
-  if (A->getType() == B->getType()) return false;
+  if (A->getType() == B->getType()) { return false;
+
+}
 
   // We can't handle structs or arrays.
   if (isa<StructType>(A->getType()) || isa<ArrayType>(A->getType()) ||
-      isa<StructType>(B->getType()) || isa<ArrayType>(B->getType()))
+      isa<StructType>(B->getType()) || isa<ArrayType>(B->getType())) {
     return false;
+
+}
 
   // For now, only support constants with the same size.
   uint64_t StoreSize = DL.getTypeStoreSize(A->getType());
-  if (StoreSize != DL.getTypeStoreSize(B->getType()) || StoreSize > 128)
+  if (StoreSize != DL.getTypeStoreSize(B->getType()) || StoreSize > 128) {
     return false;
+
+}
 
   Type *IntTy = IntegerType::get(A->getContext(), StoreSize*8);
 
@@ -1164,18 +1288,22 @@ static bool CanShareConstantPoolEntry(const Constant *A, const Constant *B,
   // get two identical ConstantInt's, then we are good to share them.  We use
   // the constant folding APIs to do this so that we get the benefit of
   // DataLayout.
-  if (isa<PointerType>(A->getType()))
+  if (isa<PointerType>(A->getType())) {
     A = ConstantFoldCastOperand(Instruction::PtrToInt,
                                 const_cast<Constant *>(A), IntTy, DL);
-  else if (A->getType() != IntTy)
+  } else if (A->getType() != IntTy) {
     A = ConstantFoldCastOperand(Instruction::BitCast, const_cast<Constant *>(A),
                                 IntTy, DL);
-  if (isa<PointerType>(B->getType()))
+
+}
+  if (isa<PointerType>(B->getType())) {
     B = ConstantFoldCastOperand(Instruction::PtrToInt,
                                 const_cast<Constant *>(B), IntTy, DL);
-  else if (B->getType() != IntTy)
+  } else if (B->getType() != IntTy) {
     B = ConstantFoldCastOperand(Instruction::BitCast, const_cast<Constant *>(B),
                                 IntTy, DL);
+
+}
 
   return A == B;
 }
@@ -1185,18 +1313,24 @@ static bool CanShareConstantPoolEntry(const Constant *A, const Constant *B,
 unsigned MachineConstantPool::getConstantPoolIndex(const Constant *C,
                                                    unsigned Alignment) {
   assert(Alignment && "Alignment must be specified!");
-  if (Alignment > PoolAlignment) PoolAlignment = Alignment;
+  if (Alignment > PoolAlignment) { PoolAlignment = Alignment;
+
+}
 
   // Check to see if we already have this constant.
   //
   // FIXME, this could be made much more efficient for large constant pools.
-  for (unsigned i = 0, e = Constants.size(); i != e; ++i)
+  for (unsigned i = 0, e = Constants.size(); i != e; ++i) {
     if (!Constants[i].isMachineConstantPoolEntry() &&
         CanShareConstantPoolEntry(Constants[i].Val.ConstVal, C, DL)) {
-      if ((unsigned)Constants[i].getAlignment() < Alignment)
+      if ((unsigned)Constants[i].getAlignment() < Alignment) {
         Constants[i].Alignment = Alignment;
+
+}
       return i;
     }
+
+}
 
   Constants.push_back(MachineConstantPoolEntry(C, Alignment));
   return Constants.size()-1;
@@ -1205,7 +1339,9 @@ unsigned MachineConstantPool::getConstantPoolIndex(const Constant *C,
 unsigned MachineConstantPool::getConstantPoolIndex(MachineConstantPoolValue *V,
                                                    unsigned Alignment) {
   assert(Alignment && "Alignment must be specified!");
-  if (Alignment > PoolAlignment) PoolAlignment = Alignment;
+  if (Alignment > PoolAlignment) { PoolAlignment = Alignment;
+
+}
 
   // Check to see if we already have this constant.
   //
@@ -1221,15 +1357,19 @@ unsigned MachineConstantPool::getConstantPoolIndex(MachineConstantPoolValue *V,
 }
 
 void MachineConstantPool::print(raw_ostream &OS) const {
-  if (Constants.empty()) return;
+  if (Constants.empty()) { return;
+
+}
 
   OS << "Constant Pool:\n";
   for (unsigned i = 0, e = Constants.size(); i != e; ++i) {
     OS << "  cp#" << i << ": ";
-    if (Constants[i].isMachineConstantPoolEntry())
+    if (Constants[i].isMachineConstantPoolEntry()) {
       Constants[i].Val.MachineCPVal->print(OS);
-    else
+    } else {
       Constants[i].Val.ConstVal->printAsOperand(OS, /*PrintType=*/false);
+
+}
     OS << ", align=" << Constants[i].getAlignment();
     OS << "\n";
   }

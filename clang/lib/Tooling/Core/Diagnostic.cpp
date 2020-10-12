@@ -31,8 +31,10 @@ DiagnosticMessage::DiagnosticMessage(llvm::StringRef Message,
   // Don't store offset in the scratch space. It doesn't tell anything to the
   // user. Moreover, it depends on the history of macro expansions and thus
   // prevents deduplication of warnings in headers.
-  if (!FilePath.empty())
+  if (!FilePath.empty()) {
     FileOffset = Sources.getFileOffset(Loc);
+
+}
 }
 
 FileByteRange::FileByteRange(
@@ -59,13 +61,17 @@ Diagnostic::Diagnostic(llvm::StringRef DiagnosticName,
       DiagLevel(DiagLevel), BuildDirectory(BuildDirectory), Ranges(Ranges) {}
 
 const llvm::StringMap<Replacements> *selectFirstFix(const Diagnostic& D) {
-   if (!D.Message.Fix.empty())
+   if (!D.Message.Fix.empty()) {
     return &D.Message.Fix;
+
+}
   auto Iter = llvm::find_if(D.Notes, [](const tooling::DiagnosticMessage &D) {
     return !D.Fix.empty();
   });
-  if (Iter != D.Notes.end())
+  if (Iter != D.Notes.end()) {
     return &Iter->Fix;
+
+}
   return nullptr;
 }
 

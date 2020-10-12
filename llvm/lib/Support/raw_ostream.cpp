@@ -82,8 +82,10 @@ raw_ostream::~raw_ostream() {
   assert(OutBufCur == OutBufStart &&
          "raw_ostream destructor called with non-empty buffer!");
 
-  if (BufferMode == BufferKind::InternalBuffer)
+  if (BufferMode == BufferKind::InternalBuffer) {
     delete [] OutBufStart;
+
+}
 }
 
 size_t raw_ostream::preferred_buffer_size() const {
@@ -93,11 +95,13 @@ size_t raw_ostream::preferred_buffer_size() const {
 
 void raw_ostream::SetBuffered() {
   // Ask the subclass to determine an appropriate buffer size.
-  if (size_t Size = preferred_buffer_size())
+  if (size_t Size = preferred_buffer_size()) {
     SetBufferSize(Size);
-  else
+  } else {
     // It may return 0, meaning this stream should be unbuffered.
     SetUnbuffered();
+
+}
 }
 
 void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size,
@@ -109,8 +113,10 @@ void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size,
   // child buffer management logic will be in write_impl).
   assert(GetNumBytesInBuffer() == 0 && "Current buffer is non-empty!");
 
-  if (BufferMode == BufferKind::InternalBuffer)
+  if (BufferMode == BufferKind::InternalBuffer) {
     delete [] OutBufStart;
+
+}
   OutBufStart = BufferStart;
   OutBufEnd = OutBufStart+Size;
   OutBufCur = OutBufStart;
@@ -145,18 +151,22 @@ raw_ostream &raw_ostream::write_hex(unsigned long long N) {
 }
 
 raw_ostream &raw_ostream::operator<<(Colors C) {
-  if (C == Colors::RESET)
+  if (C == Colors::RESET) {
     resetColor();
-  else
+  } else {
     changeColor(C);
+
+}
   return *this;
 }
 
 raw_ostream &raw_ostream::write_uuid(const uuid_t UUID) {
   for (int Idx = 0; Idx < 16; ++Idx) {
     *this << format("%02" PRIX32, UUID[Idx]);
-    if (Idx == 3 || Idx == 5 || Idx == 7 || Idx == 9)
+    if (Idx == 3 || Idx == 5 || Idx == 7 || Idx == 9) {
       *this << "-";
+
+}
   }
   return *this;
 }
@@ -333,8 +343,10 @@ raw_ostream &raw_ostream::operator<<(const format_object_base &Fmt) {
     size_t BytesUsed = Fmt.print(V.data(), NextBufferSize);
 
     // If BytesUsed fit into the vector, we win.
-    if (BytesUsed <= NextBufferSize)
+    if (BytesUsed <= NextBufferSize) {
       return write(V.data(), BytesUsed);
+
+}
 
     // Otherwise, try again with a new size.
     assert(BytesUsed > NextBufferSize && "Didn't grow buffer!?");
@@ -379,29 +391,35 @@ raw_ostream &raw_ostream::operator<<(const FormattedString &FS) {
 raw_ostream &raw_ostream::operator<<(const FormattedNumber &FN) {
   if (FN.Hex) {
     HexPrintStyle Style;
-    if (FN.Upper && FN.HexPrefix)
+    if (FN.Upper && FN.HexPrefix) {
       Style = HexPrintStyle::PrefixUpper;
-    else if (FN.Upper && !FN.HexPrefix)
+    } else if (FN.Upper && !FN.HexPrefix) {
       Style = HexPrintStyle::Upper;
-    else if (!FN.Upper && FN.HexPrefix)
+    } else if (!FN.Upper && FN.HexPrefix) {
       Style = HexPrintStyle::PrefixLower;
-    else
+    } else {
       Style = HexPrintStyle::Lower;
+
+}
     llvm::write_hex(*this, FN.HexValue, Style, FN.Width);
   } else {
     llvm::SmallString<16> Buffer;
     llvm::raw_svector_ostream Stream(Buffer);
     llvm::write_integer(Stream, FN.DecValue, 0, IntegerStyle::Integer);
-    if (Buffer.size() < FN.Width)
+    if (Buffer.size() < FN.Width) {
       indent(FN.Width - Buffer.size());
+
+}
     (*this) << Buffer;
   }
   return *this;
 }
 
 raw_ostream &raw_ostream::operator<<(const FormattedBytes &FB) {
-  if (FB.Bytes.empty())
+  if (FB.Bytes.empty()) {
     return *this;
+
+}
 
   size_t LineIndex = 0;
   auto Bytes = FB.Bytes;
@@ -415,8 +433,10 @@ raw_ostream &raw_ostream::operator<<(const FormattedBytes &FB) {
     size_t Lines = Size / FB.NumPerLine;
     uint64_t MaxOffset = *FB.FirstByteOffset + Lines * FB.NumPerLine;
     unsigned Power = 0;
-    if (MaxOffset > 0)
+    if (MaxOffset > 0) {
       Power = llvm::Log2_64_Ceil(MaxOffset);
+
+}
     OffsetWidth = std::max<uint64_t>(4, llvm::alignTo(Power, 4) / 4);
   }
 
@@ -455,18 +475,22 @@ raw_ostream &raw_ostream::operator<<(const FormattedBytes &FB) {
 
       // Print the ASCII char values for each byte on this line
       for (uint8_t Byte : Line) {
-        if (isPrint(Byte))
+        if (isPrint(Byte)) {
           *this << static_cast<char>(Byte);
-        else
+        } else {
           *this << '.';
+
+}
       }
       *this << '|';
     }
 
     Bytes = Bytes.drop_front(Line.size());
     LineIndex += Line.size();
-    if (LineIndex < Size)
+    if (LineIndex < Size) {
       *this << '\n';
+
+}
   }
   return *this;
 }
@@ -480,8 +504,10 @@ static raw_ostream &write_padding(raw_ostream &OS, unsigned NumChars) {
                                C, C, C, C, C, C, C, C, C, C, C, C, C, C, C, C};
 
   // Usually the indentation is small, handle it with a fastpath.
-  if (NumChars < array_lengthof(Chars))
+  if (NumChars < array_lengthof(Chars)) {
     return OS.write(Chars, NumChars);
+
+}
 
   while (NumChars) {
     unsigned NumToWrite = std::min(NumChars,
@@ -528,18 +554,24 @@ static int getFD(StringRef Filename, std::error_code &EC,
     EC = std::error_code();
     // If user requested binary then put stdout into binary mode if
     // possible.
-    if (!(Flags & sys::fs::OF_Text))
+    if (!(Flags & sys::fs::OF_Text)) {
       sys::ChangeStdoutToBinary();
+
+}
     return STDOUT_FILENO;
   }
 
   int FD;
-  if (Access & sys::fs::FA_Read)
+  if (Access & sys::fs::FA_Read) {
     EC = sys::fs::openFileForReadWrite(Filename, FD, Disp, Flags);
-  else
+  } else {
     EC = sys::fs::openFileForWrite(Filename, FD, Disp, Flags);
-  if (EC)
+
+}
+  if (EC) {
     return -1;
+
+}
 
   return FD;
 }
@@ -583,8 +615,10 @@ raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered)
   // maintain this invariant. Many features have been added to LLVM and clang
   // (-fdump-record-layouts, optimization remarks, etc) that print to stdout, so
   // users must simply be aware that mixed output and remarks is a possibility.
-  if (FD <= STDERR_FILENO)
+  if (FD <= STDERR_FILENO) {
     ShouldClose = false;
+
+}
 
 #ifdef _WIN32
   // Check if this is a console device. This is not equivalent to isatty.
@@ -602,18 +636,22 @@ raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered)
 #else
   SupportsSeeking = loc != (off_t)-1;
 #endif
-  if (!SupportsSeeking)
+  if (!SupportsSeeking) {
     pos = 0;
-  else
+  } else {
     pos = static_cast<uint64_t>(loc);
+
+}
 }
 
 raw_fd_ostream::~raw_fd_ostream() {
   if (FD >= 0) {
     flush();
     if (ShouldClose) {
-      if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+      if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD)) {
         error_detected(EC);
+
+}
     }
   }
 
@@ -629,9 +667,11 @@ raw_fd_ostream::~raw_fd_ostream() {
   // to avoid report_fatal_error calls should check for errors with
   // has_error() and clear the error flag with clear_error() before
   // destructing raw_ostream objects which may have errors.
-  if (has_error())
+  if (has_error()) {
     report_fatal_error("IO failure on output stream: " + error().message(),
                        /*gen_crash_diag=*/false);
+
+}
 }
 
 #if defined(_WIN32)
@@ -744,8 +784,10 @@ void raw_fd_ostream::close() {
   assert(ShouldClose);
   ShouldClose = false;
   flush();
-  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD))
+  if (auto EC = sys::Process::SafelyCloseFileDescriptor(FD)) {
     error_detected(EC);
+
+}
   FD = -1;
 }
 
@@ -759,8 +801,10 @@ uint64_t raw_fd_ostream::seek(uint64_t off) {
 #else
   pos = ::lseek(FD, off, SEEK_SET);
 #endif
-  if (pos == (uint64_t)-1)
+  if (pos == (uint64_t)-1) {
     error_detected(std::error_code(errno, std::generic_category()));
+
+}
   return pos;
 }
 
@@ -786,14 +830,18 @@ size_t raw_fd_ostream::preferred_buffer_size() const {
   // Minix has no st_blksize.
   assert(FD >= 0 && "File not yet open!");
   struct stat statbuf;
-  if (fstat(FD, &statbuf) != 0)
+  if (fstat(FD, &statbuf) != 0) {
     return 0;
+
+}
 
   // If this is a terminal, don't use buffering. Line buffering
   // would be a more traditional thing to do, but it's not worth
   // the complexity.
-  if (S_ISCHR(statbuf.st_mode) && isatty(FD))
+  if (S_ISCHR(statbuf.st_mode) && isatty(FD)) {
     return 0;
+
+}
   // Return the preferred block size.
   return statbuf.st_blksize;
 #else
@@ -803,11 +851,15 @@ size_t raw_fd_ostream::preferred_buffer_size() const {
 
 raw_ostream &raw_fd_ostream::changeColor(enum Colors colors, bool bold,
                                          bool bg) {
-  if (!ColorEnabled)
+  if (!ColorEnabled) {
     return *this;
 
-  if (sys::Process::ColorNeedsFlush())
+}
+
+  if (sys::Process::ColorNeedsFlush()) {
     flush();
+
+}
   const char *colorcode =
       (colors == SAVEDCOLOR)
           ? sys::Process::OutputBold(bg)
@@ -822,11 +874,15 @@ raw_ostream &raw_fd_ostream::changeColor(enum Colors colors, bool bold,
 }
 
 raw_ostream &raw_fd_ostream::resetColor() {
-  if (!ColorEnabled)
+  if (!ColorEnabled) {
     return *this;
 
-  if (sys::Process::ColorNeedsFlush())
+}
+
+  if (sys::Process::ColorNeedsFlush()) {
     flush();
+
+}
   const char *colorcode = sys::Process::ResetColor();
   if (colorcode) {
     size_t len = strlen(colorcode);
@@ -838,11 +894,15 @@ raw_ostream &raw_fd_ostream::resetColor() {
 }
 
 raw_ostream &raw_fd_ostream::reverseColor() {
-  if (!ColorEnabled)
+  if (!ColorEnabled) {
     return *this;
 
-  if (sys::Process::ColorNeedsFlush())
+}
+
+  if (sys::Process::ColorNeedsFlush()) {
     flush();
+
+}
   const char *colorcode = sys::Process::OutputReverse();
   if (colorcode) {
     size_t len = strlen(colorcode);

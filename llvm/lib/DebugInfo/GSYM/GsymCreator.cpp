@@ -41,8 +41,10 @@ uint32_t GsymCreator::insertFile(StringRef Path,
   const auto NextIndex = Files.size();
   // Find FE in hash map and insert if not present.
   auto R = FileEntryToIndex.insert(std::make_pair(FE, NextIndex));
-  if (R.second)
+  if (R.second) {
     Files.emplace_back(FE);
+
+}
   return R.first->second;
 }
 
@@ -50,24 +52,32 @@ llvm::Error GsymCreator::save(StringRef Path,
                               llvm::support::endianness ByteOrder) const {
   std::error_code EC;
   raw_fd_ostream OutStrm(Path, EC);
-  if (EC)
+  if (EC) {
     return llvm::errorCodeToError(EC);
+
+}
   FileWriter O(OutStrm, ByteOrder);
   return encode(O);
 }
 
 llvm::Error GsymCreator::encode(FileWriter &O) const {
   std::lock_guard<std::recursive_mutex> Guard(Mutex);
-  if (Funcs.empty())
+  if (Funcs.empty()) {
     return createStringError(std::errc::invalid_argument,
                              "no functions to encode");
-  if (!Finalized)
+
+}
+  if (!Finalized) {
     return createStringError(std::errc::invalid_argument,
                              "GsymCreator wasn't finalized prior to encoding");
 
-  if (Funcs.size() > UINT32_MAX)
+}
+
+  if (Funcs.size() > UINT32_MAX) {
     return createStringError(std::errc::invalid_argument,
                              "too many FunctionInfos");
+
+}
 
   const uint64_t MinAddr = BaseAddress ? *BaseAddress : Funcs.front().startAddress();
   const uint64_t MaxAddr = Funcs.back().startAddress();
@@ -82,25 +92,33 @@ llvm::Error GsymCreator::encode(FileWriter &O) const {
   Hdr.StrtabOffset = 0; // We will fix this up later.
   Hdr.StrtabSize = 0; // We will fix this up later.
   memset(Hdr.UUID, 0, sizeof(Hdr.UUID));
-  if (UUID.size() > sizeof(Hdr.UUID))
+  if (UUID.size() > sizeof(Hdr.UUID)) {
     return createStringError(std::errc::invalid_argument,
                              "invalid UUID size %u", (uint32_t)UUID.size());
+
+}
   // Set the address offset size correctly in the GSYM header.
-  if (AddrDelta <= UINT8_MAX)
+  if (AddrDelta <= UINT8_MAX) {
     Hdr.AddrOffSize = 1;
-  else if (AddrDelta <= UINT16_MAX)
+  } else if (AddrDelta <= UINT16_MAX) {
     Hdr.AddrOffSize = 2;
-  else if (AddrDelta <= UINT32_MAX)
+  } else if (AddrDelta <= UINT32_MAX) {
     Hdr.AddrOffSize = 4;
-  else
+  } else {
     Hdr.AddrOffSize = 8;
+
+}
   // Copy the UUID value if we have one.
-  if (UUID.size() > 0)
+  if (UUID.size() > 0) {
     memcpy(Hdr.UUID, UUID.data(), UUID.size());
+
+}
   // Write out the header.
   llvm::Error Err = Hdr.encode(O);
-  if (Err)
+  if (Err) {
     return Err;
+
+}
 
   // Write out the address offsets.
   O.alignTo(Hdr.AddrOffSize);
@@ -117,8 +135,10 @@ llvm::Error GsymCreator::encode(FileWriter &O) const {
   // Write out all zeros for the AddrInfoOffsets.
   O.alignTo(4);
   const off_t AddrInfoOffsetsOffset = O.tell();
-  for (size_t i = 0, n = Funcs.size(); i < n; ++i)
+  for (size_t i = 0, n = Funcs.size(); i < n; ++i) {
     O.writeU32(0);
+
+}
 
   // Write out the file table
   O.alignTo(4);
@@ -126,9 +146,11 @@ llvm::Error GsymCreator::encode(FileWriter &O) const {
   assert(Files[0].Dir == 0);
   assert(Files[0].Base == 0);
   size_t NumFiles = Files.size();
-  if (NumFiles > UINT32_MAX)
+  if (NumFiles > UINT32_MAX) {
     return createStringError(std::errc::invalid_argument,
                              "too many files");
+
+}
   O.writeU32(static_cast<uint32_t>(NumFiles));
   for (auto File: Files) {
       O.writeU32(File.Dir);
@@ -143,10 +165,12 @@ llvm::Error GsymCreator::encode(FileWriter &O) const {
 
   // Write out the address infos for each function info.
   for (const auto &FuncInfo : Funcs) {
-    if (Expected<uint64_t> OffsetOrErr = FuncInfo.encode(O))
+    if (Expected<uint64_t> OffsetOrErr = FuncInfo.encode(O)) {
         AddrInfoOffsets.push_back(OffsetOrErr.get());
-    else
+    } else {
         return OffsetOrErr.takeError();
+
+}
   }
   // Fixup the string table offset and size in the header
   O.fixup32((uint32_t)StrtabOffset, offsetof(Header, StrtabOffset));
@@ -163,9 +187,11 @@ llvm::Error GsymCreator::encode(FileWriter &O) const {
 
 llvm::Error GsymCreator::finalize(llvm::raw_ostream &OS) {
   std::lock_guard<std::recursive_mutex> Guard(Mutex);
-  if (Finalized)
+  if (Finalized) {
     return createStringError(std::errc::invalid_argument,
                              "already finalized");
+
+}
   Finalized = true;
 
   // Sort function infos so we can emit sorted functions.
@@ -240,8 +266,10 @@ llvm::Error GsymCreator::finalize(llvm::raw_ostream &OS) {
         Curr = Funcs.erase(Prev);
       }
     }
-    if (Curr == Funcs.end())
+    if (Curr == Funcs.end()) {
       break;
+
+}
     Prev = Curr++;
   }
 
@@ -262,8 +290,10 @@ llvm::Error GsymCreator::finalize(llvm::raw_ostream &OS) {
 }
 
 uint32_t GsymCreator::insertString(StringRef S, bool Copy) {
-  if (S.empty())
+  if (S.empty()) {
     return 0;
+
+}
   std::lock_guard<std::recursive_mutex> Guard(Mutex);
   if (Copy) {
     // We need to provide backing storage for the string if requested
@@ -273,8 +303,10 @@ uint32_t GsymCreator::insertString(StringRef S, bool Copy) {
     // This allows GsymCreator to be really fast when parsing DWARF and
     // other object files as most strings don't need to be copied.
     CachedHashStringRef CHStr(S);
-    if (!StrTab.contains(CHStr))
+    if (!StrTab.contains(CHStr)) {
       S = StringStorage.insert(S).first->getKey();
+
+}
   }
   return StrTab.add(S);
 }
@@ -289,8 +321,10 @@ void GsymCreator::forEachFunctionInfo(
     std::function<bool(FunctionInfo &)> const &Callback) {
   std::lock_guard<std::recursive_mutex> Guard(Mutex);
   for (auto &FI : Funcs) {
-    if (!Callback(FI))
+    if (!Callback(FI)) {
       break;
+
+}
   }
 }
 
@@ -298,8 +332,10 @@ void GsymCreator::forEachFunctionInfo(
     std::function<bool(const FunctionInfo &)> const &Callback) const {
   std::lock_guard<std::recursive_mutex> Guard(Mutex);
   for (const auto &FI : Funcs) {
-    if (!Callback(FI))
+    if (!Callback(FI)) {
       break;
+
+}
   }
 }
 
@@ -309,8 +345,10 @@ size_t GsymCreator::getNumFunctionInfos() const{
 }
 
 bool GsymCreator::IsValidTextAddress(uint64_t Addr) const {
-  if (ValidTextRanges)
+  if (ValidTextRanges) {
     return ValidTextRanges->contains(Addr);
+
+}
   return true; // No valid text ranges has been set, so accept all ranges.
 }
 

@@ -124,9 +124,9 @@ bool Document::readFromBlob(StringRef Blob, bool Multi) {
     }
 
     // Store it.
-    if (Stack.empty())
+    if (Stack.empty()) {
       Root = Node;
-    else if (Stack.back().Node.getKind() == Type::Array) {
+    } else if (Stack.back().Node.getKind() == Type::Array) {
       // Reading an array entry.
       auto &Array = Stack.back().Node.getArray();
       Array.push_back(Node);
@@ -155,12 +155,16 @@ bool Document::readFromBlob(StringRef Blob, bool Multi) {
     // Pop finished stack levels.
     while (!Stack.empty()) {
       if (Stack.back().Node.getKind() == msgpack::Type::Array) {
-        if (Stack.back().Node.getArray().size() != Stack.back().Length)
+        if (Stack.back().Node.getArray().size() != Stack.back().Length) {
           break;
+
+}
       } else {
         if (Stack.back().MapEntry ||
-            Stack.back().Node.getMap().size() != Stack.back().Length)
+            Stack.back().Node.getMap().size() != Stack.back().Length) {
           break;
+
+}
       }
       Stack.pop_back();
     }
@@ -215,16 +219,22 @@ void Document::writeToBlob(std::string &Blob) {
     // Pop finished stack levels.
     while (!Stack.empty()) {
       if (Stack.back().Node.getKind() == Type::Map) {
-        if (Stack.back().MapIt != Stack.back().Node.getMap().end())
+        if (Stack.back().MapIt != Stack.back().Node.getMap().end()) {
           break;
+
+}
       } else {
-        if (Stack.back().ArrayIt != Stack.back().Node.getArray().end())
+        if (Stack.back().ArrayIt != Stack.back().Node.getArray().end()) {
           break;
+
+}
       }
       Stack.pop_back();
     }
-    if (Stack.empty())
+    if (Stack.empty()) {
       break;
+
+}
     // Get the next value.
     if (Stack.back().Node.getKind() == Type::Map) {
       if (Stack.back().OnKey) {

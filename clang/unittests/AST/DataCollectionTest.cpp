@@ -57,11 +57,15 @@ struct StmtHashMatch : public MatchFinder::MatchCallback {
 
   void run(const MatchFinder::MatchResult &Result) override {
     const Stmt *S = Result.Nodes.getNodeAs<Stmt>("id");
-    if (!S)
+    if (!S) {
       return;
+
+}
     ++NumFound;
-    if (NumFound > 1)
+    if (NumFound > 1) {
       return;
+
+}
     llvm::MD5 MD5;
     StmtDataCollector(S, *Result.Context, MD5);
     MD5.final(Hash);
@@ -77,16 +81,22 @@ static testing::AssertionResult hashStmt(llvm::MD5::MD5Result &Hash,
   Finder.addMatcher(StmtMatch, &Hasher);
   std::unique_ptr<FrontendActionFactory> Factory(
       newFrontendActionFactory(&Finder));
-  if (!runToolOnCode(Factory->create(), Code))
+  if (!runToolOnCode(Factory->create(), Code)) {
     return testing::AssertionFailure()
            << "Parsing error in \"" << Code.str() << "\"";
-  if (Hasher.NumFound == 0)
+
+}
+  if (Hasher.NumFound == 0) {
     return testing::AssertionFailure() << "Matcher didn't find any statements";
-  if (Hasher.NumFound > 1)
+
+}
+  if (Hasher.NumFound > 1) {
     return testing::AssertionFailure()
            << "Matcher should match only one statement "
               "(found "
            << Hasher.NumFound << ")";
+
+}
   return testing::AssertionSuccess();
 }
 
@@ -95,10 +105,14 @@ isStmtHashEqual(const StatementMatcher &StmtMatch, StringRef Code1,
                 StringRef Code2) {
   llvm::MD5::MD5Result Hash1, Hash2;
   testing::AssertionResult Result = hashStmt(Hash1, StmtMatch, Code1);
-  if (!Result)
+  if (!Result) {
     return Result;
-  if (!(Result = hashStmt(Hash2, StmtMatch, Code2)))
+
+}
+  if (!(Result = hashStmt(Hash2, StmtMatch, Code2))) {
     return Result;
+
+}
 
   return testing::AssertionResult(Hash1 == Hash2);
 }

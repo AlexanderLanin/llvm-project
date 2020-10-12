@@ -58,13 +58,17 @@ void TpiStreamBuilder::addTypeRecord(ArrayRef<uint8_t> Record,
   TypeRecordBytes = NewSize;
 
   TypeRecords.push_back(Record);
-  if (Hash)
+  if (Hash) {
     TypeHashes.push_back(*Hash);
+
+}
 }
 
 Error TpiStreamBuilder::finalize() {
-  if (Header)
+  if (Header) {
     return Error::success();
+
+}
 
   TpiStreamHeader *H = Allocator.Allocate<TpiStreamHeader>();
 
@@ -115,18 +119,24 @@ uint32_t TpiStreamBuilder::calculateIndexOffsetSize() const {
 
 Error TpiStreamBuilder::finalizeMsfLayout() {
   uint32_t Length = calculateSerializedLength();
-  if (auto EC = Msf.setStreamSize(Idx, Length))
+  if (auto EC = Msf.setStreamSize(Idx, Length)) {
     return EC;
+
+}
 
   uint32_t HashStreamSize =
       calculateHashBufferSize() + calculateIndexOffsetSize();
 
-  if (HashStreamSize == 0)
+  if (HashStreamSize == 0) {
     return Error::success();
 
+}
+
   auto ExpectedIndex = Msf.addStream(HashStreamSize);
-  if (!ExpectedIndex)
+  if (!ExpectedIndex) {
     return ExpectedIndex.takeError();
+
+}
   HashStreamIndex = *ExpectedIndex;
   if (!TypeHashes.empty()) {
     ulittle32_t *H = Allocator.Allocate<ulittle32_t>(TypeHashes.size());
@@ -145,15 +155,19 @@ Error TpiStreamBuilder::finalizeMsfLayout() {
 
 Error TpiStreamBuilder::commit(const msf::MSFLayout &Layout,
                                WritableBinaryStreamRef Buffer) {
-  if (auto EC = finalize())
+  if (auto EC = finalize()) {
     return EC;
+
+}
 
   auto InfoS = WritableMappedBlockStream::createIndexedStream(Layout, Buffer,
                                                               Idx, Allocator);
 
   BinaryStreamWriter Writer(*InfoS);
-  if (auto EC = Writer.writeObject(*Header))
+  if (auto EC = Writer.writeObject(*Header)) {
     return EC;
+
+}
 
   for (auto Rec : TypeRecords) {
     assert(!Rec.empty() && "Attempting to write an empty type record shifts "
@@ -161,8 +175,10 @@ Error TpiStreamBuilder::commit(const msf::MSFLayout &Layout,
     assert(((Rec.size() & 3) == 0) &&
            "The type record's size is not a multiple of 4 bytes which will "
            "cause misalignment in the output TPI stream!");
-    if (auto EC = Writer.writeBytes(Rec))
+    if (auto EC = Writer.writeBytes(Rec)) {
       return EC;
+
+}
   }
 
   if (HashStreamIndex != kInvalidStreamIndex) {
@@ -170,13 +186,17 @@ Error TpiStreamBuilder::commit(const msf::MSFLayout &Layout,
         Layout, Buffer, HashStreamIndex, Allocator);
     BinaryStreamWriter HW(*HVS);
     if (HashValueStream) {
-      if (auto EC = HW.writeStreamRef(*HashValueStream))
+      if (auto EC = HW.writeStreamRef(*HashValueStream)) {
         return EC;
+
+}
     }
 
     for (auto &IndexOffset : TypeIndexOffsets) {
-      if (auto EC = HW.writeObject(IndexOffset))
+      if (auto EC = HW.writeObject(IndexOffset)) {
         return EC;
+
+}
     }
   }
 

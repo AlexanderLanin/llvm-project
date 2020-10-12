@@ -38,13 +38,17 @@ Expected<std::unique_ptr<SymbolicFile>>
 SymbolicFile::createSymbolicFile(MemoryBufferRef Object, file_magic Type,
                                  LLVMContext *Context) {
   StringRef Data = Object.getBuffer();
-  if (Type == file_magic::unknown)
+  if (Type == file_magic::unknown) {
     Type = identify_magic(Data);
+
+}
 
   switch (Type) {
   case file_magic::bitcode:
-    if (Context)
+    if (Context) {
       return IRObjectFile::create(Object, *Context);
+
+}
     LLVM_FALLTHROUGH;
   case file_magic::unknown:
   case file_magic::archive:
@@ -81,8 +85,10 @@ SymbolicFile::createSymbolicFile(MemoryBufferRef Object, file_magic Type,
   case file_magic::coff_object: {
     Expected<std::unique_ptr<ObjectFile>> Obj =
         ObjectFile::createObjectFile(Object, Type);
-    if (!Obj || !Context)
+    if (!Obj || !Context) {
       return std::move(Obj);
+
+}
 
     Expected<MemoryBufferRef> BCData =
         IRObjectFile::findBitcodeInObject(*Obj->get());

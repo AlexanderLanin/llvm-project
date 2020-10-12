@@ -78,20 +78,30 @@ static MachineInstr *FindDominatedInstruction(MachineInstr &New,
                                               MachineInstr *Old,
                                               const InstOrderMap &M) {
   auto NewIter = M.find(&New);
-  if (NewIter == M.end())
+  if (NewIter == M.end()) {
     return Old;
-  if (Old == nullptr)
+
+}
+  if (Old == nullptr) {
     return &New;
+
+}
   unsigned OrderOld = M.find(Old)->second;
   unsigned OrderNew = NewIter->second;
-  if (OrderOld != OrderNew)
+  if (OrderOld != OrderNew) {
     return OrderOld < OrderNew ? &New : Old;
+
+}
   // OrderOld == OrderNew, we need to iterate down from Old to see if it
   // can reach New, if yes, New is dominated by Old.
   for (MachineInstr *I = Old->getNextNode(); M.find(I)->second == OrderNew;
-       I = I->getNextNode())
-    if (I == &New)
+       I = I->getNextNode()) {
+    if (I == &New) {
       return &New;
+
+}
+
+}
   return Old;
 }
 
@@ -101,13 +111,17 @@ static void BuildInstOrderMap(MachineBasicBlock::iterator Start,
                               InstOrderMap &M) {
   M.clear();
   unsigned i = 0;
-  for (MachineInstr &I : make_range(Start, Start->getParent()->end()))
+  for (MachineInstr &I : make_range(Start, Start->getParent()->end())) {
     M[&I] = i++;
+
+}
 }
 
 bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   MachineRegisterInfo &MRI = MF.getRegInfo();
 
@@ -121,8 +135,10 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
   DenseMap<unsigned, std::pair<unsigned, MachineInstr *>> UseMap;
 
   for (MachineBasicBlock &MBB : MF) {
-    if (MBB.empty())
+    if (MBB.empty()) {
       continue;
+
+}
     bool SawStore = false;
     BuildInstOrderMap(MBB.begin(), IOM);
     UseMap.clear();
@@ -130,26 +146,34 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
     for (MachineBasicBlock::iterator Next = MBB.begin(); Next != MBB.end();) {
       MachineInstr &MI = *Next;
       ++Next;
-      if (MI.isPHI() || MI.isDebugInstr())
+      if (MI.isPHI() || MI.isDebugInstr()) {
         continue;
-      if (MI.mayStore())
+
+}
+      if (MI.mayStore()) {
         SawStore = true;
+
+}
 
       unsigned CurrentOrder = IOM[&MI];
       unsigned Barrier = 0;
       MachineInstr *BarrierMI = nullptr;
       for (const MachineOperand &MO : MI.operands()) {
-        if (!MO.isReg() || MO.isDebug())
+        if (!MO.isReg() || MO.isDebug()) {
           continue;
-        if (MO.isUse())
+
+}
+        if (MO.isUse()) {
           UseMap[MO.getReg()] = std::make_pair(CurrentOrder, &MI);
-        else if (MO.isDead() && UseMap.count(MO.getReg()))
+        } else if (MO.isDead() && UseMap.count(MO.getReg())) {
           // Barrier is the last instruction where MO get used. MI should not
           // be moved above Barrier.
           if (Barrier < UseMap[MO.getReg()].first) {
             Barrier = UseMap[MO.getReg()].first;
             BarrierMI = UseMap[MO.getReg()].second;
           }
+
+}
       }
 
       if (!MI.isSafeToMove(nullptr, SawStore)) {
@@ -171,14 +195,18 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
       unsigned NumEligibleUse = 0;
 
       for (const MachineOperand &MO : MI.operands()) {
-        if (!MO.isReg() || MO.isDead() || MO.isDebug())
+        if (!MO.isReg() || MO.isDead() || MO.isDebug()) {
           continue;
+
+}
         Register Reg = MO.getReg();
         // Do not move the instruction if it def/uses a physical register,
         // unless it is a constant physical register or a noreg.
         if (!Register::isVirtualRegister(Reg)) {
-          if (!Reg || MRI.isConstantPhysReg(Reg))
+          if (!Reg || MRI.isConstantPhysReg(Reg)) {
             continue;
+
+}
           Insert = nullptr;
           break;
         }
@@ -197,8 +225,10 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
           // is because it needs more accurate model to handle register
           // pressure correctly.
           MachineInstr &DefInstr = *MRI.def_instr_begin(Reg);
-          if (!DefInstr.isCopy())
+          if (!DefInstr.isCopy()) {
             NumEligibleUse++;
+
+}
           Insert = FindDominatedInstruction(DefInstr, Insert, IOM);
         } else {
           Insert = nullptr;
@@ -209,19 +239,25 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
       // If Barrier equals IOM[I], traverse forward to find if BarrierMI is
       // after Insert, if yes, then we should not hoist.
       for (MachineInstr *I = Insert; I && IOM[I] == Barrier;
-           I = I->getNextNode())
+           I = I->getNextNode()) {
         if (I == BarrierMI) {
           Insert = nullptr;
           break;
         }
+
+}
       // Move the instruction when # of shrunk live range > 1.
       if (DefMO && Insert && NumEligibleUse > 1 && Barrier <= IOM[Insert]) {
         MachineBasicBlock::iterator I = std::next(Insert->getIterator());
         // Skip all the PHI and debug instructions.
-        while (I != MBB.end() && (I->isPHI() || I->isDebugInstr()))
+        while (I != MBB.end() && (I->isPHI() || I->isDebugInstr())) {
           I = std::next(I);
-        if (I == MI.getIterator())
+
+}
+        if (I == MI.getIterator()) {
           continue;
+
+}
 
         // Update the dominator order to be the same as the insertion point.
         // We do this to maintain a non-decreasing order without need to update
@@ -232,12 +268,16 @@ bool LiveRangeShrink::runOnMachineFunction(MachineFunction &MF) {
 
         // Find MI's debug value following MI.
         MachineBasicBlock::iterator EndIter = std::next(MI.getIterator());
-        if (MI.getOperand(0).isReg())
+        if (MI.getOperand(0).isReg()) {
           for (; EndIter != MBB.end() && EndIter->isDebugValue() &&
                  EndIter->getOperand(0).isReg() &&
                  EndIter->getOperand(0).getReg() == MI.getOperand(0).getReg();
-               ++EndIter, ++Next)
+               ++EndIter, ++Next) {
             IOM[&*EndIter] = NewOrder;
+
+}
+
+}
         MBB.splice(I, &MBB, MI.getIterator(), EndIter);
       }
     }

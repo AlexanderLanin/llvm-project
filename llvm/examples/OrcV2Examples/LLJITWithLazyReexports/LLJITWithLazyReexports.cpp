@@ -115,10 +115,12 @@ int main(int argc, char *argv[]) {
   {
     auto ISMBuilder =
         createLocalIndirectStubsManagerBuilder(J->getTargetTriple());
-    if (!ISMBuilder())
+    if (!ISMBuilder()) {
       ExitOnErr(make_error<StringError>("Could not create stubs manager for " +
                                             J->getTargetTriple().str(),
                                         inconvertibleErrorCode()));
+
+}
     ISM = ISMBuilder();
   }
   auto LCTM = ExitOnErr(createLocalLazyCallThroughManager(

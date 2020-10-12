@@ -21,14 +21,18 @@ static std::pair<bool, SmallString<128>> findSrcDirMap(StringRef Argv0) {
   SmallString<128> PathInSameDir = BaseDir;
   llvm::sys::path::append(PathInSameDir, "llvm.srcdir.txt");
 
-  if (llvm::sys::fs::is_regular_file(PathInSameDir))
+  if (llvm::sys::fs::is_regular_file(PathInSameDir)) {
     return std::make_pair(true, std::move(PathInSameDir));
+
+}
 
   SmallString<128> PathInParentDir = llvm::sys::path::parent_path(BaseDir);
 
   llvm::sys::path::append(PathInParentDir, "llvm.srcdir.txt");
-  if (llvm::sys::fs::is_regular_file(PathInParentDir))
+  if (llvm::sys::fs::is_regular_file(PathInParentDir)) {
     return std::make_pair(true, std::move(PathInParentDir));
+
+}
 
   return std::pair<bool, SmallString<128>>(false, {});
 }

@@ -65,27 +65,35 @@ ArgList::getRange(std::initializer_list<OptSpecifier> Ids) const {
     }
   }
   // Map an empty {-1, 0} range to {0, 0} so it can be used to form iterators.
-  if (R.first == -1u)
+  if (R.first == -1u) {
     R.first = 0;
+
+}
   return R;
 }
 
 bool ArgList::hasFlag(OptSpecifier Pos, OptSpecifier Neg, bool Default) const {
-  if (Arg *A = getLastArg(Pos, Neg))
+  if (Arg *A = getLastArg(Pos, Neg)) {
     return A->getOption().matches(Pos);
+
+}
   return Default;
 }
 
 bool ArgList::hasFlag(OptSpecifier Pos, OptSpecifier PosAlias, OptSpecifier Neg,
                       bool Default) const {
-  if (Arg *A = getLastArg(Pos, PosAlias, Neg))
+  if (Arg *A = getLastArg(Pos, PosAlias, Neg)) {
     return A->getOption().matches(Pos) || A->getOption().matches(PosAlias);
+
+}
   return Default;
 }
 
 StringRef ArgList::getLastArgValue(OptSpecifier Id, StringRef Default) const {
-  if (Arg *A = getLastArg(Id))
+  if (Arg *A = getLastArg(Id)) {
     return A->getValue();
+
+}
   return Default;
 }
 
@@ -161,14 +169,20 @@ void ArgList::AddAllArgsTranslated(ArgStringList &Output, OptSpecifier Id0,
 }
 
 void ArgList::ClaimAllArgs(OptSpecifier Id0) const {
-  for (auto *Arg : filtered(Id0))
+  for (auto *Arg : filtered(Id0)) {
     Arg->claim();
+
+}
 }
 
 void ArgList::ClaimAllArgs() const {
-  for (auto *Arg : *this)
-    if (!Arg->isClaimed())
+  for (auto *Arg : *this) {
+    if (!Arg->isClaimed()) {
       Arg->claim();
+
+}
+
+}
 }
 
 const char *ArgList::GetOrMakeJoinedArgString(unsigned Index,
@@ -176,8 +190,10 @@ const char *ArgList::GetOrMakeJoinedArgString(unsigned Index,
                                               StringRef RHS) const {
   StringRef Cur = getArgString(Index);
   if (Cur.size() == LHS.size() + RHS.size() &&
-      Cur.startswith(LHS) && Cur.endswith(RHS))
+      Cur.startswith(LHS) && Cur.endswith(RHS)) {
     return Cur.data();
+
+}
 
   return MakeArgString(LHS + RHS);
 }
@@ -195,8 +211,10 @@ LLVM_DUMP_METHOD void ArgList::dump() const { print(dbgs()); }
 
 void InputArgList::releaseMemory() {
   // An InputArgList always owns its arguments.
-  for (Arg *A : *this)
+  for (Arg *A : *this) {
     delete A;
+
+}
 }
 
 InputArgList::InputArgList(const char* const *ArgBegin,

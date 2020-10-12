@@ -46,10 +46,14 @@ void CCState::HandleByVal(unsigned ValNo, MVT ValVT, MVT LocVT,
   Align MinAlign(MinAlignment);
   Align Alignment = ArgFlags.getNonZeroByValAlign();
   unsigned Size  = ArgFlags.getByValSize();
-  if (MinSize > (int)Size)
+  if (MinSize > (int)Size) {
     Size = MinSize;
-  if (MinAlign > Alignment)
+
+}
+  if (MinAlign > Alignment) {
     Alignment = MinAlign;
+
+}
   ensureMaxAlignment(Alignment);
   MF.getSubtarget().getTargetLowering()->HandleByVal(this, Size,
                                                      Alignment.value());
@@ -60,20 +64,26 @@ void CCState::HandleByVal(unsigned ValNo, MVT ValVT, MVT LocVT,
 
 /// Mark a register and all of its aliases as allocated.
 void CCState::MarkAllocated(unsigned Reg) {
-  for (MCRegAliasIterator AI(Reg, &TRI, true); AI.isValid(); ++AI)
+  for (MCRegAliasIterator AI(Reg, &TRI, true); AI.isValid(); ++AI) {
     UsedRegs[*AI/32] |= 1 << (*AI&31);
+
+}
 }
 
 bool CCState::IsShadowAllocatedReg(unsigned Reg) const {
-  if (!isAllocated(Reg))
+  if (!isAllocated(Reg)) {
     return false;
+
+}
 
   for (auto const &ValAssign : Locs) {
     if (ValAssign.isRegLoc()) {
       for (MCRegAliasIterator AI(ValAssign.getLocReg(), &TRI, true);
            AI.isValid(); ++AI) {
-        if (*AI == Reg)
+        if (*AI == Reg) {
           return false;
+
+}
       }
     }
   }
@@ -90,8 +100,10 @@ CCState::AnalyzeFormalArguments(const SmallVectorImpl<ISD::InputArg> &Ins,
   for (unsigned i = 0; i != NumArgs; ++i) {
     MVT ArgVT = Ins[i].VT;
     ISD::ArgFlagsTy ArgFlags = Ins[i].Flags;
-    if (Fn(i, ArgVT, ArgVT, CCValAssign::Full, ArgFlags, *this))
+    if (Fn(i, ArgVT, ArgVT, CCValAssign::Full, ArgFlags, *this)) {
       report_fatal_error("unable to allocate function argument #" + Twine(i));
+
+}
   }
 }
 
@@ -103,8 +115,10 @@ bool CCState::CheckReturn(const SmallVectorImpl<ISD::OutputArg> &Outs,
   for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
     MVT VT = Outs[i].VT;
     ISD::ArgFlagsTy ArgFlags = Outs[i].Flags;
-    if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this))
+    if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this)) {
       return false;
+
+}
   }
   return true;
 }
@@ -117,8 +131,10 @@ void CCState::AnalyzeReturn(const SmallVectorImpl<ISD::OutputArg> &Outs,
   for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
     MVT VT = Outs[i].VT;
     ISD::ArgFlagsTy ArgFlags = Outs[i].Flags;
-    if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this))
+    if (Fn(i, VT, VT, CCValAssign::Full, ArgFlags, *this)) {
       report_fatal_error("unable to allocate function return #" + Twine(i));
+
+}
   }
 }
 
@@ -187,12 +203,18 @@ void CCState::AnalyzeCallResult(MVT VT, CCAssignFn Fn) {
 }
 
 static bool isValueTypeInRegForCC(CallingConv::ID CC, MVT VT) {
-  if (VT.isVector())
+  if (VT.isVector()) {
     return true; // Assume -msse-regparm might be in effect.
-  if (!VT.isInteger())
+
+}
+  if (!VT.isInteger()) {
     return false;
-  if (CC == CallingConv::X86_VectorCall || CC == CallingConv::X86_FastCall)
+
+}
+  if (CC == CallingConv::X86_VectorCall || CC == CallingConv::X86_FastCall) {
     return true;
+
+}
   return false;
 }
 
@@ -204,8 +226,10 @@ void CCState::getRemainingRegParmsForType(SmallVectorImpl<MCPhysReg> &Regs,
 
   // Set the 'inreg' flag if it is used for this calling convention.
   ISD::ArgFlagsTy Flags;
-  if (isValueTypeInRegForCC(CallingConv, VT))
+  if (isValueTypeInRegForCC(CallingConv, VT)) {
     Flags.setInReg();
+
+}
 
   // Allocate something of this value type repeatedly until we get assigned a
   // location in memory.
@@ -223,9 +247,13 @@ void CCState::getRemainingRegParmsForType(SmallVectorImpl<MCPhysReg> &Regs,
 
   // Copy all the registers from the value locations we added.
   assert(NumLocs < Locs.size() && "CC assignment failed to add location");
-  for (unsigned I = NumLocs, E = Locs.size(); I != E; ++I)
-    if (Locs[I].isRegLoc())
+  for (unsigned I = NumLocs, E = Locs.size(); I != E; ++I) {
+    if (Locs[I].isRegLoc()) {
       Regs.push_back(MCPhysReg(Locs[I].getLocReg()));
+
+}
+
+}
 
   // Clear the assigned values and stack memory. We leave the registers marked
   // as allocated so that future queries don't return the same registers, i.e.
@@ -261,8 +289,10 @@ bool CCState::resultsCompatible(CallingConv::ID CalleeCC,
                                 LLVMContext &C,
                                 const SmallVectorImpl<ISD::InputArg> &Ins,
                                 CCAssignFn CalleeFn, CCAssignFn CallerFn) {
-  if (CalleeCC == CallerCC)
+  if (CalleeCC == CallerCC) {
     return true;
+
+}
   SmallVector<CCValAssign, 4> RVLocs1;
   CCState CCInfo1(CalleeCC, false, MF, RVLocs1, C);
   CCInfo1.AnalyzeCallResult(Ins, CalleeFn);
@@ -271,22 +301,32 @@ bool CCState::resultsCompatible(CallingConv::ID CalleeCC,
   CCState CCInfo2(CallerCC, false, MF, RVLocs2, C);
   CCInfo2.AnalyzeCallResult(Ins, CallerFn);
 
-  if (RVLocs1.size() != RVLocs2.size())
+  if (RVLocs1.size() != RVLocs2.size()) {
     return false;
+
+}
   for (unsigned I = 0, E = RVLocs1.size(); I != E; ++I) {
     const CCValAssign &Loc1 = RVLocs1[I];
     const CCValAssign &Loc2 = RVLocs2[I];
-    if (Loc1.getLocInfo() != Loc2.getLocInfo())
+    if (Loc1.getLocInfo() != Loc2.getLocInfo()) {
       return false;
+
+}
     bool RegLoc1 = Loc1.isRegLoc();
-    if (RegLoc1 != Loc2.isRegLoc())
+    if (RegLoc1 != Loc2.isRegLoc()) {
       return false;
+
+}
     if (RegLoc1) {
-      if (Loc1.getLocReg() != Loc2.getLocReg())
+      if (Loc1.getLocReg() != Loc2.getLocReg()) {
         return false;
+
+}
     } else {
-      if (Loc1.getLocMemOffset() != Loc2.getLocMemOffset())
+      if (Loc1.getLocMemOffset() != Loc2.getLocMemOffset()) {
         return false;
+
+}
     }
   }
   return true;

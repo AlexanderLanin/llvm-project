@@ -104,8 +104,10 @@ bool X86RetpolineThunks::runOnMachineFunction(MachineFunction &MF) {
   // a thunk.
   if (!MF.getName().startswith(ThunkNamePrefix)) {
     // If we've already inserted a thunk, nothing else to do.
-    if (InsertedThunks)
+    if (InsertedThunks) {
       return false;
+
+}
 
     // Only add a thunk if one of the functions has the retpoline feature
     // enabled in its subtarget, and doesn't enable external thunks.
@@ -116,19 +118,25 @@ bool X86RetpolineThunks::runOnMachineFunction(MachineFunction &MF) {
     // calls, so maybe this is OK.
     if ((!STI->useRetpolineIndirectCalls() &&
          !STI->useRetpolineIndirectBranches()) ||
-        STI->useRetpolineExternalThunk())
+        STI->useRetpolineExternalThunk()) {
       return false;
+
+}
 
     // Otherwise, we need to insert the thunk.
     // WARNING: This is not really a well behaving thing to do in a function
     // pass. We extract the module and insert a new function (and machine
     // function) directly into the module.
-    if (Is64Bit)
+    if (Is64Bit) {
       createThunkFunction(M, R11ThunkName);
-    else
+    } else {
       for (StringRef Name :
-           {EAXThunkName, ECXThunkName, EDXThunkName, EDIThunkName})
+           {EAXThunkName, ECXThunkName, EDXThunkName, EDIThunkName}) {
         createThunkFunction(M, Name);
+
+}
+
+}
     InsertedThunks = true;
     return true;
   }
@@ -177,16 +185,18 @@ bool X86RetpolineThunks::runOnMachineFunction(MachineFunction &MF) {
     //   ... # Same setup
     //         movl %edi, (%esp)
     //         retl
-    if (MF.getName() == EAXThunkName)
+    if (MF.getName() == EAXThunkName) {
       populateThunk(MF, X86::EAX);
-    else if (MF.getName() == ECXThunkName)
+    } else if (MF.getName() == ECXThunkName) {
       populateThunk(MF, X86::ECX);
-    else if (MF.getName() == EDXThunkName)
+    } else if (MF.getName() == EDXThunkName) {
       populateThunk(MF, X86::EDX);
-    else if (MF.getName() == EDIThunkName)
+    } else if (MF.getName() == EDIThunkName) {
       populateThunk(MF, X86::EDI);
-    else
+    } else {
       llvm_unreachable("Invalid thunk name on x86-32!");
+
+}
   }
 
   return true;
@@ -243,8 +253,10 @@ void X86RetpolineThunks::populateThunk(MachineFunction &MF,
   // generate two bbs for the entry block.
   MachineBasicBlock *Entry = &MF.front();
   Entry->clear();
-  while (MF.size() > 1)
+  while (MF.size() > 1) {
     MF.erase(std::next(MF.begin()));
+
+}
 
   MachineBasicBlock *CaptureSpec = MF.CreateMachineBasicBlock(Entry->getBasicBlock());
   MachineBasicBlock *CallTarget = MF.CreateMachineBasicBlock(Entry->getBasicBlock());

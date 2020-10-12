@@ -127,11 +127,15 @@ static void error(llvm::Error E, StringRef FileName, const Archive::Child &C,
   if (!NameOrErr) {
     consumeError(NameOrErr.takeError());
     errs() << "(" << "???" << ")";
-  } else
+  } else {
     errs() << "(" << NameOrErr.get() << ")";
 
-  if (!ArchitectureName.empty())
+}
+
+  if (!ArchitectureName.empty()) {
     errs() << " (for architecture " << ArchitectureName << ") ";
+
+}
 
   std::string Buf;
   raw_string_ostream OS(Buf);
@@ -148,8 +152,10 @@ static void error(llvm::Error E, StringRef FileName,
   HadError = true;
   WithColor::error(errs(), ToolName) << "'" << FileName << "'";
 
-  if (!ArchitectureName.empty())
+  if (!ArchitectureName.empty()) {
     errs() << " (for architecture " << ArchitectureName << ") ";
+
+}
 
   std::string Buf;
   raw_string_ostream OS(Buf);
@@ -182,8 +188,10 @@ static const char *getRadixFmt() {
 
 /// Remove unneeded ELF sections from calculation
 static bool considerForSize(ObjectFile *Obj, SectionRef Section) {
-  if (!Obj->isELF())
+  if (!Obj->isELF()) {
     return true;
+
+}
   switch (static_cast<ELFSectionRef>(Section).getType()) {
   case ELF::SHT_NULL:
   case ELF::SHT_SYMTAB:
@@ -198,9 +206,13 @@ static bool considerForSize(ObjectFile *Obj, SectionRef Section) {
 /// Total size of all ELF common symbols
 static uint64_t getCommonSize(ObjectFile *Obj) {
   uint64_t TotalCommons = 0;
-  for (auto &Sym : Obj->symbols())
-    if (Obj->getSymbolFlags(Sym.getRawDataRefImpl()) & SymbolRef::SF_Common)
+  for (auto &Sym : Obj->symbols()) {
+    if (Obj->getSymbolFlags(Sym.getRawDataRefImpl()) & SymbolRef::SF_Common) {
       TotalCommons += Obj->getCommonSymbolSize(Sym.getRawDataRefImpl());
+
+}
+
+}
   return TotalCommons;
 }
 
@@ -212,8 +224,10 @@ static void printDarwinSectionSizes(MachOObjectFile *MachO) {
   std::string fmtbuf;
   raw_string_ostream fmt(fmtbuf);
   const char *radix_fmt = getRadixFmt();
-  if (Radix == hexadecimal)
+  if (Radix == hexadecimal) {
     fmt << "0x";
+
+}
   fmt << "%" << radix_fmt;
 
   uint32_t Filetype = MachO->getHeader().filetype;
@@ -224,56 +238,72 @@ static void printDarwinSectionSizes(MachOObjectFile *MachO) {
       MachO::segment_command_64 Seg = MachO->getSegment64LoadCommand(Load);
       outs() << "Segment " << Seg.segname << ": "
              << format(fmt.str().c_str(), Seg.vmsize);
-      if (DarwinLongFormat)
+      if (DarwinLongFormat) {
         outs() << " (vmaddr 0x" << format("%" PRIx64, Seg.vmaddr) << " fileoff "
                << Seg.fileoff << ")";
+
+}
       outs() << "\n";
       total += Seg.vmsize;
       uint64_t sec_total = 0;
       for (unsigned J = 0; J < Seg.nsects; ++J) {
         MachO::section_64 Sec = MachO->getSection64(Load, J);
-        if (Filetype == MachO::MH_OBJECT)
+        if (Filetype == MachO::MH_OBJECT) {
           outs() << "\tSection (" << format("%.16s", &Sec.segname) << ", "
                  << format("%.16s", &Sec.sectname) << "): ";
-        else
+        } else {
           outs() << "\tSection " << format("%.16s", &Sec.sectname) << ": ";
+
+}
         outs() << format(fmt.str().c_str(), Sec.size);
-        if (DarwinLongFormat)
+        if (DarwinLongFormat) {
           outs() << " (addr 0x" << format("%" PRIx64, Sec.addr) << " offset "
                  << Sec.offset << ")";
+
+}
         outs() << "\n";
         sec_total += Sec.size;
       }
-      if (Seg.nsects != 0)
+      if (Seg.nsects != 0) {
         outs() << "\ttotal " << format(fmt.str().c_str(), sec_total) << "\n";
+
+}
     } else if (Load.C.cmd == MachO::LC_SEGMENT) {
       MachO::segment_command Seg = MachO->getSegmentLoadCommand(Load);
       uint64_t Seg_vmsize = Seg.vmsize;
       outs() << "Segment " << Seg.segname << ": "
              << format(fmt.str().c_str(), Seg_vmsize);
-      if (DarwinLongFormat)
+      if (DarwinLongFormat) {
         outs() << " (vmaddr 0x" << format("%" PRIx32, Seg.vmaddr) << " fileoff "
                << Seg.fileoff << ")";
+
+}
       outs() << "\n";
       total += Seg.vmsize;
       uint64_t sec_total = 0;
       for (unsigned J = 0; J < Seg.nsects; ++J) {
         MachO::section Sec = MachO->getSection(Load, J);
-        if (Filetype == MachO::MH_OBJECT)
+        if (Filetype == MachO::MH_OBJECT) {
           outs() << "\tSection (" << format("%.16s", &Sec.segname) << ", "
                  << format("%.16s", &Sec.sectname) << "): ";
-        else
+        } else {
           outs() << "\tSection " << format("%.16s", &Sec.sectname) << ": ";
+
+}
         uint64_t Sec_size = Sec.size;
         outs() << format(fmt.str().c_str(), Sec_size);
-        if (DarwinLongFormat)
+        if (DarwinLongFormat) {
           outs() << " (addr 0x" << format("%" PRIx32, Sec.addr) << " offset "
                  << Sec.offset << ")";
+
+}
         outs() << "\n";
         sec_total += Sec.size;
       }
-      if (Seg.nsects != 0)
+      if (Seg.nsects != 0) {
         outs() << "\ttotal " << format(fmt.str().c_str(), sec_total) << "\n";
+
+}
     }
   }
   outs() << "total " << format(fmt.str().c_str(), total) << "\n";
@@ -295,25 +325,29 @@ static void printDarwinSegmentSizes(MachOObjectFile *MachO) {
         for (unsigned J = 0; J < Seg.nsects; ++J) {
           MachO::section_64 Sec = MachO->getSection64(Load, J);
           StringRef SegmentName = StringRef(Sec.segname);
-          if (SegmentName == "__TEXT")
+          if (SegmentName == "__TEXT") {
             total_text += Sec.size;
-          else if (SegmentName == "__DATA")
+          } else if (SegmentName == "__DATA") {
             total_data += Sec.size;
-          else if (SegmentName == "__OBJC")
+          } else if (SegmentName == "__OBJC") {
             total_objc += Sec.size;
-          else
+          } else {
             total_others += Sec.size;
+
+}
         }
       } else {
         StringRef SegmentName = StringRef(Seg.segname);
-        if (SegmentName == "__TEXT")
+        if (SegmentName == "__TEXT") {
           total_text += Seg.vmsize;
-        else if (SegmentName == "__DATA")
+        } else if (SegmentName == "__DATA") {
           total_data += Seg.vmsize;
-        else if (SegmentName == "__OBJC")
+        } else if (SegmentName == "__OBJC") {
           total_objc += Seg.vmsize;
-        else
+        } else {
           total_others += Seg.vmsize;
+
+}
       }
     } else if (Load.C.cmd == MachO::LC_SEGMENT) {
       MachO::segment_command Seg = MachO->getSegmentLoadCommand(Load);
@@ -321,25 +355,29 @@ static void printDarwinSegmentSizes(MachOObjectFile *MachO) {
         for (unsigned J = 0; J < Seg.nsects; ++J) {
           MachO::section Sec = MachO->getSection(Load, J);
           StringRef SegmentName = StringRef(Sec.segname);
-          if (SegmentName == "__TEXT")
+          if (SegmentName == "__TEXT") {
             total_text += Sec.size;
-          else if (SegmentName == "__DATA")
+          } else if (SegmentName == "__DATA") {
             total_data += Sec.size;
-          else if (SegmentName == "__OBJC")
+          } else if (SegmentName == "__OBJC") {
             total_objc += Sec.size;
-          else
+          } else {
             total_others += Sec.size;
+
+}
         }
       } else {
         StringRef SegmentName = StringRef(Seg.segname);
-        if (SegmentName == "__TEXT")
+        if (SegmentName == "__TEXT") {
           total_text += Seg.vmsize;
-        else if (SegmentName == "__DATA")
+        } else if (SegmentName == "__DATA") {
           total_data += Seg.vmsize;
-        else if (SegmentName == "__OBJC")
+        } else if (SegmentName == "__OBJC") {
           total_objc += Seg.vmsize;
-        else
+        } else {
           total_others += Seg.vmsize;
+
+}
       }
     }
   }
@@ -367,21 +405,23 @@ static void printObjectSectionSizes(ObjectFile *Obj) {
   // size(1) -m output, else if OutputFormat is darwin and not a Mach-O object
   // let it fall through to OutputFormat berkeley.
   MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(Obj);
-  if (OutputFormat == darwin && MachO)
+  if (OutputFormat == darwin && MachO) {
     printDarwinSectionSizes(MachO);
   // If we have a MachOObjectFile and the OutputFormat is berkeley print as
   // darwin's default berkeley format for Mach-O files.
-  else if (MachO && OutputFormat == berkeley)
+  } else if (MachO && OutputFormat == berkeley) {
     printDarwinSegmentSizes(MachO);
-  else if (OutputFormat == sysv) {
+  } else if (OutputFormat == sysv) {
     // Run two passes over all sections. The first gets the lengths needed for
     // formatting the output. The second actually does the output.
     std::size_t max_name_len = strlen("section");
     std::size_t max_size_len = strlen("size");
     std::size_t max_addr_len = strlen("addr");
     for (const SectionRef &Section : Obj->sections()) {
-      if (!considerForSize(Obj, Section))
+      if (!considerForSize(Obj, Section)) {
         continue;
+
+}
       uint64_t size = Section.getSize();
       total += size;
 
@@ -420,8 +460,10 @@ static void printObjectSectionSizes(ObjectFile *Obj) {
 
     // Print each section.
     for (const SectionRef &Section : Obj->sections()) {
-      if (!considerForSize(Obj, Section))
+      if (!considerForSize(Obj, Section)) {
         continue;
+
+}
 
       Expected<StringRef> name_or_err = Section.getName();
       if (!name_or_err) {
@@ -461,16 +503,20 @@ static void printObjectSectionSizes(ObjectFile *Obj) {
       bool isText = Section.isBerkeleyText();
       bool isData = Section.isBerkeleyData();
       bool isBSS = Section.isBSS();
-      if (isText)
+      if (isText) {
         total_text += size;
-      else if (isData)
+      } else if (isData) {
         total_data += size;
-      else if (isBSS)
+      } else if (isBSS) {
         total_bss += size;
+
+}
     }
 
-    if (ELFCommons)
+    if (ELFCommons) {
       total_bss += getCommonSize(Obj);
+
+}
 
     total = total_text + total_data + total_bss;
 
@@ -513,8 +559,10 @@ static void printObjectSectionSizes(ObjectFile *Obj) {
 static bool checkMachOAndArchFlags(ObjectFile *O, StringRef Filename) {
   auto *MachO = dyn_cast<MachOObjectFile>(O);
 
-  if (!MachO || ArchAll || ArchFlags.empty())
+  if (!MachO || ArchAll || ArchFlags.empty()) {
     return true;
+
+}
 
   MachO::mach_header H;
   MachO::mach_header_64 H_64;
@@ -553,29 +601,39 @@ static void printFileSectionSizes(StringRef file) {
     for (auto &C : a->children(Err)) {
       Expected<std::unique_ptr<Binary>> ChildOrErr = C.getAsBinary();
       if (!ChildOrErr) {
-        if (auto E = isNotObjectErrorInvalidFileType(ChildOrErr.takeError()))
+        if (auto E = isNotObjectErrorInvalidFileType(ChildOrErr.takeError())) {
           error(std::move(E), a->getFileName(), C);
+
+}
         continue;
       }
       if (ObjectFile *o = dyn_cast<ObjectFile>(&*ChildOrErr.get())) {
         MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-        if (!checkMachOAndArchFlags(o, file))
+        if (!checkMachOAndArchFlags(o, file)) {
           return;
-        if (OutputFormat == sysv)
+
+}
+        if (OutputFormat == sysv) {
           outs() << o->getFileName() << "   (ex " << a->getFileName() << "):\n";
-        else if (MachO && OutputFormat == darwin)
+        } else if (MachO && OutputFormat == darwin) {
           outs() << a->getFileName() << "(" << o->getFileName() << "):\n";
+
+}
         printObjectSectionSizes(o);
         if (OutputFormat == berkeley) {
-          if (MachO)
+          if (MachO) {
             outs() << a->getFileName() << "(" << o->getFileName() << ")\n";
-          else
+          } else {
             outs() << o->getFileName() << " (ex " << a->getFileName() << ")\n";
+
+}
         }
       }
     }
-    if (Err)
+    if (Err) {
       error(std::move(Err), a->getFileName());
+
+}
   } else if (MachOUniversalBinary *UB =
                  dyn_cast<MachOUniversalBinary>(&Bin)) {
     // If we have a list of architecture flags specified dump only those.
@@ -593,18 +651,22 @@ static void printFileSectionSizes(StringRef file) {
             if (UO) {
               if (ObjectFile *o = dyn_cast<ObjectFile>(&*UO.get())) {
                 MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-                if (OutputFormat == sysv)
+                if (OutputFormat == sysv) {
                   outs() << o->getFileName() << "  :\n";
-                else if (MachO && OutputFormat == darwin) {
-                  if (MoreThanOneFile || ArchFlags.size() > 1)
+                } else if (MachO && OutputFormat == darwin) {
+                  if (MoreThanOneFile || ArchFlags.size() > 1) {
                     outs() << o->getFileName() << " (for architecture "
                            << I->getArchFlagName() << "): \n";
+
+}
                 }
                 printObjectSectionSizes(o);
                 if (OutputFormat == berkeley) {
-                  if (!MachO || MoreThanOneFile || ArchFlags.size() > 1)
+                  if (!MachO || MoreThanOneFile || ArchFlags.size() > 1) {
                     outs() << o->getFileName() << " (for architecture "
                            << I->getArchFlagName() << ")";
+
+}
                   outs() << "\n";
                 }
               }
@@ -623,39 +685,49 @@ static void printFileSectionSizes(StringRef file) {
                 Expected<std::unique_ptr<Binary>> ChildOrErr = C.getAsBinary();
                 if (!ChildOrErr) {
                   if (auto E = isNotObjectErrorInvalidFileType(
-                                    ChildOrErr.takeError()))
+                                    ChildOrErr.takeError())) {
                     error(std::move(E), UA->getFileName(), C,
                           ArchFlags.size() > 1 ?
                           StringRef(I->getArchFlagName()) : StringRef());
+
+}
                   continue;
                 }
                 if (ObjectFile *o = dyn_cast<ObjectFile>(&*ChildOrErr.get())) {
                   MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-                  if (OutputFormat == sysv)
+                  if (OutputFormat == sysv) {
                     outs() << o->getFileName() << "   (ex " << UA->getFileName()
                            << "):\n";
-                  else if (MachO && OutputFormat == darwin)
+                  } else if (MachO && OutputFormat == darwin) {
                     outs() << UA->getFileName() << "(" << o->getFileName()
                            << ")"
                            << " (for architecture " << I->getArchFlagName()
                            << "):\n";
+
+}
                   printObjectSectionSizes(o);
                   if (OutputFormat == berkeley) {
                     if (MachO) {
                       outs() << UA->getFileName() << "(" << o->getFileName()
                              << ")";
-                      if (ArchFlags.size() > 1)
+                      if (ArchFlags.size() > 1) {
                         outs() << " (for architecture " << I->getArchFlagName()
                                << ")";
+
+}
                       outs() << "\n";
-                    } else
+                    } else {
                       outs() << o->getFileName() << " (ex " << UA->getFileName()
                              << ")\n";
+
+}
                   }
                 }
               }
-              if (Err)
+              if (Err) {
                 error(std::move(Err), UA->getFileName());
+
+}
             } else {
               consumeError(AOrErr.takeError());
               error("mach-o universal file for architecture " +
@@ -684,18 +756,22 @@ static void printFileSectionSizes(StringRef file) {
           if (UO) {
             if (ObjectFile *o = dyn_cast<ObjectFile>(&*UO.get())) {
               MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-              if (OutputFormat == sysv)
+              if (OutputFormat == sysv) {
                 outs() << o->getFileName() << "  :\n";
-              else if (MachO && OutputFormat == darwin) {
-                if (MoreThanOneFile)
+              } else if (MachO && OutputFormat == darwin) {
+                if (MoreThanOneFile) {
                   outs() << o->getFileName() << " (for architecture "
                          << I->getArchFlagName() << "):\n";
+
+}
               }
               printObjectSectionSizes(o);
               if (OutputFormat == berkeley) {
-                if (!MachO || MoreThanOneFile)
+                if (!MachO || MoreThanOneFile) {
                   outs() << o->getFileName() << " (for architecture "
                          << I->getArchFlagName() << ")";
+
+}
                 outs() << "\n";
               }
             }
@@ -712,32 +788,40 @@ static void printFileSectionSizes(StringRef file) {
               Expected<std::unique_ptr<Binary>> ChildOrErr = C.getAsBinary();
               if (!ChildOrErr) {
                 if (auto E = isNotObjectErrorInvalidFileType(
-                                ChildOrErr.takeError()))
+                                ChildOrErr.takeError())) {
                   error(std::move(E), UA->getFileName(), C);
+
+}
                 continue;
               }
               if (ObjectFile *o = dyn_cast<ObjectFile>(&*ChildOrErr.get())) {
                 MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-                if (OutputFormat == sysv)
+                if (OutputFormat == sysv) {
                   outs() << o->getFileName() << "   (ex " << UA->getFileName()
                          << "):\n";
-                else if (MachO && OutputFormat == darwin)
+                } else if (MachO && OutputFormat == darwin) {
                   outs() << UA->getFileName() << "(" << o->getFileName() << ")"
                          << " (for architecture " << I->getArchFlagName()
                          << "):\n";
+
+}
                 printObjectSectionSizes(o);
                 if (OutputFormat == berkeley) {
-                  if (MachO)
+                  if (MachO) {
                     outs() << UA->getFileName() << "(" << o->getFileName()
                            << ")\n";
-                  else
+                  } else {
                     outs() << o->getFileName() << " (ex " << UA->getFileName()
                            << ")\n";
+
+}
                 }
               }
             }
-            if (Err)
+            if (Err) {
               error(std::move(Err), UA->getFileName());
+
+}
           } else {
             consumeError(AOrErr.takeError());
             error("mach-o universal file for architecture " +
@@ -759,19 +843,23 @@ static void printFileSectionSizes(StringRef file) {
       if (UO) {
         if (ObjectFile *o = dyn_cast<ObjectFile>(&*UO.get())) {
           MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-          if (OutputFormat == sysv)
+          if (OutputFormat == sysv) {
             outs() << o->getFileName() << "  :\n";
-          else if (MachO && OutputFormat == darwin) {
-            if (MoreThanOneFile || MoreThanOneArch)
+          } else if (MachO && OutputFormat == darwin) {
+            if (MoreThanOneFile || MoreThanOneArch) {
               outs() << o->getFileName() << " (for architecture "
                      << I->getArchFlagName() << "):";
+
+}
             outs() << "\n";
           }
           printObjectSectionSizes(o);
           if (OutputFormat == berkeley) {
-            if (!MachO || MoreThanOneFile || MoreThanOneArch)
+            if (!MachO || MoreThanOneFile || MoreThanOneArch) {
               outs() << o->getFileName() << " (for architecture "
                      << I->getArchFlagName() << ")";
+
+}
             outs() << "\n";
           }
         }
@@ -788,33 +876,41 @@ static void printFileSectionSizes(StringRef file) {
           Expected<std::unique_ptr<Binary>> ChildOrErr = C.getAsBinary();
           if (!ChildOrErr) {
             if (auto E = isNotObjectErrorInvalidFileType(
-                              ChildOrErr.takeError()))
+                              ChildOrErr.takeError())) {
               error(std::move(E), UA->getFileName(), C, MoreThanOneArch ?
                     StringRef(I->getArchFlagName()) : StringRef());
+
+}
             continue;
           }
           if (ObjectFile *o = dyn_cast<ObjectFile>(&*ChildOrErr.get())) {
             MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-            if (OutputFormat == sysv)
+            if (OutputFormat == sysv) {
               outs() << o->getFileName() << "   (ex " << UA->getFileName()
                      << "):\n";
-            else if (MachO && OutputFormat == darwin)
+            } else if (MachO && OutputFormat == darwin) {
               outs() << UA->getFileName() << "(" << o->getFileName() << ")"
                      << " (for architecture " << I->getArchFlagName() << "):\n";
+
+}
             printObjectSectionSizes(o);
             if (OutputFormat == berkeley) {
-              if (MachO)
+              if (MachO) {
                 outs() << UA->getFileName() << "(" << o->getFileName() << ")"
                        << " (for architecture " << I->getArchFlagName()
                        << ")\n";
-              else
+              } else {
                 outs() << o->getFileName() << " (ex " << UA->getFileName()
                        << ")\n";
+
+}
             }
           }
         }
-        if (Err)
+        if (Err) {
           error(std::move(Err), UA->getFileName());
+
+}
       } else {
         consumeError(AOrErr.takeError());
         error("mach-o universal file for architecture " +
@@ -824,17 +920,23 @@ static void printFileSectionSizes(StringRef file) {
       }
     }
   } else if (ObjectFile *o = dyn_cast<ObjectFile>(&Bin)) {
-    if (!checkMachOAndArchFlags(o, file))
+    if (!checkMachOAndArchFlags(o, file)) {
       return;
+
+}
     MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
-    if (OutputFormat == sysv)
+    if (OutputFormat == sysv) {
       outs() << o->getFileName() << "  :\n";
-    else if (MachO && OutputFormat == darwin && MoreThanOneFile)
+    } else if (MachO && OutputFormat == darwin && MoreThanOneFile) {
       outs() << o->getFileName() << ":\n";
+
+}
     printObjectSectionSizes(o);
     if (OutputFormat == berkeley) {
-      if (!MachO || MoreThanOneFile)
+      if (!MachO || MoreThanOneFile) {
         outs() << o->getFileName();
+
+}
       outs() << "\n";
     }
   } else {
@@ -864,10 +966,14 @@ int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv, "llvm object size dumper\n");
 
   ToolName = argv[0];
-  if (OutputFormatShort.getNumOccurrences())
+  if (OutputFormatShort.getNumOccurrences()) {
     OutputFormat = static_cast<OutputFormatTy>(OutputFormatShort);
-  if (RadixShort.getNumOccurrences())
+
+}
+  if (RadixShort.getNumOccurrences()) {
     Radix = RadixShort.getValue();
+
+}
 
   for (StringRef Arch : ArchFlags) {
     if (Arch == "all") {
@@ -881,14 +987,20 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (InputFilenames.empty())
+  if (InputFilenames.empty()) {
     InputFilenames.push_back("a.out");
+
+}
 
   MoreThanOneFile = InputFilenames.size() > 1;
   llvm::for_each(InputFilenames, printFileSectionSizes);
-  if (OutputFormat == berkeley && TotalSizes)
+  if (OutputFormat == berkeley && TotalSizes) {
     printBerkeleyTotals();
 
-  if (HadError)
+}
+
+  if (HadError) {
     return 1;
+
+}
 }

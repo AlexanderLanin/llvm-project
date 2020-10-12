@@ -129,11 +129,11 @@ struct Operator {
     for (unsigned i = 0; i != 4; ++i) {
       unsigned SrcElt = (ShuffleMask >> (4*i)) & 0xF;
       unsigned ResElt;
-      if (SrcElt < 4)
+      if (SrcElt < 4) {
         ResElt = getMaskElt(LHSMask, SrcElt);
-      else if (SrcElt < 8)
+      } else if (SrcElt < 8) {
         ResElt = getMaskElt(RHSMask, SrcElt-4);
-      else {
+      } else {
         assert(SrcElt == 8 && "Bad src elt!");
         ResElt = 8;
       }
@@ -144,11 +144,11 @@ struct Operator {
 };
 
 static const char *getZeroCostOpName(unsigned short Op) {
-  if (ShufTab[Op].Arg0 == 0x0123)
+  if (ShufTab[Op].Arg0 == 0x0123) {
     return "LHS";
-  else if (ShufTab[Op].Arg0 == 0x4567)
+  } else if (ShufTab[Op].Arg0 == 0x4567) {
     return "RHS";
-  else {
+  } else {
     assert(0 && "bad zero cost operation");
     abort();
   }
@@ -165,11 +165,13 @@ static void PrintOperation(unsigned ValNo, unsigned short Vals[]) {
     PrintMask(ShufTab[ThisOp].Arg0, std::cerr);
   } else {
     // Figure out what tmp # it is.
-    for (unsigned i = 0; ; ++i)
+    for (unsigned i = 0; ; ++i) {
       if (Vals[i] == ShufTab[ThisOp].Arg0) {
         std::cerr << "t" << i;
         break;
       }
+
+}
   }
 
   if (!ShufTab[Vals[ValNo]].Op->isOnlyLHSOperator()) {
@@ -179,11 +181,13 @@ static void PrintOperation(unsigned ValNo, unsigned short Vals[]) {
       PrintMask(ShufTab[ThisOp].Arg1, std::cerr);
     } else {
       // Figure out what tmp # it is.
-      for (unsigned i = 0; ; ++i)
+      for (unsigned i = 0; ; ++i) {
         if (Vals[i] == ShufTab[ThisOp].Arg1) {
           std::cerr << "t" << i;
           break;
         }
+
+}
     }
   }
   std::cerr << ")  ";
@@ -191,25 +195,37 @@ static void PrintOperation(unsigned ValNo, unsigned short Vals[]) {
 
 static unsigned getNumEntered() {
   unsigned Count = 0;
-  for (unsigned i = 0; i != 65536; ++i)
+  for (unsigned i = 0; i != 65536; ++i) {
     Count += ShufTab[i].Cost < 100;
+
+}
   return Count;
 }
 
 static void EvaluateOps(unsigned short Elt, unsigned short Vals[],
                         unsigned &NumVals) {
-  if (ShufTab[Elt].Cost == 0) return;
+  if (ShufTab[Elt].Cost == 0) { return;
+
+}
 
   // If this value has already been evaluated, it is free.  FIXME: match undefs.
-  for (unsigned i = 0, e = NumVals; i != e; ++i)
-    if (Vals[i] == Elt) return;
+  for (unsigned i = 0, e = NumVals; i != e; ++i) {
+    if (Vals[i] == Elt) { return;
+
+}
+
+}
 
   // Otherwise, get the operands of the value, then add it.
   unsigned Arg0 = ShufTab[Elt].Arg0, Arg1 = ShufTab[Elt].Arg1;
-  if (ShufTab[Arg0].Cost)
+  if (ShufTab[Arg0].Cost) {
     EvaluateOps(Arg0, Vals, NumVals);
-  if (Arg0 != Arg1 && ShufTab[Arg1].Cost)
+
+}
+  if (Arg0 != Arg1 && ShufTab[Arg1].Cost) {
     EvaluateOps(Arg1, Vals, NumVals);
+
+}
 
   Vals[NumVals++] = Elt;
 }
@@ -239,9 +255,13 @@ int main() {
     // have the cheapest alternative that they match.
     unsigned MaxCost = ShufTab[0].Cost;
     for (unsigned i = 1; i != 0x8889; ++i) {
-      if (!isValidMask(i)) continue;
-      if (ShufTab[i].Cost > MaxCost)
+      if (!isValidMask(i)) { continue;
+
+}
+      if (ShufTab[i].Cost > MaxCost) {
         MaxCost = ShufTab[i].Cost;
+
+}
 
       // If this value has an undef, make it be computed the cheapest possible
       // way of any of the things that it matches.
@@ -259,16 +279,18 @@ int main() {
         // know that each of 704u, 714u, 724u, etc contain the minimum value of
         // all of the 704[0-8], 714[0-8] and 724[0-8] entries respectively.
         unsigned UndefIdx;
-        if (i & 0x8000)
+        if (i & 0x8000) {
           UndefIdx = 0;
-        else if (i & 0x0800)
+        } else if (i & 0x0800) {
           UndefIdx = 1;
-        else if (i & 0x0080)
+        } else if (i & 0x0080) {
           UndefIdx = 2;
-        else if (i & 0x0008)
+        } else if (i & 0x0008) {
           UndefIdx = 3;
-        else
+        } else {
           abort();
+
+}
 
         unsigned MinVal  = i;
         unsigned MinCost = ShufTab[i].Cost;
@@ -291,13 +313,19 @@ int main() {
     }
 
     for (unsigned LHS = 0; LHS != 0x8889; ++LHS) {
-      if (!isValidMask(LHS)) continue;
-      if (ShufTab[LHS].Cost > 1000) continue;
+      if (!isValidMask(LHS)) { continue;
+
+}
+      if (ShufTab[LHS].Cost > 1000) { continue;
+
+}
 
       // If nothing involving this operand could possibly be cheaper than what
       // we already have, don't consider it.
-      if (ShufTab[LHS].Cost + 1 >= MaxCost)
+      if (ShufTab[LHS].Cost + 1 >= MaxCost) {
         continue;
+
+}
 
       for (unsigned opnum = 0, e = TheOperators.size(); opnum != e; ++opnum) {
         Operator *Op = TheOperators[opnum];
@@ -316,16 +344,24 @@ int main() {
 
         // If this is a two input instruction, include the op(x,y) cases.  If
         // this is a one input instruction, skip this.
-        if (Op->isOnlyLHSOperator()) continue;
+        if (Op->isOnlyLHSOperator()) { continue;
+
+}
 
         for (unsigned RHS = 0; RHS != 0x8889; ++RHS) {
-          if (!isValidMask(RHS)) continue;
-          if (ShufTab[RHS].Cost > 1000) continue;
+          if (!isValidMask(RHS)) { continue;
+
+}
+          if (ShufTab[RHS].Cost > 1000) { continue;
+
+}
 
           // If nothing involving this operand could possibly be cheaper than
           // what we already have, don't consider it.
-          if (ShufTab[RHS].Cost + 1 >= MaxCost)
+          if (ShufTab[RHS].Cost + 1 >= MaxCost) {
             continue;
+
+}
 
 
           // Evaluate op(LHS,RHS)
@@ -333,8 +369,10 @@ int main() {
 
           if (ShufTab[ResultMask].Cost <= OpCount ||
               ShufTab[ResultMask].Cost <= ShufTab[LHS].Cost ||
-              ShufTab[ResultMask].Cost <= ShufTab[RHS].Cost)
+              ShufTab[ResultMask].Cost <= ShufTab[RHS].Cost) {
             continue;
+
+}
 
           // Figure out the cost to evaluate this, knowing that CSE's only need
           // to be evaluated once.
@@ -363,18 +401,28 @@ int main() {
 
   // Compute a cost histogram.
   for (unsigned i = 0; i != 65536; ++i) {
-    if (!isValidMask(i)) continue;
-    if (ShufTab[i].Cost > 9)
+    if (!isValidMask(i)) { continue;
+
+}
+    if (ShufTab[i].Cost > 9) {
       ++CostArray[9];
-    else
+    } else {
       ++CostArray[ShufTab[i].Cost];
+
+}
   }
 
-  for (unsigned i = 0; i != 9; ++i)
-    if (CostArray[i])
+  for (unsigned i = 0; i != 9; ++i) {
+    if (CostArray[i]) {
       std::cout << "// " << CostArray[i] << " entries have cost " << i << "\n";
-  if (CostArray[9])
+
+}
+
+}
+  if (CostArray[9]) {
     std::cout << "// " << CostArray[9] << " entries have higher cost!\n";
+
+}
 
 
   // Build up the table to emit.
@@ -382,12 +430,18 @@ int main() {
   std::cout << "static const unsigned PerfectShuffleTable[6561+1] = {\n";
 
   for (unsigned i = 0; i != 0x8889; ++i) {
-    if (!isValidMask(i)) continue;
+    if (!isValidMask(i)) { continue;
+
+}
 
     // CostSat - The cost of this operation saturated to two bits.
     unsigned CostSat = ShufTab[i].Cost;
-    if (CostSat > 4) CostSat = 4;
-    if (CostSat == 0) CostSat = 1;
+    if (CostSat > 4) { CostSat = 4;
+
+}
+    if (CostSat == 0) { CostSat = 1;
+
+}
     --CostSat;  // Cost is now between 0-3.
 
     unsigned OpNum = ShufTab[i].Op ? ShufTab[i].Op->OpNum : 0;
@@ -426,7 +480,9 @@ int main() {
   if (0) {
     // Print out the table.
     for (unsigned i = 0; i != 0x8889; ++i) {
-      if (!isValidMask(i)) continue;
+      if (!isValidMask(i)) { continue;
+
+}
       if (ShufTab[i].Cost < 1000) {
         PrintMask(i, std::cerr);
         std::cerr << " - Cost " << ShufTab[i].Cost << " - ";
@@ -435,8 +491,10 @@ int main() {
         unsigned NumVals = 0;
         EvaluateOps(i, Vals, NumVals);
 
-        for (unsigned j = 0, e = NumVals; j != e; ++j)
+        for (unsigned j = 0, e = NumVals; j != e; ++j) {
           PrintOperation(j, Vals);
+
+}
         std::cerr << "\n";
       }
     }

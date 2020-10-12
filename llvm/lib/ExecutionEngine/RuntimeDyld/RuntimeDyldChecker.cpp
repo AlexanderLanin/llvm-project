@@ -45,20 +45,28 @@ public:
     EvalResult LHSResult;
     std::tie(LHSResult, RemainingExpr) =
         evalComplexExpr(evalSimpleExpr(LHSExpr, OutsideLoad), OutsideLoad);
-    if (LHSResult.hasError())
+    if (LHSResult.hasError()) {
       return handleError(Expr, LHSResult);
-    if (RemainingExpr != "")
+
+}
+    if (RemainingExpr != "") {
       return handleError(Expr, unexpectedToken(RemainingExpr, LHSExpr, ""));
+
+}
 
     // Evaluate RHS.
     StringRef RHSExpr = Expr.substr(EQIdx + 1).ltrim();
     EvalResult RHSResult;
     std::tie(RHSResult, RemainingExpr) =
         evalComplexExpr(evalSimpleExpr(RHSExpr, OutsideLoad), OutsideLoad);
-    if (RHSResult.hasError())
+    if (RHSResult.hasError()) {
       return handleError(Expr, RHSResult);
-    if (RemainingExpr != "")
+
+}
+    if (RemainingExpr != "") {
       return handleError(Expr, unexpectedToken(RemainingExpr, RHSExpr, ""));
+
+}
 
     if (LHSResult.getValue() != RHSResult.getValue()) {
       Checker.ErrStream << "Expression '" << Expr << "' is false: "
@@ -110,18 +118,22 @@ private:
   };
 
   StringRef getTokenForError(StringRef Expr) const {
-    if (Expr.empty())
+    if (Expr.empty()) {
       return "";
 
+}
+
     StringRef Token, Remaining;
-    if (isalpha(Expr[0]))
+    if (isalpha(Expr[0])) {
       std::tie(Token, Remaining) = parseSymbol(Expr);
-    else if (isdigit(Expr[0]))
+    } else if (isdigit(Expr[0])) {
       std::tie(Token, Remaining) = parseNumberString(Expr);
-    else {
+    } else {
       unsigned TokLen = 1;
-      if (Expr.startswith("<<") || Expr.startswith(">>"))
+      if (Expr.startswith("<<") || Expr.startswith(">>")) {
         TokLen = 2;
+
+}
       Token = Expr.substr(0, TokLen);
     }
     return Token;
@@ -151,14 +163,20 @@ private:
   }
 
   std::pair<BinOpToken, StringRef> parseBinOpToken(StringRef Expr) const {
-    if (Expr.empty())
+    if (Expr.empty()) {
       return std::make_pair(BinOpToken::Invalid, "");
 
+}
+
     // Handle the two 2-character tokens.
-    if (Expr.startswith("<<"))
+    if (Expr.startswith("<<")) {
       return std::make_pair(BinOpToken::ShiftLeft, Expr.substr(2).ltrim());
-    if (Expr.startswith(">>"))
+
+}
+    if (Expr.startswith(">>")) {
       return std::make_pair(BinOpToken::ShiftRight, Expr.substr(2).ltrim());
+
+}
 
     // Handle one-character tokens.
     BinOpToken Op;
@@ -220,38 +238,50 @@ private:
   // On success, returns a pair containing the value of the operand, plus
   // the expression remaining to be evaluated.
   std::pair<EvalResult, StringRef> evalDecodeOperand(StringRef Expr) const {
-    if (!Expr.startswith("("))
+    if (!Expr.startswith("(")) {
       return std::make_pair(unexpectedToken(Expr, Expr, "expected '('"), "");
+
+}
     StringRef RemainingExpr = Expr.substr(1).ltrim();
     StringRef Symbol;
     std::tie(Symbol, RemainingExpr) = parseSymbol(RemainingExpr);
 
-    if (!Checker.isSymbolValid(Symbol))
+    if (!Checker.isSymbolValid(Symbol)) {
       return std::make_pair(
           EvalResult(("Cannot decode unknown symbol '" + Symbol + "'").str()),
           "");
 
-    if (!RemainingExpr.startswith(","))
+}
+
+    if (!RemainingExpr.startswith(",")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected ','"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     EvalResult OpIdxExpr;
     std::tie(OpIdxExpr, RemainingExpr) = evalNumberExpr(RemainingExpr);
-    if (OpIdxExpr.hasError())
+    if (OpIdxExpr.hasError()) {
       return std::make_pair(OpIdxExpr, "");
 
-    if (!RemainingExpr.startswith(")"))
+}
+
+    if (!RemainingExpr.startswith(")")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected ')'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     MCInst Inst;
     uint64_t Size;
-    if (!decodeInst(Symbol, Inst, Size))
+    if (!decodeInst(Symbol, Inst, Size)) {
       return std::make_pair(
           EvalResult(("Couldn't decode instruction at '" + Symbol + "'").str()),
           "");
+
+}
 
     unsigned OpIdx = OpIdxExpr.getValue();
     if (OpIdx >= Inst.getNumOperands()) {
@@ -288,28 +318,36 @@ private:
   // expression remaining to be evaluated.
   std::pair<EvalResult, StringRef> evalNextPC(StringRef Expr,
                                               ParseContext PCtx) const {
-    if (!Expr.startswith("("))
+    if (!Expr.startswith("(")) {
       return std::make_pair(unexpectedToken(Expr, Expr, "expected '('"), "");
+
+}
     StringRef RemainingExpr = Expr.substr(1).ltrim();
     StringRef Symbol;
     std::tie(Symbol, RemainingExpr) = parseSymbol(RemainingExpr);
 
-    if (!Checker.isSymbolValid(Symbol))
+    if (!Checker.isSymbolValid(Symbol)) {
       return std::make_pair(
           EvalResult(("Cannot decode unknown symbol '" + Symbol + "'").str()),
           "");
 
-    if (!RemainingExpr.startswith(")"))
+}
+
+    if (!RemainingExpr.startswith(")")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected ')'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     MCInst Inst;
     uint64_t InstSize;
-    if (!decodeInst(Symbol, Inst, InstSize))
+    if (!decodeInst(Symbol, Inst, InstSize)) {
       return std::make_pair(
           EvalResult(("Couldn't decode instruction at '" + Symbol + "'").str()),
           "");
+
+}
 
     uint64_t SymbolAddr = PCtx.IsInsideLoad
                               ? Checker.getSymbolLocalAddr(Symbol)
@@ -326,8 +364,10 @@ private:
   // remaining to be evaluated.
   std::pair<EvalResult, StringRef>
   evalStubOrGOTAddr(StringRef Expr, ParseContext PCtx, bool IsStubAddr) const {
-    if (!Expr.startswith("("))
+    if (!Expr.startswith("(")) {
       return std::make_pair(unexpectedToken(Expr, Expr, "expected '('"), "");
+
+}
     StringRef RemainingExpr = Expr.substr(1).ltrim();
 
     // Handle file-name specially, as it may contain characters that aren't
@@ -337,17 +377,21 @@ private:
     StubContainerName = RemainingExpr.substr(0, ComaIdx).rtrim();
     RemainingExpr = RemainingExpr.substr(ComaIdx).ltrim();
 
-    if (!RemainingExpr.startswith(","))
+    if (!RemainingExpr.startswith(",")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, Expr, "expected ','"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     StringRef Symbol;
     std::tie(Symbol, RemainingExpr) = parseSymbol(RemainingExpr);
 
-    if (!RemainingExpr.startswith(")"))
+    if (!RemainingExpr.startswith(")")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, Expr, "expected ')'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     uint64_t StubAddr;
@@ -355,16 +399,20 @@ private:
     std::tie(StubAddr, ErrorMsg) = Checker.getStubOrGOTAddrFor(
         StubContainerName, Symbol, PCtx.IsInsideLoad, IsStubAddr);
 
-    if (ErrorMsg != "")
+    if (ErrorMsg != "") {
       return std::make_pair(EvalResult(ErrorMsg), "");
+
+}
 
     return std::make_pair(EvalResult(StubAddr), RemainingExpr);
   }
 
   std::pair<EvalResult, StringRef> evalSectionAddr(StringRef Expr,
                                                    ParseContext PCtx) const {
-    if (!Expr.startswith("("))
+    if (!Expr.startswith("(")) {
       return std::make_pair(unexpectedToken(Expr, Expr, "expected '('"), "");
+
+}
     StringRef RemainingExpr = Expr.substr(1).ltrim();
 
     // Handle file-name specially, as it may contain characters that aren't
@@ -374,17 +422,21 @@ private:
     FileName = RemainingExpr.substr(0, ComaIdx).rtrim();
     RemainingExpr = RemainingExpr.substr(ComaIdx).ltrim();
 
-    if (!RemainingExpr.startswith(","))
+    if (!RemainingExpr.startswith(",")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, Expr, "expected ','"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     StringRef SectionName;
     std::tie(SectionName, RemainingExpr) = parseSymbol(RemainingExpr);
 
-    if (!RemainingExpr.startswith(")"))
+    if (!RemainingExpr.startswith(")")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, Expr, "expected ')'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     uint64_t StubAddr;
@@ -392,8 +444,10 @@ private:
     std::tie(StubAddr, ErrorMsg) = Checker.getSectionAddr(
         FileName, SectionName, PCtx.IsInsideLoad);
 
-    if (ErrorMsg != "")
+    if (ErrorMsg != "") {
       return std::make_pair(EvalResult(ErrorMsg), "");
+
+}
 
     return std::make_pair(EvalResult(StubAddr), RemainingExpr);
   }
@@ -408,24 +462,28 @@ private:
     std::tie(Symbol, RemainingExpr) = parseSymbol(Expr);
 
     // Check for builtin function calls.
-    if (Symbol == "decode_operand")
+    if (Symbol == "decode_operand") {
       return evalDecodeOperand(RemainingExpr);
-    else if (Symbol == "next_pc")
+    } else if (Symbol == "next_pc") {
       return evalNextPC(RemainingExpr, PCtx);
-    else if (Symbol == "stub_addr")
+    } else if (Symbol == "stub_addr") {
       return evalStubOrGOTAddr(RemainingExpr, PCtx, true);
-    else if (Symbol == "got_addr")
+    } else if (Symbol == "got_addr") {
       return evalStubOrGOTAddr(RemainingExpr, PCtx, false);
-    else if (Symbol == "section_addr")
+    } else if (Symbol == "section_addr") {
       return evalSectionAddr(RemainingExpr, PCtx);
+
+}
 
     if (!Checker.isSymbolValid(Symbol)) {
       std::string ErrMsg("No known address for symbol '");
       ErrMsg += Symbol;
       ErrMsg += "'";
-      if (Symbol.startswith("L"))
+      if (Symbol.startswith("L")) {
         ErrMsg += " (this appears to be an assembler local label - "
                   " perhaps drop the 'L'?)";
+
+}
 
       return std::make_pair(EvalResult(ErrMsg), "");
     }
@@ -446,12 +504,16 @@ private:
     size_t FirstNonDigit = StringRef::npos;
     if (Expr.startswith("0x")) {
       FirstNonDigit = Expr.find_first_not_of("0123456789abcdefABCDEF", 2);
-      if (FirstNonDigit == StringRef::npos)
+      if (FirstNonDigit == StringRef::npos) {
         FirstNonDigit = Expr.size();
+
+}
     } else {
       FirstNonDigit = Expr.find_first_not_of("0123456789");
-      if (FirstNonDigit == StringRef::npos)
+      if (FirstNonDigit == StringRef::npos) {
         FirstNonDigit = Expr.size();
+
+}
     }
     return std::make_pair(Expr.substr(0, FirstNonDigit),
                           Expr.substr(FirstNonDigit));
@@ -465,9 +527,11 @@ private:
     StringRef RemainingExpr;
     std::tie(ValueStr, RemainingExpr) = parseNumberString(Expr);
 
-    if (ValueStr.empty() || !isdigit(ValueStr[0]))
+    if (ValueStr.empty() || !isdigit(ValueStr[0])) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected number"), "");
+
+}
     uint64_t Value;
     ValueStr.getAsInteger(0, Value);
     return std::make_pair(EvalResult(Value), RemainingExpr);
@@ -483,11 +547,15 @@ private:
     StringRef RemainingExpr;
     std::tie(SubExprResult, RemainingExpr) =
         evalComplexExpr(evalSimpleExpr(Expr.substr(1).ltrim(), PCtx), PCtx);
-    if (SubExprResult.hasError())
+    if (SubExprResult.hasError()) {
       return std::make_pair(SubExprResult, "");
-    if (!RemainingExpr.startswith(")"))
+
+}
+    if (!RemainingExpr.startswith(")")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, Expr, "expected ')'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
     return std::make_pair(SubExprResult, RemainingExpr);
   }
@@ -501,18 +569,26 @@ private:
     StringRef RemainingExpr = Expr.substr(1).ltrim();
 
     // Parse read size.
-    if (!RemainingExpr.startswith("{"))
+    if (!RemainingExpr.startswith("{")) {
       return std::make_pair(EvalResult("Expected '{' following '*'."), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
     EvalResult ReadSizeExpr;
     std::tie(ReadSizeExpr, RemainingExpr) = evalNumberExpr(RemainingExpr);
-    if (ReadSizeExpr.hasError())
+    if (ReadSizeExpr.hasError()) {
       return std::make_pair(ReadSizeExpr, RemainingExpr);
+
+}
     uint64_t ReadSize = ReadSizeExpr.getValue();
-    if (ReadSize < 1 || ReadSize > 8)
+    if (ReadSize < 1 || ReadSize > 8) {
       return std::make_pair(EvalResult("Invalid size for dereference."), "");
-    if (!RemainingExpr.startswith("}"))
+
+}
+    if (!RemainingExpr.startswith("}")) {
       return std::make_pair(EvalResult("Missing '}' for dereference."), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     // Evaluate the expression representing the load address.
@@ -521,15 +597,19 @@ private:
     std::tie(LoadAddrExprResult, RemainingExpr) =
         evalComplexExpr(evalSimpleExpr(RemainingExpr, LoadCtx), LoadCtx);
 
-    if (LoadAddrExprResult.hasError())
+    if (LoadAddrExprResult.hasError()) {
       return std::make_pair(LoadAddrExprResult, "");
+
+}
 
     uint64_t LoadAddr = LoadAddrExprResult.getValue();
 
     // If there is no error but the content pointer is null then this is a
     // zero-fill symbol/section.
-    if (LoadAddr == 0)
+    if (LoadAddr == 0) {
       return std::make_pair(0, RemainingExpr);
+
+}
 
     return std::make_pair(
         EvalResult(Checker.readMemoryAtAddr(LoadAddr, ReadSize)),
@@ -548,29 +628,37 @@ private:
     EvalResult SubExprResult;
     StringRef RemainingExpr;
 
-    if (Expr.empty())
+    if (Expr.empty()) {
       return std::make_pair(EvalResult("Unexpected end of expression"), "");
 
-    if (Expr[0] == '(')
+}
+
+    if (Expr[0] == '(') {
       std::tie(SubExprResult, RemainingExpr) = evalParensExpr(Expr, PCtx);
-    else if (Expr[0] == '*')
+    } else if (Expr[0] == '*') {
       std::tie(SubExprResult, RemainingExpr) = evalLoadExpr(Expr);
-    else if (isalpha(Expr[0]) || Expr[0] == '_')
+    } else if (isalpha(Expr[0]) || Expr[0] == '_') {
       std::tie(SubExprResult, RemainingExpr) = evalIdentifierExpr(Expr, PCtx);
-    else if (isdigit(Expr[0]))
+    } else if (isdigit(Expr[0])) {
       std::tie(SubExprResult, RemainingExpr) = evalNumberExpr(Expr);
-    else
+    } else {
       return std::make_pair(
           unexpectedToken(Expr, Expr,
                           "expected '(', '*', identifier, or number"), "");
 
-    if (SubExprResult.hasError())
+}
+
+    if (SubExprResult.hasError()) {
       return std::make_pair(SubExprResult, RemainingExpr);
 
+}
+
     // Evaluate bit-slice if present.
-    if (RemainingExpr.startswith("["))
+    if (RemainingExpr.startswith("[")) {
       std::tie(SubExprResult, RemainingExpr) =
           evalSliceExpr(std::make_pair(SubExprResult, RemainingExpr));
+
+}
 
     return std::make_pair(SubExprResult, RemainingExpr);
   }
@@ -594,23 +682,31 @@ private:
     EvalResult HighBitExpr;
     std::tie(HighBitExpr, RemainingExpr) = evalNumberExpr(RemainingExpr);
 
-    if (HighBitExpr.hasError())
+    if (HighBitExpr.hasError()) {
       return std::make_pair(HighBitExpr, RemainingExpr);
 
-    if (!RemainingExpr.startswith(":"))
+}
+
+    if (!RemainingExpr.startswith(":")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected ':'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     EvalResult LowBitExpr;
     std::tie(LowBitExpr, RemainingExpr) = evalNumberExpr(RemainingExpr);
 
-    if (LowBitExpr.hasError())
+    if (LowBitExpr.hasError()) {
       return std::make_pair(LowBitExpr, RemainingExpr);
 
-    if (!RemainingExpr.startswith("]"))
+}
+
+    if (!RemainingExpr.startswith("]")) {
       return std::make_pair(
           unexpectedToken(RemainingExpr, RemainingExpr, "expected ']'"), "");
+
+}
     RemainingExpr = RemainingExpr.substr(1).ltrim();
 
     unsigned HighBit = HighBitExpr.getValue();
@@ -635,24 +731,30 @@ private:
 
     // If there was an error, or there's nothing left to evaluate, return the
     // result.
-    if (LHSResult.hasError() || RemainingExpr == "")
+    if (LHSResult.hasError() || RemainingExpr == "") {
       return std::make_pair(LHSResult, RemainingExpr);
+
+}
 
     // Otherwise check if this is a binary expressioan.
     BinOpToken BinOp;
     std::tie(BinOp, RemainingExpr) = parseBinOpToken(RemainingExpr);
 
     // If this isn't a recognized expression just return.
-    if (BinOp == BinOpToken::Invalid)
+    if (BinOp == BinOpToken::Invalid) {
       return std::make_pair(LHSResult, RemainingExpr);
+
+}
 
     // This is a recognized bin-op. Evaluate the RHS, then evaluate the binop.
     EvalResult RHSResult;
     std::tie(RHSResult, RemainingExpr) = evalSimpleExpr(RemainingExpr, PCtx);
 
     // If there was an error evaluating the RHS, return it.
-    if (RHSResult.hasError())
+    if (RHSResult.hasError()) {
       return std::make_pair(RHSResult, RemainingExpr);
+
+}
 
     // This is a binary expression - evaluate and try to continue as a
     // complex expr.
@@ -708,18 +810,24 @@ bool RuntimeDyldCheckerImpl::checkAllRulesInBuffer(StringRef RulePrefix,
   const char *LineStart = MemBuf->getBufferStart();
 
   // Eat whitespace.
-  while (LineStart != MemBuf->getBufferEnd() && std::isspace(*LineStart))
+  while (LineStart != MemBuf->getBufferEnd() && std::isspace(*LineStart)) {
     ++LineStart;
+
+}
 
   while (LineStart != MemBuf->getBufferEnd() && *LineStart != '\0') {
     const char *LineEnd = LineStart;
     while (LineEnd != MemBuf->getBufferEnd() && *LineEnd != '\r' &&
-           *LineEnd != '\n')
+           *LineEnd != '\n') {
       ++LineEnd;
 
+}
+
     StringRef Line(LineStart, LineEnd - LineStart);
-    if (Line.startswith(RulePrefix))
+    if (Line.startswith(RulePrefix)) {
       CheckExpr += Line.substr(RulePrefix.size()).str();
+
+}
 
     // If there's a check expr string...
     if (!CheckExpr.empty()) {
@@ -728,14 +836,18 @@ bool RuntimeDyldCheckerImpl::checkAllRulesInBuffer(StringRef RulePrefix,
         DidAllTestsPass &= check(CheckExpr);
         CheckExpr.clear();
         ++NumRules;
-      } else
+      } else {
         CheckExpr.pop_back();
+
+}
     }
 
     // Eat whitespace.
     LineStart = LineEnd;
-    while (LineStart != MemBuf->getBufferEnd() && std::isspace(*LineStart))
+    while (LineStart != MemBuf->getBufferEnd() && std::isspace(*LineStart)) {
       ++LineStart;
+
+}
   }
   return DidAllTestsPass && (NumRules != 0);
 }
@@ -751,8 +863,10 @@ uint64_t RuntimeDyldCheckerImpl::getSymbolLocalAddr(StringRef Symbol) const {
     return 0;
   }
 
-  if (SymInfo->isZeroFill())
+  if (SymInfo->isZeroFill()) {
     return 0;
+
+}
 
   return static_cast<uint64_t>(
       reinterpret_cast<uintptr_t>(SymInfo->getContent().data()));
@@ -816,12 +930,16 @@ std::pair<uint64_t, std::string> RuntimeDyldCheckerImpl::getSectionAddr(
   uint64_t Addr = 0;
 
   if (IsInsideLoad) {
-    if (SecInfo->isZeroFill())
+    if (SecInfo->isZeroFill()) {
       Addr = 0;
-    else
+    } else {
       Addr = pointerToJITTargetAddress(SecInfo->getContent().data());
-  } else
+
+}
+  } else {
     Addr = SecInfo->getTargetAddress();
+
+}
 
   return std::make_pair(Addr, "");
 }
@@ -846,11 +964,15 @@ std::pair<uint64_t, std::string> RuntimeDyldCheckerImpl::getStubOrGOTAddrFor(
   uint64_t Addr = 0;
 
   if (IsInsideLoad) {
-    if (StubInfo->isZeroFill())
+    if (StubInfo->isZeroFill()) {
       return std::make_pair((uint64_t)0, "Detected zero-filled stub/GOT entry");
+
+}
     Addr = pointerToJITTargetAddress(StubInfo->getContent().data());
-  } else
+  } else {
     Addr = StubInfo->getTargetAddress();
+
+}
 
   return std::make_pair(Addr, "");
 }

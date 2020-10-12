@@ -16,8 +16,10 @@ static int print_remappings(const char *path) {
   CXString transFname;
 
   remap = clang_getRemappings(path);
-  if (!remap)
+  if (!remap) {
     return 1;
+
+}
 
   N = clang_remap_getNumFiles(remap);
   for (i = 0; i != N; ++i) {
@@ -41,8 +43,10 @@ static int print_remappings_filelist(const char **files, unsigned numFiles) {
   CXString transFname;
 
   remap = clang_getRemappingsFromFileList(files, numFiles);
-  if (!remap)
+  if (!remap) {
     return 1;
+
+}
 
   N = clang_remap_getNumFiles(remap);
   for (i = 0; i != N; ++i) {
@@ -73,11 +77,15 @@ static void print_usage(void) {
 
 int carcmttest_main(int argc, const char **argv) {
   clang_enableStackTraces();
-  if (argc == 3 && strncmp(argv[1], "-mt-migrate-directory", 21) == 0)
+  if (argc == 3 && strncmp(argv[1], "-mt-migrate-directory", 21) == 0) {
     return print_remappings(argv[2]);
 
-  if (argc > 1)
+}
+
+  if (argc > 1) {
     return print_remappings_filelist(argv+1, argc-1);
+
+}
   
   print_usage();
   return 1;
@@ -119,8 +127,10 @@ int main(int argc, const char **argv) {
   setenv("LIBCLANG_LOGGING", "1", /*overwrite=*/0);
 #endif
 
-  if (getenv("CINDEXTEST_NOTHREADS"))
+  if (getenv("CINDEXTEST_NOTHREADS")) {
     return carcmttest_main(argc, argv);
+
+}
 
   client_data.argc = argc;
   client_data.argv = argv;

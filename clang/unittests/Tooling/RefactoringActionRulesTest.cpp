@@ -76,8 +76,10 @@ TEST_F(RefactoringActionRulesTest, MyFirstRefactoringRule) {
           Selection.first.getBegin().getLocWithOffset(Selection.second);
       AtomicChange Change(SM, Loc);
       llvm::Error E = Change.replace(SM, Loc, 1, "b");
-      if (E)
+      if (E) {
         return std::move(E);
+
+}
       return AtomicChanges{Change};
     }
   };
@@ -88,8 +90,10 @@ TEST_F(RefactoringActionRulesTest, MyFirstRefactoringRule) {
     evaluate(RefactoringRuleContext &Context) const {
       Expected<SourceRange> R =
           SourceRangeSelectionRequirement::evaluate(Context);
-      if (!R)
+      if (!R) {
         return R.takeError();
+
+}
       return std::make_pair(*R, 20);
     }
   };

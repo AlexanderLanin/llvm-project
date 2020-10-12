@@ -48,8 +48,10 @@ ExplodedGraph::~ExplodedGraph() = default;
 //===----------------------------------------------------------------------===//
 
 bool ExplodedGraph::isInterestingLValueExpr(const Expr *Ex) {
-  if (!Ex->isLValue())
+  if (!Ex->isLValue()) {
     return false;
+
+}
   return isa<DeclRefExpr>(Ex) ||
          isa<MemberExpr>(Ex) ||
          isa<ObjCIvarRefExpr>(Ex);
@@ -87,67 +89,93 @@ bool ExplodedGraph::shouldCollect(const ExplodedNode *node) {
   // FIXME: It may be safe to reclaim PreCall and PostCall nodes as well.
 
   // Conditions 1 and 2.
-  if (node->pred_size() != 1 || node->succ_size() != 1)
+  if (node->pred_size() != 1 || node->succ_size() != 1) {
     return false;
+
+}
 
   const ExplodedNode *pred = *(node->pred_begin());
-  if (pred->succ_size() != 1)
+  if (pred->succ_size() != 1) {
     return false;
 
+}
+
   const ExplodedNode *succ = *(node->succ_begin());
-  if (succ->pred_size() != 1)
+  if (succ->pred_size() != 1) {
     return false;
+
+}
 
   // Now reclaim any nodes that are (by definition) not essential to
   // analysis history and are not consulted by any client code.
   ProgramPoint progPoint = node->getLocation();
-  if (progPoint.getAs<PreStmtPurgeDeadSymbols>())
+  if (progPoint.getAs<PreStmtPurgeDeadSymbols>()) {
     return !progPoint.getTag();
 
+}
+
   // Condition 3.
-  if (!progPoint.getAs<PostStmt>() || progPoint.getAs<PostStore>())
+  if (!progPoint.getAs<PostStmt>() || progPoint.getAs<PostStore>()) {
     return false;
 
+}
+
   // Condition 4.
-  if (progPoint.getTag())
+  if (progPoint.getTag()) {
     return false;
+
+}
 
   // Conditions 5, 6, and 7.
   ProgramStateRef state = node->getState();
   ProgramStateRef pred_state = pred->getState();
   if (state->store != pred_state->store || state->GDM != pred_state->GDM ||
-      progPoint.getLocationContext() != pred->getLocationContext())
+      progPoint.getLocationContext() != pred->getLocationContext()) {
     return false;
+
+}
 
   // All further checks require expressions. As per #3, we know that we have
   // a PostStmt.
   const Expr *Ex = dyn_cast<Expr>(progPoint.castAs<PostStmt>().getStmt());
-  if (!Ex)
+  if (!Ex) {
     return false;
+
+}
 
   // Condition 8.
   // Do not collect nodes for "interesting" lvalue expressions since they are
   // used extensively for generating path diagnostics.
-  if (isInterestingLValueExpr(Ex))
+  if (isInterestingLValueExpr(Ex)) {
     return false;
+
+}
 
   // Condition 9.
   // Do not collect nodes for non-consumed Stmt or Expr to ensure precise
   // diagnostic generation; specifically, so that we could anchor arrows
   // pointing to the beginning of statements (as written in code).
   const ParentMap &PM = progPoint.getLocationContext()->getParentMap();
-  if (!PM.isConsumedExpr(Ex))
+  if (!PM.isConsumedExpr(Ex)) {
     return false;
+
+}
 
   // Condition 10.
   const ProgramPoint SuccLoc = succ->getLocation();
-  if (Optional<StmtPoint> SP = SuccLoc.getAs<StmtPoint>())
-    if (CallEvent::isCallStmt(SP->getStmt()))
+  if (Optional<StmtPoint> SP = SuccLoc.getAs<StmtPoint>()) {
+    if (CallEvent::isCallStmt(SP->getStmt())) {
       return false;
 
+}
+
+}
+
   // Condition 10, continuation.
-  if (SuccLoc.getAs<CallEnter>() || SuccLoc.getAs<PreImplicitCall>())
+  if (SuccLoc.getAs<CallEnter>() || SuccLoc.getAs<PreImplicitCall>()) {
     return false;
+
+}
 
   return true;
 }
@@ -169,20 +197,28 @@ void ExplodedGraph::collectNode(ExplodedNode *node) {
 }
 
 void ExplodedGraph::reclaimRecentlyAllocatedNodes() {
-  if (ChangedNodes.empty())
+  if (ChangedNodes.empty()) {
     return;
+
+}
 
   // Only periodically reclaim nodes so that we can build up a set of
   // nodes that meet the reclamation criteria.  Freshly created nodes
   // by definition have no successor, and thus cannot be reclaimed (see below).
   assert(ReclaimCounter > 0);
-  if (--ReclaimCounter != 0)
+  if (--ReclaimCounter != 0) {
     return;
+
+}
   ReclaimCounter = ReclaimNodeInterval;
 
-  for (const auto node : ChangedNodes)
-    if (shouldCollect(node))
+  for (const auto node : ChangedNodes) {
+    if (shouldCollect(node)) {
       collectNode(node);
+
+}
+
+}
   ChangedNodes.clear();
 }
 
@@ -248,38 +284,56 @@ void ExplodedNode::NodeGroup::addNode(ExplodedNode *N, ExplodedGraph &G) {
 }
 
 unsigned ExplodedNode::NodeGroup::size() const {
-  if (getFlag())
+  if (getFlag()) {
     return 0;
 
+}
+
   const GroupStorage &Storage = reinterpret_cast<const GroupStorage &>(P);
-  if (Storage.isNull())
+  if (Storage.isNull()) {
     return 0;
-  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>())
+
+}
+  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>()) {
     return V->size();
+
+}
   return 1;
 }
 
 ExplodedNode * const *ExplodedNode::NodeGroup::begin() const {
-  if (getFlag())
+  if (getFlag()) {
     return nullptr;
 
+}
+
   const GroupStorage &Storage = reinterpret_cast<const GroupStorage &>(P);
-  if (Storage.isNull())
+  if (Storage.isNull()) {
     return nullptr;
-  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>())
+
+}
+  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>()) {
     return V->begin();
+
+}
   return Storage.getAddrOfPtr1();
 }
 
 ExplodedNode * const *ExplodedNode::NodeGroup::end() const {
-  if (getFlag())
+  if (getFlag()) {
     return nullptr;
 
+}
+
   const GroupStorage &Storage = reinterpret_cast<const GroupStorage &>(P);
-  if (Storage.isNull())
+  if (Storage.isNull()) {
     return nullptr;
-  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>())
+
+}
+  if (ExplodedNodeVector *V = Storage.dyn_cast<ExplodedNodeVector *>()) {
     return V->end();
+
+}
   return Storage.getAddrOfPtr1() + 1;
 }
 
@@ -291,17 +345,21 @@ bool ExplodedNode::isTrivial() const {
 
 const CFGBlock *ExplodedNode::getCFGBlock() const {
   ProgramPoint P = getLocation();
-  if (auto BEP = P.getAs<BlockEntrance>())
+  if (auto BEP = P.getAs<BlockEntrance>()) {
     return BEP->getBlock();
+
+}
 
   // Find the node's current statement in the CFG.
   // FIXME: getStmtForDiagnostics() does nasty things in order to provide
   // a valid statement for body farms, do we need this behavior here?
-  if (const Stmt *S = getStmtForDiagnostics())
+  if (const Stmt *S = getStmtForDiagnostics()) {
     return getLocationContext()
         ->getAnalysisDeclContext()
         ->getCFGStmtMap()
         ->getBlock(S);
+
+}
 
   return nullptr;
 }
@@ -332,20 +390,34 @@ const Stmt *ExplodedNode::getStmtForDiagnostics() const {
   // Otherwise, see if the node's program point directly points to a statement.
   // FIXME: Refactor into a ProgramPoint method?
   ProgramPoint P = getLocation();
-  if (auto SP = P.getAs<StmtPoint>())
+  if (auto SP = P.getAs<StmtPoint>()) {
     return SP->getStmt();
-  if (auto BE = P.getAs<BlockEdge>())
+
+}
+  if (auto BE = P.getAs<BlockEdge>()) {
     return BE->getSrc()->getTerminatorStmt();
-  if (auto CE = P.getAs<CallEnter>())
+
+}
+  if (auto CE = P.getAs<CallEnter>()) {
     return CE->getCallExpr();
-  if (auto CEE = P.getAs<CallExitEnd>())
+
+}
+  if (auto CEE = P.getAs<CallExitEnd>()) {
     return CEE->getCalleeContext()->getCallSite();
-  if (auto PIPP = P.getAs<PostInitializer>())
+
+}
+  if (auto PIPP = P.getAs<PostInitializer>()) {
     return PIPP->getInitializer()->getInit();
-  if (auto CEB = P.getAs<CallExitBegin>())
+
+}
+  if (auto CEB = P.getAs<CallExitBegin>()) {
     return CEB->getReturnStmt();
-  if (auto FEP = P.getAs<FunctionExitPoint>())
+
+}
+  if (auto FEP = P.getAs<FunctionExitPoint>()) {
     return FEP->getStmt();
+
+}
 
   return nullptr;
 }
@@ -362,8 +434,10 @@ const Stmt *ExplodedNode::getNextStmtForDiagnostics() const {
           continue;
         case Stmt::BinaryOperatorClass: {
           BinaryOperatorKind Op = cast<BinaryOperator>(S)->getOpcode();
-          if (Op == BO_LAnd || Op == BO_LOr)
+          if (Op == BO_LAnd || Op == BO_LOr) {
             continue;
+
+}
           break;
         }
         default:
@@ -378,16 +452,22 @@ const Stmt *ExplodedNode::getNextStmtForDiagnostics() const {
 }
 
 const Stmt *ExplodedNode::getPreviousStmtForDiagnostics() const {
-  for (const ExplodedNode *N = getFirstPred(); N; N = N->getFirstPred())
-    if (const Stmt *S = N->getStmtForDiagnostics())
+  for (const ExplodedNode *N = getFirstPred(); N; N = N->getFirstPred()) {
+    if (const Stmt *S = N->getStmtForDiagnostics()) {
       return S;
+
+}
+
+}
 
   return nullptr;
 }
 
 const Stmt *ExplodedNode::getCurrentOrPreviousStmtForDiagnostics() const {
-  if (const Stmt *S = getStmtForDiagnostics())
+  if (const Stmt *S = getStmtForDiagnostics()) {
     return S;
+
+}
 
   return getPreviousStmtForDiagnostics();
 }
@@ -416,16 +496,22 @@ ExplodedNode *ExplodedGraph::getNode(const ProgramPoint &L,
     ++NumNodes;
     new (V) NodeTy(L, State, NumNodes, IsSink);
 
-    if (ReclaimNodeInterval)
+    if (ReclaimNodeInterval) {
       ChangedNodes.push_back(V);
+
+}
 
     // Insert the node into the node set and return it.
     Nodes.InsertNode(V, InsertPos);
 
-    if (IsNew) *IsNew = true;
+    if (IsNew) { *IsNew = true;
+
+}
   }
   else
-    if (IsNew) *IsNew = false;
+    if (IsNew) { *IsNew = false;
+
+}
 
   return V;
 }
@@ -443,8 +529,10 @@ std::unique_ptr<ExplodedGraph>
 ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
                     InterExplodedGraphMap *ForwardMap,
                     InterExplodedGraphMap *InverseMap) const {
-  if (Nodes.empty())
+  if (Nodes.empty()) {
     return nullptr;
+
+}
 
   using Pass1Ty = llvm::DenseSet<const ExplodedNode *>;
   Pass1Ty Pass1;
@@ -456,17 +544,23 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
   SmallVector<const ExplodedNode*, 10> WL1, WL2;
 
   // ===- Pass 1 (reverse DFS) -===
-  for (const auto Sink : Sinks)
-    if (Sink)
+  for (const auto Sink : Sinks) {
+    if (Sink) {
       WL1.push_back(Sink);
+
+}
+
+}
 
   // Process the first worklist until it is empty.
   while (!WL1.empty()) {
     const ExplodedNode *N = WL1.pop_back_val();
 
     // Have we already visited this node?  If so, continue to the next one.
-    if (!Pass1.insert(N).second)
+    if (!Pass1.insert(N).second) {
       continue;
+
+}
 
     // If this is a root enqueue it to the second worklist.
     if (N->Preds.empty()) {
@@ -479,8 +573,10 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
   }
 
   // We didn't hit a root? Return with a null pointer for the new graph.
-  if (WL2.empty())
+  if (WL2.empty()) {
     return nullptr;
+
+}
 
   // Create an empty graph.
   std::unique_ptr<ExplodedGraph> G = MakeEmptyGraph();
@@ -490,8 +586,10 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
     const ExplodedNode *N = WL2.pop_back_val();
 
     // Skip this node if we have already processed it.
-    if (Pass2.find(N) != Pass2.end())
+    if (Pass2.find(N) != Pass2.end()) {
       continue;
+
+}
 
     // Create the corresponding node in the new graph and record the mapping
     // from the old node to the new node.
@@ -500,11 +598,15 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
     Pass2[N] = NewN;
 
     // Also record the reverse mapping from the new node to the old node.
-    if (InverseMap) (*InverseMap)[NewN] = N;
+    if (InverseMap) { (*InverseMap)[NewN] = N;
+
+}
 
     // If this node is a root, designate it as such in the graph.
-    if (N->Preds.empty())
+    if (N->Preds.empty()) {
       G->addRoot(NewN);
+
+}
 
     // In the case that some of the intended predecessors of NewN have already
     // been created, we should hook them up as predecessors.
@@ -514,8 +616,10 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
     for (ExplodedNode::pred_iterator I = N->Preds.begin(), E = N->Preds.end();
          I != E; ++I) {
       Pass2Ty::iterator PI = Pass2.find(*I);
-      if (PI == Pass2.end())
+      if (PI == Pass2.end()) {
         continue;
+
+}
 
       NewN->addPredecessor(const_cast<ExplodedNode *>(PI->second), *G);
     }
@@ -533,8 +637,10 @@ ExplodedGraph::trim(ArrayRef<const NodeTy *> Sinks,
       }
 
       // Enqueue nodes to the worklist that were marked during pass 1.
-      if (Pass1.count(*I))
+      if (Pass1.count(*I)) {
         WL2.push_back(*I);
+
+}
     }
   }
 

@@ -43,18 +43,24 @@ protected:
   }
 
   void eraseClones() {
-    for (Value *V : Clones)
+    for (Value *V : Clones) {
       V->deleteValue();
+
+}
     Clones.clear();
   }
 
   void TearDown() override {
     eraseClones();
-    for (Value *V : Orig)
+    for (Value *V : Orig) {
       V->deleteValue();
+
+}
     Orig.clear();
-    if (V)
+    if (V) {
       V->deleteValue();
+
+}
   }
 
   SmallPtrSet<Value *, 4> Orig;   // Erase on exit
@@ -372,8 +378,10 @@ static void runWithLoopInfoAndDominatorTree(
 static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
   SMDiagnostic Err;
   std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("CloneLoop", errs());
+
+}
   return Mod;
 }
 

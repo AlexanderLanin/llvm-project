@@ -209,14 +209,18 @@ TEST_F(MemoryBufferTest, make_new) {
   // 0-initialized buffer with no name
   OwningBuffer Three(WritableMemoryBuffer::getNewMemBuffer(321, data));
   EXPECT_TRUE(nullptr != Three.get());
-  for (size_t i = 0; i < 321; ++i)
+  for (size_t i = 0; i < 321; ++i) {
     EXPECT_EQ(0, Three->getBufferStart()[0]);
+
+}
 
   // 0-initialized buffer with name
   OwningBuffer Four(WritableMemoryBuffer::getNewMemBuffer(123, "zeros"));
   EXPECT_TRUE(nullptr != Four.get());
-  for (size_t i = 0; i < 123; ++i)
+  for (size_t i = 0; i < 123; ++i) {
     EXPECT_EQ(0, Four->getBufferStart()[0]);
+
+}
 }
 
 void MemoryBufferTest::testGetOpenFileSlice(bool Reopen) {
@@ -327,8 +331,10 @@ TEST_F(MemoryBufferTest, writableSlice) {
                                TestPath);
   FileRemover Cleanup(TestPath);
   raw_fd_ostream OF(FD, true);
-  for (unsigned i = 0; i < 0x1000; ++i)
+  for (unsigned i = 0; i < 0x1000; ++i) {
     OF << "0123456789abcdef";
+
+}
   OF.close();
 
   {
@@ -348,8 +354,10 @@ TEST_F(MemoryBufferTest, writableSlice) {
   ASSERT_FALSE(MBOrError.getError());
   auto &MB = **MBOrError;
   ASSERT_EQ(0x10000u, MB.getBufferSize());
-  for (size_t i = 0; i < MB.getBufferSize(); i += 0x10)
+  for (size_t i = 0; i < MB.getBufferSize(); i += 0x10) {
     EXPECT_EQ("0123456789abcdef", MB.getBuffer().substr(i, 0x10)) << "i: " << i;
+
+}
 }
 
 TEST_F(MemoryBufferTest, writeThroughFile) {

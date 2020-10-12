@@ -38,15 +38,19 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
                       SetVector<GlobalValue *> &PromoteExtra) {
   DenseMap<const Comdat *, Comdat *> RenamedComdats;
   for (auto &ExportGV : ExportM.global_values()) {
-    if (!ExportGV.hasLocalLinkage())
+    if (!ExportGV.hasLocalLinkage()) {
       continue;
+
+}
 
     auto Name = ExportGV.getName();
     GlobalValue *ImportGV = nullptr;
     if (!PromoteExtra.count(&ExportGV)) {
       ImportGV = ImportM.getNamedValue(Name);
-      if (!ImportGV)
+      if (!ImportGV) {
         continue;
+
+}
       ImportGV->removeDeadConstantUsers();
       if (ImportGV->use_empty()) {
         ImportGV->eraseFromParent();
@@ -56,9 +60,13 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
 
     std::string NewName = (Name + ModuleId).str();
 
-    if (const auto *C = ExportGV.getComdat())
-      if (C->getName() == Name)
+    if (const auto *C = ExportGV.getComdat()) {
+      if (C->getName() == Name) {
         RenamedComdats.try_emplace(C, ExportM.getOrInsertComdat(NewName));
+
+}
+
+}
 
     ExportGV.setName(NewName);
     ExportGV.setLinkage(GlobalValue::ExternalLinkage);
@@ -70,13 +78,19 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
     }
   }
 
-  if (!RenamedComdats.empty())
-    for (auto &GO : ExportM.global_objects())
+  if (!RenamedComdats.empty()) {
+    for (auto &GO : ExportM.global_objects()) {
       if (auto *C = GO.getComdat()) {
         auto Replacement = RenamedComdats.find(C);
-        if (Replacement != RenamedComdats.end())
+        if (Replacement != RenamedComdats.end()) {
           GO.setComdat(Replacement->second);
+
+}
       }
+
+}
+
+}
 }
 
 // Promote all internal (i.e. distinct) type ids used by the module by replacing
@@ -151,8 +165,10 @@ void simplifyExternals(Module &M) {
 
     if (!F.isDeclaration() || F.getFunctionType() == EmptyFT ||
         // Changing the type of an intrinsic may invalidate the IR.
-        F.getName().startswith("llvm."))
+        F.getName().startswith("llvm.")) {
       continue;
+
+}
 
     Function *NewF =
         Function::Create(EmptyFT, GlobalValue::ExternalLinkage,
@@ -176,22 +192,36 @@ static void
 filterModule(Module *M,
              function_ref<bool(const GlobalValue *)> ShouldKeepDefinition) {
   std::vector<GlobalValue *> V;
-  for (GlobalValue &GV : M->global_values())
-    if (!ShouldKeepDefinition(&GV))
+  for (GlobalValue &GV : M->global_values()) {
+    if (!ShouldKeepDefinition(&GV)) {
       V.push_back(&GV);
 
-  for (GlobalValue *GV : V)
-    if (!convertToDeclaration(*GV))
+}
+
+}
+
+  for (GlobalValue *GV : V) {
+    if (!convertToDeclaration(*GV)) {
       GV->eraseFromParent();
+
+}
+
+}
 }
 
 void forEachVirtualFunction(Constant *C, function_ref<void(Function *)> Fn) {
-  if (auto *F = dyn_cast<Function>(C))
+  if (auto *F = dyn_cast<Function>(C)) {
     return Fn(F);
-  if (isa<GlobalValue>(C))
+
+}
+  if (isa<GlobalValue>(C)) {
     return;
-  for (Value *Op : C->operands())
+
+}
+  for (Value *Op : C->operands()) {
     forEachVirtualFunction(cast<Constant>(Op), Fn);
+
+}
 }
 
 // If it's possible to split M into regular and thin LTO parts, do so and write
@@ -209,11 +239,13 @@ void splitAndWriteThinLTOBitcode(
     ModuleSummaryIndex Index = buildModuleSummaryIndex(M, nullptr, &PSI);
     WriteBitcodeToFile(M, OS, /*ShouldPreserveUseListOrder=*/false, &Index);
 
-    if (ThinLinkOS)
+    if (ThinLinkOS) {
       // We don't have a ThinLTO part, but still write the module to the
       // ThinLinkOS if requested so that the expected output file is produced.
       WriteBitcodeToFile(M, *ThinLinkOS, /*ShouldPreserveUseListOrder=*/false,
                          &Index);
+
+}
 
     return;
   }
@@ -227,11 +259,19 @@ void splitAndWriteThinLTOBitcode(
   // with type metadata need to appear in the merged module because they will
   // reference the global's section directly.
   auto HasTypeMetadata = [](const GlobalObject *GO) {
-    if (MDNode *MD = GO->getMetadata(LLVMContext::MD_associated))
-      if (auto *AssocVM = dyn_cast_or_null<ValueAsMetadata>(MD->getOperand(0)))
-        if (auto *AssocGO = dyn_cast<GlobalObject>(AssocVM->getValue()))
-          if (AssocGO->hasMetadata(LLVMContext::MD_type))
+    if (MDNode *MD = GO->getMetadata(LLVMContext::MD_associated)) {
+      if (auto *AssocVM = dyn_cast_or_null<ValueAsMetadata>(MD->getOperand(0))) {
+        if (auto *AssocGO = dyn_cast<GlobalObject>(AssocVM->getValue())) {
+          if (AssocGO->hasMetadata(LLVMContext::MD_type)) {
             return true;
+
+}
+
+}
+
+}
+
+}
     return GO->hasMetadata(LLVMContext::MD_type);
   };
 
@@ -251,42 +291,60 @@ void splitAndWriteThinLTOBitcode(
   // If any member of a comdat lives in MergedM, put all members of that
   // comdat in MergedM to keep the comdat together.
   DenseSet<const Comdat *> MergedMComdats;
-  for (GlobalVariable &GV : M.globals())
+  for (GlobalVariable &GV : M.globals()) {
     if (HasTypeMetadata(&GV)) {
-      if (const auto *C = GV.getComdat())
+      if (const auto *C = GV.getComdat()) {
         MergedMComdats.insert(C);
+
+}
       forEachVirtualFunction(GV.getInitializer(), [&](Function *F) {
         auto *RT = dyn_cast<IntegerType>(F->getReturnType());
         if (!RT || RT->getBitWidth() > 64 || F->arg_empty() ||
-            !F->arg_begin()->use_empty())
+            !F->arg_begin()->use_empty()) {
           return;
+
+}
         for (auto &Arg : make_range(std::next(F->arg_begin()), F->arg_end())) {
           auto *ArgT = dyn_cast<IntegerType>(Arg.getType());
-          if (!ArgT || ArgT->getBitWidth() > 64)
+          if (!ArgT || ArgT->getBitWidth() > 64) {
             return;
+
+}
         }
         if (!F->isDeclaration() &&
-            computeFunctionBodyMemoryAccess(*F, AARGetter(*F)) == MAK_ReadNone)
+            computeFunctionBodyMemoryAccess(*F, AARGetter(*F)) == MAK_ReadNone) {
           EligibleVirtualFns.insert(F);
+
+}
       });
     }
+
+}
 
   ValueToValueMapTy VMap;
   std::unique_ptr<Module> MergedM(
       CloneModule(M, VMap, [&](const GlobalValue *GV) -> bool {
-        if (const auto *C = GV->getComdat())
-          if (MergedMComdats.count(C))
+        if (const auto *C = GV->getComdat()) {
+          if (MergedMComdats.count(C)) {
             return true;
-        if (auto *F = dyn_cast<Function>(GV))
+
+}
+
+}
+        if (auto *F = dyn_cast<Function>(GV)) {
           return EligibleVirtualFns.count(F);
-        if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getBaseObject()))
+
+}
+        if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getBaseObject())) {
           return HasTypeMetadata(GVar);
+
+}
         return false;
       }));
   StripDebugInfo(*MergedM);
   MergedM->setModuleInlineAsm("");
 
-  for (Function &F : *MergedM)
+  for (Function &F : *MergedM) {
     if (!F.isDeclaration()) {
       // Reset the linkage of all functions eligible for virtual constant
       // propagation. The canonical definitions live in the thin LTO module so
@@ -295,20 +353,34 @@ void splitAndWriteThinLTOBitcode(
       F.setComdat(nullptr);
     }
 
+}
+
   SetVector<GlobalValue *> CfiFunctions;
-  for (auto &F : M)
-    if ((!F.hasLocalLinkage() || F.hasAddressTaken()) && HasTypeMetadata(&F))
+  for (auto &F : M) {
+    if ((!F.hasLocalLinkage() || F.hasAddressTaken()) && HasTypeMetadata(&F)) {
       CfiFunctions.insert(&F);
+
+}
+
+}
 
   // Remove all globals with type metadata, globals with comdats that live in
   // MergedM, and aliases pointing to such globals from the thin LTO module.
   filterModule(&M, [&](const GlobalValue *GV) {
-    if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getBaseObject()))
-      if (HasTypeMetadata(GVar))
+    if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getBaseObject())) {
+      if (HasTypeMetadata(GVar)) {
         return false;
-    if (const auto *C = GV->getComdat())
-      if (MergedMComdats.count(C))
+
+}
+
+}
+    if (const auto *C = GV->getComdat()) {
+      if (MergedMComdats.count(C)) {
         return false;
+
+}
+
+}
     return true;
   });
 
@@ -325,29 +397,37 @@ void splitAndWriteThinLTOBitcode(
     SmallVector<Metadata *, 4> Elts;
     Elts.push_back(MDString::get(Ctx, F.getName()));
     CfiFunctionLinkage Linkage;
-    if (lowertypetests::isJumpTableCanonical(&F))
+    if (lowertypetests::isJumpTableCanonical(&F)) {
       Linkage = CFL_Definition;
-    else if (F.hasExternalWeakLinkage())
+    } else if (F.hasExternalWeakLinkage()) {
       Linkage = CFL_WeakDeclaration;
-    else
+    } else {
       Linkage = CFL_Declaration;
+
+}
     Elts.push_back(ConstantAsMetadata::get(
         llvm::ConstantInt::get(Type::getInt8Ty(Ctx), Linkage)));
-    for (auto Type : Types)
+    for (auto Type : Types) {
       Elts.push_back(Type);
+
+}
     CfiFunctionMDs.push_back(MDTuple::get(Ctx, Elts));
   }
 
   if(!CfiFunctionMDs.empty()) {
     NamedMDNode *NMD = MergedM->getOrInsertNamedMetadata("cfi.functions");
-    for (auto MD : CfiFunctionMDs)
+    for (auto MD : CfiFunctionMDs) {
       NMD->addOperand(MD);
+
+}
   }
 
   SmallVector<MDNode *, 8> FunctionAliases;
   for (auto &A : M.aliases()) {
-    if (!isa<Function>(A.getAliasee()))
+    if (!isa<Function>(A.getAliasee())) {
       continue;
+
+}
 
     auto *F = cast<Function>(A.getAliasee());
 
@@ -365,15 +445,19 @@ void splitAndWriteThinLTOBitcode(
 
   if (!FunctionAliases.empty()) {
     NamedMDNode *NMD = MergedM->getOrInsertNamedMetadata("aliases");
-    for (auto MD : FunctionAliases)
+    for (auto MD : FunctionAliases) {
       NMD->addOperand(MD);
+
+}
   }
 
   SmallVector<MDNode *, 8> Symvers;
   ModuleSymbolTable::CollectAsmSymvers(M, [&](StringRef Name, StringRef Alias) {
     Function *F = M.getFunction(Name);
-    if (!F || F->use_empty())
+    if (!F || F->use_empty()) {
       return;
+
+}
 
     Symvers.push_back(MDTuple::get(
         Ctx, {MDString::get(Ctx, Name), MDString::get(Ctx, Alias)}));
@@ -381,8 +465,10 @@ void splitAndWriteThinLTOBitcode(
 
   if (!Symvers.empty()) {
     NamedMDNode *NMD = MergedM->getOrInsertNamedMetadata("symvers");
-    for (auto MD : Symvers)
+    for (auto MD : Symvers) {
       NMD->addOperand(MD);
+
+}
   }
 
   simplifyExternals(*MergedM);
@@ -431,16 +517,20 @@ void splitAndWriteThinLTOBitcode(
 bool enableSplitLTOUnit(Module &M) {
   bool EnableSplitLTOUnit = false;
   if (auto *MD = mdconst::extract_or_null<ConstantInt>(
-          M.getModuleFlag("EnableSplitLTOUnit")))
+          M.getModuleFlag("EnableSplitLTOUnit"))) {
     EnableSplitLTOUnit = MD->getZExtValue();
+
+}
   return EnableSplitLTOUnit;
 }
 
 // Returns whether this module needs to be split because it uses type metadata.
 bool hasTypeMetadata(Module &M) {
   for (auto &GO : M.global_objects()) {
-    if (GO.hasMetadata(LLVMContext::MD_type))
+    if (GO.hasMetadata(LLVMContext::MD_type)) {
       return true;
+
+}
   }
   return false;
 }
@@ -452,8 +542,10 @@ void writeThinLTOBitcode(raw_ostream &OS, raw_ostream *ThinLinkOS,
   // See if this module has any type metadata. If so, we try to split it
   // or at least promote type ids to enable WPD.
   if (hasTypeMetadata(M)) {
-    if (enableSplitLTOUnit(M))
+    if (enableSplitLTOUnit(M)) {
       return splitAndWriteThinLTOBitcode(OS, ThinLinkOS, AARGetter, M);
+
+}
     // Promote type ids as needed for index-based WPD.
     std::string ModuleId = getUniqueModuleId(&M);
     if (!ModuleId.empty()) {
@@ -484,8 +576,10 @@ void writeThinLTOBitcode(raw_ostream &OS, raw_ostream *ThinLinkOS,
   // If a minimized bitcode module was requested for the thin link, only
   // the information that is needed by thin link will be written in the
   // given OS.
-  if (ThinLinkOS && Index)
+  if (ThinLinkOS && Index) {
     WriteThinLinkBitcodeToFile(M, *ThinLinkOS, *Index, ModHash);
+
+}
 }
 
 class WriteThinLTOBitcode : public ModulePass {

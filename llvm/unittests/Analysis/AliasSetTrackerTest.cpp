@@ -67,8 +67,10 @@ TEST(AliasSetTracker, AliasUnknownInst) {
   Function *Test = M->getFunction("test");
   ASSERT_NE(Test, nullptr);
   AliasSetTracker AST(AA);
-  for (auto &BB : *Test)
+  for (auto &BB : *Test) {
     AST.add(BB);
+
+}
   // There should be 2 disjoint alias sets. 1 from each call. 
   ASSERT_EQ((int)AST.getAliasSets().size(), 2);
 
@@ -77,10 +79,14 @@ TEST(AliasSetTracker, AliasUnknownInst) {
   for (auto &Inst : *Test->begin()) {
     bool FoundAS = false;
     for (AliasSet &AS : AST) {
-      if (!Inst.mayReadOrWriteMemory())
+      if (!Inst.mayReadOrWriteMemory()) {
         continue;
-      if (!AS.aliasesUnknownInst(&Inst, AA))
+
+}
+      if (!AS.aliasesUnknownInst(&Inst, AA)) {
         continue;
+
+}
       ASSERT_NE(FoundAS, true);
       FoundAS = true;
     }

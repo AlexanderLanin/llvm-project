@@ -48,8 +48,10 @@ static uint64_t getOffsetOfLSDA(const UnwindInfo& UI) {
 }
 
 static uint32_t getLargeSlotValue(ArrayRef<UnwindCode> UC) {
-  if (UC.size() < 3)
+  if (UC.size() < 3) {
     return 0;
+
+}
   return UC[1].FrameOffset + (static_cast<uint32_t>(UC[2].FrameOffset) << 16);
 }
 
@@ -116,8 +118,10 @@ static std::error_code getSymbol(const COFFObjectFile &COFF, uint64_t VA,
                                  object::SymbolRef &Sym) {
   for (const auto &Symbol : COFF.symbols()) {
     Expected<uint64_t> Address = Symbol.getAddress();
-    if (!Address)
+    if (!Address) {
       return errorToErrorCode(Address.takeError());
+
+}
     if (*Address == VA) {
       Sym = Symbol;
       return readobj_error::success;
@@ -137,10 +141,12 @@ static std::string formatSymbol(const Dumper::Context &Ctx,
     Expected<StringRef> Name = Symbol.getName();
     if (Name) {
       OS << *Name;
-      if (Displacement > 0)
+      if (Displacement > 0) {
         OS << format(" +0x%X (0x%" PRIX64 ")", Displacement, Offset);
-      else
+      } else {
         OS << format(" (0x%" PRIX64 ")", Offset);
+
+}
       return OS.str();
     } else {
       // TODO: Actually report errors helpfully.
@@ -158,10 +164,12 @@ static std::string formatSymbol(const Dumper::Context &Ctx,
     }
   }
 
-  if (Displacement > 0)
+  if (Displacement > 0) {
     OS << format("(0x%" PRIX64 ")", Ctx.COFF.getImageBase() + Displacement);
-  else
+  } else {
     OS << format("(0x%" PRIX64 ")", Offset);
+
+}
   return OS.str();
 }
 
@@ -172,17 +180,23 @@ static std::error_code resolveRelocation(const Dumper::Context &Ctx,
                                          uint64_t &ResolvedAddress) {
   SymbolRef Symbol;
   if (std::error_code EC =
-          Ctx.ResolveSymbol(Section, Offset, Symbol, Ctx.UserData))
+          Ctx.ResolveSymbol(Section, Offset, Symbol, Ctx.UserData)) {
     return EC;
 
+}
+
   Expected<uint64_t> ResolvedAddressOrErr = Symbol.getAddress();
-  if (!ResolvedAddressOrErr)
+  if (!ResolvedAddressOrErr) {
     return errorToErrorCode(ResolvedAddressOrErr.takeError());
+
+}
   ResolvedAddress = *ResolvedAddressOrErr;
 
   Expected<section_iterator> SI = Symbol.getSection();
-  if (!SI)
+  if (!SI) {
     return errorToErrorCode(SI.takeError());
+
+}
   ResolvedSection = Ctx.COFF.getCOFFSection(**SI);
   return std::error_code();
 }
@@ -193,8 +207,10 @@ getSectionContaining(const COFFObjectFile &COFF, uint64_t VA) {
     uint64_t Address = Section.getAddress();
     uint64_t Size = Section.getSize();
 
-    if (VA >= Address && (VA - Address) <= Size)
+    if (VA >= Address && (VA - Address) <= Size) {
       return COFF.getCOFFSection(Section);
+
+}
   }
   return nullptr;
 }
@@ -238,11 +254,13 @@ void Dumper::printUnwindCode(const UnwindInfo& UI, ArrayRef<UnwindCode> UC) {
     break;
 
   case UOP_SetFPReg:
-    if (UI.getFrameRegister() == 0)
+    if (UI.getFrameRegister() == 0) {
       OS << " reg=<invalid>";
-    else
+    } else {
       OS << " reg=" << getUnwindRegisterName(UI.getFrameRegister())
          << format(", offset=0x%X", UI.getFrameOffset() * 16);
+
+}
     break;
 
   case UOP_SaveNonVol:
@@ -332,20 +350,28 @@ void Dumper::printRuntimeFunction(const Context &Ctx,
   if (!XData) {
     uint64_t Address = Ctx.COFF.getImageBase() + RF.UnwindInfoOffset;
     XData = getSectionContaining(Ctx.COFF, Address);
-    if (!XData)
+    if (!XData) {
       return;
+
+}
     Offset = RF.UnwindInfoOffset - XData->VirtualAddress;
   }
 
   ArrayRef<uint8_t> Contents;
-  if (Error E = Ctx.COFF.getSectionContents(XData, Contents))
+  if (Error E = Ctx.COFF.getSectionContents(XData, Contents)) {
     reportError(std::move(E), Ctx.COFF.getFileName());
 
-  if (Contents.empty())
+}
+
+  if (Contents.empty()) {
     return;
 
-  if (Offset > Contents.size())
+}
+
+  if (Offset > Contents.size()) {
     return;
+
+}
 
   const auto UI = reinterpret_cast<const UnwindInfo*>(Contents.data() + Offset);
   printUnwindInfo(Ctx, XData, Offset, *UI);
@@ -354,21 +380,29 @@ void Dumper::printRuntimeFunction(const Context &Ctx,
 void Dumper::printData(const Context &Ctx) {
   for (const auto &Section : Ctx.COFF.sections()) {
     StringRef Name;
-    if (Expected<StringRef> NameOrErr = Section.getName())
+    if (Expected<StringRef> NameOrErr = Section.getName()) {
       Name = *NameOrErr;
-    else
+    } else {
       consumeError(NameOrErr.takeError());
 
-    if (Name != ".pdata" && !Name.startswith(".pdata$"))
+}
+
+    if (Name != ".pdata" && !Name.startswith(".pdata$")) {
       continue;
+
+}
 
     const coff_section *PData = Ctx.COFF.getCOFFSection(Section);
     ArrayRef<uint8_t> Contents;
 
-    if (Error E = Ctx.COFF.getSectionContents(PData, Contents))
+    if (Error E = Ctx.COFF.getSectionContents(PData, Contents)) {
       reportError(std::move(E), Ctx.COFF.getFileName());
-    if (Contents.empty())
+
+}
+    if (Contents.empty()) {
       continue;
+
+}
 
     const RuntimeFunction *Entries =
       reinterpret_cast<const RuntimeFunction *>(Contents.data());

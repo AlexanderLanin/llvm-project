@@ -28,9 +28,11 @@ Profile::Profile(const Profile &O) {
   for (const auto &Block : O) {
     Blocks.push_back({Block.Thread, {}});
     auto &B = Blocks.back();
-    for (const auto &PathData : Block.PathData)
+    for (const auto &PathData : Block.PathData) {
       B.PathData.push_back({internPath(cantFail(O.expandPath(PathData.first))),
                             PathData.second});
+
+}
   }
 }
 
@@ -53,25 +55,31 @@ static Expected<BlockHeader> readBlockHeader(DataExtractor &Extractor,
   BlockHeader H;
   uint64_t CurrentOffset = Offset;
   H.Size = Extractor.getU32(&Offset);
-  if (Offset == CurrentOffset)
+  if (Offset == CurrentOffset) {
     return make_error<StringError>(
         Twine("Error parsing block header size at offset '") +
             Twine(CurrentOffset) + "'",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   CurrentOffset = Offset;
   H.Number = Extractor.getU32(&Offset);
-  if (Offset == CurrentOffset)
+  if (Offset == CurrentOffset) {
     return make_error<StringError>(
         Twine("Error parsing block header number at offset '") +
             Twine(CurrentOffset) + "'",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   CurrentOffset = Offset;
   H.Thread = Extractor.getU64(&Offset);
-  if (Offset == CurrentOffset)
+  if (Offset == CurrentOffset) {
     return make_error<StringError>(
         Twine("Error parsing block header thread id at offset '") +
             Twine(CurrentOffset) + "'",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   return H;
 }
 
@@ -83,10 +91,12 @@ static Expected<std::vector<Profile::FuncID>> readPath(DataExtractor &Extractor,
   int32_t FuncId;
   do {
     FuncId = Extractor.getSigned(&Offset, 4);
-    if (CurrentOffset == Offset)
+    if (CurrentOffset == Offset) {
       return make_error<StringError>(
           Twine("Error parsing path at offset '") + Twine(CurrentOffset) + "'",
           std::make_error_code(std::errc::invalid_argument));
+
+}
     CurrentOffset = Offset;
     Path.push_back(FuncId);
   } while (FuncId != 0);
@@ -101,28 +111,34 @@ static Expected<Profile::Data> readData(DataExtractor &Extractor,
   Profile::Data D;
   auto CurrentOffset = Offset;
   D.CallCount = Extractor.getU64(&Offset);
-  if (CurrentOffset == Offset)
+  if (CurrentOffset == Offset) {
     return make_error<StringError>(
         Twine("Error parsing call counts at offset '") + Twine(CurrentOffset) +
             "'",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   CurrentOffset = Offset;
   D.CumulativeLocalTime = Extractor.getU64(&Offset);
-  if (CurrentOffset == Offset)
+  if (CurrentOffset == Offset) {
     return make_error<StringError>(
         Twine("Error parsing cumulative local time at offset '") +
             Twine(CurrentOffset) + "'",
         std::make_error_code(std::errc::invalid_argument));
+
+}
   return D;
 }
 
 } // namespace
 
 Error Profile::addBlock(Block &&B) {
-  if (B.PathData.empty())
+  if (B.PathData.empty()) {
     return make_error<StringError>(
         "Block may not have empty path data.",
         std::make_error_code(std::errc::invalid_argument));
+
+}
 
   Blocks.emplace_back(std::move(B));
   return Error::success();
@@ -130,19 +146,25 @@ Error Profile::addBlock(Block &&B) {
 
 Expected<std::vector<Profile::FuncID>> Profile::expandPath(PathID P) const {
   auto It = PathIDMap.find(P);
-  if (It == PathIDMap.end())
+  if (It == PathIDMap.end()) {
     return make_error<StringError>(
         Twine("PathID not found: ") + Twine(P),
         std::make_error_code(std::errc::invalid_argument));
+
+}
   std::vector<Profile::FuncID> Path;
-  for (auto Node = It->second; Node; Node = Node->Caller)
+  for (auto Node = It->second; Node; Node = Node->Caller) {
     Path.push_back(Node->Func);
+
+}
   return std::move(Path);
 }
 
 Profile::PathID Profile::internPath(ArrayRef<FuncID> P) {
-  if (P.empty())
+  if (P.empty()) {
     return 0;
+
+}
 
   auto RootToLeafPath = reverse(P);
 
@@ -198,7 +220,7 @@ Profile mergeProfilesByThread(const Profile &L, const Profile &R) {
   using ThreadProfileIndexMap = DenseMap<Profile::ThreadID, PathDataMapPtr>;
   ThreadProfileIndexMap ThreadProfileIndex;
 
-  for (const auto &P : {std::ref(L), std::ref(R)})
+  for (const auto &P : {std::ref(L), std::ref(R)}) {
     for (const auto &Block : P.get()) {
       ThreadProfileIndexMap::iterator It;
       std::tie(It, std::ignore) = ThreadProfileIndex.insert(
@@ -219,6 +241,8 @@ Profile mergeProfilesByThread(const Profile &L, const Profile &R) {
       }
     }
 
+}
+
   for (const auto &IndexedThreadBlock : ThreadProfileIndex) {
     PathDataVector PathAndData;
     PathAndData.reserve(IndexedThreadBlock.second->size());
@@ -234,8 +258,8 @@ Profile mergeProfilesByStack(const Profile &L, const Profile &R) {
   using PathDataMap = DenseMap<Profile::PathID, Profile::Data>;
   PathDataMap PathData;
   using PathDataVector = decltype(Profile::Block::PathData);
-  for (const auto &P : {std::ref(L), std::ref(R)})
-    for (const auto &Block : P.get())
+  for (const auto &P : {std::ref(L), std::ref(R)}) {
+    for (const auto &Block : P.get()) {
       for (const auto &PathAndData : Block.PathData) {
         auto &PathId = PathAndData.first;
         auto &Data = PathAndData.second;
@@ -251,6 +275,10 @@ Profile mergeProfilesByStack(const Profile &L, const Profile &R) {
         }
       }
 
+}
+
+}
+
   // In the end there's a single Block, for thread 0.
   PathDataVector Block;
   Block.reserve(PathData.size());
@@ -261,22 +289,28 @@ Profile mergeProfilesByStack(const Profile &L, const Profile &R) {
 
 Expected<Profile> loadProfile(StringRef Filename) {
   Expected<sys::fs::file_t> FdOrErr = sys::fs::openNativeFileForRead(Filename);
-  if (!FdOrErr)
+  if (!FdOrErr) {
     return FdOrErr.takeError();
 
+}
+
   uint64_t FileSize;
-  if (auto EC = sys::fs::file_size(Filename, FileSize))
+  if (auto EC = sys::fs::file_size(Filename, FileSize)) {
     return make_error<StringError>(
         Twine("Cannot get filesize of '") + Filename + "'", EC);
+
+}
 
   std::error_code EC;
   sys::fs::mapped_file_region MappedFile(
       *FdOrErr, sys::fs::mapped_file_region::mapmode::readonly, FileSize, 0,
       EC);
   sys::fs::closeFile(*FdOrErr);
-  if (EC)
+  if (EC) {
     return make_error<StringError>(
         Twine("Cannot mmap profile '") + Filename + "'", EC);
+
+}
   StringRef Data(MappedFile.data(), MappedFile.size());
 
   Profile P;
@@ -286,8 +320,10 @@ Expected<Profile> loadProfile(StringRef Filename) {
   // For each block we get from the file:
   while (Offset != MappedFile.size()) {
     auto HeaderOrError = readBlockHeader(Extractor, Offset);
-    if (!HeaderOrError)
+    if (!HeaderOrError) {
       return HeaderOrError.takeError();
+
+}
 
     // TODO: Maybe store this header information for each block, even just for
     // debugging?
@@ -295,20 +331,26 @@ Expected<Profile> loadProfile(StringRef Filename) {
 
     // Read in the path data.
     auto PathOrError = readPath(Extractor, Offset);
-    if (!PathOrError)
+    if (!PathOrError) {
       return PathOrError.takeError();
+
+}
     const auto &Path = PathOrError.get();
 
     // For each path we encounter, we should intern it to get a PathID.
     auto DataOrError = readData(Extractor, Offset);
-    if (!DataOrError)
+    if (!DataOrError) {
       return DataOrError.takeError();
+
+}
     auto &Data = DataOrError.get();
 
     if (auto E =
             P.addBlock(Profile::Block{Profile::ThreadID{Header.Thread},
-                                      {{P.internPath(Path), std::move(Data)}}}))
+                                      {{P.internPath(Path), std::move(Data)}}})) {
       return std::move(E);
+
+}
   }
 
   return P;
@@ -366,8 +408,10 @@ Expected<Profile> profileFromTrace(const Trace &T) {
 
         // If we've matched the corresponding entry event for this function,
         // then we exit the loop.
-        if (Top.FuncId == E.FuncId)
+        if (Top.FuncId == E.FuncId) {
           break;
+
+}
 
         // FIXME: Consider the intermediate times and the cumulative tree time
         // as well.
@@ -392,8 +436,10 @@ Expected<Profile> profileFromTrace(const Trace &T) {
             TID,
             std::vector<std::pair<Profile::PathID, Profile::Data>>(
                 PathsData.begin(), PathsData.end()),
-        }))
+        })) {
       return std::move(E);
+
+}
   }
 
   return P;

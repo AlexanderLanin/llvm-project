@@ -69,8 +69,10 @@ static constexpr std::pair<StringLiteral, StringLiteral> MtNsHrefsPrefixes[] = {
 static bool xmlStringsEqual(const unsigned char *A, const unsigned char *B) {
   // Handle null pointers.  Comparison of 2 null pointers returns true because
   // this indicates the prefix of a default namespace.
-  if (!A || !B)
+  if (!A || !B) {
     return A == B;
+
+}
   return strcmp(FROM_XML_CHAR(A), FROM_XML_CHAR(B)) == 0;
 }
 
@@ -152,10 +154,14 @@ static const unsigned char *getPrefixForHref(const unsigned char *HRef) {
 // reference to it.
 static Expected<xmlNsPtr> searchOrDefine(const unsigned char *HRef,
                                          xmlNodePtr Node) {
-  if (xmlNsPtr Def = search(HRef, Node))
+  if (xmlNsPtr Def = search(HRef, Node)) {
     return Def;
-  if (xmlNsPtr Def = xmlNewNs(Node, HRef, getPrefixForHref(HRef)))
+
+}
+  if (xmlNsPtr Def = xmlNewNs(Node, HRef, getPrefixForHref(HRef))) {
     return Def;
+
+}
   return make_error<WindowsManifestError>("failed to create new namespace");
 }
 
@@ -167,8 +173,10 @@ static Error copyAttributeNamespace(xmlAttrPtr OriginalAttribute,
 
   Expected<xmlNsPtr> ExplicitOrError =
       searchOrDefine(AdditionalAttribute->ns->href, OriginalNode);
-  if (!ExplicitOrError)
+  if (!ExplicitOrError) {
     return ExplicitOrError.takeError();
+
+}
   OriginalAttribute->ns = std::move(ExplicitOrError.get());
   return Error::success();
 }
@@ -177,8 +185,10 @@ static Error copyAttributeNamespace(xmlAttrPtr OriginalAttribute,
 // given Node.  Returns nullptr if there is no such definition.
 static xmlNsPtr getNamespaceWithPrefix(const unsigned char *Prefix,
                                        xmlNodePtr Node) {
-  if (Node == nullptr)
+  if (Node == nullptr) {
     return nullptr;
+
+}
   for (xmlNsPtr Def = Node->nsDef; Def; Def = Def->next) {
     if (xmlStringsEqual(Def->prefix, Prefix)) {
       return Def;
@@ -191,10 +201,14 @@ static xmlNsPtr getNamespaceWithPrefix(const unsigned char *Prefix,
 // including) the Node and traveling upwards through parent nodes.  Returns
 // nullptr if there are no inheritable default namespaces.
 static xmlNsPtr getClosestDefault(xmlNodePtr Node) {
-  if (xmlNsPtr Ret = getNamespaceWithPrefix(nullptr, Node))
+  if (xmlNsPtr Ret = getNamespaceWithPrefix(nullptr, Node)) {
     return Ret;
-  if (Node->parent == nullptr)
+
+}
+  if (Node->parent == nullptr) {
     return nullptr;
+
+}
   return getClosestDefault(Node->parent);
 }
 
@@ -267,8 +281,10 @@ static Error mergeAttributes(xmlNodePtr OriginalNode,
         xmlNewProp(OriginalNode, Attribute->name, Attribute->children->content);
     Expected<xmlNsPtr> ExplicitOrError =
         searchOrDefine(Attribute->ns->href, OriginalNode);
-    if (!ExplicitOrError)
+    if (!ExplicitOrError) {
       return ExplicitOrError.takeError();
+
+}
     NewProp->ns = std::move(ExplicitOrError.get());
   }
   return Error::success();
@@ -277,12 +293,18 @@ static Error mergeAttributes(xmlNodePtr OriginalNode,
 // Given two nodes, return the one with the higher priority namespace.
 static xmlNodePtr getDominantNode(xmlNodePtr Node1, xmlNodePtr Node2) {
 
-  if (!Node1 || !Node1->ns)
+  if (!Node1 || !Node1->ns) {
     return Node2;
-  if (!Node2 || !Node2->ns)
+
+}
+  if (!Node2 || !Node2->ns) {
     return Node1;
-  if (namespaceOverrides(Node1->ns->href, Node2->ns->href))
+
+}
+  if (namespaceOverrides(Node1->ns->href, Node2->ns->href)) {
     return Node1;
+
+}
   return Node2;
 }
 
@@ -311,11 +333,15 @@ static void explicateNamespace(xmlNsPtr PrefixDef, xmlNodePtr Node) {
   // If a node as its own default namespace definition it clearly cannot have
   // inherited the given default namespace, and neither will any of its
   // children.
-  if (hasDefinedDefaultNamespace(Node))
+  if (hasDefinedDefaultNamespace(Node)) {
     return;
+
+}
   if (Node->ns && xmlStringsEqual(Node->ns->href, PrefixDef->href) &&
-      hasInheritedDefaultNs(Node))
+      hasInheritedDefaultNs(Node)) {
     Node->ns = PrefixDef;
+
+}
   for (xmlAttrPtr Attribute = Node->properties; Attribute;
        Attribute = Attribute->next) {
     if (Attribute->ns &&
@@ -509,10 +535,14 @@ static Error reconcileNamespaces(xmlNodePtr Node) {
 // are of a mergeable type, and choose namespaces according to which have
 // higher priority.
 static Error treeMerge(xmlNodePtr OriginalRoot, xmlNodePtr AdditionalRoot) {
-  if (auto E = mergeAttributes(OriginalRoot, AdditionalRoot))
+  if (auto E = mergeAttributes(OriginalRoot, AdditionalRoot)) {
     return E;
-  if (auto E = mergeNamespaces(OriginalRoot, AdditionalRoot))
+
+}
+  if (auto E = mergeNamespaces(OriginalRoot, AdditionalRoot)) {
     return E;
+
+}
   xmlNodePtr AdditionalFirstChild = AdditionalRoot->children;
   xmlNode StoreNext;
   for (xmlNodePtr Child = AdditionalFirstChild; Child; Child = Child->next) {
@@ -615,26 +645,34 @@ static void checkAndStripPrefixes(xmlNodePtr Node,
 }
 
 WindowsManifestMerger::WindowsManifestMergerImpl::~WindowsManifestMergerImpl() {
-  for (auto &Doc : MergedDocs)
+  for (auto &Doc : MergedDocs) {
     xmlFreeDoc(Doc);
+
+}
 }
 
 Error WindowsManifestMerger::WindowsManifestMergerImpl::merge(
     const MemoryBuffer &Manifest) {
-  if (Merged)
+  if (Merged) {
     return make_error<WindowsManifestError>(
         "merge after getMergedManifest is not supported");
-  if (Manifest.getBufferSize() == 0)
+
+}
+  if (Manifest.getBufferSize() == 0) {
     return make_error<WindowsManifestError>(
         "attempted to merge empty manifest");
+
+}
   xmlSetGenericErrorFunc((void *)this,
                          WindowsManifestMergerImpl::errorCallback);
   xmlDocPtr ManifestXML = xmlReadMemory(
       Manifest.getBufferStart(), Manifest.getBufferSize(), "manifest.xml",
       nullptr, XML_PARSE_NOBLANKS | XML_PARSE_NODICT);
   xmlSetGenericErrorFunc(nullptr, nullptr);
-  if (auto E = getParseError())
+  if (auto E = getParseError()) {
     return E;
+
+}
   xmlNodePtr AdditionalRoot = xmlDocGetRootElement(ManifestXML);
   stripComments(AdditionalRoot);
   setAttributeNamespaces(AdditionalRoot);
@@ -660,8 +698,10 @@ WindowsManifestMerger::WindowsManifestMergerImpl::getMergedManifest() {
   if (!Merged) {
     Merged = true;
 
-    if (!CombinedDoc)
+    if (!CombinedDoc) {
       return nullptr;
+
+}
 
     xmlNodePtr CombinedRoot = xmlDocGetRootElement(CombinedDoc);
     std::vector<xmlNsPtr> RequiredPrefixes;
@@ -723,7 +763,9 @@ void WindowsManifestMerger::WindowsManifestMergerImpl::errorCallback(
 }
 
 Error WindowsManifestMerger::WindowsManifestMergerImpl::getParseError() {
-  if (!ParseErrorOccurred)
+  if (!ParseErrorOccurred) {
     return Error::success();
+
+}
   return make_error<WindowsManifestError>("invalid xml document");
 }

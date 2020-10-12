@@ -39,16 +39,20 @@ llvm::Optional<Token> findQualToken(const VarDecl *Decl, Qualifier Qual,
          "Invalid Qualifier");
 
   SourceLocation BeginLoc = Decl->getQualifierLoc().getBeginLoc();
-  if (BeginLoc.isInvalid())
+  if (BeginLoc.isInvalid()) {
     BeginLoc = Decl->getBeginLoc();
+
+}
   SourceLocation EndLoc = Decl->getLocation();
 
   CharSourceRange FileRange = Lexer::makeFileCharRange(
       CharSourceRange::getCharRange(BeginLoc, EndLoc), *Result.SourceManager,
       Result.Context->getLangOpts());
 
-  if (FileRange.isInvalid())
+  if (FileRange.isInvalid()) {
     return llvm::None;
+
+}
 
   tok::TokenKind Tok =
       Qual == Qualifier::Const
@@ -69,8 +73,10 @@ getTypeSpecifierLocation(const VarDecl *Var,
           Result.Context->getLangOpts())));
 
   if (TypeSpecifier.getBegin().isMacroID() ||
-      TypeSpecifier.getEnd().isMacroID())
+      TypeSpecifier.getEnd().isMacroID()) {
     return llvm::None;
+
+}
   return TypeSpecifier;
 }
 
@@ -143,8 +149,10 @@ void QualifiedAutoCheck::registerMatchers(MatchFinder *Finder) {
                           hasAnyTemplateArgument(IsBoundToType))))),
           "auto"),
       this);
-  if (!AddConstToQualified)
+  if (!AddConstToQualified) {
     return;
+
+}
   Finder->addMatcher(ExplicitSingleVarDecl(
                          hasType(pointerType(pointee(autoType()))), "auto_ptr"),
                      this);
@@ -160,18 +168,24 @@ void QualifiedAutoCheck::check(const MatchFinder::MatchResult &Result) {
     if (llvm::Optional<SourceRange> TypeSpec =
             getTypeSpecifierLocation(Var, Result)) {
       TypeSpecifier = *TypeSpec;
-    } else
+    } else {
       return;
+
+}
 
     llvm::SmallVector<SourceRange, 4> RemoveQualifiersRange;
     auto CheckQualifier = [&](bool IsPresent, Qualifier Qual) {
       if (IsPresent) {
         llvm::Optional<Token> Token = findQualToken(Var, Qual, Result);
-        if (!Token || Token->getLocation().isMacroID())
+        if (!Token || Token->getLocation().isMacroID()) {
           return true; // Disregard this VarDecl.
+
+}
         if (llvm::Optional<SourceRange> Result =
-                mergeReplacementRange(TypeSpecifier, *Token))
+                mergeReplacementRange(TypeSpecifier, *Token)) {
           RemoveQualifiersRange.push_back(*Result);
+
+}
       }
       return false;
     };
@@ -182,21 +196,29 @@ void QualifiedAutoCheck::check(const MatchFinder::MatchResult &Result) {
 
     if (CheckQualifier(IsLocalConst, Qualifier::Const) ||
         CheckQualifier(IsLocalVolatile, Qualifier::Volatile) ||
-        CheckQualifier(IsLocalRestrict, Qualifier::Restrict))
+        CheckQualifier(IsLocalRestrict, Qualifier::Restrict)) {
       return;
+
+}
 
     // Check for bridging the gap between the asterisk and name.
-    if (Var->getLocation() == TypeSpecifier.getEnd().getLocWithOffset(1))
+    if (Var->getLocation() == TypeSpecifier.getEnd().getLocWithOffset(1)) {
       TypeSpecifier.setEnd(TypeSpecifier.getEnd().getLocWithOffset(1));
 
+}
+
     CharSourceRange FixItRange = CharSourceRange::getCharRange(TypeSpecifier);
-    if (FixItRange.isInvalid())
+    if (FixItRange.isInvalid()) {
       return;
+
+}
 
     SourceLocation FixitLoc = FixItRange.getBegin();
     for (SourceRange &Range : RemoveQualifiersRange) {
-      if (Range.getBegin() < FixitLoc)
+      if (Range.getBegin() < FixitLoc) {
         FixitLoc = Range.getBegin();
+
+}
     }
 
     std::string ReplStr = [&] {
@@ -222,36 +244,48 @@ void QualifiedAutoCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
   if (const auto *Var = Result.Nodes.getNodeAs<VarDecl>("auto_ptr")) {
-    if (!isPointerConst(Var->getType()))
+    if (!isPointerConst(Var->getType())) {
       return; // Pointer isn't const, no need to add const qualifier.
-    if (!isAutoPointerConst(Var->getType()))
+
+}
+    if (!isAutoPointerConst(Var->getType())) {
       return; // Const isnt wrapped in the auto type, so must be declared
+
+}
               // explicitly.
 
     if (Var->getType().isLocalConstQualified()) {
       llvm::Optional<Token> Token =
           findQualToken(Var, Qualifier::Const, Result);
-      if (!Token || Token->getLocation().isMacroID())
+      if (!Token || Token->getLocation().isMacroID()) {
         return;
+
+}
     }
     if (Var->getType().isLocalVolatileQualified()) {
       llvm::Optional<Token> Token =
           findQualToken(Var, Qualifier::Volatile, Result);
-      if (!Token || Token->getLocation().isMacroID())
+      if (!Token || Token->getLocation().isMacroID()) {
         return;
+
+}
     }
     if (Var->getType().isLocalRestrictQualified()) {
       llvm::Optional<Token> Token =
           findQualToken(Var, Qualifier::Restrict, Result);
-      if (!Token || Token->getLocation().isMacroID())
+      if (!Token || Token->getLocation().isMacroID()) {
         return;
+
+}
     }
 
     if (llvm::Optional<SourceRange> TypeSpec =
             getTypeSpecifierLocation(Var, Result)) {
       if (TypeSpec->isInvalid() || TypeSpec->getBegin().isMacroID() ||
-          TypeSpec->getEnd().isMacroID())
+          TypeSpec->getEnd().isMacroID()) {
         return;
+
+}
       SourceLocation InsertPos = TypeSpec->getBegin();
       diag(InsertPos, "'auto *%0%1%2' can be declared as 'const auto *%0%1%2'")
           << (Var->getType().isLocalConstQualified() ? "const " : "")
@@ -261,17 +295,23 @@ void QualifiedAutoCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
   if (const auto *Var = Result.Nodes.getNodeAs<VarDecl>("auto_ref")) {
-    if (!isPointerConst(Var->getType()))
+    if (!isPointerConst(Var->getType())) {
       return; // Pointer isn't const, no need to add const qualifier.
-    if (!isAutoPointerConst(Var->getType()))
+
+}
+    if (!isAutoPointerConst(Var->getType())) {
       // Const isnt wrapped in the auto type, so must be declared explicitly.
       return;
+
+}
 
     if (llvm::Optional<SourceRange> TypeSpec =
             getTypeSpecifierLocation(Var, Result)) {
       if (TypeSpec->isInvalid() || TypeSpec->getBegin().isMacroID() ||
-          TypeSpec->getEnd().isMacroID())
+          TypeSpec->getEnd().isMacroID()) {
         return;
+
+}
       SourceLocation InsertPos = TypeSpec->getBegin();
       diag(InsertPos, "'auto &%0' can be declared as 'const auto &%0'")
           << Var->getName() << FixItHint::CreateInsertion(InsertPos, "const ");

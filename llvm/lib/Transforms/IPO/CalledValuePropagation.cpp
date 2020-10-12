@@ -127,8 +127,10 @@ public:
       if (isa<Instruction>(Key.getPointer())) {
         return getUndefVal();
       } else if (auto *A = dyn_cast<Argument>(Key.getPointer())) {
-        if (canTrackArgumentsInterprocedurally(A->getParent()))
+        if (canTrackArgumentsInterprocedurally(A->getParent())) {
           return getUndefVal();
+
+}
       } else if (auto *C = dyn_cast<Constant>(Key.getPointer())) {
         return computeConstant(C);
       }
@@ -136,11 +138,17 @@ public:
     case IPOGrouping::Memory:
     case IPOGrouping::Return:
       if (auto *GV = dyn_cast<GlobalVariable>(Key.getPointer())) {
-        if (canTrackGlobalVariableInterprocedurally(GV))
+        if (canTrackGlobalVariableInterprocedurally(GV)) {
           return computeConstant(GV->getInitializer());
-      } else if (auto *F = cast<Function>(Key.getPointer()))
-        if (canTrackReturnsInterprocedurally(F))
+
+}
+      } else if (auto *F = cast<Function>(Key.getPointer())) {
+        if (canTrackReturnsInterprocedurally(F)) {
           return getUndefVal();
+
+}
+
+}
     }
     return getOverdefinedVal();
   }
@@ -151,16 +159,22 @@ public:
   /// is greater than the maximum functions we track, the merged value is
   /// overdefined.
   CVPLatticeVal MergeValues(CVPLatticeVal X, CVPLatticeVal Y) override {
-    if (X == getOverdefinedVal() || Y == getOverdefinedVal())
+    if (X == getOverdefinedVal() || Y == getOverdefinedVal()) {
       return getOverdefinedVal();
-    if (X == getUndefVal() && Y == getUndefVal())
+
+}
+    if (X == getUndefVal() && Y == getUndefVal()) {
       return getUndefVal();
+
+}
     std::vector<Function *> Union;
     std::set_union(X.getFunctions().begin(), X.getFunctions().end(),
                    Y.getFunctions().begin(), Y.getFunctions().end(),
                    std::back_inserter(Union), CVPLatticeVal::Compare{});
-    if (Union.size() > MaxFunctionsPerValue)
+    if (Union.size() > MaxFunctionsPerValue) {
       return getOverdefinedVal();
+
+}
     return CVPLatticeVal(std::move(Union));
   }
 
@@ -191,28 +205,34 @@ public:
 
   /// Print the given CVPLatticeVal to the specified stream.
   void PrintLatticeVal(CVPLatticeVal LV, raw_ostream &OS) override {
-    if (LV == getUndefVal())
+    if (LV == getUndefVal()) {
       OS << "Undefined  ";
-    else if (LV == getOverdefinedVal())
+    } else if (LV == getOverdefinedVal()) {
       OS << "Overdefined";
-    else if (LV == getUntrackedVal())
+    } else if (LV == getUntrackedVal()) {
       OS << "Untracked  ";
-    else
+    } else {
       OS << "FunctionSet";
+
+}
   }
 
   /// Print the given CVPLatticeKey to the specified stream.
   void PrintLatticeKey(CVPLatticeKey Key, raw_ostream &OS) override {
-    if (Key.getInt() == IPOGrouping::Register)
+    if (Key.getInt() == IPOGrouping::Register) {
       OS << "<reg> ";
-    else if (Key.getInt() == IPOGrouping::Memory)
+    } else if (Key.getInt() == IPOGrouping::Memory) {
       OS << "<mem> ";
-    else if (Key.getInt() == IPOGrouping::Return)
+    } else if (Key.getInt() == IPOGrouping::Return) {
       OS << "<ret> ";
-    if (isa<Function>(Key.getPointer()))
+
+}
+    if (isa<Function>(Key.getPointer())) {
       OS << Key.getPointer()->getName();
-    else
+    } else {
       OS << *Key.getPointer();
+
+}
   }
 
   /// We collect a set of indirect calls when visiting call sites. This method
@@ -230,10 +250,14 @@ private:
   /// pointers as an optimization, since calling these values is undefined
   /// behavior.
   CVPLatticeVal computeConstant(Constant *C) {
-    if (isa<ConstantPointerNull>(C))
+    if (isa<ConstantPointerNull>(C)) {
       return CVPLatticeVal(CVPLatticeVal::FunctionSet);
-    if (auto *F = dyn_cast<Function>(C->stripPointerCasts()))
+
+}
+    if (auto *F = dyn_cast<Function>(C->stripPointerCasts())) {
       return CVPLatticeVal({F});
+
+}
     return getOverdefinedVal();
   }
 
@@ -243,8 +267,10 @@ private:
                    DenseMap<CVPLatticeKey, CVPLatticeVal> &ChangedValues,
                    SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     Function *F = I.getParent()->getParent();
-    if (F->getReturnType()->isVoidTy())
+    if (F->getReturnType()->isVoidTy()) {
       return;
+
+}
     auto RegI = CVPLatticeKey(I.getReturnValue(), IPOGrouping::Register);
     auto RetF = CVPLatticeKey(F, IPOGrouping::Return);
     ChangedValues[RetF] =
@@ -264,15 +290,19 @@ private:
 
     // If this is an indirect call, save it so we can quickly revisit it when
     // attaching metadata.
-    if (!F)
+    if (!F) {
       IndirectCalls.insert(I);
+
+}
 
     // If we can't track the function's return values, there's nothing to do.
     if (!F || !canTrackReturnsInterprocedurally(F)) {
       // Void return, No need to create and update CVPLattice state as no one
       // can use it.
-      if (I->getType()->isVoidTy())
+      if (I->getType()->isVoidTy()) {
         return;
+
+}
       ChangedValues[RegI] = getOverdefinedVal();
       return;
     }
@@ -291,8 +321,10 @@ private:
 
     // Void return, No need to create and update CVPLattice state as no one can
     // use it.
-    if (I->getType()->isVoidTy())
+    if (I->getType()->isVoidTy()) {
       return;
+
+}
 
     ChangedValues[RegI] =
         MergeValues(SS.getValueState(RegI), SS.getValueState(RetF));
@@ -333,8 +365,10 @@ private:
                   DenseMap<CVPLatticeKey, CVPLatticeVal> &ChangedValues,
                   SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     auto *GV = dyn_cast<GlobalVariable>(I.getPointerOperand());
-    if (!GV)
+    if (!GV) {
       return;
+
+}
     auto RegI = CVPLatticeKey(I.getValueOperand(), IPOGrouping::Register);
     auto MemGV = CVPLatticeKey(GV, IPOGrouping::Memory);
     ChangedValues[MemGV] =
@@ -347,8 +381,10 @@ private:
                  DenseMap<CVPLatticeKey, CVPLatticeVal> &ChangedValues,
                  SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     // Simply bail if this instruction has no user.
-    if (I.use_empty())
+    if (I.use_empty()) {
       return;
+
+}
     auto RegI = CVPLatticeKey(&I, IPOGrouping::Register);
     ChangedValues[RegI] = getOverdefinedVal();
   }
@@ -376,9 +412,13 @@ static bool runCVP(Module &M) {
 
   // For each function in the module, if we can't track its arguments, let the
   // generic solver assume it is executable.
-  for (Function &F : M)
-    if (!F.isDeclaration() && !canTrackArgumentsInterprocedurally(&F))
+  for (Function &F : M) {
+    if (!F.isDeclaration() && !canTrackArgumentsInterprocedurally(&F)) {
       Solver.MarkBlockExecutable(&F.front());
+
+}
+
+}
 
   // Solver our custom lattice. In doing so, we will also build a set of
   // indirect call sites.
@@ -392,8 +432,10 @@ static bool runCVP(Module &M) {
     CallSite CS(C);
     auto RegI = CVPLatticeKey(CS.getCalledValue(), IPOGrouping::Register);
     CVPLatticeVal LV = Solver.getExistingValueState(RegI);
-    if (!LV.isFunctionSet() || LV.getFunctions().empty())
+    if (!LV.isFunctionSet() || LV.getFunctions().empty()) {
       continue;
+
+}
     MDNode *Callees = MDB.createCallees(LV.getFunctions());
     C->setMetadata(LLVMContext::MD_callees, Callees);
     Changed = true;
@@ -423,8 +465,10 @@ public:
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
     return runCVP(M);
   }
 };

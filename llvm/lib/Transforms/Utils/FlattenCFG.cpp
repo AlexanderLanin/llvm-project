@@ -135,8 +135,10 @@ public:
 ///  as its predecessors.
 bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
   PHINode *PHI = dyn_cast<PHINode>(BB->begin());
-  if (PHI)
+  if (PHI) {
     return false; // For simplicity, avoid cases containing PHI nodes.
+
+}
 
   BasicBlock *LastCondBlock = nullptr;
   BasicBlock *FirstCondBlock = nullptr;
@@ -151,8 +153,10 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
     BranchInst *PBI = dyn_cast<BranchInst>(Pred->getTerminator());
 
     // All predecessors should terminate with a branch.
-    if (!PBI)
+    if (!PBI) {
       return false;
+
+}
 
     BasicBlock *PP = Pred->getSinglePredecessor();
 
@@ -163,8 +167,10 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
       // There should exist only one such unconditional
       // branch among the predecessors.
       if (UnCondBlock || !PP || (Preds.count(PP) == 0) ||
-          Pred->hasAddressTaken())
+          Pred->hasAddressTaken()) {
         return false;
+
+}
 
       UnCondBlock = Pred;
       continue;
@@ -175,29 +181,37 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
 
     // Condition's unique use should be the branch instruction.
     Value *PC = PBI->getCondition();
-    if (!PC || !PC->hasOneUse())
+    if (!PC || !PC->hasOneUse()) {
       return false;
+
+}
 
     if (PP && Preds.count(PP)) {
       // These are internal condition blocks to be merged from, e.g.,
       // BB2 in both cases.
       // Should not be address-taken.
-      if (Pred->hasAddressTaken())
+      if (Pred->hasAddressTaken()) {
         return false;
+
+}
 
       // Instructions in the internal condition blocks should be safe
       // to hoist up.
       for (BasicBlock::iterator BI = Pred->begin(), BE = PBI->getIterator();
            BI != BE;) {
         Instruction *CI = &*BI++;
-        if (isa<PHINode>(CI) || !isSafeToSpeculativelyExecute(CI))
+        if (isa<PHINode>(CI) || !isSafeToSpeculativelyExecute(CI)) {
           return false;
+
+}
       }
     } else {
       // This is the condition block to be merged into, e.g. BB1 in
       // both cases.
-      if (FirstCondBlock)
+      if (FirstCondBlock) {
         return false;
+
+}
       FirstCondBlock = Pred;
     }
 
@@ -208,10 +222,12 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
     BasicBlock *PS = (PS1 == BB) ? PS2 : PS1;
     int CIdx = (PS1 == BB) ? 0 : 1;
 
-    if (Idx == -1)
+    if (Idx == -1) {
       Idx = CIdx;
-    else if (CIdx != Idx)
+    } else if (CIdx != Idx) {
       return false;
+
+}
 
     // PS is the successor which is not BB. Check successors to identify
     // the last conditional branch.
@@ -228,8 +244,10 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
     }
   }
 
-  if (!FirstCondBlock || !LastCondBlock || (FirstCondBlock == LastCondBlock))
+  if (!FirstCondBlock || !LastCondBlock || (FirstCondBlock == LastCondBlock)) {
     return false;
+
+}
 
   Instruction *TBB = LastCondBlock->getTerminator();
   BasicBlock *PS1 = TBB->getSuccessor(0);
@@ -243,8 +261,10 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
       (PS1->getTerminator()->getSuccessor(0) != PS2)) {
     // Check whether PS2 jumps into PS1.
     if (!PBI2 || !PBI2->isUnconditional() ||
-        (PS2->getTerminator()->getSuccessor(0) != PS1))
+        (PS2->getTerminator()->getSuccessor(0) != PS1)) {
       return false;
+
+}
 
     // Do branch inversion.
     BasicBlock *CurrBlock = LastCondBlock;
@@ -253,8 +273,10 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
          CurrBlock = CurrBlock->getSinglePredecessor()) {
       auto *BI = cast<BranchInst>(CurrBlock->getTerminator());
       auto *CI = dyn_cast<CmpInst>(BI->getCondition());
-      if (!CI)
+      if (!CI) {
         continue;
+
+}
 
       CmpInst::Predicate Predicate = CI->getPredicate();
       // Canonicalize icmp_ne -> icmp_eq, fcmp_one -> fcmp_oeq
@@ -268,13 +290,17 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
   }
 
   // PS1 must have a conditional branch.
-  if (!PBI1 || !PBI1->isUnconditional())
+  if (!PBI1 || !PBI1->isUnconditional()) {
     return false;
+
+}
 
   // PS2 should not contain PHI node.
   PHI = dyn_cast<PHINode>(PS2->begin());
-  if (PHI)
+  if (PHI) {
     return false;
+
+}
 
   // Do the transformation.
   BasicBlock *CB;
@@ -294,17 +320,21 @@ bool FlattenCFGOpt::FlattenParallelAndOr(BasicBlock *BB, IRBuilder<> &Builder) {
     // Merge conditions.
     Builder.SetInsertPoint(PBI);
     Value *NC;
-    if (Idx == 0)
+    if (Idx == 0) {
       // Case 2, use parallel or.
       NC = Builder.CreateOr(PC, CC);
-    else
+    } else {
       // Case 1, use parallel and.
       NC = Builder.CreateAnd(PC, CC);
 
+}
+
     PBI->replaceUsesOfWith(CC, NC);
     PC = NC;
-    if (CB == LastCondBlock)
+    if (CB == LastCondBlock) {
       Iteration = false;
+
+}
     // Remove internal conditional branches.
     CB->dropAllReferences();
     // make CB unreachable and let downstream to delete the block.
@@ -343,34 +373,44 @@ bool FlattenCFGOpt::CompareIfRegionBlock(BasicBlock *Head1, BasicBlock *Head2,
 
   while (true) {
     if (iter1 == end1) {
-      if (iter2 != end2)
+      if (iter2 != end2) {
         return false;
+
+}
       break;
     }
 
-    if (!iter1->isIdenticalTo(&*iter2))
+    if (!iter1->isIdenticalTo(&*iter2)) {
       return false;
+
+}
 
     // Illegal to remove instructions with side effects except
     // non-volatile stores.
     if (iter1->mayHaveSideEffects()) {
       Instruction *CurI = &*iter1;
       StoreInst *SI = dyn_cast<StoreInst>(CurI);
-      if (!SI || SI->isVolatile())
+      if (!SI || SI->isVolatile()) {
         return false;
+
+}
     }
 
     // For simplicity and speed, data dependency check can be
     // avoided if read from memory doesn't exist.
-    if (iter1->mayReadFromMemory())
+    if (iter1->mayReadFromMemory()) {
       return false;
+
+}
 
     if (iter1->mayWriteToMemory()) {
       for (BasicBlock::iterator BI(PBI2), BE(PTI2); BI != BE; ++BI) {
         if (BI->mayReadFromMemory() || BI->mayWriteToMemory()) {
           // Check alias with Head2.
-          if (!AA || AA->alias(&*iter1, &*BI))
+          if (!AA || AA->alias(&*iter1, &*BI)) {
             return false;
+
+}
         }
       }
     }
@@ -399,45 +439,61 @@ bool FlattenCFGOpt::MergeIfRegion(BasicBlock *BB, IRBuilder<> &Builder) {
   BasicBlock *IfTrue2, *IfFalse2;
   Value *IfCond2 = GetIfCondition(BB, IfTrue2, IfFalse2);
   Instruction *CInst2 = dyn_cast_or_null<Instruction>(IfCond2);
-  if (!CInst2)
+  if (!CInst2) {
     return false;
 
+}
+
   BasicBlock *SecondEntryBlock = CInst2->getParent();
-  if (SecondEntryBlock->hasAddressTaken())
+  if (SecondEntryBlock->hasAddressTaken()) {
     return false;
+
+}
 
   BasicBlock *IfTrue1, *IfFalse1;
   Value *IfCond1 = GetIfCondition(SecondEntryBlock, IfTrue1, IfFalse1);
   Instruction *CInst1 = dyn_cast_or_null<Instruction>(IfCond1);
-  if (!CInst1)
+  if (!CInst1) {
     return false;
+
+}
 
   BasicBlock *FirstEntryBlock = CInst1->getParent();
 
   // Either then-path or else-path should be empty.
-  if ((IfTrue1 != FirstEntryBlock) && (IfFalse1 != FirstEntryBlock))
+  if ((IfTrue1 != FirstEntryBlock) && (IfFalse1 != FirstEntryBlock)) {
     return false;
-  if ((IfTrue2 != SecondEntryBlock) && (IfFalse2 != SecondEntryBlock))
+
+}
+  if ((IfTrue2 != SecondEntryBlock) && (IfFalse2 != SecondEntryBlock)) {
     return false;
+
+}
 
   Instruction *PTI2 = SecondEntryBlock->getTerminator();
   Instruction *PBI2 = &SecondEntryBlock->front();
 
   if (!CompareIfRegionBlock(FirstEntryBlock, SecondEntryBlock, IfTrue1,
-                            IfTrue2))
+                            IfTrue2)) {
     return false;
 
+}
+
   if (!CompareIfRegionBlock(FirstEntryBlock, SecondEntryBlock, IfFalse1,
-                            IfFalse2))
+                            IfFalse2)) {
     return false;
+
+}
 
   // Check whether \param SecondEntryBlock has side-effect and is safe to
   // speculate.
   for (BasicBlock::iterator BI(PBI2), BE(PTI2); BI != BE; ++BI) {
     Instruction *CI = &*BI;
     if (isa<PHINode>(CI) || CI->mayHaveSideEffects() ||
-        !isSafeToSpeculativelyExecute(CI))
+        !isSafeToSpeculativelyExecute(CI)) {
       return false;
+
+}
   }
 
   // Merge \param SecondEntryBlock into \param FirstEntryBlock.
@@ -457,8 +513,10 @@ bool FlattenCFGOpt::MergeIfRegion(BasicBlock *BB, IRBuilder<> &Builder) {
   for (BasicBlock *Succ : successors(PBI)) {
     for (PHINode &Phi : Succ->phis()) {
       for (unsigned i = 0, e = Phi.getNumIncomingValues(); i != e; ++i) {
-        if (Phi.getIncomingBlock(i) == SecondEntryBlock)
+        if (Phi.getIncomingBlock(i) == SecondEntryBlock) {
           Phi.setIncomingBlock(i, FirstEntryBlock);
+
+}
       }
     }
   }
@@ -488,8 +546,10 @@ bool FlattenCFGOpt::run(BasicBlock *BB) {
 
   IRBuilder<> Builder(BB);
 
-  if (FlattenParallelAndOr(BB, Builder) || MergeIfRegion(BB, Builder))
+  if (FlattenParallelAndOr(BB, Builder) || MergeIfRegion(BB, Builder)) {
     return true;
+
+}
   return false;
 }
 

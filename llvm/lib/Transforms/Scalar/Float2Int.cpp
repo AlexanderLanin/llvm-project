@@ -59,8 +59,10 @@ namespace {
     }
 
     bool runOnFunction(Function &F) override {
-      if (skipFunction(F))
+      if (skipFunction(F)) {
         return false;
+
+}
 
       const DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
       return Impl.runImpl(F, DT);
@@ -125,12 +127,16 @@ void Float2IntPass::findRoots(Function &F, const DominatorTree &DT,
   for (BasicBlock &BB : F) {
     // Unreachable code can take on strange forms that we are not prepared to
     // handle. For example, an instruction may have itself as an operand.
-    if (!DT.isReachableFromEntry(&BB))
+    if (!DT.isReachableFromEntry(&BB)) {
       continue;
 
+}
+
     for (Instruction &I : BB) {
-      if (isa<VectorType>(I.getType()))
+      if (isa<VectorType>(I.getType())) {
         continue;
+
+}
       switch (I.getOpcode()) {
       default: break;
       case Instruction::FPToUI:
@@ -139,8 +145,10 @@ void Float2IntPass::findRoots(Function &F, const DominatorTree &DT,
         break;
       case Instruction::FCmp:
         if (mapFCmpPred(cast<CmpInst>(&I)->getPredicate()) !=
-            CmpInst::BAD_ICMP_PREDICATE)
+            CmpInst::BAD_ICMP_PREDICATE) {
           Roots.insert(&I);
+
+}
         break;
       }
     }
@@ -151,10 +159,12 @@ void Float2IntPass::findRoots(Function &F, const DominatorTree &DT,
 void Float2IntPass::seen(Instruction *I, ConstantRange R) {
   LLVM_DEBUG(dbgs() << "F2I: " << *I << ":" << R << "\n");
   auto IT = SeenInsts.find(I);
-  if (IT != SeenInsts.end())
+  if (IT != SeenInsts.end()) {
     IT->second = std::move(R);
-  else
+  } else {
     SeenInsts.insert(std::make_pair(I, std::move(R)));
+
+}
 }
 
 // Helper - get a range representing a poison value.
@@ -165,8 +175,10 @@ ConstantRange Float2IntPass::unknownRange() {
   return ConstantRange::getEmpty(MaxIntegerBW + 1);
 }
 ConstantRange Float2IntPass::validateRange(ConstantRange R) {
-  if (R.getBitWidth() > MaxIntegerBW + 1)
+  if (R.getBitWidth() > MaxIntegerBW + 1) {
     return badRange();
+
+}
   return R;
 }
 
@@ -190,9 +202,11 @@ void Float2IntPass::walkBackwards(const SmallPtrSetImpl<Instruction*> &Roots) {
     Instruction *I = Worklist.back();
     Worklist.pop_back();
 
-    if (SeenInsts.find(I) != SeenInsts.end())
+    if (SeenInsts.find(I) != SeenInsts.end()) {
       // Seen already.
       continue;
+
+}
 
     switch (I->getOpcode()) {
       // FIXME: Handle select and phi nodes.
@@ -227,8 +241,10 @@ void Float2IntPass::walkBackwards(const SmallPtrSetImpl<Instruction*> &Roots) {
       if (Instruction *OI = dyn_cast<Instruction>(O)) {
         // Unify def-use chains if they interfere.
         ECs.unionSets(I, OI);
-        if (SeenInsts.find(I)->second != badRange())
+        if (SeenInsts.find(I)->second != badRange()) {
           Worklist.push_back(OI);
+
+}
       } else if (!isa<ConstantFP>(O)) {
         // Not an instruction or ConstantFP? we can't do anything.
         seen(I, badRange());
@@ -241,8 +257,10 @@ void Float2IntPass::walkBackwards(const SmallPtrSetImpl<Instruction*> &Roots) {
 // uses.
 void Float2IntPass::walkForwards() {
   for (auto &It : reverse(SeenInsts)) {
-    if (It.second != unknownRange())
+    if (It.second != unknownRange()) {
       continue;
+
+}
 
     Instruction *I = It.first;
     std::function<ConstantRange(ArrayRef<ConstantRange>)> Op;
@@ -345,8 +363,10 @@ void Float2IntPass::walkForwards() {
     }
 
     // Reduce the operands' ranges to a single range and return.
-    if (!Abort)
+    if (!Abort) {
       seen(I, Op(OpRanges));
+
+}
   }
 }
 
@@ -365,8 +385,10 @@ bool Float2IntPass::validateAndTransform() {
          MI != ME; ++MI) {
       Instruction *I = *MI;
       auto SeenI = SeenInsts.find(I);
-      if (SeenI == SeenInsts.end())
+      if (SeenI == SeenInsts.end()) {
         continue;
+
+}
 
       R = R.unionWith(SeenI->second);
       // We need to ensure I has no users that have not been seen.
@@ -375,8 +397,10 @@ bool Float2IntPass::validateAndTransform() {
       // Don't count the roots, as they terminate the graphs.
       if (Roots.count(I) == 0) {
         // Set the type of the conversion while we're here.
-        if (!ConvertedToTy)
+        if (!ConvertedToTy) {
           ConvertedToTy = I->getType();
+
+}
         for (User *U : I->users()) {
           Instruction *UI = dyn_cast<Instruction>(U);
           if (!UI || SeenInsts.find(UI) == SeenInsts.end()) {
@@ -386,15 +410,19 @@ bool Float2IntPass::validateAndTransform() {
           }
         }
       }
-      if (Fail)
+      if (Fail) {
         break;
+
+}
     }
 
     // If the set was empty, or we failed, or the range is poisonous,
     // bail out.
     if (ECs.member_begin(It) == ECs.member_end() || Fail ||
-        R.isFullSet() || R.isSignWrappedSet())
+        R.isFullSet() || R.isSignWrappedSet()) {
       continue;
+
+}
     assert(ConvertedToTy && "Must have set the convertedtoty by this point!");
 
     // The number of bits required is the maximum of the upper and
@@ -426,8 +454,10 @@ bool Float2IntPass::validateAndTransform() {
     Type *Ty = (MinBW > 32) ? Type::getInt64Ty(*Ctx) : Type::getInt32Ty(*Ctx);
 
     for (auto MI = ECs.member_begin(It), ME = ECs.member_end();
-         MI != ME; ++MI)
+         MI != ME; ++MI) {
       convert(*MI, Ty);
+
+}
     MadeChange = true;
   }
 
@@ -435,9 +465,11 @@ bool Float2IntPass::validateAndTransform() {
 }
 
 Value *Float2IntPass::convert(Instruction *I, Type *ToTy) {
-  if (ConvertedInsts.find(I) != ConvertedInsts.end())
+  if (ConvertedInsts.find(I) != ConvertedInsts.end()) {
     // Already converted this instruction.
     return ConvertedInsts[I];
+
+}
 
   SmallVector<Value*,4> NewOperands;
   for (Value *V : I->operands()) {
@@ -502,8 +534,10 @@ Value *Float2IntPass::convert(Instruction *I, Type *ToTy) {
   }
 
   // If we're a root instruction, RAUW.
-  if (Roots.count(I))
+  if (Roots.count(I)) {
     I->replaceAllUsesWith(NewV);
+
+}
 
   ConvertedInsts[I] = NewV;
   return NewV;
@@ -511,8 +545,10 @@ Value *Float2IntPass::convert(Instruction *I, Type *ToTy) {
 
 // Perform dead code elimination on the instructions we just modified.
 void Float2IntPass::cleanup() {
-  for (auto &I : reverse(ConvertedInsts))
+  for (auto &I : reverse(ConvertedInsts)) {
     I.first->eraseFromParent();
+
+}
 }
 
 bool Float2IntPass::runImpl(Function &F, const DominatorTree &DT) {
@@ -531,8 +567,10 @@ bool Float2IntPass::runImpl(Function &F, const DominatorTree &DT) {
   walkForwards();
 
   bool Modified = validateAndTransform();
-  if (Modified)
+  if (Modified) {
     cleanup();
+
+}
   return Modified;
 }
 
@@ -541,8 +579,10 @@ FunctionPass *createFloat2IntPass() { return new Float2IntLegacyPass(); }
 
 PreservedAnalyses Float2IntPass::run(Function &F, FunctionAnalysisManager &AM) {
   const DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
-  if (!runImpl(F, DT))
+  if (!runImpl(F, DT)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();

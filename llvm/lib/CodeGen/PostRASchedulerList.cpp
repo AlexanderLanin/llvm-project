@@ -272,16 +272,20 @@ bool PostRAScheduler::enablePostRAScheduler(
   ST.getCriticalPathRCs(CriticalPathRCs);
 
   // Check for explicit enable/disable of post-ra scheduling.
-  if (EnablePostRAScheduler.getPosition() > 0)
+  if (EnablePostRAScheduler.getPosition() > 0) {
     return EnablePostRAScheduler;
+
+}
 
   return ST.enablePostRAScheduler() &&
          OptLevel >= ST.getOptLevelToEnablePostRAScheduler();
 }
 
 bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
-  if (skipFunction(Fn.getFunction()))
+  if (skipFunction(Fn.getFunction())) {
     return false;
+
+}
 
   TII = Fn.getSubtarget().getInstrInfo();
   MachineLoopInfo &MLI = getAnalysis<MachineLoopInfo>();
@@ -297,8 +301,10 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
   // Check that post-RA scheduling is enabled for this target.
   // This may upgrade the AntiDepMode.
   if (!enablePostRAScheduler(Fn.getSubtarget(), PassConfig->getOptLevel(),
-                             AntiDepMode, CriticalPathRCs))
+                             AntiDepMode, CriticalPathRCs)) {
     return false;
+
+}
 
   // Check for antidep breaking override...
   if (EnableAntiDepBreaking.getPosition() > 0) {
@@ -351,8 +357,10 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
         Scheduler.Observe(MI, CurrentCount);
       }
       I = MI;
-      if (MI.isBundle())
+      if (MI.isBundle()) {
         Count -= MI.getBundleSize();
+
+}
     }
     assert(Count == 0 && "Instruction count mismatch!");
     assert((MBB.begin() == Current || CurrentCount != 0) &&
@@ -382,8 +390,10 @@ void SchedulePostRATDList::startBlock(MachineBasicBlock *BB) {
 
   // Reset the hazard recognizer and anti-dep breaker.
   HazardRec->Reset();
-  if (AntiDepBreak)
+  if (AntiDepBreak) {
     AntiDepBreak->StartBlock(BB);
+
+}
 }
 
 /// Schedule - Schedule the instruction range using list scheduling.
@@ -425,15 +435,19 @@ void SchedulePostRATDList::schedule() {
 /// instruction, which will not be scheduled.
 ///
 void SchedulePostRATDList::Observe(MachineInstr &MI, unsigned Count) {
-  if (AntiDepBreak)
+  if (AntiDepBreak) {
     AntiDepBreak->Observe(MI, Count, EndIndex);
+
+}
 }
 
 /// FinishBlock - Clean up register live-range state.
 ///
 void SchedulePostRATDList::finishBlock() {
-  if (AntiDepBreak)
+  if (AntiDepBreak) {
     AntiDepBreak->FinishBlock();
+
+}
 
   // Call the superclass.
   ScheduleDAGInstrs::finishBlock();
@@ -441,8 +455,10 @@ void SchedulePostRATDList::finishBlock() {
 
 /// Apply each ScheduleDAGMutation step in order.
 void SchedulePostRATDList::postprocessDAG() {
-  for (auto &M : Mutations)
+  for (auto &M : Mutations) {
     M->apply(this);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -481,8 +497,10 @@ void SchedulePostRATDList::ReleaseSucc(SUnit *SU, SDep *SuccEdge) {
 
   // If all the node's predecessors are scheduled, this node is ready
   // to be scheduled. Ignore the special ExitSU node.
-  if (SuccSU->NumPredsLeft == 0 && SuccSU != &ExitSU)
+  if (SuccSU->NumPredsLeft == 0 && SuccSU != &ExitSU) {
     PendingQueue.push_back(SuccSU);
+
+}
 }
 
 /// ReleaseSuccessors - Call ReleaseSucc on each of SU's successors.
@@ -560,8 +578,10 @@ void SchedulePostRATDList::ListScheduleTopDown() {
         PendingQueue[i] = PendingQueue.back();
         PendingQueue.pop_back();
         --i; --e;
-      } else if (PendingQueue[i]->getDepth() < MinDepth)
+      } else if (PendingQueue[i]->getDepth() < MinDepth) {
         MinDepth = PendingQueue[i]->getDepth();
+
+}
     }
 
     LLVM_DEBUG(dbgs() << "\n*** Examining Available\n";
@@ -621,8 +641,10 @@ void SchedulePostRATDList::ListScheduleTopDown() {
     if (FoundSUnit) {
       // If we need to emit noops prior to this instruction, then do so.
       unsigned NumPreNoops = HazardRec->PreEmitNoops(FoundSUnit);
-      for (unsigned i = 0; i != NumPreNoops; ++i)
+      for (unsigned i = 0; i != NumPreNoops; ++i) {
         emitNoop(CurCycle);
+
+}
 
       // ... schedule the node...
       ScheduleNodeTopDown(FoundSUnit, CurCycle);
@@ -673,21 +695,27 @@ void SchedulePostRATDList::EmitSchedule() {
   RegionBegin = RegionEnd;
 
   // If first instruction was a DBG_VALUE then put it back.
-  if (FirstDbgValue)
+  if (FirstDbgValue) {
     BB->splice(RegionEnd, BB, FirstDbgValue);
+
+}
 
   // Then re-insert them according to the given schedule.
   for (unsigned i = 0, e = Sequence.size(); i != e; i++) {
-    if (SUnit *SU = Sequence[i])
+    if (SUnit *SU = Sequence[i]) {
       BB->splice(RegionEnd, BB, SU->getInstr());
-    else
+    } else {
       // Null SUnit* is a noop.
       TII->insertNoop(*BB, RegionEnd);
 
+}
+
     // Update the Begin iterator, as the first instruction in the block
     // may have been scheduled later.
-    if (i == 0)
+    if (i == 0) {
       RegionBegin = std::prev(RegionEnd);
+
+}
   }
 
   // Reinsert any remaining debug_values.

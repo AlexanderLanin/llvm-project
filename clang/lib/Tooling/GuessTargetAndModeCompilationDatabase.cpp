@@ -38,8 +38,10 @@ private:
   std::vector<CompileCommand>
   addTargetAndMode(std::vector<CompileCommand> Cmds) const {
     for (auto &Cmd : Cmds) {
-      if (Cmd.CommandLine.empty())
+      if (Cmd.CommandLine.empty()) {
         continue;
+
+}
       addTargetAndModeForProgramName(Cmd.CommandLine, Cmd.CommandLine.front());
     }
     return Cmds;

@@ -24,8 +24,10 @@ using namespace llvm;
 
 OptimizationRemarkEmitter::OptimizationRemarkEmitter(const Function *F)
     : F(F), BFI(nullptr) {
-  if (!F->getContext().getDiagnosticsHotnessRequested())
+  if (!F->getContext().getDiagnosticsHotnessRequested()) {
     return;
+
+}
 
   // First create a dominator tree.
   DominatorTree DT;
@@ -53,16 +55,20 @@ bool OptimizationRemarkEmitter::invalidate(
   }
   // This analysis has no state and so can be trivially preserved but it needs
   // a fresh view of BFI if it was constructed with one.
-  if (BFI && Inv.invalidate<BlockFrequencyAnalysis>(F, PA))
+  if (BFI && Inv.invalidate<BlockFrequencyAnalysis>(F, PA)) {
     return true;
+
+}
 
   // Otherwise this analysis result remains valid.
   return false;
 }
 
 Optional<uint64_t> OptimizationRemarkEmitter::computeHotness(const Value *V) {
-  if (!BFI)
+  if (!BFI) {
     return None;
+
+}
 
   return BFI->getBlockProfileCount(cast<BasicBlock>(V));
 }
@@ -70,8 +76,10 @@ Optional<uint64_t> OptimizationRemarkEmitter::computeHotness(const Value *V) {
 void OptimizationRemarkEmitter::computeHotness(
     DiagnosticInfoIROptimization &OptDiag) {
   const Value *V = OptDiag.getCodeRegion();
-  if (V)
+  if (V) {
     OptDiag.setHotness(computeHotness(V));
+
+}
 }
 
 void OptimizationRemarkEmitter::emit(
@@ -97,10 +105,12 @@ OptimizationRemarkEmitterWrapperPass::OptimizationRemarkEmitterWrapperPass()
 bool OptimizationRemarkEmitterWrapperPass::runOnFunction(Function &Fn) {
   BlockFrequencyInfo *BFI;
 
-  if (Fn.getContext().getDiagnosticsHotnessRequested())
+  if (Fn.getContext().getDiagnosticsHotnessRequested()) {
     BFI = &getAnalysis<LazyBlockFrequencyInfoPass>().getBFI();
-  else
+  } else {
     BFI = nullptr;
+
+}
 
   ORE = std::make_unique<OptimizationRemarkEmitter>(&Fn, BFI);
   return false;
@@ -119,10 +129,12 @@ OptimizationRemarkEmitterAnalysis::run(Function &F,
                                        FunctionAnalysisManager &AM) {
   BlockFrequencyInfo *BFI;
 
-  if (F.getContext().getDiagnosticsHotnessRequested())
+  if (F.getContext().getDiagnosticsHotnessRequested()) {
     BFI = &AM.getResult<BlockFrequencyAnalysis>(F);
-  else
+  } else {
     BFI = nullptr;
+
+}
 
   return OptimizationRemarkEmitter(&F, BFI);
 }

@@ -17,18 +17,24 @@ class NestedNameSpecifiersVisitor
     : public ExpectedLocationVisitor<NestedNameSpecifiersVisitor> {
 public:
   bool VisitRecordTypeLoc(RecordTypeLoc RTL) {
-    if (!RTL)
+    if (!RTL) {
       return true;
+
+}
     Match(RTL.getDecl()->getName(), RTL.getNameLoc());
     return true;
   }
 
   bool TraverseNestedNameSpecifierLoc(NestedNameSpecifierLoc NNS) {
-    if (!NNS)
+    if (!NNS) {
       return true;
+
+}
     if (const NamespaceDecl *ND =
-            NNS.getNestedNameSpecifier()->getAsNamespace())
+            NNS.getNestedNameSpecifier()->getAsNamespace()) {
       Match(ND->getName(), NNS.getLocalBeginLoc());
+
+}
     return ExpectedLocationVisitor::TraverseNestedNameSpecifierLoc(NNS);
   }
 };

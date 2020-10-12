@@ -159,21 +159,27 @@ TEST(SerializationTest, YAMLConversions) {
 
 std::vector<std::string> YAMLFromSymbols(const SymbolSlab &Slab) {
   std::vector<std::string> Result;
-  for (const auto &Sym : Slab)
+  for (const auto &Sym : Slab) {
     Result.push_back(toYAML(Sym));
+
+}
   return Result;
 }
 std::vector<std::string> YAMLFromRefs(const RefSlab &Slab) {
   std::vector<std::string> Result;
-  for (const auto &Refs : Slab)
+  for (const auto &Refs : Slab) {
     Result.push_back(toYAML(Refs));
+
+}
   return Result;
 }
 
 std::vector<std::string> YAMLFromRelations(const RelationSlab &Slab) {
   std::vector<std::string> Result;
-  for (const auto &Rel : Slab)
+  for (const auto &Rel : Slab) {
     Result.push_back(toYAML(Rel));
+
+}
   return Result;
 }
 

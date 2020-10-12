@@ -55,8 +55,10 @@ namespace {
     // the specified callgraph to reflect the changes.
     //
     bool runOnModule(Module &M) override {
-      if (skipModule(M))
+      if (skipModule(M)) {
         return false;
+
+}
 
       // We need a minimally functional dummy module analysis manager. It needs
       // to at least know about the possibility of proxying a function analysis
@@ -88,10 +90,14 @@ ModulePass *llvm::createGlobalDCEPass() {
 static bool isEmptyFunction(Function *F) {
   BasicBlock &Entry = F->getEntryBlock();
   for (auto &I : Entry) {
-    if (isa<DbgInfoIntrinsic>(I))
+    if (isa<DbgInfoIntrinsic>(I)) {
       continue;
-    if (auto *RI = dyn_cast<ReturnInst>(&I))
+
+}
+    if (auto *RI = dyn_cast<ReturnInst>(&I)) {
       return !RI->getReturnValue();
+
+}
     break;
   }
   return false;
@@ -114,8 +120,10 @@ void GlobalDCEPass::ComputeDependencies(Value *V,
       Deps.insert(K.begin(), K.end());
     } else {
       SmallPtrSetImpl<GlobalValue *> &LocalDeps = ConstantDependenciesCache[CE];
-      for (User *CEUser : CE->users())
+      for (User *CEUser : CE->users()) {
         ComputeDependencies(CEUser, LocalDeps);
+
+}
       Deps.insert(LocalDeps.begin(), LocalDeps.end());
     }
   }
@@ -123,8 +131,10 @@ void GlobalDCEPass::ComputeDependencies(Value *V,
 
 void GlobalDCEPass::UpdateGVDependencies(GlobalValue &GV) {
   SmallPtrSet<GlobalValue *, 8> Deps;
-  for (User *User : GV.users())
+  for (User *User : GV.users()) {
     ComputeDependencies(User, Deps);
+
+}
   Deps.erase(&GV); // Remove self-reference.
   for (GlobalValue *GVU : Deps) {
     // If this is a dep from a vtable to a virtual function, and we have
@@ -144,11 +154,15 @@ void GlobalDCEPass::UpdateGVDependencies(GlobalValue &GV) {
 void GlobalDCEPass::MarkLive(GlobalValue &GV,
                              SmallVectorImpl<GlobalValue *> *Updates) {
   auto const Ret = AliveGlobals.insert(&GV);
-  if (!Ret.second)
+  if (!Ret.second) {
     return;
 
-  if (Updates)
+}
+
+  if (Updates) {
     Updates->push_back(&GV);
+
+}
   if (Comdat *C = GV.getComdat()) {
     for (auto &&CM : make_range(ComdatMembers.equal_range(C))) {
       MarkLive(*CM.second, Updates); // Recursion depth is only two because only
@@ -170,8 +184,10 @@ void GlobalDCEPass::ScanVTables(Module &M) {
   for (GlobalVariable &GV : M.globals()) {
     Types.clear();
     GV.getMetadata(LLVMContext::MD_type, Types);
-    if (GV.isDeclaration() || Types.empty())
+    if (GV.isDeclaration() || Types.empty()) {
       continue;
+
+}
 
     // Use the typeid metadata on the vtable to build a mapping from typeids to
     // the list of (GV, offset) pairs which are the possible vtables for that
@@ -235,13 +251,17 @@ void GlobalDCEPass::ScanTypeCheckedLoadIntrinsics(Module &M) {
   Function *TypeCheckedLoadFunc =
       M.getFunction(Intrinsic::getName(Intrinsic::type_checked_load));
 
-  if (!TypeCheckedLoadFunc)
+  if (!TypeCheckedLoadFunc) {
     return;
+
+}
 
   for (auto U : TypeCheckedLoadFunc->users()) {
     auto CI = dyn_cast<CallInst>(U);
-    if (!CI)
+    if (!CI) {
       continue;
+
+}
 
     auto *Offset = dyn_cast<ConstantInt>(CI->getArgOperand(1));
     Value *TypeIdValue = CI->getArgOperand(2);
@@ -260,8 +280,10 @@ void GlobalDCEPass::ScanTypeCheckedLoadIntrinsics(Module &M) {
 }
 
 void GlobalDCEPass::AddVirtualFunctionDependencies(Module &M) {
-  if (!ClEnableVFE)
+  if (!ClEnableVFE) {
     return;
+
+}
 
   // If the Virtual Function Elim module flag is present and set to zero, then
   // the vcall_visibility metadata was inserted for another optimization (WPD)
@@ -269,13 +291,17 @@ void GlobalDCEPass::AddVirtualFunctionDependencies(Module &M) {
   // Don't attempt VFE in that case.
   auto *Val = mdconst::dyn_extract_or_null<ConstantInt>(
       M.getModuleFlag("Virtual Function Elim"));
-  if (!Val || Val->getZExtValue() == 0)
+  if (!Val || Val->getZExtValue() == 0) {
     return;
+
+}
 
   ScanVTables(M);
 
-  if (VFESafeVTables.empty())
+  if (VFESafeVTables.empty()) {
     return;
+
+}
 
   ScanTypeCheckedLoadIntrinsics(M);
 
@@ -301,15 +327,27 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
   Changed |= optimizeGlobalCtorsList(M, isEmptyFunction);
 
   // Collect the set of members for each comdat.
-  for (Function &F : M)
-    if (Comdat *C = F.getComdat())
+  for (Function &F : M) {
+    if (Comdat *C = F.getComdat()) {
       ComdatMembers.insert(std::make_pair(C, &F));
-  for (GlobalVariable &GV : M.globals())
-    if (Comdat *C = GV.getComdat())
+
+}
+
+}
+  for (GlobalVariable &GV : M.globals()) {
+    if (Comdat *C = GV.getComdat()) {
       ComdatMembers.insert(std::make_pair(C, &GV));
-  for (GlobalAlias &GA : M.aliases())
-    if (Comdat *C = GA.getComdat())
+
+}
+
+}
+  for (GlobalAlias &GA : M.aliases()) {
+    if (Comdat *C = GA.getComdat()) {
       ComdatMembers.insert(std::make_pair(C, &GA));
+
+}
+
+}
 
   // Add dependencies between virtual call sites and the virtual functions they
   // might call, if we have that information.
@@ -321,9 +359,13 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
     // Functions with external linkage are needed if they have a body.
     // Externally visible & appending globals are needed, if they have an
     // initializer.
-    if (!GO.isDeclaration())
-      if (!GO.isDiscardableIfUnused())
+    if (!GO.isDeclaration()) {
+      if (!GO.isDiscardableIfUnused()) {
         MarkLive(GO);
+
+}
+
+}
 
     UpdateGVDependencies(GO);
   }
@@ -332,8 +374,10 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
   for (GlobalAlias &GA : M.aliases()) {
     Changed |= RemoveUnusedGlobalValue(GA);
     // Externally visible aliases are needed.
-    if (!GA.isDiscardableIfUnused())
+    if (!GA.isDiscardableIfUnused()) {
       MarkLive(GA);
+
+}
 
     UpdateGVDependencies(GA);
   }
@@ -342,8 +386,10 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
   for (GlobalIFunc &GIF : M.ifuncs()) {
     Changed |= RemoveUnusedGlobalValue(GIF);
     // Externally visible ifuncs are needed.
-    if (!GIF.isDiscardableIfUnused())
+    if (!GIF.isDiscardableIfUnused()) {
       MarkLive(GIF);
+
+}
 
     UpdateGVDependencies(GIF);
   }
@@ -354,8 +400,10 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
                                            AliveGlobals.end()};
   while (!NewLiveGVs.empty()) {
     GlobalValue *LGV = NewLiveGVs.pop_back_val();
-    for (auto *GVD : GVDependencies[LGV])
+    for (auto *GVD : GVDependencies[LGV]) {
       MarkLive(*GVD, &NewLiveGVs);
+
+}
   }
 
   // Now that all globals which are needed are in the AliveGlobals set, we loop
@@ -364,41 +412,53 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
 
   // The first pass is to drop initializers of global variables which are dead.
   std::vector<GlobalVariable *> DeadGlobalVars; // Keep track of dead globals
-  for (GlobalVariable &GV : M.globals())
+  for (GlobalVariable &GV : M.globals()) {
     if (!AliveGlobals.count(&GV)) {
       DeadGlobalVars.push_back(&GV);         // Keep track of dead globals
       if (GV.hasInitializer()) {
         Constant *Init = GV.getInitializer();
         GV.setInitializer(nullptr);
-        if (isSafeToDestroyConstant(Init))
+        if (isSafeToDestroyConstant(Init)) {
           Init->destroyConstant();
+
+}
       }
     }
 
+}
+
   // The second pass drops the bodies of functions which are dead...
   std::vector<Function *> DeadFunctions;
-  for (Function &F : M)
+  for (Function &F : M) {
     if (!AliveGlobals.count(&F)) {
       DeadFunctions.push_back(&F);         // Keep track of dead globals
-      if (!F.isDeclaration())
+      if (!F.isDeclaration()) {
         F.deleteBody();
+
+}
     }
+
+}
 
   // The third pass drops targets of aliases which are dead...
   std::vector<GlobalAlias*> DeadAliases;
-  for (GlobalAlias &GA : M.aliases())
+  for (GlobalAlias &GA : M.aliases()) {
     if (!AliveGlobals.count(&GA)) {
       DeadAliases.push_back(&GA);
       GA.setAliasee(nullptr);
     }
 
+}
+
   // The fourth pass drops targets of ifuncs which are dead...
   std::vector<GlobalIFunc*> DeadIFuncs;
-  for (GlobalIFunc &GIF : M.ifuncs())
+  for (GlobalIFunc &GIF : M.ifuncs()) {
     if (!AliveGlobals.count(&GIF)) {
       DeadIFuncs.push_back(&GIF);
       GIF.setResolver(nullptr);
     }
+
+}
 
   // Now that all interferences have been dropped, delete the actual objects
   // themselves.
@@ -422,16 +482,22 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
   }
 
   NumVariables += DeadGlobalVars.size();
-  for (GlobalVariable *GV : DeadGlobalVars)
+  for (GlobalVariable *GV : DeadGlobalVars) {
     EraseUnusedGlobalValue(GV);
 
+}
+
   NumAliases += DeadAliases.size();
-  for (GlobalAlias *GA : DeadAliases)
+  for (GlobalAlias *GA : DeadAliases) {
     EraseUnusedGlobalValue(GA);
 
+}
+
   NumIFuncs += DeadIFuncs.size();
-  for (GlobalIFunc *GIF : DeadIFuncs)
+  for (GlobalIFunc *GIF : DeadIFuncs) {
     EraseUnusedGlobalValue(GIF);
+
+}
 
   // Make sure that all memory is released
   AliveGlobals.clear();
@@ -441,8 +507,10 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
   TypeIdMap.clear();
   VFESafeVTables.clear();
 
-  if (Changed)
+  if (Changed) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 
@@ -453,8 +521,10 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
 // might make it deader.
 //
 bool GlobalDCEPass::RemoveUnusedGlobalValue(GlobalValue &GV) {
-  if (GV.use_empty())
+  if (GV.use_empty()) {
     return false;
+
+}
   GV.removeDeadConstantUsers();
   return GV.use_empty();
 }

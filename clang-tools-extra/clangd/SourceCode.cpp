@@ -61,8 +61,10 @@ static bool iterateCodepoints(llvm::StringRef U8, const Callback &CB) {
   for (size_t I = 0; I < U8.size();) {
     unsigned char C = static_cast<unsigned char>(U8[I]);
     if (LLVM_LIKELY(!(C & 0x80))) { // ASCII character.
-      if (CB(1, 1))
+      if (CB(1, 1)) {
         return true;
+
+}
       ++I;
       continue;
     }
@@ -75,8 +77,10 @@ static bool iterateCodepoints(llvm::StringRef U8, const Callback &CB) {
     I += UTF8Length; // Skip over all trailing bytes.
     // A codepoint takes two UTF-16 code unit if it's astral (outside BMP).
     // Astral codepoints are encoded as 4 bytes in UTF-8 (11110xxx ...)
-    if (CB(UTF8Length, UTF8Length == 4 ? 2 : 1))
+    if (CB(UTF8Length, UTF8Length == 4 ? 2 : 1)) {
       return true;
+
+}
   }
   return false;
 }
@@ -88,8 +92,10 @@ static bool iterateCodepoints(llvm::StringRef U8, const Callback &CB) {
 static size_t measureUnits(llvm::StringRef U8, int Units, OffsetEncoding Enc,
                            bool &Valid) {
   Valid = Units >= 0;
-  if (Units <= 0)
+  if (Units <= 0) {
     return 0;
+
+}
   size_t Result = 0;
   switch (Enc) {
   case OffsetEncoding::UTF8:
@@ -101,8 +107,10 @@ static size_t measureUnits(llvm::StringRef U8, int Units, OffsetEncoding Enc,
       Units -= U16Len;
       return Units <= 0;
     });
-    if (Units < 0) // Offset in the middle of a surrogate pair.
+    if (Units < 0) { // Offset in the middle of a surrogate pair.
       Valid = false;
+
+}
     break;
   case OffsetEncoding::UTF32:
     Valid = iterateCodepoints(U8, [&](int U8Len, int U16Len) {
@@ -155,21 +163,27 @@ size_t lspLength(llvm::StringRef Code) {
 
 llvm::Expected<size_t> positionToOffset(llvm::StringRef Code, Position P,
                                         bool AllowColumnsBeyondLineLength) {
-  if (P.line < 0)
+  if (P.line < 0) {
     return llvm::make_error<llvm::StringError>(
         llvm::formatv("Line value can't be negative ({0})", P.line),
         llvm::errc::invalid_argument);
-  if (P.character < 0)
+
+}
+  if (P.character < 0) {
     return llvm::make_error<llvm::StringError>(
         llvm::formatv("Character value can't be negative ({0})", P.character),
         llvm::errc::invalid_argument);
+
+}
   size_t StartOfLine = 0;
   for (int I = 0; I != P.line; ++I) {
     size_t NextNL = Code.find('\n', StartOfLine);
-    if (NextNL == llvm::StringRef::npos)
+    if (NextNL == llvm::StringRef::npos) {
       return llvm::make_error<llvm::StringError>(
           llvm::formatv("Line value is out of range ({0})", P.line),
           llvm::errc::invalid_argument);
+
+}
     StartOfLine = NextNL + 1;
   }
   StringRef Line =
@@ -178,11 +192,13 @@ llvm::Expected<size_t> positionToOffset(llvm::StringRef Code, Position P,
   // P.character may be in UTF-16, transcode if necessary.
   bool Valid;
   size_t ByteInLine = measureUnits(Line, P.character, lspEncoding(), Valid);
-  if (!Valid && !AllowColumnsBeyondLineLength)
+  if (!Valid && !AllowColumnsBeyondLineLength) {
     return llvm::make_error<llvm::StringError>(
         llvm::formatv("{0} offset {1} is invalid for line {2}", lspEncoding(),
                       P.character, P.line),
         llvm::errc::invalid_argument);
+
+}
   return StartOfLine + ByteInLine;
 }
 
@@ -219,15 +235,19 @@ bool isSpelledInSource(SourceLocation Loc, const SourceManager &SM) {
   if (Loc.isMacroID()) {
     std::string PrintLoc = SM.getSpellingLoc(Loc).printToString(SM);
     if (llvm::StringRef(PrintLoc).startswith("<scratch") ||
-        llvm::StringRef(PrintLoc).startswith("<command line>"))
+        llvm::StringRef(PrintLoc).startswith("<command line>")) {
       return false;
+
+}
   }
   return true;
 }
 
 bool isValidFileRange(const SourceManager &Mgr, SourceRange R) {
-  if (!R.getBegin().isValid() || !R.getEnd().isValid())
+  if (!R.getBegin().isValid() || !R.getEnd().isValid()) {
     return false;
+
+}
 
   FileID BeginFID;
   size_t BeginOffset = 0;
@@ -268,32 +288,42 @@ SourceLocation includeHashLoc(FileID IncludedFile, const SourceManager &SM) {
       SM.getDecomposedExpansionLoc(SM.getIncludeLoc(IncludedFile));
   bool Invalid = false;
   llvm::StringRef Buf = SM.getBufferData(IncludingFile, &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return SourceLocation();
+
+}
   // Now buf is "...\n#include <foo>\n..."
   // and Offset points here:   ^
   // Rewind to the preceding # on the line.
   assert(Offset < Buf.size());
   for (;; --Offset) {
-    if (Buf[Offset] == '#')
+    if (Buf[Offset] == '#') {
       return SM.getComposedLoc(IncludingFile, Offset);
-    if (Buf[Offset] == '\n' || Offset == 0) // no hash, what's going on?
+
+}
+    if (Buf[Offset] == '\n' || Offset == 0) { // no hash, what's going on?
       return SourceLocation();
+
+}
   }
 }
 
 static unsigned getTokenLengthAtLoc(SourceLocation Loc, const SourceManager &SM,
                                     const LangOptions &LangOpts) {
   Token TheTok;
-  if (Lexer::getRawToken(Loc, TheTok, SM, LangOpts))
+  if (Lexer::getRawToken(Loc, TheTok, SM, LangOpts)) {
     return 0;
+
+}
   // FIXME: Here we check whether the token at the location is a greatergreater
   // (>>) token and consider it as a single greater (>). This is to get it
   // working for templates but it isn't correct for the right shift operator. We
   // can avoid this by using half open char ranges in getFileRange() but getting
   // token ending is not well supported in macroIDs.
-  if (TheTok.is(tok::greatergreater))
+  if (TheTok.is(tok::greatergreater)) {
     return 1;
+
+}
   return TheTok.getLength();
 }
 
@@ -316,8 +346,10 @@ static SourceLocation getLocForTokenBegin(SourceLocation EndLoc,
 // Converts a char source range to a token range.
 static SourceRange toTokenRange(CharSourceRange Range, const SourceManager &SM,
                                 const LangOptions &LangOpts) {
-  if (!Range.isTokenRange())
+  if (!Range.isTokenRange()) {
     Range.setEnd(getLocForTokenBegin(Range.getEnd(), SM, LangOpts));
+
+}
   return Range.getAsRange();
 }
 // Returns the union of two token ranges.
@@ -344,8 +376,10 @@ static SourceRange unionTokenRange(SourceRange R1, SourceRange R2,
 static SourceRange rangeInCommonFile(SourceRange R, const SourceManager &SM,
                                      const LangOptions &LangOpts) {
   // Fast path for most common cases.
-  if (SM.isWrittenInSameFile(R.getBegin(), R.getEnd()))
+  if (SM.isWrittenInSameFile(R.getBegin(), R.getEnd())) {
     return R;
+
+}
   // Record the stack of expansion locations for the beginning, keyed by FileID.
   llvm::DenseMap<FileID, SourceLocation> BeginExpansions;
   for (SourceLocation Begin = R.getBegin(); Begin.isValid();
@@ -363,8 +397,10 @@ static SourceRange rangeInCommonFile(SourceRange R, const SourceManager &SM,
                                   .getEnd()) {
     auto It = BeginExpansions.find(SM.getFileID(End));
     if (It != BeginExpansions.end()) {
-      if (SM.getFileOffset(It->second) > SM.getFileOffset(End))
+      if (SM.getFileOffset(It->second) > SM.getFileOffset(End)) {
         return SourceLocation();
+
+}
       return {It->second, End};
     }
   }
@@ -407,8 +443,10 @@ static SourceRange getTokenFileRange(SourceLocation Loc,
       SourceRange ExpansionRangeForEnd =
           getExpansionTokenRangeInSameFile(FileRange.getEnd(), SM, LangOpts);
       if (ExpansionRangeForBegin.isInvalid() ||
-          ExpansionRangeForEnd.isInvalid())
+          ExpansionRangeForEnd.isInvalid()) {
         return SourceRange();
+
+}
       assert(SM.isWrittenInSameFile(ExpansionRangeForBegin.getBegin(),
                                     ExpansionRangeForEnd.getBegin()) &&
              "Both Expansion ranges should be in same file.");
@@ -420,8 +458,10 @@ static SourceRange getTokenFileRange(SourceLocation Loc,
 }
 
 bool isInsideMainFile(SourceLocation Loc, const SourceManager &SM) {
-  if (!Loc.isValid())
+  if (!Loc.isValid()) {
     return false;
+
+}
   FileID FID = SM.getFileID(SM.getExpansionLoc(Loc));
   return FID == SM.getMainFileID() || FID == SM.getPreambleFileID();
 }
@@ -430,20 +470,26 @@ llvm::Optional<SourceRange> toHalfOpenFileRange(const SourceManager &SM,
                                                 const LangOptions &LangOpts,
                                                 SourceRange R) {
   SourceRange R1 = getTokenFileRange(R.getBegin(), SM, LangOpts);
-  if (!isValidFileRange(SM, R1))
+  if (!isValidFileRange(SM, R1)) {
     return llvm::None;
 
+}
+
   SourceRange R2 = getTokenFileRange(R.getEnd(), SM, LangOpts);
-  if (!isValidFileRange(SM, R2))
+  if (!isValidFileRange(SM, R2)) {
     return llvm::None;
+
+}
 
   SourceRange Result =
       rangeInCommonFile(unionTokenRange(R1, R2, SM, LangOpts), SM, LangOpts);
   unsigned TokLen = getTokenLengthAtLoc(Result.getEnd(), SM, LangOpts);
   // Convert from closed token range to half-open (char) range
   Result.setEnd(Result.getEnd().getLocWithOffset(TokLen));
-  if (!isValidFileRange(SM, Result))
+  if (!isValidFileRange(SM, Result)) {
     return llvm::None;
+
+}
 
   return Result;
 }
@@ -464,8 +510,10 @@ llvm::Expected<SourceLocation> sourceLocationInMainFile(const SourceManager &SM,
   llvm::StringRef Code = SM.getBuffer(SM.getMainFileID())->getBuffer();
   auto Offset =
       positionToOffset(Code, P, /*AllowColumnBeyondLineLength=*/false);
-  if (!Offset)
+  if (!Offset) {
     return Offset.takeError();
+
+}
   return SM.getLocForStartOfFile(SM.getMainFileID()).getLocWithOffset(*Offset);
 }
 
@@ -489,8 +537,10 @@ std::pair<size_t, size_t> offsetToClangLineColumn(llvm::StringRef Code,
 
 std::pair<StringRef, StringRef> splitQualifiedName(StringRef QName) {
   size_t Pos = QName.rfind("::");
-  if (Pos == llvm::StringRef::npos)
+  if (Pos == llvm::StringRef::npos) {
     return {llvm::StringRef(), QName};
+
+}
   return {QName.substr(0, Pos + 2), QName.substr(Pos + 2)};
 }
 
@@ -505,15 +555,19 @@ TextEdit replacementToEdit(llvm::StringRef Code,
 std::vector<TextEdit> replacementsToEdits(llvm::StringRef Code,
                                           const tooling::Replacements &Repls) {
   std::vector<TextEdit> Edits;
-  for (const auto &R : Repls)
+  for (const auto &R : Repls) {
     Edits.push_back(replacementToEdit(Code, R));
+
+}
   return Edits;
 }
 
 llvm::Optional<std::string> getCanonicalPath(const FileEntry *F,
                                              const SourceManager &SourceMgr) {
-  if (!F)
+  if (!F) {
     return None;
+
+}
 
   llvm::SmallString<128> FilePath = F->getName();
   if (!llvm::sys::path::is_absolute(FilePath)) {
@@ -576,8 +630,10 @@ FileDigest digest(llvm::StringRef Content) {
 llvm::Optional<FileDigest> digestFile(const SourceManager &SM, FileID FID) {
   bool Invalid = false;
   llvm::StringRef Content = SM.getBufferData(FID, &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return None;
+
+}
   return digest(Content);
 }
 
@@ -598,8 +654,10 @@ llvm::Expected<tooling::Replacements>
 cleanupAndFormat(StringRef Code, const tooling::Replacements &Replaces,
                  const format::FormatStyle &Style) {
   auto CleanReplaces = cleanupAroundReplacements(Code, Replaces, Style);
-  if (!CleanReplaces)
+  if (!CleanReplaces) {
     return CleanReplaces;
+
+}
   return formatReplacements(Code, std::move(*CleanReplaces), Style);
 }
 
@@ -611,8 +669,10 @@ lex(llvm::StringRef Code, const LangOptions &LangOpts,
   std::string NullTerminatedCode = Code.str();
   SourceManagerForFile FileSM("dummy.cpp", NullTerminatedCode);
   auto &SM = FileSM.get();
-  for (const auto &Tok : syntax::tokenize(SM.getMainFileID(), SM, LangOpts))
+  for (const auto &Tok : syntax::tokenize(SM.getMainFileID(), SM, LangOpts)) {
     Action(Tok, SM);
+
+}
 }
 
 llvm::StringMap<unsigned> collectIdentifiers(llvm::StringRef Content,
@@ -620,11 +680,13 @@ llvm::StringMap<unsigned> collectIdentifiers(llvm::StringRef Content,
   llvm::StringMap<unsigned> Identifiers;
   auto LangOpt = format::getFormattingLangOpts(Style);
   lex(Content, LangOpt, [&](const syntax::Token &Tok, const SourceManager &SM) {
-    if (Tok.kind() == tok::identifier)
+    if (Tok.kind() == tok::identifier) {
       ++Identifiers[Tok.text(SM)];
     // FIXME: Should this function really return keywords too ?
-    else if (const auto *Keyword = tok::getKeywordSpelling(Tok.kind()))
+    } else if (const auto *Keyword = tok::getKeywordSpelling(Tok.kind())) {
       ++Identifiers[Keyword];
+
+}
   });
   return Identifiers;
 }
@@ -635,8 +697,10 @@ std::vector<Range> collectIdentifierRanges(llvm::StringRef Identifier,
   std::vector<Range> Ranges;
   lex(Content, LangOpts,
       [&](const syntax::Token &Tok, const SourceManager &SM) {
-        if (Tok.kind() != tok::identifier || Tok.text(SM) != Identifier)
+        if (Tok.kind() != tok::identifier || Tok.text(SM) != Identifier) {
           return;
+
+}
         Ranges.push_back(halfOpenToRange(SM, Tok.range(SM).toCharRange(SM)));
       });
   return Ranges;
@@ -787,8 +851,10 @@ llvm::SmallVector<llvm::StringRef, 8> ancestorNamespaces(llvm::StringRef NS) {
   llvm::SmallVector<llvm::StringRef, 8> Results;
   Results.push_back(NS.take_front(0));
   NS.split(Results, "::", /*MaxSplit=*/-1, /*KeepEmpty=*/false);
-  for (llvm::StringRef &R : Results)
+  for (llvm::StringRef &R : Results) {
     R = NS.take_front(R.end() - NS.begin());
+
+}
   return Results;
 }
 
@@ -808,14 +874,16 @@ std::vector<std::string> visibleNamespaces(llvm::StringRef Code,
       Current = std::move(Event.Payload);
       break;
     case NamespaceEvent::UsingDirective:
-      if (NS.consume_front("::"))
+      if (NS.consume_front("::")) {
         UsingDirectives[Current].insert(NS);
-      else {
+      } else {
         for (llvm::StringRef Enclosing : ancestorNamespaces(Current)) {
-          if (Enclosing.empty())
+          if (Enclosing.empty()) {
             UsingDirectives[Current].insert(NS);
-          else
+          } else {
             UsingDirectives[Current].insert((Enclosing + "::" + NS).str());
+
+}
         }
       }
       break;
@@ -826,16 +894,24 @@ std::vector<std::string> visibleNamespaces(llvm::StringRef Code,
   for (llvm::StringRef Enclosing : ancestorNamespaces(Current)) {
     Found.push_back(std::string(Enclosing));
     auto It = UsingDirectives.find(Enclosing);
-    if (It != UsingDirectives.end())
-      for (const auto &Used : It->second)
+    if (It != UsingDirectives.end()) {
+      for (const auto &Used : It->second) {
         Found.push_back(std::string(Used.getKey()));
+
+}
+
+}
   }
 
   llvm::sort(Found, [&](const std::string &LHS, const std::string &RHS) {
-    if (Current == RHS)
+    if (Current == RHS) {
       return false;
-    if (Current == LHS)
+
+}
+    if (Current == LHS) {
       return true;
+
+}
     return LHS < RHS;
   });
   Found.erase(std::unique(Found.begin(), Found.end()), Found.end());
@@ -855,8 +931,10 @@ llvm::StringSet<> collectWords(llvm::StringRef Content) {
   llvm::SmallString<256> Word;
   auto Flush = [&] {
     if (Word.size() >= MinWordLength) {
-      for (char &C : Word)
+      for (char &C : Word) {
         C = llvm::toLower(C);
+
+}
       Result.insert(Word);
     }
     Word.clear();
@@ -886,17 +964,23 @@ llvm::Optional<DefinedMacro> locateMacroAt(const syntax::Token &SpelledTok,
   assert(Loc.isFileID());
   const auto &SM = PP.getSourceManager();
   IdentifierInfo *IdentifierInfo = PP.getIdentifierInfo(SpelledTok.text(SM));
-  if (!IdentifierInfo || !IdentifierInfo->hadMacroDefinition())
+  if (!IdentifierInfo || !IdentifierInfo->hadMacroDefinition()) {
     return None;
+
+}
 
   // Get the definition just before the searched location so that a macro
   // referenced in a '#undef MACRO' can still be found. Note that we only do
   // that if Loc is not pointing at start of file.
-  if (SM.getLocForStartOfFile(SM.getFileID(Loc)) != Loc)
+  if (SM.getLocForStartOfFile(SM.getFileID(Loc)) != Loc) {
     Loc = Loc.getLocWithOffset(-1);
+
+}
   MacroDefinition MacroDef = PP.getMacroDefinitionAtLoc(IdentifierInfo, Loc);
-  if (auto *MI = MacroDef.getMacroInfo())
+  if (auto *MI = MacroDef.getMacroInfo()) {
     return DefinedMacro{IdentifierInfo->getName(), MI};
+
+}
   return None;
 }
 
@@ -922,8 +1006,10 @@ bool Edit::canApplyTo(llvm::StringRef Code) const {
   // FIXME: This check is too conservative now, it should be enough to only
   // check lines around the replacements contained inside the Edit.
   while (!LHSIt.is_at_eof() && !RHSIt.is_at_eof()) {
-    if (*LHSIt != *RHSIt)
+    if (*LHSIt != *RHSIt) {
       return false;
+
+}
     ++LHSIt;
     ++RHSIt;
   }
@@ -932,23 +1018,29 @@ bool Edit::canApplyTo(llvm::StringRef Code) const {
   // contain any additional content except empty lines, they should not
   // interfere with the edit we produced.
   while (!LHSIt.is_at_eof()) {
-    if (!LHSIt->empty())
+    if (!LHSIt->empty()) {
       return false;
+
+}
     ++LHSIt;
   }
   while (!RHSIt.is_at_eof()) {
-    if (!RHSIt->empty())
+    if (!RHSIt->empty()) {
       return false;
+
+}
     ++RHSIt;
   }
   return true;
 }
 
 llvm::Error reformatEdit(Edit &E, const format::FormatStyle &Style) {
-  if (auto NewEdits = cleanupAndFormat(E.InitialCode, E.Replacements, Style))
+  if (auto NewEdits = cleanupAndFormat(E.InitialCode, E.Replacements, Style)) {
     E.Replacements = std::move(*NewEdits);
-  else
+  } else {
     return NewEdits.takeError();
+
+}
   return llvm::Error::success();
 }
 
@@ -964,11 +1056,15 @@ EligibleRegion getEligiblePoints(llvm::StringRef Code,
   parseNamespaceEvents(Code, LangOpts, [&](NamespaceEvent Event) {
     // Using Directives only introduces declarations to current scope, they do
     // not change the current namespace, so skip them.
-    if (Event.Trigger == NamespaceEvent::UsingDirective)
+    if (Event.Trigger == NamespaceEvent::UsingDirective) {
       return;
+
+}
     // Do not qualify the global namespace.
-    if (!Event.Payload.empty())
+    if (!Event.Payload.empty()) {
       Event.Payload.append("::");
+
+}
 
     std::string CurrentNamespace;
     if (Event.Trigger == NamespaceEvent::BeginNamespace) {
@@ -986,16 +1082,20 @@ EligibleRegion getEligiblePoints(llvm::StringRef Code,
     }
 
     // Ignore namespaces that are not a prefix of the target.
-    if (!FullyQualifiedName.startswith(CurrentNamespace))
+    if (!FullyQualifiedName.startswith(CurrentNamespace)) {
       return;
+
+}
 
     // Prefer the namespace that shares the longest prefix with target.
     if (CurrentNamespace.size() > ER.EnclosingNamespace.size()) {
       ER.EligiblePoints.clear();
       ER.EnclosingNamespace = CurrentNamespace;
     }
-    if (CurrentNamespace.size() == ER.EnclosingNamespace.size())
+    if (CurrentNamespace.size() == ER.EnclosingNamespace.size()) {
       ER.EligiblePoints.emplace_back(std::move(Event.Pos));
+
+}
   });
   // If there were no shared namespaces just return EOF.
   if (ER.EligiblePoints.empty()) {
@@ -1009,8 +1109,10 @@ bool isHeaderFile(llvm::StringRef FileName,
                   llvm::Optional<LangOptions> LangOpts) {
   // Respect the langOpts, for non-file-extension cases, e.g. standard library
   // files.
-  if (LangOpts && LangOpts->IsHeaderFile)
+  if (LangOpts && LangOpts->IsHeaderFile) {
     return true;
+
+}
   namespace types = clang::driver::types;
   auto Lang = types::lookupTypeForExtension(
       llvm::sys::path::extension(FileName).substr(1));
@@ -1019,8 +1121,10 @@ bool isHeaderFile(llvm::StringRef FileName,
 
 bool isProtoFile(SourceLocation Loc, const SourceManager &SM) {
   auto FileName = SM.getFilename(Loc);
-  if (!FileName.endswith(".proto.h") && !FileName.endswith(".pb.h"))
+  if (!FileName.endswith(".proto.h") && !FileName.endswith(".pb.h")) {
     return false;
+
+}
   auto FID = SM.getFileID(Loc);
   // All proto generated headers should start with this line.
   static const char *PROTO_HEADER_COMMENT =

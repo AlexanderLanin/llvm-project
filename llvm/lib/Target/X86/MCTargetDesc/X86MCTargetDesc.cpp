@@ -48,25 +48,33 @@ using namespace llvm;
 
 std::string X86_MC::ParseX86Triple(const Triple &TT) {
   std::string FS;
-  if (TT.getArch() == Triple::x86_64)
+  if (TT.getArch() == Triple::x86_64) {
     FS = "+64bit-mode,-32bit-mode,-16bit-mode";
-  else if (TT.getEnvironment() != Triple::CODE16)
+  } else if (TT.getEnvironment() != Triple::CODE16) {
     FS = "-64bit-mode,+32bit-mode,-16bit-mode";
-  else
+  } else {
     FS = "-64bit-mode,-32bit-mode,+16bit-mode";
+
+}
 
   return FS;
 }
 
 unsigned X86_MC::getDwarfRegFlavour(const Triple &TT, bool isEH) {
-  if (TT.getArch() == Triple::x86_64)
+  if (TT.getArch() == Triple::x86_64) {
     return DWARFFlavour::X86_64;
 
-  if (TT.isOSDarwin())
+}
+
+  if (TT.isOSDarwin()) {
     return isEH ? DWARFFlavour::X86_32_DarwinEH : DWARFFlavour::X86_32_Generic;
-  if (TT.isOSCygMing())
+
+}
+  if (TT.isOSCygMing()) {
     // Unsupported by now, just quick fallback
     return DWARFFlavour::X86_32_Generic;
+
+}
   return DWARFFlavour::X86_32_Generic;
 }
 
@@ -283,20 +291,26 @@ void X86_MC::initLLVMToSEHAndCVRegMapping(MCRegisterInfo *MRI) {
       {codeview::RegisterId::AMD64_XMM31, X86::XMM31},
 
   };
-  for (unsigned I = 0; I < array_lengthof(RegMap); ++I)
+  for (unsigned I = 0; I < array_lengthof(RegMap); ++I) {
     MRI->mapLLVMRegToCVReg(RegMap[I].Reg, static_cast<int>(RegMap[I].CVReg));
+
+}
 }
 
 MCSubtargetInfo *X86_MC::createX86MCSubtargetInfo(const Triple &TT,
                                                   StringRef CPU, StringRef FS) {
   std::string ArchFS = X86_MC::ParseX86Triple(TT);
   assert(!ArchFS.empty() && "Failed to parse X86 triple");
-  if (!FS.empty())
+  if (!FS.empty()) {
     ArchFS = (Twine(ArchFS) + "," + FS).str();
 
+}
+
   std::string CPUName = std::string(CPU);
-  if (CPUName.empty())
+  if (CPUName.empty()) {
     CPUName = "generic";
+
+}
 
   return createX86MCSubtargetInfoImpl(TT, CPUName, ArchFS);
 }
@@ -326,19 +340,23 @@ static MCAsmInfo *createX86MCAsmInfo(const MCRegisterInfo &MRI,
 
   MCAsmInfo *MAI;
   if (TheTriple.isOSBinFormatMachO()) {
-    if (is64Bit)
+    if (is64Bit) {
       MAI = new X86_64MCAsmInfoDarwin(TheTriple);
-    else
+    } else {
       MAI = new X86MCAsmInfoDarwin(TheTriple);
+
+}
   } else if (TheTriple.isOSBinFormatELF()) {
     // Force the use of an ELF container.
     MAI = new X86ELFMCAsmInfo(TheTriple);
   } else if (TheTriple.isWindowsMSVCEnvironment() ||
              TheTriple.isWindowsCoreCLREnvironment()) {
-    if (Options.getAssemblyLanguage().equals_lower("masm"))
+    if (Options.getAssemblyLanguage().equals_lower("masm")) {
       MAI = new X86MCAsmInfoMicrosoftMASM(TheTriple);
-    else
+    } else {
       MAI = new X86MCAsmInfoMicrosoft(TheTriple);
+
+}
   } else if (TheTriple.isOSCygMing() ||
              TheTriple.isWindowsItaniumEnvironment()) {
     MAI = new X86MCAsmInfoGNUCOFF(TheTriple);
@@ -371,10 +389,14 @@ static MCInstPrinter *createX86MCInstPrinter(const Triple &T,
                                              const MCAsmInfo &MAI,
                                              const MCInstrInfo &MII,
                                              const MCRegisterInfo &MRI) {
-  if (SyntaxVariant == 0)
+  if (SyntaxVariant == 0) {
     return new X86ATTInstPrinter(MAI, MII, MRI);
-  if (SyntaxVariant == 1)
+
+}
+  if (SyntaxVariant == 1) {
     return new X86IntelInstPrinter(MAI, MII, MRI);
+
+}
   return nullptr;
 }
 
@@ -434,12 +456,16 @@ bool X86MCInstrAnalysis::clearsSuperRegisters(const MCRegisterInfo &MRI,
     // register internal to the processor.
     // An update to the lower 32 bits of a 64 bit integer register is
     // architecturally defined to zero extend the upper 32 bits.
-    if (GR32RC.contains(RegID))
+    if (GR32RC.contains(RegID)) {
       return true;
 
+}
+
     // Early exit if this instruction has no vex/evex/xop prefix.
-    if (!HasEVEX && !HasVEX && !HasXOP)
+    if (!HasEVEX && !HasVEX && !HasXOP) {
       return false;
+
+}
 
     // All VEX and EVEX encoded instructions are defined to zero the high bits
     // of the destination register up to VLMAX (i.e. the maximum vector register
@@ -451,14 +477,18 @@ bool X86MCInstrAnalysis::clearsSuperRegisters(const MCRegisterInfo &MRI,
   Mask.clearAllBits();
   for (unsigned I = 0, E = NumDefs; I < E; ++I) {
     const MCOperand &Op = Inst.getOperand(I);
-    if (ClearsSuperReg(Op.getReg()))
+    if (ClearsSuperReg(Op.getReg())) {
       Mask.setBit(I);
+
+}
   }
 
   for (unsigned I = 0, E = NumImplicitDefs; I < E; ++I) {
     const MCPhysReg Reg = Desc.getImplicitDefs()[I];
-    if (ClearsSuperReg(Reg))
+    if (ClearsSuperReg(Reg)) {
       Mask.setBit(NumDefs + I);
+
+}
   }
 
   return Mask.getBoolValue();
@@ -484,8 +514,10 @@ findX86PltEntries(uint64_t PltSectionVA, ArrayRef<uint8_t> PltContents,
       uint32_t Imm = support::endian::read32le(PltContents.data() + Byte + 2);
       Result.push_back(std::make_pair(PltSectionVA + Byte, Imm));
       Byte += 6;
-    } else
+    } else {
       Byte++;
+
+}
   }
   return Result;
 }
@@ -503,8 +535,10 @@ findX86_64PltEntries(uint64_t PltSectionVA, ArrayRef<uint8_t> PltContents) {
       Result.push_back(
           std::make_pair(PltSectionVA + Byte, PltSectionVA + Byte + 6 + Imm));
       Byte += 6;
-    } else
+    } else {
       Byte++;
+
+}
   }
   return Result;
 }
@@ -526,8 +560,10 @@ Optional<uint64_t> X86MCInstrAnalysis::evaluateMemoryOperandAddress(
     const MCInst &Inst, uint64_t Addr, uint64_t Size) const {
   const MCInstrDesc &MCID = Info->get(Inst.getOpcode());
   int MemOpStart = X86II::getMemoryOperandNo(MCID.TSFlags);
-  if (MemOpStart == -1)
+  if (MemOpStart == -1) {
     return None;
+
+}
   MemOpStart += X86II::getOperandBias(MCID);
 
   const MCOperand &SegReg = Inst.getOperand(MemOpStart + X86::AddrSegmentReg);
@@ -536,12 +572,16 @@ Optional<uint64_t> X86MCInstrAnalysis::evaluateMemoryOperandAddress(
   const MCOperand &ScaleAmt = Inst.getOperand(MemOpStart + X86::AddrScaleAmt);
   const MCOperand &Disp = Inst.getOperand(MemOpStart + X86::AddrDisp);
   if (SegReg.getReg() != 0 || IndexReg.getReg() != 0 || ScaleAmt.getImm() != 1 ||
-      !Disp.isImm())
+      !Disp.isImm()) {
     return None;
 
+}
+
   // RIP-relative addressing.
-  if (BaseReg.getReg() == X86::RIP)
+  if (BaseReg.getReg() == X86::RIP) {
     return Addr + Size + Disp.getImm();
+
+}
 
   return None;
 }

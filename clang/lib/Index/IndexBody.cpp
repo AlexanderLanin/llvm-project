@@ -58,23 +58,31 @@ public:
                                SmallVectorImpl<SymbolRelation> &Relations) {
     SymbolRoleSet Roles{};
     assert(!StmtStack.empty() && E == StmtStack.back());
-    if (StmtStack.size() == 1)
+    if (StmtStack.size() == 1) {
       return Roles;
+
+}
     auto It = StmtStack.end()-2;
     while (isa<CastExpr>(*It) || isa<ParenExpr>(*It)) {
       if (auto ICE = dyn_cast<ImplicitCastExpr>(*It)) {
-        if (ICE->getCastKind() == CK_LValueToRValue)
+        if (ICE->getCastKind() == CK_LValueToRValue) {
           Roles |= (unsigned)(unsigned)SymbolRole::Read;
+
+}
       }
-      if (It == StmtStack.begin())
+      if (It == StmtStack.begin()) {
         break;
+
+}
       --It;
     }
     const Stmt *Parent = *It;
 
     if (auto BO = dyn_cast<BinaryOperator>(Parent)) {
-      if (BO->getOpcode() == BO_Assign && BO->getLHS()->IgnoreParenCasts() == E)
+      if (BO->getOpcode() == BO_Assign && BO->getLHS()->IgnoreParenCasts() == E) {
         Roles |= (unsigned)SymbolRole::Write;
+
+}
 
     } else if (auto UO = dyn_cast<UnaryOperator>(Parent)) {
       if (UO->isIncrementDecrementOp()) {
@@ -94,15 +102,21 @@ public:
       if (CE->getCallee()->IgnoreParenCasts() == E) {
         addCallRole(Roles, Relations);
         if (auto *ME = dyn_cast<MemberExpr>(E)) {
-          if (auto *CXXMD = dyn_cast_or_null<CXXMethodDecl>(ME->getMemberDecl()))
+          if (auto *CXXMD = dyn_cast_or_null<CXXMethodDecl>(ME->getMemberDecl())) {
             if (CXXMD->isVirtual() && !ME->hasQualifier()) {
               Roles |= (unsigned)SymbolRole::Dynamic;
               auto BaseTy = ME->getBase()->IgnoreImpCasts()->getType();
-              if (!BaseTy.isNull())
-                if (auto *CXXRD = BaseTy->getPointeeCXXRecordDecl())
+              if (!BaseTy.isNull()) {
+                if (auto *CXXRD = BaseTy->getPointeeCXXRecordDecl()) {
                   Relations.emplace_back((unsigned)SymbolRole::RelationReceivedBy,
                                          CXXRD);
+
+}
+
+}
             }
+
+}
         }
       } else if (auto CXXOp = dyn_cast<CXXOperatorCallExpr>(CE)) {
         if (CXXOp->getNumArgs() > 0 && CXXOp->getArg(0)->IgnoreParenCasts() == E) {
@@ -127,10 +141,12 @@ public:
   void addCallRole(SymbolRoleSet &Roles,
                    SmallVectorImpl<SymbolRelation> &Relations) {
     Roles |= (unsigned)SymbolRole::Call;
-    if (auto *FD = dyn_cast<FunctionDecl>(ParentDC))
+    if (auto *FD = dyn_cast<FunctionDecl>(ParentDC)) {
       Relations.emplace_back((unsigned)SymbolRole::RelationCalledBy, FD);
-    else if (auto *MD = dyn_cast<ObjCMethodDecl>(ParentDC))
+    } else if (auto *MD = dyn_cast<ObjCMethodDecl>(ParentDC)) {
       Relations.emplace_back((unsigned)SymbolRole::RelationCalledBy, MD);
+
+}
   }
 
   bool VisitDeclRefExpr(DeclRefExpr *E) {
@@ -142,8 +158,10 @@ public:
 
   bool VisitMemberExpr(MemberExpr *E) {
     SourceLocation Loc = E->getMemberLoc();
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       Loc = E->getBeginLoc();
+
+}
     SmallVector<SymbolRelation, 4> Relations;
     SymbolRoleSet Roles = getRolesForRef(E, Relations);
     return IndexCtx.handleReference(E->getMemberDecl(), Loc,
@@ -153,29 +171,41 @@ public:
   bool indexDependentReference(
       const Expr *E, const Type *T, const DeclarationNameInfo &NameInfo,
       llvm::function_ref<bool(const NamedDecl *ND)> Filter) {
-    if (!T)
+    if (!T) {
       return true;
+
+}
     const TemplateSpecializationType *TST =
         T->getAs<TemplateSpecializationType>();
-    if (!TST)
+    if (!TST) {
       return true;
+
+}
     TemplateName TN = TST->getTemplateName();
     const ClassTemplateDecl *TD =
         dyn_cast_or_null<ClassTemplateDecl>(TN.getAsTemplateDecl());
-    if (!TD)
+    if (!TD) {
       return true;
+
+}
     CXXRecordDecl *RD = TD->getTemplatedDecl();
-    if (!RD->hasDefinition())
+    if (!RD->hasDefinition()) {
       return true;
+
+}
     RD = RD->getDefinition();
     std::vector<const NamedDecl *> Symbols =
         RD->lookupDependentName(NameInfo.getName(), Filter);
     // FIXME: Improve overload handling.
-    if (Symbols.size() != 1)
+    if (Symbols.size() != 1) {
       return true;
+
+}
     SourceLocation Loc = NameInfo.getLoc();
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       Loc = E->getBeginLoc();
+
+}
     SmallVector<SymbolRelation, 4> Relations;
     SymbolRoleSet Roles = getRolesForRef(E, Relations);
     return IndexCtx.handleReference(Symbols[0], Loc, Parent, ParentDC, Roles,
@@ -199,9 +229,11 @@ public:
 
   bool VisitDesignatedInitExpr(DesignatedInitExpr *E) {
     for (DesignatedInitExpr::Designator &D : llvm::reverse(E->designators())) {
-      if (D.isFieldDesignator() && D.getField())
+      if (D.isFieldDesignator() && D.getField()) {
         return IndexCtx.handleReference(D.getField(), D.getFieldLoc(), Parent,
                                         ParentDC, SymbolRoleSet(), {}, E);
+
+}
     }
     return true;
   }
@@ -215,12 +247,16 @@ public:
 
   bool VisitObjCMessageExpr(ObjCMessageExpr *E) {
     auto isDynamic = [](const ObjCMessageExpr *MsgE)->bool {
-      if (MsgE->getReceiverKind() != ObjCMessageExpr::Instance)
+      if (MsgE->getReceiverKind() != ObjCMessageExpr::Instance) {
         return false;
+
+}
       if (auto *RecE = dyn_cast<ObjCMessageExpr>(
               MsgE->getInstanceReceiver()->IgnoreParenCasts())) {
-        if (RecE->getMethodFamily() == OMF_alloc)
+        if (RecE->getMethodFamily() == OMF_alloc) {
           return false;
+
+}
       }
       return true;
     };
@@ -233,20 +269,28 @@ public:
 
       auto IsImplicitProperty = [](const PseudoObjectExpr *POE) -> bool {
         const auto *E = POE->getSyntacticForm();
-        if (const auto *BinOp = dyn_cast<BinaryOperator>(E))
+        if (const auto *BinOp = dyn_cast<BinaryOperator>(E)) {
           E = BinOp->getLHS();
+
+}
         const auto *PRE = dyn_cast<ObjCPropertyRefExpr>(E);
-        if (!PRE)
+        if (!PRE) {
           return false;
-        if (PRE->isExplicitProperty())
+
+}
+        if (PRE->isExplicitProperty()) {
           return false;
+
+}
         if (const ObjCMethodDecl *Getter = PRE->getImplicitPropertyGetter()) {
           // Class properties that are explicitly defined using @property
           // declarations are represented implicitly as there is no ivar for
           // class properties.
           if (Getter->isClassMethod() &&
-              Getter->getCanonicalDecl()->findPropertyDecl())
+              Getter->getCanonicalDecl()->findPropertyDecl()) {
             return false;
+
+}
         }
         return true;
       };
@@ -254,15 +298,19 @@ public:
       // Implicit property message sends are not 'implicit'.
       if ((E->isImplicit() || IsPropCall) &&
           !(IsPropCall &&
-            IsImplicitProperty(cast<PseudoObjectExpr>(Containing))))
+            IsImplicitProperty(cast<PseudoObjectExpr>(Containing)))) {
         Roles |= (unsigned)SymbolRole::Implicit;
+
+}
 
       if (isDynamic(E)) {
         Roles |= (unsigned)SymbolRole::Dynamic;
 
         auto addReceivers = [&](const ObjCObjectType *Ty) {
-          if (!Ty)
+          if (!Ty) {
             return;
+
+}
           if (const auto *clsD = Ty->getInterface()) {
             Relations.emplace_back((unsigned)SymbolRole::RelationReceivedBy,
                                    clsD);
@@ -273,10 +321,12 @@ public:
           }
         };
         QualType recT = E->getReceiverType();
-        if (const auto *Ptr = recT->getAs<ObjCObjectPointerType>())
+        if (const auto *Ptr = recT->getAs<ObjCObjectPointerType>()) {
           addReceivers(Ptr->getObjectType());
-        else
+        } else {
           addReceivers(recT->getAs<ObjCObjectType>());
+
+}
       }
 
       return IndexCtx.handleReference(MD, E->getSelectorStartLoc(),
@@ -286,9 +336,11 @@ public:
   }
 
   bool VisitObjCPropertyRefExpr(ObjCPropertyRefExpr *E) {
-    if (E->isClassReceiver())
+    if (E->isClassReceiver()) {
       IndexCtx.handleReference(E->getClassReceiver(), E->getReceiverLocation(),
                                Parent, ParentDC);
+
+}
     if (E->isExplicitProperty()) {
       SmallVector<SymbolRelation, 2> Relations;
       SymbolRoleSet Roles = getRolesForRef(E, Relations);
@@ -363,8 +415,10 @@ public:
 
   bool TraverseCXXOperatorCallExpr(CXXOperatorCallExpr *E,
                                    DataRecursionQueue *Q = nullptr) {
-    if (E->getOperatorLoc().isInvalid())
+    if (E->getOperatorLoc().isInvalid()) {
       return true; // implicit.
+
+}
     return base::TraverseCXXOperatorCallExpr(E, Q);
   }
 
@@ -377,10 +431,14 @@ public:
     DeclGroupRef DG = S->getDeclGroup();
     for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
       const Decl *D = *I;
-      if (!D)
+      if (!D) {
         continue;
-      if (!isFunctionLocalSymbol(D))
+
+}
+      if (!isFunctionLocalSymbol(D)) {
         IndexCtx.indexTopLevelDecl(D);
+
+}
     }
 
     return true;
@@ -388,12 +446,16 @@ public:
 
   bool TraverseLambdaCapture(LambdaExpr *LE, const LambdaCapture *C,
                              Expr *Init) {
-    if (C->capturesThis() || C->capturesVLAType())
+    if (C->capturesThis() || C->capturesVLAType()) {
       return true;
 
-    if (C->capturesVariable() && IndexCtx.shouldIndexFunctionLocalSymbols())
+}
+
+    if (C->capturesVariable() && IndexCtx.shouldIndexFunctionLocalSymbols()) {
       return IndexCtx.handleReference(C->getCapturedVar(), C->getLocation(),
                                       Parent, ParentDC, SymbolRoleSet());
+
+}
 
     // FIXME: Lambda init-captures.
     return true;
@@ -406,18 +468,22 @@ public:
   bool TraverseInitListExpr(InitListExpr *S, DataRecursionQueue *Q = nullptr) {
     auto visitForm = [&](InitListExpr *Form) {
       for (Stmt *SubStmt : Form->children()) {
-        if (!TraverseStmt(SubStmt, Q))
+        if (!TraverseStmt(SubStmt, Q)) {
           return false;
+
+}
       }
       return true;
     };
 
     auto visitSyntacticDesignatedInitExpr = [&](DesignatedInitExpr *E) -> bool {
       for (DesignatedInitExpr::Designator &D : llvm::reverse(E->designators())) {
-        if (D.isFieldDesignator())
+        if (D.isFieldDesignator()) {
           return IndexCtx.handleReference(D.getField(), D.getFieldLoc(),
                                           Parent, ParentDC, SymbolRoleSet(),
                                           {}, E);
+
+}
       }
       return true;
     };
@@ -429,8 +495,10 @@ public:
       // Visit things present in syntactic form but not the semantic form.
       if (SyntaxForm) {
         for (Expr *init : SyntaxForm->inits()) {
-          if (auto *DIE = dyn_cast<DesignatedInitExpr>(init))
+          if (auto *DIE = dyn_cast<DesignatedInitExpr>(init)) {
             visitSyntacticDesignatedInitExpr(DIE);
+
+}
         }
       }
       return visitForm(SemaForm);
@@ -447,9 +515,11 @@ public:
   bool VisitOffsetOfExpr(OffsetOfExpr *S) {
     for (unsigned I = 0, E = S->getNumComponents(); I != E; ++I) {
       const OffsetOfNode &Component = S->getComponent(I);
-      if (Component.getKind() == OffsetOfNode::Field)
+      if (Component.getKind() == OffsetOfNode::Field) {
         IndexCtx.handleReference(Component.getField(), Component.getEndLoc(),
                                  Parent, ParentDC, SymbolRoleSet(), {});
+
+}
       // FIXME: Try to resolve dependent field references.
     }
     return true;
@@ -459,8 +529,10 @@ public:
     // Index the parameters of lambda expression.
     if (IndexCtx.shouldIndexFunctionLocalSymbols()) {
       const auto *DC = D->getDeclContext();
-      if (DC && isLambdaCallOperator(DC))
+      if (DC && isLambdaCallOperator(DC)) {
         IndexCtx.handleDecl(D);
+
+}
     }
     return true;
   }
@@ -470,10 +542,14 @@ public:
 
 void IndexingContext::indexBody(const Stmt *S, const NamedDecl *Parent,
                                 const DeclContext *DC) {
-  if (!S)
+  if (!S) {
     return;
 
-  if (!DC)
+}
+
+  if (!DC) {
     DC = Parent->getLexicalDeclContext();
+
+}
   BodyIndexer(*this, Parent, DC).TraverseStmt(const_cast<Stmt*>(S));
 }

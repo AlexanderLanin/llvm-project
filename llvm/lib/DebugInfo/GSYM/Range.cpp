@@ -18,21 +18,27 @@ using namespace gsym;
 
 
 void AddressRanges::insert(AddressRange Range) {
-  if (Range.size() == 0)
+  if (Range.size() == 0) {
     return;
+
+}
 
   auto It = llvm::upper_bound(Ranges, Range);
   auto It2 = It;
-  while (It2 != Ranges.end() && It2->Start < Range.End)
+  while (It2 != Ranges.end() && It2->Start < Range.End) {
     ++It2;
+
+}
   if (It != It2) {
     Range.End = std::max(Range.End, It2[-1].End);
     It = Ranges.erase(It, It2);
   }
-  if (It != Ranges.begin() && Range.Start < It[-1].End)
+  if (It != Ranges.begin() && Range.Start < It[-1].End) {
     It[-1].End = std::max(It[-1].End, Range.End);
-  else
+  } else {
     Ranges.insert(It, Range);
+
+}
 }
 
 bool AddressRanges::contains(uint64_t Addr) const {
@@ -43,13 +49,17 @@ bool AddressRanges::contains(uint64_t Addr) const {
 }
 
 bool AddressRanges::contains(AddressRange Range) const {
-  if (Range.size() == 0)
+  if (Range.size() == 0) {
     return false;
+
+}
   auto It = std::partition_point(
       Ranges.begin(), Ranges.end(),
       [=](const AddressRange &R) { return R.Start <= Range.Start; });
-  if (It == Ranges.begin())
+  if (It == Ranges.begin()) {
     return false;
+
+}
   return Range.End <= It[-1].End;
 }
 
@@ -58,8 +68,10 @@ AddressRanges::getRangeThatContains(uint64_t Addr) const {
   auto It = std::partition_point(
       Ranges.begin(), Ranges.end(),
       [=](const AddressRange &R) { return R.Start <= Addr; });
-  if (It != Ranges.begin() && Addr < It[-1].End)
+  if (It != Ranges.begin() && Addr < It[-1].End) {
     return It[-1];
+
+}
   return llvm::None;
 }
 
@@ -70,8 +82,10 @@ raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const AddressRange &R) {
 raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const AddressRanges &AR) {
   size_t Size = AR.size();
   for (size_t I = 0; I < Size; ++I) {
-    if (I)
+    if (I) {
       OS << ' ';
+
+}
     OS << AR[I];
   }
   return OS;
@@ -94,21 +108,29 @@ void AddressRange::decode(DataExtractor &Data, uint64_t BaseAddr,
 
 void AddressRanges::encode(FileWriter &O, uint64_t BaseAddr) const {
   O.writeULEB(Ranges.size());
-  if (Ranges.empty())
+  if (Ranges.empty()) {
     return;
-  for (auto Range : Ranges)
+
+}
+  for (auto Range : Ranges) {
     Range.encode(O, BaseAddr);
+
+}
 }
 
 void AddressRanges::decode(DataExtractor &Data, uint64_t BaseAddr,
                            uint64_t &Offset) {
   clear();
   uint64_t NumRanges = Data.getULEB128(&Offset);
-  if (NumRanges == 0)
+  if (NumRanges == 0) {
     return;
+
+}
   Ranges.resize(NumRanges);
-  for (auto &Range : Ranges)
+  for (auto &Range : Ranges) {
     Range.decode(Data, BaseAddr, Offset);
+
+}
 }
 
 void AddressRange::skip(DataExtractor &Data, uint64_t &Offset) {
@@ -118,7 +140,9 @@ void AddressRange::skip(DataExtractor &Data, uint64_t &Offset) {
 
 uint64_t AddressRanges::skip(DataExtractor &Data, uint64_t &Offset) {
   uint64_t NumRanges = Data.getULEB128(&Offset);
-  for (uint64_t I=0; I<NumRanges; ++I)
+  for (uint64_t I=0; I<NumRanges; ++I) {
     AddressRange::skip(Data, Offset);
+
+}
   return NumRanges;
 }

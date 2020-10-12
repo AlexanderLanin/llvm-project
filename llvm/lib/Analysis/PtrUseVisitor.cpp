@@ -31,8 +31,10 @@ void detail::PtrUseVisitorBase::enqueueUsers(Instruction &I) {
 }
 
 bool detail::PtrUseVisitorBase::adjustOffsetForGEP(GetElementPtrInst &GEPI) {
-  if (!IsOffsetKnown)
+  if (!IsOffsetKnown) {
     return false;
+
+}
 
   APInt TmpOffset(DL.getIndexTypeSizeInBits(GEPI.getType()), 0);
   if (GEPI.accumulateConstantOffset(DL, TmpOffset)) {

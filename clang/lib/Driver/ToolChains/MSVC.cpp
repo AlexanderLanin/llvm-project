@@ -98,23 +98,29 @@ static bool findVCToolChainViaEnvironment(std::string &Path,
     llvm::SmallVector<llvm::StringRef, 8> PathEntries;
     llvm::StringRef(*PathEnv).split(PathEntries, llvm::sys::EnvPathSeparator);
     for (llvm::StringRef PathEntry : PathEntries) {
-      if (PathEntry.empty())
+      if (PathEntry.empty()) {
         continue;
+
+}
 
       llvm::SmallString<256> ExeTestPath;
 
       // If cl.exe doesn't exist, then this definitely isn't a VC toolchain.
       ExeTestPath = PathEntry;
       llvm::sys::path::append(ExeTestPath, "cl.exe");
-      if (!llvm::sys::fs::exists(ExeTestPath))
+      if (!llvm::sys::fs::exists(ExeTestPath)) {
         continue;
+
+}
 
       // cl.exe existing isn't a conclusive test for a VC toolchain; clang also
       // has a cl.exe. So let's check for link.exe too.
       ExeTestPath = PathEntry;
       llvm::sys::path::append(ExeTestPath, "link.exe");
-      if (!llvm::sys::fs::exists(ExeTestPath))
+      if (!llvm::sys::fs::exists(ExeTestPath)) {
         continue;
+
+}
 
       // whatever/VC/bin --> old toolchain, VC dir is toolchain dir.
       llvm::StringRef TestPath = PathEntry;
@@ -150,18 +156,24 @@ static bool findVCToolChainViaEnvironment(std::string &Path,
         auto It = llvm::sys::path::rbegin(PathEntry);
         auto End = llvm::sys::path::rend(PathEntry);
         for (llvm::StringRef Prefix : ExpectedPrefixes) {
-          if (It == End)
+          if (It == End) {
             goto NotAToolChain;
-          if (!It->startswith(Prefix))
+
+}
+          if (!It->startswith(Prefix)) {
             goto NotAToolChain;
+
+}
           ++It;
         }
 
         // We've found a new toolchain!
         // Back up 3 times (/bin/Host/arch) to get the root path.
         llvm::StringRef ToolChainPath(PathEntry);
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 3; ++i) {
           ToolChainPath = llvm::sys::path::parent_path(ToolChainPath);
+
+}
 
         Path = std::string(ToolChainPath);
         VSLayout = MSVCToolChain::ToolsetLayout::VS2017OrNewer;
@@ -314,13 +326,17 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   auto &TC = static_cast<const toolchains::MSVCToolChain &>(getToolChain());
 
   assert((Output.isFilename() || Output.isNothing()) && "invalid output");
-  if (Output.isFilename())
+  if (Output.isFilename()) {
     CmdArgs.push_back(
         Args.MakeArgString(std::string("-out:") + Output.getFilename()));
 
+}
+
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles) &&
-      !C.getDriver().IsCLMode())
+      !C.getDriver().IsCLMode()) {
     CmdArgs.push_back("-defaultlib:libcmt");
+
+}
 
   if (!llvm::sys::Process::GetEnv("LIB")) {
     // If the VC environment hasn't been configured (perhaps because the user
@@ -339,26 +355,36 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
     if (TC.useUniversalCRT()) {
       std::string UniversalCRTLibPath;
-      if (TC.getUniversalCRTLibraryPath(UniversalCRTLibPath))
+      if (TC.getUniversalCRTLibraryPath(UniversalCRTLibPath)) {
         CmdArgs.push_back(
             Args.MakeArgString(Twine("-libpath:") + UniversalCRTLibPath));
+
+}
     }
 
     std::string WindowsSdkLibPath;
-    if (TC.getWindowsSDKLibraryPath(WindowsSdkLibPath))
+    if (TC.getWindowsSDKLibraryPath(WindowsSdkLibPath)) {
       CmdArgs.push_back(
           Args.MakeArgString(std::string("-libpath:") + WindowsSdkLibPath));
+
+}
   }
 
-  if (!C.getDriver().IsCLMode() && Args.hasArg(options::OPT_L))
-    for (const auto &LibPath : Args.getAllArgValues(options::OPT_L))
+  if (!C.getDriver().IsCLMode() && Args.hasArg(options::OPT_L)) {
+    for (const auto &LibPath : Args.getAllArgValues(options::OPT_L)) {
       CmdArgs.push_back(Args.MakeArgString("-libpath:" + LibPath));
+
+}
+
+}
 
   CmdArgs.push_back("-nologo");
 
   if (Args.hasArg(options::OPT_g_Group, options::OPT__SLASH_Z7,
-                  options::OPT__SLASH_Zd))
+                  options::OPT__SLASH_Zd)) {
     CmdArgs.push_back("-debug");
+
+}
 
   // Pass on /Brepro if it was passed to the compiler.
   // Note that /Brepro maps to -mno-incremental-linker-compatible.
@@ -366,8 +392,10 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       C.getDefaultToolChain().getTriple().isWindowsMSVCEnvironment();
   if (!Args.hasFlag(options::OPT_mincremental_linker_compatible,
                     options::OPT_mno_incremental_linker_compatible,
-                    DefaultIncrementalLinkerCompatible))
+                    DefaultIncrementalLinkerCompatible)) {
     CmdArgs.push_back("-Brepro");
+
+}
 
   bool DLL = Args.hasArg(options::OPT__SLASH_LD, options::OPT__SLASH_LDd,
                          options::OPT_shared);
@@ -380,10 +408,12 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (TC.getSanitizerArgs().needsFuzzer()) {
-    if (!Args.hasArg(options::OPT_shared))
+    if (!Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back(
           Args.MakeArgString(std::string("-wholearchive:") +
                              TC.getCompilerRTArgString(Args, "fuzzer")));
+
+}
     CmdArgs.push_back(Args.MakeArgString("-debug"));
     // Prevent the linker from padding sections we use for instrumentation
     // arrays.
@@ -395,8 +425,10 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Args.MakeArgString("-incremental:no"));
     if (TC.getSanitizerArgs().needsSharedRt() ||
         Args.hasArg(options::OPT__SLASH_MD, options::OPT__SLASH_MDd)) {
-      for (const auto &Lib : {"asan_dynamic", "asan_dynamic_runtime_thunk"})
+      for (const auto &Lib : {"asan_dynamic", "asan_dynamic_runtime_thunk"}) {
         CmdArgs.push_back(TC.getCompilerRTArgString(Args, Lib));
+
+}
       // Make sure the dynamic runtime thunk is not optimized out at link time
       // to ensure proper SEH handling.
       CmdArgs.push_back(Args.MakeArgString(
@@ -474,10 +506,12 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (A.getOption().matches(options::OPT_l)) {
       StringRef Lib = A.getValue();
       const char *LinkLibArg;
-      if (Lib.endswith(".lib"))
+      if (Lib.endswith(".lib")) {
         LinkLibArg = Args.MakeArgString(Lib);
-      else
+      } else {
         LinkLibArg = Args.MakeArgString(Lib + ".lib");
+
+}
       CmdArgs.push_back(LinkLibArg);
       continue;
     }
@@ -496,8 +530,10 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // linker, we need to use a special search algorithm.
   llvm::SmallString<128> linkPath;
   StringRef Linker = Args.getLastArgValue(options::OPT_fuse_ld_EQ, "link");
-  if (Linker.equals_lower("lld"))
+  if (Linker.equals_lower("lld")) {
     Linker = "lld-link";
+
+}
 
   if (Linker.equals_lower("link")) {
     // If we're using the MSVC linker, it's not sufficient to just use link
@@ -511,8 +547,10 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       if (llvm::sys::fs::can_execute(ClPath)) {
         linkPath = llvm::sys::path::parent_path(ClPath);
         llvm::sys::path::append(linkPath, "link.exe");
-        if (!llvm::sys::fs::can_execute(linkPath))
+        if (!llvm::sys::fs::can_execute(linkPath)) {
           C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
+
+}
       } else {
         C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
       }
@@ -584,8 +622,10 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   auto LinkCmd = std::make_unique<Command>(
       JA, *this, Args.MakeArgString(linkPath), CmdArgs, Inputs);
-  if (!Environment.empty())
+  if (!Environment.empty()) {
     LinkCmd->setEnvironment(Environment);
+
+}
   C.addCommand(std::move(LinkCmd));
 }
 
@@ -613,9 +653,11 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
   Args.AddAllArgs(CmdArgs, {options::OPT_D, options::OPT_U, options::OPT_I});
 
   // Optimization level.
-  if (Arg *A = Args.getLastArg(options::OPT_fbuiltin, options::OPT_fno_builtin))
+  if (Arg *A = Args.getLastArg(options::OPT_fbuiltin, options::OPT_fno_builtin)) {
     CmdArgs.push_back(A->getOption().getID() == options::OPT_fbuiltin ? "/Oi"
                                                                       : "/Oi-");
+
+}
   if (Arg *A = Args.getLastArg(options::OPT_O, options::OPT_O0)) {
     if (A->getOption().getID() == options::OPT_O0) {
       CmdArgs.push_back("/Od");
@@ -623,52 +665,72 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
       CmdArgs.push_back("/Og");
 
       StringRef OptLevel = A->getValue();
-      if (OptLevel == "s" || OptLevel == "z")
+      if (OptLevel == "s" || OptLevel == "z") {
         CmdArgs.push_back("/Os");
-      else
+      } else {
         CmdArgs.push_back("/Ot");
+
+}
 
       CmdArgs.push_back("/Ob2");
     }
   }
   if (Arg *A = Args.getLastArg(options::OPT_fomit_frame_pointer,
-                               options::OPT_fno_omit_frame_pointer))
+                               options::OPT_fno_omit_frame_pointer)) {
     CmdArgs.push_back(A->getOption().getID() == options::OPT_fomit_frame_pointer
                           ? "/Oy"
                           : "/Oy-");
-  if (!Args.hasArg(options::OPT_fwritable_strings))
+
+}
+  if (!Args.hasArg(options::OPT_fwritable_strings)) {
     CmdArgs.push_back("/GF");
+
+}
 
   // Flags for which clang-cl has an alias.
   // FIXME: How can we ensure this stays in sync with relevant clang-cl options?
 
   if (Args.hasFlag(options::OPT__SLASH_GR_, options::OPT__SLASH_GR,
-                   /*Default=*/false))
+                   /*Default=*/false)) {
     CmdArgs.push_back("/GR-");
 
+}
+
   if (Args.hasFlag(options::OPT__SLASH_GS_, options::OPT__SLASH_GS,
-                   /*Default=*/false))
+                   /*Default=*/false)) {
     CmdArgs.push_back("/GS-");
 
+}
+
   if (Arg *A = Args.getLastArg(options::OPT_ffunction_sections,
-                               options::OPT_fno_function_sections))
+                               options::OPT_fno_function_sections)) {
     CmdArgs.push_back(A->getOption().getID() == options::OPT_ffunction_sections
                           ? "/Gy"
                           : "/Gy-");
+
+}
   if (Arg *A = Args.getLastArg(options::OPT_fdata_sections,
-                               options::OPT_fno_data_sections))
+                               options::OPT_fno_data_sections)) {
     CmdArgs.push_back(
         A->getOption().getID() == options::OPT_fdata_sections ? "/Gw" : "/Gw-");
-  if (Args.hasArg(options::OPT_fsyntax_only))
+
+}
+  if (Args.hasArg(options::OPT_fsyntax_only)) {
     CmdArgs.push_back("/Zs");
+
+}
   if (Args.hasArg(options::OPT_g_Flag, options::OPT_gline_tables_only,
-                  options::OPT__SLASH_Z7))
+                  options::OPT__SLASH_Z7)) {
     CmdArgs.push_back("/Z7");
+
+}
 
   std::vector<std::string> Includes =
       Args.getAllArgValues(options::OPT_include);
-  for (const auto &Include : Includes)
+  for (const auto &Include : Includes) {
     CmdArgs.push_back(Args.MakeArgString(std::string("/FI") + Include));
+
+}
 
   // Flags that can simply be passed through.
   Args.AddAllArgs(CmdArgs, options::OPT__SLASH_LD);
@@ -680,8 +742,10 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
 
   // The order of these flags is relevant, so pick the last one.
   if (Arg *A = Args.getLastArg(options::OPT__SLASH_MD, options::OPT__SLASH_MDd,
-                               options::OPT__SLASH_MT, options::OPT__SLASH_MTd))
+                               options::OPT__SLASH_MT, options::OPT__SLASH_MTd)) {
     A->render(Args, CmdArgs);
+
+}
 
   // Use MSVC's default threadsafe statics behaviour unless there was a flag.
   if (Arg *A = Args.getLastArg(options::OPT_fthreadsafe_statics,
@@ -711,10 +775,12 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
   const InputInfo &II = Inputs[0];
   assert(II.getType() == types::TY_C || II.getType() == types::TY_CXX);
   CmdArgs.push_back(II.getType() == types::TY_C ? "/Tc" : "/Tp");
-  if (II.isFilename())
+  if (II.isFilename()) {
     CmdArgs.push_back(II.getFilename());
-  else
+  } else {
     II.getInputArg().renderAsInput(Args, CmdArgs);
+
+}
 
   // Output filename.
   assert(Output.getType() == types::TY_Object);
@@ -731,8 +797,10 @@ MSVCToolChain::MSVCToolChain(const Driver &D, const llvm::Triple &Triple,
                              const ArgList &Args)
     : ToolChain(D, Triple, Args), CudaInstallation(D, Triple, Args) {
   getProgramPaths().push_back(getDriver().getInstalledDir());
-  if (getDriver().getInstalledDir() != getDriver().Dir)
+  if (getDriver().getInstalledDir() != getDriver().Dir) {
     getProgramPaths().push_back(getDriver().Dir);
+
+}
 
   // Check the environment first, since that's probably the user telling us
   // what they want to use.
@@ -748,8 +816,10 @@ Tool *MSVCToolChain::buildLinker() const {
 }
 
 Tool *MSVCToolChain::buildAssembler() const {
-  if (getTriple().isOSBinFormatMachO())
+  if (getTriple().isOSBinFormatMachO()) {
     return new tools::darwin::Assembler(*this);
+
+}
   getDriver().Diag(clang::diag::err_no_external_assembler);
   return nullptr;
 }
@@ -760,8 +830,10 @@ bool MSVCToolChain::IsIntegratedAssemblerDefault() const {
 
 bool MSVCToolChain::IsUnwindTablesDefault(const ArgList &Args) const {
   // Don't emit unwind tables by default for MachO targets.
-  if (getTriple().isOSBinFormatMachO())
+  if (getTriple().isOSBinFormatMachO()) {
     return false;
+
+}
 
   // All non-x86_32 Windows targets require unwind tables. However, LLVM
   // doesn't know how to generate them for all targets, so only enable
@@ -872,8 +944,10 @@ MSVCToolChain::getSubDirectoryPath(SubDirectoryType Type,
   }
 
   llvm::SmallString<256> Path(VCToolChainPath);
-  if (!SubdirParent.empty())
+  if (!SubdirParent.empty()) {
     llvm::sys::path::append(Path, SubdirParent);
+
+}
 
   switch (Type) {
   case SubDirectoryType::Bin:
@@ -1038,16 +1112,22 @@ static bool getWindows10SDKVersionFromPath(const std::string &SDKPath,
   llvm::sys::path::append(IncludePath, "Include");
   for (llvm::sys::fs::directory_iterator DirIt(IncludePath, EC), DirEnd;
        DirIt != DirEnd && !EC; DirIt.increment(EC)) {
-    if (!llvm::sys::fs::is_directory(DirIt->path()))
+    if (!llvm::sys::fs::is_directory(DirIt->path())) {
       continue;
+
+}
     StringRef CandidateName = llvm::sys::path::filename(DirIt->path());
     // If WDK is installed, there could be subfolders like "wdf" in the
     // "Include" directory.
     // Allow only directories which names start with "10.".
-    if (!CandidateName.startswith("10."))
+    if (!CandidateName.startswith("10.")) {
       continue;
-    if (CandidateName > SDKVersion)
+
+}
+    if (CandidateName > SDKVersion) {
       SDKVersion = std::string(CandidateName);
+
+}
   }
 
   return !SDKVersion.empty();
@@ -1061,17 +1141,23 @@ static bool getWindowsSDKDir(std::string &Path, int &Major,
   // Try the Windows registry.
   if (!getSystemRegistryString(
           "SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\$VERSION",
-          "InstallationFolder", Path, &RegistrySDKVersion))
+          "InstallationFolder", Path, &RegistrySDKVersion)) {
     return false;
-  if (Path.empty() || RegistrySDKVersion.empty())
+
+}
+  if (Path.empty() || RegistrySDKVersion.empty()) {
     return false;
+
+}
 
   WindowsSDKIncludeVersion.clear();
   WindowsSDKLibVersion.clear();
   Major = 0;
   std::sscanf(RegistrySDKVersion.c_str(), "v%d.", &Major);
-  if (Major <= 7)
+  if (Major <= 7) {
     return true;
+
+}
   if (Major == 8) {
     // Windows SDK 8.x installs libraries in a folder whose names depend on the
     // version of the OS you're targeting.  By default choose the newest, which
@@ -1088,8 +1174,10 @@ static bool getWindowsSDKDir(std::string &Path, int &Major,
     return !WindowsSDKLibVersion.empty();
   }
   if (Major == 10) {
-    if (!getWindows10SDKVersionFromPath(Path, WindowsSDKIncludeVersion))
+    if (!getWindows10SDKVersionFromPath(Path, WindowsSDKIncludeVersion)) {
       return false;
+
+}
     WindowsSDKLibVersion = WindowsSDKIncludeVersion;
     return true;
   }
@@ -1106,8 +1194,10 @@ bool MSVCToolChain::getWindowsSDKLibraryPath(std::string &path) const {
 
   path.clear();
   if (!getWindowsSDKDir(sdkPath, sdkMajor, windowsSDKIncludeVersion,
-                        windowsSDKLibVersion))
+                        windowsSDKLibVersion)) {
     return false;
+
+}
 
   llvm::SmallString<128> libPath(sdkPath);
   llvm::sys::path::append(libPath, "Lib");
@@ -1148,8 +1238,10 @@ static bool getUniversalCRTSdkDir(std::string &Path, std::string &UCRTVersion) {
   // for the specific key "KitsRoot10". So do we.
   if (!getSystemRegistryString(
           "SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots", "KitsRoot10",
-          Path, nullptr))
+          Path, nullptr)) {
     return false;
+
+}
 
   return getWindows10SDKVersionFromPath(Path, UCRTVersion);
 }
@@ -1159,12 +1251,16 @@ bool MSVCToolChain::getUniversalCRTLibraryPath(std::string &Path) const {
   std::string UCRTVersion;
 
   Path.clear();
-  if (!getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion))
+  if (!getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion)) {
     return false;
 
+}
+
   StringRef ArchName = llvmArchToWindowsSDKArch(getArch());
-  if (ArchName.empty())
+  if (ArchName.empty()) {
     return false;
+
+}
 
   llvm::SmallString<128> LibPath(UniversalCRTSdkPath);
   llvm::sys::path::append(LibPath, "Lib", UCRTVersion, "ucrt", ArchName);
@@ -1176,8 +1272,10 @@ bool MSVCToolChain::getUniversalCRTLibraryPath(std::string &Path) const {
 static VersionTuple getMSVCVersionFromTriple(const llvm::Triple &Triple) {
   unsigned Major, Minor, Micro;
   Triple.getEnvironmentVersion(Major, Minor, Micro);
-  if (Major || Minor || Micro)
+  if (Major || Minor || Micro) {
     return VersionTuple(Major, Minor, Micro);
+
+}
   return VersionTuple();
 }
 
@@ -1228,8 +1326,10 @@ void MSVCToolChain::AddSystemIncludeWithSubfolder(
 
 void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                               ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     AddSystemIncludeWithSubfolder(DriverArgs, CC1Args, getDriver().ResourceDir,
@@ -1237,11 +1337,15 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
   }
 
   // Add %INCLUDE%-like directories from the -imsvc flag.
-  for (const auto &Path : DriverArgs.getAllArgValues(options::OPT__SLASH_imsvc))
+  for (const auto &Path : DriverArgs.getAllArgValues(options::OPT__SLASH_imsvc)) {
     addSystemInclude(DriverArgs, CC1Args, Path);
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+}
+
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   // Honor %INCLUDE%. It should know essential search paths with vcvarsall.bat.
   if (llvm::Optional<std::string> cl_include_dir =
@@ -1249,10 +1353,14 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     SmallVector<StringRef, 8> Dirs;
     StringRef(*cl_include_dir)
         .split(Dirs, ";", /*MaxSplit=*/-1, /*KeepEmpty=*/false);
-    for (StringRef Dir : Dirs)
+    for (StringRef Dir : Dirs) {
       addSystemInclude(DriverArgs, CC1Args, Dir);
-    if (!Dirs.empty())
+
+}
+    if (!Dirs.empty()) {
       return;
+
+}
   }
 
   // When built with access to the proper Windows APIs, try to actually find
@@ -1322,10 +1430,14 @@ VersionTuple MSVCToolChain::computeMSVCVersion(const Driver *D,
                                                const ArgList &Args) const {
   bool IsWindowsMSVC = getTriple().isWindowsMSVCEnvironment();
   VersionTuple MSVT = ToolChain::computeMSVCVersion(D, Args);
-  if (MSVT.empty())
+  if (MSVT.empty()) {
     MSVT = getMSVCVersionFromTriple(getTriple());
-  if (MSVT.empty() && IsWindowsMSVC)
+
+}
+  if (MSVT.empty() && IsWindowsMSVC) {
     MSVT = getMSVCVersionFromExe(getSubDirectoryPath(SubDirectoryType::Bin));
+
+}
   if (MSVT.empty() &&
       Args.hasFlag(options::OPT_fms_extensions, options::OPT_fno_ms_extensions,
                    IsWindowsMSVC)) {
@@ -1349,11 +1461,13 @@ MSVCToolChain::ComputeEffectiveClangTriple(const ArgList &Args,
   llvm::Triple Triple(ToolChain::ComputeEffectiveClangTriple(Args, InputType));
   if (Triple.getEnvironment() == llvm::Triple::MSVC) {
     StringRef ObjFmt = Triple.getEnvironmentName().split('-').second;
-    if (ObjFmt.empty())
+    if (ObjFmt.empty()) {
       Triple.setEnvironmentName((Twine("msvc") + MSVT.getAsString()).str());
-    else
+    } else {
       Triple.setEnvironmentName(
           (Twine("msvc") + MSVT.getAsString() + Twine('-') + ObjFmt).str());
+
+}
   }
   return Triple.getTriple();
 }
@@ -1400,10 +1514,14 @@ static void TranslateOptArg(Arg *A, llvm::opt::DerivedArgList &DAL,
           DAL.AddJoinedArg(A, Opts.getOption(options::OPT_O), "2");
         }
         if (SupportsForcingFramePointer &&
-            !DAL.hasArgNoClaim(options::OPT_fno_omit_frame_pointer))
+            !DAL.hasArgNoClaim(options::OPT_fno_omit_frame_pointer)) {
           DAL.AddFlagArg(A, Opts.getOption(options::OPT_fomit_frame_pointer));
-        if (OptChar == '1' || OptChar == '2')
+
+}
+        if (OptChar == '1' || OptChar == '2') {
           DAL.AddFlagArg(A, Opts.getOption(options::OPT_ffunction_sections));
+
+}
       }
       break;
     case 'b':
@@ -1446,12 +1564,14 @@ static void TranslateOptArg(Arg *A, llvm::opt::DerivedArgList &DAL,
         ++I;
       }
       if (SupportsForcingFramePointer) {
-        if (OmitFramePointer)
+        if (OmitFramePointer) {
           DAL.AddFlagArg(A,
                          Opts.getOption(options::OPT_fomit_frame_pointer));
-        else
+        } else {
           DAL.AddFlagArg(
               A, Opts.getOption(options::OPT_fno_omit_frame_pointer));
+
+}
       } else {
         // Don't warn about /Oy- in x86-64 builds (where
         // SupportsForcingFramePointer is false).  The flag having no effect
@@ -1509,8 +1629,10 @@ MSVCToolChain::TranslateArgs(const llvm::opt::DerivedArgList &Args,
         // OptChar does not expand; it's an argument to the previous char.
         continue;
       }
-      if (OptChar == '1' || OptChar == '2' || OptChar == 'x' || OptChar == 'd')
+      if (OptChar == '1' || OptChar == '2' || OptChar == 'x' || OptChar == 'd') {
         ExpandChar = OptStr.data() + I;
+
+}
     }
   }
 

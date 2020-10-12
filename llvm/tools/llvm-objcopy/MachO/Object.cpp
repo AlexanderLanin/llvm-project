@@ -23,10 +23,12 @@ void SymbolTable::removeSymbols(
 }
 
 void Object::removeSections(function_ref<bool(const std::unique_ptr<Section> &)> ToRemove) {
-  for (LoadCommand &LC : LoadCommands)
+  for (LoadCommand &LC : LoadCommands) {
     LC.Sections.erase(std::remove_if(std::begin(LC.Sections),
                                      std::end(LC.Sections), ToRemove),
                       std::end(LC.Sections));
+
+}
 }
 
 void Object::addLoadCommand(LoadCommand LC) {
@@ -45,12 +47,14 @@ static void constructSegment(SegmentType &Seg,
 
 LoadCommand &Object::addSegment(StringRef SegName) {
   LoadCommand LC;
-  if (is64Bit())
+  if (is64Bit()) {
     constructSegment(LC.MachOLoadCommand.segment_command_64_data,
                      MachO::LC_SEGMENT_64, SegName);
-  else
+  } else {
     constructSegment(LC.MachOLoadCommand.segment_command_data,
                      MachO::LC_SEGMENT, SegName);
+
+}
 
   LoadCommands.push_back(std::move(LC));
   return LoadCommands.back();

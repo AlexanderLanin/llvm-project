@@ -78,10 +78,12 @@ RuntimeDyldMachO::processScatteredVANILLA(
   bool IsCode = TargetSection.isText();
   uint32_t TargetSectionID = ~0U;
   if (auto TargetSectionIDOrErr =
-        findOrEmitSection(Obj, TargetSection, IsCode, ObjSectionToID))
+        findOrEmitSection(Obj, TargetSection, IsCode, ObjSectionToID)) {
     TargetSectionID = *TargetSectionIDOrErr;
-  else
+  } else {
     return TargetSectionIDOrErr.takeError();
+
+}
 
   Addend -= SectionBaseAddr;
   RelocationEntry R(SectionID, Offset, RelocType, Addend, IsPCRel, Size);
@@ -108,10 +110,12 @@ RuntimeDyldMachO::getRelocationValueRef(
   if (IsExternal) {
     symbol_iterator Symbol = RI->getSymbol();
     StringRef TargetName;
-    if (auto TargetNameOrErr = Symbol->getName())
+    if (auto TargetNameOrErr = Symbol->getName()) {
       TargetName = *TargetNameOrErr;
-    else
+    } else {
       return TargetNameOrErr.takeError();
+
+}
     RTDyldSymbolTable::const_iterator SI =
       GlobalSymbolTable.find(TargetName.data());
     if (SI != GlobalSymbolTable.end()) {
@@ -126,10 +130,12 @@ RuntimeDyldMachO::getRelocationValueRef(
     SectionRef Sec = Obj.getAnyRelocationSection(RelInfo);
     bool IsCode = Sec.isText();
     if (auto SectionIDOrErr = findOrEmitSection(Obj, Sec, IsCode,
-                                                ObjSectionToID))
+                                                ObjSectionToID)) {
       Value.SectionID = *SectionIDOrErr;
-    else
+    } else {
       return SectionIDOrErr.takeError();
+
+}
     uint64_t Addr = Sec.getAddress();
     Value.Offset = RE.Addend - Addr;
   }
@@ -168,8 +174,10 @@ RuntimeDyldMachO::getSectionByAddress(const MachOObjectFile &Obj,
   for (; SI != SE; ++SI) {
     uint64_t SAddr = SI->getAddress();
     uint64_t SSize = SI->getSize();
-    if ((Addr >= SAddr) && (Addr < SAddr + SSize))
+    if ((Addr >= SAddr) && (Addr < SAddr + SSize)) {
       return SI;
+
+}
   }
 
   return SE;
@@ -205,10 +213,12 @@ Error RuntimeDyldMachO::populateIndirectSymbolPointersSection(
       Obj.getIndirectSymbolTableEntry(DySymTabCmd, FirstIndirectSymbol + i);
     symbol_iterator SI = Obj.getSymbolByIndex(SymbolIndex);
     StringRef IndirectSymbolName;
-    if (auto IndirectSymbolNameOrErr = SI->getName())
+    if (auto IndirectSymbolNameOrErr = SI->getName()) {
       IndirectSymbolName = *IndirectSymbolNameOrErr;
-    else
+    } else {
       return IndirectSymbolNameOrErr.takeError();
+
+}
     LLVM_DEBUG(dbgs() << "  " << IndirectSymbolName << ": index " << SymbolIndex
                       << ", PT offset: " << PTEntryOffset << "\n");
     RelocationEntry RE(PTSectionID, PTEntryOffset,
@@ -233,36 +243,48 @@ RuntimeDyldMachOCRTPBase<Impl>::finalizeLoad(const ObjectFile &Obj,
 
   for (const auto &Section : Obj.sections()) {
     StringRef Name;
-    if (Expected<StringRef> NameOrErr = Section.getName())
+    if (Expected<StringRef> NameOrErr = Section.getName()) {
       Name = *NameOrErr;
-    else
+    } else {
       consumeError(NameOrErr.takeError());
+
+}
 
     // Force emission of the __text, __eh_frame, and __gcc_except_tab sections
     // if they're present. Otherwise call down to the impl to handle other
     // sections that have already been emitted.
     if (Name == "__text") {
-      if (auto TextSIDOrErr = findOrEmitSection(Obj, Section, true, SectionMap))
+      if (auto TextSIDOrErr = findOrEmitSection(Obj, Section, true, SectionMap)) {
         TextSID = *TextSIDOrErr;
-      else
+      } else {
         return TextSIDOrErr.takeError();
+
+}
     } else if (Name == "__eh_frame") {
       if (auto EHFrameSIDOrErr = findOrEmitSection(Obj, Section, false,
-                                                   SectionMap))
+                                                   SectionMap)) {
         EHFrameSID = *EHFrameSIDOrErr;
-      else
+      } else {
         return EHFrameSIDOrErr.takeError();
+
+}
     } else if (Name == "__gcc_except_tab") {
       if (auto ExceptTabSIDOrErr = findOrEmitSection(Obj, Section, true,
-                                                     SectionMap))
+                                                     SectionMap)) {
         ExceptTabSID = *ExceptTabSIDOrErr;
-      else
+      } else {
         return ExceptTabSIDOrErr.takeError();
+
+}
     } else {
       auto I = SectionMap.find(Section);
-      if (I != SectionMap.end())
-        if (auto Err = impl().finalizeSection(Obj, I->second, Section))
+      if (I != SectionMap.end()) {
+        if (auto Err = impl().finalizeSection(Obj, I->second, Section)) {
           return Err;
+
+}
+
+}
     }
   }
   UnregisteredEHFrameSections.push_back(
@@ -283,8 +305,10 @@ unsigned char *RuntimeDyldMachOCRTPBase<Impl>::processFDE(uint8_t *P,
   P += 4;
   uint8_t *Ret = P + Length;
   uint32_t Offset = readBytesUnaligned(P, 4);
-  if (Offset == 0) // is a CIE
+  if (Offset == 0) { // is a CIE
     return Ret;
+
+}
 
   P += 4;
   TargetPtrT FDELocation = readBytesUnaligned(P, sizeof(TargetPtrT));
@@ -320,18 +344,24 @@ void RuntimeDyldMachOCRTPBase<Impl>::registerEHFrames() {
   for (int i = 0, e = UnregisteredEHFrameSections.size(); i != e; ++i) {
     EHFrameRelatedSections &SectionInfo = UnregisteredEHFrameSections[i];
     if (SectionInfo.EHFrameSID == RTDYLD_INVALID_SECTION_ID ||
-        SectionInfo.TextSID == RTDYLD_INVALID_SECTION_ID)
+        SectionInfo.TextSID == RTDYLD_INVALID_SECTION_ID) {
       continue;
+
+}
     SectionEntry *Text = &Sections[SectionInfo.TextSID];
     SectionEntry *EHFrame = &Sections[SectionInfo.EHFrameSID];
     SectionEntry *ExceptTab = nullptr;
-    if (SectionInfo.ExceptTabSID != RTDYLD_INVALID_SECTION_ID)
+    if (SectionInfo.ExceptTabSID != RTDYLD_INVALID_SECTION_ID) {
       ExceptTab = &Sections[SectionInfo.ExceptTabSID];
+
+}
 
     int64_t DeltaForText = computeDelta(Text, EHFrame);
     int64_t DeltaForEH = 0;
-    if (ExceptTab)
+    if (ExceptTab) {
       DeltaForEH = computeDelta(ExceptTab, EHFrame);
+
+}
 
     uint8_t *P = EHFrame->getAddress();
     uint8_t *End = P + EHFrame->getSize();
@@ -368,10 +398,10 @@ RuntimeDyldMachO::create(Triple::ArchType Arch,
 
 std::unique_ptr<RuntimeDyld::LoadedObjectInfo>
 RuntimeDyldMachO::loadObject(const object::ObjectFile &O) {
-  if (auto ObjSectionToIDOrErr = loadObjectImpl(O))
+  if (auto ObjSectionToIDOrErr = loadObjectImpl(O)) {
     return std::make_unique<LoadedMachOObjectInfo>(*this,
                                                     *ObjSectionToIDOrErr);
-  else {
+  } else {
     HasError = true;
     raw_string_ostream ErrStream(ErrorStr);
     logAllUnhandledErrors(ObjSectionToIDOrErr.takeError(), ErrStream);

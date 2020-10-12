@@ -66,8 +66,10 @@ void InstructionSelect::getAnalysisUsage(AnalysisUsage &AU) const {
 bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
   // If the ISel pipeline failed, do not bother running that pass.
   if (MF.getProperties().hasProperty(
-          MachineFunctionProperties::Property::FailedISel))
+          MachineFunctionProperties::Property::FailedISel)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Selecting function: " << MF.getName() << '\n');
   GISelKnownBits &KB = getAnalysis<GISelKnownBitsAnalysis>().get(MF);
@@ -101,8 +103,10 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
 #endif
 
   for (MachineBasicBlock *MBB : post_order(&MF)) {
-    if (MBB->empty())
+    if (MBB->empty()) {
       continue;
+
+}
 
     // Select instructions in reverse block order. We permit erasing so have
     // to resort to manually iterating and recognizing the begin (rend) case.
@@ -117,10 +121,12 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
       MachineInstr &MI = *MII;
 
       // And have our iterator point to the next instruction, if there is one.
-      if (MII == Begin)
+      if (MII == Begin) {
         ReachedBegin = true;
-      else
+      } else {
         --MII;
+
+}
 
       LLVM_DEBUG(dbgs() << "Selecting: \n  " << MI);
 
@@ -151,8 +157,10 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
   }
 
   for (MachineBasicBlock &MBB : MF) {
-    if (MBB.empty())
+    if (MBB.empty()) {
       continue;
+
+}
 
     // Try to find redundant copies b/w vregs of the same register class.
     bool ReachedBegin = false;
@@ -161,12 +169,16 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
       MachineInstr &MI = *MII;
 
       // And have our iterator point to the next instruction, if there is one.
-      if (MII == Begin)
+      if (MII == Begin) {
         ReachedBegin = true;
-      else
+      } else {
         --MII;
-      if (MI.getOpcode() != TargetOpcode::COPY)
+
+}
+      if (MI.getOpcode() != TargetOpcode::COPY) {
         continue;
+
+}
       Register SrcReg = MI.getOperand(1).getReg();
       Register DstReg = MI.getOperand(0).getReg();
       if (Register::isVirtualRegister(SrcReg) &&
@@ -229,14 +241,20 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
   // SelectionDAG.
   MachineFrameInfo &MFI = MF.getFrameInfo();
   for (const auto &MBB : MF) {
-    if (MFI.hasCalls() && MF.hasInlineAsm())
+    if (MFI.hasCalls() && MF.hasInlineAsm()) {
       break;
 
+}
+
     for (const auto &MI : MBB) {
-      if ((MI.isCall() && !MI.isReturn()) || MI.isStackAligningInlineAsm())
+      if ((MI.isCall() && !MI.isReturn()) || MI.isStackAligningInlineAsm()) {
         MFI.setHasCalls(true);
-      if (MI.isInlineAsm())
+
+}
+      if (MI.isInlineAsm()) {
         MF.setHasInlineAsm(true);
+
+}
     }
   }
 

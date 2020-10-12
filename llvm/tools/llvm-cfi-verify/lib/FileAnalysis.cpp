@@ -74,16 +74,20 @@ Expected<FileAnalysis> FileAnalysis::Create(StringRef Filename) {
   // Open the filename provided.
   Expected<object::OwningBinary<object::Binary>> BinaryOrErr =
       object::createBinary(Filename);
-  if (!BinaryOrErr)
+  if (!BinaryOrErr) {
     return BinaryOrErr.takeError();
+
+}
 
   // Construct the object and allow it to take ownership of the binary.
   object::OwningBinary<object::Binary> Binary = std::move(BinaryOrErr.get());
   FileAnalysis Analysis(std::move(Binary));
 
   Analysis.Object = dyn_cast<object::ObjectFile>(Analysis.Binary.getBinary());
-  if (!Analysis.Object)
+  if (!Analysis.Object) {
     return make_error<UnsupportedDisassembly>("Failed to cast object");
+
+}
 
   switch (Analysis.Object->getArch()) {
     case Triple::x86:
@@ -99,14 +103,20 @@ Expected<FileAnalysis> FileAnalysis::Create(StringRef Filename) {
   Analysis.Features = Analysis.Object->getFeatures();
 
   // Init the rest of the object.
-  if (auto InitResponse = Analysis.initialiseDisassemblyMembers())
+  if (auto InitResponse = Analysis.initialiseDisassemblyMembers()) {
     return std::move(InitResponse);
 
-  if (auto SectionParseResponse = Analysis.parseCodeSections())
+}
+
+  if (auto SectionParseResponse = Analysis.parseCodeSections()) {
     return std::move(SectionParseResponse);
 
-  if (auto SymbolTableParseResponse = Analysis.parseSymbolTable())
+}
+
+  if (auto SymbolTableParseResponse = Analysis.parseSymbolTable()) {
     return std::move(SymbolTableParseResponse);
+
+}
 
   return std::move(Analysis);
 }
@@ -122,11 +132,15 @@ const Instr *
 FileAnalysis::getPrevInstructionSequential(const Instr &InstrMeta) const {
   std::map<uint64_t, Instr>::const_iterator KV =
       Instructions.find(InstrMeta.VMAddress);
-  if (KV == Instructions.end() || KV == Instructions.begin())
+  if (KV == Instructions.end() || KV == Instructions.begin()) {
     return nullptr;
 
-  if (!(--KV)->second.Valid)
+}
+
+  if (!(--KV)->second.Valid) {
     return nullptr;
+
+}
 
   return &KV->second;
 }
@@ -135,27 +149,35 @@ const Instr *
 FileAnalysis::getNextInstructionSequential(const Instr &InstrMeta) const {
   std::map<uint64_t, Instr>::const_iterator KV =
       Instructions.find(InstrMeta.VMAddress);
-  if (KV == Instructions.end() || ++KV == Instructions.end())
+  if (KV == Instructions.end() || ++KV == Instructions.end()) {
     return nullptr;
 
-  if (!KV->second.Valid)
+}
+
+  if (!KV->second.Valid) {
     return nullptr;
+
+}
 
   return &KV->second;
 }
 
 bool FileAnalysis::usesRegisterOperand(const Instr &InstrMeta) const {
   for (const auto &Operand : InstrMeta.Instruction) {
-    if (Operand.isReg())
+    if (Operand.isReg()) {
       return true;
+
+}
   }
   return false;
 }
 
 const Instr *FileAnalysis::getInstruction(uint64_t Address) const {
   const auto &InstrKV = Instructions.find(Address);
-  if (InstrKV == Instructions.end())
+  if (InstrKV == Instructions.end()) {
     return nullptr;
+
+}
 
   return &InstrKV->second;
 }
@@ -173,47 +195,65 @@ bool FileAnalysis::isCFITrap(const Instr &InstrMeta) const {
 
 bool FileAnalysis::willTrapOnCFIViolation(const Instr &InstrMeta) const {
   const auto &InstrDesc = MII->get(InstrMeta.Instruction.getOpcode());
-  if (!InstrDesc.isCall())
+  if (!InstrDesc.isCall()) {
     return false;
+
+}
   uint64_t Target;
   if (!MIA->evaluateBranch(InstrMeta.Instruction, InstrMeta.VMAddress,
-                           InstrMeta.InstructionSize, Target))
+                           InstrMeta.InstructionSize, Target)) {
     return false;
+
+}
   return TrapOnFailFunctionAddresses.count(Target) > 0;
 }
 
 bool FileAnalysis::canFallThrough(const Instr &InstrMeta) const {
-  if (!InstrMeta.Valid)
+  if (!InstrMeta.Valid) {
     return false;
 
-  if (isCFITrap(InstrMeta))
+}
+
+  if (isCFITrap(InstrMeta)) {
     return false;
+
+}
 
   const auto &InstrDesc = MII->get(InstrMeta.Instruction.getOpcode());
-  if (InstrDesc.mayAffectControlFlow(InstrMeta.Instruction, *RegisterInfo))
+  if (InstrDesc.mayAffectControlFlow(InstrMeta.Instruction, *RegisterInfo)) {
     return InstrDesc.isConditionalBranch();
+
+}
 
   return true;
 }
 
 const Instr *
 FileAnalysis::getDefiniteNextInstruction(const Instr &InstrMeta) const {
-  if (!InstrMeta.Valid)
+  if (!InstrMeta.Valid) {
     return nullptr;
 
-  if (isCFITrap(InstrMeta))
+}
+
+  if (isCFITrap(InstrMeta)) {
     return nullptr;
+
+}
 
   const auto &InstrDesc = MII->get(InstrMeta.Instruction.getOpcode());
   const Instr *NextMetaPtr;
   if (InstrDesc.mayAffectControlFlow(InstrMeta.Instruction, *RegisterInfo)) {
-    if (InstrDesc.isConditionalBranch())
+    if (InstrDesc.isConditionalBranch()) {
       return nullptr;
+
+}
 
     uint64_t Target;
     if (!MIA->evaluateBranch(InstrMeta.Instruction, InstrMeta.VMAddress,
-                             InstrMeta.InstructionSize, Target))
+                             InstrMeta.InstructionSize, Target)) {
       return nullptr;
+
+}
 
     NextMetaPtr = getInstruction(Target);
   } else {
@@ -221,8 +261,10 @@ FileAnalysis::getDefiniteNextInstruction(const Instr &InstrMeta) const {
         getInstruction(InstrMeta.VMAddress + InstrMeta.InstructionSize);
   }
 
-  if (!NextMetaPtr || !NextMetaPtr->Valid)
+  if (!NextMetaPtr || !NextMetaPtr->Valid) {
     return nullptr;
+
+}
 
   return NextMetaPtr;
 }
@@ -232,12 +274,16 @@ FileAnalysis::getDirectControlFlowXRefs(const Instr &InstrMeta) const {
   std::set<const Instr *> CFCrossReferences;
   const Instr *PrevInstruction = getPrevInstructionSequential(InstrMeta);
 
-  if (PrevInstruction && canFallThrough(*PrevInstruction))
+  if (PrevInstruction && canFallThrough(*PrevInstruction)) {
     CFCrossReferences.insert(PrevInstruction);
 
+}
+
   const auto &TargetRefsKV = StaticBranchTargetings.find(InstrMeta.VMAddress);
-  if (TargetRefsKV == StaticBranchTargetings.end())
+  if (TargetRefsKV == StaticBranchTargetings.end()) {
     return CFCrossReferences;
+
+}
 
   for (uint64_t SourceInstrAddress : TargetRefsKV->second) {
     const auto &SourceInstrKV = Instructions.find(SourceInstrAddress);
@@ -281,26 +327,38 @@ FileAnalysis::symbolizeInlinedCode(object::SectionedAddress Address) {
 CFIProtectionStatus
 FileAnalysis::validateCFIProtection(const GraphResult &Graph) const {
   const Instr *InstrMetaPtr = getInstruction(Graph.BaseAddress);
-  if (!InstrMetaPtr)
+  if (!InstrMetaPtr) {
     return CFIProtectionStatus::FAIL_INVALID_INSTRUCTION;
 
+}
+
   const auto &InstrDesc = MII->get(InstrMetaPtr->Instruction.getOpcode());
-  if (!InstrDesc.mayAffectControlFlow(InstrMetaPtr->Instruction, *RegisterInfo))
+  if (!InstrDesc.mayAffectControlFlow(InstrMetaPtr->Instruction, *RegisterInfo)) {
     return CFIProtectionStatus::FAIL_NOT_INDIRECT_CF;
 
-  if (!usesRegisterOperand(*InstrMetaPtr))
+}
+
+  if (!usesRegisterOperand(*InstrMetaPtr)) {
     return CFIProtectionStatus::FAIL_NOT_INDIRECT_CF;
 
-  if (!Graph.OrphanedNodes.empty())
+}
+
+  if (!Graph.OrphanedNodes.empty()) {
     return CFIProtectionStatus::FAIL_ORPHANS;
 
+}
+
   for (const auto &BranchNode : Graph.ConditionalBranchNodes) {
-    if (!BranchNode.CFIProtection)
+    if (!BranchNode.CFIProtection) {
       return CFIProtectionStatus::FAIL_BAD_CONDITIONAL_BRANCH;
+
+}
   }
 
-  if (indirectCFOperandClobber(Graph) != Graph.BaseAddress)
+  if (indirectCFOperandClobber(Graph) != Graph.BaseAddress) {
     return CFIProtectionStatus::FAIL_REGISTER_CLOBBERED;
+
+}
 
   return CFIProtectionStatus::PROTECTED;
 }
@@ -312,18 +370,22 @@ uint64_t FileAnalysis::indirectCFOperandClobber(const GraphResult &Graph) const 
   const Instr &IndirectCF = getInstructionOrDie(Graph.BaseAddress);
   DenseSet<unsigned> RegisterNumbers;
   for (const auto &Operand : IndirectCF.Instruction) {
-    if (Operand.isReg())
+    if (Operand.isReg()) {
       RegisterNumbers.insert(Operand.getReg());
+
+}
   }
   assert(RegisterNumbers.size() && "Zero register operands on indirect CF.");
 
   // Now check all branches to indirect CFs and ensure no clobbering happens.
   for (const auto &Branch : Graph.ConditionalBranchNodes) {
     uint64_t Node;
-    if (Branch.IndirectCFIsOnTargetPath)
+    if (Branch.IndirectCFIsOnTargetPath) {
       Node = Branch.Target;
-    else
+    } else {
       Node = Branch.Fallthrough;
+
+}
 
     // Some architectures (e.g., AArch64) cannot load in an indirect branch, so
     // we allow them one load.
@@ -343,16 +405,20 @@ uint64_t FileAnalysis::indirectCFOperandClobber(const GraphResult &Graph) const 
         unsigned RegNum = *RI;
         if (InstrDesc.hasDefOfPhysReg(NodeInstr.Instruction, RegNum,
                                       *RegisterInfo)) {
-          if (!canLoad || !InstrDesc.mayLoad())
+          if (!canLoad || !InstrDesc.mayLoad()) {
             return Node;
+
+}
           canLoad = false;
           CurRegisterNumbers.erase(RI);
           // Add the registers this load reads to those we check for clobbers.
           for (unsigned i = InstrDesc.getNumDefs(),
                         e = InstrDesc.getNumOperands(); i != e; i++) {
             const auto Operand = NodeInstr.Instruction.getOperand(i);
-            if (Operand.isReg())
+            if (Operand.isReg()) {
               CurRegisterNumbers.insert(Operand.getReg());
+
+}
           }
           break;
         }
@@ -378,41 +444,53 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
 
   ObjectTarget =
       TargetRegistry::lookupTarget(ArchName, ObjectTriple, ErrorString);
-  if (!ObjectTarget)
+  if (!ObjectTarget) {
     return make_error<UnsupportedDisassembly>(
         (Twine("Couldn't find target \"") + ObjectTriple.getTriple() +
          "\", failed with error: " + ErrorString)
             .str());
 
+}
+
   RegisterInfo.reset(ObjectTarget->createMCRegInfo(TripleName));
-  if (!RegisterInfo)
+  if (!RegisterInfo) {
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise RegisterInfo.");
+
+}
 
   MCTargetOptions MCOptions;
   AsmInfo.reset(
       ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName, MCOptions));
-  if (!AsmInfo)
+  if (!AsmInfo) {
     return make_error<UnsupportedDisassembly>("Failed to initialise AsmInfo.");
+
+}
 
   SubtargetInfo.reset(ObjectTarget->createMCSubtargetInfo(
       TripleName, MCPU, Features.getString()));
-  if (!SubtargetInfo)
+  if (!SubtargetInfo) {
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise SubtargetInfo.");
 
+}
+
   MII.reset(ObjectTarget->createMCInstrInfo());
-  if (!MII)
+  if (!MII) {
     return make_error<UnsupportedDisassembly>("Failed to initialise MII.");
+
+}
 
   Context.reset(new MCContext(AsmInfo.get(), RegisterInfo.get(), &MOFI));
 
   Disassembler.reset(
       ObjectTarget->createMCDisassembler(*SubtargetInfo, *Context));
 
-  if (!Disassembler)
+  if (!Disassembler) {
     return make_error<UnsupportedDisassembly>(
         "No disassembler available for target");
+
+}
 
   MIA.reset(ObjectTarget->createMCInstrAnalysis(MII.get()));
 
@@ -426,9 +504,11 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
 Error FileAnalysis::parseCodeSections() {
   if (!IgnoreDWARFFlag) {
     std::unique_ptr<DWARFContext> DWARF = DWARFContext::create(*Object);
-    if (!DWARF)
+    if (!DWARF) {
       return make_error<StringError>("Could not create DWARF information.",
                                      inconvertibleErrorCode());
+
+}
 
     bool LineInfoValid = false;
 
@@ -440,27 +520,35 @@ Error FileAnalysis::parseCodeSections() {
       }
     }
 
-    if (!LineInfoValid)
+    if (!LineInfoValid) {
       return make_error<StringError>(
           "DWARF line information missing. Did you compile with '-g'?",
           inconvertibleErrorCode());
+
+}
   }
 
   for (const object::SectionRef &Section : Object->sections()) {
     // Ensure only executable sections get analysed.
-    if (!(object::ELFSectionRef(Section).getFlags() & ELF::SHF_EXECINSTR))
+    if (!(object::ELFSectionRef(Section).getFlags() & ELF::SHF_EXECINSTR)) {
       continue;
+
+}
 
     // Avoid checking the PLT since it produces spurious failures on AArch64
     // when ignoring DWARF data.
     Expected<StringRef> NameOrErr = Section.getName();
-    if (NameOrErr && *NameOrErr == ".plt")
+    if (NameOrErr && *NameOrErr == ".plt") {
       continue;
+
+}
     consumeError(NameOrErr.takeError());
 
     Expected<StringRef> Contents = Section.getContents();
-    if (!Contents)
+    if (!Contents) {
       return Contents.takeError();
+
+}
     ArrayRef<uint8_t> SectionBytes = arrayRefFromStringRef(*Contents);
 
     parseSectionContents(SectionBytes,
@@ -492,14 +580,18 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
 
     addInstruction(InstrMeta);
 
-    if (!ValidInstruction)
+    if (!ValidInstruction) {
       continue;
+
+}
 
     // Skip additional parsing for instructions that do not affect the control
     // flow.
     const auto &InstrDesc = MII->get(Instruction.getOpcode());
-    if (!InstrDesc.mayAffectControlFlow(Instruction, *RegisterInfo))
+    if (!InstrDesc.mayAffectControlFlow(Instruction, *RegisterInfo)) {
       continue;
+
+}
 
     uint64_t Target;
     if (MIA->evaluateBranch(Instruction, VMAddress, InstructionSize, Target)) {
@@ -508,11 +600,15 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
       continue;
     }
 
-    if (!usesRegisterOperand(InstrMeta))
+    if (!usesRegisterOperand(InstrMeta)) {
       continue;
 
-    if (InstrDesc.isReturn())
+}
+
+    if (InstrDesc.isReturn()) {
       continue;
+
+}
 
     // Check if this instruction exists in the range of the DWARF metadata.
     if (!IgnoreDWARFFlag) {
@@ -526,8 +622,10 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
         continue;
       }
 
-      if (LineInfo->FileName == DILineInfo::BadString)
+      if (LineInfo->FileName == DILineInfo::BadString) {
         continue;
+
+}
     }
 
     IndirectInstructions.insert({VMAddress, Address.SectionIndex});
@@ -556,24 +654,28 @@ Error FileAnalysis::parseSymbolTable() {
   // violations.
   for (auto &Sym : Object->symbols()) {
     auto SymNameOrErr = Sym.getName();
-    if (!SymNameOrErr)
+    if (!SymNameOrErr) {
       consumeError(SymNameOrErr.takeError());
-    else if (TrapOnFailFunctions.count(*SymNameOrErr) > 0) {
+    } else if (TrapOnFailFunctions.count(*SymNameOrErr) > 0) {
       auto AddrOrErr = Sym.getAddress();
-      if (!AddrOrErr)
+      if (!AddrOrErr) {
         consumeError(AddrOrErr.takeError());
-      else
+      } else {
         TrapOnFailFunctionAddresses.insert(*AddrOrErr);
+
+}
     }
   }
   if (auto *ElfObject = dyn_cast<object::ELFObjectFileBase>(Object)) {
     for (const auto &Addr : ElfObject->getPltAddresses()) {
       object::SymbolRef Sym(Addr.first, Object);
       auto SymNameOrErr = Sym.getName();
-      if (!SymNameOrErr)
+      if (!SymNameOrErr) {
         consumeError(SymNameOrErr.takeError());
-      else if (TrapOnFailFunctions.count(*SymNameOrErr) > 0)
+      } else if (TrapOnFailFunctions.count(*SymNameOrErr) > 0) {
         TrapOnFailFunctionAddresses.insert(Addr.second);
+
+}
     }
   }
   return Error::success();

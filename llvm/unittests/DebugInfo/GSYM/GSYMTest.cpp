@@ -986,10 +986,12 @@ static void InitHeader(Header &H) {
   H.StrtabOffset= 0x2000;
   H.StrtabSize = 0x1000;
   for (size_t i=0; i<GSYM_MAX_UUID_SIZE; ++i) {
-    if (i < H.UUIDSize)
+    if (i < H.UUIDSize) {
       H.UUID[i] = i;
-    else
+    } else {
       H.UUID[i] = 0;
+
+}
   }
 }
 

@@ -21,8 +21,10 @@ Token getPreviousToken(SourceLocation Location, const SourceManager &SM,
   Token.setKind(tok::unknown);
 
   Location = Location.getLocWithOffset(-1);
-  if (Location.isInvalid())
+  if (Location.isInvalid()) {
       return Token;
+
+}
 
   auto StartOfFile = SM.getLocForStartOfFile(SM.getFileID(Location));
   while (Location != StartOfFile) {
@@ -39,12 +41,16 @@ Token getPreviousToken(SourceLocation Location, const SourceManager &SM,
 SourceLocation findPreviousTokenStart(SourceLocation Start,
                                       const SourceManager &SM,
                                       const LangOptions &LangOpts) {
-  if (Start.isInvalid() || Start.isMacroID())
+  if (Start.isInvalid() || Start.isMacroID()) {
     return SourceLocation();
 
+}
+
   SourceLocation BeforeStart = Start.getLocWithOffset(-1);
-  if (BeforeStart.isInvalid() || BeforeStart.isMacroID())
+  if (BeforeStart.isInvalid() || BeforeStart.isMacroID()) {
     return SourceLocation();
+
+}
 
   return Lexer::GetBeginningOfToken(BeforeStart, SM, LangOpts);
 }
@@ -53,20 +59,28 @@ SourceLocation findPreviousTokenKind(SourceLocation Start,
                                      const SourceManager &SM,
                                      const LangOptions &LangOpts,
                                      tok::TokenKind TK) {
-  if (Start.isInvalid() || Start.isMacroID())
+  if (Start.isInvalid() || Start.isMacroID()) {
     return SourceLocation();
+
+}
 
   while (true) {
     SourceLocation L = findPreviousTokenStart(Start, SM, LangOpts);
-    if (L.isInvalid() || L.isMacroID())
+    if (L.isInvalid() || L.isMacroID()) {
       return SourceLocation();
+
+}
 
     Token T;
-    if (Lexer::getRawToken(L, T, SM, LangOpts, /*IgnoreWhiteSpace=*/true))
+    if (Lexer::getRawToken(L, T, SM, LangOpts, /*IgnoreWhiteSpace=*/true)) {
       return SourceLocation();
 
-    if (T.is(TK))
+}
+
+    if (T.is(TK)) {
       return T.getLocation();
+
+}
 
     Start = L;
   }
@@ -94,16 +108,22 @@ bool rangeContainsExpansionsOrDirectives(SourceRange Range,
   SourceLocation Loc = Range.getBegin();
 
   while (Loc < Range.getEnd()) {
-    if (Loc.isMacroID())
+    if (Loc.isMacroID()) {
       return true;
+
+}
 
     llvm::Optional<Token> Tok = Lexer::findNextToken(Loc, SM, LangOpts);
 
-    if (!Tok)
+    if (!Tok) {
       return true;
 
-    if (Tok->is(tok::hash))
+}
+
+    if (Tok->is(tok::hash)) {
       return true;
+
+}
 
     Loc = Lexer::getLocForEndOfToken(Loc, 0, SM, LangOpts).getLocWithOffset(1);
   }
@@ -135,15 +155,17 @@ llvm::Optional<Token> getQualifyingToken(tok::TokenKind TK,
       Tok.setIdentifierInfo(&Info);
       Tok.setKind(Info.getTokenID());
     }
-    if (Tok.is(tok::less))
+    if (Tok.is(tok::less)) {
       SawTemplate = true;
-    else if (Tok.isOneOf(tok::greater, tok::greatergreater))
+    } else if (Tok.isOneOf(tok::greater, tok::greatergreater)) {
       LastMatchAfterTemplate = None;
-    else if (Tok.is(TK)) {
-      if (SawTemplate)
+    } else if (Tok.is(TK)) {
+      if (SawTemplate) {
         LastMatchAfterTemplate = Tok;
-      else
+      } else {
         LastMatchBeforeTemplate = Tok;
+
+}
     }
   }
   return LastMatchAfterTemplate != None ? LastMatchAfterTemplate
@@ -190,8 +212,10 @@ static SourceLocation getSemicolonAfterStmtEndLoc(const SourceLocation &EndLoc,
   Optional<Token> NextTok = findNextTokenSkippingComments(EndLoc, SM, LangOpts);
 
   // Testing for semicolon again avoids some issues with macros.
-  if (NextTok && NextTok->is(tok::TokenKind::semi))
+  if (NextTok && NextTok->is(tok::TokenKind::semi)) {
     return NextTok->getLocation();
+
+}
 
   return SourceLocation();
 }
@@ -202,8 +226,10 @@ SourceLocation getUnifiedEndLoc(const Stmt &S, const SourceManager &SM,
   const Stmt *LastChild = &S;
   while (!LastChild->children().empty() && !breakAndReturnEnd(*LastChild) &&
          !breakAndReturnEndPlus1Token(*LastChild)) {
-    for (const Stmt *Child : LastChild->children())
+    for (const Stmt *Child : LastChild->children()) {
       LastChild = Child;
+
+}
   }
 
   if (!breakAndReturnEnd(*LastChild) &&

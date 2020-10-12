@@ -107,8 +107,10 @@ private:
                    bool isKeyEvent = false) {
     switch (P.getKind()) {
       case PathDiagnosticPiece::ControlFlow:
-        if (includeControlFlow)
+        if (includeControlFlow) {
           ReportControlFlow(o, cast<PathDiagnosticControlFlowPiece>(P), indent);
+
+}
         break;
       case PathDiagnosticPiece::Call:
         ReportCall(o, cast<PathDiagnosticCallPiece>(P), indent,
@@ -190,8 +192,10 @@ void PlistPrinter::EmitRanges(raw_ostream &o,
                               const ArrayRef<SourceRange> Ranges,
                               unsigned indent) {
 
-  if (Ranges.empty())
+  if (Ranges.empty()) {
     return;
+
+}
 
   Indent(o, indent) << "<key>ranges</key>\n";
   Indent(o, indent) << "<array>\n";
@@ -200,10 +204,12 @@ void PlistPrinter::EmitRanges(raw_ostream &o,
   const SourceManager &SM = PP.getSourceManager();
   const LangOptions &LangOpts = PP.getLangOpts();
 
-  for (auto &R : Ranges)
+  for (auto &R : Ranges) {
     EmitRange(o, SM,
               Lexer::getAsCharRange(SM.getExpansionRange(R), SM, LangOpts),
               FM, indent + 1);
+
+}
   --indent;
   Indent(o, indent) << "</array>\n";
 }
@@ -225,8 +231,10 @@ void PlistPrinter::EmitMessage(raw_ostream &o, StringRef Message,
 
 void PlistPrinter::EmitFixits(raw_ostream &o, ArrayRef<FixItHint> fixits,
                               unsigned indent) {
-  if (fixits.size() == 0)
+  if (fixits.size() == 0) {
     return;
+
+}
 
   const SourceManager &SM = PP.getSourceManager();
   const LangOptions &LangOpts = PP.getLangOpts();
@@ -351,24 +359,32 @@ void PlistPrinter::ReportCall(raw_ostream &o, const PathDiagnosticCallPiece &P,
                               unsigned indent,
                               unsigned depth) {
 
-  if (auto callEnter = P.getCallEnterEvent())
+  if (auto callEnter = P.getCallEnterEvent()) {
     ReportPiece(o, *callEnter, indent, depth, /*includeControlFlow*/ true,
                 P.isLastInMainSourceFile());
+
+}
 
 
   ++depth;
 
-  if (auto callEnterWithinCaller = P.getCallEnterWithinCallerEvent())
+  if (auto callEnterWithinCaller = P.getCallEnterWithinCallerEvent()) {
     ReportPiece(o, *callEnterWithinCaller, indent, depth,
                 /*includeControlFlow*/ true);
 
-  for (PathPieces::const_iterator I = P.path.begin(), E = P.path.end();I!=E;++I)
+}
+
+  for (PathPieces::const_iterator I = P.path.begin(), E = P.path.end();I!=E;++I) {
     ReportPiece(o, **I, indent, depth, /*includeControlFlow*/ true);
+
+}
 
   --depth;
 
-  if (auto callExit = P.getCallExitEvent())
+  if (auto callExit = P.getCallExitEvent()) {
     ReportPiece(o, *callExit, indent, depth, /*includeControlFlow*/ true);
+
+}
 
   assert(P.getFixits().size() == 0 &&
          "Fixits on call pieces are not implemented yet!");
@@ -542,8 +558,10 @@ static void printBugPath(llvm::raw_ostream &o, const FIDMap& FM,
     o << "   <key>notes</key>\n"
          "   <array>\n";
 
-    for (; I != FirstNonNote; ++I)
+    for (; I != FirstNonNote; ++I) {
       Printer.ReportDiag(o, **I);
+
+}
 
     o << "   </array>\n";
   }
@@ -552,13 +570,17 @@ static void printBugPath(llvm::raw_ostream &o, const FIDMap& FM,
 
   o << "   <array>\n";
 
-  for (PathPieces::const_iterator E = Path.end(); I != E; ++I)
+  for (PathPieces::const_iterator E = Path.end(); I != E; ++I) {
     Printer.ReportDiag(o, **I);
+
+}
 
   o << "   </array>\n";
 
-  if (!AnOpts.ShouldDisplayMacroExpansions)
+  if (!AnOpts.ShouldDisplayMacroExpansions) {
     return;
+
+}
 
   o << "   <key>macro_expansions</key>\n"
        "   <array>\n";
@@ -628,11 +650,15 @@ void PlistDiagnostics::FlushDiagnosticsImpl(
 
         if (const PathDiagnosticCallPiece *Call =
                 dyn_cast<PathDiagnosticCallPiece>(&Piece)) {
-          if (auto CallEnterWithin = Call->getCallEnterWithinCallerEvent())
+          if (auto CallEnterWithin = Call->getCallEnterWithinCallerEvent()) {
             AddPieceFID(*CallEnterWithin);
 
-          if (auto CallEnterEvent = Call->getCallEnterEvent())
+}
+
+          if (auto CallEnterEvent = Call->getCallEnterEvent()) {
             AddPieceFID(*CallEnterEvent);
+
+}
 
           WorkList.push_back(&Call->path);
         } else if (const PathDiagnosticMacroPiece *Macro =
@@ -789,8 +815,10 @@ void PlistDiagnostics::FlushDiagnosticsImpl(
 
   o << " <key>files</key>\n"
        " <array>\n";
-  for (FileID FID : Fids)
+  for (FileID FID : Fids) {
     EmitString(o << "  ", SM.getFileEntryForID(FID)->getName()) << '\n';
+
+}
   o << " </array>\n";
 
   if (llvm::AreStatisticsEnabled() && AnOpts.ShouldSerializeStats) {
@@ -960,12 +988,16 @@ static std::string getMacroNameAndPrintExpansion(
   // in this case we don't get the full expansion text in the Plist file. See
   // the test file where "value" is expanded to "garbage_" instead of
   // "garbage_value".
-  if (AlreadyProcessedTokens.find(IDInfo) != AlreadyProcessedTokens.end())
+  if (AlreadyProcessedTokens.find(IDInfo) != AlreadyProcessedTokens.end()) {
     return Info.Name;
+
+}
   AlreadyProcessedTokens.insert(IDInfo);
 
-  if (!Info.MI)
+  if (!Info.MI) {
     return Info.Name;
+
+}
 
   // Manually expand its arguments from the previous macro.
   Info.Args.expandFromPrevMacro(PrevArgs);
@@ -995,8 +1027,10 @@ static std::string getMacroNameAndPrintExpansion(
       // getExpandedMacro() already printed them. If this is the case, let's
       // first jump to the '(' token.
       auto N = std::next(It);
-      if (N != E && N->is(tok::l_paren))
+      if (N != E && N->is(tok::l_paren)) {
         It = getMatchingRParen(++It, E);
+
+}
       continue;
     }
 
@@ -1032,8 +1066,10 @@ static std::string getMacroNameAndPrintExpansion(
         // apply(func)
         // apply(func(42))
         auto N = std::next(ArgIt);
-        if (N != ArgEnd && N->is(tok::l_paren))
+        if (N != ArgEnd && N->is(tok::l_paren)) {
           ArgIt = getMatchingRParen(++ArgIt, ArgEnd);
+
+}
       }
       continue;
     }
@@ -1079,8 +1115,10 @@ static MacroNameAndArgs getMacroNameAndArgs(SourceLocation ExpanLoc,
   // we're running the analyzer with CTU, the Preprocessor won't contain the
   // directive history (or anything for that matter) from another TU.
   // TODO: assert when we're not running with CTU.
-  if (!MI)
+  if (!MI) {
     return { MacroName, MI, {} };
+
+}
 
   // Acquire the macro's arguments.
   //
@@ -1090,8 +1128,10 @@ static MacroNameAndArgs getMacroNameAndArgs(SourceLocation ExpanLoc,
   // (like '3 + 4'), so we'll lex until we find a tok::comma or tok::r_paren, at
   // which point we start lexing the next argument or finish.
   ArrayRef<const IdentifierInfo *> MacroArgs = MI->params();
-  if (MacroArgs.empty())
+  if (MacroArgs.empty()) {
     return { MacroName, MI, {} };
+
+}
 
   RawLexer.LexFromRawLexer(TheTok);
   // When this is a token which expands to another macro function then its
@@ -1102,8 +1142,10 @@ static MacroNameAndArgs getMacroNameAndArgs(SourceLocation ExpanLoc,
   // apply_zero(foo)
   //               ^
   //               This is not a tok::l_paren, but foo is a function.
-  if (TheTok.isNot(tok::l_paren))
+  if (TheTok.isNot(tok::l_paren)) {
     return { MacroName, MI, {} };
+
+}
 
   MacroArgMap Args;
 
@@ -1144,17 +1186,25 @@ static MacroNameAndArgs getMacroNameAndArgs(SourceLocation ExpanLoc,
         assert(TheTok.isNot(tok::eof) &&
                "EOF encountered while looking for expanded macro args!");
 
-        if (TheTok.is(tok::l_paren))
+        if (TheTok.is(tok::l_paren)) {
           ++ParenthesesDepth;
 
-        if (TheTok.is(tok::r_paren))
+}
+
+        if (TheTok.is(tok::r_paren)) {
           --ParenthesesDepth;
 
-        if (ParenthesesDepth == 0)
+}
+
+        if (ParenthesesDepth == 0) {
           break;
 
-        if (TheTok.is(tok::raw_identifier))
+}
+
+        if (TheTok.is(tok::raw_identifier)) {
           PP.LookUpIdentifierInfo(TheTok);
+
+}
 
         ExpandedArgTokens.push_back(TheTok);
         RawLexer.LexFromRawLexer(TheTok);
@@ -1189,11 +1239,15 @@ static MacroInfo::tokens_iterator getMatchingRParen(
     assert(It != End &&
            "End of the macro definition reached before finding ')'!");
 
-    if (It->is(tok::l_paren))
+    if (It->is(tok::l_paren)) {
       ++ParenthesesDepth;
 
-    if (It->is(tok::r_paren))
+}
+
+    if (It->is(tok::r_paren)) {
       --ParenthesesDepth;
+
+}
   }
   return It;
 }
@@ -1204,8 +1258,10 @@ static const MacroInfo *getMacroInfoForLocation(const Preprocessor &PP,
                                                 SourceLocation Loc) {
 
   const MacroDirective *MD = PP.getLocalMacroDirectiveHistory(II);
-  if (!MD)
+  if (!MD) {
     return nullptr;
+
+}
 
   return MD->findDirectiveAtLoc(Loc, SM).getMacroInfo();
 }
@@ -1257,10 +1313,12 @@ void TokenPrinter::printToken(const Token &Tok) {
   }
 
   if (!Tok.isOneOf(tok::hash, tok::hashhash)) {
-    if (PrevTok.is(tok::hash))
+    if (PrevTok.is(tok::hash)) {
       OS << '\"' << PP.getSpelling(Tok) << '\"';
-    else
+    } else {
       OS << PP.getSpelling(Tok);
+
+}
   }
 
   PrevPrevTok = PrevTok;

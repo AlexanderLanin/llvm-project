@@ -58,15 +58,21 @@ public:
 
   void VisitChild(ExprParent Parent, const Stmt *S) {
     TypeCallPair AllocCall = Visit(S);
-    if (AllocCall.second && AllocCall.second != S)
+    if (AllocCall.second && AllocCall.second != S) {
       Calls.push_back(CallRecord(Parent, cast<Expr>(S), AllocCall.first,
                                  AllocCall.second));
+
+}
   }
 
   void VisitChildren(const Stmt *S) {
-    for (const Stmt *Child : S->children())
-      if (Child)
+    for (const Stmt *Child : S->children()) {
+      if (Child) {
         VisitChild(S, Child);
+
+}
+
+}
   }
 
   TypeCallPair VisitCastExpr(const CastExpr *E) {
@@ -92,17 +98,25 @@ public:
     const FunctionDecl *FD = E->getDirectCallee();
     if (FD) {
       IdentifierInfo *II = FD->getIdentifier();
-      if (II == II_malloc || II == II_calloc || II == II_realloc)
+      if (II == II_malloc || II == II_calloc || II == II_realloc) {
         return TypeCallPair((const TypeSourceInfo *)nullptr, E);
+
+}
     }
     return TypeCallPair();
   }
 
   TypeCallPair VisitDeclStmt(const DeclStmt *S) {
-    for (const auto *I : S->decls())
-      if (const VarDecl *VD = dyn_cast<VarDecl>(I))
-        if (const Expr *Init = VD->getInit())
+    for (const auto *I : S->decls()) {
+      if (const VarDecl *VD = dyn_cast<VarDecl>(I)) {
+        if (const Expr *Init = VD->getInit()) {
           VisitChild(VD, Init);
+
+}
+
+}
+
+}
     return TypeCallPair();
   }
 };
@@ -125,8 +139,10 @@ public:
   }
 
   void VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *E) {
-    if (E->getKind() != UETT_SizeOf)
+    if (E->getKind() != UETT_SizeOf) {
       return;
+
+}
 
     Sizeofs.push_back(E);
   }
@@ -136,22 +152,28 @@ public:
 // we ignore constness of pointer types.
 static bool typesCompatible(ASTContext &C, QualType A, QualType B) {
   // sizeof(void*) is compatible with any other pointer.
-  if (B->isVoidPointerType() && A->getAs<PointerType>())
+  if (B->isVoidPointerType() && A->getAs<PointerType>()) {
     return true;
+
+}
 
   while (true) {
     A = A.getCanonicalType();
     B = B.getCanonicalType();
 
-    if (A.getTypePtr() == B.getTypePtr())
+    if (A.getTypePtr() == B.getTypePtr()) {
       return true;
 
-    if (const PointerType *ptrA = A->getAs<PointerType>())
+}
+
+    if (const PointerType *ptrA = A->getAs<PointerType>()) {
       if (const PointerType *ptrB = B->getAs<PointerType>()) {
         A = ptrA->getPointeeType();
         B = ptrB->getPointeeType();
         continue;
       }
+
+}
 
     break;
   }
@@ -163,8 +185,10 @@ static bool compatibleWithArrayType(ASTContext &C, QualType PT, QualType T) {
   // Ex: 'int a[10][2]' is compatible with 'int', 'int[2]', 'int[10][2]'.
   while (const ArrayType *AT = T->getAsArrayTypeUnsafe()) {
     QualType ElemType = AT->getElementType();
-    if (typesCompatible(C, PT, AT->getElementType()))
+    if (typesCompatible(C, PT, AT->getElementType())) {
       return true;
+
+}
     T = ElemType;
   }
 
@@ -181,31 +205,43 @@ public:
     for (CastedAllocFinder::CallVec::iterator i = Finder.Calls.begin(),
          e = Finder.Calls.end(); i != e; ++i) {
       QualType CastedType = i->CastedExpr->getType();
-      if (!CastedType->isPointerType())
+      if (!CastedType->isPointerType()) {
         continue;
+
+}
       QualType PointeeType = CastedType->getPointeeType();
-      if (PointeeType->isVoidType())
+      if (PointeeType->isVoidType()) {
         continue;
+
+}
 
       for (CallExpr::const_arg_iterator ai = i->AllocCall->arg_begin(),
            ae = i->AllocCall->arg_end(); ai != ae; ++ai) {
-        if (!(*ai)->getType()->isIntegralOrUnscopedEnumerationType())
+        if (!(*ai)->getType()->isIntegralOrUnscopedEnumerationType()) {
           continue;
+
+}
 
         SizeofFinder SFinder;
         SFinder.Visit(*ai);
-        if (SFinder.Sizeofs.size() != 1)
+        if (SFinder.Sizeofs.size() != 1) {
           continue;
+
+}
 
         QualType SizeofType = SFinder.Sizeofs[0]->getTypeOfArgument();
 
-        if (typesCompatible(BR.getContext(), PointeeType, SizeofType))
+        if (typesCompatible(BR.getContext(), PointeeType, SizeofType)) {
           continue;
+
+}
 
         // If the argument to sizeof is an array, the result could be a
         // pointer to any array element.
-        if (compatibleWithArrayType(BR.getContext(), PointeeType, SizeofType))
+        if (compatibleWithArrayType(BR.getContext(), PointeeType, SizeofType)) {
           continue;
+
+}
 
         const TypeSourceInfo *TSI = nullptr;
         if (i->CastedExprParent.is<const VarDecl *>()) {
@@ -220,18 +256,22 @@ public:
 
         OS << "Result of ";
         const FunctionDecl *Callee = i->AllocCall->getDirectCallee();
-        if (Callee && Callee->getIdentifier())
+        if (Callee && Callee->getIdentifier()) {
           OS << '\'' << Callee->getIdentifier()->getName() << '\'';
-        else
+        } else {
           OS << "call";
+
+}
         OS << " is converted to a pointer of type '"
             << PointeeType.getAsString() << "', which is incompatible with "
             << "sizeof operand type '" << SizeofType.getAsString() << "'";
         SmallVector<SourceRange, 4> Ranges;
         Ranges.push_back(i->AllocCall->getCallee()->getSourceRange());
         Ranges.push_back(SFinder.Sizeofs[0]->getSourceRange());
-        if (TSI)
+        if (TSI) {
           Ranges.push_back(TSI->getTypeLoc().getSourceRange());
+
+}
 
         PathDiagnosticLocation L =
             PathDiagnosticLocation::createBegin(i->AllocCall->getCallee(),

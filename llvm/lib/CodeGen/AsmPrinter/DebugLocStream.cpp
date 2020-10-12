@@ -25,8 +25,10 @@ bool DebugLocStream::finalizeList(AsmPrinter &Asm) {
 }
 
 void DebugLocStream::finalizeEntry() {
-  if (Entries.back().ByteOffset != DWARFBytes.size())
+  if (Entries.back().ByteOffset != DWARFBytes.size()) {
     return;
+
+}
 
   // The last entry was empty.  Delete it.
   Comments.erase(Comments.begin() + Entries.back().CommentOffset,
@@ -38,10 +40,14 @@ void DebugLocStream::finalizeEntry() {
 }
 
 DebugLocStream::ListBuilder::~ListBuilder() {
-  if (!Locs.finalizeList(Asm))
+  if (!Locs.finalizeList(Asm)) {
     return;
+
+}
   V.initializeDbgValue(&MI);
   V.setDebugLocListIndex(ListIndex);
-  if (TagOffset)
+  if (TagOffset) {
     V.setDebugLocListTagOffset(*TagOffset);
+
+}
 }

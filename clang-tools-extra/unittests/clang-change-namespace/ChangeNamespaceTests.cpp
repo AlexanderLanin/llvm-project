@@ -44,8 +44,10 @@ public:
     std::unique_ptr<tooling::FrontendActionFactory> Factory =
         tooling::newFrontendActionFactory(&Finder);
     if (!tooling::runToolOnCodeWithArgs(Factory->create(), Code, {"-std=c++11"},
-                                        FileName))
+                                        FileName)) {
       return "";
+
+}
     formatAndApplyAllReplacements(FileToReplacements, Context.Rewrite);
     return format(Context.getRewrittenText(ID));
   }

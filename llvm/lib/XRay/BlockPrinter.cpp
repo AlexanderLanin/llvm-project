@@ -18,8 +18,10 @@ Error BlockPrinter::visit(BufferExtents &R) {
 
 // Preamble printing.
 Error BlockPrinter::visit(NewBufferRecord &R) {
-  if (CurrentState == State::Start)
+  if (CurrentState == State::Start) {
     OS << "\n[New Block]\n";
+
+}
 
   OS << "Preamble: \n";
   CurrentState = State::Preamble;
@@ -38,10 +40,14 @@ Error BlockPrinter::visit(PIDRecord &R) {
 
 // Metadata printing.
 Error BlockPrinter::visit(NewCPUIDRecord &R) {
-  if (CurrentState == State::Preamble)
+  if (CurrentState == State::Preamble) {
     OS << "\nBody:\n";
-  if (CurrentState == State::Function)
+
+}
+  if (CurrentState == State::Function) {
     OS << "\nMetadata: ";
+
+}
   CurrentState = State::Metadata;
   OS << " ";
   auto E = RP.visit(R);
@@ -49,8 +55,10 @@ Error BlockPrinter::visit(NewCPUIDRecord &R) {
 }
 
 Error BlockPrinter::visit(TSCWrapRecord &R) {
-  if (CurrentState == State::Function)
+  if (CurrentState == State::Function) {
     OS << "\nMetadata:";
+
+}
   CurrentState = State::Metadata;
   OS << " ";
   auto E = RP.visit(R);
@@ -59,8 +67,10 @@ Error BlockPrinter::visit(TSCWrapRecord &R) {
 
 // Custom events will be rendered like "function" events.
 Error BlockPrinter::visit(CustomEventRecord &R) {
-  if (CurrentState == State::Metadata)
+  if (CurrentState == State::Metadata) {
     OS << "\n";
+
+}
   CurrentState = State::CustomEvent;
   OS << "*  ";
   auto E = RP.visit(R);
@@ -68,8 +78,10 @@ Error BlockPrinter::visit(CustomEventRecord &R) {
 }
 
 Error BlockPrinter::visit(CustomEventRecordV5 &R) {
-  if (CurrentState == State::Metadata)
+  if (CurrentState == State::Metadata) {
     OS << "\n";
+
+}
   CurrentState = State::CustomEvent;
   OS << "*  ";
   auto E = RP.visit(R);
@@ -77,8 +89,10 @@ Error BlockPrinter::visit(CustomEventRecordV5 &R) {
 }
 
 Error BlockPrinter::visit(TypedEventRecord &R) {
-  if (CurrentState == State::Metadata)
+  if (CurrentState == State::Metadata) {
     OS << "\n";
+
+}
   CurrentState = State::CustomEvent;
   OS << "*  ";
   auto E = RP.visit(R);
@@ -87,8 +101,10 @@ Error BlockPrinter::visit(TypedEventRecord &R) {
 
 // Function call printing.
 Error BlockPrinter::visit(FunctionRecord &R) {
-  if (CurrentState == State::Metadata)
+  if (CurrentState == State::Metadata) {
     OS << "\n";
+
+}
   CurrentState = State::Function;
   OS << "-  ";
   auto E = RP.visit(R);

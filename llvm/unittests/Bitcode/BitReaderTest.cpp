@@ -34,8 +34,10 @@ std::unique_ptr<Module> parseAssembly(LLVMContext &Context,
   Error.print("", OS);
 
   // A failure here means that the test itself is buggy.
-  if (!M)
+  if (!M) {
     report_fatal_error(OS.str().c_str());
+
+}
 
   return M;
 }
@@ -52,8 +54,10 @@ static std::unique_ptr<Module> getLazyModuleFromAssembly(LLVMContext &Context,
   writeModuleToBuffer(parseAssembly(Context, Assembly), Mem);
   Expected<std::unique_ptr<Module>> ModuleOrErr =
       getLazyBitcodeModule(MemoryBufferRef(Mem.str(), "test"), Context);
-  if (!ModuleOrErr)
+  if (!ModuleOrErr) {
     report_fatal_error("Could not parse bitcode module");
+
+}
   return std::move(ModuleOrErr.get());
 }
 

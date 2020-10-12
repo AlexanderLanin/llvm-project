@@ -138,17 +138,21 @@ void UpgradeDurationConversionsCheck::check(
   // instantiations for future matches.
   internal::Matcher<Stmt> IsInsideTemplate =
       hasAncestor(decl(anyOf(classTemplateDecl(), functionTemplateDecl())));
-  if (!match(IsInsideTemplate, *ArgExpr, *Result.Context).empty())
+  if (!match(IsInsideTemplate, *ArgExpr, *Result.Context).empty()) {
     MatchedTemplateLocations.insert(Loc.getRawEncoding());
+
+}
 
   DiagnosticBuilder Diag = diag(Loc, Message);
   CharSourceRange SourceRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(ArgExpr->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
-  if (SourceRange.isInvalid())
+  if (SourceRange.isInvalid()) {
     // An invalid source range likely means we are inside a macro body. A manual
     // fix is likely needed so we do not create a fix-it hint.
     return;
+
+}
 
   Diag << FixItHint::CreateInsertion(SourceRange.getBegin(),
                                      "static_cast<int64_t>(")

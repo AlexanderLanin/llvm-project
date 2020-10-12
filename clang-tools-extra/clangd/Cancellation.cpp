@@ -33,9 +33,13 @@ std::pair<Context, Canceler> cancelableTask() {
 
 bool isCancelled(const Context &Ctx) {
   for (const CancelState *State = Ctx.get(StateKey); State != nullptr;
-       State = State->Parent)
-    if (State->Cancelled->load())
+       State = State->Parent) {
+    if (State->Cancelled->load()) {
       return true;
+
+}
+
+}
   return false;
 }
 

@@ -70,10 +70,12 @@ void XCOFFDumper::printFileHeaders() {
     char FormattedTime[21] = {};
     size_t BytesWritten =
         strftime(FormattedTime, 21, "%Y-%m-%dT%H:%M:%SZ", gmtime(&TimeDate));
-    if (BytesWritten)
+    if (BytesWritten) {
       W.printHex("TimeStamp", FormattedTime, TimeStamp);
-    else
+    } else {
       W.printHex("Timestamp", TimeStamp);
+
+}
   } else {
     W.printHex("TimeStamp", TimeStamp == 0 ? "None" : "Reserved Value",
                TimeStamp);
@@ -88,10 +90,12 @@ void XCOFFDumper::printFileHeaders() {
   } else {
     W.printHex("SymbolTableOffset", Obj.getSymbolTableOffset32());
     int32_t SymTabEntries = Obj.getRawNumberOfSymbolTableEntries32();
-    if (SymTabEntries >= 0)
+    if (SymTabEntries >= 0) {
       W.printNumber("SymbolTableEntries", SymTabEntries);
-    else
+    } else {
       W.printHex("SymbolTableEntries", "Reserved Value", SymTabEntries);
+
+}
   }
 
   W.printHex("OptionalHeaderSize", Obj.getOptionalHeaderSize());
@@ -102,17 +106,21 @@ void XCOFFDumper::printFileHeaders() {
 }
 
 void XCOFFDumper::printSectionHeaders() {
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     printSectionHeaders(Obj.sections64());
-  else
+  } else {
     printSectionHeaders(Obj.sections32());
+
+}
 }
 
 void XCOFFDumper::printRelocations() {
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     llvm_unreachable("64-bit relocation output not implemented!");
-  else
+  } else {
     printRelocations(Obj.sections32());
+
+}
 }
 
 static const EnumEntry<XCOFF::RelocationType> RelocationTypeNameclass[] = {
@@ -128,8 +136,10 @@ static const EnumEntry<XCOFF::RelocationType> RelocationTypeNameclass[] = {
 };
 
 void XCOFFDumper::printRelocations(ArrayRef<XCOFFSectionHeader32> Sections) {
-  if (!opts::ExpandRelocs)
+  if (!opts::ExpandRelocs) {
     report_fatal_error("Unexpanded relocation output not implemented.");
+
+}
 
   ListScope LS(W, "Relocations");
   uint16_t Index = 0;
@@ -137,11 +147,15 @@ void XCOFFDumper::printRelocations(ArrayRef<XCOFFSectionHeader32> Sections) {
     ++Index;
     // Only the .text, .data, .tdata, and STYP_DWARF sections have relocation.
     if (Sec.Flags != XCOFF::STYP_TEXT && Sec.Flags != XCOFF::STYP_DATA &&
-        Sec.Flags != XCOFF::STYP_TDATA && Sec.Flags != XCOFF::STYP_DWARF)
+        Sec.Flags != XCOFF::STYP_TDATA && Sec.Flags != XCOFF::STYP_DWARF) {
       continue;
+
+}
     auto Relocations = unwrapOrError(Obj.getFileName(), Obj.relocations(Sec));
-    if (Relocations.empty())
+    if (Relocations.empty()) {
       continue;
+
+}
 
     W.startLine() << "Section (index: " << Index << ") " << Sec.getName()
                   << " {\n";
@@ -171,9 +185,11 @@ static const EnumEntry<XCOFF::CFileStringType> FileStringType[] = {
 };
 
 void XCOFFDumper::printFileAuxEnt(const XCOFFFileAuxEnt *AuxEntPtr) {
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     report_fatal_error(
         "Printing for File Auxiliary Entry in 64-bit is unimplemented.");
+
+}
   StringRef FileName =
       unwrapOrError(Obj.getFileName(), Obj.getCFileName(AuxEntPtr));
   DictScope SymDs(W, "File Auxiliary Entry");
@@ -211,10 +227,12 @@ void XCOFFDumper::printCsectAuxEnt32(const XCOFFCsectAuxEnt32 *AuxEntPtr) {
   DictScope SymDs(W, "CSECT Auxiliary Entry");
   W.printNumber("Index",
                 Obj.getSymbolIndex(reinterpret_cast<uintptr_t>(AuxEntPtr)));
-  if ((AuxEntPtr->SymbolAlignmentAndType & SymbolTypeMask) == XCOFF::XTY_LD)
+  if ((AuxEntPtr->SymbolAlignmentAndType & SymbolTypeMask) == XCOFF::XTY_LD) {
     W.printNumber("ContainingCsectSymbolIndex", AuxEntPtr->SectionOrLength);
-  else
+  } else {
     W.printNumber("SectionLen", AuxEntPtr->SectionOrLength);
+
+}
   W.printHex("ParameterHashIndex", AuxEntPtr->ParameterHashIndex);
   W.printHex("TypeChkSectNum", AuxEntPtr->TypeChkSectNum);
   // Print out symbol alignment and type.
@@ -309,8 +327,10 @@ static const EnumEntry<XCOFF::CFileCpuId> CFileCpuIdClass[] = {
 };
 
 void XCOFFDumper::printSymbol(const SymbolRef &S) {
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     report_fatal_error("64-bit support is unimplemented.");
+
+}
 
   DataRefImpl SymbolDRI = S.getRawDataRefImpl();
   const XCOFFSymbolEntry *SymbolEntPtr = Obj.toSymbolEntry(SymbolDRI);
@@ -340,15 +360,19 @@ void XCOFFDumper::printSymbol(const SymbolRef &S) {
     W.printEnum("CPU Version ID",
                 SymbolEntPtr->CFileLanguageIdAndTypeId.CpuTypeId,
                 makeArrayRef(CFileCpuIdClass));
-  } else
+  } else {
     W.printHex("Type", SymbolEntPtr->SymbolType);
+
+}
 
   W.printEnum("StorageClass", static_cast<uint8_t>(SymbolEntPtr->StorageClass),
               makeArrayRef(SymStorageClass));
   W.printNumber("NumberOfAuxEntries", SymbolEntPtr->NumberOfAuxEntries);
 
-  if (NumberOfAuxEntries == 0)
+  if (NumberOfAuxEntries == 0) {
     return;
+
+}
 
   switch (XCOFFSymRef.getStorageClass()) {
   case XCOFF::C_FILE:
@@ -368,8 +392,10 @@ void XCOFFDumper::printSymbol(const SymbolRef &S) {
     // If the symbol is for a function, and it has more than 1 auxiliary entry,
     // then one of them must be function auxiliary entry which we do not
     // support yet.
-    if (XCOFFSymRef.isFunction() && NumberOfAuxEntries >= 2)
+    if (XCOFFSymRef.isFunction() && NumberOfAuxEntries >= 2) {
       report_fatal_error("Function auxiliary entry printing is unimplemented.");
+
+}
 
     // If there is more than 1 auxiliary entry, instead of printing out
     // error information, print out the raw Auxiliary entry from 1st till
@@ -385,9 +411,11 @@ void XCOFFDumper::printSymbol(const SymbolRef &S) {
     printCsectAuxEnt32(XCOFFSymRef.getXCOFFCsectAuxEnt32());
     break;
   case XCOFF::C_STAT:
-    if (NumberOfAuxEntries > 1)
+    if (NumberOfAuxEntries > 1) {
       report_fatal_error(
           "C_STAT symbol should not have more than 1 auxiliary entry.");
+
+}
 
     const XCOFFSectAuxEntForStat *StatAuxEntPtr;
     StatAuxEntPtr =
@@ -416,8 +444,10 @@ void XCOFFDumper::printSymbol(const SymbolRef &S) {
 
 void XCOFFDumper::printSymbols() {
   ListScope Group(W, "Symbols");
-  for (const SymbolRef &S : Obj.symbols())
+  for (const SymbolRef &S : Obj.symbols()) {
     printSymbol(S);
+
+}
 }
 
 void XCOFFDumper::printDynamicSymbols() {
@@ -505,20 +535,28 @@ void XCOFFDumper::printSectionHeaders(ArrayRef<T> Sections) {
       printGenericSectionHeader(Sec);
       break;
     }
-    if (Sec.isReservedSectionType())
+    if (Sec.isReservedSectionType()) {
       W.printHex("Flags", "Reserved", SectionType);
-    else
+    } else {
       W.printEnum("Type", SectionType, makeArrayRef(SectionTypeFlagsNames));
+
+}
   }
 
-  if (opts::SectionRelocations)
+  if (opts::SectionRelocations) {
     report_fatal_error("Dumping section relocations is unimplemented");
 
-  if (opts::SectionSymbols)
+}
+
+  if (opts::SectionSymbols) {
     report_fatal_error("Dumping symbols is unimplemented");
 
-  if (opts::SectionData)
+}
+
+  if (opts::SectionData) {
     report_fatal_error("Dumping section data is unimplemented");
+
+}
 }
 
 namespace llvm {
@@ -526,8 +564,10 @@ std::error_code createXCOFFDumper(const object::ObjectFile *Obj,
                                   ScopedPrinter &Writer,
                                   std::unique_ptr<ObjDumper> &Result) {
   const XCOFFObjectFile *XObj = dyn_cast<XCOFFObjectFile>(Obj);
-  if (!XObj)
+  if (!XObj) {
     return readobj_error::unsupported_obj_file_format;
+
+}
 
   Result.reset(new XCOFFDumper(*XObj, Writer));
   return readobj_error::success;

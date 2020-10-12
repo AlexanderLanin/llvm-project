@@ -41,32 +41,42 @@ class SpeculativeJIT {
 public:
   static Expected<std::unique_ptr<SpeculativeJIT>> Create() {
     auto JTMB = orc::JITTargetMachineBuilder::detectHost();
-    if (!JTMB)
+    if (!JTMB) {
       return JTMB.takeError();
 
+}
+
     auto DL = JTMB->getDefaultDataLayoutForTarget();
-    if (!DL)
+    if (!DL) {
       return DL.takeError();
+
+}
 
     auto ES = std::make_unique<ExecutionSession>();
 
     auto LCTMgr = createLocalLazyCallThroughManager(
         JTMB->getTargetTriple(), *ES,
         pointerToJITTargetAddress(explodeOnLazyCompileFailure));
-    if (!LCTMgr)
+    if (!LCTMgr) {
       return LCTMgr.takeError();
+
+}
 
     auto ISMBuilder =
         createLocalIndirectStubsManagerBuilder(JTMB->getTargetTriple());
-    if (!ISMBuilder)
+    if (!ISMBuilder) {
       return make_error<StringError>("No indirect stubs manager for target",
                                      inconvertibleErrorCode());
+
+}
 
     auto ProcessSymbolsSearchGenerator =
         DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL->getGlobalPrefix());
-    if (!ProcessSymbolsSearchGenerator)
+    if (!ProcessSymbolsSearchGenerator) {
       return ProcessSymbolsSearchGenerator.takeError();
+
+}
 
     std::unique_ptr<SpeculativeJIT> SJ(new SpeculativeJIT(
         std::move(ES), std::move(*DL), std::move(*JTMB), std::move(*LCTMgr),

@@ -176,8 +176,10 @@ static void mergeInlinedArrayAllocas(
   // because their scopes are not disjoint.  We could make this smarter by
   // keeping track of the inline history for each alloca in the
   // InlinedArrayAllocas but this isn't likely to be a significant win.
-  if (InlineHistory != -1) // Only do merging for top-level call sites in SCC.
+  if (InlineHistory != -1) { // Only do merging for top-level call sites in SCC.
     return;
+
+}
 
   // Loop over all the allocas we have so far and see if they can be merged with
   // a previously inlined alloca.  If not, remember that we had it.
@@ -189,8 +191,10 @@ static void mergeInlinedArrayAllocas(
     // canonicalized to be an allocation *of* an array), or allocations whose
     // type is not itself an array (because we're afraid of pessimizing SRoA).
     ArrayType *ATy = dyn_cast<ArrayType>(AI->getAllocatedType());
-    if (!ATy || AI->isArrayAllocation())
+    if (!ATy || AI->isArrayAllocation()) {
       continue;
+
+}
 
     // Get the list of all available allocas for this array type.
     std::vector<AllocaInst *> &AllocasForType = InlinedArrayAllocas[ATy];
@@ -207,13 +211,17 @@ static void mergeInlinedArrayAllocas(
 
       // The available alloca has to be in the right function, not in some other
       // function in this SCC.
-      if (AvailableAlloca->getParent() != AI->getParent())
+      if (AvailableAlloca->getParent() != AI->getParent()) {
         continue;
+
+}
 
       // If the inlined function already uses this alloca then we can't reuse
       // it.
-      if (!UsedAllocas.insert(AvailableAlloca).second)
+      if (!UsedAllocas.insert(AvailableAlloca).second) {
         continue;
+
+}
 
       // Otherwise, we *can* reuse it, RAUW AI into AvailableAlloca and declare
       // success!
@@ -222,11 +230,19 @@ static void mergeInlinedArrayAllocas(
 
       // Move affected dbg.declare calls immediately after the new alloca to
       // avoid the situation when a dbg.declare precedes its alloca.
-      if (auto *L = LocalAsMetadata::getIfExists(AI))
-        if (auto *MDV = MetadataAsValue::getIfExists(AI->getContext(), L))
-          for (User *U : MDV->users())
-            if (DbgDeclareInst *DDI = dyn_cast<DbgDeclareInst>(U))
+      if (auto *L = LocalAsMetadata::getIfExists(AI)) {
+        if (auto *MDV = MetadataAsValue::getIfExists(AI->getContext(), L)) {
+          for (User *U : MDV->users()) {
+            if (DbgDeclareInst *DDI = dyn_cast<DbgDeclareInst>(U)) {
               DDI->moveBefore(AvailableAlloca->getNextNode());
+
+}
+
+}
+
+}
+
+}
 
       AI->replaceAllUsesWith(AvailableAlloca);
 
@@ -239,8 +255,10 @@ static void mergeInlinedArrayAllocas(
           Align2 = Align2 ? Align2 : TypeAlign;
         }
 
-        if (Align1 > Align2)
+        if (Align1 > Align2) {
           AvailableAlloca->setAlignment(MaybeAlign(AI->getAlignment()));
+
+}
       }
 
       AI->eraseFromParent();
@@ -251,8 +269,10 @@ static void mergeInlinedArrayAllocas(
     }
 
     // If we already nuked the alloca, we're done with it.
-    if (MergedAwayAlloca)
+    if (MergedAwayAlloca) {
       continue;
+
+}
 
     // If we were unable to merge away the alloca either because there are no
     // allocas of the right type available or because we reused them all
@@ -285,16 +305,22 @@ static InlineResult InlineCallIfPossible(
   // Try to inline the function.  Get the list of static allocas that were
   // inlined.
   InlineResult IR = InlineFunction(CS, IFI, &AAR, InsertLifetime);
-  if (!IR.isSuccess())
+  if (!IR.isSuccess()) {
     return IR;
 
-  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No)
+}
+
+  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No) {
     ImportedFunctionsStats.recordInline(*Caller, *Callee);
+
+}
 
   AttributeFuncs::mergeAttributesForInlining(*Caller, *Callee);
 
-  if (!DisableInlinedAllocaMerging)
+  if (!DisableInlinedAllocaMerging) {
     mergeInlinedArrayAllocas(Caller, IFI, InlinedArrayAllocas, InlineHistory);
+
+}
 
   return IR; // success
 }
@@ -309,13 +335,17 @@ shouldBeDeferred(Function *Caller, CallSite CS, InlineCost IC,
                  int &TotalSecondaryCost,
                  function_ref<InlineCost(CallSite CS)> GetInlineCost) {
   // For now we only handle local or inline functions.
-  if (!Caller->hasLocalLinkage() && !Caller->hasLinkOnceODRLinkage())
+  if (!Caller->hasLocalLinkage() && !Caller->hasLinkOnceODRLinkage()) {
     return false;
+
+}
   // If the cost of inlining CS is non-positive, it is not going to prevent the
   // caller from being inlined into its callers and hence we don't need to
   // defer.
-  if (IC.getCost() <= 0)
+  if (IC.getCost() <= 0) {
     return false;
+
+}
   // Try to detect the case where the current inlining candidate caller (call
   // it B) is a static or linkonce-ODR function and is an inlining candidate
   // elsewhere, and the current candidate callee (call it C) is large enough
@@ -344,8 +374,10 @@ shouldBeDeferred(Function *Caller, CallSite CS, InlineCost IC,
     // If the caller will not be removed (either because it does not have a
     // local linkage or because the LastCallToStaticBonus has been already
     // applied), then we can exit the loop early.
-    if (!ApplyLastCallBonus && TotalSecondaryCost >= IC.getCost())
+    if (!ApplyLastCallBonus && TotalSecondaryCost >= IC.getCost()) {
       return false;
+
+}
     CallSite CS2(U);
 
     // If this isn't a call to Caller (it could be some other sort
@@ -362,8 +394,10 @@ shouldBeDeferred(Function *Caller, CallSite CS, InlineCost IC,
       ApplyLastCallBonus = false;
       continue;
     }
-    if (IC2.isAlways())
+    if (IC2.isAlways()) {
       continue;
+
+}
 
     // See if inlining of the original callsite would erase the cost delta of
     // this callsite. We subtract off the penalty for the call instruction,
@@ -377,11 +411,15 @@ shouldBeDeferred(Function *Caller, CallSite CS, InlineCost IC,
   // one is set very low by getInlineCost, in anticipation that Caller will
   // be removed entirely.  We did not account for this above unless there
   // is only one caller of Caller.
-  if (ApplyLastCallBonus)
+  if (ApplyLastCallBonus) {
     TotalSecondaryCost -= InlineConstants::LastCallToStaticBonus;
 
-  if (inliningPreventsSomeOuterInline && TotalSecondaryCost < IC.getCost())
+}
+
+  if (inliningPreventsSomeOuterInline && TotalSecondaryCost < IC.getCost()) {
     return true;
+
+}
 
   return false;
 }
@@ -402,8 +440,10 @@ RemarkT &operator<<(RemarkT &&R, const InlineCost &IC) {
     R << "(cost=" << ore::NV("Cost", IC.getCost())
       << ", threshold=" << ore::NV("Threshold", IC.getThreshold()) << ")";
   }
-  if (const char *Reason = IC.getReason())
+  if (const char *Reason = IC.getReason()) {
     R << ": " << ore::NV("Reason", Reason);
+
+}
   return R;
 }
 
@@ -486,22 +526,28 @@ static bool InlineHistoryIncludes(
   while (InlineHistoryID != -1) {
     assert(unsigned(InlineHistoryID) < InlineHistory.size() &&
            "Invalid inline history ID");
-    if (InlineHistory[InlineHistoryID].first == F)
+    if (InlineHistory[InlineHistoryID].first == F) {
       return true;
+
+}
     InlineHistoryID = InlineHistory[InlineHistoryID].second;
   }
   return false;
 }
 
 bool LegacyInlinerBase::doInitialization(CallGraph &CG) {
-  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No)
+  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No) {
     ImportedFunctionsStats.setModuleInfo(CG.getModule());
+
+}
   return false; // No changes to CallGraph.
 }
 
 bool LegacyInlinerBase::runOnSCC(CallGraphSCC &SCC) {
-  if (skipSCC(SCC))
+  if (skipSCC(SCC)) {
     return false;
+
+}
   return inlineCalls(SCC);
 }
 
@@ -518,8 +564,10 @@ static void emit_inlined_into(OptimizationRemarkEmitter &ORE, DebugLoc &DLoc,
 }
 
 static void setInlineRemark(CallSite &CS, StringRef message) {
-  if (!InlineRemarkAttribute)
+  if (!InlineRemarkAttribute) {
     return;
+
+}
 
   Attribute attr = Attribute::get(CS->getContext(), "inline-remark", message);
   CS.addAttribute(AttributeList::FunctionIndex, attr);
@@ -538,8 +586,10 @@ inlineCallsImpl(CallGraphSCC &SCC, CallGraph &CG,
   LLVM_DEBUG(dbgs() << "Inliner visiting SCC:");
   for (CallGraphNode *Node : SCC) {
     Function *F = Node->getFunction();
-    if (F)
+    if (F) {
       SCCFunctions.insert(F);
+
+}
     LLVM_DEBUG(dbgs() << " " << (F ? F->getName() : "INDIRECTNODE"));
   }
 
@@ -556,22 +606,26 @@ inlineCallsImpl(CallGraphSCC &SCC, CallGraph &CG,
 
   for (CallGraphNode *Node : SCC) {
     Function *F = Node->getFunction();
-    if (!F || F->isDeclaration())
+    if (!F || F->isDeclaration()) {
       continue;
 
+}
+
     OptimizationRemarkEmitter ORE(F);
-    for (BasicBlock &BB : *F)
+    for (BasicBlock &BB : *F) {
       for (Instruction &I : BB) {
         CallSite CS(cast<Value>(&I));
         // If this isn't a call, or it is a call to an intrinsic, it can
         // never be inlined.
-        if (!CS || isa<IntrinsicInst>(I))
+        if (!CS || isa<IntrinsicInst>(I)) {
           continue;
+
+}
 
         // If this is a direct call to an external function, we can never inline
         // it.  If it is an indirect call, inlining may resolve it to be a
         // direct call, so we keep it.
-        if (Function *Callee = CS.getCalledFunction())
+        if (Function *Callee = CS.getCalledFunction()) {
           if (Callee->isDeclaration()) {
             using namespace ore;
 
@@ -586,23 +640,35 @@ inlineCallsImpl(CallGraphSCC &SCC, CallGraph &CG,
             continue;
           }
 
+}
+
         CallSites.push_back(std::make_pair(CS, -1));
       }
+
+}
   }
 
   LLVM_DEBUG(dbgs() << ": " << CallSites.size() << " call sites.\n");
 
   // If there are no calls in this function, exit early.
-  if (CallSites.empty())
+  if (CallSites.empty()) {
     return false;
+
+}
 
   // Now that we have all of the call sites, move the ones to functions in the
   // current SCC to the end of the list.
   unsigned FirstCallInSCC = CallSites.size();
-  for (unsigned i = 0; i < FirstCallInSCC; ++i)
-    if (Function *F = CallSites[i].first.getCalledFunction())
-      if (SCCFunctions.count(F))
+  for (unsigned i = 0; i < FirstCallInSCC; ++i) {
+    if (Function *F = CallSites[i].first.getCalledFunction()) {
+      if (SCCFunctions.count(F)) {
         std::swap(CallSites[i--], CallSites[--FirstCallInSCC]);
+
+}
+
+}
+
+}
 
   InlinedArrayAllocasTy InlinedArrayAllocas;
   InlineFunctionInfo InlineInfo(&CG, &GetAssumptionCache, PSI);
@@ -623,8 +689,10 @@ inlineCallsImpl(CallGraphSCC &SCC, CallGraph &CG,
       Function *Callee = CS.getCalledFunction();
 
       // We can only inline direct calls to non-declarations.
-      if (!Callee || Callee->isDeclaration())
+      if (!Callee || Callee->isDeclaration()) {
         continue;
+
+}
 
       Instruction *Instr = CS.getInstruction();
 
@@ -712,8 +780,10 @@ inlineCallsImpl(CallGraphSCC &SCC, CallGraph &CG,
           int NewHistoryID = InlineHistory.size();
           InlineHistory.push_back(std::make_pair(Callee, InlineHistoryID));
 
-          for (Value *Ptr : InlineInfo.InlinedCalls)
+          for (Value *Ptr : InlineInfo.InlinedCalls) {
             CallSites.push_back(std::make_pair(CallSite(Ptr), NewHistoryID));
+
+}
         }
       }
 
@@ -777,9 +847,11 @@ bool LegacyInlinerBase::inlineCalls(CallGraphSCC &SCC) {
 /// Remove now-dead linkonce functions at the end of
 /// processing to avoid breaking the SCC traversal.
 bool LegacyInlinerBase::doFinalization(CallGraph &CG) {
-  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No)
+  if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No) {
     ImportedFunctionsStats.dump(InlinerFunctionImportStats ==
                                 InlinerFunctionImportStatsOpts::Verbose);
+
+}
   return removeDeadFunctions(CG);
 }
 
@@ -807,21 +879,27 @@ bool LegacyInlinerBase::removeDeadFunctions(CallGraph &CG,
   for (const auto &I : CG) {
     CallGraphNode *CGN = I.second.get();
     Function *F = CGN->getFunction();
-    if (!F || F->isDeclaration())
+    if (!F || F->isDeclaration()) {
       continue;
+
+}
 
     // Handle the case when this function is called and we only want to care
     // about always-inline functions. This is a bit of a hack to share code
     // between here and the InlineAlways pass.
-    if (AlwaysInlineOnly && !F->hasFnAttribute(Attribute::AlwaysInline))
+    if (AlwaysInlineOnly && !F->hasFnAttribute(Attribute::AlwaysInline)) {
       continue;
+
+}
 
     // If the only remaining users of the function are dead constants, remove
     // them.
     F->removeDeadConstantUsers();
 
-    if (!F->isDefTriviallyDead())
+    if (!F->isDefTriviallyDead()) {
       continue;
+
+}
 
     // It is unsafe to drop a function with discardable linkage from a COMDAT
     // without also dropping the other members of the COMDAT.
@@ -840,12 +918,16 @@ bool LegacyInlinerBase::removeDeadFunctions(CallGraph &CG,
     // Filter out the functions whose comdats remain alive.
     filterDeadComdatFunctions(CG.getModule(), DeadFunctionsInComdats);
     // Remove the rest.
-    for (Function *F : DeadFunctionsInComdats)
+    for (Function *F : DeadFunctionsInComdats) {
       RemoveCGN(CG[F]);
+
+}
   }
 
-  if (FunctionsToRemove.empty())
+  if (FunctionsToRemove.empty()) {
     return false;
+
+}
 
   // Now that we know which functions to delete, do so.  We didn't want to do
   // this inline, because that would invalidate our CallGraph::iterator
@@ -930,12 +1012,12 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
     // after inlining to be visible to subsequent inlining decisions.
     // FIXME: Using instructions sequence is a really bad way to do this.
     // Instead we should do an actual RPO walk of the function body.
-    for (Instruction &I : instructions(N.getFunction()))
-      if (auto CS = CallSite(&I))
+    for (Instruction &I : instructions(N.getFunction())) {
+      if (auto CS = CallSite(&I)) {
         if (Function *Callee = CS.getCalledFunction()) {
-          if (!Callee->isDeclaration())
+          if (!Callee->isDeclaration()) {
             Calls.push_back({CS, -1});
-          else if (!isa<IntrinsicInst>(I)) {
+          } else if (!isa<IntrinsicInst>(I)) {
             using namespace ore;
             setInlineRemark(CS, "unavailable definition");
             ORE.emit([&]() {
@@ -947,9 +1029,15 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
             });
           }
         }
+
+}
+
+}
   }
-  if (Calls.empty())
+  if (Calls.empty()) {
     return PreservedAnalyses::all();
+
+}
 
   // Capture updatable variables for the current SCC and RefSCC.
   auto *C = &InitialC;
@@ -979,8 +1067,10 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
     // alone.
     Function &F = *Calls[i].first.getCaller();
     LazyCallGraph::Node &N = *CG.lookup(F);
-    if (CG.lookupSCC(N) != C)
+    if (CG.lookupSCC(N) != C) {
       continue;
+
+}
     if (F.hasOptNone()) {
       setInlineRemark(Calls[i].first, "optnone attribute");
       continue;
@@ -1111,17 +1201,25 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
             // post-inline cleanup and the next DevirtSCCRepeatedPass iteration
             // because the next iteration may not happen and we may miss
             // inlining it.
-            if (tryPromoteCall(CS))
+            if (tryPromoteCall(CS)) {
               NewCallee = CS.getCalledFunction();
+
+}
           }
-          if (NewCallee)
-            if (!NewCallee->isDeclaration())
+          if (NewCallee) {
+            if (!NewCallee->isDeclaration()) {
               Calls.push_back({CS, NewHistoryID});
+
+}
+
+}
         }
       }
 
-      if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No)
+      if (InlinerFunctionImportStats != InlinerFunctionImportStatsOpts::No) {
         ImportedFunctionsStats->recordInline(F, Callee);
+
+}
 
       // Merge the attributes based on the inlining.
       AttributeFuncs::mergeAttributesForInlining(F, Callee);
@@ -1157,8 +1255,10 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
     // the outer loop.
     --i;
 
-    if (!DidInline)
+    if (!DidInline) {
       continue;
+
+}
     Changed = true;
 
     // Add all the inlined callees' edges as ref edges to the caller. These are
@@ -1171,8 +1271,10 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
     // below.
     for (Function *InlinedCallee : InlinedCallees) {
       LazyCallGraph::Node &CalleeN = *CG.lookup(*InlinedCallee);
-      for (LazyCallGraph::Edge &E : *CalleeN)
+      for (LazyCallGraph::Edge &E : *CalleeN) {
         RC->insertTrivialRefEdge(N, E.getNode());
+
+}
     }
 
     // At this point, since we have made changes we have at least removed
@@ -1246,8 +1348,10 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
     ++NumDeleted;
   }
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   // Even if we change the IR, we update the core CGSCC data structures and so
   // can preserve the proxy to the function analysis manager.

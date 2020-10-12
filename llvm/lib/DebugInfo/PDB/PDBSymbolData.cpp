@@ -21,27 +21,35 @@ void PDBSymbolData::dump(PDBSymDumper &Dumper) const { Dumper.dump(*this); }
 std::unique_ptr<IPDBEnumLineNumbers> PDBSymbolData::getLineNumbers() const {
   auto Len = RawSymbol->getLength();
   Len = Len ? Len : 1;
-  if (auto RVA = RawSymbol->getRelativeVirtualAddress())
+  if (auto RVA = RawSymbol->getRelativeVirtualAddress()) {
     return Session.findLineNumbersByRVA(RVA, Len);
 
-  if (auto Section = RawSymbol->getAddressSection())
+}
+
+  if (auto Section = RawSymbol->getAddressSection()) {
     return Session.findLineNumbersBySectOffset(
         Section, RawSymbol->getAddressOffset(), Len);
+
+}
 
   return nullptr;
 }
 
 uint32_t PDBSymbolData::getCompilandId() const {
   if (auto Lines = getLineNumbers()) {
-    if (auto FirstLine = Lines->getNext())
+    if (auto FirstLine = Lines->getNext()) {
       return FirstLine->getCompilandId();
+
+}
   }
 
   uint32_t DataSection = RawSymbol->getAddressSection();
   uint32_t DataOffset = RawSymbol->getAddressOffset();
   if (DataSection == 0) {
-    if (auto RVA = RawSymbol->getRelativeVirtualAddress())
+    if (auto RVA = RawSymbol->getRelativeVirtualAddress()) {
       Session.addressForRVA(RVA, DataSection, DataOffset);
+
+}
   }
 
   if (DataSection) {
@@ -49,17 +57,23 @@ uint32_t PDBSymbolData::getCompilandId() const {
       while (auto Section = SecContribs->getNext()) {
         if (Section->getAddressSection() == DataSection &&
             Section->getAddressOffset() <= DataOffset &&
-            (Section->getAddressOffset() + Section->getLength()) > DataOffset)
+            (Section->getAddressOffset() + Section->getLength()) > DataOffset) {
           return Section->getCompilandId();
+
+}
       }
     }
   } else {
     auto LexParentId = RawSymbol->getLexicalParentId();
     while (auto LexParent = Session.getSymbolById(LexParentId)) {
-      if (LexParent->getSymTag() == PDB_SymType::Exe)
+      if (LexParent->getSymTag() == PDB_SymType::Exe) {
         break;
-      if (LexParent->getSymTag() == PDB_SymType::Compiland)
+
+}
+      if (LexParent->getSymTag() == PDB_SymType::Compiland) {
         return LexParentId;
+
+}
       LexParentId = LexParent->getRawSymbol().getLexicalParentId();
     }
   }

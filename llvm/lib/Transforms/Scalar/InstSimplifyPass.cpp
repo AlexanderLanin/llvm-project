@@ -37,16 +37,20 @@ static bool runImpl(Function &F, const SimplifyQuery &SQ,
     for (BasicBlock &BB : F) {
       // Unreachable code can take on strange forms that we are not prepared to
       // handle. For example, an instruction may have itself as an operand.
-      if (!SQ.DT->isReachableFromEntry(&BB))
+      if (!SQ.DT->isReachableFromEntry(&BB)) {
         continue;
+
+}
 
       SmallVector<WeakTrackingVH, 8> DeadInstsInBB;
       for (Instruction &I : BB) {
         // The first time through the loop, ToSimplify is empty and we try to
         // simplify all instructions. On later iterations, ToSimplify is not
         // empty and we only bother simplifying instructions that are in it.
-        if (!ToSimplify->empty() && !ToSimplify->count(&I))
+        if (!ToSimplify->empty() && !ToSimplify->count(&I)) {
           continue;
+
+}
 
         // Don't waste time simplifying dead/unused instructions.
         if (isInstructionTriviallyDead(&I)) {
@@ -55,14 +59,18 @@ static bool runImpl(Function &F, const SimplifyQuery &SQ,
         } else if (!I.use_empty()) {
           if (Value *V = SimplifyInstruction(&I, SQ, ORE)) {
             // Mark all uses for resimplification next time round the loop.
-            for (User *U : I.users())
+            for (User *U : I.users()) {
               Next->insert(cast<Instruction>(U));
+
+}
             I.replaceAllUsesWith(V);
             ++NumSimplified;
             Changed = true;
             // A call can get simplified, but it may not be trivially dead.
-            if (isInstructionTriviallyDead(&I))
+            if (isInstructionTriviallyDead(&I)) {
               DeadInstsInBB.push_back(&I);
+
+}
           }
         }
       }
@@ -95,8 +103,10 @@ struct InstSimplifyLegacyPass : public FunctionPass {
 
   /// Remove instructions that simplify.
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     const DominatorTree *DT =
         &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
@@ -137,8 +147,10 @@ PreservedAnalyses InstSimplifyPass::run(Function &F,
   const DataLayout &DL = F.getParent()->getDataLayout();
   const SimplifyQuery SQ(DL, &TLI, &DT, &AC);
   bool Changed = runImpl(F, SQ, &ORE);
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();

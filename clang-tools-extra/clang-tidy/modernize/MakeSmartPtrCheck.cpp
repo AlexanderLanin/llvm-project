@@ -119,8 +119,10 @@ void MakeSmartPtrCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *New = Result.Nodes.getNodeAs<CXXNewExpr>(NewExpression);
 
   // Skip when this is a new-expression with `auto`, e.g. new auto(1)
-  if (New->getType()->getPointeeType()->getContainedAutoType())
+  if (New->getType()->getPointeeType()->getContainedAutoType()) {
     return;
+
+}
 
   // Be conservative for cases where we construct an array without any
   // initalization.
@@ -129,12 +131,16 @@ void MakeSmartPtrCheck::check(const MatchFinder::MatchResult &Result) {
   //
   // The fix of the check has side effect, it introduces default initialization
   // which maybe unexpected and cause performance regression.
-  if (New->isArray() && !New->hasInitializer())
+  if (New->isArray() && !New->hasInitializer()) {
     return;
-  if (Construct)
+
+}
+  if (Construct) {
     checkConstruct(SM, Result.Context, Construct, Type, New);
-  else if (Reset)
+  } else if (Reset) {
     checkReset(SM, Result.Context, Reset, New);
+
+}
 }
 
 void MakeSmartPtrCheck::checkConstruct(SourceManager &SM, ASTContext *Ctx,
@@ -153,8 +159,10 @@ void MakeSmartPtrCheck::checkConstruct(SourceManager &SM, ASTContext *Ctx,
       CharSourceRange::getCharRange(
           ConstructCallStart, Construct->getParenOrBraceRange().getBegin()),
       SM, getLangOpts(), &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return;
+
+}
 
   auto Diag = diag(ConstructCallStart, "use %0 instead")
               << MakeSmartPtrFunctionName;
@@ -244,8 +252,10 @@ void MakeSmartPtrCheck::checkReset(SourceManager &SM, ASTContext *Ctx,
        GetNewExprName(New, SM, getLangOpts()) + ">")
           .str());
 
-  if (Expr->isArrow())
+  if (Expr->isArrow()) {
     Diag << FixItHint::CreateInsertion(ExprStart, "*");
+
+}
 
   insertHeader(Diag, SM.getFileID(OperatorLoc));
 }
@@ -271,8 +281,10 @@ bool MakeSmartPtrCheck::replaceNew(DiagnosticBuilder &Diag,
   SourceLocation NewEnd = NewRange.getEnd();
 
   // Skip when the source location of the new expression is invalid.
-  if (NewStart.isInvalid() || NewEnd.isInvalid())
+  if (NewStart.isInvalid() || NewEnd.isInvalid()) {
     return false;
+
+}
 
   std::string ArraySizeExpr;
   if (const auto* ArraySize = New->getArraySize().getValueOr(nullptr)) {
@@ -291,8 +303,10 @@ bool MakeSmartPtrCheck::replaceNew(DiagnosticBuilder &Diag,
     for (const auto *Arg : CE->arguments()) {
       Arg = Arg->IgnoreImplicit();
 
-      if (isa<CXXStdInitializerListExpr>(Arg) || isa<InitListExpr>(Arg))
+      if (isa<CXXStdInitializerListExpr>(Arg) || isa<InitListExpr>(Arg)) {
         return true;
+
+}
       // Check whether we implicitly construct a class from a
       // std::initializer_list.
       if (const auto *CEArg = dyn_cast<CXXConstructExpr>(Arg)) {
@@ -302,12 +316,16 @@ bool MakeSmartPtrCheck::replaceNew(DiagnosticBuilder &Diag,
         if (CEArg->isElidable()) {
           if (const auto *TempExp = CEArg->getArg(0)) {
             if (const auto *UnwrappedCE =
-                    dyn_cast<CXXConstructExpr>(TempExp->IgnoreImplicit()))
+                    dyn_cast<CXXConstructExpr>(TempExp->IgnoreImplicit())) {
               CEArg = UnwrappedCE;
+
+}
           }
         }
-        if (CEArg->isStdInitListInitialization())
+        if (CEArg->isStdInitListInitialization()) {
           return true;
+
+}
       }
     }
     return false;
@@ -343,8 +361,10 @@ bool MakeSmartPtrCheck::replaceNew(DiagnosticBuilder &Diag,
     //   std::make_smart_ptr<S2>(std::vector<int>({1}));
     //   std::make_smart_ptr<S3>(S2{1, 2}, 3);
     if (const auto *CE = New->getConstructExpr()) {
-      if (HasListIntializedArgument(CE))
+      if (HasListIntializedArgument(CE)) {
         return false;
+
+}
     }
     if (ArraySizeExpr.empty()) {
       SourceRange InitRange = New->getDirectInitRange();

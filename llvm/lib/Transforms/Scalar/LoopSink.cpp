@@ -83,10 +83,14 @@ static cl::opt<unsigned> MaxNumberOfUseBBsForSinking(
 static BlockFrequency adjustedSumFreq(SmallPtrSetImpl<BasicBlock *> &BBs,
                                       BlockFrequencyInfo &BFI) {
   BlockFrequency T = 0;
-  for (BasicBlock *B : BBs)
+  for (BasicBlock *B : BBs) {
     T += BFI.getBlockFreq(B);
-  if (BBs.size() > 1)
+
+}
+  if (BBs.size() > 1) {
     T /= BranchProbability(SinkFrequencyPercentThreshold, 100);
+
+}
   return T;
 }
 
@@ -122,8 +126,10 @@ findBBsToSinkInto(const Loop &L, const SmallPtrSetImpl<BasicBlock *> &UseBBs,
                   const SmallVectorImpl<BasicBlock *> &ColdLoopBBs,
                   DominatorTree &DT, BlockFrequencyInfo &BFI) {
   SmallPtrSet<BasicBlock *, 2> BBsToSinkInto;
-  if (UseBBs.size() == 0)
+  if (UseBBs.size() == 0) {
     return BBsToSinkInto;
+
+}
 
   BBsToSinkInto.insert(UseBBs.begin(), UseBBs.end());
   SmallPtrSet<BasicBlock *, 2> BBsDominatedByColdestBB;
@@ -138,11 +144,17 @@ findBBsToSinkInto(const Loop &L, const SmallPtrSetImpl<BasicBlock *> &UseBBs,
   //     BBsToSinkInto
   for (BasicBlock *ColdestBB : ColdLoopBBs) {
     BBsDominatedByColdestBB.clear();
-    for (BasicBlock *SinkedBB : BBsToSinkInto)
-      if (DT.dominates(ColdestBB, SinkedBB))
+    for (BasicBlock *SinkedBB : BBsToSinkInto) {
+      if (DT.dominates(ColdestBB, SinkedBB)) {
         BBsDominatedByColdestBB.insert(SinkedBB);
-    if (BBsDominatedByColdestBB.size() == 0)
+
+}
+
+}
+    if (BBsDominatedByColdestBB.size() == 0) {
       continue;
+
+}
     if (adjustedSumFreq(BBsDominatedByColdestBB, BFI) >
         BFI.getBlockFreq(ColdestBB)) {
       for (BasicBlock *DominatedBB : BBsDominatedByColdestBB) {
@@ -163,8 +175,10 @@ findBBsToSinkInto(const Loop &L, const SmallPtrSetImpl<BasicBlock *> &UseBBs,
   // If the total frequency of BBsToSinkInto is larger than preheader frequency,
   // do not sink.
   if (adjustedSumFreq(BBsToSinkInto, BFI) >
-      BFI.getBlockFreq(L.getLoopPreheader()))
+      BFI.getBlockFreq(L.getLoopPreheader())) {
     BBsToSinkInto.clear();
+
+}
   return BBsToSinkInto;
 }
 
@@ -182,31 +196,43 @@ static bool sinkInstruction(Loop &L, Instruction &I,
   for (auto &U : I.uses()) {
     Instruction *UI = cast<Instruction>(U.getUser());
     // We cannot sink I to PHI-uses.
-    if (dyn_cast<PHINode>(UI))
+    if (dyn_cast<PHINode>(UI)) {
       return false;
+
+}
     // We cannot sink I if it has uses outside of the loop.
-    if (!L.contains(LI.getLoopFor(UI->getParent())))
+    if (!L.contains(LI.getLoopFor(UI->getParent()))) {
       return false;
+
+}
     BBs.insert(UI->getParent());
   }
 
   // findBBsToSinkInto is O(BBs.size() * ColdLoopBBs.size()). We cap the max
   // BBs.size() to avoid expensive computation.
   // FIXME: Handle code size growth for min_size and opt_size.
-  if (BBs.size() > MaxNumberOfUseBBsForSinking)
+  if (BBs.size() > MaxNumberOfUseBBsForSinking) {
     return false;
+
+}
 
   // Find the set of BBs that we should insert a copy of I.
   SmallPtrSet<BasicBlock *, 2> BBsToSinkInto =
       findBBsToSinkInto(L, BBs, ColdLoopBBs, DT, BFI);
-  if (BBsToSinkInto.empty())
+  if (BBsToSinkInto.empty()) {
     return false;
+
+}
 
   // Return if any of the candidate blocks to sink into is non-cold.
   if (BBsToSinkInto.size() > 1) {
-    for (auto *BB : BBsToSinkInto)
-      if (!LoopBlockNumber.count(BB))
+    for (auto *BB : BBsToSinkInto) {
+      if (!LoopBlockNumber.count(BB)) {
         return false;
+
+}
+
+}
   }
 
   // Copy the final BBs into a vector and sort them using the total ordering
@@ -254,13 +280,17 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
                                           BlockFrequencyInfo &BFI,
                                           ScalarEvolution *SE) {
   BasicBlock *Preheader = L.getLoopPreheader();
-  if (!Preheader)
+  if (!Preheader) {
     return false;
+
+}
 
   // Enable LoopSink only when runtime profile is available.
   // With static profile, the sinking decision may be sub-optimal.
-  if (!Preheader->getParent()->hasProfileData())
+  if (!Preheader->getParent()->hasProfileData()) {
     return false;
+
+}
 
   const BlockFrequency PreheaderFreq = BFI.getBlockFreq(Preheader);
   // If there are no basic blocks with lower frequency than the preheader then
@@ -268,26 +298,32 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
   // opportunities.
   if (all_of(L.blocks(), [&](const BasicBlock *BB) {
         return BFI.getBlockFreq(BB) > PreheaderFreq;
-      }))
+      })) {
     return false;
+
+}
 
   bool Changed = false;
   AliasSetTracker CurAST(AA);
 
   // Compute alias set.
-  for (BasicBlock *BB : L.blocks())
+  for (BasicBlock *BB : L.blocks()) {
     CurAST.add(*BB);
+
+}
   CurAST.add(*Preheader);
 
   // Sort loop's basic blocks by frequency
   SmallVector<BasicBlock *, 10> ColdLoopBBs;
   SmallDenseMap<BasicBlock *, int, 16> LoopBlockNumber;
   int i = 0;
-  for (BasicBlock *B : L.blocks())
+  for (BasicBlock *B : L.blocks()) {
     if (BFI.getBlockFreq(B) < BFI.getBlockFreq(L.getLoopPreheader())) {
       ColdLoopBBs.push_back(B);
       LoopBlockNumber[B] = ++i;
     }
+
+}
   llvm::stable_sort(ColdLoopBBs, [&](BasicBlock *A, BasicBlock *B) {
     return BFI.getBlockFreq(A) < BFI.getBlockFreq(B);
   });
@@ -300,22 +336,30 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
     // No need to check for instruction's operands are loop invariant.
     assert(L.hasLoopInvariantOperands(I) &&
            "Insts in a loop's preheader should have loop invariant operands!");
-    if (!canSinkOrHoistInst(*I, &AA, &DT, &L, &CurAST, nullptr, false))
+    if (!canSinkOrHoistInst(*I, &AA, &DT, &L, &CurAST, nullptr, false)) {
       continue;
-    if (sinkInstruction(L, *I, ColdLoopBBs, LoopBlockNumber, LI, DT, BFI))
+
+}
+    if (sinkInstruction(L, *I, ColdLoopBBs, LoopBlockNumber, LI, DT, BFI)) {
       Changed = true;
+
+}
   }
 
-  if (Changed && SE)
+  if (Changed && SE) {
     SE->forgetLoopDispositions(&L);
+
+}
   return Changed;
 }
 
 PreservedAnalyses LoopSinkPass::run(Function &F, FunctionAnalysisManager &FAM) {
   LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
   // Nothing to do if there are no loops.
-  if (LI.empty())
+  if (LI.empty()) {
     return PreservedAnalyses::all();
+
+}
 
   AAResults &AA = FAM.getResult<AAManager>(F);
   DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
@@ -339,8 +383,10 @@ PreservedAnalyses LoopSinkPass::run(Function &F, FunctionAnalysisManager &FAM) {
                                              /*ScalarEvolution*/ nullptr);
   } while (!PreorderLoops.empty());
 
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -355,8 +401,10 @@ struct LegacyLoopSinkPass : public LoopPass {
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (skipLoop(L))
+    if (skipLoop(L)) {
       return false;
+
+}
 
     auto *SE = getAnalysisIfAvailable<ScalarEvolutionWrapperPass>();
     return sinkLoopInvariantInstructions(

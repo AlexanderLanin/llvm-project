@@ -50,8 +50,10 @@ static void fixupPHINodeForNormalDest(InvokeInst *Invoke, BasicBlock *OrigBlock,
                                       BasicBlock *MergeBlock) {
   for (PHINode &Phi : Invoke->getNormalDest()->phis()) {
     int Idx = Phi.getBasicBlockIndex(OrigBlock);
-    if (Idx == -1)
+    if (Idx == -1) {
       continue;
+
+}
     Phi.setIncomingBlock(Idx, MergeBlock);
   }
 }
@@ -82,8 +84,10 @@ static void fixupPHINodeForUnwindDest(InvokeInst *Invoke, BasicBlock *OrigBlock,
                                       BasicBlock *ElseBlock) {
   for (PHINode &Phi : Invoke->getUnwindDest()->phis()) {
     int Idx = Phi.getBasicBlockIndex(OrigBlock);
-    if (Idx == -1)
+    if (Idx == -1) {
       continue;
+
+}
     auto *V = Phi.getIncomingValue(Idx);
     Phi.setIncomingBlock(Idx, ThenBlock);
     Phi.addIncoming(V, ElseBlock);
@@ -106,16 +110,22 @@ static void fixupPHINodeForUnwindDest(InvokeInst *Invoke, BasicBlock *OrigBlock,
 static void createRetPHINode(Instruction *OrigInst, Instruction *NewInst,
                              BasicBlock *MergeBlock, IRBuilder<> &Builder) {
 
-  if (OrigInst->getType()->isVoidTy() || OrigInst->use_empty())
+  if (OrigInst->getType()->isVoidTy() || OrigInst->use_empty()) {
     return;
+
+}
 
   Builder.SetInsertPoint(&MergeBlock->front());
   PHINode *Phi = Builder.CreatePHI(OrigInst->getType(), 0);
   SmallVector<User *, 16> UsersToUpdate;
-  for (User *U : OrigInst->users())
+  for (User *U : OrigInst->users()) {
     UsersToUpdate.push_back(U);
-  for (User *U : UsersToUpdate)
+
+}
+  for (User *U : UsersToUpdate) {
     U->replaceUsesOfWith(OrigInst, Phi);
+
+}
   Phi->addIncoming(OrigInst, OrigInst->getParent());
   Phi->addIncoming(NewInst, NewInst->getParent());
 }
@@ -165,27 +175,35 @@ static void createRetBitCast(CallSite CS, Type *RetTy, CastInst **RetBitCast) {
   // Save the users of the calling instruction. These uses will be changed to
   // use the bitcast after we create it.
   SmallVector<User *, 16> UsersToUpdate;
-  for (User *U : CS.getInstruction()->users())
+  for (User *U : CS.getInstruction()->users()) {
     UsersToUpdate.push_back(U);
+
+}
 
   // Determine an appropriate location to create the bitcast for the return
   // value. The location depends on if we have a call or invoke instruction.
   Instruction *InsertBefore = nullptr;
-  if (auto *Invoke = dyn_cast<InvokeInst>(CS.getInstruction()))
+  if (auto *Invoke = dyn_cast<InvokeInst>(CS.getInstruction())) {
     InsertBefore =
         &SplitEdge(Invoke->getParent(), Invoke->getNormalDest())->front();
-  else
+  } else {
     InsertBefore = &*std::next(CS.getInstruction()->getIterator());
+
+}
 
   // Bitcast the return value to the correct type.
   auto *Cast = CastInst::CreateBitOrPointerCast(CS.getInstruction(), RetTy, "",
                                                 InsertBefore);
-  if (RetBitCast)
+  if (RetBitCast) {
     *RetBitCast = Cast;
 
+}
+
   // Replace all the original uses of the calling instruction with the bitcast.
-  for (User *U : UsersToUpdate)
+  for (User *U : UsersToUpdate) {
     U->replaceUsesOfWith(CS.getInstruction(), Cast);
+
+}
 }
 
 /// Predicate and clone the given call site.
@@ -264,8 +282,10 @@ static Instruction *versionCallSite(CallSite CS, Value *Callee,
 
   // Create the compare. The called value and callee must have the same type to
   // be compared.
-  if (CS.getCalledValue()->getType() != Callee->getType())
+  if (CS.getCalledValue()->getType() != Callee->getType()) {
     Callee = Builder.CreateBitCast(Callee, CS.getCalledValue()->getType());
+
+}
   auto *Cond = Builder.CreateICmpEQ(CS.getCalledValue(), Callee);
 
   // Create an if-then-else structure. The original instruction is moved into
@@ -328,12 +348,16 @@ bool llvm::isLegalToPromote(CallSite CS, Function *Callee,
   // compatible with the call site's type.
   Type *CallRetTy = CS.getInstruction()->getType();
   Type *FuncRetTy = Callee->getReturnType();
-  if (CallRetTy != FuncRetTy)
+  if (CallRetTy != FuncRetTy) {
     if (!CastInst::isBitOrNoopPointerCastable(FuncRetTy, CallRetTy, DL)) {
-      if (FailureReason)
+      if (FailureReason) {
         *FailureReason = "Return type mismatch";
+
+}
       return false;
     }
+
+}
 
   // The number of formal arguments of the callee.
   unsigned NumParams = Callee->getFunctionType()->getNumParams();
@@ -341,8 +365,10 @@ bool llvm::isLegalToPromote(CallSite CS, Function *Callee,
   // Check the number of arguments. The callee and call site must agree on the
   // number of arguments.
   if (CS.arg_size() != NumParams && !Callee->isVarArg()) {
-    if (FailureReason)
+    if (FailureReason) {
       *FailureReason = "The number of arguments mismatch";
+
+}
     return false;
   }
 
@@ -352,11 +378,15 @@ bool llvm::isLegalToPromote(CallSite CS, Function *Callee,
   for (unsigned I = 0; I < NumParams; ++I) {
     Type *FormalTy = Callee->getFunctionType()->getFunctionParamType(I);
     Type *ActualTy = CS.getArgument(I)->getType();
-    if (FormalTy == ActualTy)
+    if (FormalTy == ActualTy) {
       continue;
+
+}
     if (!CastInst::isBitOrNoopPointerCastable(ActualTy, FormalTy, DL)) {
-      if (FailureReason)
+      if (FailureReason) {
         *FailureReason = "Argument type mismatch";
+
+}
       return false;
     }
   }
@@ -380,8 +410,10 @@ Instruction *llvm::promoteCall(CallSite CS, Function *Callee,
 
   // If the function type of the call site matches that of the callee, no
   // additional work is required.
-  if (CS.getFunctionType() == Callee->getFunctionType())
+  if (CS.getFunctionType() == Callee->getFunctionType()) {
     return CS.getInstruction();
+
+}
 
   // Save the return types of the call site and callee.
   Type *CallSiteRetTy = CS.getInstruction()->getType();
@@ -425,8 +457,10 @@ Instruction *llvm::promoteCall(CallSite CS, Function *Callee,
 
       NewArgAttrs.push_back(AttributeSet::get(Ctx, ArgAttrs));
       AttributeChanged = true;
-    } else
+    } else {
       NewArgAttrs.push_back(CallerPAL.getParamAttributes(ArgNo));
+
+}
   }
 
   // If the return type of the call site doesn't match that of the callee, cast
@@ -440,10 +474,12 @@ Instruction *llvm::promoteCall(CallSite CS, Function *Callee,
   }
 
   // Set the new callsite attribute.
-  if (AttributeChanged)
+  if (AttributeChanged) {
     CS.setAttributes(AttributeList::get(Ctx, CallerPAL.getFnAttributes(),
                                         AttributeSet::get(Ctx, RAttrs),
                                         NewArgAttrs));
+
+}
 
   return CS.getInstruction();
 }
@@ -467,52 +503,70 @@ bool llvm::tryPromoteCall(CallSite &CS) {
   Value *Callee = CS.getCalledValue();
 
   LoadInst *VTableEntryLoad = dyn_cast<LoadInst>(Callee);
-  if (!VTableEntryLoad)
+  if (!VTableEntryLoad) {
     return false; // Not a vtable entry load.
+
+}
   Value *VTableEntryPtr = VTableEntryLoad->getPointerOperand();
   APInt VTableOffset(DL.getTypeSizeInBits(VTableEntryPtr->getType()), 0);
   Value *VTableBasePtr = VTableEntryPtr->stripAndAccumulateConstantOffsets(
       DL, VTableOffset, /* AllowNonInbounds */ true);
   LoadInst *VTablePtrLoad = dyn_cast<LoadInst>(VTableBasePtr);
-  if (!VTablePtrLoad)
+  if (!VTablePtrLoad) {
     return false; // Not a vtable load.
+
+}
   Value *Object = VTablePtrLoad->getPointerOperand();
   APInt ObjectOffset(DL.getTypeSizeInBits(Object->getType()), 0);
   Value *ObjectBase = Object->stripAndAccumulateConstantOffsets(
       DL, ObjectOffset, /* AllowNonInbounds */ true);
-  if (!(isa<AllocaInst>(ObjectBase) && ObjectOffset == 0))
+  if (!(isa<AllocaInst>(ObjectBase) && ObjectOffset == 0)) {
     // Not an Alloca or the offset isn't zero.
     return false;
+
+}
 
   // Look for the vtable pointer store into the object by the ctor.
   BasicBlock::iterator BBI(VTablePtrLoad);
   Value *VTablePtr = FindAvailableLoadedValue(
       VTablePtrLoad, VTablePtrLoad->getParent(), BBI, 0, nullptr, nullptr);
-  if (!VTablePtr)
+  if (!VTablePtr) {
     return false; // No vtable found.
+
+}
   APInt VTableOffsetGVBase(DL.getTypeSizeInBits(VTablePtr->getType()), 0);
   Value *VTableGVBase = VTablePtr->stripAndAccumulateConstantOffsets(
       DL, VTableOffsetGVBase, /* AllowNonInbounds */ true);
   GlobalVariable *GV = dyn_cast<GlobalVariable>(VTableGVBase);
-  if (!(GV && GV->isConstant() && GV->hasDefinitiveInitializer()))
+  if (!(GV && GV->isConstant() && GV->hasDefinitiveInitializer())) {
     // Not in the form of a global constant variable with an initializer.
     return false;
 
+}
+
   Constant *VTableGVInitializer = GV->getInitializer();
   APInt VTableGVOffset = VTableOffsetGVBase + VTableOffset;
-  if (!(VTableGVOffset.getActiveBits() <= 64))
+  if (!(VTableGVOffset.getActiveBits() <= 64)) {
     return false; // Out of range.
+
+}
   Constant *Ptr = getPointerAtOffset(VTableGVInitializer,
                                      VTableGVOffset.getZExtValue(),
                                      *M);
-  if (!Ptr)
+  if (!Ptr) {
     return false; // No constant (function) pointer found.
+
+}
   Function *DirectCallee = dyn_cast<Function>(Ptr->stripPointerCasts());
-  if (!DirectCallee)
+  if (!DirectCallee) {
     return false; // No function pointer found.
 
-  if (!isLegalToPromote(CS, DirectCallee))
+}
+
+  if (!isLegalToPromote(CS, DirectCallee)) {
     return false;
+
+}
 
   // Success.
   promoteCall(CS, DirectCallee);

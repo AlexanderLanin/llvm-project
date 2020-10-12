@@ -70,8 +70,10 @@ bool X86AvoidTrailingCallPass::runOnMachineFunction(MachineFunction &MF) {
     // Look for basic blocks that precede funclet entries or are at the end of
     // the function.
     MachineBasicBlock *NextMBB = MBB.getNextNode();
-    if (NextMBB && !NextMBB->isEHFuncletEntry())
+    if (NextMBB && !NextMBB->isEHFuncletEntry()) {
       continue;
+
+}
 
     // Find the last real instruction in this block, or previous blocks if this
     // block is empty.
@@ -79,13 +81,17 @@ bool X86AvoidTrailingCallPass::runOnMachineFunction(MachineFunction &MF) {
     for (MachineBasicBlock &RMBB :
          make_range(MBB.getReverseIterator(), MF.rend())) {
       LastRealInstr = llvm::find_if(reverse(RMBB), isRealInstruction);
-      if (LastRealInstr != RMBB.rend())
+      if (LastRealInstr != RMBB.rend()) {
         break;
+
+}
     }
 
     // Do nothing if this function or funclet has no instructions.
-    if (LastRealInstr == MF.begin()->rend())
+    if (LastRealInstr == MF.begin()->rend()) {
       continue;
+
+}
 
     // If this is a call instruction, insert int3 right after it with the same
     // DebugLoc. Convert back to a forward iterator and advance the insertion

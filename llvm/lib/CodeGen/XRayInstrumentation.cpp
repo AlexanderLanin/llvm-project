@@ -108,23 +108,29 @@ void XRayInstrumentation::replaceRetWithPatchableRet(
       if (Opc != 0) {
         auto MIB = BuildMI(MBB, T, T.getDebugLoc(), TII->get(Opc))
                        .addImm(T.getOpcode());
-        for (auto &MO : T.operands())
+        for (auto &MO : T.operands()) {
           MIB.add(MO);
+
+}
         Terminators.push_back(&T);
-        if (T.shouldUpdateCallSiteInfo())
+        if (T.shouldUpdateCallSiteInfo()) {
           MF.eraseCallSiteInfo(&T);
+
+}
       }
     }
   }
 
-  for (auto &I : Terminators)
+  for (auto &I : Terminators) {
     I->eraseFromParent();
+
+}
 }
 
 void XRayInstrumentation::prependRetWithPatchableExit(
     MachineFunction &MF, const TargetInstrInfo *TII,
     InstrumentationOptions op) {
-  for (auto &MBB : MF)
+  for (auto &MBB : MF) {
     for (auto &T : MBB.terminators()) {
       unsigned Opc = 0;
       if (T.isReturn() &&
@@ -140,6 +146,8 @@ void XRayInstrumentation::prependRetWithPatchableExit(
         BuildMI(MBB, T, T.getDebugLoc(), TII->get(Opc));
       }
     }
+
+}
 }
 
 bool XRayInstrumentation::runOnMachineFunction(MachineFunction &MF) {
@@ -153,17 +161,23 @@ bool XRayInstrumentation::runOnMachineFunction(MachineFunction &MF) {
   unsigned int XRayThreshold = 0;
   if (!AlwaysInstrument) {
     if (ThresholdAttr.hasAttribute(Attribute::None) ||
-        !ThresholdAttr.isStringAttribute())
+        !ThresholdAttr.isStringAttribute()) {
       return false; // XRay threshold attribute not found.
-    if (ThresholdAttr.getValueAsString().getAsInteger(10, XRayThreshold))
+
+}
+    if (ThresholdAttr.getValueAsString().getAsInteger(10, XRayThreshold)) {
       return false; // Invalid value for threshold.
+
+}
 
     bool IgnoreLoops = !IgnoreLoopsAttr.hasAttribute(Attribute::None);
 
     // Count the number of MachineInstr`s in MachineFunction
     int64_t MICount = 0;
-    for (const auto &MBB : MF)
+    for (const auto &MBB : MF) {
       MICount += MBB.size();
+
+}
 
     bool TooFewInstrs = MICount < XRayThreshold;
 
@@ -187,8 +201,10 @@ bool XRayInstrumentation::runOnMachineFunction(MachineFunction &MF) {
       // Check if we have a loop.
       // FIXME: Maybe make this smarter, and see whether the loops are dependent
       // on inputs or side-effects?
-      if (MLI->empty() && TooFewInstrs)
+      if (MLI->empty() && TooFewInstrs) {
         return false; // Function is too small and has no loops.
+
+}
     } else if (TooFewInstrs) {
       // Function is too small
       return false;
@@ -199,8 +215,10 @@ bool XRayInstrumentation::runOnMachineFunction(MachineFunction &MF) {
   // the function instrumentation in the appropriate place.
   auto MBI = llvm::find_if(
       MF, [&](const MachineBasicBlock &MBB) { return !MBB.empty(); });
-  if (MBI == MF.end())
+  if (MBI == MF.end()) {
     return false; // The function is empty.
+
+}
 
   auto *TII = MF.getSubtarget().getInstrInfo();
   auto &FirstMBB = *MBI;

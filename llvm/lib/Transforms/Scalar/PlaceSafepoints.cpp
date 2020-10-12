@@ -123,8 +123,10 @@ struct PlaceBackedgeSafepointsImpl : public FunctionPass {
   bool runOnLoop(Loop *);
   void runOnLoopAndSubLoops(Loop *L) {
     // Visit all the subloops
-    for (Loop *I : *L)
+    for (Loop *I : *L) {
       runOnLoopAndSubLoops(I);
+
+}
     runOnLoop(L);
   }
 
@@ -182,11 +184,15 @@ InsertSafepointPoll(Instruction *InsertBefore,
                     const TargetLibraryInfo &TLI);
 
 static bool needsStatepoint(CallBase *Call, const TargetLibraryInfo &TLI) {
-  if (callsGCLeafFunction(Call, TLI))
+  if (callsGCLeafFunction(Call, TLI)) {
     return false;
+
+}
   if (auto *CI = dyn_cast<CallInst>(Call)) {
-    if (CI->isInlineAsm())
+    if (CI->isInlineAsm()) {
       return false;
+
+}
   }
 
   return !(isStatepoint(Call) || isGCRelocate(Call) || isGCResult(Call));
@@ -215,19 +221,25 @@ static bool containsUnconditionalCallSafepoint(Loop *L, BasicBlock *Header,
   BasicBlock *Current = Pred;
   while (true) {
     for (Instruction &I : *Current) {
-      if (auto *Call = dyn_cast<CallBase>(&I))
+      if (auto *Call = dyn_cast<CallBase>(&I)) {
         // Note: Technically, needing a safepoint isn't quite the right
         // condition here.  We should instead be checking if the target method
         // has an
         // unconditional poll. In practice, this is only a theoretical concern
         // since we don't have any methods with conditional-only safepoint
         // polls.
-        if (needsStatepoint(Call, TLI))
+        if (needsStatepoint(Call, TLI)) {
           return true;
+
+}
+
+}
     }
 
-    if (Current == Header)
+    if (Current == Header) {
       break;
+
+}
     Current = DT.getNode(Current)->getIDom()->getBlock();
   }
 
@@ -244,8 +256,10 @@ static bool mustBeFiniteCountedLoop(Loop *L, ScalarEvolution *SE,
   const SCEV *MaxTrips = SE->getConstantMaxBackedgeTakenCount(L);
   if (MaxTrips != SE->getCouldNotCompute() &&
       SE->getUnsignedRange(MaxTrips).getUnsignedMax().isIntN(
-          CountedLoopTripWidth))
+          CountedLoopTripWidth)) {
     return true;
+
+}
 
   // If this is a conditional branch to the header with the alternate path
   // being outside the loop, we can ask questions about the execution frequency
@@ -256,8 +270,10 @@ static bool mustBeFiniteCountedLoop(Loop *L, ScalarEvolution *SE,
     const SCEV *MaxExec = SE->getExitCount(L, Pred);
     if (MaxExec != SE->getCouldNotCompute() &&
         SE->getUnsignedRange(MaxExec).getUnsignedMax().isIntN(
-            CountedLoopTripWidth))
+            CountedLoopTripWidth)) {
         return true;
+
+}
   }
 
   return /* not finite */ false;
@@ -270,8 +286,10 @@ static void scanOneBB(Instruction *Start, Instruction *End,
   for (BasicBlock::iterator BBI(Start), BBE0 = Start->getParent()->end(),
                                         BBE1 = BasicBlock::iterator(End);
        BBI != BBE0 && BBI != BBE1; BBI++) {
-    if (CallInst *CI = dyn_cast<CallInst>(&*BBI))
+    if (CallInst *CI = dyn_cast<CallInst>(&*BBI)) {
       Calls.push_back(CI);
+
+}
 
     // FIXME: This code does not handle invokes
     assert(!isa<InvokeInst>(&*BBI) &&
@@ -394,8 +412,10 @@ static Instruction *findLocationForEntrySafepoint(Function &F,
   // through a "straight line" execution sequence.
 
   auto HasNextInstruction = [](Instruction *I) {
-    if (!I->isTerminator())
+    if (!I->isTerminator()) {
       return true;
+
+}
 
     BasicBlock *nextBB = I->getParent()->getUniqueSuccessor();
     return nextBB && (nextBB->getUniquePredecessor() != nullptr);
@@ -405,8 +425,10 @@ static Instruction *findLocationForEntrySafepoint(Function &F,
     assert(HasNextInstruction(I) &&
            "first check if there is a next instruction!");
 
-    if (I->isTerminator())
+    if (I->isTerminator()) {
       return &I->getParent()->getUniqueSuccessor()->front();
+
+}
     return &*++I->getIterator();
   };
 
@@ -422,8 +444,10 @@ static Instruction *findLocationForEntrySafepoint(Function &F,
     // for GC semantics per se, but is a common requirement for languages
     // which detect stack overflow via guard pages and then throw exceptions.
     if (auto *Call = dyn_cast<CallBase>(Cursor)) {
-      if (doesNotRequireEntrySafepointBefore(Call))
+      if (doesNotRequireEntrySafepointBefore(Call)) {
         continue;
+
+}
       break;
     }
   }
@@ -451,8 +475,10 @@ static bool shouldRewriteFunction(Function &F) {
     const StringRef CoreCLRName("coreclr");
     return (StatepointExampleName == FunctionGCName) ||
            (CoreCLRName == FunctionGCName);
-  } else
+  } else {
     return false;
+
+}
 }
 
 // TODO: These should become properties of the GCStrategy, possibly with
@@ -475,8 +501,10 @@ bool PlaceSafepoints::runOnFunction(Function &F) {
     return false;
   }
 
-  if (!shouldRewriteFunction(F))
+  if (!shouldRewriteFunction(F)) {
     return false;
+
+}
 
   const TargetLibraryInfo &TLI =
       getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
@@ -640,10 +668,12 @@ InsertSafepointPoll(Instruction *InsertBefore,
   // Record some information about the call site we're replacing
   BasicBlock::iterator Before(PollCall), After(PollCall);
   bool IsBegin = false;
-  if (Before == OrigBB->begin())
+  if (Before == OrigBB->begin()) {
     IsBegin = true;
-  else
+  } else {
     Before--;
+
+}
 
   After++;
   assert(After != OrigBB->end() && "must have successor");
@@ -679,8 +709,10 @@ InsertSafepointPoll(Instruction *InsertBefore,
   assert(ParsePointsNeeded.empty());
   for (auto *CI : Calls) {
     // No safepoint needed or wanted
-    if (!needsStatepoint(CI, TLI))
+    if (!needsStatepoint(CI, TLI)) {
       continue;
+
+}
 
     // These are likely runtime calls.  Should we assert that via calling
     // convention or something?

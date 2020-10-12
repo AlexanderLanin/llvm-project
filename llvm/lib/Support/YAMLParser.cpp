@@ -60,51 +60,71 @@ using EncodingInfo = std::pair<UnicodeEncodingForm, unsigned>;
 /// @returns An EncodingInfo indicating the Unicode encoding form of the input
 ///          and how long the byte order mark is if one exists.
 static EncodingInfo getUnicodeEncoding(StringRef Input) {
-  if (Input.empty())
+  if (Input.empty()) {
     return std::make_pair(UEF_Unknown, 0);
+
+}
 
   switch (uint8_t(Input[0])) {
   case 0x00:
     if (Input.size() >= 4) {
       if (  Input[1] == 0
          && uint8_t(Input[2]) == 0xFE
-         && uint8_t(Input[3]) == 0xFF)
+         && uint8_t(Input[3]) == 0xFF) {
         return std::make_pair(UEF_UTF32_BE, 4);
-      if (Input[1] == 0 && Input[2] == 0 && Input[3] != 0)
+
+}
+      if (Input[1] == 0 && Input[2] == 0 && Input[3] != 0) {
         return std::make_pair(UEF_UTF32_BE, 0);
+
+}
     }
 
-    if (Input.size() >= 2 && Input[1] != 0)
+    if (Input.size() >= 2 && Input[1] != 0) {
       return std::make_pair(UEF_UTF16_BE, 0);
+
+}
     return std::make_pair(UEF_Unknown, 0);
   case 0xFF:
     if (  Input.size() >= 4
        && uint8_t(Input[1]) == 0xFE
        && Input[2] == 0
-       && Input[3] == 0)
+       && Input[3] == 0) {
       return std::make_pair(UEF_UTF32_LE, 4);
 
-    if (Input.size() >= 2 && uint8_t(Input[1]) == 0xFE)
+}
+
+    if (Input.size() >= 2 && uint8_t(Input[1]) == 0xFE) {
       return std::make_pair(UEF_UTF16_LE, 2);
+
+}
     return std::make_pair(UEF_Unknown, 0);
   case 0xFE:
-    if (Input.size() >= 2 && uint8_t(Input[1]) == 0xFF)
+    if (Input.size() >= 2 && uint8_t(Input[1]) == 0xFF) {
       return std::make_pair(UEF_UTF16_BE, 2);
+
+}
     return std::make_pair(UEF_Unknown, 0);
   case 0xEF:
     if (  Input.size() >= 3
        && uint8_t(Input[1]) == 0xBB
-       && uint8_t(Input[2]) == 0xBF)
+       && uint8_t(Input[2]) == 0xBF) {
       return std::make_pair(UEF_UTF8, 3);
+
+}
     return std::make_pair(UEF_Unknown, 0);
   }
 
   // It could still be utf-32 or utf-16.
-  if (Input.size() >= 4 && Input[1] == 0 && Input[2] == 0 && Input[3] == 0)
+  if (Input.size() >= 4 && Input[1] == 0 && Input[2] == 0 && Input[3] == 0) {
     return std::make_pair(UEF_UTF32_LE, 0);
 
-  if (Input.size() >= 2 && Input[1] == 0)
+}
+
+  if (Input.size() >= 2 && Input[1] == 0) {
     return std::make_pair(UEF_UTF16_LE, 0);
+
+}
 
   return std::make_pair(UEF_UTF8, 0);
 }
@@ -210,8 +230,10 @@ static UTF8Decoded decodeUTF8(StringRef Range) {
       ((*(Position + 1) & 0xC0) == 0x80)) {
     uint32_t codepoint = ((*Position & 0x1F) << 6) |
                           (*(Position + 1) & 0x3F);
-    if (codepoint >= 0x80)
+    if (codepoint >= 0x80) {
       return std::make_pair(codepoint, 2);
+
+}
   }
   // 3 bytes: [0x8000, 0xffff]
   // Bit pattern: 1110xxxx 10xxxxxx 10xxxxxx
@@ -225,8 +247,10 @@ static UTF8Decoded decodeUTF8(StringRef Range) {
     // Codepoints between 0xD800 and 0xDFFF are invalid, as
     // they are high / low surrogate halves used by UTF-16.
     if (codepoint >= 0x800 &&
-        (codepoint < 0xD800 || codepoint > 0xDFFF))
+        (codepoint < 0xD800 || codepoint > 0xDFFF)) {
       return std::make_pair(codepoint, 3);
+
+}
   }
   // 4 bytes: [0x10000, 0x10FFFF]
   // Bit pattern: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
@@ -239,8 +263,10 @@ static UTF8Decoded decodeUTF8(StringRef Range) {
                          ((*(Position + 1) & 0x3F) << 12) |
                          ((*(Position + 2) & 0x3F) << 6) |
                           (*(Position + 3) & 0x3F);
-    if (codepoint >= 0x10000 && codepoint <= 0x10FFFF)
+    if (codepoint >= 0x10000 && codepoint <= 0x10FFFF) {
       return std::make_pair(codepoint, 4);
+
+}
   }
   return std::make_pair(0, 0);
 }
@@ -268,17 +294,23 @@ public:
   }
 
   void setError(const Twine &Message, StringRef::iterator Position) {
-    if (Current >= End)
+    if (Current >= End) {
       Current = End - 1;
 
+}
+
     // propagate the error if possible
-    if (EC)
+    if (EC) {
       *EC = make_error_code(std::errc::invalid_argument);
+
+}
 
     // Don't print out more errors after the first one we encounter. The rest
     // are just the result of the first, and have no meaning.
-    if (!Failed)
+    if (!Failed) {
       printError(SMLoc::getFromPointer(Current), SourceMgr::DK_Error, Message);
+
+}
     Failed = true;
   }
 
@@ -666,10 +698,12 @@ bool yaml::dumpTokens(StringRef Input, raw_ostream &OS) {
       break;
     }
     OS << T.Range << "\n";
-    if (T.Kind == Token::TK_StreamEnd)
+    if (T.Kind == Token::TK_StreamEnd) {
       break;
-    else if (T.Kind == Token::TK_Error)
+    } else if (T.Kind == Token::TK_Error) {
       return false;
+
+}
   }
   return true;
 }
@@ -679,10 +713,12 @@ bool yaml::scanTokens(StringRef Input) {
   Scanner scanner(Input, SM);
   while (true) {
     Token T = scanner.getNext();
-    if (T.Kind == Token::TK_StreamEnd)
+    if (T.Kind == Token::TK_StreamEnd) {
       break;
-    else if (T.Kind == Token::TK_Error)
+    } else if (T.Kind == Token::TK_Error) {
       return false;
+
+}
   }
   return true;
 }
@@ -690,29 +726,29 @@ bool yaml::scanTokens(StringRef Input) {
 std::string yaml::escape(StringRef Input, bool EscapePrintable) {
   std::string EscapedInput;
   for (StringRef::iterator i = Input.begin(), e = Input.end(); i != e; ++i) {
-    if (*i == '\\')
+    if (*i == '\\') {
       EscapedInput += "\\\\";
-    else if (*i == '"')
+    } else if (*i == '"') {
       EscapedInput += "\\\"";
-    else if (*i == 0)
+    } else if (*i == 0) {
       EscapedInput += "\\0";
-    else if (*i == 0x07)
+    } else if (*i == 0x07) {
       EscapedInput += "\\a";
-    else if (*i == 0x08)
+    } else if (*i == 0x08) {
       EscapedInput += "\\b";
-    else if (*i == 0x09)
+    } else if (*i == 0x09) {
       EscapedInput += "\\t";
-    else if (*i == 0x0A)
+    } else if (*i == 0x0A) {
       EscapedInput += "\\n";
-    else if (*i == 0x0B)
+    } else if (*i == 0x0B) {
       EscapedInput += "\\v";
-    else if (*i == 0x0C)
+    } else if (*i == 0x0C) {
       EscapedInput += "\\f";
-    else if (*i == 0x0D)
+    } else if (*i == 0x0D) {
       EscapedInput += "\\r";
-    else if (*i == 0x1B)
+    } else if (*i == 0x1B) {
       EscapedInput += "\\e";
-    else if ((unsigned char)*i < 0x20) { // Control characters not handled above.
+    } else if ((unsigned char)*i < 0x20) { // Control characters not handled above.
       std::string HexStr = utohexstr(*i);
       EscapedInput += "\\x" + std::string(2 - HexStr.size(), '0') + HexStr;
     } else if (*i & 0x80) { // UTF-8 multiple code unit subsequence.
@@ -726,29 +762,33 @@ std::string yaml::escape(StringRef Input, bool EscapePrintable) {
         // FIXME: Error reporting.
         return EscapedInput;
       }
-      if (UnicodeScalarValue.first == 0x85)
+      if (UnicodeScalarValue.first == 0x85) {
         EscapedInput += "\\N";
-      else if (UnicodeScalarValue.first == 0xA0)
+      } else if (UnicodeScalarValue.first == 0xA0) {
         EscapedInput += "\\_";
-      else if (UnicodeScalarValue.first == 0x2028)
+      } else if (UnicodeScalarValue.first == 0x2028) {
         EscapedInput += "\\L";
-      else if (UnicodeScalarValue.first == 0x2029)
+      } else if (UnicodeScalarValue.first == 0x2029) {
         EscapedInput += "\\P";
-      else if (!EscapePrintable &&
-               sys::unicode::isPrintable(UnicodeScalarValue.first))
+      } else if (!EscapePrintable &&
+               sys::unicode::isPrintable(UnicodeScalarValue.first)) {
         EscapedInput += StringRef(i, UnicodeScalarValue.second);
-      else {
+      } else {
         std::string HexStr = utohexstr(UnicodeScalarValue.first);
-        if (HexStr.size() <= 2)
+        if (HexStr.size() <= 2) {
           EscapedInput += "\\x" + std::string(2 - HexStr.size(), '0') + HexStr;
-        else if (HexStr.size() <= 4)
+        } else if (HexStr.size() <= 4) {
           EscapedInput += "\\u" + std::string(4 - HexStr.size(), '0') + HexStr;
-        else if (HexStr.size() <= 8)
+        } else if (HexStr.size() <= 8) {
           EscapedInput += "\\U" + std::string(8 - HexStr.size(), '0') + HexStr;
+
+}
       }
       i += UnicodeScalarValue.second - 1;
-    } else
+    } else {
       EscapedInput.push_back(*i);
+
+}
   }
   return EscapedInput;
 }
@@ -800,10 +840,12 @@ Token &Scanner::peekNext() {
     removeStaleSimpleKeyCandidates();
     SimpleKey SK;
     SK.Tok = TokenQueue.begin();
-    if (!is_contained(SimpleKeys, SK))
+    if (!is_contained(SimpleKeys, SK)) {
       break;
-    else
+    } else {
       NeedMore = true;
+
+}
   }
   return TokenQueue.front();
 }
@@ -811,24 +853,32 @@ Token &Scanner::peekNext() {
 Token Scanner::getNext() {
   Token Ret = peekNext();
   // TokenQueue can be empty if there was an error getting the next token.
-  if (!TokenQueue.empty())
+  if (!TokenQueue.empty()) {
     TokenQueue.pop_front();
+
+}
 
   // There cannot be any referenced Token's if the TokenQueue is empty. So do a
   // quick deallocation of them all.
-  if (TokenQueue.empty())
+  if (TokenQueue.empty()) {
     TokenQueue.resetAlloc();
+
+}
 
   return Ret;
 }
 
 StringRef::iterator Scanner::skip_nb_char(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return Position;
+
+}
   // Check 7 bit c-printable - b-char.
   if (   *Position == 0x09
-      || (*Position >= 0x20 && *Position <= 0x7E))
+      || (*Position >= 0x20 && *Position <= 0x7E)) {
     return Position + 1;
+
+}
 
   // Check for valid UTF-8.
   if (uint8_t(*Position) & 0x80) {
@@ -841,47 +891,67 @@ StringRef::iterator Scanner::skip_nb_char(StringRef::iterator Position) {
           || ( u8d.first >= 0xE000
             && u8d.first <= 0xFFFD)
           || ( u8d.first >= 0x10000
-            && u8d.first <= 0x10FFFF)))
+            && u8d.first <= 0x10FFFF))) {
       return Position + u8d.second;
+
+}
   }
   return Position;
 }
 
 StringRef::iterator Scanner::skip_b_break(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return Position;
+
+}
   if (*Position == 0x0D) {
-    if (Position + 1 != End && *(Position + 1) == 0x0A)
+    if (Position + 1 != End && *(Position + 1) == 0x0A) {
       return Position + 2;
+
+}
     return Position + 1;
   }
 
-  if (*Position == 0x0A)
+  if (*Position == 0x0A) {
     return Position + 1;
+
+}
   return Position;
 }
 
 StringRef::iterator Scanner::skip_s_space(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return Position;
-  if (*Position == ' ')
+
+}
+  if (*Position == ' ') {
     return Position + 1;
+
+}
   return Position;
 }
 
 StringRef::iterator Scanner::skip_s_white(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return Position;
-  if (*Position == ' ' || *Position == '\t')
+
+}
+  if (*Position == ' ' || *Position == '\t') {
     return Position + 1;
+
+}
   return Position;
 }
 
 StringRef::iterator Scanner::skip_ns_char(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return Position;
-  if (*Position == ' ' || *Position == '\t')
+
+}
+  if (*Position == ' ' || *Position == '\t') {
     return Position;
+
+}
   return skip_nb_char(Position);
 }
 
@@ -889,8 +959,10 @@ StringRef::iterator Scanner::skip_while( SkipWhileFunc Func
                                        , StringRef::iterator Position) {
   while (true) {
     StringRef::iterator i = (this->*Func)(Position);
-    if (i == Position)
+    if (i == Position) {
       break;
+
+}
     Position = i;
   }
   return Position;
@@ -916,8 +988,10 @@ static bool is_ns_word_char(const char C) {
 
 void Scanner::scan_ns_uri_char() {
   while (true) {
-    if (Current == End)
+    if (Current == End) {
       break;
+
+}
     if ((   *Current == '%'
           && Current + 2 < End
           && is_ns_hex_digit(*(Current + 1))
@@ -927,8 +1001,10 @@ void Scanner::scan_ns_uri_char() {
           != StringRef::npos) {
       ++Current;
       ++Column;
-    } else
+    } else {
       break;
+
+}
   }
 }
 
@@ -937,8 +1013,10 @@ bool Scanner::consume(uint32_t Expected) {
     setError("Cannot consume non-ascii characters");
     return false;
   }
-  if (Current == End)
+  if (Current == End) {
     return false;
+
+}
   if (uint8_t(*Current) >= 0x80) {
     setError("Cannot consume non-ascii characters");
     return false;
@@ -958,16 +1036,20 @@ void Scanner::skip(uint32_t Distance) {
 }
 
 bool Scanner::isBlankOrBreak(StringRef::iterator Position) {
-  if (Position == End)
+  if (Position == End) {
     return false;
+
+}
   return *Position == ' ' || *Position == '\t' || *Position == '\r' ||
          *Position == '\n';
 }
 
 bool Scanner::consumeLineBreakIfPresent() {
   auto Next = skip_b_break(Current);
-  if (Next == Current)
+  if (Next == Current) {
     return false;
+
+}
   Column = 0;
   ++Line;
   Current = Next;
@@ -992,25 +1074,33 @@ void Scanner::removeStaleSimpleKeyCandidates() {
   for (SmallVectorImpl<SimpleKey>::iterator i = SimpleKeys.begin();
                                             i != SimpleKeys.end();) {
     if (i->Line != Line || i->Column + 1024 < Column) {
-      if (i->IsRequired)
+      if (i->IsRequired) {
         setError( "Could not find expected : for simple key"
                 , i->Tok->Range.begin());
+
+}
       i = SimpleKeys.erase(i);
-    } else
+    } else {
       ++i;
+
+}
   }
 }
 
 void Scanner::removeSimpleKeyCandidatesOnFlowLevel(unsigned Level) {
-  if (!SimpleKeys.empty() && (SimpleKeys.end() - 1)->FlowLevel == Level)
+  if (!SimpleKeys.empty() && (SimpleKeys.end() - 1)->FlowLevel == Level) {
     SimpleKeys.pop_back();
+
+}
 }
 
 bool Scanner::unrollIndent(int ToColumn) {
   Token T;
   // Indentation is ignored in flow.
-  if (FlowLevel != 0)
+  if (FlowLevel != 0) {
     return true;
+
+}
 
   while (Indent > ToColumn) {
     T.Kind = Token::TK_BlockEnd;
@@ -1025,8 +1115,10 @@ bool Scanner::unrollIndent(int ToColumn) {
 bool Scanner::rollIndent( int ToColumn
                         , Token::TokenKind Kind
                         , TokenQueueT::iterator InsertPoint) {
-  if (FlowLevel)
+  if (FlowLevel) {
     return true;
+
+}
   if (Indent < ToColumn) {
     Indents.push_back(Indent);
     Indent = ToColumn;
@@ -1040,14 +1132,18 @@ bool Scanner::rollIndent( int ToColumn
 }
 
 void Scanner::skipComment() {
-  if (*Current != '#')
+  if (*Current != '#') {
     return;
+
+}
   while (true) {
     // This may skip more than one byte, thus Column is only incremented
     // for code points.
     StringRef::iterator I = skip_nb_char(Current);
-    if (I == Current)
+    if (I == Current) {
       break;
+
+}
     Current = I;
     ++Column;
   }
@@ -1063,14 +1159,18 @@ void Scanner::scanToNextToken() {
 
     // Skip EOL.
     StringRef::iterator i = skip_b_break(Current);
-    if (i == Current)
+    if (i == Current) {
       break;
+
+}
     Current = i;
     ++Line;
     Column = 0;
     // New lines may start a simple key.
-    if (!FlowLevel)
+    if (!FlowLevel) {
       IsSimpleKeyAllowed = true;
+
+}
   }
 }
 
@@ -1176,8 +1276,10 @@ bool Scanner::scanFlowCollectionEnd(bool IsSequence) {
   T.Range = StringRef(Current, 1);
   skip(1);
   TokenQueue.push_back(T);
-  if (FlowLevel)
+  if (FlowLevel) {
     --FlowLevel;
+
+}
   return true;
 }
 
@@ -1205,8 +1307,10 @@ bool Scanner::scanBlockEntry() {
 }
 
 bool Scanner::scanKey() {
-  if (!FlowLevel)
+  if (!FlowLevel) {
     rollIndent(Column, Token::TK_BlockMappingStart, TokenQueue.end());
+
+}
 
   removeSimpleKeyCandidatesOnFlowLevel(FlowLevel);
   IsSimpleKeyAllowed = !FlowLevel;
@@ -1229,8 +1333,10 @@ bool Scanner::scanValue() {
     T.Range = SK.Tok->Range;
     TokenQueueT::iterator i, e;
     for (i = TokenQueue.begin(), e = TokenQueue.end(); i != e; ++i) {
-      if (i == SK.Tok)
+      if (i == SK.Tok) {
         break;
+
+}
     }
     if (i == e) {
       Failed = true;
@@ -1243,8 +1349,10 @@ bool Scanner::scanValue() {
 
     IsSimpleKeyAllowed = false;
   } else {
-    if (!FlowLevel)
+    if (!FlowLevel) {
       rollIndent(Column, Token::TK_BlockMappingStart, TokenQueue.end());
+
+}
     IsSimpleKeyAllowed = !FlowLevel;
   }
 
@@ -1269,7 +1377,9 @@ static bool wasEscaped(StringRef::iterator First,
   StringRef::iterator I = Position - 1;
   // We calculate the number of consecutive '\'s before the current position
   // by iterating backwards through our string.
-  while (I >= First && *I == '\\') --I;
+  while (I >= First && *I == '\\') { --I;
+
+}
   // (Position - 1 - I) now contains the number of '\'s before the current
   // position. If it is odd, the character at 'Position' was escaped.
   return (Position - 1 - I) % 2 == 1;
@@ -1281,8 +1391,10 @@ bool Scanner::scanFlowScalar(bool IsDoubleQuoted) {
   if (IsDoubleQuoted) {
     do {
       ++Current;
-      while (Current != End && *Current != '"')
+      while (Current != End && *Current != '"') {
         ++Current;
+
+}
       // Repeat until the previous character was not a '\' or was an escaped
       // backslash.
     } while (   Current != End
@@ -1295,19 +1407,25 @@ bool Scanner::scanFlowScalar(bool IsDoubleQuoted) {
       if (Current + 1 < End && *Current == '\'' && *(Current + 1) == '\'') {
         skip(2);
         continue;
-      } else if (*Current == '\'')
+      } else if (*Current == '\'') {
         break;
+
+}
       StringRef::iterator i = skip_nb_char(Current);
       if (i == Current) {
         i = skip_b_break(Current);
-        if (i == Current)
+        if (i == Current) {
           break;
+
+}
         Current = i;
         Column = 0;
         ++Line;
       } else {
-        if (i == End)
+        if (i == End) {
           break;
+
+}
         Current = i;
         ++Column;
       }
@@ -1339,8 +1457,10 @@ bool Scanner::scanPlainScalar() {
   assert(Indent >= -1 && "Indent must be >= -1 !");
   unsigned indent = static_cast<unsigned>(Indent + 1);
   while (true) {
-    if (*Current == '#')
+    if (*Current == '#') {
       break;
+
+}
 
     while (!isBlankOrBreak(Current)) {
       if (  FlowLevel && *Current == ':'
@@ -1353,19 +1473,25 @@ bool Scanner::scanPlainScalar() {
       if (  (*Current == ':' && isBlankOrBreak(Current + 1))
           || (  FlowLevel
           && (StringRef(Current, 1).find_first_of(",:?[]{}")
-              != StringRef::npos)))
+              != StringRef::npos))) {
         break;
 
+}
+
       StringRef::iterator i = skip_nb_char(Current);
-      if (i == Current)
+      if (i == Current) {
         break;
+
+}
       Current = i;
       ++Column;
     }
 
     // Are we at the end?
-    if (!isBlankOrBreak(Current))
+    if (!isBlankOrBreak(Current)) {
       break;
+
+}
 
     // Eat blanks.
     StringRef::iterator Tmp = Current;
@@ -1380,16 +1506,20 @@ bool Scanner::scanPlainScalar() {
         ++Column;
       } else {
         i = skip_b_break(Tmp);
-        if (!LeadingBlanks)
+        if (!LeadingBlanks) {
           LeadingBlanks = 1;
+
+}
         Tmp = i;
         Column = 0;
         ++Line;
       }
     }
 
-    if (!FlowLevel && Column < indent)
+    if (!FlowLevel && Column < indent) {
       break;
+
+}
 
     Current = Tmp;
   }
@@ -1418,11 +1548,15 @@ bool Scanner::scanAliasOrAnchor(bool IsAlias) {
     if (   *Current == '[' || *Current == ']'
         || *Current == '{' || *Current == '}'
         || *Current == ','
-        || *Current == ':')
+        || *Current == ':') {
       break;
+
+}
     StringRef::iterator i = skip_ns_char(Current);
-    if (i == Current)
+    if (i == Current) {
       break;
+
+}
     Current = i;
     ++Column;
   }
@@ -1460,10 +1594,14 @@ char Scanner::scanBlockChompingIndicator() {
 /// \p ChompingIndicator.
 static unsigned getChompedLineBreaks(char ChompingIndicator,
                                      unsigned LineBreaks, StringRef Str) {
-  if (ChompingIndicator == '-') // Strip all line breaks.
+  if (ChompingIndicator == '-') { // Strip all line breaks.
     return 0;
-  if (ChompingIndicator == '+') // Keep all line breaks.
+
+}
+  if (ChompingIndicator == '+') { // Keep all line breaks.
     return LineBreaks;
+
+}
   // Clip trailing lines.
   return Str.empty() ? 0 : 1;
 }
@@ -1484,8 +1622,10 @@ bool Scanner::scanBlockScalarHeader(char &ChompingIndicator,
   ChompingIndicator = scanBlockChompingIndicator();
   IndentIndicator = scanBlockIndentationIndicator();
   // Check for the chomping indicator once again.
-  if (ChompingIndicator == ' ')
+  if (ChompingIndicator == ' ') {
     ChompingIndicator = scanBlockChompingIndicator();
+
+}
   Current = skip_while(&Scanner::skip_s_white, Current);
   skipComment();
 
@@ -1557,14 +1697,18 @@ bool Scanner::scanBlockScalarIndent(unsigned BlockIndent,
   // Skip the indentation.
   while (Column < BlockIndent) {
     auto I = skip_s_space(Current);
-    if (I == Current)
+    if (I == Current) {
       break;
+
+}
     Current = I;
     ++Column;
   }
 
-  if (skip_nb_char(Current) == Current)
+  if (skip_nb_char(Current) == Current) {
     return true;
+
+}
 
   if (Column <= BlockExitIndent) { // End of the block literal.
     IsDone = true;
@@ -1590,27 +1734,37 @@ bool Scanner::scanBlockScalar(bool IsLiteral) {
   char ChompingIndicator;
   unsigned BlockIndent;
   bool IsDone = false;
-  if (!scanBlockScalarHeader(ChompingIndicator, BlockIndent, IsDone))
+  if (!scanBlockScalarHeader(ChompingIndicator, BlockIndent, IsDone)) {
     return false;
-  if (IsDone)
+
+}
+  if (IsDone) {
     return true;
+
+}
 
   auto Start = Current;
   unsigned BlockExitIndent = Indent < 0 ? 0 : (unsigned)Indent;
   unsigned LineBreaks = 0;
   if (BlockIndent == 0) {
     if (!findBlockScalarIndent(BlockIndent, BlockExitIndent, LineBreaks,
-                               IsDone))
+                               IsDone)) {
       return false;
+
+}
   }
 
   // Scan the block's scalars body.
   SmallString<256> Str;
   while (!IsDone) {
-    if (!scanBlockScalarIndent(BlockIndent, BlockExitIndent, IsDone))
+    if (!scanBlockScalarIndent(BlockIndent, BlockExitIndent, IsDone)) {
       return false;
-    if (IsDone)
+
+}
+    if (IsDone) {
       break;
+
+}
 
     // Parse the current line.
     auto LineStart = Current;
@@ -1622,22 +1776,30 @@ bool Scanner::scanBlockScalar(bool IsLiteral) {
     }
 
     // Check for EOF.
-    if (Current == End)
+    if (Current == End) {
       break;
 
-    if (!consumeLineBreakIfPresent())
+}
+
+    if (!consumeLineBreakIfPresent()) {
       break;
+
+}
     ++LineBreaks;
   }
 
-  if (Current == End && !LineBreaks)
+  if (Current == End && !LineBreaks) {
     // Ensure that there is at least one line break before the end of file.
     LineBreaks = 1;
+
+}
   Str.append(getChompedLineBreaks(ChompingIndicator, LineBreaks, Str), '\n');
 
   // New lines may start a simple key.
-  if (!FlowLevel)
+  if (!FlowLevel) {
     IsSimpleKeyAllowed = true;
+
+}
 
   Token T;
   T.Kind = Token::TK_BlockScalar;
@@ -1651,12 +1813,14 @@ bool Scanner::scanTag() {
   StringRef::iterator Start = Current;
   unsigned ColStart = Column;
   skip(1); // Eat !.
-  if (Current == End || isBlankOrBreak(Current)); // An empty tag.
-  else if (*Current == '<') {
+  if (Current == End || isBlankOrBreak(Current)) {; // An empty tag.
+  } else if (*Current == '<') {
     skip(1);
     scan_ns_uri_char();
-    if (!consume('>'))
+    if (!consume('>')) {
       return false;
+
+}
   } else {
     // FIXME: Actually parse the c-ns-shorthand-tag rule.
     Current = skip_while(&Scanner::skip_ns_char, Current);
@@ -1676,79 +1840,119 @@ bool Scanner::scanTag() {
 }
 
 bool Scanner::fetchMoreTokens() {
-  if (IsStartOfStream)
+  if (IsStartOfStream) {
     return scanStreamStart();
+
+}
 
   scanToNextToken();
 
-  if (Current == End)
+  if (Current == End) {
     return scanStreamEnd();
+
+}
 
   removeStaleSimpleKeyCandidates();
 
   unrollIndent(Column);
 
-  if (Column == 0 && *Current == '%')
+  if (Column == 0 && *Current == '%') {
     return scanDirective();
+
+}
 
   if (Column == 0 && Current + 4 <= End
       && *Current == '-'
       && *(Current + 1) == '-'
       && *(Current + 2) == '-'
-      && (Current + 3 == End || isBlankOrBreak(Current + 3)))
+      && (Current + 3 == End || isBlankOrBreak(Current + 3))) {
     return scanDocumentIndicator(true);
+
+}
 
   if (Column == 0 && Current + 4 <= End
       && *Current == '.'
       && *(Current + 1) == '.'
       && *(Current + 2) == '.'
-      && (Current + 3 == End || isBlankOrBreak(Current + 3)))
+      && (Current + 3 == End || isBlankOrBreak(Current + 3))) {
     return scanDocumentIndicator(false);
 
-  if (*Current == '[')
+}
+
+  if (*Current == '[') {
     return scanFlowCollectionStart(true);
 
-  if (*Current == '{')
+}
+
+  if (*Current == '{') {
     return scanFlowCollectionStart(false);
 
-  if (*Current == ']')
+}
+
+  if (*Current == ']') {
     return scanFlowCollectionEnd(true);
 
-  if (*Current == '}')
+}
+
+  if (*Current == '}') {
     return scanFlowCollectionEnd(false);
 
-  if (*Current == ',')
+}
+
+  if (*Current == ',') {
     return scanFlowEntry();
 
-  if (*Current == '-' && isBlankOrBreak(Current + 1))
+}
+
+  if (*Current == '-' && isBlankOrBreak(Current + 1)) {
     return scanBlockEntry();
 
-  if (*Current == '?' && (FlowLevel || isBlankOrBreak(Current + 1)))
+}
+
+  if (*Current == '?' && (FlowLevel || isBlankOrBreak(Current + 1))) {
     return scanKey();
 
-  if (*Current == ':' && (FlowLevel || isBlankOrBreak(Current + 1)))
+}
+
+  if (*Current == ':' && (FlowLevel || isBlankOrBreak(Current + 1))) {
     return scanValue();
 
-  if (*Current == '*')
+}
+
+  if (*Current == '*') {
     return scanAliasOrAnchor(true);
 
-  if (*Current == '&')
+}
+
+  if (*Current == '&') {
     return scanAliasOrAnchor(false);
 
-  if (*Current == '!')
+}
+
+  if (*Current == '!') {
     return scanTag();
 
-  if (*Current == '|' && !FlowLevel)
+}
+
+  if (*Current == '|' && !FlowLevel) {
     return scanBlockScalar(true);
 
-  if (*Current == '>' && !FlowLevel)
+}
+
+  if (*Current == '>' && !FlowLevel) {
     return scanBlockScalar(false);
 
-  if (*Current == '\'')
+}
+
+  if (*Current == '\'') {
     return scanFlowScalar(false);
 
-  if (*Current == '"')
+}
+
+  if (*Current == '"') {
     return scanFlowScalar(true);
+
+}
 
   // Get a plain scalar.
   StringRef FirstChar(Current, 1);
@@ -1760,8 +1964,10 @@ bool Scanner::fetchMoreTokens() {
       || (!FlowLevel && *Current == ':'
                       && Current + 2 < End
                       && *(Current + 1) == ':'
-                      && !isBlankOrBreak(Current + 2)))
+                      && !isBlankOrBreak(Current + 2))) {
     return scanPlainScalar();
+
+}
 
   setError("Unrecognized character while tokenizing.");
   return false;
@@ -1788,8 +1994,10 @@ void Stream::printError(Node *N, const Twine &Msg) {
 }
 
 document_iterator Stream::begin() {
-  if (CurrentDoc)
+  if (CurrentDoc) {
     report_fatal_error("Can only iterate over the stream once");
+
+}
 
   // Skip Stream-Start.
   scanner->getNext();
@@ -1803,8 +2011,10 @@ document_iterator Stream::end() {
 }
 
 void Stream::skip() {
-  for (document_iterator i = begin(), e = end(); i != e; ++i)
+  for (document_iterator i = begin(), e = end(); i != e; ++i) {
     i->skip();
+
+}
 }
 
 Node::Node(unsigned int Type, std::unique_ptr<Document> &D, StringRef A,
@@ -1830,9 +2040,9 @@ std::string Node::getVerbatimTag() const {
       StringRef TagHandle = Raw.substr(0, Raw.find_last_of('!') + 1);
       std::map<StringRef, StringRef>::const_iterator It =
           Doc->getTagMap().find(TagHandle);
-      if (It != Doc->getTagMap().end())
+      if (It != Doc->getTagMap().end()) {
         Ret = std::string(It->second);
-      else {
+      } else {
         Token T;
         T.Kind = Token::TK_Tag;
         T.Range = TagHandle;
@@ -1890,8 +2100,10 @@ StringRef ScalarNode::getValue(SmallVectorImpl<char> &Storage) const {
     StringRef UnquotedValue = Value.substr(1, Value.size() - 2);
     // Search for characters that would require unescaping the value.
     StringRef::size_type i = UnquotedValue.find_first_of("\\\r\n");
-    if (i != StringRef::npos)
+    if (i != StringRef::npos) {
       return unescapeDoubleQuoted(UnquotedValue, i, Storage);
+
+}
     return UnquotedValue;
   } else if (Value[0] == '\'') { // Single quoted.
     // Pull off the leading and trailing 's.
@@ -1938,8 +2150,10 @@ StringRef ScalarNode::unescapeDoubleQuoted( StringRef UnquotedValue
     case '\n':
       Storage.push_back('\n');
       if (   UnquotedValue.size() > 1
-          && (UnquotedValue[1] == '\r' || UnquotedValue[1] == '\n'))
+          && (UnquotedValue[1] == '\r' || UnquotedValue[1] == '\n')) {
         UnquotedValue = UnquotedValue.substr(1);
+
+}
       UnquotedValue = UnquotedValue.substr(1);
       break;
     default:
@@ -1961,8 +2175,10 @@ StringRef ScalarNode::unescapeDoubleQuoted( StringRef UnquotedValue
       case '\n':
         // Remove the new line.
         if (   UnquotedValue.size() > 1
-            && (UnquotedValue[1] == '\r' || UnquotedValue[1] == '\n'))
+            && (UnquotedValue[1] == '\r' || UnquotedValue[1] == '\n')) {
           UnquotedValue = UnquotedValue.substr(1);
+
+}
         // If this was just a single byte newline, it will get skipped
         // below.
         break;
@@ -2019,37 +2235,49 @@ StringRef ScalarNode::unescapeDoubleQuoted( StringRef UnquotedValue
         encodeUTF8(0x2029, Storage);
         break;
       case 'x': {
-          if (UnquotedValue.size() < 3)
+          if (UnquotedValue.size() < 3) {
             // TODO: Report error.
             break;
+
+}
           unsigned int UnicodeScalarValue;
-          if (UnquotedValue.substr(1, 2).getAsInteger(16, UnicodeScalarValue))
+          if (UnquotedValue.substr(1, 2).getAsInteger(16, UnicodeScalarValue)) {
             // TODO: Report error.
             UnicodeScalarValue = 0xFFFD;
+
+}
           encodeUTF8(UnicodeScalarValue, Storage);
           UnquotedValue = UnquotedValue.substr(2);
           break;
         }
       case 'u': {
-          if (UnquotedValue.size() < 5)
+          if (UnquotedValue.size() < 5) {
             // TODO: Report error.
             break;
+
+}
           unsigned int UnicodeScalarValue;
-          if (UnquotedValue.substr(1, 4).getAsInteger(16, UnicodeScalarValue))
+          if (UnquotedValue.substr(1, 4).getAsInteger(16, UnicodeScalarValue)) {
             // TODO: Report error.
             UnicodeScalarValue = 0xFFFD;
+
+}
           encodeUTF8(UnicodeScalarValue, Storage);
           UnquotedValue = UnquotedValue.substr(4);
           break;
         }
       case 'U': {
-          if (UnquotedValue.size() < 9)
+          if (UnquotedValue.size() < 9) {
             // TODO: Report error.
             break;
+
+}
           unsigned int UnicodeScalarValue;
-          if (UnquotedValue.substr(1, 8).getAsInteger(16, UnicodeScalarValue))
+          if (UnquotedValue.substr(1, 8).getAsInteger(16, UnicodeScalarValue)) {
             // TODO: Report error.
             UnicodeScalarValue = 0xFFFD;
+
+}
           encodeUTF8(UnicodeScalarValue, Storage);
           UnquotedValue = UnquotedValue.substr(8);
           break;
@@ -2063,8 +2291,10 @@ StringRef ScalarNode::unescapeDoubleQuoted( StringRef UnquotedValue
 }
 
 Node *KeyValueNode::getKey() {
-  if (Key)
+  if (Key) {
     return Key;
+
+}
   // Handle implicit null keys.
   {
     Token &t = peekNext();
@@ -2073,8 +2303,10 @@ Node *KeyValueNode::getKey() {
         || t.Kind == Token::TK_Error) {
       return Key = new (getAllocator()) NullNode(Doc);
     }
-    if (t.Kind == Token::TK_Key)
+    if (t.Kind == Token::TK_Key) {
       getNext(); // skip TK_Key.
+
+}
   }
 
   // Handle explicit null keys.
@@ -2088,18 +2320,22 @@ Node *KeyValueNode::getKey() {
 }
 
 Node *KeyValueNode::getValue() {
-  if (Value)
+  if (Value) {
     return Value;
 
-  if (Node* Key = getKey())
+}
+
+  if (Node* Key = getKey()) {
     Key->skip();
-  else {
+  } else {
     setError("Null key in Key Value.", peekNext());
     return Value = new (getAllocator()) NullNode(Doc);
   }
 
-  if (failed())
+  if (failed()) {
     return Value = new (getAllocator()) NullNode(Doc);
+
+}
 
   // Handle implicit null values.
   {
@@ -2191,8 +2427,10 @@ void SequenceNode::increment() {
     CurrentEntry = nullptr;
     return;
   }
-  if (CurrentEntry)
+  if (CurrentEntry) {
     CurrentEntry->skip();
+
+}
   Token T = peekNext();
   if (SeqType == ST_Block) {
     switch (T.Kind) {
@@ -2278,22 +2516,32 @@ Document::Document(Stream &S) : stream(S), Root(nullptr) {
   TagMap["!"] = "!";
   TagMap["!!"] = "tag:yaml.org,2002:";
 
-  if (parseDirectives())
+  if (parseDirectives()) {
     expectToken(Token::TK_DocumentStart);
+
+}
   Token &T = peekNext();
-  if (T.Kind == Token::TK_DocumentStart)
+  if (T.Kind == Token::TK_DocumentStart) {
     getNext();
+
+}
 }
 
 bool Document::skip()  {
-  if (stream.scanner->failed())
+  if (stream.scanner->failed()) {
     return false;
-  if (!Root && !getRoot())
+
+}
+  if (!Root && !getRoot()) {
     return false;
+
+}
   Root->skip();
   Token &T = peekNext();
-  if (T.Kind == Token::TK_StreamEnd)
+  if (T.Kind == Token::TK_StreamEnd) {
     return false;
+
+}
   if (T.Kind == Token::TK_DocumentEnd) {
     getNext();
     return skip();
@@ -2416,8 +2664,10 @@ parse_property:
   case Token::TK_FlowMappingEnd:
   case Token::TK_FlowSequenceEnd:
   case Token::TK_FlowEntry: {
-    if (Root && (isa<MappingNode>(Root) || isa<SequenceNode>(Root)))
+    if (Root && (isa<MappingNode>(Root) || isa<SequenceNode>(Root))) {
       return new (NodeAllocator) NullNode(stream.CurrentDoc);
+
+}
 
     setError("Unexpected token", T);
     return nullptr;
@@ -2439,8 +2689,10 @@ bool Document::parseDirectives() {
     } else if (T.Kind == Token::TK_VersionDirective) {
       parseYAMLDirective();
       isDirective = true;
-    } else
+    } else {
       break;
+
+}
   }
   return isDirective;
 }

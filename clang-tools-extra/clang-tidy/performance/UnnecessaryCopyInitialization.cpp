@@ -24,8 +24,10 @@ void recordFixes(const VarDecl &Var, ASTContext &Context,
   Diagnostic << utils::fixit::changeVarDeclToReference(Var, Context);
   if (!Var.getType().isLocalConstQualified()) {
     if (llvm::Optional<FixItHint> Fix = utils::fixit::addQualifierToVarDecl(
-            Var, Context, DeclSpec::TQ::TQ_const))
+            Var, Context, DeclSpec::TQ::TQ_const)) {
       Diagnostic << *Fix;
+
+}
   }
 }
 
@@ -105,9 +107,13 @@ void UnnecessaryCopyInitialization::check(
   // A constructor that looks like T(const T& t, bool arg = false) counts as a
   // copy only when it is called with default arguments for the arguments after
   // the first.
-  for (unsigned int i = 1; i < CtorCall->getNumArgs(); ++i)
-    if (!CtorCall->getArg(i)->isDefaultArgument())
+  for (unsigned int i = 1; i < CtorCall->getNumArgs(); ++i) {
+    if (!CtorCall->getArg(i)->isDefaultArgument()) {
       return;
+
+}
+
+}
 
   if (OldVar == nullptr) {
     handleCopyFromMethodReturn(*NewVar, *BlockStmt, IssueFix, ObjectArg,
@@ -122,11 +128,15 @@ void UnnecessaryCopyInitialization::handleCopyFromMethodReturn(
     const VarDecl &Var, const Stmt &BlockStmt, bool IssueFix,
     const VarDecl *ObjectArg, ASTContext &Context) {
   bool IsConstQualified = Var.getType().isConstQualified();
-  if (!IsConstQualified && !isOnlyUsedAsConst(Var, BlockStmt, Context))
+  if (!IsConstQualified && !isOnlyUsedAsConst(Var, BlockStmt, Context)) {
     return;
+
+}
   if (ObjectArg != nullptr &&
-      !isOnlyUsedAsConst(*ObjectArg, BlockStmt, Context))
+      !isOnlyUsedAsConst(*ObjectArg, BlockStmt, Context)) {
     return;
+
+}
 
   auto Diagnostic =
       diag(Var.getLocation(),
@@ -137,23 +147,29 @@ void UnnecessaryCopyInitialization::handleCopyFromMethodReturn(
                               "const reference but is only used as const "
                               "reference; consider making it a const reference")
       << &Var;
-  if (IssueFix)
+  if (IssueFix) {
     recordFixes(Var, Context, Diagnostic);
+
+}
 }
 
 void UnnecessaryCopyInitialization::handleCopyFromLocalVar(
     const VarDecl &NewVar, const VarDecl &OldVar, const Stmt &BlockStmt,
     bool IssueFix, ASTContext &Context) {
   if (!isOnlyUsedAsConst(NewVar, BlockStmt, Context) ||
-      !isOnlyUsedAsConst(OldVar, BlockStmt, Context))
+      !isOnlyUsedAsConst(OldVar, BlockStmt, Context)) {
     return;
+
+}
 
   auto Diagnostic = diag(NewVar.getLocation(),
                          "local copy %0 of the variable %1 is never modified; "
                          "consider avoiding the copy")
                     << &NewVar << &OldVar;
-  if (IssueFix)
+  if (IssueFix) {
     recordFixes(NewVar, Context, Diagnostic);
+
+}
 }
 
 void UnnecessaryCopyInitialization::storeOptions(

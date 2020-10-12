@@ -28,44 +28,62 @@ using namespace clang;
 // Get a string representation of the parts of the signature that can be
 // overloaded on.
 static std::string GetSignature(const FunctionDecl *Target) {
-  if (!Target)
+  if (!Target) {
     return "";
+
+}
   std::string Signature;
 
   // When a flow sensitive bug happens in templated code we should not generate
   // distinct hash value for every instantiation. Use the signature from the
   // primary template.
   if (const FunctionDecl *InstantiatedFrom =
-          Target->getTemplateInstantiationPattern())
+          Target->getTemplateInstantiationPattern()) {
     Target = InstantiatedFrom;
 
+}
+
   if (!isa<CXXConstructorDecl>(Target) && !isa<CXXDestructorDecl>(Target) &&
-      !isa<CXXConversionDecl>(Target))
+      !isa<CXXConversionDecl>(Target)) {
     Signature.append(Target->getReturnType().getAsString()).append(" ");
+
+}
   Signature.append(Target->getQualifiedNameAsString()).append("(");
 
   for (int i = 0, paramsCount = Target->getNumParams(); i < paramsCount; ++i) {
-    if (i)
+    if (i) {
       Signature.append(", ");
+
+}
     Signature.append(Target->getParamDecl(i)->getType().getAsString());
   }
 
-  if (Target->isVariadic())
+  if (Target->isVariadic()) {
     Signature.append(", ...");
+
+}
   Signature.append(")");
 
   const auto *TargetT =
       llvm::dyn_cast_or_null<FunctionType>(Target->getType().getTypePtr());
 
-  if (!TargetT || !isa<CXXMethodDecl>(Target))
+  if (!TargetT || !isa<CXXMethodDecl>(Target)) {
     return Signature;
 
-  if (TargetT->isConst())
+}
+
+  if (TargetT->isConst()) {
     Signature.append(" const");
-  if (TargetT->isVolatile())
+
+}
+  if (TargetT->isVolatile()) {
     Signature.append(" volatile");
-  if (TargetT->isRestrict())
+
+}
+  if (TargetT->isRestrict()) {
     Signature.append(" restrict");
+
+}
 
   if (const auto *TargetPT =
           dyn_cast_or_null<FunctionProtoType>(Target->getType().getTypePtr())) {
@@ -85,8 +103,10 @@ static std::string GetSignature(const FunctionDecl *Target) {
 }
 
 static std::string GetEnclosingDeclContextSignature(const Decl *D) {
-  if (!D)
+  if (!D) {
     return "";
+
+}
 
   if (const auto *ND = dyn_cast<NamedDecl>(D)) {
     std::string DeclName;
@@ -121,12 +141,16 @@ static std::string GetEnclosingDeclContextSignature(const Decl *D) {
 }
 
 static StringRef GetNthLineOfFile(const llvm::MemoryBuffer *Buffer, int Line) {
-  if (!Buffer)
+  if (!Buffer) {
     return "";
 
+}
+
   llvm::line_iterator LI(*Buffer, false);
-  for (; !LI.is_at_eof() && LI.line_number() != Line; ++LI)
+  for (; !LI.is_at_eof() && LI.line_number() != Line; ++LI) {
     ;
+
+}
 
   return *LI;
 }
@@ -138,16 +162,20 @@ static std::string NormalizeLine(const SourceManager &SM, FullSourceLoc &L,
   StringRef Str = GetNthLineOfFile(SM.getBuffer(L.getFileID(), L),
                                    L.getExpansionLineNumber());
   StringRef::size_type col = Str.find_first_not_of(Whitespaces);
-  if (col == StringRef::npos)
+  if (col == StringRef::npos) {
     col = 1; // The line only contains whitespace.
-  else
+  } else {
     col++;
+
+}
   SourceLocation StartOfLine =
       SM.translateLineCol(SM.getFileID(L), L.getExpansionLineNumber(), col);
   const llvm::MemoryBuffer *Buffer =
       SM.getBuffer(SM.getFileID(StartOfLine), StartOfLine);
-  if (!Buffer)
+  if (!Buffer) {
     return {};
+
+}
 
   const char *BufferPos = SM.getCharacterData(StartOfLine);
 
@@ -158,8 +186,10 @@ static std::string NormalizeLine(const SourceManager &SM, FullSourceLoc &L,
   size_t NextStart = 0;
   std::ostringstream LineBuff;
   while (!Lexer.LexFromRawLexer(Token) && NextStart < 2) {
-    if (Token.isAtStartOfLine() && NextStart++ > 0)
+    if (Token.isAtStartOfLine() && NextStart++ > 0) {
       continue;
+
+}
     LineBuff << std::string(SM.getCharacterData(Token.getLocation()),
                             Token.getLength());
   }

@@ -49,8 +49,10 @@ public:
     Threads[0] = std::thread([this, ThreadCount, S] {
       for (unsigned I = 1; I < ThreadCount; ++I) {
         Threads.emplace_back([=] { work(S, I); });
-        if (Stop)
+        if (Stop) {
           break;
+
+}
       }
       ThreadsCreated.set_value();
       work(S, 0);
@@ -60,8 +62,10 @@ public:
   void stop() {
     {
       std::lock_guard<std::mutex> Lock(Mutex);
-      if (Stop)
+      if (Stop) {
         return;
+
+}
       Stop = true;
     }
     Cond.notify_all();
@@ -71,11 +75,15 @@ public:
   ~ThreadPoolExecutor() override {
     stop();
     std::thread::id CurrentThreadId = std::this_thread::get_id();
-    for (std::thread &T : Threads)
-      if (T.get_id() == CurrentThreadId)
+    for (std::thread &T : Threads) {
+      if (T.get_id() == CurrentThreadId) {
         T.detach();
-      else
+      } else {
         T.join();
+
+}
+
+}
   }
 
   struct Deleter {
@@ -96,8 +104,10 @@ private:
     while (true) {
       std::unique_lock<std::mutex> Lock(Mutex);
       Cond.wait(Lock, [&] { return Stop || !WorkStack.empty(); });
-      if (Stop)
+      if (Stop) {
         break;
+
+}
       auto Task = WorkStack.top();
       WorkStack.pop();
       Lock.unlock();

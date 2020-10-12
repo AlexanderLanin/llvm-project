@@ -51,10 +51,12 @@ SSAUpdater::~SSAUpdater() {
 }
 
 void SSAUpdater::Initialize(Type *Ty, StringRef Name) {
-  if (!AV)
+  if (!AV) {
     AV = new AvailableValsTy();
-  else
+  } else {
     getAvailableVals(AV).clear();
+
+}
   ProtoType = Ty;
   ProtoName = std::string(Name);
 }
@@ -78,15 +80,19 @@ void SSAUpdater::AddAvailableValue(BasicBlock *BB, Value *V) {
 static bool IsEquivalentPHI(PHINode *PHI,
                         SmallDenseMap<BasicBlock *, Value *, 8> &ValueMapping) {
   unsigned PHINumValues = PHI->getNumIncomingValues();
-  if (PHINumValues != ValueMapping.size())
+  if (PHINumValues != ValueMapping.size()) {
     return false;
 
+}
+
   // Scan the phi to see if it matches.
-  for (unsigned i = 0, e = PHINumValues; i != e; ++i)
+  for (unsigned i = 0, e = PHINumValues; i != e; ++i) {
     if (ValueMapping[PHI->getIncomingBlock(i)] !=
         PHI->getIncomingValue(i)) {
       return false;
     }
+
+}
 
   return true;
 }
@@ -99,8 +105,10 @@ Value *SSAUpdater::GetValueAtEndOfBlock(BasicBlock *BB) {
 Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
   // If there is no definition of the renamed variable in this block, just use
   // GetValueAtEndOfBlock to do our work.
-  if (!HasValueForBlock(BB))
+  if (!HasValueForBlock(BB)) {
     return GetValueAtEndOfBlock(BB);
+
+}
 
   // Otherwise, we have the hard case.  Get the live-in values for each
   // predecessor.
@@ -117,10 +125,12 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
       PredValues.push_back(std::make_pair(PredBB, PredVal));
 
       // Compute SingularValue.
-      if (i == 0)
+      if (i == 0) {
         SingularValue = PredVal;
-      else if (PredVal != SingularValue)
+      } else if (PredVal != SingularValue) {
         SingularValue = nullptr;
+
+}
     }
   } else {
     bool isFirstPred = true;
@@ -133,18 +143,24 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
       if (isFirstPred) {
         SingularValue = PredVal;
         isFirstPred = false;
-      } else if (PredVal != SingularValue)
+      } else if (PredVal != SingularValue) {
         SingularValue = nullptr;
+
+}
     }
   }
 
   // If there are no predecessors, just return undef.
-  if (PredValues.empty())
+  if (PredValues.empty()) {
     return UndefValue::get(ProtoType);
 
+}
+
   // Otherwise, if all the merged values are the same, just use it.
-  if (SingularValue)
+  if (SingularValue) {
     return SingularValue;
+
+}
 
   // Otherwise, we do need a PHI: check to see if we already have one available
   // in this block that produces the right value.
@@ -152,8 +168,10 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
     SmallDenseMap<BasicBlock *, Value *, 8> ValueMapping(PredValues.begin(),
                                                          PredValues.end());
     for (PHINode &SomePHI : BB->phis()) {
-      if (IsEquivalentPHI(&SomePHI, ValueMapping))
+      if (IsEquivalentPHI(&SomePHI, ValueMapping)) {
         return &SomePHI;
+
+}
     }
   }
 
@@ -162,8 +180,10 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
                                          ProtoName, &BB->front());
 
   // Fill in all the predecessors of the PHI.
-  for (const auto &PredValue : PredValues)
+  for (const auto &PredValue : PredValues) {
     InsertedPHI->addIncoming(PredValue.second, PredValue.first);
+
+}
 
   // See if the PHI node can be merged to a single value.  This can happen in
   // loop cases when we get a PHI of itself and one other value.
@@ -175,12 +195,16 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
 
   // Set the DebugLoc of the inserted PHI, if available.
   DebugLoc DL;
-  if (const Instruction *I = BB->getFirstNonPHI())
+  if (const Instruction *I = BB->getFirstNonPHI()) {
       DL = I->getDebugLoc();
+
+}
   InsertedPHI->setDebugLoc(DL);
 
   // If the client wants to know about all new instructions, tell it.
-  if (InsertedPHIs) InsertedPHIs->push_back(InsertedPHI);
+  if (InsertedPHIs) { InsertedPHIs->push_back(InsertedPHI);
+
+}
 
   LLVM_DEBUG(dbgs() << "  Inserted PHI: " << *InsertedPHI << "\n");
   return InsertedPHI;
@@ -190,10 +214,12 @@ void SSAUpdater::RewriteUse(Use &U) {
   Instruction *User = cast<Instruction>(U.getUser());
 
   Value *V;
-  if (PHINode *UserPN = dyn_cast<PHINode>(User))
+  if (PHINode *UserPN = dyn_cast<PHINode>(User)) {
     V = GetValueAtEndOfBlock(UserPN->getIncomingBlock(U));
-  else
+  } else {
     V = GetValueInMiddleOfBlock(User->getParent());
+
+}
 
   U.set(V);
 }
@@ -202,10 +228,12 @@ void SSAUpdater::RewriteUseAfterInsertions(Use &U) {
   Instruction *User = cast<Instruction>(U.getUser());
 
   Value *V;
-  if (PHINode *UserPN = dyn_cast<PHINode>(User))
+  if (PHINode *UserPN = dyn_cast<PHINode>(User)) {
     V = GetValueAtEndOfBlock(UserPN->getIncomingBlock(U));
-  else
+  } else {
     V = GetValueAtEndOfBlock(User->getParent());
+
+}
 
   U.set(V);
 }
@@ -257,8 +285,10 @@ public:
     if (PHINode *SomePhi = dyn_cast<PHINode>(BB->begin())) {
       Preds->append(SomePhi->block_begin(), SomePhi->block_end());
     } else {
-      for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI)
+      for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
         Preds->push_back(*PI);
+
+}
     }
   }
 
@@ -298,8 +328,10 @@ public:
   /// operands, i.e., it was just added.
   static PHINode *ValueIsNewPHI(Value *Val, SSAUpdater *Updater) {
     PHINode *PHI = ValueIsPHI(Val, Updater);
-    if (PHI && PHI->getNumIncomingValues() == 0)
+    if (PHI && PHI->getNumIncomingValues() == 0) {
       return PHI;
+
+}
     return nullptr;
   }
 
@@ -317,8 +349,10 @@ public:
 /// placement of PHIs and then inserting new PHIs where needed.
 Value *SSAUpdater::GetValueAtEndOfBlockInternal(BasicBlock *BB) {
   AvailableValsTy &AvailableVals = getAvailableVals(AV);
-  if (Value *V = AvailableVals[BB])
+  if (Value *V = AvailableVals[BB]) {
     return V;
+
+}
 
   SSAUpdaterImpl<SSAUpdater> Impl(this, &AvailableVals, InsertedPHIs);
   return Impl.GetValue(BB);
@@ -331,16 +365,22 @@ Value *SSAUpdater::GetValueAtEndOfBlockInternal(BasicBlock *BB) {
 LoadAndStorePromoter::
 LoadAndStorePromoter(ArrayRef<const Instruction *> Insts,
                      SSAUpdater &S, StringRef BaseName) : SSA(S) {
-  if (Insts.empty()) return;
+  if (Insts.empty()) { return;
+
+}
 
   const Value *SomeVal;
-  if (const LoadInst *LI = dyn_cast<LoadInst>(Insts[0]))
+  if (const LoadInst *LI = dyn_cast<LoadInst>(Insts[0])) {
     SomeVal = LI;
-  else
+  } else {
     SomeVal = cast<StoreInst>(Insts[0])->getOperand(0);
 
-  if (BaseName.empty())
+}
+
+  if (BaseName.empty()) {
     BaseName = SomeVal->getName();
+
+}
   SSA.Initialize(SomeVal->getType(), BaseName);
 }
 
@@ -350,8 +390,10 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
   // ourselves: SSAUpdater is purely for cross-block references.
   DenseMap<BasicBlock *, TinyPtrVector<Instruction *>> UsesByBlock;
 
-  for (Instruction *User : Insts)
+  for (Instruction *User : Insts) {
     UsesByBlock[User->getParent()].push_back(User);
+
+}
 
   // Okay, now we can iterate over all the blocks in the function with uses,
   // processing them.  Keep track of which loads are loading a live-in value.
@@ -364,7 +406,9 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
     TinyPtrVector<Instruction *> &BlockUses = UsesByBlock[BB];
 
     // If this block has already been processed, ignore this repeat use.
-    if (BlockUses.empty()) continue;
+    if (BlockUses.empty()) { continue;
+
+}
 
     // Okay, this is the first use in the block.  If this block just has a
     // single user in it, we can rewrite it trivially.
@@ -373,9 +417,11 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
       if (StoreInst *SI = dyn_cast<StoreInst>(User)) {
         updateDebugInfo(SI);
         SSA.AddAvailableValue(BB, SI->getOperand(0));
-      } else
+      } else {
         // Otherwise it is a load, queue it to rewrite as a live-in load.
         LiveInLoads.push_back(cast<LoadInst>(User));
+
+}
       BlockUses.clear();
       continue;
     }
@@ -393,8 +439,10 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
     // efficient way to tell which on is first in the block and don't want to
     // scan large blocks, so just add all loads as live ins.
     if (!HasStore) {
-      for (Instruction *I : BlockUses)
+      for (Instruction *I : BlockUses) {
         LiveInLoads.push_back(cast<LoadInst>(I));
+
+}
       BlockUses.clear();
       continue;
     }
@@ -408,7 +456,9 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
     for (Instruction &I : *BB) {
       if (LoadInst *L = dyn_cast<LoadInst>(&I)) {
         // If this is a load from an unrelated pointer, ignore it.
-        if (!isInstInList(L, Insts)) continue;
+        if (!isInstInList(L, Insts)) { continue;
+
+}
 
         // If we haven't seen a store yet, this is a live in use, otherwise
         // use the stored value.
@@ -424,7 +474,9 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
 
       if (StoreInst *SI = dyn_cast<StoreInst>(&I)) {
         // If this is a store to an unrelated pointer, ignore it.
-        if (!isInstInList(SI, Insts)) continue;
+        if (!isInstInList(SI, Insts)) { continue;
+
+}
         updateDebugInfo(SI);
 
         // Remember that this is the active value in the block.
@@ -445,7 +497,9 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
     replaceLoadWithValue(ALoad, NewVal);
 
     // Avoid assertions in unreachable code.
-    if (NewVal == ALoad) NewVal = UndefValue::get(NewVal->getType());
+    if (NewVal == ALoad) { NewVal = UndefValue::get(NewVal->getType());
+
+}
     ALoad->replaceAllUsesWith(NewVal);
     ReplacedLoads[ALoad] = NewVal;
   }

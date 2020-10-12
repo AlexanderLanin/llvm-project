@@ -44,7 +44,9 @@ const InterferenceCache::BlockInterference
 // also support for when pass managers are reused for targets with different
 // numbers of PhysRegs: in this case PhysRegEntries is freed and reinitialized.
 void InterferenceCache::reinitPhysRegEntries() {
-  if (PhysRegEntriesCount == TRI->getNumRegs()) return;
+  if (PhysRegEntriesCount == TRI->getNumRegs()) { return;
+
+}
   free(PhysRegEntries);
   PhysRegEntriesCount = TRI->getNumRegs();
   PhysRegEntries = static_cast<unsigned char*>(
@@ -60,26 +62,34 @@ void InterferenceCache::init(MachineFunction *mf,
   LIUArray = liuarray;
   TRI = tri;
   reinitPhysRegEntries();
-  for (unsigned i = 0; i != CacheEntries; ++i)
+  for (unsigned i = 0; i != CacheEntries; ++i) {
     Entries[i].clear(mf, indexes, lis);
+
+}
 }
 
 InterferenceCache::Entry *InterferenceCache::get(unsigned PhysReg) {
   unsigned E = PhysRegEntries[PhysReg];
   if (E < CacheEntries && Entries[E].getPhysReg() == PhysReg) {
-    if (!Entries[E].valid(LIUArray, TRI))
+    if (!Entries[E].valid(LIUArray, TRI)) {
       Entries[E].revalidate(LIUArray, TRI);
+
+}
     return &Entries[E];
   }
   // No valid entry exists, pick the next round-robin entry.
   E = RoundRobin;
-  if (++RoundRobin == CacheEntries)
+  if (++RoundRobin == CacheEntries) {
     RoundRobin = 0;
+
+}
   for (unsigned i = 0; i != CacheEntries; ++i) {
     // Skip entries that are in use.
     if (Entries[E].hasRefs()) {
-      if (++E == CacheEntries)
+      if (++E == CacheEntries) {
         E = 0;
+
+}
       continue;
     }
     Entries[E].reset(PhysReg, LIUArray, TRI, MF);
@@ -97,8 +107,10 @@ void InterferenceCache::Entry::revalidate(LiveIntervalUnion *LIUArray,
   // Invalidate all iterators.
   PrevPos = SlotIndex();
   unsigned i = 0;
-  for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units, ++i)
+  for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units, ++i) {
     RegUnits[i].VirtTag = LIUArray[*Units].getTag();
+
+}
 }
 
 void InterferenceCache::Entry::reset(unsigned physReg,
@@ -124,10 +136,14 @@ bool InterferenceCache::Entry::valid(LiveIntervalUnion *LIUArray,
                                      const TargetRegisterInfo *TRI) {
   unsigned i = 0, e = RegUnits.size();
   for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units, ++i) {
-    if (i == e)
+    if (i == e) {
       return false;
-    if (LIUArray[*Units].changedSince(RegUnits[i].VirtTag))
+
+}
+    if (LIUArray[*Units].changedSince(RegUnits[i].VirtTag)) {
       return false;
+
+}
   }
   return i == e;
 }
@@ -148,8 +164,10 @@ void InterferenceCache::Entry::update(unsigned MBBNum) {
       for (unsigned i = 0, e = RegUnits.size(); i != e; ++i) {
         RegUnitInfo &RUI = RegUnits[i];
         RUI.VirtI.advanceTo(Start);
-        if (RUI.FixedI != RUI.Fixed->end())
+        if (RUI.FixedI != RUI.Fixed->end()) {
           RUI.FixedI = RUI.Fixed->advanceTo(RUI.FixedI, Start);
+
+}
       }
     }
     PrevPos = Start;
@@ -167,26 +185,38 @@ void InterferenceCache::Entry::update(unsigned MBBNum) {
     // Check for first interference from virtregs.
     for (unsigned i = 0, e = RegUnits.size(); i != e; ++i) {
       LiveIntervalUnion::SegmentIter &I = RegUnits[i].VirtI;
-      if (!I.valid())
+      if (!I.valid()) {
         continue;
+
+}
       SlotIndex StartI = I.start();
-      if (StartI >= Stop)
+      if (StartI >= Stop) {
         continue;
-      if (!BI->First.isValid() || StartI < BI->First)
+
+}
+      if (!BI->First.isValid() || StartI < BI->First) {
         BI->First = StartI;
+
+}
     }
 
     // Same thing for fixed interference.
     for (unsigned i = 0, e = RegUnits.size(); i != e; ++i) {
       LiveInterval::const_iterator I = RegUnits[i].FixedI;
       LiveInterval::const_iterator E = RegUnits[i].Fixed->end();
-      if (I == E)
+      if (I == E) {
         continue;
+
+}
       SlotIndex StartI = I->start;
-      if (StartI >= Stop)
+      if (StartI >= Stop) {
         continue;
-      if (!BI->First.isValid() || StartI < BI->First)
+
+}
+      if (!BI->First.isValid() || StartI < BI->First) {
         BI->First = StartI;
+
+}
     }
 
     // Also check for register mask interference.
@@ -194,68 +224,94 @@ void InterferenceCache::Entry::update(unsigned MBBNum) {
     RegMaskBits = LIS->getRegMaskBitsInBlock(MBBNum);
     SlotIndex Limit = BI->First.isValid() ? BI->First : Stop;
     for (unsigned i = 0, e = RegMaskSlots.size();
-         i != e && RegMaskSlots[i] < Limit; ++i)
+         i != e && RegMaskSlots[i] < Limit; ++i) {
       if (MachineOperand::clobbersPhysReg(RegMaskBits[i], PhysReg)) {
         // Register mask i clobbers PhysReg before the LIU interference.
         BI->First = RegMaskSlots[i];
         break;
       }
 
+}
+
     PrevPos = Stop;
-    if (BI->First.isValid())
+    if (BI->First.isValid()) {
       break;
 
+}
+
     // No interference in this block? Go ahead and precompute the next block.
-    if (++MFI == MF->end())
+    if (++MFI == MF->end()) {
       return;
+
+}
     MBBNum = MFI->getNumber();
     BI = &Blocks[MBBNum];
-    if (BI->Tag == Tag)
+    if (BI->Tag == Tag) {
       return;
+
+}
     std::tie(Start, Stop) = Indexes->getMBBRange(MBBNum);
   }
 
   // Check for last interference in block.
   for (unsigned i = 0, e = RegUnits.size(); i != e; ++i) {
     LiveIntervalUnion::SegmentIter &I = RegUnits[i].VirtI;
-    if (!I.valid() || I.start() >= Stop)
+    if (!I.valid() || I.start() >= Stop) {
       continue;
+
+}
     I.advanceTo(Stop);
     bool Backup = !I.valid() || I.start() >= Stop;
-    if (Backup)
+    if (Backup) {
       --I;
+
+}
     SlotIndex StopI = I.stop();
-    if (!BI->Last.isValid() || StopI > BI->Last)
+    if (!BI->Last.isValid() || StopI > BI->Last) {
       BI->Last = StopI;
-    if (Backup)
+
+}
+    if (Backup) {
       ++I;
+
+}
   }
 
   // Fixed interference.
   for (unsigned i = 0, e = RegUnits.size(); i != e; ++i) {
     LiveInterval::iterator &I = RegUnits[i].FixedI;
     LiveRange *LR = RegUnits[i].Fixed;
-    if (I == LR->end() || I->start >= Stop)
+    if (I == LR->end() || I->start >= Stop) {
       continue;
+
+}
     I = LR->advanceTo(I, Stop);
     bool Backup = I == LR->end() || I->start >= Stop;
-    if (Backup)
+    if (Backup) {
       --I;
+
+}
     SlotIndex StopI = I->end;
-    if (!BI->Last.isValid() || StopI > BI->Last)
+    if (!BI->Last.isValid() || StopI > BI->Last) {
       BI->Last = StopI;
-    if (Backup)
+
+}
+    if (Backup) {
       ++I;
+
+}
   }
 
   // Also check for register mask interference.
   SlotIndex Limit = BI->Last.isValid() ? BI->Last : Start;
   for (unsigned i = RegMaskSlots.size();
-       i && RegMaskSlots[i-1].getDeadSlot() > Limit; --i)
+       i && RegMaskSlots[i-1].getDeadSlot() > Limit; --i) {
     if (MachineOperand::clobbersPhysReg(RegMaskBits[i-1], PhysReg)) {
       // Register mask i-1 clobbers PhysReg after the LIU interference.
       // Model the regmask clobber as a dead def.
       BI->Last = RegMaskSlots[i-1].getDeadSlot();
       break;
     }
+
+}
 }

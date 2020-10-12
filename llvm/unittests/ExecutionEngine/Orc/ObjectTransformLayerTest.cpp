@@ -255,8 +255,10 @@ TEST(LegacyObjectTransformLayerTest, Main) {
   EXPECT_EQ(289, *OwnedObj) << "Expected incrementing transform";
 
   volatile bool RunStaticChecks = false;
-  if (!RunStaticChecks)
+  if (!RunStaticChecks) {
     return;
+
+}
 
   // Make sure that LegacyObjectTransformLayer implements the object layer concept
   // correctly by sandwitching one between an ObjectLinkingLayer and an

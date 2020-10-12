@@ -74,8 +74,10 @@ void RegAllocBase::seedLiveRegs() {
                      TimerGroupDescription, TimePassesIsEnabled);
   for (unsigned i = 0, e = MRI->getNumVirtRegs(); i != e; ++i) {
     unsigned Reg = Register::index2VirtReg(i);
-    if (MRI->reg_nodbg_empty(Reg))
+    if (MRI->reg_nodbg_empty(Reg)) {
       continue;
+
+}
     enqueue(&LIS->getInterval(Reg));
   }
 }
@@ -120,8 +122,10 @@ void RegAllocBase::allocatePhysRegs() {
            I = MRI->reg_instr_begin(VirtReg->reg), E = MRI->reg_instr_end();
            I != E; ) {
         MI = &*(I++);
-        if (MI->isInlineAsm())
+        if (MI->isInlineAsm()) {
           break;
+
+}
       }
       if (MI && MI->isInlineAsm()) {
         MI->emitError("inline assembly requires more registers than available");
@@ -138,8 +142,10 @@ void RegAllocBase::allocatePhysRegs() {
       continue;
     }
 
-    if (AvailablePhysReg)
+    if (AvailablePhysReg) {
       Matrix->assign(*VirtReg, AvailablePhysReg);
+
+}
 
     for (unsigned Reg : SplitVRegs) {
       assert(LIS->hasInterval(Reg));

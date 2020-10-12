@@ -60,8 +60,10 @@ int main(int argc, const char **argv) {
   InitLLVM X(argc, argv);
 
   // If argv[0] is or ends with 'gcov', always be gcov compatible
-  if (sys::path::stem(argv[0]).endswith_lower("gcov"))
+  if (sys::path::stem(argv[0]).endswith_lower("gcov")) {
     return gcovMain(argc, argv);
+
+}
 
   // Check if we are invoking a specific tool command.
   if (argc > 1) {
@@ -84,11 +86,15 @@ int main(int argc, const char **argv) {
   }
 
   if (argc > 1) {
-    if (sys::Process::StandardErrHasColors())
+    if (sys::Process::StandardErrHasColors()) {
       errs().changeColor(raw_ostream::RED);
+
+}
     errs() << "Unrecognized command: " << argv[1] << ".\n\n";
-    if (sys::Process::StandardErrHasColors())
+    if (sys::Process::StandardErrHasColors()) {
       errs().resetColor();
+
+}
   }
   helpMain(argc, argv);
   return 1;

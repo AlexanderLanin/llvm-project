@@ -59,8 +59,10 @@ void ExceptionEscapeCheck::check(const MatchFinder::MatchResult &Result) {
   assert(StructuredBlock && "Expected to get some OpenMP Structured Block.");
 
   if (Tracer.analyze(StructuredBlock).getBehaviour() !=
-      utils::ExceptionAnalyzer::State::Throwing)
+      utils::ExceptionAnalyzer::State::Throwing) {
     return; // No exceptions have been proven to escape out of the struc. block.
+
+}
 
   // FIXME: We should provide more information about the exact location where
   // the exception is thrown, maybe the full path the exception escapes.

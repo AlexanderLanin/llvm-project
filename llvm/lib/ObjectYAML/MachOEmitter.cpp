@@ -79,8 +79,10 @@ void MachOWriter::writeHeader(raw_ostream &OS) {
   Header.flags = Obj.Header.flags;
   Header.reserved = Obj.Header.reserved;
 
-  if (Obj.IsLittleEndian != sys::IsLittleEndianHost)
+  if (Obj.IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(Header);
+
+}
 
   auto header_size =
       is64Bit ? sizeof(MachO::mach_header_64) : sizeof(MachO::mach_header);
@@ -117,8 +119,10 @@ size_t writeLoadCommandData<MachO::segment_command>(MachOYAML::LoadCommand &LC,
   size_t BytesWritten = 0;
   for (const auto &Sec : LC.Sections) {
     auto TempSec = constructSection<MachO::section>(Sec);
-    if (IsLittleEndian != sys::IsLittleEndianHost)
+    if (IsLittleEndian != sys::IsLittleEndianHost) {
       MachO::swapStruct(TempSec);
+
+}
     OS.write(reinterpret_cast<const char *>(&(TempSec)),
              sizeof(MachO::section));
     BytesWritten += sizeof(MachO::section);
@@ -133,8 +137,10 @@ size_t writeLoadCommandData<MachO::segment_command_64>(
   for (const auto &Sec : LC.Sections) {
     auto TempSec = constructSection<MachO::section_64>(Sec);
     TempSec.reserved3 = Sec.reserved3;
-    if (IsLittleEndian != sys::IsLittleEndianHost)
+    if (IsLittleEndian != sys::IsLittleEndianHost) {
       MachO::swapStruct(TempSec);
+
+}
     OS.write(reinterpret_cast<const char *>(&(TempSec)),
              sizeof(MachO::section_64));
     BytesWritten += sizeof(MachO::section_64);
@@ -178,8 +184,10 @@ size_t writeLoadCommandData<MachO::build_version_command>(
   size_t BytesWritten = 0;
   for (const auto &T : LC.Tools) {
     struct MachO::build_tool_version tool = T;
-    if (IsLittleEndian != sys::IsLittleEndianHost)
+    if (IsLittleEndian != sys::IsLittleEndianHost) {
       MachO::swapStruct(tool);
+
+}
     OS.write(reinterpret_cast<const char *>(&tool),
              sizeof(MachO::build_tool_version));
     BytesWritten += sizeof(MachO::build_tool_version);
@@ -201,8 +209,10 @@ void Fill(raw_ostream &OS, size_t Size, uint32_t Data) {
 
 void MachOWriter::ZeroToOffset(raw_ostream &OS, size_t Offset) {
   auto currOffset = OS.tell() - fileStart;
-  if (currOffset < Offset)
+  if (currOffset < Offset) {
     ZeroFillBytes(OS, Offset - currOffset);
+
+}
 }
 
 void MachOWriter::writeLoadCommands(raw_ostream &OS) {
@@ -223,8 +233,10 @@ void MachOWriter::writeLoadCommands(raw_ostream &OS) {
 
     switch (LC.Data.load_command_data.cmd) {
     default:
-      if (Obj.IsLittleEndian != sys::IsLittleEndianHost)
+      if (Obj.IsLittleEndian != sys::IsLittleEndianHost) {
         MachO::swapStruct(Data.load_command_data);
+
+}
       OS.write(reinterpret_cast<const char *>(&(Data.load_command_data)),
                sizeof(MachO::load_command));
       BytesWritten = sizeof(MachO::load_command);
@@ -297,8 +309,10 @@ void MachOWriter::writeSectionData(raw_ostream &OS) {
         }
 
         // Skip if it's a virtual section.
-        if (MachO::isVirtualSection(Sec.flags & MachO::SECTION_TYPE))
+        if (MachO::isVirtualSection(Sec.flags & MachO::SECTION_TYPE)) {
           continue;
+
+}
 
         if (Sec.content) {
           yaml::BinaryRef Content = *Sec.content;
@@ -317,8 +331,10 @@ void MachOWriter::writeSectionData(raw_ostream &OS) {
   }
   // Old PPC Object Files didn't have __LINKEDIT segments, the data was just
   // stuck at the end of the file.
-  if (!FoundLinkEditSeg)
+  if (!FoundLinkEditSeg) {
     writeLinkEditData(OS);
+
+}
 }
 
 void MachOWriter::writeBindOpcodes(
@@ -351,8 +367,10 @@ void MachOWriter::dumpExportEntry(raw_ostream &OS,
       OS.write('\0');
     } else {
       encodeSLEB128(Entry.Address, OS);
-      if (Entry.Flags & MachO::EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER)
+      if (Entry.Flags & MachO::EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER) {
         encodeSLEB128(Entry.Other, OS);
+
+}
     }
   }
   OS.write(static_cast<uint8_t>(Entry.Children.size()));
@@ -361,8 +379,10 @@ void MachOWriter::dumpExportEntry(raw_ostream &OS,
     OS.write('\0');
     encodeSLEB128(EE.NodeOffset, OS);
   }
-  for (auto EE : Entry.Children)
+  for (auto EE : Entry.Children) {
     dumpExportEntry(OS, EE);
+
+}
 }
 
 void MachOWriter::writeExportTrie(raw_ostream &OS) {
@@ -379,8 +399,10 @@ void writeNListEntry(MachOYAML::NListEntry &NLE, raw_ostream &OS,
   ListEntry.n_desc = NLE.n_desc;
   ListEntry.n_value = NLE.n_value;
 
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(ListEntry);
+
+}
   OS.write(reinterpret_cast<const char *>(&ListEntry), sizeof(NListType));
 }
 
@@ -432,8 +454,10 @@ void MachOWriter::writeRebaseOpcodes(raw_ostream &OS) {
   for (auto Opcode : LinkEdit.RebaseOpcodes) {
     uint8_t OpByte = Opcode.Opcode | Opcode.Imm;
     OS.write(reinterpret_cast<char *>(&OpByte), 1);
-    for (auto Data : Opcode.ExtraData)
+    for (auto Data : Opcode.ExtraData) {
       encodeULEB128(Data, OS);
+
+}
   }
 }
 
@@ -451,10 +475,12 @@ void MachOWriter::writeLazyBindOpcodes(raw_ostream &OS) {
 
 void MachOWriter::writeNameList(raw_ostream &OS) {
   for (auto NLE : Obj.LinkEdit.NameList) {
-    if (is64Bit)
+    if (is64Bit) {
       writeNListEntry<MachO::nlist_64>(NLE, OS, Obj.IsLittleEndian);
-    else
+    } else {
       writeNListEntry<MachO::nlist>(NLE, OS, Obj.IsLittleEndian);
+
+}
   }
 }
 
@@ -511,8 +537,10 @@ void UniversalWriter::writeFatHeader(raw_ostream &OS) {
   MachO::fat_header header;
   header.magic = FatFile.Header.magic;
   header.nfat_arch = FatFile.Header.nfat_arch;
-  if (sys::IsLittleEndianHost)
+  if (sys::IsLittleEndianHost) {
     swapStruct(header);
+
+}
   OS.write(reinterpret_cast<const char *>(&header), sizeof(MachO::fat_header));
 }
 
@@ -533,8 +561,10 @@ void writeFatArch(MachOYAML::FatArch &LC, raw_ostream &OS) {}
 template <>
 void writeFatArch<MachO::fat_arch>(MachOYAML::FatArch &Arch, raw_ostream &OS) {
   auto FatArch = constructFatArch<MachO::fat_arch>(Arch);
-  if (sys::IsLittleEndianHost)
+  if (sys::IsLittleEndianHost) {
     swapStruct(FatArch);
+
+}
   OS.write(reinterpret_cast<const char *>(&FatArch), sizeof(MachO::fat_arch));
 }
 
@@ -543,8 +573,10 @@ void writeFatArch<MachO::fat_arch_64>(MachOYAML::FatArch &Arch,
                                       raw_ostream &OS) {
   auto FatArch = constructFatArch<MachO::fat_arch_64>(Arch);
   FatArch.reserved = Arch.reserved;
-  if (sys::IsLittleEndianHost)
+  if (sys::IsLittleEndianHost) {
     swapStruct(FatArch);
+
+}
   OS.write(reinterpret_cast<const char *>(&FatArch),
            sizeof(MachO::fat_arch_64));
 }
@@ -553,17 +585,21 @@ void UniversalWriter::writeFatArchs(raw_ostream &OS) {
   auto &FatFile = *ObjectFile.FatMachO;
   bool is64Bit = FatFile.Header.magic == MachO::FAT_MAGIC_64;
   for (auto Arch : FatFile.FatArchs) {
-    if (is64Bit)
+    if (is64Bit) {
       writeFatArch<MachO::fat_arch_64>(Arch, OS);
-    else
+    } else {
       writeFatArch<MachO::fat_arch>(Arch, OS);
+
+}
   }
 }
 
 void UniversalWriter::ZeroToOffset(raw_ostream &OS, size_t Offset) {
   auto currOffset = OS.tell() - fileStart;
-  if (currOffset < Offset)
+  if (currOffset < Offset) {
     ZeroFillBytes(OS, Offset - currOffset);
+
+}
 }
 
 } // end anonymous namespace

@@ -34,29 +34,39 @@ AST_MATCHER(FunctionDecl, isPlacementOverload) {
   }
 
   // Variadic functions are always placement functions.
-  if (Node.isVariadic())
+  if (Node.isVariadic()) {
     return true;
+
+}
 
   // Placement new is easy: it always has more than one parameter (the first
   // parameter is always the size). If it's an overload of delete or delete[]
   // that has only one parameter, it's never a placement delete.
-  if (New)
+  if (New) {
     return Node.getNumParams() > 1;
-  if (Node.getNumParams() == 1)
+
+}
+  if (Node.getNumParams() == 1) {
     return false;
+
+}
 
   // Placement delete is a little more challenging. They always have more than
   // one parameter with the first parameter being a pointer. However, the
   // second parameter can be a size_t for sized deallocation, and that is never
   // a placement delete operator.
-  if (Node.getNumParams() <= 1 || Node.getNumParams() > 2)
+  if (Node.getNumParams() <= 1 || Node.getNumParams() > 2) {
     return true;
+
+}
 
   const auto *FPT = Node.getType()->castAs<FunctionProtoType>();
   ASTContext &Ctx = Node.getASTContext();
   if (Ctx.getLangOpts().SizedDeallocation &&
-      Ctx.hasSameType(FPT->getParamType(1), Ctx.getSizeType()))
+      Ctx.hasSameType(FPT->getParamType(1), Ctx.getSizeType())) {
     return false;
+
+}
 
   return true;
 }
@@ -102,10 +112,14 @@ bool hasCorrespondingOverloadInBaseClass(const CXXMethodDecl *MD,
                                          const CXXRecordDecl *RD = nullptr) {
   if (RD) {
     // Check the methods in the given class and accessible to derived classes.
-    for (const auto *BMD : RD->methods())
+    for (const auto *BMD : RD->methods()) {
       if (BMD->isOverloadedOperator() && BMD->getAccess() != AS_private &&
-          areCorrespondingOverloads(MD, BMD))
+          areCorrespondingOverloads(MD, BMD)) {
         return true;
+
+}
+
+}
   } else {
     // Get the parent class of the method; we do not need to care about checking
     // the methods in this class as the caller has already done that by looking
@@ -116,11 +130,17 @@ bool hasCorrespondingOverloadInBaseClass(const CXXMethodDecl *MD,
   for (const auto &BS : RD->bases()) {
     // We can't say much about a dependent base class, but to avoid false
     // positives assume it can have a corresponding overload.
-    if (BS.getType()->isDependentType())
+    if (BS.getType()->isDependentType()) {
       return true;
-    if (const auto *BaseRD = BS.getType()->getAsCXXRecordDecl())
-      if (hasCorrespondingOverloadInBaseClass(MD, BaseRD))
+
+}
+    if (const auto *BaseRD = BS.getType()->getAsCXXRecordDecl()) {
+      if (hasCorrespondingOverloadInBaseClass(MD, BaseRD)) {
         return true;
+
+}
+
+}
   }
 
   return false;
@@ -153,8 +173,10 @@ void NewDeleteOverloadsCheck::check(const MatchFinder::MatchResult &Result) {
   // end of the translation unit.
   const auto *FD = Result.Nodes.getNodeAs<FunctionDecl>("func");
   const CXXRecordDecl *RD = nullptr;
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD))
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
     RD = MD->getParent();
+
+}
   Overloads[RD].push_back(FD);
 }
 
@@ -172,17 +194,23 @@ void NewDeleteOverloadsCheck::onEndOfTranslationUnit() {
       const auto *Match =
           std::find_if(RP.second.begin(), RP.second.end(),
                        [&Overload](const FunctionDecl *FD) {
-                         if (FD == Overload)
+                         if (FD == Overload) {
                            return false;
+
+}
                          // If the declaration contexts don't match, we don't
                          // need to check any further.
-                         if (FD->getDeclContext() != Overload->getDeclContext())
+                         if (FD->getDeclContext() != Overload->getDeclContext()) {
                            return false;
+
+}
 
                          // Since the declaration contexts match, see whether
                          // the current element is the corresponding operator.
-                         if (!areCorrespondingOverloads(Overload, FD))
+                         if (!areCorrespondingOverloads(Overload, FD)) {
                            return false;
+
+}
 
                          return true;
                        });
@@ -192,16 +220,20 @@ void NewDeleteOverloadsCheck::onEndOfTranslationUnit() {
         // context. If there isn't, or if the overload is not a class member
         // function, then we should diagnose.
         const auto *MD = dyn_cast<CXXMethodDecl>(Overload);
-        if (!MD || !hasCorrespondingOverloadInBaseClass(MD))
+        if (!MD || !hasCorrespondingOverloadInBaseClass(MD)) {
           Diagnose.push_back(Overload);
+
+}
       }
     }
   }
 
-  for (const auto *FD : Diagnose)
+  for (const auto *FD : Diagnose) {
     diag(FD->getLocation(), "declaration of %0 has no matching declaration "
                             "of '%1' at the same scope")
         << FD << getOperatorName(getCorrespondingOverload(FD));
+
+}
 }
 
 } // namespace misc

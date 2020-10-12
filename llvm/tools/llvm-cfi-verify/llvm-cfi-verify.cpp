@@ -75,10 +75,12 @@ void printBlameContext(const DILineInfo &LineInfo, unsigned Context) {
        i <
        std::min<size_t>(Lines.size() + 1, LineInfo.Line + Context + 1);
        ++i) {
-    if (i == LineInfo.Line)
+    if (i == LineInfo.Line) {
       outs() << ">";
-    else
+    } else {
       outs() << " ";
+
+}
 
     outs() << i << ": " << Lines[i - 1] << "\n";
   }
@@ -93,8 +95,10 @@ void printInstructionInformation(const FileAnalysis &Analysis,
   Analysis.printInstruction(InstrMeta, outs());
   outs() << " \n";
 
-  if (PrintGraphs)
+  if (PrintGraphs) {
     Graph.printToDOT(Analysis, outs());
+
+}
 }
 
 void printInstructionStatus(unsigned BlameLine, bool CFIProtected,
@@ -102,22 +106,30 @@ void printInstructionStatus(unsigned BlameLine, bool CFIProtected,
   if (BlameLine) {
     outs() << "Blacklist Match: " << BlacklistFilename << ":" << BlameLine
            << "\n";
-    if (CFIProtected)
+    if (CFIProtected) {
       outs() << "====> Unexpected Protected\n";
-    else
+    } else {
       outs() << "====> Expected Unprotected\n";
 
-    if (PrintBlameContextAll)
+}
+
+    if (PrintBlameContextAll) {
       printBlameContext(LineInfo, PrintBlameContextAll);
+
+}
   } else {
     if (CFIProtected) {
       outs() << "====> Expected Protected\n";
-      if (PrintBlameContextAll)
+      if (PrintBlameContextAll) {
         printBlameContext(LineInfo, PrintBlameContextAll);
+
+}
     } else {
       outs() << "====> Unexpected Unprotected (BAD)\n";
-      if (PrintBlameContext)
+      if (PrintBlameContext) {
         printBlameContext(LineInfo, PrintBlameContext);
+
+}
     }
   }
 }
@@ -145,10 +157,12 @@ void printIndirectCFInstructions(FileAnalysis &Analysis,
     }
 
     if (IgnoreDWARFFlag) {
-      if (CFIProtected)
+      if (CFIProtected) {
         ExpectedProtected++;
-      else
+      } else {
         UnexpectedUnprotected++;
+
+}
       continue;
     }
 
@@ -173,12 +187,16 @@ void printIndirectCFInstructions(FileAnalysis &Analysis,
 
     if (!SpecialCaseList) {
       if (CFIProtected) {
-        if (PrintBlameContextAll && !Summarize)
+        if (PrintBlameContextAll && !Summarize) {
           printBlameContext(LineInfo, PrintBlameContextAll);
+
+}
         ExpectedProtected++;
       } else {
-        if (PrintBlameContext && !Summarize)
+        if (PrintBlameContext && !Summarize) {
           printBlameContext(LineInfo, PrintBlameContext);
+
+}
         UnexpectedUnprotected++;
       }
       continue;
@@ -186,29 +204,39 @@ void printIndirectCFInstructions(FileAnalysis &Analysis,
 
     unsigned BlameLine = 0;
     for (auto &K : {"cfi-icall", "cfi-vcall"}) {
-      if (!BlameLine)
+      if (!BlameLine) {
         BlameLine =
             SpecialCaseList->inSectionBlame(K, "src", LineInfo.FileName);
-      if (!BlameLine)
+
+}
+      if (!BlameLine) {
         BlameLine =
             SpecialCaseList->inSectionBlame(K, "fun", LineInfo.FunctionName);
+
+}
     }
 
     if (BlameLine) {
       BlameCounter[BlameLine]++;
-      if (CFIProtected)
+      if (CFIProtected) {
         UnexpectedProtected++;
-      else
+      } else {
         ExpectedUnprotected++;
+
+}
     } else {
-      if (CFIProtected)
+      if (CFIProtected) {
         ExpectedProtected++;
-      else
+      } else {
         UnexpectedUnprotected++;
+
+}
     }
 
-    if (!Summarize)
+    if (!Summarize) {
       printInstructionStatus(BlameLine, CFIProtected, LineInfo);
+
+}
   }
 
   uint64_t IndirectCFInstructions = ExpectedProtected + UnexpectedProtected +
@@ -233,8 +261,10 @@ void printIndirectCFInstructions(FileAnalysis &Analysis,
                     UnexpectedUnprotected,
                     ((double)UnexpectedUnprotected) / IndirectCFInstructions);
 
-  if (!SpecialCaseList)
+  if (!SpecialCaseList) {
     return;
+
+}
 
   outs() << "\nBlacklist Results:\n";
   for (const auto &KV : BlameCounter) {
@@ -256,8 +286,10 @@ int main(int argc, char **argv) {
   InitializeAllAsmParsers();
   InitializeAllDisassemblers();
 
-  if (PrintBlameContextAll && !PrintBlameContext)
+  if (PrintBlameContextAll && !PrintBlameContext) {
     PrintBlameContext.setValue(PrintBlameContextAll);
+
+}
 
   std::unique_ptr<SpecialCaseList> SpecialCaseList;
   if (BlacklistFilename != "-") {

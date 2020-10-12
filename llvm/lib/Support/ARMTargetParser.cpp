@@ -28,8 +28,10 @@ ARM::ArchKind ARM::parseArch(StringRef Arch) {
   Arch = getCanonicalArchName(Arch);
   StringRef Syn = getArchSynonym(Arch);
   for (const auto &A : ARCHNames) {
-    if (A.getName().endswith(Syn))
+    if (A.getName().endswith(Syn)) {
       return A.ID;
+
+}
   }
   return ArchKind::INVALID;
 }
@@ -159,8 +161,10 @@ StringRef ARM::getArchSynonym(StringRef Arch) {
 
 bool ARM::getFPUFeatures(unsigned FPUKind, std::vector<StringRef> &Features) {
 
-  if (FPUKind >= FK_LAST || FPUKind == FK_INVALID)
+  if (FPUKind >= FK_LAST || FPUKind == FK_INVALID) {
     return false;
+
+}
 
   static const struct FPUFeatureNameInfo {
     const char *PlusName, *MinusName;
@@ -196,10 +200,12 @@ bool ARM::getFPUFeatures(unsigned FPUKind, std::vector<StringRef> &Features) {
 
   for (const auto &Info: FPUFeatureInfoList) {
     if (FPUNames[FPUKind].FPUVer >= Info.MinVersion &&
-        FPUNames[FPUKind].Restriction <= Info.MaxRestriction)
+        FPUNames[FPUKind].Restriction <= Info.MaxRestriction) {
       Features.push_back(Info.PlusName);
-    else
+    } else {
       Features.push_back(Info.MinusName);
+
+}
   }
 
   static const struct NeonFeatureNameInfo {
@@ -211,10 +217,12 @@ bool ARM::getFPUFeatures(unsigned FPUKind, std::vector<StringRef> &Features) {
   };
 
   for (const auto &Info: NeonFeatureInfoList) {
-    if (FPUNames[FPUKind].NeonSupport >= Info.MinSupportLevel)
+    if (FPUNames[FPUKind].NeonSupport >= Info.MinSupportLevel) {
       Features.push_back(Info.PlusName);
-    else
+    } else {
       Features.push_back(Info.MinusName);
+
+}
   }
 
   return true;
@@ -223,18 +231,24 @@ bool ARM::getFPUFeatures(unsigned FPUKind, std::vector<StringRef> &Features) {
 // Little/Big endian
 ARM::EndianKind ARM::parseArchEndian(StringRef Arch) {
   if (Arch.startswith("armeb") || Arch.startswith("thumbeb") ||
-      Arch.startswith("aarch64_be"))
+      Arch.startswith("aarch64_be")) {
     return EndianKind::BIG;
 
+}
+
   if (Arch.startswith("arm") || Arch.startswith("thumb")) {
-    if (Arch.endswith("eb"))
+    if (Arch.endswith("eb")) {
       return EndianKind::BIG;
-    else
+    } else {
       return EndianKind::LITTLE;
+
+}
   }
 
-  if (Arch.startswith("aarch64") || Arch.startswith("aarch64_32"))
+  if (Arch.startswith("aarch64") || Arch.startswith("aarch64_32")) {
     return EndianKind::LITTLE;
+
+}
 
   return EndianKind::INVALID;
 }
@@ -252,15 +266,19 @@ ARM::ISAKind ARM::parseArchISA(StringRef Arch) {
 unsigned ARM::parseFPU(StringRef FPU) {
   StringRef Syn = getFPUSynonym(FPU);
   for (const auto F : FPUNames) {
-    if (Syn == F.getName())
+    if (Syn == F.getName()) {
       return F.ID;
+
+}
   }
   return FK_INVALID;
 }
 
 ARM::NeonSupportLevel ARM::getFPUNeonSupportLevel(unsigned FPUKind) {
-  if (FPUKind >= FK_LAST)
+  if (FPUKind >= FK_LAST) {
     return NeonSupportLevel::None;
+
+}
   return FPUNames[FPUKind].NeonSupport;
 }
 
@@ -274,47 +292,61 @@ StringRef ARM::getCanonicalArchName(StringRef Arch) {
   StringRef Error = "";
 
   // Begins with "arm" / "thumb", move past it.
-  if (A.startswith("arm64_32"))
+  if (A.startswith("arm64_32")) {
     offset = 8;
-  else if (A.startswith("arm64"))
+  } else if (A.startswith("arm64")) {
     offset = 5;
-  else if (A.startswith("aarch64_32"))
+  } else if (A.startswith("aarch64_32")) {
     offset = 10;
-  else if (A.startswith("arm"))
+  } else if (A.startswith("arm")) {
     offset = 3;
-  else if (A.startswith("thumb"))
+  } else if (A.startswith("thumb")) {
     offset = 5;
-  else if (A.startswith("aarch64")) {
+  } else if (A.startswith("aarch64")) {
     offset = 7;
     // AArch64 uses "_be", not "eb" suffix.
-    if (A.find("eb") != StringRef::npos)
+    if (A.find("eb") != StringRef::npos) {
       return Error;
-    if (A.substr(offset, 3) == "_be")
+
+}
+    if (A.substr(offset, 3) == "_be") {
       offset += 3;
+
+}
   }
 
   // Ex. "armebv7", move past the "eb".
-  if (offset != StringRef::npos && A.substr(offset, 2) == "eb")
+  if (offset != StringRef::npos && A.substr(offset, 2) == "eb") {
     offset += 2;
   // Or, if it ends with eb ("armv7eb"), chop it off.
-  else if (A.endswith("eb"))
+  } else if (A.endswith("eb")) {
     A = A.substr(0, A.size() - 2);
+
+}
   // Trim the head
-  if (offset != StringRef::npos)
+  if (offset != StringRef::npos) {
     A = A.substr(offset);
 
+}
+
   // Empty string means offset reached the end, which means it's valid.
-  if (A.empty())
+  if (A.empty()) {
     return Arch;
+
+}
 
   // Only match non-marketing names
   if (offset != StringRef::npos) {
     // Must start with 'vN'.
-    if (A.size() >= 2 && (A[0] != 'v' || !std::isdigit(A[1])))
+    if (A.size() >= 2 && (A[0] != 'v' || !std::isdigit(A[1]))) {
       return Error;
+
+}
     // Can't have an extra 'eb'.
-    if (A.find("eb") != StringRef::npos)
+    if (A.find("eb") != StringRef::npos) {
       return Error;
+
+}
   }
 
   // Arch will either be a 'v' name (v7a) or a marketing name (xscale).
@@ -339,26 +371,34 @@ StringRef ARM::getFPUSynonym(StringRef FPU) {
 }
 
 StringRef ARM::getFPUName(unsigned FPUKind) {
-  if (FPUKind >= FK_LAST)
+  if (FPUKind >= FK_LAST) {
     return StringRef();
+
+}
   return FPUNames[FPUKind].getName();
 }
 
 ARM::FPUVersion ARM::getFPUVersion(unsigned FPUKind) {
-  if (FPUKind >= FK_LAST)
+  if (FPUKind >= FK_LAST) {
     return FPUVersion::NONE;
+
+}
   return FPUNames[FPUKind].FPUVer;
 }
 
 ARM::FPURestriction ARM::getFPURestriction(unsigned FPUKind) {
-  if (FPUKind >= FK_LAST)
+  if (FPUKind >= FK_LAST) {
     return FPURestriction::None;
+
+}
   return FPUNames[FPUKind].Restriction;
 }
 
 unsigned ARM::getDefaultFPU(StringRef CPU, ARM::ArchKind AK) {
-  if (CPU == "generic")
+  if (CPU == "generic") {
     return ARM::ARCHNames[static_cast<unsigned>(AK)].DefaultFPU;
+
+}
 
   return StringSwitch<unsigned>(CPU)
 #define ARM_CPU_NAME(NAME, ID, DEFAULT_FPU, IS_DEFAULT, DEFAULT_EXT)           \
@@ -368,8 +408,10 @@ unsigned ARM::getDefaultFPU(StringRef CPU, ARM::ArchKind AK) {
 }
 
 uint64_t ARM::getDefaultExtensions(StringRef CPU, ARM::ArchKind AK) {
-  if (CPU == "generic")
+  if (CPU == "generic") {
     return ARM::ARCHNames[static_cast<unsigned>(AK)].ArchBaseExtensions;
+
+}
 
   return StringSwitch<uint64_t>(CPU)
 #define ARM_CPU_NAME(NAME, ID, DEFAULT_FPU, IS_DEFAULT, DEFAULT_EXT)           \
@@ -383,18 +425,24 @@ uint64_t ARM::getDefaultExtensions(StringRef CPU, ARM::ArchKind AK) {
 bool ARM::getHWDivFeatures(uint64_t HWDivKind,
                            std::vector<StringRef> &Features) {
 
-  if (HWDivKind == AEK_INVALID)
+  if (HWDivKind == AEK_INVALID) {
     return false;
 
-  if (HWDivKind & AEK_HWDIVARM)
+}
+
+  if (HWDivKind & AEK_HWDIVARM) {
     Features.push_back("+hwdiv-arm");
-  else
+  } else {
     Features.push_back("-hwdiv-arm");
 
-  if (HWDivKind & AEK_HWDIVTHUMB)
+}
+
+  if (HWDivKind & AEK_HWDIVTHUMB) {
     Features.push_back("+hwdiv");
-  else
+  } else {
     Features.push_back("-hwdiv");
+
+}
 
   return true;
 }
@@ -402,14 +450,18 @@ bool ARM::getHWDivFeatures(uint64_t HWDivKind,
 bool ARM::getExtensionFeatures(uint64_t Extensions,
                                std::vector<StringRef> &Features) {
 
-  if (Extensions == AEK_INVALID)
+  if (Extensions == AEK_INVALID) {
     return false;
 
+}
+
   for (const auto AE : ARCHExtNames) {
-    if ((Extensions & AE.ID) == AE.ID && AE.Feature)
+    if ((Extensions & AE.ID) == AE.ID && AE.Feature) {
       Features.push_back(AE.Feature);
-    else if (AE.NegFeature)
+    } else if (AE.NegFeature) {
       Features.push_back(AE.NegFeature);
+
+}
   }
 
   return getHWDivFeatures(Extensions, Features);
@@ -433,8 +485,10 @@ unsigned ARM::getArchAttr(ARM::ArchKind AK) {
 
 StringRef ARM::getArchExtName(uint64_t ArchExtKind) {
   for (const auto AE : ARCHExtNames) {
-    if (ArchExtKind == AE.ID)
+    if (ArchExtKind == AE.ID) {
       return AE.getName();
+
+}
   }
   return StringRef();
 }
@@ -450,8 +504,10 @@ static bool stripNegationPrefix(StringRef &Name) {
 StringRef ARM::getArchExtFeature(StringRef ArchExt) {
   bool Negated = stripNegationPrefix(ArchExt);
   for (const auto AE : ARCHExtNames) {
-    if (AE.Feature && ArchExt == AE.getName())
+    if (AE.Feature && ArchExt == AE.getName()) {
       return StringRef(Negated ? AE.NegFeature : AE.Feature);
+
+}
   }
 
   return StringRef();
@@ -468,8 +524,10 @@ static unsigned findDoublePrecisionFPU(unsigned InputFPUKind) {
   // and single precision only); there's no value representing
   // SP restriction without D16. So this test just means 'is it
   // SP only?'.
-  if (InputFPU.Restriction != ARM::FPURestriction::SP_D16)
+  if (InputFPU.Restriction != ARM::FPURestriction::SP_D16) {
     return ARM::FK_INVALID;
+
+}
 
   // Otherwise, look for an FPU entry with all the same fields, except
   // that SP_D16 has been replaced with just D16, representing adding
@@ -494,21 +552,29 @@ bool ARM::appendArchExtFeatures(
   const bool Negated = stripNegationPrefix(ArchExt);
   uint64_t ID = parseArchExt(ArchExt);
 
-  if (ID == AEK_INVALID)
+  if (ID == AEK_INVALID) {
     return false;
+
+}
 
   for (const auto AE : ARCHExtNames) {
     if (Negated) {
-      if ((AE.ID & ID) == ID && AE.NegFeature)
+      if ((AE.ID & ID) == ID && AE.NegFeature) {
         Features.push_back(AE.NegFeature);
+
+}
     } else {
-      if ((AE.ID & ID) == AE.ID && AE.Feature)
+      if ((AE.ID & ID) == AE.ID && AE.Feature) {
         Features.push_back(AE.Feature);
+
+}
     }
   }
 
-  if (CPU == "")
+  if (CPU == "") {
     CPU = "generic";
+
+}
 
   if (ArchExt == "fp" || ArchExt == "fp.dp") {
     unsigned FPUKind;
@@ -530,21 +596,27 @@ bool ARM::appendArchExtFeatures(
 
 StringRef ARM::getHWDivName(uint64_t HWDivKind) {
   for (const auto D : HWDivNames) {
-    if (HWDivKind == D.ID)
+    if (HWDivKind == D.ID) {
       return D.getName();
+
+}
   }
   return StringRef();
 }
 
 StringRef ARM::getDefaultCPU(StringRef Arch) {
   ArchKind AK = parseArch(Arch);
-  if (AK == ArchKind::INVALID)
+  if (AK == ArchKind::INVALID) {
     return StringRef();
+
+}
 
   // Look for multiple AKs to find the default for pair AK+Name.
   for (const auto CPU : CPUNames) {
-    if (CPU.ArchID == AK && CPU.Default)
+    if (CPU.ArchID == AK && CPU.Default) {
       return CPU.getName();
+
+}
   }
 
   // If we can't find a default then target the architecture instead
@@ -554,32 +626,40 @@ StringRef ARM::getDefaultCPU(StringRef Arch) {
 uint64_t ARM::parseHWDiv(StringRef HWDiv) {
   StringRef Syn = getHWDivSynonym(HWDiv);
   for (const auto D : HWDivNames) {
-    if (Syn == D.getName())
+    if (Syn == D.getName()) {
       return D.ID;
+
+}
   }
   return AEK_INVALID;
 }
 
 uint64_t ARM::parseArchExt(StringRef ArchExt) {
   for (const auto A : ARCHExtNames) {
-    if (ArchExt == A.getName())
+    if (ArchExt == A.getName()) {
       return A.ID;
+
+}
   }
   return AEK_INVALID;
 }
 
 ARM::ArchKind ARM::parseCPUArch(StringRef CPU) {
   for (const auto C : CPUNames) {
-    if (CPU == C.getName())
+    if (CPU == C.getName()) {
       return C.ArchID;
+
+}
   }
   return ArchKind::INVALID;
 }
 
 void ARM::fillValidCPUArchList(SmallVectorImpl<StringRef> &Values) {
   for (const CpuNames<ArchKind> &Arch : CPUNames) {
-    if (Arch.ArchID != ArchKind::INVALID)
+    if (Arch.ArchID != ArchKind::INVALID) {
       Values.push_back(Arch.getName());
+
+}
   }
 }
 
@@ -590,14 +670,20 @@ StringRef ARM::computeDefaultTargetABI(const Triple &TT, StringRef CPU) {
   if (TT.isOSBinFormatMachO()) {
     if (TT.getEnvironment() == Triple::EABI ||
         TT.getOS() == Triple::UnknownOS ||
-        parseArchProfile(ArchName) == ProfileKind::M)
+        parseArchProfile(ArchName) == ProfileKind::M) {
       return "aapcs";
-    if (TT.isWatchABI())
+
+}
+    if (TT.isWatchABI()) {
       return "aapcs16";
+
+}
     return "apcs-gnu";
-  } else if (TT.isOSWindows())
+  } else if (TT.isOSWindows()) {
     // FIXME: this is invalid for WindowsCE.
     return "aapcs";
+
+}
 
   // Select the default based on the platform.
   switch (TT.getEnvironment()) {
@@ -611,10 +697,14 @@ StringRef ARM::computeDefaultTargetABI(const Triple &TT, StringRef CPU) {
   case Triple::EABI:
     return "aapcs";
   default:
-    if (TT.isOSNetBSD())
+    if (TT.isOSNetBSD()) {
       return "apcs-gnu";
-    if (TT.isOSOpenBSD())
+
+}
+    if (TT.isOSOpenBSD()) {
       return "aapcs-linux";
+
+}
     return "aapcs";
   }
 }

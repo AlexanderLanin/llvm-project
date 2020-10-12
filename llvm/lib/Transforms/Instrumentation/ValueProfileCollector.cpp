@@ -51,8 +51,10 @@ public:
   PluginChain(Function &F) : PluginChain<Ts...>(F), Plugin(F) {}
 
   void get(InstrProfValueKind K, std::vector<CandidateInfo> &Candidates) {
-    if (K == PluginT::Kind)
+    if (K == PluginT::Kind) {
       Plugin.run(Candidates);
+
+}
     Base::get(K, Candidates);
   }
 };

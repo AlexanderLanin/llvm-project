@@ -63,8 +63,10 @@ void InheritanceHierarchyWriter::WriteNode(QualType Type, bool FromVirtual) {
   QualType CanonType = Context.getCanonicalType(Type);
 
   if (FromVirtual) {
-    if (KnownVirtualBases.find(CanonType) != KnownVirtualBases.end())
+    if (KnownVirtualBases.find(CanonType) != KnownVirtualBases.end()) {
       return;
+
+}
 
     // We haven't seen this virtual base before, so display it and
     // its bases.
@@ -97,8 +99,10 @@ void InheritanceHierarchyWriter::WriteNode(QualType Type, bool FromVirtual) {
 
     // If this is not virtual inheritance, bump the direct base
     // count for the type.
-    if (!Base.isVirtual())
+    if (!Base.isVirtual()) {
       ++DirectBaseCount[CanonBaseType];
+
+}
 
     // Write out the node (if we need to).
     WriteNode(Base.getType(), Base.isVirtual());
@@ -126,8 +130,10 @@ InheritanceHierarchyWriter::WriteNodeReference(QualType Type,
   QualType CanonType = Context.getCanonicalType(Type);
 
   Out << "Class_" << CanonType.getAsOpaquePtr();
-  if (!FromVirtual)
+  if (!FromVirtual) {
     Out << "_" << DirectBaseCount[CanonType];
+
+}
   return Out;
 }
 

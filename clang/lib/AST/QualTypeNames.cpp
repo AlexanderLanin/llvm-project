@@ -316,7 +316,9 @@ static NestedNameSpecifier *createNestedNameSpecifierForScopeOf(
 static NestedNameSpecifier *createNestedNameSpecifierForScopeOf(
     const ASTContext &Ctx, const Type *TypePtr,
     bool FullyQualified, bool WithGlobalNsPrefix) {
-  if (!TypePtr) return nullptr;
+  if (!TypePtr) { return nullptr;
+
+}
 
   Decl *Decl = nullptr;
   // There are probably other cases ...
@@ -330,7 +332,9 @@ static NestedNameSpecifier *createNestedNameSpecifierForScopeOf(
     Decl = TypePtr->getAsCXXRecordDecl();
   }
 
-  if (!Decl) return nullptr;
+  if (!Decl) { return nullptr;
+
+}
 
   return createNestedNameSpecifierForScopeOf(
       Ctx, Decl, FullyQualified, WithGlobalNsPrefix);
@@ -343,7 +347,9 @@ NestedNameSpecifier *createNestedNameSpecifier(const ASTContext &Ctx,
     // Ignore inline namespace;
     Namespace = dyn_cast<NamespaceDecl>(Namespace->getDeclContext());
   }
-  if (!Namespace) return nullptr;
+  if (!Namespace) { return nullptr;
+
+}
 
   bool FullyQualified = true;  // doesn't matter, DeclContexts are namespaces
   return NestedNameSpecifier::Create(
@@ -401,10 +407,12 @@ QualType getFullyQualifiedType(QualType QT, const ASTContext &Ctx,
     QT = getFullyQualifiedType(QT->getPointeeType(), Ctx, WithGlobalNsPrefix);
     // Add the r- or l-value reference type back to the fully
     // qualified one.
-    if (IsLValueRefTy)
+    if (IsLValueRefTy) {
       QT = Ctx.getLValueReferenceType(QT);
-    else
+    } else {
       QT = Ctx.getRValueReferenceType(QT);
+
+}
     // Add back the qualifiers.
     QT = Ctx.getQualifiedType(QT, Quals);
     return QT;

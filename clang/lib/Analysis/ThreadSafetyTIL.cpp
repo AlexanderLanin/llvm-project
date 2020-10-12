@@ -104,8 +104,10 @@ const SExpr *til::getCanonicalVal(const SExpr *E) {
 SExpr *til::simplifyToCanonicalVal(SExpr *E) {
   while (true) {
     if (auto *V = dyn_cast<Variable>(E)) {
-      if (V->kind() != Variable::VK_Let)
+      if (V->kind() != Variable::VK_Let) {
         return V;
+
+}
       // Eliminate redundant variables, e.g. x = y, or x = 5,
       // but keep anything more complicated.
       if (til::ThreadSafetyTIL::isTrivial(V->definition())) {
@@ -115,8 +117,10 @@ SExpr *til::simplifyToCanonicalVal(SExpr *E) {
       return V;
     }
     if (auto *Ph = dyn_cast<Phi>(E)) {
-      if (Ph->status() == Phi::PH_Incomplete)
+      if (Ph->status() == Phi::PH_Incomplete) {
         simplifyIncompleteArg(Ph);
+
+}
       // Eliminate redundant Phi nodes.
       if (Ph->status() == Phi::PH_SingleVal) {
         E = Ph->values()[0];
@@ -139,8 +143,10 @@ void til::simplifyIncompleteArg(til::Phi *Ph) {
   SExpr *E0 = simplifyToCanonicalVal(Ph->values()[0]);
   for (unsigned i = 1, n = Ph->values().size(); i < n; ++i) {
     SExpr *Ei = simplifyToCanonicalVal(Ph->values()[i]);
-    if (Ei == Ph)
+    if (Ei == Ph) {
       continue;  // Recursive reference to itself.  Don't count.
+
+}
     if (Ei != E0) {
       return;    // Status is already set to MultiVal.
     }
@@ -150,10 +156,14 @@ void til::simplifyIncompleteArg(til::Phi *Ph) {
 
 // Renumbers the arguments and instructions to have unique, sequential IDs.
 unsigned BasicBlock::renumberInstrs(unsigned ID) {
-  for (auto *Arg : Args)
+  for (auto *Arg : Args) {
     Arg->setID(this, ID++);
-  for (auto *Instr : Instrs)
+
+}
+  for (auto *Instr : Instrs) {
     Instr->setID(this, ID++);
+
+}
   TermInstr->setID(this, ID++);
   return ID;
 }
@@ -164,10 +174,14 @@ unsigned BasicBlock::renumberInstrs(unsigned ID) {
 // block, and ID should be the total number of blocks.
 unsigned BasicBlock::topologicalSort(SimpleArray<BasicBlock *> &Blocks,
                                      unsigned ID) {
-  if (Visited) return ID;
+  if (Visited) { return ID;
+
+}
   Visited = true;
-  for (auto *Block : successors())
+  for (auto *Block : successors()) {
     ID = Block->topologicalSort(Blocks, ID);
+
+}
   // set ID and update block array in place.
   // We may lose pointers to unreachable blocks.
   assert(ID > 0);
@@ -190,12 +204,18 @@ unsigned BasicBlock::topologicalFinalSort(SimpleArray<BasicBlock *> &Blocks,
                                           unsigned ID) {
   // Visited is assumed to have been set by the topologicalSort.  This pass
   // assumes !Visited means that we've visited this node before.
-  if (!Visited) return ID;
+  if (!Visited) { return ID;
+
+}
   Visited = false;
-  if (DominatorNode.Parent)
+  if (DominatorNode.Parent) {
     ID = DominatorNode.Parent->topologicalFinalSort(Blocks, ID);
-  for (auto *Pred : Predecessors)
+
+}
+  for (auto *Pred : Predecessors) {
     ID = Pred->topologicalFinalSort(Blocks, ID);
+
+}
   assert(static_cast<size_t>(ID) < Blocks.size());
   BlockID = ID++;
   Blocks[BlockID] = this;
@@ -210,7 +230,9 @@ void BasicBlock::computeDominator() {
   // Walk backwards from each predecessor to find the common dominator node.
   for (auto *Pred : Predecessors) {
     // Skip back-edges
-    if (Pred->BlockID >= BlockID) continue;
+    if (Pred->BlockID >= BlockID) { continue;
+
+}
     // If we don't yet have a candidate for dominator yet, take this one.
     if (Candidate == nullptr) {
       Candidate = Pred;
@@ -219,10 +241,12 @@ void BasicBlock::computeDominator() {
     // Walk the alternate and current candidate back to find a common ancestor.
     auto *Alternate = Pred;
     while (Alternate != Candidate) {
-      if (Candidate->BlockID > Alternate->BlockID)
+      if (Candidate->BlockID > Alternate->BlockID) {
         Candidate = Candidate->DominatorNode.Parent;
-      else
+      } else {
         Alternate = Alternate->DominatorNode.Parent;
+
+}
     }
   }
   DominatorNode.Parent = Candidate;
@@ -237,7 +261,9 @@ void BasicBlock::computePostDominator() {
   // Walk back from each predecessor to find the common post-dominator node.
   for (auto *Succ : successors()) {
     // Skip back-edges
-    if (Succ->BlockID <= BlockID) continue;
+    if (Succ->BlockID <= BlockID) { continue;
+
+}
     // If we don't yet have a candidate for post-dominator yet, take this one.
     if (Candidate == nullptr) {
       Candidate = Succ;
@@ -246,10 +272,12 @@ void BasicBlock::computePostDominator() {
     // Walk the alternate and current candidate back to find a common ancestor.
     auto *Alternate = Succ;
     while (Alternate != Candidate) {
-      if (Candidate->BlockID < Alternate->BlockID)
+      if (Candidate->BlockID < Alternate->BlockID) {
         Candidate = Candidate->PostDominatorNode.Parent;
-      else
+      } else {
         Alternate = Alternate->PostDominatorNode.Parent;
+
+}
     }
   }
   PostDominatorNode.Parent = Candidate;
@@ -259,8 +287,10 @@ void BasicBlock::computePostDominator() {
 // Renumber instructions in all blocks
 void SCFG::renumberInstrs() {
   unsigned InstrID = 0;
-  for (auto *Block : Blocks)
+  for (auto *Block : Blocks) {
     InstrID = Block->renumberInstrs(InstrID);
+
+}
 }
 
 static inline void computeNodeSize(BasicBlock *B,
@@ -302,8 +332,10 @@ void SCFG::computeNormalForm() {
   }
 
   // Compute dominators.
-  for (auto *Block : Blocks)
+  for (auto *Block : Blocks) {
     Block->computeDominator();
+
+}
 
   // Once dominators have been computed, the final sort may be performed.
   unsigned NumBlocks = Exit->topologicalFinalSort(Blocks, 0);

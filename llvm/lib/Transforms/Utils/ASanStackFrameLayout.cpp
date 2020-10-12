@@ -41,12 +41,14 @@ static const size_t kMinAlignment = 16;
 static size_t VarAndRedzoneSize(size_t Size, size_t Granularity,
                                 size_t Alignment) {
   size_t Res = 0;
-  if (Size <= 4)  Res = 16;
-  else if (Size <= 16) Res = 32;
-  else if (Size <= 128) Res = Size + 32;
-  else if (Size <= 512) Res = Size + 64;
-  else if (Size <= 4096) Res = Size + 128;
-  else                   Res = Size + 256;
+  if (Size <= 4) {  Res = 16;
+  } else if (Size <= 16) { Res = 32;
+  } else if (Size <= 128) { Res = Size + 32;
+  } else if (Size <= 512) { Res = Size + 64;
+  } else if (Size <= 4096) { Res = Size + 128;
+  } else {                   Res = Size + 256;
+
+}
   return alignTo(std::max(Res, 2 * Granularity), Alignment);
 }
 
@@ -59,8 +61,10 @@ ComputeASanStackFrameLayout(SmallVectorImpl<ASanStackVariableDescription> &Vars,
          MinHeaderSize >= Granularity);
   const size_t NumVars = Vars.size();
   assert(NumVars > 0);
-  for (size_t i = 0; i < NumVars; i++)
+  for (size_t i = 0; i < NumVars; i++) {
     Vars[i].Alignment = std::max(Vars[i].Alignment, kMinAlignment);
+
+}
 
   llvm::stable_sort(Vars, CompareVars);
 
@@ -124,8 +128,10 @@ GetShadowBytes(const SmallVectorImpl<ASanStackVariableDescription> &Vars,
     SB.resize(Var.Offset / Granularity, kAsanStackMidRedzoneMagic);
 
     SB.resize(SB.size() + Var.Size / Granularity, 0);
-    if (Var.Size % Granularity)
+    if (Var.Size % Granularity) {
       SB.push_back(Var.Size % Granularity);
+
+}
   }
   SB.resize(Layout.FrameSize / Granularity, kAsanStackRightRedzoneMagic);
   return SB;

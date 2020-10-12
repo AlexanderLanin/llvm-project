@@ -286,8 +286,10 @@ TEST(JSONTest, Inspection) {
       ASSERT_TRUE(E.getAsObject());
       EXPECT_EQ(E.getAsObject()->getString("time"),
                 llvm::Optional<llvm::StringRef>("arrow"));
-    } else
+    } else {
       EXPECT_FALSE(E.getAsObject());
+
+}
   }
 }
 
@@ -370,8 +372,10 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
 }
 bool fromJSON(const Value &E, CustomStruct &R) {
   ObjectMapper O(E);
-  if (!O || !O.map("str", R.S) || !O.map("int", R.I))
+  if (!O || !O.map("str", R.S) || !O.map("int", R.I)) {
     return false;
+
+}
   O.map("bool", R.B);
   return true;
 }

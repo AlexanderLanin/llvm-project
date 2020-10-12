@@ -16,8 +16,10 @@ using namespace llvm;
 
 Error minidump2yaml(raw_ostream &Out, const object::MinidumpFile &Obj) {
   auto ExpectedObject = MinidumpYAML::Object::create(Obj);
-  if (!ExpectedObject)
+  if (!ExpectedObject) {
     return ExpectedObject.takeError();
+
+}
   yaml::Output Output(Out);
   Output << *ExpectedObject;
   return llvm::Error::success();

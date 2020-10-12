@@ -68,7 +68,9 @@ void ScheduleDAG::clearDAG() {
 }
 
 const MCInstrDesc *ScheduleDAG::getNodeDesc(const SDNode *Node) const {
-  if (!Node || !Node->isMachineOpcode()) return nullptr;
+  if (!Node || !Node->isMachineOpcode()) { return nullptr;
+
+}
   return &TII->get(Node->getMachineOpcode());
 }
 
@@ -83,8 +85,10 @@ LLVM_DUMP_METHOD void SDep::dump(const TargetRegisterInfo *TRI) const {
   switch (getKind()) {
   case Data:
     dbgs() << " Latency=" << getLatency();
-    if (TRI && isAssignedRegDep())
+    if (TRI && isAssignedRegDep()) {
       dbgs() << " Reg=" << printReg(getReg(), TRI);
+
+}
     break;
   case Anti:
   case Output:
@@ -109,8 +113,10 @@ bool SUnit::addPred(const SDep &D, bool Required) {
   for (SDep &PredDep : Preds) {
     // Zero-latency weak edges may be added purely for heuristic ordering. Don't
     // add them if another kind of edge already exists.
-    if (!Required && PredDep.getSUnit() == D.getSUnit())
+    if (!Required && PredDep.getSUnit() == D.getSUnit()) {
       return false;
+
+}
     if (PredDep.overlaps(D)) {
       // Extend the latency if needed. Equivalent to
       // removePred(PredDep) + addPred(D).
@@ -175,8 +181,10 @@ bool SUnit::addPred(const SDep &D, bool Required) {
 void SUnit::removePred(const SDep &D) {
   // Find the matching predecessor.
   SmallVectorImpl<SDep>::iterator I = llvm::find(Preds, D);
-  if (I == Preds.end())
+  if (I == Preds.end()) {
     return;
+
+}
   // Find the corresponding successor in N.
   SDep P = D;
   P.setSUnit(this);
@@ -193,17 +201,17 @@ void SUnit::removePred(const SDep &D) {
     --N->NumSuccs;
   }
   if (!N->isScheduled) {
-    if (D.isWeak())
+    if (D.isWeak()) {
       --WeakPredsLeft;
-    else {
+    } else {
       assert(NumPredsLeft > 0 && "NumPredsLeft will underflow!");
       --NumPredsLeft;
     }
   }
   if (!isScheduled) {
-    if (D.isWeak())
+    if (D.isWeak()) {
       --N->WeakSuccsLeft;
-    else {
+    } else {
       assert(N->NumSuccsLeft > 0 && "NumSuccsLeft will underflow!");
       --N->NumSuccsLeft;
     }
@@ -215,7 +223,9 @@ void SUnit::removePred(const SDep &D) {
 }
 
 void SUnit::setDepthDirty() {
-  if (!isDepthCurrent) return;
+  if (!isDepthCurrent) { return;
+
+}
   SmallVector<SUnit*, 8> WorkList;
   WorkList.push_back(this);
   do {
@@ -223,14 +233,18 @@ void SUnit::setDepthDirty() {
     SU->isDepthCurrent = false;
     for (SDep &SuccDep : SU->Succs) {
       SUnit *SuccSU = SuccDep.getSUnit();
-      if (SuccSU->isDepthCurrent)
+      if (SuccSU->isDepthCurrent) {
         WorkList.push_back(SuccSU);
+
+}
     }
   } while (!WorkList.empty());
 }
 
 void SUnit::setHeightDirty() {
-  if (!isHeightCurrent) return;
+  if (!isHeightCurrent) { return;
+
+}
   SmallVector<SUnit*, 8> WorkList;
   WorkList.push_back(this);
   do {
@@ -238,23 +252,29 @@ void SUnit::setHeightDirty() {
     SU->isHeightCurrent = false;
     for (SDep &PredDep : SU->Preds) {
       SUnit *PredSU = PredDep.getSUnit();
-      if (PredSU->isHeightCurrent)
+      if (PredSU->isHeightCurrent) {
         WorkList.push_back(PredSU);
+
+}
     }
   } while (!WorkList.empty());
 }
 
 void SUnit::setDepthToAtLeast(unsigned NewDepth) {
-  if (NewDepth <= getDepth())
+  if (NewDepth <= getDepth()) {
     return;
+
+}
   setDepthDirty();
   Depth = NewDepth;
   isDepthCurrent = true;
 }
 
 void SUnit::setHeightToAtLeast(unsigned NewHeight) {
-  if (NewHeight <= getHeight())
+  if (NewHeight <= getHeight()) {
     return;
+
+}
   setHeightDirty();
   Height = NewHeight;
   isHeightCurrent = true;
@@ -271,10 +291,10 @@ void SUnit::ComputeDepth() {
     unsigned MaxPredDepth = 0;
     for (const SDep &PredDep : Cur->Preds) {
       SUnit *PredSU = PredDep.getSUnit();
-      if (PredSU->isDepthCurrent)
+      if (PredSU->isDepthCurrent) {
         MaxPredDepth = std::max(MaxPredDepth,
                                 PredSU->Depth + PredDep.getLatency());
-      else {
+      } else {
         Done = false;
         WorkList.push_back(PredSU);
       }
@@ -302,10 +322,10 @@ void SUnit::ComputeHeight() {
     unsigned MaxSuccHeight = 0;
     for (const SDep &SuccDep : Cur->Succs) {
       SUnit *SuccSU = SuccDep.getSUnit();
-      if (SuccSU->isHeightCurrent)
+      if (SuccSU->isHeightCurrent) {
         MaxSuccHeight = std::max(MaxSuccHeight,
                                  SuccSU->Height + SuccDep.getLatency());
-      else {
+      } else {
         Done = false;
         WorkList.push_back(SuccSU);
       }
@@ -323,18 +343,24 @@ void SUnit::ComputeHeight() {
 }
 
 void SUnit::biasCriticalPath() {
-  if (NumPreds < 2)
+  if (NumPreds < 2) {
     return;
+
+}
 
   SUnit::pred_iterator BestI = Preds.begin();
   unsigned MaxDepth = BestI->getSUnit()->getDepth();
   for (SUnit::pred_iterator I = std::next(BestI), E = Preds.end(); I != E;
        ++I) {
-    if (I->getKind() == SDep::Data && I->getSUnit()->getDepth() > MaxDepth)
+    if (I->getKind() == SDep::Data && I->getSUnit()->getDepth() > MaxDepth) {
       BestI = I;
+
+}
   }
-  if (BestI != Preds.begin())
+  if (BestI != Preds.begin()) {
     std::swap(*Preds.begin(), *BestI);
+
+}
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
@@ -475,8 +501,10 @@ void ScheduleDAGTopologicalSort::InitDAGTopologicalSorting() {
   Node2Index.resize(DAGSize);
 
   // Initialize the data structures.
-  if (ExitSU)
+  if (ExitSU) {
     WorkList.push_back(ExitSU);
+
+}
   for (SUnit &SU : SUnits) {
     int NodeNum = SU.NodeNum;
     unsigned Degree = SU.Succs.size();
@@ -495,14 +523,18 @@ void ScheduleDAGTopologicalSort::InitDAGTopologicalSorting() {
   while (!WorkList.empty()) {
     SUnit *SU = WorkList.back();
     WorkList.pop_back();
-    if (SU->NodeNum < DAGSize)
+    if (SU->NodeNum < DAGSize) {
       Allocate(SU->NodeNum, --Id);
+
+}
     for (const SDep &PredDep : SU->Preds) {
       SUnit *SU = PredDep.getSUnit();
-      if (SU->NodeNum < DAGSize && !--Node2Index[SU->NodeNum])
+      if (SU->NodeNum < DAGSize && !--Node2Index[SU->NodeNum]) {
         // If all dependencies of the node are processed already,
         // then the node can be computed now.
         WorkList.push_back(SU);
+
+}
     }
   }
 
@@ -528,8 +560,10 @@ void ScheduleDAGTopologicalSort::FixOrder() {
   }
 
   // Otherwise apply updates one-by-one.
-  for (auto &U : Updates)
+  for (auto &U : Updates) {
     AddPred(U.first, U.second);
+
+}
   Updates.clear();
 }
 
@@ -539,8 +573,10 @@ void ScheduleDAGTopologicalSort::AddPredQueued(SUnit *Y, SUnit *X) {
   // chosen.
   Dirty = Dirty || Updates.size() > 10;
 
-  if (Dirty)
+  if (Dirty) {
     return;
+
+}
 
   Updates.emplace_back(Y, X);
 }
@@ -581,8 +617,10 @@ void ScheduleDAGTopologicalSort::DFS(const SUnit *SU, int UpperBound,
          : make_range(SU->Succs.rbegin(), SU->Succs.rend())) {
       unsigned s = SuccDep.getSUnit()->NodeNum;
       // Edges to non-SUnits are allowed but ignored (e.g. ExitSU).
-      if (s >= Node2Index.size())
+      if (s >= Node2Index.size()) {
         continue;
+
+}
       if (Node2Index[s] == UpperBound) {
         HasLoop = true;
         return;
@@ -623,8 +661,10 @@ std::vector<int> ScheduleDAGTopologicalSort::GetSubGraph(const SUnit &StartSU,
       const SUnit *Succ = SU->Succs[I].getSUnit();
       unsigned s = Succ->NodeNum;
       // Edges to non-SUnits are allowed but ignored (e.g. ExitSU).
-      if (Succ->isBoundaryNode())
+      if (Succ->isBoundaryNode()) {
         continue;
+
+}
       if (Node2Index[s] == UpperBound) {
         Found = true;
         continue;
@@ -657,8 +697,10 @@ std::vector<int> ScheduleDAGTopologicalSort::GetSubGraph(const SUnit &StartSU,
       const SUnit *Pred = SU->Preds[I].getSUnit();
       unsigned s = Pred->NodeNum;
       // Edges to non-SUnits are allowed but ignored (e.g. EntrySU).
-      if (Pred->isBoundaryNode())
+      if (Pred->isBoundaryNode()) {
         continue;
+
+}
       if (Node2Index[s] == LowerBound) {
         Found = true;
         continue;
@@ -704,12 +746,18 @@ void ScheduleDAGTopologicalSort::Shift(BitVector& Visited, int LowerBound,
 bool ScheduleDAGTopologicalSort::WillCreateCycle(SUnit *TargetSU, SUnit *SU) {
   FixOrder();
   // Is SU reachable from TargetSU via successor edges?
-  if (IsReachable(SU, TargetSU))
+  if (IsReachable(SU, TargetSU)) {
     return true;
-  for (const SDep &PredDep : TargetSU->Preds)
+
+}
+  for (const SDep &PredDep : TargetSU->Preds) {
     if (PredDep.isAssignedRegDep() &&
-        IsReachable(SU, PredDep.getSUnit()))
+        IsReachable(SU, PredDep.getSUnit())) {
       return true;
+
+}
+
+}
   return false;
 }
 

@@ -45,18 +45,22 @@ public:
   }
 
   Error removeObject(ObjHandleT H) {
-    if (SymTab.count(H))
+    if (SymTab.count(H)) {
       return Error::success();
-    else
+    } else {
       return make_error<ObjectNotFound>(H);
+
+}
   }
 
   JITSymbol findSymbol(StringRef Name, bool ExportedSymbolsOnly) {
     for (auto KV : SymTab) {
-      if (auto Sym = KV.second(Name, ExportedSymbolsOnly))
+      if (auto Sym = KV.second(Name, ExportedSymbolsOnly)) {
         return Sym;
-      else if (auto Err = Sym.takeError())
+      } else if (auto Err = Sym.takeError()) {
         return std::move(Err);
+
+}
     }
     return JITSymbol(nullptr);
   }
@@ -64,17 +68,21 @@ public:
   JITSymbol findSymbolIn(ObjHandleT H, StringRef Name,
                          bool ExportedSymbolsOnly) {
     auto LI = SymTab.find(H);
-    if (LI != SymTab.end())
+    if (LI != SymTab.end()) {
       return LI->second(Name, ExportedSymbolsOnly);
-    else
+    } else {
       return make_error<ObjectNotFound>(H);
+
+}
   }
 
   Error emitAndFinalize(ObjHandleT H) {
-    if (SymTab.count(H))
+    if (SymTab.count(H)) {
       return Error::success();
-    else
+    } else {
       return make_error<ObjectNotFound>(H);
+
+}
   }
 
 private:
@@ -88,8 +96,10 @@ MockObjectLayer::ObjectPtr createTestObject() {
   OrcNativeTarget::initialize();
   auto TM = std::unique_ptr<TargetMachine>(EngineBuilder().selectTarget());
 
-  if (!TM)
+  if (!TM) {
     return nullptr;
+
+}
 
   LLVMContext Ctx;
   ModuleBuilder MB(Ctx, TM->getTargetTriple().str(), "TestModule");
@@ -111,8 +121,10 @@ MockObjectLayer::ObjectPtr createTestObject() {
 TEST(RemoteObjectLayer, AddObject) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -155,8 +167,10 @@ TEST(RemoteObjectLayer, AddObject) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   cantFail(Client.addObject(std::move(TestObject),
@@ -168,8 +182,10 @@ TEST(RemoteObjectLayer, AddObject) {
 TEST(RemoteObjectLayer, AddObjectFailure) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -202,8 +218,10 @@ TEST(RemoteObjectLayer, AddObjectFailure) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto HandleOrErr = Client.addObject(std::move(TestObject),
@@ -223,8 +241,10 @@ TEST(RemoteObjectLayer, AddObjectFailure) {
 TEST(RemoteObjectLayer, RemoveObject) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -254,8 +274,10 @@ TEST(RemoteObjectLayer, RemoveObject) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto H = cantFail(Client.addObject(std::move(TestObject),
@@ -270,8 +292,10 @@ TEST(RemoteObjectLayer, RemoveObject) {
 TEST(RemoteObjectLayer, RemoveObjectFailure) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -305,8 +329,10 @@ TEST(RemoteObjectLayer, RemoveObjectFailure) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto H = cantFail(Client.addObject(std::move(TestObject),
@@ -326,8 +352,10 @@ TEST(RemoteObjectLayer, RemoveObjectFailure) {
 TEST(RemoteObjectLayer, FindSymbol) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -351,10 +379,14 @@ TEST(RemoteObjectLayer, FindSymbol) {
        MockObjectLayer::SymbolLookupTable &SymTab) {
       SymTab[42] =
         [](StringRef Name, bool ExportedSymbolsOnly) -> JITSymbol {
-          if (Name == "foobar")
+          if (Name == "foobar") {
             return JITSymbol(0x12348765, JITSymbolFlags::Exported);
-          if (Name == "badsymbol")
+
+}
+          if (Name == "badsymbol") {
             return make_error<JITSymbolNotFound>(std::string(Name));
+
+}
           return nullptr;
         };
       return 42;
@@ -369,8 +401,10 @@ TEST(RemoteObjectLayer, FindSymbol) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   cantFail(Client.addObject(std::move(TestObject),
@@ -408,8 +442,10 @@ TEST(RemoteObjectLayer, FindSymbol) {
 TEST(RemoteObjectLayer, FindSymbolIn) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -433,16 +469,20 @@ TEST(RemoteObjectLayer, FindSymbolIn) {
        MockObjectLayer::SymbolLookupTable &SymTab) {
       SymTab[42] =
         [](StringRef Name, bool ExportedSymbolsOnly) -> JITSymbol {
-          if (Name == "foobar")
+          if (Name == "foobar") {
             return JITSymbol(0x12348765, JITSymbolFlags::Exported);
+
+}
           return make_error<JITSymbolNotFound>(std::string(Name));
         };
       // Dummy symbol table entry - this should not be visible to
       // findSymbolIn.
       SymTab[43] =
         [](StringRef Name, bool ExportedSymbolsOnly) -> JITSymbol {
-          if (Name == "barbaz")
+          if (Name == "barbaz") {
             return JITSymbol(0xdeadbeef, JITSymbolFlags::Exported);
+
+}
           return make_error<JITSymbolNotFound>(std::string(Name));
         };
 
@@ -458,8 +498,10 @@ TEST(RemoteObjectLayer, FindSymbolIn) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto H = cantFail(Client.addObject(std::move(TestObject),
@@ -486,8 +528,10 @@ TEST(RemoteObjectLayer, FindSymbolIn) {
 TEST(RemoteObjectLayer, EmitAndFinalize) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -517,8 +561,10 @@ TEST(RemoteObjectLayer, EmitAndFinalize) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto H = cantFail(Client.addObject(std::move(TestObject),
@@ -534,8 +580,10 @@ TEST(RemoteObjectLayer, EmitAndFinalize) {
 TEST(RemoteObjectLayer, EmitAndFinalizeFailure) {
   llvm::orc::rpc::registerStringError<rpc::RawByteChannel>();
   auto TestObject = createTestObject();
-  if (!TestObject)
+  if (!TestObject) {
     return;
+
+}
 
   auto Channels = createPairedQueueChannels();
 
@@ -567,8 +615,10 @@ TEST(RemoteObjectLayer, EmitAndFinalizeFailure) {
 
   auto ServerThread =
     std::thread([&]() {
-      while (!Finished)
+      while (!Finished) {
         cantFail(ServerEP.handleOne());
+
+}
     });
 
   auto H = cantFail(Client.addObject(std::move(TestObject),

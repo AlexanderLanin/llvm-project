@@ -30,10 +30,14 @@ static void getChunkMetadataNodes(T &MDUser, int &I,
   for (auto &MD : MDs) {
     SeenNodes.insert(MD.second);
     if (I < (int)ChunksToKeep.size()) {
-      if (ChunksToKeep[I].contains(SeenNodes.size()))
+      if (ChunksToKeep[I].contains(SeenNodes.size())) {
         NodesToKeep.insert(MD.second);
-      if (ChunksToKeep[I].end == (int)SeenNodes.size())
+
+}
+      if (ChunksToKeep[I].end == (int)SeenNodes.size()) {
         ++I;
+
+}
     }
   }
 }
@@ -44,9 +48,13 @@ static void eraseMetadataIfOutsideChunk(T &MDUser,
                                         const std::set<MDNode *> &NodesToKeep) {
   SmallVector<std::pair<unsigned, MDNode *>, 4> MDs;
   MDUser.getAllMetadata(MDs);
-  for (int I = 0, E = MDs.size(); I != E; ++I)
-    if (!NodesToKeep.count(MDs[I].second))
+  for (int I = 0, E = MDs.size(); I != E; ++I) {
+    if (!NodesToKeep.count(MDs[I].second)) {
       MDUser.setMetadata(I, NULL);
+
+}
+
+}
 }
 
 /// Removes all the Named and Unnamed Metadata Nodes, as well as any debug
@@ -58,25 +66,37 @@ static void extractMetadataFromModule(const std::vector<Chunk> &ChunksToKeep,
   int I = 0;
 
   // Add chunk MDNodes used by GVs, Functions, and Instructions to set
-  for (auto &GV : Program->globals())
+  for (auto &GV : Program->globals()) {
     getChunkMetadataNodes(GV, I, ChunksToKeep, SeenNodes, NodesToKeep);
+
+}
 
   for (auto &F : *Program) {
     getChunkMetadataNodes(F, I, ChunksToKeep, SeenNodes, NodesToKeep);
-    for (auto &BB : F)
-      for (auto &Inst : BB)
+    for (auto &BB : F) {
+      for (auto &Inst : BB) {
         getChunkMetadataNodes(Inst, I, ChunksToKeep, SeenNodes, NodesToKeep);
+
+}
+
+}
   }
 
   // Once more, go over metadata nodes, but deleting the ones outside chunks
-  for (auto &GV : Program->globals())
+  for (auto &GV : Program->globals()) {
     eraseMetadataIfOutsideChunk(GV, NodesToKeep);
+
+}
 
   for (auto &F : *Program) {
     eraseMetadataIfOutsideChunk(F, NodesToKeep);
-    for (auto &BB : F)
-      for (auto &Inst : BB)
+    for (auto &BB : F) {
+      for (auto &Inst : BB) {
         eraseMetadataIfOutsideChunk(Inst, NodesToKeep);
+
+}
+
+}
   }
 
 
@@ -85,17 +105,25 @@ static void extractMetadataFromModule(const std::vector<Chunk> &ChunksToKeep,
   std::vector<NamedMDNode *> NamedNodesToDelete;
   for (auto &MD : Program->named_metadata()) {
     if (I < (int)ChunksToKeep.size()) {
-      if (!ChunksToKeep[I].contains(++MetadataCount))
+      if (!ChunksToKeep[I].contains(++MetadataCount)) {
         NamedNodesToDelete.push_back(&MD);
-      if (ChunksToKeep[I].end == (int)SeenNodes.size())
+
+}
+      if (ChunksToKeep[I].end == (int)SeenNodes.size()) {
         ++I;
-    } else
+
+}
+    } else {
       NamedNodesToDelete.push_back(&MD);
+
+}
   }
 
   for (auto *NN : NamedNodesToDelete) {
-    for (int I = 0, E = NN->getNumOperands(); I != E; ++I)
+    for (int I = 0, E = NN->getNumOperands(); I != E; ++I) {
       NN->setOperand(I, NULL);
+
+}
     NN->eraseFromParent();
   }
 }
@@ -106,8 +134,10 @@ template <class T>
 static void addMetadataToSet(T &MDUser, std::set<MDNode *> &UnnamedNodes) {
   SmallVector<std::pair<unsigned, MDNode *>, 4> MDs;
   MDUser.getAllMetadata(MDs);
-  for (auto &MD : MDs)
+  for (auto &MD : MDs) {
     UnnamedNodes.insert(MD.second);
+
+}
 }
 
 /// Returns the amount of Named and Unnamed Metadata Nodes
@@ -116,15 +146,21 @@ static int countMetadataTargets(Module *Program) {
   int NamedMetadataNodes = Program->named_metadata_size();
 
   // Get metadata nodes used by globals
-  for (auto &GV : Program->globals())
+  for (auto &GV : Program->globals()) {
     addMetadataToSet(GV, UnnamedNodes);
+
+}
 
   // Do the same for nodes used by functions & instructions
   for (auto &F : *Program) {
     addMetadataToSet(F, UnnamedNodes);
-    for (auto &BB : F)
-      for (auto &I : BB)
+    for (auto &BB : F) {
+      for (auto &I : BB) {
         addMetadataToSet(I, UnnamedNodes);
+
+}
+
+}
   }
 
   return UnnamedNodes.size() + NamedMetadataNodes;

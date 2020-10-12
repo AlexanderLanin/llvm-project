@@ -34,16 +34,20 @@ public:
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
     for (DeclGroupRef::iterator i = DG.begin(), e = DG.end(); i != e; ++i) {
       const Decl *D = *i;
-      if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
+      if (const NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
         llvm::errs() << "top-level-decl: \"" << ND->getNameAsString() << "\"\n";
+
+}
     }
 
     return true;
   }
 
   void HandleTranslationUnit(ASTContext& context) override {
-    if (!Instance.getLangOpts().DelayedTemplateParsing)
+    if (!Instance.getLangOpts().DelayedTemplateParsing) {
       return;
+
+}
 
     // This demonstrates how to force instantiation of some templates in
     // -fdelayed-template-parsing mode. (Note: Doing this unconditionally for
@@ -58,8 +62,10 @@ public:
           : ParsedTemplates(ParsedTemplates) {}
       bool VisitFunctionDecl(FunctionDecl *FD) {
         if (FD->isLateTemplateParsed() &&
-            ParsedTemplates.count(FD->getNameAsString()))
+            ParsedTemplates.count(FD->getNameAsString())) {
           LateParsedDecls.insert(FD);
+
+}
         return true;
       }
 
@@ -106,8 +112,10 @@ protected:
         ParsedTemplates.insert(args[i]);
       }
     }
-    if (!args.empty() && args[0] == "help")
+    if (!args.empty() && args[0] == "help") {
       PrintHelp(llvm::errs());
+
+}
 
     return true;
   }

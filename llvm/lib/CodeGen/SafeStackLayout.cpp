@@ -124,10 +124,14 @@ void StackLayout::layoutObject(StackObject &Obj) {
 
   // Update live ranges for all affected regions.
   for (StackRegion &R : Regions) {
-    if (Start < R.End && End > R.Start)
+    if (Start < R.End && End > R.Start) {
       R.Range.Join(Obj.Range);
-    if (End <= R.End)
+
+}
+    if (End <= R.End) {
       break;
+
+}
   }
 
   ObjectOffsets[Obj.Handle] = End;
@@ -140,14 +144,18 @@ void StackLayout::computeLayout() {
   // StackProtectorSlot), or handle stack protector in some other way.
 
   // Sort objects by size (largest first) to reduce fragmentation.
-  if (StackObjects.size() > 2)
+  if (StackObjects.size() > 2) {
     std::stable_sort(StackObjects.begin() + 1, StackObjects.end(),
                      [](const StackObject &a, const StackObject &b) {
                        return a.Size > b.Size;
                      });
 
-  for (auto &Obj : StackObjects)
+}
+
+  for (auto &Obj : StackObjects) {
     layoutObject(Obj);
+
+}
 
   LLVM_DEBUG(print(dbgs()));
 }

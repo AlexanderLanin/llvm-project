@@ -28,30 +28,36 @@ void DWARFGdbIndex::dumpCUList(raw_ostream &OS) const {
                CuListOffset, (uint64_t)CuList.size())
      << '\n';
   uint32_t I = 0;
-  for (const CompUnitEntry &CU : CuList)
+  for (const CompUnitEntry &CU : CuList) {
     OS << format("    %d: Offset = 0x%llx, Length = 0x%llx\n", I++, CU.Offset,
                  CU.Length);
+
+}
 }
 
 void DWARFGdbIndex::dumpTUList(raw_ostream &OS) const {
   OS << formatv("\n  Types CU list offset = {0:x}, has {1} entries:\n",
                 TuListOffset, TuList.size());
   uint32_t I = 0;
-  for (const TypeUnitEntry &TU : TuList)
+  for (const TypeUnitEntry &TU : TuList) {
     OS << formatv("    {0}: offset = {1:x8}, type_offset = {2:x8}, "
                   "type_signature = {3:x16}\n",
                   I++, TU.Offset, TU.TypeOffset, TU.TypeSignature);
+
+}
 }
 
 void DWARFGdbIndex::dumpAddressArea(raw_ostream &OS) const {
   OS << format("\n  Address area offset = 0x%x, has %" PRId64 " entries:",
                AddressAreaOffset, (uint64_t)AddressArea.size())
      << '\n';
-  for (const AddressEntry &Addr : AddressArea)
+  for (const AddressEntry &Addr : AddressArea) {
     OS << format(
         "    Low/High address = [0x%llx, 0x%llx) (Size: 0x%llx), CU id = %d\n",
         Addr.LowAddress, Addr.HighAddress, Addr.HighAddress - Addr.LowAddress,
         Addr.CuIndex);
+
+}
 }
 
 void DWARFGdbIndex::dumpSymbolTable(raw_ostream &OS) const {
@@ -62,8 +68,10 @@ void DWARFGdbIndex::dumpSymbolTable(raw_ostream &OS) const {
   uint32_t I = -1;
   for (const SymTableEntry &E : SymbolTable) {
     ++I;
-    if (!E.NameOffset && !E.VecOffset)
+    if (!E.NameOffset && !E.VecOffset) {
       continue;
+
+}
 
     OS << format("    %d: Name offset = 0x%x, CU vector offset = 0x%x\n", I,
                  E.NameOffset, E.VecOffset);
@@ -89,8 +97,10 @@ void DWARFGdbIndex::dumpConstantPool(raw_ostream &OS) const {
   uint32_t I = 0;
   for (const auto &V : ConstantPoolVectors) {
     OS << format("\n    %d(0x%x): ", I++, V.first);
-    for (uint32_t Val : V.second)
+    for (uint32_t Val : V.second) {
       OS << format("0x%x ", Val);
+
+}
   }
   OS << '\n';
 }
@@ -116,8 +126,10 @@ bool DWARFGdbIndex::parseImpl(DataExtractor Data) {
 
   // Only version 7 is supported at this moment.
   Version = Data.getU32(&Offset);
-  if (Version != 7)
+  if (Version != 7) {
     return false;
+
+}
 
   CuListOffset = Data.getU32(&Offset);
   TuListOffset = Data.getU32(&Offset);
@@ -125,8 +137,10 @@ bool DWARFGdbIndex::parseImpl(DataExtractor Data) {
   SymbolTableOffset = Data.getU32(&Offset);
   ConstantPoolOffset = Data.getU32(&Offset);
 
-  if (Offset != CuListOffset)
+  if (Offset != CuListOffset) {
     return false;
+
+}
 
   uint32_t CuListSize = (TuListOffset - CuListOffset) / 16;
   CuList.reserve(CuListSize);
@@ -171,8 +185,10 @@ bool DWARFGdbIndex::parseImpl(DataExtractor Data) {
     uint32_t NameOffset = Data.getU32(&Offset);
     uint32_t CuVecOffset = Data.getU32(&Offset);
     SymbolTable.push_back({NameOffset, CuVecOffset});
-    if (NameOffset || CuVecOffset)
+    if (NameOffset || CuVecOffset) {
       ++CuVectorsTotal;
+
+}
   }
 
   // The constant pool. CU vectors are stored first, followed by strings.
@@ -184,8 +200,10 @@ bool DWARFGdbIndex::parseImpl(DataExtractor Data) {
     Vec.first = Offset - ConstantPoolOffset;
 
     uint32_t Num = Data.getU32(&Offset);
-    for (uint32_t j = 0; j < Num; ++j)
+    for (uint32_t j = 0; j < Num; ++j) {
       Vec.second.push_back(Data.getU32(&Offset));
+
+}
   }
 
   ConstantPoolStrings = Data.getData().drop_front(Offset);

@@ -197,8 +197,10 @@ computeIdealizedProcResPressure(const MCSchedModel &SM,
   // Turn dense pressure into sparse pressure by removing zero entries.
   std::vector<std::pair<uint16_t, float>> Pressure;
   for (unsigned I = 0, E = SM.getNumProcResourceKinds(); I < E; ++I) {
-    if (DensePressure[I] > 0.0f)
+    if (DensePressure[I] > 0.0f) {
       Pressure.emplace_back(I, DensePressure[I]);
+
+}
   }
   return Pressure;
 }
@@ -220,9 +222,11 @@ static unsigned ResolveVariantSchedClassId(const MCSubtargetInfo &STI,
                                            unsigned SchedClassId,
                                            const MCInst &MCI) {
   const auto &SM = STI.getSchedModel();
-  while (SchedClassId && SM.getSchedClassDesc(SchedClassId)->isVariant())
+  while (SchedClassId && SM.getSchedClassDesc(SchedClassId)->isVariant()) {
     SchedClassId =
         STI.resolveVariantSchedClass(SchedClassId, &MCI, SM.getProcessorID());
+
+}
   return SchedClassId;
 }
 
@@ -243,13 +247,17 @@ static unsigned findProcResIdx(const MCSubtargetInfo &STI,
                                const StringRef NameOrId) {
   // Interpret the key as an ProcResIdx.
   unsigned ProcResIdx = 0;
-  if (to_integer(NameOrId, ProcResIdx, 10))
+  if (to_integer(NameOrId, ProcResIdx, 10)) {
     return ProcResIdx;
+
+}
   // Interpret the key as a ProcRes name.
   const auto &SchedModel = STI.getSchedModel();
   for (int I = 0, E = SchedModel.getNumProcResourceKinds(); I < E; ++I) {
-    if (NameOrId == SchedModel.getProcResource(I)->Name)
+    if (NameOrId == SchedModel.getProcResource(I)->Name) {
       return I;
+
+}
   }
   return 0;
 }

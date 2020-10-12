@@ -24,8 +24,10 @@ void FileIndexRecord::addDeclOccurence(SymbolRoleSet Roles, unsigned Offset,
          "Occurrences should be associated with their canonical decl");
 
   auto IsNextOccurence = [&]() -> bool {
-    if (Decls.empty())
+    if (Decls.empty()) {
       return true;
+
+}
     auto &Last = Decls.back();
     return Last.Offset < Offset;
   };

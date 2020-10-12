@@ -36,16 +36,20 @@ INITIALIZE_PASS(IntervalPartition, "intervals",
 
 // releaseMemory - Reset state back to before function was analyzed
 void IntervalPartition::releaseMemory() {
-  for (unsigned i = 0, e = Intervals.size(); i != e; ++i)
+  for (unsigned i = 0, e = Intervals.size(); i != e; ++i) {
     delete Intervals[i];
+
+}
   IntervalMap.clear();
   Intervals.clear();
   RootInterval = nullptr;
 }
 
 void IntervalPartition::print(raw_ostream &O, const Module*) const {
-  for(unsigned i = 0, e = Intervals.size(); i != e; ++i)
+  for(unsigned i = 0, e = Intervals.size(); i != e; ++i) {
     Intervals[i]->print(O);
+
+}
 }
 
 // addIntervalToPartition - Add an interval to the internal list of intervals,
@@ -56,8 +60,10 @@ void IntervalPartition::addIntervalToPartition(Interval *I) {
 
   // Add mappings for all of the basic blocks in I to the IntervalPartition
   for (Interval::node_iterator It = I->Nodes.begin(), End = I->Nodes.end();
-       It != End; ++It)
+       It != End; ++It) {
     IntervalMap.insert(std::make_pair(*It, I));
+
+}
 }
 
 // updatePredecessors - Interval generation only sets the successor fields of
@@ -66,8 +72,10 @@ void IntervalPartition::addIntervalToPartition(Interval *I) {
 // predecessor info.
 void IntervalPartition::updatePredecessors(Interval *Int) {
   BasicBlock *Header = Int->getHeaderNode();
-  for (BasicBlock *Successor : Int->Successors)
+  for (BasicBlock *Successor : Int->Successors) {
     getBlockInterval(Successor)->Predecessors.push_back(Header);
+
+}
 }
 
 // IntervalPartition ctor - Build the first level interval partition for the
@@ -82,13 +90,17 @@ bool IntervalPartition::runOnFunction(Function &F) {
   ++I;  // After the first one...
 
   // Add the rest of the intervals to the partition.
-  for (function_interval_iterator E = intervals_end(&F); I != E; ++I)
+  for (function_interval_iterator E = intervals_end(&F); I != E; ++I) {
     addIntervalToPartition(*I);
+
+}
 
   // Now that we know all of the successor information, propagate this to the
   // predecessors for each block.
-  for (unsigned i = 0, e = Intervals.size(); i != e; ++i)
+  for (unsigned i = 0, e = Intervals.size(); i != e; ++i) {
     updatePredecessors(Intervals[i]);
+
+}
   return false;
 }
 
@@ -108,11 +120,15 @@ IntervalPartition::IntervalPartition(IntervalPartition &IP, bool)
   ++I;  // After the first one...
 
   // Add the rest of the intervals to the partition.
-  for (interval_part_interval_iterator E = intervals_end(IP); I != E; ++I)
+  for (interval_part_interval_iterator E = intervals_end(IP); I != E; ++I) {
     addIntervalToPartition(*I);
+
+}
 
   // Now that we know all of the successor information, propagate this to the
   // predecessors for each block.
-  for (unsigned i = 0, e = Intervals.size(); i != e; ++i)
+  for (unsigned i = 0, e = Intervals.size(); i != e; ++i) {
     updatePredecessors(Intervals[i]);
+
+}
 }

@@ -50,8 +50,10 @@ NormalizeDenormalizeRewriter::visitAddRecExpr(const SCEVAddRecExpr *AR) {
   transform(AR->operands(), std::back_inserter(Operands),
             [&](const SCEV *Op) { return visit(Op); });
 
-  if (!Pred(AR))
+  if (!Pred(AR)) {
     return SE.getAddRecExpr(Operands, AR->getLoop(), SCEV::FlagAnyWrap);
+
+}
 
   // Normalization and denormalization are fancy names for decrementing and
   // incrementing a SCEV expression with respect to a set of loops.  Since
@@ -62,8 +64,10 @@ NormalizeDenormalizeRewriter::visitAddRecExpr(const SCEVAddRecExpr *AR) {
     // Denormalization / "partial increment" is essentially the same as \c
     // SCEVAddRecExpr::getPostIncExpr.  Here we use an explicit loop to make the
     // symmetry with Normalization clear.
-    for (int i = 0, e = Operands.size() - 1; i < e; i++)
+    for (int i = 0, e = Operands.size() - 1; i < e; i++) {
       Operands[i] = SE.getAddExpr(Operands[i], Operands[i + 1]);
+
+}
   } else {
     assert(Kind == Normalize && "Only two possibilities!");
 
@@ -86,8 +90,10 @@ NormalizeDenormalizeRewriter::visitAddRecExpr(const SCEVAddRecExpr *AR) {
     //   normalization by induction.  We subtract the normalized step
     //   recurrence from S_{N-1} to get the normalization of S.
 
-    for (int i = Operands.size() - 2; i >= 0; i--)
+    for (int i = Operands.size() - 2; i >= 0; i--) {
       Operands[i] = SE.getMinusSCEV(Operands[i], Operands[i + 1]);
+
+}
   }
 
   return SE.getAddRecExpr(Operands, AR->getLoop(), SCEV::FlagAnyWrap);

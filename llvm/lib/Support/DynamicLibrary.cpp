@@ -54,18 +54,24 @@ public:
 
     if (LLVM_LIKELY(!IsProcess)) {
       if (Find(Handle) != Handles.end()) {
-        if (CanClose)
+        if (CanClose) {
           DLClose(Handle);
+
+}
         return false;
       }
       Handles.push_back(Handle);
     } else {
 #ifndef _WIN32
       if (Process) {
-        if (CanClose)
+        if (CanClose) {
           DLClose(Process);
-        if (Process == Handle)
+
+}
+        if (Process == Handle) {
           return false;
+
+}
       }
 #endif
       Process = Handle;
@@ -76,13 +82,17 @@ public:
   void *LibLookup(const char *Symbol, DynamicLibrary::SearchOrdering Order) {
     if (Order & SO_LoadOrder) {
       for (void *Handle : Handles) {
-        if (void *Ptr = DLSym(Handle, Symbol))
+        if (void *Ptr = DLSym(Handle, Symbol)) {
           return Ptr;
+
+}
       }
     } else {
       for (void *Handle : llvm::reverse(Handles)) {
-        if (void *Ptr = DLSym(Handle, Symbol))
+        if (void *Ptr = DLSym(Handle, Symbol)) {
           return Ptr;
+
+}
       }
     }
     return nullptr;
@@ -93,18 +103,24 @@ public:
            "Invalid Ordering");
 
     if (!Process || (Order & SO_LoadedFirst)) {
-      if (void *Ptr = LibLookup(Symbol, Order))
+      if (void *Ptr = LibLookup(Symbol, Order)) {
         return Ptr;
+
+}
     }
     if (Process) {
       // Use OS facilities to search the current binary and all loaded libs.
-      if (void *Ptr = DLSym(Process, Symbol))
+      if (void *Ptr = DLSym(Process, Symbol)) {
         return Ptr;
+
+}
 
       // Search any libs that might have been skipped because of RTLD_LOCAL.
       if (Order & SO_LoadedLast) {
-        if (void *Ptr = LibLookup(Symbol, Order))
+        if (void *Ptr = LibLookup(Symbol, Order)) {
           return Ptr;
+
+}
       }
     }
     return nullptr;
@@ -164,15 +180,19 @@ DynamicLibrary DynamicLibrary::addPermanentLibrary(void *Handle,
                                                    std::string *Err) {
   SmartScopedLock<true> Lock(*SymbolsMutex);
   // If we've already loaded this library, tell the caller.
-  if (!OpenedHandles->AddLibrary(Handle, /*IsProcess*/false, /*CanClose*/false))
+  if (!OpenedHandles->AddLibrary(Handle, /*IsProcess*/false, /*CanClose*/false)) {
     *Err = "Library already loaded";
+
+}
 
   return DynamicLibrary(Handle);
 }
 
 void *DynamicLibrary::getAddressOfSymbol(const char *SymbolName) {
-  if (!isValid())
+  if (!isValid()) {
     return nullptr;
+
+}
   return HandleSet::DLSym(Data, SymbolName);
 }
 
@@ -184,14 +204,18 @@ void *DynamicLibrary::SearchForAddressOfSymbol(const char *SymbolName) {
     if (ExplicitSymbols.isConstructed()) {
       StringMap<void *>::iterator i = ExplicitSymbols->find(SymbolName);
 
-      if (i != ExplicitSymbols->end())
+      if (i != ExplicitSymbols->end()) {
         return i->second;
+
+}
     }
 
     // Now search the libraries.
     if (OpenedHandles.isConstructed()) {
-      if (void *Ptr = OpenedHandles->Lookup(SymbolName, SearchOrder))
+      if (void *Ptr = OpenedHandles->Lookup(SymbolName, SearchOrder)) {
         return Ptr;
+
+}
     }
   }
 

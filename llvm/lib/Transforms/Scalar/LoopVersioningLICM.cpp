@@ -283,11 +283,15 @@ bool LoopVersioningLICM::legalLoopMemoryAccesses() {
     const AliasSet &AS = I;
     // Skip Forward Alias Sets, as this should be ignored as part of
     // the AliasSetTracker object.
-    if (AS.isForwardingAliasSet())
+    if (AS.isForwardingAliasSet()) {
       continue;
+
+}
     // With MustAlias its not worth adding runtime bound check.
-    if (AS.isMustAlias())
+    if (AS.isMustAlias()) {
       return false;
+
+}
     Value *SomePtr = AS.begin()->getValue();
     bool TypeCheck = true;
     // Check for Mod & MayAlias
@@ -358,8 +362,10 @@ bool LoopVersioningLICM::instructionSafeForVersioning(Instruction *I) {
     LoadAndStoreCounter++;
     Value *Ptr = Ld->getPointerOperand();
     // Check loop invariant.
-    if (SE->isLoopInvariant(SE->getSCEV(Ptr), CurLoop))
+    if (SE->isLoopInvariant(SE->getSCEV(Ptr), CurLoop)) {
       InvariantCounter++;
+
+}
   }
   // If current instruction is store instruction
   // make sure it's a simple store (non atomic & non volatile)
@@ -372,8 +378,10 @@ bool LoopVersioningLICM::instructionSafeForVersioning(Instruction *I) {
     LoadAndStoreCounter++;
     Value *Ptr = St->getPointerOperand();
     // Check loop invariant.
-    if (SE->isLoopInvariant(SE->getSCEV(Ptr), CurLoop))
+    if (SE->isLoopInvariant(SE->getSCEV(Ptr), CurLoop)) {
       InvariantCounter++;
+
+}
 
     IsReadOnlyLoop = false;
   }
@@ -390,7 +398,7 @@ bool LoopVersioningLICM::legalLoopInstructions() {
   using namespace ore;
   // Iterate over loop blocks and instructions of each block and check
   // instruction safety.
-  for (auto *Block : CurLoop->getBlocks())
+  for (auto *Block : CurLoop->getBlocks()) {
     for (auto &Inst : *Block) {
       // If instruction is unsafe just return false.
       if (!instructionSafeForVersioning(&Inst)) {
@@ -401,6 +409,8 @@ bool LoopVersioningLICM::legalLoopInstructions() {
         return false;
       }
     }
+
+}
   // Get LoopAccessInfo from current loop.
   LAI = &LAA->getInfo(CurLoop);
   // Check LoopAccessInfo for need of runtime check.
@@ -547,8 +557,10 @@ void LoopVersioningLICM::setNoAliasToLoop(Loop *VerLoop) {
   for (auto *Block : CurLoop->getBlocks()) {
     for (auto &Inst : *Block) {
       // Only interested in instruction that may modify or read memory.
-      if (!Inst.mayReadFromMemory() && !Inst.mayWriteToMemory())
+      if (!Inst.mayReadFromMemory() && !Inst.mayWriteToMemory()) {
         continue;
+
+}
       Scopes.push_back(NewScope);
       NoAliases.push_back(NewScope);
       // Set no-alias for current instruction.
@@ -570,12 +582,16 @@ bool LoopVersioningLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
   // LoopVersioningLICM object.
   AutoResetter Resetter(*this);
 
-  if (skipLoop(L))
+  if (skipLoop(L)) {
     return false;
 
+}
+
   // Do not do the transformation if disabled by metadata.
-  if (hasLICMVersioningTransformation(L) & TM_Disable)
+  if (hasLICMVersioningTransformation(L) & TM_Disable) {
     return false;
+
+}
 
   // Get Analysis information.
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
@@ -590,8 +606,10 @@ bool LoopVersioningLICM::runOnLoop(Loop *L, LPPassManager &LPM) {
   // Loop over the body of this loop, construct AST.
   LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   for (auto *Block : L->getBlocks()) {
-    if (LI->getLoopFor(Block) == L) // Ignore blocks in subloop.
+    if (LI->getLoopFor(Block) == L) { // Ignore blocks in subloop.
       CurAST->add(*Block);          // Incorporate the specified basic block
+
+}
   }
 
   bool Changed = false;

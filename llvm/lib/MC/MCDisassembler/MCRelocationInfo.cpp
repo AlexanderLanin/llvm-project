@@ -19,8 +19,10 @@ MCRelocationInfo::~MCRelocationInfo() = default;
 const MCExpr *
 MCRelocationInfo::createExprForCAPIVariantKind(const MCExpr *SubExpr,
                                                unsigned VariantKind) {
-  if (VariantKind != LLVMDisassembler_VariantKind_None)
+  if (VariantKind != LLVMDisassembler_VariantKind_None) {
     return nullptr;
+
+}
   return SubExpr;
 }
 

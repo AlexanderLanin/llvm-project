@@ -62,13 +62,19 @@ void ScalarTraits<uuid_t>::output(const uuid_t &Val, void *, raw_ostream &Out) {
 StringRef ScalarTraits<uuid_t>::input(StringRef Scalar, void *, uuid_t &Val) {
   size_t OutIdx = 0;
   for (size_t Idx = 0; Idx < Scalar.size(); ++Idx) {
-    if (Scalar[Idx] == '-' || OutIdx >= 16)
+    if (Scalar[Idx] == '-' || OutIdx >= 16) {
       continue;
+
+}
     unsigned long long TempInt;
-    if (getAsUnsignedInteger(Scalar.slice(Idx, Idx + 2), 16, TempInt))
+    if (getAsUnsignedInteger(Scalar.slice(Idx, Idx + 2), 16, TempInt)) {
       return "invalid number";
-    if (TempInt > 0xFF)
+
+}
+    if (TempInt > 0xFF) {
       return "out of range number";
+
+}
     Val[OutIdx] = static_cast<uint8_t>(TempInt);
     ++Idx; // increment idx an extra time because we're consuming 2 chars
     ++OutIdx;
@@ -90,8 +96,10 @@ void MappingTraits<MachOYAML::FileHeader>::mapping(
   IO.mapRequired("sizeofcmds", FileHdr.sizeofcmds);
   IO.mapRequired("flags", FileHdr.flags);
   if (FileHdr.magic == MachO::MH_MAGIC_64 ||
-      FileHdr.magic == MachO::MH_CIGAM_64)
+      FileHdr.magic == MachO::MH_CIGAM_64) {
     IO.mapRequired("reserved", FileHdr.reserved);
+
+}
 }
 
 void MappingTraits<MachOYAML::Object>::mapping(IO &IO,
@@ -108,14 +116,20 @@ void MappingTraits<MachOYAML::Object>::mapping(IO &IO,
 
   IO.mapRequired("FileHeader", Object.Header);
   IO.mapOptional("LoadCommands", Object.LoadCommands);
-  if(!Object.LinkEdit.isEmpty() || !IO.outputting())
+  if(!Object.LinkEdit.isEmpty() || !IO.outputting()) {
     IO.mapOptional("LinkEditData", Object.LinkEdit);
 
-  if(!Object.DWARF.isEmpty() || !IO.outputting())
+}
+
+  if(!Object.DWARF.isEmpty() || !IO.outputting()) {
     IO.mapOptional("DWARF", Object.DWARF);
 
-  if (IO.getContext() == &Object)
+}
+
+  if (IO.getContext() == &Object) {
     IO.setContext(nullptr);
+
+}
 }
 
 void MappingTraits<MachOYAML::FatHeader>::mapping(
@@ -145,8 +159,10 @@ void MappingTraits<MachOYAML::UniversalBinary>::mapping(
   IO.mapRequired("FatArchs", UniversalBinary.FatArchs);
   IO.mapRequired("Slices", UniversalBinary.Slices);
 
-  if (IO.getContext() == &UniversalBinary)
+  if (IO.getContext() == &UniversalBinary) {
     IO.setContext(nullptr);
+
+}
 }
 
 void MappingTraits<MachOYAML::LinkEditData>::mapping(
@@ -155,8 +171,10 @@ void MappingTraits<MachOYAML::LinkEditData>::mapping(
   IO.mapOptional("BindOpcodes", LinkEditData.BindOpcodes);
   IO.mapOptional("WeakBindOpcodes", LinkEditData.WeakBindOpcodes);
   IO.mapOptional("LazyBindOpcodes", LinkEditData.LazyBindOpcodes);
-  if (!LinkEditData.ExportTrie.Children.empty() || !IO.outputting())
+  if (!LinkEditData.ExportTrie.Children.empty() || !IO.outputting()) {
     IO.mapOptional("ExportTrie", LinkEditData.ExportTrie);
+
+}
   IO.mapOptional("NameList", LinkEditData.NameList);
   IO.mapOptional("StringTable", LinkEditData.StringTable);
 }
@@ -293,8 +311,10 @@ void MappingTraits<MachOYAML::Section>::mapping(IO &IO,
 StringRef
 MappingTraits<MachOYAML::Section>::validate(IO &IO,
                                             MachOYAML::Section &Section) {
-  if (Section.content && Section.size < Section.content->binary_size())
+  if (Section.content && Section.size < Section.content->binary_size()) {
     return "Section size must be greater than or equal to the content size";
+
+}
   return {};
 }
 

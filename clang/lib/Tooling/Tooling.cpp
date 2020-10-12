@@ -96,8 +96,10 @@ static const llvm::opt::ArgStringList *getCC1Arguments(
   if (Jobs.size() > 1) {
     for (auto A : Actions){
       // On MacOSX real actions may end up being wrapped in BindArchAction
-      if (isa<driver::BindArchAction>(A))
+      if (isa<driver::BindArchAction>(A)) {
         A = *A->input_begin();
+
+}
       if (isa<driver::OffloadAction>(A)) {
         // Offload compilation has 2 top-level actions, one (at the front) is
         // the original host compilation and the other is offload action
@@ -231,8 +233,10 @@ llvm::Expected<std::string> getAbsolutePath(llvm::vfs::FileSystem &FS,
   }
 
   SmallString<1024> AbsolutePath = RelativePath;
-  if (auto EC = FS.makeAbsolute(AbsolutePath))
+  if (auto EC = FS.makeAbsolute(AbsolutePath)) {
     return llvm::errorCodeToError(EC);
+
+}
   llvm::sys::path::native(AbsolutePath);
   return std::string(AbsolutePath.str());
 }
@@ -302,8 +306,10 @@ ToolInvocation::ToolInvocation(
       PCHContainerOps(std::move(PCHContainerOps)) {}
 
 ToolInvocation::~ToolInvocation() {
-  if (OwnsAction)
+  if (OwnsAction) {
     delete Action;
+
+}
 }
 
 void ToolInvocation::mapVirtualFile(StringRef FilePath, StringRef Content) {
@@ -314,8 +320,10 @@ void ToolInvocation::mapVirtualFile(StringRef FilePath, StringRef Content) {
 
 bool ToolInvocation::run() {
   std::vector<const char*> Argv;
-  for (const std::string &Str : CommandLine)
+  for (const std::string &Str : CommandLine) {
     Argv.push_back(Str.c_str());
+
+}
   const char *const BinaryName = Argv[0];
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   unsigned MissingArgIndex, MissingArgCount;
@@ -334,16 +342,22 @@ bool ToolInvocation::run() {
   // The driver is only aware of the VFS working directory, but some clients
   // change this at the FileManager level instead.
   // In this case the checks have false positives, so skip them.
-  if (!Files->getFileSystemOpts().WorkingDir.empty())
+  if (!Files->getFileSystemOpts().WorkingDir.empty()) {
     Driver->setCheckInputsExist(false);
+
+}
   const std::unique_ptr<driver::Compilation> Compilation(
       Driver->BuildCompilation(llvm::makeArrayRef(Argv)));
-  if (!Compilation)
+  if (!Compilation) {
     return false;
+
+}
   const llvm::opt::ArgStringList *const CC1Args = getCC1Arguments(
       &Diagnostics, Compilation.get());
-  if (!CC1Args)
+  if (!CC1Args) {
     return false;
+
+}
   std::unique_ptr<CompilerInvocation> Invocation(
       newInvocation(&Diagnostics, *CC1Args));
   // FIXME: remove this when all users have migrated!
@@ -389,8 +403,10 @@ bool FrontendActionFactory::runInvocation(
 
   // Create the compiler's actual diagnostics engine.
   Compiler.createDiagnostics(DiagConsumer, /*ShouldOwnClient=*/false);
-  if (!Compiler.hasDiagnostics())
+  if (!Compiler.hasDiagnostics()) {
     return false;
+
+}
 
   Compiler.createSourceManager(*Files);
 
@@ -415,8 +431,10 @@ ClangTool::ClangTool(const CompilationDatabase &Compilations,
   appendArgumentsAdjuster(getClangStripOutputAdjuster());
   appendArgumentsAdjuster(getClangSyntaxOnlyAdjuster());
   appendArgumentsAdjuster(getClangStripDependencyFileAdjuster());
-  if (Files)
+  if (Files) {
     Files->setVirtualFileSystem(OverlayFileSystem);
+
+}
 }
 
 ClangTool::~ClangTool() = default;
@@ -436,9 +454,13 @@ void ClangTool::clearArgumentsAdjusters() {
 static void injectResourceDir(CommandLineArguments &Args, const char *Argv0,
                               void *MainAddr) {
   // Allow users to override the resource dir.
-  for (StringRef Arg : Args)
-    if (Arg.startswith("-resource-dir"))
+  for (StringRef Arg : Args) {
+    if (Arg.startswith("-resource-dir")) {
       return;
+
+}
+
+}
 
   // If there's no override in place add our resource dir.
   Args.push_back("-resource-dir=" +
@@ -452,12 +474,18 @@ int ClangTool::run(ToolAction *Action) {
 
   // First insert all absolute paths into the in-memory VFS. These are global
   // for all compile commands.
-  if (SeenWorkingDirectories.insert("/").second)
-    for (const auto &MappedFile : MappedFileContents)
-      if (llvm::sys::path::is_absolute(MappedFile.first))
+  if (SeenWorkingDirectories.insert("/").second) {
+    for (const auto &MappedFile : MappedFileContents) {
+      if (llvm::sys::path::is_absolute(MappedFile.first)) {
         InMemoryFileSystem->addFile(
             MappedFile.first, 0,
             llvm::MemoryBuffer::getMemBuffer(MappedFile.second));
+
+}
+
+}
+
+}
 
   bool ProcessingFailed = false;
   bool FileSkipped = false;
@@ -511,23 +539,33 @@ int ClangTool::run(ToolAction *Action) {
       // switched during runtime of the tool. Fixing this depends on having a
       // file system abstraction that allows openat() style interactions.
       if (OverlayFileSystem->setCurrentWorkingDirectory(
-              CompileCommand.Directory))
+              CompileCommand.Directory)) {
         llvm::report_fatal_error("Cannot chdir into \"" +
                                  Twine(CompileCommand.Directory) + "\"!");
+
+}
 
       // Now fill the in-memory VFS with the relative file mappings so it will
       // have the correct relative paths. We never remove mappings but that
       // should be fine.
-      if (SeenWorkingDirectories.insert(CompileCommand.Directory).second)
-        for (const auto &MappedFile : MappedFileContents)
-          if (!llvm::sys::path::is_absolute(MappedFile.first))
+      if (SeenWorkingDirectories.insert(CompileCommand.Directory).second) {
+        for (const auto &MappedFile : MappedFileContents) {
+          if (!llvm::sys::path::is_absolute(MappedFile.first)) {
             InMemoryFileSystem->addFile(
                 MappedFile.first, 0,
                 llvm::MemoryBuffer::getMemBuffer(MappedFile.second));
 
+}
+
+}
+
+}
+
       std::vector<std::string> CommandLine = CompileCommand.CommandLine;
-      if (ArgsAdjuster)
+      if (ArgsAdjuster) {
         CommandLine = ArgsAdjuster(CommandLine, CompileCommand.Filename);
+
+}
       assert(!CommandLine.empty());
 
       // Add the resource dir based on the binary of this tool. argv[0] in the
@@ -549,8 +587,10 @@ int ClangTool::run(ToolAction *Action) {
 
       if (!Invocation.run()) {
         // FIXME: Diagnostics should be used instead.
-        if (PrintErrorMessage)
+        if (PrintErrorMessage) {
           llvm::errs() << "Error while processing " << File << ".\n";
+
+}
         ProcessingFailed = true;
       }
     }
@@ -558,9 +598,11 @@ int ClangTool::run(ToolAction *Action) {
 
   if (!InitialWorkingDir.empty()) {
     if (auto EC =
-            OverlayFileSystem->setCurrentWorkingDirectory(InitialWorkingDir))
+            OverlayFileSystem->setCurrentWorkingDirectory(InitialWorkingDir)) {
       llvm::errs() << "Error when trying to restore working dir: "
                    << EC.message() << "\n";
+
+}
   }
   return ProcessingFailed ? 1 : (FileSkipped ? 2 : 0);
 }
@@ -583,8 +625,10 @@ public:
                                             DiagConsumer,
                                             /*ShouldOwnClient=*/false),
         Files);
-    if (!AST)
+    if (!AST) {
       return false;
+
+}
 
     ASTs.push_back(std::move(AST));
     return true;
@@ -644,8 +688,10 @@ std::unique_ptr<ASTUnit> buildASTFromCodeWithArgs(
         llvm::MemoryBuffer::getMemBuffer(FilenameWithContent.second));
   }
 
-  if (!Invocation.run())
+  if (!Invocation.run()) {
     return nullptr;
+
+}
 
   assert(ASTs.size() == 1);
   return std::move(ASTs[0]);

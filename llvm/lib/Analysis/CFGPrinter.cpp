@@ -103,8 +103,10 @@ PreservedAnalyses CFGOnlyViewerPass::run(Function &F,
 }
 
 static void writeCFGToDotFile(Function &F, bool CFGOnly = false) {
-  if (!CFGFuncName.empty() && !F.getName().contains(CFGFuncName))
+  if (!CFGFuncName.empty() && !F.getName().contains(CFGFuncName)) {
      return;
+
+}
   std::string Filename =
       (CFGDotFilenamePrefix + "." + F.getName() + ".dot").str();
   errs() << "Writing '" << Filename << "'...";
@@ -112,10 +114,12 @@ static void writeCFGToDotFile(Function &F, bool CFGOnly = false) {
   std::error_code EC;
   raw_fd_ostream File(Filename, EC, sys::fs::OF_Text);
 
-  if (!EC)
+  if (!EC) {
     WriteGraph(File, (const Function*)&F, CFGOnly);
-  else
+  } else {
     errs() << "  error opening file for writing!";
+
+}
   errs() << "\n";
 }
 
@@ -185,8 +189,10 @@ PreservedAnalyses CFGOnlyPrinterPass::run(Function &F,
 /// being a 'dot' and 'gv' program in your path.
 ///
 void Function::viewCFG() const {
-  if (!CFGFuncName.empty() && !getName().contains(CFGFuncName))
+  if (!CFGFuncName.empty() && !getName().contains(CFGFuncName)) {
      return;
+
+}
   ViewGraph(this, "cfg" + getName());
 }
 
@@ -196,8 +202,10 @@ void Function::viewCFG() const {
 /// this can make the graph smaller.
 ///
 void Function::viewCFGOnly() const {
-  if (!CFGFuncName.empty() && !getName().contains(CFGFuncName))
+  if (!CFGFuncName.empty() && !getName().contains(CFGFuncName)) {
      return;
+
+}
   ViewGraph(this, "cfg" + getName(), true);
 }
 
@@ -230,9 +238,13 @@ void DOTGraphTraits<const Function *>::computeHiddenNodes(const Function *F) {
 
 bool DOTGraphTraits<const Function *>::isNodeHidden(const BasicBlock *Node) {
   // If both restricting flags are false, all nodes are displayed.
-  if (!HideUnreachablePaths && !HideDeoptimizePaths)
+  if (!HideUnreachablePaths && !HideDeoptimizePaths) {
     return false;
-  if (isHiddenBasicBlock.find(Node) == isHiddenBasicBlock.end())
+
+}
+  if (isHiddenBasicBlock.find(Node) == isHiddenBasicBlock.end()) {
     computeHiddenNodes(Node->getParent());
+
+}
   return isHiddenBasicBlock[Node];
 }

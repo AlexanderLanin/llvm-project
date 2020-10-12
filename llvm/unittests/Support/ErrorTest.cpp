@@ -473,8 +473,10 @@ TEST(Error, ExitOnError) {
   ExitOnError ExitOnErr;
   ExitOnErr.setBanner("Error in tool:");
   ExitOnErr.setExitCodeMapper([](const Error &E) {
-    if (E.isA<CustomSubError>())
+    if (E.isA<CustomSubError>()) {
       return 2;
+
+}
     return 1;
   });
 
@@ -648,8 +650,10 @@ TEST(Error, HandleExpectedSuccess) {
 enum FooStrategy { Aggressive, Conservative };
 
 static Expected<int> foo(FooStrategy S) {
-  if (S == Aggressive)
+  if (S == Aggressive) {
     return make_error<CustomError>(7);
+
+}
   return 42;
 }
 

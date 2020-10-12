@@ -47,14 +47,18 @@ struct ScopedDir {
       Path = Name.str();
       EC = llvm::sys::fs::create_directory(Twine(Path));
     }
-    if (EC)
+    if (EC) {
       Path = "";
+
+}
     EXPECT_FALSE(EC);
     // Ensure the path is the real path so tests can use it to compare against
     // realpath output.
     SmallString<128> RealPath;
-    if (!llvm::sys::fs::real_path(Path, RealPath))
+    if (!llvm::sys::fs::real_path(Path, RealPath)) {
       Path.swap(RealPath);
+
+}
   }
   ~ScopedDir() {
     if (Path != "") {
@@ -69,8 +73,10 @@ struct ScopedLink {
   ScopedLink(const Twine &To, const Twine &From) {
     Path = From.str();
     std::error_code EC = sys::fs::create_link(To, From);
-    if (EC)
+    if (EC) {
       Path = "";
+
+}
     EXPECT_FALSE(EC);
   }
   ~ScopedLink() {
@@ -86,8 +92,10 @@ struct ScopedFile {
   ScopedFile(const Twine &Name) {
     std::error_code EC;
     EC = llvm::sys::fs::createUniqueFile(Name, Path);
-    if (EC)
+    if (EC) {
       Path = "";
+
+}
     EXPECT_FALSE(EC);
   }
   ~ScopedFile() {

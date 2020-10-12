@@ -168,8 +168,10 @@ PDBSymbol::findInlineFramesByRVA(uint32_t RVA) const {
 std::unique_ptr<IPDBEnumSymbols>
 PDBSymbol::getChildStats(TagStats &Stats) const {
   std::unique_ptr<IPDBEnumSymbols> Result(findAllChildren());
-  if (!Result)
+  if (!Result) {
     return nullptr;
+
+}
   Stats.clear();
   while (auto Child = Result->getNext()) {
     ++Stats[Child->getSymTag()];
@@ -188,25 +190,33 @@ void llvm::pdb::dumpSymbolIdField(raw_ostream &OS, StringRef Name,
                                   PdbSymbolIdField FieldId,
                                   PdbSymbolIdField ShowFlags,
                                   PdbSymbolIdField RecurseFlags) {
-  if ((FieldId & ShowFlags) == PdbSymbolIdField::None)
+  if ((FieldId & ShowFlags) == PdbSymbolIdField::None) {
     return;
+
+}
 
   OS << "\n";
   OS.indent(Indent);
   OS << Name << ": " << Value;
   // Don't recurse unless the user requested it.
-  if ((FieldId & RecurseFlags) == PdbSymbolIdField::None)
+  if ((FieldId & RecurseFlags) == PdbSymbolIdField::None) {
     return;
+
+}
   // And obviously don't recurse on the symbol itself.
-  if (FieldId == PdbSymbolIdField::SymIndexId)
+  if (FieldId == PdbSymbolIdField::SymIndexId) {
     return;
+
+}
 
   auto Child = Session.getSymbolById(Value);
 
   // It could have been a placeholder symbol for a type we don't yet support,
   // so just exit in that case.
-  if (!Child)
+  if (!Child) {
     return;
+
+}
 
   // Don't recurse more than once, so pass PdbSymbolIdField::None) for the
   // recurse flags.

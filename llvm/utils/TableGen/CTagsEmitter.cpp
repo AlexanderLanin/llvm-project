@@ -67,16 +67,22 @@ void CTagsEmitter::run(raw_ostream &OS) {
   std::vector<Tag> Tags;
   // Collect tags.
   Tags.reserve(Classes.size() + Defs.size());
-  for (const auto &C : Classes)
+  for (const auto &C : Classes) {
     Tags.push_back(Tag(C.first, locate(C.second.get())));
-  for (const auto &D : Defs)
+
+}
+  for (const auto &D : Defs) {
     Tags.push_back(Tag(D.first, locate(D.second.get())));
+
+}
   // Emit tags.
   llvm::sort(Tags);
   OS << "!_TAG_FILE_FORMAT\t1\t/original ctags format/\n";
   OS << "!_TAG_FILE_SORTED\t1\t/0=unsorted, 1=sorted, 2=foldcase/\n";
-  for (const Tag &T : Tags)
+  for (const Tag &T : Tags) {
     T.emit(OS);
+
+}
 }
 
 namespace llvm {

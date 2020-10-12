@@ -220,8 +220,10 @@ TEST_F(ProgramEnvTest, TestExecuteNoWait) {
     ++LoopCount;
     ProcessInfo WaitResult = llvm::sys::Wait(PI1, 0, true, &Error);
     ASSERT_TRUE(Error.empty());
-    if (WaitResult.Pid == PI1.Pid)
+    if (WaitResult.Pid == PI1.Pid) {
       break;
+
+}
   }
 
   EXPECT_EQ(LoopCount, 1u) << "LoopCount should be 1";
@@ -237,8 +239,10 @@ TEST_F(ProgramEnvTest, TestExecuteNoWait) {
     ++LoopCount;
     ProcessInfo WaitResult = llvm::sys::Wait(PI2, 0, false, &Error);
     ASSERT_TRUE(Error.empty());
-    if (WaitResult.Pid == PI2.Pid)
+    if (WaitResult.Pid == PI2.Pid) {
       break;
+
+}
   }
 
   ASSERT_GT(LoopCount, 1u) << "LoopCount should be >1";

@@ -77,8 +77,10 @@ Error ARMAttributeParser::stringAttribute(AttrType tag) {
   if (sw) {
     DictScope scope(*sw, "Attribute");
     sw->printNumber("Tag", tag);
-    if (!tagName.empty())
+    if (!tagName.empty()) {
       sw->printString("TagName", tagName);
+
+}
     sw->printString("Value", desc);
   }
   return Error::success();
@@ -94,10 +96,14 @@ void ARMAttributeParser::printAttribute(unsigned tag, unsigned value,
     DictScope as(*sw, "Attribute");
     sw->printNumber("Tag", tag);
     sw->printNumber("Value", value);
-    if (!tagName.empty())
+    if (!tagName.empty()) {
       sw->printString("TagName", tagName);
-    if (!valueDesc.empty())
+
+}
+    if (!valueDesc.empty()) {
       sw->printString("Description", valueDesc);
+
+}
   }
 }
 
@@ -244,13 +250,15 @@ Error ARMAttributeParser::ABI_align_needed(AttrType tag) {
   uint64_t value = de.getULEB128(cursor);
 
   std::string description;
-  if (value < array_lengthof(strings))
+  if (value < array_lengthof(strings)) {
     description = strings[value];
-  else if (value <= 12)
+  } else if (value <= 12) {
     description = "8-byte alignment, " + utostr(1ULL << value) +
                   "-byte extended alignment";
-  else
+  } else {
     description = "Invalid";
+
+}
 
   printAttribute(tag, value, description);
   return Error::success();
@@ -263,13 +271,15 @@ Error ARMAttributeParser::ABI_align_preserved(AttrType tag) {
   uint64_t value = de.getULEB128(cursor);
 
   std::string description;
-  if (value < array_lengthof(strings))
+  if (value < array_lengthof(strings)) {
     description = std::string(strings[value]);
-  else if (value <= 12)
+  } else if (value <= 12) {
     description = std::string("8-byte stack alignment, ") +
                   utostr(1ULL << value) + std::string("-byte data alignment");
-  else
+  } else {
     description = "Invalid";
+
+}
 
   printAttribute(tag, value, description);
   return Error::success();
@@ -392,8 +402,10 @@ Error ARMAttributeParser::nodefaults(AttrType tag) {
 void ARMAttributeParser::parseIndexList(SmallVectorImpl<uint8_t> &indexList) {
   for (;;) {
     uint64_t value = de.getULEB128(cursor);
-    if (!cursor || !value)
+    if (!cursor || !value) {
       break;
+
+}
     indexList.push_back(value);
   }
 }
@@ -408,24 +420,30 @@ Error ARMAttributeParser::parseAttributeList(uint32_t length) {
          AHI != AHE && !handled; ++AHI) {
       if (uint64_t(displayRoutines[AHI].attribute) == tag) {
         if (Error e = (this->*displayRoutines[AHI].routine)(
-                ARMBuildAttrs::AttrType(tag)))
+                ARMBuildAttrs::AttrType(tag))) {
           return e;
+
+}
         handled = true;
         break;
       }
     }
     if (!handled) {
-      if (tag < 32)
+      if (tag < 32) {
         return createStringError(errc::invalid_argument,
                                  "invalid AEABI tag 0x" +
                                      Twine::utohexstr(tag) + " at offset 0x" +
                                      Twine::utohexstr(pos));
 
+}
+
       if (tag % 2 == 0) {
         uint64_t value = de.getULEB128(cursor);
         attributes.insert(std::make_pair(tag, value));
-        if (sw)
+        if (sw) {
           sw->printNumber(ARMBuildAttrs::AttrTypeAsString(tag), value);
+
+}
       } else {
         StringRef tagName =
             ARMBuildAttrs::AttrTypeAsString(tag, /*TagPrefix=*/false);
@@ -434,8 +452,10 @@ Error ARMAttributeParser::parseAttributeList(uint32_t length) {
         if (sw) {
           DictScope scope(*sw, "Attribute");
           sw->printNumber("Tag", tag);
-          if (!tagName.empty())
+          if (!tagName.empty()) {
             sw->printString("TagName", tagName);
+
+}
           sw->printString("Value", desc);
         }
       }
@@ -453,26 +473,32 @@ Error ARMAttributeParser::parseSubsection(uint32_t length) {
   }
 
   // Ignore unrecognized vendor-name.
-  if (vendorName.lower() != "aeabi")
+  if (vendorName.lower() != "aeabi") {
     return createStringError(errc::invalid_argument,
                              "unrecognized vendor-name: " + vendorName);
+
+}
 
   while (cursor.tell() < end) {
     /// Tag_File | Tag_Section | Tag_Symbol   uleb128:byte-size
     uint8_t tag = de.getU8(cursor);
     uint32_t size = de.getU32(cursor);
-    if (!cursor)
+    if (!cursor) {
       return cursor.takeError();
+
+}
 
     if (sw) {
       sw->printEnum("Tag", tag, makeArrayRef(tagNames));
       sw->printNumber("Size", size);
     }
-    if (size < 5)
+    if (size < 5) {
       return createStringError(errc::invalid_argument,
                                "invalid attribute size " + Twine(size) +
                                    " at offset 0x" +
                                    Twine::utohexstr(cursor.tell() - 5));
+
+}
 
     StringRef scopeName, indexName;
     SmallVector<uint8_t, 8> indicies;
@@ -499,12 +525,18 @@ Error ARMAttributeParser::parseSubsection(uint32_t length) {
 
     if (sw) {
       DictScope scope(*sw, scopeName);
-      if (!indicies.empty())
+      if (!indicies.empty()) {
         sw->printList(indexName, indicies);
-      if (Error e = parseAttributeList(size - 5))
+
+}
+      if (Error e = parseAttributeList(size - 5)) {
         return e;
-    } else if (Error e = parseAttributeList(size - 5))
+
+}
+    } else if (Error e = parseAttributeList(size - 5)) {
       return e;
+
+}
   }
   return Error::success();
 }
@@ -523,28 +555,36 @@ Error ARMAttributeParser::parse(ArrayRef<uint8_t> section,
 
   // Unrecognized format-version.
   uint8_t formatVersion = de.getU8(cursor);
-  if (formatVersion != 'A')
+  if (formatVersion != 'A') {
     return createStringError(errc::invalid_argument,
                              "unrecognized format-version: 0x" +
                                  utohexstr(formatVersion));
 
+}
+
   while (!de.eof(cursor)) {
     uint32_t sectionLength = de.getU32(cursor);
-    if (!cursor)
+    if (!cursor) {
       return cursor.takeError();
+
+}
 
     if (sw) {
       sw->startLine() << "Section " << ++sectionNumber << " {\n";
       sw->indent();
     }
 
-    if (sectionLength < 4 || cursor.tell() - 4 + sectionLength > section.size())
+    if (sectionLength < 4 || cursor.tell() - 4 + sectionLength > section.size()) {
       return createStringError(errc::invalid_argument,
                                "invalid subsection length " +
                                    Twine(sectionLength) + " at offset 0x" +
                                    utohexstr(cursor.tell() - 4));
-    if (Error e = parseSubsection(sectionLength))
+
+}
+    if (Error e = parseSubsection(sectionLength)) {
       return e;
+
+}
     if (sw) {
       sw->unindent();
       sw->startLine() << "}\n";

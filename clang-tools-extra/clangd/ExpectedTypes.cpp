@@ -20,22 +20,32 @@ namespace clangd {
 namespace {
 
 static const Type *toEquivClass(ASTContext &Ctx, QualType T) {
-  if (T.isNull() || T->isDependentType())
+  if (T.isNull() || T->isDependentType()) {
     return nullptr;
+
+}
   // Drop references, we do not handle reference inits properly anyway.
   T = T.getCanonicalType().getNonReferenceType();
   // Numeric types are the simplest case.
-  if (T->isBooleanType())
+  if (T->isBooleanType()) {
     return Ctx.BoolTy.getTypePtr();
-  if (T->isIntegerType() && !T->isEnumeralType())
+
+}
+  if (T->isIntegerType() && !T->isEnumeralType()) {
     return Ctx.IntTy.getTypePtr(); // All integers are equivalent.
-  if (T->isFloatingType() && !T->isComplexType())
+
+}
+  if (T->isFloatingType() && !T->isComplexType()) {
     return Ctx.FloatTy.getTypePtr(); // All floats are equivalent.
 
+}
+
   // Do some simple transformations.
-  if (T->isArrayType()) // Decay arrays to pointers.
+  if (T->isArrayType()) { // Decay arrays to pointers.
     return Ctx.getPointerType(QualType(T->getArrayElementTypeNoTypeQual(), 0))
         .getTypePtr();
+
+}
   // Drop the qualifiers and return the resulting type.
   // FIXME: also drop qualifiers from pointer types, e.g. 'const T* => T*'
   return T.getTypePtr();
@@ -45,14 +55,20 @@ static llvm::Optional<QualType>
 typeOfCompletion(const CodeCompletionResult &R) {
   const NamedDecl *D = R.Declaration;
   // Templates do not have a type on their own, look at the templated decl.
-  if (auto *Template = dyn_cast_or_null<TemplateDecl>(D))
+  if (auto *Template = dyn_cast_or_null<TemplateDecl>(D)) {
     D = Template->getTemplatedDecl();
+
+}
   auto *VD = dyn_cast_or_null<ValueDecl>(D);
-  if (!VD)
+  if (!VD) {
     return llvm::None; // We handle only variables and functions below.
+
+}
   auto T = VD->getType();
-  if (T.isNull())
+  if (T.isNull()) {
     return llvm::None;
+
+}
   if (auto FuncT = T->getAs<FunctionType>()) {
     // Functions are a special case. They are completed as 'foo()' and we want
     // to match their return type rather than the function type itself.
@@ -65,14 +81,20 @@ typeOfCompletion(const CodeCompletionResult &R) {
 } // namespace
 
 llvm::Optional<OpaqueType> OpaqueType::encode(ASTContext &Ctx, QualType T) {
-  if (T.isNull())
+  if (T.isNull()) {
     return None;
+
+}
   const Type *C = toEquivClass(Ctx, T);
-  if (!C)
+  if (!C) {
     return None;
+
+}
   llvm::SmallString<128> Encoded;
-  if (index::generateUSRForType(QualType(C, 0), Ctx, Encoded))
+  if (index::generateUSRForType(QualType(C, 0), Ctx, Encoded)) {
     return None;
+
+}
   return OpaqueType(std::string(Encoded.str()));
 }
 
@@ -87,8 +109,10 @@ llvm::Optional<OpaqueType>
 OpaqueType::fromCompletionResult(ASTContext &Ctx,
                                  const CodeCompletionResult &R) {
   auto T = typeOfCompletion(R);
-  if (!T)
+  if (!T) {
     return None;
+
+}
   return encode(Ctx, *T);
 }
 

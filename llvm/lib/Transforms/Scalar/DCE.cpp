@@ -46,8 +46,10 @@ struct DeadInstElimination : public FunctionPass {
     initializeDeadInstEliminationPass(*PassRegistry::getPassRegistry());
   }
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     auto *TLIP = getAnalysisIfAvailable<TargetLibraryInfoWrapperPass>();
     TargetLibraryInfo *TLI = TLIP ? &TLIP->getTLI(F) : nullptr;
 
@@ -56,8 +58,10 @@ struct DeadInstElimination : public FunctionPass {
       for (BasicBlock::iterator DI = BB.begin(); DI != BB.end(); ) {
         Instruction *Inst = &*DI++;
         if (isInstructionTriviallyDead(Inst, TLI)) {
-          if (!DebugCounter::shouldExecute(DCECounter))
+          if (!DebugCounter::shouldExecute(DCECounter)) {
             continue;
+
+}
           salvageDebugInfo(*Inst);
           Inst->eraseFromParent();
           Changed = true;
@@ -93,11 +97,15 @@ struct RedundantDbgInstElimination : public FunctionPass {
     initializeRedundantDbgInstEliminationPass(*PassRegistry::getPassRegistry());
   }
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     bool Changed = false;
-    for (auto &BB : F)
+    for (auto &BB : F) {
       Changed |= RemoveRedundantDbgInstrs(&BB);
+
+}
     return Changed;
   }
 
@@ -123,8 +131,10 @@ static bool DCEInstruction(Instruction *I,
                            SmallSetVector<Instruction *, 16> &WorkList,
                            const TargetLibraryInfo *TLI) {
   if (isInstructionTriviallyDead(I, TLI)) {
-    if (!DebugCounter::shouldExecute(DCECounter))
+    if (!DebugCounter::shouldExecute(DCECounter)) {
       return false;
+
+}
 
     salvageDebugInfo(*I);
 
@@ -134,15 +144,21 @@ static bool DCEInstruction(Instruction *I,
       Value *OpV = I->getOperand(i);
       I->setOperand(i, nullptr);
 
-      if (!OpV->use_empty() || I == OpV)
+      if (!OpV->use_empty() || I == OpV) {
         continue;
+
+}
 
       // If the operand is an instruction that became dead as we nulled out the
       // operand, and if it is 'trivially' dead, delete it in a future loop
       // iteration.
-      if (Instruction *OpI = dyn_cast<Instruction>(OpV))
-        if (isInstructionTriviallyDead(OpI, TLI))
+      if (Instruction *OpI = dyn_cast<Instruction>(OpV)) {
+        if (isInstructionTriviallyDead(OpI, TLI)) {
           WorkList.insert(OpI);
+
+}
+
+}
     }
 
     I->eraseFromParent();
@@ -164,8 +180,10 @@ static bool eliminateDeadCode(Function &F, TargetLibraryInfo *TLI) {
 
     // We're visiting this instruction now, so make sure it's not in the
     // worklist from an earlier visit.
-    if (!WorkList.count(I))
+    if (!WorkList.count(I)) {
       MadeChange |= DCEInstruction(I, WorkList, TLI);
+
+}
   }
 
   while (!WorkList.empty()) {
@@ -176,8 +194,10 @@ static bool eliminateDeadCode(Function &F, TargetLibraryInfo *TLI) {
 }
 
 PreservedAnalyses DCEPass::run(Function &F, FunctionAnalysisManager &AM) {
-  if (!eliminateDeadCode(F, AM.getCachedResult<TargetLibraryAnalysis>(F)))
+  if (!eliminateDeadCode(F, AM.getCachedResult<TargetLibraryAnalysis>(F))) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -192,8 +212,10 @@ struct DCELegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     auto *TLIP = getAnalysisIfAvailable<TargetLibraryInfoWrapperPass>();
     TargetLibraryInfo *TLI = TLIP ? &TLIP->getTLI(F) : nullptr;

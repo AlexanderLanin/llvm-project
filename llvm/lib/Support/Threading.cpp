@@ -86,13 +86,17 @@ int computeHostNumHardwareThreads();
 unsigned llvm::ThreadPoolStrategy::compute_thread_count() const {
   int MaxThreadCount = UseHyperThreads ? computeHostNumHardwareThreads()
                                        : sys::getHostNumPhysicalCores();
-  if (MaxThreadCount <= 0)
+  if (MaxThreadCount <= 0) {
     MaxThreadCount = 1;
+
+}
 
   // No need to create more threads than there are hardware threads, it would
   // uselessly induce more context-switching and cache eviction.
-  if (!ThreadsRequested || ThreadsRequested > (unsigned)MaxThreadCount)
+  if (!ThreadsRequested || ThreadsRequested > (unsigned)MaxThreadCount) {
     return MaxThreadCount;
+
+}
   return ThreadsRequested;
 }
 

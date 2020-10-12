@@ -21,8 +21,10 @@ using namespace ast_matchers;
 
 static StringRef getUnqualifiedName(StringRef QualifiedName) {
   size_t LastSeparatorPos = QualifiedName.rfind("::");
-  if (LastSeparatorPos == StringRef::npos)
+  if (LastSeparatorPos == StringRef::npos) {
     return QualifiedName;
+
+}
   return QualifiedName.drop_front(LastSeparatorPos + 2);
 }
 
@@ -33,18 +35,24 @@ Optional<FixItHint> UsingInserter::createUsingDeclaration(
     ASTContext &Context, const Stmt &Statement, StringRef QualifiedName) {
   StringRef UnqualifiedName = getUnqualifiedName(QualifiedName);
   const FunctionDecl *Function = getSurroundingFunction(Context, Statement);
-  if (!Function)
+  if (!Function) {
     return None;
 
-  if (AddedUsing.count(std::make_pair(Function, QualifiedName.str())) != 0)
+}
+
+  if (AddedUsing.count(std::make_pair(Function, QualifiedName.str())) != 0) {
     return None;
+
+}
 
   SourceLocation InsertLoc = Lexer::getLocForEndOfToken(
       Function->getBody()->getBeginLoc(), 0, SourceMgr, Context.getLangOpts());
 
   // Only use using declarations in the main file, not in includes.
-  if (SourceMgr.getFileID(InsertLoc) != SourceMgr.getMainFileID())
+  if (SourceMgr.getFileID(InsertLoc) != SourceMgr.getMainFileID()) {
     return None;
+
+}
 
   // FIXME: This declaration could be masked. Investigate if
   // there is a way to avoid using Sema.
@@ -64,8 +72,10 @@ Optional<FixItHint> UsingInserter::createUsingDeclaration(
   bool HasConflictingDeclRef =
       !match(findAll(declRefExpr(to(ConflictingDecl))), *Function, Context)
            .empty();
-  if (HasConflictingDeclaration || HasConflictingDeclRef)
+  if (HasConflictingDeclaration || HasConflictingDeclRef) {
     return None;
+
+}
 
   std::string Declaration =
       (llvm::Twine("\nusing ") + QualifiedName + ";").str();
@@ -78,8 +88,10 @@ StringRef UsingInserter::getShortName(ASTContext &Context,
                                       const Stmt &Statement,
                                       StringRef QualifiedName) {
   const FunctionDecl *Function = getSurroundingFunction(Context, Statement);
-  if (AddedUsing.count(NameInFunction(Function, QualifiedName.str())) != 0)
+  if (AddedUsing.count(NameInFunction(Function, QualifiedName.str())) != 0) {
     return getUnqualifiedName(QualifiedName);
+
+}
   return QualifiedName;
 }
 

@@ -46,8 +46,10 @@ using namespace coverage;
 
 Counter CounterExpressionBuilder::get(const CounterExpression &E) {
   auto It = ExpressionIndices.find(E);
-  if (It != ExpressionIndices.end())
+  if (It != ExpressionIndices.end()) {
     return Counter::getExpression(It->second);
+
+}
   unsigned I = Expressions.size();
   Expressions.push_back(E);
   ExpressionIndices[E] = I;
@@ -78,8 +80,10 @@ Counter CounterExpressionBuilder::simplify(Counter ExpressionTree) {
 
   // If there are no terms, this is just a zero. The algorithm below assumes at
   // least one term.
-  if (Terms.size() == 0)
+  if (Terms.size() == 0) {
     return Counter::getZero();
+
+}
 
   // Group the terms by counter ID.
   llvm::sort(Terms, [](const Term &LHS, const Term &RHS) {
@@ -102,23 +106,33 @@ Counter CounterExpressionBuilder::simplify(Counter ExpressionTree) {
   // Create additions. We do this before subtractions to avoid constructs like
   // ((0 - X) + Y), as opposed to (Y - X).
   for (auto T : Terms) {
-    if (T.Factor <= 0)
+    if (T.Factor <= 0) {
       continue;
-    for (int I = 0; I < T.Factor; ++I)
-      if (C.isZero())
+
+}
+    for (int I = 0; I < T.Factor; ++I) {
+      if (C.isZero()) {
         C = Counter::getCounter(T.CounterID);
-      else
+      } else {
         C = get(CounterExpression(CounterExpression::Add, C,
                                   Counter::getCounter(T.CounterID)));
+
+}
+
+}
   }
 
   // Create subtractions.
   for (auto T : Terms) {
-    if (T.Factor >= 0)
+    if (T.Factor >= 0) {
       continue;
-    for (int I = 0; I < -T.Factor; ++I)
+
+}
+    for (int I = 0; I < -T.Factor; ++I) {
       C = get(CounterExpression(CounterExpression::Subtract, C,
                                 Counter::getCounter(T.CounterID)));
+
+}
   }
   return C;
 }
@@ -141,8 +155,10 @@ void CounterMappingContext::dump(const Counter &C, raw_ostream &OS) const {
     OS << '#' << C.getCounterID();
     break;
   case Counter::Expression: {
-    if (C.getExpressionID() >= Expressions.size())
+    if (C.getExpressionID() >= Expressions.size()) {
       return;
+
+}
     const auto &E = Expressions[C.getExpressionID()];
     OS << '(';
     dump(E.LHS, OS);
@@ -152,8 +168,10 @@ void CounterMappingContext::dump(const Counter &C, raw_ostream &OS) const {
     break;
   }
   }
-  if (CounterValues.empty())
+  if (CounterValues.empty()) {
     return;
+
+}
   Expected<int64_t> Value = evaluate(C);
   if (auto E = Value.takeError()) {
     consumeError(std::move(E));
@@ -167,19 +185,27 @@ Expected<int64_t> CounterMappingContext::evaluate(const Counter &C) const {
   case Counter::Zero:
     return 0;
   case Counter::CounterValueReference:
-    if (C.getCounterID() >= CounterValues.size())
+    if (C.getCounterID() >= CounterValues.size()) {
       return errorCodeToError(errc::argument_out_of_domain);
+
+}
     return CounterValues[C.getCounterID()];
   case Counter::Expression: {
-    if (C.getExpressionID() >= Expressions.size())
+    if (C.getExpressionID() >= Expressions.size()) {
       return errorCodeToError(errc::argument_out_of_domain);
+
+}
     const auto &E = Expressions[C.getExpressionID()];
     Expected<int64_t> LHS = evaluate(E.LHS);
-    if (!LHS)
+    if (!LHS) {
       return LHS;
+
+}
     Expected<int64_t> RHS = evaluate(E.RHS);
-    if (!RHS)
+    if (!RHS) {
       return RHS;
+
+}
     return E.Kind == CounterExpression::Subtract ? *LHS - *RHS : *LHS + *RHS;
   }
   }
@@ -188,18 +214,24 @@ Expected<int64_t> CounterMappingContext::evaluate(const Counter &C) const {
 
 void FunctionRecordIterator::skipOtherFiles() {
   while (Current != Records.end() && !Filename.empty() &&
-         Filename != Current->Filenames[0])
+         Filename != Current->Filenames[0]) {
     ++Current;
-  if (Current == Records.end())
+
+}
+  if (Current == Records.end()) {
     *this = FunctionRecordIterator();
+
+}
 }
 
 ArrayRef<unsigned> CoverageMapping::getImpreciseRecordIndicesForFilename(
     StringRef Filename) const {
   size_t FilenameHash = hash_value(Filename);
   auto RecordIt = FilenameHash2RecordIndices.find(FilenameHash);
-  if (RecordIt == FilenameHash2RecordIndices.end())
+  if (RecordIt == FilenameHash2RecordIndices.end()) {
     return {};
+
+}
   return RecordIt->second;
 }
 
@@ -207,13 +239,17 @@ Error CoverageMapping::loadFunctionRecord(
     const CoverageMappingRecord &Record,
     IndexedInstrProfReader &ProfileReader) {
   StringRef OrigFuncName = Record.FunctionName;
-  if (OrigFuncName.empty())
+  if (OrigFuncName.empty()) {
     return make_error<CoverageMapError>(coveragemap_error::malformed);
 
-  if (Record.Filenames.empty())
+}
+
+  if (Record.Filenames.empty()) {
     OrigFuncName = getFuncNameWithoutPrefix(OrigFuncName);
-  else
+  } else {
     OrigFuncName = getFuncNameWithoutPrefix(OrigFuncName, Record.Filenames[0]);
+
+}
 
   CounterMappingContext Ctx(Record.Expressions);
 
@@ -225,8 +261,10 @@ Error CoverageMapping::loadFunctionRecord(
       FuncHashMismatches.emplace_back(std::string(Record.FunctionName),
                                       Record.FunctionHash);
       return Error::success();
-    } else if (IPE != instrprof_error::unknown_function)
+    } else if (IPE != instrprof_error::unknown_function) {
       return make_error<InstrProfError>(IPE);
+
+}
     Counts.assign(Record.MappingRegions.size(), 0);
   }
   Ctx.setCounts(Counts);
@@ -239,8 +277,10 @@ Error CoverageMapping::loadFunctionRecord(
   // won't (in which case we don't unintuitively report functions as uncovered
   // when they have non-zero counts in the profile).
   if (Record.MappingRegions.size() == 1 &&
-      Record.MappingRegions[0].Count.isZero() && Counts[0] > 0)
+      Record.MappingRegions[0].Count.isZero() && Counts[0] > 0) {
     return Error::success();
+
+}
 
   FunctionRecord Function(OrigFuncName, Record.Filenames);
   for (const auto &Region : Record.MappingRegions) {
@@ -255,8 +295,10 @@ Error CoverageMapping::loadFunctionRecord(
   // Don't create records for (filenames, function) pairs we've already seen.
   auto FilenamesHash = hash_combine_range(Record.Filenames.begin(),
                                           Record.Filenames.end());
-  if (!RecordProvenance[FilenamesHash].insert(hash_value(OrigFuncName)).second)
+  if (!RecordProvenance[FilenamesHash].insert(hash_value(OrigFuncName)).second) {
     return Error::success();
+
+}
 
   Functions.push_back(std::move(Function));
 
@@ -269,8 +311,10 @@ Error CoverageMapping::loadFunctionRecord(
     // Note that there may be duplicates in the filename set for a function
     // record, because of e.g. macro expansions in the function in which both
     // the macro and the function are defined in the same file.
-    if (RecordIndices.empty() || RecordIndices.back() != RecordIndex)
+    if (RecordIndices.empty() || RecordIndices.back() != RecordIndex) {
       RecordIndices.push_back(RecordIndex);
+
+}
   }
 
   return Error::success();
@@ -283,11 +327,15 @@ Expected<std::unique_ptr<CoverageMapping>> CoverageMapping::load(
 
   for (const auto &CoverageReader : CoverageReaders) {
     for (auto RecordOrErr : *CoverageReader) {
-      if (Error E = RecordOrErr.takeError())
+      if (Error E = RecordOrErr.takeError()) {
         return std::move(E);
+
+}
       const auto &Record = *RecordOrErr;
-      if (Error E = Coverage->loadFunctionRecord(Record, ProfileReader))
+      if (Error E = Coverage->loadFunctionRecord(Record, ProfileReader)) {
         return std::move(E);
+
+}
     }
   }
 
@@ -298,8 +346,10 @@ Expected<std::unique_ptr<CoverageMapping>> CoverageMapping::load(
 static Error handleMaybeNoDataFoundError(Error E) {
   return handleErrors(
       std::move(E), [](const CoverageMapError &CME) {
-        if (CME.get() == coveragemap_error::no_data_found)
+        if (CME.get() == coveragemap_error::no_data_found) {
           return static_cast<Error>(Error::success());
+
+}
         return make_error<CoverageMapError>(CME.get());
       });
 }
@@ -308,16 +358,20 @@ Expected<std::unique_ptr<CoverageMapping>>
 CoverageMapping::load(ArrayRef<StringRef> ObjectFilenames,
                       StringRef ProfileFilename, ArrayRef<StringRef> Arches) {
   auto ProfileReaderOrErr = IndexedInstrProfReader::create(ProfileFilename);
-  if (Error E = ProfileReaderOrErr.takeError())
+  if (Error E = ProfileReaderOrErr.takeError()) {
     return std::move(E);
+
+}
   auto ProfileReader = std::move(ProfileReaderOrErr.get());
 
   SmallVector<std::unique_ptr<CoverageMappingReader>, 4> Readers;
   SmallVector<std::unique_ptr<MemoryBuffer>, 4> Buffers;
   for (const auto &File : llvm::enumerate(ObjectFilenames)) {
     auto CovMappingBufOrErr = MemoryBuffer::getFileOrSTDIN(File.value());
-    if (std::error_code EC = CovMappingBufOrErr.getError())
+    if (std::error_code EC = CovMappingBufOrErr.getError()) {
       return errorCodeToError(EC);
+
+}
     StringRef Arch = Arches.empty() ? StringRef() : Arches[File.index()];
     MemoryBufferRef CovMappingBufRef =
         CovMappingBufOrErr.get()->getMemBufferRef();
@@ -325,19 +379,25 @@ CoverageMapping::load(ArrayRef<StringRef> ObjectFilenames,
         BinaryCoverageReader::create(CovMappingBufRef, Arch, Buffers);
     if (Error E = CoverageReadersOrErr.takeError()) {
       E = handleMaybeNoDataFoundError(std::move(E));
-      if (E)
+      if (E) {
         return std::move(E);
+
+}
       // E == success (originally a no_data_found error).
       continue;
     }
-    for (auto &Reader : CoverageReadersOrErr.get())
+    for (auto &Reader : CoverageReadersOrErr.get()) {
       Readers.push_back(std::move(Reader));
+
+}
     Buffers.push_back(std::move(CovMappingBufOrErr.get()));
   }
   // If no readers were created, either no objects were provided or none of them
   // had coverage data. Return an error in the latter case.
-  if (Readers.empty() && !ObjectFilenames.empty())
+  if (Readers.empty() && !ObjectFilenames.empty()) {
     return make_error<CoverageMapError>(coveragemap_error::no_data_found);
+
+}
   return load(Readers, *ProfileReader);
 }
 
@@ -354,8 +414,10 @@ class FunctionInstantiationSetCollector {
 public:
   void insert(const FunctionRecord &Function, unsigned FileID) {
     auto I = Function.CountedRegions.begin(), E = Function.CountedRegions.end();
-    while (I != E && I->FileID != FileID)
+    while (I != E && I->FileID != FileID) {
       ++I;
+
+}
     assert(I != E && "function does not cover the given file");
     auto &Functions = InstantiatedFunctions[I->startLoc()];
     Functions.push_back(&Function);
@@ -384,16 +446,20 @@ class SegmentBuilder {
     if (!Segments.empty() && !IsRegionEntry && !EmitSkippedRegion) {
       const auto &Last = Segments.back();
       if (Last.HasCount == HasCount && Last.Count == Region.ExecutionCount &&
-          !Last.IsRegionEntry)
+          !Last.IsRegionEntry) {
         return;
+
+}
     }
 
-    if (HasCount)
+    if (HasCount) {
       Segments.emplace_back(StartLoc.first, StartLoc.second,
                             Region.ExecutionCount, IsRegionEntry,
                             Region.Kind == CounterMappingRegion::GapRegion);
-    else
+    } else {
       Segments.emplace_back(StartLoc.first, StartLoc.second, IsRegionEntry);
+
+}
 
     LLVM_DEBUG({
       const auto &Last = Segments.back();
@@ -431,18 +497,26 @@ class SegmentBuilder {
       auto CompletedSegmentLoc = PrevCompletedRegion->endLoc();
 
       // Don't emit any more segments if they start where the new region begins.
-      if (Loc && CompletedSegmentLoc == *Loc)
+      if (Loc && CompletedSegmentLoc == *Loc) {
         break;
+
+}
 
       // Don't emit a segment if the next completed region ends at the same
       // location as this one.
-      if (CompletedSegmentLoc == CompletedRegion->endLoc())
+      if (CompletedSegmentLoc == CompletedRegion->endLoc()) {
         continue;
 
+}
+
       // Use the count from the last completed region which ends at this loc.
-      for (unsigned J = I + 1; J < E; ++J)
-        if (CompletedRegion->endLoc() == ActiveRegions[J]->endLoc())
+      for (unsigned J = I + 1; J < E; ++J) {
+        if (CompletedRegion->endLoc() == ActiveRegions[J]->endLoc()) {
           CompletedRegion = ActiveRegions[J];
+
+}
+
+}
 
       startSegment(*CompletedRegion, CompletedSegmentLoc, false);
     }
@@ -502,18 +576,24 @@ class SegmentBuilder {
     }
 
     // Complete any remaining active regions.
-    if (!ActiveRegions.empty())
+    if (!ActiveRegions.empty()) {
       completeRegionsUntil(None, 0);
+
+}
   }
 
   /// Sort a nested sequence of regions from a single file.
   static void sortNestedRegions(MutableArrayRef<CountedRegion> Regions) {
     llvm::sort(Regions, [](const CountedRegion &LHS, const CountedRegion &RHS) {
-      if (LHS.startLoc() != RHS.startLoc())
+      if (LHS.startLoc() != RHS.startLoc()) {
         return LHS.startLoc() < RHS.startLoc();
-      if (LHS.endLoc() != RHS.endLoc())
+
+}
+      if (LHS.endLoc() != RHS.endLoc()) {
         // When LHS completely contains RHS, we sort LHS first.
         return RHS.endLoc() < LHS.endLoc();
+
+}
       // If LHS and RHS cover the same area, we need to sort them according
       // to their kinds so that the most suitable region will become "active"
       // in combineRegions(). Because we accumulate counter values only from
@@ -531,8 +611,10 @@ class SegmentBuilder {
   /// Combine counts of regions which cover the same area.
   static ArrayRef<CountedRegion>
   combineRegions(MutableArrayRef<CountedRegion> Regions) {
-    if (Regions.empty())
+    if (Regions.empty()) {
       return Regions;
+
+}
     auto Active = Regions.begin();
     auto End = Regions.end();
     for (auto I = Regions.begin() + 1; I != End; ++I) {
@@ -540,8 +622,10 @@ class SegmentBuilder {
           Active->endLoc() != I->endLoc()) {
         // Shift to the next region.
         ++Active;
-        if (Active != I)
+        if (Active != I) {
           *Active = *I;
+
+}
         continue;
       }
       // Merge duplicate region.
@@ -556,8 +640,10 @@ class SegmentBuilder {
       // value for that area.
       // We add counts of the regions of the same kind as the active region
       // to handle the both situations.
-      if (I->Kind == Active->Kind)
+      if (I->Kind == Active->Kind) {
         Active->ExecutionCount += I->ExecutionCount;
+
+}
     }
     return Regions.drop_back(std::distance(++Active, End));
   }
@@ -602,9 +688,11 @@ public:
 
 std::vector<StringRef> CoverageMapping::getUniqueSourceFiles() const {
   std::vector<StringRef> Filenames;
-  for (const auto &Function : getCoveredFunctions())
+  for (const auto &Function : getCoveredFunctions()) {
     Filenames.insert(Filenames.end(), Function.Filenames.begin(),
                      Function.Filenames.end());
+
+}
   llvm::sort(Filenames);
   auto Last = std::unique(Filenames.begin(), Filenames.end());
   Filenames.erase(Last, Filenames.end());
@@ -614,21 +702,31 @@ std::vector<StringRef> CoverageMapping::getUniqueSourceFiles() const {
 static SmallBitVector gatherFileIDs(StringRef SourceFile,
                                     const FunctionRecord &Function) {
   SmallBitVector FilenameEquivalence(Function.Filenames.size(), false);
-  for (unsigned I = 0, E = Function.Filenames.size(); I < E; ++I)
-    if (SourceFile == Function.Filenames[I])
+  for (unsigned I = 0, E = Function.Filenames.size(); I < E; ++I) {
+    if (SourceFile == Function.Filenames[I]) {
       FilenameEquivalence[I] = true;
+
+}
+
+}
   return FilenameEquivalence;
 }
 
 /// Return the ID of the file where the definition of the function is located.
 static Optional<unsigned> findMainViewFileID(const FunctionRecord &Function) {
   SmallBitVector IsNotExpandedFile(Function.Filenames.size(), true);
-  for (const auto &CR : Function.CountedRegions)
-    if (CR.Kind == CounterMappingRegion::ExpansionRegion)
+  for (const auto &CR : Function.CountedRegions) {
+    if (CR.Kind == CounterMappingRegion::ExpansionRegion) {
       IsNotExpandedFile[CR.ExpandedFileID] = false;
+
+}
+
+}
   int I = IsNotExpandedFile.find_first();
-  if (I == -1)
+  if (I == -1) {
     return None;
+
+}
   return I;
 }
 
@@ -637,8 +735,10 @@ static Optional<unsigned> findMainViewFileID(const FunctionRecord &Function) {
 static Optional<unsigned> findMainViewFileID(StringRef SourceFile,
                                              const FunctionRecord &Function) {
   Optional<unsigned> I = findMainViewFileID(Function);
-  if (I && SourceFile == Function.Filenames[*I])
+  if (I && SourceFile == Function.Filenames[*I]) {
     return I;
+
+}
   return None;
 }
 
@@ -658,12 +758,16 @@ CoverageData CoverageMapping::getCoverageForFile(StringRef Filename) const {
     const FunctionRecord &Function = Functions[RecordIndex];
     auto MainFileID = findMainViewFileID(Filename, Function);
     auto FileIDs = gatherFileIDs(Filename, Function);
-    for (const auto &CR : Function.CountedRegions)
+    for (const auto &CR : Function.CountedRegions) {
       if (FileIDs.test(CR.FileID)) {
         Regions.push_back(CR);
-        if (MainFileID && isExpansion(CR, *MainFileID))
+        if (MainFileID && isExpansion(CR, *MainFileID)) {
           FileCoverage.Expansions.emplace_back(CR, Function);
+
+}
       }
+
+}
   }
 
   LLVM_DEBUG(dbgs() << "Emitting segments for file: " << Filename << "\n");
@@ -682,8 +786,10 @@ CoverageMapping::getInstantiationGroups(StringRef Filename) const {
   for (unsigned RecordIndex : RecordIndices) {
     const FunctionRecord &Function = Functions[RecordIndex];
     auto MainFileID = findMainViewFileID(Filename, Function);
-    if (!MainFileID)
+    if (!MainFileID) {
       continue;
+
+}
     InstantiationSetCollector.insert(Function, *MainFileID);
   }
 
@@ -700,17 +806,23 @@ CoverageMapping::getInstantiationGroups(StringRef Filename) const {
 CoverageData
 CoverageMapping::getCoverageForFunction(const FunctionRecord &Function) const {
   auto MainFileID = findMainViewFileID(Function);
-  if (!MainFileID)
+  if (!MainFileID) {
     return CoverageData();
+
+}
 
   CoverageData FunctionCoverage(Function.Filenames[*MainFileID]);
   std::vector<CountedRegion> Regions;
-  for (const auto &CR : Function.CountedRegions)
+  for (const auto &CR : Function.CountedRegions) {
     if (CR.FileID == *MainFileID) {
       Regions.push_back(CR);
-      if (isExpansion(CR, *MainFileID))
+      if (isExpansion(CR, *MainFileID)) {
         FunctionCoverage.Expansions.emplace_back(CR, Function);
+
+}
     }
+
+}
 
   LLVM_DEBUG(dbgs() << "Emitting segments for function: " << Function.Name
                     << "\n");
@@ -724,12 +836,16 @@ CoverageData CoverageMapping::getCoverageForExpansion(
   CoverageData ExpansionCoverage(
       Expansion.Function.Filenames[Expansion.FileID]);
   std::vector<CountedRegion> Regions;
-  for (const auto &CR : Expansion.Function.CountedRegions)
+  for (const auto &CR : Expansion.Function.CountedRegions) {
     if (CR.FileID == Expansion.FileID) {
       Regions.push_back(CR);
-      if (isExpansion(CR, Expansion.FileID))
+      if (isExpansion(CR, Expansion.FileID)) {
         ExpansionCoverage.Expansions.emplace_back(CR, Expansion.Function);
+
+}
     }
+
+}
 
   LLVM_DEBUG(dbgs() << "Emitting segments for expansion of file "
                     << Expansion.FileID << "\n");
@@ -748,9 +864,13 @@ LineCoverageStats::LineCoverageStats(
   auto isStartOfRegion = [](const CoverageSegment *S) {
     return !S->IsGapRegion && S->HasCount && S->IsRegionEntry;
   };
-  for (unsigned I = 0; I < LineSegments.size() && MinRegionCount < 2; ++I)
-    if (isStartOfRegion(LineSegments[I]))
+  for (unsigned I = 0; I < LineSegments.size() && MinRegionCount < 2; ++I) {
+    if (isStartOfRegion(LineSegments[I])) {
       ++MinRegionCount;
+
+}
+
+}
 
   bool StartOfSkippedRegion = !LineSegments.empty() &&
                               !LineSegments.front()->HasCount &&
@@ -761,18 +881,28 @@ LineCoverageStats::LineCoverageStats(
       !StartOfSkippedRegion &&
       ((WrappedSegment && WrappedSegment->HasCount) || (MinRegionCount > 0));
 
-  if (!Mapped)
+  if (!Mapped) {
     return;
+
+}
 
   // Pick the max count from the non-gap, region entry segments and the
   // wrapped count.
-  if (WrappedSegment)
+  if (WrappedSegment) {
     ExecutionCount = WrappedSegment->Count;
-  if (!MinRegionCount)
+
+}
+  if (!MinRegionCount) {
     return;
-  for (const auto *LS : LineSegments)
-    if (isStartOfRegion(LS))
+
+}
+  for (const auto *LS : LineSegments) {
+    if (isStartOfRegion(LS)) {
       ExecutionCount = std::max(ExecutionCount, LS->Count);
+
+}
+
+}
 }
 
 LineCoverageIterator &LineCoverageIterator::operator++() {
@@ -781,11 +911,15 @@ LineCoverageIterator &LineCoverageIterator::operator++() {
     Ended = true;
     return *this;
   }
-  if (Segments.size())
+  if (Segments.size()) {
     WrappedSegment = Segments.back();
+
+}
   Segments.clear();
-  while (Next != CD.end() && Next->Line == Line)
+  while (Next != CD.end() && Next->Line == Line) {
     Segments.push_back(&*Next++);
+
+}
   Stats = LineCoverageStats(Segments, WrappedSegment, Line);
   ++Line;
   return *this;

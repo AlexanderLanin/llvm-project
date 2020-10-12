@@ -23,11 +23,15 @@ static bool inferAllPrototypeAttributes(
     Module &M, function_ref<TargetLibraryInfo &(Function &)> GetTLI) {
   bool Changed = false;
 
-  for (Function &F : M.functions())
+  for (Function &F : M.functions()) {
     // We only infer things using the prototype and the name; we don't need
     // definitions.
-    if (F.isDeclaration() && !F.hasOptNone())
+    if (F.isDeclaration() && !F.hasOptNone()) {
       Changed |= inferLibFuncAttributes(F, GetTLI(F));
+
+}
+
+}
 
   return Changed;
 }
@@ -40,9 +44,11 @@ PreservedAnalyses InferFunctionAttrsPass::run(Module &M,
     return FAM.getResult<TargetLibraryAnalysis>(F);
   };
 
-  if (!inferAllPrototypeAttributes(M, GetTLI))
+  if (!inferAllPrototypeAttributes(M, GetTLI)) {
     // If we didn't infer anything, preserve all analyses.
     return PreservedAnalyses::all();
+
+}
 
   // Otherwise, we may have changed fundamental function attributes, so clear
   // out all the passes.
@@ -62,8 +68,10 @@ struct InferFunctionAttrsLegacyPass : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
 
     auto GetTLI = [this](Function &F) -> TargetLibraryInfo & {
       return this->getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);

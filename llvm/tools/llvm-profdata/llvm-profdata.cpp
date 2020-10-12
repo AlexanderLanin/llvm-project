@@ -46,21 +46,29 @@ enum ProfileFormat {
 static void warn(Twine Message, std::string Whence = "",
                  std::string Hint = "") {
   WithColor::warning();
-  if (!Whence.empty())
+  if (!Whence.empty()) {
     errs() << Whence << ": ";
+
+}
   errs() << Message << "\n";
-  if (!Hint.empty())
+  if (!Hint.empty()) {
     WithColor::note() << Hint << "\n";
+
+}
 }
 
 static void exitWithError(Twine Message, std::string Whence = "",
                           std::string Hint = "") {
   WithColor::error();
-  if (!Whence.empty())
+  if (!Whence.empty()) {
     errs() << Whence << ": ";
+
+}
   errs() << Message << "\n";
-  if (!Hint.empty())
+  if (!Hint.empty()) {
     WithColor::note() << Hint << "\n";
+
+}
   ::exit(1);
 }
 
@@ -91,19 +99,25 @@ enum FailureMode { failIfAnyAreInvalid, failIfAllAreInvalid };
 
 static void warnOrExitGivenError(FailureMode FailMode, std::error_code EC,
                                  StringRef Whence = "") {
-  if (FailMode == failIfAnyAreInvalid)
+  if (FailMode == failIfAnyAreInvalid) {
     exitWithErrorCode(EC, Whence);
-  else
+  } else {
     warn(EC.message(), std::string(Whence));
+
+}
 }
 
 static void handleMergeWriterError(Error E, StringRef WhenceFile = "",
                                    StringRef WhenceFunction = "",
                                    bool ShowHint = true) {
-  if (!WhenceFile.empty())
+  if (!WhenceFile.empty()) {
     errs() << WhenceFile << ": ";
-  if (!WhenceFunction.empty())
+
+}
+  if (!WhenceFunction.empty()) {
     errs() << WhenceFunction << ": ";
+
+}
 
   auto IPE = instrprof_error::success;
   E = handleErrors(std::move(E),
@@ -128,8 +142,10 @@ static void handleMergeWriterError(Error E, StringRef WhenceFile = "",
       }
     }
 
-    if (!Hint.empty())
+    if (!Hint.empty()) {
       errs() << Hint << "\n";
+
+}
   }
 }
 
@@ -144,8 +160,10 @@ public:
   /// Build a SymbolRemapper from a file containing a list of old/new symbols.
   static std::unique_ptr<SymbolRemapper> create(StringRef InputFile) {
     auto BufOrError = MemoryBuffer::getFileOrSTDIN(InputFile);
-    if (!BufOrError)
+    if (!BufOrError) {
       exitWithErrorCode(BufOrError.getError(), InputFile);
+
+}
 
     auto Remapper = std::make_unique<SymbolRemapper>();
     Remapper->File = std::move(BufOrError.get());
@@ -205,8 +223,10 @@ static void overlapInput(const std::string &BaseFilename,
   if (Error E = ReaderOrErr.takeError()) {
     // Skip the empty profiles by returning sliently.
     instrprof_error IPE = InstrProfError::take(std::move(E));
-    if (IPE != instrprof_error::empty_raw_profile)
+    if (IPE != instrprof_error::empty_raw_profile) {
       WC->Errors.emplace_back(make_error<InstrProfError>(IPE), TestFilename);
+
+}
     return;
   }
 
@@ -234,8 +254,10 @@ static void loadInput(const WeightedFile &Input, SymbolRemapper *Remapper,
   if (Error E = ReaderOrErr.takeError()) {
     // Skip the empty profiles by returning sliently.
     instrprof_error IPE = InstrProfError::take(std::move(E));
-    if (IPE != instrprof_error::empty_raw_profile)
+    if (IPE != instrprof_error::empty_raw_profile) {
       WC->Errors.emplace_back(make_error<InstrProfError>(IPE), Filename);
+
+}
     return;
   }
 
@@ -252,8 +274,10 @@ static void loadInput(const WeightedFile &Input, SymbolRemapper *Remapper,
   }
 
   for (auto &I : *Reader) {
-    if (Remapper)
+    if (Remapper) {
       I.Name = (*Remapper)(I.Name);
+
+}
     const StringRef FuncName = I.Name;
     bool Reported = false;
     WC->Writer.addRecord(std::move(I), Input.Weight, [&](Error E) {
@@ -270,23 +294,31 @@ static void loadInput(const WeightedFile &Input, SymbolRemapper *Remapper,
                              FuncName, firstTime);
     });
   }
-  if (Reader->hasError())
-    if (Error E = Reader->getError())
+  if (Reader->hasError()) {
+    if (Error E = Reader->getError()) {
       WC->Errors.emplace_back(std::move(E), Filename);
+
+}
+
+}
 }
 
 /// Merge the \p Src writer context into \p Dst.
 static void mergeWriterContexts(WriterContext *Dst, WriterContext *Src) {
-  for (auto &ErrorPair : Src->Errors)
+  for (auto &ErrorPair : Src->Errors) {
     Dst->Errors.push_back(std::move(ErrorPair));
+
+}
   Src->Errors.clear();
 
   Dst->Writer.mergeRecordsFromWriter(std::move(Src->Writer), [&](Error E) {
     instrprof_error IPE = InstrProfError::take(std::move(E));
     std::unique_lock<std::mutex> ErrGuard{Dst->ErrLock};
     bool firstTime = Dst->WriterErrorCodes.insert(IPE).second;
-    if (firstTime)
+    if (firstTime) {
       warn(toString(make_error<InstrProfError>(IPE)));
+
+}
   });
 }
 
@@ -295,33 +327,43 @@ static void mergeInstrProfile(const WeightedFileVector &Inputs,
                               StringRef OutputFilename,
                               ProfileFormat OutputFormat, bool OutputSparse,
                               unsigned NumThreads, FailureMode FailMode) {
-  if (OutputFilename.compare("-") == 0)
+  if (OutputFilename.compare("-") == 0) {
     exitWithError("Cannot write indexed profdata format to stdout.");
 
+}
+
   if (OutputFormat != PF_Binary && OutputFormat != PF_Compact_Binary &&
-      OutputFormat != PF_Ext_Binary && OutputFormat != PF_Text)
+      OutputFormat != PF_Ext_Binary && OutputFormat != PF_Text) {
     exitWithError("Unknown format is specified.");
+
+}
 
   std::mutex ErrorLock;
   SmallSet<instrprof_error, 4> WriterErrorCodes;
 
   // If NumThreads is not specified, auto-detect a good default.
-  if (NumThreads == 0)
+  if (NumThreads == 0) {
     NumThreads = std::min(hardware_concurrency().compute_thread_count(),
                           unsigned((Inputs.size() + 1) / 2));
+
+}
   // FIXME: There's a bug here, where setting NumThreads = Inputs.size() fails
   // the merge_empty_profile.test because the InstrProfWriter.ProfileKind isn't
   // merged, thus the emitted file ends up with a PF_Unknown kind.
 
   // Initialize the writer contexts.
   SmallVector<std::unique_ptr<WriterContext>, 4> Contexts;
-  for (unsigned I = 0; I < NumThreads; ++I)
+  for (unsigned I = 0; I < NumThreads; ++I) {
     Contexts.emplace_back(std::make_unique<WriterContext>(
         OutputSparse, ErrorLock, WriterErrorCodes));
 
+}
+
   if (NumThreads == 1) {
-    for (const auto &Input : Inputs)
+    for (const auto &Input : Inputs) {
       loadInput(Input, Remapper, Contexts[0].get());
+
+}
   } else {
     ThreadPool Pool(hardware_concurrency(NumThreads));
 
@@ -338,9 +380,11 @@ static void mergeInstrProfile(const WeightedFileVector &Inputs,
     unsigned End = Contexts.size();
     assert(Mid > 0 && "Expected more than one context");
     do {
-      for (unsigned I = 0; I < Mid; ++I)
+      for (unsigned I = 0; I < Mid; ++I) {
         Pool.async(mergeWriterContexts, Contexts[I].get(),
                    Contexts[I + Mid].get());
+
+}
       Pool.wait();
       if (End & 1) {
         Pool.async(mergeWriterContexts, Contexts[0].get(),
@@ -362,18 +406,24 @@ static void mergeInstrProfile(const WeightedFileVector &Inputs,
     }
   }
   if (NumErrors == Inputs.size() ||
-      (NumErrors > 0 && FailMode == failIfAnyAreInvalid))
+      (NumErrors > 0 && FailMode == failIfAnyAreInvalid)) {
     exitWithError("No profiles could be merged.");
+
+}
 
   std::error_code EC;
   raw_fd_ostream Output(OutputFilename.data(), EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     exitWithErrorCode(EC, OutputFilename);
+
+}
 
   InstrProfWriter &Writer = Contexts[0]->Writer;
   if (OutputFormat == PF_Text) {
-    if (Error E = Writer.writeText(Output))
+    if (Error E = Writer.writeText(Output)) {
       exitWithError(std::move(E));
+
+}
   } else {
     Writer.write(Output);
   }
@@ -421,27 +471,35 @@ static sampleprof::SampleProfileFormat FormatMap[] = {
 
 static std::unique_ptr<MemoryBuffer>
 getInputFileBuf(const StringRef &InputFile) {
-  if (InputFile == "")
+  if (InputFile == "") {
     return {};
 
+}
+
   auto BufOrError = MemoryBuffer::getFileOrSTDIN(InputFile);
-  if (!BufOrError)
+  if (!BufOrError) {
     exitWithErrorCode(BufOrError.getError(), InputFile);
+
+}
 
   return std::move(*BufOrError);
 }
 
 static void populateProfileSymbolList(MemoryBuffer *Buffer,
                                       sampleprof::ProfileSymbolList &PSL) {
-  if (!Buffer)
+  if (!Buffer) {
     return;
+
+}
 
   SmallVector<StringRef, 32> SymbolVec;
   StringRef Data = Buffer->getBuffer();
   Data.split(SymbolVec, '\n', /*MaxSplit=*/-1, /*KeepEmpty=*/false);
 
-  for (StringRef symbol : SymbolVec)
+  for (StringRef symbol : SymbolVec) {
     PSL.add(symbol);
+
+}
 }
 
 static void handleExtBinaryWriter(sampleprof::SampleProfileWriter &Writer,
@@ -450,9 +508,11 @@ static void handleExtBinaryWriter(sampleprof::SampleProfileWriter &Writer,
                                   sampleprof::ProfileSymbolList &WriterList,
                                   bool CompressAllSections) {
   populateProfileSymbolList(Buffer, WriterList);
-  if (WriterList.size() > 0 && OutputFormat != PF_Ext_Binary)
+  if (WriterList.size() > 0 && OutputFormat != PF_Ext_Binary) {
     warn("Profile Symbol list is not empty but the output format is not "
          "ExtBinary format. The list will be lost in the output. ");
+
+}
 
   Writer.setProfileSymbolList(&WriterList);
 
@@ -516,13 +576,17 @@ static void mergeSampleProfile(const WeightedFileVector &Inputs,
 
     std::unique_ptr<sampleprof::ProfileSymbolList> ReaderList =
         Reader->getProfileSymbolList();
-    if (ReaderList)
+    if (ReaderList) {
       WriterList.merge(*ReaderList);
+
+}
   }
   auto WriterOrErr =
       SampleProfileWriter::create(OutputFilename, FormatMap[OutputFormat]);
-  if (std::error_code EC = WriterOrErr.getError())
+  if (std::error_code EC = WriterOrErr.getError()) {
     exitWithErrorCode(EC, OutputFilename);
+
+}
 
   auto Writer = std::move(WriterOrErr.get());
   // WriterList will have StringRef refering to string in Buffer.
@@ -538,8 +602,10 @@ static WeightedFile parseWeightedFile(const StringRef &WeightedFilename) {
   std::tie(WeightStr, FileName) = WeightedFilename.split(',');
 
   uint64_t Weight;
-  if (WeightStr.getAsInteger(10, Weight) || Weight < 1)
+  if (WeightStr.getAsInteger(10, Weight) || Weight < 1) {
     exitWithError("Input weight must be a positive integer.");
+
+}
 
   return {std::string(FileName), Weight};
 }
@@ -556,9 +622,11 @@ static void addWeightedInput(WeightedFileVector &WNI, const WeightedFile &WF) {
 
   llvm::sys::fs::file_status Status;
   llvm::sys::fs::status(Filename, Status);
-  if (!llvm::sys::fs::exists(Status))
+  if (!llvm::sys::fs::exists(Status)) {
     exitWithErrorCode(make_error_code(errc::no_such_file_or_directory),
                       Filename);
+
+}
   // If it's a source file, collect it.
   if (llvm::sys::fs::is_regular_file(Status)) {
     WNI.push_back({std::string(Filename), Weight});
@@ -573,15 +641,19 @@ static void addWeightedInput(WeightedFileVector &WNI, const WeightedFile &WF) {
         addWeightedInput(WNI, {F->path(), Weight});
       }
     }
-    if (EC)
+    if (EC) {
       exitWithErrorCode(EC, Filename);
+
+}
   }
 }
 
 static void parseInputFilenamesFile(MemoryBuffer *Buffer,
                                     WeightedFileVector &WFV) {
-  if (!Buffer)
+  if (!Buffer) {
     return;
+
+}
 
   SmallVector<StringRef, 8> Entries;
   StringRef Data = Buffer->getBuffer();
@@ -589,13 +661,15 @@ static void parseInputFilenamesFile(MemoryBuffer *Buffer,
   for (const StringRef &FileWeightEntry : Entries) {
     StringRef SanitizedEntry = FileWeightEntry.trim(" \t\v\f\r");
     // Skip comments.
-    if (SanitizedEntry.startswith("#"))
+    if (SanitizedEntry.startswith("#")) {
       continue;
     // If there's no comma, it's an unweighted profile.
-    else if (SanitizedEntry.find(',') == StringRef::npos)
+    } else if (SanitizedEntry.find(',') == StringRef::npos) {
       addWeightedInput(WFV, {std::string(SanitizedEntry), 1});
-    else
+    } else {
       addWeightedInput(WFV, parseWeightedFile(SanitizedEntry));
+
+}
   }
 }
 
@@ -661,37 +735,49 @@ static int merge_main(int argc, const char *argv[]) {
   cl::ParseCommandLineOptions(argc, argv, "LLVM profile data merger\n");
 
   WeightedFileVector WeightedInputs;
-  for (StringRef Filename : InputFilenames)
+  for (StringRef Filename : InputFilenames) {
     addWeightedInput(WeightedInputs, {std::string(Filename), 1});
-  for (StringRef WeightedFilename : WeightedInputFilenames)
+
+}
+  for (StringRef WeightedFilename : WeightedInputFilenames) {
     addWeightedInput(WeightedInputs, parseWeightedFile(WeightedFilename));
+
+}
 
   // Make sure that the file buffer stays alive for the duration of the
   // weighted input vector's lifetime.
   auto Buffer = getInputFileBuf(InputFilenamesFile);
   parseInputFilenamesFile(Buffer.get(), WeightedInputs);
 
-  if (WeightedInputs.empty())
+  if (WeightedInputs.empty()) {
     exitWithError("No input files specified. See " +
                   sys::path::filename(argv[0]) + " -help");
 
+}
+
   if (DumpInputFileList) {
-    for (auto &WF : WeightedInputs)
+    for (auto &WF : WeightedInputs) {
       outs() << WF.Weight << "," << WF.Filename << "\n";
+
+}
     return 0;
   }
 
   std::unique_ptr<SymbolRemapper> Remapper;
-  if (!RemappingFile.empty())
+  if (!RemappingFile.empty()) {
     Remapper = SymbolRemapper::create(RemappingFile);
 
-  if (ProfileKind == instr)
+}
+
+  if (ProfileKind == instr) {
     mergeInstrProfile(WeightedInputs, Remapper.get(), OutputFilename,
                       OutputFormat, OutputSparse, NumThreads, FailureMode);
-  else
+  } else {
     mergeSampleProfile(WeightedInputs, Remapper.get(), OutputFilename,
                        OutputFormat, ProfileSymbolListFile, CompressAllSections,
                        FailureMode);
+
+}
 
   return 0;
 }
@@ -707,8 +793,10 @@ static void overlapInstrProfile(const std::string &BaseFilename,
   WeightedFile WeightedInput{BaseFilename, 1};
   OverlapStats Overlap;
   Error E = Overlap.accumulateCounts(BaseFilename, TestFilename, IsCS);
-  if (E)
+  if (E) {
     exitWithError(std::move(E), "Error in getting profile count sums");
+
+}
   if (Overlap.Base.CountSum < 1.0f) {
     OS << "Sum of edge counts for profile " << BaseFilename << " is 0.\n";
     exit(0);
@@ -745,8 +833,10 @@ static int overlap_main(int argc, const char *argv[]) {
 
   std::error_code EC;
   raw_fd_ostream OS(Output.data(), EC, sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     exitWithErrorCode(EC, Output);
+
+}
 
   overlapInstrProfile(BaseFilename, TestFilename,
                       OverlapFuncFilters{ValueCutoff, FuncNameFilter}, OS,
@@ -776,23 +866,31 @@ static void traverseAllValueSites(const InstrProfRecord &Func, uint32_t VK,
     Stats.TotalNumValues += NV;
     if (NV) {
       Stats.TotalNumValueSitesWithValueProfile++;
-      if (NV > Stats.ValueSitesHistogram.size())
+      if (NV > Stats.ValueSitesHistogram.size()) {
         Stats.ValueSitesHistogram.resize(NV, 0);
+
+}
       Stats.ValueSitesHistogram[NV - 1]++;
     }
 
     uint64_t SiteSum = 0;
-    for (uint32_t V = 0; V < NV; V++)
+    for (uint32_t V = 0; V < NV; V++) {
       SiteSum += VD[V].Count;
-    if (SiteSum == 0)
+
+}
+    if (SiteSum == 0) {
       SiteSum = 1;
+
+}
 
     for (uint32_t V = 0; V < NV; V++) {
       OS << "\t[ " << format("%2u", I) << ", ";
-      if (Symtab == nullptr)
+      if (Symtab == nullptr) {
         OS << format("%4" PRIu64, VD[V].Value);
-      else
+      } else {
         OS << Symtab->getFuncName(VD[V].Value);
+
+}
       OS << ", " << format("%10" PRId64, VD[V].Count) << " ] ("
          << format("%.2f%%", (VD[V].Count * 100.0 / SiteSum)) << ")\n";
     }
@@ -808,8 +906,10 @@ static void showValueSitesStats(raw_fd_ostream &OS, uint32_t VK,
 
   OS << "  Value sites histogram:\n\tNumTargets, SiteCount\n";
   for (unsigned I = 0; I < Stats.ValueSitesHistogram.size(); I++) {
-    if (Stats.ValueSitesHistogram[I] > 0)
+    if (Stats.ValueSitesHistogram[I] > 0) {
       OS << "\t" << I + 1 << ", " << Stats.ValueSitesHistogram[I] << "\n";
+
+}
   }
 }
 
@@ -827,8 +927,10 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
     Cutoffs = {800000, 900000, 950000, 990000, 999000, 999900, 999990};
   }
   InstrProfSummaryBuilder Builder(std::move(Cutoffs));
-  if (Error E = ReaderOrErr.takeError())
+  if (Error E = ReaderOrErr.takeError()) {
     exitWithError(std::move(E), Filename);
+
+}
 
   auto Reader = std::move(ReaderOrErr.get());
   bool IsIRInstr = Reader->isIRLevelProfile();
@@ -853,14 +955,18 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
   }
 
   // Add marker so that IR-level instrumentation round-trips properly.
-  if (TextFormat && IsIRInstr)
+  if (TextFormat && IsIRInstr) {
     OS << ":ir\n";
+
+}
 
   for (const auto &Func : *Reader) {
     if (Reader->isIRLevelProfile()) {
       bool FuncIsCS = NamedInstrProfRecord::hasCSFlagInHash(Func.Hash);
-      if (FuncIsCS != ShowCS)
+      if (FuncIsCS != ShowCS) {
         continue;
+
+}
     }
     bool Show =
         ShowAllFunctions || (!ShowFunction.empty() &&
@@ -892,8 +998,10 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
            << " Sum = " << FuncSum << ")\n";
       }
       continue;
-    } else if (OnlyListBelow)
+    } else if (OnlyListBelow) {
       continue;
+
+}
 
     if (TopN) {
       if (HottestFuncs.size() == TopN) {
@@ -901,30 +1009,40 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
           HottestFuncs.pop();
           HottestFuncs.emplace(std::make_pair(std::string(Func.Name), FuncMax));
         }
-      } else
+      } else {
         HottestFuncs.emplace(std::make_pair(std::string(Func.Name), FuncMax));
+
+}
     }
 
     if (Show) {
-      if (!ShownFunctions)
+      if (!ShownFunctions) {
         OS << "Counters:\n";
+
+}
 
       ++ShownFunctions;
 
       OS << "  " << Func.Name << ":\n"
          << "    Hash: " << format("0x%016" PRIx64, Func.Hash) << "\n"
          << "    Counters: " << Func.Counts.size() << "\n";
-      if (!IsIRInstr)
+      if (!IsIRInstr) {
         OS << "    Function count: " << Func.Counts[0] << "\n";
 
-      if (ShowIndirectCallTargets)
+}
+
+      if (ShowIndirectCallTargets) {
         OS << "    Indirect Call Site Count: "
            << Func.getNumValueSites(IPVK_IndirectCallTarget) << "\n";
 
+}
+
       uint32_t NumMemOPCalls = Func.getNumValueSites(IPVK_MemOPSize);
-      if (ShowMemOPSizes && NumMemOPCalls > 0)
+      if (ShowMemOPSizes && NumMemOPCalls > 0) {
         OS << "    Number of Memory Intrinsics Calls: " << NumMemOPCalls
            << "\n";
+
+}
 
       if (ShowCounts) {
         OS << "    Block counts: [";
@@ -949,16 +1067,22 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
       }
     }
   }
-  if (Reader->hasError())
+  if (Reader->hasError()) {
     exitWithError(Reader->getError(), Filename);
 
-  if (TextFormat)
+}
+
+  if (TextFormat) {
     return 0;
+
+}
   std::unique_ptr<ProfileSummary> PS(Builder.getSummary());
   OS << "Instrumentation level: "
      << (Reader->isIRLevelProfile() ? "IR" : "Front-end") << "\n";
-  if (ShowAllFunctions || !ShowFunction.empty())
+  if (ShowAllFunctions || !ShowFunction.empty()) {
     OS << "Functions shown: " << ShownFunctions << "\n";
+
+}
   OS << "Total functions: " << PS->getNumFunctions() << "\n";
   if (ValueCutoff > 0) {
     OS << "Number of functions with maximum count (< " << ValueCutoff
@@ -977,8 +1101,10 @@ static int showInstrProfile(const std::string &Filename, bool ShowCounts,
     }
     OS << "Top " << TopN
        << " functions with the largest internal block counts: \n";
-    for (auto &hotfunc : llvm::reverse(SortedHottestFuncs))
+    for (auto &hotfunc : llvm::reverse(SortedHottestFuncs)) {
       OS << "  " << hotfunc.first << ", max count = " << hotfunc.second << "\n";
+
+}
   }
 
   if (ShownFunctions && ShowIndirectCallTargets) {
@@ -1024,8 +1150,10 @@ static int showSampleProfile(const std::string &Filename, bool ShowCounts,
   using namespace sampleprof;
   LLVMContext Context;
   auto ReaderOrErr = SampleProfileReader::create(Filename, Context);
-  if (std::error_code EC = ReaderOrErr.getError())
+  if (std::error_code EC = ReaderOrErr.getError()) {
     exitWithErrorCode(EC, Filename);
+
+}
 
   auto Reader = std::move(ReaderOrErr.get());
 
@@ -1034,13 +1162,17 @@ static int showSampleProfile(const std::string &Filename, bool ShowCounts,
     return 0;
   }
 
-  if (std::error_code EC = Reader->read())
+  if (std::error_code EC = Reader->read()) {
     exitWithErrorCode(EC, Filename);
 
-  if (ShowAllFunctions || ShowFunction.empty())
+}
+
+  if (ShowAllFunctions || ShowFunction.empty()) {
     Reader->dump(OS);
-  else
+  } else {
     Reader->dumpFunctionProfile(ShowFunction, OS);
+
+}
 
   if (ShowProfileSymbolList) {
     std::unique_ptr<sampleprof::ProfileSymbolList> ReaderList =
@@ -1111,8 +1243,10 @@ static int show_main(int argc, const char *argv[]) {
 
   cl::ParseCommandLineOptions(argc, argv, "LLVM profile data summary\n");
 
-  if (OutputFilename.empty())
+  if (OutputFilename.empty()) {
     OutputFilename = "-";
+
+}
 
   if (!Filename.compare(OutputFilename)) {
     errs() << sys::path::filename(argv[0])
@@ -1122,22 +1256,28 @@ static int show_main(int argc, const char *argv[]) {
 
   std::error_code EC;
   raw_fd_ostream OS(OutputFilename.data(), EC, sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     exitWithErrorCode(EC, OutputFilename);
 
-  if (ShowAllFunctions && !ShowFunction.empty())
+}
+
+  if (ShowAllFunctions && !ShowFunction.empty()) {
     WithColor::warning() << "-function argument ignored: showing all functions\n";
 
-  if (ProfileKind == instr)
+}
+
+  if (ProfileKind == instr) {
     return showInstrProfile(Filename, ShowCounts, TopNFunctions,
                             ShowIndirectCallTargets, ShowMemOPSizes,
                             ShowDetailedSummary, DetailedSummaryCutoffs,
                             ShowAllFunctions, ShowCS, ValueCutoff,
                             OnlyListBelow, ShowFunction, TextFormat, OS);
-  else
+  } else {
     return showSampleProfile(Filename, ShowCounts, ShowAllFunctions,
                              ShowFunction, ShowProfileSymbolList,
                              ShowSectionInfoOnly, OS);
+
+}
 }
 
 int main(int argc, const char *argv[]) {
@@ -1147,12 +1287,14 @@ int main(int argc, const char *argv[]) {
   if (argc > 1) {
     int (*func)(int, const char *[]) = nullptr;
 
-    if (strcmp(argv[1], "merge") == 0)
+    if (strcmp(argv[1], "merge") == 0) {
       func = merge_main;
-    else if (strcmp(argv[1], "show") == 0)
+    } else if (strcmp(argv[1], "show") == 0) {
       func = show_main;
-    else if (strcmp(argv[1], "overlap") == 0)
+    } else if (strcmp(argv[1], "overlap") == 0) {
       func = overlap_main;
+
+}
 
     if (func) {
       std::string Invocation(ProgName.str() + " " + argv[1]);
@@ -1172,10 +1314,12 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  if (argc < 2)
+  if (argc < 2) {
     errs() << ProgName << ": No command specified!\n";
-  else
+  } else {
     errs() << ProgName << ": Unknown command!\n";
+
+}
 
   errs() << "USAGE: " << ProgName << " <merge|show|overlap> [args...]\n";
   return 1;

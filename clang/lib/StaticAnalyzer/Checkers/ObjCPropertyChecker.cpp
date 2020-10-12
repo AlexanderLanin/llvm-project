@@ -40,18 +40,24 @@ void ObjCPropertyChecker::checkASTDecl(const ObjCPropertyDecl *D,
 
 void ObjCPropertyChecker::checkCopyMutable(const ObjCPropertyDecl *D,
                                            BugReporter &BR) const {
-  if (D->isReadOnly() || D->getSetterKind() != ObjCPropertyDecl::Copy)
+  if (D->isReadOnly() || D->getSetterKind() != ObjCPropertyDecl::Copy) {
     return;
 
+}
+
   QualType T = D->getType();
-  if (!T->isObjCObjectPointerType())
+  if (!T->isObjCObjectPointerType()) {
     return;
+
+}
 
   const std::string &PropTypeName(T->getPointeeType().getCanonicalType()
                                                      .getUnqualifiedType()
                                                      .getAsString());
-  if (!StringRef(PropTypeName).startswith("NSMutable"))
+  if (!StringRef(PropTypeName).startswith("NSMutable")) {
     return;
+
+}
 
   const ObjCImplDecl *ImplD = nullptr;
   if (const ObjCInterfaceDecl *IntD =
@@ -61,8 +67,10 @@ void ObjCPropertyChecker::checkCopyMutable(const ObjCPropertyDecl *D,
     ImplD = CatD->getClassInterface()->getImplementation();
   }
 
-  if (!ImplD || ImplD->HasUserDeclaredSetterMethod(D))
+  if (!ImplD || ImplD->HasUserDeclaredSetterMethod(D)) {
     return;
+
+}
 
   SmallString<128> Str;
   llvm::raw_svector_ostream OS(Str);

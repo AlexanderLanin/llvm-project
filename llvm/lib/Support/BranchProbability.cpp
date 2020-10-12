@@ -22,8 +22,10 @@ using namespace llvm;
 const uint32_t BranchProbability::D;
 
 raw_ostream &BranchProbability::print(raw_ostream &OS) const {
-  if (isUnknown())
+  if (isUnknown()) {
     return OS << "?%";
+
+}
 
   // Get a percentage rounded to two decimal digits. This avoids
   // implementation-defined rounding inside printf.
@@ -39,9 +41,9 @@ LLVM_DUMP_METHOD void BranchProbability::dump() const { print(dbgs()) << '\n'; }
 BranchProbability::BranchProbability(uint32_t Numerator, uint32_t Denominator) {
   assert(Denominator > 0 && "Denominator cannot be 0!");
   assert(Numerator <= Denominator && "Probability cannot be bigger than 1!");
-  if (Denominator == D)
+  if (Denominator == D) {
     N = Numerator;
-  else {
+  } else {
     uint64_t Prob64 =
         (Numerator * static_cast<uint64_t>(D) + Denominator / 2) / Denominator;
     N = static_cast<uint32_t>(Prob64);
@@ -66,14 +68,18 @@ BranchProbability::getBranchProbability(uint64_t Numerator,
 // compiler.
 template <uint32_t ConstD>
 static uint64_t scale(uint64_t Num, uint32_t N, uint32_t D) {
-  if (ConstD > 0)
+  if (ConstD > 0) {
     D = ConstD;
+
+}
 
   assert(D && "divide by 0");
 
   // Fast path for multiplying by 1.0.
-  if (!Num || D == N)
+  if (!Num || D == N) {
     return Num;
+
+}
 
   // Split Num into upper and lower parts to multiply, then recombine.
   uint64_t ProductHigh = (Num >> 32) * N;
@@ -92,8 +98,10 @@ static uint64_t scale(uint64_t Num, uint32_t N, uint32_t D) {
   uint64_t UpperQ = Rem / D;
 
   // Check for overflow.
-  if (UpperQ > UINT32_MAX)
+  if (UpperQ > UINT32_MAX) {
     return UINT64_MAX;
+
+}
 
   Rem = ((Rem % D) << 32) | Lower32;
   uint64_t LowerQ = Rem / D;

@@ -113,8 +113,10 @@ void EmitDisassembler(RecordKeeper &Records, raw_ostream &OS) {
     ArrayRef<const CodeGenInstruction*> numberedInstructions =
       Target.getInstructionsByEnumValue();
 
-    for (unsigned i = 0, e = numberedInstructions.size(); i != e; ++i)
+    for (unsigned i = 0, e = numberedInstructions.size(); i != e; ++i) {
       RecognizableInstr::processInstr(Tables, *numberedInstructions[i], i);
+
+}
 
     if (Tables.hasConflicts()) {
       PrintError(Target.getTargetRecord()->getLoc(), "Primary decode conflict");
@@ -137,8 +139,10 @@ void EmitDisassembler(RecordKeeper &Records, raw_ostream &OS) {
   if (Target.getName() == "ARM" || Target.getName() == "Thumb" ||
       Target.getName() == "AArch64" || Target.getName() == "ARM64") {
     std::string PredicateNamespace = std::string(Target.getName());
-    if (PredicateNamespace == "Thumb")
+    if (PredicateNamespace == "Thumb") {
       PredicateNamespace = "ARM";
+
+}
 
     EmitFixedLenDecoder(Records, OS, PredicateNamespace,
                         "if (!Check(S, ", "))",

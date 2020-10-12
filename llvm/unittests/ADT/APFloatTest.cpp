@@ -938,17 +938,23 @@ TEST(APFloatTest, fromStringSpecials) {
 
   // Convert payload integer to decimal string representation.
   std::string NaNPayloadDecStrings[array_lengthof(NaNPayloads)];
-  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I)
+  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I) {
     NaNPayloadDecStrings[I] = utostr(NaNPayloads[I]);
+
+}
 
   // Convert payload integer to hexadecimal string representation.
   std::string NaNPayloadHexStrings[array_lengthof(NaNPayloads)];
-  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I)
+  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I) {
     NaNPayloadHexStrings[I] = "0x" + utohexstr(NaNPayloads[I]);
 
+}
+
   // Fix payloads to expected result.
-  for (uint64_t &Payload : NaNPayloads)
+  for (uint64_t &Payload : NaNPayloads) {
     Payload &= PayloadMask;
+
+}
 
   // Signaling NaN must have a non-zero payload. In case a zero payload is
   // requested, a default arbitrary payload is set instead. Save this payload
@@ -963,7 +969,7 @@ TEST(APFloatTest, fromStringSpecials) {
   const char NaNTypes[] = {0, 's', 'S'};
 
   const StringRef NaNStrings[] = {"nan", "NaN"};
-  for (StringRef NaNStr : NaNStrings)
+  for (StringRef NaNStr : NaNStrings) {
     for (char TypeChar : NaNTypes) {
       bool Signaling = (TypeChar == 's' || TypeChar == 'S');
 
@@ -980,15 +986,21 @@ TEST(APFloatTest, fromStringSpecials) {
           size_t NumTestStrings = 0;
 
           std::string Prefix;
-          if (SignChar)
+          if (SignChar) {
             Prefix += SignChar;
-          if (TypeChar)
+
+}
+          if (TypeChar) {
             Prefix += TypeChar;
+
+}
           Prefix += NaNStr;
 
           // Test without any paylod.
-          if (!Payload)
+          if (!Payload) {
             TestStrings[NumTestStrings++] = Prefix;
+
+}
 
           // Test with the payload as a suffix.
           TestStrings[NumTestStrings++] = Prefix + PayloadDec;
@@ -1015,6 +1027,8 @@ TEST(APFloatTest, fromStringSpecials) {
         }
       }
     }
+
+}
 
   const StringRef InfStrings[] = {"inf",  "INFINITY",  "+Inf",
                                   "-inf", "-INFINITY", "-Inf"};
@@ -1226,10 +1240,12 @@ TEST(APFloatTest, toInteger) {
 static APInt nanbitsFromAPInt(const fltSemantics &Sem, bool SNaN, bool Negative,
                               uint64_t payload) {
   APInt appayload(64, payload);
-  if (SNaN)
+  if (SNaN) {
     return APFloat::getSNaN(Sem, Negative, &appayload).bitcastToAPInt();
-  else
+  } else {
     return APFloat::getQNaN(Sem, Negative, &appayload).bitcastToAPInt();
+
+}
 }
 
 TEST(APFloatTest, makeNaN) {
@@ -3110,9 +3126,13 @@ TEST(APFloatTest, Comparisons) {
     /* PInf */ {UN, GT, GT, GT, GT, GT, GT, GT, EQ, UN},
     /* PNan */ {UN, UN, UN, UN, UN, UN, UN, UN, UN, UN},
   };
-  for (unsigned I = 0; I < NumVals; ++I)
-    for (unsigned J = 0; J < NumVals; ++J)
+  for (unsigned I = 0; I < NumVals; ++I) {
+    for (unsigned J = 0; J < NumVals; ++J) {
       Relations[I][J](Vals[I], Vals[J]);
+
+}
+
+}
 }
 
 TEST(APFloatTest, abs) {

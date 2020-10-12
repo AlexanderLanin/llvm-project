@@ -148,11 +148,15 @@ static void collectLocStats(uint64_t BytesCovered, uint64_t BytesInScope,
                             bool IsLocalVar) {
   auto getCoverageBucket = [BytesCovered, BytesInScope]() -> unsigned {
     // No debug location at all for the variable.
-    if (BytesCovered == 0)
+    if (BytesCovered == 0) {
       return 0;
+
+}
     // Fully covered variable within its scope.
-    if (BytesCovered >= BytesInScope)
+    if (BytesCovered >= BytesInScope) {
       return NumOfCoverageCategories - 1;
+
+}
     // Get covered range (e.g. 20%-29%).
     unsigned LocBucket = 100 * (double)BytesCovered / BytesInScope;
     LocBucket /= 10;
@@ -161,10 +165,12 @@ static void collectLocStats(uint64_t BytesCovered, uint64_t BytesInScope,
 
   unsigned CoverageBucket = getCoverageBucket();
   VarParamLocStats[CoverageBucket]++;
-  if (IsParam)
+  if (IsParam) {
     ParamLocStats[CoverageBucket]++;
-  else if (IsLocalVar)
+  } else if (IsLocalVar) {
     VarLocStats[CoverageBucket]++;
+
+}
 }
 /// Construct an identifier for a given DIE from its Prefix, Name, DeclFileName
 /// and DeclLine. The identifier aims to be unique for any unique entities,
@@ -177,18 +183,24 @@ static std::string constructDieID(DWARFDie Die,
      << Die.getName(DINameKind::LinkageName);
 
   // Prefix + Name is enough for local variables and parameters.
-  if (!Prefix.empty() && !Prefix.equals("g"))
+  if (!Prefix.empty() && !Prefix.equals("g")) {
     return ID.str();
+
+}
 
   auto DeclFile = Die.findRecursively(dwarf::DW_AT_decl_file);
   std::string File;
   if (DeclFile) {
     DWARFUnit *U = Die.getDwarfUnit();
-    if (const auto *LT = U->getContext().getLineTableForUnit(U))
+    if (const auto *LT = U->getContext().getLineTableForUnit(U)) {
       if (LT->getFileNameByIndex(
               dwarf::toUnsigned(DeclFile, 0), U->getCompilationDir(),
-              DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File))
+              DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File)) {
         File = std::string(sys::path::filename(File));
+
+}
+
+}
   }
   ID << ":" << (File.empty() ? "/" : File);
   ID << ":"
@@ -232,15 +244,21 @@ static void collectStatsForDie(DWARFDie Die, std::string FnPrefix,
   }
 
   // Ignore declarations of global variables.
-  if (IsVariable && Die.find(dwarf::DW_AT_declaration))
+  if (IsVariable && Die.find(dwarf::DW_AT_declaration)) {
     return;
 
+}
+
   if (Die.findRecursively(dwarf::DW_AT_decl_file) &&
-      Die.findRecursively(dwarf::DW_AT_decl_line))
+      Die.findRecursively(dwarf::DW_AT_decl_line)) {
     HasSrcLoc = true;
 
-  if (Die.findRecursively(dwarf::DW_AT_type))
+}
+
+  if (Die.findRecursively(dwarf::DW_AT_type)) {
     HasType = true;
+
+}
 
   auto IsEntryValue = [&](ArrayRef<uint8_t> D) -> bool {
     DWARFUnit *U = Die.getDwarfUnit();
@@ -277,8 +295,10 @@ static void collectStatsForDie(DWARFDie Die, std::string FnPrefix,
         for (auto Entry : *Loc) {
           uint64_t BytesEntryCovered = Entry.Range->HighPC - Entry.Range->LowPC;
           BytesCovered += BytesEntryCovered;
-          if (IsEntryValue(Entry.Expr))
+          if (IsEntryValue(Entry.Expr)) {
             BytesEntryValuesCovered += BytesEntryCovered;
+
+}
         }
       }
     }
@@ -287,10 +307,12 @@ static void collectStatsForDie(DWARFDie Die, std::string FnPrefix,
   // Calculate the debug location statistics.
   if (BytesInScope) {
     LocStats.NumVarParam++;
-    if (IsParam)
+    if (IsParam) {
       LocStats.NumParam++;
-    else if (IsVariable)
+    } else if (IsVariable) {
       LocStats.NumVar++;
+
+}
 
     collectLocStats(BytesCovered, BytesInScope, LocStats.VarParamLocStats,
                     LocStats.ParamLocStats, LocStats.VarLocStats, IsParam,
@@ -304,8 +326,10 @@ static void collectStatsForDie(DWARFDie Die, std::string FnPrefix,
 
   // Collect PC range coverage data.
   if (DWARFDie D =
-          Die.getAttributeValueAsReferencedDie(dwarf::DW_AT_abstract_origin))
+          Die.getAttributeValueAsReferencedDie(dwarf::DW_AT_abstract_origin)) {
     Die = D;
+
+}
 
   std::string VarID = constructDieID(Die, VarPrefix);
   FnStats.VarsInFunction.insert(VarID);
@@ -342,20 +366,32 @@ static void collectStatsForDie(DWARFDie Die, std::string FnPrefix,
 
   if (IsParam) {
     FnStats.NumParams++;
-    if (HasType)
+    if (HasType) {
       FnStats.NumParamTypes++;
-    if (HasSrcLoc)
+
+}
+    if (HasSrcLoc) {
       FnStats.NumParamSourceLocations++;
-    if (HasLoc)
+
+}
+    if (HasLoc) {
       FnStats.NumParamLocations++;
+
+}
   } else if (IsVariable) {
     FnStats.NumVars++;
-    if (HasType)
+    if (HasType) {
       FnStats.NumVarTypes++;
-    if (HasSrcLoc)
+
+}
+    if (HasSrcLoc) {
       FnStats.NumVarSourceLocations++;
-    if (HasLoc)
+
+}
+    if (HasLoc) {
       FnStats.NumVarLocations++;
+
+}
   }
 }
 
@@ -368,8 +404,10 @@ static void collectStatsRecursive(DWARFDie Die, std::string FnPrefix,
                                   LocationStats &LocStats) {
   const dwarf::Tag Tag = Die.getTag();
   // Skip function types.
-  if (Tag == dwarf::DW_TAG_subroutine_type)
+  if (Tag == dwarf::DW_TAG_subroutine_type) {
     return;
+
+}
 
   // Handle any kind of lexical scope.
   const bool IsFunction = Tag == dwarf::DW_TAG_subprogram;
@@ -379,16 +417,22 @@ static void collectStatsRecursive(DWARFDie Die, std::string FnPrefix,
 
     // Reset VarPrefix when entering a new function.
     if (Die.getTag() == dwarf::DW_TAG_subprogram ||
-        Die.getTag() == dwarf::DW_TAG_inlined_subroutine)
+        Die.getTag() == dwarf::DW_TAG_inlined_subroutine) {
       VarPrefix = "v";
 
+}
+
     // Ignore forward declarations.
-    if (Die.find(dwarf::DW_AT_declaration))
+    if (Die.find(dwarf::DW_AT_declaration)) {
       return;
 
+}
+
     // Check for call sites.
-    if (Die.find(dwarf::DW_AT_call_file) && Die.find(dwarf::DW_AT_call_line))
+    if (Die.find(dwarf::DW_AT_call_file) && Die.find(dwarf::DW_AT_call_line)) {
       GlobalStats.CallSiteEntries++;
+
+}
 
     // PC Ranges.
     auto RangesOrError = Die.getAddressRanges();
@@ -399,38 +443,48 @@ static void collectStatsRecursive(DWARFDie Die, std::string FnPrefix,
 
     auto Ranges = RangesOrError.get();
     uint64_t BytesInThisScope = 0;
-    for (auto Range : Ranges)
+    for (auto Range : Ranges) {
       BytesInThisScope += Range.HighPC - Range.LowPC;
+
+}
 
     // Count the function.
     if (!IsBlock) {
       // Skip over abstract origins.
-      if (Die.find(dwarf::DW_AT_inline))
+      if (Die.find(dwarf::DW_AT_inline)) {
         return;
+
+}
       std::string FnID = constructDieID(Die);
       // We've seen an instance of this function.
       auto &FnStats = FnStatMap[FnID];
       FnStats.IsFunction = true;
       if (IsInlinedFunction) {
         FnStats.NumFnInlined++;
-        if (Die.findRecursively(dwarf::DW_AT_abstract_origin))
+        if (Die.findRecursively(dwarf::DW_AT_abstract_origin)) {
           FnStats.NumAbstractOrigins++;
+
+}
       } else {
         FnStats.NumFnOutOfLine++;
       }
       if (Die.findRecursively(dwarf::DW_AT_decl_file) &&
-          Die.findRecursively(dwarf::DW_AT_decl_line))
+          Die.findRecursively(dwarf::DW_AT_decl_line)) {
         FnStats.HasSourceLocation = true;
+
+}
       // Update function prefix.
       FnPrefix = FnID;
     }
 
     if (BytesInThisScope) {
       BytesInScope = BytesInThisScope;
-      if (IsFunction)
+      if (IsFunction) {
         GlobalStats.FunctionSize += BytesInThisScope;
-      else if (IsInlinedFunction && InlineDepth == 0)
+      } else if (IsInlinedFunction && InlineDepth == 0) {
         GlobalStats.InlineFunctionSize += BytesInThisScope;
+
+}
     }
   } else {
     // Not a scope, visit the Die itself. It could be a variable.
@@ -439,10 +493,12 @@ static void collectStatsRecursive(DWARFDie Die, std::string FnPrefix,
   }
 
   // Set InlineDepth correctly for child recursion
-  if (IsFunction)
+  if (IsFunction) {
     InlineDepth = 0;
-  else if (IsInlinedFunction)
+  } else if (IsInlinedFunction) {
     ++InlineDepth;
+
+}
 
   // Traverse children.
   unsigned LexicalBlockIndex = 0;
@@ -450,10 +506,14 @@ static void collectStatsRecursive(DWARFDie Die, std::string FnPrefix,
   DWARFDie Child = Die.getFirstChild();
   while (Child) {
     std::string ChildVarPrefix = VarPrefix;
-    if (Child.getTag() == dwarf::DW_TAG_lexical_block)
+    if (Child.getTag() == dwarf::DW_TAG_lexical_block) {
       ChildVarPrefix += toHex(LexicalBlockIndex++) + '.';
-    if (Child.getTag() == dwarf::DW_TAG_formal_parameter)
+
+}
+    if (Child.getTag() == dwarf::DW_TAG_formal_parameter) {
       ChildVarPrefix += 'p' + toHex(FormalParameterIndex++) + '.';
+
+}
 
     collectStatsRecursive(Child, FnPrefix, ChildVarPrefix, BytesInScope,
                           InlineDepth, FnStatMap, GlobalStats, LocStats);
@@ -507,10 +567,14 @@ bool collectStatsForObjectFile(ObjectFile &Obj, DWARFContext &DICtx,
   GlobalStats GlobalStats;
   LocationStats LocStats;
   StringMap<PerFunctionStats> Statistics;
-  for (const auto &CU : static_cast<DWARFContext *>(&DICtx)->compile_units())
-    if (DWARFDie CUDie = CU->getNonSkeletonUnitDIE(false))
+  for (const auto &CU : static_cast<DWARFContext *>(&DICtx)->compile_units()) {
+    if (DWARFDie CUDie = CU->getNonSkeletonUnitDIE(false)) {
       collectStatsRecursive(CUDie, "/", "g", 0, 0, Statistics, GlobalStats,
                             LocStats);
+
+}
+
+}
 
   /// The version number should be increased every time the algorithm is changed
   /// (including bug fixes). New metrics may be added without increasing the
@@ -536,8 +600,10 @@ bool collectStatsForObjectFile(ObjectFile &Obj, DWARFContext &DICtx,
     unsigned TotalVars = Stats.VarsInFunction.size() *
                          (Stats.NumFnInlined + Stats.NumFnOutOfLine);
     // Count variables in global scope.
-    if (!Stats.IsFunction)
+    if (!Stats.IsFunction) {
       TotalVars = Stats.NumVars + Stats.ConstantMembers + Stats.NumArtificial;
+
+}
     unsigned Constants = Stats.ConstantMembers;
     VarParamWithLoc += Stats.TotalVarWithLoc + Constants;
     VarParamTotal += TotalVars;

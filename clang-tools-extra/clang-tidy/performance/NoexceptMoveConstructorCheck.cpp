@@ -30,8 +30,10 @@ void NoexceptMoveConstructorCheck::check(
   if (const auto *Decl = Result.Nodes.getNodeAs<CXXMethodDecl>("decl")) {
     StringRef MethodType = "assignment operator";
     if (const auto *Ctor = dyn_cast<CXXConstructorDecl>(Decl)) {
-      if (!Ctor->isMoveConstructor())
+      if (!Ctor->isMoveConstructor()) {
         return;
+
+}
       MethodType = "constructor";
     } else if (!Decl->isMoveAssignmentOperator()) {
       return;
@@ -39,8 +41,10 @@ void NoexceptMoveConstructorCheck::check(
 
     const auto *ProtoType = Decl->getType()->getAs<FunctionProtoType>();
 
-    if (isUnresolvedExceptionSpec(ProtoType->getExceptionSpecType()))
+    if (isUnresolvedExceptionSpec(ProtoType->getExceptionSpecType())) {
       return;
+
+}
 
     if (!isNoexceptExceptionSpec(ProtoType->getExceptionSpecType())) {
       auto Diag =
@@ -52,11 +56,15 @@ void NoexceptMoveConstructorCheck::check(
       SourceLocation NoexceptLoc = Decl->getParamDecl(Decl->getNumParams() - 1)
                                        ->getSourceRange()
                                        .getEnd();
-      if (NoexceptLoc.isValid())
+      if (NoexceptLoc.isValid()) {
         NoexceptLoc = Lexer::findLocationAfterToken(
             NoexceptLoc, tok::r_paren, SM, Result.Context->getLangOpts(), true);
-      if (NoexceptLoc.isValid())
+
+}
+      if (NoexceptLoc.isValid()) {
         Diag << FixItHint::CreateInsertion(NoexceptLoc, " noexcept ");
+
+}
       return;
     }
 

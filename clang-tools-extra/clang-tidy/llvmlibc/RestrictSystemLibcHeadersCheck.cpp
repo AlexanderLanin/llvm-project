@@ -47,7 +47,9 @@ void RestrictedIncludesPPCallbacks::InclusionDirective(
     SrcMgr::CharacteristicKind FileType) {
   if (SrcMgr::isSystem(FileType)) {
     // Compiler provided headers are allowed (e.g stddef.h).
-    if (SearchPath == CompilerIncudeDir) return;
+    if (SearchPath == CompilerIncudeDir) { return;
+
+}
     if (!SM.isInMainFile(HashLoc)) {
       Check.diag(
           HashLoc,

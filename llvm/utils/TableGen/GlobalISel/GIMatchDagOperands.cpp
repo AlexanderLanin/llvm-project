@@ -30,9 +30,11 @@ void GIMatchDagOperandList::add(StringRef Name, unsigned Idx, bool IsDef) {
 }
 
 void GIMatchDagOperandList::Profile(FoldingSetNodeID &ID) const {
-  for (const auto &I : enumerate(Operands))
+  for (const auto &I : enumerate(Operands)) {
     GIMatchDagOperand::Profile(ID, I.index(), I.value().getName(),
                                I.value().isDef());
+
+}
 }
 
 void GIMatchDagOperandList::print(raw_ostream &OS) const {
@@ -43,8 +45,10 @@ void GIMatchDagOperandList::print(raw_ostream &OS) const {
   StringRef Separator = "";
   for (const auto &I : Operands) {
     OS << Separator << I.getIdx() << ":" << I.getName();
-    if (I.isDef())
+    if (I.isDef()) {
       OS << "<def>";
+
+}
     Separator = ", ";
   }
 }
@@ -63,8 +67,10 @@ GIMatchDagOperandListContext::makeEmptyOperandList() {
   void *InsertPoint;
   GIMatchDagOperandList *Value =
       OperandLists.FindNodeOrInsertPos(ID, InsertPoint);
-  if (Value)
+  if (Value) {
     return *Value;
+
+}
 
   std::unique_ptr<GIMatchDagOperandList> NewValue =
       std::make_unique<GIMatchDagOperandList>();
@@ -76,20 +82,26 @@ GIMatchDagOperandListContext::makeEmptyOperandList() {
 const GIMatchDagOperandList &
 GIMatchDagOperandListContext::makeOperandList(const CodeGenInstruction &I) {
   FoldingSetNodeID ID;
-  for (unsigned i = 0; i < I.Operands.size(); ++i)
+  for (unsigned i = 0; i < I.Operands.size(); ++i) {
     GIMatchDagOperand::Profile(ID, i, I.Operands[i].Name,
                                i < I.Operands.NumDefs);
+
+}
 
   void *InsertPoint;
   GIMatchDagOperandList *Value =
       OperandLists.FindNodeOrInsertPos(ID, InsertPoint);
-  if (Value)
+  if (Value) {
     return *Value;
+
+}
 
   std::unique_ptr<GIMatchDagOperandList> NewValue =
       std::make_unique<GIMatchDagOperandList>();
-  for (unsigned i = 0; i < I.Operands.size(); ++i)
+  for (unsigned i = 0; i < I.Operands.size(); ++i) {
     NewValue->add(I.Operands[i].Name, i, i < I.Operands.NumDefs);
+
+}
   OperandLists.InsertNode(NewValue.get(), InsertPoint);
   OperandListsOwner.push_back(std::move(NewValue));
   return *OperandListsOwner.back().get();
@@ -104,8 +116,10 @@ GIMatchDagOperandListContext::makeMIPredicateOperandList() {
   void *InsertPoint;
   GIMatchDagOperandList *Value =
       OperandLists.FindNodeOrInsertPos(ID, InsertPoint);
-  if (Value)
+  if (Value) {
     return *Value;
+
+}
 
   std::unique_ptr<GIMatchDagOperandList> NewValue =
       std::make_unique<GIMatchDagOperandList>();
@@ -127,8 +141,10 @@ GIMatchDagOperandListContext::makeTwoMOPredicateOperandList() {
   void *InsertPoint;
   GIMatchDagOperandList *Value =
       OperandLists.FindNodeOrInsertPos(ID, InsertPoint);
-  if (Value)
+  if (Value) {
     return *Value;
+
+}
 
   std::unique_ptr<GIMatchDagOperandList> NewValue =
       std::make_unique<GIMatchDagOperandList>();

@@ -72,10 +72,12 @@ void X86EVEX2VEXTablesEmitter::printTable(const std::vector<Entry> &Table,
 static inline uint64_t getValueFromBitsInit(const BitsInit *B) {
   uint64_t Value = 0;
   for (unsigned i = 0, e = B->getNumBits(); i != e; ++i) {
-    if (BitInit *Bit = dyn_cast<BitInit>(B->getBit(i)))
+    if (BitInit *Bit = dyn_cast<BitInit>(B->getBit(i))) {
       Value |= uint64_t(Bit->getValue()) << i;
-    else
+    } else {
       PrintFatalError("Invalid VectSize bit");
+
+}
   }
   return Value;
 }
@@ -110,8 +112,10 @@ public:
         (!(VEX_WIG || (!EVEX_WIG && EVEX_W == VEX_W) ||
            (EVEX_W1_VEX_W0 && EVEX_W && !VEX_W))) ||
         // Instruction's format
-        RecV->getValueAsDef("Form") != RecE->getValueAsDef("Form"))
+        RecV->getValueAsDef("Form") != RecE->getValueAsDef("Form")) {
       return false;
+
+}
 
     // This is needed for instructions with intrinsic version (_Int).
     // Where the only difference is the size of the operands.
@@ -123,20 +127,26 @@ public:
       Record *OpRec1 = EVEXInst->Operands[i].Rec;
       Record *OpRec2 = VEXInst->Operands[i].Rec;
 
-      if (OpRec1 == OpRec2)
+      if (OpRec1 == OpRec2) {
         continue;
 
+}
+
       if (isRegisterOperand(OpRec1) && isRegisterOperand(OpRec2)) {
-        if (getRegOperandSize(OpRec1) != getRegOperandSize(OpRec2))
+        if (getRegOperandSize(OpRec1) != getRegOperandSize(OpRec2)) {
           return false;
+
+}
       } else if (isMemoryOperand(OpRec1) && isMemoryOperand(OpRec2)) {
         return false;
       } else if (isImmediateOperand(OpRec1) && isImmediateOperand(OpRec2)) {
         if (OpRec1->getValueAsDef("Type") != OpRec2->getValueAsDef("Type")) {
           return false;
         }
-      } else
+      } else {
         return false;
+
+}
     }
 
     return true;
@@ -159,10 +169,14 @@ private:
   }
 
   static inline unsigned int getRegOperandSize(const Record *RegRec) {
-    if (RegRec->isSubClassOf("RegisterClass"))
+    if (RegRec->isSubClassOf("RegisterClass")) {
       return RegRec->getValueAsInt("Alignment");
-    if (RegRec->isSubClassOf("RegisterOperand"))
+
+}
+    if (RegRec->isSubClassOf("RegisterOperand")) {
       return RegRec->getValueAsDef("RegClass")->getValueAsInt("Alignment");
+
+}
 
     llvm_unreachable("Register operand's size not known!");
   }
@@ -176,8 +190,10 @@ void X86EVEX2VEXTablesEmitter::run(raw_ostream &OS) {
 
   for (const CodeGenInstruction *Inst : NumberedInstructions) {
     // Filter non-X86 instructions.
-    if (!Inst->TheDef->isSubClassOf("X86Inst"))
+    if (!Inst->TheDef->isSubClassOf("X86Inst")) {
       continue;
+
+}
 
     // Add VEX encoded instructions to one of VEXInsts vectors according to
     // it's opcode.
@@ -191,8 +207,10 @@ void X86EVEX2VEXTablesEmitter::run(raw_ostream &OS) {
              !Inst->TheDef->getValueAsBit("hasEVEX_K") &&
              !Inst->TheDef->getValueAsBit("hasEVEX_B") &&
              !Inst->TheDef->getValueAsBit("hasEVEX_L2") &&
-             !Inst->TheDef->getValueAsBit("notEVEX2VEXConvertible"))
+             !Inst->TheDef->getValueAsBit("notEVEX2VEXConvertible")) {
       EVEXInsts.push_back(Inst);
+
+}
   }
 
   for (const CodeGenInstruction *EVEXInst : EVEXInsts) {
@@ -210,18 +228,24 @@ void X86EVEX2VEXTablesEmitter::run(raw_ostream &OS) {
       VEXInst = &Target.getInstruction(AltInstRec);
     } else {
       auto Match = llvm::find_if(VEXInsts[Opcode], IsMatch(EVEXInst));
-      if (Match != VEXInsts[Opcode].end())
+      if (Match != VEXInsts[Opcode].end()) {
         VEXInst = *Match;
+
+}
     }
 
-    if (!VEXInst)
+    if (!VEXInst) {
       continue;
 
+}
+
     // In case a match is found add new entry to the appropriate table
-    if (EVEXInst->TheDef->getValueAsBit("hasVEX_L"))
+    if (EVEXInst->TheDef->getValueAsBit("hasVEX_L")) {
       EVEX2VEX256.push_back(std::make_pair(EVEXInst, VEXInst)); // {0,1}
-    else
+    } else {
       EVEX2VEX128.push_back(std::make_pair(EVEXInst, VEXInst)); // {0,0}
+
+}
   }
 
   // Print both tables

@@ -61,13 +61,17 @@ public:
     const std::string ShardPath =
         getShardPathFromFilePath(DiskShardRoot, ShardIdentifier);
     auto Buffer = llvm::MemoryBuffer::getFile(ShardPath);
-    if (!Buffer)
+    if (!Buffer) {
       return nullptr;
-    if (auto I = readIndexFile(Buffer->get()->getBuffer()))
+
+}
+    if (auto I = readIndexFile(Buffer->get()->getBuffer())) {
       return std::make_unique<IndexFileIn>(std::move(*I));
-    else
+    } else {
       elog("Error while reading shard {0}: {1}", ShardIdentifier,
            I.takeError());
+
+}
     return nullptr;
   }
 
@@ -115,11 +119,15 @@ public:
   BackgroundIndexStorage *operator()(PathRef File) {
     std::lock_guard<std::mutex> Lock(*IndexStorageMapMu);
     Path CDBDirectory = HomeDir;
-    if (auto PI = GetProjectInfo(File))
+    if (auto PI = GetProjectInfo(File)) {
       CDBDirectory = PI->SourceRoot;
+
+}
     auto &IndexStorage = IndexStorageMap[CDBDirectory];
-    if (!IndexStorage)
+    if (!IndexStorage) {
       IndexStorage = create(CDBDirectory);
+
+}
     return IndexStorage.get();
   }
 

@@ -21,8 +21,10 @@ static ExegesisTarget *FirstTarget = nullptr;
 
 const ExegesisTarget *ExegesisTarget::lookup(Triple TT) {
   for (const ExegesisTarget *T = FirstTarget; T != nullptr; T = T->Next) {
-    if (T->matchesArch(TT.getArch()))
+    if (T->matchesArch(TT.getArch())) {
       return T;
+
+}
   }
   return nullptr;
 }
@@ -32,8 +34,10 @@ void ExegesisTarget::registerTarget(ExegesisTarget *Target) {
     FirstTarget = Target;
     return;
   }
-  if (Target->Next != nullptr)
+  if (Target->Next != nullptr) {
     return; // Already registered.
+
+}
   Target->Next = FirstTarget;
   FirstTarget = Target;
 }
@@ -73,9 +77,11 @@ ExegesisTarget::createBenchmarkRunner(InstructionBenchmark::ModeE Mode,
     }
     return createLatencyBenchmarkRunner(State, Mode);
   case InstructionBenchmark::Uops:
-    if (!PfmCounters.UopsCounter && !PfmCounters.IssueCounters)
+    if (!PfmCounters.UopsCounter && !PfmCounters.IssueCounters) {
       return make_error<Failure>("can't run 'uops' mode, sched model does not "
                                  "define uops or issue counters.");
+
+}
     return createUopsBenchmarkRunner(State);
   }
   return nullptr;

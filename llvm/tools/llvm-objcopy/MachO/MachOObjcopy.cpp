@@ -32,8 +32,10 @@ static void removeSections(const CopyConfig &Config, Object &Obj) {
   if (Config.StripAll || Config.StripDebug) {
     // Remove all debug sections.
     RemovePred = [RemovePred](const std::unique_ptr<Section> &Sec) {
-      if (Sec->Segname == "__DWARF")
+      if (Sec->Segname == "__DWARF") {
         return true;
+
+}
 
       return RemovePred(Sec);
     };
@@ -51,25 +53,37 @@ static void removeSections(const CopyConfig &Config, Object &Obj) {
 
 static void markSymbols(const CopyConfig &Config, Object &Obj) {
   // Symbols referenced from the indirect symbol table must not be removed.
-  for (IndirectSymbolEntry &ISE : Obj.IndirectSymTable.Symbols)
-    if (ISE.Symbol)
+  for (IndirectSymbolEntry &ISE : Obj.IndirectSymTable.Symbols) {
+    if (ISE.Symbol) {
       (*ISE.Symbol)->Referenced = true;
+
+}
+
+}
 }
 
 static void updateAndRemoveSymbols(const CopyConfig &Config, Object &Obj) {
   for (SymbolEntry &Sym : Obj.SymTable) {
     auto I = Config.SymbolsToRename.find(Sym.Name);
-    if (I != Config.SymbolsToRename.end())
+    if (I != Config.SymbolsToRename.end()) {
       Sym.Name = std::string(I->getValue());
+
+}
   }
 
   auto RemovePred = [Config](const std::unique_ptr<SymbolEntry> &N) {
-    if (N->Referenced)
+    if (N->Referenced) {
       return false;
-    if (Config.StripAll)
+
+}
+    if (Config.StripAll) {
       return true;
-    if (Config.DiscardMode == DiscardType::All && !(N->n_type & MachO::N_EXT))
+
+}
+    if (Config.DiscardMode == DiscardType::All && !(N->n_type & MachO::N_EXT)) {
       return true;
+
+}
     return false;
   };
 
@@ -90,21 +104,27 @@ static LoadCommand buildRPathLoadCommand(StringRef Path) {
 
 static Error dumpSectionToFile(StringRef SecName, StringRef Filename,
                                Object &Obj) {
-  for (LoadCommand &LC : Obj.LoadCommands)
+  for (LoadCommand &LC : Obj.LoadCommands) {
     for (const std::unique_ptr<Section> &Sec : LC.Sections) {
       if (Sec->CanonicalName == SecName) {
         Expected<std::unique_ptr<FileOutputBuffer>> BufferOrErr =
             FileOutputBuffer::create(Filename, Sec->Content.size());
-        if (!BufferOrErr)
+        if (!BufferOrErr) {
           return BufferOrErr.takeError();
+
+}
         std::unique_ptr<FileOutputBuffer> Buf = std::move(*BufferOrErr);
         llvm::copy(Sec->Content, Buf->getBufferStart());
 
-        if (Error E = Buf->commit())
+        if (Error E = Buf->commit()) {
           return E;
+
+}
         return Error::success();
       }
     }
+
+}
 
   return createStringError(object_error::parse_failed, "section '%s' not found",
                            SecName.str().c_str());
@@ -113,8 +133,10 @@ static Error dumpSectionToFile(StringRef SecName, StringRef Filename,
 static Error addSection(StringRef SecName, StringRef Filename, Object &Obj) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
       MemoryBuffer::getFile(Filename);
-  if (!BufOrErr)
+  if (!BufOrErr) {
     return createFileError(Filename, errorCodeToError(BufOrErr.getError()));
+
+}
   std::unique_ptr<MemoryBuffer> Buf = std::move(*BufOrErr);
 
   std::pair<StringRef, StringRef> Pair = SecName.split(',');
@@ -142,21 +164,27 @@ static Error addSection(StringRef SecName, StringRef Filename, Object &Obj) {
 // ("<segment>,<section>") and lengths of both segment and section names are
 // valid.
 Error isValidMachOCannonicalName(StringRef Name) {
-  if (Name.count(',') != 1)
+  if (Name.count(',') != 1) {
     return createStringError(errc::invalid_argument,
                              "invalid section name '%s' (should be formatted "
                              "as '<segment name>,<section name>')",
                              Name.str().c_str());
 
+}
+
   std::pair<StringRef, StringRef> Pair = Name.split(',');
-  if (Pair.first.size() > 16)
+  if (Pair.first.size() > 16) {
     return createStringError(errc::invalid_argument,
                              "too long segment name: '%s'",
                              Pair.first.str().c_str());
-  if (Pair.second.size() > 16)
+
+}
+  if (Pair.second.size() > 16) {
     return createStringError(errc::invalid_argument,
                              "too long section name: '%s'",
                              Pair.second.str().c_str());
+
+}
   return Error::success();
 }
 
@@ -184,32 +212,46 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
   removeSections(Config, Obj);
 
   // Mark symbols to determine which symbols are still needed.
-  if (Config.StripAll)
+  if (Config.StripAll) {
     markSymbols(Config, Obj);
+
+}
 
   updateAndRemoveSymbols(Config, Obj);
 
-  if (Config.StripAll)
-    for (LoadCommand &LC : Obj.LoadCommands)
-      for (std::unique_ptr<Section> &Sec : LC.Sections)
+  if (Config.StripAll) {
+    for (LoadCommand &LC : Obj.LoadCommands) {
+      for (std::unique_ptr<Section> &Sec : LC.Sections) {
         Sec->Relocations.clear();
+
+}
+
+}
+
+}
 
   for (const StringRef &Flag : Config.DumpSection) {
     std::pair<StringRef, StringRef> SecPair = Flag.split("=");
     StringRef SecName = SecPair.first;
     StringRef File = SecPair.second;
-    if (Error E = dumpSectionToFile(SecName, File, Obj))
+    if (Error E = dumpSectionToFile(SecName, File, Obj)) {
       return E;
+
+}
   }
 
   for (const auto &Flag : Config.AddSection) {
     std::pair<StringRef, StringRef> SecPair = Flag.split("=");
     StringRef SecName = SecPair.first;
     StringRef File = SecPair.second;
-    if (Error E = isValidMachOCannonicalName(SecName))
+    if (Error E = isValidMachOCannonicalName(SecName)) {
       return E;
-    if (Error E = addSection(SecName, File, Obj))
+
+}
+    if (Error E = addSection(SecName, File, Obj)) {
       return E;
+
+}
   }
 
   for (StringRef RPath : Config.RPathToAdd) {
@@ -232,22 +274,28 @@ Error executeObjcopyOnBinary(const CopyConfig &Config,
                              object::MachOObjectFile &In, Buffer &Out) {
   MachOReader Reader(In);
   std::unique_ptr<Object> O = Reader.create();
-  if (!O)
+  if (!O) {
     return createFileError(
         Config.InputFilename,
         createStringError(object_error::parse_failed,
                           "unable to deserialize MachO object"));
 
-  if (Error E = handleArgs(Config, *O))
+}
+
+  if (Error E = handleArgs(Config, *O)) {
     return createFileError(Config.InputFilename, std::move(E));
+
+}
 
   // TODO: Support 16KB pages which are employed in iOS arm64 binaries:
   //       https://github.com/llvm/llvm-project/commit/1bebb2832ee312d3b0316dacff457a7a29435edb
   const uint64_t PageSize = 4096;
 
   MachOWriter Writer(*O, In.is64Bit(), In.isLittleEndian(), PageSize, Out);
-  if (auto E = Writer.finalize())
+  if (auto E = Writer.finalize()) {
     return E;
+
+}
   return Writer.write();
 }
 

@@ -56,9 +56,11 @@ void ErlangGCPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
                                            IE = Info.funcinfo_end();
        FI != IE; ++FI) {
     GCFunctionInfo &MD = **FI;
-    if (MD.getStrategy().getName() != getStrategy().getName())
+    if (MD.getStrategy().getName() != getStrategy().getName()) {
       // this function is managed by some other GC
       continue;
+
+}
     /** A compact GC layout. Emit this data structure:
      *
      * struct {

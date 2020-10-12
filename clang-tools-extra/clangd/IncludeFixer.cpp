@@ -77,9 +77,13 @@ std::vector<Fix> IncludeFixer::fix(DiagnosticsEngine::Level DiagLevel,
     for (unsigned Idx = 0; Idx < Info.getNumArgs(); ++Idx) {
       if (Info.getArgKind(Idx) == DiagnosticsEngine::ak_qualtype) {
         auto QT = QualType::getFromOpaquePtr((void *)Info.getRawArg(Idx));
-        if (const Type *T = QT.getTypePtrOrNull())
-          if (T->isIncompleteType())
+        if (const Type *T = QT.getTypePtrOrNull()) {
+          if (T->isIncompleteType()) {
             return fixIncompleteType(*T);
+
+}
+
+}
       }
     }
     break;
@@ -107,8 +111,10 @@ std::vector<Fix> IncludeFixer::fix(DiagnosticsEngine::Level DiagLevel,
       // We only attempt to recover a diagnostic if it has the same location as
       // the last seen unresolved name.
       if (DiagLevel >= DiagnosticsEngine::Error &&
-          LastUnresolvedName->Loc == Info.getLocation())
+          LastUnresolvedName->Loc == Info.getLocation()) {
         return fixUnresolvedName();
+
+}
     }
   }
   return {};
@@ -117,26 +123,34 @@ std::vector<Fix> IncludeFixer::fix(DiagnosticsEngine::Level DiagLevel,
 std::vector<Fix> IncludeFixer::fixIncompleteType(const Type &T) const {
   // Only handle incomplete TagDecl type.
   const TagDecl *TD = T.getAsTagDecl();
-  if (!TD)
+  if (!TD) {
     return {};
+
+}
   std::string TypeName = printQualifiedName(*TD);
   trace::Span Tracer("Fix include for incomplete type");
   SPAN_ATTACH(Tracer, "type", TypeName);
   vlog("Trying to fix include for incomplete type {0}", TypeName);
 
   auto ID = getSymbolID(TD);
-  if (!ID)
+  if (!ID) {
     return {};
+
+}
   llvm::Optional<const SymbolSlab *> Symbols = lookupCached(*ID);
-  if (!Symbols)
+  if (!Symbols) {
     return {};
+
+}
   const SymbolSlab &Syms = **Symbols;
   std::vector<Fix> Fixes;
   if (!Syms.empty()) {
     auto &Matched = *Syms.begin();
     if (!Matched.IncludeHeaders.empty() && Matched.Definition &&
-        Matched.CanonicalDeclaration.FileURI == Matched.Definition.FileURI)
+        Matched.CanonicalDeclaration.FileURI == Matched.Definition.FileURI) {
       Fixes = fixesForSymbols(Syms);
+
+}
   }
   return Fixes;
 }
@@ -146,15 +160,21 @@ std::vector<Fix> IncludeFixer::fixesForSymbols(const SymbolSlab &Syms) const {
       -> llvm::Expected<std::pair<std::string, bool>> {
     auto ResolvedDeclaring =
         URI::resolve(Sym.CanonicalDeclaration.FileURI, File);
-    if (!ResolvedDeclaring)
+    if (!ResolvedDeclaring) {
       return ResolvedDeclaring.takeError();
+
+}
     auto ResolvedInserted = toHeaderFile(Header, File);
-    if (!ResolvedInserted)
+    if (!ResolvedInserted) {
       return ResolvedInserted.takeError();
+
+}
     auto Spelled = Inserter->calculateIncludePath(*ResolvedInserted, File);
-    if (!Spelled)
+    if (!Spelled) {
       return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                      "Header not on include path");
+
+}
     return std::make_pair(
         std::move(*Spelled),
         Inserter->shouldInsertInclude(*ResolvedDeclaring, *ResolvedInserted));
@@ -170,13 +190,17 @@ std::vector<Fix> IncludeFixer::fixesForSymbols(const SymbolSlab &Syms) const {
       if (auto ToInclude = Inserted(Sym, Inc)) {
         if (ToInclude->second) {
           auto I = InsertedHeaders.try_emplace(ToInclude->first);
-          if (!I.second)
+          if (!I.second) {
             continue;
-          if (auto Edit = Inserter->insert(ToInclude->first))
+
+}
+          if (auto Edit = Inserter->insert(ToInclude->first)) {
             Fixes.push_back(Fix{std::string(llvm::formatv(
                                     "Add include {0} for symbol {1}{2}",
                                     ToInclude->first, Sym.Scope, Sym.Name)),
                                 {std::move(*Edit)}});
+
+}
         }
       } else {
         vlog("Failed to calculate include insertion for {0} into {1}: {2}", Inc,
@@ -199,16 +223,22 @@ llvm::Optional<std::string> qualifiedByUnresolved(const SourceManager &SM,
 
   SourceLocation NextLoc = Loc;
   while (auto CCTok = Lexer::findNextToken(NextLoc, SM, LangOpts)) {
-    if (!CCTok->is(tok::coloncolon))
+    if (!CCTok->is(tok::coloncolon)) {
       break;
+
+}
     auto IDTok = Lexer::findNextToken(CCTok->getLocation(), SM, LangOpts);
-    if (!IDTok || !IDTok->is(tok::raw_identifier))
+    if (!IDTok || !IDTok->is(tok::raw_identifier)) {
       break;
+
+}
     Result.append(("::" + IDTok->getRawIdentifier()).str());
     NextLoc = IDTok->getLocation();
   }
-  if (Result.empty())
+  if (Result.empty()) {
     return llvm::None;
+
+}
   return Result;
 }
 
@@ -234,15 +264,17 @@ llvm::Optional<CheapUnresolvedName> extractUnresolvedNameCheaply(
   bool Invalid = false;
   llvm::StringRef Code = SM.getBufferData(
       SM.getDecomposedLoc(Unresolved.getBeginLoc()).first, &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return llvm::None;
+
+}
   CheapUnresolvedName Result;
   Result.Name = Unresolved.getAsString();
   if (SS && SS->isNotEmpty()) { // "::" or "ns::"
     if (auto *Nested = SS->getScopeRep()) {
-      if (Nested->getKind() == NestedNameSpecifier::Global)
+      if (Nested->getKind() == NestedNameSpecifier::Global) {
         Result.ResolvedScope = "";
-      else if (const auto *NS = Nested->getAsNamespace()) {
+      } else if (const auto *NS = Nested->getAsNamespace()) {
         auto SpecifiedNS = printNamespaceScope(*NS);
 
         // Check the specifier spelled in the source.
@@ -256,10 +288,12 @@ llvm::Optional<CheapUnresolvedName> extractUnresolvedNameCheaply(
         auto B = SM.getFileOffset(SS->getBeginLoc());
         auto E = SM.getFileOffset(SS->getEndLoc());
         std::string Spelling = (Code.substr(B, E - B) + "::").str();
-        if (llvm::StringRef(SpecifiedNS).endswith(Spelling))
+        if (llvm::StringRef(SpecifiedNS).endswith(Spelling)) {
           Result.ResolvedScope = SpecifiedNS;
-        else
+        } else {
           Result.UnresolvedScope = Spelling;
+
+}
       } else if (const auto *ANS = Nested->getAsNamespaceAlias()) {
         Result.ResolvedScope = printNamespaceScope(*ANS->getNamespace());
       } else {
@@ -284,8 +318,10 @@ llvm::Optional<CheapUnresolvedName> extractUnresolvedNameCheaply(
     if (auto QualifiedByUnresolved =
             qualifiedByUnresolved(SM, Unresolved.getBeginLoc(), LangOpts)) {
       auto Split = splitQualifiedName(*QualifiedByUnresolved);
-      if (!Result.UnresolvedScope)
+      if (!Result.UnresolvedScope) {
         Result.UnresolvedScope.emplace();
+
+}
       // If UnresolvedSpecifiedScope is already set, we simply append the
       // extra scope. Suppose the unresolved name is "index" in the following
       // example:
@@ -313,8 +349,10 @@ collectAccessibleScopes(Sema &Sem, const DeclarationNameInfo &Typo, Scope *S,
 
   Scopes.push_back("");
   for (const auto *Ctx : Collector.takeVisitedContexts()) {
-    if (isa<NamespaceDecl>(Ctx))
+    if (isa<NamespaceDecl>(Ctx)) {
       Scopes.push_back(printNamespaceScope(*Ctx));
+
+}
   }
   return Scopes;
 }
@@ -334,33 +372,45 @@ public:
                              DeclContext *MemberContext, bool EnteringContext,
                              const ObjCObjectPointerType *OPT) override {
     assert(SemaPtr && "Sema must have been set.");
-    if (SemaPtr->isSFINAEContext())
+    if (SemaPtr->isSFINAEContext()) {
       return TypoCorrection();
-    if (!isInsideMainFile(Typo.getLoc(), SemaPtr->SourceMgr))
+
+}
+    if (!isInsideMainFile(Typo.getLoc(), SemaPtr->SourceMgr)) {
       return clang::TypoCorrection();
+
+}
 
     auto Extracted = extractUnresolvedNameCheaply(
         SemaPtr->SourceMgr, Typo, SS, SemaPtr->LangOpts,
         static_cast<Sema::LookupNameKind>(LookupKind) ==
             Sema::LookupNameKind::LookupNestedNameSpecifierName);
-    if (!Extracted)
+    if (!Extracted) {
       return TypoCorrection();
+
+}
 
     UnresolvedName Unresolved;
     Unresolved.Name = Extracted->Name;
     Unresolved.Loc = Typo.getBeginLoc();
-    if (!Extracted->ResolvedScope && !S) // Give up if no scope available.
+    if (!Extracted->ResolvedScope && !S) { // Give up if no scope available.
       return TypoCorrection();
 
-    if (Extracted->ResolvedScope)
+}
+
+    if (Extracted->ResolvedScope) {
       Unresolved.Scopes.push_back(*Extracted->ResolvedScope);
-    else // no qualifier or qualifier is unresolved.
+    } else { // no qualifier or qualifier is unresolved.
       Unresolved.Scopes = collectAccessibleScopes(
           *SemaPtr, Typo, S, static_cast<Sema::LookupNameKind>(LookupKind));
 
+}
+
     if (Extracted->UnresolvedScope) {
-      for (std::string &Scope : Unresolved.Scopes)
+      for (std::string &Scope : Unresolved.Scopes) {
         Scope += *Extracted->UnresolvedScope;
+
+}
     }
 
     LastUnresolvedName = std::move(Unresolved);
@@ -394,8 +444,10 @@ std::vector<Fix> IncludeFixer::fixUnresolvedName() const {
   Req.RestrictForCodeCompletion = true;
   Req.Limit = 100;
 
-  if (llvm::Optional<const SymbolSlab *> Syms = fuzzyFindCached(Req))
+  if (llvm::Optional<const SymbolSlab *> Syms = fuzzyFindCached(Req)) {
     return fixesForSymbols(**Syms);
+
+}
 
   return {};
 }
@@ -404,19 +456,27 @@ llvm::Optional<const SymbolSlab *>
 IncludeFixer::fuzzyFindCached(const FuzzyFindRequest &Req) const {
   auto ReqStr = llvm::formatv("{0}", toJSON(Req)).str();
   auto I = FuzzyFindCache.find(ReqStr);
-  if (I != FuzzyFindCache.end())
+  if (I != FuzzyFindCache.end()) {
     return &I->second;
 
-  if (IndexRequestCount >= IndexRequestLimit)
+}
+
+  if (IndexRequestCount >= IndexRequestLimit) {
     return llvm::None;
+
+}
   IndexRequestCount++;
 
   SymbolSlab::Builder Matches;
   Index.fuzzyFind(Req, [&](const Symbol &Sym) {
-    if (Sym.Name != Req.Query)
+    if (Sym.Name != Req.Query) {
       return;
-    if (!Sym.IncludeHeaders.empty())
+
+}
+    if (!Sym.IncludeHeaders.empty()) {
       Matches.insert(Sym);
+
+}
   });
   auto Syms = std::move(Matches).build();
   auto E = FuzzyFindCache.try_emplace(ReqStr, std::move(Syms));
@@ -429,11 +489,15 @@ IncludeFixer::lookupCached(const SymbolID &ID) const {
   Req.IDs.insert(ID);
 
   auto I = LookupCache.find(ID);
-  if (I != LookupCache.end())
+  if (I != LookupCache.end()) {
     return &I->second;
 
-  if (IndexRequestCount >= IndexRequestLimit)
+}
+
+  if (IndexRequestCount >= IndexRequestLimit) {
     return llvm::None;
+
+}
   IndexRequestCount++;
 
   // FIXME: consider batching the requests for all diagnostics.
@@ -445,8 +509,10 @@ IncludeFixer::lookupCached(const SymbolID &ID) const {
   if (!Syms.empty()) {
     auto &Matched = *Syms.begin();
     if (!Matched.IncludeHeaders.empty() && Matched.Definition &&
-        Matched.CanonicalDeclaration.FileURI == Matched.Definition.FileURI)
+        Matched.CanonicalDeclaration.FileURI == Matched.Definition.FileURI) {
       Fixes = fixesForSymbols(Syms);
+
+}
   }
   auto E = LookupCache.try_emplace(ID, std::move(Syms));
   return &E.first->second;

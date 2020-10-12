@@ -70,8 +70,10 @@ LLVMBool LLVMGetTargetFromTriple(const char* TripleStr, LLVMTargetRef *T,
   *T = wrap(TargetRegistry::lookupTarget(TripleStr, Error));
 
   if (!*T) {
-    if (ErrorMessage)
+    if (ErrorMessage) {
       *ErrorMessage = strdup(Error.c_str());
+
+}
 
     return 1;
   }
@@ -258,9 +260,13 @@ char *LLVMGetHostCPUFeatures(void) {
   SubtargetFeatures Features;
   StringMap<bool> HostFeatures;
 
-  if (sys::getHostCPUFeatures(HostFeatures))
-    for (auto &F : HostFeatures)
+  if (sys::getHostCPUFeatures(HostFeatures)) {
+    for (auto &F : HostFeatures) {
       Features.AddFeature(F.first(), F.second);
+
+}
+
+}
 
   return strdup(Features.getString().c_str());
 }

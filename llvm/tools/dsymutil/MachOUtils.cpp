@@ -32,8 +32,10 @@ llvm::Error ArchAndFile::createTempFile() {
   llvm::sys::path::append(TmpModel, "dsym.tmp%%%%%.dwarf");
   Expected<sys::fs::TempFile> T = sys::fs::TempFile::create(TmpModel);
 
-  if (!T)
+  if (!T) {
     return T.takeError();
+
+}
 
   File = std::make_unique<sys::fs::TempFile>(std::move(*T));
   return Error::success();
@@ -42,21 +44,29 @@ llvm::Error ArchAndFile::createTempFile() {
 llvm::StringRef ArchAndFile::path() const { return File->TmpName; }
 
 ArchAndFile::~ArchAndFile() {
-  if (File)
-    if (auto E = File->discard())
+  if (File) {
+    if (auto E = File->discard()) {
       llvm::consumeError(std::move(E));
+
+}
+
+}
 }
 
 std::string getArchName(StringRef Arch) {
-  if (Arch.startswith("thumb"))
+  if (Arch.startswith("thumb")) {
     return (llvm::Twine("arm") + Arch.drop_front(5)).str();
+
+}
   return std::string(Arch);
 }
 
 static bool runLipo(StringRef SDKPath, SmallVectorImpl<StringRef> &Args) {
   auto Path = sys::findProgramByName("lipo", makeArrayRef(SDKPath));
-  if (!Path)
+  if (!Path) {
     Path = sys::findProgramByName("lipo");
+
+}
 
   if (!Path) {
     WithColor::error() << "lipo: " << Path.getError().message() << "\n";
@@ -91,8 +101,10 @@ bool generateUniversalBinary(SmallVectorImpl<ArchAndFile> &ArchFiles,
   Args.push_back("lipo");
   Args.push_back("-create");
 
-  for (auto &Thin : ArchFiles)
+  for (auto &Thin : ArchFiles) {
     Args.push_back(Thin.path());
+
+}
 
   // Align segments to match dsymutil-classic alignment
   for (auto &Thin : ArchFiles) {
@@ -107,8 +119,10 @@ bool generateUniversalBinary(SmallVectorImpl<ArchAndFile> &ArchFiles,
 
   if (Options.Verbose) {
     outs() << "Running lipo\n";
-    for (auto Arg : Args)
+    for (auto Arg : Args) {
       outs() << ' ' << Arg;
+
+}
     outs() << "\n";
   }
 
@@ -140,12 +154,14 @@ static void iterateOnSegments(const object::MachOObjectFile &Obj,
                               FunctionTy Handler) {
   for (const auto &LCI : Obj.load_commands()) {
     MachO::segment_command_64 Segment;
-    if (LCI.C.cmd == MachO::LC_SEGMENT)
+    if (LCI.C.cmd == MachO::LC_SEGMENT) {
       Segment = adaptFrom32bits(Obj.getSegmentLoadCommand(LCI));
-    else if (LCI.C.cmd == MachO::LC_SEGMENT_64)
+    } else if (LCI.C.cmd == MachO::LC_SEGMENT_64) {
       Segment = Obj.getSegment64LoadCommand(LCI);
-    else
+    } else {
       continue;
+
+}
 
     Handler(Segment);
   }
@@ -160,8 +176,10 @@ static bool transferSymbol(NListTy NList, bool IsLittleEndian,
                            NonRelocatableStringpool &NewStrings,
                            bool &InDebugNote) {
   // Do not transfer undefined symbols, we want real addresses.
-  if ((NList.n_type & MachO::N_TYPE) == MachO::N_UNDF)
+  if ((NList.n_type & MachO::N_TYPE) == MachO::N_UNDF) {
     return false;
+
+}
 
   StringRef Name = StringRef(Strings.begin() + NList.n_strx);
   if (InDebugNote) {
@@ -177,8 +195,10 @@ static bool transferSymbol(NListTy NList, bool IsLittleEndian,
   // strings at the start of the generated string table (There is
   // corresponding code in the string table emission).
   NList.n_strx = NewStrings.getStringOffset(Name) + 1;
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(NList);
+
+}
 
   NewSymtab.append(reinterpret_cast<char *>(&NList),
                    reinterpret_cast<char *>(&NList + 1));
@@ -200,15 +220,19 @@ static unsigned transferSymbols(const object::MachOObjectFile &Obj,
     for (const object::SymbolRef &Symbol : Obj.symbols()) {
       object::DataRefImpl DRI = Symbol.getRawDataRefImpl();
       if (transferSymbol(Obj.getSymbol64TableEntry(DRI), IsLittleEndian,
-                         Strings, NewSymtab, NewStrings, InDebugNote))
+                         Strings, NewSymtab, NewStrings, InDebugNote)) {
         ++Syms;
+
+}
     }
   } else {
     for (const object::SymbolRef &Symbol : Obj.symbols()) {
       object::DataRefImpl DRI = Symbol.getRawDataRefImpl();
       if (transferSymbol(Obj.getSymbolTableEntry(DRI), IsLittleEndian, Strings,
-                         NewSymtab, NewStrings, InDebugNote))
+                         NewSymtab, NewStrings, InDebugNote)) {
         ++Syms;
+
+}
     }
   }
   return Syms;
@@ -242,8 +266,10 @@ static void transferSegmentAndSections(
     const object::MachOObjectFile &Obj, MachObjectWriter &Writer,
     uint64_t LinkeditOffset, uint64_t LinkeditSize, uint64_t DwarfSegmentSize,
     uint64_t &GapForDwarf, uint64_t &EndAddress) {
-  if (StringRef("__DWARF") == Segment.segname)
+  if (StringRef("__DWARF") == Segment.segname) {
     return;
+
+}
 
   Segment.fileoff = Segment.filesize = 0;
 
@@ -260,21 +286,27 @@ static void transferSegmentAndSections(
   uint64_t PrevEndAddress = EndAddress;
   EndAddress = alignTo(EndAddress, 0x1000);
   if (GapForDwarf == UINT64_MAX && Segment.vmaddr > EndAddress &&
-      Segment.vmaddr - EndAddress >= DwarfSegmentSize)
+      Segment.vmaddr - EndAddress >= DwarfSegmentSize) {
     GapForDwarf = EndAddress;
+
+}
 
   // The segments are not necessarily sorted by their vmaddr.
   EndAddress =
       std::max<uint64_t>(PrevEndAddress, Segment.vmaddr + Segment.vmsize);
   unsigned nsects = Segment.nsects;
-  if (Obj.isLittleEndian() != sys::IsLittleEndianHost)
+  if (Obj.isLittleEndian() != sys::IsLittleEndianHost) {
     MachO::swapStruct(Segment);
+
+}
   Writer.W.OS.write(reinterpret_cast<char *>(&Segment), sizeof(Segment));
   for (unsigned i = 0; i < nsects; ++i) {
     auto Sect = getSection(Obj, Segment, LCI, i);
     Sect.offset = Sect.reloff = Sect.nreloc = 0;
-    if (Obj.isLittleEndian() != sys::IsLittleEndianHost)
+    if (Obj.isLittleEndian() != sys::IsLittleEndianHost) {
       MachO::swapStruct(Sect);
+
+}
     Writer.W.OS.write(reinterpret_cast<char *>(&Sect), sizeof(Sect));
   }
 }
@@ -290,8 +322,10 @@ static void createDwarfSegment(uint64_t VMAddr, uint64_t FileOffset,
 
   for (unsigned int i = 0, n = Layout.getSectionOrder().size(); i != n; ++i) {
     MCSection *Sec = Layout.getSectionOrder()[i];
-    if (Sec->begin() == Sec->end() || !Layout.getSectionFileSize(Sec))
+    if (Sec->begin() == Sec->end() || !Layout.getSectionFileSize(Sec)) {
       continue;
+
+}
 
     unsigned Align = Sec->getAlignment();
     if (Align > 1) {
@@ -306,25 +340,31 @@ static void createDwarfSegment(uint64_t VMAddr, uint64_t FileOffset,
 }
 
 static bool isExecutable(const object::MachOObjectFile &Obj) {
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     return Obj.getHeader64().filetype != MachO::MH_OBJECT;
-  else
+  } else {
     return Obj.getHeader().filetype != MachO::MH_OBJECT;
+
+}
 }
 
 static bool hasLinkEditSegment(const object::MachOObjectFile &Obj) {
   bool HasLinkEditSegment = false;
   iterateOnSegments(Obj, [&](const MachO::segment_command_64 &Segment) {
-    if (StringRef("__LINKEDIT") == Segment.segname)
+    if (StringRef("__LINKEDIT") == Segment.segname) {
       HasLinkEditSegment = true;
+
+}
   });
   return HasLinkEditSegment;
 }
 
 static unsigned segmentLoadCommandSize(bool Is64Bit, unsigned NumSections) {
-  if (Is64Bit)
+  if (Is64Bit) {
     return sizeof(MachO::segment_command_64) +
            NumSections * sizeof(MachO::section_64);
+
+}
 
   return sizeof(MachO::segment_command) + NumSections * sizeof(MachO::section);
 }
@@ -378,8 +418,10 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
   for (auto &LCI : InputBinary.load_commands()) {
     switch (LCI.C.cmd) {
     case MachO::LC_UUID:
-      if (UUIDCmd.cmd)
+      if (UUIDCmd.cmd) {
         return error("Binary contains more than one UUID");
+
+}
       UUIDCmd = InputBinary.getUuidCommand(LCI);
       ++NumLoadCommands;
       LoadCommandSize += sizeof(UUIDCmd);
@@ -412,8 +454,10 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
       Is64Bit ? sizeof(MachO::mach_header_64) : sizeof(MachO::mach_header);
   // We will copy every segment that isn't __DWARF.
   iterateOnSegments(InputBinary, [&](const MachO::segment_command_64 &Segment) {
-    if (StringRef("__DWARF") == Segment.segname)
+    if (StringRef("__DWARF") == Segment.segname) {
       return;
+
+}
 
     ++NumLoadCommands;
     LoadCommandSize += segmentLoadCommandSize(Is64Bit, Segment.nsects);
@@ -426,8 +470,10 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
 
   for (unsigned int i = 0, n = Layout.getSectionOrder().size(); i != n; ++i) {
     MCSection *Sec = Layout.getSectionOrder()[i];
-    if (Sec->begin() == Sec->end())
+    if (Sec->begin() == Sec->end()) {
       continue;
+
+}
 
     if (uint64_t Size = Layout.getSectionFileSize(Sec)) {
       DwarfSegmentSize = alignTo(DwarfSegmentSize, Sec->getAlignment());
@@ -483,9 +529,11 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
 
   assert(SymtabCmd.cmd && "No symbol table.");
   uint64_t StringStart = SymtabStart + NumSyms * NListSize;
-  if (ShouldEmitSymtab)
+  if (ShouldEmitSymtab) {
     Writer.writeSymtabLoadCommand(SymtabStart, NumSyms, StringStart,
                                   NewStringsSize);
+
+}
 
   uint64_t DwarfSegmentStart = StringStart + NewStringsSize;
   DwarfSegmentStart = alignTo(DwarfSegmentStart, 0x1000);
@@ -495,16 +543,18 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
   uint64_t EndAddress = 0;
   uint64_t GapForDwarf = UINT64_MAX;
   for (auto &LCI : InputBinary.load_commands()) {
-    if (LCI.C.cmd == MachO::LC_SEGMENT)
+    if (LCI.C.cmd == MachO::LC_SEGMENT) {
       transferSegmentAndSections(LCI, InputBinary.getSegmentLoadCommand(LCI),
                                  InputBinary, Writer, SymtabStart,
                                  StringStart + NewStringsSize - SymtabStart,
                                  DwarfSegmentSize, GapForDwarf, EndAddress);
-    else if (LCI.C.cmd == MachO::LC_SEGMENT_64)
+    } else if (LCI.C.cmd == MachO::LC_SEGMENT_64) {
       transferSegmentAndSections(LCI, InputBinary.getSegment64LoadCommand(LCI),
                                  InputBinary, Writer, SymtabStart,
                                  StringStart + NewStringsSize - SymtabStart,
                                  DwarfSegmentSize, GapForDwarf, EndAddress);
+
+}
   }
 
   uint64_t DwarfVMAddr = alignTo(EndAddress, 0x1000);
@@ -514,9 +564,11 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
     // There is no room for the __DWARF segment at the end of the
     // address space. Look through segments to find a gap.
     DwarfVMAddr = GapForDwarf;
-    if (DwarfVMAddr == UINT64_MAX)
+    if (DwarfVMAddr == UINT64_MAX) {
       warn("not enough VM space for the __DWARF segment.",
            "output file streaming");
+
+}
   }
 
   // Write the load command for the __DWARF segment.
@@ -554,8 +606,10 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
 
   // Emit the Dwarf sections contents.
   for (const MCSection &Sec : MCAsm) {
-    if (Sec.begin() == Sec.end())
+    if (Sec.begin() == Sec.end()) {
       continue;
+
+}
 
     uint64_t Pos = OutFile.tell();
     OutFile.write_zeros(alignTo(Pos, Sec.getAlignment()) - Pos);

@@ -35,11 +35,15 @@ ObjCAtTryStmt::ObjCAtTryStmt(SourceLocation atTryLoc, Stmt *atTryStmt,
       NumCatchStmts(NumCatchStmts), HasFinally(atFinallyStmt != nullptr) {
   Stmt **Stmts = getStmts();
   Stmts[0] = atTryStmt;
-  for (unsigned I = 0; I != NumCatchStmts; ++I)
+  for (unsigned I = 0; I != NumCatchStmts; ++I) {
     Stmts[I + 1] = CatchStmts[I];
 
-  if (HasFinally)
+}
+
+  if (HasFinally) {
     Stmts[NumCatchStmts + 1] = atFinallyStmt;
+
+}
 }
 
 ObjCAtTryStmt *ObjCAtTryStmt::Create(const ASTContext &Context,
@@ -64,9 +68,13 @@ ObjCAtTryStmt *ObjCAtTryStmt::CreateEmpty(const ASTContext &Context,
 }
 
 SourceLocation ObjCAtTryStmt::getEndLoc() const {
-  if (HasFinally)
+  if (HasFinally) {
     return getFinallyStmt()->getEndLoc();
-  if (NumCatchStmts)
+
+}
+  if (NumCatchStmts) {
     return getCatchStmt(NumCatchStmts - 1)->getEndLoc();
+
+}
   return getTryBody()->getEndLoc();
 }

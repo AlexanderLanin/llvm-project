@@ -34,12 +34,14 @@ Error RangeListEntry::extract(DWARFDataExtractor Data, uint64_t End,
   case dwarf::DW_RLE_base_addressx: {
     uint64_t PreviousOffset = *OffsetPtr - 1;
     Value0 = Data.getULEB128(OffsetPtr);
-    if (End < *OffsetPtr)
+    if (End < *OffsetPtr) {
       return createStringError(
           errc::invalid_argument,
           "read past end of table when reading "
           "DW_RLE_base_addressx encoding at offset 0x%" PRIx64,
           PreviousOffset);
+
+}
     break;
   }
   case dwarf::DW_RLE_startx_endx:
@@ -51,41 +53,49 @@ Error RangeListEntry::extract(DWARFDataExtractor Data, uint64_t End,
     uint64_t PreviousOffset = *OffsetPtr - 1;
     Value0 = Data.getULEB128(OffsetPtr);
     Value1 = Data.getULEB128(OffsetPtr);
-    if (End < *OffsetPtr)
+    if (End < *OffsetPtr) {
       return createStringError(
           errc::invalid_argument,
           "read past end of table when reading "
           "DW_RLE_startx_length encoding at offset 0x%" PRIx64,
           PreviousOffset);
+
+}
     break;
   }
   case dwarf::DW_RLE_offset_pair: {
     uint64_t PreviousOffset = *OffsetPtr - 1;
     Value0 = Data.getULEB128(OffsetPtr);
     Value1 = Data.getULEB128(OffsetPtr);
-    if (End < *OffsetPtr)
+    if (End < *OffsetPtr) {
       return createStringError(errc::invalid_argument,
                          "read past end of table when reading "
                          "DW_RLE_offset_pair encoding at offset 0x%" PRIx64,
                          PreviousOffset);
+
+}
     break;
   }
   case dwarf::DW_RLE_base_address: {
-    if ((End - *OffsetPtr) < Data.getAddressSize())
+    if ((End - *OffsetPtr) < Data.getAddressSize()) {
       return createStringError(errc::invalid_argument,
                          "insufficient space remaining in table for "
                          "DW_RLE_base_address encoding at offset 0x%" PRIx64,
                          *OffsetPtr - 1);
+
+}
     Value0 = Data.getRelocatedAddress(OffsetPtr, &SectionIndex);
     break;
   }
   case dwarf::DW_RLE_start_end: {
-    if ((End - *OffsetPtr) < unsigned(Data.getAddressSize() * 2))
+    if ((End - *OffsetPtr) < unsigned(Data.getAddressSize() * 2)) {
       return createStringError(errc::invalid_argument,
                          "insufficient space remaining in table for "
                          "DW_RLE_start_end encoding "
                          "at offset 0x%" PRIx64,
                          *OffsetPtr - 1);
+
+}
     Value0 = Data.getRelocatedAddress(OffsetPtr, &SectionIndex);
     Value1 = Data.getRelocatedAddress(OffsetPtr);
     break;
@@ -94,11 +104,13 @@ Error RangeListEntry::extract(DWARFDataExtractor Data, uint64_t End,
     uint64_t PreviousOffset = *OffsetPtr - 1;
     Value0 = Data.getRelocatedAddress(OffsetPtr, &SectionIndex);
     Value1 = Data.getULEB128(OffsetPtr);
-    if (End < *OffsetPtr)
+    if (End < *OffsetPtr) {
       return createStringError(errc::invalid_argument,
                          "read past end of table when reading "
                          "DW_RLE_start_length encoding at offset 0x%" PRIx64,
                          PreviousOffset);
+
+}
     break;
   }
   default:
@@ -125,12 +137,16 @@ DWARFAddressRangesVector DWARFDebugRnglist::getAbsoluteRanges(
         LookupPooledAddress) const {
   DWARFAddressRangesVector Res;
   for (const RangeListEntry &RLE : Entries) {
-    if (RLE.EntryKind == dwarf::DW_RLE_end_of_list)
+    if (RLE.EntryKind == dwarf::DW_RLE_end_of_list) {
       break;
+
+}
     if (RLE.EntryKind == dwarf::DW_RLE_base_addressx) {
       BaseAddr = LookupPooledAddress(RLE.Value0);
-      if (!BaseAddr)
+      if (!BaseAddr) {
         BaseAddr = {RLE.Value0, -1ULL};
+
+}
       continue;
     }
     if (RLE.EntryKind == dwarf::DW_RLE_base_address) {
@@ -140,8 +156,10 @@ DWARFAddressRangesVector DWARFDebugRnglist::getAbsoluteRanges(
 
     DWARFAddressRange E;
     E.SectionIndex = RLE.SectionIndex;
-    if (BaseAddr && E.SectionIndex == -1ULL)
+    if (BaseAddr && E.SectionIndex == -1ULL) {
       E.SectionIndex = BaseAddr->SectionIndex;
+
+}
 
     switch (RLE.EntryKind) {
     case dwarf::DW_RLE_offset_pair:
@@ -162,8 +180,10 @@ DWARFAddressRangesVector DWARFDebugRnglist::getAbsoluteRanges(
       break;
     case dwarf::DW_RLE_startx_length: {
       auto Start = LookupPooledAddress(RLE.Value0);
-      if (!Start)
+      if (!Start) {
         Start = {0, -1ULL};
+
+}
       E.SectionIndex = Start->SectionIndex;
       E.LowPC = Start->Address;
       E.HighPC = E.LowPC + RLE.Value1;
@@ -202,8 +222,10 @@ void RangeListEntry::dump(
     assert(!EncodingString.empty() && "Unknown range entry encoding");
     OS << format(" [%s%*c", EncodingString.data(),
                  MaxEncodingStringLength - EncodingString.size() + 1, ']');
-    if (EntryKind != dwarf::DW_RLE_end_of_list)
+    if (EntryKind != dwarf::DW_RLE_end_of_list) {
       OS << ": ";
+
+}
   }
 
   switch (EntryKind) {
@@ -211,20 +233,26 @@ void RangeListEntry::dump(
     OS << (DumpOpts.Verbose ? "" : "<End of list>");
     break;
   case dwarf::DW_RLE_base_addressx: {
-    if (auto SA = LookupPooledAddress(Value0))
+    if (auto SA = LookupPooledAddress(Value0)) {
       CurrentBase = SA->Address;
-    else
+    } else {
       CurrentBase = Value0;
-    if (!DumpOpts.Verbose)
+
+}
+    if (!DumpOpts.Verbose) {
       return;
+
+}
     OS << format(" 0x%*.*" PRIx64, AddrSize * 2, AddrSize * 2, Value0);
     break;
   }
   case dwarf::DW_RLE_base_address:
     // In non-verbose mode we do not print anything for this entry.
     CurrentBase = Value0;
-    if (!DumpOpts.Verbose)
+    if (!DumpOpts.Verbose) {
       return;
+
+}
     OS << format(" 0x%*.*" PRIx64, AddrSize * 2, AddrSize * 2, Value0);
     break;
   case dwarf::DW_RLE_start_length:
@@ -242,8 +270,10 @@ void RangeListEntry::dump(
   case dwarf::DW_RLE_startx_length: {
     PrintRawEntry(OS, *this, AddrSize, DumpOpts);
     uint64_t Start = 0;
-    if (auto SA = LookupPooledAddress(Value0))
+    if (auto SA = LookupPooledAddress(Value0)) {
       Start = SA->Address;
+
+}
     DWARFAddressRange(Start, Start + Value1).dump(OS, AddrSize, DumpOpts);
     break;
   }

@@ -17,10 +17,12 @@ namespace llvm {
 namespace rc {
 
 raw_ostream &operator<<(raw_ostream &OS, const IntOrString &Item) {
-  if (Item.IsInt)
+  if (Item.IsInt) {
     return OS << Item.Data.Int;
-  else
+  } else {
     return OS << Item.Data.String;
+
+}
 }
 
 raw_ostream &OptionalStmtList::log(raw_ostream &OS) const {
@@ -48,9 +50,13 @@ raw_ostream &AcceleratorsResource::log(raw_ostream &OS) const {
   OptStatements->log(OS);
   for (const auto &Acc : Accelerators) {
     OS << "  Accelerator: " << Acc.Event << " " << Acc.Id;
-    for (size_t i = 0; i < Accelerator::NumFlags; ++i)
-      if (Acc.Flags & Accelerator::OptionsFlags[i])
+    for (size_t i = 0; i < Accelerator::NumFlags; ++i) {
+      if (Acc.Flags & Accelerator::OptionsFlags[i]) {
         OS << " " << Accelerator::OptionsStr[i];
+
+}
+
+}
     OS << "\n";
   }
   return OS;
@@ -79,16 +85,22 @@ uint32_t MenuDefinition::OptionsFlags[MenuDefinition::NumFlags] = {
     CHECKED, GRAYED, HELP, INACTIVE, MENUBARBREAK, MENUBREAK};
 
 raw_ostream &MenuDefinition::logFlags(raw_ostream &OS, uint16_t Flags) {
-  for (size_t i = 0; i < NumFlags; ++i)
-    if (Flags & OptionsFlags[i])
+  for (size_t i = 0; i < NumFlags; ++i) {
+    if (Flags & OptionsFlags[i]) {
       OS << " " << OptionsStr[i];
+
+}
+
+}
   return OS;
 }
 
 raw_ostream &MenuDefinitionList::log(raw_ostream &OS) const {
   OS << "  Menu list starts\n";
-  for (auto &Item : Definitions)
+  for (auto &Item : Definitions) {
     Item->log(OS);
+
+}
   return OS << "  Menu list ends\n";
 }
 
@@ -118,8 +130,10 @@ raw_ostream &MenuResource::log(raw_ostream &OS) const {
 raw_ostream &StringTableResource::log(raw_ostream &OS) const {
   OS << "StringTable:\n";
   OptStatements->log(OS);
-  for (const auto &String : Table)
+  for (const auto &String : Table) {
     OS << "  " << String.first << " => " << String.second << "\n";
+
+}
   return OS;
 }
 
@@ -149,12 +163,18 @@ raw_ostream &Control::log(raw_ostream &OS) const {
   OS << "  Control (" << ID << "): " << Type << ", title: " << Title
      << ", loc: (" << X << ", " << Y << "), size: [" << Width << ", " << Height
      << "]";
-  if (Style)
+  if (Style) {
     OS << ", style: " << (*Style).getValue();
-  if (ExtStyle)
+
+}
+  if (ExtStyle) {
     OS << ", ext. style: " << *ExtStyle;
-  if (HelpID)
+
+}
+  if (HelpID) {
     OS << ", help ID: " << *HelpID;
+
+}
   return OS << "\n";
 }
 
@@ -163,15 +183,19 @@ raw_ostream &DialogResource::log(raw_ostream &OS) const {
      << X << ", " << Y << "), size: [" << Width << ", " << Height
      << "], help ID: " << HelpID << "\n";
   OptStatements->log(OS);
-  for (auto &Ctl : Controls)
+  for (auto &Ctl : Controls) {
     Ctl.log(OS);
+
+}
   return OS;
 }
 
 raw_ostream &VersionInfoBlock::log(raw_ostream &OS) const {
   OS << "  Start of block (name: " << Name << ")\n";
-  for (auto &Stmt : Stmts)
+  for (auto &Stmt : Stmts) {
     Stmt->log(OS);
+
+}
   return OS << "  End of block\n";
 }
 
@@ -179,8 +203,10 @@ raw_ostream &VersionInfoValue::log(raw_ostream &OS) const {
   OS << "  " << Key << " =>";
   size_t NumValues = Values.size();
   for (size_t Id = 0; Id < NumValues; ++Id) {
-    if (Id > 0 && HasPrecedingComma[Id])
+    if (Id > 0 && HasPrecedingComma[Id]) {
       OS << ",";
+
+}
     OS << " " << Values[Id];
   }
   return OS << "\n";
@@ -206,8 +232,10 @@ const StringMap<VersionInfoFixedType> VersionInfoFixed::FixedFieldsInfoMap = {
 VersionInfoFixedType VersionInfoFixed::getFixedType(StringRef Type) {
   auto UpperType = Type.upper();
   auto Iter = FixedFieldsInfoMap.find(UpperType);
-  if (Iter != FixedFieldsInfoMap.end())
+  if (Iter != FixedFieldsInfoMap.end()) {
     return Iter->getValue();
+
+}
   return FtUnknown;
 }
 
@@ -228,11 +256,15 @@ bool VersionInfoFixed::isVersionType(VersionInfoFixedType Type) {
 
 raw_ostream &VersionInfoFixed::log(raw_ostream &OS) const {
   for (int Type = FtUnknown; Type < FtNumTypes; ++Type) {
-    if (!isTypeSupported((VersionInfoFixedType)Type))
+    if (!isTypeSupported((VersionInfoFixedType)Type)) {
       continue;
+
+}
     OS << "  Fixed: " << FixedFieldsNames[Type] << ":";
-    for (uint32_t Val : FixedInfo[Type])
+    for (uint32_t Val : FixedInfo[Type]) {
       OS << " " << Val;
+
+}
     OS << "\n";
   }
   return OS;
@@ -246,11 +278,15 @@ raw_ostream &VersionInfoResource::log(raw_ostream &OS) const {
 
 raw_ostream &UserDefinedResource::log(raw_ostream &OS) const {
   OS << "User-defined (type: " << Type << ", name: " << ResName << "): ";
-  if (IsFileResource)
+  if (IsFileResource) {
     return OS << FileLoc << "\n";
+
+}
   OS << "data = ";
-  for (auto &Item : Contents)
+  for (auto &Item : Contents) {
     OS << Item << " ";
+
+}
   return OS << "\n";
 }
 
@@ -273,8 +309,10 @@ raw_ostream &ClassStmt::log(raw_ostream &OS) const {
 raw_ostream &FontStmt::log(raw_ostream &OS) const {
   OS << "Font: size = " << Size << ", face = " << Name
      << ", weight = " << Weight;
-  if (Italic)
+  if (Italic) {
     OS << ", italic";
+
+}
   return OS << ", charset = " << Charset << "\n";
 }
 

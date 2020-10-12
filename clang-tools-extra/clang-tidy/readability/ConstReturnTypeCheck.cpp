@@ -27,8 +27,10 @@ namespace readability {
 static llvm::Optional<Token>
 findConstToRemove(const FunctionDecl *Def,
                   const MatchFinder::MatchResult &Result) {
-  if (!Def->getReturnType().isLocalConstQualified())
+  if (!Def->getReturnType().isLocalConstQualified()) {
     return None;
+
+}
 
   // Get the begin location for the function name, including any qualifiers
   // written in the source (for out-of-line declarations). A FunctionDecl's
@@ -44,8 +46,10 @@ findConstToRemove(const FunctionDecl *Def,
       CharSourceRange::getCharRange(Def->getBeginLoc(), NameBeginLoc),
       *Result.SourceManager, Result.Context->getLangOpts());
 
-  if (FileRange.isInvalid())
+  if (FileRange.isInvalid()) {
     return None;
+
+}
 
   return utils::lexer::getQualifyingToken(
       tok::kw_const, FileRange, *Result.Context, *Result.SourceManager);
@@ -71,8 +75,10 @@ static CheckResult checkDef(const clang::FunctionDecl *Def,
                             const MatchFinder::MatchResult &MatchResult) {
   CheckResult Result;
   llvm::Optional<Token> Tok = findConstToRemove(Def, MatchResult);
-  if (!Tok)
+  if (!Tok) {
     return Result;
+
+}
 
   Result.ConstRange =
       CharSourceRange::getCharRange(Tok->getLocation(), Tok->getEndLoc());
@@ -83,12 +89,14 @@ static CheckResult checkDef(const clang::FunctionDecl *Def,
   // single warning at the definition.
   for (const FunctionDecl *Decl = Def->getPreviousDecl(); Decl != nullptr;
        Decl = Decl->getPreviousDecl()) {
-    if (llvm::Optional<Token> T = findConstToRemove(Decl, MatchResult))
+    if (llvm::Optional<Token> T = findConstToRemove(Decl, MatchResult)) {
       Result.Hints.push_back(FixItHint::CreateRemoval(
           CharSourceRange::getCharRange(T->getLocation(), T->getEndLoc())));
-    else
+    } else {
       // `getInnerLocStart` gives the start of the return type.
       Result.DeclLocs.push_back(Decl->getInnerLocStart());
+
+}
   }
   return Result;
 }
@@ -113,13 +121,19 @@ void ConstReturnTypeCheck::check(const MatchFinder::MatchResult &Result) {
              "return type %0 is 'const'-qualified at the top level, which may "
              "reduce code readability without improving const correctness")
         << Def->getReturnType();
-    if (CR.ConstRange.isValid())
+    if (CR.ConstRange.isValid()) {
       Diagnostic << CR.ConstRange;
-    for (auto &Hint : CR.Hints)
+
+}
+    for (auto &Hint : CR.Hints) {
       Diagnostic << Hint;
+
+}
   }
-  for (auto Loc : CR.DeclLocs)
+  for (auto Loc : CR.DeclLocs) {
     diag(Loc, "could not transform this declaration", DiagnosticIDs::Note);
+
+}
 }
 
 } // namespace readability

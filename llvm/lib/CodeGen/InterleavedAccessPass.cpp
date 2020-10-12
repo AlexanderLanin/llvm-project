@@ -147,12 +147,18 @@ static bool isDeInterleaveMaskOfFactor(ArrayRef<int> Mask, unsigned Factor,
 
     // Check that elements are in ascending order by Factor. Ignore undef
     // elements.
-    for (; i < Mask.size(); i++)
-      if (Mask[i] >= 0 && static_cast<unsigned>(Mask[i]) != Index + i * Factor)
+    for (; i < Mask.size(); i++) {
+      if (Mask[i] >= 0 && static_cast<unsigned>(Mask[i]) != Index + i * Factor) {
         break;
 
-    if (i == Mask.size())
+}
+
+}
+
+    if (i == Mask.size()) {
       return true;
+
+}
   }
 
   return false;
@@ -166,16 +172,22 @@ static bool isDeInterleaveMaskOfFactor(ArrayRef<int> Mask, unsigned Factor,
 static bool isDeInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
                                unsigned &Index, unsigned MaxFactor,
                                unsigned NumLoadElements) {
-  if (Mask.size() < 2)
+  if (Mask.size() < 2) {
     return false;
+
+}
 
   // Check potential Factors.
   for (Factor = 2; Factor <= MaxFactor; Factor++) {
     // Make sure we don't produce a load wider than the input load.
-    if (Mask.size() * Factor > NumLoadElements)
+    if (Mask.size() * Factor > NumLoadElements) {
       return false;
-    if (isDeInterleaveMaskOfFactor(Mask, Factor, Index))
+
+}
+    if (isDeInterleaveMaskOfFactor(Mask, Factor, Index)) {
       return true;
+
+}
   }
 
   return false;
@@ -195,17 +207,23 @@ static bool isDeInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
 static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
                                unsigned MaxFactor, unsigned OpNumElts) {
   unsigned NumElts = Mask.size();
-  if (NumElts < 4)
+  if (NumElts < 4) {
     return false;
+
+}
 
   // Check potential Factors.
   for (Factor = 2; Factor <= MaxFactor; Factor++) {
-    if (NumElts % Factor)
+    if (NumElts % Factor) {
       continue;
 
+}
+
     unsigned LaneLen = NumElts / Factor;
-    if (!isPowerOf2_32(LaneLen))
+    if (!isPowerOf2_32(LaneLen)) {
       continue;
+
+}
 
     // Check whether each element matches the general interleaved rule.
     // Ignore undef elements, as long as the defined elements match the rule.
@@ -225,8 +243,10 @@ static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
 
         // If both are defined, values must be sequential
         if (LaneValue >= 0 && NextLaneValue >= 0 &&
-            LaneValue + 1 != NextLaneValue)
+            LaneValue + 1 != NextLaneValue) {
           break;
+
+}
 
         // If the next value is undef, save the current one as reference
         if (LaneValue >= 0 && NextLaneValue < 0) {
@@ -242,13 +262,17 @@ static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
         if (SavedNoUndefs > 0 && LaneValue < 0) {
           SavedNoUndefs++;
           if (NextLaneValue >= 0 &&
-              SavedLaneValue + SavedNoUndefs != (unsigned)NextLaneValue)
+              SavedLaneValue + SavedNoUndefs != (unsigned)NextLaneValue) {
             break;
+
+}
         }
       }
 
-      if (J < LaneLen - 1)
+      if (J < LaneLen - 1) {
         break;
+
+}
 
       int StartMask = 0;
       if (Mask[I] >= 0) {
@@ -263,16 +287,22 @@ static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
       }
       // else StartMask remains set to 0, i.e. all elements are undefs
 
-      if (StartMask < 0)
+      if (StartMask < 0) {
         break;
+
+}
       // We must stay within the vectors; This case can happen with undefs.
-      if (StartMask + LaneLen > OpNumElts*2)
+      if (StartMask + LaneLen > OpNumElts*2) {
         break;
+
+}
     }
 
     // Found an interleaved mask of current factor.
-    if (I == Factor)
+    if (I == Factor) {
       return true;
+
+}
   }
 
   return false;
@@ -280,8 +310,10 @@ static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
 
 bool InterleavedAccess::lowerInterleavedLoad(
     LoadInst *LI, SmallVector<Instruction *, 32> &DeadInsts) {
-  if (!LI->isSimple())
+  if (!LI->isSimple()) {
     return false;
+
+}
 
   SmallVector<ShuffleVectorInst *, 4> Shuffles;
   SmallVector<ExtractElementInst *, 4> Extracts;
@@ -297,22 +329,28 @@ bool InterleavedAccess::lowerInterleavedLoad(
       continue;
     }
     ShuffleVectorInst *SVI = dyn_cast<ShuffleVectorInst>(*UI);
-    if (!SVI || !isa<UndefValue>(SVI->getOperand(1)))
+    if (!SVI || !isa<UndefValue>(SVI->getOperand(1))) {
       return false;
+
+}
 
     Shuffles.push_back(SVI);
   }
 
-  if (Shuffles.empty())
+  if (Shuffles.empty()) {
     return false;
+
+}
 
   unsigned Factor, Index;
 
   unsigned NumLoadElements = LI->getType()->getVectorNumElements();
   // Check if the first shufflevector is DE-interleave shuffle.
   if (!isDeInterleaveMask(Shuffles[0]->getShuffleMask(), Factor, Index,
-                          MaxFactor, NumLoadElements))
+                          MaxFactor, NumLoadElements)) {
     return false;
+
+}
 
   // Holds the corresponding index for each DE-interleave shuffle.
   SmallVector<unsigned, 4> Indices;
@@ -323,29 +361,39 @@ bool InterleavedAccess::lowerInterleavedLoad(
   // Check if other shufflevectors are also DE-interleaved of the same type
   // and factor as the first shufflevector.
   for (unsigned i = 1; i < Shuffles.size(); i++) {
-    if (Shuffles[i]->getType() != VecTy)
+    if (Shuffles[i]->getType() != VecTy) {
       return false;
 
+}
+
     if (!isDeInterleaveMaskOfFactor(Shuffles[i]->getShuffleMask(), Factor,
-                                    Index))
+                                    Index)) {
       return false;
+
+}
 
     Indices.push_back(Index);
   }
 
   // Try and modify users of the load that are extractelement instructions to
   // use the shufflevector instructions instead of the load.
-  if (!tryReplaceExtracts(Extracts, Shuffles))
+  if (!tryReplaceExtracts(Extracts, Shuffles)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "IA: Found an interleaved load: " << *LI << "\n");
 
   // Try to create target specific intrinsics to replace the load and shuffles.
-  if (!TLI->lowerInterleavedLoad(LI, Shuffles, Indices, Factor))
+  if (!TLI->lowerInterleavedLoad(LI, Shuffles, Indices, Factor)) {
     return false;
 
-  for (auto SVI : Shuffles)
+}
+
+  for (auto SVI : Shuffles) {
     DeadInsts.push_back(SVI);
+
+}
 
   DeadInsts.push_back(LI);
   return true;
@@ -356,8 +404,10 @@ bool InterleavedAccess::tryReplaceExtracts(
     ArrayRef<ShuffleVectorInst *> Shuffles) {
   // If there aren't any extractelement instructions to modify, there's nothing
   // to do.
-  if (Extracts.empty())
+  if (Extracts.empty()) {
     return true;
+
+}
 
   // Maps extractelement instructions to vector-index pairs. The extractlement
   // instructions will be modified to use the new vector and index operands.
@@ -374,15 +424,17 @@ bool InterleavedAccess::tryReplaceExtracts(
     for (auto *Shuffle : Shuffles) {
       // If the shufflevector instruction doesn't dominate the extract, we
       // can't create a use of it.
-      if (!DT->dominates(Shuffle, Extract))
+      if (!DT->dominates(Shuffle, Extract)) {
         continue;
+
+}
 
       // Inspect the indices of the shufflevector instruction. If the shuffle
       // selects the same index that is extracted, we can modify the
       // extractelement instruction.
       SmallVector<int, 4> Indices;
       Shuffle->getShuffleMask(Indices);
-      for (unsigned I = 0; I < Indices.size(); ++I)
+      for (unsigned I = 0; I < Indices.size(); ++I) {
         if (Indices[I] == Index) {
           assert(Extract->getOperand(0) == Shuffle->getOperand(0) &&
                  "Vector operations do not match");
@@ -390,15 +442,21 @@ bool InterleavedAccess::tryReplaceExtracts(
           break;
         }
 
+}
+
       // If we found a suitable shufflevector instruction, stop looking.
-      if (ReplacementMap.count(Extract))
+      if (ReplacementMap.count(Extract)) {
         break;
+
+}
     }
 
     // If we did not find a suitable shufflevector instruction, the
     // extractelement instruction cannot be modified, so we must give up.
-    if (!ReplacementMap.count(Extract))
+    if (!ReplacementMap.count(Extract)) {
       return false;
+
+}
   }
 
   // Finally, perform the replacements.
@@ -417,24 +475,32 @@ bool InterleavedAccess::tryReplaceExtracts(
 
 bool InterleavedAccess::lowerInterleavedStore(
     StoreInst *SI, SmallVector<Instruction *, 32> &DeadInsts) {
-  if (!SI->isSimple())
+  if (!SI->isSimple()) {
     return false;
 
+}
+
   ShuffleVectorInst *SVI = dyn_cast<ShuffleVectorInst>(SI->getValueOperand());
-  if (!SVI || !SVI->hasOneUse())
+  if (!SVI || !SVI->hasOneUse()) {
     return false;
+
+}
 
   // Check if the shufflevector is RE-interleave shuffle.
   unsigned Factor;
   unsigned OpNumElts = SVI->getOperand(0)->getType()->getVectorNumElements();
-  if (!isReInterleaveMask(SVI->getShuffleMask(), Factor, MaxFactor, OpNumElts))
+  if (!isReInterleaveMask(SVI->getShuffleMask(), Factor, MaxFactor, OpNumElts)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "IA: Found an interleaved store: " << *SI << "\n");
 
   // Try to create target specific intrinsics to replace the store and shuffle.
-  if (!TLI->lowerInterleavedStore(SI, SVI, Factor))
+  if (!TLI->lowerInterleavedStore(SI, SVI, Factor)) {
     return false;
+
+}
 
   // Already have a new target specific interleaved store. Erase the old store.
   DeadInsts.push_back(SI);
@@ -444,8 +510,10 @@ bool InterleavedAccess::lowerInterleavedStore(
 
 bool InterleavedAccess::runOnFunction(Function &F) {
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-  if (!TPC || !LowerInterleavedAccesses)
+  if (!TPC || !LowerInterleavedAccesses) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "*** " << getPassName() << ": " << F.getName() << "\n");
 
@@ -459,15 +527,21 @@ bool InterleavedAccess::runOnFunction(Function &F) {
   bool Changed = false;
 
   for (auto &I : instructions(F)) {
-    if (LoadInst *LI = dyn_cast<LoadInst>(&I))
+    if (LoadInst *LI = dyn_cast<LoadInst>(&I)) {
       Changed |= lowerInterleavedLoad(LI, DeadInsts);
 
-    if (StoreInst *SI = dyn_cast<StoreInst>(&I))
+}
+
+    if (StoreInst *SI = dyn_cast<StoreInst>(&I)) {
       Changed |= lowerInterleavedStore(SI, DeadInsts);
+
+}
   }
 
-  for (auto I : DeadInsts)
+  for (auto I : DeadInsts) {
     I->eraseFromParent();
+
+}
 
   return Changed;
 }

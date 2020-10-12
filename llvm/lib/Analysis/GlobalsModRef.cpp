@@ -109,8 +109,10 @@ public:
   // pointer-int pair.
   FunctionInfo(const FunctionInfo &Arg)
       : Info(nullptr, Arg.Info.getInt()) {
-    if (const auto *ArgPtr = Arg.Info.getPointer())
+    if (const auto *ArgPtr = Arg.Info.getPointer()) {
       Info.setPointer(new AlignedMap(*ArgPtr));
+
+}
   }
   FunctionInfo(FunctionInfo &&Arg)
       : Info(Arg.Info.getPointer(), Arg.Info.getInt()) {
@@ -119,8 +121,10 @@ public:
   FunctionInfo &operator=(const FunctionInfo &RHS) {
     delete Info.getPointer();
     Info.setPointerAndInt(nullptr, RHS.Info.getInt());
-    if (const auto *RHSPtr = RHS.Info.getPointer())
+    if (const auto *RHSPtr = RHS.Info.getPointer()) {
       Info.setPointer(new AlignedMap(*RHSPtr));
+
+}
     return *this;
   }
   FunctionInfo &operator=(FunctionInfo &&RHS) {
@@ -162,8 +166,10 @@ public:
         mayReadAnyGlobal() ? ModRefInfo::Ref : ModRefInfo::NoModRef;
     if (AlignedMap *P = Info.getPointer()) {
       auto I = P->Map.find(&GV);
-      if (I != P->Map.end())
+      if (I != P->Map.end()) {
         GlobalMRI = unionModRef(GlobalMRI, I->second);
+
+}
     }
     return GlobalMRI;
   }
@@ -173,12 +179,18 @@ public:
   void addFunctionInfo(const FunctionInfo &FI) {
     addModRefInfo(FI.getModRefInfo());
 
-    if (FI.mayReadAnyGlobal())
+    if (FI.mayReadAnyGlobal()) {
       setMayReadAnyGlobal();
 
-    if (AlignedMap *P = FI.Info.getPointer())
-      for (const auto &G : P->Map)
+}
+
+    if (AlignedMap *P = FI.Info.getPointer()) {
+      for (const auto &G : P->Map) {
         addModRefInfoForGlobal(*G.first, G.second);
+
+}
+
+}
   }
 
   void addModRefInfoForGlobal(const GlobalValue &GV, ModRefInfo NewMRI) {
@@ -194,8 +206,10 @@ public:
   /// Clear a global's ModRef info. Should be used when a global is being
   /// deleted.
   void eraseModRefInfoForGlobal(const GlobalValue &GV) {
-    if (AlignedMap *P = Info.getPointer())
+    if (AlignedMap *P = Info.getPointer()) {
       P->Map.erase(&GV);
+
+}
   }
 
 private:
@@ -209,8 +223,10 @@ private:
 
 void GlobalsAAResult::DeletionCallbackHandle::deleted() {
   Value *V = getValPtr();
-  if (auto *F = dyn_cast<Function>(V))
+  if (auto *F = dyn_cast<Function>(V)) {
     GAR->FunctionInfos.erase(F);
+
+}
 
   if (GlobalValue *GV = dyn_cast<GlobalValue>(V)) {
     if (GAR->NonAddressTakenGlobals.erase(GV)) {
@@ -220,15 +236,21 @@ void GlobalsAAResult::DeletionCallbackHandle::deleted() {
         // Remove any entries in AllocsForIndirectGlobals for this global.
         for (auto I = GAR->AllocsForIndirectGlobals.begin(),
                   E = GAR->AllocsForIndirectGlobals.end();
-             I != E; ++I)
-          if (I->second == GV)
+             I != E; ++I) {
+          if (I->second == GV) {
             GAR->AllocsForIndirectGlobals.erase(I);
+
+}
+
+}
       }
 
       // Scan the function info we have collected and remove this global
       // from all of them.
-      for (auto &FIPair : GAR->FunctionInfos)
+      for (auto &FIPair : GAR->FunctionInfos) {
         FIPair.second.eraseModRefInfoForGlobal(*GV);
+
+}
     }
   }
 
@@ -245,10 +267,12 @@ FunctionModRefBehavior GlobalsAAResult::getModRefBehavior(const Function *F) {
   FunctionModRefBehavior Min = FMRB_UnknownModRefBehavior;
 
   if (FunctionInfo *FI = getFunctionInfo(F)) {
-    if (!isModOrRefSet(FI->getModRefInfo()))
+    if (!isModOrRefSet(FI->getModRefInfo())) {
       Min = FMRB_DoesNotAccessMemory;
-    else if (!isModSet(FI->getModRefInfo()))
+    } else if (!isModSet(FI->getModRefInfo())) {
       Min = FMRB_OnlyReadsMemory;
+
+}
   }
 
   return FunctionModRefBehavior(AAResultBase::getModRefBehavior(F) & Min);
@@ -258,14 +282,20 @@ FunctionModRefBehavior
 GlobalsAAResult::getModRefBehavior(const CallBase *Call) {
   FunctionModRefBehavior Min = FMRB_UnknownModRefBehavior;
 
-  if (!Call->hasOperandBundles())
-    if (const Function *F = Call->getCalledFunction())
+  if (!Call->hasOperandBundles()) {
+    if (const Function *F = Call->getCalledFunction()) {
       if (FunctionInfo *FI = getFunctionInfo(F)) {
-        if (!isModOrRefSet(FI->getModRefInfo()))
+        if (!isModOrRefSet(FI->getModRefInfo())) {
           Min = FMRB_DoesNotAccessMemory;
-        else if (!isModSet(FI->getModRefInfo()))
+        } else if (!isModSet(FI->getModRefInfo())) {
           Min = FMRB_OnlyReadsMemory;
+
+}
       }
+
+}
+
+}
 
   return FunctionModRefBehavior(AAResultBase::getModRefBehavior(Call) & Min);
 }
@@ -275,8 +305,10 @@ GlobalsAAResult::getModRefBehavior(const CallBase *Call) {
 GlobalsAAResult::FunctionInfo *
 GlobalsAAResult::getFunctionInfo(const Function *F) {
   auto I = FunctionInfos.find(F);
-  if (I != FunctionInfos.end())
+  if (I != FunctionInfos.end()) {
     return &I->second;
+
+}
   return nullptr;
 }
 
@@ -286,7 +318,7 @@ GlobalsAAResult::getFunctionInfo(const Function *F) {
 /// and record the functions that they are used directly in.
 void GlobalsAAResult::AnalyzeGlobals(Module &M) {
   SmallPtrSet<Function *, 32> TrackedFunctions;
-  for (Function &F : M)
+  for (Function &F : M) {
     if (F.hasLocalLinkage()) {
       if (!AnalyzeUsesOfPointer(&F)) {
         // Remember that we are tracking this global.
@@ -295,12 +327,16 @@ void GlobalsAAResult::AnalyzeGlobals(Module &M) {
         Handles.emplace_front(*this, &F);
         Handles.front().I = Handles.begin();
         ++NumNonAddrTakenFunctions;
-      } else
+      } else {
         UnknownFunctionsWithLocalLinkage = true;
+
+}
     }
 
+}
+
   SmallPtrSet<Function *, 16> Readers, Writers;
-  for (GlobalVariable &GV : M.globals())
+  for (GlobalVariable &GV : M.globals()) {
     if (GV.hasLocalLinkage()) {
       if (!AnalyzeUsesOfPointer(&GV, &Readers,
                                 GV.isConstant() ? nullptr : &Writers)) {
@@ -317,7 +353,7 @@ void GlobalsAAResult::AnalyzeGlobals(Module &M) {
           FunctionInfos[Reader].addModRefInfoForGlobal(GV, ModRefInfo::Ref);
         }
 
-        if (!GV.isConstant()) // No need to keep track of writers to constants
+        if (!GV.isConstant()) { // No need to keep track of writers to constants
           for (Function *Writer : Writers) {
             if (TrackedFunctions.insert(Writer).second) {
               Handles.emplace_front(*this, Writer);
@@ -325,16 +361,22 @@ void GlobalsAAResult::AnalyzeGlobals(Module &M) {
             }
             FunctionInfos[Writer].addModRefInfoForGlobal(GV, ModRefInfo::Mod);
           }
+
+}
         ++NumNonAddrTakenGlobalVars;
 
         // If this global holds a pointer type, see if it is an indirect global.
         if (GV.getValueType()->isPointerTy() &&
-            AnalyzeIndirectGlobalMemory(&GV))
+            AnalyzeIndirectGlobalMemory(&GV)) {
           ++NumIndirectGlobalVars;
+
+}
       }
       Readers.clear();
       Writers.clear();
     }
+
+}
 }
 
 /// AnalyzeUsesOfPointer - Look at all of the users of the specified pointer.
@@ -347,27 +389,37 @@ bool GlobalsAAResult::AnalyzeUsesOfPointer(Value *V,
                                            SmallPtrSetImpl<Function *> *Readers,
                                            SmallPtrSetImpl<Function *> *Writers,
                                            GlobalValue *OkayStoreDest) {
-  if (!V->getType()->isPointerTy())
+  if (!V->getType()->isPointerTy()) {
     return true;
+
+}
 
   for (Use &U : V->uses()) {
     User *I = U.getUser();
     if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
-      if (Readers)
+      if (Readers) {
         Readers->insert(LI->getParent()->getParent());
+
+}
     } else if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
       if (V == SI->getOperand(1)) {
-        if (Writers)
+        if (Writers) {
           Writers->insert(SI->getParent()->getParent());
+
+}
       } else if (SI->getOperand(1) != OkayStoreDest) {
         return true; // Storing the pointer
       }
     } else if (Operator::getOpcode(I) == Instruction::GetElementPtr) {
-      if (AnalyzeUsesOfPointer(I, Readers, Writers))
+      if (AnalyzeUsesOfPointer(I, Readers, Writers)) {
         return true;
+
+}
     } else if (Operator::getOpcode(I) == Instruction::BitCast) {
-      if (AnalyzeUsesOfPointer(I, Readers, Writers, OkayStoreDest))
+      if (AnalyzeUsesOfPointer(I, Readers, Writers, OkayStoreDest)) {
         return true;
+
+}
     } else if (auto *Call = dyn_cast<CallBase>(I)) {
       // Make sure that this is just the function being called, not that it is
       // passing into the function.
@@ -375,19 +427,25 @@ bool GlobalsAAResult::AnalyzeUsesOfPointer(Value *V,
         // Detect calls to free.
         if (Call->isArgOperand(&U) &&
             isFreeCall(I, &GetTLI(*Call->getFunction()))) {
-          if (Writers)
+          if (Writers) {
             Writers->insert(Call->getParent()->getParent());
+
+}
         } else {
           return true; // Argument of an unknown call.
         }
       }
     } else if (ICmpInst *ICI = dyn_cast<ICmpInst>(I)) {
-      if (!isa<ConstantPointerNull>(ICI->getOperand(1)))
+      if (!isa<ConstantPointerNull>(ICI->getOperand(1))) {
         return true; // Allow comparison against null.
+
+}
     } else if (Constant *C = dyn_cast<Constant>(I)) {
       // Ignore constants which don't have any live uses.
-      if (isa<GlobalValue>(C) || C->isConstantUsed())
+      if (isa<GlobalValue>(C) || C->isConstantUsed()) {
         return true;
+
+}
     } else {
       return true;
     }
@@ -409,9 +467,13 @@ bool GlobalsAAResult::AnalyzeIndirectGlobalMemory(GlobalVariable *GV) {
   std::vector<Value *> AllocRelatedValues;
 
   // If the initializer is a valid pointer, bail.
-  if (Constant *C = GV->getInitializer())
-    if (!C->isNullValue())
+  if (Constant *C = GV->getInitializer()) {
+    if (!C->isNullValue()) {
       return false;
+
+}
+
+}
 
   // Walk the user list of the global.  If we find anything other than a direct
   // load or store, bail out.
@@ -420,30 +482,40 @@ bool GlobalsAAResult::AnalyzeIndirectGlobalMemory(GlobalVariable *GV) {
       // The pointer loaded from the global can only be used in simple ways:
       // we allow addressing of it and loading storing to it.  We do *not* allow
       // storing the loaded pointer somewhere else or passing to a function.
-      if (AnalyzeUsesOfPointer(LI))
+      if (AnalyzeUsesOfPointer(LI)) {
         return false; // Loaded pointer escapes.
+
+}
       // TODO: Could try some IP mod/ref of the loaded pointer.
     } else if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
       // Storing the global itself.
-      if (SI->getOperand(0) == GV)
+      if (SI->getOperand(0) == GV) {
         return false;
 
+}
+
       // If storing the null pointer, ignore it.
-      if (isa<ConstantPointerNull>(SI->getOperand(0)))
+      if (isa<ConstantPointerNull>(SI->getOperand(0))) {
         continue;
+
+}
 
       // Check the value being stored.
       Value *Ptr = GetUnderlyingObject(SI->getOperand(0),
                                        GV->getParent()->getDataLayout());
 
-      if (!isAllocLikeFn(Ptr, &GetTLI(*SI->getFunction())))
+      if (!isAllocLikeFn(Ptr, &GetTLI(*SI->getFunction()))) {
         return false; // Too hard to analyze.
+
+}
 
       // Analyze all uses of the allocation.  If any of them are used in a
       // non-simple way (e.g. stored to another global) bail out.
       if (AnalyzeUsesOfPointer(Ptr, /*Readers*/ nullptr, /*Writers*/ nullptr,
-                               GV))
+                               GV)) {
         return false; // Loaded pointer escapes.
+
+}
 
       // Remember that this allocation is related to the indirect global.
       AllocRelatedValues.push_back(Ptr);
@@ -475,9 +547,13 @@ void GlobalsAAResult::CollectSCCMembership(CallGraph &CG) {
     const std::vector<CallGraphNode *> &SCC = *I;
     assert(!SCC.empty() && "SCC with no functions?");
 
-    for (auto *CGN : SCC)
-      if (Function *F = CGN->getFunction())
+    for (auto *CGN : SCC) {
+      if (Function *F = CGN->getFunction()) {
         FunctionToSCCMap[F] = SCCID;
+
+}
+
+}
     ++SCCID;
   }
 }
@@ -499,8 +575,10 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
       // Calls externally or not exact - can't say anything useful. Remove any
       // existing function records (may have been created when scanning
       // globals).
-      for (auto *Node : SCC)
+      for (auto *Node : SCC) {
         FunctionInfos.erase(Node->getFunction());
+
+}
       continue;
     }
 
@@ -523,14 +601,18 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
           // Can't do better than that!
         } else if (F->onlyReadsMemory()) {
           FI.addModRefInfo(ModRefInfo::Ref);
-          if (!F->isIntrinsic() && !F->onlyAccessesArgMemory())
+          if (!F->isIntrinsic() && !F->onlyAccessesArgMemory()) {
             // This function might call back into the module and read a global -
             // consider every global as possibly being read by this function.
             FI.setMayReadAnyGlobal();
+
+}
         } else {
           FI.addModRefInfo(ModRefInfo::ModRef);
-          if (!F->onlyAccessesArgMemory())
+          if (!F->onlyAccessesArgMemory()) {
             FI.setMayReadAnyGlobal();
+
+}
           if (!F->isIntrinsic()) {
             KnowNothing = true;
             break;
@@ -540,7 +622,7 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
       }
 
       for (CallGraphNode::iterator CI = SCC[i]->begin(), E = SCC[i]->end();
-           CI != E && !KnowNothing; ++CI)
+           CI != E && !KnowNothing; ++CI) {
         if (Function *Callee = CI->second->getFunction()) {
           if (FunctionInfo *CalleeFI = getFunctionInfo(Callee)) {
             // Propagate function effect up.
@@ -549,36 +631,48 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
             // Can't say anything about it.  However, if it is inside our SCC,
             // then nothing needs to be done.
             CallGraphNode *CalleeNode = CG[Callee];
-            if (!is_contained(SCC, CalleeNode))
+            if (!is_contained(SCC, CalleeNode)) {
               KnowNothing = true;
+
+}
           }
         } else {
           KnowNothing = true;
         }
+
+}
     }
 
     // If we can't say anything useful about this SCC, remove all SCC functions
     // from the FunctionInfos map.
     if (KnowNothing) {
-      for (auto *Node : SCC)
+      for (auto *Node : SCC) {
         FunctionInfos.erase(Node->getFunction());
+
+}
       continue;
     }
 
     // Scan the function bodies for explicit loads or stores.
     for (auto *Node : SCC) {
-      if (isModAndRefSet(FI.getModRefInfo()))
+      if (isModAndRefSet(FI.getModRefInfo())) {
         break; // The mod/ref lattice saturates here.
+
+}
 
       // Don't prove any properties based on the implementation of an optnone
       // function. Function attributes were already used as a best approximation
       // above.
-      if (Node->getFunction()->hasOptNone())
+      if (Node->getFunction()->hasOptNone()) {
         continue;
 
+}
+
       for (Instruction &I : instructions(Node->getFunction())) {
-        if (isModAndRefSet(FI.getModRefInfo()))
+        if (isModAndRefSet(FI.getModRefInfo())) {
           break; // The mod/ref lattice saturates here.
+
+}
 
         // We handle calls specially because the graph-relevant aspects are
         // handled above.
@@ -591,9 +685,11 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
           } else if (Function *Callee = Call->getCalledFunction()) {
             // The callgraph doesn't include intrinsic calls.
             if (Callee->isIntrinsic()) {
-              if (isa<DbgInfoIntrinsic>(Call))
+              if (isa<DbgInfoIntrinsic>(Call)) {
                 // Don't let dbg intrinsics affect alias info.
                 continue;
+
+}
 
               FunctionModRefBehavior Behaviour =
                   AAResultBase::getModRefBehavior(Callee);
@@ -605,25 +701,35 @@ void GlobalsAAResult::AnalyzeCallGraph(CallGraph &CG, Module &M) {
 
         // All non-call instructions we use the primary predicates for whether
         // they read or write memory.
-        if (I.mayReadFromMemory())
+        if (I.mayReadFromMemory()) {
           FI.addModRefInfo(ModRefInfo::Ref);
-        if (I.mayWriteToMemory())
+
+}
+        if (I.mayWriteToMemory()) {
           FI.addModRefInfo(ModRefInfo::Mod);
+
+}
       }
     }
 
-    if (!isModSet(FI.getModRefInfo()))
+    if (!isModSet(FI.getModRefInfo())) {
       ++NumReadMemFunctions;
-    if (!isModOrRefSet(FI.getModRefInfo()))
+
+}
+    if (!isModOrRefSet(FI.getModRefInfo())) {
       ++NumNoMemFunctions;
+
+}
 
     // Finally, now that we know the full effect on this SCC, clone the
     // information to each function in the SCC.
     // FI is a reference into FunctionInfos, so copy it now so that it doesn't
     // get invalidated if DenseMap decides to re-hash.
     FunctionInfo CachedFI = FI;
-    for (unsigned i = 1, e = SCC.size(); i != e; ++i)
+    for (unsigned i = 1, e = SCC.size(); i != e; ++i) {
       FunctionInfos[SCC[i]->getFunction()] = CachedFI;
+
+}
   }
 }
 
@@ -642,7 +748,7 @@ static bool isNonEscapingGlobalNoAliasWithLoad(const GlobalValue *GV,
     const Value *Input = Inputs.pop_back_val();
 
     if (isa<GlobalValue>(Input) || isa<Argument>(Input) || isa<CallInst>(Input) ||
-        isa<InvokeInst>(Input))
+        isa<InvokeInst>(Input)) {
       // Arguments to functions or returns from functions are inherently
       // escaping, so we can immediately classify those as not aliasing any
       // non-addr-taken globals.
@@ -651,12 +757,16 @@ static bool isNonEscapingGlobalNoAliasWithLoad(const GlobalValue *GV,
       // another global, its address would escape, so no alias.
       continue;
 
+}
+
     // Recurse through a limited number of selects, loads and PHIs. This is an
     // arbitrary depth of 4, lower numbers could be used to fix compile time
     // issues if needed, but this is generally expected to be only be important
     // for small depths.
-    if (++Depth > 4)
+    if (++Depth > 4) {
       return false;
+
+}
 
     if (auto *LI = dyn_cast<LoadInst>(Input)) {
       Inputs.push_back(GetUnderlyingObject(LI->getPointerOperand(), DL));
@@ -665,17 +775,23 @@ static bool isNonEscapingGlobalNoAliasWithLoad(const GlobalValue *GV,
     if (auto *SI = dyn_cast<SelectInst>(Input)) {
       const Value *LHS = GetUnderlyingObject(SI->getTrueValue(), DL);
       const Value *RHS = GetUnderlyingObject(SI->getFalseValue(), DL);
-      if (Visited.insert(LHS).second)
+      if (Visited.insert(LHS).second) {
         Inputs.push_back(LHS);
-      if (Visited.insert(RHS).second)
+
+}
+      if (Visited.insert(RHS).second) {
         Inputs.push_back(RHS);
+
+}
       continue;
     }
     if (auto *PN = dyn_cast<PHINode>(Input)) {
       for (const Value *Op : PN->incoming_values()) {
         Op = GetUnderlyingObject(Op, DL);
-        if (Visited.insert(Op).second)
+        if (Visited.insert(Op).second) {
           Inputs.push_back(Op);
+
+}
       }
       continue;
     }
@@ -731,8 +847,10 @@ bool GlobalsAAResult::isNonEscapingGlobalNoAlias(const GlobalValue *GV,
     if (auto *InputGV = dyn_cast<GlobalValue>(Input)) {
       // If one input is the very global we're querying against, then we can't
       // conclude no-alias.
-      if (InputGV == GV)
+      if (InputGV == GV) {
         return false;
+
+}
 
       // Distinct GlobalVariables never alias, unless overriden or zero-sized.
       // FIXME: The condition can be refined, but be conservative for now.
@@ -745,8 +863,10 @@ bool GlobalsAAResult::isNonEscapingGlobalNoAlias(const GlobalValue *GV,
         Type *InputGVType = InputGVar->getInitializer()->getType();
         if (GVType->isSized() && InputGVType->isSized() &&
             (DL.getTypeAllocSize(GVType) > 0) &&
-            (DL.getTypeAllocSize(InputGVType) > 0))
+            (DL.getTypeAllocSize(InputGVType) > 0)) {
           continue;
+
+}
       }
 
       // Conservatively return false, even though we could be smarter
@@ -766,33 +886,43 @@ bool GlobalsAAResult::isNonEscapingGlobalNoAlias(const GlobalValue *GV,
     // arbitrary depth of 4, lower numbers could be used to fix compile time
     // issues if needed, but this is generally expected to be only be important
     // for small depths.
-    if (++Depth > 4)
+    if (++Depth > 4) {
       return false;
+
+}
 
     if (auto *LI = dyn_cast<LoadInst>(Input)) {
       // A pointer loaded from a global would have been captured, and we know
       // that the global is non-escaping, so no alias.
       const Value *Ptr = GetUnderlyingObject(LI->getPointerOperand(), DL);
-      if (isNonEscapingGlobalNoAliasWithLoad(GV, Ptr, Depth, DL))
+      if (isNonEscapingGlobalNoAliasWithLoad(GV, Ptr, Depth, DL)) {
         // The load does not alias with GV.
         continue;
+
+}
       // Otherwise, a load could come from anywhere, so bail.
       return false;
     }
     if (auto *SI = dyn_cast<SelectInst>(Input)) {
       const Value *LHS = GetUnderlyingObject(SI->getTrueValue(), DL);
       const Value *RHS = GetUnderlyingObject(SI->getFalseValue(), DL);
-      if (Visited.insert(LHS).second)
+      if (Visited.insert(LHS).second) {
         Inputs.push_back(LHS);
-      if (Visited.insert(RHS).second)
+
+}
+      if (Visited.insert(RHS).second) {
         Inputs.push_back(RHS);
+
+}
       continue;
     }
     if (auto *PN = dyn_cast<PHINode>(Input)) {
       for (const Value *Op : PN->incoming_values()) {
         Op = GetUnderlyingObject(Op, DL);
-        if (Visited.insert(Op).second)
+        if (Visited.insert(Op).second) {
           Inputs.push_back(Op);
+
+}
       }
       continue;
     }
@@ -835,30 +965,42 @@ AliasResult GlobalsAAResult::alias(const MemoryLocation &LocA,
   if (GV1 || GV2) {
     // If the global's address is taken, pretend we don't know it's a pointer to
     // the global.
-    if (GV1 && !NonAddressTakenGlobals.count(GV1))
+    if (GV1 && !NonAddressTakenGlobals.count(GV1)) {
       GV1 = nullptr;
-    if (GV2 && !NonAddressTakenGlobals.count(GV2))
+
+}
+    if (GV2 && !NonAddressTakenGlobals.count(GV2)) {
       GV2 = nullptr;
+
+}
 
     // If the two pointers are derived from two different non-addr-taken
     // globals we know these can't alias.
-    if (GV1 && GV2 && GV1 != GV2)
+    if (GV1 && GV2 && GV1 != GV2) {
       return NoAlias;
+
+}
 
     // If one is and the other isn't, it isn't strictly safe but we can fake
     // this result if necessary for performance. This does not appear to be
     // a common problem in practice.
-    if (EnableUnsafeGlobalsModRefAliasResults)
-      if ((GV1 || GV2) && GV1 != GV2)
+    if (EnableUnsafeGlobalsModRefAliasResults) {
+      if ((GV1 || GV2) && GV1 != GV2) {
         return NoAlias;
+
+}
+
+}
 
     // Check for a special case where a non-escaping global can be used to
     // conclude no-alias.
     if ((GV1 || GV2) && GV1 != GV2) {
       const GlobalValue *GV = GV1 ? GV1 : GV2;
       const Value *UV = GV1 ? UV2 : UV1;
-      if (isNonEscapingGlobalNoAlias(GV, UV))
+      if (isNonEscapingGlobalNoAlias(GV, UV)) {
         return NoAlias;
+
+}
     }
 
     // Otherwise if they are both derived from the same addr-taken global, we
@@ -869,34 +1011,56 @@ AliasResult GlobalsAAResult::alias(const MemoryLocation &LocA,
   // so, we may be able to handle this.  First check to see if the base pointer
   // is a direct load from an indirect global.
   GV1 = GV2 = nullptr;
-  if (const LoadInst *LI = dyn_cast<LoadInst>(UV1))
-    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)))
-      if (IndirectGlobals.count(GV))
+  if (const LoadInst *LI = dyn_cast<LoadInst>(UV1)) {
+    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0))) {
+      if (IndirectGlobals.count(GV)) {
         GV1 = GV;
-  if (const LoadInst *LI = dyn_cast<LoadInst>(UV2))
-    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)))
-      if (IndirectGlobals.count(GV))
+
+}
+
+}
+
+}
+  if (const LoadInst *LI = dyn_cast<LoadInst>(UV2)) {
+    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0))) {
+      if (IndirectGlobals.count(GV)) {
         GV2 = GV;
+
+}
+
+}
+
+}
 
   // These pointers may also be from an allocation for the indirect global.  If
   // so, also handle them.
-  if (!GV1)
+  if (!GV1) {
     GV1 = AllocsForIndirectGlobals.lookup(UV1);
-  if (!GV2)
+
+}
+  if (!GV2) {
     GV2 = AllocsForIndirectGlobals.lookup(UV2);
+
+}
 
   // Now that we know whether the two pointers are related to indirect globals,
   // use this to disambiguate the pointers. If the pointers are based on
   // different indirect globals they cannot alias.
-  if (GV1 && GV2 && GV1 != GV2)
+  if (GV1 && GV2 && GV1 != GV2) {
     return NoAlias;
+
+}
 
   // If one is based on an indirect global and the other isn't, it isn't
   // strictly safe but we can fake this result if necessary for performance.
   // This does not appear to be a common problem in practice.
-  if (EnableUnsafeGlobalsModRefAliasResults)
-    if ((GV1 || GV2) && GV1 != GV2)
+  if (EnableUnsafeGlobalsModRefAliasResults) {
+    if ((GV1 || GV2) && GV1 != GV2) {
       return NoAlias;
+
+}
+
+}
 
   return AAResultBase::alias(LocA, LocB, AAQI);
 }
@@ -904,8 +1068,10 @@ AliasResult GlobalsAAResult::alias(const MemoryLocation &LocA,
 ModRefInfo GlobalsAAResult::getModRefInfoForArgument(const CallBase *Call,
                                                      const GlobalValue *GV,
                                                      AAQueryInfo &AAQI) {
-  if (Call->doesNotAccessMemory())
+  if (Call->doesNotAccessMemory()) {
     return ModRefInfo::NoModRef;
+
+}
   ModRefInfo ConservativeResult =
       Call->onlyReadsMemory() ? ModRefInfo::Ref : ModRefInfo::ModRef;
 
@@ -921,11 +1087,15 @@ ModRefInfo GlobalsAAResult::getModRefInfoForArgument(const CallBase *Call,
         !all_of(Objects, [&](const Value *V) {
           return this->alias(MemoryLocation(V), MemoryLocation(GV), AAQI) ==
                  NoAlias;
-        }))
+        })) {
       return ConservativeResult;
 
-    if (is_contained(Objects, GV))
+}
+
+    if (is_contained(Objects, GV)) {
       return ConservativeResult;
+
+}
   }
 
   // We identified all objects in the argument list, and none of them were GV.
@@ -940,18 +1110,30 @@ ModRefInfo GlobalsAAResult::getModRefInfo(const CallBase *Call,
   // If we are asking for mod/ref info of a direct call with a pointer to a
   // global we are tracking, return information if we have it.
   if (const GlobalValue *GV =
-          dyn_cast<GlobalValue>(GetUnderlyingObject(Loc.Ptr, DL)))
+          dyn_cast<GlobalValue>(GetUnderlyingObject(Loc.Ptr, DL))) {
     // If GV is internal to this IR and there is no function with local linkage
     // that has had their address taken, keep looking for a tighter ModRefInfo.
-    if (GV->hasLocalLinkage() && !UnknownFunctionsWithLocalLinkage)
-      if (const Function *F = Call->getCalledFunction())
-        if (NonAddressTakenGlobals.count(GV))
-          if (const FunctionInfo *FI = getFunctionInfo(F))
+    if (GV->hasLocalLinkage() && !UnknownFunctionsWithLocalLinkage) {
+      if (const Function *F = Call->getCalledFunction()) {
+        if (NonAddressTakenGlobals.count(GV)) {
+          if (const FunctionInfo *FI = getFunctionInfo(F)) {
             Known = unionModRef(FI->getModRefInfoForGlobal(*GV),
                                 getModRefInfoForArgument(Call, GV, AAQI));
 
-  if (!isModOrRefSet(Known))
+}
+
+}
+
+}
+
+}
+
+}
+
+  if (!isModOrRefSet(Known)) {
     return ModRefInfo::NoModRef; // No need to query other mod/ref analyses
+
+}
   return intersectModRef(Known, AAResultBase::getModRefInfo(Call, Loc, AAQI));
 }
 

@@ -30,8 +30,10 @@ const Expr *ParentMapContext::traverseIgnored(const Expr *E) const {
 }
 
 Expr *ParentMapContext::traverseIgnored(Expr *E) const {
-  if (!E)
+  if (!E) {
     return nullptr;
+
+}
 
   switch (Traversal) {
   case TK_AsIs:
@@ -76,10 +78,14 @@ class ParentMapContext::ParentMap {
 
   static DynTypedNode
   getSingleDynTypedNodeFromParentMap(ParentMapPointers::mapped_type U) {
-    if (const auto *D = U.dyn_cast<const Decl *>())
+    if (const auto *D = U.dyn_cast<const Decl *>()) {
       return DynTypedNode::create(*D);
-    if (const auto *S = U.dyn_cast<const Stmt *>())
+
+}
+    if (const auto *S = U.dyn_cast<const Stmt *>()) {
       return DynTypedNode::create(*S);
+
+}
     return *U.get<DynTypedNode *>();
   }
 
@@ -122,8 +128,10 @@ public:
       if (ParentList.size() == 1 && TK == TK_IgnoreUnlessSpelledInSource) {
         const auto *E = ParentList[0].get<Expr>();
         const auto *Child = Node.get<Expr>();
-        if (E && Child)
+        if (E && Child) {
           return AscendIgnoreUnlessSpelledInSource(E, Child);
+
+}
       }
       return ParentList;
     }
@@ -134,56 +142,80 @@ public:
                                                      const Expr *Child) {
 
     auto ShouldSkip = [](const Expr *E, const Expr *Child) {
-      if (isa<ImplicitCastExpr>(E))
+      if (isa<ImplicitCastExpr>(E)) {
         return true;
 
-      if (isa<FullExpr>(E))
+}
+
+      if (isa<FullExpr>(E)) {
         return true;
 
-      if (isa<MaterializeTemporaryExpr>(E))
+}
+
+      if (isa<MaterializeTemporaryExpr>(E)) {
         return true;
 
-      if (isa<CXXBindTemporaryExpr>(E))
+}
+
+      if (isa<CXXBindTemporaryExpr>(E)) {
         return true;
 
-      if (isa<ParenExpr>(E))
+}
+
+      if (isa<ParenExpr>(E)) {
         return true;
 
-      if (isa<ExprWithCleanups>(E))
+}
+
+      if (isa<ExprWithCleanups>(E)) {
         return true;
+
+}
 
       auto SR = Child->getSourceRange();
 
       if (const auto *C = dyn_cast<CXXConstructExpr>(E)) {
-        if (C->getSourceRange() == SR || !isa<CXXTemporaryObjectExpr>(C))
+        if (C->getSourceRange() == SR || !isa<CXXTemporaryObjectExpr>(C)) {
           return true;
+
+}
       }
 
       if (const auto *C = dyn_cast<CXXMemberCallExpr>(E)) {
-        if (C->getSourceRange() == SR)
+        if (C->getSourceRange() == SR) {
           return true;
+
+}
       }
 
       if (const auto *C = dyn_cast<MemberExpr>(E)) {
-        if (C->getSourceRange() == SR)
+        if (C->getSourceRange() == SR) {
           return true;
+
+}
       }
       return false;
     };
 
     while (ShouldSkip(E, Child)) {
       auto It = PointerParents.find(E);
-      if (It == PointerParents.end())
+      if (It == PointerParents.end()) {
         break;
+
+}
       const auto *S = It->second.dyn_cast<const Stmt *>();
       if (!S) {
-        if (auto *Vec = It->second.dyn_cast<ParentVector *>())
+        if (auto *Vec = It->second.dyn_cast<ParentVector *>()) {
           return llvm::makeArrayRef(*Vec);
+
+}
         return getSingleDynTypedNodeFromParentMap(It->second);
       }
       const auto *P = dyn_cast<Expr>(S);
-      if (!P)
+      if (!P) {
         return DynTypedNode::create(*S);
+
+}
       Child = E;
       E = P;
     }
@@ -231,8 +263,10 @@ private:
             typename MapTy>
   bool TraverseNode(T Node, MapNodeTy MapNode, BaseTraverseFn BaseTraverse,
                     MapTy *Parents) {
-    if (!Node)
+    if (!Node) {
       return true;
+
+}
     if (ParentStack.size() > 0) {
       // FIXME: Currently we add the same parent multiple times, but only
       // when no memoization data is available for the type.
@@ -246,12 +280,14 @@ private:
       // do not have pointer identity.
       auto &NodeOrVector = (*Parents)[MapNode];
       if (NodeOrVector.isNull()) {
-        if (const auto *D = ParentStack.back().get<Decl>())
+        if (const auto *D = ParentStack.back().get<Decl>()) {
           NodeOrVector = D;
-        else if (const auto *S = ParentStack.back().get<Stmt>())
+        } else if (const auto *S = ParentStack.back().get<Stmt>()) {
           NodeOrVector = S;
-        else
+        } else {
           NodeOrVector = new DynTypedNode(ParentStack.back());
+
+}
       } else {
         if (!NodeOrVector.template is<ParentVector *>()) {
           auto *Vector = new ParentVector(
@@ -268,8 +304,10 @@ private:
         bool Found = ParentStack.back().getMemoizationData() &&
                      std::find(Vector->begin(), Vector->end(),
                                ParentStack.back()) != Vector->end();
-        if (!Found)
+        if (!Found) {
           Vector->push_back(ParentStack.back());
+
+}
       }
     }
     ParentStack.push_back(createDynTypedNode(Node));
@@ -313,9 +351,11 @@ ParentMapContext::ParentMap::ParentMap(ASTContext &Ctx) {
 }
 
 DynTypedNodeList ParentMapContext::getParents(const DynTypedNode &Node) {
-  if (!Parents)
+  if (!Parents) {
     // We build the parent map for the traversal scope (usually whole TU), as
     // hasAncestor can escape any subtree.
     Parents = std::make_unique<ParentMap>(ASTCtx);
+
+}
   return Parents->getParents(getTraversalKind(), Node);
 }

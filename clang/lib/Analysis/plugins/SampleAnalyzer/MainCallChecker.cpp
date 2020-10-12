@@ -20,21 +20,29 @@ void MainCallChecker::checkPreStmt(const CallExpr *CE,
   const Expr *Callee = CE->getCallee();
   const FunctionDecl *FD = C.getSVal(Callee).getAsFunctionDecl();
 
-  if (!FD)
+  if (!FD) {
     return;
+
+}
 
   // Get the name of the callee.
   IdentifierInfo *II = FD->getIdentifier();
-  if (!II) // if no identifier, not a simple C function
+  if (!II) { // if no identifier, not a simple C function
     return;
+
+}
 
   if (II->isStr("main")) {
     ExplodedNode *N = C.generateErrorNode();
-    if (!N)
+    if (!N) {
       return;
 
-    if (!BT)
+}
+
+    if (!BT) {
       BT.reset(new BugType(this, "call to main", "example analyzer plugin"));
+
+}
 
     auto report =
         std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);

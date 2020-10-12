@@ -46,22 +46,30 @@ static void warn(Twine Message, Twine Whence = "",
                  std::string Hint = "") {
   WithColor::warning();
   std::string WhenceStr = Whence.str();
-  if (!WhenceStr.empty())
+  if (!WhenceStr.empty()) {
     errs() << WhenceStr << ": ";
+
+}
   errs() << Message << "\n";
-  if (!Hint.empty())
+  if (!Hint.empty()) {
     WithColor::note() << Hint << "\n";
+
+}
 }
 
 static void exitWithError(Twine Message, Twine Whence = "",
                           std::string Hint = "") {
   WithColor::error();
   std::string WhenceStr = Whence.str();
-  if (!WhenceStr.empty())
+  if (!WhenceStr.empty()) {
     errs() << WhenceStr << ": ";
+
+}
   errs() << Message << "\n";
-  if (!Hint.empty())
+  if (!Hint.empty()) {
     WithColor::note() << Hint << "\n";
+
+}
   ::exit(1);
 }
 
@@ -79,8 +87,10 @@ static void remapSymbols(MemoryBuffer &OldSymbolFile,
                          raw_ostream &Out) {
   // Load the remapping file and prepare to canonicalize symbols.
   SymbolRemappingReader Reader;
-  if (Error E = Reader.read(RemappingFile))
+  if (Error E = Reader.read(RemappingFile)) {
     exitWithError(std::move(E));
+
+}
 
   // Canonicalize the new symbols.
   DenseMap<SymbolRemappingReader::Key, StringRef> MappedNames;
@@ -133,21 +143,29 @@ int main(int argc, const char *argv[]) {
   cl::ParseCommandLineOptions(argc, argv, "LLVM C++ mangled name remapper\n");
 
   auto OldSymbolBufOrError = MemoryBuffer::getFileOrSTDIN(OldSymbolFile);
-  if (!OldSymbolBufOrError)
+  if (!OldSymbolBufOrError) {
     exitWithErrorCode(OldSymbolBufOrError.getError(), OldSymbolFile);
 
+}
+
   auto NewSymbolBufOrError = MemoryBuffer::getFileOrSTDIN(NewSymbolFile);
-  if (!NewSymbolBufOrError)
+  if (!NewSymbolBufOrError) {
     exitWithErrorCode(NewSymbolBufOrError.getError(), NewSymbolFile);
 
+}
+
   auto RemappingBufOrError = MemoryBuffer::getFileOrSTDIN(RemappingFile);
-  if (!RemappingBufOrError)
+  if (!RemappingBufOrError) {
     exitWithErrorCode(RemappingBufOrError.getError(), RemappingFile);
+
+}
 
   std::error_code EC;
   raw_fd_ostream OS(OutputFilename.data(), EC, sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     exitWithErrorCode(EC, OutputFilename);
+
+}
 
   remapSymbols(*OldSymbolBufOrError.get(), *NewSymbolBufOrError.get(),
                *RemappingBufOrError.get(), OS);

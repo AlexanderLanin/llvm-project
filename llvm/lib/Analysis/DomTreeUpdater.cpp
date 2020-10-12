@@ -39,12 +39,16 @@ bool DomTreeUpdater::isUpdateValid(
   // 1. In batch updates, this update is unnecessary.
   // 2. When called by insertEdge*()/deleteEdge*(), this update is invalid.
   // Edge does not exist in IR.
-  if (Kind == DominatorTree::Insert && !HasEdge)
+  if (Kind == DominatorTree::Insert && !HasEdge) {
     return false;
 
+}
+
   // Edge exists in IR.
-  if (Kind == DominatorTree::Delete && HasEdge)
+  if (Kind == DominatorTree::Delete && HasEdge) {
     return false;
+
+}
 
   return true;
 }
@@ -57,8 +61,10 @@ bool DomTreeUpdater::isSelfDominance(
 
 void DomTreeUpdater::applyDomTreeUpdates() {
   // No pending DomTreeUpdates.
-  if (Strategy != UpdateStrategy::Lazy || !DT)
+  if (Strategy != UpdateStrategy::Lazy || !DT) {
     return;
+
+}
 
   // Only apply updates not are applied by DomTree.
   if (hasPendingDomTreeUpdates()) {
@@ -78,8 +84,10 @@ void DomTreeUpdater::flush() {
 
 void DomTreeUpdater::applyPostDomTreeUpdates() {
   // No pending PostDomTreeUpdates.
-  if (Strategy != UpdateStrategy::Lazy || !PDT)
+  if (Strategy != UpdateStrategy::Lazy || !PDT) {
     return;
+
+}
 
   // Only apply updates not are applied by PostDomTree.
   if (hasPendingPostDomTreeUpdates()) {
@@ -93,13 +101,17 @@ void DomTreeUpdater::applyPostDomTreeUpdates() {
 }
 
 void DomTreeUpdater::tryFlushDeletedBB() {
-  if (!hasPendingUpdates())
+  if (!hasPendingUpdates()) {
     forceFlushDeletedBB();
+
+}
 }
 
 bool DomTreeUpdater::forceFlushDeletedBB() {
-  if (DeletedBBs.empty())
+  if (DeletedBBs.empty()) {
     return false;
+
+}
 
   for (auto *BB : DeletedBBs) {
     // After calling deleteBB or callbackDeleteBB under Lazy UpdateStrategy,
@@ -121,10 +133,14 @@ bool DomTreeUpdater::forceFlushDeletedBB() {
 void DomTreeUpdater::recalculate(Function &F) {
 
   if (Strategy == UpdateStrategy::Eager) {
-    if (DT)
+    if (DT) {
       DT->recalculate(F);
-    if (PDT)
+
+}
+    if (PDT) {
       PDT->recalculate(F);
+
+}
     return;
   }
 
@@ -137,10 +153,14 @@ void DomTreeUpdater::recalculate(Function &F) {
   // Because all trees are going to be up-to-date after recalculation,
   // flush awaiting deleted BasicBlocks.
   forceFlushDeletedBB();
-  if (DT)
+  if (DT) {
     DT->recalculate(F);
-  if (PDT)
+
+}
+  if (PDT) {
     PDT->recalculate(F);
+
+}
 
   // Resume forceFlushDeletedBB() to erase DomTree or PostDomTree nodes.
   IsRecalculatingDomTree = IsRecalculatingPostDomTree = false;
@@ -153,20 +173,26 @@ bool DomTreeUpdater::hasPendingUpdates() const {
 }
 
 bool DomTreeUpdater::hasPendingDomTreeUpdates() const {
-  if (!DT)
+  if (!DT) {
     return false;
+
+}
   return PendUpdates.size() != PendDTUpdateIndex;
 }
 
 bool DomTreeUpdater::hasPendingPostDomTreeUpdates() const {
-  if (!PDT)
+  if (!PDT) {
     return false;
+
+}
   return PendUpdates.size() != PendPDTUpdateIndex;
 }
 
 bool DomTreeUpdater::isBBPendingDeletion(llvm::BasicBlock *DelBB) const {
-  if (Strategy == UpdateStrategy::Eager || DeletedBBs.empty())
+  if (Strategy == UpdateStrategy::Eager || DeletedBBs.empty()) {
     return false;
+
+}
   return DeletedBBs.count(DelBB) != 0;
 }
 
@@ -203,13 +229,21 @@ void DomTreeUpdater::callbackDeleteBB(
 }
 
 void DomTreeUpdater::eraseDelBBNode(BasicBlock *DelBB) {
-  if (DT && !IsRecalculatingDomTree)
-    if (DT->getNode(DelBB))
+  if (DT && !IsRecalculatingDomTree) {
+    if (DT->getNode(DelBB)) {
       DT->eraseNode(DelBB);
 
-  if (PDT && !IsRecalculatingPostDomTree)
-    if (PDT->getNode(DelBB))
+}
+
+}
+
+  if (PDT && !IsRecalculatingPostDomTree) {
+    if (PDT->getNode(DelBB)) {
       PDT->eraseNode(DelBB);
+
+}
+
+}
 }
 
 void DomTreeUpdater::validateDeleteBB(BasicBlock *DelBB) {
@@ -219,8 +253,10 @@ void DomTreeUpdater::validateDeleteBB(BasicBlock *DelBB) {
   while (!DelBB->empty()) {
     Instruction &I = DelBB->back();
     // Replace used instructions with an arbitrary value (undef).
-    if (!I.use_empty())
+    if (!I.use_empty()) {
       I.replaceAllUsesWith(llvm::UndefValue::get(I.getType()));
+
+}
     DelBB->getInstList().pop_back();
   }
   // Make sure DelBB has a valid terminator instruction. As long as DelBB is a
@@ -229,27 +265,39 @@ void DomTreeUpdater::validateDeleteBB(BasicBlock *DelBB) {
 }
 
 void DomTreeUpdater::applyUpdates(ArrayRef<DominatorTree::UpdateType> Updates) {
-  if (!DT && !PDT)
+  if (!DT && !PDT) {
     return;
 
+}
+
   if (Strategy == UpdateStrategy::Lazy) {
-    for (const auto &U : Updates)
-      if (!isSelfDominance(U))
+    for (const auto &U : Updates) {
+      if (!isSelfDominance(U)) {
         PendUpdates.push_back(U);
+
+}
+
+}
 
     return;
   }
 
-  if (DT)
+  if (DT) {
     DT->applyUpdates(Updates);
-  if (PDT)
+
+}
+  if (PDT) {
     PDT->applyUpdates(Updates);
+
+}
 }
 
 void DomTreeUpdater::applyUpdatesPermissive(
     ArrayRef<DominatorTree::UpdateType> Updates) {
-  if (!DT && !PDT)
+  if (!DT && !PDT) {
     return;
+
+}
 
   SmallSet<std::pair<BasicBlock *, BasicBlock *>, 8> Seen;
   SmallVector<DominatorTree::UpdateType, 8> DeduplicatedUpdates;
@@ -283,21 +331,29 @@ void DomTreeUpdater::applyUpdatesPermissive(
       // either the change isn't made or relevant operations
       // result in a no-op.
       if (isUpdateValid(U)) {
-        if (isLazy())
+        if (isLazy()) {
           PendUpdates.push_back(U);
-        else
+        } else {
           DeduplicatedUpdates.push_back(U);
+
+}
       }
     }
   }
 
-  if (Strategy == UpdateStrategy::Lazy)
+  if (Strategy == UpdateStrategy::Lazy) {
     return;
 
-  if (DT)
+}
+
+  if (DT) {
     DT->applyUpdates(DeduplicatedUpdates);
-  if (PDT)
+
+}
+  if (PDT) {
     PDT->applyUpdates(DeduplicatedUpdates);
+
+}
 }
 
 DominatorTree &DomTreeUpdater::getDomTree() {
@@ -321,18 +377,26 @@ void DomTreeUpdater::insertEdge(BasicBlock *From, BasicBlock *To) {
          "Inserted edge does not appear in the CFG");
 #endif
 
-  if (!DT && !PDT)
+  if (!DT && !PDT) {
     return;
+
+}
 
   // Won't affect DomTree and PostDomTree; discard update.
-  if (From == To)
+  if (From == To) {
     return;
 
+}
+
   if (Strategy == UpdateStrategy::Eager) {
-    if (DT)
+    if (DT) {
       DT->insertEdge(From, To);
-    if (PDT)
+
+}
+    if (PDT) {
       PDT->insertEdge(From, To);
+
+}
     return;
   }
 
@@ -340,20 +404,30 @@ void DomTreeUpdater::insertEdge(BasicBlock *From, BasicBlock *To) {
 }
 
 void DomTreeUpdater::insertEdgeRelaxed(BasicBlock *From, BasicBlock *To) {
-  if (From == To)
+  if (From == To) {
     return;
 
-  if (!DT && !PDT)
+}
+
+  if (!DT && !PDT) {
     return;
 
-  if (!isUpdateValid({DominatorTree::Insert, From, To}))
+}
+
+  if (!isUpdateValid({DominatorTree::Insert, From, To})) {
     return;
+
+}
 
   if (Strategy == UpdateStrategy::Eager) {
-    if (DT)
+    if (DT) {
       DT->insertEdge(From, To);
-    if (PDT)
+
+}
+    if (PDT) {
       PDT->insertEdge(From, To);
+
+}
     return;
   }
 
@@ -367,18 +441,26 @@ void DomTreeUpdater::deleteEdge(BasicBlock *From, BasicBlock *To) {
          "Deleted edge still exists in the CFG!");
 #endif
 
-  if (!DT && !PDT)
+  if (!DT && !PDT) {
     return;
+
+}
 
   // Won't affect DomTree and PostDomTree; discard update.
-  if (From == To)
+  if (From == To) {
     return;
 
+}
+
   if (Strategy == UpdateStrategy::Eager) {
-    if (DT)
+    if (DT) {
       DT->deleteEdge(From, To);
-    if (PDT)
+
+}
+    if (PDT) {
       PDT->deleteEdge(From, To);
+
+}
     return;
   }
 
@@ -386,20 +468,30 @@ void DomTreeUpdater::deleteEdge(BasicBlock *From, BasicBlock *To) {
 }
 
 void DomTreeUpdater::deleteEdgeRelaxed(BasicBlock *From, BasicBlock *To) {
-  if (From == To)
+  if (From == To) {
     return;
 
-  if (!DT && !PDT)
+}
+
+  if (!DT && !PDT) {
     return;
 
-  if (!isUpdateValid({DominatorTree::Delete, From, To}))
+}
+
+  if (!isUpdateValid({DominatorTree::Delete, From, To})) {
     return;
+
+}
 
   if (Strategy == UpdateStrategy::Eager) {
-    if (DT)
+    if (DT) {
       DT->deleteEdge(From, To);
-    if (PDT)
+
+}
+    if (PDT) {
       PDT->deleteEdge(From, To);
+
+}
     return;
   }
 
@@ -407,16 +499,22 @@ void DomTreeUpdater::deleteEdgeRelaxed(BasicBlock *From, BasicBlock *To) {
 }
 
 void DomTreeUpdater::dropOutOfDateUpdates() {
-  if (Strategy == DomTreeUpdater::UpdateStrategy::Eager)
+  if (Strategy == DomTreeUpdater::UpdateStrategy::Eager) {
     return;
+
+}
 
   tryFlushDeletedBB();
 
   // Drop all updates applied by both trees.
-  if (!DT)
+  if (!DT) {
     PendDTUpdateIndex = PendUpdates.size();
-  if (!PDT)
+
+}
+  if (!PDT) {
     PendPDTUpdateIndex = PendUpdates.size();
+
+}
 
   const size_t dropIndex = std::min(PendDTUpdateIndex, PendPDTUpdateIndex);
   const auto B = PendUpdates.begin();

@@ -41,8 +41,10 @@ void dependencies::detail::appendCommonModuleArguments(
   std::function<void(llvm::ArrayRef<ClangModuleDep>)> AddArgs =
       [&](llvm::ArrayRef<ClangModuleDep> Modules) {
         for (const ClangModuleDep &CMD : Modules) {
-          if (!AlreadyAdded.insert(CMD.ModuleName + CMD.ContextHash).second)
+          if (!AlreadyAdded.insert(CMD.ModuleName + CMD.ContextHash).second) {
             continue;
+
+}
           const ModuleDeps &M = LookupModuleDeps(CMD);
           // Depth first traversal.
           AddArgs(M.ClangModuleDeps);
@@ -62,8 +64,10 @@ void ModuleDepCollectorPP::FileChanged(SourceLocation Loc,
                                        FileChangeReason Reason,
                                        SrcMgr::CharacteristicKind FileType,
                                        FileID PrevFID) {
-  if (Reason != PPCallbacks::EnterFile)
+  if (Reason != PPCallbacks::EnterFile) {
     return;
+
+}
   
   // This has to be delayed as the context hash can change at the start of
   // `CompilerInstance::ExecuteAction`.
@@ -79,8 +83,10 @@ void ModuleDepCollectorPP::FileChanged(SourceLocation Loc,
   // We do not want #line markers to affect dependency generation!
   Optional<FileEntryRef> File =
       SM.getFileEntryRefForID(SM.getFileID(SM.getExpansionLoc(Loc)));
-  if (!File)
+  if (!File) {
     return;
+
+}
 
   StringRef FileName =
       llvm::sys::path::remove_leading_dotslash(File->getName());
@@ -108,8 +114,10 @@ void ModuleDepCollectorPP::moduleImport(SourceLocation ImportLoc,
 }
 
 void ModuleDepCollectorPP::handleImport(const Module *Imported) {
-  if (!Imported)
+  if (!Imported) {
     return;
+
+}
 
   MDC.Deps[MDC.ContextHash + Imported->getTopLevelModule()->getFullModuleName()]
       .ImportedByMainFile = true;
@@ -125,11 +133,15 @@ void ModuleDepCollectorPP::EndOfMainFile() {
     handleTopLevelModule(M);
   }
 
-  for (auto &&I : MDC.Deps)
+  for (auto &&I : MDC.Deps) {
     MDC.Consumer.handleModuleDependency(I.second);
 
-  for (auto &&I : MDC.MainDeps)
+}
+
+  for (auto &&I : MDC.MainDeps) {
     MDC.Consumer.handleFileDependency(*MDC.Opts, I);
+
+}
 }
 
 void ModuleDepCollectorPP::handleTopLevelModule(const Module *M) {
@@ -138,8 +150,10 @@ void ModuleDepCollectorPP::handleTopLevelModule(const Module *M) {
   auto ModI = MDC.Deps.insert(
       std::make_pair(MDC.ContextHash + M->getFullModuleName(), ModuleDeps{}));
 
-  if (!ModI.first->second.ModuleName.empty())
+  if (!ModI.first->second.ModuleName.empty()) {
     return;
+
+}
 
   ModuleDeps &MD = ModI.first->second;
 
@@ -168,8 +182,10 @@ void ModuleDepCollectorPP::addAllSubmoduleDeps(
     llvm::DenseSet<const Module *> &AddedModules) {
   addModuleDep(M, MD, AddedModules);
 
-  for (const Module *SubM : M->submodules())
+  for (const Module *SubM : M->submodules()) {
     addAllSubmoduleDeps(SubM, MD, AddedModules);
+
+}
 }
 
 void ModuleDepCollectorPP::addModuleDep(
@@ -177,10 +193,12 @@ void ModuleDepCollectorPP::addModuleDep(
     llvm::DenseSet<const Module *> &AddedModules) {
   for (const Module *Import : M->Imports) {
     if (Import->getTopLevelModule() != M->getTopLevelModule()) {
-      if (AddedModules.insert(Import->getTopLevelModule()).second)
+      if (AddedModules.insert(Import->getTopLevelModule()).second) {
         MD.ClangModuleDeps.push_back(
             {std::string(Import->getTopLevelModuleName()),
              Instance.getInvocation().getModuleHash()});
+
+}
       handleTopLevelModule(Import->getTopLevelModule());
     }
   }

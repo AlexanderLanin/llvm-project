@@ -208,9 +208,15 @@ static void test_codegen_fns(MyASTConsumer *my) {
         FieldDecl *zField = NULL;
 
         for (auto field : rd->fields()) {
-          if (field->getName() == "x") xField = field;
-          if (field->getName() == "y") yField = field;
-          if (field->getName() == "z") zField = field;
+          if (field->getName() == "x") { xField = field;
+
+}
+          if (field->getName() == "y") { yField = field;
+
+}
+          if (field->getName() == "z") { zField = field;
+
+}
         }
 
         ASSERT_TRUE(xField != NULL);

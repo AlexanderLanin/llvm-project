@@ -38,8 +38,10 @@ static unsigned getOffsetSize(const DWARFYAML::Unit &Unit) {
 }
 
 static unsigned getRefSize(const DWARFYAML::Unit &Unit) {
-  if (Unit.Version == 2)
+  if (Unit.Version == 2) {
     return Unit.AddrSize;
+
+}
   return getOffsetSize(Unit);
 }
 
@@ -50,8 +52,10 @@ template <typename T> void DWARFYAML::VisitorImpl<T>::traverseDebugInfo() {
 
     for (auto &Entry : Unit.Entries) {
       onStartDIE(Unit, Entry);
-      if (Entry.AbbrCode == 0u)
+      if (Entry.AbbrCode == 0u) {
         continue;
+
+}
       auto &Abbrev = DebugInfo.AbbrevDecls[Entry.AbbrCode - FirstAbbrevCode];
       auto FormVal = Entry.Values.begin();
       auto AbbrForm = Abbrev.Attributes.begin();

@@ -39,17 +39,23 @@ llvm::Optional<std::string> makeCharacterLiteral(const StringLiteral *Literal,
   // Special case: If the string contains a single quote, we just need to return
   // a character of the single quote. This is a special case because we need to
   // escape it in the character literal.
-  if (Result == R"("'")")
+  if (Result == R"("'")") {
     return std::string(R"('\'')");
+
+}
 
   // Now replace the " with '.
   std::string::size_type Pos = Result.find_first_of('"');
-  if (Pos == Result.npos)
+  if (Pos == Result.npos) {
     return llvm::None;
+
+}
   Result[Pos] = '\'';
   Pos = Result.find_last_of('"');
-  if (Pos == Result.npos)
+  if (Pos == Result.npos) {
     return llvm::None;
+
+}
   Result[Pos] = '\'';
   return Result;
 }
@@ -99,17 +105,23 @@ void FasterStrsplitDelimiterCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *Literal = Result.Nodes.getNodeAs<StringLiteral>("Literal");
 
-  if (Literal->getBeginLoc().isMacroID() || Literal->getEndLoc().isMacroID())
+  if (Literal->getBeginLoc().isMacroID() || Literal->getEndLoc().isMacroID()) {
     return;
+
+}
 
   llvm::Optional<std::string> Replacement =
       makeCharacterLiteral(Literal, *Result.Context);
-  if (!Replacement)
+  if (!Replacement) {
     return;
+
+}
   SourceRange Range = Literal->getSourceRange();
 
-  if (const auto *ByAnyChar = Result.Nodes.getNodeAs<Expr>("ByAnyChar"))
+  if (const auto *ByAnyChar = Result.Nodes.getNodeAs<Expr>("ByAnyChar")) {
     Range = ByAnyChar->getSourceRange();
+
+}
 
   diag(
       Literal->getBeginLoc(),

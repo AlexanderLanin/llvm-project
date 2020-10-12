@@ -26,12 +26,16 @@ using namespace ms_demangle;
 
 // Writes a space if the last token does not end with a punctuation.
 static void outputSpaceIfNecessary(OutputStream &OS) {
-  if (OS.empty())
+  if (OS.empty()) {
     return;
 
+}
+
   char C = OS.back();
-  if (std::isalnum(C) || C == '>')
+  if (std::isalnum(C) || C == '>') {
     OS << " ";
+
+}
 }
 
 static void outputSingleQualifier(OutputStream &OS, Qualifiers Q) {
@@ -52,11 +56,15 @@ static void outputSingleQualifier(OutputStream &OS, Qualifiers Q) {
 
 static bool outputQualifierIfPresent(OutputStream &OS, Qualifiers Q,
                                      Qualifiers Mask, bool NeedSpace) {
-  if (!(Q & Mask))
+  if (!(Q & Mask)) {
     return NeedSpace;
 
-  if (NeedSpace)
+}
+
+  if (NeedSpace) {
     OS << " ";
+
+}
 
   outputSingleQualifier(OS, Mask);
   return true;
@@ -64,16 +72,20 @@ static bool outputQualifierIfPresent(OutputStream &OS, Qualifiers Q,
 
 static void outputQualifiers(OutputStream &OS, Qualifiers Q, bool SpaceBefore,
                              bool SpaceAfter) {
-  if (Q == Q_None)
+  if (Q == Q_None) {
     return;
+
+}
 
   size_t Pos1 = OS.getCurrentPosition();
   SpaceBefore = outputQualifierIfPresent(OS, Q, Q_Const, SpaceBefore);
   SpaceBefore = outputQualifierIfPresent(OS, Q, Q_Volatile, SpaceBefore);
   SpaceBefore = outputQualifierIfPresent(OS, Q, Q_Restrict, SpaceBefore);
   size_t Pos2 = OS.getCurrentPosition();
-  if (SpaceAfter && Pos2 > Pos1)
+  if (SpaceAfter && Pos2 > Pos1) {
     OS << " ";
+
+}
 }
 
 static void outputCallingConvention(OutputStream &OS, CallingConv CC) {
@@ -153,10 +165,14 @@ void NodeArrayNode::output(OutputStream &OS, OutputFlags Flags) const {
 
 void NodeArrayNode::output(OutputStream &OS, OutputFlags Flags,
                            StringView Separator) const {
-  if (Count == 0)
+  if (Count == 0) {
     return;
-  if (Nodes[0])
+
+}
+  if (Nodes[0]) {
     Nodes[0]->output(OS, Flags);
+
+}
   for (size_t I = 1; I < Count; ++I) {
     OS << Separator;
     Nodes[I]->output(OS, Flags);
@@ -180,42 +196,56 @@ void EncodedStringLiteralNode::output(OutputStream &OS,
     break;
   }
   OS << DecodedString << "\"";
-  if (IsTruncated)
+  if (IsTruncated) {
     OS << "...";
+
+}
 }
 
 void IntegerLiteralNode::output(OutputStream &OS, OutputFlags Flags) const {
-  if (IsNegative)
+  if (IsNegative) {
     OS << '-';
+
+}
   OS << Value;
 }
 
 void TemplateParameterReferenceNode::output(OutputStream &OS,
                                             OutputFlags Flags) const {
-  if (ThunkOffsetCount > 0)
+  if (ThunkOffsetCount > 0) {
     OS << "{";
-  else if (Affinity == PointerAffinity::Pointer)
+  } else if (Affinity == PointerAffinity::Pointer) {
     OS << "&";
+
+}
 
   if (Symbol) {
     Symbol->output(OS, Flags);
-    if (ThunkOffsetCount > 0)
+    if (ThunkOffsetCount > 0) {
       OS << ", ";
+
+}
   }
 
-  if (ThunkOffsetCount > 0)
+  if (ThunkOffsetCount > 0) {
     OS << ThunkOffsets[0];
+
+}
   for (int I = 1; I < ThunkOffsetCount; ++I) {
     OS << ", " << ThunkOffsets[I];
   }
-  if (ThunkOffsetCount > 0)
+  if (ThunkOffsetCount > 0) {
     OS << "}";
+
+}
 }
 
 void IdentifierNode::outputTemplateParameters(OutputStream &OS,
                                               OutputFlags Flags) const {
-  if (!TemplateParams)
+  if (!TemplateParams) {
     return;
+
+}
   OS << "<";
   TemplateParams->output(OS, Flags);
   OS << ">";
@@ -223,10 +253,12 @@ void IdentifierNode::outputTemplateParameters(OutputStream &OS,
 
 void DynamicStructorIdentifierNode::output(OutputStream &OS,
                                            OutputFlags Flags) const {
-  if (IsDestructor)
+  if (IsDestructor) {
     OS << "`dynamic atexit destructor for ";
-  else
+  } else {
     OS << "`dynamic initializer for ";
+
+}
 
   if (Variable) {
     OS << "`";
@@ -347,12 +379,16 @@ void IntrinsicFunctionIdentifierNode::output(OutputStream &OS,
 
 void LocalStaticGuardIdentifierNode::output(OutputStream &OS,
                                             OutputFlags Flags) const {
-  if (IsThread)
+  if (IsThread) {
     OS << "`local static thread guard'";
-  else
+  } else {
     OS << "`local static guard'";
-  if (ScopeIndex > 0)
+
+}
+  if (ScopeIndex > 0) {
     OS << "{" << ScopeIndex << "}";
+
+}
 }
 
 void ConversionOperatorIdentifierNode::output(OutputStream &OS,
@@ -364,8 +400,10 @@ void ConversionOperatorIdentifierNode::output(OutputStream &OS,
 }
 
 void StructorIdentifierNode::output(OutputStream &OS, OutputFlags Flags) const {
-  if (IsDestructor)
+  if (IsDestructor) {
     OS << "~";
+
+}
   Class->output(OS, Flags);
   outputTemplateParameters(OS, Flags);
 }
@@ -379,24 +417,36 @@ void LiteralOperatorIdentifierNode::output(OutputStream &OS,
 void FunctionSignatureNode::outputPre(OutputStream &OS,
                                       OutputFlags Flags) const {
   if (!(Flags & OF_NoAccessSpecifier)) {
-    if (FunctionClass & FC_Public)
+    if (FunctionClass & FC_Public) {
       OS << "public: ";
-    if (FunctionClass & FC_Protected)
+
+}
+    if (FunctionClass & FC_Protected) {
       OS << "protected: ";
-    if (FunctionClass & FC_Private)
+
+}
+    if (FunctionClass & FC_Private) {
       OS << "private: ";
+
+}
   }
 
   if (!(Flags & OF_NoMemberType)) {
     if (!(FunctionClass & FC_Global)) {
-      if (FunctionClass & FC_Static)
+      if (FunctionClass & FC_Static) {
         OS << "static ";
+
+}
     }
-    if (FunctionClass & FC_Virtual)
+    if (FunctionClass & FC_Virtual) {
       OS << "virtual ";
 
-    if (FunctionClass & FC_ExternC)
+}
+
+    if (FunctionClass & FC_ExternC) {
       OS << "extern \"C\" ";
+
+}
   }
 
   if (!(Flags & OF_NoReturnType) && ReturnType) {
@@ -404,46 +454,66 @@ void FunctionSignatureNode::outputPre(OutputStream &OS,
     OS << " ";
   }
 
-  if (!(Flags & OF_NoCallingConvention))
+  if (!(Flags & OF_NoCallingConvention)) {
     outputCallingConvention(OS, CallConvention);
+
+}
 }
 
 void FunctionSignatureNode::outputPost(OutputStream &OS,
                                        OutputFlags Flags) const {
   if (!(FunctionClass & FC_NoParameterList)) {
     OS << "(";
-    if (Params)
+    if (Params) {
       Params->output(OS, Flags);
-    else
+    } else {
       OS << "void";
 
+}
+
     if (IsVariadic) {
-      if (OS.back() != '(')
+      if (OS.back() != '(') {
         OS << ", ";
+
+}
       OS << "...";
     }
     OS << ")";
   }
 
-  if (Quals & Q_Const)
+  if (Quals & Q_Const) {
     OS << " const";
-  if (Quals & Q_Volatile)
+
+}
+  if (Quals & Q_Volatile) {
     OS << " volatile";
-  if (Quals & Q_Restrict)
+
+}
+  if (Quals & Q_Restrict) {
     OS << " __restrict";
-  if (Quals & Q_Unaligned)
+
+}
+  if (Quals & Q_Unaligned) {
     OS << " __unaligned";
 
-  if (IsNoexcept)
+}
+
+  if (IsNoexcept) {
     OS << " noexcept";
 
-  if (RefQualifier == FunctionRefQualifier::Reference)
+}
+
+  if (RefQualifier == FunctionRefQualifier::Reference) {
     OS << " &";
-  else if (RefQualifier == FunctionRefQualifier::RValueReference)
+  } else if (RefQualifier == FunctionRefQualifier::RValueReference) {
     OS << " &&";
 
-  if (!(Flags & OF_NoReturnType) && ReturnType)
+}
+
+  if (!(Flags & OF_NoReturnType) && ReturnType) {
     ReturnType->outputPost(OS, Flags);
+
+}
 }
 
 void ThunkSignatureNode::outputPre(OutputStream &OS, OutputFlags Flags) const {
@@ -476,13 +546,17 @@ void PointerTypeNode::outputPre(OutputStream &OS, OutputFlags Flags) const {
     const FunctionSignatureNode *Sig =
         static_cast<const FunctionSignatureNode *>(Pointee);
     Sig->outputPre(OS, OF_NoCallingConvention);
-  } else
+  } else {
     Pointee->outputPre(OS, Flags);
+
+}
 
   outputSpaceIfNecessary(OS);
 
-  if (Quals & Q_Unaligned)
+  if (Quals & Q_Unaligned) {
     OS << "__unaligned ";
+
+}
 
   if (Pointee->kind() == NodeKind::ArrayType) {
     OS << "(";
@@ -517,8 +591,10 @@ void PointerTypeNode::outputPre(OutputStream &OS, OutputFlags Flags) const {
 
 void PointerTypeNode::outputPost(OutputStream &OS, OutputFlags Flags) const {
   if (Pointee->kind() == NodeKind::ArrayType ||
-      Pointee->kind() == NodeKind::FunctionSignature)
+      Pointee->kind() == NodeKind::FunctionSignature) {
     OS << ")";
+
+}
 
   Pointee->outputPost(OS, Flags);
 }
@@ -548,14 +624,18 @@ void ArrayTypeNode::outputOneDimension(OutputStream &OS, OutputFlags Flags,
                                        Node *N) const {
   assert(N->kind() == NodeKind::IntegerLiteral);
   IntegerLiteralNode *ILN = static_cast<IntegerLiteralNode *>(N);
-  if (ILN->Value != 0)
+  if (ILN->Value != 0) {
     ILN->output(OS, Flags);
+
+}
 }
 
 void ArrayTypeNode::outputDimensionsImpl(OutputStream &OS,
                                          OutputFlags Flags) const {
-  if (Dimensions->Count == 0)
+  if (Dimensions->Count == 0) {
     return;
+
+}
 
   outputOneDimension(OS, Flags, Dimensions->Nodes[0]);
   for (size_t I = 1; I < Dimensions->Count; ++I) {
@@ -600,18 +680,24 @@ void VariableSymbolNode::output(OutputStream &OS, OutputFlags Flags) const {
     IsStatic = false;
     break;
   }
-  if (!(Flags & OF_NoAccessSpecifier) && AccessSpec)
+  if (!(Flags & OF_NoAccessSpecifier) && AccessSpec) {
     OS << AccessSpec << ": ";
-  if (!(Flags & OF_NoMemberType) && IsStatic)
+
+}
+  if (!(Flags & OF_NoMemberType) && IsStatic) {
     OS << "static ";
+
+}
 
   if (Type) {
     Type->outputPre(OS, Flags);
     outputSpaceIfNecessary(OS);
   }
   Name->output(OS, Flags);
-  if (Type)
+  if (Type) {
     Type->outputPost(OS, Flags);
+
+}
 }
 
 void CustomTypeNode::outputPre(OutputStream &OS, OutputFlags Flags) const {

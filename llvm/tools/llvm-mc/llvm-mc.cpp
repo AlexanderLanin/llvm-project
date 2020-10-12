@@ -191,8 +191,10 @@ Action(cl::desc("Action to perform:"),
 
 static const Target *GetTarget(const char *ProgName) {
   // Figure out the target triple.
-  if (TripleName.empty())
+  if (TripleName.empty()) {
     TripleName = sys::getDefaultTargetTriple();
+
+}
   Triple TheTriple(Triple::normalize(TripleName));
 
   // Get the target specific parser.
@@ -223,19 +225,25 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(StringRef Path,
 
 static std::string DwarfDebugFlags;
 static void setDwarfDebugFlags(int argc, char **argv) {
-  if (!getenv("RC_DEBUG_OPTIONS"))
+  if (!getenv("RC_DEBUG_OPTIONS")) {
     return;
+
+}
   for (int i = 0; i < argc; i++) {
     DwarfDebugFlags += argv[i];
-    if (i + 1 < argc)
+    if (i + 1 < argc) {
       DwarfDebugFlags += " ";
+
+}
   }
 }
 
 static std::string DwarfDebugProducer;
 static void setDwarfDebugProducer() {
-  if(!getenv("DEBUG_PRODUCER"))
+  if(!getenv("DEBUG_PRODUCER")) {
     return;
+
+}
   DwarfDebugProducer += getenv("DEBUG_PRODUCER");
 }
 
@@ -249,8 +257,10 @@ static int AsLexInput(SourceMgr &SrcMgr, MCAsmInfo &MAI,
   while (Lexer.Lex().isNot(AsmToken::Eof)) {
     Lexer.getTok().dump(OS);
     OS << "\n";
-    if (Lexer.getTok().getKind() == AsmToken::Error)
+    if (Lexer.getTok().getKind() == AsmToken::Error) {
       Error = true;
+
+}
   }
 
   return Error;
@@ -293,8 +303,10 @@ static int AssembleInput(const char *ProgName, const Target *TheTarget,
   }
 
   int SymbolResult = fillCommandLineSymbols(*Parser);
-  if(SymbolResult)
+  if(SymbolResult) {
     return SymbolResult;
+
+}
   Parser->setShowParsedOperands(ShowInstOperands);
   Parser->setTargetParser(*TAP);
   Parser->getLexer().setLexMasmIntegers(LexMasmIntegers);
@@ -324,8 +336,10 @@ int main(int argc, char **argv) {
 
   const char *ProgName = argv[0];
   const Target *TheTarget = GetTarget(ProgName);
-  if (!TheTarget)
+  if (!TheTarget) {
     return 1;
+
+}
   // Now that GetTarget() has (potentially) replaced TripleName, it's safe to
   // construct the Triple object.
   Triple TheTriple(TripleName);
@@ -373,8 +387,10 @@ int main(int argc, char **argv) {
   MCContext Ctx(MAI.get(), MRI.get(), &MOFI, &SrcMgr, &MCOptions);
   MOFI.InitMCObjectFileInfo(TheTriple, PIC, Ctx, LargeCodeModel);
 
-  if (SaveTempLabels)
+  if (SaveTempLabels) {
     Ctx.setAllowTemporaryLabels(false);
+
+}
 
   Ctx.setGenDwarfForAssembly(GenDwarfForAssembly);
   // Default to 4 for dwarf version.
@@ -385,41 +401,55 @@ int main(int argc, char **argv) {
     return 1;
   }
   Ctx.setDwarfVersion(DwarfVersion);
-  if (!DwarfDebugFlags.empty())
+  if (!DwarfDebugFlags.empty()) {
     Ctx.setDwarfDebugFlags(StringRef(DwarfDebugFlags));
-  if (!DwarfDebugProducer.empty())
+
+}
+  if (!DwarfDebugProducer.empty()) {
     Ctx.setDwarfDebugProducer(StringRef(DwarfDebugProducer));
-  if (!DebugCompilationDir.empty())
+
+}
+  if (!DebugCompilationDir.empty()) {
     Ctx.setCompilationDir(DebugCompilationDir);
-  else {
+  } else {
     // If no compilation dir is set, try to use the current directory.
     SmallString<128> CWD;
-    if (!sys::fs::current_path(CWD))
+    if (!sys::fs::current_path(CWD)) {
       Ctx.setCompilationDir(CWD);
+
+}
   }
   for (const auto &Arg : DebugPrefixMap) {
     const auto &KV = StringRef(Arg).split('=');
     Ctx.addDebugPrefixMapEntry(std::string(KV.first), std::string(KV.second));
   }
-  if (!MainFileName.empty())
+  if (!MainFileName.empty()) {
     Ctx.setMainFileName(MainFileName);
-  if (GenDwarfForAssembly)
+
+}
+  if (GenDwarfForAssembly) {
     Ctx.setGenDwarfRootFile(InputFilename, Buffer->getBuffer());
+
+}
 
   // Package up features to be passed to target/subtarget
   std::string FeaturesStr;
   if (MAttrs.size()) {
     SubtargetFeatures Features;
-    for (unsigned i = 0; i != MAttrs.size(); ++i)
+    for (unsigned i = 0; i != MAttrs.size(); ++i) {
       Features.AddFeature(MAttrs[i]);
+
+}
     FeaturesStr = Features.getString();
   }
 
   sys::fs::OpenFlags Flags = (FileType == OFT_AssemblyFile) ? sys::fs::OF_Text
                                                             : sys::fs::OF_None;
   std::unique_ptr<ToolOutputFile> Out = GetOutputStream(OutputFilename, Flags);
-  if (!Out)
+  if (!Out) {
     return 1;
+
+}
 
   std::unique_ptr<ToolOutputFile> DwoOut;
   if (!SplitDwarfFile.empty()) {
@@ -428,8 +458,10 @@ int main(int argc, char **argv) {
       return 1;
     }
     DwoOut = GetOutputStream(SplitDwarfFile, sys::fs::OF_None);
-    if (!DwoOut)
+    if (!DwoOut) {
       return 1;
+
+}
   }
 
   std::unique_ptr<buffer_ostream> BOS;
@@ -458,8 +490,10 @@ int main(int argc, char **argv) {
 
     // Set up the AsmStreamer.
     std::unique_ptr<MCCodeEmitter> CE;
-    if (ShowEncoding)
+    if (ShowEncoding) {
       CE.reset(TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx));
+
+}
 
     std::unique_ptr<MCAsmBackend> MAB(
         TheTarget->createMCAsmBackend(*STI, *MRI, MCOptions));
@@ -488,8 +522,10 @@ int main(int argc, char **argv) {
         std::unique_ptr<MCCodeEmitter>(CE), *STI, MCOptions.MCRelaxAll,
         MCOptions.MCIncrementalLinkerCompatible,
         /*DWARFMustBeAtTheEnd*/ false));
-    if (NoExecStack)
+    if (NoExecStack) {
       Str->InitSections(true);
+
+}
   }
 
   // Use Assembler information for parsing.
@@ -514,15 +550,19 @@ int main(int argc, char **argv) {
     disassemble = true;
     break;
   }
-  if (disassemble)
+  if (disassemble) {
     Res = Disassembler::disassemble(*TheTarget, TripleName, *STI, *Str, *Buffer,
                                     SrcMgr, Ctx, Out->os(), MCOptions);
+
+}
 
   // Keep output if no errors.
   if (Res == 0) {
     Out->keep();
-    if (DwoOut)
+    if (DwoOut) {
       DwoOut->keep();
+
+}
   }
   return Res;
 }

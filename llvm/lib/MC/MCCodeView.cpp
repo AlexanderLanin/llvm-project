@@ -30,16 +30,20 @@ CodeViewContext::CodeViewContext() {}
 CodeViewContext::~CodeViewContext() {
   // If someone inserted strings into the string table but never actually
   // emitted them somewhere, clean up the fragment.
-  if (!InsertedStrTabFragment)
+  if (!InsertedStrTabFragment) {
     delete StrTabFragment;
+
+}
 }
 
 /// This is a valid number for use with .cv_loc if we've already seen a .cv_file
 /// for it.
 bool CodeViewContext::isValidFileNumber(unsigned FileNumber) const {
   unsigned Idx = FileNumber - 1;
-  if (Idx < Files.size())
+  if (Idx < Files.size()) {
     return Files[Idx].Assigned;
+
+}
   return false;
 }
 
@@ -51,14 +55,20 @@ bool CodeViewContext::addFile(MCStreamer &OS, unsigned FileNumber,
   auto FilenameOffset = addToStringTable(Filename);
   Filename = FilenameOffset.first;
   unsigned Idx = FileNumber - 1;
-  if (Idx >= Files.size())
+  if (Idx >= Files.size()) {
     Files.resize(Idx + 1);
 
-  if (Filename.empty())
+}
+
+  if (Filename.empty()) {
     Filename = "<stdin>";
 
-  if (Files[Idx].Assigned)
+}
+
+  if (Files[Idx].Assigned) {
     return false;
+
+}
 
   FilenameOffset = addToStringTable(Filename);
   Filename = FilenameOffset.first;
@@ -76,20 +86,28 @@ bool CodeViewContext::addFile(MCStreamer &OS, unsigned FileNumber,
 }
 
 MCCVFunctionInfo *CodeViewContext::getCVFunctionInfo(unsigned FuncId) {
-  if (FuncId >= Functions.size())
+  if (FuncId >= Functions.size()) {
     return nullptr;
-  if (Functions[FuncId].isUnallocatedFunctionInfo())
+
+}
+  if (Functions[FuncId].isUnallocatedFunctionInfo()) {
     return nullptr;
+
+}
   return &Functions[FuncId];
 }
 
 bool CodeViewContext::recordFunctionId(unsigned FuncId) {
-  if (FuncId >= Functions.size())
+  if (FuncId >= Functions.size()) {
     Functions.resize(FuncId + 1);
 
+}
+
   // Return false if this function info was already allocated.
-  if (!Functions[FuncId].isUnallocatedFunctionInfo())
+  if (!Functions[FuncId].isUnallocatedFunctionInfo()) {
     return false;
+
+}
 
   // Mark this as an allocated normal function, and leave the rest alone.
   Functions[FuncId].ParentFuncIdPlusOne = MCCVFunctionInfo::FunctionSentinel;
@@ -99,12 +117,16 @@ bool CodeViewContext::recordFunctionId(unsigned FuncId) {
 bool CodeViewContext::recordInlinedCallSiteId(unsigned FuncId, unsigned IAFunc,
                                               unsigned IAFile, unsigned IALine,
                                               unsigned IACol) {
-  if (FuncId >= Functions.size())
+  if (FuncId >= Functions.size()) {
     Functions.resize(FuncId + 1);
 
+}
+
   // Return false if this function info was already allocated.
-  if (!Functions[FuncId].isUnallocatedFunctionInfo())
+  if (!Functions[FuncId].isUnallocatedFunctionInfo()) {
     return false;
+
+}
 
   MCCVFunctionInfo::LineInfo InlinedAt;
   InlinedAt.File = IAFile;
@@ -160,8 +182,10 @@ std::pair<StringRef, unsigned> CodeViewContext::addToStringTable(StringRef S) {
 
 unsigned CodeViewContext::getStringTableOffset(StringRef S) {
   // A string table offset of zero is always the empty string.
-  if (S.empty())
+  if (S.empty()) {
     return 0;
+
+}
   auto I = StringTable.find(S);
   assert(I != StringTable.end());
   return I->second;
@@ -192,8 +216,10 @@ void CodeViewContext::emitStringTable(MCObjectStreamer &OS) {
 void CodeViewContext::emitFileChecksums(MCObjectStreamer &OS) {
   // Do nothing if there are no file checksums. Microsoft's linker rejects empty
   // CodeView substreams.
-  if (Files.empty())
+  if (Files.empty()) {
     return;
+
+}
 
   MCContext &Ctx = OS.getContext();
   MCSymbol *FileBegin = Ctx.createTempSymbol("filechecksums_begin", false),
@@ -248,8 +274,10 @@ void CodeViewContext::emitFileChecksumOffset(MCObjectStreamer &OS,
                                              unsigned FileNo) {
   unsigned Idx = FileNo - 1;
 
-  if (Idx >= Files.size())
+  if (Idx >= Files.size()) {
     Files.resize(Idx + 1);
+
+}
 
   if (ChecksumOffsetsAssigned) {
     OS.emitSymbolValue(Files[Idx].ChecksumTableOffset, 4);
@@ -266,8 +294,10 @@ void CodeViewContext::addLineEntry(const MCCVLoc &LineEntry) {
   size_t Offset = MCCVLines.size();
   auto I = MCCVLineStartStop.insert(
       {LineEntry.getFunctionId(), {Offset, Offset + 1}});
-  if (!I.second)
+  if (!I.second) {
     I.first->second.second = Offset + 1;
+
+}
   MCCVLines.push_back(LineEntry);
 }
 
@@ -310,16 +340,22 @@ CodeViewContext::getFunctionLineEntries(unsigned FuncId) {
 std::pair<size_t, size_t> CodeViewContext::getLineExtent(unsigned FuncId) {
   auto I = MCCVLineStartStop.find(FuncId);
   // Return an empty extent if there are no cv_locs for this function id.
-  if (I == MCCVLineStartStop.end())
+  if (I == MCCVLineStartStop.end()) {
     return {~0ULL, 0};
+
+}
   return I->second;
 }
 
 ArrayRef<MCCVLoc> CodeViewContext::getLinesForExtent(size_t L, size_t R) {
-  if (R <= L)
+  if (R <= L) {
     return None;
-  if (L >= MCCVLines.size())
+
+}
+  if (L >= MCCVLines.size()) {
     return None;
+
+}
   return makeArrayRef(&MCCVLines[L], R - L);
 }
 
@@ -362,15 +398,19 @@ void CodeViewContext::emitLineTableForFunction(MCObjectStreamer &OS,
     OS.emitInt32(EntryCount);
     uint32_t SegmentSize = 12;
     SegmentSize += 8 * EntryCount;
-    if (HaveColumns)
+    if (HaveColumns) {
       SegmentSize += 4 * EntryCount;
+
+}
     OS.emitInt32(SegmentSize);
 
     for (auto J = I; J != FileSegEnd; ++J) {
       OS.emitAbsoluteSymbolDiff(J->getLabel(), FuncBegin, 4);
       unsigned LineData = J->getLine();
-      if (J->isStmt())
+      if (J->isStmt()) {
         LineData |= LineInfo::StatementFlag;
+
+}
       OS.emitInt32(LineData);
     }
     if (HaveColumns) {
@@ -413,8 +453,10 @@ static bool compressAnnotation(BinaryAnnotationsOpCode Annotation,
 }
 
 static uint32_t encodeSignedNumber(uint32_t Data) {
-  if (Data >> 31)
+  if (Data >> 31) {
     return ((-Data) << 1) | 1;
+
+}
   return Data << 1;
 }
 
@@ -473,11 +515,15 @@ void CodeViewContext::encodeInlineLineTable(MCAsmLayout &Layout,
     LocEnd = std::max(LocEnd, Extent.second);
   }
 
-  if (LocBegin >= LocEnd)
+  if (LocBegin >= LocEnd) {
     return;
+
+}
   ArrayRef<MCCVLoc> Locs = getLinesForExtent(LocBegin, LocEnd);
-  if (Locs.empty())
+  if (Locs.empty()) {
     return;
+
+}
 
   // Check that the locations are all in the same section.
 #ifndef NDEBUG
@@ -515,8 +561,10 @@ void CodeViewContext::encodeInlineLineTable(MCAsmLayout &Layout,
     constexpr uint32_t InlineSiteSize = 12;
     constexpr uint32_t AnnotationSize = 8;
     size_t MaxBufferSize = MaxRecordLength - InlineSiteSize - AnnotationSize;
-    if (Buffer.size() >= MaxBufferSize)
+    if (Buffer.size() >= MaxBufferSize) {
       break;
+
+}
 
     if (Loc.getFunctionId() == Frag.SiteFuncId) {
       CurSourceLoc.File = Loc.getFileNum();
@@ -546,8 +594,10 @@ void CodeViewContext::encodeInlineLineTable(MCAsmLayout &Layout,
     // source location update. The current table format does not support column
     // info, so we can skip updates for those.
     if (HaveOpenRange && CurSourceLoc.File == LastSourceLoc.File &&
-        CurSourceLoc.Line == LastSourceLoc.Line)
+        CurSourceLoc.Line == LastSourceLoc.Line) {
       continue;
+
+}
 
     HaveOpenRange = true;
 
@@ -597,8 +647,10 @@ void CodeViewContext::encodeInlineLineTable(MCAsmLayout &Layout,
   if (!LocAfter.empty()) {
     // Only try to compute this difference if we're in the same section.
     const MCCVLoc &Loc = LocAfter[0];
-    if (&Loc.getLabel()->getSection() == &LastLabel->getSection())
+    if (&Loc.getLabel()->getSection() == &LastLabel->getSection()) {
       LocAfterLength = computeLabelDiff(Layout, LastLabel, Loc.getLabel());
+
+}
   }
 
   compressAnnotation(BinaryAnnotationsOpCode::ChangeCodeLength, Buffer);
@@ -634,8 +686,10 @@ void CodeViewContext::encodeDefRange(MCAsmLayout &Layout,
     size_t J = I + 1;
     for (; J != E; ++J) {
       unsigned GapAndRangeSize = GapAndRangeSizes[J].first + GapAndRangeSizes[J].second;
-      if (RangeSize + GapAndRangeSize > MaxDefRange)
+      if (RangeSize + GapAndRangeSize > MaxDefRange) {
         break;
+
+}
       RangeSize += GapAndRangeSize;
     }
     unsigned NumGaps = J - I - 1;

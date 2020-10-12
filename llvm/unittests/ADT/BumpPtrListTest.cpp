@@ -49,13 +49,17 @@ TEST(BumpPtrListTest, pushPopBack) {
   // Build a list with push_back.
   BumpPtrList<int> L;
   int Ns[] = {1, 3, 9, 5, 7};
-  for (const int N : Ns)
+  for (const int N : Ns) {
     L.push_back(N);
+
+}
 
   // Use iterators to check contents.
   auto I = L.begin();
-  for (int N : Ns)
+  for (int N : Ns) {
     EXPECT_EQ(N, *I++);
+
+}
   EXPECT_EQ(I, L.end());
 
   // Unbuild the list with pop_back.
@@ -70,13 +74,17 @@ TEST(BumpPtrListTest, pushPopFront) {
   // Build a list with push_front.
   BumpPtrList<int> L;
   int Ns[] = {1, 3, 9, 5, 7};
-  for (const int N : Ns)
+  for (const int N : Ns) {
     L.push_front(N);
+
+}
 
   // Use reverse iterators to check contents.
   auto I = L.rbegin();
-  for (int N : Ns)
+  for (int N : Ns) {
     EXPECT_EQ(N, *I++);
+
+}
   EXPECT_EQ(I, L.rend());
 
   // Unbuild the list with pop_front.
@@ -95,8 +103,10 @@ TEST(BumpPtrListTest, pushBackMoveOnly) {
     EXPECT_EQ(N, L.back().V);
   }
   // Instantiate with MoveOnly.
-  while (!L.empty())
+  while (!L.empty()) {
     L.pop_back();
+
+}
 }
 
 TEST(BumpPtrListTest, pushFrontMoveOnly) {
@@ -107,8 +117,10 @@ TEST(BumpPtrListTest, pushFrontMoveOnly) {
     EXPECT_EQ(N, L.front().V);
   }
   // Instantiate with MoveOnly.
-  while (!L.empty())
+  while (!L.empty()) {
     L.pop_front();
+
+}
 }
 
 TEST(BumpPtrListTest, emplaceBack) {
@@ -121,8 +133,10 @@ TEST(BumpPtrListTest, emplaceBack) {
     EXPECT_EQ(N2s[I], L.back().V2);
   }
   // Instantiate with EmplaceOnly.
-  while (!L.empty())
+  while (!L.empty()) {
     L.pop_back();
+
+}
 }
 
 TEST(BumpPtrListTest, emplaceFront) {
@@ -135,8 +149,10 @@ TEST(BumpPtrListTest, emplaceFront) {
     EXPECT_EQ(N2s[I], L.front().V2);
   }
   // Instantiate with EmplaceOnly.
-  while (!L.empty())
+  while (!L.empty()) {
     L.pop_front();
+
+}
 }
 
 TEST(BumpPtrListTest, swap) {
@@ -155,16 +171,20 @@ TEST(BumpPtrListTest, swap) {
 
     // Check L2's contents before it goes out of scope.
     auto I = L2.begin();
-    for (int N : N1s)
+    for (int N : N1s) {
       EXPECT_EQ(N, *I++);
+
+}
     EXPECT_EQ(I, L2.end());
   }
 
   // Check L1's contents now that L2 is out of scope (with its allocation
   // blocks).
   auto I = L1.begin();
-  for (int N : N2s)
+  for (int N : N2s) {
     EXPECT_EQ(N, *I++);
+
+}
   EXPECT_EQ(I, L1.end());
 }
 

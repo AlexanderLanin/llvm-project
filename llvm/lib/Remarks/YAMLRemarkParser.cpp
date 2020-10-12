@@ -59,36 +59,46 @@ static SourceMgr setupSM(std::string &LastErrorMessage) {
 // Parse the magic number. This function returns true if this represents remark
 // metadata, false otherwise.
 static Expected<bool> parseMagic(StringRef &Buf) {
-  if (!Buf.consume_front(remarks::Magic))
+  if (!Buf.consume_front(remarks::Magic)) {
     return false;
 
-  if (Buf.size() < 1 || !Buf.consume_front(StringRef("\0", 1)))
+}
+
+  if (Buf.size() < 1 || !Buf.consume_front(StringRef("\0", 1))) {
     return createStringError(std::errc::illegal_byte_sequence,
                              "Expecting \\0 after magic number.");
+
+}
   return true;
 }
 
 static Expected<uint64_t> parseVersion(StringRef &Buf) {
-  if (Buf.size() < sizeof(uint64_t))
+  if (Buf.size() < sizeof(uint64_t)) {
     return createStringError(std::errc::illegal_byte_sequence,
                              "Expecting version number.");
+
+}
 
   uint64_t Version =
       support::endian::read<uint64_t, support::little, support::unaligned>(
           Buf.data());
-  if (Version != remarks::CurrentRemarkVersion)
+  if (Version != remarks::CurrentRemarkVersion) {
     return createStringError(std::errc::illegal_byte_sequence,
                              "Mismatching remark version. Got %" PRId64
                              ", expected %" PRId64 ".",
                              Version, remarks::CurrentRemarkVersion);
+
+}
   Buf = Buf.drop_front(sizeof(uint64_t));
   return Version;
 }
 
 static Expected<uint64_t> parseStrTabSize(StringRef &Buf) {
-  if (Buf.size() < sizeof(uint64_t))
+  if (Buf.size() < sizeof(uint64_t)) {
     return createStringError(std::errc::illegal_byte_sequence,
                              "Expecting string table size.");
+
+}
   uint64_t StrTabSize =
       support::endian::read<uint64_t, support::little, support::unaligned>(
           Buf.data());
@@ -98,9 +108,11 @@ static Expected<uint64_t> parseStrTabSize(StringRef &Buf) {
 
 static Expected<ParsedStringTable> parseStrTab(StringRef &Buf,
                                                uint64_t StrTabSize) {
-  if (Buf.size() < StrTabSize)
+  if (Buf.size() < StrTabSize) {
     return createStringError(std::errc::illegal_byte_sequence,
                              "Expecting string table.");
+
+}
 
   // Attach the string table to the parser.
   ParsedStringTable Result(StringRef(Buf.data(), StrTabSize));
@@ -114,27 +126,37 @@ remarks::createYAMLParserFromMeta(StringRef Buf,
                                   Optional<StringRef> ExternalFilePrependPath) {
   // We now have a magic number. The metadata has to be correct.
   Expected<bool> isMeta = parseMagic(Buf);
-  if (!isMeta)
+  if (!isMeta) {
     return isMeta.takeError();
+
+}
   // If it's not recognized as metadata, roll back.
   std::unique_ptr<MemoryBuffer> SeparateBuf;
   if (*isMeta) {
     Expected<uint64_t> Version = parseVersion(Buf);
-    if (!Version)
+    if (!Version) {
       return Version.takeError();
 
+}
+
     Expected<uint64_t> StrTabSize = parseStrTabSize(Buf);
-    if (!StrTabSize)
+    if (!StrTabSize) {
       return StrTabSize.takeError();
+
+}
 
     // If the size of string table is not 0, try to build one.
     if (*StrTabSize != 0) {
-      if (StrTab)
+      if (StrTab) {
         return createStringError(std::errc::illegal_byte_sequence,
                                  "String table already provided.");
+
+}
       Expected<ParsedStringTable> MaybeStrTab = parseStrTab(Buf, *StrTabSize);
-      if (!MaybeStrTab)
+      if (!MaybeStrTab) {
         return MaybeStrTab.takeError();
+
+}
       StrTab = std::move(*MaybeStrTab);
     }
     // If it starts with "---", there is no external file.
@@ -142,15 +164,19 @@ remarks::createYAMLParserFromMeta(StringRef Buf,
       // At this point, we expect Buf to contain the external file path.
       StringRef ExternalFilePath = Buf;
       SmallString<80> FullPath;
-      if (ExternalFilePrependPath)
+      if (ExternalFilePrependPath) {
         FullPath = *ExternalFilePrependPath;
+
+}
       sys::path::append(FullPath, ExternalFilePath);
 
       // Try to open the file and start parsing from there.
       ErrorOr<std::unique_ptr<MemoryBuffer>> BufferOrErr =
           MemoryBuffer::getFile(FullPath);
-      if (std::error_code EC = BufferOrErr.getError())
+      if (std::error_code EC = BufferOrErr.getError()) {
         return createFileError(FullPath, EC);
+
+}
 
       // Keep the buffer alive.
       SeparateBuf = std::move(*BufferOrErr);
@@ -162,8 +188,10 @@ remarks::createYAMLParserFromMeta(StringRef Buf,
       StrTab
           ? std::make_unique<YAMLStrTabRemarkParser>(Buf, std::move(*StrTab))
           : std::make_unique<YAMLRemarkParser>(Buf);
-  if (SeparateBuf)
+  if (SeparateBuf) {
     Result->SeparateBuf = std::move(SeparateBuf);
+
+}
   return std::move(Result);
 }
 
@@ -180,8 +208,10 @@ Error YAMLRemarkParser::error(StringRef Message, yaml::Node &Node) {
 }
 
 Error YAMLRemarkParser::error() {
-  if (LastErrorMessage.empty())
+  if (LastErrorMessage.empty()) {
     return Error::success();
+
+}
   Error E = make_error<YAMLParseError>(LastErrorMessage);
   LastErrorMessage.clear();
   return E;
@@ -189,8 +219,10 @@ Error YAMLRemarkParser::error() {
 
 Expected<std::unique_ptr<Remark>>
 YAMLRemarkParser::parseRemark(yaml::Document &RemarkEntry) {
-  if (Error E = error())
+  if (Error E = error()) {
     return std::move(E);
+
+}
 
   yaml::Node *YAMLRoot = RemarkEntry.getRoot();
   if (!YAMLRoot) {
@@ -199,8 +231,10 @@ YAMLRemarkParser::parseRemark(yaml::Document &RemarkEntry) {
   }
 
   auto *Root = dyn_cast<yaml::MappingNode>(YAMLRoot);
-  if (!Root)
+  if (!Root) {
     return error("document root is not of mapping type.", *YAMLRoot);
+
+}
 
   std::unique_ptr<Remark> Result = std::make_unique<Remark>();
   Remark &TheRemark = *Result;
@@ -208,53 +242,71 @@ YAMLRemarkParser::parseRemark(yaml::Document &RemarkEntry) {
   // First, the type. It needs special handling since is not part of the
   // key-value stream.
   Expected<Type> T = parseType(*Root);
-  if (!T)
+  if (!T) {
     return T.takeError();
-  else
+  } else {
     TheRemark.RemarkType = *T;
+
+}
 
   // Then, parse the fields, one by one.
   for (yaml::KeyValueNode &RemarkField : *Root) {
     Expected<StringRef> MaybeKey = parseKey(RemarkField);
-    if (!MaybeKey)
+    if (!MaybeKey) {
       return MaybeKey.takeError();
+
+}
     StringRef KeyName = *MaybeKey;
 
     if (KeyName == "Pass") {
-      if (Expected<StringRef> MaybeStr = parseStr(RemarkField))
+      if (Expected<StringRef> MaybeStr = parseStr(RemarkField)) {
         TheRemark.PassName = *MaybeStr;
-      else
+      } else {
         return MaybeStr.takeError();
+
+}
     } else if (KeyName == "Name") {
-      if (Expected<StringRef> MaybeStr = parseStr(RemarkField))
+      if (Expected<StringRef> MaybeStr = parseStr(RemarkField)) {
         TheRemark.RemarkName = *MaybeStr;
-      else
+      } else {
         return MaybeStr.takeError();
+
+}
     } else if (KeyName == "Function") {
-      if (Expected<StringRef> MaybeStr = parseStr(RemarkField))
+      if (Expected<StringRef> MaybeStr = parseStr(RemarkField)) {
         TheRemark.FunctionName = *MaybeStr;
-      else
+      } else {
         return MaybeStr.takeError();
+
+}
     } else if (KeyName == "Hotness") {
-      if (Expected<unsigned> MaybeU = parseUnsigned(RemarkField))
+      if (Expected<unsigned> MaybeU = parseUnsigned(RemarkField)) {
         TheRemark.Hotness = *MaybeU;
-      else
+      } else {
         return MaybeU.takeError();
+
+}
     } else if (KeyName == "DebugLoc") {
-      if (Expected<RemarkLocation> MaybeLoc = parseDebugLoc(RemarkField))
+      if (Expected<RemarkLocation> MaybeLoc = parseDebugLoc(RemarkField)) {
         TheRemark.Loc = *MaybeLoc;
-      else
+      } else {
         return MaybeLoc.takeError();
+
+}
     } else if (KeyName == "Args") {
       auto *Args = dyn_cast<yaml::SequenceNode>(RemarkField.getValue());
-      if (!Args)
+      if (!Args) {
         return error("wrong value type for key.", RemarkField);
 
+}
+
       for (yaml::Node &Arg : *Args) {
-        if (Expected<Argument> MaybeArg = parseArg(Arg))
+        if (Expected<Argument> MaybeArg = parseArg(Arg)) {
           TheRemark.Args.push_back(*MaybeArg);
-        else
+        } else {
           return MaybeArg.takeError();
+
+}
       }
     } else {
       return error("unknown key.", RemarkField);
@@ -263,9 +315,11 @@ YAMLRemarkParser::parseRemark(yaml::Document &RemarkEntry) {
 
   // Check if any of the mandatory fields are missing.
   if (TheRemark.RemarkType == Type::Unknown || TheRemark.PassName.empty() ||
-      TheRemark.RemarkName.empty() || TheRemark.FunctionName.empty())
+      TheRemark.RemarkName.empty() || TheRemark.FunctionName.empty()) {
     return error("Type, Pass, Name or Function missing.",
                  *RemarkEntry.getRoot());
+
+}
 
   return std::move(Result);
 }
@@ -279,29 +333,39 @@ Expected<Type> YAMLRemarkParser::parseType(yaml::MappingNode &Node) {
                   .Case("!AnalysisAliasing", remarks::Type::AnalysisAliasing)
                   .Case("!Failure", remarks::Type::Failure)
                   .Default(remarks::Type::Unknown);
-  if (Type == remarks::Type::Unknown)
+  if (Type == remarks::Type::Unknown) {
     return error("expected a remark tag.", Node);
+
+}
   return Type;
 }
 
 Expected<StringRef> YAMLRemarkParser::parseKey(yaml::KeyValueNode &Node) {
-  if (auto *Key = dyn_cast<yaml::ScalarNode>(Node.getKey()))
+  if (auto *Key = dyn_cast<yaml::ScalarNode>(Node.getKey())) {
     return Key->getRawValue();
+
+}
 
   return error("key is not a string.", Node);
 }
 
 Expected<StringRef> YAMLRemarkParser::parseStr(yaml::KeyValueNode &Node) {
   auto *Value = dyn_cast<yaml::ScalarNode>(Node.getValue());
-  if (!Value)
+  if (!Value) {
     return error("expected a value of scalar type.", Node);
+
+}
   StringRef Result = Value->getRawValue();
 
-  if (Result.front() == '\'')
+  if (Result.front() == '\'') {
     Result = Result.drop_front();
 
-  if (Result.back() == '\'')
+}
+
+  if (Result.back() == '\'') {
     Result = Result.drop_back();
+
+}
 
   return Result;
 }
@@ -309,19 +373,25 @@ Expected<StringRef> YAMLRemarkParser::parseStr(yaml::KeyValueNode &Node) {
 Expected<unsigned> YAMLRemarkParser::parseUnsigned(yaml::KeyValueNode &Node) {
   SmallVector<char, 4> Tmp;
   auto *Value = dyn_cast<yaml::ScalarNode>(Node.getValue());
-  if (!Value)
+  if (!Value) {
     return error("expected a value of scalar type.", Node);
+
+}
   unsigned UnsignedValue = 0;
-  if (Value->getValue(Tmp).getAsInteger(10, UnsignedValue))
+  if (Value->getValue(Tmp).getAsInteger(10, UnsignedValue)) {
     return error("expected a value of integer type.", *Value);
+
+}
   return UnsignedValue;
 }
 
 Expected<RemarkLocation>
 YAMLRemarkParser::parseDebugLoc(yaml::KeyValueNode &Node) {
   auto *DebugLoc = dyn_cast<yaml::MappingNode>(Node.getValue());
-  if (!DebugLoc)
+  if (!DebugLoc) {
     return error("expected a value of mapping type.", Node);
+
+}
 
   Optional<StringRef> File;
   Optional<unsigned> Line;
@@ -329,41 +399,53 @@ YAMLRemarkParser::parseDebugLoc(yaml::KeyValueNode &Node) {
 
   for (yaml::KeyValueNode &DLNode : *DebugLoc) {
     Expected<StringRef> MaybeKey = parseKey(DLNode);
-    if (!MaybeKey)
+    if (!MaybeKey) {
       return MaybeKey.takeError();
+
+}
     StringRef KeyName = *MaybeKey;
 
     if (KeyName == "File") {
-      if (Expected<StringRef> MaybeStr = parseStr(DLNode))
+      if (Expected<StringRef> MaybeStr = parseStr(DLNode)) {
         File = *MaybeStr;
-      else
+      } else {
         return MaybeStr.takeError();
+
+}
     } else if (KeyName == "Column") {
-      if (Expected<unsigned> MaybeU = parseUnsigned(DLNode))
+      if (Expected<unsigned> MaybeU = parseUnsigned(DLNode)) {
         Column = *MaybeU;
-      else
+      } else {
         return MaybeU.takeError();
+
+}
     } else if (KeyName == "Line") {
-      if (Expected<unsigned> MaybeU = parseUnsigned(DLNode))
+      if (Expected<unsigned> MaybeU = parseUnsigned(DLNode)) {
         Line = *MaybeU;
-      else
+      } else {
         return MaybeU.takeError();
+
+}
     } else {
       return error("unknown entry in DebugLoc map.", DLNode);
     }
   }
 
   // If any of the debug loc fields is missing, return an error.
-  if (!File || !Line || !Column)
+  if (!File || !Line || !Column) {
     return error("DebugLoc node incomplete.", Node);
+
+}
 
   return RemarkLocation{*File, *Line, *Column};
 }
 
 Expected<Argument> YAMLRemarkParser::parseArg(yaml::Node &Node) {
   auto *ArgMap = dyn_cast<yaml::MappingNode>(&Node);
-  if (!ArgMap)
+  if (!ArgMap) {
     return error("expected a value of mapping type.", Node);
+
+}
 
   Optional<StringRef> KeyStr;
   Optional<StringRef> ValueStr;
@@ -371,49 +453,65 @@ Expected<Argument> YAMLRemarkParser::parseArg(yaml::Node &Node) {
 
   for (yaml::KeyValueNode &ArgEntry : *ArgMap) {
     Expected<StringRef> MaybeKey = parseKey(ArgEntry);
-    if (!MaybeKey)
+    if (!MaybeKey) {
       return MaybeKey.takeError();
+
+}
     StringRef KeyName = *MaybeKey;
 
     // Try to parse debug locs.
     if (KeyName == "DebugLoc") {
       // Can't have multiple DebugLoc entries per argument.
-      if (Loc)
+      if (Loc) {
         return error("only one DebugLoc entry is allowed per argument.",
                      ArgEntry);
+
+}
 
       if (Expected<RemarkLocation> MaybeLoc = parseDebugLoc(ArgEntry)) {
         Loc = *MaybeLoc;
         continue;
-      } else
+      } else {
         return MaybeLoc.takeError();
+
+}
     }
 
     // If we already have a string, error out.
-    if (ValueStr)
+    if (ValueStr) {
       return error("only one string entry is allowed per argument.", ArgEntry);
 
+}
+
     // Try to parse the value.
-    if (Expected<StringRef> MaybeStr = parseStr(ArgEntry))
+    if (Expected<StringRef> MaybeStr = parseStr(ArgEntry)) {
       ValueStr = *MaybeStr;
-    else
+    } else {
       return MaybeStr.takeError();
+
+}
 
     // Keep the key from the string.
     KeyStr = KeyName;
   }
 
-  if (!KeyStr)
+  if (!KeyStr) {
     return error("argument key is missing.", *ArgMap);
-  if (!ValueStr)
+
+}
+  if (!ValueStr) {
     return error("argument value is missing.", *ArgMap);
+
+}
 
   return Argument{*KeyStr, *ValueStr, Loc};
 }
 
 Expected<std::unique_ptr<Remark>> YAMLRemarkParser::next() {
-  if (YAMLIt == Stream.end())
+  if (YAMLIt == Stream.end()) {
     return make_error<EndOfFileError>();
+
+}
 
   Expected<std::unique_ptr<Remark>> MaybeResult = parseRemark(*YAMLIt);
   if (!MaybeResult) {
@@ -429,26 +527,36 @@ Expected<std::unique_ptr<Remark>> YAMLRemarkParser::next() {
 
 Expected<StringRef> YAMLStrTabRemarkParser::parseStr(yaml::KeyValueNode &Node) {
   auto *Value = dyn_cast<yaml::ScalarNode>(Node.getValue());
-  if (!Value)
+  if (!Value) {
     return error("expected a value of scalar type.", Node);
+
+}
   StringRef Result;
   // If we have a string table, parse it as an unsigned.
   unsigned StrID = 0;
-  if (Expected<unsigned> MaybeStrID = parseUnsigned(Node))
+  if (Expected<unsigned> MaybeStrID = parseUnsigned(Node)) {
     StrID = *MaybeStrID;
-  else
+  } else {
     return MaybeStrID.takeError();
 
-  if (Expected<StringRef> Str = (*StrTab)[StrID])
+}
+
+  if (Expected<StringRef> Str = (*StrTab)[StrID]) {
     Result = *Str;
-  else
+  } else {
     return Str.takeError();
 
-  if (Result.front() == '\'')
+}
+
+  if (Result.front() == '\'') {
     Result = Result.drop_front();
 
-  if (Result.back() == '\'')
+}
+
+  if (Result.back() == '\'') {
     Result = Result.drop_back();
+
+}
 
   return Result;
 }

@@ -42,8 +42,10 @@ const Target *TargetRegistry::lookupTarget(const std::string &ArchName,
     // Adjust the triple to match (if known), otherwise stick with the
     // given triple.
     Triple::ArchType Type = Triple::getArchTypeForLLVMName(ArchName);
-    if (Type != Triple::UnknownArch)
+    if (Type != Triple::UnknownArch) {
       TheTriple.setArch(Type);
+
+}
   } else {
     // Get the target specific parser.
     std::string TempError;
@@ -95,8 +97,10 @@ void TargetRegistry::RegisterTarget(Target &T, const char *Name,
 
   // Check if this target has already been initialized, we allow this as a
   // convenience to some clients.
-  if (T.Name)
+  if (T.Name) {
     return;
+
+}
 
   // Add to the list of targets.
   T.Next = FirstTarget;
@@ -129,6 +133,8 @@ void TargetRegistry::printRegisteredTargetsForVersion(raw_ostream &OS) {
     OS.indent(Width - Targets[i].first.size()) << " - "
       << Targets[i].second->getShortDescription() << '\n';
   }
-  if (Targets.empty())
+  if (Targets.empty()) {
     OS << "    (none)\n";
+
+}
 }

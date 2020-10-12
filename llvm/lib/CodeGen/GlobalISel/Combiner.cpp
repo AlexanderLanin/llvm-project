@@ -100,15 +100,19 @@ bool Combiner::combineMachineInstrs(MachineFunction &MF,
   // If the ISel pipeline failed, do not bother running this pass.
   // FIXME: Should this be here or in individual combiner passes.
   if (MF.getProperties().hasProperty(
-          MachineFunctionProperties::Property::FailedISel))
+          MachineFunctionProperties::Property::FailedISel)) {
     return false;
+
+}
 
   Builder =
       CSEInfo ? std::make_unique<CSEMIRBuilder>() : std::make_unique<MachineIRBuilder>();
   MRI = &MF.getRegInfo();
   Builder->setMF(MF);
-  if (CSEInfo)
+  if (CSEInfo) {
     Builder->setCSEInfo(CSEInfo);
+
+}
 
   LLVM_DEBUG(dbgs() << "Generic MI Combiner for: " << MF.getName() << '\n');
 
@@ -126,12 +130,16 @@ bool Combiner::combineMachineInstrs(MachineFunction &MF,
     GISelWorkList<512> WorkList;
     WorkListMaintainer Observer(WorkList);
     GISelObserverWrapper WrapperObserver(&Observer);
-    if (CSEInfo)
+    if (CSEInfo) {
       WrapperObserver.addObserver(CSEInfo);
+
+}
     RAIIDelegateInstaller DelInstall(MF, &WrapperObserver);
     for (MachineBasicBlock *MBB : post_order(&MF)) {
-      if (MBB->empty())
+      if (MBB->empty()) {
         continue;
+
+}
       for (auto MII = MBB->rbegin(), MIE = MBB->rend(); MII != MIE;) {
         MachineInstr *CurMI = &*MII;
         ++MII;

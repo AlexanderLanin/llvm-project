@@ -20,8 +20,10 @@ int TestRunner::run(StringRef Filename) {
   std::vector<StringRef> ProgramArgs;
   ProgramArgs.push_back(TestName);
 
-  for (const auto &Arg : TestArgs)
+  for (const auto &Arg : TestArgs) {
     ProgramArgs.push_back(Arg);
+
+}
 
   ProgramArgs.push_back(Filename);
 

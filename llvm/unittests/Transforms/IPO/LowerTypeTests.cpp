@@ -52,8 +52,10 @@ TEST(LowerTypeTests, BitSetBuilder) {
 
   for (auto &&T : BSBTests) {
     BitSetBuilder BSB;
-    for (auto Offset : T.Offsets)
+    for (auto Offset : T.Offsets) {
       BSB.addOffset(Offset);
+
+}
 
     BitSetInfo BSI = BSB.build();
 
@@ -64,8 +66,10 @@ TEST(LowerTypeTests, BitSetBuilder) {
     EXPECT_EQ(T.IsSingleOffset, BSI.isSingleOffset());
     EXPECT_EQ(T.IsAllOnes, BSI.isAllOnes());
 
-    for (auto Offset : T.Offsets)
+    for (auto Offset : T.Offsets) {
       EXPECT_TRUE(BSI.containsGlobalOffset(Offset));
+
+}
 
     auto I = T.Offsets.begin();
     for (uint64_t NonOffset = 0; NonOffset != 256; ++NonOffset) {
@@ -95,12 +99,16 @@ TEST(LowerTypeTests, GlobalLayoutBuilder) {
 
   for (auto &&T : GLBTests) {
     GlobalLayoutBuilder GLB(T.NumObjects);
-    for (auto &&F : T.Fragments)
+    for (auto &&F : T.Fragments) {
       GLB.addFragment(F);
 
+}
+
     std::vector<uint64_t> ComputedLayout;
-    for (auto &&F : GLB.Fragments)
+    for (auto &&F : GLB.Fragments) {
       ComputedLayout.insert(ComputedLayout.end(), F.begin(), F.end());
+
+}
 
     EXPECT_EQ(T.WantLayout, ComputedLayout);
   }

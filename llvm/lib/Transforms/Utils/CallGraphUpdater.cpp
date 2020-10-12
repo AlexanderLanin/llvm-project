@@ -90,19 +90,23 @@ void CallGraphUpdater::reanalyzeFunction(Function &Fn) {
 }
 
 void CallGraphUpdater::registerOutlinedFunction(Function &NewFn) {
-  if (CG)
+  if (CG) {
     CG->addToCallGraph(&NewFn);
-  else if (LCG)
+  } else if (LCG) {
     LCG->addNewFunctionIntoSCC(NewFn, *SCC);
+
+}
 }
 
 void CallGraphUpdater::removeFunction(Function &DeadFn) {
   DeadFn.deleteBody();
   DeadFn.setLinkage(GlobalValue::ExternalLinkage);
-  if (DeadFn.hasComdat())
+  if (DeadFn.hasComdat()) {
     DeadFunctionsInComdats.push_back(&DeadFn);
-  else
+  } else {
     DeadFunctions.push_back(&DeadFn);
+
+}
 }
 
 void CallGraphUpdater::replaceFunctionWith(Function &OldFn, Function &NewFn) {
@@ -126,8 +130,10 @@ void CallGraphUpdater::replaceFunctionWith(Function &OldFn, Function &NewFn) {
 
 bool CallGraphUpdater::replaceCallSite(CallBase &OldCS, CallBase &NewCS) {
   // This is only necessary in the (old) CG.
-  if (!CG)
+  if (!CG) {
     return true;
+
+}
 
   Function *Caller = OldCS.getCaller();
   CallGraphNode *NewCalleeNode =
@@ -135,16 +141,20 @@ bool CallGraphUpdater::replaceCallSite(CallBase &OldCS, CallBase &NewCS) {
   CallGraphNode *CallerNode = (*CG)[Caller];
   if (llvm::none_of(*CallerNode, [&OldCS](const CallGraphNode::CallRecord &CR) {
         return CR.first == &OldCS;
-      }))
+      })) {
     return false;
+
+}
   CallerNode->replaceCallEdge(OldCS, NewCS, NewCalleeNode);
   return true;
 }
 
 void CallGraphUpdater::removeCallSite(CallBase &CS) {
   // This is only necessary in the (old) CG.
-  if (!CG)
+  if (!CG) {
     return;
+
+}
 
   Function *Caller = CS.getCaller();
   CallGraphNode *CallerNode = (*CG)[Caller];

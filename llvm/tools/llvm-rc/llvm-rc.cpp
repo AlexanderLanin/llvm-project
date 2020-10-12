@@ -100,8 +100,10 @@ int main(int Argc, const char **Argv) {
   const bool BeVerbose = InputArgs.hasArg(OPT_VERBOSE);
 
   std::vector<std::string> InArgsInfo = InputArgs.getAllArgValues(OPT_INPUT);
-  if (DashDash != Argv + Argc)
+  if (DashDash != Argv + Argc) {
     InArgsInfo.insert(InArgsInfo.end(), DashDash + 1, Argv + Argc);
+
+}
   if (InArgsInfo.size() != 1) {
     fatalError("Exactly one input file should be provided.");
   }
@@ -130,8 +132,10 @@ int main(int Argc, const char **Argv) {
     for (const RCToken &Token : Tokens) {
       outs() << TokenNames[static_cast<int>(Token.kind())] << ": "
              << Token.value();
-      if (Token.kind() == RCToken::Kind::Int)
+      if (Token.kind() == RCToken::Kind::Int) {
         outs() << "; int value = " << Token.intValue();
+
+}
 
       outs() << "\n";
     }
@@ -146,9 +150,11 @@ int main(int Argc, const char **Argv) {
 
   if (InputArgs.hasArg(OPT_CODEPAGE)) {
     if (InputArgs.getLastArgValue(OPT_CODEPAGE)
-            .getAsInteger(10, Params.CodePage))
+            .getAsInteger(10, Params.CodePage)) {
       fatalError("Invalid code page: " +
                  InputArgs.getLastArgValue(OPT_CODEPAGE));
+
+}
     switch (Params.CodePage) {
     case CpAcp:
     case CpWin1252:
@@ -171,16 +177,20 @@ int main(int Argc, const char **Argv) {
       OutArgsInfo.push_back(std::string(OutputFile.str()));
     }
 
-    if (OutArgsInfo.size() != 1)
+    if (OutArgsInfo.size() != 1) {
       fatalError(
           "No more than one output file should be provided (using /FO flag).");
+
+}
 
     std::error_code EC;
     auto FOut = std::make_unique<raw_fd_ostream>(
         OutArgsInfo[0], EC, sys::fs::FA_Read | sys::fs::FA_Write);
-    if (EC)
+    if (EC) {
       fatalError("Error opening output file '" + OutArgsInfo[0] +
                  "': " + EC.message());
+
+}
     Visitor = std::make_unique<ResourceFileWriter>(Params, std::move(FOut));
     Visitor->AppendNull = InputArgs.hasArg(OPT_ADD_NULL);
 
@@ -193,15 +203,21 @@ int main(int Argc, const char **Argv) {
   rc::RCParser Parser{std::move(Tokens)};
   while (!Parser.isEof()) {
     auto Resource = ExitOnErr(Parser.parseSingleResource());
-    if (BeVerbose)
+    if (BeVerbose) {
       Resource->log(outs());
-    if (!IsDryRun)
+
+}
+    if (!IsDryRun) {
       ExitOnErr(Resource->visit(Visitor.get()));
+
+}
   }
 
   // STRINGTABLE resources come at the very end.
-  if (!IsDryRun)
+  if (!IsDryRun) {
     ExitOnErr(Visitor->dumpAllStringTables());
+
+}
 
   return 0;
 }

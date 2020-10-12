@@ -25,13 +25,17 @@ public:
   /// For each call to VisitLambdaExpr, we expect a subsequent call to visit
   /// the body (and maybe the lambda class, which is implicit).
   bool VisitStmt(Stmt *S) {
-    if (!PendingBodies.empty() && S == PendingBodies.top())
+    if (!PendingBodies.empty() && S == PendingBodies.top()) {
       PendingBodies.pop();
+
+}
     return true;
   }
   bool VisitDecl(Decl *D) {
-    if (!PendingClasses.empty() && D == PendingClasses.top())
+    if (!PendingClasses.empty() && D == PendingClasses.top()) {
       PendingClasses.pop();
+
+}
     return true;
   }
   /// Determine whether parts of lambdas (VisitLambdaExpr) were later traversed.
@@ -87,8 +91,10 @@ TEST(RecursiveASTVisitor, VisitsLambdaExprAndImplicitClass) {
 }
 
 TEST(RecursiveASTVisitor, VisitsAttributedLambdaExpr) {
-  if (llvm::Triple(llvm::sys::getDefaultTargetTriple()).isPS4())
+  if (llvm::Triple(llvm::sys::getDefaultTargetTriple()).isPS4()) {
     return; // PS4 does not support fastcall.
+
+}
   LambdaExprVisitor Visitor;
   Visitor.ExpectMatch("", 1, 12);
   EXPECT_TRUE(Visitor.runOver(

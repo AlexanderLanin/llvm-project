@@ -98,10 +98,12 @@ namespace {
     }
 
     void enqueue(const WorkListUnit& U) override {
-      if (U.getNode()->getLocation().getAs<BlockEntrance>())
+      if (U.getNode()->getLocation().getAs<BlockEntrance>()) {
         Queue.push_front(U);
-      else
+      } else {
         Stack.push_back(U);
+
+}
     }
 
     WorkListUnit dequeue() override {
@@ -292,8 +294,10 @@ public:
   void enqueue(const WorkListUnit &U) override {
     const ExplodedNode *N = U.getNode();
     unsigned NumVisited = 0;
-    if (auto BE = N->getLocation().getAs<BlockEntrance>())
+    if (auto BE = N->getLocation().getAs<BlockEntrance>()) {
       NumVisited = NumReached[BE->getBlock()]++;
+
+}
 
     queue.push(std::make_pair(U, std::make_pair(-NumVisited, ++Counter)));
   }

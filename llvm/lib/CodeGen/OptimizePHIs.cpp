@@ -72,8 +72,10 @@ INITIALIZE_PASS(OptimizePHIs, DEBUG_TYPE,
                 "Optimize machine instruction PHIs", false, false)
 
 bool OptimizePHIs::runOnMachineFunction(MachineFunction &Fn) {
-  if (skipFunction(Fn.getFunction()))
+  if (skipFunction(Fn.getFunction())) {
     return false;
+
+}
 
   MRI = &Fn.getRegInfo();
   TII = Fn.getSubtarget().getInstrInfo();
@@ -83,8 +85,10 @@ bool OptimizePHIs::runOnMachineFunction(MachineFunction &Fn) {
   // introduce new opportunities, e.g., when i64 values are split up for
   // 32-bit targets.
   bool Changed = false;
-  for (MachineFunction::iterator I = Fn.begin(), E = Fn.end(); I != E; ++I)
+  for (MachineFunction::iterator I = Fn.begin(), E = Fn.end(); I != E; ++I) {
     Changed |= OptimizeBB(*I);
+
+}
 
   return Changed;
 }
@@ -101,18 +105,24 @@ bool OptimizePHIs::IsSingleValuePHICycle(MachineInstr *MI,
   Register DstReg = MI->getOperand(0).getReg();
 
   // See if we already saw this register.
-  if (!PHIsInCycle.insert(MI).second)
+  if (!PHIsInCycle.insert(MI).second) {
     return true;
 
+}
+
   // Don't scan crazily complex things.
-  if (PHIsInCycle.size() == 16)
+  if (PHIsInCycle.size() == 16) {
     return false;
+
+}
 
   // Scan the PHI operands.
   for (unsigned i = 1; i != MI->getNumOperands(); i += 2) {
     Register SrcReg = MI->getOperand(i).getReg();
-    if (SrcReg == DstReg)
+    if (SrcReg == DstReg) {
       continue;
+
+}
     MachineInstr *SrcMI = MRI->getVRegDef(SrcReg);
 
     // Skip over register-to-register moves.
@@ -122,16 +132,22 @@ bool OptimizePHIs::IsSingleValuePHICycle(MachineInstr *MI,
       SrcReg = SrcMI->getOperand(1).getReg();
       SrcMI = MRI->getVRegDef(SrcReg);
     }
-    if (!SrcMI)
+    if (!SrcMI) {
       return false;
 
+}
+
     if (SrcMI->isPHI()) {
-      if (!IsSingleValuePHICycle(SrcMI, SingleValReg, PHIsInCycle))
+      if (!IsSingleValuePHICycle(SrcMI, SingleValReg, PHIsInCycle)) {
         return false;
+
+}
     } else {
       // Fail if there is more than one non-phi/non-move register.
-      if (SingleValReg != 0 && SingleValReg != SrcReg)
+      if (SingleValReg != 0 && SingleValReg != SrcReg) {
         return false;
+
+}
       SingleValReg = SrcReg;
     }
   }
@@ -147,16 +163,22 @@ bool OptimizePHIs::IsDeadPHICycle(MachineInstr *MI, InstrSet &PHIsInCycle) {
          "PHI destination is not a virtual register");
 
   // See if we already saw this register.
-  if (!PHIsInCycle.insert(MI).second)
+  if (!PHIsInCycle.insert(MI).second) {
     return true;
 
+}
+
   // Don't scan crazily complex things.
-  if (PHIsInCycle.size() == 16)
+  if (PHIsInCycle.size() == 16) {
     return false;
 
+}
+
   for (MachineInstr &UseMI : MRI->use_nodbg_instructions(DstReg)) {
-    if (!UseMI.isPHI() || !IsDeadPHICycle(&UseMI, PHIsInCycle))
+    if (!UseMI.isPHI() || !IsDeadPHICycle(&UseMI, PHIsInCycle)) {
       return false;
+
+}
   }
 
   return true;
@@ -169,8 +191,10 @@ bool OptimizePHIs::OptimizeBB(MachineBasicBlock &MBB) {
   for (MachineBasicBlock::iterator
          MII = MBB.begin(), E = MBB.end(); MII != E; ) {
     MachineInstr *MI = &*MII++;
-    if (!MI->isPHI())
+    if (!MI->isPHI()) {
       break;
+
+}
 
     // Check for single-value PHI cycles.
     unsigned SingleValReg = 0;
@@ -178,8 +202,10 @@ bool OptimizePHIs::OptimizeBB(MachineBasicBlock &MBB) {
     if (IsSingleValuePHICycle(MI, SingleValReg, PHIsInCycle) &&
         SingleValReg != 0) {
       Register OldReg = MI->getOperand(0).getReg();
-      if (!MRI->constrainRegClass(SingleValReg, MRI->getRegClass(OldReg)))
+      if (!MRI->constrainRegClass(SingleValReg, MRI->getRegClass(OldReg))) {
         continue;
+
+}
 
       MRI->replaceRegWith(OldReg, SingleValReg);
       MI->eraseFromParent();
@@ -198,8 +224,10 @@ bool OptimizePHIs::OptimizeBB(MachineBasicBlock &MBB) {
       for (InstrSetIterator PI = PHIsInCycle.begin(), PE = PHIsInCycle.end();
            PI != PE; ++PI) {
         MachineInstr *PhiMI = *PI;
-        if (MII == PhiMI)
+        if (MII == PhiMI) {
           ++MII;
+
+}
         PhiMI->eraseFromParent();
       }
       ++NumDeadPHICycles;

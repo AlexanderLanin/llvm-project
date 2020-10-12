@@ -61,12 +61,16 @@ FunctionPass *llvm::createCFGuardLongjmpPass() { return new CFGuardLongjmp(); }
 bool CFGuardLongjmp::runOnMachineFunction(MachineFunction &MF) {
 
   // Skip modules for which the cfguard flag is not set.
-  if (!MF.getMMI().getModule()->getModuleFlag("cfguard"))
+  if (!MF.getMMI().getModule()->getModuleFlag("cfguard")) {
     return false;
 
+}
+
   // Skip functions that do not have calls to _setjmp.
-  if (!MF.getFunction().callsFunctionThatReturnsTwice())
+  if (!MF.getFunction().callsFunctionThatReturnsTwice()) {
     return false;
+
+}
 
   SmallVector<MachineInstr *, 8> SetjmpCalls;
 
@@ -76,17 +80,23 @@ bool CFGuardLongjmp::runOnMachineFunction(MachineFunction &MF) {
     for (MachineInstr &MI : MBB) {
 
       // Skip instructions that are not calls.
-      if (!MI.isCall() || MI.getNumOperands() < 1)
+      if (!MI.isCall() || MI.getNumOperands() < 1) {
         continue;
+
+}
 
       // Iterate over operands to find calls to global functions.
       for (MachineOperand &MO : MI.operands()) {
-        if (!MO.isGlobal())
+        if (!MO.isGlobal()) {
           continue;
 
+}
+
         auto *F = dyn_cast<Function>(MO.getGlobal());
-        if (!F)
+        if (!F) {
           continue;
+
+}
 
         // If the instruction calls a function that returns twice, add
         // it to the list of targets.
@@ -98,8 +108,10 @@ bool CFGuardLongjmp::runOnMachineFunction(MachineFunction &MF) {
     }
   }
 
-  if (SetjmpCalls.empty())
+  if (SetjmpCalls.empty()) {
     return false;
+
+}
 
   unsigned SetjmpNum = 0;
 

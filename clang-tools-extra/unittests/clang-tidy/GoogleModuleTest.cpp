@@ -71,8 +71,10 @@ protected:
     }
     test::runCheckOnCode<readability::GlobalNamesInHeadersCheck>(
         Header + Code, &Errors, Filename, Args);
-    if (Errors.empty())
+    if (Errors.empty()) {
       return false;
+
+}
     assert(Errors.size() == 1);
     assert(
         Errors[0].Message.Message ==

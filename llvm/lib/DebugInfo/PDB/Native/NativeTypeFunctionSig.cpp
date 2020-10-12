@@ -63,8 +63,10 @@ public:
 
 private:
   std::unique_ptr<PDBSymbol> wrap(std::unique_ptr<PDBSymbol> S) const {
-    if (!S)
+    if (!S) {
       return nullptr;
+
+}
     auto NTFA = std::make_unique<NativeTypeFunctionArg>(Session, std::move(S));
     return PDBSymbol::create(Session, std::move(NTFA));
   }
@@ -119,8 +121,10 @@ void NativeTypeFunctionSig::dump(raw_ostream &OS, int Indent,
   dumpSymbolField(OS, "count", getCount(), Indent);
   dumpSymbolIdField(OS, "typeId", getTypeId(), Indent, Session,
                     PdbSymbolIdField::Type, ShowIdFields, RecurseIdFields);
-  if (IsMemberFunction)
+  if (IsMemberFunction) {
     dumpSymbolField(OS, "thisAdjust", getThisAdjust(), Indent);
+
+}
   dumpSymbolField(OS, "constructor", hasConstructor(), Indent);
   dumpSymbolField(OS, "constType", isConstType(), Indent);
   dumpSymbolField(OS, "isConstructorVirtualBase", isConstructorVirtualBase(),
@@ -132,8 +136,10 @@ void NativeTypeFunctionSig::dump(raw_ostream &OS, int Indent,
 
 std::unique_ptr<IPDBEnumSymbols>
 NativeTypeFunctionSig::findChildren(PDB_SymType Type) const {
-  if (Type != PDB_SymType::FunctionArg)
+  if (Type != PDB_SymType::FunctionArg) {
     return std::make_unique<NullEnumerator<PDBSymbol>>();
+
+}
 
   auto NET = std::make_unique<NativeEnumTypes>(Session,
                                                 /* copy */ ArgList.ArgIndices);
@@ -142,8 +148,10 @@ NativeTypeFunctionSig::findChildren(PDB_SymType Type) const {
 }
 
 SymIndexId NativeTypeFunctionSig::getClassParentId() const {
-  if (!IsMemberFunction)
+  if (!IsMemberFunction) {
     return 0;
+
+}
 
   return ClassParentId;
 }
@@ -170,8 +178,10 @@ int32_t NativeTypeFunctionSig::getThisAdjust() const {
 }
 
 bool NativeTypeFunctionSig::hasConstructor() const {
-  if (!IsMemberFunction)
+  if (!IsMemberFunction) {
     return false;
+
+}
 
   return (MemberFunc.getOptions() & FunctionOptions::Constructor) !=
          FunctionOptions::None;
@@ -180,8 +190,10 @@ bool NativeTypeFunctionSig::hasConstructor() const {
 bool NativeTypeFunctionSig::isConstType() const { return false; }
 
 bool NativeTypeFunctionSig::isConstructorVirtualBase() const {
-  if (!IsMemberFunction)
+  if (!IsMemberFunction) {
     return false;
+
+}
 
   return (MemberFunc.getOptions() &
           FunctionOptions::ConstructorWithVirtualBases) !=

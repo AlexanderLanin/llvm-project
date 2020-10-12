@@ -60,8 +60,10 @@ protected:
   static char *testFuncName;
 
   static uint64_t myResolver(const char *Name, void *Ctx) {
-    if (!strncmp(Name, testFuncName, 8))
+    if (!strncmp(Name, testFuncName, 8)) {
       return (uint64_t)&myTestFuncImpl;
+
+}
     return 0;
   }
 
@@ -92,8 +94,10 @@ protected:
 char *OrcCAPIExecutionTest::testFuncName = nullptr;
 
 TEST_F(OrcCAPIExecutionTest, TestEagerIRCompilation) {
-  if (!SupportsJIT)
+  if (!SupportsJIT) {
     return;
+
+}
 
   LLVMOrcJITStackRef JIT =
     LLVMOrcCreateInstance(wrap(TM.get()));
@@ -132,8 +136,10 @@ TEST_F(OrcCAPIExecutionTest, TestEagerIRCompilation) {
 }
 
 TEST_F(OrcCAPIExecutionTest, TestLazyIRCompilation) {
-  if (!SupportsIndirection)
+  if (!SupportsIndirection) {
     return;
+
+}
 
   LLVMOrcJITStackRef JIT =
     LLVMOrcCreateInstance(wrap(TM.get()));
@@ -158,8 +164,10 @@ TEST_F(OrcCAPIExecutionTest, TestLazyIRCompilation) {
 }
 
 TEST_F(OrcCAPIExecutionTest, TestAddObjectFile) {
-  if (!SupportsJIT)
+  if (!SupportsJIT) {
     return;
+
+}
 
   auto ObjBuffer = cantFail(createTestObject());
 
@@ -183,8 +191,10 @@ TEST_F(OrcCAPIExecutionTest, TestAddObjectFile) {
 }
 
 TEST_F(OrcCAPIExecutionTest, TestDirectCallbacksAPI) {
-  if (!SupportsIndirection)
+  if (!SupportsIndirection) {
     return;
+
+}
 
   LLVMOrcJITStackRef JIT =
     LLVMOrcCreateInstance(wrap(TM.get()));

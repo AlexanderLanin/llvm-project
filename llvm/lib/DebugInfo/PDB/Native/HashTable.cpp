@@ -24,21 +24,29 @@ using namespace llvm::pdb;
 Error llvm::pdb::readSparseBitVector(BinaryStreamReader &Stream,
                                      SparseBitVector<> &V) {
   uint32_t NumWords;
-  if (auto EC = Stream.readInteger(NumWords))
+  if (auto EC = Stream.readInteger(NumWords)) {
     return joinErrors(
         std::move(EC),
         make_error<RawError>(raw_error_code::corrupt_file,
                              "Expected hash table number of words"));
 
+}
+
   for (uint32_t I = 0; I != NumWords; ++I) {
     uint32_t Word;
-    if (auto EC = Stream.readInteger(Word))
+    if (auto EC = Stream.readInteger(Word)) {
       return joinErrors(std::move(EC),
                         make_error<RawError>(raw_error_code::corrupt_file,
                                              "Expected hash table word"));
-    for (unsigned Idx = 0; Idx < 32; ++Idx)
-      if (Word & (1U << Idx))
+
+}
+    for (unsigned Idx = 0; Idx < 32; ++Idx) {
+      if (Word & (1U << Idx)) {
         V.set((I * 32) + Idx);
+
+}
+
+}
   }
   return Error::success();
 }
@@ -49,23 +57,29 @@ Error llvm::pdb::writeSparseBitVector(BinaryStreamWriter &Writer,
 
   int ReqBits = Vec.find_last() + 1;
   uint32_t ReqWords = alignTo(ReqBits, BitsPerWord) / BitsPerWord;
-  if (auto EC = Writer.writeInteger(ReqWords))
+  if (auto EC = Writer.writeInteger(ReqWords)) {
     return joinErrors(
         std::move(EC),
         make_error<RawError>(raw_error_code::corrupt_file,
                              "Could not write linear map number of words"));
 
+}
+
   uint32_t Idx = 0;
   for (uint32_t I = 0; I != ReqWords; ++I) {
     uint32_t Word = 0;
     for (uint32_t WordIdx = 0; WordIdx < 32; ++WordIdx, ++Idx) {
-      if (Vec.test(Idx))
+      if (Vec.test(Idx)) {
         Word |= (1 << WordIdx);
+
+}
     }
-    if (auto EC = Writer.writeInteger(Word))
+    if (auto EC = Writer.writeInteger(Word)) {
       return joinErrors(std::move(EC), make_error<RawError>(
                                            raw_error_code::corrupt_file,
                                            "Could not write linear map word"));
+
+}
   }
   return Error::success();
 }

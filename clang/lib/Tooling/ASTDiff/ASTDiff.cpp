@@ -70,8 +70,10 @@ public:
 
   NodeId getMapped(const std::unique_ptr<SyntaxTree::Impl> &Tree,
                    NodeId Id) const {
-    if (&*Tree == &T1)
+    if (&*Tree == &T1) {
       return TheMapping.getDst(Id);
+
+}
     assert(&*Tree == &T2 && "Invalid tree.");
     return TheMapping.getSrc(Id);
   }
@@ -171,16 +173,22 @@ static bool isSpecializedNodeExcluded(CXXCtorInitializer *I) {
 
 template <class T>
 static bool isNodeExcluded(const SourceManager &SrcMgr, T *N) {
-  if (!N)
+  if (!N) {
     return true;
+
+}
   SourceLocation SLoc = N->getSourceRange().getBegin();
   if (SLoc.isValid()) {
     // Ignore everything from other files.
-    if (!SrcMgr.isInMainFile(SLoc))
+    if (!SrcMgr.isInMainFile(SLoc)) {
       return true;
+
+}
     // Ignore macros.
-    if (SLoc != SrcMgr.getSpellingLoc(SLoc))
+    if (SLoc != SrcMgr.getSpellingLoc(SLoc)) {
       return true;
+
+}
   }
   return isSpecializedNodeExcluded(N);
 }
@@ -223,25 +231,35 @@ struct PreorderVisitor : public RecursiveASTVisitor<PreorderVisitor> {
     assert(N.RightMostDescendant >= 0 &&
            N.RightMostDescendant < Tree.getSize() &&
            "Rightmost descendant must be a valid tree node.");
-    if (N.isLeaf())
+    if (N.isLeaf()) {
       Tree.Leaves.push_back(MyId);
+
+}
     N.Height = 1;
-    for (NodeId Child : N.Children)
+    for (NodeId Child : N.Children) {
       N.Height = std::max(N.Height, 1 + Tree.getNode(Child).Height);
+
+}
   }
   bool TraverseDecl(Decl *D) {
-    if (isNodeExcluded(Tree.AST.getSourceManager(), D))
+    if (isNodeExcluded(Tree.AST.getSourceManager(), D)) {
       return true;
+
+}
     auto SavedState = PreTraverse(D);
     RecursiveASTVisitor<PreorderVisitor>::TraverseDecl(D);
     PostTraverse(SavedState);
     return true;
   }
   bool TraverseStmt(Stmt *S) {
-    if (auto *E = dyn_cast_or_null<Expr>(S))
+    if (auto *E = dyn_cast_or_null<Expr>(S)) {
       S = E->IgnoreImplicit();
-    if (isNodeExcluded(Tree.AST.getSourceManager(), S))
+
+}
+    if (isNodeExcluded(Tree.AST.getSourceManager(), S)) {
       return true;
+
+}
     auto SavedState = PreTraverse(S);
     RecursiveASTVisitor<PreorderVisitor>::TraverseStmt(S);
     PostTraverse(SavedState);
@@ -249,8 +267,10 @@ struct PreorderVisitor : public RecursiveASTVisitor<PreorderVisitor> {
   }
   bool TraverseType(QualType T) { return true; }
   bool TraverseConstructorInitializer(CXXCtorInitializer *Init) {
-    if (isNodeExcluded(Tree.AST.getSourceManager(), Init))
+    if (isNodeExcluded(Tree.AST.getSourceManager(), Init)) {
       return true;
+
+}
     auto SavedState = PreTraverse(Init);
     RecursiveASTVisitor<PreorderVisitor>::TraverseConstructorInitializer(Init);
     PostTraverse(SavedState);
@@ -283,8 +303,10 @@ static std::vector<NodeId> getSubtreePostorder(const SyntaxTree::Impl &Tree,
   std::vector<NodeId> Postorder;
   std::function<void(NodeId)> Traverse = [&](NodeId Id) {
     const Node &N = Tree.getNode(Id);
-    for (NodeId Child : N.Children)
+    for (NodeId Child : N.Children) {
       Traverse(Child);
+
+}
     Postorder.push_back(Id);
   };
   Traverse(Root);
@@ -296,9 +318,13 @@ static std::vector<NodeId> getSubtreeBfs(const SyntaxTree::Impl &Tree,
   std::vector<NodeId> Ids;
   size_t Expanded = 0;
   Ids.push_back(Root);
-  while (Expanded < Ids.size())
-    for (NodeId Child : Tree.getNode(Ids[Expanded++]).Children)
+  while (Expanded < Ids.size()) {
+    for (NodeId Child : Tree.getNode(Ids[Expanded++]).Children) {
       Ids.push_back(Child);
+
+}
+
+}
   return Ids;
 }
 
@@ -307,8 +333,10 @@ void SyntaxTree::Impl::initTree() {
   int PostorderId = 0;
   PostorderIds.resize(getSize());
   std::function<void(NodeId)> PostorderTraverse = [&](NodeId Id) {
-    for (NodeId Child : getNode(Id).Children)
+    for (NodeId Child : getNode(Id).Children) {
       PostorderTraverse(Child);
+
+}
     PostorderIds[Id] = PostorderId;
     ++PostorderId;
   };
@@ -338,13 +366,17 @@ bool SyntaxTree::Impl::isInSubtree(NodeId Id, NodeId SubtreeRoot) const {
 
 int SyntaxTree::Impl::findPositionInParent(NodeId Id, bool Shifted) const {
   NodeId Parent = getNode(Id).Parent;
-  if (Parent.isInvalid())
+  if (Parent.isInvalid()) {
     return 0;
+
+}
   const auto &Siblings = getNode(Parent).Children;
   int Position = 0;
   for (size_t I = 0, E = Siblings.size(); I < E; ++I) {
-    if (Shifted)
+    if (Shifted) {
       Position += getNode(Siblings[I]).Shift;
+
+}
     if (Siblings[I] == Id) {
       Position += I;
       return Position;
@@ -360,20 +392,28 @@ SyntaxTree::Impl::getRelativeName(const NamedDecl *ND,
                                   const DeclContext *Context) const {
   std::string Val = ND->getQualifiedNameAsString();
   std::string ContextPrefix;
-  if (!Context)
+  if (!Context) {
     return Val;
-  if (auto *Namespace = dyn_cast<NamespaceDecl>(Context))
+
+}
+  if (auto *Namespace = dyn_cast<NamespaceDecl>(Context)) {
     ContextPrefix = Namespace->getQualifiedNameAsString();
-  else if (auto *Record = dyn_cast<RecordDecl>(Context))
+  } else if (auto *Record = dyn_cast<RecordDecl>(Context)) {
     ContextPrefix = Record->getQualifiedNameAsString();
-  else if (AST.getLangOpts().CPlusPlus11)
-    if (auto *Tag = dyn_cast<TagDecl>(Context))
+  } else if (AST.getLangOpts().CPlusPlus11) {
+    if (auto *Tag = dyn_cast<TagDecl>(Context)) {
       ContextPrefix = Tag->getQualifiedNameAsString();
+
+}
+
+}
   // Strip the qualifier, if Val refers to something in the current scope.
   // But leave one leading ':' in place, so that we know that this is a
   // relative path.
-  if (!ContextPrefix.empty() && StringRef(Val).startswith(ContextPrefix))
+  if (!ContextPrefix.empty() && StringRef(Val).startswith(ContextPrefix)) {
     Val = Val.substr(ContextPrefix.size() + 1);
+
+}
   return Val;
 }
 
@@ -385,11 +425,15 @@ static const DeclContext *getEnclosingDeclContext(ASTContext &AST,
                                                   const Stmt *S) {
   while (S) {
     const auto &Parents = AST.getParents(*S);
-    if (Parents.empty())
+    if (Parents.empty()) {
       return nullptr;
+
+}
     const auto &P = Parents[0];
-    if (const auto *D = P.get<Decl>())
+    if (const auto *D = P.get<Decl>()) {
       return D->getDeclContext();
+
+}
     S = P.get<Stmt>();
   }
   return nullptr;
@@ -397,12 +441,18 @@ static const DeclContext *getEnclosingDeclContext(ASTContext &AST,
 
 static std::string getInitializerValue(const CXXCtorInitializer *Init,
                                        const PrintingPolicy &TypePP) {
-  if (Init->isAnyMemberInitializer())
+  if (Init->isAnyMemberInitializer()) {
     return std::string(Init->getAnyMember()->getName());
-  if (Init->isBaseInitializer())
+
+}
+  if (Init->isBaseInitializer()) {
     return QualType(Init->getBaseClass(), 0).getAsString(TypePP);
-  if (Init->isDelegatingInitializer())
+
+}
+  if (Init->isDelegatingInitializer()) {
     return Init->getTypeSourceInfo()->getType().getAsString(TypePP);
+
+}
   llvm_unreachable("Unknown initializer type");
 }
 
@@ -412,30 +462,48 @@ std::string SyntaxTree::Impl::getNodeValue(NodeId Id) const {
 
 std::string SyntaxTree::Impl::getNodeValue(const Node &N) const {
   const DynTypedNode &DTN = N.ASTNode;
-  if (auto *S = DTN.get<Stmt>())
+  if (auto *S = DTN.get<Stmt>()) {
     return getStmtValue(S);
-  if (auto *D = DTN.get<Decl>())
+
+}
+  if (auto *D = DTN.get<Decl>()) {
     return getDeclValue(D);
-  if (auto *Init = DTN.get<CXXCtorInitializer>())
+
+}
+  if (auto *Init = DTN.get<CXXCtorInitializer>()) {
     return getInitializerValue(Init, TypePP);
+
+}
   llvm_unreachable("Fatal: unhandled AST node.\n");
 }
 
 std::string SyntaxTree::Impl::getDeclValue(const Decl *D) const {
   std::string Value;
-  if (auto *V = dyn_cast<ValueDecl>(D))
+  if (auto *V = dyn_cast<ValueDecl>(D)) {
     return getRelativeName(V) + "(" + V->getType().getAsString(TypePP) + ")";
-  if (auto *N = dyn_cast<NamedDecl>(D))
+
+}
+  if (auto *N = dyn_cast<NamedDecl>(D)) {
     Value += getRelativeName(N) + ";";
-  if (auto *T = dyn_cast<TypedefNameDecl>(D))
+
+}
+  if (auto *T = dyn_cast<TypedefNameDecl>(D)) {
     return Value + T->getUnderlyingType().getAsString(TypePP) + ";";
-  if (auto *T = dyn_cast<TypeDecl>(D))
-    if (T->getTypeForDecl())
+
+}
+  if (auto *T = dyn_cast<TypeDecl>(D)) {
+    if (T->getTypeForDecl()) {
       Value +=
           T->getTypeForDecl()->getCanonicalTypeInternal().getAsString(TypePP) +
           ";";
-  if (auto *U = dyn_cast<UsingDirectiveDecl>(D))
+
+}
+
+}
+  if (auto *U = dyn_cast<UsingDirectiveDecl>(D)) {
     return std::string(U->getNominatedNamespace()->getName());
+
+}
   if (auto *A = dyn_cast<AccessSpecDecl>(D)) {
     CharSourceRange Range(A->getSourceRange(), false);
     return std::string(
@@ -445,12 +513,18 @@ std::string SyntaxTree::Impl::getDeclValue(const Decl *D) const {
 }
 
 std::string SyntaxTree::Impl::getStmtValue(const Stmt *S) const {
-  if (auto *U = dyn_cast<UnaryOperator>(S))
+  if (auto *U = dyn_cast<UnaryOperator>(S)) {
     return std::string(UnaryOperator::getOpcodeStr(U->getOpcode()));
-  if (auto *B = dyn_cast<BinaryOperator>(S))
+
+}
+  if (auto *B = dyn_cast<BinaryOperator>(S)) {
     return std::string(B->getOpcodeStr());
-  if (auto *M = dyn_cast<MemberExpr>(S))
+
+}
+  if (auto *M = dyn_cast<MemberExpr>(S)) {
     return getRelativeName(M->getMemberDecl());
+
+}
   if (auto *I = dyn_cast<IntegerLiteral>(S)) {
     SmallString<256> Str;
     I->getValue().toString(Str, /*Radix=*/10, /*Signed=*/false);
@@ -461,12 +535,18 @@ std::string SyntaxTree::Impl::getStmtValue(const Stmt *S) const {
     F->getValue().toString(Str);
     return std::string(Str.str());
   }
-  if (auto *D = dyn_cast<DeclRefExpr>(S))
+  if (auto *D = dyn_cast<DeclRefExpr>(S)) {
     return getRelativeName(D->getDecl(), getEnclosingDeclContext(AST, S));
-  if (auto *String = dyn_cast<StringLiteral>(S))
+
+}
+  if (auto *String = dyn_cast<StringLiteral>(S)) {
     return std::string(String->getString());
-  if (auto *B = dyn_cast<CXXBoolLiteralExpr>(S))
+
+}
+  if (auto *B = dyn_cast<CXXBoolLiteralExpr>(S)) {
     return B->getValue() ? "true" : "false";
+
+}
   return "";
 }
 
@@ -543,8 +623,10 @@ private:
     int K = Leaves - 1;
     for (SNodeId I(getSize()); I > 0; --I) {
       SNodeId LeftDesc = getLeftMostDescendant(I);
-      if (Visited.count(LeftDesc))
+      if (Visited.count(LeftDesc)) {
         continue;
+
+}
       assert(K >= 0 && "K should be non-negative");
       KeyRoots[K] = I;
       Visited.insert(LeftDesc);
@@ -643,15 +725,21 @@ private:
   static constexpr double InsertionCost = 1;
 
   double getUpdateCost(SNodeId Id1, SNodeId Id2) {
-    if (!DiffImpl.isMatchingPossible(S1.getIdInRoot(Id1), S2.getIdInRoot(Id2)))
+    if (!DiffImpl.isMatchingPossible(S1.getIdInRoot(Id1), S2.getIdInRoot(Id2))) {
       return std::numeric_limits<double>::max();
+
+}
     return S1.getNodeValue(Id1) != S2.getNodeValue(Id2);
   }
 
   void computeTreeDist() {
-    for (SNodeId Id1 : S1.KeyRoots)
-      for (SNodeId Id2 : S2.KeyRoots)
+    for (SNodeId Id1 : S1.KeyRoots) {
+      for (SNodeId Id2 : S2.KeyRoots) {
         computeForestDist(Id1, Id2);
+
+}
+
+}
   }
 
   void computeForestDist(SNodeId Id1, SNodeId Id2) {
@@ -690,16 +778,20 @@ StringRef Node::getTypeLabel() const { return getType().asStringRef(); }
 
 llvm::Optional<std::string> Node::getQualifiedIdentifier() const {
   if (auto *ND = ASTNode.get<NamedDecl>()) {
-    if (ND->getDeclName().isIdentifier())
+    if (ND->getDeclName().isIdentifier()) {
       return ND->getQualifiedNameAsString();
+
+}
   }
   return llvm::None;
 }
 
 llvm::Optional<StringRef> Node::getIdentifier() const {
   if (auto *ND = ASTNode.get<NamedDecl>()) {
-    if (ND->getDeclName().isIdentifier())
+    if (ND->getDeclName().isIdentifier()) {
       return ND->getName();
+
+}
   }
   return llvm::None;
 }
@@ -732,8 +824,10 @@ public:
   std::vector<NodeId> pop() {
     int Max = peekMax();
     std::vector<NodeId> Result;
-    if (Max == 0)
+    if (Max == 0) {
       return Result;
+
+}
     while (peekMax() == Max) {
       Result.push_back(List.top());
       List.pop();
@@ -743,13 +837,17 @@ public:
     return Result;
   }
   int peekMax() const {
-    if (List.empty())
+    if (List.empty()) {
       return 0;
+
+}
     return Tree.getNode(List.top()).Height;
   }
   void open(NodeId Id) {
-    for (NodeId Child : Tree.getNode(Id).Children)
+    for (NodeId Child : Tree.getNode(Id).Children) {
       push(Child);
+
+}
   }
 };
 } // end anonymous namespace
@@ -759,11 +857,17 @@ bool ASTDiff::Impl::identical(NodeId Id1, NodeId Id2) const {
   const Node &N2 = T2.getNode(Id2);
   if (N1.Children.size() != N2.Children.size() ||
       !isMatchingPossible(Id1, Id2) ||
-      T1.getNodeValue(Id1) != T2.getNodeValue(Id2))
+      T1.getNodeValue(Id1) != T2.getNodeValue(Id2)) {
     return false;
-  for (size_t Id = 0, E = N1.Children.size(); Id < E; ++Id)
-    if (!identical(N1.Children[Id], N2.Children[Id]))
+
+}
+  for (size_t Id = 0, E = N1.Children.size(); Id < E; ++Id) {
+    if (!identical(N1.Children[Id], N2.Children[Id])) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -782,15 +886,19 @@ bool ASTDiff::Impl::haveSameParents(const Mapping &M, NodeId Id1,
 void ASTDiff::Impl::addOptimalMapping(Mapping &M, NodeId Id1,
                                       NodeId Id2) const {
   if (std::max(T1.getNumberOfDescendants(Id1), T2.getNumberOfDescendants(Id2)) >
-      Options.MaxSize)
+      Options.MaxSize) {
     return;
+
+}
   ZhangShashaMatcher Matcher(*this, T1, T2, Id1, Id2);
   std::vector<std::pair<NodeId, NodeId>> R = Matcher.getMatchingNodes();
   for (const auto &Tuple : R) {
     NodeId Src = Tuple.first;
     NodeId Dst = Tuple.second;
-    if (!M.hasSrc(Src) && !M.hasDst(Dst))
+    if (!M.hasSrc(Src) && !M.hasDst(Dst)) {
       M.link(Src, Dst);
+
+}
   }
 }
 
@@ -808,8 +916,10 @@ double ASTDiff::Impl::getJaccardSimilarity(const Mapping &M, NodeId Id1,
                        T2.getNumberOfDescendants(Id2) - 1 - CommonDescendants;
   // CommonDescendants is less than the size of one subtree.
   assert(Denominator >= 0 && "Expected non-negative denominator.");
-  if (Denominator == 0)
+  if (Denominator == 0) {
     return 0;
+
+}
   return CommonDescendants / Denominator;
 }
 
@@ -817,10 +927,14 @@ NodeId ASTDiff::Impl::findCandidate(const Mapping &M, NodeId Id1) const {
   NodeId Candidate;
   double HighestSimilarity = 0.0;
   for (NodeId Id2 : T2) {
-    if (!isMatchingPossible(Id1, Id2))
+    if (!isMatchingPossible(Id1, Id2)) {
       continue;
-    if (M.hasDst(Id2))
+
+}
+    if (M.hasDst(Id2)) {
       continue;
+
+}
     double Similarity = getJaccardSimilarity(M, Id1, Id2);
     if (Similarity >= Options.MinSimilarity && Similarity > HighestSimilarity) {
       HighestSimilarity = Similarity;
@@ -845,8 +959,10 @@ void ASTDiff::Impl::matchBottomUp(Mapping &M) const {
     const Node &N1 = T1.getNode(Id1);
     bool MatchedChildren = llvm::any_of(
         N1.Children, [&](NodeId Child) { return M.hasSrc(Child); });
-    if (Matched || !MatchedChildren)
+    if (Matched || !MatchedChildren) {
       continue;
+
+}
     NodeId Id2 = findCandidate(M, Id1);
     if (Id2.isValid()) {
       M.link(Id1, Id2);
@@ -868,13 +984,17 @@ Mapping ASTDiff::Impl::matchTopDown() const {
   while (std::min(Max1 = L1.peekMax(), Max2 = L2.peekMax()) >
          Options.MinHeight) {
     if (Max1 > Max2) {
-      for (NodeId Id : L1.pop())
+      for (NodeId Id : L1.pop()) {
         L1.open(Id);
+
+}
       continue;
     }
     if (Max2 > Max1) {
-      for (NodeId Id : L2.pop())
+      for (NodeId Id : L2.pop()) {
         L2.open(Id);
+
+}
       continue;
     }
     std::vector<NodeId> H1, H2;
@@ -883,18 +1003,24 @@ Mapping ASTDiff::Impl::matchTopDown() const {
     for (NodeId Id1 : H1) {
       for (NodeId Id2 : H2) {
         if (identical(Id1, Id2) && !M.hasSrc(Id1) && !M.hasDst(Id2)) {
-          for (int I = 0, E = T1.getNumberOfDescendants(Id1); I < E; ++I)
+          for (int I = 0, E = T1.getNumberOfDescendants(Id1); I < E; ++I) {
             M.link(Id1 + I, Id2 + I);
+
+}
         }
       }
     }
     for (NodeId Id1 : H1) {
-      if (!M.hasSrc(Id1))
+      if (!M.hasSrc(Id1)) {
         L1.open(Id1);
+
+}
     }
     for (NodeId Id2 : H2) {
-      if (!M.hasDst(Id2))
+      if (!M.hasDst(Id2)) {
         L2.open(Id2);
+
+}
     }
   }
   return M;
@@ -909,8 +1035,10 @@ ASTDiff::Impl::Impl(SyntaxTree::Impl &T1, SyntaxTree::Impl &T2,
 
 void ASTDiff::Impl::computeMapping() {
   TheMapping = matchTopDown();
-  if (Options.StopAfterTopDown)
+  if (Options.StopAfterTopDown) {
     return;
+
+}
   matchBottomUp(TheMapping);
 }
 
@@ -929,8 +1057,10 @@ void ASTDiff::Impl::computeChangeKinds(Mapping &M) {
   }
   for (NodeId Id1 : T1.NodesBfs) {
     NodeId Id2 = M.getDst(Id1);
-    if (Id2.isInvalid())
+    if (Id2.isInvalid()) {
       continue;
+
+}
     if (!haveSameParents(M, Id1, Id2) ||
         T1.findPositionInParent(Id1, true) !=
             T2.findPositionInParent(Id2, true)) {
@@ -940,12 +1070,16 @@ void ASTDiff::Impl::computeChangeKinds(Mapping &M) {
   }
   for (NodeId Id2 : T2.NodesBfs) {
     NodeId Id1 = M.getSrc(Id2);
-    if (Id1.isInvalid())
+    if (Id1.isInvalid()) {
       continue;
+
+}
     Node &N1 = T1.getMutableNode(Id1);
     Node &N2 = T2.getMutableNode(Id2);
-    if (Id1.isInvalid())
+    if (Id1.isInvalid()) {
       continue;
+
+}
     if (!haveSameParents(M, Id1, Id2) ||
         T1.findPositionInParent(Id1, true) !=
             T2.findPositionInParent(Id2, true)) {
@@ -998,8 +1132,10 @@ SyntaxTree::getSourceRangeOffsets(const Node &N) const {
   SourceLocation EndLoc = Lexer::getLocForEndOfToken(
       Range.getEnd(), /*Offset=*/0, SrcMgr, TreeImpl->AST.getLangOpts());
   if (auto *ThisExpr = N.ASTNode.get<CXXThisExpr>()) {
-    if (ThisExpr->isImplicit())
+    if (ThisExpr->isImplicit()) {
       EndLoc = BeginLoc;
+
+}
   }
   unsigned Begin = SrcMgr.getFileOffset(SrcMgr.getExpansionLoc(BeginLoc));
   unsigned End = SrcMgr.getFileOffset(SrcMgr.getExpansionLoc(EndLoc));

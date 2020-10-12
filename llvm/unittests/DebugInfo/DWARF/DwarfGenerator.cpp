@@ -103,11 +103,13 @@ void dwarfgen::DIE::addAttribute(uint16_t A, dwarf::Form Form, const void *P,
                                  size_t S) {
   auto &DG = CU->getGenerator();
   DIEBlock *Block = new (DG.getAllocator()) DIEBlock;
-  for (size_t I = 0; I < S; ++I)
+  for (size_t I = 0; I < S; ++I) {
     Block->addValue(
         DG.getAllocator(), (dwarf::Attribute)0, dwarf::DW_FORM_data1,
         DIEInteger(
             (const_cast<uint8_t *>(static_cast<const uint8_t *>(P)))[I]));
+
+}
 
   Block->ComputeSize(DG.getAsmPrinter());
   Die->addValue(DG.getAllocator(), static_cast<dwarf::Attribute>(A), Form,
@@ -132,9 +134,11 @@ void dwarfgen::DIE::addStrOffsetsBaseAttribute() {
   const MCExpr *Expr =
       MCSymbolRefExpr::create(DG.getStringOffsetsStartSym(), MC);
 
-  if (!Asm->MAI->doesDwarfUseRelocationsAcrossSections())
+  if (!Asm->MAI->doesDwarfUseRelocationsAcrossSections()) {
     Expr = MCBinaryExpr::createSub(
         Expr, MCSymbolRefExpr::create(SectionStart, MC), MC);
+
+}
 
   addAttribute(dwarf::DW_AT_str_offsets_base, DW_FORM_sec_offset, *Expr);
 }
@@ -235,8 +239,10 @@ void dwarfgen::LineTable::generate(MCContext &MC, AsmPrinter &Asm) const {
   }
 
   writeData(Contents, Asm);
-  if (EndSymbol != nullptr)
+  if (EndSymbol != nullptr) {
     Asm.OutStreamer->emitLabel(EndSymbol);
+
+}
 }
 
 void dwarfgen::LineTable::writeData(ArrayRef<ValueAndLength> Data,
@@ -318,10 +324,12 @@ void dwarfgen::LineTable::writePrologue(AsmPrinter &Asm) const {
     Asm.emitInt8(Prologue->getAddressSize());
     Asm.emitInt8(Prologue->SegSelectorSize);
   }
-  if (Format == DwarfFormat::DWARF64)
+  if (Format == DwarfFormat::DWARF64) {
     Asm.emitInt64(Prologue->PrologueLength);
-  else
+  } else {
     Asm.emitInt32(Prologue->PrologueLength);
+
+}
 
   writeProloguePayload(*Prologue, Asm);
 }
@@ -378,8 +386,10 @@ static void writeV5IncludeAndFileTable(const DWARFDebugLine::Prologue &Prologue,
 void dwarfgen::LineTable::writeProloguePayload(
     const DWARFDebugLine::Prologue &Prologue, AsmPrinter &Asm) const {
   Asm.emitInt8(Prologue.MinInstLength);
-  if (Version >= 4)
+  if (Version >= 4) {
     Asm.emitInt8(Prologue.MaxOpsPerInst);
+
+}
   Asm.emitInt8(Prologue.DefaultIsStmt);
   Asm.emitInt8(Prologue.LineBase);
   Asm.emitInt8(Prologue.LineRange);
@@ -388,10 +398,12 @@ void dwarfgen::LineTable::writeProloguePayload(
     Asm.emitInt8(Length);
   }
 
-  if (Version < 5)
+  if (Version < 5) {
     writeV2IncludeAndFileTable(Prologue, Asm);
-  else
+  } else {
     writeV5IncludeAndFileTable(Prologue, Asm);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -408,8 +420,10 @@ llvm::Expected<std::unique_ptr<dwarfgen::Generator>>
 dwarfgen::Generator::create(Triple TheTriple, uint16_t DwarfVersion) {
   std::unique_ptr<dwarfgen::Generator> GenUP(new dwarfgen::Generator());
   llvm::Error error = GenUP->init(TheTriple, DwarfVersion);
-  if (error)
+  if (error) {
     return Expected<std::unique_ptr<dwarfgen::Generator>>(std::move(error));
+
+}
   return Expected<std::unique_ptr<dwarfgen::Generator>>(std::move(GenUP));
 }
 
@@ -421,54 +435,70 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
   // Get the target.
   const Target *TheTarget =
       TargetRegistry::lookupTarget(TripleName, TheTriple, ErrorStr);
-  if (!TheTarget)
+  if (!TheTarget) {
     return make_error<StringError>(ErrorStr, inconvertibleErrorCode());
+
+}
 
   TripleName = TheTriple.getTriple();
 
   // Create all the MC Objects.
   MRI.reset(TheTarget->createMCRegInfo(TripleName));
-  if (!MRI)
+  if (!MRI) {
     return make_error<StringError>(Twine("no register info for target ") +
                                        TripleName,
                                    inconvertibleErrorCode());
 
+}
+
   MCTargetOptions MCOptions = InitMCTargetOptionsFromFlags();
   MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
-  if (!MAI)
+  if (!MAI) {
     return make_error<StringError>("no asm info for target " + TripleName,
                                    inconvertibleErrorCode());
 
+}
+
   MSTI.reset(TheTarget->createMCSubtargetInfo(TripleName, "", ""));
-  if (!MSTI)
+  if (!MSTI) {
     return make_error<StringError>("no subtarget info for target " + TripleName,
                                    inconvertibleErrorCode());
 
+}
+
   MAB = TheTarget->createMCAsmBackend(*MSTI, *MRI, MCOptions);
-  if (!MAB)
+  if (!MAB) {
     return make_error<StringError>("no asm backend for target " + TripleName,
                                    inconvertibleErrorCode());
 
+}
+
   MII.reset(TheTarget->createMCInstrInfo());
-  if (!MII)
+  if (!MII) {
     return make_error<StringError>("no instr info info for target " +
                                        TripleName,
                                    inconvertibleErrorCode());
 
+}
+
   TM.reset(TheTarget->createTargetMachine(TripleName, "", "", TargetOptions(),
                                           None));
-  if (!TM)
+  if (!TM) {
     return make_error<StringError>("no target machine for target " + TripleName,
                                    inconvertibleErrorCode());
+
+}
 
   TLOF = TM->getObjFileLowering();
   MC.reset(new MCContext(MAI.get(), MRI.get(), TLOF));
   TLOF->Initialize(*MC, *TM);
 
   MCE = TheTarget->createMCCodeEmitter(*MII, *MRI, *MC);
-  if (!MCE)
+  if (!MCE) {
     return make_error<StringError>("no code emitter for target " + TripleName,
                                    inconvertibleErrorCode());
+
+}
 
   Stream = std::make_unique<raw_svector_ostream>(FileBytes);
 
@@ -477,17 +507,21 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
       MAB->createObjectWriter(*Stream), std::unique_ptr<MCCodeEmitter>(MCE),
       *MSTI, MCOptions.MCRelaxAll, MCOptions.MCIncrementalLinkerCompatible,
       /*DWARFMustBeAtTheEnd*/ false);
-  if (!MS)
+  if (!MS) {
     return make_error<StringError>("no object streamer for target " +
                                        TripleName,
                                    inconvertibleErrorCode());
 
+}
+
 
   // Finally create the AsmPrinter we'll use to emit the DIEs.
   Asm.reset(TheTarget->createAsmPrinter(*TM, std::unique_ptr<MCStreamer>(MS)));
-  if (!Asm)
+  if (!Asm) {
     return make_error<StringError>("no asm printer for target " + TripleName,
                                    inconvertibleErrorCode());
+
+}
 
   // Set the DWARF version correctly on all classes that we use.
   MC->setDwarfVersion(Version);
@@ -542,22 +576,30 @@ StringRef dwarfgen::Generator::generate() {
   }
 
   MS->SwitchSection(TLOF->getDwarfLineSection());
-  for (auto &LT : LineTables)
+  for (auto &LT : LineTables) {
     LT->generate(*MC, *Asm);
 
+}
+
   MS->Finish();
-  if (FileBytes.empty())
+  if (FileBytes.empty()) {
     return StringRef();
+
+}
   return StringRef(FileBytes.data(), FileBytes.size());
 }
 
 bool dwarfgen::Generator::saveFile(StringRef Path) {
-  if (FileBytes.empty())
+  if (FileBytes.empty()) {
     return false;
+
+}
   std::error_code EC;
   raw_fd_ostream Strm(Path, EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     return false;
+
+}
   Strm.write(FileBytes.data(), FileBytes.size());
   Strm.close();
   return true;

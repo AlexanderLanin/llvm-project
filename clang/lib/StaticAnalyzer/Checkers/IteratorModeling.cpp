@@ -130,15 +130,19 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
                                      CheckerContext &C) const {
   // Record new iterator positions and iterator position changes
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+
+}
 
   if (Func->isOverloadedOperator()) {
     const auto Op = Func->getOverloadedOperator();
     if (isSimpleComparisonOperator(Op)) {
       const auto *OrigExpr = Call.getOriginExpr();
-      if (!OrigExpr)
+      if (!OrigExpr) {
         return;
+
+}
 
       if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
         handleComparison(C, OrigExpr, Call.getReturnValue(),
@@ -151,8 +155,10 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
       return;
     } else if (isRandomIncrOrDecrOperator(Func->getOverloadedOperator())) {
       const auto *OrigExpr = Call.getOriginExpr();
-      if (!OrigExpr)
+      if (!OrigExpr) {
         return;
+
+}
 
       if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
         if (Call.getNumArgs() >= 1 &&
@@ -193,18 +199,24 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
       return;
     }
   } else {
-    if (!isIteratorType(Call.getResultType()))
+    if (!isIteratorType(Call.getResultType())) {
       return;
 
+}
+
     const auto *OrigExpr = Call.getOriginExpr();
-    if (!OrigExpr)
+    if (!OrigExpr) {
       return;
+
+}
 
     auto State = C.getState();
 
     // Already bound to container?
-    if (getIteratorPosition(State, Call.getReturnValue()))
+    if (getIteratorPosition(State, Call.getReturnValue())) {
       return;
+
+}
 
     // Copy-like and move constructors
     if (isa<CXXConstructorCall>(&Call) && Call.getNumArgs() == 1) {
@@ -256,8 +268,10 @@ void IteratorModeling::checkPostStmt(const MaterializeTemporaryExpr *MTE,
   /* Transfer iterator state to temporary objects */
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, C.getSVal(MTE->getSubExpr()));
-  if (!Pos)
+  if (!Pos) {
     return;
+
+}
   State = setIteratorPosition(State, C.getSVal(MTE), *Pos);
   C.addTransition(State);
 }
@@ -268,17 +282,25 @@ void IteratorModeling::checkLiveSymbols(ProgramStateRef State,
   auto RegionMap = State->get<IteratorRegionMap>();
   for (const auto &Reg : RegionMap) {
     const auto Offset = Reg.second.getOffset();
-    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i)
-      if (isa<SymbolData>(*i))
+    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i) {
+      if (isa<SymbolData>(*i)) {
         SR.markLive(*i);
+
+}
+
+}
   }
 
   auto SymbolMap = State->get<IteratorSymbolMap>();
   for (const auto &Sym : SymbolMap) {
     const auto Offset = Sym.second.getOffset();
-    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i)
-      if (isa<SymbolData>(*i))
+    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i) {
+      if (isa<SymbolData>(*i)) {
         SR.markLive(*i);
+
+}
+
+}
   }
 
 }
@@ -327,8 +349,10 @@ void IteratorModeling::handleComparison(CheckerContext &C, const Expr *CE,
   } else if (RPos) {
     Cont = RPos->getContainer();
   }
-  if (!Cont)
+  if (!Cont) {
     return;
+
+}
 
   // At least one of the iterators have recorded positions. If one of them has
   // not then create a new symbol for the offset.
@@ -379,8 +403,10 @@ void IteratorModeling::processComparison(CheckerContext &C,
   }
 
   const auto ConditionVal = RetVal.getAs<DefinedSVal>();
-  if (!ConditionVal)
+  if (!ConditionVal) {
     return;
+
+}
 
   if (auto StateTrue = relateSymbols(State, Sym1, Sym2, Op == OO_EqualEqual)) {
     StateTrue = StateTrue->assume(*ConditionVal, true);
@@ -401,8 +427,10 @@ void IteratorModeling::handleIncrement(CheckerContext &C, const SVal &RetVal,
   auto &BVF = C.getSymbolManager().getBasicVals();
 
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+
+}
 
   auto NewState =
     advancePosition(State, Iter, OO_Plus,
@@ -427,8 +455,10 @@ void IteratorModeling::handleDecrement(CheckerContext &C, const SVal &RetVal,
   auto &BVF = C.getSymbolManager().getBasicVals();
 
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+
+}
 
   auto NewState =
     advancePosition(State, Iter, OO_Minus,
@@ -456,8 +486,10 @@ void IteratorModeling::handleRandomIncrOrDecr(CheckerContext &C,
   auto State = C.getState();
 
   const auto *Pos = getIteratorPosition(State, LHS);
-  if (!Pos)
+  if (!Pos) {
     return;
+
+}
 
   const auto *value = &RHS;
   if (auto loc = RHS.getAs<Loc>()) {
@@ -557,8 +589,10 @@ ProgramStateRef relateSymbols(ProgramStateRef State, SymbolRef Sym1,
     "Symbol comparison must be a `DefinedSVal`");
 
   auto NewState = State->assume(comparison.castAs<DefinedSVal>(), Equal);
-  if (!NewState)
+  if (!NewState) {
     return nullptr;
+
+}
 
   if (const auto CompSym = comparison.getAsSymbol()) {
     assert(isa<SymIntExpr>(CompSym) &&
@@ -576,8 +610,10 @@ bool isBoundThroughLazyCompoundVal(const Environment &Env,
                                    const MemRegion *Reg) {
   for (const auto &Binding : Env) {
     if (const auto LCVal = Binding.second.getAs<nonloc::LazyCompoundVal>()) {
-      if (LCVal->getRegion() == Reg)
+      if (LCVal->getRegion() == Reg) {
         return true;
+
+}
     }
   }
 

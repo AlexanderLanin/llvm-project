@@ -225,8 +225,10 @@ bool isPrintable(int UCS) {
 ///   * 1 for all remaining characters.
 static inline int charWidth(int UCS)
 {
-  if (!isPrintable(UCS))
+  if (!isPrintable(UCS)) {
     return ErrorNonPrintableCharacter;
+
+}
 
   // Sorted list of non-spacing and enclosing combining mark intervals as
   // defined in "3.6 Combination" of
@@ -308,8 +310,10 @@ static inline int charWidth(int UCS)
   };
   static const UnicodeCharSet CombiningCharacters(CombiningCharacterRanges);
 
-  if (CombiningCharacters.contains(UCS))
+  if (CombiningCharacters.contains(UCS)) {
     return 0;
+
+}
 
   static const UnicodeCharRange DoubleWidthCharacterRanges[] = {
     // Hangul Jamo
@@ -334,8 +338,10 @@ static inline int charWidth(int UCS)
   };
   static const UnicodeCharSet DoubleWidthCharacters(DoubleWidthCharacterRanges);
 
-  if (DoubleWidthCharacters.contains(UCS))
+  if (DoubleWidthCharacters.contains(UCS)) {
     return 2;
+
+}
   return 1;
 }
 
@@ -344,17 +350,23 @@ int columnWidthUTF8(StringRef Text) {
   unsigned Length;
   for (size_t i = 0, e = Text.size(); i < e; i += Length) {
     Length = getNumBytesForUTF8(Text[i]);
-    if (Length <= 0 || i + Length > Text.size())
+    if (Length <= 0 || i + Length > Text.size()) {
       return ErrorInvalidUTF8;
+
+}
     UTF32 buf[1];
     const UTF8 *Start = reinterpret_cast<const UTF8 *>(Text.data() + i);
     UTF32 *Target = &buf[0];
     if (conversionOK != ConvertUTF8toUTF32(&Start, Start + Length, &Target,
-                                           Target + 1, strictConversion))
+                                           Target + 1, strictConversion)) {
       return ErrorInvalidUTF8;
+
+}
     int Width = charWidth(buf[0]);
-    if (Width < 0)
+    if (Width < 0) {
       return ErrorNonPrintableCharacter;
+
+}
     ColumnWidth += Width;
   }
   return ColumnWidth;

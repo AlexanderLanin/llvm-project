@@ -39,15 +39,19 @@ public:
 }
 
 inline void TaintTesterChecker::initBugType() const {
-  if (!BT)
+  if (!BT) {
     BT.reset(new BugType(this, "Tainted data", "General"));
+
+}
 }
 
 void TaintTesterChecker::checkPostStmt(const Expr *E,
                                        CheckerContext &C) const {
   ProgramStateRef State = C.getState();
-  if (!State)
+  if (!State) {
     return;
+
+}
 
   if (isTainted(State, E, C.getLocationContext())) {
     if (ExplodedNode *N = C.generateNonFatalErrorNode()) {

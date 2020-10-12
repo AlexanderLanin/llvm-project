@@ -30,11 +30,15 @@ void taint::printTaint(ProgramStateRef State, raw_ostream &Out, const char *NL,
                        const char *Sep) {
   TaintMapTy TM = State->get<TaintMap>();
 
-  if (!TM.isEmpty())
+  if (!TM.isEmpty()) {
     Out << "Tainted symbols:" << NL;
 
-  for (const auto &I : TM)
+}
+
+  for (const auto &I : TM) {
     Out << I.first << " : " << I.second << NL;
+
+}
 }
 
 void dumpTaint(ProgramStateRef State) { printTaint(State, llvm::errs()); }
@@ -48,8 +52,10 @@ ProgramStateRef taint::addTaint(ProgramStateRef State, const Stmt *S,
 ProgramStateRef taint::addTaint(ProgramStateRef State, SVal V,
                                 TaintTagType Kind) {
   SymbolRef Sym = V.getAsSymbol();
-  if (Sym)
+  if (Sym) {
     return addTaint(State, Sym, Kind);
+
+}
 
   // If the SVal represents a structure, try to mass-taint all values within the
   // structure. For now it only works efficiently on lazy compound values that
@@ -64,8 +70,10 @@ ProgramStateRef taint::addTaint(ProgramStateRef State, SVal V,
     if (Optional<SVal> binding =
             State->getStateManager().getStoreManager().getDefaultBinding(
                 *LCV)) {
-      if (SymbolRef Sym = binding->getAsSymbol())
+      if (SymbolRef Sym = binding->getAsSymbol()) {
         return addPartialTaint(State, Sym, LCV->getRegion(), Kind);
+
+}
     }
   }
 
@@ -75,8 +83,10 @@ ProgramStateRef taint::addTaint(ProgramStateRef State, SVal V,
 
 ProgramStateRef taint::addTaint(ProgramStateRef State, const MemRegion *R,
                                 TaintTagType Kind) {
-  if (const SymbolicRegion *SR = dyn_cast_or_null<SymbolicRegion>(R))
+  if (const SymbolicRegion *SR = dyn_cast_or_null<SymbolicRegion>(R)) {
     return addTaint(State, SR->getSymbol(), Kind);
+
+}
   return State;
 }
 
@@ -84,8 +94,10 @@ ProgramStateRef taint::addTaint(ProgramStateRef State, SymbolRef Sym,
                                 TaintTagType Kind) {
   // If this is a symbol cast, remove the cast before adding the taint. Taint
   // is cast agnostic.
-  while (const SymbolCast *SC = dyn_cast<SymbolCast>(Sym))
+  while (const SymbolCast *SC = dyn_cast<SymbolCast>(Sym)) {
     Sym = SC->getOperand();
+
+}
 
   ProgramStateRef NewState = State->set<TaintMap>(Sym, Kind);
   assert(NewState);
@@ -94,24 +106,30 @@ ProgramStateRef taint::addTaint(ProgramStateRef State, SymbolRef Sym,
 
 ProgramStateRef taint::removeTaint(ProgramStateRef State, SVal V) {
   SymbolRef Sym = V.getAsSymbol();
-  if (Sym)
+  if (Sym) {
     return removeTaint(State, Sym);
+
+}
 
   const MemRegion *R = V.getAsRegion();
   return removeTaint(State, R);
 }
 
 ProgramStateRef taint::removeTaint(ProgramStateRef State, const MemRegion *R) {
-  if (const SymbolicRegion *SR = dyn_cast_or_null<SymbolicRegion>(R))
+  if (const SymbolicRegion *SR = dyn_cast_or_null<SymbolicRegion>(R)) {
     return removeTaint(State, SR->getSymbol());
+
+}
   return State;
 }
 
 ProgramStateRef taint::removeTaint(ProgramStateRef State, SymbolRef Sym) {
   // If this is a symbol cast, remove the cast before adding the taint. Taint
   // is cast agnostic.
-  while (const SymbolCast *SC = dyn_cast<SymbolCast>(Sym))
+  while (const SymbolCast *SC = dyn_cast<SymbolCast>(Sym)) {
     Sym = SC->getOperand();
+
+}
 
   ProgramStateRef NewState = State->remove<TaintMap>(Sym);
   assert(NewState);
@@ -123,13 +141,19 @@ ProgramStateRef taint::addPartialTaint(ProgramStateRef State,
                                        const SubRegion *SubRegion,
                                        TaintTagType Kind) {
   // Ignore partial taint if the entire parent symbol is already tainted.
-  if (const TaintTagType *T = State->get<TaintMap>(ParentSym))
-    if (*T == Kind)
+  if (const TaintTagType *T = State->get<TaintMap>(ParentSym)) {
+    if (*T == Kind) {
       return State;
 
+}
+
+}
+
   // Partial taint applies if only a portion of the symbol is tainted.
-  if (SubRegion == SubRegion->getBaseRegion())
+  if (SubRegion == SubRegion->getBaseRegion()) {
     return addTaint(State, ParentSym, Kind);
+
+}
 
   const TaintedSubRegions *SavedRegs = State->get<DerivedSymTaint>(ParentSym);
   TaintedSubRegions::Factory &F = State->get_context<TaintedSubRegions>();
@@ -148,53 +172,73 @@ bool taint::isTainted(ProgramStateRef State, const Stmt *S,
 }
 
 bool taint::isTainted(ProgramStateRef State, SVal V, TaintTagType Kind) {
-  if (const SymExpr *Sym = V.getAsSymExpr())
+  if (const SymExpr *Sym = V.getAsSymExpr()) {
     return isTainted(State, Sym, Kind);
-  if (const MemRegion *Reg = V.getAsRegion())
+
+}
+  if (const MemRegion *Reg = V.getAsRegion()) {
     return isTainted(State, Reg, Kind);
+
+}
   return false;
 }
 
 bool taint::isTainted(ProgramStateRef State, const MemRegion *Reg,
                       TaintTagType K) {
-  if (!Reg)
+  if (!Reg) {
     return false;
+
+}
 
   // Element region (array element) is tainted if either the base or the offset
   // are tainted.
-  if (const ElementRegion *ER = dyn_cast<ElementRegion>(Reg))
+  if (const ElementRegion *ER = dyn_cast<ElementRegion>(Reg)) {
     return isTainted(State, ER->getSuperRegion(), K) ||
            isTainted(State, ER->getIndex(), K);
 
-  if (const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(Reg))
+}
+
+  if (const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(Reg)) {
     return isTainted(State, SR->getSymbol(), K);
 
-  if (const SubRegion *ER = dyn_cast<SubRegion>(Reg))
+}
+
+  if (const SubRegion *ER = dyn_cast<SubRegion>(Reg)) {
     return isTainted(State, ER->getSuperRegion(), K);
+
+}
 
   return false;
 }
 
 bool taint::isTainted(ProgramStateRef State, SymbolRef Sym, TaintTagType Kind) {
-  if (!Sym)
+  if (!Sym) {
     return false;
+
+}
 
   // Traverse all the symbols this symbol depends on to see if any are tainted.
   for (SymExpr::symbol_iterator SI = Sym->symbol_begin(),
                                 SE = Sym->symbol_end();
        SI != SE; ++SI) {
-    if (!isa<SymbolData>(*SI))
+    if (!isa<SymbolData>(*SI)) {
       continue;
 
+}
+
     if (const TaintTagType *Tag = State->get<TaintMap>(*SI)) {
-      if (*Tag == Kind)
+      if (*Tag == Kind) {
         return true;
+
+}
     }
 
     if (const auto *SD = dyn_cast<SymbolDerived>(*SI)) {
       // If this is a SymbolDerived with a tainted parent, it's also tainted.
-      if (isTainted(State, SD->getParentSymbol(), Kind))
+      if (isTainted(State, SD->getParentSymbol(), Kind)) {
         return true;
+
+}
 
       // If this is a SymbolDerived with the same parent symbol as another
       // tainted SymbolDerived and a region that's a sub-region of that tainted
@@ -207,22 +251,28 @@ bool taint::isTainted(ProgramStateRef State, SymbolRef Sym, TaintTagType Kind) {
           // complete. For example, this would not currently identify
           // overlapping fields in a union as tainted. To identify this we can
           // check for overlapping/nested byte offsets.
-          if (Kind == I.second && R->isSubRegionOf(I.first))
+          if (Kind == I.second && R->isSubRegionOf(I.first)) {
             return true;
+
+}
         }
       }
     }
 
     // If memory region is tainted, data is also tainted.
     if (const auto *SRV = dyn_cast<SymbolRegionValue>(*SI)) {
-      if (isTainted(State, SRV->getRegion(), Kind))
+      if (isTainted(State, SRV->getRegion(), Kind)) {
         return true;
+
+}
     }
 
     // If this is a SymbolCast from a tainted value, it's also tainted.
     if (const auto *SC = dyn_cast<SymbolCast>(*SI)) {
-      if (isTainted(State, SC->getOperand(), Kind))
+      if (isTainted(State, SC->getOperand(), Kind)) {
         return true;
+
+}
     }
   }
 
@@ -235,18 +285,24 @@ PathDiagnosticPieceRef TaintBugVisitor::VisitNode(const ExplodedNode *N,
 
   // Find the ExplodedNode where the taint was first introduced
   if (!isTainted(N->getState(), V) ||
-      isTainted(N->getFirstPred()->getState(), V))
+      isTainted(N->getFirstPred()->getState(), V)) {
     return nullptr;
 
+}
+
   const Stmt *S = N->getStmtForDiagnostics();
-  if (!S)
+  if (!S) {
     return nullptr;
+
+}
 
   const LocationContext *NCtx = N->getLocationContext();
   PathDiagnosticLocation L =
       PathDiagnosticLocation::createBegin(S, BRC.getSourceManager(), NCtx);
-  if (!L.isValid() || !L.asLocation().isValid())
+  if (!L.isValid() || !L.asLocation().isValid()) {
     return nullptr;
+
+}
 
   return std::make_shared<PathDiagnosticEventPiece>(L, "Taint originated here");
 }

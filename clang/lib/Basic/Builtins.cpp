@@ -29,13 +29,17 @@ static const Builtin::Info BuiltinInfo[] = {
 };
 
 const Builtin::Info &Builtin::Context::getRecord(unsigned ID) const {
-  if (ID < Builtin::FirstTSBuiltin)
+  if (ID < Builtin::FirstTSBuiltin) {
     return BuiltinInfo[ID];
+
+}
   assert(((ID - Builtin::FirstTSBuiltin) <
           (TSRecords.size() + AuxTSRecords.size())) &&
          "Invalid builtin ID!");
-  if (isAuxBuiltinID(ID))
+  if (isAuxBuiltinID(ID)) {
     return AuxTSRecords[getAuxBuiltinID(ID) - Builtin::FirstTSBuiltin];
+
+}
   return TSRecords[ID - Builtin::FirstTSBuiltin];
 }
 
@@ -43,14 +47,20 @@ void Builtin::Context::InitializeTarget(const TargetInfo &Target,
                                         const TargetInfo *AuxTarget) {
   assert(TSRecords.empty() && "Already initialized target?");
   TSRecords = Target.getTargetBuiltins();
-  if (AuxTarget)
+  if (AuxTarget) {
     AuxTSRecords = AuxTarget->getTargetBuiltins();
+
+}
 }
 
 bool Builtin::Context::isBuiltinFunc(llvm::StringRef FuncName) {
-  for (unsigned i = Builtin::NotBuiltin + 1; i != Builtin::FirstTSBuiltin; ++i)
-    if (FuncName.equals(BuiltinInfo[i].Name))
+  for (unsigned i = Builtin::NotBuiltin + 1; i != Builtin::FirstTSBuiltin; ++i) {
+    if (FuncName.equals(BuiltinInfo[i].Name)) {
       return strchr(BuiltinInfo[i].Attributes, 'f') != nullptr;
+
+}
+
+}
 
   return false;
 }
@@ -89,20 +99,28 @@ bool Builtin::Context::builtinIsSupported(const Builtin::Info &BuiltinInfo,
 void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
                                           const LangOptions& LangOpts) {
   // Step #1: mark all target-independent builtins with their ID's.
-  for (unsigned i = Builtin::NotBuiltin+1; i != Builtin::FirstTSBuiltin; ++i)
+  for (unsigned i = Builtin::NotBuiltin+1; i != Builtin::FirstTSBuiltin; ++i) {
     if (builtinIsSupported(BuiltinInfo[i], LangOpts)) {
       Table.get(BuiltinInfo[i].Name).setBuiltinID(i);
     }
 
+}
+
   // Step #2: Register target-specific builtins.
-  for (unsigned i = 0, e = TSRecords.size(); i != e; ++i)
-    if (builtinIsSupported(TSRecords[i], LangOpts))
+  for (unsigned i = 0, e = TSRecords.size(); i != e; ++i) {
+    if (builtinIsSupported(TSRecords[i], LangOpts)) {
       Table.get(TSRecords[i].Name).setBuiltinID(i + Builtin::FirstTSBuiltin);
 
+}
+
+}
+
   // Step #3: Register target-specific builtins for AuxTarget.
-  for (unsigned i = 0, e = AuxTSRecords.size(); i != e; ++i)
+  for (unsigned i = 0, e = AuxTSRecords.size(); i != e; ++i) {
     Table.get(AuxTSRecords[i].Name)
         .setBuiltinID(i + Builtin::FirstTSBuiltin + TSRecords.size());
+
+}
 }
 
 void Builtin::Context::forgetBuiltin(unsigned ID, IdentifierTable &Table) {
@@ -111,8 +129,10 @@ void Builtin::Context::forgetBuiltin(unsigned ID, IdentifierTable &Table) {
 
 unsigned Builtin::Context::getRequiredVectorWidth(unsigned ID) const {
   const char *WidthPos = ::strchr(getRecord(ID).Attributes, 'V');
-  if (!WidthPos)
+  if (!WidthPos) {
     return 0;
+
+}
 
   ++WidthPos;
   assert(*WidthPos == ':' &&
@@ -134,8 +154,10 @@ bool Builtin::Context::isLike(unsigned ID, unsigned &FormatIdx,
          "Format string is not in the form \"xX\"");
 
   const char *Like = ::strpbrk(getRecord(ID).Attributes, Fmt);
-  if (!Like)
+  if (!Like) {
     return false;
+
+}
 
   HasVAListArg = (*Like == Fmt[1]);
 
@@ -161,8 +183,10 @@ bool Builtin::Context::isScanfLike(unsigned ID, unsigned &FormatIdx,
 bool Builtin::Context::performsCallback(unsigned ID,
                                         SmallVectorImpl<int> &Encoding) const {
   const char *CalleePos = ::strchr(getRecord(ID).Attributes, 'C');
-  if (!CalleePos)
+  if (!CalleePos) {
     return false;
+
+}
 
   ++CalleePos;
   assert(*CalleePos == '<' &&

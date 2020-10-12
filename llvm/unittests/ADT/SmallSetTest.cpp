@@ -20,16 +20,22 @@ TEST(SmallSetTest, Insert) {
 
   SmallSet<int, 4> s1;
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++) {
     s1.insert(i);
 
-  for (int i = 0; i < 4; i++)
+}
+
+  for (int i = 0; i < 4; i++) {
     s1.insert(i);
+
+}
 
   EXPECT_EQ(4u, s1.size());
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++) {
     EXPECT_EQ(1u, s1.count(i));
+
+}
 
   EXPECT_EQ(0u, s1.count(4));
 }
@@ -37,13 +43,17 @@ TEST(SmallSetTest, Insert) {
 TEST(SmallSetTest, Grow) {
   SmallSet<int, 4> s1;
 
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++) {
     s1.insert(i);
+
+}
 
   EXPECT_EQ(8u, s1.size());
 
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++) {
     EXPECT_EQ(1u, s1.count(i));
+
+}
 
   EXPECT_EQ(0u, s1.count(8));
 }
@@ -51,8 +61,10 @@ TEST(SmallSetTest, Grow) {
 TEST(SmallSetTest, Erase) {
   SmallSet<int, 4> s1;
 
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++) {
     s1.insert(i);
+
+}
 
   EXPECT_EQ(8u, s1.size());
 
@@ -62,8 +74,10 @@ TEST(SmallSetTest, Erase) {
     EXPECT_TRUE(s1.erase(i));
     EXPECT_EQ(0u, s1.count(i));
     EXPECT_EQ(8u - i - 1, s1.size());
-    for (int j = i + 1; j < 8; j++)
+    for (int j = i + 1; j < 8; j++) {
       EXPECT_EQ(1u, s1.count(j));
+
+}
   }
 
   EXPECT_EQ(0u, s1.count(8));
@@ -73,25 +87,33 @@ TEST(SmallSetTest, IteratorInt) {
   SmallSet<int, 4> s1;
 
   // Test the 'small' case.
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++) {
     s1.insert(i);
+
+}
 
   std::vector<int> V(s1.begin(), s1.end());
   // Make sure the elements are in the expected order.
   std::sort(V.begin(), V.end());
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++) {
     EXPECT_EQ(i, V[i]);
+
+}
 
   // Test the 'big' case by adding a few more elements to switch to std::set
   // internally.
-  for (int i = 3; i < 6; i++)
+  for (int i = 3; i < 6; i++) {
     s1.insert(i);
+
+}
 
   V.assign(s1.begin(), s1.end());
   // Make sure the elements are in the expected order.
   std::sort(V.begin(), V.end());
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < 6; i++) {
     EXPECT_EQ(i, V[i]);
+
+}
 }
 
 TEST(SmallSetTest, IteratorString) {
@@ -154,8 +176,10 @@ TEST(SmallSetTest, EqualityComparisonTest) {
     s2small.insert(5 - i);
     s3large.insert(i);
   }
-  for (int i = 1; i < 11; i++)
+  for (int i = 1; i < 11; i++) {
     s4large.insert(i);
+
+}
 
   EXPECT_EQ(s1small, s1small);
   EXPECT_EQ(s3large, s3large);

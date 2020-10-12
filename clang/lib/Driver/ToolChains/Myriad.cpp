@@ -95,9 +95,11 @@ void tools::SHAVE::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
 
   CmdArgs.push_back("-no6thSlotCompression");
   const Arg *CPUArg = Args.getLastArg(options::OPT_mcpu_EQ);
-  if (CPUArg)
+  if (CPUArg) {
     CmdArgs.push_back(
         Args.MakeArgString("-cv:" + StringRef(CPUArg->getValue())));
+
+}
   CmdArgs.push_back("-noSPrefixing");
   CmdArgs.push_back("-a"); // Mystery option.
   Args.AddAllArgValues(CmdArgs, options::OPT_Wa_COMMA, options::OPT_Xassembler);
@@ -132,10 +134,12 @@ void tools::Myriad::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // Silence warning if the args contain both -nostdlib and -stdlib=.
   Args.getLastArg(options::OPT_stdlib_EQ);
 
-  if (T.getArch() == llvm::Triple::sparc)
+  if (T.getArch() == llvm::Triple::sparc) {
     CmdArgs.push_back("-EB");
-  else // SHAVE assumes little-endian, and sparcel is expressly so.
+  } else { // SHAVE assumes little-endian, and sparcel is expressly so.
     CmdArgs.push_back("-EL");
+
+}
 
   // The remaining logic is mostly like gnutools::Linker::ConstructJob,
   // but we never pass through a --sysroot option and various other bits.
@@ -146,8 +150,10 @@ void tools::Myriad::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   Args.ClaimAllArgs(options::OPT_w);
   Args.ClaimAllArgs(options::OPT_static_libgcc);
 
-  if (Args.hasArg(options::OPT_s)) // Pass the 'strip' option.
+  if (Args.hasArg(options::OPT_s)) { // Pass the 'strip' option.
     CmdArgs.push_back("-s");
+
+}
 
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
@@ -169,14 +175,18 @@ void tools::Myriad::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   AddLinkerInputs(getToolChain(), Inputs, Args, CmdArgs, JA);
 
   if (UseDefaultLibs) {
-    if (NeedsSanitizerDeps)
+    if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(TC, CmdArgs);
+
+}
     if (C.getDriver().CCCIsCXX()) {
       if (TC.GetCXXStdlibType(Args) == ToolChain::CST_Libcxx) {
         CmdArgs.push_back("-lc++");
         CmdArgs.push_back("-lc++abi");
-      } else
+      } else {
         CmdArgs.push_back("-lstdc++");
+
+}
     }
     if (T.getOS() == llvm::Triple::RTEMS) {
       CmdArgs.push_back("--start-group");
@@ -237,8 +247,10 @@ MyriadToolChain::~MyriadToolChain() {}
 
 void MyriadToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                 ArgStringList &CC1Args) const {
-  if (!DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (!DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     addSystemInclude(DriverArgs, CC1Args, getDriver().SysRoot + "/include");
+
+}
 }
 
 void MyriadToolChain::addLibCxxIncludePaths(
@@ -264,17 +276,23 @@ void MyriadToolChain::addLibStdCxxIncludePaths(
 //  {shave,sparc{,el}}-myriad-{rtems,unknown}-elf
 Tool *MyriadToolChain::SelectTool(const JobAction &JA) const {
   // The inherited method works fine if not targeting the SHAVE.
-  if (!isShaveCompilation(getTriple()))
+  if (!isShaveCompilation(getTriple())) {
     return ToolChain::SelectTool(JA);
+
+}
   switch (JA.getKind()) {
   case Action::PreprocessJobClass:
   case Action::CompileJobClass:
-    if (!Compiler)
+    if (!Compiler) {
       Compiler.reset(new tools::SHAVE::Compiler(*this));
+
+}
     return Compiler.get();
   case Action::AssembleJobClass:
-    if (!Assembler)
+    if (!Assembler) {
       Assembler.reset(new tools::SHAVE::Assembler(*this));
+
+}
     return Assembler.get();
   default:
     return ToolChain::getTool(JA.getKind());

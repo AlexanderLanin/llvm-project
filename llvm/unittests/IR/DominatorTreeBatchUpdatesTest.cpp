@@ -36,10 +36,12 @@ std::vector<DomUpdate> ToDomUpdates(CFGBuilder &B,
   std::vector<DomUpdate> Res;
   Res.reserve(In.size());
 
-  for (const auto &CFGU : In)
+  for (const auto &CFGU : In) {
     Res.push_back({CFGU.Action == CFGInsert ? Insert : Delete,
                    B.getOrAddBlock(CFGU.Edge.From),
                    B.getOrAddBlock(CFGU.Edge.To)});
+
+}
   return Res;
 }
 }  // namespace
@@ -155,8 +157,10 @@ TEST(DominatorTreeBatchUpdates, FewInsertion) {
   std::vector<DomUpdate> Updates = {
       {Insert, B, C}, {Insert, C, B}, {Insert, C, D}, {Insert, D, E}};
 
-  while (Builder.applyUpdate())
+  while (Builder.applyUpdate()) {
     ;
+
+}
 
   DT.applyUpdates(Updates);
   EXPECT_TRUE(DT.verify());
@@ -182,8 +186,10 @@ TEST(DominatorTreeBatchUpdates, FewDeletions) {
 
   auto Updates = ToDomUpdates(Builder, CFGUpdates);
 
-  while (Builder.applyUpdate())
+  while (Builder.applyUpdate()) {
     ;
+
+}
 
   DT.applyUpdates(Updates);
   EXPECT_TRUE(DT.verify());
@@ -211,8 +217,10 @@ TEST(DominatorTreeBatchUpdates, InsertDelete) {
   PostDominatorTree PDT(*Holder.F);
   EXPECT_TRUE(PDT.verify());
 
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ;
+
+}
 
   auto DomUpdates = ToDomUpdates(B, Updates);
   DT.applyUpdates(DomUpdates);
@@ -244,8 +252,10 @@ TEST(DominatorTreeBatchUpdates, InsertDeleteExhaustive) {
     PostDominatorTree PDT(*Holder.F);
     EXPECT_TRUE(PDT.verify());
 
-    while (B.applyUpdate())
+    while (B.applyUpdate()) {
       ;
+
+}
 
     auto DomUpdates = ToDomUpdates(B, Updates);
     DT.applyUpdates(DomUpdates);
@@ -277,8 +287,10 @@ TEST(DominatorTreeBatchUpdates, InfiniteLoop) {
   PostDominatorTree PDT(*Holder.F);
   EXPECT_TRUE(PDT.verify());
 
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ;
+
+}
 
   auto DomUpdates = ToDomUpdates(B, Updates);
   DT.applyUpdates(DomUpdates);
@@ -310,8 +322,10 @@ TEST(DominatorTreeBatchUpdates, DeadBlocks) {
   PostDominatorTree PDT(*Holder.F);
   EXPECT_TRUE(PDT.verify());
 
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ;
+
+}
 
   auto DomUpdates = ToDomUpdates(B, Updates);
   DT.applyUpdates(DomUpdates);
@@ -340,8 +354,10 @@ TEST(DominatorTreeBatchUpdates, InfiniteLoop2) {
   PostDominatorTree PDT(*Holder.F);
   EXPECT_TRUE(PDT.verify());
 
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ;
+
+}
 
   auto DomUpdates = ToDomUpdates(B, Updates);
   DT.applyUpdates(DomUpdates);

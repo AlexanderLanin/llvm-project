@@ -110,9 +110,13 @@ public:
   /// test analysis, a LatticeKey will begin in the undefined state, unless it
   /// represents an LLVM Constant in the register grouping.
   TestLatticeVal ComputeLatticeVal(TestLatticeKey Key) override {
-    if (Key.getInt() == IPOGrouping::Register)
-      if (auto *C = dyn_cast<Constant>(Key.getPointer()))
+    if (Key.getInt() == IPOGrouping::Register) {
+      if (auto *C = dyn_cast<Constant>(Key.getPointer())) {
         return TestLatticeVal(C, TestLatticeVal::ConstantVal);
+
+}
+
+}
     return getUndefVal();
   }
 
@@ -121,18 +125,30 @@ public:
   /// value is constant only if the two given lattice values are constant and
   /// hold the same value.
   TestLatticeVal MergeValues(TestLatticeVal X, TestLatticeVal Y) override {
-    if (X == getUntrackedVal() || Y == getUntrackedVal())
+    if (X == getUntrackedVal() || Y == getUntrackedVal()) {
       return getUntrackedVal();
-    if (X == getOverdefinedVal() || Y == getOverdefinedVal())
+
+}
+    if (X == getOverdefinedVal() || Y == getOverdefinedVal()) {
       return getOverdefinedVal();
-    if (X == getUndefVal() && Y == getUndefVal())
+
+}
+    if (X == getUndefVal() && Y == getUndefVal()) {
       return getUndefVal();
-    if (X == getUndefVal())
+
+}
+    if (X == getUndefVal()) {
       return Y;
-    if (Y == getUndefVal())
+
+}
+    if (Y == getUndefVal()) {
       return X;
-    if (X == Y)
+
+}
+    if (X == Y) {
       return X;
+
+}
     return getOverdefinedVal();
   }
 
@@ -187,8 +203,10 @@ private:
                    DenseMap<TestLatticeKey, TestLatticeVal> &ChangedValues,
                    SparseSolver<TestLatticeKey, TestLatticeVal> &SS) {
     Function *F = I.getParent()->getParent();
-    if (F->getReturnType()->isVoidTy())
+    if (F->getReturnType()->isVoidTy()) {
       return;
+
+}
     auto RegR = TestLatticeKey(I.getReturnValue(), IPOGrouping::Register);
     auto RetF = TestLatticeKey(F, IPOGrouping::Return);
     ChangedValues[RetF] =
@@ -203,8 +221,10 @@ private:
                   DenseMap<TestLatticeKey, TestLatticeVal> &ChangedValues,
                   SparseSolver<TestLatticeKey, TestLatticeVal> &SS) {
     auto *GV = dyn_cast<GlobalVariable>(I.getPointerOperand());
-    if (!GV)
+    if (!GV) {
       return;
+
+}
     auto RegVal = TestLatticeKey(I.getValueOperand(), IPOGrouping::Register);
     auto MemPtr = TestLatticeKey(GV, IPOGrouping::Memory);
     ChangedValues[MemPtr] =

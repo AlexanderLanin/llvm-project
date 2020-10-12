@@ -22,11 +22,15 @@ void DWARFDebugMacro::dump(raw_ostream &OS) const {
     for (const Entry &E : Macros.Macros) {
       // There should not be DW_MACINFO_end_file when IndLevel is Zero. However,
       // this check handles the case of corrupted ".debug_macinfo" section.
-      if (IndLevel > 0)
+      if (IndLevel > 0) {
         IndLevel -= (E.Type == DW_MACINFO_end_file);
+
+}
       // Print indentation.
-      for (unsigned I = 0; I < IndLevel; I++)
+      for (unsigned I = 0; I < IndLevel; I++) {
         OS << "  ";
+
+}
       IndLevel += (E.Type == DW_MACINFO_start_file);
 
       WithColor(OS, HighlightColor::Macro).get() << MacinfoString(E.Type);

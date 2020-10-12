@@ -37,8 +37,10 @@ using namespace clang;
 namespace {
 static llvm::ArrayRef<syntax::Token> tokens(syntax::Node *N) {
   assert(N->isOriginal() && "tokens of modified nodes are not well-defined");
-  if (auto *L = dyn_cast<syntax::Leaf>(N))
+  if (auto *L = dyn_cast<syntax::Leaf>(N)) {
     return llvm::makeArrayRef(L->token(), 1);
+
+}
   auto *T = cast<syntax::Tree>(N);
   return llvm::makeArrayRef(T->firstLeaf()->token(),
                             T->lastLeaf()->token() + 1);
@@ -95,8 +97,10 @@ protected:
 
     constexpr const char *FileName = "./input.cpp";
     FS->addFile(FileName, time_t(), llvm::MemoryBuffer::getMemBufferCopy(""));
-    if (!Diags->getClient())
+    if (!Diags->getClient()) {
       Diags->setClient(new IgnoringDiagConsumer);
+
+}
     // Prepare to run a compiler.
     std::vector<const char *> Args = {"syntax-test", "-std=c++11",
                                       "-fsyntax-only", FileName};
@@ -136,15 +140,21 @@ protected:
     if (Toks.front().location().isFileID() &&
         Toks.back().location().isFileID() &&
         syntax::Token::range(*SourceMgr, Toks.front(), Toks.back()) ==
-            syntax::FileRange(SourceMgr->getMainFileID(), R.Begin, R.End))
+            syntax::FileRange(SourceMgr->getMainFileID(), R.Begin, R.End)) {
       return Root;
 
+}
+
     auto *T = dyn_cast<syntax::Tree>(Root);
-    if (!T)
+    if (!T) {
       return nullptr;
+
+}
     for (auto *C = T->firstChild(); C != nullptr; C = C->nextSibling()) {
-      if (auto *Result = nodeByRange(R, C))
+      if (auto *Result = nodeByRange(R, C)) {
         return Result;
+
+}
     }
     return nullptr;
   }
@@ -1483,8 +1493,10 @@ TEST_F(SyntaxTreeTest, Mutations) {
           {"void test() { if (true) [[{}]] else {} }",
            "void test() { if (true) ; else {} }"},
           {"void test() { [[;]] }", "void test() {  }"}};
-  for (const auto &C : Cases)
+  for (const auto &C : Cases) {
     CheckTransformation(C.first, C.second, RemoveStatement);
+
+}
 }
 
 TEST_F(SyntaxTreeTest, SynthesizedNodes) {

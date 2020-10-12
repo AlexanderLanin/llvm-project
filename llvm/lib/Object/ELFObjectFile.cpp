@@ -61,8 +61,10 @@ template <class ELFT>
 static Expected<std::unique_ptr<ELFObjectFile<ELFT>>>
 createPtr(MemoryBufferRef Object) {
   auto Ret = ELFObjectFile<ELFT>::create(Object);
-  if (Error E = Ret.takeError())
+  if (Error E = Ret.takeError()) {
     return std::move(E);
+
+}
   return std::make_unique<ELFObjectFile<ELFT>>(std::move(*Ret));
 }
 
@@ -73,23 +75,29 @@ ObjectFile::createELFObjectFile(MemoryBufferRef Obj) {
   std::size_t MaxAlignment =
       1ULL << countTrailingZeros(uintptr_t(Obj.getBufferStart()));
 
-  if (MaxAlignment < 2)
+  if (MaxAlignment < 2) {
     return createError("Insufficient alignment");
 
+}
+
   if (Ident.first == ELF::ELFCLASS32) {
-    if (Ident.second == ELF::ELFDATA2LSB)
+    if (Ident.second == ELF::ELFDATA2LSB) {
       return createPtr<ELF32LE>(Obj);
-    else if (Ident.second == ELF::ELFDATA2MSB)
+    } else if (Ident.second == ELF::ELFDATA2MSB) {
       return createPtr<ELF32BE>(Obj);
-    else
+    } else {
       return createError("Invalid ELF data");
+
+}
   } else if (Ident.first == ELF::ELFCLASS64) {
-    if (Ident.second == ELF::ELFDATA2LSB)
+    if (Ident.second == ELF::ELFDATA2LSB) {
       return createPtr<ELF64LE>(Obj);
-    else if (Ident.second == ELF::ELFDATA2MSB)
+    } else if (Ident.second == ELF::ELFDATA2MSB) {
       return createPtr<ELF64BE>(Obj);
-    else
+    } else {
       return createError("Invalid ELF data");
+
+}
   }
   return createError("Invalid ELF class");
 }
@@ -146,10 +154,14 @@ SubtargetFeatures ELFObjectFileBase::getMIPSFeatures() const {
     llvm_unreachable("Unknown EF_MIPS_ARCH value");
   }
 
-  if (PlatformFlags & ELF::EF_MIPS_ARCH_ASE_M16)
+  if (PlatformFlags & ELF::EF_MIPS_ARCH_ASE_M16) {
     Features.AddFeature("mips16");
-  if (PlatformFlags & ELF::EF_MIPS_MICROMIPS)
+
+}
+  if (PlatformFlags & ELF::EF_MIPS_MICROMIPS) {
     Features.AddFeature("micromips");
+
+}
 
   return Features;
 }
@@ -164,9 +176,11 @@ SubtargetFeatures ELFObjectFileBase::getARMFeatures() const {
 
   // both ARMv7-M and R have to support thumb hardware div
   bool isV7 = false;
-  if (Attributes.hasAttribute(ARMBuildAttrs::CPU_arch))
+  if (Attributes.hasAttribute(ARMBuildAttrs::CPU_arch)) {
     isV7 = Attributes.getAttributeValue(ARMBuildAttrs::CPU_arch)
       == ARMBuildAttrs::v7;
+
+}
 
   if (Attributes.hasAttribute(ARMBuildAttrs::CPU_arch_profile)) {
     switch(Attributes.getAttributeValue(ARMBuildAttrs::CPU_arch_profile)) {
@@ -175,13 +189,17 @@ SubtargetFeatures ELFObjectFileBase::getARMFeatures() const {
       break;
     case ARMBuildAttrs::RealTimeProfile:
       Features.AddFeature("rclass");
-      if (isV7)
+      if (isV7) {
         Features.AddFeature("hwdiv");
+
+}
       break;
     case ARMBuildAttrs::MicroControllerProfile:
       Features.AddFeature("mclass");
-      if (isV7)
+      if (isV7) {
         Features.AddFeature("hwdiv");
+
+}
       break;
     }
   }
@@ -303,8 +321,10 @@ SubtargetFeatures ELFObjectFileBase::getFeatures() const {
 
 // FIXME Encode from a tablegen description or target parser.
 void ELFObjectFileBase::setARMSubArch(Triple &TheTriple) const {
-  if (TheTriple.getSubArch() != Triple::NoSubArch)
+  if (TheTriple.getSubArch() != Triple::NoSubArch) {
     return;
+
+}
 
   ARMAttributeParser Attributes;
   if (Error E = getBuildAttributes(Attributes)) {
@@ -315,10 +335,12 @@ void ELFObjectFileBase::setARMSubArch(Triple &TheTriple) const {
 
   std::string Triple;
   // Default to ARM, but use the triple if it's been set.
-  if (TheTriple.isThumb())
+  if (TheTriple.isThumb()) {
     Triple = "thumb";
-  else
+  } else {
     Triple = "arm";
+
+}
 
   if (Attributes.hasAttribute(ARMBuildAttrs::CPU_arch)) {
     switch(Attributes.getAttributeValue(ARMBuildAttrs::CPU_arch)) {
@@ -378,8 +400,10 @@ void ELFObjectFileBase::setARMSubArch(Triple &TheTriple) const {
       break;
     }
   }
-  if (!isLittleEndian())
+  if (!isLittleEndian()) {
     Triple += "eb";
+
+}
 
   TheTriple.setArchName(Triple);
 }
@@ -389,8 +413,10 @@ ELFObjectFileBase::getPltAddresses() const {
   std::string Err;
   const auto Triple = makeTriple();
   const auto *T = TargetRegistry::lookupTarget(Triple.str(), Err);
-  if (!T)
+  if (!T) {
     return {};
+
+}
   uint64_t JumpSlotReloc = 0;
   switch (Triple.getArch()) {
     case Triple::x86:
@@ -408,8 +434,10 @@ ELFObjectFileBase::getPltAddresses() const {
   std::unique_ptr<const MCInstrInfo> MII(T->createMCInstrInfo());
   std::unique_ptr<const MCInstrAnalysis> MIA(
       T->createMCInstrAnalysis(MII.get()));
-  if (!MIA)
+  if (!MIA) {
     return {};
+
+}
   Optional<SectionRef> Plt = None, RelaPlt = None, GotPlt = None;
   for (const SectionRef &Section : sections()) {
     Expected<StringRef> NameOrErr = Section.getName();
@@ -419,15 +447,19 @@ ELFObjectFileBase::getPltAddresses() const {
     }
     StringRef Name = *NameOrErr;
 
-    if (Name == ".plt")
+    if (Name == ".plt") {
       Plt = Section;
-    else if (Name == ".rela.plt" || Name == ".rel.plt")
+    } else if (Name == ".rela.plt" || Name == ".rel.plt") {
       RelaPlt = Section;
-    else if (Name == ".got.plt")
+    } else if (Name == ".got.plt") {
       GotPlt = Section;
+
+}
   }
-  if (!Plt || !RelaPlt || !GotPlt)
+  if (!Plt || !RelaPlt || !GotPlt) {
     return {};
+
+}
   Expected<StringRef> PltContents = Plt->getContents();
   if (!PltContents) {
     consumeError(PltContents.takeError());
@@ -438,18 +470,24 @@ ELFObjectFileBase::getPltAddresses() const {
                                         GotPlt->getAddress(), Triple);
   // Build a map from GOT entry virtual address to PLT entry virtual address.
   DenseMap<uint64_t, uint64_t> GotToPlt;
-  for (const auto &Entry : PltEntries)
+  for (const auto &Entry : PltEntries) {
     GotToPlt.insert(std::make_pair(Entry.second, Entry.first));
+
+}
   // Find the relocations in the dynamic relocation table that point to
   // locations in the GOT for which we know the corresponding PLT entry.
   std::vector<std::pair<DataRefImpl, uint64_t>> Result;
   for (const auto &Relocation : RelaPlt->relocations()) {
-    if (Relocation.getType() != JumpSlotReloc)
+    if (Relocation.getType() != JumpSlotReloc) {
       continue;
+
+}
     auto PltEntryIter = GotToPlt.find(Relocation.getOffset());
-    if (PltEntryIter != GotToPlt.end())
+    if (PltEntryIter != GotToPlt.end()) {
       Result.push_back(std::make_pair(
           Relocation.getSymbol()->getRawDataRefImpl(), PltEntryIter->second));
+
+}
   }
   return Result;
 }

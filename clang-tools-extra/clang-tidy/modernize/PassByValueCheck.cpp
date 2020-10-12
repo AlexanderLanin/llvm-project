@@ -39,8 +39,10 @@ namespace {
 ///   matches "Foo".
 AST_MATCHER(CXXRecordDecl, isMoveConstructible) {
   for (const CXXConstructorDecl *Ctor : Node.ctors()) {
-    if (Ctor->isMoveConstructor() && !Ctor->isDeleted())
+    if (Ctor->isMoveConstructor() && !Ctor->isDeleted()) {
       return true;
+
+}
   }
   return false;
 }
@@ -113,8 +115,10 @@ collectParamDecls(const CXXConstructorDecl *Ctor,
   SmallVector<const ParmVarDecl *, 2> Results;
   unsigned ParamIdx = ParamDecl->getFunctionScopeIndex();
 
-  for (const FunctionDecl *Redecl : Ctor->redecls())
+  for (const FunctionDecl *Redecl : Ctor->redecls()) {
     Results.push_back(Redecl->getParamDecl(ParamIdx));
+
+}
   return Results;
 }
 
@@ -179,14 +183,18 @@ void PassByValueCheck::check(const MatchFinder::MatchResult &Result) {
 
   // If the parameter is used or anything other than the copy, do not apply
   // the changes.
-  if (!paramReferredExactlyOnce(Ctor, ParamDecl))
+  if (!paramReferredExactlyOnce(Ctor, ParamDecl)) {
     return;
+
+}
 
   // If the parameter is trivial to copy, don't move it. Moving a trivivally
   // copyable type will cause a problem with performance-move-const-arg
   if (ParamDecl->getType().getNonReferenceType().isTriviallyCopyableType(
-          *Result.Context))
+          *Result.Context)) {
     return;
+
+}
 
   auto Diag = diag(ParamDecl->getBeginLoc(), "pass by value and use std::move");
 
@@ -196,8 +204,10 @@ void PassByValueCheck::check(const MatchFinder::MatchResult &Result) {
     auto RefTL = ParamTL.getAs<ReferenceTypeLoc>();
 
     // Do not replace if it is already a value, skip.
-    if (RefTL.isNull())
+    if (RefTL.isNull()) {
       continue;
+
+}
 
     TypeLoc ValueTL = RefTL.getPointeeLoc();
     auto TypeRange = CharSourceRange::getTokenRange(ParmDecl->getBeginLoc(),

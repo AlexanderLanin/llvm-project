@@ -66,8 +66,10 @@ LockFileManager::readLockFile(StringRef LockFileName) {
   int PID;
   if (!PIDStr.getAsInteger(10, PID)) {
     auto Owner = std::make_pair(std::string(Hostname), PID);
-    if (processStillExecuting(Owner.first, Owner.second))
+    if (processStillExecuting(Owner.first, Owner.second)) {
       return Owner;
+
+}
   }
 
   // Delete the lock file. It's invalid anyway.
@@ -109,12 +111,16 @@ static std::error_code getHostID(SmallVectorImpl<char> &HostID) {
 bool LockFileManager::processStillExecuting(StringRef HostID, int PID) {
 #if LLVM_ON_UNIX && !defined(__ANDROID__)
   SmallString<256> StoredHostID;
-  if (getHostID(StoredHostID))
+  if (getHostID(StoredHostID)) {
     return true; // Conservatively assume it's executing on error.
 
+}
+
   // Check whether the process is dead. If so, we're done.
-  if (StoredHostID == HostID && getsid(PID) == -1 && errno == ESRCH)
+  if (StoredHostID == HostID && getsid(PID) == -1 && errno == ESRCH) {
     return false;
+
+}
 #endif
 
   return true;
@@ -167,8 +173,10 @@ LockFileManager::LockFileManager(StringRef FileName)
 
   // If the lock file already exists, don't bother to try to create our own
   // lock file; it won't work anyway. Just figure out who owns this lock file.
-  if ((Owner = readLockFile(LockFileName)))
+  if ((Owner = readLockFile(LockFileName))) {
     return;
+
+}
 
   // Create a lock file that is unique to this instance.
   UniqueLockFileName = LockFileName;
@@ -257,11 +265,15 @@ LockFileManager::LockFileManager(StringRef FileName)
 }
 
 LockFileManager::LockFileState LockFileManager::getState() const {
-  if (Owner)
+  if (Owner) {
     return LFS_Shared;
 
-  if (ErrorCode)
+}
+
+  if (ErrorCode) {
     return LFS_Error;
+
+}
 
   return LFS_Owned;
 }
@@ -271,16 +283,20 @@ std::string LockFileManager::getErrorMessage() const {
     std::string Str(ErrorDiagMsg);
     std::string ErrCodeMsg = ErrorCode.message();
     raw_string_ostream OSS(Str);
-    if (!ErrCodeMsg.empty())
+    if (!ErrCodeMsg.empty()) {
       OSS << ": " << ErrCodeMsg;
+
+}
     return OSS.str();
   }
   return "";
 }
 
 LockFileManager::~LockFileManager() {
-  if (getState() != LFS_Owned)
+  if (getState() != LFS_Owned) {
     return;
+
+}
 
   // Since we own the lock, remove the lock file and our own unique lock file.
   sys::fs::remove(LockFileName);
@@ -292,8 +308,10 @@ LockFileManager::~LockFileManager() {
 
 LockFileManager::WaitForUnlockResult
 LockFileManager::waitForUnlock(const unsigned MaxSeconds) {
-  if (getState() != LFS_Shared)
+  if (getState() != LFS_Shared) {
     return Res_Success;
+
+}
 
 #ifdef _WIN32
   unsigned long Interval = 1;
@@ -316,14 +334,18 @@ LockFileManager::waitForUnlock(const unsigned MaxSeconds) {
     if (sys::fs::access(LockFileName.c_str(), sys::fs::AccessMode::Exist) ==
         errc::no_such_file_or_directory) {
       // If the original file wasn't created, somone thought the lock was dead.
-      if (!sys::fs::exists(FileName))
+      if (!sys::fs::exists(FileName)) {
         return Res_OwnerDied;
+
+}
       return Res_Success;
     }
 
     // If the process owning the lock died without cleaning up, just bail out.
-    if (!processStillExecuting((*Owner).first, (*Owner).second))
+    if (!processStillExecuting((*Owner).first, (*Owner).second)) {
       return Res_OwnerDied;
+
+}
 
     // Exponentially increase the time we wait for the lock to be removed.
 #ifdef _WIN32

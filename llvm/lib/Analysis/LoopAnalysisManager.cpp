@@ -47,8 +47,10 @@ bool LoopAnalysisManagerFunctionProxy::Result::invalidate(
   // invalidation logic below to act on that.
   auto PAC = PA.getChecker<LoopAnalysisManagerFunctionProxy>();
   bool invalidateMemorySSAAnalysis = false;
-  if (MSSAUsed)
+  if (MSSAUsed) {
     invalidateMemorySSAAnalysis = Inv.invalidate<MemorySSAAnalysis>(F, PA);
+
+}
   if (!(PAC.preserved() || PAC.preservedSet<AllAnalysesOn<Function>>()) ||
       Inv.invalidate<AAManager>(F, PA) ||
       Inv.invalidate<AssumptionAnalysis>(F, PA) ||
@@ -98,18 +100,24 @@ bool LoopAnalysisManagerFunctionProxy::Result::invalidate(
     // function-level analysis invalidation triggering deferred invalidation
     // for this loop.
     if (auto *OuterProxy =
-            InnerAM->getCachedResult<FunctionAnalysisManagerLoopProxy>(*L))
+            InnerAM->getCachedResult<FunctionAnalysisManagerLoopProxy>(*L)) {
       for (const auto &OuterInvalidationPair :
            OuterProxy->getOuterInvalidations()) {
         AnalysisKey *OuterAnalysisID = OuterInvalidationPair.first;
         const auto &InnerAnalysisIDs = OuterInvalidationPair.second;
         if (Inv.invalidate(OuterAnalysisID, F, PA)) {
-          if (!InnerPA)
+          if (!InnerPA) {
             InnerPA = PA;
-          for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs)
+
+}
+          for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs) {
             InnerPA->abandon(InnerAnalysisID);
+
+}
         }
       }
+
+}
 
     // Check if we needed a custom PA set. If so we'll need to run the inner
     // invalidation.
@@ -120,8 +128,10 @@ bool LoopAnalysisManagerFunctionProxy::Result::invalidate(
 
     // Otherwise we only need to do invalidation if the original PA set didn't
     // preserve all Loop analyses.
-    if (!AreLoopAnalysesPreserved)
+    if (!AreLoopAnalysesPreserved) {
       InnerAM->invalidate(*L, PA);
+
+}
   }
 
   // Return false to indicate that this result is still a valid proxy.

@@ -123,8 +123,10 @@ static const unsigned StaticDiagInfoSize = llvm::array_lengthof(StaticDiagInfo);
 static const StaticDiagInfoRec *GetDiagInfo(unsigned DiagID) {
   // Out of bounds diag. Can't be in the table.
   using namespace diag;
-  if (DiagID >= DIAG_UPPER_LIMIT || DiagID <= DIAG_START_COMMON)
+  if (DiagID >= DIAG_UPPER_LIMIT || DiagID <= DIAG_START_COMMON) {
     return nullptr;
+
+}
 
   // Compute the index of the requested diagnostic in the static table.
   // 1. Add the number of diagnostics in each category preceding the
@@ -155,8 +157,10 @@ CATEGORY(REFACTORING, ANALYSIS)
 #undef CATEGORY
 
   // Avoid out of bounds reads.
-  if (ID + Offset >= StaticDiagInfoSize)
+  if (ID + Offset >= StaticDiagInfoSize) {
     return nullptr;
+
+}
 
   assert(ID < StaticDiagInfoSize && Offset < StaticDiagInfoSize);
 
@@ -164,8 +168,10 @@ CATEGORY(REFACTORING, ANALYSIS)
   // If the diag id doesn't match we found a different diag, abort. This can
   // happen when this function is called with an ID that points into a hole in
   // the diagID space.
-  if (Found->DiagID != DiagID)
+  if (Found->DiagID != DiagID) {
     return nullptr;
+
+}
   return Found;
 }
 
@@ -189,8 +195,10 @@ static DiagnosticMapping GetDefaultDiagMapping(unsigned DiagID) {
 /// getCategoryNumberForDiag - Return the category number that a specified
 /// DiagID belongs to, or 0 if no category.
 unsigned DiagnosticIDs::getCategoryNumberForDiag(unsigned DiagID) {
-  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID)) {
     return Info->Category;
+
+}
   return 0;
 }
 
@@ -215,8 +223,10 @@ DiagnosticsEngine::DiagState::getOrAddMapping(diag::kind Diag) {
       DiagMap.insert(std::make_pair(Diag, DiagnosticMapping()));
 
   // Initialize the entry if we added it.
-  if (Result.second)
+  if (Result.second) {
     Result.first->second = GetDefaultDiagMapping(Diag);
+
+}
 
   return Result.first->second;
 }
@@ -238,8 +248,10 @@ unsigned DiagnosticIDs::getNumberOfCategories() {
 /// category, an empty string if CategoryID is zero, or null if CategoryID is
 /// invalid.
 StringRef DiagnosticIDs::getCategoryNameFromID(unsigned CategoryID) {
-  if (CategoryID >= getNumberOfCategories())
+  if (CategoryID >= getNumberOfCategories()) {
    return StringRef();
+
+}
   return CategoryNameTable[CategoryID].getName();
 }
 
@@ -247,16 +259,20 @@ StringRef DiagnosticIDs::getCategoryNameFromID(unsigned CategoryID) {
 
 DiagnosticIDs::SFINAEResponse
 DiagnosticIDs::getDiagnosticSFINAEResponse(unsigned DiagID) {
-  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID)) {
     return static_cast<DiagnosticIDs::SFINAEResponse>(Info->SFINAE);
+
+}
   return SFINAE_Report;
 }
 
 /// getBuiltinDiagClass - Return the class field of the diagnostic.
 ///
 static unsigned getBuiltinDiagClass(unsigned DiagID) {
-  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID)) {
     return Info->Class;
+
+}
   return ~0U;
 }
 
@@ -292,8 +308,10 @@ namespace clang {
         DiagDesc D(L, std::string(Message));
         // Check to see if it already exists.
         std::map<DiagDesc, unsigned>::iterator I = DiagIDs.lower_bound(D);
-        if (I != DiagIDs.end() && I->first == D)
+        if (I != DiagIDs.end() && I->first == D) {
           return I->second;
+
+}
 
         // If not, assign a new ID.
         unsigned ID = DiagInfo.size()+DIAG_UPPER_LIMIT;
@@ -322,8 +340,10 @@ DiagnosticIDs::~DiagnosticIDs() {}
 /// \param FormatString A fixed diagnostic format string that will be hashed and
 /// mapped to a unique DiagID.
 unsigned DiagnosticIDs::getCustomDiagID(Level L, StringRef FormatString) {
-  if (!CustomDiagInfo)
+  if (!CustomDiagInfo) {
     CustomDiagInfo.reset(new diag::CustomDiagInfo());
+
+}
   return CustomDiagInfo->getOrCreateDiagID(L, FormatString, *this);
 }
 
@@ -352,8 +372,10 @@ bool DiagnosticIDs::isBuiltinNote(unsigned DiagID) {
 bool DiagnosticIDs::isBuiltinExtensionDiag(unsigned DiagID,
                                         bool &EnabledByDefault) {
   if (DiagID >= diag::DIAG_UPPER_LIMIT ||
-      getBuiltinDiagClass(DiagID) != CLASS_EXTENSION)
+      getBuiltinDiagClass(DiagID) != CLASS_EXTENSION) {
     return false;
+
+}
 
   EnabledByDefault =
       GetDefaultDiagMapping(DiagID).getSeverity() != diag::Severity::Ignored;
@@ -361,8 +383,10 @@ bool DiagnosticIDs::isBuiltinExtensionDiag(unsigned DiagID,
 }
 
 bool DiagnosticIDs::isDefaultMappingAsError(unsigned DiagID) {
-  if (DiagID >= diag::DIAG_UPPER_LIMIT)
+  if (DiagID >= diag::DIAG_UPPER_LIMIT) {
     return false;
+
+}
 
   return GetDefaultDiagMapping(DiagID).getSeverity() >= diag::Severity::Error;
 }
@@ -370,8 +394,10 @@ bool DiagnosticIDs::isDefaultMappingAsError(unsigned DiagID) {
 /// getDescription - Given a diagnostic ID, return a description of the
 /// issue.
 StringRef DiagnosticIDs::getDescription(unsigned DiagID) const {
-  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID)) {
     return Info->getDescription();
+
+}
   assert(CustomDiagInfo && "Invalid CustomDiagInfo");
   return CustomDiagInfo->getDescription(DiagID);
 }
@@ -405,7 +431,9 @@ DiagnosticIDs::getDiagnosticLevel(unsigned DiagID, SourceLocation Loc,
   }
 
   unsigned DiagClass = getBuiltinDiagClass(DiagID);
-  if (DiagClass == CLASS_NOTE) return DiagnosticIDs::Note;
+  if (DiagClass == CLASS_NOTE) { return DiagnosticIDs::Note;
+
+}
   return toLevel(getDiagnosticSeverity(DiagID, Loc, Diag));
 }
 
@@ -429,30 +457,40 @@ DiagnosticIDs::getDiagnosticSeverity(unsigned DiagID, SourceLocation Loc,
   DiagnosticMapping &Mapping = State->getOrAddMapping((diag::kind)DiagID);
 
   // TODO: Can a null severity really get here?
-  if (Mapping.getSeverity() != diag::Severity())
+  if (Mapping.getSeverity() != diag::Severity()) {
     Result = Mapping.getSeverity();
+
+}
 
   // Upgrade ignored diagnostics if -Weverything is enabled.
   if (State->EnableAllWarnings && Result == diag::Severity::Ignored &&
-      !Mapping.isUser() && getBuiltinDiagClass(DiagID) != CLASS_REMARK)
+      !Mapping.isUser() && getBuiltinDiagClass(DiagID) != CLASS_REMARK) {
     Result = diag::Severity::Warning;
+
+}
 
   // Ignore -pedantic diagnostics inside __extension__ blocks.
   // (The diagnostics controlled by -pedantic are the extension diagnostics
   // that are not enabled by default.)
   bool EnabledByDefault = false;
   bool IsExtensionDiag = isBuiltinExtensionDiag(DiagID, EnabledByDefault);
-  if (Diag.AllExtensionsSilenced && IsExtensionDiag && !EnabledByDefault)
+  if (Diag.AllExtensionsSilenced && IsExtensionDiag && !EnabledByDefault) {
     return diag::Severity::Ignored;
+
+}
 
   // For extension diagnostics that haven't been explicitly mapped, check if we
   // should upgrade the diagnostic.
-  if (IsExtensionDiag && !Mapping.isUser())
+  if (IsExtensionDiag && !Mapping.isUser()) {
     Result = std::max(Result, State->ExtBehavior);
 
+}
+
   // At this point, ignored errors can no longer be upgraded.
-  if (Result == diag::Severity::Ignored)
+  if (Result == diag::Severity::Ignored) {
     return Result;
+
+}
 
   // Honor -w: this disables all messages which which are not Error/Fatal by
   // default (disregarding attempts to upgrade severity from Warning to Error),
@@ -462,27 +500,35 @@ DiagnosticIDs::getDiagnosticSeverity(unsigned DiagID, SourceLocation Loc,
   if (State->IgnoreAllWarnings) {
     if (Result == diag::Severity::Warning ||
         (Result >= diag::Severity::Error &&
-         !isDefaultMappingAsError((diag::kind)DiagID)))
+         !isDefaultMappingAsError((diag::kind)DiagID))) {
       return diag::Severity::Ignored;
+
+}
   }
 
   // If -Werror is enabled, map warnings to errors unless explicitly disabled.
   if (Result == diag::Severity::Warning) {
-    if (State->WarningsAsErrors && !Mapping.hasNoWarningAsError())
+    if (State->WarningsAsErrors && !Mapping.hasNoWarningAsError()) {
       Result = diag::Severity::Error;
+
+}
   }
 
   // If -Wfatal-errors is enabled, map errors to fatal unless explicitly
   // disabled.
   if (Result == diag::Severity::Error) {
-    if (State->ErrorsAsFatal && !Mapping.hasNoErrorAsFatal())
+    if (State->ErrorsAsFatal && !Mapping.hasNoErrorAsFatal()) {
       Result = diag::Severity::Fatal;
+
+}
   }
 
   // If explicitly requested, map fatal errors to errors.
   if (Result == diag::Severity::Fatal &&
-      Diag.CurDiagID != diag::fatal_too_many_errors && Diag.FatalsAsError)
+      Diag.CurDiagID != diag::fatal_too_many_errors && Diag.FatalsAsError) {
     Result = diag::Severity::Error;
+
+}
 
   // Custom diagnostics always are emitted in system headers.
   bool ShowInSystemHeader =
@@ -493,8 +539,10 @@ DiagnosticIDs::getDiagnosticSeverity(unsigned DiagID, SourceLocation Loc,
   // -pedantic-errors modes, which *map* warnings/extensions to errors.
   if (State->SuppressSystemWarnings && !ShowInSystemHeader && Loc.isValid() &&
       Diag.getSourceManager().isInSystemHeader(
-          Diag.getSourceManager().getExpansionLoc(Loc)))
+          Diag.getSourceManager().getExpansionLoc(Loc))) {
     return diag::Severity::Ignored;
+
+}
 
   return Result;
 }
@@ -528,8 +576,10 @@ static const WarningOption OptionTable[] = {
 /// enables the specified diagnostic.  If there is no -Wfoo flag that controls
 /// the diagnostic, this returns null.
 StringRef DiagnosticIDs::getWarningOptionForDiag(unsigned DiagID) {
-  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID))
+  if (const StaticDiagInfoRec *Info = GetDiagInfo(DiagID)) {
     return OptionTable[Info->getOptionGroupIndex()].getName();
+
+}
   return StringRef();
 }
 
@@ -552,8 +602,10 @@ static bool getDiagnosticsInGroup(diag::Flavor Flavor,
                                   SmallVectorImpl<diag::kind> &Diags) {
   // An empty group is considered to be a warning group: we have empty groups
   // for GCC compatibility, and GCC does not have remarks.
-  if (!Group->Members && !Group->SubGroups)
+  if (!Group->Members && !Group->SubGroups) {
     return Flavor == diag::Flavor::Remark;
+
+}
 
   bool NotFound = true;
 
@@ -568,9 +620,11 @@ static bool getDiagnosticsInGroup(diag::Flavor Flavor,
 
   // Add the members of the subgroups.
   const int16_t *SubGroups = DiagSubGroups + Group->SubGroups;
-  for (; *SubGroups != (int16_t)-1; ++SubGroups)
+  for (; *SubGroups != (int16_t)-1; ++SubGroups) {
     NotFound &= getDiagnosticsInGroup(Flavor, &OptionTable[(short)*SubGroups],
                                       Diags);
+
+}
 
   return NotFound;
 }
@@ -580,17 +634,23 @@ DiagnosticIDs::getDiagnosticsInGroup(diag::Flavor Flavor, StringRef Group,
                                      SmallVectorImpl<diag::kind> &Diags) const {
   auto Found = llvm::partition_point(
       OptionTable, [=](const WarningOption &O) { return O.getName() < Group; });
-  if (Found == std::end(OptionTable) || Found->getName() != Group)
+  if (Found == std::end(OptionTable) || Found->getName() != Group) {
     return true; // Option not found.
+
+}
 
   return ::getDiagnosticsInGroup(Flavor, Found, Diags);
 }
 
 void DiagnosticIDs::getAllDiagnostics(diag::Flavor Flavor,
                                       std::vector<diag::kind> &Diags) {
-  for (unsigned i = 0; i != StaticDiagInfoSize; ++i)
-    if (StaticDiagInfo[i].getFlavor() == Flavor)
+  for (unsigned i = 0; i != StaticDiagInfoSize; ++i) {
+    if (StaticDiagInfo[i].getFlavor() == Flavor) {
       Diags.push_back(StaticDiagInfo[i].DiagID);
+
+}
+
+}
 }
 
 StringRef DiagnosticIDs::getNearestOption(diag::Flavor Flavor,
@@ -599,17 +659,23 @@ StringRef DiagnosticIDs::getNearestOption(diag::Flavor Flavor,
   unsigned BestDistance = Group.size() + 1; // Sanity threshold.
   for (const WarningOption &O : OptionTable) {
     // Don't suggest ignored warning flags.
-    if (!O.Members && !O.SubGroups)
+    if (!O.Members && !O.SubGroups) {
       continue;
 
+}
+
     unsigned Distance = O.getName().edit_distance(Group, true, BestDistance);
-    if (Distance > BestDistance)
+    if (Distance > BestDistance) {
       continue;
+
+}
 
     // Don't suggest groups that are not of this kind.
     llvm::SmallVector<diag::kind, 8> Diags;
-    if (::getDiagnosticsInGroup(Flavor, &O, Diags) || Diags.empty())
+    if (::getDiagnosticsInGroup(Flavor, &O, Diags) || Diags.empty()) {
       continue;
+
+}
 
     if (Distance == BestDistance) {
       // Two matches with the same distance, don't prefer one over the other.
@@ -640,20 +706,26 @@ bool DiagnosticIDs::ProcessDiag(DiagnosticsEngine &Diag) const {
   // or diagnostics are suppressed.
   if (DiagLevel >= DiagnosticIDs::Error) {
     ++Diag.TrapNumErrorsOccurred;
-    if (isUnrecoverable(DiagID))
+    if (isUnrecoverable(DiagID)) {
       ++Diag.TrapNumUnrecoverableErrorsOccurred;
+
+}
   }
 
-  if (Diag.SuppressAllDiagnostics)
+  if (Diag.SuppressAllDiagnostics) {
     return false;
+
+}
 
   if (DiagLevel != DiagnosticIDs::Note) {
     // Record that a fatal error occurred only when we see a second
     // non-note diagnostic. This allows notes to be attached to the
     // fatal error, but suppresses any diagnostics that follow those
     // notes.
-    if (Diag.LastDiagLevel == DiagnosticIDs::Fatal)
+    if (Diag.LastDiagLevel == DiagnosticIDs::Fatal) {
       Diag.FatalErrorOccurred = true;
+
+}
 
     Diag.LastDiagLevel = DiagLevel;
   }
@@ -673,16 +745,22 @@ bool DiagnosticIDs::ProcessDiag(DiagnosticsEngine &Diag) const {
   // a note and the last real diagnostic was ignored, ignore it too.
   if (DiagLevel == DiagnosticIDs::Ignored ||
       (DiagLevel == DiagnosticIDs::Note &&
-       Diag.LastDiagLevel == DiagnosticIDs::Ignored))
+       Diag.LastDiagLevel == DiagnosticIDs::Ignored)) {
     return false;
 
+}
+
   if (DiagLevel >= DiagnosticIDs::Error) {
-    if (isUnrecoverable(DiagID))
+    if (isUnrecoverable(DiagID)) {
       Diag.UnrecoverableErrorOccurred = true;
 
+}
+
     // Warnings which have been upgraded to errors do not prevent compilation.
-    if (isDefaultMappingAsError(DiagID))
+    if (isDefaultMappingAsError(DiagID)) {
       Diag.UncompilableErrorOccurred = true;
+
+}
 
     Diag.ErrorOccurred = true;
     if (Diag.Client->IncludeInDiagnosticCounts()) {
@@ -700,8 +778,10 @@ bool DiagnosticIDs::ProcessDiag(DiagnosticsEngine &Diag) const {
 
   // Make sure we set FatalErrorOccurred to ensure that the notes from the
   // diagnostic that caused `fatal_too_many_errors` won't be emitted.
-  if (Diag.CurDiagID == diag::fatal_too_many_errors)
+  if (Diag.CurDiagID == diag::fatal_too_many_errors) {
     Diag.FatalErrorOccurred = true;
+
+}
   // Finally, report it.
   EmitDiag(Diag, DiagLevel);
   return true;
@@ -713,8 +793,10 @@ void DiagnosticIDs::EmitDiag(DiagnosticsEngine &Diag, Level DiagLevel) const {
 
   Diag.Client->HandleDiagnostic((DiagnosticsEngine::Level)DiagLevel, Info);
   if (Diag.Client->IncludeInDiagnosticCounts()) {
-    if (DiagLevel == DiagnosticIDs::Warning)
+    if (DiagLevel == DiagnosticIDs::Warning) {
       ++Diag.NumWarnings;
+
+}
   }
 
   Diag.CurDiagID = ~0U;
@@ -728,16 +810,22 @@ bool DiagnosticIDs::isUnrecoverable(unsigned DiagID) const {
   }
 
   // Only errors may be unrecoverable.
-  if (getBuiltinDiagClass(DiagID) < CLASS_ERROR)
+  if (getBuiltinDiagClass(DiagID) < CLASS_ERROR) {
     return false;
+
+}
 
   if (DiagID == diag::err_unavailable ||
-      DiagID == diag::err_unavailable_message)
+      DiagID == diag::err_unavailable_message) {
     return false;
 
+}
+
   // Currently we consider all ARC errors as recoverable.
-  if (isARCDiagnostic(DiagID))
+  if (isARCDiagnostic(DiagID)) {
     return false;
+
+}
 
   return true;
 }

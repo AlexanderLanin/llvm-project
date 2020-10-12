@@ -68,10 +68,14 @@ static bool isX87Reg(unsigned Reg) {
 /// check if the instruction is X87 instruction
 static bool isX87Instruction(MachineInstr &MI) {
   for (const MachineOperand &MO : MI.operands()) {
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
-    if (isX87Reg(MO.getReg()))
+
+}
+    if (isX87Reg(MO.getReg())) {
       return true;
+
+}
   }
   return false;
 }
@@ -115,8 +119,10 @@ static bool isX87NonWaitingControlInstruction(MachineInstr &MI) {
 }
 
 bool WaitInsert::runOnMachineFunction(MachineFunction &MF) {
-  if (!MF.getFunction().hasFnAttribute(Attribute::StrictFP))
+  if (!MF.getFunction().hasFnAttribute(Attribute::StrictFP)) {
     return false;
+
+}
 
   const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
   TII = ST.getInstrInfo();
@@ -125,20 +131,26 @@ bool WaitInsert::runOnMachineFunction(MachineFunction &MF) {
   for (MachineBasicBlock &MBB : MF) {
     for (MachineBasicBlock::iterator MI = MBB.begin(); MI != MBB.end(); ++MI) {
       // Jump non X87 instruction.
-      if (!isX87Instruction(*MI))
+      if (!isX87Instruction(*MI)) {
         continue;
+
+}
       // If the instruction instruction neither has float exception nor is
       // a load/store instruction, or the instruction is x87 control
       // instruction, do not insert wait.
       if (!(MI->mayRaiseFPException() || MI->mayLoadOrStore()) ||
-          isX87ControlInstruction(*MI))
+          isX87ControlInstruction(*MI)) {
         continue;
+
+}
       // If the following instruction is an X87 instruction and isn't an X87
       // non-waiting control instruction, we can omit insert wait instruction.
       MachineBasicBlock::iterator AfterMI = std::next(MI);
       if (AfterMI != MBB.end() && isX87Instruction(*AfterMI) &&
-          !isX87NonWaitingControlInstruction(*AfterMI))
+          !isX87NonWaitingControlInstruction(*AfterMI)) {
         continue;
+
+}
 
       BuildMI(MBB, AfterMI, MI->getDebugLoc(), TII->get(X86::WAIT));
       LLVM_DEBUG(dbgs() << "\nInsert wait after:\t" << *MI);

@@ -48,25 +48,35 @@ bool InstructionSelector::constrainOperandRegToRegClass(
 bool InstructionSelector::isOperandImmEqual(
     const MachineOperand &MO, int64_t Value,
     const MachineRegisterInfo &MRI) const {
-  if (MO.isReg() && MO.getReg())
-    if (auto VRegVal = getConstantVRegValWithLookThrough(MO.getReg(), MRI))
+  if (MO.isReg() && MO.getReg()) {
+    if (auto VRegVal = getConstantVRegValWithLookThrough(MO.getReg(), MRI)) {
       return VRegVal->Value == Value;
+
+}
+
+}
   return false;
 }
 
 bool InstructionSelector::isBaseWithConstantOffset(
     const MachineOperand &Root, const MachineRegisterInfo &MRI) const {
-  if (!Root.isReg())
+  if (!Root.isReg()) {
     return false;
 
+}
+
   MachineInstr *RootI = MRI.getVRegDef(Root.getReg());
-  if (RootI->getOpcode() != TargetOpcode::G_PTR_ADD)
+  if (RootI->getOpcode() != TargetOpcode::G_PTR_ADD) {
     return false;
+
+}
 
   MachineOperand &RHS = RootI->getOperand(2);
   MachineInstr *RHSI = MRI.getVRegDef(RHS.getReg());
-  if (RHSI->getOpcode() != TargetOpcode::G_CONSTANT)
+  if (RHSI->getOpcode() != TargetOpcode::G_CONSTANT) {
     return false;
+
+}
 
   return true;
 }
@@ -75,8 +85,10 @@ bool InstructionSelector::isObviouslySafeToFold(MachineInstr &MI,
                                                 MachineInstr &IntoMI) const {
   // Immediate neighbours are already folded.
   if (MI.getParent() == IntoMI.getParent() &&
-      std::next(MI.getIterator()) == IntoMI.getIterator())
+      std::next(MI.getIterator()) == IntoMI.getIterator()) {
     return true;
+
+}
 
   return !MI.mayLoadOrStore() && !MI.mayRaiseFPException() &&
          !MI.hasUnmodeledSideEffects() && MI.implicit_operands().empty();

@@ -80,8 +80,10 @@ Error appendToError(Error Err, StringRef After) {
 template <class ELFT>
 static Error populateDynamic(DynamicEntries &Dyn,
                              typename ELFT::DynRange DynTable) {
-  if (DynTable.empty())
+  if (DynTable.empty()) {
     return createError("No .dynamic section found");
+
+}
 
   // Search .dynamic for relevant entries.
   bool FoundDynStr = false;
@@ -153,8 +155,10 @@ static Error populateDynamic(DynamicEntries &Dyn,
 template <class ELFT>
 static uint64_t getDynSymtabSize(const typename ELFT::GnuHash &Table) {
   using Elf_Word = typename ELFT::Word;
-  if (Table.nbuckets == 0)
+  if (Table.nbuckets == 0) {
     return Table.symndx + 1;
+
+}
   uint64_t LastSymIdx = 0;
   uint64_t BucketVal = 0;
   // Find the index of the first symbol in the last chain.
@@ -186,8 +190,10 @@ static Expected<uint64_t> getNumSyms(DynamicEntries &Dyn,
   // Search GNU hash table to try to find the upper bound of dynsym.
   if (Dyn.GnuHash.hasValue()) {
     Expected<const uint8_t *> TablePtr = ElfFile.toMappedAddr(*Dyn.GnuHash);
-    if (!TablePtr)
+    if (!TablePtr) {
       return TablePtr.takeError();
+
+}
     const Elf_GnuHash *Table =
         reinterpret_cast<const Elf_GnuHash *>(TablePtr.get());
     return getDynSymtabSize<ELFT>(*Table);
@@ -195,8 +201,10 @@ static Expected<uint64_t> getNumSyms(DynamicEntries &Dyn,
   // Search SYSV hash table to try to find the upper bound of dynsym.
   if (Dyn.ElfHash.hasValue()) {
     Expected<const uint8_t *> TablePtr = ElfFile.toMappedAddr(*Dyn.ElfHash);
-    if (!TablePtr)
+    if (!TablePtr) {
       return TablePtr.takeError();
+
+}
     const Elf_Hash *Table = reinterpret_cast<const Elf_Hash *>(TablePtr.get());
     return Table->nchain;
   }
@@ -235,10 +243,12 @@ static ELFSymbol createELFSym(StringRef SymName,
                               const typename ELFT::Sym &RawSym) {
   ELFSymbol TargetSym{std::string(SymName)};
   uint8_t Binding = RawSym.getBinding();
-  if (Binding == STB_WEAK)
+  if (Binding == STB_WEAK) {
     TargetSym.Weak = true;
-  else
+  } else {
     TargetSym.Weak = false;
+
+}
 
   TargetSym.Undefined = RawSym.isUndefined();
   TargetSym.Type = convertInfoToType(RawSym.st_info);
@@ -265,17 +275,23 @@ static Error populateSymbols(ELFStub &TargetStub,
   for (auto RawSym : DynSym.drop_front(1)) {
     // If a symbol does not have global or weak binding, ignore it.
     uint8_t Binding = RawSym.getBinding();
-    if (!(Binding == STB_GLOBAL || Binding == STB_WEAK))
+    if (!(Binding == STB_GLOBAL || Binding == STB_WEAK)) {
       continue;
+
+}
     // If a symbol doesn't have default or protected visibility, ignore it.
     uint8_t Visibility = RawSym.getVisibility();
-    if (!(Visibility == STV_DEFAULT || Visibility == STV_PROTECTED))
+    if (!(Visibility == STV_DEFAULT || Visibility == STV_PROTECTED)) {
       continue;
+
+}
     // Create an ELFSymbol and populate it with information from the symbol
     // table entry.
     Expected<StringRef> SymName = terminatedSubstr(DynStr, RawSym.st_name);
-    if (!SymName)
+    if (!SymName) {
       return SymName.takeError();
+
+}
     ELFSymbol Sym = createELFSym<ELFT>(*SymName, RawSym);
     TargetStub.Symbols.insert(std::move(Sym));
     // TODO: Populate symbol warning.
@@ -308,15 +324,19 @@ buildStub(const ELFObjectFile<ELFT> &ElfObj) {
 
   // Collect relevant .dynamic entries.
   DynamicEntries DynEnt;
-  if (Error Err = populateDynamic<ELFT>(DynEnt, *DynTable))
+  if (Error Err = populateDynamic<ELFT>(DynEnt, *DynTable)) {
     return std::move(Err);
+
+}
 
     // Get pointer to in-memory location of .dynstr section.
   Expected<const uint8_t *> DynStrPtr =
       ElfFile->toMappedAddr(DynEnt.StrTabAddr);
-  if (!DynStrPtr)
+  if (!DynStrPtr) {
     return appendToError(DynStrPtr.takeError(),
                          "when locating .dynstr section contents");
+
+}
 
   StringRef DynStr(reinterpret_cast<const char *>(DynStrPtr.get()),
                    DynEnt.StrSize);
@@ -346,22 +366,28 @@ buildStub(const ELFObjectFile<ELFT> &ElfObj) {
 
   // Populate Symbols from .dynsym table and dynamic string table.
   Expected<uint64_t> SymCount = getNumSyms(DynEnt, *ElfFile);
-  if (!SymCount)
+  if (!SymCount) {
     return SymCount.takeError();
+
+}
   if (*SymCount > 0) {
     // Get pointer to in-memory location of .dynsym section.
     Expected<const uint8_t *> DynSymPtr =
         ElfFile->toMappedAddr(DynEnt.DynSymAddr);
-    if (!DynSymPtr)
+    if (!DynSymPtr) {
       return appendToError(DynSymPtr.takeError(),
                            "when locating .dynsym section contents");
+
+}
     Elf_Sym_Range DynSyms =
         ArrayRef<Elf_Sym>(reinterpret_cast<const Elf_Sym *>(*DynSymPtr),
                           *SymCount);
     Error SymReadError = populateSymbols<ELFT>(*DestStub, DynSyms, DynStr);
-    if (SymReadError)
+    if (SymReadError) {
       return appendToError(std::move(SymReadError),
                            "when reading dynamic symbols");
+
+}
   }
 
   return std::move(DestStub);

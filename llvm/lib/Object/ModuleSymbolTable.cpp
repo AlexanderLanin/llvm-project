@@ -54,13 +54,17 @@ using namespace llvm;
 using namespace object;
 
 void ModuleSymbolTable::addModule(Module *M) {
-  if (FirstMod)
+  if (FirstMod) {
     assert(FirstMod->getTargetTriple() == M->getTargetTriple());
-  else
+  } else {
     FirstMod = M;
 
-  for (GlobalValue &GV : M->global_values())
+}
+
+  for (GlobalValue &GV : M->global_values()) {
     SymTab.push_back(&GV);
+
+}
 
   CollectAsmSymbols(*M, [this](StringRef Name, BasicSymbolRef::Flags Flags) {
     SymTab.push_back(new (AsmSymbols.Allocate())
@@ -72,8 +76,10 @@ static void
 initializeRecordStreamer(const Module &M,
                          function_ref<void(RecordStreamer &)> Init) {
   StringRef InlineAsm = M.getModuleInlineAsm();
-  if (InlineAsm.empty())
+  if (InlineAsm.empty()) {
     return;
+
+}
 
   std::string Err;
   const Triple TT(M.getTargetTriple());
@@ -81,22 +87,30 @@ initializeRecordStreamer(const Module &M,
   assert(T && T->hasMCAsmParser());
 
   std::unique_ptr<MCRegisterInfo> MRI(T->createMCRegInfo(TT.str()));
-  if (!MRI)
+  if (!MRI) {
     return;
+
+}
 
   MCTargetOptions MCOptions;
   std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str(), MCOptions));
-  if (!MAI)
+  if (!MAI) {
     return;
+
+}
 
   std::unique_ptr<MCSubtargetInfo> STI(
       T->createMCSubtargetInfo(TT.str(), "", ""));
-  if (!STI)
+  if (!STI) {
     return;
 
+}
+
   std::unique_ptr<MCInstrInfo> MCII(T->createMCInstrInfo());
-  if (!MCII)
+  if (!MCII) {
     return;
+
+}
 
   MCObjectFileInfo MOFI;
   MCContext MCCtx(MAI.get(), MRI.get(), &MOFI);
@@ -113,12 +127,16 @@ initializeRecordStreamer(const Module &M,
 
   std::unique_ptr<MCTargetAsmParser> TAP(
       T->createMCAsmParser(*STI, *Parser, *MCII, MCOptions));
-  if (!TAP)
+  if (!TAP) {
     return;
 
+}
+
   Parser->setTargetParser(*TAP);
-  if (Parser->Run(false))
+  if (Parser->Run(false)) {
     return;
+
+}
 
   Init(Streamer);
 }
@@ -163,9 +181,13 @@ void ModuleSymbolTable::CollectAsmSymbols(
 void ModuleSymbolTable::CollectAsmSymvers(
     const Module &M, function_ref<void(StringRef, StringRef)> AsmSymver) {
   initializeRecordStreamer(M, [&](RecordStreamer &Streamer) {
-    for (auto &KV : Streamer.symverAliases())
-      for (auto &Alias : KV.second)
+    for (auto &KV : Streamer.symverAliases()) {
+      for (auto &Alias : KV.second) {
         AsmSymver(KV.first->getName(), Alias);
+
+}
+
+}
   });
 }
 
@@ -176,46 +198,68 @@ void ModuleSymbolTable::printSymbolName(raw_ostream &OS, Symbol S) const {
   }
 
   auto *GV = S.get<GlobalValue *>();
-  if (GV->hasDLLImportStorageClass())
+  if (GV->hasDLLImportStorageClass()) {
     OS << "__imp_";
+
+}
 
   Mang.getNameWithPrefix(OS, GV, false);
 }
 
 uint32_t ModuleSymbolTable::getSymbolFlags(Symbol S) const {
-  if (S.is<AsmSymbol *>())
+  if (S.is<AsmSymbol *>()) {
     return S.get<AsmSymbol *>()->second;
+
+}
 
   auto *GV = S.get<GlobalValue *>();
 
   uint32_t Res = BasicSymbolRef::SF_None;
-  if (GV->isDeclarationForLinker())
+  if (GV->isDeclarationForLinker()) {
     Res |= BasicSymbolRef::SF_Undefined;
-  else if (GV->hasHiddenVisibility() && !GV->hasLocalLinkage())
+  } else if (GV->hasHiddenVisibility() && !GV->hasLocalLinkage()) {
     Res |= BasicSymbolRef::SF_Hidden;
+
+}
   if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV)) {
-    if (GVar->isConstant())
+    if (GVar->isConstant()) {
       Res |= BasicSymbolRef::SF_Const;
+
+}
   }
-  if (dyn_cast_or_null<Function>(GV->getBaseObject()))
+  if (dyn_cast_or_null<Function>(GV->getBaseObject())) {
     Res |= BasicSymbolRef::SF_Executable;
-  if (isa<GlobalAlias>(GV))
+
+}
+  if (isa<GlobalAlias>(GV)) {
     Res |= BasicSymbolRef::SF_Indirect;
-  if (GV->hasPrivateLinkage())
+
+}
+  if (GV->hasPrivateLinkage()) {
     Res |= BasicSymbolRef::SF_FormatSpecific;
-  if (!GV->hasLocalLinkage())
+
+}
+  if (!GV->hasLocalLinkage()) {
     Res |= BasicSymbolRef::SF_Global;
-  if (GV->hasCommonLinkage())
+
+}
+  if (GV->hasCommonLinkage()) {
     Res |= BasicSymbolRef::SF_Common;
+
+}
   if (GV->hasLinkOnceLinkage() || GV->hasWeakLinkage() ||
-      GV->hasExternalWeakLinkage())
+      GV->hasExternalWeakLinkage()) {
     Res |= BasicSymbolRef::SF_Weak;
 
-  if (GV->getName().startswith("llvm."))
+}
+
+  if (GV->getName().startswith("llvm.")) {
     Res |= BasicSymbolRef::SF_FormatSpecific;
-  else if (auto *Var = dyn_cast<GlobalVariable>(GV)) {
-    if (Var->getSection() == "llvm.metadata")
+  } else if (auto *Var = dyn_cast<GlobalVariable>(GV)) {
+    if (Var->getSection() == "llvm.metadata") {
       Res |= BasicSymbolRef::SF_FormatSpecific;
+
+}
   }
 
   return Res;

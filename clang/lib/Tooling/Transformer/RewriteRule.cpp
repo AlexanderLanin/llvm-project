@@ -34,17 +34,23 @@ transformer::detail::translateEdits(const MatchResult &Result,
   SmallVector<transformer::detail::Transformation, 1> Transformations;
   for (const auto &Edit : Edits) {
     Expected<CharSourceRange> Range = Edit.TargetRange(Result);
-    if (!Range)
+    if (!Range) {
       return Range.takeError();
+
+}
     llvm::Optional<CharSourceRange> EditRange =
         tooling::getRangeForEdit(*Range, *Result.Context);
     // FIXME: let user specify whether to treat this case as an error or ignore
     // it as is currently done.
-    if (!EditRange)
+    if (!EditRange) {
       return SmallVector<Transformation, 0>();
+
+}
     auto Replacement = Edit.Replacement->eval(Result);
-    if (!Replacement)
+    if (!Replacement) {
       return Replacement.takeError();
+
+}
     transformer::detail::Transformation T;
     T.Range = *EditRange;
     T.Replacement = std::move(*Replacement);
@@ -90,8 +96,10 @@ RewriteRule transformer::makeRule(DynTypedMatcher M, SmallVector<ASTEdit, 1> Edi
 
 void transformer::addInclude(RewriteRule &Rule, StringRef Header,
                          IncludeFormat Format) {
-  for (auto &Case : Rule.Cases)
+  for (auto &Case : Rule.Cases) {
     Case.AddedIncludes.emplace_back(Header.str(), Format);
+
+}
 }
 
 #ifndef NDEBUG
@@ -126,8 +134,10 @@ static std::vector<DynTypedMatcher> taggedMatchers(
 // registration.
 RewriteRule transformer::applyFirst(ArrayRef<RewriteRule> Rules) {
   RewriteRule R;
-  for (auto &Rule : Rules)
+  for (auto &Rule : Rules) {
     R.Cases.append(Rule.Cases.begin(), Rule.Cases.end());
+
+}
   return R;
 }
 
@@ -171,8 +181,10 @@ SourceLocation transformer::detail::getRuleMatchLoc(const MatchResult &Result) {
   llvm::Optional<CharSourceRange> RootRange = tooling::getRangeForEdit(
       CharSourceRange::getTokenRange(Root->second.getSourceRange()),
       *Result.Context);
-  if (RootRange)
+  if (RootRange) {
     return RootRange->getBegin();
+
+}
   // The match doesn't have a coherent range, so fall back to the expansion
   // location as the "beginning" of the match.
   return Result.SourceManager->getExpansionLoc(
@@ -184,14 +196,18 @@ SourceLocation transformer::detail::getRuleMatchLoc(const MatchResult &Result) {
 const RewriteRule::Case &
 transformer::detail::findSelectedCase(const MatchResult &Result,
                                   const RewriteRule &Rule) {
-  if (Rule.Cases.size() == 1)
+  if (Rule.Cases.size() == 1) {
     return Rule.Cases[0];
+
+}
 
   auto &NodesMap = Result.Nodes.getMap();
   for (size_t i = 0, N = Rule.Cases.size(); i < N; ++i) {
     std::string Tag = ("Tag" + Twine(i)).str();
-    if (NodesMap.find(Tag) != NodesMap.end())
+    if (NodesMap.find(Tag) != NodesMap.end()) {
       return Rule.Cases[i];
+
+}
   }
   llvm_unreachable("No tag found for this rule.");
 }

@@ -42,8 +42,10 @@ static_assert(sizeof(GlobalObject) == sizeof(GlobalValue) + sizeof(void *),
               "unexpected GlobalObject size growth");
 
 bool GlobalValue::isMaterializable() const {
-  if (const Function *F = dyn_cast<Function>(this))
+  if (const Function *F = dyn_cast<Function>(this)) {
     return F->isMaterializable();
+
+}
   return false;
 }
 Error GlobalValue::materialize() {
@@ -95,8 +97,10 @@ void GlobalValue::eraseFromParent() {
 }
 
 bool GlobalValue::isInterposable() const {
-  if (isInterposableLinkage(getLinkage()))
+  if (isInterposableLinkage(getLinkage())) {
     return true;
+
+}
   return getParent() && getParent()->getSemanticInterposition() &&
          !isDSOLocal();
 }
@@ -104,8 +108,10 @@ bool GlobalValue::isInterposable() const {
 unsigned GlobalValue::getAlignment() const {
   if (auto *GA = dyn_cast<GlobalAlias>(this)) {
     // In general we cannot compute this at the IR level, but we try.
-    if (const GlobalObject *GO = GA->getBaseObject())
+    if (const GlobalObject *GO = GA->getBaseObject()) {
       return GO->getAlignment();
+
+}
 
     // FIXME: we should also be able to handle:
     // Alias = Global + Offset
@@ -147,8 +153,10 @@ std::string GlobalValue::getGlobalIdentifier(StringRef Name,
   // Value names may be prefixed with a binary '1' to indicate
   // that the backend should not modify the symbols due to any platform
   // naming convention. Do not include that '1' in the PGO profile name.
-  if (Name[0] == '\1')
+  if (Name[0] == '\1') {
     Name = Name.substr(1);
+
+}
 
   std::string NewName = std::string(Name);
   if (llvm::GlobalValue::isLocalLinkage(Linkage)) {
@@ -156,10 +164,12 @@ std::string GlobalValue::getGlobalIdentifier(StringRef Name,
     // Do not include the full path in the file name since there's no guarantee
     // that it will stay the same, e.g., if the files are checked out from
     // version control in different locations.
-    if (FileName.empty())
+    if (FileName.empty()) {
       NewName = NewName.insert(0, "<unknown>:");
-    else
+    } else {
       NewName = NewName.insert(0, FileName.str() + ":");
+
+}
   }
   return NewName;
 }
@@ -172,8 +182,10 @@ std::string GlobalValue::getGlobalIdentifier() const {
 StringRef GlobalValue::getSection() const {
   if (auto *GA = dyn_cast<GlobalAlias>(this)) {
     // In general we cannot compute this at the IR level, but we try.
-    if (const GlobalObject *GO = GA->getBaseObject())
+    if (const GlobalObject *GO = GA->getBaseObject()) {
       return GO->getSection();
+
+}
     return "";
   }
   return cast<GlobalObject>(this)->getSection();
@@ -182,31 +194,41 @@ StringRef GlobalValue::getSection() const {
 const Comdat *GlobalValue::getComdat() const {
   if (auto *GA = dyn_cast<GlobalAlias>(this)) {
     // In general we cannot compute this at the IR level, but we try.
-    if (const GlobalObject *GO = GA->getBaseObject())
+    if (const GlobalObject *GO = GA->getBaseObject()) {
       return const_cast<GlobalObject *>(GO)->getComdat();
+
+}
     return nullptr;
   }
   // ifunc and its resolver are separate things so don't use resolver comdat.
-  if (isa<GlobalIFunc>(this))
+  if (isa<GlobalIFunc>(this)) {
     return nullptr;
+
+}
   return cast<GlobalObject>(this)->getComdat();
 }
 
 StringRef GlobalValue::getPartition() const {
-  if (!hasPartition())
+  if (!hasPartition()) {
     return "";
+
+}
   return getContext().pImpl->GlobalValuePartitions[this];
 }
 
 void GlobalValue::setPartition(StringRef S) {
   // Do nothing if we're clearing the partition and it is already empty.
-  if (!hasPartition() && S.empty())
+  if (!hasPartition() && S.empty()) {
     return;
+
+}
 
   // Get or create a stable partition name string and put it in the table in the
   // context.
-  if (!S.empty())
+  if (!S.empty()) {
     S = getContext().pImpl->Saver.save(S);
+
+}
   getContext().pImpl->GlobalValuePartitions[this] = S;
 
   // Update the HasPartition field. Setting the partition to the empty string
@@ -221,13 +243,17 @@ StringRef GlobalObject::getSectionImpl() const {
 
 void GlobalObject::setSection(StringRef S) {
   // Do nothing if we're clearing the section and it is already empty.
-  if (!hasSection() && S.empty())
+  if (!hasSection() && S.empty()) {
     return;
+
+}
 
   // Get or create a stable section name string and put it in the table in the
   // context.
-  if (!S.empty())
+  if (!S.empty()) {
     S = getContext().pImpl->Saver.save(S);
+
+}
   getContext().pImpl->GlobalObjectSections[this] = S;
 
   // Update the HasSectionHashEntryBit. Setting the section to the empty string
@@ -237,12 +263,16 @@ void GlobalObject::setSection(StringRef S) {
 
 bool GlobalValue::isDeclaration() const {
   // Globals are definitions if they have an initializer.
-  if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(this))
+  if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(this)) {
     return GV->getNumOperands() == 0;
 
+}
+
   // Functions are definitions if they have a body.
-  if (const Function *F = dyn_cast<Function>(this))
+  if (const Function *F = dyn_cast<Function>(this)) {
     return F->empty() && !F->isMaterializable();
+
+}
 
   // Aliases and ifuncs are always definitions.
   assert(isa<GlobalIndirectSymbol>(this));
@@ -252,15 +282,19 @@ bool GlobalValue::isDeclaration() const {
 bool GlobalValue::canIncreaseAlignment() const {
   // Firstly, can only increase the alignment of a global if it
   // is a strong definition.
-  if (!isStrongDefinitionForLinker())
+  if (!isStrongDefinitionForLinker()) {
     return false;
+
+}
 
   // It also has to either not have a section defined, or, not have
   // alignment specified. (If it is assigned a section, the global
   // could be densely packed with other objects in the section, and
   // increasing the alignment could cause padding issues.)
-  if (hasSection() && getAlignment() > 0)
+  if (hasSection() && getAlignment() > 0) {
     return false;
+
+}
 
   // On ELF platforms, we're further restricted in that we can't
   // increase the alignment of any variable which might be emitted
@@ -284,54 +318,74 @@ bool GlobalValue::canIncreaseAlignment() const {
   // Conservatively assume ELF if there's no parent pointer.
   bool isELF =
       (!Parent || Triple(Parent->getTargetTriple()).isOSBinFormatELF());
-  if (isELF && !isDSOLocal())
+  if (isELF && !isDSOLocal()) {
     return false;
+
+}
 
   return true;
 }
 
 const GlobalObject *GlobalValue::getBaseObject() const {
-  if (auto *GO = dyn_cast<GlobalObject>(this))
+  if (auto *GO = dyn_cast<GlobalObject>(this)) {
     return GO;
-  if (auto *GA = dyn_cast<GlobalIndirectSymbol>(this))
+
+}
+  if (auto *GA = dyn_cast<GlobalIndirectSymbol>(this)) {
     return GA->getBaseObject();
+
+}
   return nullptr;
 }
 
 bool GlobalValue::isAbsoluteSymbolRef() const {
   auto *GO = dyn_cast<GlobalObject>(this);
-  if (!GO)
+  if (!GO) {
     return false;
+
+}
 
   return GO->getMetadata(LLVMContext::MD_absolute_symbol);
 }
 
 Optional<ConstantRange> GlobalValue::getAbsoluteSymbolRange() const {
   auto *GO = dyn_cast<GlobalObject>(this);
-  if (!GO)
+  if (!GO) {
     return None;
 
+}
+
   MDNode *MD = GO->getMetadata(LLVMContext::MD_absolute_symbol);
-  if (!MD)
+  if (!MD) {
     return None;
+
+}
 
   return getConstantRangeFromMetadata(*MD);
 }
 
 bool GlobalValue::canBeOmittedFromSymbolTable() const {
-  if (!hasLinkOnceODRLinkage())
+  if (!hasLinkOnceODRLinkage()) {
     return false;
+
+}
 
   // We assume that anyone who sets global unnamed_addr on a non-constant
   // knows what they're doing.
-  if (hasGlobalUnnamedAddr())
+  if (hasGlobalUnnamedAddr()) {
     return true;
+
+}
 
   // If it is a non constant variable, it needs to be uniqued across shared
   // objects.
-  if (auto *Var = dyn_cast<GlobalVariable>(this))
-    if (!Var->isConstant())
+  if (auto *Var = dyn_cast<GlobalVariable>(this)) {
+    if (!Var->isConstant()) {
       return false;
+
+}
+
+}
 
   return hasAtLeastLocalUnnamedAddr();
 }
@@ -378,10 +432,12 @@ GlobalVariable::GlobalVariable(Module &M, Type *Ty, bool constant,
     Op<0>() = InitVal;
   }
 
-  if (Before)
+  if (Before) {
     Before->getParent()->getGlobalList().insert(Before->getIterator(), this);
-  else
+  } else {
     M.getGlobalList().push_back(this);
+
+}
 }
 
 void GlobalVariable::removeFromParent() {
@@ -407,8 +463,10 @@ void GlobalVariable::setInitializer(Constant *InitVal) {
     // Note, the num operands is used to compute the offset of the operand, so
     // the order here matters.  We need to set num operands to 1 first so that
     // we get the correct offset to the first operand when we set it.
-    if (!hasInitializer())
+    if (!hasInitializer()) {
       setGlobalVariableNumOperands(1);
+
+}
     Op<0>().set(InitVal);
   }
 }
@@ -440,23 +498,33 @@ GlobalIndirectSymbol::GlobalIndirectSymbol(Type *Ty, ValueTy VTy,
 
 static const GlobalObject *
 findBaseObject(const Constant *C, DenseSet<const GlobalAlias *> &Aliases) {
-  if (auto *GO = dyn_cast<GlobalObject>(C))
+  if (auto *GO = dyn_cast<GlobalObject>(C)) {
     return GO;
-  if (auto *GA = dyn_cast<GlobalAlias>(C))
-    if (Aliases.insert(GA).second)
+
+}
+  if (auto *GA = dyn_cast<GlobalAlias>(C)) {
+    if (Aliases.insert(GA).second) {
       return findBaseObject(GA->getOperand(0), Aliases);
+
+}
+
+}
   if (auto *CE = dyn_cast<ConstantExpr>(C)) {
     switch (CE->getOpcode()) {
     case Instruction::Add: {
       auto *LHS = findBaseObject(CE->getOperand(0), Aliases);
       auto *RHS = findBaseObject(CE->getOperand(1), Aliases);
-      if (LHS && RHS)
+      if (LHS && RHS) {
         return nullptr;
+
+}
       return LHS ? LHS : RHS;
     }
     case Instruction::Sub: {
-      if (findBaseObject(CE->getOperand(1), Aliases))
+      if (findBaseObject(CE->getOperand(1), Aliases)) {
         return nullptr;
+
+}
       return findBaseObject(CE->getOperand(0), Aliases);
     }
     case Instruction::IntToPtr:
@@ -485,8 +553,10 @@ GlobalAlias::GlobalAlias(Type *Ty, unsigned AddressSpace, LinkageTypes Link,
                          Module *ParentModule)
     : GlobalIndirectSymbol(Ty, Value::GlobalAliasVal, AddressSpace, Link, Name,
                            Aliasee) {
-  if (ParentModule)
+  if (ParentModule) {
     ParentModule->getAliasList().push_back(this);
+
+}
 }
 
 GlobalAlias *GlobalAlias::create(Type *Ty, unsigned AddressSpace,
@@ -541,8 +611,10 @@ GlobalIFunc::GlobalIFunc(Type *Ty, unsigned AddressSpace, LinkageTypes Link,
                          Module *ParentModule)
     : GlobalIndirectSymbol(Ty, Value::GlobalIFuncVal, AddressSpace, Link, Name,
                            Resolver) {
-  if (ParentModule)
+  if (ParentModule) {
     ParentModule->getIFuncList().push_back(this);
+
+}
 }
 
 GlobalIFunc *GlobalIFunc::create(Type *Ty, unsigned AddressSpace,

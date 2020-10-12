@@ -45,8 +45,10 @@ void llvm::makeGuardControlFlowExplicit(Function *DeoptIntrinsic,
   CheckBI->getSuccessor(0)->setName("guarded");
   CheckBI->getSuccessor(1)->setName("deopt");
 
-  if (auto *MD = Guard->getMetadata(LLVMContext::MD_make_implicit))
+  if (auto *MD = Guard->getMetadata(LLVMContext::MD_make_implicit)) {
     CheckBI->setMetadata(LLVMContext::MD_make_implicit, MD);
+
+}
 
   MDBuilder MDB(Guard->getContext());
   CheckBI->setMetadata(LLVMContext::MD_prof,

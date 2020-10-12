@@ -30,30 +30,40 @@ void DwarfFile::addUnit(std::unique_ptr<DwarfCompileUnit> U) {
 // Emit the various dwarf units to the unit section USection with
 // the abbreviations going into ASection.
 void DwarfFile::emitUnits(bool UseOffsets) {
-  for (const auto &TheU : CUs)
+  for (const auto &TheU : CUs) {
     emitUnit(TheU.get(), UseOffsets);
+
+}
 }
 
 void DwarfFile::emitUnit(DwarfUnit *TheU, bool UseOffsets) {
-  if (TheU->getCUNode()->isDebugDirectivesOnly())
+  if (TheU->getCUNode()->isDebugDirectivesOnly()) {
     return;
+
+}
 
   MCSection *S = TheU->getSection();
 
-  if (!S)
+  if (!S) {
     return;
+
+}
 
   // Skip CUs that ended up not being needed (split CUs that were abandoned
   // because they added no information beyond the non-split CU)
-  if (llvm::empty(TheU->getUnitDie().values()))
+  if (llvm::empty(TheU->getUnitDie().values())) {
     return;
+
+}
 
   Asm->OutStreamer->SwitchSection(S);
   TheU->emitHeader(UseOffsets);
   Asm->emitDwarfDIE(TheU->getUnitDie());
 
-  if (MCSymbol *EndLabel = TheU->getEndLabel())
+  if (MCSymbol *EndLabel = TheU->getEndLabel()) {
     Asm->OutStreamer->emitLabel(EndLabel);
+
+}
 }
 
 // Compute the size and offset for each DIE.
@@ -64,13 +74,17 @@ void DwarfFile::computeSizeAndOffsets() {
   // Iterate over each compile unit and set the size and offsets for each
   // DIE within each compile unit. All offsets are CU relative.
   for (const auto &TheU : CUs) {
-    if (TheU->getCUNode()->isDebugDirectivesOnly())
+    if (TheU->getCUNode()->isDebugDirectivesOnly()) {
       continue;
+
+}
 
     // Skip CUs that ended up not being needed (split CUs that were abandoned
     // because they added no information beyond the non-split CU)
-    if (llvm::empty(TheU->getUnitDie().values()))
+    if (llvm::empty(TheU->getUnitDie().values())) {
       return;
+
+}
 
     TheU->setDebugSectionOffset(SecOffset);
     SecOffset += computeSizeAndOffsetsForUnit(TheU.get());
@@ -106,9 +120,9 @@ bool DwarfFile::addScopeVariable(LexicalScope *LS, DbgVariable *Var) {
   const DILocalVariable *DV = Var->getVariable();
   if (unsigned ArgNum = DV->getArg()) {
     auto Cached = ScopeVars.Args.find(ArgNum);
-    if (Cached == ScopeVars.Args.end())
+    if (Cached == ScopeVars.Args.end()) {
       ScopeVars.Args[ArgNum] = Var;
-    else {
+    } else {
       Cached->second->addMMIEntry(*Var);
       return false;
     }

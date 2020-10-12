@@ -54,8 +54,10 @@ findTokenUnderCursor(const SourceManager &SM,
     assert(T.location().isFileID());
     return SM.getFileOffset(T.location()) <= CursorOffset;
   });
-  if (It == Spelled.begin())
+  if (It == Spelled.begin()) {
     return nullptr;
+
+}
   // Check the token we found actually touches the cursor position.
   --It;
   return It->range(SM).touches(CursorOffset) ? It : nullptr;
@@ -70,18 +72,26 @@ findIdentifierUnderCursor(const syntax::TokenBuffer &Tokens,
   auto Spelled = Tokens.spelledTokens(SM.getFileID(Cursor));
 
   auto *T = findTokenUnderCursor(SM, Spelled, SM.getFileOffset(Cursor));
-  if (!T)
+  if (!T) {
     return nullptr;
-  if (T->kind() == tok::identifier)
+
+}
+  if (T->kind() == tok::identifier) {
     return T;
+
+}
   // Also try the previous token when the cursor is at the boundary, e.g.
   //   FOO^()
   //   FOO^+
-  if (T == Spelled.begin())
+  if (T == Spelled.begin()) {
     return nullptr;
+
+}
   --T;
-  if (T->endLocation() != Cursor || T->kind() != tok::identifier)
+  if (T->endLocation() != Cursor || T->kind() != tok::identifier) {
     return nullptr;
+
+}
   return T;
 }
 
@@ -92,12 +102,16 @@ bool ExpandMacro::prepare(const Selection &Inputs) {
   // Find a token under the cursor.
   auto *T = findIdentifierUnderCursor(Inputs.AST->getTokens(), Inputs.Cursor);
   // We are interested only in identifiers, other tokens can't be macro names.
-  if (!T)
+  if (!T) {
     return false;
+
+}
   // If the identifier is a macro we will find the corresponding expansion.
   auto Expansion = Inputs.AST->getTokens().expansionStartingAt(T);
-  if (!Expansion)
+  if (!Expansion) {
     return false;
+
+}
   this->MacroName = std::string(T->text(Inputs.AST->getSourceManager()));
   this->Expansion = *Expansion;
   return true;

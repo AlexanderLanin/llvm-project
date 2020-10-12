@@ -110,15 +110,19 @@ FunctionPass *llvm::createWinEHPass(bool DemoteCatchSwitchPHIOnly) {
 }
 
 bool WinEHPrepare::runOnFunction(Function &Fn) {
-  if (!Fn.hasPersonalityFn())
+  if (!Fn.hasPersonalityFn()) {
     return false;
+
+}
 
   // Classify the personality to see what kind of preparation we need.
   Personality = classifyEHPersonality(Fn.getPersonalityFn());
 
   // Do nothing if this is not a scope-based personality.
-  if (!isScopedEHPersonality(Personality))
+  if (!isScopedEHPersonality(Personality)) {
     return false;
+
+}
 
   DL = &Fn.getParent()->getDataLayout();
   return prepareExplicitEH(Fn);
@@ -148,26 +152,34 @@ static void addTryBlockMapEntry(WinEHFuncInfo &FuncInfo, int TryLow,
   for (const CatchPadInst *CPI : Handlers) {
     WinEHHandlerType HT;
     Constant *TypeInfo = cast<Constant>(CPI->getArgOperand(0));
-    if (TypeInfo->isNullValue())
+    if (TypeInfo->isNullValue()) {
       HT.TypeDescriptor = nullptr;
-    else
+    } else {
       HT.TypeDescriptor = cast<GlobalVariable>(TypeInfo->stripPointerCasts());
+
+}
     HT.Adjectives = cast<ConstantInt>(CPI->getArgOperand(1))->getZExtValue();
     HT.Handler = CPI->getParent();
     if (auto *AI =
-            dyn_cast<AllocaInst>(CPI->getArgOperand(2)->stripPointerCasts()))
+            dyn_cast<AllocaInst>(CPI->getArgOperand(2)->stripPointerCasts())) {
       HT.CatchObj.Alloca = AI;
-    else
+    } else {
       HT.CatchObj.Alloca = nullptr;
+
+}
     TBME.HandlerArray.push_back(HT);
   }
   FuncInfo.TryBlockMap.push_back(TBME);
 }
 
 static BasicBlock *getCleanupRetUnwindDest(const CleanupPadInst *CleanupPad) {
-  for (const User *U : CleanupPad->users())
-    if (const auto *CRI = dyn_cast<CleanupReturnInst>(U))
+  for (const User *U : CleanupPad->users()) {
+    if (const auto *CRI = dyn_cast<CleanupReturnInst>(U)) {
       return CRI->getUnwindDest();
+
+}
+
+}
   return nullptr;
 }
 
@@ -177,8 +189,10 @@ static void calculateStateNumbersForInvokes(const Function *Fn,
   DenseMap<BasicBlock *, ColorVector> BlockColors = colorEHFunclets(*F);
   for (BasicBlock &BB : *F) {
     auto *II = dyn_cast<InvokeInst>(BB.getTerminator());
-    if (!II)
+    if (!II) {
       continue;
+
+}
 
     auto &BBColors = BlockColors[&BB];
     assert(BBColors.size() == 1 && "multi-color BB not removed by preparation");
@@ -188,21 +202,25 @@ static void calculateStateNumbersForInvokes(const Function *Fn,
     auto *FuncletPad =
         dyn_cast<FuncletPadInst>(FuncletEntryBB->getFirstNonPHI());
     assert(FuncletPad || FuncletEntryBB == &Fn->getEntryBlock());
-    if (!FuncletPad)
+    if (!FuncletPad) {
       FuncletUnwindDest = nullptr;
-    else if (auto *CatchPad = dyn_cast<CatchPadInst>(FuncletPad))
+    } else if (auto *CatchPad = dyn_cast<CatchPadInst>(FuncletPad)) {
       FuncletUnwindDest = CatchPad->getCatchSwitch()->getUnwindDest();
-    else if (auto *CleanupPad = dyn_cast<CleanupPadInst>(FuncletPad))
+    } else if (auto *CleanupPad = dyn_cast<CleanupPadInst>(FuncletPad)) {
       FuncletUnwindDest = getCleanupRetUnwindDest(CleanupPad);
-    else
+    } else {
       llvm_unreachable("unexpected funclet pad!");
+
+}
 
     BasicBlock *InvokeUnwindDest = II->getUnwindDest();
     int BaseState = -1;
     if (FuncletUnwindDest == InvokeUnwindDest) {
       auto BaseStateI = FuncInfo.FuncletBaseStateMap.find(FuncletPad);
-      if (BaseStateI != FuncInfo.FuncletBaseStateMap.end())
+      if (BaseStateI != FuncInfo.FuncletBaseStateMap.end()) {
         BaseState = BaseStateI->second;
+
+}
     }
 
     if (BaseState != -1) {
@@ -220,17 +238,23 @@ static void calculateStateNumbersForInvokes(const Function *Fn,
 static const BasicBlock *getEHPadFromPredecessor(const BasicBlock *BB,
                                                  Value *ParentPad) {
   const Instruction *TI = BB->getTerminator();
-  if (isa<InvokeInst>(TI))
+  if (isa<InvokeInst>(TI)) {
     return nullptr;
+
+}
   if (auto *CatchSwitch = dyn_cast<CatchSwitchInst>(TI)) {
-    if (CatchSwitch->getParentPad() != ParentPad)
+    if (CatchSwitch->getParentPad() != ParentPad) {
       return nullptr;
+
+}
     return BB;
   }
   assert(!TI->isEHPad() && "unexpected EHPad!");
   auto *CleanupPad = cast<CleanupReturnInst>(TI)->getCleanupPad();
-  if (CleanupPad->getParentPad() != ParentPad)
+  if (CleanupPad->getParentPad() != ParentPad) {
     return nullptr;
+
+}
   return CleanupPad->getParent();
 }
 
@@ -251,11 +275,15 @@ static void calculateCXXStateNumbers(WinEHFuncInfo &FuncInfo,
     }
     int TryLow = addUnwindMapEntry(FuncInfo, ParentState, nullptr);
     FuncInfo.EHPadStateMap[CatchSwitch] = TryLow;
-    for (const BasicBlock *PredBlock : predecessors(BB))
+    for (const BasicBlock *PredBlock : predecessors(BB)) {
       if ((PredBlock = getEHPadFromPredecessor(PredBlock,
-                                               CatchSwitch->getParentPad())))
+                                               CatchSwitch->getParentPad()))) {
         calculateCXXStateNumbers(FuncInfo, PredBlock->getFirstNonPHI(),
                                  TryLow);
+
+}
+
+}
     int CatchLow = addUnwindMapEntry(FuncInfo, ParentState, nullptr);
 
     // catchpads are separate funclets in C++ EH due to the way rethrow works.
@@ -266,16 +294,20 @@ static void calculateCXXStateNumbers(WinEHFuncInfo &FuncInfo,
         const auto *UserI = cast<Instruction>(U);
         if (auto *InnerCatchSwitch = dyn_cast<CatchSwitchInst>(UserI)) {
           BasicBlock *UnwindDest = InnerCatchSwitch->getUnwindDest();
-          if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest())
+          if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest()) {
             calculateCXXStateNumbers(FuncInfo, UserI, CatchLow);
+
+}
         }
         if (auto *InnerCleanupPad = dyn_cast<CleanupPadInst>(UserI)) {
           BasicBlock *UnwindDest = getCleanupRetUnwindDest(InnerCleanupPad);
           // If a nested cleanup pad reports a null unwind destination and the
           // enclosing catch pad doesn't it must be post-dominated by an
           // unreachable instruction.
-          if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest())
+          if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest()) {
             calculateCXXStateNumbers(FuncInfo, UserI, CatchLow);
+
+}
         }
       }
     }
@@ -291,8 +323,10 @@ static void calculateCXXStateNumbers(WinEHFuncInfo &FuncInfo,
 
     // It's possible for a cleanup to be visited twice: it might have multiple
     // cleanupret instructions.
-    if (FuncInfo.EHPadStateMap.count(CleanupPad))
+    if (FuncInfo.EHPadStateMap.count(CleanupPad)) {
       return;
+
+}
 
     int CleanupState = addUnwindMapEntry(FuncInfo, ParentState, BB);
     FuncInfo.EHPadStateMap[CleanupPad] = CleanupState;
@@ -307,9 +341,11 @@ static void calculateCXXStateNumbers(WinEHFuncInfo &FuncInfo,
     }
     for (const User *U : CleanupPad->users()) {
       const auto *UserI = cast<Instruction>(U);
-      if (UserI->isEHPad())
+      if (UserI->isEHPad()) {
         report_fatal_error("Cleanup funclets for the MSVC++ personality cannot "
                            "contain exceptional actions");
+
+}
     }
   }
 }
@@ -364,11 +400,15 @@ static void calculateSEHStateNumbers(WinEHFuncInfo &FuncInfo,
     FuncInfo.EHPadStateMap[CatchSwitch] = TryState;
     LLVM_DEBUG(dbgs() << "Assigning state #" << TryState << " to BB "
                       << CatchPadBB->getName() << '\n');
-    for (const BasicBlock *PredBlock : predecessors(BB))
+    for (const BasicBlock *PredBlock : predecessors(BB)) {
       if ((PredBlock = getEHPadFromPredecessor(PredBlock,
-                                               CatchSwitch->getParentPad())))
+                                               CatchSwitch->getParentPad()))) {
         calculateSEHStateNumbers(FuncInfo, PredBlock->getFirstNonPHI(),
                                  TryState);
+
+}
+
+}
 
     // Everything in the __except block unwinds to ParentState, just like code
     // outside the __try.
@@ -376,16 +416,20 @@ static void calculateSEHStateNumbers(WinEHFuncInfo &FuncInfo,
       const auto *UserI = cast<Instruction>(U);
       if (auto *InnerCatchSwitch = dyn_cast<CatchSwitchInst>(UserI)) {
         BasicBlock *UnwindDest = InnerCatchSwitch->getUnwindDest();
-        if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest())
+        if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest()) {
           calculateSEHStateNumbers(FuncInfo, UserI, ParentState);
+
+}
       }
       if (auto *InnerCleanupPad = dyn_cast<CleanupPadInst>(UserI)) {
         BasicBlock *UnwindDest = getCleanupRetUnwindDest(InnerCleanupPad);
         // If a nested cleanup pad reports a null unwind destination and the
         // enclosing catch pad doesn't it must be post-dominated by an
         // unreachable instruction.
-        if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest())
+        if (!UnwindDest || UnwindDest == CatchSwitch->getUnwindDest()) {
           calculateSEHStateNumbers(FuncInfo, UserI, ParentState);
+
+}
       }
     }
   } else {
@@ -393,51 +437,71 @@ static void calculateSEHStateNumbers(WinEHFuncInfo &FuncInfo,
 
     // It's possible for a cleanup to be visited twice: it might have multiple
     // cleanupret instructions.
-    if (FuncInfo.EHPadStateMap.count(CleanupPad))
+    if (FuncInfo.EHPadStateMap.count(CleanupPad)) {
       return;
+
+}
 
     int CleanupState = addSEHFinally(FuncInfo, ParentState, BB);
     FuncInfo.EHPadStateMap[CleanupPad] = CleanupState;
     LLVM_DEBUG(dbgs() << "Assigning state #" << CleanupState << " to BB "
                       << BB->getName() << '\n');
-    for (const BasicBlock *PredBlock : predecessors(BB))
+    for (const BasicBlock *PredBlock : predecessors(BB)) {
       if ((PredBlock =
-               getEHPadFromPredecessor(PredBlock, CleanupPad->getParentPad())))
+               getEHPadFromPredecessor(PredBlock, CleanupPad->getParentPad()))) {
         calculateSEHStateNumbers(FuncInfo, PredBlock->getFirstNonPHI(),
                                  CleanupState);
+
+}
+
+}
     for (const User *U : CleanupPad->users()) {
       const auto *UserI = cast<Instruction>(U);
-      if (UserI->isEHPad())
+      if (UserI->isEHPad()) {
         report_fatal_error("Cleanup funclets for the SEH personality cannot "
                            "contain exceptional actions");
+
+}
     }
   }
 }
 
 static bool isTopLevelPadForMSVC(const Instruction *EHPad) {
-  if (auto *CatchSwitch = dyn_cast<CatchSwitchInst>(EHPad))
+  if (auto *CatchSwitch = dyn_cast<CatchSwitchInst>(EHPad)) {
     return isa<ConstantTokenNone>(CatchSwitch->getParentPad()) &&
            CatchSwitch->unwindsToCaller();
-  if (auto *CleanupPad = dyn_cast<CleanupPadInst>(EHPad))
+
+}
+  if (auto *CleanupPad = dyn_cast<CleanupPadInst>(EHPad)) {
     return isa<ConstantTokenNone>(CleanupPad->getParentPad()) &&
            getCleanupRetUnwindDest(CleanupPad) == nullptr;
-  if (isa<CatchPadInst>(EHPad))
+
+}
+  if (isa<CatchPadInst>(EHPad)) {
     return false;
+
+}
   llvm_unreachable("unexpected EHPad!");
 }
 
 void llvm::calculateSEHStateNumbers(const Function *Fn,
                                     WinEHFuncInfo &FuncInfo) {
   // Don't compute state numbers twice.
-  if (!FuncInfo.SEHUnwindMap.empty())
+  if (!FuncInfo.SEHUnwindMap.empty()) {
     return;
 
+}
+
   for (const BasicBlock &BB : *Fn) {
-    if (!BB.isEHPad())
+    if (!BB.isEHPad()) {
       continue;
+
+}
     const Instruction *FirstNonPHI = BB.getFirstNonPHI();
-    if (!isTopLevelPadForMSVC(FirstNonPHI))
+    if (!isTopLevelPadForMSVC(FirstNonPHI)) {
       continue;
+
+}
     ::calculateSEHStateNumbers(FuncInfo, FirstNonPHI, -1);
   }
 
@@ -447,15 +511,21 @@ void llvm::calculateSEHStateNumbers(const Function *Fn,
 void llvm::calculateWinCXXEHStateNumbers(const Function *Fn,
                                          WinEHFuncInfo &FuncInfo) {
   // Return if it's already been done.
-  if (!FuncInfo.EHPadStateMap.empty())
+  if (!FuncInfo.EHPadStateMap.empty()) {
     return;
 
+}
+
   for (const BasicBlock &BB : *Fn) {
-    if (!BB.isEHPad())
+    if (!BB.isEHPad()) {
       continue;
+
+}
     const Instruction *FirstNonPHI = BB.getFirstNonPHI();
-    if (!isTopLevelPadForMSVC(FirstNonPHI))
+    if (!isTopLevelPadForMSVC(FirstNonPHI)) {
       continue;
+
+}
     calculateCXXStateNumbers(FuncInfo, FirstNonPHI, -1);
   }
 
@@ -478,8 +548,10 @@ static int addClrEHHandler(WinEHFuncInfo &FuncInfo, int HandlerParentState,
 void llvm::calculateClrEHStateNumbers(const Function *Fn,
                                       WinEHFuncInfo &FuncInfo) {
   // Return if it's already been done.
-  if (!FuncInfo.EHPadStateMap.empty())
+  if (!FuncInfo.EHPadStateMap.empty()) {
     return;
+
+}
 
   // This numbering assigns one state number to each catchpad and cleanuppad.
   // It also computes two tree-like relations over states:
@@ -509,14 +581,18 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
   for (const BasicBlock &BB : *Fn) {
     const Instruction *FirstNonPHI = BB.getFirstNonPHI();
     const Value *ParentPad;
-    if (const auto *CPI = dyn_cast<CleanupPadInst>(FirstNonPHI))
+    if (const auto *CPI = dyn_cast<CleanupPadInst>(FirstNonPHI)) {
       ParentPad = CPI->getParentPad();
-    else if (const auto *CSI = dyn_cast<CatchSwitchInst>(FirstNonPHI))
+    } else if (const auto *CSI = dyn_cast<CatchSwitchInst>(FirstNonPHI)) {
       ParentPad = CSI->getParentPad();
-    else
+    } else {
       continue;
-    if (isa<ConstantTokenNone>(ParentPad))
+
+}
+    if (isa<ConstantTokenNone>(ParentPad)) {
       Worklist.emplace_back(FirstNonPHI, -1);
+
+}
   }
 
   // Use the worklist to visit all pads, from outer to inner.  Record
@@ -539,10 +615,16 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
       int CleanupState = addClrEHHandler(FuncInfo, HandlerParentState, -1,
                                          HandlerType, 0, Pad->getParent());
       // Queue any child EH pads on the worklist.
-      for (const User *U : Cleanup->users())
-        if (const auto *I = dyn_cast<Instruction>(U))
-          if (I->isEHPad())
+      for (const User *U : Cleanup->users()) {
+        if (const auto *I = dyn_cast<Instruction>(U)) {
+          if (I->isEHPad()) {
             Worklist.emplace_back(I, CleanupState);
+
+}
+
+}
+
+}
       // Remember this pad's state.
       FuncInfo.EHPadStateMap[Cleanup] = CleanupState;
     } else {
@@ -563,10 +645,16 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
             addClrEHHandler(FuncInfo, HandlerParentState, FollowerState,
                             ClrHandlerType::Catch, TypeToken, CatchBlock);
         // Queue any child EH pads on the worklist.
-        for (const User *U : Catch->users())
-          if (const auto *I = dyn_cast<Instruction>(U))
-            if (I->isEHPad())
+        for (const User *U : Catch->users()) {
+          if (const auto *I = dyn_cast<Instruction>(U)) {
+            if (I->isEHPad()) {
               Worklist.emplace_back(I, CatchState);
+
+}
+
+}
+
+}
         // Remember this catch's state.
         FuncInfo.EHPadStateMap[Catch] = CatchState;
       }
@@ -593,8 +681,10 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
       // that's not the unwind dest of exceptions escaping the catch.  Those
       // cases were already assigned a TryParentState in the first pass, so
       // skip them.
-      if (Entry->TryParentState != -1)
+      if (Entry->TryParentState != -1) {
         continue;
+
+}
       // Otherwise, get the unwind dest from the catchswitch.
       UnwindDest = Catch->getCatchSwitch()->getUnwindDest();
     } else {
@@ -618,32 +708,40 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
           int UserState = FuncInfo.EHPadStateMap[ChildCleanup];
           int UserUnwindState =
               FuncInfo.ClrEHUnwindMap[UserState].TryParentState;
-          if (UserUnwindState != -1)
+          if (UserUnwindState != -1) {
             UserUnwindDest = FuncInfo.ClrEHUnwindMap[UserUnwindState]
                                  .Handler.get<const BasicBlock *>();
+
+}
         }
 
         // Not having an unwind dest for this user might indicate that it
         // doesn't unwind, so can't be taken as proof that the cleanup itself
         // may unwind to caller (see e.g. SimplifyUnreachable and
         // RemoveUnwindEdge).
-        if (!UserUnwindDest)
+        if (!UserUnwindDest) {
           continue;
+
+}
 
         // Now we have an unwind dest for the user, but we need to see if it
         // unwinds all the way out of the cleanup or if it stays within it.
         const Instruction *UserUnwindPad = UserUnwindDest->getFirstNonPHI();
         const Value *UserUnwindParent;
-        if (auto *CSI = dyn_cast<CatchSwitchInst>(UserUnwindPad))
+        if (auto *CSI = dyn_cast<CatchSwitchInst>(UserUnwindPad)) {
           UserUnwindParent = CSI->getParentPad();
-        else
+        } else {
           UserUnwindParent =
               cast<CleanupPadInst>(UserUnwindPad)->getParentPad();
 
+}
+
         // The unwind stays within the cleanup iff it targets a child of the
         // cleanup.
-        if (UserUnwindParent == Cleanup)
+        if (UserUnwindParent == Cleanup) {
           continue;
+
+}
 
         // This unwind exits the cleanup, so its dest is the cleanup's dest.
         UnwindDest = UserUnwindDest;
@@ -683,8 +781,10 @@ void WinEHPrepare::colorFunclets(Function &F) {
   // Invert the map from BB to colors to color to BBs.
   for (BasicBlock &BB : F) {
     ColorVector &Colors = BlockColors[&BB];
-    for (BasicBlock *Color : Colors)
+    for (BasicBlock *Color : Colors) {
       FuncletBlocks[Color].push_back(&BB);
+
+}
   }
 }
 
@@ -694,21 +794,29 @@ void WinEHPrepare::demotePHIsOnFunclets(Function &F,
   SmallVector<PHINode *, 16> PHINodes;
   for (Function::iterator FI = F.begin(), FE = F.end(); FI != FE;) {
     BasicBlock *BB = &*FI++;
-    if (!BB->isEHPad())
+    if (!BB->isEHPad()) {
       continue;
-    if (DemoteCatchSwitchPHIOnly && !isa<CatchSwitchInst>(BB->getFirstNonPHI()))
+
+}
+    if (DemoteCatchSwitchPHIOnly && !isa<CatchSwitchInst>(BB->getFirstNonPHI())) {
       continue;
+
+}
 
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
       Instruction *I = &*BI++;
       auto *PN = dyn_cast<PHINode>(I);
       // Stop at the first non-PHI.
-      if (!PN)
+      if (!PN) {
         break;
 
+}
+
       AllocaInst *SpillSlot = insertPHILoads(PN, F);
-      if (SpillSlot)
+      if (SpillSlot) {
         insertPHIStores(PN, SpillSlot);
+
+}
 
       PHINodes.push_back(PN);
     }
@@ -729,10 +837,12 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
     BasicBlock *FuncletPadBB = Funclets.first;
     std::vector<BasicBlock *> &BlocksInFunclet = Funclets.second;
     Value *FuncletToken;
-    if (FuncletPadBB == &F.getEntryBlock())
+    if (FuncletPadBB == &F.getEntryBlock()) {
       FuncletToken = ConstantTokenNone::get(F.getContext());
-    else
+    } else {
       FuncletToken = FuncletPadBB->getFirstNonPHI();
+
+}
 
     std::vector<std::pair<BasicBlock *, BasicBlock *>> Orig2Clone;
     ValueToValueMapTy VMap;
@@ -740,8 +850,10 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
       ColorVector &ColorsForBB = BlockColors[BB];
       // We don't need to do anything if the block is monochromatic.
       size_t NumColorsForBB = ColorsForBB.size();
-      if (NumColorsForBB == 1)
+      if (NumColorsForBB == 1) {
         continue;
+
+}
 
       DEBUG_WITH_TYPE("winehprepare-coloring",
                       dbgs() << "  Cloning block \'" << BB->getName()
@@ -763,8 +875,10 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
     }
 
     // If nothing was cloned, we're done cloning in this funclet.
-    if (Orig2Clone.empty())
+    if (Orig2Clone.empty()) {
       continue;
+
+}
 
     // Update our color mappings to reflect that one block has lost a color and
     // another has gained a color.
@@ -798,11 +912,15 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
 
     // Loop over all of the instructions in this funclet, fixing up operand
     // references as we go.  This uses VMap to do all the hard work.
-    for (BasicBlock *BB : BlocksInFunclet)
+    for (BasicBlock *BB : BlocksInFunclet) {
       // Loop over all instructions, fixing each one as we find it...
-      for (Instruction &I : *BB)
+      for (Instruction &I : *BB) {
         RemapInstruction(&I, VMap,
                          RF_IgnoreMissingLocals | RF_NoModuleLevelChanges);
+
+}
+
+}
 
     // Catchrets targeting cloned blocks need to be updated separately from
     // the loop above because they are not in the current funclet.
@@ -812,13 +930,21 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
       BasicBlock *NewBlock = BBMapping.second;
 
       FixupCatchrets.clear();
-      for (BasicBlock *Pred : predecessors(OldBlock))
-        if (auto *CatchRet = dyn_cast<CatchReturnInst>(Pred->getTerminator()))
-          if (CatchRet->getCatchSwitchParentPad() == FuncletToken)
+      for (BasicBlock *Pred : predecessors(OldBlock)) {
+        if (auto *CatchRet = dyn_cast<CatchReturnInst>(Pred->getTerminator())) {
+          if (CatchRet->getCatchSwitchParentPad() == FuncletToken) {
             FixupCatchrets.push_back(CatchRet);
 
-      for (CatchReturnInst *CatchRet : FixupCatchrets)
+}
+
+}
+
+}
+
+      for (CatchReturnInst *CatchRet : FixupCatchrets) {
         CatchRet->setSuccessor(NewBlock);
+
+}
     }
 
     auto UpdatePHIOnClonedBlock = [&](PHINode *PN, bool IsForOldBlock) {
@@ -841,8 +967,10 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
                  "Cloning should leave this funclet's blocks monochromatic");
           EdgeTargetsFunclet = (IncomingColors.front() == FuncletPadBB);
         }
-        if (IsForOldBlock != EdgeTargetsFunclet)
+        if (IsForOldBlock != EdgeTargetsFunclet) {
           continue;
+
+}
         PN->removeIncomingValue(IncomingBlock, /*DeletePHIIfEmpty=*/false);
         // Revisit the next entry.
         --PredIdx;
@@ -871,15 +999,19 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
           // Ok, we have a PHI node.  Figure out what the incoming value was for
           // the OldBlock.
           int OldBlockIdx = SuccPN.getBasicBlockIndex(OldBlock);
-          if (OldBlockIdx == -1)
+          if (OldBlockIdx == -1) {
             break;
+
+}
           Value *IV = SuccPN.getIncomingValue(OldBlockIdx);
 
           // Remap the value if necessary.
           if (auto *Inst = dyn_cast<Instruction>(IV)) {
             ValueToValueMapTy::iterator I = VMap.find(Inst);
-            if (I != VMap.end())
+            if (I != VMap.end()) {
               IV = I->second;
+
+}
           }
 
           SuccPN.addIncoming(IV, NewBlock);
@@ -896,8 +1028,10 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
       SmallVector<Use *, 16> UsesToRename;
 
       auto *OldI = dyn_cast<Instruction>(const_cast<Value *>(VT.first));
-      if (!OldI)
+      if (!OldI) {
         continue;
+
+}
       auto *NewI = cast<Instruction>(VT.second);
       // Scan all uses of this instruction to see if it is used outside of its
       // funclet, and if so, record them in UsesToRename.
@@ -907,14 +1041,18 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
         ColorVector &ColorsForUserBB = BlockColors[UserBB];
         assert(!ColorsForUserBB.empty());
         if (ColorsForUserBB.size() > 1 ||
-            *ColorsForUserBB.begin() != FuncletPadBB)
+            *ColorsForUserBB.begin() != FuncletPadBB) {
           UsesToRename.push_back(&U);
+
+}
       }
 
       // If there are no uses outside the block, we're done with this
       // instruction.
-      if (UsesToRename.empty())
+      if (UsesToRename.empty()) {
         continue;
+
+}
 
       // We found a use of OldI outside of the funclet.  Rename all uses of OldI
       // that are outside its funclet to be uses of the appropriate PHI node
@@ -924,8 +1062,10 @@ void WinEHPrepare::cloneCommonBlocks(Function &F) {
       SSAUpdate.AddAvailableValue(OldI->getParent(), OldI);
       SSAUpdate.AddAvailableValue(NewI->getParent(), NewI);
 
-      while (!UsesToRename.empty())
+      while (!UsesToRename.empty()) {
         SSAUpdate.RewriteUseAfterInsertions(*UsesToRename.pop_back_val());
+
+}
     }
   }
 }
@@ -943,22 +1083,30 @@ void WinEHPrepare::removeImplausibleInstructions(Function &F) {
     for (BasicBlock *BB : BlocksInFunclet) {
       for (Instruction &I : *BB) {
         CallSite CS(&I);
-        if (!CS)
+        if (!CS) {
           continue;
+
+}
 
         Value *FuncletBundleOperand = nullptr;
-        if (auto BU = CS.getOperandBundle(LLVMContext::OB_funclet))
+        if (auto BU = CS.getOperandBundle(LLVMContext::OB_funclet)) {
           FuncletBundleOperand = BU->Inputs.front();
 
-        if (FuncletBundleOperand == FuncletPad)
+}
+
+        if (FuncletBundleOperand == FuncletPad) {
           continue;
+
+}
 
         // Skip call sites which are nounwind intrinsics or inline asm.
         auto *CalledFn =
             dyn_cast<Function>(CS.getCalledValue()->stripPointerCasts());
         if (CalledFn && ((CalledFn->isIntrinsic() && CS.doesNotThrow()) ||
-                         CS.isInlineAsm()))
+                         CS.isInlineAsm())) {
           continue;
+
+}
 
         // This call site was not part of this funclet, remove it.
         if (CS.isInvoke()) {
@@ -983,12 +1131,16 @@ void WinEHPrepare::removeImplausibleInstructions(Function &F) {
       bool IsUnreachableRet = isa<ReturnInst>(TI) && FuncletPad;
       // The token consumed by a CatchReturnInst must match the funclet token.
       bool IsUnreachableCatchret = false;
-      if (auto *CRI = dyn_cast<CatchReturnInst>(TI))
+      if (auto *CRI = dyn_cast<CatchReturnInst>(TI)) {
         IsUnreachableCatchret = CRI->getCatchPad() != CatchPad;
+
+}
       // The token consumed by a CleanupReturnInst must match the funclet token.
       bool IsUnreachableCleanupret = false;
-      if (auto *CRI = dyn_cast<CleanupReturnInst>(TI))
+      if (auto *CRI = dyn_cast<CleanupReturnInst>(TI)) {
         IsUnreachableCleanupret = CRI->getCleanupPad() != CleanupPad;
+
+}
       if (IsUnreachableRet || IsUnreachableCatchret ||
           IsUnreachableCleanupret) {
         changeToUnreachable(TI, /*UseLLVMTrap=*/false);
@@ -1045,9 +1197,11 @@ bool WinEHPrepare::prepareExplicitEH(Function &F) {
 
   cloneCommonBlocks(F);
 
-  if (!DisableDemotion)
+  if (!DisableDemotion) {
     demotePHIsOnFunclets(F, DemoteCatchSwitchPHIOnly ||
                                 DemoteCatchSwitchPHIOnlyOpt);
+
+}
 
   if (!DisableCleanups) {
     LLVM_DEBUG(verifyFunction(F));
@@ -1131,8 +1285,10 @@ void WinEHPrepare::insertPHIStores(PHINode *OriginalPHI,
         Value *PredVal = PN->getIncomingValue(i);
 
         // Undef can safely be skipped.
-        if (isa<UndefValue>(PredVal))
+        if (isa<UndefValue>(PredVal)) {
           continue;
+
+}
 
         insertPHIStore(PN->getIncomingBlock(i), PredVal, SpillSlot, Worklist);
       }
@@ -1164,10 +1320,12 @@ void WinEHPrepare::replaceUseWithLoad(Value *V, Use &U, AllocaInst *&SpillSlot,
                                       DenseMap<BasicBlock *, Value *> &Loads,
                                       Function &F) {
   // Lazilly create the spill slot.
-  if (!SpillSlot)
+  if (!SpillSlot) {
     SpillSlot = new AllocaInst(V->getType(), DL->getAllocaAddrSpace(), nullptr,
                                Twine(V->getName(), ".wineh.spillslot"),
                                &F.getEntryBlock().front());
+
+}
 
   auto *UsingInst = cast<Instruction>(U.getUser());
   if (auto *UsingPHI = dyn_cast<PHINode>(UsingInst)) {
@@ -1216,17 +1374,21 @@ void WinEHPrepare::replaceUseWithLoad(Value *V, Use &U, AllocaInst *&SpillSlot,
       ColorVector &ColorsForNewBlock = BlockColors[NewBlock];
       ColorVector &ColorsForPHIBlock = BlockColors[PHIBlock];
       ColorsForNewBlock = ColorsForPHIBlock;
-      for (BasicBlock *FuncletPad : ColorsForPHIBlock)
+      for (BasicBlock *FuncletPad : ColorsForPHIBlock) {
         FuncletBlocks[FuncletPad].push_back(NewBlock);
+
+}
       // Treat the new block as incoming for load insertion.
       IncomingBlock = NewBlock;
     }
     Value *&Load = Loads[IncomingBlock];
     // Insert the load into the predecessor block
-    if (!Load)
+    if (!Load) {
       Load = new LoadInst(V->getType(), SpillSlot,
                           Twine(V->getName(), ".wineh.reload"),
                           /*isVolatile=*/false, IncomingBlock->getTerminator());
+
+}
 
     U.set(Load);
   } else {

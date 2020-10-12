@@ -156,24 +156,32 @@ void DivergencePropagator::exploreSyncDependency(Instruction *TI) {
   BasicBlock *ThisBB = TI->getParent();
 
   // Unreachable blocks may not be in the dominator tree.
-  if (!DT.isReachableFromEntry(ThisBB))
+  if (!DT.isReachableFromEntry(ThisBB)) {
     return;
+
+}
 
   // If the function has no exit blocks or doesn't reach any exit blocks, the
   // post dominator may be null.
   DomTreeNode *ThisNode = PDT.getNode(ThisBB);
-  if (!ThisNode)
+  if (!ThisNode) {
     return;
 
+}
+
   BasicBlock *IPostDom = ThisNode->getIDom()->getBlock();
-  if (IPostDom == nullptr)
+  if (IPostDom == nullptr) {
     return;
+
+}
 
   for (auto I = IPostDom->begin(); isa<PHINode>(I); ++I) {
     // A PHINode is uniform if it returns the same value no matter which path is
     // taken.
-    if (!cast<PHINode>(I)->hasConstantOrUndefValue() && DV.insert(&*I).second)
+    if (!cast<PHINode>(I)->hasConstantOrUndefValue() && DV.insert(&*I).second) {
       Worklist.push_back(&*I);
+
+}
   }
 
   // Propagation rule 2: if a value defined in a loop is used outside, the user
@@ -204,12 +212,16 @@ void DivergencePropagator::exploreSyncDependency(Instruction *TI) {
   BasicBlock *InfluencedBB = ThisBB;
   while (InfluenceRegion.count(InfluencedBB)) {
     for (auto &I : *InfluencedBB) {
-      if (!DV.count(&I))
+      if (!DV.count(&I)) {
         findUsersOutsideInfluenceRegion(I, InfluenceRegion);
+
+}
     }
     DomTreeNode *IDomNode = DT.getNode(InfluencedBB)->getIDom();
-    if (IDomNode == nullptr)
+    if (IDomNode == nullptr) {
       break;
+
+}
     InfluencedBB = IDomNode->getBlock();
   }
 }
@@ -220,8 +232,10 @@ void DivergencePropagator::findUsersOutsideInfluenceRegion(
     Instruction *UserInst = cast<Instruction>(Use.getUser());
     if (!InfluenceRegion.count(UserInst->getParent())) {
       DU.insert(&Use);
-      if (DV.insert(UserInst).second)
+      if (DV.insert(UserInst).second) {
         Worklist.push_back(UserInst);
+
+}
     }
   }
 }
@@ -233,8 +247,10 @@ addSuccessorsToInfluenceRegion(BasicBlock *ThisBB, BasicBlock *End,
                                DenseSet<BasicBlock *> &InfluenceRegion,
                                std::vector<BasicBlock *> &InfluenceStack) {
   for (BasicBlock *Succ : successors(ThisBB)) {
-    if (Succ != End && InfluenceRegion.insert(Succ).second)
+    if (Succ != End && InfluenceRegion.insert(Succ).second) {
       InfluenceStack.push_back(Succ);
+
+}
   }
 }
 
@@ -259,8 +275,10 @@ void DivergencePropagator::computeInfluenceRegion(
 void DivergencePropagator::exploreDataDependency(Value *V) {
   // Follow def-use chains of V.
   for (User *U : V->users()) {
-    if (!TTI.isAlwaysUniform(U) && DV.insert(U).second)
+    if (!TTI.isAlwaysUniform(U) && DV.insert(U).second) {
       Worklist.push_back(U);
+
+}
   }
 }
 
@@ -272,8 +290,10 @@ void DivergencePropagator::propagate() {
     if (Instruction *I = dyn_cast<Instruction>(V)) {
       // Terminators with less than two successors won't introduce sync
       // dependency. Ignore them.
-      if (I->isTerminator() && I->getNumSuccessors() > 1)
+      if (I->isTerminator() && I->getNumSuccessors() > 1) {
         exploreSyncDependency(I);
+
+}
     }
     exploreDataDependency(V);
   }
@@ -307,8 +327,10 @@ void LegacyDivergenceAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool LegacyDivergenceAnalysis::shouldUseGPUDivergenceAnalysis(
     const Function &F, const TargetTransformInfo &TTI) const {
-  if (!(UseGPUDA || TTI.useGPUDivergenceAnalysis()))
+  if (!(UseGPUDA || TTI.useGPUDivergenceAnalysis())) {
     return false;
+
+}
 
   // GPUDivergenceAnalysis requires a reducible CFG.
   auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
@@ -320,14 +342,18 @@ bool LegacyDivergenceAnalysis::shouldUseGPUDivergenceAnalysis(
 
 bool LegacyDivergenceAnalysis::runOnFunction(Function &F) {
   auto *TTIWP = getAnalysisIfAvailable<TargetTransformInfoWrapperPass>();
-  if (TTIWP == nullptr)
+  if (TTIWP == nullptr) {
     return false;
+
+}
 
   TargetTransformInfo &TTI = TTIWP->getTTI(F);
   // Fast path: if the target does not have branch divergence, we do not mark
   // any branch as divergent.
-  if (!TTI.hasBranchDivergence())
+  if (!TTI.hasBranchDivergence()) {
     return false;
+
+}
 
   DivergentValues.clear();
   DivergentUses.clear();
@@ -370,8 +396,10 @@ bool LegacyDivergenceAnalysis::isDivergentUse(const Use *U) const {
 }
 
 void LegacyDivergenceAnalysis::print(raw_ostream &OS, const Module *) const {
-  if ((!gpuDA || !gpuDA->hasDivergence()) && DivergentValues.empty())
+  if ((!gpuDA || !gpuDA->hasDivergence()) && DivergentValues.empty()) {
     return;
+
+}
 
   const Function *F = nullptr;
   if (!DivergentValues.empty()) {
@@ -387,8 +415,10 @@ void LegacyDivergenceAnalysis::print(raw_ostream &OS, const Module *) const {
   } else if (gpuDA) {
     F = &gpuDA->getFunction();
   }
-  if (!F)
+  if (!F) {
     return;
+
+}
 
   // Dumps all divergent values in F, arguments and then instructions.
   for (auto &Arg : F->args()) {

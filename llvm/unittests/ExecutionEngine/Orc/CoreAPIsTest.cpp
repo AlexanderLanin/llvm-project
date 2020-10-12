@@ -116,8 +116,10 @@ TEST_F(CoreAPIsStandardTest, RemoveSymbolsTest) {
       nullptr,
       [&](const JITDylib &JD, const SymbolStringPtr &Name) {
         EXPECT_EQ(Name, Bar) << "Expected \"Bar\" to be discarded";
-        if (Name == Bar)
+        if (Name == Bar) {
           BarDiscarded = true;
+
+}
       },
       [&]() { BarMaterializerDestructed = true; })));
 
@@ -954,8 +956,10 @@ TEST_F(CoreAPIsStandardTest, DefineMaterializingSymbol) {
   bool ExpectNoMoreMaterialization = false;
   ES.setDispatchMaterialization(
       [&](JITDylib &JD, std::unique_ptr<MaterializationUnit> MU) {
-        if (ExpectNoMoreMaterialization)
+        if (ExpectNoMoreMaterialization) {
           ADD_FAILURE() << "Unexpected materialization";
+
+}
         MU->doMaterialize(JD);
       });
 
@@ -993,8 +997,10 @@ TEST_F(CoreAPIsStandardTest, GeneratorTest) {
 
       for (const auto &KV : Names) {
         const auto &Name = KV.first;
-        if (Symbols.count(Name))
+        if (Symbols.count(Name)) {
           NewDefs[Name] = Symbols[Name];
+
+}
       }
 
       cantFail(JD.define(absoluteSymbols(std::move(NewDefs))));

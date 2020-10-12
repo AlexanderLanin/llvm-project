@@ -112,16 +112,22 @@ UnrollVerifyDomtree("unroll-verify-domtree", cl::Hidden,
 static bool needToInsertPhisForLCSSA(Loop *L, std::vector<BasicBlock *> Blocks,
                                      LoopInfo *LI) {
   for (BasicBlock *BB : Blocks) {
-    if (LI->getLoopFor(BB) == L)
+    if (LI->getLoopFor(BB) == L) {
       continue;
+
+}
     for (Instruction &I : *BB) {
       for (Use &U : I.operands()) {
         if (auto Def = dyn_cast<Instruction>(U)) {
           Loop *DefLoop = LI->getLoopFor(Def->getParent());
-          if (!DefLoop)
+          if (!DefLoop) {
             continue;
-          if (DefLoop->contains(L))
+
+}
+          if (DefLoop->contains(L)) {
             return true;
+
+}
         }
       }
     }
@@ -149,10 +155,12 @@ const Loop* llvm::addClonedBlockToLoopInfo(BasicBlock *OriginalBB,
     NewLoop = LI->AllocateLoop();
     Loop *NewLoopParent = NewLoops.lookup(OldLoop->getParentLoop());
 
-    if (NewLoopParent)
+    if (NewLoopParent) {
       NewLoopParent->addChildLoop(NewLoop);
-    else
+    } else {
       LI->addTopLevelLoop(NewLoop);
+
+}
 
     NewLoop->addBasicBlockToLoop(ClonedBB, *LI);
     return OldLoop;
@@ -192,8 +200,10 @@ static bool isEpilogProfitable(Loop *L) {
   BasicBlock *Header = L->getHeader();
   assert(PreHeader && Header);
   for (const PHINode &PN : Header->phis()) {
-    if (isa<ConstantInt>(PN.getIncomingValueForBlock(PreHeader)))
+    if (isa<ConstantInt>(PN.getIncomingValueForBlock(PreHeader))) {
       return true;
+
+}
   }
   return false;
 }
@@ -214,8 +224,10 @@ void llvm::simplifyLoopAfterUnroll(Loop *L, bool SimplifyIVs, LoopInfo *LI,
     // identified. Any remaining should be cleaned up below.
     while (!DeadInsts.empty()) {
       Value *V = DeadInsts.pop_back_val();
-      if (Instruction *Inst = dyn_cast_or_null<Instruction>(V))
+      if (Instruction *Inst = dyn_cast_or_null<Instruction>(V)) {
         RecursivelyDeleteTriviallyDeadInstructions(Inst);
+
+}
     }
   }
 
@@ -227,11 +239,17 @@ void llvm::simplifyLoopAfterUnroll(Loop *L, bool SimplifyIVs, LoopInfo *LI,
     for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E;) {
       Instruction *Inst = &*I++;
 
-      if (Value *V = SimplifyInstruction(Inst, {DL, nullptr, DT, AC}))
-        if (LI->replacementPreservesLCSSAForm(Inst, V))
+      if (Value *V = SimplifyInstruction(Inst, {DL, nullptr, DT, AC})) {
+        if (LI->replacementPreservesLCSSAForm(Inst, V)) {
           Inst->replaceAllUsesWith(V);
-      if (isInstructionTriviallyDead(Inst))
+
+}
+
+}
+      if (isInstructionTriviallyDead(Inst)) {
         BB->getInstList().erase(Inst);
+
+}
     }
   }
 
@@ -355,15 +373,21 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
     return LoopUnrollResult::Unmodified;
   }
 
-  if (ULO.TripCount != 0)
+  if (ULO.TripCount != 0) {
     LLVM_DEBUG(dbgs() << "  Trip Count = " << ULO.TripCount << "\n");
-  if (ULO.TripMultiple != 1)
+
+}
+  if (ULO.TripMultiple != 1) {
     LLVM_DEBUG(dbgs() << "  Trip Multiple = " << ULO.TripMultiple << "\n");
+
+}
 
   // Effectively "DCE" unrolled iterations that are beyond the tripcount
   // and will never be executed.
-  if (ULO.TripCount != 0 && ULO.Count > ULO.TripCount)
+  if (ULO.TripCount != 0 && ULO.Count > ULO.TripCount) {
     ULO.Count = ULO.TripCount;
+
+}
 
   // Don't enter the unroll code if there is nothing to do.
   if (ULO.TripCount == 0 && ULO.Count < 2 && ULO.PeelCount == 0) {
@@ -444,9 +468,9 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
                                   EpilogProfitability, ULO.UnrollRemainder,
                                   ULO.ForgetAllSCEV, LI, SE, DT, AC, TTI,
                                   PreserveLCSSA, RemainderLoop)) {
-    if (ULO.Force)
+    if (ULO.Force) {
       RuntimeTripCount = false;
-    else {
+    } else {
       LLVM_DEBUG(dbgs() << "Won't unroll; remainder loop could not be "
                            "generated when assuming runtime trip count\n");
       return LoopUnrollResult::Unmodified;
@@ -469,23 +493,27 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
   if (CompletelyUnroll) {
     LLVM_DEBUG(dbgs() << "COMPLETELY UNROLLING loop %" << Header->getName()
                       << " with trip count " << ULO.TripCount << "!\n");
-    if (ORE)
+    if (ORE) {
       ORE->emit([&]() {
         return OptimizationRemark(DEBUG_TYPE, "FullyUnrolled", L->getStartLoc(),
                                   L->getHeader())
                << "completely unrolled loop with "
                << NV("UnrollCount", ULO.TripCount) << " iterations";
       });
+
+}
   } else if (ULO.PeelCount) {
     LLVM_DEBUG(dbgs() << "PEELING loop %" << Header->getName()
                       << " with iteration count " << ULO.PeelCount << "!\n");
-    if (ORE)
+    if (ORE) {
       ORE->emit([&]() {
         return OptimizationRemark(DEBUG_TYPE, "Peeled", L->getStartLoc(),
                                   L->getHeader())
                << " peeled loop by " << NV("PeelCount", ULO.PeelCount)
                << " iterations";
       });
+
+}
   } else {
     auto DiagBuilder = [&]() {
       OptimizationRemark Diag(DEBUG_TYPE, "PartialUnrolled", L->getStartLoc(),
@@ -498,24 +526,30 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
                       << ULO.Count);
     if (ULO.TripMultiple == 0 || BreakoutTrip != ULO.TripMultiple) {
       LLVM_DEBUG(dbgs() << " with a breakout at trip " << BreakoutTrip);
-      if (ORE)
+      if (ORE) {
         ORE->emit([&]() {
           return DiagBuilder() << " with a breakout at trip "
                                << NV("BreakoutTrip", BreakoutTrip);
         });
+
+}
     } else if (ULO.TripMultiple != 1) {
       LLVM_DEBUG(dbgs() << " with " << ULO.TripMultiple << " trips per branch");
-      if (ORE)
+      if (ORE) {
         ORE->emit([&]() {
           return DiagBuilder()
                  << " with " << NV("TripMultiple", ULO.TripMultiple)
                  << " trips per branch";
         });
+
+}
     } else if (RuntimeTripCount) {
       LLVM_DEBUG(dbgs() << " with run-time trip count");
-      if (ORE)
+      if (ORE) {
         ORE->emit(
             [&]() { return DiagBuilder() << " with run-time trip count"; });
+
+}
     }
     LLVM_DEBUG(dbgs() << "!\n");
   }
@@ -529,10 +563,12 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
   // change. When we forget outermost loop, we also forget all contained loops
   // and this is what we need here.
   if (SE) {
-    if (ULO.ForgetAllSCEV)
+    if (ULO.ForgetAllSCEV) {
       SE->forgetAllLoops();
-    else
+    } else {
       SE->forgetTopmostLoop(L);
+
+}
   }
 
   bool ContinueOnTrue;
@@ -589,22 +625,34 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
   // share the same exit blocks). We'll keep track of loops for which we can
   // break this so that later we can re-simplify them.
   SmallSetVector<Loop *, 4> LoopsToSimplify;
-  for (Loop *SubLoop : *L)
+  for (Loop *SubLoop : *L) {
     LoopsToSimplify.insert(SubLoop);
 
-  if (Header->getParent()->isDebugInfoForProfiling())
-    for (BasicBlock *BB : L->getBlocks())
-      for (Instruction &I : *BB)
-        if (!isa<DbgInfoIntrinsic>(&I))
+}
+
+  if (Header->getParent()->isDebugInfoForProfiling()) {
+    for (BasicBlock *BB : L->getBlocks()) {
+      for (Instruction &I : *BB) {
+        if (!isa<DbgInfoIntrinsic>(&I)) {
           if (const DILocation *DIL = I.getDebugLoc()) {
             auto NewDIL = DIL->cloneByMultiplyingDuplicationFactor(ULO.Count);
-            if (NewDIL)
+            if (NewDIL) {
               I.setDebugLoc(NewDIL.getValue());
-            else
+            } else {
               LLVM_DEBUG(dbgs()
                          << "Failed to create new discriminator: "
                          << DIL->getFilename() << " Line: " << DIL->getLine());
+
+}
           }
+
+}
+
+}
+
+}
+
+}
 
   for (unsigned It = 1; It != ULO.Count; ++It) {
     SmallVector<BasicBlock *, 8> NewBlocks;
@@ -620,53 +668,73 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
              "Header should not be in a sub-loop");
       // Tell LI about New.
       const Loop *OldLoop = addClonedBlockToLoopInfo(*BB, New, LI, NewLoops);
-      if (OldLoop)
+      if (OldLoop) {
         LoopsToSimplify.insert(NewLoops[OldLoop]);
 
-      if (*BB == Header)
+}
+
+      if (*BB == Header) {
         // Loop over all of the PHI nodes in the block, changing them to use
         // the incoming values from the previous block.
         for (PHINode *OrigPHI : OrigPHINode) {
           PHINode *NewPHI = cast<PHINode>(VMap[OrigPHI]);
           Value *InVal = NewPHI->getIncomingValueForBlock(LatchBlock);
-          if (Instruction *InValI = dyn_cast<Instruction>(InVal))
-            if (It > 1 && L->contains(InValI))
+          if (Instruction *InValI = dyn_cast<Instruction>(InVal)) {
+            if (It > 1 && L->contains(InValI)) {
               InVal = LastValueMap[InValI];
+
+}
+
+}
           VMap[OrigPHI] = InVal;
           New->getInstList().erase(NewPHI);
         }
 
+}
+
       // Update our running map of newest clones
       LastValueMap[*BB] = New;
       for (ValueToValueMapTy::iterator VI = VMap.begin(), VE = VMap.end();
-           VI != VE; ++VI)
+           VI != VE; ++VI) {
         LastValueMap[VI->first] = VI->second;
+
+}
 
       // Add phi entries for newly created values to all exit blocks.
       for (BasicBlock *Succ : successors(*BB)) {
-        if (L->contains(Succ))
+        if (L->contains(Succ)) {
           continue;
+
+}
         for (PHINode &PHI : Succ->phis()) {
           Value *Incoming = PHI.getIncomingValueForBlock(*BB);
           ValueToValueMapTy::iterator It = LastValueMap.find(Incoming);
-          if (It != LastValueMap.end())
+          if (It != LastValueMap.end()) {
             Incoming = It->second;
+
+}
           PHI.addIncoming(Incoming, New);
         }
       }
       // Keep track of new headers and latches as we create them, so that
       // we can insert the proper branches later.
-      if (*BB == Header)
+      if (*BB == Header) {
         Headers.push_back(New);
-      if (*BB == LatchBlock)
+
+}
+      if (*BB == LatchBlock) {
         Latches.push_back(New);
 
+}
+
       // Keep track of the successor of the new header in the current iteration.
-      for (auto *Pred : predecessors(*BB))
+      for (auto *Pred : predecessors(*BB)) {
         if (Pred == Header) {
           HeaderSucc.push_back(New);
           break;
         }
+
+}
 
       NewBlocks.push_back(New);
       UnrolledLoopBlocks.push_back(New);
@@ -676,9 +744,9 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       // dominates all copied blocks. That means, dominance relations in the
       // copied body are the same as in the original body.
       if (DT) {
-        if (*BB == Header)
+        if (*BB == Header) {
           DT->addNewBlock(New, Latches[It - 1]);
-        else {
+        } else {
           auto BBDomNode = DT->getNode(*BB);
           auto BBIDom = BBDomNode->getIDom();
           BasicBlock *OriginalBBIDom = BBIDom->getBlock();
@@ -692,9 +760,13 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
     remapInstructionsInBlocks(NewBlocks, LastValueMap);
     for (BasicBlock *NewBlock : NewBlocks) {
       for (Instruction &I : *NewBlock) {
-        if (auto *II = dyn_cast<IntrinsicInst>(&I))
-          if (II->getIntrinsicID() == Intrinsic::assume)
+        if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
+          if (II->getIntrinsicID() == Intrinsic::assume) {
             AC->registerAssumption(II);
+
+}
+
+}
       }
     }
   }
@@ -709,8 +781,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       // If this value was defined in the loop, take the value defined by the
       // last iteration of the loop.
       if (Instruction *InValI = dyn_cast<Instruction>(InVal)) {
-        if (L->contains(InValI))
+        if (L->contains(InValI)) {
           InVal = LastValueMap[InVal];
+
+}
       }
       assert(Latches.back() == LastValueMap[LatchBlock] && "bad last latch");
       PN->addIncoming(InVal, Latches.back());
@@ -733,10 +807,14 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
         for (BasicBlock *Succ : successors(BB)) {
           // Preserve the incoming value from BB if we are jumping to the block
           // in the current loop.
-          if (Succ == BlockInLoop)
+          if (Succ == BlockInLoop) {
             continue;
-          for (PHINode &Phi : Succ->phis())
+
+}
+          for (PHINode &Phi : Succ->phis()) {
             Phi.removeIncomingValue(BB, false);
+
+}
         }
       }
       // Replace the conditional branch with an unconditional one.
@@ -763,8 +841,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       // For a complete unroll, make the last iteration end with a branch
       // to the exit block.
       if (CompletelyUnroll) {
-        if (j == 0)
+        if (j == 0) {
           Dest = LoopExit;
+
+}
         // If using trip count upper bound to completely unroll, we need to keep
         // the conditional branch except the last one because the loop may exit
         // after any iteration.
@@ -791,18 +871,22 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       BasicBlock *Dest = HeaderSucc[i];
       bool NeedConditional = true;
 
-      if (RuntimeTripCount && j != 0)
+      if (RuntimeTripCount && j != 0) {
         NeedConditional = false;
 
-      if (CompletelyUnroll)
+}
+
+      if (CompletelyUnroll) {
         // We cannot drop the conditional branch for the last condition, as we
         // may have to execute the loop body depending on the condition.
         NeedConditional = j == 0 || ULO.PreserveCondBr;
-      else if (j != BreakoutTrip &&
-               (ULO.TripMultiple == 0 || j % ULO.TripMultiple != 0))
+      } else if (j != BreakoutTrip &&
+               (ULO.TripMultiple == 0 || j % ULO.TripMultiple != 0)) {
         // If we know the trip count or a multiple of it, we can safely use an
         // unconditional branch for some iterations.
         NeedConditional = false;
+
+}
 
       setDest(Headers[i], Dest, Headers, HeaderSucc[i], NeedConditional);
     }
@@ -819,11 +903,13 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       BasicBlock *Dest = Headers[j];
 
       // When completely unrolling, the last latch becomes unreachable.
-      if (CompletelyUnroll && j == 0)
+      if (CompletelyUnroll && j == 0) {
         new UnreachableInst(Term->getContext(), Term);
-      else
+      } else {
         // Replace the conditional branch with an unconditional one.
         BranchInst::Create(Dest, Term);
+
+}
 
       Term->eraseFromParent();
     }
@@ -839,8 +925,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       SmallVector<BasicBlock *, 16> ChildrenToUpdate;
       for (auto *ChildDomNode : BBDomNode->getChildren()) {
         auto *ChildBB = ChildDomNode->getBlock();
-        if (!L->contains(ChildBB))
+        if (!L->contains(ChildBB)) {
           ChildrenToUpdate.push_back(ChildBB);
+
+}
       }
       BasicBlock *NewIDom;
       BasicBlock *&TermBlock = LatchIsExiting ? LatchBlock : Header;
@@ -870,8 +958,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
         // which dominates all copies of the previous idom.
         NewIDom = DT->findNearestCommonDominator(BB, LatchBlock);
       }
-      for (auto *ChildBB : ChildrenToUpdate)
+      for (auto *ChildBB : ChildrenToUpdate) {
         DT->changeImmediateDominator(ChildBB, NewIDom);
+
+}
     }
   }
 
@@ -911,8 +1001,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
 
   Loop *OuterL = L->getParentLoop();
   // Update LoopInfo if the loop is completely removed.
-  if (CompletelyUnroll)
+  if (CompletelyUnroll) {
     LI->erase(L);
+
+}
 
   // After complete unrolling most of the blocks should be contained in OuterL.
   // However, some of them might happen to be out of OuterL (e.g. if they
@@ -922,8 +1014,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
   // form.
   // TODO: For now we just recompute LCSSA for the outer loop in this case, but
   // it should be possible to fix it in-place.
-  if (PreserveLCSSA && OuterL && CompletelyUnroll && !NeedToFixLCSSA)
+  if (PreserveLCSSA && OuterL && CompletelyUnroll && !NeedToFixLCSSA) {
     NeedToFixLCSSA |= ::needToInsertPhisForLCSSA(OuterL, UnrolledLoopBlocks, LI);
+
+}
 
   // If we have a pass and a DominatorTree we should re-simplify impacted loops
   // to ensure subsequent analyses can rely on this form. We want to simplify
@@ -940,9 +1034,13 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
         // after LoopInfo's been updated by LoopInfo::erase.
         Loop *LatchLoop = LI->getLoopFor(Latches.back());
         Loop *FixLCSSALoop = OuterL;
-        if (!FixLCSSALoop->contains(LatchLoop))
-          while (FixLCSSALoop->getParentLoop() != LatchLoop)
+        if (!FixLCSSALoop->contains(LatchLoop)) {
+          while (FixLCSSALoop->getParentLoop() != LatchLoop) {
             FixLCSSALoop = FixLCSSALoop->getParentLoop();
+
+}
+
+}
 
         formLCSSARecursively(*FixLCSSALoop, *DT, LI, SE);
       } else if (PreserveLCSSA) {
@@ -955,8 +1053,10 @@ LoopUnrollResult llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       simplifyLoop(OuterL, DT, LI, SE, AC, nullptr, PreserveLCSSA);
     } else {
       // Simplify loops for which we might've broken loop-simplify form.
-      for (Loop *SubLoop : LoopsToSimplify)
+      for (Loop *SubLoop : LoopsToSimplify) {
         simplifyLoop(SubLoop, DT, LI, SE, AC, nullptr, PreserveLCSSA);
+
+}
     }
   }
 
@@ -974,15 +1074,21 @@ MDNode *llvm::GetUnrollMetadata(MDNode *LoopID, StringRef Name) {
 
   for (unsigned i = 1, e = LoopID->getNumOperands(); i < e; ++i) {
     MDNode *MD = dyn_cast<MDNode>(LoopID->getOperand(i));
-    if (!MD)
+    if (!MD) {
       continue;
+
+}
 
     MDString *S = dyn_cast<MDString>(MD->getOperand(0));
-    if (!S)
+    if (!S) {
       continue;
 
-    if (Name.equals(S->getString()))
+}
+
+    if (Name.equals(S->getString())) {
       return MD;
+
+}
   }
   return nullptr;
 }

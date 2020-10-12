@@ -58,8 +58,10 @@ public:
     Compiler.setFileManager(FileMgr);
 
     Compiler.createDiagnostics(DiagConsumer, /*ShouldOwnClient=*/false);
-    if (!Compiler.hasDiagnostics())
+    if (!Compiler.hasDiagnostics()) {
       return false;
+
+}
 
     Compiler.createSourceManager(*FileMgr);
     Compiler.addDependencyCollector(std::make_shared<TestFileCollector>(

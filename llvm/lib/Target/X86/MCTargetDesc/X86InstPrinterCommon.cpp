@@ -294,9 +294,9 @@ void X86InstPrinterCommon::printRoundingControl(const MCInst *MI, unsigned Op,
 void X86InstPrinterCommon::printPCRelImm(const MCInst *MI, unsigned OpNo,
                                          raw_ostream &O) {
   const MCOperand &Op = MI->getOperand(OpNo);
-  if (Op.isImm())
+  if (Op.isImm()) {
     O << formatImm(Op.getImm());
-  else {
+  } else {
     assert(Op.isExpr() && "unknown pcrel immediate operand");
     // If a symbolic branch target was added as a constant expression then print
     // that address in hex.
@@ -324,16 +324,22 @@ void X86InstPrinterCommon::printInstFlags(const MCInst *MI, raw_ostream &O) {
   uint64_t TSFlags = Desc.TSFlags;
   unsigned Flags = MI->getFlags();
 
-  if ((TSFlags & X86II::LOCK) || (Flags & X86::IP_HAS_LOCK))
+  if ((TSFlags & X86II::LOCK) || (Flags & X86::IP_HAS_LOCK)) {
     O << "\tlock\t";
 
-  if ((TSFlags & X86II::NOTRACK) || (Flags & X86::IP_HAS_NOTRACK))
+}
+
+  if ((TSFlags & X86II::NOTRACK) || (Flags & X86::IP_HAS_NOTRACK)) {
     O << "\tnotrack\t";
 
-  if (Flags & X86::IP_HAS_REPEAT_NE)
+}
+
+  if (Flags & X86::IP_HAS_REPEAT_NE) {
     O << "\trepne\t";
-  else if (Flags & X86::IP_HAS_REPEAT)
+  } else if (Flags & X86::IP_HAS_REPEAT) {
     O << "\trep\t";
+
+}
 }
 
 void X86InstPrinterCommon::printVKPair(const MCInst *MI, unsigned OpNo,

@@ -20,16 +20,20 @@ void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
                                           raw_ostream &OS,
                                           const MCExpr *Subsection) const {
   if (getKind().isText()) {
-    if (getMappingClass() != XCOFF::XMC_PR)
+    if (getMappingClass() != XCOFF::XMC_PR) {
       report_fatal_error("Unhandled storage-mapping class for .text csect");
+
+}
 
     OS << "\t.csect " << QualName->getName() << '\n';
     return;
   }
 
   if (getKind().isReadOnly()) {
-    if (getMappingClass() != XCOFF::XMC_RO)
+    if (getMappingClass() != XCOFF::XMC_RO) {
       report_fatal_error("Unhandled storage-mapping class for .rodata csect.");
+
+}
     OS << "\t.csect " << QualName->getName() << '\n';
     return;
   }

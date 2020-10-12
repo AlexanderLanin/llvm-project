@@ -129,15 +129,19 @@ static bool isZero(const Expr *E) {
 
 static const Expr *ignoreUnaryPlus(const Expr *E) {
   auto *UnaryOp = dyn_cast<UnaryOperator>(E);
-  if (UnaryOp && UnaryOp->getOpcode() == UO_Plus)
+  if (UnaryOp && UnaryOp->getOpcode() == UO_Plus) {
     return UnaryOp->getSubExpr();
+
+}
   return E;
 }
 
 static const Expr *getInitializer(const Expr *E) {
   auto *InitList = dyn_cast<InitListExpr>(E);
-  if (InitList && InitList->getNumInits() == 1)
+  if (InitList && InitList->getNumInits() == 1) {
     return InitList->getInit(0)->IgnoreParenImpCasts();
+
+}
   return E;
 }
 
@@ -145,11 +149,15 @@ static bool sameValue(const Expr *E1, const Expr *E2) {
   E1 = ignoreUnaryPlus(getInitializer(E1->IgnoreParenImpCasts()));
   E2 = ignoreUnaryPlus(getInitializer(E2->IgnoreParenImpCasts()));
 
-  if (isZero(E1) && isZero(E2))
+  if (isZero(E1) && isZero(E2)) {
     return true;
 
-  if (E1->getStmtClass() != E2->getStmtClass())
+}
+
+  if (E1->getStmtClass() != E2->getStmtClass()) {
     return false;
+
+}
 
   switch (E1->getStmtClass()) {
   case Stmt::UnaryOperatorClass:
@@ -227,13 +235,15 @@ void UseDefaultMemberInitCheck::registerMatchers(MatchFinder *Finder) {
 
 void UseDefaultMemberInitCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *Default =
-          Result.Nodes.getNodeAs<CXXCtorInitializer>("default"))
+          Result.Nodes.getNodeAs<CXXCtorInitializer>("default")) {
     checkDefaultInit(Result, Default);
-  else if (const auto *Existing =
-               Result.Nodes.getNodeAs<CXXCtorInitializer>("existing"))
+  } else if (const auto *Existing =
+               Result.Nodes.getNodeAs<CXXCtorInitializer>("existing")) {
     checkExistingInit(Result, Existing);
-  else
+  } else {
     llvm_unreachable("Bad Callback. No node provided.");
+
+}
 }
 
 void UseDefaultMemberInitCheck::checkDefaultInit(
@@ -241,8 +251,10 @@ void UseDefaultMemberInitCheck::checkDefaultInit(
   const FieldDecl *Field = Init->getAnyMember();
 
   SourceLocation StartLoc = Field->getBeginLoc();
-  if (StartLoc.isMacroID() && IgnoreMacros)
+  if (StartLoc.isMacroID() && IgnoreMacros) {
     return;
+
+}
 
   SourceLocation FieldEnd =
       Lexer::getLocForEndOfToken(Field->getSourceRange().getEnd(), 0,
@@ -261,12 +273,16 @@ void UseDefaultMemberInitCheck::checkDefaultInit(
       << FixItHint::CreateInsertion(FieldEnd, CanAssign ? " = " : "{")
       << FixItHint::CreateInsertionFromRange(FieldEnd, InitRange);
 
-  if (CanAssign && ValueInit)
+  if (CanAssign && ValueInit) {
     Diag << FixItHint::CreateInsertion(
         FieldEnd, getValueOfValueInit(Init->getInit()->getType()));
 
-  if (!CanAssign)
+}
+
+  if (!CanAssign) {
     Diag << FixItHint::CreateInsertion(FieldEnd, "}");
+
+}
 
   Diag << FixItHint::CreateRemoval(Init->getSourceRange());
 }
@@ -275,8 +291,10 @@ void UseDefaultMemberInitCheck::checkExistingInit(
     const MatchFinder::MatchResult &Result, const CXXCtorInitializer *Init) {
   const FieldDecl *Field = Init->getAnyMember();
 
-  if (!sameValue(Field->getInClassInitializer(), Init->getInit()))
+  if (!sameValue(Field->getInClassInitializer(), Init->getInit())) {
     return;
+
+}
 
   diag(Init->getSourceLocation(), "member initializer for %0 is redundant")
       << Field

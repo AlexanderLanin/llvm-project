@@ -35,8 +35,10 @@ static QualType guessAlternateQualification(ASTContext &Context, QualType QT) {
   // We're given a QualType from a typedef where the qualifiers apply to the
   // pointer instead of the pointee. Strip the const qualifier from the pointer
   // type and add it to the pointee instead.
-  if (!QT->isPointerType())
+  if (!QT->isPointerType()) {
     return QT;
+
+}
 
   Qualifiers Quals = QT.getLocalQualifiers();
   Quals.removeConst();

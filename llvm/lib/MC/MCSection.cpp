@@ -25,8 +25,10 @@ MCSection::MCSection(SectionVariant V, SectionKind K, MCSymbol *Begin)
       IsRegistered(false), DummyFragment(this), Variant(V), Kind(K) {}
 
 MCSymbol *MCSection::getEndSymbol(MCContext &Ctx) {
-  if (!End)
+  if (!End) {
     End = Ctx.createTempSymbol("sec_end", true);
+
+}
   return End;
 }
 
@@ -55,8 +57,10 @@ void MCSection::setBundleLockState(BundleLockStateType NewState) {
 
 MCSection::iterator
 MCSection::getSubsectionInsertionPoint(unsigned Subsection) {
-  if (Subsection == 0 && SubsectionFragmentMap.empty())
+  if (Subsection == 0 && SubsectionFragmentMap.empty()) {
     return end();
+
+}
 
   SmallVectorImpl<std::pair<unsigned, MCFragment *>>::iterator MI =
       std::lower_bound(SubsectionFragmentMap.begin(),
@@ -65,14 +69,18 @@ MCSection::getSubsectionInsertionPoint(unsigned Subsection) {
   bool ExactMatch = false;
   if (MI != SubsectionFragmentMap.end()) {
     ExactMatch = MI->first == Subsection;
-    if (ExactMatch)
+    if (ExactMatch) {
       ++MI;
+
+}
   }
   iterator IP;
-  if (MI == SubsectionFragmentMap.end())
+  if (MI == SubsectionFragmentMap.end()) {
     IP = end();
-  else
+  } else {
     IP = MI->second->getIterator();
+
+}
   if (!ExactMatch && Subsection != 0) {
     // The GNU as documentation claims that subsections have an alignment of 4,
     // although this appears not to be the case.
@@ -91,8 +99,10 @@ void MCSection::addPendingLabel(MCSymbol* label, unsigned Subsection) {
 
 void MCSection::flushPendingLabels(MCFragment *F, uint64_t FOffset,
 				   unsigned Subsection) {
-  if (PendingLabels.empty())
+  if (PendingLabels.empty()) {
     return;
+
+}
 
   // Set the fragment and fragment offset for all pending symbols in the
   // specified Subsection, and remove those symbols from the pending list.

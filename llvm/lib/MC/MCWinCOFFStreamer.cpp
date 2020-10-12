@@ -135,9 +135,11 @@ void MCWinCOFFStreamer::emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) {
 
 void MCWinCOFFStreamer::BeginCOFFSymbolDef(MCSymbol const *S) {
   auto *Symbol = cast<MCSymbolCOFF>(S);
-  if (CurSymbol)
+  if (CurSymbol) {
     Error("starting a new symbol definition without completing the "
           "previous one");
+
+}
   CurSymbol = Symbol;
 }
 
@@ -173,8 +175,10 @@ void MCWinCOFFStreamer::EmitCOFFSymbolType(int Type) {
 }
 
 void MCWinCOFFStreamer::EndCOFFSymbolDef() {
-  if (!CurSymbol)
+  if (!CurSymbol) {
     Error("ending symbol definition without starting one");
+
+}
   CurSymbol = nullptr;
 }
 
@@ -182,17 +186,23 @@ void MCWinCOFFStreamer::EmitCOFFSafeSEH(MCSymbol const *Symbol) {
   // SafeSEH is a feature specific to 32-bit x86.  It does not exist (and is
   // unnecessary) on all platforms which use table-based exception dispatch.
   if (getContext().getObjectFileInfo()->getTargetTriple().getArch() !=
-      Triple::x86)
+      Triple::x86) {
     return;
 
+}
+
   const MCSymbolCOFF *CSymbol = cast<MCSymbolCOFF>(Symbol);
-  if (CSymbol->isSafeSEH())
+  if (CSymbol->isSafeSEH()) {
     return;
+
+}
 
   MCSection *SXData = getContext().getObjectFileInfo()->getSXDataSection();
   getAssembler().registerSection(*SXData);
-  if (SXData->getAlignment() < 4)
+  if (SXData->getAlignment() < 4) {
     SXData->setAlignment(Align(4));
+
+}
 
   new MCSymbolIdFragment(Symbol, SXData);
 
@@ -208,8 +218,10 @@ void MCWinCOFFStreamer::EmitCOFFSafeSEH(MCSymbol const *Symbol) {
 void MCWinCOFFStreamer::EmitCOFFSymbolIndex(MCSymbol const *Symbol) {
   MCSection *Sec = getCurrentSectionOnly();
   getAssembler().registerSection(*Sec);
-  if (Sec->getAlignment() < 4)
+  if (Sec->getAlignment() < 4) {
     Sec->setAlignment(Align(4));
+
+}
 
   new MCSymbolIdFragment(Symbol, getCurrentSectionOnly());
 
@@ -232,9 +244,11 @@ void MCWinCOFFStreamer::EmitCOFFSecRel32(const MCSymbol *Symbol,
   // Create Symbol A for the relocation relative reference.
   const MCExpr *MCE = MCSymbolRefExpr::create(Symbol, getContext());
   // Add the constant offset, if given.
-  if (Offset)
+  if (Offset) {
     MCE = MCBinaryExpr::createAdd(
         MCE, MCConstantExpr::create(Offset, getContext()), getContext());
+
+}
   // Build the secrel32 relocation.
   MCFixup Fixup = MCFixup::create(DF->getContents().size(), MCE, FK_SecRel_4);
   // Record the relocation.
@@ -251,9 +265,11 @@ void MCWinCOFFStreamer::EmitCOFFImgRel32(const MCSymbol *Symbol,
   const MCExpr *MCE = MCSymbolRefExpr::create(
       Symbol, MCSymbolRefExpr::VK_COFF_IMGREL32, getContext());
   // Add the constant offset, if given.
-  if (Offset)
+  if (Offset) {
     MCE = MCBinaryExpr::createAdd(
         MCE, MCConstantExpr::create(Offset, getContext()), getContext());
+
+}
   // Build the imgrel relocation.
   MCFixup Fixup = MCFixup::create(DF->getContents().size(), MCE, FK_Data_4);
   // Record the relocation.
@@ -268,8 +284,10 @@ void MCWinCOFFStreamer::emitCommonSymbol(MCSymbol *S, uint64_t Size,
 
   const Triple &T = getContext().getObjectFileInfo()->getTargetTriple();
   if (T.isWindowsMSVCEnvironment()) {
-    if (ByteAlignment > 32)
+    if (ByteAlignment > 32) {
       report_fatal_error("alignment is limited to 32-bytes");
+
+}
 
     // Round size up to alignment so that we will honor the alignment request.
     Size = std::max(Size, static_cast<uint64_t>(ByteAlignment));

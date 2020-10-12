@@ -74,8 +74,10 @@ void SchedulerStatistics::onEvent(const HWInstructionEvent &Event) {
 void SchedulerStatistics::onReservedBuffers(const InstRef & /* unused */,
                                             ArrayRef<unsigned> Buffers) {
   for (const unsigned Buffer : Buffers) {
-    if (Buffer == LQResourceID || Buffer == SQResourceID)
+    if (Buffer == LQResourceID || Buffer == SQResourceID) {
       continue;
+
+}
     Usage[Buffer].SlotsInUse++;
   }
 }
@@ -83,8 +85,10 @@ void SchedulerStatistics::onReservedBuffers(const InstRef & /* unused */,
 void SchedulerStatistics::onReleasedBuffers(const InstRef & /* unused */,
                                             ArrayRef<unsigned> Buffers) {
   for (const unsigned Buffer : Buffers) {
-    if (Buffer == LQResourceID || Buffer == SQResourceID)
+    if (Buffer == LQResourceID || Buffer == SQResourceID) {
       continue;
+
+}
     Usage[Buffer].SlotsInUse--;
   }
 }
@@ -109,14 +113,18 @@ void SchedulerStatistics::printSchedulerStats(raw_ostream &OS) const {
       std::max_element(IssueWidthPerCycle.begin(), IssueWidthPerCycle.end());
   for (const std::pair<const unsigned, unsigned> &Entry : IssueWidthPerCycle) {
     unsigned NumIssued = Entry.first;
-    if (NumIssued == It->first && HasColors)
+    if (NumIssued == It->first && HasColors) {
       OS.changeColor(raw_ostream::SAVEDCOLOR, true, false);
+
+}
 
     unsigned IPC = Entry.second;
     OS << " " << NumIssued << ",          " << IPC << "  ("
        << format("%.1f", ((double)IPC / NumCycles) * 100) << "%)\n";
-    if (HasColors)
+    if (HasColors) {
       OS.resetColor();
+
+}
   }
 }
 
@@ -139,8 +147,10 @@ void SchedulerStatistics::printSchedulerUsage(raw_ostream &OS) const {
   bool HasColors = FOS.has_colors();
   for (unsigned I = 0, E = SM.getNumProcResourceKinds(); I < E; ++I) {
     const MCProcResourceDesc &ProcResource = *SM.getProcResource(I);
-    if (ProcResource.BufferSize <= 0)
+    if (ProcResource.BufferSize <= 0) {
       continue;
+
+}
 
     const BufferUsage &BU = Usage[I];
     double AvgUsage = (double)BU.CumulativeNumUsedSlots / NumCycles;
@@ -150,18 +160,26 @@ void SchedulerStatistics::printSchedulerUsage(raw_ostream &OS) const {
 
     FOS << ProcResource.Name;
     FOS.PadToColumn(17);
-    if (HasColors && NormalizedAvg >= NormalizedThreshold)
+    if (HasColors && NormalizedAvg >= NormalizedThreshold) {
       FOS.changeColor(raw_ostream::YELLOW, true, false);
+
+}
     FOS << NormalizedAvg;
-    if (HasColors)
+    if (HasColors) {
       FOS.resetColor();
+
+}
     FOS.PadToColumn(28);
     if (HasColors &&
-        BU.MaxUsedSlots == static_cast<unsigned>(ProcResource.BufferSize))
+        BU.MaxUsedSlots == static_cast<unsigned>(ProcResource.BufferSize)) {
       FOS.changeColor(raw_ostream::RED, true, false);
+
+}
     FOS << BU.MaxUsedSlots;
-    if (HasColors)
+    if (HasColors) {
       FOS.resetColor();
+
+}
     FOS.PadToColumn(39);
     FOS << ProcResource.BufferSize << '\n';
   }

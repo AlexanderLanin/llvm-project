@@ -119,8 +119,10 @@ void ClangAsmParserCallback::LookupInlineAsmIdentifier(
   }
 
   // Initialize Info with the lookup result.
-  if (!Result.isUsable())
+  if (!Result.isUsable()) {
     return;
+
+}
   TheParser.getActions().FillInlineAsmIdentifierInfo(Result.get(), Info);
 }
 
@@ -157,8 +159,10 @@ void ClangAsmParserCallback::findTokensForString(
   FirstOrigToken = &AsmToks[FirstTokIndex];
   unsigned LastCharOffset = Str.end() - AsmString.begin();
   for (unsigned i = FirstTokIndex, e = AsmTokOffsets.size(); i != e; ++i) {
-    if (AsmTokOffsets[i] >= LastCharOffset)
+    if (AsmTokOffsets[i] >= LastCharOffset) {
       break;
+
+}
     TempToks.push_back(AsmToks[i]);
   }
 }
@@ -248,8 +252,10 @@ ExprResult Parser::ParseMSAsmIdentifier(llvm::SmallVectorImpl<Token> &LineToks,
   // like '.' 'else'.
   while (Result.isUsable() && Tok.is(tok::period)) {
     Token IdTok = PP.LookAhead(0);
-    if (IdTok.isNot(tok::identifier))
+    if (IdTok.isNot(tok::identifier)) {
       break;
+
+}
     ConsumeToken(); // Consume the period.
     IdentifierInfo *Id = Tok.getIdentifierInfo();
     ConsumeToken(); // Consume the identifier.
@@ -314,8 +320,10 @@ static bool buildMSAsmString(Preprocessor &PP, SourceLocation AsmLoc,
 
     // Preserve the existence of leading whitespace except at the
     // start of a statement.
-    if (!isNewStatement && Tok.hasLeadingSpace())
+    if (!isNewStatement && Tok.hasLeadingSpace()) {
       Asm += ' ';
+
+}
 
     // Remember the offset of this token.
     TokOffsets.push_back(Asm.size());
@@ -407,8 +415,10 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
   SourceLocation TokLoc = Tok.getLocation();
   do {
     // If we hit EOF, we're done, period.
-    if (isEofOrEom())
+    if (isEofOrEom()) {
       break;
+
+}
 
     if (!InAsmComment && Tok.is(tok::l_brace)) {
       // Consume the opening brace.
@@ -442,15 +452,19 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
         // if needed and then keep processing the next line as a single
         // line __asm.
         bool isAsm = Tok.is(tok::kw_asm);
-        if (SingleLineMode && (!isAsm || isGCCAsmStatement(NextToken())))
+        if (SingleLineMode && (!isAsm || isGCCAsmStatement(NextToken()))) {
           break;
+
+}
         // We're no longer in a comment.
         InAsmComment = false;
         if (isAsm) {
           // If this is a new __asm {} block we want to process it separately
           // from the single-line __asm statements
-          if (PP.LookAhead(0).is(tok::l_brace))
+          if (PP.LookAhead(0).is(tok::l_brace)) {
             break;
+
+}
           LineNo = SrcMgr.getLineNumber(ExpLoc.first, ExpLoc.second);
           SkippedStartOfLine = Tok.isAtStartOfLine();
         } else if (Tok.is(tok::semi)) {
@@ -463,8 +477,10 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
         // In MSVC mode, braces only participate in brace matching and
         // separating the asm statements.  This is an intentional
         // departure from the Apple gcc behavior.
-        if (!BraceNesting)
+        if (!BraceNesting) {
           break;
+
+}
       }
     }
     if (!InAsmComment && BraceNesting && Tok.is(tok::r_brace) &&
@@ -480,9 +496,9 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
       BraceNesting--;
       // Finish if all of the opened braces in the inline asm section were
       // consumed.
-      if (BraceNesting == 0 && !SingleLineMode)
+      if (BraceNesting == 0 && !SingleLineMode) {
         break;
-      else {
+      } else {
         LBraceLocs.pop_back();
         TokLoc = Tok.getLocation();
         ++NumTokensRead;
@@ -493,13 +509,15 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
     // Consume the next token; make sure we don't modify the brace count etc.
     // if we are in a comment.
     EndLoc = TokLoc;
-    if (InAsmComment)
+    if (InAsmComment) {
       PP.Lex(Tok);
-    else {
+    } else {
       // Set the token as the start of line if we skipped the original start
       // of line token in case it was a nested brace.
-      if (SkippedStartOfLine)
+      if (SkippedStartOfLine) {
         Tok.setFlag(Token::StartOfLine);
+
+}
       AsmToks.push_back(Tok);
       ConsumeAnyToken();
     }
@@ -536,8 +554,10 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
   } else {
     std::string Error;
     TheTarget = llvm::TargetRegistry::lookupTarget(TT, Error);
-    if (!TheTarget)
+    if (!TheTarget) {
       Diag(AsmLoc, diag::err_msasm_unable_to_create_target) << Error;
+
+}
   }
 
   assert(!LBraceLocs.empty() && "Should have at least one location here");
@@ -556,8 +576,10 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
 
   // Expand the tokens into a string buffer.
   SmallVector<unsigned, 8> TokOffsets;
-  if (buildMSAsmString(PP, AsmLoc, AsmToks, TokOffsets, AsmString))
+  if (buildMSAsmString(PP, AsmLoc, AsmToks, TokOffsets, AsmString)) {
     return StmtError();
+
+}
 
   const TargetOptions &TO = Actions.Context.getTargetInfo().getTargetOpts();
   std::string FeaturesStr =
@@ -630,8 +652,10 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
   SmallVector<std::string, 4> Clobbers;
   if (Parser->parseMSInlineAsm(AsmLoc.getPtrEncoding(), AsmStringIR, NumOutputs,
                                NumInputs, OpExprs, Constraints, Clobbers,
-                               MII.get(), IP.get(), Callback))
+                               MII.get(), IP.get(), Callback)) {
     return StmtError();
+
+}
 
   // Filter out "fpsw" and "mxcsr". They aren't valid GCC asm clobber
   // constraints. Clang always adds fpsr to the clobber list anyway.
@@ -648,13 +672,17 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
   Exprs.resize(NumExprs);
   for (unsigned i = 0, e = NumExprs; i != e; ++i) {
     Expr *OpExpr = static_cast<Expr *>(OpExprs[i].first);
-    if (!OpExpr)
+    if (!OpExpr) {
       return StmtError();
 
+}
+
     // Need address of variable.
-    if (OpExprs[i].second)
+    if (OpExprs[i].second) {
       OpExpr =
           Actions.BuildUnaryOp(getCurScope(), AsmLoc, UO_AddrOf, OpExpr).get();
+
+}
 
     ConstraintRefs[i] = StringRef(Constraints[i]);
     Exprs[i] = OpExpr;
@@ -686,9 +714,11 @@ bool Parser::parseGNUAsmQualifierListOpt(GNUAsmQualifiers &AQ) {
       }
       return false;
     }
-    if (AQ.setAsmQualifier(A))
+    if (AQ.setAsmQualifier(A)) {
       Diag(Tok.getLocation(), diag::err_asm_duplicate_qual)
           << GNUAsmQualifiers::getQualifierName(A);
+
+}
     ConsumeToken();
   }
   return false;
@@ -724,8 +754,10 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
 
   SourceLocation Loc = Tok.getLocation();
   GNUAsmQualifiers GAQ;
-  if (parseGNUAsmQualifierListOpt(GAQ))
+  if (parseGNUAsmQualifierListOpt(GAQ)) {
     return StmtError();
+
+}
 
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
@@ -736,8 +768,10 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
   // Error on anything other than empty string.
   if (!(getLangOpts().GNUAsm || AsmString.isInvalid())) {
     const auto *SL = cast<StringLiteral>(AsmString.get());
-    if (!SL->getString().trim().empty())
+    if (!SL->getString().trim().empty()) {
       Diag(Loc, diag::err_gnu_inline_asm_disabled);
+
+}
   }
 
   if (AsmString.isInvalid()) {
@@ -767,8 +801,10 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
     AteExtraColon = Tok.is(tok::coloncolon);
     ConsumeToken();
 
-    if (!AteExtraColon && ParseAsmOperandsOpt(Names, Constraints, Exprs))
+    if (!AteExtraColon && ParseAsmOperandsOpt(Names, Constraints, Exprs)) {
       return StmtError();
+
+}
   }
 
   unsigned NumOutputs = Names.size();
@@ -776,15 +812,17 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
   // Parse Inputs, if present.
   if (AteExtraColon || Tok.is(tok::colon) || Tok.is(tok::coloncolon)) {
     // In C++ mode, parse "::" like ": :".
-    if (AteExtraColon)
+    if (AteExtraColon) {
       AteExtraColon = false;
-    else {
+    } else {
       AteExtraColon = Tok.is(tok::coloncolon);
       ConsumeToken();
     }
 
-    if (!AteExtraColon && ParseAsmOperandsOpt(Names, Constraints, Exprs))
+    if (!AteExtraColon && ParseAsmOperandsOpt(Names, Constraints, Exprs)) {
       return StmtError();
+
+}
   }
 
   assert(Names.size() == Constraints.size() &&
@@ -794,9 +832,9 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
 
   // Parse the clobbers, if present.
   if (AteExtraColon || Tok.is(tok::colon) || Tok.is(tok::coloncolon)) {
-    if (AteExtraColon)
+    if (AteExtraColon) {
       AteExtraColon = false;
-    else {
+    } else {
       AteExtraColon = Tok.is(tok::coloncolon);
       ConsumeToken();
     }
@@ -805,13 +843,17 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
       while (1) {
         ExprResult Clobber(ParseAsmStringLiteral(/*ForAsmLabel*/ false));
 
-        if (Clobber.isInvalid())
+        if (Clobber.isInvalid()) {
           break;
+
+}
 
         Clobbers.push_back(Clobber.get());
 
-        if (!TryConsumeToken(tok::comma))
+        if (!TryConsumeToken(tok::comma)) {
           break;
+
+}
       }
     }
   }
@@ -824,8 +866,10 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
   // Parse the goto label, if present.
   unsigned NumLabels = 0;
   if (AteExtraColon || Tok.is(tok::colon)) {
-    if (!AteExtraColon)
+    if (!AteExtraColon) {
       ConsumeToken();
+
+}
 
     while (true) {
       if (Tok.isNot(tok::identifier)) {
@@ -845,8 +889,10 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
       Exprs.push_back(Res.get());
       NumLabels++;
       ConsumeToken();
-      if (!TryConsumeToken(tok::comma))
+      if (!TryConsumeToken(tok::comma)) {
         break;
+
+}
     }
   } else if (GAQ.isGoto()) {
     Diag(Tok, diag::err_expected) << tok::colon;
@@ -877,8 +923,10 @@ bool Parser::ParseAsmOperandsOpt(SmallVectorImpl<IdentifierInfo *> &Names,
                                  SmallVectorImpl<Expr *> &Constraints,
                                  SmallVectorImpl<Expr *> &Exprs) {
   // 'asm-operands' isn't present?
-  if (!isTokenStringLiteral() && Tok.isNot(tok::l_square))
+  if (!isTokenStringLiteral() && Tok.isNot(tok::l_square)) {
     return false;
+
+}
 
   while (1) {
     // Read the [id] if present.
@@ -897,8 +945,10 @@ bool Parser::ParseAsmOperandsOpt(SmallVectorImpl<IdentifierInfo *> &Names,
 
       Names.push_back(II);
       T.consumeClose();
-    } else
+    } else {
       Names.push_back(nullptr);
+
+}
 
     ExprResult Constraint(ParseAsmStringLiteral(/*ForAsmLabel*/ false));
     if (Constraint.isInvalid()) {
@@ -924,8 +974,10 @@ bool Parser::ParseAsmOperandsOpt(SmallVectorImpl<IdentifierInfo *> &Names,
     }
     Exprs.push_back(Res.get());
     // Eat the comma and continue parsing if it exists.
-    if (!TryConsumeToken(tok::comma))
+    if (!TryConsumeToken(tok::comma)) {
       return false;
+
+}
   }
 }
 

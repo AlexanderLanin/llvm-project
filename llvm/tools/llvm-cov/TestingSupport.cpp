@@ -64,26 +64,30 @@ int convertForTestingMain(int argc, const char *argv[]) {
     } else if (Name == llvm::getInstrProfSectionName(
                            IPSK_covmap, ObjFormat, /*AddSegmentInfo=*/false)) {
       CoverageMapping = Section;
-    } else
+    } else {
       continue;
+
+}
     ++FoundSectionCount;
   }
-  if (FoundSectionCount != 2)
+  if (FoundSectionCount != 2) {
     return 1;
+
+}
 
   // Get the contents of the given sections.
   uint64_t ProfileNamesAddress = ProfileNames.getAddress();
   StringRef CoverageMappingData;
   StringRef ProfileNamesData;
-  if (Expected<StringRef> E = CoverageMapping.getContents())
+  if (Expected<StringRef> E = CoverageMapping.getContents()) {
     CoverageMappingData = *E;
-  else {
+  } else {
     consumeError(E.takeError());
     return 1;
   }
-  if (Expected<StringRef> E = ProfileNames.getContents())
+  if (Expected<StringRef> E = ProfileNames.getContents()) {
     ProfileNamesData = *E;
-  else {
+  } else {
     consumeError(E.takeError());
     return 1;
   }
@@ -100,8 +104,10 @@ int convertForTestingMain(int argc, const char *argv[]) {
   encodeULEB128(ProfileNamesAddress, OS);
   OS << ProfileNamesData;
   // Coverage mapping data is expected to have an alignment of 8.
-  for (unsigned Pad = offsetToAlignment(OS.tell(), Align(8)); Pad; --Pad)
+  for (unsigned Pad = offsetToAlignment(OS.tell(), Align(8)); Pad; --Pad) {
     OS.write(uint8_t(0));
+
+}
   OS << CoverageMappingData;
 
   return 0;

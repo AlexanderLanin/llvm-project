@@ -97,8 +97,10 @@ private:
 static void PrintDefList(const std::vector<Record*> &Uses,
                          unsigned Num, raw_ostream &OS) {
   OS << "static const MCPhysReg ImplicitList" << Num << "[] = { ";
-  for (Record *U : Uses)
+  for (Record *U : Uses) {
     OS << getQualifiedName(U) << ", ";
+
+}
   OS << "0 };\n";
 }
 
@@ -137,37 +139,49 @@ InstrInfoEmitter::GetOperandInfo(const CodeGenInstruction &Inst) {
       Record *OpR = OperandList[j].Rec;
       std::string Res;
 
-      if (OpR->isSubClassOf("RegisterOperand"))
+      if (OpR->isSubClassOf("RegisterOperand")) {
         OpR = OpR->getValueAsDef("RegClass");
-      if (OpR->isSubClassOf("RegisterClass"))
+
+}
+      if (OpR->isSubClassOf("RegisterClass")) {
         Res += getQualifiedName(OpR) + "RegClassID, ";
-      else if (OpR->isSubClassOf("PointerLikeRegClass"))
+      } else if (OpR->isSubClassOf("PointerLikeRegClass")) {
         Res += utostr(OpR->getValueAsInt("RegClassKind")) + ", ";
-      else
+      } else {
         // -1 means the operand does not have a fixed register class.
         Res += "-1, ";
+
+}
 
       // Fill in applicable flags.
       Res += "0";
 
       // Ptr value whose register class is resolved via callback.
-      if (OpR->isSubClassOf("PointerLikeRegClass"))
+      if (OpR->isSubClassOf("PointerLikeRegClass")) {
         Res += "|(1<<MCOI::LookupPtrRegClass)";
+
+}
 
       // Predicate operands.  Check to see if the original unexpanded operand
       // was of type PredicateOp.
-      if (Op.Rec->isSubClassOf("PredicateOp"))
+      if (Op.Rec->isSubClassOf("PredicateOp")) {
         Res += "|(1<<MCOI::Predicate)";
+
+}
 
       // Optional def operands.  Check to see if the original unexpanded operand
       // was of type OptionalDefOperand.
-      if (Op.Rec->isSubClassOf("OptionalDefOperand"))
+      if (Op.Rec->isSubClassOf("OptionalDefOperand")) {
         Res += "|(1<<MCOI::OptionalDef)";
+
+}
 
       // Branch target operands.  Check to see if the original unexpanded
       // operand was of type BranchTargetOperand.
-      if (Op.Rec->isSubClassOf("BranchTargetOperand"))
+      if (Op.Rec->isSubClassOf("BranchTargetOperand")) {
         Res += "|(1<<MCOI::BranchTarget)";
+
+}
 
       // Fill in operand type.
       Res += ", ";
@@ -179,11 +193,11 @@ InstrInfoEmitter::GetOperandInfo(const CodeGenInstruction &Inst) {
 
       const CGIOperandList::ConstraintInfo &Constraint =
         Op.Constraints[j];
-      if (Constraint.isNone())
+      if (Constraint.isNone()) {
         Res += "0";
-      else if (Constraint.isEarlyClobber())
+      } else if (Constraint.isEarlyClobber()) {
         Res += "(1 << MCOI::EARLY_CLOBBER)";
-      else {
+      } else {
         assert(Constraint.isTied());
         Res += "((" + utostr(Constraint.getTiedOperand()) +
                     " << 16) | (1 << MCOI::TIED_TO))";
@@ -207,12 +221,16 @@ void InstrInfoEmitter::EmitOperandInfo(raw_ostream &OS,
   for (const CodeGenInstruction *Inst : Target.getInstructionsByEnumValue()) {
     std::vector<std::string> OperandInfo = GetOperandInfo(*Inst);
     unsigned &N = OperandInfoIDs[OperandInfo];
-    if (N != 0) continue;
+    if (N != 0) { continue;
+
+}
 
     N = ++OperandListNum;
     OS << "static const MCOperandInfo OperandInfo" << N << "[] = { ";
-    for (const std::string &Info : OperandInfo)
+    for (const std::string &Info : OperandInfo) {
       OS << "{ " << Info << " }, ";
+
+}
     OS << "};\n";
   }
 }
@@ -231,8 +249,10 @@ void InstrInfoEmitter::initOperandMapData(
         OpNameMapTy &OperandMap) {
   unsigned NumOperands = 0;
   for (const CodeGenInstruction *Inst : NumberedInstructions) {
-    if (!Inst->TheDef->getValueAsBit("UseNamedOperandTable"))
+    if (!Inst->TheDef->getValueAsBit("UseNamedOperandTable")) {
       continue;
+
+}
     std::map<unsigned, unsigned> OpList;
     for (const auto &Info : Inst->Operands) {
       StrUintMapIter I = Operands.find(Info.Name);
@@ -277,8 +297,10 @@ void InstrInfoEmitter::emitOperandNameMappings(raw_ostream &OS,
   OS << "namespace " << Namespace << " {\n";
   OS << "namespace " << OpNameNS << " {\n";
   OS << "enum {\n";
-  for (const auto &Op : Operands)
+  for (const auto &Op : Operands) {
     OS << "  " << Op.first << " = " << Op.second << ",\n";
+
+}
 
   OS << "OPERAND_LAST";
   OS << "\n};\n";
@@ -301,8 +323,10 @@ void InstrInfoEmitter::emitOperandNameMappings(raw_ostream &OS,
       OS << "{";
 
       // Emit a row of the OperandMap table
-      for (unsigned i = 0, e = Operands.size(); i != e; ++i)
+      for (unsigned i = 0, e = Operands.size(); i != e; ++i) {
         OS << (OpList.count(i) == 0 ? -1 : (int)OpList.find(i)->second) << ", ";
+
+}
 
       OS << "},\n";
     }
@@ -311,8 +335,10 @@ void InstrInfoEmitter::emitOperandNameMappings(raw_ostream &OS,
     OS << "  switch(Opcode) {\n";
     unsigned TableIndex = 0;
     for (const auto &Entry : OperandMap) {
-      for (const std::string &Name : Entry.second)
+      for (const std::string &Name : Entry.second) {
         OS << "  case " << Name << ":\n";
+
+}
 
       OS << "    return OperandMap[" << TableIndex++ << "][NamedIdx];\n";
     }
@@ -353,8 +379,10 @@ void InstrInfoEmitter::emitOperandTypeMappings(
   for (const std::vector<Record *> *RecordsToAdd :
        {&Operands, &RegisterOperands, &RegisterClasses}) {
     for (const Record *Op : *RecordsToAdd) {
-      if (!Op->isAnonymous())
+      if (!Op->isAnonymous()) {
         OS << "  " << Op->getName() << " = " << EnumVal << ",\n";
+
+}
       ++EnumVal;
     }
   }
@@ -395,8 +423,10 @@ void InstrInfoEmitter::emitOperandTypeMappings(
 
     // Emit the table of offsets for the opcode lookup.
     OS << "  const int Offsets[] = {\n";
-    for (int I = 0, E = OperandOffsets.size(); I != E; ++I)
+    for (int I = 0, E = OperandOffsets.size(); I != E; ++I) {
       OS << "    " << OperandOffsets[I] << ",\n";
+
+}
     OS << "  };\n";
 
     // Add an entry for the end so that we don't need to special case it below.
@@ -408,17 +438,21 @@ void InstrInfoEmitter::emitOperandTypeMappings(
       if (I == OperandOffsets[CurOffset]) {
         OS << "\n    ";
         // If there are empty rows, mark them with an empty comment.
-        while (OperandOffsets[++CurOffset] == I)
+        while (OperandOffsets[++CurOffset] == I) {
           OS << "/**/\n    ";
+
+}
       }
       Record *OpR = OperandRecords[I];
       if ((OpR->isSubClassOf("Operand") ||
            OpR->isSubClassOf("RegisterOperand") ||
            OpR->isSubClassOf("RegisterClass")) &&
-          !OpR->isAnonymous())
+          !OpR->isAnonymous()) {
         OS << "OpTypes::" << OpR->getName();
-      else
+      } else {
         OS << -1;
+
+}
       OS << ", ";
     }
     OS << "\n  };\n";
@@ -436,8 +470,10 @@ void InstrInfoEmitter::emitOperandTypeMappings(
 void InstrInfoEmitter::emitMCIIHelperMethods(raw_ostream &OS,
                                              StringRef TargetName) {
   RecVec TIIPredicates = Records.getAllDerivedDefinitions("TIIPredicate");
-  if (TIIPredicates.empty())
+  if (TIIPredicates.empty()) {
     return;
+
+}
 
   OS << "#ifdef GET_INSTRINFO_MC_HELPER_DECLS\n";
   OS << "#undef GET_INSTRINFO_MC_HELPER_DECLS\n\n";
@@ -485,16 +521,20 @@ void InstrInfoEmitter::emitTIIHelperMethods(raw_ostream &OS,
                                             StringRef TargetName,
                                             bool ExpandDefinition) {
   RecVec TIIPredicates = Records.getAllDerivedDefinitions("TIIPredicate");
-  if (TIIPredicates.empty())
+  if (TIIPredicates.empty()) {
     return;
+
+}
 
   PredicateExpander PE(TargetName);
   PE.setExpandForMC(false);
 
   for (const Record *Rec : TIIPredicates) {
     OS << (ExpandDefinition ? "" : "static ") << "bool ";
-    if (ExpandDefinition)
+    if (ExpandDefinition) {
       OS << TargetName << "InstrInfo::";
+
+}
     OS << Rec->getValueAsString("FunctionName");
     OS << "(const MachineInstr &MI)";
     if (!ExpandDefinition) {
@@ -537,12 +577,16 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
     std::vector<Record*> Uses = Inst->getValueAsListOfDefs("Uses");
     if (!Uses.empty()) {
       unsigned &IL = EmittedLists[Uses];
-      if (!IL) PrintDefList(Uses, IL = ++ListNumber, OS);
+      if (!IL) { PrintDefList(Uses, IL = ++ListNumber, OS);
+
+}
     }
     std::vector<Record*> Defs = Inst->getValueAsListOfDefs("Defs");
     if (!Defs.empty()) {
       unsigned &IL = EmittedLists[Defs];
-      if (!IL) PrintDefList(Defs, IL = ++ListNumber, OS);
+      if (!IL) { PrintDefList(Defs, IL = ++ListNumber, OS);
+
+}
     }
   }
 
@@ -576,8 +620,10 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
   Num = 0;
   for (const CodeGenInstruction *Inst : NumberedInstructions) {
     // Newline every eight entries.
-    if (Num % 8 == 0)
+    if (Num % 8 == 0) {
       OS << "\n    ";
+
+}
     OS << InstrNames.get(std::string(Inst->TheDef->getName())) << "U, ";
     ++Num;
   }
@@ -652,10 +698,12 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
                                   const OperandInfoMapTy &OpInfo,
                                   raw_ostream &OS) {
   int MinOperands = 0;
-  if (!Inst.Operands.empty())
+  if (!Inst.Operands.empty()) {
     // Each logical operand can be multiple MI operands.
     MinOperands = Inst.Operands.back().MIOperandNo +
                   Inst.Operands.back().MINumOperands;
+
+}
 
   OS << "  { ";
   OS << Num << ",\t" << MinOperands << ",\t"
@@ -666,60 +714,144 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
   CodeGenTarget &Target = CDP.getTargetInfo();
 
   // Emit all of the target independent flags...
-  if (Inst.isPreISelOpcode)    OS << "|(1ULL<<MCID::PreISelOpcode)";
-  if (Inst.isPseudo)           OS << "|(1ULL<<MCID::Pseudo)";
-  if (Inst.isReturn)           OS << "|(1ULL<<MCID::Return)";
-  if (Inst.isEHScopeReturn)    OS << "|(1ULL<<MCID::EHScopeReturn)";
-  if (Inst.isBranch)           OS << "|(1ULL<<MCID::Branch)";
-  if (Inst.isIndirectBranch)   OS << "|(1ULL<<MCID::IndirectBranch)";
-  if (Inst.isCompare)          OS << "|(1ULL<<MCID::Compare)";
-  if (Inst.isMoveImm)          OS << "|(1ULL<<MCID::MoveImm)";
-  if (Inst.isMoveReg)          OS << "|(1ULL<<MCID::MoveReg)";
-  if (Inst.isBitcast)          OS << "|(1ULL<<MCID::Bitcast)";
-  if (Inst.isAdd)              OS << "|(1ULL<<MCID::Add)";
-  if (Inst.isTrap)             OS << "|(1ULL<<MCID::Trap)";
-  if (Inst.isSelect)           OS << "|(1ULL<<MCID::Select)";
-  if (Inst.isBarrier)          OS << "|(1ULL<<MCID::Barrier)";
-  if (Inst.hasDelaySlot)       OS << "|(1ULL<<MCID::DelaySlot)";
-  if (Inst.isCall)             OS << "|(1ULL<<MCID::Call)";
-  if (Inst.canFoldAsLoad)      OS << "|(1ULL<<MCID::FoldableAsLoad)";
-  if (Inst.mayLoad)            OS << "|(1ULL<<MCID::MayLoad)";
-  if (Inst.mayStore)           OS << "|(1ULL<<MCID::MayStore)";
-  if (Inst.mayRaiseFPException) OS << "|(1ULL<<MCID::MayRaiseFPException)";
-  if (Inst.isPredicable)       OS << "|(1ULL<<MCID::Predicable)";
-  if (Inst.isConvertibleToThreeAddress) OS << "|(1ULL<<MCID::ConvertibleTo3Addr)";
-  if (Inst.isCommutable)       OS << "|(1ULL<<MCID::Commutable)";
-  if (Inst.isTerminator)       OS << "|(1ULL<<MCID::Terminator)";
-  if (Inst.isReMaterializable) OS << "|(1ULL<<MCID::Rematerializable)";
-  if (Inst.isNotDuplicable)    OS << "|(1ULL<<MCID::NotDuplicable)";
-  if (Inst.Operands.hasOptionalDef) OS << "|(1ULL<<MCID::HasOptionalDef)";
-  if (Inst.usesCustomInserter) OS << "|(1ULL<<MCID::UsesCustomInserter)";
-  if (Inst.hasPostISelHook)    OS << "|(1ULL<<MCID::HasPostISelHook)";
-  if (Inst.Operands.isVariadic)OS << "|(1ULL<<MCID::Variadic)";
-  if (Inst.hasSideEffects)     OS << "|(1ULL<<MCID::UnmodeledSideEffects)";
-  if (Inst.isAsCheapAsAMove)   OS << "|(1ULL<<MCID::CheapAsAMove)";
-  if (!Target.getAllowRegisterRenaming() || Inst.hasExtraSrcRegAllocReq)
+  if (Inst.isPreISelOpcode) {    OS << "|(1ULL<<MCID::PreISelOpcode)";
+
+}
+  if (Inst.isPseudo) {           OS << "|(1ULL<<MCID::Pseudo)";
+
+}
+  if (Inst.isReturn) {           OS << "|(1ULL<<MCID::Return)";
+
+}
+  if (Inst.isEHScopeReturn) {    OS << "|(1ULL<<MCID::EHScopeReturn)";
+
+}
+  if (Inst.isBranch) {           OS << "|(1ULL<<MCID::Branch)";
+
+}
+  if (Inst.isIndirectBranch) {   OS << "|(1ULL<<MCID::IndirectBranch)";
+
+}
+  if (Inst.isCompare) {          OS << "|(1ULL<<MCID::Compare)";
+
+}
+  if (Inst.isMoveImm) {          OS << "|(1ULL<<MCID::MoveImm)";
+
+}
+  if (Inst.isMoveReg) {          OS << "|(1ULL<<MCID::MoveReg)";
+
+}
+  if (Inst.isBitcast) {          OS << "|(1ULL<<MCID::Bitcast)";
+
+}
+  if (Inst.isAdd) {              OS << "|(1ULL<<MCID::Add)";
+
+}
+  if (Inst.isTrap) {             OS << "|(1ULL<<MCID::Trap)";
+
+}
+  if (Inst.isSelect) {           OS << "|(1ULL<<MCID::Select)";
+
+}
+  if (Inst.isBarrier) {          OS << "|(1ULL<<MCID::Barrier)";
+
+}
+  if (Inst.hasDelaySlot) {       OS << "|(1ULL<<MCID::DelaySlot)";
+
+}
+  if (Inst.isCall) {             OS << "|(1ULL<<MCID::Call)";
+
+}
+  if (Inst.canFoldAsLoad) {      OS << "|(1ULL<<MCID::FoldableAsLoad)";
+
+}
+  if (Inst.mayLoad) {            OS << "|(1ULL<<MCID::MayLoad)";
+
+}
+  if (Inst.mayStore) {           OS << "|(1ULL<<MCID::MayStore)";
+
+}
+  if (Inst.mayRaiseFPException) { OS << "|(1ULL<<MCID::MayRaiseFPException)";
+
+}
+  if (Inst.isPredicable) {       OS << "|(1ULL<<MCID::Predicable)";
+
+}
+  if (Inst.isConvertibleToThreeAddress) { OS << "|(1ULL<<MCID::ConvertibleTo3Addr)";
+
+}
+  if (Inst.isCommutable) {       OS << "|(1ULL<<MCID::Commutable)";
+
+}
+  if (Inst.isTerminator) {       OS << "|(1ULL<<MCID::Terminator)";
+
+}
+  if (Inst.isReMaterializable) { OS << "|(1ULL<<MCID::Rematerializable)";
+
+}
+  if (Inst.isNotDuplicable) {    OS << "|(1ULL<<MCID::NotDuplicable)";
+
+}
+  if (Inst.Operands.hasOptionalDef) { OS << "|(1ULL<<MCID::HasOptionalDef)";
+
+}
+  if (Inst.usesCustomInserter) { OS << "|(1ULL<<MCID::UsesCustomInserter)";
+
+}
+  if (Inst.hasPostISelHook) {    OS << "|(1ULL<<MCID::HasPostISelHook)";
+
+}
+  if (Inst.Operands.isVariadic) {OS << "|(1ULL<<MCID::Variadic)";
+
+}
+  if (Inst.hasSideEffects) {     OS << "|(1ULL<<MCID::UnmodeledSideEffects)";
+
+}
+  if (Inst.isAsCheapAsAMove) {   OS << "|(1ULL<<MCID::CheapAsAMove)";
+
+}
+  if (!Target.getAllowRegisterRenaming() || Inst.hasExtraSrcRegAllocReq) {
     OS << "|(1ULL<<MCID::ExtraSrcRegAllocReq)";
-  if (!Target.getAllowRegisterRenaming() || Inst.hasExtraDefRegAllocReq)
+
+}
+  if (!Target.getAllowRegisterRenaming() || Inst.hasExtraDefRegAllocReq) {
     OS << "|(1ULL<<MCID::ExtraDefRegAllocReq)";
-  if (Inst.isRegSequence) OS << "|(1ULL<<MCID::RegSequence)";
-  if (Inst.isExtractSubreg) OS << "|(1ULL<<MCID::ExtractSubreg)";
-  if (Inst.isInsertSubreg) OS << "|(1ULL<<MCID::InsertSubreg)";
-  if (Inst.isConvergent) OS << "|(1ULL<<MCID::Convergent)";
-  if (Inst.variadicOpsAreDefs) OS << "|(1ULL<<MCID::VariadicOpsAreDefs)";
-  if (Inst.isAuthenticated) OS << "|(1ULL<<MCID::Authenticated)";
+
+}
+  if (Inst.isRegSequence) { OS << "|(1ULL<<MCID::RegSequence)";
+
+}
+  if (Inst.isExtractSubreg) { OS << "|(1ULL<<MCID::ExtractSubreg)";
+
+}
+  if (Inst.isInsertSubreg) { OS << "|(1ULL<<MCID::InsertSubreg)";
+
+}
+  if (Inst.isConvergent) { OS << "|(1ULL<<MCID::Convergent)";
+
+}
+  if (Inst.variadicOpsAreDefs) { OS << "|(1ULL<<MCID::VariadicOpsAreDefs)";
+
+}
+  if (Inst.isAuthenticated) { OS << "|(1ULL<<MCID::Authenticated)";
+
+}
 
   // Emit all of the target-specific flags...
   BitsInit *TSF = Inst.TheDef->getValueAsBitsInit("TSFlags");
-  if (!TSF)
+  if (!TSF) {
     PrintFatalError(Inst.TheDef->getLoc(), "no TSFlags?");
+
+}
   uint64_t Value = 0;
   for (unsigned i = 0, e = TSF->getNumBits(); i != e; ++i) {
-    if (const auto *Bit = dyn_cast<BitInit>(TSF->getBit(i)))
+    if (const auto *Bit = dyn_cast<BitInit>(TSF->getBit(i))) {
       Value |= uint64_t(Bit->getValue()) << i;
-    else
+    } else {
       PrintFatalError(Inst.TheDef->getLoc(),
                       "Invalid TSFlags bit in " + Inst.TheDef->getName());
+
+}
   }
   OS << ", 0x";
   OS.write_hex(Value);
@@ -727,35 +859,43 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
 
   // Emit the implicit uses and defs lists...
   std::vector<Record*> UseList = Inst.TheDef->getValueAsListOfDefs("Uses");
-  if (UseList.empty())
+  if (UseList.empty()) {
     OS << "nullptr, ";
-  else
+  } else {
     OS << "ImplicitList" << EmittedLists[UseList] << ", ";
 
+}
+
   std::vector<Record*> DefList = Inst.TheDef->getValueAsListOfDefs("Defs");
-  if (DefList.empty())
+  if (DefList.empty()) {
     OS << "nullptr, ";
-  else
+  } else {
     OS << "ImplicitList" << EmittedLists[DefList] << ", ";
+
+}
 
   // Emit the operand info.
   std::vector<std::string> OperandInfo = GetOperandInfo(Inst);
-  if (OperandInfo.empty())
+  if (OperandInfo.empty()) {
     OS << "nullptr";
-  else
+  } else {
     OS << "OperandInfo" << OpInfo.find(OperandInfo)->second;
 
-  if (Inst.HasComplexDeprecationPredicate)
+}
+
+  if (Inst.HasComplexDeprecationPredicate) {
     // Emit a function pointer to the complex predicate method.
     OS << ", -1 "
        << ",&get" << Inst.DeprecatedReason << "DeprecationInfo";
-  else if (!Inst.DeprecatedReason.empty())
+  } else if (!Inst.DeprecatedReason.empty()) {
     // Emit the Subtarget feature.
     OS << ", " << Target.getInstNamespace() << "::" << Inst.DeprecatedReason
        << " ,nullptr";
-  else
+  } else {
     // Instruction isn't deprecated.
     OS << ", -1 ,nullptr";
+
+}
 
   OS << " },  // Inst #" << Num << " = " << Inst.TheDef->getName() << "\n";
 }
@@ -772,14 +912,18 @@ void InstrInfoEmitter::emitEnums(raw_ostream &OS) {
   // We must emit the PHI opcode first...
   StringRef Namespace = Target.getInstNamespace();
 
-  if (Namespace.empty())
+  if (Namespace.empty()) {
     PrintFatalError("No instructions defined!");
+
+}
 
   OS << "namespace " << Namespace << " {\n";
   OS << "  enum {\n";
   unsigned Num = 0;
-  for (const CodeGenInstruction *Inst : Target.getInstructionsByEnumValue())
+  for (const CodeGenInstruction *Inst : Target.getInstructionsByEnumValue()) {
     OS << "    " << Inst->TheDef->getName() << "\t= " << Num++ << ",\n";
+
+}
   OS << "    INSTRUCTION_LIST_END = " << Num << "\n";
   OS << "  };\n\n";
   OS << "} // end namespace " << Namespace << "\n";
@@ -793,8 +937,10 @@ void InstrInfoEmitter::emitEnums(raw_ostream &OS) {
   OS << "namespace Sched {\n";
   OS << "  enum {\n";
   Num = 0;
-  for (const auto &Class : SchedModels.explicit_classes())
+  for (const auto &Class : SchedModels.explicit_classes()) {
     OS << "    " << Class.Name << "\t= " << Num++ << ",\n";
+
+}
   OS << "    SCHED_LIST_END = " << Num << "\n";
   OS << "  };\n";
   OS << "} // end namespace Sched\n";

@@ -124,15 +124,19 @@ int main(int argc, char **argv) {
   // Remove the TUReplacementFiles (triggered by "remove-change-desc-files"
   // command line option) when exiting main().
   std::unique_ptr<ScopedFileRemover> Remover;
-  if (RemoveTUReplacementFiles)
+  if (RemoveTUReplacementFiles) {
     Remover.reset(new ScopedFileRemover(TUFiles, Diagnostics));
+
+}
 
   FileManager Files((FileSystemOptions()));
   SourceManager SM(Diagnostics, Files);
 
   FileToChangesMap Changes;
-  if (!mergeAndDeduplicate(TURs, TUDs, Changes, SM))
+  if (!mergeAndDeduplicate(TURs, TUDs, Changes, SM)) {
     return 1;
+
+}
 
   tooling::ApplyChangesSpec Spec;
   Spec.Cleanup = true;

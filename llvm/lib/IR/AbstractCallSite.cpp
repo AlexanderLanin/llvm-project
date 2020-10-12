@@ -36,12 +36,16 @@ STATISTIC(NumInvalidAbstractCallSitesNoCallback,
 void AbstractCallSite::getCallbackUses(ImmutableCallSite ICS,
                                        SmallVectorImpl<const Use *> &CBUses) {
   const Function *Callee = ICS.getCalledFunction();
-  if (!Callee)
+  if (!Callee) {
     return;
 
+}
+
   MDNode *CallbackMD = Callee->getMetadata(LLVMContext::MD_callback);
-  if (!CallbackMD)
+  if (!CallbackMD) {
     return;
+
+}
 
   for (const MDOperand &Op : CallbackMD->operands()) {
     MDNode *OpMD = cast<MDNode>(Op.get());
@@ -62,11 +66,13 @@ AbstractCallSite::AbstractCallSite(const Use *U) : CS(U->getUser()) {
     // has only one use, we look through the constant cast expression.
     // This happens by updating the use @p U to the use of the constant
     // cast expression and afterwards re-initializing CS accordingly.
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U->getUser()))
+    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U->getUser())) {
       if (CE->getNumUses() == 1 && CE->isCast()) {
         U = &*CE->use_begin();
         CS = CallSite(U->getUser());
       }
+
+}
 
     if (!CS) {
       NumInvalidAbstractCallSitesUnknownUse++;
@@ -104,8 +110,10 @@ AbstractCallSite::AbstractCallSite(const Use *U) : CS(U->getUser()) {
     auto *CBCalleeIdxAsCM = cast<ConstantAsMetadata>(OpMD->getOperand(0));
     uint64_t CBCalleeIdx =
         cast<ConstantInt>(CBCalleeIdxAsCM->getValue())->getZExtValue();
-    if (CBCalleeIdx != UseIdx)
+    if (CBCalleeIdx != UseIdx) {
       continue;
+
+}
     CallbackEncMD = OpMD;
     break;
   }
@@ -135,8 +143,10 @@ AbstractCallSite::AbstractCallSite(const Use *U) : CS(U->getUser()) {
     CI.ParameterEncoding.push_back(Idx);
   }
 
-  if (!Callee->isVarArg())
+  if (!Callee->isVarArg()) {
     return;
+
+}
 
   Metadata *VarArgFlagAsM =
       CallbackEncMD->getOperand(CallbackEncMD->getNumOperands() - 1).get();
@@ -144,10 +154,14 @@ AbstractCallSite::AbstractCallSite(const Use *U) : CS(U->getUser()) {
   assert(VarArgFlagAsCM->getType()->isIntegerTy(1) &&
          "Malformed !callback metadata var-arg flag");
 
-  if (VarArgFlagAsCM->getValue()->isNullValue())
+  if (VarArgFlagAsCM->getValue()->isNullValue()) {
     return;
 
+}
+
   // Add all variadic arguments at the end.
-  for (unsigned u = Callee->arg_size(); u < NumCallOperands; u++)
+  for (unsigned u = Callee->arg_size(); u < NumCallOperands; u++) {
     CI.ParameterEncoding.push_back(u);
+
+}
 }

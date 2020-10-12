@@ -57,8 +57,10 @@ void RegisterFileStatistics::updateRegisterFileUsage(
 }
 
 void RegisterFileStatistics::updateMoveElimInfo(const Instruction &Inst) {
-  if (!Inst.isOptimizableMove())
+  if (!Inst.isOptimizableMove()) {
     return;
+
+}
 
   assert(Inst.getDefs().size() == 1 && "Expected a single definition!");
   assert(Inst.getUses().size() == 1 && "Expected a single register use!");
@@ -68,10 +70,14 @@ void RegisterFileStatistics::updateMoveElimInfo(const Instruction &Inst) {
   MoveEliminationInfo &Info =
       MoveElimInfo[Inst.getDefs()[0].getRegisterFileID()];
   Info.TotalMoveEliminationCandidates++;
-  if (WS.isEliminated())
+  if (WS.isEliminated()) {
     Info.CurrentMovesEliminated++;
-  if (WS.isWriteZero() && RS.isReadZero())
+
+}
+  if (WS.isWriteZero() && RS.isReadZero()) {
     Info.TotalMovesThatPropagateZero++;
+
+}
 }
 
 void RegisterFileStatistics::onEvent(const HWInstructionEvent &Event) {
@@ -80,8 +86,10 @@ void RegisterFileStatistics::onEvent(const HWInstructionEvent &Event) {
     break;
   case HWInstructionEvent::Retired: {
     const auto &RE = static_cast<const HWInstructionRetiredEvent &>(Event);
-    for (unsigned I = 0, E = PRFUsage.size(); I < E; ++I)
+    for (unsigned I = 0, E = PRFUsage.size(); I < E; ++I) {
       PRFUsage[I].CurrentlyUsedMappings -= RE.FreedPhysRegs[I];
+
+}
     break;
   }
   case HWInstructionEvent::Dispatched: {
@@ -122,16 +130,20 @@ void RegisterFileStatistics::printView(raw_ostream &OS) const {
     assert(I <= PI.NumRegisterFiles && "Unexpected register file index!");
     const MCRegisterFileDesc &RFDesc = PI.RegisterFiles[I];
     // Skip invalid register files.
-    if (!RFDesc.NumPhysRegs)
+    if (!RFDesc.NumPhysRegs) {
       continue;
+
+}
 
     TempStream << "\n*  Register File #" << I;
     TempStream << " -- " << StringRef(RFDesc.Name) << ':';
     TempStream << "\n   Number of physical registers:     ";
-    if (!RFDesc.NumPhysRegs)
+    if (!RFDesc.NumPhysRegs) {
       TempStream << "unbounded";
-    else
+    } else {
       TempStream << RFDesc.NumPhysRegs;
+
+}
     TempStream << "\n   Total number of mappings created: "
                << RFU.TotalMappings;
     TempStream << "\n   Max number of mappings used:      "

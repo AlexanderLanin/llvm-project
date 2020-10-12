@@ -1223,8 +1223,10 @@ namespace yaml {
 
     static StringRef input(StringRef scalar, void *, MyNumber &value) {
       long long n;
-      if ( getAsSignedInteger(scalar, 0, n) )
+      if ( getAsSignedInteger(scalar, 0, n) ) {
         return "invalid number";
+
+}
       value = n;
       return StringRef();
     }
@@ -1785,8 +1787,10 @@ namespace yaml {
         io.mapRequired("value", d.value);
     }
     static StringRef validate(IO &io, MyValidation &d) {
-        if (d.value < 0)
+        if (d.value < 0) {
           return "negative value";
+
+}
         return StringRef();
     }
   };
@@ -2212,8 +2216,10 @@ TEST(YAMLIO, TestReadBuiltInTypesHex8Error) {
 
   EXPECT_TRUE(seq.size() == 3);
   EXPECT_TRUE(seq.size() == seq2.size());
-  for (size_t i = 0; i < seq.size(); ++i)
+  for (size_t i = 0; i < seq.size(); ++i) {
     EXPECT_TRUE(seq[i] == seq2[i]);
+
+}
 }
 
 
@@ -2242,8 +2248,10 @@ TEST(YAMLIO, TestReadBuiltInTypesHex16Error) {
 
   EXPECT_TRUE(seq.size() == 3);
   EXPECT_TRUE(seq.size() == seq2.size());
-  for (size_t i = 0; i < seq.size(); ++i)
+  for (size_t i = 0; i < seq.size(); ++i) {
     EXPECT_TRUE(seq[i] == seq2[i]);
+
+}
 }
 
 //
@@ -2272,8 +2280,10 @@ TEST(YAMLIO, TestReadBuiltInTypesHex32Error) {
 
   EXPECT_TRUE(seq.size() == 3);
   EXPECT_TRUE(seq.size() == seq2.size());
-  for (size_t i = 0; i < seq.size(); ++i)
+  for (size_t i = 0; i < seq.size(); ++i) {
     EXPECT_TRUE(seq[i] == seq2[i]);
+
+}
 }
 
 //
@@ -2301,8 +2311,10 @@ TEST(YAMLIO, TestReadBuiltInTypesHex64Error) {
 
   EXPECT_TRUE(seq.size() == 3);
   EXPECT_TRUE(seq.size() == seq2.size());
-  for (size_t i = 0; i < seq.size(); ++i)
+  for (size_t i = 0; i < seq.size(); ++i) {
     EXPECT_TRUE(seq[i] == seq2[i]);
+
+}
 }
 
 TEST(YAMLIO, TestMalformedMapFailsGracefully) {
@@ -2876,30 +2888,42 @@ namespace yaml {
 
 template <> struct PolymorphicTraits<std::unique_ptr<Poly>> {
   static NodeKind getKind(const std::unique_ptr<Poly> &N) {
-    if (isa<Scalar>(*N))
+    if (isa<Scalar>(*N)) {
       return NodeKind::Scalar;
-    if (isa<Seq>(*N))
+
+}
+    if (isa<Seq>(*N)) {
       return NodeKind::Sequence;
-    if (isa<Map>(*N))
+
+}
+    if (isa<Map>(*N)) {
       return NodeKind::Map;
+
+}
     llvm_unreachable("unsupported node type");
   }
 
   static Scalar &getAsScalar(std::unique_ptr<Poly> &N) {
-    if (!N || !isa<Scalar>(*N))
+    if (!N || !isa<Scalar>(*N)) {
       N = std::make_unique<Scalar>();
+
+}
     return *cast<Scalar>(N.get());
   }
 
   static Seq &getAsSequence(std::unique_ptr<Poly> &N) {
-    if (!N || !isa<Seq>(*N))
+    if (!N || !isa<Seq>(*N)) {
       N = std::make_unique<Seq>();
+
+}
     return *cast<Seq>(N.get());
   }
 
   static Map &getAsMap(std::unique_ptr<Poly> &N) {
-    if (!N || !isa<Map>(*N))
+    if (!N || !isa<Map>(*N)) {
       N = std::make_unique<Map>();
+
+}
     return *cast<Map>(N.get());
   }
 };
@@ -2958,8 +2982,10 @@ template <> struct CustomMappingTraits<Map> {
   }
 
   static void output(IO &IO, Map &M) {
-    for (auto &N : M)
+    for (auto &N : M) {
       IO.mapRequired(N.getKey().str().c_str(), N.getValue());
+
+}
   }
 };
 
@@ -2967,8 +2993,10 @@ template <> struct SequenceTraits<Seq> {
   static size_t size(IO &IO, Seq &A) { return A.size(); }
 
   static std::unique_ptr<Poly> &element(IO &IO, Seq &A, size_t Index) {
-    if (Index >= A.size())
+    if (Index >= A.size()) {
       A.resize(Index + 1);
+
+}
     return A[Index];
   }
 };

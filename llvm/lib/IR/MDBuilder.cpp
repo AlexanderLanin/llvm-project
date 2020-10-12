@@ -26,8 +26,10 @@ ConstantAsMetadata *MDBuilder::createConstant(Constant *C) {
 }
 
 MDNode *MDBuilder::createFPMath(float Accuracy) {
-  if (Accuracy == 0.0)
+  if (Accuracy == 0.0) {
     return nullptr;
+
+}
   assert(Accuracy > 0.0 && "Invalid fpmath accuracy!");
   auto *Op =
       createConstant(ConstantFP::get(Type::getFloatTy(Context), Accuracy));
@@ -46,8 +48,10 @@ MDNode *MDBuilder::createBranchWeights(ArrayRef<uint32_t> Weights) {
   Vals[0] = createString("branch_weights");
 
   Type *Int32Ty = Type::getInt32Ty(Context);
-  for (unsigned i = 0, e = Weights.size(); i != e; ++i)
+  for (unsigned i = 0, e = Weights.size(); i != e; ++i) {
     Vals[i + 1] = createConstant(ConstantInt::get(Int32Ty, Weights[i]));
+
+}
 
   return MDNode::get(Context, Vals);
 }
@@ -61,16 +65,20 @@ MDNode *MDBuilder::createFunctionEntryCount(
     const DenseSet<GlobalValue::GUID> *Imports) {
   Type *Int64Ty = Type::getInt64Ty(Context);
   SmallVector<Metadata *, 8> Ops;
-  if (Synthetic)
+  if (Synthetic) {
     Ops.push_back(createString("synthetic_function_entry_count"));
-  else
+  } else {
     Ops.push_back(createString("function_entry_count"));
+
+}
   Ops.push_back(createConstant(ConstantInt::get(Int64Ty, Count)));
   if (Imports) {
     SmallVector<GlobalValue::GUID, 2> OrderID(Imports->begin(), Imports->end());
     llvm::stable_sort(OrderID);
-    for (auto ID : OrderID)
+    for (auto ID : OrderID) {
       Ops.push_back(createConstant(ConstantInt::get(Int64Ty, ID)));
+
+}
   }
   return MDNode::get(Context, Ops);
 }
@@ -90,8 +98,10 @@ MDNode *MDBuilder::createRange(const APInt &Lo, const APInt &Hi) {
 
 MDNode *MDBuilder::createRange(Constant *Lo, Constant *Hi) {
   // If the range is everything then it is useless.
-  if (Hi == Lo)
+  if (Hi == Lo) {
     return nullptr;
+
+}
 
   // Return the range [Lo, Hi).
   return MDNode::get(Context, {createConstant(Lo), createConstant(Hi)});
@@ -99,8 +109,10 @@ MDNode *MDBuilder::createRange(Constant *Lo, Constant *Hi) {
 
 MDNode *MDBuilder::createCallees(ArrayRef<Function *> Callees) {
   SmallVector<Metadata *, 4> Ops;
-  for (Function *F : Callees)
+  for (Function *F : Callees) {
     Ops.push_back(createConstant(F));
+
+}
   return MDNode::get(Context, Ops);
 }
 
@@ -112,8 +124,10 @@ MDNode *MDBuilder::createCallbackEncoding(unsigned CalleeArgNo,
   Type *Int64 = Type::getInt64Ty(Context);
   Ops.push_back(createConstant(ConstantInt::get(Int64, CalleeArgNo)));
 
-  for (int ArgNo : Arguments)
+  for (int ArgNo : Arguments) {
     Ops.push_back(createConstant(ConstantInt::get(Int64, ArgNo, true)));
+
+}
 
   Type *Int1 = Type::getInt1Ty(Context);
   Ops.push_back(createConstant(ConstantInt::get(Int1, VarArgArePassed)));
@@ -123,8 +137,10 @@ MDNode *MDBuilder::createCallbackEncoding(unsigned CalleeArgNo,
 
 MDNode *MDBuilder::mergeCallbackEncodings(MDNode *ExistingCallbacks,
                                           MDNode *NewCB) {
-  if (!ExistingCallbacks)
+  if (!ExistingCallbacks) {
     return MDNode::get(Context, {NewCB});
+
+}
 
   auto *NewCBCalleeIdxAsCM = cast<ConstantAsMetadata>(NewCB->getOperand(0));
   uint64_t NewCBCalleeIdx =
@@ -155,10 +171,14 @@ MDNode *MDBuilder::createAnonymousAARoot(StringRef Name, MDNode *Extra) {
   auto Dummy = MDNode::getTemporary(Context, None);
 
   SmallVector<Metadata *, 3> Args(1, Dummy.get());
-  if (Extra)
+  if (Extra) {
     Args.push_back(Extra);
-  if (!Name.empty())
+
+}
+  if (!Name.empty()) {
     Args.push_back(createString(Name));
+
+}
   MDNode *Root = MDNode::get(Context, Args);
 
   // At this point we have
@@ -285,17 +305,23 @@ MDNode *MDBuilder::createMutableTBAAAccessTag(MDNode *Tag) {
 
   // See if the tag is already mutable.
   unsigned ImmutabilityFlagOp = NewFormat ? 4 : 3;
-  if (Tag->getNumOperands() <= ImmutabilityFlagOp)
+  if (Tag->getNumOperands() <= ImmutabilityFlagOp) {
     return Tag;
+
+}
 
   // If Tag is already mutable then return it.
   Metadata *ImmutabilityFlagNode = Tag->getOperand(ImmutabilityFlagOp);
-  if (!mdconst::extract<ConstantInt>(ImmutabilityFlagNode)->getValue())
+  if (!mdconst::extract<ConstantInt>(ImmutabilityFlagNode)->getValue()) {
     return Tag;
 
+}
+
   // Otherwise, create another node.
-  if (!NewFormat)
+  if (!NewFormat) {
     return createTBAAStructTagNode(BaseType, AccessType, Offset);
+
+}
 
   Metadata *SizeNode = Tag->getOperand(3);
   uint64_t Size = mdconst::extract<ConstantInt>(SizeNode)->getZExtValue();

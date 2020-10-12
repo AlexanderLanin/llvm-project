@@ -16,8 +16,10 @@ struct CastExprVisitor : TestVisitor<CastExprVisitor> {
   std::function<void(ExplicitCastExpr *)> OnExplicitCast;
 
   bool VisitExplicitCastExpr(ExplicitCastExpr *Expr) {
-    if (OnExplicitCast)
+    if (OnExplicitCast) {
       OnExplicitCast(Expr);
+
+}
     return true;
   }
 };

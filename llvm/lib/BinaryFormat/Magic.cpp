@@ -32,55 +32,79 @@ static bool startswith(StringRef Magic, const char (&S)[N]) {
 
 /// Identify the magic in magic.
 file_magic llvm::identify_magic(StringRef Magic) {
-  if (Magic.size() < 4)
+  if (Magic.size() < 4) {
     return file_magic::unknown;
+
+}
   switch ((unsigned char)Magic[0]) {
   case 0x00: {
     // COFF bigobj, CL.exe's LTO object file, or short import library file
     if (startswith(Magic, "\0\0\xFF\xFF")) {
       size_t MinSize =
           offsetof(COFF::BigObjHeader, UUID) + sizeof(COFF::BigObjMagic);
-      if (Magic.size() < MinSize)
+      if (Magic.size() < MinSize) {
         return file_magic::coff_import_library;
 
+}
+
       const char *Start = Magic.data() + offsetof(COFF::BigObjHeader, UUID);
-      if (memcmp(Start, COFF::BigObjMagic, sizeof(COFF::BigObjMagic)) == 0)
+      if (memcmp(Start, COFF::BigObjMagic, sizeof(COFF::BigObjMagic)) == 0) {
         return file_magic::coff_object;
-      if (memcmp(Start, COFF::ClGlObjMagic, sizeof(COFF::BigObjMagic)) == 0)
+
+}
+      if (memcmp(Start, COFF::ClGlObjMagic, sizeof(COFF::BigObjMagic)) == 0) {
         return file_magic::coff_cl_gl_object;
+
+}
       return file_magic::coff_import_library;
     }
     // Windows resource file
     if (Magic.size() >= sizeof(COFF::WinResMagic) &&
-        memcmp(Magic.data(), COFF::WinResMagic, sizeof(COFF::WinResMagic)) == 0)
+        memcmp(Magic.data(), COFF::WinResMagic, sizeof(COFF::WinResMagic)) == 0) {
       return file_magic::windows_resource;
+
+}
     // 0x0000 = COFF unknown machine type
-    if (Magic[1] == 0)
+    if (Magic[1] == 0) {
       return file_magic::coff_object;
-    if (startswith(Magic, "\0asm"))
+
+}
+    if (startswith(Magic, "\0asm")) {
       return file_magic::wasm_object;
+
+}
     break;
   }
 
   case 0x01:
     // XCOFF format
-    if (startswith(Magic, "\x01\xDF"))
+    if (startswith(Magic, "\x01\xDF")) {
       return file_magic::xcoff_object_32;
-    if (startswith(Magic, "\x01\xF7"))
+
+}
+    if (startswith(Magic, "\x01\xF7")) {
       return file_magic::xcoff_object_64;
+
+}
     break;
 
   case 0xDE: // 0x0B17C0DE = BC wraper
-    if (startswith(Magic, "\xDE\xC0\x17\x0B"))
+    if (startswith(Magic, "\xDE\xC0\x17\x0B")) {
       return file_magic::bitcode;
+
+}
     break;
   case 'B':
-    if (startswith(Magic, "BC\xC0\xDE"))
+    if (startswith(Magic, "BC\xC0\xDE")) {
       return file_magic::bitcode;
+
+}
     break;
   case '!':
-    if (startswith(Magic, "!<arch>\n") || startswith(Magic, "!<thin>\n"))
+    if (startswith(Magic, "!<arch>\n") || startswith(Magic, "!<thin>\n")) {
       return file_magic::archive;
+
+}
     break;
 
   case '\177':
@@ -112,8 +136,10 @@ file_magic llvm::identify_magic(StringRef Magic) {
         startswith(Magic, "\xCA\xFE\xBA\xBF")) {
       // This is complicated by an overlap with Java class files.
       // See the Mach-O section in /usr/share/file/magic for details.
-      if (Magic.size() >= 8 && Magic[7] < 43)
+      if (Magic.size() >= 8 && Magic[7] < 43) {
         return file_magic::macho_universal_binary;
+
+}
     }
     break;
 
@@ -128,22 +154,30 @@ file_magic llvm::identify_magic(StringRef Magic) {
         startswith(Magic, "\xFE\xED\xFA\xCF")) {
       /* Native endian */
       size_t MinSize;
-      if (Magic[3] == char(0xCE))
+      if (Magic[3] == char(0xCE)) {
         MinSize = sizeof(MachO::mach_header);
-      else
+      } else {
         MinSize = sizeof(MachO::mach_header_64);
-      if (Magic.size() >= MinSize)
+
+}
+      if (Magic.size() >= MinSize) {
         type = Magic[12] << 24 | Magic[13] << 12 | Magic[14] << 8 | Magic[15];
+
+}
     } else if (startswith(Magic, "\xCE\xFA\xED\xFE") ||
                startswith(Magic, "\xCF\xFA\xED\xFE")) {
       /* Reverse endian */
       size_t MinSize;
-      if (Magic[0] == char(0xCE))
+      if (Magic[0] == char(0xCE)) {
         MinSize = sizeof(MachO::mach_header);
-      else
+      } else {
         MinSize = sizeof(MachO::mach_header_64);
-      if (Magic.size() >= MinSize)
+
+}
+      if (Magic.size() >= MinSize) {
         type = Magic[15] << 24 | Magic[14] << 12 | Magic[13] << 8 | Magic[12];
+
+}
     }
     switch (type) {
     default:
@@ -180,14 +214,18 @@ file_magic llvm::identify_magic(StringRef Magic) {
   case 0x50: // mc68K
   case 0x4c: // 80386 Windows
   case 0xc4: // ARMNT Windows
-    if (Magic[1] == 0x01)
+    if (Magic[1] == 0x01) {
       return file_magic::coff_object;
+
+}
     LLVM_FALLTHROUGH;
 
   case 0x90: // PA-RISC Windows
   case 0x68: // mc68K Windows
-    if (Magic[1] == 0x02)
+    if (Magic[1] == 0x02) {
       return file_magic::coff_object;
+
+}
     break;
 
   case 'M': // Possible MS-DOS stub on Windows PE file, MSF/PDB file or a
@@ -196,23 +234,33 @@ file_magic llvm::identify_magic(StringRef Magic) {
       uint32_t off = read32le(Magic.data() + 0x3c);
       // PE/COFF file, either EXE or DLL.
       if (Magic.substr(off).startswith(
-              StringRef(COFF::PEMagic, sizeof(COFF::PEMagic))))
+              StringRef(COFF::PEMagic, sizeof(COFF::PEMagic)))) {
         return file_magic::pecoff_executable;
+
+}
     }
-    if (Magic.startswith("Microsoft C/C++ MSF 7.00\r\n"))
+    if (Magic.startswith("Microsoft C/C++ MSF 7.00\r\n")) {
       return file_magic::pdb;
-    if (startswith(Magic, "MDMP"))
+
+}
+    if (startswith(Magic, "MDMP")) {
       return file_magic::minidump;
+
+}
     break;
 
   case 0x64: // x86-64 or ARM64 Windows.
-    if (Magic[1] == char(0x86) || Magic[1] == char(0xaa))
+    if (Magic[1] == char(0x86) || Magic[1] == char(0xaa)) {
       return file_magic::coff_object;
+
+}
     break;
 
   case 0x2d: // YAML '-'
-    if (startswith(Magic, "--- !tapi") || startswith(Magic, "---\narchs:"))
+    if (startswith(Magic, "--- !tapi") || startswith(Magic, "---\narchs:")) {
       return file_magic::tapi_file;
+
+}
     break;
 
   default:
@@ -223,8 +271,10 @@ file_magic llvm::identify_magic(StringRef Magic) {
 
 std::error_code llvm::identify_magic(const Twine &Path, file_magic &Result) {
   auto FileOrError = MemoryBuffer::getFile(Path, -1LL, false);
-  if (!FileOrError)
+  if (!FileOrError) {
     return FileOrError.getError();
+
+}
 
   std::unique_ptr<MemoryBuffer> FileBuffer = std::move(*FileOrError);
   Result = identify_magic(FileBuffer->getBuffer());

@@ -44,10 +44,14 @@ bool BasicBlockEdge::isSingleEdge() const {
   const Instruction *TI = Start->getTerminator();
   unsigned NumEdgesToEnd = 0;
   for (unsigned int i = 0, n = TI->getNumSuccessors(); i < n; ++i) {
-    if (TI->getSuccessor(i) == End)
+    if (TI->getSuccessor(i) == End) {
       ++NumEdgesToEnd;
-    if (NumEdgesToEnd >= 2)
+
+}
+    if (NumEdgesToEnd >= 2) {
       return false;
+
+}
   }
   assert(NumEdgesToEnd == 1);
   return true;
@@ -119,26 +123,36 @@ bool DominatorTree::dominates(const Instruction *Def,
   const BasicBlock *DefBB = Def->getParent();
 
   // Any unreachable use is dominated, even if Def == User.
-  if (!isReachableFromEntry(UseBB))
+  if (!isReachableFromEntry(UseBB)) {
     return true;
 
+}
+
   // Unreachable definitions don't dominate anything.
-  if (!isReachableFromEntry(DefBB))
+  if (!isReachableFromEntry(DefBB)) {
     return false;
 
+}
+
   // An instruction doesn't dominate a use in itself.
-  if (Def == User)
+  if (Def == User) {
     return false;
+
+}
 
   // The value defined by an invoke dominates an instruction only if it
   // dominates every instruction in UseBB.
   // A PHI is dominated only if the instruction dominates every possible use in
   // the UseBB.
-  if (isa<InvokeInst>(Def) || isa<PHINode>(User))
+  if (isa<InvokeInst>(Def) || isa<PHINode>(User)) {
     return dominates(Def, UseBB);
 
-  if (DefBB != UseBB)
+}
+
+  if (DefBB != UseBB) {
     return dominates(DefBB, UseBB);
+
+}
 
   return Def->comesBefore(User);
 }
@@ -150,15 +164,21 @@ bool DominatorTree::dominates(const Instruction *Def,
   const BasicBlock *DefBB = Def->getParent();
 
   // Any unreachable use is dominated, even if DefBB == UseBB.
-  if (!isReachableFromEntry(UseBB))
+  if (!isReachableFromEntry(UseBB)) {
     return true;
 
+}
+
   // Unreachable definitions don't dominate anything.
-  if (!isReachableFromEntry(DefBB))
+  if (!isReachableFromEntry(DefBB)) {
     return false;
 
-  if (DefBB == UseBB)
+}
+
+  if (DefBB == UseBB) {
     return false;
+
+}
 
   // Invoke results are only usable in the normal destination, not in the
   // exceptional destination.
@@ -177,13 +197,17 @@ bool DominatorTree::dominates(const BasicBlockEdge &BBE,
   // edge also doesn't.
   const BasicBlock *Start = BBE.getStart();
   const BasicBlock *End = BBE.getEnd();
-  if (!dominates(End, UseBB))
+  if (!dominates(End, UseBB)) {
     return false;
+
+}
 
   // Simple case: if the end BB has a single predecessor, the fact that it
   // dominates the use block implies that the edge also does.
-  if (End->getSinglePredecessor())
+  if (End->getSinglePredecessor()) {
     return true;
+
+}
 
   // The normal edge from the invoke is critical. Conceptually, what we would
   // like to do is split it and check if the new block dominates the use.
@@ -212,13 +236,17 @@ bool DominatorTree::dominates(const BasicBlockEdge &BBE,
     if (BB == Start) {
       // If there are multiple edges between Start and End, by definition they
       // can't dominate anything.
-      if (IsDuplicateEdge++)
+      if (IsDuplicateEdge++) {
         return false;
+
+}
       continue;
     }
 
-    if (!dominates(End, BB))
+    if (!dominates(End, BB)) {
       return false;
+
+}
   }
   return true;
 }
@@ -228,16 +256,20 @@ bool DominatorTree::dominates(const BasicBlockEdge &BBE, const Use &U) const {
   // A PHI in the end of the edge is dominated by it.
   PHINode *PN = dyn_cast<PHINode>(UserInst);
   if (PN && PN->getParent() == BBE.getEnd() &&
-      PN->getIncomingBlock(U) == BBE.getStart())
+      PN->getIncomingBlock(U) == BBE.getStart()) {
     return true;
+
+}
 
   // Otherwise use the edge-dominates-block query, which
   // handles the crazy critical edge cases properly.
   const BasicBlock *UseBB;
-  if (PN)
+  if (PN) {
     UseBB = PN->getIncomingBlock(U);
-  else
+  } else {
     UseBB = UserInst->getParent();
+
+}
   return dominates(BBE, UseBB);
 }
 
@@ -249,18 +281,24 @@ bool DominatorTree::dominates(const Instruction *Def, const Use &U) const {
   // their operands on edges; simulate this by thinking of the use
   // happening at the end of the predecessor block.
   const BasicBlock *UseBB;
-  if (PHINode *PN = dyn_cast<PHINode>(UserInst))
+  if (PHINode *PN = dyn_cast<PHINode>(UserInst)) {
     UseBB = PN->getIncomingBlock(U);
-  else
+  } else {
     UseBB = UserInst->getParent();
 
+}
+
   // Any unreachable use is dominated, even if Def == User.
-  if (!isReachableFromEntry(UseBB))
+  if (!isReachableFromEntry(UseBB)) {
     return true;
 
+}
+
   // Unreachable definitions don't dominate anything.
-  if (!isReachableFromEntry(DefBB))
+  if (!isReachableFromEntry(DefBB)) {
     return false;
+
+}
 
   // Invoke instructions define their return values on the edges to their normal
   // successors, so we have to handle them specially.
@@ -275,14 +313,18 @@ bool DominatorTree::dominates(const Instruction *Def, const Use &U) const {
 
   // If the def and use are in different blocks, do a simple CFG dominator
   // tree query.
-  if (DefBB != UseBB)
+  if (DefBB != UseBB) {
     return dominates(DefBB, UseBB);
+
+}
 
   // Ok, def and use are in the same block. If the def is an invoke, it
   // doesn't dominate anything in the block. If it's a PHI, it dominates
   // everything in the block.
-  if (isa<PHINode>(UserInst))
+  if (isa<PHINode>(UserInst)) {
     return true;
+
+}
 
   return Def->comesBefore(UserInst);
 }
@@ -292,11 +334,15 @@ bool DominatorTree::isReachableFromEntry(const Use &U) const {
 
   // ConstantExprs aren't really reachable from the entry block, but they
   // don't need to be treated like unreachable code either.
-  if (!I) return true;
+  if (!I) { return true;
+
+}
 
   // PHI nodes use their operands on their incoming edges.
-  if (PHINode *PN = dyn_cast<PHINode>(I))
+  if (PHINode *PN = dyn_cast<PHINode>(I)) {
     return isReachableFromEntry(PN->getIncomingBlock(U));
+
+}
 
   // Everything else uses their operands in their own block.
   return isReachableFromEntry(I->getParent());
@@ -362,10 +408,12 @@ bool DominatorTreeWrapperPass::runOnFunction(Function &F) {
 }
 
 void DominatorTreeWrapperPass::verifyAnalysis() const {
-  if (VerifyDomInfo)
+  if (VerifyDomInfo) {
     assert(DT.verify(DominatorTree::VerificationLevel::Full));
-  else if (ExpensiveChecksEnabled)
+  } else if (ExpensiveChecksEnabled) {
     assert(DT.verify(DominatorTree::VerificationLevel::Basic));
+
+}
 }
 
 void DominatorTreeWrapperPass::print(raw_ostream &OS, const Module *) const {

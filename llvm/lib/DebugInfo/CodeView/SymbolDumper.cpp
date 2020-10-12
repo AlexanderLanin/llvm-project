@@ -80,9 +80,11 @@ static StringRef getSymbolKindName(SymbolKind Kind) {
 void CVSymbolDumperImpl::printLocalVariableAddrRange(
     const LocalVariableAddrRange &Range, uint32_t RelocationOffset) {
   DictScope S(W, "LocalVariableAddrRange");
-  if (ObjDelegate)
+  if (ObjDelegate) {
     ObjDelegate->printRelocatedField("OffsetStart", RelocationOffset,
                                      Range.OffsetStart);
+
+}
   W.printHex("ISectStart", Range.ISectStart);
   W.printHex("Range", Range.Range);
 }
@@ -109,8 +111,10 @@ Error CVSymbolDumperImpl::visitSymbolBegin(CVSymbol &CVR) {
 }
 
 Error CVSymbolDumperImpl::visitSymbolEnd(CVSymbol &CVR) {
-  if (PrintRecordBytes && ObjDelegate)
+  if (PrintRecordBytes && ObjDelegate) {
     ObjDelegate->printBinaryBlockWithRelocs("SymData", CVR.content());
+
+}
 
   W.unindent();
   W.startLine() << "}\n";
@@ -204,8 +208,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR,
   }
   W.printHex("Segment", CallSiteInfo.Segment);
   printTypeIndex("Type", CallSiteInfo.Type);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -301,8 +307,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, DataSym &Data) {
   }
   printTypeIndex("Type", Data.Type);
   W.printString("DisplayName", Data.Name);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -443,8 +451,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(
   W.printHex("Segment", HeapAllocSite.Segment);
   W.printHex("CallInstructionSize", HeapAllocSite.CallInstructionSize);
   printTypeIndex("Type", HeapAllocSite.Type);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -538,8 +548,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, LabelSym &Label) {
   W.printHex("Flags", uint8_t(Label.Flags));
   W.printFlags("Flags", uint8_t(Label.Flags), getProcSymFlagNames());
   W.printString("DisplayName", Label.Name);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -557,9 +569,11 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, ObjNameSym &ObjName) {
 }
 
 Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, ProcSym &Proc) {
-  if (InFunctionScope)
+  if (InFunctionScope) {
     return llvm::make_error<CodeViewError>(
         "Visiting a ProcSym while inside function scope!");
+
+}
 
   InFunctionScope = true;
 
@@ -579,8 +593,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, ProcSym &Proc) {
   W.printFlags("Flags", static_cast<uint8_t>(Proc.Flags),
                getProcSymFlagNames());
   W.printString("DisplayName", Proc.Name);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -592,8 +608,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR,
 
 Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR, CallerSym &Caller) {
   ListScope S(W, CVR.kind() == S_CALLEES ? "Callees" : "Callers");
-  for (auto FuncID : Caller.Indices)
+  for (auto FuncID : Caller.Indices) {
     printTypeIndex("FuncID", FuncID);
+
+}
   return Error::success();
 }
 
@@ -616,8 +634,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR,
   }
   printTypeIndex("Type", Data.Type);
   W.printString("DisplayName", Data.Name);
-  if (!LinkageName.empty())
+  if (!LinkageName.empty()) {
     W.printString("LinkageName", LinkageName);
+
+}
   return Error::success();
 }
 
@@ -639,8 +659,10 @@ Error CVSymbolDumperImpl::visitKnownRecord(CVSymbol &CVR,
   W.printHex("Segment", Annot.Segment);
 
   ListScope S(W, "Strings");
-  for (StringRef Str : Annot.Strings)
+  for (StringRef Str : Annot.Strings) {
     W.printString(Str);
+
+}
 
   return Error::success();
 }

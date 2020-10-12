@@ -60,8 +60,10 @@ public:
   Error dec() {
     assert(Idx != 0 && "Walking off start of (mock) collection");
     --Idx;
-    if (C[Idx].second == ValidLink)
+    if (C[Idx].second == ValidLink) {
       return Error::success();
+
+}
     return make_error<StringError>("cant get prev object in (mock) collection",
                                    inconvertibleErrorCode());
   }
@@ -94,15 +96,19 @@ public:
 
   Expected<Item &> operator*() {
     auto &I = FallibleCollectionWalker::operator*();
-    if (!I.isValid())
+    if (!I.isValid()) {
       return make_error<StringError>("bad item", inconvertibleErrorCode());
+
+}
     return I;
   }
 
   Expected<const Item &> operator*() const {
     const auto &I = FallibleCollectionWalker::operator*();
-    if (!I.isValid())
+    if (!I.isValid()) {
       return make_error<StringError>("bad item", inconvertibleErrorCode());
+
+}
     return I;
   }
 };
@@ -119,8 +125,10 @@ TEST(FallibleIteratorTest, BasicSuccess) {
 
   Error Err = Error::success();
   for (auto &Elem :
-       make_fallible_range<FallibleCollectionWalker>(begin, end, Err))
+       make_fallible_range<FallibleCollectionWalker>(begin, end, Err)) {
     EXPECT_TRUE(Elem.isValid());
+
+}
   cantFail(std::move(Err));
 }
 
@@ -136,8 +144,10 @@ TEST(FallibleIteratorTest, BasicFailure) {
 
   Error Err = Error::success();
   for (auto &Elem :
-       make_fallible_range<FallibleCollectionWalker>(begin, end, Err))
+       make_fallible_range<FallibleCollectionWalker>(begin, end, Err)) {
     EXPECT_TRUE(Elem.isValid());
+
+}
 
   EXPECT_THAT_ERROR(std::move(Err), Failed()) << "Expected failure value";
 }

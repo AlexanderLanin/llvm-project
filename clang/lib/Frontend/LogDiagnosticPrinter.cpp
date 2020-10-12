@@ -80,8 +80,10 @@ void LogDiagnosticPrinter::EndSourceFile() {
   // Note that DiagnosticConsumer has no "end-of-compilation" callback, so we
   // will miss any diagnostics which are emitted after and outside the
   // translation unit processing.
-  if (Entries.empty())
+  if (Entries.empty()) {
     return;
+
+}
 
   // Write to a temporary string to ensure atomic write of diagnostic object.
   SmallString<512> Msg;
@@ -100,8 +102,10 @@ void LogDiagnosticPrinter::EndSourceFile() {
   }
   OS << "  <key>diagnostics</key>\n";
   OS << "  <array>\n";
-  for (auto &DE : Entries)
+  for (auto &DE : Entries) {
     EmitDiagEntry(OS, DE);
+
+}
   OS << "  </array>\n";
   OS << "</dict>\n";
 
@@ -119,8 +123,10 @@ void LogDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
     FileID FID = SM.getMainFileID();
     if (FID.isValid()) {
       const FileEntry *FE = SM.getFileEntryForID(FID);
-      if (FE && FE->isValid())
+      if (FE && FE->isValid()) {
         MainFilename = std::string(FE->getName());
+
+}
     }
   }
 
@@ -149,8 +155,10 @@ void LogDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
       FileID FID = SM.getFileID(Info.getLocation());
       if (FID.isValid()) {
         const FileEntry *FE = SM.getFileEntryForID(FID);
-        if (FE && FE->isValid())
+        if (FE && FE->isValid()) {
           DE.Filename = std::string(FE->getName());
+
+}
       }
     } else {
       DE.Filename = PLoc.getFilename();

@@ -47,8 +47,10 @@ struct Lowerer : coro::LowererBase {
 // provided constant.
 static void replaceWithConstant(Constant *Value,
                                 SmallVectorImpl<CoroSubFnInst *> &Users) {
-  if (Users.empty())
+  if (Users.empty()) {
     return;
+
+}
 
   // See if we need to bitcast the constant to match the type of the intrinsic
   // being replaced. Note: All coro.subfn.addr intrinsics return the same type,
@@ -63,15 +65,21 @@ static void replaceWithConstant(Constant *Value,
   }
 
   // Now the value type matches the type of the intrinsic. Replace them all!
-  for (CoroSubFnInst *I : Users)
+  for (CoroSubFnInst *I : Users) {
     replaceAndRecursivelySimplify(I, Value);
+
+}
 }
 
 // See if any operand of the call instruction references the coroutine frame.
 static bool operandReferences(CallInst *CI, AllocaInst *Frame, AAResults &AA) {
-  for (Value *Op : CI->operand_values())
-    if (AA.alias(Op, Frame) != NoAlias)
+  for (Value *Op : CI->operand_values()) {
+    if (AA.alias(Op, Frame) != NoAlias) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -80,16 +88,22 @@ static bool operandReferences(CallInst *CI, AllocaInst *Frame, AAResults &AA) {
 // call implies that the function does not references anything on the stack.
 static void removeTailCallAttribute(AllocaInst *Frame, AAResults &AA) {
   Function &F = *Frame->getFunction();
-  for (Instruction &I : instructions(F))
-    if (auto *Call = dyn_cast<CallInst>(&I))
+  for (Instruction &I : instructions(F)) {
+    if (auto *Call = dyn_cast<CallInst>(&I)) {
       if (Call->isTailCall() && operandReferences(Call, Frame, AA)) {
         // FIXME: If we ever hit this check. Evaluate whether it is more
         // appropriate to retain musttail and allow the code to compile.
-        if (Call->isMustTailCall())
+        if (Call->isMustTailCall()) {
           report_fatal_error("Call referring to the coroutine frame cannot be "
                              "marked as musttail");
+
+}
         Call->setTailCall(false);
       }
+
+}
+
+}
 }
 
 // Given a resume function @f.resume(%f.frame* %frame), returns %f.frame type.
@@ -100,9 +114,13 @@ static Type *getFrameType(Function *Resume) {
 
 // Finds first non alloca instruction in the entry block of a function.
 static Instruction *getFirstNonAllocaInTheEntryBlock(Function *F) {
-  for (Instruction &I : F->getEntryBlock())
-    if (!isa<AllocaInst>(&I))
+  for (Instruction &I : F->getEntryBlock()) {
+    if (!isa<AllocaInst>(&I)) {
       return &I;
+
+}
+
+}
   llvm_unreachable("no terminator in the entry block");
 }
 
@@ -158,19 +176,27 @@ bool Lowerer::hasEscapePath(const CoroBeginInst *CB,
   SmallPtrSet<const BasicBlock *, 32> Visited;
   // Consider basicblock of coro.destroy as visited one, so that we
   // skip the path pass through coro.destroy.
-  for (auto *DA : It->second)
+  for (auto *DA : It->second) {
     Visited.insert(DA->getParent());
+
+}
 
   do {
     const auto *BB = Worklist.pop_back_val();
-    if (!Visited.insert(BB).second)
+    if (!Visited.insert(BB).second) {
       continue;
-    if (TIs.count(BB))
+
+}
+    if (TIs.count(BB)) {
       return true;
 
+}
+
     // Conservatively say that there is potentially a path.
-    if (!--Limit)
+    if (!--Limit) {
       return true;
+
+}
 
     auto TI = BB->getTerminator();
     // Although the default dest of coro.suspend switches is suspend pointer
@@ -180,8 +206,10 @@ bool Lowerer::hasEscapePath(const CoroBeginInst *CB,
         CoroSuspendSwitches.count(cast<SwitchInst>(TI))) {
       Worklist.push_back(cast<SwitchInst>(TI)->getSuccessor(1));
       Worklist.push_back(cast<SwitchInst>(TI)->getSuccessor(2));
-    } else
+    } else {
       Worklist.append(succ_begin(BB), succ_end(BB));
+
+}
 
   } while (!Worklist.empty());
 
@@ -193,8 +221,10 @@ bool Lowerer::hasEscapePath(const CoroBeginInst *CB,
 bool Lowerer::shouldElide(Function *F, DominatorTree &DT) const {
   // If no CoroAllocs, we cannot suppress allocation, so elision is not
   // possible.
-  if (CoroAllocs.empty())
+  if (CoroAllocs.empty()) {
     return false;
+
+}
 
   // Check that for every coro.begin there is at least one coro.destroy directly
   // referencing the SSA value of that coro.begin along each
@@ -209,8 +239,10 @@ bool Lowerer::shouldElide(Function *F, DominatorTree &DT) const {
     for (BasicBlock &B : *F) {
       auto *TI = B.getTerminator();
       if (TI->getNumSuccessors() == 0 && !TI->isExceptionalTerminator() &&
-          !isa<UnreachableInst>(TI))
+          !isa<UnreachableInst>(TI)) {
         Terminators.insert(&B);
+
+}
     }
 
   // Filter out the coro.destroy that lie along exceptional paths.
@@ -228,8 +260,10 @@ bool Lowerer::shouldElide(Function *F, DominatorTree &DT) const {
     // Whether there is any paths from coro.begin to Terminators which not pass
     // through any of the coro.destroys.
     if (!ReferencedCoroBegins.count(It.first) &&
-        !hasEscapePath(It.first, Terminators))
+        !hasEscapePath(It.first, Terminators)) {
       ReferencedCoroBegins.insert(It.first);
+
+}
   }
 
   // If size of the set is the same as total number of coro.begin, that means we
@@ -242,23 +276,33 @@ void Lowerer::collectPostSplitCoroIds(Function *F) {
   CoroIds.clear();
   CoroSuspendSwitches.clear();
   for (auto &I : instructions(F)) {
-    if (auto *CII = dyn_cast<CoroIdInst>(&I))
-      if (CII->getInfo().isPostSplit())
+    if (auto *CII = dyn_cast<CoroIdInst>(&I)) {
+      if (CII->getInfo().isPostSplit()) {
         // If it is the coroutine itself, don't touch it.
-        if (CII->getCoroutine() != CII->getFunction())
+        if (CII->getCoroutine() != CII->getFunction()) {
           CoroIds.push_back(CII);
+
+}
+
+}
+
+}
 
     // Consider case like:
     // %0 = call i8 @llvm.coro.suspend(...)
     // switch i8 %0, label %suspend [i8 0, label %resume
     //                              i8 1, label %cleanup]
     // and collect the SwitchInsts which are used by escape analysis later.
-    if (auto *CSI = dyn_cast<CoroSuspendInst>(&I))
+    if (auto *CSI = dyn_cast<CoroSuspendInst>(&I)) {
       if (CSI->hasOneUse() && isa<SwitchInst>(CSI->use_begin()->getUser())) {
         SwitchInst *SWI = cast<SwitchInst>(CSI->use_begin()->getUser());
-        if (SWI->getNumCases() == 2)
+        if (SWI->getNumCases() == 2) {
           CoroSuspendSwitches.insert(SWI);
+
+}
       }
+
+}
   }
 }
 
@@ -272,12 +316,14 @@ bool Lowerer::processCoroId(CoroIdInst *CoroId, AAResults &AA,
 
   // Collect all coro.begin and coro.allocs associated with this coro.id.
   for (User *U : CoroId->users()) {
-    if (auto *CB = dyn_cast<CoroBeginInst>(U))
+    if (auto *CB = dyn_cast<CoroBeginInst>(U)) {
       CoroBegins.push_back(CB);
-    else if (auto *CA = dyn_cast<CoroAllocInst>(U))
+    } else if (auto *CA = dyn_cast<CoroAllocInst>(U)) {
       CoroAllocs.push_back(CA);
-    else if (auto *CF = dyn_cast<CoroFreeInst>(U))
+    } else if (auto *CF = dyn_cast<CoroFreeInst>(U)) {
       CoroFrees.push_back(CF);
+
+}
   }
 
   // Collect all coro.subfn.addrs associated with coro.begin.
@@ -285,8 +331,8 @@ bool Lowerer::processCoroId(CoroIdInst *CoroId, AAResults &AA,
   // coro.begin directly. If we run into cases where this check is too
   // conservative, we can consider relaxing the check.
   for (CoroBeginInst *CB : CoroBegins) {
-    for (User *U : CB->users())
-      if (auto *II = dyn_cast<CoroSubFnInst>(U))
+    for (User *U : CB->users()) {
+      if (auto *II = dyn_cast<CoroSubFnInst>(U)) {
         switch (II->getIndex()) {
         case CoroSubFnInst::ResumeIndex:
           ResumeAddr.push_back(II);
@@ -297,6 +343,10 @@ bool Lowerer::processCoroId(CoroIdInst *CoroId, AAResults &AA,
         default:
           llvm_unreachable("unexpected coro.subfn.addr constant");
         }
+
+}
+
+}
   }
 
   // PostSplit coro.id refers to an array of subfunctions in its Info
@@ -315,8 +365,10 @@ bool Lowerer::processCoroId(CoroIdInst *CoroId, AAResults &AA,
       Resumers,
       ShouldElide ? CoroSubFnInst::CleanupIndex : CoroSubFnInst::DestroyIndex);
 
-  for (auto &It : DestroyAddr)
+  for (auto &It : DestroyAddr) {
     replaceWithConstant(DestroyAddrConstant, It.second);
+
+}
 
   if (ShouldElide) {
     auto *FrameTy = getFrameType(cast<Function>(ResumeAddrConstant));
@@ -331,13 +383,21 @@ bool Lowerer::processCoroId(CoroIdInst *CoroId, AAResults &AA,
 // trigger, if so, replace them with a direct call to devirt trigger function.
 static bool replaceDevirtTrigger(Function &F) {
   SmallVector<CoroSubFnInst *, 1> DevirtAddr;
-  for (auto &I : instructions(F))
-    if (auto *SubFn = dyn_cast<CoroSubFnInst>(&I))
-      if (SubFn->getIndex() == CoroSubFnInst::RestartTrigger)
+  for (auto &I : instructions(F)) {
+    if (auto *SubFn = dyn_cast<CoroSubFnInst>(&I)) {
+      if (SubFn->getIndex() == CoroSubFnInst::RestartTrigger) {
         DevirtAddr.push_back(SubFn);
 
-  if (DevirtAddr.empty())
+}
+
+}
+
+}
+
+  if (DevirtAddr.empty()) {
     return false;
+
+}
 
   Module &M = *F.getParent();
   Function *DevirtFn = M.getFunction(CORO_DEVIRT_TRIGGER_FN);
@@ -353,22 +413,28 @@ static bool declaresCoroElideIntrinsics(Module &M) {
 
 PreservedAnalyses CoroElidePass::run(Function &F, FunctionAnalysisManager &AM) {
   auto &M = *F.getParent();
-  if (!declaresCoroElideIntrinsics(M))
+  if (!declaresCoroElideIntrinsics(M)) {
     return PreservedAnalyses::all();
+
+}
 
   Lowerer L(M);
   L.CoroIds.clear();
   L.collectPostSplitCoroIds(&F);
   // If we did not find any coro.id, there is nothing to do.
-  if (L.CoroIds.empty())
+  if (L.CoroIds.empty()) {
     return PreservedAnalyses::all();
+
+}
 
   AAResults &AA = AM.getResult<AAManager>(F);
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
 
   bool Changed = false;
-  for (auto *CII : L.CoroIds)
+  for (auto *CII : L.CoroIds) {
     Changed |= L.processCoroId(CII, AA, DT);
+
+}
 
   return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }
@@ -383,31 +449,41 @@ struct CoroElideLegacy : FunctionPass {
   std::unique_ptr<Lowerer> L;
 
   bool doInitialization(Module &M) override {
-    if (declaresCoroElideIntrinsics(M))
+    if (declaresCoroElideIntrinsics(M)) {
       L = std::make_unique<Lowerer>(M);
+
+}
     return false;
   }
 
   bool runOnFunction(Function &F) override {
-    if (!L)
+    if (!L) {
       return false;
+
+}
 
     bool Changed = false;
 
-    if (F.hasFnAttribute(CORO_PRESPLIT_ATTR))
+    if (F.hasFnAttribute(CORO_PRESPLIT_ATTR)) {
       Changed = replaceDevirtTrigger(F);
+
+}
 
     L->CoroIds.clear();
     L->collectPostSplitCoroIds(&F);
     // If we did not find any coro.id, there is nothing to do.
-    if (L->CoroIds.empty())
+    if (L->CoroIds.empty()) {
       return Changed;
+
+}
 
     AAResults &AA = getAnalysis<AAResultsWrapperPass>().getAAResults();
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 
-    for (auto *CII : L->CoroIds)
+    for (auto *CII : L->CoroIds) {
       Changed |= L->processCoroId(CII, AA, DT);
+
+}
 
     return Changed;
   }

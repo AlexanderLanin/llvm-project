@@ -38,19 +38,23 @@ Sema::CheckConstraintExpression(Expr *ConstraintExpression, Token NextToken,
   ConstraintExpression = ConstraintExpression->IgnoreParenImpCasts();
 
   if (auto *BinOp = dyn_cast<BinaryOperator>(ConstraintExpression)) {
-    if (BinOp->getOpcode() == BO_LAnd || BinOp->getOpcode() == BO_LOr)
+    if (BinOp->getOpcode() == BO_LAnd || BinOp->getOpcode() == BO_LOr) {
       return CheckConstraintExpression(BinOp->getLHS(), NextToken,
                                        PossibleNonPrimary) &&
              CheckConstraintExpression(BinOp->getRHS(), NextToken,
                                        PossibleNonPrimary);
-  } else if (auto *C = dyn_cast<ExprWithCleanups>(ConstraintExpression))
+
+}
+  } else if (auto *C = dyn_cast<ExprWithCleanups>(ConstraintExpression)) {
     return CheckConstraintExpression(C->getSubExpr(), NextToken,
                                      PossibleNonPrimary);
+
+}
 
   QualType Type = ConstraintExpression->getType();
 
   auto CheckForNonPrimary = [&] {
-    if (PossibleNonPrimary)
+    if (PossibleNonPrimary) {
       *PossibleNonPrimary =
           // We have the following case:
           // template<typename> requires func(0) struct S { };
@@ -71,6 +75,8 @@ Sema::CheckConstraintExpression(Expr *ConstraintExpression, Token NextToken,
           getBinOpPrecedence(NextToken.getKind(),
                              /*GreaterThanIsOperator=*/true,
                              getLangOpts().CPlusPlus11) > prec::LogicalAnd;
+
+}
   };
 
   // An atomic constraint!
@@ -87,8 +93,10 @@ Sema::CheckConstraintExpression(Expr *ConstraintExpression, Token NextToken,
     return false;
   }
 
-  if (PossibleNonPrimary)
+  if (PossibleNonPrimary) {
       *PossibleNonPrimary = false;
+
+}
   return true;
 }
 
@@ -102,12 +110,14 @@ calculateConstraintSatisfaction(Sema &S, const Expr *ConstraintExpr,
   if (auto *BO = dyn_cast<BinaryOperator>(ConstraintExpr)) {
     if (BO->getOpcode() == BO_LAnd || BO->getOpcode() == BO_LOr) {
       if (calculateConstraintSatisfaction(S, BO->getLHS(), Satisfaction,
-                                          Evaluator))
+                                          Evaluator)) {
         return true;
+
+}
 
       bool IsLHSSatisfied = Satisfaction.IsSatisfied;
 
-      if (BO->getOpcode() == BO_LOr && IsLHSSatisfied)
+      if (BO->getOpcode() == BO_LOr && IsLHSSatisfied) {
         // [temp.constr.op] p3
         //    A disjunction is a constraint taking two operands. To determine if
         //    a disjunction is satisfied, the satisfaction of the first operand
@@ -116,7 +126,9 @@ calculateConstraintSatisfaction(Sema &S, const Expr *ConstraintExpr,
         //    operand is satisfied.
         return false;
 
-      if (BO->getOpcode() == BO_LAnd && !IsLHSSatisfied)
+}
+
+      if (BO->getOpcode() == BO_LAnd && !IsLHSSatisfied) {
         // [temp.constr.op] p2
         //    A conjunction is a constraint taking two operands. To determine if
         //    a conjunction is satisfied, the satisfaction of the first operand
@@ -125,23 +137,31 @@ calculateConstraintSatisfaction(Sema &S, const Expr *ConstraintExpr,
         //    the second operand is satisfied.
         return false;
 
+}
+
       return calculateConstraintSatisfaction(S, BO->getRHS(), Satisfaction,
           std::forward<AtomicEvaluator>(Evaluator));
     }
   }
-  else if (auto *C = dyn_cast<ExprWithCleanups>(ConstraintExpr))
+  else if (auto *C = dyn_cast<ExprWithCleanups>(ConstraintExpr)) {
     return calculateConstraintSatisfaction(S, C->getSubExpr(), Satisfaction,
         std::forward<AtomicEvaluator>(Evaluator));
+
+}
 
   // An atomic constraint expression
   ExprResult SubstitutedAtomicExpr = Evaluator(ConstraintExpr);
 
-  if (SubstitutedAtomicExpr.isInvalid())
+  if (SubstitutedAtomicExpr.isInvalid()) {
     return true;
 
-  if (!SubstitutedAtomicExpr.isUsable())
+}
+
+  if (!SubstitutedAtomicExpr.isUsable()) {
     // Evaluator has decided satisfaction without yielding an expression.
     return false;
+
+}
 
   EnterExpressionEvaluationContext ConstantEvaluated(
       S, Sema::ExpressionEvaluationContext::ConstantEvaluated);
@@ -154,15 +174,19 @@ calculateConstraintSatisfaction(Sema &S, const Expr *ConstraintExpr,
     S.Diag(SubstitutedAtomicExpr.get()->getBeginLoc(),
            diag::err_non_constant_constraint_expression)
         << SubstitutedAtomicExpr.get()->getSourceRange();
-    for (const PartialDiagnosticAt &PDiag : EvaluationDiags)
+    for (const PartialDiagnosticAt &PDiag : EvaluationDiags) {
       S.Diag(PDiag.first, PDiag.second);
+
+}
     return true;
   }
 
   Satisfaction.IsSatisfied = EvalResult.Val.getInt().getBoolValue();
-  if (!Satisfaction.IsSatisfied)
+  if (!Satisfaction.IsSatisfied) {
     Satisfaction.Details.emplace_back(ConstraintExpr,
                                       SubstitutedAtomicExpr.get());
+
+}
 
   return false;
 }
@@ -184,8 +208,10 @@ static bool calculateConstraintSatisfaction(
               Sema::InstantiatingTemplate::ConstraintSubstitution{},
               const_cast<NamedDecl *>(Template), Info,
               AtomicExpr->getSourceRange());
-          if (Inst.isInvalid())
+          if (Inst.isInvalid()) {
             return ExprError();
+
+}
           // We do not want error diagnostics escaping here.
           Sema::SFINAETrap Trap(S);
           SubstitutedExpression = S.SubstExpr(const_cast<Expr *>(AtomicExpr),
@@ -194,10 +220,12 @@ static bool calculateConstraintSatisfaction(
             // C++2a [temp.constr.atomic]p1
             //   ...If substitution results in an invalid type or expression, the
             //   constraint is not satisfied.
-            if (!Trap.hasErrorOccurred())
+            if (!Trap.hasErrorOccurred()) {
               // A non-SFINAE error has occured as a result of this
               // substitution.
               return ExprError();
+
+}
 
             PartialDiagnosticAt SubstDiag{SourceLocation(),
                                           PartialDiagnostic::NullDiagnostic()};
@@ -223,8 +251,10 @@ static bool calculateConstraintSatisfaction(
           }
         }
 
-        if (!S.CheckConstraintExpression(SubstitutedExpression.get()))
+        if (!S.CheckConstraintExpression(SubstitutedExpression.get())) {
           return ExprError();
+
+}
 
         return SubstitutedExpression;
       });
@@ -240,18 +270,22 @@ static bool CheckConstraintSatisfaction(Sema &S, const NamedDecl *Template,
     return false;
   }
 
-  for (auto& Arg : TemplateArgs)
+  for (auto& Arg : TemplateArgs) {
     if (Arg.isInstantiationDependent()) {
       // No need to check satisfaction for dependent constraint expressions.
       Satisfaction.IsSatisfied = true;
       return false;
     }
 
+}
+
   Sema::InstantiatingTemplate Inst(S, TemplateIDRange.getBegin(),
       Sema::InstantiatingTemplate::ConstraintsCheck{},
       const_cast<NamedDecl *>(Template), TemplateArgs, TemplateIDRange);
-  if (Inst.isInvalid())
+  if (Inst.isInvalid()) {
     return true;
+
+}
 
   MultiLevelTemplateArgumentList MLTAL;
   MLTAL.addOuterTemplateArguments(TemplateArgs);
@@ -259,14 +293,18 @@ static bool CheckConstraintSatisfaction(Sema &S, const NamedDecl *Template,
   for (const Expr *ConstraintExpr : ConstraintExprs) {
     if (calculateConstraintSatisfaction(S, Template, TemplateArgs,
                                         TemplateIDRange.getBegin(), MLTAL,
-                                        ConstraintExpr, Satisfaction))
+                                        ConstraintExpr, Satisfaction)) {
       return true;
-    if (!Satisfaction.IsSatisfied)
+
+}
+    if (!Satisfaction.IsSatisfied) {
       // [temp.constr.op] p2
       //   [...] To determine if a conjunction is satisfied, the satisfaction
       //   of the first operand is checked. If that is not satisfied, the
       //   conjunction is not satisfied. [...]
       return false;
+
+}
   }
   return false;
 }
@@ -298,8 +336,10 @@ bool Sema::CheckConstraintSatisfaction(
   if (::CheckConstraintSatisfaction(*this, Template, ConstraintExprs,
                                     TemplateArgs, TemplateIDRange,
                                     *Satisfaction)) {
-    if (ShouldCache)
+    if (ShouldCache) {
       delete Satisfaction;
+
+}
     return true;
   }
 
@@ -352,8 +392,10 @@ bool Sema::EnsureTemplateArgumentListConstraints(
   llvm::SmallVector<const Expr *, 3> AssociatedConstraints;
   TD->getAssociatedConstraints(AssociatedConstraints);
   if (CheckConstraintSatisfaction(TD, AssociatedConstraints, TemplateArgs,
-                                  TemplateIDRange, Satisfaction))
+                                  TemplateIDRange, Satisfaction)) {
     return true;
+
+}
 
   if (!Satisfaction.IsSatisfied) {
     SmallString<128> TemplateArgString;
@@ -382,15 +424,17 @@ static void diagnoseUnsatisfiedRequirement(Sema &S,
       break;
     case concepts::ExprRequirement::SS_ExprSubstitutionFailure: {
       auto *SubstDiag = Req->getExprSubstitutionDiagnostic();
-      if (!SubstDiag->DiagMessage.empty())
+      if (!SubstDiag->DiagMessage.empty()) {
         S.Diag(SubstDiag->DiagLoc,
                diag::note_expr_requirement_expr_substitution_error)
                << (int)First << SubstDiag->SubstitutedEntity
                << SubstDiag->DiagMessage;
-      else
+      } else {
         S.Diag(SubstDiag->DiagLoc,
                diag::note_expr_requirement_expr_unknown_substitution_error)
             << (int)First << SubstDiag->SubstitutedEntity;
+
+}
       break;
     }
     case concepts::ExprRequirement::SS_NoexceptNotMet:
@@ -401,21 +445,23 @@ static void diagnoseUnsatisfiedRequirement(Sema &S,
     case concepts::ExprRequirement::SS_TypeRequirementSubstitutionFailure: {
       auto *SubstDiag =
           Req->getReturnTypeRequirement().getSubstitutionDiagnostic();
-      if (!SubstDiag->DiagMessage.empty())
+      if (!SubstDiag->DiagMessage.empty()) {
         S.Diag(SubstDiag->DiagLoc,
                diag::note_expr_requirement_type_requirement_substitution_error)
             << (int)First << SubstDiag->SubstitutedEntity
             << SubstDiag->DiagMessage;
-      else
+      } else {
         S.Diag(SubstDiag->DiagLoc,
                diag::note_expr_requirement_type_requirement_unknown_substitution_error)
             << (int)First << SubstDiag->SubstitutedEntity;
+
+}
       break;
     }
     case concepts::ExprRequirement::SS_ConstraintsNotSatisfied: {
       ConceptSpecializationExpr *ConstraintExpr =
           Req->getReturnTypeRequirementSubstitutedConstraintExpr();
-      if (ConstraintExpr->getTemplateArgsAsWritten()->NumTemplateArgs == 1)
+      if (ConstraintExpr->getTemplateArgsAsWritten()->NumTemplateArgs == 1) {
         // A simple case - expr type is the type being constrained and the concept
         // was not provided arguments.
         S.Diag(ConstraintExpr->getBeginLoc(),
@@ -423,10 +469,12 @@ static void diagnoseUnsatisfiedRequirement(Sema &S,
             << (int)First << S.BuildDecltypeType(Req->getExpr(),
                                                  Req->getExpr()->getBeginLoc())
             << ConstraintExpr->getNamedConcept();
-      else
+      } else {
         S.Diag(ConstraintExpr->getBeginLoc(),
                diag::note_expr_requirement_constraints_not_satisfied)
             << (int)First << ConstraintExpr;
+
+}
       S.DiagnoseUnsatisfiedConstraint(ConstraintExpr->getSatisfaction());
       break;
     }
@@ -446,14 +494,16 @@ static void diagnoseUnsatisfiedRequirement(Sema &S,
     return;
   case concepts::TypeRequirement::SS_SubstitutionFailure: {
     auto *SubstDiag = Req->getSubstitutionDiagnostic();
-    if (!SubstDiag->DiagMessage.empty())
+    if (!SubstDiag->DiagMessage.empty()) {
       S.Diag(SubstDiag->DiagLoc,
              diag::note_type_requirement_substitution_error) << (int)First
           << SubstDiag->SubstitutedEntity << SubstDiag->DiagMessage;
-    else
+    } else {
       S.Diag(SubstDiag->DiagLoc,
              diag::note_type_requirement_unknown_substitution_error)
           << (int)First << SubstDiag->SubstitutedEntity;
+
+}
     return;
   }
   default:
@@ -468,15 +518,17 @@ static void diagnoseUnsatisfiedRequirement(Sema &S,
   if (Req->isSubstitutionFailure()) {
     concepts::Requirement::SubstitutionDiagnostic *SubstDiag =
         Req->getSubstitutionDiagnostic();
-    if (!SubstDiag->DiagMessage.empty())
+    if (!SubstDiag->DiagMessage.empty()) {
       S.Diag(SubstDiag->DiagLoc,
              diag::note_nested_requirement_substitution_error)
              << (int)First << SubstDiag->SubstitutedEntity
              << SubstDiag->DiagMessage;
-    else
+    } else {
       S.Diag(SubstDiag->DiagLoc,
              diag::note_nested_requirement_unknown_substitution_error)
           << (int)First << SubstDiag->SubstitutedEntity;
+
+}
     return;
   }
   S.DiagnoseUnsatisfiedConstraint(Req->getConstraintSatisfaction(), First);
@@ -512,9 +564,11 @@ static void diagnoseWellFormedUnsatisfiedConstraintExpr(Sema &S,
       // RHS might also be false
       bool RHSSatisfied;
       BO->getRHS()->EvaluateAsBooleanCondition(RHSSatisfied, S.Context);
-      if (!RHSSatisfied)
+      if (!RHSSatisfied) {
         diagnoseWellFormedUnsatisfiedConstraintExpr(S, BO->getRHS(),
                                                     /*First=*/false);
+
+}
       return;
     case BO_GE:
     case BO_LE:
@@ -560,17 +614,21 @@ static void diagnoseWellFormedUnsatisfiedConstraintExpr(Sema &S,
     S.DiagnoseUnsatisfiedConstraint(CSE->getSatisfaction());
     return;
   } else if (auto *RE = dyn_cast<RequiresExpr>(SubstExpr)) {
-    for (concepts::Requirement *Req : RE->getRequirements())
+    for (concepts::Requirement *Req : RE->getRequirements()) {
       if (!Req->isDependent() && !Req->isSatisfied()) {
-        if (auto *E = dyn_cast<concepts::ExprRequirement>(Req))
+        if (auto *E = dyn_cast<concepts::ExprRequirement>(Req)) {
           diagnoseUnsatisfiedRequirement(S, E, First);
-        else if (auto *T = dyn_cast<concepts::TypeRequirement>(Req))
+        } else if (auto *T = dyn_cast<concepts::TypeRequirement>(Req)) {
           diagnoseUnsatisfiedRequirement(S, T, First);
-        else
+        } else {
           diagnoseUnsatisfiedRequirement(
               S, cast<concepts::NestedRequirement>(Req), First);
+
+}
         break;
       }
+
+}
     return;
   }
 
@@ -641,8 +699,10 @@ static bool substituteParameterMappings(Sema &S, NormalizedConstraint &N,
     const ASTTemplateArgumentListInfo *ArgsAsWritten) {
   if (!N.isAtomic()) {
     if (substituteParameterMappings(S, N.getLHS(), Concept, TemplateArgs,
-                                    ArgsAsWritten))
+                                    ArgsAsWritten)) {
       return true;
+
+}
     return substituteParameterMappings(S, N.getRHS(), Concept, TemplateArgs,
                                        ArgsAsWritten);
   }
@@ -660,8 +720,8 @@ static bool substituteParameterMappings(Sema &S, NormalizedConstraint &N,
         MutableArrayRef<TemplateArgumentLoc>(
             new (S.Context) TemplateArgumentLoc[OccurringIndices.count()],
             OccurringIndices.count()));
-    for (unsigned I = 0, J = 0, C = TemplateParams->size(); I != C; ++I)
-      if (OccurringIndices[I])
+    for (unsigned I = 0, J = 0, C = TemplateParams->size(); I != C; ++I) {
+      if (OccurringIndices[I]) {
         new (&(*Atomic.ParameterMapping)[J++]) TemplateArgumentLoc(
             S.getIdentityTemplateArgumentLoc(TemplateParams->begin()[I],
                 // Here we assume we do not support things like
@@ -675,14 +735,20 @@ static bool substituteParameterMappings(Sema &S, NormalizedConstraint &N,
                 ArgsAsWritten->NumTemplateArgs > I ?
                 ArgsAsWritten->arguments()[I].getLocation() :
                 SourceLocation()));
+
+}
+
+}
   }
   Sema::InstantiatingTemplate Inst(
       S, ArgsAsWritten->arguments().front().getSourceRange().getBegin(),
       Sema::InstantiatingTemplate::ParameterMappingSubstitution{}, Concept,
       SourceRange(ArgsAsWritten->arguments()[0].getSourceRange().getBegin(),
                   ArgsAsWritten->arguments().back().getSourceRange().getEnd()));
-  if (S.SubstTemplateArguments(*Atomic.ParameterMapping, MLTAL, SubstArgs))
+  if (S.SubstTemplateArguments(*Atomic.ParameterMapping, MLTAL, SubstArgs)) {
     return true;
+
+}
   Atomic.ParameterMapping.emplace(
         MutableArrayRef<TemplateArgumentLoc>(
             new (S.Context) TemplateArgumentLoc[SubstArgs.size()],
@@ -697,18 +763,24 @@ NormalizedConstraint::fromConstraintExprs(Sema &S, NamedDecl *D,
                                           ArrayRef<const Expr *> E) {
   assert(E.size() != 0);
   auto First = fromConstraintExpr(S, D, E[0]);
-  if (E.size() == 1)
+  if (E.size() == 1) {
     return First;
+
+}
   auto Second = fromConstraintExpr(S, D, E[1]);
-  if (!Second)
+  if (!Second) {
     return None;
+
+}
   llvm::Optional<NormalizedConstraint> Conjunction;
   Conjunction.emplace(S.Context, std::move(*First), std::move(*Second),
                       CCK_Conjunction);
   for (unsigned I = 2; I < E.size(); ++I) {
     auto Next = fromConstraintExpr(S, D, E[I]);
-    if (!Next)
+    if (!Next) {
       return llvm::Optional<NormalizedConstraint>{};
+
+}
     NormalizedConstraint NewConjunction(S.Context, std::move(*Conjunction),
                                         std::move(*Next), CCK_Conjunction);
     *Conjunction = std::move(NewConjunction);
@@ -728,11 +800,15 @@ NormalizedConstraint::fromConstraintExpr(Sema &S, NamedDecl *D, const Expr *E) {
   if (auto *BO = dyn_cast<const BinaryOperator>(E)) {
     if (BO->getOpcode() == BO_LAnd || BO->getOpcode() == BO_LOr) {
       auto LHS = fromConstraintExpr(S, D, BO->getLHS());
-      if (!LHS)
+      if (!LHS) {
         return None;
+
+}
       auto RHS = fromConstraintExpr(S, D, BO->getRHS());
-      if (!RHS)
+      if (!RHS) {
         return None;
+
+}
 
       return NormalizedConstraint(
           S.Context, std::move(*LHS), std::move(*RHS),
@@ -757,8 +833,10 @@ NormalizedConstraint::fromConstraintExpr(Sema &S, NamedDecl *D, const Expr *E) {
       ConceptDecl *CD = CSE->getNamedConcept();
       SubNF = S.getNormalizedAssociatedConstraints(CD,
                                                    {CD->getConstraintExpr()});
-      if (!SubNF)
+      if (!SubNF) {
         return None;
+
+}
     }
 
     Optional<NormalizedConstraint> New;
@@ -766,8 +844,10 @@ NormalizedConstraint::fromConstraintExpr(Sema &S, NamedDecl *D, const Expr *E) {
 
     if (substituteParameterMappings(
             S, *New, CSE->getNamedConcept(),
-            CSE->getTemplateArguments(), CSE->getTemplateArgsAsWritten()))
+            CSE->getTemplateArguments(), CSE->getTemplateArgsAsWritten())) {
       return None;
+
+}
 
     return New;
   }
@@ -778,22 +858,26 @@ using NormalForm =
     llvm::SmallVector<llvm::SmallVector<AtomicConstraint *, 2>, 4>;
 
 static NormalForm makeCNF(const NormalizedConstraint &Normalized) {
-  if (Normalized.isAtomic())
+  if (Normalized.isAtomic()) {
     return {{Normalized.getAtomicConstraint()}};
+
+}
 
   NormalForm LCNF = makeCNF(Normalized.getLHS());
   NormalForm RCNF = makeCNF(Normalized.getRHS());
   if (Normalized.getCompoundKind() == NormalizedConstraint::CCK_Conjunction) {
     LCNF.reserve(LCNF.size() + RCNF.size());
-    while (!RCNF.empty())
+    while (!RCNF.empty()) {
       LCNF.push_back(RCNF.pop_back_val());
+
+}
     return LCNF;
   }
 
   // Disjunction
   NormalForm Res;
   Res.reserve(LCNF.size() * RCNF.size());
-  for (auto &LDisjunction : LCNF)
+  for (auto &LDisjunction : LCNF) {
     for (auto &RDisjunction : RCNF) {
       NormalForm::value_type Combined;
       Combined.reserve(LDisjunction.size() + RDisjunction.size());
@@ -803,19 +887,25 @@ static NormalForm makeCNF(const NormalizedConstraint &Normalized) {
                 std::back_inserter(Combined));
       Res.emplace_back(Combined);
     }
+
+}
   return Res;
 }
 
 static NormalForm makeDNF(const NormalizedConstraint &Normalized) {
-  if (Normalized.isAtomic())
+  if (Normalized.isAtomic()) {
     return {{Normalized.getAtomicConstraint()}};
+
+}
 
   NormalForm LDNF = makeDNF(Normalized.getLHS());
   NormalForm RDNF = makeDNF(Normalized.getRHS());
   if (Normalized.getCompoundKind() == NormalizedConstraint::CCK_Disjunction) {
     LDNF.reserve(LDNF.size() + RDNF.size());
-    while (!RDNF.empty())
+    while (!RDNF.empty()) {
       LDNF.push_back(RDNF.pop_back_val());
+
+}
     return LDNF;
   }
 
@@ -858,11 +948,15 @@ static bool subsumes(NormalForm PDNF, NormalForm QCNF,
             break;
           }
         }
-        if (Found)
+        if (Found) {
           break;
+
+}
       }
-      if (!Found)
+      if (!Found) {
         return false;
+
+}
     }
   }
   return true;
@@ -877,13 +971,17 @@ static bool subsumes(Sema &S, NamedDecl *DP, ArrayRef<const Expr *> P,
   //   transformed into disjunctive normal form, and Q is transformed into
   //   conjunctive normal form. [...]
   auto *PNormalized = S.getNormalizedAssociatedConstraints(DP, P);
-  if (!PNormalized)
+  if (!PNormalized) {
     return true;
+
+}
   const NormalForm PDNF = makeDNF(*PNormalized);
 
   auto *QNormalized = S.getNormalizedAssociatedConstraints(DQ, Q);
-  if (!QNormalized)
+  if (!QNormalized) {
     return true;
+
+}
   const NormalForm QCNF = makeCNF(*QNormalized);
 
   Subsumes = subsumes(PDNF, QCNF, E);
@@ -913,20 +1011,26 @@ bool Sema::IsAtLeastAsConstrained(NamedDecl *D1, ArrayRef<const Expr *> AC1,
   if (subsumes(*this, D1, AC1, D2, AC2, Result,
         [this] (const AtomicConstraint &A, const AtomicConstraint &B) {
           return A.subsumes(Context, B);
-        }))
+        })) {
     return true;
+
+}
   SubsumptionCache.try_emplace(Key, Result);
   return false;
 }
 
 bool Sema::MaybeEmitAmbiguousAtomicConstraintsDiagnostic(NamedDecl *D1,
     ArrayRef<const Expr *> AC1, NamedDecl *D2, ArrayRef<const Expr *> AC2) {
-  if (isSFINAEContext())
+  if (isSFINAEContext()) {
     // No need to work here because our notes would be discarded.
     return false;
 
-  if (AC1.empty() || AC2.empty())
+}
+
+  if (AC1.empty() || AC2.empty()) {
     return false;
+
+}
 
   auto NormalExprEvaluator =
       [this] (const AtomicConstraint &A, const AtomicConstraint &B) {
@@ -936,19 +1040,25 @@ bool Sema::MaybeEmitAmbiguousAtomicConstraintsDiagnostic(NamedDecl *D1,
   const Expr *AmbiguousAtomic1 = nullptr, *AmbiguousAtomic2 = nullptr;
   auto IdenticalExprEvaluator =
       [&] (const AtomicConstraint &A, const AtomicConstraint &B) {
-        if (!A.hasMatchingParameterMapping(Context, B))
+        if (!A.hasMatchingParameterMapping(Context, B)) {
           return false;
+
+}
         const Expr *EA = A.ConstraintExpr, *EB = B.ConstraintExpr;
-        if (EA == EB)
+        if (EA == EB) {
           return true;
+
+}
 
         // Not the same source level expression - are the expressions
         // identical?
         llvm::FoldingSetNodeID IDA, IDB;
         EA->Profile(IDA, Context, /*Cannonical=*/true);
         EB->Profile(IDB, Context, /*Cannonical=*/true);
-        if (IDA != IDB)
+        if (IDA != IDB) {
           return false;
+
+}
 
         AmbiguousAtomic1 = EA;
         AmbiguousAtomic2 = EB;
@@ -959,14 +1069,18 @@ bool Sema::MaybeEmitAmbiguousAtomicConstraintsDiagnostic(NamedDecl *D1,
     // The subsumption checks might cause diagnostics
     SFINAETrap Trap(*this);
     auto *Normalized1 = getNormalizedAssociatedConstraints(D1, AC1);
-    if (!Normalized1)
+    if (!Normalized1) {
       return false;
+
+}
     const NormalForm DNF1 = makeDNF(*Normalized1);
     const NormalForm CNF1 = makeCNF(*Normalized1);
 
     auto *Normalized2 = getNormalizedAssociatedConstraints(D2, AC2);
-    if (!Normalized2)
+    if (!Normalized2) {
       return false;
+
+}
     const NormalForm DNF2 = makeDNF(*Normalized2);
     const NormalForm CNF2 = makeCNF(*Normalized2);
 
@@ -975,9 +1089,11 @@ bool Sema::MaybeEmitAmbiguousAtomicConstraintsDiagnostic(NamedDecl *D1,
     bool Is1AtLeastAs2 = subsumes(DNF1, CNF2, IdenticalExprEvaluator);
     bool Is2AtLeastAs1 = subsumes(DNF2, CNF1, IdenticalExprEvaluator);
     if (Is1AtLeastAs2 == Is1AtLeastAs2Normally &&
-        Is2AtLeastAs1 == Is2AtLeastAs1Normally)
+        Is2AtLeastAs1 == Is2AtLeastAs1Normally) {
       // Same result - no ambiguity was caused by identical atomic expressions.
       return false;
+
+}
   }
 
   // A different result! Some ambiguous atomic constraint(s) caused a difference

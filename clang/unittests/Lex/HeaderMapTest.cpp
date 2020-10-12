@@ -53,8 +53,10 @@ template <unsigned NumBuckets, unsigned NumBytes> struct MapFile {
 // The header map hash function.
 static inline unsigned getHash(StringRef Str) {
   unsigned Result = 0;
-  for (char C : Str)
+  for (char C : Str) {
     Result += toLowercase(C) * 13;
+
+}
   return Result;
 }
 

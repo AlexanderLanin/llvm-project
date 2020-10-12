@@ -113,12 +113,18 @@ static bool valueComesBefore(OrderedInstructions &OI, const Value *A,
                              const Value *B) {
   auto *ArgA = dyn_cast_or_null<Argument>(A);
   auto *ArgB = dyn_cast_or_null<Argument>(B);
-  if (ArgA && !ArgB)
+  if (ArgA && !ArgB) {
     return true;
-  if (ArgB && !ArgA)
+
+}
+  if (ArgB && !ArgA) {
     return false;
-  if (ArgA && ArgB)
+
+}
+  if (ArgA && ArgB) {
     return ArgA->getArgNo() < ArgB->getArgNo();
+
+}
   return OI.dfsBefore(cast<Instruction>(A), cast<Instruction>(B));
 }
 
@@ -132,8 +138,10 @@ struct ValueDFS_Compare {
       : DT(DT), OI(OI) {}
 
   bool operator()(const ValueDFS &A, const ValueDFS &B) const {
-    if (&A == &B)
+    if (&A == &B) {
       return false;
+
+}
     // The only case we can't directly compare them is when they in the same
     // block, and both have localnum == middle.  In that case, we have to use
     // comesbefore to see what the real ordering is, because they are in the
@@ -147,14 +155,18 @@ struct ValueDFS_Compare {
     // before those phi uses.
     // So we sort by edge, then by def.
     // Note that only phi nodes uses and defs can come last.
-    if (SameBlock && A.LocalNum == LN_Last && B.LocalNum == LN_Last)
+    if (SameBlock && A.LocalNum == LN_Last && B.LocalNum == LN_Last) {
       return comparePHIRelated(A, B);
+
+}
 
     bool isADef = A.Def;
     bool isBDef = B.Def;
-    if (!SameBlock || A.LocalNum != LN_Middle || B.LocalNum != LN_Middle)
+    if (!SameBlock || A.LocalNum != LN_Middle || B.LocalNum != LN_Middle) {
       return std::tie(A.DFSIn, A.LocalNum, isADef) <
              std::tie(B.DFSIn, B.LocalNum, isBDef);
+
+}
     return localComesBefore(A, B);
   }
 
@@ -204,8 +216,10 @@ struct ValueDFS_Compare {
 
   // Get the definition of an instruction that occurs in the middle of a block.
   Value *getMiddleDef(const ValueDFS &VD) const {
-    if (VD.Def)
+    if (VD.Def) {
       return VD.Def;
+
+}
     // It's possible for the defs and uses to be null.  For branches, the local
     // numbering will say the placed predicaeinfos should go first (IE
     // LN_beginning), so we won't be in this function. For assumes, we will end
@@ -225,8 +239,10 @@ struct ValueDFS_Compare {
   // Return either the Def, if it's not null, or the user of the Use, if the def
   // is null.
   const Instruction *getDefOrUser(const Value *Def, const Use *U) const {
-    if (Def)
+    if (Def) {
       return cast<Instruction>(Def);
+
+}
     return cast<Instruction>(U->getUser());
   }
 
@@ -242,8 +258,10 @@ struct ValueDFS_Compare {
     auto *ArgA = dyn_cast_or_null<Argument>(ADef);
     auto *ArgB = dyn_cast_or_null<Argument>(BDef);
 
-    if (ArgA || ArgB)
+    if (ArgA || ArgB) {
       return valueComesBefore(OI, ArgA, ArgB);
+
+}
 
     auto *AInst = getDefOrUser(ADef, A.U);
     auto *BInst = getDefOrUser(BDef, B.U);
@@ -255,23 +273,31 @@ struct ValueDFS_Compare {
 
 bool PredicateInfo::stackIsInScope(const ValueDFSStack &Stack,
                                    const ValueDFS &VDUse) const {
-  if (Stack.empty())
+  if (Stack.empty()) {
     return false;
+
+}
   // If it's a phi only use, make sure it's for this phi node edge, and that the
   // use is in a phi node.  If it's anything else, and the top of the stack is
   // EdgeOnly, we need to pop the stack.  We deliberately sort phi uses next to
   // the defs they must go with so that we can know it's time to pop the stack
   // when we hit the end of the phi uses for a given def.
   if (Stack.back().EdgeOnly) {
-    if (!VDUse.U)
+    if (!VDUse.U) {
       return false;
+
+}
     auto *PHI = dyn_cast<PHINode>(VDUse.U->getUser());
-    if (!PHI)
+    if (!PHI) {
       return false;
+
+}
     // Check edge
     BasicBlock *EdgePred = PHI->getIncomingBlock(*VDUse.U);
-    if (EdgePred != getBranchBlock(Stack.back().PInfo))
+    if (EdgePred != getBranchBlock(Stack.back().PInfo)) {
       return false;
+
+}
 
     // Use dominates, which knows how to handle edge dominance.
     return DT.dominates(getBlockEdge(Stack.back().PInfo), *VDUse.U);
@@ -283,8 +309,10 @@ bool PredicateInfo::stackIsInScope(const ValueDFSStack &Stack,
 
 void PredicateInfo::popStackUntilDFSScope(ValueDFSStack &Stack,
                                           const ValueDFS &VD) {
-  while (!Stack.empty() && !stackIsInScope(Stack, VD))
+  while (!Stack.empty() && !stackIsInScope(Stack, VD)) {
     Stack.pop_back();
+
+}
 }
 
 // Convert the uses of Op into a vector of uses, associating global and local
@@ -309,8 +337,10 @@ void PredicateInfo::convertUsesToDFSOrdered(
       }
       DomTreeNode *DomNode = DT.getNode(IBlock);
       // It's possible our use is in an unreachable block. Skip it if so.
-      if (!DomNode)
+      if (!DomNode) {
         continue;
+
+}
       VD.DFSIn = DomNode->getDFSNumIn();
       VD.DFSOut = DomNode->getDFSNumOut();
       VD.U = &U;
@@ -324,25 +354,33 @@ void PredicateInfo::convertUsesToDFSOrdered(
 void collectCmpOps(CmpInst *Comparison, SmallVectorImpl<Value *> &CmpOperands) {
   auto *Op0 = Comparison->getOperand(0);
   auto *Op1 = Comparison->getOperand(1);
-  if (Op0 == Op1)
+  if (Op0 == Op1) {
     return;
+
+}
   CmpOperands.push_back(Comparison);
   // Only want real values, not constants.  Additionally, operands with one use
   // are only being used in the comparison, which means they will not be useful
   // for us to consider for predicateinfo.
   //
-  if ((isa<Instruction>(Op0) || isa<Argument>(Op0)) && !Op0->hasOneUse())
+  if ((isa<Instruction>(Op0) || isa<Argument>(Op0)) && !Op0->hasOneUse()) {
     CmpOperands.push_back(Op0);
-  if ((isa<Instruction>(Op1) || isa<Argument>(Op1)) && !Op1->hasOneUse())
+
+}
+  if ((isa<Instruction>(Op1) || isa<Argument>(Op1)) && !Op1->hasOneUse()) {
     CmpOperands.push_back(Op1);
+
+}
 }
 
 // Add Op, PB to the list of value infos for Op, and mark Op to be renamed.
 void PredicateInfo::addInfoFor(SmallVectorImpl<Value *> &OpsToRename, Value *Op,
                                PredicateBase *PB) {
   auto &OperandInfo = getOrCreateValueInfo(Op);
-  if (OperandInfo.Infos.empty())
+  if (OperandInfo.Infos.empty()) {
     OpsToRename.push_back(Op);
+
+}
   AllInfos.push_back(PB);
   OperandInfo.Infos.push_back(PB);
 }
@@ -402,18 +440,24 @@ void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
     for (auto *Succ : SuccsToProcess) {
       // Don't try to insert on a self-edge. This is mainly because we will
       // eliminate during renaming anyway.
-      if (Succ == BranchBB)
+      if (Succ == BranchBB) {
         continue;
+
+}
       bool TakenEdge = (Succ == FirstBB);
       // For and, only insert on the true edge
       // For or, only insert on the false edge
-      if ((isAnd && !TakenEdge) || (isOr && TakenEdge))
+      if ((isAnd && !TakenEdge) || (isOr && TakenEdge)) {
         continue;
+
+}
       PredicateBase *PB =
           new PredicateBranch(Op, BranchBB, Succ, Cond, TakenEdge);
       addInfoFor(OpsToRename, Op, PB);
-      if (!Succ->getSinglePredecessor())
+      if (!Succ->getSinglePredecessor()) {
         EdgeUsesOnly.insert({BranchBB, Succ});
+
+}
     }
   };
 
@@ -427,10 +471,12 @@ void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
       match(BI->getCondition(), m_Or(m_Cmp(Pred, m_Value(), m_Value()),
                                      m_Cmp(Pred, m_Value(), m_Value())))) {
     auto *BinOp = cast<BinaryOperator>(BI->getCondition());
-    if (BinOp->getOpcode() == Instruction::And)
+    if (BinOp->getOpcode() == Instruction::And) {
       isAnd = true;
-    else if (BinOp->getOpcode() == Instruction::Or)
+    } else if (BinOp->getOpcode() == Instruction::Or) {
       isOr = true;
+
+}
     ConditionsToProcess.push_back(BinOp->getOperand(0));
     ConditionsToProcess.push_back(BinOp->getOperand(1));
     ConditionsToProcess.push_back(BI->getCondition());
@@ -441,8 +487,10 @@ void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
     if (auto *Cmp = dyn_cast<CmpInst>(Cond)) {
       collectCmpOps(Cmp, CmpOperands);
       // Now add our copy infos for our operands
-      for (auto *Op : CmpOperands)
+      for (auto *Op : CmpOperands) {
         InsertHelper(Op, isAnd, isOr, Cmp);
+
+}
     } else if (auto *BinOp = dyn_cast<BinaryOperator>(Cond)) {
       // This must be an AND or an OR.
       assert((BinOp->getOpcode() == Instruction::And ||
@@ -462,8 +510,10 @@ void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
 void PredicateInfo::processSwitch(SwitchInst *SI, BasicBlock *BranchBB,
                                   SmallVectorImpl<Value *> &OpsToRename) {
   Value *Op = SI->getCondition();
-  if ((!isa<Instruction>(Op) && !isa<Argument>(Op)) || Op->hasOneUse())
+  if ((!isa<Instruction>(Op) && !isa<Argument>(Op)) || Op->hasOneUse()) {
     return;
+
+}
 
   // Remember how many outgoing edges there are to every successor.
   SmallDenseMap<BasicBlock *, unsigned, 16> SwitchEdges;
@@ -479,8 +529,10 @@ void PredicateInfo::processSwitch(SwitchInst *SI, BasicBlock *BranchBB,
       PredicateSwitch *PS = new PredicateSwitch(
           Op, SI->getParent(), TargetBlock, C.getCaseValue(), SI);
       addInfoFor(OpsToRename, Op, PS);
-      if (!TargetBlock->getSinglePredecessor())
+      if (!TargetBlock->getSinglePredecessor()) {
         EdgeUsesOnly.insert({BranchBB, TargetBlock});
+
+}
     }
   }
 }
@@ -494,20 +546,28 @@ void PredicateInfo::buildPredicateInfo() {
   for (auto DTN : depth_first(DT.getRootNode())) {
     BasicBlock *BranchBB = DTN->getBlock();
     if (auto *BI = dyn_cast<BranchInst>(BranchBB->getTerminator())) {
-      if (!BI->isConditional())
+      if (!BI->isConditional()) {
         continue;
+
+}
       // Can't insert conditional information if they all go to the same place.
-      if (BI->getSuccessor(0) == BI->getSuccessor(1))
+      if (BI->getSuccessor(0) == BI->getSuccessor(1)) {
         continue;
+
+}
       processBranch(BI, BranchBB, OpsToRename);
     } else if (auto *SI = dyn_cast<SwitchInst>(BranchBB->getTerminator())) {
       processSwitch(SI, BranchBB, OpsToRename);
     }
   }
   for (auto &Assume : AC.assumptions()) {
-    if (auto *II = dyn_cast_or_null<IntrinsicInst>(Assume))
-      if (DT.isReachableFromEntry(II->getParent()))
+    if (auto *II = dyn_cast_or_null<IntrinsicInst>(Assume)) {
+      if (DT.isReachableFromEntry(II->getParent())) {
         processAssume(II, II->getParent(), OpsToRename);
+
+}
+
+}
   }
   // Now rename all our operations.
   renameUses(OpsToRename);
@@ -535,9 +595,13 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
                                        Value *OrigOp) {
   // Find the first thing we have to materialize
   auto RevIter = RenameStack.rbegin();
-  for (; RevIter != RenameStack.rend(); ++RevIter)
-    if (RevIter->Def)
+  for (; RevIter != RenameStack.rend(); ++RevIter) {
+    if (RevIter->Def) {
       break;
+
+}
+
+}
 
   size_t Start = RevIter - RenameStack.rbegin();
   // The maximum number of things we should be trying to materialize at once
@@ -557,8 +621,10 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
     if (isa<PredicateWithEdge>(ValInfo)) {
       IRBuilder<> B(getBranchTerminator(ValInfo));
       Function *IF = getCopyDeclaration(F.getParent(), Op->getType());
-      if (IF->users().empty())
+      if (IF->users().empty()) {
         CreatedDeclarations.insert(IF);
+
+}
       CallInst *PIC =
           B.CreateCall(IF, Op, Op->getName() + "." + Twine(Counter++));
       PredicateMap.insert({PIC, ValInfo});
@@ -569,8 +635,10 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
              "Should not have gotten here without it being an assume");
       IRBuilder<> B(PAssume->AssumeInst);
       Function *IF = getCopyDeclaration(F.getParent(), Op->getType());
-      if (IF->users().empty())
+      if (IF->users().empty()) {
         CreatedDeclarations.insert(IF);
+
+}
       CallInst *PIC = B.CreateCall(IF, Op);
       PredicateMap.insert({PIC, ValInfo});
       Result.Def = PIC;
@@ -619,8 +687,10 @@ void PredicateInfo::renameUses(SmallVectorImpl<Value *> &OpsToRename) {
       if (const auto *PAssume = dyn_cast<PredicateAssume>(PossibleCopy)) {
         VD.LocalNum = LN_Middle;
         DomTreeNode *DomNode = DT.getNode(PAssume->AssumeInst->getParent());
-        if (!DomNode)
+        if (!DomNode) {
           continue;
+
+}
         VD.DFSIn = DomNode->getDFSNumIn();
         VD.DFSOut = DomNode->getDFSNumOut();
         VD.PInfo = PossibleCopy;
@@ -692,11 +762,15 @@ void PredicateInfo::renameUses(SmallVectorImpl<Value *> &OpsToRename) {
       }
       // If we get to this point, and the stack is empty we must have a use
       // with no renaming needed, just skip it.
-      if (RenameStack.empty())
+      if (RenameStack.empty()) {
         continue;
+
+}
       // Skip values, only want to rename the uses
-      if (VD.Def || PossibleCopy)
+      if (VD.Def || PossibleCopy) {
         continue;
+
+}
       if (!DebugCounter::shouldExecute(RenameCounter)) {
         LLVM_DEBUG(dbgs() << "Skipping execution due to debug counter\n");
         continue;
@@ -706,8 +780,10 @@ void PredicateInfo::renameUses(SmallVectorImpl<Value *> &OpsToRename) {
       // If the possible copy dominates something, materialize our stack up to
       // this point. This ensures every comparison that affects our operation
       // ends up with predicateinfo.
-      if (!Result.Def)
+      if (!Result.Def) {
         Result.Def = materializeStack(Counter, RenameStack, Op);
+
+}
 
       LLVM_DEBUG(dbgs() << "Found replacement " << *Result.Def << " for "
                         << *VD.U->get() << " in " << *(VD.U->getUser())
@@ -755,8 +831,10 @@ PredicateInfo::~PredicateInfo() {
   // Collect function pointers in set first, as SmallSet uses a SmallVector
   // internally and we have to remove the asserting value handles first.
   SmallPtrSet<Function *, 20> FunctionPtrs;
-  for (auto &F : CreatedDeclarations)
+  for (auto &F : CreatedDeclarations) {
     FunctionPtrs.insert(&*F);
+
+}
   CreatedDeclarations.clear();
 
   for (Function *F : FunctionPtrs) {
@@ -788,8 +866,10 @@ static void replaceCreatedSSACopys(PredicateInfo &PredInfo, Function &F) {
     Instruction *Inst = &*I++;
     const auto *PI = PredInfo.getPredicateInfoFor(Inst);
     auto *II = dyn_cast<IntrinsicInst>(Inst);
-    if (!PI || !II || II->getIntrinsicID() != Intrinsic::ssa_copy)
+    if (!PI || !II || II->getIntrinsicID() != Intrinsic::ssa_copy) {
       continue;
+
+}
 
     Inst->replaceAllUsesWith(II->getOperand(0));
     Inst->eraseFromParent();
@@ -801,8 +881,10 @@ bool PredicateInfoPrinterLegacyPass::runOnFunction(Function &F) {
   auto &AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
   auto PredInfo = std::make_unique<PredicateInfo>(F, DT, AC);
   PredInfo->print(dbgs());
-  if (VerifyPredicateInfo)
+  if (VerifyPredicateInfo) {
     PredInfo->verifyPredicateInfo();
+
+}
 
   replaceCreatedSSACopys(*PredInfo, F);
   return false;

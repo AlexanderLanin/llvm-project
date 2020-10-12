@@ -120,8 +120,10 @@ public:
 
 template <typename R> void TestRev(const R &r) {
   int counter = 3;
-  for (int i : r)
+  for (int i : r) {
     EXPECT_EQ(i, counter--);
+
+}
 }
 
 // Test fixture

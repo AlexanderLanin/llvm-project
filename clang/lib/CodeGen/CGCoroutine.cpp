@@ -91,14 +91,16 @@ static void createCoroData(CodeGenFunction &CGF,
                            llvm::CallInst *CoroId,
                            CallExpr const *CoroIdExpr = nullptr) {
   if (CurCoro.Data) {
-    if (CurCoro.Data->CoroIdExpr)
+    if (CurCoro.Data->CoroIdExpr) {
       CGF.CGM.Error(CoroIdExpr->getBeginLoc(),
                     "only one __builtin_coro_id can be used in a function");
-    else if (CoroIdExpr)
+    } else if (CoroIdExpr) {
       CGF.CGM.Error(CoroIdExpr->getBeginLoc(),
                     "__builtin_coro_id shall not be used in a C++ coroutine");
-    else
+    } else {
       llvm_unreachable("EmitCoroutineBodyStatement called twice?");
+
+}
 
     return;
   }
@@ -130,12 +132,18 @@ static SmallString<32> buildSuspendPrefixStr(CGCoroData &Coro, AwaitKind Kind) {
 }
 
 static bool memberCallExpressionCanThrow(const Expr *E) {
-  if (const auto *CE = dyn_cast<CXXMemberCallExpr>(E))
+  if (const auto *CE = dyn_cast<CXXMemberCallExpr>(E)) {
     if (const auto *Proto =
-            CE->getMethodDecl()->getType()->getAs<FunctionProtoType>())
+            CE->getMethodDecl()->getType()->getAs<FunctionProtoType>()) {
       if (isNoexceptExceptionSpec(Proto->getExceptionSpecType()) &&
-          Proto->canThrow() == CT_Cannot)
+          Proto->canThrow() == CT_Cannot) {
         return false;
+
+}
+
+}
+
+}
   return true;
 }
 
@@ -245,10 +253,12 @@ static LValueOrRValue emitSuspendExpression(CodeGenFunction &CGF, CGCoroData &Co
   }
 
   LValueOrRValue Res;
-  if (forLValue)
+  if (forLValue) {
     Res.LV = CGF.EmitLValue(S.getResumeExpr());
-  else
+  } else {
     Res.RV = CGF.EmitAnyExpr(S.getResumeExpr(), aggSlot, ignoreResult);
+
+}
 
   if (TryStmt) {
     Builder.CreateFlagStore(false, Coro.ResumeEHVar);
@@ -329,8 +339,10 @@ public:
   }
   void VisitStmt(Stmt *S) {
     for (auto *C : S->children()) {
-      if (C)
+      if (C) {
         Visit(C);
+
+}
     }
   }
 };
@@ -383,8 +395,10 @@ static SmallVector<llvm::OperandBundleDef, 1>
 getBundlesForCoroEnd(CodeGenFunction &CGF) {
   SmallVector<llvm::OperandBundleDef, 1> BundleList;
 
-  if (llvm::Instruction *EHPad = CGF.CurrentFuncletPad)
+  if (llvm::Instruction *EHPad = CGF.CurrentFuncletPad) {
     BundleList.emplace_back("funclet", EHPad);
+
+}
 
   return BundleList;
 }
@@ -535,9 +549,13 @@ static void emitBodyAndFallthrough(CodeGenFunction &CGF,
                                    const CoroutineBodyStmt &S, Stmt *Body) {
   CGF.EmitStmt(Body);
   const bool CanFallthrough = CGF.Builder.GetInsertBlock();
-  if (CanFallthrough)
-    if (Stmt *OnFallthrough = S.getFallthroughHandler())
+  if (CanFallthrough) {
+    if (Stmt *OnFallthrough = S.getFallthroughHandler()) {
       CGF.EmitStmt(OnFallthrough);
+
+}
+
+}
 }
 
 void CodeGenFunction::EmitCoroutineBody(const CoroutineBodyStmt &S) {
@@ -662,8 +680,10 @@ void CodeGenFunction::EmitCoroutineBody(const CoroutineBodyStmt &S) {
       emitBodyAndFallthrough(*this, S, TryStmt->getTryBlock());
       ExitCXXTryStmt(*TryStmt);
 
-      if (ContBB)
+      if (ContBB) {
         EmitBlock(ContBB);
+
+}
     }
     else {
       emitBodyAndFallthrough(*this, S, S.getBody());
@@ -688,8 +708,10 @@ void CodeGenFunction::EmitCoroutineBody(const CoroutineBodyStmt &S) {
   llvm::Function *CoroEnd = CGM.getIntrinsic(llvm::Intrinsic::coro_end);
   Builder.CreateCall(CoroEnd, {NullPtr, Builder.getFalse()});
 
-  if (Stmt *Ret = S.getReturnStmt())
+  if (Stmt *Ret = S.getReturnStmt()) {
     EmitStmt(Ret);
+
+}
 }
 
 // Emit coroutine intrinsic and patch up arguments of the token type.
@@ -731,8 +753,10 @@ RValue CodeGenFunction::EmitCoroutineIntrinsic(const CallExpr *E,
     Args.push_back(llvm::ConstantTokenNone::get(getLLVMContext()));
     break;
   }
-  for (const Expr *Arg : E->arguments())
+  for (const Expr *Arg : E->arguments()) {
     Args.push_back(EmitScalarExpr(Arg));
+
+}
 
   llvm::Function *F = CGM.getIntrinsic(IID);
   llvm::CallInst *Call = Builder.CreateCall(F, Args);
@@ -745,14 +769,18 @@ RValue CodeGenFunction::EmitCoroutineIntrinsic(const CallExpr *E,
     createCoroData(*this, CurCoro, Call, E);
   }
   else if (IID == llvm::Intrinsic::coro_begin) {
-    if (CurCoro.Data)
+    if (CurCoro.Data) {
       CurCoro.Data->CoroBegin = Call;
+
+}
   }
   else if (IID == llvm::Intrinsic::coro_free) {
     // Remember the last coro_free as we need it to build the conditional
     // deletion of the coroutine frame.
-    if (CurCoro.Data)
+    if (CurCoro.Data) {
       CurCoro.Data->LastCoroFree = Call;
+
+}
   }
   return RValue::get(Call);
 }

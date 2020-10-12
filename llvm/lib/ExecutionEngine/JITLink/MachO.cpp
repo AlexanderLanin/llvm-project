@@ -54,8 +54,10 @@ void jitLink_MachO(std::unique_ptr<JITLinkContext> Ctx) {
     MachO::mach_header_64 Header;
 
     memcpy(&Header, Data.data(), sizeof(MachO::mach_header_64));
-    if (Magic == MachO::MH_CIGAM_64)
+    if (Magic == MachO::MH_CIGAM_64) {
       swapStruct(Header);
+
+}
 
     LLVM_DEBUG({
       dbgs() << "jitLink_MachO: cputype = "

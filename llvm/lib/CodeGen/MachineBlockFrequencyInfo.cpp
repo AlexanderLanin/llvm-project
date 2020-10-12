@@ -77,8 +77,10 @@ static cl::opt<bool> PrintMachineBlockFreq(
 extern cl::opt<std::string> PrintBlockFreqFuncName;
 
 static GVDAGType getGVDT() {
-  if (ViewBlockLayoutWithBFI != GVDT_None)
+  if (ViewBlockLayoutWithBFI != GVDT_None) {
     return ViewBlockLayoutWithBFI;
+
+}
 
   return ViewMachineBlockFreqPropagationDAG;
 }
@@ -129,8 +131,10 @@ struct DOTGraphTraits<MachineBlockFrequencyInfo *>
     if (!isSimple()) {
       const MachineFunction *F = Node->getParent();
       if (!CurFunc || F != CurFunc) {
-        if (CurFunc)
+        if (CurFunc) {
           LayoutOrderMap.clear();
+
+}
 
         CurFunc = F;
         int O = 0;
@@ -192,8 +196,10 @@ void MachineBlockFrequencyInfo::getAnalysisUsage(AnalysisUsage &AU) const {
 void MachineBlockFrequencyInfo::calculate(
     const MachineFunction &F, const MachineBranchProbabilityInfo &MBPI,
     const MachineLoopInfo &MLI) {
-  if (!MBFI)
+  if (!MBFI) {
     MBFI.reset(new ImplType);
+
+}
   MBFI->calculate(F, MBPI, MLI);
   if (ViewMachineBlockFreqPropagationDAG != GVDT_None &&
       (ViewBlockFreqFuncName.empty() ||

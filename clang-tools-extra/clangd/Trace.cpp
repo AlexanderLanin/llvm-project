@@ -97,8 +97,10 @@ private:
         // If the parent span ended already, then show this as "following" it.
         // Otherwise show us as "parallel".
         double OriginTime = (*Parent)->EndTime;
-        if (!OriginTime)
+        if (!OriginTime) {
           OriginTime = (*Parent)->StartTime;
+
+}
 
         auto FlowID = nextID();
         Tracer->jsonEvent(
@@ -152,8 +154,10 @@ private:
     Out.object([&]{
       Out.attribute("pid", 0);
       Out.attribute("ph", Phase);
-      for (const auto& KV : Event)
+      for (const auto& KV : Event) {
         Out.attribute(KV.first, KV.second);
+
+}
     });
   }
 
@@ -203,15 +207,19 @@ std::unique_ptr<EventTracer> createJSONTracer(llvm::raw_ostream &OS,
 }
 
 void log(const llvm::Twine &Message) {
-  if (!T)
+  if (!T) {
     return;
+
+}
   T->instant("Log", llvm::json::Object{{"Message", Message.str()}});
 }
 
 // Returned context owns Args.
 static Context makeSpanContext(llvm::Twine Name, llvm::json::Object *Args) {
-  if (!T)
+  if (!T) {
     return Context::current().clone();
+
+}
   WithContextValue WithArgs{std::unique_ptr<llvm::json::Object>(Args)};
   return T->beginSpan(Name.isSingleStringRef() ? Name.getSingleStringRef()
                                                : llvm::StringRef(Name.str()),
@@ -226,8 +234,10 @@ Span::Span(llvm::Twine Name)
       RestoreCtx(makeSpanContext(Name, Args)) {}
 
 Span::~Span() {
-  if (T)
+  if (T) {
     T->endSpan();
+
+}
 }
 
 } // namespace trace

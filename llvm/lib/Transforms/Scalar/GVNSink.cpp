@@ -130,8 +130,10 @@ public:
   void reset() {
     Fail = false;
     ActiveBlocks.clear();
-    for (BasicBlock *BB : Blocks)
+    for (BasicBlock *BB : Blocks) {
       ActiveBlocks.insert(BB);
+
+}
     Insts.clear();
     for (BasicBlock *BB : Blocks) {
       if (BB->size() <= 1) {
@@ -141,8 +143,10 @@ public:
       }
       Insts.push_back(BB->getTerminator()->getPrevNode());
     }
-    if (Insts.empty())
+    if (Insts.empty()) {
       Fail = true;
+
+}
   }
 
   bool isValid() const { return !Fail; }
@@ -169,14 +173,18 @@ public:
   }
 
   void operator--() {
-    if (Fail)
+    if (Fail) {
       return;
+
+}
     SmallVector<Instruction *, 4> NewInsts;
     for (auto *Inst : Insts) {
-      if (Inst == &Inst->getParent()->front())
+      if (Inst == &Inst->getParent()->front()) {
         ActiveBlocks.remove(Inst->getParent());
-      else
+      } else {
         NewInsts.push_back(Inst->getPrevNode());
+
+}
     }
     if (NewInsts.empty()) {
       Fail = true;
@@ -237,8 +245,10 @@ public:
   ModelledPHI(const PHINode *PN) {
     // BasicBlock comes first so we sort by basic block pointer order, then by value pointer order.
     SmallVector<std::pair<BasicBlock *, Value *>, 4> Ops;
-    for (unsigned I = 0, E = PN->getNumIncomingValues(); I != E; ++I)
+    for (unsigned I = 0, E = PN->getNumIncomingValues(); I != E; ++I) {
       Ops.push_back({PN->getIncomingBlock(I), PN->getIncomingValue(I)});
+
+}
     llvm::sort(Ops);
     for (auto &P : Ops) {
       Blocks.push_back(P.first);
@@ -266,8 +276,10 @@ public:
   template <typename BArray>
   ModelledPHI(ArrayRef<Instruction *> Insts, unsigned OpNum, const BArray &B) {
     llvm::copy(B, std::back_inserter(Blocks));
-    for (auto *I : Insts)
+    for (auto *I : Insts) {
       Values.push_back(I->getOperand(OpNum));
+
+}
   }
 
   /// Restrict the PHI's contents down to only \c NewBlocks.
@@ -359,8 +371,10 @@ public:
     setOpcode(I->getOpcode());
     setType(I->getType());
 
-    for (auto &U : I->uses())
+    for (auto &U : I->uses()) {
       op_push_back(U.getUser());
+
+}
     llvm::sort(op_begin(), op_end());
   }
 
@@ -375,8 +389,10 @@ public:
   template <typename Function> hash_code getHashValue(Function MapFn) {
     hash_code H =
         hash_combine(getOpcode(), getType(), MemoryUseOrder, Volatile);
-    for (auto *V : operands())
+    for (auto *V : operands()) {
       H = hash_combine(H, MapFn(V));
+
+}
     return H;
   }
 };
@@ -395,8 +411,10 @@ class ValueTable {
   InstructionUseExpr *createExpr(Instruction *I) {
     InstructionUseExpr *E =
         new (Allocator) InstructionUseExpr(I, Recycler, Allocator);
-    if (isMemoryInst(I))
+    if (isMemoryInst(I)) {
       E->setMemoryUseOrder(getMemoryUseOrder(I));
+
+}
 
     if (CmpInst *C = dyn_cast<CmpInst>(I)) {
       CmpInst::Predicate Predicate = C->getPredicate();
@@ -409,8 +427,10 @@ class ValueTable {
   /// (LoadInst/StoreInst), including checking the memory ordering and
   /// volatility.
   template <class Inst> InstructionUseExpr *createMemoryExpr(Inst *I) {
-    if (isStrongerThanUnordered(I->getOrdering()) || I->isAtomic())
+    if (isStrongerThanUnordered(I->getOrdering()) || I->isAtomic()) {
       return nullptr;
+
+}
     InstructionUseExpr *E = createExpr(I);
     E->setVolatile(I->isVolatile());
     return E;
@@ -423,8 +443,10 @@ public:
   /// it a new number if it did not have one before.
   uint32_t lookupOrAdd(Value *V) {
     auto VI = ValueNumbering.find(V);
-    if (VI != ValueNumbering.end())
+    if (VI != ValueNumbering.end()) {
       return VI->second;
+
+}
 
     if (!isa<Instruction>(V)) {
       ValueNumbering[V] = nextValueNumber;
@@ -539,16 +561,24 @@ public:
     auto *BB = Inst->getParent();
     for (auto I = std::next(Inst->getIterator()), E = BB->end();
          I != E && !I->isTerminator(); ++I) {
-      if (!isMemoryInst(&*I))
+      if (!isMemoryInst(&*I)) {
         continue;
-      if (isa<LoadInst>(&*I))
+
+}
+      if (isa<LoadInst>(&*I)) {
         continue;
+
+}
       CallInst *CI = dyn_cast<CallInst>(&*I);
-      if (CI && CI->onlyReadsMemory())
+      if (CI && CI->onlyReadsMemory()) {
         continue;
+
+}
       InvokeInst *II = dyn_cast<InvokeInst>(&*I);
-      if (II && II->onlyReadsMemory())
+      if (II && II->onlyReadsMemory()) {
         continue;
+
+}
       return lookupOrAdd(&*I);
     }
     return 0;
@@ -567,8 +597,10 @@ public:
 
     unsigned NumSunk = 0;
     ReversePostOrderTraversal<Function*> RPOT(&F);
-    for (auto *N : RPOT)
+    for (auto *N : RPOT) {
       NumSunk += sinkBB(N);
+
+}
 
     return NumSunk > 0;
   }
@@ -579,8 +611,10 @@ private:
   bool isInstructionBlacklisted(Instruction *I) {
     // These instructions may change or break semantics if moved.
     if (isa<PHINode>(I) || I->isEHPad() || isa<AllocaInst>(I) ||
-        I->getType()->isTokenTy())
+        I->getType()->isTokenTy()) {
       return true;
+
+}
     return false;
   }
 
@@ -597,8 +631,10 @@ private:
     for (PHINode &PN : BB->phis()) {
       auto MPHI = ModelledPHI(&PN);
       PHIs.insert(MPHI);
-      for (auto *V : MPHI.getValues())
+      for (auto *V : MPHI.getValues()) {
         PHIContents.insert(V);
+
+}
     }
   }
 
@@ -616,12 +652,16 @@ private:
     while (PHINode *PN = dyn_cast<PHINode>(I++)) {
       if (!llvm::all_of(PN->incoming_values(), [&](const Value *V) {
             return V == PN->getIncomingValue(0);
-          }))
+          })) {
         continue;
-      if (PN->getIncomingValue(0) != PN)
+
+}
+      if (PN->getIncomingValue(0) != PN) {
         PN->replaceAllUsesWith(PN->getIncomingValue(0));
-      else
+      } else {
         PN->replaceAllUsesWith(UndefValue::get(PN->getType()));
+
+}
       PN->eraseFromParent();
     }
   }
@@ -640,8 +680,10 @@ Optional<SinkingInstructionCandidate> GVNSink::analyzeInstructionForSinking(
   for (auto *I : Insts) {
     uint32_t N = VN.lookupOrAdd(I);
     LLVM_DEBUG(dbgs() << " VN=" << Twine::utohexstr(N) << " for" << *I << "\n");
-    if (N == ~0U)
+    if (N == ~0U) {
       return None;
+
+}
     VNums[N]++;
   }
   unsigned VNumToSink =
@@ -652,9 +694,11 @@ Optional<SinkingInstructionCandidate> GVNSink::analyzeInstructionForSinking(
                        })
           ->first;
 
-  if (VNums[VNumToSink] == 1)
+  if (VNums[VNumToSink] == 1) {
     // Can't sink anything!
     return None;
+
+}
 
   // Now restrict the number of incoming blocks down to only those with
   // VNumToSink.
@@ -662,14 +706,20 @@ Optional<SinkingInstructionCandidate> GVNSink::analyzeInstructionForSinking(
   unsigned InitialActivePredSize = ActivePreds.size();
   SmallVector<Instruction *, 4> NewInsts;
   for (auto *I : Insts) {
-    if (VN.lookup(I) != VNumToSink)
+    if (VN.lookup(I) != VNumToSink) {
       ActivePreds.remove(I->getParent());
-    else
+    } else {
       NewInsts.push_back(I);
+
+}
   }
-  for (auto *I : NewInsts)
-    if (isInstructionBlacklisted(I))
+  for (auto *I : NewInsts) {
+    if (isInstructionBlacklisted(I)) {
       return None;
+
+}
+
+}
 
   // If we've restricted the incoming blocks, restrict all needed PHIs also
   // to that set.
@@ -698,18 +748,24 @@ Optional<SinkingInstructionCandidate> GVNSink::analyzeInstructionForSinking(
     // The needed PHIs have changed, so recompute the set of all needed
     // values.
     PHIContents.clear();
-    for (auto &PHI : NeededPHIs)
+    for (auto &PHI : NeededPHIs) {
       PHIContents.insert(PHI.getValues().begin(), PHI.getValues().end());
+
+}
   }
 
   // Is this instruction required by a later PHI that doesn't match this PHI?
   // if so, we can't sink this instruction.
-  for (auto *V : NewPHI.getValues())
-    if (PHIContents.count(V))
+  for (auto *V : NewPHI.getValues()) {
+    if (PHIContents.count(V)) {
       // V exists in this PHI, but the whole PHI is different to NewPHI
       // (else it would have been removed earlier). We cannot continue
       // because this isn't representable.
       return None;
+
+}
+
+}
 
   // Which operands need PHIs?
   // FIXME: If any of these fail, we should partition up the candidates to
@@ -721,40 +777,56 @@ Optional<SinkingInstructionCandidate> GVNSink::analyzeInstructionForSinking(
   auto hasDifferentNumOperands = [&I0](Instruction *I) {
     return I->getNumOperands() != I0->getNumOperands();
   };
-  if (any_of(NewInsts, hasDifferentNumOperands))
+  if (any_of(NewInsts, hasDifferentNumOperands)) {
     return None;
+
+}
 
   for (unsigned OpNum = 0, E = I0->getNumOperands(); OpNum != E; ++OpNum) {
     ModelledPHI PHI(NewInsts, OpNum, ActivePreds);
-    if (PHI.areAllIncomingValuesSame())
+    if (PHI.areAllIncomingValuesSame()) {
       continue;
-    if (!canReplaceOperandWithVariable(I0, OpNum))
+
+}
+    if (!canReplaceOperandWithVariable(I0, OpNum)) {
       // We can 't create a PHI from this instruction!
       return None;
-    if (NeededPHIs.count(PHI))
+
+}
+    if (NeededPHIs.count(PHI)) {
       continue;
-    if (!PHI.areAllIncomingValuesSameType())
+
+}
+    if (!PHI.areAllIncomingValuesSameType()) {
       return None;
+
+}
     // Don't create indirect calls! The called value is the final operand.
     if ((isa<CallInst>(I0) || isa<InvokeInst>(I0)) && OpNum == E - 1 &&
-        PHI.areAnyIncomingValuesConstant())
+        PHI.areAnyIncomingValuesConstant()) {
       return None;
+
+}
 
     NeededPHIs.reserve(NeededPHIs.size());
     NeededPHIs.insert(PHI);
     PHIContents.insert(PHI.getValues().begin(), PHI.getValues().end());
   }
 
-  if (isMemoryInst(NewInsts[0]))
+  if (isMemoryInst(NewInsts[0])) {
     ++MemoryInstNum;
+
+}
 
   SinkingInstructionCandidate Cand;
   Cand.NumInstructions = ++InstNum;
   Cand.NumMemoryInsts = MemoryInstNum;
   Cand.NumBlocks = ActivePreds.size();
   Cand.NumPHIs = NeededPHIs.size();
-  for (auto *C : ActivePreds)
+  for (auto *C : ActivePreds) {
     Cand.Blocks.push_back(C);
+
+}
 
   return Cand;
 }
@@ -765,22 +837,28 @@ unsigned GVNSink::sinkBB(BasicBlock *BBEnd) {
   SmallVector<BasicBlock *, 4> Preds;
   for (auto *B : predecessors(BBEnd)) {
     auto *T = B->getTerminator();
-    if (isa<BranchInst>(T) || isa<SwitchInst>(T))
+    if (isa<BranchInst>(T) || isa<SwitchInst>(T)) {
       Preds.push_back(B);
-    else
+    } else {
       return 0;
+
+}
   }
-  if (Preds.size() < 2)
+  if (Preds.size() < 2) {
     return 0;
+
+}
   llvm::sort(Preds);
 
   unsigned NumOrigPreds = Preds.size();
   // We can only sink instructions through unconditional branches.
   for (auto I = Preds.begin(); I != Preds.end();) {
-    if ((*I)->getTerminator()->getNumSuccessors() != 1)
+    if ((*I)->getTerminator()->getNumSuccessors() != 1) {
       I = Preds.erase(I);
-    else
+    } else {
       ++I;
+
+}
   }
 
   LockstepReverseIterator LRI(Preds);
@@ -794,8 +872,10 @@ unsigned GVNSink::sinkBB(BasicBlock *BBEnd) {
   while (LRI.isValid()) {
     auto Cand = analyzeInstructionForSinking(LRI, InstNum, MemoryInstNum,
                                              NeededPHIs, PHIContents);
-    if (!Cand)
+    if (!Cand) {
       break;
+
+}
     Cand->calculateCost(NumOrigPHIs, Preds.size());
     Candidates.emplace_back(*Cand);
     --LRI;
@@ -807,8 +887,10 @@ unsigned GVNSink::sinkBB(BasicBlock *BBEnd) {
                                                     << "  " << C << "\n";);
 
   // Pick the top candidate, as long it is positive!
-  if (Candidates.empty() || Candidates.front().Cost <= 0)
+  if (Candidates.empty() || Candidates.front().Cost <= 0) {
     return 0;
+
+}
   auto C = Candidates.front();
 
   LLVM_DEBUG(dbgs() << " -- Sinking: " << C << "\n");
@@ -824,8 +906,10 @@ unsigned GVNSink::sinkBB(BasicBlock *BBEnd) {
     }
   }
 
-  for (unsigned I = 0; I < C.NumInstructions; ++I)
+  for (unsigned I = 0; I < C.NumInstructions; ++I) {
     sinkLastInstruction(C.Blocks, InsertBB);
+
+}
 
   return C.NumInstructions;
 }
@@ -833,8 +917,10 @@ unsigned GVNSink::sinkBB(BasicBlock *BBEnd) {
 void GVNSink::sinkLastInstruction(ArrayRef<BasicBlock *> Blocks,
                                   BasicBlock *BBEnd) {
   SmallVector<Instruction *, 4> Insts;
-  for (BasicBlock *BB : Blocks)
+  for (BasicBlock *BB : Blocks) {
     Insts.push_back(BB->getTerminator()->getPrevNode());
+
+}
   Instruction *I0 = Insts.front();
 
   SmallVector<Value *, 4> NewOperands;
@@ -852,33 +938,47 @@ void GVNSink::sinkLastInstruction(ArrayRef<BasicBlock *> Blocks,
     assert(!Op->getType()->isTokenTy() && "Can't PHI tokens!");
     auto *PN = PHINode::Create(Op->getType(), Insts.size(),
                                Op->getName() + ".sink", &BBEnd->front());
-    for (auto *I : Insts)
+    for (auto *I : Insts) {
       PN->addIncoming(I->getOperand(O), I->getParent());
+
+}
     NewOperands.push_back(PN);
   }
 
   // Arbitrarily use I0 as the new "common" instruction; remap its operands
   // and move it to the start of the successor block.
-  for (unsigned O = 0, E = I0->getNumOperands(); O != E; ++O)
+  for (unsigned O = 0, E = I0->getNumOperands(); O != E; ++O) {
     I0->getOperandUse(O).set(NewOperands[O]);
+
+}
   I0->moveBefore(&*BBEnd->getFirstInsertionPt());
 
   // Update metadata and IR flags.
-  for (auto *I : Insts)
+  for (auto *I : Insts) {
     if (I != I0) {
       combineMetadataForCSE(I0, I, true);
       I0->andIRFlags(I);
     }
 
-  for (auto *I : Insts)
-    if (I != I0)
+}
+
+  for (auto *I : Insts) {
+    if (I != I0) {
       I->replaceAllUsesWith(I0);
+
+}
+
+}
   foldPointlessPHINodes(BBEnd);
 
   // Finally nuke all instructions apart from the common instruction.
-  for (auto *I : Insts)
-    if (I != I0)
+  for (auto *I : Insts) {
+    if (I != I0) {
       I->eraseFromParent();
+
+}
+
+}
 
   NumRemoved += Insts.size() - 1;
 }
@@ -895,8 +995,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     GVNSink G;
     return G.run(F);
   }
@@ -910,8 +1012,10 @@ public:
 
 PreservedAnalyses GVNSinkPass::run(Function &F, FunctionAnalysisManager &AM) {
   GVNSink G;
-  if (!G.run(F))
+  if (!G.run(F)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserve<GlobalsAA>();

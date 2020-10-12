@@ -45,8 +45,10 @@ static bool stripDeadPrototypes(Module &M) {
        I != E; ) {
     GlobalVariable *GV = &*I++;
     // Global must be a prototype and unused.
-    if (GV->isDeclaration() && GV->use_empty())
+    if (GV->isDeclaration() && GV->use_empty()) {
       GV->eraseFromParent();
+
+}
   }
 
   // Return an indication of whether we changed anything or not.
@@ -55,8 +57,10 @@ static bool stripDeadPrototypes(Module &M) {
 
 PreservedAnalyses StripDeadPrototypesPass::run(Module &M,
                                                ModuleAnalysisManager &) {
-  if (stripDeadPrototypes(M))
+  if (stripDeadPrototypes(M)) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 
@@ -70,8 +74,10 @@ public:
         *PassRegistry::getPassRegistry());
   }
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
 
     return stripDeadPrototypes(M);
   }

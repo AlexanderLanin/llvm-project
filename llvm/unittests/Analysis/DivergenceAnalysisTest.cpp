@@ -31,8 +31,10 @@ namespace {
 
 BasicBlock *GetBlockByName(StringRef BlockName, Function &F) {
   for (auto &BB : F) {
-    if (BB.getName() != BlockName)
+    if (BB.getName() != BlockName) {
       continue;
+
+}
     return &BB;
   }
   return nullptr;
@@ -298,8 +300,10 @@ TEST_F(DivergenceAnalysisTest, DAJoinDivergence) {
 
       for (auto &BB : F) {
         auto *Phi = dyn_cast<PHINode>(BB.begin());
-        if (!Phi)
+        if (!Phi) {
           continue;
+
+}
 
         if (ItDivJoins != ItCase.second.end() && &BB == *ItDivJoins) {
           EXPECT_TRUE(DA.isDivergent(*Phi));

@@ -39,15 +39,19 @@ MergingTypeTableBuilder::MergingTypeTableBuilder(BumpPtrAllocator &Storage)
 MergingTypeTableBuilder::~MergingTypeTableBuilder() = default;
 
 Optional<TypeIndex> MergingTypeTableBuilder::getFirst() {
-  if (empty())
+  if (empty()) {
     return None;
+
+}
 
   return TypeIndex(TypeIndex::FirstNonSimpleIndex);
 }
 
 Optional<TypeIndex> MergingTypeTableBuilder::getNext(TypeIndex Prev) {
-  if (++Prev == nextTypeIndex())
+  if (++Prev == nextTypeIndex()) {
     return None;
+
+}
   return Prev;
 }
 
@@ -61,8 +65,10 @@ StringRef MergingTypeTableBuilder::getTypeName(TypeIndex Index) {
 }
 
 bool MergingTypeTableBuilder::contains(TypeIndex Index) {
-  if (Index.isSimple() || Index.isNoneType())
+  if (Index.isSimple() || Index.isNoneType()) {
     return false;
+
+}
 
   return Index.toArrayIndex() < SeenRecords.size();
 }
@@ -119,7 +125,9 @@ MergingTypeTableBuilder::insertRecord(ContinuationRecordBuilder &Builder) {
   TypeIndex TI;
   auto Fragments = Builder.end(nextTypeIndex());
   assert(!Fragments.empty());
-  for (auto C : Fragments)
+  for (auto C : Fragments) {
     TI = insertRecordBytes(C.RecordData);
+
+}
   return TI;
 }

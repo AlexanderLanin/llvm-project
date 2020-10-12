@@ -29,8 +29,10 @@ static void codegen(Module *M, llvm::raw_pwrite_stream &OS,
                     CodeGenFileType FileType) {
   std::unique_ptr<TargetMachine> TM = TMFactory();
   legacy::PassManager CodeGenPasses;
-  if (TM->addPassesToEmitFile(CodeGenPasses, OS, nullptr, FileType))
+  if (TM->addPassesToEmitFile(CodeGenPasses, OS, nullptr, FileType)) {
     report_fatal_error("Failed to setup codegen");
+
+}
   CodeGenPasses.run(*M);
 }
 
@@ -42,8 +44,10 @@ std::unique_ptr<Module> llvm::splitCodeGen(
   assert(BCOSs.empty() || BCOSs.size() == OSs.size());
 
   if (OSs.size() == 1) {
-    if (!BCOSs.empty())
+    if (!BCOSs.empty()) {
       WriteBitcodeToFile(*M, *BCOSs[0]);
+
+}
     codegen(M.get(), *OSs[0], TMFactory, FileType);
     return M;
   }
@@ -81,8 +85,10 @@ std::unique_ptr<Module> llvm::splitCodeGen(
                     MemoryBufferRef(StringRef(BC.data(), BC.size()),
                                     "<split-module>"),
                     Ctx);
-                if (!MOrErr)
+                if (!MOrErr) {
                   report_fatal_error("Failed to read bitcode");
+
+}
                 std::unique_ptr<Module> MPartInCtx = std::move(MOrErr.get());
 
                 codegen(MPartInCtx.get(), *ThreadOS, TMFactory, FileType);

@@ -36,8 +36,10 @@ llvm::Expected<GsymReader> GsymReader::openFile(StringRef Filename) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> BuffOrErr =
       MemoryBuffer::getFileOrSTDIN(Filename);
   auto Err = BuffOrErr.getError();
-  if (Err)
+  if (Err) {
     return llvm::errorCodeToError(Err);
+
+}
   return create(BuffOrErr.get());
 }
 
@@ -48,13 +50,17 @@ llvm::Expected<GsymReader> GsymReader::copyBuffer(StringRef Bytes) {
 
 llvm::Expected<llvm::gsym::GsymReader>
 GsymReader::create(std::unique_ptr<MemoryBuffer> &MemBuffer) {
-  if (!MemBuffer.get())
+  if (!MemBuffer.get()) {
     return createStringError(std::errc::invalid_argument,
                              "invalid memory buffer");
+
+}
   GsymReader GR(std::move(MemBuffer));
   llvm::Error Err = GR.parse();
-  if (Err)
+  if (Err) {
     return std::move(Err);
+
+}
   return std::move(GR);
 }
 
@@ -65,9 +71,11 @@ GsymReader::parse() {
   // Check for the magic bytes. This file format is designed to be mmap'ed
   // into a process and accessed as read only. This is done for performance
   // and efficiency for symbolicating and parsing GSYM data.
-  if (FileData.readObject(Hdr))
+  if (FileData.readObject(Hdr)) {
     return createStringError(std::errc::invalid_argument,
                              "not enough data for a GSYM header");
+
+}
 
   const auto HostByteOrder = support::endian::system_endianness();
   switch (Hdr->Magic) {
@@ -88,18 +96,22 @@ GsymReader::parse() {
   // Read a correctly byte swapped header if we need to.
   if (Swap) {
     DataExtractor Data(MemBuffer->getBuffer(), DataIsLittleEndian, 4);
-    if (auto ExpectedHdr = Header::decode(Data))
+    if (auto ExpectedHdr = Header::decode(Data)) {
       Swap->Hdr = ExpectedHdr.get();
-    else
+    } else {
       return ExpectedHdr.takeError();
+
+}
     Hdr = &Swap->Hdr;
   }
 
   // Detect errors in the header and report any that are found. If we make it
   // past this without errors, we know we have a good magic value, a supported
   // version number, verified address offset size and a valid UUID size.
-  if (Error Err = Hdr->checkForError())
+  if (Error Err = Hdr->checkForError()) {
     return Err;
+
+}
 
   if (!Swap) {
     // This is the native endianness case that is most common and optimized for
@@ -109,27 +121,35 @@ GsymReader::parse() {
     // Read the address offsets.
     if (FileData.padToAlignment(Hdr->AddrOffSize) ||
         FileData.readArray(AddrOffsets,
-                           Hdr->NumAddresses * Hdr->AddrOffSize))
+                           Hdr->NumAddresses * Hdr->AddrOffSize)) {
       return createStringError(std::errc::invalid_argument,
                               "failed to read address table");
 
+}
+
     // Read the address info offsets.
     if (FileData.padToAlignment(4) ||
-        FileData.readArray(AddrInfoOffsets, Hdr->NumAddresses))
+        FileData.readArray(AddrInfoOffsets, Hdr->NumAddresses)) {
       return createStringError(std::errc::invalid_argument,
                               "failed to read address info offsets table");
 
+}
+
     // Read the file table.
     uint32_t NumFiles = 0;
-    if (FileData.readInteger(NumFiles) || FileData.readArray(Files, NumFiles))
+    if (FileData.readInteger(NumFiles) || FileData.readArray(Files, NumFiles)) {
       return createStringError(std::errc::invalid_argument,
                               "failed to read file table");
 
+}
+
     // Get the string table.
     FileData.setOffset(Hdr->StrtabOffset);
-    if (FileData.readFixedString(StrTab.Data, Hdr->StrtabSize))
+    if (FileData.readFixedString(StrTab.Data, Hdr->StrtabSize)) {
       return createStringError(std::errc::invalid_argument,
                               "failed to read string table");
+
+}
 } else {
   // This is the non native endianness case that is not common and not
   // optimized for lookups. Here we decode the important tables into local
@@ -142,57 +162,71 @@ GsymReader::parse() {
   Swap->AddrOffsets.resize(Hdr->NumAddresses * Hdr->AddrOffSize);
   switch (Hdr->AddrOffSize) {
     case 1:
-      if (!Data.getU8(&Offset, Swap->AddrOffsets.data(), Hdr->NumAddresses))
+      if (!Data.getU8(&Offset, Swap->AddrOffsets.data(), Hdr->NumAddresses)) {
         return createStringError(std::errc::invalid_argument,
                                   "failed to read address table");
+
+}
       break;
     case 2:
       if (!Data.getU16(&Offset,
                         reinterpret_cast<uint16_t *>(Swap->AddrOffsets.data()),
-                        Hdr->NumAddresses))
+                        Hdr->NumAddresses)) {
         return createStringError(std::errc::invalid_argument,
                                   "failed to read address table");
+
+}
       break;
     case 4:
       if (!Data.getU32(&Offset,
                         reinterpret_cast<uint32_t *>(Swap->AddrOffsets.data()),
-                        Hdr->NumAddresses))
+                        Hdr->NumAddresses)) {
         return createStringError(std::errc::invalid_argument,
                                   "failed to read address table");
+
+}
       break;
     case 8:
       if (!Data.getU64(&Offset,
                         reinterpret_cast<uint64_t *>(Swap->AddrOffsets.data()),
-                        Hdr->NumAddresses))
+                        Hdr->NumAddresses)) {
         return createStringError(std::errc::invalid_argument,
                                   "failed to read address table");
+
+}
     }
     AddrOffsets = ArrayRef<uint8_t>(Swap->AddrOffsets);
 
     // Read the address info offsets.
     Offset = alignTo(Offset, 4);
     Swap->AddrInfoOffsets.resize(Hdr->NumAddresses);
-    if (Data.getU32(&Offset, Swap->AddrInfoOffsets.data(), Hdr->NumAddresses))
+    if (Data.getU32(&Offset, Swap->AddrInfoOffsets.data(), Hdr->NumAddresses)) {
       AddrInfoOffsets = ArrayRef<uint32_t>(Swap->AddrInfoOffsets);
-    else
+    } else {
       return createStringError(std::errc::invalid_argument,
                                "failed to read address table");
+
+}
     // Read the file table.
     const uint32_t NumFiles = Data.getU32(&Offset);
     if (NumFiles > 0) {
       Swap->Files.resize(NumFiles);
-      if (Data.getU32(&Offset, &Swap->Files[0].Dir, NumFiles*2))
+      if (Data.getU32(&Offset, &Swap->Files[0].Dir, NumFiles*2)) {
         Files = ArrayRef<FileEntry>(Swap->Files);
-      else
+      } else {
         return createStringError(std::errc::invalid_argument,
                                  "failed to read file table");
+
+}
     }
     // Get the string table.
     StrTab.Data = MemBuffer->getBuffer().substr(Hdr->StrtabOffset,
                                                 Hdr->StrtabSize);
-    if (StrTab.Data.empty())
+    if (StrTab.Data.empty()) {
       return createStringError(std::errc::invalid_argument,
                                "failed to read string table");
+
+}
   }
   return Error::success();
 
@@ -218,8 +252,10 @@ Optional<uint64_t> GsymReader::getAddress(size_t Index) const {
 
 Optional<uint64_t> GsymReader::getAddressInfoOffset(size_t Index) const {
   const auto NumAddrInfoOffsets = AddrInfoOffsets.size();
-  if (Index < NumAddrInfoOffsets)
+  if (Index < NumAddrInfoOffsets) {
     return AddrInfoOffsets[Index];
+
+}
   return llvm::None;
 }
 
@@ -246,8 +282,10 @@ GsymReader::getAddressIndex(const uint64_t Addr) const {
                                "unsupported address offset size %u",
                                Hdr->AddrOffSize);
     }
-    if (AddrOffsetIndex)
+    if (AddrOffsetIndex) {
       return *AddrOffsetIndex;
+
+}
   }
   return createStringError(std::errc::invalid_argument,
                            "address 0x%" PRIx64 " is not in GSYM", Addr);
@@ -256,8 +294,10 @@ GsymReader::getAddressIndex(const uint64_t Addr) const {
 
 llvm::Expected<FunctionInfo> GsymReader::getFunctionInfo(uint64_t Addr) const {
   Expected<uint64_t> AddressIndex = getAddressIndex(Addr);
-  if (!AddressIndex)
+  if (!AddressIndex) {
     return AddressIndex.takeError();
+
+}
   // Address info offsets size should have been checked in parse().
   assert(*AddressIndex < AddrInfoOffsets.size());
   auto AddrInfoOffset = AddrInfoOffsets[*AddressIndex];
@@ -265,8 +305,10 @@ llvm::Expected<FunctionInfo> GsymReader::getFunctionInfo(uint64_t Addr) const {
   if (Optional<uint64_t> OptAddr = getAddress(*AddressIndex)) {
     auto ExpectedFI = FunctionInfo::decode(Data, *OptAddr);
     if (ExpectedFI) {
-      if (ExpectedFI->Range.contains(Addr) || ExpectedFI->Range.size() == 0)
+      if (ExpectedFI->Range.contains(Addr) || ExpectedFI->Range.size() == 0) {
         return ExpectedFI;
+
+}
       return createStringError(std::errc::invalid_argument,
                                 "address 0x%" PRIx64 " is not in GSYM", Addr);
     }
@@ -278,14 +320,18 @@ llvm::Expected<FunctionInfo> GsymReader::getFunctionInfo(uint64_t Addr) const {
 
 llvm::Expected<LookupResult> GsymReader::lookup(uint64_t Addr) const {
   Expected<uint64_t> AddressIndex = getAddressIndex(Addr);
-  if (!AddressIndex)
+  if (!AddressIndex) {
     return AddressIndex.takeError();
+
+}
   // Address info offsets size should have been checked in parse().
   assert(*AddressIndex < AddrInfoOffsets.size());
   auto AddrInfoOffset = AddrInfoOffsets[*AddressIndex];
   DataExtractor Data(MemBuffer->getBuffer().substr(AddrInfoOffset), Endian, 4);
-  if (Optional<uint64_t> OptAddr = getAddress(*AddressIndex))
+  if (Optional<uint64_t> OptAddr = getAddress(*AddressIndex)) {
     return FunctionInfo::lookup(Data, *this, *OptAddr, Addr);
+
+}
   return createStringError(std::errc::invalid_argument,
                            "failed to extract address[%" PRIu64 "]",
                            *AddressIndex);
@@ -323,8 +369,10 @@ void GsymReader::dump(raw_ostream &OS) {
   OS << "\nAddress Info Offsets:\n";
   OS << "INDEX  Offset\n";
   OS << "====== ==========\n";
-  for (uint32_t I = 0; I < Header.NumAddresses; ++I)
+  for (uint32_t I = 0; I < Header.NumAddresses; ++I) {
     OS << format("[%4u] ", I) << HEX32(AddrInfoOffsets[I]) << "\n";
+
+}
   // Dump the file table.
   OS << "\nFiles:\n";
   OS << "INDEX  DIRECTORY  BASENAME   PATH\n";
@@ -339,36 +387,46 @@ void GsymReader::dump(raw_ostream &OS) {
 
   for (uint32_t I = 0; I < Header.NumAddresses; ++I) {
     OS << "FunctionInfo @ " << HEX32(AddrInfoOffsets[I]) << ": ";
-    if (auto FI = getFunctionInfo(*getAddress(I)))
+    if (auto FI = getFunctionInfo(*getAddress(I))) {
       dump(OS, *FI);
-    else
+    } else {
       logAllUnhandledErrors(FI.takeError(), OS, "FunctionInfo:");
+
+}
   }
 }
 
 void GsymReader::dump(raw_ostream &OS, const FunctionInfo &FI) {
   OS << FI.Range << " \"" << getString(FI.Name) << "\"\n";
-  if (FI.OptLineTable)
+  if (FI.OptLineTable) {
     dump(OS, *FI.OptLineTable);
-  if (FI.Inline)
+
+}
+  if (FI.Inline) {
     dump(OS, *FI.Inline);
+
+}
 }
 
 void GsymReader::dump(raw_ostream &OS, const LineTable &LT) {
   OS << "LineTable:\n";
   for (auto &LE: LT) {
     OS << "  " << HEX64(LE.Addr) << ' ';
-    if (LE.File)
+    if (LE.File) {
       dump(OS, getFile(LE.File));
+
+}
     OS << ':' << LE.Line << '\n';
   }
 }
 
 void GsymReader::dump(raw_ostream &OS, const InlineInfo &II, uint32_t Indent) {
-  if (Indent == 0)
+  if (Indent == 0) {
     OS << "InlineInfo:\n";
-  else
+  } else {
     OS.indent(Indent);
+
+}
   OS << II.Ranges << ' ' << getString(II.Name);
   if (II.CallFile != 0) {
     if (auto File = getFile(II.CallFile)) {
@@ -378,29 +436,37 @@ void GsymReader::dump(raw_ostream &OS, const InlineInfo &II, uint32_t Indent) {
     }
   }
   OS << '\n';
-  for (const auto &ChildII: II.Children)
+  for (const auto &ChildII: II.Children) {
     dump(OS, ChildII, Indent + 2);
+
+}
 }
 
 void GsymReader::dump(raw_ostream &OS, Optional<FileEntry> FE) {
   if (FE) {
     // IF we have the file from index 0, then don't print anything
-    if (FE->Dir == 0 && FE->Base == 0)
+    if (FE->Dir == 0 && FE->Base == 0) {
       return;
+
+}
     StringRef Dir = getString(FE->Dir);
     StringRef Base = getString(FE->Base);
     if (!Dir.empty()) {
       OS << Dir;
-      if (Dir.contains('\\') && !Dir.contains('/'))
+      if (Dir.contains('\\') && !Dir.contains('/')) {
         OS << '\\';
-      else
+      } else {
         OS << '/';
+
+}
     }
     if (!Base.empty()) {
       OS << Base;
     }
-    if (!Dir.empty() || !Base.empty())
+    if (!Dir.empty() || !Base.empty()) {
       return;
+
+}
   }
   OS << "<invalid-file>";
 }

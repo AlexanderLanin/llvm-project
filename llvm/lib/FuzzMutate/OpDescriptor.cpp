@@ -26,8 +26,10 @@ void fuzzerop::makeConstantsWithType(Type *T, std::vector<Constant *> &Cs) {
     Cs.push_back(ConstantFP::get(Ctx, APFloat::getZero(Sem)));
     Cs.push_back(ConstantFP::get(Ctx, APFloat::getLargest(Sem)));
     Cs.push_back(ConstantFP::get(Ctx, APFloat::getSmallest(Sem)));
-  } else
+  } else {
     Cs.push_back(UndefValue::get(T));
+
+}
 }
 
 std::vector<Constant *> fuzzerop::makeConstantsWithType(Type *T) {

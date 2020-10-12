@@ -89,10 +89,12 @@ void Scheduler::issueInstructionImpl(
     IS->setCriticalMemDep(Group.getCriticalPredecessor());
   }
 
-  if (IS->isExecuting())
+  if (IS->isExecuting()) {
     IssuedSet.emplace_back(IR);
-  else if (IS->isExecuted())
+  } else if (IS->isExecuted()) {
     LSU.onInstructionExecuted(IR);
+
+}
 }
 
 // Release the buffered resources and issue the instruction.
@@ -111,9 +113,13 @@ void Scheduler::issueInstruction(
   // other dependent instructions. Dependent instructions may be issued during
   // this same cycle if operands have ReadAdvance entries.  Promote those
   // instructions to the ReadySet and notify the caller that those are ready.
-  if (HasDependentUsers)
-    if (promoteToPendingSet(PendingInstructions))
+  if (HasDependentUsers) {
+    if (promoteToPendingSet(PendingInstructions)) {
       promoteToReadySet(ReadyInstructions);
+
+}
+
+}
 }
 
 bool Scheduler::promoteToReadySet(SmallVectorImpl<InstRef> &Ready) {
@@ -122,8 +128,10 @@ bool Scheduler::promoteToReadySet(SmallVectorImpl<InstRef> &Ready) {
   unsigned PromotedElements = 0;
   for (auto I = PendingSet.begin(), E = PendingSet.end(); I != E;) {
     InstRef &IR = *I;
-    if (!IR)
+    if (!IR) {
       break;
+
+}
 
     // Check if there are unsolved register dependencies.
     Instruction &IS = *IR.getInstruction();
@@ -158,8 +166,10 @@ bool Scheduler::promoteToPendingSet(SmallVectorImpl<InstRef> &Pending) {
   unsigned RemovedElements = 0;
   for (auto I = WaitSet.begin(), E = WaitSet.end(); I != E;) {
     InstRef &IR = *I;
-    if (!IR)
+    if (!IR) {
       break;
+
+}
 
     // Check if this instruction is now ready. In case, force
     // a transition in state using method 'updateDispatched()'.
@@ -197,16 +207,22 @@ InstRef Scheduler::select() {
         Strategy->compare(IR, ReadySet[QueueIndex])) {
       Instruction &IS = *IR.getInstruction();
       uint64_t BusyResourceMask = Resources->checkAvailability(IS.getDesc());
-      if (BusyResourceMask)
+      if (BusyResourceMask) {
         IS.setCriticalResourceMask(BusyResourceMask);
+
+}
       BusyResourceUnits |= BusyResourceMask;
-      if (!BusyResourceMask)
+      if (!BusyResourceMask) {
         QueueIndex = I;
+
+}
     }
   }
 
-  if (QueueIndex == ReadySet.size())
+  if (QueueIndex == ReadySet.size()) {
     return InstRef();
+
+}
 
   // We found an instruction to issue.
   InstRef IR = ReadySet[QueueIndex];
@@ -219,8 +235,10 @@ void Scheduler::updateIssuedSet(SmallVectorImpl<InstRef> &Executed) {
   unsigned RemovedElements = 0;
   for (auto I = IssuedSet.begin(), E = IssuedSet.end(); I != E;) {
     InstRef &IR = *I;
-    if (!IR)
+    if (!IR) {
       break;
+
+}
     Instruction &IS = *IR.getInstruction();
     if (!IS.isExecuted()) {
       LLVM_DEBUG(dbgs() << "[SCHEDULER]: Instruction #" << IR
@@ -250,14 +268,20 @@ void Scheduler::analyzeDataDependencies(SmallVectorImpl<InstRef> &RegDeps,
   const auto EndIt = PendingSet.end() - NumDispatchedToThePendingSet;
   for (const InstRef &IR : make_range(PendingSet.begin(), EndIt)) {
     const Instruction &IS = *IR.getInstruction();
-    if (Resources->checkAvailability(IS.getDesc()))
+    if (Resources->checkAvailability(IS.getDesc())) {
       continue;
 
-    if (IS.isMemOp() && LSU.isPending(IR))
+}
+
+    if (IS.isMemOp() && LSU.isPending(IR)) {
       MemDeps.emplace_back(IR);
 
-    if (IS.isPending())
+}
+
+    if (IS.isPending()) {
       RegDeps.emplace_back(IR);
+
+}
   }
 }
 
@@ -270,15 +294,21 @@ void Scheduler::cycleEvent(SmallVectorImpl<ResourceRef> &Freed,
   // Release consumed resources.
   Resources->cycleEvent(Freed);
 
-  for (InstRef &IR : IssuedSet)
+  for (InstRef &IR : IssuedSet) {
     IR.getInstruction()->cycleEvent();
+
+}
   updateIssuedSet(Executed);
 
-  for (InstRef &IR : PendingSet)
+  for (InstRef &IR : PendingSet) {
     IR.getInstruction()->cycleEvent();
 
-  for (InstRef &IR : WaitSet)
+}
+
+  for (InstRef &IR : WaitSet) {
     IR.getInstruction()->cycleEvent();
+
+}
 
   promoteToPendingSet(Pending);
   promoteToReadySet(Ready);
@@ -289,8 +319,10 @@ void Scheduler::cycleEvent(SmallVectorImpl<ResourceRef> &Freed,
 
 bool Scheduler::mustIssueImmediately(const InstRef &IR) const {
   const InstrDesc &Desc = IR.getInstruction()->getDesc();
-  if (Desc.isZeroLatency())
+  if (Desc.isZeroLatency()) {
     return true;
+
+}
   // Instructions that use an in-order dispatch/issue processor resource must be
   // issued immediately to the pipeline(s). Any other in-order buffered
   // resources (i.e. BufferSize=1) is consumed.
@@ -302,8 +334,10 @@ bool Scheduler::dispatch(InstRef &IR) {
   Resources->reserveBuffers(IS.getUsedBuffers());
 
   // If necessary, reserve queue entries in the load-store unit (LSU).
-  if (IS.isMemOp())
+  if (IS.isMemOp()) {
     IS.setLSUTokenID(LSU.dispatch(IR));
+
+}
 
   if (IS.isDispatched() || (IS.isMemOp() && LSU.isWaiting(IR))) {
     LLVM_DEBUG(dbgs() << "[SCHEDULER] Adding #" << IR << " to the WaitSet\n");

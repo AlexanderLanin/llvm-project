@@ -161,10 +161,12 @@ static void sectionMapping(IO &IO, WasmYAML::DataCountSection &Section) {
 void MappingTraits<std::unique_ptr<WasmYAML::Section>>::mapping(
     IO &IO, std::unique_ptr<WasmYAML::Section> &Section) {
   WasmYAML::SectionType SectionType;
-  if (IO.outputting())
+  if (IO.outputting()) {
     SectionType = Section->Type;
-  else
+  } else {
     IO.mapRequired("Type", SectionType);
+
+}
 
   switch (SectionType) {
   case wasm::WASM_SEC_CUSTOM: {
@@ -176,95 +178,133 @@ void MappingTraits<std::unique_ptr<WasmYAML::Section>>::mapping(
       IO.mapRequired("Name", SectionName);
     }
     if (SectionName == "dylink") {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::DylinkSection());
+
+}
       sectionMapping(IO, *cast<WasmYAML::DylinkSection>(Section.get()));
     } else if (SectionName == "linking") {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::LinkingSection());
+
+}
       sectionMapping(IO, *cast<WasmYAML::LinkingSection>(Section.get()));
     } else if (SectionName == "name") {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::NameSection());
+
+}
       sectionMapping(IO, *cast<WasmYAML::NameSection>(Section.get()));
     } else if (SectionName == "producers") {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::ProducersSection());
+
+}
       sectionMapping(IO, *cast<WasmYAML::ProducersSection>(Section.get()));
     } else if (SectionName == "target_features") {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::TargetFeaturesSection());
+
+}
       sectionMapping(IO, *cast<WasmYAML::TargetFeaturesSection>(Section.get()));
     } else {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Section.reset(new WasmYAML::CustomSection(SectionName));
+
+}
       sectionMapping(IO, *cast<WasmYAML::CustomSection>(Section.get()));
     }
     break;
   }
   case wasm::WASM_SEC_TYPE:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::TypeSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::TypeSection>(Section.get()));
     break;
   case wasm::WASM_SEC_IMPORT:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::ImportSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::ImportSection>(Section.get()));
     break;
   case wasm::WASM_SEC_FUNCTION:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::FunctionSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::FunctionSection>(Section.get()));
     break;
   case wasm::WASM_SEC_TABLE:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::TableSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::TableSection>(Section.get()));
     break;
   case wasm::WASM_SEC_MEMORY:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::MemorySection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::MemorySection>(Section.get()));
     break;
   case wasm::WASM_SEC_GLOBAL:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::GlobalSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::GlobalSection>(Section.get()));
     break;
   case wasm::WASM_SEC_EVENT:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::EventSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::EventSection>(Section.get()));
     break;
   case wasm::WASM_SEC_EXPORT:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::ExportSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::ExportSection>(Section.get()));
     break;
   case wasm::WASM_SEC_START:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::StartSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::StartSection>(Section.get()));
     break;
   case wasm::WASM_SEC_ELEM:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::ElemSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::ElemSection>(Section.get()));
     break;
   case wasm::WASM_SEC_CODE:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::CodeSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::CodeSection>(Section.get()));
     break;
   case wasm::WASM_SEC_DATA:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::DataSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::DataSection>(Section.get()));
     break;
   case wasm::WASM_SEC_DATACOUNT:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new WasmYAML::DataCountSection());
+
+}
     sectionMapping(IO, *cast<WasmYAML::DataCountSection>(Section.get()));
     break;
   default:
@@ -362,11 +402,15 @@ void MappingTraits<WasmYAML::LocalDecl>::mapping(
 
 void MappingTraits<WasmYAML::Limits>::mapping(IO &IO,
                                               WasmYAML::Limits &Limits) {
-  if (!IO.outputting() || Limits.Flags)
+  if (!IO.outputting() || Limits.Flags) {
     IO.mapOptional("Flags", Limits.Flags);
+
+}
   IO.mapRequired("Initial", Limits.Initial);
-  if (!IO.outputting() || Limits.Flags & wasm::WASM_LIMITS_FLAG_HAS_MAX)
+  if (!IO.outputting() || Limits.Flags & wasm::WASM_LIMITS_FLAG_HAS_MAX) {
     IO.mapOptional("Maximum", Limits.Maximum);
+
+}
 }
 
 void MappingTraits<WasmYAML::ElemSegment>::mapping(
@@ -484,8 +528,10 @@ void MappingTraits<WasmYAML::SymbolInfo>::mapping(IO &IO,
                                                   WasmYAML::SymbolInfo &Info) {
   IO.mapRequired("Index", Info.Index);
   IO.mapRequired("Kind", Info.Kind);
-  if (Info.Kind != wasm::WASM_SYMBOL_TYPE_SECTION)
+  if (Info.Kind != wasm::WASM_SYMBOL_TYPE_SECTION) {
     IO.mapRequired("Name", Info.Name);
+
+}
   IO.mapRequired("Flags", Info.Flags);
   if (Info.Kind == wasm::WASM_SYMBOL_TYPE_FUNCTION) {
     IO.mapRequired("Function", Info.ElementIndex);

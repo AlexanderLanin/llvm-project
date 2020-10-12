@@ -30,8 +30,10 @@ template <> struct ScalarEnumerationTraits<ELFSymbolType> {
     IO.enumCase(SymbolType, "TLS", ELFSymbolType::TLS);
     IO.enumCase(SymbolType, "Unknown", ELFSymbolType::Unknown);
     // Treat other symbol types as noise, and map to Unknown.
-    if (!IO.outputting() && IO.matchEnumFallback())
+    if (!IO.outputting() && IO.matchEnumFallback()) {
       SymbolType = ELFSymbolType::Unknown;
+
+}
   }
 };
 
@@ -77,11 +79,15 @@ template <> struct ScalarTraits<VersionTuple> {
   }
 
   static StringRef input(StringRef Scalar, void *, VersionTuple &Value) {
-    if (Value.tryParse(Scalar))
+    if (Value.tryParse(Scalar)) {
       return StringRef("Can't parse version: invalid version format.");
 
-    if (Value > TBEVersionCurrent)
+}
+
+    if (Value > TBEVersionCurrent) {
       return StringRef("Unsupported TBE version.");
+
+}
 
     // Returning empty StringRef indicates successful parse.
     return StringRef();
@@ -121,16 +127,20 @@ template <> struct CustomMappingTraits<std::set<ELFSymbol>> {
   }
 
   static void output(IO &IO, std::set<ELFSymbol> &Set) {
-    for (auto &Sym : Set)
+    for (auto &Sym : Set) {
       IO.mapRequired(Sym.Name.c_str(), const_cast<ELFSymbol &>(Sym));
+
+}
   }
 };
 
 /// YAML traits for ELFStub objects.
 template <> struct MappingTraits<ELFStub> {
   static void mapping(IO &IO, ELFStub &Stub) {
-    if (!IO.mapTag("!tapi-tbe", true))
+    if (!IO.mapTag("!tapi-tbe", true)) {
       IO.setError("Not a .tbe YAML file.");
+
+}
     IO.mapRequired("TbeVersion", Stub.TbeVersion);
     IO.mapOptional("SoName", Stub.SoName);
     IO.mapRequired("Arch", (ELFArchMapper &)Stub.Arch);
@@ -146,8 +156,10 @@ Expected<std::unique_ptr<ELFStub>> elfabi::readTBEFromBuffer(StringRef Buf) {
   yaml::Input YamlIn(Buf);
   std::unique_ptr<ELFStub> Stub(new ELFStub());
   YamlIn >> *Stub;
-  if (std::error_code Err = YamlIn.error())
+  if (std::error_code Err = YamlIn.error()) {
     return createStringError(Err, "YAML failed reading as TBE");
+
+}
 
   return std::move(Stub);
 }

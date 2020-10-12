@@ -120,18 +120,26 @@ Value *DwarfEHPrepare::GetExceptionObject(ResumeInst *RI) {
     }
   }
 
-  if (!ExnObj)
+  if (!ExnObj) {
     ExnObj = ExtractValueInst::Create(RI->getOperand(0), 0, "exn.obj", RI);
+
+}
 
   RI->eraseFromParent();
 
   if (EraseIVIs) {
-    if (SelIVI->use_empty())
+    if (SelIVI->use_empty()) {
       SelIVI->eraseFromParent();
-    if (ExcIVI->use_empty())
+
+}
+    if (ExcIVI->use_empty()) {
       ExcIVI->eraseFromParent();
-    if (SelLoad && SelLoad->use_empty())
+
+}
+    if (SelLoad && SelLoad->use_empty()) {
       SelLoad->eraseFromParent();
+
+}
   }
 
   return ExnObj;
@@ -155,8 +163,10 @@ size_t DwarfEHPrepare::pruneUnreachableResumes(
   }
 
   // If everything is reachable, there is no change.
-  if (ResumeReachable.all())
+  if (ResumeReachable.all()) {
     return Resumes.size();
+
+}
 
   const TargetTransformInfo &TTI =
       getAnalysis<TargetTransformInfoWrapperPass>().getTTI(Fn);
@@ -185,26 +195,38 @@ bool DwarfEHPrepare::InsertUnwindResumeCalls(Function &Fn) {
   SmallVector<ResumeInst*, 16> Resumes;
   SmallVector<LandingPadInst*, 16> CleanupLPads;
   for (BasicBlock &BB : Fn) {
-    if (auto *RI = dyn_cast<ResumeInst>(BB.getTerminator()))
+    if (auto *RI = dyn_cast<ResumeInst>(BB.getTerminator())) {
       Resumes.push_back(RI);
-    if (auto *LP = BB.getLandingPadInst())
-      if (LP->isCleanup())
+
+}
+    if (auto *LP = BB.getLandingPadInst()) {
+      if (LP->isCleanup()) {
         CleanupLPads.push_back(LP);
+
+}
+
+}
   }
 
-  if (Resumes.empty())
+  if (Resumes.empty()) {
     return false;
+
+}
 
   // Check the personality, don't do anything if it's scope-based.
   EHPersonality Pers = classifyEHPersonality(Fn.getPersonalityFn());
-  if (isScopedEHPersonality(Pers))
+  if (isScopedEHPersonality(Pers)) {
     return false;
+
+}
 
   LLVMContext &Ctx = Fn.getContext();
 
   size_t ResumesLeft = pruneUnreachableResumes(Fn, Resumes, CleanupLPads);
-  if (ResumesLeft == 0)
+  if (ResumesLeft == 0) {
     return true; // We pruned them all.
+
+}
 
   // Find the rewind function if we didn't already.
   if (!RewindFunction) {

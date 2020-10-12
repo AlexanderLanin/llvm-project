@@ -25,8 +25,10 @@ static Token getTokenAtLoc(SourceLocation Loc,
                            IdentifierTable &IdentTable) {
   Token Tok;
   if (Lexer::getRawToken(Loc, Tok, *MatchResult.SourceManager,
-                         MatchResult.Context->getLangOpts(), false))
+                         MatchResult.Context->getLangOpts(), false)) {
     return Tok;
+
+}
 
   if (Tok.is(tok::raw_identifier)) {
     IdentifierInfo &Info = IdentTable.get(Tok.getRawIdentifier());
@@ -70,16 +72,22 @@ void IntegerTypesCheck::check(const MatchFinder::MatchResult &Result) {
   auto TL = *Result.Nodes.getNodeAs<TypeLoc>("tl");
   SourceLocation Loc = TL.getBeginLoc();
 
-  if (Loc.isInvalid() || Loc.isMacroID())
+  if (Loc.isInvalid() || Loc.isMacroID()) {
     return;
+
+}
 
   // Look through qualification.
-  if (auto QualLoc = TL.getAs<QualifiedTypeLoc>())
+  if (auto QualLoc = TL.getAs<QualifiedTypeLoc>()) {
     TL = QualLoc.getUnqualifiedLoc();
 
+}
+
   auto BuiltinLoc = TL.getAs<BuiltinTypeLoc>();
-  if (!BuiltinLoc)
+  if (!BuiltinLoc) {
     return;
+
+}
 
   Token Tok = getTokenAtLoc(Loc, Result, *IdentTable);
   // Ensure the location actually points to one of the builting integral type
@@ -87,8 +95,10 @@ void IntegerTypesCheck::check(const MatchFinder::MatchResult &Result) {
   // implicit code (e.g. an implicit assignment operator of a class containing
   // an array of non-POD types).
   if (!Tok.isOneOf(tok::kw_short, tok::kw_long, tok::kw_unsigned,
-                   tok::kw_signed))
+                   tok::kw_signed)) {
     return;
+
+}
 
   bool IsSigned;
   unsigned Width;
@@ -129,8 +139,10 @@ void IntegerTypesCheck::check(const MatchFinder::MatchResult &Result) {
   const StringRef Port = "unsigned short port";
   const char *Data = Result.SourceManager->getCharacterData(Loc);
   if (!std::strncmp(Data, Port.data(), Port.size()) &&
-      !isIdentifierBody(Data[Port.size()]))
+      !isIdentifierBody(Data[Port.size()])) {
     return;
+
+}
 
   std::string Replacement =
       ((IsSigned ? SignedTypePrefix : UnsignedTypePrefix) + Twine(Width) +

@@ -62,8 +62,10 @@ bool LTOModule::isBitcodeFile(const void *Mem, size_t Length) {
 bool LTOModule::isBitcodeFile(StringRef Path) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufferOrErr =
       MemoryBuffer::getFile(Path);
-  if (!BufferOrErr)
+  if (!BufferOrErr) {
     return false;
+
+}
 
   Expected<MemoryBufferRef> BCData = IRObjectFile::findBitcodeInMemBuffer(
       BufferOrErr.get()->getMemBufferRef());
@@ -83,26 +85,34 @@ bool LTOModule::isBitcodeForTarget(MemoryBuffer *Buffer,
                                    StringRef TriplePrefix) {
   Expected<MemoryBufferRef> BCOrErr =
       IRObjectFile::findBitcodeInMemBuffer(Buffer->getMemBufferRef());
-  if (errorToBool(BCOrErr.takeError()))
+  if (errorToBool(BCOrErr.takeError())) {
     return false;
+
+}
   LLVMContext Context;
   ErrorOr<std::string> TripleOrErr =
       expectedToErrorOrAndEmitErrors(Context, getBitcodeTargetTriple(*BCOrErr));
-  if (!TripleOrErr)
+  if (!TripleOrErr) {
     return false;
+
+}
   return StringRef(*TripleOrErr).startswith(TriplePrefix);
 }
 
 std::string LTOModule::getProducerString(MemoryBuffer *Buffer) {
   Expected<MemoryBufferRef> BCOrErr =
       IRObjectFile::findBitcodeInMemBuffer(Buffer->getMemBufferRef());
-  if (errorToBool(BCOrErr.takeError()))
+  if (errorToBool(BCOrErr.takeError())) {
     return "";
+
+}
   LLVMContext Context;
   ErrorOr<std::string> ProducerOrErr = expectedToErrorOrAndEmitErrors(
       Context, getBitcodeProducerString(*BCOrErr));
-  if (!ProducerOrErr)
+  if (!ProducerOrErr) {
     return "";
+
+}
   return *ProducerOrErr;
 }
 
@@ -161,8 +171,10 @@ LTOModule::createInLocalContext(std::unique_ptr<LLVMContext> Context,
   // not linking.  Be lazy in that case.
   ErrorOr<std::unique_ptr<LTOModule>> Ret =
       makeLTOModule(Buffer, options, *Context, /* ShouldBeLazy */ true);
-  if (Ret)
+  if (Ret) {
     (*Ret)->OwnedContext = std::move(Context);
+
+}
   return Ret;
 }
 
@@ -195,20 +207,26 @@ LTOModule::makeLTOModule(MemoryBufferRef Buffer, const TargetOptions &options,
                          LLVMContext &Context, bool ShouldBeLazy) {
   ErrorOr<std::unique_ptr<Module>> MOrErr =
       parseBitcodeFileImpl(Buffer, Context, ShouldBeLazy);
-  if (std::error_code EC = MOrErr.getError())
+  if (std::error_code EC = MOrErr.getError()) {
     return EC;
+
+}
   std::unique_ptr<Module> &M = *MOrErr;
 
   std::string TripleStr = M->getTargetTriple();
-  if (TripleStr.empty())
+  if (TripleStr.empty()) {
     TripleStr = sys::getDefaultTargetTriple();
+
+}
   llvm::Triple Triple(TripleStr);
 
   // find machine architecture for this module
   std::string errMsg;
   const Target *march = TargetRegistry::lookupTarget(TripleStr, errMsg);
-  if (!march)
+  if (!march) {
     return make_error_code(object::object_error::arch_not_found);
+
+}
 
   // construct LTOModule, hand over ownership of module and target
   SubtargetFeatures Features;
@@ -217,13 +235,15 @@ LTOModule::makeLTOModule(MemoryBufferRef Buffer, const TargetOptions &options,
   // Set a default CPU for Darwin triples.
   std::string CPU;
   if (Triple.isOSDarwin()) {
-    if (Triple.getArch() == llvm::Triple::x86_64)
+    if (Triple.getArch() == llvm::Triple::x86_64) {
       CPU = "core2";
-    else if (Triple.getArch() == llvm::Triple::x86)
+    } else if (Triple.getArch() == llvm::Triple::x86) {
       CPU = "yonah";
-    else if (Triple.getArch() == llvm::Triple::aarch64 ||
-             Triple.getArch() == llvm::Triple::aarch64_32)
+    } else if (Triple.getArch() == llvm::Triple::aarch64 ||
+             Triple.getArch() == llvm::Triple::aarch64_32) {
       CPU = "cyclone";
+
+}
   }
 
   TargetMachine *target =
@@ -264,7 +284,9 @@ LTOModule::objcClassNameFromExpression(const Constant *c, std::string &name) {
 /// addObjCClass - Parse i386/ppc ObjC class data structure.
 void LTOModule::addObjCClass(const GlobalVariable *clgv) {
   const ConstantStruct *c = dyn_cast<ConstantStruct>(clgv->getInitializer());
-  if (!c) return;
+  if (!c) { return;
+
+}
 
   // second slot in __OBJC,__class is pointer to superclass name
   std::string superclassName;
@@ -298,18 +320,24 @@ void LTOModule::addObjCClass(const GlobalVariable *clgv) {
 /// addObjCCategory - Parse i386/ppc ObjC category data structure.
 void LTOModule::addObjCCategory(const GlobalVariable *clgv) {
   const ConstantStruct *c = dyn_cast<ConstantStruct>(clgv->getInitializer());
-  if (!c) return;
+  if (!c) { return;
+
+}
 
   // second slot in __OBJC,__category is pointer to target class name
   std::string targetclassName;
-  if (!objcClassNameFromExpression(c->getOperand(1), targetclassName))
+  if (!objcClassNameFromExpression(c->getOperand(1), targetclassName)) {
     return;
+
+}
 
   auto IterBool =
       _undefines.insert(std::make_pair(targetclassName, NameAndAttributes()));
 
-  if (!IterBool.second)
+  if (!IterBool.second) {
     return;
+
+}
 
   NameAndAttributes &info = IterBool.first->second;
   info.name = IterBool.first->first();
@@ -321,14 +349,18 @@ void LTOModule::addObjCCategory(const GlobalVariable *clgv) {
 /// addObjCClassRef - Parse i386/ppc ObjC class list data structure.
 void LTOModule::addObjCClassRef(const GlobalVariable *clgv) {
   std::string targetclassName;
-  if (!objcClassNameFromExpression(clgv->getInitializer(), targetclassName))
+  if (!objcClassNameFromExpression(clgv->getInitializer(), targetclassName)) {
     return;
+
+}
 
   auto IterBool =
       _undefines.insert(std::make_pair(targetclassName, NameAndAttributes()));
 
-  if (!IterBool.second)
+  if (!IterBool.second) {
     return;
+
+}
 
   NameAndAttributes &info = IterBool.first->second;
   info.name = IterBool.first->first();
@@ -353,8 +385,10 @@ void LTOModule::addDefinedDataSymbol(StringRef Name, const GlobalValue *v) {
   // Add to list of defined symbols.
   addDefinedSymbol(Name, v, false);
 
-  if (!v->hasSection() /* || !isTargetDarwin */)
+  if (!v->hasSection() /* || !isTargetDarwin */) {
     return;
+
+}
 
   // Special case i386/ppc ObjC data structures in magic sections:
   // The issue is that the old ObjC object format did some strange
@@ -423,38 +457,48 @@ void LTOModule::addDefinedSymbol(StringRef Name, const GlobalValue *def,
     attr |= LTO_SYMBOL_PERMISSIONS_CODE;
   } else {
     const GlobalVariable *gv = dyn_cast<GlobalVariable>(def);
-    if (gv && gv->isConstant())
+    if (gv && gv->isConstant()) {
       attr |= LTO_SYMBOL_PERMISSIONS_RODATA;
-    else
+    } else {
       attr |= LTO_SYMBOL_PERMISSIONS_DATA;
+
+}
   }
 
   // set definition part
-  if (def->hasWeakLinkage() || def->hasLinkOnceLinkage())
+  if (def->hasWeakLinkage() || def->hasLinkOnceLinkage()) {
     attr |= LTO_SYMBOL_DEFINITION_WEAK;
-  else if (def->hasCommonLinkage())
+  } else if (def->hasCommonLinkage()) {
     attr |= LTO_SYMBOL_DEFINITION_TENTATIVE;
-  else
+  } else {
     attr |= LTO_SYMBOL_DEFINITION_REGULAR;
 
+}
+
   // set scope part
-  if (def->hasLocalLinkage())
+  if (def->hasLocalLinkage()) {
     // Ignore visibility if linkage is local.
     attr |= LTO_SYMBOL_SCOPE_INTERNAL;
-  else if (def->hasHiddenVisibility())
+  } else if (def->hasHiddenVisibility()) {
     attr |= LTO_SYMBOL_SCOPE_HIDDEN;
-  else if (def->hasProtectedVisibility())
+  } else if (def->hasProtectedVisibility()) {
     attr |= LTO_SYMBOL_SCOPE_PROTECTED;
-  else if (def->canBeOmittedFromSymbolTable())
+  } else if (def->canBeOmittedFromSymbolTable()) {
     attr |= LTO_SYMBOL_SCOPE_DEFAULT_CAN_BE_HIDDEN;
-  else
+  } else {
     attr |= LTO_SYMBOL_SCOPE_DEFAULT;
 
-  if (def->hasComdat())
+}
+
+  if (def->hasComdat()) {
     attr |= LTO_SYMBOL_COMDAT;
 
-  if (isa<GlobalAlias>(def))
+}
+
+  if (isa<GlobalAlias>(def)) {
     attr |= LTO_SYMBOL_ALIAS;
+
+}
 
   auto Iter = _defines.insert(Name).first;
 
@@ -478,8 +522,10 @@ void LTOModule::addAsmGlobalSymbol(StringRef name,
   auto IterBool = _defines.insert(name);
 
   // only add new define if not already defined
-  if (!IterBool.second)
+  if (!IterBool.second) {
     return;
+
+}
 
   NameAndAttributes &info = _undefines[IterBool.first->first()];
 
@@ -504,10 +550,12 @@ void LTOModule::addAsmGlobalSymbol(StringRef name,
     return;
   }
 
-  if (info.isFunction)
+  if (info.isFunction) {
     addDefinedFunctionSymbol(info.name, cast<Function>(info.symbol));
-  else
+  } else {
     addDefinedDataSymbol(info.name, info.symbol);
+
+}
 
   _symbols.back().attributes &= ~LTO_SYMBOL_SCOPE_MASK;
   _symbols.back().attributes |= scope;
@@ -521,8 +569,10 @@ void LTOModule::addAsmGlobalSymbolUndef(StringRef name) {
   _asm_undefines.push_back(IterBool.first->first());
 
   // we already have the symbol
-  if (!IterBool.second)
+  if (!IterBool.second) {
     return;
+
+}
 
   uint32_t attr = LTO_SYMBOL_DEFINITION_UNDEFINED;
   attr |= LTO_SYMBOL_SCOPE_DEFAULT;
@@ -546,8 +596,10 @@ void LTOModule::addPotentialUndefinedSymbol(ModuleSymbolTable::Symbol Sym,
   auto IterBool = _undefines.insert(std::make_pair(name, NameAndAttributes()));
 
   // we already have the symbol
-  if (!IterBool.second)
+  if (!IterBool.second) {
     return;
+
+}
 
   NameAndAttributes &info = IterBool.first->second;
 
@@ -555,10 +607,12 @@ void LTOModule::addPotentialUndefinedSymbol(ModuleSymbolTable::Symbol Sym,
 
   const GlobalValue *decl = Sym.dyn_cast<GlobalValue *>();
 
-  if (decl->hasExternalWeakLinkage())
+  if (decl->hasExternalWeakLinkage()) {
     info.attributes = LTO_SYMBOL_DEFINITION_WEAKUNDEF;
-  else
+  } else {
     info.attributes = LTO_SYMBOL_DEFINITION_UNDEFINED;
+
+}
 
   info.isFunction = isFunc;
   info.symbol = decl;
@@ -568,8 +622,10 @@ void LTOModule::parseSymbols() {
   for (auto Sym : SymTab.symbols()) {
     auto *GV = Sym.dyn_cast<GlobalValue *>();
     uint32_t Flags = SymTab.getSymbolFlags(Sym);
-    if (Flags & object::BasicSymbolRef::SF_FormatSpecific)
+    if (Flags & object::BasicSymbolRef::SF_FormatSpecific) {
       continue;
+
+}
 
     bool IsUndefined = Flags & object::BasicSymbolRef::SF_Undefined;
 
@@ -582,12 +638,14 @@ void LTOModule::parseSymbols() {
       }
       StringRef Name(Buffer);
 
-      if (IsUndefined)
+      if (IsUndefined) {
         addAsmGlobalSymbolUndef(Name);
-      else if (Flags & object::BasicSymbolRef::SF_Global)
+      } else if (Flags & object::BasicSymbolRef::SF_Global) {
         addAsmGlobalSymbol(Name, LTO_SYMBOL_SCOPE_DEFAULT);
-      else
+      } else {
         addAsmGlobalSymbol(Name, LTO_SYMBOL_SCOPE_INTERNAL);
+
+}
       continue;
     }
 
@@ -616,7 +674,9 @@ void LTOModule::parseSymbols() {
          e = _undefines.end(); u != e; ++u) {
     // If this symbol also has a definition, then don't make an undefine because
     // it is a tentative definition.
-    if (_defines.count(u->getKey())) continue;
+    if (_defines.count(u->getKey())) { continue;
+
+}
     NameAndAttributes info = u->getValue();
     _symbols.push_back(info);
   }
@@ -640,12 +700,16 @@ void LTOModule::parseMetadata() {
 
   // Globals - we only need to do this for COFF.
   const Triple TT(_target->getTargetTriple());
-  if (!TT.isOSBinFormatCOFF())
+  if (!TT.isOSBinFormatCOFF()) {
     return;
+
+}
   Mangler M;
   for (const NameAndAttributes &Sym : _symbols) {
-    if (!Sym.symbol)
+    if (!Sym.symbol) {
       continue;
+
+}
     emitLinkerFlagsForGlobalCOFF(OS, Sym.symbol, TT, M);
   }
 }
@@ -659,8 +723,10 @@ lto::InputFile *LTOModule::createInputFile(const void *buffer,
   Expected<std::unique_ptr<lto::InputFile>> ObjOrErr =
       lto::InputFile::create(BufferRef);
 
-  if (ObjOrErr)
+  if (ObjOrErr) {
     return ObjOrErr->release();
+
+}
 
   outErr = std::string(path) +
            ": Could not read LTO input file: " + toString(ObjOrErr.takeError());

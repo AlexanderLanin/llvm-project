@@ -305,13 +305,19 @@ int main(int argc, char **argv) {
       for (auto &BB : *F) {
         for (auto &I : BB) {
           CallBase *CB = dyn_cast<CallBase>(&I);
-          if (!CB)
+          if (!CB) {
             continue;
+
+}
           Function *CF = CB->getCalledFunction();
-          if (!CF)
+          if (!CF) {
             continue;
-          if (CF->isDeclaration() || GVs.count(CF))
+
+}
+          if (CF->isDeclaration() || GVs.count(CF)) {
             continue;
+
+}
           GVs.insert(CF);
           Workqueue.push_back(CF);
         }
@@ -323,14 +329,18 @@ int main(int argc, char **argv) {
 
   // Materialize requisite global values.
   if (!DeleteFn) {
-    for (size_t i = 0, e = GVs.size(); i != e; ++i)
+    for (size_t i = 0, e = GVs.size(); i != e; ++i) {
       Materialize(*GVs[i]);
+
+}
   } else {
     // Deleting. Materialize every GV that's *not* in GVs.
     SmallPtrSet<GlobalValue *, 8> GVSet(GVs.begin(), GVs.end());
     for (auto &F : *M) {
-      if (!GVSet.count(&F))
+      if (!GVSet.count(&F)) {
         Materialize(F);
+
+}
     }
   }
 
@@ -358,8 +368,10 @@ int main(int argc, char **argv) {
   // up a little bit.  Do this now.
   legacy::PassManager Passes;
 
-  if (!DeleteFn)
+  if (!DeleteFn) {
     Passes.add(createGlobalDCEPass());           // Delete unreachable globals
+
+}
   Passes.add(createStripDeadDebugInfoPass());    // Remove dead debug info
   Passes.add(createStripDeadPrototypesPass());   // Remove dead func decls
 
@@ -370,11 +382,13 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (OutputAssembly)
+  if (OutputAssembly) {
     Passes.add(
         createPrintModulePass(Out.os(), "", PreserveAssemblyUseListOrder));
-  else if (Force || !CheckBitcodeOutputToConsole(Out.os(), true))
+  } else if (Force || !CheckBitcodeOutputToConsole(Out.os(), true)) {
     Passes.add(createBitcodeWriterPass(Out.os(), PreserveBitcodeUseListOrder));
+
+}
 
   Passes.run(*M.get());
 

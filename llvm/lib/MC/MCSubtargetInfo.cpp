@@ -26,7 +26,9 @@ static const T *Find(StringRef S, ArrayRef<T> A) {
   // Binary search the array
   auto F = llvm::lower_bound(A, S);
   // If not found then return NULL
-  if (F == A.end() || StringRef(F->Key) != S) return nullptr;
+  if (F == A.end() || StringRef(F->Key) != S) { return nullptr;
+
+}
   // Return the found array item
   return F;
 }
@@ -38,9 +40,13 @@ void SetImpliedBits(FeatureBitset &Bits, const FeatureBitset &Implies,
   // OR the Implies bits in outside the loop. This allows the Implies for CPUs
   // which might imply features not in FeatureTable to use this.
   Bits |= Implies;
-  for (const SubtargetFeatureKV &FE : FeatureTable)
-    if (Implies.test(FE.Value))
+  for (const SubtargetFeatureKV &FE : FeatureTable) {
+    if (Implies.test(FE.Value)) {
       SetImpliedBits(Bits, FE.Implies.getAsBitset(), FeatureTable);
+
+}
+
+}
 }
 
 /// For each feature that (transitively) implies this feature, clear it.
@@ -87,8 +93,10 @@ static void ApplyFeatureFlag(FeatureBitset &Bits, StringRef Feature,
 template <typename T>
 static size_t getLongestEntryLength(ArrayRef<T> Table) {
   size_t MaxLen = 0;
-  for (auto &I : Table)
+  for (auto &I : Table) {
     MaxLen = std::max(MaxLen, std::strlen(I.Key));
+
+}
   return MaxLen;
 }
 
@@ -108,15 +116,19 @@ static void Help(ArrayRef<SubtargetSubTypeKV> CPUTable,
 
   // Print the CPU table.
   errs() << "Available CPUs for this target:\n\n";
-  for (auto &CPU : CPUTable)
+  for (auto &CPU : CPUTable) {
     errs() << format("  %-*s - Select the %s processor.\n", MaxCPULen, CPU.Key,
                      CPU.Key);
+
+}
   errs() << '\n';
 
   // Print the Feature table.
   errs() << "Available features for this target:\n\n";
-  for (auto &Feature : FeatTable)
+  for (auto &Feature : FeatTable) {
     errs() << format("  %-*s - %s.\n", MaxFeatLen, Feature.Key, Feature.Desc);
+
+}
   errs() << '\n';
 
   errs() << "Use +feature to enable a feature, or -feature to disable it.\n"
@@ -136,8 +148,10 @@ static void cpuHelp(ArrayRef<SubtargetSubTypeKV> CPUTable) {
 
   // Print the CPU table.
   errs() << "Available CPUs for this target:\n\n";
-  for (auto &CPU : CPUTable)
+  for (auto &CPU : CPUTable) {
     errs() << "\t" << CPU.Key << "\n";
+
+}
   errs() << '\n';
 
   errs() << "Use -mcpu or -mtune to specify the target's processor.\n"
@@ -152,8 +166,10 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef FS,
                                  ArrayRef<SubtargetFeatureKV> ProcFeatures) {
   SubtargetFeatures Features(FS);
 
-  if (ProcDesc.empty() || ProcFeatures.empty())
+  if (ProcDesc.empty() || ProcFeatures.empty()) {
     return FeatureBitset();
+
+}
 
   assert(std::is_sorted(std::begin(ProcDesc), std::end(ProcDesc)) &&
          "CPU table is not sorted");
@@ -163,11 +179,11 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef FS,
   FeatureBitset Bits;
 
   // Check if help is needed
-  if (CPU == "help")
+  if (CPU == "help") {
     Help(ProcDesc, ProcFeatures);
 
   // Find CPU entry if CPU name is specified.
-  else if (!CPU.empty()) {
+  } else if (!CPU.empty()) {
     const SubtargetSubTypeKV *CPUEntry = Find(CPU, ProcDesc);
 
     // If there is a match
@@ -183,12 +199,14 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef FS,
   // Iterate through each feature
   for (const std::string &Feature : Features.getFeatures()) {
     // Check for help
-    if (Feature == "+help")
+    if (Feature == "+help") {
       Help(ProcDesc, ProcFeatures);
-    else if (Feature == "+cpuHelp")
+    } else if (Feature == "+cpuHelp") {
       cpuHelp(ProcDesc);
-    else
+    } else {
       ApplyFeatureFlag(Bits, Feature, ProcFeatures);
+
+}
   }
 
   return Bits;
@@ -196,10 +214,12 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef FS,
 
 void MCSubtargetInfo::InitMCProcessorInfo(StringRef CPU, StringRef FS) {
   FeatureBits = getFeatures(CPU, FS, ProcDesc, ProcFeatures);
-  if (!CPU.empty())
+  if (!CPU.empty()) {
     CPUSchedModel = &getSchedModelForCPU(CPU);
-  else
+  } else {
     CPUSchedModel = &MCSchedModel::GetDefaultSchedModel();
+
+}
 }
 
 void MCSubtargetInfo::setDefaultFeatures(StringRef CPU, StringRef FS) {
@@ -282,8 +302,10 @@ bool MCSubtargetInfo::checkFeatures(StringRef FS) const {
   FeatureBitset Set, All;
   for (std::string F : T.getFeatures()) {
     ::ApplyFeatureFlag(Set, F, ProcFeatures);
-    if (F[0] == '-')
+    if (F[0] == '-') {
       F[0] = '+';
+
+}
     ::ApplyFeatureFlag(All, F, ProcFeatures);
   }
   return (FeatureBits & All) == Set;
@@ -297,10 +319,12 @@ const MCSchedModel &MCSubtargetInfo::getSchedModelForCPU(StringRef CPU) const {
   const SubtargetSubTypeKV *CPUEntry = Find(CPU, ProcDesc);
 
   if (!CPUEntry) {
-    if (CPU != "help") // Don't error if the user asked for help.
+    if (CPU != "help") { // Don't error if the user asked for help.
       errs() << "'" << CPU
              << "' is not a recognized processor for this target"
              << " (ignoring processor)\n";
+
+}
     return MCSchedModel::GetDefaultSchedModel();
   }
   assert(CPUEntry->SchedModel && "Missing processor SchedModel value");

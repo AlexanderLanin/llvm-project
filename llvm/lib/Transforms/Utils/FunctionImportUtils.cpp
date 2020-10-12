@@ -20,12 +20,16 @@ using namespace llvm;
 /// declaration.
 bool FunctionImportGlobalProcessing::doImportAsDefinition(
     const GlobalValue *SGV) {
-  if (!isPerformingImport())
+  if (!isPerformingImport()) {
     return false;
 
+}
+
   // Only import the globals requested for importing.
-  if (!GlobalsToImport->count(const_cast<GlobalValue *>(SGV)))
+  if (!GlobalsToImport->count(const_cast<GlobalValue *>(SGV))) {
     return false;
+
+}
 
   assert(!isa<GlobalAlias>(SGV) &&
          "Unexpected global alias in the import list.");
@@ -39,8 +43,10 @@ bool FunctionImportGlobalProcessing::shouldPromoteLocalToGlobal(
   assert(SGV->hasLocalLinkage());
   // Both the imported references and the original local variable must
   // be promoted.
-  if (!isPerformingImport() && !isModuleExporting())
+  if (!isPerformingImport() && !isModuleExporting()) {
     return false;
+
+}
 
   if (isPerformingImport()) {
     assert((!GlobalsToImport->count(const_cast<GlobalValue *>(SGV)) ||
@@ -105,14 +111,18 @@ FunctionImportGlobalProcessing::getLinkage(const GlobalValue *SGV,
   // functions reference which local variables/functions, we must treat
   // all as potentially exported if this module is exporting anything.
   if (isModuleExporting()) {
-    if (SGV->hasLocalLinkage() && DoPromote)
+    if (SGV->hasLocalLinkage() && DoPromote) {
       return GlobalValue::ExternalLinkage;
+
+}
     return SGV->getLinkage();
   }
 
   // Otherwise, if we aren't importing, no linkage change is needed.
-  if (!isPerformingImport())
+  if (!isPerformingImport()) {
     return SGV->getLinkage();
+
+}
 
   switch (SGV->getLinkage()) {
   case GlobalValue::LinkOnceODRLinkage:
@@ -121,16 +131,20 @@ FunctionImportGlobalProcessing::getLinkage(const GlobalValue *SGV,
     // definitions upon import, so that they are available for inlining
     // and/or optimization, but are turned into declarations later
     // during the EliminateAvailableExternally pass.
-    if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV))
+    if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV)) {
       return GlobalValue::AvailableExternallyLinkage;
+
+}
     // An imported external declaration stays external.
     return SGV->getLinkage();
 
   case GlobalValue::AvailableExternallyLinkage:
     // An imported available_externally definition converts
     // to external if imported as a declaration.
-    if (!doImportAsDefinition(SGV))
+    if (!doImportAsDefinition(SGV)) {
       return GlobalValue::ExternalLinkage;
+
+}
     // An imported available_externally declaration stays that way.
     return SGV->getLinkage();
 
@@ -150,10 +164,12 @@ FunctionImportGlobalProcessing::getLinkage(const GlobalValue *SGV,
     // equivalent, so the issue described above for weak_any does not exist,
     // and the definition can be imported. It can be treated similarly
     // to an imported externally visible global value.
-    if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV))
+    if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV)) {
       return GlobalValue::AvailableExternallyLinkage;
-    else
+    } else {
       return GlobalValue::ExternalLinkage;
+
+}
 
   case GlobalValue::AppendingLinkage:
     // It would be incorrect to import an appending linkage variable,
@@ -168,10 +184,12 @@ FunctionImportGlobalProcessing::getLinkage(const GlobalValue *SGV,
     // If we are promoting the local to global scope, it is handled
     // similarly to a normal externally visible global.
     if (DoPromote) {
-      if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV))
+      if (doImportAsDefinition(SGV) && !isa<GlobalAlias>(SGV)) {
         return GlobalValue::AvailableExternallyLinkage;
-      else
+      } else {
         return GlobalValue::ExternalLinkage;
+
+}
     }
     // A non-promoted imported local definition stays local.
     // The ThinLTO pass will eventually force-import their definitions.
@@ -216,8 +234,10 @@ void FunctionImportGlobalProcessing::processGlobalForThinLTO(GlobalValue &GV) {
     // definition.
     if (VI && VI.isDSOLocal()) {
       GV.setDSOLocal(true);
-      if (GV.hasDLLImportStorageClass())
+      if (GV.hasDLLImportStorageClass()) {
         GV.setDLLStorageClass(GlobalValue::DefaultStorageClass);
+
+}
     }
   }
 
@@ -258,8 +278,10 @@ void FunctionImportGlobalProcessing::processGlobalForThinLTO(GlobalValue &GV) {
         // references in IR module (not in combined index), so we can
         // ignore them when computing import. We do not export references
         // of writeonly object. See computeImportForReferencedGlobals
-        if (ImportIndex.isWriteOnly(GVS))
+        if (ImportIndex.isWriteOnly(GVS)) {
           V->setInitializer(Constant::getNullValue(V->getValueType()));
+
+}
       }
     }
   }
@@ -274,11 +296,17 @@ void FunctionImportGlobalProcessing::processGlobalForThinLTO(GlobalValue &GV) {
 
     // If we are renaming a COMDAT leader, ensure that we record the COMDAT
     // for later renaming as well. This is required for COFF.
-    if (const auto *C = GV.getComdat())
-      if (C->getName() == Name)
+    if (const auto *C = GV.getComdat()) {
+      if (C->getName() == Name) {
         RenamedComdats.try_emplace(C, M.getOrInsertComdat(GV.getName()));
-  } else
+
+}
+
+}
+  } else {
     GV.setLinkage(getLinkage(&GV, /* DoPromote */ false));
+
+}
 
   // Remove functions imported as available externally defs from comdats,
   // as this is a declaration for the linker, and will be dropped eventually.
@@ -295,22 +323,34 @@ void FunctionImportGlobalProcessing::processGlobalForThinLTO(GlobalValue &GV) {
 }
 
 void FunctionImportGlobalProcessing::processGlobalsForThinLTO() {
-  for (GlobalVariable &GV : M.globals())
+  for (GlobalVariable &GV : M.globals()) {
     processGlobalForThinLTO(GV);
-  for (Function &SF : M)
+
+}
+  for (Function &SF : M) {
     processGlobalForThinLTO(SF);
-  for (GlobalAlias &GA : M.aliases())
+
+}
+  for (GlobalAlias &GA : M.aliases()) {
     processGlobalForThinLTO(GA);
+
+}
 
   // Replace any COMDATS that required renaming (because the COMDAT leader was
   // promoted and renamed).
-  if (!RenamedComdats.empty())
-    for (auto &GO : M.global_objects())
+  if (!RenamedComdats.empty()) {
+    for (auto &GO : M.global_objects()) {
       if (auto *C = GO.getComdat()) {
         auto Replacement = RenamedComdats.find(C);
-        if (Replacement != RenamedComdats.end())
+        if (Replacement != RenamedComdats.end()) {
           GO.setComdat(Replacement->second);
+
+}
       }
+
+}
+
+}
 }
 
 bool FunctionImportGlobalProcessing::run() {

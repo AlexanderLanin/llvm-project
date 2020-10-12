@@ -86,22 +86,30 @@ void CheckerManager::runCheckersOnASTDecl(const Decl *D, AnalysisManager& mgr,
   } else {
     // Find the checkers that should run for this Decl and cache them.
     checkers = &CachedDeclCheckersMap[DeclKind];
-    for (const auto &info : DeclCheckers)
-      if (info.IsForDeclFn(D))
+    for (const auto &info : DeclCheckers) {
+      if (info.IsForDeclFn(D)) {
         checkers->push_back(info.CheckFn);
+
+}
+
+}
   }
 
   assert(checkers);
-  for (const auto &checker : *checkers)
+  for (const auto &checker : *checkers) {
     checker(D, mgr, BR);
+
+}
 }
 
 void CheckerManager::runCheckersOnASTBody(const Decl *D, AnalysisManager& mgr,
                                           BugReporter &BR) {
   assert(D && D->hasBody());
 
-  for (const auto &BodyChecker : BodyCheckers)
+  for (const auto &BodyChecker : BodyCheckers) {
     BodyChecker(D, mgr, BR);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -113,8 +121,10 @@ static void expandGraphWithCheckers(CHECK_CTX checkCtx,
                                     ExplodedNodeSet &Dst,
                                     const ExplodedNodeSet &Src) {
   const NodeBuilderContext &BldrCtx = checkCtx.Eng.getBuilderContext();
-  if (Src.empty())
+  if (Src.empty()) {
     return;
+
+}
 
   typename CHECK_CTX::CheckersTy::const_iterator
       I = checkCtx.checkers_begin(), E = checkCtx.checkers_end();
@@ -128,20 +138,24 @@ static void expandGraphWithCheckers(CHECK_CTX checkCtx,
 
   for (; I != E; ++I) {
     ExplodedNodeSet *CurrSet = nullptr;
-    if (I+1 == E)
+    if (I+1 == E) {
       CurrSet = &Dst;
-    else {
+    } else {
       CurrSet = (PrevSet == &Tmp1) ? &Tmp2 : &Tmp1;
       CurrSet->clear();
     }
 
     NodeBuilder B(*PrevSet, *CurrSet, BldrCtx);
-    for (const auto &NI : *PrevSet)
+    for (const auto &NI : *PrevSet) {
       checkCtx.runChecker(*I, B, NI);
 
+}
+
     // If all the produced transitions are sinks, stop.
-    if (CurrSet->empty())
+    if (CurrSet->empty()) {
       return;
+
+}
 
     // Update which NodeSet is the current one.
     PrevSet = CurrSet;
@@ -403,8 +417,10 @@ void CheckerManager::runCheckersForBind(ExplodedNodeSet &Dst,
 void CheckerManager::runCheckersForEndAnalysis(ExplodedGraph &G,
                                                BugReporter &BR,
                                                ExprEngine &Eng) {
-  for (const auto &EndAnalysisChecker : EndAnalysisCheckers)
+  for (const auto &EndAnalysisChecker : EndAnalysisCheckers) {
     EndAnalysisChecker(G, BR, Eng);
+
+}
 }
 
 namespace {
@@ -543,8 +559,10 @@ void CheckerManager::runCheckersForNewAllocator(
 /// Run checkers for live symbols.
 void CheckerManager::runCheckersForLiveSymbols(ProgramStateRef state,
                                                SymbolReaper &SymReaper) {
-  for (const auto &LiveSymbolsChecker : LiveSymbolsCheckers)
+  for (const auto &LiveSymbolsChecker : LiveSymbolsCheckers) {
     LiveSymbolsChecker(state, SymReaper);
+
+}
 }
 
 namespace {
@@ -603,8 +621,10 @@ CheckerManager::runCheckersForRegionChanges(ProgramStateRef state,
   for (const auto &RegionChangesChecker : RegionChangesCheckers) {
     // If any checker declares the state infeasible (or if it starts that way),
     // bail out.
-    if (!state)
+    if (!state) {
       return nullptr;
+
+}
     state = RegionChangesChecker(state, invalidated, ExplicitRegions, Regions,
                                  LCtx, Call);
   }
@@ -625,8 +645,10 @@ CheckerManager::runCheckersForPointerEscape(ProgramStateRef State,
   for (const auto &PointerEscapeChecker : PointerEscapeCheckers) {
     // If any checker declares the state infeasible (or if it starts that
     //  way), bail out.
-    if (!State)
+    if (!State) {
       return nullptr;
+
+}
     State = PointerEscapeChecker(State, Escaped, Call, Kind, ETraits);
   }
   return State;
@@ -639,8 +661,10 @@ CheckerManager::runCheckersForEvalAssume(ProgramStateRef state,
   for (const auto &EvalAssumeChecker : EvalAssumeCheckers) {
     // If any checker declares the state infeasible (or if it starts that way),
     // bail out.
-    if (!state)
+    if (!state) {
       return nullptr;
+
+}
     state = EvalAssumeChecker(state, Cond, Assumption);
   }
   return state;
@@ -698,8 +722,10 @@ void CheckerManager::runCheckersOnEndOfTranslationUnit(
                                                   const TranslationUnitDecl *TU,
                                                   AnalysisManager &mgr,
                                                   BugReporter &BR) {
-  for (const auto &EndOfTranslationUnitChecker : EndOfTranslationUnitCheckers)
+  for (const auto &EndOfTranslationUnitChecker : EndOfTranslationUnitCheckers) {
     EndOfTranslationUnitChecker(TU, mgr, BR);
+
+}
 }
 
 void CheckerManager::runCheckersForPrintStateJson(raw_ostream &Out,
@@ -729,8 +755,10 @@ void CheckerManager::runCheckersForPrintStateJson(raw_ostream &Out,
     // See whether the current checker has a message.
     CT.second->printState(TempOut, State, /*NL=*/NewLine.c_str(), /*Sep=*/"");
 
-    if (TempBuf.empty())
+    if (TempBuf.empty()) {
       continue;
+
+}
 
     if (!HasMessage) {
       Out << '[' << NL;
@@ -745,8 +773,10 @@ void CheckerManager::runCheckersForPrintStateJson(raw_ostream &Out,
     // See whether the current checker has a message.
     CT.second->printState(TempOut, State, /*NL=*/NewLine.c_str(), /*Sep=*/"");
 
-    if (TempBuf.empty())
+    if (TempBuf.empty()) {
       continue;
+
+}
 
     Indent(Out, Space, IsDot)
         << "{ \"checker\": \"" << CT.second->getCheckerName().getName()
@@ -755,18 +785,22 @@ void CheckerManager::runCheckersForPrintStateJson(raw_ostream &Out,
         << '\"' << TempBuf.str().trim() << '\"' << NL;
     Indent(Out, Space, IsDot) << "]}";
 
-    if (&CT != LastCT)
+    if (&CT != LastCT) {
       Out << ',';
+
+}
     Out << NL;
 
     TempBuf.clear();
   }
 
   // It is the last element of the 'program_state' so do not add a comma.
-  if (HasMessage)
+  if (HasMessage) {
     Indent(Out, --Space, IsDot) << "]";
-  else
+  } else {
     Out << "null";
+
+}
 
   Out << NL;
 }
@@ -893,18 +927,26 @@ CheckerManager::getCachedStmtCheckersFor(const Stmt *S, bool isPreVisit) {
 
   unsigned Key = (S->getStmtClass() << 1) | unsigned(isPreVisit);
   CachedStmtCheckersMapTy::iterator CCI = CachedStmtCheckersMap.find(Key);
-  if (CCI != CachedStmtCheckersMap.end())
+  if (CCI != CachedStmtCheckersMap.end()) {
     return CCI->second;
+
+}
 
   // Find the checkers that should run for this Stmt and cache them.
   CachedStmtCheckers &Checkers = CachedStmtCheckersMap[Key];
-  for (const auto &Info : StmtCheckers)
-    if (Info.IsPreVisit == isPreVisit && Info.IsForStmtFn(S))
+  for (const auto &Info : StmtCheckers) {
+    if (Info.IsPreVisit == isPreVisit && Info.IsForStmtFn(S)) {
       Checkers.push_back(Info.CheckFn);
+
+}
+
+}
   return Checkers;
 }
 
 CheckerManager::~CheckerManager() {
-  for (const auto &CheckerDtor : CheckerDtors)
+  for (const auto &CheckerDtor : CheckerDtors) {
     CheckerDtor();
+
+}
 }

@@ -39,15 +39,19 @@ GlobalTypeTableBuilder::GlobalTypeTableBuilder(BumpPtrAllocator &Storage)
 GlobalTypeTableBuilder::~GlobalTypeTableBuilder() = default;
 
 Optional<TypeIndex> GlobalTypeTableBuilder::getFirst() {
-  if (empty())
+  if (empty()) {
     return None;
+
+}
 
   return TypeIndex(TypeIndex::FirstNonSimpleIndex);
 }
 
 Optional<TypeIndex> GlobalTypeTableBuilder::getNext(TypeIndex Prev) {
-  if (++Prev == nextTypeIndex())
+  if (++Prev == nextTypeIndex()) {
     return None;
+
+}
   return Prev;
 }
 
@@ -61,8 +65,10 @@ StringRef GlobalTypeTableBuilder::getTypeName(TypeIndex Index) {
 }
 
 bool GlobalTypeTableBuilder::contains(TypeIndex Index) {
-  if (Index.isSimple() || Index.isNoneType())
+  if (Index.isSimple() || Index.isNoneType()) {
     return false;
+
+}
 
   return Index.toArrayIndex() < SeenRecords.size();
 }
@@ -100,7 +106,9 @@ GlobalTypeTableBuilder::insertRecord(ContinuationRecordBuilder &Builder) {
   TypeIndex TI;
   auto Fragments = Builder.end(nextTypeIndex());
   assert(!Fragments.empty());
-  for (auto C : Fragments)
+  for (auto C : Fragments) {
     TI = insertRecordBytes(C.RecordData);
+
+}
   return TI;
 }

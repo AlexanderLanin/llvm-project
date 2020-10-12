@@ -32,15 +32,19 @@ void ODRHash::AddIdentifierInfo(const IdentifierInfo *II) {
 }
 
 void ODRHash::AddDeclarationName(DeclarationName Name, bool TreatAsDecl) {
-  if (TreatAsDecl)
+  if (TreatAsDecl) {
     // Matches the NamedDecl check in AddDecl
     AddBoolean(true);
 
+}
+
   AddDeclarationNameImpl(Name);
 
-  if (TreatAsDecl)
+  if (TreatAsDecl) {
     // Matches the ClassTemplateSpecializationDecl check in AddDecl
     AddBoolean(false);
+
+}
 }
 
 void ODRHash::AddDeclarationNameImpl(DeclarationName Name) {
@@ -54,8 +58,10 @@ void ODRHash::AddDeclarationNameImpl(DeclarationName Name) {
 
   // First time processing each DeclarationName, also process its details.
   AddBoolean(Name.isEmpty());
-  if (Name.isEmpty())
+  if (Name.isEmpty()) {
     return;
+
+}
 
   auto Kind = Name.getNameKind();
   ID.AddInteger(Kind);
@@ -382,8 +388,10 @@ public:
 
     const TypeConstraint *TC = D->getTypeConstraint();
     Hash.AddBoolean(TC != nullptr);
-    if (TC)
+    if (TC) {
       AddStmt(TC->getImmediatelyDeclaredConstraint());
+
+}
 
     Inherited::VisitTemplateTypeParmDecl(D);
   }
@@ -441,8 +449,12 @@ public:
 // Only allow a small portion of Decl's to be processed.  Remove this once
 // all Decl's can be handled.
 bool ODRHash::isWhitelistedDecl(const Decl *D, const DeclContext *Parent) {
-  if (D->isImplicit()) return false;
-  if (D->getDeclContext() != Parent) return false;
+  if (D->isImplicit()) { return false;
+
+}
+  if (D->getDeclContext() != Parent) { return false;
+
+}
 
   switch (D->getKind()) {
     default:
@@ -523,11 +535,17 @@ void ODRHash::AddFunctionDecl(const FunctionDecl *Function,
   // Skip functions that are specializations or in specialization context.
   const DeclContext *DC = Function;
   while (DC) {
-    if (isa<ClassTemplateSpecializationDecl>(DC)) return;
+    if (isa<ClassTemplateSpecializationDecl>(DC)) { return;
+
+}
     if (auto *F = dyn_cast<FunctionDecl>(DC)) {
       if (F->isFunctionTemplateSpecialization()) {
-        if (!isa<CXXMethodDecl>(DC)) return;
-        if (DC->getLexicalParent()->isFileContext()) return;
+        if (!isa<CXXMethodDecl>(DC)) { return;
+
+}
+        if (DC->getLexicalParent()->isFileContext()) { return;
+
+}
         // Inline method specializations are the only supported
         // specialization for now.
       }
@@ -563,8 +581,10 @@ void ODRHash::AddFunctionDecl(const FunctionDecl *Function,
   AddQualType(Function->getReturnType());
 
   ID.AddInteger(Function->param_size());
-  for (auto Param : Function->parameters())
+  for (auto Param : Function->parameters()) {
     AddSubDecl(Param);
+
+}
 
   if (SkipBody) {
     AddBoolean(false);
@@ -581,8 +601,10 @@ void ODRHash::AddFunctionDecl(const FunctionDecl *Function,
 
   auto *Body = Function->getBody();
   AddBoolean(Body);
-  if (Body)
+  if (Body) {
     AddStmt(Body);
+
+}
 
   // Filter out sub-Decls which will not be processed in order to get an
   // accurate count of Decl's.
@@ -604,11 +626,15 @@ void ODRHash::AddEnumDecl(const EnumDecl *Enum) {
   AddDeclarationName(Enum->getDeclName());
 
   AddBoolean(Enum->isScoped());
-  if (Enum->isScoped())
+  if (Enum->isScoped()) {
     AddBoolean(Enum->isScopedUsingClassTag());
 
-  if (Enum->getIntegerTypeSourceInfo())
+}
+
+  if (Enum->getIntegerTypeSourceInfo()) {
     AddQualType(Enum->getIntegerType());
+
+}
 
   // Filter out sub-Decls which will not be processed in order to get an
   // accurate count of Decl's.
@@ -646,8 +672,10 @@ void ODRHash::AddDecl(const Decl *D) {
   if (Specialization) {
     const TemplateArgumentList &List = Specialization->getTemplateArgs();
     ID.AddInteger(List.size());
-    for (const TemplateArgument &TA : List.asArray())
+    for (const TemplateArgument &TA : List.asArray()) {
       AddTemplateArgument(TA);
+
+}
   }
 }
 
@@ -861,8 +889,10 @@ public:
     if (T->isConstrained()) {
       AddDecl(T->getTypeConstraintConcept());
       ID.AddInteger(T->getNumArgs());
-      for (const auto &TA : T->getTypeConstraintArguments())
+      for (const auto &TA : T->getTypeConstraintArguments()) {
         Hash.AddTemplateArgument(TA);
+
+}
     }
     VisitDeducedType(T);
   }
@@ -900,8 +930,10 @@ public:
 
   void VisitFunctionProtoType(const FunctionProtoType *T) {
     ID.AddInteger(T->getNumParams());
-    for (auto ParamType : T->getParamTypes())
+    for (auto ParamType : T->getParamTypes()) {
       AddQualType(ParamType);
+
+}
 
     VisitFunctionType(T);
   }
@@ -1054,8 +1086,10 @@ public:
   void VisitTypeOfExprType(const TypeOfExprType *T) {
     AddStmt(T->getUnderlyingExpr());
     Hash.AddBoolean(T->isSugared());
-    if (T->isSugared())
+    if (T->isSugared()) {
       AddQualType(T->desugar());
+
+}
 
     VisitType(T);
   }
@@ -1123,8 +1157,10 @@ void ODRHash::AddType(const Type *T) {
 
 void ODRHash::AddQualType(QualType T) {
   AddBoolean(T.isNull());
-  if (T.isNull())
+  if (T.isNull()) {
     return;
+
+}
   SplitQualType split = T.split();
   ID.AddInteger(split.Quals.getAsOpaqueValue());
   AddType(split.Ty);

@@ -101,9 +101,9 @@ void Writer::write(double d) {
 void Writer::write(StringRef s) {
   size_t Size = s.size();
 
-  if (Size <= FixMax::String)
+  if (Size <= FixMax::String) {
     EW.write(static_cast<uint8_t>(FixBits::String | Size));
-  else if (!Compatible && Size <= UINT8_MAX) {
+  } else if (!Compatible && Size <= UINT8_MAX) {
     EW.write(FirstByte::Str8);
     EW.write(static_cast<uint8_t>(Size));
   } else if (Size <= UINT16_MAX) {

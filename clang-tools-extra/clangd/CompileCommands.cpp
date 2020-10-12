@@ -87,9 +87,13 @@ std::string detectClangPath() {
     return resolve(std::move(*MacClang));
 #endif
   // On other platforms, just look for compilers on the PATH.
-  for (const char *Name : {"clang", "gcc", "cc"})
-    if (auto PathCC = llvm::sys::findProgramByName(Name))
+  for (const char *Name : {"clang", "gcc", "cc"}) {
+    if (auto PathCC = llvm::sys::findProgramByName(Name)) {
       return resolve(std::move(*PathCC));
+
+}
+
+}
   // Fallback: a nonexistent 'clang' binary next to clangd.
   static int Dummy;
   std::string ClangdExecutable =
@@ -108,8 +112,10 @@ const llvm::Optional<std::string> detectSysroot() {
 #endif
 
   // SDKROOT overridden in environment, respect it. Driver will set isysroot.
-  if (::getenv("SDKROOT"))
+  if (::getenv("SDKROOT")) {
     return llvm::None;
+
+}
   return queryXcrun({"xcrun", "--show-sdk-path"});
   return llvm::None;
 }
@@ -137,8 +143,10 @@ void CommandMangler::adjust(std::vector<std::string> &Cmd) const {
   // Check whether the flag exists, either as -flag or -flag=*
   auto Has = [&](llvm::StringRef Flag) {
     for (llvm::StringRef Arg : Cmd) {
-      if (Arg.consume_front(Flag) && (Arg.empty() || Arg[0] == '='))
+      if (Arg.consume_front(Flag) && (Arg.empty() || Arg[0] == '=')) {
         return true;
+
+}
     }
     return false;
   };
@@ -152,8 +160,10 @@ void CommandMangler::adjust(std::vector<std::string> &Cmd) const {
   Cmd = tooling::getStripPluginsAdjuster()(Cmd, "");
   Cmd = tooling::getClangSyntaxOnlyAdjuster()(Cmd, "");
 
-  if (ResourceDir && !Has("-resource-dir"))
+  if (ResourceDir && !Has("-resource-dir")) {
     Cmd.push_back(("-resource-dir=" + *ResourceDir));
+
+}
 
   // Don't set `-isysroot` if it is already set or if `--sysroot` is set.
   // `--sysroot` is a superset of the `-isysroot` argument.

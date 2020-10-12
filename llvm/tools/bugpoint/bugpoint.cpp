@@ -126,10 +126,12 @@ static void AddOptimizationPasses(legacy::FunctionPassManager &FPM,
   Builder.OptLevel = OptLevel;
   Builder.SizeLevel = SizeLevel;
 
-  if (OptLevel > 1)
+  if (OptLevel > 1) {
     Builder.Inliner = createFunctionInliningPass(OptLevel, SizeLevel, false);
-  else
+  } else {
     Builder.Inliner = createAlwaysInlinerLegacyPass();
+
+}
 
   Builder.populateFunctionPassManager(FPM);
   Builder.populateModulePassManager(FPM);
@@ -184,10 +186,12 @@ int main(int argc, char **argv) {
   if (MemoryLimit < 0) {
     // Set the default MemoryLimit.  Be sure to update the flag's description if
     // you change this.
-    if (sys::RunningOnValgrind() || UseValgrind)
+    if (sys::RunningOnValgrind() || UseValgrind) {
       MemoryLimit = 800;
-    else
+    } else {
       MemoryLimit = 400;
+
+}
 #if (LLVM_ADDRESS_SANITIZER_BUILD || LLVM_MEMORY_SANITIZER_BUILD ||            \
      LLVM_THREAD_SANITIZER_BUILD)
     // Starting from kernel 4.9 memory allocated with mmap is counted against
@@ -198,8 +202,10 @@ int main(int argc, char **argv) {
 
   BugDriver D(argv[0], FindBugs, TimeoutValue, MemoryLimit, UseValgrind,
               Context);
-  if (D.addSources(InputFilenames))
+  if (D.addSources(InputFilenames)) {
     return 1;
+
+}
 
   AddToDriver PM(D);
 
@@ -209,19 +215,23 @@ int main(int argc, char **argv) {
     Builder.populateLTOPassManager(PM);
   }
 
-  if (OptLevelO1)
+  if (OptLevelO1) {
     AddOptimizationPasses(PM, 1, 0);
-  else if (OptLevelO2)
+  } else if (OptLevelO2) {
     AddOptimizationPasses(PM, 2, 0);
-  else if (OptLevelO3)
+  } else if (OptLevelO3) {
     AddOptimizationPasses(PM, 3, 0);
-  else if (OptLevelOs)
+  } else if (OptLevelOs) {
     AddOptimizationPasses(PM, 2, 1);
-  else if (OptLevelOz)
+  } else if (OptLevelOz) {
     AddOptimizationPasses(PM, 2, 2);
 
-  for (const PassInfo *PI : PassList)
+}
+
+  for (const PassInfo *PI : PassList) {
     D.addPass(std::string(PI->getPassArgument()));
+
+}
 
 // Bugpoint has the ability of generating a plethora of core files, so to
 // avoid filling up the disk, we prevent it

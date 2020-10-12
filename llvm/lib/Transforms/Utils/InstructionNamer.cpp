@@ -32,17 +32,27 @@ namespace {
     }
 
     bool runOnFunction(Function &F) override {
-      for (auto &Arg : F.args())
-        if (!Arg.hasName())
+      for (auto &Arg : F.args()) {
+        if (!Arg.hasName()) {
           Arg.setName("arg");
 
+}
+
+}
+
       for (BasicBlock &BB : F) {
-        if (!BB.hasName())
+        if (!BB.hasName()) {
           BB.setName("bb");
 
-        for (Instruction &I : BB)
-          if (!I.hasName() && !I.getType()->isVoidTy())
+}
+
+        for (Instruction &I : BB) {
+          if (!I.hasName() && !I.getType()->isVoidTy()) {
             I.setName("tmp");
+
+}
+
+}
       }
       return true;
     }

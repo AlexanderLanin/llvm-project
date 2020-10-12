@@ -60,42 +60,56 @@ Error PublicsStream::reload() {
 
   // Check stream size.
   if (Reader.bytesRemaining() <
-      sizeof(PublicsStreamHeader) + sizeof(GSIHashHeader))
+      sizeof(PublicsStreamHeader) + sizeof(GSIHashHeader)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Publics Stream does not contain a header.");
+
+}
 
   // Read PSGSIHDR struct.
-  if (Reader.readObject(Header))
+  if (Reader.readObject(Header)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Publics Stream does not contain a header.");
 
+}
+
   // Read the hash table.
-  if (auto E = PublicsTable.read(Reader))
+  if (auto E = PublicsTable.read(Reader)) {
     return E;
+
+}
 
   // Something called "address map" follows.
   uint32_t NumAddressMapEntries = Header->AddrMap / sizeof(uint32_t);
-  if (auto EC = Reader.readArray(AddressMap, NumAddressMapEntries))
+  if (auto EC = Reader.readArray(AddressMap, NumAddressMapEntries)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Could not read an address map."));
 
+}
+
   // Something called "thunk map" follows.
-  if (auto EC = Reader.readArray(ThunkMap, Header->NumThunks))
+  if (auto EC = Reader.readArray(ThunkMap, Header->NumThunks)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Could not read a thunk map."));
 
+}
+
   // Something called "section map" follows.
   if (Reader.bytesRemaining() > 0) {
-    if (auto EC = Reader.readArray(SectionOffsets, Header->NumSections))
+    if (auto EC = Reader.readArray(SectionOffsets, Header->NumSections)) {
       return joinErrors(std::move(EC),
                         make_error<RawError>(raw_error_code::corrupt_file,
                                              "Could not read a section map."));
+
+}
   }
 
-  if (Reader.bytesRemaining() > 0)
+  if (Reader.bytesRemaining() > 0) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Corrupted publics stream.");
+
+}
   return Error::success();
 }

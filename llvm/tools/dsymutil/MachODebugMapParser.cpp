@@ -110,10 +110,14 @@ private:
                          << ") " << File << " " << Msg << "\n";
 
     if (PaperTrailWarnings) {
-      if (!File.empty())
+      if (!File.empty()) {
         Result->addDebugMapObject(File, sys::TimePoint<std::chrono::seconds>());
-      if (Result->end() != Result->begin())
+
+}
+      if (Result->end() != Result->begin()) {
         (*--Result->end())->addWarning(Msg.str());
+
+}
     }
   }
 };
@@ -194,10 +198,12 @@ MachODebugMapParser::parseOneBinary(const MachOObjectFile &MainBinary,
   MainBinaryStrings = MainBinary.getStringTableData();
   for (const SymbolRef &Symbol : MainBinary.symbols()) {
     const DataRefImpl &DRI = Symbol.getRawDataRefImpl();
-    if (MainBinary.is64Bit())
+    if (MainBinary.is64Bit()) {
       handleStabDebugMapEntry(MainBinary.getSymbol64TableEntry(DRI));
-    else
+    } else {
       handleStabDebugMapEntry(MainBinary.getSymbolTableEntry(DRI));
+
+}
   }
 
   resetParserState();
@@ -233,8 +239,10 @@ static const struct DarwinStabName DarwinStabNames[] = {
 
 static const char *getDarwinStabString(uint8_t NType) {
   for (unsigned i = 0; DarwinStabNames[i].Name; i++) {
-    if (DarwinStabNames[i].NType == NType)
+    if (DarwinStabNames[i].NType == NType) {
       return DarwinStabNames[i].Name;
+
+}
   }
   return nullptr;
 }
@@ -262,13 +270,15 @@ void MachODebugMapParser::dumpSymTabEntry(raw_ostream &OS, uint64_t Index,
      // n_type...
      << format_hex_no_prefix(Type, 2) << " (";
 
-  if (Type & MachO::N_STAB)
+  if (Type & MachO::N_STAB) {
     OS << left_justify(getDarwinStabString(Type), 13);
-  else {
-    if (Type & MachO::N_PEXT)
+  } else {
+    if (Type & MachO::N_PEXT) {
       OS << "PEXT ";
-    else
+    } else {
       OS << "     ";
+
+}
     switch (Type & MachO::N_TYPE) {
     case MachO::N_UNDF: // 0x0 undefined, n_sect == NO_SECT
       OS << "UNDF";
@@ -289,10 +299,12 @@ void MachODebugMapParser::dumpSymTabEntry(raw_ostream &OS, uint64_t Index,
       OS << format_hex_no_prefix(Type, 2) << "    ";
       break;
     }
-    if (Type & MachO::N_EXT)
+    if (Type & MachO::N_EXT) {
       OS << " EXT";
-    else
+    } else {
       OS << "    ";
+
+}
   }
 
   OS << ") "
@@ -306,8 +318,10 @@ void MachODebugMapParser::dumpSymTabEntry(raw_ostream &OS, uint64_t Index,
      << format_hex_no_prefix(Value, 16);
 
   const char *Name = &MainBinaryStrings.data()[StringIndex];
-  if (Name && Name[0])
+  if (Name && Name[0]) {
     OS << " '" << Name << "'";
+
+}
 
   OS << "\n";
 }
@@ -322,10 +336,12 @@ void MachODebugMapParser::dumpOneBinaryStab(const MachOObjectFile &MainBinary,
   uint64_t Idx = 0;
   for (const SymbolRef &Symbol : MainBinary.symbols()) {
     const DataRefImpl &DRI = Symbol.getRawDataRefImpl();
-    if (MainBinary.is64Bit())
+    if (MainBinary.is64Bit()) {
       dumpSymTabEntry(OS, Idx, MainBinary.getSymbol64TableEntry(DRI));
-    else
+    } else {
       dumpSymTabEntry(OS, Idx, MainBinary.getSymbolTableEntry(DRI));
+
+}
     Idx++;
   }
 
@@ -334,15 +350,21 @@ void MachODebugMapParser::dumpOneBinaryStab(const MachOObjectFile &MainBinary,
 }
 
 static bool shouldLinkArch(SmallVectorImpl<StringRef> &Archs, StringRef Arch) {
-  if (Archs.empty() || is_contained(Archs, "all") || is_contained(Archs, "*"))
+  if (Archs.empty() || is_contained(Archs, "all") || is_contained(Archs, "*")) {
     return true;
 
-  if (Arch.startswith("arm") && Arch != "arm64" && is_contained(Archs, "arm"))
+}
+
+  if (Arch.startswith("arm") && Arch != "arm64" && is_contained(Archs, "arm")) {
     return true;
+
+}
 
   SmallString<16> ArchName = Arch;
-  if (Arch.startswith("thumb"))
+  if (Arch.startswith("thumb")) {
     ArchName = ("arm" + Arch.substr(5)).str();
+
+}
 
   return is_contained(Archs, ArchName);
 }
@@ -365,9 +387,13 @@ bool MachODebugMapParser::dumpStab() {
     return false;
   }
 
-  for (const auto *Object : *Objects)
-    if (shouldLinkArch(Archs, Object->getArchTriple().getArchName()))
+  for (const auto *Object : *Objects) {
+    if (shouldLinkArch(Archs, Object->getArchTriple().getArchName())) {
       dumpOneBinaryStab(*Object, BinaryPath);
+
+}
+
+}
 
   return true;
 }
@@ -387,9 +413,13 @@ ErrorOr<std::vector<std::unique_ptr<DebugMap>>> MachODebugMapParser::parse() {
   }
 
   std::vector<std::unique_ptr<DebugMap>> Results;
-  for (const auto *Object : *Objects)
-    if (shouldLinkArch(Archs, Object->getArchTriple().getArchName()))
+  for (const auto *Object : *Objects) {
+    if (shouldLinkArch(Archs, Object->getArchTriple().getArchName())) {
       Results.push_back(parseOneBinary(*Object, BinaryPath));
+
+}
+
+}
 
   return std::move(Results);
 }
@@ -400,14 +430,18 @@ void MachODebugMapParser::handleStabSymbolTableEntry(uint32_t StringIndex,
                                                      uint8_t SectionIndex,
                                                      uint16_t Flags,
                                                      uint64_t Value) {
-  if (!(Type & MachO::N_STAB))
+  if (!(Type & MachO::N_STAB)) {
     return;
+
+}
 
   const char *Name = &MainBinaryStrings.data()[StringIndex];
 
   // An N_OSO entry represents the start of a new object file description.
-  if (Type == MachO::N_OSO)
+  if (Type == MachO::N_OSO) {
     return switchToNewDebugMapObject(Name, sys::toTimePoint(Value));
+
+}
 
   if (Type == MachO::N_AST) {
     SmallString<80> Path(PathPrefix);
@@ -418,8 +452,10 @@ void MachODebugMapParser::handleStabSymbolTableEntry(uint32_t StringIndex,
 
   // If the last N_OSO object file wasn't found, CurrentDebugMapObject will be
   // null. Do not update anything until we find the next valid N_OSO entry.
-  if (!CurrentDebugMapObject)
+  if (!CurrentDebugMapObject) {
     return;
+
+}
 
   uint32_t Size = 0;
   switch (Type) {
@@ -455,8 +491,10 @@ void MachODebugMapParser::handleStabSymbolTableEntry(uint32_t StringIndex,
   if (ObjectSymIt == CurrentObjectAddresses.end() && Type != MachO::N_STSYM) {
     for (const auto &Alias : getMainBinarySymbolNames(Value)) {
       ObjectSymIt = CurrentObjectAddresses.find(Alias);
-      if (ObjectSymIt != CurrentObjectAddresses.end())
+      if (ObjectSymIt != CurrentObjectAddresses.end()) {
         break;
+
+}
     }
   }
 
@@ -510,8 +548,10 @@ void MachODebugMapParser::loadCurrentObjectFileSymbols(
 /// address is available through this function.
 uint64_t MachODebugMapParser::getMainBinarySymbolAddress(StringRef Name) {
   auto Sym = MainBinarySymbolAddresses.find(Name);
-  if (Sym == MainBinarySymbolAddresses.end())
+  if (Sym == MainBinarySymbolAddresses.end()) {
     return 0;
+
+}
   return Sym->second;
 }
 
@@ -520,8 +560,10 @@ std::vector<StringRef>
 MachODebugMapParser::getMainBinarySymbolNames(uint64_t Value) {
   std::vector<StringRef> Names;
   for (const auto &Entry : MainBinarySymbolAddresses) {
-    if (Entry.second == Value)
+    if (Entry.second == Value) {
       Names.push_back(Entry.first());
+
+}
   }
   return Names;
 }
@@ -541,8 +583,10 @@ void MachODebugMapParser::loadMainBinarySymbols(
     }
     SymbolRef::Type Type = *TypeOrErr;
     // Skip undefined and STAB entries.
-    if ((Type == SymbolRef::ST_Debug) || (Type == SymbolRef::ST_Unknown))
+    if ((Type == SymbolRef::ST_Debug) || (Type == SymbolRef::ST_Unknown)) {
       continue;
+
+}
     // In theory, the only symbols of interest are the global variables. These
     // are the only ones that need to be queried because the address of common
     // data won't be described in the debug map. All other addresses should be
@@ -560,8 +604,10 @@ void MachODebugMapParser::loadMainBinarySymbols(
       continue;
     }
     Section = *SectionOrErr;
-    if (Section == MainBinary.section_end() || Section->isText())
+    if (Section == MainBinary.section_end() || Section->isText()) {
       continue;
+
+}
     uint64_t Addr = Sym.getValue();
     Expected<StringRef> NameOrErr = Sym.getName();
     if (!NameOrErr) {
@@ -570,13 +616,17 @@ void MachODebugMapParser::loadMainBinarySymbols(
       continue;
     }
     StringRef Name = *NameOrErr;
-    if (Name.size() == 0 || Name[0] == '\0')
+    if (Name.size() == 0 || Name[0] == '\0') {
       continue;
+
+}
     // Override only if the new key is global.
-    if (Extern)
+    if (Extern) {
       MainBinarySymbolAddresses[Name] = Addr;
-    else
+    } else {
       MainBinarySymbolAddresses.try_emplace(Name, Addr);
+
+}
   }
 }
 
@@ -586,8 +636,10 @@ llvm::ErrorOr<std::vector<std::unique_ptr<DebugMap>>>
 parseDebugMap(StringRef InputFile, ArrayRef<std::string> Archs,
               StringRef PrependPath, bool PaperTrailWarnings, bool Verbose,
               bool InputIsYAML) {
-  if (InputIsYAML)
+  if (InputIsYAML) {
     return DebugMap::parseYAMLDebugMap(InputFile, PrependPath, Verbose);
+
+}
 
   MachODebugMapParser Parser(InputFile, Archs, PrependPath, PaperTrailWarnings,
                              Verbose);

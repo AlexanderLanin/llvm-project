@@ -24,7 +24,9 @@ void clang::DoRewriteTest(Preprocessor &PP, raw_ostream *OS) {
   // Throw <i> </i> tags around comments.
   for (TokenRewriter::token_iterator I = Rewriter.token_begin(),
        E = Rewriter.token_end(); I != E; ++I) {
-    if (I->isNot(tok::comment)) continue;
+    if (I->isNot(tok::comment)) { continue;
+
+}
 
     Rewriter.AddTokenBefore(I, "<i>");
     Rewriter.AddTokenAfter(I, "</i>");
@@ -33,6 +35,8 @@ void clang::DoRewriteTest(Preprocessor &PP, raw_ostream *OS) {
 
   // Print out the output.
   for (TokenRewriter::token_iterator I = Rewriter.token_begin(),
-       E = Rewriter.token_end(); I != E; ++I)
+       E = Rewriter.token_end(); I != E; ++I) {
     *OS << PP.getSpelling(*I);
+
+}
 }

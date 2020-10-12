@@ -39,14 +39,18 @@ namespace clang {
 namespace tooling {
 
 const NamedDecl *getCanonicalSymbolDeclaration(const NamedDecl *FoundDecl) {
-  if (!FoundDecl)
+  if (!FoundDecl) {
     return nullptr;
+
+}
   // If FoundDecl is a constructor or destructor, we want to instead take
   // the Decl of the corresponding class.
-  if (const auto *CtorDecl = dyn_cast<CXXConstructorDecl>(FoundDecl))
+  if (const auto *CtorDecl = dyn_cast<CXXConstructorDecl>(FoundDecl)) {
     FoundDecl = CtorDecl->getParent();
-  else if (const auto *DtorDecl = dyn_cast<CXXDestructorDecl>(FoundDecl))
+  } else if (const auto *DtorDecl = dyn_cast<CXXDestructorDecl>(FoundDecl)) {
     FoundDecl = DtorDecl->getParent();
+
+}
   // FIXME: (Alex L): Canonicalize implicit template instantions, just like
   // the indexer does it.
 
@@ -71,8 +75,10 @@ public:
     if (const auto *MethodDecl = dyn_cast<CXXMethodDecl>(FoundDecl)) {
       addUSRsOfOverridenFunctions(MethodDecl);
       for (const auto &OverriddenMethod : OverriddenMethods) {
-        if (checkIfOverriddenFunctionAscends(OverriddenMethod))
+        if (checkIfOverriddenFunctionAscends(OverriddenMethod)) {
           USRSet.insert(getUSRForDecl(OverriddenMethod));
+
+}
       }
       addUSRsOfInstantiatedMethods(MethodDecl);
     } else if (const auto *RecordDecl = dyn_cast<CXXRecordDecl>(FoundDecl)) {
@@ -89,10 +95,14 @@ public:
   bool shouldVisitTemplateInstantiations() const { return true; }
 
   bool VisitCXXMethodDecl(const CXXMethodDecl *MethodDecl) {
-    if (MethodDecl->isVirtual())
+    if (MethodDecl->isVirtual()) {
       OverriddenMethods.push_back(MethodDecl);
-    if (MethodDecl->getInstantiatedFromMemberFunction())
+
+}
+    if (MethodDecl->getInstantiatedFromMemberFunction()) {
       InstantiatedMethods.push_back(MethodDecl);
+
+}
     return true;
   }
 
@@ -110,18 +120,24 @@ private:
     }
     RecordDecl = RecordDecl->getDefinition();
     if (const auto *ClassTemplateSpecDecl =
-            dyn_cast<ClassTemplateSpecializationDecl>(RecordDecl))
+            dyn_cast<ClassTemplateSpecializationDecl>(RecordDecl)) {
       handleClassTemplateDecl(ClassTemplateSpecDecl->getSpecializedTemplate());
+
+}
     addUSRsOfCtorDtors(RecordDecl);
   }
 
   void handleClassTemplateDecl(const ClassTemplateDecl *TemplateDecl) {
-    for (const auto *Specialization : TemplateDecl->specializations())
+    for (const auto *Specialization : TemplateDecl->specializations()) {
       addUSRsOfCtorDtors(Specialization);
 
+}
+
     for (const auto *PartialSpec : PartialSpecs) {
-      if (PartialSpec->getSpecializedTemplate() == TemplateDecl)
+      if (PartialSpec->getSpecializedTemplate() == TemplateDecl) {
         addUSRsOfCtorDtors(PartialSpec);
+
+}
     }
     addUSRsOfCtorDtors(TemplateDecl->getTemplatedDecl());
   }
@@ -135,15 +151,25 @@ private:
       return;
     }
 
-    for (const auto *CtorDecl : RecordDecl->ctors())
+    for (const auto *CtorDecl : RecordDecl->ctors()) {
       USRSet.insert(getUSRForDecl(CtorDecl));
+
+}
     // Add template constructor decls, they are not in ctors() unfortunately.
-    if (RecordDecl->hasUserDeclaredConstructor())
-      for (const auto *D : RecordDecl->decls())
-        if (const auto *FTD = dyn_cast<FunctionTemplateDecl>(D))
+    if (RecordDecl->hasUserDeclaredConstructor()) {
+      for (const auto *D : RecordDecl->decls()) {
+        if (const auto *FTD = dyn_cast<FunctionTemplateDecl>(D)) {
           if (const auto *Ctor =
-                  dyn_cast<CXXConstructorDecl>(FTD->getTemplatedDecl()))
+                  dyn_cast<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
             USRSet.insert(getUSRForDecl(Ctor));
+
+}
+
+}
+
+}
+
+}
 
     USRSet.insert(getUSRForDecl(RecordDecl->getDestructor()));
     USRSet.insert(getUSRForDecl(RecordDecl));
@@ -152,8 +178,10 @@ private:
   void addUSRsOfOverridenFunctions(const CXXMethodDecl *MethodDecl) {
     USRSet.insert(getUSRForDecl(MethodDecl));
     // Recursively visit each OverridenMethod.
-    for (const auto &OverriddenMethod : MethodDecl->overridden_methods())
+    for (const auto &OverriddenMethod : MethodDecl->overridden_methods()) {
       addUSRsOfOverridenFunctions(OverriddenMethod);
+
+}
   }
 
   void addUSRsOfInstantiatedMethods(const CXXMethodDecl *MethodDecl) {
@@ -161,19 +189,25 @@ private:
     // member methods should be renamed too, so add USRs of the instantiated
     // methods to the USR set.
     USRSet.insert(getUSRForDecl(MethodDecl));
-    if (const auto *FT = MethodDecl->getInstantiatedFromMemberFunction())
+    if (const auto *FT = MethodDecl->getInstantiatedFromMemberFunction()) {
       USRSet.insert(getUSRForDecl(FT));
+
+}
     for (const auto *Method : InstantiatedMethods) {
       if (USRSet.find(getUSRForDecl(
-              Method->getInstantiatedFromMemberFunction())) != USRSet.end())
+              Method->getInstantiatedFromMemberFunction())) != USRSet.end()) {
         USRSet.insert(getUSRForDecl(Method));
+
+}
     }
   }
 
   bool checkIfOverriddenFunctionAscends(const CXXMethodDecl *MethodDecl) {
     for (const auto &OverriddenMethod : MethodDecl->overridden_methods()) {
-      if (USRSet.find(getUSRForDecl(OverriddenMethod)) != USRSet.end())
+      if (USRSet.find(getUSRForDecl(OverriddenMethod)) != USRSet.end()) {
         return true;
+
+}
       return checkIfOverriddenFunctionAscends(OverriddenMethod);
     }
     return false;
@@ -261,12 +295,16 @@ private:
   void HandleTranslationUnit(ASTContext &Context) override {
     const SourceManager &SourceMgr = Context.getSourceManager();
     for (unsigned Offset : SymbolOffsets) {
-      if (!FindSymbol(Context, SourceMgr, Offset, ""))
+      if (!FindSymbol(Context, SourceMgr, Offset, "")) {
         return;
+
+}
     }
     for (const std::string &QualifiedName : QualifiedNames) {
-      if (!FindSymbol(Context, SourceMgr, 0, QualifiedName))
+      if (!FindSymbol(Context, SourceMgr, 0, QualifiedName)) {
         return;
+
+}
     }
   }
 

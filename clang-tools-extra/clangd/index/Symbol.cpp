@@ -12,13 +12,19 @@ namespace clang {
 namespace clangd {
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, Symbol::SymbolFlag F) {
-  if (F == Symbol::None)
+  if (F == Symbol::None) {
     return OS << "None";
+
+}
   std::string S;
-  if (F & Symbol::Deprecated)
+  if (F & Symbol::Deprecated) {
     S += "deprecated|";
-  if (F & Symbol::IndexedForCodeCompletion)
+
+}
+  if (F & Symbol::IndexedForCodeCompletion) {
     S += "completion|";
+
+}
   return OS << llvm::StringRef(S).rtrim('|');
 }
 
@@ -29,16 +35,20 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const Symbol &S) {
 float quality(const Symbol &S) {
   // This avoids a sharp gradient for tail symbols, and also neatly avoids the
   // question of whether 0 references means a bad symbol or missing data.
-  if (S.References < 3)
+  if (S.References < 3) {
     return 1;
+
+}
   return std::log(S.References);
 }
 
 SymbolSlab::const_iterator SymbolSlab::find(const SymbolID &ID) const {
   auto It = llvm::partition_point(Symbols,
                                   [&](const Symbol &S) { return S.ID < ID; });
-  if (It != Symbols.end() && It->ID == ID)
+  if (It != Symbols.end() && It->ID == ID) {
     return It;
+
+}
   return Symbols.end();
 }
 
@@ -55,15 +65,19 @@ SymbolSlab SymbolSlab::Builder::build() && {
   // Sort symbols into vector so the slab can binary search over them.
   std::vector<Symbol> SortedSymbols;
   SortedSymbols.reserve(Symbols.size());
-  for (auto &Entry : Symbols)
+  for (auto &Entry : Symbols) {
     SortedSymbols.push_back(std::move(Entry.second));
+
+}
   llvm::sort(SortedSymbols,
              [](const Symbol &L, const Symbol &R) { return L.ID < R.ID; });
   // We may have unused strings from overwritten symbols. Build a new arena.
   llvm::BumpPtrAllocator NewArena;
   llvm::UniqueStringSaver Strings(NewArena);
-  for (auto &S : SortedSymbols)
+  for (auto &S : SortedSymbols) {
     own(S, Strings);
+
+}
   return SymbolSlab(std::move(NewArena), std::move(SortedSymbols));
 }
 

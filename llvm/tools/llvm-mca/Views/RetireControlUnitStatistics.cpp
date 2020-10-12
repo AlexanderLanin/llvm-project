@@ -23,8 +23,10 @@ RetireControlUnitStatistics::RetireControlUnitStatistics(const MCSchedModel &SM)
   TotalROBEntries = SM.MicroOpBufferSize;
   if (SM.hasExtraProcessorInfo()) {
     const MCExtraProcessorInfo &EPI = SM.getExtraProcessorInfo();
-    if (EPI.ReorderBufferSize)
+    if (EPI.ReorderBufferSize) {
       TotalROBEntries = EPI.ReorderBufferSize;
+
+}
   }
 }
 
@@ -61,10 +63,12 @@ void RetireControlUnitStatistics::printView(raw_ostream &OS) const {
 
   for (const std::pair<const unsigned, unsigned> &Entry : RetiredPerCycle) {
     TempStream << " " << Entry.first;
-    if (Entry.first < 10)
+    if (Entry.first < 10) {
       TempStream << ",           ";
-    else
+    } else {
       TempStream << ",          ";
+
+}
     TempStream << Entry.second << "  ("
                << format("%.1f", ((double)Entry.second / NumCycles) * 100.0)
                << "%)\n";

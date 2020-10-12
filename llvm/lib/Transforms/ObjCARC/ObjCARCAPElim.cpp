@@ -70,17 +70,25 @@ void ObjCARCAPElim::getAnalysisUsage(AnalysisUsage &AU) const {
 /// possibly produce autoreleases.
 bool ObjCARCAPElim::MayAutorelease(ImmutableCallSite CS, unsigned Depth) {
   if (const Function *Callee = CS.getCalledFunction()) {
-    if (!Callee->hasExactDefinition())
+    if (!Callee->hasExactDefinition()) {
       return true;
+
+}
     for (const BasicBlock &BB : *Callee) {
-      for (const Instruction &I : BB)
-        if (ImmutableCallSite JCS = ImmutableCallSite(&I))
+      for (const Instruction &I : BB) {
+        if (ImmutableCallSite JCS = ImmutableCallSite(&I)) {
           // This recursion depth limit is arbitrary. It's just great
           // enough to cover known interesting testcases.
           if (Depth < 3 &&
               !JCS.onlyReadsMemory() &&
-              MayAutorelease(JCS, Depth + 1))
+              MayAutorelease(JCS, Depth + 1)) {
             return true;
+
+}
+
+}
+
+}
     }
     return false;
   }
@@ -115,8 +123,10 @@ bool ObjCARCAPElim::OptimizeBB(BasicBlock *BB) {
       Push = nullptr;
       break;
     case ARCInstKind::CallOrUser:
-      if (MayAutorelease(ImmutableCallSite(Inst)))
+      if (MayAutorelease(ImmutableCallSite(Inst))) {
         Push = nullptr;
+
+}
       break;
     default:
       break;
@@ -127,15 +137,21 @@ bool ObjCARCAPElim::OptimizeBB(BasicBlock *BB) {
 }
 
 bool ObjCARCAPElim::runOnModule(Module &M) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return false;
+
+}
 
   // If nothing in the Module uses ARC, don't do anything.
-  if (!ModuleHasARC(M))
+  if (!ModuleHasARC(M)) {
     return false;
 
-  if (skipModule(M))
+}
+
+  if (skipModule(M)) {
     return false;
+
+}
 
   // Find the llvm.global_ctors variable, as the first step in
   // identifying the global constructors. In theory, unnecessary autorelease
@@ -144,8 +160,10 @@ bool ObjCARCAPElim::runOnModule(Module &M) {
   // so it's pretty common for them to be unnecessary, and it's pretty
   // profitable to eliminate them.
   GlobalVariable *GV = M.getGlobalVariable("llvm.global_ctors");
-  if (!GV)
+  if (!GV) {
     return false;
+
+}
 
   assert(GV->hasDefinitiveInitializer() &&
          "llvm.global_ctors is uncooperative!");
@@ -162,14 +180,20 @@ bool ObjCARCAPElim::runOnModule(Module &M) {
     Function *F = dyn_cast<Function>(cast<ConstantStruct>(Op)->getOperand(1));
     // If the user used a constructor function with the wrong signature and
     // it got bitcasted or whatever, look the other way.
-    if (!F)
+    if (!F) {
       continue;
+
+}
     // Only look at function definitions.
-    if (F->isDeclaration())
+    if (F->isDeclaration()) {
       continue;
+
+}
     // Only look at functions with one basic block.
-    if (std::next(F->begin()) != F->end())
+    if (std::next(F->begin()) != F->end()) {
       continue;
+
+}
     // Ok, a single-block constructor function definition. Try to optimize it.
     Changed |= OptimizeBB(&F->front());
   }

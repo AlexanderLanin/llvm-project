@@ -164,8 +164,10 @@ public:
   void visitMemIntrinsic(MemIntrinsic &MI) {
     Value *Length = MI.getLength();
     // Not perform on constant length calls.
-    if (dyn_cast<ConstantInt>(Length))
+    if (dyn_cast<ConstantInt>(Length)) {
       return;
+
+}
     WorkList.push_back(&MI);
   }
 
@@ -190,10 +192,14 @@ private:
   enum MemOPSizeKind { PreciseValue, NonLargeGroup, LargeGroup };
 
   MemOPSizeKind getMemOPSizeKind(int64_t Value) const {
-    if (Value == MemOPSizeLarge && MemOPSizeLarge != 0)
+    if (Value == MemOPSizeLarge && MemOPSizeLarge != 0) {
       return LargeGroup;
-    if (Value == PreciseRangeLast + 1)
+
+}
+    if (Value == PreciseRangeLast + 1) {
       return NonLargeGroup;
+
+}
     return PreciseValue;
   }
 };
@@ -213,17 +219,23 @@ static const char *getMIName(const MemIntrinsic *MI) {
 
 static bool isProfitable(uint64_t Count, uint64_t TotalCount) {
   assert(Count <= TotalCount);
-  if (Count < MemOPCountThreshold)
+  if (Count < MemOPCountThreshold) {
     return false;
-  if (Count < TotalCount * MemOPPercentThreshold / 100)
+
+}
+  if (Count < TotalCount * MemOPPercentThreshold / 100) {
     return false;
+
+}
   return true;
 }
 
 static inline uint64_t getScaledCount(uint64_t Count, uint64_t Num,
                                       uint64_t Denom) {
-  if (!MemOPScaleCount)
+  if (!MemOPScaleCount) {
     return Count;
+
+}
   bool Overflowed;
   uint64_t ScaleCount = SaturatingMultiply(Count, Num, &Overflowed);
   return ScaleCount / Denom;
@@ -231,21 +243,27 @@ static inline uint64_t getScaledCount(uint64_t Count, uint64_t Num,
 
 bool MemOPSizeOpt::perform(MemIntrinsic *MI) {
   assert(MI);
-  if (MI->getIntrinsicID() == Intrinsic::memmove)
+  if (MI->getIntrinsicID() == Intrinsic::memmove) {
     return false;
+
+}
 
   uint32_t NumVals, MaxNumPromotions = MemOPMaxVersion + 2;
   uint64_t TotalCount;
   if (!getValueProfDataFromInst(*MI, IPVK_MemOPSize, MaxNumPromotions,
-                                ValueDataArray.get(), NumVals, TotalCount))
+                                ValueDataArray.get(), NumVals, TotalCount)) {
     return false;
+
+}
 
   uint64_t ActualCount = TotalCount;
   uint64_t SavedTotalCount = TotalCount;
   if (MemOPScaleCount) {
     auto BBEdgeCount = BFI.getBlockProfileCount(MI->getParent());
-    if (!BBEdgeCount)
+    if (!BBEdgeCount) {
       return false;
+
+}
     ActualCount = *BBEdgeCount;
   }
 
@@ -256,17 +274,23 @@ bool MemOPSizeOpt::perform(MemIntrinsic *MI) {
       for (auto &VD
            : VDs) { dbgs() << "  (" << VD.Value << "," << VD.Count << ")\n"; });
 
-  if (ActualCount < MemOPCountThreshold)
-    return false;
-  // Skip if the total value profiled count is 0, in which case we can't
-  // scale up the counts properly (and there is no profitable transformation).
-  if (TotalCount == 0)
+  if (ActualCount < MemOPCountThreshold) {
     return false;
 
+}
+  // Skip if the total value profiled count is 0, in which case we can't
+  // scale up the counts properly (and there is no profitable transformation).
+  if (TotalCount == 0) {
+    return false;
+
+}
+
   TotalCount = ActualCount;
-  if (MemOPScaleCount)
+  if (MemOPScaleCount) {
     LLVM_DEBUG(dbgs() << "Scale counts: numerator = " << ActualCount
                       << " denominator = " << SavedTotalCount << "\n");
+
+}
 
   // Keeping track of the count of the default case:
   uint64_t RemainCount = TotalCount;
@@ -280,38 +304,52 @@ bool MemOPSizeOpt::perform(MemIntrinsic *MI) {
   for (auto &VD : VDs) {
     int64_t V = VD.Value;
     uint64_t C = VD.Count;
-    if (MemOPScaleCount)
+    if (MemOPScaleCount) {
       C = getScaledCount(C, ActualCount, SavedTotalCount);
 
+}
+
     // Only care precise value here.
-    if (getMemOPSizeKind(V) != PreciseValue)
+    if (getMemOPSizeKind(V) != PreciseValue) {
       continue;
+
+}
 
     // ValueCounts are sorted on the count. Break at the first un-profitable
     // value.
-    if (!isProfitable(C, RemainCount))
+    if (!isProfitable(C, RemainCount)) {
       break;
+
+}
 
     SizeIds.push_back(V);
     CaseCounts.push_back(C);
-    if (C > MaxCount)
+    if (C > MaxCount) {
       MaxCount = C;
+
+}
 
     assert(RemainCount >= C);
     RemainCount -= C;
     assert(SavedRemainCount >= VD.Count);
     SavedRemainCount -= VD.Count;
 
-    if (++Version > MemOPMaxVersion && MemOPMaxVersion != 0)
+    if (++Version > MemOPMaxVersion && MemOPMaxVersion != 0) {
       break;
+
+}
   }
 
-  if (Version == 0)
+  if (Version == 0) {
     return false;
 
+}
+
   CaseCounts[0] = RemainCount;
-  if (RemainCount > MaxCount)
+  if (RemainCount > MaxCount) {
     MaxCount = RemainCount;
+
+}
 
   uint64_t SumForOpt = TotalCount - RemainCount;
 
@@ -359,16 +397,20 @@ bool MemOPSizeOpt::perform(MemIntrinsic *MI) {
   // Clear the value profile data.
   MI->setMetadata(LLVMContext::MD_prof, nullptr);
   // If all promoted, we don't need the MD.prof metadata.
-  if (SavedRemainCount > 0 || Version != NumVals)
+  if (SavedRemainCount > 0 || Version != NumVals) {
     // Otherwise we need update with the un-promoted records back.
     annotateValueSite(*Func.getParent(), *MI, VDs.slice(Version),
                       SavedRemainCount, IPVK_MemOPSize, NumVals);
 
+}
+
   LLVM_DEBUG(dbgs() << "\n\n== Basic Block After==\n");
 
   std::vector<DominatorTree::UpdateType> Updates;
-  if (DT)
+  if (DT) {
     Updates.reserve(2 * SizeIds.size());
+
+}
 
   for (uint64_t SizeId : SizeIds) {
     BasicBlock *CaseBB = BasicBlock::Create(
@@ -415,11 +457,15 @@ bool MemOPSizeOpt::perform(MemIntrinsic *MI) {
 static bool PGOMemOPSizeOptImpl(Function &F, BlockFrequencyInfo &BFI,
                                 OptimizationRemarkEmitter &ORE,
                                 DominatorTree *DT) {
-  if (DisableMemOPOPT)
+  if (DisableMemOPOPT) {
     return false;
 
-  if (F.hasFnAttribute(Attribute::OptimizeForSize))
+}
+
+  if (F.hasFnAttribute(Attribute::OptimizeForSize)) {
     return false;
+
+}
   MemOPSizeOpt MemOPSizeOpt(F, BFI, ORE, DT);
   MemOPSizeOpt.perform();
   return MemOPSizeOpt.isChanged();
@@ -443,8 +489,10 @@ PreservedAnalyses PGOMemOPSizeOpt::run(Function &F,
   auto &ORE = FAM.getResult<OptimizationRemarkEmitterAnalysis>(F);
   auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
   bool Changed = PGOMemOPSizeOptImpl(F, BFI, ORE, DT);
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
   auto PA = PreservedAnalyses();
   PA.preserve<GlobalsAA>();
   PA.preserve<DominatorTreeAnalysis>();

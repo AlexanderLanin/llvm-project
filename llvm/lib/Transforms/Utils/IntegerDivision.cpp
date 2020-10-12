@@ -64,8 +64,10 @@ static Value *generateSignedRemainderCode(Value *Dividend, Value *Divisor,
   Value *Xored        = Builder.CreateXor(URem, DividendSign);
   Value *SRem         = Builder.CreateSub(Xored, DividendSign);
 
-  if (Instruction *URemInst = dyn_cast<Instruction>(URem))
+  if (Instruction *URemInst = dyn_cast<Instruction>(URem)) {
     Builder.SetInsertPoint(URemInst);
+
+}
 
   return SRem;
 }
@@ -89,8 +91,10 @@ static Value *generatedUnsignedRemainderCode(Value *Dividend, Value *Divisor,
   Value *Product   = Builder.CreateMul(Divisor, Quotient);
   Value *Remainder = Builder.CreateSub(Dividend, Product);
 
-  if (Instruction *UDiv = dyn_cast<Instruction>(Quotient))
+  if (Instruction *UDiv = dyn_cast<Instruction>(Quotient)) {
     Builder.SetInsertPoint(UDiv);
+
+}
 
   return Remainder;
 }
@@ -138,8 +142,10 @@ static Value *generateSignedDivisionCode(Value *Dividend, Value *Divisor,
   Value *Tmp4   = Builder.CreateXor(Q_Mag, Q_Sgn);
   Value *Q      = Builder.CreateSub(Tmp4, Q_Sgn);
 
-  if (Instruction *UDiv = dyn_cast<Instruction>(Q_Mag))
+  if (Instruction *UDiv = dyn_cast<Instruction>(Q_Mag)) {
     Builder.SetInsertPoint(UDiv);
+
+}
 
   return Q;
 }
@@ -398,8 +404,10 @@ bool llvm::expandRemainder(BinaryOperator *Rem) {
     // If we didn't actually generate an urem instruction, we're done
     // This happens for example if the input were constant. In this case the
     // Builder insertion point was unchanged
-    if (IsInsertPoint)
+    if (IsInsertPoint) {
       return true;
+
+}
 
     BinaryOperator *BO = dyn_cast<BinaryOperator>(Builder.GetInsertPoint());
     Rem = BO;
@@ -457,8 +465,10 @@ bool llvm::expandDivision(BinaryOperator *Div) {
     // If we didn't actually generate an udiv instruction, we're done
     // This happens for example if the input were constant. In this case the
     // Builder insertion point was unchanged
-    if (IsInsertPoint)
+    if (IsInsertPoint) {
       return true;
+
+}
 
     BinaryOperator *BO = dyn_cast<BinaryOperator>(Builder.GetInsertPoint());
     Div = BO;
@@ -495,8 +505,10 @@ bool llvm::expandRemainderUpTo32Bits(BinaryOperator *Rem) {
   assert(RemTyBitWidth <= 32 &&
          "Div of bitwidth greater than 32 not supported");
 
-  if (RemTyBitWidth == 32)
+  if (RemTyBitWidth == 32) {
     return expandRemainder(Rem);
+
+}
 
   // If bitwidth smaller than 32 extend inputs, extend output and proceed
   // with 32 bit division.
@@ -543,8 +555,10 @@ bool llvm::expandRemainderUpTo64Bits(BinaryOperator *Rem) {
 
   assert(RemTyBitWidth <= 64 && "Div of bitwidth greater than 64 not supported");
 
-  if (RemTyBitWidth == 64)
+  if (RemTyBitWidth == 64) {
     return expandRemainder(Rem);
+
+}
 
   // If bitwidth smaller than 64 extend inputs, extend output and proceed
   // with 64 bit division.
@@ -592,8 +606,10 @@ bool llvm::expandDivisionUpTo32Bits(BinaryOperator *Div) {
 
   assert(DivTyBitWidth <= 32 && "Div of bitwidth greater than 32 not supported");
 
-  if (DivTyBitWidth == 32)
+  if (DivTyBitWidth == 32) {
     return expandDivision(Div);
+
+}
 
   // If bitwidth smaller than 32 extend inputs, extend output and proceed
   // with 32 bit division.
@@ -641,8 +657,10 @@ bool llvm::expandDivisionUpTo64Bits(BinaryOperator *Div) {
   assert(DivTyBitWidth <= 64 &&
          "Div of bitwidth greater than 64 not supported");
 
-  if (DivTyBitWidth == 64)
+  if (DivTyBitWidth == 64) {
     return expandDivision(Div);
+
+}
 
   // If bitwidth smaller than 64 extend inputs, extend output and proceed
   // with 64 bit division.

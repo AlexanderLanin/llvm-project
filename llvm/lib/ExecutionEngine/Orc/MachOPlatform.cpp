@@ -45,19 +45,23 @@ namespace orc {
 template <typename FnTy>
 static Error setUpObjCRegAPIFunc(FnTy &Target, sys::DynamicLibrary &LibObjC,
                                  const char *Name) {
-  if (void *Addr = LibObjC.getAddressOfSymbol(Name))
+  if (void *Addr = LibObjC.getAddressOfSymbol(Name)) {
     Target = reinterpret_cast<FnTy>(Addr);
-  else
+  } else {
     return make_error<StringError>(
         (Twine("Could not find address for ") + Name).str(),
         inconvertibleErrorCode());
+
+}
   return Error::success();
 }
 
 Error enableObjCRegistration(const char *PathToLibObjC) {
   // If we've already tried to initialize then just bail out.
-  if (ObjCRegistrationAPIState != ObjCRegistrationAPI::Uninitialized)
+  if (ObjCRegistrationAPIState != ObjCRegistrationAPI::Uninitialized) {
     return Error::success();
+
+}
 
   ObjCRegistrationAPIState = ObjCRegistrationAPI::Unavailable;
 
@@ -65,17 +69,25 @@ Error enableObjCRegistration(const char *PathToLibObjC) {
   auto LibObjC =
       sys::DynamicLibrary::getPermanentLibrary(PathToLibObjC, &ErrMsg);
 
-  if (!LibObjC.isValid())
+  if (!LibObjC.isValid()) {
     return make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode());
 
-  if (auto Err = setUpObjCRegAPIFunc(objc_msgSend, LibObjC, "objc_msgSend"))
+}
+
+  if (auto Err = setUpObjCRegAPIFunc(objc_msgSend, LibObjC, "objc_msgSend")) {
     return Err;
+
+}
   if (auto Err = setUpObjCRegAPIFunc(objc_readClassPair, LibObjC,
-                                     "objc_readClassPair"))
+                                     "objc_readClassPair")) {
     return Err;
+
+}
   if (auto Err =
-          setUpObjCRegAPIFunc(sel_registerName, LibObjC, "sel_registerName"))
+          setUpObjCRegAPIFunc(sel_registerName, LibObjC, "sel_registerName")) {
     return Err;
+
+}
 
   ObjCRegistrationAPIState = ObjCRegistrationAPI::Initialized;
   return Error::success();
@@ -136,9 +148,11 @@ Error MachOJITDylibInitializers::registerObjCClasses() const {
       auto Registered = objc_readClassPair(Cls, ImageInfo);
 
       // FIXME: Improve diagnostic by reporting the failed class's name.
-      if (Registered != Cls)
+      if (Registered != Cls) {
         return make_error<StringError>("Unable to register Objective-C class",
                                        inconvertibleErrorCode());
+
+}
     }
   }
   return Error::success();
@@ -160,8 +174,10 @@ Error MachOPlatform::setupJITDylib(JITDylib &JD) {
 
 Error MachOPlatform::notifyAdding(JITDylib &JD, const MaterializationUnit &MU) {
   const auto &InitSym = MU.getInitializerSymbol();
-  if (!InitSym)
+  if (!InitSym) {
     return Error::success();
+
+}
 
   std::lock_guard<std::mutex> Lock(PlatformMutex);
   RegisteredInitSymbols[&JD].add(InitSym);
@@ -203,8 +219,10 @@ MachOPlatform::getInitializerSequence(JITDylib &JD) {
       }
     }
 
-    if (NewInitSymbols.empty())
+    if (NewInitSymbols.empty()) {
       break;
+
+}
 
     LLVM_DEBUG({
       dbgs() << "MachOPlatform: Issuing lookups for new init symbols: "
@@ -214,10 +232,12 @@ MachOPlatform::getInitializerSequence(JITDylib &JD) {
     });
 
     // Outside the lock, issue the lookup.
-    if (auto R = lookupInitSymbols(JD.getExecutionSession(), NewInitSymbols))
+    if (auto R = lookupInitSymbols(JD.getExecutionSession(), NewInitSymbols)) {
       ; // Nothing to do in the success case.
-    else
+    } else {
       return R.takeError();
+
+}
   }
 
   LLVM_DEBUG({
@@ -267,13 +287,17 @@ std::vector<JITDylib *> MachOPlatform::getDFSLinkOrder(JITDylib &JD) {
   while (!WorkStack.empty()) {
     auto *NextJD = WorkStack.back();
     WorkStack.pop_back();
-    if (Visited.count(NextJD))
+    if (Visited.count(NextJD)) {
       continue;
+
+}
     Visited.insert(NextJD);
     Result.push_back(NextJD);
     NextJD->withSearchOrderDo([&](const JITDylibSearchOrder &SO) {
-      for (auto &KV : SO)
+      for (auto &KV : SO) {
         WorkStack.push_back(KV.first);
+
+}
     });
   }
 
@@ -291,26 +315,36 @@ void MachOPlatform::registerInitInfo(
 
   InitSeq.setObjCImageInfoAddr(ObjCImageInfoAddr);
 
-  if (ModInits.Address)
+  if (ModInits.Address) {
     InitSeq.addModInitsSection(std::move(ModInits));
 
-  if (ObjCSelRefs.Address)
+}
+
+  if (ObjCSelRefs.Address) {
     InitSeq.addObjCSelRefsSection(std::move(ObjCSelRefs));
 
-  if (ObjCClassList.Address)
+}
+
+  if (ObjCClassList.Address) {
     InitSeq.addObjCClassListSection(std::move(ObjCClassList));
+
+}
 }
 
 static Expected<MachOJITDylibInitializers::SectionExtent>
 getSectionExtent(jitlink::LinkGraph &G, StringRef SectionName) {
   auto *Sec = G.findSectionByName(SectionName);
-  if (!Sec)
+  if (!Sec) {
     return MachOJITDylibInitializers::SectionExtent();
+
+}
   jitlink::SectionRange R(*Sec);
-  if (R.getSize() % G.getPointerSize() != 0)
+  if (R.getSize() % G.getPointerSize() != 0) {
     return make_error<StringError>(SectionName + " section size is not a "
                                                  "multiple of the pointer size",
                                    inconvertibleErrorCode());
+
+}
   return MachOJITDylibInitializers::SectionExtent(
       R.getStart(), R.getSize() / G.getPointerSize());
 }
@@ -330,8 +364,10 @@ void MachOPlatform::InitScraperPlugin::modifyPassConfig(
       InitSymbolDeps[&MR] = std::move(InitSectionSymbols);
     }
 
-    if (auto Err = processObjCImageInfo(G, MR))
+    if (auto Err = processObjCImageInfo(G, MR)) {
       return Err;
+
+}
 
     return Error::success();
   });
@@ -350,22 +386,28 @@ void MachOPlatform::InitScraperPlugin::modifyPassConfig(
     }
 
     // Record __mod_init_func.
-    if (auto ModInitsOrErr = getSectionExtent(G, "__mod_init_func"))
+    if (auto ModInitsOrErr = getSectionExtent(G, "__mod_init_func")) {
       ModInits = std::move(*ModInitsOrErr);
-    else
+    } else {
       return ModInitsOrErr.takeError();
 
+}
+
     // Record __objc_selrefs.
-    if (auto ObjCSelRefsOrErr = getSectionExtent(G, "__objc_selrefs"))
+    if (auto ObjCSelRefsOrErr = getSectionExtent(G, "__objc_selrefs")) {
       ObjCSelRefs = std::move(*ObjCSelRefsOrErr);
-    else
+    } else {
       return ObjCSelRefsOrErr.takeError();
 
+}
+
     // Record __objc_classlist.
-    if (auto ObjCClassListOrErr = getSectionExtent(G, "__objc_classlist"))
+    if (auto ObjCClassListOrErr = getSectionExtent(G, "__objc_classlist")) {
       ObjCClassList = std::move(*ObjCClassListOrErr);
-    else
+    } else {
       return ObjCClassListOrErr.takeError();
+
+}
 
     // Dump the scraped inits.
     LLVM_DEBUG({
@@ -418,9 +460,11 @@ void MachOPlatform::InitScraperPlugin::preserveInitSectionIfPresent(
     StringRef SectionName) {
   if (auto *Sec = G.findSectionByName(SectionName)) {
     auto SecBlocks = Sec->blocks();
-    if (!llvm::empty(SecBlocks))
+    if (!llvm::empty(SecBlocks)) {
       Symbols.push_back(
           &G.addAnonymousSymbol(**SecBlocks.begin(), 0, 0, false, true));
+
+}
   }
 }
 
@@ -434,36 +478,50 @@ Error MachOPlatform::InitScraperPlugin::processObjCImageInfo(
   //   (2) We already have a recorded __objc_imageinfo for this JITDylib,
   //       in which case we just verify it.
   auto *ObjCImageInfo = G.findSectionByName("__objc_imageinfo");
-  if (!ObjCImageInfo)
+  if (!ObjCImageInfo) {
     return Error::success();
+
+}
 
   auto ObjCImageInfoBlocks = ObjCImageInfo->blocks();
 
   // Check that the section is not empty if present.
-  if (llvm::empty(ObjCImageInfoBlocks))
+  if (llvm::empty(ObjCImageInfoBlocks)) {
     return make_error<StringError>("Empty __objc_imageinfo section in " +
                                        G.getName(),
                                    inconvertibleErrorCode());
 
+}
+
   // Check that there's only one block in the section.
-  if (std::next(ObjCImageInfoBlocks.begin()) != ObjCImageInfoBlocks.end())
+  if (std::next(ObjCImageInfoBlocks.begin()) != ObjCImageInfoBlocks.end()) {
     return make_error<StringError>("Multiple blocks in __objc_imageinfo "
                                    "section in " +
                                        G.getName(),
                                    inconvertibleErrorCode());
 
+}
+
   // Check that the __objc_imageinfo section is unreferenced.
   // FIXME: We could optimize this check if Symbols had a ref-count.
   for (auto &Sec : G.sections()) {
-    if (&Sec != ObjCImageInfo)
-      for (auto *B : Sec.blocks())
-        for (auto &E : B->edges())
+    if (&Sec != ObjCImageInfo) {
+      for (auto *B : Sec.blocks()) {
+        for (auto &E : B->edges()) {
           if (E.getTarget().isDefined() &&
-              &E.getTarget().getBlock().getSection() == ObjCImageInfo)
+              &E.getTarget().getBlock().getSection() == ObjCImageInfo) {
             return make_error<StringError>("__objc_imageinfo is referenced "
                                            "within file " +
                                                G.getName(),
                                            inconvertibleErrorCode());
+
+}
+
+}
+
+}
+
+}
   }
 
   auto &ObjCImageInfoBlock = **ObjCImageInfoBlocks.begin();
@@ -479,19 +537,25 @@ Error MachOPlatform::InitScraperPlugin::processObjCImageInfo(
   if (ObjCImageInfoItr != ObjCImageInfos.end()) {
     // We've already registered an __objc_imageinfo section. Verify the
     // content of this new section matches, then delete it.
-    if (ObjCImageInfoItr->second.first != Version)
+    if (ObjCImageInfoItr->second.first != Version) {
       return make_error<StringError>(
           "ObjC version in " + G.getName() +
               " does not match first registered version",
           inconvertibleErrorCode());
-    if (ObjCImageInfoItr->second.second != Flags)
+
+}
+    if (ObjCImageInfoItr->second.second != Flags) {
       return make_error<StringError>("ObjC flags in " + G.getName() +
                                          " do not match first registered flags",
                                      inconvertibleErrorCode());
 
+}
+
     // __objc_imageinfo is valid. Delete the block.
-    for (auto *S : ObjCImageInfo->symbols())
+    for (auto *S : ObjCImageInfo->symbols()) {
       G.removeDefinedSymbol(*S);
+
+}
     G.removeBlock(ObjCImageInfoBlock);
   } else {
     // We haven't registered an __objc_imageinfo section yet. Register and

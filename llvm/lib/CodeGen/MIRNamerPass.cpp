@@ -52,15 +52,19 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override {
     bool Changed = false;
 
-    if (MF.empty())
+    if (MF.empty()) {
       return Changed;
+
+}
 
     VRegRenamer Renamer(MF.getRegInfo());
 
     unsigned BBIndex = 0;
     ReversePostOrderTraversal<MachineBasicBlock *> RPOT(&*MF.begin());
-    for (auto &MBB : RPOT)
+    for (auto &MBB : RPOT) {
       Changed |= Renamer.renameVRegs(MBB, BBIndex++);
+
+}
 
     return Changed;
   }

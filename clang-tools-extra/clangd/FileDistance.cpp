@@ -46,8 +46,10 @@ namespace clangd {
 static llvm::SmallString<128> canonicalize(llvm::StringRef Path) {
   llvm::SmallString<128> Result = Path.rtrim('/');
   native(Result, llvm::sys::path::Style::posix);
-  if (Result.empty() || Result.front() != '/')
+  if (Result.empty() || Result.front() != '/') {
     Result.insert(Result.begin(), '/');
+
+}
   return Result;
 }
 
@@ -73,12 +75,16 @@ FileDistance::FileDistance(llvm::StringMap<SourceParams> Sources,
       Rest = parent_path(Rest, llvm::sys::path::Style::posix);
       auto NextHash = llvm::hash_value(Rest);
       auto &Down = DownEdges[NextHash];
-      if (!llvm::is_contained(Down, Hash))
+      if (!llvm::is_contained(Down, Hash)) {
         Down.push_back(Hash);
+
+}
       // We can't just break after MaxUpTraversals, must still set DownEdges.
       if (I > S.getValue().MaxUpTraversals) {
-        if (Cache.find(Hash) != Cache.end())
+        if (Cache.find(Hash) != Cache.end()) {
           break;
+
+}
       } else {
         unsigned Cost = S.getValue().Cost + I * Opts.UpCost;
         auto R = Cache.try_emplace(Hash, Cost);
@@ -97,8 +103,10 @@ FileDistance::FileDistance(llvm::StringMap<SourceParams> Sources,
   // Now propagate scores parent -> child if that's an improvement.
   // BFS ensures we propagate down chains (must visit parents before children).
   std::queue<llvm::hash_code> Next;
-  for (auto Child : DownEdges.lookup(llvm::hash_value(llvm::StringRef(""))))
+  for (auto Child : DownEdges.lookup(llvm::hash_value(llvm::StringRef("")))) {
     Next.push(Child);
+
+}
   while (!Next.empty()) {
     auto Parent = Next.front();
     Next.pop();
@@ -107,8 +115,10 @@ FileDistance::FileDistance(llvm::StringMap<SourceParams> Sources,
       if (Parent != RootHash || Opts.AllowDownTraversalFromRoot) {
         auto &ChildCost =
             Cache.try_emplace(Child, Unreachable).first->getSecond();
-        if (ParentCost + Opts.DownCost < ChildCost)
+        if (ParentCost + Opts.DownCost < ChildCost) {
           ChildCost = ParentCost + Opts.DownCost;
+
+}
       }
       Next.push(Child);
     }
@@ -138,8 +148,10 @@ unsigned FileDistance::distance(llvm::StringRef Path) {
   // Now we know the costs for (known node, queried node].
   // Fill these in, walking down the directory tree.
   for (llvm::hash_code Hash : llvm::reverse(Ancestors)) {
-    if (Cost != Unreachable)
+    if (Cost != Unreachable) {
       Cost += Opts.DownCost;
+
+}
     Cache.try_emplace(Hash, Cost);
   }
   dlog("distance({0} = {1})", Path, Cost);
@@ -148,8 +160,10 @@ unsigned FileDistance::distance(llvm::StringRef Path) {
 
 unsigned URIDistance::distance(llvm::StringRef URI) {
   auto R = Cache.try_emplace(llvm::hash_value(URI), FileDistance::Unreachable);
-  if (!R.second)
+  if (!R.second) {
     return R.first->getSecond();
+
+}
   if (auto U = clangd::URI::parse(URI)) {
     dlog("distance({0} = {1})", URI, U->body());
     R.first->second = forScheme(U->scheme()).distance(U->body());
@@ -164,10 +178,12 @@ FileDistance &URIDistance::forScheme(llvm::StringRef Scheme) {
   if (!Delegate) {
     llvm::StringMap<SourceParams> SchemeSources;
     for (const auto &Source : Sources) {
-      if (auto U = clangd::URI::create(Source.getKey(), Scheme))
+      if (auto U = clangd::URI::create(Source.getKey(), Scheme)) {
         SchemeSources.try_emplace(U->body(), Source.getValue());
-      else
+      } else {
         llvm::consumeError(U.takeError());
+
+}
     }
     dlog("FileDistance for scheme {0}: {1}/{2} sources", Scheme,
          SchemeSources.size(), Sources.size());
@@ -197,12 +213,14 @@ createScopeFileDistance(llvm::ArrayRef<std::string> QueryScopes) {
     // Penalize the global scope even it's preferred, as all projects can define
     // symbols in it, and there is pattern where using-namespace is used in
     // place of enclosing namespaces (e.g. in implementation files).
-    if (S == Preferred)
+    if (S == Preferred) {
       Param.Cost = S == "" ? 4 : 0;
-    else if (Preferred.startswith(S) && !S.empty())
+    } else if (Preferred.startswith(S) && !S.empty()) {
       continue; // just rely on up-traversals.
-    else
+    } else {
       Param.Cost = S == "" ? 6 : 2;
+
+}
     auto Path = scopeToPath(S);
     // The global namespace is not 'near' its children.
     Param.MaxUpTraversals = std::max(Path.second - 1, 0);

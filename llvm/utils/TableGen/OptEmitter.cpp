@@ -23,17 +23,23 @@ static int StrCmpOptionName(const char *A, const char *B) {
   const char *X = A, *Y = B;
   char a = tolower(*A), b = tolower(*B);
   while (a == b) {
-    if (a == '\0')
+    if (a == '\0') {
       return strcmp(A, B);
+
+}
 
     a = tolower(*++X);
     b = tolower(*++Y);
   }
 
-  if (a == '\0') // A is a prefix of B.
+  if (a == '\0') { // A is a prefix of B.
     return 1;
-  if (b == '\0') // B is a prefix of A.
+
+}
+  if (b == '\0') { // B is a prefix of A.
     return -1;
+
+}
 
   // Otherwise lexicographic.
   return (a < b) ? -1 : 1;
@@ -46,14 +52,20 @@ int CompareOptionRecords(Record *const *Av, Record *const *Bv) {
   // Sentinel options precede all others and are only ordered by precedence.
   bool ASent = A->getValueAsDef("Kind")->getValueAsBit("Sentinel");
   bool BSent = B->getValueAsDef("Kind")->getValueAsBit("Sentinel");
-  if (ASent != BSent)
+  if (ASent != BSent) {
     return ASent ? -1 : 1;
 
+}
+
   // Compare options by name, unless they are sentinels.
-  if (!ASent)
+  if (!ASent) {
     if (int Cmp = StrCmpOptionName(A->getValueAsString("Name").str().c_str(),
-                                   B->getValueAsString("Name").str().c_str()))
+                                   B->getValueAsString("Name").str().c_str())) {
       return Cmp;
+
+}
+
+}
 
   if (!ASent) {
     std::vector<StringRef> APrefixes = A->getValueAsListOfStrings("Prefixes");
@@ -64,8 +76,10 @@ int CompareOptionRecords(Record *const *Av, Record *const *Bv) {
                                                 BPre = BPrefixes.begin(),
                                                 BEPre = BPrefixes.end();
          APre != AEPre && BPre != BEPre; ++APre, ++BPre) {
-      if (int Cmp = StrCmpOptionName(APre->str().c_str(), BPre->str().c_str()))
+      if (int Cmp = StrCmpOptionName(APre->str().c_str(), BPre->str().c_str())) {
         return Cmp;
+
+}
     }
   }
 

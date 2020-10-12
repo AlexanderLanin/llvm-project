@@ -81,12 +81,14 @@ struct OptReportLocationItemInfo {
   }
 
   bool operator < (const OptReportLocationItemInfo &RHS) const {
-    if (Analyzed < RHS.Analyzed)
+    if (Analyzed < RHS.Analyzed) {
       return true;
-    else if (Analyzed > RHS.Analyzed)
+    } else if (Analyzed > RHS.Analyzed) {
       return false;
-    else if (Transformed < RHS.Transformed)
+    } else if (Transformed < RHS.Transformed) {
       return true;
+
+}
     return false;
   }
 };
@@ -115,28 +117,30 @@ struct OptReportLocationInfo {
   }
 
   bool operator < (const OptReportLocationInfo &RHS) const {
-    if (Inlined < RHS.Inlined)
+    if (Inlined < RHS.Inlined) {
       return true;
-    else if (RHS.Inlined < Inlined)
+    } else if (RHS.Inlined < Inlined) {
       return false;
-    else if (Unrolled < RHS.Unrolled)
+    } else if (Unrolled < RHS.Unrolled) {
       return true;
-    else if (RHS.Unrolled < Unrolled)
+    } else if (RHS.Unrolled < Unrolled) {
       return false;
-    else if (Vectorized < RHS.Vectorized)
+    } else if (Vectorized < RHS.Vectorized) {
       return true;
-    else if (RHS.Vectorized < Vectorized || Succinct)
+    } else if (RHS.Vectorized < Vectorized || Succinct) {
       return false;
-    else if (VectorizationFactor < RHS.VectorizationFactor)
+    } else if (VectorizationFactor < RHS.VectorizationFactor) {
       return true;
-    else if (VectorizationFactor > RHS.VectorizationFactor)
+    } else if (VectorizationFactor > RHS.VectorizationFactor) {
       return false;
-    else if (InterleaveCount < RHS.InterleaveCount)
+    } else if (InterleaveCount < RHS.InterleaveCount) {
       return true;
-    else if (InterleaveCount > RHS.InterleaveCount)
+    } else if (InterleaveCount > RHS.InterleaveCount) {
       return false;
-    else if (UnrollCount < RHS.UnrollCount)
+    } else if (UnrollCount < RHS.UnrollCount) {
       return true;
+
+}
     return false;
   }
 };
@@ -199,17 +203,21 @@ static bool readLocationInfo(LocationInfoTy &LocationInfo) {
     int UnrollCount = 1;
 
     for (const remarks::Argument &Arg : Remark.Args) {
-      if (Arg.Key == "VectorizationFactor")
+      if (Arg.Key == "VectorizationFactor") {
         Arg.Val.getAsInteger(10, VectorizationFactor);
-      else if (Arg.Key == "InterleaveCount")
+      } else if (Arg.Key == "InterleaveCount") {
         Arg.Val.getAsInteger(10, InterleaveCount);
-      else if (Arg.Key == "UnrollCount")
+      } else if (Arg.Key == "UnrollCount") {
         Arg.Val.getAsInteger(10, UnrollCount);
+
+}
     }
 
     const Optional<remarks::RemarkLocation> &Loc = Remark.Loc;
-    if (!Loc)
+    if (!Loc) {
       continue;
+
+}
 
     StringRef File = Loc->SourceFilePath;
     unsigned Line = Loc->SourceLine;
@@ -220,8 +228,10 @@ static bool readLocationInfo(LocationInfoTy &LocationInfo) {
     // have been transformed, we can indicate that explicitly in the output.
     auto UpdateLLII = [Transformed](OptReportLocationItemInfo &LLII) {
       LLII.Analyzed = true;
-      if (Transformed)
+      if (Transformed) {
         LLII.Transformed = true;
+
+}
     };
 
     if (Remark.PassName == "inline") {
@@ -257,8 +267,10 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
   bool FirstFile = true;
   for (auto &FI : LocationInfo) {
     SmallString<128> FileName(FI.first);
-    if (!InputRelDir.empty())
+    if (!InputRelDir.empty()) {
       sys::fs::make_absolute(InputRelDir, FileName);
+
+}
 
     const auto &FileInfo = FI.second;
 
@@ -270,20 +282,28 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
       return false;
     }
 
-    if (FirstFile)
+    if (FirstFile) {
       FirstFile = false;
-    else
+    } else {
       OS << "\n";
+
+}
 
     OS << "< " << FileName << "\n";
 
     // Figure out how many characters we need for the vectorization factors
     // and similar.
     OptReportLocationInfo MaxLI;
-    for (auto &FLI : FileInfo)
-      for (auto &FI : FLI.second)
-        for (auto &LI : FI.second)
+    for (auto &FLI : FileInfo) {
+      for (auto &FI : FLI.second) {
+        for (auto &LI : FI.second) {
           MaxLI |= LI.second;
+
+}
+
+}
+
+}
 
     bool NothingInlined = !MaxLI.Inlined.Transformed;
     bool NothingUnrolled = !MaxLI.Unrolled.Transformed;
@@ -295,8 +315,10 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
 
     // Figure out how many characters we need for the line numbers.
     int64_t NumLines = 0;
-    for (line_iterator LI(*Buf.get(), false); LI != line_iterator(); ++LI)
+    for (line_iterator LI(*Buf.get(), false); LI != line_iterator(); ++LI) {
       ++NumLines;
+
+}
 
     unsigned LNDigits = llvm::utostr(NumLines).size();
 
@@ -329,10 +351,12 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
 
           bool FirstFunc = true;
           for (const auto &FuncName : FuncNameSet) {
-            if (FirstFunc)
+            if (FirstFunc) {
               FirstFunc = false;
-            else
+            } else {
               OS << ", ";
+
+}
 
             bool Printed = false;
             if (!NoDemangle) {
@@ -344,12 +368,16 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
                 Printed = true;
               }
 
-              if (Demangled)
+              if (Demangled) {
                 std::free(Demangled);
+
+}
             }
 
-            if (!Printed)
+            if (!Printed) {
               OS << FuncName;
+
+}
           }
 
           OS << ":\n";
@@ -434,8 +462,10 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
         for (const auto &FLII : FuncLineInfo) {
           UniqueLIs[FLII.second].insert(FLII.first);
 
-          for (const auto &OI : FLII.second)
+          for (const auto &OI : FLII.second) {
             AllLI |= OI.second;
+
+}
         }
       }
 
@@ -444,8 +474,10 @@ static bool writeReport(LocationInfoTy &LocationInfo) {
                              !AllLI.Vectorized.Transformed;
       if (UniqueLIs.size() > 1 && !NothingHappened) {
         OS << " [[\n";
-        for (const auto &FSLI : UniqueLIs)
+        for (const auto &FSLI : UniqueLIs) {
           PrintLine(true, FSLI.second);
+
+}
         OS << " ]]\n";
       } else if (UniqueLIs.size() == 1) {
         PrintLine(false, UniqueLIs.begin()->second);
@@ -468,10 +500,14 @@ int main(int argc, const char **argv) {
       " record files.\n");
 
   LocationInfoTy LocationInfo;
-  if (!readLocationInfo(LocationInfo))
+  if (!readLocationInfo(LocationInfo)) {
     return 1;
-  if (!writeReport(LocationInfo))
+
+}
+  if (!writeReport(LocationInfo)) {
     return 1;
+
+}
 
   return 0;
 }

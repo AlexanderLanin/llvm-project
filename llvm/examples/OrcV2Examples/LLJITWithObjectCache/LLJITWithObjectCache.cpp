@@ -57,8 +57,10 @@ void runJITWithCache(ObjectCache &ObjCache) {
               [&](JITTargetMachineBuilder JTMB)
                   -> Expected<std::unique_ptr<IRCompileLayer::IRCompiler>> {
                 auto TM = JTMB.createTargetMachine();
-                if (!TM)
+                if (!TM) {
                   return TM.takeError();
+
+}
                 return std::make_unique<TMOwningSimpleCompiler>(std::move(*TM),
                                                                 &ObjCache);
               })

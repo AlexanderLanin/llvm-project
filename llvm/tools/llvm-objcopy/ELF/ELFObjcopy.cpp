@@ -64,8 +64,10 @@ static bool isDWOSection(const SectionBase &Sec) {
 
 static bool onlyKeepDWOPred(const Object &Obj, const SectionBase &Sec) {
   // We can't remove the section header string table.
-  if (&Sec == Obj.SectionNames)
+  if (&Sec == Obj.SectionNames) {
     return false;
+
+}
   // Short of keeping the string table we want to keep everything that is a DWO
   // section and remove everything else.
   return !isDWOSection(Sec);
@@ -73,18 +75,30 @@ static bool onlyKeepDWOPred(const Object &Obj, const SectionBase &Sec) {
 
 uint64_t getNewShfFlags(SectionFlag AllFlags) {
   uint64_t NewFlags = 0;
-  if (AllFlags & SectionFlag::SecAlloc)
+  if (AllFlags & SectionFlag::SecAlloc) {
     NewFlags |= ELF::SHF_ALLOC;
-  if (!(AllFlags & SectionFlag::SecReadonly))
+
+}
+  if (!(AllFlags & SectionFlag::SecReadonly)) {
     NewFlags |= ELF::SHF_WRITE;
-  if (AllFlags & SectionFlag::SecCode)
+
+}
+  if (AllFlags & SectionFlag::SecCode) {
     NewFlags |= ELF::SHF_EXECINSTR;
-  if (AllFlags & SectionFlag::SecMerge)
+
+}
+  if (AllFlags & SectionFlag::SecMerge) {
     NewFlags |= ELF::SHF_MERGE;
-  if (AllFlags & SectionFlag::SecStrings)
+
+}
+  if (AllFlags & SectionFlag::SecStrings) {
     NewFlags |= ELF::SHF_STRINGS;
-  if (AllFlags & SectionFlag::SecExclude)
+
+}
+  if (AllFlags & SectionFlag::SecExclude) {
     NewFlags |= ELF::SHF_EXCLUDE;
+
+}
   return NewFlags;
 }
 
@@ -108,29 +122,41 @@ static void setSectionFlagsAndType(SectionBase &Sec, SectionFlag Flags) {
   // non-ALLOC SHT_NOBITS sections do not make much sense.
   if (Sec.Type == SHT_NOBITS &&
       (!(Sec.Flags & ELF::SHF_ALLOC) ||
-       Flags & (SectionFlag::SecContents | SectionFlag::SecLoad)))
+       Flags & (SectionFlag::SecContents | SectionFlag::SecLoad))) {
     Sec.Type = SHT_PROGBITS;
+
+}
 }
 
 static ElfType getOutputElfType(const Binary &Bin) {
   // Infer output ELF type from the input ELF object
-  if (isa<ELFObjectFile<ELF32LE>>(Bin))
+  if (isa<ELFObjectFile<ELF32LE>>(Bin)) {
     return ELFT_ELF32LE;
-  if (isa<ELFObjectFile<ELF64LE>>(Bin))
+
+}
+  if (isa<ELFObjectFile<ELF64LE>>(Bin)) {
     return ELFT_ELF64LE;
-  if (isa<ELFObjectFile<ELF32BE>>(Bin))
+
+}
+  if (isa<ELFObjectFile<ELF32BE>>(Bin)) {
     return ELFT_ELF32BE;
-  if (isa<ELFObjectFile<ELF64BE>>(Bin))
+
+}
+  if (isa<ELFObjectFile<ELF64BE>>(Bin)) {
     return ELFT_ELF64BE;
+
+}
   llvm_unreachable("Invalid ELFType");
 }
 
 static ElfType getOutputElfType(const MachineInfo &MI) {
   // Infer output ELF type from the binary arch specified
-  if (MI.Is64Bit)
+  if (MI.Is64Bit) {
     return MI.IsLittleEndian ? ELFT_ELF64LE : ELFT_ELF64BE;
-  else
+  } else {
     return MI.IsLittleEndian ? ELFT_ELF32LE : ELFT_ELF32BE;
+
+}
 }
 
 static std::unique_ptr<Writer> createELFWriter(const CopyConfig &Config,
@@ -171,18 +197,28 @@ template <class ELFT>
 static Expected<ArrayRef<uint8_t>>
 findBuildID(const CopyConfig &Config, const object::ELFFile<ELFT> &In) {
   auto PhdrsOrErr = In.program_headers();
-  if (auto Err = PhdrsOrErr.takeError())
+  if (auto Err = PhdrsOrErr.takeError()) {
     return createFileError(Config.InputFilename, std::move(Err));
 
+}
+
   for (const auto &Phdr : *PhdrsOrErr) {
-    if (Phdr.p_type != PT_NOTE)
+    if (Phdr.p_type != PT_NOTE) {
       continue;
+
+}
     Error Err = Error::success();
-    for (auto Note : In.notes(Phdr, Err))
-      if (Note.getType() == NT_GNU_BUILD_ID && Note.getName() == ELF_NOTE_GNU)
+    for (auto Note : In.notes(Phdr, Err)) {
+      if (Note.getType() == NT_GNU_BUILD_ID && Note.getName() == ELF_NOTE_GNU) {
         return Note.getDesc();
-    if (Err)
+
+}
+
+}
+    if (Err) {
       return createFileError(Config.InputFilename, std::move(Err));
+
+}
   }
 
   return createFileError(
@@ -193,14 +229,16 @@ findBuildID(const CopyConfig &Config, const object::ELFFile<ELFT> &In) {
 
 static Expected<ArrayRef<uint8_t>>
 findBuildID(const CopyConfig &Config, const object::ELFObjectFileBase &In) {
-  if (auto *O = dyn_cast<ELFObjectFile<ELF32LE>>(&In))
+  if (auto *O = dyn_cast<ELFObjectFile<ELF32LE>>(&In)) {
     return findBuildID(Config, *O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF64LE>>(&In))
+  } else if (auto *O = dyn_cast<ELFObjectFile<ELF64LE>>(&In)) {
     return findBuildID(Config, *O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF32BE>>(&In))
+  } else if (auto *O = dyn_cast<ELFObjectFile<ELF32BE>>(&In)) {
     return findBuildID(Config, *O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF64BE>>(&In))
+  } else if (auto *O = dyn_cast<ELFObjectFile<ELF64BE>>(&In)) {
     return findBuildID(Config, *O->getELFFile());
+
+}
 
   llvm_unreachable("Bad file format");
 }
@@ -220,10 +258,12 @@ static Error linkToBuildIdDir(const CopyConfig &Config, StringRef ToLink,
                               ArrayRef<uint8_t> BuildIdBytes) {
   SmallString<128> Path = Config.BuildIdLinkDir;
   sys::path::append(Path, llvm::toHex(BuildIdBytes[0], /*LowerCase*/ true));
-  if (auto EC = sys::fs::create_directories(Path))
+  if (auto EC = sys::fs::create_directories(Path)) {
     return createFileError(
         Path.str(),
         makeStringError(EC, "cannot create build ID link directory"));
+
+}
 
   sys::path::append(Path,
                     llvm::toHex(BuildIdBytes.slice(1), /*LowerCase*/ true));
@@ -271,16 +311,20 @@ static Error splitDWOToFile(const CopyConfig &Config, const Reader &Reader,
     return onlyKeepDWOPred(*DWOFile, Sec);
   };
   if (Error E = DWOFile->removeSections(Config.AllowBrokenLinks, 
-                                        OnlyKeepDWOPred))
+                                        OnlyKeepDWOPred)) {
     return E;
+
+}
   if (Config.OutputArch) {
     DWOFile->Machine = Config.OutputArch.getValue().EMachine;
     DWOFile->OSABI = Config.OutputArch.getValue().OSABI;
   }
   FileBuffer FB(File);
   auto Writer = createWriter(Config, *DWOFile, FB, OutputElfType);
-  if (Error E = Writer->finalize())
+  if (Error E = Writer->finalize()) {
     return E;
+
+}
   return Writer->write();
 }
 
@@ -288,19 +332,25 @@ static Error dumpSectionToFile(StringRef SecName, StringRef Filename,
                                Object &Obj) {
   for (auto &Sec : Obj.sections()) {
     if (Sec.Name == SecName) {
-      if (Sec.OriginalData.empty())
+      if (Sec.OriginalData.empty()) {
         return createStringError(object_error::parse_failed,
                                  "cannot dump section '%s': it has no contents",
                                  SecName.str().c_str());
+
+}
       Expected<std::unique_ptr<FileOutputBuffer>> BufferOrErr =
           FileOutputBuffer::create(Filename, Sec.OriginalData.size());
-      if (!BufferOrErr)
+      if (!BufferOrErr) {
         return BufferOrErr.takeError();
+
+}
       std::unique_ptr<FileOutputBuffer> Buf = std::move(*BufferOrErr);
       std::copy(Sec.OriginalData.begin(), Sec.OriginalData.end(),
                 Buf->getBufferStart());
-      if (Error E = Buf->commit())
+      if (Error E = Buf->commit()) {
         return E;
+
+}
       return Error::success();
     }
   }
@@ -321,20 +371,28 @@ static void replaceDebugSections(
   // We can't call `addSection` while iterating over sections,
   // because it would mutate the sections array.
   SmallVector<SectionBase *, 13> ToReplace;
-  for (auto &Sec : Obj.sections())
-    if (shouldReplace(Sec))
+  for (auto &Sec : Obj.sections()) {
+    if (shouldReplace(Sec)) {
       ToReplace.push_back(&Sec);
+
+}
+
+}
 
   // Build a mapping from original section to a new one.
   DenseMap<SectionBase *, SectionBase *> FromTo;
-  for (SectionBase *S : ToReplace)
+  for (SectionBase *S : ToReplace) {
     FromTo[S] = addSection(S);
+
+}
 
   // Now we want to update the target sections of relocation
   // sections. Also we will update the relocations themselves
   // to update the symbol references.
-  for (auto &Sec : Obj.sections())
+  for (auto &Sec : Obj.sections()) {
     Sec.replaceSectionReferences(FromTo);
+
+}
 
   RemovePred = [shouldReplace, RemovePred](const SectionBase &Sec) {
     return shouldReplace(Sec) || RemovePred(Sec);
@@ -350,8 +408,10 @@ static bool isUnneededSymbol(const Symbol &Sym) {
 static Error updateAndRemoveSymbols(const CopyConfig &Config, Object &Obj) {
   // TODO: update or remove symbols only if there is an option that affects
   // them.
-  if (!Obj.SymbolTable)
+  if (!Obj.SymbolTable) {
     return Error::success();
+
+}
 
   Obj.SymbolTable->updateSymbols([&](Symbol &Sym) {
     // Common and undefined symbols don't make sense as local symbols, and can
@@ -359,8 +419,10 @@ static Error updateAndRemoveSymbols(const CopyConfig &Config, Object &Obj) {
     if (!Sym.isCommon() && Sym.getShndx() != SHN_UNDEF &&
         ((Config.LocalizeHidden &&
           (Sym.Visibility == STV_HIDDEN || Sym.Visibility == STV_INTERNAL)) ||
-         Config.SymbolsToLocalize.matches(Sym.Name)))
+         Config.SymbolsToLocalize.matches(Sym.Name))) {
       Sym.Binding = STB_LOCAL;
+
+}
 
     // Note: these two globalize flags have very similar names but different
     // meanings:
@@ -374,26 +436,38 @@ static Error updateAndRemoveSymbols(const CopyConfig &Config, Object &Obj) {
     // --globalize-symbol second.
     if (!Config.SymbolsToKeepGlobal.empty() &&
         !Config.SymbolsToKeepGlobal.matches(Sym.Name) &&
-        Sym.getShndx() != SHN_UNDEF)
+        Sym.getShndx() != SHN_UNDEF) {
       Sym.Binding = STB_LOCAL;
 
+}
+
     if (Config.SymbolsToGlobalize.matches(Sym.Name) &&
-        Sym.getShndx() != SHN_UNDEF)
+        Sym.getShndx() != SHN_UNDEF) {
       Sym.Binding = STB_GLOBAL;
 
-    if (Config.SymbolsToWeaken.matches(Sym.Name) && Sym.Binding == STB_GLOBAL)
+}
+
+    if (Config.SymbolsToWeaken.matches(Sym.Name) && Sym.Binding == STB_GLOBAL) {
       Sym.Binding = STB_WEAK;
+
+}
 
     if (Config.Weaken && Sym.Binding == STB_GLOBAL &&
-        Sym.getShndx() != SHN_UNDEF)
+        Sym.getShndx() != SHN_UNDEF) {
       Sym.Binding = STB_WEAK;
 
+}
+
     const auto I = Config.SymbolsToRename.find(Sym.Name);
-    if (I != Config.SymbolsToRename.end())
+    if (I != Config.SymbolsToRename.end()) {
       Sym.Name = std::string(I->getValue());
 
-    if (!Config.SymbolsPrefix.empty() && Sym.Type != STT_SECTION)
+}
+
+    if (!Config.SymbolsPrefix.empty() && Sym.Type != STT_SECTION) {
       Sym.Name = (Config.SymbolsPrefix + Sym.Name).str();
+
+}
   });
 
   // The purpose of this loop is to mark symbols referenced by sections
@@ -401,37 +475,51 @@ static Error updateAndRemoveSymbols(const CopyConfig &Config, Object &Obj) {
   // symbols are still 'needed' and which are not.
   if (Config.StripUnneeded || !Config.UnneededSymbolsToRemove.empty() ||
       !Config.OnlySection.empty()) {
-    for (SectionBase &Sec : Obj.sections())
+    for (SectionBase &Sec : Obj.sections()) {
       Sec.markSymbols();
+
+}
   }
 
   auto RemoveSymbolsPred = [&](const Symbol &Sym) {
     if (Config.SymbolsToKeep.matches(Sym.Name) ||
-        (Config.KeepFileSymbols && Sym.Type == STT_FILE))
+        (Config.KeepFileSymbols && Sym.Type == STT_FILE)) {
       return false;
+
+}
 
     if ((Config.DiscardMode == DiscardType::All ||
          (Config.DiscardMode == DiscardType::Locals &&
           StringRef(Sym.Name).startswith(".L"))) &&
         Sym.Binding == STB_LOCAL && Sym.getShndx() != SHN_UNDEF &&
-        Sym.Type != STT_FILE && Sym.Type != STT_SECTION)
+        Sym.Type != STT_FILE && Sym.Type != STT_SECTION) {
       return true;
 
-    if (Config.StripAll || Config.StripAllGNU)
+}
+
+    if (Config.StripAll || Config.StripAllGNU) {
       return true;
 
-    if (Config.SymbolsToRemove.matches(Sym.Name))
+}
+
+    if (Config.SymbolsToRemove.matches(Sym.Name)) {
       return true;
+
+}
 
     if ((Config.StripUnneeded ||
          Config.UnneededSymbolsToRemove.matches(Sym.Name)) &&
-        (!Obj.isRelocatable() || isUnneededSymbol(Sym)))
+        (!Obj.isRelocatable() || isUnneededSymbol(Sym))) {
       return true;
+
+}
 
     // We want to remove undefined symbols if all references have been stripped.
     if (!Config.OnlySection.empty() && !Sym.Referenced &&
-        Sym.getShndx() == SHN_UNDEF)
+        Sym.getShndx() == SHN_UNDEF) {
       return true;
+
+}
 
     return false;
   };
@@ -449,24 +537,34 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
     };
   }
 
-  if (Config.StripDWO || !Config.SplitDWO.empty())
+  if (Config.StripDWO || !Config.SplitDWO.empty()) {
     RemovePred = [RemovePred](const SectionBase &Sec) {
       return isDWOSection(Sec) || RemovePred(Sec);
     };
 
-  if (Config.ExtractDWO)
+}
+
+  if (Config.ExtractDWO) {
     RemovePred = [RemovePred, &Obj](const SectionBase &Sec) {
       return onlyKeepDWOPred(Obj, Sec) || RemovePred(Sec);
     };
 
-  if (Config.StripAllGNU)
+}
+
+  if (Config.StripAllGNU) {
     RemovePred = [RemovePred, &Obj](const SectionBase &Sec) {
-      if (RemovePred(Sec))
+      if (RemovePred(Sec)) {
         return true;
-      if ((Sec.Flags & SHF_ALLOC) != 0)
+
+}
+      if ((Sec.Flags & SHF_ALLOC) != 0) {
         return false;
-      if (&Sec == Obj.SectionNames)
+
+}
+      if (&Sec == Obj.SectionNames) {
         return false;
+
+}
       switch (Sec.Type) {
       case SHT_SYMTAB:
       case SHT_REL:
@@ -476,6 +574,8 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
       }
       return isDebugSection(Sec);
     };
+
+}
 
   if (Config.StripSections) {
     RemovePred = [RemovePred](const SectionBase &Sec) {
@@ -489,40 +589,62 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
     };
   }
 
-  if (Config.StripNonAlloc)
+  if (Config.StripNonAlloc) {
     RemovePred = [RemovePred, &Obj](const SectionBase &Sec) {
-      if (RemovePred(Sec))
+      if (RemovePred(Sec)) {
         return true;
-      if (&Sec == Obj.SectionNames)
+
+}
+      if (&Sec == Obj.SectionNames) {
         return false;
+
+}
       return (Sec.Flags & SHF_ALLOC) == 0 && Sec.ParentSegment == nullptr;
     };
 
-  if (Config.StripAll)
+}
+
+  if (Config.StripAll) {
     RemovePred = [RemovePred, &Obj](const SectionBase &Sec) {
-      if (RemovePred(Sec))
+      if (RemovePred(Sec)) {
         return true;
-      if (&Sec == Obj.SectionNames)
+
+}
+      if (&Sec == Obj.SectionNames) {
         return false;
-      if (StringRef(Sec.Name).startswith(".gnu.warning"))
+
+}
+      if (StringRef(Sec.Name).startswith(".gnu.warning")) {
         return false;
+
+}
       // We keep the .ARM.attribute section to maintain compatibility
       // with Debian derived distributions. This is a bug in their
       // patchset as documented here:
       // https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=943798
-      if (Sec.Type == SHT_ARM_ATTRIBUTES)
+      if (Sec.Type == SHT_ARM_ATTRIBUTES) {
         return false;
-      if (Sec.ParentSegment != nullptr)
+
+}
+      if (Sec.ParentSegment != nullptr) {
         return false;
+
+}
       return (Sec.Flags & SHF_ALLOC) == 0;
     };
 
+}
+
   if (Config.ExtractPartition || Config.ExtractMainPartition) {
     RemovePred = [RemovePred](const SectionBase &Sec) {
-      if (RemovePred(Sec))
+      if (RemovePred(Sec)) {
         return true;
-      if (Sec.Type == SHT_LLVM_PART_EHDR || Sec.Type == SHT_LLVM_PART_PHDR)
+
+}
+      if (Sec.Type == SHT_LLVM_PART_EHDR || Sec.Type == SHT_LLVM_PART_PHDR) {
         return true;
+
+}
       return (Sec.Flags & SHF_ALLOC) != 0 && !Sec.ParentSegment;
     };
   }
@@ -531,19 +653,27 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
   if (!Config.OnlySection.empty()) {
     RemovePred = [&Config, RemovePred, &Obj](const SectionBase &Sec) {
       // Explicitly keep these sections regardless of previous removes.
-      if (Config.OnlySection.matches(Sec.Name))
+      if (Config.OnlySection.matches(Sec.Name)) {
         return false;
+
+}
 
       // Allow all implicit removes.
-      if (RemovePred(Sec))
+      if (RemovePred(Sec)) {
         return true;
 
+}
+
       // Keep special sections.
-      if (Obj.SectionNames == &Sec)
+      if (Obj.SectionNames == &Sec) {
         return false;
+
+}
       if (Obj.SymbolTable == &Sec ||
-          (Obj.SymbolTable && Obj.SymbolTable->getStrTab() == &Sec))
+          (Obj.SymbolTable && Obj.SymbolTable->getStrTab() == &Sec)) {
         return false;
+
+}
 
       // Remove everything else.
       return true;
@@ -553,8 +683,10 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
   if (!Config.KeepSection.empty()) {
     RemovePred = [&Config, RemovePred](const SectionBase &Sec) {
       // Explicitly keep these sections regardless of previous removes.
-      if (Config.KeepSection.matches(Sec.Name))
+      if (Config.KeepSection.matches(Sec.Name)) {
         return false;
+
+}
       // Otherwise defer to RemovePred.
       return RemovePred(Sec);
     };
@@ -568,19 +700,21 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
   if ((!Config.SymbolsToKeep.empty() || Config.KeepFileSymbols) &&
       Obj.SymbolTable && !Obj.SymbolTable->empty()) {
     RemovePred = [&Obj, RemovePred](const SectionBase &Sec) {
-      if (&Sec == Obj.SymbolTable || &Sec == Obj.SymbolTable->getStrTab())
+      if (&Sec == Obj.SymbolTable || &Sec == Obj.SymbolTable->getStrTab()) {
         return false;
+
+}
       return RemovePred(Sec);
     };
   }
 
-  if (Config.CompressionType != DebugCompressionType::None)
+  if (Config.CompressionType != DebugCompressionType::None) {
     replaceDebugSections(Obj, RemovePred, isCompressable, 
                          [&Config, &Obj](const SectionBase *S) {
                            return &Obj.addSection<CompressedSection>(
                                 *S, Config.CompressionType);
                         });
-  else if (Config.DecompressDebugSections)
+  } else if (Config.DecompressDebugSections) {
     replaceDebugSections(
         Obj, RemovePred,
         [](const SectionBase &S) { return isa<CompressedSection>(&S); },
@@ -588,6 +722,8 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
           auto CS = cast<CompressedSection>(S);
           return &Obj.addSection<DecompressedSection>(*CS);
         });
+
+}
 
   return Obj.removeSections(Config.AllowBrokenLinks, RemovePred);
 }
@@ -602,10 +738,14 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
 static Error handleArgs(const CopyConfig &Config, Object &Obj,
                         const Reader &Reader, ElfType OutputElfType) {
 
-  if (!Config.SplitDWO.empty())
+  if (!Config.SplitDWO.empty()) {
     if (Error E =
-            splitDWOToFile(Config, Reader, Config.SplitDWO, OutputElfType))
+            splitDWOToFile(Config, Reader, Config.SplitDWO, OutputElfType)) {
       return E;
+
+}
+
+}
 
   if (Config.OutputArch) {
     Obj.Machine = Config.OutputArch.getValue().EMachine;
@@ -616,11 +756,15 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
   // remove the relocation sections before removing the symbols. That allows
   // us to avoid reporting the inappropriate errors about removing symbols
   // named in relocations.
-  if (Error E = replaceAndRemoveSections(Config, Obj))
+  if (Error E = replaceAndRemoveSections(Config, Obj)) {
     return E;
 
-  if (Error E = updateAndRemoveSymbols(Config, Obj))
+}
+
+  if (Error E = updateAndRemoveSymbols(Config, Obj)) {
     return E;
+
+}
 
   if (!Config.SectionsToRename.empty()) {
     for (SectionBase &Sec : Obj.sections()) {
@@ -628,8 +772,10 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
       if (Iter != Config.SectionsToRename.end()) {
         const SectionRename &SR = Iter->second;
         Sec.Name = std::string(SR.NewName);
-        if (SR.NewFlags.hasValue())
+        if (SR.NewFlags.hasValue()) {
           setSectionFlagsAndType(Sec, SR.NewFlags.getValue());
+
+}
       }
     }
   }
@@ -669,11 +815,13 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
           // don't add Config.AllocSectionsPrefix because we've already added
           // the prefix to TargetSec->Name. Otherwise, if the relocation
           // section comes *before* the target section, we add the prefix.
-          if (PrefixedSections.count(TargetSec))
+          if (PrefixedSections.count(TargetSec)) {
             Sec.Name = (prefix + TargetSec->Name).str();
-          else
+          } else {
             Sec.Name =
                 (prefix + Config.AllocSectionsPrefix + TargetSec->Name).str();
+
+}
         }
       }
     }
@@ -682,8 +830,10 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
   if (!Config.SetSectionAlignment.empty()) {
     for (SectionBase &Sec : Obj.sections()) {
       auto I = Config.SetSectionAlignment.find(Sec.Name);
-      if (I != Config.SetSectionAlignment.end())
+      if (I != Config.SetSectionAlignment.end()) {
         Sec.Align = I->second;
+
+}
     }
   }
 
@@ -697,10 +847,16 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
     }
   }
 
-  if (Config.OnlyKeepDebug)
-    for (auto &Sec : Obj.sections())
-      if (Sec.Flags & SHF_ALLOC && Sec.Type != SHT_NOTE)
+  if (Config.OnlyKeepDebug) {
+    for (auto &Sec : Obj.sections()) {
+      if (Sec.Flags & SHF_ALLOC && Sec.Type != SHT_NOTE) {
         Sec.Type = SHT_NOBITS;
+
+}
+
+}
+
+}
 
   for (const auto &Flag : Config.AddSection) {
     std::pair<StringRef, StringRef> SecPair = Flag.split("=");
@@ -708,29 +864,37 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
     StringRef File = SecPair.second;
     ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
         MemoryBuffer::getFile(File);
-    if (!BufOrErr)
+    if (!BufOrErr) {
       return createFileError(File, errorCodeToError(BufOrErr.getError()));
+
+}
     std::unique_ptr<MemoryBuffer> Buf = std::move(*BufOrErr);
     ArrayRef<uint8_t> Data(
         reinterpret_cast<const uint8_t *>(Buf->getBufferStart()),
         Buf->getBufferSize());
     OwnedDataSection &NewSection =
         Obj.addSection<OwnedDataSection>(SecName, Data);
-    if (SecName.startswith(".note") && SecName != ".note.GNU-stack")
+    if (SecName.startswith(".note") && SecName != ".note.GNU-stack") {
       NewSection.Type = SHT_NOTE;
+
+}
   }
 
   for (const auto &Flag : Config.DumpSection) {
     std::pair<StringRef, StringRef> SecPair = Flag.split("=");
     StringRef SecName = SecPair.first;
     StringRef File = SecPair.second;
-    if (Error E = dumpSectionToFile(SecName, File, Obj))
+    if (Error E = dumpSectionToFile(SecName, File, Obj)) {
       return E;
+
+}
   }
 
-  if (!Config.AddGnuDebugLink.empty())
+  if (!Config.AddGnuDebugLink.empty()) {
     Obj.addSection<GnuDebugLinkSection>(Config.AddGnuDebugLink,
                                         Config.GnuDebugLinkCRC32);
+
+}
 
   for (const NewSymbolInfo &SI : Config.ELF->SymbolsToAdd) {
     SectionBase *Sec = Obj.findSection(SI.SectionName);
@@ -740,8 +904,10 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
         Sec ? (uint16_t)SYMBOL_SIMPLE_INDEX : (uint16_t)SHN_ABS, 0);
   }
 
-  if (Config.EntryExpr)
+  if (Config.EntryExpr) {
     Obj.Entry = Config.EntryExpr(Obj.Entry);
+
+}
   return Error::success();
 }
 
@@ -749,8 +915,10 @@ static Error writeOutput(const CopyConfig &Config, Object &Obj, Buffer &Out,
                          ElfType OutputElfType) {
   std::unique_ptr<Writer> Writer =
       createWriter(Config, Obj, Out, OutputElfType);
-  if (Error E = Writer->finalize())
+  if (Error E = Writer->finalize()) {
     return E;
+
+}
   return Writer->write();
 }
 
@@ -760,8 +928,10 @@ Error executeObjcopyOnIHex(const CopyConfig &Config, MemoryBuffer &In,
   std::unique_ptr<Object> Obj = Reader.create(true);
   const ElfType OutputElfType =
     getOutputElfType(Config.OutputArch.getValueOr(MachineInfo()));
-  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType))
+  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType)) {
     return E;
+
+}
   return writeOutput(Config, *Obj, Out, OutputElfType);
 }
 
@@ -776,8 +946,10 @@ Error executeObjcopyOnRawBinary(const CopyConfig &Config, MemoryBuffer &In,
   // (-B<arch>).
   const ElfType OutputElfType =
       getOutputElfType(Config.OutputArch.getValueOr(MachineInfo()));
-  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType))
+  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType)) {
     return E;
+
+}
   return writeOutput(Config, *Obj, Out, OutputElfType);
 }
 
@@ -793,33 +965,49 @@ Error executeObjcopyOnBinary(const CopyConfig &Config,
 
   if (!Config.BuildIdLinkDir.empty()) {
     auto BuildIdBytesOrErr = findBuildID(Config, In);
-    if (auto E = BuildIdBytesOrErr.takeError())
+    if (auto E = BuildIdBytesOrErr.takeError()) {
       return E;
+
+}
     BuildIdBytes = *BuildIdBytesOrErr;
 
-    if (BuildIdBytes.size() < 2)
+    if (BuildIdBytes.size() < 2) {
       return createFileError(
           Config.InputFilename,
           createStringError(object_error::parse_failed,
                             "build ID is smaller than two bytes"));
+
+}
   }
 
-  if (!Config.BuildIdLinkDir.empty() && Config.BuildIdLinkInput)
+  if (!Config.BuildIdLinkDir.empty() && Config.BuildIdLinkInput) {
     if (Error E =
             linkToBuildIdDir(Config, Config.InputFilename,
-                             Config.BuildIdLinkInput.getValue(), BuildIdBytes))
+                             Config.BuildIdLinkInput.getValue(), BuildIdBytes)) {
       return E;
 
-  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType))
+}
+
+}
+
+  if (Error E = handleArgs(Config, *Obj, Reader, OutputElfType)) {
     return createFileError(Config.InputFilename, std::move(E));
 
-  if (Error E = writeOutput(Config, *Obj, Out, OutputElfType))
+}
+
+  if (Error E = writeOutput(Config, *Obj, Out, OutputElfType)) {
     return createFileError(Config.InputFilename, std::move(E));
-  if (!Config.BuildIdLinkDir.empty() && Config.BuildIdLinkOutput)
+
+}
+  if (!Config.BuildIdLinkDir.empty() && Config.BuildIdLinkOutput) {
     if (Error E =
             linkToBuildIdDir(Config, Config.OutputFilename,
-                             Config.BuildIdLinkOutput.getValue(), BuildIdBytes))
+                             Config.BuildIdLinkOutput.getValue(), BuildIdBytes)) {
       return createFileError(Config.OutputFilename, std::move(E));
+
+}
+
+}
 
   return Error::success();
 }

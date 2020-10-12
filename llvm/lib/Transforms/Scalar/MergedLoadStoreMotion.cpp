@@ -138,25 +138,35 @@ BasicBlock *MergedLoadStoreMotion::getDiamondTail(BasicBlock *BB) {
 /// True when BB is the head of a diamond (hammock)
 ///
 bool MergedLoadStoreMotion::isDiamondHead(BasicBlock *BB) {
-  if (!BB)
+  if (!BB) {
     return false;
+
+}
   auto *BI = dyn_cast<BranchInst>(BB->getTerminator());
-  if (!BI || !BI->isConditional())
+  if (!BI || !BI->isConditional()) {
     return false;
+
+}
 
   BasicBlock *Succ0 = BI->getSuccessor(0);
   BasicBlock *Succ1 = BI->getSuccessor(1);
 
-  if (!Succ0->getSinglePredecessor())
+  if (!Succ0->getSinglePredecessor()) {
     return false;
-  if (!Succ1->getSinglePredecessor())
+
+}
+  if (!Succ1->getSinglePredecessor()) {
     return false;
+
+}
 
   BasicBlock *Succ0Succ = Succ0->getSingleSuccessor();
   BasicBlock *Succ1Succ = Succ1->getSingleSuccessor();
   // Ignore triangles.
-  if (!Succ0Succ || !Succ1Succ || Succ0Succ != Succ1Succ)
+  if (!Succ0Succ || !Succ1Succ || Succ0Succ != Succ1Succ) {
     return false;
+
+}
   return true;
 }
 
@@ -173,9 +183,13 @@ bool MergedLoadStoreMotion::isStoreSinkBarrierInRange(const Instruction &Start,
                                                       const Instruction &End,
                                                       MemoryLocation Loc) {
   for (const Instruction &Inst :
-       make_range(Start.getIterator(), End.getIterator()))
-    if (Inst.mayThrow())
+       make_range(Start.getIterator(), End.getIterator())) {
+    if (Inst.mayThrow()) {
       return true;
+
+}
+
+}
   return AA->canInstructionRangeModRef(Start, End, Loc, ModRefInfo::ModRef);
 }
 
@@ -190,8 +204,10 @@ StoreInst *MergedLoadStoreMotion::canSinkFromBlock(BasicBlock *BB1,
   BasicBlock *BB0 = Store0->getParent();
   for (Instruction &Inst : reverse(*BB1)) {
     auto *Store1 = dyn_cast<StoreInst>(&Inst);
-    if (!Store1)
+    if (!Store1) {
       continue;
+
+}
 
     MemoryLocation Loc0 = MemoryLocation::get(Store0);
     MemoryLocation Loc1 = MemoryLocation::get(Store1);
@@ -212,8 +228,10 @@ PHINode *MergedLoadStoreMotion::getPHIOperand(BasicBlock *BB, StoreInst *S0,
   // Create a phi if the values mismatch.
   Value *Opd1 = S0->getValueOperand();
   Value *Opd2 = S1->getValueOperand();
-  if (Opd1 == Opd2)
+  if (Opd1 == Opd2) {
     return nullptr;
+
+}
 
   auto *NewPN = PHINode::Create(Opd1->getType(), 2, Opd2->getName() + ".sink",
                                 &BB->front());
@@ -264,8 +282,10 @@ void MergedLoadStoreMotion::sinkStoresAndGEPs(BasicBlock *BB, StoreInst *S0,
   assert(S1->getParent() == A1->getParent());
 
   // New PHI operand? Use it.
-  if (PHINode *NewPN = getPHIOperand(BB, S0, S1))
+  if (PHINode *NewPN = getPHIOperand(BB, S0, S1)) {
     SNew->setOperand(0, NewPN);
+
+}
   S0->eraseFromParent();
   S1->eraseFromParent();
   A0->replaceAllUsesWith(ANew);
@@ -294,11 +314,15 @@ bool MergedLoadStoreMotion::mergeStores(BasicBlock *HeadBB) {
   assert(SI != succ_end(HeadBB) && "Diamond head cannot have single successor");
   BasicBlock *Pred1 = *SI;
   // tail block  of a diamond/hammock?
-  if (Pred0 == Pred1)
+  if (Pred0 == Pred1) {
     return false; // No.
+
+}
   // bail out early if we can not merge into the footer BB
-  if (!SplitFooterBB && TailBB->hasNPredecessorsOrMore(3))
+  if (!SplitFooterBB && TailBB->hasNPredecessorsOrMore(3)) {
     return false;
+
+}
   // #Instructions in Pred1 for Compile Time Control
   auto InstsNoDbg = Pred1->instructionsWithoutDebug();
   int Size1 = std::distance(InstsNoDbg.begin(), InstsNoDbg.end());
@@ -312,26 +336,34 @@ bool MergedLoadStoreMotion::mergeStores(BasicBlock *HeadBB) {
 
     // Don't sink non-simple (atomic, volatile) stores.
     auto *S0 = dyn_cast<StoreInst>(I);
-    if (!S0 || !S0->isSimple())
+    if (!S0 || !S0->isSimple()) {
       continue;
 
+}
+
     ++NStores;
-    if (NStores * Size1 >= MagicCompileTimeControl)
+    if (NStores * Size1 >= MagicCompileTimeControl) {
       break;
+
+}
     if (StoreInst *S1 = canSinkFromBlock(Pred1, S0)) {
-      if (!canSinkStoresAndGEPs(S0, S1))
+      if (!canSinkStoresAndGEPs(S0, S1)) {
         // Don't attempt to sink below stores that had to stick around
         // But after removal of a store and some of its feeding
         // instruction search again from the beginning since the iterator
         // is likely stale at this point.
         break;
 
+}
+
       if (SinkBB == TailBB && TailBB->hasNPredecessorsOrMore(3)) {
         // We have more than 2 predecessors. Insert a new block
         // postdominating 2 predecessors we're going to sink from.
         SinkBB = SplitBlockPredecessors(TailBB, {Pred0, Pred1}, ".sink.split");
-        if (!SinkBB)
+        if (!SinkBB) {
           break;
+
+}
       }
 
       MergedStores = true;
@@ -354,11 +386,15 @@ bool MergedLoadStoreMotion::run(Function &F, AliasAnalysis &AA) {
   // optimization opportunities.
   // This loop doesn't care about newly inserted/split blocks 
   // since they never will be diamond heads.
-  for (BasicBlock &BB : make_early_inc_range(F))
+  for (BasicBlock &BB : make_early_inc_range(F)) {
     // Hoist equivalent loads and sink stores
     // outside diamonds when possible
-    if (isDiamondHead(&BB))
+    if (isDiamondHead(&BB)) {
       Changed |= mergeStores(&BB);
+
+}
+
+}
   return Changed;
 }
 
@@ -377,16 +413,20 @@ public:
   /// Run the transformation for each function
   ///
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     MergedLoadStoreMotion Impl(SplitFooterBB);
     return Impl.run(F, getAnalysis<AAResultsWrapperPass>().getAAResults());
   }
 
 private:
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    if (!SplitFooterBB)
+    if (!SplitFooterBB) {
       AU.setPreservesCFG();
+
+}
     AU.addRequired<AAResultsWrapperPass>();
     AU.addPreserved<GlobalsAAWrapperPass>();
   }
@@ -412,12 +452,16 @@ PreservedAnalyses
 MergedLoadStoreMotionPass::run(Function &F, FunctionAnalysisManager &AM) {
   MergedLoadStoreMotion Impl(Options.SplitFooterBB);
   auto &AA = AM.getResult<AAManager>(F);
-  if (!Impl.run(F, AA))
+  if (!Impl.run(F, AA)) {
     return PreservedAnalyses::all();
 
+}
+
   PreservedAnalyses PA;
-  if (!Options.SplitFooterBB)
+  if (!Options.SplitFooterBB) {
     PA.preserveSet<CFGAnalyses>();
+
+}
   PA.preserve<GlobalsAA>();
   return PA;
 }

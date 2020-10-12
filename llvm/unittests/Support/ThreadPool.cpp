@@ -33,14 +33,20 @@ protected:
     Triple Host(Triple::normalize(sys::getProcessTriple()));
 
     if (find(UnsupportedEnvironments, Host.getEnvironment()) !=
-        UnsupportedEnvironments.end())
+        UnsupportedEnvironments.end()) {
       return true;
 
-    if (is_contained(UnsupportedOSs, Host.getOS()))
+}
+
+    if (is_contained(UnsupportedOSs, Host.getOS())) {
       return true;
 
-    if (is_contained(UnsupportedArchs, Host.getArch()))
+}
+
+    if (is_contained(UnsupportedArchs, Host.getArch())) {
       return true;
+
+}
 
     return false;
   }
@@ -174,8 +180,10 @@ void ThreadPoolTest::TestAllThreads(ThreadPoolStrategy S) {
   // tested on Unix yet, and llvm::get_thread_affinity_mask() isn't implemented
   // for Unix.
   Triple Host(Triple::normalize(sys::getProcessTriple()));
-  if (!Host.isOSWindows())
+  if (!Host.isOSWindows()) {
     return;
+
+}
 
   llvm::DenseSet<llvm::BitVector> ThreadsUsed;
   std::mutex Lock;

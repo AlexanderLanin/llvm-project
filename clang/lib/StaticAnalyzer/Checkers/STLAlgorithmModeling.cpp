@@ -68,12 +68,16 @@ public:
 bool STLAlgorithmModeling::evalCall(const CallEvent &Call,
                                     CheckerContext &C) const {
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return false;
 
+}
+
   const FnCheck *Handler = Callbacks.lookup(Call);
-  if (!Handler)
+  if (!Handler) {
     return false;
+
+}
 
   return (this->**Handler)(C, CE);
 }
@@ -84,8 +88,10 @@ bool STLAlgorithmModeling::evalFind(CheckerContext &C,
   // two parameters, or if the first parameter is "execution policy" then in
   // the second and third. This means that the second parameter must always be
   // an iterator.
-  if (!isIteratorType(CE->getArg(1)->getType()))
+  if (!isIteratorType(CE->getArg(1)->getType())) {
     return false;
+
+}
 
   // If no "execution policy" parameter is used then the first argument is the
   // beginning of the range.

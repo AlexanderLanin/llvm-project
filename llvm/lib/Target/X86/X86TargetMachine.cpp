@@ -87,23 +87,37 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86Target() {
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
   if (TT.isOSBinFormatMachO()) {
-    if (TT.getArch() == Triple::x86_64)
+    if (TT.getArch() == Triple::x86_64) {
       return std::make_unique<X86_64MachoTargetObjectFile>();
+
+}
     return std::make_unique<TargetLoweringObjectFileMachO>();
   }
 
-  if (TT.isOSFreeBSD())
+  if (TT.isOSFreeBSD()) {
     return std::make_unique<X86FreeBSDTargetObjectFile>();
-  if (TT.isOSLinux() || TT.isOSNaCl() || TT.isOSIAMCU())
+
+}
+  if (TT.isOSLinux() || TT.isOSNaCl() || TT.isOSIAMCU()) {
     return std::make_unique<X86LinuxNaClTargetObjectFile>();
-  if (TT.isOSSolaris())
+
+}
+  if (TT.isOSSolaris()) {
     return std::make_unique<X86SolarisTargetObjectFile>();
-  if (TT.isOSFuchsia())
+
+}
+  if (TT.isOSFuchsia()) {
     return std::make_unique<X86FuchsiaTargetObjectFile>();
-  if (TT.isOSBinFormatELF())
+
+}
+  if (TT.isOSBinFormatELF()) {
     return std::make_unique<X86ELFTargetObjectFile>();
-  if (TT.isOSBinFormatCOFF())
+
+}
+  if (TT.isOSBinFormatCOFF()) {
     return std::make_unique<TargetLoweringObjectFileCOFF>();
+
+}
   llvm_unreachable("unknown subtarget type");
 }
 
@@ -115,42 +129,54 @@ static std::string computeDataLayout(const Triple &TT) {
   // X86 and x32 have 32 bit pointers.
   if ((TT.isArch64Bit() &&
        (TT.getEnvironment() == Triple::GNUX32 || TT.isOSNaCl())) ||
-      !TT.isArch64Bit())
+      !TT.isArch64Bit()) {
     Ret += "-p:32:32";
+
+}
 
   // Address spaces for 32 bit signed, 32 bit unsigned, and 64 bit pointers.
   Ret += "-p270:32:32-p271:32:32-p272:64:64";
 
   // Some ABIs align 64 bit integers and doubles to 64 bits, others to 32.
-  if (TT.isArch64Bit() || TT.isOSWindows() || TT.isOSNaCl())
+  if (TT.isArch64Bit() || TT.isOSWindows() || TT.isOSNaCl()) {
     Ret += "-i64:64";
-  else if (TT.isOSIAMCU())
+  } else if (TT.isOSIAMCU()) {
     Ret += "-i64:32-f64:32";
-  else
+  } else {
     Ret += "-f64:32:64";
 
+}
+
   // Some ABIs align long double to 128 bits, others to 32.
-  if (TT.isOSNaCl() || TT.isOSIAMCU())
+  if (TT.isOSNaCl() || TT.isOSIAMCU()) {
     ; // No f80
-  else if (TT.isArch64Bit() || TT.isOSDarwin())
+  } else if (TT.isArch64Bit() || TT.isOSDarwin()) {
     Ret += "-f80:128";
-  else
+  } else {
     Ret += "-f80:32";
 
-  if (TT.isOSIAMCU())
+}
+
+  if (TT.isOSIAMCU()) {
     Ret += "-f128:32";
 
+}
+
   // The registers can hold 8, 16, 32 or, in x86-64, 64 bits.
-  if (TT.isArch64Bit())
+  if (TT.isArch64Bit()) {
     Ret += "-n8:16:32:64";
-  else
+  } else {
     Ret += "-n8:16:32";
 
+}
+
   // The stack is aligned to 32 bits on some ABIs and 128 bits on others.
-  if ((!TT.isArch64Bit() && TT.isOSWindows()) || TT.isOSIAMCU())
+  if ((!TT.isArch64Bit() && TT.isOSWindows()) || TT.isOSIAMCU()) {
     Ret += "-a:0:32-S32";
-  else
+  } else {
     Ret += "-S128";
+
+}
 
   return Ret;
 }
@@ -162,19 +188,25 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
   if (!RM.hasValue()) {
     // JIT codegen should use static relocations by default, since it's
     // typically executed in process and not relocatable.
-    if (JIT)
+    if (JIT) {
       return Reloc::Static;
+
+}
 
     // Darwin defaults to PIC in 64 bit mode and dynamic-no-pic in 32 bit mode.
     // Win64 requires rip-rel addressing, thus we force it to PIC. Otherwise we
     // use static relocation model by default.
     if (TT.isOSDarwin()) {
-      if (is64Bit)
+      if (is64Bit) {
         return Reloc::PIC_;
+
+}
       return Reloc::DynamicNoPIC;
     }
-    if (TT.isOSWindows() && is64Bit)
+    if (TT.isOSWindows() && is64Bit) {
       return Reloc::PIC_;
+
+}
     return Reloc::Static;
   }
 
@@ -183,16 +215,22 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
   // executables but not necessarily a shared library. On X86-32 we just
   // compile in -static mode, in x86-64 we use PIC.
   if (*RM == Reloc::DynamicNoPIC) {
-    if (is64Bit)
+    if (is64Bit) {
       return Reloc::PIC_;
-    if (!TT.isOSDarwin())
+
+}
+    if (!TT.isOSDarwin()) {
       return Reloc::Static;
+
+}
   }
 
   // If we are on Darwin, disallow static relocation model in X86-64 mode, since
   // the Mach-O file format doesn't support it.
-  if (*RM == Reloc::Static && TT.isOSDarwin() && is64Bit)
+  if (*RM == Reloc::Static && TT.isOSDarwin() && is64Bit) {
     return Reloc::PIC_;
+
+}
 
   return *RM;
 }
@@ -200,12 +238,16 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
 static CodeModel::Model getEffectiveX86CodeModel(Optional<CodeModel::Model> CM,
                                                  bool JIT, bool Is64Bit) {
   if (CM) {
-    if (*CM == CodeModel::Tiny)
+    if (*CM == CodeModel::Tiny) {
       report_fatal_error("Target does not support the tiny CodeModel", false);
+
+}
     return *CM;
   }
-  if (JIT)
+  if (JIT) {
     return Is64Bit ? CodeModel::Large : CodeModel::Small;
+
+}
   return CodeModel::Small;
 }
 
@@ -263,8 +305,10 @@ X86TargetMachine::getSubtargetImpl(const Function &F) const {
       F.getFnAttribute("use-soft-float").getValueAsString() == "true";
   // If the soft float attribute is set on the function turn on the soft float
   // subtarget feature.
-  if (SoftFloat)
+  if (SoftFloat) {
     Key += FS.empty() ? "+soft-float" : ",+soft-float";
+
+}
 
   // Keep track of the key width after all features are added so we can extract
   // the feature string out later.
@@ -406,8 +450,10 @@ void X86PassConfig::addIRPasses() {
 
   TargetPassConfig::addIRPasses();
 
-  if (TM->getOptLevel() != CodeGenOpt::None)
+  if (TM->getOptLevel() != CodeGenOpt::None) {
     addPass(createInterleavedAccessPass());
+
+}
 
   // Add passes that handle indirect branch removal and insertion of a retpoline
   // thunk. These will be a no-op unless a function subtarget has the retpoline
@@ -431,8 +477,10 @@ bool X86PassConfig::addInstSelector() {
 
   // For ELF, cleanup any local-dynamic TLS accesses.
   if (TM->getTargetTriple().isOSBinFormatELF() &&
-      getOptLevel() != CodeGenOpt::None)
+      getOptLevel() != CodeGenOpt::None) {
     addPass(createCleanupLocalDynamicTLSPass());
+
+}
 
   addPass(createX86GlobalBaseRegPass());
   return false;
@@ -459,11 +507,15 @@ bool X86PassConfig::addGlobalInstructionSelect() {
 }
 
 bool X86PassConfig::addILPOpts() {
-  if (EnableCondBrFoldingPass)
+  if (EnableCondBrFoldingPass) {
     addPass(createX86CondBrFolding());
+
+}
   addPass(&EarlyIfConverterID);
-  if (EnableMachineCombinerPass)
+  if (EnableMachineCombinerPass) {
     addPass(&MachineCombinerID);
+
+}
   addPass(createX86CmovConverterPass());
   return true;
 }
@@ -471,8 +523,10 @@ bool X86PassConfig::addILPOpts() {
 bool X86PassConfig::addPreISel() {
   // Only add this pass for 32-bit x86 Windows.
   const Triple &TT = TM->getTargetTriple();
-  if (TT.isOSWindows() && TT.getArch() == Triple::x86)
+  if (TT.isOSWindows() && TT.getArch() == Triple::x86) {
     addPass(createX86WinEHStatePass());
+
+}
   return true;
 }
 
@@ -508,8 +562,10 @@ void X86PassConfig::addPreEmitPass() {
 
   addPass(createX86IndirectBranchTrackingPass());
 
-  if (UseVZeroUpper)
+  if (UseVZeroUpper) {
     addPass(createX86IssueVZeroUpperPass());
+
+}
 
   if (getOptLevel() != CodeGenOpt::None) {
     addPass(createX86FixupBWInsts());
@@ -530,19 +586,25 @@ void X86PassConfig::addPreEmitPass2() {
 
   // Insert extra int3 instructions after trailing call instructions to avoid
   // issues in the unwinder.
-  if (TT.isOSWindows() && TT.getArch() == Triple::x86_64)
+  if (TT.isOSWindows() && TT.getArch() == Triple::x86_64) {
     addPass(createX86AvoidTrailingCallPass());
+
+}
 
   // Verify basic block incoming and outgoing cfa offset and register values and
   // correct CFA calculation rule where needed by inserting appropriate CFI
   // instructions.
   if (!TT.isOSDarwin() &&
       (!TT.isOSWindows() ||
-       MAI->getExceptionHandlingType() == ExceptionHandling::DwarfCFI))
+       MAI->getExceptionHandlingType() == ExceptionHandling::DwarfCFI)) {
     addPass(createCFIInstrInserter());
+
+}
   // Identify valid longjmp targets for Windows Control Flow Guard.
-  if (TT.isOSWindows())
+  if (TT.isOSWindows()) {
     addPass(createCFGuardLongjmpPass());
+
+}
 }
 
 std::unique_ptr<CSEConfigBase> X86PassConfig::getCSEConfig() const {

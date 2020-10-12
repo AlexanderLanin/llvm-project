@@ -35,14 +35,24 @@ public:
 
 static const DeclRefExpr *FindBlockDeclRefExpr(const Stmt *S,
                                                const VarDecl *VD) {
-  if (const DeclRefExpr *BR = dyn_cast<DeclRefExpr>(S))
-    if (BR->getDecl() == VD)
+  if (const DeclRefExpr *BR = dyn_cast<DeclRefExpr>(S)) {
+    if (BR->getDecl() == VD) {
       return BR;
 
-  for (const Stmt *Child : S->children())
-    if (Child)
-      if (const DeclRefExpr *BR = FindBlockDeclRefExpr(Child, VD))
+}
+
+}
+
+  for (const Stmt *Child : S->children()) {
+    if (Child) {
+      if (const DeclRefExpr *BR = FindBlockDeclRefExpr(Child, VD)) {
         return BR;
+
+}
+
+}
+
+}
 
   return nullptr;
 }
@@ -50,8 +60,10 @@ static const DeclRefExpr *FindBlockDeclRefExpr(const Stmt *S,
 void
 UndefCapturedBlockVarChecker::checkPostStmt(const BlockExpr *BE,
                                             CheckerContext &C) const {
-  if (!BE->getBlockDecl()->hasCaptures())
+  if (!BE->getBlockDecl()->hasCaptures()) {
     return;
+
+}
 
   ProgramStateRef state = C.getState();
   auto *R = cast<BlockDataRegion>(C.getSVal(BE).getAsRegion());
@@ -65,16 +77,20 @@ UndefCapturedBlockVarChecker::checkPostStmt(const BlockExpr *BE,
     const VarRegion *VR = I.getCapturedRegion();
     const VarDecl *VD = VR->getDecl();
 
-    if (VD->hasAttr<BlocksAttr>() || !VD->hasLocalStorage())
+    if (VD->hasAttr<BlocksAttr>() || !VD->hasLocalStorage()) {
       continue;
+
+}
 
     // Get the VarRegion associated with VD in the local stack frame.
     if (Optional<UndefinedVal> V =
           state->getSVal(I.getOriginalRegion()).getAs<UndefinedVal>()) {
       if (ExplodedNode *N = C.generateErrorNode()) {
-        if (!BT)
+        if (!BT) {
           BT.reset(
               new BuiltinBug(this, "uninitialized variable captured by block"));
+
+}
 
         // Generate a bug report.
         SmallString<128> buf;
@@ -84,8 +100,10 @@ UndefCapturedBlockVarChecker::checkPostStmt(const BlockExpr *BE,
            << "' is uninitialized when captured by block";
 
         auto R = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
-        if (const Expr *Ex = FindBlockDeclRefExpr(BE->getBody(), VD))
+        if (const Expr *Ex = FindBlockDeclRefExpr(BE->getBody(), VD)) {
           R->addRange(Ex->getSourceRange());
+
+}
         R->addVisitor(std::make_unique<FindLastStoreBRVisitor>(
             *V, VR, /*EnableNullFPSuppression*/ false,
             bugreporter::TrackingKind::Thorough));

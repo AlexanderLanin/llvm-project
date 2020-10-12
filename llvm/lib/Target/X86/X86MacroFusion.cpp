@@ -38,16 +38,22 @@ static bool shouldScheduleAdjacent(const TargetInstrInfo &TII,
   const X86Subtarget &ST = static_cast<const X86Subtarget &>(TSI);
 
   // Check if this processor supports any kind of fusion.
-  if (!(ST.hasBranchFusion() || ST.hasMacroFusion()))
+  if (!(ST.hasBranchFusion() || ST.hasMacroFusion())) {
     return false;
+
+}
 
   const X86::SecondMacroFusionInstKind BranchKind = classifySecond(SecondMI);
 
-  if (BranchKind == X86::SecondMacroFusionInstKind::Invalid)
+  if (BranchKind == X86::SecondMacroFusionInstKind::Invalid) {
     return false; // Second cannot be fused with anything.
 
-  if (FirstMI == nullptr)
+}
+
+  if (FirstMI == nullptr) {
     return true; // We're only checking whether Second can be fused at all.
+
+}
 
   const X86::FirstMacroFusionInstKind TestKind = classifyFirst(*FirstMI);
 

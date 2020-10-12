@@ -46,21 +46,27 @@ void X86IntelInstPrinter::printInst(const MCInst *MI, uint64_t Address,
       STI.getFeatureBits()[X86::Mode16Bit]) {
     OS << "\tdata32";
   } else if (!printAliasInstr(MI, OS) &&
-             !printVecCompareInstr(MI, OS))
+             !printVecCompareInstr(MI, OS)) {
     printInstruction(MI, Address, OS);
+
+}
 
   // Next always print the annotation.
   printAnnotation(OS, Annot);
 
   // If verbose assembly is enabled, we can print some informative comments.
-  if (CommentStream)
+  if (CommentStream) {
     EmitAnyX86InstComments(MI, *CommentStream, MII);
+
+}
 }
 
 bool X86IntelInstPrinter::printVecCompareInstr(const MCInst *MI, raw_ostream &OS) {
   if (MI->getNumOperands() == 0 ||
-      !MI->getOperand(MI->getNumOperands() - 1).isImm())
+      !MI->getOperand(MI->getNumOperands() - 1).isImm()) {
     return false;
+
+}
 
   int64_t Imm = MI->getOperand(MI->getNumOperands() - 1).getImm();
 
@@ -83,14 +89,18 @@ bool X86IntelInstPrinter::printVecCompareInstr(const MCInst *MI, raw_ostream &OS
       // Skip operand 1 as its tied to the dest.
 
       if ((Desc.TSFlags & X86II::FormMask) == X86II::MRMSrcMem) {
-        if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XS)
+        if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XS) {
           printdwordmem(MI, 2, OS);
-        else if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XD)
+        } else if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XD) {
           printqwordmem(MI, 2, OS);
-        else
+        } else {
           printxmmwordmem(MI, 2, OS);
-      } else
+
+}
+      } else {
         printOperand(MI, 2, OS);
+
+}
 
       return true;
     }
@@ -153,36 +163,44 @@ bool X86IntelInstPrinter::printVecCompareInstr(const MCInst *MI, raw_ostream &OS
         if (Desc.TSFlags & X86II::EVEX_B) {
           // Broadcast form.
           // Load size is based on W-bit.
-          if (Desc.TSFlags & X86II::VEX_W)
+          if (Desc.TSFlags & X86II::VEX_W) {
             printqwordmem(MI, CurOp++, OS);
-          else
+          } else {
             printdwordmem(MI, CurOp++, OS);
+
+}
 
           // Print the number of elements broadcasted.
           unsigned NumElts;
-          if (Desc.TSFlags & X86II::EVEX_L2)
+          if (Desc.TSFlags & X86II::EVEX_L2) {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 8 : 16;
-          else if (Desc.TSFlags & X86II::VEX_L)
+          } else if (Desc.TSFlags & X86II::VEX_L) {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 4 : 8;
-          else
+          } else {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 2 : 4;
+
+}
           OS << "{1to" << NumElts << "}";
         } else {
-          if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XS)
+          if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XS) {
             printdwordmem(MI, CurOp++, OS);
-          else if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XD)
+          } else if ((Desc.TSFlags & X86II::OpPrefixMask) == X86II::XD) {
             printqwordmem(MI, CurOp++, OS);
-          else if (Desc.TSFlags & X86II::EVEX_L2)
+          } else if (Desc.TSFlags & X86II::EVEX_L2) {
             printzmmwordmem(MI, CurOp++, OS);
-          else if (Desc.TSFlags & X86II::VEX_L)
+          } else if (Desc.TSFlags & X86II::VEX_L) {
             printymmwordmem(MI, CurOp++, OS);
-          else
+          } else {
             printxmmwordmem(MI, CurOp++, OS);
+
+}
         }
       } else {
         printOperand(MI, CurOp++, OS);
-        if (Desc.TSFlags & X86II::EVEX_B)
+        if (Desc.TSFlags & X86II::EVEX_B) {
           OS << ", {sae}";
+
+}
       }
 
       return true;
@@ -204,10 +222,12 @@ bool X86IntelInstPrinter::printVecCompareInstr(const MCInst *MI, raw_ostream &OS
       OS << ", ";
       printOperand(MI, 1, OS);
       OS << ", ";
-      if ((Desc.TSFlags & X86II::FormMask) == X86II::MRMSrcMem)
+      if ((Desc.TSFlags & X86II::FormMask) == X86II::MRMSrcMem) {
         printxmmwordmem(MI, 2, OS);
-      else
+      } else {
         printOperand(MI, 2, OS);
+
+}
       return true;
     }
     break;
@@ -293,27 +313,33 @@ bool X86IntelInstPrinter::printVecCompareInstr(const MCInst *MI, raw_ostream &OS
         if (Desc.TSFlags & X86II::EVEX_B) {
           // Broadcast form.
           // Load size is based on W-bit as only D and Q are supported.
-          if (Desc.TSFlags & X86II::VEX_W)
+          if (Desc.TSFlags & X86II::VEX_W) {
             printqwordmem(MI, CurOp++, OS);
-          else
+          } else {
             printdwordmem(MI, CurOp++, OS);
+
+}
 
           // Print the number of elements broadcasted.
           unsigned NumElts;
-          if (Desc.TSFlags & X86II::EVEX_L2)
+          if (Desc.TSFlags & X86II::EVEX_L2) {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 8 : 16;
-          else if (Desc.TSFlags & X86II::VEX_L)
+          } else if (Desc.TSFlags & X86II::VEX_L) {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 4 : 8;
-          else
+          } else {
             NumElts = (Desc.TSFlags & X86II::VEX_W) ? 2 : 4;
+
+}
           OS << "{1to" << NumElts << "}";
         } else {
-          if (Desc.TSFlags & X86II::EVEX_L2)
+          if (Desc.TSFlags & X86II::EVEX_L2) {
             printzmmwordmem(MI, CurOp++, OS);
-          else if (Desc.TSFlags & X86II::VEX_L)
+          } else if (Desc.TSFlags & X86II::VEX_L) {
             printymmwordmem(MI, CurOp++, OS);
-          else
+          } else {
             printxmmwordmem(MI, CurOp++, OS);
+
+}
         }
       } else {
         printOperand(MI, CurOp++, OS);
@@ -360,24 +386,30 @@ void X86IntelInstPrinter::printMemReference(const MCInst *MI, unsigned Op,
   }
 
   if (IndexReg.getReg()) {
-    if (NeedPlus) O << " + ";
-    if (ScaleVal != 1)
+    if (NeedPlus) { O << " + ";
+
+}
+    if (ScaleVal != 1) {
       O << ScaleVal << '*';
+
+}
     printOperand(MI, Op+X86::AddrIndexReg, O);
     NeedPlus = true;
   }
 
   if (!DispSpec.isImm()) {
-    if (NeedPlus) O << " + ";
+    if (NeedPlus) { O << " + ";
+
+}
     assert(DispSpec.isExpr() && "non-immediate displacement for LEA?");
     DispSpec.getExpr()->print(O, &MAI);
   } else {
     int64_t DispVal = DispSpec.getImm();
     if (DispVal || (!IndexReg.getReg() && !BaseReg.getReg())) {
       if (NeedPlus) {
-        if (DispVal > 0)
+        if (DispVal > 0) {
           O << " + ";
-        else {
+        } else {
           O << " - ";
           DispVal = -DispVal;
         }
@@ -427,8 +459,10 @@ void X86IntelInstPrinter::printMemOffset(const MCInst *MI, unsigned Op,
 
 void X86IntelInstPrinter::printU8Imm(const MCInst *MI, unsigned Op,
                                      raw_ostream &O) {
-  if (MI->getOperand(Op).isExpr())
+  if (MI->getOperand(Op).isExpr()) {
     return MI->getOperand(Op).getExpr()->print(O, &MAI);
+
+}
 
   O << formatImm(MI->getOperand(Op).getImm() & 0xff);
 }
@@ -438,8 +472,10 @@ void X86IntelInstPrinter::printSTiRegOperand(const MCInst *MI, unsigned OpNo,
   const MCOperand &Op = MI->getOperand(OpNo);
   unsigned Reg = Op.getReg();
   // Override the default printing to print st(0) instead st.
-  if (Reg == X86::ST0)
+  if (Reg == X86::ST0) {
     OS << "st(0)";
-  else
+  } else {
     printRegName(OS, Reg);
+
+}
 }

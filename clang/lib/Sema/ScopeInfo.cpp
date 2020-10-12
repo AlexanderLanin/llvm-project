@@ -58,8 +58,10 @@ void FunctionScopeInfo::Clear() {
 }
 
 static const NamedDecl *getBestPropertyDecl(const ObjCPropertyRefExpr *PropE) {
-  if (PropE->isExplicitProperty())
+  if (PropE->isExplicitProperty()) {
     return PropE->getExplicitProperty();
+
+}
 
   return PropE->getImplicitPropertyGetter();
 }
@@ -97,8 +99,10 @@ FunctionScopeInfo::WeakObjectProfileTy::getBaseInfo(const Expr *E) {
 
       if (BaseProp->isObjectReceiver()) {
         const Expr *DoubleBase = BaseProp->getBase();
-        if (const OpaqueValueExpr *OVE = dyn_cast<OpaqueValueExpr>(DoubleBase))
+        if (const OpaqueValueExpr *OVE = dyn_cast<OpaqueValueExpr>(DoubleBase)) {
           DoubleBase = OVE->getSourceExpr();
+
+}
 
         IsExact = DoubleBase->isObjCSelfExpr();
       }
@@ -130,8 +134,10 @@ FunctionScopeInfo::WeakObjectProfileTy::WeakObjectProfileTy(
 FunctionScopeInfo::WeakObjectProfileTy::WeakObjectProfileTy(const Expr *BaseE,
                                                 const ObjCPropertyDecl *Prop)
     : Base(nullptr, true), Property(Prop) {
-  if (BaseE)
+  if (BaseE) {
     Base = getBaseInfo(BaseE);
+
+}
   // else, this is a message accessing a property on super.
 }
 
@@ -178,20 +184,24 @@ void FunctionScopeInfo::markSafeWeakUse(const Expr *E) {
   // Has this weak object been seen before?
   FunctionScopeInfo::WeakObjectUseMap::iterator Uses = WeakObjectUses.end();
   if (const ObjCPropertyRefExpr *RefExpr = dyn_cast<ObjCPropertyRefExpr>(E)) {
-    if (!RefExpr->isObjectReceiver())
+    if (!RefExpr->isObjectReceiver()) {
       return;
-    if (isa<OpaqueValueExpr>(RefExpr->getBase()))
+
+}
+    if (isa<OpaqueValueExpr>(RefExpr->getBase())) {
      Uses = WeakObjectUses.find(WeakObjectProfileTy(RefExpr));
-    else {
+    } else {
       markSafeWeakUse(RefExpr->getBase());
       return;
     }
   }
-  else if (const ObjCIvarRefExpr *IvarE = dyn_cast<ObjCIvarRefExpr>(E))
+  else if (const ObjCIvarRefExpr *IvarE = dyn_cast<ObjCIvarRefExpr>(E)) {
     Uses = WeakObjectUses.find(WeakObjectProfileTy(IvarE));
-  else if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
-    if (isa<VarDecl>(DRE->getDecl()))
+  } else if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
+    if (isa<VarDecl>(DRE->getDecl())) {
       Uses = WeakObjectUses.find(WeakObjectProfileTy(DRE));
+
+}
   } else if (const ObjCMessageExpr *MsgE = dyn_cast<ObjCMessageExpr>(E)) {
     if (const ObjCMethodDecl *MD = MsgE->getMethodDecl()) {
       if (const ObjCPropertyDecl *Prop = MD->findPropertyDecl()) {
@@ -201,17 +211,23 @@ void FunctionScopeInfo::markSafeWeakUse(const Expr *E) {
       }
     }
   }
-  else
+  else {
     return;
 
-  if (Uses == WeakObjectUses.end())
+}
+
+  if (Uses == WeakObjectUses.end()) {
     return;
+
+}
 
   // Has there been a read from the object using this Expr?
   FunctionScopeInfo::WeakUseVector::reverse_iterator ThisUse =
       llvm::find(llvm::reverse(Uses->second), WeakUseTy(E, true));
-  if (ThisUse == Uses->second.rend())
+  if (ThisUse == Uses->second.rend()) {
     return;
+
+}
 
   ThisUse->markSafe();
 }
@@ -223,9 +239,13 @@ bool Capture::isInitCapture() const {
 }
 
 bool CapturingScopeInfo::isVLATypeCaptured(const VariableArrayType *VAT) const {
-  for (auto &Cap : Captures)
-    if (Cap.isVLATypeCapture() && Cap.getCapturedVLAType() == VAT)
+  for (auto &Cap : Captures) {
+    if (Cap.isVLATypeCapture() && Cap.getCapturedVLAType() == VAT) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -237,8 +257,10 @@ void LambdaScopeInfo::visitPotentialCaptures(
     } else if (auto *ME = dyn_cast<MemberExpr>(E)) {
       Callback(cast<VarDecl>(ME->getMemberDecl()), E);
     } else if (auto *FP = dyn_cast<FunctionParmPackExpr>(E)) {
-      for (VarDecl *VD : *FP)
+      for (VarDecl *VD : *FP) {
         Callback(VD, E);
+
+}
     } else {
       llvm_unreachable("unexpected expression in potential captures list");
     }

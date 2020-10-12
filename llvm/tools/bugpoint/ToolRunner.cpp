@@ -83,8 +83,10 @@ static int RunProgramRemotelyWithTimeout(
   if (255 == ReturnCode) {
     std::ostringstream OS;
     OS << "\nError running remote client:\n ";
-    for (StringRef Arg : Args)
+    for (StringRef Arg : Args) {
       OS << " " << Arg.str();
+
+}
     OS << "\n";
 
     // The error message is in the output file, let's print it out from there.
@@ -107,8 +109,10 @@ static Error ProcessFailure(StringRef ProgPath, ArrayRef<StringRef> Args,
                             unsigned Timeout = 0, unsigned MemoryLimit = 0) {
   std::ostringstream OS;
   OS << "\nError running tool:\n ";
-  for (StringRef Arg : Args)
+  for (StringRef Arg : Args) {
     OS << " " << Arg.str();
+
+}
   OS << "\n";
 
   // Rerun the compiler, capturing any error messages to print them.
@@ -181,13 +185,17 @@ Expected<int> LLI::ExecuteProgram(const std::string &Bitcode,
   }
 
   // Add any extra LLI args.
-  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i)
+  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i) {
     LLIArgs.push_back(ToolArgs[i]);
+
+}
 
   LLIArgs.push_back(Bitcode);
   // Add optional parameters to the running program from Argv
-  for (unsigned i = 0, e = Args.size(); i != e; ++i)
+  for (unsigned i = 0, e = Args.size(); i != e; ++i) {
     LLIArgs.push_back(Args[i]);
+
+}
 
   outs() << "<lli>";
   outs().flush();
@@ -209,8 +217,10 @@ ErrorOr<std::string> llvm::FindProgramByName(const std::string &ExeName,
   // is a relative path to the executable itself.
   std::string Main = sys::fs::getMainExecutable(Argv0, MainAddr);
   StringRef Result = sys::path::parent_path(Main);
-  if (ErrorOr<std::string> Path = sys::findProgramByName(ExeName, Result))
+  if (ErrorOr<std::string> Path = sys::findProgramByName(ExeName, Result)) {
     return *Path;
+
+}
 
   // Check the user PATH.
   return sys::findProgramByName(ExeName);
@@ -268,17 +278,23 @@ Error CustomCompiler::compileProgram(const std::string &Bitcode,
   std::vector<StringRef> ProgramArgs;
   ProgramArgs.push_back(CompilerCommand);
 
-  for (const auto &Arg : CompilerArgs)
+  for (const auto &Arg : CompilerArgs) {
     ProgramArgs.push_back(Arg);
+
+}
   ProgramArgs.push_back(Bitcode);
 
   // Add optional parameters to the running program from Argv
-  for (const auto &Arg : CompilerArgs)
+  for (const auto &Arg : CompilerArgs) {
     ProgramArgs.push_back(Arg);
 
+}
+
   if (RunProgramWithTimeout(CompilerCommand, ProgramArgs, "", "", "", Timeout,
-                            MemoryLimit))
+                            MemoryLimit)) {
     return ProcessFailure(CompilerCommand, ProgramArgs, Timeout, MemoryLimit);
+
+}
   return Error::success();
 }
 
@@ -317,13 +333,17 @@ Expected<int> CustomExecutor::ExecuteProgram(
   std::vector<StringRef> ProgramArgs;
   ProgramArgs.push_back(ExecutionCommand);
 
-  for (std::size_t i = 0; i < ExecutorArgs.size(); ++i)
+  for (std::size_t i = 0; i < ExecutorArgs.size(); ++i) {
     ProgramArgs.push_back(ExecutorArgs[i]);
+
+}
   ProgramArgs.push_back(Bitcode);
 
   // Add optional parameters to the running program from Argv
-  for (unsigned i = 0, e = Args.size(); i != e; ++i)
+  for (unsigned i = 0, e = Args.size(); i != e; ++i) {
     ProgramArgs.push_back(Args[i]);
+
+}
 
   return RunProgramWithTimeout(ExecutionCommand, ProgramArgs, InputFile,
                                OutputFile, OutputFile, Timeout, MemoryLimit);
@@ -362,14 +382,18 @@ static void lexCommand(const char *Argv0, std::string &Message,
   // Skip repeated whitespace, leading whitespace and trailing whitespace.
   for (std::size_t Pos = 0u; Pos <= CommandLine.size(); ++Pos) {
     if ('\\' == CommandLine[Pos]) {
-      if (Pos + 1 < CommandLine.size())
+      if (Pos + 1 < CommandLine.size()) {
         Token.push_back(CommandLine[++Pos]);
+
+}
 
       continue;
     }
     if (' ' == CommandLine[Pos] || CommandLine.size() == Pos) {
-      if (Token.empty())
+      if (Token.empty()) {
         continue;
+
+}
 
       if (!FoundPath) {
         Command = Token;
@@ -405,8 +429,10 @@ AbstractInterpreter *AbstractInterpreter::createCustomCompiler(
   std::string CmdPath;
   std::vector<std::string> Args;
   lexCommand(Argv0, Message, CompileCommandLine, CmdPath, Args);
-  if (CmdPath.empty())
+  if (CmdPath.empty()) {
     return nullptr;
+
+}
 
   return new CustomCompiler(CmdPath, Args);
 }
@@ -421,8 +447,10 @@ AbstractInterpreter::createCustomExecutor(const char *Argv0,
   std::string CmdPath;
   std::vector<std::string> Args;
   lexCommand(Argv0, Message, ExecCommandLine, CmdPath, Args);
-  if (CmdPath.empty())
+  if (CmdPath.empty()) {
     return nullptr;
+
+}
 
   return new CustomExecutor(CmdPath, Args);
 }
@@ -447,15 +475,19 @@ Expected<CC::FileType> LLC::OutputCode(const std::string &Bitcode,
   LLCArgs.push_back(LLCPath);
 
   // Add any extra LLC args.
-  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i)
+  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i) {
     LLCArgs.push_back(ToolArgs[i]);
+
+}
 
   LLCArgs.push_back("-o");
   LLCArgs.push_back(OutputAsmFile); // Output to the Asm file
   LLCArgs.push_back(Bitcode);       // This is the input bitcode
 
-  if (UseIntegratedAssembler)
+  if (UseIntegratedAssembler) {
     LLCArgs.push_back("-filetype=obj");
+
+}
 
   outs() << (UseIntegratedAssembler ? "<llc-ia>" : "<llc>");
   outs().flush();
@@ -463,8 +495,10 @@ Expected<CC::FileType> LLC::OutputCode(const std::string &Bitcode,
              for (unsigned i = 0, e = LLCArgs.size() - 1; i != e; ++i) errs()
              << " " << LLCArgs[i];
              errs() << "\n";);
-  if (RunProgramWithTimeout(LLCPath, LLCArgs, "", "", "", Timeout, MemoryLimit))
+  if (RunProgramWithTimeout(LLCPath, LLCArgs, "", "", "", Timeout, MemoryLimit)) {
     return ProcessFailure(LLCPath, LLCArgs, Timeout, MemoryLimit);
+
+}
   return UseIntegratedAssembler ? CC::ObjectFile : CC::AsmFile;
 }
 
@@ -474,8 +508,10 @@ Error LLC::compileProgram(const std::string &Bitcode, unsigned Timeout,
   Expected<CC::FileType> Result =
       OutputCode(Bitcode, OutputAsmFile, Timeout, MemoryLimit);
   sys::fs::remove(OutputAsmFile);
-  if (Error E = Result.takeError())
+  if (Error E = Result.takeError()) {
     return E;
+
+}
   return Error::success();
 }
 
@@ -491,8 +527,10 @@ Expected<int> LLC::ExecuteProgram(const std::string &Bitcode,
   Expected<CC::FileType> FileKind =
       OutputCode(Bitcode, OutputAsmFile, Timeout, MemoryLimit);
   FileRemover OutFileRemover(OutputAsmFile, !SaveTemps);
-  if (Error E = FileKind.takeError())
+  if (Error E = FileKind.takeError()) {
     return std::move(E);
+
+}
 
   std::vector<std::string> CCArgs(ArgsForCC);
   CCArgs.insert(CCArgs.end(), SharedLibs.begin(), SharedLibs.end());
@@ -563,8 +601,10 @@ Expected<int> JIT::ExecuteProgram(const std::string &Bitcode,
   JITArgs.push_back("-force-interpreter=false");
 
   // Add any extra LLI args.
-  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i)
+  for (unsigned i = 0, e = ToolArgs.size(); i != e; ++i) {
     JITArgs.push_back(ToolArgs[i]);
+
+}
 
   for (unsigned i = 0, e = SharedLibs.size(); i != e; ++i) {
     JITArgs.push_back("-load");
@@ -572,8 +612,10 @@ Expected<int> JIT::ExecuteProgram(const std::string &Bitcode,
   }
   JITArgs.push_back(Bitcode);
   // Add optional parameters to the running program from Argv
-  for (unsigned i = 0, e = Args.size(); i != e; ++i)
+  for (unsigned i = 0, e = Args.size(); i != e; ++i) {
     JITArgs.push_back(Args[i]);
+
+}
 
   outs() << "<jit>";
   outs().flush();
@@ -607,13 +649,19 @@ AbstractInterpreter::createJIT(const char *Argv0, std::string &Message,
 
 static bool IsARMArchitecture(std::vector<StringRef> Args) {
   for (size_t I = 0; I < Args.size(); ++I) {
-    if (!Args[I].equals_lower("-arch"))
+    if (!Args[I].equals_lower("-arch")) {
       continue;
+
+}
     ++I;
-    if (I == Args.size())
+    if (I == Args.size()) {
       break;
-    if (Args[I].startswith_lower("arm"))
+
+}
+    if (Args[I].startswith_lower("arm")) {
       return true;
+
+}
   }
 
   return false;
@@ -630,13 +678,17 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
 
   CCArgs.push_back(CCPath);
 
-  if (TargetTriple.getArch() == Triple::x86)
+  if (TargetTriple.getArch() == Triple::x86) {
     CCArgs.push_back("-m32");
+
+}
 
   for (std::vector<std::string>::const_iterator I = ccArgs.begin(),
                                                 E = ccArgs.end();
-       I != E; ++I)
+       I != E; ++I) {
     CCArgs.push_back(*I);
+
+}
 
   // Specify -x explicitly in case the extension is wonky
   if (fileType != ObjectFile) {
@@ -650,8 +702,10 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
       // For ARM architectures we don't want this flag. bugpoint isn't
       // explicitly told what architecture it is working on, so we get
       // it from cc flags
-      if (TargetTriple.isOSDarwin() && !IsARMArchitecture(CCArgs))
+      if (TargetTriple.isOSDarwin() && !IsARMArchitecture(CCArgs)) {
         CCArgs.push_back("-force_cpusubtype_ALL");
+
+}
     }
   }
 
@@ -674,13 +728,17 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
   // most likely -L and -l options that need to come before other libraries but
   // after the source. Other options won't be sensitive to placement on the
   // command line, so this should be safe.
-  for (unsigned i = 0, e = ArgsForCC.size(); i != e; ++i)
+  for (unsigned i = 0, e = ArgsForCC.size(); i != e; ++i) {
     CCArgs.push_back(ArgsForCC[i]);
+
+}
 
   CCArgs.push_back("-lm"); // Hard-code the math library...
   CCArgs.push_back("-O2"); // Optimize the program a bit...
-  if (TargetTriple.getArch() == Triple::sparc)
+  if (TargetTriple.getArch() == Triple::sparc) {
     CCArgs.push_back("-mcpu=v9");
+
+}
 
   outs() << "<CC>";
   outs().flush();
@@ -688,8 +746,10 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
              for (unsigned i = 0, e = CCArgs.size() - 1; i != e; ++i) errs()
              << " " << CCArgs[i];
              errs() << "\n";);
-  if (RunProgramWithTimeout(CCPath, CCArgs, "", "", ""))
+  if (RunProgramWithTimeout(CCPath, CCArgs, "", "", "")) {
     return ProcessFailure(CCPath, CCArgs);
+
+}
 
   std::vector<StringRef> ProgramArgs;
 
@@ -697,9 +757,9 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
   // ProgramArgs is used.
   std::string Exec;
 
-  if (RemoteClientPath.empty())
+  if (RemoteClientPath.empty()) {
     ProgramArgs.push_back(OutputBinary);
-  else {
+  } else {
     ProgramArgs.push_back(RemoteClientPath);
     ProgramArgs.push_back(RemoteHost);
     if (!RemoteUser.empty()) {
@@ -725,8 +785,10 @@ Expected<int> CC::ExecuteProgram(const std::string &ProgramFile,
   }
 
   // Add optional parameters to the running program from Argv
-  for (unsigned i = 0, e = Args.size(); i != e; ++i)
+  for (unsigned i = 0, e = Args.size(); i != e; ++i) {
     ProgramArgs.push_back(Args[i]);
+
+}
 
   // Now that we have a binary, run it!
   outs() << "<program>";
@@ -778,13 +840,17 @@ Error CC::MakeSharedObject(const std::string &InputFile, FileType fileType,
 
   CCArgs.push_back(CCPath);
 
-  if (TargetTriple.getArch() == Triple::x86)
+  if (TargetTriple.getArch() == Triple::x86) {
     CCArgs.push_back("-m32");
+
+}
 
   for (std::vector<std::string>::const_iterator I = ccArgs.begin(),
                                                 E = ccArgs.end();
-       I != E; ++I)
+       I != E; ++I) {
     CCArgs.push_back(*I);
+
+}
 
   // Compile the C/asm file into a shared object
   if (fileType != ObjectFile) {
@@ -795,9 +861,9 @@ Error CC::MakeSharedObject(const std::string &InputFile, FileType fileType,
   CCArgs.push_back(InputFile); // Specify the input filename.
   CCArgs.push_back("-x");
   CCArgs.push_back("none");
-  if (TargetTriple.getArch() == Triple::sparc)
+  if (TargetTriple.getArch() == Triple::sparc) {
     CCArgs.push_back("-G"); // Compile a shared library, `-G' for Sparc
-  else if (TargetTriple.isOSDarwin()) {
+  } else if (TargetTriple.isOSDarwin()) {
     // link all source files into a single module in data segment, rather than
     // generating blocks. dynamic_lookup requires that you set
     // MACOSX_DEPLOYMENT_TARGET=10.3 in your env.  FIXME: it would be better for
@@ -806,14 +872,20 @@ Error CC::MakeSharedObject(const std::string &InputFile, FileType fileType,
     CCArgs.push_back("-dynamiclib"); // `-dynamiclib' for MacOS X/PowerPC
     CCArgs.push_back("-undefined");
     CCArgs.push_back("dynamic_lookup");
-  } else
+  } else {
     CCArgs.push_back("-shared"); // `-shared' for Linux/X86, maybe others
 
-  if (TargetTriple.getArch() == Triple::x86_64)
+}
+
+  if (TargetTriple.getArch() == Triple::x86_64) {
     CCArgs.push_back("-fPIC"); // Requires shared objs to contain PIC
 
-  if (TargetTriple.getArch() == Triple::sparc)
+}
+
+  if (TargetTriple.getArch() == Triple::sparc) {
     CCArgs.push_back("-mcpu=v9");
+
+}
 
   CCArgs.push_back("-o");
   CCArgs.push_back(OutputFile);         // Output to the right filename.
@@ -823,8 +895,10 @@ Error CC::MakeSharedObject(const std::string &InputFile, FileType fileType,
   // most likely -L and -l options that need to come before other libraries but
   // after the source. Other options won't be sensitive to placement on the
   // command line, so this should be safe.
-  for (unsigned i = 0, e = ArgsForCC.size(); i != e; ++i)
+  for (unsigned i = 0, e = ArgsForCC.size(); i != e; ++i) {
     CCArgs.push_back(ArgsForCC[i]);
+
+}
 
   outs() << "<CC>";
   outs().flush();
@@ -832,8 +906,10 @@ Error CC::MakeSharedObject(const std::string &InputFile, FileType fileType,
              for (unsigned i = 0, e = CCArgs.size() - 1; i != e; ++i) errs()
              << " " << CCArgs[i];
              errs() << "\n";);
-  if (RunProgramWithTimeout(CCPath, CCArgs, "", "", ""))
+  if (RunProgramWithTimeout(CCPath, CCArgs, "", "", "")) {
     return ProcessFailure(CCPath, CCArgs);
+
+}
   return Error::success();
 }
 

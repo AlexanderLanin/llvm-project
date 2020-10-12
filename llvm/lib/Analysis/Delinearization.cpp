@@ -76,8 +76,10 @@ void Delinearization::print(raw_ostream &O, const Module *) const {
 
     // Only analyze loads and stores.
     if (!isa<StoreInst>(Inst) && !isa<LoadInst>(Inst) &&
-        !isa<GetElementPtrInst>(Inst))
+        !isa<GetElementPtrInst>(Inst)) {
       continue;
+
+}
 
     const BasicBlock *BB = Inst->getParent();
     // Delinearize the memory access as analyzed in all the surrounding loops.
@@ -88,8 +90,10 @@ void Delinearization::print(raw_ostream &O, const Module *) const {
       const SCEVUnknown *BasePointer =
           dyn_cast<SCEVUnknown>(SE->getPointerBase(AccessFn));
       // Do not delinearize if we cannot find the base pointer.
-      if (!BasePointer)
+      if (!BasePointer) {
         break;
+
+}
       AccessFn = SE->getMinusSCEV(AccessFn, BasePointer);
 
       O << "\n";
@@ -108,13 +112,17 @@ void Delinearization::print(raw_ostream &O, const Module *) const {
       O << "Base offset: " << *BasePointer << "\n";
       O << "ArrayDecl[UnknownSize]";
       int Size = Subscripts.size();
-      for (int i = 0; i < Size - 1; i++)
+      for (int i = 0; i < Size - 1; i++) {
         O << "[" << *Sizes[i] << "]";
+
+}
       O << " with elements of " << *Sizes[Size - 1] << " bytes.\n";
 
       O << "ArrayRef";
-      for (int i = 0; i < Size; i++)
+      for (int i = 0; i < Size; i++) {
         O << "[" << *Subscripts[i] << "]";
+
+}
       O << "\n";
     }
   }

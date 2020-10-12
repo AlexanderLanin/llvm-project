@@ -37,8 +37,10 @@ void PrintDecl(raw_ostream &Out, const ASTContext *Context, const Decl *D,
                PrintingPolicyModifier PolicyModifier) {
   PrintingPolicy Policy = Context->getPrintingPolicy();
   Policy.TerseOutput = true;
-  if (PolicyModifier)
+  if (PolicyModifier) {
     PolicyModifier(Policy);
+
+}
   D->print(Out, Policy, /*Indentation*/ 0, /*PrintInstantiation*/ false);
 }
 
@@ -53,11 +55,15 @@ public:
 
   void run(const MatchFinder::MatchResult &Result) override {
     const Decl *D = Result.Nodes.getNodeAs<Decl>("id");
-    if (!D || D->isImplicit())
+    if (!D || D->isImplicit()) {
       return;
+
+}
     NumFoundDecls++;
-    if (NumFoundDecls > 1)
+    if (NumFoundDecls > 1) {
       return;
+
+}
 
     llvm::raw_svector_ostream Out(Printed);
     PrintDecl(Out, Result.Context, D, PolicyModifier);
@@ -83,23 +89,31 @@ PrintedDeclMatches(StringRef Code, const std::vector<std::string> &Args,
   std::unique_ptr<FrontendActionFactory> Factory(
       newFrontendActionFactory(&Finder));
 
-  if (!runToolOnCodeWithArgs(Factory->create(), Code, Args, FileName))
+  if (!runToolOnCodeWithArgs(Factory->create(), Code, Args, FileName)) {
     return testing::AssertionFailure()
       << "Parsing error in \"" << Code.str() << "\"";
 
-  if (Printer.getNumFoundDecls() == 0)
+}
+
+  if (Printer.getNumFoundDecls() == 0) {
     return testing::AssertionFailure()
         << "Matcher didn't find any declarations";
 
-  if (Printer.getNumFoundDecls() > 1)
+}
+
+  if (Printer.getNumFoundDecls() > 1) {
     return testing::AssertionFailure()
         << "Matcher should match only one declaration "
            "(found " << Printer.getNumFoundDecls() << ")";
 
-  if (Printer.getPrinted() != ExpectedPrinted)
+}
+
+  if (Printer.getPrinted() != ExpectedPrinted) {
     return ::testing::AssertionFailure()
       << "Expected \"" << ExpectedPrinted.str() << "\", "
          "got \"" << Printer.getPrinted().str() << "\"";
+
+}
 
   return ::testing::AssertionSuccess();
 }

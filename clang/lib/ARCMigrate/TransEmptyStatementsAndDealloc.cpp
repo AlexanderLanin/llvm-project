@@ -31,15 +31,21 @@ using namespace trans;
 static bool isEmptyARCMTMacroStatement(NullStmt *S,
                                        std::vector<SourceLocation> &MacroLocs,
                                        ASTContext &Ctx) {
-  if (!S->hasLeadingEmptyMacro())
+  if (!S->hasLeadingEmptyMacro()) {
     return false;
+
+}
 
   SourceLocation SemiLoc = S->getSemiLoc();
-  if (SemiLoc.isInvalid() || SemiLoc.isMacroID())
+  if (SemiLoc.isInvalid() || SemiLoc.isMacroID()) {
     return false;
 
-  if (MacroLocs.empty())
+}
+
+  if (MacroLocs.empty()) {
     return false;
+
+}
 
   SourceManager &SM = Ctx.getSourceManager();
   std::vector<SourceLocation>::iterator I = llvm::upper_bound(
@@ -49,21 +55,29 @@ static bool isEmptyARCMTMacroStatement(NullStmt *S,
       AfterMacroLoc = I->getLocWithOffset(getARCMTMacroName().size());
   assert(AfterMacroLoc.isFileID());
 
-  if (AfterMacroLoc == SemiLoc)
+  if (AfterMacroLoc == SemiLoc) {
     return true;
 
+}
+
   int RelOffs = 0;
-  if (!SM.isInSameSLocAddrSpace(AfterMacroLoc, SemiLoc, &RelOffs))
+  if (!SM.isInSameSLocAddrSpace(AfterMacroLoc, SemiLoc, &RelOffs)) {
     return false;
-  if (RelOffs < 0)
+
+}
+  if (RelOffs < 0) {
     return false;
+
+}
 
   // We make the reasonable assumption that a semicolon after 100 characters
   // means that it is not the next token after our macro. If this assumption
   // fails it is not critical, we will just fail to clear out, e.g., an empty
   // 'if'.
-  if (RelOffs - getARCMTMacroName().size() > 100)
+  if (RelOffs - getARCMTMacroName().size() > 100) {
     return false;
+
+}
 
   SourceLocation AfterMacroSemiLoc = findSemiAfterLocation(AfterMacroLoc, Ctx);
   return AfterMacroSemiLoc == SemiLoc;
@@ -85,60 +99,96 @@ public:
     return isEmptyARCMTMacroStatement(S, MacroLocs, Ctx);
   }
   bool VisitCompoundStmt(CompoundStmt *S) {
-    if (S->body_empty())
+    if (S->body_empty()) {
       return false; // was already empty, not because of transformations.
-    for (auto *I : S->body())
-      if (!Visit(I))
+
+}
+    for (auto *I : S->body()) {
+      if (!Visit(I)) {
         return false;
+
+}
+
+}
     return true;
   }
   bool VisitIfStmt(IfStmt *S) {
-    if (S->getConditionVariable())
+    if (S->getConditionVariable()) {
       return false;
+
+}
     Expr *condE = S->getCond();
-    if (!condE)
+    if (!condE) {
       return false;
-    if (hasSideEffects(condE, Ctx))
+
+}
+    if (hasSideEffects(condE, Ctx)) {
       return false;
-    if (!S->getThen() || !Visit(S->getThen()))
+
+}
+    if (!S->getThen() || !Visit(S->getThen())) {
       return false;
+
+}
     return !S->getElse() || Visit(S->getElse());
   }
   bool VisitWhileStmt(WhileStmt *S) {
-    if (S->getConditionVariable())
+    if (S->getConditionVariable()) {
       return false;
+
+}
     Expr *condE = S->getCond();
-    if (!condE)
+    if (!condE) {
       return false;
-    if (hasSideEffects(condE, Ctx))
+
+}
+    if (hasSideEffects(condE, Ctx)) {
       return false;
-    if (!S->getBody())
+
+}
+    if (!S->getBody()) {
       return false;
+
+}
     return Visit(S->getBody());
   }
   bool VisitDoStmt(DoStmt *S) {
     Expr *condE = S->getCond();
-    if (!condE)
+    if (!condE) {
       return false;
-    if (hasSideEffects(condE, Ctx))
+
+}
+    if (hasSideEffects(condE, Ctx)) {
       return false;
-    if (!S->getBody())
+
+}
+    if (!S->getBody()) {
       return false;
+
+}
     return Visit(S->getBody());
   }
   bool VisitObjCForCollectionStmt(ObjCForCollectionStmt *S) {
     Expr *Exp = S->getCollection();
-    if (!Exp)
+    if (!Exp) {
       return false;
-    if (hasSideEffects(Exp, Ctx))
+
+}
+    if (hasSideEffects(Exp, Ctx)) {
       return false;
-    if (!S->getBody())
+
+}
+    if (!S->getBody()) {
       return false;
+
+}
     return Visit(S->getBody());
   }
   bool VisitObjCAutoreleasePoolStmt(ObjCAutoreleasePoolStmt *S) {
-    if (!S->getSubStmt())
+    if (!S->getSubStmt()) {
       return false;
+
+}
     return Visit(S->getSubStmt());
   }
 };
@@ -154,16 +204,20 @@ public:
     CompoundStmt *S = E->getSubStmt();
     for (CompoundStmt::body_iterator
            I = S->body_begin(), E = S->body_end(); I != E; ++I) {
-      if (I != E - 1)
+      if (I != E - 1) {
         check(*I);
+
+}
       TraverseStmt(*I);
     }
     return true;
   }
 
   bool VisitCompoundStmt(CompoundStmt *S) {
-    for (auto *I : S->body())
+    for (auto *I : S->body()) {
       check(I);
+
+}
     return true;
   }
 
@@ -171,7 +225,9 @@ public:
 
 private:
   void check(Stmt *S) {
-    if (!S) return;
+    if (!S) { return;
+
+}
     if (EmptyChecker(Pass.Ctx, Pass.ARCMTMacroLocs).Visit(S)) {
       Transaction Trans(Pass.TA);
       Pass.TA.removeStmt(S);
@@ -183,9 +239,13 @@ private:
 
 static bool isBodyEmpty(CompoundStmt *body, ASTContext &Ctx,
                         std::vector<SourceLocation> &MacroLocs) {
-  for (auto *I : body->body())
-    if (!EmptyChecker(Ctx, MacroLocs).Visit(I))
+  for (auto *I : body->body()) {
+    if (!EmptyChecker(Ctx, MacroLocs).Visit(I)) {
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -204,8 +264,10 @@ static void cleanupDeallocOrFinalize(MigrationPass &pass) {
     ObjCMethodDecl *DeallocM = nullptr;
     ObjCMethodDecl *FinalizeM = nullptr;
     for (auto *MD : I->instance_methods()) {
-      if (!MD->hasBody())
+      if (!MD->hasBody()) {
         continue;
+
+}
 
       if (MD->getMethodFamily() == OMF_dealloc) {
         DeallocM = MD;

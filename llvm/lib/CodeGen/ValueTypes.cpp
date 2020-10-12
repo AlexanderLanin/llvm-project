@@ -104,10 +104,14 @@ unsigned EVT::getExtendedVectorNumElements() const {
 
 TypeSize EVT::getExtendedSizeInBits() const {
   assert(isExtended() && "Type is not extended!");
-  if (IntegerType *ITy = dyn_cast<IntegerType>(LLVMTy))
+  if (IntegerType *ITy = dyn_cast<IntegerType>(LLVMTy)) {
     return TypeSize::Fixed(ITy->getBitWidth());
-  if (VectorType *VTy = dyn_cast<VectorType>(LLVMTy))
+
+}
+  if (VectorType *VTy = dyn_cast<VectorType>(LLVMTy)) {
     return VTy->getPrimitiveSizeInBits();
+
+}
   llvm_unreachable("Unrecognized extended type!");
 }
 
@@ -115,13 +119,19 @@ TypeSize EVT::getExtendedSizeInBits() const {
 std::string EVT::getEVTString() const {
   switch (V.SimpleTy) {
   default:
-    if (isVector())
+    if (isVector()) {
       return (isScalableVector() ? "nxv" : "v") + utostr(getVectorNumElements())
              + getVectorElementType().getEVTString();
-    if (isInteger())
+
+}
+    if (isInteger()) {
       return "i" + utostr(getSizeInBits());
-    if (isFloatingPoint())
+
+}
+    if (isFloatingPoint()) {
       return "f" + utostr(getSizeInBits());
+
+}
     llvm_unreachable("Invalid EVT!");
   case MVT::ppcf128: return "ppcf128";
   case MVT::isVoid:  return "isVoid";
@@ -324,7 +334,9 @@ Type *EVT::getTypeForEVT(LLVMContext &Context) const {
 MVT MVT::getVT(Type *Ty, bool HandleUnknown){
   switch (Ty->getTypeID()) {
   default:
-    if (HandleUnknown) return MVT(MVT::Other);
+    if (HandleUnknown) { return MVT(MVT::Other);
+
+}
     llvm_unreachable("Unknown type!");
   case Type::VoidTyID:
     return MVT::isVoid;

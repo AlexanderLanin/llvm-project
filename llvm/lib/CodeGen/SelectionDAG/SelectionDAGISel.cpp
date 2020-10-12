@@ -216,8 +216,10 @@ namespace llvm {
                     CodeGenOpt::Level NewOptLevel) : IS(ISel) {
       SavedOptLevel = IS.OptLevel;
       SavedFastISel = IS.TM.Options.EnableFastISel;
-      if (NewOptLevel == SavedOptLevel)
+      if (NewOptLevel == SavedOptLevel) {
         return;
+
+}
       IS.OptLevel = NewOptLevel;
       IS.TM.setOptLevel(NewOptLevel);
       LLVM_DEBUG(dbgs() << "\nChanging optimization level for Function "
@@ -234,8 +236,10 @@ namespace llvm {
     }
 
     ~OptLevelChanger() {
-      if (IS.OptLevel == SavedOptLevel)
+      if (IS.OptLevel == SavedOptLevel) {
         return;
+
+}
       LLVM_DEBUG(dbgs() << "\nRestoring optimization level for Function "
                         << IS.MF->getFunction().getName() << "\n");
       LLVM_DEBUG(dbgs() << "\tBefore: -O" << IS.OptLevel << " ; After: -O"
@@ -261,14 +265,22 @@ namespace llvm {
 
     if (OptLevel == CodeGenOpt::None ||
         (ST.enableMachineScheduler() && ST.enableMachineSchedDefaultSched()) ||
-        TLI->getSchedulingPreference() == Sched::Source)
+        TLI->getSchedulingPreference() == Sched::Source) {
       return createSourceListDAGScheduler(IS, OptLevel);
-    if (TLI->getSchedulingPreference() == Sched::RegPressure)
+
+}
+    if (TLI->getSchedulingPreference() == Sched::RegPressure) {
       return createBURRListDAGScheduler(IS, OptLevel);
-    if (TLI->getSchedulingPreference() == Sched::Hybrid)
+
+}
+    if (TLI->getSchedulingPreference() == Sched::Hybrid) {
       return createHybridListDAGScheduler(IS, OptLevel);
-    if (TLI->getSchedulingPreference() == Sched::VLIW)
+
+}
+    if (TLI->getSchedulingPreference() == Sched::VLIW) {
       return createVLIWDAGScheduler(IS, OptLevel);
+
+}
     assert(TLI->getSchedulingPreference() == Sched::ILP &&
            "Unknown sched type!");
     return createILPListDAGScheduler(IS, OptLevel);
@@ -327,15 +339,19 @@ SelectionDAGISel::~SelectionDAGISel() {
 }
 
 void SelectionDAGISel::getAnalysisUsage(AnalysisUsage &AU) const {
-  if (OptLevel != CodeGenOpt::None)
+  if (OptLevel != CodeGenOpt::None) {
     AU.addRequired<AAResultsWrapperPass>();
+
+}
   AU.addRequired<GCModuleInfo>();
   AU.addRequired<StackProtector>();
   AU.addPreserved<GCModuleInfo>();
   AU.addRequired<TargetLibraryInfoWrapperPass>();
   AU.addRequired<TargetTransformInfoWrapperPass>();
-  if (UseMBPI && OptLevel != CodeGenOpt::None)
+  if (UseMBPI && OptLevel != CodeGenOpt::None) {
     AU.addRequired<BranchProbabilityInfoWrapperPass>();
+
+}
   AU.addRequired<ProfileSummaryInfoWrapperPass>();
   LazyBlockFrequencyInfoPass::getLazyBFIAnalysisUsage(AU);
   MachineFunctionPass::getAnalysisUsage(AU);
@@ -354,24 +370,30 @@ static void SplitCriticalSideEffectEdges(Function &Fn, DominatorTree *DT,
   // Loop for blocks with phi nodes.
   for (BasicBlock &BB : Fn) {
     PHINode *PN = dyn_cast<PHINode>(BB.begin());
-    if (!PN) continue;
+    if (!PN) { continue;
+
+}
 
   ReprocessBlock:
     // For each block with a PHI node, check to see if any of the input values
     // are potentially trapping constant expressions.  Constant expressions are
     // the only potentially trapping value that can occur as the argument to a
     // PHI.
-    for (BasicBlock::iterator I = BB.begin(); (PN = dyn_cast<PHINode>(I)); ++I)
+    for (BasicBlock::iterator I = BB.begin(); (PN = dyn_cast<PHINode>(I)); ++I) {
       for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
         ConstantExpr *CE = dyn_cast<ConstantExpr>(PN->getIncomingValue(i));
-        if (!CE || !CE->canTrap()) continue;
+        if (!CE || !CE->canTrap()) { continue;
+
+}
 
         // The only case we have to worry about is when the edge is critical.
         // Since this block has a PHI Node, we assume it has multiple input
         // edges: check to see if the pred has multiple successors.
         BasicBlock *Pred = PN->getIncomingBlock(i);
-        if (Pred->getTerminator()->getNumSuccessors() == 1)
+        if (Pred->getTerminator()->getNumSuccessors() == 1) {
           continue;
+
+}
 
         // Okay, we have to split this edge.
         SplitCriticalEdge(
@@ -379,18 +401,24 @@ static void SplitCriticalSideEffectEdges(Function &Fn, DominatorTree *DT,
             CriticalEdgeSplittingOptions(DT, LI).setMergeIdenticalEdges());
         goto ReprocessBlock;
       }
+
+}
   }
 }
 
 static void computeUsesMSVCFloatingPoint(const Triple &TT, const Function &F,
                                          MachineModuleInfo &MMI) {
   // Only needed for MSVC
-  if (!TT.isWindowsMSVCEnvironment())
+  if (!TT.isWindowsMSVCEnvironment()) {
     return;
 
+}
+
   // If it's already set, nothing to do.
-  if (MMI.usesMSVCFloatingPoint())
+  if (MMI.usesMSVCFloatingPoint()) {
     return;
+
+}
 
   for (const Instruction &I : instructions(F)) {
     if (I.getType()->isFPOrFPVectorTy()) {
@@ -409,8 +437,10 @@ static void computeUsesMSVCFloatingPoint(const Triple &TT, const Function &F,
 bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   // If we already selected that function, we do not need to run SDISel.
   if (mf.getProperties().hasProperty(
-          MachineFunctionProperties::Property::Selected))
+          MachineFunctionProperties::Property::Selected)) {
     return false;
+
+}
   // Do some sanity-checking on the command-line options.
   assert((!EnableFastISelAbort || TM.Options.EnableFastISel) &&
          "-fast-isel-abort > 0 requires -fast-isel");
@@ -426,8 +456,10 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   TM.resetTargetOptions(Fn);
   // Reset OptLevel to None for optnone functions.
   CodeGenOpt::Level NewOptLevel = OptLevel;
-  if (OptLevel != CodeGenOpt::None && skipFunction(Fn))
+  if (OptLevel != CodeGenOpt::None && skipFunction(Fn)) {
     NewOptLevel = CodeGenOpt::None;
+
+}
   OptLevelChanger OLC(*this, NewOptLevel);
 
   TII = MF->getSubtarget().getInstrInfo();
@@ -459,15 +491,19 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   // into account).  That's unfortunate but OK because it just means we won't
   // ask for passes that have been required anyway.
 
-  if (UseMBPI && OptLevel != CodeGenOpt::None)
+  if (UseMBPI && OptLevel != CodeGenOpt::None) {
     FuncInfo->BPI = &getAnalysis<BranchProbabilityInfoWrapperPass>().getBPI();
-  else
+  } else {
     FuncInfo->BPI = nullptr;
 
-  if (OptLevel != CodeGenOpt::None)
+}
+
+  if (OptLevel != CodeGenOpt::None) {
     AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
-  else
+  } else {
     AA = nullptr;
+
+}
 
   SDB->init(GFI, AA, LibInfo);
 
@@ -482,12 +518,16 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
 
     // Collect all the return blocks.
     for (const BasicBlock &BB : Fn) {
-      if (!succ_empty(&BB))
+      if (!succ_empty(&BB)) {
         continue;
 
+}
+
       const Instruction *Term = BB.getTerminator();
-      if (isa<UnreachableInst>(Term) || isa<ReturnInst>(Term))
+      if (isa<UnreachableInst>(Term) || isa<ReturnInst>(Term)) {
         continue;
+
+}
 
       // Bail out if the exit block is not Return nor Unreachable.
       FuncInfo->SplitCSR = false;
@@ -496,9 +536,11 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   }
 
   MachineBasicBlock *EntryMBB = &MF->front();
-  if (FuncInfo->SplitCSR)
+  if (FuncInfo->SplitCSR) {
     // This performs initialization so lowering for SplitCSR will be correct.
     TLI->initializeSplitCSR(EntryMBB);
+
+}
 
   SelectAllBasicBlocks(Fn);
   if (FastISelFailed && EnableFastISelFallbackReport) {
@@ -522,20 +564,26 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
     // replacement is.
     while (true) {
       DenseMap<unsigned, unsigned>::iterator J = FuncInfo->RegFixups.find(To);
-      if (J == E)
+      if (J == E) {
         break;
+
+}
       To = J->second;
     }
     // Make sure the new register has a sufficiently constrained register class.
-    if (Register::isVirtualRegister(From) && Register::isVirtualRegister(To))
+    if (Register::isVirtualRegister(From) && Register::isVirtualRegister(To)) {
       MRI.constrainRegClass(To, MRI.getRegClass(From));
+
+}
     // Replace it.
 
     // Replacing one register with another won't touch the kill flags.
     // We need to conservatively clear the kill flags as a kill on the old
     // register might dominate existing uses of the new register.
-    if (!MRI.use_empty(To))
+    if (!MRI.use_empty(To)) {
       MRI.clearKillFlags(From);
+
+}
     MRI.replaceRegWith(From, To);
   }
 
@@ -550,8 +598,10 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
     SmallVector<MachineBasicBlock*, 4> Returns;
     // Collect all the return blocks.
     for (MachineBasicBlock &MBB : mf) {
-      if (!MBB.succ_empty())
+      if (!MBB.succ_empty()) {
         continue;
+
+}
 
       MachineBasicBlock::iterator Term = MBB.getFirstTerminator();
       if (Term != MBB.end() && Term->isReturn()) {
@@ -563,10 +613,16 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   }
 
   DenseMap<unsigned, unsigned> LiveInMap;
-  if (!FuncInfo->ArgDbgValues.empty())
-    for (std::pair<unsigned, unsigned> LI : RegInfo->liveins())
-      if (LI.second)
+  if (!FuncInfo->ArgDbgValues.empty()) {
+    for (std::pair<unsigned, unsigned> LI : RegInfo->liveins()) {
+      if (LI.second) {
         LiveInMap.insert(LI);
+
+}
+
+}
+
+}
 
   // Insert DBG_VALUE instructions for function arguments to the entry block.
   for (unsigned i = 0, e = FuncInfo->ArgDbgValues.size(); i != e; ++i) {
@@ -574,17 +630,19 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
     bool hasFI = MI->getOperand(0).isFI();
     Register Reg =
         hasFI ? TRI.getFrameRegister(*MF) : MI->getOperand(0).getReg();
-    if (Register::isPhysicalRegister(Reg))
+    if (Register::isPhysicalRegister(Reg)) {
       EntryMBB->insert(EntryMBB->begin(), MI);
-    else {
+    } else {
       MachineInstr *Def = RegInfo->getVRegDef(Reg);
       if (Def) {
         MachineBasicBlock::iterator InsertPos = Def;
         // FIXME: VR def may not be in entry block.
         Def->getParent()->insert(std::next(InsertPos), MI);
-      } else
+      } else {
         LLVM_DEBUG(dbgs() << "Dropping debug info for dead vreg"
                           << Register::virtReg2Index(Reg) << "\n");
+
+}
     }
 
     // If Reg is live-in then update debug info to track its copy in a vreg.
@@ -598,9 +656,11 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
       const MDNode *Expr = MI->getDebugExpression();
       DebugLoc DL = MI->getDebugLoc();
       bool IsIndirect = MI->isIndirectDebugValue();
-      if (IsIndirect)
+      if (IsIndirect) {
         assert(MI->getOperand(1).getImm() == 0 &&
                "DBG_VALUE with nonzero offset");
+
+}
       assert(cast<DILocalVariable>(Variable)->isValidLocationForIntrinsic(DL) &&
              "Expected inlined-at fields to agree");
       // Def is never a terminator here, so it is ok to increment InsertPos.
@@ -615,7 +675,9 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
            UI = RegInfo->use_instr_begin(LDI->second),
            E = RegInfo->use_instr_end(); UI != E; ) {
         MachineInstr *UseMI = &*(UI++);
-        if (UseMI->isDebugValue()) continue;
+        if (UseMI->isDebugValue()) { continue;
+
+}
         if (UseMI->isCopy() && !CopyUseMI && UseMI->getParent() == EntryMBB) {
           CopyUseMI = UseMI; continue;
         }
@@ -637,8 +699,10 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
   // Determine if there are any calls in this machine function.
   MachineFrameInfo &MFI = MF->getFrameInfo();
   for (const auto &MBB : *MF) {
-    if (MFI.hasCalls() && MF->hasInlineAsm())
+    if (MFI.hasCalls() && MF->hasInlineAsm()) {
       break;
+
+}
 
     for (const auto &MI : MBB) {
       const MCInstrDesc &MCID = TII->get(MI.getOpcode());
@@ -669,20 +733,26 @@ bool SelectionDAGISel::runOnMachineFunction(MachineFunction &mf) {
     // replacement is.
     while (true) {
       DenseMap<unsigned, unsigned>::iterator J = FuncInfo->RegFixups.find(To);
-      if (J == E) break;
+      if (J == E) { break;
+
+}
       To = J->second;
     }
     // Make sure the new register has a sufficiently constrained register class.
-    if (Register::isVirtualRegister(From) && Register::isVirtualRegister(To))
+    if (Register::isVirtualRegister(From) && Register::isVirtualRegister(To)) {
       MRI.constrainRegClass(To, MRI.getRegClass(From));
+
+}
     // Replace it.
 
 
     // Replacing one register with another won't touch the kill flags.
     // We need to conservatively clear the kill flags as a kill on the old
     // register might dominate existing uses of the new register.
-    if (!MRI.use_empty(To))
+    if (!MRI.use_empty(To)) {
       MRI.clearKillFlags(From);
+
+}
     MRI.replaceRegWith(From, To);
   }
 
@@ -704,11 +774,15 @@ static void reportFastISelFailure(MachineFunction &MF,
                                   bool ShouldAbort) {
   // Print the function name explicitly if we don't have a debug location (which
   // makes the diagnostic less useful) or if we're going to emit a raw error.
-  if (!R.getLocation().isValid() || ShouldAbort)
+  if (!R.getLocation().isValid() || ShouldAbort) {
     R << (" (in function: " + MF.getName() + ")").str();
 
-  if (ShouldAbort)
+}
+
+  if (ShouldAbort) {
     report_fatal_error(R.getMsg());
+
+}
 
   ORE.emit(R);
 }
@@ -722,8 +796,10 @@ void SelectionDAGISel::SelectBasicBlock(BasicBlock::const_iterator Begin,
   // Lower the instructions. If a call is emitted as a tail call, cease emitting
   // nodes for this block.
   for (BasicBlock::const_iterator I = Begin; I != End && !SDB->HasTailCall; ++I) {
-    if (!ElidedArgCopyInstrs.count(&*I))
+    if (!ElidedArgCopyInstrs.count(&*I)) {
       SDB->visit(*I);
+
+}
   }
 
   // Make sure the root of the DAG is up-to-date.
@@ -749,23 +825,33 @@ void SelectionDAGISel::ComputeLiveOutVRegInfo() {
     SDNode *N = Worklist.pop_back_val();
 
     // Otherwise, add all chain operands to the worklist.
-    for (const SDValue &Op : N->op_values())
-      if (Op.getValueType() == MVT::Other && Added.insert(Op.getNode()).second)
+    for (const SDValue &Op : N->op_values()) {
+      if (Op.getValueType() == MVT::Other && Added.insert(Op.getNode()).second) {
         Worklist.push_back(Op.getNode());
 
+}
+
+}
+
     // If this is a CopyToReg with a vreg dest, process it.
-    if (N->getOpcode() != ISD::CopyToReg)
+    if (N->getOpcode() != ISD::CopyToReg) {
       continue;
 
+}
+
     unsigned DestReg = cast<RegisterSDNode>(N->getOperand(1))->getReg();
-    if (!Register::isVirtualRegister(DestReg))
+    if (!Register::isVirtualRegister(DestReg)) {
       continue;
+
+}
 
     // Ignore non-integer values.
     SDValue Src = N->getOperand(2);
     EVT SrcVT = Src.getValueType();
-    if (!SrcVT.isInteger())
+    if (!SrcVT.isInteger()) {
       continue;
+
+}
 
     unsigned NumSignBits = CurDAG->ComputeNumSignBits(Src);
     Known = CurDAG->computeKnownBits(Src);
@@ -805,8 +891,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
                     << "'\n";
              CurDAG->dump());
 
-  if (ViewDAGCombine1 && MatchFilterBB)
+  if (ViewDAGCombine1 && MatchFilterBB) {
     CurDAG->viewGraph("dag-combine1 input for " + BlockName);
+
+}
 
   // Run the DAG combiner in pre-legalize mode.
   {
@@ -827,8 +915,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
 
   // Second step, hack on the DAG until it only uses operations and types that
   // the target supports.
-  if (ViewLegalizeTypesDAGs && MatchFilterBB)
+  if (ViewLegalizeTypesDAGs && MatchFilterBB) {
     CurDAG->viewGraph("legalize-types input for " + BlockName);
+
+}
 
   bool Changed;
   {
@@ -851,8 +941,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
   CurDAG->NewNodesMustHaveLegalTypes = true;
 
   if (Changed) {
-    if (ViewDAGCombineLT && MatchFilterBB)
+    if (ViewDAGCombineLT && MatchFilterBB) {
       CurDAG->viewGraph("dag-combine-lt input for " + BlockName);
+
+}
 
     // Run the DAG combiner in post-type-legalize mode.
     {
@@ -895,8 +987,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
                       << "'\n";
                CurDAG->dump());
 
-    if (ViewDAGCombineLT && MatchFilterBB)
+    if (ViewDAGCombineLT && MatchFilterBB) {
       CurDAG->viewGraph("dag-combine-lv input for " + BlockName);
+
+}
 
     // Run the DAG combiner in post-type-legalize mode.
     {
@@ -916,8 +1010,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
 #endif
   }
 
-  if (ViewLegalizeDAGs && MatchFilterBB)
+  if (ViewLegalizeDAGs && MatchFilterBB) {
     CurDAG->viewGraph("legalize input for " + BlockName);
+
+}
 
   {
     NamedRegionTimer T("legalize", "DAG Legalization", GroupName,
@@ -935,8 +1031,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
                     << "'\n";
              CurDAG->dump());
 
-  if (ViewDAGCombine2 && MatchFilterBB)
+  if (ViewDAGCombine2 && MatchFilterBB) {
     CurDAG->viewGraph("dag-combine2 input for " + BlockName);
+
+}
 
   // Run the DAG combiner in post-legalize mode.
   {
@@ -955,11 +1053,15 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
                     << "'\n";
              CurDAG->dump());
 
-  if (OptLevel != CodeGenOpt::None)
+  if (OptLevel != CodeGenOpt::None) {
     ComputeLiveOutVRegInfo();
 
-  if (ViewISelDAGs && MatchFilterBB)
+}
+
+  if (ViewISelDAGs && MatchFilterBB) {
     CurDAG->viewGraph("isel input for " + BlockName);
+
+}
 
   // Third, instruction select all of the operations to machine code, adding the
   // code to the MachineBasicBlock.
@@ -974,8 +1076,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
                     << "'\n";
              CurDAG->dump());
 
-  if (ViewSchedDAGs && MatchFilterBB)
+  if (ViewSchedDAGs && MatchFilterBB) {
     CurDAG->viewGraph("scheduler input for " + BlockName);
+
+}
 
   // Schedule machine code.
   ScheduleDAGSDNodes *Scheduler = CreateScheduler();
@@ -985,8 +1089,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
     Scheduler->Run(CurDAG, FuncInfo->MBB);
   }
 
-  if (ViewSUnitDAGs && MatchFilterBB)
+  if (ViewSUnitDAGs && MatchFilterBB) {
     Scheduler->viewGraph();
+
+}
 
   // Emit machine code to BB.  This can change 'BB' to the last block being
   // inserted into.
@@ -1002,8 +1108,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
 
   // If the block was split, make sure we update any references that are used to
   // update PHI nodes later on.
-  if (FirstMBB != LastMBB)
+  if (FirstMBB != LastMBB) {
     SDB->UpdateSplitBlock(FirstMBB, LastMBB);
+
+}
 
   // Free the scheduler state.
   {
@@ -1031,8 +1139,10 @@ public:
   /// deleted is the current ISelPosition node, update ISelPosition.
   ///
   void NodeDeleted(SDNode *N, SDNode *E) override {
-    if (ISelPosition == SelectionDAG::allnodes_iterator(N))
+    if (ISelPosition == SelectionDAG::allnodes_iterator(N)) {
       ++ISelPosition;
+
+}
   }
 };
 
@@ -1085,8 +1195,10 @@ void SelectionDAGISel::InvalidateNodeId(SDNode *N) {
 // getUninvalidatedNodeId - get original uninvalidated node id.
 int SelectionDAGISel::getUninvalidatedNodeId(SDNode *N) {
   int Id = N->getNodeId();
-  if (Id < -1)
+  if (Id < -1) {
     return -(Id + 1);
+
+}
   return Id;
 }
 
@@ -1122,8 +1234,10 @@ void SelectionDAGISel::DoInstructionSelection() {
       // Skip dead nodes. DAGCombiner is expected to eliminate all dead nodes,
       // but there are currently some corner cases that it misses. Also, this
       // makes it theoretically possible to disable the DAGCombiner.
-      if (Node->use_empty())
+      if (Node->use_empty()) {
         continue;
+
+}
 
 #ifndef NDEBUG
       SmallVector<SDNode *, 4> Nodes;
@@ -1179,8 +1293,10 @@ void SelectionDAGISel::DoInstructionSelection() {
           break;
         }
         if (TLI->getOperationAction(Node->getOpcode(), ActionVT)
-            == TargetLowering::Expand)
+            == TargetLowering::Expand) {
           Node = CurDAG->mutateStrictFPToFP(Node);
+
+}
       }
 
       LLVM_DEBUG(dbgs() << "\nISEL: Starting selection on root node: ";
@@ -1202,8 +1318,10 @@ static bool hasExceptionPointerOrCodeUser(const CatchPadInst *CPI) {
     if (const IntrinsicInst *EHPtrCall = dyn_cast<IntrinsicInst>(U)) {
       Intrinsic::ID IID = EHPtrCall->getIntrinsicID();
       if (IID == Intrinsic::eh_exceptionpointer ||
-          IID == Intrinsic::eh_exceptioncode)
+          IID == Intrinsic::eh_exceptioncode) {
         return true;
+
+}
     }
   }
   return false;
@@ -1279,17 +1397,23 @@ bool SelectionDAGISel::PrepareEHLandingPad() {
     .addSym(Label);
 
   if (Pers == EHPersonality::Wasm_CXX) {
-    if (const auto *CPI = dyn_cast<CatchPadInst>(LLVMBB->getFirstNonPHI()))
+    if (const auto *CPI = dyn_cast<CatchPadInst>(LLVMBB->getFirstNonPHI())) {
       mapWasmLandingPadIndex(MBB, CPI);
+
+}
   } else {
     // Assign the call site to the landing pad's begin label.
     MF->setCallSiteLandingPad(Label, SDB->LPadToCallSiteMap[MBB]);
     // Mark exception register as live in.
-    if (unsigned Reg = TLI->getExceptionPointerRegister(PersonalityFn))
+    if (unsigned Reg = TLI->getExceptionPointerRegister(PersonalityFn)) {
       FuncInfo->ExceptionPointerVirtReg = MBB->addLiveIn(Reg, PtrRC);
+
+}
     // Mark exception selector register as live in.
-    if (unsigned Reg = TLI->getExceptionSelectorRegister(PersonalityFn))
+    if (unsigned Reg = TLI->getExceptionSelectorRegister(PersonalityFn)) {
       FuncInfo->ExceptionSelectorVirtReg = MBB->addLiveIn(Reg, PtrRC);
+
+}
   }
 
   return true;
@@ -1315,8 +1439,10 @@ static void processDbgDeclares(FunctionLoweringInfo &FuncInfo) {
   for (const BasicBlock &BB : *FuncInfo.Fn) {
     for (const Instruction &I : BB) {
       const DbgDeclareInst *DI = dyn_cast<DbgDeclareInst>(&I);
-      if (!DI)
+      if (!DI) {
         continue;
+
+}
 
       assert(DI->getVariable() && "Missing variable");
       assert(DI->getDebugLoc() && "Missing location");
@@ -1338,18 +1464,26 @@ static void processDbgDeclares(FunctionLoweringInfo &FuncInfo) {
       int FI = std::numeric_limits<int>::max();
       if (const auto *AI = dyn_cast<AllocaInst>(Address)) {
         auto SI = FuncInfo.StaticAllocaMap.find(AI);
-        if (SI != FuncInfo.StaticAllocaMap.end())
+        if (SI != FuncInfo.StaticAllocaMap.end()) {
           FI = SI->second;
-      } else if (const auto *Arg = dyn_cast<Argument>(Address))
+
+}
+      } else if (const auto *Arg = dyn_cast<Argument>(Address)) {
         FI = FuncInfo.getArgumentFrameIndex(Arg);
 
-      if (FI == std::numeric_limits<int>::max())
+}
+
+      if (FI == std::numeric_limits<int>::max()) {
         continue;
 
+}
+
       DIExpression *Expr = DI->getExpression();
-      if (Offset.getBoolValue())
+      if (Offset.getBoolValue()) {
         Expr = DIExpression::prepend(Expr, DIExpression::ApplyOffset,
                                      Offset.getZExtValue());
+
+}
       LLVM_DEBUG(dbgs() << "processDbgDeclares: setVariableDbgInfo FI=" << FI
                         << ", " << *DI << "\n");
       MF->setVariableDbgInfo(DI->getVariable(), Expr, FI, DI->getDebugLoc());
@@ -1406,16 +1540,20 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
     // If we inserted any instructions at the beginning, make a note of
     // where they are, so we can be sure to emit subsequent instructions
     // after them.
-    if (FuncInfo->InsertPt != FuncInfo->MBB->begin())
+    if (FuncInfo->InsertPt != FuncInfo->MBB->begin()) {
       FastIS->setLastLocalValue(&*std::prev(FuncInfo->InsertPt));
-    else
+    } else {
       FastIS->setLastLocalValue(nullptr);
+
+}
   }
 
   bool Inserted = SwiftError->createEntriesInEntryBlock(SDB->getCurDebugLoc());
 
-  if (FastIS && Inserted)
+  if (FastIS && Inserted) {
     FastIS->setLastLocalValue(&*std::prev(FuncInfo->InsertPt));
+
+}
 
   processDbgDeclares(*FuncInfo);
 
@@ -1433,11 +1571,15 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
       }
 
       if (AllPredsVisited) {
-        for (const PHINode &PN : LLVMBB->phis())
+        for (const PHINode &PN : LLVMBB->phis()) {
           FuncInfo->ComputePHILiveOutRegInfo(&PN);
+
+}
       } else {
-        for (const PHINode &PN : LLVMBB->phis())
+        for (const PHINode &PN : LLVMBB->phis()) {
           FuncInfo->InvalidatePHILiveOutRegInfo(&PN);
+
+}
       }
 
       FuncInfo->VisitedBBs.insert(LLVMBB);
@@ -1449,8 +1591,10 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
     BasicBlock::const_iterator BI = End;
 
     FuncInfo->MBB = FuncInfo->MBBMap[LLVMBB];
-    if (!FuncInfo->MBB)
+    if (!FuncInfo->MBB) {
       continue; // Some blocks like catchpads have no code or MBB.
+
+}
 
     // Insert new instructions after any phi or argument setup code.
     FuncInfo->InsertPt = FuncInfo->MBB->end();
@@ -1458,14 +1602,20 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
     // Setup an EH landing-pad block.
     FuncInfo->ExceptionPointerVirtReg = 0;
     FuncInfo->ExceptionSelectorVirtReg = 0;
-    if (LLVMBB->isEHPad())
-      if (!PrepareEHLandingPad())
+    if (LLVMBB->isEHPad()) {
+      if (!PrepareEHLandingPad()) {
         continue;
+
+}
+
+}
 
     // Before doing SelectionDAG ISel, see if FastISel has been requested.
     if (FastIS) {
-      if (LLVMBB != &Fn.getEntryBlock())
+      if (LLVMBB != &Fn.getEntryBlock()) {
         FastIS->startNewBlock();
+
+}
 
       unsigned NumFastIselRemaining = std::distance(Begin, End);
 
@@ -1497,8 +1647,10 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
           const Instruction *BeforeInst = Inst;
           while (BeforeInst != &*Begin) {
             BeforeInst = &*std::prev(BasicBlock::const_iterator(BeforeInst));
-            if (!isFoldedOrDeadInstruction(BeforeInst, *FuncInfo))
+            if (!isFoldedOrDeadInstruction(BeforeInst, *FuncInfo)) {
               break;
+
+}
           }
           if (BeforeInst != Inst && isa<LoadInst>(BeforeInst) &&
               BeforeInst->hasOneUse() &&
@@ -1538,8 +1690,10 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
           if (!Inst->getType()->isVoidTy() && !Inst->getType()->isTokenTy() &&
               !Inst->use_empty()) {
             unsigned &R = FuncInfo->ValueMap[Inst];
-            if (!R)
+            if (!R) {
               R = FuncInfo->CreateRegs(Inst);
+
+}
           }
 
           bool HadTailCall = false;
@@ -1598,10 +1752,12 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
                                    FunctionBasedInstrumentation);
     }
 
-    if (Begin != BI)
+    if (Begin != BI) {
       ++NumDAGBlocks;
-    else
+    } else {
       ++NumFastIselBlocks;
+
+}
 
     if (Begin != BI) {
       // Run SelectionDAG instruction selection on the remainder of the block
@@ -1613,12 +1769,16 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
       // But if FastISel was run, we already selected some of the block.
       // If we emitted a tail-call, we need to delete any previously emitted
       // instruction that follows it.
-      if (FastIS && HadTailCall && FuncInfo->InsertPt != FuncInfo->MBB->end())
+      if (FastIS && HadTailCall && FuncInfo->InsertPt != FuncInfo->MBB->end()) {
         FastIS->removeDeadCode(FuncInfo->InsertPt, FuncInfo->MBB->end());
+
+}
     }
 
-    if (FastIS)
+    if (FastIS) {
       FastIS->finishBasicBlock();
+
+}
     FinishBasicBlock();
     FuncInfo->PHINodesToUpdate.clear();
     ElidedArgCopyInstrs.clear();
@@ -1644,12 +1804,14 @@ void SelectionDAGISel::SelectAllBasicBlocks(const Function &Fn) {
 static bool MIIsInTerminatorSequence(const MachineInstr &MI) {
   // If we do not have a copy or an implicit def, we return true if and only if
   // MI is a debug value.
-  if (!MI.isCopy() && !MI.isImplicitDef())
+  if (!MI.isCopy() && !MI.isImplicitDef()) {
     // Sometimes DBG_VALUE MI sneak in between the copies from the vregs to the
     // physical registers if there is debug info associated with the terminator
     // of our mbb. We want to include said debug info in our terminator
     // sequence, so we return true in that case.
     return MI.isDebugValue();
+
+}
 
   // We have left the terminator sequence if we are not doing one of the
   // following:
@@ -1660,12 +1822,16 @@ static bool MIIsInTerminatorSequence(const MachineInstr &MI) {
 
   // OPI should always be a register definition...
   MachineInstr::const_mop_iterator OPI = MI.operands_begin();
-  if (!OPI->isReg() || !OPI->isDef())
+  if (!OPI->isReg() || !OPI->isDef()) {
     return false;
 
+}
+
   // Defining any register via an implicit def is always ok.
-  if (MI.isImplicitDef())
+  if (MI.isImplicitDef()) {
     return true;
+
+}
 
   // Grab the copy source...
   MachineInstr::const_mop_iterator OPI2 = OPI;
@@ -1676,8 +1842,10 @@ static bool MIIsInTerminatorSequence(const MachineInstr &MI) {
   // Make sure that the copy dest is not a vreg when the copy source is a
   // physical register.
   if (!OPI2->isReg() || (!Register::isPhysicalRegister(OPI->getReg()) &&
-                         Register::isPhysicalRegister(OPI2->getReg())))
+                         Register::isPhysicalRegister(OPI2->getReg()))) {
     return false;
+
+}
 
   return true;
 }
@@ -1699,8 +1867,10 @@ static MachineBasicBlock::iterator
 FindSplitPointForStackProtector(MachineBasicBlock *BB) {
   MachineBasicBlock::iterator SplitPoint = BB->getFirstTerminator();
   //
-  if (SplitPoint == BB->begin())
+  if (SplitPoint == BB->begin()) {
     return SplitPoint;
+
+}
 
   MachineBasicBlock::iterator Start = BB->begin();
   MachineBasicBlock::iterator Previous = SplitPoint;
@@ -1708,8 +1878,10 @@ FindSplitPointForStackProtector(MachineBasicBlock *BB) {
 
   while (MIIsInTerminatorSequence(*Previous)) {
     SplitPoint = Previous;
-    if (Previous == Start)
+    if (Previous == Start) {
       break;
+
+}
     --Previous;
   }
 
@@ -1731,8 +1903,10 @@ SelectionDAGISel::FinishBasicBlock() {
     MachineInstrBuilder PHI(*MF, FuncInfo->PHINodesToUpdate[i].first);
     assert(PHI->isPHI() &&
            "This is not a machine PHI node that we are updating!");
-    if (!FuncInfo->MBB->isSuccessor(PHI->getParent()))
+    if (!FuncInfo->MBB->isSuccessor(PHI->getParent())) {
       continue;
+
+}
     PHI.addReg(FuncInfo->PHINodesToUpdate[i].second).addMBB(FuncInfo->MBB);
   }
 
@@ -1871,8 +2045,10 @@ SelectionDAGISel::FinishBasicBlock() {
       for (unsigned j = 0, ej = BTB.Cases.size();
            j != ej; ++j) {
         MachineBasicBlock* cBB = BTB.Cases[j].ThisBB;
-        if (cBB->isSuccessor(PHIBB))
+        if (cBB->isSuccessor(PHIBB)) {
           PHI.addReg(FuncInfo->PHINodesToUpdate[pi].second).addMBB(cBB);
+
+}
       }
     }
   }
@@ -1912,12 +2088,16 @@ SelectionDAGISel::FinishBasicBlock() {
       assert(PHI->isPHI() &&
              "This is not a machine PHI node that we are updating!");
       // "default" BB. We can go there only from header BB.
-      if (PHIBB == SDB->SL->JTCases[i].second.Default)
+      if (PHIBB == SDB->SL->JTCases[i].second.Default) {
         PHI.addReg(FuncInfo->PHINodesToUpdate[pi].second)
            .addMBB(SDB->SL->JTCases[i].first.HeaderBB);
+
+}
       // JT BB. Just iterate over successors here
-      if (FuncInfo->MBB->isSuccessor(PHIBB))
+      if (FuncInfo->MBB->isSuccessor(PHIBB)) {
         PHI.addReg(FuncInfo->PHINodesToUpdate[pi].second).addMBB(FuncInfo->MBB);
+
+}
     }
   }
   SDB->SL->JTCases.clear();
@@ -1932,8 +2112,10 @@ SelectionDAGISel::FinishBasicBlock() {
     // Determine the unique successors.
     SmallVector<MachineBasicBlock *, 2> Succs;
     Succs.push_back(SDB->SL->SwitchCases[i].TrueBB);
-    if (SDB->SL->SwitchCases[i].TrueBB != SDB->SL->SwitchCases[i].FalseBB)
+    if (SDB->SL->SwitchCases[i].TrueBB != SDB->SL->SwitchCases[i].FalseBB) {
       Succs.push_back(SDB->SL->SwitchCases[i].FalseBB);
+
+}
 
     // Emit the code. Note that this could result in FuncInfo->MBB being split.
     SDB->visitSwitchCase(SDB->SL->SwitchCases[i], FuncInfo->MBB);
@@ -1998,18 +2180,24 @@ bool SelectionDAGISel::CheckAndMask(SDValue LHS, ConstantSDNode *RHS,
   const APInt &DesiredMask = APInt(LHS.getValueSizeInBits(), DesiredMaskS);
 
   // If the actual mask exactly matches, success!
-  if (ActualMask == DesiredMask)
+  if (ActualMask == DesiredMask) {
     return true;
 
+}
+
   // If the actual AND mask is allowing unallowed bits, this doesn't match.
-  if (!ActualMask.isSubsetOf(DesiredMask))
+  if (!ActualMask.isSubsetOf(DesiredMask)) {
     return false;
+
+}
 
   // Otherwise, the DAG Combiner may have proven that the value coming in is
   // either already zero or is not demanded.  Check for known zero input bits.
   APInt NeededMask = DesiredMask & ~ActualMask;
-  if (CurDAG->MaskedValueIsZero(LHS, NeededMask))
+  if (CurDAG->MaskedValueIsZero(LHS, NeededMask)) {
     return true;
+
+}
 
   // TODO: check to see if missing bits are just not demanded.
 
@@ -2027,12 +2215,16 @@ bool SelectionDAGISel::CheckOrMask(SDValue LHS, ConstantSDNode *RHS,
   const APInt &DesiredMask = APInt(LHS.getValueSizeInBits(), DesiredMaskS);
 
   // If the actual mask exactly matches, success!
-  if (ActualMask == DesiredMask)
+  if (ActualMask == DesiredMask) {
     return true;
 
+}
+
   // If the actual AND mask is allowing unallowed bits, this doesn't match.
-  if (!ActualMask.isSubsetOf(DesiredMask))
+  if (!ActualMask.isSubsetOf(DesiredMask)) {
     return false;
+
+}
 
   // Otherwise, the DAG Combiner may have proven that the value coming in is
   // either already zero or is not demanded.  Check for known zero input bits.
@@ -2040,8 +2232,10 @@ bool SelectionDAGISel::CheckOrMask(SDValue LHS, ConstantSDNode *RHS,
   KnownBits Known = CurDAG->computeKnownBits(LHS);
 
   // If all the missing bits in the or are already known to be set, match!
-  if (NeededMask.isSubsetOf(Known.One))
+  if (NeededMask.isSubsetOf(Known.One)) {
     return true;
+
+}
 
   // TODO: check to see if missing bits are just not demanded.
 
@@ -2062,8 +2256,10 @@ void SelectionDAGISel::SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops,
   Ops.push_back(InOps[InlineAsm::Op_ExtraInfo]);  // 3 (SideEffect, AlignStack)
 
   unsigned i = InlineAsm::Op_FirstOperand, e = InOps.size();
-  if (InOps[e-1].getValueType() == MVT::Glue)
+  if (InOps[e-1].getValueType() == MVT::Glue) {
     --e;  // Don't process a glue operand if it is here.
+
+}
 
   while (i != e) {
     unsigned Flags = cast<ConstantSDNode>(InOps[i])->getZExtValue();
@@ -2090,9 +2286,11 @@ void SelectionDAGISel::SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops,
       // Otherwise, this is a memory operand.  Ask the target to select it.
       std::vector<SDValue> SelOps;
       unsigned ConstraintID = InlineAsm::getMemoryConstraintID(Flags);
-      if (SelectInlineAsmMemoryOperand(InOps[i+1], ConstraintID, SelOps))
+      if (SelectInlineAsmMemoryOperand(InOps[i+1], ConstraintID, SelOps)) {
         report_fatal_error("Could not match memory address.  Inline asm"
                            " failure!");
+
+}
 
       // Add this to the output node.
       unsigned NewFlags =
@@ -2105,8 +2303,10 @@ void SelectionDAGISel::SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops,
   }
 
   // Add the glue input back if present.
-  if (e != InOps.size())
+  if (e != InOps.size()) {
     Ops.push_back(InOps.back());
+
+}
 }
 
 /// findGlueUse - Return use of MVT::Glue value produced by the specified
@@ -2116,8 +2316,10 @@ static SDNode *findGlueUse(SDNode *N) {
   unsigned FlagResNo = N->getNumValues()-1;
   for (SDNode::use_iterator I = N->use_begin(), E = N->use_end(); I != E; ++I) {
     SDUse &Use = I.getUse();
-    if (Use.getResNo() == FlagResNo)
+    if (Use.getResNo() == FlagResNo) {
       return Use.getUser();
+
+}
   }
   return nullptr;
 }
@@ -2129,8 +2331,10 @@ static bool findNonImmUse(SDNode *Root, SDNode *Def, SDNode *ImmedUse,
   SmallPtrSet<const SDNode *, 16> Visited;
   SmallVector<const SDNode *, 16> WorkList;
   // Only check if we have non-immediate uses of Def.
-  if (ImmedUse->isOnlyUserOf(Def))
+  if (ImmedUse->isOnlyUserOf(Def)) {
     return false;
+
+}
 
   // We don't care about paths to Def that go through ImmedUse so mark it
   // visited and mark non-def operands as used.
@@ -2139,10 +2343,14 @@ static bool findNonImmUse(SDNode *Root, SDNode *Def, SDNode *ImmedUse,
     SDNode *N = Op.getNode();
     // Ignore chain deps (they are validated by
     // HandleMergeInputChains) and immediate uses
-    if ((Op.getValueType() == MVT::Other && IgnoreChains) || N == Def)
+    if ((Op.getValueType() == MVT::Other && IgnoreChains) || N == Def) {
       continue;
-    if (!Visited.insert(N).second)
+
+}
+    if (!Visited.insert(N).second) {
       continue;
+
+}
     WorkList.push_back(N);
   }
 
@@ -2151,10 +2359,14 @@ static bool findNonImmUse(SDNode *Root, SDNode *Def, SDNode *ImmedUse,
     for (const SDValue &Op : Root->op_values()) {
       SDNode *N = Op.getNode();
       // Ignore chains (they are validated by HandleMergeInputChains)
-      if ((Op.getValueType() == MVT::Other && IgnoreChains) || N == Def)
+      if ((Op.getValueType() == MVT::Other && IgnoreChains) || N == Def) {
         continue;
-      if (!Visited.insert(N).second)
+
+}
+      if (!Visited.insert(N).second) {
         continue;
+
+}
       WorkList.push_back(N);
     }
   }
@@ -2166,7 +2378,9 @@ static bool findNonImmUse(SDNode *Root, SDNode *Def, SDNode *ImmedUse,
 /// operand node N of U during instruction selection that starts at Root.
 bool SelectionDAGISel::IsProfitableToFold(SDValue N, SDNode *U,
                                           SDNode *Root) const {
-  if (OptLevel == CodeGenOpt::None) return false;
+  if (OptLevel == CodeGenOpt::None) { return false;
+
+}
   return N.hasOneUse();
 }
 
@@ -2175,7 +2389,9 @@ bool SelectionDAGISel::IsProfitableToFold(SDValue N, SDNode *U,
 bool SelectionDAGISel::IsLegalToFold(SDValue N, SDNode *U, SDNode *Root,
                                      CodeGenOpt::Level OptLevel,
                                      bool IgnoreChains) {
-  if (OptLevel == CodeGenOpt::None) return false;
+  if (OptLevel == CodeGenOpt::None) { return false;
+
+}
 
   // If Root use can somehow reach N through a path that that doesn't contain
   // U then folding N would create a cycle. e.g. In the following
@@ -2224,8 +2440,10 @@ bool SelectionDAGISel::IsLegalToFold(SDValue N, SDNode *U, SDNode *Root,
   EVT VT = Root->getValueType(Root->getNumValues()-1);
   while (VT == MVT::Glue) {
     SDNode *GU = findGlueUse(Root);
-    if (!GU)
+    if (!GU) {
       break;
+
+}
     Root = GU;
     VT = Root->getValueType(Root->getNumValues()-1);
 
@@ -2325,38 +2543,50 @@ void SelectionDAGISel::UpdateChains(
       SDNode *ChainNode = ChainNodesMatched[i];
       // If ChainNode is null, it's because we replaced it on a previous
       // iteration and we cleared it out of the map. Just skip it.
-      if (!ChainNode)
+      if (!ChainNode) {
         continue;
+
+}
 
       assert(ChainNode->getOpcode() != ISD::DELETED_NODE &&
              "Deleted node left in chain");
 
       // Don't replace the results of the root node if we're doing a
       // MorphNodeTo.
-      if (ChainNode == NodeToMatch && isMorphNodeTo)
+      if (ChainNode == NodeToMatch && isMorphNodeTo) {
         continue;
 
+}
+
       SDValue ChainVal = SDValue(ChainNode, ChainNode->getNumValues()-1);
-      if (ChainVal.getValueType() == MVT::Glue)
+      if (ChainVal.getValueType() == MVT::Glue) {
         ChainVal = ChainVal.getValue(ChainVal->getNumValues()-2);
+
+}
       assert(ChainVal.getValueType() == MVT::Other && "Not a chain?");
       SelectionDAG::DAGNodeDeletedListener NDL(
           *CurDAG, [&](SDNode *N, SDNode *E) {
             std::replace(ChainNodesMatched.begin(), ChainNodesMatched.end(), N,
                          static_cast<SDNode *>(nullptr));
           });
-      if (ChainNode->getOpcode() != ISD::TokenFactor)
+      if (ChainNode->getOpcode() != ISD::TokenFactor) {
         ReplaceUses(ChainVal, InputChain);
+
+}
 
       // If the node became dead and we haven't already seen it, delete it.
       if (ChainNode != NodeToMatch && ChainNode->use_empty() &&
-          !std::count(NowDeadNodes.begin(), NowDeadNodes.end(), ChainNode))
+          !std::count(NowDeadNodes.begin(), NowDeadNodes.end(), ChainNode)) {
         NowDeadNodes.push_back(ChainNode);
+
+}
     }
   }
 
-  if (!NowDeadNodes.empty())
+  if (!NowDeadNodes.empty()) {
     CurDAG->RemoveDeadNodes(NowDeadNodes);
+
+}
 
   LLVM_DEBUG(dbgs() << "ISEL: Match complete!\n");
 }
@@ -2377,23 +2607,35 @@ HandleMergeInputChains(SmallVectorImpl<SDNode*> &ChainNodesMatched,
   unsigned int Max = 8192;
 
   // Quick exit on trivial merge.
-  if (ChainNodesMatched.size() == 1)
+  if (ChainNodesMatched.size() == 1) {
     return ChainNodesMatched[0]->getOperand(0);
+
+}
 
   // Add chains that aren't already added (internal). Peek through
   // token factors.
   std::function<void(const SDValue)> AddChains = [&](const SDValue V) {
-    if (V.getValueType() != MVT::Other)
+    if (V.getValueType() != MVT::Other) {
       return;
-    if (V->getOpcode() == ISD::EntryToken)
+
+}
+    if (V->getOpcode() == ISD::EntryToken) {
       return;
-    if (!Visited.insert(V.getNode()).second)
+
+}
+    if (!Visited.insert(V.getNode()).second) {
       return;
+
+}
     if (V->getOpcode() == ISD::TokenFactor) {
-      for (const SDValue &Op : V->op_values())
+      for (const SDValue &Op : V->op_values()) {
         AddChains(Op);
-    } else
+
+}
+    } else {
       InputChains.push_back(V);
+
+}
   };
 
   for (auto *N : ChainNodesMatched) {
@@ -2401,27 +2643,39 @@ HandleMergeInputChains(SmallVectorImpl<SDNode*> &ChainNodesMatched,
     Visited.insert(N);
   }
 
-  while (!Worklist.empty())
+  while (!Worklist.empty()) {
     AddChains(Worklist.pop_back_val()->getOperand(0));
 
+}
+
   // Skip the search if there are no chain dependencies.
-  if (InputChains.size() == 0)
+  if (InputChains.size() == 0) {
     return CurDAG->getEntryNode();
+
+}
 
   // If one of these chains is a successor of input, we must have a
   // node that is both the predecessor and successor of the
   // to-be-merged nodes. Fail.
   Visited.clear();
-  for (SDValue V : InputChains)
+  for (SDValue V : InputChains) {
     Worklist.push_back(V.getNode());
 
-  for (auto *N : ChainNodesMatched)
-    if (SDNode::hasPredecessorHelper(N, Visited, Worklist, Max, true))
+}
+
+  for (auto *N : ChainNodesMatched) {
+    if (SDNode::hasPredecessorHelper(N, Visited, Worklist, Max, true)) {
       return SDValue();
 
+}
+
+}
+
   // Return merged chain.
-  if (InputChains.size() == 1)
+  if (InputChains.size() == 1) {
     return InputChains[0];
+
+}
   return CurDAG->getNode(ISD::TokenFactor, SDLoc(ChainNodesMatched[0]),
                          MVT::Other, InputChains);
 }
@@ -2442,10 +2696,14 @@ MorphNode(SDNode *Node, unsigned TargetOpc, SDVTList VTList,
   if (Node->getValueType(NTMNumResults-1) == MVT::Glue) {
     OldGlueResultNo = NTMNumResults-1;
     if (NTMNumResults != 1 &&
-        Node->getValueType(NTMNumResults-2) == MVT::Other)
+        Node->getValueType(NTMNumResults-2) == MVT::Other) {
       OldChainResultNo = NTMNumResults-2;
-  } else if (Node->getValueType(NTMNumResults-1) == MVT::Other)
+
+}
+  } else if (Node->getValueType(NTMNumResults-1) == MVT::Other) {
     OldChainResultNo = NTMNumResults-1;
+
+}
 
   // Call the underlying SelectionDAG routine to do the transmogrification. Note
   // that this deletes operands of the old node that become dead.
@@ -2463,18 +2721,24 @@ MorphNode(SDNode *Node, unsigned TargetOpc, SDVTList VTList,
   unsigned ResNumResults = Res->getNumValues();
   // Move the glue if needed.
   if ((EmitNodeInfo & OPFL_GlueOutput) && OldGlueResultNo != -1 &&
-      (unsigned)OldGlueResultNo != ResNumResults-1)
+      (unsigned)OldGlueResultNo != ResNumResults-1) {
     ReplaceUses(SDValue(Node, OldGlueResultNo),
                 SDValue(Res, ResNumResults - 1));
 
-  if ((EmitNodeInfo & OPFL_GlueOutput) != 0)
+}
+
+  if ((EmitNodeInfo & OPFL_GlueOutput) != 0) {
     --ResNumResults;
+
+}
 
   // Move the chain reference if needed.
   if ((EmitNodeInfo & OPFL_Chain) && OldChainResultNo != -1 &&
-      (unsigned)OldChainResultNo != ResNumResults-1)
+      (unsigned)OldChainResultNo != ResNumResults-1) {
     ReplaceUses(SDValue(Node, OldChainResultNo),
                 SDValue(Res, ResNumResults - 1));
+
+}
 
   // Otherwise, no replacement happened because the node already exists. Replace
   // Uses of the old node with the new one.
@@ -2504,8 +2768,10 @@ CheckChildSame(const unsigned char *MatcherTable, unsigned &MatcherIndex,
               SDValue N,
               const SmallVectorImpl<std::pair<SDValue, SDNode*>> &RecordedNodes,
               unsigned ChildNo) {
-  if (ChildNo >= N.getNumOperands())
+  if (ChildNo >= N.getNumOperands()) {
     return false;  // Match fails if out of range child #.
+
+}
   return ::CheckSame(MatcherTable, MatcherIndex, N.getOperand(ChildNo),
                      RecordedNodes);
 }
@@ -2536,7 +2802,9 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckType(const unsigned char *MatcherTable, unsigned &MatcherIndex, SDValue N,
           const TargetLowering *TLI, const DataLayout &DL) {
   MVT::SimpleValueType VT = (MVT::SimpleValueType)MatcherTable[MatcherIndex++];
-  if (N.getValueType() == VT) return true;
+  if (N.getValueType() == VT) { return true;
+
+}
 
   // Handle the case when VT is iPTR.
   return VT == MVT::iPTR && N.getValueType() == TLI->getPointerTy(DL);
@@ -2546,8 +2814,10 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckChildType(const unsigned char *MatcherTable, unsigned &MatcherIndex,
                SDValue N, const TargetLowering *TLI, const DataLayout &DL,
                unsigned ChildNo) {
-  if (ChildNo >= N.getNumOperands())
+  if (ChildNo >= N.getNumOperands()) {
     return false;  // Match fails if out of range child #.
+
+}
   return ::CheckType(MatcherTable, MatcherIndex, N.getOperand(ChildNo), TLI,
                      DL);
 }
@@ -2562,8 +2832,10 @@ CheckCondCode(const unsigned char *MatcherTable, unsigned &MatcherIndex,
 LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckChild2CondCode(const unsigned char *MatcherTable, unsigned &MatcherIndex,
                     SDValue N) {
-  if (2 >= N.getNumOperands())
+  if (2 >= N.getNumOperands()) {
     return false;
+
+}
   return ::CheckCondCode(MatcherTable, MatcherIndex, N.getOperand(2));
 }
 
@@ -2571,8 +2843,10 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckValueType(const unsigned char *MatcherTable, unsigned &MatcherIndex,
                SDValue N, const TargetLowering *TLI, const DataLayout &DL) {
   MVT::SimpleValueType VT = (MVT::SimpleValueType)MatcherTable[MatcherIndex++];
-  if (cast<VTSDNode>(N)->getVT() == VT)
+  if (cast<VTSDNode>(N)->getVT() == VT) {
     return true;
+
+}
 
   // Handle the case when VT is iPTR.
   return VT == MVT::iPTR && cast<VTSDNode>(N)->getVT() == TLI->getPointerTy(DL);
@@ -2582,8 +2856,10 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckInteger(const unsigned char *MatcherTable, unsigned &MatcherIndex,
              SDValue N) {
   int64_t Val = MatcherTable[MatcherIndex++];
-  if (Val & 128)
+  if (Val & 128) {
     Val = GetVBR(Val, MatcherTable, MatcherIndex);
+
+}
 
   ConstantSDNode *C = dyn_cast<ConstantSDNode>(N);
   return C && C->getSExtValue() == Val;
@@ -2592,8 +2868,10 @@ CheckInteger(const unsigned char *MatcherTable, unsigned &MatcherIndex,
 LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckChildInteger(const unsigned char *MatcherTable, unsigned &MatcherIndex,
                   SDValue N, unsigned ChildNo) {
-  if (ChildNo >= N.getNumOperands())
+  if (ChildNo >= N.getNumOperands()) {
     return false;  // Match fails if out of range child #.
+
+}
   return ::CheckInteger(MatcherTable, MatcherIndex, N.getOperand(ChildNo));
 }
 
@@ -2601,10 +2879,14 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckAndImm(const unsigned char *MatcherTable, unsigned &MatcherIndex,
             SDValue N, const SelectionDAGISel &SDISel) {
   int64_t Val = MatcherTable[MatcherIndex++];
-  if (Val & 128)
+  if (Val & 128) {
     Val = GetVBR(Val, MatcherTable, MatcherIndex);
 
-  if (N->getOpcode() != ISD::AND) return false;
+}
+
+  if (N->getOpcode() != ISD::AND) { return false;
+
+}
 
   ConstantSDNode *C = dyn_cast<ConstantSDNode>(N->getOperand(1));
   return C && SDISel.CheckAndMask(N.getOperand(0), C, Val);
@@ -2614,10 +2896,14 @@ LLVM_ATTRIBUTE_ALWAYS_INLINE static inline bool
 CheckOrImm(const unsigned char *MatcherTable, unsigned &MatcherIndex,
            SDValue N, const SelectionDAGISel &SDISel) {
   int64_t Val = MatcherTable[MatcherIndex++];
-  if (Val & 128)
+  if (Val & 128) {
     Val = GetVBR(Val, MatcherTable, MatcherIndex);
 
-  if (N->getOpcode() != ISD::OR) return false;
+}
+
+  if (N->getOpcode() != ISD::OR) { return false;
+
+}
 
   ConstantSDNode *C = dyn_cast<ConstantSDNode>(N->getOperand(1));
   return C && SDISel.CheckOrMask(N.getOperand(0), C, Val);
@@ -2754,22 +3040,36 @@ public:
     // do, so it's unnecessary to update matching state at that point).
     // Neither of these can occur currently because we only install this
     // update listener during matching a complex patterns.
-    if (!E || E->isMachineOpcode())
+    if (!E || E->isMachineOpcode()) {
       return;
+
+}
     // Check if NodeToMatch was updated.
-    if (N == *NodeToMatch)
+    if (N == *NodeToMatch) {
       *NodeToMatch = E;
+
+}
     // Performing linear search here does not matter because we almost never
     // run this code.  You'd have to have a CSE during complex pattern
     // matching.
-    for (auto &I : RecordedNodes)
-      if (I.first.getNode() == N)
+    for (auto &I : RecordedNodes) {
+      if (I.first.getNode() == N) {
         I.first.setNode(E);
 
-    for (auto &I : MatchScopes)
-      for (auto &J : I.NodeStack)
-        if (J.getNode() == N)
+}
+
+}
+
+    for (auto &I : MatchScopes) {
+      for (auto &J : I.NodeStack) {
+        if (J.getNode() == N) {
           J.setNode(E);
+
+}
+
+}
+
+}
   }
 };
 
@@ -2869,8 +3169,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
 
   if (!OpcodeOffset.empty()) {
     // Already computed the OpcodeOffset table, just index into it.
-    if (N.getOpcode() < OpcodeOffset.size())
+    if (N.getOpcode() < OpcodeOffset.size()) {
       MatcherIndex = OpcodeOffset[N.getOpcode()];
+
+}
     LLVM_DEBUG(dbgs() << "  Initial Opcode index to " << MatcherIndex << "\n");
 
   } else if (MatcherTable[0] == OPC_SwitchOpcode) {
@@ -2881,22 +3183,30 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     while (true) {
       // Get the size of this case.
       unsigned CaseSize = MatcherTable[Idx++];
-      if (CaseSize & 128)
+      if (CaseSize & 128) {
         CaseSize = GetVBR(CaseSize, MatcherTable, Idx);
-      if (CaseSize == 0) break;
+
+}
+      if (CaseSize == 0) { break;
+
+}
 
       // Get the opcode, add the index to the table.
       uint16_t Opc = MatcherTable[Idx++];
       Opc |= (unsigned short)MatcherTable[Idx++] << 8;
-      if (Opc >= OpcodeOffset.size())
+      if (Opc >= OpcodeOffset.size()) {
         OpcodeOffset.resize((Opc+1)*2);
+
+}
       OpcodeOffset[Opc] = Idx;
       Idx += CaseSize;
     }
 
     // Okay, do the lookup for the first opcode.
-    if (N.getOpcode() < OpcodeOffset.size())
+    if (N.getOpcode() < OpcodeOffset.size()) {
       MatcherIndex = OpcodeOffset[N.getOpcode()];
+
+}
   }
 
   while (true) {
@@ -2916,8 +3226,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
 
       while (true) {
         unsigned NumToSkip = MatcherTable[MatcherIndex++];
-        if (NumToSkip & 128)
+        if (NumToSkip & 128) {
           NumToSkip = GetVBR(NumToSkip, MatcherTable, MatcherIndex);
+
+}
         // Found the end of the scope with no match.
         if (NumToSkip == 0) {
           FailIndex = 0;
@@ -2935,8 +3247,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
         bool Result;
         MatcherIndex = IsPredicateKnownToFail(MatcherTable, MatcherIndex, N,
                                               Result, *this, RecordedNodes);
-        if (!Result)
+        if (!Result) {
           break;
+
+}
 
         LLVM_DEBUG(
             dbgs() << "  Skipped scope entry (due to false predicate) at "
@@ -2950,7 +3264,9 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       }
 
       // If the whole scope failed to match, bail.
-      if (FailIndex == 0) break;
+      if (FailIndex == 0) { break;
+
+}
 
       // Push a MatchScope which indicates where to go if the first child fails
       // to match.
@@ -2968,8 +3284,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     case OPC_RecordNode: {
       // Remember this node, it may end up being an operand in the pattern.
       SDNode *Parent = nullptr;
-      if (NodeStack.size() > 1)
+      if (NodeStack.size() > 1) {
         Parent = NodeStack[NodeStack.size()-2].getNode();
+
+}
       RecordedNodes.push_back(std::make_pair(N, Parent));
       continue;
     }
@@ -2979,17 +3297,19 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     case OPC_RecordChild4: case OPC_RecordChild5:
     case OPC_RecordChild6: case OPC_RecordChild7: {
       unsigned ChildNo = Opcode-OPC_RecordChild0;
-      if (ChildNo >= N.getNumOperands())
+      if (ChildNo >= N.getNumOperands()) {
         break;  // Match fails if out of range child #.
+
+}
 
       RecordedNodes.push_back(std::make_pair(N->getOperand(ChildNo),
                                              N.getNode()));
       continue;
     }
     case OPC_RecordMemRef:
-      if (auto *MN = dyn_cast<MemSDNode>(N))
+      if (auto *MN = dyn_cast<MemSDNode>(N)) {
         MatchedMemRefs.push_back(MN->getMemOperand());
-      else {
+      } else {
         LLVM_DEBUG(dbgs() << "Expected MemSDNode "; N->dump(CurDAG);
                    dbgs() << '\n');
       }
@@ -2999,14 +3319,18 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     case OPC_CaptureGlueInput:
       // If the current node has an input glue, capture it in InputGlue.
       if (N->getNumOperands() != 0 &&
-          N->getOperand(N->getNumOperands()-1).getValueType() == MVT::Glue)
+          N->getOperand(N->getNumOperands()-1).getValueType() == MVT::Glue) {
         InputGlue = N->getOperand(N->getNumOperands()-1);
+
+}
       continue;
 
     case OPC_MoveChild: {
       unsigned ChildNo = MatcherTable[MatcherIndex++];
-      if (ChildNo >= N.getNumOperands())
+      if (ChildNo >= N.getNumOperands()) {
         break;  // Match fails if out of range child #.
+
+}
       N = N.getOperand(ChildNo);
       NodeStack.push_back(N);
       continue;
@@ -3017,8 +3341,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     case OPC_MoveChild4: case OPC_MoveChild5:
     case OPC_MoveChild6: case OPC_MoveChild7: {
       unsigned ChildNo = Opcode-OPC_MoveChild0;
-      if (ChildNo >= N.getNumOperands())
+      if (ChildNo >= N.getNumOperands()) {
         break;  // Match fails if out of range child #.
+
+}
       N = N.getOperand(ChildNo);
       NodeStack.push_back(N);
       continue;
@@ -3032,34 +3358,46 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       continue;
 
     case OPC_CheckSame:
-      if (!::CheckSame(MatcherTable, MatcherIndex, N, RecordedNodes)) break;
+      if (!::CheckSame(MatcherTable, MatcherIndex, N, RecordedNodes)) { break;
+
+}
       continue;
 
     case OPC_CheckChild0Same: case OPC_CheckChild1Same:
     case OPC_CheckChild2Same: case OPC_CheckChild3Same:
       if (!::CheckChildSame(MatcherTable, MatcherIndex, N, RecordedNodes,
-                            Opcode-OPC_CheckChild0Same))
+                            Opcode-OPC_CheckChild0Same)) {
         break;
+
+}
       continue;
 
     case OPC_CheckPatternPredicate:
-      if (!::CheckPatternPredicate(MatcherTable, MatcherIndex, *this)) break;
+      if (!::CheckPatternPredicate(MatcherTable, MatcherIndex, *this)) { break;
+
+}
       continue;
     case OPC_CheckPredicate:
       if (!::CheckNodePredicate(MatcherTable, MatcherIndex, *this,
-                                N.getNode()))
+                                N.getNode())) {
         break;
+
+}
       continue;
     case OPC_CheckPredicateWithOperands: {
       unsigned OpNum = MatcherTable[MatcherIndex++];
       SmallVector<SDValue, 8> Operands;
 
-      for (unsigned i = 0; i < OpNum; ++i)
+      for (unsigned i = 0; i < OpNum; ++i) {
         Operands.push_back(RecordedNodes[MatcherTable[MatcherIndex++]].first);
 
+}
+
       unsigned PredNo = MatcherTable[MatcherIndex++];
-      if (!CheckNodePredicateWithOperands(N.getNode(), PredNo, Operands))
+      if (!CheckNodePredicateWithOperands(N.getNode(), PredNo, Operands)) {
         break;
+
+}
       continue;
     }
     case OPC_CheckComplexPat: {
@@ -3070,31 +3408,41 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       // If target can modify DAG during matching, keep the matching state
       // consistent.
       std::unique_ptr<MatchStateUpdater> MSU;
-      if (ComplexPatternFuncMutatesDAG())
+      if (ComplexPatternFuncMutatesDAG()) {
         MSU.reset(new MatchStateUpdater(*CurDAG, &NodeToMatch, RecordedNodes,
                                         MatchScopes));
 
+}
+
       if (!CheckComplexPattern(NodeToMatch, RecordedNodes[RecNo].second,
                                RecordedNodes[RecNo].first, CPNum,
-                               RecordedNodes))
+                               RecordedNodes)) {
         break;
+
+}
       continue;
     }
     case OPC_CheckOpcode:
-      if (!::CheckOpcode(MatcherTable, MatcherIndex, N.getNode())) break;
+      if (!::CheckOpcode(MatcherTable, MatcherIndex, N.getNode())) { break;
+
+}
       continue;
 
     case OPC_CheckType:
       if (!::CheckType(MatcherTable, MatcherIndex, N, TLI,
-                       CurDAG->getDataLayout()))
+                       CurDAG->getDataLayout())) {
         break;
+
+}
       continue;
 
     case OPC_CheckTypeRes: {
       unsigned Res = MatcherTable[MatcherIndex++];
       if (!::CheckType(MatcherTable, MatcherIndex, N.getValue(Res), TLI,
-                       CurDAG->getDataLayout()))
+                       CurDAG->getDataLayout())) {
         break;
+
+}
       continue;
     }
 
@@ -3105,23 +3453,31 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       while (true) {
         // Get the size of this case.
         CaseSize = MatcherTable[MatcherIndex++];
-        if (CaseSize & 128)
+        if (CaseSize & 128) {
           CaseSize = GetVBR(CaseSize, MatcherTable, MatcherIndex);
-        if (CaseSize == 0) break;
+
+}
+        if (CaseSize == 0) { break;
+
+}
 
         uint16_t Opc = MatcherTable[MatcherIndex++];
         Opc |= (unsigned short)MatcherTable[MatcherIndex++] << 8;
 
         // If the opcode matches, then we will execute this case.
-        if (CurNodeOpcode == Opc)
+        if (CurNodeOpcode == Opc) {
           break;
+
+}
 
         // Otherwise, skip over this case.
         MatcherIndex += CaseSize;
       }
 
       // If no cases matched, bail out.
-      if (CaseSize == 0) break;
+      if (CaseSize == 0) { break;
+
+}
 
       // Otherwise, execute the case we found.
       LLVM_DEBUG(dbgs() << "  OpcodeSwitch from " << SwitchStart << " to "
@@ -3136,24 +3492,34 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       while (true) {
         // Get the size of this case.
         CaseSize = MatcherTable[MatcherIndex++];
-        if (CaseSize & 128)
+        if (CaseSize & 128) {
           CaseSize = GetVBR(CaseSize, MatcherTable, MatcherIndex);
-        if (CaseSize == 0) break;
+
+}
+        if (CaseSize == 0) { break;
+
+}
 
         MVT CaseVT = (MVT::SimpleValueType)MatcherTable[MatcherIndex++];
-        if (CaseVT == MVT::iPTR)
+        if (CaseVT == MVT::iPTR) {
           CaseVT = TLI->getPointerTy(CurDAG->getDataLayout());
 
+}
+
         // If the VT matches, then we will execute this case.
-        if (CurNodeVT == CaseVT)
+        if (CurNodeVT == CaseVT) {
           break;
+
+}
 
         // Otherwise, skip over this case.
         MatcherIndex += CaseSize;
       }
 
       // If no cases matched, bail out.
-      if (CaseSize == 0) break;
+      if (CaseSize == 0) { break;
+
+}
 
       // Otherwise, execute the case we found.
       LLVM_DEBUG(dbgs() << "  TypeSwitch[" << EVT(CurNodeVT).getEVTString()
@@ -3167,40 +3533,60 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
     case OPC_CheckChild6Type: case OPC_CheckChild7Type:
       if (!::CheckChildType(MatcherTable, MatcherIndex, N, TLI,
                             CurDAG->getDataLayout(),
-                            Opcode - OPC_CheckChild0Type))
+                            Opcode - OPC_CheckChild0Type)) {
         break;
+
+}
       continue;
     case OPC_CheckCondCode:
-      if (!::CheckCondCode(MatcherTable, MatcherIndex, N)) break;
+      if (!::CheckCondCode(MatcherTable, MatcherIndex, N)) { break;
+
+}
       continue;
     case OPC_CheckChild2CondCode:
-      if (!::CheckChild2CondCode(MatcherTable, MatcherIndex, N)) break;
+      if (!::CheckChild2CondCode(MatcherTable, MatcherIndex, N)) { break;
+
+}
       continue;
     case OPC_CheckValueType:
       if (!::CheckValueType(MatcherTable, MatcherIndex, N, TLI,
-                            CurDAG->getDataLayout()))
+                            CurDAG->getDataLayout())) {
         break;
+
+}
       continue;
     case OPC_CheckInteger:
-      if (!::CheckInteger(MatcherTable, MatcherIndex, N)) break;
+      if (!::CheckInteger(MatcherTable, MatcherIndex, N)) { break;
+
+}
       continue;
     case OPC_CheckChild0Integer: case OPC_CheckChild1Integer:
     case OPC_CheckChild2Integer: case OPC_CheckChild3Integer:
     case OPC_CheckChild4Integer:
       if (!::CheckChildInteger(MatcherTable, MatcherIndex, N,
-                               Opcode-OPC_CheckChild0Integer)) break;
+                               Opcode-OPC_CheckChild0Integer)) { break;
+
+}
       continue;
     case OPC_CheckAndImm:
-      if (!::CheckAndImm(MatcherTable, MatcherIndex, N, *this)) break;
+      if (!::CheckAndImm(MatcherTable, MatcherIndex, N, *this)) { break;
+
+}
       continue;
     case OPC_CheckOrImm:
-      if (!::CheckOrImm(MatcherTable, MatcherIndex, N, *this)) break;
+      if (!::CheckOrImm(MatcherTable, MatcherIndex, N, *this)) { break;
+
+}
       continue;
     case OPC_CheckImmAllOnesV:
-      if (!ISD::isBuildVectorAllOnes(N.getNode())) break;
+      if (!ISD::isBuildVectorAllOnes(N.getNode())) { break;
+
+}
       continue;
     case OPC_CheckImmAllZerosV:
-      if (!ISD::isBuildVectorAllZeros(N.getNode())) break;
+      if (!ISD::isBuildVectorAllZeros(N.getNode())) { break;
+
+}
       continue;
 
     case OPC_CheckFoldableChainNode: {
@@ -3211,15 +3597,23 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       for (unsigned i = 1, e = NodeStack.size()-1; i != e; ++i) {
         unsigned NNonChainUses = 0;
         SDNode *NS = NodeStack[i].getNode();
-        for (auto UI = NS->use_begin(), UE = NS->use_end(); UI != UE; ++UI)
-          if (UI.getUse().getValueType() != MVT::Other)
+        for (auto UI = NS->use_begin(), UE = NS->use_end(); UI != UE; ++UI) {
+          if (UI.getUse().getValueType() != MVT::Other) {
             if (++NNonChainUses > 1) {
               HasMultipleUses = true;
               break;
             }
-        if (HasMultipleUses) break;
+
+}
+
+}
+        if (HasMultipleUses) { break;
+
+}
       }
-      if (HasMultipleUses) break;
+      if (HasMultipleUses) { break;
+
+}
 
       // Check to see that the target thinks this is profitable to fold and that
       // we can fold it without inducing cycles in the graph.
@@ -3227,8 +3621,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
                               NodeToMatch) ||
           !IsLegalToFold(N, NodeStack[NodeStack.size()-2].getNode(),
                          NodeToMatch, OptLevel,
-                         true/*We validate our own chains*/))
+                         true/*We validate our own chains*/)) {
         break;
+
+}
 
       continue;
     }
@@ -3236,8 +3632,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       MVT::SimpleValueType VT =
         (MVT::SimpleValueType)MatcherTable[MatcherIndex++];
       int64_t Val = MatcherTable[MatcherIndex++];
-      if (Val & 128)
+      if (Val & 128) {
         Val = GetVBR(Val, MatcherTable, MatcherIndex);
+
+}
       RecordedNodes.push_back(std::pair<SDValue, SDNode*>(
                               CurDAG->getTargetConstant(Val, SDLoc(NodeToMatch),
                                                         VT), nullptr));
@@ -3309,8 +3707,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       // Merge the input chains if they are not intra-pattern references.
       InputChain = HandleMergeInputChains(ChainNodesMatched, CurDAG);
 
-      if (!InputChain.getNode())
+      if (!InputChain.getNode()) {
         break;  // Failed to merge.
+
+}
       continue;
     }
 
@@ -3345,14 +3745,18 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       }
 
       // If the inner loop broke out, the match fails.
-      if (ChainNodesMatched.empty())
+      if (ChainNodesMatched.empty()) {
         break;
+
+}
 
       // Merge the input chains if they are not intra-pattern references.
       InputChain = HandleMergeInputChains(ChainNodesMatched, CurDAG);
 
-      if (!InputChain.getNode())
+      if (!InputChain.getNode()) {
         break;  // Failed to merge.
+
+}
 
       continue;
     }
@@ -3362,11 +3766,15 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       unsigned RecNo = MatcherTable[MatcherIndex++];
       assert(RecNo < RecordedNodes.size() && "Invalid EmitCopyToReg");
       unsigned DestPhysReg = MatcherTable[MatcherIndex++];
-      if (Opcode == OPC_EmitCopyToReg2)
+      if (Opcode == OPC_EmitCopyToReg2) {
         DestPhysReg |= MatcherTable[MatcherIndex++] << 8;
 
-      if (!InputChain.getNode())
+}
+
+      if (!InputChain.getNode()) {
         InputChain = CurDAG->getEntryNode();
+
+}
 
       InputChain = CurDAG->getCopyToReg(InputChain, SDLoc(NodeToMatch),
                                         DestPhysReg, RecordedNodes[RecNo].first,
@@ -3404,43 +3812,55 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       unsigned NumVTs;
       // If this is one of the compressed forms, get the number of VTs based
       // on the Opcode. Otherwise read the next byte from the table.
-      if (Opcode >= OPC_MorphNodeTo0 && Opcode <= OPC_MorphNodeTo2)
+      if (Opcode >= OPC_MorphNodeTo0 && Opcode <= OPC_MorphNodeTo2) {
         NumVTs = Opcode - OPC_MorphNodeTo0;
-      else if (Opcode >= OPC_EmitNode0 && Opcode <= OPC_EmitNode2)
+      } else if (Opcode >= OPC_EmitNode0 && Opcode <= OPC_EmitNode2) {
         NumVTs = Opcode - OPC_EmitNode0;
-      else
+      } else {
         NumVTs = MatcherTable[MatcherIndex++];
+
+}
       SmallVector<EVT, 4> VTs;
       for (unsigned i = 0; i != NumVTs; ++i) {
         MVT::SimpleValueType VT =
           (MVT::SimpleValueType)MatcherTable[MatcherIndex++];
-        if (VT == MVT::iPTR)
+        if (VT == MVT::iPTR) {
           VT = TLI->getPointerTy(CurDAG->getDataLayout()).SimpleTy;
+
+}
         VTs.push_back(VT);
       }
 
-      if (EmitNodeInfo & OPFL_Chain)
+      if (EmitNodeInfo & OPFL_Chain) {
         VTs.push_back(MVT::Other);
-      if (EmitNodeInfo & OPFL_GlueOutput)
+
+}
+      if (EmitNodeInfo & OPFL_GlueOutput) {
         VTs.push_back(MVT::Glue);
+
+}
 
       // This is hot code, so optimize the two most common cases of 1 and 2
       // results.
       SDVTList VTList;
-      if (VTs.size() == 1)
+      if (VTs.size() == 1) {
         VTList = CurDAG->getVTList(VTs[0]);
-      else if (VTs.size() == 2)
+      } else if (VTs.size() == 2) {
         VTList = CurDAG->getVTList(VTs[0], VTs[1]);
-      else
+      } else {
         VTList = CurDAG->getVTList(VTs);
+
+}
 
       // Get the operand list.
       unsigned NumOps = MatcherTable[MatcherIndex++];
       SmallVector<SDValue, 8> Ops;
       for (unsigned i = 0; i != NumOps; ++i) {
         unsigned RecNo = MatcherTable[MatcherIndex++];
-        if (RecNo & 128)
+        if (RecNo & 128) {
           RecNo = GetVBR(RecNo, MatcherTable, MatcherIndex);
+
+}
 
         assert(RecNo < RecordedNodes.size() && "Invalid EmitNode");
         Ops.push_back(RecordedNodes[RecNo].first);
@@ -3458,27 +3878,35 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
         for (unsigned i = FirstOpToCopy, e = NodeToMatch->getNumOperands();
              i != e; ++i) {
           SDValue V = NodeToMatch->getOperand(i);
-          if (V.getValueType() == MVT::Glue) break;
+          if (V.getValueType() == MVT::Glue) { break;
+
+}
           Ops.push_back(V);
         }
       }
 
       // If this has chain/glue inputs, add them.
-      if (EmitNodeInfo & OPFL_Chain)
+      if (EmitNodeInfo & OPFL_Chain) {
         Ops.push_back(InputChain);
-      if ((EmitNodeInfo & OPFL_GlueInput) && InputGlue.getNode() != nullptr)
+
+}
+      if ((EmitNodeInfo & OPFL_GlueInput) && InputGlue.getNode() != nullptr) {
         Ops.push_back(InputGlue);
+
+}
 
       // Check whether any matched node could raise an FP exception.  Since all
       // such nodes must have a chain, it suffices to check ChainNodesMatched.
       // We need to perform this check before potentially modifying one of the
       // nodes via MorphNode.
       bool MayRaiseFPException = false;
-      for (auto *N : ChainNodesMatched)
+      for (auto *N : ChainNodesMatched) {
         if (mayRaiseFPException(N) && !N->getFlags().hasNoFPExcept()) {
           MayRaiseFPException = true;
           break;
         }
+
+}
 
       // Create the node.
       MachineSDNode *Res = nullptr;
@@ -3492,7 +3920,9 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
 
         // Add all the non-glue/non-chain results to the RecordedNodes list.
         for (unsigned i = 0, e = VTs.size(); i != e; ++i) {
-          if (VTs[i] == MVT::Other || VTs[i] == MVT::Glue) break;
+          if (VTs[i] == MVT::Other || VTs[i] == MVT::Glue) { break;
+
+}
           RecordedNodes.push_back(std::pair<SDValue,SDNode*>(SDValue(Res, i),
                                                              nullptr));
         }
@@ -3523,10 +3953,14 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       // chain and glue.
       if (EmitNodeInfo & OPFL_GlueOutput) {
         InputGlue = SDValue(Res, VTs.size()-1);
-        if (EmitNodeInfo & OPFL_Chain)
+        if (EmitNodeInfo & OPFL_Chain) {
           InputChain = SDValue(Res, VTs.size()-2);
-      } else if (EmitNodeInfo & OPFL_Chain)
+
+}
+      } else if (EmitNodeInfo & OPFL_Chain) {
         InputChain = SDValue(Res, VTs.size()-1);
+
+}
 
       // If the OPFL_MemRefs glue is set on this node, slap all of the
       // accumulated memrefs onto it.
@@ -3546,11 +3980,15 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
         SmallVector<MachineMemOperand *, 4> FilteredMemRefs;
         for (MachineMemOperand *MMO : MatchedMemRefs) {
           if (MMO->isLoad()) {
-            if (mayLoad)
+            if (mayLoad) {
               FilteredMemRefs.push_back(MMO);
+
+}
           } else if (MMO->isStore()) {
-            if (mayStore)
+            if (mayStore) {
               FilteredMemRefs.push_back(MMO);
+
+}
           } else {
             FilteredMemRefs.push_back(MMO);
           }
@@ -3582,8 +4020,10 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
 
       for (unsigned i = 0; i != NumResults; ++i) {
         unsigned ResSlot = MatcherTable[MatcherIndex++];
-        if (ResSlot & 128)
+        if (ResSlot & 128) {
           ResSlot = GetVBR(ResSlot, MatcherTable, MatcherIndex);
+
+}
 
         assert(ResSlot < RecordedNodes.size() && "Invalid CompleteMatch");
         SDValue Res = RecordedNodes[ResSlot].first;
@@ -3610,9 +4050,11 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       // NFC.
       if (NodeToMatch->getValueType(NodeToMatch->getNumValues() - 1) ==
               MVT::Glue &&
-          InputGlue.getNode())
+          InputGlue.getNode()) {
         ReplaceUses(SDValue(NodeToMatch, NodeToMatch->getNumValues() - 1),
                     InputGlue);
+
+}
 
       assert(NodeToMatch->use_empty() &&
              "Didn't replace all uses of the node?");
@@ -3642,23 +4084,29 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
       NodeStack.append(LastScope.NodeStack.begin(), LastScope.NodeStack.end());
       N = NodeStack.back();
 
-      if (LastScope.NumMatchedMemRefs != MatchedMemRefs.size())
+      if (LastScope.NumMatchedMemRefs != MatchedMemRefs.size()) {
         MatchedMemRefs.resize(LastScope.NumMatchedMemRefs);
+
+}
       MatcherIndex = LastScope.FailIndex;
 
       LLVM_DEBUG(dbgs() << "  Continuing at " << MatcherIndex << "\n");
 
       InputChain = LastScope.InputChain;
       InputGlue = LastScope.InputGlue;
-      if (!LastScope.HasChainNodesMatched)
+      if (!LastScope.HasChainNodesMatched) {
         ChainNodesMatched.clear();
+
+}
 
       // Check to see what the offset is at the new MatcherIndex.  If it is zero
       // we have reached the end of this scope, otherwise we have another child
       // in the current scope to try.
       unsigned NumToSkip = MatcherTable[MatcherIndex++];
-      if (NumToSkip & 128)
+      if (NumToSkip & 128) {
         NumToSkip = GetVBR(NumToSkip, MatcherTable, MatcherIndex);
+
+}
 
       // If we have another child in this scope to match, update FailIndex and
       // try it.
@@ -3684,16 +4132,20 @@ bool SelectionDAGISel::mayRaiseFPException(SDNode *N) const {
 
   // For ISD opcodes, only StrictFP opcodes may raise an FP
   // exception.
-  if (N->isTargetOpcode())
+  if (N->isTargetOpcode()) {
     return N->isTargetStrictFPOpcode();
+
+}
   return N->isStrictFPOpcode();
 }
 
 bool SelectionDAGISel::isOrEquivalentToAdd(const SDNode *N) const {
   assert(N->getOpcode() == ISD::OR && "Unexpected opcode");
   auto *C = dyn_cast<ConstantSDNode>(N->getOperand(1));
-  if (!C)
+  if (!C) {
     return false;
+
+}
 
   // Detect when "or" is used to add an offset to a stack object.
   if (auto *FN = dyn_cast<FrameIndexSDNode>(N->getOperand(0))) {
@@ -3722,12 +4174,14 @@ void SelectionDAGISel::CannotYetSelect(SDNode *N) {
     bool HasInputChain = N->getOperand(0).getValueType() == MVT::Other;
     unsigned iid =
       cast<ConstantSDNode>(N->getOperand(HasInputChain))->getZExtValue();
-    if (iid < Intrinsic::num_intrinsics)
+    if (iid < Intrinsic::num_intrinsics) {
       Msg << "intrinsic %" << Intrinsic::getName((Intrinsic::ID)iid, None);
-    else if (const TargetIntrinsicInfo *TII = TM.getIntrinsicInfo())
+    } else if (const TargetIntrinsicInfo *TII = TM.getIntrinsicInfo()) {
       Msg << "target intrinsic %" << TII->getName(iid);
-    else
+    } else {
       Msg << "unknown intrinsic #" << iid;
+
+}
   }
   report_fatal_error(Msg.str());
 }

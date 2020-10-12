@@ -21,7 +21,7 @@ namespace {
 /// TODO: Common w/ the version in AtomicExpandPass, and change the term used.
 /// Idemptotent is confusing in this context.
 bool isIdempotentRMW(AtomicRMWInst& RMWI) {
-  if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand()))
+  if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand())) {
     switch(RMWI.getOperation()) {
     case AtomicRMWInst::FAdd: // -0.0
       return CF->isZero() && CF->isNegative();
@@ -29,11 +29,15 @@ bool isIdempotentRMW(AtomicRMWInst& RMWI) {
       return CF->isZero() && !CF->isNegative();
     default:
       return false;
-    };
+    }
+
+};
   
   auto C = dyn_cast<ConstantInt>(RMWI.getValOperand());
-  if(!C)
+  if(!C) {
     return false;
+
+}
 
   switch(RMWI.getOperation()) {
     case AtomicRMWInst::Add:
@@ -59,18 +63,22 @@ bool isIdempotentRMW(AtomicRMWInst& RMWI) {
 /// Return true if the given instruction always produces a value in memory
 /// equivalent to its value operand.
 bool isSaturating(AtomicRMWInst& RMWI) {
-  if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand()))
+  if (auto CF = dyn_cast<ConstantFP>(RMWI.getValOperand())) {
     switch(RMWI.getOperation()) {
     case AtomicRMWInst::FAdd:
     case AtomicRMWInst::FSub:
       return CF->isNaN();
     default:
       return false;
-    };
+    }
+
+};
 
   auto C = dyn_cast<ConstantInt>(RMWI.getValOperand());
-  if(!C)
+  if(!C) {
     return false;
+
+}
 
   switch(RMWI.getOperation()) {
   default:
@@ -98,8 +106,10 @@ Instruction *InstCombiner::visitAtomicRMWInst(AtomicRMWInst &RMWI) {
   // Volatile RMWs perform a load and a store, we cannot replace this by just a
   // load or just a store. We chose not to canonicalize out of general paranoia
   // about user expectations around volatile. 
-  if (RMWI.isVolatile())
+  if (RMWI.isVolatile()) {
     return nullptr;
+
+}
 
   // Any atomicrmw op which produces a known result in memory can be
   // replaced w/an atomicrmw xchg.
@@ -119,8 +129,10 @@ Instruction *InstCombiner::visitAtomicRMWInst(AtomicRMWInst &RMWI) {
   if (RMWI.getOperation() == AtomicRMWInst::Xchg &&
       RMWI.use_empty()) {
     if (Ordering != AtomicOrdering::Release &&
-        Ordering != AtomicOrdering::Monotonic)
+        Ordering != AtomicOrdering::Monotonic) {
       return nullptr;
+
+}
     auto *SI = new StoreInst(RMWI.getValOperand(),
                              RMWI.getPointerOperand(), &RMWI);
     SI->setAtomic(Ordering, RMWI.getSyncScopeID());
@@ -128,8 +140,10 @@ Instruction *InstCombiner::visitAtomicRMWInst(AtomicRMWInst &RMWI) {
     return eraseInstFromFunction(RMWI);
   }
   
-  if (!isIdempotentRMW(RMWI))
+  if (!isIdempotentRMW(RMWI)) {
     return nullptr;
+
+}
 
   // We chose to canonicalize all idempotent operations to an single
   // operation code and constant.  This makes it easier for the rest of the
@@ -147,8 +161,10 @@ Instruction *InstCombiner::visitAtomicRMWInst(AtomicRMWInst &RMWI) {
 
   // Check if the required ordering is compatible with an atomic load.
   if (Ordering != AtomicOrdering::Acquire &&
-      Ordering != AtomicOrdering::Monotonic)
+      Ordering != AtomicOrdering::Monotonic) {
     return nullptr;
+
+}
   
   LoadInst *Load = new LoadInst(RMWI.getType(), RMWI.getPointerOperand());
   Load->setAtomic(Ordering, RMWI.getSyncScopeID());

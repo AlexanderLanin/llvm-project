@@ -21,18 +21,26 @@ using namespace llvm;
 
 JITSymbolFlags llvm::JITSymbolFlags::fromGlobalValue(const GlobalValue &GV) {
   JITSymbolFlags Flags = JITSymbolFlags::None;
-  if (GV.hasWeakLinkage() || GV.hasLinkOnceLinkage())
+  if (GV.hasWeakLinkage() || GV.hasLinkOnceLinkage()) {
     Flags |= JITSymbolFlags::Weak;
-  if (GV.hasCommonLinkage())
+
+}
+  if (GV.hasCommonLinkage()) {
     Flags |= JITSymbolFlags::Common;
-  if (!GV.hasLocalLinkage() && !GV.hasHiddenVisibility())
+
+}
+  if (!GV.hasLocalLinkage() && !GV.hasHiddenVisibility()) {
     Flags |= JITSymbolFlags::Exported;
 
-  if (isa<Function>(GV))
+}
+
+  if (isa<Function>(GV)) {
     Flags |= JITSymbolFlags::Callable;
-  else if (isa<GlobalAlias>(GV) &&
-           isa<Function>(cast<GlobalAlias>(GV).getAliasee()))
+  } else if (isa<GlobalAlias>(GV) &&
+           isa<Function>(cast<GlobalAlias>(GV).getAliasee())) {
     Flags |= JITSymbolFlags::Callable;
+
+}
 
   return Flags;
 }
@@ -40,15 +48,23 @@ JITSymbolFlags llvm::JITSymbolFlags::fromGlobalValue(const GlobalValue &GV) {
 JITSymbolFlags llvm::JITSymbolFlags::fromSummary(GlobalValueSummary *S) {
   JITSymbolFlags Flags = JITSymbolFlags::None;
   auto L = S->linkage();
-  if (GlobalValue::isWeakLinkage(L) || GlobalValue::isLinkOnceLinkage(L))
+  if (GlobalValue::isWeakLinkage(L) || GlobalValue::isLinkOnceLinkage(L)) {
     Flags |= JITSymbolFlags::Weak;
-  if (GlobalValue::isCommonLinkage(L))
+
+}
+  if (GlobalValue::isCommonLinkage(L)) {
     Flags |= JITSymbolFlags::Common;
-  if (GlobalValue::isExternalLinkage(L) || GlobalValue::isExternalWeakLinkage(L))
+
+}
+  if (GlobalValue::isExternalLinkage(L) || GlobalValue::isExternalWeakLinkage(L)) {
     Flags |= JITSymbolFlags::Exported;
 
-  if (isa<FunctionSummary>(S))
+}
+
+  if (isa<FunctionSummary>(S)) {
     Flags |= JITSymbolFlags::Callable;
+
+}
 
   return Flags;
 }
@@ -56,19 +72,29 @@ JITSymbolFlags llvm::JITSymbolFlags::fromSummary(GlobalValueSummary *S) {
 Expected<JITSymbolFlags>
 llvm::JITSymbolFlags::fromObjectSymbol(const object::SymbolRef &Symbol) {
   JITSymbolFlags Flags = JITSymbolFlags::None;
-  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Weak)
+  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Weak) {
     Flags |= JITSymbolFlags::Weak;
-  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Common)
+
+}
+  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Common) {
     Flags |= JITSymbolFlags::Common;
-  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Exported)
+
+}
+  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Exported) {
     Flags |= JITSymbolFlags::Exported;
 
+}
+
   auto SymbolType = Symbol.getType();
-  if (!SymbolType)
+  if (!SymbolType) {
     return SymbolType.takeError();
 
-  if (*SymbolType & object::SymbolRef::ST_Function)
+}
+
+  if (*SymbolType & object::SymbolRef::ST_Function) {
     Flags |= JITSymbolFlags::Callable;
+
+}
 
   return Flags;
 }
@@ -76,8 +102,10 @@ llvm::JITSymbolFlags::fromObjectSymbol(const object::SymbolRef &Symbol) {
 ARMJITSymbolFlags
 llvm::ARMJITSymbolFlags::fromObjectSymbol(const object::SymbolRef &Symbol) {
   ARMJITSymbolFlags Flags;
-  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Thumb)
+  if (Symbol.getFlags() & object::BasicSymbolRef::SF_Thumb) {
     Flags |= ARMJITSymbolFlags::Thumb;
+
+}
   return Flags;
 }
 
@@ -90,9 +118,9 @@ void LegacyJITSymbolResolver::lookup(const LookupSet &Symbols,
   for (auto &Symbol : Symbols) {
     std::string SymName = Symbol.str();
     if (auto Sym = findSymbolInLogicalDylib(SymName)) {
-      if (auto AddrOrErr = Sym.getAddress())
+      if (auto AddrOrErr = Sym.getAddress()) {
         Result[Symbol] = JITEvaluatedSymbol(*AddrOrErr, Sym.getFlags());
-      else {
+      } else {
         OnResolved(AddrOrErr.takeError());
         return;
       }
@@ -102,9 +130,9 @@ void LegacyJITSymbolResolver::lookup(const LookupSet &Symbols,
     } else {
       // findSymbolInLogicalDylib failed. Lets try findSymbol.
       if (auto Sym = findSymbol(SymName)) {
-        if (auto AddrOrErr = Sym.getAddress())
+        if (auto AddrOrErr = Sym.getAddress()) {
           Result[Symbol] = JITEvaluatedSymbol(*AddrOrErr, Sym.getFlags());
-        else {
+        } else {
           OnResolved(AddrOrErr.takeError());
           return;
         }
@@ -133,11 +161,13 @@ LegacyJITSymbolResolver::getResponsibilitySet(const LookupSet &Symbols) {
     if (auto Sym = findSymbolInLogicalDylib(SymName)) {
       // If there's an existing def but it is not strong, then the caller is
       // responsible for it.
-      if (!Sym.getFlags().isStrong())
+      if (!Sym.getFlags().isStrong()) {
         Result.insert(Symbol);
-    } else if (auto Err = Sym.takeError())
+
+}
+    } else if (auto Err = Sym.takeError()) {
       return std::move(Err);
-    else {
+    } else {
       // If there is no existing definition then the caller is responsible for
       // it.
       Result.insert(Symbol);

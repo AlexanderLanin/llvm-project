@@ -41,10 +41,14 @@ size_t MachOWriter::totalSize() const {
     const MachO::symtab_command &SymTabCommand =
         O.LoadCommands[*O.SymTabCommandIndex]
             .MachOLoadCommand.symtab_command_data;
-    if (SymTabCommand.symoff)
+    if (SymTabCommand.symoff) {
       Ends.push_back(SymTabCommand.symoff + symTableSize());
-    if (SymTabCommand.stroff)
+
+}
+    if (SymTabCommand.stroff) {
       Ends.push_back(SymTabCommand.stroff + SymTabCommand.strsize);
+
+}
   }
   if (O.DyLdInfoCommandIndex) {
     const MachO::dyld_info_command &DyLdInfoCommand =
@@ -84,9 +88,11 @@ size_t MachOWriter::totalSize() const {
         O.LoadCommands[*O.DySymTabCommandIndex]
             .MachOLoadCommand.dysymtab_command_data;
 
-    if (DySymTabCommand.indirectsymoff)
+    if (DySymTabCommand.indirectsymoff) {
       Ends.push_back(DySymTabCommand.indirectsymoff +
                      sizeof(uint32_t) * O.IndirectSymTable.Symbols.size());
+
+}
   }
 
   if (O.DataInCodeCommandIndex) {
@@ -94,9 +100,11 @@ size_t MachOWriter::totalSize() const {
         O.LoadCommands[*O.DataInCodeCommandIndex]
             .MachOLoadCommand.linkedit_data_command_data;
 
-    if (LinkEditDataCommand.dataoff)
+    if (LinkEditDataCommand.dataoff) {
       Ends.push_back(LinkEditDataCommand.dataoff +
                      LinkEditDataCommand.datasize);
+
+}
   }
 
   if (O.FunctionStartsCommandIndex) {
@@ -104,22 +112,30 @@ size_t MachOWriter::totalSize() const {
         O.LoadCommands[*O.FunctionStartsCommandIndex]
             .MachOLoadCommand.linkedit_data_command_data;
 
-    if (LinkEditDataCommand.dataoff)
+    if (LinkEditDataCommand.dataoff) {
       Ends.push_back(LinkEditDataCommand.dataoff +
                      LinkEditDataCommand.datasize);
+
+}
   }
 
   // Otherwise, use the last section / reloction.
-  for (const LoadCommand &LC : O.LoadCommands)
+  for (const LoadCommand &LC : O.LoadCommands) {
     for (const std::unique_ptr<Section> &S : LC.Sections) {
       Ends.push_back(S->Offset + S->Size);
-      if (S->RelOff)
+      if (S->RelOff) {
         Ends.push_back(S->RelOff +
                        S->NReloc * sizeof(MachO::any_relocation_info));
+
+}
     }
 
-  if (!Ends.empty())
+}
+
+  if (!Ends.empty()) {
     return *std::max_element(Ends.begin(), Ends.end());
+
+}
 
   // Otherwise, we have only Mach header and load commands.
   return headerSize() + loadCommandsSize();
@@ -137,8 +153,10 @@ void MachOWriter::writeHeader() {
   Header.flags = O.Header.Flags;
   Header.reserved = O.Header.Reserved;
 
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(Header);
+
+}
 
   auto HeaderSize =
       Is64Bit ? sizeof(MachO::mach_header_64) : sizeof(MachO::mach_header);
@@ -152,23 +170,31 @@ void MachOWriter::writeLoadCommands() {
     MachO::macho_load_command MLC = LC.MachOLoadCommand;
     switch (MLC.load_command_data.cmd) {
     case MachO::LC_SEGMENT:
-      if (IsLittleEndian != sys::IsLittleEndianHost)
+      if (IsLittleEndian != sys::IsLittleEndianHost) {
         MachO::swapStruct(MLC.segment_command_data);
+
+}
       memcpy(Begin, &MLC.segment_command_data, sizeof(MachO::segment_command));
       Begin += sizeof(MachO::segment_command);
 
-      for (const std::unique_ptr<Section> &Sec : LC.Sections)
+      for (const std::unique_ptr<Section> &Sec : LC.Sections) {
         writeSectionInLoadCommand<MachO::section>(*Sec, Begin);
+
+}
       continue;
     case MachO::LC_SEGMENT_64:
-      if (IsLittleEndian != sys::IsLittleEndianHost)
+      if (IsLittleEndian != sys::IsLittleEndianHost) {
         MachO::swapStruct(MLC.segment_command_64_data);
+
+}
       memcpy(Begin, &MLC.segment_command_64_data,
              sizeof(MachO::segment_command_64));
       Begin += sizeof(MachO::segment_command_64);
 
-      for (const std::unique_ptr<Section> &Sec : LC.Sections)
+      for (const std::unique_ptr<Section> &Sec : LC.Sections) {
         writeSectionInLoadCommand<MachO::section_64>(*Sec, Begin);
+
+}
       continue;
     }
 
@@ -190,12 +216,16 @@ void MachOWriter::writeLoadCommands() {
     default:
       assert(sizeof(MachO::load_command) + LC.Payload.size() ==
              MLC.load_command_data.cmdsize);
-      if (IsLittleEndian != sys::IsLittleEndianHost)
+      if (IsLittleEndian != sys::IsLittleEndianHost) {
         MachO::swapStruct(MLC.load_command_data);
+
+}
       memcpy(Begin, &MLC.load_command_data, sizeof(MachO::load_command));
       Begin += sizeof(MachO::load_command);
-      if (!LC.Payload.empty())
+      if (!LC.Payload.empty()) {
         memcpy(Begin, LC.Payload.data(), LC.Payload.size());
+
+}
       Begin += LC.Payload.size();
       break;
 #include "llvm/BinaryFormat/MachO.def"
@@ -222,17 +252,21 @@ void MachOWriter::writeSectionInLoadCommand(const Section &Sec, uint8_t *&Out) {
   Temp.reserved1 = Sec.Reserved1;
   Temp.reserved2 = Sec.Reserved2;
 
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(Temp);
+
+}
   memcpy(Out, &Temp, sizeof(StructType));
   Out += sizeof(StructType);
 }
 
 void MachOWriter::writeSections() {
-  for (const LoadCommand &LC : O.LoadCommands)
+  for (const LoadCommand &LC : O.LoadCommands) {
     for (const std::unique_ptr<Section> &Sec : LC.Sections) {
-      if (Sec->isVirtualSection())
+      if (Sec->isVirtualSection()) {
         continue;
+
+}
 
       assert(Sec->Offset && "Section offset can not be zero");
       assert((Sec->Size == Sec->Content.size()) && "Incorrect section size");
@@ -246,14 +280,18 @@ void MachOWriter::writeSections() {
           Info->r_symbolnum = RelocInfo.Symbol->Index;
         }
 
-        if (IsLittleEndian != sys::IsLittleEndianHost)
+        if (IsLittleEndian != sys::IsLittleEndianHost) {
           MachO::swapStruct(
               reinterpret_cast<MachO::any_relocation_info &>(RelocInfo.Info));
+
+}
         memcpy(B.getBufferStart() + Sec->RelOff +
                    Index * sizeof(MachO::any_relocation_info),
                &RelocInfo.Info, sizeof(RelocInfo.Info));
       }
     }
+
+}
 }
 
 template <typename NListType>
@@ -266,15 +304,19 @@ void writeNListEntry(const SymbolEntry &SE, bool IsLittleEndian, char *&Out,
   ListEntry.n_desc = SE.n_desc;
   ListEntry.n_value = SE.n_value;
 
-  if (IsLittleEndian != sys::IsLittleEndianHost)
+  if (IsLittleEndian != sys::IsLittleEndianHost) {
     MachO::swapStruct(ListEntry);
+
+}
   memcpy(Out, reinterpret_cast<const char *>(&ListEntry), sizeof(NListType));
   Out += sizeof(NListType);
 }
 
 void MachOWriter::writeStringTable() {
-  if (!O.SymTabCommandIndex)
+  if (!O.SymTabCommandIndex) {
     return;
+
+}
   const MachO::symtab_command &SymTabCommand =
       O.LoadCommands[*O.SymTabCommandIndex]
           .MachOLoadCommand.symtab_command_data;
@@ -284,8 +326,10 @@ void MachOWriter::writeStringTable() {
 }
 
 void MachOWriter::writeSymbolTable() {
-  if (!O.SymTabCommandIndex)
+  if (!O.SymTabCommandIndex) {
     return;
+
+}
   const MachO::symtab_command &SymTabCommand =
       O.LoadCommands[*O.SymTabCommandIndex]
           .MachOLoadCommand.symtab_command_data;
@@ -296,16 +340,20 @@ void MachOWriter::writeSymbolTable() {
     SymbolEntry *Sym = Iter->get();
     uint32_t Nstrx = LayoutBuilder.getStringTableBuilder().getOffset(Sym->Name);
 
-    if (Is64Bit)
+    if (Is64Bit) {
       writeNListEntry<MachO::nlist_64>(*Sym, IsLittleEndian, SymTable, Nstrx);
-    else
+    } else {
       writeNListEntry<MachO::nlist>(*Sym, IsLittleEndian, SymTable, Nstrx);
+
+}
   }
 }
 
 void MachOWriter::writeRebaseInfo() {
-  if (!O.DyLdInfoCommandIndex)
+  if (!O.DyLdInfoCommandIndex) {
     return;
+
+}
   const MachO::dyld_info_command &DyLdInfoCommand =
       O.LoadCommands[*O.DyLdInfoCommandIndex]
           .MachOLoadCommand.dyld_info_command_data;
@@ -316,8 +364,10 @@ void MachOWriter::writeRebaseInfo() {
 }
 
 void MachOWriter::writeBindInfo() {
-  if (!O.DyLdInfoCommandIndex)
+  if (!O.DyLdInfoCommandIndex) {
     return;
+
+}
   const MachO::dyld_info_command &DyLdInfoCommand =
       O.LoadCommands[*O.DyLdInfoCommandIndex]
           .MachOLoadCommand.dyld_info_command_data;
@@ -328,8 +378,10 @@ void MachOWriter::writeBindInfo() {
 }
 
 void MachOWriter::writeWeakBindInfo() {
-  if (!O.DyLdInfoCommandIndex)
+  if (!O.DyLdInfoCommandIndex) {
     return;
+
+}
   const MachO::dyld_info_command &DyLdInfoCommand =
       O.LoadCommands[*O.DyLdInfoCommandIndex]
           .MachOLoadCommand.dyld_info_command_data;
@@ -340,8 +392,10 @@ void MachOWriter::writeWeakBindInfo() {
 }
 
 void MachOWriter::writeLazyBindInfo() {
-  if (!O.DyLdInfoCommandIndex)
+  if (!O.DyLdInfoCommandIndex) {
     return;
+
+}
   const MachO::dyld_info_command &DyLdInfoCommand =
       O.LoadCommands[*O.DyLdInfoCommandIndex]
           .MachOLoadCommand.dyld_info_command_data;
@@ -352,8 +406,10 @@ void MachOWriter::writeLazyBindInfo() {
 }
 
 void MachOWriter::writeExportInfo() {
-  if (!O.DyLdInfoCommandIndex)
+  if (!O.DyLdInfoCommandIndex) {
     return;
+
+}
   const MachO::dyld_info_command &DyLdInfoCommand =
       O.LoadCommands[*O.DyLdInfoCommandIndex]
           .MachOLoadCommand.dyld_info_command_data;
@@ -364,8 +420,10 @@ void MachOWriter::writeExportInfo() {
 }
 
 void MachOWriter::writeIndirectSymbolTable() {
-  if (!O.DySymTabCommandIndex)
+  if (!O.DySymTabCommandIndex) {
     return;
+
+}
 
   const MachO::dysymtab_command &DySymTabCommand =
       O.LoadCommands[*O.DySymTabCommandIndex]
@@ -375,15 +433,19 @@ void MachOWriter::writeIndirectSymbolTable() {
       (uint32_t *)(B.getBufferStart() + DySymTabCommand.indirectsymoff);
   for (const IndirectSymbolEntry &Sym : O.IndirectSymTable.Symbols) {
     uint32_t Entry = (Sym.Symbol) ? (*Sym.Symbol)->Index : Sym.OriginalIndex;
-    if (IsLittleEndian != sys::IsLittleEndianHost)
+    if (IsLittleEndian != sys::IsLittleEndianHost) {
       sys::swapByteOrder(Entry);
+
+}
     *Out++ = Entry;
   }
 }
 
 void MachOWriter::writeDataInCodeData() {
-  if (!O.DataInCodeCommandIndex)
+  if (!O.DataInCodeCommandIndex) {
     return;
+
+}
   const MachO::linkedit_data_command &LinkEditDataCommand =
       O.LoadCommands[*O.DataInCodeCommandIndex]
           .MachOLoadCommand.linkedit_data_command_data;
@@ -394,8 +456,10 @@ void MachOWriter::writeDataInCodeData() {
 }
 
 void MachOWriter::writeFunctionStartsData() {
-  if (!O.FunctionStartsCommandIndex)
+  if (!O.FunctionStartsCommandIndex) {
     return;
+
+}
   const MachO::linkedit_data_command &LinkEditDataCommand =
       O.LoadCommands[*O.FunctionStartsCommandIndex]
           .MachOLoadCommand.linkedit_data_command_data;
@@ -414,30 +478,44 @@ void MachOWriter::writeTail() {
     const MachO::symtab_command &SymTabCommand =
         O.LoadCommands[*O.SymTabCommandIndex]
             .MachOLoadCommand.symtab_command_data;
-    if (SymTabCommand.symoff)
+    if (SymTabCommand.symoff) {
       Queue.push_back({SymTabCommand.symoff, &MachOWriter::writeSymbolTable});
-    if (SymTabCommand.stroff)
+
+}
+    if (SymTabCommand.stroff) {
       Queue.push_back({SymTabCommand.stroff, &MachOWriter::writeStringTable});
+
+}
   }
 
   if (O.DyLdInfoCommandIndex) {
     const MachO::dyld_info_command &DyLdInfoCommand =
         O.LoadCommands[*O.DyLdInfoCommandIndex]
             .MachOLoadCommand.dyld_info_command_data;
-    if (DyLdInfoCommand.rebase_off)
+    if (DyLdInfoCommand.rebase_off) {
       Queue.push_back(
           {DyLdInfoCommand.rebase_off, &MachOWriter::writeRebaseInfo});
-    if (DyLdInfoCommand.bind_off)
+
+}
+    if (DyLdInfoCommand.bind_off) {
       Queue.push_back({DyLdInfoCommand.bind_off, &MachOWriter::writeBindInfo});
-    if (DyLdInfoCommand.weak_bind_off)
+
+}
+    if (DyLdInfoCommand.weak_bind_off) {
       Queue.push_back(
           {DyLdInfoCommand.weak_bind_off, &MachOWriter::writeWeakBindInfo});
-    if (DyLdInfoCommand.lazy_bind_off)
+
+}
+    if (DyLdInfoCommand.lazy_bind_off) {
       Queue.push_back(
           {DyLdInfoCommand.lazy_bind_off, &MachOWriter::writeLazyBindInfo});
-    if (DyLdInfoCommand.export_off)
+
+}
+    if (DyLdInfoCommand.export_off) {
       Queue.push_back(
           {DyLdInfoCommand.export_off, &MachOWriter::writeExportInfo});
+
+}
   }
 
   if (O.DySymTabCommandIndex) {
@@ -445,9 +523,11 @@ void MachOWriter::writeTail() {
         O.LoadCommands[*O.DySymTabCommandIndex]
             .MachOLoadCommand.dysymtab_command_data;
 
-    if (DySymTabCommand.indirectsymoff)
+    if (DySymTabCommand.indirectsymoff) {
       Queue.emplace_back(DySymTabCommand.indirectsymoff,
                          &MachOWriter::writeIndirectSymbolTable);
+
+}
   }
 
   if (O.DataInCodeCommandIndex) {
@@ -455,9 +535,11 @@ void MachOWriter::writeTail() {
         O.LoadCommands[*O.DataInCodeCommandIndex]
             .MachOLoadCommand.linkedit_data_command_data;
 
-    if (LinkEditDataCommand.dataoff)
+    if (LinkEditDataCommand.dataoff) {
       Queue.emplace_back(LinkEditDataCommand.dataoff,
                          &MachOWriter::writeDataInCodeData);
+
+}
   }
 
   if (O.FunctionStartsCommandIndex) {
@@ -465,24 +547,30 @@ void MachOWriter::writeTail() {
         O.LoadCommands[*O.FunctionStartsCommandIndex]
             .MachOLoadCommand.linkedit_data_command_data;
 
-    if (LinkEditDataCommand.dataoff)
+    if (LinkEditDataCommand.dataoff) {
       Queue.emplace_back(LinkEditDataCommand.dataoff,
                          &MachOWriter::writeFunctionStartsData);
+
+}
   }
 
   llvm::sort(Queue, [](const WriteOperation &LHS, const WriteOperation &RHS) {
     return LHS.first < RHS.first;
   });
 
-  for (auto WriteOp : Queue)
+  for (auto WriteOp : Queue) {
     (this->*WriteOp.second)();
+
+}
 }
 
 Error MachOWriter::finalize() { return LayoutBuilder.layout(); }
 
 Error MachOWriter::write() {
-  if (Error E = B.allocate(totalSize()))
+  if (Error E = B.allocate(totalSize())) {
     return E;
+
+}
   memset(B.getBufferStart(), 0, totalSize());
   writeHeader();
   writeLoadCommands();

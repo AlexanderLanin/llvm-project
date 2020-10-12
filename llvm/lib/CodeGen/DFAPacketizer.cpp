@@ -56,8 +56,10 @@ static unsigned InstrCount = 0;
 // current state.
 bool DFAPacketizer::canReserveResources(const MCInstrDesc *MID) {
   unsigned Action = ItinActions[MID->getSchedClass()];
-  if (MID->getSchedClass() == 0 || Action == 0)
+  if (MID->getSchedClass() == 0 || Action == 0) {
     return false;
+
+}
   return A.canAdd(Action);
 }
 
@@ -65,8 +67,10 @@ bool DFAPacketizer::canReserveResources(const MCInstrDesc *MID) {
 // state to reflect that change.
 void DFAPacketizer::reserveResources(const MCInstrDesc *MID) {
   unsigned Action = ItinActions[MID->getSchedClass()];
-  if (MID->getSchedClass() == 0 || Action == 0)
+  if (MID->getSchedClass() == 0 || Action == 0) {
     return;
+
+}
   A.add(Action);
 }
 
@@ -91,8 +95,10 @@ unsigned DFAPacketizer::getUsedResources(unsigned InstIdx) {
 
   // RS stores the cumulative resources used up to and including the I'th
   // instruction. The 0th instruction is the base case.
-  if (InstIdx == 0)
+  if (InstIdx == 0) {
     return RS[0];
+
+}
   // Return the difference between the cumulative resources used by InstIdx and
   // its predecessor.
   return RS[InstIdx] ^ RS[InstIdx - 1];
@@ -135,8 +141,10 @@ DefaultVLIWScheduler::DefaultVLIWScheduler(MachineFunction &MF,
 
 /// Apply each ScheduleDAGMutation step in order.
 void DefaultVLIWScheduler::postprocessDAG() {
-  for (auto &M : Mutations)
+  for (auto &M : Mutations) {
     M->apply(this);
+
+}
 }
 
 void DefaultVLIWScheduler::schedule() {
@@ -197,8 +205,10 @@ void VLIWPacketizerList::PacketizeMIs(MachineBasicBlock *MBB,
 
   // Generate MI -> SU map.
   MIToSUnit.clear();
-  for (SUnit &SU : VLIWScheduler->SUnits)
+  for (SUnit &SU : VLIWScheduler->SUnits) {
     MIToSUnit[SU.getInstr()] = &SU;
+
+}
 
   bool LimitPresent = InstrLimit.getPosition();
 
@@ -221,8 +231,10 @@ void VLIWPacketizerList::PacketizeMIs(MachineBasicBlock *MBB,
     }
 
     // Ignore pseudo instructions.
-    if (ignorePseudoInstruction(MI, MBB))
+    if (ignorePseudoInstruction(MI, MBB)) {
       continue;
+
+}
 
     SUnit *SUI = MIToSUnit[&MI];
     assert(SUI && "Missing SUnit Info!");
@@ -282,8 +294,10 @@ void VLIWPacketizerList::PacketizeMIs(MachineBasicBlock *MBB,
 bool VLIWPacketizerList::alias(const MachineMemOperand &Op1,
                                const MachineMemOperand &Op2,
                                bool UseTBAA) const {
-  if (!Op1.getValue() || !Op2.getValue())
+  if (!Op1.getValue() || !Op2.getValue()) {
     return true;
+
+}
 
   int64_t MinOffset = std::min(Op1.getOffset(), Op2.getOffset());
   int64_t Overlapa = Op1.getSize() + Op1.getOffset() - MinOffset;
@@ -301,13 +315,21 @@ bool VLIWPacketizerList::alias(const MachineMemOperand &Op1,
 bool VLIWPacketizerList::alias(const MachineInstr &MI1,
                                const MachineInstr &MI2,
                                bool UseTBAA) const {
-  if (MI1.memoperands_empty() || MI2.memoperands_empty())
+  if (MI1.memoperands_empty() || MI2.memoperands_empty()) {
     return true;
 
-  for (const MachineMemOperand *Op1 : MI1.memoperands())
-    for (const MachineMemOperand *Op2 : MI2.memoperands())
-      if (alias(*Op1, *Op2, UseTBAA))
+}
+
+  for (const MachineMemOperand *Op1 : MI1.memoperands()) {
+    for (const MachineMemOperand *Op2 : MI2.memoperands()) {
+      if (alias(*Op1, *Op2, UseTBAA)) {
         return true;
+
+}
+
+}
+
+}
   return false;
 }
 

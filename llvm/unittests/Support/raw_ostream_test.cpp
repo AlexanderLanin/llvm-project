@@ -32,8 +32,10 @@ template<typename T> std::string printToString(const T &Value,
   assert(BytesLeftInBuffer < 256 && "Invalid buffer count!");
   llvm::raw_svector_ostream OS(SVec);
   unsigned StartIndex = 256 - BytesLeftInBuffer;
-  for (unsigned i = 0; i != StartIndex; ++i)
+  for (unsigned i = 0; i != StartIndex; ++i) {
     OS << '?';
+
+}
   OS << Value;
   return std::string(OS.str().substr(StartIndex));
 }

@@ -36,8 +36,10 @@ void SleepForMicroseconds(int microseconds) {
   struct timespec sleep_time;
   sleep_time.tv_sec = microseconds / kNumMicrosPerSecond;
   sleep_time.tv_nsec = (microseconds % kNumMicrosPerSecond) * kNumNanosPerMicro;
-  while (nanosleep(&sleep_time, &sleep_time) != 0 && errno == EINTR)
+  while (nanosleep(&sleep_time, &sleep_time) != 0 && errno == EINTR) {
     ;  // Ignore signals and wait for the full interval to elapse.
+
+}
 }
 
 void SleepForMilliseconds(int milliseconds) {

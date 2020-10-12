@@ -25,15 +25,19 @@ void enumerateTokenSpans(const syntax::Tree *Root, ProcessTokensFn Callback) {
     void run(const syntax::Tree *Root) {
       process(Root);
       // Report the last span to the user.
-      if (SpanBegin)
+      if (SpanBegin) {
         Callback(llvm::makeArrayRef(SpanBegin, SpanEnd), SpanIsOriginal);
+
+}
     }
 
   private:
     void process(const syntax::Node *N) {
       if (auto *T = dyn_cast<syntax::Tree>(N)) {
-        for (auto *C = T->firstChild(); C != nullptr; C = C->nextSibling())
+        for (auto *C = T->firstChild(); C != nullptr; C = C->nextSibling()) {
           process(C);
+
+}
         return;
       }
 
@@ -44,8 +48,10 @@ void enumerateTokenSpans(const syntax::Tree *Root, ProcessTokensFn Callback) {
         return;
       }
       // Report the current span to the user.
-      if (SpanBegin)
+      if (SpanBegin) {
         Callback(llvm::makeArrayRef(SpanBegin, SpanEnd), SpanIsOriginal);
+
+}
       // Start recording a new span.
       SpanBegin = L->token();
       SpanEnd = SpanBegin + 1;
@@ -70,10 +76,12 @@ syntax::FileRange rangeOfExpanded(const syntax::Arena &A,
   assert(Buffer.expandedTokens().begin() <= Expanded.begin());
   assert(Expanded.end() < Buffer.expandedTokens().end());
 
-  if (Expanded.empty())
+  if (Expanded.empty()) {
     // (!) empty tokens must always point before end().
     return syntax::FileRange(
         SM, SM.getExpansionLoc(Expanded.begin()->location()), /*Length=*/0);
+
+}
 
   auto Spelled = Buffer.spelledForExpanded(Expanded);
   assert(Spelled && "could not find spelled tokens for expanded");
@@ -91,8 +99,10 @@ syntax::computeReplacements(const syntax::Arena &A,
   // Text inserted by the replacement we are building now.
   std::string Replacement;
   auto emitReplacement = [&](llvm::ArrayRef<syntax::Token> ReplacedRange) {
-    if (ReplacedRange.empty() && Replacement.empty())
+    if (ReplacedRange.empty() && Replacement.empty()) {
       return;
+
+}
     llvm::cantFail(Replacements.add(tooling::Replacement(
         SM, rangeOfExpanded(A, ReplacedRange).toCharRange(SM), Replacement)));
     Replacement = "";

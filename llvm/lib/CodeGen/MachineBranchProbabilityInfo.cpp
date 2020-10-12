@@ -80,8 +80,10 @@ MachineBranchProbabilityInfo::getHotSucc(MachineBasicBlock *MBB) const {
   }
 
   BranchProbability HotProb(StaticLikelyProb, 100);
-  if (getEdgeProbability(MBB, MaxSucc) >= HotProb)
+  if (getEdgeProbability(MBB, MaxSucc) >= HotProb) {
     return MaxSucc;
+
+}
 
   return nullptr;
 }

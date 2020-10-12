@@ -38,11 +38,13 @@ public:
 }
 
 COFFDumper::COFFDumper(const object::COFFObjectFile &Obj) : Obj(Obj) {
-  if (const object::pe32_header *PE32Header = Obj.getPE32Header())
+  if (const object::pe32_header *PE32Header = Obj.getPE32Header()) {
     dumpOptionalHeader(PE32Header);
-  else if (const object::pe32plus_header *PE32PlusHeader =
-               Obj.getPE32PlusHeader())
+  } else if (const object::pe32plus_header *PE32PlusHeader =
+               Obj.getPE32PlusHeader()) {
     dumpOptionalHeader(PE32PlusHeader);
+
+}
 
   dumpHeader();
   dumpSections(Obj.getNumberOfSections());
@@ -83,8 +85,10 @@ template <typename T> void COFFDumper::dumpOptionalHeader(T OptionalHeader) {
   unsigned I = 0;
   for (auto &DestDD : YAMLObj.OptionalHeader->DataDirectories) {
     const object::data_directory *DD;
-    if (Obj.getDataDirectory(I++, DD))
+    if (Obj.getDataDirectory(I++, DD)) {
       continue;
+
+}
     DestDD = COFF::DataDirectory();
     DestDD->RelativeVirtualAddress = DD->RelativeVirtualAddress;
     DestDD->Size = DD->Size;
@@ -104,8 +108,10 @@ initializeFileAndStringTable(const llvm::object::COFFObjectFile &Obj,
   // Iterate all .debug$S sections looking for the checksums and string table.
   // Exit as soon as both sections are found.
   for (const auto &S : Obj.sections()) {
-    if (SC.hasStrings() && SC.hasChecksums())
+    if (SC.hasStrings() && SC.hasChecksums()) {
       break;
+
+}
 
     Expected<StringRef> SectionNameOrErr = S.getName();
     if (!SectionNameOrErr) {
@@ -114,8 +120,10 @@ initializeFileAndStringTable(const llvm::object::COFFObjectFile &Obj,
     }
 
     ArrayRef<uint8_t> sectionData;
-    if ((*SectionNameOrErr) != ".debug$S")
+    if ((*SectionNameOrErr) != ".debug$S") {
       continue;
+
+}
 
     const object::coff_section *COFFSection = Obj.getCOFFSection(S);
 
@@ -147,18 +155,22 @@ void COFFDumper::dumpSections(unsigned NumSections) {
     StringMap<bool>::iterator It;
     bool Inserted;
     std::tie(It, Inserted) = SymbolUnique.insert(std::make_pair(Name, true));
-    if (!Inserted)
+    if (!Inserted) {
       It->second = false;
+
+}
   }
 
   for (const auto &ObjSection : Obj.sections()) {
     const object::coff_section *COFFSection = Obj.getCOFFSection(ObjSection);
     COFFYAML::Section NewYAMLSection;
 
-    if (Expected<StringRef> NameOrErr = ObjSection.getName())
+    if (Expected<StringRef> NameOrErr = ObjSection.getName()) {
       NewYAMLSection.Name = *NameOrErr;
-    else
+    } else {
       consumeError(NameOrErr.takeError());
+
+}
 
     NewYAMLSection.Header.Characteristics = COFFSection->Characteristics;
     NewYAMLSection.Header.VirtualAddress = COFFSection->VirtualAddress;
@@ -178,20 +190,24 @@ void COFFDumper::dumpSections(unsigned NumSections) {
     assert(NewYAMLSection.Alignment <= 8192);
 
     ArrayRef<uint8_t> sectionData;
-    if (!ObjSection.isBSS())
+    if (!ObjSection.isBSS()) {
       cantFail(Obj.getSectionContents(COFFSection, sectionData));
+
+}
     NewYAMLSection.SectionData = yaml::BinaryRef(sectionData);
 
-    if (NewYAMLSection.Name == ".debug$S")
+    if (NewYAMLSection.Name == ".debug$S") {
       NewYAMLSection.DebugS = CodeViewYAML::fromDebugS(sectionData, SC);
-    else if (NewYAMLSection.Name == ".debug$T")
+    } else if (NewYAMLSection.Name == ".debug$T") {
       NewYAMLSection.DebugT = CodeViewYAML::fromDebugT(sectionData,
                                                        NewYAMLSection.Name);
-    else if (NewYAMLSection.Name == ".debug$P")
+    } else if (NewYAMLSection.Name == ".debug$P") {
       NewYAMLSection.DebugP = CodeViewYAML::fromDebugT(sectionData,
                                                        NewYAMLSection.Name);
-    else if (NewYAMLSection.Name == ".debug$H")
+    } else if (NewYAMLSection.Name == ".debug$H") {
       NewYAMLSection.DebugH = CodeViewYAML::fromDebugH(sectionData);
+
+}
 
     std::vector<COFFYAML::Relocation> Relocations;
     for (const auto &Reloc : ObjSection.relocations()) {
@@ -206,10 +222,12 @@ void COFFDumper::dumpSections(unsigned NumSections) {
        OS.flush();
        report_fatal_error(Buf);
       }
-      if (SymbolUnique.lookup(*SymbolNameOrErr))
+      if (SymbolUnique.lookup(*SymbolNameOrErr)) {
         Rel.SymbolName = *SymbolNameOrErr;
-      else
+      } else {
         Rel.SymbolTableIndex = reloc->SymbolTableIndex;
+
+}
       Rel.VirtualAddress = reloc->VirtualAddress;
       Rel.Type = reloc->Type;
       Relocations.push_back(Rel);

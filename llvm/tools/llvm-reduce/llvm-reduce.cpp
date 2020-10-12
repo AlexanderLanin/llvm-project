@@ -91,13 +91,15 @@ int main(int argc, char **argv) {
     errs() << "\nCouldnt reduce input :/\n";
   } else {
     // Print reduced file to STDOUT
-    if (OutputFilename == "-")
+    if (OutputFilename == "-") {
       Tester.getProgram()->print(outs(), nullptr);
-    else {
-      if (ReplaceInput) // In-place
+    } else {
+      if (ReplaceInput) { // In-place
         OutputFilename = InputFilename.c_str();
-      else if (OutputFilename.empty())
+      } else if (OutputFilename.empty()) {
         OutputFilename = "reduced.ll";
+
+}
 
       std::error_code EC;
       raw_fd_ostream Out(OutputFilename, EC);

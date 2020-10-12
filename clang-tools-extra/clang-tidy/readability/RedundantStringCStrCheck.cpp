@@ -52,8 +52,10 @@ formatDereference(const ast_matchers::MatchFinder::MatchResult &Result,
   }
   StringRef Text = tooling::fixit::getText(ExprNode, *Result.Context);
 
-  if (Text.empty())
+  if (Text.empty()) {
     return std::string();
+
+}
   // Add leading '*'.
   if (needParensAfterUnaryOperator(ExprNode)) {
     return (llvm::Twine("*(") + Text + ")").str();
@@ -68,12 +70,16 @@ tryGetCallExprAncestorForCxxConstructExpr(const Expr *TheExpr,
   // We skip nodes such as CXXBindTemporaryExpr, MaterializeTemporaryExpr.
   for (ast_type_traits::DynTypedNode DynParent : Context.getParents(*TheExpr)) {
     if (const auto *Parent = DynParent.get<Expr>()) {
-      if (const auto *TheCallExpr = dyn_cast<CallExpr>(Parent))
+      if (const auto *TheCallExpr = dyn_cast<CallExpr>(Parent)) {
         return TheCallExpr;
 
+}
+
       if (const clang::CallExpr *TheCallExpr =
-              tryGetCallExprAncestorForCxxConstructExpr(Parent, Context))
+              tryGetCallExprAncestorForCxxConstructExpr(Parent, Context)) {
         return TheCallExpr;
+
+}
     }
   }
 
@@ -94,8 +100,10 @@ static bool checkParamDeclOfAncestorCallExprHasRValueRefType(
                     ->getType()
                     ->getPointeeType()
                     ->getAs<FunctionProtoType>()) {
-          if (TheCallExprFuncProto->getParamType(i)->isRValueReferenceType())
+          if (TheCallExprFuncProto->getParamType(i)->isRValueReferenceType()) {
             return true;
+
+}
         }
       }
     }
@@ -225,8 +233,10 @@ void RedundantStringCStrCheck::check(const MatchFinder::MatchResult &Result) {
   std::string ArgText =
       Arrow ? formatDereference(Result, *Arg)
             : tooling::fixit::getText(*Arg, *Result.Context).str();
-  if (ArgText.empty())
+  if (ArgText.empty()) {
     return;
+
+}
 
   diag(Call->getBeginLoc(), "redundant call to %0")
       << Member->getMemberDecl()

@@ -52,8 +52,10 @@ ConceptSpecializationExpr::ConceptSpecializationExpr(const ASTContext &C,
                                TemplateArgumentDependence::UnexpandedPack;
   for (const TemplateArgumentLoc& ArgLoc : ArgsAsWritten->arguments()) {
     Deps |= ArgLoc.getArgument().getDependence() & InterestingDeps;
-    if (Deps == InterestingDeps)
+    if (Deps == InterestingDeps) {
       break;
+
+}
   }
 
   // Currently guaranteed by the fact concepts can only be at namespace-scope.
@@ -171,8 +173,10 @@ RequiresExpr::RequiresExpr(ASTContext &C, SourceLocation RequiresKWLoc,
     ContainsUnexpandedParameterPack |= R->containsUnexpandedParameterPack();
     if (!Dependent) {
       RequiresExprBits.IsSatisfied = R->isSatisfied();
-      if (!RequiresExprBits.IsSatisfied)
+      if (!RequiresExprBits.IsSatisfied) {
         break;
+
+}
     }
   }
   std::copy(LocalParameters.begin(), LocalParameters.end(),
@@ -180,14 +184,18 @@ RequiresExpr::RequiresExpr(ASTContext &C, SourceLocation RequiresKWLoc,
   std::copy(Requirements.begin(), Requirements.end(),
             getTrailingObjects<concepts::Requirement *>());
   RequiresExprBits.IsSatisfied |= Dependent;
-  if (ContainsUnexpandedParameterPack)
+  if (ContainsUnexpandedParameterPack) {
     addDependence(ExprDependence::UnexpandedPack);
+
+}
   // FIXME: this is incorrect for cases where we have a non-dependent
   // requirement, but its parameters are instantiation-dependent. RequiresExpr
   // should be instantiation-dependent if it has instantiation-dependent
   // parameters.
-  if (Dependent)
+  if (Dependent) {
     addDependence(ExprDependence::ValueInstantiation);
+
+}
 }
 
 RequiresExpr::RequiresExpr(ASTContext &C, EmptyShell Empty,

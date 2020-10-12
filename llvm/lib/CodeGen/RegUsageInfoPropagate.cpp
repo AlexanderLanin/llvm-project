@@ -68,8 +68,10 @@ private:
                                           ->getNumRegs())
            && "expected register mask size");
     for (MachineOperand &MO : MI.operands()) {
-      if (MO.isRegMask())
+      if (MO.isRegMask()) {
         MO.setRegMask(RegMask.data());
+
+}
     }
   }
 };
@@ -88,11 +90,15 @@ char RegUsageInfoPropagation::ID = 0;
 static const Function *findCalledFunction(const Module &M,
                                           const MachineInstr &MI) {
   for (const MachineOperand &MO : MI.operands()) {
-    if (MO.isGlobal())
+    if (MO.isGlobal()) {
       return dyn_cast<const Function>(MO.getGlobal());
 
-    if (MO.isSymbol())
+}
+
+    if (MO.isSymbol()) {
       return M.getFunction(MO.getSymbolName());
+
+}
   }
 
   return nullptr;
@@ -107,15 +113,19 @@ bool RegUsageInfoPropagation::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "MachineFunction : " << MF.getName() << "\n");
 
   const MachineFrameInfo &MFI = MF.getFrameInfo();
-  if (!MFI.hasCalls() && !MFI.hasTailCall())
+  if (!MFI.hasCalls() && !MFI.hasTailCall()) {
     return false;
+
+}
 
   bool Changed = false;
 
   for (MachineBasicBlock &MBB : MF) {
     for (MachineInstr &MI : MBB) {
-      if (!MI.isCall())
+      if (!MI.isCall()) {
         continue;
+
+}
       LLVM_DEBUG(
           dbgs()
           << "Call Instruction Before Register Usage Info Propagation : \n");
@@ -123,8 +133,10 @@ bool RegUsageInfoPropagation::runOnMachineFunction(MachineFunction &MF) {
 
       auto UpdateRegMask = [&](const Function &F) {
         const ArrayRef<uint32_t> RegMask = PRUI->getRegUsageInfo(F);
-        if (RegMask.empty())
+        if (RegMask.empty()) {
           return;
+
+}
         setRegMask(MI, RegMask);
         Changed = true;
       };

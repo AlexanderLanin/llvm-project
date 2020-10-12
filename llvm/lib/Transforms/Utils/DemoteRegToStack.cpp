@@ -67,7 +67,7 @@ AllocaInst *llvm::DemoteRegToStack(Instruction &I, bool VolatileLoads,
       // from the same block, which is illegal SSA form. For this reason, we
       // keep track of and reuse loads we insert.
       DenseMap<BasicBlock*, Value*> Loads;
-      for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
+      for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
         if (PN->getIncomingValue(i) == &I) {
           Value *&V = Loads[PN->getIncomingBlock(i)];
           if (!V) {
@@ -78,6 +78,8 @@ AllocaInst *llvm::DemoteRegToStack(Instruction &I, bool VolatileLoads,
           }
           PN->setIncomingValue(i, V);
         }
+
+}
 
     } else {
       // If this is a normal instruction, just insert a load.
@@ -93,8 +95,10 @@ AllocaInst *llvm::DemoteRegToStack(Instruction &I, bool VolatileLoads,
   BasicBlock::iterator InsertPt;
   if (!I.isTerminator()) {
     InsertPt = ++I.getIterator();
-    for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt)
+    for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt) {
       /* empty */;   // Don't insert before PHI nodes or landingpad instrs.
+
+}
   } else {
     InvokeInst &II = cast<InvokeInst>(I);
     InsertPt = II.getNormalDest()->getFirstInsertionPt();
@@ -140,8 +144,10 @@ AllocaInst *llvm::DemotePHIToStack(PHINode *P, Instruction *AllocaPoint) {
   // Insert a load in place of the PHI and replace all uses.
   BasicBlock::iterator InsertPt = P->getIterator();
 
-  for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt)
+  for (; isa<PHINode>(InsertPt) || InsertPt->isEHPad(); ++InsertPt) {
     /* empty */;   // Don't insert before PHI nodes or landingpad instrs.
+
+}
 
   Value *V =
       new LoadInst(P->getType(), Slot, P->getName() + ".reload", &*InsertPt);

@@ -38,13 +38,17 @@ void UseUsingCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   const auto *MatchedDecl = Result.Nodes.getNodeAs<TypedefDecl>("typedef");
-  if (MatchedDecl->getLocation().isInvalid())
+  if (MatchedDecl->getLocation().isInvalid()) {
     return;
+
+}
 
   SourceLocation StartLoc = MatchedDecl->getBeginLoc();
 
-  if (StartLoc.isMacroID() && IgnoreMacros)
+  if (StartLoc.isMacroID() && IgnoreMacros) {
     return;
+
+}
 
   static const char *UseUsingWarning = "use 'using' instead of 'typedef'";
 
@@ -88,11 +92,15 @@ void UseUsingCheck::check(const MatchFinder::MatchResult &Result) {
     // type, make this using statement refer back to the first type, e.g. make
     // "typedef int Foo, *Foo_p;" -> "using Foo = int;\nusing Foo_p = Foo*;"
     if (Type.size() > FirstTypedefType.size() &&
-        Type.substr(0, FirstTypedefType.size()) == FirstTypedefType)
+        Type.substr(0, FirstTypedefType.size()) == FirstTypedefType) {
       Type = FirstTypedefName + Type.substr(FirstTypedefType.size() + 1);
+
+}
   }
-  if (!ReplaceRange.getEnd().isMacroID())
+  if (!ReplaceRange.getEnd().isMacroID()) {
     LastReplacementEnd = ReplaceRange.getEnd().getLocWithOffset(Name.size());
+
+}
 
   auto Diag = diag(ReplaceRange.getBegin(), UseUsingWarning);
 
@@ -103,8 +111,10 @@ void UseUsingCheck::check(const MatchFinder::MatchResult &Result) {
     Type = std::string(
         Lexer::getSourceText(CharSourceRange::getTokenRange(LastTagDeclRange),
                              *Result.SourceManager, getLangOpts(), &Invalid));
-    if (Invalid)
+    if (Invalid) {
       return;
+
+}
   }
 
   std::string Replacement = Using + Name + " = " + Type;

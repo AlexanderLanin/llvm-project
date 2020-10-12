@@ -19,13 +19,17 @@ namespace readability {
 static const IfStmt *getPrecedingIf(const SourceManager &SM,
                                     ASTContext *Context, const IfStmt *If) {
   auto parents = Context->getParents(*If);
-  if (parents.size() != 1)
+  if (parents.size() != 1) {
     return nullptr;
+
+}
   if (const auto *PrecedingIf = parents[0].get<IfStmt>()) {
     SourceLocation PreviousElseLoc = PrecedingIf->getElseLoc();
     if (SM.getExpansionLineNumber(PreviousElseLoc) ==
-        SM.getExpansionLineNumber(If->getIfLoc()))
+        SM.getExpansionLineNumber(If->getIfLoc())) {
       return PrecedingIf;
+
+}
   }
   return nullptr;
 }
@@ -36,21 +40,29 @@ void MisleadingIndentationCheck::danglingElseCheck(const SourceManager &SM,
   SourceLocation IfLoc = If->getIfLoc();
   SourceLocation ElseLoc = If->getElseLoc();
 
-  if (IfLoc.isMacroID() || ElseLoc.isMacroID())
+  if (IfLoc.isMacroID() || ElseLoc.isMacroID()) {
     return;
 
+}
+
   if (SM.getExpansionLineNumber(If->getThen()->getEndLoc()) ==
-      SM.getExpansionLineNumber(ElseLoc))
+      SM.getExpansionLineNumber(ElseLoc)) {
     return;
+
+}
 
   // Find location of first 'if' in a 'if else if' chain.
   for (auto PrecedingIf = getPrecedingIf(SM, Context, If); PrecedingIf;
-       PrecedingIf = getPrecedingIf(SM, Context, PrecedingIf))
+       PrecedingIf = getPrecedingIf(SM, Context, PrecedingIf)) {
     IfLoc = PrecedingIf->getIfLoc();
 
+}
+
   if (SM.getExpansionColumnNumber(IfLoc) !=
-      SM.getExpansionColumnNumber(ElseLoc))
+      SM.getExpansionColumnNumber(ElseLoc)) {
     diag(ElseLoc, "different indentation for 'if' and corresponding 'else'");
+
+}
 }
 
 void MisleadingIndentationCheck::missingBracesCheck(const SourceManager &SM,
@@ -75,25 +87,33 @@ void MisleadingIndentationCheck::missingBracesCheck(const SourceManager &SM,
       continue;
     }
 
-    if (isa<CompoundStmt>(Inner))
+    if (isa<CompoundStmt>(Inner)) {
       continue;
+
+}
 
     SourceLocation InnerLoc = Inner->getBeginLoc();
     SourceLocation OuterLoc = CurrentStmt->getBeginLoc();
 
     if (InnerLoc.isInvalid() || InnerLoc.isMacroID() || OuterLoc.isInvalid() ||
-        OuterLoc.isMacroID())
+        OuterLoc.isMacroID()) {
       continue;
 
+}
+
     if (SM.getExpansionLineNumber(InnerLoc) ==
-        SM.getExpansionLineNumber(OuterLoc))
+        SM.getExpansionLineNumber(OuterLoc)) {
       continue;
+
+}
 
     const Stmt *NextStmt = CStmt->body_begin()[i + 1];
     SourceLocation NextLoc = NextStmt->getBeginLoc();
 
-    if (NextLoc.isInvalid() || NextLoc.isMacroID())
+    if (NextLoc.isInvalid() || NextLoc.isMacroID()) {
       continue;
+
+}
 
     if (SM.getExpansionColumnNumber(InnerLoc) ==
         SM.getExpansionColumnNumber(NextLoc)) {
@@ -118,11 +138,15 @@ void MisleadingIndentationCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void MisleadingIndentationCheck::check(const MatchFinder::MatchResult &Result) {
-  if (const auto *If = Result.Nodes.getNodeAs<IfStmt>("if"))
+  if (const auto *If = Result.Nodes.getNodeAs<IfStmt>("if")) {
     danglingElseCheck(*Result.SourceManager, Result.Context, If);
 
-  if (const auto *CStmt = Result.Nodes.getNodeAs<CompoundStmt>("compound"))
+}
+
+  if (const auto *CStmt = Result.Nodes.getNodeAs<CompoundStmt>("compound")) {
     missingBracesCheck(*Result.SourceManager, CStmt);
+
+}
 }
 
 } // namespace readability

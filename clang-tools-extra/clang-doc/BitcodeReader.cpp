@@ -24,14 +24,18 @@ llvm::Error decodeRecord(Record R, llvm::SmallVectorImpl<char> &Field,
 }
 
 llvm::Error decodeRecord(Record R, SymbolID &Field, llvm::StringRef Blob) {
-  if (R[0] != BitCodeConstants::USRHashSize)
+  if (R[0] != BitCodeConstants::USRHashSize) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "incorrect USR size");
 
+}
+
   // First position in the record is the length of the following array, so we
   // copy the following elements to the field.
-  for (int I = 0, E = R[0]; I < E; ++I)
+  for (int I = 0, E = R[0]; I < E; ++I) {
     Field[I] = R[I + 1];
+
+}
   return llvm::Error::success();
 }
 
@@ -41,9 +45,11 @@ llvm::Error decodeRecord(Record R, bool &Field, llvm::StringRef Blob) {
 }
 
 llvm::Error decodeRecord(Record R, int &Field, llvm::StringRef Blob) {
-  if (R[0] > INT_MAX)
+  if (R[0] > INT_MAX) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "integer too large to parse");
+
+}
   Field = (int)R[0];
   return llvm::Error::success();
 }
@@ -80,9 +86,11 @@ llvm::Error decodeRecord(Record R, TagTypeKind &Field, llvm::StringRef Blob) {
 
 llvm::Error decodeRecord(Record R, llvm::Optional<Location> &Field,
                          llvm::StringRef Blob) {
-  if (R[0] > INT_MAX)
+  if (R[0] > INT_MAX) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "integer too large to parse");
+
+}
   Field.emplace((int)R[0], Blob, (bool)R[1]);
   return llvm::Error::success();
 }
@@ -126,17 +134,21 @@ llvm::Error decodeRecord(Record R,
 
 llvm::Error decodeRecord(Record R, llvm::SmallVectorImpl<Location> &Field,
                          llvm::StringRef Blob) {
-  if (R[0] > INT_MAX)
+  if (R[0] > INT_MAX) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "integer too large to parse");
+
+}
   Field.emplace_back((int)R[0], Blob, (bool)R[1]);
   return llvm::Error::success();
 }
 
 llvm::Error parseRecord(Record R, unsigned ID, llvm::StringRef Blob,
                         const unsigned VersionNo) {
-  if (ID == VERSION && R[0] == VersionNo)
+  if (ID == VERSION && R[0] == VersionNo) {
     return llvm::Error::success();
+
+}
   return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                  "mismatched bitcode version number");
 }
@@ -526,8 +538,10 @@ llvm::Error ClangDocBitcodeReader::readRecord(unsigned ID, T I) {
   Record R;
   llvm::StringRef Blob;
   llvm::Expected<unsigned> MaybeRecID = Stream.readRecord(ID, R, &Blob);
-  if (!MaybeRecID)
+  if (!MaybeRecID) {
     return MaybeRecID.takeError();
+
+}
   return parseRecord(R, MaybeRecID.get(), Blob, I);
 }
 
@@ -536,16 +550,20 @@ llvm::Error ClangDocBitcodeReader::readRecord(unsigned ID, Reference *I) {
   Record R;
   llvm::StringRef Blob;
   llvm::Expected<unsigned> MaybeRecID = Stream.readRecord(ID, R, &Blob);
-  if (!MaybeRecID)
+  if (!MaybeRecID) {
     return MaybeRecID.takeError();
+
+}
   return parseRecord(R, MaybeRecID.get(), Blob, I, CurrentReferenceField);
 }
 
 // Read a block of records into a single info.
 template <typename T>
 llvm::Error ClangDocBitcodeReader::readBlock(unsigned ID, T I) {
-  if (llvm::Error Err = Stream.EnterSubBlock(ID))
+  if (llvm::Error Err = Stream.EnterSubBlock(ID)) {
     return Err;
+
+}
 
   while (true) {
     unsigned BlockOrCode = 0;
@@ -559,16 +577,20 @@ llvm::Error ClangDocBitcodeReader::readBlock(unsigned ID, T I) {
       return llvm::Error::success();
     case Cursor::BlockBegin:
       if (llvm::Error Err = readSubBlock(BlockOrCode, I)) {
-        if (llvm::Error Skipped = Stream.SkipBlock())
+        if (llvm::Error Skipped = Stream.SkipBlock()) {
           return joinErrors(std::move(Err), std::move(Skipped));
+
+}
         return Err;
       }
       continue;
     case Cursor::Record:
       break;
     }
-    if (auto Err = readRecord(BlockOrCode, I))
+    if (auto Err = readRecord(BlockOrCode, I)) {
       return Err;
+
+}
   }
 }
 
@@ -579,62 +601,88 @@ llvm::Error ClangDocBitcodeReader::readSubBlock(unsigned ID, T I) {
   // EnumInfo subblocks
   case BI_COMMENT_BLOCK_ID: {
     auto Comment = getCommentInfo(I);
-    if (!Comment)
+    if (!Comment) {
       return Comment.takeError();
-    if (auto Err = readBlock(ID, Comment.get()))
+
+}
+    if (auto Err = readBlock(ID, Comment.get())) {
       return Err;
+
+}
     return llvm::Error::success();
   }
   case BI_TYPE_BLOCK_ID: {
     TypeInfo TI;
-    if (auto Err = readBlock(ID, &TI))
+    if (auto Err = readBlock(ID, &TI)) {
       return Err;
-    if (auto Err = addTypeInfo(I, std::move(TI)))
+
+}
+    if (auto Err = addTypeInfo(I, std::move(TI))) {
       return Err;
+
+}
     return llvm::Error::success();
   }
   case BI_FIELD_TYPE_BLOCK_ID: {
     FieldTypeInfo TI;
-    if (auto Err = readBlock(ID, &TI))
+    if (auto Err = readBlock(ID, &TI)) {
       return Err;
-    if (auto Err = addTypeInfo(I, std::move(TI)))
+
+}
+    if (auto Err = addTypeInfo(I, std::move(TI))) {
       return Err;
+
+}
     return llvm::Error::success();
   }
   case BI_MEMBER_TYPE_BLOCK_ID: {
     MemberTypeInfo TI;
-    if (auto Err = readBlock(ID, &TI))
+    if (auto Err = readBlock(ID, &TI)) {
       return Err;
-    if (auto Err = addTypeInfo(I, std::move(TI)))
+
+}
+    if (auto Err = addTypeInfo(I, std::move(TI))) {
       return Err;
+
+}
     return llvm::Error::success();
   }
   case BI_REFERENCE_BLOCK_ID: {
     Reference R;
-    if (auto Err = readBlock(ID, &R))
+    if (auto Err = readBlock(ID, &R)) {
       return Err;
-    if (auto Err = addReference(I, std::move(R), CurrentReferenceField))
+
+}
+    if (auto Err = addReference(I, std::move(R), CurrentReferenceField)) {
       return Err;
+
+}
     return llvm::Error::success();
   }
   case BI_FUNCTION_BLOCK_ID: {
     FunctionInfo F;
-    if (auto Err = readBlock(ID, &F))
+    if (auto Err = readBlock(ID, &F)) {
       return Err;
+
+}
     addChild(I, std::move(F));
     return llvm::Error::success();
   }
   case BI_BASE_RECORD_BLOCK_ID: {
     BaseRecordInfo BR;
-    if (auto Err = readBlock(ID, &BR))
+    if (auto Err = readBlock(ID, &BR)) {
       return Err;
+
+}
     addChild(I, std::move(BR));
     return llvm::Error::success();
   }
   case BI_ENUM_BLOCK_ID: {
     EnumInfo E;
-    if (auto Err = readBlock(ID, &E))
+    if (auto Err = readBlock(ID, &E)) {
       return Err;
+
+}
     addChild(I, std::move(E));
     return llvm::Error::success();
   }
@@ -663,16 +711,18 @@ ClangDocBitcodeReader::skipUntilRecordOrBlock(unsigned &BlockOrRecordID) {
     }
     switch (static_cast<llvm::bitc::FixedAbbrevIDs>(Code)) {
     case llvm::bitc::ENTER_SUBBLOCK:
-      if (Expected<unsigned> MaybeID = Stream.ReadSubBlockID())
+      if (Expected<unsigned> MaybeID = Stream.ReadSubBlockID()) {
         BlockOrRecordID = MaybeID.get();
-      else {
+      } else {
         // FIXME this drops the error on the floor.
         consumeError(MaybeID.takeError());
       }
       return Cursor::BlockBegin;
     case llvm::bitc::END_BLOCK:
-      if (Stream.ReadBlockEnd())
+      if (Stream.ReadBlockEnd()) {
         return Cursor::BadBlock;
+
+}
       return Cursor::BlockEnd;
     case llvm::bitc::DEFINE_ABBREV:
       if (llvm::Error Err = Stream.ReadAbbrevRecord()) {
@@ -690,18 +740,22 @@ ClangDocBitcodeReader::skipUntilRecordOrBlock(unsigned &BlockOrRecordID) {
 }
 
 llvm::Error ClangDocBitcodeReader::validateStream() {
-  if (Stream.AtEndOfStream())
+  if (Stream.AtEndOfStream()) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "premature end of stream");
+
+}
 
   // Sniff for the signature.
   for (int Idx = 0; Idx != 4; ++Idx) {
     Expected<llvm::SimpleBitstreamCursor::word_t> MaybeRead = Stream.Read(8);
-    if (!MaybeRead)
+    if (!MaybeRead) {
       return MaybeRead.takeError();
-    else if (MaybeRead.get() != BitCodeConstants::Signature[Idx])
+    } else if (MaybeRead.get() != BitCodeConstants::Signature[Idx]) {
       return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                      "invalid bitcode signature");
+
+}
   }
   return llvm::Error::success();
 }
@@ -709,13 +763,17 @@ llvm::Error ClangDocBitcodeReader::validateStream() {
 llvm::Error ClangDocBitcodeReader::readBlockInfoBlock() {
   Expected<Optional<llvm::BitstreamBlockInfo>> MaybeBlockInfo =
       Stream.ReadBlockInfoBlock();
-  if (!MaybeBlockInfo)
+  if (!MaybeBlockInfo) {
     return MaybeBlockInfo.takeError();
-  else
+  } else {
     BlockInfo = MaybeBlockInfo.get();
-  if (!BlockInfo)
+
+}
+  if (!BlockInfo) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "unable to parse BlockInfoBlock");
+
+}
   Stream.setBlockInfo(&*BlockInfo);
   return llvm::Error::success();
 }
@@ -724,8 +782,10 @@ template <typename T>
 llvm::Expected<std::unique_ptr<Info>>
 ClangDocBitcodeReader::createInfo(unsigned ID) {
   std::unique_ptr<Info> I = std::make_unique<T>();
-  if (auto Err = readBlock(ID, static_cast<T *>(I.get())))
+  if (auto Err = readBlock(ID, static_cast<T *>(I.get()))) {
     return std::move(Err);
+
+}
   return std::unique_ptr<Info>{std::move(I)};
 }
 
@@ -750,20 +810,28 @@ ClangDocBitcodeReader::readBlockToInfo(unsigned ID) {
 llvm::Expected<std::vector<std::unique_ptr<Info>>>
 ClangDocBitcodeReader::readBitcode() {
   std::vector<std::unique_ptr<Info>> Infos;
-  if (auto Err = validateStream())
+  if (auto Err = validateStream()) {
     return std::move(Err);
+
+}
 
   // Read the top level blocks.
   while (!Stream.AtEndOfStream()) {
     Expected<unsigned> MaybeCode = Stream.ReadCode();
-    if (!MaybeCode)
+    if (!MaybeCode) {
       return MaybeCode.takeError();
-    if (MaybeCode.get() != llvm::bitc::ENTER_SUBBLOCK)
+
+}
+    if (MaybeCode.get() != llvm::bitc::ENTER_SUBBLOCK) {
       return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                      "no blocks in input");
+
+}
     Expected<unsigned> MaybeID = Stream.ReadSubBlockID();
-    if (!MaybeID)
+    if (!MaybeID) {
       return MaybeID.takeError();
+
+}
     unsigned ID = MaybeID.get();
     switch (ID) {
     // NamedType and Comment blocks should not appear at the top level
@@ -779,18 +847,24 @@ ClangDocBitcodeReader::readBitcode() {
     case BI_ENUM_BLOCK_ID:
     case BI_FUNCTION_BLOCK_ID: {
       auto InfoOrErr = readBlockToInfo(ID);
-      if (!InfoOrErr)
+      if (!InfoOrErr) {
         return InfoOrErr.takeError();
+
+}
       Infos.emplace_back(std::move(InfoOrErr.get()));
       continue;
     }
     case BI_VERSION_BLOCK_ID:
-      if (auto Err = readBlock(ID, VersionNumber))
+      if (auto Err = readBlock(ID, VersionNumber)) {
         return std::move(Err);
+
+}
       continue;
     case llvm::bitc::BLOCKINFO_BLOCK_ID:
-      if (auto Err = readBlockInfoBlock())
+      if (auto Err = readBlockInfoBlock()) {
         return std::move(Err);
+
+}
       continue;
     default:
       if (llvm::Error Err = Stream.SkipBlock()) {

@@ -34,13 +34,17 @@ void DurationSubtractionCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *FuncDecl = Result.Nodes.getNodeAs<FunctionDecl>("function_decl");
 
   // Don't try to replace things inside of macro definitions.
-  if (Binop->getExprLoc().isMacroID() || Binop->getExprLoc().isInvalid())
+  if (Binop->getExprLoc().isMacroID() || Binop->getExprLoc().isInvalid()) {
     return;
+
+}
 
   llvm::Optional<DurationScale> Scale =
       getScaleForDurationInverse(FuncDecl->getName());
-  if (!Scale)
+  if (!Scale) {
     return;
+
+}
 
   std::string RhsReplacement =
       rewriteExprFromNumberToDuration(Result, *Scale, Binop->getRHS());

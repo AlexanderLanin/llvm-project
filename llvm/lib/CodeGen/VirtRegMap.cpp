@@ -100,19 +100,27 @@ unsigned VirtRegMap::createSpillSlot(const TargetRegisterClass *RC) {
 
 bool VirtRegMap::hasPreferredPhys(Register VirtReg) {
   Register Hint = MRI->getSimpleHint(VirtReg);
-  if (!Hint.isValid())
+  if (!Hint.isValid()) {
     return false;
-  if (Hint.isVirtual())
+
+}
+  if (Hint.isVirtual()) {
     Hint = getPhys(Hint);
+
+}
   return getPhys(VirtReg) == Hint;
 }
 
 bool VirtRegMap::hasKnownPreference(Register VirtReg) {
   std::pair<unsigned, unsigned> Hint = MRI->getRegAllocationHint(VirtReg);
-  if (Register::isPhysicalRegister(Hint.second))
+  if (Register::isPhysicalRegister(Hint.second)) {
     return true;
-  if (Register::isVirtualRegister(Hint.second))
+
+}
+  if (Register::isVirtualRegister(Hint.second)) {
     return hasPhys(Hint.second);
+
+}
   return false;
 }
 
@@ -276,10 +284,14 @@ void VirtRegRewriter::addLiveInsForSubRanges(const LiveInterval &LI,
   SlotIndex Last;
   for (const LiveInterval::SubRange &SR : LI.subranges()) {
     SubRanges.push_back(std::make_pair(&SR, SR.begin()));
-    if (!First.isValid() || SR.segments.front().start < First)
+    if (!First.isValid() || SR.segments.front().start < First) {
       First = SR.segments.front().start;
-    if (!Last.isValid() || SR.segments.back().end > Last)
+
+}
+    if (!Last.isValid() || SR.segments.back().end > Last) {
       Last = SR.segments.back().end;
+
+}
   }
 
   // Check all mbb start positions between First and Last while
@@ -293,15 +305,23 @@ void VirtRegRewriter::addLiveInsForSubRanges(const LiveInterval &LI,
     for (auto &RangeIterPair : SubRanges) {
       const LiveInterval::SubRange *SR = RangeIterPair.first;
       LiveInterval::const_iterator &SRI = RangeIterPair.second;
-      while (SRI != SR->end() && SRI->end <= MBBBegin)
+      while (SRI != SR->end() && SRI->end <= MBBBegin) {
         ++SRI;
-      if (SRI == SR->end())
+
+}
+      if (SRI == SR->end()) {
         continue;
-      if (SRI->start <= MBBBegin)
+
+}
+      if (SRI->start <= MBBBegin) {
         LaneMask |= SR->LaneMask;
+
+}
     }
-    if (LaneMask.none())
+    if (LaneMask.none()) {
       continue;
+
+}
     MachineBasicBlock *MBB = MBBI->second;
     MBB->addLiveIn(PhysReg, LaneMask);
   }
@@ -312,11 +332,15 @@ void VirtRegRewriter::addLiveInsForSubRanges(const LiveInterval &LI,
 void VirtRegRewriter::addMBBLiveIns() {
   for (unsigned Idx = 0, IdxE = MRI->getNumVirtRegs(); Idx != IdxE; ++Idx) {
     Register VirtReg = Register::index2VirtReg(Idx);
-    if (MRI->reg_nodbg_empty(VirtReg))
+    if (MRI->reg_nodbg_empty(VirtReg)) {
       continue;
+
+}
     LiveInterval &LI = LIS->getInterval(VirtReg);
-    if (LI.empty() || LIS->intervalIsInOneMBB(LI))
+    if (LI.empty() || LIS->intervalIsInOneMBB(LI)) {
       continue;
+
+}
     // This is a virtual register that is live across basic blocks. Its
     // assigned PhysReg must be marked as live-in to those blocks.
     Register PhysReg = VRM->getPhys(VirtReg);
@@ -341,16 +365,20 @@ void VirtRegRewriter::addMBBLiveIns() {
 
   // Sort and unique MBB LiveIns as we've not checked if SubReg/PhysReg were in
   // each MBB's LiveIns set before calling addLiveIn on them.
-  for (MachineBasicBlock &MBB : *MF)
+  for (MachineBasicBlock &MBB : *MF) {
     MBB.sortUniqueLiveIns();
+
+}
 }
 
 /// Returns true if the given machine operand \p MO only reads undefined lanes.
 /// The function only works for use operands with a subregister set.
 bool VirtRegRewriter::readsUndefSubreg(const MachineOperand &MO) const {
   // Shortcut if the operand is already marked undef.
-  if (MO.isUndef())
+  if (MO.isUndef()) {
     return true;
+
+}
 
   Register Reg = MO.getReg();
   const LiveInterval &LI = LIS->getInterval(Reg);
@@ -365,15 +393,19 @@ bool VirtRegRewriter::readsUndefSubreg(const MachineOperand &MO) const {
   LaneBitmask UseMask = TRI->getSubRegIndexLaneMask(SubRegIdx);
   // See if any of the relevant subregister liveranges is defined at this point.
   for (const LiveInterval::SubRange &SR : LI.subranges()) {
-    if ((SR.LaneMask & UseMask).any() && SR.liveAt(BaseIndex))
+    if ((SR.LaneMask & UseMask).any() && SR.liveAt(BaseIndex)) {
       return false;
+
+}
   }
   return true;
 }
 
 void VirtRegRewriter::handleIdentityCopy(MachineInstr &MI) const {
-  if (!MI.isIdentityCopy())
+  if (!MI.isIdentityCopy()) {
     return;
+
+}
   LLVM_DEBUG(dbgs() << "Identity copy: " << MI);
   ++NumIdCopies;
 
@@ -389,8 +421,10 @@ void VirtRegRewriter::handleIdentityCopy(MachineInstr &MI) const {
     return;
   }
 
-  if (Indexes)
+  if (Indexes) {
     Indexes->removeSingleMachineInstrFromMaps(MI);
+
+}
   MI.eraseFromBundle();
   LLVM_DEBUG(dbgs() << "  deleted.\n");
 }
@@ -400,8 +434,10 @@ void VirtRegRewriter::handleIdentityCopy(MachineInstr &MI) const {
 /// after processing the last in the bundle. Does not update LiveIntervals
 /// which we shouldn't need for this instruction anymore.
 void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
-  if (!MI.isCopy())
+  if (!MI.isCopy()) {
     return;
+
+}
 
   if (MI.isBundledWithPred() && !MI.isBundledWithSucc()) {
     SmallVector<MachineInstr *, 2> MIs({&MI});
@@ -411,8 +447,10 @@ void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
     for (MachineBasicBlock::reverse_instr_iterator I =
          std::next(MI.getReverseIterator()), E = MBB.instr_rend();
          I != E && I->isBundledWithSucc(); ++I) {
-      if (!I->isCopy())
+      if (!I->isCopy()) {
         return;
+
+}
       MIs.push_back(&*I);
     }
     MachineInstr *FirstMI = MIs.back();
@@ -420,11 +458,17 @@ void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
     auto anyRegsAlias = [](const MachineInstr *Dst,
                            ArrayRef<MachineInstr *> Srcs,
                            const TargetRegisterInfo *TRI) {
-      for (const MachineInstr *Src : Srcs)
-        if (Src != Dst)
+      for (const MachineInstr *Src : Srcs) {
+        if (Src != Dst) {
           if (TRI->regsOverlap(Dst->getOperand(0).getReg(),
-                               Src->getOperand(1).getReg()))
+                               Src->getOperand(1).getReg())) {
             return true;
+
+}
+
+}
+
+}
       return false;
     };
 
@@ -432,12 +476,16 @@ void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
     // the source registers, try to schedule the instructions to avoid any
     // clobbering.
     for (int E = MIs.size(), PrevE = E; E > 1; PrevE = E) {
-      for (int I = E; I--; )
+      for (int I = E; I--; ) {
         if (!anyRegsAlias(MIs[I], makeArrayRef(MIs).take_front(E), TRI)) {
-          if (I + 1 != E)
+          if (I + 1 != E) {
             std::swap(MIs[I], MIs[E - 1]);
+
+}
           --E;
         }
+
+}
       if (PrevE == E) {
         MF->getFunction().getContext().emitError(
             "register rewriting failed: cycle in copy bundle");
@@ -458,8 +506,10 @@ void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
         BundleStart = &*std::next(BundledMI->getIterator());
       }
 
-      if (Indexes && BundledMI != FirstMI)
+      if (Indexes && BundledMI != FirstMI) {
         Indexes->insertMachineInstrInMaps(*BundledMI);
+
+}
     }
   }
 }
@@ -484,8 +534,10 @@ bool VirtRegRewriter::subRegLiveThrough(const MachineInstr &MI,
     // is defined at the same time as RU (i.e., "vreg, RU = op RU").
     // Thus, vreg and RU interferes and vreg cannot be assigned to
     // SuperPhysReg. Therefore, this situation cannot happen.
-    if (UnitRange.liveAt(AfterMIDefs) && UnitRange.liveAt(BeforeMIUses))
+    if (UnitRange.liveAt(AfterMIDefs) && UnitRange.liveAt(BeforeMIUses)) {
       return true;
+
+}
   }
   return false;
 }
@@ -509,11 +561,15 @@ void VirtRegRewriter::rewrite() {
         MachineOperand &MO = *MOI;
 
         // Make sure MRI knows about registers clobbered by regmasks.
-        if (MO.isRegMask())
+        if (MO.isRegMask()) {
           MRI->addPhysRegsUsedFromRegMask(MO.getRegMask());
 
-        if (!MO.isReg() || !MO.getReg().isVirtual())
+}
+
+        if (!MO.isReg() || !MO.getReg().isVirtual()) {
           continue;
+
+}
         Register VirtReg = MO.getReg();
         Register PhysReg = VRM->getPhys(VirtReg);
         assert(PhysReg != VirtRegMap::NO_PHYS_REG &&
@@ -528,23 +584,29 @@ void VirtRegRewriter::rewrite() {
             // have to add implicit killed operands for the super-register.  A
             // partial redef always kills and redefines the super-register.
             if ((MO.readsReg() && (MO.isDef() || MO.isKill())) ||
-                (MO.isDef() && subRegLiveThrough(*MI, PhysReg)))
+                (MO.isDef() && subRegLiveThrough(*MI, PhysReg))) {
               SuperKills.push_back(PhysReg);
+
+}
 
             if (MO.isDef()) {
               // Also add implicit defs for the super-register.
-              if (MO.isDead())
+              if (MO.isDead()) {
                 SuperDeads.push_back(PhysReg);
-              else
+              } else {
                 SuperDefs.push_back(PhysReg);
+
+}
             }
           } else {
             if (MO.isUse()) {
-              if (readsUndefSubreg(MO))
+              if (readsUndefSubreg(MO)) {
                 // We need to add an <undef> flag if the subregister is
                 // completely undefined (and we are not adding super-register
                 // defs).
                 MO.setIsUndef(true);
+
+}
             } else if (!MO.isDead()) {
               assert(MO.isDef());
             }
@@ -572,14 +634,20 @@ void VirtRegRewriter::rewrite() {
 
       // Add any missing super-register kills after rewriting the whole
       // instruction.
-      while (!SuperKills.empty())
+      while (!SuperKills.empty()) {
         MI->addRegisterKilled(SuperKills.pop_back_val(), TRI, true);
 
-      while (!SuperDeads.empty())
+}
+
+      while (!SuperDeads.empty()) {
         MI->addRegisterDead(SuperDeads.pop_back_val(), TRI, true);
 
-      while (!SuperDefs.empty())
+}
+
+      while (!SuperDefs.empty()) {
         MI->addRegisterDefined(SuperDefs.pop_back_val(), TRI);
+
+}
 
       LLVM_DEBUG(dbgs() << "> " << *MI);
 

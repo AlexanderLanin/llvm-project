@@ -44,12 +44,16 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefRecursive(
   // First, do a cache lookup. Without this cache, certain CFG structures
   // (like a series of if statements) take exponential time to visit.
   auto Cached = CachedPreviousDef.find(BB);
-  if (Cached != CachedPreviousDef.end())
+  if (Cached != CachedPreviousDef.end()) {
     return Cached->second;
 
+}
+
   // If this method is called from an unreachable block, return LoE.
-  if (!MSSA->DT->isReachableFromEntry(BB))
+  if (!MSSA->DT->isReachableFromEntry(BB)) {
     return MSSA->getLiveOnEntryDef();
+
+}
 
   if (BasicBlock *Pred = BB->getUniquePredecessor()) {
     VisitedBlocks.insert(BB);
@@ -80,13 +84,17 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefRecursive(
     for (auto *Pred : predecessors(BB)) {
       if (MSSA->DT->isReachableFromEntry(Pred)) {
         auto *IncomingAccess = getPreviousDefFromEnd(Pred, CachedPreviousDef);
-        if (!SingleAccess)
+        if (!SingleAccess) {
           SingleAccess = IncomingAccess;
-        else if (IncomingAccess != SingleAccess)
+        } else if (IncomingAccess != SingleAccess) {
           UniqueIncomingAccess = false;
+
+}
         PhiOps.push_back(IncomingAccess);
-      } else
+      } else {
         PhiOps.push_back(MSSA->getLiveOnEntryDef());
+
+}
     }
 
     // Now try to simplify the ops to avoid placing a phi.
@@ -105,8 +113,10 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefRecursive(
       }
       Result = SingleAccess;
     } else if (Result == Phi && !(UniqueIncomingAccess && SingleAccess)) {
-      if (!Phi)
+      if (!Phi) {
         Phi = MSSA->createMemoryPhi(BB);
+
+}
 
       // See if the existing phi operands match what we need.
       // Unlike normal SSA, we only allow one phi node per block, so we can't just
@@ -120,8 +130,10 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefRecursive(
         }
       } else {
         unsigned i = 0;
-        for (auto *Pred : predecessors(BB))
+        for (auto *Pred : predecessors(BB)) {
           Phi->addIncoming(&*PhiOps[i++], Pred);
+
+}
         InsertedPHIs.push_back(Phi);
       }
       Result = Phi;
@@ -140,8 +152,10 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefRecursive(
 // it continues globally, creating phi nodes to ensure we have a single
 // definition.
 MemoryAccess *MemorySSAUpdater::getPreviousDef(MemoryAccess *MA) {
-  if (auto *LocalResult = getPreviousDefInBlock(MA))
+  if (auto *LocalResult = getPreviousDefInBlock(MA)) {
     return LocalResult;
+
+}
   DenseMap<BasicBlock *, TrackingVH<MemoryAccess>> CachedPreviousDef;
   return getPreviousDefRecursive(MA->getBlock(), CachedPreviousDef);
 }
@@ -158,14 +172,20 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefInBlock(MemoryAccess *MA) {
     if (!isa<MemoryUse>(MA)) {
       auto Iter = MA->getReverseDefsIterator();
       ++Iter;
-      if (Iter != Defs->rend())
+      if (Iter != Defs->rend()) {
         return &*Iter;
+
+}
     } else {
       // Otherwise, have to walk the all access iterator.
       auto End = MSSA->getWritableBlockAccesses(MA->getBlock())->rend();
-      for (auto &U : make_range(++MA->getReverseIterator(), End))
-        if (!isa<MemoryUse>(U))
+      for (auto &U : make_range(++MA->getReverseIterator(), End)) {
+        if (!isa<MemoryUse>(U)) {
           return cast<MemoryAccess>(&U);
+
+}
+
+}
       // Note that if MA comes before Defs->begin(), we won't hit a def.
       return nullptr;
     }
@@ -188,14 +208,20 @@ MemoryAccess *MemorySSAUpdater::getPreviousDefFromEnd(
 }
 // Recurse over a set of phi uses to eliminate the trivial ones
 MemoryAccess *MemorySSAUpdater::recursePhi(MemoryAccess *Phi) {
-  if (!Phi)
+  if (!Phi) {
     return nullptr;
+
+}
   TrackingVH<MemoryAccess> Res(Phi);
   SmallVector<TrackingVH<Value>, 8> Uses;
   std::copy(Phi->user_begin(), Phi->user_end(), std::back_inserter(Uses));
-  for (auto &U : Uses)
-    if (MemoryPhi *UsePhi = dyn_cast<MemoryPhi>(&*U))
+  for (auto &U : Uses) {
+    if (MemoryPhi *UsePhi = dyn_cast<MemoryPhi>(&*U)) {
       tryRemoveTrivialPhi(UsePhi);
+
+}
+
+}
   return Res;
 }
 
@@ -213,23 +239,31 @@ template <class RangeType>
 MemoryAccess *MemorySSAUpdater::tryRemoveTrivialPhi(MemoryPhi *Phi,
                                                     RangeType &Operands) {
   // Bail out on non-opt Phis.
-  if (NonOptPhis.count(Phi))
+  if (NonOptPhis.count(Phi)) {
     return Phi;
+
+}
 
   // Detect equal or self arguments
   MemoryAccess *Same = nullptr;
   for (auto &Op : Operands) {
     // If the same or self, good so far
-    if (Op == Phi || Op == Same)
+    if (Op == Phi || Op == Same) {
       continue;
+
+}
     // not the same, return the phi since it's not eliminatable by us
-    if (Same)
+    if (Same) {
       return Phi;
+
+}
     Same = cast<MemoryAccess>(&*Op);
   }
   // Never found a non-self reference, the phi is undef
-  if (Same == nullptr)
+  if (Same == nullptr) {
     return MSSA->getLiveOnEntryDef();
+
+}
   if (Phi) {
     Phi->replaceAllUsesWith(Same);
     removeMemoryAccess(Phi);
@@ -272,16 +306,22 @@ void MemorySSAUpdater::insertUse(MemoryUse *MU, bool RenameUses) {
       MemoryAccess *FirstDef = &*Defs->begin();
       // Convert to incoming value if it's a memorydef. A phi *is* already an
       // incoming value.
-      if (auto *MD = dyn_cast<MemoryDef>(FirstDef))
+      if (auto *MD = dyn_cast<MemoryDef>(FirstDef)) {
         FirstDef = MD->getDefiningAccess();
+
+}
 
       MSSA->renamePass(MU->getBlock(), FirstDef, Visited);
     }
     // We just inserted a phi into this block, so the incoming value will
     // become the phi anyway, so it does not matter what we pass.
-    for (auto &MP : InsertedPHIs)
-      if (MemoryPhi *Phi = cast_or_null<MemoryPhi>(MP))
+    for (auto &MP : InsertedPHIs) {
+      if (MemoryPhi *Phi = cast_or_null<MemoryPhi>(MP)) {
         MSSA->renamePass(Phi->getBlock(), nullptr, Visited);
+
+}
+
+}
   }
 }
 
@@ -296,8 +336,10 @@ static void setMemoryPhiValueForBlock(MemoryPhi *MP, const BasicBlock *BB,
   // other not. So use it to index into the block iterator.
   for (auto BBIter = MP->block_begin() + i; BBIter != MP->block_end();
        ++BBIter) {
-    if (*BBIter != BB)
+    if (*BBIter != BB) {
       break;
+
+}
     MP->setIncomingValue(i, NewDef);
     ++i;
   }
@@ -318,8 +360,10 @@ void MemorySSAUpdater::insertDef(MemoryDef *MD, bool RenameUses) {
   if (DefBefore->getBlock() == MD->getBlock() &&
       !(isa<MemoryPhi>(DefBefore) &&
         std::find(InsertedPHIs.begin(), InsertedPHIs.end(), DefBefore) !=
-            InsertedPHIs.end()))
+            InsertedPHIs.end())) {
     DefBeforeSameBlock = true;
+
+}
 
   // There is a def before us, which means we can replace any store/phi uses
   // of that thing with us, since we are in the way of whatever was there
@@ -365,12 +409,18 @@ void MemorySSAUpdater::insertDef(MemoryDef *MD, bool RenameUses) {
     auto Iter = MD->getDefsIterator();
     ++Iter;
     auto IterEnd = MSSA->getBlockDefs(MD->getBlock())->end();
-    if (Iter == IterEnd)
+    if (Iter == IterEnd) {
       DefiningBlocks.insert(MD->getBlock());
 
-    for (const auto &VH : InsertedPHIs)
-      if (const auto *RealPHI = cast_or_null<MemoryPhi>(VH))
+}
+
+    for (const auto &VH : InsertedPHIs) {
+      if (const auto *RealPHI = cast_or_null<MemoryPhi>(VH)) {
         DefiningBlocks.insert(RealPHI->getBlock());
+
+}
+
+}
     ForwardIDFCalculator IDFs(*MSSA->DT);
     SmallVector<BasicBlock *, 32> IDFBlocks;
     IDFs.setDefiningBlocks(DefiningBlocks);
@@ -423,8 +473,10 @@ void MemorySSAUpdater::insertDef(MemoryDef *MD, bool RenameUses) {
 
   // Optimize potentially non-minimal phis added in this method.
   unsigned NewPhiSize = NewPhiIndexEnd - NewPhiIndex;
-  if (NewPhiSize)
+  if (NewPhiSize) {
     tryRemoveTrivialPhis(ArrayRef<WeakVH>(&InsertedPHIs[NewPhiIndex], NewPhiSize));
+
+}
 
   // Now that all fixups are done, rename all uses if we are asked.
   if (RenameUses) {
@@ -435,16 +487,20 @@ void MemorySSAUpdater::insertDef(MemoryDef *MD, bool RenameUses) {
     MemoryAccess *FirstDef = &*MSSA->getWritableBlockDefs(StartBlock)->begin();
     // Convert to incoming value if it's a memorydef. A phi *is* already an
     // incoming value.
-    if (auto *MD = dyn_cast<MemoryDef>(FirstDef))
+    if (auto *MD = dyn_cast<MemoryDef>(FirstDef)) {
       FirstDef = MD->getDefiningAccess();
+
+}
 
     MSSA->renamePass(MD->getBlock(), FirstDef, Visited);
     // We just inserted a phi into this block, so the incoming value will become
     // the phi anyway, so it does not matter what we pass.
     for (auto &MP : InsertedPHIs) {
       MemoryPhi *Phi = dyn_cast_or_null<MemoryPhi>(MP);
-      if (Phi)
+      if (Phi) {
         MSSA->renamePass(Phi->getBlock(), nullptr, Visited);
+
+}
     }
   }
 }
@@ -454,15 +510,19 @@ void MemorySSAUpdater::fixupDefs(const SmallVectorImpl<WeakVH> &Vars) {
   SmallVector<const BasicBlock *, 16> Worklist;
   for (auto &Var : Vars) {
     MemoryAccess *NewDef = dyn_cast_or_null<MemoryAccess>(Var);
-    if (!NewDef)
+    if (!NewDef) {
       continue;
+
+}
     // First, see if there is a local def after the operand.
     auto *Defs = MSSA->getWritableBlockDefs(NewDef->getBlock());
     auto DefIter = NewDef->getDefsIterator();
 
     // The temporary Phi is being fixed, unmark it for not to optimize.
-    if (MemoryPhi *Phi = dyn_cast<MemoryPhi>(NewDef))
+    if (MemoryPhi *Phi = dyn_cast<MemoryPhi>(NewDef)) {
       NonOptPhis.erase(Phi);
+
+}
 
     // If there is a local def after us, we only have to rename that.
     if (++DefIter != Defs->end()) {
@@ -474,10 +534,12 @@ void MemorySSAUpdater::fixupDefs(const SmallVectorImpl<WeakVH> &Vars) {
     // For each of our successors, handle it directly if their is a phi, or
     // place on the fixup worklist.
     for (const auto *S : successors(NewDef->getBlock())) {
-      if (auto *MP = MSSA->getMemoryAccess(S))
+      if (auto *MP = MSSA->getMemoryAccess(S)) {
         setMemoryPhiValueForBlock(MP, NewDef->getBlock(), NewDef);
-      else
+      } else {
         Worklist.push_back(S);
+
+}
     }
 
     while (!Worklist.empty()) {
@@ -505,13 +567,15 @@ void MemorySSAUpdater::fixupDefs(const SmallVectorImpl<WeakVH> &Vars) {
       for (const auto *S : successors(FixupBlock)) {
         // If there is a phi node, handle it.
         // Otherwise, put the block on the worklist
-        if (auto *MP = MSSA->getMemoryAccess(S))
+        if (auto *MP = MSSA->getMemoryAccess(S)) {
           setMemoryPhiValueForBlock(MP, FixupBlock, NewDef);
-        else {
+        } else {
           // If we cycle, we should have ended up at a phi node that we already
           // processed.  FIXME: Double check this
-          if (!Seen.insert(S).second)
+          if (!Seen.insert(S).second) {
             continue;
+
+}
           Worklist.push_back(S);
         }
       }
@@ -531,10 +595,14 @@ void MemorySSAUpdater::removeDuplicatePhiEdgesBetween(const BasicBlock *From,
   if (MemoryPhi *MPhi = MSSA->getMemoryAccess(To)) {
     bool Found = false;
     MPhi->unorderedDeleteIncomingIf([&](const MemoryAccess *, BasicBlock *B) {
-      if (From != B)
+      if (From != B) {
         return false;
-      if (Found)
+
+}
+      if (Found) {
         return true;
+
+}
       Found = true;
       return false;
     });
@@ -555,9 +623,9 @@ static MemoryAccess *getNewDefiningAccessForClone(MemoryAccess *MA,
       if (Instruction *NewDefMUDI =
               cast_or_null<Instruction>(VMap.lookup(DefMUDI))) {
         InsnDefining = MSSA->getMemoryAccess(NewDefMUDI);
-        if (!CloneWasSimplified)
+        if (!CloneWasSimplified) {
           assert(InsnDefining && "Defining instruction cannot be nullptr.");
-        else if (!InsnDefining || isa<MemoryUse>(InsnDefining)) {
+        } else if (!InsnDefining || isa<MemoryUse>(InsnDefining)) {
           // The clone was simplified, it's no longer a MemoryDef, look up.
           auto DefIt = DefMUD->getDefsIterator();
           // Since simplified clones only occur in single block cloning, a
@@ -572,8 +640,10 @@ static MemoryAccess *getNewDefiningAccessForClone(MemoryAccess *MA,
     }
   } else {
     MemoryPhi *DefPhi = cast<MemoryPhi>(InsnDefining);
-    if (MemoryAccess *NewDefPhi = MPhiMap.lookup(DefPhi))
+    if (MemoryAccess *NewDefPhi = MPhiMap.lookup(DefPhi)) {
       InsnDefining = NewDefPhi;
+
+}
   }
   assert(InsnDefining && "Defining instruction cannot be nullptr.");
   return InsnDefining;
@@ -584,8 +654,10 @@ void MemorySSAUpdater::cloneUsesAndDefs(BasicBlock *BB, BasicBlock *NewBB,
                                         PhiToDefMap &MPhiMap,
                                         bool CloneWasSimplified) {
   const MemorySSA::AccessList *Acc = MSSA->getBlockAccesses(BB);
-  if (!Acc)
+  if (!Acc) {
     return;
+
+}
   for (const MemoryAccess &MA : *Acc) {
     if (const MemoryUseOrDef *MUD = dyn_cast<MemoryUseOrDef>(&MA)) {
       Instruction *Insn = MUD->getMemoryInst();
@@ -604,8 +676,10 @@ void MemorySSAUpdater::cloneUsesAndDefs(BasicBlock *BB, BasicBlock *NewBB,
                                          MPhiMap, CloneWasSimplified, MSSA),
             /*Template=*/CloneWasSimplified ? nullptr : MUD,
             /*CreationMustSucceed=*/CloneWasSimplified ? false : true);
-        if (NewUseOrDef)
+        if (NewUseOrDef) {
           MSSA->insertIntoListsForBlock(NewUseOrDef, NewBB, MemorySSA::End);
+
+}
       }
     }
   }
@@ -614,8 +688,10 @@ void MemorySSAUpdater::cloneUsesAndDefs(BasicBlock *BB, BasicBlock *NewBB,
 void MemorySSAUpdater::updatePhisWhenInsertingUniqueBackedgeBlock(
     BasicBlock *Header, BasicBlock *Preheader, BasicBlock *BEBlock) {
   auto *MPhi = MSSA->getMemoryAccess(Header);
-  if (!MPhi)
+  if (!MPhi) {
     return;
+
+}
 
   // Create phi node in the backedge block and populate it with the same
   // incoming values as MPhi. Skip incoming values coming from Preheader.
@@ -628,10 +704,12 @@ void MemorySSAUpdater::updatePhisWhenInsertingUniqueBackedgeBlock(
     if (IBB != Preheader) {
       NewMPhi->addIncoming(IV, IBB);
       if (HasUniqueIncomingValue) {
-        if (!UniqueValue)
+        if (!UniqueValue) {
           UniqueValue = IV;
-        else if (UniqueValue != IV)
+        } else if (UniqueValue != IV) {
           HasUniqueIncomingValue = false;
+
+}
       }
     }
   }
@@ -641,8 +719,10 @@ void MemorySSAUpdater::updatePhisWhenInsertingUniqueBackedgeBlock(
   auto *AccFromPreheader = MPhi->getIncomingValueForBlock(Preheader);
   MPhi->setIncomingValue(0, AccFromPreheader);
   MPhi->setIncomingBlock(0, Preheader);
-  for (unsigned I = MPhi->getNumIncomingValues() - 1; I >= 1; --I)
+  for (unsigned I = MPhi->getNumIncomingValues() - 1; I >= 1; --I) {
     MPhi->unorderedDeleteIncoming(I);
+
+}
   MPhi->addIncoming(NewMPhi, BEBlock);
 
   // If NewMPhi is a trivial phi, remove it. Its use in the header MPhi will be
@@ -665,17 +745,21 @@ void MemorySSAUpdater::updateForClonedLoop(const LoopBlocksRPO &LoopBlocks,
       MemoryAccess *IncomingAccess = Phi->getIncomingValue(It);
       BasicBlock *IncBB = Phi->getIncomingBlock(It);
 
-      if (BasicBlock *NewIncBB = cast_or_null<BasicBlock>(VMap.lookup(IncBB)))
+      if (BasicBlock *NewIncBB = cast_or_null<BasicBlock>(VMap.lookup(IncBB))) {
         IncBB = NewIncBB;
-      else if (IgnoreIncomingWithNoClones)
+      } else if (IgnoreIncomingWithNoClones) {
         continue;
+
+}
 
       // Now we have IncBB, and will need to add incoming from it to NewPhi.
 
       // If IncBB is not a predecessor of NewPhiBB, then do not add it.
       // NewPhiBB was cloned without that edge.
-      if (!NewPhiBBPreds.count(IncBB))
+      if (!NewPhiBBPreds.count(IncBB)) {
         continue;
+
+}
 
       // Determine incoming value and add it as incoming from IncBB.
       if (MemoryUseOrDef *IncMUD = dyn_cast<MemoryUseOrDef>(IncomingAccess)) {
@@ -692,18 +776,22 @@ void MemorySSAUpdater::updateForClonedLoop(const LoopBlocksRPO &LoopBlocks,
         NewPhi->addIncoming(IncMUD, IncBB);
       } else {
         MemoryPhi *IncPhi = cast<MemoryPhi>(IncomingAccess);
-        if (MemoryAccess *NewDefPhi = MPhiMap.lookup(IncPhi))
+        if (MemoryAccess *NewDefPhi = MPhiMap.lookup(IncPhi)) {
           NewPhi->addIncoming(NewDefPhi, IncBB);
-        else
+        } else {
           NewPhi->addIncoming(IncPhi, IncBB);
+
+}
       }
     }
   };
 
   auto ProcessBlock = [&](BasicBlock *BB) {
     BasicBlock *NewBlock = cast_or_null<BasicBlock>(VMap.lookup(BB));
-    if (!NewBlock)
+    if (!NewBlock) {
       return;
+
+}
 
     assert(!MSSA->getWritableBlockAccesses(NewBlock) &&
            "Cloned block should have no accesses");
@@ -717,13 +805,21 @@ void MemorySSAUpdater::updateForClonedLoop(const LoopBlocksRPO &LoopBlocks,
     cloneUsesAndDefs(BB, NewBlock, VMap, MPhiMap);
   };
 
-  for (auto BB : llvm::concat<BasicBlock *const>(LoopBlocks, ExitBlocks))
+  for (auto BB : llvm::concat<BasicBlock *const>(LoopBlocks, ExitBlocks)) {
     ProcessBlock(BB);
 
-  for (auto BB : llvm::concat<BasicBlock *const>(LoopBlocks, ExitBlocks))
-    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(BB))
-      if (MemoryAccess *NewPhi = MPhiMap.lookup(MPhi))
+}
+
+  for (auto BB : llvm::concat<BasicBlock *const>(LoopBlocks, ExitBlocks)) {
+    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(BB)) {
+      if (MemoryAccess *NewPhi = MPhiMap.lookup(MPhi)) {
         FixPhiIncomingValues(MPhi, cast<MemoryPhi>(NewPhi));
+
+}
+
+}
+
+}
 }
 
 void MemorySSAUpdater::updateForClonedBlockIntoPred(
@@ -737,8 +833,10 @@ void MemorySSAUpdater::updateForClonedBlockIntoPred(
   // simplified, so disable the use of the template, and create an access from
   // scratch.
   PhiToDefMap MPhiMap;
-  if (MemoryPhi *MPhi = MSSA->getMemoryAccess(BB))
+  if (MemoryPhi *MPhi = MSSA->getMemoryAccess(BB)) {
     MPhiMap[MPhi] = MPhi->getIncomingValueForBlock(P1);
+
+}
   cloneUsesAndDefs(BB, P1, VM, MPhiMap, /*CloneWasSimplified=*/true);
 }
 
@@ -748,12 +846,16 @@ void MemorySSAUpdater::privateUpdateExitBlocksForClonedLoop(
     DominatorTree &DT) {
   SmallVector<CFGUpdate, 4> Updates;
   // Update/insert phis in all successors of exit blocks.
-  for (auto *Exit : ExitBlocks)
-    for (const ValueToValueMapTy *VMap : make_range(ValuesBegin, ValuesEnd))
+  for (auto *Exit : ExitBlocks) {
+    for (const ValueToValueMapTy *VMap : make_range(ValuesBegin, ValuesEnd)) {
       if (BasicBlock *NewExit = cast_or_null<BasicBlock>(VMap->lookup(Exit))) {
         BasicBlock *ExitSucc = NewExit->getTerminator()->getSuccessor(0);
         Updates.push_back({DT.Insert, NewExit, ExitSucc});
       }
+
+}
+
+}
   applyInsertUpdates(Updates, DT);
 }
 
@@ -784,10 +886,12 @@ void MemorySSAUpdater::applyUpdates(ArrayRef<CFGUpdate> Updates,
   SmallVector<CFGUpdate, 4> RevDeleteUpdates;
   SmallVector<CFGUpdate, 4> InsertUpdates;
   for (auto &Update : Updates) {
-    if (Update.getKind() == DT.Insert)
+    if (Update.getKind() == DT.Insert) {
       InsertUpdates.push_back({DT.Insert, Update.getFrom(), Update.getTo()});
-    else
+    } else {
       RevDeleteUpdates.push_back({DT.Insert, Update.getFrom(), Update.getTo()});
+
+}
   }
 
   if (!RevDeleteUpdates.empty()) {
@@ -806,8 +910,10 @@ void MemorySSAUpdater::applyUpdates(ArrayRef<CFGUpdate> Updates,
   }
 
   // Update for deleted edges
-  for (auto &Update : RevDeleteUpdates)
+  for (auto &Update : RevDeleteUpdates) {
     removeEdge(Update.getFrom(), Update.getTo());
+
+}
 }
 
 void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
@@ -824,8 +930,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
     while (true) {
       MemorySSA::DefsList *Defs = MSSA->getWritableBlockDefs(BB);
       // Return last Def or Phi in BB, if it exists.
-      if (Defs)
+      if (Defs) {
         return &*(--Defs->end());
+
+}
 
       // Check number of predecessors, we only care if there's more than one.
       unsigned Count = 0;
@@ -833,8 +941,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
       for (auto &Pair : children<GraphDiffInvBBPair>({GD, BB})) {
         Pred = Pair.second;
         Count++;
-        if (Count == 2)
+        if (Count == 2) {
           break;
+
+}
       }
 
       // If BB has multiple predecessors, get last definition from IDom.
@@ -842,20 +952,26 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
         // [SimpleLoopUnswitch] If BB is a dead block, about to be deleted, its
         // DT is invalidated. Return LoE as its last def. This will be added to
         // MemoryPhi node, and later deleted when the block is deleted.
-        if (!DT.getNode(BB))
+        if (!DT.getNode(BB)) {
           return MSSA->getLiveOnEntryDef();
-        if (auto *IDom = DT.getNode(BB)->getIDom())
+
+}
+        if (auto *IDom = DT.getNode(BB)->getIDom()) {
           if (IDom->getBlock() != BB) {
             BB = IDom->getBlock();
             continue;
           }
+
+}
         return MSSA->getLiveOnEntryDef();
       } else {
         // Single predecessor, BB cannot be dead. GetLastDef of Pred.
         assert(Count == 1 && Pred && "Single predecessor expected.");
         // BB can be unreachable though, return LoE if that is the case.
-        if (!DT.getNode(BB))
+        if (!DT.getNode(BB)) {
           return MSSA->getLiveOnEntryDef();
+
+}
         BB = Pred;
       }
     };
@@ -868,8 +984,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
   auto FindNearestCommonDominator =
       [&](const SmallSetVector<BasicBlock *, 2> &BBSet) -> BasicBlock * {
     BasicBlock *PrevIDom = *BBSet.begin();
-    for (auto *BB : BBSet)
+    for (auto *BB : BBSet) {
       PrevIDom = DT.findNearestCommonDominator(PrevIDom, BB);
+
+}
     return PrevIDom;
   };
 
@@ -878,14 +996,18 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
   auto GetNoLongerDomBlocks =
       [&](BasicBlock *PrevIDom, BasicBlock *CurrIDom,
           SmallVectorImpl<BasicBlock *> &BlocksPrevDom) {
-        if (PrevIDom == CurrIDom)
+        if (PrevIDom == CurrIDom) {
           return;
+
+}
         BlocksPrevDom.push_back(PrevIDom);
         BasicBlock *NextIDom = PrevIDom;
         while (BasicBlock *UpIDom =
                    DT.getNode(NextIDom)->getIDom()->getBlock()) {
-          if (UpIDom == CurrIDom)
+          if (UpIDom == CurrIDom) {
             break;
+
+}
           BlocksPrevDom.push_back(UpIDom);
           NextIDom = UpIDom;
         }
@@ -926,8 +1048,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
     auto &PrevBlockSet = BBPredPair.second.Prev;
     for (auto &Pair : children<GraphDiffInvBBPair>({GD, BB})) {
       BasicBlock *Pi = Pair.second;
-      if (!AddedBlockSet.count(Pi))
+      if (!AddedBlockSet.count(Pi)) {
         PrevBlockSet.insert(Pi);
+
+}
       EdgeCountMap[{Pi, BB}]++;
     }
 
@@ -949,8 +1073,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
     }
   }
   // Nothing to process for new/cloned blocks.
-  for (auto *BB : NewBlocks)
+  for (auto *BB : NewBlocks) {
     PredMap.erase(BB);
+
+}
 
   SmallVector<BasicBlock *, 16> BlocksWithDefsToReplace;
   SmallVector<WeakVH, 8> InsertedPhis;
@@ -959,8 +1085,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
   // order found in Updates, not in PredMap, to get deterministic numbering.
   for (auto &Edge : Updates) {
     BasicBlock *BB = Edge.getTo();
-    if (PredMap.count(BB) && !MSSA->getMemoryAccess(BB))
+    if (PredMap.count(BB) && !MSSA->getMemoryAccess(BB)) {
       InsertedPhis.push_back(MSSA->createMemoryPhi(BB));
+
+}
   }
 
   // Now we'll fill in the MemoryPhis with the right incoming values.
@@ -990,8 +1118,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
     if (NewPhi->getNumOperands()) {
       for (auto *Pred : AddedBlockSet) {
         auto *LastDefForPred = LastDefAddedPred[Pred];
-        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I)
+        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I) {
           NewPhi->addIncoming(LastDefForPred, Pred);
+
+}
       }
     } else {
       // Pick any existing predecessor and get its definition. All other
@@ -1002,11 +1132,13 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
       // Check DefP1 against all Defs in LastDefPredPair. If all the same,
       // nothing to add.
       bool InsertPhi = false;
-      for (auto LastDefPredPair : LastDefAddedPred)
+      for (auto LastDefPredPair : LastDefAddedPred) {
         if (DefP1 != LastDefPredPair.second) {
           InsertPhi = true;
           break;
         }
+
+}
       if (!InsertPhi) {
         // Since NewPhi may be used in other newly added Phis, replace all uses
         // of NewPhi with the definition coming from all predecessors (DefP1),
@@ -1021,12 +1153,18 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
       // sets, the order of entries in NewPhi is deterministic.
       for (auto *Pred : AddedBlockSet) {
         auto *LastDefForPred = LastDefAddedPred[Pred];
-        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I)
+        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I) {
           NewPhi->addIncoming(LastDefForPred, Pred);
+
+}
       }
-      for (auto *Pred : PrevBlockSet)
-        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I)
+      for (auto *Pred : PrevBlockSet) {
+        for (int I = 0, E = EdgeCountMap[{Pred, BB}]; I < E; ++I) {
           NewPhi->addIncoming(DefP1, Pred);
+
+}
+
+}
     }
 
     // Get all blocks that used to dominate BB and no longer do after adding
@@ -1045,9 +1183,13 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
   // Create the set of blocks that now have a definition. We'll use this to
   // compute IDF and add Phis there next.
   SmallVector<BasicBlock *, 8> BlocksToProcess;
-  for (auto &VH : InsertedPhis)
-    if (auto *MPhi = cast_or_null<MemoryPhi>(VH))
+  for (auto &VH : InsertedPhis) {
+    if (auto *MPhi = cast_or_null<MemoryPhi>(VH)) {
       BlocksToProcess.push_back(MPhi->getBlock());
+
+}
+
+}
 
   // Compute IDF and add Phis in all IDF blocks that do not have one.
   SmallVector<BasicBlock *, 32> IDFBlocks;
@@ -1060,12 +1202,14 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
 
     SmallSetVector<MemoryPhi *, 4> PhisToFill;
     // First create all needed Phis.
-    for (auto *BBIDF : IDFBlocks)
+    for (auto *BBIDF : IDFBlocks) {
       if (!MSSA->getMemoryAccess(BBIDF)) {
         auto *IDFPhi = MSSA->createMemoryPhi(BBIDF);
         InsertedPhis.push_back(IDFPhi);
         PhisToFill.insert(IDFPhi);
       }
+
+}
     // Then update or insert their correct incoming values.
     for (auto *BBIDF : IDFBlocks) {
       auto *IDFPhi = MSSA->getMemoryAccess(BBIDF);
@@ -1073,8 +1217,10 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
       if (!PhisToFill.count(IDFPhi)) {
         // Update existing Phi.
         // FIXME: some updates may be redundant, try to optimize and skip some.
-        for (unsigned I = 0, E = IDFPhi->getNumIncomingValues(); I < E; ++I)
+        for (unsigned I = 0, E = IDFPhi->getNumIncomingValues(); I < E; ++I) {
           IDFPhi->setIncomingValue(I, GetLastDef(IDFPhi->getIncomingBlock(I)));
+
+}
       } else {
         for (auto &Pair : children<GraphDiffInvBBPair>({GD, BBIDF})) {
           BasicBlock *Pi = Pair.second;
@@ -1099,14 +1245,16 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
           MemoryAccess *Usr = cast<MemoryAccess>(U.getUser());
           if (MemoryPhi *UsrPhi = dyn_cast<MemoryPhi>(Usr)) {
             BasicBlock *DominatedBlock = UsrPhi->getIncomingBlock(U);
-            if (!DT.dominates(DominatingBlock, DominatedBlock))
+            if (!DT.dominates(DominatingBlock, DominatedBlock)) {
               U.set(GetLastDef(DominatedBlock));
+
+}
           } else {
             BasicBlock *DominatedBlock = Usr->getBlock();
             if (!DT.dominates(DominatingBlock, DominatedBlock)) {
-              if (auto *DomBlPhi = MSSA->getMemoryAccess(DominatedBlock))
+              if (auto *DomBlPhi = MSSA->getMemoryAccess(DominatedBlock)) {
                 U.set(DomBlPhi);
-              else {
+              } else {
                 auto *IDom = DT.getNode(DominatedBlock)->getIDom();
                 assert(IDom && "Block must have a valid IDom.");
                 U.set(GetLastDef(IDom->getBlock()));
@@ -1126,9 +1274,13 @@ template <class WhereType>
 void MemorySSAUpdater::moveTo(MemoryUseOrDef *What, BasicBlock *BB,
                               WhereType Where) {
   // Mark MemoryPhi users of What not to be optimized.
-  for (auto *U : What->users())
-    if (MemoryPhi *PhiUser = dyn_cast<MemoryPhi>(U))
+  for (auto *U : What->users()) {
+    if (MemoryPhi *PhiUser = dyn_cast<MemoryPhi>(U)) {
       NonOptPhis.insert(PhiUser);
+
+}
+
+}
 
   // Replace all our users with our defining access.
   What->replaceAllUsesWith(What->getDefiningAccess());
@@ -1137,10 +1289,12 @@ void MemorySSAUpdater::moveTo(MemoryUseOrDef *What, BasicBlock *BB,
   MSSA->moveTo(What, BB, Where);
 
   // Now reinsert it into the IR and do whatever fixups needed.
-  if (auto *MD = dyn_cast<MemoryDef>(What))
+  if (auto *MD = dyn_cast<MemoryDef>(What)) {
     insertDef(MD, /*RenameUses=*/true);
-  else
+  } else {
     insertUse(cast<MemoryUse>(What), /*RenameUses=*/true);
+
+}
 
   // Clear dangling pointers. We added all MemoryPhi users, but not all
   // of them are removed by fixupDefs().
@@ -1159,13 +1313,17 @@ void MemorySSAUpdater::moveAfter(MemoryUseOrDef *What, MemoryUseOrDef *Where) {
 
 void MemorySSAUpdater::moveToPlace(MemoryUseOrDef *What, BasicBlock *BB,
                                    MemorySSA::InsertionPlace Where) {
-  if (Where != MemorySSA::InsertionPlace::BeforeTerminator)
+  if (Where != MemorySSA::InsertionPlace::BeforeTerminator) {
     return moveTo(What, BB, Where);
 
-  if (auto *Where = MSSA->getMemoryAccess(BB->getTerminator()))
+}
+
+  if (auto *Where = MSSA->getMemoryAccess(BB->getTerminator())) {
     return moveBefore(What, Where);
-  else
+  } else {
     return moveTo(What, BB, MemorySSA::InsertionPlace::End);
+
+}
 }
 
 // All accesses in To used to be in From. Move to end and update access lists.
@@ -1173,14 +1331,20 @@ void MemorySSAUpdater::moveAllAccesses(BasicBlock *From, BasicBlock *To,
                                        Instruction *Start) {
 
   MemorySSA::AccessList *Accs = MSSA->getWritableBlockAccesses(From);
-  if (!Accs)
+  if (!Accs) {
     return;
+
+}
 
   assert(Start->getParent() == To && "Incorrect Start instruction");
   MemoryAccess *FirstInNew = nullptr;
-  for (Instruction &I : make_range(Start->getIterator(), To->end()))
-    if ((FirstInNew = MSSA->getMemoryAccess(&I)))
+  for (Instruction &I : make_range(Start->getIterator(), To->end())) {
+    if ((FirstInNew = MSSA->getMemoryAccess(&I))) {
       break;
+
+}
+
+}
   if (FirstInNew) {
     auto *MUD = cast<MemoryUseOrDef>(FirstInNew);
     do {
@@ -1199,9 +1363,13 @@ void MemorySSAUpdater::moveAllAccesses(BasicBlock *From, BasicBlock *To,
   // If all accesses were moved and only a trivial Phi remains, we try to remove
   // that Phi. This is needed when From is going to be deleted.
   auto *Defs = MSSA->getWritableBlockDefs(From);
-  if (Defs && !Defs->empty())
-    if (auto *Phi = dyn_cast<MemoryPhi>(&*Defs->begin()))
+  if (Defs && !Defs->empty()) {
+    if (auto *Phi = dyn_cast<MemoryPhi>(&*Defs->begin())) {
       tryRemoveTrivialPhi(Phi);
+
+}
+
+}
 }
 
 void MemorySSAUpdater::moveAllAfterSpliceBlocks(BasicBlock *From,
@@ -1210,9 +1378,13 @@ void MemorySSAUpdater::moveAllAfterSpliceBlocks(BasicBlock *From,
   assert(MSSA->getBlockAccesses(To) == nullptr &&
          "To block is expected to be free of MemoryAccesses.");
   moveAllAccesses(From, To, Start);
-  for (BasicBlock *Succ : successors(To))
-    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(Succ))
+  for (BasicBlock *Succ : successors(To)) {
+    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(Succ)) {
       MPhi->setIncomingBlock(MPhi->getBasicBlockIndex(From), To);
+
+}
+
+}
 }
 
 void MemorySSAUpdater::moveAllAfterMergeBlocks(BasicBlock *From, BasicBlock *To,
@@ -1220,9 +1392,13 @@ void MemorySSAUpdater::moveAllAfterMergeBlocks(BasicBlock *From, BasicBlock *To,
   assert(From->getUniquePredecessor() == To &&
          "From block is expected to have a single predecessor (To).");
   moveAllAccesses(From, To, Start);
-  for (BasicBlock *Succ : successors(From))
-    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(Succ))
+  for (BasicBlock *Succ : successors(From)) {
+    if (MemoryPhi *MPhi = MSSA->getMemoryAccess(Succ)) {
       MPhi->setIncomingBlock(MPhi->getBasicBlockIndex(From), To);
+
+}
+
+}
 }
 
 /// If all arguments of a MemoryPHI are defined by the same incoming
@@ -1231,10 +1407,12 @@ static MemoryAccess *onlySingleValue(MemoryPhi *MP) {
   MemoryAccess *MA = nullptr;
 
   for (auto &Arg : MP->operands()) {
-    if (!MA)
+    if (!MA) {
       MA = cast<MemoryAccess>(Arg);
-    else if (MA != Arg)
+    } else if (MA != Arg) {
       return nullptr;
+
+}
   }
   return MA;
 }
@@ -1245,8 +1423,10 @@ void MemorySSAUpdater::wireOldPredecessorsToNewImmediatePredecessor(
   assert(!MSSA->getWritableBlockAccesses(New) &&
          "Access list should be null for a new block.");
   MemoryPhi *Phi = MSSA->getMemoryAccess(Old);
-  if (!Phi)
+  if (!Phi) {
     return;
+
+}
   if (Old->hasNPredecessors(1)) {
     assert(pred_size(New) == Preds.size() &&
            "Should have moved all predecessors.");
@@ -1258,15 +1438,19 @@ void MemorySSAUpdater::wireOldPredecessorsToNewImmediatePredecessor(
     SmallPtrSet<BasicBlock *, 16> PredsSet(Preds.begin(), Preds.end());
     // Currently only support the case of removing a single incoming edge when
     // identical edges were not merged.
-    if (!IdenticalEdgesWereMerged)
+    if (!IdenticalEdgesWereMerged) {
       assert(PredsSet.size() == Preds.size() &&
              "If identical edges were not merged, we cannot have duplicate "
              "blocks in the predecessors");
+
+}
     Phi->unorderedDeleteIncomingIf([&](MemoryAccess *MA, BasicBlock *B) {
       if (PredsSet.count(B)) {
         NewPhi->addIncoming(MA, B);
-        if (!IdenticalEdgesWereMerged)
+        if (!IdenticalEdgesWereMerged) {
           PredsSet.erase(B);
+
+}
         return true;
       }
       return false;
@@ -1307,18 +1491,26 @@ void MemorySSAUpdater::removeMemoryAccess(MemoryAccess *MA, bool OptimizePhis) {
     // flags on users of phi nodes if doing the below makes a phi node have all
     // the same arguments. Instead, we prefer users to removeMemoryAccess those
     // phi nodes, because doing it here would be N^3.
-    if (MA->hasValueHandle())
+    if (MA->hasValueHandle()) {
       ValueHandleBase::ValueIsRAUWd(MA, NewDefTarget);
+
+}
     // Note: We assume MemorySSA is not used in metadata since it's not really
     // part of the IR.
 
     while (!MA->use_empty()) {
       Use &U = *MA->use_begin();
-      if (auto *MUD = dyn_cast<MemoryUseOrDef>(U.getUser()))
+      if (auto *MUD = dyn_cast<MemoryUseOrDef>(U.getUser())) {
         MUD->resetOptimized();
-      if (OptimizePhis)
-        if (MemoryPhi *MP = dyn_cast<MemoryPhi>(U.getUser()))
+
+}
+      if (OptimizePhis) {
+        if (MemoryPhi *MP = dyn_cast<MemoryPhi>(U.getUser())) {
           PhisToCheck.insert(MP);
+
+}
+
+}
       U.set(NewDefTarget);
     }
   }
@@ -1335,10 +1527,14 @@ void MemorySSAUpdater::removeMemoryAccess(MemoryAccess *MA, bool OptimizePhis) {
     PhisToCheck.clear();
 
     unsigned PhisSize = PhisToOptimize.size();
-    while (PhisSize-- > 0)
+    while (PhisSize-- > 0) {
       if (MemoryPhi *MP =
-              cast_or_null<MemoryPhi>(PhisToOptimize.pop_back_val()))
+              cast_or_null<MemoryPhi>(PhisToOptimize.pop_back_val())) {
         tryRemoveTrivialPhi(MP);
+
+}
+
+}
   }
 }
 
@@ -1348,23 +1544,33 @@ void MemorySSAUpdater::removeBlocks(
   for (BasicBlock *BB : DeadBlocks) {
     Instruction *TI = BB->getTerminator();
     assert(TI && "Basic block expected to have a terminator instruction");
-    for (BasicBlock *Succ : successors(TI))
-      if (!DeadBlocks.count(Succ))
+    for (BasicBlock *Succ : successors(TI)) {
+      if (!DeadBlocks.count(Succ)) {
         if (MemoryPhi *MP = MSSA->getMemoryAccess(Succ)) {
           MP->unorderedDeleteIncomingBlock(BB);
           tryRemoveTrivialPhi(MP);
         }
+
+}
+
+}
     // Drop all references of all accesses in BB
-    if (MemorySSA::AccessList *Acc = MSSA->getWritableBlockAccesses(BB))
-      for (MemoryAccess &MA : *Acc)
+    if (MemorySSA::AccessList *Acc = MSSA->getWritableBlockAccesses(BB)) {
+      for (MemoryAccess &MA : *Acc) {
         MA.dropAllReferences();
+
+}
+
+}
   }
 
   // Next, delete all memory accesses in each block
   for (BasicBlock *BB : DeadBlocks) {
     MemorySSA::AccessList *Acc = MSSA->getWritableBlockAccesses(BB);
-    if (!Acc)
+    if (!Acc) {
       continue;
+
+}
     for (auto AB = Acc->begin(), AE = Acc->end(); AB != AE;) {
       MemoryAccess *MA = &*AB;
       ++AB;
@@ -1375,9 +1581,13 @@ void MemorySSAUpdater::removeBlocks(
 }
 
 void MemorySSAUpdater::tryRemoveTrivialPhis(ArrayRef<WeakVH> UpdatedPHIs) {
-  for (auto &VH : UpdatedPHIs)
-    if (auto *MPhi = cast_or_null<MemoryPhi>(VH))
+  for (auto &VH : UpdatedPHIs) {
+    if (auto *MPhi = cast_or_null<MemoryPhi>(VH)) {
       tryRemoveTrivialPhi(MPhi);
+
+}
+
+}
 }
 
 void MemorySSAUpdater::changeToUnreachable(const Instruction *I) {
@@ -1386,8 +1596,10 @@ void MemorySSAUpdater::changeToUnreachable(const Instruction *I) {
   auto BBI = I->getIterator(), BBE = BB->end();
   // FIXME: If this becomes too expensive, iterate until the first instruction
   // with a memory access, then iterate over MemoryAccesses.
-  while (BBI != BBE)
+  while (BBI != BBE) {
     removeMemoryAccess(&*(BBI++));
+
+}
   // Update phis in BB's successors to remove BB.
   SmallVector<WeakVH, 16> UpdatedPHIs;
   for (const BasicBlock *Successor : successors(BB)) {
@@ -1407,11 +1619,13 @@ void MemorySSAUpdater::changeCondBranchToUnconditionalTo(const BranchInst *BI,
   SmallVector<WeakVH, 16> UpdatedPHIs;
   for (const BasicBlock *Succ : successors(BB)) {
     removeDuplicatePhiEdgesBetween(BB, Succ);
-    if (Succ != To)
+    if (Succ != To) {
       if (auto *MPhi = MSSA->getMemoryAccess(Succ)) {
         MPhi->unorderedDeleteIncomingBlock(BB);
         UpdatedPHIs.push_back(MPhi);
       }
+
+}
   }
   // Optimize trivial phis.
   tryRemoveTrivialPhis(UpdatedPHIs);

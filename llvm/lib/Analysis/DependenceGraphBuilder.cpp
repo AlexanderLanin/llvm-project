@@ -40,22 +40,28 @@ template <class G>
 void AbstractDependenceGraphBuilder<G>::computeInstructionOrdinals() {
   // The BBList is expected to be in program order.
   size_t NextOrdinal = 1;
-  for (auto *BB : BBList)
-    for (auto &I : *BB)
+  for (auto *BB : BBList) {
+    for (auto &I : *BB) {
       InstOrdinalMap.insert(std::make_pair(&I, NextOrdinal++));
+
+}
+
+}
 }
 
 template <class G>
 void AbstractDependenceGraphBuilder<G>::createFineGrainedNodes() {
   ++TotalGraphs;
   assert(IMap.empty() && "Expected empty instruction map at start");
-  for (BasicBlock *BB : BBList)
+  for (BasicBlock *BB : BBList) {
     for (Instruction &I : *BB) {
       auto &NewNode = createFineGrainedNode(I);
       IMap.insert(std::make_pair(&I, &NewNode));
       NodeOrdinalMap.insert(std::make_pair(&NewNode, getOrdinal(I)));
       ++TotalFineGrainedNodes;
     }
+
+}
 }
 
 template <class G>
@@ -78,17 +84,25 @@ void AbstractDependenceGraphBuilder<G>::createAndConnectRootNode() {
   auto &RootNode = createRootNode();
   df_iterator_default_set<const NodeType *, 4> Visited;
   for (auto *N : Graph) {
-    if (*N == RootNode)
+    if (*N == RootNode) {
       continue;
-    for (auto I : depth_first_ext(N, Visited))
-      if (I == N)
+
+}
+    for (auto I : depth_first_ext(N, Visited)) {
+      if (I == N) {
         createRootedEdge(RootNode, *N);
+
+}
+
+}
   }
 }
 
 template <class G> void AbstractDependenceGraphBuilder<G>::createPiBlocks() {
-  if (!shouldCreatePiBlocks())
+  if (!shouldCreatePiBlocks()) {
     return;
+
+}
 
   LLVM_DEBUG(dbgs() << "==== Start of Creation of Pi-Blocks ===\n");
 
@@ -109,8 +123,10 @@ template <class G> void AbstractDependenceGraphBuilder<G>::createPiBlocks() {
   // ignored.
   SmallVector<NodeListType, 4> ListOfSCCs;
   for (auto &SCC : make_range(scc_begin(&Graph), scc_end(&Graph))) {
-    if (SCC.size() > 1)
+    if (SCC.size() > 1) {
       ListOfSCCs.emplace_back(SCC.begin(), SCC.end());
+
+}
   }
 
   for (NodeListType &NL : ListOfSCCs) {
@@ -136,8 +152,10 @@ template <class G> void AbstractDependenceGraphBuilder<G>::createPiBlocks() {
     for (NodeType *N : Graph) {
 
       // Skip the SCC node and all the nodes inside of it.
-      if (*N == PiNode || NodesInSCC.count(N))
+      if (*N == PiNode || NodesInSCC.count(N)) {
         continue;
+
+}
 
       for (NodeType *SCCNode : NL) {
 
@@ -178,8 +196,10 @@ template <class G> void AbstractDependenceGraphBuilder<G>::createPiBlocks() {
 
         auto reconnectEdges = [&](NodeType *Src, NodeType *Dst, NodeType *New,
                                   const Direction Dir) {
-          if (!Src->hasEdgeTo(*Dst))
+          if (!Src->hasEdgeTo(*Dst)) {
             return;
+
+}
           LLVM_DEBUG(dbgs()
                      << "reconnecting("
                      << (Dir == Direction::Incoming ? "incoming)" : "outgoing)")
@@ -237,11 +257,15 @@ template <class G> void AbstractDependenceGraphBuilder<G>::createDefUseEdges() {
     for (Instruction *II : SrcIList) {
       for (User *U : II->users()) {
         Instruction *UI = dyn_cast<Instruction>(U);
-        if (!UI)
+        if (!UI) {
           continue;
+
+}
         NodeType *DstNode = nullptr;
-        if (IMap.find(UI) != IMap.end())
+        if (IMap.find(UI) != IMap.end()) {
           DstNode = IMap.find(UI)->second;
+
+}
 
         // In the case of loops, the scope of the subgraph is all the
         // basic blocks (and instructions within them) belonging to the loop. We
@@ -282,23 +306,31 @@ void AbstractDependenceGraphBuilder<G>::createMemoryDependencyEdges() {
   for (DGIterator SrcIt = Graph.begin(), E = Graph.end(); SrcIt != E; ++SrcIt) {
     InstructionListType SrcIList;
     (*SrcIt)->collectInstructions(isMemoryAccess, SrcIList);
-    if (SrcIList.empty())
+    if (SrcIList.empty()) {
       continue;
 
+}
+
     for (DGIterator DstIt = SrcIt; DstIt != E; ++DstIt) {
-      if (**SrcIt == **DstIt)
+      if (**SrcIt == **DstIt) {
         continue;
+
+}
       InstructionListType DstIList;
       (*DstIt)->collectInstructions(isMemoryAccess, DstIList);
-      if (DstIList.empty())
+      if (DstIList.empty()) {
         continue;
+
+}
       bool ForwardEdgeCreated = false;
       bool BackwardEdgeCreated = false;
       for (Instruction *ISrc : SrcIList) {
         for (Instruction *IDst : DstIList) {
           auto D = DI.depends(ISrc, IDst, true);
-          if (!D)
+          if (!D) {
             continue;
+
+}
 
           // If we have a dependence with its left-most non-'=' direction
           // being '>' we need to reverse the direction of the edge, because
@@ -335,48 +367,58 @@ void AbstractDependenceGraphBuilder<G>::createMemoryDependencyEdges() {
             BackwardEdgeCreated = true;
           };
 
-          if (D->isConfused())
+          if (D->isConfused()) {
             createConfusedEdges(**SrcIt, **DstIt);
-          else if (D->isOrdered() && !D->isLoopIndependent()) {
+          } else if (D->isOrdered() && !D->isLoopIndependent()) {
             bool ReversedEdge = false;
             for (unsigned Level = 1; Level <= D->getLevels(); ++Level) {
-              if (D->getDirection(Level) == Dependence::DVEntry::EQ)
+              if (D->getDirection(Level) == Dependence::DVEntry::EQ) {
                 continue;
-              else if (D->getDirection(Level) == Dependence::DVEntry::GT) {
+              } else if (D->getDirection(Level) == Dependence::DVEntry::GT) {
                 createBackwardEdge(**SrcIt, **DstIt);
                 ReversedEdge = true;
                 ++TotalEdgeReversals;
                 break;
-              } else if (D->getDirection(Level) == Dependence::DVEntry::LT)
+              } else if (D->getDirection(Level) == Dependence::DVEntry::LT) {
                 break;
-              else {
+              } else {
                 createConfusedEdges(**SrcIt, **DstIt);
                 break;
               }
             }
-            if (!ReversedEdge)
+            if (!ReversedEdge) {
               createForwardEdge(**SrcIt, **DstIt);
-          } else
+
+}
+          } else {
             createForwardEdge(**SrcIt, **DstIt);
 
+}
+
           // Avoid creating duplicate edges.
-          if (ForwardEdgeCreated && BackwardEdgeCreated)
+          if (ForwardEdgeCreated && BackwardEdgeCreated) {
             break;
+
+}
         }
 
         // If we've created edges in both directions, there is no more
         // unique edge that we can create between these two nodes, so we
         // can exit early.
-        if (ForwardEdgeCreated && BackwardEdgeCreated)
+        if (ForwardEdgeCreated && BackwardEdgeCreated) {
           break;
+
+}
       }
     }
   }
 }
 
 template <class G> void AbstractDependenceGraphBuilder<G>::simplify() {
-  if (!shouldSimplify())
+  if (!shouldSimplify()) {
     return;
+
+}
   LLVM_DEBUG(dbgs() << "==== Start of Graph Simplification ===\n");
 
   // This algorithm works by first collecting a set of candidate nodes that have
@@ -391,11 +433,15 @@ template <class G> void AbstractDependenceGraphBuilder<G>::simplify() {
   DenseMap<NodeType *, unsigned> TargetInDegreeMap;
 
   for (NodeType *N : Graph) {
-    if (N->getEdges().size() != 1)
+    if (N->getEdges().size() != 1) {
       continue;
+
+}
     EdgeType &Edge = N->back();
-    if (!Edge.isDefUse())
+    if (!Edge.isDefUse()) {
       continue;
+
+}
     CandidateSourceNodes.insert(N);
 
     // Insert an element into the in-degree map and initialize to zero. The
@@ -415,8 +461,10 @@ template <class G> void AbstractDependenceGraphBuilder<G>::simplify() {
     for (EdgeType *E : *N) {
       NodeType *Tgt = &E->getTargetNode();
       auto TgtIT = TargetInDegreeMap.find(Tgt);
-      if (TgtIT != TargetInDegreeMap.end())
+      if (TgtIT != TargetInDegreeMap.end()) {
         ++(TgtIT->second);
+
+}
     }
   }
 
@@ -434,8 +482,10 @@ template <class G> void AbstractDependenceGraphBuilder<G>::simplify() {
     NodeType &Src = *Worklist.pop_back_val();
     // As nodes get merged, we need to skip any node that has been removed from
     // the candidate set (see below).
-    if (CandidateSourceNodes.find(&Src) == CandidateSourceNodes.end())
+    if (CandidateSourceNodes.find(&Src) == CandidateSourceNodes.end()) {
       continue;
+
+}
     CandidateSourceNodes.erase(&Src);
 
     assert(Src.getEdges().size() == 1 &&
@@ -444,16 +494,22 @@ template <class G> void AbstractDependenceGraphBuilder<G>::simplify() {
     assert(TargetInDegreeMap.find(&Tgt) != TargetInDegreeMap.end() &&
            "Expected target to be in the in-degree map.");
 
-    if (TargetInDegreeMap[&Tgt] != 1)
+    if (TargetInDegreeMap[&Tgt] != 1) {
       continue;
 
-    if (!areNodesMergeable(Src, Tgt))
+}
+
+    if (!areNodesMergeable(Src, Tgt)) {
       continue;
+
+}
 
     // Do not merge if there is also an edge from target to src (immediate
     // cycle).
-    if (Tgt.hasEdgeTo(Src))
+    if (Tgt.hasEdgeTo(Src)) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "Merging:" << Src << "\nWith:" << Tgt << "\n");
 
@@ -483,8 +539,10 @@ template <class G>
 void AbstractDependenceGraphBuilder<G>::sortNodesTopologically() {
 
   // If we don't create pi-blocks, then we may not have a DAG.
-  if (!shouldCreatePiBlocks())
+  if (!shouldCreatePiBlocks()) {
     return;
+
+}
 
   SmallVector<NodeType *, 64> NodesInPO;
   using NodeKind = typename NodeType::NodeKind;
@@ -501,11 +559,15 @@ void AbstractDependenceGraphBuilder<G>::sortNodesTopologically() {
 
   size_t OldSize = Graph.Nodes.size();
   Graph.Nodes.clear();
-  for (NodeType *N : reverse(NodesInPO))
+  for (NodeType *N : reverse(NodesInPO)) {
     Graph.Nodes.push_back(N);
-  if (Graph.Nodes.size() != OldSize)
+
+}
+  if (Graph.Nodes.size() != OldSize) {
     assert(false &&
            "Expected the number of nodes to stay the same after the sort");
+
+}
 }
 
 template class llvm::AbstractDependenceGraphBuilder<DataDependenceGraph>;

@@ -12,15 +12,19 @@ namespace clang {
 namespace clangd {
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, RefKind K) {
-  if (K == RefKind::Unknown)
+  if (K == RefKind::Unknown) {
     return OS << "Unknown";
+
+}
   static constexpr std::array<const char *, 4> Messages = {"Decl", "Def", "Ref",
                                                            "Spelled"};
   bool VisitedOnce = false;
   for (unsigned I = 0; I < Messages.size(); ++I) {
     if (static_cast<uint8_t>(K) & 1u << I) {
-      if (VisitedOnce)
+      if (VisitedOnce) {
         OS << ", ";
+
+}
       OS << Messages[I];
       VisitedOnce = true;
     }
@@ -34,8 +38,10 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const Ref &R) {
 
 void RefSlab::Builder::insert(const SymbolID &ID, const Ref &S) {
   auto &M = Refs[ID];
-  if (M.count(S))
+  if (M.count(S)) {
     return;
+
+}
   Ref R = S;
   R.Location.FileURI =
       UniqueStrings.save(R.Location.FileURI).data();

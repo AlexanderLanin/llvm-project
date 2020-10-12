@@ -34,17 +34,25 @@ inline bool operator<(const DeltaInfo &LHS, int64_t Delta) {
 static bool encodeSpecial(int64_t MinLineDelta, int64_t MaxLineDelta,
                           int64_t LineDelta, uint64_t AddrDelta,
                           uint8_t &SpecialOp) {
-  if (LineDelta < MinLineDelta)
+  if (LineDelta < MinLineDelta) {
     return false;
-  if (LineDelta > MaxLineDelta)
+
+}
+  if (LineDelta > MaxLineDelta) {
     return false;
+
+}
   int64_t LineRange = MaxLineDelta - MinLineDelta + 1;
   int64_t AdjustedOp = ((LineDelta - MinLineDelta) + AddrDelta * LineRange);
   int64_t Op = AdjustedOp + FirstSpecial;
-  if (Op < 0)
+  if (Op < 0) {
     return false;
-  if (Op > 255)
+
+}
+  if (Op > 255) {
     return false;
+
+}
   SpecialOp = (uint8_t)Op;
   return true;
 }
@@ -54,52 +62,68 @@ typedef std::function<bool(const LineEntry &Row)> LineEntryCallback;
 static llvm::Error parse(DataExtractor &Data, uint64_t BaseAddr,
                          LineEntryCallback const &Callback) {
   uint64_t Offset = 0;
-  if (!Data.isValidOffset(Offset))
+  if (!Data.isValidOffset(Offset)) {
     return createStringError(std::errc::io_error,
         "0x%8.8" PRIx64 ": missing LineTable MinDelta", Offset);
+
+}
   int64_t MinDelta = Data.getSLEB128(&Offset);
-  if (!Data.isValidOffset(Offset))
+  if (!Data.isValidOffset(Offset)) {
     return createStringError(std::errc::io_error,
         "0x%8.8" PRIx64 ": missing LineTable MaxDelta", Offset);
+
+}
   int64_t MaxDelta = Data.getSLEB128(&Offset);
   int64_t LineRange = MaxDelta - MinDelta + 1;
-  if (!Data.isValidOffset(Offset))
+  if (!Data.isValidOffset(Offset)) {
     return createStringError(std::errc::io_error,
         "0x%8.8" PRIx64 ": missing LineTable FirstLine", Offset);
+
+}
   const uint32_t FirstLine = (uint32_t)Data.getULEB128(&Offset);
   LineEntry Row(BaseAddr, 1, FirstLine);
   bool Done = false;
   while (!Done) {
-    if (!Data.isValidOffset(Offset))
+    if (!Data.isValidOffset(Offset)) {
       return createStringError(std::errc::io_error,
           "0x%8.8" PRIx64 ": EOF found before EndSequence", Offset);
+
+}
     uint8_t Op = Data.getU8(&Offset);
     switch (Op) {
     case EndSequence:
       Done = true;
       break;
     case SetFile:
-      if (!Data.isValidOffset(Offset))
+      if (!Data.isValidOffset(Offset)) {
         return createStringError(std::errc::io_error,
             "0x%8.8" PRIx64 ": EOF found before SetFile value",
             Offset);
+
+}
       Row.File = (uint32_t)Data.getULEB128(&Offset);
       break;
     case AdvancePC:
-      if (!Data.isValidOffset(Offset))
+      if (!Data.isValidOffset(Offset)) {
         return createStringError(std::errc::io_error,
             "0x%8.8" PRIx64 ": EOF found before AdvancePC value",
             Offset);
+
+}
       Row.Addr += Data.getULEB128(&Offset);
       // If the function callback returns false, we stop parsing.
-      if (Callback(Row) == false)
+      if (Callback(Row) == false) {
         return Error::success();
+
+}
       break;
     case AdvanceLine:
-      if (!Data.isValidOffset(Offset))
+      if (!Data.isValidOffset(Offset)) {
         return createStringError(std::errc::io_error,
             "0x%8.8" PRIx64 ": EOF found before AdvanceLine value",
             Offset);
+
+}
       Row.Line += Data.getSLEB128(&Offset);
       break;
     default: {
@@ -110,8 +134,10 @@ static llvm::Error parse(DataExtractor &Data, uint64_t BaseAddr,
         Row.Line += LineDelta;
         Row.Addr += AddrDelta;
         // If the function callback returns false, we stop parsing.
-        if (Callback(Row) == false)
+        if (Callback(Row) == false) {
           return Error::success();
+
+}
         break;
       }
     }
@@ -123,9 +149,11 @@ llvm::Error LineTable::encode(FileWriter &Out, uint64_t BaseAddr) const {
   // Users must verify the LineTable is valid prior to calling this funtion.
   // We don't want to emit any LineTable objects if they are not valid since
   // it will waste space in the GSYM file.
-  if (!isValid())
+  if (!isValid()) {
     return createStringError(std::errc::invalid_argument,
                              "attempted to encode invalid LineTable object");
+
+}
 
   int64_t MinLineDelta = INT64_MAX;
   int64_t MaxLineDelta = INT64_MIN;
@@ -137,20 +165,26 @@ llvm::Error LineTable::encode(FileWriter &Out, uint64_t BaseAddr) const {
     int64_t PrevLine = 1;
     bool First = true;
     for (const auto &line_entry : Lines) {
-      if (First)
+      if (First) {
         First = false;
-      else {
+      } else {
         int64_t LineDelta = (int64_t)line_entry.Line - PrevLine;
         auto End = DeltaInfos.end();
         auto Pos = std::lower_bound(DeltaInfos.begin(), End, LineDelta);
-        if (Pos != End && Pos->Delta == LineDelta)
+        if (Pos != End && Pos->Delta == LineDelta) {
           ++Pos->Count;
-        else
+        } else {
           DeltaInfos.insert(Pos, DeltaInfo(LineDelta, 1));
-        if (LineDelta < MinLineDelta)
+
+}
+        if (LineDelta < MinLineDelta) {
           MinLineDelta = LineDelta;
-        if (LineDelta > MaxLineDelta)
+
+}
+        if (LineDelta > MaxLineDelta) {
           MaxLineDelta = LineDelta;
+
+}
       }
       PrevLine = (int64_t)line_entry.Line;
     }
@@ -170,8 +204,10 @@ llvm::Error LineTable::encode(FileWriter &Out, uint64_t BaseAddr) const {
       uint32_t J;
       for (J = I; J < NumDeltaInfos; ++J) {
         auto LineRange = DeltaInfos[J].Delta - FirstDelta;
-        if (LineRange > MaxLineRange)
+        if (LineRange > MaxLineRange) {
           break;
+
+}
         CurrCount += DeltaInfos[J].Count;
       }
       if (CurrCount > BestCount) {
@@ -184,8 +220,10 @@ llvm::Error LineTable::encode(FileWriter &Out, uint64_t BaseAddr) const {
     MaxLineDelta = DeltaInfos[BestEndIndex].Delta;
   }
   if (MinLineDelta == MaxLineDelta && MinLineDelta > 0 &&
-      MinLineDelta < MaxLineRange)
+      MinLineDelta < MaxLineRange) {
     MinLineDelta = 0;
+
+}
   assert(MinLineDelta <= MaxLineDelta);
 
   // Initialize the line entry state as a starting point. All line entries
@@ -199,20 +237,26 @@ llvm::Error LineTable::encode(FileWriter &Out, uint64_t BaseAddr) const {
   Out.writeULEB(Prev.Line);
 
   for (const auto &Curr : Lines) {
-    if (Curr.Addr < BaseAddr)
+    if (Curr.Addr < BaseAddr) {
       return createStringError(std::errc::invalid_argument,
                                "LineEntry has address 0x%" PRIx64 " which is "
                                "less than the function start address 0x%"
                                PRIx64, Curr.Addr, BaseAddr);
-    if (Curr.Addr < Prev.Addr)
+
+}
+    if (Curr.Addr < Prev.Addr) {
       return createStringError(std::errc::invalid_argument,
                                "LineEntry in LineTable not in ascending order");
+
+}
     const uint64_t AddrDelta = Curr.Addr - Prev.Addr;
     int64_t LineDelta = 0;
-    if (Curr.Line > Prev.Line)
+    if (Curr.Line > Prev.Line) {
       LineDelta = Curr.Line - Prev.Line;
-    else if (Prev.Line > Curr.Line)
+    } else if (Prev.Line > Curr.Line) {
       LineDelta = -((int32_t)(Prev.Line - Curr.Line));
+
+}
 
     // Set the file if it doesn't match the current one.
     if (Curr.File != Prev.File) {
@@ -255,8 +299,10 @@ llvm::Expected<LineTable> LineTable::decode(DataExtractor &Data,
     LT.Lines.push_back(Row);
     return true; // Keep parsing by returning true.
   });
-  if (Err)
+  if (Err) {
     return std::move(Err);
+
+}
   return LT;
 }
 // Parse the line table on the fly and find the row we are looking for.
@@ -267,8 +313,10 @@ Expected<LineEntry> LineTable::lookup(DataExtractor &Data, uint64_t BaseAddr, ui
   LineEntry Result;
   llvm::Error Err = parse(Data, BaseAddr,
                           [Addr, &Result](const LineEntry &Row) -> bool {
-    if (Addr < Row.Addr)
+    if (Addr < Row.Addr) {
       return false; // Stop parsing, result contains the line table row!
+
+}
     Result = Row;
     if (Addr == Row.Addr) {
       // Stop parsing, this is the row we are looking for since the address
@@ -277,17 +325,23 @@ Expected<LineEntry> LineTable::lookup(DataExtractor &Data, uint64_t BaseAddr, ui
     }
     return true; // Keep parsing till we find the right row.
   });
-  if (Err)
+  if (Err) {
     return std::move(Err);
-  if (Result.isValid())
+
+}
+  if (Result.isValid()) {
     return Result;
+
+}
   return createStringError(std::errc::invalid_argument,
                            "address 0x%" PRIx64 " is not in the line table",
                            Addr);
 }
 
 raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const LineTable &LT) {
-  for (const auto &LineEntry : LT)
+  for (const auto &LineEntry : LT) {
     OS << LineEntry << '\n';
+
+}
   return OS;
 }

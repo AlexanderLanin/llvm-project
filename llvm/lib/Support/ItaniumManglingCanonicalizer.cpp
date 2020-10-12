@@ -37,8 +37,10 @@ struct FoldingSetNodeIDBuilder {
   }
   void operator()(itanium_demangle::NodeArray A) {
     ID.AddInteger(A.size());
-    for (const Node *N : A)
+    for (const Node *N : A) {
       (*this)(N);
+
+}
   }
 };
 
@@ -109,11 +111,15 @@ public:
     profileCtor(ID, NodeKind<T>::Kind, As...);
 
     void *InsertPos;
-    if (NodeHeader *Existing = Nodes.FindNodeOrInsertPos(ID, InsertPos))
+    if (NodeHeader *Existing = Nodes.FindNodeOrInsertPos(ID, InsertPos)) {
       return {static_cast<T*>(Existing->getNode()), false};
 
-    if (!CreateNewNodes)
+}
+
+    if (!CreateNewNodes) {
       return {nullptr, true};
+
+}
 
     static_assert(alignof(T) <= alignof(NodeHeader),
                   "underaligned node header for specific node kind");
@@ -155,8 +161,10 @@ class CanonicalizerAllocator : public FoldingNodeAllocator {
         assert(Remappings.find(Result.first) == Remappings.end() &&
                "should never need multiple remap steps");
       }
-      if (Result.first == TrackedNode)
+      if (Result.first == TrackedNode) {
         TrackedNodeIsUsed = true;
+
+}
     }
     return Result.first;
   }
@@ -201,8 +209,10 @@ struct CanonicalizerAllocator::MakeNodeImpl<
   CanonicalizerAllocator &Self;
   Node *make(Node *Child) {
     Node *StdNamespace = Self.makeNode<itanium_demangle::NameType>("std");
-    if (!StdNamespace)
+    if (!StdNamespace) {
       return nullptr;
+
+}
     return Self.makeNode<itanium_demangle::NestedName>(StdNamespace, Child);
   }
 };
@@ -236,17 +246,19 @@ ItaniumManglingCanonicalizer::addEquivalence(FragmentKind Kind, StringRef First,
       // Very special case: allow "St" as a shorthand for "3std". It's not
       // valid as a <name> mangling, but is nonetheless the most natural
       // way to name the 'std' namespace.
-      if (Str.size() == 2 && P->Demangler.consumeIf("St"))
+      if (Str.size() == 2 && P->Demangler.consumeIf("St")) {
         N = P->Demangler.make<itanium_demangle::NameType>("std");
       // We permit substitutions to name templates without their template
       // arguments. This mostly just falls out, as almost all template names
       // are valid as <name>s, but we also want to parse <substitution>s as
       // <name>s, even though they're not.
-      else if (Str.startswith("S"))
+      } else if (Str.startswith("S")) {
         // Parse the substitution and optional following template arguments.
         N = P->Demangler.parseType();
-      else
+      } else {
         N = P->Demangler.parseName();
+
+}
       break;
 
       // A <type>.
@@ -261,8 +273,10 @@ ItaniumManglingCanonicalizer::addEquivalence(FragmentKind Kind, StringRef First,
     }
 
     // If we have trailing junk, the mangling is invalid.
-    if (P->Demangler.numLeft() != 0)
+    if (P->Demangler.numLeft() != 0) {
       N = nullptr;
+
+}
 
     // If any node was created after N, then we cannot safely remap it because
     // it might already be in use by another node.
@@ -273,24 +287,32 @@ ItaniumManglingCanonicalizer::addEquivalence(FragmentKind Kind, StringRef First,
   bool FirstIsNew, SecondIsNew;
 
   std::tie(FirstNode, FirstIsNew) = Parse(First);
-  if (!FirstNode)
+  if (!FirstNode) {
     return EquivalenceError::InvalidFirstMangling;
+
+}
 
   Alloc.trackUsesOf(FirstNode);
   std::tie(SecondNode, SecondIsNew) = Parse(Second);
-  if (!SecondNode)
+  if (!SecondNode) {
     return EquivalenceError::InvalidSecondMangling;
 
+}
+
   // If they're already equivalent, there's nothing to do.
-  if (FirstNode == SecondNode)
+  if (FirstNode == SecondNode) {
     return EquivalenceError::Success;
 
-  if (FirstIsNew && !Alloc.trackedNodeIsUsed())
+}
+
+  if (FirstIsNew && !Alloc.trackedNodeIsUsed()) {
     Alloc.addRemapping(FirstNode, SecondNode);
-  else if (SecondIsNew)
+  } else if (SecondIsNew) {
     Alloc.addRemapping(SecondNode, FirstNode);
-  else
+  } else {
     return EquivalenceError::ManglingAlreadyUsed;
+
+}
 
   return EquivalenceError::Success;
 }
@@ -307,11 +329,13 @@ parseMaybeMangledName(CanonicalizingDemangler &Demangler, StringRef Mangling,
   // consistent with how they are encoded as local-names inside a C++ mangling.
   Node *N;
   if (Mangling.startswith("_Z") || Mangling.startswith("__Z") ||
-      Mangling.startswith("___Z") || Mangling.startswith("____Z"))
+      Mangling.startswith("___Z") || Mangling.startswith("____Z")) {
     N = Demangler.parse();
-  else
+  } else {
     N = Demangler.make<itanium_demangle::NameType>(
         StringView(Mangling.data(), Mangling.size()));
+
+}
   return reinterpret_cast<ItaniumManglingCanonicalizer::Key>(N);
 }
 

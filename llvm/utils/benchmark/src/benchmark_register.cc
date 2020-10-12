@@ -130,7 +130,9 @@ bool BenchmarkFamilies::FindBenchmarks(
   MutexLock l(mutex_);
   for (std::unique_ptr<Benchmark>& family : families_) {
     // Family was deleted or benchmark doesn't match
-    if (!family) continue;
+    if (!family) { continue;
+
+}
 
     if (family->ArgsCnt() == -1) {
       family->Args({});
@@ -148,7 +150,9 @@ bool BenchmarkFamilies::FindBenchmarks(
     }
     // reserve in the special case the regex ".", since we know the final
     // family size.
-    if (spec == ".") benchmarks->reserve(family_size);
+    if (spec == ".") { benchmarks->reserve(family_size);
+
+}
 
     for (auto const& args : family->args_) {
       for (int num_threads : *thread_counts) {
@@ -186,12 +190,18 @@ bool BenchmarkFamilies::FindBenchmarks(
           ++arg_i;
         }
 
-        if (!IsZero(family->min_time_))
+        if (!IsZero(family->min_time_)) {
           instance.name += StrFormat("/min_time:%0.3f", family->min_time_);
-        if (family->iterations_ != 0)
+
+}
+        if (family->iterations_ != 0) {
           instance.name += StrFormat("/iterations:%d", family->iterations_);
-        if (family->repetitions_ != 0)
+
+}
+        if (family->repetitions_ != 0) {
           instance.name += StrFormat("/repeats:%d", family->repetitions_);
+
+}
 
         if (family->use_manual_time_) {
           instance.name += "/manual_time";
@@ -440,7 +450,9 @@ void Benchmark::SetName(const char* name) { name_ = name; }
 
 int Benchmark::ArgsCnt() const {
   if (args_.empty()) {
-    if (arg_names_.empty()) return -1;
+    if (arg_names_.empty()) { return -1;
+
+}
     return static_cast<int>(arg_names_.size());
   }
   return static_cast<int>(args_.front().size());

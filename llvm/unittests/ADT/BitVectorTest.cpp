@@ -819,8 +819,10 @@ static inline VecType createBitVector(uint32_t Size,
                                       const RangeList &setRanges) {
   VecType V;
   V.resize(Size);
-  for (auto &R : setRanges)
+  for (auto &R : setRanges) {
     V.set(R.first, R.second);
+
+}
   return V;
 }
 
@@ -1094,8 +1096,10 @@ TYPED_TEST(BitVectorTest, Iterators) {
   TypeParam Filled(10, true);
   EXPECT_NE(Filled.set_bits_begin(), Filled.set_bits_end());
   unsigned Counter = 0;
-  for (unsigned Bit : Filled.set_bits())
+  for (unsigned Bit : Filled.set_bits()) {
     EXPECT_EQ(Bit, Counter++);
+
+}
 
   TypeParam Empty;
   EXPECT_EQ(Empty.set_bits_begin(), Empty.set_bits_end());
@@ -1113,11 +1117,15 @@ TYPED_TEST(BitVectorTest, Iterators) {
   EXPECT_EQ(ToFill.set_bits_begin(), ToFill.set_bits_end());
 
   const unsigned List[] = {1, 10, 25, 99};
-  for (unsigned Num : List)
+  for (unsigned Num : List) {
     ToFill.set(Num);
+
+}
   unsigned i = 0;
-  for (unsigned Bit : ToFill.set_bits())
+  for (unsigned Bit : ToFill.set_bits()) {
     EXPECT_EQ(List[i++], Bit);
+
+}
 }
 
 TYPED_TEST(BitVectorTest, PushBack) {

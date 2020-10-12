@@ -21,8 +21,10 @@ using namespace llvm;
 // should be printed before the section name.
 bool MCSectionELF::ShouldOmitSectionDirective(StringRef Name,
                                               const MCAsmInfo &MAI) const {
-  if (isUnique())
+  if (isUnique()) {
     return false;
+
+}
 
   return MAI.shouldOmitSectionDirective(Name);
 }
@@ -36,13 +38,13 @@ static void printName(raw_ostream &OS, StringRef Name) {
   }
   OS << '"';
   for (const char *B = Name.begin(), *E = Name.end(); B < E; ++B) {
-    if (*B == '"') // Unquoted "
+    if (*B == '"') { // Unquoted "
       OS << "\\\"";
-    else if (*B != '\\') // Neither " or backslash
+    } else if (*B != '\\') { // Neither " or backslash
       OS << *B;
-    else if (B + 1 == E) // Trailing backslash
+    } else if (B + 1 == E) { // Trailing backslash
       OS << "\\\\";
-    else {
+    } else {
       OS << B[0] << B[1]; // Quoted character
       ++B;
     }
@@ -69,53 +71,89 @@ void MCSectionELF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   // Handle the weird solaris syntax if desired.
   if (MAI.usesSunStyleELFSectionSwitchSyntax() &&
       !(Flags & ELF::SHF_MERGE)) {
-    if (Flags & ELF::SHF_ALLOC)
+    if (Flags & ELF::SHF_ALLOC) {
       OS << ",#alloc";
-    if (Flags & ELF::SHF_EXECINSTR)
+
+}
+    if (Flags & ELF::SHF_EXECINSTR) {
       OS << ",#execinstr";
-    if (Flags & ELF::SHF_WRITE)
+
+}
+    if (Flags & ELF::SHF_WRITE) {
       OS << ",#write";
-    if (Flags & ELF::SHF_EXCLUDE)
+
+}
+    if (Flags & ELF::SHF_EXCLUDE) {
       OS << ",#exclude";
-    if (Flags & ELF::SHF_TLS)
+
+}
+    if (Flags & ELF::SHF_TLS) {
       OS << ",#tls";
+
+}
     OS << '\n';
     return;
   }
 
   OS << ",\"";
-  if (Flags & ELF::SHF_ALLOC)
+  if (Flags & ELF::SHF_ALLOC) {
     OS << 'a';
-  if (Flags & ELF::SHF_EXCLUDE)
+
+}
+  if (Flags & ELF::SHF_EXCLUDE) {
     OS << 'e';
-  if (Flags & ELF::SHF_EXECINSTR)
+
+}
+  if (Flags & ELF::SHF_EXECINSTR) {
     OS << 'x';
-  if (Flags & ELF::SHF_GROUP)
+
+}
+  if (Flags & ELF::SHF_GROUP) {
     OS << 'G';
-  if (Flags & ELF::SHF_WRITE)
+
+}
+  if (Flags & ELF::SHF_WRITE) {
     OS << 'w';
-  if (Flags & ELF::SHF_MERGE)
+
+}
+  if (Flags & ELF::SHF_MERGE) {
     OS << 'M';
-  if (Flags & ELF::SHF_STRINGS)
+
+}
+  if (Flags & ELF::SHF_STRINGS) {
     OS << 'S';
-  if (Flags & ELF::SHF_TLS)
+
+}
+  if (Flags & ELF::SHF_TLS) {
     OS << 'T';
-  if (Flags & ELF::SHF_LINK_ORDER)
+
+}
+  if (Flags & ELF::SHF_LINK_ORDER) {
     OS << 'o';
+
+}
 
   // If there are target-specific flags, print them.
   Triple::ArchType Arch = T.getArch();
   if (Arch == Triple::xcore) {
-    if (Flags & ELF::XCORE_SHF_CP_SECTION)
+    if (Flags & ELF::XCORE_SHF_CP_SECTION) {
       OS << 'c';
-    if (Flags & ELF::XCORE_SHF_DP_SECTION)
+
+}
+    if (Flags & ELF::XCORE_SHF_DP_SECTION) {
       OS << 'd';
+
+}
   } else if (T.isARM() || T.isThumb()) {
-    if (Flags & ELF::SHF_ARM_PURECODE)
+    if (Flags & ELF::SHF_ARM_PURECODE) {
       OS << 'y';
+
+}
   } else if (Arch == Triple::hexagon) {
-    if (Flags & ELF::SHF_HEX_GPREL)
+    if (Flags & ELF::SHF_HEX_GPREL) {
       OS << 's';
+
+}
   }
 
   OS << '"';
@@ -123,42 +161,46 @@ void MCSectionELF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   OS << ',';
 
   // If comment string is '@', e.g. as on ARM - use '%' instead
-  if (MAI.getCommentString()[0] == '@')
+  if (MAI.getCommentString()[0] == '@') {
     OS << '%';
-  else
+  } else {
     OS << '@';
 
-  if (Type == ELF::SHT_INIT_ARRAY)
+}
+
+  if (Type == ELF::SHT_INIT_ARRAY) {
     OS << "init_array";
-  else if (Type == ELF::SHT_FINI_ARRAY)
+  } else if (Type == ELF::SHT_FINI_ARRAY) {
     OS << "fini_array";
-  else if (Type == ELF::SHT_PREINIT_ARRAY)
+  } else if (Type == ELF::SHT_PREINIT_ARRAY) {
     OS << "preinit_array";
-  else if (Type == ELF::SHT_NOBITS)
+  } else if (Type == ELF::SHT_NOBITS) {
     OS << "nobits";
-  else if (Type == ELF::SHT_NOTE)
+  } else if (Type == ELF::SHT_NOTE) {
     OS << "note";
-  else if (Type == ELF::SHT_PROGBITS)
+  } else if (Type == ELF::SHT_PROGBITS) {
     OS << "progbits";
-  else if (Type == ELF::SHT_X86_64_UNWIND)
+  } else if (Type == ELF::SHT_X86_64_UNWIND) {
     OS << "unwind";
-  else if (Type == ELF::SHT_MIPS_DWARF)
+  } else if (Type == ELF::SHT_MIPS_DWARF) {
     // Print hex value of the flag while we do not have
     // any standard symbolic representation of the flag.
     OS << "0x7000001e";
-  else if (Type == ELF::SHT_LLVM_ODRTAB)
+  } else if (Type == ELF::SHT_LLVM_ODRTAB) {
     OS << "llvm_odrtab";
-  else if (Type == ELF::SHT_LLVM_LINKER_OPTIONS)
+  } else if (Type == ELF::SHT_LLVM_LINKER_OPTIONS) {
     OS << "llvm_linker_options";
-  else if (Type == ELF::SHT_LLVM_CALL_GRAPH_PROFILE)
+  } else if (Type == ELF::SHT_LLVM_CALL_GRAPH_PROFILE) {
     OS << "llvm_call_graph_profile";
-  else if (Type == ELF::SHT_LLVM_DEPENDENT_LIBRARIES)
+  } else if (Type == ELF::SHT_LLVM_DEPENDENT_LIBRARIES) {
     OS << "llvm_dependent_libraries";
-  else if (Type == ELF::SHT_LLVM_SYMPART)
+  } else if (Type == ELF::SHT_LLVM_SYMPART) {
     OS << "llvm_sympart";
-  else
+  } else {
     report_fatal_error("unsupported type 0x" + Twine::utohexstr(Type) +
                        " for section " + getSectionName());
+
+}
 
   if (EntrySize) {
     assert(Flags & ELF::SHF_MERGE);
@@ -177,8 +219,10 @@ void MCSectionELF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
     printName(OS, LinkedToSym->getName());
   }
 
-  if (isUnique())
+  if (isUnique()) {
     OS << ",unique," << UniqueID;
+
+}
 
   OS << '\n';
 

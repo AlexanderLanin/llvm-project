@@ -118,10 +118,12 @@ struct VerifyingConsumer {
 
   // This method is used by DirectoryWatcher.
   void consume(DirectoryWatcher::Event E, bool IsInitial) {
-    if (IsInitial)
+    if (IsInitial) {
       consumeInitial(E);
-    else
+    } else {
       consumeNonInitial(E);
+
+}
   }
 
   void consumeInitial(DirectoryWatcher::Event E) {
@@ -161,17 +163,23 @@ struct VerifyingConsumer {
 
   // This method is used by DirectoryWatcher.
   void consume(llvm::ArrayRef<DirectoryWatcher::Event> Es, bool IsInitial) {
-    for (const auto &E : Es)
+    for (const auto &E : Es) {
       consume(E, IsInitial);
+
+}
   }
 
   // Not locking - caller has to lock Mtx.
   llvm::Optional<bool> result() const {
     if (ExpectedInitial.empty() && ExpectedNonInitial.empty() &&
-        UnexpectedInitial.empty() && UnexpectedNonInitial.empty())
+        UnexpectedInitial.empty() && UnexpectedNonInitial.empty()) {
       return true;
-    if (!UnexpectedInitial.empty() || !UnexpectedNonInitial.empty())
+
+}
+    if (!UnexpectedInitial.empty() || !UnexpectedNonInitial.empty()) {
       return false;
+
+}
     return llvm::None;
   }
 
@@ -180,8 +188,10 @@ struct VerifyingConsumer {
   bool blockUntilResult() {
     std::unique_lock<std::mutex> L(Mtx);
     while (true) {
-      if (result())
+      if (result()) {
         return *result();
+
+}
 
       ResultIsReady.wait(L, [this]() { return result().hasValue(); });
     }
@@ -252,8 +262,10 @@ void checkEventualResultWithTimeout(VerifyingConsumer &TestConsumer) {
     EXPECT_TRUE(*TestConsumer.result());
   }
   if ((TestConsumer.result().hasValue() && !TestConsumer.result().getValue()) ||
-      !TestConsumer.result().hasValue())
+      !TestConsumer.result().hasValue()) {
     TestConsumer.printUnmetExpectations(llvm::outs());
+
+}
 }
 } // namespace
 

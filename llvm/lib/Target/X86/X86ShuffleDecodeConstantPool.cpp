@@ -37,12 +37,16 @@ static bool extractConstantMask(const Constant *C, unsigned MaskEltSizeInBits,
   //   <4 x i32> <i32 -2147483648, i32 -2147483648,
   //              i32 -2147483648, i32 -2147483648>
   Type *CstTy = C->getType();
-  if (!CstTy->isVectorTy())
+  if (!CstTy->isVectorTy()) {
     return false;
 
+}
+
   Type *CstEltTy = CstTy->getVectorElementType();
-  if (!CstEltTy->isIntegerTy())
+  if (!CstEltTy->isIntegerTy()) {
     return false;
+
+}
 
   unsigned CstSizeInBits = CstTy->getPrimitiveSizeInBits();
   unsigned CstEltSizeInBits = CstTy->getScalarSizeInBits();
@@ -60,8 +64,10 @@ static bool extractConstantMask(const Constant *C, unsigned MaskEltSizeInBits,
     assert(NumCstElts == NumMaskElts && "Unaligned shuffle mask size");
     for (unsigned i = 0; i != NumMaskElts; ++i) {
       Constant *COp = C->getAggregateElement(i);
-      if (!COp || (!isa<UndefValue>(COp) && !isa<ConstantInt>(COp)))
+      if (!COp || (!isa<UndefValue>(COp) && !isa<ConstantInt>(COp))) {
         return false;
+
+}
 
       if (isa<UndefValue>(COp)) {
         UndefElts.setBit(i);
@@ -80,8 +86,10 @@ static bool extractConstantMask(const Constant *C, unsigned MaskEltSizeInBits,
   APInt MaskBits(CstSizeInBits, 0);
   for (unsigned i = 0; i != NumCstElts; ++i) {
     Constant *COp = C->getAggregateElement(i);
-    if (!COp || (!isa<UndefValue>(COp) && !isa<ConstantInt>(COp)))
+    if (!COp || (!isa<UndefValue>(COp) && !isa<ConstantInt>(COp))) {
       return false;
+
+}
 
     unsigned BitOffset = i * CstEltSizeInBits;
 
@@ -122,8 +130,10 @@ void DecodePSHUFBMask(const Constant *C, unsigned Width,
   // The shuffle mask requires a byte vector.
   APInt UndefElts;
   SmallVector<uint64_t, 64> RawMask;
-  if (!extractConstantMask(C, 8, UndefElts, RawMask))
+  if (!extractConstantMask(C, 8, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / 8;
   assert((NumElts == 16 || NumElts == 32 || NumElts == 64) &&
@@ -137,9 +147,9 @@ void DecodePSHUFBMask(const Constant *C, unsigned Width,
 
     uint64_t Element = RawMask[i];
     // If the high bit (7) of the byte is set, the element is zeroed.
-    if (Element & (1 << 7))
+    if (Element & (1 << 7)) {
       ShuffleMask.push_back(SM_SentinelZero);
-    else {
+    } else {
       // For AVX vectors with 32 bytes the base of the shuffle is the 16-byte
       // lane of the vector we're inside.
       unsigned Base = i & ~0xf;
@@ -161,8 +171,10 @@ void DecodeVPERMILPMask(const Constant *C, unsigned ElSize, unsigned Width,
   // The shuffle mask requires elements the same size as the target.
   APInt UndefElts;
   SmallVector<uint64_t, 16> RawMask;
-  if (!extractConstantMask(C, ElSize, UndefElts, RawMask))
+  if (!extractConstantMask(C, ElSize, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / ElSize;
   unsigned NumEltsPerLane = 128 / ElSize;
@@ -177,10 +189,12 @@ void DecodeVPERMILPMask(const Constant *C, unsigned ElSize, unsigned Width,
 
     int Index = i & ~(NumEltsPerLane - 1);
     uint64_t Element = RawMask[i];
-    if (ElSize == 64)
+    if (ElSize == 64) {
       Index += (Element >> 1) & 0x1;
-    else
+    } else {
       Index += Element & 0x3;
+
+}
 
     ShuffleMask.push_back(Index);
   }
@@ -197,8 +211,10 @@ void DecodeVPERMIL2PMask(const Constant *C, unsigned M2Z, unsigned ElSize,
   // The shuffle mask requires elements the same size as the target.
   APInt UndefElts;
   SmallVector<uint64_t, 8> RawMask;
-  if (!extractConstantMask(C, ElSize, UndefElts, RawMask))
+  if (!extractConstantMask(C, ElSize, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / ElSize;
   unsigned NumEltsPerLane = 128 / ElSize;
@@ -230,10 +246,12 @@ void DecodeVPERMIL2PMask(const Constant *C, unsigned M2Z, unsigned ElSize,
     }
 
     int Index = i & ~(NumEltsPerLane - 1);
-    if (ElSize == 64)
+    if (ElSize == 64) {
       Index += (Selector >> 1) & 0x1;
-    else
+    } else {
       Index += Selector & 0x3;
+
+}
 
     int Src = (Selector >> 2) & 0x1;
     Index += Src * NumElts;
@@ -251,8 +269,10 @@ void DecodeVPPERMMask(const Constant *C, unsigned Width,
   // The shuffle mask requires a byte vector.
   APInt UndefElts;
   SmallVector<uint64_t, 16> RawMask;
-  if (!extractConstantMask(C, 8, UndefElts, RawMask))
+  if (!extractConstantMask(C, 8, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / 8;
   assert(NumElts == 16 && "Unexpected number of vector elements.");
@@ -304,8 +324,10 @@ void DecodeVPERMVMask(const Constant *C, unsigned ElSize, unsigned Width,
   // The shuffle mask requires elements the same size as the target.
   APInt UndefElts;
   SmallVector<uint64_t, 64> RawMask;
-  if (!extractConstantMask(C, ElSize, UndefElts, RawMask))
+  if (!extractConstantMask(C, ElSize, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / ElSize;
 
@@ -330,8 +352,10 @@ void DecodeVPERMV3Mask(const Constant *C, unsigned ElSize, unsigned Width,
   // The shuffle mask requires elements the same size as the target.
   APInt UndefElts;
   SmallVector<uint64_t, 64> RawMask;
-  if (!extractConstantMask(C, ElSize, UndefElts, RawMask))
+  if (!extractConstantMask(C, ElSize, UndefElts, RawMask)) {
     return;
+
+}
 
   unsigned NumElts = Width / ElSize;
 

@@ -61,8 +61,10 @@ namespace {
     }
     void getAnalysisUsage(AnalysisUsage &AU) const override {
       AU.setPreservesAll();
-      if (EmitSummaryIndex)
+      if (EmitSummaryIndex) {
         AU.addRequired<ModuleSummaryIndexWrapperPass>();
+
+}
     }
   };
 }

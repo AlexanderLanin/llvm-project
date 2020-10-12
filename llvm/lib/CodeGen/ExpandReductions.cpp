@@ -96,8 +96,10 @@ bool expandReductions(Function &F, const TargetTransformInfo *TTI) {
       case Intrinsic::experimental_vector_reduce_umin:
       case Intrinsic::experimental_vector_reduce_fmax:
       case Intrinsic::experimental_vector_reduce_fmin:
-        if (TTI->shouldExpandReduction(II))
+        if (TTI->shouldExpandReduction(II)) {
           Worklist.push_back(II);
+
+}
 
         break;
       }
@@ -122,11 +124,13 @@ bool expandReductions(Function &F, const TargetTransformInfo *TTI) {
       // and it can't be handled by generating a shuffle sequence.
       Value *Acc = II->getArgOperand(0);
       Value *Vec = II->getArgOperand(1);
-      if (!FMF.allowReassoc())
+      if (!FMF.allowReassoc()) {
         Rdx = getOrderedReduction(Builder, Acc, Vec, getOpcode(ID), MRK);
-      else {
-        if (!isPowerOf2_32(Vec->getType()->getVectorNumElements()))
+      } else {
+        if (!isPowerOf2_32(Vec->getType()->getVectorNumElements())) {
           continue;
+
+}
 
         Rdx = getShuffleReduction(Builder, Vec, getOpcode(ID), MRK);
         Rdx = Builder.CreateBinOp((Instruction::BinaryOps)getOpcode(ID),
@@ -146,8 +150,10 @@ bool expandReductions(Function &F, const TargetTransformInfo *TTI) {
     case Intrinsic::experimental_vector_reduce_fmax:
     case Intrinsic::experimental_vector_reduce_fmin: {
       Value *Vec = II->getArgOperand(0);
-      if (!isPowerOf2_32(Vec->getType()->getVectorNumElements()))
+      if (!isPowerOf2_32(Vec->getType()->getVectorNumElements())) {
         continue;
+
+}
 
       Rdx = getShuffleReduction(Builder, Vec, getOpcode(ID), MRK);
       break;
@@ -193,8 +199,10 @@ FunctionPass *llvm::createExpandReductionsPass() {
 PreservedAnalyses ExpandReductionsPass::run(Function &F,
                                             FunctionAnalysisManager &AM) {
   const auto &TTI = AM.getResult<TargetIRAnalysis>(F);
-  if (!expandReductions(F, &TTI))
+  if (!expandReductions(F, &TTI)) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   return PA;

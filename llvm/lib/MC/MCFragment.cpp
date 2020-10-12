@@ -31,27 +31,39 @@ using namespace llvm;
 
 MCAsmLayout::MCAsmLayout(MCAssembler &Asm) : Assembler(Asm) {
   // Compute the section layout order. Virtual sections must go last.
-  for (MCSection &Sec : Asm)
-    if (!Sec.isVirtualSection())
+  for (MCSection &Sec : Asm) {
+    if (!Sec.isVirtualSection()) {
       SectionOrder.push_back(&Sec);
-  for (MCSection &Sec : Asm)
-    if (Sec.isVirtualSection())
+
+}
+
+}
+  for (MCSection &Sec : Asm) {
+    if (Sec.isVirtualSection()) {
       SectionOrder.push_back(&Sec);
+
+}
+
+}
 }
 
 bool MCAsmLayout::isFragmentValid(const MCFragment *F) const {
   const MCSection *Sec = F->getParent();
   const MCFragment *LastValid = LastValidFragment.lookup(Sec);
-  if (!LastValid)
+  if (!LastValid) {
     return false;
+
+}
   assert(LastValid->getParent() == Sec);
   return F->getLayoutOrder() <= LastValid->getLayoutOrder();
 }
 
 void MCAsmLayout::invalidateFragmentsFrom(MCFragment *F) {
   // If this fragment wasn't already valid, we don't need to do anything.
-  if (!isFragmentValid(F))
+  if (!isFragmentValid(F)) {
     return;
+
+}
 
   // Otherwise, reset the last valid fragment to the previous fragment
   // (if this is the first fragment, it will be NULL).
@@ -61,10 +73,12 @@ void MCAsmLayout::invalidateFragmentsFrom(MCFragment *F) {
 void MCAsmLayout::ensureValid(const MCFragment *F) const {
   MCSection *Sec = F->getParent();
   MCSection::iterator I;
-  if (MCFragment *Cur = LastValidFragment[Sec])
+  if (MCFragment *Cur = LastValidFragment[Sec]) {
     I = ++MCSection::iterator(Cur);
-  else
+  } else {
     I = Sec->begin();
+
+}
 
   // Advance the layout position until the fragment is valid.
   while (!isFragmentValid(F)) {
@@ -84,9 +98,11 @@ uint64_t MCAsmLayout::getFragmentOffset(const MCFragment *F) const {
 static bool getLabelOffset(const MCAsmLayout &Layout, const MCSymbol &S,
                            bool ReportError, uint64_t &Val) {
   if (!S.getFragment()) {
-    if (ReportError)
+    if (ReportError) {
       report_fatal_error("unable to evaluate offset to undefined symbol '" +
                          S.getName() + "'");
+
+}
     return false;
   }
   Val = Layout.getFragmentOffset(S.getFragment()) + S.getOffset();
@@ -95,30 +111,38 @@ static bool getLabelOffset(const MCAsmLayout &Layout, const MCSymbol &S,
 
 static bool getSymbolOffsetImpl(const MCAsmLayout &Layout, const MCSymbol &S,
                                 bool ReportError, uint64_t &Val) {
-  if (!S.isVariable())
+  if (!S.isVariable()) {
     return getLabelOffset(Layout, S, ReportError, Val);
+
+}
 
   // If SD is a variable, evaluate it.
   MCValue Target;
-  if (!S.getVariableValue()->evaluateAsValue(Target, Layout))
+  if (!S.getVariableValue()->evaluateAsValue(Target, Layout)) {
     report_fatal_error("unable to evaluate offset for variable '" +
                        S.getName() + "'");
+
+}
 
   uint64_t Offset = Target.getConstant();
 
   const MCSymbolRefExpr *A = Target.getSymA();
   if (A) {
     uint64_t ValA;
-    if (!getLabelOffset(Layout, A->getSymbol(), ReportError, ValA))
+    if (!getLabelOffset(Layout, A->getSymbol(), ReportError, ValA)) {
       return false;
+
+}
     Offset += ValA;
   }
 
   const MCSymbolRefExpr *B = Target.getSymB();
   if (B) {
     uint64_t ValB;
-    if (!getLabelOffset(Layout, B->getSymbol(), ReportError, ValB))
+    if (!getLabelOffset(Layout, B->getSymbol(), ReportError, ValB)) {
       return false;
+
+}
     Offset -= ValB;
   }
 
@@ -137,8 +161,10 @@ uint64_t MCAsmLayout::getSymbolOffset(const MCSymbol &S) const {
 }
 
 const MCSymbol *MCAsmLayout::getBaseSymbol(const MCSymbol &Symbol) const {
-  if (!Symbol.isVariable())
+  if (!Symbol.isVariable()) {
     return &Symbol;
+
+}
 
   const MCExpr *Expr = Symbol.getVariableValue();
   MCValue Value;
@@ -157,8 +183,10 @@ const MCSymbol *MCAsmLayout::getBaseSymbol(const MCSymbol &Symbol) const {
   }
 
   const MCSymbolRefExpr *A = Value.getSymA();
-  if (!A)
+  if (!A) {
     return nullptr;
+
+}
 
   const MCSymbol &ASym = A->getSymbol();
   const MCAssembler &Asm = getAssembler();
@@ -180,8 +208,10 @@ uint64_t MCAsmLayout::getSectionAddressSize(const MCSection *Sec) const {
 
 uint64_t MCAsmLayout::getSectionFileSize(const MCSection *Sec) const {
   // Virtual sections have no file size.
-  if (Sec->isVirtualSection())
+  if (Sec->isVirtualSection()) {
     return 0;
+
+}
 
   // Otherwise, the file size is the same as the address space size.
   return getSectionAddressSize(Sec);
@@ -215,17 +245,19 @@ uint64_t llvm::computeBundlePadding(const MCAssembler &Assembler,
     //
     // Note: this code could be made shorter with some modulo trickery, but it's
     // intentionally kept in its more explicit form for simplicity.
-    if (EndOfFragment == BundleSize)
+    if (EndOfFragment == BundleSize) {
       return 0;
-    else if (EndOfFragment < BundleSize)
+    } else if (EndOfFragment < BundleSize) {
       return BundleSize - EndOfFragment;
-    else { // EndOfFragment > BundleSize
+    } else { // EndOfFragment > BundleSize
       return 2 * BundleSize - EndOfFragment;
     }
-  } else if (OffsetInBundle > 0 && EndOfFragment > BundleSize)
+  } else if (OffsetInBundle > 0 && EndOfFragment > BundleSize) {
     return BundleSize - OffsetInBundle;
-  else
+  } else {
     return 0;
+
+}
 }
 
 /* *** */
@@ -236,8 +268,10 @@ MCFragment::MCFragment(FragmentType Kind, bool HasInstructions,
                        MCSection *Parent)
     : Parent(Parent), Atom(nullptr), Offset(~UINT64_C(0)), LayoutOrder(0),
       Kind(Kind), HasInstructions(HasInstructions) {
-  if (Parent && !isa<MCDummyFragment>(*this))
+  if (Parent && !isa<MCDummyFragment>(*this)) {
     Parent->getFragmentList().push_back(this);
+
+}
 }
 
 void MCFragment::destroy() {

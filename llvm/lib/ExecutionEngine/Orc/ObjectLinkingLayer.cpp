@@ -32,8 +32,10 @@ public:
   ~ObjectLinkingLayerJITLinkContext() {
     // If there is an object buffer return function then use it to
     // return ownership of the buffer.
-    if (Layer.ReturnObjectBuffer)
+    if (Layer.ReturnObjectBuffer) {
       Layer.ReturnObjectBuffer(std::move(ObjBuffer));
+
+}
   }
 
   JITLinkMemoryManager &getMemoryManager() override { return *Layer.MemMgr; }
@@ -74,12 +76,14 @@ public:
     auto OnResolve = [this, LookupContinuation = std::move(LC)](
                          Expected<SymbolMap> Result) mutable {
       auto Main = Layer.getExecutionSession().intern("_main");
-      if (!Result)
+      if (!Result) {
         LookupContinuation->run(Result.takeError());
-      else {
+      } else {
         AsyncLookupResult LR;
-        for (auto &KV : *Result)
+        for (auto &KV : *Result) {
           LR[*KV.first] = KV.second;
+
+}
         LookupContinuation->run(std::move(LR));
       }
     };
@@ -104,15 +108,19 @@ public:
     bool AutoClaim = Layer.AutoClaimObjectSymbols;
 
     SymbolMap InternedResult;
-    for (auto *Sym : G.defined_symbols())
+    for (auto *Sym : G.defined_symbols()) {
       if (Sym->hasName() && Sym->getScope() != Scope::Local) {
         auto InternedName = ES.intern(Sym->getName());
         JITSymbolFlags Flags;
 
-        if (Sym->isCallable())
+        if (Sym->isCallable()) {
           Flags |= JITSymbolFlags::Callable;
-        if (Sym->getScope() == Scope::Default)
+
+}
+        if (Sym->getScope() == Scope::Default) {
           Flags |= JITSymbolFlags::Exported;
+
+}
 
         InternedResult[InternedName] =
             JITEvaluatedSymbol(Sym->getAddress(), Flags);
@@ -123,15 +131,21 @@ public:
         }
       }
 
-    for (auto *Sym : G.absolute_symbols())
+}
+
+    for (auto *Sym : G.absolute_symbols()) {
       if (Sym->hasName()) {
         auto InternedName = ES.intern(Sym->getName());
         JITSymbolFlags Flags;
         Flags |= JITSymbolFlags::Absolute;
-        if (Sym->isCallable())
+        if (Sym->isCallable()) {
           Flags |= JITSymbolFlags::Callable;
-        if (Sym->getLinkage() == Linkage::Weak)
+
+}
+        if (Sym->getLinkage() == Linkage::Weak) {
           Flags |= JITSymbolFlags::Weak;
+
+}
         InternedResult[InternedName] =
             JITEvaluatedSymbol(Sym->getAddress(), Flags);
         if (AutoClaim && !MR.getSymbols().count(InternedName)) {
@@ -141,12 +155,20 @@ public:
         }
       }
 
-    if (!ExtraSymbolsToClaim.empty())
-      if (auto Err = MR.defineMaterializing(ExtraSymbolsToClaim))
+}
+
+    if (!ExtraSymbolsToClaim.empty()) {
+      if (auto Err = MR.defineMaterializing(ExtraSymbolsToClaim)) {
         return notifyFailed(std::move(Err));
 
-    if (const auto &InitSym = MR.getInitializerSymbol())
+}
+
+}
+
+    if (const auto &InitSym = MR.getInitializerSymbol()) {
       InternedResult[InitSym] = JITEvaluatedSymbol();
+
+}
 
     {
       // Check that InternedResult matches up with MR.getSymbols().
@@ -154,9 +176,13 @@ public:
 
       if (InternedResult.size() > MR.getSymbols().size()) {
         SymbolNameVector ExtraSymbols;
-        for (auto &KV : InternedResult)
-          if (!MR.getSymbols().count(KV.first))
+        for (auto &KV : InternedResult) {
+          if (!MR.getSymbols().count(KV.first)) {
             ExtraSymbols.push_back(KV.first);
+
+}
+
+}
         ES.reportError(
           make_error<UnexpectedSymbolDefinitions>(G.getName(),
                                                   std::move(ExtraSymbols)));
@@ -165,9 +191,13 @@ public:
       }
 
       SymbolNameVector MissingSymbols;
-      for (auto &KV : MR.getSymbols())
-        if (!InternedResult.count(KV.first))
+      for (auto &KV : MR.getSymbols()) {
+        if (!InternedResult.count(KV.first)) {
           MissingSymbols.push_back(KV.first);
+
+}
+
+}
 
       if (!MissingSymbols.empty()) {
         ES.reportError(
@@ -227,26 +257,38 @@ private:
 
   Error externalizeWeakAndCommonSymbols(LinkGraph &G) {
     auto &ES = Layer.getExecutionSession();
-    for (auto *Sym : G.defined_symbols())
+    for (auto *Sym : G.defined_symbols()) {
       if (Sym->hasName() && Sym->getLinkage() == Linkage::Weak) {
-        if (!MR.getSymbols().count(ES.intern(Sym->getName())))
+        if (!MR.getSymbols().count(ES.intern(Sym->getName()))) {
           G.makeExternal(*Sym);
+
+}
       }
 
-    for (auto *Sym : G.absolute_symbols())
+}
+
+    for (auto *Sym : G.absolute_symbols()) {
       if (Sym->hasName() && Sym->getLinkage() == Linkage::Weak) {
-        if (!MR.getSymbols().count(ES.intern(Sym->getName())))
+        if (!MR.getSymbols().count(ES.intern(Sym->getName()))) {
           G.makeExternal(*Sym);
+
+}
       }
+
+}
 
     return Error::success();
   }
 
   Error markResponsibilitySymbolsLive(LinkGraph &G) const {
     auto &ES = Layer.getExecutionSession();
-    for (auto *Sym : G.defined_symbols())
-      if (Sym->hasName() && MR.getSymbols().count(ES.intern(Sym->getName())))
+    for (auto *Sym : G.defined_symbols()) {
+      if (Sym->hasName() && MR.getSymbols().count(ES.intern(Sym->getName()))) {
         Sym->setLive(true);
+
+}
+
+}
     return Error::success();
   }
 
@@ -258,8 +300,10 @@ private:
     for (auto *Sym : G.defined_symbols()) {
 
       // Skip local symbols: we do not track dependencies for these.
-      if (Sym->getScope() == Scope::Local)
+      if (Sym->getScope() == Scope::Local) {
         continue;
+
+}
       assert(Sym->hasName() &&
              "Defined non-local jitlink::Symbol should have a name");
 
@@ -270,37 +314,51 @@ private:
         auto &TargetSym = E.getTarget();
 
         if (TargetSym.getScope() != Scope::Local) {
-          if (TargetSym.isExternal())
+          if (TargetSym.isExternal()) {
             ExternalSymDeps.insert(ES.intern(TargetSym.getName()));
-          else if (&TargetSym != Sym)
+          } else if (&TargetSym != Sym) {
             InternalSymDeps.insert(ES.intern(TargetSym.getName()));
+
+}
         } else {
           assert(TargetSym.isDefined() &&
                  "local symbols must be defined");
           auto I = LocalDeps.find(&TargetSym);
           if (I != LocalDeps.end()) {
-            for (auto &S : I->second.External)
+            for (auto &S : I->second.External) {
               ExternalSymDeps.insert(S);
-            for (auto &S : I->second.Internal)
+
+}
+            for (auto &S : I->second.Internal) {
               InternalSymDeps.insert(S);
+
+}
           }
         }
       }
 
-      if (ExternalSymDeps.empty() && InternalSymDeps.empty())
+      if (ExternalSymDeps.empty() && InternalSymDeps.empty()) {
         continue;
 
+}
+
       auto SymName = ES.intern(Sym->getName());
-      if (!ExternalSymDeps.empty())
+      if (!ExternalSymDeps.empty()) {
         ExternalNamedSymbolDeps[SymName] = std::move(ExternalSymDeps);
-      if (!InternalSymDeps.empty())
+
+}
+      if (!InternalSymDeps.empty()) {
         InternalNamedSymbolDeps[SymName] = std::move(InternalSymDeps);
+
+}
     }
 
     for (auto &P : Layer.Plugins) {
       auto SyntheticLocalDeps = P->getSyntheticSymbolLocalDependencies(MR);
-      if (SyntheticLocalDeps.empty())
+      if (SyntheticLocalDeps.empty()) {
         continue;
+
+}
 
       for (auto &KV : SyntheticLocalDeps) {
         auto &Name = KV.first;
@@ -309,12 +367,18 @@ private:
           assert(Local->getScope() == Scope::Local &&
                  "Dependence on non-local symbol");
           auto LocalNamedDepsItr = LocalDeps.find(Local);
-          if (LocalNamedDepsItr == LocalDeps.end())
+          if (LocalNamedDepsItr == LocalDeps.end()) {
             continue;
-          for (auto &S : LocalNamedDepsItr->second.Internal)
+
+}
+          for (auto &S : LocalNamedDepsItr->second.Internal) {
             InternalNamedSymbolDeps[Name].insert(S);
-          for (auto &S : LocalNamedDepsItr->second.External)
+
+}
+          for (auto &S : LocalNamedDepsItr->second.External) {
             ExternalNamedSymbolDeps[Name].insert(S);
+
+}
         }
       }
     }
@@ -337,25 +401,29 @@ private:
       DenseSet<Symbol *> LocalDeps;
     };
     std::vector<WorklistEntry> Worklist;
-    for (auto *Sym : G.defined_symbols())
+    for (auto *Sym : G.defined_symbols()) {
       if (Sym->getScope() == Scope::Local) {
         auto &SymNamedDeps = DepMap[Sym];
         DenseSet<Symbol *> LocalDeps;
 
         for (auto &E : Sym->getBlock().edges()) {
           auto &TargetSym = E.getTarget();
-          if (TargetSym.getScope() != Scope::Local)
+          if (TargetSym.getScope() != Scope::Local) {
             SymNamedDeps.insert(&TargetSym);
-          else {
+          } else {
             assert(TargetSym.isDefined() &&
                    "local symbols must be defined");
             LocalDeps.insert(&TargetSym);
           }
         }
 
-        if (!LocalDeps.empty())
+        if (!LocalDeps.empty()) {
           Worklist.push_back(WorklistEntry(Sym, std::move(LocalDeps)));
+
+}
       }
+
+}
 
     // Loop over all local symbols with local dependencies, propagating
     // their respective non-local dependencies. Iterate until we hit a stable
@@ -370,9 +438,13 @@ private:
 
         for (auto *TargetSym : LocalDeps) {
           auto I = DepMap.find(TargetSym);
-          if (I != DepMap.end())
-            for (const auto &S : I->second)
+          if (I != DepMap.end()) {
+            for (const auto &S : I->second) {
               Changed |= NamedDeps.insert(S).second;
+
+}
+
+}
         }
       }
     } while (Changed);
@@ -389,10 +461,12 @@ private:
       for (auto *Named : KV.second) {
         assert(Named->getScope() != Scope::Local &&
                "DepMap values should all be non-local symbol sets");
-        if (Named->isExternal())
+        if (Named->isExternal()) {
           LocalNamedDeps.External.insert(ES.intern(Named->getName()));
-        else
+        } else {
           LocalNamedDeps.Internal.insert(ES.intern(Named->getName()));
+
+}
       }
     }
 
@@ -410,12 +484,18 @@ private:
         const SymbolNameSet &Symbols = QueryDepsEntry.second;
         auto &DepsForJD = SymbolDeps[&SourceJD];
 
-        for (const auto &S : Symbols)
-          if (NameDeps.count(S))
+        for (const auto &S : Symbols) {
+          if (NameDeps.count(S)) {
             DepsForJD.insert(S);
 
-        if (DepsForJD.empty())
+}
+
+}
+
+        if (DepsForJD.empty()) {
           SymbolDeps.erase(&SourceJD);
+
+}
       }
 
       MR.addDependencies(Name, SymbolDeps);
@@ -436,8 +516,10 @@ ObjectLinkingLayer::ObjectLinkingLayer(
     : ObjectLayer(ES), MemMgr(std::move(MemMgr)) {}
 
 ObjectLinkingLayer::~ObjectLinkingLayer() {
-  if (auto Err = removeAllModules())
+  if (auto Err = removeAllModules()) {
     getExecutionSession().reportError(std::move(Err));
+
+}
 }
 
 void ObjectLinkingLayer::emit(MaterializationResponsibility R,
@@ -450,23 +532,31 @@ void ObjectLinkingLayer::emit(MaterializationResponsibility R,
 void ObjectLinkingLayer::modifyPassConfig(MaterializationResponsibility &MR,
                                           const Triple &TT,
                                           PassConfiguration &PassConfig) {
-  for (auto &P : Plugins)
+  for (auto &P : Plugins) {
     P->modifyPassConfig(MR, TT, PassConfig);
+
+}
 }
 
 void ObjectLinkingLayer::notifyLoaded(MaterializationResponsibility &MR) {
-  for (auto &P : Plugins)
+  for (auto &P : Plugins) {
     P->notifyLoaded(MR);
+
+}
 }
 
 Error ObjectLinkingLayer::notifyEmitted(MaterializationResponsibility &MR,
                                         AllocPtr Alloc) {
   Error Err = Error::success();
-  for (auto &P : Plugins)
+  for (auto &P : Plugins) {
     Err = joinErrors(std::move(Err), P->notifyEmitted(MR));
 
-  if (Err)
+}
+
+  if (Err) {
     return Err;
+
+}
 
   {
     std::lock_guard<std::mutex> Lock(LayerMutex);
@@ -479,8 +569,10 @@ Error ObjectLinkingLayer::notifyEmitted(MaterializationResponsibility &MR,
 Error ObjectLinkingLayer::removeModule(VModuleKey K) {
   Error Err = Error::success();
 
-  for (auto &P : Plugins)
+  for (auto &P : Plugins) {
     Err = joinErrors(std::move(Err), P->notifyRemovingModule(K));
+
+}
 
   AllocPtr Alloc;
 
@@ -500,16 +592,20 @@ Error ObjectLinkingLayer::removeAllModules() {
 
   Error Err = Error::success();
 
-  for (auto &P : Plugins)
+  for (auto &P : Plugins) {
     Err = joinErrors(std::move(Err), P->notifyRemovingAllModules());
+
+}
 
   std::vector<AllocPtr> Allocs;
   {
     std::lock_guard<std::mutex> Lock(LayerMutex);
     Allocs = std::move(UntrackedAllocs);
 
-    for (auto &KV : TrackedAllocs)
+    for (auto &KV : TrackedAllocs) {
       Allocs.push_back(std::move(KV.second));
+
+}
 
     TrackedAllocs.clear();
   }
@@ -546,18 +642,22 @@ Error EHFrameRegistrationPlugin::notifyEmitted(
   std::lock_guard<std::mutex> Lock(EHFramePluginMutex);
 
   auto EHFrameRangeItr = InProcessLinks.find(&MR);
-  if (EHFrameRangeItr == InProcessLinks.end())
+  if (EHFrameRangeItr == InProcessLinks.end()) {
     return Error::success();
+
+}
 
   auto EHFrameRange = EHFrameRangeItr->second;
   assert(EHFrameRange.Addr &&
          "eh-frame addr to register can not be null");
 
   InProcessLinks.erase(EHFrameRangeItr);
-  if (auto Key = MR.getVModuleKey())
+  if (auto Key = MR.getVModuleKey()) {
     TrackedEHFrameRanges[Key] = EHFrameRange;
-  else
+  } else {
     UntrackedEHFrameRanges.push_back(EHFrameRange);
+
+}
 
   return Registrar.registerEHFrames(EHFrameRange.Addr, EHFrameRange.Size);
 }
@@ -566,8 +666,10 @@ Error EHFrameRegistrationPlugin::notifyRemovingModule(VModuleKey K) {
   std::lock_guard<std::mutex> Lock(EHFramePluginMutex);
 
   auto EHFrameRangeItr = TrackedEHFrameRanges.find(K);
-  if (EHFrameRangeItr == TrackedEHFrameRanges.end())
+  if (EHFrameRangeItr == TrackedEHFrameRanges.end()) {
     return Error::success();
+
+}
 
   auto EHFrameRange = EHFrameRangeItr->second;
   assert(EHFrameRange.Addr && "Tracked eh-frame range must not be null");
@@ -584,8 +686,10 @@ Error EHFrameRegistrationPlugin::notifyRemovingAllModules() {
     std::move(UntrackedEHFrameRanges);
   EHFrameRanges.reserve(EHFrameRanges.size() + TrackedEHFrameRanges.size());
 
-  for (auto &KV : TrackedEHFrameRanges)
+  for (auto &KV : TrackedEHFrameRanges) {
     EHFrameRanges.push_back(KV.second);
+
+}
 
   TrackedEHFrameRanges.clear();
 

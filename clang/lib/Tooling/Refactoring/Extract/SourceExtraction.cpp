@@ -27,23 +27,39 @@ bool isSemicolonAtLocation(SourceLocation TokenLoc, const SourceManager &SM,
 
 /// Returns true if there should be a semicolon after the given statement.
 bool isSemicolonRequiredAfter(const Stmt *S) {
-  if (isa<CompoundStmt>(S))
+  if (isa<CompoundStmt>(S)) {
     return false;
-  if (const auto *If = dyn_cast<IfStmt>(S))
+
+}
+  if (const auto *If = dyn_cast<IfStmt>(S)) {
     return isSemicolonRequiredAfter(If->getElse() ? If->getElse()
                                                   : If->getThen());
-  if (const auto *While = dyn_cast<WhileStmt>(S))
+
+}
+  if (const auto *While = dyn_cast<WhileStmt>(S)) {
     return isSemicolonRequiredAfter(While->getBody());
-  if (const auto *For = dyn_cast<ForStmt>(S))
+
+}
+  if (const auto *For = dyn_cast<ForStmt>(S)) {
     return isSemicolonRequiredAfter(For->getBody());
-  if (const auto *CXXFor = dyn_cast<CXXForRangeStmt>(S))
+
+}
+  if (const auto *CXXFor = dyn_cast<CXXForRangeStmt>(S)) {
     return isSemicolonRequiredAfter(CXXFor->getBody());
-  if (const auto *ObjCFor = dyn_cast<ObjCForCollectionStmt>(S))
+
+}
+  if (const auto *ObjCFor = dyn_cast<ObjCForCollectionStmt>(S)) {
     return isSemicolonRequiredAfter(ObjCFor->getBody());
-  if(const auto *Switch = dyn_cast<SwitchStmt>(S))
+
+}
+  if(const auto *Switch = dyn_cast<SwitchStmt>(S)) {
     return isSemicolonRequiredAfter(Switch->getBody());
-  if(const auto *Case = dyn_cast<SwitchCase>(S))
+
+}
+  if(const auto *Case = dyn_cast<SwitchCase>(S)) {
     return isSemicolonRequiredAfter(Case->getSubStmt());
+
+}
   switch (S->getStmtClass()) {
   case Stmt::DeclStmtClass:
   case Stmt::CXXTryStmtClass:
@@ -82,21 +98,27 @@ ExtractionSemicolonPolicy::compute(const Stmt *S, SourceRange &ExtractedRange,
   /// The extracted expression should be terminated with a ';'. The call to
   /// the extracted function will replace this expression, so it won't need
   /// a terminating ';'.
-  if (isa<Expr>(S))
+  if (isa<Expr>(S)) {
     return neededInExtractedFunction();
+
+}
 
   /// Some statements don't need to be terminated with ';'. The call to the
   /// extracted function will be a standalone statement, so it should be
   /// terminated with a ';'.
   bool NeedsSemi = isSemicolonRequiredAfter(S);
-  if (!NeedsSemi)
+  if (!NeedsSemi) {
     return neededInOriginalFunction();
+
+}
 
   /// Some statements might end at ';'. The extraction will move that ';', so
   /// the call to the extracted function should be terminated with a ';'.
   SourceLocation End = ExtractedRange.getEnd();
-  if (isSemicolonAtLocation(End, SM, LangOpts))
+  if (isSemicolonAtLocation(End, SM, LangOpts)) {
     return neededInOriginalFunction();
+
+}
 
   /// Other statements should generally have a trailing ';'. We can try to find
   /// it and move it together it with the extracted code.

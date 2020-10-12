@@ -28,15 +28,21 @@ SmallVector<const BasicBlock *, 8> findBBwithCalls(const Function &F,
   SmallVector<const BasicBlock *, 8> BBs;
 
   auto findCallInst = [&IndirectCall](const Instruction &I) {
-    if (auto Call = dyn_cast<CallBase>(&I))
+    if (auto Call = dyn_cast<CallBase>(&I)) {
       return Call->isIndirectCall() ? IndirectCall : true;
-    else
+    } else {
       return false;
+
+}
   };
-  for (auto &BB : F)
+  for (auto &BB : F) {
     if (findCallInst(*BB.getTerminator()) ||
-        llvm::any_of(BB.instructionsWithoutDebug(), findCallInst))
+        llvm::any_of(BB.instructionsWithoutDebug(), findCallInst)) {
       BBs.emplace_back(&BB);
+
+}
+
+}
 
   return BBs;
 }
@@ -55,15 +61,23 @@ void SpeculateQuery::findCalles(const BasicBlock *BB,
 
   auto getCalledFunction = [&CallesNames](const CallBase *Call) {
     auto CalledValue = Call->getCalledOperand()->stripPointerCasts();
-    if (auto DirectCall = dyn_cast<Function>(CalledValue))
+    if (auto DirectCall = dyn_cast<Function>(CalledValue)) {
       CallesNames.insert(DirectCall->getName());
+
+}
   };
-  for (auto &I : BB->instructionsWithoutDebug())
-    if (auto CI = dyn_cast<CallInst>(&I))
+  for (auto &I : BB->instructionsWithoutDebug()) {
+    if (auto CI = dyn_cast<CallInst>(&I)) {
       getCalledFunction(CI);
 
-  if (auto II = dyn_cast<InvokeInst>(BB->getTerminator()))
+}
+
+}
+
+  if (auto II = dyn_cast<InvokeInst>(BB->getTerminator())) {
     getCalledFunction(II);
+
+}
 }
 
 bool SpeculateQuery::isStraightLine(const Function &F) {
@@ -76,13 +90,15 @@ bool SpeculateQuery::isStraightLine(const Function &F) {
 
 size_t BlockFreqQuery::numBBToGet(size_t numBB) {
   // small CFG
-  if (numBB < 4)
+  if (numBB < 4) {
     return numBB;
   // mid-size CFG
-  else if (numBB < 20)
+  } else if (numBB < 20) {
     return (numBB / 2);
-  else
+  } else {
     return (numBB / 2) + (numBB / 4);
+
+}
 }
 
 BlockFreqQuery::ResultTy BlockFreqQuery::operator()(Function &F) {
@@ -96,13 +112,17 @@ BlockFreqQuery::ResultTy BlockFreqQuery::operator()(Function &F) {
 
   auto IBBs = findBBwithCalls(F);
 
-  if (IBBs.empty())
+  if (IBBs.empty()) {
     return None;
+
+}
 
   auto &BFI = FAM.getResult<BlockFrequencyAnalysis>(F);
 
-  for (const auto I : IBBs)
+  for (const auto I : IBBs) {
     BBFreqs.push_back({I, BFI.getBlockFreq(I).getFrequency()});
+
+}
 
   assert(IBBs.size() == BBFreqs.size() && "BB Count Mismatch");
 
@@ -115,8 +135,10 @@ BlockFreqQuery::ResultTy BlockFreqQuery::operator()(Function &F) {
   // ignoring number of direct calls in a BB
   auto Topk = numBBToGet(BBFreqs.size());
 
-  for (size_t i = 0; i < Topk; i++)
+  for (size_t i = 0; i < Topk; i++) {
     findCalles(BBFreqs[i].first, Calles);
+
+}
 
   assert(!Calles.empty() && "Running Analysis on Function with no calls?");
 
@@ -127,8 +149,10 @@ BlockFreqQuery::ResultTy BlockFreqQuery::operator()(Function &F) {
 
 // SequenceBBQuery Implementation
 std::size_t SequenceBBQuery::getHottestBlocks(std::size_t TotalBlocks) {
-  if (TotalBlocks == 1)
+  if (TotalBlocks == 1) {
     return TotalBlocks;
+
+}
   return TotalBlocks / 2;
 }
 
@@ -137,9 +161,13 @@ SequenceBBQuery::BlockListTy
 SequenceBBQuery::rearrangeBB(const Function &F, const BlockListTy &BBList) {
   BlockListTy RearrangedBBSet;
 
-  for (auto &Block : F.getBasicBlockList())
-    if (llvm::is_contained(BBList, &Block))
+  for (auto &Block : F.getBasicBlockList()) {
+    if (llvm::is_contained(BBList, &Block)) {
       RearrangedBBSet.push_back(&Block);
+
+}
+
+}
 
   assert(RearrangedBBSet.size() == BBList.size() &&
          "BasicBlock missing while rearranging?");
@@ -153,16 +181,20 @@ void SequenceBBQuery::traverseToEntryBlock(const BasicBlock *AtBB,
                                            VisitedBlocksInfoTy &VisitedBlocks) {
   auto Itr = VisitedBlocks.find(AtBB);
   if (Itr != VisitedBlocks.end()) { // already visited.
-    if (!Itr->second.Upward)
+    if (!Itr->second.Upward) {
       return;
+
+}
     Itr->second.Upward = false;
   } else {
     // Create hint for newly discoverd blocks.
     WalkDirection BlockHint;
     BlockHint.Upward = false;
     // FIXME: Expensive Check
-    if (llvm::is_contained(CallerBlocks, AtBB))
+    if (llvm::is_contained(CallerBlocks, AtBB)) {
       BlockHint.CallerBlock = true;
+
+}
     VisitedBlocks.insert(std::make_pair(AtBB, BlockHint));
   }
 
@@ -170,23 +202,33 @@ void SequenceBBQuery::traverseToEntryBlock(const BasicBlock *AtBB,
   // Move this check to top, when we have code setup to launch speculative
   // compiles for function in entry BB, this triggers the speculative compiles
   // before running the program.
-  if (PIt == EIt) // No Preds.
+  if (PIt == EIt) { // No Preds.
     return;
+
+}
 
   DenseSet<const BasicBlock *> PredSkipNodes;
 
   // Since we are checking for predecessor's backedges, this Block
   // occurs in second position.
-  for (auto &I : BackEdgesInfo)
-    if (I.second == AtBB)
+  for (auto &I : BackEdgesInfo) {
+    if (I.second == AtBB) {
       PredSkipNodes.insert(I.first);
 
+}
+
+}
+
   // Skip predecessors which source of back-edges.
-  for (; PIt != EIt; ++PIt)
+  for (; PIt != EIt; ++PIt) {
     // checking EdgeHotness is cheaper
-    if (BPI->isEdgeHot(*PIt, AtBB) && !PredSkipNodes.count(*PIt))
+    if (BPI->isEdgeHot(*PIt, AtBB) && !PredSkipNodes.count(*PIt)) {
       traverseToEntryBlock(*PIt, CallerBlocks, BackEdgesInfo, BPI,
                            VisitedBlocks);
+
+}
+
+}
 }
 
 void SequenceBBQuery::traverseToExitBlock(const BasicBlock *AtBB,
@@ -196,36 +238,50 @@ void SequenceBBQuery::traverseToExitBlock(const BasicBlock *AtBB,
                                           VisitedBlocksInfoTy &VisitedBlocks) {
   auto Itr = VisitedBlocks.find(AtBB);
   if (Itr != VisitedBlocks.end()) { // already visited.
-    if (!Itr->second.Downward)
+    if (!Itr->second.Downward) {
       return;
+
+}
     Itr->second.Downward = false;
   } else {
     // Create hint for newly discoverd blocks.
     WalkDirection BlockHint;
     BlockHint.Downward = false;
     // FIXME: Expensive Check
-    if (llvm::is_contained(CallerBlocks, AtBB))
+    if (llvm::is_contained(CallerBlocks, AtBB)) {
       BlockHint.CallerBlock = true;
+
+}
     VisitedBlocks.insert(std::make_pair(AtBB, BlockHint));
   }
 
   succ_const_iterator PIt = succ_begin(AtBB), EIt = succ_end(AtBB);
-  if (PIt == EIt) // No succs.
+  if (PIt == EIt) { // No succs.
     return;
+
+}
 
   // If there are hot edges, then compute SuccSkipNodes.
   DenseSet<const BasicBlock *> SuccSkipNodes;
 
   // Since we are checking for successor's backedges, this Block
   // occurs in first position.
-  for (auto &I : BackEdgesInfo)
-    if (I.first == AtBB)
+  for (auto &I : BackEdgesInfo) {
+    if (I.first == AtBB) {
       SuccSkipNodes.insert(I.second);
 
-  for (; PIt != EIt; ++PIt)
-    if (BPI->isEdgeHot(AtBB, *PIt) && !SuccSkipNodes.count(*PIt))
+}
+
+}
+
+  for (; PIt != EIt; ++PIt) {
+    if (BPI->isEdgeHot(AtBB, *PIt) && !SuccSkipNodes.count(*PIt)) {
       traverseToExitBlock(*PIt, CallerBlocks, BackEdgesInfo, BPI,
                           VisitedBlocks);
+
+}
+
+}
 }
 
 // Get Block frequencies for blocks and take most frquently executed block,
@@ -246,8 +302,10 @@ SequenceBBQuery::queryCFG(Function &F, const BlockListTy &CallerBlocks) {
 
   llvm::FindFunctionBackedges(F, BackEdgesInfo);
 
-  for (const auto I : CallerBlocks)
+  for (const auto I : CallerBlocks) {
     BBFreqs.push_back({I, BFI.getBlockFreq(I).getFrequency()});
+
+}
 
   llvm::sort(BBFreqs, [](decltype(BBFreqs)::const_reference Bbf,
                          decltype(BBFreqs)::const_reference Bbs) {
@@ -273,9 +331,13 @@ SequenceBBQuery::queryCFG(Function &F, const BlockListTy &CallerBlocks) {
   }
 
   BlockListTy MinCallerBlocks;
-  for (auto &I : VisitedBlocks)
-    if (I.second.CallerBlock)
+  for (auto &I : VisitedBlocks) {
+    if (I.second.CallerBlock) {
       MinCallerBlocks.push_back(std::move(I.first));
+
+}
+
+}
 
   return rearrangeBB(F, MinCallerBlocks);
 }
@@ -288,16 +350,22 @@ SpeculateQuery::ResultTy SequenceBBQuery::operator()(Function &F) {
   BlockListTy CallerBlocks;
 
   CallerBlocks = findBBwithCalls(F);
-  if (CallerBlocks.empty())
+  if (CallerBlocks.empty()) {
     return None;
 
-  if (isStraightLine(F))
+}
+
+  if (isStraightLine(F)) {
     SequencedBlocks = rearrangeBB(F, CallerBlocks);
-  else
+  } else {
     SequencedBlocks = queryCFG(F, CallerBlocks);
 
-  for (auto BB : SequencedBlocks)
+}
+
+  for (auto BB : SequencedBlocks) {
     findCalles(BB, Calles);
+
+}
 
   CallerAndCalles.insert({F.getName(), std::move(Calles)});
   return CallerAndCalles;

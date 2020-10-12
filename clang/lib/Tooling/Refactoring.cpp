@@ -57,8 +57,10 @@ int RefactoringTool::runAndSave(FrontendActionFactory *ActionFactory) {
 bool RefactoringTool::applyAllReplacements(Rewriter &Rewrite) {
   bool Result = true;
   for (const auto &Entry : groupReplacementsByFile(
-           Rewrite.getSourceMgr().getFileManager(), FileToReplaces))
+           Rewrite.getSourceMgr().getFileManager(), FileToReplaces)) {
     Result = tooling::applyAllReplacements(Entry.second, Rewrite) && Result;
+
+}
   return Result;
 }
 
@@ -79,8 +81,10 @@ bool formatAndApplyAllReplacements(
     auto &CurReplaces = FileAndReplaces.second;
 
     const FileEntry *Entry = nullptr;
-    if (auto File = Files.getFile(FilePath))
+    if (auto File = Files.getFile(FilePath)) {
       Entry = *File;
+
+}
 
     FileID ID = SM.getOrCreateFileID(Entry, SrcMgr::C_User);
     StringRef Code = SM.getBufferData(ID);

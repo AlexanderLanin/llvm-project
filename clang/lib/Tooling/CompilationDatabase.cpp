@@ -71,8 +71,10 @@ CompilationDatabase::loadFromDirectory(StringRef BuildDirectory,
     std::string DatabaseErrorMessage;
     std::unique_ptr<CompilationDatabasePlugin> Plugin(It->instantiate());
     if (std::unique_ptr<CompilationDatabase> DB =
-            Plugin->loadFromDirectory(BuildDirectory, DatabaseErrorMessage))
+            Plugin->loadFromDirectory(BuildDirectory, DatabaseErrorMessage)) {
       return DB;
+
+}
     ErrorStream << It->getName() << ": " << DatabaseErrorMessage << "\n";
   }
   return nullptr;
@@ -87,8 +89,10 @@ findCompilationDatabaseFromDirectory(StringRef Directory,
     std::string LoadErrorMessage;
 
     if (std::unique_ptr<CompilationDatabase> DB =
-            CompilationDatabase::loadFromDirectory(Directory, LoadErrorMessage))
+            CompilationDatabase::loadFromDirectory(Directory, LoadErrorMessage)) {
       return DB;
+
+}
 
     if (!HasErrorMessage) {
       ErrorStream << "No compilation database found in " << Directory.str()
@@ -111,9 +115,11 @@ CompilationDatabase::autoDetectFromSource(StringRef SourceFile,
   std::unique_ptr<CompilationDatabase> DB =
       findCompilationDatabaseFromDirectory(Directory, ErrorMessage);
 
-  if (!DB)
+  if (!DB) {
     ErrorMessage = ("Could not auto-detect compilation database for file \"" +
                    SourceFile + "\"\n" + ErrorMessage).str();
+
+}
   return DB;
 }
 
@@ -125,9 +131,11 @@ CompilationDatabase::autoDetectFromDirectory(StringRef SourceDir,
   std::unique_ptr<CompilationDatabase> DB =
       findCompilationDatabaseFromDirectory(AbsolutePath, ErrorMessage);
 
-  if (!DB)
+  if (!DB) {
     ErrorMessage = ("Could not auto-detect compilation database from directory \"" +
                    SourceDir + "\"\n" + ErrorMessage).str();
+
+}
   return DB;
 }
 
@@ -173,8 +181,10 @@ private:
       break;
     }
 
-    for (const driver::Action *AI : A->inputs())
+    for (const driver::Action *AI : A->inputs()) {
       runImpl(AI, CollectChildren);
+
+}
   }
 };
 
@@ -207,9 +217,13 @@ struct MatchesAny {
   MatchesAny(ArrayRef<std::string> Arr) : Arr(Arr) {}
 
   bool operator() (StringRef S) {
-    for (const std::string *I = Arr.begin(), *E = Arr.end(); I != E; ++I)
-      if (*I == S)
+    for (const std::string *I = Arr.begin(), *E = Arr.end(); I != E; ++I) {
+      if (*I == S) {
         return true;
+
+}
+
+}
     return false;
   }
 
@@ -299,8 +313,10 @@ static bool stripPositionalArgs(std::vector<const char *> Args,
 
   const std::unique_ptr<driver::Compilation> Compilation(
       NewDriver->BuildCompilation(Args));
-  if (!Compilation)
+  if (!Compilation) {
     return false;
+
+}
 
   const driver::JobList &Jobs = Compilation->getJobs();
 
@@ -345,17 +361,23 @@ FixedCompilationDatabase::loadFromCommandLine(int &Argc,
                                               std::string &ErrorMsg,
                                               Twine Directory) {
   ErrorMsg.clear();
-  if (Argc == 0)
+  if (Argc == 0) {
     return nullptr;
+
+}
   const char *const *DoubleDash = std::find(Argv, Argv + Argc, StringRef("--"));
-  if (DoubleDash == Argv + Argc)
+  if (DoubleDash == Argv + Argc) {
     return nullptr;
+
+}
   std::vector<const char *> CommandLine(DoubleDash + 1, Argv + Argc);
   Argc = DoubleDash - Argv;
 
   std::vector<std::string> StrippedArgs;
-  if (!stripPositionalArgs(CommandLine, StrippedArgs, ErrorMsg))
+  if (!stripPositionalArgs(CommandLine, StrippedArgs, ErrorMsg)) {
     return nullptr;
+
+}
   return std::make_unique<FixedCompilationDatabase>(Directory, StrippedArgs);
 }
 

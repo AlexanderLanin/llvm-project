@@ -22,8 +22,10 @@ TEST(DWARFDataExtractorTest, getInitialLength) {
     uint64_t Length;
     dwarf::DwarfFormat Format;
     std::tie(Length, Format) = Data.getInitialLength(C);
-    if (C)
+    if (C) {
       return std::make_tuple(Length, Format, C.tell());
+
+}
 
     EXPECT_EQ(Length, 0u);
     EXPECT_EQ(Format, dwarf::DWARF32);

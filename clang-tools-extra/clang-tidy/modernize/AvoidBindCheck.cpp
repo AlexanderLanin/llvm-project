@@ -103,23 +103,31 @@ struct LambdaProperties {
 } // end namespace
 
 static const Expr *ignoreTemporariesAndPointers(const Expr *E) {
-  if (const auto *T = dyn_cast<UnaryOperator>(E))
+  if (const auto *T = dyn_cast<UnaryOperator>(E)) {
     return ignoreTemporariesAndPointers(T->getSubExpr());
 
+}
+
   const Expr *F = E->IgnoreImplicit();
-  if (E != F)
+  if (E != F) {
     return ignoreTemporariesAndPointers(F);
+
+}
 
   return E;
 }
 
 static const Expr *ignoreTemporariesAndConstructors(const Expr *E) {
-  if (const auto *T = dyn_cast<CXXConstructExpr>(E))
+  if (const auto *T = dyn_cast<CXXConstructExpr>(E)) {
     return ignoreTemporariesAndConstructors(T->getArg(0));
 
+}
+
   const Expr *F = E->IgnoreImplicit();
-  if (E != F)
+  if (E != F) {
     return ignoreTemporariesAndPointers(F);
+
+}
 
   return E;
 }
@@ -133,11 +141,15 @@ static StringRef getSourceTextForExpr(const MatchFinder::MatchResult &Result,
 
 static bool isCallExprNamed(const Expr *E, StringRef Name) {
   const auto *CE = dyn_cast<CallExpr>(E->IgnoreImplicit());
-  if (!CE)
+  if (!CE) {
     return false;
+
+}
   const auto *ND = dyn_cast<NamedDecl>(CE->getCalleeDecl());
-  if (!ND)
+  if (!ND) {
     return false;
+
+}
   return ND->getQualifiedNameAsString() == Name;
 }
 
@@ -163,11 +175,15 @@ static bool anyDescendantIsLocal(const Stmt *Statement) {
   if (const auto *DeclRef = dyn_cast<DeclRefExpr>(Statement)) {
     const ValueDecl *Decl = DeclRef->getDecl();
     if (const auto *Var = dyn_cast_or_null<VarDecl>(Decl)) {
-      if (Var->isLocalVarDeclOrParm())
+      if (Var->isLocalVarDeclOrParm()) {
         return true;
+
+}
     }
-  } else if (isa<CXXThisExpr>(Statement))
+  } else if (isa<CXXThisExpr>(Statement)) {
     return true;
+
+}
 
   return any_of(Statement->children(), anyDescendantIsLocal);
 }
@@ -175,18 +191,24 @@ static bool anyDescendantIsLocal(const Stmt *Statement) {
 static bool tryCaptureAsLocalVariable(const MatchFinder::MatchResult &Result,
                                       BindArgument &B, const Expr *E) {
   if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E)) {
-    if (const auto *CE = dyn_cast<CXXConstructExpr>(BTE->getSubExpr()))
+    if (const auto *CE = dyn_cast<CXXConstructExpr>(BTE->getSubExpr())) {
       return tryCaptureAsLocalVariable(Result, B, CE->getArg(0));
+
+}
     return false;
   }
 
   const auto *DRE = dyn_cast<DeclRefExpr>(E->IgnoreImplicit());
-  if (!DRE)
+  if (!DRE) {
     return false;
 
+}
+
   const auto *VD = dyn_cast<VarDecl>(DRE->getDecl());
-  if (!VD || !VD->isLocalVarDeclOrParm())
+  if (!VD || !VD->isLocalVarDeclOrParm()) {
     return false;
+
+}
 
   B.CM = CM_ByValue;
   B.UsageIdentifier = std::string(getSourceTextForExpr(Result, E));
@@ -197,8 +219,10 @@ static bool tryCaptureAsLocalVariable(const MatchFinder::MatchResult &Result,
 static bool tryCaptureAsMemberVariable(const MatchFinder::MatchResult &Result,
                                        BindArgument &B, const Expr *E) {
   if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E)) {
-    if (const auto *CE = dyn_cast<CXXConstructExpr>(BTE->getSubExpr()))
+    if (const auto *CE = dyn_cast<CXXConstructExpr>(BTE->getSubExpr())) {
       return tryCaptureAsMemberVariable(Result, B, CE->getArg(0));
+
+}
     return false;
   }
 
@@ -211,11 +235,15 @@ static bool tryCaptureAsMemberVariable(const MatchFinder::MatchResult &Result,
   }
 
   const auto *ME = dyn_cast<MemberExpr>(E);
-  if (!ME)
+  if (!ME) {
     return false;
 
-  if (!ME->isLValue() || !isa<FieldDecl>(ME->getMemberDecl()))
+}
+
+  if (!ME->isLValue() || !isa<FieldDecl>(ME->getMemberDecl())) {
     return false;
+
+}
 
   B.CM = CM_ByValue;
   B.UsageIdentifier = std::string(getSourceTextForExpr(Result, E));
@@ -239,16 +267,20 @@ buildBindArguments(const MatchFinder::MatchResult &Result,
     BindArgument &B = BindArguments.emplace_back();
 
     size_t ArgIndex = I - 1;
-    if (Callable.Type == CT_MemberFunction)
+    if (Callable.Type == CT_MemberFunction) {
       --ArgIndex;
+
+}
 
     bool IsObjectPtr = (I == 1 && Callable.Type == CT_MemberFunction);
     B.E = E;
     B.SourceTokens = getSourceTextForExpr(Result, E);
 
     if (!Callable.Decl || ArgIndex < Callable.Decl->getNumParams() ||
-        IsObjectPtr)
+        IsObjectPtr) {
       B.IsUsed = true;
+
+}
 
     SmallVector<StringRef, 2> Matches;
     if (MatchPlaceholder.match(B.SourceTokens, &Matches)) {
@@ -266,8 +298,10 @@ buildBindArguments(const MatchFinder::MatchResult &Result,
     }
 
     if (tryCaptureAsLocalVariable(Result, B, B.E) ||
-        tryCaptureAsMemberVariable(Result, B, B.E))
+        tryCaptureAsMemberVariable(Result, B, B.E)) {
       continue;
+
+}
 
     // If it's not something we recognize, capture it by init expression to be
     // safe.
@@ -287,9 +321,13 @@ buildBindArguments(const MatchFinder::MatchResult &Result,
 
 static int findPositionOfPlaceholderUse(ArrayRef<BindArgument> Args,
                                         size_t PlaceholderIndex) {
-  for (size_t I = 0; I < Args.size(); ++I)
-    if (Args[I].PlaceHolderIndex == PlaceholderIndex)
+  for (size_t I = 0; I < Args.size(); ++I) {
+    if (Args[I].PlaceHolderIndex == PlaceholderIndex) {
       return I;
+
+}
+
+}
 
   return -1;
 }
@@ -308,8 +346,10 @@ static void addPlaceholderArgs(const LambdaProperties &LP,
 
   // Placeholders (if present) have index 1 or greater.
   if (!PermissiveParameterList && (MaxPlaceholderIt == Args.end() ||
-                                   MaxPlaceholderIt->PlaceHolderIndex == 0))
+                                   MaxPlaceholderIt->PlaceHolderIndex == 0)) {
     return;
+
+}
 
   size_t PlaceholderCount = MaxPlaceholderIt->PlaceHolderIndex;
   Stream << "(";
@@ -319,12 +359,16 @@ static void addPlaceholderArgs(const LambdaProperties &LP,
 
     int ArgIndex = findPositionOfPlaceholderUse(Args, I);
 
-    if (ArgIndex != -1 && Args[ArgIndex].IsUsed)
+    if (ArgIndex != -1 && Args[ArgIndex].IsUsed) {
       Stream << " " << Args[ArgIndex].UsageIdentifier;
+
+}
     Delimiter = ", ";
   }
-  if (PermissiveParameterList)
+  if (PermissiveParameterList) {
     Stream << Delimiter << "auto && ...";
+
+}
   Stream << ")";
 }
 
@@ -337,10 +381,12 @@ static void addFunctionCallArgs(ArrayRef<BindArgument> Args,
 
     Stream << Delimiter;
 
-    if (B.Kind == BK_Placeholder || B.CM != CM_None)
+    if (B.Kind == BK_Placeholder || B.CM != CM_None) {
       Stream << B.UsageIdentifier;
-    else if (B.CM == CM_None)
+    } else if (B.CM == CM_None) {
       Stream << B.SourceTokens;
+
+}
 
     Delimiter = ", ";
   }
@@ -350,8 +396,10 @@ static bool isPlaceHolderIndexRepeated(const ArrayRef<BindArgument> Args) {
   llvm::SmallSet<size_t, 4> PlaceHolderIndices;
   for (const BindArgument &B : Args) {
     if (B.PlaceHolderIndex) {
-      if (!PlaceHolderIndices.insert(B.PlaceHolderIndex).second)
+      if (!PlaceHolderIndices.insert(B.PlaceHolderIndex).second) {
         return true;
+
+}
     }
   }
   return false;
@@ -364,11 +412,15 @@ findCandidateCallOperators(const CXXRecordDecl *RecordDecl, size_t NumArgs) {
   for (const clang::CXXMethodDecl *Method : RecordDecl->methods()) {
     OverloadedOperatorKind OOK = Method->getOverloadedOperator();
 
-    if (OOK != OverloadedOperatorKind::OO_Call)
+    if (OOK != OverloadedOperatorKind::OO_Call) {
       continue;
 
-    if (Method->getNumParams() > NumArgs)
+}
+
+    if (Method->getNumParams() > NumArgs) {
       continue;
+
+}
 
     Candidates.push_back(Method);
   }
@@ -392,15 +444,21 @@ static bool isFixitSupported(const CallableInfo &Callee,
   // Do not attempt to create fixits when placeholders are reused.
   // Unused placeholders are supported by requiring C++14 generic lambdas.
   // FIXME: Support this case by deducing the common type.
-  if (isPlaceHolderIndexRepeated(Args))
+  if (isPlaceHolderIndexRepeated(Args)) {
     return false;
+
+}
 
   // If we can't determine the Decl being used, don't offer a fixit.
-  if (!Callee.Decl)
+  if (!Callee.Decl) {
     return false;
 
-  if (Callee.Type == CT_Other || Callee.Materialization == CMK_Other)
+}
+
+  if (Callee.Type == CT_Other || Callee.Materialization == CMK_Other) {
     return false;
+
+}
 
   return true;
 }
@@ -409,8 +467,10 @@ const FunctionDecl *getCallOperator(const CXXRecordDecl *Callable,
                                     size_t NumArgs) {
   std::vector<const CXXMethodDecl *> Candidates =
       findCandidateCallOperators(Callable, NumArgs);
-  if (Candidates.size() != 1)
+  if (Candidates.size() != 1) {
     return nullptr;
+
+}
 
   return Candidates.front();
 }
@@ -429,8 +489,10 @@ getCallMethodDecl(const MatchFinder::MatchResult &Result, CallableType Type,
   }
 
   if (Materialization == CMK_Function) {
-    if (const auto *DRE = dyn_cast<DeclRefExpr>(CallExpression))
+    if (const auto *DRE = dyn_cast<DeclRefExpr>(CallExpression)) {
       return dyn_cast<FunctionDecl>(DRE->getDecl());
+
+}
   }
 
   // Maybe this is an indirect call through a function pointer or something
@@ -442,17 +504,23 @@ static CallableType getCallableType(const MatchFinder::MatchResult &Result) {
   const auto *CallableExpr = Result.Nodes.getNodeAs<Expr>("ref");
 
   QualType QT = CallableExpr->getType();
-  if (QT->isMemberFunctionPointerType())
+  if (QT->isMemberFunctionPointerType()) {
     return CT_MemberFunction;
 
+}
+
   if (QT->isFunctionPointerType() || QT->isFunctionReferenceType() ||
-      QT->isFunctionType())
+      QT->isFunctionType()) {
     return CT_Function;
+
+}
 
   if (QT->isRecordType()) {
     const CXXRecordDecl *Decl = QT->getAsCXXRecordDecl();
-    if (!Decl)
+    if (!Decl) {
       return CT_Other;
+
+}
 
     return CT_Object;
   }
@@ -466,18 +534,26 @@ getCallableMaterialization(const MatchFinder::MatchResult &Result) {
 
   const auto *NoTemporaries = ignoreTemporariesAndPointers(CallableExpr);
 
-  if (isa<CallExpr>(NoTemporaries))
+  if (isa<CallExpr>(NoTemporaries)) {
     return CMK_CallExpression;
 
+}
+
   if (isa<CXXFunctionalCastExpr>(NoTemporaries) ||
-      isa<CXXConstructExpr>(NoTemporaries))
+      isa<CXXConstructExpr>(NoTemporaries)) {
     return CMK_Function;
 
+}
+
   if (const auto *DRE = dyn_cast<DeclRefExpr>(NoTemporaries)) {
-    if (isa<FunctionDecl>(DRE->getDecl()))
+    if (isa<FunctionDecl>(DRE->getDecl())) {
       return CMK_Function;
-    if (isa<VarDecl>(DRE->getDecl()))
+
+}
+    if (isa<VarDecl>(DRE->getDecl())) {
       return CMK_VariableRef;
+
+}
   }
 
   return CMK_Other;
@@ -493,8 +569,10 @@ getLambdaProperties(const MatchFinder::MatchResult &Result) {
   const auto *Decl = dyn_cast<FunctionDecl>(Bind->getCalleeDecl());
   const auto *NS =
       dyn_cast<NamespaceDecl>(Decl->getEnclosingNamespaceContext());
-  while (NS->isInlineNamespace())
+  while (NS->isInlineNamespace()) {
     NS = dyn_cast<NamespaceDecl>(NS->getDeclContext());
+
+}
   LP.BindNamespace = NS->getName();
 
   LP.Callable.Type = getCallableType(Result);
@@ -525,20 +603,28 @@ getLambdaProperties(const MatchFinder::MatchResult &Result) {
 static bool emitCapture(llvm::StringSet<> &CaptureSet, StringRef Delimiter,
                         CaptureMode CM, StringRef Identifier,
                         StringRef InitExpression, raw_ostream &Stream) {
-  if (CM == CM_None)
+  if (CM == CM_None) {
     return false;
 
+}
+
   // This capture has already been emitted.
-  if (CaptureSet.count(Identifier) != 0)
+  if (CaptureSet.count(Identifier) != 0) {
     return false;
+
+}
 
   Stream << Delimiter;
 
-  if (CM == CM_ByRef)
+  if (CM == CM_ByRef) {
     Stream << "&";
+
+}
   Stream << Identifier;
-  if (CM == CM_InitExpression)
+  if (CM == CM_InitExpression) {
     Stream << " = " << InitExpression;
+
+}
 
   CaptureSet.insert(Identifier);
   return true;
@@ -555,22 +641,28 @@ static void emitCaptureList(const LambdaProperties &LP,
                                    LP.Callable.CaptureInitializer, Stream);
 
   for (const BindArgument &B : LP.BindArguments) {
-    if (B.CM == CM_None || !B.IsUsed)
+    if (B.CM == CM_None || !B.IsUsed) {
       continue;
+
+}
 
     StringRef Delimiter = AnyCapturesEmitted ? ", " : "";
 
     if (emitCapture(CaptureSet, Delimiter, B.CM, B.CaptureIdentifier,
-                    B.SourceTokens, Stream))
+                    B.SourceTokens, Stream)) {
       AnyCapturesEmitted = true;
+
+}
   }
 }
 
 static ArrayRef<BindArgument>
 getForwardedArgumentList(const LambdaProperties &P) {
   ArrayRef<BindArgument> Args = makeArrayRef(P.BindArguments);
-  if (P.Callable.Type != CT_MemberFunction)
+  if (P.Callable.Type != CT_MemberFunction) {
     return Args;
+
+}
 
   return Args.drop_front();
 }
@@ -598,8 +690,10 @@ void AvoidBindCheck::check(const MatchFinder::MatchResult &Result) {
   auto Diag =
       diag(MatchedDecl->getBeginLoc(),
            formatv("prefer a lambda to {0}::bind", LP.BindNamespace).str());
-  if (!LP.IsFixitSupported)
+  if (!LP.IsFixitSupported) {
     return;
+
+}
 
   const auto *Ref = Result.Nodes.getNodeAs<Expr>("ref");
 

@@ -37,35 +37,47 @@ CharSourceRange clang::tooling::maybeExtendRange(CharSourceRange Range,
                                                  ASTContext &Context) {
   Optional<Token> Tok = Lexer::findNextToken(
       Range.getEnd(), Context.getSourceManager(), Context.getLangOpts());
-  if (!Tok || !Tok->is(Next))
+  if (!Tok || !Tok->is(Next)) {
     return Range;
+
+}
   return CharSourceRange::getTokenRange(Range.getBegin(), Tok->getLocation());
 }
 
 llvm::Error clang::tooling::validateEditRange(const CharSourceRange &Range,
                                               const SourceManager &SM) {
-  if (Range.isInvalid())
+  if (Range.isInvalid()) {
     return llvm::make_error<StringError>(errc::invalid_argument,
                                          "Invalid range");
 
-  if (Range.getBegin().isMacroID() || Range.getEnd().isMacroID())
+}
+
+  if (Range.getBegin().isMacroID() || Range.getEnd().isMacroID()) {
     return llvm::make_error<StringError>(
         errc::invalid_argument, "Range starts or ends in a macro expansion");
 
+}
+
   if (SM.isInSystemHeader(Range.getBegin()) ||
-      SM.isInSystemHeader(Range.getEnd()))
+      SM.isInSystemHeader(Range.getEnd())) {
     return llvm::make_error<StringError>(errc::invalid_argument,
                                          "Range is in system header");
 
+}
+
   std::pair<FileID, unsigned> BeginInfo = SM.getDecomposedLoc(Range.getBegin());
   std::pair<FileID, unsigned> EndInfo = SM.getDecomposedLoc(Range.getEnd());
-  if (BeginInfo.first != EndInfo.first)
+  if (BeginInfo.first != EndInfo.first) {
     return llvm::make_error<StringError>(
         errc::invalid_argument, "Range begins and ends in different files");
 
-  if (BeginInfo.second > EndInfo.second)
+}
+
+  if (BeginInfo.second > EndInfo.second) {
     return llvm::make_error<StringError>(
         errc::invalid_argument, "Range's begin is past its end");
+
+}
 
   return llvm::Error::success();
 }
@@ -87,8 +99,10 @@ clang::tooling::getRangeForEdit(const CharSourceRange &EditRange,
   // Decide whether the current behavior is desirable and modify if not.
   CharSourceRange Range = Lexer::makeFileCharRange(EditRange, SM, LangOpts);
   bool IsInvalid = llvm::errorToBool(validateEditRange(Range, SM));
-  if (IsInvalid)
+  if (IsInvalid) {
     return llvm::None;
+
+}
   return Range;
 
 }
@@ -168,9 +182,9 @@ getEntityEndLoc(const SourceManager &SM, SourceLocation EntityLast,
   // expansion loc.
   bool TerminatedByMacro = false;
   Lexer->LexFromRawLexer(Tok);
-  if (Terminators.empty() || contains(Terminators, Tok))
+  if (Terminators.empty() || contains(Terminators, Tok)) {
     Terminated = true;
-  else if (EntityLast.isMacroID()) {
+  } else if (EntityLast.isMacroID()) {
     Terminated = true;
     TerminatedByMacro = true;
   }
@@ -191,13 +205,17 @@ getEntityEndLoc(const SourceManager &SM, SourceLocation EntityLast,
       return End;
     // Whitespace pseudo-tokens.
     case tok::unknown:
-      if (startsWithNewline(SM, Tok))
+      if (startsWithNewline(SM, Tok)) {
         // Include at least until the end of the line.
         End = Tok.getEndLoc();
+
+}
       break;
     default:
-      if (contains(Terminators, Tok))
+      if (contains(Terminators, Tok)) {
         Terminated = true;
+
+}
       End = Tok.getEndLoc();
       break;
     }
@@ -209,9 +227,11 @@ getEntityEndLoc(const SourceManager &SM, SourceLocation EntityLast,
 
     switch (Tok.getKind()) {
     case tok::unknown:
-      if (startsWithNewline(SM, Tok))
+      if (startsWithNewline(SM, Tok)) {
         // We're done, but include this newline.
         return Tok.getEndLoc();
+
+}
       break;
     case tok::comment:
       // Include any comments we find on the way.
@@ -241,14 +261,20 @@ getEntityEndLoc(const SourceManager &SM, SourceLocation EntityLast,
 // There are cases where we have more than one possible terminator (for example,
 // we find either a comma or a semicolon after a VarDecl).
 static std::set<tok::TokenKind> getTerminators(const Decl &D) {
-  if (llvm::isa<RecordDecl>(D) || llvm::isa<UsingDecl>(D))
+  if (llvm::isa<RecordDecl>(D) || llvm::isa<UsingDecl>(D)) {
     return {tok::semi};
 
-  if (llvm::isa<FunctionDecl>(D) || llvm::isa<LinkageSpecDecl>(D))
+}
+
+  if (llvm::isa<FunctionDecl>(D) || llvm::isa<LinkageSpecDecl>(D)) {
     return {tok::r_brace, tok::semi};
 
-  if (llvm::isa<VarDecl>(D) || llvm::isa<FieldDecl>(D))
+}
+
+  if (llvm::isa<VarDecl>(D) || llvm::isa<FieldDecl>(D)) {
     return {tok::comma, tok::semi};
+
+}
 
   return {};
 }
@@ -261,10 +287,14 @@ static SourceLocation skipWhitespaceAndNewline(const SourceManager &SM,
                                                const LangOptions &LangOpts) {
   const char *LocChars = SM.getCharacterData(Loc);
   int i = 0;
-  while (isHorizontalWhitespace(LocChars[i]))
+  while (isHorizontalWhitespace(LocChars[i])) {
     ++i;
-  if (isVerticalWhitespace(LocChars[i]))
+
+}
+  if (isVerticalWhitespace(LocChars[i])) {
     ++i;
+
+}
   return Loc.getLocWithOffset(i);
 }
 
@@ -284,18 +314,24 @@ static bool atOrBeforeSeparation(const SourceManager &SM, SourceLocation Loc,
   assert(!Invalid &&
          "Loc must be a valid character and not the first of the source file.");
   if (isVerticalWhitespace(LocChars[0])) {
-    for (int i = 1; isWhitespace(LocChars[i]); ++i)
-      if (isVerticalWhitespace(LocChars[i]))
+    for (int i = 1; isWhitespace(LocChars[i]); ++i) {
+      if (isVerticalWhitespace(LocChars[i])) {
         return true;
+
+}
+
+}
   }
   // We didn't find an empty line, so lex the next token, skipping past any
   // whitespace we just scanned.
   Token Tok;
   bool Failed = Lexer::getRawToken(Loc, Tok, SM, LangOpts,
                                    /*IgnoreWhiteSpace=*/true);
-  if (Failed)
+  if (Failed) {
     // Any text that confuses the lexer seems fair to consider a separation.
     return true;
+
+}
 
   switch (Tok.getKind()) {
   case tok::comment:
@@ -316,13 +352,21 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
 
   // First, expand to the start of the template<> declaration if necessary.
   if (const auto *Record = llvm::dyn_cast<CXXRecordDecl>(&Decl)) {
-    if (const auto *T = Record->getDescribedClassTemplate())
-      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin()))
+    if (const auto *T = Record->getDescribedClassTemplate()) {
+      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin())) {
         Range.setBegin(T->getBeginLoc());
+
+}
+
+}
   } else if (const auto *F = llvm::dyn_cast<FunctionDecl>(&Decl)) {
-    if (const auto *T = F->getDescribedFunctionTemplate())
-      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin()))
+    if (const auto *T = F->getDescribedFunctionTemplate()) {
+      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin())) {
         Range.setBegin(T->getBeginLoc());
+
+}
+
+}
   }
 
   // Next, expand the end location past trailing comments to include a potential
@@ -335,7 +379,7 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
   // that are not preceeding the decl, since we've already skipped trailing
   // comments with getEntityEndLoc.
   if (const RawComment *Comment =
-          Decl.getASTContext().getRawCommentForDeclNoCache(&Decl))
+          Decl.getASTContext().getRawCommentForDeclNoCache(&Decl)) {
     // Only include a preceding comment if:
     // * it is *not* separate from the declaration (not including any newline
     //   that immediately follows the comment),
@@ -350,14 +394,20 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
         atOrBeforeSeparation(SM, Range.getEnd(), LangOpts)) {
       const StringRef CommentText = Comment->getRawText(SM);
       if (!CommentText.contains("LINT.IfChange") &&
-          !CommentText.contains("LINT.ThenChange"))
+          !CommentText.contains("LINT.ThenChange")) {
         Range.setBegin(Comment->getBeginLoc());
+
+}
     }
+
+}
   // Add leading attributes.
   for (auto *Attr : Decl.attrs()) {
     if (Attr->getLocation().isInvalid() ||
-        !SM.isBeforeInTranslationUnit(Attr->getLocation(), Range.getBegin()))
+        !SM.isBeforeInTranslationUnit(Attr->getLocation(), Range.getBegin())) {
       continue;
+
+}
     Range.setBegin(Attr->getLocation());
 
     // Extend to the left '[[' or '__attribute((' if we saw the attribute,
@@ -365,8 +415,10 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
     bool Invalid;
     StringRef Source =
         SM.getBufferData(SM.getFileID(Range.getBegin()), &Invalid);
-    if (Invalid)
+    if (Invalid) {
       continue;
+
+}
     llvm::StringRef BeforeAttr =
         Source.substr(0, SM.getFileOffset(Range.getBegin()));
     llvm::StringRef BeforeAttrStripped = BeforeAttr.rtrim();

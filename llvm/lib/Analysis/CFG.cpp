@@ -27,8 +27,10 @@ using namespace llvm;
 void llvm::FindFunctionBackedges(const Function &F,
      SmallVectorImpl<std::pair<const BasicBlock*,const BasicBlock*> > &Result) {
   const BasicBlock *BB = &F.getEntryBlock();
-  if (succ_empty(BB))
+  if (succ_empty(BB)) {
     return;
+
+}
 
   SmallPtrSet<const BasicBlock*, 8> Visited;
   SmallVector<std::pair<const BasicBlock*, succ_const_iterator>, 8> VisitStack;
@@ -50,8 +52,10 @@ void llvm::FindFunctionBackedges(const Function &F,
         break;
       }
       // Successor is in VisitStack, it's a back edge.
-      if (InStack.count(BB))
+      if (InStack.count(BB)) {
         Result.push_back(std::make_pair(ParentBB, BB));
+
+}
     }
 
     if (FoundNew) {
@@ -77,8 +81,10 @@ unsigned llvm::GetSuccessorNumber(const BasicBlock *BB,
 #endif
   for (unsigned i = 0; ; ++i) {
     assert(i != e && "Didn't find edge?");
-    if (Term->getSuccessor(i) == Succ)
+    if (Term->getSuccessor(i) == Succ) {
       return i;
+
+}
   }
 }
 
@@ -94,7 +100,9 @@ bool llvm::isCriticalEdge(const Instruction *TI, unsigned SuccNum,
 bool llvm::isCriticalEdge(const Instruction *TI, const BasicBlock *Dest,
                           bool AllowIdenticalEdges) {
   assert(TI->isTerminator() && "Must be a terminator to have successors!");
-  if (TI->getNumSuccessors() == 1) return false;
+  if (TI->getNumSuccessors() == 1) { return false;
+
+}
 
   assert(find(predecessors(Dest), TI->getParent()) != pred_end(Dest) &&
          "No edge between TI's block and Dest.");
@@ -105,14 +113,20 @@ bool llvm::isCriticalEdge(const Instruction *TI, const BasicBlock *Dest,
   assert(I != E && "No preds, but we have an edge to the block?");
   const BasicBlock *FirstPred = *I;
   ++I;        // Skip one edge due to the incoming arc from TI.
-  if (!AllowIdenticalEdges)
+  if (!AllowIdenticalEdges) {
     return I != E;
+
+}
 
   // If AllowIdenticalEdges is true, then we allow this edge to be considered
   // non-critical iff all preds come from TI's block.
-  for (; I != E; ++I)
-    if (*I != FirstPred)
+  for (; I != E; ++I) {
+    if (*I != FirstPred) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -121,8 +135,10 @@ bool llvm::isCriticalEdge(const Instruction *TI, const BasicBlock *Dest,
 static const Loop *getOutermostLoop(const LoopInfo *LI, const BasicBlock *BB) {
   const Loop *L = LI->getLoopFor(BB);
   if (L) {
-    while (const Loop *Parent = L->getParentLoop())
+    while (const Loop *Parent = L->getParentLoop()) {
       L = Parent;
+
+}
   }
   return L;
 }
@@ -133,13 +149,17 @@ bool llvm::isPotentiallyReachableFromMany(
     const LoopInfo *LI) {
   // When the stop block is unreachable, it's dominated from everywhere,
   // regardless of whether there's a path between the two blocks.
-  if (DT && !DT->isReachableFromEntry(StopBB))
+  if (DT && !DT->isReachableFromEntry(StopBB)) {
     DT = nullptr;
+
+}
 
   // We can't skip directly from a block that dominates the stop block if the
   // exclusion block is potentially in between.
-  if (ExclusionSet && !ExclusionSet->empty())
+  if (ExclusionSet && !ExclusionSet->empty()) {
     DT = nullptr;
+
+}
 
   // Normally any block in a loop is reachable from any other block in a loop,
   // however excluded blocks might partition the body of a loop to make that
@@ -147,8 +167,10 @@ bool llvm::isPotentiallyReachableFromMany(
   SmallPtrSet<const Loop *, 8> LoopsWithHoles;
   if (LI && ExclusionSet) {
     for (auto BB : *ExclusionSet) {
-      if (const Loop *L = getOutermostLoop(LI, BB))
+      if (const Loop *L = getOutermostLoop(LI, BB)) {
         LoopsWithHoles.insert(L);
+
+}
     }
   }
 
@@ -160,14 +182,22 @@ bool llvm::isPotentiallyReachableFromMany(
   SmallPtrSet<const BasicBlock*, 32> Visited;
   do {
     BasicBlock *BB = Worklist.pop_back_val();
-    if (!Visited.insert(BB).second)
+    if (!Visited.insert(BB).second) {
       continue;
-    if (BB == StopBB)
+
+}
+    if (BB == StopBB) {
       return true;
-    if (ExclusionSet && ExclusionSet->count(BB))
+
+}
+    if (ExclusionSet && ExclusionSet->count(BB)) {
       continue;
-    if (DT && DT->dominates(BB, StopBB))
+
+}
+    if (DT && DT->dominates(BB, StopBB)) {
       return true;
+
+}
 
     const Loop *Outer = nullptr;
     if (LI) {
@@ -176,10 +206,14 @@ bool llvm::isPotentiallyReachableFromMany(
       // reachable from all other blocks. That implies we can't simply jump to
       // the loop's exit blocks, as that exit might need to pass through an
       // excluded block. Clear Outer so we process BB's successors.
-      if (LoopsWithHoles.count(Outer))
+      if (LoopsWithHoles.count(Outer)) {
         Outer = nullptr;
-      if (StopLoop && Outer == StopLoop)
+
+}
+      if (StopLoop && Outer == StopLoop) {
         return true;
+
+}
     }
 
     if (!--Limit) {
@@ -234,20 +268,26 @@ bool llvm::isPotentiallyReachable(
 
     // If the block is in a loop then we can reach any instruction in the block
     // from any other instruction in the block by going around a backedge.
-    if (LI && LI->getLoopFor(BB) != nullptr)
+    if (LI && LI->getLoopFor(BB) != nullptr) {
       return true;
+
+}
 
     // Linear scan, start at 'A', see whether we hit 'B' or the end first.
     for (BasicBlock::const_iterator I = A->getIterator(), E = BB->end(); I != E;
          ++I) {
-      if (&*I == B)
+      if (&*I == B) {
         return true;
+
+}
     }
 
     // Can't be in a loop if it's the entry block -- the entry block may not
     // have predecessors.
-    if (BB == &BB->getParent()->getEntryBlock())
+    if (BB == &BB->getParent()->getEntryBlock()) {
       return false;
+
+}
 
     // Otherwise, continue doing the normal per-BB CFG walk.
     Worklist.append(succ_begin(BB), succ_end(BB));
@@ -262,15 +302,21 @@ bool llvm::isPotentiallyReachable(
 
   if (DT) {
     if (DT->isReachableFromEntry(A->getParent()) &&
-        !DT->isReachableFromEntry(B->getParent()))
+        !DT->isReachableFromEntry(B->getParent())) {
       return false;
+
+}
     if (!ExclusionSet || ExclusionSet->empty()) {
       if (A->getParent() == &A->getParent()->getParent()->getEntryBlock() &&
-          DT->isReachableFromEntry(B->getParent()))
+          DT->isReachableFromEntry(B->getParent())) {
         return true;
+
+}
       if (B->getParent() == &A->getParent()->getParent()->getEntryBlock() &&
-          DT->isReachableFromEntry(A->getParent()))
+          DT->isReachableFromEntry(A->getParent())) {
         return false;
+
+}
     }
   }
 

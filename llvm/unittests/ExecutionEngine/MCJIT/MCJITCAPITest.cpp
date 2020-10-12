@@ -43,8 +43,10 @@ static uint8_t *roundTripAllocateDataSection(void *object, uintptr_t size,
                                              unsigned sectionID,
                                              const char *sectionName,
                                              LLVMBool isReadOnly) {
-  if (!strcmp(sectionName, "__compact_unwind"))
+  if (!strcmp(sectionName, "__compact_unwind")) {
     didAllocateCompactUnwindSection = true;
+
+}
   return static_cast<SectionMemoryManager*>(object)->allocateDataSection(
     size, alignment, sectionID, sectionName, isReadOnly);
 }
@@ -156,10 +158,12 @@ protected:
   }
 
   void TearDown() override {
-    if (Engine)
+    if (Engine) {
       LLVMDisposeExecutionEngine(Engine);
-    else if (Module)
+    } else if (Module) {
       LLVMDisposeModule(Module);
+
+}
   }
   
   void buildSimpleFunction() {
@@ -311,8 +315,10 @@ protected:
     
     LLVMInitializeFunctionPassManager(functionPasses);
     for (LLVMValueRef value = LLVMGetFirstFunction(Module);
-         value; value = LLVMGetNextFunction(value))
+         value; value = LLVMGetNextFunction(value)) {
       LLVMRunFunctionPassManager(functionPasses, value);
+
+}
     LLVMFinalizeFunctionPassManager(functionPasses);
     
     LLVMRunPassManager(modulePasses, Module);
@@ -396,8 +402,10 @@ TEST_F(MCJITCAPITest, stackmap_creates_compact_unwind_on_darwin) {
   SKIP_UNSUPPORTED_PLATFORM;
   
   // This test is also not supported on non-x86 platforms.
-  if (Triple(HostTriple).getArch() != Triple::x86_64)
+  if (Triple(HostTriple).getArch() != Triple::x86_64) {
     return;
+
+}
   
   buildFunctionThatUsesStackmap();
   buildMCJITOptions();

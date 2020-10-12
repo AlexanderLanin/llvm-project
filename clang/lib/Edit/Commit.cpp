@@ -47,8 +47,10 @@ Commit::Commit(EditedSource &Editor)
 
 bool Commit::insert(SourceLocation loc, StringRef text,
                     bool afterToken, bool beforePreviousInsertions) {
-  if (text.empty())
+  if (text.empty()) {
     return true;
+
+}
 
   FileOffset Offs;
   if ((!afterToken && !canInsert(loc, Offs)) ||
@@ -105,17 +107,21 @@ bool Commit::insertWrap(StringRef before, CharSourceRange range,
   bool commitableBefore = insert(range.getBegin(), before, /*afterToken=*/false,
                                  /*beforePreviousInsertions=*/true);
   bool commitableAfter;
-  if (range.isTokenRange())
+  if (range.isTokenRange()) {
     commitableAfter = insertAfterToken(range.getEnd(), after);
-  else
+  } else {
     commitableAfter = insert(range.getEnd(), after);
+
+}
 
   return commitableBefore && commitableAfter;
 }
 
 bool Commit::replace(CharSourceRange range, StringRef text) {
-  if (text.empty())
+  if (text.empty()) {
     return remove(range);
+
+}
 
   FileOffset Offs;
   unsigned Len;
@@ -164,8 +170,10 @@ bool Commit::replaceWithInner(CharSourceRange range,
 
 bool Commit::replaceText(SourceLocation loc, StringRef text,
                          StringRef replacementText) {
-  if (text.empty() || replacementText.empty())
+  if (text.empty() || replacementText.empty()) {
     return true;
+
+}
 
   FileOffset Offs;
   unsigned Len;
@@ -181,8 +189,10 @@ bool Commit::replaceText(SourceLocation loc, StringRef text,
 
 void Commit::addInsert(SourceLocation OrigLoc, FileOffset Offs, StringRef text,
                        bool beforePreviousInsertions) {
-  if (text.empty())
+  if (text.empty()) {
     return;
+
+}
 
   Edit data;
   data.Kind = Act_Insert;
@@ -196,8 +206,10 @@ void Commit::addInsert(SourceLocation OrigLoc, FileOffset Offs, StringRef text,
 void Commit::addInsertFromRange(SourceLocation OrigLoc, FileOffset Offs,
                                 FileOffset RangeOffs, unsigned RangeLen,
                                 bool beforePreviousInsertions) {
-  if (RangeLen == 0)
+  if (RangeLen == 0) {
     return;
+
+}
 
   Edit data;
   data.Kind = Act_InsertFromRange;
@@ -211,8 +223,10 @@ void Commit::addInsertFromRange(SourceLocation OrigLoc, FileOffset Offs,
 
 void Commit::addRemove(SourceLocation OrigLoc,
                        FileOffset Offs, unsigned Len) {
-  if (Len == 0)
+  if (Len == 0) {
     return;
+
+}
 
   Edit data;
   data.Kind = Act_Remove;
@@ -223,73 +237,105 @@ void Commit::addRemove(SourceLocation OrigLoc,
 }
 
 bool Commit::canInsert(SourceLocation loc, FileOffset &offs) {
-  if (loc.isInvalid())
+  if (loc.isInvalid()) {
     return false;
 
-  if (loc.isMacroID())
+}
+
+  if (loc.isMacroID()) {
     isAtStartOfMacroExpansion(loc, &loc);
+
+}
 
   const SourceManager &SM = SourceMgr;
   loc = SM.getTopMacroCallerLoc(loc);
 
-  if (loc.isMacroID())
-    if (!isAtStartOfMacroExpansion(loc, &loc))
+  if (loc.isMacroID()) {
+    if (!isAtStartOfMacroExpansion(loc, &loc)) {
       return false;
 
-  if (SM.isInSystemHeader(loc))
+}
+
+}
+
+  if (SM.isInSystemHeader(loc)) {
     return false;
 
+}
+
   std::pair<FileID, unsigned> locInfo = SM.getDecomposedLoc(loc);
-  if (locInfo.first.isInvalid())
+  if (locInfo.first.isInvalid()) {
     return false;
+
+}
   offs = FileOffset(locInfo.first, locInfo.second);
   return canInsertInOffset(loc, offs);
 }
 
 bool Commit::canInsertAfterToken(SourceLocation loc, FileOffset &offs,
                                  SourceLocation &AfterLoc) {
-  if (loc.isInvalid())
+  if (loc.isInvalid()) {
 
     return false;
+
+}
 
   SourceLocation spellLoc = SourceMgr.getSpellingLoc(loc);
   unsigned tokLen = Lexer::MeasureTokenLength(spellLoc, SourceMgr, LangOpts);
   AfterLoc = loc.getLocWithOffset(tokLen);
 
-  if (loc.isMacroID())
+  if (loc.isMacroID()) {
     isAtEndOfMacroExpansion(loc, &loc);
+
+}
 
   const SourceManager &SM = SourceMgr;
   loc = SM.getTopMacroCallerLoc(loc);
 
-  if (loc.isMacroID())
-    if (!isAtEndOfMacroExpansion(loc, &loc))
+  if (loc.isMacroID()) {
+    if (!isAtEndOfMacroExpansion(loc, &loc)) {
       return false;
 
-  if (SM.isInSystemHeader(loc))
+}
+
+}
+
+  if (SM.isInSystemHeader(loc)) {
     return false;
+
+}
 
   loc = Lexer::getLocForEndOfToken(loc, 0, SourceMgr, LangOpts);
-  if (loc.isInvalid())
+  if (loc.isInvalid()) {
     return false;
 
+}
+
   std::pair<FileID, unsigned> locInfo = SM.getDecomposedLoc(loc);
-  if (locInfo.first.isInvalid())
+  if (locInfo.first.isInvalid()) {
     return false;
+
+}
   offs = FileOffset(locInfo.first, locInfo.second);
   return canInsertInOffset(loc, offs);
 }
 
 bool Commit::canInsertInOffset(SourceLocation OrigLoc, FileOffset Offs) {
-  for (const auto &act : CachedEdits)
+  for (const auto &act : CachedEdits) {
     if (act.Kind == Act_Remove) {
       if (act.Offset.getFID() == Offs.getFID() &&
-          Offs > act.Offset && Offs < act.Offset.getWithOffset(act.Length))
+          Offs > act.Offset && Offs < act.Offset.getWithOffset(act.Length)) {
         return false; // position has been removed.
+
+}
     }
 
-  if (!Editor)
+}
+
+  if (!Editor) {
     return true;
+
+}
   return Editor->canInsertInOffset(OrigLoc, Offs);
 }
 
@@ -297,23 +343,33 @@ bool Commit::canRemoveRange(CharSourceRange range,
                             FileOffset &Offs, unsigned &Len) {
   const SourceManager &SM = SourceMgr;
   range = Lexer::makeFileCharRange(range, SM, LangOpts);
-  if (range.isInvalid())
+  if (range.isInvalid()) {
     return false;
 
-  if (range.getBegin().isMacroID() || range.getEnd().isMacroID())
+}
+
+  if (range.getBegin().isMacroID() || range.getEnd().isMacroID()) {
     return false;
+
+}
   if (SM.isInSystemHeader(range.getBegin()) ||
-      SM.isInSystemHeader(range.getEnd()))
+      SM.isInSystemHeader(range.getEnd())) {
     return false;
 
-  if (PPRec && PPRec->rangeIntersectsConditionalDirective(range.getAsRange()))
+}
+
+  if (PPRec && PPRec->rangeIntersectsConditionalDirective(range.getAsRange())) {
     return false;
+
+}
 
   std::pair<FileID, unsigned> beginInfo = SM.getDecomposedLoc(range.getBegin());
   std::pair<FileID, unsigned> endInfo = SM.getDecomposedLoc(range.getEnd());
   if (beginInfo.first != endInfo.first ||
-      beginInfo.second > endInfo.second)
+      beginInfo.second > endInfo.second) {
     return false;
+
+}
 
   Offs = FileOffset(beginInfo.first, beginInfo.second);
   Len = endInfo.second - beginInfo.second;
@@ -324,14 +380,18 @@ bool Commit::canReplaceText(SourceLocation loc, StringRef text,
                             FileOffset &Offs, unsigned &Len) {
   assert(!text.empty());
 
-  if (!canInsert(loc, Offs))
+  if (!canInsert(loc, Offs)) {
     return false;
+
+}
 
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SourceMgr.getBufferData(Offs.getFID(), &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
     return false;
+
+}
 
   Len = text.size();
   return file.substr(Offs.getOffset()).startswith(text);

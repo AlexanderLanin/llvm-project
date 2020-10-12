@@ -41,8 +41,10 @@ NVPTXTargetInfo::NVPTXTargetInfo(const llvm::Triple &Triple,
 
   PTXVersion = 32;
   for (const StringRef Feature : Opts.FeaturesAsWritten) {
-    if (!Feature.startswith("+ptx"))
+    if (!Feature.startswith("+ptx")) {
       continue;
+
+}
     PTXVersion = llvm::StringSwitch<unsigned>(Feature)
                      .Case("+ptx64", 64)
                      .Case("+ptx63", 63)
@@ -67,19 +69,23 @@ NVPTXTargetInfo::NVPTXTargetInfo(const llvm::Triple &Triple,
   NoAsmVariants = true;
   GPU = CudaArch::SM_20;
 
-  if (TargetPointerWidth == 32)
+  if (TargetPointerWidth == 32) {
     resetDataLayout("e-p:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64");
-  else if (Opts.NVPTXUseShortPointers)
+  } else if (Opts.NVPTXUseShortPointers) {
     resetDataLayout(
         "e-p3:32:32-p4:32:32-p5:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64");
-  else
+  } else {
     resetDataLayout("e-i64:64-i128:128-v16:16-v32:32-n16:32:64");
+
+}
 
   // If possible, get a TargetInfo for our host triple, so we can match its
   // types.
   llvm::Triple HostTriple(Opts.HostTriple);
-  if (!HostTriple.isNVPTX())
+  if (!HostTriple.isNVPTX()) {
     HostTarget.reset(AllocateTarget(llvm::Triple(Opts.HostTriple), Opts));
+
+}
 
   // If no host target, make some guesses about the data layout and return.
   if (!HostTarget) {

@@ -62,8 +62,10 @@ using namespace llvm::pdb;
 
 DumpOutputStyle::DumpOutputStyle(InputFile &File)
     : File(File), P(2, false, outs()) {
-  if (opts::dump::DumpTypeRefStats)
+  if (opts::dump::DumpTypeRefStats) {
     RefTracker.reset(new TypeReferenceTracker(File));
+
+}
 }
 
 DumpOutputStyle::~DumpOutputStyle() {}
@@ -83,144 +85,198 @@ void DumpOutputStyle::printStreamNotPresent(StringRef StreamName) {
 
 Error DumpOutputStyle::dump() {
   // Walk symbols & globals if we are supposed to mark types referenced.
-  if (opts::dump::DumpTypeRefStats)
+  if (opts::dump::DumpTypeRefStats) {
     RefTracker->mark();
 
+}
+
   if (opts::dump::DumpSummary) {
-    if (auto EC = dumpFileSummary())
+    if (auto EC = dumpFileSummary()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpStreams) {
-    if (auto EC = dumpStreamSummary())
+    if (auto EC = dumpStreamSummary()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpSymbolStats) {
-    if (auto EC = dumpSymbolStats())
+    if (auto EC = dumpSymbolStats()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpUdtStats) {
-    if (auto EC = dumpUdtStats())
+    if (auto EC = dumpUdtStats()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpTypeStats) {
-    if (auto EC = dumpTypeStats())
+    if (auto EC = dumpTypeStats()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpNamedStreams) {
-    if (auto EC = dumpNamedStreams())
+    if (auto EC = dumpNamedStreams()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpStringTable || opts::dump::DumpStringTableDetails) {
-    if (auto EC = dumpStringTable())
+    if (auto EC = dumpStringTable()) {
       return EC;
+
+}
     P.NewLine();
   }
 
   if (opts::dump::DumpModules) {
-    if (auto EC = dumpModules())
+    if (auto EC = dumpModules()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpModuleFiles) {
-    if (auto EC = dumpModuleFiles())
+    if (auto EC = dumpModuleFiles()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpLines) {
-    if (auto EC = dumpLines())
+    if (auto EC = dumpLines()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpInlineeLines) {
-    if (auto EC = dumpInlineeLines())
+    if (auto EC = dumpInlineeLines()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpXmi) {
-    if (auto EC = dumpXmi())
+    if (auto EC = dumpXmi()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpXme) {
-    if (auto EC = dumpXme())
+    if (auto EC = dumpXme()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpFpo) {
-    if (auto EC = dumpFpo())
+    if (auto EC = dumpFpo()) {
       return EC;
+
+}
   }
 
   if (File.isObj()) {
     if (opts::dump::DumpTypes || !opts::dump::DumpTypeIndex.empty() ||
-        opts::dump::DumpTypeExtras)
-      if (auto EC = dumpTypesFromObjectFile())
+        opts::dump::DumpTypeExtras) {
+      if (auto EC = dumpTypesFromObjectFile()) {
         return EC;
+
+}
+
+}
   } else {
     if (opts::dump::DumpTypes || !opts::dump::DumpTypeIndex.empty() ||
         opts::dump::DumpTypeExtras) {
-      if (auto EC = dumpTpiStream(StreamTPI))
+      if (auto EC = dumpTpiStream(StreamTPI)) {
         return EC;
+
+}
     }
 
     if (opts::dump::DumpIds || !opts::dump::DumpIdIndex.empty() ||
         opts::dump::DumpIdExtras) {
-      if (auto EC = dumpTpiStream(StreamIPI))
+      if (auto EC = dumpTpiStream(StreamIPI)) {
         return EC;
+
+}
     }
   }
 
   if (opts::dump::DumpGSIRecords) {
-    if (auto EC = dumpGSIRecords())
+    if (auto EC = dumpGSIRecords()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpGlobals) {
-    if (auto EC = dumpGlobals())
+    if (auto EC = dumpGlobals()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpPublics) {
-    if (auto EC = dumpPublics())
+    if (auto EC = dumpPublics()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpSymbols) {
     auto EC = File.isPdb() ? dumpModuleSymsForPdb() : dumpModuleSymsForObj();
-    if (EC)
+    if (EC) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpTypeRefStats) {
-    if (auto EC = dumpTypeRefStats())
+    if (auto EC = dumpTypeRefStats()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpSectionHeaders) {
-    if (auto EC = dumpSectionHeaders())
+    if (auto EC = dumpSectionHeaders()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpSectionContribs) {
-    if (auto EC = dumpSectionContribs())
+    if (auto EC = dumpSectionContribs()) {
       return EC;
+
+}
   }
 
   if (opts::dump::DumpSectionMap) {
-    if (auto EC = dumpSectionMap())
+    if (auto EC = dumpSectionMap()) {
       return EC;
+
+}
   }
 
   P.NewLine();
@@ -284,8 +340,10 @@ static StatCollection getSymbolStats(const SymbolGroup &SG,
   for (const auto &SS : SG.getDebugSubsections()) {
     // For object files, all symbols are spread across multiple Symbol
     // subsections of a given .debug$S section.
-    if (SS.kind() != DebugSubsectionKind::Symbols)
+    if (SS.kind() != DebugSubsectionKind::Symbols) {
       continue;
+
+}
     DebugSymbolsSubsectionRef Symbols;
     BinaryStreamReader Reader(SS.getRecordData());
     cantFail(Symbols.initialize(Reader));
@@ -344,30 +402,46 @@ static void printModuleDetailStats(LinePrinter &P, StringRef Label,
 }
 
 static bool isMyCode(const SymbolGroup &Group) {
-  if (Group.getFile().isObj())
+  if (Group.getFile().isObj()) {
     return true;
 
+}
+
   StringRef Name = Group.name();
-  if (Name.startswith("Import:"))
+  if (Name.startswith("Import:")) {
     return false;
-  if (Name.endswith_lower(".dll"))
+
+}
+  if (Name.endswith_lower(".dll")) {
     return false;
-  if (Name.equals_lower("* linker *"))
+
+}
+  if (Name.equals_lower("* linker *")) {
     return false;
-  if (Name.startswith_lower("f:\\binaries\\Intermediate\\vctools"))
+
+}
+  if (Name.startswith_lower("f:\\binaries\\Intermediate\\vctools")) {
     return false;
-  if (Name.startswith_lower("f:\\dd\\vctools\\crt"))
+
+}
+  if (Name.startswith_lower("f:\\dd\\vctools\\crt")) {
     return false;
+
+}
   return true;
 }
 
 static bool shouldDumpSymbolGroup(uint32_t Idx, const SymbolGroup &Group) {
-  if (opts::dump::JustMyCode && !isMyCode(Group))
+  if (opts::dump::JustMyCode && !isMyCode(Group)) {
     return false;
 
+}
+
   // If the arg was not specified on the command line, always dump all modules.
-  if (opts::dump::DumpModi.getNumOccurrences() == 0)
+  if (opts::dump::DumpModi.getNumOccurrences() == 0) {
     return true;
+
+}
 
   // Otherwise, only dump if this is the same module specified.
   return (opts::dump::DumpModi == Idx);
@@ -383,8 +457,10 @@ Error DumpOutputStyle::dumpStreamSummary() {
 
   AutoIndent Indent(P);
 
-  if (StreamPurposes.empty())
+  if (StreamPurposes.empty()) {
     discoverStreamPurposes(getPdb(), StreamPurposes);
+
+}
 
   uint32_t StreamCount = getPdb().getNumStreams();
   uint32_t MaxStreamSize = getPdb().getMaxStreamSize();
@@ -418,16 +494,20 @@ static Expected<ModuleDebugStreamRef> getModuleDebugStream(PDBFile &File,
   auto Modi = Modules.getModuleDescriptor(Index);
 
   uint16_t ModiStream = Modi.getModuleStreamIndex();
-  if (ModiStream == kInvalidStreamIndex)
+  if (ModiStream == kInvalidStreamIndex) {
     return make_error<RawError>(raw_error_code::no_stream,
                                 "Module stream not present");
+
+}
 
   auto ModStreamData = File.createIndexedStream(ModiStream);
 
   ModuleDebugStreamRef ModS(Modi, std::move(ModStreamData));
-  if (auto EC = ModS.reload())
+  if (auto EC = ModS.reload()) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Invalid module stream");
+
+}
 
   return std::move(ModS);
 }
@@ -466,9 +546,11 @@ static void iterateSymbolGroups(InputFile &Input,
   uint32_t I = 0;
 
   for (const auto &SG : Input.symbol_groups()) {
-    if (shouldDumpSymbolGroup(I, SG))
+    if (shouldDumpSymbolGroup(I, SG)) {
       iterateOneModule(Input, withLabelWidth(HeaderScope, NumDigits(I)), SG, I,
                        Callback);
+
+}
 
     ++I;
   }
@@ -485,12 +567,16 @@ static void iterateModuleSubsections(
                         for (const auto &SS : SG.getDebugSubsections()) {
                           SubsectionT Subsection;
 
-                          if (SS.kind() != Subsection.kind())
+                          if (SS.kind() != Subsection.kind()) {
                             continue;
 
+}
+
                           BinaryStreamReader Reader(SS.getRecordData());
-                          if (auto EC = Subsection.initialize(Reader))
+                          if (auto EC = Subsection.initialize(Reader)) {
                             continue;
+
+}
                           Callback(Modi, SG, Subsection);
                         }
                       });
@@ -499,29 +585,37 @@ static void iterateModuleSubsections(
 static Expected<std::pair<std::unique_ptr<MappedBlockStream>,
                           ArrayRef<llvm::object::coff_section>>>
 loadSectionHeaders(PDBFile &File, DbgHeaderType Type) {
-  if (!File.hasPDBDbiStream())
+  if (!File.hasPDBDbiStream()) {
     return make_error<StringError>(
         "Section headers require a DBI Stream, which could not be loaded",
         inconvertibleErrorCode());
 
+}
+
   auto &Dbi = cantFail(File.getPDBDbiStream());
   uint32_t SI = Dbi.getDebugStreamIndex(Type);
 
-  if (SI == kInvalidStreamIndex)
+  if (SI == kInvalidStreamIndex) {
     return make_error<StringError>(
         "PDB does not contain the requested image section header type",
         inconvertibleErrorCode());
 
+}
+
   auto Stream = File.createIndexedStream(SI);
-  if (!Stream)
+  if (!Stream) {
     return make_error<StringError>("Could not load the required stream data",
                                    inconvertibleErrorCode());
 
+}
+
   ArrayRef<object::coff_section> Headers;
-  if (Stream->getLength() % sizeof(object::coff_section) != 0)
+  if (Stream->getLength() % sizeof(object::coff_section) != 0) {
     return make_error<StringError>(
         "Section header array size is not a multiple of section header size",
         inconvertibleErrorCode());
+
+}
 
   uint32_t NumHeaders = Stream->getLength() / sizeof(object::coff_section);
   BinaryStreamReader Reader(*Stream);
@@ -531,15 +625,19 @@ loadSectionHeaders(PDBFile &File, DbgHeaderType Type) {
 
 static std::vector<std::string> getSectionNames(PDBFile &File) {
   auto ExpectedHeaders = loadSectionHeaders(File, DbgHeaderType::SectionHdr);
-  if (!ExpectedHeaders)
+  if (!ExpectedHeaders) {
     return {};
+
+}
 
   std::unique_ptr<MappedBlockStream> Stream;
   ArrayRef<object::coff_section> Headers;
   std::tie(Stream, Headers) = std::move(*ExpectedHeaders);
   std::vector<std::string> Names;
-  for (const auto &H : Headers)
+  for (const auto &H : Headers) {
     Names.push_back(H.Name);
+
+}
   return Names;
 }
 
@@ -550,8 +648,10 @@ static void dumpSectionContrib(LinePrinter &P, const SectionContrib &SC,
   if (SC.ISect > 0 && SC.ISect <= SectionNames.size()) {
     StringRef SectionName = SectionNames[SC.ISect - 1];
     NameInsert = formatv("[{0}]", SectionName).str();
-  } else
+  } else {
     NameInsert = "[???]";
+
+}
   P.formatLine("SC{5}  | mod = {2}, {0}, size = {1}, data crc = {3}, reloc "
                "crc = {4}",
                formatSegmentOffset(SC.ISect, SC.Off), fmtle(SC.Size),
@@ -658,8 +758,10 @@ Error DumpOutputStyle::dumpSymbolStats() {
   StatCollection ChunkStats;
 
   Optional<PrintScope> Scope;
-  if (File.isPdb())
+  if (File.isPdb()) {
     Scope.emplace(P, 2);
+
+}
 
   iterateSymbolGroups(File, Scope, [&](uint32_t Modi, const SymbolGroup &SG) {
     StatCollection SS = getSymbolStats(SG, SymStats);
@@ -726,11 +828,15 @@ Error DumpOutputStyle::dumpTypeStats() {
 }
 
 static bool isValidNamespaceIdentifier(StringRef S) {
-  if (S.empty())
+  if (S.empty()) {
     return false;
 
-  if (std::isdigit(S[0]))
+}
+
+  if (std::isdigit(S[0])) {
     return false;
+
+}
 
   return llvm::all_of(S, [](char C) { return std::isalnum(C); });
 }
@@ -746,14 +852,20 @@ const StringRef UnknownLabel("<unknown type>");
 } // namespace
 
 static StringRef getUdtStatLabel(uint32_t Kind) {
-  if (Kind == kNoneUdtKind)
+  if (Kind == kNoneUdtKind) {
     return NoneLabel;
 
-  if (Kind == kSimpleUdtKind)
+}
+
+  if (Kind == kSimpleUdtKind) {
     return SimpleLabel;
 
-  if (Kind == kUnknownUdtKind)
+}
+
+  if (Kind == kUnknownUdtKind) {
     return UnknownLabel;
+
+}
 
   return formatTypeLeafKind(static_cast<TypeLeafKind>(Kind));
 }
@@ -785,8 +897,10 @@ Error DumpOutputStyle::dumpUdtStats() {
 
   size_t LongestNamespace = 0;
   auto HandleOneSymbol = [&](const CVSymbol &Sym) {
-    if (Sym.kind() != SymbolKind::S_UDT)
+    if (Sym.kind() != SymbolKind::S_UDT) {
       return;
+
+}
     UdtStats.update(SymbolKind::S_UDT, Sym.length());
 
     UDTSym UDT = cantFail(SymbolDeserializer::deserializeAs<UDTSym>(Sym));
@@ -794,25 +908,31 @@ Error DumpOutputStyle::dumpUdtStats() {
     uint32_t Kind = 0;
     uint32_t RecordSize = 0;
 
-    if (UDT.Type.isNoneType())
+    if (UDT.Type.isNoneType()) {
       Kind = kNoneUdtKind;
-    else if (UDT.Type.isSimple())
+    } else if (UDT.Type.isSimple()) {
       Kind = kSimpleUdtKind;
-    else if (Optional<CVType> T = TpiTypes.tryGetType(UDT.Type)) {
+    } else if (Optional<CVType> T = TpiTypes.tryGetType(UDT.Type)) {
       Kind = T->kind();
       RecordSize = T->length();
-    } else
+    } else {
       Kind = kUnknownUdtKind;
+
+}
 
     UdtTargetStats.update(Kind, RecordSize);
 
     size_t Pos = UDT.Name.find("::");
-    if (Pos == StringRef::npos)
+    if (Pos == StringRef::npos) {
       return;
 
+}
+
     StringRef Scope = UDT.Name.take_front(Pos);
-    if (Scope.empty() || !isValidNamespaceIdentifier(Scope))
+    if (Scope.empty() || !isValidNamespaceIdentifier(Scope)) {
       return;
+
+}
 
     LongestNamespace = std::max(LongestNamespace, Scope.size());
     NamespacedStats[Scope].update(RecordSize);
@@ -823,8 +943,10 @@ Error DumpOutputStyle::dumpUdtStats() {
   if (File.isPdb()) {
     auto &SymbolRecords = cantFail(getPdb().getPDBSymbolStream());
     auto ExpGlobals = getPdb().getPDBGlobalsStream();
-    if (!ExpGlobals)
+    if (!ExpGlobals) {
       return ExpGlobals.takeError();
+
+}
 
     for (uint32_t PubSymOff : ExpGlobals->getGlobalsTable()) {
       CVSymbol Sym = SymbolRecords.readRecord(PubSymOff);
@@ -833,14 +955,18 @@ Error DumpOutputStyle::dumpUdtStats() {
   } else {
     for (const auto &Sec : File.symbol_groups()) {
       for (const auto &SS : Sec.getDebugSubsections()) {
-        if (SS.kind() != DebugSubsectionKind::Symbols)
+        if (SS.kind() != DebugSubsectionKind::Symbols) {
           continue;
+
+}
 
         DebugSymbolsSubsectionRef Symbols;
         BinaryStreamReader Reader(SS.getRecordData());
         cantFail(Symbols.initialize(Reader));
-        for (const auto &S : Symbols)
+        for (const auto &S : Symbols) {
           HandleOneSymbol(S);
+
+}
       }
     }
   }
@@ -889,8 +1015,10 @@ Error DumpOutputStyle::dumpUdtStats() {
 
   // Print namespace stats in descending order of size.
   std::vector<StrAndStat> NamespacedStatsSorted;
-  for (const auto &Stat : NamespacedStats)
+  for (const auto &Stat : NamespacedStats) {
     NamespacedStatsSorted.push_back({Stat.getKey(), Stat.second});
+
+}
   llvm::stable_sort(NamespacedStatsSorted,
                     [](const StrAndStat &L, const StrAndStat &R) {
                       return L.Stat.Size > R.Stat.Size;
@@ -921,12 +1049,14 @@ static void typesetLinesAndColumns(LinePrinter &P, uint32_t Start,
     for (uint32_t I = 0; I < RowColumns; ++I) {
       LineInfo Line(LineIter->Flags);
       std::string LineStr;
-      if (Line.isAlwaysStepInto())
+      if (Line.isAlwaysStepInto()) {
         LineStr = "ASI";
-      else if (Line.isNeverStepInto())
+      } else if (Line.isNeverStepInto()) {
         LineStr = "NSI";
-      else
+      } else {
         LineStr = utostr(Line.getStartLine());
+
+}
       char Statement = Line.isStatement() ? ' ' : '!';
       P.format("{0} {1:X-} {2} ",
                fmt_align(LineStr, AlignStyle::Right, kMaxCharsPerLineNumber),
@@ -967,10 +1097,12 @@ Error DumpOutputStyle::dumpLines() {
           AutoIndent Indent(P, 2);
           P.formatLine("{0:X-4}:{1:X-8}-{2:X-8}, ", Segment, Begin, End);
           uint32_t Count = Block.LineNumbers.size();
-          if (Lines.hasColumnInfo())
+          if (Lines.hasColumnInfo()) {
             P.format("line/column/addr entries = {0}", Count);
-          else
+          } else {
             P.format("line/addr entries = {0}", Count);
+
+}
 
           P.NewLine();
           typesetLinesAndColumns(P, Begin, Block);
@@ -1030,16 +1162,20 @@ Error DumpOutputStyle::dumpXmi() {
           if (!ExpectedModule) {
             Module = "(unknown module)";
             consumeError(ExpectedModule.takeError());
-          } else
+          } else {
             Module = *ExpectedModule;
+
+}
           if (Module.size() > 32) {
             ModuleStorage = "...";
             ModuleStorage += Module.take_back(32 - 3);
             Module = ModuleStorage;
           }
           std::vector<std::string> TIs;
-          for (const auto I : Xmi.Imports)
+          for (const auto I : Xmi.Imports) {
             TIs.push_back(std::string(formatv("{0,+10:X+}", fmtle(I))));
+
+}
           std::string Result =
               typesetItemList(TIs, P.getIndentLevel() + 35, 12, " ");
           P.formatLine("{0,+32} | {1}", Module, Result);
@@ -1158,10 +1294,14 @@ Error DumpOutputStyle::dumpFpo() {
     return Error::success();
   }
 
-  if (auto EC = dumpOldFpo(File))
+  if (auto EC = dumpOldFpo(File)) {
     return EC;
-  if (auto EC = dumpNewFpo(File))
+
+}
+  if (auto EC = dumpNewFpo(File)) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -1175,9 +1315,9 @@ Error DumpOutputStyle::dumpStringTableFromPdb() {
   }
 
   if (opts::dump::DumpStringTable) {
-    if (IS->name_ids().empty())
+    if (IS->name_ids().empty()) {
       P.formatLine("Empty");
-    else {
+    } else {
       auto MaxID =
           std::max_element(IS->name_ids().begin(), IS->name_ids().end());
       uint32_t Digits = NumDigits(*MaxID);
@@ -1200,9 +1340,11 @@ Error DumpOutputStyle::dumpStringTableFromPdb() {
           Str.append("'");
         }
 
-        if (!Str.empty())
+        if (!Str.empty()) {
           P.formatLine("{0} | {1}", fmt_align(I, AlignStyle::Right, Digits),
                        Str);
+
+}
       }
     }
   }
@@ -1227,9 +1369,11 @@ Error DumpOutputStyle::dumpStringTableFromPdb() {
       P.printLine("Hash Table:");
       AutoIndent Indent(P);
       P.formatLine("Bucket Count: {0}", IS->name_ids().size());
-      for (const auto &Entry : enumerate(IS->name_ids()))
+      for (const auto &Entry : enumerate(IS->name_ids())) {
         P.formatLine("Bucket[{0}] : {1}", Entry.index(),
                      uint32_t(Entry.value()));
+
+}
       P.formatLine("Name Count: {0}", IS->getNameCount());
     }
   }
@@ -1247,8 +1391,10 @@ Error DumpOutputStyle::dumpStringTableFromObj() {
           StringRef Str;
           uint32_t Offset = Reader.getOffset();
           cantFail(Reader.readCString(Str));
-          if (Str.empty())
+          if (Str.empty()) {
             continue;
+
+}
 
           P.formatLine("{0} | {1}", fmt_align(Offset, AlignStyle::Right, 4),
                        Str);
@@ -1284,8 +1430,10 @@ Error DumpOutputStyle::dumpNamedStreams() {
 Error DumpOutputStyle::dumpStringTable() {
   printHeader(P, "String Table");
 
-  if (File.isPdb())
+  if (File.isPdb()) {
     return dumpStringTableFromPdb();
+
+}
 
   return dumpStringTableFromObj();
 }
@@ -1296,8 +1444,10 @@ static void buildDepSet(LazyRandomTypeCollection &Types,
   SmallVector<TypeIndex, 4> DepList;
   for (const auto &I : Indices) {
     TypeIndex TI(I);
-    if (DepSet.find(TI) != DepSet.end() || TI.isSimple() || TI.isNoneType())
+    if (DepSet.find(TI) != DepSet.end() || TI.isSimple() || TI.isNoneType()) {
       continue;
+
+}
 
     CVType Type = Types.getType(TI);
     DepSet[TI] = Type;
@@ -1348,9 +1498,11 @@ static void dumpPartialTypeStream(LinePrinter &Printer,
         TiList.size(), DepSet.size());
 
     for (auto &Dep : DepSet) {
-      if (auto EC = codeview::visitTypeRecord(Dep.second, Dep.first, V))
+      if (auto EC = codeview::visitTypeRecord(Dep.second, Dep.first, V)) {
         Printer.formatLine("An error occurred dumping type record {0}: {1}",
                            Dep.first, toString(std::move(EC)));
+
+}
     }
   } else {
     Printer.formatLine("Showing {0:N} records.", TiList.size());
@@ -1358,9 +1510,11 @@ static void dumpPartialTypeStream(LinePrinter &Printer,
     for (const auto &I : TiList) {
       TypeIndex TI(I);
       CVType Type = Types.getType(TI);
-      if (auto EC = codeview::visitTypeRecord(Type, TI, V))
+      if (auto EC = codeview::visitTypeRecord(Type, TI, V)) {
         Printer.formatLine("An error occurred dumping type record {0}: {1}", TI,
                            toString(std::move(EC)));
+
+}
     }
   }
 }
@@ -1370,30 +1524,40 @@ Error DumpOutputStyle::dumpTypesFromObjectFile() {
 
   for (const auto &S : getObj().sections()) {
     Expected<StringRef> NameOrErr = S.getName();
-    if (!NameOrErr)
+    if (!NameOrErr) {
       return NameOrErr.takeError();
+
+}
     StringRef SectionName = *NameOrErr;
 
     // .debug$T is a standard CodeView type section, while .debug$P is the same
     // format but used for MSVC precompiled header object files.
-    if (SectionName == ".debug$T")
+    if (SectionName == ".debug$T") {
       printHeader(P, "Types (.debug$T)");
-    else if (SectionName == ".debug$P")
+    } else if (SectionName == ".debug$P") {
       printHeader(P, "Precompiled Types (.debug$P)");
-    else
+    } else {
       continue;
 
+}
+
     Expected<StringRef> ContentsOrErr = S.getContents();
-    if (!ContentsOrErr)
+    if (!ContentsOrErr) {
       return ContentsOrErr.takeError();
+
+}
 
     uint32_t Magic;
     BinaryStreamReader Reader(*ContentsOrErr, llvm::support::little);
-    if (auto EC = Reader.readInteger(Magic))
+    if (auto EC = Reader.readInteger(Magic)) {
       return EC;
-    if (Magic != COFF::DEBUG_SECTION_MAGIC)
+
+}
+    if (Magic != COFF::DEBUG_SECTION_MAGIC) {
       return make_error<StringError>("Invalid CodeView debug section.",
                                      inconvertibleErrorCode());
+
+}
 
     Types.reset(Reader, 100);
 
@@ -1476,11 +1640,11 @@ Error DumpOutputStyle::dumpTpiStream(uint32_t StreamIdx) {
   Stream.buildHashMap();
 
   if (DumpTypes || !Indices.empty()) {
-    if (Indices.empty())
+    if (Indices.empty()) {
       dumpFullTypeStream(P, Types, MaybeTracker, Stream.getNumTypeRecords(),
                          Stream.getNumHashBuckets(), Stream.getHashValues(),
                          &Stream, DumpBytes, DumpExtras);
-    else {
+    } else {
       std::vector<TypeIndex> TiList(Indices.begin(), Indices.end());
       dumpPartialTypeStream(P, Types, MaybeTracker, Stream, TiList, DumpBytes,
                             DumpExtras, opts::dump::DumpTypeDependents);
@@ -1514,9 +1678,9 @@ Error DumpOutputStyle::dumpTpiStream(uint32_t StreamIdx) {
         AutoIndent Indent2(P);
         auto ExpectedStr = Strings.getStringForID(A.first);
         TypeIndex TI(A.second);
-        if (ExpectedStr)
+        if (ExpectedStr) {
           P.formatLine("`{0}` -> {1}", *ExpectedStr, TI);
-        else {
+        } else {
           P.formatLine("unknown str id ({0}) -> {1}", A.first, TI);
           consumeError(ExpectedStr.takeError());
         }
@@ -1558,8 +1722,10 @@ Error DumpOutputStyle::dumpModuleSymsForObj() {
         }
       });
 
-  if (SymbolError)
+  if (SymbolError) {
     return std::move(*SymbolError);
+
+}
 
   return Error::success();
 }
@@ -1665,8 +1831,10 @@ Error DumpOutputStyle::dumpGSIRecords() {
   CVSymbolVisitor Visitor(Pipeline);
 
   BinaryStreamRef SymStream = Records.getSymbolArray().getUnderlyingStream();
-  if (auto E = Visitor.visitSymbolStream(Records.getSymbolArray(), 0))
+  if (auto E = Visitor.visitSymbolStream(Records.getSymbolArray(), 0)) {
     return E;
+
+}
   return Error::success();
 }
 
@@ -1716,8 +1884,10 @@ Error DumpOutputStyle::dumpGlobals() {
       }
 
       for (ResultEntryType Result : Results) {
-        if (auto E = Visitor.visitSymbolRecord(Result.second, Result.first))
+        if (auto E = Visitor.visitSymbolRecord(Result.second, Result.first)) {
           return E;
+
+}
       }
     }
   }
@@ -1752,23 +1922,29 @@ Error DumpOutputStyle::dumpPublics() {
   Err(dumpSymbolsFromGSI(PublicsTable, opts::dump::DumpPublicExtras));
 
   // Skip the rest if we aren't dumping extras.
-  if (!opts::dump::DumpPublicExtras)
+  if (!opts::dump::DumpPublicExtras) {
     return Error::success();
+
+}
 
   P.formatLine("Address Map");
   {
     // These are offsets into the publics stream sorted by secidx:secrel.
     AutoIndent Indent2(P);
-    for (uint32_t Addr : Publics.getAddressMap())
+    for (uint32_t Addr : Publics.getAddressMap()) {
       P.formatLine("off = {0}", Addr);
+
+}
   }
 
   // The thunk map is optional debug info used for ILT thunks.
   if (!Publics.getThunkMap().empty()) {
     P.formatLine("Thunk Map");
     AutoIndent Indent2(P);
-    for (uint32_t Addr : Publics.getThunkMap())
+    for (uint32_t Addr : Publics.getThunkMap()) {
       P.formatLine("{0:x8}", Addr);
+
+}
   }
 
   // The section offsets table appears to be empty when incremental linking
@@ -1776,8 +1952,10 @@ Error DumpOutputStyle::dumpPublics() {
   if (!Publics.getSectionOffsets().empty()) {
     P.formatLine("Section Offsets");
     AutoIndent Indent2(P);
-    for (const SectionOffset &SO : Publics.getSectionOffsets())
+    for (const SectionOffset &SO : Publics.getSectionOffsets()) {
       P.formatLine("{0:x4}:{1:x8}", uint16_t(SO.Isect), uint32_t(SO.Off));
+
+}
   }
 
   return Error::success();
@@ -1786,8 +1964,10 @@ Error DumpOutputStyle::dumpPublics() {
 Error DumpOutputStyle::dumpSymbolsFromGSI(const GSIHashTable &Table,
                                           bool HashExtras) {
   auto ExpectedSyms = getPdb().getPDBSymbolStream();
-  if (!ExpectedSyms)
+  if (!ExpectedSyms) {
     return ExpectedSyms.takeError();
+
+}
   auto &Types = File.types();
   auto &Ids = File.ids();
 
@@ -1814,10 +1994,14 @@ Error DumpOutputStyle::dumpSymbolsFromGSI(const GSIHashTable &Table,
         ExpectedSyms->getSymbolArray().getUnderlyingStream();
     for (uint32_t PubSymOff : Table) {
       Expected<CVSymbol> Sym = readSymbolFromStream(SymStream, PubSymOff);
-      if (!Sym)
+      if (!Sym) {
         return Sym.takeError();
-      if (auto E = Visitor.visitSymbolRecord(*Sym, PubSymOff))
+
+}
+      if (auto E = Visitor.visitSymbolRecord(*Sym, PubSymOff)) {
         return E;
+
+}
     }
   }
 
@@ -1826,16 +2010,20 @@ Error DumpOutputStyle::dumpSymbolsFromGSI(const GSIHashTable &Table,
     P.formatLine("Hash Entries");
     {
       AutoIndent Indent2(P);
-      for (const PSHashRecord &HR : Table.HashRecords)
+      for (const PSHashRecord &HR : Table.HashRecords) {
         P.formatLine("off = {0}, refcnt = {1}", uint32_t(HR.Off),
           uint32_t(HR.CRef));
+
+}
     }
 
     P.formatLine("Hash Buckets");
     {
       AutoIndent Indent2(P);
-      for (uint32_t Hash : Table.HashBuckets)
+      for (uint32_t Hash : Table.HashBuckets) {
         P.formatLine("{0:x8}", Hash);
+
+}
     }
   }
 
@@ -1845,8 +2033,10 @@ Error DumpOutputStyle::dumpSymbolsFromGSI(const GSIHashTable &Table,
 static std::string formatSegMapDescriptorFlag(uint32_t IndentLevel,
                                               OMFSegDescFlags Flags) {
   std::vector<std::string> Opts;
-  if (Flags == OMFSegDescFlags::None)
+  if (Flags == OMFSegDescFlags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(OMFSegDescFlags, Read, Flags, "read");
   PUSH_FLAG(OMFSegDescFlags, Write, Flags, "write");

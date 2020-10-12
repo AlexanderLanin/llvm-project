@@ -50,8 +50,10 @@ bool SpecialCaseList::Matcher::insert(std::string Regexp,
 
   // Check that the regexp is valid.
   Regex CheckRE(Regexp);
-  if (!CheckRE.isValid(REError))
+  if (!CheckRE.isValid(REError)) {
     return false;
+
+}
 
   RegExes.emplace_back(
       std::make_pair(std::make_unique<Regex>(std::move(CheckRE)), LineNumber));
@@ -60,13 +62,21 @@ bool SpecialCaseList::Matcher::insert(std::string Regexp,
 
 unsigned SpecialCaseList::Matcher::match(StringRef Query) const {
   auto It = Strings.find(Query);
-  if (It != Strings.end())
+  if (It != Strings.end()) {
     return It->second;
-  if (Trigrams.isDefinitelyOut(Query))
+
+}
+  if (Trigrams.isDefinitelyOut(Query)) {
     return false;
-  for (auto& RegExKV : RegExes)
-    if (RegExKV.first->match(Query))
+
+}
+  for (auto& RegExKV : RegExes) {
+    if (RegExKV.first->match(Query)) {
       return RegExKV.second;
+
+}
+
+}
   return 0;
 }
 
@@ -74,16 +84,20 @@ std::unique_ptr<SpecialCaseList>
 SpecialCaseList::create(const std::vector<std::string> &Paths,
                         llvm::vfs::FileSystem &FS, std::string &Error) {
   std::unique_ptr<SpecialCaseList> SCL(new SpecialCaseList());
-  if (SCL->createInternal(Paths, FS, Error))
+  if (SCL->createInternal(Paths, FS, Error)) {
     return SCL;
+
+}
   return nullptr;
 }
 
 std::unique_ptr<SpecialCaseList> SpecialCaseList::create(const MemoryBuffer *MB,
                                                          std::string &Error) {
   std::unique_ptr<SpecialCaseList> SCL(new SpecialCaseList());
-  if (SCL->createInternal(MB, Error))
+  if (SCL->createInternal(MB, Error)) {
     return SCL;
+
+}
   return nullptr;
 }
 
@@ -91,8 +105,10 @@ std::unique_ptr<SpecialCaseList>
 SpecialCaseList::createOrDie(const std::vector<std::string> &Paths,
                              llvm::vfs::FileSystem &FS) {
   std::string Error;
-  if (auto SCL = create(Paths, FS, Error))
+  if (auto SCL = create(Paths, FS, Error)) {
     return SCL;
+
+}
   report_fatal_error(Error);
 }
 
@@ -118,8 +134,10 @@ bool SpecialCaseList::createInternal(const std::vector<std::string> &Paths,
 bool SpecialCaseList::createInternal(const MemoryBuffer *MB,
                                      std::string &Error) {
   StringMap<size_t> Sections;
-  if (!parse(MB, Sections, Error))
+  if (!parse(MB, Sections, Error)) {
     return false;
+
+}
   return true;
 }
 
@@ -136,8 +154,10 @@ bool SpecialCaseList::parse(const MemoryBuffer *MB,
   for (auto I = Lines.begin(), E = Lines.end(); I != E; ++I, ++LineNo) {
     *I = I->trim();
     // Ignore empty lines and lines starting with "#"
-    if (I->empty() || I->startswith("#"))
+    if (I->empty() || I->startswith("#")) {
       continue;
+
+}
 
     // Save section names
     if (I->startswith("[")) {
@@ -209,13 +229,17 @@ bool SpecialCaseList::inSection(StringRef Section, StringRef Prefix,
 unsigned SpecialCaseList::inSectionBlame(StringRef Section, StringRef Prefix,
                                          StringRef Query,
                                          StringRef Category) const {
-  for (auto &SectionIter : Sections)
+  for (auto &SectionIter : Sections) {
     if (SectionIter.SectionMatcher->match(Section)) {
       unsigned Blame =
           inSectionBlame(SectionIter.Entries, Prefix, Query, Category);
-      if (Blame)
+      if (Blame) {
         return Blame;
+
+}
     }
+
+}
   return 0;
 }
 
@@ -223,9 +247,13 @@ unsigned SpecialCaseList::inSectionBlame(const SectionEntries &Entries,
                                          StringRef Prefix, StringRef Query,
                                          StringRef Category) const {
   SectionEntries::const_iterator I = Entries.find(Prefix);
-  if (I == Entries.end()) return 0;
+  if (I == Entries.end()) { return 0;
+
+}
   StringMap<Matcher>::const_iterator II = I->second.find(Category);
-  if (II == I->second.end()) return 0;
+  if (II == I->second.end()) { return 0;
+
+}
 
   return II->getValue().match(Query);
 }

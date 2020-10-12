@@ -16,8 +16,10 @@ using namespace llvm;
 static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
   SMDiagnostic Err;
   std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("LoopUtilsTests", errs());
+
+}
   return Mod;
 }
 

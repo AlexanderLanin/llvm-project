@@ -483,8 +483,10 @@ bool foldFuncPtrAndConstToNull(LLVMContext &Context, Module *TheModule,
   Function *Func(Function::Create(
       FuncType, GlobalValue::ExternalLinkage, "", TheModule));
 
-  if (FunctionAlign)
+  if (FunctionAlign) {
     Func->setAlignment(*FunctionAlign);
+
+}
 
   IntegerType *ConstantIntType(Type::getInt32Ty(Context));
   ConstantInt *TheConstant(ConstantInt::get(ConstantIntType, AndValue));

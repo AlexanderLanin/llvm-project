@@ -28,9 +28,13 @@ TEST_F(LegacyAPIsStandardTest, TestLambdaSymbolResolver) {
             LookupKind::Static, JITDylibLookupFlags::MatchExportedSymbolsOnly,
             SymbolLookupSet(Symbols)));
         SymbolNameSet Result;
-        for (auto &KV : FlagsMap)
-          if (!KV.second.isStrong())
+        for (auto &KV : FlagsMap) {
+          if (!KV.second.isStrong()) {
             Result.insert(KV.first);
+
+}
+
+}
         return Result;
       },
       [&](std::shared_ptr<AsynchronousSymbolQuery> Q, SymbolNameSet Symbols) {
@@ -73,8 +77,10 @@ TEST_F(LegacyAPIsStandardTest, LegacyLookupHelpersFn) {
   BarSym.setFlags(BarSym.getFlags() | JITSymbolFlags::Weak);
 
   auto LegacyLookup = [&](StringRef Name) -> JITSymbol {
-    if (Name == "foo")
+    if (Name == "foo") {
       return FooSym;
+
+}
 
     if (Name == "bar") {
       auto BarMaterializer = [&]() -> Expected<JITTargetAddress> {

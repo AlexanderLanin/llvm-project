@@ -39,15 +39,19 @@ Error FileBuffer::allocate(size_t Size) {
       FileOutputBuffer::create(getName(), Size, FileOutputBuffer::F_executable);
   // FileOutputBuffer::create() returns an Error that is just a wrapper around
   // std::error_code. Wrap it in FileError to include the actual filename.
-  if (!BufferOrErr)
+  if (!BufferOrErr) {
     return createFileError(getName(), BufferOrErr.takeError());
+
+}
   Buf = std::move(*BufferOrErr);
   return Error::success();
 }
 
 Error FileBuffer::commit() {
-  if (EmptyFile)
+  if (EmptyFile) {
     return createEmptyFile(getName());
+
+}
 
   assert(Buf && "allocate() not called before commit()!");
   Error Err = Buf->commit();

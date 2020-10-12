@@ -100,10 +100,12 @@ raw_ostream &operator<<(raw_ostream &OS, const Block &B) {
 
 raw_ostream &operator<<(raw_ostream &OS, const Symbol &Sym) {
   OS << "<";
-  if (Sym.getName().empty())
+  if (Sym.getName().empty()) {
     OS << "*anon*";
-  else
+  } else {
     OS << Sym.getName();
+
+}
   OS << ": flags = ";
   switch (Sym.getLinkage()) {
   case Linkage::Strong:
@@ -129,8 +131,10 @@ raw_ostream &operator<<(raw_ostream &OS, const Symbol &Sym) {
      << ", addr = " << formatv("{0:x16}", Sym.getAddress()) << " ("
      << formatv("{0:x16}", Sym.getAddressable().getAddress()) << " + "
      << formatv("{0:x8}", Sym.getOffset());
-  if (Sym.isDefined())
+  if (Sym.isDefined()) {
     OS << " " << Sym.getBlock().getSection().getName();
+
+}
   OS << ")>";
   return OS;
 }
@@ -143,10 +147,14 @@ void printEdge(raw_ostream &OS, const Block &B, const Edge &E,
 }
 
 Section::~Section() {
-  for (auto *Sym : Symbols)
+  for (auto *Sym : Symbols) {
     Sym->~Symbol();
-  for (auto *B : Blocks)
+
+}
+  for (auto *B : Blocks) {
     B->~Block();
+
+}
 }
 
 Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
@@ -155,8 +163,10 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
   assert(SplitIndex > 0 && "splitBlock can not be called with SplitIndex == 0");
 
   // If the split point covers all of B then just return B.
-  if (SplitIndex == B.getSize())
+  if (SplitIndex == B.getSize()) {
     return B;
+
+}
 
   assert(SplitIndex < B.getSize() && "SplitIndex out of range");
 
@@ -184,8 +194,10 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
       if (I->getOffset() < SplitIndex) {
         NewBlock.addEdge(*I);
         EdgesToRemove.push_back(I);
-      } else
+      } else {
         I->setOffset(I->getOffset() - SplitIndex);
+
+}
     }
 
     // Remove edges that were transfered to NewBlock from B.
@@ -199,13 +211,19 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
   {
     // Initialize the symbols cache if necessary.
     SplitBlockCache LocalBlockSymbolsCache;
-    if (!Cache)
+    if (!Cache) {
       Cache = &LocalBlockSymbolsCache;
+
+}
     if (*Cache == None) {
       *Cache = SplitBlockCache::value_type();
-      for (auto *Sym : B.getSection().symbols())
-        if (&Sym->getBlock() == &B)
+      for (auto *Sym : B.getSection().symbols()) {
+        if (&Sym->getBlock() == &B) {
           (*Cache)->push_back(Sym);
+
+}
+
+}
 
       llvm::sort(**Cache, [](const Symbol *LHS, const Symbol *RHS) {
         return LHS->getOffset() > RHS->getOffset();
@@ -221,8 +239,10 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
     }
 
     // Update offsets for all remaining symbols in B.
-    for (auto *Sym : BlockSymbols)
+    for (auto *Sym : BlockSymbols) {
       Sym->setOffset(Sym->getOffset() - SplitIndex);
+
+}
   }
 
   return NewBlock;
@@ -230,8 +250,10 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
 
 void LinkGraph::dump(raw_ostream &OS,
                      std::function<StringRef(Edge::Kind)> EdgeKindToName) {
-  if (!EdgeKindToName)
+  if (!EdgeKindToName) {
     EdgeKindToName = [](Edge::Kind K) { return StringRef(); };
+
+}
 
   OS << "Symbols:\n";
   for (auto *Sym : defined_symbols()) {
@@ -244,9 +266,9 @@ void LinkGraph::dump(raw_ostream &OS,
                                   ? getGenericEdgeKindName(E.getKind())
                                   : EdgeKindToName(E.getKind()));
 
-        if (!EdgeName.empty())
+        if (!EdgeName.empty()) {
           printEdge(OS, Sym->getBlock(), E, EdgeName);
-        else {
+        } else {
           auto EdgeNumberString = std::to_string(E.getKind());
           printEdge(OS, Sym->getBlock(), E, EdgeNumberString);
         }
@@ -256,14 +278,18 @@ void LinkGraph::dump(raw_ostream &OS,
   }
 
   OS << "Absolute symbols:\n";
-  for (auto *Sym : absolute_symbols())
+  for (auto *Sym : absolute_symbols()) {
     OS << "  " << format("0x%016" PRIx64, Sym->getAddress()) << ": " << *Sym
        << "\n";
 
+}
+
   OS << "External symbols:\n";
-  for (auto *Sym : external_symbols())
+  for (auto *Sym : external_symbols()) {
     OS << "  " << format("0x%016" PRIx64, Sym->getAddress()) << ": " << *Sym
        << "\n";
+
+}
 }
 
 raw_ostream &operator<<(raw_ostream &OS, const SymbolLookupFlags &LF) {
@@ -294,8 +320,10 @@ Error JITLinkContext::modifyPassConfig(const Triple &TT,
 }
 
 Error markAllSymbolsLive(LinkGraph &G) {
-  for (auto *Sym : G.defined_symbols())
+  for (auto *Sym : G.defined_symbols()) {
     Sym->setLive(true);
+
+}
   return Error::success();
 }
 

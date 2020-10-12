@@ -26,11 +26,17 @@ void llvm::parseFuzzerCLOpts(int ArgC, char *ArgV[]) {
   CLArgs.push_back(ArgV[0]);
 
   int I = 1;
-  while (I < ArgC)
-    if (StringRef(ArgV[I++]).equals("-ignore_remaining_args=1"))
+  while (I < ArgC) {
+    if (StringRef(ArgV[I++]).equals("-ignore_remaining_args=1")) {
       break;
-  while (I < ArgC)
+
+}
+
+}
+  while (I < ArgC) {
     CLArgs.push_back(ArgV[I++]);
+
+}
 
   cl::ParseCommandLineOptions(CLArgs.size(), CLArgs.data());
 }
@@ -39,8 +45,10 @@ void llvm::handleExecNameEncodedBEOpts(StringRef ExecName) {
   std::vector<std::string> Args{std::string(ExecName)};
 
   auto NameAndArgs = ExecName.split("--");
-  if (NameAndArgs.second.empty())
+  if (NameAndArgs.second.empty()) {
     return;
+
+}
 
   SmallVector<StringRef, 4> Opts;
   NameAndArgs.second.split(Opts, '-');
@@ -59,14 +67,18 @@ void llvm::handleExecNameEncodedBEOpts(StringRef ExecName) {
     }
   }
   errs() << NameAndArgs.first << ": Injected args:";
-  for (int I = 1, E = Args.size(); I < E; ++I)
+  for (int I = 1, E = Args.size(); I < E; ++I) {
     errs() << " " << Args[I];
+
+}
   errs() << "\n";
 
   std::vector<const char *> CLArgs;
   CLArgs.reserve(Args.size());
-  for (std::string &S : Args)
+  for (std::string &S : Args) {
     CLArgs.push_back(S.c_str());
+
+}
 
   cl::ParseCommandLineOptions(CLArgs.size(), CLArgs.data());
 }
@@ -76,8 +88,10 @@ void llvm::handleExecNameEncodedOptimizerOpts(StringRef ExecName) {
   std::vector<std::string> Args{std::string(ExecName)};
 
   auto NameAndArgs = ExecName.split("--");
-  if (NameAndArgs.second.empty())
+  if (NameAndArgs.second.empty()) {
     return;
+
+}
 
   SmallVector<StringRef, 4> Opts;
   NameAndArgs.second.split(Opts, '-');
@@ -123,14 +137,18 @@ void llvm::handleExecNameEncodedOptimizerOpts(StringRef ExecName) {
   }
 
   errs() << NameAndArgs.first << ": Injected args:";
-  for (int I = 1, E = Args.size(); I < E; ++I)
+  for (int I = 1, E = Args.size(); I < E; ++I) {
     errs() << " " << Args[I];
+
+}
   errs() << "\n";
 
   std::vector<const char *> CLArgs;
   CLArgs.reserve(Args.size());
-  for (std::string &S : Args)
+  for (std::string &S : Args) {
     CLArgs.push_back(S.c_str());
+
+}
 
   cl::ParseCommandLineOptions(CLArgs.size(), CLArgs.data());
 }
@@ -147,8 +165,10 @@ int llvm::runFuzzerOnInputs(int ArgC, char *ArgV[], FuzzerTestFun TestOne,
   for (int I = 1; I < ArgC; ++I) {
     StringRef Arg(ArgV[I]);
     if (Arg.startswith("-")) {
-      if (Arg.equals("-ignore_remaining_args=1"))
+      if (Arg.equals("-ignore_remaining_args=1")) {
         break;
+
+}
       continue;
     }
 
@@ -169,9 +189,11 @@ int llvm::runFuzzerOnInputs(int ArgC, char *ArgV[], FuzzerTestFun TestOne,
 std::unique_ptr<Module> llvm::parseModule(
     const uint8_t *Data, size_t Size, LLVMContext &Context) {
 
-  if (Size <= 1)
+  if (Size <= 1) {
     // We get bogus data given an empty corpus - just create a new module.
     return std::make_unique<Module>("M", Context);
+
+}
 
   auto Buffer = MemoryBuffer::getMemBuffer(
       StringRef(reinterpret_cast<const char *>(Data), Size), "Fuzzer input",
@@ -192,8 +214,10 @@ size_t llvm::writeModule(const Module &M, uint8_t *Dest, size_t MaxSize) {
     raw_string_ostream OS(Buf);
     WriteBitcodeToFile(M, OS);
   }
-  if (Buf.size() > MaxSize)
+  if (Buf.size() > MaxSize) {
       return 0;
+
+}
   memcpy(Dest, Buf.data(), Buf.size());
   return Buf.size();
 }
@@ -201,8 +225,10 @@ size_t llvm::writeModule(const Module &M, uint8_t *Dest, size_t MaxSize) {
 std::unique_ptr<Module> llvm::parseAndVerify(const uint8_t *Data, size_t Size,
                                              LLVMContext &Context) {
   auto M = parseModule(Data, Size, Context);
-  if (!M || verifyModule(*M, &errs()))
+  if (!M || verifyModule(*M, &errs())) {
     return nullptr;
+
+}
 
   return M;
 }

@@ -25,8 +25,10 @@ const char CastSequence[] = "sequence";
 
 AST_MATCHER(Type, sugaredNullptrType) {
   const Type *DesugaredType = Node.getUnqualifiedDesugaredType();
-  if (const auto *BT = dyn_cast<BuiltinType>(DesugaredType))
+  if (const auto *BT = dyn_cast<BuiltinType>(DesugaredType)) {
     return BT->getKind() == BuiltinType::NullPtr;
+
+}
   return false;
 }
 
@@ -101,8 +103,10 @@ public:
   bool TraverseStmt(Stmt *S) {
     bool VisitedPreviously = Visited;
 
-    if (!RecursiveASTVisitor<MacroArgUsageVisitor>::TraverseStmt(S))
+    if (!RecursiveASTVisitor<MacroArgUsageVisitor>::TraverseStmt(S)) {
       return false;
+
+}
 
     // The point at which VisitedPreviously is false and Visited is true is the
     // root of a subtree containing nodes whose locations match CastLoc. It's
@@ -124,14 +128,18 @@ public:
   }
 
   bool VisitStmt(Stmt *S) {
-    if (SM.getFileLoc(S->getBeginLoc()) != CastLoc)
+    if (SM.getFileLoc(S->getBeginLoc()) != CastLoc) {
       return true;
+
+}
     Visited = true;
 
     const ImplicitCastExpr *Cast = dyn_cast<ImplicitCastExpr>(S);
     if (Cast && (Cast->getCastKind() == CK_NullToPointer ||
-                 Cast->getCastKind() == CK_NullToMemberPointer))
+                 Cast->getCastKind() == CK_NullToMemberPointer)) {
       CastFound = true;
+
+}
 
     return true;
   }
@@ -205,8 +213,10 @@ public:
       return true;
     }
 
-    if (!FirstSubExpr)
+    if (!FirstSubExpr) {
       FirstSubExpr = CastSubExpr;
+
+}
 
     if (C->getCastKind() != CK_NullToPointer &&
         C->getCastKind() != CK_NullToMemberPointer) {
@@ -227,8 +237,10 @@ public:
       SourceLocation ImmediateMacroArgLoc, MacroLoc;
       // Skip NULL macros used in macro.
       if (!getMacroAndArgLocations(StartLoc, ImmediateMacroArgLoc, MacroLoc) ||
-          ImmediateMacroArgLoc != FileLocStart)
+          ImmediateMacroArgLoc != FileLocStart) {
         return skipSubTree();
+
+}
 
       if (isReplaceableRange(FileLocStart, FileLocEnd, SM) &&
           allArgUsesValid(C)) {
@@ -242,8 +254,10 @@ public:
           getOutermostMacroName(StartLoc, SM, Context.getLangOpts());
 
       // Check to see if the user wants to replace the macro being expanded.
-      if (!llvm::is_contained(NullMacros, OutermostMacroName))
+      if (!llvm::is_contained(NullMacros, OutermostMacroName)) {
         return skipSubTree();
+
+}
 
       StartLoc = SM.getFileLoc(StartLoc);
       EndLoc = SM.getFileLoc(EndLoc);
@@ -271,15 +285,19 @@ private:
     // Step 1: Get location of macro arg and location of the macro the arg was
     // provided to.
     SourceLocation ArgLoc, MacroLoc;
-    if (!getMacroAndArgLocations(CastLoc, ArgLoc, MacroLoc))
+    if (!getMacroAndArgLocations(CastLoc, ArgLoc, MacroLoc)) {
       return false;
+
+}
 
     // Step 2: Find the first ancestor that doesn't expand from this macro.
     ast_type_traits::DynTypedNode ContainingAncestor;
     if (!findContainingAncestor(
             ast_type_traits::DynTypedNode::create<Stmt>(*CE), MacroLoc,
-            ContainingAncestor))
+            ContainingAncestor)) {
       return false;
+
+}
 
     // Step 3:
     // Visit children of this containing parent looking for the least-descended
@@ -287,12 +305,14 @@ private:
     // from the given arg location.
     // Visitor needs: arg loc.
     MacroArgUsageVisitor ArgUsageVisitor(SM.getFileLoc(CastLoc), SM);
-    if (const auto *D = ContainingAncestor.get<Decl>())
+    if (const auto *D = ContainingAncestor.get<Decl>()) {
       ArgUsageVisitor.TraverseDecl(const_cast<Decl *>(D));
-    else if (const auto *S = ContainingAncestor.get<Stmt>())
+    } else if (const auto *S = ContainingAncestor.get<Stmt>()) {
       ArgUsageVisitor.TraverseStmt(const_cast<Stmt *>(S));
-    else
+    } else {
       llvm_unreachable("Unhandled ContainingAncestor node type");
+
+}
 
     return !ArgUsageVisitor.foundInvalid();
   }
@@ -320,8 +340,10 @@ private:
       SourceLocation OldArgLoc = ArgLoc;
       ArgLoc = Expansion.getExpansionLocStart();
       if (!Expansion.isMacroArgExpansion()) {
-        if (!MacroLoc.isFileID())
+        if (!MacroLoc.isFileID()) {
           return false;
+
+}
 
         StringRef Name =
             Lexer::getImmediateMacroName(OldArgLoc, SM, Context.getLangOpts());
@@ -331,8 +353,10 @@ private:
       MacroLoc = SM.getExpansionRange(ArgLoc).getBegin();
 
       ArgLoc = Expansion.getSpellingLoc().getLocWithOffset(LocInfo.second);
-      if (ArgLoc.isFileID())
+      if (ArgLoc.isFileID()) {
         return true;
+
+}
 
       // If spelling location resides in the same FileID as macro expansion
       // location, it means there is no inner macro.
@@ -416,26 +440,32 @@ private:
 
     while (true) {
       const auto &Parents = Context.getParents(Start);
-      if (Parents.empty())
+      if (Parents.empty()) {
         return false;
+
+}
       if (Parents.size() > 1) {
         // If there are more than one parents, don't do the replacement unless
         // they are InitListsExpr (semantic and syntactic form). In this case we
         // can choose any one here, and the ASTVisitor will take care of
         // traversing the right one.
         for (const auto &Parent : Parents) {
-          if (!Parent.get<InitListExpr>())
+          if (!Parent.get<InitListExpr>()) {
             return false;
+
+}
         }
       }
 
       const ast_type_traits::DynTypedNode &Parent = Parents[0];
 
       SourceLocation Loc;
-      if (const auto *D = Parent.get<Decl>())
+      if (const auto *D = Parent.get<Decl>()) {
         Loc = D->getBeginLoc();
-      else if (const auto *S = Parent.get<Stmt>())
+      } else if (const auto *S = Parent.get<Stmt>()) {
         Loc = S->getBeginLoc();
+
+}
 
       // TypeLoc and NestedNameSpecifierLoc are members of the parent map. Skip
       // them and keep going up.

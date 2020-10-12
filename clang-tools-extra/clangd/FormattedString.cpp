@@ -37,8 +37,10 @@ std::string renderText(llvm::StringRef Input) {
   for (size_t From = 0; From < Input.size();) {
     size_t Next = Input.find_first_of(Punctuation, From);
     R += Input.substr(From, Next - From);
-    if (Next == llvm::StringRef::npos)
+    if (Next == llvm::StringRef::npos) {
       break;
+
+}
     R += "\\";
     R += Input[Next];
 
@@ -55,21 +57,27 @@ std::string renderInlineBlock(llvm::StringRef Input) {
   for (size_t From = 0; From < Input.size();) {
     size_t Next = Input.find("`", From);
     R += Input.substr(From, Next - From);
-    if (Next == llvm::StringRef::npos)
+    if (Next == llvm::StringRef::npos) {
       break;
+
+}
     R += "``"; // double the found backtick.
 
     From = Next + 1;
   }
   // If results starts with a backtick, add spaces on both sides. The spaces
   // are ignored by markdown renderers.
-  if (llvm::StringRef(R).startswith("`") || llvm::StringRef(R).endswith("`"))
+  if (llvm::StringRef(R).startswith("`") || llvm::StringRef(R).endswith("`")) {
     return "` " + std::move(R) + " `";
+
+}
   // Markdown render should ignore first and last space if both are there. We
   // add an extra pair of spaces in that case to make sure we render what the
   // user intended.
-  if (llvm::StringRef(R).startswith(" ") && llvm::StringRef(R).endswith(" "))
+  if (llvm::StringRef(R).startswith(" ") && llvm::StringRef(R).endswith(" ")) {
     return "` " + std::move(R) + " `";
+
+}
   return "`" + std::move(R) + "`";
 }
 
@@ -101,12 +109,16 @@ std::string canonicalizeSpaces(std::string Input) {
   auto WritePtr = Input.begin();
   llvm::SmallVector<llvm::StringRef, 4> Words;
   llvm::SplitString(Input, Words);
-  if (Words.empty())
+  if (Words.empty()) {
     return "";
+
+}
   // Go over each word and add it to the string.
   for (llvm::StringRef Word : Words) {
-    if (WritePtr > Input.begin())
+    if (WritePtr > Input.begin()) {
       *WritePtr++ = ' '; // Separate from previous block.
+
+}
     llvm::for_each(Word, [&WritePtr](const char C) { *WritePtr++ = C; });
   }
   // Get rid of extra spaces.
@@ -129,8 +141,10 @@ std::string renderBlocks(llvm::ArrayRef<std::unique_ptr<Block>> Children,
 
   bool LastBlockWasRuler = true;
   for (const auto &C : Children) {
-    if (C->isRuler() && LastBlockWasRuler)
+    if (C->isRuler() && LastBlockWasRuler) {
       continue;
+
+}
     LastBlockWasRuler = C->isRuler();
     ((*C).*RenderFunc)(OS);
   }
@@ -196,8 +210,10 @@ std::string indentLines(llvm::StringRef Input) {
   IndentedR.reserve(Input.size() + Input.count('\n') * 2);
   for (char C : Input) {
     IndentedR += C;
-    if (C == '\n')
+    if (C == '\n') {
       IndentedR.append("  ");
+
+}
   }
   return IndentedR;
 }
@@ -279,8 +295,10 @@ void BulletList::renderPlainText(llvm::raw_ostream &OS) const {
 
 Paragraph &Paragraph::appendText(std::string Text) {
   Text = canonicalizeSpaces(std::move(Text));
-  if (Text.empty())
+  if (Text.empty()) {
     return *this;
+
+}
   Chunks.emplace_back();
   Chunk &C = Chunks.back();
   C.Contents = std::move(Text);
@@ -290,8 +308,10 @@ Paragraph &Paragraph::appendText(std::string Text) {
 
 Paragraph &Paragraph::appendCode(std::string Code) {
   Code = canonicalizeSpaces(std::move(Code));
-  if (Code.empty())
+  if (Code.empty()) {
     return *this;
+
+}
   Chunks.emplace_back();
   Chunk &C = Chunks.back();
   C.Contents = std::move(Code);

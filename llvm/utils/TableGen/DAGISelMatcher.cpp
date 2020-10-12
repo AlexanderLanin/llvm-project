@@ -21,8 +21,10 @@ void Matcher::dump() const {
 
 void Matcher::print(raw_ostream &OS, unsigned indent) const {
   printImpl(OS, indent);
-  if (Next)
+  if (Next) {
     return Next->print(OS, indent);
+
+}
 }
 
 void Matcher::printOne(raw_ostream &OS) const {
@@ -33,15 +35,21 @@ void Matcher::printOne(raw_ostream &OS) const {
 /// we unlink the next pointer and return it.  Otherwise we unlink Other from
 /// the list and return this.
 Matcher *Matcher::unlinkNode(Matcher *Other) {
-  if (this == Other)
+  if (this == Other) {
     return takeNext();
+
+}
 
   // Scan until we find the predecessor of Other.
   Matcher *Cur = this;
-  for (; Cur && Cur->getNext() != Other; Cur = Cur->getNext())
+  for (; Cur && Cur->getNext() != Other; Cur = Cur->getNext()) {
     /*empty*/;
 
-  if (!Cur) return nullptr;
+}
+
+  if (!Cur) { return nullptr;
+
+}
   Cur->takeNext();
   Cur->setNext(Other->takeNext());
   return this;
@@ -53,11 +61,15 @@ Matcher *Matcher::unlinkNode(Matcher *Other) {
 bool Matcher::canMoveBefore(const Matcher *Other) const {
   for (;; Other = Other->getNext()) {
     assert(Other && "Other didn't come before 'this'?");
-    if (this == Other) return true;
+    if (this == Other) { return true;
+
+}
 
     // We have to be able to move this node across the Other node.
-    if (!canMoveBeforeNode(Other))
+    if (!canMoveBeforeNode(Other)) {
       return false;
+
+}
   }
 }
 
@@ -65,12 +77,16 @@ bool Matcher::canMoveBefore(const Matcher *Other) const {
 /// across the specified one.
 bool Matcher::canMoveBeforeNode(const Matcher *Other) const {
   // We can move simple predicates before record nodes.
-  if (isSimplePredicateNode())
+  if (isSimplePredicateNode()) {
     return Other->isSimplePredicateOrRecordNode();
 
+}
+
   // We can move record nodes across simple predicates.
-  if (isSimplePredicateOrRecordNode())
+  if (isSimplePredicateOrRecordNode()) {
     return isSimplePredicateNode();
+
+}
 
   // We can't move record nodes across each other etc.
   return false;
@@ -78,18 +94,24 @@ bool Matcher::canMoveBeforeNode(const Matcher *Other) const {
 
 
 ScopeMatcher::~ScopeMatcher() {
-  for (Matcher *C : Children)
+  for (Matcher *C : Children) {
     delete C;
+
+}
 }
 
 SwitchOpcodeMatcher::~SwitchOpcodeMatcher() {
-  for (auto &C : Cases)
+  for (auto &C : Cases) {
     delete C.second;
+
+}
 }
 
 SwitchTypeMatcher::~SwitchTypeMatcher() {
-  for (auto &C : Cases)
+  for (auto &C : Cases) {
     delete C.second;
+
+}
 }
 
 CheckPredicateMatcher::CheckPredicateMatcher(
@@ -116,10 +138,12 @@ unsigned CheckPredicateMatcher::getOperandNo(unsigned i) const {
 void ScopeMatcher::printImpl(raw_ostream &OS, unsigned indent) const {
   OS.indent(indent) << "Scope\n";
   for (const Matcher *C : Children) {
-    if (!C)
+    if (!C) {
       OS.indent(indent+1) << "NULL POINTER\n";
-    else
+    } else {
       C->print(OS, indent+2);
+
+}
   }
 }
 
@@ -260,10 +284,12 @@ printImpl(raw_ostream &OS, unsigned indent) const {
 
 void EmitRegisterMatcher::printImpl(raw_ostream &OS, unsigned indent) const {
   OS.indent(indent) << "EmitRegister ";
-  if (Reg)
+  if (Reg) {
     OS << Reg->getName();
-  else
+  } else {
     OS << "zero_reg";
+
+}
   OS << " VT=" << getEnumName(VT) << '\n';
 }
 
@@ -292,11 +318,15 @@ void EmitNodeMatcherCommon::printImpl(raw_ostream &OS, unsigned indent) const {
   OS << (isa<MorphNodeToMatcher>(this) ? "MorphNodeTo: " : "EmitNode: ")
      << OpcodeName << ": <todo flags> ";
 
-  for (unsigned i = 0, e = VTs.size(); i != e; ++i)
+  for (unsigned i = 0, e = VTs.size(); i != e; ++i) {
     OS << ' ' << getEnumName(VTs[i]);
+
+}
   OS << '(';
-  for (unsigned i = 0, e = Operands.size(); i != e; ++i)
+  for (unsigned i = 0, e = Operands.size(); i != e; ++i) {
     OS << Operands[i] << ' ';
+
+}
   OS << ")\n";
 }
 
@@ -332,15 +362,21 @@ static bool TypesAreContradictory(MVT::SimpleValueType T1,
                                   MVT::SimpleValueType T2) {
   // If the two types are the same, then they are the same, so they don't
   // contradict.
-  if (T1 == T2) return false;
+  if (T1 == T2) { return false;
+
+}
 
   // If either type is about iPtr, then they don't conflict unless the other
   // one is not a scalar integer type.
-  if (T1 == MVT::iPTR)
+  if (T1 == MVT::iPTR) {
     return !MVT(T2).isInteger() || MVT(T2).isVector();
 
-  if (T2 == MVT::iPTR)
+}
+
+  if (T2 == MVT::iPTR) {
     return !MVT(T1).isInteger() || MVT(T1).isVector();
+
+}
 
   // Otherwise, they are two different non-iPTR types, they conflict.
   return true;
@@ -359,20 +395,26 @@ bool CheckOpcodeMatcher::isContradictoryImpl(const Matcher *M) const {
   // ISD::STORE will never be true at the same time a check for Type i32 is.
   if (const CheckTypeMatcher *CT = dyn_cast<CheckTypeMatcher>(M)) {
     // If checking for a result the opcode doesn't have, it can't match.
-    if (CT->getResNo() >= getOpcode().getNumResults())
+    if (CT->getResNo() >= getOpcode().getNumResults()) {
       return true;
 
+}
+
     MVT::SimpleValueType NodeType = getOpcode().getKnownType(CT->getResNo());
-    if (NodeType != MVT::Other)
+    if (NodeType != MVT::Other) {
       return TypesAreContradictory(NodeType, CT->getType());
+
+}
   }
 
   return false;
 }
 
 bool CheckTypeMatcher::isContradictoryImpl(const Matcher *M) const {
-  if (const CheckTypeMatcher *CT = dyn_cast<CheckTypeMatcher>(M))
+  if (const CheckTypeMatcher *CT = dyn_cast<CheckTypeMatcher>(M)) {
     return TypesAreContradictory(getType(), CT->getType());
+
+}
   return false;
 }
 
@@ -380,8 +422,10 @@ bool CheckChildTypeMatcher::isContradictoryImpl(const Matcher *M) const {
   if (const CheckChildTypeMatcher *CC = dyn_cast<CheckChildTypeMatcher>(M)) {
     // If the two checks are about different nodes, we don't know if they
     // conflict!
-    if (CC->getChildNo() != getChildNo())
+    if (CC->getChildNo() != getChildNo()) {
       return false;
+
+}
 
     return TypesAreContradictory(getType(), CC->getType());
   }
@@ -389,8 +433,10 @@ bool CheckChildTypeMatcher::isContradictoryImpl(const Matcher *M) const {
 }
 
 bool CheckIntegerMatcher::isContradictoryImpl(const Matcher *M) const {
-  if (const CheckIntegerMatcher *CIM = dyn_cast<CheckIntegerMatcher>(M))
+  if (const CheckIntegerMatcher *CIM = dyn_cast<CheckIntegerMatcher>(M)) {
     return CIM->getValue() != getValue();
+
+}
   return false;
 }
 
@@ -398,8 +444,10 @@ bool CheckChildIntegerMatcher::isContradictoryImpl(const Matcher *M) const {
   if (const CheckChildIntegerMatcher *CCIM = dyn_cast<CheckChildIntegerMatcher>(M)) {
     // If the two checks are about different nodes, we don't know if they
     // conflict!
-    if (CCIM->getChildNo() != getChildNo())
+    if (CCIM->getChildNo() != getChildNo()) {
       return false;
+
+}
 
     return CCIM->getValue() != getValue();
   }
@@ -407,8 +455,10 @@ bool CheckChildIntegerMatcher::isContradictoryImpl(const Matcher *M) const {
 }
 
 bool CheckValueTypeMatcher::isContradictoryImpl(const Matcher *M) const {
-  if (const CheckValueTypeMatcher *CVT = dyn_cast<CheckValueTypeMatcher>(M))
+  if (const CheckValueTypeMatcher *CVT = dyn_cast<CheckValueTypeMatcher>(M)) {
     return CVT->getTypeName() != getTypeName();
+
+}
   return false;
 }
 

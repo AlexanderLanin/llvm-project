@@ -37,10 +37,14 @@ DIBuilder::DIBuilder(Module &m, bool AllowUnresolvedNodes, DICompileUnit *CU)
       AllowUnresolvedNodes(AllowUnresolvedNodes) {}
 
 void DIBuilder::trackIfUnresolved(MDNode *N) {
-  if (!N)
+  if (!N) {
     return;
-  if (N->isResolved())
+
+}
+  if (N->isResolved()) {
     return;
+
+}
 
   assert(AllowUnresolvedNodes && "Cannot handle unresolved nodes");
   UnresolvedNodes.emplace_back(N);
@@ -48,18 +52,24 @@ void DIBuilder::trackIfUnresolved(MDNode *N) {
 
 void DIBuilder::finalizeSubprogram(DISubprogram *SP) {
   MDTuple *Temp = SP->getRetainedNodes().get();
-  if (!Temp || !Temp->isTemporary())
+  if (!Temp || !Temp->isTemporary()) {
     return;
+
+}
 
   SmallVector<Metadata *, 16> RetainedNodes;
 
   auto PV = PreservedVariables.find(SP);
-  if (PV != PreservedVariables.end())
+  if (PV != PreservedVariables.end()) {
     RetainedNodes.append(PV->second.begin(), PV->second.end());
 
+}
+
   auto PL = PreservedLabels.find(SP);
-  if (PL != PreservedLabels.end())
+  if (PL != PreservedLabels.end()) {
     RetainedNodes.append(PL->second.begin(), PL->second.end());
+
+}
 
   DINodeArray Node = getOrCreateArray(RetainedNodes);
 
@@ -81,27 +91,43 @@ void DIBuilder::finalize() {
   // list. Use a set to remove the duplicates while we transform the
   // TrackingVHs back into Values.
   SmallPtrSet<Metadata *, 16> RetainSet;
-  for (unsigned I = 0, E = AllRetainTypes.size(); I < E; I++)
-    if (RetainSet.insert(AllRetainTypes[I]).second)
+  for (unsigned I = 0, E = AllRetainTypes.size(); I < E; I++) {
+    if (RetainSet.insert(AllRetainTypes[I]).second) {
       RetainValues.push_back(AllRetainTypes[I]);
 
-  if (!RetainValues.empty())
+}
+
+}
+
+  if (!RetainValues.empty()) {
     CUNode->replaceRetainedTypes(MDTuple::get(VMContext, RetainValues));
 
+}
+
   DISubprogramArray SPs = MDTuple::get(VMContext, AllSubprograms);
-  for (auto *SP : SPs)
+  for (auto *SP : SPs) {
     finalizeSubprogram(SP);
-  for (auto *N : RetainValues)
-    if (auto *SP = dyn_cast<DISubprogram>(N))
+
+}
+  for (auto *N : RetainValues) {
+    if (auto *SP = dyn_cast<DISubprogram>(N)) {
       finalizeSubprogram(SP);
 
-  if (!AllGVs.empty())
+}
+
+}
+
+  if (!AllGVs.empty()) {
     CUNode->replaceGlobalVariables(MDTuple::get(VMContext, AllGVs));
 
-  if (!AllImportedModules.empty())
+}
+
+  if (!AllImportedModules.empty()) {
     CUNode->replaceImportedEntities(MDTuple::get(
         VMContext, SmallVector<Metadata *, 16>(AllImportedModules.begin(),
                                                AllImportedModules.end())));
+
+}
 
   for (const auto &I : AllMacrosPerParent) {
     // DIMacroNode's with nullptr parent are DICompileUnit direct children.
@@ -119,9 +145,13 @@ void DIBuilder::finalize() {
 
   // Now that all temp nodes have been replaced or deleted, resolve remaining
   // cycles.
-  for (const auto &N : UnresolvedNodes)
-    if (N && !N->isResolved())
+  for (const auto &N : UnresolvedNodes) {
+    if (N && !N->isResolved()) {
       N->resolveCycles();
+
+}
+
+}
   UnresolvedNodes.clear();
 
   // Can't handle unresolved nodes anymore.
@@ -130,8 +160,10 @@ void DIBuilder::finalize() {
 
 /// If N is compile unit return NULL otherwise return N.
 static DIScope *getNonCompileUnitScope(DIScope *N) {
-  if (!N || isa<DICompileUnit>(N))
+  if (!N || isa<DICompileUnit>(N)) {
     return nullptr;
+
+}
   return cast<DIScope>(N);
 }
 
@@ -165,15 +197,19 @@ static DIImportedEntity *
 createImportedModule(LLVMContext &C, dwarf::Tag Tag, DIScope *Context,
                      Metadata *NS, DIFile *File, unsigned Line, StringRef Name,
                      SmallVectorImpl<TrackingMDNodeRef> &AllImportedModules) {
-  if (Line)
+  if (Line) {
     assert(File && "Source location has line number but no file");
+
+}
   unsigned EntitiesCount = C.pImpl->DIImportedEntitys.size();
   auto *M = DIImportedEntity::get(C, Tag, Context, cast_or_null<DINode>(NS),
                                   File, Line, Name);
-  if (EntitiesCount < C.pImpl->DIImportedEntitys.size())
+  if (EntitiesCount < C.pImpl->DIImportedEntitys.size()) {
     // A new Imported Entity was just added to the context.
     // Add it to the Imported Modules list.
     AllImportedModules.emplace_back(M);
+
+}
   return M;
 }
 
@@ -345,8 +381,10 @@ DIDerivedType *DIBuilder::createMemberType(DIScope *Scope, StringRef Name,
 }
 
 static ConstantAsMetadata *getConstantOrNull(Constant *C) {
-  if (C)
+  if (C) {
     return ConstantAsMetadata::get(C);
+
+}
   return nullptr;
 }
 
@@ -551,15 +589,19 @@ static DIType *createTypeWithFlags(const DIType *Ty,
 
 DIType *DIBuilder::createArtificialType(DIType *Ty) {
   // FIXME: Restrict this to the nodes where it's valid.
-  if (Ty->isArtificial())
+  if (Ty->isArtificial()) {
     return Ty;
+
+}
   return createTypeWithFlags(Ty, DINode::FlagArtificial);
 }
 
 DIType *DIBuilder::createObjectPointerType(DIType *Ty) {
   // FIXME: Restrict this to the nodes where it's valid.
-  if (Ty->isObjectPointer())
+  if (Ty->isObjectPointer()) {
     return Ty;
+
+}
   DINode::DIFlags Flags = DINode::FlagObjectPointer | DINode::FlagArtificial;
   return createTypeWithFlags(Ty, Flags);
 }
@@ -615,10 +657,12 @@ DIBuilder::getOrCreateMacroArray(ArrayRef<Metadata *> Elements) {
 DITypeRefArray DIBuilder::getOrCreateTypeArray(ArrayRef<Metadata *> Elements) {
   SmallVector<llvm::Metadata *, 16> Elts;
   for (unsigned i = 0, e = Elements.size(); i != e; ++i) {
-    if (Elements[i] && isa<MDNode>(Elements[i]))
+    if (Elements[i] && isa<MDNode>(Elements[i])) {
       Elts.push_back(cast<DIType>(Elements[i]));
-    else
+    } else {
       Elts.push_back(Elements[i]);
+
+}
   }
   return DITypeRefArray(MDNode::get(VMContext, Elts));
 }
@@ -651,8 +695,10 @@ DIGlobalVariableExpression *DIBuilder::createGlobalVariableExpression(
       VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
       LineNumber, Ty, IsLocalToUnit, isDefined, cast_or_null<DIDerivedType>(Decl),
       TemplateParams, AlignInBits);
-  if (!Expr)
+  if (!Expr) {
     Expr = createExpression();
+
+}
   auto *N = DIGlobalVariableExpression::get(VMContext, GV, Expr);
   AllGVs.push_back(N);
   return N;
@@ -748,8 +794,10 @@ DIExpression *DIBuilder::createExpression(ArrayRef<int64_t> Signed) {
 
 template <class... Ts>
 static DISubprogram *getSubprogram(bool IsDistinct, Ts &&... Args) {
-  if (IsDistinct)
+  if (IsDistinct) {
     return DISubprogram::getDistinct(std::forward<Ts>(Args)...);
+
+}
   return DISubprogram::get(std::forward<Ts>(Args)...);
 }
 
@@ -766,8 +814,10 @@ DISubprogram *DIBuilder::createFunction(
       SPFlags, IsDefinition ? CUNode : nullptr, TParams, Decl,
       MDTuple::getTemporary(VMContext, None).release(), ThrownTypes);
 
-  if (IsDefinition)
+  if (IsDefinition) {
     AllSubprograms.push_back(Node);
+
+}
   trackIfUnresolved(Node);
   return Node;
 }
@@ -804,8 +854,10 @@ DISubprogram *DIBuilder::createMethod(
       Flags, SPFlags, IsDefinition ? CUNode : nullptr, TParams, nullptr,
       nullptr, ThrownTypes);
 
-  if (IsDefinition)
+  if (IsDefinition) {
     AllSubprograms.push_back(SP);
+
+}
   trackIfUnresolved(SP);
   return SP;
 }
@@ -901,10 +953,12 @@ Instruction *DIBuilder::insertDbgValueIntrinsic(Value *V,
 /// This abstracts over the various ways to specify an insert position.
 static void initIRBuilder(IRBuilder<> &Builder, const DILocation *DL,
                           BasicBlock *InsertBB, Instruction *InsertBefore) {
-  if (InsertBefore)
+  if (InsertBefore) {
     Builder.SetInsertPoint(InsertBefore);
-  else if (InsertBB)
+  } else if (InsertBB) {
     Builder.SetInsertPoint(InsertBB);
+
+}
   Builder.SetCurrentDebugLocation(DL);
 }
 
@@ -926,8 +980,10 @@ Instruction *DIBuilder::insertDeclare(Value *Storage, DILocalVariable *VarInfo,
   assert(DL->getScope()->getSubprogram() ==
              VarInfo->getScope()->getSubprogram() &&
          "Expected matching subprograms");
-  if (!DeclareFn)
+  if (!DeclareFn) {
     DeclareFn = getDeclareIntrin(M);
+
+}
 
   trackIfUnresolved(VarInfo);
   trackIfUnresolved(Expr);
@@ -949,8 +1005,10 @@ Instruction *DIBuilder::insertDbgValueIntrinsic(
   assert(DL->getScope()->getSubprogram() ==
              VarInfo->getScope()->getSubprogram() &&
          "Expected matching subprograms");
-  if (!ValueFn)
+  if (!ValueFn) {
     ValueFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_value);
+
+}
 
   trackIfUnresolved(VarInfo);
   trackIfUnresolved(Expr);
@@ -971,8 +1029,10 @@ Instruction *DIBuilder::insertLabel(
   assert(DL->getScope()->getSubprogram() ==
              LabelInfo->getScope()->getSubprogram() &&
          "Expected matching subprograms");
-  if (!LabelFn)
+  if (!LabelFn) {
     LabelFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_label);
+
+}
 
   trackIfUnresolved(LabelInfo);
   Value *Args[] = {MetadataAsValue::get(VMContext, LabelInfo)};
@@ -991,37 +1051,55 @@ void DIBuilder::replaceVTableHolder(DICompositeType *&T,
   }
 
   // If this didn't create a self-reference, just return.
-  if (T != VTableHolder)
+  if (T != VTableHolder) {
     return;
+
+}
 
   // Look for unresolved operands.  T will drop RAUW support, orphaning any
   // cycles underneath it.
-  if (T->isResolved())
-    for (const MDOperand &O : T->operands())
-      if (auto *N = dyn_cast_or_null<MDNode>(O))
+  if (T->isResolved()) {
+    for (const MDOperand &O : T->operands()) {
+      if (auto *N = dyn_cast_or_null<MDNode>(O)) {
         trackIfUnresolved(N);
+
+}
+
+}
+
+}
 }
 
 void DIBuilder::replaceArrays(DICompositeType *&T, DINodeArray Elements,
                               DINodeArray TParams) {
   {
     TypedTrackingMDRef<DICompositeType> N(T);
-    if (Elements)
+    if (Elements) {
       N->replaceElements(Elements);
-    if (TParams)
+
+}
+    if (TParams) {
       N->replaceTemplateParams(DITemplateParameterArray(TParams));
+
+}
     T = N.get();
   }
 
   // If T isn't resolved, there's no problem.
-  if (!T->isResolved())
+  if (!T->isResolved()) {
     return;
+
+}
 
   // If T is resolved, it may be due to a self-reference cycle.  Track the
   // arrays explicitly if they're unresolved, or else the cycles will be
   // orphaned.
-  if (Elements)
+  if (Elements) {
     trackIfUnresolved(Elements.get());
-  if (TParams)
+
+}
+  if (TParams) {
     trackIfUnresolved(TParams.get());
+
+}
 }

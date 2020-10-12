@@ -121,9 +121,11 @@ void MCStreamer::addExplicitComment(const Twine &T) {}
 void MCStreamer::emitExplicitComments() {}
 
 void MCStreamer::generateCompactUnwindEncodings(MCAsmBackend *MAB) {
-  for (auto &FI : DwarfFrameInfos)
+  for (auto &FI : DwarfFrameInfos) {
     FI.CompactUnwindEncoding =
         (MAB ? MAB->generateCompactUnwindEncoding(FI.Instructions) : 0);
+
+}
 }
 
 /// EmitIntValue - Special case of EmitValue that avoids the client having to
@@ -168,10 +170,12 @@ void MCStreamer::emitSymbolValue(const MCSymbol *Sym, unsigned Size,
   assert((!IsSectionRelative || Size == 4) &&
          "SectionRelative value requires 4-bytes");
 
-  if (!IsSectionRelative)
+  if (!IsSectionRelative) {
     emitValueImpl(MCSymbolRefExpr::create(Sym, getContext()), Size);
-  else
+  } else {
     EmitCOFFSecRel32(Sym, /*Offset=*/0);
+
+}
 }
 
 void MCStreamer::emitDTPRel64Value(const MCExpr *Value) {
@@ -228,8 +232,10 @@ void MCStreamer::emitDwarfFile0Directive(StringRef Directory,
 
 void MCStreamer::emitCFIBKeyFrame() {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->IsBKeyFrame = true;
 }
 
@@ -306,9 +312,9 @@ bool MCStreamer::checkCVLocSection(unsigned FuncId, unsigned FileNo,
   }
 
   // Track the section
-  if (FI->Section == nullptr)
+  if (FI->Section == nullptr) {
     FI->Section = getCurrentSectionOnly();
-  else if (FI->Section != getCurrentSectionOnly()) {
+  } else if (FI->Section != getCurrentSectionOnly()) {
     getContext().reportError(
         Loc,
         "all .cv_loc directives for a function must be in the same section");
@@ -397,8 +403,10 @@ void MCStreamer::AssignFragment(MCSymbol *Symbol, MCFragment *Fragment) {
 void MCStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   Symbol->redefineIfPossible();
 
-  if (!Symbol->isUndefined() || Symbol->isVariable())
+  if (!Symbol->isUndefined() || Symbol->isVariable()) {
     return getContext().reportError(Loc, "invalid symbol redefinition");
+
+}
 
   assert(!Symbol->isVariable() && "Cannot emit a variable symbol!");
   assert(getCurrentSectionOnly() && "Cannot emit before setting section!");
@@ -408,8 +416,10 @@ void MCStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   Symbol->setFragment(&getCurrentSectionOnly()->getDummyFragment());
 
   MCTargetStreamer *TS = getTargetStreamer();
-  if (TS)
+  if (TS) {
     TS->emitLabel(Symbol);
+
+}
 }
 
 void MCStreamer::emitCFISections(bool EH, bool Debug) {
@@ -417,9 +427,11 @@ void MCStreamer::emitCFISections(bool EH, bool Debug) {
 }
 
 void MCStreamer::emitCFIStartProc(bool IsSimple, SMLoc Loc) {
-  if (hasUnfinishedDwarfFrameInfo())
+  if (hasUnfinishedDwarfFrameInfo()) {
     return getContext().reportError(
         Loc, "starting new .cfi frame before finishing the previous one");
+
+}
 
   MCDwarfFrameInfo Frame;
   Frame.IsSimple = IsSimple;
@@ -443,8 +455,10 @@ void MCStreamer::emitCFIStartProcImpl(MCDwarfFrameInfo &Frame) {
 
 void MCStreamer::emitCFIEndProc() {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   emitCFIEndProcImpl(*CurFrame);
 }
 
@@ -465,8 +479,10 @@ void MCStreamer::emitCFIDefCfa(int64_t Register, int64_t Offset) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createDefCfa(Label, Register, Offset);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
   CurFrame->CurrentCfaRegister = static_cast<unsigned>(Register);
 }
@@ -476,8 +492,10 @@ void MCStreamer::emitCFIDefCfaOffset(int64_t Offset) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createDefCfaOffset(Label, Offset);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -486,8 +504,10 @@ void MCStreamer::emitCFIAdjustCfaOffset(int64_t Adjustment) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createAdjustCfaOffset(Label, Adjustment);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -496,8 +516,10 @@ void MCStreamer::emitCFIDefCfaRegister(int64_t Register) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createDefCfaRegister(Label, Register);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
   CurFrame->CurrentCfaRegister = static_cast<unsigned>(Register);
 }
@@ -507,8 +529,10 @@ void MCStreamer::emitCFIOffset(int64_t Register, int64_t Offset) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createOffset(Label, Register, Offset);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -517,24 +541,30 @@ void MCStreamer::emitCFIRelOffset(int64_t Register, int64_t Offset) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createRelOffset(Label, Register, Offset);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
 void MCStreamer::emitCFIPersonality(const MCSymbol *Sym,
                                     unsigned Encoding) {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Personality = Sym;
   CurFrame->PersonalityEncoding = Encoding;
 }
 
 void MCStreamer::emitCFILsda(const MCSymbol *Sym, unsigned Encoding) {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Lsda = Sym;
   CurFrame->LsdaEncoding = Encoding;
 }
@@ -543,8 +573,10 @@ void MCStreamer::emitCFIRememberState() {
   MCSymbol *Label = emitCFILabel();
   MCCFIInstruction Instruction = MCCFIInstruction::createRememberState(Label);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -553,8 +585,10 @@ void MCStreamer::emitCFIRestoreState() {
   MCSymbol *Label = emitCFILabel();
   MCCFIInstruction Instruction = MCCFIInstruction::createRestoreState(Label);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -563,8 +597,10 @@ void MCStreamer::emitCFISameValue(int64_t Register) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createSameValue(Label, Register);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -573,8 +609,10 @@ void MCStreamer::emitCFIRestore(int64_t Register) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createRestore(Label, Register);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -582,8 +620,10 @@ void MCStreamer::emitCFIEscape(StringRef Values) {
   MCSymbol *Label = emitCFILabel();
   MCCFIInstruction Instruction = MCCFIInstruction::createEscape(Label, Values);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -592,15 +632,19 @@ void MCStreamer::emitCFIGnuArgsSize(int64_t Size) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createGnuArgsSize(Label, Size);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
 void MCStreamer::emitCFISignalFrame() {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->IsSignalFrame = true;
 }
 
@@ -609,8 +653,10 @@ void MCStreamer::emitCFIUndefined(int64_t Register) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createUndefined(Label, Register);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -619,8 +665,10 @@ void MCStreamer::emitCFIRegister(int64_t Register1, int64_t Register2) {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createRegister(Label, Register1, Register2);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -629,8 +677,10 @@ void MCStreamer::emitCFIWindowSave() {
   MCCFIInstruction Instruction =
     MCCFIInstruction::createWindowSave(Label);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
@@ -638,15 +688,19 @@ void MCStreamer::emitCFINegateRAState() {
   MCSymbol *Label = emitCFILabel();
   MCCFIInstruction Instruction = MCCFIInstruction::createNegateRAState(Label);
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->Instructions.push_back(Instruction);
 }
 
 void MCStreamer::emitCFIReturnColumn(int64_t Register) {
   MCDwarfFrameInfo *CurFrame = getCurrentDwarfFrameInfo();
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
   CurFrame->RAReg = Register;
 }
 
@@ -667,12 +721,16 @@ WinEH::FrameInfo *MCStreamer::EnsureValidWinFrameInfo(SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIStartProc(const MCSymbol *Symbol, SMLoc Loc) {
   const MCAsmInfo *MAI = Context.getAsmInfo();
-  if (!MAI->usesWindowsCFI())
+  if (!MAI->usesWindowsCFI()) {
     return getContext().reportError(
         Loc, ".seh_* directives are not supported on this target");
-  if (CurrentWinFrameInfo && !CurrentWinFrameInfo->End)
+
+}
+  if (CurrentWinFrameInfo && !CurrentWinFrameInfo->End) {
     getContext().reportError(
         Loc, "Starting a function before ending the previous one!");
+
+}
 
   MCSymbol *StartProc = emitCFILabel();
 
@@ -684,10 +742,14 @@ void MCStreamer::EmitWinCFIStartProc(const MCSymbol *Symbol, SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIEndProc(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (CurFrame->ChainedParent)
+
+}
+  if (CurFrame->ChainedParent) {
     getContext().reportError(Loc, "Not all chained regions terminated!");
+
+}
 
   MCSymbol *Label = emitCFILabel();
   CurFrame->End = Label;
@@ -695,10 +757,14 @@ void MCStreamer::EmitWinCFIEndProc(SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIFuncletOrFuncEnd(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (CurFrame->ChainedParent)
+
+}
+  if (CurFrame->ChainedParent) {
     getContext().reportError(Loc, "Not all chained regions terminated!");
+
+}
 
   MCSymbol *Label = emitCFILabel();
   CurFrame->FuncletOrFuncEnd = Label;
@@ -706,8 +772,10 @@ void MCStreamer::EmitWinCFIFuncletOrFuncEnd(SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIStartChained(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
 
   MCSymbol *StartProc = emitCFILabel();
 
@@ -719,11 +787,15 @@ void MCStreamer::EmitWinCFIStartChained(SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIEndChained(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (!CurFrame->ChainedParent)
+
+}
+  if (!CurFrame->ChainedParent) {
     return getContext().reportError(
         Loc, "End of a chained region outside a chained region!");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -734,26 +806,40 @@ void MCStreamer::EmitWinCFIEndChained(SMLoc Loc) {
 void MCStreamer::EmitWinEHHandler(const MCSymbol *Sym, bool Unwind, bool Except,
                                   SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (CurFrame->ChainedParent)
+
+}
+  if (CurFrame->ChainedParent) {
     return getContext().reportError(
         Loc, "Chained unwind areas can't have handlers!");
+
+}
   CurFrame->ExceptionHandler = Sym;
-  if (!Except && !Unwind)
+  if (!Except && !Unwind) {
     getContext().reportError(Loc, "Don't know what kind of handler this is!");
-  if (Unwind)
+
+}
+  if (Unwind) {
     CurFrame->HandlesUnwind = true;
-  if (Except)
+
+}
+  if (Except) {
     CurFrame->HandlesExceptions = true;
+
+}
 }
 
 void MCStreamer::EmitWinEHHandlerData(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (CurFrame->ChainedParent)
+
+}
+  if (CurFrame->ChainedParent) {
     getContext().reportError(Loc, "Chained unwind areas can't have handlers!");
+
+}
 }
 
 void MCStreamer::emitCGProfileEntry(const MCSymbolRefExpr *From,
@@ -764,8 +850,10 @@ static MCSection *getWinCFISection(MCContext &Context, unsigned *NextWinCFIID,
                                    MCSection *MainCFISec,
                                    const MCSection *TextSec) {
   // If this is the main .text section, use the main unwind info section.
-  if (TextSec == Context.getObjectFileInfo()->getTextSection())
+  if (TextSec == Context.getObjectFileInfo()->getTextSection()) {
     return MainCFISec;
+
+}
 
   const auto *TextSecCOFF = cast<MCSectionCOFF>(TextSec);
   auto *MainCFISecCOFF = cast<MCSectionCOFF>(MainCFISec);
@@ -815,8 +903,10 @@ static unsigned encodeSEHRegNum(MCContext &Ctx, MCRegister Reg) {
 
 void MCStreamer::EmitWinCFIPushReg(MCRegister Register, SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -828,16 +918,24 @@ void MCStreamer::EmitWinCFIPushReg(MCRegister Register, SMLoc Loc) {
 void MCStreamer::EmitWinCFISetFrame(MCRegister Register, unsigned Offset,
                                     SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (CurFrame->LastFrameInst >= 0)
+
+}
+  if (CurFrame->LastFrameInst >= 0) {
     return getContext().reportError(
         Loc, "frame register and offset can be set at most once");
-  if (Offset & 0x0F)
+
+}
+  if (Offset & 0x0F) {
     return getContext().reportError(Loc, "offset is not a multiple of 16");
-  if (Offset > 240)
+
+}
+  if (Offset > 240) {
     return getContext().reportError(
         Loc, "frame offset must be less than or equal to 240");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -849,14 +947,20 @@ void MCStreamer::EmitWinCFISetFrame(MCRegister Register, unsigned Offset,
 
 void MCStreamer::EmitWinCFIAllocStack(unsigned Size, SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (Size == 0)
+
+}
+  if (Size == 0) {
     return getContext().reportError(Loc,
                                     "stack allocation size must be non-zero");
-  if (Size & 7)
+
+}
+  if (Size & 7) {
     return getContext().reportError(
         Loc, "stack allocation size is not a multiple of 8");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -867,12 +971,16 @@ void MCStreamer::EmitWinCFIAllocStack(unsigned Size, SMLoc Loc) {
 void MCStreamer::EmitWinCFISaveReg(MCRegister Register, unsigned Offset,
                                    SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
 
-  if (Offset & 7)
+}
+
+  if (Offset & 7) {
     return getContext().reportError(
         Loc, "register save offset is not 8 byte aligned");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -884,10 +992,14 @@ void MCStreamer::EmitWinCFISaveReg(MCRegister Register, unsigned Offset,
 void MCStreamer::EmitWinCFISaveXMM(MCRegister Register, unsigned Offset,
                                    SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (Offset & 0x0F)
+
+}
+  if (Offset & 0x0F) {
     return getContext().reportError(Loc, "offset is not a multiple of 16");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -898,11 +1010,15 @@ void MCStreamer::EmitWinCFISaveXMM(MCRegister Register, unsigned Offset,
 
 void MCStreamer::EmitWinCFIPushFrame(bool Code, SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
-  if (!CurFrame->Instructions.empty())
+
+}
+  if (!CurFrame->Instructions.empty()) {
     return getContext().reportError(
         Loc, "If present, PushMachFrame must be the first UOP");
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -912,8 +1028,10 @@ void MCStreamer::EmitWinCFIPushFrame(bool Code, SMLoc Loc) {
 
 void MCStreamer::EmitWinCFIEndProlog(SMLoc Loc) {
   WinEH::FrameInfo *CurFrame = EnsureValidWinFrameInfo(Loc);
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
 
   MCSymbol *Label = emitCFILabel();
 
@@ -958,8 +1076,10 @@ void MCStreamer::Finish() {
   }
 
   MCTargetStreamer *TS = getTargetStreamer();
-  if (TS)
+  if (TS) {
     TS->finish();
+
+}
 
   FinishImpl();
 }
@@ -969,8 +1089,10 @@ void MCStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   Symbol->setVariableValue(Value);
 
   MCTargetStreamer *TS = getTargetStreamer();
-  if (TS)
+  if (TS) {
     TS->emitAssignment(Symbol, Value);
+
+}
 }
 
 void MCTargetStreamer::prettyPrintAsm(MCInstPrinter &InstPrinter,
@@ -1011,9 +1133,13 @@ void MCStreamer::visitUsedExpr(const MCExpr &Expr) {
 
 void MCStreamer::emitInstruction(const MCInst &Inst, const MCSubtargetInfo &) {
   // Scan for values.
-  for (unsigned i = Inst.getNumOperands(); i--;)
-    if (Inst.getOperand(i).isExpr())
+  for (unsigned i = Inst.getNumOperands(); i--;) {
+    if (Inst.getOperand(i).isExpr()) {
       visitUsedExpr(*Inst.getOperand(i).getExpr());
+
+}
+
+}
 }
 
 void MCStreamer::emitAbsoluteSymbolDiff(const MCSymbol *Hi, const MCSymbol *Lo,
@@ -1106,8 +1232,10 @@ void MCStreamer::SwitchSection(MCSection *Section, const MCExpr *Subsection) {
     SectionStack.back().first = MCSectionSubPair(Section, Subsection);
     assert(!Section->hasEnded() && "Section already ended");
     MCSymbol *Sym = Section->getBeginSymbol();
-    if (Sym && !Sym->isInSection())
+    if (Sym && !Sym->isInSection()) {
       emitLabel(Sym);
+
+}
   }
 }
 
@@ -1115,8 +1243,10 @@ MCSymbol *MCStreamer::endSection(MCSection *Section) {
   // TODO: keep track of the last subsection so that this symbol appears in the
   // correct place.
   MCSymbol *Sym = Section->getEndSymbol(Context);
-  if (Sym->isInSection())
+  if (Sym->isInSection()) {
     return Sym;
+
+}
 
   SwitchSection(Section);
   emitLabel(Sym);
@@ -1125,11 +1255,15 @@ MCSymbol *MCStreamer::endSection(MCSection *Section) {
 
 void MCStreamer::emitVersionForTarget(const Triple &Target,
                                       const VersionTuple &SDKVersion) {
-  if (!Target.isOSBinFormatMachO() || !Target.isOSDarwin())
+  if (!Target.isOSBinFormatMachO() || !Target.isOSDarwin()) {
     return;
+
+}
   // Do we even know the version?
-  if (Target.getOSMajorVersion() == 0)
+  if (Target.getOSMajorVersion() == 0) {
     return;
+
+}
 
   unsigned Major;
   unsigned Minor;
@@ -1152,12 +1286,16 @@ void MCStreamer::emitVersionForTarget(const Triple &Target,
     Target.getiOSVersion(Major, Minor, Update);
   } else if (Target.isMacOSX()) {
     VersionType = MCVM_OSXVersionMin;
-    if (!Target.getMacOSXVersion(Major, Minor, Update))
+    if (!Target.getMacOSXVersion(Major, Minor, Update)) {
       Major = 0;
+
+}
   } else {
     VersionType = MCVM_IOSVersionMin;
     Target.getiOSVersion(Major, Minor, Update);
   }
-  if (Major != 0)
+  if (Major != 0) {
     emitVersionMin(VersionType, Major, Minor, Update, SDKVersion);
+
+}
 }

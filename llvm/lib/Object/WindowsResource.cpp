@@ -58,18 +58,22 @@ WindowsResource::WindowsResource(MemoryBufferRef Source)
 // static
 Expected<std::unique_ptr<WindowsResource>>
 WindowsResource::createWindowsResource(MemoryBufferRef Source) {
-  if (Source.getBufferSize() < WIN_RES_MAGIC_SIZE + WIN_RES_NULL_ENTRY_SIZE)
+  if (Source.getBufferSize() < WIN_RES_MAGIC_SIZE + WIN_RES_NULL_ENTRY_SIZE) {
     return make_error<GenericBinaryError>(
         Source.getBufferIdentifier() + ": too small to be a resource file",
         object_error::invalid_file_type);
+
+}
   std::unique_ptr<WindowsResource> Ret(new WindowsResource(Source));
   return std::move(Ret);
 }
 
 Expected<ResourceEntryRef> WindowsResource::getHeadEntry() {
-  if (BBS.getLength() < sizeof(WinResHeaderPrefix) + sizeof(WinResHeaderSuffix))
+  if (BBS.getLength() < sizeof(WinResHeaderPrefix) + sizeof(WinResHeaderSuffix)) {
     return make_error<EmptyResError>(getFileName() + " contains no entries",
                                      object_error::unexpected_eof);
+
+}
   return ResourceEntryRef::create(BinaryStreamRef(BBS), this);
 }
 
@@ -80,8 +84,10 @@ ResourceEntryRef::ResourceEntryRef(BinaryStreamRef Ref,
 Expected<ResourceEntryRef>
 ResourceEntryRef::create(BinaryStreamRef BSR, const WindowsResource *Owner) {
   auto Ref = ResourceEntryRef(BSR, Owner);
-  if (auto E = Ref.loadNext())
+  if (auto E = Ref.loadNext()) {
     return std::move(E);
+
+}
   return Ref;
 }
 
@@ -117,10 +123,12 @@ Error ResourceEntryRef::loadNext() {
   const WinResHeaderPrefix *Prefix;
   RETURN_IF_ERROR(Reader.readObject(Prefix));
 
-  if (Prefix->HeaderSize < MIN_HEADER_SIZE)
+  if (Prefix->HeaderSize < MIN_HEADER_SIZE) {
     return make_error<GenericBinaryError>(Owner->getFileName() +
                                               ": header size too small",
                                           object_error::parse_failed);
+
+}
 
   RETURN_IF_ERROR(readStringOrId(Reader, TypeID, Type, IsStringType));
 
@@ -168,8 +176,10 @@ void printResourceTypeName(uint16_t TypeID, raw_ostream &OS) {
 }
 
 static bool convertUTF16LEToUTF8String(ArrayRef<UTF16> Src, std::string &Out) {
-  if (!sys::IsBigEndianHost)
+  if (!sys::IsBigEndianHost) {
     return convertUTF16ToUTF8String(Src, Out);
+
+}
 
   std::vector<UTF16> EndianCorrectedSrc;
   EndianCorrectedSrc.resize(Src.size() + 1);
@@ -188,17 +198,23 @@ static std::string makeDuplicateResourceError(
   OS << " type ";
   if (Entry.checkTypeString()) {
     std::string UTF8;
-    if (!convertUTF16LEToUTF8String(Entry.getTypeString(), UTF8))
+    if (!convertUTF16LEToUTF8String(Entry.getTypeString(), UTF8)) {
       UTF8 = "(failed conversion from UTF16)";
+
+}
     OS << '\"' << UTF8 << '\"';
-  } else
+  } else {
     printResourceTypeName(Entry.getTypeID(), OS);
+
+}
 
   OS << "/name ";
   if (Entry.checkNameString()) {
     std::string UTF8;
-    if (!convertUTF16LEToUTF8String(Entry.getNameString(), UTF8))
+    if (!convertUTF16LEToUTF8String(Entry.getNameString(), UTF8)) {
       UTF8 = "(failed conversion from UTF16)";
+
+}
     OS << '\"' << UTF8 << '\"';
   } else {
     OS << "ID " << Entry.getNameID();
@@ -214,15 +230,19 @@ static void printStringOrID(const WindowsResourceParser::StringOrID &S,
                             raw_string_ostream &OS, bool IsType, bool IsID) {
   if (S.IsString) {
     std::string UTF8;
-    if (!convertUTF16LEToUTF8String(S.String, UTF8))
+    if (!convertUTF16LEToUTF8String(S.String, UTF8)) {
       UTF8 = "(failed conversion from UTF16)";
+
+}
     OS << '\"' << UTF8 << '\"';
-  } else if (IsType)
+  } else if (IsType) {
     printResourceTypeName(S.ID, OS);
-  else if (IsID)
+  } else if (IsID) {
     OS << "ID " << S.ID;
-  else
+  } else {
     OS << S.ID;
+
+}
 }
 
 static std::string makeDuplicateResourceError(
@@ -263,18 +283,24 @@ static std::string makeDuplicateResourceError(
 void WindowsResourceParser::cleanUpManifests(
     std::vector<std::string> &Duplicates) {
   auto TypeIt = Root.IDChildren.find(/* RT_MANIFEST */ 24);
-  if (TypeIt == Root.IDChildren.end())
+  if (TypeIt == Root.IDChildren.end()) {
     return;
+
+}
 
   TreeNode *TypeNode = TypeIt->second.get();
   auto NameIt =
       TypeNode->IDChildren.find(/* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 1);
-  if (NameIt == TypeNode->IDChildren.end())
+  if (NameIt == TypeNode->IDChildren.end()) {
     return;
 
+}
+
   TreeNode *NameNode = NameIt->second.get();
-  if (NameNode->IDChildren.size() <= 1)
+  if (NameNode->IDChildren.size() <= 1) {
     return; // None or one manifest present, all good.
+
+}
 
   // If we have more than one manifest, drop the language zero one if present,
   // and check again.
@@ -287,8 +313,10 @@ void WindowsResourceParser::cleanUpManifests(
     Root.shiftDataIndexDown(RemovedIndex);
 
     // If we're now down to one manifest, all is good.
-    if (NameNode->IDChildren.size() <= 1)
+    if (NameNode->IDChildren.size() <= 1) {
       return;
+
+}
   }
 
   // More than one non-language-zero manifest
@@ -353,9 +381,11 @@ Error WindowsResourceParser::parse(WindowsResource *WR,
     TreeNode *Node;
     bool IsNewNode = Root.addEntry(Entry, Origin, Data, StringTable, Node);
     if (!IsNewNode) {
-      if (!shouldIgnoreDuplicate(Entry))
+      if (!shouldIgnoreDuplicate(Entry)) {
         Duplicates.push_back(makeDuplicateResourceError(
             Entry, InputFilenames[Node->Origin], WR->getFileName()));
+
+}
     }
 
     RETURN_IF_ERROR(Entry.moveNext(End));
@@ -414,16 +444,20 @@ Error WindowsResourceParser::addChildren(TreeNode &Node,
       UNWRAP_REF_OR_RETURN(NextTable, RSR.getEntrySubDir(Entry));
       Error E =
           addChildren(*Child, RSR, NextTable, Origin, Context, Duplicates);
-      if (E)
+      if (E) {
         return E;
+
+}
       Context.pop_back();
 
     } else {
 
       // Data leaves are supposed to have a numeric ID as identifier (language).
-      if (Table.NumberOfNameEntries > 0)
+      if (Table.NumberOfNameEntries > 0) {
         return createStringError(object_error::parse_failed,
                                  "unexpected string key for data object");
+
+}
 
       // Try adding a data leaf
       UNWRAP_REF_OR_RETURN(DataEntry, RSR.getEntryData(Entry));
@@ -438,9 +472,11 @@ Error WindowsResourceParser::addChildren(TreeNode &Node,
             reinterpret_cast<const uint8_t *>(Contents.data()),
             Contents.size()));
       } else {
-        if (!shouldIgnoreDuplicate(Context))
+        if (!shouldIgnoreDuplicate(Context)) {
           Duplicates.push_back(makeDuplicateResourceError(
               Context, InputFilenames[Child->Origin], InputFilenames.back()));
+
+}
       }
       Context.pop_back();
 
@@ -483,19 +519,23 @@ WindowsResourceParser::TreeNode::createDataNode(uint16_t MajorVersion,
 WindowsResourceParser::TreeNode &WindowsResourceParser::TreeNode::addTypeNode(
     const ResourceEntryRef &Entry,
     std::vector<std::vector<UTF16>> &StringTable) {
-  if (Entry.checkTypeString())
+  if (Entry.checkTypeString()) {
     return addNameChild(Entry.getTypeString(), StringTable);
-  else
+  } else {
     return addIDChild(Entry.getTypeID());
+
+}
 }
 
 WindowsResourceParser::TreeNode &WindowsResourceParser::TreeNode::addNameNode(
     const ResourceEntryRef &Entry,
     std::vector<std::vector<UTF16>> &StringTable) {
-  if (Entry.checkNameString())
+  if (Entry.checkNameString()) {
     return addNameChild(Entry.getNameString(), StringTable);
-  else
+  } else {
     return addIDChild(Entry.getNameID());
+
+}
 }
 
 bool WindowsResourceParser::TreeNode::addLanguageNode(
@@ -504,8 +544,10 @@ bool WindowsResourceParser::TreeNode::addLanguageNode(
   bool Added = addDataChild(Entry.getLanguage(), Entry.getMajorVersion(),
                             Entry.getMinorVersion(), Entry.getCharacteristics(),
                             Origin, Data.size(), Result);
-  if (Added)
+  if (Added) {
     Data.push_back(Entry.getData());
+
+}
   return Added;
 }
 
@@ -528,8 +570,10 @@ WindowsResourceParser::TreeNode &WindowsResourceParser::TreeNode::addIDChild(
     WindowsResourceParser::TreeNode &Node = *NewChild;
     IDChildren.emplace(ID, std::move(NewChild));
     return Node;
-  } else
+  } else {
     return *(Child->second);
+
+}
 }
 
 WindowsResourceParser::TreeNode &WindowsResourceParser::TreeNode::addNameChild(
@@ -544,8 +588,10 @@ WindowsResourceParser::TreeNode &WindowsResourceParser::TreeNode::addNameChild(
     WindowsResourceParser::TreeNode &Node = *NewChild;
     StringChildren.emplace(NameString, std::move(NewChild));
     return Node;
-  } else
+  } else {
     return *(Child->second);
+
+}
 }
 
 void WindowsResourceParser::TreeNode::print(ScopedPrinter &Writer,
@@ -591,10 +637,14 @@ void WindowsResourceParser::TreeNode::shiftDataIndexDown(uint32_t Index) {
   if (IsDataNode && DataIndex >= Index) {
     DataIndex--;
   } else {
-    for (auto &Child : IDChildren)
+    for (auto &Child : IDChildren) {
       Child.second->shiftDataIndexDown(Index);
-    for (auto &Child : StringChildren)
+
+}
+    for (auto &Child : StringChildren) {
       Child.second->shiftDataIndexDown(Index);
+
+}
   }
 }
 
@@ -1006,8 +1056,10 @@ writeWindowsResourceCOFF(COFF::MachineTypes MachineType,
                          uint32_t TimeDateStamp) {
   Error E = Error::success();
   WindowsResourceCOFFWriter Writer(MachineType, Parser, E);
-  if (E)
+  if (E) {
     return std::move(E);
+
+}
   return Writer.write(TimeDateStamp);
 }
 

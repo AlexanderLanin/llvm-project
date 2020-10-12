@@ -29,8 +29,10 @@ TEST(Render, Escaping) {
   // Same text, with each character escaped.
   std::string EscapedPunctuation;
   EscapedPunctuation.reserve(2 * Punctuation.size());
-  for (char C : Punctuation)
+  for (char C : Punctuation) {
     EscapedPunctuation += std::string("\\") + C;
+
+}
   P.appendText(Punctuation);
   EXPECT_EQ(P.asMarkdown(), EscapedPunctuation);
 

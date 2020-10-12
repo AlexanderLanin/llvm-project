@@ -208,9 +208,13 @@ TEST_F(ScalarEvolutionsTest, ExpandPtrTypeSCEV) {
 }
 
 static Instruction *getInstructionByName(Function &F, StringRef Name) {
-  for (auto &I : instructions(F))
-    if (I.getName() == Name)
+  for (auto &I : instructions(F)) {
+    if (I.getName() == Name) {
       return &I;
+
+}
+
+}
   llvm_unreachable("Expected to find instruction!");
 }
 
@@ -322,13 +326,15 @@ TEST_F(ScalarEvolutionsTest, CommutativeExprOperandOrder) {
     EXPECT_EQ(Mul4, Mul5) << "Expected " << *Mul4 << " == " << *Mul5;
   };
 
-  for (StringRef FuncName : {"f_2", "f_3", "f_4"})
+  for (StringRef FuncName : {"f_2", "f_3", "f_4"}) {
     runWithSE(
         *M, FuncName, [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
           CheckCommutativeMulExprs(SE, SE.getSCEV(getInstructionByName(F, "x")),
                                    SE.getSCEV(getInstructionByName(F, "y")),
                                    SE.getSCEV(getInstructionByName(F, "z")));
         });
+
+}
 }
 
 TEST_F(ScalarEvolutionsTest, CompareSCEVComplexity) {
@@ -469,9 +475,13 @@ TEST_F(ScalarEvolutionsTest, SCEVAddExpr) {
 }
 
 static Instruction &GetInstByName(Function &F, StringRef Name) {
-  for (auto &I : instructions(F))
-    if (I.getName() == Name)
+  for (auto &I : instructions(F)) {
+    if (I.getName() == Name) {
       return I;
+
+}
+
+}
   llvm_unreachable("Could not find instructions!");
 }
 
@@ -599,15 +609,21 @@ TEST_F(ScalarEvolutionsTest, SCEVNormalization) {
     std::vector<PostIncLoopSet> LoopSets;
     for (int i = 0; i < 8; i++) {
       LoopSets.emplace_back();
-      if (i & 1)
+      if (i & 1) {
         LoopSets.back().insert(L0);
-      if (i & 2)
+
+}
+      if (i & 2) {
         LoopSets.back().insert(L1);
-      if (i & 4)
+
+}
+      if (i & 4) {
         LoopSets.back().insert(L2);
+
+}
     }
 
-    for (const auto &LoopSet : LoopSets)
+    for (const auto &LoopSet : LoopSets) {
       for (auto *S : Exprs) {
         {
           auto *N = llvm::normalizeForPostIncUse(S, LoopSet, SE);
@@ -626,6 +642,8 @@ TEST_F(ScalarEvolutionsTest, SCEVNormalization) {
           EXPECT_EQ(S, N) << "S = " << *S << "  N = " << *N;
         }
       }
+
+}
   });
 }
 
@@ -697,10 +715,12 @@ TEST_F(ScalarEvolutionsTest, SCEVZeroExtendExpr) {
                                 ConstantInt::get(Context, APInt(64, 90)), "cmp",
                                 CondBB);
     BasicBlock *NextBB;
-    if (i != Iters - 1)
+    if (i != Iters - 1) {
       NextBB = BasicBlock::Create(Context, "for.cond", F, EndBB);
-    else
+    } else {
       NextBB = EndBB;
+
+}
     BranchInst::Create(IncBB, NextBB, Cmp, CondBB);
     auto *Dec = BinaryOperator::CreateNSWAdd(
         PN, ConstantInt::get(Context, APInt(64, -1)), "dec", IncBB);
@@ -744,8 +764,10 @@ TEST_F(ScalarEvolutionsTest, SCEVZeroExtendExprNonIntegral) {
   // Create a module with non-integral pointers in it's datalayout
   Module NIM("nonintegral", Context);
   std::string DataLayout = M.getDataLayoutStr();
-  if (!DataLayout.empty())
+  if (!DataLayout.empty()) {
     DataLayout += "-";
+
+}
   DataLayout += "ni:10";
   NIM.setDataLayout(DataLayout);
 
@@ -819,8 +841,10 @@ TEST_F(ScalarEvolutionsTest, SCEVExitLimitForgetLoop) {
   // Create a module with non-integral pointers in it's datalayout
   Module NIM("nonintegral", Context);
   std::string DataLayout = M.getDataLayoutStr();
-  if (!DataLayout.empty())
+  if (!DataLayout.empty()) {
     DataLayout += "-";
+
+}
   DataLayout += "ni:10";
   NIM.setDataLayout(DataLayout);
 
@@ -917,8 +941,10 @@ TEST_F(ScalarEvolutionsTest, SCEVExitLimitForgetValue) {
   // Create a module with non-integral pointers in it's datalayout
   Module NIM("nonintegral", Context);
   std::string DataLayout = M.getDataLayoutStr();
-  if (!DataLayout.empty())
+  if (!DataLayout.empty()) {
     DataLayout += "-";
+
+}
   DataLayout += "ni:10";
   NIM.setDataLayout(DataLayout);
 
@@ -1145,8 +1171,10 @@ TEST_F(ScalarEvolutionsTest, SCEVExpanderIsSafeToExpandAt) {
   // Create a module with non-integral pointers in it's datalayout
   Module NIM("nonintegral", Context);
   std::string DataLayout = M.getDataLayoutStr();
-  if (!DataLayout.empty())
+  if (!DataLayout.empty()) {
     DataLayout += "-";
+
+}
   DataLayout += "ni:10";
   NIM.setDataLayout(DataLayout);
 
@@ -1541,8 +1569,10 @@ TEST_F(ScalarEvolutionsTest, SCEVExpandInsertCanonicalIV) {
       for (BasicBlock::iterator i = LoopHeaderBB->begin(); isa<PHINode>(i);
            ++i) {
         PHINode *PN = cast<PHINode>(i);
-        if (PN == &I || PN == CanonicalIV)
+        if (PN == &I || PN == CanonicalIV) {
           continue;
+
+}
         // We expect that the only PHI added is the new canonical IV
         EXPECT_FALSE(NewCanonicalIV);
         NewCanonicalIV = PN;
@@ -1621,8 +1651,10 @@ TEST_F(ScalarEvolutionsTest, SCEVExpandInsertCanonicalIV) {
       for (BasicBlock::iterator i = LoopHeaderBB->begin(); isa<PHINode>(i);
            ++i) {
         PHINode *PN = cast<PHINode>(i);
-        if (PN == &I || PN == &CanonicalIV)
+        if (PN == &I || PN == &CanonicalIV) {
           continue;
+
+}
         NewCanonicalIV = PN;
       }
       EXPECT_FALSE(NewCanonicalIV);
@@ -1747,8 +1779,10 @@ TEST_F(ScalarEvolutionsTest, SCEVComputeConstantDifference) {
 
     auto diff = [&SE](const SCEV *LHS, const SCEV *RHS) -> Optional<int> {
       auto ConstantDiffOrNone = computeConstantDifference(SE, LHS, RHS);
-      if (!ConstantDiffOrNone)
+      if (!ConstantDiffOrNone) {
         return None;
+
+}
 
       auto ExtDiff = ConstantDiffOrNone->getSExtValue();
       int Diff = ExtDiff;

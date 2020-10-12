@@ -19,18 +19,22 @@ class BasicBlock;
 //===----------------------------------------------------------------------===//
 
 void User::replaceUsesOfWith(Value *From, Value *To) {
-  if (From == To) return;   // Duh what?
+  if (From == To) { return;   // Duh what?
+
+}
 
   assert((!isa<Constant>(this) || isa<GlobalValue>(this)) &&
          "Cannot call User::replaceUsesOfWith on a constant!");
 
-  for (unsigned i = 0, E = getNumOperands(); i != E; ++i)
+  for (unsigned i = 0, E = getNumOperands(); i != E; ++i) {
     if (getOperand(i) == From) {  // Is This operand is pointing to oldval?
       // The side effects of this setOperand call include linking to
       // "To", adding "this" to the uses list of To, and
       // most importantly, removing "this" from the use list of "From".
       setOperand(i, To); // Fix it now...
     }
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -48,8 +52,10 @@ void User::allocHungoffUses(unsigned N, bool IsPhi) {
   // Allocate the array of Uses, followed by a pointer (with bottom bit set) to
   // the User.
   size_t size = N * sizeof(Use) + sizeof(Use::UserRef);
-  if (IsPhi)
+  if (IsPhi) {
     size += N * sizeof(BasicBlock *);
+
+}
   Use *Begin = static_cast<Use*>(::operator new(size));
   Use *End = Begin + N;
   (void) new(End) Use::UserRef(const_cast<User*>(this), 1);
@@ -107,8 +113,10 @@ MutableArrayRef<uint8_t> User::getDescriptor() {
 }
 
 bool User::isDroppable() const {
-  if (const auto *Intr = dyn_cast<IntrinsicInst>(this))
+  if (const auto *Intr = dyn_cast<IntrinsicInst>(this)) {
     return Intr->getIntrinsicID() == Intrinsic::assume;
+
+}
   return false;
 }
 

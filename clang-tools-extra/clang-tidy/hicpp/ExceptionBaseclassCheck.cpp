@@ -48,14 +48,18 @@ void ExceptionBaseclassCheck::check(const MatchFinder::MatchResult &Result) {
       << BadThrow->getSubExpr()->getType() << BadThrow->getSourceRange();
 
   if (const auto *Template =
-          Result.Nodes.getNodeAs<SubstTemplateTypeParmType>("templ_type"))
+          Result.Nodes.getNodeAs<SubstTemplateTypeParmType>("templ_type")) {
     diag(BadThrow->getSubExpr()->getBeginLoc(),
          "type %0 is a template instantiation of %1", DiagnosticIDs::Note)
         << BadThrow->getSubExpr()->getType()
         << Template->getReplacedParameter()->getDecl();
 
-  if (const auto *TypeDecl = Result.Nodes.getNodeAs<NamedDecl>("decl"))
+}
+
+  if (const auto *TypeDecl = Result.Nodes.getNodeAs<NamedDecl>("decl")) {
     diag(TypeDecl->getBeginLoc(), "type defined here", DiagnosticIDs::Note);
+
+}
 }
 
 } // namespace hicpp

@@ -32,20 +32,26 @@ public:
 
   /// Return the lazily computed hash.
   std::string &get() {
-    if (!TheHash.empty())
+    if (!TheHash.empty()) {
       // Cache hit :)
       return TheHash;
 
+}
+
     MD5 Hasher;
     for (auto &F : TheModule) {
-      if (F.isDeclaration() || F.hasLocalLinkage() || !F.hasName())
+      if (F.isDeclaration() || F.hasLocalLinkage() || !F.hasName()) {
         continue;
+
+}
       auto Name = F.getName();
       Hasher.update(Name);
     }
     for (auto &GV : TheModule.globals()) {
-      if (GV.isDeclaration() || GV.hasLocalLinkage() || !GV.hasName())
+      if (GV.isDeclaration() || GV.hasLocalLinkage() || !GV.hasName()) {
         continue;
+
+}
       auto Name = GV.getName();
       Hasher.update(Name);
     }
@@ -67,15 +73,21 @@ bool llvm::nameUnamedGlobals(Module &M) {
   ModuleHasher ModuleHash(M);
   int count = 0;
   auto RenameIfNeed = [&](GlobalValue &GV) {
-    if (GV.hasName())
+    if (GV.hasName()) {
       return;
+
+}
     GV.setName(Twine("anon.") + ModuleHash.get() + "." + Twine(count++));
     Changed = true;
   };
-  for (auto &GO : M.global_objects())
+  for (auto &GO : M.global_objects()) {
     RenameIfNeed(GO);
-  for (auto &GA : M.aliases())
+
+}
+  for (auto &GA : M.aliases()) {
     RenameIfNeed(GA);
+
+}
 
   return Changed;
 }
@@ -102,8 +114,10 @@ char NameAnonGlobalLegacyPass::ID = 0;
 
 PreservedAnalyses NameAnonGlobalPass::run(Module &M,
                                           ModuleAnalysisManager &AM) {
-  if (!nameUnamedGlobals(M))
+  if (!nameUnamedGlobals(M)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }

@@ -69,8 +69,10 @@ protected:
                     const StringRef VectorName = "",
                     const StringRef IRType = "void()") {
     StringRef Name = MangledName;
-    if (!VectorName.empty())
+    if (!VectorName.empty()) {
       Name = VectorName;
+
+}
     // Reset the VFInfo and the Module to be able to invoke
     // `invokeParser` multiple times in the same test.
     reset(Name, IRType);

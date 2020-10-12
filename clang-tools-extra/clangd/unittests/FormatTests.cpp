@@ -28,9 +28,13 @@ std::string afterTyped(llvm::StringRef CodeWithCursor,
       formatIncremental(Code.code(), Cursor, Typed,
                         format::getGoogleStyle(format::FormatStyle::LK_Cpp));
   tooling::Replacements Merged;
-  for (const auto& R : Changes)
-    if (llvm::Error E = Merged.add(R))
+  for (const auto& R : Changes) {
+    if (llvm::Error E = Merged.add(R)) {
       ADD_FAILURE() << llvm::toString(std::move(E));
+
+}
+
+}
   auto NewCode = tooling::applyAllReplacements(Code.code(), Merged);
   EXPECT_TRUE(bool(NewCode))
       << "Bad replacements: " << llvm::toString(NewCode.takeError());

@@ -195,11 +195,13 @@ bool AssemblerInvocation::CreateFromArgs(AssemblerInvocation &Opts,
   for (const Arg *A : Args.filtered(OPT_UNKNOWN)) {
     auto ArgString = A->getAsString(Args);
     std::string Nearest;
-    if (OptTbl.findNearest(ArgString, Nearest, IncludedFlagsBitmask) > 1)
+    if (OptTbl.findNearest(ArgString, Nearest, IncludedFlagsBitmask) > 1) {
       Diags.Report(diag::err_drv_unknown_argument) << ArgString;
-    else
+    } else {
       Diags.Report(diag::err_drv_unknown_argument_with_suggestion)
           << ArgString << Nearest;
+
+}
     Success = false;
   }
 
@@ -211,8 +213,10 @@ bool AssemblerInvocation::CreateFromArgs(AssemblerInvocation &Opts,
   Opts.Features = Args.getAllArgValues(OPT_target_feature);
 
   // Use the default target triple if unspecified.
-  if (Opts.Triple.empty())
+  if (Opts.Triple.empty()) {
     Opts.Triple = llvm::sys::getDefaultTargetTriple();
+
+}
 
   // Language Options
   Opts.IncludePaths = Args.getAllArgValues(OPT_I);
@@ -279,8 +283,10 @@ bool AssemblerInvocation::CreateFromArgs(AssemblerInvocation &Opts,
     if (OutputType == ~0U) {
       Diags.Report(diag::err_drv_invalid_value) << A->getAsString(Args) << Name;
       Success = false;
-    } else
+    } else {
       Opts.OutputType = FileType(OutputType);
+
+}
   }
   Opts.ShowHelp = Args.hasArg(OPT_help);
   Opts.ShowVersion = Args.hasArg(OPT_version);
@@ -320,8 +326,10 @@ static std::unique_ptr<raw_fd_ostream>
 getOutputStream(StringRef Path, DiagnosticsEngine &Diags, bool Binary) {
   // Make sure that the Out file gets unlinked from the disk if we get a
   // SIGINT.
-  if (Path != "-")
+  if (Path != "-") {
     sys::RemoveFileOnSignal(Path);
+
+}
 
   std::error_code EC;
   auto Out = std::make_unique<raw_fd_ostream>(
@@ -339,8 +347,10 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
   // Get the target specific parser.
   std::string Error;
   const Target *TheTarget = TargetRegistry::lookupTarget(Opts.Triple, Error);
-  if (!TheTarget)
+  if (!TheTarget) {
     return Diags.Report(diag::err_target_unknown_triple) << Opts.Triple;
+
+}
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer =
       MemoryBuffer::getFileOrSTDIN(Opts.InputFile);
@@ -374,15 +384,21 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
   MAI->setRelaxELFRelocations(Opts.RelaxELFRelocations);
 
   bool IsBinary = Opts.OutputType == AssemblerInvocation::FT_Obj;
-  if (Opts.OutputPath.empty())
+  if (Opts.OutputPath.empty()) {
     Opts.OutputPath = "-";
+
+}
   std::unique_ptr<raw_fd_ostream> FDOS =
       getOutputStream(Opts.OutputPath, Diags, IsBinary);
-  if (!FDOS)
+  if (!FDOS) {
     return true;
+
+}
   std::unique_ptr<raw_fd_ostream> DwoOS;
-  if (!Opts.SplitDwarfOutput.empty())
+  if (!Opts.SplitDwarfOutput.empty()) {
     DwoOS = getOutputStream(Opts.SplitDwarfOutput, Diags, IsBinary);
+
+}
 
   // FIXME: This is not pretty. MCContext has a ptr to MCObjectFileInfo and
   // MCObjectFileInfo needs a MCContext reference in order to initialize itself.
@@ -402,38 +418,58 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
   }
 
   MOFI->InitMCObjectFileInfo(Triple(Opts.Triple), PIC, Ctx);
-  if (Opts.SaveTemporaryLabels)
+  if (Opts.SaveTemporaryLabels) {
     Ctx.setAllowTemporaryLabels(false);
-  if (Opts.GenDwarfForAssembly)
+
+}
+  if (Opts.GenDwarfForAssembly) {
     Ctx.setGenDwarfForAssembly(true);
-  if (!Opts.DwarfDebugFlags.empty())
+
+}
+  if (!Opts.DwarfDebugFlags.empty()) {
     Ctx.setDwarfDebugFlags(StringRef(Opts.DwarfDebugFlags));
-  if (!Opts.DwarfDebugProducer.empty())
+
+}
+  if (!Opts.DwarfDebugProducer.empty()) {
     Ctx.setDwarfDebugProducer(StringRef(Opts.DwarfDebugProducer));
-  if (!Opts.DebugCompilationDir.empty())
+
+}
+  if (!Opts.DebugCompilationDir.empty()) {
     Ctx.setCompilationDir(Opts.DebugCompilationDir);
-  else {
+  } else {
     // If no compilation dir is set, try to use the current directory.
     SmallString<128> CWD;
-    if (!sys::fs::current_path(CWD))
+    if (!sys::fs::current_path(CWD)) {
       Ctx.setCompilationDir(CWD);
+
+}
   }
-  if (!Opts.DebugPrefixMap.empty())
-    for (const auto &KV : Opts.DebugPrefixMap)
+  if (!Opts.DebugPrefixMap.empty()) {
+    for (const auto &KV : Opts.DebugPrefixMap) {
       Ctx.addDebugPrefixMapEntry(KV.first, KV.second);
-  if (!Opts.MainFileName.empty())
+
+}
+
+}
+  if (!Opts.MainFileName.empty()) {
     Ctx.setMainFileName(StringRef(Opts.MainFileName));
+
+}
   Ctx.setDwarfVersion(Opts.DwarfVersion);
-  if (Opts.GenDwarfForAssembly)
+  if (Opts.GenDwarfForAssembly) {
     Ctx.setGenDwarfRootFile(Opts.InputFile,
                             SrcMgr.getMemoryBuffer(BufferIndex)->getBuffer());
+
+}
 
   // Build up the feature string from the target feature list.
   std::string FS;
   if (!Opts.Features.empty()) {
     FS = Opts.Features[0];
-    for (unsigned i = 1, e = Opts.Features.size(); i != e; ++i)
+    for (unsigned i = 1, e = Opts.Features.size(); i != e; ++i) {
       FS += "," + Opts.Features[i];
+
+}
   }
 
   std::unique_ptr<MCStreamer> Str;
@@ -455,8 +491,10 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
         llvm::Triple(Opts.Triple), Opts.OutputAsmVariant, *MAI, *MCII, *MRI);
 
     std::unique_ptr<MCCodeEmitter> CE;
-    if (Opts.ShowEncoding)
+    if (Opts.ShowEncoding) {
       CE.reset(TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx));
+
+}
     std::unique_ptr<MCAsmBackend> MAB(
         TheTarget->createMCAsmBackend(*STI, *MRI, MCOptions));
 
@@ -512,8 +550,10 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
   // FIXME: init MCTargetOptions from sanitizer flags here.
   std::unique_ptr<MCTargetAsmParser> TAP(
       TheTarget->createMCAsmParser(*STI, *Parser, *MCII, MCOptions));
-  if (!TAP)
+  if (!TAP) {
     Failed = Diags.Report(diag::err_target_unknown_triple) << Opts.Triple;
+
+}
 
   // Set values for symbols, if any.
   for (auto &S : Opts.SymbolDefs) {
@@ -540,10 +580,14 @@ static bool ExecuteAssembler(AssemblerInvocation &Opts,
 
   // Delete output file if there were errors.
   if (Failed) {
-    if (Opts.OutputPath != "-")
+    if (Opts.OutputPath != "-") {
       sys::fs::remove(Opts.OutputPath);
-    if (!Opts.SplitDwarfOutput.empty() && Opts.SplitDwarfOutput != "-")
+
+}
+    if (!Opts.SplitDwarfOutput.empty() && Opts.SplitDwarfOutput != "-") {
       sys::fs::remove(Opts.SplitDwarfOutput);
+
+}
   }
 
   return Failed;
@@ -580,8 +624,10 @@ int cc1as_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
 
   // Parse the arguments.
   AssemblerInvocation Asm;
-  if (!AssemblerInvocation::CreateFromArgs(Asm, Argv, Diags))
+  if (!AssemblerInvocation::CreateFromArgs(Asm, Argv, Diags)) {
     return 1;
+
+}
 
   if (Asm.ShowHelp) {
     getDriverOptTable().PrintHelp(
@@ -607,8 +653,10 @@ int cc1as_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
     unsigned NumArgs = Asm.LLVMArgs.size();
     auto Args = std::make_unique<const char*[]>(NumArgs + 2);
     Args[0] = "clang (LLVM option parsing)";
-    for (unsigned i = 0; i != NumArgs; ++i)
+    for (unsigned i = 0; i != NumArgs; ++i) {
       Args[i + 1] = Asm.LLVMArgs[i].c_str();
+
+}
     Args[NumArgs + 1] = nullptr;
     llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get());
   }

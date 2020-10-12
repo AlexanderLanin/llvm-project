@@ -32,10 +32,12 @@ static llvm::Regex ConsumeGlob(StringRef &GlobList) {
   SmallString<128> RegexText("^");
   StringRef MetaChars("()^$|*+?.[]\\{}");
   for (char C : Glob) {
-    if (C == '*')
+    if (C == '*') {
       RegexText.push_back('.');
-    else if (MetaChars.find(C) != StringRef::npos)
+    } else if (MetaChars.find(C) != StringRef::npos) {
       RegexText.push_back('\\');
+
+}
     RegexText.push_back(C);
   }
   RegexText.push_back('$');
@@ -54,8 +56,10 @@ GlobList::GlobList(StringRef Globs) {
 bool GlobList::contains(StringRef S) {
   bool Contains = false;
   for (const GlobListItem &Item : Items) {
-    if (Item.Regex.match(S))
+    if (Item.Regex.match(S)) {
       Contains = Item.IsPositive;
+
+}
   }
   return Contains;
 }

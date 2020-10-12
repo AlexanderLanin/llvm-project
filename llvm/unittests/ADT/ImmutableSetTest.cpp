@@ -22,7 +22,9 @@ protected:
     char *ptr;
 
     MyIter() : counter(0), ptr(buffer) {
-      for (unsigned i=0; i<sizeof(buffer);++i) buffer[i]='\0';
+      for (unsigned i=0; i<sizeof(buffer);++i) { buffer[i]='\0';
+
+}
     }
     void operator()(char c) {
       *ptr++ = c;

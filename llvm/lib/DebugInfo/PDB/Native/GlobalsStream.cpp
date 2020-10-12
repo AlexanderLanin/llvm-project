@@ -39,8 +39,10 @@ GlobalsStream::~GlobalsStream() = default;
 
 Error GlobalsStream::reload() {
   BinaryStreamReader Reader(*Stream);
-  if (auto E = GlobalsTable.read(Reader))
+  if (auto E = GlobalsTable.read(Reader)) {
     return E;
+
+}
   return Error::success();
 }
 
@@ -52,8 +54,10 @@ GlobalsStream::findRecordsByName(StringRef Name,
   // Hash the name to figure out which bucket this goes into.
   size_t ExpandedBucketIndex = hashStringV1(Name) % IPHR_HASH;
   int32_t CompressedBucketIndex = GlobalsTable.BucketMap[ExpandedBucketIndex];
-  if (CompressedBucketIndex == -1)
+  if (CompressedBucketIndex == -1) {
     return Result;
+
+}
 
   uint32_t LastBucketIndex = GlobalsTable.HashBuckets.size() - 1;
   uint32_t StartRecordIndex =
@@ -74,32 +78,40 @@ GlobalsStream::findRecordsByName(StringRef Name,
     PSHashRecord PSH = GlobalsTable.HashRecords[StartRecordIndex];
     uint32_t Off = PSH.Off - 1;
     codeview::CVSymbol Record = Symbols.readRecord(Off);
-    if (codeview::getSymbolName(Record) == Name)
+    if (codeview::getSymbolName(Record) == Name) {
       Result.push_back(std::make_pair(Off, std::move(Record)));
+
+}
     ++StartRecordIndex;
   }
   return Result;
 }
 
 static Error checkHashHdrVersion(const GSIHashHeader *HashHdr) {
-  if (HashHdr->VerHdr != GSIHashHeader::HdrVersion)
+  if (HashHdr->VerHdr != GSIHashHeader::HdrVersion) {
     return make_error<RawError>(
         raw_error_code::feature_unsupported,
         "Encountered unsupported globals stream version.");
+
+}
 
   return Error::success();
 }
 
 static Error readGSIHashHeader(const GSIHashHeader *&HashHdr,
                                BinaryStreamReader &Reader) {
-  if (Reader.readObject(HashHdr))
+  if (Reader.readObject(HashHdr)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Stream does not contain a GSIHashHeader.");
 
-  if (HashHdr->VerSignature != GSIHashHeader::HdrSignature)
+}
+
+  if (HashHdr->VerSignature != GSIHashHeader::HdrSignature) {
     return make_error<RawError>(
         raw_error_code::feature_unsupported,
         "GSIHashHeader signature (0xffffffff) not found.");
+
+}
 
   return Error::success();
 }
@@ -107,19 +119,25 @@ static Error readGSIHashHeader(const GSIHashHeader *&HashHdr,
 static Error readGSIHashRecords(FixedStreamArray<PSHashRecord> &HashRecords,
                                 const GSIHashHeader *HashHdr,
                                 BinaryStreamReader &Reader) {
-  if (auto EC = checkHashHdrVersion(HashHdr))
+  if (auto EC = checkHashHdrVersion(HashHdr)) {
     return EC;
+
+}
 
   // HashHdr->HrSize specifies the number of bytes of PSHashRecords we have.
   // Verify that we can read them all.
-  if (HashHdr->HrSize % sizeof(PSHashRecord))
+  if (HashHdr->HrSize % sizeof(PSHashRecord)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Invalid HR array size.");
+
+}
   uint32_t NumHashRecords = HashHdr->HrSize / sizeof(PSHashRecord);
-  if (auto EC = Reader.readArray(HashRecords, NumHashRecords))
+  if (auto EC = Reader.readArray(HashRecords, NumHashRecords)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Error reading hash records."));
+
+}
 
   return Error::success();
 }
@@ -130,17 +148,21 @@ readGSIHashBuckets(FixedStreamArray<support::ulittle32_t> &HashBuckets,
                    const GSIHashHeader *HashHdr,
                    MutableArrayRef<int32_t> BucketMap,
                    BinaryStreamReader &Reader) {
-  if (auto EC = checkHashHdrVersion(HashHdr))
+  if (auto EC = checkHashHdrVersion(HashHdr)) {
     return EC;
+
+}
 
   // Before the actual hash buckets, there is a bitmap of length determined by
   // IPHR_HASH.
   size_t BitmapSizeInBits = alignTo(IPHR_HASH + 1, 32);
   uint32_t NumBitmapEntries = BitmapSizeInBits / 32;
-  if (auto EC = Reader.readArray(HashBitmap, NumBitmapEntries))
+  if (auto EC = Reader.readArray(HashBitmap, NumBitmapEntries)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Could not read a bitmap."));
+
+}
   uint32_t NumBuckets1 = 0;
   uint32_t CompressedBucketIdx = 0;
   for (uint32_t I = 0; I <= IPHR_HASH; ++I) {
@@ -156,26 +178,38 @@ readGSIHashBuckets(FixedStreamArray<support::ulittle32_t> &HashBuckets,
   }
 
   uint32_t NumBuckets = 0;
-  for (uint32_t B : HashBitmap)
+  for (uint32_t B : HashBitmap) {
     NumBuckets += countPopulation(B);
 
+}
+
   // Hash buckets follow.
-  if (auto EC = Reader.readArray(HashBuckets, NumBuckets))
+  if (auto EC = Reader.readArray(HashBuckets, NumBuckets)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Hash buckets corrupted."));
+
+}
 
   return Error::success();
 }
 
 Error GSIHashTable::read(BinaryStreamReader &Reader) {
-  if (auto EC = readGSIHashHeader(HashHdr, Reader))
+  if (auto EC = readGSIHashHeader(HashHdr, Reader)) {
     return EC;
-  if (auto EC = readGSIHashRecords(HashRecords, HashHdr, Reader))
+
+}
+  if (auto EC = readGSIHashRecords(HashRecords, HashHdr, Reader)) {
     return EC;
-  if (HashHdr->HrSize > 0)
+
+}
+  if (HashHdr->HrSize > 0) {
     if (auto EC = readGSIHashBuckets(HashBuckets, HashBitmap, HashHdr,
-                                     BucketMap, Reader))
+                                     BucketMap, Reader)) {
       return EC;
+
+}
+
+}
   return Error::success();
 }

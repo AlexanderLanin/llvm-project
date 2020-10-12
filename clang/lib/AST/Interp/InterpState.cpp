@@ -64,11 +64,15 @@ void InterpState::deallocate(Block *B) {
     auto *D = new (Memory) DeadBlock(DeadBlocks, B);
 
     // Move data from one block to another.
-    if (Desc->MoveFn)
+    if (Desc->MoveFn) {
       Desc->MoveFn(B, B->data(), D->data(), Desc);
+
+}
   } else {
     // Free storage, if necessary.
-    if (Desc->DtorFn)
+    if (Desc->DtorFn) {
       Desc->DtorFn(B, B->data(), Desc);
+
+}
   }
 }

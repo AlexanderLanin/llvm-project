@@ -30,17 +30,23 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
                                              const TargetInstrInfo *TII) {
   MachineFunction &MF = *Loop->getParent();
   MachineBasicBlock *Preheader = *Loop->pred_begin();
-  if (Preheader == Loop)
+  if (Preheader == Loop) {
     Preheader = *std::next(Loop->pred_begin());
+
+}
   MachineBasicBlock *Exit = *Loop->succ_begin();
-  if (Exit == Loop)
+  if (Exit == Loop) {
     Exit = *std::next(Loop->succ_begin());
 
+}
+
   MachineBasicBlock *NewBB = MF.CreateMachineBasicBlock(Loop->getBasicBlock());
-  if (Direction == LPD_Front)
+  if (Direction == LPD_Front) {
     MF.insert(Loop->getIterator(), NewBB);
-  else
+  } else {
     MF.insert(std::next(Loop->getIterator()), NewBB);
+
+}
 
   // FIXME: Add DenseMapInfo trait for Register so we can use it as a key.
   DenseMap<unsigned, Register> Remaps;
@@ -50,8 +56,10 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
     NewBB->insert(InsertPt, NewMI);
     for (MachineOperand &MO : NewMI->defs()) {
       Register OrigR = MO.getReg();
-      if (OrigR.isPhysical())
+      if (OrigR.isPhysical()) {
         continue;
+
+}
       Register &R = Remaps[OrigR];
       R = MRI.createVirtualRegister(MRI.getRegClass(OrigR));
       MO.setReg(R);
@@ -61,9 +69,13 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
         // FIXME: is the use_iterator stable enough to mutate register uses
         // while iterating?
         SmallVector<MachineOperand *, 4> Uses;
-        for (auto &Use : MRI.use_operands(OrigR))
-          if (Use.getParent()->getParent() != Loop)
+        for (auto &Use : MRI.use_operands(OrigR)) {
+          if (Use.getParent()->getParent() != Loop) {
             Uses.push_back(&Use);
+
+}
+
+}
         for (auto *Use : Uses) {
           MRI.constrainRegClass(R, MRI.getRegClass(Use->getReg()));
           Use->setReg(R);
@@ -72,24 +84,34 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
     }
   }
 
-  for (auto I = NewBB->getFirstNonPHI(); I != NewBB->end(); ++I)
-    for (MachineOperand &MO : I->uses())
-      if (MO.isReg() && Remaps.count(MO.getReg()))
+  for (auto I = NewBB->getFirstNonPHI(); I != NewBB->end(); ++I) {
+    for (MachineOperand &MO : I->uses()) {
+      if (MO.isReg() && Remaps.count(MO.getReg())) {
         MO.setReg(Remaps[MO.getReg()]);
+
+}
+
+}
+
+}
 
   for (auto I = NewBB->begin(); I->isPHI(); ++I) {
     MachineInstr &MI = *I;
     unsigned LoopRegIdx = 3, InitRegIdx = 1;
-    if (MI.getOperand(2).getMBB() != Preheader)
+    if (MI.getOperand(2).getMBB() != Preheader) {
       std::swap(LoopRegIdx, InitRegIdx);
+
+}
     MachineInstr &OrigPhi = findEquivalentInstruction(MI, Loop);
     assert(OrigPhi.isPHI());
     if (Direction == LPD_Front) {
       // When peeling front, we are only left with the initial value from the
       // preheader.
       Register R = MI.getOperand(LoopRegIdx).getReg();
-      if (Remaps.count(R))
+      if (Remaps.count(R)) {
         R = Remaps[R];
+
+}
       OrigPhi.getOperand(InitRegIdx).setReg(R);
       MI.RemoveOperand(LoopRegIdx + 1);
       MI.RemoveOperand(LoopRegIdx + 0);
@@ -108,8 +130,10 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
     Preheader->replaceSuccessor(Loop, NewBB);
     NewBB->addSuccessor(Loop);
     Loop->replacePhiUsesWith(Preheader, NewBB);
-    if (TII->removeBranch(*Preheader) > 0)
+    if (TII->removeBranch(*Preheader) > 0) {
       TII->insertBranch(*Preheader, NewBB, nullptr, {}, DL);
+
+}
     TII->removeBranch(*NewBB);
     TII->insertBranch(*NewBB, Loop, nullptr, {}, DL);
   } else {
@@ -125,8 +149,10 @@ MachineBasicBlock *llvm::PeelSingleBlockLoop(LoopPeelDirection Direction,
     TII->removeBranch(*Loop);
     TII->insertBranch(*Loop, TBB == Exit ? NewBB : TBB,
                       FBB == Exit ? NewBB : FBB, Cond, DL);
-    if (TII->removeBranch(*NewBB) > 0)
+    if (TII->removeBranch(*NewBB) > 0) {
       TII->insertBranch(*NewBB, Exit, nullptr, {}, DL);
+
+}
   }
 
   return NewBB;
@@ -136,9 +162,13 @@ bool llvm::isRegLiveInExitBlocks(MachineLoop *Loop, int PhysReg) {
   SmallVector<MachineBasicBlock *, 4> ExitBlocks;
   Loop->getExitBlocks(ExitBlocks);
 
-  for (auto *MBB : ExitBlocks)
-    if (MBB->isLiveIn(PhysReg))
+  for (auto *MBB : ExitBlocks) {
+    if (MBB->isLiveIn(PhysReg)) {
       return true;
+
+}
+
+}
 
   return false;
 }

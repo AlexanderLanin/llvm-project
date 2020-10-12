@@ -201,11 +201,15 @@ void llvm::llvm_unreachable_internal(const char *msg, const char *file,
   // This code intentionally doesn't call the ErrorHandler callback, because
   // llvm_unreachable is intended to be used to indicate "impossible"
   // situations, and not legitimate runtime errors.
-  if (msg)
+  if (msg) {
     dbgs() << msg << "\n";
+
+}
   dbgs() << "UNREACHABLE executed";
-  if (file)
+  if (file) {
     dbgs() << " at " << file << ":" << line;
+
+}
   dbgs() << "!\n";
   abort();
 #ifdef LLVM_BUILTIN_UNREACHABLE

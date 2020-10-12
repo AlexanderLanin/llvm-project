@@ -505,8 +505,10 @@ TEST_F(MemorySSATest, RemoveAPhi) {
   Updater.removeMemoryAccess(StoreAccess);
   MemoryPhi *MP = cast<MemoryPhi>(DefiningAccess);
   // Verify the phi ended up as liveonentry, liveonentry
-  for (auto &Op : MP->incoming_values())
+  for (auto &Op : MP->incoming_values()) {
     EXPECT_TRUE(MSSA.isLiveOnEntryDef(cast<MemoryAccess>(Op.get())));
+
+}
   // Replace the phi uses with the live on entry def
   MP->replaceAllUsesWith(MSSA.getLiveOnEntryDef());
   // Verify the load is now defined by liveOnEntryDef
@@ -1069,9 +1071,9 @@ TEST_F(MemorySSATest, TestStoreMustAlias) {
     EXPECT_EQ(MemDef->getOptimizedAccessType(), MayAlias)
         << "Store " << I
         << " has correct alias information before being optimized?";
-    if (V == SA1)
+    if (V == SA1) {
       Walker->getClobberingMemoryAccess(V);
-    else {
+    } else {
       MemoryAccess *Def = MemDef->getDefiningAccess();
       MemoryAccess *Clob = Walker->getClobberingMemoryAccess(V);
       EXPECT_NE(Def, Clob) << "Store " << I
@@ -1079,12 +1081,14 @@ TEST_F(MemorySSATest, TestStoreMustAlias) {
     }
     EXPECT_EQ(MemDef->isOptimized(), true)
         << "Store " << I << " was not optimized";
-    if (I == 0 || I == 1)
+    if (I == 0 || I == 1) {
       EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
           << "Store " << I << " doesn't have the correct alias information";
-    else
+    } else {
       EXPECT_EQ(MemDef->getOptimizedAccessType(), MustAlias)
           << "Store " << I << " doesn't have the correct alias information";
+
+}
     // EXPECT_EQ expands such that if we increment I above, it won't get
     // incremented except when we try to print the error message.
     ++I;
@@ -1176,23 +1180,27 @@ TEST_F(MemorySSATest, TestStoreMayAlias) {
     ++I;
   }
 
-  for (StoreInst *V : Sts)
+  for (StoreInst *V : Sts) {
     Walker->getClobberingMemoryAccess(V);
+
+}
 
   I = 0;
   for (StoreInst *V : Sts) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), true)
         << "Store " << I << " was not optimized";
-    if (I == 1 || I == 3 || I == 4)
+    if (I == 1 || I == 3 || I == 4) {
       EXPECT_EQ(MemDef->getOptimizedAccessType(), MayAlias)
           << "Store " << I << " doesn't have the correct alias information";
-    else if (I == 0 || I == 2)
+    } else if (I == 0 || I == 2) {
       EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
           << "Store " << I << " doesn't have the correct alias information";
-    else
+    } else {
       EXPECT_EQ(MemDef->getOptimizedAccessType(), MustAlias)
           << "Store " << I << " doesn't have the correct alias information";
+
+}
     // EXPECT_EQ expands such that if we increment I above, it won't get
     // incremented except when we try to print the error message.
     ++I;

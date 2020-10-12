@@ -195,21 +195,31 @@ static std::vector<unsigned> getOpcodesOrDie(const MCInstrInfo &MCInstrInfo) {
     ExitWithError("please provide one and only one of 'opcode-index', "
                   "'opcode-name' or 'snippets-file'");
   }
-  if (!SnippetsFile.empty())
+  if (!SnippetsFile.empty()) {
     return {};
-  if (OpcodeIndex > 0)
+
+}
+  if (OpcodeIndex > 0) {
     return {static_cast<unsigned>(OpcodeIndex)};
+
+}
   if (OpcodeIndex < 0) {
     std::vector<unsigned> Result;
-    for (unsigned I = 1, E = MCInstrInfo.getNumOpcodes(); I < E; ++I)
+    for (unsigned I = 1, E = MCInstrInfo.getNumOpcodes(); I < E; ++I) {
       Result.push_back(I);
+
+}
     return Result;
   }
   // Resolve opcode name -> opcode.
   const auto ResolveName = [&MCInstrInfo](StringRef OpcodeName) -> unsigned {
-    for (unsigned I = 1, E = MCInstrInfo.getNumOpcodes(); I < E; ++I)
-      if (MCInstrInfo.getName(I) == OpcodeName)
+    for (unsigned I = 1, E = MCInstrInfo.getNumOpcodes(); I < E; ++I) {
+      if (MCInstrInfo.getName(I) == OpcodeName) {
         return I;
+
+}
+
+}
     return 0u;
   };
   SmallVector<StringRef, 2> Pieces;
@@ -217,10 +227,12 @@ static std::vector<unsigned> getOpcodesOrDie(const MCInstrInfo &MCInstrInfo) {
       .split(Pieces, ",", /* MaxSplit */ -1, /* KeepEmpty */ false);
   std::vector<unsigned> Result;
   for (const StringRef &OpcodeName : Pieces) {
-    if (unsigned Opcode = ResolveName(OpcodeName))
+    if (unsigned Opcode = ResolveName(OpcodeName)) {
       Result.push_back(Opcode);
-    else
+    } else {
       ExitWithError(Twine("unknown opcode ").concat(OpcodeName));
+
+}
   }
   return Result;
 }
@@ -232,12 +244,18 @@ generateSnippets(const LLVMState &State, unsigned Opcode,
   const Instruction &Instr = State.getIC().getInstr(Opcode);
   const MCInstrDesc &InstrDesc = Instr.Description;
   // Ignore instructions that we cannot run.
-  if (InstrDesc.isPseudo())
+  if (InstrDesc.isPseudo()) {
     return make_error<Failure>("Unsupported opcode: isPseudo");
-  if (InstrDesc.isBranch() || InstrDesc.isIndirectBranch())
+
+}
+  if (InstrDesc.isBranch() || InstrDesc.isIndirectBranch()) {
     return make_error<Failure>("Unsupported opcode: isBranch/isIndirectBranch");
-  if (InstrDesc.isCall() || InstrDesc.isReturn())
+
+}
+  if (InstrDesc.isCall() || InstrDesc.isReturn()) {
     return make_error<Failure>("Unsupported opcode: isCall/isReturn");
+
+}
 
   const std::vector<InstructionTemplate> InstructionVariants =
       State.getExegesisTarget().generateInstructionVariants(
@@ -248,16 +266,22 @@ generateSnippets(const LLVMState &State, unsigned Opcode,
   const std::unique_ptr<SnippetGenerator> Generator =
       State.getExegesisTarget().createSnippetGenerator(BenchmarkMode, State,
                                                        SnippetOptions);
-  if (!Generator)
+  if (!Generator) {
     ExitWithError("cannot create snippet generator");
+
+}
 
   std::vector<BenchmarkCode> Benchmarks;
   for (const InstructionTemplate &Variant : InstructionVariants) {
-    if (Benchmarks.size() >= MaxConfigsPerOpcode)
+    if (Benchmarks.size() >= MaxConfigsPerOpcode) {
       break;
+
+}
     if (auto Err = Generator->generateConfigurations(Variant, Benchmarks,
-                                                     ForbiddenRegs))
+                                                     ForbiddenRegs)) {
       return std::move(Err);
+
+}
   }
   return Benchmarks;
 }
@@ -267,8 +291,10 @@ void benchmarkMain() {
   ExitWithError("benchmarking unavailable, LLVM was built without libpfm.");
 #endif
 
-  if (exegesis::pfm::pfmInitialize())
+  if (exegesis::pfm::pfmInitialize()) {
     ExitWithError("cannot initialize libpfm");
+
+}
 
   InitializeNativeTarget();
   InitializeNativeTargetAsmPrinter();
@@ -319,8 +345,10 @@ void benchmarkMain() {
   }
 
   // Write to standard output if file is not set.
-  if (BenchmarkFile.empty())
+  if (BenchmarkFile.empty()) {
     BenchmarkFile = "-";
+
+}
 
   for (const BenchmarkCode &Conf : Configurations) {
     InstructionBenchmark Result = ExitOnErr(Runner->runConfiguration(
@@ -335,8 +363,10 @@ void benchmarkMain() {
 template <typename Pass>
 static void maybeRunAnalysis(const Analysis &Analyzer, const std::string &Name,
                              const std::string &OutputFilename) {
-  if (OutputFilename.empty())
+  if (OutputFilename.empty()) {
     return;
+
+}
   if (OutputFilename != "-") {
     errs() << "Printing " << Name << " results to file '" << OutputFilename
            << "'\n";
@@ -344,16 +374,22 @@ static void maybeRunAnalysis(const Analysis &Analyzer, const std::string &Name,
   std::error_code ErrorCode;
   raw_fd_ostream ClustersOS(OutputFilename, ErrorCode,
                             sys::fs::FA_Read | sys::fs::FA_Write);
-  if (ErrorCode)
+  if (ErrorCode) {
     ExitOnFileError(OutputFilename, errorCodeToError(ErrorCode));
-  if (auto Err = Analyzer.run<Pass>(ClustersOS))
+
+}
+  if (auto Err = Analyzer.run<Pass>(ClustersOS)) {
     ExitOnFileError(OutputFilename, std::move(Err));
+
+}
 }
 
 static void analysisMain() {
   ExitOnErr.setBanner("llvm-exegesis: ");
-  if (BenchmarkFile.empty())
+  if (BenchmarkFile.empty()) {
     ExitWithError("--benchmarks-file must be set");
+
+}
 
   if (AnalysisClustersOutputFile.empty() &&
       AnalysisInconsistenciesOutputFile.empty()) {
@@ -412,8 +448,10 @@ int main(int Argc, char **Argv) {
   cl::ParseCommandLineOptions(Argc, Argv, "");
 
   exegesis::ExitOnErr.setExitCodeMapper([](const Error &Err) {
-    if (Err.isA<exegesis::ClusteringError>())
+    if (Err.isA<exegesis::ClusteringError>()) {
       return EXIT_SUCCESS;
+
+}
     return EXIT_FAILURE;
   });
 

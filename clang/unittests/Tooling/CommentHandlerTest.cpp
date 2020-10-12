@@ -109,7 +109,9 @@ public:
 
   void Match(const char *Message, unsigned Line, unsigned Col) {
     EXPECT_TRUE(Current != End) << "Comment " << Message << " not found";
-    if (Current == End) return;
+    if (Current == End) { return;
+
+}
 
     const Comment &C = *Current;
     EXPECT_TRUE(C.Message == Message && C.Line == Line && C.Col == Col)

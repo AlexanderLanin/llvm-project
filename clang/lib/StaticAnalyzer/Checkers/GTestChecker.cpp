@@ -135,8 +135,10 @@ void GTestChecker::modelAssertionResultBoolConstructor(
   SVal BooleanArgVal = Call->getArgSVal(0);
   if (IsRef) {
     // The argument is a reference, so load from it to get the boolean value.
-    if (!BooleanArgVal.getAs<Loc>())
+    if (!BooleanArgVal.getAs<Loc>()) {
       return;
+
+}
     BooleanArgVal = C.getState()->getSVal(BooleanArgVal.castAs<Loc>());
   }
 
@@ -181,19 +183,25 @@ void GTestChecker::modelAssertionResultCopyConstructor(
 void GTestChecker::checkPostCall(const CallEvent &Call,
                                  CheckerContext &C) const {
   /// If the constructor was inlined, there is no need model it.
-  if (C.wasInlined)
+  if (C.wasInlined) {
     return;
+
+}
 
   initIdentifierInfo(C.getASTContext());
 
   auto *CtorCall = dyn_cast<CXXConstructorCall>(&Call);
-  if (!CtorCall)
+  if (!CtorCall) {
     return;
+
+}
 
   const CXXConstructorDecl *CtorDecl = CtorCall->getDecl();
   const CXXRecordDecl *CtorParent = CtorDecl->getParent();
-  if (CtorParent->getIdentifier() != AssertionResultII)
+  if (CtorParent->getIdentifier() != AssertionResultII) {
     return;
+
+}
 
   unsigned ParamCount = CtorDecl->getNumParams();
 
@@ -237,8 +245,10 @@ void GTestChecker::checkPostCall(const CallEvent &Call,
 }
 
 void GTestChecker::initIdentifierInfo(ASTContext &Ctx) const {
-  if (AssertionResultII)
+  if (AssertionResultII) {
     return;
+
+}
 
   AssertionResultII = &Ctx.Idents.get("AssertionResult");
   SuccessII = &Ctx.Idents.get("success_");
@@ -251,17 +261,23 @@ SVal GTestChecker::getAssertionResultSuccessFieldValue(
     ProgramStateRef State) const {
 
   DeclContext::lookup_result Result = AssertionResultDecl->lookup(SuccessII);
-  if (Result.empty())
+  if (Result.empty()) {
     return UnknownVal();
 
+}
+
   auto *SuccessField = dyn_cast<FieldDecl>(Result.front());
-  if (!SuccessField)
+  if (!SuccessField) {
     return UnknownVal();
+
+}
 
   Optional<Loc> FieldLoc =
       State->getLValue(SuccessField, Instance).getAs<Loc>();
-  if (!FieldLoc.hasValue())
+  if (!FieldLoc.hasValue()) {
     return UnknownVal();
+
+}
 
   return State->getSVal(*FieldLoc);
 }
@@ -271,15 +287,19 @@ ProgramStateRef GTestChecker::assumeValuesEqual(SVal Val1, SVal Val2,
                                                 ProgramStateRef State,
                                                 CheckerContext &C) {
   if (!Val1.getAs<DefinedOrUnknownSVal>() ||
-      !Val2.getAs<DefinedOrUnknownSVal>())
+      !Val2.getAs<DefinedOrUnknownSVal>()) {
     return State;
+
+}
 
   auto ValuesEqual =
       C.getSValBuilder().evalEQ(State, Val1.castAs<DefinedOrUnknownSVal>(),
                                 Val2.castAs<DefinedOrUnknownSVal>());
 
-  if (!ValuesEqual.getAs<DefinedSVal>())
+  if (!ValuesEqual.getAs<DefinedSVal>()) {
     return State;
+
+}
 
   State = C.getConstraintManager().assume(
       State, ValuesEqual.castAs<DefinedSVal>(), true);

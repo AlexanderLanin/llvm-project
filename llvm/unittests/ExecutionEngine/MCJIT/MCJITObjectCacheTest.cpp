@@ -26,8 +26,10 @@ public:
   void notifyObjectCompiled(const Module *M, MemoryBufferRef Obj) override {
     // If we've seen this module before, note that.
     const std::string ModuleID = M->getModuleIdentifier();
-    if (ObjMap.find(ModuleID) != ObjMap.end())
+    if (ObjMap.find(ModuleID) != ObjMap.end()) {
       DuplicateInserted = true;
+
+}
     // Store a copy of the buffer in our map.
     ObjMap[ModuleID] = copyBuffer(Obj);
   }
@@ -35,8 +37,10 @@ public:
   std::unique_ptr<MemoryBuffer> getObject(const Module *M) override {
     const MemoryBuffer* BufferFound = getObjectInternal(M);
     ModulesLookedUp.insert(M->getModuleIdentifier());
-    if (!BufferFound)
+    if (!BufferFound) {
       return nullptr;
+
+}
     // Our test cache wants to maintain ownership of its object buffers
     // so we make a copy here for the execution engine.
     return MemoryBuffer::getMemBufferCopy(BufferFound->getBuffer());
@@ -54,8 +58,10 @@ public:
     // Look for the module in our map.
     const std::string ModuleID = M->getModuleIdentifier();
     StringMap<const MemoryBuffer *>::iterator it = ObjMap.find(ModuleID);
-    if (it == ObjMap.end())
+    if (it == ObjMap.end()) {
       return nullptr;
+
+}
     return it->second;
   }
 

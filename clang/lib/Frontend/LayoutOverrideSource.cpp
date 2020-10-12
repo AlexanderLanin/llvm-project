@@ -16,20 +16,26 @@ using namespace clang;
 
 /// Parse a simple identifier.
 static std::string parseName(StringRef S) {
-  if (S.empty() || !isIdentifierHead(S[0]))
+  if (S.empty() || !isIdentifierHead(S[0])) {
     return "";
 
+}
+
   unsigned Offset = 1;
-  while (Offset < S.size() && isIdentifierBody(S[Offset]))
+  while (Offset < S.size() && isIdentifierBody(S[Offset])) {
     ++Offset;
+
+}
 
   return S.substr(0, Offset).str();
 }
 
 LayoutOverrideSource::LayoutOverrideSource(StringRef Filename) {
   std::ifstream Input(Filename.str().c_str());
-  if (!Input.is_open())
+  if (!Input.is_open()) {
     return;
+
+}
 
   // Parse the output of -fdump-record-layouts.
   std::string CurrentType;
@@ -45,8 +51,10 @@ LayoutOverrideSource::LayoutOverrideSource(StringRef Filename) {
     // Determine whether the following line will start a
     if (LineStr.find("*** Dumping AST Record Layout") != StringRef::npos)  {
       // Flush the last type/layout, if there is one.
-      if (!CurrentType.empty())
+      if (!CurrentType.empty()) {
         Layouts[CurrentType] = CurrentLayout;
+
+}
       CurrentLayout = Layout();
 
       ExpectingType = true;
@@ -58,14 +66,16 @@ LayoutOverrideSource::LayoutOverrideSource(StringRef Filename) {
       ExpectingType = false;
 
       StringRef::size_type Pos;
-      if ((Pos = LineStr.find("struct ")) != StringRef::npos)
+      if ((Pos = LineStr.find("struct ")) != StringRef::npos) {
         LineStr = LineStr.substr(Pos + strlen("struct "));
-      else if ((Pos = LineStr.find("class ")) != StringRef::npos)
+      } else if ((Pos = LineStr.find("class ")) != StringRef::npos) {
         LineStr = LineStr.substr(Pos + strlen("class "));
-      else if ((Pos = LineStr.find("union ")) != StringRef::npos)
+      } else if ((Pos = LineStr.find("union ")) != StringRef::npos) {
         LineStr = LineStr.substr(Pos + strlen("union "));
-      else
+      } else {
         continue;
+
+}
 
       // Find the name of the type.
       CurrentType = parseName(LineStr);
@@ -124,15 +134,19 @@ LayoutOverrideSource::LayoutOverrideSource(StringRef Filename) {
 
     // Check for the field offsets of the type.
     Pos = LineStr.find("FieldOffsets: [");
-    if (Pos == StringRef::npos)
+    if (Pos == StringRef::npos) {
       continue;
+
+}
 
     LineStr = LineStr.substr(Pos + strlen("FieldOffsets: ["));
     while (!LineStr.empty() && isDigit(LineStr[0])) {
       // Parse this offset.
       unsigned Idx = 1;
-      while (Idx < LineStr.size() && isDigit(LineStr[Idx]))
+      while (Idx < LineStr.size() && isDigit(LineStr[Idx])) {
         ++Idx;
+
+}
 
       unsigned long long Offset = 0;
       (void)LineStr.substr(0, Idx).getAsInteger(10, Offset);
@@ -141,14 +155,18 @@ LayoutOverrideSource::LayoutOverrideSource(StringRef Filename) {
 
       // Skip over this offset, the following comma, and any spaces.
       LineStr = LineStr.substr(Idx + 1);
-      while (!LineStr.empty() && isWhitespace(LineStr[0]))
+      while (!LineStr.empty() && isWhitespace(LineStr[0])) {
         LineStr = LineStr.substr(1);
+
+}
     }
   }
 
   // Flush the last type/layout, if there is one.
-  if (!CurrentType.empty())
+  if (!CurrentType.empty()) {
     Layouts[CurrentType] = CurrentLayout;
+
+}
 }
 
 bool
@@ -159,28 +177,36 @@ LayoutOverrideSource::layoutRecordType(const RecordDecl *Record,
   llvm::DenseMap<const CXXRecordDecl *, CharUnits> &VirtualBaseOffsets)
 {
   // We can't override unnamed declarations.
-  if (!Record->getIdentifier())
+  if (!Record->getIdentifier()) {
     return false;
+
+}
 
   // Check whether we have a layout for this record.
   llvm::StringMap<Layout>::iterator Known = Layouts.find(Record->getName());
-  if (Known == Layouts.end())
+  if (Known == Layouts.end()) {
     return false;
+
+}
 
   // Provide field layouts.
   unsigned NumFields = 0;
   for (RecordDecl::field_iterator F = Record->field_begin(),
                                FEnd = Record->field_end();
        F != FEnd; ++F, ++NumFields) {
-    if (NumFields >= Known->second.FieldOffsets.size())
+    if (NumFields >= Known->second.FieldOffsets.size()) {
       continue;
+
+}
 
     FieldOffsets[*F] = Known->second.FieldOffsets[NumFields];
   }
 
   // Wrong number of fields.
-  if (NumFields != Known->second.FieldOffsets.size())
+  if (NumFields != Known->second.FieldOffsets.size()) {
     return false;
+
+}
 
   Size = Known->second.Size;
   Alignment = Known->second.Align;
@@ -197,8 +223,10 @@ LLVM_DUMP_METHOD void LayoutOverrideSource::dump() {
     OS << "  Alignment:" << L->second.Align << '\n';
     OS << "  FieldOffsets: [";
     for (unsigned I = 0, N = L->second.FieldOffsets.size(); I != N; ++I) {
-      if (I)
+      if (I) {
         OS << ", ";
+
+}
       OS << L->second.FieldOffsets[I];
     }
     OS << "]\n";

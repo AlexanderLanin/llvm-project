@@ -46,8 +46,10 @@ HwModeSelect::HwModeSelect(Record *R, CodeGenHwModes &CGH) {
 LLVM_DUMP_METHOD
 void HwModeSelect::dump() const {
   dbgs() << '{';
-  for (const PairType &P : Items)
+  for (const PairType &P : Items) {
     dbgs() << " (" << P.first << ',' << P.second->getName() << ')';
+
+}
   dbgs() << " }\n";
 }
 
@@ -56,8 +58,10 @@ CodeGenHwModes::CodeGenHwModes(RecordKeeper &RK) : Records(RK) {
   // The default mode needs a definition in the .td sources for TableGen
   // to accept references to it. We need to ignore the definition here.
   for (auto I = MRs.begin(), E = MRs.end(); I != E; ++I) {
-    if ((*I)->getName() != DefaultModeName)
+    if ((*I)->getName() != DefaultModeName) {
       continue;
+
+}
     MRs.erase(I);
     break;
   }
@@ -77,8 +81,10 @@ CodeGenHwModes::CodeGenHwModes(RecordKeeper &RK) : Records(RK) {
 }
 
 unsigned CodeGenHwModes::getHwModeId(StringRef Name) const {
-  if (Name == DefaultModeName)
+  if (Name == DefaultModeName) {
     return DefaultMode;
+
+}
   auto F = ModeIds.find(Name);
   assert(F != ModeIds.end() && "Unknown mode name");
   return F->second;
@@ -100,8 +106,10 @@ void CodeGenHwModes::dump() const {
   dbgs() << "}\n";
 
   dbgs() << "ModeIds: {\n";
-  for (const auto &P : ModeIds)
+  for (const auto &P : ModeIds) {
     dbgs() << "  " << P.first() << " -> " << P.second << '\n';
+
+}
   dbgs() << "}\n";
 
   dbgs() << "ModeSelects: {\n";

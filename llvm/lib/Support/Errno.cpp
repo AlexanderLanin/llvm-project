@@ -35,8 +35,10 @@ std::string StrError() {
 
 std::string StrError(int errnum) {
   std::string str;
-  if (errnum == 0)
+  if (errnum == 0) {
     return str;
+
+}
 #if defined(HAVE_STRERROR_R) || HAVE_DECL_STRERROR_S
   const int MaxErrStrLen = 2000;
   char buffer[MaxErrStrLen];

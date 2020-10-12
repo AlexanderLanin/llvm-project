@@ -23,8 +23,10 @@ protected:
       std::vector<std::string> Rules) {
     std::unique_ptr<TrigramIndex> TI =
         std::make_unique<TrigramIndex>();
-    for (auto &Rule : Rules)
+    for (auto &Rule : Rules) {
       TI->insert(Rule);
+
+}
     return TI;
   }
 };

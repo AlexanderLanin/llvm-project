@@ -39,8 +39,10 @@ static void *getStackPointer() {
 }
 
 void clang::noteBottomOfStack() {
-  if (!BottomOfStack)
+  if (!BottomOfStack) {
     BottomOfStack = getStackPointer();
+
+}
 }
 
 bool clang::isStackNearlyExhausted() {
@@ -49,8 +51,10 @@ bool clang::isStackNearlyExhausted() {
   constexpr size_t SufficientStack = 256 << 10;
 
   // If we don't know where the bottom of the stack is, hope for the best.
-  if (!BottomOfStack)
+  if (!BottomOfStack) {
     return false;
+
+}
 
   intptr_t StackDiff = (intptr_t)getStackPointer() - (intptr_t)BottomOfStack;
   size_t StackUsage = (size_t)std::abs(StackDiff);
@@ -58,8 +62,10 @@ bool clang::isStackNearlyExhausted() {
   // If the stack pointer has a surprising value, we do not understand this
   // stack usage scheme. (Perhaps the target allocates new stack regions on
   // demand for us.) Don't try to guess what's going on.
-  if (StackUsage > DesiredStackSize)
+  if (StackUsage > DesiredStackSize) {
     return false;
+
+}
 
   return StackUsage >= DesiredStackSize - SufficientStack;
 }

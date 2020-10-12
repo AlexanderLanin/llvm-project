@@ -63,14 +63,18 @@ static int reportError(const char *ProgName, Twine Msg) {
 /// This functionality is really only for the benefit of the build system.
 /// It is similar to GCC's `-M*` family of options.
 static int createDependencyFile(const TGParser &Parser, const char *argv0) {
-  if (OutputFilename == "-")
+  if (OutputFilename == "-") {
     return reportError(argv0, "the option -d must be used together with -o\n");
+
+}
 
   std::error_code EC;
   ToolOutputFile DepOut(DependFilename, EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     return reportError(argv0, "error opening " + DependFilename + ":" +
                                   EC.message() + "\n");
+
+}
   DepOut.os() << OutputFilename << ":";
   for (const auto &Dep : Parser.getDependencies()) {
     DepOut.os() << ' ' << Dep;
@@ -86,9 +90,11 @@ int llvm::TableGenMain(char *argv0, TableGenMainFn *MainFn) {
   // Parse the input file.
   ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr =
       MemoryBuffer::getFileOrSTDIN(InputFilename);
-  if (std::error_code EC = FileOrErr.getError())
+  if (std::error_code EC = FileOrErr.getError()) {
     return reportError(argv0, "Could not open input file '" + InputFilename +
                                   "': " + EC.message() + "\n");
+
+}
 
   // Tell SrcMgr about this buffer, which is what TGParser will pick up.
   SrcMgr.AddNewSourceBuffer(std::move(*FileOrErr), SMLoc());
@@ -99,42 +105,56 @@ int llvm::TableGenMain(char *argv0, TableGenMainFn *MainFn) {
 
   TGParser Parser(SrcMgr, MacroNames, Records);
 
-  if (Parser.ParseFile())
+  if (Parser.ParseFile()) {
     return 1;
+
+}
 
   // Write output to memory.
   std::string OutString;
   raw_string_ostream Out(OutString);
-  if (MainFn(Out, Records))
+  if (MainFn(Out, Records)) {
     return 1;
+
+}
 
   // Always write the depfile, even if the main output hasn't changed.
   // If it's missing, Ninja considers the output dirty.  If this was below
   // the early exit below and someone deleted the .inc.d file but not the .inc
   // file, tablegen would never write the depfile.
   if (!DependFilename.empty()) {
-    if (int Ret = createDependencyFile(Parser, argv0))
+    if (int Ret = createDependencyFile(Parser, argv0)) {
       return Ret;
+
+}
   }
 
   if (WriteIfChanged) {
     // Only updates the real output file if there are any differences.
     // This prevents recompilation of all the files depending on it if there
     // aren't any.
-    if (auto ExistingOrErr = MemoryBuffer::getFile(OutputFilename))
-      if (std::move(ExistingOrErr.get())->getBuffer() == Out.str())
+    if (auto ExistingOrErr = MemoryBuffer::getFile(OutputFilename)) {
+      if (std::move(ExistingOrErr.get())->getBuffer() == Out.str()) {
         return 0;
+
+}
+
+}
   }
 
   std::error_code EC;
   ToolOutputFile OutFile(OutputFilename, EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     return reportError(argv0, "error opening " + OutputFilename + ":" +
                                   EC.message() + "\n");
+
+}
   OutFile.os() << Out.str();
 
-  if (ErrorsPrinted > 0)
+  if (ErrorsPrinted > 0) {
     return reportError(argv0, Twine(ErrorsPrinted) + " errors.\n");
+
+}
 
   // Declare success.
   OutFile.keep();

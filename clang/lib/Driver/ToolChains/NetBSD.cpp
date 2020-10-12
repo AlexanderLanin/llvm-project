@@ -64,10 +64,12 @@ void netbsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-mabi");
     CmdArgs.push_back(mips::getGnuCompatibleMipsABIName(ABIName).data());
 
-    if (getToolChain().getTriple().isLittleEndian())
+    if (getToolChain().getTriple().isLittleEndian()) {
       CmdArgs.push_back("-EL");
-    else
+    } else {
       CmdArgs.push_back("-EB");
+
+}
 
     AddAssemblerKPIC(getToolChain(), Args, CmdArgs);
     break;
@@ -99,8 +101,10 @@ void netbsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+
+}
 
   const char *Exec = Args.MakeArgString((getToolChain().GetProgramPath("as")));
   C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
@@ -116,8 +120,10 @@ void netbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const Driver &D = ToolChain.getDriver();
   ArgStringList CmdArgs;
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+
+}
 
   CmdArgs.push_back("--eh-frame-hdr");
   if (Args.hasArg(options::OPT_static)) {
@@ -127,8 +133,10 @@ void netbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("--no-dynamic-linker");
     }
   } else {
-    if (Args.hasArg(options::OPT_rdynamic))
+    if (Args.hasArg(options::OPT_rdynamic)) {
       CmdArgs.push_back("-export-dynamic");
+
+}
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-Bshareable");
     } else {
@@ -184,16 +192,20 @@ void netbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   case llvm::Triple::mips64el:
     if (mips::hasMipsAbiArg(Args, "32")) {
       CmdArgs.push_back("-m");
-      if (ToolChain.getArch() == llvm::Triple::mips64)
+      if (ToolChain.getArch() == llvm::Triple::mips64) {
         CmdArgs.push_back("elf32btsmip");
-      else
+      } else {
         CmdArgs.push_back("elf32ltsmip");
+
+}
     } else if (mips::hasMipsAbiArg(Args, "64")) {
       CmdArgs.push_back("-m");
-      if (ToolChain.getArch() == llvm::Triple::mips64)
+      if (ToolChain.getArch() == llvm::Triple::mips64) {
         CmdArgs.push_back("elf64btsmip");
-      else
+      } else {
         CmdArgs.push_back("elf64ltsmip");
+
+}
     }
     break;
   case llvm::Triple::ppc:
@@ -295,16 +307,24 @@ void netbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     addOpenMPRuntime(CmdArgs, getToolChain(), Args, StaticOpenMP);
 
     if (D.CCCIsCXX()) {
-      if (ToolChain.ShouldLinkCXXStdlib(Args))
+      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
         ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
+
+}
       CmdArgs.push_back("-lm");
     }
-    if (NeedsSanitizerDeps)
+    if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(getToolChain(), CmdArgs);
-    if (NeedsXRayDeps)
+
+}
+    if (NeedsXRayDeps) {
       linkXRayRuntimeDeps(ToolChain, CmdArgs);
-    if (Args.hasArg(options::OPT_pthread))
+
+}
+    if (Args.hasArg(options::OPT_pthread)) {
       CmdArgs.push_back("-lpthread");
+
+}
     CmdArgs.push_back("-lc");
 
     if (useLibgcc) {
@@ -325,12 +345,14 @@ void netbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie))
+    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie)) {
       CmdArgs.push_back(
           Args.MakeArgString(ToolChain.GetFilePath("crtendS.o")));
-    else
+    } else {
       CmdArgs.push_back(
           Args.MakeArgString(ToolChain.GetFilePath("crtend.o")));
+
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtn.o")));
   }
 
@@ -374,10 +396,12 @@ NetBSD::NetBSD(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
       break;
     case llvm::Triple::mips64:
     case llvm::Triple::mips64el:
-      if (tools::mips::hasMipsAbiArg(Args, "o32"))
+      if (tools::mips::hasMipsAbiArg(Args, "o32")) {
         getFilePaths().push_back("=/usr/lib/o32");
-      else if (tools::mips::hasMipsAbiArg(Args, "64"))
+      } else if (tools::mips::hasMipsAbiArg(Args, "64")) {
         getFilePaths().push_back("=/usr/lib/64");
+
+}
       break;
     case llvm::Triple::ppc:
       getFilePaths().push_back("=/usr/lib/powerpc");
@@ -437,8 +461,10 @@ void NetBSD::addLibCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
   };
 
   for (const auto &IncludePath : Candidates) {
-    if (!getVFS().exists(IncludePath + "/__config"))
+    if (!getVFS().exists(IncludePath + "/__config")) {
       continue;
+
+}
 
     // Use the first candidate that looks valid.
     addSystemInclude(DriverArgs, CC1Args, IncludePath);
@@ -456,8 +482,10 @@ llvm::ExceptionHandling NetBSD::GetExceptionModel(const ArgList &Args) const {
   // NetBSD uses Dwarf exceptions on ARM.
   llvm::Triple::ArchType TArch = getTriple().getArch();
   if (TArch == llvm::Triple::arm || TArch == llvm::Triple::armeb ||
-      TArch == llvm::Triple::thumb || TArch == llvm::Triple::thumbeb)
+      TArch == llvm::Triple::thumb || TArch == llvm::Triple::thumbeb) {
     return llvm::ExceptionHandling::DwarfCFI;
+
+}
   return llvm::ExceptionHandling::None;
 }
 
@@ -493,8 +521,10 @@ void NetBSD::addClangTargetOptions(const ArgList &DriverArgs,
                                    ArgStringList &CC1Args,
                                    Action::OffloadKind) const {
   const SanitizerArgs &SanArgs = getSanitizerArgs();
-  if (SanArgs.hasAnySanitizer())
+  if (SanArgs.hasAnySanitizer()) {
     CC1Args.push_back("-D_REENTRANT");
+
+}
 
   unsigned Major, Minor, Micro;
   getTriple().getOSVersion(Major, Minor, Micro);
@@ -506,6 +536,8 @@ void NetBSD::addClangTargetOptions(const ArgList &DriverArgs,
     getTriple().getArch() == llvm::Triple::armeb;
 
   if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
-                          options::OPT_fno_use_init_array, UseInitArrayDefault))
+                          options::OPT_fno_use_init_array, UseInitArrayDefault)) {
     CC1Args.push_back("-fno-use-init-array");
+
+}
 }

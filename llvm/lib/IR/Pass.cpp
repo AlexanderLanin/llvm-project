@@ -79,8 +79,10 @@ void Pass::dumpPassStructure(unsigned Offset) {
 StringRef Pass::getPassName() const {
   AnalysisID AID =  getPassID();
   const PassInfo *PI = PassRegistry::getPassRegistry()->getPassInfo(AID);
-  if (PI)
+  if (PI) {
     return PI->getPassName();
+
+}
   return "Unnamed pass: implement Pass::getPassName()";
 }
 
@@ -165,8 +167,10 @@ static std::string getDescription(const Function &F) {
 
 bool FunctionPass::skipFunction(const Function &F) const {
   OptPassGate &Gate = F.getContext().getOptPassGate();
-  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(F)))
+  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(F))) {
     return true;
+
+}
 
   if (F.hasOptNone()) {
     LLVM_DEBUG(dbgs() << "Skipping pass '" << getPassName() << "' on function "
@@ -186,8 +190,10 @@ const PassInfo *Pass::lookupPassInfo(StringRef Arg) {
 
 Pass *Pass::createPass(AnalysisID ID) {
   const PassInfo *PI = PassRegistry::getPassRegistry()->getPassInfo(ID);
-  if (!PI)
+  if (!PI) {
     return nullptr;
+
+}
   return PI->createPass();
 }
 
@@ -238,8 +244,10 @@ struct GetCFGOnlyPasses : public PassRegistrationListener {
   GetCFGOnlyPasses(VectorType &L) : CFGOnlyList(L) {}
 
   void passEnumerate(const PassInfo *P) override {
-    if (P->isCFGOnlyPass())
+    if (P->isCFGOnlyPass()) {
       CFGOnlyList.push_back(P->getTypeInfo());
+
+}
   }
 };
 
@@ -262,7 +270,9 @@ void AnalysisUsage::setPreservesCFG() {
 AnalysisUsage &AnalysisUsage::addPreserved(StringRef Arg) {
   const PassInfo *PI = Pass::lookupPassInfo(Arg);
   // If the pass exists, preserve it. Otherwise silently do nothing.
-  if (PI) Preserved.push_back(PI->getTypeInfo());
+  if (PI) { Preserved.push_back(PI->getTypeInfo());
+
+}
   return *this;
 }
 

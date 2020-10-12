@@ -25,14 +25,18 @@ void DWARFDebugRangeList::clear() {
 Error DWARFDebugRangeList::extract(const DWARFDataExtractor &data,
                                    uint64_t *offset_ptr) {
   clear();
-  if (!data.isValidOffset(*offset_ptr))
+  if (!data.isValidOffset(*offset_ptr)) {
     return createStringError(errc::invalid_argument,
                        "invalid range list offset 0x%" PRIx64, *offset_ptr);
 
+}
+
   AddressSize = data.getAddressSize();
-  if (AddressSize != 4 && AddressSize != 8)
+  if (AddressSize != 4 && AddressSize != 8) {
     return createStringError(errc::invalid_argument,
                        "invalid address size: %" PRIu8, AddressSize);
+
+}
   Offset = *offset_ptr;
   while (true) {
     RangeListEntry Entry;
@@ -50,8 +54,10 @@ Error DWARFDebugRangeList::extract(const DWARFDataExtractor &data,
                          "invalid range list entry at offset 0x%" PRIx64,
                          prev_offset);
     }
-    if (Entry.isEndOfListEntry())
+    if (Entry.isEndOfListEntry()) {
       break;
+
+}
     Entries.push_back(Entry);
   }
   return Error::success();
@@ -86,8 +92,10 @@ DWARFAddressRangesVector DWARFDebugRangeList::getAbsoluteRanges(
     if (BaseAddr) {
       E.LowPC += BaseAddr->Address;
       E.HighPC += BaseAddr->Address;
-      if (E.SectionIndex == -1ULL)
+      if (E.SectionIndex == -1ULL) {
         E.SectionIndex = BaseAddr->SectionIndex;
+
+}
     }
     Res.push_back(E);
   }

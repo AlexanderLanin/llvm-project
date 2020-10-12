@@ -24,8 +24,10 @@ void GISelChangeObserver::changingAllUsesOfReg(
 }
 
 void GISelChangeObserver::finishedChangingAllUsesOfReg() {
-  for (auto *ChangedMI : ChangingAllUsesOfReg)
+  for (auto *ChangedMI : ChangingAllUsesOfReg) {
     changedInstr(*ChangedMI);
+
+}
   ChangingAllUsesOfReg.clear();
 }
 

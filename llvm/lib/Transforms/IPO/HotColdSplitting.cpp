@@ -94,33 +94,49 @@ namespace {
 /// Also consider a block that ends in an indirect branch to be a return block,
 /// since many targets use plain indirect branches to return.
 bool blockEndsInUnreachable(const BasicBlock &BB) {
-  if (!succ_empty(&BB))
+  if (!succ_empty(&BB)) {
     return false;
-  if (BB.empty())
+
+}
+  if (BB.empty()) {
     return true;
+
+}
   const Instruction *I = BB.getTerminator();
   return !(isa<ReturnInst>(I) || isa<IndirectBrInst>(I));
 }
 
 bool unlikelyExecuted(BasicBlock &BB) {
   // Exception handling blocks are unlikely executed.
-  if (BB.isEHPad() || isa<ResumeInst>(BB.getTerminator()))
+  if (BB.isEHPad() || isa<ResumeInst>(BB.getTerminator())) {
     return true;
+
+}
 
   // The block is cold if it calls/invokes a cold function. However, do not
   // mark sanitizer traps as cold.
-  for (Instruction &I : BB)
-    if (auto CS = CallSite(&I))
-      if (CS.hasFnAttr(Attribute::Cold) && !CS->getMetadata("nosanitize"))
+  for (Instruction &I : BB) {
+    if (auto CS = CallSite(&I)) {
+      if (CS.hasFnAttr(Attribute::Cold) && !CS->getMetadata("nosanitize")) {
         return true;
+
+}
+
+}
+
+}
 
   // The block is cold if it has an unreachable terminator, unless it's
   // preceded by a call to a (possibly warm) noreturn call (e.g. longjmp).
   if (blockEndsInUnreachable(BB)) {
     if (auto *CI =
-            dyn_cast_or_null<CallInst>(BB.getTerminator()->getPrevNode()))
-      if (CI->hasFnAttr(Attribute::NoReturn))
+            dyn_cast_or_null<CallInst>(BB.getTerminator()->getPrevNode())) {
+      if (CI->hasFnAttr(Attribute::NoReturn)) {
         return false;
+
+}
+
+}
     return true;
   }
 
@@ -186,14 +202,20 @@ public:
 
 /// Check whether \p F is inherently cold.
 bool HotColdSplitting::isFunctionCold(const Function &F) const {
-  if (F.hasFnAttribute(Attribute::Cold))
+  if (F.hasFnAttribute(Attribute::Cold)) {
     return true;
 
-  if (F.getCallingConv() == CallingConv::Cold)
+}
+
+  if (F.getCallingConv() == CallingConv::Cold) {
     return true;
 
-  if (PSI->isFunctionEntryCold(&F))
+}
+
+  if (PSI->isFunctionEntryCold(&F)) {
     return true;
+
+}
 
   return false;
 }
@@ -201,22 +223,30 @@ bool HotColdSplitting::isFunctionCold(const Function &F) const {
 // Returns false if the function should not be considered for hot-cold split
 // optimization.
 bool HotColdSplitting::shouldOutlineFrom(const Function &F) const {
-  if (F.hasFnAttribute(Attribute::AlwaysInline))
+  if (F.hasFnAttribute(Attribute::AlwaysInline)) {
     return false;
 
-  if (F.hasFnAttribute(Attribute::NoInline))
+}
+
+  if (F.hasFnAttribute(Attribute::NoInline)) {
     return false;
+
+}
 
   // A function marked `noreturn` may contain unreachable terminators: these
   // should not be considered cold, as the function may be a trampoline.
-  if (F.hasFnAttribute(Attribute::NoReturn))
+  if (F.hasFnAttribute(Attribute::NoReturn)) {
     return false;
+
+}
 
   if (F.hasFnAttribute(Attribute::SanitizeAddress) ||
       F.hasFnAttribute(Attribute::SanitizeHWAddress) ||
       F.hasFnAttribute(Attribute::SanitizeThread) ||
-      F.hasFnAttribute(Attribute::SanitizeMemory))
+      F.hasFnAttribute(Attribute::SanitizeMemory)) {
     return false;
+
+}
 
   return true;
 }
@@ -227,11 +257,17 @@ static int getOutliningBenefit(ArrayRef<BasicBlock *> Region,
   // Sum up the code size costs of non-terminator instructions. Tight coupling
   // with \ref getOutliningPenalty is needed to model the costs of terminators.
   int Benefit = 0;
-  for (BasicBlock *BB : Region)
-    for (Instruction &I : BB->instructionsWithoutDebug())
-      if (&I != BB->getTerminator())
+  for (BasicBlock *BB : Region) {
+    for (Instruction &I : BB->instructionsWithoutDebug()) {
+      if (&I != BB->getTerminator()) {
         Benefit +=
             TTI.getInstructionCost(&I, TargetTransformInfo::TCK_CodeSize);
+
+}
+
+}
+
+}
 
   return Benefit;
 }
@@ -244,8 +280,10 @@ static int getOutliningPenalty(ArrayRef<BasicBlock *> Region,
 
   // If the splitting threshold is set at or below zero, skip the usual
   // profitability check.
-  if (SplittingThreshold <= 0)
+  if (SplittingThreshold <= 0) {
     return Penalty;
+
+}
 
   // The typical code size cost for materializing an argument for the outlined
   // call.
@@ -318,8 +356,10 @@ Function *HotColdSplitting::extractColdRegion(
       getOutliningPenalty(Region, Inputs.size(), Outputs.size());
   LLVM_DEBUG(dbgs() << "Split profitability: benefit = " << OutliningBenefit
                     << ", penalty = " << OutliningPenalty << "\n");
-  if (OutliningBenefit <= OutliningPenalty)
+  if (OutliningBenefit <= OutliningPenalty) {
     return nullptr;
+
+}
 
   Function *OrigF = Region[0]->getParent();
   if (Function *OutF = CE.extractCodeRegion(CEAC)) {
@@ -333,8 +373,10 @@ Function *HotColdSplitting::extractColdRegion(
     }
     CI->setIsNoInline();
 
-    if (OrigF->hasSection())
+    if (OrigF->hasSection()) {
       OutF->setSection(OrigF->getSection());
+
+}
 
     markFunctionCold(*OutF, BFI != nullptr);
 
@@ -527,8 +569,10 @@ public:
         NextEntryPoint = BB;
         NextScore = Score;
       }
-      if (InSubRegion && BB != SuggestedEntryPoint)
+      if (InSubRegion && BB != SuggestedEntryPoint) {
         SubRegion.push_back(BB);
+
+}
       return InSubRegion;
     });
     Blocks.erase(RegionStartIt, RegionEndIt);
@@ -563,8 +607,10 @@ bool HotColdSplitting::outlineColdRegions(Function &F, bool HasProfileSummary) {
   // reduces compile-time significantly. TODO: When we *do* use BFI, we should
   // be able to salvage its domtrees instead of recomputing them.
   BlockFrequencyInfo *BFI = nullptr;
-  if (HasProfileSummary)
+  if (HasProfileSummary) {
     BFI = GetBFI(F);
+
+}
 
   TargetTransformInfo &TTI = GetTTI(F);
   OptimizationRemarkEmitter &ORE = (*GetORE)(F);
@@ -573,28 +619,38 @@ bool HotColdSplitting::outlineColdRegions(Function &F, bool HasProfileSummary) {
   // Find all cold regions.
   for (BasicBlock *BB : RPOT) {
     // This block is already part of some outlining region.
-    if (ColdBlocks.count(BB))
+    if (ColdBlocks.count(BB)) {
       continue;
+
+}
 
     bool Cold = (BFI && PSI->isColdBlock(BB, BFI)) ||
                 (EnableStaticAnalyis && unlikelyExecuted(*BB));
-    if (!Cold)
+    if (!Cold) {
       continue;
+
+}
 
     LLVM_DEBUG({
       dbgs() << "Found a cold block:\n";
       BB->dump();
     });
 
-    if (!DT)
+    if (!DT) {
       DT = std::make_unique<DominatorTree>(F);
-    if (!PDT)
+
+}
+    if (!PDT) {
       PDT = std::make_unique<PostDominatorTree>(F);
+
+}
 
     auto Regions = OutliningRegion::create(*BB, *DT, *PDT);
     for (OutliningRegion &Region : Regions) {
-      if (Region.empty())
+      if (Region.empty()) {
         continue;
+
+}
 
       if (Region.isEntireFunctionCold()) {
         LLVM_DEBUG(dbgs() << "Entire function is cold\n");
@@ -609,16 +665,20 @@ bool HotColdSplitting::outlineColdRegions(Function &F, bool HasProfileSummary) {
       bool RegionsOverlap = any_of(Region.blocks(), [&](const BlockTy &Block) {
         return !ColdBlocks.insert(Block.first).second;
       });
-      if (RegionsOverlap)
+      if (RegionsOverlap) {
         continue;
+
+}
 
       OutliningWorklist.emplace_back(std::move(Region));
       ++NumColdRegionsFound;
     }
   }
 
-  if (OutliningWorklist.empty())
+  if (OutliningWorklist.empty()) {
     return Changed;
+
+}
 
   // Outline single-entry cold regions, splitting up larger regions as needed.
   unsigned OutlinedFunctionID = 1;
@@ -654,12 +714,16 @@ bool HotColdSplitting::run(Module &M) {
     Function &F = *It;
 
     // Do not touch declarations.
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
 
+}
+
     // Do not modify `optnone` functions.
-    if (F.hasOptNone())
+    if (F.hasOptNone()) {
       continue;
+
+}
 
     // Detect inherently cold functions and mark them as such.
     if (isFunctionCold(F)) {
@@ -679,8 +743,10 @@ bool HotColdSplitting::run(Module &M) {
 }
 
 bool HotColdSplittingLegacyPass::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
   ProfileSummaryInfo *PSI =
       &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
   auto GTTI = [this](Function &F) -> TargetTransformInfo & {
@@ -696,8 +762,10 @@ bool HotColdSplittingLegacyPass::runOnModule(Module &M) {
     return *ORE.get();
   };
   auto LookupAC = [this](Function &F) -> AssumptionCache * {
-    if (auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>())
+    if (auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>()) {
       return ACT->lookupAssumptionCache(F);
+
+}
     return nullptr;
   };
 
@@ -730,8 +798,10 @@ HotColdSplittingPass::run(Module &M, ModuleAnalysisManager &AM) {
 
   ProfileSummaryInfo *PSI = &AM.getResult<ProfileSummaryAnalysis>(M);
 
-  if (HotColdSplitting(PSI, GBFI, GTTI, &GetORE, LookupAC).run(M))
+  if (HotColdSplitting(PSI, GBFI, GTTI, &GetORE, LookupAC).run(M)) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 

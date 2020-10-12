@@ -74,11 +74,15 @@ void CodeExpander::emit(raw_ostream &OS) const {
                        : SMLoc(),
                    "Attempting to expand an undeclared variable " + Var);
       }
-      if (ShowExpansions)
+      if (ShowExpansions) {
         OS << "/*$" << Var << "{*/";
+
+}
       OS << Expansions.lookup(Var);
-      if (ShowExpansions)
+      if (ShowExpansions) {
         OS << "/*}*/";
+
+}
       continue;
     }
 

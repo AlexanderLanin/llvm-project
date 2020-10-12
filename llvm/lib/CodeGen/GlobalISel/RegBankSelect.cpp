@@ -74,8 +74,10 @@ RegBankSelect::RegBankSelect(Mode RunningMode)
     : MachineFunctionPass(ID), OptMode(RunningMode) {
   if (RegBankSelectMode.getNumOccurrences() != 0) {
     OptMode = RegBankSelectMode;
-    if (RegBankSelectMode != RunningMode)
+    if (RegBankSelectMode != RunningMode) {
       LLVM_DEBUG(dbgs() << "RegBankSelect mode overrided by command line\n");
+
+}
   }
 }
 
@@ -115,8 +117,10 @@ bool RegBankSelect::assignmentMatch(
   OnlyAssign = false;
   // Each part of a break down needs to end up in a different register.
   // In other word, Reg assignment does not match.
-  if (ValMapping.NumBreakDowns != 1)
+  if (ValMapping.NumBreakDowns != 1) {
     return false;
+
+}
 
   const RegisterBank *CurRegBank = RBI->getRegBank(Reg, *MRI, *TRI);
   const RegisterBank *DesiredRegBank = ValMapping.BreakDown[0].RegBank;
@@ -151,8 +155,10 @@ bool RegBankSelect::repairReg(
 
     // If we repair a definition, swap the source and destination for
     // the repairing.
-    if (MO.isDef())
+    if (MO.isDef()) {
       std::swap(Src, Dst);
+
+}
 
     assert((RepairPt.getNumInsertPoints() == 1 ||
             Register::isPhysicalRegister(Dst)) &&
@@ -175,9 +181,9 @@ bool RegBankSelect::repairReg(
     if (MO.isDef()) {
       unsigned MergeOp;
       if (RegTy.isVector()) {
-        if (ValMapping.NumBreakDowns == RegTy.getNumElements())
+        if (ValMapping.NumBreakDowns == RegTy.getNumElements()) {
           MergeOp = TargetOpcode::G_BUILD_VECTOR;
-        else {
+        } else {
           assert(
               (ValMapping.BreakDown[0].Length * ValMapping.NumBreakDowns ==
                RegTy.getSizeInBits()) &&
@@ -187,30 +193,38 @@ bool RegBankSelect::repairReg(
 
           MergeOp = TargetOpcode::G_CONCAT_VECTORS;
         }
-      } else
+      } else {
         MergeOp = TargetOpcode::G_MERGE_VALUES;
+
+}
 
       auto MergeBuilder =
         MIRBuilder.buildInstrNoInsert(MergeOp)
         .addDef(MO.getReg());
 
-      for (Register SrcReg : NewVRegs)
+      for (Register SrcReg : NewVRegs) {
         MergeBuilder.addUse(SrcReg);
+
+}
 
       MI = MergeBuilder;
     } else {
       MachineInstrBuilder UnMergeBuilder =
         MIRBuilder.buildInstrNoInsert(TargetOpcode::G_UNMERGE_VALUES);
-      for (Register DefReg : NewVRegs)
+      for (Register DefReg : NewVRegs) {
         UnMergeBuilder.addDef(DefReg);
+
+}
 
       UnMergeBuilder.addUse(MO.getReg());
       MI = UnMergeBuilder;
     }
   }
 
-  if (RepairPt.getNumInsertPoints() != 1)
+  if (RepairPt.getNumInsertPoints() != 1) {
     report_fatal_error("need testcase to support multiple insertion points");
+
+}
 
   // TODO:
   // Check if MI is legal. if not, we need to legalize all the
@@ -221,10 +235,12 @@ bool RegBankSelect::repairReg(
   unsigned Idx = 0;
   for (const std::unique_ptr<InsertPoint> &InsertPt : RepairPt) {
     MachineInstr *CurMI;
-    if (IsFirst)
+    if (IsFirst) {
       CurMI = MI;
-    else
+    } else {
       CurMI = MIRBuilder.getMF().CloneMachineInstr(MI);
+
+}
     InsertPt->insert(*CurMI);
     NewInstrs[Idx++] = CurMI;
     IsFirst = false;
@@ -256,15 +272,19 @@ uint64_t RegBankSelect::getRepairCost(
   // We should remember that this value is available somewhere else to
   // coalesce the value.
 
-  if (ValMapping.NumBreakDowns != 1)
+  if (ValMapping.NumBreakDowns != 1) {
     return RBI->getBreakDownCost(ValMapping, CurRegBank);
+
+}
 
   if (IsSameNumOfValues) {
     const RegisterBank *DesiredRegBank = ValMapping.BreakDown[0].RegBank;
     // If we repair a definition, swap the source and destination for
     // the repairing.
-    if (MO.isDef())
+    if (MO.isDef()) {
       std::swap(CurRegBank, DesiredRegBank);
+
+}
     // TODO: It may be possible to actually avoid the copy.
     // If we repair something where the source is defined by a copy
     // and the source of that copy is on the right bank, we can reuse
@@ -279,8 +299,10 @@ uint64_t RegBankSelect::getRepairCost(
     unsigned Cost = RBI->copyCost(*DesiredRegBank, *CurRegBank,
                                   RBI->getSizeInBits(MO.getReg(), *MRI, *TRI));
     // TODO: use a dedicated constant for ImpossibleCost.
-    if (Cost != std::numeric_limits<unsigned>::max())
+    if (Cost != std::numeric_limits<unsigned>::max()) {
       return Cost;
+
+}
     // Return the legalization cost of that repairing.
   }
   return std::numeric_limits<unsigned>::max();
@@ -304,8 +326,10 @@ const RegisterBankInfo::InstructionMapping &RegBankSelect::findBestMapping(
       Cost = CurCost;
       BestMapping = CurMapping;
       RepairPts.clear();
-      for (RepairingPlacement &RepairPt : LocalRepairPts)
+      for (RepairingPlacement &RepairPt : LocalRepairPts) {
         RepairPts.emplace_back(std::move(RepairPt));
+
+}
     }
   }
   if (!BestMapping && !TPC->isGlobalISelAbortEnabled()) {
@@ -315,8 +339,10 @@ const RegisterBankInfo::InstructionMapping &RegBankSelect::findBestMapping(
     BestMapping = *PossibleMappings.begin();
     RepairPts.emplace_back(
         RepairingPlacement(MI, 0, *TRI, *this, RepairingPlacement::Impossible));
-  } else
+  } else {
     assert(BestMapping && "No suitable mapping for instruction");
+
+}
   return *BestMapping;
 }
 
@@ -347,9 +373,11 @@ void RegBankSelect::tryAvoidingSplit(
       // For the PHI case, the split may not be actually required.
       // In the copy case, a phi is already a copy on the incoming edge,
       // therefore there is no need to split.
-      if (ValMapping.NumBreakDowns == 1)
+      if (ValMapping.NumBreakDowns == 1) {
         // This is a already a copy, there is nothing to do.
         RepairPt.switchTo(RepairingPlacement::RepairingKind::Reassign);
+
+}
     }
     return;
   }
@@ -416,11 +444,13 @@ void RegBankSelect::tryAvoidingSplit(
     const MachineInstr *Next = MI.getNextNode();
     assert((!Next || Next->isUnconditionalBranch()) &&
            "Do not know where each terminator ends up");
-    if (Next)
+    if (Next) {
       // If the next terminator uses Reg, this means we have
       // to split right after MI and thus we need a way to ask
       // which outgoing edges are affected.
       assert(!Next->readsRegister(Reg) && "Need to split between terminators");
+
+}
     // We will split all the edges and repair there.
   } else {
     // This is a virtual register defined by a terminator.
@@ -445,8 +475,10 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
     const RegBankSelect::MappingCost *BestCost) {
   assert((MBFI || !BestCost) && "Costs comparison require MBFI");
 
-  if (!InstrMapping.isValid())
+  if (!InstrMapping.isValid()) {
     return MappingCost::ImpossibleCost();
+
+}
 
   // If mapped with InstrMapping, MI will have the recorded cost.
   MappingCost Cost(MBFI ? MBFI->getBlockFreq(MI.getParent()) : 1);
@@ -467,11 +499,15 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
   for (unsigned OpIdx = 0, EndOpIdx = InstrMapping.getNumOperands();
        OpIdx != EndOpIdx; ++OpIdx) {
     const MachineOperand &MO = MI.getOperand(OpIdx);
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
+
+}
     Register Reg = MO.getReg();
-    if (!Reg)
+    if (!Reg) {
       continue;
+
+}
     LLVM_DEBUG(dbgs() << "Opd" << OpIdx << '\n');
     const RegisterBankInfo::ValueMapping &ValMapping =
         InstrMapping.getOperandMapping(OpIdx);
@@ -496,8 +532,10 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
     // If we need to split a basic block to materialize this insertion point,
     // we may give a higher cost to this mapping.
     // Nevertheless, we may get away with the split, so try that first.
-    if (RepairPt.hasSplit())
+    if (RepairPt.hasSplit()) {
       tryAvoidingSplit(RepairPt, MO, ValMapping);
+
+}
 
     // Check that the materialization of the repairing is possible.
     if (!RepairPt.canMaterialize()) {
@@ -507,8 +545,10 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
 
     // Account for the split cost and repair cost.
     // Unless the cost is already saturated or we do not care about the cost.
-    if (!BestCost || Saturated)
+    if (!BestCost || Saturated) {
       continue;
+
+}
 
     // To get accurate information we need MBFI and MBPI.
     // Thus, if we end up here this information should be here.
@@ -527,8 +567,10 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
     uint64_t RepairCost = getRepairCost(MO, ValMapping);
 
     // This is an impossible to repair cost.
-    if (RepairCost == std::numeric_limits<unsigned>::max())
+    if (RepairCost == std::numeric_limits<unsigned>::max()) {
       return MappingCost::ImpossibleCost();
+
+}
 
     // Bias used for splitting: 5%.
     const uint64_t PercentageForBias = 5;
@@ -544,9 +586,9 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
     for (const std::unique_ptr<InsertPoint> &InsertPt : RepairPt) {
       assert(InsertPt->canMaterialize() && "We should not have made it here");
       // We will applied some basic block frequency and those uses uint64_t.
-      if (!InsertPt->isSplit())
+      if (!InsertPt->isSplit()) {
         Saturated = Cost.addLocalCost(RepairCost);
-      else {
+      } else {
         uint64_t CostForInsertPt = RepairCost;
         // Again we shouldn't overflow here givent that
         // CostForInsertPt is frequency free at this point.
@@ -555,10 +597,12 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
         CostForInsertPt += Bias;
         uint64_t PtCost = InsertPt->frequency(*this) * CostForInsertPt;
         // Check if we just overflowed.
-        if ((Saturated = PtCost < CostForInsertPt))
+        if ((Saturated = PtCost < CostForInsertPt)) {
           Cost.saturate();
-        else
+        } else {
           Saturated = Cost.addNonLocalCost(PtCost);
+
+}
       }
 
       // Stop looking into what it takes to repair, this is already
@@ -570,8 +614,10 @@ RegBankSelect::MappingCost RegBankSelect::computeMapping(
 
       // No need to accumulate more cost information.
       // We need to still gather the repairing information though.
-      if (Saturated)
+      if (Saturated) {
         break;
+
+}
     }
   }
   LLVM_DEBUG(dbgs() << "Total cost is: " << Cost << "\n");
@@ -587,8 +633,10 @@ bool RegBankSelect::applyMapping(
   // First, place the repairing code.
   for (RepairingPlacement &RepairPt : RepairPts) {
     if (!RepairPt.canMaterialize() ||
-        RepairPt.getKind() == RepairingPlacement::Impossible)
+        RepairPt.getKind() == RepairingPlacement::Impossible) {
       return false;
+
+}
     assert(RepairPt.getKind() != RepairingPlacement::None &&
            "This should not make its way in the list");
     unsigned OpIdx = RepairPt.getOpIdx();
@@ -605,8 +653,10 @@ bool RegBankSelect::applyMapping(
       break;
     case RepairingPlacement::Insert:
       OpdMapper.createVRegs(OpIdx);
-      if (!repairReg(MO, ValMapping, RepairPt, OpdMapper.getVRegs(OpIdx)))
+      if (!repairReg(MO, ValMapping, RepairPt, OpdMapper.getVRegs(OpIdx))) {
         return false;
+
+}
       break;
     default:
       llvm_unreachable("Other kind should not happen");
@@ -630,13 +680,17 @@ bool RegBankSelect::assignInstr(MachineInstr &MI) {
     BestMapping = &RBI->getInstrMapping(MI);
     MappingCost DefaultCost = computeMapping(MI, *BestMapping, RepairPts);
     (void)DefaultCost;
-    if (DefaultCost == MappingCost::ImpossibleCost())
+    if (DefaultCost == MappingCost::ImpossibleCost()) {
       return false;
+
+}
   } else {
     RegisterBankInfo::InstructionMappings PossibleMappings =
         RBI->getInstrPossibleMappings(MI);
-    if (PossibleMappings.empty())
+    if (PossibleMappings.empty()) {
       return false;
+
+}
     BestMapping = &findBestMapping(MI, PossibleMappings, RepairPts);
   }
   // Make sure the mapping is valid for MI.
@@ -652,14 +706,18 @@ bool RegBankSelect::assignInstr(MachineInstr &MI) {
 bool RegBankSelect::runOnMachineFunction(MachineFunction &MF) {
   // If the ISel pipeline failed, do not bother running that pass.
   if (MF.getProperties().hasProperty(
-          MachineFunctionProperties::Property::FailedISel))
+          MachineFunctionProperties::Property::FailedISel)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Assign register banks for: " << MF.getName() << '\n');
   const Function &F = MF.getFunction();
   Mode SaveOptMode = OptMode;
-  if (F.hasOptNone())
+  if (F.hasOptNone()) {
     OptMode = Mode::Fast;
+
+}
   init(MF);
 
 #ifndef NDEBUG
@@ -690,8 +748,10 @@ bool RegBankSelect::runOnMachineFunction(MachineFunction &MF) {
 
       // Ignore target-specific post-isel instructions: they should use proper
       // regclasses.
-      if (isTargetSpecificOpcode(MI.getOpcode()) && !MI.isPreISelOpcode())
+      if (isTargetSpecificOpcode(MI.getOpcode()) && !MI.isPreISelOpcode()) {
         continue;
+
+}
 
       if (!assignInstr(MI)) {
         reportGISelFailure(MF, *TPC, *MORE, "gisel-regbankselect",
@@ -729,8 +789,10 @@ RegBankSelect::RepairingPlacement::RepairingPlacement(
   const MachineOperand &MO = MI.getOperand(OpIdx);
   assert(MO.isReg() && "Trying to repair a non-reg operand");
 
-  if (Kind != RepairingKind::Insert)
+  if (Kind != RepairingKind::Insert) {
     return;
+
+}
 
   // Repairings for definitions happen after MI, uses happen before.
   bool Before = !MO.isDef();
@@ -749,10 +811,12 @@ RegBankSelect::RepairingPlacement::RepairingPlacement(
     //   * After, move the insertion point past the last phi.
     if (!Before) {
       MachineBasicBlock::iterator It = MI.getParent()->getFirstNonPHI();
-      if (It != MI.getParent()->end())
+      if (It != MI.getParent()->end()) {
         addInsertPoint(*It, /*Before*/ true);
-      else
+      } else {
         addInsertPoint(*(--It), /*Before*/ false);
+
+}
       return;
     }
     // We repair a use of a phi, we may need to split the related edge.
@@ -761,22 +825,26 @@ RegBankSelect::RepairingPlacement::RepairingPlacement(
     // terminators of the predecessor.
     Register Reg = MO.getReg();
     MachineBasicBlock::iterator It = Pred.getLastNonDebugInstr();
-    for (auto Begin = Pred.begin(); It != Begin && It->isTerminator(); --It)
+    for (auto Begin = Pred.begin(); It != Begin && It->isTerminator(); --It) {
       if (It->modifiesRegister(Reg, &TRI)) {
         // We cannot hoist the repairing code in the predecessor.
         // Split the edge.
         addInsertPoint(Pred, *MI.getParent());
         return;
       }
+
+}
     // At this point, we can insert in Pred.
 
     // - If It is invalid, Pred is empty and we can insert in Pred
     //   wherever we want.
     // - If It is valid, It is the first non-terminator, insert after It.
-    if (It == Pred.end())
+    if (It == Pred.end()) {
       addInsertPoint(Pred, /*Beginning*/ false);
-    else
+    } else {
       addInsertPoint(*It, /*Before*/ false);
+
+}
   } else {
     // - Terminators must be the last instructions:
     //   * Before, move the insert point before the first terminator.
@@ -803,14 +871,18 @@ RegBankSelect::RepairingPlacement::RepairingPlacement(
     // Make sure Reg is not redefined by other terminators, otherwise
     // we do not know how to split.
     for (MachineBasicBlock::iterator It = MI, End = MI.getParent()->end();
-         ++It != End;)
+         ++It != End;) {
       // The machine verifier should reject this kind of code.
       assert(It->modifiesRegister(MO.getReg(), &TRI) &&
              "Do not know where to split");
+
+}
     // Split each outcoming edges.
     MachineBasicBlock &Src = *MI.getParent();
-    for (auto &Succ : Src.successors())
+    for (auto &Succ : Src.successors()) {
       addInsertPoint(Src, Succ);
+
+}
   }
 }
 
@@ -871,8 +943,10 @@ void RegBankSelect::InstrInsertPoint::materialize() {
 
 bool RegBankSelect::InstrInsertPoint::isSplit() const {
   // If the insertion point is after a terminator, we need to split.
-  if (!Before)
+  if (!Before) {
     return Instr.isTerminator();
+
+}
   // If we insert before an instruction that is after a terminator,
   // we are still after a terminator.
   return Instr.getPrevNode() && Instr.getPrevNode()->isTerminator();
@@ -883,16 +957,20 @@ uint64_t RegBankSelect::InstrInsertPoint::frequency(const Pass &P) const {
   // this split has actually the same frequency as the instruction.
   const MachineBlockFrequencyInfo *MBFI =
       P.getAnalysisIfAvailable<MachineBlockFrequencyInfo>();
-  if (!MBFI)
+  if (!MBFI) {
     return 1;
+
+}
   return MBFI->getBlockFreq(Instr.getParent()).getFrequency();
 }
 
 uint64_t RegBankSelect::MBBInsertPoint::frequency(const Pass &P) const {
   const MachineBlockFrequencyInfo *MBFI =
       P.getAnalysisIfAvailable<MachineBlockFrequencyInfo>();
-  if (!MBFI)
+  if (!MBFI) {
     return 1;
+
+}
   return MBFI->getBlockFreq(&MBB).getFrequency();
 }
 
@@ -912,15 +990,21 @@ void RegBankSelect::EdgeInsertPoint::materialize() {
 uint64_t RegBankSelect::EdgeInsertPoint::frequency(const Pass &P) const {
   const MachineBlockFrequencyInfo *MBFI =
       P.getAnalysisIfAvailable<MachineBlockFrequencyInfo>();
-  if (!MBFI)
+  if (!MBFI) {
     return 1;
-  if (WasMaterialized)
+
+}
+  if (WasMaterialized) {
     return MBFI->getBlockFreq(DstOrSplit).getFrequency();
+
+}
 
   const MachineBranchProbabilityInfo *MBPI =
       P.getAnalysisIfAvailable<MachineBranchProbabilityInfo>();
-  if (!MBPI)
+  if (!MBPI) {
     return 1;
+
+}
   // The basic block will be on the edge.
   return (MBFI->getBlockFreq(&Src) * MBPI->getEdgeProbability(&Src, DstOrSplit))
       .getFrequency();
@@ -974,16 +1058,22 @@ RegBankSelect::MappingCost RegBankSelect::MappingCost::ImpossibleCost() {
 
 bool RegBankSelect::MappingCost::operator<(const MappingCost &Cost) const {
   // Sort out the easy cases.
-  if (*this == Cost)
+  if (*this == Cost) {
     return false;
+
+}
   // If one is impossible to realize the other is cheaper unless it is
   // impossible as well.
-  if ((*this == ImpossibleCost()) || (Cost == ImpossibleCost()))
+  if ((*this == ImpossibleCost()) || (Cost == ImpossibleCost())) {
     return (*this == ImpossibleCost()) < (Cost == ImpossibleCost());
+
+}
   // If one is saturated the other is cheaper, unless it is saturated
   // as well.
-  if (isSaturated() || Cost.isSaturated())
+  if (isSaturated() || Cost.isSaturated()) {
     return isSaturated() < Cost.isSaturated();
+
+}
   // At this point we know both costs hold sensible values.
 
   // If both values have a different base frequency, there is no much
@@ -996,19 +1086,23 @@ bool RegBankSelect::MappingCost::operator<(const MappingCost &Cost) const {
 
     // At this point, we know the local costs are comparable.
     // Do the case that do not involve potential overflow first.
-    if (NonLocalCost == Cost.NonLocalCost)
+    if (NonLocalCost == Cost.NonLocalCost) {
       // Since the non-local costs do not discriminate on the result,
       // just compare the local costs.
       return LocalCost < Cost.LocalCost;
+
+}
 
     // The base costs are comparable so we may only keep the relative
     // value to increase our chances of avoiding overflows.
     ThisLocalAdjust = 0;
     OtherLocalAdjust = 0;
-    if (LocalCost < Cost.LocalCost)
+    if (LocalCost < Cost.LocalCost) {
       OtherLocalAdjust = Cost.LocalCost - LocalCost;
-    else
+    } else {
       ThisLocalAdjust = LocalCost - Cost.LocalCost;
+
+}
   } else {
     ThisLocalAdjust = LocalCost;
     OtherLocalAdjust = Cost.LocalCost;
@@ -1017,10 +1111,12 @@ bool RegBankSelect::MappingCost::operator<(const MappingCost &Cost) const {
   // The non-local costs are comparable, just keep the relative value.
   uint64_t ThisNonLocalAdjust = 0;
   uint64_t OtherNonLocalAdjust = 0;
-  if (NonLocalCost < Cost.NonLocalCost)
+  if (NonLocalCost < Cost.NonLocalCost) {
     OtherNonLocalAdjust = Cost.NonLocalCost - NonLocalCost;
-  else
+  } else {
     ThisNonLocalAdjust = NonLocalCost - Cost.NonLocalCost;
+
+}
   // Scale everything to make them comparable.
   uint64_t ThisScaledCost = ThisLocalAdjust * LocalFreq;
   // Check for overflow on that operation.
@@ -1040,11 +1136,15 @@ bool RegBankSelect::MappingCost::operator<(const MappingCost &Cost) const {
   OtherScaledCost += OtherNonLocalAdjust;
   // If both overflows, we cannot compare without additional
   // precision, e.g., APInt. Just give up on that case.
-  if (ThisOverflows && OtherOverflows)
+  if (ThisOverflows && OtherOverflows) {
     return false;
+
+}
   // If one overflows but not the other, we can still compare.
-  if (ThisOverflows || OtherOverflows)
+  if (ThisOverflows || OtherOverflows) {
     return ThisOverflows < OtherOverflows;
+
+}
   // Otherwise, just compare the values.
   return ThisScaledCost < OtherScaledCost;
 }

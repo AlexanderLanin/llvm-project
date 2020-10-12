@@ -13,8 +13,10 @@ namespace {
 
 TEST_F(GISelMITest, TestCSE) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s16{LLT::scalar(16)};
   LLT s32{LLT::scalar(32)};
@@ -81,8 +83,10 @@ TEST_F(GISelMITest, TestCSE) {
 
 TEST_F(GISelMITest, TestCSEConstantConfig) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s16{LLT::scalar(16)};
   auto MIBInput = B.buildInstr(TargetOpcode::G_TRUNC, {s16}, {Copies[0]});

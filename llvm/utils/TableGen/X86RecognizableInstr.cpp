@@ -39,8 +39,10 @@ static uint8_t byteFromBitsInit(BitsInit &init) {
   uint8_t ret = 0;
 
   for (index = 0; index < width; index++) {
-    if (cast<BitInit>(init.getBit(index))->getValue())
+    if (cast<BitInit>(init.getBit(index))->getValue()) {
       ret |= mask;
+
+}
 
     mask <<= 1;
   }
@@ -139,8 +141,10 @@ void RecognizableInstr::processInstr(DisassemblerTables &tables,
                                      InstrUID uid)
 {
   // Ignore "asm parser only" instructions.
-  if (insn.TheDef->getValueAsBit("isAsmParserOnly"))
+  if (insn.TheDef->getValueAsBit("isAsmParserOnly")) {
     return;
+
+}
 
   RecognizableInstr recogInstr(tables, insn, uid);
 
@@ -165,184 +169,188 @@ InstructionContext RecognizableInstr::insnContext() const {
     }
     // VEX_L & VEX_W
     if (!EncodeRC && HasVEX_LPrefix && HasVEX_W) {
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = EVEX_KB(IC_EVEX_L_W_OPSIZE);
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = EVEX_KB(IC_EVEX_L_W_XS);
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = EVEX_KB(IC_EVEX_L_W_XD);
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = EVEX_KB(IC_EVEX_L_W);
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
     } else if (!EncodeRC && HasVEX_LPrefix) {
       // VEX_L
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = EVEX_KB(IC_EVEX_L_OPSIZE);
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = EVEX_KB(IC_EVEX_L_XS);
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = EVEX_KB(IC_EVEX_L_XD);
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = EVEX_KB(IC_EVEX_L);
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
     } else if (!EncodeRC && HasEVEX_L2Prefix && HasVEX_W) {
       // EVEX_L2 & VEX_W
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = EVEX_KB(IC_EVEX_L2_W_OPSIZE);
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = EVEX_KB(IC_EVEX_L2_W_XS);
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = EVEX_KB(IC_EVEX_L2_W_XD);
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = EVEX_KB(IC_EVEX_L2_W);
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
     } else if (!EncodeRC && HasEVEX_L2Prefix) {
       // EVEX_L2
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = EVEX_KB(IC_EVEX_L2_OPSIZE);
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = EVEX_KB(IC_EVEX_L2_XD);
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = EVEX_KB(IC_EVEX_L2_XS);
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = EVEX_KB(IC_EVEX_L2);
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
     }
     else if (HasVEX_W) {
       // VEX_W
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = EVEX_KB(IC_EVEX_W_OPSIZE);
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = EVEX_KB(IC_EVEX_W_XS);
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = EVEX_KB(IC_EVEX_W_XD);
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = EVEX_KB(IC_EVEX_W);
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
     }
     // No L, no W
-    else if (OpPrefix == X86Local::PD)
+    else if (OpPrefix == X86Local::PD) {
       insnContext = EVEX_KB(IC_EVEX_OPSIZE);
-    else if (OpPrefix == X86Local::XD)
+    } else if (OpPrefix == X86Local::XD) {
       insnContext = EVEX_KB(IC_EVEX_XD);
-    else if (OpPrefix == X86Local::XS)
+    } else if (OpPrefix == X86Local::XS) {
       insnContext = EVEX_KB(IC_EVEX_XS);
-    else if (OpPrefix == X86Local::PS)
+    } else if (OpPrefix == X86Local::PS) {
       insnContext = EVEX_KB(IC_EVEX);
-    else {
+    } else {
       errs() << "Instruction does not use a prefix: " << Name << "\n";
       llvm_unreachable("Invalid prefix");
     }
     /// eof EVEX
   } else if (Encoding == X86Local::VEX || Encoding == X86Local::XOP) {
     if (HasVEX_LPrefix && HasVEX_W) {
-      if (OpPrefix == X86Local::PD)
+      if (OpPrefix == X86Local::PD) {
         insnContext = IC_VEX_L_W_OPSIZE;
-      else if (OpPrefix == X86Local::XS)
+      } else if (OpPrefix == X86Local::XS) {
         insnContext = IC_VEX_L_W_XS;
-      else if (OpPrefix == X86Local::XD)
+      } else if (OpPrefix == X86Local::XD) {
         insnContext = IC_VEX_L_W_XD;
-      else if (OpPrefix == X86Local::PS)
+      } else if (OpPrefix == X86Local::PS) {
         insnContext = IC_VEX_L_W;
-      else {
+      } else {
         errs() << "Instruction does not use a prefix: " << Name << "\n";
         llvm_unreachable("Invalid prefix");
       }
-    } else if (OpPrefix == X86Local::PD && HasVEX_LPrefix)
+    } else if (OpPrefix == X86Local::PD && HasVEX_LPrefix) {
       insnContext = IC_VEX_L_OPSIZE;
-    else if (OpPrefix == X86Local::PD && HasVEX_W)
+    } else if (OpPrefix == X86Local::PD && HasVEX_W) {
       insnContext = IC_VEX_W_OPSIZE;
-    else if (OpPrefix == X86Local::PD)
+    } else if (OpPrefix == X86Local::PD) {
       insnContext = IC_VEX_OPSIZE;
-    else if (HasVEX_LPrefix && OpPrefix == X86Local::XS)
+    } else if (HasVEX_LPrefix && OpPrefix == X86Local::XS) {
       insnContext = IC_VEX_L_XS;
-    else if (HasVEX_LPrefix && OpPrefix == X86Local::XD)
+    } else if (HasVEX_LPrefix && OpPrefix == X86Local::XD) {
       insnContext = IC_VEX_L_XD;
-    else if (HasVEX_W && OpPrefix == X86Local::XS)
+    } else if (HasVEX_W && OpPrefix == X86Local::XS) {
       insnContext = IC_VEX_W_XS;
-    else if (HasVEX_W && OpPrefix == X86Local::XD)
+    } else if (HasVEX_W && OpPrefix == X86Local::XD) {
       insnContext = IC_VEX_W_XD;
-    else if (HasVEX_W && OpPrefix == X86Local::PS)
+    } else if (HasVEX_W && OpPrefix == X86Local::PS) {
       insnContext = IC_VEX_W;
-    else if (HasVEX_LPrefix && OpPrefix == X86Local::PS)
+    } else if (HasVEX_LPrefix && OpPrefix == X86Local::PS) {
       insnContext = IC_VEX_L;
-    else if (OpPrefix == X86Local::XD)
+    } else if (OpPrefix == X86Local::XD) {
       insnContext = IC_VEX_XD;
-    else if (OpPrefix == X86Local::XS)
+    } else if (OpPrefix == X86Local::XS) {
       insnContext = IC_VEX_XS;
-    else if (OpPrefix == X86Local::PS)
+    } else if (OpPrefix == X86Local::PS) {
       insnContext = IC_VEX;
-    else {
+    } else {
       errs() << "Instruction does not use a prefix: " << Name << "\n";
       llvm_unreachable("Invalid prefix");
     }
   } else if (Is64Bit || HasREX_WPrefix || AdSize == X86Local::AdSize64) {
-    if (HasREX_WPrefix && (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD))
+    if (HasREX_WPrefix && (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD)) {
       insnContext = IC_64BIT_REXW_OPSIZE;
-    else if (HasREX_WPrefix && AdSize == X86Local::AdSize32)
+    } else if (HasREX_WPrefix && AdSize == X86Local::AdSize32) {
       insnContext = IC_64BIT_REXW_ADSIZE;
-    else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XD)
+    } else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XD) {
       insnContext = IC_64BIT_XD_OPSIZE;
-    else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XS)
+    } else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XS) {
       insnContext = IC_64BIT_XS_OPSIZE;
-    else if (AdSize == X86Local::AdSize32 && OpPrefix == X86Local::PD)
+    } else if (AdSize == X86Local::AdSize32 && OpPrefix == X86Local::PD) {
       insnContext = IC_64BIT_OPSIZE_ADSIZE;
-    else if (OpSize == X86Local::OpSize16 && AdSize == X86Local::AdSize32)
+    } else if (OpSize == X86Local::OpSize16 && AdSize == X86Local::AdSize32) {
       insnContext = IC_64BIT_OPSIZE_ADSIZE;
-    else if (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD)
+    } else if (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD) {
       insnContext = IC_64BIT_OPSIZE;
-    else if (AdSize == X86Local::AdSize32)
+    } else if (AdSize == X86Local::AdSize32) {
       insnContext = IC_64BIT_ADSIZE;
-    else if (HasREX_WPrefix && OpPrefix == X86Local::XS)
+    } else if (HasREX_WPrefix && OpPrefix == X86Local::XS) {
       insnContext = IC_64BIT_REXW_XS;
-    else if (HasREX_WPrefix && OpPrefix == X86Local::XD)
+    } else if (HasREX_WPrefix && OpPrefix == X86Local::XD) {
       insnContext = IC_64BIT_REXW_XD;
-    else if (OpPrefix == X86Local::XD)
+    } else if (OpPrefix == X86Local::XD) {
       insnContext = IC_64BIT_XD;
-    else if (OpPrefix == X86Local::XS)
+    } else if (OpPrefix == X86Local::XS) {
       insnContext = IC_64BIT_XS;
-    else if (HasREX_WPrefix)
+    } else if (HasREX_WPrefix) {
       insnContext = IC_64BIT_REXW;
-    else
+    } else {
       insnContext = IC_64BIT;
+
+}
   } else {
-    if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XD)
+    if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XD) {
       insnContext = IC_XD_OPSIZE;
-    else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XS)
+    } else if (OpSize == X86Local::OpSize16 && OpPrefix == X86Local::XS) {
       insnContext = IC_XS_OPSIZE;
-    else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::XD)
+    } else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::XD) {
       insnContext = IC_XD_ADSIZE;
-    else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::XS)
+    } else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::XS) {
       insnContext = IC_XS_ADSIZE;
-    else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::PD)
+    } else if (AdSize == X86Local::AdSize16 && OpPrefix == X86Local::PD) {
       insnContext = IC_OPSIZE_ADSIZE;
-    else if (OpSize == X86Local::OpSize16 && AdSize == X86Local::AdSize16)
+    } else if (OpSize == X86Local::OpSize16 && AdSize == X86Local::AdSize16) {
       insnContext = IC_OPSIZE_ADSIZE;
-    else if (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD)
+    } else if (OpSize == X86Local::OpSize16 || OpPrefix == X86Local::PD) {
       insnContext = IC_OPSIZE;
-    else if (AdSize == X86Local::AdSize16)
+    } else if (AdSize == X86Local::AdSize16) {
       insnContext = IC_ADSIZE;
-    else if (OpPrefix == X86Local::XD)
+    } else if (OpPrefix == X86Local::XD) {
       insnContext = IC_XD;
-    else if (OpPrefix == X86Local::XS)
+    } else if (OpPrefix == X86Local::XS) {
       insnContext = IC_XS;
-    else
+    } else {
       insnContext = IC;
+
+}
   }
 
   return insnContext;
@@ -352,8 +360,10 @@ void RecognizableInstr::adjustOperandEncoding(OperandEncoding &encoding) {
   // The scaling factor for AVX512 compressed displacement encoding is an
   // instruction attribute.  Adjust the ModRM encoding type to include the
   // scale for compressed displacement.
-  if ((encoding != ENCODING_RM && encoding != ENCODING_VSIB) ||CD8_Scale == 0)
+  if ((encoding != ENCODING_RM && encoding != ENCODING_VSIB) ||CD8_Scale == 0) {
     return;
+
+}
   encoding = (OperandEncoding)(encoding + Log2_32(CD8_Scale));
   assert(((encoding >= ENCODING_RM && encoding <= ENCODING_RM_CD64) ||
           (encoding >= ENCODING_VSIB && encoding <= ENCODING_VSIB_CD64)) &&
@@ -368,8 +378,10 @@ void RecognizableInstr::handleOperand(bool optional, unsigned &operandIndex,
                                         (const std::string&,
                                          uint8_t OpSize)) {
   if (optional) {
-    if (physicalOperandIndex >= numPhysicalOperands)
+    if (physicalOperandIndex >= numPhysicalOperands) {
       return;
+
+}
   } else {
     assert(physicalOperandIndex < numPhysicalOperands);
   }
@@ -810,11 +822,13 @@ void RecognizableInstr::emitDecodePath(DisassemblerTables &tables) const {
     uint8_t currentOpcode;
 
     for (currentOpcode = opcodeToSet; currentOpcode < opcodeToSet + Count;
-         ++currentOpcode)
+         ++currentOpcode) {
       tables.setTableFields(*opcodeType, insnContext(), currentOpcode, *filter,
                             UID, Is32Bit, OpPrefix == 0,
                             IgnoresVEX_L || EncodeRC,
                             IgnoresVEX_W, AddressSize);
+
+}
   } else {
     tables.setTableFields(*opcodeType, insnContext(), opcodeToSet, *filter, UID,
                           Is32Bit, OpPrefix == 0, IgnoresVEX_L || EncodeRC,

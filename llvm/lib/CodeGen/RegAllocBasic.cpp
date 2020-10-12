@@ -93,8 +93,10 @@ public:
   }
 
   LiveInterval *dequeue() override {
-    if (Queue.empty())
+    if (Queue.empty()) {
       return nullptr;
+
+}
     LiveInterval *LI = Queue.top();
     Queue.pop();
     return LI;
@@ -157,8 +159,10 @@ bool RABasic::LRE_CanEraseVirtReg(unsigned VirtReg) {
 }
 
 void RABasic::LRE_WillShrinkVirtReg(unsigned VirtReg) {
-  if (!VRM->hasPhys(VirtReg))
+  if (!VRM->hasPhys(VirtReg)) {
     return;
+
+}
 
   // Register is assigned, put it back on the queue for reassignment.
   LiveInterval &LI = LIS->getInterval(VirtReg);
@@ -213,8 +217,10 @@ bool RABasic::spillInterferences(LiveInterval &VirtReg, unsigned PhysReg,
     Q.collectInterferingVRegs();
     for (unsigned i = Q.interferingVRegs().size(); i; --i) {
       LiveInterval *Intf = Q.interferingVRegs()[i - 1];
-      if (!Intf->isSpillable() || Intf->weight > VirtReg.weight)
+      if (!Intf->isSpillable() || Intf->weight > VirtReg.weight) {
         return false;
+
+}
       Intfs.push_back(Intf);
     }
   }
@@ -227,8 +233,10 @@ bool RABasic::spillInterferences(LiveInterval &VirtReg, unsigned PhysReg,
     LiveInterval &Spill = *Intfs[i];
 
     // Skip duplicates.
-    if (!VRM->hasPhys(Spill.reg))
+    if (!VRM->hasPhys(Spill.reg)) {
       continue;
+
+}
 
     // Deallocate the interfering vreg by removing it from the union.
     // A LiveInterval instance may not be in a union during modification!
@@ -281,8 +289,10 @@ unsigned RABasic::selectOrSplit(LiveInterval &VirtReg,
   // Try to spill another interfering reg with less spill weight.
   for (SmallVectorImpl<unsigned>::iterator PhysRegI = PhysRegSpillCands.begin(),
        PhysRegE = PhysRegSpillCands.end(); PhysRegI != PhysRegE; ++PhysRegI) {
-    if (!spillInterferences(VirtReg, *PhysRegI, SplitVRegs))
+    if (!spillInterferences(VirtReg, *PhysRegI, SplitVRegs)) {
       continue;
+
+}
 
     assert(!Matrix->checkInterference(VirtReg, *PhysRegI) &&
            "Interference after spill.");
@@ -292,8 +302,10 @@ unsigned RABasic::selectOrSplit(LiveInterval &VirtReg,
 
   // No other spill candidates were found, so spill the current VirtReg.
   LLVM_DEBUG(dbgs() << "spilling: " << VirtReg << '\n');
-  if (!VirtReg.isSpillable())
+  if (!VirtReg.isSpillable()) {
     return ~0u;
+
+}
   LiveRangeEdit LRE(&VirtReg, SplitVRegs, *MF, *LIS, VRM, this, &DeadRemats);
   spiller().spill(LRE);
 

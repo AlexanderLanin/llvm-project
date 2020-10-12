@@ -60,12 +60,14 @@ public:
                         const MCAsmLayout &Layout, const MCFragment *Fragment,
                         const MCFixup &Fixup, MCValue Target,
                         uint64_t &FixedValue) override {
-    if (Writer->is64Bit())
+    if (Writer->is64Bit()) {
       RecordX86_64Relocation(Writer, Asm, Layout, Fragment, Fixup, Target,
                              FixedValue);
-    else
+    } else {
       RecordX86Relocation(Writer, Asm, Layout, Fragment, Fixup, Target,
                           FixedValue);
+
+}
   }
 };
 }
@@ -143,13 +145,17 @@ void X86MachObjectWriter::RecordX86_64Relocation(
     }
   } else if (Target.getSymB()) { // A - B + constant
     const MCSymbol *A = &Target.getSymA()->getSymbol();
-    if (A->isTemporary())
+    if (A->isTemporary()) {
       A = &Writer->findAliasedSymbol(*A);
+
+}
     const MCSymbol *A_Base = Asm.getAtom(*A);
 
     const MCSymbol *B = &Target.getSymB()->getSymbol();
-    if (B->isTemporary())
+    if (B->isTemporary()) {
       B = &Writer->findAliasedSymbol(*B);
+
+}
     const MCSymbol *B_Base = Asm.getAtom(*B);
 
     // Neither symbol can be modified.
@@ -198,8 +204,10 @@ void X86MachObjectWriter::RecordX86_64Relocation(
     Value -= Writer->getSymbolAddress(*B, Layout) -
              (!B_Base ? 0 : Writer->getSymbolAddress(*B_Base, Layout));
 
-    if (!A_Base)
+    if (!A_Base) {
       Index = A->getFragment()->getParent()->getOrdinal() + 1;
+
+}
     Type = MachO::X86_64_RELOC_UNSIGNED;
 
     MachO::any_relocation_info MRE;
@@ -208,17 +216,21 @@ void X86MachObjectWriter::RecordX86_64Relocation(
         (Index << 0) | (IsPCRel << 24) | (Log2Size << 25) | (Type << 28);
     Writer->addRelocation(A_Base, Fragment->getParent(), MRE);
 
-    if (B_Base)
+    if (B_Base) {
       RelSymbol = B_Base;
-    else
+    } else {
       Index = B->getFragment()->getParent()->getOrdinal() + 1;
+
+}
     Type = MachO::X86_64_RELOC_SUBTRACTOR;
   } else {
     const MCSymbol *Symbol = &Target.getSymA()->getSymbol();
     if (Symbol->isTemporary() && Value) {
       const MCSection &Sec = Symbol->getSection();
-      if (!Asm.getContext().getAsmInfo()->isSectionAtomizableBySymbols(Sec))
+      if (!Asm.getContext().getAsmInfo()->isSectionAtomizableBySymbols(Sec)) {
         Symbol->setUsedInReloc();
+
+}
     }
     RelSymbol = Asm.getAtom(*Symbol);
 
@@ -229,8 +241,10 @@ void X86MachObjectWriter::RecordX86_64Relocation(
     if (Symbol->isInSection()) {
       const MCSectionMachO &Section =
           static_cast<const MCSectionMachO &>(*Fragment->getParent());
-      if (Section.hasAttribute(MachO::S_ATTR_DEBUG))
+      if (Section.hasAttribute(MachO::S_ATTR_DEBUG)) {
         RelSymbol = nullptr;
+
+}
     }
 
     // x86_64 almost always uses external relocations, except when there is no
@@ -238,16 +252,20 @@ void X86MachObjectWriter::RecordX86_64Relocation(
     // non-local symbol).
     if (RelSymbol) {
       // Add the local offset, if needed.
-      if (RelSymbol != Symbol)
+      if (RelSymbol != Symbol) {
         Value += Layout.getSymbolOffset(*Symbol) -
                  Layout.getSymbolOffset(*RelSymbol);
+
+}
     } else if (Symbol->isInSection() && !Symbol->isVariable()) {
       // The index is the section ordinal (1-based).
       Index = Symbol->getFragment()->getParent()->getOrdinal() + 1;
       Value += Writer->getSymbolAddress(*Symbol, Layout);
 
-      if (IsPCRel)
+      if (IsPCRel) {
         Value -= FixupAddress + (1 << Log2Size);
+
+}
     } else if (Symbol->isVariable()) {
       const MCExpr *Value = Symbol->getVariableValue();
       int64_t Res;
@@ -276,10 +294,12 @@ void X86MachObjectWriter::RecordX86_64Relocation(
           // x86_64 distinguishes movq foo@GOTPCREL so that the linker can
           // rewrite the movq to an leaq at link time if the symbol ends up in
           // the same linkage unit.
-          if (Fixup.getTargetKind() == X86::reloc_riprel_4byte_movq_load)
+          if (Fixup.getTargetKind() == X86::reloc_riprel_4byte_movq_load) {
             Type = MachO::X86_64_RELOC_GOT_LOAD;
-          else
+          } else {
             Type = MachO::X86_64_RELOC_GOT;
+
+}
         }  else if (Modifier == MCSymbolRefExpr::VK_TLVP) {
           Type = MachO::X86_64_RELOC_TLV;
         }  else if (Modifier != MCSymbolRefExpr::VK_None) {
@@ -529,21 +549,27 @@ void X86MachObjectWriter::RecordX86Relocation(MachObjectWriter *Writer,
 
   // Get the symbol data, if any.
   const MCSymbol *A = nullptr;
-  if (Target.getSymA())
+  if (Target.getSymA()) {
     A = &Target.getSymA()->getSymbol();
+
+}
 
   // If this is an internal relocation with an offset, it also needs a scattered
   // relocation entry.
   uint32_t Offset = Target.getConstant();
-  if (IsPCRel)
+  if (IsPCRel) {
     Offset += 1 << Log2Size;
+
+}
   // Try to record the scattered relocation if needed. Fall back to non
   // scattered if necessary (see comments in recordScatteredRelocation()
   // for details).
   if (Offset && A && !Writer->doesSymbolRequireExternRelocation(*A) &&
       recordScatteredRelocation(Writer, Asm, Layout, Fragment, Fixup, Target,
-                                Log2Size, FixedValue))
+                                Log2Size, FixedValue)) {
     return;
+
+}
 
   // See <reloc.h>.
   uint32_t FixupOffset = Layout.getFragmentOffset(Fragment)+Fixup.getOffset();
@@ -574,16 +600,20 @@ void X86MachObjectWriter::RecordX86Relocation(MachObjectWriter *Writer,
       // For external relocations, make sure to offset the fixup value to
       // compensate for the addend of the symbol address, if it was
       // undefined. This occurs with weak definitions, for example.
-      if (!A->isUndefined())
+      if (!A->isUndefined()) {
         FixedValue -= Layout.getSymbolOffset(*A);
+
+}
     } else {
       // The index is the section ordinal (1-based).
       const MCSection &Sec = A->getSection();
       Index = Sec.getOrdinal() + 1;
       FixedValue += Writer->getSectionAddress(&Sec);
     }
-    if (IsPCRel)
+    if (IsPCRel) {
       FixedValue -= Writer->getSectionAddress(Fragment->getParent());
+
+}
 
     Type = MachO::GENERIC_RELOC_VANILLA;
   }

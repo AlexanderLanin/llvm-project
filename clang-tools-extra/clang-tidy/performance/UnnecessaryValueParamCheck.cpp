@@ -51,14 +51,22 @@ bool hasLoopStmtAncestor(const DeclRefExpr &DeclRef, const Decl &Decl,
 }
 
 bool isExplicitTemplateSpecialization(const FunctionDecl &Function) {
-  if (const auto *SpecializationInfo = Function.getTemplateSpecializationInfo())
+  if (const auto *SpecializationInfo = Function.getTemplateSpecializationInfo()) {
     if (SpecializationInfo->getTemplateSpecializationKind() ==
-        TSK_ExplicitSpecialization)
+        TSK_ExplicitSpecialization) {
       return true;
-  if (const auto *Method = llvm::dyn_cast<CXXMethodDecl>(&Function))
+
+}
+
+}
+  if (const auto *Method = llvm::dyn_cast<CXXMethodDecl>(&Function)) {
     if (Method->getTemplatedKind() == FunctionDecl::TK_MemberSpecialization &&
-        Method->getMemberSpecializationInfo()->isExplicitSpecialization())
+        Method->getMemberSpecializationInfo()->isExplicitSpecialization()) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -95,8 +103,10 @@ void UnnecessaryValueParamCheck::check(const MatchFinder::MatchResult &Result) {
   FunctionParmMutationAnalyzer &Analyzer =
       MutationAnalyzers.try_emplace(Function, *Function, *Result.Context)
           .first->second;
-  if (Analyzer.isMutated(Param))
+  if (Analyzer.isMutated(Param)) {
     return;
+
+}
 
   const bool IsConstQualified =
       Param->getType().getCanonicalType().isConstQualified();
@@ -148,8 +158,10 @@ void UnnecessaryValueParamCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Method = llvm::dyn_cast<CXXMethodDecl>(Function);
   if (Param->getBeginLoc().isMacroID() || (Method && Method->isVirtual()) ||
       isReferencedOutsideOfCallExpr(*Function, *Result.Context) ||
-      isExplicitTemplateSpecialization(*Function))
+      isExplicitTemplateSpecialization(*Function)) {
     return;
+
+}
   for (const auto *FunctionDecl = Function; FunctionDecl != nullptr;
        FunctionDecl = FunctionDecl->getPreviousDecl()) {
     const auto &CurrentParam = *FunctionDecl->getParamDecl(Index);
@@ -160,8 +172,10 @@ void UnnecessaryValueParamCheck::check(const MatchFinder::MatchResult &Result) {
     // declaration.
     if (!CurrentParam.getType().getCanonicalType().isConstQualified()) {
       if (llvm::Optional<FixItHint> Fix = utils::fixit::addQualifierToVarDecl(
-              CurrentParam, *Result.Context, DeclSpec::TQ::TQ_const))
+              CurrentParam, *Result.Context, DeclSpec::TQ::TQ_const)) {
         Diag << *Fix;
+
+}
     }
   }
 }
@@ -193,8 +207,10 @@ void UnnecessaryValueParamCheck::handleMoveFix(const ParmVarDecl &Var,
                    "consider moving it to avoid unnecessary copies")
               << &Var;
   // Do not propose fixes in macros since we cannot place them correctly.
-  if (CopyArgument.getBeginLoc().isMacroID())
+  if (CopyArgument.getBeginLoc().isMacroID()) {
     return;
+
+}
   const auto &SM = Context.getSourceManager();
   auto EndLoc = Lexer::getLocForEndOfToken(CopyArgument.getLocation(), 0, SM,
                                            Context.getLangOpts());
@@ -202,8 +218,10 @@ void UnnecessaryValueParamCheck::handleMoveFix(const ParmVarDecl &Var,
        << FixItHint::CreateInsertion(EndLoc, ")");
   if (auto IncludeFixit = Inserter->CreateIncludeInsertion(
           SM.getFileID(CopyArgument.getBeginLoc()), "utility",
-          /*IsAngled=*/true))
+          /*IsAngled=*/true)) {
     Diag << *IncludeFixit;
+
+}
 }
 
 } // namespace performance

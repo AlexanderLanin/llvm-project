@@ -771,8 +771,10 @@ TYPED_TEST(DualSmallVectorsTest, MoveAssignment) {
   SCOPED_TRACE("MoveAssignTest-DualVectorTypes");
 
   // Set up our vector with four elements.
-  for (unsigned I = 0; I < 4; ++I)
+  for (unsigned I = 0; I < 4; ++I) {
     this->otherVector.push_back(Constructable(I));
+
+}
 
   const Constructable *OrigDataPtr = this->otherVector.data();
 
@@ -834,8 +836,10 @@ TEST(SmallVectorTest, MidInsert) {
   SmallVector<MovedFrom, 3> v;
   v.push_back(MovedFrom());
   v.insert(v.begin(), MovedFrom());
-  for (MovedFrom &m : v)
+  for (MovedFrom &m : v) {
     EXPECT_TRUE(m.hasValue);
+
+}
 }
 
 enum EmplaceableArgState {

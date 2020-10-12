@@ -93,14 +93,20 @@ INITIALIZE_PASS(SingleLoopExtractor, "loop-extract-single",
 Pass *llvm::createLoopExtractorPass() { return new LoopExtractor(); }
 
 bool LoopExtractor::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
 
-  if (M.empty())
+}
+
+  if (M.empty()) {
     return false;
 
-  if (!NumLoops)
+}
+
+  if (!NumLoops) {
     return false;
+
+}
 
   bool Changed = false;
 
@@ -111,12 +117,16 @@ bool LoopExtractor::runOnModule(Module &M) {
     Function &F = *I;
 
     Changed |= runOnFunction(F);
-    if (!NumLoops)
+    if (!NumLoops) {
       break;
 
+}
+
     // If this is the last function.
-    if (I == E)
+    if (I == E) {
       break;
+
+}
 
     ++I;
   }
@@ -125,24 +135,32 @@ bool LoopExtractor::runOnModule(Module &M) {
 
 bool LoopExtractor::runOnFunction(Function &F) {
   // Do not modify `optnone` functions.
-  if (F.hasOptNone())
+  if (F.hasOptNone()) {
     return false;
 
-  if (F.empty())
+}
+
+  if (F.empty()) {
     return false;
+
+}
 
   LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
 
   // If there are no loops in the function.
-  if (LI.empty())
+  if (LI.empty()) {
     return false;
+
+}
 
   DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
 
   // If there is more than one top-level loop in this function, extract all of
   // the loops.
-  if (std::next(LI.begin()) != LI.end())
+  if (std::next(LI.begin()) != LI.end()) {
     return extractLoops(LI.begin(), LI.end(), LI, DT);
+
+}
 
   // Otherwise there is exactly one top-level loop.
   Loop *TLL = *LI.begin();
@@ -163,15 +181,19 @@ bool LoopExtractor::runOnFunction(Function &F) {
       // blocks.
       SmallVector<BasicBlock *, 8> ExitBlocks;
       TLL->getExitBlocks(ExitBlocks);
-      for (auto *ExitBlock : ExitBlocks)
+      for (auto *ExitBlock : ExitBlocks) {
         if (!isa<ReturnInst>(ExitBlock->getTerminator())) {
           ShouldExtractLoop = true;
           break;
         }
+
+}
     }
 
-    if (ShouldExtractLoop)
+    if (ShouldExtractLoop) {
       return extractLoop(TLL, LI, DT);
+
+}
   }
 
   // Okay, this function is a minimal container around the specified loop.
@@ -190,12 +212,16 @@ bool LoopExtractor::extractLoops(Loop::iterator From, Loop::iterator To,
   Loops.assign(From, To);
   for (Loop *L : Loops) {
     // If LoopSimplify form is not available, stay out of trouble.
-    if (!L->isLoopSimplifyForm())
+    if (!L->isLoopSimplifyForm()) {
       continue;
 
+}
+
     Changed |= extractLoop(L, LI, DT);
-    if (!NumLoops)
+    if (!NumLoops) {
       break;
+
+}
   }
   return Changed;
 }
@@ -204,8 +230,10 @@ bool LoopExtractor::extractLoop(Loop *L, LoopInfo &LI, DominatorTree &DT) {
   assert(NumLoops != 0);
   AssumptionCache *AC = nullptr;
   Function &Func = *L->getHeader()->getParent();
-  if (auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>())
+  if (auto *ACT = getAnalysisIfAvailable<AssumptionCacheTracker>()) {
     AC = ACT->lookupAssumptionCache(Func);
+
+}
   CodeExtractorAnalysisCache CEAC(Func);
   CodeExtractor Extractor(DT, *L, false, nullptr, nullptr, AC);
   if (Extractor.extractCodeRegion(CEAC)) {

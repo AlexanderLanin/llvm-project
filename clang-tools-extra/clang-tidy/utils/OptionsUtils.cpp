@@ -21,8 +21,10 @@ std::vector<std::string> parseStringList(StringRef Option) {
   std::vector<std::string> Result;
   for (StringRef &Name : Names) {
     Name = Name.trim();
-    if (!Name.empty())
+    if (!Name.empty()) {
       Result.emplace_back(Name);
+
+}
   }
   return Result;
 }

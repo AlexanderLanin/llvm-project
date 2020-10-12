@@ -29,8 +29,10 @@ bool formatv_object_base::consumeFieldLayout(StringRef &Spec, AlignStyle &Where,
   Where = AlignStyle::Right;
   Align = 0;
   Pad = ' ';
-  if (Spec.empty())
+  if (Spec.empty()) {
     return true;
+
+}
 
   if (Spec.size() > 1) {
     // A maximum of 2 characters at the beginning can be used for something
@@ -73,8 +75,10 @@ formatv_object_base::parseReplacementItem(StringRef Spec) {
   RepString = RepString.trim();
   if (!RepString.empty() && RepString.front() == ',') {
     RepString = RepString.drop_front();
-    if (!consumeFieldLayout(RepString, Where, Align, Pad))
+    if (!consumeFieldLayout(RepString, Where, Align, Pad)) {
       assert(false && "Invalid replacement field layout specification!");
+
+}
   }
   RepString = RepString.trim();
   if (!RepString.empty() && RepString.front() == ':') {
@@ -95,8 +99,10 @@ formatv_object_base::splitLiteralAndReplacement(StringRef Fmt) {
   while (From < Fmt.size() && From != StringRef::npos) {
     std::size_t BO = Fmt.find_first_of('{', From);
     // Everything up until the first brace is a literal.
-    if (BO != 0)
+    if (BO != 0) {
       return std::make_pair(ReplacementItem{Fmt.substr(0, BO)}, Fmt.substr(BO));
+
+}
 
     StringRef Braces =
         Fmt.drop_front(BO).take_while([](char C) { return C == '{'; });
@@ -123,16 +129,20 @@ formatv_object_base::splitLiteralAndReplacement(StringRef Fmt) {
     // this closing brace, treat this portion as literal, and try again with the
     // next one.
     std::size_t BO2 = Fmt.find_first_of('{', BO + 1);
-    if (BO2 < BC)
+    if (BO2 < BC) {
       return std::make_pair(ReplacementItem{Fmt.substr(0, BO2)},
                             Fmt.substr(BO2));
+
+}
 
     StringRef Spec = Fmt.slice(BO + 1, BC);
     StringRef Right = Fmt.substr(BC + 1);
 
     auto RI = parseReplacementItem(Spec);
-    if (RI.hasValue())
+    if (RI.hasValue()) {
       return std::make_pair(*RI, Right);
+
+}
 
     // If there was an error parsing the replacement item, treat it as an
     // invalid replacement spec, and just continue.
@@ -147,8 +157,10 @@ formatv_object_base::parseFormatString(StringRef Fmt) {
   ReplacementItem I;
   while (!Fmt.empty()) {
     std::tie(I, Fmt) = splitLiteralAndReplacement(Fmt);
-    if (I.Type != ReplacementType::Empty)
+    if (I.Type != ReplacementType::Empty) {
       Replacements.push_back(I);
+
+}
   }
   return Replacements;
 }

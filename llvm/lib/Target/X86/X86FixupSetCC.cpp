@@ -67,33 +67,47 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
     MachineInstr *FlagsDefMI = nullptr;
     for (auto &MI : MBB) {
       // Remember the most recent preceding eflags defining instruction.
-      if (MI.definesRegister(X86::EFLAGS))
+      if (MI.definesRegister(X86::EFLAGS)) {
         FlagsDefMI = &MI;
+
+}
 
       // Find a setcc that is used by a zext.
       // This doesn't have to be the only use, the transformation is safe
       // regardless.
-      if (MI.getOpcode() != X86::SETCCr)
+      if (MI.getOpcode() != X86::SETCCr) {
         continue;
+
+}
 
       MachineInstr *ZExt = nullptr;
-      for (auto &Use : MRI->use_instructions(MI.getOperand(0).getReg()))
-        if (Use.getOpcode() == X86::MOVZX32rr8)
+      for (auto &Use : MRI->use_instructions(MI.getOperand(0).getReg())) {
+        if (Use.getOpcode() == X86::MOVZX32rr8) {
           ZExt = &Use;
 
-      if (!ZExt)
+}
+
+}
+
+      if (!ZExt) {
         continue;
 
-      if (!FlagsDefMI)
+}
+
+      if (!FlagsDefMI) {
         continue;
+
+}
 
       // We'd like to put something that clobbers eflags directly before
       // FlagsDefMI. This can't hurt anything after FlagsDefMI, because
       // it, itself, by definition, clobbers eflags. But it may happen that
       // FlagsDefMI also *uses* eflags, in which case the transformation is
       // invalid.
-      if (FlagsDefMI->readsRegister(X86::EFLAGS))
+      if (FlagsDefMI->readsRegister(X86::EFLAGS)) {
         continue;
+
+}
 
       ++NumSubstZexts;
       Changed = true;
@@ -121,8 +135,10 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
     }
   }
 
-  for (auto &I : ToErase)
+  for (auto &I : ToErase) {
     I->eraseFromParent();
+
+}
 
   return Changed;
 }

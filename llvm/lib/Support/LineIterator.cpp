@@ -12,10 +12,14 @@
 using namespace llvm;
 
 static bool isAtLineEnd(const char *P) {
-  if (*P == '\n')
+  if (*P == '\n') {
     return true;
-  if (*P == '\r' && *(P + 1) == '\n')
+
+}
+  if (*P == '\r' && *(P + 1) == '\n') {
     return true;
+
+}
   return false;
 }
 
@@ -42,8 +46,10 @@ line_iterator::line_iterator(const MemoryBuffer &Buffer, bool SkipBlanks,
   if (Buffer.getBufferSize()) {
     assert(Buffer.getBufferEnd()[0] == '\0');
     // Make sure we don't skip a leading newline if we're keeping blanks
-    if (SkipBlanks || !isAtLineEnd(Buffer.getBufferStart()))
+    if (SkipBlanks || !isAtLineEnd(Buffer.getBufferStart())) {
       advance();
+
+}
   }
 }
 
@@ -53,25 +59,35 @@ void line_iterator::advance() {
   const char *Pos = CurrentLine.end();
   assert(Pos == Buffer->getBufferStart() || isAtLineEnd(Pos) || *Pos == '\0');
 
-  if (skipIfAtLineEnd(Pos))
+  if (skipIfAtLineEnd(Pos)) {
     ++LineNumber;
+
+}
   if (!SkipBlanks && isAtLineEnd(Pos)) {
     // Nothing to do for a blank line.
   } else if (CommentMarker == '\0') {
     // If we're not stripping comments, this is simpler.
-    while (skipIfAtLineEnd(Pos))
+    while (skipIfAtLineEnd(Pos)) {
       ++LineNumber;
+
+}
   } else {
     // Skip comments and count line numbers, which is a bit more complex.
     for (;;) {
-      if (isAtLineEnd(Pos) && !SkipBlanks)
+      if (isAtLineEnd(Pos) && !SkipBlanks) {
         break;
-      if (*Pos == CommentMarker)
+
+}
+      if (*Pos == CommentMarker) {
         do {
           ++Pos;
         } while (*Pos != '\0' && !isAtLineEnd(Pos));
-      if (!skipIfAtLineEnd(Pos))
+
+}
+      if (!skipIfAtLineEnd(Pos)) {
         break;
+
+}
       ++LineNumber;
     }
   }

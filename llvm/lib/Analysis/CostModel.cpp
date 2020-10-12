@@ -95,16 +95,20 @@ CostModelAnalysis::runOnFunction(Function &F) {
 }
 
 void CostModelAnalysis::print(raw_ostream &OS, const Module*) const {
-  if (!F)
+  if (!F) {
     return;
+
+}
 
   for (BasicBlock &B : *F) {
     for (Instruction &Inst : B) {
       unsigned Cost = TTI->getInstructionCost(&Inst, CostKind);
-      if (Cost != (unsigned)-1)
+      if (Cost != (unsigned)-1) {
         OS << "Cost Model: Found an estimated cost of " << Cost;
-      else
+      } else {
         OS << "Cost Model: Unknown cost";
+
+}
 
       OS << " for instruction: " << Inst << "\n";
     }

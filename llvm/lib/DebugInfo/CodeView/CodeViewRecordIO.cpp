@@ -39,8 +39,10 @@ Error CodeViewRecordIO::endRecord() {
     // For streaming mode, add padding to align with 4 byte boundaries for each
     // record
     uint32_t Align = getStreamedLen() % 4;
-    if (Align == 0)
+    if (Align == 0) {
       return Error::success();
+
+}
 
     int PaddingBytes = 4 - Align;
     while (PaddingBytes > 0) {
@@ -55,8 +57,10 @@ Error CodeViewRecordIO::endRecord() {
 }
 
 uint32_t CodeViewRecordIO::maxFieldLength() const {
-  if (isStreaming())
+  if (isStreaming()) {
     return 0;
+
+}
 
   assert(!Limits.empty() && "Not in a record!");
 
@@ -68,8 +72,10 @@ uint32_t CodeViewRecordIO::maxFieldLength() const {
   Optional<uint32_t> Min = Limits.front().bytesRemaining(Offset);
   for (auto X : makeArrayRef(Limits).drop_front()) {
     Optional<uint32_t> ThisMin = X.bytesRemaining(Offset);
-    if (ThisMin.hasValue())
+    if (ThisMin.hasValue()) {
       Min = (Min.hasValue()) ? std::min(*Min, *ThisMin) : *ThisMin;
+
+}
   }
   assert(Min.hasValue() && "Every field must have a maximum length!");
 
@@ -77,20 +83,26 @@ uint32_t CodeViewRecordIO::maxFieldLength() const {
 }
 
 Error CodeViewRecordIO::padToAlignment(uint32_t Align) {
-  if (isReading())
+  if (isReading()) {
     return Reader->padToAlignment(Align);
+
+}
   return Writer->padToAlignment(Align);
 }
 
 Error CodeViewRecordIO::skipPadding() {
   assert(!isWriting() && "Cannot skip padding while writing!");
 
-  if (Reader->bytesRemaining() == 0)
+  if (Reader->bytesRemaining() == 0) {
     return Error::success();
 
+}
+
   uint8_t Leaf = Reader->peek();
-  if (Leaf < LF_PAD0)
+  if (Leaf < LF_PAD0) {
     return Error::success();
+
+}
   // Leaf is greater than 0xf0. We should advance by the number of bytes in
   // the low 4 bits.
   unsigned BytesToAdvance = Leaf & 0x0F;
@@ -104,11 +116,15 @@ Error CodeViewRecordIO::mapByteVectorTail(ArrayRef<uint8_t> &Bytes,
     Streamer->emitBinaryData(toStringRef(Bytes));
     incrStreamedLen(Bytes.size());
   } else if (isWriting()) {
-    if (auto EC = Writer->writeBytes(Bytes))
+    if (auto EC = Writer->writeBytes(Bytes)) {
       return EC;
+
+}
   } else {
-    if (auto EC = Reader->readBytes(Bytes, Reader->bytesRemaining()))
+    if (auto EC = Reader->readBytes(Bytes, Reader->bytesRemaining())) {
       return EC;
+
+}
   }
   return Error::success();
 }
@@ -116,10 +132,14 @@ Error CodeViewRecordIO::mapByteVectorTail(ArrayRef<uint8_t> &Bytes,
 Error CodeViewRecordIO::mapByteVectorTail(std::vector<uint8_t> &Bytes,
                                           const Twine &Comment) {
   ArrayRef<uint8_t> BytesRef(Bytes);
-  if (auto EC = mapByteVectorTail(BytesRef, Comment))
+  if (auto EC = mapByteVectorTail(BytesRef, Comment)) {
     return EC;
-  if (!isWriting())
+
+}
+  if (!isWriting()) {
     Bytes.assign(BytesRef.begin(), BytesRef.end());
+
+}
 
   return Error::success();
 }
@@ -127,19 +147,25 @@ Error CodeViewRecordIO::mapByteVectorTail(std::vector<uint8_t> &Bytes,
 Error CodeViewRecordIO::mapInteger(TypeIndex &TypeInd, const Twine &Comment) {
   if (isStreaming()) {
     std::string TypeNameStr = Streamer->getTypeName(TypeInd);
-    if (!TypeNameStr.empty())
+    if (!TypeNameStr.empty()) {
       emitComment(Comment + ": " + TypeNameStr);
-    else
+    } else {
       emitComment(Comment);
+
+}
     Streamer->emitIntValue(TypeInd.getIndex(), sizeof(TypeInd.getIndex()));
     incrStreamedLen(sizeof(TypeInd.getIndex()));
   } else if (isWriting()) {
-    if (auto EC = Writer->writeInteger(TypeInd.getIndex()))
+    if (auto EC = Writer->writeInteger(TypeInd.getIndex())) {
       return EC;
+
+}
   } else {
     uint32_t I;
-    if (auto EC = Reader->readInteger(I))
+    if (auto EC = Reader->readInteger(I)) {
       return EC;
+
+}
     TypeInd.setIndex(I);
   }
   return Error::success();
@@ -148,22 +174,30 @@ Error CodeViewRecordIO::mapInteger(TypeIndex &TypeInd, const Twine &Comment) {
 Error CodeViewRecordIO::mapEncodedInteger(int64_t &Value,
                                           const Twine &Comment) {
   if (isStreaming()) {
-    if (Value >= 0)
+    if (Value >= 0) {
       emitEncodedUnsignedInteger(static_cast<uint64_t>(Value), Comment);
-    else
+    } else {
       emitEncodedSignedInteger(Value, Comment);
+
+}
   } else if (isWriting()) {
     if (Value >= 0) {
-      if (auto EC = writeEncodedUnsignedInteger(static_cast<uint64_t>(Value)))
+      if (auto EC = writeEncodedUnsignedInteger(static_cast<uint64_t>(Value))) {
         return EC;
+
+}
     } else {
-      if (auto EC = writeEncodedSignedInteger(Value))
+      if (auto EC = writeEncodedSignedInteger(Value)) {
         return EC;
+
+}
     }
   } else {
     APSInt N;
-    if (auto EC = consume(*Reader, N))
+    if (auto EC = consume(*Reader, N)) {
       return EC;
+
+}
     Value = N.getExtValue();
   }
 
@@ -172,15 +206,19 @@ Error CodeViewRecordIO::mapEncodedInteger(int64_t &Value,
 
 Error CodeViewRecordIO::mapEncodedInteger(uint64_t &Value,
                                           const Twine &Comment) {
-  if (isStreaming())
+  if (isStreaming()) {
     emitEncodedUnsignedInteger(Value, Comment);
-  else if (isWriting()) {
-    if (auto EC = writeEncodedUnsignedInteger(Value))
+  } else if (isWriting()) {
+    if (auto EC = writeEncodedUnsignedInteger(Value)) {
       return EC;
+
+}
   } else {
     APSInt N;
-    if (auto EC = consume(*Reader, N))
+    if (auto EC = consume(*Reader, N)) {
       return EC;
+
+}
     Value = N.getZExtValue();
   }
   return Error::success();
@@ -188,16 +226,22 @@ Error CodeViewRecordIO::mapEncodedInteger(uint64_t &Value,
 
 Error CodeViewRecordIO::mapEncodedInteger(APSInt &Value, const Twine &Comment) {
   if (isStreaming()) {
-    if (Value.isSigned())
+    if (Value.isSigned()) {
       emitEncodedSignedInteger(Value.getSExtValue(), Comment);
-    else
+    } else {
       emitEncodedUnsignedInteger(Value.getZExtValue(), Comment);
+
+}
   } else if (isWriting()) {
-    if (Value.isSigned())
+    if (Value.isSigned()) {
       return writeEncodedSignedInteger(Value.getSExtValue());
+
+}
     return writeEncodedUnsignedInteger(Value.getZExtValue());
-  } else
+  } else {
     return consume(*Reader, Value);
+
+}
   return Error::success();
 }
 
@@ -210,11 +254,15 @@ Error CodeViewRecordIO::mapStringZ(StringRef &Value, const Twine &Comment) {
   } else if (isWriting()) {
     // Truncate if we attempt to write too much.
     StringRef S = Value.take_front(maxFieldLength() - 1);
-    if (auto EC = Writer->writeCString(S))
+    if (auto EC = Writer->writeCString(S)) {
       return EC;
+
+}
   } else {
-    if (auto EC = Reader->readCString(Value))
+    if (auto EC = Reader->readCString(Value)) {
       return EC;
+
+}
   }
   return Error::success();
 }
@@ -231,16 +279,22 @@ Error CodeViewRecordIO::mapGuid(GUID &Guid, const Twine &Comment) {
     return Error::success();
   }
 
-  if (maxFieldLength() < GuidSize)
+  if (maxFieldLength() < GuidSize) {
     return make_error<CodeViewError>(cv_error_code::insufficient_buffer);
 
+}
+
   if (isWriting()) {
-    if (auto EC = Writer->writeBytes(Guid.Guid))
+    if (auto EC = Writer->writeBytes(Guid.Guid)) {
       return EC;
+
+}
   } else {
     ArrayRef<uint8_t> GuidBytes;
-    if (auto EC = Reader->readBytes(GuidBytes, GuidSize))
+    if (auto EC = Reader->readBytes(GuidBytes, GuidSize)) {
       return EC;
+
+}
     memcpy(Guid.Guid, GuidBytes.data(), GuidSize);
   }
   return Error::success();
@@ -252,20 +306,28 @@ Error CodeViewRecordIO::mapStringZVectorZ(std::vector<StringRef> &Value,
   if (!isReading()) {
     emitComment(Comment);
     for (auto V : Value) {
-      if (auto EC = mapStringZ(V))
+      if (auto EC = mapStringZ(V)) {
         return EC;
+
+}
     }
     uint8_t FinalZero = 0;
-    if (auto EC = mapInteger(FinalZero))
+    if (auto EC = mapInteger(FinalZero)) {
       return EC;
+
+}
   } else {
     StringRef S;
-    if (auto EC = mapStringZ(S))
+    if (auto EC = mapStringZ(S)) {
       return EC;
+
+}
     while (!S.empty()) {
       Value.push_back(S);
-      if (auto EC = mapStringZ(S))
+      if (auto EC = mapStringZ(S)) {
         return EC;
+
+}
     };
   }
   return Error::success();
@@ -324,48 +386,78 @@ void CodeViewRecordIO::emitEncodedUnsignedInteger(const uint64_t &Value,
 Error CodeViewRecordIO::writeEncodedSignedInteger(const int64_t &Value) {
   assert(Value < 0 && "Encoded integer is not signed!");
   if (Value >= std::numeric_limits<int8_t>::min()) {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_CHAR))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_CHAR)) {
       return EC;
-    if (auto EC = Writer->writeInteger<int8_t>(Value))
+
+}
+    if (auto EC = Writer->writeInteger<int8_t>(Value)) {
       return EC;
+
+}
   } else if (Value >= std::numeric_limits<int16_t>::min()) {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_SHORT))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_SHORT)) {
       return EC;
-    if (auto EC = Writer->writeInteger<int16_t>(Value))
+
+}
+    if (auto EC = Writer->writeInteger<int16_t>(Value)) {
       return EC;
+
+}
   } else if (Value >= std::numeric_limits<int32_t>::min()) {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_LONG))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_LONG)) {
       return EC;
-    if (auto EC = Writer->writeInteger<int32_t>(Value))
+
+}
+    if (auto EC = Writer->writeInteger<int32_t>(Value)) {
       return EC;
+
+}
   } else {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_QUADWORD))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_QUADWORD)) {
       return EC;
-    if (auto EC = Writer->writeInteger(Value))
+
+}
+    if (auto EC = Writer->writeInteger(Value)) {
       return EC;
+
+}
   }
   return Error::success();
 }
 
 Error CodeViewRecordIO::writeEncodedUnsignedInteger(const uint64_t &Value) {
   if (Value < LF_NUMERIC) {
-    if (auto EC = Writer->writeInteger<uint16_t>(Value))
+    if (auto EC = Writer->writeInteger<uint16_t>(Value)) {
       return EC;
+
+}
   } else if (Value <= std::numeric_limits<uint16_t>::max()) {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_USHORT))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_USHORT)) {
       return EC;
-    if (auto EC = Writer->writeInteger<uint16_t>(Value))
+
+}
+    if (auto EC = Writer->writeInteger<uint16_t>(Value)) {
       return EC;
+
+}
   } else if (Value <= std::numeric_limits<uint32_t>::max()) {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_ULONG))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_ULONG)) {
       return EC;
-    if (auto EC = Writer->writeInteger<uint32_t>(Value))
+
+}
+    if (auto EC = Writer->writeInteger<uint32_t>(Value)) {
       return EC;
+
+}
   } else {
-    if (auto EC = Writer->writeInteger<uint16_t>(LF_UQUADWORD))
+    if (auto EC = Writer->writeInteger<uint16_t>(LF_UQUADWORD)) {
       return EC;
-    if (auto EC = Writer->writeInteger(Value))
+
+}
+    if (auto EC = Writer->writeInteger(Value)) {
       return EC;
+
+}
   }
 
   return Error::success();

@@ -101,19 +101,25 @@ void MoveForwardingReferenceCheck::check(
   // Get the FunctionDecl and FunctionTemplateDecl containing the function
   // parameter.
   const auto *FuncForParam = dyn_cast<FunctionDecl>(ParmVar->getDeclContext());
-  if (!FuncForParam)
+  if (!FuncForParam) {
     return;
+
+}
   const FunctionTemplateDecl *FuncTemplate =
       FuncForParam->getDescribedFunctionTemplate();
-  if (!FuncTemplate)
+  if (!FuncTemplate) {
     return;
+
+}
 
   // Check that the template type parameter belongs to the same function
   // template as the function parameter of that type. (This implies that type
   // deduction will happen on the type.)
   const TemplateParameterList *Params = FuncTemplate->getTemplateParameters();
-  if (!std::count(Params->begin(), Params->end(), TypeParmDecl))
+  if (!std::count(Params->begin(), Params->end(), TypeParmDecl)) {
     return;
+
+}
 
   auto Diag = diag(CallMove->getExprLoc(),
                    "forwarding reference passed to std::move(), which may "

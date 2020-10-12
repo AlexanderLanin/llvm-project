@@ -29,17 +29,21 @@ static void check(remarks::Format SerializerFormat,
   std::string Buf;
   raw_string_ostream OS(Buf);
   Expected<std::unique_ptr<remarks::RemarkSerializer>> MaybeS = [&] {
-    if (StrTab)
+    if (StrTab) {
       return createRemarkSerializer(SerializerFormat, Mode, OS,
                                     std::move(*StrTab));
-    else
+    } else {
       return createRemarkSerializer(SerializerFormat, Mode, OS);
+
+}
   }();
   EXPECT_FALSE(errorToBool(MaybeS.takeError()));
   std::unique_ptr<remarks::RemarkSerializer> S = std::move(*MaybeS);
 
-  for (const remarks::Remark &R : Rs)
+  for (const remarks::Remark &R : Rs) {
     S->emit(R);
+
+}
   EXPECT_EQ(OS.str(), ExpectedR);
 
   if (ExpectedMeta) {

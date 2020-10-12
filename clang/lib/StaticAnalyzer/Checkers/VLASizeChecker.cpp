@@ -48,12 +48,16 @@ void VLASizeChecker::reportBug(
     CheckerContext &C, std::unique_ptr<BugReporterVisitor> Visitor) const {
   // Generate an error node.
   ExplodedNode *N = C.generateErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
 
-  if (!BT)
+}
+
+  if (!BT) {
     BT.reset(new BuiltinBug(
         this, "Dangerous variable-length array (VLA) declaration"));
+
+}
 
   SmallString<256> buf;
   llvm::raw_svector_ostream os(buf);
@@ -81,17 +85,23 @@ void VLASizeChecker::reportBug(
 }
 
 void VLASizeChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
-  if (!DS->isSingleDecl())
+  if (!DS->isSingleDecl()) {
     return;
 
+}
+
   const VarDecl *VD = dyn_cast<VarDecl>(DS->getSingleDecl());
-  if (!VD)
+  if (!VD) {
     return;
+
+}
 
   ASTContext &Ctx = C.getASTContext();
   const VariableArrayType *VLA = Ctx.getAsVariableArrayType(VD->getType());
-  if (!VLA)
+  if (!VLA) {
     return;
+
+}
 
   // FIXME: Handle multi-dimensional VLAs.
   const Expr *SE = VLA->getSizeExpr();
@@ -105,8 +115,10 @@ void VLASizeChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
 
   // See if the size value is known. It can't be undefined because we would have
   // warned about that already.
-  if (sizeV.isUnknown())
+  if (sizeV.isUnknown()) {
     return;
+
+}
 
   // Check if the size is tainted.
   if (isTainted(state, sizeV)) {

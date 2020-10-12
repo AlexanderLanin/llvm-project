@@ -61,8 +61,10 @@ void StringCompareCheck::check(const MatchFinder::MatchResult &Result) {
 
       auto Diag = diag(Matched->getBeginLoc(), CompareMessage);
 
-      if (Str1->isArrow())
+      if (Str1->isArrow()) {
         Diag << FixItHint::CreateInsertion(Str1->getBeginLoc(), "*");
+
+}
 
       Diag << tooling::fixit::createReplacement(*Zero, *Str2, Ctx)
            << tooling::fixit::createReplacement(*Compare, *Str1->getBase(),

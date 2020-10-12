@@ -106,11 +106,15 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
   ComdatMembersType ComdatMembers;
 
   auto recordGVSet = [&GVtoClusterMap, &ComdatMembers](GlobalValue &GV) {
-    if (GV.isDeclaration())
+    if (GV.isDeclaration()) {
       return;
 
-    if (!GV.hasName())
+}
+
+    if (!GV.hasName()) {
       GV.setName("__llvmsplit_unnamed");
+
+}
 
     // Comdat groups must not be partitioned. For comdat groups that contain
     // locals, record all their members here so we can keep them together.
@@ -118,30 +122,38 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
     // the MD5-based partitioning.
     if (const Comdat *C = GV.getComdat()) {
       auto &Member = ComdatMembers[C];
-      if (Member)
+      if (Member) {
         GVtoClusterMap.unionSets(Member, &GV);
-      else
+      } else {
         Member = &GV;
+
+}
     }
 
     // For aliases we should not separate them from their aliasees regardless
     // of linkage.
     if (auto *GIS = dyn_cast<GlobalIndirectSymbol>(&GV)) {
-      if (const GlobalObject *Base = GIS->getBaseObject())
+      if (const GlobalObject *Base = GIS->getBaseObject()) {
         GVtoClusterMap.unionSets(&GV, Base);
+
+}
     }
 
     if (const Function *F = dyn_cast<Function>(&GV)) {
       for (const BasicBlock &BB : *F) {
         BlockAddress *BA = BlockAddress::lookup(&BB);
-        if (!BA || !BA->isConstantUsed())
+        if (!BA || !BA->isConstantUsed()) {
           continue;
+
+}
         addAllGlobalValueUsers(GVtoClusterMap, F, BA);
       }
     }
 
-    if (GV.hasLocalLinkage())
+    if (GV.hasLocalLinkage()) {
       addAllGlobalValueUsers(GVtoClusterMap, &GV, &GV);
+
+}
   };
 
   llvm::for_each(M->functions(), recordGVSet);
@@ -152,10 +164,12 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
   // each.
   auto CompareClusters = [](const std::pair<unsigned, unsigned> &a,
                             const std::pair<unsigned, unsigned> &b) {
-    if (a.second || b.second)
+    if (a.second || b.second) {
       return a.second > b.second;
-    else
+    } else {
       return a.first > b.first;
+
+}
   };
 
   std::priority_queue<std::pair<unsigned, unsigned>,
@@ -163,8 +177,10 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
                       decltype(CompareClusters)>
       BalancinQueue(CompareClusters);
   // Pre-populate priority queue with N slot blanks.
-  for (unsigned i = 0; i < N; ++i)
+  for (unsigned i = 0; i < N; ++i) {
     BalancinQueue.push(std::make_pair(i, 0));
+
+}
 
   using SortType = std::pair<unsigned, ClusterMapType::iterator>;
 
@@ -174,17 +190,23 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
   // To guarantee determinism, we have to sort SCC according to size.
   // When size is the same, use leader's name.
   for (ClusterMapType::iterator I = GVtoClusterMap.begin(),
-                                E = GVtoClusterMap.end(); I != E; ++I)
-    if (I->isLeader())
+                                E = GVtoClusterMap.end(); I != E; ++I) {
+    if (I->isLeader()) {
       Sets.push_back(
           std::make_pair(std::distance(GVtoClusterMap.member_begin(I),
                                        GVtoClusterMap.member_end()), I));
 
+}
+
+}
+
   llvm::sort(Sets, [](const SortType &a, const SortType &b) {
-    if (a.first == b.first)
+    if (a.first == b.first) {
       return a.second->getData()->getName() > b.second->getData()->getName();
-    else
+    } else {
       return a.first > b.first;
+
+}
   });
 
   for (auto &I : Sets) {
@@ -199,8 +221,10 @@ static void findPartitions(Module *M, ClusterIDMapType &ClusterIDMap,
     for (ClusterMapType::member_iterator MI =
              GVtoClusterMap.findLeader(I.second);
          MI != GVtoClusterMap.member_end(); ++MI) {
-      if (!Visited.insert(*MI).second)
+      if (!Visited.insert(*MI).second) {
         continue;
+
+}
       LLVM_DEBUG(dbgs() << "----> " << (*MI)->getName()
                         << ((*MI)->hasLocalLinkage() ? " l " : " e ") << "\n");
       Visited.insert(*MI);
@@ -220,21 +244,29 @@ static void externalize(GlobalValue *GV) {
 
   // Unnamed entities must be named consistently between modules. setName will
   // give a distinct name to each such entity.
-  if (!GV->hasName())
+  if (!GV->hasName()) {
     GV->setName("__llvmsplit_unnamed");
+
+}
 }
 
 // Returns whether GV should be in partition (0-based) I of N.
 static bool isInPartition(const GlobalValue *GV, unsigned I, unsigned N) {
-  if (auto *GIS = dyn_cast<GlobalIndirectSymbol>(GV))
-    if (const GlobalObject *Base = GIS->getBaseObject())
+  if (auto *GIS = dyn_cast<GlobalIndirectSymbol>(GV)) {
+    if (const GlobalObject *Base = GIS->getBaseObject()) {
       GV = Base;
 
+}
+
+}
+
   StringRef Name;
-  if (const Comdat *C = GV->getComdat())
+  if (const Comdat *C = GV->getComdat()) {
     Name = C->getName();
-  else
+  } else {
     Name = GV->getName();
+
+}
 
   // Partition by MD5 hash. We only need a few bits for evenness as the number
   // of partitions will generally be in the 1-2 figure range; the low 16 bits
@@ -251,14 +283,22 @@ void llvm::SplitModule(
     function_ref<void(std::unique_ptr<Module> MPart)> ModuleCallback,
     bool PreserveLocals) {
   if (!PreserveLocals) {
-    for (Function &F : *M)
+    for (Function &F : *M) {
       externalize(&F);
-    for (GlobalVariable &GV : M->globals())
+
+}
+    for (GlobalVariable &GV : M->globals()) {
       externalize(&GV);
-    for (GlobalAlias &GA : M->aliases())
+
+}
+    for (GlobalAlias &GA : M->aliases()) {
       externalize(&GA);
-    for (GlobalIFunc &GIF : M->ifuncs())
+
+}
+    for (GlobalIFunc &GIF : M->ifuncs()) {
       externalize(&GIF);
+
+}
   }
 
   // This performs splitting without a need for externalization, which might not
@@ -272,13 +312,17 @@ void llvm::SplitModule(
     ValueToValueMapTy VMap;
     std::unique_ptr<Module> MPart(
         CloneModule(*M, VMap, [&](const GlobalValue *GV) {
-          if (ClusterIDMap.count(GV))
+          if (ClusterIDMap.count(GV)) {
             return (ClusterIDMap[GV] == I);
-          else
+          } else {
             return isInPartition(GV, I, N);
+
+}
         }));
-    if (I != 0)
+    if (I != 0) {
       MPart->setModuleInlineAsm("");
+
+}
     ModuleCallback(std::move(MPart));
   }
 }

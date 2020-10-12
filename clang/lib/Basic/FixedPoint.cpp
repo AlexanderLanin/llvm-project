@@ -21,8 +21,10 @@ APFixedPoint APFixedPoint::convert(const FixedPointSemantics &DstSema,
   unsigned DstWidth = DstSema.getWidth();
   unsigned DstScale = DstSema.getScale();
   bool Upscaling = DstScale > getScale();
-  if (Overflow)
+  if (Overflow) {
     *Overflow = false;
+
+}
 
   if (Upscaling) {
     NewVal = NewVal.extend(NewVal.getBitWidth() + DstScale - getScale());
@@ -39,20 +41,24 @@ APFixedPoint APFixedPoint::convert(const FixedPointSemantics &DstSema,
   // Change in the bits above the sign
   if (!(Masked == Mask || Masked == 0)) {
     // Found overflow in the bits above the sign
-    if (DstSema.isSaturated())
+    if (DstSema.isSaturated()) {
       NewVal = NewVal.isNegative() ? Mask : ~Mask;
-    else if (Overflow)
+    } else if (Overflow) {
       *Overflow = true;
+
+}
   }
 
   // If the dst semantics are unsigned, but our value is signed and negative, we
   // clamp to zero.
   if (!DstSema.isSigned() && NewVal.isSigned() && NewVal.isNegative()) {
     // Found negative overflow for unsigned result
-    if (DstSema.isSaturated())
+    if (DstSema.isSaturated()) {
       NewVal = 0;
-    else if (Overflow)
+    } else if (Overflow) {
       *Overflow = true;
+
+}
   }
 
   NewVal = NewVal.extOrTrunc(DstWidth);
@@ -82,30 +88,38 @@ int APFixedPoint::compare(const APFixedPoint &Other) const {
   OtherVal = OtherVal.shl(CommonScale - OtherScale);
 
   if (ThisSigned && OtherSigned) {
-    if (ThisVal.sgt(OtherVal))
+    if (ThisVal.sgt(OtherVal)) {
       return 1;
-    else if (ThisVal.slt(OtherVal))
+    } else if (ThisVal.slt(OtherVal)) {
       return -1;
+
+}
   } else if (!ThisSigned && !OtherSigned) {
-    if (ThisVal.ugt(OtherVal))
+    if (ThisVal.ugt(OtherVal)) {
       return 1;
-    else if (ThisVal.ult(OtherVal))
+    } else if (ThisVal.ult(OtherVal)) {
       return -1;
+
+}
   } else if (ThisSigned && !OtherSigned) {
-    if (ThisVal.isSignBitSet())
+    if (ThisVal.isSignBitSet()) {
       return -1;
-    else if (ThisVal.ugt(OtherVal))
+    } else if (ThisVal.ugt(OtherVal)) {
       return 1;
-    else if (ThisVal.ult(OtherVal))
+    } else if (ThisVal.ult(OtherVal)) {
       return -1;
+
+}
   } else {
     // !ThisSigned && OtherSigned
-    if (OtherVal.isSignBitSet())
+    if (OtherVal.isSignBitSet()) {
       return 1;
-    else if (ThisVal.ugt(OtherVal))
+    } else if (ThisVal.ugt(OtherVal)) {
       return 1;
-    else if (ThisVal.ult(OtherVal))
+    } else if (ThisVal.ult(OtherVal)) {
       return -1;
+
+}
   }
 
   return 0;
@@ -114,8 +128,10 @@ int APFixedPoint::compare(const APFixedPoint &Other) const {
 APFixedPoint APFixedPoint::getMax(const FixedPointSemantics &Sema) {
   bool IsUnsigned = !Sema.isSigned();
   auto Val = llvm::APSInt::getMaxValue(Sema.getWidth(), IsUnsigned);
-  if (IsUnsigned && Sema.hasUnsignedPadding())
+  if (IsUnsigned && Sema.hasUnsignedPadding()) {
     Val = Val.lshr(1);
+
+}
   return APFixedPoint(Val, Sema);
 }
 
@@ -142,8 +158,10 @@ FixedPointSemantics FixedPointSemantics::getCommonSemantics(
   // If the result is signed, add an extra bit for the sign. Otherwise, if it is
   // unsigned and has unsigned padding, we only need to add the extra padding
   // bit back if we are not saturating.
-  if (ResultIsSigned || ResultHasUnsignedPadding)
+  if (ResultIsSigned || ResultHasUnsignedPadding) {
     CommonWidth++;
+
+}
 
   return FixedPointSemantics(CommonWidth, CommonScale, ResultIsSigned,
                              ResultIsSaturated, ResultHasUnsignedPadding);
@@ -167,8 +185,10 @@ APFixedPoint APFixedPoint::add(const APFixedPoint &Other,
                                 : ThisVal.uadd_ov(OtherVal, Overflowed);
   }
 
-  if (Overflow)
+  if (Overflow) {
     *Overflow = Overflowed;
+
+}
 
   return APFixedPoint(Result, CommonFXSema);
 }
@@ -202,20 +222,26 @@ void APFixedPoint::toString(llvm::SmallVectorImpl<char> &Str) const {
 
 APFixedPoint APFixedPoint::negate(bool *Overflow) const {
   if (!isSaturated()) {
-    if (Overflow)
+    if (Overflow) {
       *Overflow =
           (!isSigned() && Val != 0) || (isSigned() && Val.isMinSignedValue());
+
+}
     return APFixedPoint(-Val, Sema);
   }
 
   // We never overflow for saturation
-  if (Overflow)
+  if (Overflow) {
     *Overflow = false;
 
-  if (isSigned())
+}
+
+  if (isSigned()) {
     return Val.isMinSignedValue() ? getMax(Sema) : APFixedPoint(-Val, Sema);
-  else
+  } else {
     return APFixedPoint(Sema);
+
+}
 }
 
 llvm::APSInt APFixedPoint::convertToInt(unsigned DstWidth, bool DstSign,

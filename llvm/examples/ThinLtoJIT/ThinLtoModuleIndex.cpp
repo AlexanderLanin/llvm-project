@@ -17,13 +17,17 @@ namespace orc {
 
 Error ThinLtoModuleIndex::add(StringRef InputPath) {
   auto Buffer = errorOrToExpected(MemoryBuffer::getFile(InputPath));
-  if (!Buffer)
+  if (!Buffer) {
     return Buffer.takeError();
+
+}
 
   Error ParseErr = readModuleSummaryIndex((*Buffer)->getMemBufferRef(),
                                           CombinedSummaryIndex, NextModuleId);
-  if (ParseErr)
+  if (ParseErr) {
     return ParseErr;
+
+}
 
 #ifndef NDEBUG
   auto Paths = getAllModulePaths();
@@ -54,8 +58,10 @@ std::vector<StringRef> ThinLtoModuleIndex::getAllModulePaths() const {
 GlobalValueSummary *
 ThinLtoModuleIndex::getSummary(GlobalValue::GUID Function) const {
   ValueInfo VI = CombinedSummaryIndex.getValueInfo(Function);
-  if (!VI || VI.getSummaryList().empty())
+  if (!VI || VI.getSummaryList().empty()) {
     return nullptr;
+
+}
 
   // There can be more than one symbol with the same GUID, in the case of same-
   // named locals in different but same-named source files that were compiled in
@@ -74,16 +80,20 @@ ThinLtoModuleIndex::getSummary(GlobalValue::GUID Function) const {
 
 Optional<StringRef>
 ThinLtoModuleIndex::getModulePathForSymbol(StringRef Name) const {
-  if (GlobalValueSummary *S = getSummary(GlobalValue::getGUID(Name)))
+  if (GlobalValueSummary *S = getSummary(GlobalValue::getGUID(Name))) {
     return S->modulePath();
+
+}
   return None; // We don't know the symbol.
 }
 
 void ThinLtoModuleIndex::scheduleModuleParsingPrelocked(StringRef Path) {
   // Once the module was scheduled, we can call takeModule().
   auto ScheduledIt = ScheduledModules.find(Path);
-  if (ScheduledIt != ScheduledModules.end())
+  if (ScheduledIt != ScheduledModules.end()) {
     return;
+
+}
 
   auto Worker = [this](std::string Path) {
     if (auto TSM = doParseModule(Path)) {
@@ -258,9 +268,13 @@ unsigned ThinLtoModuleIndex::getNumDiscoveredModules() const {
   // TODO: It would probably be more efficient to track the number of
   // unscheduled modules.
   unsigned NonNullItems = 0;
-  for (const auto &KV : PathRank)
-    if (KV.second.Count > 0)
+  for (const auto &KV : PathRank) {
+    if (KV.second.Count > 0) {
       ++NonNullItems;
+
+}
+
+}
   return NonNullItems;
 }
 

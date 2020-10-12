@@ -56,8 +56,10 @@ public:
       Val.IsRequested = true;
       return false;
     }
-    if (Arg.getAsInteger(0, Val.Val))
+    if (Arg.getAsInteger(0, Val.Val)) {
       return O.error("'" + Arg + "' value invalid for integer argument!");
+
+}
     Val.HasValue = true;
     Val.IsRequested = true;
     return false;
@@ -227,8 +229,10 @@ static cl::extrahelp
 //===----------------------------------------------------------------------===//
 
 static void error(StringRef Prefix, std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return;
+
+}
   WithColor::error() << Prefix << ": " << EC.message() << "\n";
   exit(1);
 }
@@ -245,34 +249,46 @@ static DIDumpOptions getDumpOpts() {
   DumpOpts.SummarizeTypes = SummarizeTypes;
   DumpOpts.Verbose = Verbose;
   // In -verify mode, print DIEs without children in error messages.
-  if (Verify)
+  if (Verify) {
     return DumpOpts.noImplicitRecursion();
+
+}
   return DumpOpts;
 }
 
 static uint32_t getCPUType(MachOObjectFile &MachO) {
-  if (MachO.is64Bit())
+  if (MachO.is64Bit()) {
     return MachO.getHeader64().cputype;
-  else
+  } else {
     return MachO.getHeader().cputype;
+
+}
 }
 
 /// Return true if the object file has not been filtered by an --arch option.
 static bool filterArch(ObjectFile &Obj) {
-  if (ArchFilters.empty())
+  if (ArchFilters.empty()) {
     return true;
+
+}
 
   if (auto *MachO = dyn_cast<MachOObjectFile>(&Obj)) {
     for (auto Arch : ArchFilters) {
       // Match architecture number.
       unsigned Value;
-      if (!StringRef(Arch).getAsInteger(0, Value))
-        if (Value == getCPUType(*MachO))
+      if (!StringRef(Arch).getAsInteger(0, Value)) {
+        if (Value == getCPUType(*MachO)) {
           return true;
 
+}
+
+}
+
       // Match as name.
-      if (MachO->getArchTriple().getArchName() == Triple(Arch).getArchName())
+      if (MachO->getArchTriple().getArchName() == Triple(Arch).getArchName()) {
         return true;
+
+}
     }
   }
   return false;
@@ -312,23 +328,33 @@ static bool filterByName(const StringSet<> &Names, DWARFDie Die,
 static void filterByName(const StringSet<> &Names,
                          DWARFContext::unit_iterator_range CUs,
                          raw_ostream &OS) {
-  for (const auto &CU : CUs)
+  for (const auto &CU : CUs) {
     for (const auto &Entry : CU->dies()) {
       DWARFDie Die = {CU.get(), &Entry};
-      if (const char *Name = Die.getName(DINameKind::ShortName))
-        if (filterByName(Names, Die, Name, OS))
+      if (const char *Name = Die.getName(DINameKind::ShortName)) {
+        if (filterByName(Names, Die, Name, OS)) {
           continue;
-      if (const char *Name = Die.getName(DINameKind::LinkageName))
+
+}
+
+}
+      if (const char *Name = Die.getName(DINameKind::LinkageName)) {
         filterByName(Names, Die, Name, OS);
+
+}
     }
+
+}
 }
 
 static void getDies(DWARFContext &DICtx, const AppleAcceleratorTable &Accel,
                     StringRef Name, SmallVectorImpl<DWARFDie> &Dies) {
   for (const auto &Entry : Accel.equal_range(Name)) {
     if (llvm::Optional<uint64_t> Off = Entry.getDIESectionOffset()) {
-      if (DWARFDie Die = DICtx.getDIEForOffset(*Off))
+      if (DWARFDie Die = DICtx.getDIEForOffset(*Off)) {
         Dies.push_back(Die);
+
+}
     }
   }
 }
@@ -337,18 +363,24 @@ static DWARFDie toDie(const DWARFDebugNames::Entry &Entry,
                       DWARFContext &DICtx) {
   llvm::Optional<uint64_t> CUOff = Entry.getCUOffset();
   llvm::Optional<uint64_t> Off = Entry.getDIEUnitOffset();
-  if (!CUOff || !Off)
+  if (!CUOff || !Off) {
     return DWARFDie();
 
+}
+
   DWARFCompileUnit *CU = DICtx.getCompileUnitForOffset(*CUOff);
-  if (!CU)
+  if (!CU) {
     return DWARFDie();
+
+}
 
   if (llvm::Optional<uint64_t> DWOId = CU->getDWOId()) {
     // This is a skeleton unit. Look up the DIE in the DWO unit.
     CU = DICtx.getDWOCompileUnitForHash(*DWOId);
-    if (!CU)
+    if (!CU) {
       return DWARFDie();
+
+}
   }
 
   return CU->getDIEForOffset(CU->getOffset() + *Off);
@@ -357,8 +389,10 @@ static DWARFDie toDie(const DWARFDebugNames::Entry &Entry,
 static void getDies(DWARFContext &DICtx, const DWARFDebugNames &Accel,
                     StringRef Name, SmallVectorImpl<DWARFDie> &Dies) {
   for (const auto &Entry : Accel.equal_range(Name)) {
-    if (DWARFDie Die = toDie(Entry, DICtx))
+    if (DWARFDie Die = toDie(Entry, DICtx)) {
       Dies.push_back(Die);
+
+}
   }
 }
 
@@ -375,8 +409,10 @@ static void filterByAccelName(ArrayRef<std::string> Names, DWARFContext &DICtx,
   llvm::sort(Dies);
   Dies.erase(std::unique(Dies.begin(), Dies.end()), Dies.end());
 
-  for (DWARFDie Die : Dies)
+  for (DWARFDie Die : Dies) {
     Die.dump(OS, 0, getDumpOpts());
+
+}
 }
 
 /// Handle the --lookup option and dump the DIEs and line info for the given
@@ -389,23 +425,29 @@ static bool lookup(ObjectFile &Obj, DWARFContext &DICtx, uint64_t Address,
                    raw_ostream &OS) {
   auto DIEsForAddr = DICtx.getDIEsForAddress(Lookup);
 
-  if (!DIEsForAddr)
+  if (!DIEsForAddr) {
     return false;
+
+}
 
   DIDumpOptions DumpOpts = getDumpOpts();
   DumpOpts.ChildRecurseDepth = 0;
   DIEsForAddr.CompileUnit->dump(OS, DumpOpts);
   if (DIEsForAddr.FunctionDIE) {
     DIEsForAddr.FunctionDIE.dump(OS, 2, DumpOpts);
-    if (DIEsForAddr.BlockDIE)
+    if (DIEsForAddr.BlockDIE) {
       DIEsForAddr.BlockDIE.dump(OS, 4, DumpOpts);
+
+}
   }
 
   // TODO: it is neccessary to set proper SectionIndex here.
   // object::SectionedAddress::UndefSection works for only absolute addresses.
   if (DILineInfo LineInfo = DICtx.getLineInfoForAddress(
-          {Lookup, object::SectionedAddress::UndefSection}))
+          {Lookup, object::SectionedAddress::UndefSection})) {
     LineInfo.dump(OS);
+
+}
 
   return true;
 }
@@ -418,18 +460,24 @@ static bool dumpObjectFile(ObjectFile &Obj, DWARFContext &DICtx,
   logAllUnhandledErrors(DICtx.loadRegisterInfo(Obj), errs(),
                         Filename.str() + ": ");
   // The UUID dump already contains all the same information.
-  if (!(DumpType & DIDT_UUID) || DumpType == DIDT_All)
+  if (!(DumpType & DIDT_UUID) || DumpType == DIDT_All) {
     OS << Filename << ":\tfile format " << Obj.getFileFormatName() << '\n';
 
+}
+
   // Handle the --lookup option.
-  if (Lookup)
+  if (Lookup) {
     return lookup(Obj, DICtx, Lookup, OS);
+
+}
 
   // Handle the --name option.
   if (!Name.empty()) {
     StringSet<> Names;
-    for (auto name : Name)
+    for (auto name : Name) {
       Names.insert((IgnoreCase && !UseRegex) ? StringRef(name).lower() : name);
+
+}
 
     filterByName(Names, DICtx.normal_units(), OS);
     filterByName(Names, DICtx.dwo_units(), OS);
@@ -455,10 +503,12 @@ static bool verifyObjectFile(ObjectFile &Obj, DWARFContext &DICtx,
   stream << "Verifying " << Filename.str() << ":\tfile format "
   << Obj.getFileFormatName() << "\n";
   bool Result = DICtx.verify(stream, getDumpOpts());
-  if (Result)
+  if (Result) {
     stream << "No errors.\n";
-  else
+  } else {
     stream << "Errors detected.\n";
+
+}
   return Result;
 }
 
@@ -494,7 +544,7 @@ static bool handleBuffer(StringRef Filename, MemoryBufferRef Buffer,
       Result = HandleObj(*Obj, *DICtx, Filename, OS);
     }
   }
-  else if (auto *Fat = dyn_cast<MachOUniversalBinary>(BinOrErr->get()))
+  else if (auto *Fat = dyn_cast<MachOUniversalBinary>(BinOrErr->get())) {
     for (auto &ObjForArch : Fat->objects()) {
       std::string ObjName =
           (Filename + "(" + ObjForArch.getArchFlagName() + ")").str();
@@ -505,17 +555,23 @@ static bool handleBuffer(StringRef Filename, MemoryBufferRef Buffer,
           Result &= HandleObj(Obj, *DICtx, ObjName, OS);
         }
         continue;
-      } else
+      } else {
         consumeError(MachOOrErr.takeError());
+
+}
       if (auto ArchiveOrErr = ObjForArch.getAsArchive()) {
         error(ObjName, errorToErrorCode(ArchiveOrErr.takeError()));
         Result &= handleArchive(ObjName, *ArchiveOrErr.get(), HandleObj, OS);
         continue;
-      } else
+      } else {
         consumeError(ArchiveOrErr.takeError());
+
+}
     }
-  else if (auto *Arch = dyn_cast<Archive>(BinOrErr->get()))
+  } else if (auto *Arch = dyn_cast<Archive>(BinOrErr->get())) {
     Result = handleArchive(Filename, *Arch, HandleObj, OS);
+
+}
   return Result;
 }
 
@@ -558,8 +614,10 @@ static std::vector<std::string> expandBundle(const std::string &InputPath) {
     }
     error(BundlePath, EC);
   }
-  if (!BundlePaths.size())
+  if (!BundlePaths.size()) {
     BundlePaths.push_back(InputPath);
+
+}
   return BundlePaths;
 }
 
@@ -603,24 +661,34 @@ int main(int argc, char **argv) {
   }
 #include "llvm/BinaryFormat/Dwarf.def"
 #undef HANDLE_DWARF_SECTION
-  if (DumpUUID)
+  if (DumpUUID) {
     DumpType |= DIDT_UUID;
-  if (DumpAll)
+
+}
+  if (DumpAll) {
     DumpType = DIDT_All;
+
+}
   if (DumpType == DIDT_Null) {
-    if (Verbose)
+    if (Verbose) {
       DumpType = DIDT_All;
-    else
+    } else {
       DumpType = DIDT_DebugInfo;
+
+}
   }
 
   // Unless dumping a specific DIE, default to --show-children.
-  if (!ShowChildren && !Verify && !OffsetRequested && Name.empty() && Find.empty())
+  if (!ShowChildren && !Verify && !OffsetRequested && Name.empty() && Find.empty()) {
     ShowChildren = true;
 
+}
+
   // Defaults to a.out if no filenames specified.
-  if (InputFilenames.empty())
+  if (InputFilenames.empty()) {
     InputFilenames.push_back("a.out");
+
+}
 
   // Expand any .dSYM bundles to the individual object files contained therein.
   std::vector<std::string> Objects;
@@ -633,14 +701,22 @@ int main(int argc, char **argv) {
     // If we encountered errors during verify, exit with a non-zero exit status.
     if (!all_of(Objects, [&](std::string Object) {
           return handleFile(Object, verifyObjectFile, OutputFile.os());
-        }))
+        })) {
       return 1;
-  } else if (Statistics)
-    for (auto Object : Objects)
+
+}
+  } else if (Statistics) {
+    for (auto Object : Objects) {
       handleFile(Object, collectStatsForObjectFile, OutputFile.os());
-  else
-    for (auto Object : Objects)
+
+}
+  } else {
+    for (auto Object : Objects) {
       handleFile(Object, dumpObjectFile, OutputFile.os());
+
+}
+
+}
 
   return EXIT_SUCCESS;
 }

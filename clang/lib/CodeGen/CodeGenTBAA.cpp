@@ -46,10 +46,12 @@ llvm::MDNode *CodeGenTBAA::getRoot() {
   // (or a different version of this front-end), their TBAA trees will
   // remain distinct, and the optimizer will treat them conservatively.
   if (!Root) {
-    if (Features.CPlusPlus)
+    if (Features.CPlusPlus) {
       Root = MDHelper.createTBAARoot("Simple C++ TBAA");
-    else
+    } else {
       Root = MDHelper.createTBAARoot("Simple C/C++ TBAA");
+
+}
   }
 
   return Root;
@@ -70,24 +72,32 @@ llvm::MDNode *CodeGenTBAA::getChar() {
   // give special powers to char and certain similar types. However,
   // these special powers only cover user-accessible memory, and doesn't
   // include things like vtables.
-  if (!Char)
+  if (!Char) {
     Char = createScalarTypeNode("omnipotent char", getRoot(), /* Size= */ 1);
+
+}
 
   return Char;
 }
 
 static bool TypeHasMayAlias(QualType QTy) {
   // Tagged types have declarations, and therefore may have attributes.
-  if (auto *TD = QTy->getAsTagDecl())
-    if (TD->hasAttr<MayAliasAttr>())
+  if (auto *TD = QTy->getAsTagDecl()) {
+    if (TD->hasAttr<MayAliasAttr>()) {
       return true;
+
+}
+
+}
 
   // Also look for may_alias as a declaration attribute on a typedef.
   // FIXME: We should follow GCC and model may_alias as a type attribute
   // rather than as a declaration attribute.
   while (auto *TT = QTy->getAs<TypedefType>()) {
-    if (TT->getDecl()->hasAttr<MayAliasAttr>())
+    if (TT->getDecl()->hasAttr<MayAliasAttr>()) {
       return true;
+
+}
     QTy = TT->desugar();
   }
   return false;
@@ -95,19 +105,27 @@ static bool TypeHasMayAlias(QualType QTy) {
 
 /// Check if the given type is a valid base type to be used in access tags.
 static bool isValidBaseType(QualType QTy) {
-  if (QTy->isReferenceType())
+  if (QTy->isReferenceType()) {
     return false;
+
+}
   if (const RecordType *TTy = QTy->getAs<RecordType>()) {
     const RecordDecl *RD = TTy->getDecl()->getDefinition();
     // Incomplete types are not valid base access types.
-    if (!RD)
+    if (!RD) {
       return false;
-    if (RD->hasFlexibleArrayMember())
+
+}
+    if (RD->hasFlexibleArrayMember()) {
       return false;
+
+}
     // RD can be struct, union, class, interface or enum.
     // For now, we only handle struct and class.
-    if (RD->isStruct() || RD->isClass())
+    if (RD->isStruct() || RD->isClass()) {
       return true;
+
+}
   }
   return false;
 }
@@ -152,18 +170,24 @@ llvm::MDNode *CodeGenTBAA::getTypeInfoHelper(const Type *Ty) {
   // C++1z [basic.lval]p10: "If a program attempts to access the stored value of
   // an object through a glvalue of other than one of the following types the
   // behavior is undefined: [...] a char, unsigned char, or std::byte type."
-  if (Ty->isStdByteType())
+  if (Ty->isStdByteType()) {
     return getChar();
+
+}
 
   // Handle pointers and references.
   // TODO: Implement C++'s type "similarity" and consider dis-"similar"
   // pointers distinct.
-  if (Ty->isPointerType() || Ty->isReferenceType())
+  if (Ty->isPointerType() || Ty->isReferenceType()) {
     return createScalarTypeNode("any pointer", getChar(), Size);
 
+}
+
   // Accesses to arrays are accesses to objects of their element types.
-  if (CodeGenOpts.NewStructPathTBAA && Ty->isArrayType())
+  if (CodeGenOpts.NewStructPathTBAA && Ty->isArrayType()) {
     return getTypeInfo(cast<ArrayType>(Ty)->getElementType());
+
+}
 
   // Enum types are distinct types. In C++ they have "underlying types",
   // however they aren't related for TBAA.
@@ -172,8 +196,10 @@ llvm::MDNode *CodeGenTBAA::getTypeInfoHelper(const Type *Ty) {
     // on their mangled names, if they're external.
     // TODO: Is there a way to get a program-wide unique name for a
     // decl with local linkage or no linkage?
-    if (!Features.CPlusPlus || !ETy->getDecl()->isExternallyVisible())
+    if (!Features.CPlusPlus || !ETy->getDecl()->isExternallyVisible()) {
       return getChar();
+
+}
 
     SmallString<256> OutName;
     llvm::raw_svector_ostream Out(OutName);
@@ -187,13 +213,17 @@ llvm::MDNode *CodeGenTBAA::getTypeInfoHelper(const Type *Ty) {
 
 llvm::MDNode *CodeGenTBAA::getTypeInfo(QualType QTy) {
   // At -O0 or relaxed aliasing, TBAA is not emitted for regular types.
-  if (CodeGenOpts.OptimizationLevel == 0 || CodeGenOpts.RelaxedAliasing)
+  if (CodeGenOpts.OptimizationLevel == 0 || CodeGenOpts.RelaxedAliasing) {
     return nullptr;
+
+}
 
   // If the type has the may_alias attribute (even on a typedef), it is
   // effectively in the general char alias class.
-  if (TypeHasMayAlias(QTy))
+  if (TypeHasMayAlias(QTy)) {
     return getChar();
+
+}
 
   // We need this function to not fall back to returning the "omnipotent char"
   // type node for aggregate and union types. Otherwise, any dereference of an
@@ -201,12 +231,16 @@ llvm::MDNode *CodeGenTBAA::getTypeInfo(QualType QTy) {
   // subsequent accesses to direct and indirect members of that aggregate will
   // be considered may-alias too.
   // TODO: Combine getTypeInfo() and getBaseTypeInfo() into a single function.
-  if (isValidBaseType(QTy))
+  if (isValidBaseType(QTy)) {
     return getBaseTypeInfo(QTy);
 
+}
+
   const Type *Ty = Context.getCanonicalType(QTy).getTypePtr();
-  if (llvm::MDNode *N = MetadataCache[Ty])
+  if (llvm::MDNode *N = MetadataCache[Ty]) {
     return N;
+
+}
 
   // Note that the following helper call is allowed to add new nodes to the
   // cache, which invalidates all its previously obtained iterators. So we
@@ -218,11 +252,15 @@ llvm::MDNode *CodeGenTBAA::getTypeInfo(QualType QTy) {
 TBAAAccessInfo CodeGenTBAA::getAccessInfo(QualType AccessType) {
   // Pointee values may have incomplete types, but they shall never be
   // dereferenced.
-  if (AccessType->isIncompleteType())
+  if (AccessType->isIncompleteType()) {
     return TBAAAccessInfo::getIncompleteInfo();
 
-  if (TypeHasMayAlias(AccessType))
+}
+
+  if (TypeHasMayAlias(AccessType)) {
     return TBAAAccessInfo::getMayAliasInfo();
+
+}
 
   uint64_t Size = Context.getTypeSizeInChars(AccessType).getQuantity();
   return TBAAAccessInfo(getTypeInfo(AccessType), Size);
@@ -245,27 +283,37 @@ CodeGenTBAA::CollectFields(uint64_t BaseOffset,
 
   if (const RecordType *TTy = QTy->getAs<RecordType>()) {
     const RecordDecl *RD = TTy->getDecl()->getDefinition();
-    if (RD->hasFlexibleArrayMember())
+    if (RD->hasFlexibleArrayMember()) {
       return false;
 
+}
+
     // TODO: Handle C++ base classes.
-    if (const CXXRecordDecl *Decl = dyn_cast<CXXRecordDecl>(RD))
-      if (Decl->bases_begin() != Decl->bases_end())
+    if (const CXXRecordDecl *Decl = dyn_cast<CXXRecordDecl>(RD)) {
+      if (Decl->bases_begin() != Decl->bases_end()) {
         return false;
+
+}
+
+}
 
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
 
     unsigned idx = 0;
     for (RecordDecl::field_iterator i = RD->field_begin(),
          e = RD->field_end(); i != e; ++i, ++idx) {
-      if ((*i)->isZeroSize(Context) || (*i)->isUnnamedBitfield())
+      if ((*i)->isZeroSize(Context) || (*i)->isUnnamedBitfield()) {
         continue;
+
+}
       uint64_t Offset = BaseOffset +
                         Layout.getFieldOffset(idx) / Context.getCharWidth();
       QualType FieldQTy = i->getType();
       if (!CollectFields(Offset, FieldQTy, Fields,
-                         MayAlias || TypeHasMayAlias(FieldQTy)))
+                         MayAlias || TypeHasMayAlias(FieldQTy))) {
         return false;
+
+}
     }
     return true;
   }
@@ -283,12 +331,16 @@ llvm::MDNode *
 CodeGenTBAA::getTBAAStructInfo(QualType QTy) {
   const Type *Ty = Context.getCanonicalType(QTy).getTypePtr();
 
-  if (llvm::MDNode *N = StructMetadataCache[Ty])
+  if (llvm::MDNode *N = StructMetadataCache[Ty]) {
     return N;
 
+}
+
   SmallVector<llvm::MDBuilder::TBAAStructField, 4> Fields;
-  if (CollectFields(0, QTy, Fields, TypeHasMayAlias(QTy)))
+  if (CollectFields(0, QTy, Fields, TypeHasMayAlias(QTy))) {
     return MDHelper.createTBAAStructNode(Fields);
+
+}
 
   // For now, handle any other kind of type conservatively.
   return StructMetadataCache[Ty] = nullptr;
@@ -300,13 +352,17 @@ llvm::MDNode *CodeGenTBAA::getBaseTypeInfoHelper(const Type *Ty) {
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
     SmallVector<llvm::MDBuilder::TBAAStructField, 4> Fields;
     for (FieldDecl *Field : RD->fields()) {
-      if (Field->isZeroSize(Context) || Field->isUnnamedBitfield())
+      if (Field->isZeroSize(Context) || Field->isUnnamedBitfield()) {
         continue;
+
+}
       QualType FieldQTy = Field->getType();
       llvm::MDNode *TypeNode = isValidBaseType(FieldQTy) ?
           getBaseTypeInfo(FieldQTy) : getTypeInfo(FieldQTy);
-      if (!TypeNode)
+      if (!TypeNode) {
         return BaseTypeMetadataCache[Ty] = nullptr;
+
+}
 
       uint64_t BitOffset = Layout.getFieldOffset(Field->getFieldIndex());
       uint64_t Offset = Context.toCharUnitsFromBits(BitOffset).getQuantity();
@@ -333,8 +389,10 @@ llvm::MDNode *CodeGenTBAA::getBaseTypeInfoHelper(const Type *Ty) {
 
     // Create the struct type node with a vector of pairs (offset, type).
     SmallVector<std::pair<llvm::MDNode*, uint64_t>, 4> OffsetsAndTypes;
-    for (const auto &Field : Fields)
+    for (const auto &Field : Fields) {
         OffsetsAndTypes.push_back(std::make_pair(Field.Type, Field.Offset));
+
+}
     return MDHelper.createTBAAStructTypeNode(OutName, OffsetsAndTypes);
   }
 
@@ -342,12 +400,16 @@ llvm::MDNode *CodeGenTBAA::getBaseTypeInfoHelper(const Type *Ty) {
 }
 
 llvm::MDNode *CodeGenTBAA::getBaseTypeInfo(QualType QTy) {
-  if (!isValidBaseType(QTy))
+  if (!isValidBaseType(QTy)) {
     return nullptr;
 
+}
+
   const Type *Ty = Context.getCanonicalType(QTy).getTypePtr();
-  if (llvm::MDNode *N = BaseTypeMetadataCache[Ty])
+  if (llvm::MDNode *N = BaseTypeMetadataCache[Ty]) {
     return N;
+
+}
 
   // Note that the following helper call is allowed to add new nodes to the
   // cache, which invalidates all its previously obtained iterators. So we
@@ -359,18 +421,26 @@ llvm::MDNode *CodeGenTBAA::getBaseTypeInfo(QualType QTy) {
 llvm::MDNode *CodeGenTBAA::getAccessTagInfo(TBAAAccessInfo Info) {
   assert(!Info.isIncomplete() && "Access to an object of an incomplete type!");
 
-  if (Info.isMayAlias())
+  if (Info.isMayAlias()) {
     Info = TBAAAccessInfo(getChar(), Info.Size);
 
-  if (!Info.AccessType)
+}
+
+  if (!Info.AccessType) {
     return nullptr;
 
-  if (!CodeGenOpts.StructPathTBAA)
+}
+
+  if (!CodeGenOpts.StructPathTBAA) {
     Info = TBAAAccessInfo(Info.AccessType, Info.Size);
 
+}
+
   llvm::MDNode *&N = AccessTagMetadataCache[Info];
-  if (N)
+  if (N) {
     return N;
+
+}
 
   if (!Info.BaseType) {
     Info.BaseType = Info.AccessType;
@@ -386,22 +456,30 @@ llvm::MDNode *CodeGenTBAA::getAccessTagInfo(TBAAAccessInfo Info) {
 
 TBAAAccessInfo CodeGenTBAA::mergeTBAAInfoForCast(TBAAAccessInfo SourceInfo,
                                                  TBAAAccessInfo TargetInfo) {
-  if (SourceInfo.isMayAlias() || TargetInfo.isMayAlias())
+  if (SourceInfo.isMayAlias() || TargetInfo.isMayAlias()) {
     return TBAAAccessInfo::getMayAliasInfo();
+
+}
   return TargetInfo;
 }
 
 TBAAAccessInfo
 CodeGenTBAA::mergeTBAAInfoForConditionalOperator(TBAAAccessInfo InfoA,
                                                  TBAAAccessInfo InfoB) {
-  if (InfoA == InfoB)
+  if (InfoA == InfoB) {
     return InfoA;
 
-  if (!InfoA || !InfoB)
+}
+
+  if (!InfoA || !InfoB) {
     return TBAAAccessInfo();
 
-  if (InfoA.isMayAlias() || InfoB.isMayAlias())
+}
+
+  if (InfoA.isMayAlias() || InfoB.isMayAlias()) {
     return TBAAAccessInfo::getMayAliasInfo();
+
+}
 
   // TODO: Implement the rest of the logic here. For example, two accesses
   // with same final access types result in an access to an object of that final
@@ -412,14 +490,20 @@ CodeGenTBAA::mergeTBAAInfoForConditionalOperator(TBAAAccessInfo InfoA,
 TBAAAccessInfo
 CodeGenTBAA::mergeTBAAInfoForMemoryTransfer(TBAAAccessInfo DestInfo,
                                             TBAAAccessInfo SrcInfo) {
-  if (DestInfo == SrcInfo)
+  if (DestInfo == SrcInfo) {
     return DestInfo;
 
-  if (!DestInfo || !SrcInfo)
+}
+
+  if (!DestInfo || !SrcInfo) {
     return TBAAAccessInfo();
 
-  if (DestInfo.isMayAlias() || SrcInfo.isMayAlias())
+}
+
+  if (DestInfo.isMayAlias() || SrcInfo.isMayAlias()) {
     return TBAAAccessInfo::getMayAliasInfo();
+
+}
 
   // TODO: Implement the rest of the logic here. For example, two accesses
   // with same final access types result in an access to an object of that final

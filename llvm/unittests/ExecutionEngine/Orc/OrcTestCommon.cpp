@@ -24,6 +24,8 @@ bool OrcNativeTarget::NativeTargetInitialized = false;
 ModuleBuilder::ModuleBuilder(LLVMContext &Context, StringRef Triple,
                              StringRef Name)
   : M(new Module(Name, Context)) {
-  if (Triple != "")
+  if (Triple != "") {
     M->setTargetTriple(Triple);
+
+}
 }

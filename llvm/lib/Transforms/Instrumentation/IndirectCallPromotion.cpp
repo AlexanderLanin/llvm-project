@@ -319,13 +319,15 @@ Instruction *llvm::pgo::promoteIndirectCall(Instruction *Inst,
 
   using namespace ore;
 
-  if (ORE)
+  if (ORE) {
     ORE->emit([&]() {
       return OptimizationRemark(DEBUG_TYPE, "Promoted", Inst)
              << "Promote indirect call to " << NV("DirectCallee", DirectCallee)
              << " with count " << NV("Count", Count) << " out of "
              << NV("TotalCount", TotalCount);
     });
+
+}
   return NewInst;
 }
 
@@ -358,20 +360,26 @@ bool ICallPromotionFunc::processFunction(ProfileSummaryInfo *PSI) {
     auto ICallProfDataRef = ICallAnalysis.getPromotionCandidatesForInstruction(
         I, NumVals, TotalCount, NumCandidates);
     if (!NumCandidates ||
-        (PSI && PSI->hasProfileSummary() && !PSI->isHotCount(TotalCount)))
+        (PSI && PSI->hasProfileSummary() && !PSI->isHotCount(TotalCount))) {
       continue;
+
+}
     auto PromotionCandidates = getPromotionCandidatesForCallSite(
         I, ICallProfDataRef, TotalCount, NumCandidates);
     uint32_t NumPromoted = tryToPromote(I, PromotionCandidates, TotalCount);
-    if (NumPromoted == 0)
+    if (NumPromoted == 0) {
       continue;
+
+}
 
     Changed = true;
     // Adjust the MD.prof metadata. First delete the old one.
     I->setMetadata(LLVMContext::MD_prof, nullptr);
     // If all promoted, we don't need the MD.prof metadata.
-    if (TotalCount == 0 || NumPromoted == NumVals)
+    if (TotalCount == 0 || NumPromoted == NumVals) {
       continue;
+
+}
     // Otherwise we need update with the un-promoted records back.
     annotateValueSite(*M, *I, ICallProfDataRef.slice(NumPromoted), TotalCount,
                       IPVK_IndirectCallTarget, NumCandidates);
@@ -383,8 +391,10 @@ bool ICallPromotionFunc::processFunction(ProfileSummaryInfo *PSI) {
 static bool promoteIndirectCalls(Module &M, ProfileSummaryInfo *PSI,
                                  bool InLTO, bool SamplePGO,
                                  ModuleAnalysisManager *AM = nullptr) {
-  if (DisableICP)
+  if (DisableICP) {
     return false;
+
+}
   InstrProfSymtab Symtab;
   if (Error E = Symtab.create(M, InLTO)) {
     std::string SymtabFailure = toString(std::move(E));
@@ -394,8 +404,10 @@ static bool promoteIndirectCalls(Module &M, ProfileSummaryInfo *PSI,
   }
   bool Changed = false;
   for (auto &F : M) {
-    if (F.isDeclaration() || F.hasOptNone())
+    if (F.isDeclaration() || F.hasOptNone()) {
       continue;
+
+}
 
     std::unique_ptr<OptimizationRemarkEmitter> OwnedORE;
     OptimizationRemarkEmitter *ORE;
@@ -437,8 +449,10 @@ PreservedAnalyses PGOIndirectCallPromotion::run(Module &M,
   ProfileSummaryInfo *PSI = &AM.getResult<ProfileSummaryAnalysis>(M);
 
   if (!promoteIndirectCalls(M, PSI, InLTO | ICPLTOMode,
-                            SamplePGO | ICPSamplePGOMode, &AM))
+                            SamplePGO | ICPSamplePGOMode, &AM)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }

@@ -137,8 +137,10 @@ struct LLVMDisDiagnosticHandler : public DiagnosticHandler {
     DI.print(DP);
     OS << '\n';
 
-    if (DI.getSeverity() == DS_Error)
+    if (DI.getSeverity() == DS_Error) {
       exit(1);
+
+}
     return true;
   }
 };
@@ -163,28 +165,36 @@ int main(int argc, char **argv) {
 
   const size_t N = IF.Mods.size();
 
-  if (OutputFilename == "-" && N > 1)
+  if (OutputFilename == "-" && N > 1) {
       errs() << "only single module bitcode files can be written to stdout\n";
+
+}
 
   for (size_t i = 0; i < N; ++i) {
     BitcodeModule MB = IF.Mods[i];
     std::unique_ptr<Module> M = ExitOnErr(MB.getLazyModule(Context, MaterializeMetadata,
                                           SetImporting));
-    if (MaterializeMetadata)
+    if (MaterializeMetadata) {
       ExitOnErr(M->materializeMetadata());
-    else
+    } else {
       ExitOnErr(M->materializeAll());
+
+}
 
     BitcodeLTOInfo LTOInfo = ExitOnErr(MB.getLTOInfo());
     std::unique_ptr<ModuleSummaryIndex> Index;
-    if (LTOInfo.HasSummary)
+    if (LTOInfo.HasSummary) {
       Index = ExitOnErr(MB.getSummary());
+
+}
 
     std::string FinalFilename(OutputFilename);
 
     // Just use stdout.  We won't actually print anything on it.
-    if (DontPrint)
+    if (DontPrint) {
       FinalFilename = "-";
+
+}
 
     if (FinalFilename.empty()) { // Unspecified output, infer it.
       if (InputFilename == "-") {
@@ -192,13 +202,17 @@ int main(int argc, char **argv) {
       } else {
         StringRef IFN = InputFilename;
         FinalFilename = (IFN.endswith(".bc") ? IFN.drop_back(3) : IFN).str();
-        if (N > 1)
+        if (N > 1) {
           FinalFilename += std::string(".") + std::to_string(i);
+
+}
         FinalFilename += ".ll";
       }
     } else {
-      if (N > 1)
+      if (N > 1) {
         FinalFilename += std::string(".") + std::to_string(i);
+
+}
     }
 
     std::error_code EC;
@@ -210,14 +224,18 @@ int main(int argc, char **argv) {
     }
 
     std::unique_ptr<AssemblyAnnotationWriter> Annotator;
-    if (ShowAnnotations)
+    if (ShowAnnotations) {
       Annotator.reset(new CommentWriter());
+
+}
 
     // All that llvm-dis does is write the assembly to a file.
     if (!DontPrint) {
       M->print(Out->os(), Annotator.get(), PreserveAssemblyUseListOrder);
-      if (Index)
+      if (Index) {
         Index->print(Out->os());
+
+}
     }
 
     // Declare success.

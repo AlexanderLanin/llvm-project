@@ -45,8 +45,10 @@ LLVMContextImpl::~LLVMContextImpl() {
   // NOTE: We need to delete the contents of OwnedModules, but Module's dtor
   // will call LLVMContextImpl::removeModule, thus invalidating iterators into
   // the container. Avoid iterators during this operation:
-  while (!OwnedModules.empty())
+  while (!OwnedModules.empty()) {
     delete *OwnedModules.begin();
+
+}
 
 #ifndef NDEBUG
   // Check for metadata references from leaked Instructions.
@@ -58,36 +60,52 @@ LLVMContextImpl::~LLVMContextImpl() {
 
   // Drop references for MDNodes.  Do this before Values get deleted to avoid
   // unnecessary RAUW when nodes are still unresolved.
-  for (auto *I : DistinctMDNodes)
+  for (auto *I : DistinctMDNodes) {
     I->dropAllReferences();
+
+}
 #define HANDLE_MDNODE_LEAF_UNIQUABLE(CLASS)                                    \
   for (auto *I : CLASS##s)                                                     \
     I->dropAllReferences();
 #include "llvm/IR/Metadata.def"
 
   // Also drop references that come from the Value bridges.
-  for (auto &Pair : ValuesAsMetadata)
+  for (auto &Pair : ValuesAsMetadata) {
     Pair.second->dropUsers();
-  for (auto &Pair : MetadataAsValues)
+
+}
+  for (auto &Pair : MetadataAsValues) {
     Pair.second->dropUse();
 
+}
+
   // Destroy MDNodes.
-  for (MDNode *I : DistinctMDNodes)
+  for (MDNode *I : DistinctMDNodes) {
     I->deleteAsSubclass();
+
+}
 #define HANDLE_MDNODE_LEAF_UNIQUABLE(CLASS)                                    \
   for (CLASS * I : CLASS##s)                                                   \
     delete I;
 #include "llvm/IR/Metadata.def"
 
   // Free the constants.
-  for (auto *I : ExprConstants)
+  for (auto *I : ExprConstants) {
     I->dropAllReferences();
-  for (auto *I : ArrayConstants)
+
+}
+  for (auto *I : ArrayConstants) {
     I->dropAllReferences();
-  for (auto *I : StructConstants)
+
+}
+  for (auto *I : StructConstants) {
     I->dropAllReferences();
-  for (auto *I : VectorConstants)
+
+}
+  for (auto *I : VectorConstants) {
     I->dropAllReferences();
+
+}
   ExprConstants.freeConstants();
   ArrayConstants.freeConstants();
   StructConstants.freeConstants();
@@ -100,8 +118,10 @@ LLVMContextImpl::~LLVMContextImpl() {
   IntConstants.clear();
   FPConstants.clear();
 
-  for (auto &CDSConstant : CDSConstants)
+  for (auto &CDSConstant : CDSConstants) {
     delete CDSConstant.second;
+
+}
   CDSConstants.clear();
 
   // Destroy attributes.
@@ -130,16 +150,22 @@ LLVMContextImpl::~LLVMContextImpl() {
   {
     SmallVector<MetadataAsValue *, 8> MDVs;
     MDVs.reserve(MetadataAsValues.size());
-    for (auto &Pair : MetadataAsValues)
+    for (auto &Pair : MetadataAsValues) {
       MDVs.push_back(Pair.second);
+
+}
     MetadataAsValues.clear();
-    for (auto *V : MDVs)
+    for (auto *V : MDVs) {
       delete V;
+
+}
   }
 
   // Destroy ValuesAsMetadata.
-  for (auto &Pair : ValuesAsMetadata)
+  for (auto &Pair : ValuesAsMetadata) {
     delete Pair.second;
+
+}
 }
 
 void LLVMContextImpl::dropTriviallyDeadConstantArrays() {
@@ -150,8 +176,10 @@ void LLVMContextImpl::dropTriviallyDeadConstantArrays() {
     ConstantArray *C = WorkList.pop_back_val();
     if (C->use_empty()) {
       for (const Use &Op : C->operands()) {
-        if (auto *COp = dyn_cast<ConstantArray>(Op))
+        if (auto *COp = dyn_cast<ConstantArray>(Op)) {
           WorkList.insert(COp);
+
+}
       }
       C->destroyConstant();
     }
@@ -205,8 +233,10 @@ StringMapEntry<uint32_t> *LLVMContextImpl::getOrInsertBundleTag(StringRef Tag) {
 
 void LLVMContextImpl::getOperandBundleTags(SmallVectorImpl<StringRef> &Tags) const {
   Tags.resize(BundleTagCache.size());
-  for (const auto &T : BundleTagCache)
+  for (const auto &T : BundleTagCache) {
     Tags[T.second] = T.first();
+
+}
 }
 
 uint32_t LLVMContextImpl::getOperandBundleTagID(StringRef Tag) const {
@@ -225,8 +255,10 @@ SyncScope::ID LLVMContextImpl::getOrInsertSyncScopeID(StringRef SSN) {
 void LLVMContextImpl::getSyncScopeNames(
     SmallVectorImpl<StringRef> &SSNs) const {
   SSNs.resize(SSC.size());
-  for (const auto &SSE : SSC)
+  for (const auto &SSE : SSC) {
     SSNs[SSE.second] = SSE.first();
+
+}
 }
 
 /// Singleton instance of the OptBisect class.
@@ -243,8 +275,10 @@ void LLVMContextImpl::getSyncScopeNames(
 static ManagedStatic<OptBisect> OptBisector;
 
 OptPassGate &LLVMContextImpl::getOptPassGate() const {
-  if (!OPG)
+  if (!OPG) {
     OPG = &(*OptBisector);
+
+}
   return *OPG;
 }
 

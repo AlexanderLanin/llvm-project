@@ -32,13 +32,17 @@ Error DebugSubsectionRecord::initialize(BinaryStreamRef Stream,
                                         CodeViewContainer Container) {
   const DebugSubsectionHeader *Header;
   BinaryStreamReader Reader(Stream);
-  if (auto EC = Reader.readObject(Header))
+  if (auto EC = Reader.readObject(Header)) {
     return EC;
+
+}
 
   DebugSubsectionKind Kind =
       static_cast<DebugSubsectionKind>(uint32_t(Header->Kind));
-  if (auto EC = Reader.readStreamRef(Info.Data, Header->Length))
+  if (auto EC = Reader.readStreamRef(Info.Data, Header->Length)) {
     return EC;
+
+}
   Info.Container = Container;
   Info.Kind = Kind;
   return Error::success();
@@ -80,17 +84,25 @@ Error DebugSubsectionRecordBuilder::commit(BinaryStreamWriter &Writer) const {
                                  : Contents.getRecordData().getLength();
   Header.Length = alignTo(DataSize, alignOf(Container));
 
-  if (auto EC = Writer.writeObject(Header))
+  if (auto EC = Writer.writeObject(Header)) {
     return EC;
+
+}
   if (Subsection) {
-    if (auto EC = Subsection->commit(Writer))
+    if (auto EC = Subsection->commit(Writer)) {
       return EC;
+
+}
   } else {
-    if (auto EC = Writer.writeStreamRef(Contents.getRecordData()))
+    if (auto EC = Writer.writeStreamRef(Contents.getRecordData())) {
       return EC;
+
+}
   }
-  if (auto EC = Writer.padToAlignment(4))
+  if (auto EC = Writer.padToAlignment(4)) {
     return EC;
+
+}
 
   return Error::success();
 }

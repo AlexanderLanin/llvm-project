@@ -88,8 +88,10 @@ AVRToolChain::AVRToolChain(const Driver &D, const llvm::Triple &Triple,
       }
     }
 
-    if (!LinkStdlib)
+    if (!LinkStdlib) {
       D.Diag(diag::warn_drv_avr_stdlib_not_linked);
+
+}
   }
 }
 
@@ -151,8 +153,10 @@ void AVR::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 llvm::Optional<std::string> AVRToolChain::findAVRLibcInstallation() const {
   for (StringRef PossiblePath : PossibleAVRLibcLocations) {
     // Return the first avr-libc installation that exists.
-    if (llvm::sys::fs::is_directory(PossiblePath))
+    if (llvm::sys::fs::is_directory(PossiblePath)) {
       return Optional<std::string>(std::string(PossiblePath));
+
+}
   }
 
   return llvm::None;

@@ -52,8 +52,10 @@ static std::string mangleTLIName(StringRef VectorName, const CallInst &CI,
   SmallString<256> Buffer;
   llvm::raw_svector_ostream Out(Buffer);
   Out << "_ZGV" << VFABI::_LLVM_ << "N" << VF;
-  for (unsigned I = 0; I < CI.getNumArgOperands(); ++I)
+  for (unsigned I = 0; I < CI.getNumArgOperands(); ++I) {
     Out << "v";
+
+}
   Out << "_" << CI.getCalledFunction()->getName() << "(" << VectorName << ")";
   return std::string(Out.str());
 }
@@ -70,8 +72,10 @@ static void addVariantDeclaration(CallInst &CI, const unsigned VF,
   // Add function declaration.
   Type *RetTy = ToVectorTy(CI.getType(), VF);
   SmallVector<Type *, 4> Tys;
-  for (Value *ArgOperand : CI.arg_operands())
+  for (Value *ArgOperand : CI.arg_operands()) {
     Tys.push_back(ToVectorTy(ArgOperand->getType(), VF));
+
+}
   assert(!CI.getFunctionType()->isVarArg() &&
          "VarArg functions are not supported.");
   FunctionType *FTy = FunctionType::get(RetTy, Tys, /*isVarArg=*/false);
@@ -98,14 +102,18 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
   // bitcast (i32 (...)* @goo to i32 (i32*, ...)*)(i32* nonnull %i)`,
   // as such calls make the `isFunctionVectorizable` raise an
   // exception.
-  if (CI.isNoBuiltin() || !CI.getCalledFunction())
+  if (CI.isNoBuiltin() || !CI.getCalledFunction()) {
     return;
+
+}
 
   const std::string ScalarName = std::string(CI.getCalledFunction()->getName());
   // Nothing to be done if the TLI thinks the function is not
   // vectorizable.
-  if (!TLI.isFunctionVectorizable(ScalarName))
+  if (!TLI.isFunctionVectorizable(ScalarName)) {
     return;
+
+}
   SmallVector<std::string, 8> Mappings;
   VFABI::getVectorVariantNames(CI, Mappings);
   Module *M = CI.getModule();
@@ -123,8 +131,10 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
         ++NumCallInjected;
       }
       Function *VariantF = M->getFunction(TLIName);
-      if (!VariantF)
+      if (!VariantF) {
         addVariantDeclaration(CI, VF, TLIName);
+
+}
     }
   }
 
@@ -132,9 +142,13 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
 }
 
 static bool runImpl(const TargetLibraryInfo &TLI, Function &F) {
-  for (auto &I : instructions(F))
-    if (auto CI = dyn_cast<CallInst>(&I))
+  for (auto &I : instructions(F)) {
+    if (auto CI = dyn_cast<CallInst>(&I)) {
       addMappingsFromTLI(TLI, *CI);
+
+}
+
+}
   // Even if the pass adds IR attributes, the analyses are preserved.
   return false;
 }

@@ -81,13 +81,17 @@ class TestImportBase : public CompilerOptionSpecificTest,
                          FromAST->getFileManager(), false);
 
     auto FoundNodes = match(SearchMatcher, FromCtx);
-    if (FoundNodes.size() != 1)
+    if (FoundNodes.size() != 1) {
       return testing::AssertionFailure()
              << "Multiple potential nodes were found!";
 
+}
+
     auto ToImport = selectFirst<NodeType>(DeclToImportID, FoundNodes);
-    if (!ToImport)
+    if (!ToImport) {
       return testing::AssertionFailure() << "Node type mismatch!";
+
+}
 
     // Sanity check: the node being imported should match in the same way as
     // the result node.
@@ -215,10 +219,12 @@ public:
 
       // Create a new importer if needed.
       std::unique_ptr<ASTImporter> &ImporterRef = Importers[{From, To}];
-      if (!ImporterRef)
+      if (!ImporterRef) {
         ImporterRef.reset(new ASTImporter(
             To->getASTContext(), To->getFileManager(), From->getASTContext(),
             From->getFileManager(), false));
+
+}
 
       // Find the declaration and import it.
       auto FoundDecl = match(Action.ImportPredicate.bind(DeclToImportID),
@@ -227,8 +233,10 @@ public:
       const Decl *ToImport = selectFirst<Decl>(DeclToImportID, FoundDecl);
       auto Imported = importNode(From, To, *ImporterRef, ToImport);
       EXPECT_TRUE(static_cast<bool>(Imported));
-      if (!Imported)
+      if (!Imported) {
         llvm::consumeError(Imported.takeError());
+
+}
     }
 
     // Find the declaration and import it.
@@ -304,14 +312,18 @@ struct RedirectingImporter : public ASTImporter {
 protected:
   llvm::Expected<Decl *> ImportImpl(Decl *FromD) override {
     auto *ND = dyn_cast<NamedDecl>(FromD);
-    if (!ND || ND->getName() != "shouldNotBeImported")
+    if (!ND || ND->getName() != "shouldNotBeImported") {
       return ASTImporter::ImportImpl(FromD);
+
+}
     for (Decl *D : getToContext().getTranslationUnitDecl()->decls()) {
-      if (auto *ND = dyn_cast<NamedDecl>(D))
+      if (auto *ND = dyn_cast<NamedDecl>(D)) {
         if (ND->getName() == "realDecl") {
           RegisterImportedDecl(FromD, ND);
           return ND;
         }
+
+}
     }
     return ASTImporter::ImportImpl(FromD);
   }
@@ -1431,10 +1443,14 @@ AST_MATCHER_P(RecordDecl, hasFieldOrder, std::vector<StringRef>, Order) {
   for (Decl *D : Node.decls()) {
     if (isa<FieldDecl>(D) || isa<IndirectFieldDecl>(D)) {
       auto *ND = cast<NamedDecl>(D);
-      if (Index == Order.size())
+      if (Index == Order.size()) {
         return false;
-      if (ND->getName() != Order[Index])
+
+}
+      if (ND->getName() != Order[Index]) {
         return false;
+
+}
       ++Index;
     }
   }
@@ -2885,8 +2901,10 @@ TEST_P(ImportFriendFunctions, ImportFriendList) {
 
 AST_MATCHER_P(TagDecl, hasTypedefForAnonDecl, Matcher<TypedefNameDecl>,
               InnerMatcher) {
-  if (auto *Typedef = Node.getTypedefNameForAnonDecl())
+  if (auto *Typedef = Node.getTypedefNameForAnonDecl()) {
     return InnerMatcher.matches(*Typedef, Finder, Builder);
+
+}
   return false;
 }
 
@@ -4327,9 +4345,13 @@ TEST_P(ASTImporterLookupTableTest, OneDecl) {
 
 static Decl *findInDeclListOfDC(DeclContext *DC, DeclarationName Name) {
   for (Decl *D : DC->decls()) {
-    if (auto *ND = dyn_cast<NamedDecl>(D))
-      if (ND->getDeclName() == Name)
+    if (auto *ND = dyn_cast<NamedDecl>(D)) {
+      if (ND->getDeclName() == Name) {
         return ND;
+
+}
+
+}
   }
   return nullptr;
 }

@@ -35,8 +35,10 @@ using namespace clang;
 static bool isDispatchBlock(QualType Ty) {
   // Is it a block pointer?
   const BlockPointerType *BPT = Ty->getAs<BlockPointerType>();
-  if (!BPT)
+  if (!BPT) {
     return false;
+
+}
 
   // Check if the block pointer type takes no arguments and
   // returns void.
@@ -175,8 +177,10 @@ ImplicitCastExpr *ASTMaker::makeImplicitCast(const Expr *Arg, QualType Ty,
 }
 
 Expr *ASTMaker::makeIntegralCast(const Expr *Arg, QualType Ty) {
-  if (Arg->getType() == Ty)
+  if (Arg->getType() == Ty) {
     return const_cast<Expr*>(Arg);
+
+}
 
   return ImplicitCastExpr::Create(C, Ty, CK_IntegralCast,
                                   const_cast<Expr*>(Arg), nullptr, VK_RValue);
@@ -233,9 +237,13 @@ ValueDecl *ASTMaker::findMemberField(const RecordDecl *RD, StringRef Name) {
   DeclarationName DeclName = C.DeclarationNames.getIdentifier(&II);
 
   DeclContextLookupResult Decls = RD->lookup(DeclName);
-  for (NamedDecl *FoundDecl : Decls)
-    if (!FoundDecl->getDeclContext()->isFunctionOrMethod())
+  for (NamedDecl *FoundDecl : Decls) {
+    if (!FoundDecl->getDeclContext()->isFunctionOrMethod()) {
       return cast<ValueDecl>(FoundDecl);
+
+}
+
+}
 
   return nullptr;
 }
@@ -318,8 +326,10 @@ static Stmt *create_call_once(ASTContext &C, const FunctionDecl *D) {
   LLVM_DEBUG(llvm::dbgs() << "Generating body for call_once\n");
 
   // We need at least two parameters.
-  if (D->param_size() < 2)
+  if (D->param_size() < 2) {
     return nullptr;
+
+}
 
   ASTMaker M(C);
 
@@ -392,8 +402,10 @@ static Stmt *create_call_once(ASTContext &C, const FunctionDecl *D) {
     CallbackFunctionType = CallbackType->getAs<FunctionProtoType>();
   }
 
-  if (!CallbackFunctionType)
+  if (!CallbackFunctionType) {
     return nullptr;
+
+}
 
   // First two arguments are used for the flag and for the callback.
   if (D->getNumParams() != CallbackFunctionType->getNumParams() + 2) {
@@ -476,24 +488,32 @@ static Stmt *create_call_once(ASTContext &C, const FunctionDecl *D) {
 /// Create a fake body for dispatch_once.
 static Stmt *create_dispatch_once(ASTContext &C, const FunctionDecl *D) {
   // Check if we have at least two parameters.
-  if (D->param_size() != 2)
+  if (D->param_size() != 2) {
     return nullptr;
+
+}
 
   // Check if the first parameter is a pointer to integer type.
   const ParmVarDecl *Predicate = D->getParamDecl(0);
   QualType PredicateQPtrTy = Predicate->getType();
   const PointerType *PredicatePtrTy = PredicateQPtrTy->getAs<PointerType>();
-  if (!PredicatePtrTy)
+  if (!PredicatePtrTy) {
     return nullptr;
+
+}
   QualType PredicateTy = PredicatePtrTy->getPointeeType();
-  if (!PredicateTy->isIntegerType())
+  if (!PredicateTy->isIntegerType()) {
     return nullptr;
+
+}
 
   // Check if the second parameter is the proper block type.
   const ParmVarDecl *Block = D->getParamDecl(1);
   QualType Ty = Block->getType();
-  if (!isDispatchBlock(Ty))
+  if (!isDispatchBlock(Ty)) {
     return nullptr;
+
+}
 
   // Everything checks out.  Create a fakse body that checks the predicate,
   // sets it, and calls the block.  Basically, an AST dump of:
@@ -559,14 +579,18 @@ static Stmt *create_dispatch_once(ASTContext &C, const FunctionDecl *D) {
 /// Create a fake body for dispatch_sync.
 static Stmt *create_dispatch_sync(ASTContext &C, const FunctionDecl *D) {
   // Check if we have at least two parameters.
-  if (D->param_size() != 2)
+  if (D->param_size() != 2) {
     return nullptr;
+
+}
 
   // Check if the second parameter is a block.
   const ParmVarDecl *PV = D->getParamDecl(1);
   QualType Ty = PV->getType();
-  if (!isDispatchBlock(Ty))
+  if (!isDispatchBlock(Ty)) {
     return nullptr;
+
+}
 
   // Everything checks out.  Create a fake body that just calls the block.
   // This is basically just an AST dump of:
@@ -586,8 +610,10 @@ static Stmt *create_dispatch_sync(ASTContext &C, const FunctionDecl *D) {
 static Stmt *create_OSAtomicCompareAndSwap(ASTContext &C, const FunctionDecl *D)
 {
   // There are exactly 3 arguments.
-  if (D->param_size() != 3)
+  if (D->param_size() != 3) {
     return nullptr;
+
+}
 
   // Signature:
   // _Bool OSAtomicCompareAndSwapPtr(void *__oldValue,
@@ -602,8 +628,10 @@ static Stmt *create_OSAtomicCompareAndSwap(ASTContext &C, const FunctionDecl *D)
 
   QualType ResultTy = D->getReturnType();
   bool isBoolean = ResultTy->isBooleanType();
-  if (!isBoolean && !ResultTy->isIntegralType(C))
+  if (!isBoolean && !ResultTy->isIntegralType(C)) {
     return nullptr;
+
+}
 
   const ParmVarDecl *OldValue = D->getParamDecl(0);
   QualType OldValueTy = OldValue->getType();
@@ -616,8 +644,10 @@ static Stmt *create_OSAtomicCompareAndSwap(ASTContext &C, const FunctionDecl *D)
   const ParmVarDecl *TheValue = D->getParamDecl(2);
   QualType TheValueTy = TheValue->getType();
   const PointerType *PT = TheValueTy->getAs<PointerType>();
-  if (!PT)
+  if (!PT) {
     return nullptr;
+
+}
   QualType PointeeTy = PT->getPointeeType();
 
   ASTMaker M(C);
@@ -666,17 +696,23 @@ static Stmt *create_OSAtomicCompareAndSwap(ASTContext &C, const FunctionDecl *D)
 
 Stmt *BodyFarm::getBody(const FunctionDecl *D) {
   Optional<Stmt *> &Val = Bodies[D];
-  if (Val.hasValue())
+  if (Val.hasValue()) {
     return Val.getValue();
+
+}
 
   Val = nullptr;
 
-  if (D->getIdentifier() == nullptr)
+  if (D->getIdentifier() == nullptr) {
     return nullptr;
 
+}
+
   StringRef Name = D->getName();
-  if (Name.empty())
+  if (Name.empty()) {
     return nullptr;
+
+}
 
   FunctionFarmer FF;
 
@@ -700,8 +736,10 @@ Stmt *BodyFarm::getBody(const FunctionDecl *D) {
 static const ObjCIvarDecl *findBackingIvar(const ObjCPropertyDecl *Prop) {
   const ObjCIvarDecl *IVar = Prop->getPropertyIvarDecl();
 
-  if (IVar)
+  if (IVar) {
     return IVar;
+
+}
 
   // When a readonly property is shadowed in a class extensions with a
   // a readwrite property, the instance variable belongs to the shadowing
@@ -709,8 +747,10 @@ static const ObjCIvarDecl *findBackingIvar(const ObjCPropertyDecl *Prop) {
   // variable on a readonly property, check to see whether the property is
   // shadowed and if so try to get the instance variable from shadowing
   // property.
-  if (!Prop->isReadOnly())
+  if (!Prop->isReadOnly()) {
     return nullptr;
+
+}
 
   auto *Container = cast<ObjCContainerDecl>(Prop->getDeclContext());
   const ObjCInterfaceDecl *PrimaryInterface = nullptr;
@@ -749,8 +789,10 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
     const ObjCImplementationDecl *ImpD = IntD->getImplementation();
     for (const auto *PI: ImpD->property_impls()) {
       if (const ObjCPropertyDecl *P = PI->getPropertyDecl()) {
-        if (P->getGetterName() == MD->getSelector())
+        if (P->getGetterName() == MD->getSelector()) {
           IVar = P->getPropertyIvarDecl();
+
+}
       }
     }
   }
@@ -758,12 +800,16 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
   if (!IVar) {
     const ObjCPropertyDecl *Prop = MD->findPropertyDecl();
     IVar = findBackingIvar(Prop);
-    if (!IVar)
+    if (!IVar) {
       return nullptr;
 
+}
+
     // Ignore weak variables, which have special behavior.
-    if (Prop->getPropertyAttributes() & ObjCPropertyDecl::OBJC_PR_weak)
+    if (Prop->getPropertyAttributes() & ObjCPropertyDecl::OBJC_PR_weak) {
       return nullptr;
+
+}
 
     // Look to see if Sema has synthesized a body for us. This happens in
     // Objective-C++ because the return value may be a C++ class type with a
@@ -774,8 +820,10 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
       IVar->getContainingInterface()->getImplementation();
     if (ImplDecl) {
       for (const auto *I : ImplDecl->property_impls()) {
-        if (I->getPropertyDecl() != Prop)
+        if (I->getPropertyDecl() != Prop) {
           continue;
+
+}
 
         if (I->getGetterCXXConstructor()) {
           ASTMaker M(Ctx);
@@ -788,11 +836,15 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
     // reference to it, and that it is either an object pointer or trivially
     // copyable.
     if (!Ctx.hasSameUnqualifiedType(IVar->getType(),
-                                    Prop->getType().getNonReferenceType()))
+                                    Prop->getType().getNonReferenceType())) {
       return nullptr;
+
+}
     if (!IVar->getType()->isObjCLifetimeType() &&
-        !IVar->getType().isTriviallyCopyableType(Ctx))
+        !IVar->getType().isTriviallyCopyableType(Ctx)) {
       return nullptr;
+
+}
   }
 
   // Generate our body:
@@ -800,8 +852,10 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
   ASTMaker M(Ctx);
 
   const VarDecl *selfVar = MD->getSelfDecl();
-  if (!selfVar)
+  if (!selfVar) {
     return nullptr;
+
+}
 
   Expr *loadedIVar =
     M.makeObjCIvarRef(
@@ -810,27 +864,35 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
         selfVar->getType()),
       IVar);
 
-  if (!MD->getReturnType()->isReferenceType())
+  if (!MD->getReturnType()->isReferenceType()) {
     loadedIVar = M.makeLvalueToRvalue(loadedIVar, IVar->getType());
+
+}
 
   return M.makeReturn(loadedIVar);
 }
 
 Stmt *BodyFarm::getBody(const ObjCMethodDecl *D) {
   // We currently only know how to synthesize property accessors.
-  if (!D->isPropertyAccessor())
+  if (!D->isPropertyAccessor()) {
     return nullptr;
+
+}
 
   D = D->getCanonicalDecl();
 
   // We should not try to synthesize explicitly redefined accessors.
   // We do not know for sure how they behave.
-  if (!D->isImplicit())
+  if (!D->isImplicit()) {
     return nullptr;
 
+}
+
   Optional<Stmt *> &Val = Bodies[D];
-  if (Val.hasValue())
+  if (Val.hasValue()) {
     return Val.getValue();
+
+}
   Val = nullptr;
 
   // For now, we only synthesize getters.
@@ -842,18 +904,24 @@ Stmt *BodyFarm::getBody(const ObjCMethodDecl *D) {
   //  id foo = [[NSObject alloc] init];
   //  self.foo = foo; // We should warn that foo leaks here.
   //
-  if (D->param_size() != 0)
+  if (D->param_size() != 0) {
     return nullptr;
+
+}
 
   // If the property was defined in an extension, search the extensions for
   // overrides.
   const ObjCInterfaceDecl *OID = D->getClassInterface();
-  if (dyn_cast<ObjCInterfaceDecl>(D->getParent()) != OID)
+  if (dyn_cast<ObjCInterfaceDecl>(D->getParent()) != OID) {
     for (auto *Ext : OID->known_extensions()) {
       auto *OMD = Ext->getInstanceMethod(D->getSelector());
-      if (OMD && !OMD->isImplicit())
+      if (OMD && !OMD->isImplicit()) {
         return nullptr;
+
+}
     }
+
+}
 
   Val = createObjCPropertyGetter(C, D);
 

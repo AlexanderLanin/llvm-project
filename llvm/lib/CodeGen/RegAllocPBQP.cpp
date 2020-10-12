@@ -200,10 +200,12 @@ public:
     for (auto NId : G.nodeIds()) {
       PBQP::PBQPNum SpillCost =
         LIS.getInterval(G.getNodeMetadata(NId).getVReg()).weight;
-      if (SpillCost == 0.0)
+      if (SpillCost == 0.0) {
         SpillCost = std::numeric_limits<PBQP::PBQPNum>::min();
-      else
+      } else {
         SpillCost += MinSpillCost;
+
+}
       PBQPRAGraph::RawVector NodeCosts(G.getNodeCosts(NId));
       NodeCosts[PBQP::RegAlloc::getSpillOptionIdx()] = SpillCost;
       G.setNodeCosts(NId, std::move(NodeCosts));
@@ -227,11 +229,15 @@ private:
     const auto *NRegs = &G.getNodeMetadata(NId).getAllowedRegs();
     const auto *MRegs = &G.getNodeMetadata(MId).getAllowedRegs();
 
-    if (NRegs == MRegs)
+    if (NRegs == MRegs) {
       return false;
 
-    if (NRegs < MRegs)
+}
+
+    if (NRegs < MRegs) {
       return D.count(IKey(NRegs, MRegs)) > 0;
+
+}
 
     return D.count(IKey(MRegs, NRegs)) > 0;
   }
@@ -244,10 +250,12 @@ private:
 
     assert(NRegs != MRegs && "AllowedRegs can not be disjoint with itself");
 
-    if (NRegs < MRegs)
+    if (NRegs < MRegs) {
       D.insert(IKey(NRegs, MRegs));
-    else
+    } else {
       D.insert(IKey(MRegs, NRegs));
+
+}
   }
 
   // Holds (Interval, CurrentSegmentID, and NodeId). The first two are required
@@ -281,11 +289,15 @@ private:
     SlotIndex E1 = getEndPoint(I1);
     SlotIndex E2 = getEndPoint(I2);
 
-    if (E1 < E2)
+    if (E1 < E2) {
       return true;
 
-    if (E1 > E2)
+}
+
+    if (E1 > E2) {
       return false;
+
+}
 
     // If two intervals end at the same point, we need a way to break the tie or
     // the set will assume they're actually equal and refuse to insert a
@@ -348,8 +360,10 @@ public:
              (getEndPoint(*RetireItr) <= getStartPoint(Cur))) {
         // If this interval has subsequent segments, add the next one to the
         // inactive list.
-        if (!isAtLastSegment(*RetireItr))
+        if (!isAtLastSegment(*RetireItr)) {
           Inactive.push(nextSegment(*RetireItr));
+
+}
 
         ++RetireItr;
       }
@@ -368,19 +382,25 @@ public:
 
         // Do not add an edge when the nodes' allowed registers do not
         // intersect: there is obviously no interference.
-        if (haveDisjointAllowedRegs(G, NId, MId, D))
+        if (haveDisjointAllowedRegs(G, NId, MId, D)) {
           continue;
+
+}
 
         // Check that we haven't already added this edge
         IEdgeKey EK(std::min(NId, MId), std::max(NId, MId));
-        if (EC.count(EK))
+        if (EC.count(EK)) {
           continue;
 
+}
+
         // This is a new edge - add it to the graph.
-        if (!createInterferenceEdge(G, NId, MId, C))
+        if (!createInterferenceEdge(G, NId, MId, C)) {
           setDisjointAllowedRegs(G, NId, MId, D);
-        else
+        } else {
           EC.insert(EK);
+
+}
       }
 
       // Finally, add Cur to the Active set.
@@ -423,8 +443,10 @@ private:
       }
     }
 
-    if (!NodesInterfere)
+    if (!NodesInterfere) {
       return false;
+
+}
 
     PBQPRAGraph::EdgeId EId = G.addEdge(NId, MId, std::move(M));
     C[K] = G.getEdgeCostsPtr(EId);
@@ -445,8 +467,10 @@ public:
     for (const auto &MBB : MF) {
       for (const auto &MI : MBB) {
         // Skip not-coalescable or already coalesced copies.
-        if (!CP.setRegisters(&MI) || CP.getSrcReg() == CP.getDstReg())
+        if (!CP.setRegisters(&MI) || CP.getSrcReg() == CP.getDstReg()) {
           continue;
+
+}
 
         unsigned DstReg = CP.getDstReg();
         unsigned SrcReg = CP.getSrcReg();
@@ -455,8 +479,10 @@ public:
         PBQP::PBQPNum CBenefit = MBFI.getBlockFreq(&MBB).getFrequency() * Scale;
 
         if (CP.isPhys()) {
-          if (!MF.getRegInfo().isAllocatable(DstReg))
+          if (!MF.getRegInfo().isAllocatable(DstReg)) {
             continue;
+
+}
 
           PBQPRAGraph::NodeId NId = G.getMetadata().getNodeIdForVReg(SrcReg);
 
@@ -464,8 +490,10 @@ public:
             G.getNodeMetadata(NId).getAllowedRegs();
 
           unsigned PRegOpt = 0;
-          while (PRegOpt < Allowed.size() && Allowed[PRegOpt] != DstReg)
+          while (PRegOpt < Allowed.size() && Allowed[PRegOpt] != DstReg) {
             ++PRegOpt;
+
+}
 
           if (PRegOpt < Allowed.size()) {
             PBQPRAGraph::RawVector NewCosts(G.getNodeCosts(NId));
@@ -512,8 +540,10 @@ private:
       unsigned PReg1 = Allowed1[I];
       for (unsigned J = 0; J != Allowed2.size(); ++J) {
         unsigned PReg2 = Allowed2[J];
-        if (PReg1 == PReg2)
+        if (PReg1 == PReg2) {
           CostMat[I + 1][J + 1] -= Benefit;
+
+}
       }
     }
   }
@@ -537,8 +567,10 @@ void RegAllocPBQP::getAnalysisUsage(AnalysisUsage &au) const {
   au.addRequired<LiveIntervals>();
   au.addPreserved<LiveIntervals>();
   //au.addRequiredID(SplitCriticalEdgesID);
-  if (customPassID)
+  if (customPassID) {
     au.addRequiredID(*customPassID);
+
+}
   au.addRequired<LiveStacks>();
   au.addPreserved<LiveStacks>();
   au.addRequired<MachineBlockFrequencyInfo>();
@@ -559,8 +591,10 @@ void RegAllocPBQP::findVRegIntervalsToAlloc(const MachineFunction &MF,
   // Iterate over all live ranges.
   for (unsigned I = 0, E = MRI.getNumVirtRegs(); I != E; ++I) {
     unsigned Reg = Register::index2VirtReg(I);
-    if (MRI.reg_nodbg_empty(Reg))
+    if (MRI.reg_nodbg_empty(Reg)) {
       continue;
+
+}
     VRegsToAlloc.insert(Reg);
   }
 }
@@ -568,9 +602,13 @@ void RegAllocPBQP::findVRegIntervalsToAlloc(const MachineFunction &MF,
 static bool isACalleeSavedRegister(unsigned reg, const TargetRegisterInfo &TRI,
                                    const MachineFunction &MF) {
   const MCPhysReg *CSR = MF.getRegInfo().getCalleeSavedRegs();
-  for (unsigned i = 0; CSR[i] != 0; ++i)
-    if (TRI.regsOverlap(reg, CSR[i]))
+  for (unsigned i = 0; CSR[i] != 0; ++i) {
+    if (TRI.regsOverlap(reg, CSR[i])) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -612,12 +650,16 @@ void RegAllocPBQP::initializeGraph(PBQPRAGraph &G, VirtRegMap &VRM,
     ArrayRef<MCPhysReg> RawPRegOrder = TRC->getRawAllocationOrder(MF);
     for (unsigned I = 0; I != RawPRegOrder.size(); ++I) {
       unsigned PReg = RawPRegOrder[I];
-      if (MRI.isReserved(PReg))
+      if (MRI.isReserved(PReg)) {
         continue;
 
+}
+
       // vregLI crosses a regmask operand that clobbers preg.
-      if (!RegMaskOverlaps.empty() && !RegMaskOverlaps.test(PReg))
+      if (!RegMaskOverlaps.empty() && !RegMaskOverlaps.test(PReg)) {
         continue;
+
+}
 
       // vregLI overlaps fixed regunit interference.
       bool Interference = false;
@@ -627,8 +669,10 @@ void RegAllocPBQP::initializeGraph(PBQPRAGraph &G, VirtRegMap &VRM,
           break;
         }
       }
-      if (Interference)
+      if (Interference) {
         continue;
+
+}
 
       // preg is usable for this virtual register.
       VRegAllowed.push_back(PReg);
@@ -641,8 +685,10 @@ void RegAllocPBQP::initializeGraph(PBQPRAGraph &G, VirtRegMap &VRM,
       spillVReg(VReg, NewVRegs, MF, LIS, VRM, VRegSpiller);
       Worklist.insert(Worklist.end(), NewVRegs.begin(), NewVRegs.end());
       continue;
-    } else
+    } else {
       VRegAllowedMap[VReg] = std::move(VRegAllowed);
+
+}
   }
 
   for (auto &KV : VRegAllowedMap) {
@@ -661,9 +707,13 @@ void RegAllocPBQP::initializeGraph(PBQPRAGraph &G, VirtRegMap &VRM,
 
     // Tweak cost of callee saved registers, as using then force spilling and
     // restoring them. This would only happen in the prologue / epilogue though.
-    for (unsigned i = 0; i != VRegAllowed.size(); ++i)
-      if (isACalleeSavedRegister(VRegAllowed[i], TRI, MF))
+    for (unsigned i = 0; i != VRegAllowed.size(); ++i) {
+      if (isACalleeSavedRegister(VRegAllowed[i], TRI, MF)) {
         NodeCosts[1 + i] += 1.0;
+
+}
+
+}
 
     PBQPRAGraph::NodeId NId = G.addNode(std::move(NodeCosts));
     G.getNodeMetadata(NId).setVReg(VReg);
@@ -827,8 +877,10 @@ bool RegAllocPBQP::runOnMachineFunction(MachineFunction &MF) {
       std::make_unique<PBQPRAConstraintList>();
     ConstraintsRoot->addConstraint(std::make_unique<SpillCosts>());
     ConstraintsRoot->addConstraint(std::make_unique<Interference>());
-    if (PBQPCoalescing)
+    if (PBQPCoalescing) {
       ConstraintsRoot->addConstraint(std::make_unique<Coalescing>());
+
+}
     ConstraintsRoot->addConstraint(Subtarget.getCustomPBQPConstraints());
 
     bool PBQPAllocComplete = false;

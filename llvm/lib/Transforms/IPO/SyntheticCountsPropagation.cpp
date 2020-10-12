@@ -66,16 +66,20 @@ static void
 initializeCounts(Module &M, function_ref<void(Function *, uint64_t)> SetCount) {
   auto MayHaveIndirectCalls = [](Function &F) {
     for (auto *U : F.users()) {
-      if (!isa<CallInst>(U) && !isa<InvokeInst>(U))
+      if (!isa<CallInst>(U) && !isa<InvokeInst>(U)) {
         return true;
+
+}
     }
     return false;
   };
 
   for (Function &F : M) {
     uint64_t InitialCount = InitialSyntheticCount;
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
+
+}
     if (F.hasFnAttribute(Attribute::AlwaysInline) ||
         F.hasFnAttribute(Attribute::InlineHint)) {
       // Use a higher value for inline functions to account for the fact that
@@ -108,8 +112,10 @@ PreservedAnalyses SyntheticCountsPropagation::run(Module &M,
   auto GetCallSiteProfCount = [&](const CallGraphNode *,
                                   const CallGraphNode::CallRecord &Edge) {
     Optional<Scaled64> Res = None;
-    if (!Edge.first)
+    if (!Edge.first) {
       return Res;
+
+}
     assert(isa<Instruction>(Edge.first));
     CallSite CS(cast<Instruction>(Edge.first));
     Function *Caller = CS.getCaller();
@@ -130,8 +136,10 @@ PreservedAnalyses SyntheticCountsPropagation::run(Module &M,
   SyntheticCountsUtils<const CallGraph *>::propagate(
       &CG, GetCallSiteProfCount, [&](const CallGraphNode *N, Scaled64 New) {
         auto F = N->getFunction();
-        if (!F || F->isDeclaration())
+        if (!F || F->isDeclaration()) {
           return;
+
+}
 
         Counts[F] += New;
       });

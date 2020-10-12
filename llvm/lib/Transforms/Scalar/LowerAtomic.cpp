@@ -118,18 +118,22 @@ static bool LowerStoreInst(StoreInst *SI) {
 static bool runOnBasicBlock(BasicBlock &BB) {
   bool Changed = false;
   for (Instruction &Inst : make_early_inc_range(BB)) {
-    if (FenceInst *FI = dyn_cast<FenceInst>(&Inst))
+    if (FenceInst *FI = dyn_cast<FenceInst>(&Inst)) {
       Changed |= LowerFenceInst(FI);
-    else if (AtomicCmpXchgInst *CXI = dyn_cast<AtomicCmpXchgInst>(&Inst))
+    } else if (AtomicCmpXchgInst *CXI = dyn_cast<AtomicCmpXchgInst>(&Inst)) {
       Changed |= LowerAtomicCmpXchgInst(CXI);
-    else if (AtomicRMWInst *RMWI = dyn_cast<AtomicRMWInst>(&Inst))
+    } else if (AtomicRMWInst *RMWI = dyn_cast<AtomicRMWInst>(&Inst)) {
       Changed |= LowerAtomicRMWInst(RMWI);
-    else if (LoadInst *LI = dyn_cast<LoadInst>(&Inst)) {
-      if (LI->isAtomic())
+    } else if (LoadInst *LI = dyn_cast<LoadInst>(&Inst)) {
+      if (LI->isAtomic()) {
         LowerLoadInst(LI);
+
+}
     } else if (StoreInst *SI = dyn_cast<StoreInst>(&Inst)) {
-      if (SI->isAtomic())
+      if (SI->isAtomic()) {
         LowerStoreInst(SI);
+
+}
     }
   }
   return Changed;
@@ -144,8 +148,10 @@ static bool lowerAtomics(Function &F) {
 }
 
 PreservedAnalyses LowerAtomicPass::run(Function &F, FunctionAnalysisManager &) {
-  if (lowerAtomics(F))
+  if (lowerAtomics(F)) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 

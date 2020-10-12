@@ -73,10 +73,12 @@ unsigned LLVMGenericValueIntWidth(LLVMGenericValueRef GenValRef) {
 unsigned long long LLVMGenericValueToInt(LLVMGenericValueRef GenValRef,
                                          LLVMBool IsSigned) {
   GenericValue *GenVal = unwrap(GenValRef);
-  if (IsSigned)
+  if (IsSigned) {
     return GenVal->IntVal.getSExtValue();
-  else
+  } else {
     return GenVal->IntVal.getZExtValue();
+
+}
 }
 
 void *LLVMGenericValueToPointer(LLVMGenericValueRef GenVal) {
@@ -182,7 +184,7 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
   targetOptions.EnableFastISel = options.EnableFastISel;
   std::unique_ptr<Module> Mod(unwrap(M));
 
-  if (Mod)
+  if (Mod) {
     // Set function attribute "frame-pointer" based on
     // NoFramePointerElim.
     for (auto &F : *Mod) {
@@ -193,6 +195,8 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
       F.setAttributes(Attrs);
     }
 
+}
+
   std::string Error;
   EngineBuilder builder(std::move(Mod));
   builder.setEngineKind(EngineKind::JIT)
@@ -200,11 +204,15 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
          .setOptLevel((CodeGenOpt::Level)options.OptLevel)
          .setTargetOptions(targetOptions);
   bool JIT;
-  if (Optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT))
+  if (Optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT)) {
     builder.setCodeModel(*CM);
-  if (options.MCJMM)
+
+}
+  if (options.MCJMM) {
     builder.setMCJITMemoryManager(
       std::unique_ptr<RTDyldMemoryManager>(unwrap(options.MCJMM)));
+
+}
   if (ExecutionEngine *JIT = builder.create()) {
     *OutJIT = wrap(JIT);
     return 0;
@@ -243,8 +251,10 @@ LLVMGenericValueRef LLVMRunFunction(LLVMExecutionEngineRef EE, LLVMValueRef F,
 
   std::vector<GenericValue> ArgVec;
   ArgVec.reserve(NumArgs);
-  for (unsigned I = 0; I != NumArgs; ++I)
+  for (unsigned I = 0; I != NumArgs; ++I) {
     ArgVec.push_back(*unwrap(Args[I]));
+
+}
 
   GenericValue *Result = new GenericValue();
   *Result = unwrap(EE)->runFunction(unwrap<Function>(F), ArgVec);
@@ -391,8 +401,10 @@ bool SimpleBindingMemoryManager::finalizeMemory(std::string *ErrMsg) {
   assert((result || !errMsgCString) &&
          "Did not expect an error message if FinalizeMemory succeeded");
   if (errMsgCString) {
-    if (ErrMsg)
+    if (ErrMsg) {
       *ErrMsg = errMsgCString;
+
+}
     free(errMsgCString);
   }
   return result;
@@ -408,8 +420,10 @@ LLVMMCJITMemoryManagerRef LLVMCreateSimpleMCJITMemoryManager(
   LLVMMemoryManagerDestroyCallback Destroy) {
 
   if (!AllocateCodeSection || !AllocateDataSection || !FinalizeMemory ||
-      !Destroy)
+      !Destroy) {
     return nullptr;
+
+}
 
   SimpleBindingMMFunctions functions;
   functions.AllocateCodeSection = AllocateCodeSection;

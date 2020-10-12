@@ -19,8 +19,10 @@ std::ostream &operator<<(std::ostream &OS,
   OS << "{";
   for (std::set<unsigned>::const_iterator it = S.begin(),
          ie = S.end(); it != ie; ++it) {
-    if (it != S.begin())
+    if (it != S.begin()) {
       OS << ",";
+
+}
     OS << *it;
   }
   OS << "}";
@@ -54,16 +56,20 @@ std::set<unsigned> fixed_set(unsigned N, ...) {
   std::set<unsigned> S;
   va_list ap;
   va_start(ap, N);
-  for (unsigned i = 0; i != N; ++i)
+  for (unsigned i = 0; i != N; ++i) {
     S.insert(va_arg(ap, unsigned));
+
+}
   va_end(ap);
   return S;
 }
 
 std::set<unsigned> range(unsigned Start, unsigned End) {
   std::set<unsigned> S;
-  while (Start != End)
+  while (Start != End) {
     S.insert(Start++);
+
+}
   return S;
 }
 

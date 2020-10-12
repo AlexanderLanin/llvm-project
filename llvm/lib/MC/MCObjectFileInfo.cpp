@@ -24,24 +24,34 @@ using namespace llvm;
 
 static bool useCompactUnwind(const Triple &T) {
   // Only on darwin.
-  if (!T.isOSDarwin())
+  if (!T.isOSDarwin()) {
     return false;
 
+}
+
   // aarch64 always has it.
-  if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32)
+  if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32) {
     return true;
+
+}
 
   // armv7k always has it.
-  if (T.isWatchABI())
+  if (T.isWatchABI()) {
     return true;
+
+}
 
   // Use it on newer version of OS X.
-  if (T.isMacOSX() && !T.isMacOSXVersionLT(10, 6))
+  if (T.isMacOSX() && !T.isMacOSXVersionLT(10, 6)) {
     return true;
 
+}
+
   // And the iOS simulator.
-  if (T.isiOS() && T.isX86())
+  if (T.isiOS() && T.isX86()) {
     return true;
+
+}
 
   return false;
 }
@@ -57,17 +67,23 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
       SectionKind::getReadOnly());
 
   if (T.isOSDarwin() &&
-      (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32))
+      (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32)) {
     SupportsCompactUnwindWithoutEHFrame = true;
 
-  if (T.isWatchABI())
+}
+
+  if (T.isWatchABI()) {
     OmitDwarfIfHaveCompactUnwind = true;
+
+}
 
   FDECFIEncoding = dwarf::DW_EH_PE_pcrel;
 
   // .comm doesn't support alignment before Leopard.
-  if (T.isMacOSX() && T.isMacOSXVersionLT(10, 5))
+  if (T.isMacOSX() && T.isMacOSXVersionLT(10, 5)) {
     CommDirectiveSupportsAlignment = false;
+
+}
 
   TextSection // .text
     = Ctx->getMachOSection("__TEXT", "__text",
@@ -191,12 +207,14 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
         Ctx->getMachOSection("__LD", "__compact_unwind", MachO::S_ATTR_DEBUG,
                              SectionKind::getReadOnly());
 
-    if (T.isX86())
+    if (T.isX86()) {
       CompactUnwindDwarfEHFrameOnly = 0x04000000;  // UNWIND_X86_64_MODE_DWARF
-    else if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32)
+    } else if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32) {
       CompactUnwindDwarfEHFrameOnly = 0x03000000;  // UNWIND_ARM64_MODE_DWARF
-    else if (T.getArch() == Triple::arm || T.getArch() == Triple::thumb)
+    } else if (T.getArch() == Triple::arm || T.getArch() == Triple::thumb) {
       CompactUnwindDwarfEHFrameOnly = 0x04000000;  // UNWIND_ARM_MODE_DWARF
+
+}
   }
 
   // Debug Information.
@@ -305,12 +323,14 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
   case Triple::mips64el:
     // We cannot use DW_EH_PE_sdata8 for the large PositionIndependent case
     // since there is no R_MIPS_PC64 relocation (only a 32-bit version).
-    if (PositionIndependent && !Large)
+    if (PositionIndependent && !Large) {
       FDECFIEncoding = dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4;
-    else
+    } else {
       FDECFIEncoding = Ctx->getAsmInfo()->getCodePointerSize() == 4
                            ? dwarf::DW_EH_PE_sdata4
                            : dwarf::DW_EH_PE_sdata8;
+
+}
     break;
   case Triple::ppc64:
   case Triple::ppc64le:
@@ -338,8 +358,10 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
   // Solaris requires different flags for .eh_frame to seemingly every other
   // platform.
   unsigned EHSectionFlags = ELF::SHF_ALLOC;
-  if (T.isOSSolaris() && T.getArch() != Triple::x86_64)
+  if (T.isOSSolaris() && T.getArch() != Triple::x86_64) {
     EHSectionFlags |= ELF::SHF_WRITE;
+
+}
 
   // ELF
   BSSSection = Ctx->getELFSection(".bss", ELF::SHT_NOBITS,
@@ -397,8 +419,10 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
   // MIPS .debug_* sections should have SHT_MIPS_DWARF section type
   // to distinguish among sections contain DWARF and ECOFF debug formats.
   // Sections with ECOFF debug format are obsoleted and marked by SHT_PROGBITS.
-  if (T.isMIPS())
+  if (T.isMIPS()) {
     DebugSecType = ELF::SHT_MIPS_DWARF;
+
+}
 
   // Debug Info Sections.
   DwarfAbbrevSection =
@@ -855,9 +879,11 @@ void MCObjectFileInfo::InitMCObjectFileInfo(const Triple &TheTriple, bool PIC,
     initMachOMCObjectFileInfo(TT);
     break;
   case Triple::COFF:
-    if (!TT.isOSWindows())
+    if (!TT.isOSWindows()) {
       report_fatal_error(
           "Cannot initialize MC for non-Windows COFF object files.");
+
+}
 
     Env = IsCOFF;
     initCOFFMCObjectFileInfo(TT);
@@ -900,8 +926,10 @@ MCSection *MCObjectFileInfo::getDwarfComdatSection(const char *Name,
 
 MCSection *
 MCObjectFileInfo::getStackSizesSection(const MCSection &TextSec) const {
-  if (Env != IsELF)
+  if (Env != IsELF) {
     return StackSizesSection;
+
+}
 
   const MCSectionELF &ElfSec = static_cast<const MCSectionELF &>(TextSec);
   unsigned Flags = ELF::SHF_LINK_ORDER;

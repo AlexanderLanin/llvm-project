@@ -35,22 +35,30 @@ protected:
     Error.print("", os);
 
     // A failure here means that the test itself is buggy.
-    if (!M)
+    if (!M) {
       report_fatal_error(os.str());
 
+}
+
     Function *F = M->getFunction("test");
-    if (F == nullptr)
+    if (F == nullptr) {
       report_fatal_error("Test must have a function named @test");
+
+}
 
     A = nullptr;
     for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
       if (I->hasName()) {
-        if (I->getName() == "A")
+        if (I->getName() == "A") {
           A = &*I;
+
+}
       }
     }
-    if (A == nullptr)
+    if (A == nullptr) {
       report_fatal_error("@test must have an instruction %A");
+
+}
   }
 
   LLVMContext Context;

@@ -48,14 +48,18 @@ bool llvm::objcarc::CanAlterRefCount(const Instruction *Inst, const Value *Ptr,
 
   // See if AliasAnalysis can help us with the call.
   FunctionModRefBehavior MRB = PA.getAA()->getModRefBehavior(Call);
-  if (AliasAnalysis::onlyReadsMemory(MRB))
+  if (AliasAnalysis::onlyReadsMemory(MRB)) {
     return false;
+
+}
   if (AliasAnalysis::onlyAccessesArgPointees(MRB)) {
     const DataLayout &DL = Inst->getModule()->getDataLayout();
     for (const Value *Op : Call->args()) {
       if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) &&
-          PA.related(Ptr, Op, DL))
+          PA.related(Ptr, Op, DL)) {
         return true;
+
+}
     }
     return false;
   }
@@ -69,8 +73,10 @@ bool llvm::objcarc::CanDecrementRefCount(const Instruction *Inst,
                                          ProvenanceAnalysis &PA,
                                          ARCInstKind Class) {
   // First perform a quick check if Class can not touch ref counts.
-  if (!CanDecrementRefCount(Class))
+  if (!CanDecrementRefCount(Class)) {
     return false;
+
+}
 
   // Otherwise, just use CanAlterRefCount for now.
   return CanAlterRefCount(Inst, Ptr, PA, Class);
@@ -82,8 +88,10 @@ bool llvm::objcarc::CanUse(const Instruction *Inst, const Value *Ptr,
                            ProvenanceAnalysis &PA, ARCInstKind Class) {
   // ARCInstKind::Call operations (as opposed to
   // ARCInstKind::CallOrUser) never "use" objc pointers.
-  if (Class == ARCInstKind::Call)
+  if (Class == ARCInstKind::Call) {
     return false;
+
+}
 
   const DataLayout &DL = Inst->getModule()->getDataLayout();
 
@@ -93,16 +101,20 @@ bool llvm::objcarc::CanUse(const Instruction *Inst, const Value *Ptr,
     // Comparing a pointer with null, or any other constant, isn't really a use,
     // because we don't care what the pointer points to, or about the values
     // of any other dynamic reference-counted pointers.
-    if (!IsPotentialRetainableObjPtr(ICI->getOperand(1), *PA.getAA()))
+    if (!IsPotentialRetainableObjPtr(ICI->getOperand(1), *PA.getAA())) {
       return false;
+
+}
   } else if (auto CS = ImmutableCallSite(Inst)) {
     // For calls, just check the arguments (and not the callee operand).
     for (ImmutableCallSite::arg_iterator OI = CS.arg_begin(),
          OE = CS.arg_end(); OI != OE; ++OI) {
       const Value *Op = *OI;
       if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) &&
-          PA.related(Ptr, Op, DL))
+          PA.related(Ptr, Op, DL)) {
         return true;
+
+}
     }
     return false;
   } else if (const StoreInst *SI = dyn_cast<StoreInst>(Inst)) {
@@ -119,8 +131,10 @@ bool llvm::objcarc::CanUse(const Instruction *Inst, const Value *Ptr,
   for (User::const_op_iterator OI = Inst->op_begin(), OE = Inst->op_end();
        OI != OE; ++OI) {
     const Value *Op = *OI;
-    if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) && PA.related(Ptr, Op, DL))
+    if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) && PA.related(Ptr, Op, DL)) {
       return true;
+
+}
   }
   return false;
 }
@@ -131,8 +145,10 @@ bool
 llvm::objcarc::Depends(DependenceKind Flavor, Instruction *Inst,
                        const Value *Arg, ProvenanceAnalysis &PA) {
   // If we've reached the definition of Arg, stop.
-  if (Inst == Arg)
+  if (Inst == Arg) {
     return true;
+
+}
 
   switch (Flavor) {
   case NeedsPositiveRetainCount: {
@@ -235,16 +251,20 @@ llvm::objcarc::FindDependencies(DependenceKind Flavor,
     for (;;) {
       if (LocalStartPos == StartBBBegin) {
         pred_iterator PI(LocalStartBB), PE(LocalStartBB, false);
-        if (PI == PE)
+        if (PI == PE) {
           // If we've reached the function entry, produce a null dependence.
           DependingInsts.insert(nullptr);
-        else
+        } else {
           // Add the predecessors to the worklist.
           do {
             BasicBlock *PredBB = *PI;
-            if (Visited.insert(PredBB).second)
+            if (Visited.insert(PredBB).second) {
               Worklist.push_back(std::make_pair(PredBB, PredBB->end()));
+
+}
           } while (++PI != PE);
+
+}
         break;
       }
 
@@ -260,12 +280,16 @@ llvm::objcarc::FindDependencies(DependenceKind Flavor,
   // visited. If not, insert a sentinal indicating that most optimizations are
   // not safe.
   for (const BasicBlock *BB : Visited) {
-    if (BB == StartBB)
+    if (BB == StartBB) {
       continue;
-    for (const BasicBlock *Succ : successors(BB))
+
+}
+    for (const BasicBlock *Succ : successors(BB)) {
       if (Succ != StartBB && !Visited.count(Succ)) {
         DependingInsts.insert(reinterpret_cast<Instruction *>(-1));
         return;
       }
+
+}
   }
 }

@@ -32,8 +32,10 @@ namespace {
 
 TEST_F(GISelMITest, MatchIntConstant) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   auto MIBCst = B.buildConstant(LLT::scalar(64), 42);
   int64_t Cst;
   bool match = mi_match(MIBCst.getReg(0), *MRI, m_ICst(Cst));
@@ -43,8 +45,10 @@ TEST_F(GISelMITest, MatchIntConstant) {
 
 TEST_F(GISelMITest, MatchBinaryOp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   LLT s32 = LLT::scalar(32);
   LLT s64 = LLT::scalar(64);
   auto MIBAdd = B.buildAdd(s64, Copies[0], Copies[1]);
@@ -141,8 +145,10 @@ TEST_F(GISelMITest, MatchBinaryOp) {
 
 TEST_F(GISelMITest, MatchICmp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   const LLT s1 = LLT::scalar(1);
   auto CmpEq = B.buildICmp(CmpInst::ICMP_EQ, s1, Copies[0], Copies[1]);
@@ -166,8 +172,10 @@ TEST_F(GISelMITest, MatchICmp) {
 
 TEST_F(GISelMITest, MatchFCmp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   const LLT s1 = LLT::scalar(1);
   auto CmpEq = B.buildFCmp(CmpInst::FCMP_OEQ, s1, Copies[0], Copies[1]);
@@ -191,8 +199,10 @@ TEST_F(GISelMITest, MatchFCmp) {
 
 TEST_F(GISelMITest, MatchFPUnaryOp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Truncate s64 to s32.
   LLT s32 = LLT::scalar(32);
@@ -253,8 +263,10 @@ TEST_F(GISelMITest, MatchFPUnaryOp) {
 
 TEST_F(GISelMITest, MatchExtendsTrunc) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s64 = LLT::scalar(64);
   LLT s32 = LLT::scalar(32);
@@ -300,8 +312,10 @@ TEST_F(GISelMITest, MatchExtendsTrunc) {
 
 TEST_F(GISelMITest, MatchSpecificType) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Try to match a 64bit add.
   LLT s64 = LLT::scalar(64);
@@ -337,8 +351,10 @@ TEST_F(GISelMITest, MatchSpecificType) {
 
 TEST_F(GISelMITest, MatchCombinators) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s64 = LLT::scalar(64);
   LLT s32 = LLT::scalar(32);
@@ -371,8 +387,10 @@ TEST_F(GISelMITest, MatchCombinators) {
 
 TEST_F(GISelMITest, MatchMiscellaneous) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s64 = LLT::scalar(64);
   auto MIBAdd = B.buildAdd(s64, Copies[0], Copies[1]);

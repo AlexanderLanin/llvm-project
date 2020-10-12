@@ -51,10 +51,12 @@ RCParser::ParseType RCParser::parseSingleResource() {
   // and the first token to be read is the type.
   ASSIGN_OR_RETURN(NameToken, readTypeOrName());
 
-  if (NameToken->equalsLower("LANGUAGE"))
+  if (NameToken->equalsLower("LANGUAGE")) {
     return parseLanguageResource();
-  else if (NameToken->equalsLower("STRINGTABLE"))
+  } else if (NameToken->equalsLower("STRINGTABLE")) {
     return parseStringTableResource();
+
+}
 
   // If it's not an unnamed resource, what we've just read is a name. Now,
   // read resource type;
@@ -63,31 +65,35 @@ RCParser::ParseType RCParser::parseSingleResource() {
   ParseType Result = std::unique_ptr<RCResource>();
   (void)!Result;
 
-  if (TypeToken->equalsLower("ACCELERATORS"))
+  if (TypeToken->equalsLower("ACCELERATORS")) {
     Result = parseAcceleratorsResource();
-  else if (TypeToken->equalsLower("BITMAP"))
+  } else if (TypeToken->equalsLower("BITMAP")) {
     Result = parseBitmapResource();
-  else if (TypeToken->equalsLower("CURSOR"))
+  } else if (TypeToken->equalsLower("CURSOR")) {
     Result = parseCursorResource();
-  else if (TypeToken->equalsLower("DIALOG"))
+  } else if (TypeToken->equalsLower("DIALOG")) {
     Result = parseDialogResource(false);
-  else if (TypeToken->equalsLower("DIALOGEX"))
+  } else if (TypeToken->equalsLower("DIALOGEX")) {
     Result = parseDialogResource(true);
-  else if (TypeToken->equalsLower("HTML"))
+  } else if (TypeToken->equalsLower("HTML")) {
     Result = parseHTMLResource();
-  else if (TypeToken->equalsLower("ICON"))
+  } else if (TypeToken->equalsLower("ICON")) {
     Result = parseIconResource();
-  else if (TypeToken->equalsLower("MENU"))
+  } else if (TypeToken->equalsLower("MENU")) {
     Result = parseMenuResource();
-  else if (TypeToken->equalsLower("RCDATA"))
+  } else if (TypeToken->equalsLower("RCDATA")) {
     Result = parseUserDefinedResource(RkRcData);
-  else if (TypeToken->equalsLower("VERSIONINFO"))
+  } else if (TypeToken->equalsLower("VERSIONINFO")) {
     Result = parseVersionInfoResource();
-  else
+  } else {
     Result = parseUserDefinedResource(*TypeToken);
 
-  if (Result)
+}
+
+  if (Result) {
     (*Result)->setName(*NameToken);
+
+}
 
   return Result;
 }
@@ -188,8 +194,10 @@ Expected<IntWithNotMask> RCParser::parseIntExpr2() {
   // Exp2 ::= -Exp2 || ~Exp2 || not Expr2 || Int || (Exp1).
   static const char ErrorMsg[] = "'-', '~', integer or '('";
 
-  if (isEof())
+  if (isEof()) {
     return getExpectedError(ErrorMsg);
+
+}
 
   switch (look().kind()) {
   case Kind::Minus: {
@@ -215,8 +223,10 @@ Expected<IntWithNotMask> RCParser::parseIntExpr2() {
   }
 
   case Kind::Identifier: {
-    if (!read().value().equals_lower("not"))
+    if (!read().value().equals_lower("not")) {
       return getExpectedError(ErrorMsg, true);
+
+}
     ASSIGN_OR_RETURN(Result, parseIntExpr2());
     return IntWithNotMask(0, (*Result).getValue());
   }
@@ -227,34 +237,44 @@ Expected<IntWithNotMask> RCParser::parseIntExpr2() {
 }
 
 Expected<StringRef> RCParser::readString() {
-  if (!isNextTokenKind(Kind::String))
+  if (!isNextTokenKind(Kind::String)) {
     return getExpectedError("string");
+
+}
   return read().value();
 }
 
 Expected<StringRef> RCParser::readFilename() {
-  if (!isNextTokenKind(Kind::String) && !isNextTokenKind(Kind::Identifier))
+  if (!isNextTokenKind(Kind::String) && !isNextTokenKind(Kind::Identifier)) {
     return getExpectedError("string");
+
+}
   return read().value();
 }
 
 Expected<StringRef> RCParser::readIdentifier() {
-  if (!isNextTokenKind(Kind::Identifier))
+  if (!isNextTokenKind(Kind::Identifier)) {
     return getExpectedError("identifier");
+
+}
   return read().value();
 }
 
 Expected<IntOrString> RCParser::readIntOrString() {
-  if (!isNextTokenKind(Kind::Int) && !isNextTokenKind(Kind::String))
+  if (!isNextTokenKind(Kind::Int) && !isNextTokenKind(Kind::String)) {
     return getExpectedError("int or string");
+
+}
   return IntOrString(read());
 }
 
 Expected<IntOrString> RCParser::readTypeOrName() {
   // We suggest that the correct resource name or type should be either an
   // identifier or an integer. The original RC tool is much more liberal.
-  if (!isNextTokenKind(Kind::Identifier) && !isNextTokenKind(Kind::Int))
+  if (!isNextTokenKind(Kind::Identifier) && !isNextTokenKind(Kind::Int)) {
     return getExpectedError("int or identifier");
+
+}
   return IntOrString(read());
 }
 
@@ -294,8 +314,10 @@ Expected<SmallVector<RCInt, 8>> RCParser::readIntsWithCommas(size_t MinCount,
 
   auto FailureHandler =
       [&](llvm::Error Err) -> Expected<SmallVector<RCInt, 8>> {
-    if (Result.size() < MinCount)
+    if (Result.size() < MinCount) {
       return std::move(Err);
+
+}
     consumeError(std::move(Err));
     return Result;
   };
@@ -305,14 +327,18 @@ Expected<SmallVector<RCInt, 8>> RCParser::readIntsWithCommas(size_t MinCount,
     // Sometimes RC tool requires them and sometimes not. We decide to
     // always require them.
     if (i >= 1) {
-      if (auto CommaError = consumeType(Kind::Comma))
+      if (auto CommaError = consumeType(Kind::Comma)) {
         return FailureHandler(std::move(CommaError));
+
+}
     }
 
-    if (auto IntResult = readInt())
+    if (auto IntResult = readInt()) {
       Result.push_back(*IntResult);
-    else
+    } else {
       return FailureHandler(IntResult.takeError());
+
+}
   }
 
   return std::move(Result);
@@ -330,16 +356,20 @@ Expected<uint32_t> RCParser::parseFlags(ArrayRef<StringRef> FlagDesc,
     bool FoundFlag = false;
 
     for (size_t FlagId = 0; FlagId < FlagDesc.size(); ++FlagId) {
-      if (!FlagResult->equals_lower(FlagDesc[FlagId]))
+      if (!FlagResult->equals_lower(FlagDesc[FlagId])) {
         continue;
+
+}
 
       Result |= FlagValues[FlagId];
       FoundFlag = true;
       break;
     }
 
-    if (!FoundFlag)
+    if (!FoundFlag) {
       return getExpectedError(join(FlagDesc, "/"), true);
+
+}
   }
 
   return Result;
@@ -348,29 +378,33 @@ Expected<uint32_t> RCParser::parseFlags(ArrayRef<StringRef> FlagDesc,
 uint16_t RCParser::parseMemoryFlags(uint16_t Flags) {
   while (!isEof()) {
     const RCToken &Token = look();
-    if (Token.kind() != Kind::Identifier)
+    if (Token.kind() != Kind::Identifier) {
       return Flags;
+
+}
     const StringRef Ident = Token.value();
-    if (Ident.equals_lower("PRELOAD"))
+    if (Ident.equals_lower("PRELOAD")) {
       Flags |= MfPreload;
-    else if (Ident.equals_lower("LOADONCALL"))
+    } else if (Ident.equals_lower("LOADONCALL")) {
       Flags &= ~MfPreload;
-    else if (Ident.equals_lower("FIXED"))
+    } else if (Ident.equals_lower("FIXED")) {
       Flags &= ~(MfMoveable | MfDiscardable);
-    else if (Ident.equals_lower("MOVEABLE"))
+    } else if (Ident.equals_lower("MOVEABLE")) {
       Flags |= MfMoveable;
-    else if (Ident.equals_lower("DISCARDABLE"))
+    } else if (Ident.equals_lower("DISCARDABLE")) {
       Flags |= MfDiscardable | MfMoveable | MfPure;
-    else if (Ident.equals_lower("PURE"))
+    } else if (Ident.equals_lower("PURE")) {
       Flags |= MfPure;
-    else if (Ident.equals_lower("IMPURE"))
+    } else if (Ident.equals_lower("IMPURE")) {
       Flags &= ~(MfPure | MfDiscardable);
-    else if (Ident.equals_lower("SHARED"))
+    } else if (Ident.equals_lower("SHARED")) {
       Flags |= MfPure;
-    else if (Ident.equals_lower("NONSHARED"))
+    } else if (Ident.equals_lower("NONSHARED")) {
       Flags &= ~(MfPure | MfDiscardable);
-    else
+    } else {
       return Flags;
+
+}
     consume();
   }
   return Flags;
@@ -392,24 +426,40 @@ RCParser::parseOptionalStatements(OptStmtType StmtsType) {
 Expected<std::unique_ptr<OptionalStmt>>
 RCParser::parseSingleOptionalStatement(OptStmtType StmtsType) {
   ASSIGN_OR_RETURN(TypeToken, readIdentifier());
-  if (TypeToken->equals_lower("CHARACTERISTICS"))
+  if (TypeToken->equals_lower("CHARACTERISTICS")) {
     return parseCharacteristicsStmt();
-  if (TypeToken->equals_lower("LANGUAGE"))
+
+}
+  if (TypeToken->equals_lower("LANGUAGE")) {
     return parseLanguageStmt();
-  if (TypeToken->equals_lower("VERSION"))
+
+}
+  if (TypeToken->equals_lower("VERSION")) {
     return parseVersionStmt();
 
+}
+
   if (StmtsType != OptStmtType::BasicStmt) {
-    if (TypeToken->equals_lower("CAPTION"))
+    if (TypeToken->equals_lower("CAPTION")) {
       return parseCaptionStmt();
-    if (TypeToken->equals_lower("CLASS"))
+
+}
+    if (TypeToken->equals_lower("CLASS")) {
       return parseClassStmt();
-    if (TypeToken->equals_lower("EXSTYLE"))
+
+}
+    if (TypeToken->equals_lower("EXSTYLE")) {
       return parseExStyleStmt();
-    if (TypeToken->equals_lower("FONT"))
+
+}
+    if (TypeToken->equals_lower("FONT")) {
       return parseFontStmt(StmtsType);
-    if (TypeToken->equals_lower("STYLE"))
+
+}
+    if (TypeToken->equals_lower("STYLE")) {
       return parseStyleStmt();
+
+}
   }
 
   return getExpectedError("optional statement type, BEGIN or '{'",
@@ -490,8 +540,10 @@ RCParser::ParseType RCParser::parseDialogResource(bool IsExtended) {
 RCParser::ParseType RCParser::parseUserDefinedResource(IntOrString Type) {
   uint16_t MemoryFlags =
       parseMemoryFlags(UserDefinedResource::getDefaultMemoryFlags());
-  if (isEof())
+  if (isEof()) {
     return getExpectedError("filename, '{' or BEGIN");
+
+}
 
   // Check if this is a file resource.
   switch (look().kind()) {
@@ -540,8 +592,10 @@ Expected<Control> RCParser::parseControl() {
   ASSIGN_OR_RETURN(ClassResult, readIdentifier());
   std::string ClassUpper = ClassResult->upper();
   auto CtlInfo = Control::SupportedCtls.find(ClassUpper);
-  if (CtlInfo == Control::SupportedCtls.end())
+  if (CtlInfo == Control::SupportedCtls.end()) {
     return getExpectedError("control type, END or '}'", true);
+
+}
 
   // Read caption if necessary.
   IntOrString Caption{StringRef()};
@@ -637,8 +691,10 @@ Expected<MenuDefinitionList> RCParser::parseMenuItemsList() {
 
     bool IsMenuItem = ItemTypeResult->equals_lower("MENUITEM");
     bool IsPopup = ItemTypeResult->equals_lower("POPUP");
-    if (!IsMenuItem && !IsPopup)
+    if (!IsMenuItem && !IsPopup) {
       return getExpectedError("MENUITEM, POPUP, END or '}'", true);
+
+}
 
     if (IsMenuItem && isNextTokenKind(Kind::Identifier)) {
       // Now, expecting SEPARATOR.
@@ -763,11 +819,15 @@ RCParser::parseVersionInfoFixed() {
     ASSIGN_OR_RETURN(TypeResult, readIdentifier());
     auto FixedType = RetType::getFixedType(*TypeResult);
 
-    if (!RetType::isTypeSupported(FixedType))
+    if (!RetType::isTypeSupported(FixedType)) {
       return getExpectedError("fixed VERSIONINFO statement type", true);
-    if (Result.IsTypePresent[FixedType])
+
+}
+    if (Result.IsTypePresent[FixedType]) {
       return getExpectedError("yet unread fixed VERSIONINFO statement type",
                               true);
+
+}
 
     // VERSION variations take multiple integers.
     size_t NumInts = RetType::isVersionType(FixedType) ? 4 : 1;
@@ -818,12 +878,18 @@ RCParser::ParseOptionType RCParser::parseFontStmt(OptStmtType DialogType) {
   if (DialogType == OptStmtType::DialogExStmt) {
     if (consumeOptionalType(Kind::Comma)) {
       ASSIGN_OR_RETURN(Args, readIntsWithCommas(/* min = */ 0, /* max = */ 3));
-      if (Args->size() >= 1)
+      if (Args->size() >= 1) {
         FontWeight = (*Args)[0];
-      if (Args->size() >= 2)
+
+}
+      if (Args->size() >= 2) {
         FontItalic = (*Args)[1] != 0;
-      if (Args->size() >= 3)
+
+}
+      if (Args->size() >= 3) {
         FontCharset = (*Args)[2];
+
+}
     }
   }
   return std::make_unique<FontStmt>(*SizeResult, *NameResult, FontWeight,

@@ -39,8 +39,10 @@ Arg::Arg(const Option Opt, StringRef S, unsigned Index, const char *Value0,
 
 Arg::~Arg() {
   if (OwnsValues) {
-    for (unsigned i = 0, e = Values.size(); i != e; ++i)
+    for (unsigned i = 0, e = Values.size(); i != e; ++i) {
       delete[] Values[i];
+
+}
   }
 }
 
@@ -54,7 +56,9 @@ void Arg::print(raw_ostream& O) const {
 
   O << " Values: [";
   for (unsigned i = 0, e = Values.size(); i != e; ++i) {
-    if (i) O << ", ";
+    if (i) { O << ", ";
+
+}
     O << "'" << Values[i] << "'";
   }
 
@@ -66,8 +70,10 @@ LLVM_DUMP_METHOD void Arg::dump() const { print(dbgs()); }
 #endif
 
 std::string Arg::getAsString(const ArgList &Args) const {
-  if (Alias)
+  if (Alias) {
     return Alias->getAsString(Args);
+
+}
 
   SmallString<256> Res;
   raw_svector_ostream OS(Res);
@@ -76,8 +82,10 @@ std::string Arg::getAsString(const ArgList &Args) const {
   render(Args, ASL);
   for (ArgStringList::iterator
          it = ASL.begin(), ie = ASL.end(); it != ie; ++it) {
-    if (it != ASL.begin())
+    if (it != ASL.begin()) {
       OS << ' ';
+
+}
     OS << *it;
   }
 
@@ -104,7 +112,9 @@ void Arg::render(const ArgList &Args, ArgStringList &Output) const {
     raw_svector_ostream OS(Res);
     OS << getSpelling();
     for (unsigned i = 0, e = getNumValues(); i != e; ++i) {
-      if (i) OS << ',';
+      if (i) { OS << ',';
+
+}
       OS << getValue(i);
     }
     Output.push_back(Args.MakeArgString(OS.str()));

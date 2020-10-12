@@ -41,8 +41,10 @@ cl::list<std::string> InputFilenames(cl::Positional,
 namespace llvm {
 
 static void error(std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return;
+
+}
   WithColor::error(outs(), "") << "reading file: " << EC.message() << ".\n";
   outs().flush();
   exit(1);
@@ -57,16 +59,20 @@ LLVM_ATTRIBUTE_NORETURN static void error(Error Err) {
 
 template <typename T>
 T unwrapOrError(Expected<T> EO) {
-  if (!EO)
+  if (!EO) {
     error(EO.takeError());
+
+}
   return std::move(*EO);
 }
 
 } // namespace llvm
 
 static void reportError(StringRef Input, StringRef Message) {
-  if (Input == "-")
+  if (Input == "-") {
     Input = "<stdin>";
+
+}
   WithColor::error(errs(), Input) << Message << "\n";
   errs().flush();
   exit(1);
@@ -86,11 +92,15 @@ static void collectRelocatedSymbols(const ObjectFile *Obj,
   uint64_t SymEnd = SymOffset + SymSize;
   for (const SectionRef &SR : SectionRelocMap[Sec]) {
     for (const object::RelocationRef &Reloc : SR.relocations()) {
-      if (I == E)
+      if (I == E) {
         break;
+
+}
       const object::symbol_iterator RelocSymI = Reloc.getSymbol();
-      if (RelocSymI == Obj->symbol_end())
+      if (RelocSymI == Obj->symbol_end()) {
         continue;
+
+}
       Expected<StringRef> RelocSymName = RelocSymI->getName();
       error(errorToErrorCode(RelocSymName.takeError()));
       uint64_t Offset = Reloc.getOffset();
@@ -111,13 +121,17 @@ static void collectRelocationOffsets(
   for (const SectionRef &SR : SectionRelocMap[Sec]) {
     for (const object::RelocationRef &Reloc : SR.relocations()) {
       const object::symbol_iterator RelocSymI = Reloc.getSymbol();
-      if (RelocSymI == Obj->symbol_end())
+      if (RelocSymI == Obj->symbol_end()) {
         continue;
+
+}
       Expected<StringRef> RelocSymName = RelocSymI->getName();
       error(errorToErrorCode(RelocSymName.takeError()));
       uint64_t Offset = Reloc.getOffset();
-      if (Offset >= SymOffset && Offset < SymEnd)
+      if (Offset >= SymOffset && Offset < SymEnd) {
         Collection[std::make_pair(SymName, Offset - SymOffset)] = *RelocSymName;
+
+}
     }
   }
 }
@@ -175,12 +189,16 @@ static void dumpCXXData(const ObjectFile *Obj) {
   SectionRelocMap.clear();
   for (const SectionRef &Section : Obj->sections()) {
     Expected<section_iterator> ErrOrSec = Section.getRelocatedSection();
-    if (!ErrOrSec)
+    if (!ErrOrSec) {
       error(ErrOrSec.takeError());
 
+}
+
     section_iterator Sec2 = *ErrOrSec;
-    if (Sec2 != Obj->section_end())
+    if (Sec2 != Obj->section_end()) {
       SectionRelocMap[*Sec2].push_back(Section);
+
+}
   }
 
   uint8_t BytesInAddress = Obj->getBytesInAddress();
@@ -198,12 +216,16 @@ static void dumpCXXData(const ObjectFile *Obj) {
     error(errorToErrorCode(SecIOrErr.takeError()));
     object::section_iterator SecI = *SecIOrErr;
     // Skip external symbols.
-    if (SecI == Obj->section_end())
+    if (SecI == Obj->section_end()) {
       continue;
+
+}
     const SectionRef &Sec = *SecI;
     // Skip virtual or BSS sections.
-    if (Sec.isBSS() || Sec.isVirtual())
+    if (Sec.isBSS() || Sec.isVirtual()) {
       continue;
+
+}
     StringRef SecContents = unwrapOrError(Sec.getContents());
     Expected<uint64_t> SymAddressOrErr = Sym.getAddress();
     error(errorToErrorCode(SymAddressOrErr.takeError()));
@@ -268,10 +290,12 @@ static void dumpCXXData(const ObjectFile *Obj) {
     else if (SymName.startswith("??_R0")) {
       const char *DataPtr = SymContents.drop_front(BytesInAddress).data();
       TypeDescriptor TD;
-      if (BytesInAddress == 8)
+      if (BytesInAddress == 8) {
         TD.AlwaysZero = *reinterpret_cast<const little64_t *>(DataPtr);
-      else
+      } else {
         TD.AlwaysZero = *reinterpret_cast<const little32_t *>(DataPtr);
+
+}
       TD.MangledName = SymContents.drop_front(BytesInAddress * 2);
       StringRef *I = std::begin(TD.Symbols), *E = std::end(TD.Symbols);
       collectRelocatedSymbols(Obj, Sec, SecAddress, SymAddress, SymSize, I, E);
@@ -323,15 +347,19 @@ static void dumpCXXData(const ObjectFile *Obj) {
                                SymName, VTableSymEntries);
       for (uint64_t SymOffI = 0; SymOffI < SymSize; SymOffI += BytesInAddress) {
         auto Key = std::make_pair(SymName, SymOffI);
-        if (VTableSymEntries.count(Key))
+        if (VTableSymEntries.count(Key)) {
           continue;
+
+}
         const char *DataPtr =
             SymContents.substr(SymOffI, BytesInAddress).data();
         int64_t VData;
-        if (BytesInAddress == 8)
+        if (BytesInAddress == 8) {
           VData = *reinterpret_cast<const little64_t *>(DataPtr);
-        else
+        } else {
           VData = *reinterpret_cast<const little32_t *>(DataPtr);
+
+}
         VTableDataEntries[Key] = VData;
       }
     }
@@ -428,8 +456,10 @@ static void dumpCXXData(const ObjectFile *Obj) {
     unsigned Idx = 0;
     for (auto I = CTAEntries.lower_bound(std::make_pair(CTAName, 0)),
               E = CTAEntries.upper_bound(std::make_pair(CTAName, UINT64_MAX));
-         I != E; ++I)
+         I != E; ++I) {
       outs() << CTAName << '[' << Idx++ << "]: " << I->second << '\n';
+
+}
   }
   for (const auto &CTPair : CTs) {
     StringRef CTName = CTPair.first;
@@ -471,8 +501,10 @@ static void dumpCXXData(const ObjectFile *Obj) {
   for (;;) {
     bool SymDone = VTableSymI == VTableSymE;
     bool DataDone = VTableDataI == VTableDataE;
-    if (SymDone && DataDone)
+    if (SymDone && DataDone) {
       break;
+
+}
     if (!SymDone && (DataDone || VTableSymI->first < VTableDataI->first)) {
       StringRef VTableName = VTableSymI->first.first;
       uint64_t Offset = VTableSymI->first.second;
@@ -513,13 +545,17 @@ static void dumpArchive(const Archive *Arc) {
       continue;
     }
 
-    if (ObjectFile *Obj = dyn_cast<ObjectFile>(&*ChildOrErr.get()))
+    if (ObjectFile *Obj = dyn_cast<ObjectFile>(&*ChildOrErr.get())) {
       dumpCXXData(Obj);
-    else
+    } else {
       reportError(Arc->getFileName(), cxxdump_error::unrecognized_file_format);
+
+}
   }
-  if (Err)
+  if (Err) {
     error(std::move(Err));
+
+}
 }
 
 static void dumpInput(StringRef File) {
@@ -532,12 +568,14 @@ static void dumpInput(StringRef File) {
   }
   Binary &Binary = *BinaryOrErr.get().getBinary();
 
-  if (Archive *Arc = dyn_cast<Archive>(&Binary))
+  if (Archive *Arc = dyn_cast<Archive>(&Binary)) {
     dumpArchive(Arc);
-  else if (ObjectFile *Obj = dyn_cast<ObjectFile>(&Binary))
+  } else if (ObjectFile *Obj = dyn_cast<ObjectFile>(&Binary)) {
     dumpCXXData(Obj);
-  else
+  } else {
     reportError(File, cxxdump_error::unrecognized_file_format);
+
+}
 }
 
 int main(int argc, const char *argv[]) {
@@ -552,8 +590,10 @@ int main(int argc, const char *argv[]) {
   cl::ParseCommandLineOptions(argc, argv, "LLVM C++ ABI Data Dumper\n");
 
   // Default to stdin if no filename is specified.
-  if (opts::InputFilenames.size() == 0)
+  if (opts::InputFilenames.size() == 0) {
     opts::InputFilenames.push_back("-");
+
+}
 
   llvm::for_each(opts::InputFilenames, dumpInput);
 

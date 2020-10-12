@@ -21,14 +21,18 @@ static bool isItaniumEncoding(const std::string &MangledName) {
 
 std::string llvm::demangle(const std::string &MangledName) {
   char *Demangled;
-  if (isItaniumEncoding(MangledName))
+  if (isItaniumEncoding(MangledName)) {
     Demangled = itaniumDemangle(MangledName.c_str(), nullptr, nullptr, nullptr);
-  else
+  } else {
     Demangled =
         microsoftDemangle(MangledName.c_str(), nullptr, nullptr, nullptr);
 
-  if (!Demangled)
+}
+
+  if (!Demangled) {
     return MangledName;
+
+}
 
   std::string Ret = Demangled;
   free(Demangled);

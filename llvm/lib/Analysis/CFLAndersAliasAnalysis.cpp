@@ -184,9 +184,11 @@ public:
   iterator_range<const_valuestate_iterator>
   reachableValueAliases(InstantiatedValue V) const {
     auto Itr = ReachMap.find(V);
-    if (Itr == ReachMap.end())
+    if (Itr == ReachMap.end()) {
       return make_range<const_valuestate_iterator>(const_valuestate_iterator(),
                                                    const_valuestate_iterator());
+
+}
     return make_range<const_valuestate_iterator>(Itr->second.begin(),
                                                  Itr->second.end());
   }
@@ -216,8 +218,10 @@ public:
 
   const MemSet *getMemoryAliases(InstantiatedValue V) const {
     auto Itr = MemMap.find(V);
-    if (Itr == MemMap.end())
+    if (Itr == MemMap.end()) {
       return nullptr;
+
+}
     return &Itr->second;
   }
 };
@@ -234,8 +238,10 @@ public:
   bool add(InstantiatedValue V, AliasAttrs Attr) {
     auto &OldAttr = AttrMap[V];
     auto NewAttr = OldAttr | Attr;
-    if (OldAttr == NewAttr)
+    if (OldAttr == NewAttr) {
       return false;
+
+}
     OldAttr = NewAttr;
     return true;
   }
@@ -243,8 +249,10 @@ public:
   AliasAttrs getAttrs(InstantiatedValue V) const {
     AliasAttrs Attr;
     auto Itr = AttrMap.find(V);
-    if (Itr != AttrMap.end())
+    if (Itr != AttrMap.end()) {
       Attr = Itr->second;
+
+}
     return Attr;
   }
 
@@ -357,13 +365,17 @@ getInterfaceValue(InstantiatedValue IValue,
   auto Val = IValue.Val;
 
   Optional<unsigned> Index;
-  if (auto Arg = dyn_cast<Argument>(Val))
+  if (auto Arg = dyn_cast<Argument>(Val)) {
     Index = Arg->getArgNo() + 1;
-  else if (is_contained(RetVals, Val))
+  } else if (is_contained(RetVals, Val)) {
     Index = 0;
 
-  if (Index)
+}
+
+  if (Index) {
     return InterfaceValue{*Index, IValue.DerefLevel};
+
+}
   return None;
 }
 
@@ -375,8 +387,10 @@ static void populateAttrMap(DenseMap<const Value *, AliasAttrs> &AttrMap,
     // Insert IVal into the map
     auto &Attr = AttrMap[IVal.Val];
     // AttrMap only cares about top-level values
-    if (IVal.DerefLevel == 0)
+    if (IVal.DerefLevel == 0) {
       Attr |= Mapping.second;
+
+}
   }
 }
 
@@ -385,15 +399,19 @@ populateAliasMap(DenseMap<const Value *, std::vector<OffsetValue>> &AliasMap,
                  const ReachabilitySet &ReachSet) {
   for (const auto &OuterMapping : ReachSet.value_mappings()) {
     // AliasMap only cares about top-level values
-    if (OuterMapping.first.DerefLevel > 0)
+    if (OuterMapping.first.DerefLevel > 0) {
       continue;
+
+}
 
     auto Val = OuterMapping.first.Val;
     auto &AliasList = AliasMap[Val];
     for (const auto &InnerMapping : OuterMapping.second) {
       // Again, AliasMap only cares about top-level values
-      if (InnerMapping.first.DerefLevel == 0)
+      if (InnerMapping.first.DerefLevel == 0) {
         AliasList.push_back(OffsetValue{InnerMapping.first.Val, UnknownOffset});
+
+}
     }
 
     // Sort AliasList for faster lookup
@@ -435,21 +453,29 @@ static void populateExternalRelations(
         // If Src is a param/return value, we get a same-level assignment.
         if (auto Src = getInterfaceValue(InnerMapping.first, RetVals)) {
           // This may happen if both Dst and Src are return values
-          if (*Dst == *Src)
+          if (*Dst == *Src) {
             continue;
 
-          if (hasReadOnlyState(InnerMapping.second))
+}
+
+          if (hasReadOnlyState(InnerMapping.second)) {
             ExtRelations.push_back(ExternalRelation{*Dst, *Src, UnknownOffset});
+
+}
           // No need to check for WriteOnly state, since ReachSet is symmetric
         } else {
           // If Src is not a param/return, add it to ValueMap
           auto SrcIVal = InnerMapping.first;
-          if (hasReadOnlyState(InnerMapping.second))
+          if (hasReadOnlyState(InnerMapping.second)) {
             ValueMap[SrcIVal.Val].FromRecords.push_back(
                 ValueSummary::Record{*Dst, SrcIVal.DerefLevel});
-          if (hasWriteOnlyState(InnerMapping.second))
+
+}
+          if (hasWriteOnlyState(InnerMapping.second)) {
             ValueMap[SrcIVal.Val].ToRecords.push_back(
                 ValueSummary::Record{*Dst, SrcIVal.DerefLevel});
+
+}
         }
       }
     }
@@ -461,17 +487,21 @@ static void populateExternalRelations(
         auto ToLevel = ToRecord.DerefLevel;
         auto FromLevel = FromRecord.DerefLevel;
         // Same-level assignments should have already been processed by now
-        if (ToLevel == FromLevel)
+        if (ToLevel == FromLevel) {
           continue;
+
+}
 
         auto SrcIndex = FromRecord.IValue.Index;
         auto SrcLevel = FromRecord.IValue.DerefLevel;
         auto DstIndex = ToRecord.IValue.Index;
         auto DstLevel = ToRecord.IValue.DerefLevel;
-        if (ToLevel > FromLevel)
+        if (ToLevel > FromLevel) {
           SrcLevel += ToLevel - FromLevel;
-        else
+        } else {
           DstLevel += FromLevel - ToLevel;
+
+}
 
         ExtRelations.push_back(ExternalRelation{
             InterfaceValue{SrcIndex, SrcLevel},
@@ -492,8 +522,10 @@ static void populateExternalAttributes(
   for (const auto &Mapping : AMap.mappings()) {
     if (auto IVal = getInterfaceValue(Mapping.first, RetVals)) {
       auto Attr = getExternallyVisibleAttrs(Mapping.second);
-      if (Attr.any())
+      if (Attr.any()) {
         ExtAttributes.push_back(ExternalAttribute{*IVal, Attr});
+
+}
     }
   }
 }
@@ -512,8 +544,10 @@ CFLAndersAAResult::FunctionInfo::getAttrs(const Value *V) const {
   assert(V != nullptr);
 
   auto Itr = AttrMap.find(V);
-  if (Itr != AttrMap.end())
+  if (Itr != AttrMap.end()) {
     return Itr->second;
+
+}
   return None;
 }
 
@@ -527,20 +561,30 @@ bool CFLAndersAAResult::FunctionInfo::mayAlias(
   // cases.
   auto MaybeAttrsA = getAttrs(LHS);
   auto MaybeAttrsB = getAttrs(RHS);
-  if (!MaybeAttrsA || !MaybeAttrsB)
+  if (!MaybeAttrsA || !MaybeAttrsB) {
     return true;
+
+}
 
   // Check AliasAttrs before AliasMap lookup since it's cheaper
   auto AttrsA = *MaybeAttrsA;
   auto AttrsB = *MaybeAttrsB;
-  if (hasUnknownOrCallerAttr(AttrsA))
+  if (hasUnknownOrCallerAttr(AttrsA)) {
     return AttrsB.any();
-  if (hasUnknownOrCallerAttr(AttrsB))
+
+}
+  if (hasUnknownOrCallerAttr(AttrsB)) {
     return AttrsA.any();
-  if (isGlobalOrArgAttr(AttrsA))
+
+}
+  if (isGlobalOrArgAttr(AttrsA)) {
     return isGlobalOrArgAttr(AttrsB);
-  if (isGlobalOrArgAttr(AttrsB))
+
+}
+  if (isGlobalOrArgAttr(AttrsB)) {
     return isGlobalOrArgAttr(AttrsA);
+
+}
 
   // At this point both LHS and RHS should point to locally allocated objects
 
@@ -560,16 +604,20 @@ bool CFLAndersAAResult::FunctionInfo::mayAlias(
     if (RangePair.first != RangePair.second) {
       // Be conservative about unknown sizes
       if (MaybeLHSSize == LocationSize::unknown() ||
-          MaybeRHSSize == LocationSize::unknown())
+          MaybeRHSSize == LocationSize::unknown()) {
         return true;
+
+}
 
       const uint64_t LHSSize = MaybeLHSSize.getValue();
       const uint64_t RHSSize = MaybeRHSSize.getValue();
 
       for (const auto &OVal : make_range(RangePair)) {
         // Be conservative about UnknownOffset
-        if (OVal.Offset == UnknownOffset)
+        if (OVal.Offset == UnknownOffset) {
           return true;
+
+}
 
         // We know that LHS aliases (RHS + OVal.Offset) if the control flow
         // reaches here. The may-alias query essentially becomes integer
@@ -577,16 +625,20 @@ bool CFLAndersAAResult::FunctionInfo::mayAlias(
         // LHSSize) and [0, RHSSize).
 
         // Try to be conservative on super large offsets
-        if (LLVM_UNLIKELY(LHSSize > INT64_MAX || RHSSize > INT64_MAX))
+        if (LLVM_UNLIKELY(LHSSize > INT64_MAX || RHSSize > INT64_MAX)) {
           return true;
+
+}
 
         auto LHSStart = OVal.Offset;
         // FIXME: Do we need to guard against integer overflow?
         auto LHSEnd = OVal.Offset + static_cast<int64_t>(LHSSize);
         auto RHSStart = 0;
         auto RHSEnd = static_cast<int64_t>(RHSSize);
-        if (LHSEnd > RHSStart && LHSStart < RHSEnd)
+        if (LHSEnd > RHSStart && LHSStart < RHSEnd) {
           return true;
+
+}
       }
     }
   }
@@ -597,10 +649,14 @@ bool CFLAndersAAResult::FunctionInfo::mayAlias(
 static void propagate(InstantiatedValue From, InstantiatedValue To,
                       MatchState State, ReachabilitySet &ReachSet,
                       std::vector<WorkListItem> &WorkList) {
-  if (From == To)
+  if (From == To) {
     return;
-  if (ReachSet.insert(From, To, State))
+
+}
+  if (ReachSet.insert(From, To, State)) {
     WorkList.push_back(WorkListItem{From, To, State});
+
+}
 }
 
 static void initializeWorkList(std::vector<WorkListItem> &WorkList,
@@ -629,8 +685,10 @@ static void initializeWorkList(std::vector<WorkListItem> &WorkList,
 static Optional<InstantiatedValue> getNodeBelow(const CFLGraph &Graph,
                                                 InstantiatedValue V) {
   auto NodeBelow = InstantiatedValue{V.Val, V.DerefLevel + 1};
-  if (Graph.getNode(NodeBelow))
+  if (Graph.getNode(NodeBelow)) {
     return NodeBelow;
+
+}
   return None;
 }
 
@@ -660,8 +718,10 @@ static void processWorkListItem(const WorkListItem &Item, const CFLGraph &Graph,
     for (const auto &Mapping : ReachSet.reachableValueAliases(*FromNodeBelow)) {
       auto Src = Mapping.first;
       auto MemAliasPropagate = [&](MatchState FromState, MatchState ToState) {
-        if (Mapping.second.test(static_cast<size_t>(FromState)))
+        if (Mapping.second.test(static_cast<size_t>(FromState))) {
           propagate(Src, *ToNodeBelow, ToState, ReachSet, WorkList);
+
+}
       };
 
       MemAliasPropagate(MatchState::FlowFromReadOnly,
@@ -682,17 +742,23 @@ static void processWorkListItem(const WorkListItem &Item, const CFLGraph &Graph,
   // - If Y is an alias of X, then reverse assignment edges (if there is any)
   // should precede any assignment edges on the path from X to Y.
   auto NextAssignState = [&](MatchState State) {
-    for (const auto &AssignEdge : NodeInfo->Edges)
+    for (const auto &AssignEdge : NodeInfo->Edges) {
       propagate(FromNode, AssignEdge.Other, State, ReachSet, WorkList);
+
+}
   };
   auto NextRevAssignState = [&](MatchState State) {
-    for (const auto &RevAssignEdge : NodeInfo->ReverseEdges)
+    for (const auto &RevAssignEdge : NodeInfo->ReverseEdges) {
       propagate(FromNode, RevAssignEdge.Other, State, ReachSet, WorkList);
+
+}
   };
   auto NextMemState = [&](MatchState State) {
     if (auto AliasSet = MemSet.getMemoryAliases(ToNode)) {
-      for (const auto &MemAlias : *AliasSet)
+      for (const auto &MemAlias : *AliasSet) {
         propagate(FromNode, MemAlias, State, ReachSet, WorkList);
+
+}
     }
   };
 
@@ -752,14 +818,18 @@ static AliasAttrMap buildAttrMap(const CFLGraph &Graph,
   while (!WorkList.empty()) {
     for (const auto &Dst : WorkList) {
       auto DstAttr = AttrMap.getAttrs(Dst);
-      if (DstAttr.none())
+      if (DstAttr.none()) {
         continue;
+
+}
 
       // Propagate attr on the same level
       for (const auto &Mapping : ReachSet.reachableValueAliases(Dst)) {
         auto Src = Mapping.first;
-        if (AttrMap.add(Src, DstAttr))
+        if (AttrMap.add(Src, DstAttr)) {
           NextList.push_back(Src);
+
+}
       }
 
       // Propagate attr to the levels below
@@ -794,8 +864,10 @@ CFLAndersAAResult::buildInfoFrom(const Function &Fn) {
   initializeWorkList(WorkList, ReachSet, Graph);
   // TODO: make sure we don't stop before the fix point is reached
   while (!WorkList.empty()) {
-    for (const auto &Item : WorkList)
+    for (const auto &Item : WorkList) {
       processWorkListItem(Item, Graph, ReachSet, MemSet, NextList);
+
+}
 
     NextList.swap(WorkList);
     NextList.clear();
@@ -839,10 +911,12 @@ CFLAndersAAResult::ensureCached(const Function &Fn) {
 
 const AliasSummary *CFLAndersAAResult::getAliasSummary(const Function &Fn) {
   auto &FunInfo = ensureCached(Fn);
-  if (FunInfo.hasValue())
+  if (FunInfo.hasValue()) {
     return &FunInfo->getAliasSummary();
-  else
+  } else {
     return nullptr;
+
+}
 }
 
 AliasResult CFLAndersAAResult::query(const MemoryLocation &LocA,
@@ -850,8 +924,10 @@ AliasResult CFLAndersAAResult::query(const MemoryLocation &LocA,
   auto *ValA = LocA.Ptr;
   auto *ValB = LocB.Ptr;
 
-  if (!ValA->getType()->isPointerTy() || !ValB->getType()->isPointerTy())
+  if (!ValA->getType()->isPointerTy() || !ValB->getType()->isPointerTy()) {
     return NoAlias;
+
+}
 
   auto *Fn = parentFunctionOfValue(ValA);
   if (!Fn) {
@@ -872,28 +948,36 @@ AliasResult CFLAndersAAResult::query(const MemoryLocation &LocA,
   auto &FunInfo = ensureCached(*Fn);
 
   // AliasMap lookup
-  if (FunInfo->mayAlias(ValA, LocA.Size, ValB, LocB.Size))
+  if (FunInfo->mayAlias(ValA, LocA.Size, ValB, LocB.Size)) {
     return MayAlias;
+
+}
   return NoAlias;
 }
 
 AliasResult CFLAndersAAResult::alias(const MemoryLocation &LocA,
                                      const MemoryLocation &LocB,
                                      AAQueryInfo &AAQI) {
-  if (LocA.Ptr == LocB.Ptr)
+  if (LocA.Ptr == LocB.Ptr) {
     return MustAlias;
+
+}
 
   // Comparisons between global variables and other constants should be
   // handled by BasicAA.
   // CFLAndersAA may report NoAlias when comparing a GlobalValue and
   // ConstantExpr, but every query needs to have at least one Value tied to a
   // Function, and neither GlobalValues nor ConstantExprs are.
-  if (isa<Constant>(LocA.Ptr) && isa<Constant>(LocB.Ptr))
+  if (isa<Constant>(LocA.Ptr) && isa<Constant>(LocB.Ptr)) {
     return AAResultBase::alias(LocA, LocB, AAQI);
 
+}
+
   AliasResult QueryResult = query(LocA, LocB);
-  if (QueryResult == MayAlias)
+  if (QueryResult == MayAlias) {
     return AAResultBase::alias(LocA, LocB, AAQI);
+
+}
 
   return QueryResult;
 }

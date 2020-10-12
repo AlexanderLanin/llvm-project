@@ -475,10 +475,14 @@ private:
   /// Returns TRUE if we're using the first-use-begins-lifetime method for
   /// this slot (if FALSE, then the start marker is treated as start of lifetime).
   bool applyFirstUse(int Slot) {
-    if (!LifetimeStartOnFirstUse || ProtectFromEscapedAllocas)
+    if (!LifetimeStartOnFirstUse || ProtectFromEscapedAllocas) {
       return false;
-    if (ConservativeSlots.test(Slot))
+
+}
+    if (ConservativeSlots.test(Slot)) {
       return false;
+
+}
     return true;
   }
 
@@ -571,8 +575,10 @@ static inline int getStartOrEndSlot(const MachineInstr &MI)
          "Expected LIFETIME_START or LIFETIME_END op");
   const MachineOperand &MO = MI.getOperand(0);
   int Slot = MO.getIndex();
-  if (Slot >= 0)
+  if (Slot >= 0) {
     return Slot;
+
+}
   return -1;
 }
 
@@ -586,10 +592,14 @@ bool StackColoring::isLifetimeStartOrEnd(const MachineInstr &MI,
   if (MI.getOpcode() == TargetOpcode::LIFETIME_START ||
       MI.getOpcode() == TargetOpcode::LIFETIME_END) {
     int Slot = getStartOrEndSlot(MI);
-    if (Slot < 0)
+    if (Slot < 0) {
       return false;
-    if (!InterestingSlots.test(Slot))
+
+}
+    if (!InterestingSlots.test(Slot)) {
       return false;
+
+}
     slots.push_back(Slot);
     if (MI.getOpcode() == TargetOpcode::LIFETIME_END) {
       isStart = false;
@@ -603,11 +613,15 @@ bool StackColoring::isLifetimeStartOrEnd(const MachineInstr &MI,
     if (!MI.isDebugInstr()) {
       bool found = false;
       for (const MachineOperand &MO : MI.operands()) {
-        if (!MO.isFI())
+        if (!MO.isFI()) {
           continue;
+
+}
         int Slot = MO.getIndex();
-        if (Slot<0)
+        if (Slot<0) {
           continue;
+
+}
         if (InterestingSlots.test(Slot) && applyFirstUse(Slot)) {
           slots.push_back(Slot);
           found = true;
@@ -655,8 +669,10 @@ unsigned StackColoring::collectMarkers(unsigned NumSlot) {
       if (MI.getOpcode() == TargetOpcode::LIFETIME_START ||
           MI.getOpcode() == TargetOpcode::LIFETIME_END) {
         int Slot = getStartOrEndSlot(MI);
-        if (Slot < 0)
+        if (Slot < 0) {
           continue;
+
+}
         InterestingSlots.set(Slot);
         if (MI.getOpcode() == TargetOpcode::LIFETIME_START) {
           BetweenStartEnd.set(Slot);
@@ -679,11 +695,15 @@ unsigned StackColoring::collectMarkers(unsigned NumSlot) {
         MarkersFound += 1;
       } else {
         for (const MachineOperand &MO : MI.operands()) {
-          if (!MO.isFI())
+          if (!MO.isFI()) {
             continue;
+
+}
           int Slot = MO.getIndex();
-          if (Slot < 0)
+          if (Slot < 0) {
             continue;
+
+}
           if (! BetweenStartEnd.test(Slot)) {
             ConservativeSlots.set(Slot);
           }
@@ -699,9 +719,13 @@ unsigned StackColoring::collectMarkers(unsigned NumSlot) {
 
   // PR27903: slots with multiple start or end lifetime ops are not
   // safe to enable for "lifetime-start-on-first-use".
-  for (unsigned slot = 0; slot < NumSlot; ++slot)
-    if (NumStartLifetimes[slot] > 1 || NumEndLifetimes[slot] > 1)
+  for (unsigned slot = 0; slot < NumSlot; ++slot) {
+    if (NumStartLifetimes[slot] > 1 || NumEndLifetimes[slot] > 1) {
       ConservativeSlots.set(slot);
+
+}
+
+}
   LLVM_DEBUG(dumpBV("Conservative slots", ConservativeSlots));
 
   // Step 2: compute begin/end sets for each block
@@ -779,8 +803,10 @@ void StackColoring::calculateLocalLiveness() {
         // PR37130: transformations prior to stack coloring can
         // sometimes leave behind statically unreachable blocks; these
         // can be safely skipped here.
-        if (I != BlockLiveness.end())
+        if (I != BlockLiveness.end()) {
           LocalLiveIn |= I->second.LiveOut;
+
+}
       }
 
       // Compute LiveOut by subtracting out lifetimes that end in this
@@ -834,8 +860,10 @@ void StackColoring::calculateLiveIntervals(unsigned NumSlots) {
     for (const MachineInstr &MI : MBB) {
       SmallVector<int, 4> slots;
       bool IsStart = false;
-      if (!isLifetimeStartOrEnd(MI, slots, IsStart))
+      if (!isLifetimeStartOrEnd(MI, slots, IsStart)) {
         continue;
+
+}
       SlotIndex ThisIndex = Indexes->getInstructionIndex(MI);
       for (auto Slot : slots) {
         if (IsStart) {
@@ -846,8 +874,10 @@ void StackColoring::calculateLiveIntervals(unsigned NumSlots) {
             LiveStarts[Slot].push_back(ThisIndex);
             DefinitelyInUse[Slot] = true;
           }
-          if (!Starts[Slot].isValid())
+          if (!Starts[Slot].isValid()) {
             Starts[Slot] = ThisIndex;
+
+}
         } else {
           if (Starts[Slot].isValid()) {
             VNInfo *VNI = Intervals[Slot]->getValNumInfo(0);
@@ -862,8 +892,10 @@ void StackColoring::calculateLiveIntervals(unsigned NumSlots) {
 
     // Finish up started segments
     for (unsigned i = 0; i < NumSlots; ++i) {
-      if (!Starts[i].isValid())
+      if (!Starts[i].isValid()) {
         continue;
+
+}
 
       SlotIndex EndIdx = Indexes->getMBBEndIdx(&MBB);
       VNInfo *VNI = Intervals[i]->getValNumInfo(0);
@@ -891,8 +923,10 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
 
   // Remap debug information that refers to stack slots.
   for (auto &VI : MF->getVariableDbgInfo()) {
-    if (!VI.Var)
+    if (!VI.Var) {
       continue;
+
+}
     if (SlotRemap.count(VI.Slot)) {
       LLVM_DEBUG(dbgs() << "Remapping debug info for ["
                         << cast<DILocalVariable>(VI.Var)->getName() << "].\n");
@@ -939,18 +973,26 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
     if (FromKind != MachineFrameInfo::SSPLK_None &&
         (ToKind == MachineFrameInfo::SSPLK_None ||
          (ToKind != MachineFrameInfo::SSPLK_LargeArray &&
-          FromKind != MachineFrameInfo::SSPLK_AddrOf)))
+          FromKind != MachineFrameInfo::SSPLK_AddrOf))) {
       MFI->setObjectSSPLayout(SI.second, FromKind);
+
+}
 
     // The new alloca might not be valid in a llvm.dbg.declare for this
     // variable, so undef out the use to make the verifier happy.
     AllocaInst *FromAI = const_cast<AllocaInst *>(From);
-    if (FromAI->isUsedByMetadata())
+    if (FromAI->isUsedByMetadata()) {
       ValueAsMetadata::handleRAUW(FromAI, UndefValue::get(FromAI->getType()));
+
+}
     for (auto &Use : FromAI->uses()) {
-      if (BitCastInst *BCI = dyn_cast<BitCastInst>(Use.get()))
-        if (BCI->isUsedByMetadata())
+      if (BitCastInst *BCI = dyn_cast<BitCastInst>(Use.get())) {
+        if (BCI->isUsedByMetadata()) {
           ValueAsMetadata::handleRAUW(BCI, UndefValue::get(BCI->getType()));
+
+}
+
+}
     }
 
     // Note that this will not replace uses in MMOs (which we'll update below),
@@ -962,23 +1004,29 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
   // Remap all instructions to the new stack slots.
   std::vector<std::vector<MachineMemOperand *>> SSRefs(
       MFI->getObjectIndexEnd());
-  for (MachineBasicBlock &BB : *MF)
+  for (MachineBasicBlock &BB : *MF) {
     for (MachineInstr &I : BB) {
       // Skip lifetime markers. We'll remove them soon.
       if (I.getOpcode() == TargetOpcode::LIFETIME_START ||
-          I.getOpcode() == TargetOpcode::LIFETIME_END)
+          I.getOpcode() == TargetOpcode::LIFETIME_END) {
         continue;
+
+}
 
       // Update the MachineMemOperand to use the new alloca.
       for (MachineMemOperand *MMO : I.memoperands()) {
         // We've replaced IR-level uses of the remapped allocas, so we only
         // need to replace direct uses here.
         const AllocaInst *AI = dyn_cast_or_null<AllocaInst>(MMO->getValue());
-        if (!AI)
+        if (!AI) {
           continue;
 
-        if (!Allocas.count(AI))
+}
+
+        if (!Allocas.count(AI)) {
           continue;
+
+}
 
         MMO->setValue(Allocas[AI]);
         FixedMemOp++;
@@ -986,17 +1034,23 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
 
       // Update all of the machine instruction operands.
       for (MachineOperand &MO : I.operands()) {
-        if (!MO.isFI())
+        if (!MO.isFI()) {
           continue;
+
+}
         int FromSlot = MO.getIndex();
 
         // Don't touch arguments.
-        if (FromSlot<0)
+        if (FromSlot<0) {
           continue;
 
+}
+
         // Only look at mapped slots.
-        if (!SlotRemap.count(FromSlot))
+        if (!SlotRemap.count(FromSlot)) {
           continue;
+
+}
 
         // In a debug build, check that the instruction that we are modifying is
         // inside the expected live range. If the instruction is not inside
@@ -1033,8 +1087,10 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
                 MMO->getPseudoValue())) {
           int FI = FSV->getFrameIndex();
           auto To = SlotRemap.find(FI);
-          if (To != SlotRemap.end())
+          if (To != SlotRemap.end()) {
             SSRefs[FI].push_back(MMO);
+
+}
         }
 
         // If this memory location can be a slot remapped here,
@@ -1045,9 +1101,9 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
             SmallVector<Value *, 4> Objs;
             getUnderlyingObjectsForCodeGen(MMOV, Objs, MF->getDataLayout());
 
-            if (Objs.empty())
+            if (Objs.empty()) {
               MayHaveConflictingAAMD = true;
-            else
+            } else {
               for (Value *V : Objs) {
                 // If this memory location comes from a known stack slot
                 // that is not remapped, we continue checking.
@@ -1058,6 +1114,8 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
                   break;
                 }
               }
+
+}
           }
         }
         if (MayHaveConflictingAAMD) {
@@ -1070,26 +1128,42 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
 
       // If any memory operand is updated, set memory references of
       // this instruction.
-      if (ReplaceMemOps)
+      if (ReplaceMemOps) {
         I.setMemRefs(*MF, NewMMOs);
+
+}
     }
 
+}
+
   // Rewrite MachineMemOperands that reference old frame indices.
-  for (auto E : enumerate(SSRefs))
+  for (auto E : enumerate(SSRefs)) {
     if (!E.value().empty()) {
       const PseudoSourceValue *NewSV =
           MF->getPSVManager().getFixedStack(SlotRemap.find(E.index())->second);
-      for (MachineMemOperand *Ref : E.value())
+      for (MachineMemOperand *Ref : E.value()) {
         Ref->setValue(NewSV);
+
+}
     }
 
+}
+
   // Update the location of C++ catch objects for the MSVC personality routine.
-  if (WinEHFuncInfo *EHInfo = MF->getWinEHFuncInfo())
-    for (WinEHTryBlockMapEntry &TBME : EHInfo->TryBlockMap)
-      for (WinEHHandlerType &H : TBME.HandlerArray)
+  if (WinEHFuncInfo *EHInfo = MF->getWinEHFuncInfo()) {
+    for (WinEHTryBlockMapEntry &TBME : EHInfo->TryBlockMap) {
+      for (WinEHHandlerType &H : TBME.HandlerArray) {
         if (H.CatchObj.FrameIndex != std::numeric_limits<int>::max() &&
-            SlotRemap.count(H.CatchObj.FrameIndex))
+            SlotRemap.count(H.CatchObj.FrameIndex)) {
           H.CatchObj.FrameIndex = SlotRemap[H.CatchObj.FrameIndex];
+
+}
+
+}
+
+}
+
+}
 
   LLVM_DEBUG(dbgs() << "Fixed " << FixedMemOp << " machine memory operands.\n");
   LLVM_DEBUG(dbgs() << "Fixed " << FixedDbg << " debug locations.\n");
@@ -1097,11 +1171,13 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
 }
 
 void StackColoring::removeInvalidSlotRanges() {
-  for (MachineBasicBlock &BB : *MF)
+  for (MachineBasicBlock &BB : *MF) {
     for (MachineInstr &I : BB) {
       if (I.getOpcode() == TargetOpcode::LIFETIME_START ||
-          I.getOpcode() == TargetOpcode::LIFETIME_END || I.isDebugInstr())
+          I.getOpcode() == TargetOpcode::LIFETIME_END || I.isDebugInstr()) {
         continue;
+
+}
 
       // Some intervals are suspicious! In some cases we find address
       // calculations outside of the lifetime zone, but not actual memory
@@ -1109,21 +1185,29 @@ void StackColoring::removeInvalidSlotRanges() {
       // violation, but address calculations are okay. This can happen when
       // GEPs are hoisted outside of the lifetime zone.
       // So, in here we only check instructions which can read or write memory.
-      if (!I.mayLoad() && !I.mayStore())
+      if (!I.mayLoad() && !I.mayStore()) {
         continue;
+
+}
 
       // Check all of the machine operands.
       for (const MachineOperand &MO : I.operands()) {
-        if (!MO.isFI())
+        if (!MO.isFI()) {
           continue;
+
+}
 
         int Slot = MO.getIndex();
 
-        if (Slot<0)
+        if (Slot<0) {
           continue;
 
-        if (Intervals[Slot]->empty())
+}
+
+        if (Intervals[Slot]->empty()) {
           continue;
+
+}
 
         // Check that the used slot is inside the calculated lifetime range.
         // If it is not, warn about it and invalidate the range.
@@ -1136,6 +1220,8 @@ void StackColoring::removeInvalidSlotRanges() {
         }
       }
     }
+
+}
 }
 
 void StackColoring::expungeSlotMap(DenseMap<int, int> &SlotRemap,
@@ -1171,8 +1257,10 @@ bool StackColoring::runOnMachineFunction(MachineFunction &Func) {
   unsigned NumSlots = MFI->getObjectIndexEnd();
 
   // If there are no stack slots then there are no markers to remove.
-  if (!NumSlots)
+  if (!NumSlots) {
     return false;
+
+}
 
   SmallVector<int, 8> SortedSlots;
   SortedSlots.reserve(NumSlots);
@@ -1220,8 +1308,10 @@ bool StackColoring::runOnMachineFunction(MachineFunction &Func) {
 
   // Search for allocas which are used outside of the declared lifetime
   // markers.
-  if (ProtectFromEscapedAllocas)
+  if (ProtectFromEscapedAllocas) {
     removeInvalidSlotRanges();
+
+}
 
   // Maps old slots to new slots.
   DenseMap<int, int> SlotRemap;
@@ -1230,8 +1320,10 @@ bool StackColoring::runOnMachineFunction(MachineFunction &Func) {
 
   // Do not bother looking at empty intervals.
   for (unsigned I = 0; I < NumSlots; ++I) {
-    if (Intervals[SortedSlots[I]]->empty())
+    if (Intervals[SortedSlots[I]]->empty()) {
       SortedSlots[I] = -1;
+
+}
   }
 
   // This is a simple greedy algorithm for merging allocas. First, sort the
@@ -1244,27 +1336,37 @@ bool StackColoring::runOnMachineFunction(MachineFunction &Func) {
   // Use stable sort to guarantee deterministic code generation.
   llvm::stable_sort(SortedSlots, [this](int LHS, int RHS) {
     // We use -1 to denote a uninteresting slot. Place these slots at the end.
-    if (LHS == -1)
+    if (LHS == -1) {
       return false;
-    if (RHS == -1)
+
+}
+    if (RHS == -1) {
       return true;
+
+}
     // Sort according to size.
     return MFI->getObjectSize(LHS) > MFI->getObjectSize(RHS);
   });
 
-  for (auto &s : LiveStarts)
+  for (auto &s : LiveStarts) {
     llvm::sort(s);
+
+}
 
   bool Changed = true;
   while (Changed) {
     Changed = false;
     for (unsigned I = 0; I < NumSlots; ++I) {
-      if (SortedSlots[I] == -1)
+      if (SortedSlots[I] == -1) {
         continue;
 
+}
+
       for (unsigned J=I+1; J < NumSlots; ++J) {
-        if (SortedSlots[J] == -1)
+        if (SortedSlots[J] == -1) {
           continue;
+
+}
 
         int FirstSlot = SortedSlots[I];
         int SecondSlot = SortedSlots[J];

@@ -56,10 +56,12 @@ VPValue *VPlanPredicator::getOrCreateNotPredicate(VPBasicBlock *PredBB,
 
   // Now AND intermediate value with PredBB's block predicate if it has one.
   VPValue *BP = PredBB->getPredicate();
-  if (BP)
+  if (BP) {
     return Builder.createAnd(BP, IntermediateVal);
-  else
+  } else {
     return IntermediateVal;
+
+}
 }
 
 // Generate a tree of ORs for all IncomingPredicates in  WorkList.
@@ -83,8 +85,10 @@ VPValue *VPlanPredicator::getOrCreateNotPredicate(VPBasicBlock *PredBB,
 // The process iterates until we have only one element in the Worklist (OR4).
 // The last element is the root predicate which is returned.
 VPValue *VPlanPredicator::genPredicateTree(std::list<VPValue *> &Worklist) {
-  if (Worklist.empty())
+  if (Worklist.empty()) {
     return nullptr;
+
+}
 
   // The worklist initially contains all the leaf nodes. Initialize the tree
   // using them.
@@ -153,8 +157,10 @@ void VPlanPredicator::createOrPropagatePredicates(VPBlockBase *CurrBlock,
   // into IncomingPredicates.
   for (VPBlockBase *PredBlock : CurrBlock->getPredecessors()) {
     // Skip back-edges
-    if (VPBlockUtils::isBackEdge(PredBlock, CurrBlock, VPLI))
+    if (VPBlockUtils::isBackEdge(PredBlock, CurrBlock, VPLI)) {
       continue;
+
+}
 
     VPValue *IncomingPredicate = nullptr;
     unsigned NumPredSuccsNoBE =
@@ -162,18 +168,22 @@ void VPlanPredicator::createOrPropagatePredicates(VPBlockBase *CurrBlock,
 
     // If there is an unconditional branch to the currBB, then we don't create
     // edge predicates. We use the predecessor's block predicate instead.
-    if (NumPredSuccsNoBE == 1)
+    if (NumPredSuccsNoBE == 1) {
       IncomingPredicate = PredBlock->getPredicate();
-    else if (NumPredSuccsNoBE == 2) {
+    } else if (NumPredSuccsNoBE == 2) {
       // Emit recipes into CurrBlock if required
       assert(isa<VPBasicBlock>(PredBlock) && "Only BBs have multiple exits");
       IncomingPredicate =
           getOrCreateNotPredicate(cast<VPBasicBlock>(PredBlock), CurrBB);
-    } else
+    } else {
       llvm_unreachable("FIXME: switch statement ?");
 
-    if (IncomingPredicate)
+}
+
+    if (IncomingPredicate) {
       IncomingPredicates.push_back(IncomingPredicate);
+
+}
   }
 
   // Logically OR all incoming predicates by building the Predicate Tree.

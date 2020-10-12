@@ -526,8 +526,10 @@ TEST(IntervalMapTest, Branched2) {
   UUMap map(allocator);
 
   // Insert enough intervals to force a height >= 2 tree.
-  for (unsigned i = 1; i < 1000; ++i)
+  for (unsigned i = 1; i < 1000; ++i) {
     map.insert(10*i, 10*i+5, i);
+
+}
 
   // Tree limits.
   EXPECT_FALSE(map.empty());
@@ -715,16 +717,22 @@ TEST(IntervalMapOverlapsTest, BigMaps) {
   UUMap mapB(allocator);
 
   // [0;4] [10;14] [20;24] ...
-  for (unsigned n = 0; n != 100; ++n)
+  for (unsigned n = 0; n != 100; ++n) {
     mapA.insert(10*n, 10*n+4, n);
 
+}
+
   // [5;6] [15;16] [25;26] ...
-  for (unsigned n = 10; n != 20; ++n)
+  for (unsigned n = 10; n != 20; ++n) {
     mapB.insert(10*n+5, 10*n+6, n);
 
+}
+
   // [208;209] [218;219] ...
-  for (unsigned n = 20; n != 30; ++n)
+  for (unsigned n = 20; n != 30; ++n) {
     mapB.insert(10*n+8, 10*n+9, n);
+
+}
 
   // insert some overlapping segments.
   mapB.insert(400, 400, 400);

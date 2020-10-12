@@ -51,11 +51,15 @@ class RootBlockObjCVarRewriter :
       if (DeclRefExpr *
             ref = dyn_cast<DeclRefExpr>(castE->getSubExpr())) {
         if (ref->getDecl() == Var) {
-          if (castE->getCastKind() == CK_LValueToRValue)
+          if (castE->getCastKind() == CK_LValueToRValue) {
             return true; // Using the value of the variable.
+
+}
           if (castE->getCastKind() == CK_NoOp && castE->isLValue() &&
-              Var->getASTContext().getLangOpts().CPlusPlus)
+              Var->getASTContext().getLangOpts().CPlusPlus) {
             return true; // Binding to const C++ reference.
+
+}
         }
       }
 
@@ -63,8 +67,10 @@ class RootBlockObjCVarRewriter :
     }
 
     bool VisitDeclRefExpr(DeclRefExpr *E) {
-      if (E->getDecl() == Var)
+      if (E->getDecl() == Var) {
         return false; // The reference of the variable, and not just its value,
+
+}
                       //  is needed.
       return true;
     }
@@ -91,10 +97,12 @@ public:
 
       BlockVarChecker checker(var);
       bool onlyValueOfVarIsNeeded = checker.TraverseStmt(block->getBody());
-      if (onlyValueOfVarIsNeeded)
+      if (onlyValueOfVarIsNeeded) {
         VarsToChange.insert(var);
-      else
+      } else {
         VarsToChange.erase(var);
+
+}
     }
 
     return true;
@@ -102,8 +110,10 @@ public:
 
 private:
   bool isImplicitStrong(QualType ty) {
-    if (isa<AttributedType>(ty.getTypePtr()))
+    if (isa<AttributedType>(ty.getTypePtr())) {
       return false;
+
+}
     return ty.getLocalQualifiers().getObjCLifetime() == Qualifiers::OCL_Strong;
   }
 };
@@ -134,8 +144,10 @@ void BlockObjCVariableTraverser::traverseBody(BodyContext &BodyCtx) {
          I = VarsToChange.begin(), E = VarsToChange.end(); I != E; ++I) {
     VarDecl *var = *I;
     BlocksAttr *attr = var->getAttr<BlocksAttr>();
-    if(!attr)
+    if(!attr) {
       continue;
+
+}
     bool useWeak = canApplyWeak(Pass.Ctx, var->getType());
     SourceManager &SM = Pass.Ctx.getSourceManager();
     Transaction Trans(Pass.TA);

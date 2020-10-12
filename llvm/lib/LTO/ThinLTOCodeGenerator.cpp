@@ -88,15 +88,19 @@ static cl::opt<int> ThreadCount("threads", cl::init(0));
 // Simple helper to save temporary files for debug.
 static void saveTempBitcode(const Module &TheModule, StringRef TempDir,
                             unsigned count, StringRef Suffix) {
-  if (TempDir.empty())
+  if (TempDir.empty()) {
     return;
+
+}
   // User asked to save temps, let dump the bitcode file after import.
   std::string SaveTempPath = (TempDir + llvm::Twine(count) + Suffix).str();
   std::error_code EC;
   raw_fd_ostream OS(SaveTempPath, EC, sys::fs::OF_None);
-  if (EC)
+  if (EC) {
     report_fatal_error(Twine("Failed to open ") + SaveTempPath +
                        " to save optimized bitcode\n");
+
+}
   WriteBitcodeToFile(TheModule, OS, /* ShouldPreserveUseListOrder */ true);
 }
 
@@ -109,8 +113,10 @@ getFirstDefinitionForLinker(const GlobalValueSummaryList &GVSummaryList) {
         return !GlobalValue::isAvailableExternallyLinkage(Linkage) &&
                !GlobalValue::isWeakForLinker(Linkage);
       });
-  if (StrongDefForLinker != GVSummaryList.end())
+  if (StrongDefForLinker != GVSummaryList.end()) {
     return StrongDefForLinker->get();
+
+}
   // Get the first *linker visible* definition for this global in the summary
   // list.
   auto FirstDefForLinker = llvm::find_if(
@@ -119,8 +125,10 @@ getFirstDefinitionForLinker(const GlobalValueSummaryList &GVSummaryList) {
         return !GlobalValue::isAvailableExternallyLinkage(Linkage);
       });
   // Extern templates can be emitted as available_externally.
-  if (FirstDefForLinker == GVSummaryList.end())
+  if (FirstDefForLinker == GVSummaryList.end()) {
     return nullptr;
+
+}
   return FirstDefForLinker->get();
 }
 
@@ -135,9 +143,11 @@ static void computePrevailingCopies(
   };
 
   for (auto &I : Index) {
-    if (HasMultipleCopies(I.second.SummaryList))
+    if (HasMultipleCopies(I.second.SummaryList)) {
       PrevailingCopy[I.first] =
           getFirstDefinitionForLinker(I.second.SummaryList);
+
+}
   }
 }
 
@@ -153,8 +163,10 @@ generateModuleMap(std::vector<std::unique_ptr<lto::InputFile>> &Modules) {
 }
 
 static void promoteModule(Module &TheModule, const ModuleSummaryIndex &Index) {
-  if (renameModuleForThinLTO(TheModule, Index))
+  if (renameModuleForThinLTO(TheModule, Index)) {
     report_fatal_error("renameModuleForThinLTO failed");
+
+}
 }
 
 namespace {
@@ -171,8 +183,10 @@ public:
 /// Verify the module and strip broken debug info.
 static void verifyLoadedModule(Module &TheModule) {
   bool BrokenDebugInfo = false;
-  if (verifyModule(TheModule, &dbgs(), &BrokenDebugInfo))
+  if (verifyModule(TheModule, &dbgs(), &BrokenDebugInfo)) {
     report_fatal_error("Broken module found, compilation aborted!");
+
+}
   if (BrokenDebugInfo) {
     TheModule.getContext().diagnose(ThinLTODiagnosticInfo(
         "Invalid debug info found, debug info will be stripped", DS_Warning));
@@ -198,8 +212,10 @@ static std::unique_ptr<Module> loadModuleFromInput(lto::InputFile *Input,
     });
     report_fatal_error("Can't load module, abort.");
   }
-  if (!Lazy)
+  if (!Lazy) {
     verifyLoadedModule(*ModuleOrErr.get());
+
+}
   return std::move(*ModuleOrErr);
 }
 
@@ -233,8 +249,10 @@ static void optimizeModule(Module &TheModule, TargetMachine &TM,
   // Populate the PassManager
   PassManagerBuilder PMB;
   PMB.LibraryInfo = new TargetLibraryInfoImpl(TM.getTargetTriple());
-  if (Freestanding)
+  if (Freestanding) {
     PMB.LibraryInfo->disableAllFunctions();
+
+}
   PMB.Inliner = createFunctionInliningPass();
   // FIXME: should get it from the bitcode?
   PMB.OptLevel = OptLevel;
@@ -261,8 +279,10 @@ static void
 addUsedSymbolToPreservedGUID(const lto::InputFile &File,
                              DenseSet<GlobalValue::GUID> &PreservedGUID) {
   for (const auto &Sym : File.symbols()) {
-    if (Sym.isUsed())
+    if (Sym.isUsed()) {
       PreservedGUID.insert(GlobalValue::getGUID(Sym.getIRName()));
+
+}
   }
 }
 
@@ -273,8 +293,10 @@ computeGUIDPreservedSymbols(const StringSet<> &PreservedSymbols,
   DenseSet<GlobalValue::GUID> GUIDPreservedSymbols(PreservedSymbols.size());
   for (auto &Entry : PreservedSymbols) {
     StringRef Name = Entry.first();
-    if (TheTriple.isOSBinFormatMachO() && Name.size() > 0 && Name[0] == '_')
+    if (TheTriple.isOSBinFormatMachO() && Name.size() > 0 && Name[0] == '_') {
       Name = Name.drop_front();
+
+}
     GUIDPreservedSymbols.insert(GlobalValue::getGUID(Name));
   }
   return GUIDPreservedSymbols;
@@ -295,8 +317,10 @@ std::unique_ptr<MemoryBuffer> codegenModule(Module &TheModule,
 
     // Setup the codegen now.
     if (TM.addPassesToEmitFile(PM, OS, nullptr, CGFT_ObjectFile,
-                               /* DisableVerify */ true))
+                               /* DisableVerify */ true)) {
       report_fatal_error("Failed to setup codegen");
+
+}
 
     // Run codegen now. resulting binary is in OutputBuffer.
     PM.run(TheModule);
@@ -319,17 +343,23 @@ public:
       const std::map<GlobalValue::GUID, GlobalValue::LinkageTypes> &ResolvedODR,
       const GVSummaryMapTy &DefinedGVSummaries, unsigned OptLevel,
       bool Freestanding, const TargetMachineBuilder &TMBuilder) {
-    if (CachePath.empty())
+    if (CachePath.empty()) {
       return;
 
-    if (!Index.modulePaths().count(ModuleID))
+}
+
+    if (!Index.modulePaths().count(ModuleID)) {
       // The module does not have an entry, it can't have a hash at all
       return;
 
+}
+
     if (all_of(Index.getModuleHash(ModuleID),
-               [](uint32_t V) { return V == 0; }))
+               [](uint32_t V) { return V == 0; })) {
       // No hash entry, no caching!
       return;
+
+}
 
     llvm::lto::Config Conf;
     Conf.OptLevel = OptLevel;
@@ -353,13 +383,17 @@ public:
 
   // Try loading the buffer for this cache entry.
   ErrorOr<std::unique_ptr<MemoryBuffer>> tryLoadingBuffer() {
-    if (EntryPath.empty())
+    if (EntryPath.empty()) {
       return std::error_code();
+
+}
     SmallString<64> ResultPath;
     Expected<sys::fs::file_t> FDOrErr = sys::fs::openNativeFileForRead(
         Twine(EntryPath), sys::fs::OF_UpdateAtime, &ResultPath);
-    if (!FDOrErr)
+    if (!FDOrErr) {
       return errorToErrorCode(FDOrErr.takeError());
+
+}
     ErrorOr<std::unique_ptr<MemoryBuffer>> MBOrErr = MemoryBuffer::getOpenFile(
         *FDOrErr, EntryPath, /*FileSize=*/-1, /*RequiresNullTerminator=*/false);
     sys::fs::closeFile(*FDOrErr);
@@ -368,8 +402,10 @@ public:
 
   // Cache the Produced object file
   void write(const MemoryBuffer &OutputBuffer) {
-    if (EntryPath.empty())
+    if (EntryPath.empty()) {
       return;
+
+}
 
     // Write to a temporary to avoid race condition
     SmallString<128> TempFilename;
@@ -473,8 +509,10 @@ static void resolvePrevailingInIndex(
   auto isPrevailing = [&](GlobalValue::GUID GUID, const GlobalValueSummary *S) {
     const auto &Prevailing = PrevailingCopy.find(GUID);
     // Not in map means that there was only one copy, which must be prevailing.
-    if (Prevailing == PrevailingCopy.end())
+    if (Prevailing == PrevailingCopy.end()) {
       return true;
+
+}
     return Prevailing->second == S;
   };
 
@@ -494,13 +532,15 @@ static void initTMBuilder(TargetMachineBuilder &TMBuilder,
   // Set a default CPU for Darwin triples (copied from LTOCodeGenerator).
   // FIXME this looks pretty terrible...
   if (TMBuilder.MCpu.empty() && TheTriple.isOSDarwin()) {
-    if (TheTriple.getArch() == llvm::Triple::x86_64)
+    if (TheTriple.getArch() == llvm::Triple::x86_64) {
       TMBuilder.MCpu = "core2";
-    else if (TheTriple.getArch() == llvm::Triple::x86)
+    } else if (TheTriple.getArch() == llvm::Triple::x86) {
       TMBuilder.MCpu = "yonah";
-    else if (TheTriple.getArch() == llvm::Triple::aarch64 ||
-             TheTriple.getArch() == llvm::Triple::aarch64_32)
+    } else if (TheTriple.getArch() == llvm::Triple::aarch64 ||
+             TheTriple.getArch() == llvm::Triple::aarch64_32) {
       TMBuilder.MCpu = "cyclone";
+
+}
   }
   TMBuilder.TheTriple = std::move(TheTriple);
 }
@@ -511,19 +551,23 @@ void ThinLTOCodeGenerator::addModule(StringRef Identifier, StringRef Data) {
   MemoryBufferRef Buffer(Data, Identifier);
 
   auto InputOrError = lto::InputFile::create(Buffer);
-  if (!InputOrError)
+  if (!InputOrError) {
     report_fatal_error("ThinLTO cannot create input file: " +
                        toString(InputOrError.takeError()));
+
+}
 
   auto TripleStr = (*InputOrError)->getTargetTriple();
   Triple TheTriple(TripleStr);
 
-  if (Modules.empty())
+  if (Modules.empty()) {
     initTMBuilder(TMBuilder, Triple(TheTriple));
-  else if (TMBuilder.TheTriple != TheTriple) {
-    if (!TMBuilder.TheTriple.isCompatibleWith(TheTriple))
+  } else if (TMBuilder.TheTriple != TheTriple) {
+    if (!TMBuilder.TheTriple.isCompatibleWith(TheTriple)) {
       report_fatal_error("ThinLTO modules with incompatible triples not "
                          "supported");
+
+}
     initTMBuilder(TMBuilder, Triple(TMBuilder.TheTriple.merge(TheTriple)));
   }
 
@@ -607,8 +651,10 @@ struct IsPrevailing {
   bool operator()(GlobalValue::GUID GUID, const GlobalValueSummary *S) const {
     const auto &Prevailing = PrevailingCopy.find(GUID);
     // Not in map means that there was only one copy, which must be prevailing.
-    if (Prevailing == PrevailingCopy.end())
+    if (Prevailing == PrevailingCopy.end()) {
       return true;
+
+}
     return Prevailing->second == S;
   };
 };
@@ -777,9 +823,11 @@ void ThinLTOCodeGenerator::emitImports(Module &TheModule, StringRef OutputName,
 
   std::error_code EC;
   if ((EC = EmitImportsFiles(ModuleIdentifier, OutputName,
-                             ModuleToSummariesForIndex)))
+                             ModuleToSummariesForIndex))) {
     report_fatal_error(Twine("Failed to open ") + OutputName +
                        " to save imports lists\n");
+
+}
 }
 
 /**
@@ -815,8 +863,10 @@ void ThinLTOCodeGenerator::internalize(Module &TheModule,
 
   // Be friendly and don't nuke totally the module when the client didn't
   // supply anything to preserve.
-  if (ExportList.empty() && GUIDPreservedSymbols.empty())
+  if (ExportList.empty() && GUIDPreservedSymbols.empty()) {
     return;
+
+}
 
   DenseMap<GlobalValue::GUID, const GlobalValueSummary *> PrevailingCopy;
   computePrevailingCopies(Index, PrevailingCopy);
@@ -864,19 +914,25 @@ ThinLTOCodeGenerator::writeGeneratedObject(int count, StringRef CacheEntryPath,
   llvm::sys::path::append(OutputPath,
                           Twine(count) + "." + ArchName + ".thinlto.o");
   OutputPath.c_str(); // Ensure the string is null terminated.
-  if (sys::fs::exists(OutputPath))
+  if (sys::fs::exists(OutputPath)) {
     sys::fs::remove(OutputPath);
+
+}
 
   // We don't return a memory buffer to the linker, just a list of files.
   if (!CacheEntryPath.empty()) {
     // Cache is enabled, hard-link the entry (or copy if hard-link fails).
     auto Err = sys::fs::create_hard_link(CacheEntryPath, OutputPath);
-    if (!Err)
+    if (!Err) {
       return std::string(OutputPath.str());
+
+}
     // Hard linking failed, try to copy.
     Err = sys::fs::copy_file(CacheEntryPath, OutputPath);
-    if (!Err)
+    if (!Err) {
       return std::string(OutputPath.str());
+
+}
     // Copy failed (could be because the CacheEntry was removed from the cache
     // in the meantime by another process), fall back and try to write down the
     // buffer to the output.
@@ -886,8 +942,10 @@ ThinLTOCodeGenerator::writeGeneratedObject(int count, StringRef CacheEntryPath,
   // No cache entry, just write out the buffer.
   std::error_code Err;
   raw_fd_ostream OS(OutputPath, Err, sys::fs::OF_None);
-  if (Err)
+  if (Err) {
     report_fatal_error("Can't open output '" + OutputPath + "'\n");
+
+}
   OS << OutputBuffer.getBuffer();
   return std::string(OutputPath.str());
 }
@@ -896,14 +954,16 @@ ThinLTOCodeGenerator::writeGeneratedObject(int count, StringRef CacheEntryPath,
 void ThinLTOCodeGenerator::run() {
   // Prepare the resulting object vector
   assert(ProducedBinaries.empty() && "The generator should not be reused");
-  if (SavedObjectsDirectoryPath.empty())
+  if (SavedObjectsDirectoryPath.empty()) {
     ProducedBinaries.resize(Modules.size());
-  else {
+  } else {
     sys::fs::create_directories(SavedObjectsDirectoryPath);
     bool IsDir;
     sys::fs::is_directory(SavedObjectsDirectoryPath, IsDir);
-    if (!IsDir)
+    if (!IsDir) {
       report_fatal_error("Unexistent dir: '" + SavedObjectsDirectoryPath + "'");
+
+}
     ProducedBinaryFiles.resize(Modules.size());
   }
 
@@ -922,11 +982,13 @@ void ThinLTOCodeGenerator::run() {
 
         // CodeGen
         auto OutputBuffer = codegenModule(*TheModule, *TMBuilder.create());
-        if (SavedObjectsDirectoryPath.empty())
+        if (SavedObjectsDirectoryPath.empty()) {
           ProducedBinaries[count] = std::move(OutputBuffer);
-        else
+        } else {
           ProducedBinaryFiles[count] =
               writeGeneratedObject(count, "", *OutputBuffer);
+
+}
       }, count++);
     }
 
@@ -941,9 +1003,11 @@ void ThinLTOCodeGenerator::run() {
     auto SaveTempPath = SaveTempsDir + "index.bc";
     std::error_code EC;
     raw_fd_ostream OS(SaveTempPath, EC, sys::fs::OF_None);
-    if (EC)
+    if (EC) {
       report_fatal_error(Twine("Failed to open ") + SaveTempPath +
                          " to save optimized bitcode\n");
+
+}
     WriteIndexToFile(*Index, OS);
   }
 
@@ -962,8 +1026,10 @@ void ThinLTOCodeGenerator::run() {
       computeGUIDPreservedSymbols(PreservedSymbols, TMBuilder.TheTriple);
 
   // Add used symbol from inputs to the preserved symbols.
-  for (const auto &M : Modules)
+  for (const auto &M : Modules) {
     addUsedSymbolToPreservedGUID(*M, GUIDPreservedSymbols);
+
+}
 
   // Compute "dead" symbols, we don't want to import/export these!
   computeDeadSymbolsInIndex(*Index, GUIDPreservedSymbols);
@@ -983,8 +1049,10 @@ void ThinLTOCodeGenerator::run() {
   std::map<ValueInfo, std::vector<VTableSlotSummary>> LocalWPDTargetsMap;
   std::set<GlobalValue::GUID> ExportedGUIDs;
   runWholeProgramDevirtOnIndex(*Index, ExportedGUIDs, LocalWPDTargetsMap);
-  for (auto GUID : ExportedGUIDs)
+  for (auto GUID : ExportedGUIDs) {
     GUIDPreservedSymbols.insert(GUID);
+
+}
 
   // Collect the import/export lists for all modules from the call-graph in the
   // combined index.
@@ -1069,11 +1137,13 @@ void ThinLTOCodeGenerator::run() {
 
           if (ErrOrBuffer) {
             // Cache Hit!
-            if (SavedObjectsDirectoryPath.empty())
+            if (SavedObjectsDirectoryPath.empty()) {
               ProducedBinaries[count] = std::move(ErrOrBuffer.get());
-            else
+            } else {
               ProducedBinaryFiles[count] = writeGeneratedObject(
                   count, CacheEntryPath, *ErrOrBuffer.get());
+
+}
             return;
           }
         }
@@ -1138,7 +1208,9 @@ void ThinLTOCodeGenerator::run() {
   pruneCache(CacheOptions.Path, CacheOptions.Policy);
 
   // If statistics were requested, print them out now.
-  if (llvm::AreStatisticsEnabled())
+  if (llvm::AreStatisticsEnabled()) {
     llvm::PrintStatistics();
+
+}
   reportAndResetTimings();
 }

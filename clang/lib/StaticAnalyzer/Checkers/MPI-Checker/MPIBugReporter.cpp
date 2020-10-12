@@ -36,8 +36,10 @@ void MPIBugReporter::reportDoubleNonblocking(
   Report->addRange(MPICallEvent.getSourceRange());
   SourceRange Range = RequestRegion->sourceRange();
 
-  if (Range.isValid())
+  if (Range.isValid()) {
     Report->addRange(Range);
+
+}
 
   Report->addVisitor(std::make_unique<RequestNodeVisitor>(
       RequestRegion, "Request is previously used by nonblocking call here. "));
@@ -57,8 +59,10 @@ void MPIBugReporter::reportMissingWait(
                                                          ErrorText, ExplNode);
 
   SourceRange Range = RequestRegion->sourceRange();
-  if (Range.isValid())
+  if (Range.isValid()) {
     Report->addRange(Range);
+
+}
   Report->addVisitor(std::make_unique<RequestNodeVisitor>(
       RequestRegion, "Request is previously used by nonblocking call here. "));
   Report->markInteresting(RequestRegion);
@@ -78,8 +82,10 @@ void MPIBugReporter::reportUnmatchedWait(
 
   Report->addRange(CE.getSourceRange());
   SourceRange Range = RequestRegion->sourceRange();
-  if (Range.isValid())
+  if (Range.isValid()) {
     Report->addRange(Range);
+
+}
 
   BReporter.emitReport(std::move(Report));
 }
@@ -89,8 +95,10 @@ MPIBugReporter::RequestNodeVisitor::VisitNode(const ExplodedNode *N,
                                               BugReporterContext &BRC,
                                               PathSensitiveBugReport &BR) {
 
-  if (IsNodeFound)
+  if (IsNodeFound) {
     return nullptr;
+
+}
 
   const Request *const Req = N->getState()->get<RequestMap>(RequestRegion);
   assert(Req && "The region must be tracked and alive, given that we've "

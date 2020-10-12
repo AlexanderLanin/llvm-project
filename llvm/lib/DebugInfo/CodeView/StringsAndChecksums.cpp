@@ -71,8 +71,10 @@ void StringsAndChecksumsRef::setChecksums(
 void StringsAndChecksumsRef::initializeChecksums(
     const DebugSubsectionRecord &FCR) {
   assert(FCR.kind() == DebugSubsectionKind::FileChecksums);
-  if (Checksums)
+  if (Checksums) {
     return;
+
+}
 
   OwnedChecksums = std::make_shared<DebugChecksumsSubsectionRef>();
   consumeError(OwnedChecksums->initialize(FCR.getRecordData()));

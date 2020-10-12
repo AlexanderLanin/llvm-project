@@ -160,8 +160,10 @@ void CGCXXABI::EmitReturnFromThunk(CodeGenFunction &CGF,
 }
 
 CharUnits CGCXXABI::GetArrayCookieSize(const CXXNewExpr *expr) {
-  if (!requiresArrayCookie(expr))
+  if (!requiresArrayCookie(expr)) {
     return CharUnits::Zero();
+
+}
   return getArrayCookieSizeImpl(expr->getAllocatedType());
 }
 
@@ -184,8 +186,10 @@ bool CGCXXABI::requiresArrayCookie(const CXXDeleteExpr *expr,
                                    QualType elementType) {
   // If the class's usual deallocation function takes two arguments,
   // it needs a cookie.
-  if (expr->doesUsualArrayDeleteWantSize())
+  if (expr->doesUsualArrayDeleteWantSize()) {
     return true;
+
+}
 
   return elementType.isDestructedType();
 }
@@ -193,8 +197,10 @@ bool CGCXXABI::requiresArrayCookie(const CXXDeleteExpr *expr,
 bool CGCXXABI::requiresArrayCookie(const CXXNewExpr *expr) {
   // If the class's usual deallocation function takes two arguments,
   // it needs a cookie.
-  if (expr->doesUsualArrayDeleteWantSize())
+  if (expr->doesUsualArrayDeleteWantSize()) {
     return true;
+
+}
 
   return expr->getAllocatedType().isDestructedType();
 }
@@ -236,10 +242,12 @@ llvm::Constant *CGCXXABI::getMemberPointerAdjustment(const CastExpr *E) {
          E->getCastKind() == CK_BaseToDerivedMemberPointer);
 
   QualType derivedType;
-  if (E->getCastKind() == CK_DerivedToBaseMemberPointer)
+  if (E->getCastKind() == CK_DerivedToBaseMemberPointer) {
     derivedType = E->getSubExpr()->getType();
-  else
+  } else {
     derivedType = E->getType();
+
+}
 
   const CXXRecordDecl *derivedClass =
     derivedType->castAs<MemberPointerType>()->getClass()->getAsCXXRecordDecl();
@@ -260,22 +268,28 @@ CharUnits CGCXXABI::getMemberPointerPathAdjustment(const APValue &MP) {
   for (unsigned I = 0, N = Path.size(); I != N; ++I) {
     const CXXRecordDecl *Base = RD;
     const CXXRecordDecl *Derived = Path[I];
-    if (DerivedMember)
+    if (DerivedMember) {
       std::swap(Base, Derived);
+
+}
     ThisAdjustment +=
       getContext().getASTRecordLayout(Derived).getBaseClassOffset(Base);
     RD = Path[I];
   }
-  if (DerivedMember)
+  if (DerivedMember) {
     ThisAdjustment = -ThisAdjustment;
+
+}
   return ThisAdjustment;
 }
 
 llvm::BasicBlock *
 CGCXXABI::EmitCtorCompleteObjectHandler(CodeGenFunction &CGF,
                                         const CXXRecordDecl *RD) {
-  if (CGM.getTarget().getCXXABI().hasConstructorVariants())
+  if (CGM.getTarget().getCXXABI().hasConstructorVariants()) {
     llvm_unreachable("shouldn't be called in this ABI");
+
+}
 
   ErrorUnsupportedABI(CGF, "complete object detection in ctor");
   return nullptr;

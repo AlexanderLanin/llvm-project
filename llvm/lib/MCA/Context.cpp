@@ -55,9 +55,11 @@ Context::createDefaultPipeline(const PipelineOptions &Opts, SourceMgr &SrcMgr) {
   // Build the pipeline.
   auto StagePipeline = std::make_unique<Pipeline>();
   StagePipeline->appendStage(std::move(Fetch));
-  if (Opts.MicroOpQueueSize)
+  if (Opts.MicroOpQueueSize) {
     StagePipeline->appendStage(std::make_unique<MicroOpQueueStage>(
         Opts.MicroOpQueueSize, Opts.DecodersThroughput));
+
+}
   StagePipeline->appendStage(std::move(Dispatch));
   StagePipeline->appendStage(std::move(Execute));
   StagePipeline->appendStage(std::move(Retire));

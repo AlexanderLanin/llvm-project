@@ -193,9 +193,13 @@ DAGDeltaAlgorithmImpl::DAGDeltaAlgorithmImpl(
 
   // Compute the roots.
   for (changeset_ty::const_iterator it = Changes.begin(),
-         ie = Changes.end(); it != ie; ++it)
-    if (succ_begin(*it) == succ_end(*it))
+         ie = Changes.end(); it != ie; ++it) {
+    if (succ_begin(*it) == succ_end(*it)) {
       Roots.push_back(*it);
+
+}
+
+}
 
   // Pre-compute the closure of the successor relation.
   std::vector<change_ty> Worklist(Roots.begin(), Roots.end());
@@ -214,13 +218,19 @@ DAGDeltaAlgorithmImpl::DAGDeltaAlgorithmImpl(
 
   // Invert to form the predecessor closure map.
   for (changeset_ty::const_iterator it = Changes.begin(),
-         ie = Changes.end(); it != ie; ++it)
+         ie = Changes.end(); it != ie; ++it) {
     PredClosure.insert(std::make_pair(*it, std::set<change_ty>()));
+
+}
   for (changeset_ty::const_iterator it = Changes.begin(),
-         ie = Changes.end(); it != ie; ++it)
+         ie = Changes.end(); it != ie; ++it) {
     for (succ_closure_iterator_ty it2 = succ_closure_begin(*it),
-           ie2 = succ_closure_end(*it); it2 != ie2; ++it2)
+           ie2 = succ_closure_end(*it); it2 != ie2; ++it2) {
       PredClosure[*it2].insert(*it);
+
+}
+
+}
 
   // Dump useful debug info.
   LLVM_DEBUG({
@@ -292,15 +302,21 @@ bool DAGDeltaAlgorithmImpl::GetTestResult(const changeset_ty &Changes,
   changeset_ty Extended(Required);
   Extended.insert(Changes.begin(), Changes.end());
   for (changeset_ty::const_iterator it = Changes.begin(),
-         ie = Changes.end(); it != ie; ++it)
+         ie = Changes.end(); it != ie; ++it) {
     Extended.insert(pred_closure_begin(*it), pred_closure_end(*it));
 
-  if (FailedTestsCache.count(Extended))
+}
+
+  if (FailedTestsCache.count(Extended)) {
     return false;
 
+}
+
   bool Result = ExecuteOneTest(Extended);
-  if (!Result)
+  if (!Result) {
     FailedTestsCache.insert(Extended);
+
+}
 
   return Result;
 }
@@ -341,8 +357,10 @@ DAGDeltaAlgorithmImpl::Run() {
     // active changes.
     CurrentSet.clear();
     for (changeset_ty::const_iterator it = CurrentMinSet.begin(),
-           ie = CurrentMinSet.end(); it != ie; ++it)
+           ie = CurrentMinSet.end(); it != ie; ++it) {
       CurrentSet.insert(pred_begin(*it), pred_end(*it));
+
+}
 
     // FIXME: We could enforce CurrentSet intersect Required == {} here if we
     // wanted to protect against cyclic graphs.

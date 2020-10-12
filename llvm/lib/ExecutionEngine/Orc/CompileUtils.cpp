@@ -36,8 +36,10 @@ irManglingOptionsFromTargetOptions(const TargetOptions &Opts) {
 /// Compile a Module to an ObjectFile.
 Expected<SimpleCompiler::CompileResult> SimpleCompiler::operator()(Module &M) {
   CompileResult CachedObject = tryToLoadFromObjectCache(M);
-  if (CachedObject)
+  if (CachedObject) {
     return std::move(CachedObject);
+
+}
 
   SmallVector<char, 0> ObjBufferSV;
 
@@ -46,9 +48,11 @@ Expected<SimpleCompiler::CompileResult> SimpleCompiler::operator()(Module &M) {
 
     legacy::PassManager PM;
     MCContext *Ctx;
-    if (TM.addPassesToEmitMC(PM, Ctx, ObjStream))
+    if (TM.addPassesToEmitMC(PM, Ctx, ObjStream)) {
       return make_error<StringError>("Target does not support MC emission",
                                      inconvertibleErrorCode());
+
+}
     PM.run(M);
   }
 
@@ -57,8 +61,10 @@ Expected<SimpleCompiler::CompileResult> SimpleCompiler::operator()(Module &M) {
 
   auto Obj = object::ObjectFile::createObjectFile(ObjBuffer->getMemBufferRef());
 
-  if (!Obj)
+  if (!Obj) {
     return Obj.takeError();
+
+}
 
   notifyObjectCompiled(M, *ObjBuffer);
   return std::move(ObjBuffer);
@@ -66,16 +72,20 @@ Expected<SimpleCompiler::CompileResult> SimpleCompiler::operator()(Module &M) {
 
 SimpleCompiler::CompileResult
 SimpleCompiler::tryToLoadFromObjectCache(const Module &M) {
-  if (!ObjCache)
+  if (!ObjCache) {
     return CompileResult();
+
+}
 
   return ObjCache->getObject(&M);
 }
 
 void SimpleCompiler::notifyObjectCompiled(const Module &M,
                                           const MemoryBuffer &ObjBuffer) {
-  if (ObjCache)
+  if (ObjCache) {
     ObjCache->notifyObjectCompiled(&M, ObjBuffer.getMemBufferRef());
+
+}
 }
 
 ConcurrentIRCompiler::ConcurrentIRCompiler(JITTargetMachineBuilder JTMB,

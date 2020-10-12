@@ -171,8 +171,10 @@ class ShrinkWrap : public MachineFunctionPass {
       TFI->determineCalleeSaves(*MachineFunc, SavedRegs, RS);
 
       for (int Reg = SavedRegs.find_first(); Reg != -1;
-           Reg = SavedRegs.find_next(Reg))
+           Reg = SavedRegs.find_next(Reg)) {
         CurrentCSRs.insert((unsigned)Reg);
+
+}
     }
     return CurrentCSRs;
   }
@@ -265,8 +267,10 @@ bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI,
   //         are known to not access the stack.
   //       - Further, data dependency and alias analysis can validate
   //         that load and stores never derive from the stack pointer.
-  if (MI.mayLoadOrStore())
+  if (MI.mayLoadOrStore()) {
     return true;
+
+}
 
   if (MI.getOpcode() == FrameSetupOpcode ||
       MI.getOpcode() == FrameDestroyOpcode) {
@@ -277,11 +281,15 @@ bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI,
     bool UseOrDefCSR = false;
     if (MO.isReg()) {
       // Ignore instructions like DBG_VALUE which don't read/def the register.
-      if (!MO.isDef() && !MO.readsReg())
+      if (!MO.isDef() && !MO.readsReg()) {
         continue;
+
+}
       Register PhysReg = MO.getReg();
-      if (!PhysReg)
+      if (!PhysReg) {
         continue;
+
+}
       assert(Register::isPhysicalRegister(PhysReg) && "Unallocated register?!");
       // The stack pointer is not normally described as a callee-saved register
       // in calling convention definitions, so we need to watch for it
@@ -316,44 +324,54 @@ static MachineBasicBlock *FindIDom(MachineBasicBlock &Block, ListOfBBs BBs,
   MachineBasicBlock *IDom = &Block;
   for (MachineBasicBlock *BB : BBs) {
     IDom = Dom.findNearestCommonDominator(IDom, BB);
-    if (!IDom)
+    if (!IDom) {
       break;
+
+}
   }
-  if (IDom == &Block)
+  if (IDom == &Block) {
     return nullptr;
+
+}
   return IDom;
 }
 
 void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
                                          RegScavenger *RS) {
   // Get rid of the easy cases first.
-  if (!Save)
+  if (!Save) {
     Save = &MBB;
-  else
+  } else {
     Save = MDT->findNearestCommonDominator(Save, &MBB);
+
+}
 
   if (!Save) {
     LLVM_DEBUG(dbgs() << "Found a block that is not reachable from Entry\n");
     return;
   }
 
-  if (!Restore)
+  if (!Restore) {
     Restore = &MBB;
-  else if (MPDT->getNode(&MBB)) // If the block is not in the post dom tree, it
+  } else if (MPDT->getNode(&MBB)) { // If the block is not in the post dom tree, it
                                 // means the block never returns. If that's the
                                 // case, we don't want to call
                                 // `findNearestCommonDominator`, which will
                                 // return `Restore`.
     Restore = MPDT->findNearestCommonDominator(Restore, &MBB);
-  else
+  } else {
     Restore = nullptr; // Abort, we can't find a restore point in this case.
+
+}
 
   // Make sure we would be able to insert the restore code before the
   // terminator.
   if (Restore == &MBB) {
     for (const MachineInstr &Terminator : MBB.terminators()) {
-      if (!useOrDefCSROrFI(Terminator, RS))
+      if (!useOrDefCSROrFI(Terminator, RS)) {
         continue;
+
+}
       // One of the terminator needs to happen before the restore point.
       if (MBB.succ_empty()) {
         Restore = nullptr; // Abort, we can't find a restore point in this case.
@@ -408,8 +426,10 @@ void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
       continue;
     }
     // Fix (B).
-    if (!RestorePostDominatesSave)
+    if (!RestorePostDominatesSave) {
       Restore = MPDT->findNearestCommonDominator(Restore, Save);
+
+}
 
     // Fix (C).
     if (Save && Restore &&
@@ -418,8 +438,10 @@ void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
         // Push Save outside of this loop if immediate dominator is different
         // from save block. If immediate dominator is not different, bail out.
         Save = FindIDom<>(*Save, Save->predecessors(), *MDT);
-        if (!Save)
+        if (!Save) {
           break;
+
+}
       } else {
         // If the loop does not exit, there is no point in looking
         // for a post-dominator outside the loop.
@@ -430,15 +452,17 @@ void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
         MachineBasicBlock *IPdom = Restore;
         for (MachineBasicBlock *LoopExitBB: ExitBlocks) {
           IPdom = FindIDom<>(*IPdom, LoopExitBB->successors(), *MPDT);
-          if (!IPdom)
+          if (!IPdom) {
             break;
+
+}
         }
         // If the immediate post-dominator is not in a less nested loop,
         // then we are stuck in a program with an infinite loop.
         // In that case, we will not find a safe point, hence, bail out.
-        if (IPdom && MLI->getLoopDepth(IPdom) < MLI->getLoopDepth(Restore))
+        if (IPdom && MLI->getLoopDepth(IPdom) < MLI->getLoopDepth(Restore)) {
           Restore = IPdom;
-        else {
+        } else {
           Restore = nullptr;
           break;
         }
@@ -461,8 +485,10 @@ static bool giveUpWithRemarks(MachineOptimizationRemarkEmitter *ORE,
 }
 
 bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()) || MF.empty() || !isShrinkWrapEnabled(MF))
+  if (skipFunction(MF.getFunction()) || MF.empty() || !isShrinkWrapEnabled(MF)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "**** Analysing " << MF.getName() << '\n');
 
@@ -489,10 +515,12 @@ bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
     LLVM_DEBUG(dbgs() << "Look into: " << MBB.getNumber() << ' '
                       << MBB.getName() << '\n');
 
-    if (MBB.isEHFuncletEntry())
+    if (MBB.isEHFuncletEntry()) {
       return giveUpWithRemarks(ORE, "UnsupportedEHFunclets",
                                "EH Funclets are not supported yet.",
                                MBB.front().getDebugLoc(), &MBB);
+
+}
 
     if (MBB.isEHPad()) {
       // Push the prologue and epilogue outside of
@@ -511,8 +539,10 @@ bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
     }
 
     for (const MachineInstr &MI : MBB) {
-      if (!useOrDefCSROrFI(MI, RS.get()))
+      if (!useOrDefCSROrFI(MI, RS.get())) {
         continue;
+
+}
       // Save (resp. restore) point must dominate (resp. post dominate)
       // MI. Look for the proper basic block for those.
       updateSaveRestorePoints(MBB, RS.get());
@@ -552,21 +582,27 @@ bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
     if (((IsSaveCheap = EntryFreq >= MBFI->getBlockFreq(Save).getFrequency()) &&
          EntryFreq >= MBFI->getBlockFreq(Restore).getFrequency()) &&
         ((TargetCanUseSaveAsPrologue = TFI->canUseAsPrologue(*Save)) &&
-         TFI->canUseAsEpilogue(*Restore)))
+         TFI->canUseAsEpilogue(*Restore))) {
       break;
+
+}
     LLVM_DEBUG(
         dbgs() << "New points are too expensive or invalid for the target\n");
     MachineBasicBlock *NewBB;
     if (!IsSaveCheap || !TargetCanUseSaveAsPrologue) {
       Save = FindIDom<>(*Save, Save->predecessors(), *MDT);
-      if (!Save)
+      if (!Save) {
         break;
+
+}
       NewBB = Save;
     } else {
       // Restore is expensive.
       Restore = FindIDom<>(*Restore, Restore->successors(), *MPDT);
-      if (!Restore)
+      if (!Restore) {
         break;
+
+}
       NewBB = Restore;
     }
     updateSaveRestorePoints(*NewBB, RS.get());

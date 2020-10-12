@@ -201,8 +201,10 @@ bool X86WinCOFFTargetStreamer::emitFPOEndProc(SMLoc L) {
 }
 
 bool X86WinCOFFTargetStreamer::emitFPOSetFrame(unsigned Reg, SMLoc L) {
-  if (checkInFPOPrologue(L))
+  if (checkInFPOPrologue(L)) {
     return true;
+
+}
   FPOInstruction Inst;
   Inst.Label = emitFPOLabel();
   Inst.Op = FPOInstruction::SetFrame;
@@ -212,8 +214,10 @@ bool X86WinCOFFTargetStreamer::emitFPOSetFrame(unsigned Reg, SMLoc L) {
 }
 
 bool X86WinCOFFTargetStreamer::emitFPOPushReg(unsigned Reg, SMLoc L) {
-  if (checkInFPOPrologue(L))
+  if (checkInFPOPrologue(L)) {
     return true;
+
+}
   FPOInstruction Inst;
   Inst.Label = emitFPOLabel();
   Inst.Op = FPOInstruction::PushReg;
@@ -223,8 +227,10 @@ bool X86WinCOFFTargetStreamer::emitFPOPushReg(unsigned Reg, SMLoc L) {
 }
 
 bool X86WinCOFFTargetStreamer::emitFPOStackAlloc(unsigned StackAlloc, SMLoc L) {
-  if (checkInFPOPrologue(L))
+  if (checkInFPOPrologue(L)) {
     return true;
+
+}
   FPOInstruction Inst;
   Inst.Label = emitFPOLabel();
   Inst.Op = FPOInstruction::StackAlloc;
@@ -234,8 +240,10 @@ bool X86WinCOFFTargetStreamer::emitFPOStackAlloc(unsigned StackAlloc, SMLoc L) {
 }
 
 bool X86WinCOFFTargetStreamer::emitFPOStackAlign(unsigned Align, SMLoc L) {
-  if (checkInFPOPrologue(L))
+  if (checkInFPOPrologue(L)) {
     return true;
+
+}
   if (!llvm::any_of(CurFPOData->Instructions, [](const FPOInstruction &Inst) {
         return Inst.Op == FPOInstruction::SetFrame;
       })) {
@@ -252,8 +260,10 @@ bool X86WinCOFFTargetStreamer::emitFPOStackAlign(unsigned Align, SMLoc L) {
 }
 
 bool X86WinCOFFTargetStreamer::emitFPOEndPrologue(SMLoc L) {
-  if (checkInFPOPrologue(L))
+  if (checkInFPOPrologue(L)) {
     return true;
+
+}
   CurFPOData->PrologueEnd = emitFPOLabel();
   return false;
 }
@@ -311,8 +321,10 @@ static Printable printFPOReg(const MCRegisterInfo *MRI, unsigned LLVMReg) {
 
 void FPOStateMachine::emitFrameDataRecord(MCStreamer &OS, MCSymbol *Label) {
   unsigned CurFlags = Flags;
-  if (Label == FPO->Begin)
+  if (Label == FPO->Begin) {
     CurFlags |= FrameData::IsFunctionStart;
+
+}
 
   // Compute the new FrameFunc string.
   FrameFunc.clear();
@@ -348,9 +360,11 @@ void FPOStateMachine::emitFrameDataRecord(MCStreamer &OS, MCSymbol *Label) {
   FuncOS << "$esp " << CFAVar << " 4 + = ";
 
   // Each saved register is stored at an unchanging negative CFA offset.
-  for (RegSaveOffset RO : RegSaveOffsets)
+  for (RegSaveOffset RO : RegSaveOffsets) {
     FuncOS << printFPOReg(MRI, RO.Reg) << ' ' << CFAVar << ' ' << RO.Offset
            << " - ^ = ";
+
+}
 
   // Add it to the CV string table.
   CodeViewContext &CVCtx = OS.getContext().getCVContext();
@@ -430,8 +444,10 @@ bool X86WinCOFFTargetStreamer::emitFPOData(const MCSymbol *ProcSym, SMLoc L) {
       FSM.CurOffset += Inst.RegOrOffset;
       FSM.LocalSize += Inst.RegOrOffset;
       // No need to emit FrameData for stack allocations with a frame pointer.
-      if (FSM.FrameReg)
+      if (FSM.FrameReg) {
         continue;
+
+}
       break;
     }
     FSM.emitFrameDataRecord(OS, Inst.Label);
@@ -454,8 +470,10 @@ MCTargetStreamer *llvm::createX86AsmTargetStreamer(MCStreamer &S,
 MCTargetStreamer *
 llvm::createX86ObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
   // No need to register a target streamer.
-  if (!STI.getTargetTriple().isOSBinFormatCOFF())
+  if (!STI.getTargetTriple().isOSBinFormatCOFF()) {
     return nullptr;
+
+}
   // Registers itself to the MCStreamer.
   return new X86WinCOFFTargetStreamer(S);
 }

@@ -62,8 +62,10 @@ typedef uint64_t RuleID;
 StringSet<> StrTab;
 
 StringRef insertStrTab(StringRef S) {
-  if (S.empty())
+  if (S.empty()) {
     return S;
+
+}
   return StrTab.insert(S).first->first();
 }
 
@@ -218,8 +220,10 @@ public:
 
   /// Export expansions for this rule
   void declareExpansions(CodeExpansions &Expansions) const {
-    for (const auto &I : matchdata_decls())
+    for (const auto &I : matchdata_decls()) {
       Expansions.declare(I.getPatternSymbol(), I.getVariableName());
+
+}
   }
 
   /// The matcher will begin from the roots and will perform the match by
@@ -235,8 +239,10 @@ public:
       Roots.insert(I);
       Visited.insert(I);
     }
-    for (auto &I : MatchDag.edges())
+    for (auto &I : MatchDag.edges()) {
       EdgesRemaining.insert(I);
+
+}
 
     bool Progressed = false;
     SmallSet<GIMatchDagEdge *, 20> EdgesToRemove;
@@ -244,15 +250,19 @@ public:
       for (auto EI = EdgesRemaining.begin(), EE = EdgesRemaining.end();
            EI != EE; ++EI) {
         if (Visited.count((*EI)->getFromMI())) {
-          if (Roots.count((*EI)->getToMI()))
+          if (Roots.count((*EI)->getToMI())) {
             PrintError(TheDef.getLoc(), "One or more roots are unnecessary");
+
+}
           Visited.insert((*EI)->getToMI());
           EdgesToRemove.insert(*EI);
           Progressed = true;
         }
       }
-      for (GIMatchDagEdge *ToRemove : EdgesToRemove)
+      for (GIMatchDagEdge *ToRemove : EdgesToRemove) {
         EdgesRemaining.erase(ToRemove);
+
+}
       EdgesToRemove.clear();
 
       for (auto EI = EdgesRemaining.begin(), EE = EdgesRemaining.end();
@@ -263,8 +273,10 @@ public:
           EdgesToRemove.insert(*EI);
           Progressed = true;
         }
-        for (GIMatchDagEdge *ToRemove : EdgesToRemove)
+        for (GIMatchDagEdge *ToRemove : EdgesToRemove) {
           EdgesRemaining.erase(ToRemove);
+
+}
         EdgesToRemove.clear();
       }
 
@@ -281,9 +293,13 @@ public:
 /// is primarily useful for testing for defs and similar in DagInit's since
 /// DagInit's support any type inside them.
 static bool isSpecificDef(const Init &N, StringRef Def) {
-  if (const DefInit *OpI = dyn_cast<DefInit>(&N))
-    if (OpI->getDef()->getName() == Def)
+  if (const DefInit *OpI = dyn_cast<DefInit>(&N)) {
+    if (OpI->getDef()->getName() == Def) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -292,9 +308,13 @@ static bool isSpecificDef(const Init &N, StringRef Def) {
 /// primarily useful for testing for subclasses of GIMatchKind and similar in
 /// DagInit's since DagInit's support any type inside them.
 static Record *getDefOfSubClass(const Init &N, StringRef Cls) {
-  if (const DefInit *OpI = dyn_cast<DefInit>(&N))
-    if (OpI->getDef()->isSubClassOf(Cls))
+  if (const DefInit *OpI = dyn_cast<DefInit>(&N)) {
+    if (OpI->getDef()->isSubClassOf(Cls)) {
       return OpI->getDef();
+
+}
+
+}
   return nullptr;
 }
 
@@ -304,11 +324,19 @@ static Record *getDefOfSubClass(const Init &N, StringRef Cls) {
 /// DagInit's support any type inside them.
 static const DagInit *getDagWithSpecificOperator(const Init &N,
                                                  StringRef Name) {
-  if (const DagInit *I = dyn_cast<DagInit>(&N))
-    if (I->getNumArgs() > 0)
-      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator()))
-        if (OpI->getDef()->getName() == Name)
+  if (const DagInit *I = dyn_cast<DagInit>(&N)) {
+    if (I->getNumArgs() > 0) {
+      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator())) {
+        if (OpI->getDef()->getName() == Name) {
           return I;
+
+}
+
+}
+
+}
+
+}
   return nullptr;
 }
 
@@ -318,11 +346,19 @@ static const DagInit *getDagWithSpecificOperator(const Init &N,
 /// similar in DagInit's since DagInit's support any type inside them.
 static const DagInit *getDagWithOperatorOfSubClass(const Init &N,
                                                    StringRef Cls) {
-  if (const DagInit *I = dyn_cast<DagInit>(&N))
-    if (I->getNumArgs() > 0)
-      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator()))
-        if (OpI->getDef()->isSubClassOf(Cls))
+  if (const DagInit *I = dyn_cast<DagInit>(&N)) {
+    if (I->getNumArgs() > 0) {
+      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator())) {
+        if (OpI->getDef()->isSubClassOf(Cls)) {
           return I;
+
+}
+
+}
+
+}
+
+}
   return nullptr;
 }
 
@@ -374,16 +410,18 @@ bool CombineRule::parseDefs() {
     }
 
     // Otherwise emit an appropriate error message.
-    if (getDefOfSubClass(*Defs->getArg(I), "GIDefKind"))
+    if (getDefOfSubClass(*Defs->getArg(I), "GIDefKind")) {
       PrintError(TheDef.getLoc(),
                  "This GIDefKind not implemented in tablegen");
-    else if (getDefOfSubClass(*Defs->getArg(I), "GIDefKindWithArgs"))
+    } else if (getDefOfSubClass(*Defs->getArg(I), "GIDefKindWithArgs")) {
       PrintError(TheDef.getLoc(),
                  "This GIDefKindWithArgs not implemented in tablegen");
-    else
+    } else {
       PrintError(TheDef.getLoc(),
                  "Expected a subclass of GIDefKind or a sub-dag whose "
                  "operator is of type GIDefKindWithArgs");
+
+}
     return false;
   }
 
@@ -418,8 +456,10 @@ bool CombineRule::parseInstructionMatcher(
     unsigned OpIdx = 0;
     for (const auto &NameInit : Matcher->getArgNames()) {
       StringRef Name = insertStrTab(NameInit->getAsUnquotedString());
-      if (Name.empty())
+      if (Name.empty()) {
         continue;
+
+}
       N->assignNameToOperand(OpIdx, Name);
 
       // Record the endpoints of any named edges. We'll add the cartesian
@@ -509,12 +549,16 @@ bool CombineRule::parseMatcher(const CodeGenTarget &Target) {
   for (unsigned I = 0; I < Matchers->getNumArgs(); ++I) {
     if (parseInstructionMatcher(Target, Matchers->getArgName(I),
                                 *Matchers->getArg(I), NamedEdgeDefs,
-                                NamedEdgeUses))
+                                NamedEdgeUses)) {
       continue;
 
+}
+
     if (parseWipMatchOpcodeMatcher(Target, Matchers->getArgName(I),
-                                   *Matchers->getArg(I)))
+                                   *Matchers->getArg(I))) {
       continue;
+
+}
 
 
     // Parse arbitrary C++ code we have in lieu of supporting MIR matching
@@ -539,9 +583,11 @@ bool CombineRule::parseMatcher(const CodeGenTarget &Target) {
     if (NameAndDefs.getValue().size() > 1) {
       PrintError(TheDef.getLoc(),
                  "Two different MachineInstrs cannot def the same vreg");
-      for (const auto &NameAndDefOp : NameAndDefs.getValue())
+      for (const auto &NameAndDefOp : NameAndDefs.getValue()) {
         PrintNote("in " + to_string(*NameAndDefOp.N) + " created from " +
                   to_string(*NameAndDefOp.Matcher) + "");
+
+}
       FailedToAddEdges = true;
     }
     const auto &Uses = NamedEdgeUses[NameAndDefs.getKey()];
@@ -552,8 +598,10 @@ bool CombineRule::parseMatcher(const CodeGenTarget &Target) {
       }
     }
   }
-  if (FailedToAddEdges)
+  if (FailedToAddEdges) {
     return false;
+
+}
 
   // If a variable is referenced in multiple use contexts then we need a
   // predicate to confirm they are the same operand. We can elide this if it's
@@ -660,10 +708,14 @@ GICombinerEmitter::makeCombineRule(const Record &TheDef) {
   std::unique_ptr<CombineRule> Rule =
       std::make_unique<CombineRule>(Target, MatchDagCtx, NumPatternTotal, TheDef);
 
-  if (!Rule->parseDefs())
+  if (!Rule->parseDefs()) {
     return nullptr;
-  if (!Rule->parseMatcher(Target))
+
+}
+  if (!Rule->parseMatcher(Target)) {
     return nullptr;
+
+}
 
   Rule->reorientToRoots();
 
@@ -672,8 +724,10 @@ GICombinerEmitter::makeCombineRule(const Record &TheDef) {
     Rule->getMatchDag().dump();
     Rule->getMatchDag().writeDOTGraph(dbgs(), Rule->getName());
   });
-  if (StopAfterParse)
+  if (StopAfterParse) {
     return Rule;
+
+}
 
   // For now, don't support traversing from def to use. We'll come back to
   // this later once we have the algorithm changes to support it.
@@ -691,8 +745,10 @@ GICombinerEmitter::makeCombineRule(const Record &TheDef) {
       PrintNote("Edge " + to_string(*E));
     }
   }
-  if (EmittedDefToUseError)
+  if (EmittedDefToUseError) {
     return nullptr;
+
+}
 
   // For now, don't support multi-root rules. We'll come back to this later
   // once we have the algorithm changes to support it.
@@ -716,8 +772,10 @@ void GICombinerEmitter::gatherRules(
       }
       ActiveRules.emplace_back(std::move(Rule));
       ++NumPatternTotal;
-    } else
+    } else {
       gatherRules(ActiveRules, R->getValueAsListOfDefs("Rules"));
+
+}
   }
 }
 
@@ -747,14 +805,16 @@ void GICombinerEmitter::generateCodeForTree(raw_ostream &OS,
 
     CodeExpansions Expansions;
     for (const auto &VarBinding : Leaf.var_bindings()) {
-      if (VarBinding.isInstr())
+      if (VarBinding.isInstr()) {
         Expansions.declare(VarBinding.getName(),
                            "MIs[" + to_string(VarBinding.getInstrID()) + "]");
-      else
+      } else {
         Expansions.declare(VarBinding.getName(),
                            "MIs[" + to_string(VarBinding.getInstrID()) +
                                "]->getOperand(" +
                                to_string(VarBinding.getOpIdx()) + ")");
+
+}
     }
     Rule->declareExpansions(Expansions);
 
@@ -776,8 +836,10 @@ void GICombinerEmitter::generateCodeForTree(raw_ostream &OS,
     // untested predicates left over.
     for (const GIMatchDagPredicate *Predicate : Leaf.untested_predicates()) {
       if (Predicate->generateCheckCode(OS, (Indent + "      ").str(),
-                                       Expansions))
+                                       Expansions)) {
         continue;
+
+}
       PrintError(RuleDef.getLoc(),
                  "Unable to test predicate used in rule");
       PrintNote(SMLoc(),
@@ -837,8 +899,10 @@ void GICombinerEmitter::generateCodeForTree(raw_ostream &OS,
          << Indent << "return false;\n";
     }
   }
-  if (!AnyFullyTested)
+  if (!AnyFullyTested) {
     OS << Indent << "return false;\n";
+
+}
 }
 
 void GICombinerEmitter::run(raw_ostream &OS) {
@@ -849,8 +913,10 @@ void GICombinerEmitter::run(raw_ostream &OS) {
               "Terminating due to -gicombiner-stop-after-parse");
     return;
   }
-  if (ErrorsPrinted)
+  if (ErrorsPrinted) {
     PrintFatalError(Combiner->getLoc(), "Failed to parse one or more rules");
+
+}
   LLVM_DEBUG(dbgs() << "Optimizing tree for " << Rules.size() << " rules\n");
   std::unique_ptr<GIMatchTree> Tree;
   {
@@ -866,8 +932,10 @@ void GICombinerEmitter::run(raw_ostream &OS) {
                             Rule.get());
         HadARoot = true;
       }
-      if (!HadARoot)
+      if (!HadARoot) {
         PrintFatalError(Rule->getDef().getLoc(), "All rules must have a root");
+
+}
     }
 
     Tree = TreeBuilder.run();
@@ -967,9 +1035,13 @@ void GICombinerEmitter::run(raw_ostream &OS) {
      << "  (void)MBB; (void)MF; (void)MRI;\n\n";
 
   OS << "  // Match data\n";
-  for (const auto &Rule : Rules)
-    for (const auto &I : Rule->matchdata_decls())
+  for (const auto &Rule : Rules) {
+    for (const auto &I : Rule->matchdata_decls()) {
       OS << "  " << I.getType() << " " << I.getVariableName() << ";\n";
+
+}
+
+}
   OS << "\n";
 
   OS << "  int Partition = -1;\n";
@@ -988,12 +1060,16 @@ void EmitGICombiner(RecordKeeper &RK, raw_ostream &OS) {
   CodeGenTarget Target(RK);
   emitSourceFileHeader("Global Combiner", OS);
 
-  if (SelectedCombiners.empty())
+  if (SelectedCombiners.empty()) {
     PrintFatalError("No combiners selected with -combiners");
+
+}
   for (const auto &Combiner : SelectedCombiners) {
     Record *CombinerDef = RK.getDef(Combiner);
-    if (!CombinerDef)
+    if (!CombinerDef) {
       PrintFatalError("Could not find " + Combiner);
+
+}
     GICombinerEmitter(RK, Target, Combiner, CombinerDef).run(OS);
   }
   NumPatternTotalStatistic = NumPatternTotal;

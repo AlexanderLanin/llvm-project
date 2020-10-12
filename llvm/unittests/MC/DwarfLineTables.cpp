@@ -34,8 +34,10 @@ struct Context {
     // If we didn't build x86, do not run the test.
     std::string Error;
     const Target *TheTarget = TargetRegistry::lookupTarget(Triple, Error);
-    if (!TheTarget)
+    if (!TheTarget) {
       return;
+
+}
 
     MRI.reset(TheTarget->createMCRegInfo(Triple));
     MCTargetOptions MCOptions;
@@ -63,8 +65,10 @@ void verifyEncoding(MCDwarfLineTableParams Params, int LineDelta, int AddrDelta,
 }
 
 TEST(DwarfLineTables, TestDefaultParams) {
-  if (!getContext())
+  if (!getContext()) {
     return;
+
+}
 
   MCDwarfLineTableParams Params;
 
@@ -113,8 +117,10 @@ TEST(DwarfLineTables, TestDefaultParams) {
 }
 
 TEST(DwarfLineTables, TestCustomParams) {
-  if (!getContext())
+  if (!getContext()) {
     return;
+
+}
 
   // Some tests against the example values given in the standard.
   MCDwarfLineTableParams Params;
@@ -167,8 +173,10 @@ TEST(DwarfLineTables, TestCustomParams) {
 }
 
 TEST(DwarfLineTables, TestCustomParams2) {
-  if (!getContext())
+  if (!getContext()) {
     return;
+
+}
 
   // Corner case param values.
   MCDwarfLineTableParams Params;

@@ -56,7 +56,9 @@ void CSVReporter::ReportRuns(const std::vector<Run> & reports) {
     // print the header
     for (auto B = elements.begin(); B != elements.end();) {
       Out << *B++;
-      if (B != elements.end()) Out << ",";
+      if (B != elements.end()) { Out << ",";
+
+}
     }
     for (auto B = user_counter_names_.begin(); B != user_counter_names_.end();) {
       Out << ",\"" << *B++ << "\"";

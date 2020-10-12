@@ -71,12 +71,14 @@ KnownBits KnownBits::computeForAddSub(bool Add, bool NSW,
     if (NSW) {
       // Adding two non-negative numbers, or subtracting a negative number from
       // a non-negative one, can't wrap into negative.
-      if (LHS.isNonNegative() && RHS.isNonNegative())
+      if (LHS.isNonNegative() && RHS.isNonNegative()) {
         KnownOut.makeNonNegative();
       // Adding two negative numbers, or subtracting a non-negative number from
       // a negative one, can't wrap into non-negative.
-      else if (LHS.isNegative() && RHS.isNegative())
+      } else if (LHS.isNegative() && RHS.isNegative()) {
         KnownOut.makeNegative();
+
+}
     }
   }
 

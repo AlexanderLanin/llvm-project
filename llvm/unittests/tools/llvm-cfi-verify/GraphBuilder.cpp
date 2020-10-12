@@ -82,8 +82,10 @@ void PrintTo(const ConditionalBranchNode &BranchNode, ::std::ostream *os) {
 void PrintTo(const GraphResult &Result, ::std::ostream *os) {
   *os << "Result BaseAddress: 0x" << std::hex << Result.BaseAddress << "\n";
 
-  if (Result.ConditionalBranchNodes.empty())
+  if (Result.ConditionalBranchNodes.empty()) {
     *os << "  (No conditional branch nodes)\n";
+
+}
 
   for (const auto &Node : Result.ConditionalBranchNodes) {
     *os << "  ";
@@ -95,8 +97,10 @@ void PrintTo(const GraphResult &Result, ::std::ostream *os) {
         << HexStringifyContainer(Result.flattenAddress(Node.Target)) << "\n";
   }
 
-  if (Result.OrphanedNodes.empty())
+  if (Result.OrphanedNodes.empty()) {
     *os << "  (No orphaned nodes)";
+
+}
 
   for (const auto &Orphan : Result.OrphanedNodes) {
     *os << "  Orphan (0x" << std::hex << Orphan
@@ -148,8 +152,10 @@ MATCHER_P2(HasPath, Result, Matcher, "has path " + PrintToString(Matcher)) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestSinglePathFallthroughUd2) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x02, // 0: jne 4 [+2]
@@ -175,8 +181,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestSinglePathFallthroughUd2) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestSinglePathJumpUd2) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x02, // 0: jne 4 [+2]
@@ -202,8 +210,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestSinglePathJumpUd2) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestDualPathDualUd2) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x03, // 0: jne 5 [+3]
@@ -242,8 +252,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestDualPathDualUd2) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestDualPathSingleUd2) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x05, // 0: jne 7 [+5]
@@ -281,8 +293,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphTestDualPathSingleUd2) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphFailures) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x90,       // 0: nop
@@ -304,8 +318,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphFailures) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphNoXrefs) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0xeb, 0xfe, // 0: jmp 0 [-2]
@@ -320,8 +336,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphNoXrefs) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphConditionalInfiniteLoop) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0xfe, // 0: jne 0 [-2]
@@ -343,8 +361,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphConditionalInfiniteLoop) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphUnconditionalInfiniteLoop) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x02, // 0: jne 4 [+2]
@@ -368,8 +388,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphUnconditionalInfiniteLoop) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphNoFlowsToIndirection) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x00, // 0: jne 2 [+0]
@@ -384,8 +406,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphNoFlowsToIndirection) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphLengthExceededUpwards) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x06, // 0: jne 8 [+6]
@@ -414,8 +438,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphLengthExceededUpwards) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphLengthExceededDownwards) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x02, // 0: jne 4 [+2]
@@ -451,8 +477,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphLengthExceededDownwards) {
 // paths correctly. We don't need to recalculate the flow from 0x2 -> 0x3 as it
 // should only need to be generated once.
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphWithRepeatedWork) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   Analysis.parseSectionContents(
       {
           0x75, 0x05, // 0: jne 7 [+5]
@@ -492,8 +520,10 @@ TEST_F(BasicGraphBuilderTest, BuildFlowGraphWithRepeatedWork) {
 }
 
 TEST_F(BasicGraphBuilderTest, BuildFlowGraphComplexExample) {
-  if (!SuccessfullyInitialised)
+  if (!SuccessfullyInitialised) {
     return;
+
+}
   // The following code has this graph:
   //  +----------+      +--------------+
   //  |    20    | <--- |      0       |

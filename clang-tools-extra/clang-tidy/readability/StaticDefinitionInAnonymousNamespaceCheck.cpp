@@ -31,13 +31,17 @@ void StaticDefinitionInAnonymousNamespaceCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *Def = Result.Nodes.getNodeAs<NamedDecl>("static-def");
   // Skips all static definitions defined in Macro.
-  if (Def->getLocation().isMacroID())
+  if (Def->getLocation().isMacroID()) {
     return;
+
+}
 
   // Skips all static definitions in function scope.
   const DeclContext *DC = Def->getDeclContext();
-  if (DC->getDeclKind() != Decl::Namespace)
+  if (DC->getDeclKind() != Decl::Namespace) {
     return;
+
+}
 
   auto Diag =
       diag(Def->getLocation(), "%0 is a static definition in "

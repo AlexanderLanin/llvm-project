@@ -28,8 +28,10 @@ TargetMachine *EngineBuilder::selectTarget() {
 
   // MCJIT can generate code for remote targets, but the old JIT and Interpreter
   // must use the host architecture.
-  if (WhichEngine != EngineKind::Interpreter && M)
+  if (WhichEngine != EngineKind::Interpreter && M) {
     TT.setTriple(M->getTargetTriple());
+
+}
 
   return selectTarget(TT, MArch, MCPU, MAttrs);
 }
@@ -41,8 +43,10 @@ TargetMachine *EngineBuilder::selectTarget(const Triple &TargetTriple,
                               StringRef MCPU,
                               const SmallVectorImpl<std::string>& MAttrs) {
   Triple TheTriple(TargetTriple);
-  if (TheTriple.getTriple().empty())
+  if (TheTriple.getTriple().empty()) {
     TheTriple.setTriple(sys::getProcessTriple());
+
+}
 
   // Adjust the triple to match what the user requested.
   const Target *TheTarget = nullptr;
@@ -51,9 +55,11 @@ TargetMachine *EngineBuilder::selectTarget(const Triple &TargetTriple,
                      [&](const Target &T) { return MArch == T.getName(); });
 
     if (I == TargetRegistry::targets().end()) {
-      if (ErrorStr)
+      if (ErrorStr) {
         *ErrorStr = "No available targets are compatible with this -march, "
                     "see -version for the available targets.\n";
+
+}
       return nullptr;
     }
 
@@ -62,14 +68,18 @@ TargetMachine *EngineBuilder::selectTarget(const Triple &TargetTriple,
     // Adjust the triple to match (if known), otherwise stick with the
     // requested/host triple.
     Triple::ArchType Type = Triple::getArchTypeForLLVMName(MArch);
-    if (Type != Triple::UnknownArch)
+    if (Type != Triple::UnknownArch) {
       TheTriple.setArch(Type);
+
+}
   } else {
     std::string Error;
     TheTarget = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
     if (!TheTarget) {
-      if (ErrorStr)
+      if (ErrorStr) {
         *ErrorStr = Error;
+
+}
       return nullptr;
     }
   }
@@ -78,8 +88,10 @@ TargetMachine *EngineBuilder::selectTarget(const Triple &TargetTriple,
   std::string FeaturesStr;
   if (!MAttrs.empty()) {
     SubtargetFeatures Features;
-    for (unsigned i = 0; i != MAttrs.size(); ++i)
+    for (unsigned i = 0; i != MAttrs.size(); ++i) {
       Features.AddFeature(MAttrs[i]);
+
+}
     FeaturesStr = Features.getString();
   }
 

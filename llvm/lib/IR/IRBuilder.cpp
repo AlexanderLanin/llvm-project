@@ -61,8 +61,10 @@ Type *IRBuilderBase::getCurrentFunctionReturnType() const {
 
 Value *IRBuilderBase::getCastedInt8PtrValue(Value *Ptr) {
   auto *PT = cast<PointerType>(Ptr->getType());
-  if (PT->getElementType()->isIntegerTy(8))
+  if (PT->getElementType()->isIntegerTy(8)) {
     return Ptr;
+
+}
 
   // Otherwise, we need to insert a bitcast.
   return CreateBitCast(Ptr, getInt8PtrTy(PT->getAddressSpace()));
@@ -73,8 +75,10 @@ static CallInst *createCallHelper(Function *Callee, ArrayRef<Value *> Ops,
                                   const Twine &Name = "",
                                   Instruction *FMFSource = nullptr) {
   CallInst *CI = Builder->CreateCall(Callee, Ops, Name);
-  if (FMFSource)
+  if (FMFSource) {
     CI->copyFastMathFlags(FMFSource);
+
+}
   return CI;
 }
 
@@ -90,18 +94,26 @@ CallInst *IRBuilderBase::CreateMemSet(Value *Ptr, Value *Val, Value *Size,
 
   CallInst *CI = createCallHelper(TheFn, Ops, this);
 
-  if (Align)
+  if (Align) {
     cast<MemSetInst>(CI)->setDestAlignment(Align->value());
 
+}
+
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -122,14 +134,20 @@ CallInst *IRBuilderBase::CreateElementUnorderedAtomicMemSet(
   cast<AtomicMemSetInst>(CI)->setDestAlignment(Alignment);
 
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -160,24 +178,36 @@ CallInst *IRBuilderBase::CreateMemCpy(Value *Dst, MaybeAlign DstAlign,
   CallInst *CI = createCallHelper(TheFn, Ops, this);
 
   auto* MCI = cast<MemCpyInst>(CI);
-  if (DstAlign)
+  if (DstAlign) {
     MCI->setDestAlignment(*DstAlign);
-  if (SrcAlign)
+
+}
+  if (SrcAlign) {
     MCI->setSourceAlignment(*SrcAlign);
 
+}
+
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
+}
+
   // Set the TBAA Struct info if present.
-  if (TBAAStructTag)
+  if (TBAAStructTag) {
     CI->setMetadata(LLVMContext::MD_tbaa_struct, TBAAStructTag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -198,10 +228,14 @@ CallInst *IRBuilderBase::CreateMemCpyInline(Value *Dst, MaybeAlign DstAlign,
   CallInst *CI = createCallHelper(TheFn, Ops, this);
 
   auto *MCI = cast<MemCpyInlineInst>(CI);
-  if (DstAlign)
+  if (DstAlign) {
     MCI->setDestAlignment(*DstAlign);
-  if (SrcAlign)
+
+}
+  if (SrcAlign) {
     MCI->setSourceAlignment(*SrcAlign);
+
+}
 
   return CI;
 }
@@ -231,18 +265,26 @@ CallInst *IRBuilderBase::CreateElementUnorderedAtomicMemCpy(
   AMCI->setSourceAlignment(SrcAlign);
 
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
+}
+
   // Set the TBAA Struct info if present.
-  if (TBAAStructTag)
+  if (TBAAStructTag) {
     CI->setMetadata(LLVMContext::MD_tbaa_struct, TBAAStructTag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -263,20 +305,30 @@ CallInst *IRBuilderBase::CreateMemMove(Value *Dst, MaybeAlign DstAlign,
   CallInst *CI = createCallHelper(TheFn, Ops, this);
 
   auto *MMI = cast<MemMoveInst>(CI);
-  if (DstAlign)
+  if (DstAlign) {
     MMI->setDestAlignment(*DstAlign);
-  if (SrcAlign)
+
+}
+  if (SrcAlign) {
     MMI->setSourceAlignment(*SrcAlign);
 
+}
+
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -305,18 +357,26 @@ CallInst *IRBuilderBase::CreateElementUnorderedAtomicMemMove(
   CI->addParamAttr(1, Attribute::getWithAlignment(CI->getContext(), SrcAlign));
 
   // Set the TBAA info if present.
-  if (TBAATag)
+  if (TBAATag) {
     CI->setMetadata(LLVMContext::MD_tbaa, TBAATag);
 
+}
+
   // Set the TBAA Struct info if present.
-  if (TBAAStructTag)
+  if (TBAAStructTag) {
     CI->setMetadata(LLVMContext::MD_tbaa_struct, TBAAStructTag);
 
-  if (ScopeTag)
+}
+
+  if (ScopeTag) {
     CI->setMetadata(LLVMContext::MD_alias_scope, ScopeTag);
 
-  if (NoAliasTag)
+}
+
+  if (NoAliasTag) {
     CI->setMetadata(LLVMContext::MD_noalias, NoAliasTag);
+
+}
 
   return CI;
 }
@@ -411,11 +471,13 @@ CallInst *IRBuilderBase::CreateLifetimeStart(Value *Ptr, ConstantInt *Size) {
   assert(isa<PointerType>(Ptr->getType()) &&
          "lifetime.start only applies to pointers.");
   Ptr = getCastedInt8PtrValue(Ptr);
-  if (!Size)
+  if (!Size) {
     Size = getInt64(-1);
-  else
+  } else {
     assert(Size->getType() == getInt64Ty() &&
            "lifetime.start requires the size to be an i64");
+
+}
   Value *Ops[] = { Size, Ptr };
   Module *M = BB->getParent()->getParent();
   Function *TheFn =
@@ -427,11 +489,13 @@ CallInst *IRBuilderBase::CreateLifetimeEnd(Value *Ptr, ConstantInt *Size) {
   assert(isa<PointerType>(Ptr->getType()) &&
          "lifetime.end only applies to pointers.");
   Ptr = getCastedInt8PtrValue(Ptr);
-  if (!Size)
+  if (!Size) {
     Size = getInt64(-1);
-  else
+  } else {
     assert(Size->getType() == getInt64Ty() &&
            "lifetime.end requires the size to be an i64");
+
+}
   Value *Ops[] = { Size, Ptr };
   Module *M = BB->getParent()->getParent();
   Function *TheFn =
@@ -444,11 +508,13 @@ CallInst *IRBuilderBase::CreateInvariantStart(Value *Ptr, ConstantInt *Size) {
   assert(isa<PointerType>(Ptr->getType()) &&
          "invariant.start only applies to pointers.");
   Ptr = getCastedInt8PtrValue(Ptr);
-  if (!Size)
+  if (!Size) {
     Size = getInt64(-1);
-  else
+  } else {
     assert(Size->getType() == getInt64Ty() &&
            "invariant.start requires the size to be an i64");
+
+}
 
   Value *Ops[] = {Size, Ptr};
   // Fill in the single overloaded type: memory object type.
@@ -484,8 +550,10 @@ CallInst *IRBuilderBase::CreateMaskedLoad(Value *Ptr, Align Alignment,
   Type *DataTy = PtrTy->getElementType();
   assert(DataTy->isVectorTy() && "Ptr should point to a vector");
   assert(Mask && "Mask should not be all-ones (null)");
-  if (!PassThru)
+  if (!PassThru) {
     PassThru = UndefValue::get(DataTy);
+
+}
   Type *OverloadedTypes[] = { DataTy, PtrTy };
   Value *Ops[] = {Ptr, getInt32(Alignment.value()), Mask, PassThru};
   return CreateMaskedIntrinsic(Intrinsic::masked_load, Ops,
@@ -537,12 +605,16 @@ CallInst *IRBuilderBase::CreateMaskedGather(Value *Ptrs, Align Alignment,
   unsigned NumElts = PtrsTy->getVectorNumElements();
   Type *DataTy = VectorType::get(PtrTy->getElementType(), NumElts);
 
-  if (!Mask)
+  if (!Mask) {
     Mask = Constant::getAllOnesValue(VectorType::get(Type::getInt1Ty(Context),
                                      NumElts));
 
-  if (!PassThru)
+}
+
+  if (!PassThru) {
     PassThru = UndefValue::get(DataTy);
+
+}
 
   Type *OverloadedTypes[] = {DataTy, PtrsTy};
   Value *Ops[] = {Ptrs, getInt32(Alignment.value()), Mask, PassThru};
@@ -573,9 +645,11 @@ CallInst *IRBuilderBase::CreateMaskedScatter(Value *Data, Value *Ptrs,
          "Incompatible pointer and data types");
 #endif
 
-  if (!Mask)
+  if (!Mask) {
     Mask = Constant::getAllOnesValue(VectorType::get(Type::getInt1Ty(Context),
                                      NumElts));
+
+}
 
   Type *OverloadedTypes[] = {DataTy, PtrsTy};
   Value *Ops[] = {Data, Ptrs, getInt32(Alignment.value()), Mask};

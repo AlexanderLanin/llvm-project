@@ -35,8 +35,10 @@ void PointerSubChecker::checkPreStmt(const BinaryOperator *B,
                                      CheckerContext &C) const {
   // When doing pointer subtraction, if the two pointers do not point to the
   // same memory chunk, emit a warning.
-  if (B->getOpcode() != BO_Sub)
+  if (B->getOpcode() != BO_Sub) {
     return;
+
+}
 
   SVal LV = C.getSVal(B->getLHS());
   SVal RV = C.getSVal(B->getRHS());
@@ -44,25 +46,33 @@ void PointerSubChecker::checkPreStmt(const BinaryOperator *B,
   const MemRegion *LR = LV.getAsRegion();
   const MemRegion *RR = RV.getAsRegion();
 
-  if (!(LR && RR))
+  if (!(LR && RR)) {
     return;
+
+}
 
   const MemRegion *BaseLR = LR->getBaseRegion();
   const MemRegion *BaseRR = RR->getBaseRegion();
 
-  if (BaseLR == BaseRR)
+  if (BaseLR == BaseRR) {
     return;
+
+}
 
   // Allow arithmetic on different symbolic regions.
-  if (isa<SymbolicRegion>(BaseLR) || isa<SymbolicRegion>(BaseRR))
+  if (isa<SymbolicRegion>(BaseLR) || isa<SymbolicRegion>(BaseRR)) {
     return;
 
+}
+
   if (ExplodedNode *N = C.generateNonFatalErrorNode()) {
-    if (!BT)
+    if (!BT) {
       BT.reset(
           new BuiltinBug(this, "Pointer subtraction",
                          "Subtraction of two pointers that do not point to "
                          "the same memory chunk may cause incorrect result."));
+
+}
     auto R =
         std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);
     R->addRange(B->getSourceRange());

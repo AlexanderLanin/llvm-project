@@ -88,15 +88,19 @@ MCSectionMachO::MCSectionMachO(StringRef Segment, StringRef Section,
   assert(Segment.size() <= 16 && Section.size() <= 16 &&
          "Segment or section string too long");
   for (unsigned i = 0; i != 16; ++i) {
-    if (i < Segment.size())
+    if (i < Segment.size()) {
       SegmentName[i] = Segment[i];
-    else
+    } else {
       SegmentName[i] = 0;
 
-    if (i < Section.size())
+}
+
+    if (i < Section.size()) {
       SectionName[i] = Section[i];
-    else
+    } else {
       SectionName[i] = 0;
+
+}
   }
 }
 
@@ -130,8 +134,10 @@ void MCSectionMachO::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   if (SectionAttrs == 0) {
     // If we have a S_SYMBOL_STUBS size specified, print it along with 'none' as
     // the attribute specifier.
-    if (Reserved2 != 0)
+    if (Reserved2 != 0) {
       OS << ",none," << Reserved2;
+
+}
     OS << '\n';
     return;
   }
@@ -142,25 +148,31 @@ void MCSectionMachO::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
        SectionAttrs != 0 && SectionAttrDescriptors[i].AttrFlag;
        ++i) {
     // Check to see if we have this attribute.
-    if ((SectionAttrDescriptors[i].AttrFlag & SectionAttrs) == 0)
+    if ((SectionAttrDescriptors[i].AttrFlag & SectionAttrs) == 0) {
       continue;
+
+}
 
     // Yep, clear it and print it.
     SectionAttrs &= ~SectionAttrDescriptors[i].AttrFlag;
 
     OS << Separator;
-    if (!SectionAttrDescriptors[i].AssemblerName.empty())
+    if (!SectionAttrDescriptors[i].AssemblerName.empty()) {
       OS << SectionAttrDescriptors[i].AssemblerName;
-    else
+    } else {
       OS << "<<" << SectionAttrDescriptors[i].EnumName << ">>";
+
+}
     Separator = '+';
   }
 
   assert(SectionAttrs == 0 && "Unknown section attributes!");
 
   // If we have a S_SYMBOL_STUBS size specified, print it.
-  if (Reserved2 != 0)
+  if (Reserved2 != 0) {
     OS << ',' << Reserved2;
+
+}
   OS << '\n';
 }
 
@@ -200,24 +212,32 @@ std::string MCSectionMachO::ParseSectionSpecifier(StringRef Spec,        // In.
   StringRef StubSizeStr = GetEmptyOrTrim(4);
 
   // Verify that the segment is present and not too long.
-  if (Segment.empty() || Segment.size() > 16)
+  if (Segment.empty() || Segment.size() > 16) {
     return "mach-o section specifier requires a segment whose length is "
            "between 1 and 16 characters";
 
+}
+
   // Verify that the section is present and not too long.
-  if (Section.empty())
+  if (Section.empty()) {
     return "mach-o section specifier requires a segment and section "
            "separated by a comma";
 
-  if (Section.size() > 16)
+}
+
+  if (Section.size() > 16) {
     return "mach-o section specifier requires a section whose length is "
            "between 1 and 16 characters";
+
+}
 
   // If there is no comma after the section, we're done.
   TAA = 0;
   StubSize = 0;
-  if (SectionType.empty())
+  if (SectionType.empty()) {
     return "";
+
+}
 
   // Figure out which section type it is.
   auto TypeDescriptor = std::find_if(
@@ -227,8 +247,10 @@ std::string MCSectionMachO::ParseSectionSpecifier(StringRef Spec,        // In.
       });
 
   // If we didn't find the section type, reject it.
-  if (TypeDescriptor == std::end(SectionTypeDescriptors))
+  if (TypeDescriptor == std::end(SectionTypeDescriptors)) {
     return "mach-o section specifier uses an unknown section type";
+
+}
 
   // Remember the TypeID.
   TAA = TypeDescriptor - std::begin(SectionTypeDescriptors);
@@ -237,9 +259,11 @@ std::string MCSectionMachO::ParseSectionSpecifier(StringRef Spec,        // In.
   // If we have no comma after the section type, there are no attributes.
   if (Attrs.empty()) {
     // S_SYMBOL_STUBS always require a symbol stub size specifier.
-    if (TAA == MachO::S_SYMBOL_STUBS)
+    if (TAA == MachO::S_SYMBOL_STUBS) {
       return "mach-o section specifier of type 'symbol_stubs' requires a size "
              "specifier";
+
+}
     return "";
   }
 
@@ -253,8 +277,10 @@ std::string MCSectionMachO::ParseSectionSpecifier(StringRef Spec,        // In.
         [&](decltype(*SectionAttrDescriptors) &Descriptor) {
           return SectionAttr.trim() == Descriptor.AssemblerName;
         });
-    if (AttrDescriptorI == std::end(SectionAttrDescriptors))
+    if (AttrDescriptorI == std::end(SectionAttrDescriptors)) {
       return "mach-o section specifier has invalid attribute";
+
+}
 
     TAA |= AttrDescriptorI->AttrFlag;
   }
@@ -262,20 +288,26 @@ std::string MCSectionMachO::ParseSectionSpecifier(StringRef Spec,        // In.
   // Okay, we've parsed the section attributes, see if we have a stub size spec.
   if (StubSizeStr.empty()) {
     // S_SYMBOL_STUBS always require a symbol stub size specifier.
-    if (TAA == MachO::S_SYMBOL_STUBS)
+    if (TAA == MachO::S_SYMBOL_STUBS) {
       return "mach-o section specifier of type 'symbol_stubs' requires a size "
       "specifier";
+
+}
     return "";
   }
 
   // If we have a stub size spec, we must have a sectiontype of S_SYMBOL_STUBS.
-  if ((TAA & MachO::SECTION_TYPE) != MachO::S_SYMBOL_STUBS)
+  if ((TAA & MachO::SECTION_TYPE) != MachO::S_SYMBOL_STUBS) {
     return "mach-o section specifier cannot have a stub size specified because "
            "it does not have type 'symbol_stubs'";
 
+}
+
   // Convert the stub size from a string to an integer.
-  if (StubSizeStr.getAsInteger(0, StubSize))
+  if (StubSizeStr.getAsInteger(0, StubSize)) {
     return "mach-o section specifier has a malformed stub size";
+
+}
 
   return "";
 }

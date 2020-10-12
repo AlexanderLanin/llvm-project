@@ -49,15 +49,19 @@ X86RegisterBankInfo::getRegBankFromRegClass(const TargetRegisterClass &RC,
       X86::GR32RegClass.hasSubClassEq(&RC) ||
       X86::GR64RegClass.hasSubClassEq(&RC) ||
       X86::LOW32_ADDR_ACCESSRegClass.hasSubClassEq(&RC) ||
-      X86::LOW32_ADDR_ACCESS_RBPRegClass.hasSubClassEq(&RC))
+      X86::LOW32_ADDR_ACCESS_RBPRegClass.hasSubClassEq(&RC)) {
     return getRegBank(X86::GPRRegBankID);
+
+}
 
   if (X86::FR32XRegClass.hasSubClassEq(&RC) ||
       X86::FR64XRegClass.hasSubClassEq(&RC) ||
       X86::VR128XRegClass.hasSubClassEq(&RC) ||
       X86::VR256XRegClass.hasSubClassEq(&RC) ||
-      X86::VR512RegClass.hasSubClassEq(&RC))
+      X86::VR512RegClass.hasSubClassEq(&RC)) {
     return getRegBank(X86::VECRRegBankID);
+
+}
 
   llvm_unreachable("Unsupported register kind yet.");
 }
@@ -115,10 +119,12 @@ void X86RegisterBankInfo::getInstrPartialMappingIdxs(
   unsigned NumOperands = MI.getNumOperands();
   for (unsigned Idx = 0; Idx < NumOperands; ++Idx) {
     auto &MO = MI.getOperand(Idx);
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       OpRegBankIdx[Idx] = PMI_None;
-    else
+    } else {
       OpRegBankIdx[Idx] = getPartialMappingIdx(MRI.getType(MO.getReg()), isFP);
+
+}
   }
 }
 
@@ -129,12 +135,16 @@ bool X86RegisterBankInfo::getInstrValueMapping(
 
   unsigned NumOperands = MI.getNumOperands();
   for (unsigned Idx = 0; Idx < NumOperands; ++Idx) {
-    if (!MI.getOperand(Idx).isReg())
+    if (!MI.getOperand(Idx).isReg()) {
       continue;
 
+}
+
     auto Mapping = getValueMapping(OpRegBankIdx[Idx], 1);
-    if (!Mapping->isValid())
+    if (!Mapping->isValid()) {
       return false;
+
+}
 
     OpdsMapping[Idx] = Mapping;
   }
@@ -151,8 +161,10 @@ X86RegisterBankInfo::getSameOperandsMapping(const MachineInstr &MI,
   LLT Ty = MRI.getType(MI.getOperand(0).getReg());
 
   if (NumOperands != 3 || (Ty != MRI.getType(MI.getOperand(1).getReg())) ||
-      (Ty != MRI.getType(MI.getOperand(2).getReg())))
+      (Ty != MRI.getType(MI.getOperand(2).getReg()))) {
     llvm_unreachable("Unsupported operand mapping yet.");
+
+}
 
   auto Mapping = getValueMapping(getPartialMappingIdx(Ty, isFP), 3);
   return getInstructionMapping(DefaultMappingID, 1, Mapping, NumOperands);
@@ -168,8 +180,10 @@ X86RegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   // or already have some operands assigned to banks.
   if (!isPreISelGenericOpcode(Opc) || Opc == TargetOpcode::G_PHI) {
     const InstructionMapping &Mapping = getInstrMappingImpl(MI);
-    if (Mapping.isValid())
+    if (Mapping.isValid()) {
       return Mapping;
+
+}
   }
 
   switch (Opc) {
@@ -262,8 +276,10 @@ X86RegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
 
   // Finally construct the computed mapping.
   SmallVector<const ValueMapping *, 8> OpdsMapping(NumOperands);
-  if (!getInstrValueMapping(MI, OpRegBankIdx, OpdsMapping))
+  if (!getInstrValueMapping(MI, OpRegBankIdx, OpdsMapping)) {
     return getInvalidInstructionMapping();
+
+}
 
   return getInstructionMapping(DefaultMappingID, /* Cost */ 1,
                                getOperandsMapping(OpdsMapping), NumOperands);
@@ -288,8 +304,10 @@ X86RegisterBankInfo::getInstrAlternativeMappings(const MachineInstr &MI) const {
   case TargetOpcode::G_IMPLICIT_DEF: {
     // we going to try to map 32/64 bit to PMI_FP32/PMI_FP64
     unsigned Size = getSizeInBits(MI.getOperand(0).getReg(), MRI, TRI);
-    if (Size != 32 && Size != 64)
+    if (Size != 32 && Size != 64) {
       break;
+
+}
 
     unsigned NumOperands = MI.getNumOperands();
 
@@ -299,8 +317,10 @@ X86RegisterBankInfo::getInstrAlternativeMappings(const MachineInstr &MI) const {
 
     // Finally construct the computed mapping.
     SmallVector<const ValueMapping *, 8> OpdsMapping(NumOperands);
-    if (!getInstrValueMapping(MI, OpRegBankIdx, OpdsMapping))
+    if (!getInstrValueMapping(MI, OpRegBankIdx, OpdsMapping)) {
       break;
+
+}
 
     const RegisterBankInfo::InstructionMapping &Mapping = getInstructionMapping(
         /*ID*/ 1, /*Cost*/ 1, getOperandsMapping(OpdsMapping), NumOperands);

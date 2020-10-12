@@ -81,18 +81,24 @@ class ModuleLinker {
     Module &DstM = Mover.getModule();
     // If the source has no name it can't link.  If it has local linkage,
     // there is no name match-up going on.
-    if (!SrcGV->hasName() || GlobalValue::isLocalLinkage(SrcGV->getLinkage()))
+    if (!SrcGV->hasName() || GlobalValue::isLocalLinkage(SrcGV->getLinkage())) {
       return nullptr;
+
+}
 
     // Otherwise see if we have a match in the destination module's symtab.
     GlobalValue *DGV = DstM.getNamedValue(SrcGV->getName());
-    if (!DGV)
+    if (!DGV) {
       return nullptr;
+
+}
 
     // If we found a global with the same name in the dest module, but it has
     // internal linkage, we are really not doing any linkage here.
-    if (DGV->hasLocalLinkage())
+    if (DGV->hasLocalLinkage()) {
       return nullptr;
+
+}
 
     // Otherwise, we do in fact link to the destination global.
     return DGV;
@@ -119,11 +125,15 @@ public:
 static GlobalValue::VisibilityTypes
 getMinVisibility(GlobalValue::VisibilityTypes A,
                  GlobalValue::VisibilityTypes B) {
-  if (A == GlobalValue::HiddenVisibility || B == GlobalValue::HiddenVisibility)
+  if (A == GlobalValue::HiddenVisibility || B == GlobalValue::HiddenVisibility) {
     return GlobalValue::HiddenVisibility;
+
+}
   if (A == GlobalValue::ProtectedVisibility ||
-      B == GlobalValue::ProtectedVisibility)
+      B == GlobalValue::ProtectedVisibility) {
     return GlobalValue::ProtectedVisibility;
+
+}
   return GlobalValue::DefaultVisibility;
 }
 
@@ -132,17 +142,21 @@ bool ModuleLinker::getComdatLeader(Module &M, StringRef ComdatName,
   const GlobalValue *GVal = M.getNamedValue(ComdatName);
   if (const auto *GA = dyn_cast_or_null<GlobalAlias>(GVal)) {
     GVal = GA->getBaseObject();
-    if (!GVal)
+    if (!GVal) {
       // We cannot resolve the size of the aliasee yet.
       return emitError("Linking COMDATs named '" + ComdatName +
                        "': COMDAT key involves incomputable alias size.");
+
+}
   }
 
   GVar = dyn_cast_or_null<GlobalVariable>(GVal);
-  if (!GVar)
+  if (!GVar) {
     return emitError(
         "Linking COMDATs named '" + ComdatName +
         "': GlobalVariable required for data dependent selection!");
+
+}
 
   return false;
 }
@@ -161,10 +175,12 @@ bool ModuleLinker::computeResultingSelectionKind(StringRef ComdatName,
                          Src == Comdat::SelectionKind::Largest;
   if (DstAnyOrLargest && SrcAnyOrLargest) {
     if (Dst == Comdat::SelectionKind::Largest ||
-        Src == Comdat::SelectionKind::Largest)
+        Src == Comdat::SelectionKind::Largest) {
       Result = Comdat::SelectionKind::Largest;
-    else
+    } else {
       Result = Comdat::SelectionKind::Any;
+
+}
   } else if (Src == Dst) {
     Result = Dst;
   } else {
@@ -186,24 +202,30 @@ bool ModuleLinker::computeResultingSelectionKind(StringRef ComdatName,
     const GlobalVariable *DstGV;
     const GlobalVariable *SrcGV;
     if (getComdatLeader(DstM, ComdatName, DstGV) ||
-        getComdatLeader(*SrcM, ComdatName, SrcGV))
+        getComdatLeader(*SrcM, ComdatName, SrcGV)) {
       return true;
+
+}
 
     const DataLayout &DstDL = DstM.getDataLayout();
     const DataLayout &SrcDL = SrcM->getDataLayout();
     uint64_t DstSize = DstDL.getTypeAllocSize(DstGV->getValueType());
     uint64_t SrcSize = SrcDL.getTypeAllocSize(SrcGV->getValueType());
     if (Result == Comdat::SelectionKind::ExactMatch) {
-      if (SrcGV->getInitializer() != DstGV->getInitializer())
+      if (SrcGV->getInitializer() != DstGV->getInitializer()) {
         return emitError("Linking COMDATs named '" + ComdatName +
                          "': ExactMatch violated!");
+
+}
       LinkFromSrc = false;
     } else if (Result == Comdat::SelectionKind::Largest) {
       LinkFromSrc = SrcSize > DstSize;
     } else if (Result == Comdat::SelectionKind::SameSize) {
-      if (SrcSize != DstSize)
+      if (SrcSize != DstSize) {
         return emitError("Linking COMDATs named '" + ComdatName +
                          "': SameSize violated!");
+
+}
       LinkFromSrc = false;
     } else {
       llvm_unreachable("unknown selection kind");
@@ -333,11 +355,15 @@ bool ModuleLinker::linkIfNeeded(GlobalValue &GV) {
     if (!GV.hasAppendingLinkage()) {
       // Don't import globals unless they are referenced by the destination
       // module.
-      if (!DGV)
+      if (!DGV) {
         return false;
+
+}
       // Don't import globals that are already defined in the destination module
-      if (!DGV->isDeclaration())
+      if (!DGV->isDeclaration()) {
         return false;
+
+}
     }
   }
 
@@ -371,50 +397,72 @@ bool ModuleLinker::linkIfNeeded(GlobalValue &GV) {
 
   if (!DGV && !shouldOverrideFromSrc() &&
       (GV.hasLocalLinkage() || GV.hasLinkOnceLinkage() ||
-       GV.hasAvailableExternallyLinkage()))
+       GV.hasAvailableExternallyLinkage())) {
     return false;
 
-  if (GV.isDeclaration())
+}
+
+  if (GV.isDeclaration()) {
     return false;
+
+}
 
   if (const Comdat *SC = GV.getComdat()) {
     bool LinkFromSrc;
     Comdat::SelectionKind SK;
     std::tie(SK, LinkFromSrc) = ComdatsChosen[SC];
-    if (!LinkFromSrc)
+    if (!LinkFromSrc) {
       return false;
+
+}
   }
 
   bool LinkFromSrc = true;
-  if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, GV))
+  if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, GV)) {
     return true;
-  if (LinkFromSrc)
+
+}
+  if (LinkFromSrc) {
     ValuesToLink.insert(&GV);
+
+}
   return false;
 }
 
 void ModuleLinker::addLazyFor(GlobalValue &GV, const IRMover::ValueAdder &Add) {
   // Add these to the internalize list
   if (!GV.hasLinkOnceLinkage() && !GV.hasAvailableExternallyLinkage() &&
-      !shouldLinkOnlyNeeded())
+      !shouldLinkOnlyNeeded()) {
     return;
 
-  if (InternalizeCallback)
+}
+
+  if (InternalizeCallback) {
     Internalize.insert(GV.getName());
+
+}
   Add(GV);
 
   const Comdat *SC = GV.getComdat();
-  if (!SC)
+  if (!SC) {
     return;
+
+}
   for (GlobalValue *GV2 : LazyComdatMembers[SC]) {
     GlobalValue *DGV = getLinkedToGlobal(GV2);
     bool LinkFromSrc = true;
-    if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, *GV2))
+    if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, *GV2)) {
       return;
-    if (!LinkFromSrc)
+
+}
+    if (!LinkFromSrc) {
       continue;
-    if (InternalizeCallback)
+
+}
+    if (InternalizeCallback) {
       Internalize.insert(GV2->getName());
+
+}
     Add(*GV2);
   }
 }
@@ -422,10 +470,14 @@ void ModuleLinker::addLazyFor(GlobalValue &GV, const IRMover::ValueAdder &Add) {
 void ModuleLinker::dropReplacedComdat(
     GlobalValue &GV, const DenseSet<const Comdat *> &ReplacedDstComdats) {
   Comdat *C = GV.getComdat();
-  if (!C)
+  if (!C) {
     return;
-  if (!ReplacedDstComdats.count(C))
+
+}
+  if (!ReplacedDstComdats.count(C)) {
     return;
+
+}
   if (GV.use_empty()) {
     GV.eraseFromParent();
     return;
@@ -460,21 +512,29 @@ bool ModuleLinker::run() {
 
   for (const auto &SMEC : SrcM->getComdatSymbolTable()) {
     const Comdat &C = SMEC.getValue();
-    if (ComdatsChosen.count(&C))
+    if (ComdatsChosen.count(&C)) {
       continue;
+
+}
     Comdat::SelectionKind SK;
     bool LinkFromSrc;
-    if (getComdatResult(&C, SK, LinkFromSrc))
+    if (getComdatResult(&C, SK, LinkFromSrc)) {
       return true;
+
+}
     ComdatsChosen[&C] = std::make_pair(SK, LinkFromSrc);
 
-    if (!LinkFromSrc)
+    if (!LinkFromSrc) {
       continue;
+
+}
 
     Module::ComdatSymTabType &ComdatSymTab = DstM.getComdatSymbolTable();
     Module::ComdatSymTabType::iterator DstCI = ComdatSymTab.find(C.getName());
-    if (DstCI == ComdatSymTab.end())
+    if (DstCI == ComdatSymTab.end()) {
       continue;
+
+}
 
     // The source comdat is replacing the dest one.
     const Comdat *DstC = &DstCI->second;
@@ -498,53 +558,91 @@ bool ModuleLinker::run() {
     dropReplacedComdat(GV, ReplacedDstComdats);
   }
 
-  for (GlobalVariable &GV : SrcM->globals())
-    if (GV.hasLinkOnceLinkage())
-      if (const Comdat *SC = GV.getComdat())
+  for (GlobalVariable &GV : SrcM->globals()) {
+    if (GV.hasLinkOnceLinkage()) {
+      if (const Comdat *SC = GV.getComdat()) {
         LazyComdatMembers[SC].push_back(&GV);
 
-  for (Function &SF : *SrcM)
-    if (SF.hasLinkOnceLinkage())
-      if (const Comdat *SC = SF.getComdat())
+}
+
+}
+
+}
+
+  for (Function &SF : *SrcM) {
+    if (SF.hasLinkOnceLinkage()) {
+      if (const Comdat *SC = SF.getComdat()) {
         LazyComdatMembers[SC].push_back(&SF);
 
-  for (GlobalAlias &GA : SrcM->aliases())
-    if (GA.hasLinkOnceLinkage())
-      if (const Comdat *SC = GA.getComdat())
+}
+
+}
+
+}
+
+  for (GlobalAlias &GA : SrcM->aliases()) {
+    if (GA.hasLinkOnceLinkage()) {
+      if (const Comdat *SC = GA.getComdat()) {
         LazyComdatMembers[SC].push_back(&GA);
+
+}
+
+}
+
+}
 
   // Insert all of the globals in src into the DstM module... without linking
   // initializers (which could refer to functions not yet mapped over).
-  for (GlobalVariable &GV : SrcM->globals())
-    if (linkIfNeeded(GV))
+  for (GlobalVariable &GV : SrcM->globals()) {
+    if (linkIfNeeded(GV)) {
       return true;
 
-  for (Function &SF : *SrcM)
-    if (linkIfNeeded(SF))
+}
+
+}
+
+  for (Function &SF : *SrcM) {
+    if (linkIfNeeded(SF)) {
       return true;
 
-  for (GlobalAlias &GA : SrcM->aliases())
-    if (linkIfNeeded(GA))
+}
+
+}
+
+  for (GlobalAlias &GA : SrcM->aliases()) {
+    if (linkIfNeeded(GA)) {
       return true;
+
+}
+
+}
 
   for (unsigned I = 0; I < ValuesToLink.size(); ++I) {
     GlobalValue *GV = ValuesToLink[I];
     const Comdat *SC = GV->getComdat();
-    if (!SC)
+    if (!SC) {
       continue;
+
+}
     for (GlobalValue *GV2 : LazyComdatMembers[SC]) {
       GlobalValue *DGV = getLinkedToGlobal(GV2);
       bool LinkFromSrc = true;
-      if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, *GV2))
+      if (DGV && shouldLinkFromSource(LinkFromSrc, *DGV, *GV2)) {
         return true;
-      if (LinkFromSrc)
+
+}
+      if (LinkFromSrc) {
         ValuesToLink.insert(GV2);
+
+}
     }
   }
 
   if (InternalizeCallback) {
-    for (GlobalValue *GV : ValuesToLink)
+    for (GlobalValue *GV : ValuesToLink) {
       Internalize.insert(GV->getName());
+
+}
   }
 
   // FIXME: Propagate Errors through to the caller instead of emitting
@@ -560,11 +658,15 @@ bool ModuleLinker::run() {
       HasErrors = true;
     });
   }
-  if (HasErrors)
+  if (HasErrors) {
     return true;
 
-  if (InternalizeCallback)
+}
+
+  if (InternalizeCallback) {
     InternalizeCallback(DstM, Internalize);
+
+}
 
   return false;
 }

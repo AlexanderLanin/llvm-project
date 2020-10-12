@@ -38,8 +38,10 @@ raw_ostream &RewriteBuffer::write(raw_ostream &os) const {
   // Walk RewriteRope chunks efficiently using MoveToNextPiece() instead of the
   // character iterator.
   for (RopePieceBTreeIterator I = begin(), E = end(); I != E;
-       I.MoveToNextPiece())
+       I.MoveToNextPiece()) {
     os << I.piece();
+
+}
   return os;
 }
 
@@ -61,7 +63,9 @@ static inline bool isWhitespaceExceptNL(unsigned char c) {
 void RewriteBuffer::RemoveText(unsigned OrigOffset, unsigned Size,
                                bool removeLineIfEmpty) {
   // Nothing to remove, exit early.
-  if (Size == 0) return;
+  if (Size == 0) { return;
+
+}
 
   unsigned RealOffset = getMappedOffset(OrigOffset, true);
   assert(RealOffset+Size <= Buffer.size() && "Invalid location");
@@ -115,7 +119,9 @@ void RewriteBuffer::RemoveText(unsigned OrigOffset, unsigned Size,
 void RewriteBuffer::InsertText(unsigned OrigOffset, StringRef Str,
                                bool InsertAfter) {
   // Nothing to insert, exit early.
-  if (Str.empty()) return;
+  if (Str.empty()) { return;
+
+}
 
   unsigned RealOffset = getMappedOffset(OrigOffset, InsertAfter);
   Buffer.insert(RealOffset, Str.begin(), Str.end());
@@ -132,8 +138,10 @@ void RewriteBuffer::ReplaceText(unsigned OrigOffset, unsigned OrigLength,
   unsigned RealOffset = getMappedOffset(OrigOffset, true);
   Buffer.erase(RealOffset, OrigLength);
   Buffer.insert(RealOffset, NewStr.begin(), NewStr.end());
-  if (OrigLength != NewStr.size())
+  if (OrigLength != NewStr.size()) {
     AddReplaceDelta(OrigOffset, NewStr.size() - OrigLength);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -145,14 +153,18 @@ void RewriteBuffer::ReplaceText(unsigned OrigOffset, unsigned OrigLength,
 int Rewriter::getRangeSize(const CharSourceRange &Range,
                            RewriteOptions opts) const {
   if (!isRewritable(Range.getBegin()) ||
-      !isRewritable(Range.getEnd())) return -1;
+      !isRewritable(Range.getEnd())) { return -1;
+
+}
 
   FileID StartFileID, EndFileID;
   unsigned StartOff = getLocationOffsetAndFileID(Range.getBegin(), StartFileID);
   unsigned EndOff = getLocationOffsetAndFileID(Range.getEnd(), EndFileID);
 
-  if (StartFileID != EndFileID)
+  if (StartFileID != EndFileID) {
     return -1;
+
+}
 
   // If edits have been made to this buffer, the delta between the range may
   // have changed.
@@ -166,8 +178,10 @@ int Rewriter::getRangeSize(const CharSourceRange &Range,
 
   // Adjust the end offset to the end of the last token, instead of being the
   // start of the last token if this is a token range.
-  if (Range.isTokenRange())
+  if (Range.isTokenRange()) {
     EndOff += Lexer::MeasureTokenLength(Range.getEnd(), *SourceMgr, *LangOpts);
+
+}
 
   return EndOff-StartOff;
 }
@@ -183,16 +197,20 @@ int Rewriter::getRangeSize(SourceRange Range, RewriteOptions opts) const {
 /// Note that this method is not particularly efficient.
 std::string Rewriter::getRewrittenText(CharSourceRange Range) const {
   if (!isRewritable(Range.getBegin()) ||
-      !isRewritable(Range.getEnd()))
+      !isRewritable(Range.getEnd())) {
     return {};
+
+}
 
   FileID StartFileID, EndFileID;
   unsigned StartOff, EndOff;
   StartOff = getLocationOffsetAndFileID(Range.getBegin(), StartFileID);
   EndOff   = getLocationOffsetAndFileID(Range.getEnd(), EndFileID);
 
-  if (StartFileID != EndFileID)
+  if (StartFileID != EndFileID) {
     return {}; // Start and end in different buffers.
+
+}
 
   // If edits have been made to this buffer, the delta between the range may
   // have changed.
@@ -204,9 +222,11 @@ std::string Rewriter::getRewrittenText(CharSourceRange Range) const {
 
     // Adjust the end offset to the end of the last token, instead of being the
     // start of the last token.
-    if (Range.isTokenRange())
+    if (Range.isTokenRange()) {
       EndOff +=
           Lexer::MeasureTokenLength(Range.getEnd(), *SourceMgr, *LangOpts);
+
+}
     return std::string(Ptr, Ptr+EndOff-StartOff);
   }
 
@@ -216,8 +236,10 @@ std::string Rewriter::getRewrittenText(CharSourceRange Range) const {
 
   // Adjust the end offset to the end of the last token, instead of being the
   // start of the last token.
-  if (Range.isTokenRange())
+  if (Range.isTokenRange()) {
     EndOff += Lexer::MeasureTokenLength(Range.getEnd(), *SourceMgr, *LangOpts);
+
+}
 
   // Advance the iterators to the right spot, yay for linear time algorithms.
   RewriteBuffer::iterator Start = RB.begin();
@@ -240,8 +262,10 @@ unsigned Rewriter::getLocationOffsetAndFileID(SourceLocation Loc,
 RewriteBuffer &Rewriter::getEditBuffer(FileID FID) {
   std::map<FileID, RewriteBuffer>::iterator I =
     RewriteBuffers.lower_bound(FID);
-  if (I != RewriteBuffers.end() && I->first == FID)
+  if (I != RewriteBuffers.end() && I->first == FID) {
     return I->second;
+
+}
   I = RewriteBuffers.insert(I, std::make_pair(FID, RewriteBuffer()));
 
   StringRef MB = SourceMgr->getBufferData(FID);
@@ -254,7 +278,9 @@ RewriteBuffer &Rewriter::getEditBuffer(FileID FID) {
 /// original buffer.
 bool Rewriter::InsertText(SourceLocation Loc, StringRef Str,
                           bool InsertAfter, bool indentNewLines) {
-  if (!isRewritable(Loc)) return true;
+  if (!isRewritable(Loc)) { return true;
+
+}
   FileID FID;
   unsigned StartOffs = getLocationOffsetAndFileID(Loc, FID);
 
@@ -271,8 +297,10 @@ bool Rewriter::InsertText(SourceLocation Loc, StringRef Str,
     StringRef indentSpace;
     {
       unsigned i = lineOffs;
-      while (isWhitespaceExceptNL(MB[i]))
+      while (isWhitespaceExceptNL(MB[i])) {
         ++i;
+
+}
       indentSpace = MB.substr(lineOffs, i-lineOffs);
     }
 
@@ -294,7 +322,9 @@ bool Rewriter::InsertText(SourceLocation Loc, StringRef Str,
 }
 
 bool Rewriter::InsertTextAfterToken(SourceLocation Loc, StringRef Str) {
-  if (!isRewritable(Loc)) return true;
+  if (!isRewritable(Loc)) { return true;
+
+}
   FileID FID;
   unsigned StartOffs = getLocationOffsetAndFileID(Loc, FID);
   RewriteOptions rangeOpts;
@@ -307,7 +337,9 @@ bool Rewriter::InsertTextAfterToken(SourceLocation Loc, StringRef Str) {
 /// RemoveText - Remove the specified text region.
 bool Rewriter::RemoveText(SourceLocation Start, unsigned Length,
                           RewriteOptions opts) {
-  if (!isRewritable(Start)) return true;
+  if (!isRewritable(Start)) { return true;
+
+}
   FileID FID;
   unsigned StartOffs = getLocationOffsetAndFileID(Start, FID);
   getEditBuffer(FID).RemoveText(StartOffs, Length, opts.RemoveLineIfEmpty);
@@ -319,7 +351,9 @@ bool Rewriter::RemoveText(SourceLocation Start, unsigned Length,
 /// operation.
 bool Rewriter::ReplaceText(SourceLocation Start, unsigned OrigLength,
                            StringRef NewStr) {
-  if (!isRewritable(Start)) return true;
+  if (!isRewritable(Start)) { return true;
+
+}
   FileID StartFileID;
   unsigned StartOffs = getLocationOffsetAndFileID(Start, StartFileID);
 
@@ -328,9 +362,15 @@ bool Rewriter::ReplaceText(SourceLocation Start, unsigned OrigLength,
 }
 
 bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange) {
-  if (!isRewritable(range.getBegin())) return true;
-  if (!isRewritable(range.getEnd())) return true;
-  if (replacementRange.isInvalid()) return true;
+  if (!isRewritable(range.getBegin())) { return true;
+
+}
+  if (!isRewritable(range.getEnd())) { return true;
+
+}
+  if (replacementRange.isInvalid()) { return true;
+
+}
   SourceLocation start = range.getBegin();
   unsigned origLength = getRangeSize(range);
   unsigned newLength = getRangeSize(replacementRange);
@@ -343,10 +383,18 @@ bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange) {
 
 bool Rewriter::IncreaseIndentation(CharSourceRange range,
                                    SourceLocation parentIndent) {
-  if (range.isInvalid()) return true;
-  if (!isRewritable(range.getBegin())) return true;
-  if (!isRewritable(range.getEnd())) return true;
-  if (!isRewritable(parentIndent)) return true;
+  if (range.isInvalid()) { return true;
+
+}
+  if (!isRewritable(range.getBegin())) { return true;
+
+}
+  if (!isRewritable(range.getEnd())) { return true;
+
+}
+  if (!isRewritable(parentIndent)) { return true;
+
+}
 
   FileID StartFileID, EndFileID, parentFileID;
   unsigned StartOff, EndOff, parentOff;
@@ -355,10 +403,14 @@ bool Rewriter::IncreaseIndentation(CharSourceRange range,
   EndOff   = getLocationOffsetAndFileID(range.getEnd(), EndFileID);
   parentOff = getLocationOffsetAndFileID(parentIndent, parentFileID);
 
-  if (StartFileID != EndFileID || StartFileID != parentFileID)
+  if (StartFileID != EndFileID || StartFileID != parentFileID) {
     return true;
-  if (StartOff > EndOff)
+
+}
+  if (StartOff > EndOff) {
     return true;
+
+}
 
   FileID FID = StartFileID;
   StringRef MB = SourceMgr->getBufferData(FID);
@@ -378,19 +430,27 @@ bool Rewriter::IncreaseIndentation(CharSourceRange range,
   StringRef parentSpace, startSpace;
   {
     unsigned i = parentLineOffs;
-    while (isWhitespaceExceptNL(MB[i]))
+    while (isWhitespaceExceptNL(MB[i])) {
       ++i;
+
+}
     parentSpace = MB.substr(parentLineOffs, i-parentLineOffs);
 
     i = startLineOffs;
-    while (isWhitespaceExceptNL(MB[i]))
+    while (isWhitespaceExceptNL(MB[i])) {
       ++i;
+
+}
     startSpace = MB.substr(startLineOffs, i-startLineOffs);
   }
-  if (parentSpace.size() >= startSpace.size())
+  if (parentSpace.size() >= startSpace.size()) {
     return true;
-  if (!startSpace.startswith(parentSpace))
+
+}
+  if (!startSpace.startswith(parentSpace)) {
     return true;
+
+}
 
   StringRef indent = startSpace.substr(parentSpace.size());
 
@@ -399,11 +459,15 @@ bool Rewriter::IncreaseIndentation(CharSourceRange range,
   for (unsigned lineNo = startLineNo; lineNo <= endLineNo; ++lineNo) {
     unsigned offs = Content->SourceLineCache[lineNo];
     unsigned i = offs;
-    while (isWhitespaceExceptNL(MB[i]))
+    while (isWhitespaceExceptNL(MB[i])) {
       ++i;
+
+}
     StringRef origIndent = MB.substr(offs, i-offs);
-    if (origIndent.startswith(startSpace))
+    if (origIndent.startswith(startSpace)) {
       RB.InsertText(offs, indent, /*InsertAfter=*/false);
+
+}
   }
 
   return false;
@@ -435,7 +499,9 @@ public:
   }
 
   ~AtomicallyMovedFile() {
-    if (!ok()) return;
+    if (!ok()) { return;
+
+}
 
     // Close (will also flush) theFileStream.
     FileStream->close();

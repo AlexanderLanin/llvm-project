@@ -29,8 +29,10 @@ MCAsmInfoXCOFF::MCAsmInfoXCOFF() {
 bool MCAsmInfoXCOFF::isAcceptableChar(char C) const {
   // QualName is allowed for a MCSymbolXCOFF, and
   // QualName contains '[' and ']'.
-  if (C == '[' || C == ']')
+  if (C == '[' || C == ']') {
     return true;
+
+}
 
   return MCAsmInfo::isAcceptableChar(C);
 }

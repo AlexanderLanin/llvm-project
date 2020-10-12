@@ -20,12 +20,16 @@ namespace android {
 
 namespace {
 AST_MATCHER(BinaryOperator, isRHSATempFailureRetryArg) {
-  if (!Node.getBeginLoc().isMacroID())
+  if (!Node.getBeginLoc().isMacroID()) {
     return false;
 
+}
+
   const SourceManager &SM = Finder->getASTContext().getSourceManager();
-  if (!SM.isMacroArgExpansion(Node.getRHS()->IgnoreParenCasts()->getBeginLoc()))
+  if (!SM.isMacroArgExpansion(Node.getRHS()->IgnoreParenCasts()->getBeginLoc())) {
     return false;
+
+}
 
   const LangOptions &Opts = Finder->getASTContext().getLangOpts();
   SourceLocation LocStart = Node.getBeginLoc();
@@ -35,8 +39,10 @@ AST_MATCHER(BinaryOperator, isRHSATempFailureRetryArg) {
     if (!Lexer::getRawToken(SM.getSpellingLoc(Invocation), Tok, SM, Opts,
                             /*IgnoreWhiteSpace=*/true)) {
       if (Tok.getKind() == tok::raw_identifier &&
-          Tok.getRawIdentifier() == "TEMP_FAILURE_RETRY")
+          Tok.getRawIdentifier() == "TEMP_FAILURE_RETRY") {
         return true;
+
+}
     }
 
     LocStart = Invocation;

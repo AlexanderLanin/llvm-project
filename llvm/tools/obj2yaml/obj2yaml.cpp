@@ -18,43 +18,61 @@ using namespace llvm;
 using namespace llvm::object;
 
 static Error dumpObject(const ObjectFile &Obj) {
-  if (Obj.isCOFF())
+  if (Obj.isCOFF()) {
     return errorCodeToError(coff2yaml(outs(), cast<COFFObjectFile>(Obj)));
 
-  if (Obj.isXCOFF())
+}
+
+  if (Obj.isXCOFF()) {
     return errorCodeToError(xcoff2yaml(outs(), cast<XCOFFObjectFile>(Obj)));
 
-  if (Obj.isELF())
+}
+
+  if (Obj.isELF()) {
     return elf2yaml(outs(), Obj);
 
-  if (Obj.isWasm())
+}
+
+  if (Obj.isWasm()) {
     return errorCodeToError(wasm2yaml(outs(), cast<WasmObjectFile>(Obj)));
+
+}
 
   return errorCodeToError(obj2yaml_error::unsupported_obj_file_format);
 }
 
 static Error dumpInput(StringRef File) {
   Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(File);
-  if (!BinaryOrErr)
+  if (!BinaryOrErr) {
     return BinaryOrErr.takeError();
+
+}
 
   Binary &Binary = *BinaryOrErr.get().getBinary();
   // Universal MachO is not a subclass of ObjectFile, so it needs to be handled
   // here with the other binary types.
-  if (Binary.isMachO() || Binary.isMachOUniversalBinary())
+  if (Binary.isMachO() || Binary.isMachOUniversalBinary()) {
     return macho2yaml(outs(), Binary);
+
+}
   // TODO: If this is an archive, then burst it and dump each entry
-  if (ObjectFile *Obj = dyn_cast<ObjectFile>(&Binary))
+  if (ObjectFile *Obj = dyn_cast<ObjectFile>(&Binary)) {
     return dumpObject(*Obj);
-  if (MinidumpFile *Minidump = dyn_cast<MinidumpFile>(&Binary))
+
+}
+  if (MinidumpFile *Minidump = dyn_cast<MinidumpFile>(&Binary)) {
     return minidump2yaml(outs(), *Minidump);
+
+}
 
   return Error::success();
 }
 
 static void reportError(StringRef Input, Error Err) {
-  if (Input == "-")
+  if (Input == "-") {
     Input = "<stdin>";
+
+}
   std::string ErrMsg;
   raw_string_ostream OS(ErrMsg);
   logAllUnhandledErrors(std::move(Err), OS);

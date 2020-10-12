@@ -223,8 +223,10 @@ namespace {
         AU.addRequired<MemorySSAWrapperPass>();
         AU.addPreserved<MemorySSAWrapperPass>();
       }
-      if (HasBranchDivergence)
+      if (HasBranchDivergence) {
         AU.addRequired<LegacyDivergenceAnalysis>();
+
+}
       getLoopAnalysisUsage(AU);
     }
 
@@ -295,8 +297,10 @@ bool LUAnalysisCache::countLoop(const Loop *L, const TargetTransformInfo &TTI,
     // be shared by the resultant unswitched loops.
     CodeMetrics Metrics;
     for (Loop::block_iterator I = L->block_begin(), E = L->block_end(); I != E;
-         ++I)
+         ++I) {
       Metrics.analyzeBasicBlock(*I, TTI, EphValues);
+
+}
 
     Props.SizeEstimation = Metrics.NumInsts;
     Props.CanBeUnswitchedCount = MaxSize / (Props.SizeEstimation);
@@ -422,18 +426,24 @@ static Value *findLIVLoopCondition(Value *Cond, Loop *L, bool &Changed,
                                    DenseMap<Value *, Value *> &Cache,
                                    MemorySSAUpdater *MSSAU) {
   auto CacheIt = Cache.find(Cond);
-  if (CacheIt != Cache.end())
+  if (CacheIt != Cache.end()) {
     return CacheIt->second;
+
+}
 
   // We started analyze new instruction, increment scanned instructions counter.
   ++TotalInsts;
 
   // We can never unswitch on vector conditions.
-  if (Cond->getType()->isVectorTy())
+  if (Cond->getType()->isVectorTy()) {
     return nullptr;
 
+}
+
   // Constants should be folded, not unswitched on!
-  if (isa<Constant>(Cond)) return nullptr;
+  if (isa<Constant>(Cond)) { return nullptr;
+
+}
 
   // TODO: Handle: br (VARIANT|INVARIANT).
 
@@ -444,7 +454,7 @@ static Value *findLIVLoopCondition(Value *Cond, Loop *L, bool &Changed,
   }
 
   // Walk up the operator chain to find partial invariant conditions.
-  if (BinaryOperator *BO = dyn_cast<BinaryOperator>(Cond))
+  if (BinaryOperator *BO = dyn_cast<BinaryOperator>(Cond)) {
     if (BO->getOpcode() == Instruction::And ||
         BO->getOpcode() == Instruction::Or) {
       // Given the previous operator, compute the current operator chain status.
@@ -493,6 +503,8 @@ static Value *findLIVLoopCondition(Value *Cond, Loop *L, bool &Changed,
       }
     }
 
+}
+
   Cache[Cond] = nullptr;
   return nullptr;
 }
@@ -515,8 +527,10 @@ findLIVLoopCondition(Value *Cond, Loop *L, bool &Changed,
 }
 
 bool LoopUnswitch::runOnLoop(Loop *L, LPPassManager &LPMRef) {
-  if (skipLoop(L))
+  if (skipLoop(L)) {
     return false;
+
+}
 
   AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(
       *L->getHeader()->getParent());
@@ -532,23 +546,31 @@ bool LoopUnswitch::runOnLoop(Loop *L, LPPassManager &LPMRef) {
   Function *F = CurrentLoop->getHeader()->getParent();
 
   SanitizeMemory = F->hasFnAttribute(Attribute::SanitizeMemory);
-  if (SanitizeMemory)
+  if (SanitizeMemory) {
     SafetyInfo.computeLoopSafetyInfo(L);
 
-  if (MSSA && VerifyMemorySSA)
+}
+
+  if (MSSA && VerifyMemorySSA) {
     MSSA->verifyMemorySSA();
+
+}
 
   bool Changed = false;
   do {
     assert(CurrentLoop->isLCSSAForm(*DT));
-    if (MSSA && VerifyMemorySSA)
+    if (MSSA && VerifyMemorySSA) {
       MSSA->verifyMemorySSA();
+
+}
     RedoLoop = false;
     Changed |= processCurrentLoop();
   } while (RedoLoop);
 
-  if (MSSA && VerifyMemorySSA)
+  if (MSSA && VerifyMemorySSA) {
     MSSA->verifyMemorySSA();
+
+}
 
   return Changed;
 }
@@ -564,20 +586,26 @@ bool LoopUnswitch::isUnreachableDueToPreviousUnswitching(BasicBlock *BB) {
     Node = DT->getNode(DomBB)->getIDom();
     DomBB = Node->getBlock();
 
-    if (!BInst || !BInst->isConditional())
+    if (!BInst || !BInst->isConditional()) {
       continue;
 
+}
+
     Value *Cond = BInst->getCondition();
-    if (!isa<ConstantInt>(Cond))
+    if (!isa<ConstantInt>(Cond)) {
       continue;
+
+}
 
     BasicBlock *UnreachableSucc =
         Cond == ConstantInt::getTrue(Cond->getContext())
             ? BInst->getSuccessor(1)
             : BInst->getSuccessor(0);
 
-    if (DT->dominates(UnreachableSucc, BB))
+    if (DT->dominates(UnreachableSucc, BB)) {
       return true;
+
+}
   }
   return false;
 }
@@ -591,36 +619,48 @@ bool LoopUnswitch::isUnreachableDueToPreviousUnswitching(BasicBlock *BB) {
 /// it is necessarily safe.
 static bool equalityPropUnSafe(Value &LoopCond) {
   ICmpInst *CI = dyn_cast<ICmpInst>(&LoopCond);
-  if (!CI || !CI->isEquality())
+  if (!CI || !CI->isEquality()) {
     return false;
+
+}
 
   Value *LHS = CI->getOperand(0);
   Value *RHS = CI->getOperand(1);
-  if (isa<UndefValue>(LHS) || isa<UndefValue>(RHS))
+  if (isa<UndefValue>(LHS) || isa<UndefValue>(RHS)) {
     return true;
+
+}
 
   auto HasUndefInPHI = [](PHINode &PN) {
     for (Value *Opd : PN.incoming_values()) {
-      if (isa<UndefValue>(Opd))
+      if (isa<UndefValue>(Opd)) {
         return true;
+
+}
     }
     return false;
   };
   PHINode *LPHI = dyn_cast<PHINode>(LHS);
   PHINode *RPHI = dyn_cast<PHINode>(RHS);
-  if ((LPHI && HasUndefInPHI(*LPHI)) || (RPHI && HasUndefInPHI(*RPHI)))
+  if ((LPHI && HasUndefInPHI(*LPHI)) || (RPHI && HasUndefInPHI(*RPHI))) {
     return true;
+
+}
 
   auto HasUndefInSelect = [](SelectInst &SI) {
     if (isa<UndefValue>(SI.getTrueValue()) ||
-        isa<UndefValue>(SI.getFalseValue()))
+        isa<UndefValue>(SI.getFalseValue())) {
       return true;
+
+}
     return false;
   };
   SelectInst *LSI = dyn_cast<SelectInst>(LHS);
   SelectInst *RSI = dyn_cast<SelectInst>(RHS);
-  if ((LSI && HasUndefInSelect(*LSI)) || (RSI && HasUndefInSelect(*RSI)))
+  if ((LSI && HasUndefInSelect(*LSI)) || (RSI && HasUndefInSelect(*RSI))) {
     return true;
+
+}
   return false;
 }
 
@@ -631,16 +671,22 @@ bool LoopUnswitch::processCurrentLoop() {
   initLoopData();
 
   // If LoopSimplify was unable to form a preheader, don't do any unswitching.
-  if (!LoopPreheader)
+  if (!LoopPreheader) {
     return false;
+
+}
 
   // Loops with indirectbr cannot be cloned.
-  if (!CurrentLoop->isSafeToClone())
+  if (!CurrentLoop->isSafeToClone()) {
     return false;
 
+}
+
   // Without dedicated exits, splitting the exit edge may fail.
-  if (!CurrentLoop->hasDedicatedExits())
+  if (!CurrentLoop->hasDedicatedExits()) {
     return false;
+
+}
 
   LLVMContext &Context = LoopHeader->getContext();
 
@@ -649,8 +695,10 @@ bool LoopUnswitch::processCurrentLoop() {
           CurrentLoop,
           getAnalysis<TargetTransformInfoWrapperPass>().getTTI(
               *CurrentLoop->getHeader()->getParent()),
-          AC))
+          AC)) {
     return false;
+
+}
 
   // Try trivial unswitch first before loop over other basic blocks in the loop.
   if (tryTrivialLoopUnswitch(Changed)) {
@@ -660,8 +708,10 @@ bool LoopUnswitch::processCurrentLoop() {
   // Do not do non-trivial unswitch while optimizing for size.
   // FIXME: Use Function::hasOptSize().
   if (OptimizeForSize ||
-      LoopHeader->getParent()->hasFnAttribute(Attribute::OptimizeForSize))
+      LoopHeader->getParent()->hasFnAttribute(Attribute::OptimizeForSize)) {
     return false;
+
+}
 
   // Run through the instructions in the loop, keeping track of three things:
   //
@@ -682,15 +732,27 @@ bool LoopUnswitch::processCurrentLoop() {
   for (const auto BB : CurrentLoop->blocks()) {
     for (auto &I : *BB) {
       auto CS = CallSite(&I);
-      if (!CS) continue;
-      if (CS.isConvergent())
+      if (!CS) { continue;
+
+}
+      if (CS.isConvergent()) {
         return false;
-      if (auto *II = dyn_cast<InvokeInst>(&I))
-        if (!II->getUnwindDest()->canSplitPredecessors())
+
+}
+      if (auto *II = dyn_cast<InvokeInst>(&I)) {
+        if (!II->getUnwindDest()->canSplitPredecessors()) {
           return false;
-      if (auto *II = dyn_cast<IntrinsicInst>(&I))
-        if (II->getIntrinsicID() == Intrinsic::experimental_guard)
+
+}
+
+}
+      if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
+        if (II->getIntrinsicID() == Intrinsic::experimental_guard) {
           Guards.push_back(II);
+
+}
+
+}
     }
   }
 
@@ -723,15 +785,19 @@ bool LoopUnswitch::processCurrentLoop() {
     // This is a workaround for the discrepancy between LLVM IR and MSan
     // semantics. See PR28054 for more details.
     if (SanitizeMemory &&
-        !SafetyInfo.isGuaranteedToExecute(*TI, DT, CurrentLoop))
+        !SafetyInfo.isGuaranteedToExecute(*TI, DT, CurrentLoop)) {
       continue;
+
+}
 
     if (BranchInst *BI = dyn_cast<BranchInst>(TI)) {
       // Some branches may be rendered unreachable because of previous
       // unswitching.
       // Unswitch only those branches that are reachable.
-      if (isUnreachableDueToPreviousUnswitching(*I))
+      if (isUnreachableDueToPreviousUnswitching(*I)) {
         continue;
+
+}
 
       // If this isn't branching on an invariant condition, we can't unswitch
       // it.
@@ -766,16 +832,20 @@ bool LoopUnswitch::processCurrentLoop() {
           // If the chain only has ANDs and the switch has a case value of 0.
           // Dropping in a 0 to the chain will unswitch out the 0-casevalue.
           auto *AllZero = cast<ConstantInt>(Constant::getNullValue(SC->getType()));
-          if (BranchesInfo.isUnswitched(SI, AllZero))
+          if (BranchesInfo.isUnswitched(SI, AllZero)) {
             continue;
+
+}
           // We are unswitching 0 out.
           UnswitchVal = AllZero;
         } else if (OpChain == OC_OpChainOr) {
           // If the chain only has ORs and the switch has a case value of ~0.
           // Dropping in a ~0 to the chain will unswitch out the ~0-casevalue.
           auto *AllOne = cast<ConstantInt>(Constant::getAllOnesValue(SC->getType()));
-          if (BranchesInfo.isUnswitched(SI, AllOne))
+          if (BranchesInfo.isUnswitched(SI, AllOne)) {
             continue;
+
+}
           // We are unswitching ~0 out.
           UnswitchVal = AllOne;
         } else {
@@ -793,8 +863,10 @@ bool LoopUnswitch::processCurrentLoop() {
           }
         }
 
-        if (!UnswitchVal)
+        if (!UnswitchVal) {
           continue;
+
+}
 
         if (unswitchIfProfitable(LoopCond, UnswitchVal)) {
           ++NumSwitches;
@@ -810,7 +882,7 @@ bool LoopUnswitch::processCurrentLoop() {
 
     // Scan the instructions to check for unswitchable values.
     for (BasicBlock::iterator BBI = (*I)->begin(), E = (*I)->end();
-         BBI != E; ++BBI)
+         BBI != E; ++BBI) {
       if (SelectInst *SI = dyn_cast<SelectInst>(BBI)) {
         Value *LoopCond = findLIVLoopCondition(SI->getCondition(), CurrentLoop,
                                                Changed, MSSAU.get())
@@ -821,6 +893,8 @@ bool LoopUnswitch::processCurrentLoop() {
           return true;
         }
       }
+
+}
   }
   return Changed;
 }
@@ -842,7 +916,9 @@ static bool isTrivialLoopExitBlockHelper(Loop *L, BasicBlock *BB,
   if (!L->contains(BB)) {
     // Otherwise, this is a loop exit, this is fine so long as this is the
     // first exit.
-    if (ExitBB) return false;
+    if (ExitBB) { return false;
+
+}
     ExitBB = BB;
     return true;
   }
@@ -850,15 +926,21 @@ static bool isTrivialLoopExitBlockHelper(Loop *L, BasicBlock *BB,
   // Otherwise, this is an unvisited intra-loop node.  Check all successors.
   for (succ_iterator SI = succ_begin(BB), E = succ_end(BB); SI != E; ++SI) {
     // Check to see if the successor is a trivial loop exit.
-    if (!isTrivialLoopExitBlockHelper(L, *SI, ExitBB, Visited))
+    if (!isTrivialLoopExitBlockHelper(L, *SI, ExitBB, Visited)) {
       return false;
+
+}
   }
 
   // Okay, everything after this looks good, check to make sure that this block
   // doesn't include any side effects.
-  for (Instruction &I : *BB)
-    if (I.mayHaveSideEffects())
+  for (Instruction &I : *BB) {
+    if (I.mayHaveSideEffects()) {
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -870,8 +952,10 @@ static BasicBlock *isTrivialLoopExitBlock(Loop *L, BasicBlock *BB) {
   std::set<BasicBlock*> Visited;
   Visited.insert(L->getHeader());  // Branches to header make infinite loops.
   BasicBlock *ExitBB = nullptr;
-  if (isTrivialLoopExitBlockHelper(L, BB, ExitBB, Visited))
+  if (isTrivialLoopExitBlockHelper(L, BB, ExitBB, Visited)) {
     return ExitBB;
+
+}
   return nullptr;
 }
 
@@ -918,9 +1002,9 @@ void LoopUnswitch::emitPreheaderBranchOnCondition(Value *LIC, Constant *Val,
   Value *BranchVal = LIC;
   bool Swapped = false;
   if (!isa<ConstantInt>(Val) ||
-      Val->getType() != Type::getInt1Ty(LIC->getContext()))
+      Val->getType() != Type::getInt1Ty(LIC->getContext())) {
     BranchVal = new ICmpInst(OldBranch, ICmpInst::ICMP_EQ, LIC, Val);
-  else if (Val != ConstantInt::getTrue(Val->getContext())) {
+  } else if (Val != ConstantInt::getTrue(Val->getContext())) {
     // We want to enter the new loop when the condition is true.
     std::swap(TrueDest, FalseDest);
     Swapped = true;
@@ -934,8 +1018,10 @@ void LoopUnswitch::emitPreheaderBranchOnCondition(Value *LIC, Constant *Val,
   // Insert the new branch.
   BranchInst *BI =
       IRBuilder<>(OldBranch).CreateCondBr(BranchVal, TrueDest, FalseDest, TI);
-  if (Swapped)
+  if (Swapped) {
     BI->swapProfMetadata();
+
+}
 
   // Remove the old branch so there is only one branch at the end. This is
   // needed to perform DomTree's internal DFS walk on the function's CFG.
@@ -945,10 +1031,14 @@ void LoopUnswitch::emitPreheaderBranchOnCondition(Value *LIC, Constant *Val,
   if (DT) {
     // First, add both successors.
     SmallVector<DominatorTree::UpdateType, 3> Updates;
-    if (TrueDest != OldBranchSucc)
+    if (TrueDest != OldBranchSucc) {
       Updates.push_back({DominatorTree::Insert, OldBranchParent, TrueDest});
-    if (FalseDest != OldBranchSucc)
+
+}
+    if (FalseDest != OldBranchSucc) {
       Updates.push_back({DominatorTree::Insert, OldBranchParent, FalseDest});
+
+}
     // If both of the new successors are different from the old one, inform the
     // DT that the edge was deleted.
     if (OldBranchSucc != TrueDest && OldBranchSucc != FalseDest) {
@@ -956,8 +1046,10 @@ void LoopUnswitch::emitPreheaderBranchOnCondition(Value *LIC, Constant *Val,
     }
     DT->applyUpdates(Updates);
 
-    if (MSSAU)
+    if (MSSAU) {
       MSSAU->applyUpdates(Updates, *DT);
+
+}
   }
 
   // If either edge is critical, split it. This helps preserve LoopSimplify
@@ -983,8 +1075,10 @@ void LoopUnswitch::unswitchTrivialCondition(Loop *L, Value *Cond, Constant *Val,
                     << " on cond: " << *Val << " == " << *Cond << "\n");
   // We are going to make essential changes to CFG. This may invalidate cached
   // information for L or one of its parent loops in SCEV.
-  if (auto *SEWP = getAnalysisIfAvailable<ScalarEvolutionWrapperPass>())
+  if (auto *SEWP = getAnalysisIfAvailable<ScalarEvolutionWrapperPass>()) {
     SEWP->getSE().forgetTopmostLoop(L);
+
+}
 
   // First step, split the preheader, so that we know that there is a safe place
   // to insert the conditional branch.  We will change LoopPreheader to have a
@@ -1056,15 +1150,21 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
     // we can not reach any trivial condition candidates (unfoldable
     // branch instructions or switch instructions) and no unswitch
     // can happen. Exit and return false.
-    if (!CurrentLoop->contains(CurrentBB) || !Visited.insert(CurrentBB).second)
+    if (!CurrentLoop->contains(CurrentBB) || !Visited.insert(CurrentBB).second) {
       return false;
+
+}
 
     // Check if this loop will execute any side-effecting instructions (e.g.
     // stores, calls, volatile loads) in the part of the loop that the code
     // *would* execute. Check the header first.
-    for (Instruction &I : *CurrentBB)
-      if (I.mayHaveSideEffects())
+    for (Instruction &I : *CurrentBB) {
+      if (I.mayHaveSideEffects()) {
         return false;
+
+}
+
+}
 
     if (BranchInst *BI = dyn_cast<BranchInst>(CurrentTerm)) {
       if (BI->isUnconditional()) {
@@ -1081,8 +1181,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
       // At this point, any constant-foldable instructions should have probably
       // been folded.
       ConstantInt *Cond = dyn_cast<ConstantInt>(SI->getCondition());
-      if (!Cond)
+      if (!Cond) {
         break;
+
+}
       // Find the target block we are definitely going to.
       CurrentBB = SI->findCaseValue(Cond)->getCaseSuccessor();
     } else {
@@ -1100,8 +1202,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
   if (BranchInst *BI = dyn_cast<BranchInst>(CurrentTerm)) {
     // If this isn't branching on an invariant condition, we can't unswitch it.
-    if (!BI->isConditional())
+    if (!BI->isConditional()) {
       return false;
+
+}
 
     Value *LoopCond = findLIVLoopCondition(BI->getCondition(), CurrentLoop,
                                            Changed, MSSAU.get())
@@ -1109,8 +1213,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
     // Unswitch only if the trivial condition itself is an LIV (not
     // partial LIV which could occur in and/or)
-    if (!LoopCond || LoopCond != BI->getCondition())
+    if (!LoopCond || LoopCond != BI->getCondition()) {
       return false;
+
+}
 
     // Check to see if a successor of the branch is guaranteed to
     // exit through a unique exit block without having any
@@ -1126,11 +1232,15 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
     // If we didn't find a single unique LoopExit block, or if the loop exit
     // block contains phi nodes, this isn't trivial.
-    if (!LoopExitBB || isa<PHINode>(LoopExitBB->begin()))
+    if (!LoopExitBB || isa<PHINode>(LoopExitBB->begin())) {
       return false;   // Can't handle this.
 
-    if (equalityPropUnSafe(*LoopCond))
+}
+
+    if (equalityPropUnSafe(*LoopCond)) {
       return false;
+
+}
 
     unswitchTrivialCondition(CurrentLoop, LoopCond, CondVal, LoopExitBB,
                              CurrentTerm);
@@ -1144,8 +1254,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
     // Unswitch only if the trivial condition itself is an LIV (not
     // partial LIV which could occur in and/or)
-    if (!LoopCond || LoopCond != SI->getCondition())
+    if (!LoopCond || LoopCond != SI->getCondition()) {
       return false;
+
+}
 
     // Check to see if a successor of the switch is guaranteed to go to the
     // latch block or exit through a one exit block without having any
@@ -1162,8 +1274,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
         // Check that it was not unswitched before, since already unswitched
         // trivial vals are looks trivial too.
-        if (BranchesInfo.isUnswitched(SI, CaseVal))
+        if (BranchesInfo.isUnswitched(SI, CaseVal)) {
           continue;
+
+}
         LoopExitBB = LoopExitCandidate;
         CondVal = CaseVal;
         break;
@@ -1172,8 +1286,10 @@ bool LoopUnswitch::tryTrivialLoopUnswitch(bool &Changed) {
 
     // If we didn't find a single unique LoopExit block, or if the loop exit
     // block contains phi nodes, this isn't trivial.
-    if (!LoopExitBB || isa<PHINode>(LoopExitBB->begin()))
+    if (!LoopExitBB || isa<PHINode>(LoopExitBB->begin())) {
       return false;   // Can't handle this.
+
+}
 
     unswitchTrivialCondition(CurrentLoop, LoopCond, CondVal, LoopExitBB,
                              nullptr);
@@ -1216,14 +1332,18 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
 
   // We are going to make essential changes to CFG. This may invalidate cached
   // information for L or one of its parent loops in SCEV.
-  if (auto *SEWP = getAnalysisIfAvailable<ScalarEvolutionWrapperPass>())
+  if (auto *SEWP = getAnalysisIfAvailable<ScalarEvolutionWrapperPass>()) {
     SEWP->getSE().forgetTopmostLoop(L);
+
+}
 
   LoopBlocks.clear();
   NewBlocks.clear();
 
-  if (MSSAU && VerifyMemorySSA)
+  if (MSSAU && VerifyMemorySSA) {
     MSSA->verifyMemorySSA();
+
+}
 
   // First step, split the preheader and exit blocks, and add these blocks to
   // the LoopBlocks list.
@@ -1283,8 +1403,10 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
   for (unsigned EBI = 0, EBE = ExitBlocks.size(); EBI != EBE; ++EBI) {
     BasicBlock *NewExit = cast<BasicBlock>(VMap[ExitBlocks[EBI]]);
     // The new exit block should be in the same loop as the old one.
-    if (Loop *ExitBBLoop = LI->getLoopFor(ExitBlocks[EBI]))
+    if (Loop *ExitBBLoop = LI->getLoopFor(ExitBlocks[EBI])) {
       ExitBBLoop->addBasicBlockToLoop(NewExit, *LI);
+
+}
 
     assert(NewExit->getTerminator()->getNumSuccessors() == 1 &&
            "Exit block should have been split to have one successor!");
@@ -1295,7 +1417,9 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
     for (PHINode &PN : ExitSucc->phis()) {
       Value *V = PN.getIncomingValueForBlock(ExitBlocks[EBI]);
       ValueToValueMapTy::iterator It = VMap.find(V);
-      if (It != VMap.end()) V = It->second;
+      if (It != VMap.end()) { V = It->second;
+
+}
       PN.addIncoming(V, NewExit);
     }
 
@@ -1318,9 +1442,13 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
     for (Instruction &I : *NewBlocks[NBI]) {
       RemapInstruction(&I, VMap,
                        RF_NoModuleLevelChanges | RF_IgnoreMissingLocals);
-      if (auto *II = dyn_cast<IntrinsicInst>(&I))
-        if (II->getIntrinsicID() == Intrinsic::assume)
+      if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
+        if (II->getIntrinsicID() == Intrinsic::assume) {
           AC->registerAssumption(II);
+
+}
+
+}
     }
   }
 
@@ -1343,8 +1471,10 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
   if (MSSAU) {
     // Update MemoryPhis in Exit blocks.
     MSSAU->updateExitBlocksForClonedLoop(ExitBlocks, VMap, *DT);
-    if (VerifyMemorySSA)
+    if (VerifyMemorySSA) {
       MSSA->verifyMemorySSA();
+
+}
   }
 
   // The OldBr was replaced by a new one and removed (but not erased) by
@@ -1369,12 +1499,16 @@ void LoopUnswitch::unswitchNontrivialCondition(Value *LIC, Constant *Val,
   // changed to another value or a constant.  If its a constant, don't simplify
   // it.
   if (!LoopProcessWorklist.empty() && LoopProcessWorklist.back() == NewLoop &&
-      LICHandle && !isa<Constant>(LICHandle))
+      LICHandle && !isa<Constant>(LICHandle)) {
     rewriteLoopBodyWithConditionConstant(NewLoop, LICHandle, Val,
                                          /*IsEqual=*/true);
 
-  if (MSSA && VerifyMemorySSA)
+}
+
+  if (MSSA && VerifyMemorySSA) {
     MSSA->verifyMemorySSA();
+
+}
 }
 
 /// Remove all instances of I from the worklist vector specified.
@@ -1393,18 +1527,26 @@ static void replaceUsesOfWith(Instruction *I, Value *V,
   LLVM_DEBUG(dbgs() << "Replace with '" << *V << "': " << *I << "\n");
 
   // Add uses to the worklist, which may be dead now.
-  for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i)
-    if (Instruction *Use = dyn_cast<Instruction>(I->getOperand(i)))
+  for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i) {
+    if (Instruction *Use = dyn_cast<Instruction>(I->getOperand(i))) {
       Worklist.push_back(Use);
 
+}
+
+}
+
   // Add users to the worklist which may be simplified now.
-  for (User *U : I->users())
+  for (User *U : I->users()) {
     Worklist.push_back(cast<Instruction>(U));
+
+}
   removeFromWorklist(I, Worklist);
   I->replaceAllUsesWith(V);
   if (!I->mayHaveSideEffects()) {
-    if (MSSAU)
+    if (MSSAU) {
       MSSAU->removeMemoryAccess(I);
+
+}
     I->eraseFromParent();
   }
   ++NumSimplify;
@@ -1435,21 +1577,27 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
   if (IsEqual || (isa<ConstantInt>(Val) &&
       Val->getType()->isIntegerTy(1))) {
     Value *Replacement;
-    if (IsEqual)
+    if (IsEqual) {
       Replacement = Val;
-    else
+    } else {
       Replacement = ConstantInt::get(Type::getInt1Ty(Val->getContext()),
                                      !cast<ConstantInt>(Val)->getZExtValue());
 
+}
+
     for (User *U : LIC->users()) {
       Instruction *UI = dyn_cast<Instruction>(U);
-      if (!UI || !L->contains(UI))
+      if (!UI || !L->contains(UI)) {
         continue;
+
+}
       Worklist.push_back(UI);
     }
 
-    for (Instruction *UI : Worklist)
+    for (Instruction *UI : Worklist) {
       UI->replaceUsesOfWith(LIC, Replacement);
+
+}
 
     simplifyCode(Worklist, L);
     return;
@@ -1460,8 +1608,10 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
   // can.  This case occurs when we unswitch switch statements.
   for (User *U : LIC->users()) {
     Instruction *UI = dyn_cast<Instruction>(U);
-    if (!UI || !L->contains(UI))
+    if (!UI || !L->contains(UI)) {
       continue;
+
+}
 
     // At this point, we know LIC is definitely not Val. Try to use some simple
     // logic to simplify the user w.r.t. to the context.
@@ -1485,7 +1635,9 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
 
     // If we know that LIC is not Val, use this info to simplify code.
     SwitchInst *SI = dyn_cast<SwitchInst>(UI);
-    if (!SI || !isa<ConstantInt>(Val)) continue;
+    if (!SI || !isa<ConstantInt>(Val)) { continue;
+
+}
 
     // NOTE: if a case value for the switch is unswitched out, we record it
     // after the unswitch finishes. We can not record it here as the switch
@@ -1493,8 +1645,10 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
     SwitchInst::CaseHandle DeadCase =
         *SI->findCaseValue(cast<ConstantInt>(Val));
     // Default case is live for multiple values.
-    if (DeadCase == *SI->case_default())
+    if (DeadCase == *SI->case_default()) {
       continue;
+
+}
 
     // Found a dead case value.  Don't remove PHI nodes in the
     // successor if they become single-entry, those PHI nodes may
@@ -1504,12 +1658,16 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
     BasicBlock *SISucc = DeadCase.getCaseSuccessor();
     BasicBlock *Latch = L->getLoopLatch();
 
-    if (!SI->findCaseDest(SISucc)) continue;  // Edge is critical.
+    if (!SI->findCaseDest(SISucc)) { continue;  // Edge is critical.
+
+}
     // If the DeadCase successor dominates the loop latch, then the
     // transformation isn't safe since it will delete the sole predecessor edge
     // to the latch.
-    if (Latch && DT->dominates(SISucc, Latch))
+    if (Latch && DT->dominates(SISucc, Latch)) {
       continue;
+
+}
 
     // FIXME: This is a hack.  We need to keep the successor around
     // and hooked up so as to preserve the loop structure, because
@@ -1532,8 +1690,10 @@ void LoopUnswitch::rewriteLoopBodyWithConditionConstant(Loop *L, Value *LIC,
     BranchInst::Create(Abort, OldSISucc,
                        ConstantInt::getTrue(Context), NewSISucc);
     // Release the PHI operands for this edge.
-    for (PHINode &PN : NewSISucc->phis())
+    for (PHINode &PN : NewSISucc->phis()) {
       PN.setIncomingValueForBlock(Switch, UndefValue::get(PN.getType()));
+
+}
     // Tell the domtree about the new block. We don't fully update the
     // domtree here -- instead we force it to do a full recomputation
     // after the pass is complete -- but we do need to inform it of
@@ -1563,12 +1723,18 @@ void LoopUnswitch::simplifyCode(std::vector<Instruction *> &Worklist, Loop *L) {
       LLVM_DEBUG(dbgs() << "Remove dead instruction '" << *I << "\n");
 
       // Add uses to the worklist, which may be dead now.
-      for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i)
-        if (Instruction *Use = dyn_cast<Instruction>(I->getOperand(i)))
+      for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i) {
+        if (Instruction *Use = dyn_cast<Instruction>(I->getOperand(i))) {
           Worklist.push_back(Use);
+
+}
+
+}
       removeFromWorklist(I, Worklist);
-      if (MSSAU)
+      if (MSSAU) {
         MSSAU->removeMemoryAccess(I);
+
+}
       I->eraseFromParent();
       ++NumSimplify;
       continue;
@@ -1577,11 +1743,13 @@ void LoopUnswitch::simplifyCode(std::vector<Instruction *> &Worklist, Loop *L) {
     // See if instruction simplification can hack this up.  This is common for
     // things like "select false, X, Y" after unswitching made the condition be
     // 'false'.  TODO: update the domtree properly so we can pass it here.
-    if (Value *V = SimplifyInstruction(I, DL))
+    if (Value *V = SimplifyInstruction(I, DL)) {
       if (LI->replacementPreservesLCSSAForm(I, V)) {
         replaceUsesOfWith(I, V, Worklist, L, LPM, MSSAU.get());
         continue;
       }
+
+}
 
     // Special case hacks that appear commonly in unswitched code.
     if (BranchInst *BI = dyn_cast<BranchInst>(I)) {
@@ -1592,18 +1760,26 @@ void LoopUnswitch::simplifyCode(std::vector<Instruction *> &Worklist, Loop *L) {
         (void)Pred;
         BasicBlock *Succ = BI->getSuccessor(0);
         BasicBlock *SinglePred = Succ->getSinglePredecessor();
-        if (!SinglePred) continue;  // Nothing to do.
+        if (!SinglePred) { continue;  // Nothing to do.
+
+}
         assert(SinglePred == Pred && "CFG broken");
 
         // Make the LPM and Worklist updates specific to LoopUnswitch.
         removeFromWorklist(BI, Worklist);
         auto SuccIt = Succ->begin();
         while (PHINode *PN = dyn_cast<PHINode>(SuccIt++)) {
-          for (unsigned It = 0, E = PN->getNumOperands(); It != E; ++It)
-            if (Instruction *Use = dyn_cast<Instruction>(PN->getOperand(It)))
+          for (unsigned It = 0, E = PN->getNumOperands(); It != E; ++It) {
+            if (Instruction *Use = dyn_cast<Instruction>(PN->getOperand(It))) {
               Worklist.push_back(Use);
-          for (User *U : PN->users())
+
+}
+
+}
+          for (User *U : PN->users()) {
             Worklist.push_back(cast<Instruction>(U));
+
+}
           removeFromWorklist(PN, Worklist);
           ++NumSimplify;
         }
@@ -1631,10 +1807,12 @@ Value *LoopUnswitch::simplifyInstructionWithNotEqual(Instruction *Inst,
     Value *Op1 = CI->getOperand(1);
     if ((Op0 == Invariant && Op1 == Val) || (Op0 == Val && Op1 == Invariant)) {
       LLVMContext &Ctx = Inst->getContext();
-      if (CI->getPredicate() == CmpInst::ICMP_EQ)
+      if (CI->getPredicate() == CmpInst::ICMP_EQ) {
         return ConstantInt::getFalse(Ctx);
-      else
+      } else {
         return ConstantInt::getTrue(Ctx);
+
+}
      }
   }
 

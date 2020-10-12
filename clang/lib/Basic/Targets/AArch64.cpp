@@ -42,8 +42,10 @@ AArch64TargetInfo::AArch64TargetInfo(const llvm::Triple &Triple,
     Int64Type = SignedLongLong;
     IntMaxType = SignedLongLong;
   } else {
-    if (!getTriple().isOSDarwin() && !getTriple().isOSNetBSD())
+    if (!getTriple().isOSDarwin() && !getTriple().isOSNetBSD()) {
       WCharType = UnsignedInt;
+
+}
 
     Int64Type = SignedLong;
     IntMaxType = SignedLong;
@@ -53,10 +55,12 @@ AArch64TargetInfo::AArch64TargetInfo(const llvm::Triple &Triple,
   HasLegalHalfType = true;
   HasFloat16 = true;
 
-  if (Triple.isArch64Bit())
+  if (Triple.isArch64Bit()) {
     LongWidth = LongAlign = PointerWidth = PointerAlign = 64;
-  else
+  } else {
     LongWidth = LongAlign = PointerWidth = PointerAlign = 32;
+
+}
 
   MaxVectorAlign = 128;
   MaxAtomicInlineWidth = 128;
@@ -92,18 +96,22 @@ AArch64TargetInfo::AArch64TargetInfo(const llvm::Triple &Triple,
   // AArch64 targets default to using the ARM C++ ABI.
   TheCXXABI.set(TargetCXXABI::GenericAArch64);
 
-  if (Triple.getOS() == llvm::Triple::Linux)
+  if (Triple.getOS() == llvm::Triple::Linux) {
     this->MCountName = "\01_mcount";
-  else if (Triple.getOS() == llvm::Triple::UnknownOS)
+  } else if (Triple.getOS() == llvm::Triple::UnknownOS) {
     this->MCountName =
         Opts.EABIVersion == llvm::EABI::GNU ? "\01_mcount" : "mcount";
+
+}
 }
 
 StringRef AArch64TargetInfo::getABI() const { return ABI; }
 
 bool AArch64TargetInfo::setABI(const std::string &Name) {
-  if (Name != "aapcs" && Name != "darwinpcs")
+  if (Name != "aapcs" && Name != "darwinpcs") {
     return false;
+
+}
 
   ABI = Name;
   return true;
@@ -113,8 +121,10 @@ bool AArch64TargetInfo::validateBranchProtection(StringRef Spec,
                                                  BranchProtectionInfo &BPI,
                                                  StringRef &Err) const {
   llvm::AArch64::ParsedBranchProtection PBP;
-  if (!llvm::AArch64::parseBranchProtection(Spec, PBP, Err))
+  if (!llvm::AArch64::parseBranchProtection(Spec, PBP, Err)) {
     return false;
+
+}
 
   BPI.SignReturnAddr =
       llvm::StringSwitch<CodeGenOptions::SignReturnAddressScope>(PBP.Scope)
@@ -122,10 +132,12 @@ bool AArch64TargetInfo::validateBranchProtection(StringRef Spec,
           .Case("all", CodeGenOptions::SignReturnAddressScope::All)
           .Default(CodeGenOptions::SignReturnAddressScope::None);
 
-  if (PBP.Key == "a_key")
+  if (PBP.Key == "a_key") {
     BPI.SignKey = CodeGenOptions::SignReturnAddressKeyValue::AKey;
-  else
+  } else {
     BPI.SignKey = CodeGenOptions::SignReturnAddressKeyValue::BKey;
+
+}
 
   BPI.BranchTargetEnforcement = PBP.BranchTargetEnforcement;
   return true;
@@ -185,8 +197,10 @@ void AArch64TargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__aarch64__");
   // For bare-metal.
   if (getTriple().getOS() == llvm::Triple::UnknownOS &&
-      getTriple().isOSBinFormatELF())
+      getTriple().isOSBinFormatELF()) {
     Builder.defineMacro("__ELF__");
+
+}
 
   // Target properties.
   if (!getTriple().isOSWindows() && getTriple().isArch64Bit()) {
@@ -195,10 +209,14 @@ void AArch64TargetInfo::getTargetDefines(const LangOptions &Opts,
   }
 
   std::string CodeModel = getTargetOpts().CodeModel;
-  if (CodeModel == "default")
+  if (CodeModel == "default") {
     CodeModel = "small";
-  for (char &c : CodeModel)
+
+}
+  for (char &c : CodeModel) {
     c = toupper(c);
+
+}
   Builder.defineMacro("__AARCH64_CMODEL_" + CodeModel + "__");
 
   // ACLE predefines. Many can only have one possible value on v8 AArch64.
@@ -228,8 +246,10 @@ void AArch64TargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__ARM_FP16_FORMAT_IEEE", "1");
   Builder.defineMacro("__ARM_FP16_ARGS", "1");
 
-  if (Opts.UnsafeFPMath)
+  if (Opts.UnsafeFPMath) {
     Builder.defineMacro("__ARM_FP_FAST", "1");
+
+}
 
   Builder.defineMacro("__ARM_SIZEOF_WCHAR_T",
                       Twine(Opts.WCharSize ? Opts.WCharSize : 4));
@@ -242,31 +262,49 @@ void AArch64TargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__ARM_NEON_FP", "0xE");
   }
 
-  if (HasCRC)
+  if (HasCRC) {
     Builder.defineMacro("__ARM_FEATURE_CRC32", "1");
 
-  if (HasCrypto)
+}
+
+  if (HasCrypto) {
     Builder.defineMacro("__ARM_FEATURE_CRYPTO", "1");
 
-  if (HasUnaligned)
+}
+
+  if (HasUnaligned) {
     Builder.defineMacro("__ARM_FEATURE_UNALIGNED", "1");
 
-  if ((FPU & NeonMode) && HasFullFP16)
+}
+
+  if ((FPU & NeonMode) && HasFullFP16) {
     Builder.defineMacro("__ARM_FEATURE_FP16_VECTOR_ARITHMETIC", "1");
-  if (HasFullFP16)
+
+}
+  if (HasFullFP16) {
    Builder.defineMacro("__ARM_FEATURE_FP16_SCALAR_ARITHMETIC", "1");
 
-  if (HasDotProd)
+}
+
+  if (HasDotProd) {
     Builder.defineMacro("__ARM_FEATURE_DOTPROD", "1");
 
-  if (HasMTE)
+}
+
+  if (HasMTE) {
     Builder.defineMacro("__ARM_FEATURE_MEMORY_TAGGING", "1");
 
-  if (HasTME)
+}
+
+  if (HasTME) {
     Builder.defineMacro("__ARM_FEATURE_TME", "1");
 
-  if ((FPU & NeonMode) && HasFP16FML)
+}
+
+  if ((FPU & NeonMode) && HasFP16FML) {
     Builder.defineMacro("__ARM_FEATURE_FP16FML", "1");
+
+}
 
   switch (ArchKind) {
   default:
@@ -320,36 +358,66 @@ bool AArch64TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
   ArchKind = llvm::AArch64::ArchKind::ARMV8A;
 
   for (const auto &Feature : Features) {
-    if (Feature == "+neon")
+    if (Feature == "+neon") {
       FPU |= NeonMode;
-    if (Feature == "+sve")
+
+}
+    if (Feature == "+sve") {
       FPU |= SveMode;
-    if (Feature == "+crc")
+
+}
+    if (Feature == "+crc") {
       HasCRC = true;
-    if (Feature == "+crypto")
+
+}
+    if (Feature == "+crypto") {
       HasCrypto = true;
-    if (Feature == "+strict-align")
+
+}
+    if (Feature == "+strict-align") {
       HasUnaligned = false;
-    if (Feature == "+v8.1a")
+
+}
+    if (Feature == "+v8.1a") {
       ArchKind = llvm::AArch64::ArchKind::ARMV8_1A;
-    if (Feature == "+v8.2a")
+
+}
+    if (Feature == "+v8.2a") {
       ArchKind = llvm::AArch64::ArchKind::ARMV8_2A;
-    if (Feature == "+v8.3a")
+
+}
+    if (Feature == "+v8.3a") {
       ArchKind = llvm::AArch64::ArchKind::ARMV8_3A;
-    if (Feature == "+v8.4a")
+
+}
+    if (Feature == "+v8.4a") {
       ArchKind = llvm::AArch64::ArchKind::ARMV8_4A;
-    if (Feature == "+v8.5a")
+
+}
+    if (Feature == "+v8.5a") {
       ArchKind = llvm::AArch64::ArchKind::ARMV8_5A;
-    if (Feature == "+fullfp16")
+
+}
+    if (Feature == "+fullfp16") {
       HasFullFP16 = true;
-    if (Feature == "+dotprod")
+
+}
+    if (Feature == "+dotprod") {
       HasDotProd = true;
-    if (Feature == "+fp16fml")
+
+}
+    if (Feature == "+fp16fml") {
       HasFP16FML = true;
-    if (Feature == "+mte")
+
+}
+    if (Feature == "+mte") {
       HasMTE = true;
-    if (Feature == "+tme")
+
+}
+    if (Feature == "+tme") {
       HasTME = true;
+
+}
   }
 
   setDataLayout();
@@ -505,8 +573,10 @@ bool AArch64TargetInfo::validateConstraintModifier(
     StringRef Constraint, char Modifier, unsigned Size,
     std::string &SuggestedModifier) const {
   // Strip off constraint modifiers.
-  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&')
+  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&') {
     Constraint = Constraint.substr(1);
+
+}
 
   switch (Constraint[0]) {
   default:
@@ -522,8 +592,10 @@ bool AArch64TargetInfo::validateConstraintModifier(
     default:
       // By default an 'r' constraint will be in the 'x'
       // registers.
-      if (Size == 64)
+      if (Size == 64) {
         return true;
+
+}
 
       SuggestedModifier = "w";
       return false;
@@ -535,10 +607,14 @@ bool AArch64TargetInfo::validateConstraintModifier(
 const char *AArch64TargetInfo::getClobbers() const { return ""; }
 
 int AArch64TargetInfo::getEHDataRegisterNumber(unsigned RegNo) const {
-  if (RegNo == 0)
+  if (RegNo == 0) {
     return 0;
-  if (RegNo == 1)
+
+}
+  if (RegNo == 1) {
     return 1;
+
+}
   return -1;
 }
 
@@ -550,12 +626,16 @@ AArch64leTargetInfo::AArch64leTargetInfo(const llvm::Triple &Triple,
 
 void AArch64leTargetInfo::setDataLayout() {
   if (getTriple().isOSBinFormatMachO()) {
-    if(getTriple().isArch32Bit())
+    if(getTriple().isArch32Bit()) {
       resetDataLayout("e-m:o-p:32:32-i64:64-i128:128-n32:64-S128");
-    else
+    } else {
       resetDataLayout("e-m:o-i64:64-i128:128-n32:64-S128");
-  } else
+
+}
+  } else {
     resetDataLayout("e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128");
+
+}
 }
 
 void AArch64leTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -672,8 +752,10 @@ DarwinAArch64TargetInfo::DarwinAArch64TargetInfo(const llvm::Triple &Triple,
                                                  const TargetOptions &Opts)
     : DarwinTargetInfo<AArch64leTargetInfo>(Triple, Opts) {
   Int64Type = SignedLongLong;
-  if (getTriple().isArch32Bit())
+  if (getTriple().isArch32Bit()) {
     IntMaxType = SignedLongLong;
+
+}
 
   WCharType = SignedInt;
   UseSignedCharForObjCBool = false;
@@ -688,18 +770,22 @@ DarwinAArch64TargetInfo::DarwinAArch64TargetInfo(const llvm::Triple &Triple,
     ZeroLengthBitfieldBoundary = 32;
     UseZeroLengthBitfieldAlignment = true;
     TheCXXABI.set(TargetCXXABI::WatchOS);
-  } else
+  } else {
     TheCXXABI.set(TargetCXXABI::iOS64);
+
+}
 }
 
 void DarwinAArch64TargetInfo::getOSDefines(const LangOptions &Opts,
                                            const llvm::Triple &Triple,
                                            MacroBuilder &Builder) const {
   Builder.defineMacro("__AARCH64_SIMD__");
-  if (Triple.isArch32Bit())
+  if (Triple.isArch32Bit()) {
     Builder.defineMacro("__ARM64_ARCH_8_32__");
-  else
+  } else {
     Builder.defineMacro("__ARM64_ARCH_8__");
+
+}
   Builder.defineMacro("__ARM_NEON__");
   Builder.defineMacro("__LITTLE_ENDIAN__");
   Builder.defineMacro("__REGISTER_PREFIX__", "");

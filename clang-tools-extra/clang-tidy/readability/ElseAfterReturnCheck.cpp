@@ -27,8 +27,10 @@ static const char WarningMessage[] = "do not use 'else' after '%0'";
 static const char WarnOnUnfixableStr[] = "WarnOnUnfixable";
 
 const DeclRefExpr *findUsage(const Stmt *Node, int64_t DeclIdentifier) {
-  if (!Node)
+  if (!Node) {
     return nullptr;
+
+}
   if (const auto *DeclRef = dyn_cast<DeclRefExpr>(Node)) {
     if (DeclRef->getDecl()->getID() == DeclIdentifier) {
       return DeclRef;
@@ -46,8 +48,10 @@ const DeclRefExpr *findUsage(const Stmt *Node, int64_t DeclIdentifier) {
 const DeclRefExpr *
 findUsageRange(const Stmt *Node,
                const llvm::iterator_range<int64_t *> &DeclIdentifiers) {
-  if (!Node)
+  if (!Node) {
     return nullptr;
+
+}
   if (const auto *DeclRef = dyn_cast<DeclRefExpr>(Node)) {
     if (llvm::is_contained(DeclIdentifiers, DeclRef->getDecl()->getID())) {
       return DeclRef;
@@ -65,8 +69,10 @@ findUsageRange(const Stmt *Node,
 
 const DeclRefExpr *checkInitDeclUsageInElse(const IfStmt *If) {
   const auto *InitDeclStmt = dyn_cast_or_null<DeclStmt>(If->getInit());
-  if (!InitDeclStmt)
+  if (!InitDeclStmt) {
     return nullptr;
+
+}
   if (InitDeclStmt->isSingleDecl()) {
     const Decl *InitDecl = InitDeclStmt->getSingleDecl();
     assert(isa<VarDecl>(InitDecl) && "SingleDecl must be a VarDecl");
@@ -170,9 +176,13 @@ void ElseAfterReturnCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto ControlFlowInterruptor = [&]() -> llvm::StringRef {
     for (llvm::StringRef BindingName :
-         {ReturnStr, ContinueStr, BreakStr, ThrowStr})
-      if (Result.Nodes.getNodeAs<Stmt>(BindingName))
+         {ReturnStr, ContinueStr, BreakStr, ThrowStr}) {
+      if (Result.Nodes.getNodeAs<Stmt>(BindingName)) {
         return BindingName;
+
+}
+
+}
     return {};
   }();
 

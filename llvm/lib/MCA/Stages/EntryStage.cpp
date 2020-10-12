@@ -23,15 +23,19 @@ bool EntryStage::hasWorkToComplete() const {
 }
 
 bool EntryStage::isAvailable(const InstRef & /* unused */) const {
-  if (CurrentInstruction)
+  if (CurrentInstruction) {
     return checkNextStage(CurrentInstruction);
+
+}
   return false;
 }
 
 void EntryStage::getNextInstruction() {
   assert(!CurrentInstruction && "There is already an instruction to process!");
-  if (!SM.hasNext())
+  if (!SM.hasNext()) {
     return;
+
+}
   SourceRef SR = SM.peekNext();
   std::unique_ptr<Instruction> Inst = std::make_unique<Instruction>(SR.second);
   CurrentInstruction = InstRef(SR.first, Inst.get());
@@ -41,8 +45,10 @@ void EntryStage::getNextInstruction() {
 
 llvm::Error EntryStage::execute(InstRef & /*unused */) {
   assert(CurrentInstruction && "There is no instruction to process!");
-  if (llvm::Error Val = moveToTheNextStage(CurrentInstruction))
+  if (llvm::Error Val = moveToTheNextStage(CurrentInstruction)) {
     return Val;
+
+}
 
   // Move the program counter.
   CurrentInstruction.invalidate();
@@ -51,8 +57,10 @@ llvm::Error EntryStage::execute(InstRef & /*unused */) {
 }
 
 llvm::Error EntryStage::cycleStart() {
-  if (!CurrentInstruction)
+  if (!CurrentInstruction) {
     getNextInstruction();
+
+}
   return llvm::ErrorSuccess();
 }
 

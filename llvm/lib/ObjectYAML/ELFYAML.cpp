@@ -901,8 +901,10 @@ struct NormalizedOther {
     for (std::pair<StringRef, uint8_t> &P :
          getFlags(Object->Header.Machine).takeVector()) {
       uint8_t FlagValue = P.second;
-      if ((*Original & FlagValue) != FlagValue)
+      if ((*Original & FlagValue) != FlagValue) {
         continue;
+
+}
       *Original &= ~FlagValue;
       Ret.push_back({P.first});
     }
@@ -912,8 +914,10 @@ struct NormalizedOther {
       Ret.push_back({UnknownFlagsHolder});
     }
 
-    if (!Ret.empty())
+    if (!Ret.empty()) {
       Other = std::move(Ret);
+
+}
   }
 
   uint8_t toValue(StringRef Name) {
@@ -921,12 +925,16 @@ struct NormalizedOther {
     MapVector<StringRef, uint8_t> Flags = getFlags(Object->Header.Machine);
 
     auto It = Flags.find(Name);
-    if (It != Flags.end())
+    if (It != Flags.end()) {
       return It->second;
 
+}
+
     uint8_t Val;
-    if (to_integer(Name, Val))
+    if (to_integer(Name, Val)) {
       return Val;
+
+}
 
     YamlIO.setError("an unknown value is used for symbol's 'Other' field: " +
                     Name);
@@ -934,11 +942,15 @@ struct NormalizedOther {
   }
 
   Optional<uint8_t> denormalize(IO &) {
-    if (!Other)
+    if (!Other) {
       return None;
+
+}
     uint8_t Ret = 0;
-    for (StOtherPiece &Val : *Other)
+    for (StOtherPiece &Val : *Other) {
       Ret |= toValue(Val);
+
+}
     return Ret;
   }
 
@@ -958,8 +970,10 @@ struct NormalizedOther {
     // STV_DEFAULT is used to represent the default visibility and has a value
     // 0. We want to be able to read it from YAML documents, but there is no
     // reason to print it.
-    if (!YamlIO.outputting())
+    if (!YamlIO.outputting()) {
       Map["STV_DEFAULT"] = ELF::STV_DEFAULT;
+
+}
 
     // MIPS is not consistent. All of the STO_MIPS_* values are bit flags,
     // except STO_MIPS_MIPS16 which overlaps them. It should be checked and
@@ -1004,8 +1018,10 @@ void MappingTraits<ELFYAML::Symbol>::mapping(IO &IO, ELFYAML::Symbol &Symbol) {
 
 StringRef MappingTraits<ELFYAML::Symbol>::validate(IO &IO,
                                                    ELFYAML::Symbol &Symbol) {
-  if (Symbol.Index && Symbol.Section.data())
+  if (Symbol.Index && Symbol.Section.data()) {
     return "Index and Section cannot both be specified for Symbol";
+
+}
   return StringRef();
 }
 
@@ -1205,90 +1221,124 @@ void MappingTraits<std::unique_ptr<ELFYAML::Chunk>>::mapping(
 
   switch (Type) {
   case ELF::SHT_DYNAMIC:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::DynamicSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::DynamicSection>(Section.get()));
     break;
   case ELF::SHT_REL:
   case ELF::SHT_RELA:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::RelocationSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::RelocationSection>(Section.get()));
     break;
   case ELF::SHT_RELR:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::RelrSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::RelrSection>(Section.get()));
     break;
   case ELF::SHT_GROUP:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::Group());
+
+}
     groupSectionMapping(IO, *cast<ELFYAML::Group>(Section.get()));
     break;
   case ELF::SHT_NOBITS:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::NoBitsSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::NoBitsSection>(Section.get()));
     break;
   case ELF::SHT_HASH:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::HashSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::HashSection>(Section.get()));
     break;
   case ELF::SHT_NOTE:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::NoteSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::NoteSection>(Section.get()));
     break;
  case ELF::SHT_GNU_HASH:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::GnuHashSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::GnuHashSection>(Section.get()));
     break;
   case ELF::SHT_MIPS_ABIFLAGS:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::MipsABIFlags());
+
+}
     sectionMapping(IO, *cast<ELFYAML::MipsABIFlags>(Section.get()));
     break;
   case ELF::SHT_GNU_verdef:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::VerdefSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::VerdefSection>(Section.get()));
     break;
   case ELF::SHT_GNU_versym:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::SymverSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::SymverSection>(Section.get()));
     break;
   case ELF::SHT_GNU_verneed:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::VerneedSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::VerneedSection>(Section.get()));
     break;
   case ELF::SHT_SYMTAB_SHNDX:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::SymtabShndxSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::SymtabShndxSection>(Section.get()));
     break;
   case ELF::SHT_LLVM_ADDRSIG:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::AddrsigSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::AddrsigSection>(Section.get()));
     break;
   case ELF::SHT_LLVM_LINKER_OPTIONS:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::LinkerOptionsSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::LinkerOptionsSection>(Section.get()));
     break;
   case ELF::SHT_LLVM_DEPENDENT_LIBRARIES:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::DependentLibrariesSection());
+
+}
     sectionMapping(IO,
                    *cast<ELFYAML::DependentLibrariesSection>(Section.get()));
     break;
   case ELF::SHT_LLVM_CALL_GRAPH_PROFILE:
-    if (!IO.outputting())
+    if (!IO.outputting()) {
       Section.reset(new ELFYAML::CallGraphProfileSection());
+
+}
     sectionMapping(IO, *cast<ELFYAML::CallGraphProfileSection>(Section.get()));
     break;
   default:
@@ -1297,16 +1347,20 @@ void MappingTraits<std::unique_ptr<ELFYAML::Chunk>>::mapping(
       IO.mapOptional("Name", Name, StringRef());
       Name = ELFYAML::dropUniqueSuffix(Name);
 
-      if (ELFYAML::StackSizesSection::nameMatches(Name))
+      if (ELFYAML::StackSizesSection::nameMatches(Name)) {
         Section = std::make_unique<ELFYAML::StackSizesSection>();
-      else
+      } else {
         Section = std::make_unique<ELFYAML::RawContentSection>();
+
+}
     }
 
-    if (auto S = dyn_cast<ELFYAML::RawContentSection>(Section.get()))
+    if (auto S = dyn_cast<ELFYAML::RawContentSection>(Section.get())) {
       sectionMapping(IO, *S);
-    else
+    } else {
       sectionMapping(IO, *cast<ELFYAML::StackSizesSection>(Section.get()));
+
+}
   }
 }
 
@@ -1314,110 +1368,156 @@ StringRef MappingTraits<std::unique_ptr<ELFYAML::Chunk>>::validate(
     IO &io, std::unique_ptr<ELFYAML::Chunk> &C) {
   if (const auto *RawSection = dyn_cast<ELFYAML::RawContentSection>(C.get())) {
     if (RawSection->Size && RawSection->Content &&
-        (uint64_t)(*RawSection->Size) < RawSection->Content->binary_size())
+        (uint64_t)(*RawSection->Size) < RawSection->Content->binary_size()) {
       return "Section size must be greater than or equal to the content size";
-    if (RawSection->Flags && RawSection->ShFlags)
+
+}
+    if (RawSection->Flags && RawSection->ShFlags) {
       return "ShFlags and Flags cannot be used together";
+
+}
     return {};
   }
 
   if (const auto *SS = dyn_cast<ELFYAML::StackSizesSection>(C.get())) {
-    if (!SS->Entries && !SS->Content && !SS->Size)
+    if (!SS->Entries && !SS->Content && !SS->Size) {
       return ".stack_sizes: one of Content, Entries and Size must be specified";
 
+}
+
     if (SS->Size && SS->Content &&
-        (uint64_t)(*SS->Size) < SS->Content->binary_size())
+        (uint64_t)(*SS->Size) < SS->Content->binary_size()) {
       return ".stack_sizes: Size must be greater than or equal to the content "
              "size";
 
+}
+
     // We accept Content, Size or both together when there are no Entries.
-    if (!SS->Entries)
+    if (!SS->Entries) {
       return {};
 
-    if (SS->Size)
+}
+
+    if (SS->Size) {
       return ".stack_sizes: Size and Entries cannot be used together";
-    if (SS->Content)
+
+}
+    if (SS->Content) {
       return ".stack_sizes: Content and Entries cannot be used together";
+
+}
     return {};
   }
 
   if (const auto *HS = dyn_cast<ELFYAML::HashSection>(C.get())) {
-    if (!HS->Content && !HS->Bucket && !HS->Chain && !HS->Size)
+    if (!HS->Content && !HS->Bucket && !HS->Chain && !HS->Size) {
       return "one of \"Content\", \"Size\", \"Bucket\" or \"Chain\" must be "
              "specified";
 
+}
+
     if (HS->Content || HS->Size) {
       if (HS->Size && HS->Content &&
-          (uint64_t)*HS->Size < HS->Content->binary_size())
+          (uint64_t)*HS->Size < HS->Content->binary_size()) {
         return "\"Size\" must be greater than or equal to the content "
                "size";
 
-      if (HS->Bucket)
+}
+
+      if (HS->Bucket) {
         return "\"Bucket\" cannot be used with \"Content\" or \"Size\"";
-      if (HS->Chain)
+
+}
+      if (HS->Chain) {
         return "\"Chain\" cannot be used with \"Content\" or \"Size\"";
+
+}
       return {};
     }
 
-    if ((HS->Bucket && !HS->Chain) || (!HS->Bucket && HS->Chain))
+    if ((HS->Bucket && !HS->Chain) || (!HS->Bucket && HS->Chain)) {
       return "\"Bucket\" and \"Chain\" must be used together";
+
+}
     return {};
   }
 
   if (const auto *Sec = dyn_cast<ELFYAML::AddrsigSection>(C.get())) {
-    if (!Sec->Symbols && !Sec->Content && !Sec->Size)
+    if (!Sec->Symbols && !Sec->Content && !Sec->Size) {
       return "one of \"Content\", \"Size\" or \"Symbols\" must be specified";
+
+}
 
     if (Sec->Content || Sec->Size) {
       if (Sec->Size && Sec->Content &&
-          (uint64_t)*Sec->Size < Sec->Content->binary_size())
+          (uint64_t)*Sec->Size < Sec->Content->binary_size()) {
         return "\"Size\" must be greater than or equal to the content "
                "size";
 
-      if (Sec->Symbols)
+}
+
+      if (Sec->Symbols) {
         return "\"Symbols\" cannot be used with \"Content\" or \"Size\"";
+
+}
       return {};
     }
 
-    if (!Sec->Symbols)
+    if (!Sec->Symbols) {
       return {};
+
+}
     return {};
   }
 
   if (const auto *NS = dyn_cast<ELFYAML::NoteSection>(C.get())) {
-    if (!NS->Content && !NS->Size && !NS->Notes)
+    if (!NS->Content && !NS->Size && !NS->Notes) {
       return "one of \"Content\", \"Size\" or \"Notes\" must be "
              "specified";
 
-    if (!NS->Content && !NS->Size)
+}
+
+    if (!NS->Content && !NS->Size) {
       return {};
 
+}
+
     if (NS->Size && NS->Content &&
-        (uint64_t)*NS->Size < NS->Content->binary_size())
+        (uint64_t)*NS->Size < NS->Content->binary_size()) {
       return "\"Size\" must be greater than or equal to the content "
              "size";
 
-    if (NS->Notes)
+}
+
+    if (NS->Notes) {
       return "\"Notes\" cannot be used with \"Content\" or \"Size\"";
+
+}
     return {};
   }
 
   if (const auto *Sec = dyn_cast<ELFYAML::GnuHashSection>(C.get())) {
     if (!Sec->Content && !Sec->Header && !Sec->BloomFilter &&
-        !Sec->HashBuckets && !Sec->HashValues)
+        !Sec->HashBuckets && !Sec->HashValues) {
       return "either \"Content\" or \"Header\", \"BloomFilter\", "
              "\"HashBuckets\" and \"HashBuckets\" must be specified";
+
+}
 
     if (Sec->Header || Sec->BloomFilter || Sec->HashBuckets ||
         Sec->HashValues) {
       if (!Sec->Header || !Sec->BloomFilter || !Sec->HashBuckets ||
-          !Sec->HashValues)
+          !Sec->HashValues) {
         return "\"Header\", \"BloomFilter\", "
                "\"HashBuckets\" and \"HashValues\" must be used together";
-      if (Sec->Content)
+
+}
+      if (Sec->Content) {
         return "\"Header\", \"BloomFilter\", "
                "\"HashBuckets\" and \"HashValues\" can't be used together with "
                "\"Content\"";
+
+}
       return {};
     }
 
@@ -1426,50 +1526,66 @@ StringRef MappingTraits<std::unique_ptr<ELFYAML::Chunk>>::validate(
   }
 
   if (const auto *Sec = dyn_cast<ELFYAML::LinkerOptionsSection>(C.get())) {
-    if (Sec->Options && Sec->Content)
+    if (Sec->Options && Sec->Content) {
       return "\"Options\" and \"Content\" can't be used together";
+
+}
     return {};
   }
 
   if (const auto *Sec = dyn_cast<ELFYAML::DependentLibrariesSection>(C.get())) {
-    if (Sec->Libs && Sec->Content)
+    if (Sec->Libs && Sec->Content) {
       return "SHT_LLVM_DEPENDENT_LIBRARIES: \"Libraries\" and \"Content\" "
              "can't "
              "be used together";
+
+}
     return {};
   }
 
   if (const auto *F = dyn_cast<ELFYAML::Fill>(C.get())) {
-    if (!F->Pattern)
+    if (!F->Pattern) {
       return {};
-    if (F->Pattern->binary_size() != 0 && !F->Size)
+
+}
+    if (F->Pattern->binary_size() != 0 && !F->Size) {
       return "\"Size\" can't be 0 when \"Pattern\" is not empty";
+
+}
     return {};
   }
 
   if (const auto *VD = dyn_cast<ELFYAML::VerdefSection>(C.get())) {
-    if (VD->Entries && VD->Content)
+    if (VD->Entries && VD->Content) {
       return "SHT_GNU_verdef: \"Entries\" and \"Content\" can't be used "
              "together";
+
+}
     return {};
   }
 
   if (const auto *VD = dyn_cast<ELFYAML::VerneedSection>(C.get())) {
-    if (VD->VerneedV && VD->Content)
+    if (VD->VerneedV && VD->Content) {
       return "SHT_GNU_verneed: \"Dependencies\" and \"Content\" can't be used "
              "together";
+
+}
     return {};
   }
 
   if (const auto *RS = dyn_cast<ELFYAML::RelrSection>(C.get())) {
-    if (RS->Entries && RS->Content)
+    if (RS->Entries && RS->Content) {
       return "\"Entries\" and \"Content\" can't be used together";
+
+}
     return {};
   }
 
   if (const auto *CGP = dyn_cast<ELFYAML::CallGraphProfileSection>(C.get())) {
-    if (CGP->Entries && CGP->Content)
+    if (CGP->Entries && CGP->Content) {
       return "\"Entries\" and \"Content\" can't be used together";
+
+}
     return {};
   }
 
@@ -1579,8 +1695,10 @@ void MappingTraits<ELFYAML::Relocation>::mapping(IO &IO,
     IO.mapOptional("Type2", Key->Type2, ELFYAML::ELF_REL(ELF::R_MIPS_NONE));
     IO.mapOptional("Type3", Key->Type3, ELFYAML::ELF_REL(ELF::R_MIPS_NONE));
     IO.mapOptional("SpecSym", Key->SpecSym, ELFYAML::ELF_RSS(ELF::RSS_UNDEF));
-  } else
+  } else {
     IO.mapRequired("Type", Rel.Type);
+
+}
 
   IO.mapOptional("Addend", Rel.Addend, (int64_t)0);
 }

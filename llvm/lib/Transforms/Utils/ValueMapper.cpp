@@ -356,8 +356,10 @@ Value *Mapper::mapValue(const Value *V) {
   // Global values do not need to be seeded into the VM if they
   // are using the identity mapping.
   if (isa<GlobalValue>(V)) {
-    if (Flags & RF_NullMapMissingGlobalValues)
+    if (Flags & RF_NullMapMissingGlobalValues) {
       return nullptr;
+
+}
     return getVM()[V] = const_cast<Value *>(V);
   }
 
@@ -367,9 +369,11 @@ Value *Mapper::mapValue(const Value *V) {
     if (TypeMapper) {
       NewTy = cast<FunctionType>(TypeMapper->remapType(NewTy));
 
-      if (NewTy != IA->getFunctionType())
+      if (NewTy != IA->getFunctionType()) {
         V = InlineAsm::get(NewTy, IA->getAsmString(), IA->getConstraintString(),
                            IA->hasSideEffects(), IA->isAlignStack());
+
+}
     }
 
     return getVM()[V] = const_cast<Value *>(V);
@@ -381,8 +385,10 @@ Value *Mapper::mapValue(const Value *V) {
     if (auto *LAM = dyn_cast<LocalAsMetadata>(MD)) {
       // Look through to grab the local value.
       if (Value *LV = mapValue(LAM->getValue())) {
-        if (V == LAM->getValue())
+        if (V == LAM->getValue()) {
           return const_cast<Value *>(V);
+
+}
         return MetadataAsValue::get(V->getContext(), ValueAsMetadata::get(LV));
       }
 
@@ -396,24 +402,32 @@ Value *Mapper::mapValue(const Value *V) {
 
     // If this is a module-level metadata and we know that nothing at the module
     // level is changing, then use an identity mapping.
-    if (Flags & RF_NoModuleLevelChanges)
+    if (Flags & RF_NoModuleLevelChanges) {
       return getVM()[V] = const_cast<Value *>(V);
+
+}
 
     // Map the metadata and turn it into a value.
     auto *MappedMD = mapMetadata(MD);
-    if (MD == MappedMD)
+    if (MD == MappedMD) {
       return getVM()[V] = const_cast<Value *>(V);
+
+}
     return getVM()[V] = MetadataAsValue::get(V->getContext(), MappedMD);
   }
 
   // Okay, this either must be a constant (which may or may not be mappable) or
   // is something that is not in the mapping table.
   Constant *C = const_cast<Constant*>(dyn_cast<Constant>(V));
-  if (!C)
+  if (!C) {
     return nullptr;
 
-  if (BlockAddress *BA = dyn_cast<BlockAddress>(C))
+}
+
+  if (BlockAddress *BA = dyn_cast<BlockAddress>(C)) {
     return mapBlockAddress(*BA);
+
+}
 
   auto mapValueOrNull = [this](Value *V) {
     auto Mapped = mapValue(V);
@@ -430,28 +444,38 @@ Value *Mapper::mapValue(const Value *V) {
   for (; OpNo != NumOperands; ++OpNo) {
     Value *Op = C->getOperand(OpNo);
     Mapped = mapValueOrNull(Op);
-    if (!Mapped)
+    if (!Mapped) {
       return nullptr;
-    if (Mapped != Op)
+
+}
+    if (Mapped != Op) {
       break;
+
+}
   }
 
   // See if the type mapper wants to remap the type as well.
   Type *NewTy = C->getType();
-  if (TypeMapper)
+  if (TypeMapper) {
     NewTy = TypeMapper->remapType(NewTy);
+
+}
 
   // If the result type and all operands match up, then just insert an identity
   // mapping.
-  if (OpNo == NumOperands && NewTy == C->getType())
+  if (OpNo == NumOperands && NewTy == C->getType()) {
     return getVM()[V] = C;
+
+}
 
   // Okay, we need to create a new constant.  We've already processed some or
   // all of the operands, set them all up now.
   SmallVector<Constant*, 8> Ops;
   Ops.reserve(NumOperands);
-  for (unsigned j = 0; j != OpNo; ++j)
+  for (unsigned j = 0; j != OpNo; ++j) {
     Ops.push_back(cast<Constant>(C->getOperand(j)));
+
+}
 
   // If one of the operands mismatch, push it and the other mapped operands.
   if (OpNo != NumOperands) {
@@ -460,29 +484,47 @@ Value *Mapper::mapValue(const Value *V) {
     // Map the rest of the operands that aren't processed yet.
     for (++OpNo; OpNo != NumOperands; ++OpNo) {
       Mapped = mapValueOrNull(C->getOperand(OpNo));
-      if (!Mapped)
+      if (!Mapped) {
         return nullptr;
+
+}
       Ops.push_back(cast<Constant>(Mapped));
     }
   }
   Type *NewSrcTy = nullptr;
-  if (TypeMapper)
-    if (auto *GEPO = dyn_cast<GEPOperator>(C))
+  if (TypeMapper) {
+    if (auto *GEPO = dyn_cast<GEPOperator>(C)) {
       NewSrcTy = TypeMapper->remapType(GEPO->getSourceElementType());
 
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C))
+}
+
+}
+
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
     return getVM()[V] = CE->getWithOperands(Ops, NewTy, false, NewSrcTy);
-  if (isa<ConstantArray>(C))
+
+}
+  if (isa<ConstantArray>(C)) {
     return getVM()[V] = ConstantArray::get(cast<ArrayType>(NewTy), Ops);
-  if (isa<ConstantStruct>(C))
+
+}
+  if (isa<ConstantStruct>(C)) {
     return getVM()[V] = ConstantStruct::get(cast<StructType>(NewTy), Ops);
-  if (isa<ConstantVector>(C))
+
+}
+  if (isa<ConstantVector>(C)) {
     return getVM()[V] = ConstantVector::get(Ops);
+
+}
   // If this is a no-operand constant, it must be because the type was remapped.
-  if (isa<UndefValue>(C))
+  if (isa<UndefValue>(C)) {
     return getVM()[V] = UndefValue::get(NewTy);
-  if (isa<ConstantAggregateZero>(C))
+
+}
+  if (isa<ConstantAggregateZero>(C)) {
     return getVM()[V] = ConstantAggregateZero::get(NewTy);
+
+}
   assert(isa<ConstantPointerNull>(C));
   return getVM()[V] = ConstantPointerNull::get(cast<PointerType>(NewTy));
 }
@@ -514,8 +556,10 @@ Metadata *Mapper::mapToSelf(const Metadata *MD) {
 }
 
 Optional<Metadata *> MDNodeMapper::tryToMapOperand(const Metadata *Op) {
-  if (!Op)
+  if (!Op) {
     return nullptr;
+
+}
 
   if (Optional<Metadata *> MappedOp = M.mapSimpleMetadata(Op)) {
 #ifndef NDEBUG
@@ -531,8 +575,10 @@ Optional<Metadata *> MDNodeMapper::tryToMapOperand(const Metadata *Op) {
   }
 
   const MDNode &N = *cast<MDNode>(Op);
-  if (N.isDistinct())
+  if (N.isDistinct()) {
     return mapDistinctNode(N);
+
+}
   return None;
 }
 
@@ -541,8 +587,10 @@ static Metadata *cloneOrBuildODR(const MDNode &N) {
   // If ODR type uniquing is enabled, we would have uniqued composite types
   // with identifiers during bitcode reading, so we can just use CT.
   if (CT && CT->getContext().isODRUniquingDebugTypes() &&
-      CT->getIdentifier() != "")
+      CT->getIdentifier() != "") {
     return const_cast<DICompositeType *>(CT);
+
+}
   return MDNode::replaceWithDistinct(N.clone());
 }
 
@@ -558,23 +606,33 @@ MDNode *MDNodeMapper::mapDistinctNode(const MDNode &N) {
 
 static ConstantAsMetadata *wrapConstantAsMetadata(const ConstantAsMetadata &CMD,
                                                   Value *MappedV) {
-  if (CMD.getValue() == MappedV)
+  if (CMD.getValue() == MappedV) {
     return const_cast<ConstantAsMetadata *>(&CMD);
+
+}
   return MappedV ? ConstantAsMetadata::getConstant(MappedV) : nullptr;
 }
 
 Optional<Metadata *> MDNodeMapper::getMappedOp(const Metadata *Op) const {
-  if (!Op)
+  if (!Op) {
     return nullptr;
 
-  if (Optional<Metadata *> MappedOp = M.getVM().getMappedMD(Op))
+}
+
+  if (Optional<Metadata *> MappedOp = M.getVM().getMappedMD(Op)) {
     return *MappedOp;
 
-  if (isa<MDString>(Op))
+}
+
+  if (isa<MDString>(Op)) {
     return const_cast<Metadata *>(Op);
 
-  if (auto *CMD = dyn_cast<ConstantAsMetadata>(Op))
+}
+
+  if (auto *CMD = dyn_cast<ConstantAsMetadata>(Op)) {
     return wrapConstantAsMetadata(*CMD, M.getVM().lookup(CMD->getValue()));
+
+}
 
   return None;
 }
@@ -584,12 +642,16 @@ Metadata &MDNodeMapper::UniquedGraph::getFwdReference(MDNode &Op) {
   assert(Where != Info.end() && "Expected a valid reference");
 
   auto &OpD = Where->second;
-  if (!OpD.HasChanged)
+  if (!OpD.HasChanged) {
     return Op;
 
+}
+
   // Lazily construct a temporary node.
-  if (!OpD.Placeholder)
+  if (!OpD.Placeholder) {
     OpD.Placeholder = Op.clone();
+
+}
 
   return *OpD.Placeholder;
 }
@@ -601,8 +663,10 @@ void MDNodeMapper::remapOperands(MDNode &N, OperandMapper mapOperand) {
     Metadata *Old = N.getOperand(I);
     Metadata *New = mapOperand(Old);
 
-    if (Old != New)
+    if (Old != New) {
       N.replaceOperandWith(I, New);
+
+}
   }
 }
 
@@ -668,8 +732,10 @@ MDNode *MDNodeMapper::visitOperands(UniquedGraph &G, MDNode::op_iterator &I,
     MDNode &OpN = *cast<MDNode>(Op);
     assert(OpN.isUniqued() &&
            "Only uniqued operands cannot be mapped immediately");
-    if (G.Info.insert(std::make_pair(&OpN, Data())).second)
+    if (G.Info.insert(std::make_pair(&OpN, Data())).second) {
       return &OpN; // This is a new one.  Return it.
+
+}
   }
   return nullptr;
 }
@@ -680,14 +746,18 @@ void MDNodeMapper::UniquedGraph::propagateChanges() {
     AnyChanges = false;
     for (MDNode *N : POT) {
       auto &D = Info[N];
-      if (D.HasChanged)
+      if (D.HasChanged) {
         continue;
+
+}
 
       if (llvm::none_of(N->operands(), [&](const Metadata *Op) {
             auto Where = Info.find(Op);
             return Where != Info.end() && Where->second.HasChanged;
-          }))
+          })) {
         continue;
+
+}
 
       AnyChanges = D.HasChanged = true;
     }
@@ -711,8 +781,10 @@ void MDNodeMapper::mapNodesInPOT(UniquedGraph &G) {
     // Clone the uniqued node and remap the operands.
     TempMDNode ClonedN = D.Placeholder ? std::move(D.Placeholder) : N->clone();
     remapOperands(*ClonedN, [this, &D, &G](Metadata *Old) {
-      if (Optional<Metadata *> MappedOp = getMappedOp(Old))
+      if (Optional<Metadata *> MappedOp = getMappedOp(Old)) {
         return *MappedOp;
+
+}
       (void)D;
       assert(G.Info[Old].ID > D.ID && "Expected a forward reference");
       return &G.getFwdReference(*cast<MDNode>(Old));
@@ -723,14 +795,20 @@ void MDNodeMapper::mapNodesInPOT(UniquedGraph &G) {
 
     // Nodes that were referenced out of order in the POT are involved in a
     // uniquing cycle.
-    if (HadPlaceholder)
+    if (HadPlaceholder) {
       CyclicNodes.push_back(NewN);
+
+}
   }
 
   // Resolve cycles.
-  for (auto *N : CyclicNodes)
-    if (!N->isResolved())
+  for (auto *N : CyclicNodes) {
+    if (!N->isResolved()) {
       N->resolveCycles();
+
+}
+
+}
 }
 
 Metadata *MDNodeMapper::map(const MDNode &N) {
@@ -743,12 +821,16 @@ Metadata *MDNodeMapper::map(const MDNode &N) {
 
   Metadata *MappedN =
       N.isUniqued() ? mapTopLevelUniquedNode(N) : mapDistinctNode(N);
-  while (!DistinctWorklist.empty())
+  while (!DistinctWorklist.empty()) {
     remapOperands(*DistinctWorklist.pop_back_val(), [this](Metadata *Old) {
-      if (Optional<Metadata *> MappedOp = tryToMapOperand(Old))
+      if (Optional<Metadata *> MappedOp = tryToMapOperand(Old)) {
         return *MappedOp;
+
+}
       return mapTopLevelUniquedNode(*cast<MDNode>(Old));
     });
+
+}
   return MappedN;
 }
 
@@ -759,8 +841,10 @@ Metadata *MDNodeMapper::mapTopLevelUniquedNode(const MDNode &FirstN) {
   UniquedGraph G;
   if (!createPOT(G, FirstN)) {
     // Return early if no nodes have changed.
-    for (const MDNode *N : G.POT)
+    for (const MDNode *N : G.POT) {
       M.mapToSelf(N);
+
+}
     return &const_cast<MDNode &>(FirstN);
   }
 
@@ -776,16 +860,22 @@ Metadata *MDNodeMapper::mapTopLevelUniquedNode(const MDNode &FirstN) {
 
 Optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
   // If the value already exists in the map, use it.
-  if (Optional<Metadata *> NewMD = getVM().getMappedMD(MD))
+  if (Optional<Metadata *> NewMD = getVM().getMappedMD(MD)) {
     return *NewMD;
 
-  if (isa<MDString>(MD))
+}
+
+  if (isa<MDString>(MD)) {
     return const_cast<Metadata *>(MD);
+
+}
 
   // This is a module-level metadata.  If nothing at the module level is
   // changing, use an identity mapping.
-  if ((Flags & RF_NoModuleLevelChanges))
+  if ((Flags & RF_NoModuleLevelChanges)) {
     return const_cast<Metadata *>(MD);
+
+}
 
   if (auto *CMD = dyn_cast<ConstantAsMetadata>(MD)) {
     // Don't memoize ConstantAsMetadata.  Instead of lasting until the
@@ -804,8 +894,10 @@ Metadata *Mapper::mapMetadata(const Metadata *MD) {
   assert(MD && "Expected valid metadata");
   assert(!isa<LocalAsMetadata>(MD) && "Unexpected local metadata");
 
-  if (Optional<Metadata *> NewMD = mapSimpleMetadata(MD))
+  if (Optional<Metadata *> NewMD = mapSimpleMetadata(MD)) {
     return *NewMD;
+
+}
 
   return MDNodeMapper(*this).map(*cast<MDNode>(MD));
 }
@@ -854,11 +946,13 @@ void Mapper::remapInstruction(Instruction *I) {
   for (Use &Op : I->operands()) {
     Value *V = mapValue(Op);
     // If we aren't ignoring missing entries, assert that something happened.
-    if (V)
+    if (V) {
       Op = V;
-    else
+    } else {
       assert((Flags & RF_IgnoreMissingLocals) &&
              "Referenced value not in value map!");
+
+}
   }
 
   // Remap phi nodes' incoming blocks.
@@ -866,11 +960,13 @@ void Mapper::remapInstruction(Instruction *I) {
     for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
       Value *V = mapValue(PN->getIncomingBlock(i));
       // If we aren't ignoring missing entries, assert that something happened.
-      if (V)
+      if (V) {
         PN->setIncomingBlock(i, cast<BasicBlock>(V));
-      else
+      } else {
         assert((Flags & RF_IgnoreMissingLocals) &&
                "Referenced block not in value map!");
+
+}
     }
   }
 
@@ -880,20 +976,26 @@ void Mapper::remapInstruction(Instruction *I) {
   for (const auto &MI : MDs) {
     MDNode *Old = MI.second;
     MDNode *New = cast_or_null<MDNode>(mapMetadata(Old));
-    if (New != Old)
+    if (New != Old) {
       I->setMetadata(MI.first, New);
+
+}
   }
 
-  if (!TypeMapper)
+  if (!TypeMapper) {
     return;
+
+}
 
   // If the instruction's type is being remapped, do so now.
   if (auto CS = CallSite(I)) {
     SmallVector<Type *, 3> Tys;
     FunctionType *FTy = CS.getFunctionType();
     Tys.reserve(FTy->getNumParams());
-    for (Type *Ty : FTy->params())
+    for (Type *Ty : FTy->params()) {
       Tys.push_back(TypeMapper->remapType(Ty));
+
+}
     CS.mutateFunctionType(FunctionType::get(
         TypeMapper->remapType(I->getType()), Tys, FTy->isVarArg()));
 
@@ -902,8 +1004,10 @@ void Mapper::remapInstruction(Instruction *I) {
     for (unsigned i = 0; i < Attrs.getNumAttrSets(); ++i) {
       if (Attrs.hasAttribute(i, Attribute::ByVal)) {
         Type *Ty = Attrs.getAttribute(i, Attribute::ByVal).getValueAsType();
-        if (!Ty)
+        if (!Ty) {
           continue;
+
+}
 
         Attrs = Attrs.removeAttribute(C, i, Attribute::ByVal);
         Attrs = Attrs.addAttribute(
@@ -913,8 +1017,10 @@ void Mapper::remapInstruction(Instruction *I) {
     CS.setAttributes(Attrs);
     return;
   }
-  if (auto *AI = dyn_cast<AllocaInst>(I))
+  if (auto *AI = dyn_cast<AllocaInst>(I)) {
     AI->setAllocatedType(TypeMapper->remapType(AI->getAllocatedType()));
+
+}
   if (auto *GEP = dyn_cast<GetElementPtrInst>(I)) {
     GEP->setSourceElementType(
         TypeMapper->remapType(GEP->getSourceElementType()));
@@ -928,28 +1034,42 @@ void Mapper::remapGlobalObjectMetadata(GlobalObject &GO) {
   SmallVector<std::pair<unsigned, MDNode *>, 8> MDs;
   GO.getAllMetadata(MDs);
   GO.clearMetadata();
-  for (const auto &I : MDs)
+  for (const auto &I : MDs) {
     GO.addMetadata(I.first, *cast<MDNode>(mapMetadata(I.second)));
+
+}
 }
 
 void Mapper::remapFunction(Function &F) {
   // Remap the operands.
-  for (Use &Op : F.operands())
-    if (Op)
+  for (Use &Op : F.operands()) {
+    if (Op) {
       Op = mapValue(Op);
+
+}
+
+}
 
   // Remap the metadata attachments.
   remapGlobalObjectMetadata(F);
 
   // Remap the argument types.
-  if (TypeMapper)
-    for (Argument &A : F.args())
+  if (TypeMapper) {
+    for (Argument &A : F.args()) {
       A.mutateType(TypeMapper->remapType(A.getType()));
 
+}
+
+}
+
   // Remap the instructions.
-  for (BasicBlock &BB : F)
-    for (Instruction &I : BB)
+  for (BasicBlock &BB : F) {
+    for (Instruction &I : BB) {
       remapInstruction(&I);
+
+}
+
+}
 }
 
 void Mapper::mapAppendingVariable(GlobalVariable &GV, Constant *InitPrefix,
@@ -959,8 +1079,10 @@ void Mapper::mapAppendingVariable(GlobalVariable &GV, Constant *InitPrefix,
   if (InitPrefix) {
     unsigned NumElements =
         cast<ArrayType>(InitPrefix->getType())->getNumElements();
-    for (unsigned I = 0; I != NumElements; ++I)
+    for (unsigned I = 0; I != NumElements; ++I) {
       Elements.push_back(InitPrefix->getAggregateElement(I));
+
+}
   }
 
   PointerType *VoidPtrTy;

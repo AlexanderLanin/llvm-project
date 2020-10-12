@@ -63,15 +63,19 @@ public:
 /// against undefined behavior by branching around the rotation when the shift
 /// amount is 0.
 static bool foldGuardedRotateToFunnelShift(Instruction &I) {
-  if (I.getOpcode() != Instruction::PHI || I.getNumOperands() != 2)
+  if (I.getOpcode() != Instruction::PHI || I.getNumOperands() != 2) {
     return false;
+
+}
 
   // As with the one-use checks below, this is not strictly necessary, but we
   // are being cautious to avoid potential perf regressions on targets that
   // do not actually have a rotate instruction (where the funnel shift would be
   // expanded back into math/shift/logic ops).
-  if (!isPowerOf2_32(I.getType()->getScalarSizeInBits()))
+  if (!isPowerOf2_32(I.getType()->getScalarSizeInBits())) {
     return false;
+
+}
 
   // Match V to funnel shift left/right and capture the source operand and
   // shift amount in X and Y.
@@ -110,8 +114,10 @@ static bool foldGuardedRotateToFunnelShift(Instruction &I) {
   Intrinsic::ID IID = matchRotate(P0, RotSrc, RotAmt);
   if (IID == Intrinsic::not_intrinsic || RotSrc != P1) {
     IID = matchRotate(P1, RotSrc, RotAmt);
-    if (IID == Intrinsic::not_intrinsic || RotSrc != P0)
+    if (IID == Intrinsic::not_intrinsic || RotSrc != P0) {
       return false;
+
+}
     assert((IID == Intrinsic::fshl || IID == Intrinsic::fshr) &&
            "Pattern must match funnel shift left or right");
   }
@@ -125,11 +131,15 @@ static bool foldGuardedRotateToFunnelShift(Instruction &I) {
   ICmpInst::Predicate Pred;
   BasicBlock *PhiBB = Phi.getParent();
   if (!match(TermI, m_Br(m_ICmp(Pred, m_Specific(RotAmt), m_ZeroInt()),
-                         m_SpecificBB(PhiBB), m_SpecificBB(RotBB))))
+                         m_SpecificBB(PhiBB), m_SpecificBB(RotBB)))) {
     return false;
 
-  if (Pred != CmpInst::ICMP_EQ)
+}
+
+  if (Pred != CmpInst::ICMP_EQ) {
     return false;
+
+}
 
   // We matched a variation of this IR pattern:
   // GuardBB:
@@ -183,28 +193,38 @@ static bool matchAndOrChain(Value *V, MaskOps &MOps) {
       MOps.FoundAnd1 = true;
       return matchAndOrChain(Op0, MOps);
     }
-    if (match(V, m_And(m_Value(Op0), m_Value(Op1))))
+    if (match(V, m_And(m_Value(Op0), m_Value(Op1)))) {
       return matchAndOrChain(Op0, MOps) && matchAndOrChain(Op1, MOps);
+
+}
   } else {
     // Recurse through a chain of 'or' operands.
-    if (match(V, m_Or(m_Value(Op0), m_Value(Op1))))
+    if (match(V, m_Or(m_Value(Op0), m_Value(Op1)))) {
       return matchAndOrChain(Op0, MOps) && matchAndOrChain(Op1, MOps);
+
+}
   }
 
   // We need a shift-right or a bare value representing a compare of bit 0 of
   // the original source operand.
   Value *Candidate;
   uint64_t BitIndex = 0;
-  if (!match(V, m_LShr(m_Value(Candidate), m_ConstantInt(BitIndex))))
+  if (!match(V, m_LShr(m_Value(Candidate), m_ConstantInt(BitIndex)))) {
     Candidate = V;
 
+}
+
   // Initialize result source operand.
-  if (!MOps.Root)
+  if (!MOps.Root) {
     MOps.Root = Candidate;
 
+}
+
   // The shift constant is out-of-range? This code hasn't been simplified.
-  if (BitIndex >= MOps.Mask.getBitWidth())
+  if (BitIndex >= MOps.Mask.getBitWidth()) {
     return false;
+
+}
 
   // Fill in the mask bit derived from the shift constant.
   MOps.Mask.setBit(BitIndex);
@@ -223,20 +243,26 @@ static bool foldAnyOrAllBitsSet(Instruction &I) {
   // The 'any-bits-set' ('or' chain) pattern is simpler to match because the
   // final "and X, 1" instruction must be the final op in the sequence.
   bool MatchAllBitsSet;
-  if (match(&I, m_c_And(m_OneUse(m_And(m_Value(), m_Value())), m_Value())))
+  if (match(&I, m_c_And(m_OneUse(m_And(m_Value(), m_Value())), m_Value()))) {
     MatchAllBitsSet = true;
-  else if (match(&I, m_And(m_OneUse(m_Or(m_Value(), m_Value())), m_One())))
+  } else if (match(&I, m_And(m_OneUse(m_Or(m_Value(), m_Value())), m_One()))) {
     MatchAllBitsSet = false;
-  else
+  } else {
     return false;
+
+}
 
   MaskOps MOps(I.getType()->getScalarSizeInBits(), MatchAllBitsSet);
   if (MatchAllBitsSet) {
-    if (!matchAndOrChain(cast<BinaryOperator>(&I), MOps) || !MOps.FoundAnd1)
+    if (!matchAndOrChain(cast<BinaryOperator>(&I), MOps) || !MOps.FoundAnd1) {
       return false;
+
+}
   } else {
-    if (!matchAndOrChain(cast<BinaryOperator>(&I)->getOperand(0), MOps))
+    if (!matchAndOrChain(cast<BinaryOperator>(&I)->getOperand(0), MOps)) {
       return false;
+
+}
   }
 
   // The pattern was found. Create a masked compare that replaces all of the
@@ -263,17 +289,23 @@ static bool foldAnyOrAllBitsSet(Instruction &I) {
 //   return (i * 0x01010101) >> 24;
 // }
 static bool tryToRecognizePopCount(Instruction &I) {
-  if (I.getOpcode() != Instruction::LShr)
+  if (I.getOpcode() != Instruction::LShr) {
     return false;
 
+}
+
   Type *Ty = I.getType();
-  if (!Ty->isIntOrIntVectorTy())
+  if (!Ty->isIntOrIntVectorTy()) {
     return false;
+
+}
 
   unsigned Len = Ty->getScalarSizeInBits();
   // FIXME: fix Len == 8 and other irregular type lengths.
-  if (!(Len <= 128 && Len > 8 && Len % 8 == 0))
+  if (!(Len <= 128 && Len > 8 && Len % 8 == 0)) {
     return false;
+
+}
 
   APInt Mask55 = APInt::getSplat(Len, APInt(8, 0x55));
   APInt Mask33 = APInt::getSplat(Len, APInt(8, 0x33));
@@ -324,8 +356,10 @@ static bool foldUnusualPatterns(Function &F, DominatorTree &DT) {
   bool MadeChange = false;
   for (BasicBlock &BB : F) {
     // Ignore unreachable basic blocks.
-    if (!DT.isReachableFromEntry(&BB))
+    if (!DT.isReachableFromEntry(&BB)) {
       continue;
+
+}
     // Do not delete instructions under here and invalidate the iterator.
     // Walk the block backwards for efficiency. We're matching a chain of
     // use->defs, so we're more likely to succeed by starting from the bottom.
@@ -340,9 +374,13 @@ static bool foldUnusualPatterns(Function &F, DominatorTree &DT) {
   }
 
   // We're done with transforms, so remove dead instructions.
-  if (MadeChange)
-    for (BasicBlock &BB : F)
+  if (MadeChange) {
+    for (BasicBlock &BB : F) {
       SimplifyInstructionsInBlock(&BB);
+
+}
+
+}
 
   return MadeChange;
 }

@@ -28,8 +28,10 @@ ErrorEquals(instrprof_error Expected, Error E) {
     Found = IPE.get();
     FoundMsg = IPE.message();
   });
-  if (Expected == Found)
+  if (Expected == Found) {
     return ::testing::AssertionSuccess();
+
+}
   return ::testing::AssertionFailure() << "error: " << FoundMsg << "\n";
 }
 

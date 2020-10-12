@@ -60,17 +60,23 @@ bool DeadMachineInstructionElim::isDead(const MachineInstr *MI) const {
   // Technically speaking inline asm without side effects and no defs can still
   // be deleted. But there is so much bad inline asm code out there, we should
   // let them be.
-  if (MI->isInlineAsm())
+  if (MI->isInlineAsm()) {
     return false;
 
+}
+
   // Don't delete frame allocation labels.
-  if (MI->getOpcode() == TargetOpcode::LOCAL_ESCAPE)
+  if (MI->getOpcode() == TargetOpcode::LOCAL_ESCAPE) {
     return false;
+
+}
 
   // Don't delete instructions with side effects.
   bool SawStore = false;
-  if (!MI->isSafeToMove(nullptr, SawStore) && !MI->isPHI())
+  if (!MI->isSafeToMove(nullptr, SawStore) && !MI->isPHI()) {
     return false;
+
+}
 
   // Examine each operand.
   for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
@@ -79,8 +85,10 @@ bool DeadMachineInstructionElim::isDead(const MachineInstr *MI) const {
       Register Reg = MO.getReg();
       if (Register::isPhysicalRegister(Reg)) {
         // Don't delete live physreg defs, or any reserved register defs.
-        if (LivePhysRegs.test(Reg) || MRI->isReserved(Reg))
+        if (LivePhysRegs.test(Reg) || MRI->isReserved(Reg)) {
           return false;
+
+}
       } else {
         if (MO.isDead()) {
 #ifndef NDEBUG
@@ -92,9 +100,11 @@ bool DeadMachineInstructionElim::isDead(const MachineInstr *MI) const {
           continue;
         }
         for (const MachineInstr &Use : MRI->use_nodbg_instructions(Reg)) {
-          if (&Use != MI)
+          if (&Use != MI) {
             // This def has a non-debug use. Don't delete the instruction!
             return false;
+
+}
         }
       }
     }
@@ -105,8 +115,10 @@ bool DeadMachineInstructionElim::isDead(const MachineInstr *MI) const {
 }
 
 bool DeadMachineInstructionElim::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   bool AnyChanges = false;
   MRI = &MF.getRegInfo();
@@ -124,9 +136,13 @@ bool DeadMachineInstructionElim::runOnMachineFunction(MachineFunction &MF) {
     // live across blocks, but some targets (x86) can have flags live out of a
     // block.
     for (MachineBasicBlock::succ_iterator S = MBB.succ_begin(),
-           E = MBB.succ_end(); S != E; S++)
-      for (const auto &LI : (*S)->liveins())
+           E = MBB.succ_end(); S != E; S++) {
+      for (const auto &LI : (*S)->liveins()) {
         LivePhysRegs.set(LI.PhysReg);
+
+}
+
+}
 
     // Now scan the instructions and delete dead ones, tracking physreg
     // liveness as we go.
@@ -156,8 +172,10 @@ bool DeadMachineInstructionElim::runOnMachineFunction(MachineFunction &MF) {
             // of a super-register may still be partially live after
             // this def.
             for (MCSubRegIterator SR(Reg, TRI,/*IncludeSelf=*/true);
-                 SR.isValid(); ++SR)
+                 SR.isValid(); ++SR) {
               LivePhysRegs.reset(*SR);
+
+}
           }
         } else if (MO.isRegMask()) {
           // Register mask of preserved registers. All clobbers are dead.
@@ -171,8 +189,10 @@ bool DeadMachineInstructionElim::runOnMachineFunction(MachineFunction &MF) {
         if (MO.isReg() && MO.isUse()) {
           Register Reg = MO.getReg();
           if (Register::isPhysicalRegister(Reg)) {
-            for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI)
+            for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI) {
               LivePhysRegs.set(*AI);
+
+}
           }
         }
       }

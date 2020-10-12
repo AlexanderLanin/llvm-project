@@ -17,8 +17,10 @@ namespace tidy {
 namespace cppcoreguidelines {
 
 void ProBoundsPointerArithmeticCheck::registerMatchers(MatchFinder *Finder) {
-  if (!getLangOpts().CPlusPlus)
+  if (!getLangOpts().CPlusPlus) {
     return;
+
+}
 
   const auto AllPointerTypes = anyOf(
       hasType(pointerType()), hasType(autoType(hasDeducedType(pointerType()))),

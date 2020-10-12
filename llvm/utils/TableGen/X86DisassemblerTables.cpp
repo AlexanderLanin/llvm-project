@@ -76,8 +76,10 @@ static inline bool inheritsFrom(InstructionContext child,
                                 InstructionContext parent, bool noPrefix = true,
                                 bool VEX_LIG = false, bool VEX_WIG = false,
                                 bool AdSize64 = false) {
-  if (child == parent)
+  if (child == parent) {
     return true;
+
+}
 
   switch (parent) {
   case IC:
@@ -598,37 +600,55 @@ static ModRMDecisionType getDecisionType(ModRMDecision &decision) {
   bool satisfiesSplitMisc = true;
 
   for (unsigned index = 0; index < 256; ++index) {
-    if (decision.instructionIDs[index] != decision.instructionIDs[0])
+    if (decision.instructionIDs[index] != decision.instructionIDs[0]) {
       satisfiesOneEntry = false;
 
+}
+
     if (((index & 0xc0) == 0xc0) &&
-       (decision.instructionIDs[index] != decision.instructionIDs[0xc0]))
+       (decision.instructionIDs[index] != decision.instructionIDs[0xc0])) {
       satisfiesSplitRM = false;
+
+}
 
     if (((index & 0xc0) != 0xc0) &&
-       (decision.instructionIDs[index] != decision.instructionIDs[0x00]))
+       (decision.instructionIDs[index] != decision.instructionIDs[0x00])) {
       satisfiesSplitRM = false;
 
+}
+
     if (((index & 0xc0) == 0xc0) &&
-       (decision.instructionIDs[index] != decision.instructionIDs[index&0xf8]))
+       (decision.instructionIDs[index] != decision.instructionIDs[index&0xf8])) {
       satisfiesSplitReg = false;
 
+}
+
     if (((index & 0xc0) != 0xc0) &&
-       (decision.instructionIDs[index] != decision.instructionIDs[index&0x38]))
+       (decision.instructionIDs[index] != decision.instructionIDs[index&0x38])) {
       satisfiesSplitMisc = false;
+
+}
   }
 
-  if (satisfiesOneEntry)
+  if (satisfiesOneEntry) {
     return MODRM_ONEENTRY;
 
-  if (satisfiesSplitRM)
+}
+
+  if (satisfiesSplitRM) {
     return MODRM_SPLITRM;
 
-  if (satisfiesSplitReg && satisfiesSplitMisc)
+}
+
+  if (satisfiesSplitReg && satisfiesSplitMisc) {
     return MODRM_SPLITREG;
 
-  if (satisfiesSplitMisc)
+}
+
+  if (satisfiesSplitMisc) {
     return MODRM_SPLITMISC;
+
+}
 
   return MODRM_FULL;
 }
@@ -650,8 +670,10 @@ static const char* stringForDecisionType(ModRMDecisionType dt) {
 }
 
 DisassemblerTables::DisassemblerTables() {
-  for (unsigned i = 0; i < array_lengthof(Tables); i++)
+  for (unsigned i = 0; i < array_lengthof(Tables); i++) {
     Tables[i] = std::make_unique<ContextDecision>();
+
+}
 
   HasConflicts = false;
 }
@@ -686,20 +708,30 @@ void DisassemblerTables::emitModRMDecision(raw_ostream &o1, raw_ostream &o2,
       ModRMDecision.push_back(decision.instructionIDs[0xc0]);
       break;
     case MODRM_SPLITREG:
-      for (unsigned index = 0; index < 64; index += 8)
+      for (unsigned index = 0; index < 64; index += 8) {
         ModRMDecision.push_back(decision.instructionIDs[index]);
-      for (unsigned index = 0xc0; index < 256; index += 8)
+
+}
+      for (unsigned index = 0xc0; index < 256; index += 8) {
         ModRMDecision.push_back(decision.instructionIDs[index]);
+
+}
       break;
     case MODRM_SPLITMISC:
-      for (unsigned index = 0; index < 64; index += 8)
+      for (unsigned index = 0; index < 64; index += 8) {
         ModRMDecision.push_back(decision.instructionIDs[index]);
-      for (unsigned index = 0xc0; index < 256; ++index)
+
+}
+      for (unsigned index = 0xc0; index < 256; ++index) {
         ModRMDecision.push_back(decision.instructionIDs[index]);
+
+}
       break;
     case MODRM_FULL:
-      for (unsigned index = 0; index < 256; ++index)
+      for (unsigned index = 0; index < 256; ++index) {
         ModRMDecision.push_back(decision.instructionIDs[index]);
+
+}
       break;
   }
 
@@ -759,8 +791,10 @@ void DisassemblerTables::emitOpcodeDecision(raw_ostream &o1, raw_ostream &o2,
   for (index = 0; index < 256; ++index) {
     auto &decision = opDecision.modRMDecisions[index];
     ModRMDecisionType dt = getDecisionType(decision);
-    if (!(dt == MODRM_ONEENTRY && decision.instructionIDs[0] == 0))
+    if (!(dt == MODRM_ONEENTRY && decision.instructionIDs[0] == 0)) {
       break;
+
+}
   }
   if (index == 256) {
     // If all 256 entries are MODRM_ONEENTRY, omit output.
@@ -778,8 +812,10 @@ void DisassemblerTables::emitOpcodeDecision(raw_ostream &o1, raw_ostream &o2,
       emitModRMDecision(o1, o2, i1, i2, ModRMTableNum,
                         opDecision.modRMDecisions[index]);
 
-      if (index < 255)
+      if (index < 255) {
         o2 << ",";
+
+}
 
       o2 << "\n";
     }
@@ -839,7 +875,9 @@ void DisassemblerTables::emitInstructionInfo(raw_ostream &o,
       OperandList.push_back(std::make_pair(Encoding, Type));
     }
     unsigned &N = OperandSets[OperandList];
-    if (N != 0) continue;
+    if (N != 0) { continue;
+
+}
 
     N = ++OperandSetNum;
 
@@ -892,89 +930,103 @@ void DisassemblerTables::emitContextTable(raw_ostream &o, unsigned &i) const {
     o.indent(i * 2);
 
     if ((index & ATTR_EVEX) || (index & ATTR_VEX) || (index & ATTR_VEXL)) {
-      if (index & ATTR_EVEX)
+      if (index & ATTR_EVEX) {
         o << "IC_EVEX";
-      else
+      } else {
         o << "IC_VEX";
 
-      if ((index & ATTR_EVEX) && (index & ATTR_EVEXL2))
+}
+
+      if ((index & ATTR_EVEX) && (index & ATTR_EVEXL2)) {
         o << "_L2";
-      else if (index & ATTR_VEXL)
+      } else if (index & ATTR_VEXL) {
         o << "_L";
 
-      if (index & ATTR_REXW)
+}
+
+      if (index & ATTR_REXW) {
         o << "_W";
 
-      if (index & ATTR_OPSIZE)
+}
+
+      if (index & ATTR_OPSIZE) {
         o << "_OPSIZE";
-      else if (index & ATTR_XD)
+      } else if (index & ATTR_XD) {
         o << "_XD";
-      else if (index & ATTR_XS)
+      } else if (index & ATTR_XS) {
         o << "_XS";
 
+}
+
       if ((index & ATTR_EVEX)) {
-        if (index & ATTR_EVEXKZ)
+        if (index & ATTR_EVEXKZ) {
           o << "_KZ";
-        else if (index & ATTR_EVEXK)
+        } else if (index & ATTR_EVEXK) {
           o << "_K";
 
-        if (index & ATTR_EVEXB)
+}
+
+        if (index & ATTR_EVEXB) {
           o << "_B";
+
+}
       }
     }
-    else if ((index & ATTR_64BIT) && (index & ATTR_REXW) && (index & ATTR_XS))
+    else if ((index & ATTR_64BIT) && (index & ATTR_REXW) && (index & ATTR_XS)) {
       o << "IC_64BIT_REXW_XS";
-    else if ((index & ATTR_64BIT) && (index & ATTR_REXW) && (index & ATTR_XD))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_REXW) && (index & ATTR_XD)) {
       o << "IC_64BIT_REXW_XD";
-    else if ((index & ATTR_64BIT) && (index & ATTR_REXW) &&
-             (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_REXW) &&
+             (index & ATTR_OPSIZE)) {
       o << "IC_64BIT_REXW_OPSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_REXW) &&
-             (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_REXW) &&
+             (index & ATTR_ADSIZE)) {
       o << "IC_64BIT_REXW_ADSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XD) && (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XD) && (index & ATTR_OPSIZE)) {
       o << "IC_64BIT_XD_OPSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XD) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XD) && (index & ATTR_ADSIZE)) {
       o << "IC_64BIT_XD_ADSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XS) && (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XS) && (index & ATTR_OPSIZE)) {
       o << "IC_64BIT_XS_OPSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XS) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XS) && (index & ATTR_ADSIZE)) {
       o << "IC_64BIT_XS_ADSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XS))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XS)) {
       o << "IC_64BIT_XS";
-    else if ((index & ATTR_64BIT) && (index & ATTR_XD))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_XD)) {
       o << "IC_64BIT_XD";
-    else if ((index & ATTR_64BIT) && (index & ATTR_OPSIZE) &&
-             (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_OPSIZE) &&
+             (index & ATTR_ADSIZE)) {
       o << "IC_64BIT_OPSIZE_ADSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_OPSIZE)) {
       o << "IC_64BIT_OPSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_ADSIZE)) {
       o << "IC_64BIT_ADSIZE";
-    else if ((index & ATTR_64BIT) && (index & ATTR_REXW))
+    } else if ((index & ATTR_64BIT) && (index & ATTR_REXW)) {
       o << "IC_64BIT_REXW";
-    else if ((index & ATTR_64BIT))
+    } else if ((index & ATTR_64BIT)) {
       o << "IC_64BIT";
-    else if ((index & ATTR_XS) && (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_XS) && (index & ATTR_OPSIZE)) {
       o << "IC_XS_OPSIZE";
-    else if ((index & ATTR_XD) && (index & ATTR_OPSIZE))
+    } else if ((index & ATTR_XD) && (index & ATTR_OPSIZE)) {
       o << "IC_XD_OPSIZE";
-    else if ((index & ATTR_XS) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_XS) && (index & ATTR_ADSIZE)) {
       o << "IC_XS_ADSIZE";
-    else if ((index & ATTR_XD) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_XD) && (index & ATTR_ADSIZE)) {
       o << "IC_XD_ADSIZE";
-    else if (index & ATTR_XS)
+    } else if (index & ATTR_XS) {
       o << "IC_XS";
-    else if (index & ATTR_XD)
+    } else if (index & ATTR_XD) {
       o << "IC_XD";
-    else if ((index & ATTR_OPSIZE) && (index & ATTR_ADSIZE))
+    } else if ((index & ATTR_OPSIZE) && (index & ATTR_ADSIZE)) {
       o << "IC_OPSIZE_ADSIZE";
-    else if (index & ATTR_OPSIZE)
+    } else if (index & ATTR_OPSIZE) {
       o << "IC_OPSIZE";
-    else if (index & ATTR_ADSIZE)
+    } else if (index & ATTR_ADSIZE) {
       o << "IC_ADSIZE";
-    else
+    } else {
       o << "IC";
+
+}
 
     o << ", /* " << index << " */";
 
@@ -1041,8 +1093,10 @@ void DisassemblerTables::setTableFields(ModRMDecision     &decision,
                                         uint8_t           opcode) {
   for (unsigned index = 0; index < 256; ++index) {
     if (filter.accepts(index)) {
-      if (decision.instructionIDs[index] == uid)
+      if (decision.instructionIDs[index] == uid) {
         continue;
+
+}
 
       if (decision.instructionIDs[index] != 0) {
         InstructionSpecifier &newInfo =
@@ -1052,11 +1106,15 @@ void DisassemblerTables::setTableFields(ModRMDecision     &decision,
 
         if(previousInfo.name == "NOOP" && (newInfo.name == "XCHG16ar" ||
                                            newInfo.name == "XCHG32ar" ||
-                                           newInfo.name == "XCHG64ar"))
+                                           newInfo.name == "XCHG64ar")) {
           continue; // special case for XCHG*ar and NOOP
 
-        if (outranks(previousInfo.insnContext, newInfo.insnContext))
+}
+
+        if (outranks(previousInfo.insnContext, newInfo.insnContext)) {
           continue;
+
+}
 
         if (previousInfo.insnContext == newInfo.insnContext) {
           errs() << "Error: Primary decode conflict: ";
@@ -1088,16 +1146,20 @@ void DisassemblerTables::setTableFields(OpcodeType          type,
 
   for (unsigned index = 0; index < IC_max; ++index) {
     if ((is32bit || addressSize == 16) &&
-        inheritsFrom((InstructionContext)index, IC_64BIT))
+        inheritsFrom((InstructionContext)index, IC_64BIT)) {
       continue;
+
+}
 
     bool adSize64 = addressSize == 64;
     if (inheritsFrom((InstructionContext)index,
                      InstructionSpecifiers[uid].insnContext, noPrefix,
-                     ignoresVEX_L, ignoresVEX_W, adSize64))
+                     ignoresVEX_L, ignoresVEX_W, adSize64)) {
       setTableFields(decision.opcodeDecisions[index].modRMDecisions[opcode],
                      filter,
                      uid,
                      opcode);
+
+}
   }
 }

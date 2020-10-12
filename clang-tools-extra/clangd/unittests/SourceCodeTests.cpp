@@ -212,9 +212,11 @@ TEST(SourceCodeTests, PositionToOffset) {
   for (Line L : FileLines) {
     EXPECT_THAT_EXPECTED(positionToOffset(File, position(L.Number, -1)),
                          llvm::Failed()); // out of range
-    for (unsigned I = 0; I <= L.Length; ++I)
+    for (unsigned I = 0; I <= L.Length; ++I) {
       EXPECT_THAT_EXPECTED(positionToOffset(File, position(L.Number, I)),
                            llvm::HasValue(L.Offset + I));
+
+}
     EXPECT_THAT_EXPECTED(
         positionToOffset(File, position(L.Number, L.Length + 1)),
         llvm::HasValue(L.Offset + L.Length));
@@ -267,8 +269,10 @@ TEST(SourceCodeTests, OffsetToPosition) {
 
   WithContextValue UTF8(kCurrentOffsetEncoding, OffsetEncoding::UTF8);
   for (Line L : FileLines) {
-    for (unsigned I = 0; I <= L.Length; ++I)
+    for (unsigned I = 0; I <= L.Length; ++I) {
       EXPECT_THAT(offsetToPosition(File, L.Offset + I), Pos(L.Number, I));
+
+}
   }
   EXPECT_THAT(offsetToPosition(File, 30), Pos(2, 11)) << "out of bounds";
 }
@@ -477,11 +481,15 @@ TEST(SourceCodeTests, IsInsideMainFile) {
   auto DeclLoc = [&AST](llvm::StringRef Name) {
     return findDecl(AST, Name).getLocation();
   };
-  for (const auto *HeaderDecl : {"Header1", "Header2", "Header3"})
+  for (const auto *HeaderDecl : {"Header1", "Header2", "Header3"}) {
     EXPECT_FALSE(isInsideMainFile(DeclLoc(HeaderDecl), SM)) << HeaderDecl;
 
-  for (const auto *MainDecl : {"Main1", "Main2", "Main3", "Main4", "YY"})
+}
+
+  for (const auto *MainDecl : {"Main1", "Main2", "Main3", "Main4", "YY"}) {
     EXPECT_TRUE(isInsideMainFile(DeclLoc(MainDecl), SM)) << MainDecl;
+
+}
 
   // Main4 is *spelled* in the preamble, but in the main-file part of it.
   EXPECT_TRUE(isInsideMainFile(SM.getSpellingLoc(DeclLoc("Main4")), SM));

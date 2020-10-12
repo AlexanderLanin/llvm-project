@@ -80,9 +80,11 @@ void LiveStacks::print(raw_ostream &OS, const Module*) const {
     I->second.print(OS);
     int Slot = I->first;
     const TargetRegisterClass *RC = getIntervalRegClass(Slot);
-    if (RC)
+    if (RC) {
       OS << " [" << TRI->getRegClassName(RC) << "]\n";
-    else
+    } else {
       OS << " [Unknown]\n";
+
+}
   }
 }

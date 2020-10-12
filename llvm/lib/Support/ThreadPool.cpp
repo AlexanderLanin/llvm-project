@@ -37,8 +37,10 @@ ThreadPool::ThreadPool(ThreadPoolStrategy S)
           QueueCondition.wait(LockGuard,
                               [&] { return !EnableFlag || !Tasks.empty(); });
           // Exit condition
-          if (!EnableFlag && Tasks.empty())
+          if (!EnableFlag && Tasks.empty()) {
             return;
+
+}
           // Yeah, we have a task, grab it and release the lock on the queue
 
           // We first need to signal that we are active before popping the queue
@@ -101,8 +103,10 @@ ThreadPool::~ThreadPool() {
     EnableFlag = false;
   }
   QueueCondition.notify_all();
-  for (auto &Worker : Threads)
+  for (auto &Worker : Threads) {
     Worker.join();
+
+}
 }
 
 #else // LLVM_ENABLE_THREADS Disabled

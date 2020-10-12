@@ -473,8 +473,10 @@ public:
 bool DarwinAsmParser::parseSectionSwitch(StringRef Segment, StringRef Section,
                                          unsigned TAA, unsigned Align,
                                          unsigned StubSize) {
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in section switching directive");
+
+}
   Lex();
 
   // FIXME: Arch specific.
@@ -491,8 +493,10 @@ bool DarwinAsmParser::parseSectionSwitch(StringRef Segment, StringRef Section,
   // the section. However, this is arguably more reasonable behavior, and there
   // is no good reason for someone to intentionally emit incorrectly sized
   // values into the implicitly aligned sections.
-  if (Align)
+  if (Align) {
     getStreamer().emitValueToAlignment(Align);
+
+}
 
   return false;
 }
@@ -501,17 +505,23 @@ bool DarwinAsmParser::parseSectionSwitch(StringRef Segment, StringRef Section,
 ///  ::= .alt_entry identifier
 bool DarwinAsmParser::parseDirectiveAltEntry(StringRef, SMLoc) {
   StringRef Name;
-  if (getParser().parseIdentifier(Name))
+  if (getParser().parseIdentifier(Name)) {
     return TokError("expected identifier in directive");
+
+}
 
   // Look up symbol.
   MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
-  if (Sym->isDefined())
+  if (Sym->isDefined()) {
     return TokError(".alt_entry must preceed symbol definition");
 
-  if (!getStreamer().emitSymbolAttribute(Sym, MCSA_AltEntry))
+}
+
+  if (!getStreamer().emitSymbolAttribute(Sym, MCSA_AltEntry)) {
     return TokError("unable to emit symbol attribute");
+
+}
 
   Lex();
   return false;
@@ -521,22 +531,30 @@ bool DarwinAsmParser::parseDirectiveAltEntry(StringRef, SMLoc) {
 ///  ::= .desc identifier , expression
 bool DarwinAsmParser::parseDirectiveDesc(StringRef, SMLoc) {
   StringRef Name;
-  if (getParser().parseIdentifier(Name))
+  if (getParser().parseIdentifier(Name)) {
     return TokError("expected identifier in directive");
+
+}
 
   // Handle the identifier as the key symbol.
   MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in '.desc' directive");
+
+}
   Lex();
 
   int64_t DescValue;
-  if (getParser().parseAbsoluteExpression(DescValue))
+  if (getParser().parseAbsoluteExpression(DescValue)) {
     return true;
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+}
+
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.desc' directive");
+
+}
 
   Lex();
 
@@ -555,25 +573,35 @@ bool DarwinAsmParser::parseDirectiveIndirectSymbol(StringRef, SMLoc Loc) {
   if (SectionType != MachO::S_NON_LAZY_SYMBOL_POINTERS &&
       SectionType != MachO::S_LAZY_SYMBOL_POINTERS &&
       SectionType != MachO::S_THREAD_LOCAL_VARIABLE_POINTERS &&
-      SectionType != MachO::S_SYMBOL_STUBS)
+      SectionType != MachO::S_SYMBOL_STUBS) {
     return Error(Loc, "indirect symbol not in a symbol pointer or stub "
                       "section");
 
+}
+
   StringRef Name;
-  if (getParser().parseIdentifier(Name))
+  if (getParser().parseIdentifier(Name)) {
     return TokError("expected identifier in .indirect_symbol directive");
+
+}
 
   MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
   // Assembler local symbols don't make any sense here. Complain loudly.
-  if (Sym->isTemporary())
+  if (Sym->isTemporary()) {
     return TokError("non-local symbol required in directive");
 
-  if (!getStreamer().emitSymbolAttribute(Sym, MCSA_IndirectSymbol))
+}
+
+  if (!getStreamer().emitSymbolAttribute(Sym, MCSA_IndirectSymbol)) {
     return TokError("unable to emit indirect symbol attribute for: " + Name);
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+}
+
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.indirect_symbol' directive");
+
+}
 
   Lex();
 
@@ -585,22 +613,28 @@ bool DarwinAsmParser::parseDirectiveIndirectSymbol(StringRef, SMLoc Loc) {
 bool DarwinAsmParser::parseDirectiveDumpOrLoad(StringRef Directive,
                                                SMLoc IDLoc) {
   bool IsDump = Directive == ".dump";
-  if (getLexer().isNot(AsmToken::String))
+  if (getLexer().isNot(AsmToken::String)) {
     return TokError("expected string in '.dump' or '.load' directive");
+
+}
 
   Lex();
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.dump' or '.load' directive");
+
+}
 
   Lex();
 
   // FIXME: If/when .dump and .load are implemented they will be done in the
   // the assembly parser and not have any need for an MCStreamer API.
-  if (IsDump)
+  if (IsDump) {
     return Warning(IDLoc, "ignoring directive .dump for now");
-  else
+  } else {
     return Warning(IDLoc, "ignoring directive .load for now");
+
+}
 }
 
 /// ParseDirectiveLinkerOption
@@ -608,20 +642,28 @@ bool DarwinAsmParser::parseDirectiveDumpOrLoad(StringRef Directive,
 bool DarwinAsmParser::parseDirectiveLinkerOption(StringRef IDVal, SMLoc) {
   SmallVector<std::string, 4> Args;
   while (true) {
-    if (getLexer().isNot(AsmToken::String))
+    if (getLexer().isNot(AsmToken::String)) {
       return TokError("expected string in '" + Twine(IDVal) + "' directive");
 
+}
+
     std::string Data;
-    if (getParser().parseEscapedString(Data))
+    if (getParser().parseEscapedString(Data)) {
       return true;
+
+}
 
     Args.push_back(Data);
 
-    if (getLexer().is(AsmToken::EndOfStatement))
+    if (getLexer().is(AsmToken::EndOfStatement)) {
       break;
 
-    if (getLexer().isNot(AsmToken::Comma))
+}
+
+    if (getLexer().isNot(AsmToken::Comma)) {
       return TokError("unexpected token in '" + Twine(IDVal) + "' directive");
+
+}
     Lex();
   }
 
@@ -633,22 +675,30 @@ bool DarwinAsmParser::parseDirectiveLinkerOption(StringRef IDVal, SMLoc) {
 ///  ::= .lsym identifier , expression
 bool DarwinAsmParser::parseDirectiveLsym(StringRef, SMLoc) {
   StringRef Name;
-  if (getParser().parseIdentifier(Name))
+  if (getParser().parseIdentifier(Name)) {
     return TokError("expected identifier in directive");
+
+}
 
   // Handle the identifier as the key symbol.
   MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in '.lsym' directive");
+
+}
   Lex();
 
   const MCExpr *Value;
-  if (getParser().parseExpression(Value))
+  if (getParser().parseExpression(Value)) {
     return true;
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+}
+
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.lsym' directive");
+
+}
 
   Lex();
 
@@ -665,12 +715,16 @@ bool DarwinAsmParser::parseDirectiveSection(StringRef, SMLoc) {
   SMLoc Loc = getLexer().getLoc();
 
   StringRef SectionName;
-  if (getParser().parseIdentifier(SectionName))
+  if (getParser().parseIdentifier(SectionName)) {
     return Error(Loc, "expected identifier after '.section' directive");
 
+}
+
   // Verify there is a following comma.
-  if (!getLexer().is(AsmToken::Comma))
+  if (!getLexer().is(AsmToken::Comma)) {
     return TokError("unexpected token in '.section' directive");
+
+}
 
   std::string SectionSpec = std::string(SectionName);
   SectionSpec += ",";
@@ -681,8 +735,10 @@ bool DarwinAsmParser::parseDirectiveSection(StringRef, SMLoc) {
   SectionSpec.append(EOL.begin(), EOL.end());
 
   Lex();
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.section' directive");
+
+}
   Lex();
 
   StringRef Segment, Section;
@@ -693,8 +749,10 @@ bool DarwinAsmParser::parseDirectiveSection(StringRef, SMLoc) {
     MCSectionMachO::ParseSectionSpecifier(SectionSpec, Segment, Section,
                                           TAA, TAAParsed, StubSize);
 
-  if (!ErrorStr.empty())
+  if (!ErrorStr.empty()) {
     return Error(Loc, ErrorStr);
+
+}
 
   // Issue a warning if the target is not powerpc and Section is a *coal* section.
   Triple TT = getParser().getContext().getObjectFileInfo()->getTargetTriple();
@@ -743,8 +801,10 @@ bool DarwinAsmParser::parseDirectivePushSection(StringRef S, SMLoc Loc) {
 /// ParseDirectivePopSection:
 ///   ::= .popsection
 bool DarwinAsmParser::parseDirectivePopSection(StringRef, SMLoc) {
-  if (!getStreamer().PopSection())
+  if (!getStreamer().PopSection()) {
     return TokError(".popsection without corresponding .pushsection");
+
+}
   return false;
 }
 
@@ -752,8 +812,10 @@ bool DarwinAsmParser::parseDirectivePopSection(StringRef, SMLoc) {
 ///   ::= .previous
 bool DarwinAsmParser::parseDirectivePrevious(StringRef DirName, SMLoc) {
   MCSectionSubPair PreviousSection = getStreamer().getPreviousSection();
-  if (!PreviousSection.first)
+  if (!PreviousSection.first) {
     return TokError(".previous without corresponding .section");
+
+}
   getStreamer().SwitchSection(PreviousSection.first, PreviousSection.second);
   return false;
 }
@@ -762,17 +824,23 @@ bool DarwinAsmParser::parseDirectivePrevious(StringRef DirName, SMLoc) {
 ///  ::= .secure_log_unique ... message ...
 bool DarwinAsmParser::parseDirectiveSecureLogUnique(StringRef, SMLoc IDLoc) {
   StringRef LogMessage = getParser().parseStringToEndOfStatement();
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.secure_log_unique' directive");
 
-  if (getContext().getSecureLogUsed())
+}
+
+  if (getContext().getSecureLogUsed()) {
     return Error(IDLoc, ".secure_log_unique specified multiple times");
+
+}
 
   // Get the secure log path.
   const char *SecureLogFile = getContext().getSecureLogFile();
-  if (!SecureLogFile)
+  if (!SecureLogFile) {
     return Error(IDLoc, ".secure_log_unique used but AS_SECURE_LOG_FILE "
                  "environment variable unset.");
+
+}
 
   // Open the secure log file if we haven't already.
   raw_fd_ostream *OS = getContext().getSecureLog();
@@ -780,9 +848,11 @@ bool DarwinAsmParser::parseDirectiveSecureLogUnique(StringRef, SMLoc IDLoc) {
     std::error_code EC;
     auto NewOS = std::make_unique<raw_fd_ostream>(
         StringRef(SecureLogFile), EC, sys::fs::OF_Append | sys::fs::OF_Text);
-    if (EC)
+    if (EC) {
        return Error(IDLoc, Twine("can't open secure log file: ") +
                                SecureLogFile + " (" + EC.message() + ")");
+
+}
     OS = NewOS.get();
     getContext().setSecureLog(std::move(NewOS));
   }
@@ -801,8 +871,10 @@ bool DarwinAsmParser::parseDirectiveSecureLogUnique(StringRef, SMLoc IDLoc) {
 /// ParseDirectiveSecureLogReset
 ///  ::= .secure_log_reset
 bool DarwinAsmParser::parseDirectiveSecureLogReset(StringRef, SMLoc IDLoc) {
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.secure_log_reset' directive");
+
+}
 
   Lex();
 
@@ -814,8 +886,10 @@ bool DarwinAsmParser::parseDirectiveSecureLogReset(StringRef, SMLoc IDLoc) {
 /// parseDirectiveSubsectionsViaSymbols
 ///  ::= .subsections_via_symbols
 bool DarwinAsmParser::parseDirectiveSubsectionsViaSymbols(StringRef, SMLoc) {
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.subsections_via_symbols' directive");
+
+}
 
   Lex();
 
@@ -829,46 +903,62 @@ bool DarwinAsmParser::parseDirectiveSubsectionsViaSymbols(StringRef, SMLoc) {
 bool DarwinAsmParser::parseDirectiveTBSS(StringRef, SMLoc) {
   SMLoc IDLoc = getLexer().getLoc();
   StringRef Name;
-  if (getParser().parseIdentifier(Name))
+  if (getParser().parseIdentifier(Name)) {
     return TokError("expected identifier in directive");
+
+}
 
   // Handle the identifier as the key symbol.
   MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in directive");
+
+}
   Lex();
 
   int64_t Size;
   SMLoc SizeLoc = getLexer().getLoc();
-  if (getParser().parseAbsoluteExpression(Size))
+  if (getParser().parseAbsoluteExpression(Size)) {
     return true;
+
+}
 
   int64_t Pow2Alignment = 0;
   SMLoc Pow2AlignmentLoc;
   if (getLexer().is(AsmToken::Comma)) {
     Lex();
     Pow2AlignmentLoc = getLexer().getLoc();
-    if (getParser().parseAbsoluteExpression(Pow2Alignment))
+    if (getParser().parseAbsoluteExpression(Pow2Alignment)) {
       return true;
+
+}
   }
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.tbss' directive");
+
+}
 
   Lex();
 
-  if (Size < 0)
+  if (Size < 0) {
     return Error(SizeLoc, "invalid '.tbss' directive size, can't be less than"
                  "zero");
 
+}
+
   // FIXME: Diagnose overflow.
-  if (Pow2Alignment < 0)
+  if (Pow2Alignment < 0) {
     return Error(Pow2AlignmentLoc, "invalid '.tbss' alignment, can't be less"
                  "than zero");
 
-  if (!Sym->isUndefined())
+}
+
+  if (!Sym->isUndefined()) {
     return Error(IDLoc, "invalid symbol redefinition");
+
+}
 
   getStreamer().emitTBSSSymbol(
       getContext().getMachOSection("__DATA", "__thread_bss",
@@ -884,18 +974,24 @@ bool DarwinAsmParser::parseDirectiveTBSS(StringRef, SMLoc) {
 ///      , align_expression ]]
 bool DarwinAsmParser::parseDirectiveZerofill(StringRef, SMLoc) {
   StringRef Segment;
-  if (getParser().parseIdentifier(Segment))
+  if (getParser().parseIdentifier(Segment)) {
     return TokError("expected segment name after '.zerofill' directive");
 
-  if (getLexer().isNot(AsmToken::Comma))
+}
+
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in directive");
+
+}
   Lex();
 
   StringRef Section;
   SMLoc SectionLoc = getLexer().getLoc();
-  if (getParser().parseIdentifier(Section))
+  if (getParser().parseIdentifier(Section)) {
     return TokError("expected section name after comma in '.zerofill' "
                     "directive");
+
+}
 
   // If this is the end of the line all that was wanted was to create the
   // the section but with no symbol.
@@ -908,54 +1004,72 @@ bool DarwinAsmParser::parseDirectiveZerofill(StringRef, SMLoc) {
     return false;
   }
 
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in directive");
+
+}
   Lex();
 
   SMLoc IDLoc = getLexer().getLoc();
   StringRef IDStr;
-  if (getParser().parseIdentifier(IDStr))
+  if (getParser().parseIdentifier(IDStr)) {
     return TokError("expected identifier in directive");
+
+}
 
   // handle the identifier as the key symbol.
   MCSymbol *Sym = getContext().getOrCreateSymbol(IDStr);
 
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("unexpected token in directive");
+
+}
   Lex();
 
   int64_t Size;
   SMLoc SizeLoc = getLexer().getLoc();
-  if (getParser().parseAbsoluteExpression(Size))
+  if (getParser().parseAbsoluteExpression(Size)) {
     return true;
+
+}
 
   int64_t Pow2Alignment = 0;
   SMLoc Pow2AlignmentLoc;
   if (getLexer().is(AsmToken::Comma)) {
     Lex();
     Pow2AlignmentLoc = getLexer().getLoc();
-    if (getParser().parseAbsoluteExpression(Pow2Alignment))
+    if (getParser().parseAbsoluteExpression(Pow2Alignment)) {
       return true;
+
+}
   }
 
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.zerofill' directive");
+
+}
 
   Lex();
 
-  if (Size < 0)
+  if (Size < 0) {
     return Error(SizeLoc, "invalid '.zerofill' directive size, can't be less "
                  "than zero");
+
+}
 
   // NOTE: The alignment in the directive is a power of 2 value, the assembler
   // may internally end up wanting an alignment in bytes.
   // FIXME: Diagnose overflow.
-  if (Pow2Alignment < 0)
+  if (Pow2Alignment < 0) {
     return Error(Pow2AlignmentLoc, "invalid '.zerofill' directive alignment, "
                  "can't be less than zero");
 
-  if (!Sym->isUndefined())
+}
+
+  if (!Sym->isUndefined()) {
     return Error(IDLoc, "invalid symbol redefinition");
+
+}
 
   // Create the zerofill Symbol with Size and Pow2Alignment
   //
@@ -978,15 +1092,19 @@ bool DarwinAsmParser::parseDirectiveDataRegion(StringRef, SMLoc) {
   }
   StringRef RegionType;
   SMLoc Loc = getParser().getTok().getLoc();
-  if (getParser().parseIdentifier(RegionType))
+  if (getParser().parseIdentifier(RegionType)) {
     return TokError("expected region type after '.data_region' directive");
+
+}
   int Kind = StringSwitch<int>(RegionType)
     .Case("jt8", MCDR_DataRegionJT8)
     .Case("jt16", MCDR_DataRegionJT16)
     .Case("jt32", MCDR_DataRegionJT32)
     .Default(-1);
-  if (Kind == -1)
+  if (Kind == -1) {
     return Error(Loc, "unknown region type in '.data_region' directive");
+
+}
   Lex();
 
   getStreamer().emitDataRegion((MCDataRegionType)Kind);
@@ -996,8 +1114,10 @@ bool DarwinAsmParser::parseDirectiveDataRegion(StringRef, SMLoc) {
 /// ParseDirectiveDataRegionEnd
 ///  ::= .end_data_region
 bool DarwinAsmParser::parseDirectiveDataRegionEnd(StringRef, SMLoc) {
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in '.end_data_region' directive");
+
+}
 
   Lex();
   getStreamer().emitDataRegion(MCDR_DataRegionEnd);
@@ -1013,25 +1133,35 @@ bool DarwinAsmParser::parseMajorMinorVersionComponent(unsigned *Major,
                                                       unsigned *Minor,
                                                       const char *VersionName) {
   // Get the major version number.
-  if (getLexer().isNot(AsmToken::Integer))
+  if (getLexer().isNot(AsmToken::Integer)) {
     return TokError(Twine("invalid ") + VersionName +
                     " major version number, integer expected");
+
+}
   int64_t MajorVal = getLexer().getTok().getIntVal();
-  if (MajorVal > 65535 || MajorVal <= 0)
+  if (MajorVal > 65535 || MajorVal <= 0) {
     return TokError(Twine("invalid ") + VersionName + " major version number");
+
+}
   *Major = (unsigned)MajorVal;
   Lex();
-  if (getLexer().isNot(AsmToken::Comma))
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError(Twine(VersionName) +
                     " minor version number required, comma expected");
+
+}
   Lex();
   // Get the minor version number.
-  if (getLexer().isNot(AsmToken::Integer))
+  if (getLexer().isNot(AsmToken::Integer)) {
     return TokError(Twine("invalid ") + VersionName +
                     " minor version number, integer expected");
+
+}
   int64_t MinorVal = getLexer().getTok().getIntVal();
-  if (MinorVal > 255 || MinorVal < 0)
+  if (MinorVal > 255 || MinorVal < 0) {
     return TokError(Twine("invalid ") + VersionName + " minor version number");
+
+}
   *Minor = MinorVal;
   Lex();
   return false;
@@ -1042,12 +1172,16 @@ bool DarwinAsmParser::parseOptionalTrailingVersionComponent(
     unsigned *Component, const char *ComponentName) {
   assert(getLexer().is(AsmToken::Comma) && "comma expected");
   Lex();
-  if (getLexer().isNot(AsmToken::Integer))
+  if (getLexer().isNot(AsmToken::Integer)) {
     return TokError(Twine("invalid ") + ComponentName +
                     " version number, integer expected");
+
+}
   int64_t Val = getLexer().getTok().getIntVal();
-  if (Val > 255 || Val < 0)
+  if (Val > 255 || Val < 0) {
     return TokError(Twine("invalid ") + ComponentName + " version number");
+
+}
   *Component = Val;
   Lex();
   return false;
@@ -1057,18 +1191,26 @@ bool DarwinAsmParser::parseOptionalTrailingVersionComponent(
 ///                      parseOptionalTrailingVersionComponent
 bool DarwinAsmParser::parseVersion(unsigned *Major, unsigned *Minor,
                                    unsigned *Update) {
-  if (parseMajorMinorVersionComponent(Major, Minor, "OS"))
+  if (parseMajorMinorVersionComponent(Major, Minor, "OS")) {
     return true;
+
+}
 
   // Get the update level, if specified
   *Update = 0;
   if (getLexer().is(AsmToken::EndOfStatement) ||
-      isSDKVersionToken(getLexer().getTok()))
+      isSDKVersionToken(getLexer().getTok())) {
     return false;
-  if (getLexer().isNot(AsmToken::Comma))
+
+}
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("invalid OS update specifier, comma expected");
-  if (parseOptionalTrailingVersionComponent(Update, "OS update"))
+
+}
+  if (parseOptionalTrailingVersionComponent(Update, "OS update")) {
     return true;
+
+}
   return false;
 }
 
@@ -1076,15 +1218,19 @@ bool DarwinAsmParser::parseSDKVersion(VersionTuple &SDKVersion) {
   assert(isSDKVersionToken(getLexer().getTok()) && "expected sdk_version");
   Lex();
   unsigned Major, Minor;
-  if (parseMajorMinorVersionComponent(&Major, &Minor, "SDK"))
+  if (parseMajorMinorVersionComponent(&Major, &Minor, "SDK")) {
     return true;
+
+}
   SDKVersion = VersionTuple(Major, Minor);
 
   // Get the subminor version, if specified.
   if (getLexer().is(AsmToken::Comma)) {
     unsigned Subminor;
-    if (parseOptionalTrailingVersionComponent(&Subminor, "SDK subminor"))
+    if (parseOptionalTrailingVersionComponent(&Subminor, "SDK subminor")) {
       return true;
+
+}
     SDKVersion = VersionTuple(Major, Minor, Subminor);
   }
   return false;
@@ -1093,10 +1239,12 @@ bool DarwinAsmParser::parseSDKVersion(VersionTuple &SDKVersion) {
 void DarwinAsmParser::checkVersion(StringRef Directive, StringRef Arg,
                                    SMLoc Loc, Triple::OSType ExpectedOS) {
   const Triple &Target = getContext().getObjectFileInfo()->getTargetTriple();
-  if (Target.getOS() != ExpectedOS)
+  if (Target.getOS() != ExpectedOS) {
     Warning(Loc, Twine(Directive) +
             (Arg.empty() ? Twine() : Twine(' ') + Arg) +
             " used while targeting " + Target.getOSName());
+
+}
 
   if (LastVersionDirective.isValid()) {
     Warning(Loc, "overriding previous version directive");
@@ -1125,15 +1273,21 @@ bool DarwinAsmParser::parseVersionMin(StringRef Directive, SMLoc Loc,
   unsigned Major;
   unsigned Minor;
   unsigned Update;
-  if (parseVersion(&Major, &Minor, &Update))
+  if (parseVersion(&Major, &Minor, &Update)) {
     return true;
+
+}
 
   VersionTuple SDKVersion;
-  if (isSDKVersionToken(getLexer().getTok()) && parseSDKVersion(SDKVersion))
+  if (isSDKVersionToken(getLexer().getTok()) && parseSDKVersion(SDKVersion)) {
     return true;
 
-  if (parseToken(AsmToken::EndOfStatement))
+}
+
+  if (parseToken(AsmToken::EndOfStatement)) {
     return addErrorSuffix(Twine(" in '") + Directive + "' directive");
+
+}
 
   Triple::OSType ExpectedOS = getOSTypeFromMCVM(Type);
   checkVersion(Directive, StringRef(), Loc, ExpectedOS);
@@ -1161,8 +1315,10 @@ static Triple::OSType getOSTypeFromPlatform(MachO::PlatformType Type) {
 bool DarwinAsmParser::parseBuildVersion(StringRef Directive, SMLoc Loc) {
   StringRef PlatformName;
   SMLoc PlatformLoc = getTok().getLoc();
-  if (getParser().parseIdentifier(PlatformName))
+  if (getParser().parseIdentifier(PlatformName)) {
     return TokError("platform name expected");
+
+}
 
   unsigned Platform = StringSwitch<unsigned>(PlatformName)
     .Case("macos", MachO::PLATFORM_MACOS)
@@ -1171,25 +1327,35 @@ bool DarwinAsmParser::parseBuildVersion(StringRef Directive, SMLoc Loc) {
     .Case("watchos", MachO::PLATFORM_WATCHOS)
     .Case("macCatalyst", MachO::PLATFORM_MACCATALYST)
     .Default(0);
-  if (Platform == 0)
+  if (Platform == 0) {
     return Error(PlatformLoc, "unknown platform name");
 
-  if (getLexer().isNot(AsmToken::Comma))
+}
+
+  if (getLexer().isNot(AsmToken::Comma)) {
     return TokError("version number required, comma expected");
+
+}
   Lex();
 
   unsigned Major;
   unsigned Minor;
   unsigned Update;
-  if (parseVersion(&Major, &Minor, &Update))
+  if (parseVersion(&Major, &Minor, &Update)) {
     return true;
+
+}
 
   VersionTuple SDKVersion;
-  if (isSDKVersionToken(getLexer().getTok()) && parseSDKVersion(SDKVersion))
+  if (isSDKVersionToken(getLexer().getTok()) && parseSDKVersion(SDKVersion)) {
     return true;
 
-  if (parseToken(AsmToken::EndOfStatement))
+}
+
+  if (parseToken(AsmToken::EndOfStatement)) {
     return addErrorSuffix(" in '.build_version' directive");
+
+}
 
   Triple::OSType ExpectedOS
     = getOSTypeFromPlatform((MachO::PlatformType)Platform);

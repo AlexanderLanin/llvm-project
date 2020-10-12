@@ -61,8 +61,10 @@ void EmitOptRST(RecordKeeper &Records, raw_ostream &OS) {
 
       // Print the prefix.
       std::vector<StringRef> Prefixes = R->getValueAsListOfStrings("Prefixes");
-      if (!Prefixes.empty())
+      if (!Prefixes.empty()) {
         OS << Prefixes[0];
+
+}
 
       // Print the option name.
       OS << R->getValueAsString("Name");

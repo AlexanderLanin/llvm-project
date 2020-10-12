@@ -25,8 +25,10 @@ ExecutionDomainFix::regIndices(unsigned Reg) const {
 DomainValue *ExecutionDomainFix::alloc(int domain) {
   DomainValue *dv = Avail.empty() ? new (Allocator.Allocate()) DomainValue
                                   : Avail.pop_back_val();
-  if (domain >= 0)
+  if (domain >= 0) {
     dv->addDomain(domain);
+
+}
   assert(dv->Refs == 0 && "Reference count wasn't cleared");
   assert(!dv->Next && "Chained DomainValue shouldn't have been recycled");
   return dv;
@@ -35,12 +37,16 @@ DomainValue *ExecutionDomainFix::alloc(int domain) {
 void ExecutionDomainFix::release(DomainValue *DV) {
   while (DV) {
     assert(DV->Refs && "Bad DomainValue");
-    if (--DV->Refs)
+    if (--DV->Refs) {
       return;
 
+}
+
     // There are no more DV references. Collapse any contained instructions.
-    if (DV->AvailableDomains && !DV->isCollapsed())
+    if (DV->AvailableDomains && !DV->isCollapsed()) {
       collapse(DV, DV->getFirstDomain());
+
+}
 
     DomainValue *Next = DV->Next;
     DV->clear();
@@ -52,13 +58,15 @@ void ExecutionDomainFix::release(DomainValue *DV) {
 
 DomainValue *ExecutionDomainFix::resolve(DomainValue *&DVRef) {
   DomainValue *DV = DVRef;
-  if (!DV || !DV->Next)
+  if (!DV || !DV->Next) {
     return DV;
 
+}
+
   // DV has a chain. Find the end.
-  do
+  do {
     DV = DV->Next;
-  while (DV->Next);
+  } while (DV->Next);
 
   // Update DVRef to point to DV.
   retain(DV);
@@ -71,18 +79,24 @@ void ExecutionDomainFix::setLiveReg(int rx, DomainValue *dv) {
   assert(unsigned(rx) < NumRegs && "Invalid index");
   assert(!LiveRegs.empty() && "Must enter basic block first.");
 
-  if (LiveRegs[rx] == dv)
+  if (LiveRegs[rx] == dv) {
     return;
-  if (LiveRegs[rx])
+
+}
+  if (LiveRegs[rx]) {
     release(LiveRegs[rx]);
+
+}
   LiveRegs[rx] = retain(dv);
 }
 
 void ExecutionDomainFix::kill(int rx) {
   assert(unsigned(rx) < NumRegs && "Invalid index");
   assert(!LiveRegs.empty() && "Must enter basic block first.");
-  if (!LiveRegs[rx])
+  if (!LiveRegs[rx]) {
     return;
+
+}
 
   release(LiveRegs[rx]);
   LiveRegs[rx] = nullptr;
@@ -92,11 +106,11 @@ void ExecutionDomainFix::force(int rx, unsigned domain) {
   assert(unsigned(rx) < NumRegs && "Invalid index");
   assert(!LiveRegs.empty() && "Must enter basic block first.");
   if (DomainValue *dv = LiveRegs[rx]) {
-    if (dv->isCollapsed())
+    if (dv->isCollapsed()) {
       dv->addDomain(domain);
-    else if (dv->hasDomain(domain))
+    } else if (dv->hasDomain(domain)) {
       collapse(dv, domain);
-    else {
+    } else {
       // This is an incompatible open DomainValue. Collapse it to whatever and
       // force the new value into domain. This costs a domain crossing.
       collapse(dv, dv->getFirstDomain());
@@ -113,26 +127,38 @@ void ExecutionDomainFix::collapse(DomainValue *dv, unsigned domain) {
   assert(dv->hasDomain(domain) && "Cannot collapse");
 
   // Collapse all the instructions.
-  while (!dv->Instrs.empty())
+  while (!dv->Instrs.empty()) {
     TII->setExecutionDomain(*dv->Instrs.pop_back_val(), domain);
+
+}
   dv->setSingleDomain(domain);
 
   // If there are multiple users, give them new, unique DomainValues.
-  if (!LiveRegs.empty() && dv->Refs > 1)
-    for (unsigned rx = 0; rx != NumRegs; ++rx)
-      if (LiveRegs[rx] == dv)
+  if (!LiveRegs.empty() && dv->Refs > 1) {
+    for (unsigned rx = 0; rx != NumRegs; ++rx) {
+      if (LiveRegs[rx] == dv) {
         setLiveReg(rx, alloc(domain));
+
+}
+
+}
+
+}
 }
 
 bool ExecutionDomainFix::merge(DomainValue *A, DomainValue *B) {
   assert(!A->isCollapsed() && "Cannot merge into collapsed");
   assert(!B->isCollapsed() && "Cannot merge from collapsed");
-  if (A == B)
+  if (A == B) {
     return true;
+
+}
   // Restrict to the domains that A and B have in common.
   unsigned common = A->getCommonDomains(B->AvailableDomains);
-  if (!common)
+  if (!common) {
     return false;
+
+}
   A->AvailableDomains = common;
   A->Instrs.append(B->Instrs.begin(), B->Instrs.end());
 
@@ -143,8 +169,10 @@ bool ExecutionDomainFix::merge(DomainValue *A, DomainValue *B) {
 
   for (unsigned rx = 0; rx != NumRegs; ++rx) {
     assert(!LiveRegs.empty() && "no space allocated for live registers");
-    if (LiveRegs[rx] == B)
+    if (LiveRegs[rx] == B) {
       setLiveReg(rx, A);
+
+}
   }
   return true;
 }
@@ -156,8 +184,10 @@ void ExecutionDomainFix::enterBasicBlock(
 
   // Set up LiveRegs to represent registers entering MBB.
   // Set default domain values to 'no domain' (nullptr)
-  if (LiveRegs.empty())
+  if (LiveRegs.empty()) {
     LiveRegs.assign(NumRegs, nullptr);
+
+}
 
   // This is the entry block.
   if (MBB->pred_empty()) {
@@ -172,13 +202,17 @@ void ExecutionDomainFix::enterBasicBlock(
     LiveRegsDVInfo &Incoming = MBBOutRegsInfos[pred->getNumber()];
     // Incoming is null if this is a backedge from a BB
     // we haven't processed yet
-    if (Incoming.empty())
+    if (Incoming.empty()) {
       continue;
+
+}
 
     for (unsigned rx = 0; rx != NumRegs; ++rx) {
       DomainValue *pdv = resolve(Incoming[rx]);
-      if (!pdv)
+      if (!pdv) {
         continue;
+
+}
       if (!LiveRegs[rx]) {
         setLiveReg(rx, pdv);
         continue;
@@ -188,16 +222,20 @@ void ExecutionDomainFix::enterBasicBlock(
       if (LiveRegs[rx]->isCollapsed()) {
         // We are already collapsed, but predecessor is not. Force it.
         unsigned Domain = LiveRegs[rx]->getFirstDomain();
-        if (!pdv->isCollapsed() && pdv->hasDomain(Domain))
+        if (!pdv->isCollapsed() && pdv->hasDomain(Domain)) {
           collapse(pdv, Domain);
+
+}
         continue;
       }
 
       // Currently open, merge in predecessor.
-      if (!pdv->isCollapsed())
+      if (!pdv->isCollapsed()) {
         merge(LiveRegs[rx], pdv);
-      else
+      } else {
         force(rx, pdv->getFirstDomain());
+
+}
     }
   }
   LLVM_DEBUG(dbgs() << printMBBReference(*MBB)
@@ -223,10 +261,12 @@ bool ExecutionDomainFix::visitInstr(MachineInstr *MI) {
   // Update instructions with explicit execution domains.
   std::pair<uint16_t, uint16_t> DomP = TII->getExecutionDomain(*MI);
   if (DomP.first) {
-    if (DomP.second)
+    if (DomP.second) {
       visitSoftInstr(MI, DomP.second);
-    else
+    } else {
       visitHardInstr(MI, DomP.first);
+
+}
   }
 
   return !DomP.first;
@@ -239,17 +279,23 @@ void ExecutionDomainFix::processDefs(MachineInstr *MI, bool Kill) {
                 e = MI->isVariadic() ? MI->getNumOperands() : MCID.getNumDefs();
        i != e; ++i) {
     MachineOperand &MO = MI->getOperand(i);
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
-    if (MO.isUse())
+
+}
+    if (MO.isUse()) {
       continue;
+
+}
     for (int rx : regIndices(MO.getReg())) {
       // This instruction explicitly defines rx.
       LLVM_DEBUG(dbgs() << printReg(RC->getRegister(rx), TRI) << ":\t" << *MI);
 
       // Kill off domains redefined by generic instructions.
-      if (Kill)
+      if (Kill) {
         kill(rx);
+
+}
     }
   }
 }
@@ -260,8 +306,10 @@ void ExecutionDomainFix::visitHardInstr(MachineInstr *mi, unsigned domain) {
                 e = mi->getDesc().getNumOperands();
        i != e; ++i) {
     MachineOperand &mo = mi->getOperand(i);
-    if (!mo.isReg())
+    if (!mo.isReg()) {
       continue;
+
+}
     for (int rx : regIndices(mo.getReg())) {
       force(rx, domain);
     }
@@ -270,8 +318,10 @@ void ExecutionDomainFix::visitHardInstr(MachineInstr *mi, unsigned domain) {
   // Kill all defs and force them.
   for (unsigned i = 0, e = mi->getDesc().getNumDefs(); i != e; ++i) {
     MachineOperand &mo = mi->getOperand(i);
-    if (!mo.isReg())
+    if (!mo.isReg()) {
       continue;
+
+}
     for (int rx : regIndices(mo.getReg())) {
       kill(rx);
       force(rx, domain);
@@ -286,17 +336,21 @@ void ExecutionDomainFix::visitSoftInstr(MachineInstr *mi, unsigned mask) {
 
   // Scan the explicit use operands for incoming domains.
   SmallVector<int, 4> used;
-  if (!LiveRegs.empty())
+  if (!LiveRegs.empty()) {
     for (unsigned i = mi->getDesc().getNumDefs(),
                   e = mi->getDesc().getNumOperands();
          i != e; ++i) {
       MachineOperand &mo = mi->getOperand(i);
-      if (!mo.isReg())
+      if (!mo.isReg()) {
         continue;
+
+}
       for (int rx : regIndices(mo.getReg())) {
         DomainValue *dv = LiveRegs[rx];
-        if (dv == nullptr)
+        if (dv == nullptr) {
           continue;
+
+}
         // Bitmask of domains that dv and available have in common.
         unsigned common = dv->getCommonDomains(available);
         // Is it possible to use this collapsed register for free?
@@ -304,17 +358,23 @@ void ExecutionDomainFix::visitSoftInstr(MachineInstr *mi, unsigned mask) {
           // Restrict available domains to the ones in common with the operand.
           // If there are no common domains, we must pay the cross-domain
           // penalty for this operand.
-          if (common)
+          if (common) {
             available = common;
-        } else if (common)
+
+}
+        } else if (common) {
           // Open DomainValue is compatible, save it for merging.
           used.push_back(rx);
-        else
+        } else {
           // Open DomainValue is not compatible with instruction. It is useless
           // now.
           kill(rx);
+
+}
       }
     }
+
+}
 
   // If the collapsed operands force a single domain, propagate the collapse.
   if (isPowerOf2_32(available)) {
@@ -358,16 +418,22 @@ void ExecutionDomainFix::visitSoftInstr(MachineInstr *mi, unsigned mask) {
 
     DomainValue *Latest = LiveRegs[Regs.pop_back_val()];
     // Skip already merged values.
-    if (Latest == dv || Latest->Next)
+    if (Latest == dv || Latest->Next) {
       continue;
-    if (merge(dv, Latest))
+
+}
+    if (merge(dv, Latest)) {
       continue;
+
+}
 
     // If latest didn't merge, it is useless now. Kill all registers using it.
     for (int i : used) {
       assert(!LiveRegs.empty() && "no space allocated for live registers");
-      if (LiveRegs[i] == Latest)
+      if (LiveRegs[i] == Latest) {
         kill(i);
+
+}
     }
   }
 
@@ -381,8 +447,10 @@ void ExecutionDomainFix::visitSoftInstr(MachineInstr *mi, unsigned mask) {
   // Finally set all defs and non-collapsed uses to dv. We must iterate through
   // all the operators, including imp-def ones.
   for (MachineOperand &mo : mi->operands()) {
-    if (!mo.isReg())
+    if (!mo.isReg()) {
       continue;
+
+}
     for (int rx : regIndices(mo.getReg())) {
       if (!LiveRegs[rx] || (mo.isDef() && LiveRegs[rx] != dv)) {
         kill(rx);
@@ -402,8 +470,10 @@ void ExecutionDomainFix::processBasicBlock(
   for (MachineInstr &MI : *TraversedMBB.MBB) {
     if (!MI.isDebugInstr()) {
       bool Kill = false;
-      if (TraversedMBB.PrimaryPass)
+      if (TraversedMBB.PrimaryPass) {
         Kill = visitInstr(&MI);
+
+}
       processDefs(&MI, Kill);
     }
   }
@@ -411,8 +481,10 @@ void ExecutionDomainFix::processBasicBlock(
 }
 
 bool ExecutionDomainFix::runOnMachineFunction(MachineFunction &mf) {
-  if (skipFunction(mf.getFunction()))
+  if (skipFunction(mf.getFunction())) {
     return false;
+
+}
   MF = &mf;
   TII = MF->getSubtarget().getInstrInfo();
   TRI = MF->getSubtarget().getRegisterInfo();
@@ -432,8 +504,10 @@ bool ExecutionDomainFix::runOnMachineFunction(MachineFunction &mf) {
       break;
     }
   }
-  if (!anyregs)
+  if (!anyregs) {
     return false;
+
+}
 
   RDA = &getAnalysis<ReachingDefAnalysis>();
 
@@ -442,10 +516,14 @@ bool ExecutionDomainFix::runOnMachineFunction(MachineFunction &mf) {
     // Given a PhysReg, AliasMap[PhysReg] returns a list of indices into RC and
     // therefore the LiveRegs array.
     AliasMap.resize(TRI->getNumRegs());
-    for (unsigned i = 0, e = RC->getNumRegs(); i != e; ++i)
+    for (unsigned i = 0, e = RC->getNumRegs(); i != e; ++i) {
       for (MCRegAliasIterator AI(RC->getRegister(i), TRI, true); AI.isValid();
-           ++AI)
+           ++AI) {
         AliasMap[*AI].push_back(i);
+
+}
+
+}
   }
 
   // Initialize the MBBOutRegsInfos
@@ -460,8 +538,10 @@ bool ExecutionDomainFix::runOnMachineFunction(MachineFunction &mf) {
 
   for (LiveRegsDVInfo OutLiveRegs : MBBOutRegsInfos) {
     for (DomainValue *OutLiveReg : OutLiveRegs) {
-      if (OutLiveReg)
+      if (OutLiveReg) {
         release(OutLiveReg);
+
+}
     }
   }
   MBBOutRegsInfos.clear();

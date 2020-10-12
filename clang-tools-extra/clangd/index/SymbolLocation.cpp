@@ -30,8 +30,10 @@ void SymbolLocation::Position::setColumn(uint32_t Col) {
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const SymbolLocation &L) {
-  if (!L)
+  if (!L) {
     return OS << "(none)";
+
+}
   return OS << L.FileURI << "[" << L.Start.line() << ":" << L.Start.column()
             << "-" << L.End.line() << ":" << L.End.column() << ")";
 }

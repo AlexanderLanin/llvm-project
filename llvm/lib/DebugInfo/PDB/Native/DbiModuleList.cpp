@@ -29,16 +29,22 @@ DbiModuleSourceFilesIterator::DbiModuleSourceFilesIterator(
 bool DbiModuleSourceFilesIterator::
 operator==(const DbiModuleSourceFilesIterator &R) const {
   // incompatible iterators are never equal
-  if (!isCompatible(R))
+  if (!isCompatible(R)) {
     return false;
+
+}
 
   // If they're compatible, and they're both ends, then they're equal.
-  if (isEnd() && R.isEnd())
+  if (isEnd() && R.isEnd()) {
     return true;
 
+}
+
   // If one is an end and the other is not, they're not equal.
-  if (isEnd() != R.isEnd())
+  if (isEnd() != R.isEnd()) {
     return false;
+
+}
 
   // Now we know:
   // - They're compatible
@@ -61,8 +67,10 @@ operator<(const DbiModuleSourceFilesIterator &R) const {
   // It's not sufficient to compare the file indices, because default
   // constructed iterators could be equal to iterators with valid indices.  To
   // account for this, early-out if they're equal.
-  if (*this == R)
+  if (*this == R) {
     return false;
+
+}
 
   return Filei < R.Filei;
 }
@@ -73,8 +81,10 @@ operator-(const DbiModuleSourceFilesIterator &R) const {
   assert(!(*this < R));
 
   // If they're both end iterators, the distance is 0.
-  if (isEnd() && R.isEnd())
+  if (isEnd() && R.isEnd()) {
     return 0;
+
+}
 
   assert(!R.isEnd());
 
@@ -125,22 +135,30 @@ void DbiModuleSourceFilesIterator::setValue() {
   if (!ExpectedValue) {
     consumeError(ExpectedValue.takeError());
     Filei = Modules->getSourceFileCount(Modi);
-  } else
+  } else {
     ThisValue = *ExpectedValue;
+
+}
 }
 
 bool DbiModuleSourceFilesIterator::isEnd() const {
-  if (isUniversalEnd())
+  if (isUniversalEnd()) {
     return true;
+
+}
 
   assert(Modules);
   assert(Modi <= Modules->getModuleCount());
   assert(Filei <= Modules->getSourceFileCount(Modi));
 
-  if (Modi == Modules->getModuleCount())
+  if (Modi == Modules->getModuleCount()) {
     return true;
-  if (Filei == Modules->getSourceFileCount(Modi))
+
+}
+  if (Filei == Modules->getSourceFileCount(Modi)) {
     return true;
+
+}
   return false;
 }
 
@@ -149,8 +167,10 @@ bool DbiModuleSourceFilesIterator::isUniversalEnd() const { return !Modules; }
 bool DbiModuleSourceFilesIterator::isCompatible(
     const DbiModuleSourceFilesIterator &R) const {
   // Universal iterators are compatible with any other iterator.
-  if (isUniversalEnd() || R.isUniversalEnd())
+  if (isUniversalEnd() || R.isUniversalEnd()) {
     return true;
+
+}
 
   // At this point, neither iterator is a universal end iterator, although one
   // or both might be non-universal end iterators.  Regardless, the module index
@@ -161,10 +181,14 @@ bool DbiModuleSourceFilesIterator::isCompatible(
 
 Error DbiModuleList::initialize(BinaryStreamRef ModInfo,
                                 BinaryStreamRef FileInfo) {
-  if (auto EC = initializeModInfo(ModInfo))
+  if (auto EC = initializeModInfo(ModInfo)) {
     return EC;
-  if (auto EC = initializeFileInfo(FileInfo))
+
+}
+  if (auto EC = initializeFileInfo(FileInfo)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -172,13 +196,17 @@ Error DbiModuleList::initialize(BinaryStreamRef ModInfo,
 Error DbiModuleList::initializeModInfo(BinaryStreamRef ModInfo) {
   ModInfoSubstream = ModInfo;
 
-  if (ModInfo.getLength() == 0)
+  if (ModInfo.getLength() == 0) {
     return Error::success();
+
+}
 
   BinaryStreamReader Reader(ModInfo);
 
-  if (auto EC = Reader.readArray(Descriptors, ModInfo.getLength()))
+  if (auto EC = Reader.readArray(Descriptors, ModInfo.getLength())) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -186,38 +214,52 @@ Error DbiModuleList::initializeModInfo(BinaryStreamRef ModInfo) {
 Error DbiModuleList::initializeFileInfo(BinaryStreamRef FileInfo) {
   FileInfoSubstream = FileInfo;
 
-  if (FileInfo.getLength() == 0)
+  if (FileInfo.getLength() == 0) {
     return Error::success();
 
+}
+
   BinaryStreamReader FISR(FileInfo);
-  if (auto EC = FISR.readObject(FileInfoHeader))
+  if (auto EC = FISR.readObject(FileInfoHeader)) {
     return EC;
+
+}
 
   // First is an array of `NumModules` module indices.  This does not seem to be
   // used for anything meaningful, so we ignore it.
   FixedStreamArray<support::ulittle16_t> ModuleIndices;
-  if (auto EC = FISR.readArray(ModuleIndices, FileInfoHeader->NumModules))
+  if (auto EC = FISR.readArray(ModuleIndices, FileInfoHeader->NumModules)) {
     return EC;
-  if (auto EC = FISR.readArray(ModFileCountArray, FileInfoHeader->NumModules))
+
+}
+  if (auto EC = FISR.readArray(ModFileCountArray, FileInfoHeader->NumModules)) {
     return EC;
+
+}
 
   // Compute the real number of source files.  We can't trust the value in
   // `FileInfoHeader->NumSourceFiles` because it is a unit16, and the sum of all
   // source file counts might be larger than a unit16.  So we compute the real
   // count by summing up the individual counts.
   uint32_t NumSourceFiles = 0;
-  for (auto Count : ModFileCountArray)
+  for (auto Count : ModFileCountArray) {
     NumSourceFiles += Count;
+
+}
 
   // In the reference implementation, this array is where the pointer documented
   // at the definition of ModuleInfoHeader::FileNameOffs points to.  Note that
   // although the field in ModuleInfoHeader is ignored this array is not, as it
   // is the authority on where each filename begins in the names buffer.
-  if (auto EC = FISR.readArray(FileNameOffsets, NumSourceFiles))
+  if (auto EC = FISR.readArray(FileNameOffsets, NumSourceFiles)) {
     return EC;
 
-  if (auto EC = FISR.readStreamRef(NamesBuffer))
+}
+
+  if (auto EC = FISR.readStreamRef(NamesBuffer)) {
     return EC;
+
+}
 
   auto DescriptorIter = Descriptors.begin();
   uint32_t NextFileIndex = 0;
@@ -267,13 +309,17 @@ DbiModuleList::source_files(uint32_t Modi) const {
 
 Expected<StringRef> DbiModuleList::getFileName(uint32_t Index) const {
   BinaryStreamReader Names(NamesBuffer);
-  if (Index >= getSourceFileCount())
+  if (Index >= getSourceFileCount()) {
     return make_error<RawError>(raw_error_code::index_out_of_bounds);
+
+}
 
   uint32_t FileOffset = FileNameOffsets[Index];
   Names.setOffset(FileOffset);
   StringRef Name;
-  if (auto EC = Names.readCString(Name))
+  if (auto EC = Names.readCString(Name)) {
     return std::move(EC);
+
+}
   return Name;
 }

@@ -27,8 +27,10 @@ using namespace llvm;
 
 // Merge a LiveInterval's segments. Guarantee no overlaps.
 void LiveIntervalUnion::unify(LiveInterval &VirtReg, const LiveRange &Range) {
-  if (Range.empty())
+  if (Range.empty()) {
     return;
+
+}
   ++Tag;
 
   // Insert each of the virtual register's live segments into the map.
@@ -38,8 +40,10 @@ void LiveIntervalUnion::unify(LiveInterval &VirtReg, const LiveRange &Range) {
 
   while (SegPos.valid()) {
     SegPos.insert(RegPos->start, RegPos->end, &VirtReg);
-    if (++RegPos == RegEnd)
+    if (++RegPos == RegEnd) {
       return;
+
+}
     SegPos.advanceTo(RegPos->start);
   }
 
@@ -48,14 +52,18 @@ void LiveIntervalUnion::unify(LiveInterval &VirtReg, const LiveRange &Range) {
   // It is faster to insert the end first.
   --RegEnd;
   SegPos.insert(RegEnd->start, RegEnd->end, &VirtReg);
-  for (; RegPos != RegEnd; ++RegPos, ++SegPos)
+  for (; RegPos != RegEnd; ++RegPos, ++SegPos) {
     SegPos.insert(RegPos->start, RegPos->end, &VirtReg);
+
+}
 }
 
 // Remove a live virtual register's segments from this union.
 void LiveIntervalUnion::extract(LiveInterval &VirtReg, const LiveRange &Range) {
-  if (Range.empty())
+  if (Range.empty()) {
     return;
+
+}
   ++Tag;
 
   // Remove each of the virtual register's live segments from the map.
@@ -66,13 +74,17 @@ void LiveIntervalUnion::extract(LiveInterval &VirtReg, const LiveRange &Range) {
   while (true) {
     assert(SegPos.value() == &VirtReg && "Inconsistent LiveInterval");
     SegPos.erase();
-    if (!SegPos.valid())
+    if (!SegPos.valid()) {
       return;
+
+}
 
     // Skip all segments that may have been coalesced.
     RegPos = Range.advanceTo(RegPos, SegPos.start());
-    if (RegPos == RegEnd)
+    if (RegPos == RegEnd) {
       return;
+
+}
 
     SegPos.advanceTo(RegPos->start);
   }
@@ -117,8 +129,10 @@ bool LiveIntervalUnion::Query::isSeenInterference(LiveInterval *VirtReg) const {
 unsigned LiveIntervalUnion::Query::
 collectInterferingVRegs(unsigned MaxInterferingRegs) {
   // Fast path return if we already have the desired information.
-  if (SeenAllInterferences || InterferingVRegs.size() >= MaxInterferingRegs)
+  if (SeenAllInterferences || InterferingVRegs.size() >= MaxInterferingRegs) {
     return InterferingVRegs.size();
+
+}
 
   // Set up iterators on the first call.
   if (!CheckedFirstInterference) {
@@ -148,8 +162,10 @@ collectInterferingVRegs(unsigned MaxInterferingRegs) {
       if (VReg != RecentReg && !isSeenInterference(VReg)) {
         RecentReg = VReg;
         InterferingVRegs.push_back(VReg);
-        if (InterferingVRegs.size() >= MaxInterferingRegs)
+        if (InterferingVRegs.size() >= MaxInterferingRegs) {
           return InterferingVRegs.size();
+
+}
       }
       // This LiveUnion segment is no longer interesting.
       if (!(++LiveUnionI).valid()) {
@@ -164,12 +180,16 @@ collectInterferingVRegs(unsigned MaxInterferingRegs) {
 
     // Advance the iterator that ends first.
     LRI = LR->advanceTo(LRI, LiveUnionI.start());
-    if (LRI == LREnd)
+    if (LRI == LREnd) {
       break;
 
+}
+
     // Detect overlap, handle above.
-    if (LRI->start < LiveUnionI.stop())
+    if (LRI->start < LiveUnionI.stop()) {
       continue;
+
+}
 
     // Still not overlapping. Catch up LiveUnionI.
     LiveUnionI.advanceTo(LRI->start);
@@ -181,21 +201,29 @@ collectInterferingVRegs(unsigned MaxInterferingRegs) {
 void LiveIntervalUnion::Array::init(LiveIntervalUnion::Allocator &Alloc,
                                     unsigned NSize) {
   // Reuse existing allocation.
-  if (NSize == Size)
+  if (NSize == Size) {
     return;
+
+}
   clear();
   Size = NSize;
   LIUs = static_cast<LiveIntervalUnion*>(
       safe_malloc(sizeof(LiveIntervalUnion)*NSize));
-  for (unsigned i = 0; i != Size; ++i)
+  for (unsigned i = 0; i != Size; ++i) {
     new(LIUs + i) LiveIntervalUnion(Alloc);
+
+}
 }
 
 void LiveIntervalUnion::Array::clear() {
-  if (!LIUs)
+  if (!LIUs) {
     return;
-  for (unsigned i = 0; i != Size; ++i)
+
+}
+  for (unsigned i = 0; i != Size; ++i) {
     LIUs[i].~LiveIntervalUnion();
+
+}
   free(LIUs);
   Size =  0;
   LIUs = nullptr;

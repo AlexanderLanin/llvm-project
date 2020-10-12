@@ -41,13 +41,17 @@ void html::HighlightRange(Rewriter &R, SourceLocation B, SourceLocation E,
   unsigned EOffset = SM.getFileOffset(E);
 
   // Include the whole end token in the range.
-  if (IsTokenRange)
+  if (IsTokenRange) {
     EOffset += Lexer::MeasureTokenLength(E, R.getSourceMgr(), R.getLangOpts());
+
+}
 
   bool Invalid = false;
   const char *BufferStart = SM.getBufferData(FID, &Invalid).data();
-  if (Invalid)
+  if (Invalid) {
     return;
+
+}
 
   HighlightRange(R.getEditBuffer(FID), BOffset, EOffset,
                  BufferStart, StartTag, EndTag);
@@ -73,8 +77,10 @@ void html::HighlightRange(RewriteBuffer &RB, unsigned B, unsigned E,
     case '\n':
       // Okay, we found a newline in the range.  If we have an open tag, we need
       // to insert a close tag at the first non-whitespace before the newline.
-      if (HadOpenTag)
+      if (HadOpenTag) {
         RB.InsertTextBefore(LastNonWhiteSpace+1, EndTag);
+
+}
 
       // Instead of inserting an open tag immediately after the newline, we
       // wait until we see a non-whitespace character.  This prevents us from
@@ -125,8 +131,10 @@ void html::EscapeText(Rewriter &R, FileID FID,
       break;
 
     case ' ':
-      if (EscapeSpaces)
+      if (EscapeSpaces) {
         RB.ReplaceText(FilePos, 1, "&nbsp;");
+
+}
       ++ColNo;
       break;
     case '\f':
@@ -135,15 +143,19 @@ void html::EscapeText(Rewriter &R, FileID FID,
       break;
 
     case '\t': {
-      if (!ReplaceTabs)
+      if (!ReplaceTabs) {
         break;
+
+}
       unsigned NumSpaces = 8-(ColNo&7);
-      if (EscapeSpaces)
+      if (EscapeSpaces) {
         RB.ReplaceText(FilePos, 1,
                        StringRef("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
                                        "&nbsp;&nbsp;&nbsp;", 6*NumSpaces));
-      else
+      } else {
         RB.ReplaceText(FilePos, 1, StringRef("        ", NumSpaces));
+
+}
       ColNo += NumSpaces;
       break;
     }
@@ -179,21 +191,31 @@ std::string html::EscapeText(StringRef s, bool EscapeSpaces, bool ReplaceTabs) {
       os << c; break;
 
     case ' ':
-      if (EscapeSpaces) os << "&nbsp;";
-      else os << ' ';
+      if (EscapeSpaces) { os << "&nbsp;";
+      } else { os << ' ';
+
+}
       break;
 
     case '\t':
       if (ReplaceTabs) {
-        if (EscapeSpaces)
-          for (unsigned i = 0; i < 4; ++i)
+        if (EscapeSpaces) {
+          for (unsigned i = 0; i < 4; ++i) {
             os << "&nbsp;";
-        else
-          for (unsigned i = 0; i < 4; ++i)
+
+}
+        } else {
+          for (unsigned i = 0; i < 4; ++i) {
             os << " ";
+
+}
+
+}
       }
-      else
+      else {
         os << c;
+
+}
 
       break;
 
@@ -286,8 +308,10 @@ void html::AddHeaderFooterInternalBuiltinCSS(Rewriter &R, FileID FID,
   os << "<!doctype html>\n" // Use HTML 5 doctype
         "<html>\n<head>\n";
 
-  if (!title.empty())
+  if (!title.empty()) {
     os << "<title>" << html::EscapeText(title) << "</title>\n";
+
+}
 
   os << R"<<<(
 <style type="text/css">
@@ -473,9 +497,11 @@ void html::SyntaxHighlight(Rewriter &R, FileID FID, const Preprocessor &PP) {
       PP.LookUpIdentifierInfo(Tok);
 
       // If this is a pp-identifier, for a keyword, highlight it as such.
-      if (Tok.isNot(tok::identifier))
+      if (Tok.isNot(tok::identifier)) {
         HighlightRange(RB, TokOffs, TokOffs+TokLen, BufferStart,
                        "<span class='keyword'>", "</span>");
+
+}
       break;
     }
     case tok::comment:
@@ -502,8 +528,10 @@ void html::SyntaxHighlight(Rewriter &R, FileID FID, const Preprocessor &PP) {
       break;
     case tok::hash: {
       // If this is a preprocessor directive, all tokens to end of line are too.
-      if (!Tok.isAtStartOfLine())
+      if (!Tok.isAtStartOfLine()) {
         break;
+
+}
 
       // Eat all of the tokens until we get to the next one at the start of
       // line.
@@ -548,23 +576,31 @@ void html::HighlightMacros(Rewriter &R, FileID FID, const Preprocessor& PP) {
     // If this is a # at the start of a line, discard it from the token stream.
     // We don't want the re-preprocess step to see #defines, #includes or other
     // preprocessor directives.
-    if (Tok.is(tok::hash) && Tok.isAtStartOfLine())
+    if (Tok.is(tok::hash) && Tok.isAtStartOfLine()) {
       continue;
+
+}
 
     // If this is a ## token, change its kind to unknown so that repreprocessing
     // it will not produce an error.
-    if (Tok.is(tok::hashhash))
+    if (Tok.is(tok::hashhash)) {
       Tok.setKind(tok::unknown);
+
+}
 
     // If this raw token is an identifier, the raw lexer won't have looked up
     // the corresponding identifier info for it.  Do this now so that it will be
     // macro expanded when we re-preprocess it.
-    if (Tok.is(tok::raw_identifier))
+    if (Tok.is(tok::raw_identifier)) {
       PP.LookUpIdentifierInfo(Tok);
+
+}
 
     TokenStream.push_back(Tok);
 
-    if (Tok.is(tok::eof)) break;
+    if (Tok.is(tok::eof)) { break;
+
+}
   }
 
   // Temporarily change the diagnostics object so that we ignore any generated
@@ -642,8 +678,10 @@ void html::HighlightMacros(Rewriter &R, FileID FID, const Preprocessor& PP) {
       // If the tokens were already space separated, or if they must be to avoid
       // them being implicitly pasted, add a space between them.
       if (Tok.hasLeadingSpace() ||
-          ConcatInfo.AvoidConcat(PrevPrevTok, PrevTok, Tok))
+          ConcatInfo.AvoidConcat(PrevPrevTok, PrevTok, Tok)) {
         Expansion += ' ';
+
+}
 
       // Escape any special characters in the token text.
       Expansion += EscapeText(TmpPP.getSpelling(Tok));

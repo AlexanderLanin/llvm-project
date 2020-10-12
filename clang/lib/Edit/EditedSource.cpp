@@ -40,16 +40,20 @@ void EditedSource::deconstructMacroArgLoc(SourceLocation Loc,
   SourceLocation ImmediateExpansionLoc =
       SourceMgr.getImmediateExpansionRange(DefArgLoc).getBegin();
   ExpansionLoc = ImmediateExpansionLoc;
-  while (SourceMgr.isMacroBodyExpansion(ExpansionLoc))
+  while (SourceMgr.isMacroBodyExpansion(ExpansionLoc)) {
     ExpansionLoc =
         SourceMgr.getImmediateExpansionRange(ExpansionLoc).getBegin();
+
+}
   SmallString<20> Buf;
   StringRef ArgName = Lexer::getSpelling(SourceMgr.getSpellingLoc(DefArgLoc),
                                          Buf, SourceMgr, LangOpts);
   ArgUse = MacroArgUse{nullptr, SourceLocation(), SourceLocation()};
-  if (!ArgName.empty())
+  if (!ArgName.empty()) {
     ArgUse = {&IdentTable.get(ArgName), ImmediateExpansionLoc,
               SourceMgr.getSpellingLoc(DefArgLoc)};
+
+}
 }
 
 void EditedSource::startingCommit() {}
@@ -60,8 +64,10 @@ void EditedSource::finishedCommit() {
     MacroArgUse ArgUse;
     std::tie(ExpLoc, ArgUse) = ExpArg;
     auto &ArgUses = ExpansionToArgMap[ExpLoc.getRawEncoding()];
-    if (llvm::find(ArgUses, ArgUse) == ArgUses.end())
+    if (llvm::find(ArgUses, ArgUse) == ArgUses.end()) {
       ArgUses.push_back(ArgUse);
+
+}
   }
   CurrCommitMacroArgExps.clear();
 }
@@ -74,8 +80,10 @@ StringRef EditedSource::copyString(const Twine &twine) {
 bool EditedSource::canInsertInOffset(SourceLocation OrigLoc, FileOffset Offs) {
   FileEditsTy::iterator FA = getActionForOffset(Offs);
   if (FA != FileEdits.end()) {
-    if (FA->first != Offs)
+    if (FA->first != Offs) {
       return false; // position has been removed.
+
+}
   }
 
   if (SourceMgr.isMacroArgExpansion(OrigLoc)) {
@@ -111,17 +119,23 @@ bool EditedSource::canInsertInOffset(SourceLocation OrigLoc, FileOffset Offs) {
 bool EditedSource::commitInsert(SourceLocation OrigLoc,
                                 FileOffset Offs, StringRef text,
                                 bool beforePreviousInsertions) {
-  if (!canInsertInOffset(OrigLoc, Offs))
+  if (!canInsertInOffset(OrigLoc, Offs)) {
     return false;
-  if (text.empty())
+
+}
+  if (text.empty()) {
     return true;
+
+}
 
   if (SourceMgr.isMacroArgExpansion(OrigLoc)) {
     MacroArgUse ArgUse;
     SourceLocation ExpLoc;
     deconstructMacroArgLoc(OrigLoc, ExpLoc, ArgUse);
-    if (ArgUse.Identifier)
+    if (ArgUse.Identifier) {
       CurrCommitMacroArgExps.emplace_back(ExpLoc, ArgUse);
+
+}
   }
 
   FileEdit &FA = FileEdits[Offs];
@@ -130,10 +144,12 @@ bool EditedSource::commitInsert(SourceLocation OrigLoc,
     return true;
   }
 
-  if (beforePreviousInsertions)
+  if (beforePreviousInsertions) {
     FA.Text = copyString(Twine(text) + FA.Text);
-  else
+  } else {
     FA.Text = copyString(Twine(FA.Text) + text);
+
+}
 
   return true;
 }
@@ -142,23 +158,29 @@ bool EditedSource::commitInsertFromRange(SourceLocation OrigLoc,
                                    FileOffset Offs,
                                    FileOffset InsertFromRangeOffs, unsigned Len,
                                    bool beforePreviousInsertions) {
-  if (Len == 0)
+  if (Len == 0) {
     return true;
+
+}
 
   SmallString<128> StrVec;
   FileOffset BeginOffs = InsertFromRangeOffs;
   FileOffset EndOffs = BeginOffs.getWithOffset(Len);
   FileEditsTy::iterator I = FileEdits.upper_bound(BeginOffs);
-  if (I != FileEdits.begin())
+  if (I != FileEdits.begin()) {
     --I;
+
+}
 
   for (; I != FileEdits.end(); ++I) {
     FileEdit &FA = I->second;
     FileOffset B = I->first;
     FileOffset E = B.getWithOffset(FA.RemoveLen);
 
-    if (BeginOffs == B)
+    if (BeginOffs == B) {
       break;
+
+}
 
     if (BeginOffs < E) {
       if (BeginOffs > B) {
@@ -177,8 +199,10 @@ bool EditedSource::commitInsertFromRange(SourceLocation OrigLoc,
     if (BeginOffs < B) {
       bool Invalid = false;
       StringRef text = getSourceText(BeginOffs, B, Invalid);
-      if (Invalid)
+      if (Invalid) {
         return false;
+
+}
       StrVec += text;
     }
     StrVec += FA.Text;
@@ -188,8 +212,10 @@ bool EditedSource::commitInsertFromRange(SourceLocation OrigLoc,
   if (BeginOffs < EndOffs) {
     bool Invalid = false;
     StringRef text = getSourceText(BeginOffs, EndOffs, Invalid);
-    if (Invalid)
+    if (Invalid) {
       return false;
+
+}
     StrVec += text;
   }
 
@@ -198,21 +224,27 @@ bool EditedSource::commitInsertFromRange(SourceLocation OrigLoc,
 
 void EditedSource::commitRemove(SourceLocation OrigLoc,
                                 FileOffset BeginOffs, unsigned Len) {
-  if (Len == 0)
+  if (Len == 0) {
     return;
+
+}
 
   FileOffset EndOffs = BeginOffs.getWithOffset(Len);
   FileEditsTy::iterator I = FileEdits.upper_bound(BeginOffs);
-  if (I != FileEdits.begin())
+  if (I != FileEdits.begin()) {
     --I;
+
+}
 
   for (; I != FileEdits.end(); ++I) {
     FileEdit &FA = I->second;
     FileOffset B = I->first;
     FileOffset E = B.getWithOffset(FA.RemoveLen);
 
-    if (BeginOffs < E)
+    if (BeginOffs < E) {
       break;
+
+}
   }
 
   FileOffset TopBegin, TopEnd;
@@ -239,13 +271,17 @@ void EditedSource::commitRemove(SourceLocation OrigLoc,
     TopBegin = B;
     TopEnd = E;
     TopFA = &I->second;
-    if (TopEnd >= EndOffs)
+    if (TopEnd >= EndOffs) {
       return;
+
+}
     unsigned diff = EndOffs.getOffset() - TopEnd.getOffset();
     TopEnd = EndOffs;
     TopFA->RemoveLen += diff;
-    if (B == BeginOffs)
+    if (B == BeginOffs) {
       TopFA->Text = StringRef();
+
+}
     ++I;
   }
 
@@ -254,8 +290,10 @@ void EditedSource::commitRemove(SourceLocation OrigLoc,
     FileOffset B = I->first;
     FileOffset E = B.getWithOffset(FA.RemoveLen);
 
-    if (B >= TopEnd)
+    if (B >= TopEnd) {
       break;
+
+}
 
     if (E <= TopEnd) {
       FileEdits.erase(I++);
@@ -274,8 +312,10 @@ void EditedSource::commitRemove(SourceLocation OrigLoc,
 }
 
 bool EditedSource::commit(const Commit &commit) {
-  if (!commit.isCommitable())
+  if (!commit.isCommitable()) {
     return false;
+
+}
 
   struct CommitRAII {
     EditedSource &Editor;
@@ -322,12 +362,18 @@ static bool canBeJoined(char left, char right, const LangOptions &LangOpts) {
 /// the given characters.
 static bool canRemoveWhitespace(char left, char beforeWSpace, char right,
                                 const LangOptions &LangOpts) {
-  if (!canBeJoined(left, right, LangOpts))
+  if (!canBeJoined(left, right, LangOpts)) {
     return false;
-  if (isWhitespace(left) || isWhitespace(right))
+
+}
+  if (isWhitespace(left) || isWhitespace(right)) {
     return true;
-  if (canBeJoined(beforeWSpace, right, LangOpts))
+
+}
+  if (canBeJoined(beforeWSpace, right, LangOpts)) {
     return false; // the whitespace was intentional, keep it.
+
+}
   return true;
 }
 
@@ -339,28 +385,36 @@ static void adjustRemoval(const SourceManager &SM, const LangOptions &LangOpts,
                           unsigned &len, StringRef &text) {
   assert(len && text.empty());
   SourceLocation BeginTokLoc = Lexer::GetBeginningOfToken(Loc, SM, LangOpts);
-  if (BeginTokLoc != Loc)
+  if (BeginTokLoc != Loc) {
     return; // the range is not at the beginning of a token, keep the range.
+
+}
 
   bool Invalid = false;
   StringRef buffer = SM.getBufferData(offs.getFID(), &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return;
+
+}
 
   unsigned begin = offs.getOffset();
   unsigned end = begin + len;
 
   // Do not try to extend the removal if we're at the end of the buffer already.
-  if (end == buffer.size())
+  if (end == buffer.size()) {
     return;
+
+}
 
   assert(begin < buffer.size() && end < buffer.size() && "Invalid range!");
 
   // FIXME: Remove newline.
 
   if (begin == 0) {
-    if (buffer[end] == ' ')
+    if (buffer[end] == ' ') {
       ++len;
+
+}
     return;
   }
 
@@ -370,13 +424,17 @@ static void adjustRemoval(const SourceManager &SM, const LangOptions &LangOpts,
     if (canRemoveWhitespace(/*left=*/buffer[begin-1],
                             /*beforeWSpace=*/buffer[end-1],
                             /*right=*/buffer.data()[end + 1], // zero-terminated
-                            LangOpts))
+                            LangOpts)) {
       ++len;
+
+}
     return;
   }
 
-  if (!canBeJoined(buffer[begin-1], buffer[end], LangOpts))
+  if (!canBeJoined(buffer[begin-1], buffer[end], LangOpts)) {
     text = " ";
+
+}
 }
 
 static void applyRewrite(EditsReceiver &receiver,
@@ -388,8 +446,10 @@ static void applyRewrite(EditsReceiver &receiver,
   Loc = Loc.getLocWithOffset(offs.getOffset());
   assert(Loc.isFileID());
 
-  if (text.empty() && shouldAdjustRemovals)
+  if (text.empty() && shouldAdjustRemovals) {
     adjustRemoval(SM, LangOpts, Loc, offs, len, text);
+
+}
 
   CharSourceRange range = CharSourceRange::getCharRange(Loc,
                                                      Loc.getLocWithOffset(len));
@@ -400,10 +460,12 @@ static void applyRewrite(EditsReceiver &receiver,
     return;
   }
 
-  if (len)
+  if (len) {
     receiver.replace(range, text);
-  else
+  } else {
     receiver.insert(Loc, text);
+
+}
 }
 
 void EditedSource::applyRewrites(EditsReceiver &receiver,
@@ -412,8 +474,10 @@ void EditedSource::applyRewrites(EditsReceiver &receiver,
   FileOffset CurOffs, CurEnd;
   unsigned CurLen;
 
-  if (FileEdits.empty())
+  if (FileEdits.empty()) {
     return;
+
+}
 
   FileEditsTy::iterator I = FileEdits.begin();
   CurOffs = I->first;
@@ -467,14 +531,18 @@ StringRef EditedSource::getSourceText(FileOffset BeginOffs, FileOffset EndOffs,
 EditedSource::FileEditsTy::iterator
 EditedSource::getActionForOffset(FileOffset Offs) {
   FileEditsTy::iterator I = FileEdits.upper_bound(Offs);
-  if (I == FileEdits.begin())
+  if (I == FileEdits.begin()) {
     return FileEdits.end();
+
+}
   --I;
   FileEdit &FA = I->second;
   FileOffset B = I->first;
   FileOffset E = B.getWithOffset(FA.RemoveLen);
-  if (Offs >= B && Offs < E)
+  if (Offs >= B && Offs < E) {
     return I;
+
+}
 
   return FileEdits.end();
 }

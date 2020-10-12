@@ -52,10 +52,14 @@ namespace llvm {
     static std::string getEdgeAttributes(const SUnit *Node,
                                          SUnitIterator EI,
                                          const ScheduleDAG *Graph) {
-      if (EI.isArtificialDep())
+      if (EI.isArtificialDep()) {
         return "color=cyan,style=dashed";
-      if (EI.isCtrlDep())
+
+}
+      if (EI.isCtrlDep()) {
         return "color=blue,style=dashed";
+
+}
       return "";
     }
 

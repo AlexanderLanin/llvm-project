@@ -251,10 +251,12 @@ protected:
     ASSERT_TRUE(ToD1);
     EXPECT_NE(ToD0, ToD1);
 
-    if (shouldBeLinked())
+    if (shouldBeLinked()) {
       EXPECT_EQ(ToD1->getPreviousDecl(), ToD0);
-    else
+    } else {
       EXPECT_FALSE(ToD1->getPreviousDecl());
+
+}
   }
 
   void TypedTest_ImportAfterImport() {
@@ -269,10 +271,12 @@ protected:
     ASSERT_TRUE(ToD0);
     ASSERT_TRUE(ToD1);
     EXPECT_NE(ToD0, ToD1);
-    if (shouldBeLinked())
+    if (shouldBeLinked()) {
       EXPECT_EQ(ToD1->getPreviousDecl(), ToD0);
-    else
+    } else {
       EXPECT_FALSE(ToD1->getPreviousDecl());
+
+}
   }
 
   void TypedTest_ImportAfterWithMerge() {
@@ -288,10 +292,12 @@ protected:
     ASSERT_TRUE(ToF0);
     ASSERT_TRUE(ToF1);
 
-    if (shouldBeLinked())
+    if (shouldBeLinked()) {
       EXPECT_EQ(ToF0, ToF1);
-    else
+    } else {
       EXPECT_NE(ToF0, ToF1);
+
+}
 
     // We expect no (ODR) warning during the import.
     EXPECT_EQ(0u, ToTu->getASTContext().getDiagnostics().getNumWarnings());
@@ -308,10 +314,12 @@ protected:
     auto *ToF1 = Import(FromF1, Lang_CXX14);
     ASSERT_TRUE(ToF0);
     ASSERT_TRUE(ToF1);
-    if (shouldBeLinked())
+    if (shouldBeLinked()) {
       EXPECT_EQ(ToF0, ToF1);
-    else
+    } else {
       EXPECT_NE(ToF0, ToF1);
+
+}
 
     // We expect no (ODR) warning during the import.
     EXPECT_EQ(0u, ToF0->getTranslationUnitDecl()

@@ -124,11 +124,15 @@ bool VPlanSlp::areVectorizable(ArrayRef<VPValue *> Operands) const {
     for (auto &I : *Parent) {
       auto *VPI = cast<VPInstruction>(&I);
       if (VPI->getOpcode() == Instruction::Load &&
-          std::find(Operands.begin(), Operands.end(), VPI) != Operands.end())
+          std::find(Operands.begin(), Operands.end(), VPI) != Operands.end()) {
         LoadsSeen++;
 
-      if (LoadsSeen == Operands.size())
+}
+
+      if (LoadsSeen == Operands.size()) {
         break;
+
+}
       if (LoadsSeen > 0 && VPI->mayWriteToMemory()) {
         LLVM_DEBUG(
             dbgs() << "VPSLP: instruction modifying memory between loads\n");
@@ -145,7 +149,7 @@ bool VPlanSlp::areVectorizable(ArrayRef<VPValue *> Operands) const {
     }
   }
 
-  if (Opcode == Instruction::Store)
+  if (Opcode == Instruction::Store) {
     if (!all_of(Operands, [](VPValue *Op) {
           return cast<StoreInst>(cast<VPInstruction>(Op)->getUnderlyingInstr())
               ->isSimple();
@@ -153,6 +157,8 @@ bool VPlanSlp::areVectorizable(ArrayRef<VPValue *> Operands) const {
       LLVM_DEBUG(dbgs() << "VPSLP: only simple stores are supported.\n");
       return false;
     }
+
+}
 
   return true;
 }
@@ -184,8 +190,10 @@ getOperands(ArrayRef<VPValue *> Values) {
     Result.push_back(getOperands(Values, 0));
     break;
   default:
-    for (unsigned I = 0, NumOps = VPI->getNumOperands(); I < NumOps; ++I)
+    for (unsigned I = 0, NumOps = VPI->getNumOperands(); I < NumOps; ++I) {
       Result.push_back(getOperands(Values, I));
+
+}
     break;
   }
 
@@ -197,8 +205,10 @@ static Optional<unsigned> getOpcode(ArrayRef<VPValue *> Values) {
   unsigned Opcode = cast<VPInstruction>(Values[0])->getOpcode();
   if (any_of(Values, [Opcode](VPValue *V) {
         return cast<VPInstruction>(V)->getOpcode() != Opcode;
-      }))
+      })) {
     return None;
+
+}
   return {Opcode};
 }
 
@@ -206,12 +216,16 @@ static Optional<unsigned> getOpcode(ArrayRef<VPValue *> Values) {
 /// stores or if they have identical opcodes otherwise.
 static bool areConsecutiveOrMatch(VPInstruction *A, VPInstruction *B,
                                   VPInterleavedAccessInfo &IAI) {
-  if (A->getOpcode() != B->getOpcode())
+  if (A->getOpcode() != B->getOpcode()) {
     return false;
 
+}
+
   if (A->getOpcode() != Instruction::Load &&
-      A->getOpcode() != Instruction::Store)
+      A->getOpcode() != Instruction::Store) {
     return true;
+
+}
   auto *GA = IAI.getInterleaveGroup(A);
   auto *GB = IAI.getInterleaveGroup(B);
 
@@ -222,18 +236,26 @@ static bool areConsecutiveOrMatch(VPInstruction *A, VPInstruction *B,
 /// Traverses and compares operands of V1 and V2 to MaxLevel.
 static unsigned getLAScore(VPValue *V1, VPValue *V2, unsigned MaxLevel,
                            VPInterleavedAccessInfo &IAI) {
-  if (!isa<VPInstruction>(V1) || !isa<VPInstruction>(V2))
+  if (!isa<VPInstruction>(V1) || !isa<VPInstruction>(V2)) {
     return 0;
 
-  if (MaxLevel == 0)
+}
+
+  if (MaxLevel == 0) {
     return (unsigned)areConsecutiveOrMatch(cast<VPInstruction>(V1),
                                            cast<VPInstruction>(V2), IAI);
 
+}
+
   unsigned Score = 0;
-  for (unsigned I = 0, EV1 = cast<VPUser>(V1)->getNumOperands(); I < EV1; ++I)
-    for (unsigned J = 0, EV2 = cast<VPUser>(V2)->getNumOperands(); J < EV2; ++J)
+  for (unsigned I = 0, EV1 = cast<VPUser>(V1)->getNumOperands(); I < EV1; ++I) {
+    for (unsigned J = 0, EV2 = cast<VPUser>(V2)->getNumOperands(); J < EV2; ++J) {
       Score += getLAScore(cast<VPUser>(V1)->getOperand(I),
                           cast<VPUser>(V2)->getOperand(J), MaxLevel - 1, IAI);
+
+}
+
+}
   return Score;
 }
 
@@ -259,11 +281,15 @@ VPlanSlp::getBest(OpMode Mode, VPValue *Last,
   }
   LLVM_DEBUG(dbgs() << "\n");
 
-  if (BestCandidates.empty())
+  if (BestCandidates.empty()) {
     return {OpMode::Failed, nullptr};
 
-  if (BestCandidates.size() == 1)
+}
+
+  if (BestCandidates.size() == 1) {
     return {Mode, BestCandidates[0]};
+
+}
 
   VPValue *Best = nullptr;
   unsigned BestScore = 0;
@@ -274,10 +300,14 @@ VPlanSlp::getBest(OpMode Mode, VPValue *Last,
     // FIXME: Avoid visiting the same operands multiple times.
     for (auto *Candidate : BestCandidates) {
       unsigned Score = getLAScore(Last, Candidate, Depth, IAI);
-      if (PrevScore == ~0u)
+      if (PrevScore == ~0u) {
         PrevScore = Score;
-      if (PrevScore != Score)
+
+}
+      if (PrevScore != Score) {
         AllSame = false;
+
+}
       PrevScore = Score;
 
       if (Score > BestScore) {
@@ -285,8 +315,10 @@ VPlanSlp::getBest(OpMode Mode, VPValue *Last,
         Best = Candidate;
       }
     }
-    if (!AllSame)
+    if (!AllSame) {
       break;
+
+}
   }
   LLVM_DEBUG(dbgs() << "Found best "
                     << *cast<VPInstruction>(Best)->getUnderlyingInstr()
@@ -307,10 +339,12 @@ SmallVector<VPlanSlp::MultiNodeOpTy, 4> VPlanSlp::reorderMultiNodeOps() {
   for (auto &Operands : MultiNodeOps) {
     FinalOrder.push_back({Operands.first, {Operands.second[0]}});
     if (cast<VPInstruction>(Operands.second[0])->getOpcode() ==
-        Instruction::Load)
+        Instruction::Load) {
       Mode.push_back(OpMode::Load);
-    else
+    } else {
       Mode.push_back(OpMode::Opcode);
+
+}
   }
 
   for (unsigned Lane = 1, E = MultiNodeOps[0].second.size(); Lane < E; ++Lane) {
@@ -327,17 +361,21 @@ SmallVector<VPlanSlp::MultiNodeOpTy, 4> VPlanSlp::reorderMultiNodeOps() {
 
     for (unsigned Op = 0, E = MultiNodeOps.size(); Op < E; ++Op) {
       LLVM_DEBUG(dbgs() << "  Checking " << Op << "\n");
-      if (Mode[Op] == OpMode::Failed)
+      if (Mode[Op] == OpMode::Failed) {
         continue;
+
+}
 
       VPValue *Last = FinalOrder[Op].second[Lane - 1];
       std::pair<OpMode, VPValue *> Res =
           getBest(Mode[Op], Last, Candidates, IAI);
-      if (Res.second)
+      if (Res.second) {
         FinalOrder[Op].second.push_back(Res.second);
-      else
+      } else {
         // TODO: handle this case
         FinalOrder[Op].second.push_back(markFailed());
+
+}
     }
   }
 
@@ -347,11 +385,13 @@ SmallVector<VPlanSlp::MultiNodeOpTy, 4> VPlanSlp::reorderMultiNodeOps() {
 void VPlanSlp::dumpBundle(ArrayRef<VPValue *> Values) {
   dbgs() << " Ops: ";
   for (auto Op : Values) {
-    if (auto *VPInstr = cast_or_null<VPInstruction>(Op))
+    if (auto *VPInstr = cast_or_null<VPInstruction>(Op)) {
       if (auto *Instr = VPInstr->getUnderlyingInstr()) {
         dbgs() << *Instr << " | ";
         continue;
       }
+
+}
     dbgs() << " nullptr | ";
   }
   dbgs() << "\n";
@@ -385,8 +425,10 @@ VPInstruction *VPlanSlp::buildGraph(ArrayRef<VPValue *> Values) {
     dumpBundle(Values);
   });
 
-  if (!areVectorizable(Values))
+  if (!areVectorizable(Values)) {
     return markFailed();
+
+}
 
   assert(getOpcode(Values) && "Opcodes for all values must match");
   unsigned ValuesOpcode = getOpcode(Values).getValue();
@@ -425,9 +467,13 @@ VPInstruction *VPlanSlp::buildGraph(ArrayRef<VPValue *> Values) {
       for (auto &Ops : FinalOrder) {
         VPInstruction *NewOp = buildGraph(Ops.second);
         Ops.first->replaceAllUsesWith(NewOp);
-        for (unsigned i = 0; i < CombinedOperands.size(); i++)
-          if (CombinedOperands[i] == Ops.first)
+        for (unsigned i = 0; i < CombinedOperands.size(); i++) {
+          if (CombinedOperands[i] == Ops.first) {
             CombinedOperands[i] = NewOp;
+
+}
+
+}
         delete Ops.first;
         Ops.first = NewOp;
       }
@@ -435,12 +481,18 @@ VPInstruction *VPlanSlp::buildGraph(ArrayRef<VPValue *> Values) {
     }
   } else {
     LLVM_DEBUG(dbgs() << "  NonCommuntative\n");
-    if (ValuesOpcode == Instruction::Load)
-      for (VPValue *V : Values)
+    if (ValuesOpcode == Instruction::Load) {
+      for (VPValue *V : Values) {
         CombinedOperands.push_back(cast<VPInstruction>(V)->getOperand(0));
-    else
-      for (auto &Operands : getOperands(Values))
+
+}
+    } else {
+      for (auto &Operands : getOperands(Values)) {
         CombinedOperands.push_back(buildGraph(Operands));
+
+}
+
+}
   }
 
   unsigned Opcode;
@@ -456,8 +508,10 @@ VPInstruction *VPlanSlp::buildGraph(ArrayRef<VPValue *> Values) {
     break;
   }
 
-  if (!CompletelySLP)
+  if (!CompletelySLP) {
     return markFailed();
+
+}
 
   assert(CombinedOperands.size() > 0 && "Need more some operands");
   auto *VPI = new VPInstruction(Opcode, CombinedOperands);

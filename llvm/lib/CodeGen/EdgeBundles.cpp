@@ -46,12 +46,16 @@ bool EdgeBundles::runOnMachineFunction(MachineFunction &mf) {
     unsigned OutE = 2 * MBB.getNumber() + 1;
     // Join the outgoing bundle with the ingoing bundles of all successors.
     for (MachineBasicBlock::const_succ_iterator SI = MBB.succ_begin(),
-           SE = MBB.succ_end(); SI != SE; ++SI)
+           SE = MBB.succ_end(); SI != SE; ++SI) {
       EC.join(OutE, 2 * (*SI)->getNumber());
+
+}
   }
   EC.compress();
-  if (ViewEdgeBundles)
+  if (ViewEdgeBundles) {
     view();
+
+}
 
   // Compute the reverse mapping.
   Blocks.clear();
@@ -61,8 +65,10 @@ bool EdgeBundles::runOnMachineFunction(MachineFunction &mf) {
     unsigned b0 = getBundle(i, false);
     unsigned b1 = getBundle(i, true);
     Blocks[b0].push_back(i);
-    if (b1 != b0)
+    if (b1 != b0) {
       Blocks[b1].push_back(i);
+
+}
   }
 
   return false;
@@ -86,9 +92,11 @@ raw_ostream &WriteGraph<>(raw_ostream &O, const EdgeBundles &G,
       << "\t\"" << printMBBReference(MBB) << "\" -> " << G.getBundle(BB, true)
       << '\n';
     for (MachineBasicBlock::const_succ_iterator SI = MBB.succ_begin(),
-           SE = MBB.succ_end(); SI != SE; ++SI)
+           SE = MBB.succ_end(); SI != SE; ++SI) {
       O << "\t\"" << printMBBReference(MBB) << "\" -> \""
         << printMBBReference(**SI) << "\" [ color=lightgray ]\n";
+
+}
   }
   O << "}\n";
   return O;

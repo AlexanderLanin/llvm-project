@@ -128,9 +128,13 @@ void ThinLtoInstrumentationLayer::emit(MaterializationResponsibility R,
     // We may have discovered ahead of some functions already, but we still
     // instrument them all. Their notifications steer the future direction of
     // discovery.
-    for (Function &F : M.getFunctionList())
-      if (!F.isDeclaration())
+    for (Function &F : M.getFunctionList()) {
+      if (!F.isDeclaration()) {
         FunctionsToInstrument.push_back(&F);
+
+}
+
+}
 
     if (!FunctionsToInstrument.empty()) {
       IRBuilder<> B(M.getContext());
@@ -201,8 +205,10 @@ void ThinLtoInstrumentationLayer::dump(raw_ostream &OS) {
 
   unsigned NumFlagsFired = 0;
   for (unsigned i = 0; i < NumFlagsAllocated; i++) {
-    if (FlagsIncoming[i] == Fired)
+    if (FlagsIncoming[i] == Fired) {
       ++NumFlagsFired;
+
+}
   }
   OS << "Alloc:  " << format("%6.d", NumFlagsAllocated) << "\n";
   OS << "Issued: " << format("%6.d", NumFlagsUsed.load()) << "\n";

@@ -22,8 +22,10 @@ using namespace llvm::codeview;
 // just iterate up front to find out.
 static uint32_t getNumRecordsInCollection(LazyRandomTypeCollection &Types) {
   uint32_t NumTypes = 0;
-  for (Optional<TypeIndex> TI = Types.getFirst(); TI; TI = Types.getNext(*TI))
+  for (Optional<TypeIndex> TI = Types.getFirst(); TI; TI = Types.getNext(*TI)) {
     ++NumTypes;
+
+}
   return NumTypes;
 }
 
@@ -57,18 +59,24 @@ void TypeReferenceTracker::mark() {
       for (const auto &SS : SG.getDebugSubsections()) {
         // FIXME: Are there other type-referencing subsections? Inlinees?
         // Probably for IDs.
-        if (SS.kind() != DebugSubsectionKind::Symbols)
+        if (SS.kind() != DebugSubsectionKind::Symbols) {
           continue;
+
+}
 
         CVSymbolArray Symbols;
         BinaryStreamReader Reader(SS.getRecordData());
         cantFail(Reader.readArray(Symbols, Reader.getLength()));
-        for (const CVSymbol &S : Symbols)
+        for (const CVSymbol &S : Symbols) {
           addTypeRefsFromSymbol(S);
+
+}
       }
     } else if (SG.hasDebugStream()) {
-      for (const CVSymbol &S : SG.getPdbModuleStream().getSymbolArray())
+      for (const CVSymbol &S : SG.getPdbModuleStream().getSymbolArray()) {
         addTypeRefsFromSymbol(S);
+
+}
     }
   }
 
@@ -89,8 +97,10 @@ void TypeReferenceTracker::addOneTypeRef(TiRefKind RefKind, TypeIndex RefTI) {
   // If it's simple or already seen, no need to add to work list.
   BitVector &TypeOrIdReferenced =
       (Ids && RefKind == TiRefKind::IndexRef) ? IdReferenced : TypeReferenced;
-  if (RefTI.isSimple() || TypeOrIdReferenced.test(RefTI.toArrayIndex()))
+  if (RefTI.isSimple() || TypeOrIdReferenced.test(RefTI.toArrayIndex())) {
     return;
+
+}
 
   // Otherwise, mark it seen and add it to the work list.
   TypeOrIdReferenced.set(RefTI.toArrayIndex());
@@ -117,8 +127,10 @@ void TypeReferenceTracker::addReferencedTypes(ArrayRef<uint8_t> RecData,
 
     // If this is a PDB and this is an item reference, track it in the IPI
     // bitvector. Otherwise, it's a type ref, or there is only one stream.
-    for (TypeIndex RefTI : TIs)
+    for (TypeIndex RefTI : TIs) {
       addOneTypeRef(Ref.Kind, RefTI);
+
+}
   }
 }
 
@@ -130,8 +142,10 @@ void TypeReferenceTracker::markReferencedTypes() {
     Optional<CVType> Rec = (Ids && RefKind == TiRefKind::IndexRef)
                                ? Ids->tryGetType(RefTI)
                                : Types.tryGetType(RefTI);
-    if (!Rec)
+    if (!Rec) {
       continue; // FIXME: Report a reference to a non-existant type.
+
+}
 
     SmallVector<TiReference, 4> DepList;
     // FIXME: Check for failure.

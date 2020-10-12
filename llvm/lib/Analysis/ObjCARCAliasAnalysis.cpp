@@ -39,8 +39,10 @@ using namespace llvm::objcarc;
 AliasResult ObjCARCAAResult::alias(const MemoryLocation &LocA,
                                    const MemoryLocation &LocB,
                                    AAQueryInfo &AAQI) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return AAResultBase::alias(LocA, LocB, AAQI);
+
+}
 
   // First, strip off no-ops, including ObjC-specific no-ops, and try making a
   // precise alias query.
@@ -49,8 +51,10 @@ AliasResult ObjCARCAAResult::alias(const MemoryLocation &LocA,
   AliasResult Result =
       AAResultBase::alias(MemoryLocation(SA, LocA.Size, LocA.AATags),
                           MemoryLocation(SB, LocB.Size, LocB.AATags), AAQI);
-  if (Result != MayAlias)
+  if (Result != MayAlias) {
     return Result;
+
+}
 
   // If that failed, climb to the underlying object, including climbing through
   // ObjC-specific no-ops, and try making an imprecise alias query.
@@ -60,8 +64,10 @@ AliasResult ObjCARCAAResult::alias(const MemoryLocation &LocA,
     Result = AAResultBase::alias(MemoryLocation(UA), MemoryLocation(UB), AAQI);
     // We can't use MustAlias or PartialAlias results here because
     // GetUnderlyingObjCPtr may return an offsetted pointer value.
-    if (Result == NoAlias)
+    if (Result == NoAlias) {
       return NoAlias;
+
+}
   }
 
   // If that failed, fail. We don't need to chain here, since that's covered
@@ -71,22 +77,28 @@ AliasResult ObjCARCAAResult::alias(const MemoryLocation &LocA,
 
 bool ObjCARCAAResult::pointsToConstantMemory(const MemoryLocation &Loc,
                                              AAQueryInfo &AAQI, bool OrLocal) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return AAResultBase::pointsToConstantMemory(Loc, AAQI, OrLocal);
+
+}
 
   // First, strip off no-ops, including ObjC-specific no-ops, and try making
   // a precise alias query.
   const Value *S = GetRCIdentityRoot(Loc.Ptr);
   if (AAResultBase::pointsToConstantMemory(
-          MemoryLocation(S, Loc.Size, Loc.AATags), AAQI, OrLocal))
+          MemoryLocation(S, Loc.Size, Loc.AATags), AAQI, OrLocal)) {
     return true;
+
+}
 
   // If that failed, climb to the underlying object, including climbing through
   // ObjC-specific no-ops, and try making an imprecise alias query.
   const Value *U = GetUnderlyingObjCPtr(S, DL);
-  if (U != S)
+  if (U != S) {
     return AAResultBase::pointsToConstantMemory(MemoryLocation(U), AAQI,
                                                 OrLocal);
+
+}
 
   // If that failed, fail. We don't need to chain here, since that's covered
   // by the earlier precise query.
@@ -94,8 +106,10 @@ bool ObjCARCAAResult::pointsToConstantMemory(const MemoryLocation &Loc,
 }
 
 FunctionModRefBehavior ObjCARCAAResult::getModRefBehavior(const Function *F) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return AAResultBase::getModRefBehavior(F);
+
+}
 
   switch (GetFunctionClass(F)) {
   case ARCInstKind::NoopCast:
@@ -110,8 +124,10 @@ FunctionModRefBehavior ObjCARCAAResult::getModRefBehavior(const Function *F) {
 ModRefInfo ObjCARCAAResult::getModRefInfo(const CallBase *Call,
                                           const MemoryLocation &Loc,
                                           AAQueryInfo &AAQI) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return AAResultBase::getModRefInfo(Call, Loc, AAQI);
+
+}
 
   switch (GetBasicARCInstKind(Call)) {
   case ARCInstKind::Retain:

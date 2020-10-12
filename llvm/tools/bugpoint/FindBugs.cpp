@@ -25,14 +25,18 @@ BugDriver::runManyPasses(const std::vector<std::string> &AllPasses) {
   outs() << "Starting bug finding procedure...\n\n";
 
   // Creating a reference output if necessary
-  if (Error E = initializeExecutionEnvironment())
+  if (Error E = initializeExecutionEnvironment()) {
     return E;
+
+}
 
   outs() << "\n";
   if (ReferenceOutputFile.empty()) {
     outs() << "Generating reference output from raw program: \n";
-    if (Error E = createReferenceFile(*Program))
+    if (Error E = createReferenceFile(*Program)) {
       return E;
+
+}
   }
 
   std::mt19937 randomness(std::random_device{}());
@@ -84,8 +88,10 @@ BugDriver::runManyPasses(const std::vector<std::string> &AllPasses) {
     if (*Diff) {
       outs() << "\n*** diffProgram returned true!\n";
       Error E = debugMiscompilation();
-      if (!E)
+      if (!E) {
         return Error::success();
+
+}
     }
     outs() << "\n*** diff'd output matches!\n";
 

@@ -73,8 +73,10 @@ TEST(TBDv1, ReadFile) {
   auto Archs = AK_armv7 | AK_armv7s | AK_armv7k | AK_arm64;
   auto Platform = PlatformKind::iOS;
   TargetList Targets;
-  for (auto &&arch : Archs)
+  for (auto &&arch : Archs) {
     Targets.emplace_back(Target(arch, Platform));
+
+}
   EXPECT_EQ(Archs, File->getArchitectures());
   EXPECT_EQ(File->getPlatforms().size(), 1U);
   EXPECT_EQ(Platform, *File->getPlatforms().begin());
@@ -126,8 +128,10 @@ TEST(TBDv1, ReadFile2) {
   auto Archs = AK_armv7 | AK_armv7s | AK_armv7k | AK_arm64;
   auto Platform = PlatformKind::iOS;
   TargetList Targets;
-  for (auto &&arch : Archs)
+  for (auto &&arch : Archs) {
     Targets.emplace_back(Target(arch, Platform));
+
+}
   EXPECT_EQ(Archs, File->getArchitectures());
   EXPECT_EQ(File->getPlatforms().size(), 1U);
   EXPECT_EQ(Platform, *File->getPlatforms().begin());
@@ -168,8 +172,10 @@ TEST(TBDv1, WriteFile) {
 
   InterfaceFile File;
   TargetList Targets;
-  for (auto &&arch : AK_i386 | AK_x86_64)
+  for (auto &&arch : AK_i386 | AK_x86_64) {
     Targets.emplace_back(Target(arch, PlatformKind::macOS));
+
+}
   File.setPath("libfoo.dylib");
   File.setInstallName("/usr/lib/libfoo.dylib");
   File.setFileType(FileType::TBD_V1);

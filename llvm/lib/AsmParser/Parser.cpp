@@ -45,8 +45,10 @@ llvm::parseAssembly(MemoryBufferRef F, SMDiagnostic &Err, LLVMContext &Context,
       std::make_unique<Module>(F.getBufferIdentifier(), Context);
 
   if (parseAssemblyInto(F, M.get(), nullptr, Err, Slots, UpgradeDebugInfo,
-                        DataLayoutString))
+                        DataLayoutString)) {
     return nullptr;
+
+}
 
   return M;
 }
@@ -76,8 +78,10 @@ ParsedModuleAndIndex llvm::parseAssemblyWithIndex(
       std::make_unique<ModuleSummaryIndex>(/*HaveGVs=*/true);
 
   if (parseAssemblyInto(F, M.get(), Index.get(), Err, Slots, UpgradeDebugInfo,
-                        DataLayoutString))
+                        DataLayoutString)) {
     return {nullptr, nullptr};
+
+}
 
   return {std::move(M), std::move(Index)};
 }
@@ -125,8 +129,10 @@ llvm::parseSummaryIndexAssembly(MemoryBufferRef F, SMDiagnostic &Err) {
   std::unique_ptr<ModuleSummaryIndex> Index =
       std::make_unique<ModuleSummaryIndex>(/*HaveGVs=*/false);
 
-  if (parseSummaryIndexAssemblyInto(F, *Index, Err))
+  if (parseSummaryIndexAssemblyInto(F, *Index, Err)) {
     return nullptr;
+
+}
 
   return Index;
 }
@@ -151,8 +157,10 @@ Constant *llvm::parseConstantValue(StringRef Asm, SMDiagnostic &Err,
   SM.AddNewSourceBuffer(std::move(Buf), SMLoc());
   Constant *C;
   if (LLParser(Asm, SM, Err, const_cast<Module *>(&M), nullptr, M.getContext())
-          .parseStandaloneConstantValue(C, Slots))
+          .parseStandaloneConstantValue(C, Slots)) {
     return nullptr;
+
+}
   return C;
 }
 
@@ -160,8 +168,10 @@ Type *llvm::parseType(StringRef Asm, SMDiagnostic &Err, const Module &M,
                       const SlotMapping *Slots) {
   unsigned Read;
   Type *Ty = parseTypeAtBeginning(Asm, Read, Err, M, Slots);
-  if (!Ty)
+  if (!Ty) {
     return nullptr;
+
+}
   if (Read != Asm.size()) {
     SourceMgr SM;
     std::unique_ptr<MemoryBuffer> Buf = MemoryBuffer::getMemBuffer(Asm);
@@ -180,7 +190,9 @@ Type *llvm::parseTypeAtBeginning(StringRef Asm, unsigned &Read,
   SM.AddNewSourceBuffer(std::move(Buf), SMLoc());
   Type *Ty;
   if (LLParser(Asm, SM, Err, const_cast<Module *>(&M), nullptr, M.getContext())
-          .parseTypeAtBeginning(Ty, Read, Slots))
+          .parseTypeAtBeginning(Ty, Read, Slots)) {
     return nullptr;
+
+}
   return Ty;
 }

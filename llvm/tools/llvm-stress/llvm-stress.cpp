@@ -74,20 +74,24 @@ public:
 
   // Parse options as IR types. Return true on error.
   bool parse(Option &O, StringRef, StringRef Arg, Type *&Value) {
-    if      (Arg == "half")      Value = Type::getHalfTy(Context);
-    else if (Arg == "fp128")     Value = Type::getFP128Ty(Context);
-    else if (Arg == "x86_fp80")  Value = Type::getX86_FP80Ty(Context);
-    else if (Arg == "ppc_fp128") Value = Type::getPPC_FP128Ty(Context);
-    else if (Arg == "x86_mmx")   Value = Type::getX86_MMXTy(Context);
-    else if (Arg.startswith("i")) {
+    if      (Arg == "half") {      Value = Type::getHalfTy(Context);
+    } else if (Arg == "fp128") {     Value = Type::getFP128Ty(Context);
+    } else if (Arg == "x86_fp80") {  Value = Type::getX86_FP80Ty(Context);
+    } else if (Arg == "ppc_fp128") { Value = Type::getPPC_FP128Ty(Context);
+    } else if (Arg == "x86_mmx") {   Value = Type::getX86_MMXTy(Context);
+    } else if (Arg.startswith("i")) {
       unsigned N = 0;
       Arg.drop_front().getAsInteger(10, N);
-      if (N > 0)
+      if (N > 0) {
         Value = Type::getIntNTy(Context, N);
+
+}
     }
 
-    if (!Value)
+    if (!Value) {
       return O.error("Invalid IR scalar type: '" + Arg + "'!");
+
+}
     return false;
   }
 
@@ -190,8 +194,10 @@ public:
 
   /// Add N new instructions,
   virtual void ActN(unsigned n) {
-    for (unsigned i=0; i<n; ++i)
+    for (unsigned i=0; i<n; ++i) {
       Act();
+
+}
   }
 
 protected:
@@ -208,12 +214,16 @@ protected:
 
   Constant *getRandomConstant(Type *Tp) {
     if (Tp->isIntegerTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return ConstantInt::getAllOnesValue(Tp);
+
+}
       return ConstantInt::getNullValue(Tp);
     } else if (Tp->isFloatingPointTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return ConstantFP::getAllOnesValue(Tp);
+
+}
       return ConstantFP::getNullValue(Tp);
     }
     return UndefValue::get(Tp);
@@ -224,26 +234,34 @@ protected:
     unsigned index = getRandom();
     for (unsigned i=0; i<PT->size(); ++i) {
       Value *V = PT->at((index + i) % PT->size());
-      if (V->getType() == Tp)
+      if (V->getType() == Tp) {
         return V;
+
+}
     }
 
     // If the requested type was not found, generate a constant value.
     if (Tp->isIntegerTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return ConstantInt::getAllOnesValue(Tp);
+
+}
       return ConstantInt::getNullValue(Tp);
     } else if (Tp->isFloatingPointTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return ConstantFP::getAllOnesValue(Tp);
+
+}
       return ConstantFP::getNullValue(Tp);
     } else if (Tp->isVectorTy()) {
       VectorType *VTp = cast<VectorType>(Tp);
 
       std::vector<Constant*> TempValues;
       TempValues.reserve(VTp->getNumElements());
-      for (unsigned i = 0; i < VTp->getNumElements(); ++i)
+      for (unsigned i = 0; i < VTp->getNumElements(); ++i) {
         TempValues.push_back(getRandomConstant(VTp->getScalarType()));
+
+}
 
       ArrayRef<Constant*> VectorValue(TempValues);
       return ConstantVector::get(VectorValue);
@@ -257,8 +275,10 @@ protected:
     unsigned index = getRandom();
     for (unsigned i=0; i<PT->size(); ++i) {
       Value *V = PT->at((index + i) % PT->size());
-      if (V->getType()->isPointerTy())
+      if (V->getType()->isPointerTy()) {
         return V;
+
+}
     }
     return UndefValue::get(pickPointerType());
   }
@@ -268,8 +288,10 @@ protected:
     unsigned index = getRandom();
     for (unsigned i=0; i<PT->size(); ++i) {
       Value *V = PT->at((index + i) % PT->size());
-      if (V->getType()->isVectorTy())
+      if (V->getType()->isVectorTy()) {
         return V;
+
+}
     }
     return UndefValue::get(pickVectorType());
   }
@@ -298,8 +320,10 @@ protected:
       Ty = pickScalarType();
     } while (Ty->isX86_MMXTy());
 
-    if (len != (unsigned)-1)
+    if (len != (unsigned)-1) {
       width = len;
+
+}
     return VectorType::get(Ty, width);
   }
 
@@ -361,8 +385,10 @@ struct StoreModifier: public Modifier {
 
     // Do not store vectors of i1s because they are unsupported
     // by the codegen.
-    if (ValTy->isVectorTy() && ValTy->getScalarSizeInBits() == 1)
+    if (ValTy->isVectorTy() && ValTy->getScalarSizeInBits() == 1) {
       return;
+
+}
 
     new StoreInst(Val, Ptr, BB->getTerminator());
   }
@@ -378,12 +404,16 @@ struct BinModifier: public Modifier {
 
     // Don't handle pointer types.
     if (Val0->getType()->isPointerTy() ||
-        Val1->getType()->isPointerTy())
+        Val1->getType()->isPointerTy()) {
       return;
 
+}
+
     // Don't handle i1 types.
-    if (Val0->getType()->getScalarSizeInBits() == 1)
+    if (Val0->getType()->getScalarSizeInBits() == 1) {
       return;
+
+}
 
     bool isFloat = Val0->getType()->getScalarType()->isFloatingPointTy();
     Instruction* Term = BB->getTerminator();
@@ -421,11 +451,15 @@ struct ConstModifier: public Modifier {
 
     if (Ty->isVectorTy()) {
       switch (getRandom() % 2) {
-      case 0: if (Ty->isIntOrIntVectorTy())
+      case 0: if (Ty->isIntOrIntVectorTy()) {
                 return PT->push_back(ConstantVector::getAllOnesValue(Ty));
+
+}
               break;
-      case 1: if (Ty->isIntOrIntVectorTy())
+      case 1: if (Ty->isIntOrIntVectorTy()) {
                 return PT->push_back(ConstantVector::getNullValue(Ty));
+
+}
       }
     }
 
@@ -433,14 +467,18 @@ struct ConstModifier: public Modifier {
       // Generate 128 random bits, the size of the (currently)
       // largest floating-point types.
       uint64_t RandomBits[2];
-      for (unsigned i = 0; i < 2; ++i)
+      for (unsigned i = 0; i < 2; ++i) {
         RandomBits[i] = Ran->Rand64();
+
+}
 
       APInt RandomInt(Ty->getPrimitiveSizeInBits(), makeArrayRef(RandomBits));
       APFloat RandomFloat(Ty->getFltSemantics(), RandomInt);
 
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return PT->push_back(ConstantFP::getNullValue(Ty));
+
+}
       return PT->push_back(ConstantFP::get(Ty->getContext(), RandomFloat));
     }
 
@@ -504,8 +542,10 @@ struct ShuffModifier: public Modifier {
     for (unsigned i=0; i<Width; ++i) {
       Constant *CI = ConstantInt::get(I32, getRandom() % (Width*2));
       // Pick some undef values.
-      if (!(getRandom() % 5))
+      if (!(getRandom() % 5)) {
         CI = UndefValue::get(I32);
+
+}
       Idxs.push_back(CI);
     }
 
@@ -549,12 +589,16 @@ struct CastModifier: public Modifier {
     }
 
     // no need to cast.
-    if (VTy == DestTy) return;
+    if (VTy == DestTy) { return;
+
+}
 
     // Pointers:
     if (VTy->isPointerTy()) {
-      if (!DestTy->isPointerTy())
+      if (!DestTy->isPointerTy()) {
         DestTy = PointerType::get(DestTy, 0);
+
+}
       return PT->push_back(
         new BitCastInst(V, DestTy, "PC", BB->getTerminator()));
     }
@@ -575,26 +619,32 @@ struct CastModifier: public Modifier {
           new TruncInst(V, DestTy, "Tr", BB->getTerminator()));
       } else {
         assert(VSize < DestSize && "Different int types with the same size?");
-        if (getRandom() & 1)
+        if (getRandom() & 1) {
           return PT->push_back(
             new ZExtInst(V, DestTy, "ZE", BB->getTerminator()));
+
+}
         return PT->push_back(new SExtInst(V, DestTy, "Se", BB->getTerminator()));
       }
     }
 
     // Fp to int.
     if (VTy->isFPOrFPVectorTy() && DestTy->isIntOrIntVectorTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return PT->push_back(
           new FPToSIInst(V, DestTy, "FC", BB->getTerminator()));
+
+}
       return PT->push_back(new FPToUIInst(V, DestTy, "FC", BB->getTerminator()));
     }
 
     // Int to fp.
     if (VTy->isIntOrIntVectorTy() && DestTy->isFPOrFPVectorTy()) {
-      if (getRandom() & 1)
+      if (getRandom() & 1) {
         return PT->push_back(
           new SIToFPInst(V, DestTy, "FC", BB->getTerminator()));
+
+}
       return PT->push_back(new UIToFPInst(V, DestTy, "FC", BB->getTerminator()));
     }
 
@@ -645,7 +695,9 @@ struct CmpModifier: public Modifier {
     Value *Val0 = getRandomVal();
     Value *Val1 = getRandomValue(Val0->getType());
 
-    if (Val0->getType()->isPointerTy()) return;
+    if (Val0->getType()->isPointerTy()) { return;
+
+}
     bool fp = Val0->getType()->getScalarType()->isFloatingPointTy();
 
     int op;
@@ -677,8 +729,10 @@ static void FillFunction(Function *F, Random &R) {
   Modifier::PieceTable PT;
 
   // Consider arguments as legal values.
-  for (auto &arg : F->args())
+  for (auto &arg : F->args()) {
     PT.push_back(&arg);
+
+}
 
   // List of modifiers which add new random instructions.
   std::vector<std::unique_ptr<Modifier>> Modifiers;
@@ -697,9 +751,13 @@ static void FillFunction(Function *F, Random &R) {
   AllocaModifier{BB, &PT, &R}.ActN(5); // Throw in a few allocas
   ConstModifier{BB, &PT, &R}.ActN(40); // Throw in a few constants
 
-  for (unsigned i = 0; i < SizeCL / Modifiers.size(); ++i)
-    for (auto &Mod : Modifiers)
+  for (unsigned i = 0; i < SizeCL / Modifiers.size(); ++i) {
+    for (auto &Mod : Modifiers) {
       Mod->Act();
+
+}
+
+}
 
   SM->ActN(5); // Throw in a few stores.
 }
@@ -707,8 +765,10 @@ static void FillFunction(Function *F, Random &R) {
 static void IntroduceControlFlow(Function *F, Random &R) {
   std::vector<Instruction*> BoolInst;
   for (auto &Instr : F->front()) {
-    if (Instr.getType() == IntegerType::getInt1Ty(F->getContext()))
+    if (Instr.getType() == IntegerType::getInt1Ty(F->getContext())) {
       BoolInst.push_back(&Instr);
+
+}
   }
 
   std::shuffle(BoolInst.begin(), BoolInst.end(), R);
@@ -748,8 +808,10 @@ int main(int argc, char **argv) {
   // Figure out what stream we are supposed to write to...
   std::unique_ptr<ToolOutputFile> Out;
   // Default to standard output.
-  if (OutputFilename.empty())
+  if (OutputFilename.empty()) {
     OutputFilename = "-";
+
+}
 
   std::error_code EC;
   Out.reset(new ToolOutputFile(OutputFilename, EC, sys::fs::OF_None));

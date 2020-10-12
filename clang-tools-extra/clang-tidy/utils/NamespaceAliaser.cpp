@@ -31,11 +31,15 @@ NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
                               StringRef Namespace,
                               const std::vector<std::string> &Abbreviations) {
   const FunctionDecl *Function = getSurroundingFunction(Context, Statement);
-  if (!Function || !Function->hasBody())
+  if (!Function || !Function->hasBody()) {
     return None;
 
-  if (AddedAliases[Function].count(Namespace.str()) != 0)
+}
+
+  if (AddedAliases[Function].count(Namespace.str()) != 0) {
     return None;
+
+}
 
   // FIXME: Doesn't consider the order of declarations.
   // If we accidentally pick an alias defined later in the function,
@@ -62,8 +66,10 @@ NamespaceAliaser::createAlias(ASTContext &Context, const Stmt &Statement,
         !match(functionDecl(hasAncestor(decl(has(ConflictMatcher)))), *Function,
                Context)
              .empty();
-    if (HasConflictingAncestors || HasConflictingChildren)
+    if (HasConflictingAncestors || HasConflictingChildren) {
       continue;
+
+}
 
     std::string Declaration =
         (llvm::Twine("\nnamespace ") + Abbreviation + " = " + Namespace + ";")

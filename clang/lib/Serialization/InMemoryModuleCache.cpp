@@ -14,10 +14,14 @@ using namespace clang;
 InMemoryModuleCache::State
 InMemoryModuleCache::getPCMState(llvm::StringRef Filename) const {
   auto I = PCMs.find(Filename);
-  if (I == PCMs.end())
+  if (I == PCMs.end()) {
     return Unknown;
-  if (I->second.IsFinal)
+
+}
+  if (I->second.IsFinal) {
     return Final;
+
+}
   return I->second.Buffer ? Tentative : ToBuild;
 }
 
@@ -43,8 +47,10 @@ InMemoryModuleCache::addBuiltPCM(llvm::StringRef Filename,
 llvm::MemoryBuffer *
 InMemoryModuleCache::lookupPCM(llvm::StringRef Filename) const {
   auto I = PCMs.find(Filename);
-  if (I == PCMs.end())
+  if (I == PCMs.end()) {
     return nullptr;
+
+}
   return I->second.Buffer.get();
 }
 
@@ -63,8 +69,10 @@ bool InMemoryModuleCache::tryToDropPCM(llvm::StringRef Filename) {
   auto &PCM = I->second;
   assert(PCM.Buffer && "PCM to remove is scheduled to be built...");
 
-  if (PCM.IsFinal)
+  if (PCM.IsFinal) {
     return true;
+
+}
 
   PCM.Buffer.reset();
   return false;

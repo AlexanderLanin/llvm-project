@@ -43,8 +43,10 @@ void ExplicitMakePairCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *DeclRef = Result.Nodes.getNodeAs<DeclRefExpr>("declref");
 
   // Sanity check: The use might have overriden ::std::make_pair.
-  if (Call->getNumArgs() != 2)
+  if (Call->getNumArgs() != 2) {
     return;
+
+}
 
   const Expr *Arg0 = Call->getArg(0)->IgnoreParenImpCasts();
   const Expr *Arg1 = Call->getArg(1)->IgnoreParenImpCasts();

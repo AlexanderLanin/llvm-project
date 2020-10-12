@@ -66,11 +66,15 @@ void TargetFrameLowering::getCalleeSaves(const MachineFunction &MF,
   CalleeSaves.resize(TRI.getNumRegs());
 
   const MachineFrameInfo &MFI = MF.getFrameInfo();
-  if (!MFI.isCalleeSavedInfoValid())
+  if (!MFI.isCalleeSavedInfoValid()) {
     return;
 
-  for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo())
+}
+
+  for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo()) {
     CalleeSaves.set(Info.getReg());
+
+}
 }
 
 void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
@@ -87,19 +91,25 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
   // are preferred over callee saved registers.
   if (MF.getTarget().Options.EnableIPRA &&
       isSafeForNoCSROpt(MF.getFunction()) &&
-      isProfitableForNoCSROpt(MF.getFunction()))
+      isProfitableForNoCSROpt(MF.getFunction())) {
     return;
+
+}
 
   // Get the callee saved register list...
   const MCPhysReg *CSRegs = MF.getRegInfo().getCalleeSavedRegs();
 
   // Early exit if there are no callee saved registers.
-  if (!CSRegs || CSRegs[0] == 0)
+  if (!CSRegs || CSRegs[0] == 0) {
     return;
 
+}
+
   // In Naked functions we aren't going to save any registers.
-  if (MF.getFunction().hasFnAttribute(Attribute::Naked))
+  if (MF.getFunction().hasFnAttribute(Attribute::Naked)) {
     return;
+
+}
 
   // Noreturn+nounwind functions never restore CSR, so no saves are needed.
   // Purely noreturn functions may still return through throws, so those must
@@ -111,16 +121,20 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
   if (MF.getFunction().hasFnAttribute(Attribute::NoReturn) &&
         MF.getFunction().hasFnAttribute(Attribute::NoUnwind) &&
         !MF.getFunction().hasFnAttribute(Attribute::UWTable) &&
-        enableCalleeSaveSkip(MF))
+        enableCalleeSaveSkip(MF)) {
     return;
+
+}
 
   // Functions which call __builtin_unwind_init get all their registers saved.
   bool CallsUnwindInit = MF.callsUnwindInit();
   const MachineRegisterInfo &MRI = MF.getRegInfo();
   for (unsigned i = 0; CSRegs[i]; ++i) {
     unsigned Reg = CSRegs[i];
-    if (CallsUnwindInit || MRI.isPhysRegModified(Reg))
+    if (CallsUnwindInit || MRI.isPhysRegModified(Reg)) {
       SavedRegs.set(Reg);
+
+}
   }
 }
 
@@ -128,21 +142,31 @@ unsigned TargetFrameLowering::getStackAlignmentSkew(
     const MachineFunction &MF) const {
   // When HHVM function is called, the stack is skewed as the return address
   // is removed from the stack before we enter the function.
-  if (LLVM_UNLIKELY(MF.getFunction().getCallingConv() == CallingConv::HHVM))
+  if (LLVM_UNLIKELY(MF.getFunction().getCallingConv() == CallingConv::HHVM)) {
     return MF.getTarget().getAllocaPointerSize();
+
+}
 
   return 0;
 }
 
 bool TargetFrameLowering::isSafeForNoCSROpt(const Function &F) {
   if (!F.hasLocalLinkage() || F.hasAddressTaken() ||
-      !F.hasFnAttribute(Attribute::NoRecurse))
+      !F.hasFnAttribute(Attribute::NoRecurse)) {
     return false;
+
+}
   // Function should not be optimized as tail call.
-  for (const User *U : F.users())
-    if (auto CS = ImmutableCallSite(U))
-      if (CS.isTailCall())
+  for (const User *U : F.users()) {
+    if (auto CS = ImmutableCallSite(U)) {
+      if (CS.isTailCall()) {
         return false;
+
+}
+
+}
+
+}
   return true;
 }
 

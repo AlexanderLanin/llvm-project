@@ -24,8 +24,10 @@ void VarBypassDetector::Init(const Stmt *Body) {
   Scopes = {{~0U, nullptr}};
   unsigned ParentScope = 0;
   AlwaysBypassed = !BuildScopeInformation(Body, ParentScope);
-  if (!AlwaysBypassed)
+  if (!AlwaysBypassed) {
     Detect();
+
+}
 }
 
 /// Build scope information for a declaration that is part of a DeclStmt.
@@ -39,9 +41,13 @@ bool VarBypassDetector::BuildScopeInformation(const Decl *D,
     ParentScope = Scopes.size() - 1;
   }
 
-  if (const VarDecl *VD = dyn_cast<VarDecl>(D))
-    if (const Expr *Init = VD->getInit())
+  if (const VarDecl *VD = dyn_cast<VarDecl>(D)) {
+    if (const Expr *Init = VD->getInit()) {
       return BuildScopeInformation(Init, ParentScope);
+
+}
+
+}
 
   return true;
 }
@@ -68,13 +74,17 @@ bool VarBypassDetector::BuildScopeInformation(const Stmt *S,
 
   case Stmt::SwitchStmtClass:
     if (const Stmt *Init = cast<SwitchStmt>(S)->getInit()) {
-      if (!BuildScopeInformation(Init, ParentScope))
+      if (!BuildScopeInformation(Init, ParentScope)) {
         return false;
+
+}
       ++StmtsToSkip;
     }
     if (const VarDecl *Var = cast<SwitchStmt>(S)->getConditionVariable()) {
-      if (!BuildScopeInformation(Var, ParentScope))
+      if (!BuildScopeInformation(Var, ParentScope)) {
         return false;
+
+}
       ++StmtsToSkip;
     }
     LLVM_FALLTHROUGH;
@@ -85,9 +95,13 @@ bool VarBypassDetector::BuildScopeInformation(const Stmt *S,
 
   case Stmt::DeclStmtClass: {
     const DeclStmt *DS = cast<DeclStmt>(S);
-    for (auto *I : DS->decls())
-      if (!BuildScopeInformation(I, origParentScope))
+    for (auto *I : DS->decls()) {
+      if (!BuildScopeInformation(I, origParentScope)) {
         return false;
+
+}
+
+}
     return true;
   }
 
@@ -102,8 +116,10 @@ bool VarBypassDetector::BuildScopeInformation(const Stmt *S,
   }
 
   for (const Stmt *SubStmt : S->children()) {
-    if (!SubStmt)
+    if (!SubStmt) {
       continue;
+
+}
     if (StmtsToSkip) {
       --StmtsToSkip;
       continue;
@@ -114,20 +130,24 @@ bool VarBypassDetector::BuildScopeInformation(const Stmt *S,
     // order to avoid blowing out the stack.
     while (true) {
       const Stmt *Next;
-      if (const SwitchCase *SC = dyn_cast<SwitchCase>(SubStmt))
+      if (const SwitchCase *SC = dyn_cast<SwitchCase>(SubStmt)) {
         Next = SC->getSubStmt();
-      else if (const LabelStmt *LS = dyn_cast<LabelStmt>(SubStmt))
+      } else if (const LabelStmt *LS = dyn_cast<LabelStmt>(SubStmt)) {
         Next = LS->getSubStmt();
-      else
+      } else {
         break;
+
+}
 
       ToScopes[SubStmt] = ParentScope;
       SubStmt = Next;
     }
 
     // Recursively walk the AST.
-    if (!BuildScopeInformation(SubStmt, ParentScope))
+    if (!BuildScopeInformation(SubStmt, ParentScope)) {
       return false;
+
+}
   }
   return true;
 }
@@ -138,8 +158,10 @@ void VarBypassDetector::Detect() {
     const Stmt *St = S.first;
     unsigned from = S.second;
     if (const GotoStmt *GS = dyn_cast<GotoStmt>(St)) {
-      if (const LabelStmt *LS = GS->getLabel()->getStmt())
+      if (const LabelStmt *LS = GS->getLabel()->getStmt()) {
         Detect(from, ToScopes[LS]);
+
+}
     } else if (const SwitchStmt *SS = dyn_cast<SwitchStmt>(St)) {
       for (const SwitchCase *SC = SS->getSwitchCaseList(); SC;
            SC = SC->getNextSwitchCase()) {

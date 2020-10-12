@@ -57,8 +57,10 @@ int main(int argc, char *argv[]) {
   typedef remote::OrcRemoteTargetServer<FDRawChannel, HostOrcArch> JITServer;
   JITServer Server(Channel, SymbolLookup, RegisterEHFrames, DeregisterEHFrames);
 
-  while (!Server.receivedTerminate())
+  while (!Server.receivedTerminate()) {
     ExitOnErr(Server.handleOne());
+
+}
 
   close(InFD);
   close(OutFD);

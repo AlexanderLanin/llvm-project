@@ -71,8 +71,10 @@ protected:
     while (1) {
       Token tok;
       PP->Lex(tok);
-      if (tok.is(tok::eof))
+      if (tok.is(tok::eof)) {
         break;
+
+}
       toks.push_back(tok);
     }
 
@@ -96,8 +98,10 @@ protected:
         Lexer::getSourceText(CharSourceRange::getTokenRange(SourceRange(
                                     Begin.getLocation(), End.getLocation())),
                              SourceMgr, LangOpts, &Invalid);
-    if (Invalid)
+    if (Invalid) {
       return "<INVALID>";
+
+}
     return std::string(Str);
   }
 
@@ -396,10 +400,12 @@ TEST_F(LexerTest, DontOverallocateStringifyArgs) {
       ArgTokens.push_back(Eof);
       break;
     }
-    if (tok.is(tok::comma))
+    if (tok.is(tok::comma)) {
       ArgTokens.push_back(Eof);
-    else
+    } else {
       ArgTokens.push_back(tok);
+
+}
   }
 
   auto MacroArgsDeleter = [&PP](MacroArgs *M) { M->destroy(*PP); };
@@ -548,8 +554,10 @@ TEST_F(LexerTest, FindNextToken) {
   while (true) {
     auto T = Lexer::findNextToken(Loc, SourceMgr, LangOpts);
     ASSERT_TRUE(T.hasValue());
-    if (T->is(tok::eof))
+    if (T->is(tok::eof)) {
       break;
+
+}
     GeneratedByNextToken.push_back(getSourceText(*T, *T));
     Loc = T->getLocation();
   }

@@ -19,20 +19,22 @@ using namespace llvm;
 
 void MCOperand::print(raw_ostream &OS) const {
   OS << "<MCOperand ";
-  if (!isValid())
+  if (!isValid()) {
     OS << "INVALID";
-  else if (isReg())
+  } else if (isReg()) {
     OS << "Reg:" << getReg();
-  else if (isImm())
+  } else if (isImm()) {
     OS << "Imm:" << getImm();
-  else if (isFPImm())
+  } else if (isFPImm()) {
     OS << "FPImm:" << getFPImm();
-  else if (isExpr()) {
+  } else if (isExpr()) {
     OS << "Expr:(" << *getExpr() << ")";
   } else if (isInst()) {
     OS << "Inst:(" << *getInst() << ")";
-  } else
+  } else {
     OS << "UNDEFINED";
+
+}
   OS << ">";
 }
 
@@ -80,8 +82,10 @@ void MCInst::dump_pretty(raw_ostream &OS, StringRef Name,
   OS << "<MCInst #" << getOpcode();
 
   // Show the instruction opcode name if we have it.
-  if (!Name.empty())
+  if (!Name.empty()) {
     OS << ' ' << Name;
+
+}
 
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     OS << Separator;

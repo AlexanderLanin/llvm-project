@@ -125,23 +125,33 @@ static bool canGoAfterDWARF(const MCSectionMachO &MSec) {
   StringRef SegName = MSec.getSegmentName();
   StringRef SecName = MSec.getSectionName();
 
-  if (SegName == "__LD" && SecName == "__compact_unwind")
+  if (SegName == "__LD" && SecName == "__compact_unwind") {
     return true;
+
+}
 
   if (SegName == "__IMPORT") {
-    if (SecName == "__jump_table")
+    if (SecName == "__jump_table") {
       return true;
 
-    if (SecName == "__pointers")
+}
+
+    if (SecName == "__pointers") {
       return true;
+
+}
   }
 
-  if (SegName == "__TEXT" && SecName == "__eh_frame")
+  if (SegName == "__TEXT" && SecName == "__eh_frame") {
     return true;
 
+}
+
   if (SegName == "__DATA" && (SecName == "__nl_symbol_ptr" ||
-                              SecName == "__thread_ptr"))
+                              SecName == "__thread_ptr")) {
     return true;
+
+}
 
   return false;
 }
@@ -152,12 +162,14 @@ void MCMachOStreamer::ChangeSection(MCSection *Section,
   bool Created = changeSectionImpl(Section, Subsection);
   const MCSectionMachO &MSec = *cast<MCSectionMachO>(Section);
   StringRef SegName = MSec.getSegmentName();
-  if (SegName == "__DWARF")
+  if (SegName == "__DWARF") {
     CreatedADWARFSection = true;
-  else if (Created && DWARFMustBeAtTheEnd && !canGoAfterDWARF(MSec))
+  } else if (Created && DWARFMustBeAtTheEnd && !canGoAfterDWARF(MSec)) {
     assert((!CreatedADWARFSection ||
             Section == getContext().getObjectFileInfo()->getStackMapSection())
            && "Creating regular section after DWARF");
+
+}
 
   // Output a linker-local symbol so we don't need section-relative local
   // relocations. The linker hates us when we do that.
@@ -172,19 +184,27 @@ void MCMachOStreamer::ChangeSection(MCSection *Section,
 void MCMachOStreamer::emitEHSymAttributes(const MCSymbol *Symbol,
                                           MCSymbol *EHSymbol) {
   getAssembler().registerSymbol(*Symbol);
-  if (Symbol->isExternal())
+  if (Symbol->isExternal()) {
     emitSymbolAttribute(EHSymbol, MCSA_Global);
-  if (cast<MCSymbolMachO>(Symbol)->isWeakDefinition())
+
+}
+  if (cast<MCSymbolMachO>(Symbol)->isWeakDefinition()) {
     emitSymbolAttribute(EHSymbol, MCSA_WeakDefinition);
-  if (Symbol->isPrivateExtern())
+
+}
+  if (Symbol->isPrivateExtern()) {
     emitSymbolAttribute(EHSymbol, MCSA_PrivateExtern);
+
+}
 }
 
 void MCMachOStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
   // We have to create a new fragment if this is an atom defining symbol,
   // fragments cannot span atoms.
-  if (getAssembler().isSymbolLinkerVisible(*Symbol))
+  if (getAssembler().isSymbolLinkerVisible(*Symbol)) {
     insert(new MCDataFragment());
+
+}
 
   MCObjectStreamer::emitLabel(Symbol, Loc);
 
@@ -204,8 +224,10 @@ void MCMachOStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   if (Value->evaluateAsRelocatable(Res, nullptr, nullptr)) {
     if (const MCSymbolRefExpr *SymAExpr = Res.getSymA()) {
       const MCSymbol &SymA = SymAExpr->getSymbol();
-      if (!Res.getSymB() && (SymA.getName() == "" || Res.getConstant() != 0))
+      if (!Res.getSymB() && (SymA.getName() == "" || Res.getConstant() != 0)) {
         cast<MCSymbolMachO>(Symbol)->setAltEntry();
+
+}
     }
   }
   MCObjectStreamer::emitAssignment(Symbol, Value);
@@ -349,8 +371,10 @@ bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
   case MCSA_LazyReference:
     // FIXME: This requires -dynamic.
     Symbol->setNoDeadStrip();
-    if (Symbol->isUndefined())
+    if (Symbol->isUndefined()) {
       Symbol->setReferenceTypeUndefinedLazy(true);
+
+}
     break;
 
     // Since .reference sets the no dead strip bit, it is equivalent to
@@ -375,8 +399,10 @@ bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
 
   case MCSA_WeakReference:
     // FIXME: This requires -dynamic.
-    if (Symbol->isUndefined())
+    if (Symbol->isUndefined()) {
       Symbol->setWeakReference();
+
+}
     break;
 
   case MCSA_WeakDefinition:
@@ -496,8 +522,10 @@ void MCMachOStreamer::FinishImpl() {
   for (MCSection &Sec : getAssembler()) {
     const MCSymbol *CurrentAtom = nullptr;
     for (MCFragment &Frag : Sec) {
-      if (const MCSymbol *Symbol = DefiningSymbolMap.lookup(&Frag))
+      if (const MCSymbol *Symbol = DefiningSymbolMap.lookup(&Frag)) {
         CurrentAtom = Symbol;
+
+}
       Frag.setAtom(CurrentAtom);
     }
   }
@@ -516,7 +544,9 @@ MCStreamer *llvm::createMachOStreamer(MCContext &Context,
                           DWARFMustBeAtTheEnd, LabelSections);
   const Triple &Target = Context.getObjectFileInfo()->getTargetTriple();
   S->emitVersionForTarget(Target, Context.getObjectFileInfo()->getSDKVersion());
-  if (RelaxAll)
+  if (RelaxAll) {
     S->getAssembler().setRelaxAll(true);
+
+}
   return S;
 }

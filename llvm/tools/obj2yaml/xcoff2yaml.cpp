@@ -40,8 +40,10 @@ void XCOFFDumper::dumpHeader() {
   YAMLObj.Header.TimeStamp = Obj.getTimeStamp();
 
   // TODO FIXME only dump 32 bit header for now.
-  if (Obj.is64Bit())
+  if (Obj.is64Bit()) {
     report_fatal_error("64-bit XCOFF files not supported yet.");
+
+}
   YAMLObj.Header.SymbolTableOffset = Obj.getSymbolTableOffset32();
 
   YAMLObj.Header.NumberOfSymTableEntries =
@@ -68,8 +70,10 @@ std::error_code XCOFFDumper::dumpSymbols() {
 
     Expected<StringRef> SectionNameRefOrErr =
         Obj.getSymbolSectionName(SymbolEntPtr);
-    if (!SectionNameRefOrErr)
+    if (!SectionNameRefOrErr) {
       return errorToErrorCode(SectionNameRefOrErr.takeError());
+
+}
 
     Sym.SectionName = SectionNameRefOrErr.get();
 
@@ -86,8 +90,10 @@ std::error_code xcoff2yaml(raw_ostream &Out,
                            const object::XCOFFObjectFile &Obj) {
   XCOFFDumper Dumper(Obj);
 
-  if (std::error_code EC = Dumper.dump())
+  if (std::error_code EC = Dumper.dump()) {
     return EC;
+
+}
 
   yaml::Output Yout(Out);
   Yout << Dumper.getYAMLObj();

@@ -72,11 +72,15 @@ protected:
 
   // Returns true if the memory blocks overlap
   bool doesOverlap(MemoryBlock M1, MemoryBlock M2) {
-    if (M1.base() == M2.base())
+    if (M1.base() == M2.base()) {
       return true;
 
-    if (M1.base() > M2.base())
+}
+
+    if (M1.base() > M2.base()) {
       return (unsigned char *)M2.base() + M2.allocatedSize() > M1.base();
+
+}
 
     return (unsigned char *)M1.base() + M1.allocatedSize() > M2.base();
   }
@@ -155,8 +159,10 @@ TEST_P(MappedMemoryTest, MultipleAllocAndRelease) {
 TEST_P(MappedMemoryTest, BasicWrite) {
   // This test applies only to readable and writeable combinations
   if (Flags &&
-      !((Flags & Memory::MF_READ) && (Flags & Memory::MF_WRITE)))
+      !((Flags & Memory::MF_READ) && (Flags & Memory::MF_WRITE))) {
     return;
+
+}
   CHECK_UNSUPPORTED();
 
   std::error_code EC;
@@ -176,8 +182,10 @@ TEST_P(MappedMemoryTest, BasicWrite) {
 TEST_P(MappedMemoryTest, MultipleWrite) {
   // This test applies only to readable and writeable combinations
   if (Flags &&
-      !((Flags & Memory::MF_READ) && (Flags & Memory::MF_WRITE)))
+      !((Flags & Memory::MF_READ) && (Flags & Memory::MF_WRITE))) {
     return;
+
+}
   CHECK_UNSUPPORTED();
 
   std::error_code EC;
@@ -240,8 +248,10 @@ TEST_P(MappedMemoryTest, MultipleWrite) {
 TEST_P(MappedMemoryTest, EnabledWrite) {
   // MPROTECT prevents W+X, and since this test always adds W we need
   // to block any variant with X.
-  if ((Flags & Memory::MF_EXEC) && IsMPROTECT())
+  if ((Flags & Memory::MF_EXEC) && IsMPROTECT()) {
     return;
+
+}
 
   std::error_code EC;
   MemoryBlock M1 = Memory::allocateMappedMemory(2 * sizeof(int), nullptr, Flags,

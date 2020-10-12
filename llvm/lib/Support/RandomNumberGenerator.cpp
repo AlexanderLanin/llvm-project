@@ -70,12 +70,16 @@ std::error_code llvm::getRandomBytes(void *Buffer, size_t Size) {
   if (Fd != -1) {
     std::error_code Ret;
     ssize_t BytesRead = read(Fd, Buffer, Size);
-    if (BytesRead == -1)
+    if (BytesRead == -1) {
       Ret = std::error_code(errno, std::system_category());
-    else if (BytesRead != static_cast<ssize_t>(Size))
+    } else if (BytesRead != static_cast<ssize_t>(Size)) {
       Ret = std::error_code(EIO, std::system_category());
-    if (close(Fd) == -1)
+
+}
+    if (close(Fd) == -1) {
       Ret = std::error_code(errno, std::system_category());
+
+}
 
     return Ret;
   }

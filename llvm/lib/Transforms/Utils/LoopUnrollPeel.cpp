@@ -76,8 +76,10 @@ static const unsigned InfiniteIterationsToInvariance =
 // Check whether we are capable of peeling this loop.
 bool llvm::canPeel(Loop *L) {
   // Make sure the loop is in simplified form
-  if (!L->isLoopSimplifyForm())
+  if (!L->isLoopSimplifyForm()) {
     return false;
+
+}
 
   if (UnrollPeelMultiDeoptExit) {
     SmallVector<BasicBlock *, 4> Exits;
@@ -96,15 +98,19 @@ bool llvm::canPeel(Loop *L) {
   }
 
   // Only peel loops that contain a single exit
-  if (!L->getExitingBlock() || !L->getUniqueExitBlock())
+  if (!L->getExitingBlock() || !L->getUniqueExitBlock()) {
     return false;
+
+}
 
   // Don't try to peel loops where the latch is not the exiting block.
   // This can be an indication of two different things:
   // 1) The loop is not rotated.
   // 2) The loop contains irreducible control flow that involves the latch.
-  if (L->getLoopLatch() != L->getExitingBlock())
+  if (L->getLoopLatch() != L->getExitingBlock()) {
     return false;
+
+}
 
   return true;
 }
@@ -130,8 +136,10 @@ static unsigned calculateIterationsToInvariance(
   assert(BackEdge == L->getLoopLatch() && "Wrong latch?");
   // If we already know the answer, take it from the map.
   auto I = IterationsToInvariance.find(Phi);
-  if (I != IterationsToInvariance.end())
+  if (I != IterationsToInvariance.end()) {
     return I->second;
+
+}
 
   // Otherwise we need to analyze the input from the back edge.
   Value *Input = Phi->getIncomingValueForBlock(BackEdge);
@@ -140,23 +148,29 @@ static unsigned calculateIterationsToInvariance(
   IterationsToInvariance[Phi] = InfiniteIterationsToInvariance;
   unsigned ToInvariance = InfiniteIterationsToInvariance;
 
-  if (L->isLoopInvariant(Input))
+  if (L->isLoopInvariant(Input)) {
     ToInvariance = 1u;
-  else if (PHINode *IncPhi = dyn_cast<PHINode>(Input)) {
+  } else if (PHINode *IncPhi = dyn_cast<PHINode>(Input)) {
     // Only consider Phis in header block.
-    if (IncPhi->getParent() != L->getHeader())
+    if (IncPhi->getParent() != L->getHeader()) {
       return InfiniteIterationsToInvariance;
+
+}
     // If the input becomes an invariant after X iterations, then our Phi
     // becomes an invariant after X + 1 iterations.
     unsigned InputToInvariance = calculateIterationsToInvariance(
         IncPhi, L, BackEdge, IterationsToInvariance);
-    if (InputToInvariance != InfiniteIterationsToInvariance)
+    if (InputToInvariance != InfiniteIterationsToInvariance) {
       ToInvariance = InputToInvariance + 1u;
+
+}
   }
 
   // If we found that this Phi lies in an invariant chain, update the map.
-  if (ToInvariance != InfiniteIterationsToInvariance)
+  if (ToInvariance != InfiniteIterationsToInvariance) {
     IterationsToInvariance[Phi] = ToInvariance;
+
+}
   return ToInvariance;
 }
 
@@ -176,18 +190,24 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
 
   for (auto *BB : L.blocks()) {
     auto *BI = dyn_cast<BranchInst>(BB->getTerminator());
-    if (!BI || BI->isUnconditional())
+    if (!BI || BI->isUnconditional()) {
       continue;
 
+}
+
     // Ignore loop exit condition.
-    if (L.getLoopLatch() == BB)
+    if (L.getLoopLatch() == BB) {
       continue;
+
+}
 
     Value *Condition = BI->getCondition();
     Value *LeftVal, *RightVal;
     CmpInst::Predicate Pred;
-    if (!match(Condition, m_ICmp(Pred, m_Value(LeftVal), m_Value(RightVal))))
+    if (!match(Condition, m_ICmp(Pred, m_Value(LeftVal), m_Value(RightVal)))) {
       continue;
+
+}
 
     const SCEV *LeftSCEV = SE.getSCEV(LeftVal);
     const SCEV *RightSCEV = SE.getSCEV(RightVal);
@@ -196,8 +216,10 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
     // independently of the loop iteration.
     if (SE.isKnownPredicate(Pred, LeftSCEV, RightSCEV) ||
         SE.isKnownPredicate(ICmpInst::getInversePredicate(Pred), LeftSCEV,
-                            RightSCEV))
+                            RightSCEV)) {
       continue;
+
+}
 
     // Check if we have a condition with one AddRec and one non AddRec
     // expression. Normalize LeftSCEV to be the AddRec.
@@ -205,20 +227,26 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
       if (isa<SCEVAddRecExpr>(RightSCEV)) {
         std::swap(LeftSCEV, RightSCEV);
         Pred = ICmpInst::getSwappedPredicate(Pred);
-      } else
+      } else {
         continue;
+
+}
     }
 
     const SCEVAddRecExpr *LeftAR = cast<SCEVAddRecExpr>(LeftSCEV);
 
     // Avoid huge SCEV computations in the loop below, make sure we only
     // consider AddRecs of the loop we are trying to peel.
-    if (!LeftAR->isAffine() || LeftAR->getLoop() != &L)
+    if (!LeftAR->isAffine() || LeftAR->getLoop() != &L) {
       continue;
+
+}
     bool Increasing;
     if (!(ICmpInst::isEquality(Pred) && LeftAR->hasNoSelfWrap()) &&
-        !SE.isMonotonicPredicate(LeftAR, Pred, Increasing))
+        !SE.isMonotonicPredicate(LeftAR, Pred, Increasing)) {
       continue;
+
+}
     (void)Increasing;
 
     // Check if extending the current DesiredPeelCount lets us evaluate Pred
@@ -231,8 +259,10 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
     // If the original condition is not known, get the negated predicate
     // (which holds on the else branch) and check if it is known. This allows
     // us to peel of iterations that make the original condition false.
-    if (!SE.isKnownPredicate(Pred, IterVal, RightSCEV))
+    if (!SE.isKnownPredicate(Pred, IterVal, RightSCEV)) {
       Pred = ICmpInst::getInversePredicate(Pred);
+
+}
 
     const SCEV *Step = LeftAR->getStepRecurrence(SE);
     const SCEV *NextIterVal = SE.getAddExpr(IterVal, Step);
@@ -248,14 +278,18 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
     };
 
     while (CanPeelOneMoreIteration() &&
-           SE.isKnownPredicate(Pred, IterVal, RightSCEV))
+           SE.isKnownPredicate(Pred, IterVal, RightSCEV)) {
       PeelOneMoreIteration();
+
+}
 
     // With *that* peel count, does the predicate !Pred become known in the
     // first iteration of the loop body after peeling?
     if (!SE.isKnownPredicate(ICmpInst::getInversePredicate(Pred), IterVal,
-                             RightSCEV))
+                             RightSCEV)) {
       continue; // If not, give up.
+
+}
 
     // However, for equality comparisons, that isn't always sufficient to
     // eliminate the comparsion in loop body, we may need to peel one more
@@ -265,8 +299,10 @@ static unsigned countToEliminateCompares(Loop &L, unsigned MaxPeelCount,
                              RightSCEV) &&
         !SE.isKnownPredicate(Pred, IterVal, RightSCEV) &&
         SE.isKnownPredicate(Pred, NextIterVal, RightSCEV)) {
-      if (!CanPeelOneMoreIteration())
+      if (!CanPeelOneMoreIteration()) {
         continue; // Need to peel one more iteration, but can't. Give up.
+
+}
       PeelOneMoreIteration(); // Great!
     }
 
@@ -285,14 +321,18 @@ void llvm::computePeelCount(Loop *L, unsigned LoopSize,
   // TTI.getUnrollingPreferences or by the flag -unroll-peel-count.
   unsigned TargetPeelCount = UP.PeelCount;
   UP.PeelCount = 0;
-  if (!canPeel(L))
+  if (!canPeel(L)) {
     return;
+
+}
 
   // Only try to peel innermost loops by default.
   // The constraint can be relaxed by the target in TTI.getUnrollingPreferences
   // or by the flag -unroll-allow-loop-nests-peeling.
-  if (!UP.AllowLoopNestsPeeling && !L->empty())
+  if (!UP.AllowLoopNestsPeeling && !L->empty()) {
     return;
+
+}
 
   // If the user provided a peel count, use that.
   bool UserPeelCount = UnrollForcePeelCount.getNumOccurrences() > 0;
@@ -305,15 +345,21 @@ void llvm::computePeelCount(Loop *L, unsigned LoopSize,
   }
 
   // Skip peeling if it's disabled.
-  if (!UP.AllowPeeling)
+  if (!UP.AllowPeeling) {
     return;
 
+}
+
   unsigned AlreadyPeeled = 0;
-  if (auto Peeled = getOptionalIntLoopAttribute(L, PeeledCountMetaData))
+  if (auto Peeled = getOptionalIntLoopAttribute(L, PeeledCountMetaData)) {
     AlreadyPeeled = *Peeled;
+
+}
   // Stop if we already peeled off the maximum number of iterations.
-  if (AlreadyPeeled >= UnrollPeelMaxCount)
+  if (AlreadyPeeled >= UnrollPeelMaxCount) {
     return;
+
+}
 
   // Here we try to get rid of Phis which become invariants after 1, 2, ..., N
   // iterations of the loop. For this we compute the number for iterations after
@@ -335,8 +381,10 @@ void llvm::computePeelCount(Loop *L, unsigned LoopSize,
       PHINode *Phi = cast<PHINode>(&*BI);
       unsigned ToInvariance = calculateIterationsToInvariance(
           Phi, L, BackEdge, IterationsToInvariance);
-      if (ToInvariance != InfiniteIterationsToInvariance)
+      if (ToInvariance != InfiniteIterationsToInvariance) {
         DesiredPeelCount = std::max(DesiredPeelCount, ToInvariance);
+
+}
     }
 
     // Pay respect to limitations implied by loop size and the max peel count.
@@ -363,12 +411,16 @@ void llvm::computePeelCount(Loop *L, unsigned LoopSize,
 
   // Bail if we know the statically calculated trip count.
   // In this case we rather prefer partial unrolling.
-  if (TripCount)
+  if (TripCount) {
     return;
 
+}
+
   // Do not apply profile base peeling if it is disabled.
-  if (!UP.PeelProfiledIterations)
+  if (!UP.PeelProfiledIterations) {
     return;
+
+}
   // If we don't know the trip count, but have reason to believe the average
   // trip count is low, peeling should be beneficial, since we will usually
   // hit the peeled section.
@@ -376,8 +428,10 @@ void llvm::computePeelCount(Loop *L, unsigned LoopSize,
   // our estimates of the trip count are not reliable enough.
   if (L->getHeader()->getParent()->hasProfileData()) {
     Optional<unsigned> PeelCount = getLoopEstimatedTripCount(L);
-    if (!PeelCount)
+    if (!PeelCount) {
       return;
+
+}
 
     LLVM_DEBUG(dbgs() << "Profile-based estimated trip count is " << *PeelCount
                       << "\n");
@@ -425,8 +479,10 @@ static void updateBranchWeights(BasicBlock *Header, BranchInst *LatchBR,
                                 uint64_t &FallThroughWeight) {
   // FallThroughWeight is 0 means that there is no branch weights on original
   // latch block or estimated trip count is zero.
-  if (!FallThroughWeight)
+  if (!FallThroughWeight) {
     return;
+
+}
 
   unsigned HeaderIdx = (LatchBR->getSuccessor(0) == Header ? 0 : 1);
   MDBuilder MDB(LatchBR->getContext());
@@ -448,8 +504,10 @@ static void initBranchWeights(BasicBlock *Header, BranchInst *LatchBR,
                               uint64_t &ExitWeight,
                               uint64_t &FallThroughWeight) {
   uint64_t TrueWeight, FalseWeight;
-  if (!LatchBR->extractProfMetadata(TrueWeight, FalseWeight))
+  if (!LatchBR->extractProfMetadata(TrueWeight, FalseWeight)) {
     return;
+
+}
   unsigned HeaderIdx = LatchBR->getSuccessor(0) == Header ? 0 : 1;
   ExitWeight = HeaderIdx ? TrueWeight : FalseWeight;
   FallThroughWeight = HeaderIdx ? FalseWeight : TrueWeight;
@@ -466,8 +524,10 @@ static void fixupBranchWeights(BasicBlock *Header, BranchInst *LatchBR,
                                uint64_t FallThroughWeight) {
   // FallThroughWeight is 0 means that there is no branch weights on original
   // latch block or estimated trip count is zero.
-  if (!FallThroughWeight)
+  if (!FallThroughWeight) {
     return;
+
+}
 
   // Sets the branch weights on the loop exit.
   MDBuilder MDB(LatchBR->getContext());
@@ -512,16 +572,18 @@ static void cloneLoopBlocks(
     // If an original block is an immediate child of the loop L, its copy
     // is a child of a ParentLoop after peeling. If a block is a child of
     // a nested loop, it is handled in the cloneLoop() call below.
-    if (ParentLoop && LI->getLoopFor(*BB) == L)
+    if (ParentLoop && LI->getLoopFor(*BB) == L) {
       ParentLoop->addBasicBlockToLoop(NewBB, *LI);
+
+}
 
     VMap[*BB] = NewBB;
 
     // If dominator tree is available, insert nodes to represent cloned blocks.
     if (DT) {
-      if (Header == *BB)
+      if (Header == *BB) {
         DT->addNewBlock(NewBB, InsertTop);
-      else {
+      } else {
         DomTreeNode *IDom = DT->getNode(*BB)->getIDom();
         // VMap must contain entry for IDom, as the iteration order is RPO.
         DT->addNewBlock(NewBB, cast<BasicBlock>(VMap[IDom->getBlock()]));
@@ -548,13 +610,17 @@ static void cloneLoopBlocks(
   // iteration (for every other iteration)
   BasicBlock *NewLatch = cast<BasicBlock>(VMap[Latch]);
   BranchInst *LatchBR = cast<BranchInst>(NewLatch->getTerminator());
-  for (unsigned idx = 0, e = LatchBR->getNumSuccessors(); idx < e; ++idx)
+  for (unsigned idx = 0, e = LatchBR->getNumSuccessors(); idx < e; ++idx) {
     if (LatchBR->getSuccessor(idx) == Header) {
       LatchBR->setSuccessor(idx, InsertBot);
       break;
     }
-  if (DT)
+
+}
+  if (DT) {
     DT->changeImmediateDominator(InsertBot, NewLatch);
+
+}
 
   // The new copy of the loop body starts with a bunch of PHI nodes
   // that pick an incoming value from either the preheader, or the previous
@@ -571,10 +637,12 @@ static void cloneLoopBlocks(
     } else {
       Value *LatchVal = NewPHI->getIncomingValueForBlock(Latch);
       Instruction *LatchInst = dyn_cast<Instruction>(LatchVal);
-      if (LatchInst && L->contains(LatchInst))
+      if (LatchInst && L->contains(LatchInst)) {
         VMap[&*I] = LVMap[LatchInst];
-      else
+      } else {
         VMap[&*I] = LatchVal;
+
+}
     }
     cast<BasicBlock>(VMap[Header])->getInstList().erase(NewPHI);
   }
@@ -583,19 +651,25 @@ static void cloneLoopBlocks(
   // we've just created. Note that this must happen *after* the incoming
   // values are adjusted, since the value going out of the latch may also be
   // a value coming into the header.
-  for (auto Edge : ExitEdges)
+  for (auto Edge : ExitEdges) {
     for (PHINode &PHI : Edge.second->phis()) {
       Value *LatchVal = PHI.getIncomingValueForBlock(Edge.first);
       Instruction *LatchInst = dyn_cast<Instruction>(LatchVal);
-      if (LatchInst && L->contains(LatchInst))
+      if (LatchInst && L->contains(LatchInst)) {
         LatchVal = VMap[LatchVal];
+
+}
       PHI.addIncoming(LatchVal, cast<BasicBlock>(VMap[Edge.first]));
     }
 
+}
+
   // LastValueMap is updated with the values for the current loop
   // which are used the next time this function is called.
-  for (auto KV : VMap)
+  for (auto KV : VMap) {
     LVMap[KV.first] = KV.second;
+
+}
 }
 
 /// Peel off the first \p PeelCount iterations of loop \p L.
@@ -644,8 +718,10 @@ bool llvm::peelLoop(Loop *L, unsigned PeelCount, LoopInfo *LI,
     // Latch to update idom of Exit later.
     assert(L->hasDedicatedExits() && "No dedicated exits?");
     for (auto Edge : ExitEdges) {
-      if (ExitIDom.count(Edge.second))
+      if (ExitIDom.count(Edge.second)) {
         continue;
+
+}
       BasicBlock *BB = DT->findNearestCommonDominator(
           DT->getNode(Edge.second)->getIDom()->getBlock(), Latch);
       assert(L->contains(BB) && "IDom is not in a loop");
@@ -735,10 +811,14 @@ bool llvm::peelLoop(Loop *L, unsigned PeelCount, LoopInfo *LI,
       // Latches of the cloned loops dominate over the loop exit, so idom of the
       // latter is the first cloned loop body, as original PreHeader dominates
       // the original loop body.
-      if (Iter == 0)
-        for (auto Exit : ExitIDom)
+      if (Iter == 0) {
+        for (auto Exit : ExitIDom) {
           DT->changeImmediateDominator(Exit.first,
                                        cast<BasicBlock>(LVMap[Exit.second]));
+
+}
+
+}
 #ifdef EXPENSIVE_CHECKS
       assert(DT->verify(DominatorTree::VerificationLevel::Fast));
 #endif
@@ -765,8 +845,10 @@ bool llvm::peelLoop(Loop *L, unsigned PeelCount, LoopInfo *LI,
     PHINode *PHI = cast<PHINode>(I);
     Value *NewVal = PHI->getIncomingValueForBlock(Latch);
     Instruction *LatchInst = dyn_cast<Instruction>(NewVal);
-    if (LatchInst && L->contains(LatchInst))
+    if (LatchInst && L->contains(LatchInst)) {
       NewVal = LVMap[LatchInst];
+
+}
 
     PHI->setIncomingValueForBlock(NewPreHeader, NewVal);
   }
@@ -775,12 +857,16 @@ bool llvm::peelLoop(Loop *L, unsigned PeelCount, LoopInfo *LI,
 
   // Update Metadata for count of peeled off iterations.
   unsigned AlreadyPeeled = 0;
-  if (auto Peeled = getOptionalIntLoopAttribute(L, PeeledCountMetaData))
+  if (auto Peeled = getOptionalIntLoopAttribute(L, PeeledCountMetaData)) {
     AlreadyPeeled = *Peeled;
+
+}
   addStringMetadataToLoop(L, PeeledCountMetaData, AlreadyPeeled + PeelCount);
 
-  if (Loop *ParentLoop = L->getParentLoop())
+  if (Loop *ParentLoop = L->getParentLoop()) {
     L = ParentLoop;
+
+}
 
   // We modified the loop, update SE.
   SE->forgetTopmostLoop(L);

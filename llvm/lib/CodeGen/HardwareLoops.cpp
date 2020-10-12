@@ -99,8 +99,10 @@ createHWLoopAnalysis(StringRef RemarkName, Loop *L, Instruction *I) {
     CodeRegion = I->getParent();
     // If there is no debug location attached to the instruction, revert back to
     // using the loop's.
-    if (I->getDebugLoc())
+    if (I->getDebugLoc()) {
       DL = I->getDebugLoc();
+
+}
   }
 
   OptimizationRemarkAnalysis R(DEBUG_TYPE, RemarkName, DL, CodeRegion);
@@ -215,8 +217,10 @@ namespace {
 char HardwareLoops::ID = 0;
 
 bool HardwareLoops::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "HWLoops: Running on " << F.getName() << "\n");
 
@@ -234,8 +238,10 @@ bool HardwareLoops::runOnFunction(Function &F) {
 
   for (LoopInfo::iterator I = LI->begin(), E = LI->end(); I != E; ++I) {
     Loop *L = *I;
-    if (!L->getParentLoop())
+    if (!L->getParentLoop()) {
       TryConvertLoop(L);
+
+}
   }
 
   return MadeChange;
@@ -268,13 +274,17 @@ bool HardwareLoops::TryConvertLoop(Loop *L) {
   }
 
   // Allow overriding of the counter width and loop decrement value.
-  if (CounterBitWidth.getNumOccurrences())
+  if (CounterBitWidth.getNumOccurrences()) {
     HWLoopInfo.CountType =
       IntegerType::get(M->getContext(), CounterBitWidth);
 
-  if (LoopDecrement.getNumOccurrences())
+}
+
+  if (LoopDecrement.getNumOccurrences()) {
     HWLoopInfo.LoopDecrement =
       ConstantInt::get(HWLoopInfo.CountType, LoopDecrement);
+
+}
 
   MadeChange |= TryConvertLoop(HWLoopInfo);
   return MadeChange && (!HWLoopInfo.IsNestingLegal && !ForceNestedLoop);
@@ -301,10 +311,14 @@ bool HardwareLoops::TryConvertLoop(HardwareLoopInfo &HWLoopInfo) {
   BasicBlock *Preheader = L->getLoopPreheader();
 
   // If we don't have a preheader, then insert one.
-  if (!Preheader)
+  if (!Preheader) {
     Preheader = InsertPreheaderForLoop(L, DT, LI, nullptr, PreserveLCSSA);
-  if (!Preheader)
+
+}
+  if (!Preheader) {
     return false;
+
+}
 
   HardwareLoop HWLoop(HWLoopInfo, *SE, *DL, ORE);
   HWLoop.Create();
@@ -329,47 +343,65 @@ void HardwareLoop::Create() {
     Value *EltsRem = InsertPHICounter(LoopCountInit, LoopDec);
     LoopDec->setOperand(0, EltsRem);
     UpdateBranch(LoopDec);
-  } else
+  } else {
     InsertLoopDec();
+
+}
 
   // Run through the basic blocks of the loop and see if any of them have dead
   // PHIs that can be removed.
-  for (auto I : L->blocks())
+  for (auto I : L->blocks()) {
     DeleteDeadPHIs(I);
+
+}
 }
 
 static bool CanGenerateTest(Loop *L, Value *Count) {
   BasicBlock *Preheader = L->getLoopPreheader();
-  if (!Preheader->getSinglePredecessor())
+  if (!Preheader->getSinglePredecessor()) {
     return false;
+
+}
 
   BasicBlock *Pred = Preheader->getSinglePredecessor();
-  if (!isa<BranchInst>(Pred->getTerminator()))
+  if (!isa<BranchInst>(Pred->getTerminator())) {
     return false;
 
+}
+
   auto *BI = cast<BranchInst>(Pred->getTerminator());
-  if (BI->isUnconditional() || !isa<ICmpInst>(BI->getCondition()))
+  if (BI->isUnconditional() || !isa<ICmpInst>(BI->getCondition())) {
     return false;
+
+}
 
   // Check that the icmp is checking for equality of Count and zero and that
   // a non-zero value results in entering the loop.
   auto ICmp = cast<ICmpInst>(BI->getCondition());
   LLVM_DEBUG(dbgs() << " - Found condition: " << *ICmp << "\n");
-  if (!ICmp->isEquality())
+  if (!ICmp->isEquality()) {
     return false;
 
+}
+
   auto IsCompareZero = [](ICmpInst *ICmp, Value *Count, unsigned OpIdx) {
-    if (auto *Const = dyn_cast<ConstantInt>(ICmp->getOperand(OpIdx)))
+    if (auto *Const = dyn_cast<ConstantInt>(ICmp->getOperand(OpIdx))) {
       return Const->isZero() && ICmp->getOperand(OpIdx ^ 1) == Count;
+
+}
     return false;
   };
 
-  if (!IsCompareZero(ICmp, Count, 0) && !IsCompareZero(ICmp, Count, 1))
+  if (!IsCompareZero(ICmp, Count, 0) && !IsCompareZero(ICmp, Count, 1)) {
     return false;
 
+}
+
   unsigned SuccIdx = ICmp->getPredicate() == ICmpInst::ICMP_NE ? 0 : 1;
-  if (BI->getSuccessor(SuccIdx) != Preheader)
+  if (BI->getSuccessor(SuccIdx) != Preheader) {
     return false;
+
+}
 
   return true;
 }
@@ -381,8 +413,10 @@ Value *HardwareLoop::InitLoopCount() {
 
   SCEVExpander SCEVE(SE, DL, "loopcnt");
   if (!ExitCount->getType()->isPointerTy() &&
-      ExitCount->getType() != CountType)
+      ExitCount->getType() != CountType) {
     ExitCount = SE.getZeroExtendExpr(ExitCount, CountType);
+
+}
 
   ExitCount = SE.getAddExpr(ExitCount, SE.getOne(CountType));
 
@@ -394,13 +428,17 @@ Value *HardwareLoop::InitLoopCount() {
                                   SE.getZero(ExitCount->getType()))) {
     LLVM_DEBUG(dbgs() << " - Attempting to use test.set counter.\n");
     UseLoopGuard |= ForceGuardLoopEntry;
-  } else
+  } else {
     UseLoopGuard = false;
+
+}
 
   BasicBlock *BB = L->getLoopPreheader();
   if (UseLoopGuard && BB->getSinglePredecessor() &&
-      cast<BranchInst>(BB->getTerminator())->isUnconditional())
+      cast<BranchInst>(BB->getTerminator())->isUnconditional()) {
     BB = BB->getSinglePredecessor();
+
+}
 
   if (!isSafeToExpandAt(ExitCount, BB->getTerminator(), SE)) {
     LLVM_DEBUG(dbgs() << "- Bailing, unsafe to expand ExitCount "
@@ -442,8 +480,10 @@ void HardwareLoop::InsertIterationSetup(Value *LoopCountInit) {
            "Expected conditional branch");
     auto *LoopGuard = cast<BranchInst>(BeginBB->getTerminator());
     LoopGuard->setCondition(SetCount);
-    if (LoopGuard->getSuccessor(0) != L->getLoopPreheader())
+    if (LoopGuard->getSuccessor(0) != L->getLoopPreheader()) {
       LoopGuard->swapSuccessors();
+
+}
   }
   LLVM_DEBUG(dbgs() << "HWLoops: Inserted loop counter: "
              << *SetCount << "\n");
@@ -461,8 +501,10 @@ void HardwareLoop::InsertLoopDec() {
   ExitBranch->setCondition(NewCond);
 
   // The false branch must exit the loop.
-  if (!L->contains(ExitBranch->getSuccessor(0)))
+  if (!L->contains(ExitBranch->getSuccessor(0))) {
     ExitBranch->swapSuccessors();
+
+}
 
   // The old condition may be dead now, and may have even created a dead PHI
   // (the original induction variable).
@@ -506,8 +548,10 @@ void HardwareLoop::UpdateBranch(Value *EltsRem) {
   ExitBranch->setCondition(NewCond);
 
   // The false branch must exit the loop.
-  if (!L->contains(ExitBranch->getSuccessor(0)))
+  if (!L->contains(ExitBranch->getSuccessor(0))) {
     ExitBranch->swapSuccessors();
+
+}
 
   // The old condition may be dead now, and may have even created a dead PHI
   // (the original induction variable).

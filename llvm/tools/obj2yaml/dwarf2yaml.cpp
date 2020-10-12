@@ -19,8 +19,10 @@ using namespace llvm;
 void dumpInitialLength(DataExtractor &Data, uint64_t &Offset,
                        DWARFYAML::InitialLength &InitialLength) {
   InitialLength.TotalLength = Data.getU32(&Offset);
-  if (InitialLength.isDWARF64())
+  if (InitialLength.isDWARF64()) {
     InitialLength.TotalLength64 = Data.getU64(&Offset);
+
+}
 }
 
 void dumpDebugAbbrev(DWARFContext &DCtx, DWARFYAML::Data &Y) {
@@ -37,8 +39,10 @@ void dumpDebugAbbrev(DWARFContext &DCtx, DWARFYAML::Data &Y) {
           DWARFYAML::AttributeAbbrev AttAbrv;
           AttAbrv.Attribute = Attribute.Attr;
           AttAbrv.Form = Attribute.Form;
-          if (AttAbrv.Form == dwarf::DW_FORM_implicit_const)
+          if (AttAbrv.Form == dwarf::DW_FORM_implicit_const) {
             AttAbrv.Value = Attribute.getImplicitConstValue();
+
+}
           Abbrv.Attributes.push_back(AttAbrv);
         }
         Y.AbbrevDecls.push_back(Abbrv);
@@ -63,8 +67,10 @@ Error dumpDebugARanges(DWARFContext &DCtx, DWARFYAML::Data &Y) {
   DWARFDebugArangeSet Set;
 
   while (ArangesData.isValidOffset(Offset)) {
-    if (Error E = Set.extract(ArangesData, &Offset))
+    if (Error E = Set.extract(ArangesData, &Offset)) {
       return E;
+
+}
     DWARFYAML::ARange Range;
     Range.Length.setLength(Set.getHeader().Length);
     Range.Version = Set.getHeader().Version;
@@ -94,8 +100,10 @@ void dumpPubSection(DWARFContext &DCtx, DWARFYAML::PubSection &Y,
   while (Offset < Y.Length.getLength()) {
     DWARFYAML::PubEntry NewEntry;
     NewEntry.DieOffset = PubSectionData.getU32(&Offset);
-    if (Y.IsGNUStyle)
+    if (Y.IsGNUStyle) {
       NewEntry.Descriptor = PubSectionData.getU8(&Offset);
+
+}
     NewEntry.Name = PubSectionData.getCStr(&Offset);
     Y.Entries.push_back(NewEntry);
   }
@@ -121,8 +129,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
     DWARFYAML::Unit NewUnit;
     NewUnit.Length.setLength(CU->getLength());
     NewUnit.Version = CU->getVersion();
-    if(NewUnit.Version >= 5)
+    if(NewUnit.Version >= 5) {
       NewUnit.Type = (dwarf::UnitType)CU->getUnitType();
+
+}
     NewUnit.AbbrOffset = CU->getAbbreviations()->getOffset();
     NewUnit.AddrSize = CU->getAddressByteSize();
     for (auto DIE : CU->dies()) {
@@ -131,8 +141,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
       uint64_t offset = DIE.getOffset();
 
       assert(EntryData.isValidOffset(offset) && "Invalid DIE Offset");
-      if (!EntryData.isValidOffset(offset))
+      if (!EntryData.isValidOffset(offset)) {
         continue;
+
+}
 
       NewEntry.AbbrCode = EntryData.getULEB128(&offset);
 
@@ -143,8 +155,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
           NewValue.Value = 0xDEADBEEFDEADBEEF;
           DWARFDie DIEWrapper(CU.get(), &DIE);
           auto FormValue = DIEWrapper.find(AttrSpec.Attr);
-          if (!FormValue)
+          if (!FormValue) {
             return;
+
+}
           auto Form = FormValue.getValue().getForm();
           bool indirect = false;
           do {
@@ -152,8 +166,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
             switch (Form) {
             case dwarf::DW_FORM_addr:
             case dwarf::DW_FORM_GNU_addr_index:
-              if (auto Val = FormValue.getValue().getAsAddress())
+              if (auto Val = FormValue.getValue().getAsAddress()) {
                 NewValue.Value = Val.getValue();
+
+}
               break;
             case dwarf::DW_FORM_ref_addr:
             case dwarf::DW_FORM_ref1:
@@ -162,8 +178,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
             case dwarf::DW_FORM_ref8:
             case dwarf::DW_FORM_ref_udata:
             case dwarf::DW_FORM_ref_sig8:
-              if (auto Val = FormValue.getValue().getAsReferenceUVal())
+              if (auto Val = FormValue.getValue().getAsReferenceUVal()) {
                 NewValue.Value = Val.getValue();
+
+}
               break;
             case dwarf::DW_FORM_exprloc:
             case dwarf::DW_FORM_block:
@@ -186,12 +204,16 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
             case dwarf::DW_FORM_udata:
             case dwarf::DW_FORM_ref_sup4:
             case dwarf::DW_FORM_ref_sup8:
-              if (auto Val = FormValue.getValue().getAsUnsignedConstant())
+              if (auto Val = FormValue.getValue().getAsUnsignedConstant()) {
                 NewValue.Value = Val.getValue();
+
+}
               break;
             case dwarf::DW_FORM_string:
-              if (auto Val = FormValue.getValue().getAsCString())
+              if (auto Val = FormValue.getValue().getAsCString()) {
                 NewValue.CStr = Val.getValue();
+
+}
               break;
             case dwarf::DW_FORM_indirect:
               indirect = true;
@@ -209,8 +231,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
             case dwarf::DW_FORM_strp_sup:
             case dwarf::DW_FORM_GNU_str_index:
             case dwarf::DW_FORM_strx:
-              if (auto Val = FormValue.getValue().getAsCStringOffset())
+              if (auto Val = FormValue.getValue().getAsCStringOffset()) {
                 NewValue.Value = Val.getValue();
+
+}
               break;
             case dwarf::DW_FORM_flag_present:
               NewValue.Value = 1;
@@ -232,8 +256,10 @@ void dumpDebugInfo(DWARFContext &DCtx, DWARFYAML::Data &Y) {
 bool dumpFileEntry(DataExtractor &Data, uint64_t &Offset,
                    DWARFYAML::File &File) {
   File.Name = Data.getCStr(&Offset);
-  if (File.Name.empty())
+  if (File.Name.empty()) {
     return false;
+
+}
   File.DirIdx = Data.getULEB128(&Offset);
   File.ModTime = Data.getULEB128(&Offset);
   File.Length = Data.getULEB128(&Offset);
@@ -243,8 +269,10 @@ bool dumpFileEntry(DataExtractor &Data, uint64_t &Offset,
 void dumpDebugLines(DWARFContext &DCtx, DWARFYAML::Data &Y) {
   for (const auto &CU : DCtx.compile_units()) {
     auto CUDIE = CU->getUnitDIE();
-    if (!CUDIE)
+    if (!CUDIE) {
       continue;
+
+}
     if (auto StmtOffset =
             dwarf::toSectionOffset(CUDIE.find(dwarf::DW_AT_stmt_list))) {
       DWARFYAML::LineTable DebugLines;
@@ -260,31 +288,39 @@ void dumpDebugLines(DWARFContext &DCtx, DWARFYAML::Data &Y) {
       const uint64_t EndPrologue = DebugLines.PrologueLength + Offset;
 
       DebugLines.MinInstLength = LineData.getU8(&Offset);
-      if (DebugLines.Version >= 4)
+      if (DebugLines.Version >= 4) {
         DebugLines.MaxOpsPerInst = LineData.getU8(&Offset);
+
+}
       DebugLines.DefaultIsStmt = LineData.getU8(&Offset);
       DebugLines.LineBase = LineData.getU8(&Offset);
       DebugLines.LineRange = LineData.getU8(&Offset);
       DebugLines.OpcodeBase = LineData.getU8(&Offset);
 
       DebugLines.StandardOpcodeLengths.reserve(DebugLines.OpcodeBase - 1);
-      for (uint8_t i = 1; i < DebugLines.OpcodeBase; ++i)
+      for (uint8_t i = 1; i < DebugLines.OpcodeBase; ++i) {
         DebugLines.StandardOpcodeLengths.push_back(LineData.getU8(&Offset));
+
+}
 
       while (Offset < EndPrologue) {
         StringRef Dir = LineData.getCStr(&Offset);
-        if (!Dir.empty())
+        if (!Dir.empty()) {
           DebugLines.IncludeDirs.push_back(Dir);
-        else
+        } else {
           break;
+
+}
       }
 
       while (Offset < EndPrologue) {
         DWARFYAML::File TmpFile;
-        if (dumpFileEntry(LineData, Offset, TmpFile))
+        if (dumpFileEntry(LineData, Offset, TmpFile)) {
           DebugLines.Files.push_back(TmpFile);
-        else
+        } else {
           break;
+
+}
       }
 
       const uint64_t LineEnd =
@@ -308,8 +344,10 @@ void dumpDebugLines(DWARFContext &DCtx, DWARFYAML::Data &Y) {
           case dwarf::DW_LNE_end_sequence:
             break;
           default:
-            while (Offset < StartExt + NewOp.ExtLen)
+            while (Offset < StartExt + NewOp.ExtLen) {
               NewOp.UnknownOpcodeData.push_back(LineData.getU8(&Offset));
+
+}
           }
         } else if (NewOp.Opcode < DebugLines.OpcodeBase) {
           switch (NewOp.Opcode) {
@@ -338,8 +376,10 @@ void dumpDebugLines(DWARFContext &DCtx, DWARFYAML::Data &Y) {
 
           default:
             for (uint8_t i = 0;
-                 i < DebugLines.StandardOpcodeLengths[NewOp.Opcode - 1]; ++i)
+                 i < DebugLines.StandardOpcodeLengths[NewOp.Opcode - 1]; ++i) {
               NewOp.StandardOpcodeData.push_back(LineData.getULEB128(&Offset));
+
+}
           }
         }
         DebugLines.Opcodes.push_back(NewOp);
@@ -352,8 +392,10 @@ void dumpDebugLines(DWARFContext &DCtx, DWARFYAML::Data &Y) {
 llvm::Error dwarf2yaml(DWARFContext &DCtx, DWARFYAML::Data &Y) {
   dumpDebugAbbrev(DCtx, Y);
   dumpDebugStrings(DCtx, Y);
-  if (Error E = dumpDebugARanges(DCtx, Y))
+  if (Error E = dumpDebugARanges(DCtx, Y)) {
     return E;
+
+}
   dumpDebugPubSections(DCtx, Y);
   dumpDebugInfo(DCtx, Y);
   dumpDebugLines(DCtx, Y);

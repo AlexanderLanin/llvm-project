@@ -106,8 +106,10 @@ TEST(Local, RemoveDuplicatePHINodes) {
 static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
   SMDiagnostic Err;
   std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("UtilsTests", errs());
+
+}
   return Mod;
 }
 
@@ -158,9 +160,13 @@ TEST(Local, ReplaceDbgDeclare) {
 
   // There should be exactly two dbg.declares.
   int Declares = 0;
-  for (const Instruction &I : F->front())
-    if (isa<DbgDeclareInst>(I))
+  for (const Instruction &I : F->front()) {
+    if (isa<DbgDeclareInst>(I)) {
       Declares++;
+
+}
+
+}
   EXPECT_EQ(2, Declares);
 }
 
@@ -215,11 +221,15 @@ TEST(Local, MergeBasicBlockIntoOnlyPred) {
     for (Function::iterator I = F.begin(), E = F.end(); I != E;) {
       BasicBlock *BB = &*I++;
       BasicBlock *SinglePred = BB->getSinglePredecessor();
-      if (!SinglePred || SinglePred == BB || BB->hasAddressTaken())
+      if (!SinglePred || SinglePred == BB || BB->hasAddressTaken()) {
         continue;
+
+}
       BranchInst *Term = dyn_cast<BranchInst>(SinglePred->getTerminator());
-      if (Term && !Term->isConditional())
+      if (Term && !Term->isConditional()) {
         MergeBasicBlockIntoOnlyPred(BB, &DTU);
+
+}
     }
     if (DTU.hasDomTree()) {
       EXPECT_TRUE(DTU.getDomTree().verify());
@@ -525,23 +535,27 @@ struct SalvageDebugInfoTest : ::testing::Test {
 
   bool doesDebugValueDescribeX(const DbgValueInst &DI) {
     const auto &CI = *cast<ConstantInt>(DI.getValue());
-    if (CI.isZero())
+    if (CI.isZero()) {
       return DI.getExpression()->getElements().equals(
           {dwarf::DW_OP_plus_uconst, 1, dwarf::DW_OP_stack_value});
-    else if (CI.isOneValue())
+    } else if (CI.isOneValue()) {
       return DI.getExpression()->getElements().empty();
+
+}
     return false;
   }
 
   bool doesDebugValueDescribeY(const DbgValueInst &DI) {
     const auto &CI = *cast<ConstantInt>(DI.getValue());
-    if (CI.isZero())
+    if (CI.isZero()) {
       return DI.getExpression()->getElements().equals(
           {dwarf::DW_OP_plus_uconst, 1, dwarf::DW_OP_plus_uconst, 2,
            dwarf::DW_OP_stack_value});
-    else if (CI.isOneValue())
+    } else if (CI.isOneValue()) {
       return DI.getExpression()->getElements().equals(
           {dwarf::DW_OP_plus_uconst, 2, dwarf::DW_OP_stack_value});
+
+}
     return false;
   }
 

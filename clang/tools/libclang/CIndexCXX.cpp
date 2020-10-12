@@ -20,8 +20,10 @@ using namespace clang;
 using namespace clang::cxcursor;
 
 unsigned clang_isVirtualBase(CXCursor C) {
-  if (C.kind != CXCursor_CXXBaseSpecifier)
+  if (C.kind != CXCursor_CXXBaseSpecifier) {
     return 0;
+
+}
   
   const CXXBaseSpecifier *B = getCursorCXXBaseSpecifier(C);
   return B->isVirtual();
@@ -30,12 +32,14 @@ unsigned clang_isVirtualBase(CXCursor C) {
 enum CX_CXXAccessSpecifier clang_getCXXAccessSpecifier(CXCursor C) {
   AccessSpecifier spec = AS_none;
 
-  if (C.kind == CXCursor_CXXAccessSpecifier || clang_isDeclaration(C.kind))
+  if (C.kind == CXCursor_CXXAccessSpecifier || clang_isDeclaration(C.kind)) {
     spec = getCursorDecl(C)->getAccess();
-  else if (C.kind == CXCursor_CXXBaseSpecifier)
+  } else if (C.kind == CXCursor_CXXBaseSpecifier) {
     spec = getCursorCXXBaseSpecifier(C)->getAccessSpecifier();
-  else
+  } else {
     return CX_CXXInvalidAccessSpecifier;
+
+}
   
   switch (spec) {
     case AS_public: return CX_CXXPublic;
@@ -54,8 +58,10 @@ enum CXCursorKind clang_getTemplateCursorKind(CXCursor C) {
   case CXCursor_ClassTemplate: 
   case CXCursor_FunctionTemplate:
     if (const TemplateDecl *Template
-                           = dyn_cast_or_null<TemplateDecl>(getCursorDecl(C)))
+                           = dyn_cast_or_null<TemplateDecl>(getCursorDecl(C))) {
       return MakeCXCursor(Template->getTemplatedDecl(), getCursorTU(C)).kind;
+
+}
     break;
       
   case CXCursor_ClassTemplatePartialSpecialization:
@@ -80,43 +86,59 @@ enum CXCursorKind clang_getTemplateCursorKind(CXCursor C) {
 }
 
 CXCursor clang_getSpecializedCursorTemplate(CXCursor C) {
-  if (!clang_isDeclaration(C.kind))
+  if (!clang_isDeclaration(C.kind)) {
     return clang_getNullCursor();
+
+}
     
   const Decl *D = getCursorDecl(C);
-  if (!D)
+  if (!D) {
     return clang_getNullCursor();
+
+}
 
   Decl *Template = nullptr;
   if (const CXXRecordDecl *CXXRecord = dyn_cast<CXXRecordDecl>(D)) {
     if (const ClassTemplatePartialSpecializationDecl *PartialSpec
-          = dyn_cast<ClassTemplatePartialSpecializationDecl>(CXXRecord))
+          = dyn_cast<ClassTemplatePartialSpecializationDecl>(CXXRecord)) {
       Template = PartialSpec->getSpecializedTemplate();
-    else if (const ClassTemplateSpecializationDecl *ClassSpec 
+    } else if (const ClassTemplateSpecializationDecl *ClassSpec 
                = dyn_cast<ClassTemplateSpecializationDecl>(CXXRecord)) {
       llvm::PointerUnion<ClassTemplateDecl *,
                          ClassTemplatePartialSpecializationDecl *> Result
         = ClassSpec->getSpecializedTemplateOrPartial();
-      if (Result.is<ClassTemplateDecl *>())
+      if (Result.is<ClassTemplateDecl *>()) {
         Template = Result.get<ClassTemplateDecl *>();
-      else
+      } else {
         Template = Result.get<ClassTemplatePartialSpecializationDecl *>();
+
+}
       
-    } else 
+    } else { 
       Template = CXXRecord->getInstantiatedFromMemberClass();
+
+}
   } else if (const FunctionDecl *Function = dyn_cast<FunctionDecl>(D)) {
     Template = Function->getPrimaryTemplate();
-    if (!Template)
+    if (!Template) {
       Template = Function->getInstantiatedFromMemberFunction();
+
+}
   } else if (const VarDecl *Var = dyn_cast<VarDecl>(D)) {
-    if (Var->isStaticDataMember())
+    if (Var->isStaticDataMember()) {
       Template = Var->getInstantiatedFromStaticDataMember();
+
+}
   } else if (const RedeclarableTemplateDecl *Tmpl
-                                        = dyn_cast<RedeclarableTemplateDecl>(D))
+                                        = dyn_cast<RedeclarableTemplateDecl>(D)) {
     Template = Tmpl->getInstantiatedFromMemberTemplate();
+
+}
   
-  if (!Template)
+  if (!Template) {
     return clang_getNullCursor();
+
+}
   
   return MakeCXCursor(Template, getCursorTU(C));
 }

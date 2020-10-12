@@ -108,8 +108,10 @@ TEST(TBDv4, ReadFile) {
   EXPECT_EQ(Archs, File->getArchitectures());
   EXPECT_EQ(uuids, File->uuids());
   EXPECT_EQ(Platforms.size(), File->getPlatforms().size());
-  for (auto Platform : File->getPlatforms())
+  for (auto Platform : File->getPlatforms()) {
     EXPECT_EQ(Platforms.count(Platform), 1U);
+
+}
   EXPECT_EQ(std::string("Umbrella.framework/Umbrella"), File->getInstallName());
   EXPECT_EQ(PackedVersion(1, 2, 3), File->getCurrentVersion());
   EXPECT_EQ(PackedVersion(1, 2, 0), File->getCompatibilityVersion());
@@ -131,11 +133,13 @@ TEST(TBDv4, ReadFile) {
     temp = ExportedSymbol{Sym->getKind(), std::string(Sym->getName()),
                           Sym->isWeakDefined(), Sym->isThreadLocalValue()};
     EXPECT_FALSE(Sym->isWeakReferenced());
-    if (Sym->isUndefined())
+    if (Sym->isUndefined()) {
       Undefineds.emplace_back(std::move(temp));
-    else
+    } else {
       Sym->isReexported() ? Reexports.emplace_back(std::move(temp))
                           : Exports.emplace_back(std::move(temp));
+
+}
   }
   llvm::sort(Exports.begin(), Exports.end());
   llvm::sort(Reexports.begin(), Reexports.end());
@@ -237,8 +241,10 @@ TEST(TBDv4, MultipleTargets) {
   EXPECT_EQ(FileType::TBD_V4, File->getFileType());
   EXPECT_EQ(AK_x86_64 | AK_arm64 | AK_i386, File->getArchitectures());
   EXPECT_EQ(Platforms.size(), File->getPlatforms().size());
-  for (auto Platform : File->getPlatforms())
+  for (auto Platform : File->getPlatforms()) {
     EXPECT_EQ(Platforms.count(Platform), 1U);
+
+}
 
   SmallString<4096> Buffer;
   raw_svector_ostream OS(Buffer);
@@ -266,8 +272,10 @@ TEST(TBDv4, MultipleTargetsSameArch) {
   EXPECT_EQ(FileType::TBD_V4, File->getFileType());
   EXPECT_EQ(ArchitectureSet(AK_x86_64), File->getArchitectures());
   EXPECT_EQ(Platforms.size(), File->getPlatforms().size());
-  for (auto Platform : File->getPlatforms())
+  for (auto Platform : File->getPlatforms()) {
     EXPECT_EQ(Platforms.count(Platform), 1U);
+
+}
 
   SmallString<4096> Buffer;
   raw_svector_ostream OS(Buffer);

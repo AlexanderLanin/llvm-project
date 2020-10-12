@@ -32,15 +32,19 @@ void DurationComparisonCheck::check(const MatchFinder::MatchResult &Result) {
 
   llvm::Optional<DurationScale> Scale = getScaleForDurationInverse(
       Result.Nodes.getNodeAs<FunctionDecl>("function_decl")->getName());
-  if (!Scale)
+  if (!Scale) {
     return;
+
+}
 
   // In most cases, we'll only need to rewrite one of the sides, but we also
   // want to handle the case of rewriting both sides. This is much simpler if
   // we unconditionally try and rewrite both, and let the rewriter determine
   // if nothing needs to be done.
-  if (isInMacro(Result, Binop->getLHS()) || isInMacro(Result, Binop->getRHS()))
+  if (isInMacro(Result, Binop->getLHS()) || isInMacro(Result, Binop->getRHS())) {
     return;
+
+}
   std::string LhsReplacement =
       rewriteExprFromNumberToDuration(Result, *Scale, Binop->getLHS());
   std::string RhsReplacement =

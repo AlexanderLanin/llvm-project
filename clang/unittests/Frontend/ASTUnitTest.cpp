@@ -44,8 +44,10 @@ protected:
 
     CInvok = createInvocationFromCommandLine(Args, Diags);
 
-    if (!CInvok)
+    if (!CInvok) {
       return nullptr;
+
+}
 
     FileManager *FileMgr =
         new FileManager(FileSystemOptions(), vfs::getRealFileSystem());
@@ -74,8 +76,10 @@ TEST_F(ASTUnitTest, SaveLoadPreservesLangOptionsInPrintingPolicy) {
 
   std::unique_ptr<ASTUnit> AST = createASTUnit(false);
 
-  if (!AST)
+  if (!AST) {
     FAIL() << "failed to create ASTUnit";
+
+}
 
   EXPECT_FALSE(AST->getASTContext().getPrintingPolicy().UseVoidForZeroParams);
 
@@ -92,8 +96,10 @@ TEST_F(ASTUnitTest, SaveLoadPreservesLangOptionsInPrintingPolicy) {
       ASTUnit::LoadEverything, Diags, FileSystemOptions(),
       /*UseDebugInfo=*/false);
 
-  if (!AU)
+  if (!AU) {
     FAIL() << "failed to load ASTUnit";
+
+}
 
   EXPECT_FALSE(AU->getASTContext().getPrintingPolicy().UseVoidForZeroParams);
 }
@@ -101,8 +107,10 @@ TEST_F(ASTUnitTest, SaveLoadPreservesLangOptionsInPrintingPolicy) {
 TEST_F(ASTUnitTest, GetBufferForFileMemoryMapping) {
   std::unique_ptr<ASTUnit> AST = createASTUnit(true);
 
-  if (!AST)
+  if (!AST) {
     FAIL() << "failed to create ASTUnit";
+
+}
 
   std::unique_ptr<llvm::MemoryBuffer> memoryBuffer =
       AST->getBufferForFile(InputFileName);

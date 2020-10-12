@@ -55,8 +55,10 @@ void renderFunctions(
     auto StartLine = F.CountedRegions.front().LineStart;
     OS << "FN:" << StartLine << ',' << F.Name << '\n';
   }
-  for (const auto &F : Functions)
+  for (const auto &F : Functions) {
     OS << "FNDA:" << F.ExecutionCount << ',' << F.Name << '\n';
+
+}
 }
 
 void renderLineExecutionCounts(raw_ostream &OS,
@@ -101,9 +103,11 @@ void renderFiles(raw_ostream &OS, const coverage::CoverageMapping &Coverage,
                  ArrayRef<std::string> SourceFiles,
                  ArrayRef<FileCoverageSummary> FileReports,
                  bool ExportSummaryOnly, bool SkipFunctions) {
-  for (unsigned I = 0, E = SourceFiles.size(); I < E; ++I)
+  for (unsigned I = 0, E = SourceFiles.size(); I < E; ++I) {
     renderFile(OS, Coverage, SourceFiles[I], FileReports[I], ExportSummaryOnly,
                SkipFunctions);
+
+}
 }
 
 } // end anonymous namespace
@@ -111,8 +115,10 @@ void renderFiles(raw_ostream &OS, const coverage::CoverageMapping &Coverage,
 void CoverageExporterLcov::renderRoot(const CoverageFilters &IgnoreFilters) {
   std::vector<std::string> SourceFiles;
   for (StringRef SF : Coverage.getUniqueSourceFiles()) {
-    if (!IgnoreFilters.matchesFilename(SF))
+    if (!IgnoreFilters.matchesFilename(SF)) {
       SourceFiles.emplace_back(SF);
+
+}
   }
   renderRoot(SourceFiles);
 }

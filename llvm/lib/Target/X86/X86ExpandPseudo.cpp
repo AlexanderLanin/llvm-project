@@ -87,8 +87,10 @@ void X86ExpandPseudo::ExpandICallBranchFunnel(
   const GlobalValue *CombinedGlobal = JTInst->getOperand(1).getGlobal();
 
   auto CmpTarget = [&](unsigned Target) {
-    if (Selector.isReg())
+    if (Selector.isReg()) {
       MBB->addLiveIn(Selector.getReg());
+
+}
     BuildMI(*MBB, MBBI, DL, TII->get(X86::LEA64r), X86::R11)
         .addReg(X86::RIP)
         .addImm(1)
@@ -104,8 +106,10 @@ void X86ExpandPseudo::ExpandICallBranchFunnel(
   auto CreateMBB = [&]() {
     auto *NewMBB = MF->CreateMachineBasicBlock(BB);
     MBB->addSuccessor(NewMBB);
-    if (!MBB->isLiveIn(X86::EFLAGS))
+    if (!MBB->isLiveIn(X86::EFLAGS)) {
       MBB->addLiveIn(X86::EFLAGS);
+
+}
     return NewMBB;
   };
 
@@ -260,8 +264,10 @@ bool X86ExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
                         ? X86::TAILJMPm
                         : (IsWin64 ? X86::TAILJMPm64_REX : X86::TAILJMPm64);
       MachineInstrBuilder MIB = BuildMI(MBB, MBBI, DL, TII->get(Op));
-      for (unsigned i = 0; i != X86::AddrNumOperands; ++i)
+      for (unsigned i = 0; i != X86::AddrNumOperands; ++i) {
         MIB.add(MBBI->getOperand(i));
+
+}
     } else if (Opcode == X86::TCRETURNri64) {
       JumpTarget.setIsKill();
       BuildMI(MBB, MBBI, DL,
@@ -277,8 +283,10 @@ bool X86ExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
     NewMI.copyImplicitOps(*MBBI->getParent()->getParent(), *MBBI);
 
     // Update the call site info.
-    if (MBBI->isCandidateForCallSiteEntry())
+    if (MBBI->isCandidateForCallSiteEntry()) {
       MBB.getParent()->moveCallSiteInfo(&*MBBI, &NewMI);
+
+}
 
     // Delete the pseudo instruction TCRETURN.
     MBB.erase(MBBI);
@@ -329,8 +337,10 @@ bool X86ExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
       BuildMI(MBB, MBBI, DL, TII->get(X86::PUSH32r)).addReg(X86::ECX);
       MIB = BuildMI(MBB, MBBI, DL, TII->get(X86::RETL));
     }
-    for (unsigned I = 1, E = MBBI->getNumOperands(); I != E; ++I)
+    for (unsigned I = 1, E = MBBI->getNumOperands(); I != E; ++I) {
       MIB.add(MBBI->getOperand(I));
+
+}
     MBB.erase(MBBI);
     return true;
   }
@@ -356,8 +366,10 @@ bool X86ExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
         Opcode == X86::LCMPXCHG8B_SAVE_EBX ? X86::LCMPXCHG8B : X86::LCMPXCHG16B;
     MachineInstr *NewInstr = BuildMI(MBB, MBBI, DL, TII->get(ActualOpc));
     // Copy the operands related to the address.
-    for (unsigned Idx = 1; Idx < 6; ++Idx)
+    for (unsigned Idx = 1; Idx < 6; ++Idx) {
       NewInstr->addOperand(MBBI->getOperand(Idx));
+
+}
     // Finally, restore the value of RBX.
     TII->copyPhysReg(MBB, MBBI, DL, ActualInArg, SaveRbx,
                      /*SrcIsKill*/ true);
@@ -397,8 +409,10 @@ bool X86ExpandPseudo::runOnMachineFunction(MachineFunction &MF) {
   X86FL = STI->getFrameLowering();
 
   bool Modified = false;
-  for (MachineBasicBlock &MBB : MF)
+  for (MachineBasicBlock &MBB : MF) {
     Modified |= ExpandMBB(MBB);
+
+}
   return Modified;
 }
 

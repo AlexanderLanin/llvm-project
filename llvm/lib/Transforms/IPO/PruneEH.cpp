@@ -66,14 +66,20 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
 
   // Fill SCCNodes with the elements of the SCC.  Used for quickly
   // looking up whether a given CallGraphNode is in this SCC.
-  for (CallGraphNode *I : SCC)
+  for (CallGraphNode *I : SCC) {
     SCCNodes.insert(I);
+
+}
 
   // First pass, scan all of the functions in the SCC, simplifying them
   // according to what we know.
-  for (CallGraphNode *I : SCC)
-    if (Function *F = I->getFunction())
+  for (CallGraphNode *I : SCC) {
+    if (Function *F = I->getFunction()) {
       MadeChange |= SimplifyFunction(F, CG);
+
+}
+
+}
 
   // Next, check to see if any callees might throw or if there are any external
   // functions in this SCC: if so, we cannot prune any functions in this SCC.
@@ -103,8 +109,10 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
                                F->hasFnAttribute(Attribute::Naked) &&
                                F->hasFnAttribute(Attribute::NoInline);
 
-      if (!CheckUnwind && !CheckReturn)
+      if (!CheckUnwind && !CheckReturn) {
         continue;
+
+}
 
       for (const BasicBlock &BB : *F) {
         const Instruction *TI = BB.getTerminator();
@@ -116,8 +124,10 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
 
         for (const Instruction &I : BB) {
           if ((!CheckUnwind || SCCMightUnwind) &&
-              (!CheckReturnViaAsm || SCCMightReturn))
+              (!CheckReturnViaAsm || SCCMightReturn)) {
             break;
+
+}
 
           // Check to see if this function performs an unwind or calls an
           // unwinding function.
@@ -128,27 +138,39 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
                 CallGraphNode *CalleeNode = CG[Callee];
                 // If the callee is outside our current SCC then we may throw
                 // because it might.  If it is inside, do nothing.
-                if (SCCNodes.count(CalleeNode) > 0)
+                if (SCCNodes.count(CalleeNode) > 0) {
                   InstMightUnwind = false;
+
+}
               }
             }
             SCCMightUnwind |= InstMightUnwind;
           }
-          if (CheckReturnViaAsm && !SCCMightReturn)
-            if (auto ICS = ImmutableCallSite(&I))
-              if (const auto *IA = dyn_cast<InlineAsm>(ICS.getCalledValue()))
-                if (IA->hasSideEffects())
+          if (CheckReturnViaAsm && !SCCMightReturn) {
+            if (auto ICS = ImmutableCallSite(&I)) {
+              if (const auto *IA = dyn_cast<InlineAsm>(ICS.getCalledValue())) {
+                if (IA->hasSideEffects()) {
                   SCCMightReturn = true;
+
+}
+
+}
+
+}
+
+}
         }
 
-        if (SCCMightUnwind && SCCMightReturn)
+        if (SCCMightUnwind && SCCMightReturn) {
           break;
+
+}
       }
     }
   }
 
   // If the SCC doesn't unwind or doesn't throw, note this fact.
-  if (!SCCMightUnwind || !SCCMightReturn)
+  if (!SCCMightUnwind || !SCCMightReturn) {
     for (CallGraphNode *I : SCC) {
       Function *F = I->getFunction();
 
@@ -163,12 +185,16 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
       }
     }
 
+}
+
   for (CallGraphNode *I : SCC) {
     // Convert any invoke instructions to non-throwing functions in this node
     // into call instructions with a branch.  This makes the exception blocks
     // dead.
-    if (Function *F = I->getFunction())
+    if (Function *F = I->getFunction()) {
       MadeChange |= SimplifyFunction(F, CG);
+
+}
   }
 
   return MadeChange;
@@ -176,8 +202,10 @@ static bool runImpl(CallGraphSCC &SCC, CallGraph &CG) {
 
 
 bool PruneEH::runOnSCC(CallGraphSCC &SCC) {
-  if (skipSCC(SCC))
+  if (skipSCC(SCC)) {
     return false;
+
+}
   CallGraph &CG = getAnalysis<CallGraphWrapperPass>().getCallGraph();
   return runImpl(SCC, CG);
 }
@@ -189,21 +217,25 @@ bool PruneEH::runOnSCC(CallGraphSCC &SCC) {
 static bool SimplifyFunction(Function *F, CallGraph &CG) {
   bool MadeChange = false;
   for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-    if (InvokeInst *II = dyn_cast<InvokeInst>(BB->getTerminator()))
+    if (InvokeInst *II = dyn_cast<InvokeInst>(BB->getTerminator())) {
       if (II->doesNotThrow() && canSimplifyInvokeNoUnwind(F)) {
         BasicBlock *UnwindBlock = II->getUnwindDest();
         removeUnwindEdge(&*BB);
 
         // If the unwind block is now dead, nuke it.
-        if (pred_empty(UnwindBlock))
+        if (pred_empty(UnwindBlock)) {
           DeleteBasicBlock(UnwindBlock, CG);  // Delete the new BB.
+
+}
 
         ++NumRemoved;
         MadeChange = true;
       }
 
-    for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; )
-      if (CallInst *CI = dyn_cast<CallInst>(I++))
+}
+
+    for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+      if (CallInst *CI = dyn_cast<CallInst>(I++)) {
         if (CI->doesNotReturn() && !CI->isMustTailCall() &&
             !isa<UnreachableInst>(I)) {
           // This call calls a function that cannot return.  Insert an
@@ -221,6 +253,10 @@ static bool SimplifyFunction(Function *F, CallGraph &CG) {
           ++NumUnreach;
           break;
         }
+
+}
+
+}
   }
 
   return MadeChange;
@@ -245,25 +281,33 @@ static void DeleteBasicBlock(BasicBlock *BB, CallGraph &CG) {
 
     if (auto *Call = dyn_cast<CallBase>(&*I)) {
       const Function *Callee = Call->getCalledFunction();
-      if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID()))
+      if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID())) {
         CGN->removeCallEdgeFor(*Call);
-      else if (!Callee->isIntrinsic())
+      } else if (!Callee->isIntrinsic()) {
         CGN->removeCallEdgeFor(*Call);
+
+}
     }
 
-    if (!I->use_empty())
+    if (!I->use_empty()) {
       I->replaceAllUsesWith(UndefValue::get(I->getType()));
+
+}
   }
 
   if (TokenInst) {
-    if (!TokenInst->isTerminator())
+    if (!TokenInst->isTerminator()) {
       changeToUnreachable(TokenInst->getNextNode(), /*UseLLVMTrap=*/false);
+
+}
   } else {
     // Get the list of successors of this block.
     std::vector<BasicBlock *> Succs(succ_begin(BB), succ_end(BB));
 
-    for (unsigned i = 0, e = Succs.size(); i != e; ++i)
+    for (unsigned i = 0, e = Succs.size(); i != e; ++i) {
       Succs[i]->removePredecessor(BB);
+
+}
 
     BB->eraseFromParent();
   }

@@ -130,17 +130,23 @@ void TimeSubtractionCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *BinOp = Result.Nodes.getNodeAs<BinaryOperator>("binop");
   std::string InverseName =
       Result.Nodes.getNodeAs<FunctionDecl>("func_decl")->getNameAsString();
-  if (InsideMacroDefinition(Result, BinOp->getSourceRange()))
+  if (InsideMacroDefinition(Result, BinOp->getSourceRange())) {
     return;
 
+}
+
   llvm::Optional<DurationScale> Scale = getScaleForTimeInverse(InverseName);
-  if (!Scale)
+  if (!Scale) {
     return;
+
+}
 
   const auto *OuterCall = Result.Nodes.getNodeAs<CallExpr>("outer_call");
   if (OuterCall) {
-    if (InsideMacroDefinition(Result, OuterCall->getSourceRange()))
+    if (InsideMacroDefinition(Result, OuterCall->getSourceRange())) {
       return;
+
+}
 
     // We're working with the first case of matcher, and need to replace the
     // entire 'Duration' factory call. (Which also means being careful about

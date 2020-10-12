@@ -165,16 +165,24 @@ void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF) {
       MachineInstr &MI = *MII;
       for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
         MachineOperand &MO = MI.getOperand(i);
-        if (!MO.isFI())
+        if (!MO.isFI()) {
           continue;
+
+}
         int FI = MO.getIndex();
-        if (FI < 0)
+        if (FI < 0) {
           continue;
-        if (!LS->hasInterval(FI))
+
+}
+        if (!LS->hasInterval(FI)) {
           continue;
+
+}
         LiveInterval &li = LS->getInterval(FI);
-        if (!MI.isDebugValue())
+        if (!MI.isDebugValue()) {
           li.weight += LiveIntervals::getSpillWeight(false, true, MBFI, MI);
+
+}
       }
       for (MachineInstr::mmo_iterator MMOI = MI.memoperands_begin(),
                                       EE = MI.memoperands_end();
@@ -184,8 +192,10 @@ void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF) {
             dyn_cast_or_null<FixedStackPseudoSourceValue>(
                 MMO->getPseudoValue())) {
           int FI = FSV->getFrameIndex();
-          if (FI >= 0)
+          if (FI >= 0) {
             SSRefs[FI].push_back(MMO);
+
+}
         }
       }
     }
@@ -212,8 +222,10 @@ void StackSlotColoring::InitializeSlots() {
   SmallVector<Pair *, 16> Intervals;
 
   Intervals.reserve(LS->getNumIntervals());
-  for (auto &I : *LS)
+  for (auto &I : *LS) {
     Intervals.push_back(&I);
+
+}
   llvm::sort(Intervals,
              [](Pair *LHS, Pair *RHS) { return LHS->first < RHS->first; });
 
@@ -223,8 +235,10 @@ void StackSlotColoring::InitializeSlots() {
     LiveInterval &li = I->second;
     LLVM_DEBUG(li.dump());
     int FI = Register::stackSlot2Index(li.reg);
-    if (MFI->isDeadObjectIndex(FI))
+    if (MFI->isDeadObjectIndex(FI)) {
       continue;
+
+}
 
     SSIntervals.push_back(&li);
     OrigAlignments[FI] = MFI->getObjectAlignment(FI);
@@ -248,8 +262,10 @@ void StackSlotColoring::InitializeSlots() {
   NextColors.resize(AllColors.size());
 
   // Get first "color".
-  for (unsigned I = 0, E = AllColors.size(); I != E; ++I)
+  for (unsigned I = 0, E = AllColors.size(); I != E; ++I) {
     NextColors[I] = AllColors[I].find_first();
+
+}
 }
 
 /// OverlapWithAssignments - Return true if LiveInterval overlaps with any
@@ -259,8 +275,10 @@ StackSlotColoring::OverlapWithAssignments(LiveInterval *li, int Color) const {
   const SmallVectorImpl<LiveInterval *> &OtherLIs = Assignments[Color];
   for (unsigned i = 0, e = OtherLIs.size(); i != e; ++i) {
     LiveInterval *OtherLI = OtherLIs[i];
-    if (OtherLI->overlaps(*li))
+    if (OtherLI->overlaps(*li)) {
       return true;
+
+}
   }
   return false;
 }
@@ -310,11 +328,15 @@ int StackSlotColoring::ColorSlot(LiveInterval *li) {
   // objects sharing the same slot, then make sure the size and alignment
   // are large enough for all.
   unsigned Align = OrigAlignments[FI];
-  if (!Share || Align > MFI->getObjectAlignment(Color))
+  if (!Share || Align > MFI->getObjectAlignment(Color)) {
     MFI->setObjectAlignment(Color, Align);
+
+}
   int64_t Size = OrigSizes[FI];
-  if (!Share || Size > MFI->getObjectSize(Color))
+  if (!Share || Size > MFI->getObjectSize(Color)) {
     MFI->setObjectSize(Color, Size);
+
+}
   return Color;
 }
 
@@ -356,25 +378,33 @@ bool StackSlotColoring::ColorSlots(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << '\n');
 #endif
 
-  if (!Changed)
+  if (!Changed) {
     return false;
+
+}
 
   // Rewrite all MachineMemOperands.
   for (unsigned SS = 0, SE = SSRefs.size(); SS != SE; ++SS) {
     int NewFI = SlotMapping[SS];
-    if (NewFI == -1 || (NewFI == (int)SS))
+    if (NewFI == -1 || (NewFI == (int)SS)) {
       continue;
+
+}
 
     const PseudoSourceValue *NewSV = MF.getPSVManager().getFixedStack(NewFI);
     SmallVectorImpl<MachineMemOperand *> &RefMMOs = SSRefs[SS];
-    for (unsigned i = 0, e = RefMMOs.size(); i != e; ++i)
+    for (unsigned i = 0, e = RefMMOs.size(); i != e; ++i) {
       RefMMOs[i]->setValue(NewSV);
+
+}
   }
 
   // Rewrite all MO_FrameIndex operands.  Look for dead stores.
   for (MachineBasicBlock &MBB : MF) {
-    for (MachineInstr &MI : MBB)
+    for (MachineInstr &MI : MBB) {
       RewriteInstruction(MI, SlotMapping, MF);
+
+}
     RemoveDeadStores(&MBB);
   }
 
@@ -399,14 +429,20 @@ void StackSlotColoring::RewriteInstruction(MachineInstr &MI,
   // Update the operands.
   for (unsigned i = 0, ee = MI.getNumOperands(); i != ee; ++i) {
     MachineOperand &MO = MI.getOperand(i);
-    if (!MO.isFI())
+    if (!MO.isFI()) {
       continue;
+
+}
     int OldFI = MO.getIndex();
-    if (OldFI < 0)
+    if (OldFI < 0) {
       continue;
+
+}
     int NewFI = SlotMapping[OldFI];
-    if (NewFI == -1 || NewFI == OldFI)
+    if (NewFI == -1 || NewFI == OldFI) {
       continue;
+
+}
 
     assert(MFI->getStackID(OldFI) == MFI->getStackID(NewFI));
     MO.setIndex(NewFI);
@@ -429,8 +465,10 @@ bool StackSlotColoring::RemoveDeadStores(MachineBasicBlock* MBB) {
 
   for (MachineBasicBlock::iterator I = MBB->begin(), E = MBB->end();
        I != E; ++I) {
-    if (DCELimit != -1 && (int)NumDead >= DCELimit)
+    if (DCELimit != -1 && (int)NumDead >= DCELimit) {
       break;
+
+}
     int FirstSS, SecondSS;
     if (TII->isStackSlotCopy(*I, FirstSS, SecondSS) && FirstSS == SecondSS &&
         FirstSS != -1) {
@@ -447,19 +485,27 @@ bool StackSlotColoring::RemoveDeadStores(MachineBasicBlock* MBB) {
     unsigned StoreReg = 0;
     unsigned LoadSize = 0;
     unsigned StoreSize = 0;
-    if (!(LoadReg = TII->isLoadFromStackSlot(*I, FirstSS, LoadSize)))
+    if (!(LoadReg = TII->isLoadFromStackSlot(*I, FirstSS, LoadSize))) {
       continue;
+
+}
     // Skip the ...pseudo debugging... instructions between a load and store.
     while ((NextMI != E) && NextMI->isDebugInstr()) {
       ++NextMI;
       ++I;
     }
-    if (NextMI == E) continue;
-    if (!(StoreReg = TII->isStoreToStackSlot(*NextMI, SecondSS, StoreSize)))
+    if (NextMI == E) { continue;
+
+}
+    if (!(StoreReg = TII->isStoreToStackSlot(*NextMI, SecondSS, StoreSize))) {
       continue;
+
+}
     if (FirstSS != SecondSS || LoadReg != StoreReg || FirstSS == -1 ||
-        LoadSize != StoreSize)
+        LoadSize != StoreSize) {
       continue;
+
+}
 
     ++NumDead;
     changed = true;
@@ -474,8 +520,10 @@ bool StackSlotColoring::RemoveDeadStores(MachineBasicBlock* MBB) {
   }
 
   for (SmallVectorImpl<MachineInstr *>::iterator I = toErase.begin(),
-       E = toErase.end(); I != E; ++I)
+       E = toErase.end(); I != E; ++I) {
     (*I)->eraseFromParent();
+
+}
 
   return changed;
 }
@@ -486,8 +534,10 @@ bool StackSlotColoring::runOnMachineFunction(MachineFunction &MF) {
            << "********** Function: " << MF.getName() << '\n';
   });
 
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   MFI = &MF.getFrameInfo();
   TII = MF.getSubtarget().getInstrInfo();
@@ -497,35 +547,45 @@ bool StackSlotColoring::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
 
   unsigned NumSlots = LS->getNumIntervals();
-  if (NumSlots == 0)
+  if (NumSlots == 0) {
     // Nothing to do!
     return false;
+
+}
 
   // If there are calls to setjmp or sigsetjmp, don't perform stack slot
   // coloring. The stack could be modified before the longjmp is executed,
   // resulting in the wrong value being used afterwards. (See
   // <rdar://problem/8007500>.)
-  if (MF.exposesReturnsTwice())
+  if (MF.exposesReturnsTwice()) {
     return false;
+
+}
 
   // Gather spill slot references
   ScanForSpillSlotRefs(MF);
   InitializeSlots();
   Changed = ColorSlots(MF);
 
-  for (int &Next : NextColors)
+  for (int &Next : NextColors) {
     Next = -1;
 
+}
+
   SSIntervals.clear();
-  for (unsigned i = 0, e = SSRefs.size(); i != e; ++i)
+  for (unsigned i = 0, e = SSRefs.size(); i != e; ++i) {
     SSRefs[i].clear();
+
+}
   SSRefs.clear();
   OrigAlignments.clear();
   OrigSizes.clear();
   AllColors.clear();
   UsedColors.clear();
-  for (unsigned i = 0, e = Assignments.size(); i != e; ++i)
+  for (unsigned i = 0, e = Assignments.size(); i != e; ++i) {
     Assignments[i].clear();
+
+}
   Assignments.clear();
 
   return Changed;

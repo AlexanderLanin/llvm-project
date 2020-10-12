@@ -29,12 +29,16 @@ llvm::Optional<std::string> MakeCharacterLiteral(const StringLiteral *Literal) {
   }
   // Now replace the " with '.
   auto pos = Result.find_first_of('"');
-  if (pos == Result.npos)
+  if (pos == Result.npos) {
     return llvm::None;
+
+}
   Result[pos] = '\'';
   pos = Result.find_last_of('"');
-  if (pos == Result.npos)
+  if (pos == Result.npos) {
     return llvm::None;
+
+}
   Result[pos] = '\'';
   return Result;
 }
@@ -59,8 +63,10 @@ void FasterStringFindCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
 }
 
 void FasterStringFindCheck::registerMatchers(MatchFinder *Finder) {
-  if (!getLangOpts().CPlusPlus)
+  if (!getLangOpts().CPlusPlus) {
     return;
+
+}
 
   const auto SingleChar =
       expr(ignoringParenCasts(stringLiteral(hasSize(1)).bind("literal")));
@@ -86,8 +92,10 @@ void FasterStringFindCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *FindFunc = Result.Nodes.getNodeAs<FunctionDecl>("func");
 
   auto Replacement = MakeCharacterLiteral(Literal);
-  if (!Replacement)
+  if (!Replacement) {
     return;
+
+}
 
   diag(Literal->getBeginLoc(), "%0 called with a string literal consisting of "
                                "a single character; consider using the more "

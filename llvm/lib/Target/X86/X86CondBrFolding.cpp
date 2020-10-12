@@ -144,8 +144,10 @@ bool X86CondBrFolding::findPath(
   MachineBasicBlock *SaveMBB = MBB;
   while (PredMBB) {
     TargetMBBInfo *PredMBBInfo = getMBBInfo(PredMBB);
-    if (!PredMBBInfo || PredMBBInfo->SrcReg != MBBInfo->SrcReg)
+    if (!PredMBBInfo || PredMBBInfo->SrcReg != MBBInfo->SrcReg) {
       return false;
+
+}
 
     assert(SaveMBB == PredMBBInfo->TBB || SaveMBB == PredMBBInfo->FBB);
     bool IsFalseBranch = (SaveMBB == PredMBBInfo->FBB);
@@ -166,12 +168,16 @@ bool X86CondBrFolding::findPath(
     // These are the conditions on which we could combine the compares.
     if ((CmpValue == PredCmpValue) ||
         (CmpValue == PredCmpValue - 1 && CC == X86::COND_L) ||
-        (CmpValue == PredCmpValue + 1 && CC == X86::COND_G))
+        (CmpValue == PredCmpValue + 1 && CC == X86::COND_G)) {
       return true;
 
+}
+
     // If PredMBB has more than on preds, or not a pure cmp and br, we bailout.
-    if (PredMBB->pred_size() != 1 || !PredMBBInfo->CmpBrOnly)
+    if (PredMBB->pred_size() != 1 || !PredMBBInfo->CmpBrOnly) {
       return false;
+
+}
 
     SaveMBB = PredMBB;
     PredMBB = *PredMBB->pred_begin();
@@ -182,15 +188,21 @@ bool X86CondBrFolding::findPath(
 // Fix up any PHI node in the successor of MBB.
 static void fixPHIsInSucc(MachineBasicBlock *MBB, MachineBasicBlock *OldMBB,
                           MachineBasicBlock *NewMBB) {
-  if (NewMBB == OldMBB)
+  if (NewMBB == OldMBB) {
     return;
+
+}
   for (auto MI = MBB->instr_begin(), ME = MBB->instr_end();
-       MI != ME && MI->isPHI(); ++MI)
+       MI != ME && MI->isPHI(); ++MI) {
     for (unsigned i = 2, e = MI->getNumOperands() + 1; i != e; i += 2) {
       MachineOperand &MO = MI->getOperand(i);
-      if (MO.getMBB() == OldMBB)
+      if (MO.getMBB() == OldMBB) {
         MO.setMBB(NewMBB);
+
+}
     }
+
+}
 }
 
 // Utility function to set branch probability for edge MBB->SuccMBB.
@@ -198,8 +210,10 @@ static inline bool setBranchProb(MachineBasicBlock *MBB,
                                  MachineBasicBlock *SuccMBB,
                                  BranchProbability Prob) {
   auto MBBI = std::find(MBB->succ_begin(), MBB->succ_end(), SuccMBB);
-  if (MBBI == MBB->succ_end())
+  if (MBBI == MBB->succ_end()) {
     return false;
+
+}
   MBB->setSuccProbability(MBBI, Prob);
   return true;
 }
@@ -243,8 +257,10 @@ void X86CondBrFolding::replaceBrDest(MachineBasicBlock *MBB,
 // Change the CondCode and BrInstr according to MBBInfo.
 void X86CondBrFolding::fixupModifiedCond(MachineBasicBlock *MBB) {
   TargetMBBInfo *MBBInfo = getMBBInfo(MBB);
-  if (!MBBInfo->Modified)
+  if (!MBBInfo->Modified) {
     return;
+
+}
 
   MachineInstr *BrMI = MBBInfo->BrInstr;
   X86::CondCode CC = MBBInfo->BranchCode;
@@ -288,19 +304,25 @@ void X86CondBrFolding::optimizeCondBr(
   MachineBasicBlock *PredMBB = BranchPath.front();
   TargetMBBInfo *PredMBBInfo = getMBBInfo(PredMBB);
   assert(PredMBBInfo && "Expecting a candidate MBB");
-  if (PredMBBInfo->Modified)
+  if (PredMBBInfo->Modified) {
     fixupModifiedCond(PredMBB);
+
+}
   CC = PredMBBInfo->BranchCode;
   // Don't do this if depth of BranchPath is 1 and PredMBB is of COND_E.
   // We will short-cycle directly for this case.
-  if (!(CC == X86::COND_E && BranchPath.size() == 1))
+  if (!(CC == X86::COND_E && BranchPath.size() == 1)) {
     replaceBrDest(PredMBB, &MBB, MBBInfo->FBB);
+
+}
 
   MachineBasicBlock *RootMBB = BranchPath.back();
   TargetMBBInfo *RootMBBInfo = getMBBInfo(RootMBB);
   assert(RootMBBInfo && "Expecting a candidate MBB");
-  if (RootMBBInfo->Modified)
+  if (RootMBBInfo->Modified) {
     fixupModifiedCond(RootMBB);
+
+}
   CC = RootMBBInfo->BranchCode;
 
   if (CC != X86::COND_E) {
@@ -347,11 +369,15 @@ void X86CondBrFolding::optimizeCondBr(
     for (auto &I : BranchPath) {
       MachineBasicBlock *ThisMBB = I;
       if (!ThisMBB->hasSuccessorProbabilities() ||
-          !ThisMBB->isSuccessor(NextMBB))
+          !ThisMBB->isSuccessor(NextMBB)) {
         break;
+
+}
       Prob = MBPI->getEdgeProbability(ThisMBB, NextMBB);
-      if (Prob.isUnknown())
+      if (Prob.isUnknown()) {
         break;
+
+}
       TargetProb = Prob * TargetProb;
       Prob = Prob - TargetProb;
       setBranchProb(ThisMBB, NextMBB, Prob);
@@ -359,25 +385,33 @@ void X86CondBrFolding::optimizeCondBr(
         setBranchProb(ThisMBB, TargetMBB, TargetProb);
       }
       ThisMBB->normalizeSuccProbs();
-      if (ThisMBB == RootMBB)
+      if (ThisMBB == RootMBB) {
         break;
+
+}
       NextMBB = ThisMBB;
     }
     return true;
   };
-  if (CC != X86::COND_E && !TargetProb.isUnknown())
+  if (CC != X86::COND_E && !TargetProb.isUnknown()) {
     fixBranchProb(MBBInfo->FBB);
 
-  if (CC != X86::COND_E)
+}
+
+  if (CC != X86::COND_E) {
     RemoveList.push_back(&MBB);
+
+}
 
   // Invalidate MBBInfo just in case.
   MBBInfos[MBB.getNumber()] = nullptr;
   MBBInfos[RootMBB->getNumber()] = nullptr;
 
   LLVM_DEBUG(dbgs() << "After optimization:\nRootMBB is: " << *RootMBB << "\n");
-  if (BranchPath.size() > 1)
+  if (BranchPath.size() > 1) {
     LLVM_DEBUG(dbgs() << "PredMBB is: " << *(BranchPath[0]) << "\n");
+
+}
 }
 
 // Driver function for optimization: find the valid candidate and apply
@@ -388,20 +422,28 @@ bool X86CondBrFolding::optimize() {
                     << " *****\n");
   // Setup data structures.
   MBBInfos.resize(MF.getNumBlockIDs());
-  for (auto &MBB : MF)
+  for (auto &MBB : MF) {
     MBBInfos[MBB.getNumber()] = analyzeMBB(MBB);
+
+}
 
   for (auto &MBB : MF) {
     TargetMBBInfo *MBBInfo = getMBBInfo(&MBB);
-    if (!MBBInfo || !MBBInfo->CmpBrOnly)
+    if (!MBBInfo || !MBBInfo->CmpBrOnly) {
       continue;
-    if (MBB.pred_size() != 1)
+
+}
+    if (MBB.pred_size() != 1) {
       continue;
+
+}
     LLVM_DEBUG(dbgs() << "Work on MBB." << MBB.getNumber()
                       << " CmpValue: " << MBBInfo->CmpValue << "\n");
     SmallVector<MachineBasicBlock *, 4> BranchPath;
-    if (!findPath(&MBB, BranchPath))
+    if (!findPath(&MBB, BranchPath)) {
       continue;
+
+}
 
 #ifndef NDEBUG
     LLVM_DEBUG(dbgs() << "Found one path (len=" << BranchPath.size() << "):\n");
@@ -422,8 +464,10 @@ bool X86CondBrFolding::optimize() {
   }
   NumFixedCondBrs += RemoveList.size();
   for (auto MBBI : RemoveList) {
-    while (!MBBI->succ_empty())
+    while (!MBBI->succ_empty()) {
       MBBI->removeSuccessor(MBBI->succ_end() - 1);
+
+}
 
     MBBI->eraseFromParent();
   }
@@ -462,8 +506,10 @@ bool X86CondBrFolding::analyzeCompare(const MachineInstr &MI, unsigned &SrcReg,
     break;
   }
   SrcReg = MI.getOperand(SrcRegIndex).getReg();
-  if (!MI.getOperand(ValueIndex).isImm())
+  if (!MI.getOperand(ValueIndex).isImm()) {
     return false;
+
+}
   CmpValue = MI.getOperand(ValueIndex).getImm();
   return true;
 }
@@ -487,8 +533,10 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
   bool Modified;
   bool CmpBrOnly;
 
-  if (MBB.succ_size() != 2)
+  if (MBB.succ_size() != 2) {
     return nullptr;
+
+}
 
   CmpBrOnly = true;
   FBB = TBB = nullptr;
@@ -496,17 +544,23 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
   MachineBasicBlock::iterator I = MBB.end();
   while (I != MBB.begin()) {
     --I;
-    if (I->isDebugValue())
+    if (I->isDebugValue()) {
       continue;
+
+}
     if (I->getOpcode() == X86::JMP_1) {
-      if (FBB)
+      if (FBB) {
         return nullptr;
+
+}
       FBB = I->getOperand(0).getMBB();
       continue;
     }
     if (I->isBranch()) {
-      if (TBB)
+      if (TBB) {
         return nullptr;
+
+}
       CC = X86::getCondFromBranch(*I);
       switch (CC) {
       default:
@@ -524,8 +578,10 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
       continue;
     }
     if (analyzeCompare(*I, SrcReg, CmpValue)) {
-      if (CmpInstr)
+      if (CmpInstr) {
         return nullptr;
+
+}
       CmpInstr = &*I;
       continue;
     }
@@ -533,8 +589,10 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
     break;
   }
 
-  if (!TBB || !FBB || !CmpInstr)
+  if (!TBB || !FBB || !CmpInstr) {
     return nullptr;
+
+}
 
   // Simplify CondCode. Note this is only to simplify the findPath logic
   // and will not change the instruction here.
@@ -545,15 +603,19 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
     Modified = true;
     break;
   case X86::COND_LE:
-    if (CmpValue == INT_MAX)
+    if (CmpValue == INT_MAX) {
       return nullptr;
+
+}
     CC = X86::COND_L;
     CmpValue += 1;
     Modified = true;
     break;
   case X86::COND_GE:
-    if (CmpValue == INT_MIN)
+    if (CmpValue == INT_MIN) {
       return nullptr;
+
+}
     CC = X86::COND_G;
     CmpValue -= 1;
     Modified = true;
@@ -568,8 +630,10 @@ X86CondBrFolding::analyzeMBB(MachineBasicBlock &MBB) {
 
 bool X86CondBrFoldingPass::runOnMachineFunction(MachineFunction &MF) {
   const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
-  if (!ST.threewayBranchProfitable())
+  if (!ST.threewayBranchProfitable()) {
     return false;
+
+}
   const X86InstrInfo *TII = ST.getInstrInfo();
   const MachineBranchProbabilityInfo *MBPI =
       &getAnalysis<MachineBranchProbabilityInfo>();

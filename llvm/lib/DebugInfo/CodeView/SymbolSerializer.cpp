@@ -28,12 +28,16 @@ Error SymbolSerializer::visitSymbolBegin(CVSymbol &Record) {
 
   Writer.setOffset(0);
 
-  if (auto EC = writeRecordPrefix(Record.kind()))
+  if (auto EC = writeRecordPrefix(Record.kind())) {
     return EC;
 
+}
+
   CurrentSymbol = Record.kind();
-  if (auto EC = Mapping.visitSymbolBegin(Record))
+  if (auto EC = Mapping.visitSymbolBegin(Record)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -41,14 +45,18 @@ Error SymbolSerializer::visitSymbolBegin(CVSymbol &Record) {
 Error SymbolSerializer::visitSymbolEnd(CVSymbol &Record) {
   assert(CurrentSymbol.hasValue() && "Not in a symbol mapping!");
 
-  if (auto EC = Mapping.visitSymbolEnd(Record))
+  if (auto EC = Mapping.visitSymbolEnd(Record)) {
     return EC;
+
+}
 
   uint32_t RecordEnd = Writer.getOffset();
   uint16_t Length = RecordEnd - 2;
   Writer.setOffset(0);
-  if (auto EC = Writer.writeInteger(Length))
+  if (auto EC = Writer.writeInteger(Length)) {
     return EC;
+
+}
 
   uint8_t *StableStorage = Storage.Allocate<uint8_t>(RecordEnd);
   ::memcpy(StableStorage, &RecordBuffer[0], RecordEnd);

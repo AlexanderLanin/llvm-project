@@ -87,13 +87,15 @@ void SignedBitwiseCheck::check(const MatchFinder::MatchResult &Result) {
     Location = UnaryOp->getBeginLoc();
   } else {
     if (const auto *BinaryOp =
-            N.getNodeAs<BinaryOperator>("binary-no-sign-interference"))
+            N.getNodeAs<BinaryOperator>("binary-no-sign-interference")) {
       Location = BinaryOp->getBeginLoc();
-    else if (const auto *BinaryOp =
-                 N.getNodeAs<BinaryOperator>("binary-sign-interference"))
+    } else if (const auto *BinaryOp =
+                 N.getNodeAs<BinaryOperator>("binary-sign-interference")) {
       Location = BinaryOp->getBeginLoc();
-    else
+    } else {
       llvm_unreachable("unexpected matcher result");
+
+}
   }
   diag(Location, "use of a signed integer operand with a "
                  "%select{binary|unary}0 bitwise operator")

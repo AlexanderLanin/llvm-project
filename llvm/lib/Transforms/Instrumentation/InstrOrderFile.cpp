@@ -69,8 +69,10 @@ public:
     LLVMContext &Ctx = M.getContext();
     int NumFunctions = 0;
     for (Function &F : M) {
-      if (!F.isDeclaration())
+      if (!F.isDeclaration()) {
         NumFunctions++;
+
+}
     }
 
     BufferTy =
@@ -162,8 +164,10 @@ public:
 
     int FuncId = 0;
     for (Function &F : M) {
-      if (F.isDeclaration())
+      if (F.isDeclaration()) {
         continue;
+
+}
       generateCodeSequence(M, F, FuncId);
       ++FuncId;
     }
@@ -188,16 +192,20 @@ public:
 } // End anonymous namespace
 
 bool InstrOrderFileLegacyPass::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   return InstrOrderFile().run(M);
 }
 
 PreservedAnalyses
 InstrOrderFilePass::run(Module &M, ModuleAnalysisManager &AM) {
-  if (InstrOrderFile().run(M))
+  if (InstrOrderFile().run(M)) {
     return PreservedAnalyses::none();
+
+}
   return PreservedAnalyses::all();
 }
 

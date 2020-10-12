@@ -156,8 +156,10 @@ TEST(LinkGraphTest, SplitBlock) {
   if (size(B1.edges()) == 2) {
     auto *E1 = &*B1.edges().begin();
     auto *E2 = &*(B1.edges().begin() + 1);
-    if (E2->getOffset() < E1->getOffset())
+    if (E2->getOffset() < E1->getOffset()) {
       std::swap(E1, E2);
+
+}
     EXPECT_EQ(E1->getOffset(), 0U);
     EXPECT_EQ(E2->getOffset(), 4U);
   }
@@ -166,8 +168,10 @@ TEST(LinkGraphTest, SplitBlock) {
   if (size(B2.edges()) == 2) {
     auto *E1 = &*B2.edges().begin();
     auto *E2 = &*(B2.edges().begin() + 1);
-    if (E2->getOffset() < E1->getOffset())
+    if (E2->getOffset() < E1->getOffset()) {
       std::swap(E1, E2);
+
+}
     EXPECT_EQ(E1->getOffset(), 0U);
     EXPECT_EQ(E2->getOffset(), 4U);
   }

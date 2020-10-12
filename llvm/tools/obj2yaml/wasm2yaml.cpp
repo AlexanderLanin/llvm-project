@@ -77,8 +77,10 @@ WasmDumper::dumpCustomSection(const WasmSection &WasmSec) {
     LinkingSec->Version = Obj.linkingData().Version;
 
     ArrayRef<StringRef> Comdats = Obj.linkingData().Comdats;
-    for (StringRef ComdatName : Comdats)
+    for (StringRef ComdatName : Comdats) {
       LinkingSec->Comdats.emplace_back(WasmYAML::Comdat{ComdatName, {}});
+
+}
     for (auto &Func : Obj.functions()) {
       if (Func.Comdat != UINT32_MAX) {
         LinkingSec->Comdats[Func.Comdat].Entries.emplace_back(
@@ -198,10 +200,14 @@ ErrorOr<WasmYAML::Object *> WasmDumper::dump() {
       for (const auto &FunctionSig : Obj.types()) {
         WasmYAML::Signature Sig;
         Sig.Index = Index++;
-        for (const auto &ParamType : FunctionSig.Params)
+        for (const auto &ParamType : FunctionSig.Params) {
           Sig.ParamTypes.emplace_back(static_cast<uint32_t>(ParamType));
-        for (const auto &ReturnType : FunctionSig.Returns)
+
+}
+        for (const auto &ReturnType : FunctionSig.Returns) {
           Sig.ReturnTypes.emplace_back(static_cast<uint32_t>(ReturnType));
+
+}
         TypeSec->Signatures.push_back(Sig);
       }
       S = std::move(TypeSec);
@@ -377,8 +383,10 @@ ErrorOr<WasmYAML::Object *> WasmDumper::dump() {
 std::error_code wasm2yaml(raw_ostream &Out, const object::WasmObjectFile &Obj) {
   WasmDumper Dumper(Obj);
   ErrorOr<WasmYAML::Object *> YAMLOrErr = Dumper.dump();
-  if (std::error_code EC = YAMLOrErr.getError())
+  if (std::error_code EC = YAMLOrErr.getError()) {
     return EC;
+
+}
 
   std::unique_ptr<WasmYAML::Object> YAML(YAMLOrErr.get());
   yaml::Output Yout(Out);

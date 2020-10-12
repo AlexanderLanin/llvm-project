@@ -189,8 +189,10 @@ struct TarjanSCC {
   TarjanSCC() : Components(1) {}
 
   void Start(const Instruction *Start) {
-    if (Root.lookup(Start) == 0)
+    if (Root.lookup(Start) == 0) {
       FindSCC(Start);
+
+}
   }
 
   const SmallPtrSetImpl<const Value *> &getComponentFor(const Value *V) const {
@@ -208,10 +210,14 @@ private:
     unsigned int OurDFS = DFSNum;
     for (auto &Op : I->operands()) {
       if (auto *InstOp = dyn_cast<Instruction>(Op)) {
-        if (Root.lookup(Op) == 0)
+        if (Root.lookup(Op) == 0) {
           FindSCC(InstOp);
-        if (!InComponent.count(Op))
+
+}
+        if (!InComponent.count(Op)) {
           Root[I] = std::min(Root.lookup(I), Root.lookup(Op));
+
+}
       }
     }
     // See if we really were the root of a component, by seeing if we still have
@@ -320,8 +326,10 @@ public:
   }
   void resetNextLeader() { NextLeader = {nullptr, ~0}; }
   void addPossibleNextLeader(std::pair<Value *, unsigned int> LeaderPair) {
-    if (LeaderPair.second < NextLeader.second)
+    if (LeaderPair.second < NextLeader.second) {
       NextLeader = LeaderPair;
+
+}
   }
 
   Value *getStoredValue() const { return RepStoredValue; }
@@ -371,22 +379,34 @@ public:
   // Return true if two congruence classes are equivalent to each other. This
   // means that every field but the ID number and the dead field are equivalent.
   bool isEquivalentTo(const CongruenceClass *Other) const {
-    if (!Other)
+    if (!Other) {
       return false;
-    if (this == Other)
+
+}
+    if (this == Other) {
       return true;
+
+}
 
     if (std::tie(StoreCount, RepLeader, RepStoredValue, RepMemoryAccess) !=
         std::tie(Other->StoreCount, Other->RepLeader, Other->RepStoredValue,
-                 Other->RepMemoryAccess))
+                 Other->RepMemoryAccess)) {
       return false;
-    if (DefiningExpr != Other->DefiningExpr)
+
+}
+    if (DefiningExpr != Other->DefiningExpr) {
       if (!DefiningExpr || !Other->DefiningExpr ||
-          *DefiningExpr != *Other->DefiningExpr)
+          *DefiningExpr != *Other->DefiningExpr) {
         return false;
 
-    if (Members.size() != Other->Members.size())
+}
+
+}
+
+    if (Members.size() != Other->Members.size()) {
       return false;
+
+}
 
     return all_of(Members,
                   [&](const Value *V) { return Other->Members.count(V); });
@@ -463,23 +483,31 @@ template <> struct DenseMapInfo<const Expression *> {
   }
 
   static bool isEqual(const ExactEqualsExpression &LHS, const Expression *RHS) {
-    if (RHS == getTombstoneKey() || RHS == getEmptyKey())
+    if (RHS == getTombstoneKey() || RHS == getEmptyKey()) {
       return false;
+
+}
     return LHS == *RHS;
   }
 
   static bool isEqual(const Expression *LHS, const Expression *RHS) {
-    if (LHS == RHS)
+    if (LHS == RHS) {
       return true;
+
+}
     if (LHS == getTombstoneKey() || RHS == getTombstoneKey() ||
-        LHS == getEmptyKey() || RHS == getEmptyKey())
+        LHS == getEmptyKey() || RHS == getEmptyKey()) {
       return false;
+
+}
     // Compare hashes before equality.  This is *not* what the hashtable does,
     // since it is computing it modulo the number of buckets, whereas we are
     // using the full hash keyspace.  Since the hashes are precomputed, this
     // check is *much* faster than equality.
-    if (LHS->getComputedHash() != RHS->getComputedHash())
+    if (LHS->getComputedHash() != RHS->getComputedHash()) {
       return false;
+
+}
     return *LHS == *RHS;
   }
 };
@@ -707,8 +735,10 @@ private:
 
   CongruenceClass *ensureLeaderOfMemoryClass(MemoryAccess *MA) {
     auto *CC = getMemoryClass(MA);
-    if (CC->getMemoryLeader() != MA)
+    if (CC->getMemoryLeader() != MA) {
       CC = createMemoryClass(MA);
+
+}
     return CC;
   }
 
@@ -870,8 +900,10 @@ private:
 
 template <typename T>
 static bool equalsLoadStoreHelper(const T &LHS, const Expression &RHS) {
-  if (!isa<LoadExpression>(RHS) && !isa<StoreExpression>(RHS))
+  if (!isa<LoadExpression>(RHS) && !isa<StoreExpression>(RHS)) {
     return false;
+
+}
   return LHS.MemoryExpression::equals(RHS);
 }
 
@@ -880,12 +912,18 @@ bool LoadExpression::equals(const Expression &Other) const {
 }
 
 bool StoreExpression::equals(const Expression &Other) const {
-  if (!equalsLoadStoreHelper(*this, Other))
+  if (!equalsLoadStoreHelper(*this, Other)) {
     return false;
+
+}
   // Make sure that store vs store includes the value operand.
-  if (const auto *S = dyn_cast<StoreExpression>(&Other))
-    if (getStoredValue() != S->getStoredValue())
+  if (const auto *S = dyn_cast<StoreExpression>(&Other)) {
+    if (getStoredValue() != S->getStoredValue()) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -917,8 +955,10 @@ MemoryPhi *NewGVN::getMemoryAccess(const BasicBlock *BB) const {
 BasicBlock *NewGVN::getBlockForValue(Value *V) const {
   if (auto *I = dyn_cast<Instruction>(V)) {
     auto *Parent = I->getParent();
-    if (Parent)
+    if (Parent) {
       return Parent;
+
+}
     Parent = TempToBlock.lookup(V);
     assert(Parent && "Every fake instruction should have a block");
     return Parent;
@@ -941,9 +981,13 @@ void NewGVN::deleteExpression(const Expression *E) const {
 
 // If V is a predicateinfo copy, get the thing it is a copy of.
 static Value *getCopyOf(const Value *V) {
-  if (auto *II = dyn_cast<IntrinsicInst>(V))
-    if (II->getIntrinsicID() == Intrinsic::ssa_copy)
+  if (auto *II = dyn_cast<IntrinsicInst>(V)) {
+    if (II->getIntrinsicID() == Intrinsic::ssa_copy) {
       return II->getOperand(0);
+
+}
+
+}
   return nullptr;
 }
 
@@ -994,14 +1038,22 @@ PHIExpression *NewGVN::createPHIExpression(ArrayRef<ValPair> PHIOperands,
   // Filter out unreachable phi operands.
   auto Filtered = make_filter_range(PHIOperands, [&](const ValPair &P) {
     auto *BB = P.second;
-    if (auto *PHIOp = dyn_cast<PHINode>(I))
-      if (isCopyOfPHI(P.first, PHIOp))
+    if (auto *PHIOp = dyn_cast<PHINode>(I)) {
+      if (isCopyOfPHI(P.first, PHIOp)) {
         return false;
-    if (!ReachableEdges.count({BB, PHIBlock}))
+
+}
+
+}
+    if (!ReachableEdges.count({BB, PHIBlock})) {
       return false;
+
+}
     // Things in TOPClass are equivalent to everything.
-    if (ValueToClass.lookup(P.first) == TOPClass)
+    if (ValueToClass.lookup(P.first) == TOPClass) {
       return false;
+
+}
     OriginalOpsConstant = OriginalOpsConstant && isa<Constant>(P.first);
     HasBackedge = HasBackedge || isBackedge(BB, PHIBlock);
     return lookupOperandLeader(P.first) != I;
@@ -1017,10 +1069,12 @@ PHIExpression *NewGVN::createPHIExpression(ArrayRef<ValPair> PHIOperands,
 // E from Instruction I in block B.
 bool NewGVN::setBasicExpressionInfo(Instruction *I, BasicExpression *E) const {
   bool AllConstant = true;
-  if (auto *GEP = dyn_cast<GetElementPtrInst>(I))
+  if (auto *GEP = dyn_cast<GetElementPtrInst>(I)) {
     E->setType(GEP->getSourceElementType());
-  else
+  } else {
     E->setType(I->getType());
+
+}
   E->setOpcode(I->getOpcode());
   E->allocateOperands(ArgRecycler, ExpressionAllocator);
 
@@ -1048,15 +1102,19 @@ const Expression *NewGVN::createBinaryExpression(unsigned Opcode, Type *T,
     // of their operands get the same value number by sorting the operand value
     // numbers.  Since all commutative instructions have two operands it is more
     // efficient to sort by hand rather than using, say, std::sort.
-    if (shouldSwapOperands(Arg1, Arg2))
+    if (shouldSwapOperands(Arg1, Arg2)) {
       std::swap(Arg1, Arg2);
+
+}
   }
   E->op_push_back(lookupOperandLeader(Arg1));
   E->op_push_back(lookupOperandLeader(Arg2));
 
   Value *V = SimplifyBinOp(Opcode, E->getOperand(0), E->getOperand(1), SQ);
-  if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+  if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
     return SimplifiedE;
+
+}
   return E;
 }
 
@@ -1066,21 +1124,27 @@ const Expression *NewGVN::createBinaryExpression(unsigned Opcode, Type *T,
 const Expression *NewGVN::checkSimplificationResults(Expression *E,
                                                      Instruction *I,
                                                      Value *V) const {
-  if (!V)
+  if (!V) {
     return nullptr;
+
+}
   if (auto *C = dyn_cast<Constant>(V)) {
-    if (I)
+    if (I) {
       LLVM_DEBUG(dbgs() << "Simplified " << *I << " to "
                         << " constant " << *C << "\n");
+
+}
     NumGVNOpsSimplified++;
     assert(isa<BasicExpression>(E) &&
            "We should always have had a basic expression here");
     deleteExpression(E);
     return createConstantExpression(C);
   } else if (isa<Argument>(V) || isa<GlobalVariable>(V)) {
-    if (I)
+    if (I) {
       LLVM_DEBUG(dbgs() << "Simplified " << *I << " to "
                         << " variable " << *V << "\n");
+
+}
     deleteExpression(E);
     return createVariableExpression(V);
   }
@@ -1092,8 +1156,10 @@ const Expression *NewGVN::checkSimplificationResults(Expression *E,
       // that we're users of the value we simplified to.
       if (I != V) {
         // Don't add temporary instructions to the user lists.
-        if (!AllTempInstructions.count(I))
+        if (!AllTempInstructions.count(I)) {
           addAdditionalUsers(V, I);
+
+}
       }
       return createVariableOrConstant(CC->getLeader());
     }
@@ -1102,13 +1168,17 @@ const Expression *NewGVN::checkSimplificationResults(Expression *E,
       // that we're users of the value we simplified to.
       if (I != V) {
         // Don't add temporary instructions to the user lists.
-        if (!AllTempInstructions.count(I))
+        if (!AllTempInstructions.count(I)) {
           addAdditionalUsers(V, I);
+
+}
       }
 
-      if (I)
+      if (I) {
         LLVM_DEBUG(dbgs() << "Simplified " << *I << " to "
                           << " expression " << *CC->getDefiningExpr() << "\n");
+
+}
       NumGVNOpsSimplified++;
       deleteExpression(E);
       return CC->getDefiningExpr();
@@ -1132,8 +1202,10 @@ const Expression *NewGVN::createExpression(Instruction *I) const {
     // numbers.  Since all commutative instructions have two operands it is more
     // efficient to sort by hand rather than using, say, std::sort.
     assert(I->getNumOperands() == 2 && "Unsupported commutative instruction!");
-    if (shouldSwapOperands(E->getOperand(0), E->getOperand(1)))
+    if (shouldSwapOperands(E->getOperand(0), E->getOperand(1))) {
       E->swapOperands(0, 1);
+
+}
   }
   // Perform simplification.
   if (auto *CI = dyn_cast<CmpInst>(I)) {
@@ -1152,8 +1224,10 @@ const Expression *NewGVN::createExpression(Instruction *I) const {
             E->getOperand(1)->getType() == I->getOperand(1)->getType()));
     Value *V =
         SimplifyCmpInst(Predicate, E->getOperand(0), E->getOperand(1), SQ);
-    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
       return SimplifiedE;
+
+}
   } else if (isa<SelectInst>(I)) {
     if (isa<Constant>(E->getOperand(0)) ||
         E->getOperand(1) == E->getOperand(2)) {
@@ -1161,24 +1235,32 @@ const Expression *NewGVN::createExpression(Instruction *I) const {
              E->getOperand(2)->getType() == I->getOperand(2)->getType());
       Value *V = SimplifySelectInst(E->getOperand(0), E->getOperand(1),
                                     E->getOperand(2), SQ);
-      if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+      if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
         return SimplifiedE;
+
+}
     }
   } else if (I->isBinaryOp()) {
     Value *V =
         SimplifyBinOp(E->getOpcode(), E->getOperand(0), E->getOperand(1), SQ);
-    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
       return SimplifiedE;
+
+}
   } else if (auto *CI = dyn_cast<CastInst>(I)) {
     Value *V =
         SimplifyCastInst(CI->getOpcode(), E->getOperand(0), CI->getType(), SQ);
-    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
       return SimplifiedE;
+
+}
   } else if (isa<GetElementPtrInst>(I)) {
     Value *V = SimplifyGEPInst(
         E->getType(), ArrayRef<Value *>(E->op_begin(), E->op_end()), SQ);
-    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+    if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
       return SimplifiedE;
+
+}
   } else if (AllConstant) {
     // We don't bother trying to simplify unless all of the operands
     // were constant.
@@ -1188,12 +1270,18 @@ const Expression *NewGVN::createExpression(Instruction *I) const {
     // simplify (IE there is no SimplifyZExt).
 
     SmallVector<Constant *, 8> C;
-    for (Value *Arg : E->operands())
+    for (Value *Arg : E->operands()) {
       C.emplace_back(cast<Constant>(Arg));
 
-    if (Value *V = ConstantFoldInstOperands(I, C, DL, TLI))
-      if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V))
+}
+
+    if (Value *V = ConstantFoldInstOperands(I, C, DL, TLI)) {
+      if (const Expression *SimplifiedE = checkSimplificationResults(E, I, V)) {
         return SimplifiedE;
+
+}
+
+}
   }
   return E;
 }
@@ -1231,8 +1319,10 @@ const VariableExpression *NewGVN::createVariableExpression(Value *V) const {
 }
 
 const Expression *NewGVN::createVariableOrConstant(Value *V) const {
-  if (auto *C = dyn_cast<Constant>(V))
+  if (auto *C = dyn_cast<Constant>(V)) {
     return createConstantExpression(C);
+
+}
   return createVariableExpression(V);
 }
 
@@ -1277,15 +1367,23 @@ bool NewGVN::someEquivalentDominates(const Instruction *Inst,
   // Instruction U could be in H,  with equivalents in every other sibling.
   // Depending on the rpo order picked, the leader could be the equivalent in
   // any of these siblings.
-  if (!CC)
+  if (!CC) {
     return false;
-  if (alwaysAvailable(CC->getLeader()))
+
+}
+  if (alwaysAvailable(CC->getLeader())) {
     return true;
-  if (DT->dominates(cast<Instruction>(CC->getLeader()), U))
+
+}
+  if (DT->dominates(cast<Instruction>(CC->getLeader()), U)) {
     return true;
+
+}
   if (CC->getNextLeader().first &&
-      DT->dominates(cast<Instruction>(CC->getNextLeader().first), U))
+      DT->dominates(cast<Instruction>(CC->getNextLeader().first), U)) {
     return true;
+
+}
   return llvm::any_of(*CC, [&](const Value *Member) {
     return Member != CC->getLeader() &&
            DT->dominates(cast<Instruction>(Member), U);
@@ -1300,8 +1398,10 @@ Value *NewGVN::lookupOperandLeader(Value *V) const {
     // Everything in TOP is represented by undef, as it can be any value.
     // We do have to make sure we get the type right though, so we can't set the
     // RepLeader to undef.
-    if (CC == TOPClass)
+    if (CC == TOPClass) {
       return UndefValue::get(V->getType());
+
+}
     return CC->getStoredValue() ? CC->getStoredValue() : CC->getLeader();
   }
 
@@ -1334,8 +1434,10 @@ LoadExpression *NewGVN::createLoadExpression(Type *LoadType, Value *PointerOp,
   // Give store and loads same opcode so they value number together.
   E->setOpcode(0);
   E->op_push_back(PointerOp);
-  if (LI)
+  if (LI) {
     E->setAlignment(MaybeAlign(LI->getAlignment()));
+
+}
 
   // TODO: Value number heap versions. We may be able to discover
   // things alias analysis can't on it's own (IE that a store and a
@@ -1368,15 +1470,21 @@ const Expression *NewGVN::performSymbolicStoreEvaluation(Instruction *I) const {
   auto *StoreAccess = getMemoryAccess(SI);
   // Get the expression, if any, for the RHS of the MemoryDef.
   const MemoryAccess *StoreRHS = StoreAccess->getDefiningAccess();
-  if (EnableStoreRefinement)
+  if (EnableStoreRefinement) {
     StoreRHS = MSSAWalker->getClobberingMemoryAccess(StoreAccess);
+
+}
   // If we bypassed the use-def chains, make sure we add a use.
   StoreRHS = lookupMemoryLeader(StoreRHS);
-  if (StoreRHS != StoreAccess->getDefiningAccess())
+  if (StoreRHS != StoreAccess->getDefiningAccess()) {
     addMemoryUsers(StoreRHS, StoreAccess);
+
+}
   // If we are defined by ourselves, use the live on entry def.
-  if (StoreRHS == StoreAccess)
+  if (StoreRHS == StoreAccess) {
     StoreRHS = MSSA->getLiveOnEntryDef();
+
+}
 
   if (SI->isSimple()) {
     // See if we are defined by a previous store expression, it already has a
@@ -1389,18 +1497,24 @@ const Expression *NewGVN::performSymbolicStoreEvaluation(Instruction *I) const {
     // store, which, assuming the value numbering state is not corrupt, is
     // sufficient, because we must also be equivalent to that store's expression
     // for it to be in the same class as the load.
-    if (LastCC && LastCC->getStoredValue() == LastStore->getStoredValue())
+    if (LastCC && LastCC->getStoredValue() == LastStore->getStoredValue()) {
       return LastStore;
+
+}
     // Also check if our value operand is defined by a load of the same memory
     // location, and the memory state is the same as it was then (otherwise, it
     // could have been overwritten later. See test32 in
     // transforms/DeadStoreElimination/simple.ll).
-    if (auto *LI = dyn_cast<LoadInst>(LastStore->getStoredValue()))
+    if (auto *LI = dyn_cast<LoadInst>(LastStore->getStoredValue())) {
       if ((lookupOperandLeader(LI->getPointerOperand()) ==
            LastStore->getOperand(0)) &&
           (lookupMemoryLeader(getMemoryAccess(LI)->getDefiningAccess()) ==
-           StoreRHS))
+           StoreRHS)) {
         return LastStore;
+
+}
+
+}
     deleteExpression(LastStore);
   }
 
@@ -1422,8 +1536,10 @@ NewGVN::performSymbolicLoadCoercion(Type *LoadType, Value *LoadPtr,
     // Also don't need to coerce if they are the same type, we will just
     // propagate.
     if (LI->isAtomic() > DepSI->isAtomic() ||
-        LoadType == DepSI->getValueOperand()->getType())
+        LoadType == DepSI->getValueOperand()->getType()) {
       return nullptr;
+
+}
     int Offset = analyzeLoadFromClobberingStore(LoadType, LoadPtr, DepSI, DL);
     if (Offset >= 0) {
       if (auto *C = dyn_cast<Constant>(
@@ -1436,18 +1552,22 @@ NewGVN::performSymbolicLoadCoercion(Type *LoadType, Value *LoadPtr,
     }
   } else if (auto *DepLI = dyn_cast<LoadInst>(DepInst)) {
     // Can't forward from non-atomic to atomic without violating memory model.
-    if (LI->isAtomic() > DepLI->isAtomic())
+    if (LI->isAtomic() > DepLI->isAtomic()) {
       return nullptr;
+
+}
     int Offset = analyzeLoadFromClobberingLoad(LoadType, LoadPtr, DepLI, DL);
     if (Offset >= 0) {
       // We can coerce a constant load into a load.
-      if (auto *C = dyn_cast<Constant>(lookupOperandLeader(DepLI)))
+      if (auto *C = dyn_cast<Constant>(lookupOperandLeader(DepLI))) {
         if (auto *PossibleConstant =
                 getConstantLoadValueForLoad(C, Offset, LoadType, DL)) {
           LLVM_DEBUG(dbgs() << "Coercing load from load " << *LI
                             << " to constant " << *PossibleConstant << "\n");
           return createConstantExpression(PossibleConstant);
         }
+
+}
     }
   } else if (auto *DepMI = dyn_cast<MemIntrinsic>(DepInst)) {
     int Offset = analyzeLoadFromClobberingMemInst(LoadType, LoadPtr, DepMI, DL);
@@ -1464,8 +1584,10 @@ NewGVN::performSymbolicLoadCoercion(Type *LoadType, Value *LoadPtr,
   // All of the below are only true if the loaded pointer is produced
   // by the dependent instruction.
   if (LoadPtr != lookupOperandLeader(DepInst) &&
-      !AA->isMustAlias(LoadPtr, DepInst))
+      !AA->isMustAlias(LoadPtr, DepInst)) {
     return nullptr;
+
+}
   // If this load really doesn't depend on anything, then we must be loading an
   // undef value.  This can happen when loading for a fresh allocation with no
   // intervening stores, for example.  Note that this is only true in the case
@@ -1476,8 +1598,10 @@ NewGVN::performSymbolicLoadCoercion(Type *LoadType, Value *LoadPtr,
   // If this load occurs either right after a lifetime begin,
   // then the loaded value is undefined.
   else if (auto *II = dyn_cast<IntrinsicInst>(DepInst)) {
-    if (II->getIntrinsicID() == Intrinsic::lifetime_start)
+    if (II->getIntrinsicID() == Intrinsic::lifetime_start) {
       return createConstantExpression(UndefValue::get(LoadType));
+
+}
   }
   // If this load follows a calloc (which zero initializes memory),
   // then the loaded value is zero
@@ -1493,13 +1617,17 @@ const Expression *NewGVN::performSymbolicLoadEvaluation(Instruction *I) const {
 
   // We can eliminate in favor of non-simple loads, but we won't be able to
   // eliminate the loads themselves.
-  if (!LI->isSimple())
+  if (!LI->isSimple()) {
     return nullptr;
+
+}
 
   Value *LoadAddressLeader = lookupOperandLeader(LI->getPointerOperand());
   // Load of undef is undef.
-  if (isa<UndefValue>(LoadAddressLeader))
+  if (isa<UndefValue>(LoadAddressLeader)) {
     return createConstantExpression(UndefValue::get(LI->getType()));
+
+}
   MemoryAccess *OriginalAccess = getMemoryAccess(I);
   MemoryAccess *DefiningAccess =
       MSSAWalker->getClobberingMemoryAccess(OriginalAccess);
@@ -1508,16 +1636,20 @@ const Expression *NewGVN::performSymbolicLoadEvaluation(Instruction *I) const {
     if (auto *MD = dyn_cast<MemoryDef>(DefiningAccess)) {
       Instruction *DefiningInst = MD->getMemoryInst();
       // If the defining instruction is not reachable, replace with undef.
-      if (!ReachableBlocks.count(DefiningInst->getParent()))
+      if (!ReachableBlocks.count(DefiningInst->getParent())) {
         return createConstantExpression(UndefValue::get(LI->getType()));
+
+}
       // This will handle stores and memory insts.  We only do if it the
       // defining access has a different type, or it is a pointer produced by
       // certain memory operations that cause the memory to have a fixed value
       // (IE things like calloc).
       if (const auto *CoercionResult =
               performSymbolicLoadCoercion(LI->getType(), LoadAddressLeader, LI,
-                                          DefiningInst, DefiningAccess))
+                                          DefiningInst, DefiningAccess)) {
         return CoercionResult;
+
+}
     }
   }
 
@@ -1525,22 +1657,28 @@ const Expression *NewGVN::performSymbolicLoadEvaluation(Instruction *I) const {
                                         DefiningAccess);
   // If our MemoryLeader is not our defining access, add a use to the
   // MemoryLeader, so that we get reprocessed when it changes.
-  if (LE->getMemoryLeader() != DefiningAccess)
+  if (LE->getMemoryLeader() != DefiningAccess) {
     addMemoryUsers(LE->getMemoryLeader(), OriginalAccess);
+
+}
   return LE;
 }
 
 const Expression *
 NewGVN::performSymbolicPredicateInfoEvaluation(Instruction *I) const {
   auto *PI = PredInfo->getPredicateInfoFor(I);
-  if (!PI)
+  if (!PI) {
     return nullptr;
+
+}
 
   LLVM_DEBUG(dbgs() << "Found predicate info from instruction !\n");
 
   auto *PWC = dyn_cast<PredicateWithCondition>(PI);
-  if (!PWC)
+  if (!PWC) {
     return nullptr;
+
+}
 
   auto *CopyOf = I->getOperand(0);
   auto *Cond = PWC->Condition;
@@ -1550,15 +1688,21 @@ NewGVN::performSymbolicPredicateInfoEvaluation(Instruction *I) const {
   if (CopyOf == Cond) {
     // We should not need to add predicate users because the predicate info is
     // already a use of this operand.
-    if (isa<PredicateAssume>(PI))
+    if (isa<PredicateAssume>(PI)) {
       return createConstantExpression(ConstantInt::getTrue(Cond->getType()));
+
+}
     if (auto *PBranch = dyn_cast<PredicateBranch>(PI)) {
-      if (PBranch->TrueEdge)
+      if (PBranch->TrueEdge) {
         return createConstantExpression(ConstantInt::getTrue(Cond->getType()));
+
+}
       return createConstantExpression(ConstantInt::getFalse(Cond->getType()));
     }
-    if (auto *PSwitch = dyn_cast<PredicateSwitch>(PI))
+    if (auto *PSwitch = dyn_cast<PredicateSwitch>(PI)) {
       return createConstantExpression(cast<Constant>(PSwitch->CaseValue));
+
+}
   }
 
   // Not a copy of the condition, so see what the predicates tell us about this
@@ -1572,8 +1716,10 @@ NewGVN::performSymbolicPredicateInfoEvaluation(Instruction *I) const {
 
   // Everything below relies on the condition being a comparison.
   auto *Cmp = dyn_cast<CmpInst>(Cond);
-  if (!Cmp)
+  if (!Cmp) {
     return nullptr;
+
+}
 
   if (CopyOf != Cmp->getOperand(0) && CopyOf != Cmp->getOperand(1)) {
     LLVM_DEBUG(dbgs() << "Copy is not of any condition operands!\n");
@@ -1631,9 +1777,13 @@ const Expression *NewGVN::performSymbolicCallEvaluation(Instruction *I) const {
   if (auto *II = dyn_cast<IntrinsicInst>(I)) {
     // Intrinsics with the returned attribute are copies of arguments.
     if (auto *ReturnedValue = II->getReturnedArgOperand()) {
-      if (II->getIntrinsicID() == Intrinsic::ssa_copy)
-        if (const auto *Result = performSymbolicPredicateInfoEvaluation(I))
+      if (II->getIntrinsicID() == Intrinsic::ssa_copy) {
+        if (const auto *Result = performSymbolicPredicateInfoEvaluation(I)) {
           return Result;
+
+}
+
+}
       return createVariableOrConstant(ReturnedValue);
     }
   }
@@ -1643,8 +1793,10 @@ const Expression *NewGVN::performSymbolicCallEvaluation(Instruction *I) const {
     if (auto *MA = MSSA->getMemoryAccess(CI)) {
       auto *DefiningAccess = MSSAWalker->getClobberingMemoryAccess(MA);
       return createCallExpression(CI, DefiningAccess);
-    } else // MSSA determined that CI does not access memory.
+    } else { // MSSA determined that CI does not access memory.
       return createCallExpression(CI, TOPClass->getMemoryLeader());
+
+}
   }
   return nullptr;
 }
@@ -1717,20 +1869,26 @@ bool NewGVN::isCycleFree(const Instruction *I) const {
     SCCFinder.Start(I);
     auto &SCC = SCCFinder.getComponentFor(I);
     // It's cycle free if it's size 1 or the SCC is *only* phi nodes.
-    if (SCC.size() == 1)
+    if (SCC.size() == 1) {
       InstCycleState.insert({I, ICS_CycleFree});
-    else {
+    } else {
       bool AllPhis = llvm::all_of(SCC, [](const Value *V) {
         return isa<PHINode>(V) || isCopyOfAPHI(V);
       });
       ICS = AllPhis ? ICS_CycleFree : ICS_Cycle;
-      for (auto *Member : SCC)
-        if (auto *MemberPhi = dyn_cast<PHINode>(Member))
+      for (auto *Member : SCC) {
+        if (auto *MemberPhi = dyn_cast<PHINode>(Member)) {
           InstCycleState.insert({MemberPhi, ICS});
+
+}
+
+}
     }
   }
-  if (ICS == ICS_Cycle)
+  if (ICS == ICS_Cycle) {
     return false;
+
+}
   return true;
 }
 
@@ -1794,20 +1952,28 @@ NewGVN::performSymbolicPHIEvaluation(ArrayRef<ValPair> PHIOps,
       // just shortcuts.  If there is no backedge, or all operands are
       // constants, it also must be cycle free.
       if (HasBackedge && !OriginalOpsConstant &&
-          !isa<UndefValue>(AllSameValue) && !isCycleFree(I))
+          !isa<UndefValue>(AllSameValue) && !isCycleFree(I)) {
         return E;
 
+}
+
       // Only have to check for instructions
-      if (auto *AllSameInst = dyn_cast<Instruction>(AllSameValue))
-        if (!someEquivalentDominates(AllSameInst, I))
+      if (auto *AllSameInst = dyn_cast<Instruction>(AllSameValue)) {
+        if (!someEquivalentDominates(AllSameInst, I)) {
           return E;
+
+}
+
+}
     }
     // Can't simplify to something that comes later in the iteration.
     // Otherwise, when and if it changes congruence class, we will never catch
     // up. We will always be a class behind it.
     if (isa<Instruction>(AllSameValue) &&
-        InstrToDFSNum(AllSameValue) > InstrToDFSNum(I))
+        InstrToDFSNum(AllSameValue) > InstrToDFSNum(I)) {
       return E;
+
+}
     NumGVNPhisAllSame++;
     LLVM_DEBUG(dbgs() << "Simplified PHI node " << *I << " to " << *AllSameValue
                       << "\n");
@@ -1821,12 +1987,14 @@ const Expression *
 NewGVN::performSymbolicAggrValueEvaluation(Instruction *I) const {
   if (auto *EI = dyn_cast<ExtractValueInst>(I)) {
     auto *WO = dyn_cast<WithOverflowInst>(EI->getAggregateOperand());
-    if (WO && EI->getNumIndices() == 1 && *EI->idx_begin() == 0)
+    if (WO && EI->getNumIndices() == 1 && *EI->idx_begin() == 0) {
       // EI is an extract from one of our with.overflow intrinsics. Synthesize
       // a semantically equivalent expression instead of an extract value
       // expression.
       return createBinaryExpression(WO->getBinaryOp(), EI->getType(),
                                     WO->getLHS(), WO->getRHS(), I);
+
+}
   }
 
   return createAggregateValueExpression(I);
@@ -1851,15 +2019,19 @@ const Expression *NewGVN::performSymbolicCmpEvaluation(Instruction *I) const {
   // See if we know something about the comparison itself, like it is the target
   // of an assume.
   auto *CmpPI = PredInfo->getPredicateInfoFor(I);
-  if (dyn_cast_or_null<PredicateAssume>(CmpPI))
+  if (dyn_cast_or_null<PredicateAssume>(CmpPI)) {
     return createConstantExpression(ConstantInt::getTrue(CI->getType()));
+
+}
 
   if (Op0 == Op1) {
     // This condition does not depend on predicates, no need to add users
-    if (CI->isTrueWhenEqual())
+    if (CI->isTrueWhenEqual()) {
       return createConstantExpression(ConstantInt::getTrue(CI->getType()));
-    else if (CI->isFalseWhenEqual())
+    } else if (CI->isFalseWhenEqual()) {
       return createConstantExpression(ConstantInt::getFalse(CI->getType()));
+
+}
   }
 
   // NOTE: Because we are comparing both operands here and below, and using
@@ -1890,21 +2062,27 @@ const Expression *NewGVN::performSymbolicCmpEvaluation(Instruction *I) const {
   for (const auto &Op : CI->operands()) {
     auto *PI = PredInfo->getPredicateInfoFor(Op);
     if (const auto *PBranch = dyn_cast_or_null<PredicateBranch>(PI)) {
-      if (PI == LastPredInfo)
+      if (PI == LastPredInfo) {
         continue;
+
+}
       LastPredInfo = PI;
       // In phi of ops cases, we may have predicate info that we are evaluating
       // in a different context.
-      if (!DT->dominates(PBranch->To, getBlockForValue(I)))
+      if (!DT->dominates(PBranch->To, getBlockForValue(I))) {
         continue;
+
+}
       // TODO: Along the false edge, we may know more things too, like
       // icmp of
       // same operands is false.
       // TODO: We only handle actual comparison conditions below, not
       // and/or.
       auto *BranchCond = dyn_cast<CmpInst>(PBranch->Condition);
-      if (!BranchCond)
+      if (!BranchCond) {
         continue;
+
+}
       auto *BranchOp0 = lookupOperandLeader(BranchCond->getOperand(0));
       auto *BranchOp1 = lookupOperandLeader(BranchCond->getOperand(1));
       auto BranchPredicate = BranchCond->getPredicate();
@@ -1957,9 +2135,9 @@ const Expression *
 NewGVN::performSymbolicEvaluation(Value *V,
                                   SmallPtrSetImpl<Value *> &Visited) const {
   const Expression *E = nullptr;
-  if (auto *C = dyn_cast<Constant>(V))
+  if (auto *C = dyn_cast<Constant>(V)) {
     E = createConstantExpression(C);
-  else if (isa<Argument>(V) || isa<GlobalVariable>(V)) {
+  } else if (isa<Argument>(V) || isa<GlobalVariable>(V)) {
     E = createVariableExpression(V);
   } else {
     // TODO: memory intrinsics.
@@ -1974,8 +2152,10 @@ NewGVN::performSymbolicEvaluation(Value *V,
     case Instruction::PHI: {
       SmallVector<ValPair, 3> Ops;
       auto *PN = cast<PHINode>(I);
-      for (unsigned i = 0; i < PN->getNumOperands(); ++i)
+      for (unsigned i = 0; i < PN->getNumOperands(); ++i) {
         Ops.push_back({PN->getIncomingValue(i), PN->getIncomingBlock(i)});
+
+}
       // Sort to ensure the invariant createPHIExpression requires is met.
       sortPHIOps(Ops);
       E = performSymbolicPHIEvaluation(Ops, I, getBlockForValue(I));
@@ -2046,9 +2226,13 @@ NewGVN::performSymbolicEvaluation(Value *V,
 template <typename Map, typename KeyType, typename Func>
 void NewGVN::for_each_found(Map &M, const KeyType &Key, Func F) {
   const auto Result = M.find_as(Key);
-  if (Result != M.end())
-    for (typename Map::mapped_type::value_type Mapped : Result->second)
+  if (Result != M.end()) {
+    for (typename Map::mapped_type::value_type Mapped : Result->second) {
       F(Mapped);
+
+}
+
+}
 }
 
 // Look up a container of values/instructions in a map, and touch all the
@@ -2057,16 +2241,20 @@ template <typename Map, typename KeyType>
 void NewGVN::touchAndErase(Map &M, const KeyType &Key) {
   const auto Result = M.find_as(Key);
   if (Result != M.end()) {
-    for (const typename Map::mapped_type::value_type Mapped : Result->second)
+    for (const typename Map::mapped_type::value_type Mapped : Result->second) {
       TouchedInstructions.set(InstrToDFSNum(Mapped));
+
+}
     M.erase(Result);
   }
 }
 
 void NewGVN::addAdditionalUsers(Value *To, Value *User) const {
   assert(User && To != User);
-  if (isa<Instruction>(To))
+  if (isa<Instruction>(To)) {
     AdditionalUsers[To].insert(User);
+
+}
 }
 
 void NewGVN::markUsersTouched(Value *V) {
@@ -2088,23 +2276,31 @@ void NewGVN::markMemoryDefTouched(const MemoryAccess *MA) {
 }
 
 void NewGVN::markMemoryUsersTouched(const MemoryAccess *MA) {
-  if (isa<MemoryUse>(MA))
+  if (isa<MemoryUse>(MA)) {
     return;
-  for (auto U : MA->users())
+
+}
+  for (auto U : MA->users()) {
     TouchedInstructions.set(MemoryToDFSNum(U));
+
+}
   touchAndErase(MemoryToUsers, MA);
 }
 
 // Add I to the set of users of a given predicate.
 void NewGVN::addPredicateUsers(const PredicateBase *PB, Instruction *I) const {
   // Don't add temporary instructions to the user lists.
-  if (AllTempInstructions.count(I))
+  if (AllTempInstructions.count(I)) {
     return;
 
-  if (auto *PBranch = dyn_cast<PredicateBranch>(PB))
+}
+
+  if (auto *PBranch = dyn_cast<PredicateBranch>(PB)) {
     PredicateToUsers[PBranch->Condition].insert(I);
-  else if (auto *PAssume = dyn_cast<PredicateAssume>(PB))
+  } else if (auto *PAssume = dyn_cast<PredicateAssume>(PB)) {
     PredicateToUsers[PAssume->Condition].insert(I);
+
+}
 }
 
 // Touch all the predicates that depend on this instruction.
@@ -2114,16 +2310,20 @@ void NewGVN::markPredicateUsersTouched(Instruction *I) {
 
 // Mark users affected by a memory leader change.
 void NewGVN::markMemoryLeaderChangeTouched(CongruenceClass *CC) {
-  for (auto M : CC->memory())
+  for (auto M : CC->memory()) {
     markMemoryDefTouched(M);
+
+}
 }
 
 // Touch the instructions that need to be updated after a congruence class has a
 // leader change, and mark changed values.
 void NewGVN::markValueLeaderChangeTouched(CongruenceClass *CC) {
   for (auto M : *CC) {
-    if (auto *I = dyn_cast<Instruction>(M))
+    if (auto *I = dyn_cast<Instruction>(M)) {
       TouchedInstructions.set(InstrToDFSNum(I));
+
+}
     LeaderChanges.insert(M);
   }
 }
@@ -2135,8 +2335,10 @@ T *NewGVN::getMinDFSOfRange(const Range &R) const {
   std::pair<T *, unsigned> MinDFS = {nullptr, ~0U};
   for (const auto X : R) {
     auto DFSNum = InstrToDFSNum(X);
-    if (DFSNum < MinDFS.second)
+    if (DFSNum < MinDFS.second) {
       MinDFS = {X, DFSNum};
+
+}
   }
   return MinDFS.first;
 }
@@ -2150,8 +2352,10 @@ const MemoryAccess *NewGVN::getNextMemoryLeader(CongruenceClass *CC) const {
   // Make sure there will be a leader to find.
   assert(!CC->definesNoMemory() && "Can't get next leader if there is none");
   if (CC->getStoreCount() > 0) {
-    if (auto *NL = dyn_cast_or_null<StoreInst>(CC->getNextLeader().first))
+    if (auto *NL = dyn_cast_or_null<StoreInst>(CC->getNextLeader().first)) {
       return getMemoryAccess(NL);
+
+}
     // Find the store with the minimum DFS number.
     auto *V = getMinDFSOfRange<Value>(make_filter_range(
         *CC, [&](const Value *V) { return isa<StoreInst>(V); }));
@@ -2161,8 +2365,10 @@ const MemoryAccess *NewGVN::getNextMemoryLeader(CongruenceClass *CC) const {
 
   // Given our assertion, hitting this part must mean
   // !OldClass->memory_empty()
-  if (CC->memory_size() == 1)
+  if (CC->memory_size() == 1) {
     return *CC->memory_begin();
+
+}
   return getMinDFSOfRange<const MemoryPhi>(CC->memory());
 }
 
@@ -2230,8 +2436,10 @@ void NewGVN::moveMemoryToNewCongruenceClass(Instruction *I,
                         << *OldClass->getMemoryLeader()
                         << " due to removal of old leader " << *InstMA << "\n");
       markMemoryLeaderChangeTouched(OldClass);
-    } else
+    } else {
       OldClass->setMemoryLeader(nullptr);
+
+}
   }
 }
 
@@ -2240,14 +2448,18 @@ void NewGVN::moveMemoryToNewCongruenceClass(Instruction *I,
 void NewGVN::moveValueToNewCongruenceClass(Instruction *I, const Expression *E,
                                            CongruenceClass *OldClass,
                                            CongruenceClass *NewClass) {
-  if (I == OldClass->getNextLeader().first)
+  if (I == OldClass->getNextLeader().first) {
     OldClass->resetNextLeader();
+
+}
 
   OldClass->erase(I);
   NewClass->insert(I);
 
-  if (NewClass->getLeader() != I)
+  if (NewClass->getLeader() != I) {
     NewClass->addPossibleNextLeader({I, InstrToDFSNum(I)});
+
+}
   // Handle our special casing of stores.
   if (auto *SI = dyn_cast<StoreInst>(I)) {
     OldClass->decStoreCount();
@@ -2282,8 +2494,10 @@ void NewGVN::moveValueToNewCongruenceClass(Instruction *I, const Expression *E,
 
   // If it's not a memory use, set the MemoryAccess equivalence
   auto *InstMA = dyn_cast_or_null<MemoryDef>(getMemoryAccess(I));
-  if (InstMA)
+  if (InstMA) {
     moveMemoryToNewCongruenceClass(I, InstMA, OldClass, NewClass);
+
+}
   ValueToClass[I] = NewClass;
   // See if we destroyed the class or need to swap leaders.
   if (OldClass->empty() && OldClass != TOPClass) {
@@ -2294,8 +2508,10 @@ void NewGVN::moveValueToNewCongruenceClass(Instruction *I, const Expression *E,
       // equivalent one.
       auto Iter = ExpressionToClass.find_as(
           ExactEqualsExpression(*OldClass->getDefiningExpr()));
-      if (Iter != ExpressionToClass.end())
+      if (Iter != ExpressionToClass.end()) {
         ExpressionToClass.erase(Iter);
+
+}
 #ifdef EXPENSIVE_CHECKS
       assert(
           (*OldClass->getDefiningExpr() != *E || ExpressionToClass.lookup(E)) &&
@@ -2314,8 +2530,10 @@ void NewGVN::moveValueToNewCongruenceClass(Instruction *I, const Expression *E,
     // happens below.  If we remove stores from a class, we may leave it as a
     // class of equivalent memory phis.
     if (OldClass->getStoreCount() == 0) {
-      if (OldClass->getStoredValue())
+      if (OldClass->getStoredValue()) {
         OldClass->setStoredValue(nullptr);
+
+}
     }
     OldClass->setLeader(getNextValueLeader(OldClass));
     OldClass->resetNextLeader();
@@ -2374,18 +2592,22 @@ void NewGVN::performCongruenceFinding(Instruction *I, const Expression *E) {
                         << " using expression " << *E << " at "
                         << NewClass->getID() << " and leader "
                         << *(NewClass->getLeader()));
-      if (NewClass->getStoredValue())
+      if (NewClass->getStoredValue()) {
         LLVM_DEBUG(dbgs() << " and stored value "
                           << *(NewClass->getStoredValue()));
+
+}
       LLVM_DEBUG(dbgs() << "\n");
     } else {
       EClass = lookupResult.first->second;
-      if (isa<ConstantExpression>(E))
+      if (isa<ConstantExpression>(E)) {
         assert((isa<Constant>(EClass->getLeader()) ||
                 (EClass->getStoredValue() &&
                  isa<Constant>(EClass->getStoredValue()))) &&
                "Any class with a constant expression should have a "
                "constant leader");
+
+}
 
       assert(EClass && "Somehow don't have an eclass");
 
@@ -2403,10 +2625,14 @@ void NewGVN::performCongruenceFinding(Instruction *I, const Expression *E) {
     }
 
     markUsersTouched(I);
-    if (MemoryAccess *MA = getMemoryAccess(I))
+    if (MemoryAccess *MA = getMemoryAccess(I)) {
       markMemoryUsersTouched(MA);
-    if (auto *CI = dyn_cast<CmpInst>(I))
+
+}
+    if (auto *CI = dyn_cast<CmpInst>(I)) {
       markPredicateUsersTouched(CI);
+
+}
   }
   // If we changed the class of the store, we want to ensure nothing finds the
   // old store expression.  In particular, loads do not compare against stored
@@ -2420,8 +2646,10 @@ void NewGVN::performCongruenceFinding(Instruction *I, const Expression *E) {
       // Erase this as an exact expression to ensure we don't erase expressions
       // equivalent to it.
       auto Iter = ExpressionToClass.find_as(ExactEqualsExpression(*OldE));
-      if (Iter != ExpressionToClass.end())
+      if (Iter != ExpressionToClass.end()) {
         ExpressionToClass.erase(Iter);
+
+}
     }
   }
   ValueToExpression[I] = E;
@@ -2448,14 +2676,18 @@ void NewGVN::updateReachableEdge(BasicBlock *From, BasicBlock *To) {
       // impact predicates. Otherwise, only mark the phi nodes as touched, as
       // they are the only thing that depend on new edges. Anything using their
       // values will get propagated to if necessary.
-      if (MemoryAccess *MemPhi = getMemoryAccess(To))
+      if (MemoryAccess *MemPhi = getMemoryAccess(To)) {
         TouchedInstructions.set(InstrToDFSNum(MemPhi));
+
+}
 
       // FIXME: We should just add a union op on a Bitvector and
       // SparseBitVector.  We can do it word by word faster than we are doing it
       // here.
-      for (auto InstNum : RevisitOnReachabilityChange[To])
+      for (auto InstNum : RevisitOnReachabilityChange[To]) {
         TouchedInstructions.set(InstNum);
+
+}
     }
   }
 }
@@ -2540,8 +2772,10 @@ void NewGVN::processOutgoingEdges(Instruction *TI, BasicBlock *B) {
     auto *MA = getMemoryAccess(TI);
     if (MA && !isa<MemoryUse>(MA)) {
       auto *CC = ensureLeaderOfMemoryClass(MA);
-      if (setMemoryClass(MA, CC))
+      if (setMemoryClass(MA, CC)) {
         markMemoryUsersTouched(MA);
+
+}
     }
   }
 }
@@ -2568,14 +2802,20 @@ void NewGVN::addPhiOfOps(PHINode *Op, BasicBlock *BB,
   RealToTemp[ExistingValue] = Op;
   // Add all users to phi node use, as they are now uses of the phi of ops phis
   // and may themselves be phi of ops.
-  for (auto *U : ExistingValue->users())
-    if (auto *UI = dyn_cast<Instruction>(U))
+  for (auto *U : ExistingValue->users()) {
+    if (auto *UI = dyn_cast<Instruction>(U)) {
       PHINodeUses.insert(UI);
+
+}
+
+}
 }
 
 static bool okayForPHIOfOps(const Instruction *I) {
-  if (!EnablePhiOfOps)
+  if (!EnablePhiOfOps) {
     return false;
+
+}
   return isa<BinaryOperator>(I) || isa<SelectInst>(I) || isa<CmpInst>(I) ||
          isa<LoadInst>(I);
 }
@@ -2585,11 +2825,15 @@ bool NewGVN::OpIsSafeForPHIOfOpsHelper(
     SmallPtrSetImpl<const Value *> &Visited,
     SmallVectorImpl<Instruction *> &Worklist) {
 
-  if (!isa<Instruction>(V))
+  if (!isa<Instruction>(V)) {
     return true;
+
+}
   auto OISIt = OpSafeForPHIOfOps.find(V);
-  if (OISIt != OpSafeForPHIOfOps.end())
+  if (OISIt != OpSafeForPHIOfOps.end()) {
     return OISIt->second;
+
+}
 
   // Keep walking until we either dominate the phi block, or hit a phi, or run
   // out of things to check.
@@ -2605,8 +2849,10 @@ bool NewGVN::OpIsSafeForPHIOfOpsHelper(
 
   auto *OrigI = cast<Instruction>(V);
   for (auto *Op : OrigI->operand_values()) {
-    if (!isa<Instruction>(Op))
+    if (!isa<Instruction>(Op)) {
       continue;
+
+}
     // Stop now if we find an unsafe operand.
     auto OISIt = OpSafeForPHIOfOps.find(OrigI);
     if (OISIt != OpSafeForPHIOfOps.end()) {
@@ -2616,8 +2862,10 @@ bool NewGVN::OpIsSafeForPHIOfOpsHelper(
       }
       continue;
     }
-    if (!Visited.insert(Op).second)
+    if (!Visited.insert(Op).second) {
       continue;
+
+}
     Worklist.push_back(cast<Instruction>(Op));
   }
   return true;
@@ -2633,12 +2881,16 @@ bool NewGVN::OpIsSafeForPHIOfOpsHelper(
 bool NewGVN::OpIsSafeForPHIOfOps(Value *V, const BasicBlock *PHIBlock,
                                  SmallPtrSetImpl<const Value *> &Visited) {
   SmallVector<Instruction *, 4> Worklist;
-  if (!OpIsSafeForPHIOfOpsHelper(V, PHIBlock, Visited, Worklist))
+  if (!OpIsSafeForPHIOfOpsHelper(V, PHIBlock, Visited, Worklist)) {
     return false;
+
+}
   while (!Worklist.empty()) {
     auto *I = Worklist.pop_back_val();
-    if (!OpIsSafeForPHIOfOpsHelper(I, PHIBlock, Visited, Worklist))
+    if (!OpIsSafeForPHIOfOpsHelper(I, PHIBlock, Visited, Worklist)) {
       return false;
+
+}
   }
   OpSafeForPHIOfOps.insert({V, true});
   return true;
@@ -2666,10 +2918,14 @@ Value *NewGVN::findLeaderForInst(Instruction *TransInst,
   InstrDFS.erase(TransInst);
   AllTempInstructions.erase(TransInst);
   TempToBlock.erase(TransInst);
-  if (MemAccess)
+  if (MemAccess) {
     TempToMemory.erase(TransInst);
-  if (!E)
+
+}
+  if (!E) {
     return nullptr;
+
+}
   auto *FoundVal = findPHIOfOpsLeader(E, OrigInst, PredBB);
   if (!FoundVal) {
     ExpressionToPhiOfOps[E].insert(OrigInst);
@@ -2677,8 +2933,10 @@ Value *NewGVN::findLeaderForInst(Instruction *TransInst,
                       << " in block " << getBlockName(PredBB) << "\n");
     return nullptr;
   }
-  if (auto *SI = dyn_cast<StoreInst>(FoundVal))
+  if (auto *SI = dyn_cast<StoreInst>(FoundVal)) {
     FoundVal = SI->getValueOperand();
+
+}
   return FoundVal;
 }
 
@@ -2687,17 +2945,23 @@ Value *NewGVN::findLeaderForInst(Instruction *TransInst,
 const Expression *
 NewGVN::makePossiblePHIOfOps(Instruction *I,
                              SmallPtrSetImpl<Value *> &Visited) {
-  if (!okayForPHIOfOps(I))
+  if (!okayForPHIOfOps(I)) {
     return nullptr;
 
-  if (!Visited.insert(I).second)
+}
+
+  if (!Visited.insert(I).second) {
     return nullptr;
+
+}
   // For now, we require the instruction be cycle free because we don't
   // *always* create a phi of ops for instructions that could be done as phi
   // of ops, we only do it if we think it is useful.  If we did do it all the
   // time, we could remove the cycle free check.
-  if (!isCycleFree(I))
+  if (!isCycleFree(I)) {
     return nullptr;
+
+}
 
   SmallPtrSet<const Value *, 8> ProcessedPHIs;
   // TODO: We don't do phi translation on memory accesses because it's
@@ -2708,21 +2972,27 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
   // isn't a MemoryPhi, transforming the pointer backwards through a scalar phi
   // can't help, as it would still be killed by that memory operation.
   if (MemAccess && !isa<MemoryPhi>(MemAccess->getDefiningAccess()) &&
-      MemAccess->getDefiningAccess()->getBlock() == I->getParent())
+      MemAccess->getDefiningAccess()->getBlock() == I->getParent()) {
     return nullptr;
+
+}
 
   // Convert op of phis to phi of ops
   SmallPtrSet<const Value *, 10> VisitedOps;
   SmallVector<Value *, 4> Ops(I->operand_values());
   BasicBlock *SamePHIBlock = nullptr;
   PHINode *OpPHI = nullptr;
-  if (!DebugCounter::shouldExecute(PHIOfOpsCounter))
+  if (!DebugCounter::shouldExecute(PHIOfOpsCounter)) {
     return nullptr;
+
+}
   for (auto *Op : Ops) {
     if (!isa<PHINode>(Op)) {
       auto *ValuePHI = RealToTemp.lookup(Op);
-      if (!ValuePHI)
+      if (!ValuePHI) {
         continue;
+
+}
       LLVM_DEBUG(dbgs() << "Found possible dependent phi of ops\n");
       Op = ValuePHI;
     }
@@ -2742,8 +3012,10 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
     }
   }
 
-  if (!OpPHI)
+  if (!OpPHI) {
     return nullptr;
+
+}
 
   SmallVector<ValPair, 4> PHIOps;
   SmallPtrSet<Value *, 4> Deps;
@@ -2759,8 +3031,10 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
       // Clone the instruction, create an expression from it that is
       // translated back into the predecessor, and see if we have a leader.
       Instruction *ValueOp = I->clone();
-      if (MemAccess)
+      if (MemAccess) {
         TempToMemory.insert({ValueOp, MemAccess});
+
+}
       bool SafeForPHIOfOps = true;
       VisitedOps.clear();
       for (auto &Op : ValueOp->operands()) {
@@ -2769,11 +3043,15 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
         // leader for us or not, so we have to add additional users.
         if (isa<PHINode>(Op)) {
           Op = Op->DoPHITranslation(PHIBlock, PredBB);
-          if (Op != OrigOp && Op != I)
+          if (Op != OrigOp && Op != I) {
             CurrentDeps.insert(Op);
+
+}
         } else if (auto *ValuePHI = RealToTemp.lookup(Op)) {
-          if (getBlockForValue(ValuePHI) == PHIBlock)
+          if (getBlockForValue(ValuePHI) == PHIBlock) {
             Op = ValuePHI->getIncomingValueForBlock(PredBB);
+
+}
         }
         // If we phi-translated the op, it must be safe.
         SafeForPHIOfOps =
@@ -2792,9 +3070,13 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
       if (!FoundVal) {
         // We failed to find a leader for the current ValueOp, but this might
         // change in case of the translated operands change.
-        if (SafeForPHIOfOps)
-          for (auto Dep : CurrentDeps)
+        if (SafeForPHIOfOps) {
+          for (auto Dep : CurrentDeps) {
             addAdditionalUsers(Dep, I);
+
+}
+
+}
 
         return nullptr;
       }
@@ -2811,8 +3093,10 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
     LLVM_DEBUG(dbgs() << "Found phi of ops operand " << *FoundVal << " in "
                       << getBlockName(PredBB) << "\n");
   }
-  for (auto Dep : Deps)
+  for (auto Dep : Deps) {
     addAdditionalUsers(Dep, I);
+
+}
   sortPHIOps(PHIOps);
   auto *E = performSymbolicPHIEvaluation(PHIOps, I, PHIBlock);
   if (isa<ConstantExpression>(E) || isa<VariableExpression>(E)) {
@@ -2832,8 +3116,10 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
     NumGVNPHIOfOpsCreated++;
   }
   if (NewPHI) {
-    for (auto PHIOp : PHIOps)
+    for (auto PHIOp : PHIOps) {
       ValuePHI->addIncoming(PHIOp.first, PHIOp.second);
+
+}
   } else {
     TempToBlock[ValuePHI] = PHIBlock;
     unsigned int i = 0;
@@ -2877,7 +3163,7 @@ void NewGVN::initializeCongruenceClasses(Function &F) {
     // the maximal answer, we initialize them all to be the same as
     // liveOnEntry.
     auto *MemoryBlockDefs = MSSA->getBlockDefs(BB);
-    if (MemoryBlockDefs)
+    if (MemoryBlockDefs) {
       for (const auto &Def : *MemoryBlockDefs) {
         MemoryAccessToClass[&Def] = TOPClass;
         auto *MD = dyn_cast<MemoryDef>(&Def);
@@ -2888,31 +3174,47 @@ void NewGVN::initializeCongruenceClasses(Function &F) {
           MemoryPhiState.insert({MP, MPS_TOP});
         }
 
-        if (MD && isa<StoreInst>(MD->getMemoryInst()))
+        if (MD && isa<StoreInst>(MD->getMemoryInst())) {
           TOPClass->incStoreCount();
+
+}
       }
+
+}
 
     // FIXME: This is trying to discover which instructions are uses of phi
     // nodes.  We should move this into one of the myriad of places that walk
     // all the operands already.
     for (auto &I : *BB) {
-      if (isa<PHINode>(&I))
-        for (auto *U : I.users())
-          if (auto *UInst = dyn_cast<Instruction>(U))
-            if (InstrToDFSNum(UInst) != 0 && okayForPHIOfOps(UInst))
+      if (isa<PHINode>(&I)) {
+        for (auto *U : I.users()) {
+          if (auto *UInst = dyn_cast<Instruction>(U)) {
+            if (InstrToDFSNum(UInst) != 0 && okayForPHIOfOps(UInst)) {
               PHINodeUses.insert(UInst);
+
+}
+
+}
+
+}
+
+}
       // Don't insert void terminators into the class. We don't value number
       // them, and they just end up sitting in TOP.
-      if (I.isTerminator() && I.getType()->isVoidTy())
+      if (I.isTerminator() && I.getType()->isVoidTy()) {
         continue;
+
+}
       TOPClass->insert(&I);
       ValueToClass[&I] = TOPClass;
     }
   }
 
   // Initialize arguments to be in their own unique congruence classes
-  for (auto &FA : F.args())
+  for (auto &FA : F.args()) {
     createSingletonCongruenceClass(&FA);
+
+}
 }
 
 void NewGVN::cleanupTables() {
@@ -2993,8 +3295,10 @@ std::pair<unsigned, unsigned> NewGVN::assignDFSNumbers(BasicBlock *B,
       markInstructionForDeletion(&I);
       continue;
     }
-    if (isa<PHINode>(&I))
+    if (isa<PHINode>(&I)) {
       RevisitOnReachabilityChange[B].set(End);
+
+}
     InstrDFS[&I] = End++;
     DFSToInstr.emplace_back(&I);
   }
@@ -3033,8 +3337,10 @@ void NewGVN::valueNumberMemoryPhi(MemoryPhi *MP) {
   // InitialClass.  Note: The only case this should happen is if we have at
   // least one self-argument.
   if (Filtered.begin() == Filtered.end()) {
-    if (setMemoryClass(MP, TOPClass))
+    if (setMemoryClass(MP, TOPClass)) {
       markMemoryUsersTouched(MP);
+
+}
     return;
   }
 
@@ -3054,11 +3360,13 @@ void NewGVN::valueNumberMemoryPhi(MemoryPhi *MP) {
       MappedBegin, MappedEnd,
       [&AllSameValue](const MemoryAccess *V) { return V == AllSameValue; });
 
-  if (AllEqual)
+  if (AllEqual) {
     LLVM_DEBUG(dbgs() << "Memory Phi value numbered to " << *AllSameValue
                       << "\n");
-  else
+  } else {
     LLVM_DEBUG(dbgs() << "Memory Phi value numbered to itself\n");
+
+}
   // If it's equal to something, it's in that class. Otherwise, it has to be in
   // a class where it is the leader (other things may be equivalent to it, but
   // it needs to start off in its own class, which means it must have been the
@@ -3070,8 +3378,10 @@ void NewGVN::valueNumberMemoryPhi(MemoryPhi *MP) {
   assert(OldState != MPS_Invalid && "Invalid memory phi state");
   auto NewState = AllEqual ? MPS_Equivalent : MPS_Unique;
   MemoryPhiState[MP] = NewState;
-  if (setMemoryClass(MP, CC) || OldState != NewState)
+  if (setMemoryClass(MP, CC) || OldState != NewState) {
     markMemoryUsersTouched(MP);
+
+}
 }
 
 // Value number a single instruction, symbolically evaluating, performing
@@ -3101,8 +3411,10 @@ void NewGVN::valueNumberInstruction(Instruction *I) {
     }
     // If we couldn't come up with a symbolic expression, use the unknown
     // expression
-    if (Symbolized == nullptr)
+    if (Symbolized == nullptr) {
       Symbolized = createUnknownExpression(I);
+
+}
     performCongruenceFinding(I, Symbolized);
   } else {
     // Handle terminators that return values. All of them produce values we
@@ -3121,26 +3433,36 @@ void NewGVN::valueNumberInstruction(Instruction *I) {
 bool NewGVN::singleReachablePHIPath(
     SmallPtrSet<const MemoryAccess *, 8> &Visited, const MemoryAccess *First,
     const MemoryAccess *Second) const {
-  if (First == Second)
+  if (First == Second) {
     return true;
-  if (MSSA->isLiveOnEntryDef(First))
+
+}
+  if (MSSA->isLiveOnEntryDef(First)) {
     return false;
+
+}
 
   // This is not perfect, but as we're just verifying here, we can live with
   // the loss of precision. The real solution would be that of doing strongly
   // connected component finding in this routine, and it's probably not worth
   // the complexity for the time being. So, we just keep a set of visited
   // MemoryAccess and return true when we hit a cycle.
-  if (Visited.count(First))
+  if (Visited.count(First)) {
     return true;
+
+}
   Visited.insert(First);
 
   const auto *EndDef = First;
   for (auto *ChainDef : optimized_def_chain(First)) {
-    if (ChainDef == Second)
+    if (ChainDef == Second) {
       return true;
-    if (MSSA->isLiveOnEntryDef(ChainDef))
+
+}
+    if (MSSA->isLiveOnEntryDef(ChainDef)) {
       return false;
+
+}
     EndDef = ChainDef;
   }
   auto *MP = cast<MemoryPhi>(EndDef);
@@ -3152,9 +3474,11 @@ bool NewGVN::singleReachablePHIPath(
   SmallVector<const Value *, 32> OperandList;
   llvm::copy(FilteredPhiArgs, std::back_inserter(OperandList));
   bool Okay = is_splat(OperandList);
-  if (Okay)
+  if (Okay) {
     return singleReachablePHIPath(Visited, cast<MemoryAccess>(OperandList[0]),
                                   Second);
+
+}
   return false;
 }
 
@@ -3346,8 +3670,10 @@ void NewGVN::iterateTouchedInstructions() {
   // Figure out where touchedinstructions starts
   int FirstInstr = TouchedInstructions.find_first();
   // Nothing set, nothing to iterate, just return.
-  if (FirstInstr == -1)
+  if (FirstInstr == -1) {
     return;
+
+}
   const BasicBlock *LastBlock = getBlockForValue(InstrFromDFSNum(FirstInstr));
   while (TouchedInstructions.any()) {
     ++Iterations;
@@ -3403,8 +3729,10 @@ void NewGVN::iterateTouchedInstructions() {
 
 // This is the main transformation entry point.
 bool NewGVN::runGVN() {
-  if (DebugCounter::isCounterSet(VNCounter))
+  if (DebugCounter::isCounterSet(VNCounter)) {
     StartingVNCounter = DebugCounter::getCounterValue(VNCounter);
+
+}
   bool Changed = false;
   NumFuncArgs = F.arg_size();
   MSSAWalker = MSSA->getWalker();
@@ -3433,11 +3761,13 @@ bool NewGVN::runGVN() {
   // Sort dominator tree children arrays into RPO.
   for (auto &B : RPOT) {
     auto *Node = DT->getNode(B);
-    if (Node->getChildren().size() > 1)
+    if (Node->getChildren().size() > 1) {
       llvm::sort(Node->begin(), Node->end(),
                  [&](const DomTreeNode *A, const DomTreeNode *B) {
                    return RPOOrdering[A] < RPOOrdering[B];
                  });
+
+}
   }
 
   // Now a standard depth first ordering of the domtree is equivalent to RPO.
@@ -3471,8 +3801,10 @@ bool NewGVN::runGVN() {
 
   // Delete all instructions marked for deletion.
   for (Instruction *ToErase : InstructionsToErase) {
-    if (!ToErase->use_empty())
+    if (!ToErase->use_empty()) {
       ToErase->replaceAllUsesWith(UndefValue::get(ToErase->getType()));
+
+}
 
     assert(ToErase->getParent() &&
            "BB containing ToErase deleted unexpectedly!");
@@ -3607,8 +3939,10 @@ void NewGVN::convertClassToDFSOrdered(
     for (auto &U : Def->uses()) {
       if (auto *I = dyn_cast<Instruction>(U.getUser())) {
         // Don't try to replace into dead uses
-        if (InstructionsToErase.count(I))
+        if (InstructionsToErase.count(I)) {
           continue;
+
+}
         ValueDFS VDUse;
         // Put the phi node uses in the incoming block.
         BasicBlock *IBlock;
@@ -3624,8 +3958,10 @@ void NewGVN::convertClassToDFSOrdered(
 
         // Skip uses in unreachable blocks, as we're going
         // to delete them.
-        if (ReachableBlocks.count(IBlock) == 0)
+        if (ReachableBlocks.count(IBlock) == 0) {
           continue;
+
+}
 
         DomTreeNode *DomNode = DT->getNode(IBlock);
         VDUse.DFSIn = DomNode->getDFSNumIn();
@@ -3639,10 +3975,12 @@ void NewGVN::convertClassToDFSOrdered(
     // If there are no uses, it's probably dead (but it may have side-effects,
     // so not definitely dead. Otherwise, store the number of uses so we can
     // track if it becomes dead later).
-    if (UseCount == 0)
+    if (UseCount == 0) {
       ProbablyDead.insert(Def);
-    else
+    } else {
       UseCounts[Def] = UseCount;
+
+}
   }
 }
 
@@ -3652,8 +3990,10 @@ void NewGVN::convertClassToLoadsAndStores(
     const CongruenceClass &Dense,
     SmallVectorImpl<ValueDFS> &LoadsAndStores) const {
   for (auto D : Dense) {
-    if (!isa<LoadInst>(D) && !isa<StoreInst>(D))
+    if (!isa<LoadInst>(D) && !isa<StoreInst>(D)) {
       continue;
+
+}
 
     BasicBlock *BB = getBlockForValue(D);
     ValueDFS VD;
@@ -3663,10 +4003,12 @@ void NewGVN::convertClassToLoadsAndStores(
     VD.Def.setPointer(D);
 
     // If it's an instruction, use the real local dfs number.
-    if (auto *I = dyn_cast<Instruction>(D))
+    if (auto *I = dyn_cast<Instruction>(D)) {
       VD.LocalNum = InstrToDFSNum(I);
-    else
+    } else {
       llvm_unreachable("Should have been an instruction");
+
+}
 
     LoadsAndStores.emplace_back(VD);
   }
@@ -3689,10 +4031,14 @@ void NewGVN::deleteInstructionsInBlock(BasicBlock *BB) {
   // as it may change when we remove the first instruction.
   for (BasicBlock::reverse_iterator I(StartPoint); I != BB->rend();) {
     Instruction &Inst = *I++;
-    if (!Inst.use_empty())
+    if (!Inst.use_empty()) {
       Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
-    if (isa<LandingPadInst>(Inst))
+
+}
+    if (isa<LandingPadInst>(Inst)) {
       continue;
+
+}
 
     Inst.eraseFromParent();
     ++NumGVNInstrDeleted;
@@ -3734,8 +4080,10 @@ public:
   bool empty() const { return DFSStack.empty(); }
 
   bool isInScope(int DFSIn, int DFSOut) const {
-    if (empty())
+    if (empty()) {
       return false;
+
+}
     return DFSIn >= DFSStack.back().first && DFSOut <= DFSStack.back().second;
   }
 
@@ -3761,10 +4109,12 @@ private:
 
 // Given an expression, get the congruence class for it.
 CongruenceClass *NewGVN::getClassForExpression(const Expression *E) const {
-  if (auto *VE = dyn_cast<VariableExpression>(E))
+  if (auto *VE = dyn_cast<VariableExpression>(E)) {
     return ValueToClass.lookup(VE->getVariableValue());
-  else if (isa<DeadExpression>(E))
+  } else if (isa<DeadExpression>(E)) {
     return TOPClass;
+
+}
   return ExpressionToClass.lookup(E);
 }
 
@@ -3774,29 +4124,43 @@ Value *NewGVN::findPHIOfOpsLeader(const Expression *E,
                                   const Instruction *OrigInst,
                                   const BasicBlock *BB) const {
   // It would already be constant if we could make it constant
-  if (auto *CE = dyn_cast<ConstantExpression>(E))
+  if (auto *CE = dyn_cast<ConstantExpression>(E)) {
     return CE->getConstantValue();
+
+}
   if (auto *VE = dyn_cast<VariableExpression>(E)) {
     auto *V = VE->getVariableValue();
-    if (alwaysAvailable(V) || DT->dominates(getBlockForValue(V), BB))
+    if (alwaysAvailable(V) || DT->dominates(getBlockForValue(V), BB)) {
       return VE->getVariableValue();
+
+}
   }
 
   auto *CC = getClassForExpression(E);
-  if (!CC)
+  if (!CC) {
     return nullptr;
-  if (alwaysAvailable(CC->getLeader()))
+
+}
+  if (alwaysAvailable(CC->getLeader())) {
     return CC->getLeader();
+
+}
 
   for (auto Member : *CC) {
     auto *MemberInst = dyn_cast<Instruction>(Member);
-    if (MemberInst == OrigInst)
+    if (MemberInst == OrigInst) {
       continue;
+
+}
     // Anything that isn't an instruction is always available.
-    if (!MemberInst)
+    if (!MemberInst) {
       return Member;
-    if (DT->dominates(getBlockForValue(MemberInst), BB))
+
+}
+    if (DT->dominates(getBlockForValue(MemberInst), BB)) {
       return Member;
+
+}
   }
   return nullptr;
 }
@@ -3834,7 +4198,7 @@ bool NewGVN::eliminateInstructions(Function &F) {
   // Go through all of our phi nodes, and kill the arguments associated with
   // unreachable edges.
   auto ReplaceUnreachablePHIArgs = [&](PHINode *PHI, BasicBlock *BB) {
-    for (auto &Operand : PHI->incoming_values())
+    for (auto &Operand : PHI->incoming_values()) {
       if (!ReachableEdges.count({PHI->getIncomingBlock(Operand), BB})) {
         LLVM_DEBUG(dbgs() << "Replacing incoming value of " << PHI
                           << " for block "
@@ -3842,6 +4206,8 @@ bool NewGVN::eliminateInstructions(Function &F) {
                           << " with undef due to it being unreachable\n");
         Operand.set(UndefValue::get(PHI->getType()));
       }
+
+}
   };
   // Replace unreachable phi arguments.
   // At this point, RevisitOnReachabilityChange only contains:
@@ -3853,18 +4219,24 @@ bool NewGVN::eliminateInstructions(Function &F) {
   // So it is a slight overshoot of what we want. We could make it exact by
   // using two SparseBitVectors per block.
   DenseMap<const BasicBlock *, unsigned> ReachablePredCount;
-  for (auto &KV : ReachableEdges)
+  for (auto &KV : ReachableEdges) {
     ReachablePredCount[KV.getEnd()]++;
+
+}
   for (auto &BBPair : RevisitOnReachabilityChange) {
     for (auto InstNum : BBPair.second) {
       auto *Inst = InstrFromDFSNum(InstNum);
       auto *PHI = dyn_cast<PHINode>(Inst);
       PHI = PHI ? PHI : dyn_cast_or_null<PHINode>(RealToTemp.lookup(Inst));
-      if (!PHI)
+      if (!PHI) {
         continue;
+
+}
       auto *BB = BBPair.first;
-      if (ReachablePredCount.lookup(BB) != PHI->getNumIncomingValues())
+      if (ReachablePredCount.lookup(BB) != PHI->getNumIncomingValues()) {
         ReplaceUnreachablePHIArgs(PHI, BB);
+
+}
     }
   }
 
@@ -3877,14 +4249,18 @@ bool NewGVN::eliminateInstructions(Function &F) {
     // dead store elimination.
     SmallVector<ValueDFS, 8> PossibleDeadStores;
     SmallPtrSet<Instruction *, 8> ProbablyDead;
-    if (CC->isDead() || CC->empty())
+    if (CC->isDead() || CC->empty()) {
       continue;
+
+}
     // Everything still in the TOP class is unreachable or dead.
     if (CC == TOPClass) {
       for (auto M : *CC) {
         auto *VTE = ValueToExpression.lookup(M);
-        if (VTE && isa<DeadExpression>(VTE))
+        if (VTE && isa<DeadExpression>(VTE)) {
           markInstructionForDeletion(cast<Instruction>(M));
+
+}
         assert((!ReachableBlocks.count(cast<Instruction>(M)->getParent()) ||
                 InstructionsToErase.count(cast<Instruction>(M))) &&
                "Everything in TOP should be unreachable or dead at this "
@@ -3940,8 +4316,10 @@ bool NewGVN::eliminateInstructions(Function &F) {
           bool FromStore = VD.Def.getInt();
           Use *U = VD.U;
           // We ignore void things because we can't get a value from them.
-          if (Def && Def->getType()->isVoidTy())
+          if (Def && Def->getType()->isVoidTy()) {
             continue;
+
+}
           auto *DefInst = dyn_cast_or_null<Instruction>(Def);
           if (DefInst && AllTempInstructions.count(DefInst)) {
             auto *PN = cast<PHINode>(DefInst);
@@ -4011,8 +4389,10 @@ bool NewGVN::eliminateInstructions(Function &F) {
             // stored values here. If the stored value is really dead, it will
             // still be marked for deletion when we process it in its own class.
             if (!EliminationStack.empty() && Def != EliminationStack.back() &&
-                isa<Instruction>(Def) && !FromStore)
+                isa<Instruction>(Def) && !FromStore) {
               markInstructionForDeletion(cast<Instruction>(Def));
+
+}
             continue;
           }
           // At this point, we know it is a Use we are trying to possibly
@@ -4037,19 +4417,25 @@ bool NewGVN::eliminateInstructions(Function &F) {
 
           // If we get to this point, and the stack is empty we must have a use
           // with nothing we can use to eliminate this use, so just skip it.
-          if (EliminationStack.empty())
+          if (EliminationStack.empty()) {
             continue;
+
+}
 
           Value *DominatingLeader = EliminationStack.back();
 
           auto *II = dyn_cast<IntrinsicInst>(DominatingLeader);
           bool isSSACopy = II && II->getIntrinsicID() == Intrinsic::ssa_copy;
-          if (isSSACopy)
+          if (isSSACopy) {
             DominatingLeader = II->getOperand(0);
 
+}
+
           // Don't replace our existing users with ourselves.
-          if (U->get() == DominatingLeader)
+          if (U->get() == DominatingLeader) {
             continue;
+
+}
           LLVM_DEBUG(dbgs()
                      << "Found replacement " << *DominatingLeader << " for "
                      << *U->get() << " in " << *(U->getUser()) << "\n");
@@ -4059,21 +4445,27 @@ bool NewGVN::eliminateInstructions(Function &F) {
           // original operand, as we already know we can just drop it.
           auto *ReplacedInst = cast<Instruction>(U->get());
           auto *PI = PredInfo->getPredicateInfoFor(ReplacedInst);
-          if (!PI || DominatingLeader != PI->OriginalOp)
+          if (!PI || DominatingLeader != PI->OriginalOp) {
             patchReplacementInstruction(ReplacedInst, DominatingLeader);
+
+}
           U->set(DominatingLeader);
           // This is now a use of the dominating leader, which means if the
           // dominating leader was dead, it's now live!
           auto &LeaderUseCount = UseCounts[DominatingLeader];
           // It's about to be alive again.
-          if (LeaderUseCount == 0 && isa<Instruction>(DominatingLeader))
+          if (LeaderUseCount == 0 && isa<Instruction>(DominatingLeader)) {
             ProbablyDead.erase(cast<Instruction>(DominatingLeader));
+
+}
           // For copy instructions, we use their operand as a leader,
           // which means we remove a user of the copy and it may become dead.
           if (isSSACopy) {
             unsigned &IIUseCount = UseCounts[II];
-            if (--IIUseCount == 0)
+            if (--IIUseCount == 0) {
               ProbablyDead.insert(II);
+
+}
           }
           ++LeaderUseCount;
           AnythingReplaced = true;
@@ -4083,16 +4475,24 @@ bool NewGVN::eliminateInstructions(Function &F) {
 
     // At this point, anything still in the ProbablyDead set is actually dead if
     // would be trivially dead.
-    for (auto *I : ProbablyDead)
-      if (wouldInstructionBeTriviallyDead(I))
+    for (auto *I : ProbablyDead) {
+      if (wouldInstructionBeTriviallyDead(I)) {
         markInstructionForDeletion(I);
+
+}
+
+}
 
     // Cleanup the congruence class.
     CongruenceClass::MemberSet MembersLeft;
-    for (auto *Member : *CC)
+    for (auto *Member : *CC) {
       if (!isa<Instruction>(Member) ||
-          !InstructionsToErase.count(cast<Instruction>(Member)))
+          !InstructionsToErase.count(cast<Instruction>(Member))) {
         MembersLeft.insert(Member);
+
+}
+
+}
     CC->swap(MembersLeft);
 
     // If we have possible dead stores to look at, try to eliminate them.
@@ -4114,8 +4514,10 @@ bool NewGVN::eliminateInstructions(Function &F) {
           }
         }
         // We already did load elimination, so nothing to do here.
-        if (isa<LoadInst>(Member))
+        if (isa<LoadInst>(Member)) {
           continue;
+
+}
         assert(!EliminationStack.empty());
         Instruction *Leader = cast<Instruction>(EliminationStack.back());
         (void)Leader;
@@ -4141,20 +4543,28 @@ unsigned int NewGVN::getRank(const Value *V) const {
   // Prefer constants to undef to anything else
   // Undef is a constant, have to check it first.
   // Prefer smaller constants to constantexprs
-  if (isa<ConstantExpr>(V))
+  if (isa<ConstantExpr>(V)) {
     return 2;
-  if (isa<UndefValue>(V))
+
+}
+  if (isa<UndefValue>(V)) {
     return 1;
-  if (isa<Constant>(V))
+
+}
+  if (isa<Constant>(V)) {
     return 0;
-  else if (auto *A = dyn_cast<Argument>(V))
+  } else if (auto *A = dyn_cast<Argument>(V)) {
     return 3 + A->getArgNo();
+
+}
 
   // Need to shift the instruction DFS by number of arguments + 3 to account for
   // the constant and argument ranking above.
   unsigned Result = InstrToDFSNum(V);
-  if (Result > 0)
+  if (Result > 0) {
     return 4 + NumFuncArgs + Result;
+
+}
   // Unreachable or something else, just return a really large number.
   return ~0;
 }
@@ -4196,8 +4606,10 @@ private:
 } // end anonymous namespace
 
 bool NewGVNLegacyPass::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
   return NewGVN(F, &getAnalysis<DominatorTreeWrapperPass>().getDomTree(),
                 &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F),
                 &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F),
@@ -4235,8 +4647,10 @@ PreservedAnalyses NewGVNPass::run(Function &F, AnalysisManager<Function> &AM) {
   bool Changed =
       NewGVN(F, &DT, &AC, &TLI, &AA, &MSSA, F.getParent()->getDataLayout())
           .runGVN();
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<DominatorTreeAnalysis>();
   PA.preserve<GlobalsAA>();

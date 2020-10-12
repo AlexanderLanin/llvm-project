@@ -65,8 +65,10 @@ TEST(RandomIRBuilderTest, ShuffleVectorIncorrectOperands) {
   BasicBlock &BB = *F.begin();
 
   SmallVector<Instruction *, 32> Insts;
-  for (auto I = BB.getFirstInsertionPt(), E = BB.end(); I != E; ++I)
+  for (auto I = BB.getFirstInsertionPt(), E = BB.end(); I != E; ++I) {
     Insts.push_back(&*I);
+
+}
 
   // Pick first and second sources
   SmallVector<Value *, 2> Srcs;

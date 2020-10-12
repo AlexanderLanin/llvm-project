@@ -30,13 +30,13 @@ static void printName(raw_ostream &OS, StringRef Name) {
   }
   OS << '"';
   for (const char *B = Name.begin(), *E = Name.end(); B < E; ++B) {
-    if (*B == '"') // Unquoted "
+    if (*B == '"') { // Unquoted "
       OS << "\\\"";
-    else if (*B != '\\') // Neither " or backslash
+    } else if (*B != '\\') { // Neither " or backslash
       OS << *B;
-    else if (B + 1 == E) // Trailing backslash
+    } else if (B + 1 == E) { // Trailing backslash
       OS << "\\\\";
-    else {
+    } else {
       OS << B[0] << B[1]; // Quoted character
       ++B;
     }
@@ -62,23 +62,29 @@ void MCSectionWasm::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   printName(OS, getSectionName());
   OS << ",\"";
 
-  if (IsPassive)
+  if (IsPassive) {
     OS << "passive";
+
+}
 
   OS << '"';
 
   OS << ',';
 
   // If comment string is '@', e.g. as on ARM - use '%' instead
-  if (MAI.getCommentString()[0] == '@')
+  if (MAI.getCommentString()[0] == '@') {
     OS << '%';
-  else
+  } else {
     OS << '@';
+
+}
 
   // TODO: Print section type.
 
-  if (isUnique())
+  if (isUnique()) {
     OS << ",unique," << UniqueID;
+
+}
 
   OS << '\n';
 

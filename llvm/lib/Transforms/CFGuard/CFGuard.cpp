@@ -192,8 +192,10 @@ void CFGuard::insertCFGuardDispatch(CallBase *CB) {
 
   // Cast the guard dispatch global to the type of the called operand.
   PointerType *PTy = PointerType::get(CalledOperandType, 0);
-  if (GuardFnGlobal->getType() != PTy)
+  if (GuardFnGlobal->getType() != PTy) {
     GuardFnGlobal = ConstantExpr::getBitCast(GuardFnGlobal, PTy);
+
+}
 
   // Load the global as a pointer to a function of the same type.
   LoadInst *GuardDispatchLoad = B.CreateLoad(CalledOperandType, GuardFnGlobal);
@@ -227,12 +229,16 @@ bool CFGuard::doInitialization(Module &M) {
 
   // Check if this module has the cfguard flag and read its value.
   if (auto *MD =
-          mdconst::extract_or_null<ConstantInt>(M.getModuleFlag("cfguard")))
+          mdconst::extract_or_null<ConstantInt>(M.getModuleFlag("cfguard"))) {
     cfguard_module_flag = MD->getZExtValue();
 
+}
+
   // Skip modules for which CFGuard checks have been disabled.
-  if (cfguard_module_flag != 2)
+  if (cfguard_module_flag != 2) {
     return false;
+
+}
 
   // Set up prototypes for the guard check and dispatch functions.
   GuardFnType = FunctionType::get(Type::getVoidTy(M.getContext()),
@@ -255,8 +261,10 @@ bool CFGuard::doInitialization(Module &M) {
 bool CFGuard::runOnFunction(Function &F) {
 
   // Skip modules for which CFGuard checks have been disabled.
-  if (cfguard_module_flag != 2)
+  if (cfguard_module_flag != 2) {
     return false;
+
+}
 
   SmallVector<CallBase *, 8> IndirectCalls;
 

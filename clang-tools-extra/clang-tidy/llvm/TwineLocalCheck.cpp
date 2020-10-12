@@ -35,8 +35,10 @@ void TwineLocalCheck::check(const MatchFinder::MatchResult &Result) {
     const Expr *C = VD->getInit()->IgnoreImplicit();
 
     while (isa<CXXConstructExpr>(C)) {
-      if (cast<CXXConstructExpr>(C)->getNumArgs() == 0)
+      if (cast<CXXConstructExpr>(C)->getNumArgs() == 0) {
         break;
+
+}
       C = cast<CXXConstructExpr>(C)->getArg(0)->IgnoreParenImpCasts();
     }
 

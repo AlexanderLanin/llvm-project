@@ -44,24 +44,26 @@ private:
 
 public:
   void operator=(const std::string &Val) {
-    if (Val.empty())
+    if (Val.empty()) {
       return;
+
+}
     SmallVector<StringRef, 6> BranchTypes;
     StringRef(Val).split(BranchTypes, '+', -1, false);
     for (auto BranchType : BranchTypes) {
-      if (BranchType == "fused")
+      if (BranchType == "fused") {
         addKind(X86::AlignBranchFused);
-      else if (BranchType == "jcc")
+      } else if (BranchType == "jcc") {
         addKind(X86::AlignBranchJcc);
-      else if (BranchType == "jmp")
+      } else if (BranchType == "jmp") {
         addKind(X86::AlignBranchJmp);
-      else if (BranchType == "call")
+      } else if (BranchType == "call") {
         addKind(X86::AlignBranchCall);
-      else if (BranchType == "ret")
+      } else if (BranchType == "ret") {
         addKind(X86::AlignBranchRet);
-      else if (BranchType == "indirect")
+      } else if (BranchType == "indirect") {
         addKind(X86::AlignBranchIndirect);
-      else {
+      } else {
         report_fatal_error(
             "'-x86-align-branch 'The branches's type is combination of jcc, "
             "fused, jmp, call, ret, indirect.(plus separated)",
@@ -154,10 +156,14 @@ public:
       AlignBranchType.addKind(X86::AlignBranchJmp);
     }
     // Allow overriding defaults set by master flag
-    if (X86AlignBranchBoundary.getNumOccurrences())
+    if (X86AlignBranchBoundary.getNumOccurrences()) {
       AlignBoundary = assumeAligned(X86AlignBranchBoundary);
-    if (X86AlignBranch.getNumOccurrences())
+
+}
+    if (X86AlignBranch.getNumOccurrences()) {
       AlignBranchType = X86AlignBranchKindLoc;
+
+}
   }
 
   bool allowAutoPadding() const override;
@@ -305,8 +311,10 @@ static unsigned getRelaxedOpcodeArith(const MCInst &Inst) {
 
 static unsigned getRelaxedOpcode(const MCInst &Inst, bool Is16BitMode) {
   unsigned R = getRelaxedOpcodeArith(Inst);
-  if (R != Inst.getOpcode())
+  if (R != Inst.getOpcode()) {
     return R;
+
+}
   return getRelaxedOpcodeBranch(Inst, Is16BitMode);
 }
 
@@ -337,8 +345,10 @@ static bool isRIPRelative(const MCInst &MI, const MCInstrInfo &MCII) {
   uint64_t TSFlags = Desc.TSFlags;
   unsigned CurOp = X86II::getOperandBias(Desc);
   int MemoryOperand = X86II::getMemoryOperandNo(TSFlags);
-  if (MemoryOperand < 0)
+  if (MemoryOperand < 0) {
     return false;
+
+}
   unsigned BaseRegNum = MemoryOperand + CurOp + X86::AddrBaseReg;
   unsigned BaseReg = MI.getOperand(BaseRegNum).getReg();
   return (BaseReg == X86::RIP);
@@ -353,8 +363,10 @@ static bool isPrefix(const MCInst &MI, const MCInstrInfo &MCII) {
 static bool isFirstMacroFusibleInst(const MCInst &Inst,
                                     const MCInstrInfo &MCII) {
   // An Intel instruction with RIP relative addressing is not macro fusible.
-  if (isRIPRelative(Inst, MCII))
+  if (isRIPRelative(Inst, MCII)) {
     return false;
+
+}
   X86::FirstMacroFusionInstKind FIK =
       X86::classifyFirstOpcodeInMacroFusion(Inst.getOpcode());
   return FIK != X86::FirstMacroFusionInstKind::Invalid;
@@ -377,8 +389,10 @@ uint8_t X86AsmBackend::determinePaddingPrefix(const MCInst &Inst) const {
 
   // Determine where the memory operand starts, if present.
   int MemoryOperand = X86II::getMemoryOperandNo(TSFlags);
-  if (MemoryOperand != -1)
+  if (MemoryOperand != -1) {
     MemoryOperand += X86II::getOperandBias(Desc);
+
+}
 
   unsigned SegmentReg = 0;
   if (MemoryOperand >= 0) {
@@ -391,14 +405,18 @@ uint8_t X86AsmBackend::determinePaddingPrefix(const MCInst &Inst) const {
     break;
   case X86II::RawFrmDstSrc: {
     // Check segment override opcode prefix as needed (not for %ds).
-    if (Inst.getOperand(2).getReg() != X86::DS)
+    if (Inst.getOperand(2).getReg() != X86::DS) {
       SegmentReg = Inst.getOperand(2).getReg();
+
+}
     break;
   }
   case X86II::RawFrmSrc: {
     // Check segment override opcode prefix as needed (not for %ds).
-    if (Inst.getOperand(1).getReg() != X86::DS)
+    if (Inst.getOperand(1).getReg() != X86::DS) {
       SegmentReg = Inst.getOperand(1).getReg();
+
+}
     break;
   }
   case X86II::RawFrmMemOffs: {
@@ -408,17 +426,23 @@ uint8_t X86AsmBackend::determinePaddingPrefix(const MCInst &Inst) const {
   }
   }
 
-  if (SegmentReg != 0)
+  if (SegmentReg != 0) {
     return X86::getSegmentOverridePrefixForReg(SegmentReg);
 
-  if (STI.hasFeature(X86::Mode64Bit))
+}
+
+  if (STI.hasFeature(X86::Mode64Bit)) {
     return X86::CS_Encoding;
+
+}
 
   if (MemoryOperand >= 0) {
     unsigned BaseRegNum = MemoryOperand + X86::AddrBaseReg;
     unsigned BaseReg = Inst.getOperand(BaseRegNum).getReg();
-    if (BaseReg == X86::ESP || BaseReg == X86::EBP)
+    if (BaseReg == X86::ESP || BaseReg == X86::EBP) {
       return X86::SS_Encoding;
+
+}
   }
   return X86::DS_Encoding;
 }
@@ -426,10 +450,14 @@ uint8_t X86AsmBackend::determinePaddingPrefix(const MCInst &Inst) const {
 /// Check if the two instructions will be macro-fused on the target cpu.
 bool X86AsmBackend::isMacroFused(const MCInst &Cmp, const MCInst &Jcc) const {
   const MCInstrDesc &InstDesc = MCII->get(Jcc.getOpcode());
-  if (!InstDesc.isConditionalBranch())
+  if (!InstDesc.isConditionalBranch()) {
     return false;
-  if (!isFirstMacroFusibleInst(Cmp, *MCII))
+
+}
+  if (!isFirstMacroFusibleInst(Cmp, *MCII)) {
     return false;
+
+}
   const X86::FirstMacroFusionInstKind CmpKind =
       X86::classifyFirstOpcodeInMacroFusion(Cmp.getOpcode());
   const X86::SecondMacroFusionInstKind BranchKind =
@@ -440,12 +468,16 @@ bool X86AsmBackend::isMacroFused(const MCInst &Cmp, const MCInst &Jcc) const {
 /// Check if the instruction has a variant symbol operand.
 static bool hasVariantSymbol(const MCInst &MI) {
   for (auto &Operand : MI) {
-    if (!Operand.isExpr())
+    if (!Operand.isExpr()) {
       continue;
+
+}
     const MCExpr &Expr = *Operand.getExpr();
     if (Expr.getKind() == MCExpr::SymbolRef &&
-        cast<MCSymbolRefExpr>(Expr).getKind() != MCSymbolRefExpr::VK_None)
+        cast<MCSymbolRefExpr>(Expr).getKind() != MCSymbolRefExpr::VK_None) {
       return true;
+
+}
   }
   return false;
 }
@@ -455,17 +487,23 @@ bool X86AsmBackend::allowAutoPadding() const {
 }
 
 bool X86AsmBackend::needAlign(MCObjectStreamer &OS) const {
-  if (!OS.getAllowAutoPadding())
+  if (!OS.getAllowAutoPadding()) {
     return false;
+
+}
   assert(allowAutoPadding() && "incorrect initialization!");
 
   // To be Done: Currently don't deal with Bundle cases.
-  if (OS.getAssembler().isBundlingEnabled())
+  if (OS.getAssembler().isBundlingEnabled()) {
     return false;
 
+}
+
   // Branches only need to be aligned in 32-bit or 64-bit mode.
-  if (!(STI.hasFeature(X86::Mode64Bit) || STI.hasFeature(X86::Mode32Bit)))
+  if (!(STI.hasFeature(X86::Mode64Bit) || STI.hasFeature(X86::Mode32Bit))) {
     return false;
+
+}
 
   return true;
 }
@@ -484,8 +522,10 @@ static bool hasInterruptDelaySlot(const MCInst &Inst) {
   case X86::MOV32sr:
   case X86::MOV64sr:
   case X86::MOV16sm:
-    if (Inst.getOperand(0).getReg() == X86::SS)
+    if (Inst.getOperand(0).getReg() == X86::SS) {
       return true;
+
+}
     break;
   }
   return false;
@@ -495,8 +535,10 @@ static bool hasInterruptDelaySlot(const MCInst &Inst) {
 /// before intruction which may be rewritten by linker(e.g. TLSCALL).
 bool X86AsmBackend::needAlignInst(const MCInst &Inst) const {
   // Linker may rewrite the instruction with variant symbol operand.
-  if (hasVariantSymbol(Inst))
+  if (hasVariantSymbol(Inst)) {
     return false;
+
+}
 
   const MCInstrDesc &InstDesc = MCII->get(Inst.getOpcode());
   return (InstDesc.isConditionalBranch() &&
@@ -514,22 +556,30 @@ bool X86AsmBackend::needAlignInst(const MCInst &Inst) const {
 /// Insert BoundaryAlignFragment before instructions to align branches.
 void X86AsmBackend::emitInstructionBegin(MCObjectStreamer &OS,
                                        const MCInst &Inst) {
-  if (!needAlign(OS))
+  if (!needAlign(OS)) {
     return;
 
-  if (hasInterruptDelaySlot(PrevInst))
+}
+
+  if (hasInterruptDelaySlot(PrevInst)) {
     // If this instruction follows an interrupt enabling instruction with a one
     // instruction delay, inserting a nop would change behavior.
     return;
 
-  if (isPrefix(PrevInst, *MCII))
+}
+
+  if (isPrefix(PrevInst, *MCII)) {
     // If this instruction follows a prefix, inserting a nop would change
     // semantic.
     return;
 
-  if (!isMacroFused(PrevInst, Inst))
+}
+
+  if (!isMacroFused(PrevInst, Inst)) {
     // Macro fusion doesn't happen indeed, clear the pending.
     PendingBoundaryAlign = nullptr;
+
+}
 
   if (PendingBoundaryAlign &&
       OS.getCurrentFragment()->getPrevNode() == PendingBoundaryAlign) {
@@ -565,13 +615,17 @@ void X86AsmBackend::emitInstructionBegin(MCObjectStreamer &OS,
 
 /// Set the last fragment to be aligned for the BoundaryAlignFragment.
 void X86AsmBackend::emitInstructionEnd(MCObjectStreamer &OS, const MCInst &Inst) {
-  if (!needAlign(OS))
+  if (!needAlign(OS)) {
     return;
+
+}
 
   PrevInst = Inst;
 
-  if (!needAlignInst(Inst) || !PendingBoundaryAlign)
+  if (!needAlignInst(Inst) || !PendingBoundaryAlign) {
     return;
+
+}
 
   // Tie the aligned instructions into a a pending BoundaryAlign.
   PendingBoundaryAlign->setLastFragment(OS.getCurrentFragment());
@@ -581,23 +635,31 @@ void X86AsmBackend::emitInstructionEnd(MCObjectStreamer &OS, const MCInst &Inst)
   // DataFragment, so that we can get the size of instructions later in
   // MCAssembler::relaxBoundaryAlign. The easiest way is to insert a new empty
   // DataFragment.
-  if (isa_and_nonnull<MCDataFragment>(OS.getCurrentFragment()))
+  if (isa_and_nonnull<MCDataFragment>(OS.getCurrentFragment())) {
     OS.insert(new MCDataFragment());
+
+}
 
   // Update the maximum alignment on the current section if necessary.
   MCSection *Sec = OS.getCurrentSectionOnly();
-  if (AlignBoundary.value() > Sec->getAlignment())
+  if (AlignBoundary.value() > Sec->getAlignment()) {
     Sec->setAlignment(AlignBoundary);
+
+}
 }
 
 Optional<MCFixupKind> X86AsmBackend::getFixupKind(StringRef Name) const {
   if (STI.getTargetTriple().isOSBinFormatELF()) {
     if (STI.getTargetTriple().getArch() == Triple::x86_64) {
-      if (Name == "R_X86_64_NONE")
+      if (Name == "R_X86_64_NONE") {
         return FK_NONE;
+
+}
     } else {
-      if (Name == "R_386_NONE")
+      if (Name == "R_386_NONE") {
         return FK_NONE;
+
+}
     }
   }
   return MCAsmBackend::getFixupKind(Name);
@@ -616,8 +678,10 @@ const MCFixupKindInfo &X86AsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
       {"reloc_branch_4byte_pcrel", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
   };
 
-  if (Kind < FirstTargetFixupKind)
+  if (Kind < FirstTargetFixupKind) {
     return MCAsmBackend::getFixupKindInfo(Kind);
+
+}
 
   assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() &&
          "Invalid kind!");
@@ -679,11 +743,13 @@ void X86AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
       getFixupKindInfo(Fixup.getKind()).Flags &
       MCFixupKindInfo::FKF_IsPCRel) {
     // check that PC relative fixup fits into the fixup size.
-    if (Size > 0 && !isIntN(Size * 8, SignedValue))
+    if (Size > 0 && !isIntN(Size * 8, SignedValue)) {
       Asm.getContext().reportError(
                                    Fixup.getLoc(), "value of " + Twine(SignedValue) +
                                    " is too large for field of " + Twine(Size) +
                                    ((Size == 1) ? " byte." : " bytes."));
+
+}
   } else {
     // Check that uppper bits are either all zeros or all ones.
     // Specifically ignore overflow/underflow as long as the leakage is
@@ -693,26 +759,34 @@ void X86AsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
            "Value does not fit in the Fixup field");
   }
 
-  for (unsigned i = 0; i != Size; ++i)
+  for (unsigned i = 0; i != Size; ++i) {
     Data[Fixup.getOffset() + i] = uint8_t(Value >> (i * 8));
+
+}
 }
 
 bool X86AsmBackend::mayNeedRelaxation(const MCInst &Inst,
                                       const MCSubtargetInfo &STI) const {
   // Branches can always be relaxed in either mode.
-  if (getRelaxedOpcodeBranch(Inst, false) != Inst.getOpcode())
+  if (getRelaxedOpcodeBranch(Inst, false) != Inst.getOpcode()) {
     return true;
 
+}
+
   // Check if this instruction is ever relaxable.
-  if (getRelaxedOpcodeArith(Inst) == Inst.getOpcode())
+  if (getRelaxedOpcodeArith(Inst) == Inst.getOpcode()) {
     return false;
+
+}
 
 
   // Check if the relaxable operand has an expression. For the current set of
   // relaxable instructions, the relaxable operand is always the last operand.
   unsigned RelaxableOp = Inst.getNumOperands() - 1;
-  if (Inst.getOperand(RelaxableOp).isExpr())
+  if (Inst.getOperand(RelaxableOp).isExpr()) {
     return true;
+
+}
 
   return false;
 }
@@ -776,33 +850,43 @@ static unsigned getRemainingPrefixSize(const MCInst &Inst,
   // externally for the moment.
   unsigned ExistingPrefixSize = Code.size();
   unsigned TargetPrefixMax = X86PadMaxPrefixSize;
-  if (TargetPrefixMax <= ExistingPrefixSize)
+  if (TargetPrefixMax <= ExistingPrefixSize) {
     return 0;
+
+}
   return TargetPrefixMax - ExistingPrefixSize;
 }
 
 bool X86AsmBackend::padInstructionViaPrefix(MCRelaxableFragment &RF,
                                             MCCodeEmitter &Emitter,
                                             unsigned &RemainingSize) const {
-  if (!shouldAddPrefix(RF.getInst(), *MCII))
+  if (!shouldAddPrefix(RF.getInst(), *MCII)) {
     return false;
+
+}
   // If the instruction isn't fully relaxed, shifting it around might require a
   // larger value for one of the fixups then can be encoded.  The outer loop
   // will also catch this before moving to the next instruction, but we need to
   // prevent padding this single instruction as well.
-  if (!isFullyRelaxed(RF))
+  if (!isFullyRelaxed(RF)) {
     return false;
 
+}
+
   const unsigned OldSize = RF.getContents().size();
-  if (OldSize == 15)
+  if (OldSize == 15) {
     return false;
+
+}
 
   const unsigned MaxPossiblePad = std::min(15 - OldSize, RemainingSize);
   const unsigned PrefixBytesToAdd =
     std::min(MaxPossiblePad,
              getRemainingPrefixSize(RF.getInst(), STI, Emitter));
-  if (PrefixBytesToAdd == 0)
+  if (PrefixBytesToAdd == 0) {
     return false;
+
+}
 
   const uint8_t Prefix = determinePaddingPrefix(RF.getInst());
 
@@ -823,10 +907,12 @@ bool X86AsmBackend::padInstructionViaPrefix(MCRelaxableFragment &RF,
 bool X86AsmBackend::padInstructionViaRelaxation(MCRelaxableFragment &RF,
                                                 MCCodeEmitter &Emitter,
                                                 unsigned &RemainingSize) const {
-  if (isFullyRelaxed(RF))
+  if (isFullyRelaxed(RF)) {
     // TODO: There are lots of other tricks we could apply for increasing
     // encoding size without impacting performance.
     return false;
+
+}
 
   MCInst Relaxed;
   relaxInstruction(RF.getInst(), *RF.getSubtargetInfo(), Relaxed);
@@ -839,8 +925,10 @@ bool X86AsmBackend::padInstructionViaRelaxation(MCRelaxableFragment &RF,
   const unsigned NewSize = Code.size();
   assert(NewSize >= OldSize && "size decrease during relaxation?");
   unsigned Delta = NewSize - OldSize;
-  if (Delta > RemainingSize)
+  if (Delta > RemainingSize) {
     return false;
+
+}
   RF.setInst(Relaxed);
   RF.getContents() = Code;
   RF.getFixups() = Fixups;
@@ -852,10 +940,14 @@ bool X86AsmBackend::padInstructionEncoding(MCRelaxableFragment &RF,
                                            MCCodeEmitter &Emitter,
                                            unsigned &RemainingSize) const {
   bool Changed = false;
-  if (RemainingSize != 0)
+  if (RemainingSize != 0) {
     Changed |= padInstructionViaRelaxation(RF, Emitter, RemainingSize);
-  if (RemainingSize != 0)
+
+}
+  if (RemainingSize != 0) {
     Changed |= padInstructionViaPrefix(RF, Emitter, RemainingSize);
+
+}
   return Changed;
 }
 
@@ -867,28 +959,38 @@ void X86AsmBackend::finishLayout(MCAssembler const &Asm,
   // decode limited.  It is often better to reduce the number of instructions
   // (i.e. eliminate nops) even at the cost of increasing the size and
   // complexity of others.
-  if (!X86PadForAlign && !X86PadForBranchAlign)
+  if (!X86PadForAlign && !X86PadForBranchAlign) {
     return;
 
+}
+
   DenseSet<MCFragment *> LabeledFragments;
-  for (const MCSymbol &S : Asm.symbols())
+  for (const MCSymbol &S : Asm.symbols()) {
     LabeledFragments.insert(S.getFragment(false));
 
+}
+
   for (MCSection &Sec : Asm) {
-    if (!Sec.getKind().isText())
+    if (!Sec.getKind().isText()) {
       continue;
+
+}
 
     SmallVector<MCRelaxableFragment *, 4> Relaxable;
     for (MCSection::iterator I = Sec.begin(), IE = Sec.end(); I != IE; ++I) {
       MCFragment &F = *I;
 
-      if (LabeledFragments.count(&F))
+      if (LabeledFragments.count(&F)) {
         Relaxable.clear();
 
+}
+
       if (F.getKind() == MCFragment::FT_Data ||
-          F.getKind() == MCFragment::FT_CompactEncodedInst)
+          F.getKind() == MCFragment::FT_CompactEncodedInst) {
         // Skip and ignore
         continue;
+
+}
 
       if (F.getKind() == MCFragment::FT_Relaxable) {
         auto &RF = cast<MCRelaxableFragment>(*I);
@@ -932,8 +1034,10 @@ void X86AsmBackend::finishLayout(MCAssembler const &Asm,
         // Give the backend a chance to play any tricks it wishes to increase
         // the encoding size of the given instruction.  Target independent code
         // will try further relaxation, but target's may play further tricks.
-        if (padInstructionEncoding(RF, Asm.getEmitter(), RemainingSize))
+        if (padInstructionEncoding(RF, Asm.getEmitter(), RemainingSize)) {
           FirstChangedFragment = &RF;
+
+}
 
         // If we have an instruction which hasn't been fully relaxed, we can't
         // skip past it and insert bytes before it.  Changing its starting
@@ -941,8 +1045,10 @@ void X86AsmBackend::finishLayout(MCAssembler const &Asm,
         // We don't need to worry about larger positive offsets as none of the
         // possible offsets between this and our align are visible, and the
         // ones afterwards aren't changing.
-        if (!isFullyRelaxed(RF))
+        if (!isFullyRelaxed(RF)) {
           break;
+
+}
       }
       Relaxable.clear();
 
@@ -954,8 +1060,10 @@ void X86AsmBackend::finishLayout(MCAssembler const &Asm,
       }
 
       // BoundaryAlign explicitly tracks it's size (unlike align)
-      if (F.getKind() == MCFragment::FT_BoundaryAlign)
+      if (F.getKind() == MCFragment::FT_BoundaryAlign) {
         cast<MCBoundaryAlignFragment>(F).setSize(RemainingSize);
+
+}
 
 #ifndef NDEBUG
       const uint64_t FinalOffset = Layout.getFragmentOffset(&F);
@@ -970,10 +1078,14 @@ void X86AsmBackend::finishLayout(MCAssembler const &Asm,
       // break the alignment of the current boundary align.
       if (auto *BF = dyn_cast<MCBoundaryAlignFragment>(&F)) {
         const MCFragment *LastFragment = BF->getLastFragment();
-        if (!LastFragment)
+        if (!LastFragment) {
           continue;
-        while (&*I != LastFragment)
+
+}
+        while (&*I != LastFragment) {
           ++I;
+
+}
       }
     }
   }
@@ -1016,31 +1128,39 @@ bool X86AsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const {
   // This CPU doesn't support long nops. If needed add more.
   // FIXME: We could generated something better than plain 0x90.
   if (!STI.getFeatureBits()[X86::FeatureNOPL]) {
-    for (uint64_t i = 0; i < Count; ++i)
+    for (uint64_t i = 0; i < Count; ++i) {
       OS << '\x90';
+
+}
     return true;
   }
 
   // 15-bytes is the longest single NOP instruction, but 10-bytes is
   // commonly the longest that can be efficiently decoded.
   uint64_t MaxNopLength = 10;
-  if (STI.getFeatureBits()[X86::FeatureFast7ByteNOP])
+  if (STI.getFeatureBits()[X86::FeatureFast7ByteNOP]) {
     MaxNopLength = 7;
-  else if (STI.getFeatureBits()[X86::FeatureFast15ByteNOP])
+  } else if (STI.getFeatureBits()[X86::FeatureFast15ByteNOP]) {
     MaxNopLength = 15;
-  else if (STI.getFeatureBits()[X86::FeatureFast11ByteNOP])
+  } else if (STI.getFeatureBits()[X86::FeatureFast11ByteNOP]) {
     MaxNopLength = 11;
+
+}
 
   // Emit as many MaxNopLength NOPs as needed, then emit a NOP of the remaining
   // length.
   do {
     const uint8_t ThisNopLength = (uint8_t) std::min(Count, MaxNopLength);
     const uint8_t Prefixes = ThisNopLength <= 10 ? 0 : ThisNopLength - 10;
-    for (uint8_t i = 0; i < Prefixes; i++)
+    for (uint8_t i = 0; i < Prefixes; i++) {
       OS << '\x66';
+
+}
     const uint8_t Rest = ThisNopLength - Prefixes;
-    if (Rest != 0)
+    if (Rest != 0) {
       OS.write(Nops[Rest - 1], Rest);
+
+}
     Count -= ThisNopLength;
   } while (Count != 0);
 
@@ -1204,9 +1324,13 @@ private:
       X86::RBX, X86::R12, X86::R13, X86::R14, X86::R15, X86::RBP, 0
     };
     const MCPhysReg *CURegs = Is64Bit ? CU64BitRegs : CU32BitRegs;
-    for (int Idx = 1; *CURegs; ++CURegs, ++Idx)
-      if (*CURegs == Reg)
+    for (int Idx = 1; *CURegs; ++CURegs, ++Idx) {
+      if (*CURegs == Reg) {
         return Idx;
+
+}
+
+}
 
     return -1;
   }
@@ -1220,10 +1344,14 @@ private:
     uint32_t RegEnc = 0;
     for (int i = 0, Idx = 0; i != CU_NUM_SAVED_REGS; ++i) {
       unsigned Reg = SavedRegs[i];
-      if (Reg == 0) break;
+      if (Reg == 0) { break;
+
+}
 
       int CURegNum = getCompactUnwindRegNum(Reg);
-      if (CURegNum == -1) return ~0U;
+      if (CURegNum == -1) { return ~0U;
+
+}
 
       // Encode the 3-bit register number in order, skipping over 3-bits for
       // each register.
@@ -1254,7 +1382,9 @@ private:
     //
     for (unsigned i = 0; i < RegCount; ++i) {
       int CUReg = getCompactUnwindRegNum(SavedRegs[i]);
-      if (CUReg == -1) return ~0U;
+      if (CUReg == -1) { return ~0U;
+
+}
       SavedRegs[i] = CUReg;
     }
 
@@ -1264,9 +1394,13 @@ private:
     uint32_t RenumRegs[CU_NUM_SAVED_REGS];
     for (unsigned i = CU_NUM_SAVED_REGS - RegCount; i < CU_NUM_SAVED_REGS; ++i){
       unsigned Countless = 0;
-      for (unsigned j = CU_NUM_SAVED_REGS - RegCount; j < i; ++j)
-        if (SavedRegs[j] < SavedRegs[i])
+      for (unsigned j = CU_NUM_SAVED_REGS - RegCount; j < i; ++j) {
+        if (SavedRegs[j] < SavedRegs[i]) {
           ++Countless;
+
+}
+
+}
 
       RenumRegs[i] = SavedRegs[i] - Countless - 1;
     }
@@ -1327,7 +1461,9 @@ public:
   /// for the CFI instructions.
   uint32_t
   generateCompactUnwindEncoding(ArrayRef<MCCFIInstruction> Instrs) const override {
-    if (Instrs.empty()) return 0;
+    if (Instrs.empty()) { return 0;
+
+}
 
     // Reset the saved registers.
     unsigned SavedRegIdx = 0;
@@ -1364,8 +1500,10 @@ public:
         // If the frame pointer is other than esp/rsp, we do not have a way to
         // generate a compact unwinding representation, so bail out.
         if (*MRI.getLLVMRegNum(Inst.getRegister(), true) !=
-            (Is64Bit ? X86::RBP : X86::EBP))
+            (Is64Bit ? X86::RBP : X86::EBP)) {
           return 0;
+
+}
 
         // Reset the counts.
         memset(SavedRegs, 0, sizeof(SavedRegs));
@@ -1406,10 +1544,12 @@ public:
         //     .cfi_offset %r14, -32
         //     .cfi_offset %r15, -24
         //
-        if (SavedRegIdx == CU_NUM_SAVED_REGS)
+        if (SavedRegIdx == CU_NUM_SAVED_REGS) {
           // If there are too many saved registers, we cannot use a compact
           // unwind encoding.
           return CU::UNWIND_MODE_DWARF;
+
+}
 
         unsigned Reg = *MRI.getLLVMRegNum(Inst.getRegister(), true);
         SavedRegs[SavedRegIdx++] = Reg;
@@ -1423,13 +1563,17 @@ public:
     StackAdjust /= StackDivide;
 
     if (HasFP) {
-      if ((StackAdjust & 0xFF) != StackAdjust)
+      if ((StackAdjust & 0xFF) != StackAdjust) {
         // Offset was too big for a compact unwind encoding.
         return CU::UNWIND_MODE_DWARF;
 
+}
+
       // Get the encoding of the saved registers when we have a frame pointer.
       uint32_t RegEnc = encodeCompactUnwindRegistersWithFrame();
-      if (RegEnc == ~0U) return CU::UNWIND_MODE_DWARF;
+      if (RegEnc == ~0U) { return CU::UNWIND_MODE_DWARF;
+
+}
 
       CompactUnwindEncoding |= CU::UNWIND_MODE_BP_FRAME;
       CompactUnwindEncoding |= (StackAdjust & 0xFF) << 16;
@@ -1445,9 +1589,11 @@ public:
         // Encode the stack size.
         CompactUnwindEncoding |= (StackSize & 0xFF) << 16;
       } else {
-        if ((StackAdjust & 0x7) != StackAdjust)
+        if ((StackAdjust & 0x7) != StackAdjust) {
           // The extra stack adjustments are too big for us to handle.
           return CU::UNWIND_MODE_DWARF;
+
+}
 
         // Frameless stack with an offset too large for us to encode compactly.
         CompactUnwindEncoding |= CU::UNWIND_MODE_STACK_IND;
@@ -1467,7 +1613,9 @@ public:
       // Get the encoding of the saved registers when we don't have a frame
       // pointer.
       uint32_t RegEnc = encodeCompactUnwindRegistersWithoutFrame(SavedRegIdx);
-      if (RegEnc == ~0U) return CU::UNWIND_MODE_DWARF;
+      if (RegEnc == ~0U) { return CU::UNWIND_MODE_DWARF;
+
+}
 
       // Encode the register encoding.
       CompactUnwindEncoding |=
@@ -1485,16 +1633,22 @@ MCAsmBackend *llvm::createX86_32AsmBackend(const Target &T,
                                            const MCRegisterInfo &MRI,
                                            const MCTargetOptions &Options) {
   const Triple &TheTriple = STI.getTargetTriple();
-  if (TheTriple.isOSBinFormatMachO())
+  if (TheTriple.isOSBinFormatMachO()) {
     return new DarwinX86AsmBackend(T, MRI, STI);
 
-  if (TheTriple.isOSWindows() && TheTriple.isOSBinFormatCOFF())
+}
+
+  if (TheTriple.isOSWindows() && TheTriple.isOSBinFormatCOFF()) {
     return new WindowsX86AsmBackend(T, false, STI);
+
+}
 
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TheTriple.getOS());
 
-  if (TheTriple.isOSIAMCU())
+  if (TheTriple.isOSIAMCU()) {
     return new ELFX86_IAMCUAsmBackend(T, OSABI, STI);
+
+}
 
   return new ELFX86_32AsmBackend(T, OSABI, STI);
 }
@@ -1504,15 +1658,21 @@ MCAsmBackend *llvm::createX86_64AsmBackend(const Target &T,
                                            const MCRegisterInfo &MRI,
                                            const MCTargetOptions &Options) {
   const Triple &TheTriple = STI.getTargetTriple();
-  if (TheTriple.isOSBinFormatMachO())
+  if (TheTriple.isOSBinFormatMachO()) {
     return new DarwinX86AsmBackend(T, MRI, STI);
 
-  if (TheTriple.isOSWindows() && TheTriple.isOSBinFormatCOFF())
+}
+
+  if (TheTriple.isOSWindows() && TheTriple.isOSBinFormatCOFF()) {
     return new WindowsX86AsmBackend(T, true, STI);
+
+}
 
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TheTriple.getOS());
 
-  if (TheTriple.getEnvironment() == Triple::GNUX32)
+  if (TheTriple.getEnvironment() == Triple::GNUX32) {
     return new ELFX86_X32AsmBackend(T, OSABI, STI);
+
+}
   return new ELFX86_64AsmBackend(T, OSABI, STI);
 }

@@ -760,8 +760,10 @@ static void yamlToPdb(StringRef Path) {
   PDBFileBuilder Builder(Allocator);
 
   uint32_t BlockSize = 4096;
-  if (YamlObj.Headers.hasValue())
+  if (YamlObj.Headers.hasValue()) {
     BlockSize = YamlObj.Headers->SuperBlock.BlockSize;
+
+}
   ExitOnErr(Builder.initialize(BlockSize));
   // Add each of the reserved streams.  We ignore stream metadata in the
   // yaml, because we will reconstruct our own view of the streams.  For
@@ -769,15 +771,19 @@ static void yamlToPdb(StringRef Path) {
   // PDB, but maybe we only dump a subset of those 20 streams, so we will
   // have fewer, and the ones we do have may end up with different indices
   // than the ones in the original PDB.  So we just start with a clean slate.
-  for (uint32_t I = 0; I < kSpecialStreamCount; ++I)
+  for (uint32_t I = 0; I < kSpecialStreamCount; ++I) {
     ExitOnErr(Builder.getMsfBuilder().addStream(0));
+
+}
 
   StringsAndChecksums Strings;
   Strings.setStrings(std::make_shared<DebugStringTableSubsection>());
 
   if (YamlObj.StringTable.hasValue()) {
-    for (auto S : *YamlObj.StringTable)
+    for (auto S : *YamlObj.StringTable) {
       Strings.strings()->insert(S);
+
+}
   }
 
   pdb::yaml::PdbInfoStream DefaultInfoStream;
@@ -792,8 +798,10 @@ static void yamlToPdb(StringRef Path) {
   InfoBuilder.setGuid(Info.Guid);
   InfoBuilder.setSignature(Info.Signature);
   InfoBuilder.setVersion(Info.Version);
-  for (auto F : Info.Features)
+  for (auto F : Info.Features) {
     InfoBuilder.addFeature(F);
+
+}
 
   const auto &Dbi = YamlObj.DbiStream.getValueOr(DefaultDbiStream);
   auto &DbiBuilder = Builder.getDbiBuilder();
@@ -808,8 +816,10 @@ static void yamlToPdb(StringRef Path) {
     auto &ModiBuilder = ExitOnErr(DbiBuilder.addModuleInfo(MI.Mod));
     ModiBuilder.setObjFileName(MI.Obj);
 
-    for (auto S : MI.SourceFiles)
+    for (auto S : MI.SourceFiles) {
       ExitOnErr(DbiBuilder.addModuleSourceFile(ModiBuilder, S));
+
+}
     if (MI.Modi.hasValue()) {
       const auto &ModiStream = *MI.Modi;
       for (auto Symbol : ModiStream.Symbols) {
@@ -886,12 +896,18 @@ static void dumpBytes(StringRef Path) {
 }
 
 bool opts::pretty::shouldDumpSymLevel(SymLevel Search) {
-  if (SymTypes.empty())
+  if (SymTypes.empty()) {
     return true;
-  if (llvm::find(SymTypes, Search) != SymTypes.end())
+
+}
+  if (llvm::find(SymTypes, Search) != SymTypes.end()) {
     return true;
-  if (llvm::find(SymTypes, SymLevel::All) != SymTypes.end())
+
+}
+  if (llvm::find(SymTypes, SymLevel::All) != SymTypes.end()) {
     return true;
+
+}
   return false;
 }
 
@@ -907,8 +923,10 @@ bool opts::pretty::compareFunctionSymbols(
     const std::unique_ptr<PDBSymbolFunc> &F2) {
   assert(opts::pretty::SymbolOrder != opts::pretty::SymbolSortMode::None);
 
-  if (opts::pretty::SymbolOrder == opts::pretty::SymbolSortMode::Name)
+  if (opts::pretty::SymbolOrder == opts::pretty::SymbolSortMode::Name) {
     return F1->getName() < F2->getName();
+
+}
 
   // Note that we intentionally sort in descending order on length, since
   // long functions are more interesting than short functions.
@@ -920,8 +938,10 @@ bool opts::pretty::compareDataSymbols(
     const std::unique_ptr<PDBSymbolData> &F2) {
   assert(opts::pretty::SymbolOrder != opts::pretty::SymbolSortMode::None);
 
-  if (opts::pretty::SymbolOrder == opts::pretty::SymbolSortMode::Name)
+  if (opts::pretty::SymbolOrder == opts::pretty::SymbolSortMode::Name) {
     return F1->getName() < F2->getName();
+
+}
 
   // Note that we intentionally sort in descending order on length, since
   // large types are more interesting than short ones.
@@ -969,19 +989,23 @@ static void dumpInjectedSources(LinePrinter &Printer, IPDBSession &Session) {
         WithColor(Printer, PDB_ColorItem::LiteralValue).get(),
         IS->getCompression());
 
-    if (!opts::pretty::ShowInjectedSourceContent)
+    if (!opts::pretty::ShowInjectedSourceContent) {
       continue;
+
+}
 
     // Set the indent level to 0 when printing file content.
     int Indent = Printer.getIndentLevel();
     Printer.Unindent(Indent);
 
-    if (IS->getCompression() == PDB_SourceCompression::None)
+    if (IS->getCompression() == PDB_SourceCompression::None) {
       Printer.printLine(IS->getCode());
-    else
+    } else {
       Printer.formatBinary("Compressed data",
                            arrayRefFromStringRef(IS->getCode()),
                            /*StartOffset=*/0);
+
+}
 
     // Re-indent back to the original level.
     Printer.Indent(Indent);
@@ -992,8 +1016,10 @@ template <typename OuterT, typename ChildT>
 void diaDumpChildren(PDBSymbol &Outer, PdbSymbolIdField Ids,
                      PdbSymbolIdField Recurse) {
   OuterT *ConcreteOuter = dyn_cast<OuterT>(&Outer);
-  if (!ConcreteOuter)
+  if (!ConcreteOuter) {
     return;
+
+}
 
   auto Children = ConcreteOuter->template findAllChildren<ChildT>();
   while (auto Child = Children->getNext()) {
@@ -1014,30 +1040,50 @@ static void dumpDia(StringRef Path) {
 
   std::vector<PDB_SymType> SymTypes;
 
-  if (opts::diadump::Compilands)
+  if (opts::diadump::Compilands) {
     SymTypes.push_back(PDB_SymType::Compiland);
-  if (opts::diadump::Enums)
+
+}
+  if (opts::diadump::Enums) {
     SymTypes.push_back(PDB_SymType::Enum);
-  if (opts::diadump::Pointers)
+
+}
+  if (opts::diadump::Pointers) {
     SymTypes.push_back(PDB_SymType::PointerType);
-  if (opts::diadump::UDTs)
+
+}
+  if (opts::diadump::UDTs) {
     SymTypes.push_back(PDB_SymType::UDT);
-  if (opts::diadump::Funcsigs)
+
+}
+  if (opts::diadump::Funcsigs) {
     SymTypes.push_back(PDB_SymType::FunctionSig);
-  if (opts::diadump::Arrays)
+
+}
+  if (opts::diadump::Arrays) {
     SymTypes.push_back(PDB_SymType::ArrayType);
-  if (opts::diadump::VTShapes)
+
+}
+  if (opts::diadump::VTShapes) {
     SymTypes.push_back(PDB_SymType::VTableShape);
-  if (opts::diadump::Typedefs)
+
+}
+  if (opts::diadump::Typedefs) {
     SymTypes.push_back(PDB_SymType::Typedef);
+
+}
   PdbSymbolIdField Ids = opts::diadump::NoSymIndexIds ? PdbSymbolIdField::None
                                                       : PdbSymbolIdField::All;
 
   PdbSymbolIdField Recurse = PdbSymbolIdField::None;
-  if (opts::diadump::Recurse)
+  if (opts::diadump::Recurse) {
     Recurse = PdbSymbolIdField::All;
-  if (!opts::diadump::ShowClassHierarchy)
+
+}
+  if (!opts::diadump::ShowClassHierarchy) {
     Ids &= ~(PdbSymbolIdField::ClassParent | PdbSymbolIdField::LexicalParent);
+
+}
 
   for (PDB_SymType ST : SymTypes) {
     auto Children = GlobalScope->findAllChildren(ST);
@@ -1058,8 +1104,10 @@ static void dumpPretty(StringRef Path) {
       opts::pretty::Native ? PDB_ReaderType::Native : PDB_ReaderType::DIA;
   ExitOnErr(loadDataForPDB(ReaderType, Path, Session));
 
-  if (opts::pretty::LoadAddress)
+  if (opts::pretty::LoadAddress) {
     Session->setLoadAddress(opts::pretty::LoadAddress);
+
+}
 
   auto &Stream = outs();
   const bool UseColor = opts::pretty::ColorOutput == cl::BOU_UNSET
@@ -1068,8 +1116,10 @@ static void dumpPretty(StringRef Path) {
   LinePrinter Printer(2, UseColor, Stream);
 
   auto GlobalScope(Session->getGlobalScope());
-  if (!GlobalScope)
+  if (!GlobalScope) {
     return;
+
+}
   std::string FileName(GlobalScope->getSymbolsFileName());
 
   WithColor(Printer, PDB_ColorItem::None).get() << "Summary for ";
@@ -1096,10 +1146,14 @@ static void dumpPretty(StringRef Path) {
   Printer.NewLine();
   WithColor(Printer, PDB_ColorItem::Identifier).get() << "Attributes";
   Printer << ": ";
-  if (GlobalScope->hasCTypes())
+  if (GlobalScope->hasCTypes()) {
     outs() << "HasCTypes ";
-  if (GlobalScope->hasPrivateSymbols())
+
+}
+  if (GlobalScope->hasPrivateSymbols()) {
     outs() << "HasPrivateSymbols ";
+
+}
   Printer.Unindent();
 
   if (!opts::pretty::WithName.empty()) {
@@ -1188,10 +1242,14 @@ static void dumpPretty(StringRef Path) {
       Printer.Indent();
       CompilandDumper Dumper(Printer);
       CompilandDumpFlags options = CompilandDumper::Flags::None;
-      if (opts::pretty::Lines)
+      if (opts::pretty::Lines) {
         options = options | CompilandDumper::Flags::Lines;
-      while (auto Compiland = Compilands->getNext())
+
+}
+      while (auto Compiland = Compilands->getNext()) {
         Dumper.start(*Compiland, options);
+
+}
       Printer.Unindent();
     }
   }
@@ -1213,8 +1271,10 @@ static void dumpPretty(StringRef Path) {
     if (auto Compilands = GlobalScope->findAllChildren<PDBSymbolCompiland>()) {
       Printer.Indent();
       CompilandDumper Dumper(Printer);
-      while (auto Compiland = Compilands->getNext())
+      while (auto Compiland = Compilands->getNext()) {
         Dumper.start(*Compiland, true);
+
+}
       Printer.Unindent();
     }
   }
@@ -1233,8 +1293,10 @@ static void dumpPretty(StringRef Path) {
           }
         } else {
           std::vector<std::unique_ptr<PDBSymbolFunc>> Funcs;
-          while (auto Func = Functions->getNext())
+          while (auto Func = Functions->getNext()) {
             Funcs.push_back(std::move(Func));
+
+}
           llvm::sort(Funcs, opts::pretty::compareFunctionSymbols);
           for (const auto &Func : Funcs) {
             Printer.NewLine();
@@ -1247,23 +1309,31 @@ static void dumpPretty(StringRef Path) {
       if (auto Vars = GlobalScope->findAllChildren<PDBSymbolData>()) {
         VariableDumper Dumper(Printer);
         if (opts::pretty::SymbolOrder == opts::pretty::SymbolSortMode::None) {
-          while (auto Var = Vars->getNext())
+          while (auto Var = Vars->getNext()) {
             Dumper.start(*Var);
+
+}
         } else {
           std::vector<std::unique_ptr<PDBSymbolData>> Datas;
-          while (auto Var = Vars->getNext())
+          while (auto Var = Vars->getNext()) {
             Datas.push_back(std::move(Var));
+
+}
           llvm::sort(Datas, opts::pretty::compareDataSymbols);
-          for (const auto &Var : Datas)
+          for (const auto &Var : Datas) {
             Dumper.start(*Var);
+
+}
         }
       }
     }
     if (shouldDumpSymLevel(opts::pretty::SymLevel::Thunks)) {
       if (auto Thunks = GlobalScope->findAllChildren<PDBSymbolThunk>()) {
         CompilandDumper Dumper(Printer);
-        while (auto Thunk = Thunks->getNext())
+        while (auto Thunk = Thunks->getNext()) {
           Dumper.dump(*Thunk);
+
+}
       }
     }
     Printer.Unindent();
@@ -1318,8 +1388,10 @@ static void mergePdbs() {
   ExitOnErr(Builder.initialize(4096));
   // Add each of the reserved streams.  We might not put any data in them,
   // but at least they have to be present.
-  for (uint32_t I = 0; I < kSpecialStreamCount; ++I)
+  for (uint32_t I = 0; I < kSpecialStreamCount; ++I) {
     ExitOnErr(Builder.getMsfBuilder().addStream(0));
+
+}
 
   auto &DestTpi = Builder.getTpiBuilder();
   auto &DestIpi = Builder.getIpiBuilder();
@@ -1394,22 +1466,30 @@ static void exportStream() {
 
 static bool parseRange(StringRef Str,
                        Optional<opts::bytes::NumberRange> &Parsed) {
-  if (Str.empty())
+  if (Str.empty()) {
     return true;
+
+}
 
   llvm::Regex R("^([^-]+)(-([^-]+))?$");
   llvm::SmallVector<llvm::StringRef, 2> Matches;
-  if (!R.match(Str, &Matches))
+  if (!R.match(Str, &Matches)) {
     return false;
 
+}
+
   Parsed.emplace();
-  if (!to_integer(Matches[1], Parsed->Min))
+  if (!to_integer(Matches[1], Parsed->Min)) {
     return false;
+
+}
 
   if (!Matches[3].empty()) {
     Parsed->Max.emplace();
-    if (!to_integer(Matches[3], *Parsed->Max))
+    if (!to_integer(Matches[3], *Parsed->Max)) {
       return false;
+
+}
   }
   return true;
 }
@@ -1417,8 +1497,10 @@ static bool parseRange(StringRef Str,
 static void simplifyChunkList(llvm::cl::list<opts::ModuleSubsection> &Chunks) {
   // If this list contains "All" plus some other stuff, remove the other stuff
   // and just keep "All" in the list.
-  if (!llvm::is_contained(Chunks, opts::ModuleSubsection::All))
+  if (!llvm::is_contained(Chunks, opts::ModuleSubsection::All)) {
     return;
+
+}
   Chunks.reset();
   Chunks.push_back(opts::ModuleSubsection::All);
 }
@@ -1492,11 +1574,15 @@ int main(int Argc, const char **Argv) {
     }
     simplifyChunkList(opts::pdb2yaml::DumpModuleSubsections);
 
-    if (opts::pdb2yaml::DumpModuleSyms || opts::pdb2yaml::DumpModuleFiles)
+    if (opts::pdb2yaml::DumpModuleSyms || opts::pdb2yaml::DumpModuleFiles) {
       opts::pdb2yaml::DumpModules = true;
 
-    if (opts::pdb2yaml::DumpModules)
+}
+
+    if (opts::pdb2yaml::DumpModules) {
       opts::pdb2yaml::DbiStream = true;
+
+}
   }
 
   llvm::sys::InitializeCOMRAII COM(llvm::sys::COMThreadingMode::MultiThreaded);
@@ -1513,8 +1599,10 @@ int main(int Argc, const char **Argv) {
   } else if (opts::DiaDumpSubcommand) {
     llvm::for_each(opts::diadump::InputFilenames, dumpDia);
   } else if (opts::PrettySubcommand) {
-    if (opts::pretty::Lines)
+    if (opts::pretty::Lines) {
       opts::pretty::Compilands = true;
+
+}
 
     if (opts::pretty::All) {
       opts::pretty::Compilands = true;

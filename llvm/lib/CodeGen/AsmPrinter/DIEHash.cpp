@@ -32,9 +32,13 @@ using namespace llvm;
 static StringRef getDIEStringAttr(const DIE &Die, uint16_t Attr) {
   // Iterate through all the attributes until we find the one we're
   // looking for, if we can't find it return an empty string.
-  for (const auto &V : Die.values())
-    if (V.getAttribute() == Attr)
+  for (const auto &V : Die.values()) {
+    if (V.getAttribute() == Attr) {
       return V.getDIEString().getString();
+
+}
+
+}
 
   return StringRef("");
 }
@@ -56,8 +60,10 @@ void DIEHash::addULEB128(uint64_t Value) {
   do {
     uint8_t Byte = Value & 0x7f;
     Value >>= 7;
-    if (Value != 0)
+    if (Value != 0) {
       Byte |= 0x80; // Mark this byte to show that more bytes will follow.
+
+}
     Hash.update(Byte);
   } while (Value != 0);
 }
@@ -70,8 +76,10 @@ void DIEHash::addSLEB128(int64_t Value) {
     Value >>= 7;
     More = !((((Value == 0) && ((Byte & 0x40) == 0)) ||
               ((Value == -1) && ((Byte & 0x40) != 0))));
-    if (More)
+    if (More) {
       Byte |= 0x80; // Mark this byte to show that more bytes will follow.
+
+}
     Hash.update(Byte);
   } while (More);
 }
@@ -108,8 +116,10 @@ void DIEHash::addParentContext(const DIE &Parent) {
     // ... Then the name, taken from the DW_AT_name attribute.
     StringRef Name = getDIEStringAttr(Die, dwarf::DW_AT_name);
     LLVM_DEBUG(dbgs() << "... adding context: " << Name << "\n");
-    if (!Name.empty())
+    if (!Name.empty()) {
       addString(Name);
+
+}
   }
 }
 
@@ -141,8 +151,10 @@ void DIEHash::hashShallowTypeReference(dwarf::Attribute Attribute,
   addULEB128(Attribute);
 
   // the context of the tag,
-  if (const DIE *Parent = Entry.getParent())
+  if (const DIE *Parent = Entry.getParent()) {
     addParentContext(*Parent);
+
+}
 
   // the letter 'E',
   addULEB128('E');
@@ -215,8 +227,10 @@ void DIEHash::hashDIEEntry(dwarf::Attribute Attribute, dwarf::Tag Tag,
 // Hash all of the values in a block like set of values. This assumes that
 // all of the data is going to be added as integers.
 void DIEHash::hashBlockData(const DIE::const_value_range &Values) {
-  for (const auto &V : Values)
+  for (const auto &V : Values) {
     Hash.update((uint64_t)V.getDIEInteger().getValue());
+
+}
 }
 
 // Hash the contents of a loclistptr class.
@@ -225,8 +239,10 @@ void DIEHash::hashLocList(const DIELocList &LocList) {
   DwarfDebug &DD = *AP->getDwarfDebug();
   const DebugLocStream &Locs = DD.getDebugLocs();
   const DebugLocStream::List &List = Locs.getList(LocList.getValue());
-  for (const DebugLocStream::Entry &Entry : Locs.getEntries(List))
+  for (const DebugLocStream::Entry &Entry : Locs.getEntries(List)) {
     DD.emitDebugLocEntry(Streamer, Entry, List.CU);
+
+}
 }
 
 // Hash an individual attribute \param Attr based on the type of attribute and
@@ -385,8 +401,10 @@ uint64_t DIEHash::computeCUSignature(StringRef DWOName, const DIE &Die) {
   Numbering.clear();
   Numbering[&Die] = 1;
 
-  if (!DWOName.empty())
+  if (!DWOName.empty()) {
     Hash.update(DWOName);
+
+}
   // Hash the DIE.
   computeHash(Die);
 
@@ -408,8 +426,10 @@ uint64_t DIEHash::computeTypeSignature(const DIE &Die) {
   Numbering.clear();
   Numbering[&Die] = 1;
 
-  if (const DIE *Parent = Die.getParent())
+  if (const DIE *Parent = Die.getParent()) {
     addParentContext(*Parent);
+
+}
 
   // Hash the DIE.
   computeHash(Die);

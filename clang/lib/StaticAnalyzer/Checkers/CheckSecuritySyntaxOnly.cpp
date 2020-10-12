@@ -124,25 +124,35 @@ public:
 //===----------------------------------------------------------------------===//
 
 void WalkAST::VisitChildren(Stmt *S) {
-  for (Stmt *Child : S->children())
-    if (Child)
+  for (Stmt *Child : S->children()) {
+    if (Child) {
       Visit(Child);
+
+}
+
+}
 }
 
 void WalkAST::VisitCallExpr(CallExpr *CE) {
   // Get the callee.
   const FunctionDecl *FD = CE->getDirectCallee();
 
-  if (!FD)
+  if (!FD) {
     return;
+
+}
 
   // Get the name of the callee. If it's a builtin, strip off the prefix.
   IdentifierInfo *II = FD->getIdentifier();
-  if (!II)   // if no identifier, not a simple C function
+  if (!II) {   // if no identifier, not a simple C function
     return;
+
+}
   StringRef Name = II->getName();
-  if (Name.startswith("__builtin_"))
+  if (Name.startswith("__builtin_")) {
     Name = Name.substr(10);
+
+}
 
   // Set the evaluation function by switching on the callee name.
   FnCheck evalFunction = llvm::StringSwitch<FnCheck>(Name)
@@ -180,8 +190,10 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
 
   // If the callee isn't defined, it is not of security concern.
   // Check and evaluate the call.
-  if (evalFunction)
+  if (evalFunction) {
     (this->*evalFunction)(CE, FD);
+
+}
 
   // Recurse and check children.
   VisitChildren(CE);
@@ -194,20 +206,26 @@ void WalkAST::VisitObjCMessageExpr(ObjCMessageExpr *ME) {
                 &WalkAST::checkMsg_decodeValueOfObjCType)
           .Default(nullptr);
 
-  if (evalFunction)
+  if (evalFunction) {
     (this->*evalFunction)(ME);
+
+}
 
   // Recurse and check children.
   VisitChildren(ME);
 }
 
 void WalkAST::VisitCompoundStmt(CompoundStmt *S) {
-  for (Stmt *Child : S->children())
+  for (Stmt *Child : S->children()) {
     if (Child) {
-      if (CallExpr *CE = dyn_cast<CallExpr>(Child))
+      if (CallExpr *CE = dyn_cast<CallExpr>(Child)) {
         checkUncheckedReturnValue(CE);
+
+}
       Visit(Child);
     }
+
+}
 }
 
 void WalkAST::VisitForStmt(ForStmt *FS) {
@@ -231,14 +249,20 @@ getIncrementedVar(const Expr *expr, const VarDecl *x, const VarDecl *y) {
 
   if (const BinaryOperator *B = dyn_cast<BinaryOperator>(expr)) {
     if (!(B->isAssignmentOp() || B->isCompoundAssignmentOp() ||
-          B->getOpcode() == BO_Comma))
+          B->getOpcode() == BO_Comma)) {
       return nullptr;
 
-    if (const DeclRefExpr *lhs = getIncrementedVar(B->getLHS(), x, y))
+}
+
+    if (const DeclRefExpr *lhs = getIncrementedVar(B->getLHS(), x, y)) {
       return lhs;
 
-    if (const DeclRefExpr *rhs = getIncrementedVar(B->getRHS(), x, y))
+}
+
+    if (const DeclRefExpr *rhs = getIncrementedVar(B->getRHS(), x, y)) {
       return rhs;
+
+}
 
     return nullptr;
   }
@@ -248,9 +272,11 @@ getIncrementedVar(const Expr *expr, const VarDecl *x, const VarDecl *y) {
     return ND == x || ND == y ? DR : nullptr;
   }
 
-  if (const UnaryOperator *U = dyn_cast<UnaryOperator>(expr))
+  if (const UnaryOperator *U = dyn_cast<UnaryOperator>(expr)) {
     return U->isIncrementDecrementOp()
       ? getIncrementedVar(U->getSubExpr(), x, y) : nullptr;
+
+}
 
   return nullptr;
 }
@@ -260,20 +286,26 @@ getIncrementedVar(const Expr *expr, const VarDecl *x, const VarDecl *y) {
 ///  CERT: FLP30-C, FLP30-CPP.
 ///
 void WalkAST::checkLoopConditionForFloat(const ForStmt *FS) {
-  if (!filter.check_FloatLoopCounter)
+  if (!filter.check_FloatLoopCounter) {
     return;
+
+}
 
   // Does the loop have a condition?
   const Expr *condition = FS->getCond();
 
-  if (!condition)
+  if (!condition) {
     return;
+
+}
 
   // Does the loop have an increment?
   const Expr *increment = FS->getInc();
 
-  if (!increment)
+  if (!increment) {
     return;
+
+}
 
   // Strip away '()' and casts.
   condition = condition->IgnoreParenCasts();
@@ -282,12 +314,16 @@ void WalkAST::checkLoopConditionForFloat(const ForStmt *FS) {
   // Is the loop condition a comparison?
   const BinaryOperator *B = dyn_cast<BinaryOperator>(condition);
 
-  if (!B)
+  if (!B) {
     return;
 
+}
+
   // Is this a comparison?
-  if (!(B->isRelationalOp() || B->isEqualityOp()))
+  if (!(B->isRelationalOp() || B->isEqualityOp())) {
     return;
+
+}
 
   // Are we comparing variables?
   const DeclRefExpr *drLHS =
@@ -299,19 +335,25 @@ void WalkAST::checkLoopConditionForFloat(const ForStmt *FS) {
   drLHS = drLHS && drLHS->getType()->isRealFloatingType() ? drLHS : nullptr;
   drRHS = drRHS && drRHS->getType()->isRealFloatingType() ? drRHS : nullptr;
 
-  if (!drLHS && !drRHS)
+  if (!drLHS && !drRHS) {
     return;
+
+}
 
   const VarDecl *vdLHS = drLHS ? dyn_cast<VarDecl>(drLHS->getDecl()) : nullptr;
   const VarDecl *vdRHS = drRHS ? dyn_cast<VarDecl>(drRHS->getDecl()) : nullptr;
 
-  if (!vdLHS && !vdRHS)
+  if (!vdLHS && !vdRHS) {
     return;
+
+}
 
   // Does either variable appear in increment?
   const DeclRefExpr *drInc = getIncrementedVar(increment, vdLHS, vdRHS);
-  if (!drInc)
+  if (!drInc) {
     return;
+
+}
 
   const VarDecl *vdInc = cast<VarDecl>(drInc->getDecl());
   assert(vdInc && (vdInc == vdLHS || vdInc == vdRHS));
@@ -347,30 +389,42 @@ void WalkAST::checkLoopConditionForFloat(const ForStmt *FS) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_bcmp(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_bcmp)
+  if (!filter.check_bcmp) {
     return;
+
+}
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return;
 
+}
+
   // Verify that the function takes three arguments.
-  if (FPT->getNumParams() != 3)
+  if (FPT->getNumParams() != 3) {
     return;
+
+}
 
   for (int i = 0; i < 2; i++) {
     // Verify the first and second argument type is void*.
     const PointerType *PT = FPT->getParamType(i)->getAs<PointerType>();
-    if (!PT)
+    if (!PT) {
       return;
 
-    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy)
+}
+
+    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy) {
       return;
+
+}
   }
 
   // Verify the third argument type is integer.
-  if (!FPT->getParamType(2)->isIntegralOrUnscopedEnumerationType())
+  if (!FPT->getParamType(2)->isIntegralOrUnscopedEnumerationType()) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -389,30 +443,42 @@ void WalkAST::checkCall_bcmp(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_bcopy(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_bcopy)
+  if (!filter.check_bcopy) {
     return;
+
+}
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return;
 
+}
+
   // Verify that the function takes three arguments.
-  if (FPT->getNumParams() != 3)
+  if (FPT->getNumParams() != 3) {
     return;
+
+}
 
   for (int i = 0; i < 2; i++) {
     // Verify the first and second argument type is void*.
     const PointerType *PT = FPT->getParamType(i)->getAs<PointerType>();
-    if (!PT)
+    if (!PT) {
       return;
 
-    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy)
+}
+
+    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy) {
       return;
+
+}
   }
 
   // Verify the third argument type is integer.
-  if (!FPT->getParamType(2)->isIntegralOrUnscopedEnumerationType())
+  if (!FPT->getParamType(2)->isIntegralOrUnscopedEnumerationType()) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -432,28 +498,40 @@ void WalkAST::checkCall_bcopy(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_bzero(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_bzero)
+  if (!filter.check_bzero) {
     return;
+
+}
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return;
 
+}
+
   // Verify that the function takes two arguments.
-  if (FPT->getNumParams() != 2)
+  if (FPT->getNumParams() != 2) {
     return;
+
+}
 
   // Verify the first argument type is void*.
   const PointerType *PT = FPT->getParamType(0)->getAs<PointerType>();
-  if (!PT)
+  if (!PT) {
     return;
 
-  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy)
+}
+
+  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().VoidTy) {
     return;
+
+}
 
   // Verify the second argument type is integer.
-  if (!FPT->getParamType(1)->isIntegralOrUnscopedEnumerationType())
+  if (!FPT->getParamType(1)->isIntegralOrUnscopedEnumerationType()) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -474,24 +552,34 @@ void WalkAST::checkCall_bzero(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_gets(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_gets)
+  if (!filter.check_gets) {
     return;
+
+}
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return;
 
+}
+
   // Verify that the function takes a single argument.
-  if (FPT->getNumParams() != 1)
+  if (FPT->getNumParams() != 1) {
     return;
+
+}
 
   // Is the argument a 'char*'?
   const PointerType *PT = FPT->getParamType(0)->getAs<PointerType>();
-  if (!PT)
+  if (!PT) {
     return;
 
-  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy)
+}
+
+  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -510,28 +598,40 @@ void WalkAST::checkCall_gets(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_getpw(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_getpw)
+  if (!filter.check_getpw) {
     return;
+
+}
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return;
+
+}
 
   // Verify that the function takes two arguments.
-  if (FPT->getNumParams() != 2)
+  if (FPT->getNumParams() != 2) {
     return;
 
+}
+
   // Verify the first argument type is integer.
-  if (!FPT->getParamType(0)->isIntegralOrUnscopedEnumerationType())
+  if (!FPT->getParamType(0)->isIntegralOrUnscopedEnumerationType()) {
     return;
+
+}
 
   // Verify the second argument type is char*.
   const PointerType *PT = FPT->getParamType(1)->getAs<PointerType>();
-  if (!PT)
+  if (!PT) {
     return;
 
-  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy)
+}
+
+  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -558,21 +658,29 @@ void WalkAST::checkCall_mktemp(const CallExpr *CE, const FunctionDecl *FD) {
   }
 
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if(!FPT)
+  if(!FPT) {
     return;
 
+}
+
   // Verify that the function takes a single argument.
-  if (FPT->getNumParams() != 1)
+  if (FPT->getNumParams() != 1) {
     return;
+
+}
 
   // Verify that the argument is Pointer Type.
   const PointerType *PT = FPT->getParamType(0)->getAs<PointerType>();
-  if (!PT)
+  if (!PT) {
     return;
 
+}
+
   // Verify that the argument is a 'char*'.
-  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy)
+  if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -591,8 +699,10 @@ void WalkAST::checkCall_mktemp(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_mkstemp)
+  if (!filter.check_mkstemp) {
     return;
+
+}
 
   StringRef Name = FD->getIdentifier()->getName();
   std::pair<signed, signed> ArgSuffix =
@@ -607,8 +717,10 @@ void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
 
   // Check if the number of arguments is consistent with out expectations.
   unsigned numArgs = CE->getNumArgs();
-  if ((signed) numArgs <= ArgSuffix.first)
+  if ((signed) numArgs <= ArgSuffix.first) {
     return;
+
+}
 
   const StringLiteral *strArg =
     dyn_cast<StringLiteral>(CE->getArg((unsigned)ArgSuffix.first)
@@ -617,8 +729,10 @@ void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
   // Currently we only handle string literals.  It is possible to do better,
   // either by looking at references to const variables, or by doing real
   // flow analysis.
-  if (!strArg || strArg->getCharByteWidth() != 1)
+  if (!strArg || strArg->getCharByteWidth() != 1) {
     return;
+
+}
 
   // Count the number of X's, taking into account a possible cutoff suffix.
   StringRef str = strArg->getString();
@@ -630,21 +744,31 @@ void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
   if (ArgSuffix.second >= 0) {
     const Expr *suffixEx = CE->getArg((unsigned)ArgSuffix.second);
     Expr::EvalResult EVResult;
-    if (!suffixEx->EvaluateAsInt(EVResult, BR.getContext()))
+    if (!suffixEx->EvaluateAsInt(EVResult, BR.getContext())) {
       return;
+
+}
     llvm::APSInt Result = EVResult.Val.getInt();
     // FIXME: Issue a warning.
-    if (Result.isNegative())
+    if (Result.isNegative()) {
       return;
+
+}
     suffix = (unsigned) Result.getZExtValue();
     n = (n > suffix) ? n - suffix : 0;
   }
 
-  for (unsigned i = 0; i < n; ++i)
-    if (str[i] == 'X') ++numX;
+  for (unsigned i = 0; i < n; ++i) {
+    if (str[i] == 'X') { ++numX;
 
-  if (numX >= 6)
+}
+
+}
+
+  if (numX >= 6) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -653,13 +777,17 @@ void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
   llvm::raw_svector_ostream out(buf);
   out << "Call to '" << Name << "' should have at least 6 'X's in the"
     " format string to be secure (" << numX << " 'X'";
-  if (numX != 1)
+  if (numX != 1) {
     out << 's';
+
+}
   out << " seen";
   if (suffix) {
     out << ", " << suffix << " character";
-    if (suffix > 1)
+    if (suffix > 1) {
       out << 's';
+
+}
     out << " used as a suffix";
   }
   out << ')';
@@ -676,11 +804,15 @@ void WalkAST::checkCall_mkstemp(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_strcpy(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_strcpy)
+  if (!filter.check_strcpy) {
     return;
 
-  if (!checkCall_strCommon(CE, FD))
+}
+
+  if (!checkCall_strCommon(CE, FD)) {
     return;
+
+}
 
   const auto *Target = CE->getArg(0)->IgnoreImpCasts(),
              *Source = CE->getArg(1)->IgnoreImpCasts();
@@ -688,8 +820,10 @@ void WalkAST::checkCall_strcpy(const CallExpr *CE, const FunctionDecl *FD) {
   if (const auto *Array = dyn_cast<ConstantArrayType>(Target->getType())) {
     uint64_t ArraySize = BR.getContext().getTypeSize(Array) / 8;
     if (const auto *String = dyn_cast<StringLiteral>(Source)) {
-      if (ArraySize >= String->getLength() + 1)
+      if (ArraySize >= String->getLength() + 1) {
         return;
+
+}
     }
   }
 
@@ -715,11 +849,15 @@ void WalkAST::checkCall_strcpy(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_strcat(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_strcpy)
+  if (!filter.check_strcpy) {
     return;
 
-  if (!checkCall_strCommon(CE, FD))
+}
+
+  if (!checkCall_strCommon(CE, FD)) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -753,19 +891,25 @@ void WalkAST::checkCall_strcat(const CallExpr *CE, const FunctionDecl *FD) {
 
 void WalkAST::checkDeprecatedOrUnsafeBufferHandling(const CallExpr *CE,
                                                     const FunctionDecl *FD) {
-  if (!filter.check_DeprecatedOrUnsafeBufferHandling)
+  if (!filter.check_DeprecatedOrUnsafeBufferHandling) {
     return;
 
-  if (!BR.getContext().getLangOpts().C11)
+}
+
+  if (!BR.getContext().getLangOpts().C11) {
     return;
+
+}
 
   // Issue a warning. ArgIndex == -1: Deprecated but not unsafe (has size
   // restrictions).
   enum { DEPR_ONLY = -1, UNKNOWN_CALL = -2 };
 
   StringRef Name = FD->getIdentifier()->getName();
-  if (Name.startswith("__builtin_"))
+  if (Name.startswith("__builtin_")) {
     Name = Name.substr(10);
+
+}
 
   int ArgIndex =
       llvm::StringSwitch<int>(Name)
@@ -787,8 +931,10 @@ void WalkAST::checkDeprecatedOrUnsafeBufferHandling(const CallExpr *CE,
         dyn_cast<StringLiteral>(CE->getArg(ArgIndex)->IgnoreParenImpCasts());
     if (FormatString &&
         FormatString->getString().find("%s") == StringRef::npos &&
-        FormatString->getString().find("%[") == StringRef::npos)
+        FormatString->getString().find("%[") == StringRef::npos) {
       BoundsProvided = true;
+
+}
   }
 
   SmallString<128> Buf1;
@@ -824,24 +970,32 @@ void WalkAST::checkDeprecatedOrUnsafeBufferHandling(const CallExpr *CE,
 
 bool WalkAST::checkCall_strCommon(const CallExpr *CE, const FunctionDecl *FD) {
   const FunctionProtoType *FPT = FD->getType()->getAs<FunctionProtoType>();
-  if (!FPT)
+  if (!FPT) {
     return false;
+
+}
 
   // Verify the function takes two arguments, three in the _chk version.
   int numArgs = FPT->getNumParams();
-  if (numArgs != 2 && numArgs != 3)
+  if (numArgs != 2 && numArgs != 3) {
     return false;
+
+}
 
   // Verify the type for both arguments.
   for (int i = 0; i < 2; i++) {
     // Verify that the arguments are pointers.
     const PointerType *PT = FPT->getParamType(i)->getAs<PointerType>();
-    if (!PT)
+    if (!PT) {
       return false;
 
+}
+
     // Verify that the argument is a 'char*'.
-    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy)
+    if (PT->getPointeeType().getUnqualifiedType() != BR.getContext().CharTy) {
       return false;
+
+}
   }
 
   return true;
@@ -854,24 +1008,34 @@ bool WalkAST::checkCall_strCommon(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_rand(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_rand || !CheckRand)
+  if (!filter.check_rand || !CheckRand) {
     return;
 
+}
+
   const FunctionProtoType *FTP = FD->getType()->getAs<FunctionProtoType>();
-  if (!FTP)
+  if (!FTP) {
     return;
+
+}
 
   if (FTP->getNumParams() == 1) {
     // Is the argument an 'unsigned short *'?
     // (Actually any integer type is allowed.)
     const PointerType *PT = FTP->getParamType(0)->getAs<PointerType>();
-    if (!PT)
+    if (!PT) {
       return;
 
-    if (! PT->getPointeeType()->isIntegralOrUnscopedEnumerationType())
+}
+
+    if (! PT->getPointeeType()->isIntegralOrUnscopedEnumerationType()) {
       return;
-  } else if (FTP->getNumParams() != 0)
+
+}
+  } else if (FTP->getNumParams() != 0) {
     return;
+
+}
 
   // Issue a warning.
   SmallString<256> buf1;
@@ -897,16 +1061,22 @@ void WalkAST::checkCall_rand(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_random(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!CheckRand || !filter.check_rand)
+  if (!CheckRand || !filter.check_rand) {
     return;
+
+}
 
   const FunctionProtoType *FTP = FD->getType()->getAs<FunctionProtoType>();
-  if (!FTP)
+  if (!FTP) {
     return;
 
+}
+
   // Verify that the function takes no argument.
-  if (FTP->getNumParams() != 0)
+  if (FTP->getNumParams() != 0) {
     return;
+
+}
 
   // Issue a warning.
   PathDiagnosticLocation CELoc =
@@ -925,8 +1095,10 @@ void WalkAST::checkCall_random(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkCall_vfork(const CallExpr *CE, const FunctionDecl *FD) {
-  if (!filter.check_vfork)
+  if (!filter.check_vfork) {
     return;
+
+}
 
   // All calls to vfork() are insecure, issue a warning.
   PathDiagnosticLocation CELoc =
@@ -949,8 +1121,10 @@ void WalkAST::checkCall_vfork(const CallExpr *CE, const FunctionDecl *FD) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkMsg_decodeValueOfObjCType(const ObjCMessageExpr *ME) {
-  if (!filter.check_decodeValueOfObjCType)
+  if (!filter.check_decodeValueOfObjCType) {
     return;
+
+}
 
   // Check availability of the secure alternative:
   // iOS 11+, macOS 10.13+, tvOS 11+, and watchOS 4.0+
@@ -960,20 +1134,28 @@ void WalkAST::checkMsg_decodeValueOfObjCType(const ObjCMessageExpr *ME) {
   const VersionTuple &VT = TI.getPlatformMinVersion();
   switch (T.getOS()) {
   case llvm::Triple::IOS:
-    if (VT < VersionTuple(11, 0))
+    if (VT < VersionTuple(11, 0)) {
       return;
+
+}
     break;
   case llvm::Triple::MacOSX:
-    if (VT < VersionTuple(10, 13))
+    if (VT < VersionTuple(10, 13)) {
       return;
+
+}
     break;
   case llvm::Triple::WatchOS:
-    if (VT < VersionTuple(4, 0))
+    if (VT < VersionTuple(4, 0)) {
       return;
+
+}
     break;
   case llvm::Triple::TvOS:
-    if (VT < VersionTuple(11, 0))
+    if (VT < VersionTuple(11, 0)) {
       return;
+
+}
     break;
   default:
     return;
@@ -996,12 +1178,16 @@ void WalkAST::checkMsg_decodeValueOfObjCType(const ObjCMessageExpr *ME) {
 //===----------------------------------------------------------------------===//
 
 void WalkAST::checkUncheckedReturnValue(CallExpr *CE) {
-  if (!filter.check_UncheckedReturn)
+  if (!filter.check_UncheckedReturn) {
     return;
 
+}
+
   const FunctionDecl *FD = CE->getDirectCallee();
-  if (!FD)
+  if (!FD) {
     return;
+
+}
 
   if (II_setid[0] == nullptr) {
     static const char * const identifiers[num_setids] = {
@@ -1009,33 +1195,49 @@ void WalkAST::checkUncheckedReturnValue(CallExpr *CE) {
       "setreuid", "setregid"
     };
 
-    for (size_t i = 0; i < num_setids; i++)
+    for (size_t i = 0; i < num_setids; i++) {
       II_setid[i] = &BR.getContext().Idents.get(identifiers[i]);
+
+}
   }
 
   const IdentifierInfo *id = FD->getIdentifier();
   size_t identifierid;
 
-  for (identifierid = 0; identifierid < num_setids; identifierid++)
-    if (id == II_setid[identifierid])
+  for (identifierid = 0; identifierid < num_setids; identifierid++) {
+    if (id == II_setid[identifierid]) {
       break;
 
-  if (identifierid >= num_setids)
+}
+
+}
+
+  if (identifierid >= num_setids) {
     return;
 
+}
+
   const FunctionProtoType *FTP = FD->getType()->getAs<FunctionProtoType>();
-  if (!FTP)
+  if (!FTP) {
     return;
+
+}
 
   // Verify that the function takes one or two arguments (depending on
   //   the function).
-  if (FTP->getNumParams() != (identifierid < 4 ? 1 : 2))
+  if (FTP->getNumParams() != (identifierid < 4 ? 1 : 2)) {
     return;
 
+}
+
   // The arguments must be integers.
-  for (unsigned i = 0; i < FTP->getNumParams(); i++)
-    if (!FTP->getParamType(i)->isIntegralOrUnscopedEnumerationType())
+  for (unsigned i = 0; i < FTP->getNumParams(); i++) {
+    if (!FTP->getParamType(i)->isIntegralOrUnscopedEnumerationType()) {
       return;
+
+}
+
+}
 
   // Issue a warning.
   SmallString<256> buf1;

@@ -72,14 +72,18 @@ static Expected<std::unique_ptr<MemoryBuffer>> openBitcodeFile(StringRef Path) {
   // Read the input file.
   Expected<std::unique_ptr<MemoryBuffer>> MemBufOrErr =
       errorOrToExpected(MemoryBuffer::getFileOrSTDIN(Path));
-  if (Error E = MemBufOrErr.takeError())
+  if (Error E = MemBufOrErr.takeError()) {
     return std::move(E);
+
+}
 
   std::unique_ptr<MemoryBuffer> MemBuf = std::move(*MemBufOrErr);
 
-  if (MemBuf->getBufferSize() & 3)
+  if (MemBuf->getBufferSize() & 3) {
     return reportError(
         "Bitcode stream should be a multiple of 4 bytes in length");
+
+}
   return std::move(MemBuf);
 }
 
@@ -90,8 +94,10 @@ int main(int argc, char **argv) {
 
   std::unique_ptr<MemoryBuffer> MB = ExitOnErr(openBitcodeFile(InputFilename));
   std::unique_ptr<MemoryBuffer> BlockInfoMB = nullptr;
-  if (!BlockInfoFilename.empty())
+  if (!BlockInfoFilename.empty()) {
     BlockInfoMB = ExitOnErr(openBitcodeFile(BlockInfoFilename));
+
+}
 
   BitcodeAnalyzer BA(MB->getBuffer(),
                      BlockInfoMB ? Optional<StringRef>(BlockInfoMB->getBuffer())
@@ -106,8 +112,10 @@ int main(int argc, char **argv) {
       Dump ? Optional<BCDumpOptions>(O) : Optional<BCDumpOptions>(None),
       CheckHash.empty() ? None : Optional<StringRef>(CheckHash)));
 
-  if (Dump)
+  if (Dump) {
     outs() << "\n\n";
+
+}
 
   BA.printStats(O, StringRef(InputFilename.getValue()));
   return 0;

@@ -49,14 +49,18 @@ SmallPtrSetImplBase::insert_imp_big(const void *Ptr) {
 
   // Okay, we know we have space.  Find a hash bucket.
   const void **Bucket = const_cast<const void**>(FindBucketFor(Ptr));
-  if (*Bucket == Ptr)
+  if (*Bucket == Ptr) {
     return std::make_pair(Bucket, false); // Already inserted, good.
 
+}
+
   // Otherwise, insert it!
-  if (*Bucket == getTombstoneMarker())
+  if (*Bucket == getTombstoneMarker()) {
     --NumTombstones;
-  else
+  } else {
     ++NumNonEmpty; // Track density.
+
+}
   *Bucket = Ptr;
   incrementEpoch();
   return std::make_pair(Bucket, true);
@@ -72,17 +76,23 @@ const void * const *SmallPtrSetImplBase::FindBucketFor(const void *Ptr) const {
     // If we found an empty bucket, the pointer doesn't exist in the set.
     // Return a tombstone if we've seen one so far, or the empty bucket if
     // not.
-    if (LLVM_LIKELY(Array[Bucket] == getEmptyMarker()))
+    if (LLVM_LIKELY(Array[Bucket] == getEmptyMarker())) {
       return Tombstone ? Tombstone : Array+Bucket;
 
+}
+
     // Found Ptr's bucket?
-    if (LLVM_LIKELY(Array[Bucket] == Ptr))
+    if (LLVM_LIKELY(Array[Bucket] == Ptr)) {
       return Array+Bucket;
+
+}
 
     // If this is a tombstone, remember it.  If Ptr ends up not in the set, we
     // prefer to return it than something that would require more probing.
-    if (Array[Bucket] == getTombstoneMarker() && !Tombstone)
+    if (Array[Bucket] == getTombstoneMarker() && !Tombstone) {
       Tombstone = Array+Bucket;  // Remember the first tombstone found.
+
+}
 
     // It's a hash collision or a tombstone. Reprobe.
     Bucket = (Bucket + ProbeAmt++) & (ArraySize-1);
@@ -108,12 +118,16 @@ void SmallPtrSetImplBase::Grow(unsigned NewSize) {
   for (const void **BucketPtr = OldBuckets; BucketPtr != OldEnd; ++BucketPtr) {
     // Copy over the element if it is valid.
     const void *Elt = *BucketPtr;
-    if (Elt != getTombstoneMarker() && Elt != getEmptyMarker())
+    if (Elt != getTombstoneMarker() && Elt != getEmptyMarker()) {
       *const_cast<void**>(FindBucketFor(Elt)) = const_cast<void*>(Elt);
+
+}
   }
 
-  if (!WasSmall)
+  if (!WasSmall) {
     free(OldBuckets);
+
+}
   NumNonEmpty -= NumTombstones;
   NumTombstones = 0;
 }
@@ -144,20 +158,24 @@ SmallPtrSetImplBase::SmallPtrSetImplBase(const void **SmallStorage,
 void SmallPtrSetImplBase::CopyFrom(const SmallPtrSetImplBase &RHS) {
   assert(&RHS != this && "Self-copy should be handled by the caller.");
 
-  if (isSmall() && RHS.isSmall())
+  if (isSmall() && RHS.isSmall()) {
     assert(CurArraySize == RHS.CurArraySize &&
            "Cannot assign sets with different small sizes");
 
+}
+
   // If we're becoming small, prepare to insert into our stack space
   if (RHS.isSmall()) {
-    if (!isSmall())
+    if (!isSmall()) {
       free(CurArray);
+
+}
     CurArray = SmallArray;
   // Otherwise, allocate new heap space (unless we were the same size)
   } else if (CurArraySize != RHS.CurArraySize) {
-    if (isSmall())
+    if (isSmall()) {
       CurArray = (const void**)safe_malloc(sizeof(void*) * RHS.CurArraySize);
-    else {
+    } else {
       const void **T = (const void**)safe_realloc(CurArray,
                                              sizeof(void*) * RHS.CurArraySize);
       CurArray = T;
@@ -180,8 +198,10 @@ void SmallPtrSetImplBase::CopyHelper(const SmallPtrSetImplBase &RHS) {
 
 void SmallPtrSetImplBase::MoveFrom(unsigned SmallSize,
                                    SmallPtrSetImplBase &&RHS) {
-  if (!isSmall())
+  if (!isSmall()) {
     free(CurArray);
+
+}
   MoveHelper(SmallSize, std::move(RHS));
 }
 
@@ -211,7 +231,9 @@ void SmallPtrSetImplBase::MoveHelper(unsigned SmallSize,
 }
 
 void SmallPtrSetImplBase::swap(SmallPtrSetImplBase &RHS) {
-  if (this == &RHS) return;
+  if (this == &RHS) { return;
+
+}
 
   // We can only avoid copying elements if neither set is small.
   if (!this->isSmall() && !RHS.isSmall()) {

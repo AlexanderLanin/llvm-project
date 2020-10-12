@@ -62,8 +62,10 @@ void sys::RunSignalHandlers() {
     auto &RunMe = CallBacksToRun[I];
     auto Expected = CallbackAndCookie::Status::Initialized;
     auto Desired = CallbackAndCookie::Status::Executing;
-    if (!RunMe.Flag.compare_exchange_strong(Expected, Desired))
+    if (!RunMe.Flag.compare_exchange_strong(Expected, Desired)) {
       continue;
+
+}
     (*RunMe.Callback)(RunMe.Cookie);
     RunMe.Callback = nullptr;
     RunMe.Cookie = nullptr;
@@ -78,8 +80,10 @@ static void insertSignalHandler(sys::SignalHandlerCallback FnPtr,
     auto &SetMe = CallBacksToRun[I];
     auto Expected = CallbackAndCookie::Status::Empty;
     auto Desired = CallbackAndCookie::Status::Initializing;
-    if (!SetMe.Flag.compare_exchange_strong(Expected, Desired))
+    if (!SetMe.Flag.compare_exchange_strong(Expected, Desired)) {
       continue;
+
+}
     SetMe.Callback = FnPtr;
     SetMe.Cookie = Cookie;
     SetMe.Flag.store(CallbackAndCookie::Status::Initialized);
@@ -105,12 +109,16 @@ static FormattedNumber format_ptr(void *PC) {
 LLVM_ATTRIBUTE_USED
 static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
                                       int Depth, llvm::raw_ostream &OS) {
-  if (DisableSymbolicationFlag)
+  if (DisableSymbolicationFlag) {
     return false;
 
+}
+
   // Don't recursively invoke the llvm-symbolizer binary.
-  if (Argv0.find("llvm-symbolizer") != std::string::npos)
+  if (Argv0.find("llvm-symbolizer") != std::string::npos) {
     return false;
+
+}
 
   // FIXME: Subtract necessary number from StackTrace entries to turn return addresses
   // into actual instruction addresses.
@@ -119,13 +127,19 @@ static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
   ErrorOr<std::string> LLVMSymbolizerPathOrErr = std::error_code();
   if (!Argv0.empty()) {
     StringRef Parent = llvm::sys::path::parent_path(Argv0);
-    if (!Parent.empty())
+    if (!Parent.empty()) {
       LLVMSymbolizerPathOrErr = sys::findProgramByName("llvm-symbolizer", Parent);
+
+}
   }
-  if (!LLVMSymbolizerPathOrErr)
+  if (!LLVMSymbolizerPathOrErr) {
     LLVMSymbolizerPathOrErr = sys::findProgramByName("llvm-symbolizer");
-  if (!LLVMSymbolizerPathOrErr)
+
+}
+  if (!LLVMSymbolizerPathOrErr) {
     return false;
+
+}
   const std::string &LLVMSymbolizerPath = *LLVMSymbolizerPathOrErr;
 
   // If we don't know argv0 or the address of main() at this point, try
@@ -138,8 +152,10 @@ static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
   std::vector<const char *> Modules(Depth, nullptr);
   std::vector<intptr_t> Offsets(Depth, 0);
   if (!findModulesAndOffsets(StackTrace, Depth, Modules.data(), Offsets.data(),
-                             MainExecutableName.c_str(), StrPool))
+                             MainExecutableName.c_str(), StrPool)) {
     return false;
+
+}
   int InputFD;
   SmallString<32> InputFile, OutputFile;
   sys::fs::createTemporaryFile("symbolizer-input", "", InputFD, InputFile);
@@ -150,8 +166,10 @@ static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
   {
     raw_fd_ostream Input(InputFD, true);
     for (int i = 0; i < Depth; i++) {
-      if (Modules[i])
+      if (Modules[i]) {
         Input << Modules[i] << " " << (void*)Offsets[i] << "\n";
+
+}
     }
   }
 
@@ -167,14 +185,18 @@ static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
                       "--demangle"};
   int RunResult =
       sys::ExecuteAndWait(LLVMSymbolizerPath, Args, None, Redirects);
-  if (RunResult != 0)
+  if (RunResult != 0) {
     return false;
+
+}
 
   // This report format is based on the sanitizer stack trace printer.  See
   // sanitizer_stacktrace_printer.cc in compiler-rt.
   auto OutputBuf = MemoryBuffer::getFile(OutputFile.c_str());
-  if (!OutputBuf)
+  if (!OutputBuf) {
     return false;
+
+}
   StringRef Output = OutputBuf.get()->getBuffer();
   SmallVector<StringRef, 32> Lines;
   Output.split(Lines, "\n");
@@ -194,21 +216,31 @@ static bool printSymbolizedStackTrace(StringRef Argv0, void **StackTrace,
     // Read pairs of lines (function name and file/line info) until we
     // encounter empty line.
     for (;;) {
-      if (CurLine == Lines.end())
+      if (CurLine == Lines.end()) {
         return false;
+
+}
       StringRef FunctionName = *CurLine++;
-      if (FunctionName.empty())
+      if (FunctionName.empty()) {
         break;
+
+}
       PrintLineHeader();
-      if (!FunctionName.startswith("??"))
+      if (!FunctionName.startswith("??")) {
         OS << FunctionName << ' ';
-      if (CurLine == Lines.end())
+
+}
+      if (CurLine == Lines.end()) {
         return false;
+
+}
       StringRef FileLineInfo = *CurLine++;
-      if (!FileLineInfo.startswith("??"))
+      if (!FileLineInfo.startswith("??")) {
         OS << FileLineInfo;
-      else
+      } else {
         OS << "(" << Modules[i] << '+' << format_hex(Offsets[i], 0) << ")";
+
+}
       OS << "\n";
     }
   }

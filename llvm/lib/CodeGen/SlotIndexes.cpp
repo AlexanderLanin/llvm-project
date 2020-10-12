@@ -83,8 +83,10 @@ bool SlotIndexes::runOnMachineFunction(MachineFunction &fn) {
     SlotIndex blockStartIndex(&indexList.back(), SlotIndex::Slot_Block);
 
     for (MachineInstr &MI : MBB) {
-      if (MI.isDebugInstr())
+      if (MI.isDebugInstr()) {
         continue;
+
+}
 
       // Insert a store index for the instr.
       indexList.push_back(createEntry(&MI, index += SlotIndex::InstrDist));
@@ -116,8 +118,10 @@ void SlotIndexes::removeMachineInstrFromMaps(MachineInstr &MI) {
   assert(!MI.isBundledWithPred() &&
          "Use removeSingleMachineInstrFromMaps() instread");
   Mi2IndexMap::iterator mi2iItr = mi2iMap.find(&MI);
-  if (mi2iItr == mi2iMap.end())
+  if (mi2iItr == mi2iMap.end()) {
     return;
+
+}
 
   SlotIndex MIIndex = mi2iItr->second;
   IndexListEntry &MIEntry = *MIIndex.listEntry();
@@ -129,8 +133,10 @@ void SlotIndexes::removeMachineInstrFromMaps(MachineInstr &MI) {
 
 void SlotIndexes::removeSingleMachineInstrFromMaps(MachineInstr &MI) {
   Mi2IndexMap::iterator mi2iItr = mi2iMap.find(&MI);
-  if (mi2iItr == mi2iMap.end())
+  if (mi2iItr == mi2iMap.end()) {
     return;
+
+}
 
   SlotIndex MIIndex = mi2iItr->second;
   IndexListEntry &MIEntry = *MIIndex.listEntry();
@@ -182,23 +188,31 @@ void SlotIndexes::repairIndexesInRange(MachineBasicBlock *MBB,
   // does the same thing.
   // Find anchor points, which are at the beginning/end of blocks or at
   // instructions that already have indexes.
-  while (Begin != MBB->begin() && !hasIndex(*Begin))
+  while (Begin != MBB->begin() && !hasIndex(*Begin)) {
     --Begin;
-  while (End != MBB->end() && !hasIndex(*End))
+
+}
+  while (End != MBB->end() && !hasIndex(*End)) {
     ++End;
+
+}
 
   bool includeStart = (Begin == MBB->begin());
   SlotIndex startIdx;
-  if (includeStart)
+  if (includeStart) {
     startIdx = getMBBStartIdx(MBB);
-  else
+  } else {
     startIdx = getInstructionIndex(*Begin);
 
+}
+
   SlotIndex endIdx;
-  if (End == MBB->end())
+  if (End == MBB->end()) {
     endIdx = getMBBEndIdx(MBB);
-  else
+  } else {
     endIdx = getInstructionIndex(*End);
+
+}
 
   // FIXME: Conceptually, this code is implementing an iterator on MBB that
   // optionally includes an additional position prior to MBB->begin(), indicated
@@ -219,19 +233,25 @@ void SlotIndexes::repairIndexesInRange(MachineBasicBlock *MBB,
 
     if (SlotMI == MI && !MBBIAtBegin) {
       --ListI;
-      if (MBBI != Begin)
+      if (MBBI != Begin) {
         --MBBI;
-      else
+      } else {
         pastStart = true;
+
+}
     } else if (MI && mi2iMap.find(MI) == mi2iMap.end()) {
-      if (MBBI != Begin)
+      if (MBBI != Begin) {
         --MBBI;
-      else
+      } else {
         pastStart = true;
+
+}
     } else {
       --ListI;
-      if (SlotMI)
+      if (SlotMI) {
         removeMachineInstrFromMaps(*SlotMI);
+
+}
     }
   }
 
@@ -240,8 +260,10 @@ void SlotIndexes::repairIndexesInRange(MachineBasicBlock *MBB,
   for (MachineBasicBlock::iterator I = End; I != Begin;) {
     --I;
     MachineInstr &MI = *I;
-    if (!MI.isDebugInstr() && mi2iMap.find(&MI) == mi2iMap.end())
+    if (!MI.isDebugInstr() && mi2iMap.find(&MI) == mi2iMap.end()) {
       insertMachineInstrInMaps(MI);
+
+}
   }
 }
 
@@ -266,10 +288,12 @@ LLVM_DUMP_METHOD void SlotIndexes::dump() const {
 
 // Print a SlotIndex to a raw_ostream.
 void SlotIndex::print(raw_ostream &os) const {
-  if (isValid())
+  if (isValid()) {
     os << listEntry()->getIndex() << "Berd"[getSlot()];
-  else
+  } else {
     os << "invalid";
+
+}
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)

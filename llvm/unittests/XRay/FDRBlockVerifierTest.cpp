@@ -52,8 +52,10 @@ TEST(FDRBlockVerifierTest, ValidBlocksV3) {
   BlockIndexer::Index Index;
   BlockIndexer Indexer(Index);
   for (auto B : {std::ref(Block0), std::ref(Block1), std::ref(Block2)}) {
-    for (auto &R : B.get())
+    for (auto &R : B.get()) {
       ASSERT_FALSE(errorToBool(R->apply(Indexer)));
+
+}
     ASSERT_FALSE(errorToBool(Indexer.flush()));
   }
 
@@ -61,8 +63,10 @@ TEST(FDRBlockVerifierTest, ValidBlocksV3) {
   for (auto &ProcessThreadBlocks : Index) {
     auto &Blocks = ProcessThreadBlocks.second;
     for (auto &B : Blocks) {
-      for (auto *R : B.Records)
+      for (auto *R : B.Records) {
         ASSERT_FALSE(errorToBool(R->apply(Verifier)));
+
+}
       ASSERT_FALSE(errorToBool(Verifier.verify()));
       Verifier.reset();
     }
@@ -79,8 +83,10 @@ TEST(FDRBlockVerifierTest, MissingPIDRecord) {
                    .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                    .consume();
   BlockVerifier Verifier;
-  for (auto &R : Block)
+  for (auto &R : Block) {
     ASSERT_FALSE(errorToBool(R->apply(Verifier)));
+
+}
   ASSERT_FALSE(errorToBool(Verifier.verify()));
 }
 
@@ -93,8 +99,10 @@ TEST(FDRBlockVerifierTest, MissingBufferExtents) {
                    .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                    .consume();
   BlockVerifier Verifier;
-  for (auto &R : Block)
+  for (auto &R : Block) {
     ASSERT_FALSE(errorToBool(R->apply(Verifier)));
+
+}
   ASSERT_FALSE(errorToBool(Verifier.verify()));
 }
 
@@ -108,8 +116,10 @@ TEST(FDRBlockVerifierTest, IgnoreRecordsAfterEOB) {
                    .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                    .consume();
   BlockVerifier Verifier;
-  for (auto &R : Block)
+  for (auto &R : Block) {
     ASSERT_FALSE(errorToBool(R->apply(Verifier)));
+
+}
   ASSERT_FALSE(errorToBool(Verifier.verify()));
 }
 

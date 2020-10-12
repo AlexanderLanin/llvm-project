@@ -24,12 +24,14 @@ namespace {
 // end of the string. Else, add <Mode>.
 std::string buildFixMsgForStringFlag(const Expr *Arg, const SourceManager &SM,
                                      const LangOptions &LangOpts, char Mode) {
-  if (Arg->getBeginLoc().isMacroID())
+  if (Arg->getBeginLoc().isMacroID()) {
     return (Lexer::getSourceText(
                 CharSourceRange::getTokenRange(Arg->getSourceRange()), SM,
                 LangOpts) +
             " \"" + Twine(Mode) + "\"")
         .str();
+
+}
 
   StringRef SR = cast<StringLiteral>(Arg->IgnoreParenCasts())->getString();
   return ("\"" + SR + Twine(Mode) + "\"").str();
@@ -59,8 +61,10 @@ void CloexecCheck::insertMacroFlag(const MatchFinder::MatchResult &Result,
 
   if (utils::exprHasBitFlagWithSpelling(FlagArg->IgnoreParenCasts(), SM,
                                         Result.Context->getLangOpts(),
-                                        MacroFlag))
+                                        MacroFlag)) {
     return;
+
+}
 
   SourceLocation EndLoc =
       Lexer::getLocForEndOfToken(SM.getFileLoc(FlagArg->getEndLoc()), 0, SM,
@@ -87,8 +91,10 @@ void CloexecCheck::insertStringFlag(
 
   // Check if the <Mode> may be in the mode string.
   const auto *ModeStr = dyn_cast<StringLiteral>(ModeArg->IgnoreParenCasts());
-  if (!ModeStr || (ModeStr->getString().find(Mode) != StringRef::npos))
+  if (!ModeStr || (ModeStr->getString().find(Mode) != StringRef::npos)) {
     return;
+
+}
 
   std::string ReplacementText = buildFixMsgForStringFlag(
       ModeArg, *Result.SourceManager, Result.Context->getLangOpts(), Mode);

@@ -62,8 +62,10 @@ struct indent {
 };
 
 static raw_ostream &operator <<(raw_ostream &os, const indent &in) {
-  for (unsigned i = 0; i < in.distance; ++i)
+  for (unsigned i = 0; i < in.distance; ++i) {
     os << "  ";
+
+}
   return os;
 }
 
@@ -84,13 +86,19 @@ static std::string prettyTag(yaml::Node *N) {
 static void dumpNode( yaml::Node *n
                     , unsigned Indent = 0
                     , bool SuppressFirstIndent = false) {
-  if (!n)
+  if (!n) {
     return;
-  if (!SuppressFirstIndent)
+
+}
+  if (!SuppressFirstIndent) {
     outs() << indent(Indent);
+
+}
   StringRef Anchor = n->getAnchor();
-  if (!Anchor.empty())
+  if (!Anchor.empty()) {
     outs() << "&" << Anchor << " ";
+
+}
   if (yaml::ScalarNode *sn = dyn_cast<yaml::ScalarNode>(n)) {
     SmallString<32> Storage;
     StringRef Val = sn->getValue(Storage);
@@ -134,10 +142,12 @@ static void dumpStream(yaml::Stream &stream) {
     outs() << "%YAML 1.2\n"
            << "---\n";
     yaml::Node *n = di->getRoot();
-    if (n)
+    if (n) {
       dumpNode(n);
-    else
+    } else {
       break;
+
+}
     outs() << "\n...\n";
   }
 }
@@ -185,7 +195,9 @@ static std::string createJSONText(size_t MemoryMB, unsigned ValueSize) {
            << "  \"key3\": \"" << std::string(ValueSize, '*') << "\"\n"
            << " }";
     Stream.flush();
-    if (JSONText.size() < MemoryBytes) Stream << ",";
+    if (JSONText.size() < MemoryBytes) { Stream << ",";
+
+}
     Stream << "\n";
   }
   Stream << "]\n";
@@ -201,8 +213,10 @@ int main(int argc, char **argv) {
   if (Input.getNumOccurrences()) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
         MemoryBuffer::getFileOrSTDIN(Input);
-    if (!BufOrErr)
+    if (!BufOrErr) {
       return 1;
+
+}
     MemoryBuffer &Buf = *BufOrErr.get();
 
     llvm::SourceMgr sm;
@@ -213,8 +227,10 @@ int main(int argc, char **argv) {
     if (DumpCanonical) {
       yaml::Stream stream(Buf.getBuffer(), sm, ShowColors);
       dumpStream(stream);
-      if (stream.failed())
+      if (stream.failed()) {
         return 1;
+
+}
     }
   }
 

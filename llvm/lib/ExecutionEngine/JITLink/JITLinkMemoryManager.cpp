@@ -38,8 +38,10 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
       OnFinalize(applyProtections());
     }
     Error deallocate() override {
-      if (SegBlocks.empty())
+      if (SegBlocks.empty()) {
         return Error::success();
+
+}
       void *SlabStart = SegBlocks.begin()->second.base();
       char *SlabEnd = (char *)SlabStart;
       for (auto &KV : SegBlocks) {
@@ -51,8 +53,10 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
       assert((SlabSize % sys::Process::getPageSizeEstimate()) == 0 &&
              "Slab size is not a multiple of page size");
       sys::MemoryBlock Slab(SlabStart, SlabSize);
-      if (auto EC = sys::Memory::releaseMappedMemory(Slab))
+      if (auto EC = sys::Memory::releaseMappedMemory(Slab)) {
         return errorCodeToError(EC);
+
+}
       return Error::success();
     }
 
@@ -61,11 +65,15 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
       for (auto &KV : SegBlocks) {
         auto &Prot = KV.first;
         auto &Block = KV.second;
-        if (auto EC = sys::Memory::protectMappedMemory(Block, Prot))
+        if (auto EC = sys::Memory::protectMappedMemory(Block, Prot)) {
           return errorCodeToError(EC);
-        if (Prot & sys::Memory::MF_EXEC)
+
+}
+        if (Prot & sys::Memory::MF_EXEC) {
           sys::Memory::InvalidateInstructionCache(Block.base(),
                                                   Block.allocatedSize());
+
+}
       }
       return Error::success();
     }
@@ -73,9 +81,11 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
     AllocationMap SegBlocks;
   };
 
-  if (!isPowerOf2_64((uint64_t)sys::Process::getPageSizeEstimate()))
+  if (!isPowerOf2_64((uint64_t)sys::Process::getPageSizeEstimate())) {
     return make_error<StringError>("Page size is not a power of 2",
                                    inconvertibleErrorCode());
+
+}
 
   AllocationMap Blocks;
   const sys::Memory::ProtectionFlags ReadWrite =
@@ -87,10 +97,12 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
   for (auto &KV : Request) {
     const auto &Seg = KV.second;
 
-    if (Seg.getAlignment() > sys::Process::getPageSizeEstimate())
+    if (Seg.getAlignment() > sys::Process::getPageSizeEstimate()) {
       return make_error<StringError>("Cannot request higher than page "
                                      "alignment",
                                      inconvertibleErrorCode());
+
+}
 
     TotalSize = alignTo(TotalSize, sys::Process::getPageSizeEstimate());
     TotalSize += Seg.getContentSize();
@@ -102,8 +114,10 @@ InProcessMemoryManager::allocate(const SegmentsRequestMap &Request) {
   auto SlabRemaining =
       sys::Memory::allocateMappedMemory(TotalSize, nullptr, ReadWrite, EC);
 
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
 
   // Allocate segment memory from the slab.
   for (auto &KV : Request) {

@@ -44,10 +44,12 @@ void TemporaryObjectsCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void TemporaryObjectsCheck::check(const MatchFinder::MatchResult &Result) {
-  if (const auto *D = Result.Nodes.getNodeAs<CXXConstructExpr>("temps"))
+  if (const auto *D = Result.Nodes.getNodeAs<CXXConstructExpr>("temps")) {
     diag(D->getLocation(),
          "creating a temporary object of type %q0 is prohibited")
         << D->getConstructor()->getParent();
+
+}
 }
 
 void TemporaryObjectsCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {

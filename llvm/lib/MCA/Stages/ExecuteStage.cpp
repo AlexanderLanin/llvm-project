@@ -65,23 +65,31 @@ Error ExecuteStage::issueInstruction(InstRef &IR) {
   if (IS.isExecuted()) {
     notifyInstructionExecuted(IR);
     // FIXME: add a buffer of executed instructions.
-    if (Error S = moveToTheNextStage(IR))
+    if (Error S = moveToTheNextStage(IR)) {
       return S;
+
+}
   }
 
-  for (const InstRef &I : Pending)
+  for (const InstRef &I : Pending) {
     notifyInstructionPending(I);
 
-  for (const InstRef &I : Ready)
+}
+
+  for (const InstRef &I : Ready) {
     notifyInstructionReady(I);
+
+}
   return ErrorSuccess();
 }
 
 Error ExecuteStage::issueReadyInstructions() {
   InstRef IR = HWS.select();
   while (IR) {
-    if (Error Err = issueInstruction(IR))
+    if (Error Err = issueInstruction(IR)) {
       return Err;
+
+}
 
     // Select the next instruction to issue.
     IR = HWS.select();
@@ -100,33 +108,45 @@ Error ExecuteStage::cycleStart() {
   NumDispatchedOpcodes = 0;
   NumIssuedOpcodes = 0;
 
-  for (const ResourceRef &RR : Freed)
+  for (const ResourceRef &RR : Freed) {
     notifyResourceAvailable(RR);
+
+}
 
   for (InstRef &IR : Executed) {
     notifyInstructionExecuted(IR);
     // FIXME: add a buffer of executed instructions.
-    if (Error S = moveToTheNextStage(IR))
+    if (Error S = moveToTheNextStage(IR)) {
       return S;
+
+}
   }
 
-  for (const InstRef &IR : Pending)
+  for (const InstRef &IR : Pending) {
     notifyInstructionPending(IR);
 
-  for (const InstRef &IR : Ready)
+}
+
+  for (const InstRef &IR : Ready) {
     notifyInstructionReady(IR);
+
+}
 
   return issueReadyInstructions();
 }
 
 Error ExecuteStage::cycleEnd() {
-  if (!EnablePressureEvents)
+  if (!EnablePressureEvents) {
     return ErrorSuccess();
+
+}
 
   // Always conservatively report any backpressure events if the dispatch logic
   // was stalled due to unavailable scheduler resources.
-  if (!HWS.hadTokenStall() && NumDispatchedOpcodes <= NumIssuedOpcodes)
+  if (!HWS.hadTokenStall() && NumDispatchedOpcodes <= NumIssuedOpcodes) {
     return ErrorSuccess();
+
+}
 
   SmallVector<InstRef, 8> Insts;
   uint64_t Mask = HWS.analyzeResourcePressure(Insts);
@@ -191,8 +211,10 @@ Error ExecuteStage::execute(InstRef &IR) {
   HWS.sanityCheck(IR);
 #endif
 
-  if (IR.getInstruction()->isEliminated())
+  if (IR.getInstruction()->isEliminated()) {
     return handleInstructionEliminated(IR);
+
+}
 
   // Reserve a slot in each buffered resource. Also, mark units with
   // BufferSize=0 as reserved. Resources with a buffer size of zero will only
@@ -205,8 +227,10 @@ Error ExecuteStage::execute(InstRef &IR) {
   notifyReservedOrReleasedBuffers(IR, /* Reserved */ true);
  
   if (!IsReadyInstruction) {
-    if (Inst.isPending())
+    if (Inst.isPending()) {
       notifyInstructionPending(IR);
+
+}
     return ErrorSuccess();
   }
 
@@ -217,8 +241,10 @@ Error ExecuteStage::execute(InstRef &IR) {
 
   // If we cannot issue immediately, the HWS will add IR to its ready queue for
   // execution later, so we must return early here.
-  if (!HWS.mustIssueImmediately(IR))
+  if (!HWS.mustIssueImmediately(IR)) {
     return ErrorSuccess();
+
+}
 
   // Issue IR to the underlying pipelines.
   return issueInstruction(IR);
@@ -245,8 +271,10 @@ void ExecuteStage::notifyInstructionReady(const InstRef &IR) const {
 void ExecuteStage::notifyResourceAvailable(const ResourceRef &RR) const {
   LLVM_DEBUG(dbgs() << "[E] Resource Available: [" << RR.first << '.'
                     << RR.second << "]\n");
-  for (HWEventListener *Listener : getListeners())
+  for (HWEventListener *Listener : getListeners()) {
     Listener->onResourceAvailable(RR);
+
+}
 }
 
 void ExecuteStage::notifyInstructionIssued(
@@ -263,8 +291,10 @@ void ExecuteStage::notifyInstructionIssued(
   });
 
   // Replace resource masks with valid resource processor IDs.
-  for (std::pair<ResourceRef, ResourceCycles> &Use : Used)
+  for (std::pair<ResourceRef, ResourceCycles> &Use : Used) {
     Use.first.first = HWS.getResourceID(Use.first.first);
+
+}
 
   notifyEvent<HWInstructionEvent>(HWInstructionIssuedEvent(IR, Used));
 }
@@ -272,8 +302,10 @@ void ExecuteStage::notifyInstructionIssued(
 void ExecuteStage::notifyReservedOrReleasedBuffers(const InstRef &IR,
                                                    bool Reserved) const {
   uint64_t UsedBuffers = IR.getInstruction()->getDesc().UsedBuffers;
-  if (!UsedBuffers)
+  if (!UsedBuffers) {
     return;
+
+}
 
   SmallVector<unsigned, 4> BufferIDs(countPopulation(UsedBuffers), 0);
   for (unsigned I = 0, E = BufferIDs.size(); I < E; ++I) {
@@ -283,13 +315,17 @@ void ExecuteStage::notifyReservedOrReleasedBuffers(const InstRef &IR,
   }
 
   if (Reserved) {
-    for (HWEventListener *Listener : getListeners())
+    for (HWEventListener *Listener : getListeners()) {
       Listener->onReservedBuffers(IR, BufferIDs);
+
+}
     return;
   }
 
-  for (HWEventListener *Listener : getListeners())
+  for (HWEventListener *Listener : getListeners()) {
     Listener->onReleasedBuffers(IR, BufferIDs);
+
+}
 }
 
 } // namespace mca

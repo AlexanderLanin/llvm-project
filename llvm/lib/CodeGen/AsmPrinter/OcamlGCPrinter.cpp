@@ -116,9 +116,11 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
                                            IE = Info.funcinfo_end();
        I != IE; ++I) {
     GCFunctionInfo &FI = **I;
-    if (FI.getStrategy().getName() != getStrategy().getName())
+    if (FI.getStrategy().getName() != getStrategy().getName()) {
       // this function is managed by some other GC
       continue;
+
+}
     for (GCFunctionInfo::iterator J = FI.begin(), JE = FI.end(); J != JE; ++J) {
       NumDescriptors++;
     }
@@ -135,9 +137,11 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
                                            IE = Info.funcinfo_end();
        I != IE; ++I) {
     GCFunctionInfo &FI = **I;
-    if (FI.getStrategy().getName() != getStrategy().getName())
+    if (FI.getStrategy().getName() != getStrategy().getName()) {
       // this function is managed by some other GC
       continue;
+
+}
 
     uint64_t FrameSize = FI.getFrameSize();
     if (FrameSize >= 1 << 16) {

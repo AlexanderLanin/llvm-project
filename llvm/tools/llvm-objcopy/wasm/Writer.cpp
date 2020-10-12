@@ -26,8 +26,10 @@ Writer::SectionHeader Writer::createSectionHeader(const Section &S,
   OS << S.SectionType;
   bool HasName = S.SectionType == WASM_SEC_CUSTOM;
   SectionSize = S.Contents.size();
-  if (HasName)
+  if (HasName) {
     SectionSize += getULEB128Size(S.Name.size()) + S.Name.size();
+
+}
   // Pad the LEB value out to 5 bytes to make it a predictable size, and
   // match the behavior of clang.
   encodeULEB128(SectionSize, OS, 5);
@@ -55,8 +57,10 @@ size_t Writer::finalize() {
 
 Error Writer::write() {
   size_t FileSize = finalize();
-  if (Error E = Buf.allocate(FileSize))
+  if (Error E = Buf.allocate(FileSize)) {
     return E;
+
+}
 
   // Write the header.
   uint8_t *Ptr = Buf.getBufferStart();

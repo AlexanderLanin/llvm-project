@@ -16,10 +16,12 @@
 using namespace llvm;
 
 static void unexpectedEndReached(Error *E, uint64_t Offset) {
-  if (E)
+  if (E) {
     *E = createStringError(errc::illegal_byte_sequence,
                            "unexpected end of data at offset 0x%" PRIx64,
                            Offset);
+
+}
 }
 
 static bool isError(Error *E) { return E && *E; }
@@ -29,8 +31,10 @@ static T getU(uint64_t *offset_ptr, const DataExtractor *de,
               bool isLittleEndian, const char *Data, llvm::Error *Err) {
   ErrorAsOutParameter ErrAsOut(Err);
   T val = 0;
-  if (isError(Err))
+  if (isError(Err)) {
     return val;
+
+}
 
   uint64_t offset = *offset_ptr;
   if (!de->isValidOffsetForDataOfSize(offset, sizeof(T))) {
@@ -38,8 +42,10 @@ static T getU(uint64_t *offset_ptr, const DataExtractor *de,
     return val;
   }
   std::memcpy(&val, &Data[offset], sizeof(val));
-  if (sys::IsLittleEndianHost != isLittleEndian)
+  if (sys::IsLittleEndianHost != isLittleEndian) {
     sys::swapByteOrder(val);
+
+}
 
   // Advance the offset
   *offset_ptr += sizeof(val);
@@ -51,8 +57,10 @@ static T *getUs(uint64_t *offset_ptr, T *dst, uint32_t count,
                 const DataExtractor *de, bool isLittleEndian, const char *Data,
                 llvm::Error *Err) {
   ErrorAsOutParameter ErrAsOut(Err);
-  if (isError(Err))
+  if (isError(Err)) {
     return nullptr;
+
+}
 
   uint64_t offset = *offset_ptr;
 
@@ -61,8 +69,10 @@ static T *getUs(uint64_t *offset_ptr, T *dst, uint32_t count,
     return nullptr;
   }
   for (T *value_ptr = dst, *end = dst + count; value_ptr != end;
-       ++value_ptr, offset += sizeof(*dst))
+       ++value_ptr, offset += sizeof(*dst)) {
     *value_ptr = getU<T>(offset_ptr, de, isLittleEndian, Data, Err);
+
+}
   // Advance the offset
   *offset_ptr = offset;
   // Return a non-NULL pointer to the converted data as an indicator of
@@ -180,8 +190,10 @@ StringRef DataExtractor::getFixedLengthString(uint64_t *OffsetPtr,
 }
 
 StringRef DataExtractor::getBytes(uint64_t *OffsetPtr, uint64_t Length) const {
-  if (!isValidOffsetForDataOfSize(*OffsetPtr, Length))
+  if (!isValidOffsetForDataOfSize(*OffsetPtr, Length)) {
     return StringRef();
+
+}
   StringRef Result = Data.substr(*OffsetPtr, Length);
   *OffsetPtr += Length;
   return Result;
@@ -191,8 +203,10 @@ uint64_t DataExtractor::getULEB128(uint64_t *offset_ptr,
                                    llvm::Error *Err) const {
   assert(*offset_ptr <= Data.size());
   ErrorAsOutParameter ErrAsOut(Err);
-  if (isError(Err))
+  if (isError(Err)) {
     return 0;
+
+}
 
   const char *error;
   unsigned bytes_read;
@@ -200,8 +214,10 @@ uint64_t DataExtractor::getULEB128(uint64_t *offset_ptr,
       reinterpret_cast<const uint8_t *>(Data.data() + *offset_ptr), &bytes_read,
       reinterpret_cast<const uint8_t *>(Data.data() + Data.size()), &error);
   if (error) {
-    if (Err)
+    if (Err) {
       *Err = createStringError(errc::illegal_byte_sequence, error);
+
+}
     return 0;
   }
   *offset_ptr += bytes_read;
@@ -216,19 +232,25 @@ int64_t DataExtractor::getSLEB128(uint64_t *offset_ptr) const {
   int64_t result = decodeSLEB128(
       reinterpret_cast<const uint8_t *>(Data.data() + *offset_ptr), &bytes_read,
       reinterpret_cast<const uint8_t *>(Data.data() + Data.size()), &error);
-  if (error)
+  if (error) {
     return 0;
+
+}
   *offset_ptr += bytes_read;
   return result;
 }
 
 void DataExtractor::skip(Cursor &C, uint64_t Length) const {
   ErrorAsOutParameter ErrAsOut(&C.Err);
-  if (isError(&C.Err))
+  if (isError(&C.Err)) {
     return;
 
-  if (isValidOffsetForDataOfSize(C.Offset, Length))
+}
+
+  if (isValidOffsetForDataOfSize(C.Offset, Length)) {
     C.Offset += Length;
-  else
+  } else {
     unexpectedEndReached(&C.Err, C.Offset);
+
+}
 }

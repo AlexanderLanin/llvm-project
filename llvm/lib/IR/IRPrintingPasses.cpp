@@ -28,8 +28,10 @@ PrintModulePass::PrintModulePass(raw_ostream &OS, const std::string &Banner,
 
 PreservedAnalyses PrintModulePass::run(Module &M, ModuleAnalysisManager &) {
   if (llvm::isFunctionInPrintList("*")) {
-    if (!Banner.empty())
+    if (!Banner.empty()) {
       OS << Banner << "\n";
+
+}
     M.print(OS, nullptr, ShouldPreserveUseListOrder);
   }
   else {
@@ -54,10 +56,12 @@ PrintFunctionPass::PrintFunctionPass(raw_ostream &OS, const std::string &Banner)
 PreservedAnalyses PrintFunctionPass::run(Function &F,
                                          FunctionAnalysisManager &) {
   if (isFunctionInPrintList(F.getName())) {
-    if (forcePrintModuleIR())
+    if (forcePrintModuleIR()) {
       OS << Banner << " (function: " << F.getName() << ")\n" << *F.getParent();
-    else
+    } else {
       OS << Banner << '\n' << static_cast<Value &>(F);
+
+}
   }
   return PreservedAnalyses::all();
 }

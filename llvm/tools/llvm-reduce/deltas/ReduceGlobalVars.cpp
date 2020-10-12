@@ -22,26 +22,38 @@ static void extractGVsFromModule(std::vector<Chunk> ChunksToKeep,
   // Get GVs inside desired chunks
   std::set<GlobalVariable *> GVsToKeep;
   int I = 0, GVCount = 0;
-  for (auto &GV : Program->globals())
+  for (auto &GV : Program->globals()) {
     if (GV.hasInitializer() && I < (int)ChunksToKeep.size()) {
-      if (ChunksToKeep[I].contains(++GVCount))
+      if (ChunksToKeep[I].contains(++GVCount)) {
         GVsToKeep.insert(&GV);
-      if (GVCount == ChunksToKeep[I].end)
+
+}
+      if (GVCount == ChunksToKeep[I].end) {
         ++I;
+
+}
     }
+
+}
 
   // Delete out-of-chunk GVs and their uses
   std::vector<GlobalVariable *> ToRemove;
   std::vector<Instruction *> InstToRemove;
-  for (auto &GV : Program->globals())
+  for (auto &GV : Program->globals()) {
     if (GV.hasInitializer() && !GVsToKeep.count(&GV)) {
-      for (auto U : GV.users())
-        if (auto *Inst = dyn_cast<Instruction>(U))
+      for (auto U : GV.users()) {
+        if (auto *Inst = dyn_cast<Instruction>(U)) {
           InstToRemove.push_back(Inst);
+
+}
+
+}
 
       GV.replaceAllUsesWith(UndefValue::get(GV.getType()));
       ToRemove.push_back(&GV);
     }
+
+}
 
   // Delete Instruction uses of unwanted GVs
   for (auto *Inst : InstToRemove) {
@@ -49,8 +61,10 @@ static void extractGVsFromModule(std::vector<Chunk> ChunksToKeep,
     Inst->eraseFromParent();
   }
 
-  for (auto *GV : ToRemove)
+  for (auto *GV : ToRemove) {
     GV->eraseFromParent();
+
+}
 }
 
 /// Counts the amount of initialized GVs and displays their
@@ -60,9 +74,13 @@ static int countGVs(Module *Program) {
   outs() << "----------------------------\n";
   outs() << "GlobalVariable Index Reference:\n";
   int GVCount = 0;
-  for (auto &GV : Program->globals())
-    if (GV.hasInitializer())
+  for (auto &GV : Program->globals()) {
+    if (GV.hasInitializer()) {
       outs() << "\t" << ++GVCount << ": " << GV.getName() << "\n";
+
+}
+
+}
   outs() << "----------------------------\n";
   return GVCount;
 }

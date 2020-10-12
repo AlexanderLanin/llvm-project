@@ -84,29 +84,37 @@ void StaticAssertCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *CastExpr = Result.Nodes.getNodeAs<CStyleCastExpr>("castExpr");
   SourceLocation AssertExpansionLoc = CondStmt->getBeginLoc();
 
-  if (!AssertExpansionLoc.isValid() || !AssertExpansionLoc.isMacroID())
+  if (!AssertExpansionLoc.isValid() || !AssertExpansionLoc.isMacroID()) {
     return;
+
+}
 
   StringRef MacroName =
       Lexer::getImmediateMacroName(AssertExpansionLoc, SM, Opts);
 
   if (MacroName != "assert" || Condition->isValueDependent() ||
       Condition->isTypeDependent() || Condition->isInstantiationDependent() ||
-      !Condition->isEvaluatable(*ASTCtx))
+      !Condition->isEvaluatable(*ASTCtx)) {
     return;
+
+}
 
   // False literal is not the result of macro expansion.
   if (IsAlwaysFalse && (!CastExpr || CastExpr->getType()->isPointerType())) {
     SourceLocation FalseLiteralLoc =
         SM.getImmediateSpellingLoc(IsAlwaysFalse->getExprLoc());
-    if (!FalseLiteralLoc.isMacroID())
+    if (!FalseLiteralLoc.isMacroID()) {
       return;
+
+}
 
     StringRef FalseMacroName =
         Lexer::getImmediateMacroName(FalseLiteralLoc, SM, Opts);
     if (FalseMacroName.compare_lower("false") == 0 ||
-        FalseMacroName.compare_lower("null") == 0)
+        FalseMacroName.compare_lower("null") == 0) {
       return;
+
+}
   }
 
   SourceLocation AssertLoc = SM.getImmediateMacroCallerLoc(AssertExpansionLoc);
@@ -141,8 +149,10 @@ SourceLocation StaticAssertCheck::getLastParenLoc(const ASTContext *ASTCtx,
   const SourceManager &SM = ASTCtx->getSourceManager();
 
   const llvm::MemoryBuffer *Buffer = SM.getBuffer(SM.getFileID(AssertLoc));
-  if (!Buffer)
+  if (!Buffer) {
     return SourceLocation();
+
+}
 
   const char *BufferPos = SM.getCharacterData(AssertLoc);
 
@@ -152,15 +162,19 @@ SourceLocation StaticAssertCheck::getLastParenLoc(const ASTContext *ASTCtx,
 
   //        assert                          first left parenthesis
   if (Lexer.LexFromRawLexer(Token) || Lexer.LexFromRawLexer(Token) ||
-      !Token.is(tok::l_paren))
+      !Token.is(tok::l_paren)) {
     return SourceLocation();
+
+}
 
   unsigned int ParenCount = 1;
   while (ParenCount && !Lexer.LexFromRawLexer(Token)) {
-    if (Token.is(tok::l_paren))
+    if (Token.is(tok::l_paren)) {
       ++ParenCount;
-    else if (Token.is(tok::r_paren))
+    } else if (Token.is(tok::r_paren)) {
       --ParenCount;
+
+}
   }
 
   return Token.getLocation();

@@ -156,15 +156,19 @@ Error PDBStringTableBuilder::writeHeader(BinaryStreamWriter &Writer) const {
   H.Signature = PDBStringTableSignature;
   H.HashVersion = 1;
   H.ByteSize = Strings.calculateSerializedSize();
-  if (auto EC = Writer.writeObject(H))
+  if (auto EC = Writer.writeObject(H)) {
     return EC;
+
+}
   assert(Writer.bytesRemaining() == 0);
   return Error::success();
 }
 
 Error PDBStringTableBuilder::writeStrings(BinaryStreamWriter &Writer) const {
-  if (auto EC = Strings.commit(Writer))
+  if (auto EC = Strings.commit(Writer)) {
     return EC;
+
+}
 
   assert(Writer.bytesRemaining() == 0);
   return Error::success();
@@ -173,8 +177,10 @@ Error PDBStringTableBuilder::writeStrings(BinaryStreamWriter &Writer) const {
 Error PDBStringTableBuilder::writeHashTable(BinaryStreamWriter &Writer) const {
   // Write a hash table.
   uint32_t BucketCount = computeBucketCount(Strings.size());
-  if (auto EC = Writer.writeInteger(BucketCount))
+  if (auto EC = Writer.writeInteger(BucketCount)) {
     return EC;
+
+}
   std::vector<ulittle32_t> Buckets(BucketCount);
 
   for (auto &Pair : Strings) {
@@ -184,23 +190,29 @@ Error PDBStringTableBuilder::writeHashTable(BinaryStreamWriter &Writer) const {
 
     for (uint32_t I = 0; I != BucketCount; ++I) {
       uint32_t Slot = (Hash + I) % BucketCount;
-      if (Buckets[Slot] != 0)
+      if (Buckets[Slot] != 0) {
         continue;
+
+}
       Buckets[Slot] = Offset;
       break;
     }
   }
 
-  if (auto EC = Writer.writeArray(ArrayRef<ulittle32_t>(Buckets)))
+  if (auto EC = Writer.writeArray(ArrayRef<ulittle32_t>(Buckets))) {
     return EC;
+
+}
 
   assert(Writer.bytesRemaining() == 0);
   return Error::success();
 }
 
 Error PDBStringTableBuilder::writeEpilogue(BinaryStreamWriter &Writer) const {
-  if (auto EC = Writer.writeInteger<uint32_t>(Strings.size()))
+  if (auto EC = Writer.writeInteger<uint32_t>(Strings.size())) {
     return EC;
+
+}
   assert(Writer.bytesRemaining() == 0);
   return Error::success();
 }
@@ -209,21 +221,29 @@ Error PDBStringTableBuilder::commit(BinaryStreamWriter &Writer) const {
   BinaryStreamWriter SectionWriter;
 
   std::tie(SectionWriter, Writer) = Writer.split(sizeof(PDBStringTableHeader));
-  if (auto EC = writeHeader(SectionWriter))
+  if (auto EC = writeHeader(SectionWriter)) {
     return EC;
+
+}
 
   std::tie(SectionWriter, Writer) =
       Writer.split(Strings.calculateSerializedSize());
-  if (auto EC = writeStrings(SectionWriter))
+  if (auto EC = writeStrings(SectionWriter)) {
     return EC;
+
+}
 
   std::tie(SectionWriter, Writer) = Writer.split(calculateHashTableSize());
-  if (auto EC = writeHashTable(SectionWriter))
+  if (auto EC = writeHashTable(SectionWriter)) {
     return EC;
 
+}
+
   std::tie(SectionWriter, Writer) = Writer.split(sizeof(uint32_t));
-  if (auto EC = writeEpilogue(SectionWriter))
+  if (auto EC = writeEpilogue(SectionWriter)) {
     return EC;
+
+}
 
   return Error::success();
 }

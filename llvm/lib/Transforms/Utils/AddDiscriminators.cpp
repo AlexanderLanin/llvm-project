@@ -169,8 +169,10 @@ static bool addDiscriminators(Function &F) {
   // If the function has debug information, but the user has disabled
   // discriminators, do nothing.
   // Simlarly, if the function has no debug info, do nothing.
-  if (NoDiscriminators || !F.getSubprogram())
+  if (NoDiscriminators || !F.getSubprogram()) {
     return false;
+
+}
 
   bool Changed = false;
 
@@ -194,16 +196,22 @@ static bool addDiscriminators(Function &F) {
       // intrinsic calls because those can be early expanded by SROA into
       // pairs of loads and stores, and the expanded load/store instructions
       // should have a valid discriminator.
-      if (!shouldHaveDiscriminator(&I))
+      if (!shouldHaveDiscriminator(&I)) {
         continue;
+
+}
       const DILocation *DIL = I.getDebugLoc();
-      if (!DIL)
+      if (!DIL) {
         continue;
+
+}
       Location L = std::make_pair(DIL->getFilename(), DIL->getLine());
       auto &BBMap = LBM[L];
       auto R = BBMap.insert(&B);
-      if (BBMap.size() == 1)
+      if (BBMap.size() == 1) {
         continue;
+
+}
       // If we could insert more than one block with the same line+file, a
       // discriminator is needed to distinguish both instructions.
       // Only the lowest 7 bits are used to represent a discriminator to fit
@@ -236,12 +244,16 @@ static bool addDiscriminators(Function &F) {
       //  1) We want to avoid a non-deterministic assignment of
       //     discriminators.
       //  2) We want to minimize the number of base discriminators used.
-      if (!isa<InvokeInst>(I) && (!isa<CallInst>(I) || isa<IntrinsicInst>(I)))  
+      if (!isa<InvokeInst>(I) && (!isa<CallInst>(I) || isa<IntrinsicInst>(I))) {  
         continue;
 
+}
+
       DILocation *CurrentDIL = I.getDebugLoc();
-      if (!CurrentDIL)
+      if (!CurrentDIL) {
         continue;
+
+}
       Location L =
           std::make_pair(CurrentDIL->getFilename(), CurrentDIL->getLine());
       if (!CallLocations.insert(L).second) {
@@ -269,8 +281,10 @@ bool AddDiscriminatorsLegacyPass::runOnFunction(Function &F) {
 
 PreservedAnalyses AddDiscriminatorsPass::run(Function &F,
                                              FunctionAnalysisManager &AM) {
-  if (!addDiscriminators(F))
+  if (!addDiscriminators(F)) {
     return PreservedAnalyses::all();
+
+}
 
   // FIXME: should be all()
   return PreservedAnalyses::none();

@@ -32,8 +32,10 @@ void DontModifyStdNamespaceCheck::check(
   const auto *N = Result.Nodes.getNodeAs<NamespaceDecl>("nmspc");
 
   // Only consider top level namespaces.
-  if (N->getParent() != Result.Context->getTranslationUnitDecl())
+  if (N->getParent() != Result.Context->getTranslationUnitDecl()) {
     return;
+
+}
 
   diag(N->getLocation(),
        "modification of %0 namespace can result in undefined behavior")

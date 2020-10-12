@@ -64,15 +64,19 @@ void DfaEmitter::visitDfaState(const DfaState &DS) {
       // If this action is possible from this state add the transitioned-to
       // states to NewStates.
       auto I = NfaTransitions.find({FromState, A});
-      if (I == NfaTransitions.end())
+      if (I == NfaTransitions.end()) {
         continue;
+
+}
       for (state_type &ToState : I->second) {
         NewStates.push_back(ToState);
         TI.emplace_back(FromState, ToState);
       }
     }
-    if (NewStates.empty())
+    if (NewStates.empty()) {
       continue;
+
+}
     // Sort and unique.
     sort(NewStates);
     NewStates.erase(std::unique(NewStates.begin(), NewStates.end()),
@@ -119,8 +123,10 @@ void DfaEmitter::emit(StringRef Name, raw_ostream &OS) {
 
   SequenceToOffsetTable<DfaTransitionInfo> Table;
   std::map<DfaTransitionInfo, unsigned> EmittedIndices;
-  for (auto &T : DfaTransitions)
+  for (auto &T : DfaTransitions) {
     Table.add(T.second.second);
+
+}
   Table.layout();
   OS << "const std::array<NfaStatePair, " << Table.size() << "> " << Name
      << "TransitionInfo = {{\n";
@@ -180,12 +186,14 @@ struct Action {
   Action(Record *R, unsigned I, std::string S) : R(R), I(I), S(S) {}
 
   void print(raw_ostream &OS) const {
-    if (R)
+    if (R) {
       OS << R->getName();
-    else if (!S.empty())
+    } else if (!S.empty()) {
       OS << '"' << S << '"';
-    else
+    } else {
       OS << I;
+
+}
   }
   bool operator<(const Action &Other) const {
     return std::make_tuple(R, I, S) <
@@ -294,11 +302,15 @@ void Automaton::emit(raw_ostream &OS) {
     uint64_t State = Worklist.front();
     Worklist.pop_front();
     for (Transition &T : Transitions) {
-      if (!T.canTransitionFrom(State))
+      if (!T.canTransitionFrom(State)) {
         continue;
+
+}
       uint64_t NewState = T.transitionFrom(State);
-      if (SeenStates.emplace(NewState).second)
+      if (SeenStates.emplace(NewState).second) {
         Worklist.emplace_back(NewState);
+
+}
       ++NumTransitions;
       Emitter.addTransition(State, NewState, Actions.idFor(T.getActions()));
     }
@@ -321,8 +333,10 @@ void Automaton::emit(raw_ostream &OS) {
 
 StringRef Automaton::getActionSymbolType(StringRef A) {
   Twine Ty = "TypeOf_" + A;
-  if (!R->getValue(Ty.str()))
+  if (!R->getValue(Ty.str())) {
     return "";
+
+}
   return R->getValueAsString(Ty.str());
 }
 
@@ -333,8 +347,10 @@ Transition::Transition(Record *R, Automaton *Parent) {
          "State cannot be represented in 64 bits!");
   for (unsigned I = 0; I < NewStateInit->getNumBits(); ++I) {
     if (auto *Bit = dyn_cast<BitInit>(NewStateInit->getBit(I))) {
-      if (Bit->getValue())
+      if (Bit->getValue()) {
         NewState |= 1ULL << I;
+
+}
     }
   }
 
@@ -355,15 +371,19 @@ Transition::Transition(Record *R, Automaton *Parent) {
     }
 
     StringRef TypeOverride = Parent->getActionSymbolType(A);
-    if (!TypeOverride.empty())
+    if (!TypeOverride.empty()) {
       Types.back() = std::string(TypeOverride);
+
+}
   }
 }
 
 bool Transition::canTransitionFrom(uint64_t State) {
-  if ((State & NewState) == 0)
+  if ((State & NewState) == 0) {
     // The bits we want to set are not set;
     return true;
+
+}
   return false;
 }
 
@@ -375,17 +395,23 @@ void CustomDfaEmitter::printActionType(raw_ostream &OS) { OS << TypeName; }
 
 void CustomDfaEmitter::printActionValue(action_type A, raw_ostream &OS) {
   const ActionTuple &AT = Actions[A];
-  if (AT.size() > 1)
+  if (AT.size() > 1) {
     OS << "std::make_tuple(";
+
+}
   bool First = true;
   for (const auto &SingleAction : AT) {
-    if (!First)
+    if (!First) {
       OS << ", ";
+
+}
     First = false;
     SingleAction.print(OS);
   }
-  if (AT.size() > 1)
+  if (AT.size() > 1) {
     OS << ")";
+
+}
 }
 
 namespace llvm {

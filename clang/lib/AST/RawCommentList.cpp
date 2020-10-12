@@ -25,20 +25,26 @@ namespace {
 std::pair<RawComment::CommentKind, bool> getCommentKind(StringRef Comment,
                                                         bool ParseAllComments) {
   const size_t MinCommentLength = ParseAllComments ? 2 : 3;
-  if ((Comment.size() < MinCommentLength) || Comment[0] != '/')
+  if ((Comment.size() < MinCommentLength) || Comment[0] != '/') {
     return std::make_pair(RawComment::RCK_Invalid, false);
+
+}
 
   RawComment::CommentKind K;
   if (Comment[1] == '/') {
-    if (Comment.size() < 3)
+    if (Comment.size() < 3) {
       return std::make_pair(RawComment::RCK_OrdinaryBCPL, false);
 
-    if (Comment[2] == '/')
+}
+
+    if (Comment[2] == '/') {
       K = RawComment::RCK_BCPLSlash;
-    else if (Comment[2] == '!')
+    } else if (Comment[2] == '!') {
       K = RawComment::RCK_BCPLExcl;
-    else
+    } else {
       return std::make_pair(RawComment::RCK_OrdinaryBCPL, false);
+
+}
   } else {
     assert(Comment.size() >= 4);
 
@@ -46,15 +52,19 @@ std::pair<RawComment::CommentKind, bool> getCommentKind(StringRef Comment,
     // that this is not a comment.
     if (Comment[1] != '*' ||
         Comment[Comment.size() - 2] != '*' ||
-        Comment[Comment.size() - 1] != '/')
+        Comment[Comment.size() - 1] != '/') {
       return std::make_pair(RawComment::RCK_Invalid, false);
 
-    if (Comment[2] == '*')
+}
+
+    if (Comment[2] == '*') {
       K = RawComment::RCK_JavaDoc;
-    else if (Comment[2] == '!')
+    } else if (Comment[2] == '!') {
       K = RawComment::RCK_Qt;
-    else
+    } else {
       return std::make_pair(RawComment::RCK_OrdinaryC, false);
+
+}
   }
   const bool TrailingComment = (Comment.size() > 3) && (Comment[3] == '<');
   return std::make_pair(K, TrailingComment);
@@ -91,10 +101,14 @@ static bool onlyWhitespaceOnLineBefore(const char *Buffer, unsigned P) {
   // Search backwards until we see linefeed or carriage return.
   for (unsigned I = P; I != 0; --I) {
     char C = Buffer[I - 1];
-    if (isVerticalWhitespace(C))
+    if (isVerticalWhitespace(C)) {
       return true;
-    if (!isHorizontalWhitespace(C))
+
+}
+    if (!isHorizontalWhitespace(C)) {
       return false;
+
+}
   }
   // We hit the beginning of the buffer.
   return true;
@@ -160,8 +174,10 @@ StringRef RawComment::getRawTextSlow(const SourceManager &SourceMgr) const {
   std::tie(EndFileID, EndOffset) = SourceMgr.getDecomposedLoc(Range.getEnd());
 
   const unsigned Length = EndOffset - BeginOffset;
-  if (Length < 2)
+  if (Length < 2) {
     return StringRef();
+
+}
 
   // The comment can't begin in one file and end in another.
   assert(BeginFileID == EndFileID);
@@ -169,8 +185,10 @@ StringRef RawComment::getRawTextSlow(const SourceManager &SourceMgr) const {
   bool Invalid = false;
   const char *BufferStart = SourceMgr.getBufferData(BeginFileID,
                                                     &Invalid).data();
-  if (Invalid)
+  if (Invalid) {
     return StringRef();
+
+}
 
   return StringRef(BufferStart + BeginOffset, Length);
 }
@@ -229,13 +247,17 @@ static bool onlyWhitespaceBetween(SourceManager &SM,
   std::pair<FileID, unsigned> Loc2Info = SM.getDecomposedLoc(Loc2);
 
   // Question does not make sense if locations are in different files.
-  if (Loc1Info.first != Loc2Info.first)
+  if (Loc1Info.first != Loc2Info.first) {
     return false;
+
+}
 
   bool Invalid = false;
   const char *Buffer = SM.getBufferData(Loc1Info.first, &Invalid).data();
-  if (Invalid)
+  if (Invalid) {
     return false;
+
+}
 
   unsigned NumNewlines = 0;
   assert(Loc1Info.second <= Loc2Info.second && "Loc1 after Loc2!");
@@ -255,14 +277,18 @@ static bool onlyWhitespaceBetween(SourceManager &SM,
 
       // Check if we have found more than the maximum allowed number of
       // newlines.
-      if (NumNewlines > MaxNewlinesAllowed)
+      if (NumNewlines > MaxNewlinesAllowed) {
         return false;
+
+}
 
       // Collapse \r\n and \n\r into a single newline.
       if (I + 1 != Loc2Info.second &&
           (Buffer[I + 1] == '\n' || Buffer[I + 1] == '\r') &&
-          Buffer[I] != Buffer[I + 1])
+          Buffer[I] != Buffer[I + 1]) {
         ++I;
+
+}
       break;
     }
   }
@@ -273,12 +299,16 @@ static bool onlyWhitespaceBetween(SourceManager &SM,
 void RawCommentList::addComment(const RawComment &RC,
                                 const CommentOptions &CommentOpts,
                                 llvm::BumpPtrAllocator &Allocator) {
-  if (RC.isInvalid())
+  if (RC.isInvalid()) {
     return;
 
+}
+
   // Ordinary comments are not interesting for us.
-  if (RC.isOrdinary() && !CommentOpts.ParseAllComments)
+  if (RC.isOrdinary() && !CommentOpts.ParseAllComments) {
     return;
+
+}
 
   std::pair<FileID, unsigned> Loc =
       SourceMgr.getDecomposedLoc(RC.getBeginLoc());
@@ -328,8 +358,10 @@ void RawCommentList::addComment(const RawComment &RC,
 const std::map<unsigned, RawComment *> *
 RawCommentList::getCommentsInFile(FileID File) const {
   auto CommentsInFile = OrderedComments.find(File);
-  if (CommentsInFile == OrderedComments.end())
+  if (CommentsInFile == OrderedComments.end()) {
     return nullptr;
+
+}
 
   return &CommentsInFile->second;
 }
@@ -339,8 +371,10 @@ bool RawCommentList::empty() const { return OrderedComments.empty(); }
 unsigned RawCommentList::getCommentBeginLine(RawComment *C, FileID File,
                                              unsigned Offset) const {
   auto Cached = CommentBeginLine.find(C);
-  if (Cached != CommentBeginLine.end())
+  if (Cached != CommentBeginLine.end()) {
     return Cached->second;
+
+}
   const unsigned Line = SourceMgr.getLineNumber(File, Offset);
   CommentBeginLine[C] = Line;
   return Line;
@@ -348,8 +382,10 @@ unsigned RawCommentList::getCommentBeginLine(RawComment *C, FileID File,
 
 unsigned RawCommentList::getCommentEndOffset(RawComment *C) const {
   auto Cached = CommentEndOffset.find(C);
-  if (Cached != CommentEndOffset.end())
+  if (Cached != CommentEndOffset.end()) {
     return Cached->second;
+
+}
   const unsigned Offset =
       SourceMgr.getDecomposedLoc(C->getSourceRange().getEnd()).second;
   CommentEndOffset[C] = Offset;
@@ -359,8 +395,10 @@ unsigned RawCommentList::getCommentEndOffset(RawComment *C) const {
 std::string RawComment::getFormattedText(const SourceManager &SourceMgr,
                                          DiagnosticsEngine &Diags) const {
   llvm::StringRef CommentText = getRawText(SourceMgr);
-  if (CommentText.empty())
+  if (CommentText.empty()) {
     return "";
+
+}
 
   llvm::BumpPtrAllocator Allocator;
   // We do not parse any commands, so CommentOptions are ignored by
@@ -386,8 +424,10 @@ std::string RawComment::getFormattedText(const SourceManager &SourceMgr,
     // Lex the first token on the line. We handle it separately, because we to
     // fix up its indentation.
     L.lex(Tok);
-    if (Tok.is(comments::tok::eof))
+    if (Tok.is(comments::tok::eof)) {
       return false;
+
+}
     if (Tok.is(comments::tok::newline)) {
       Result += "\n";
       return true;
@@ -400,12 +440,16 @@ std::string RawComment::getFormattedText(const SourceManager &SourceMgr,
 
     // Amount of leading whitespace in TokText.
     size_t WhitespaceLen = TokText.find_first_not_of(" \t");
-    if (WhitespaceLen == StringRef::npos)
+    if (WhitespaceLen == StringRef::npos) {
       WhitespaceLen = TokText.size();
+
+}
     // Remember the amount of whitespace we skipped in the first line to remove
     // indent up to that column in the following lines.
-    if (IsFirstLine)
+    if (IsFirstLine) {
       IndentColumn = TokColumn + WhitespaceLen;
+
+}
 
     // Amount of leading whitespace we actually want to skip.
     // For the first line we skip all the whitespace.
@@ -431,8 +475,10 @@ std::string RawComment::getFormattedText(const SourceManager &SourceMgr,
   };
 
   auto DropTrailingNewLines = [](std::string &Str) {
-    while (Str.back() == '\n')
+    while (Str.back() == '\n') {
       Str.pop_back();
+
+}
   };
 
   // Process first line separately to remember indent for the following lines.
@@ -441,8 +487,10 @@ std::string RawComment::getFormattedText(const SourceManager &SourceMgr,
     return Result;
   }
   // Process the rest of the lines.
-  while (LexLine(/*IsFirstLine=*/false))
+  while (LexLine(/*IsFirstLine=*/false)) {
     ;
+
+}
   DropTrailingNewLines(Result);
   return Result;
 }

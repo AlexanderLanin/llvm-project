@@ -58,8 +58,10 @@ void LLVMTargetMachine::initAsmInfo() {
          "Make sure you include the correct TargetSelect.h"
          "and that InitializeAllTargetMCs() is being invoked!");
 
-  if (Options.DisableIntegratedAS)
+  if (Options.DisableIntegratedAS) {
     TmpAsmInfo->setUseIntegratedAssembler(false);
+
+}
 
   TmpAsmInfo->setPreserveAsmComments(Options.MCOptions.PreserveAsmComments);
 
@@ -67,8 +69,10 @@ void LLVMTargetMachine::initAsmInfo() {
 
   TmpAsmInfo->setRelaxELFRelocations(Options.RelaxELFRelocations);
 
-  if (Options.ExceptionModel != ExceptionHandling::None)
+  if (Options.ExceptionModel != ExceptionHandling::None) {
     TmpAsmInfo->setExceptionsType(Options.ExceptionModel);
+
+}
 
   AsmInfo.reset(TmpAsmInfo);
 }
@@ -84,8 +88,10 @@ LLVMTargetMachine::LLVMTargetMachine(const Target &T,
   this->CMModel = CM;
   this->OptLevel = OL;
 
-  if (EnableTrapUnreachable)
+  if (EnableTrapUnreachable) {
     this->Options.TrapUnreachable = true;
+
+}
 }
 
 TargetTransformInfo
@@ -106,8 +112,10 @@ addPassesToGenerateCode(LLVMTargetMachine &TM, PassManagerBase &PM,
   PM.add(PassConfig);
   PM.add(&MMIWP);
 
-  if (PassConfig->addISelPasses())
+  if (PassConfig->addISelPasses()) {
     return nullptr;
+
+}
   PassConfig->addMachinePasses();
   PassConfig->setInitialized();
   return PassConfig;
@@ -118,8 +126,10 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
                                       raw_pwrite_stream *DwoOut,
                                       CodeGenFileType FileType,
                                       MCContext &Context) {
-  if (Options.MCOptions.MCSaveTempLabels)
+  if (Options.MCOptions.MCSaveTempLabels) {
     Context.setAllowTemporaryLabels(false);
+
+}
 
   const MCSubtargetInfo &STI = *getMCSubtargetInfo();
   const MCAsmInfo &MAI = *getMCAsmInfo();
@@ -135,8 +145,10 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
 
     // Create a code emitter if asked to show the encoding.
     std::unique_ptr<MCCodeEmitter> MCE;
-    if (Options.MCOptions.ShowMCEncoding)
+    if (Options.MCOptions.ShowMCEncoding) {
       MCE.reset(getTarget().createMCCodeEmitter(MII, MRI, Context));
+
+}
 
     std::unique_ptr<MCAsmBackend> MAB(
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions));
@@ -154,8 +166,10 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
     MCCodeEmitter *MCE = getTarget().createMCCodeEmitter(MII, MRI, Context);
     MCAsmBackend *MAB =
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
-    if (!MCE || !MAB)
+    if (!MCE || !MAB) {
       return true;
+
+}
 
     Triple T(getTargetTriple().str());
     AsmStreamer.reset(getTarget().createMCObjectStreamer(
@@ -177,8 +191,10 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
   // Create the AsmPrinter, which takes ownership of AsmStreamer if successful.
   FunctionPass *Printer =
       getTarget().createAsmPrinter(*this, std::move(AsmStreamer));
-  if (!Printer)
+  if (!Printer) {
     return true;
+
+}
 
   PM.add(Printer);
   return false;
@@ -189,12 +205,16 @@ bool LLVMTargetMachine::addPassesToEmitFile(
     CodeGenFileType FileType, bool DisableVerify,
     MachineModuleInfoWrapperPass *MMIWP) {
   // Add common CodeGen passes.
-  if (!MMIWP)
+  if (!MMIWP) {
     MMIWP = new MachineModuleInfoWrapperPass(this);
+
+}
   TargetPassConfig *PassConfig =
       addPassesToGenerateCode(*this, PM, DisableVerify, *MMIWP);
-  if (!PassConfig)
+  if (!PassConfig) {
     return true;
+
+}
 
   if (!TargetPassConfig::willCompleteCodeGenPipeline()) {
     if (this->getTargetTriple().isOSAIX()) {
@@ -208,8 +228,10 @@ bool LLVMTargetMachine::addPassesToEmitFile(
     }
     PM.add(createPrintMIRPass(Out));
   } else if (addAsmPrinter(PM, Out, DwoOut, FileType,
-                           MMIWP->getMMI().getContext()))
+                           MMIWP->getMMI().getContext())) {
     return true;
+
+}
 
   PM.add(createFreeMachineFunctionPass());
   return false;
@@ -227,14 +249,18 @@ bool LLVMTargetMachine::addPassesToEmitMC(PassManagerBase &PM, MCContext *&Ctx,
   MachineModuleInfoWrapperPass *MMIWP = new MachineModuleInfoWrapperPass(this);
   TargetPassConfig *PassConfig =
       addPassesToGenerateCode(*this, PM, DisableVerify, *MMIWP);
-  if (!PassConfig)
+  if (!PassConfig) {
     return true;
+
+}
   assert(TargetPassConfig::willCompleteCodeGenPipeline() &&
          "Cannot emit MC with limited codegen pipeline");
 
   Ctx = &MMIWP->getMMI().getContext();
-  if (Options.MCOptions.MCSaveTempLabels)
+  if (Options.MCOptions.MCSaveTempLabels) {
     Ctx->setAllowTemporaryLabels(false);
+
+}
 
   // Create the code emitter for the target if it exists.  If not, .o file
   // emission fails.
@@ -244,8 +270,10 @@ bool LLVMTargetMachine::addPassesToEmitMC(PassManagerBase &PM, MCContext *&Ctx,
       getTarget().createMCCodeEmitter(*getMCInstrInfo(), MRI, *Ctx);
   MCAsmBackend *MAB =
       getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
-  if (!MCE || !MAB)
+  if (!MCE || !MAB) {
     return true;
+
+}
 
   const Triple &T = getTargetTriple();
   std::unique_ptr<MCStreamer> AsmStreamer(getTarget().createMCObjectStreamer(
@@ -257,8 +285,10 @@ bool LLVMTargetMachine::addPassesToEmitMC(PassManagerBase &PM, MCContext *&Ctx,
   // Create the AsmPrinter, which takes ownership of AsmStreamer if successful.
   FunctionPass *Printer =
       getTarget().createAsmPrinter(*this, std::move(AsmStreamer));
-  if (!Printer)
+  if (!Printer) {
     return true;
+
+}
 
   PM.add(Printer);
   PM.add(createFreeMachineFunctionPass());

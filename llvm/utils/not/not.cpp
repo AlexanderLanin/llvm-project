@@ -29,8 +29,10 @@ int main(int argc, const char **argv) {
     ExpectCrash = true;
   }
 
-  if (argc == 0)
+  if (argc == 0) {
     return 1;
+
+}
 
   auto Program = sys::findProgramByName(argv[0]);
   if (!Program) {
@@ -41,8 +43,10 @@ int main(int argc, const char **argv) {
 
   std::vector<StringRef> Argv;
   Argv.reserve(argc);
-  for (int i = 0; i < argc; ++i)
+  for (int i = 0; i < argc; ++i) {
     Argv.push_back(argv[i]);
+
+}
   std::string ErrMsg;
   int Result = sys::ExecuteAndWait(*Program, Argv, None, {}, 0, 0, &ErrMsg);
 #ifdef _WIN32
@@ -55,13 +59,17 @@ int main(int argc, const char **argv) {
 #endif
   if (Result < 0) {
     WithColor::error() << ErrMsg << "\n";
-    if (ExpectCrash)
+    if (ExpectCrash) {
       return 0;
+
+}
     return 1;
   }
 
-  if (ExpectCrash)
+  if (ExpectCrash) {
     return 1;
+
+}
 
   return Result == 0;
 }

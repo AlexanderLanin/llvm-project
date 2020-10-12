@@ -22,8 +22,10 @@ static const char * const TokNames[] = {
 };
 
 const char *tok::getTokenName(TokenKind Kind) {
-  if (Kind < tok::NUM_TOKENS)
+  if (Kind < tok::NUM_TOKENS) {
     return TokNames[Kind];
+
+}
   llvm_unreachable("unknown TokenKind");
   return nullptr;
 }

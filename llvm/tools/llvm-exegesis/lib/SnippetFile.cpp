@@ -43,8 +43,10 @@ public:
   // Implementation of the AsmCommentConsumer.
   void HandleComment(SMLoc Loc, StringRef CommentText) override {
     CommentText = CommentText.trim();
-    if (!CommentText.consume_front("LLVM-EXEGESIS-"))
+    if (!CommentText.consume_front("LLVM-EXEGESIS-")) {
       return;
+
+}
     if (CommentText.consume_front("DEFREG")) {
       // LLVM-EXEGESIS-DEFREF <reg> <hex_value>
       RegisterValue RegVal;
@@ -72,9 +74,9 @@ public:
     if (CommentText.consume_front("LIVEIN")) {
       // LLVM-EXEGESIS-LIVEIN <reg>
       const auto RegName = CommentText.ltrim();
-      if (unsigned Reg = findRegisterByName(RegName))
+      if (unsigned Reg = findRegisterByName(RegName)) {
         Result->LiveIns.push_back(Reg);
-      else {
+      } else {
         errs() << "unknown register '" << RegName
                << "' in 'LLVM-EXEGESIS-LIVEIN " << CommentText << "'\n";
         ++InvalidComments;
@@ -101,8 +103,10 @@ private:
   unsigned findRegisterByName(const StringRef RegName) const {
     // FIXME: Can we do better than this ?
     for (unsigned I = 0, E = RegInfo->getNumRegs(); I < E; ++I) {
-      if (RegName == RegInfo->getName(I))
+      if (RegName == RegInfo->getName(I)) {
         return I;
+
+}
     }
     errs() << "'" << RegName
            << "' is not a valid register name for the target\n";
@@ -148,13 +152,17 @@ Expected<std::vector<BenchmarkCode>> readSnippets(const LLVMState &State,
   TM.getTarget().createAsmTargetStreamer(Streamer, InstPrinterOStream,
                                          InstPrinter.get(),
                                          TM.Options.MCOptions.AsmVerbose);
-  if (!Streamer.getTargetStreamer())
+  if (!Streamer.getTargetStreamer()) {
     return make_error<Failure>("cannot create target asm streamer");
+
+}
 
   const std::unique_ptr<MCAsmParser> AsmParser(
       createMCAsmParser(SM, Context, Streamer, *TM.getMCAsmInfo()));
-  if (!AsmParser)
+  if (!AsmParser) {
     return make_error<Failure>("cannot create asm parser");
+
+}
   AsmParser->getLexer().setCommentConsumer(&Streamer);
 
   const std::unique_ptr<MCTargetAsmParser> TargetAsmParser(
@@ -162,16 +170,22 @@ Expected<std::vector<BenchmarkCode>> readSnippets(const LLVMState &State,
                                        *TM.getMCInstrInfo(),
                                        MCTargetOptions()));
 
-  if (!TargetAsmParser)
+  if (!TargetAsmParser) {
     return make_error<Failure>("cannot create target asm parser");
+
+}
   AsmParser->setTargetParser(*TargetAsmParser);
 
-  if (AsmParser->Run(false))
+  if (AsmParser->Run(false)) {
     return make_error<Failure>("cannot parse asm file");
-  if (Streamer.numInvalidComments())
+
+}
+  if (Streamer.numInvalidComments()) {
     return make_error<Failure>(Twine("found ")
                                    .concat(Twine(Streamer.numInvalidComments()))
                                    .concat(" invalid LLVM-EXEGESIS comments"));
+
+}
   return std::vector<BenchmarkCode>{std::move(Result)};
 }
 

@@ -32,11 +32,15 @@ public:
   void MacroExpands(const Token &MacroNameTok, const MacroDefinition &MD,
                     SourceRange Range, const MacroArgs *Args) override {
     const auto *II = MacroNameTok.getIdentifierInfo();
-    if (!II)
+    if (!II) {
       return;
 
-    if (II->getName() == "setjmp")
+}
+
+    if (II->getName() == "setjmp") {
       Check.diag(Range.getBegin(), DiagWording) << II;
+
+}
   }
 };
 } // namespace

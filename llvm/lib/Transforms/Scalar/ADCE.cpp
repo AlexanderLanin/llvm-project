@@ -232,22 +232,34 @@ void AggressiveDeadCodeElimination::initialize() {
 
   // Initialize instruction map and set pointers to block info.
   InstInfo.reserve(NumInsts);
-  for (auto &BBInfo : BlockInfo)
-    for (Instruction &I : *BBInfo.second.BB)
+  for (auto &BBInfo : BlockInfo) {
+    for (Instruction &I : *BBInfo.second.BB) {
       InstInfo[&I].Block = &BBInfo.second;
+
+}
+
+}
 
   // Since BlockInfoVec holds pointers into InstInfo and vice-versa, we may not
   // add any more elements to either after this point.
-  for (auto &BBInfo : BlockInfo)
+  for (auto &BBInfo : BlockInfo) {
     BBInfo.second.TerminatorLiveInfo = &InstInfo[BBInfo.second.Terminator];
 
+}
+
   // Collect the set of "root" instructions that are known live.
-  for (Instruction &I : instructions(F))
-    if (isAlwaysLive(I))
+  for (Instruction &I : instructions(F)) {
+    if (isAlwaysLive(I)) {
       markLive(&I);
 
-  if (!RemoveControlFlowFlag)
+}
+
+}
+
+  if (!RemoveControlFlowFlag) {
     return;
+
+}
 
   if (!RemoveLoops) {
     // This stores state for the depth-first iterator. In addition
@@ -279,15 +291,19 @@ void AggressiveDeadCodeElimination::initialize() {
     // and mark the branch live it if there is a back edge.
     for (auto *BB: depth_first_ext(&F.getEntryBlock(), State)) {
       Instruction *Term = BB->getTerminator();
-      if (isLive(Term))
+      if (isLive(Term)) {
         continue;
 
-      for (auto *Succ : successors(BB))
+}
+
+      for (auto *Succ : successors(BB)) {
         if (State.onStack(Succ)) {
           // back edge....
           markLive(Term);
           break;
         }
+
+}
     }
   }
 
@@ -306,21 +322,29 @@ void AggressiveDeadCodeElimination::initialize() {
     }
 
     // This child is something else, like an infinite loop.
-    for (auto DFNode : depth_first(PDTChild))
+    for (auto DFNode : depth_first(PDTChild)) {
       markLive(BlockInfo[DFNode->getBlock()].Terminator);
+
+}
   }
 
   // Treat the entry block as always live
   auto *BB = &F.getEntryBlock();
   auto &EntryInfo = BlockInfo[BB];
   EntryInfo.Live = true;
-  if (EntryInfo.UnconditionalBranch)
+  if (EntryInfo.UnconditionalBranch) {
     markLive(EntryInfo.Terminator);
 
+}
+
   // Build initial collection of blocks with dead terminators
-  for (auto &BBInfo : BlockInfo)
-    if (!BBInfo.second.terminatorIsLive())
+  for (auto &BBInfo : BlockInfo) {
+    if (!BBInfo.second.terminatorIsLive()) {
       BlocksWithDeadTerminators.insert(BBInfo.second.BB);
+
+}
+
+}
 }
 
 bool AggressiveDeadCodeElimination::isAlwaysLive(Instruction &I) {
@@ -328,14 +352,20 @@ bool AggressiveDeadCodeElimination::isAlwaysLive(Instruction &I) {
   if (I.isEHPad() || I.mayHaveSideEffects()) {
     // Skip any value profile instrumentation calls if they are
     // instrumenting constants.
-    if (isInstrumentsConstant(I))
+    if (isInstrumentsConstant(I)) {
       return false;
+
+}
     return true;
   }
-  if (!I.isTerminator())
+  if (!I.isTerminator()) {
     return false;
-  if (RemoveControlFlowFlag && (isa<BranchInst>(I) || isa<SwitchInst>(I)))
+
+}
+  if (RemoveControlFlowFlag && (isa<BranchInst>(I) || isa<SwitchInst>(I))) {
     return false;
+
+}
   return true;
 }
 
@@ -343,11 +373,19 @@ bool AggressiveDeadCodeElimination::isAlwaysLive(Instruction &I) {
 // if it's instrumenting a constant.
 bool AggressiveDeadCodeElimination::isInstrumentsConstant(Instruction &I) {
   // TODO -- move this test into llvm::isInstructionTriviallyDead
-  if (CallInst *CI = dyn_cast<CallInst>(&I))
-    if (Function *Callee = CI->getCalledFunction())
-      if (Callee->getName().equals(getInstrProfValueProfFuncName()))
-        if (isa<Constant>(CI->getArgOperand(0)))
+  if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+    if (Function *Callee = CI->getCalledFunction()) {
+      if (Callee->getName().equals(getInstrProfValueProfFuncName())) {
+        if (isa<Constant>(CI->getArgOperand(0))) {
           return true;
+
+}
+
+}
+
+}
+
+}
   return false;
 }
 
@@ -360,12 +398,18 @@ void AggressiveDeadCodeElimination::markLiveInstructions() {
       Instruction *LiveInst = Worklist.pop_back_val();
       LLVM_DEBUG(dbgs() << "work live: "; LiveInst->dump(););
 
-      for (Use &OI : LiveInst->operands())
-        if (Instruction *Inst = dyn_cast<Instruction>(OI))
+      for (Use &OI : LiveInst->operands()) {
+        if (Instruction *Inst = dyn_cast<Instruction>(OI)) {
           markLive(Inst);
 
-      if (auto *PN = dyn_cast<PHINode>(LiveInst))
+}
+
+}
+
+      if (auto *PN = dyn_cast<PHINode>(LiveInst)) {
         markPhiLive(PN);
+
+}
     }
 
     // After data flow liveness has been identified, examine which branch
@@ -377,16 +421,20 @@ void AggressiveDeadCodeElimination::markLiveInstructions() {
 
 void AggressiveDeadCodeElimination::markLive(Instruction *I) {
   auto &Info = InstInfo[I];
-  if (Info.Live)
+  if (Info.Live) {
     return;
+
+}
 
   LLVM_DEBUG(dbgs() << "mark live: "; I->dump());
   Info.Live = true;
   Worklist.push_back(I);
 
   // Collect the live debug info scopes attached to this instruction.
-  if (const DILocation *DL = I->getDebugLoc())
+  if (const DILocation *DL = I->getDebugLoc()) {
     collectLiveScopes(*DL);
+
+}
 
   // Mark the containing block live
   auto &BBInfo = *Info.Block;
@@ -394,16 +442,22 @@ void AggressiveDeadCodeElimination::markLive(Instruction *I) {
     BlocksWithDeadTerminators.remove(BBInfo.BB);
     // For live terminators, mark destination blocks
     // live to preserve this control flow edges.
-    if (!BBInfo.UnconditionalBranch)
-      for (auto *BB : successors(I->getParent()))
+    if (!BBInfo.UnconditionalBranch) {
+      for (auto *BB : successors(I->getParent())) {
         markLive(BB);
+
+}
+
+}
   }
   markLive(BBInfo);
 }
 
 void AggressiveDeadCodeElimination::markLive(BlockInfoType &BBInfo) {
-  if (BBInfo.Live)
+  if (BBInfo.Live) {
     return;
+
+}
   LLVM_DEBUG(dbgs() << "mark block live: " << BBInfo.BB->getName() << '\n');
   BBInfo.Live = true;
   if (!BBInfo.CFLive) {
@@ -413,16 +467,22 @@ void AggressiveDeadCodeElimination::markLive(BlockInfoType &BBInfo) {
 
   // Mark unconditional branches at the end of live
   // blocks as live since there is no work to do for them later
-  if (BBInfo.UnconditionalBranch)
+  if (BBInfo.UnconditionalBranch) {
     markLive(BBInfo.Terminator);
+
+}
 }
 
 void AggressiveDeadCodeElimination::collectLiveScopes(const DILocalScope &LS) {
-  if (!AliveScopes.insert(&LS).second)
+  if (!AliveScopes.insert(&LS).second) {
     return;
 
-  if (isa<DISubprogram>(LS))
+}
+
+  if (isa<DISubprogram>(LS)) {
     return;
+
+}
 
   // Tail-recurse through the scope chain.
   collectLiveScopes(cast<DILocalScope>(*LS.getScope()));
@@ -431,22 +491,28 @@ void AggressiveDeadCodeElimination::collectLiveScopes(const DILocalScope &LS) {
 void AggressiveDeadCodeElimination::collectLiveScopes(const DILocation &DL) {
   // Even though DILocations are not scopes, shove them into AliveScopes so we
   // don't revisit them.
-  if (!AliveScopes.insert(&DL).second)
+  if (!AliveScopes.insert(&DL).second) {
     return;
+
+}
 
   // Collect live scopes from the scope chain.
   collectLiveScopes(*DL.getScope());
 
   // Tail-recurse through the inlined-at chain.
-  if (const DILocation *IA = DL.getInlinedAt())
+  if (const DILocation *IA = DL.getInlinedAt()) {
     collectLiveScopes(*IA);
+
+}
 }
 
 void AggressiveDeadCodeElimination::markPhiLive(PHINode *PN) {
   auto &Info = BlockInfo[PN->getParent()];
   // Only need to check this once per block.
-  if (Info.HasLivePhiNodes)
+  if (Info.HasLivePhiNodes) {
     return;
+
+}
   Info.HasLivePhiNodes = true;
 
   // If a predecessor block is not live, mark it as control-flow live
@@ -462,8 +528,10 @@ void AggressiveDeadCodeElimination::markPhiLive(PHINode *PN) {
 }
 
 void AggressiveDeadCodeElimination::markLiveBranchesFromControlDependences() {
-  if (BlocksWithDeadTerminators.empty())
+  if (BlocksWithDeadTerminators.empty()) {
     return;
+
+}
 
   LLVM_DEBUG({
     dbgs() << "new live blocks:\n";
@@ -535,13 +603,17 @@ bool AggressiveDeadCodeElimination::removeDeadInstructions() {
   // NOTE: We reuse the Worklist vector here for memory efficiency.
   for (Instruction &I : instructions(F)) {
     // Check if the instruction is alive.
-    if (isLive(&I))
+    if (isLive(&I)) {
       continue;
+
+}
 
     if (auto *DII = dyn_cast<DbgInfoIntrinsic>(&I)) {
       // Check if the scope of this variable location is alive.
-      if (AliveScopes.count(DII->getDebugLoc()->getScope()))
+      if (AliveScopes.count(DII->getDebugLoc()->getScope())) {
         continue;
+
+}
 
       // Fallthrough and drop the intrinsic.
     }
@@ -589,8 +661,10 @@ void AggressiveDeadCodeElimination::updateDeadRegions() {
     BlockInfoType *PreferredSucc = nullptr;
     for (auto *Succ : successors(BB)) {
       auto *Info = &BlockInfo[Succ];
-      if (!PreferredSucc || PreferredSucc->PostOrder < Info->PostOrder)
+      if (!PreferredSucc || PreferredSucc->PostOrder < Info->PostOrder) {
         PreferredSucc = Info;
+
+}
     }
     assert((PreferredSucc && PreferredSucc->PostOrder > 0) &&
            "Failed to find safe successor for dead branch");
@@ -602,8 +676,10 @@ void AggressiveDeadCodeElimination::updateDeadRegions() {
       if (!First || Succ != PreferredSucc->BB) {
         Succ->removePredecessor(BB);
         RemovedSuccessors.insert(Succ);
-      } else
+      } else {
         First = false;
+
+}
     }
     makeUnconditional(BB, PreferredSucc->BB);
 
@@ -639,10 +715,14 @@ void AggressiveDeadCodeElimination::computeReversePostOrder() {
   SmallPtrSet<BasicBlock*, 16> Visited;
   unsigned PostOrder = 0;
   for (auto &BB : F) {
-    if (succ_begin(&BB) != succ_end(&BB))
+    if (succ_begin(&BB) != succ_end(&BB)) {
       continue;
-    for (BasicBlock *Block : inverse_post_order_ext(&BB,Visited))
+
+}
+    for (BasicBlock *Block : inverse_post_order_ext(&BB,Visited)) {
       BlockInfo[Block].PostOrder = PostOrder++;
+
+}
   }
 }
 
@@ -650,8 +730,10 @@ void AggressiveDeadCodeElimination::makeUnconditional(BasicBlock *BB,
                                                       BasicBlock *Target) {
   Instruction *PredTerm = BB->getTerminator();
   // Collect the live debug info scopes attached to this instruction.
-  if (const DILocation *DL = PredTerm->getDebugLoc())
+  if (const DILocation *DL = PredTerm->getDebugLoc()) {
     collectLiveScopes(*DL);
+
+}
 
   // Just mark live an existing unconditional branch
   if (isUnconditionalBranch(PredTerm)) {
@@ -664,8 +746,10 @@ void AggressiveDeadCodeElimination::makeUnconditional(BasicBlock *BB,
   IRBuilder<> Builder(PredTerm);
   auto *NewTerm = Builder.CreateBr(Target);
   InstInfo[NewTerm].Live = true;
-  if (const DILocation *DL = PredTerm->getDebugLoc())
+  if (const DILocation *DL = PredTerm->getDebugLoc()) {
     NewTerm->setDebugLoc(DL);
+
+}
 
   InstInfo.erase(PredTerm);
   PredTerm->eraseFromParent();
@@ -681,8 +765,10 @@ PreservedAnalyses ADCEPass::run(Function &F, FunctionAnalysisManager &FAM) {
   // to update analysis if it is already available.
   auto *DT = FAM.getCachedResult<DominatorTreeAnalysis>(F);
   auto &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
-  if (!AggressiveDeadCodeElimination(F, DT, PDT).performDeadCodeElimination())
+  if (!AggressiveDeadCodeElimination(F, DT, PDT).performDeadCodeElimination()) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
@@ -702,8 +788,10 @@ struct ADCELegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     // ADCE does not need DominatorTree, but require DominatorTree here
     // to update analysis if it is already available.
@@ -716,9 +804,9 @@ struct ADCELegacyPass : public FunctionPass {
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<PostDominatorTreeWrapperPass>();
-    if (!RemoveControlFlowFlag)
+    if (!RemoveControlFlowFlag) {
       AU.setPreservesCFG();
-    else {
+    } else {
       AU.addPreserved<DominatorTreeWrapperPass>();
       AU.addPreserved<PostDominatorTreeWrapperPass>();
     }

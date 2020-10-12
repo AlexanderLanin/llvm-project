@@ -14,8 +14,10 @@ namespace llvm {
 /// Check if the DIE at \p Idx is in the scope of a function.
 static bool inFunctionScope(CompileUnit &U, unsigned Idx) {
   while (Idx) {
-    if (U.getOrigUnit().getDIEAtIndex(Idx).getTag() == dwarf::DW_TAG_subprogram)
+    if (U.getOrigUnit().getDIEAtIndex(Idx).getTag() == dwarf::DW_TAG_subprogram) {
       return true;
+
+}
     Idx = U.getInfo(Idx).ParentIdx;
   }
   return false;
@@ -51,20 +53,26 @@ void CompileUnit::markEverythingAsKept() {
     // just for variables, because functions will be handled depending on
     // whether they carry a DW_AT_low_pc attribute or not.
     if (DIE.getTag() != dwarf::DW_TAG_variable &&
-        DIE.getTag() != dwarf::DW_TAG_constant)
+        DIE.getTag() != dwarf::DW_TAG_constant) {
       continue;
+
+}
 
     Optional<DWARFFormValue> Value;
     if (!(Value = DIE.find(dwarf::DW_AT_location))) {
       if ((Value = DIE.find(dwarf::DW_AT_const_value)) &&
-          !inFunctionScope(*this, I.ParentIdx))
+          !inFunctionScope(*this, I.ParentIdx)) {
         I.InDebugMap = true;
+
+}
       continue;
     }
     if (auto Block = Value->getAsBlock()) {
       if (Block->size() > OrigUnit.getAddressByteSize() &&
-          (*Block)[0] == dwarf::DW_OP_addr)
+          (*Block)[0] == dwarf::DW_OP_addr) {
         I.InDebugMap = true;
+
+}
     }
   }
 }
@@ -92,10 +100,12 @@ void CompileUnit::fixupForwardReferences() {
     PatchLocation Attr;
     DeclContext *Ctxt;
     std::tie(RefDie, RefUnit, Ctxt, Attr) = Ref;
-    if (Ctxt && Ctxt->getCanonicalDIEOffset())
+    if (Ctxt && Ctxt->getCanonicalDIEOffset()) {
       Attr.set(Ctxt->getCanonicalDIEOffset());
-    else
+    } else {
       Attr.set(RefDie->getOffset() + RefUnit->getStartOffset());
+
+}
   }
 }
 
@@ -108,17 +118,21 @@ void CompileUnit::addFunctionRange(uint64_t FuncLowPc, uint64_t FuncHighPc,
   //  Don't add empty ranges to the interval map.  They are a problem because
   //  the interval map expects half open intervals. This is safe because they
   //  are empty anyway.
-  if (FuncHighPc != FuncLowPc)
+  if (FuncHighPc != FuncLowPc) {
     Ranges.insert(FuncLowPc, FuncHighPc, PcOffset);
+
+}
   this->LowPc = std::min(LowPc, FuncLowPc + PcOffset);
   this->HighPc = std::max(HighPc, FuncHighPc + PcOffset);
 }
 
 void CompileUnit::noteRangeAttribute(const DIE &Die, PatchLocation Attr) {
-  if (Die.getTag() != dwarf::DW_TAG_compile_unit)
+  if (Die.getTag() != dwarf::DW_TAG_compile_unit) {
     RangeAttributes.push_back(Attr);
-  else
+  } else {
     UnitRangeAttribute = Attr;
+
+}
 }
 
 void CompileUnit::noteLocationAttribute(PatchLocation Attr, int64_t PcOffset) {

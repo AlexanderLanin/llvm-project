@@ -29,10 +29,12 @@ using namespace llvm;
 static BasicBlock *getUserBB(Use *U) {
   auto *User = cast<Instruction>(U->getUser());
 
-  if (auto *UserPN = dyn_cast<PHINode>(User))
+  if (auto *UserPN = dyn_cast<PHINode>(User)) {
     return UserPN->getIncomingBlock(*U);
-  else
+  } else {
     return User->getParent();
+
+}
 }
 
 /// Add a new variable to the SSA rewriter. This needs to be called before
@@ -80,8 +82,10 @@ Value *SSAUpdaterBulk::computeValueAt(BasicBlock *BB, RewriteInfo &R,
       BasicBlock *IDom = DT->getNode(BB)->getIDom()->getBlock();
       Value *V = computeValueAt(IDom, R, DT);
       R.Defines[BB] = V;
-    } else
+    } else {
       R.Defines[BB] = UndefValue::get(R.Ty);
+
+}
   }
   return R.Defines[BB];
 }
@@ -106,16 +110,20 @@ ComputeLiveInBlocks(const SmallPtrSetImpl<BasicBlock *> &UsingBlocks,
 
     // The block really is live in here, insert it into the set.  If already in
     // the set, then it has already been processed.
-    if (!LiveInBlocks.insert(BB).second)
+    if (!LiveInBlocks.insert(BB).second) {
       continue;
+
+}
 
     // Since the value is live into BB, it is either defined in a predecessor or
     // live into it to.  Add the preds to the worklist unless they are a
     // defining block.
     for (BasicBlock *P : PredCache.get(BB)) {
       // The value is not live into a predecessor if it defines the value.
-      if (DefBlocks.count(P))
+      if (DefBlocks.count(P)) {
         continue;
+
+}
 
       // Otherwise it is, add to the worklist.
       LiveInBlockWorklist.push_back(P);
@@ -138,13 +146,17 @@ void SSAUpdaterBulk::RewriteAllUses(DominatorTree *DT,
                       << " use(s)\n");
 
     SmallPtrSet<BasicBlock *, 2> DefBlocks;
-    for (auto &Def : R.Defines)
+    for (auto &Def : R.Defines) {
       DefBlocks.insert(Def.first);
+
+}
     IDF.setDefiningBlocks(DefBlocks);
 
     SmallPtrSet<BasicBlock *, 2> UsingBlocks;
-    for (Use *U : R.Uses)
+    for (Use *U : R.Uses) {
       UsingBlocks.insert(getUserBB(U));
+
+}
 
     SmallVector<BasicBlock *, 32> IDFBlocks;
     SmallPtrSet<BasicBlock *, 32> LiveInBlocks;
@@ -160,28 +172,36 @@ void SSAUpdaterBulk::RewriteAllUses(DominatorTree *DT,
       PHINode *PN = B.CreatePHI(R.Ty, 0, R.Name);
       R.Defines[FrontierBB] = PN;
       InsertedPHIsForVar.push_back(PN);
-      if (InsertedPHIs)
+      if (InsertedPHIs) {
         InsertedPHIs->push_back(PN);
+
+}
     }
 
     // Fill in arguments of the inserted PHIs.
     for (auto *PN : InsertedPHIsForVar) {
       BasicBlock *PBB = PN->getParent();
-      for (BasicBlock *Pred : PredCache.get(PBB))
+      for (BasicBlock *Pred : PredCache.get(PBB)) {
         PN->addIncoming(computeValueAt(Pred, R, DT), Pred);
+
+}
     }
 
     // Rewrite actual uses with the inserted definitions.
     SmallPtrSet<Use *, 4> ProcessedUses;
     for (Use *U : R.Uses) {
-      if (!ProcessedUses.insert(U).second)
+      if (!ProcessedUses.insert(U).second) {
         continue;
+
+}
       Value *V = computeValueAt(getUserBB(U), R, DT);
       Value *OldVal = U->get();
       assert(OldVal && "Invalid use!");
       // Notify that users of the existing value that it is being replaced.
-      if (OldVal != V && OldVal->hasValueHandle())
+      if (OldVal != V && OldVal->hasValueHandle()) {
         ValueHandleBase::ValueIsRAUWd(OldVal, V);
+
+}
       LLVM_DEBUG(dbgs() << "SSAUpdater: replacing " << *OldVal << " with " << *V
                         << "\n");
       U->set(V);

@@ -33,16 +33,20 @@ void dragonfly::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
 
   // When building 32-bit code on DragonFly/pc64, we have to explicitly
   // instruct as in the base system to assemble 32-bit code.
-  if (getToolChain().getArch() == llvm::Triple::x86)
+  if (getToolChain().getArch() == llvm::Triple::x86) {
     CmdArgs.push_back("--32");
+
+}
 
   Args.AddAllArgValues(CmdArgs, options::OPT_Wa_COMMA, options::OPT_Xassembler);
 
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
@@ -56,18 +60,22 @@ void dragonfly::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const Driver &D = getToolChain().getDriver();
   ArgStringList CmdArgs;
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+
+}
 
   CmdArgs.push_back("--eh-frame-hdr");
   if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
   } else {
-    if (Args.hasArg(options::OPT_rdynamic))
+    if (Args.hasArg(options::OPT_rdynamic)) {
       CmdArgs.push_back("-export-dynamic");
-    if (Args.hasArg(options::OPT_shared))
+
+}
+    if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-Bshareable");
-    else {
+    } else {
       CmdArgs.push_back("-dynamic-linker");
       CmdArgs.push_back("/usr/libexec/ld-elf.so.2");
     }
@@ -91,25 +99,29 @@ void dragonfly::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     if (!Args.hasArg(options::OPT_shared)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back(
             Args.MakeArgString(getToolChain().GetFilePath("gcrt1.o")));
-      else {
-        if (Args.hasArg(options::OPT_pie))
+      } else {
+        if (Args.hasArg(options::OPT_pie)) {
           CmdArgs.push_back(
               Args.MakeArgString(getToolChain().GetFilePath("Scrt1.o")));
-        else
+        } else {
           CmdArgs.push_back(
               Args.MakeArgString(getToolChain().GetFilePath("crt1.o")));
+
+}
       }
     }
     CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath("crti.o")));
-    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie))
+    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie)) {
       CmdArgs.push_back(
           Args.MakeArgString(getToolChain().GetFilePath("crtbeginS.o")));
-    else
+    } else {
       CmdArgs.push_back(
           Args.MakeArgString(getToolChain().GetFilePath("crtbegin.o")));
+
+}
   }
 
   Args.AddAllArgs(CmdArgs,
@@ -126,13 +138,17 @@ void dragonfly::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     }
 
     if (D.CCCIsCXX()) {
-      if (getToolChain().ShouldLinkCXXStdlib(Args))
+      if (getToolChain().ShouldLinkCXXStdlib(Args)) {
         getToolChain().AddCXXStdlibLibArgs(Args, CmdArgs);
+
+}
       CmdArgs.push_back("-lm");
     }
 
-    if (Args.hasArg(options::OPT_pthread))
+    if (Args.hasArg(options::OPT_pthread)) {
       CmdArgs.push_back("-lpthread");
+
+}
 
     if (!Args.hasArg(options::OPT_nolibc)) {
       CmdArgs.push_back("-lc");
@@ -145,8 +161,10 @@ void dragonfly::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     } else {
       if (Args.hasArg(options::OPT_shared_libgcc)) {
           CmdArgs.push_back("-lgcc_pic");
-          if (!Args.hasArg(options::OPT_shared))
+          if (!Args.hasArg(options::OPT_shared)) {
             CmdArgs.push_back("-lgcc");
+
+}
       } else {
           CmdArgs.push_back("-lgcc");
           CmdArgs.push_back("--as-needed");
@@ -157,12 +175,14 @@ void dragonfly::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie))
+    if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_pie)) {
       CmdArgs.push_back(
           Args.MakeArgString(getToolChain().GetFilePath("crtendS.o")));
-    else
+    } else {
       CmdArgs.push_back(
           Args.MakeArgString(getToolChain().GetFilePath("crtend.o")));
+
+}
     CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath("crtn.o")));
   }
 
@@ -180,8 +200,10 @@ DragonFly::DragonFly(const Driver &D, const llvm::Triple &Triple,
 
   // Path mangling to find libexec
   getProgramPaths().push_back(getDriver().getInstalledDir());
-  if (getDriver().getInstalledDir() != getDriver().Dir)
+  if (getDriver().getInstalledDir() != getDriver().Dir) {
     getProgramPaths().push_back(getDriver().Dir);
+
+}
 
   getFilePaths().push_back(getDriver().Dir + "/../lib");
   getFilePaths().push_back("/usr/lib");

@@ -31,8 +31,10 @@ DispatchStage::DispatchStage(const MCSubtargetInfo &Subtarget,
                              RegisterFile &F)
     : DispatchWidth(MaxDispatchWidth), AvailableEntries(MaxDispatchWidth),
       CarryOver(0U), CarriedOver(), STI(Subtarget), RCU(R), PRF(F) {
-  if (!DispatchWidth)
+  if (!DispatchWidth) {
     DispatchWidth = Subtarget.getSchedModel().IssueWidth;
+
+}
 }
 
 void DispatchStage::notifyInstructionDispatched(const InstRef &IR,
@@ -45,8 +47,10 @@ void DispatchStage::notifyInstructionDispatched(const InstRef &IR,
 
 bool DispatchStage::checkPRF(const InstRef &IR) const {
   SmallVector<MCPhysReg, 4> RegDefs;
-  for (const WriteState &RegDef : IR.getInstruction()->getDefs())
+  for (const WriteState &RegDef : IR.getInstruction()->getDefs()) {
     RegDefs.emplace_back(RegDef.getRegisterID());
+
+}
 
   const unsigned RegisterMask = PRF.isAvailable(RegDefs);
   // A mask with all zeroes means: register files are available.
@@ -61,8 +65,10 @@ bool DispatchStage::checkPRF(const InstRef &IR) const {
 
 bool DispatchStage::checkRCU(const InstRef &IR) const {
   const unsigned NumMicroOps = IR.getInstruction()->getNumMicroOps();
-  if (RCU.isAvailable(NumMicroOps))
+  if (RCU.isAvailable(NumMicroOps)) {
     return true;
+
+}
   notifyEvent<HWStallEvent>(
       HWStallEvent(HWStallEvent::RetireControlUnitStall, IR));
   return false;
@@ -91,15 +97,19 @@ Error DispatchStage::dispatch(InstRef IR) {
   }
 
   // Check if this instructions ends the dispatch group.
-  if (Desc.EndGroup)
+  if (Desc.EndGroup) {
     AvailableEntries = 0;
+
+}
 
   // Check if this is an optimizable reg-reg move.
   if (IS.isOptimizableMove()) {
     assert(IS.getDefs().size() == 1 && "Expected a single input!");
     assert(IS.getUses().size() == 1 && "Expected a single output!");
-    if (PRF.tryEliminateMove(IS.getDefs()[0], IS.getUses()[0]))
+    if (PRF.tryEliminateMove(IS.getDefs()[0], IS.getUses()[0])) {
       IS.setEliminated();
+
+}
   }
 
   // A dependency-breaking instruction doesn't have to wait on the register
@@ -112,16 +122,20 @@ Error DispatchStage::dispatch(InstRef IR) {
   // We also don't update data dependencies for instructions that have been
   // eliminated at register renaming stage.
   if (!IS.isEliminated()) {
-    for (ReadState &RS : IS.getUses())
+    for (ReadState &RS : IS.getUses()) {
       PRF.addRegisterRead(RS, STI);
+
+}
   }
 
   // By default, a dependency-breaking zero-idiom is expected to be optimized
   // at register renaming stage. That means, no physical register is allocated
   // to the instruction.
   SmallVector<unsigned, 4> RegisterFiles(PRF.getNumRegisterFiles());
-  for (WriteState &WS : IS.getDefs())
+  for (WriteState &WS : IS.getDefs()) {
     PRF.addRegisterWrite(WriteRef(IR.getSourceIndex(), &WS), RegisterFiles);
+
+}
 
   // Reserve entries in the reorder buffer.
   unsigned RCUTokenID = RCU.dispatch(IR);
@@ -150,8 +164,10 @@ Error DispatchStage::cycleStart() {
 
   SmallVector<unsigned, 8> RegisterFiles(PRF.getNumRegisterFiles(), 0U);
   notifyInstructionDispatched(CarriedOver, RegisterFiles, DispatchedOpcodes);
-  if (!CarryOver)
+  if (!CarryOver) {
     CarriedOver = InstRef();
+
+}
   return ErrorSuccess();
 }
 
@@ -160,11 +176,15 @@ bool DispatchStage::isAvailable(const InstRef &IR) const {
   unsigned NumMicroOps = Inst.getNumMicroOps();
   const InstrDesc &Desc = Inst.getDesc();
   unsigned Required = std::min(NumMicroOps, DispatchWidth);
-  if (Required > AvailableEntries)
+  if (Required > AvailableEntries) {
     return false;
 
-  if (Desc.BeginGroup && AvailableEntries != DispatchWidth)
+}
+
+  if (Desc.BeginGroup && AvailableEntries != DispatchWidth) {
     return false;
+
+}
 
   // The dispatch logic doesn't internally buffer instructions.  It only accepts
   // instructions that can be successfully moved to the next stage during this

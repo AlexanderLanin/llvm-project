@@ -36,8 +36,10 @@ ARMTargetStreamer &ARMException::getTargetStreamer() {
 }
 
 void ARMException::beginFunction(const MachineFunction *MF) {
-  if (Asm->MAI->getExceptionHandlingType() == ExceptionHandling::ARM)
+  if (Asm->MAI->getExceptionHandlingType() == ExceptionHandling::ARM) {
     getTargetStreamer().emitFnStart();
+
+}
   // See if we need call frame info.
   AsmPrinter::CFIMoveType MoveType = Asm->needsCFIMoves();
   assert(MoveType != AsmPrinter::CFI_M_EH &&
@@ -45,8 +47,10 @@ void ARMException::beginFunction(const MachineFunction *MF) {
 
   if (MoveType == AsmPrinter::CFI_M_Debug) {
     if (!hasEmittedCFISections) {
-      if (Asm->needsOnlyDebugCFIMoves())
+      if (Asm->needsOnlyDebugCFIMoves()) {
         Asm->OutStreamer->emitCFISections(false, true);
+
+}
       hasEmittedCFISections = true;
     }
 
@@ -61,17 +65,19 @@ void ARMException::endFunction(const MachineFunction *MF) {
   ARMTargetStreamer &ATS = getTargetStreamer();
   const Function &F = MF->getFunction();
   const Function *Per = nullptr;
-  if (F.hasPersonalityFn())
+  if (F.hasPersonalityFn()) {
     Per = dyn_cast<Function>(F.getPersonalityFn()->stripPointerCasts());
+
+}
   bool forceEmitPersonality =
     F.hasPersonalityFn() && !isNoOpWithoutInvoke(classifyEHPersonality(Per)) &&
     F.needsUnwindTableEntry();
   bool shouldEmitPersonality = forceEmitPersonality ||
     !MF->getLandingPads().empty();
   if (!Asm->MF->getFunction().needsUnwindTableEntry() &&
-      !shouldEmitPersonality)
+      !shouldEmitPersonality) {
     ATS.emitCantUnwind();
-  else if (shouldEmitPersonality) {
+  } else if (shouldEmitPersonality) {
     // Emit references to personality.
     if (Per) {
       MCSymbol *PerSym = Asm->getSymbol(Per);
@@ -86,8 +92,10 @@ void ARMException::endFunction(const MachineFunction *MF) {
     emitExceptionTable();
   }
 
-  if (Asm->MAI->getExceptionHandlingType() == ExceptionHandling::ARM)
+  if (Asm->MAI->getExceptionHandlingType() == ExceptionHandling::ARM) {
     ATS.emitFnEnd();
+
+}
 }
 
 void ARMException::emitTypeInfos(unsigned TTypeEncoding,
@@ -107,8 +115,10 @@ void ARMException::emitTypeInfos(unsigned TTypeEncoding,
   }
 
   for (const GlobalValue *GV : reverse(TypeInfos)) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       Asm->OutStreamer->AddComment("TypeInfo " + Twine(Entry--));
+
+}
     Asm->emitTTypeReference(GV, TTypeEncoding);
   }
 
@@ -125,8 +135,10 @@ void ARMException::emitTypeInfos(unsigned TTypeEncoding,
     unsigned TypeID = *I;
     if (VerboseAsm) {
       --Entry;
-      if (TypeID != 0)
+      if (TypeID != 0) {
         Asm->OutStreamer->AddComment("FilterInfo " + Twine(Entry));
+
+}
     }
 
     Asm->emitTTypeReference((TypeID == 0 ? nullptr : TypeInfos[TypeID - 1]),

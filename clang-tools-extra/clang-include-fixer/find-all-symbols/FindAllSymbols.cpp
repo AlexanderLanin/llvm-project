@@ -26,8 +26,10 @@ namespace find_all_symbols {
 namespace {
 
 AST_MATCHER(EnumConstantDecl, isInScopedEnum) {
-  if (const auto *ED = dyn_cast<EnumDecl>(Node.getDeclContext()))
+  if (const auto *ED = dyn_cast<EnumDecl>(Node.getDeclContext())) {
     return ED->isScoped();
+
+}
   return false;
 }
 
@@ -48,15 +50,19 @@ std::vector<SymbolInfo::Context> GetContexts(const NamedDecl *ND) {
   for (const auto *Context = ND->getDeclContext(); Context;
        Context = Context->getParent()) {
     if (llvm::isa<TranslationUnitDecl>(Context) ||
-        llvm::isa<LinkageSpecDecl>(Context))
+        llvm::isa<LinkageSpecDecl>(Context)) {
       break;
+
+}
 
     assert(llvm::isa<NamedDecl>(Context) &&
            "Expect Context to be a NamedDecl");
     if (const auto *NSD = dyn_cast<NamespaceDecl>(Context)) {
-      if (!NSD->isInlineNamespace())
+      if (!NSD->isInlineNamespace()) {
         Contexts.emplace_back(SymbolInfo::ContextType::Namespace,
                               NSD->getName().str());
+
+}
     } else if (const auto *ED = dyn_cast<EnumDecl>(Context)) {
       Contexts.emplace_back(SymbolInfo::ContextType::EnumDecl,
                             ED->getName().str());
@@ -84,16 +90,20 @@ CreateSymbolInfo(const NamedDecl *ND, const SourceManager &SM,
   } else if (llvm::isa<EnumDecl>(ND)) {
     Type = SymbolInfo::SymbolKind::EnumDecl;
     // Ignore anonymous enum declarations.
-    if (ND->getName().empty())
+    if (ND->getName().empty()) {
       return llvm::None;
+
+}
   } else {
     assert(llvm::isa<RecordDecl>(ND) &&
            "Matched decl must be one of VarDecl, "
            "FunctionDecl, TypedefNameDecl, EnumConstantDecl, "
            "EnumDecl and RecordDecl!");
     // C-style record decl can have empty name, e.g "struct { ... } var;".
-    if (ND->getName().empty())
+    if (ND->getName().empty()) {
       return llvm::None;
+
+}
     Type = SymbolInfo::SymbolKind::Class;
   }
 
@@ -106,7 +116,9 @@ CreateSymbolInfo(const NamedDecl *ND, const SourceManager &SM,
   }
 
   std::string FilePath = getIncludePath(SM, Loc, Collector);
-  if (FilePath.empty()) return llvm::None;
+  if (FilePath.empty()) { return llvm::None;
+
+}
 
   return SymbolInfo(ND->getNameAsString(), Type, FilePath, GetContexts(ND));
 }
@@ -242,12 +254,14 @@ void FindAllSymbols::run(const MatchFinder::MatchResult &Result) {
 
   SymbolInfo::Signals Signals;
   const NamedDecl *ND;
-  if ((ND = Result.Nodes.getNodeAs<NamedDecl>("use")))
+  if ((ND = Result.Nodes.getNodeAs<NamedDecl>("use"))) {
     Signals.Used = 1;
-  else if ((ND = Result.Nodes.getNodeAs<NamedDecl>("decl")))
+  } else if ((ND = Result.Nodes.getNodeAs<NamedDecl>("decl"))) {
     Signals.Seen = 1;
-  else
+  } else {
     assert(false && "Must match a NamedDecl!");
+
+}
 
   const SourceManager *SM = Result.SourceManager;
   if (auto Symbol = CreateSymbolInfo(ND, *SM, Collector)) {

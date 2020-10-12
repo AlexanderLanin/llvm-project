@@ -23,19 +23,27 @@ using namespace llvm;
 static void replaceFunctionCalls(Function &OldF, Function &NewF,
                                  const std::set<int> &ArgIndexesToKeep) {
   const auto &Users = OldF.users();
-  for (auto I = Users.begin(), E = Users.end(); I != E; )
+  for (auto I = Users.begin(), E = Users.end(); I != E; ) {
     if (auto *CI = dyn_cast<CallInst>(*I++)) {
       SmallVector<Value *, 8> Args;
-      for (auto ArgI = CI->arg_begin(), E = CI->arg_end(); ArgI != E; ++ArgI)
-        if (ArgIndexesToKeep.count(ArgI - CI->arg_begin()))
+      for (auto ArgI = CI->arg_begin(), E = CI->arg_end(); ArgI != E; ++ArgI) {
+        if (ArgIndexesToKeep.count(ArgI - CI->arg_begin())) {
           Args.push_back(*ArgI);
+
+}
+
+}
 
       CallInst *NewCI = CallInst::Create(&NewF, Args);
       NewCI->setCallingConv(NewF.getCallingConv());
-      if (!CI->use_empty())
+      if (!CI->use_empty()) {
         CI->replaceAllUsesWith(NewCI);
+
+}
       ReplaceInstWithInst(CI, NewCI);
     }
+
+}
 }
 
 /// Removes out-of-chunk arguments from functions, and modifies their calls
@@ -46,30 +54,44 @@ static void extractArgumentsFromModule(std::vector<Chunk> ChunksToKeep,
   std::set<Argument *> ArgsToKeep;
   std::vector<Function *> Funcs;
   // Get inside-chunk arguments, as well as their parent function
-  for (auto &F : *Program)
+  for (auto &F : *Program) {
     if (!F.isDeclaration()) {
       Funcs.push_back(&F);
-      for (auto &A : F.args())
+      for (auto &A : F.args()) {
         if (I < (int)ChunksToKeep.size()) {
-          if (ChunksToKeep[I].contains(++ArgCount))
+          if (ChunksToKeep[I].contains(++ArgCount)) {
             ArgsToKeep.insert(&A);
-          if (ChunksToKeep[I].end == ArgCount)
+
+}
+          if (ChunksToKeep[I].end == ArgCount) {
             ++I;
+
+}
         }
+
+}
     }
+
+}
 
   for (auto *F : Funcs) {
     ValueToValueMapTy VMap;
     std::vector<Instruction *> InstToDelete;
-    for (auto &A : F->args())
+    for (auto &A : F->args()) {
       if (!ArgsToKeep.count(&A)) {
         // By adding undesired arguments to the VMap, CloneFunction will remove
         // them from the resulting Function
         VMap[&A] = UndefValue::get(A.getType());
-        for (auto *U : A.users())
-          if (auto *I = dyn_cast<Instruction>(*&U))
+        for (auto *U : A.users()) {
+          if (auto *I = dyn_cast<Instruction>(*&U)) {
             InstToDelete.push_back(I);
+
+}
+
+}
       }
+
+}
     // Delete any instruction that uses the argument
     for (auto *I : InstToDelete) {
       I->replaceAllUsesWith(UndefValue::get(I->getType()));
@@ -77,14 +99,20 @@ static void extractArgumentsFromModule(std::vector<Chunk> ChunksToKeep,
     }
 
     // No arguments to reduce
-    if (VMap.empty())
+    if (VMap.empty()) {
       continue;
+
+}
 
     std::set<int> ArgIndexesToKeep;
     int ArgI = 0;
-    for (auto &Arg : F->args())
-      if (ArgsToKeep.count(&Arg))
+    for (auto &Arg : F->args()) {
+      if (ArgsToKeep.count(&Arg)) {
         ArgIndexesToKeep.insert(++ArgI);
+
+}
+
+}
 
     auto *ClonedFunc = CloneFunction(F, VMap);
     // In order to preserve function order, we move Clone after old Function
@@ -106,14 +134,18 @@ static int countArguments(Module *Program) {
   outs() << "----------------------------\n";
   outs() << "Param Index Reference:\n";
   int ArgsCount = 0;
-  for (auto &F : *Program)
+  for (auto &F : *Program) {
     if (!F.isDeclaration() && F.arg_size()) {
       outs() << "  " << F.getName() << "\n";
-      for (auto &A : F.args())
+      for (auto &A : F.args()) {
         outs() << "\t" << ++ArgsCount << ": " << A.getName() << "\n";
+
+}
 
       outs() << "----------------------------\n";
     }
+
+}
 
   return ArgsCount;
 }

@@ -76,8 +76,10 @@ bool runCommandsInFile(const char *ExeName, std::string const &FileName,
   StringRef FileContentRef(FileContent);
   while (!FileContentRef.empty()) {
     QueryRef Q = QueryParser::parse(FileContentRef, QS);
-    if (!Q->run(llvm::outs(), QS))
+    if (!Q->run(llvm::outs(), QS)) {
       return true;
+
+}
     FileContentRef = Q->RemainingContent;
   }
   return false;
@@ -121,18 +123,24 @@ int main(int argc, const char **argv) {
   if (!Commands.empty()) {
     for (auto I = Commands.begin(), E = Commands.end(); I != E; ++I) {
       QueryRef Q = QueryParser::parse(*I, QS);
-      if (!Q->run(llvm::outs(), QS))
+      if (!Q->run(llvm::outs(), QS)) {
         return 1;
+
+}
     }
   } else if (!CommandFiles.empty()) {
     for (auto I = CommandFiles.begin(), E = CommandFiles.end(); I != E; ++I) {
-      if (runCommandsInFile(argv[0], *I, QS))
+      if (runCommandsInFile(argv[0], *I, QS)) {
         return 1;
+
+}
     }
   } else {
     if (!PreloadFile.empty()) {
-      if (runCommandsInFile(argv[0], PreloadFile, QS))
+      if (runCommandsInFile(argv[0], PreloadFile, QS)) {
         return 1;
+
+}
     }
     LineEditor LE("clang-query");
     LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
@@ -142,8 +150,10 @@ int main(int argc, const char **argv) {
       QueryRef Q = QueryParser::parse(*Line, QS);
       Q->run(llvm::outs(), QS);
       llvm::outs().flush();
-      if (QS.Terminate)
+      if (QS.Terminate) {
         break;
+
+}
     }
   }
 

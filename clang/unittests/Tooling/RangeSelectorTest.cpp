@@ -57,8 +57,10 @@ template <typename M> TestMatch matchCode(StringRef Code, M Matcher) {
 // Applies \p Selector to \p Match and, on success, returns the selected source.
 Expected<StringRef> select(RangeSelector Selector, const TestMatch &Match) {
   Expected<CharSourceRange> Range = Selector(Match.Result);
-  if (!Range)
+  if (!Range) {
     return Range.takeError();
+
+}
   return tooling::getText(*Range, *Match.Result.Context);
 }
 

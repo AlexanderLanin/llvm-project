@@ -64,8 +64,10 @@ void WriteState::onInstructionIssued(unsigned IID) {
   }
 
   // Notify any writes that are in a false dependency with this write.
-  if (PartialWrite)
+  if (PartialWrite) {
     PartialWrite->writeStartEvent(IID, RegisterID, CyclesLeft);
+
+}
 }
 
 void WriteState::addUser(unsigned IID, ReadState *User, int ReadAdvance) {
@@ -96,11 +98,15 @@ void WriteState::cycleEvent() {
   // Note: CyclesLeft can be a negative number. It is an error to
   // make it an unsigned quantity because users of this write may
   // specify a negative ReadAdvance.
-  if (CyclesLeft != UNKNOWN_CYCLES)
+  if (CyclesLeft != UNKNOWN_CYCLES) {
     CyclesLeft--;
 
-  if (DependentWriteCyclesLeft)
+}
+
+  if (DependentWriteCyclesLeft) {
     DependentWriteCyclesLeft--;
+
+}
 }
 
 void ReadState::cycleEvent() {
@@ -111,8 +117,10 @@ void ReadState::cycleEvent() {
   }
 
   // Bail out immediately if we don't know how many cycles are left.
-  if (CyclesLeft == UNKNOWN_CYCLES)
+  if (CyclesLeft == UNKNOWN_CYCLES) {
     return;
+
+}
 
   if (CyclesLeft) {
     --CyclesLeft;
@@ -136,20 +144,26 @@ void WriteRef::dump() const {
 #endif
 
 const CriticalDependency &Instruction::computeCriticalRegDep() {
-  if (CriticalRegDep.Cycles)
+  if (CriticalRegDep.Cycles) {
     return CriticalRegDep;
+
+}
 
   unsigned MaxLatency = 0;
   for (const WriteState &WS : getDefs()) {
     const CriticalDependency &WriteCRD = WS.getCriticalRegDep();
-    if (WriteCRD.Cycles > MaxLatency)
+    if (WriteCRD.Cycles > MaxLatency) {
       CriticalRegDep = WriteCRD;
+
+}
   }
 
   for (const ReadState &RS : getUses()) {
     const CriticalDependency &ReadCRD = RS.getCriticalRegDep();
-    if (ReadCRD.Cycles > MaxLatency)
+    if (ReadCRD.Cycles > MaxLatency) {
       CriticalRegDep = ReadCRD;
+
+}
   }
 
   return CriticalRegDep;
@@ -161,8 +175,10 @@ void Instruction::dispatch(unsigned RCUToken) {
   RCUTokenID = RCUToken;
 
   // Check if input operands are already available.
-  if (updateDispatched())
+  if (updateDispatched()) {
     updatePending();
+
+}
 }
 
 void Instruction::execute(unsigned IID) {
@@ -172,12 +188,16 @@ void Instruction::execute(unsigned IID) {
   // Set the cycles left before the write-back stage.
   CyclesLeft = getLatency();
 
-  for (WriteState &WS : getDefs())
+  for (WriteState &WS : getDefs()) {
     WS.onInstructionIssued(IID);
 
+}
+
   // Transition to the "executed" stage if this is a zero-latency instruction.
-  if (!CyclesLeft)
+  if (!CyclesLeft) {
     Stage = IS_EXECUTED;
+
+}
 }
 
 void Instruction::forceExecuted() {
@@ -189,12 +209,16 @@ void Instruction::forceExecuted() {
 bool Instruction::updatePending() {
   assert(isPending() && "Unexpected instruction stage found!");
 
-  if (!all_of(getUses(), [](const ReadState &Use) { return Use.isReady(); }))
+  if (!all_of(getUses(), [](const ReadState &Use) { return Use.isReady(); })) {
     return false;
 
+}
+
   // A partial register write cannot complete before a dependent write.
-  if (!all_of(getDefs(), [](const WriteState &Def) { return Def.isReady(); }))
+  if (!all_of(getDefs(), [](const WriteState &Def) { return Def.isReady(); })) {
     return false;
+
+}
 
   Stage = IS_READY;
   return true;
@@ -205,35 +229,49 @@ bool Instruction::updateDispatched() {
 
   if (!all_of(getUses(), [](const ReadState &Use) {
         return Use.isPending() || Use.isReady();
-      }))
+      })) {
     return false;
+
+}
 
   // A partial register write cannot complete before a dependent write.
   if (!all_of(getDefs(),
-              [](const WriteState &Def) { return !Def.getDependentWrite(); }))
+              [](const WriteState &Def) { return !Def.getDependentWrite(); })) {
     return false;
+
+}
 
   Stage = IS_PENDING;
   return true;
 }
 
 void Instruction::update() {
-  if (isDispatched())
+  if (isDispatched()) {
     updateDispatched();
-  if (isPending())
+
+}
+  if (isPending()) {
     updatePending();
+
+}
 }
 
 void Instruction::cycleEvent() {
-  if (isReady())
+  if (isReady()) {
     return;
 
+}
+
   if (isDispatched() || isPending()) {
-    for (ReadState &Use : getUses())
+    for (ReadState &Use : getUses()) {
       Use.cycleEvent();
 
-    for (WriteState &Def : getDefs())
+}
+
+    for (WriteState &Def : getDefs()) {
       Def.cycleEvent();
+
+}
 
     update();
     return;
@@ -241,11 +279,15 @@ void Instruction::cycleEvent() {
 
   assert(isExecuting() && "Instruction not in-flight?");
   assert(CyclesLeft && "Instruction already executed?");
-  for (WriteState &Def : getDefs())
+  for (WriteState &Def : getDefs()) {
     Def.cycleEvent();
+
+}
   CyclesLeft--;
-  if (!CyclesLeft)
+  if (!CyclesLeft) {
     Stage = IS_EXECUTED;
+
+}
 }
 
 const unsigned WriteRef::INVALID_IID = std::numeric_limits<unsigned>::max();

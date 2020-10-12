@@ -42,8 +42,10 @@ void ModelInjector::onBodySynthesis(const NamedDecl *D) {
 
   // FIXME: what about overloads? Declarations can be used as keys but what
   // about file name index? Mangled names may not be suitable for that either.
-  if (Bodies.count(D->getName()) != 0)
+  if (Bodies.count(D->getName()) != 0) {
     return;
+
+}
 
   SourceManager &SM = CI.getSourceManager();
   FileID mainFileID = SM.getMainFileID();
@@ -53,11 +55,13 @@ void ModelInjector::onBodySynthesis(const NamedDecl *D) {
 
   llvm::SmallString<128> fileName;
 
-  if (!modelPath.empty())
+  if (!modelPath.empty()) {
     fileName =
         llvm::StringRef(modelPath.str() + "/" + D->getName().str() + ".model");
-  else
+  } else {
     fileName = llvm::StringRef(D->getName().str() + ".model");
+
+}
 
   if (!llvm::sys::fs::exists(fileName.str())) {
     Bodies[D->getName()] = nullptr;

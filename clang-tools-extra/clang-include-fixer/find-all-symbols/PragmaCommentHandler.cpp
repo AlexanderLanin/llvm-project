@@ -23,8 +23,10 @@ bool PragmaCommentHandler::HandleComment(Preprocessor &PP, SourceRange Range) {
       Lexer::getSourceText(CharSourceRange::getCharRange(Range),
                            PP.getSourceManager(), PP.getLangOpts());
   size_t Pos = Text.find(IWYUPragma);
-  if (Pos == StringRef::npos)
+  if (Pos == StringRef::npos) {
     return false;
+
+}
   StringRef RemappingFilePath = Text.substr(Pos + std::strlen(IWYUPragma));
   Collector->addHeaderMapping(
       PP.getSourceManager().getFilename(Range.getBegin()),

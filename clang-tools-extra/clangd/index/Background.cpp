@@ -178,8 +178,10 @@ BackgroundQueue::Task BackgroundIndex::changedFilesTask(
                  std::mt19937(std::random_device{}()));
     std::vector<BackgroundQueue::Task> Tasks;
     Tasks.reserve(NeedsReIndexing.size());
-    for (auto &Cmd : NeedsReIndexing)
+    for (auto &Cmd : NeedsReIndexing) {
       Tasks.push_back(indexFileTask(std::move(Cmd)));
+
+}
     Queue.append(std::move(Tasks));
   });
 
@@ -199,8 +201,10 @@ BackgroundIndex::indexFileTask(tooling::CompileCommand Cmd) {
     // We can't use llvm::StringRef here since we are going to
     // move from Cmd during the call below.
     const std::string FileName = Cmd.Filename;
-    if (auto Error = index(std::move(Cmd)))
+    if (auto Error = index(std::move(Cmd))) {
       elog("Indexing {0} failed: {1}", FileName, std::move(Error));
+
+}
   });
   T.QueuePri = IndexFile;
   T.Tag = std::string(filenameWithoutExtension(Cmd.Filename));
@@ -208,8 +212,10 @@ BackgroundIndex::indexFileTask(tooling::CompileCommand Cmd) {
 }
 
 void BackgroundIndex::boostRelated(llvm::StringRef Path) {
-  if (isHeaderFile(Path))
+  if (isHeaderFile(Path)) {
     Queue.boost(filenameWithoutExtension(Path), IndexBoostedFile);
+
+}
 }
 
 /// Given index results from a TU, only update symbols coming from files that
@@ -237,8 +243,10 @@ void BackgroundIndex::update(
     // File has different contents, or indexing was successfull this time.
     if (DigestIt == ShardVersionsSnapshot.end() ||
         DigestIt->getValue().Digest != IGN.Digest ||
-        (DigestIt->getValue().HadErrors && !HadErrors))
+        (DigestIt->getValue().HadErrors && !HadErrors)) {
       Files.try_emplace(AbsPath).first->getValue().Digest = IGN.Digest;
+
+}
   }
   // This map is used to figure out where to store relations.
   llvm::DenseMap<SymbolID, File *> SymbolIDToFile;
@@ -259,8 +267,10 @@ void BackgroundIndex::update(
         Sym.Definition.FileURI != Sym.CanonicalDeclaration.FileURI) {
       auto DefPath = URICache.resolve(Sym.Definition.FileURI);
       const auto FileIt = Files.find(DefPath);
-      if (FileIt != Files.end())
+      if (FileIt != Files.end()) {
         FileIt->second.Symbols.insert(&Sym);
+
+}
     }
   }
   llvm::DenseMap<const Ref *, SymbolID> RefToIDs;
@@ -277,8 +287,10 @@ void BackgroundIndex::update(
   }
   for (const auto &Rel : *Index.Relations) {
     const auto FileIt = SymbolIDToFile.find(Rel.Subject);
-    if (FileIt != SymbolIDToFile.end())
+    if (FileIt != SymbolIDToFile.end()) {
       FileIt->second->Relations.insert(&Rel);
+
+}
   }
 
   // Build and store new slabs for each updated file.
@@ -287,12 +299,18 @@ void BackgroundIndex::update(
     SymbolSlab::Builder Syms;
     RefSlab::Builder Refs;
     RelationSlab::Builder Relations;
-    for (const auto *S : FileIt.second.Symbols)
+    for (const auto *S : FileIt.second.Symbols) {
       Syms.insert(*S);
-    for (const auto *R : FileIt.second.Refs)
+
+}
+    for (const auto *R : FileIt.second.Refs) {
       Refs.insert(RefToIDs[R], *R);
-    for (const auto *Rel : FileIt.second.Relations)
+
+}
+    for (const auto *Rel : FileIt.second.Relations) {
       Relations.insert(*Rel);
+
+}
     auto SS = std::make_unique<SymbolSlab>(std::move(Syms).build());
     auto RS = std::make_unique<RefSlab>(std::move(Refs).build());
     auto RelS = std::make_unique<RelationSlab>(std::move(Relations).build());
@@ -311,12 +329,16 @@ void BackgroundIndex::update(
 
     // Only store command line hash for main files of the TU, since our
     // current model keeps only one version of a header file.
-    if (Path == MainFile)
+    if (Path == MainFile) {
       Shard.Cmd = Index.Cmd.getPointer();
 
-    if (auto Error = IndexStorage->storeShard(Path, Shard))
+}
+
+    if (auto Error = IndexStorage->storeShard(Path, Shard)) {
       elog("Failed to write background-index shard for file {0}: {1}", Path,
            std::move(Error));
+
+}
 
     {
       std::lock_guard<std::mutex> Lock(ShardVersionsMu);
@@ -325,8 +347,10 @@ void BackgroundIndex::update(
       ShardVersion &SV = DigestIt.first->second;
       // Skip if file is already up to date, unless previous index was broken
       // and this one is not.
-      if (!DigestIt.second && SV.Digest == Hash && SV.HadErrors && !HadErrors)
+      if (!DigestIt.second && SV.Digest == Hash && SV.HadErrors && !HadErrors) {
         continue;
+
+}
       SV.Digest = Hash;
       SV.HadErrors = HadErrors;
 
@@ -346,8 +370,10 @@ llvm::Error BackgroundIndex::index(tooling::CompileCommand Cmd) {
 
   auto FS = FSProvider.getFileSystem();
   auto Buf = FS->getBufferForFile(AbsolutePath);
-  if (!Buf)
+  if (!Buf) {
     return llvm::errorCodeToError(Buf.getError());
+
+}
   auto Hash = digest(Buf->get()->getBuffer());
 
   // Take a snapshot of the versions to avoid locking for each file in the TU.
@@ -364,14 +390,18 @@ llvm::Error BackgroundIndex::index(tooling::CompileCommand Cmd) {
   Inputs.CompileCommand = std::move(Cmd);
   IgnoreDiagnostics IgnoreDiags;
   auto CI = buildCompilerInvocation(Inputs, IgnoreDiags);
-  if (!CI)
+  if (!CI) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "Couldn't build compiler invocation");
+
+}
   auto Clang = prepareCompilerInstance(std::move(CI), /*Preamble=*/nullptr,
                                        std::move(*Buf), Inputs.FS, IgnoreDiags);
-  if (!Clang)
+  if (!Clang) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "Couldn't build compiler instance");
+
+}
 
   SymbolCollector::Options IndexOpts;
   // Creates a filter to not collect index results from files with unchanged
@@ -379,18 +409,26 @@ llvm::Error BackgroundIndex::index(tooling::CompileCommand Cmd) {
   IndexOpts.FileFilter = [&ShardVersionsSnapshot](const SourceManager &SM,
                                                   FileID FID) {
     const auto *F = SM.getFileEntryForID(FID);
-    if (!F)
+    if (!F) {
       return false; // Skip invalid files.
+
+}
     auto AbsPath = getCanonicalPath(F, SM);
-    if (!AbsPath)
+    if (!AbsPath) {
       return false; // Skip files without absolute path.
+
+}
     auto Digest = digestFile(SM, FID);
-    if (!Digest)
+    if (!Digest) {
       return false;
+
+}
     auto D = ShardVersionsSnapshot.find(*AbsPath);
     if (D != ShardVersionsSnapshot.end() && D->second.Digest == Digest &&
-        !D->second.HadErrors)
+        !D->second.HadErrors) {
       return false; // Skip files that haven't changed, without errors.
+
+}
     return true;
   };
 
@@ -407,11 +445,15 @@ llvm::Error BackgroundIndex::index(tooling::CompileCommand Cmd) {
   // If crashes are a real problem, maybe we should fork a child process.
 
   const FrontendInputFile &Input = Clang->getFrontendOpts().Inputs.front();
-  if (!Action->BeginSourceFile(*Clang, Input))
+  if (!Action->BeginSourceFile(*Clang, Input)) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "BeginSourceFile() failed");
-  if (llvm::Error Err = Action->Execute())
+
+}
+  if (llvm::Error Err = Action->Execute()) {
     return Err;
+
+}
 
   Action->EndSourceFile();
 
@@ -430,8 +472,10 @@ llvm::Error BackgroundIndex::index(tooling::CompileCommand Cmd) {
                    Clang->getDiagnostics().hasUncompilableErrorOccurred();
   if (HadErrors) {
     log("Failed to compile {0}, index may be incomplete", AbsolutePath);
-    for (auto &It : *Index.Sources)
+    for (auto &It : *Index.Sources) {
       It.second.Flags |= IncludeGraphNode::SourceFlag::HadErrors;
+
+}
   }
   update(AbsolutePath, std::move(Index), ShardVersionsSnapshot, HadErrors);
 
@@ -455,8 +499,10 @@ BackgroundIndex::loadProject(std::vector<std::string> MainFiles) {
     // Update in-memory state.
     std::lock_guard<std::mutex> Lock(ShardVersionsMu);
     for (auto &LS : Result) {
-      if (!LS.Shard)
+      if (!LS.Shard) {
         continue;
+
+}
       auto SS =
           LS.Shard->Symbols
               ? std::make_unique<SymbolSlab>(std::move(*LS.Shard->Symbols))
@@ -485,8 +531,10 @@ BackgroundIndex::loadProject(std::vector<std::string> MainFiles) {
   // We'll accept data from stale shards, but ensure the files get reindexed
   // soon.
   for (auto &LS : Result) {
-    if (!shardIsStale(LS, FS.get()))
+    if (!shardIsStale(LS, FS.get())) {
       continue;
+
+}
     PathRef TUForFile = LS.DependentTU;
     assert(!TUForFile.empty() && "File without a TU!");
 
@@ -500,8 +548,10 @@ BackgroundIndex::loadProject(std::vector<std::string> MainFiles) {
 
   for (PathRef TU : TUsToIndex) {
     auto Cmd = CDB.getCompileCommand(TU);
-    if (!Cmd)
+    if (!Cmd) {
       continue;
+
+}
     NeedsReIndexing.emplace_back(std::move(*Cmd));
   }
 

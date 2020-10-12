@@ -147,8 +147,10 @@ public:
       : LangOpts(nullptr), OriginalInstance(true),
         MergeChildRecords(MergeChildRecords),
         State(std::make_shared<SharedState>(File, Diags)) {
-    if (MergeChildRecords)
+    if (MergeChildRecords) {
       RemoveOldDiagnostics();
+
+}
     EmitPreamble();
   }
 
@@ -316,13 +318,17 @@ static void EmitBlockID(unsigned ID, const char *Name,
   Stream.EmitRecord(llvm::bitc::BLOCKINFO_CODE_SETBID, Record);
 
   // Emit the block name if present.
-  if (!Name || Name[0] == 0)
+  if (!Name || Name[0] == 0) {
     return;
+
+}
 
   Record.clear();
 
-  while (*Name)
+  while (*Name) {
     Record.push_back(*Name++);
+
+}
 
   Stream.EmitRecord(llvm::bitc::BLOCKINFO_CODE_BLOCKNAME, Record);
 }
@@ -334,8 +340,10 @@ static void EmitRecordID(unsigned ID, const char *Name,
   Record.clear();
   Record.push_back(ID);
 
-  while (*Name)
+  while (*Name) {
     Record.push_back(*Name++);
+
+}
 
   Stream.EmitRecord(llvm::bitc::BLOCKINFO_CODE_SETRECORDNAME, Record);
 }
@@ -362,20 +370,26 @@ void SDiagsWriter::AddCharSourceRangeToRecord(CharSourceRange Range,
                                               const SourceManager &SM) {
   AddLocToRecord(FullSourceLoc(Range.getBegin(), SM), Record);
   unsigned TokSize = 0;
-  if (Range.isTokenRange())
+  if (Range.isTokenRange()) {
     TokSize = Lexer::MeasureTokenLength(Range.getEnd(),
                                         SM, *LangOpts);
+
+}
 
   AddLocToRecord(FullSourceLoc(Range.getEnd(), SM), Record, TokSize);
 }
 
 unsigned SDiagsWriter::getEmitFile(const char *FileName){
-  if (!FileName)
+  if (!FileName) {
     return 0;
 
+}
+
   unsigned &entry = State->Files[FileName];
-  if (entry)
+  if (entry) {
     return entry;
+
+}
 
   // Lazily generate the record for the file.
   entry = State->Files.size();
@@ -522,8 +536,10 @@ void SDiagsWriter::EmitMetaBlock() {
 }
 
 unsigned SDiagsWriter::getEmitCategory(unsigned int category) {
-  if (!State->Categories.insert(category).second)
+  if (!State->Categories.insert(category).second) {
     return category;
+
+}
 
   // We use a local version of 'Record' so that we can be generating
   // another record when we lazily generate one for the category entry.
@@ -537,16 +553,20 @@ unsigned SDiagsWriter::getEmitCategory(unsigned int category) {
 
 unsigned SDiagsWriter::getEmitDiagnosticFlag(DiagnosticsEngine::Level DiagLevel,
                                              unsigned DiagID) {
-  if (DiagLevel == DiagnosticsEngine::Note)
+  if (DiagLevel == DiagnosticsEngine::Note) {
     return 0; // No flag for notes.
+
+}
 
   StringRef FlagName = DiagnosticIDs::getWarningOptionForDiag(DiagID);
   return getEmitDiagnosticFlag(FlagName);
 }
 
 unsigned SDiagsWriter::getEmitDiagnosticFlag(StringRef FlagName) {
-  if (FlagName.empty())
+  if (FlagName.empty()) {
     return 0;
+
+}
 
   // Here we assume that FlagName points to static data whose pointer
   // value is fixed.  This allows us to unique by diagnostic groups.
@@ -572,8 +592,10 @@ void SDiagsWriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
   // for beginDiagnostic, in case associated notes are emitted before we get
   // there.
   if (DiagLevel != DiagnosticsEngine::Note) {
-    if (State->EmittedAnyDiagBlocks)
+    if (State->EmittedAnyDiagBlocks) {
       ExitDiagBlock();
+
+}
 
     EnterDiagBlock();
     State->EmittedAnyDiagBlocks = true;
@@ -590,14 +612,18 @@ void SDiagsWriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
 
     // Make sure we bracket all notes as "sub-diagnostics".  This matches
     // the behavior in SDiagsRenderer::emitDiagnostic().
-    if (DiagLevel == DiagnosticsEngine::Note)
+    if (DiagLevel == DiagnosticsEngine::Note) {
       EnterDiagBlock();
+
+}
 
     EmitDiagnosticMessage(FullSourceLoc(), PresumedLoc(), DiagLevel,
                           State->diagBuf, &Info);
 
-    if (DiagLevel == DiagnosticsEngine::Note)
+    if (DiagLevel == DiagnosticsEngine::Note) {
       ExitDiagBlock();
+
+}
 
     return;
   }
@@ -671,16 +697,20 @@ void SDiagsWriter::ExitDiagBlock() {
 
 void SDiagsRenderer::beginDiagnostic(DiagOrStoredDiag D,
                                      DiagnosticsEngine::Level Level) {
-  if (Level == DiagnosticsEngine::Note)
+  if (Level == DiagnosticsEngine::Note) {
     Writer.EnterDiagBlock();
+
+}
 }
 
 void SDiagsRenderer::endDiagnostic(DiagOrStoredDiag D,
                                    DiagnosticsEngine::Level Level) {
   // Only end note diagnostics here, because we can't be sure when we've seen
   // the last note associated with a non-note diagnostic.
-  if (Level == DiagnosticsEngine::Note)
+  if (Level == DiagnosticsEngine::Note) {
     Writer.ExitDiagBlock();
+
+}
 }
 
 void SDiagsWriter::EmitCodeContext(SmallVectorImpl<CharSourceRange> &Ranges,
@@ -692,16 +722,22 @@ void SDiagsWriter::EmitCodeContext(SmallVectorImpl<CharSourceRange> &Ranges,
 
   // Emit Source Ranges.
   for (ArrayRef<CharSourceRange>::iterator I = Ranges.begin(), E = Ranges.end();
-       I != E; ++I)
-    if (I->isValid())
+       I != E; ++I) {
+    if (I->isValid()) {
       EmitCharSourceRange(*I, SM);
+
+}
+
+}
 
   // Emit FixIts.
   for (ArrayRef<FixItHint>::iterator I = Hints.begin(), E = Hints.end();
        I != E; ++I) {
     const FixItHint &Fix = *I;
-    if (Fix.isNull())
+    if (Fix.isNull()) {
       continue;
+
+}
     Record.clear();
     Record.push_back(RECORD_FIXIT);
     AddCharSourceRangeToRecord(Fix.RemoveRange, Record, SM);
@@ -751,8 +787,10 @@ DiagnosticsEngine *SDiagsWriter::getMetaDiags() {
 }
 
 void SDiagsWriter::RemoveOldDiagnostics() {
-  if (!llvm::sys::fs::remove(State->OutputFile))
+  if (!llvm::sys::fs::remove(State->OutputFile)) {
     return;
+
+}
 
   getMetaDiags()->Report(diag::warn_fe_serialized_diag_merge_failure);
   // Disable merging child records, as whatever is in this file may be
@@ -762,22 +800,32 @@ void SDiagsWriter::RemoveOldDiagnostics() {
 
 void SDiagsWriter::finish() {
   // The original instance is responsible for writing the file.
-  if (!OriginalInstance)
+  if (!OriginalInstance) {
     return;
 
+}
+
   // Finish off any diagnostic we were in the process of emitting.
-  if (State->EmittedAnyDiagBlocks)
+  if (State->EmittedAnyDiagBlocks) {
     ExitDiagBlock();
 
+}
+
   if (MergeChildRecords) {
-    if (!State->EmittedAnyDiagBlocks)
+    if (!State->EmittedAnyDiagBlocks) {
       // We have no diagnostics of our own, so we can just leave the child
       // process' output alone
       return;
 
-    if (llvm::sys::fs::exists(State->OutputFile))
-      if (SDiagsMerger(*this).mergeRecordsFromFile(State->OutputFile.c_str()))
+}
+
+    if (llvm::sys::fs::exists(State->OutputFile)) {
+      if (SDiagsMerger(*this).mergeRecordsFromFile(State->OutputFile.c_str())) {
         getMetaDiags()->Report(diag::warn_fe_serialized_diag_merge_failure);
+
+}
+
+}
   }
 
   std::error_code EC;

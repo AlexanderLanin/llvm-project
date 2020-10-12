@@ -68,9 +68,13 @@ void ExpandPostRA::TransferImplicitOperands(MachineInstr *MI) {
   MachineBasicBlock::iterator CopyMI = MI;
   --CopyMI;
 
-  for (const MachineOperand &MO : MI->implicit_operands())
-    if (MO.isReg())
+  for (const MachineOperand &MO : MI->implicit_operands()) {
+    if (MO.isReg()) {
       CopyMI->addOperand(MO);
+
+}
+
+}
 }
 
 bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
@@ -166,8 +170,10 @@ bool ExpandPostRA::LowerCopy(MachineInstr *MI) {
   TII->copyPhysReg(*MI->getParent(), MI, MI->getDebugLoc(),
                    DstMO.getReg(), SrcMO.getReg(), SrcMO.isKill());
 
-  if (MI->getNumOperands() > 2)
+  if (MI->getNumOperands() > 2) {
     TransferImplicitOperands(MI);
+
+}
   LLVM_DEBUG({
     MachineBasicBlock::iterator dMI = MI;
     dbgs() << "replaced by: " << *(--dMI);
@@ -197,8 +203,10 @@ bool ExpandPostRA::runOnMachineFunction(MachineFunction &MF) {
       ++mi;
 
       // Only expand pseudos.
-      if (!MI.isPseudo())
+      if (!MI.isPseudo()) {
         continue;
+
+}
 
       // Give targets a chance to expand even standard pseudos.
       if (TII->expandPostRAPseudo(MI)) {

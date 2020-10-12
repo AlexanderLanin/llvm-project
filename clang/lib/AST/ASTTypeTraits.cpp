@@ -49,14 +49,18 @@ bool ASTNodeKind::isBaseOf(ASTNodeKind Other, unsigned *Distance) const {
 
 bool ASTNodeKind::isBaseOf(NodeKindId Base, NodeKindId Derived,
                            unsigned *Distance) {
-  if (Base == NKI_None || Derived == NKI_None) return false;
+  if (Base == NKI_None || Derived == NKI_None) { return false;
+
+}
   unsigned Dist = 0;
   while (Derived != Base && Derived != NKI_None) {
     Derived = AllKindInfo[Derived].ParentId;
     ++Dist;
   }
-  if (Distance)
+  if (Distance) {
     *Distance = Dist;
+
+}
   return Derived == Base;
 }
 
@@ -64,8 +68,12 @@ StringRef ASTNodeKind::asStringRef() const { return AllKindInfo[KindId].Name; }
 
 ASTNodeKind ASTNodeKind::getMostDerivedType(ASTNodeKind Kind1,
                                             ASTNodeKind Kind2) {
-  if (Kind1.isBaseOf(Kind2)) return Kind2;
-  if (Kind2.isBaseOf(Kind1)) return Kind1;
+  if (Kind1.isBaseOf(Kind2)) { return Kind2;
+
+}
+  if (Kind2.isBaseOf(Kind1)) { return Kind1;
+
+}
   return ASTNodeKind();
 }
 
@@ -126,54 +134,72 @@ ASTNodeKind ASTNodeKind::getFromNode(const OMPClause &C) {
 
 void DynTypedNode::print(llvm::raw_ostream &OS,
                          const PrintingPolicy &PP) const {
-  if (const TemplateArgument *TA = get<TemplateArgument>())
+  if (const TemplateArgument *TA = get<TemplateArgument>()) {
     TA->print(PP, OS);
-  else if (const TemplateName *TN = get<TemplateName>())
+  } else if (const TemplateName *TN = get<TemplateName>()) {
     TN->print(OS, PP);
-  else if (const NestedNameSpecifier *NNS = get<NestedNameSpecifier>())
+  } else if (const NestedNameSpecifier *NNS = get<NestedNameSpecifier>()) {
     NNS->print(OS, PP);
-  else if (const NestedNameSpecifierLoc *NNSL = get<NestedNameSpecifierLoc>()) {
-    if (const NestedNameSpecifier *NNS = NNSL->getNestedNameSpecifier())
+  } else if (const NestedNameSpecifierLoc *NNSL = get<NestedNameSpecifierLoc>()) {
+    if (const NestedNameSpecifier *NNS = NNSL->getNestedNameSpecifier()) {
       NNS->print(OS, PP);
-    else
+    } else {
       OS << "(empty NestedNameSpecifierLoc)";
-  } else if (const QualType *QT = get<QualType>())
+
+}
+  } else if (const QualType *QT = get<QualType>()) {
     QT->print(OS, PP);
-  else if (const TypeLoc *TL = get<TypeLoc>())
+  } else if (const TypeLoc *TL = get<TypeLoc>()) {
     TL->getType().print(OS, PP);
-  else if (const Decl *D = get<Decl>())
+  } else if (const Decl *D = get<Decl>()) {
     D->print(OS, PP);
-  else if (const Stmt *S = get<Stmt>())
+  } else if (const Stmt *S = get<Stmt>()) {
     S->printPretty(OS, nullptr, PP);
-  else if (const Type *T = get<Type>())
+  } else if (const Type *T = get<Type>()) {
     QualType(T, 0).print(OS, PP);
-  else
+  } else {
     OS << "Unable to print values of type " << NodeKind.asStringRef() << "\n";
+
+}
 }
 
 void DynTypedNode::dump(llvm::raw_ostream &OS, SourceManager &SM) const {
-  if (const Decl *D = get<Decl>())
+  if (const Decl *D = get<Decl>()) {
     D->dump(OS);
-  else if (const Stmt *S = get<Stmt>())
+  } else if (const Stmt *S = get<Stmt>()) {
     S->dump(OS, SM);
-  else if (const Type *T = get<Type>())
+  } else if (const Type *T = get<Type>()) {
     T->dump(OS);
-  else
+  } else {
     OS << "Unable to dump values of type " << NodeKind.asStringRef() << "\n";
+
+}
 }
 
 SourceRange DynTypedNode::getSourceRange() const {
-  if (const CXXCtorInitializer *CCI = get<CXXCtorInitializer>())
+  if (const CXXCtorInitializer *CCI = get<CXXCtorInitializer>()) {
     return CCI->getSourceRange();
-  if (const NestedNameSpecifierLoc *NNSL = get<NestedNameSpecifierLoc>())
+
+}
+  if (const NestedNameSpecifierLoc *NNSL = get<NestedNameSpecifierLoc>()) {
     return NNSL->getSourceRange();
-  if (const TypeLoc *TL = get<TypeLoc>())
+
+}
+  if (const TypeLoc *TL = get<TypeLoc>()) {
     return TL->getSourceRange();
-  if (const Decl *D = get<Decl>())
+
+}
+  if (const Decl *D = get<Decl>()) {
     return D->getSourceRange();
-  if (const Stmt *S = get<Stmt>())
+
+}
+  if (const Stmt *S = get<Stmt>()) {
     return S->getSourceRange();
-  if (const auto *C = get<OMPClause>())
+
+}
+  if (const auto *C = get<OMPClause>()) {
     return SourceRange(C->getBeginLoc(), C->getEndLoc());
+
+}
   return SourceRange();
 }

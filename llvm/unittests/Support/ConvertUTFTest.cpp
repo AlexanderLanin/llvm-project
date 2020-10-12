@@ -45,8 +45,10 @@ TEST(ConvertUTFTest, ConvertUTF8ToUTF16String) {
   EXPECT_TRUE(Success);
   static const UTF16 Expected[] = {0x0CA0, 0x005f, 0x0CA0, 0};
   ASSERT_EQ(3u, Result.size());
-  for (int I = 0, E = 3; I != E; ++I)
+  for (int I = 0, E = 3; I != E; ++I) {
     EXPECT_EQ(Expected[I], Result[I]);
+
+}
 }
 
 TEST(ConvertUTFTest, OddLengthInput) {
@@ -126,22 +128,38 @@ struct ConvertUTFResultContainer {
               unsigned US4 = 0x110000, unsigned US5 = 0x110000,
               unsigned US6 = 0x110000, unsigned US7 = 0x110000) {
     ConvertUTFResultContainer Result(*this);
-    if (US0 != 0x110000)
+    if (US0 != 0x110000) {
       Result.UnicodeScalars.push_back(US0);
-    if (US1 != 0x110000)
+
+}
+    if (US1 != 0x110000) {
       Result.UnicodeScalars.push_back(US1);
-    if (US2 != 0x110000)
+
+}
+    if (US2 != 0x110000) {
       Result.UnicodeScalars.push_back(US2);
-    if (US3 != 0x110000)
+
+}
+    if (US3 != 0x110000) {
       Result.UnicodeScalars.push_back(US3);
-    if (US4 != 0x110000)
+
+}
+    if (US4 != 0x110000) {
       Result.UnicodeScalars.push_back(US4);
-    if (US5 != 0x110000)
+
+}
+    if (US5 != 0x110000) {
       Result.UnicodeScalars.push_back(US5);
-    if (US6 != 0x110000)
+
+}
+    if (US6 != 0x110000) {
       Result.UnicodeScalars.push_back(US6);
-    if (US7 != 0x110000)
+
+}
+    if (US7 != 0x110000) {
       Result.UnicodeScalars.push_back(US7);
+
+}
     return Result;
   }
 };
@@ -185,21 +203,27 @@ CheckConvertUTF8ToUnicodeScalars(ConvertUTFResultContainer Expected,
                                  StringRef S, bool Partial = false) {
   ConversionResult ErrorCode;
   std::vector<unsigned> Decoded;
-  if (!Partial)
+  if (!Partial) {
     std::tie(ErrorCode, Decoded) = ConvertUTF8ToUnicodeScalarsLenient(S);
-  else
+  } else {
     std::tie(ErrorCode, Decoded) = ConvertUTF8ToUnicodeScalarsPartialLenient(S);
 
-  if (Expected.ErrorCode != ErrorCode)
+}
+
+  if (Expected.ErrorCode != ErrorCode) {
     return ::testing::AssertionFailure() << "Expected error code "
                                          << Expected.ErrorCode << ", actual "
                                          << ErrorCode;
 
-  if (Expected.UnicodeScalars != Decoded)
+}
+
+  if (Expected.UnicodeScalars != Decoded) {
     return ::testing::AssertionFailure()
            << "Expected lenient decoded result:\n"
            << ::testing::PrintToString(Expected.UnicodeScalars) << "\n"
            << "Actual result:\n" << ::testing::PrintToString(Decoded);
+
+}
 
   return ::testing::AssertionSuccess();
 }

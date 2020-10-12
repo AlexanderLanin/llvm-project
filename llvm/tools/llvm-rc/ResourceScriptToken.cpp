@@ -32,11 +32,15 @@ using Kind = RCToken::Kind;
 // the return value is put back in Num.
 static bool rcGetAsInteger(StringRef Representation, uint32_t &Num) {
   size_t Length = Representation.size();
-  if (Length == 0)
+  if (Length == 0) {
     return false;
+
+}
   // Strip the last 'L' if unnecessary.
-  if (std::toupper(Representation.back()) == 'L')
+  if (std::toupper(Representation.back()) == 'L') {
     Representation = Representation.drop_back(1);
+
+}
 
   return !Representation.getAsInteger<uint32_t>(0, Num);
 }
@@ -148,8 +152,10 @@ void Tokenizer::skipCurrentLine() {
   Pos = Data.find_first_of("\r\n", Pos);
   Pos = Data.find_first_not_of("\r\n", Pos);
 
-  if (Pos == StringRef::npos)
+  if (Pos == StringRef::npos) {
     Pos = DataLength;
+
+}
 }
 
 Expected<std::vector<RCToken>> Tokenizer::run() {
@@ -157,24 +163,34 @@ Expected<std::vector<RCToken>> Tokenizer::run() {
   std::vector<RCToken> Result;
 
   // Consume an optional UTF-8 Byte Order Mark.
-  if (willNowRead("\xef\xbb\xbf"))
+  if (willNowRead("\xef\xbb\xbf")) {
     advance(3);
 
+}
+
   while (!streamEof()) {
-    if (!skipWhitespaces())
+    if (!skipWhitespaces()) {
       break;
 
+}
+
     Kind TokenKind = classifyCurrentToken();
-    if (TokenKind == Kind::Invalid)
+    if (TokenKind == Kind::Invalid) {
       return getStringError("Invalid token found at position " + Twine(Pos));
 
+}
+
     const size_t TokenStart = Pos;
-    if (Error TokenError = consumeToken(TokenKind))
+    if (Error TokenError = consumeToken(TokenKind)) {
       return std::move(TokenError);
 
+}
+
     // Comments are just deleted, don't bother saving them.
-    if (TokenKind == Kind::LineComment || TokenKind == Kind::StartComment)
+    if (TokenKind == Kind::LineComment || TokenKind == Kind::StartComment) {
       continue;
+
+}
 
     RCToken Token(TokenKind, Data.take_front(Pos).drop_front(TokenStart));
     if (TokenKind == Kind::Identifier) {
@@ -201,8 +217,10 @@ bool Tokenizer::advance(size_t Amount) {
 }
 
 bool Tokenizer::skipWhitespaces() {
-  while (!streamEof() && std::isspace(Data[Pos]))
+  while (!streamEof() && std::isspace(Data[Pos])) {
     advance();
+
+}
   return !streamEof();
 }
 
@@ -223,27 +241,35 @@ Error Tokenizer::consumeToken(const Kind TokenKind) {
   case Kind::StartComment: {
     advance(2);
     auto EndPos = Data.find("*/", Pos);
-    if (EndPos == StringRef::npos)
+    if (EndPos == StringRef::npos) {
       return getStringError(
           "Unclosed multi-line comment beginning at position " + Twine(Pos));
+
+}
     advance(EndPos - Pos);
     advance(2);
     return Error::success();
   }
   case Kind::Identifier:
-    while (!streamEof() && canContinueIdentifier())
+    while (!streamEof() && canContinueIdentifier()) {
       advance();
+
+}
     return Error::success();
 
   case Kind::Int:
-    while (!streamEof() && canContinueInt())
+    while (!streamEof() && canContinueInt()) {
       advance();
+
+}
     return Error::success();
 
   case Kind::String:
     // Consume the preceding 'L', if there is any.
-    if (std::toupper(Data[Pos]) == 'L')
+    if (std::toupper(Data[Pos]) == 'L') {
       advance();
+
+}
     // Consume the double-quote.
     advance();
 
@@ -256,8 +282,10 @@ Error Tokenizer::consumeToken(const Kind TokenKind) {
         advance();
         // However, if another '"' follows this double-quote, the string didn't
         // end and we just included '"' into the string.
-        if (!willNowRead("\""))
+        if (!willNowRead("\"")) {
           return Error::success();
+
+}
       } else if (Data[Pos] == '\n') {
         return getStringError("String literal not terminated in the line.");
       }
@@ -317,18 +345,28 @@ bool Tokenizer::canStartString() const {
 bool Tokenizer::streamEof() const { return Pos == DataLength; }
 
 Kind Tokenizer::classifyCurrentToken() const {
-  if (canStartBlockComment())
+  if (canStartBlockComment()) {
     return Kind::StartComment;
-  if (canStartLineComment())
+
+}
+  if (canStartLineComment()) {
     return Kind::LineComment;
 
-  if (canStartInt())
+}
+
+  if (canStartInt()) {
     return Kind::Int;
-  if (canStartString())
+
+}
+  if (canStartString()) {
     return Kind::String;
+
+}
   // BEGIN and END are at this point of lexing recognized as identifiers.
-  if (canStartIdentifier())
+  if (canStartIdentifier()) {
     return Kind::Identifier;
+
+}
 
   const char CurChar = Data[Pos];
 
@@ -349,10 +387,12 @@ void Tokenizer::processIdentifier(RCToken &Token) const {
   assert(Token.kind() == Kind::Identifier);
   StringRef Name = Token.value();
 
-  if (Name.equals_lower("begin"))
+  if (Name.equals_lower("begin")) {
     Token = RCToken(Kind::BlockBegin, Name);
-  else if (Name.equals_lower("end"))
+  } else if (Name.equals_lower("end")) {
     Token = RCToken(Kind::BlockEnd, Name);
+
+}
 }
 
 } // anonymous namespace

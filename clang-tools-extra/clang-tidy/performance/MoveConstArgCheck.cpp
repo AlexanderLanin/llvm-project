@@ -65,8 +65,10 @@ void MoveConstArgCheck::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getCharRange(CallMove->getSourceRange());
   CharSourceRange FileMoveRange =
       Lexer::makeFileCharRange(MoveRange, SM, getLangOpts());
-  if (!FileMoveRange.isValid())
+  if (!FileMoveRange.isValid()) {
     return;
+
+}
 
   bool IsConstArg = Arg->getType().isConstQualified();
   bool IsTriviallyCopyable =
@@ -77,17 +79,23 @@ void MoveConstArgCheck::check(const MatchFinder::MatchResult &Result) {
       // According to [expr.prim.lambda]p3, "whether the closure type is
       // trivially copyable" property can be changed by the implementation of
       // the language, so we shouldn't rely on it when issuing diagnostics.
-      if (R->isLambda())
+      if (R->isLambda()) {
         return;
+
+}
       // Don't warn when the type is not copyable.
       for (const auto *Ctor : R->ctors()) {
-        if (Ctor->isCopyConstructor() && Ctor->isDeleted())
+        if (Ctor->isCopyConstructor() && Ctor->isDeleted()) {
           return;
+
+}
       }
     }
 
-    if (!IsConstArg && IsTriviallyCopyable && !CheckTriviallyCopyableMove)
+    if (!IsConstArg && IsTriviallyCopyable && !CheckTriviallyCopyableMove) {
       return;
+
+}
 
     bool IsVariable = isa<DeclRefExpr>(Arg);
     const auto *Var =

@@ -29,13 +29,17 @@ void MPIChecker::checkDoubleNonblocking(const CallEvent &PreCallEvent,
   }
   const MemRegion *const MR =
       PreCallEvent.getArgSVal(PreCallEvent.getNumArgs() - 1).getAsRegion();
-  if (!MR)
+  if (!MR) {
     return;
+
+}
   const ElementRegion *const ER = dyn_cast<ElementRegion>(MR);
 
   // The region must be typed, in order to reason about it.
-  if (!isa<TypedRegion>(MR) || (ER && !isa<TypedRegion>(ER->getSuperRegion())))
+  if (!isa<TypedRegion>(MR) || (ER && !isa<TypedRegion>(ER->getSuperRegion()))) {
     return;
+
+}
 
   ProgramStateRef State = Ctx.getState();
   const Request *const Req = State->get<RequestMap>(MR);
@@ -56,21 +60,29 @@ void MPIChecker::checkDoubleNonblocking(const CallEvent &PreCallEvent,
 
 void MPIChecker::checkUnmatchedWaits(const CallEvent &PreCallEvent,
                                      CheckerContext &Ctx) const {
-  if (!FuncClassifier->isWaitType(PreCallEvent.getCalleeIdentifier()))
+  if (!FuncClassifier->isWaitType(PreCallEvent.getCalleeIdentifier())) {
     return;
+
+}
   const MemRegion *const MR = topRegionUsedByWait(PreCallEvent);
-  if (!MR)
+  if (!MR) {
     return;
+
+}
   const ElementRegion *const ER = dyn_cast<ElementRegion>(MR);
 
   // The region must be typed, in order to reason about it.
-  if (!isa<TypedRegion>(MR) || (ER && !isa<TypedRegion>(ER->getSuperRegion())))
+  if (!isa<TypedRegion>(MR) || (ER && !isa<TypedRegion>(ER->getSuperRegion()))) {
     return;
+
+}
 
   llvm::SmallVector<const MemRegion *, 2> ReqRegions;
   allRegionsUsedByWait(ReqRegions, MR, PreCallEvent, Ctx);
-  if (ReqRegions.empty())
+  if (ReqRegions.empty()) {
     return;
+
+}
 
   ProgramStateRef State = Ctx.getState();
   static CheckerProgramPointTag Tag("MPI-Checker", "UnmatchedWait");
@@ -102,8 +114,10 @@ void MPIChecker::checkMissingWaits(SymbolReaper &SymReaper,
                                    CheckerContext &Ctx) const {
   ProgramStateRef State = Ctx.getState();
   const auto &Requests = State->get<RequestMap>();
-  if (Requests.isEmpty())
+  if (Requests.isEmpty()) {
     return;
+
+}
 
   static CheckerProgramPointTag Tag("MPI-Checker", "MissingWait");
   ExplodedNode *ErrorNode{nullptr};

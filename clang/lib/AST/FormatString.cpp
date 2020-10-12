@@ -49,9 +49,11 @@ clang::analyze_format_string::ParseAmount(const char *&Beg, const char *E) {
       continue;
     }
 
-    if (hasDigits)
+    if (hasDigits) {
       return OptionalAmount(OptionalAmount::Constant, accumulator, Beg, I - Beg,
           false);
+
+}
 
     break;
   }
@@ -133,8 +135,10 @@ clang::analyze_format_string::ParseFieldWidth(FormatStringHandler &H,
       ParsePositionAmount(H, Start, Beg, E,
                           analyze_format_string::FieldWidthPos);
 
-    if (Amt.isInvalid())
+    if (Amt.isInvalid()) {
       return true;
+
+}
     CS.setFieldWidth(Amt);
   }
   return false;
@@ -183,8 +187,10 @@ clang::analyze_format_string::ParseVectorModifier(FormatStringHandler &H,
                                                   const char *&I,
                                                   const char *E,
                                                   const LangOptions &LO) {
-  if (!LO.OpenCL)
+  if (!LO.OpenCL) {
     return false;
+
+}
 
   const char *Start = I;
   if (*I == 'v') {
@@ -273,8 +279,10 @@ clang::analyze_format_string::ParseLengthModifier(FormatSpecifier &FS,
           lmKind = LengthModifier::AsInt64;
           break;
         }
-        if (IsScanf)
+        if (IsScanf) {
           return false;
+
+}
 
         if (I[1] == '3' && I[2] == '2') {
           I += 3;
@@ -295,8 +303,10 @@ clang::analyze_format_string::ParseLengthModifier(FormatSpecifier &FS,
 
 bool clang::analyze_format_string::ParseUTF8InvalidSpecifier(
     const char *SpecifierBegin, const char *FmtStrEnd, unsigned &Len) {
-  if (SpecifierBegin + 1 >= FmtStrEnd)
+  if (SpecifierBegin + 1 >= FmtStrEnd) {
     return false;
+
+}
 
   const llvm::UTF8 *SB =
       reinterpret_cast<const llvm::UTF8 *>(SpecifierBegin + 1);
@@ -307,10 +317,14 @@ bool clang::analyze_format_string::ParseUTF8InvalidSpecifier(
   // total length accordingly so that the conversion specifier can be
   // properly updated to reflect a complete UTF-8 specifier.
   unsigned NumBytes = llvm::getNumBytesForUTF8(FirstByte);
-  if (NumBytes == 1)
+  if (NumBytes == 1) {
     return false;
-  if (SB + NumBytes > SE)
+
+}
+  if (SB + NumBytes > SE) {
     return false;
+
+}
 
   Len = NumBytes + 1;
   return true;
@@ -325,12 +339,16 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
   if (Ptr) {
     // It has to be a pointer.
     const PointerType *PT = argTy->getAs<PointerType>();
-    if (!PT)
+    if (!PT) {
       return NoMatch;
 
+}
+
     // We cannot write through a const qualified pointer.
-    if (PT->getPointeeType().isConstQualified())
+    if (PT->getPointeeType().isConstQualified()) {
       return NoMatch;
+
+}
 
     argTy = PT->getPointeeType();
   }
@@ -346,12 +364,14 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
       if (const EnumType *ETy = argTy->getAs<EnumType>()) {
         // If the enum is incomplete we know nothing about the underlying type.
         // Assume that it's 'int'.
-        if (!ETy->getDecl()->isComplete())
+        if (!ETy->getDecl()->isComplete()) {
           return NoMatch;
+
+}
         argTy = ETy->getDecl()->getIntegerType();
       }
 
-      if (const BuiltinType *BT = argTy->getAs<BuiltinType>())
+      if (const BuiltinType *BT = argTy->getAs<BuiltinType>()) {
         switch (BT->getKind()) {
           default:
             break;
@@ -362,6 +382,8 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
           case BuiltinType::Bool:
             return Match;
         }
+
+}
       return NoMatch;
     }
 
@@ -369,17 +391,21 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
       if (const EnumType *ETy = argTy->getAs<EnumType>()) {
         // If the enum is incomplete we know nothing about the underlying type.
         // Assume that it's 'int'.
-        if (!ETy->getDecl()->isComplete())
+        if (!ETy->getDecl()->isComplete()) {
           argTy = C.IntTy;
-        else
+        } else {
           argTy = ETy->getDecl()->getIntegerType();
+
+}
       }
       argTy = C.getCanonicalType(argTy).getUnqualifiedType();
 
-      if (T == argTy)
+      if (T == argTy) {
         return Match;
+
+}
       // Check for "compatible types".
-      if (const BuiltinType *BT = argTy->getAs<BuiltinType>())
+      if (const BuiltinType *BT = argTy->getAs<BuiltinType>()) {
         switch (BT->getKind()) {
           default:
             break;
@@ -388,8 +414,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
           case BuiltinType::Char_U:
           case BuiltinType::UChar:
           case BuiltinType::Bool:
-            if (T == C.UnsignedShortTy || T == C.ShortTy)
+            if (T == C.UnsignedShortTy || T == C.ShortTy) {
               return NoMatchTypeConfusion;
+
+}
             return T == C.UnsignedCharTy || T == C.SignedCharTy ? Match
                                                                 : NoMatch;
           case BuiltinType::Short:
@@ -409,15 +437,19 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
           case BuiltinType::ULongLong:
             return T == C.LongLongTy ? Match : NoMatch;
         }
+
+}
       return NoMatch;
     }
 
     case CStrTy: {
       const PointerType *PT = argTy->getAs<PointerType>();
-      if (!PT)
+      if (!PT) {
         return NoMatch;
+
+}
       QualType pointeeTy = PT->getPointeeType();
-      if (const BuiltinType *BT = pointeeTy->getAs<BuiltinType>())
+      if (const BuiltinType *BT = pointeeTy->getAs<BuiltinType>()) {
         switch (BT->getKind()) {
           case BuiltinType::Void:
           case BuiltinType::Char_U:
@@ -429,13 +461,17 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
             break;
         }
 
+}
+
       return NoMatch;
     }
 
     case WCStrTy: {
       const PointerType *PT = argTy->getAs<PointerType>();
-      if (!PT)
+      if (!PT) {
         return NoMatch;
+
+}
       QualType pointeeTy =
         C.getCanonicalType(PT->getPointeeType()).getUnqualifiedType();
       return pointeeTy == C.getWideCharType() ? Match : NoMatch;
@@ -444,8 +480,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
     case WIntTy: {
       QualType WInt = C.getCanonicalType(C.getWIntType()).getUnqualifiedType();
 
-      if (C.getCanonicalType(argTy).getUnqualifiedType() == WInt)
+      if (C.getCanonicalType(argTy).getUnqualifiedType() == WInt) {
         return Match;
+
+}
 
       QualType PromoArg = argTy->isPromotableIntegerType()
                               ? C.getPromotedIntegerType(argTy)
@@ -455,8 +493,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
       // If the promoted argument is the corresponding signed type of the
       // wint_t type, then it should match.
       if (PromoArg->hasSignedIntegerRepresentation() &&
-          C.getCorrespondingUnsignedType(PromoArg) == WInt)
+          C.getCorrespondingUnsignedType(PromoArg) == WInt) {
         return Match;
+
+}
 
       return WInt == PromoArg ? Match : NoMatch;
     }
@@ -473,8 +513,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
 
     case ObjCPointerTy: {
       if (argTy->getAs<ObjCObjectPointerType>() ||
-          argTy->getAs<BlockPointerType>())
+          argTy->getAs<BlockPointerType>()) {
         return Match;
+
+}
 
       // Handle implicit toll-free bridging.
       if (const PointerType *PT = argTy->getAs<PointerType>()) {
@@ -483,8 +525,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
         // to Objective-C objects.  Since the compiler doesn't know which
         // structs can be toll-free bridged, we just accept them all.
         QualType pointee = PT->getPointeeType();
-        if (pointee->getAsStructureType() || pointee->isVoidType())
+        if (pointee->getAsStructureType() || pointee->isVoidType()) {
           return Match;
+
+}
       }
       return NoMatch;
     }
@@ -495,8 +539,10 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
 
 ArgType ArgType::makeVectorType(ASTContext &C, unsigned NumElts) const {
   // Check for valid vector element types.
-  if (T.isNull())
+  if (T.isNull()) {
     return ArgType::Invalid();
+
+}
 
   QualType Vec = C.getExtVectorType(T, NumElts);
   return ArgType(Vec, Name);
@@ -533,8 +579,10 @@ QualType ArgType::getRepresentativeType(ASTContext &C) const {
     }
   }
 
-  if (Ptr)
+  if (Ptr) {
     Res = C.getPointerType(Res);
+
+}
   return Res;
 }
 
@@ -550,12 +598,16 @@ std::string ArgType::getRepresentativeTypeName(ASTContext &C) const {
       Alias += (Alias[Alias.size()-1] == '*') ? "*" : " *";
     }
     // If Alias is the same as the underlying type, e.g. wchar_t, then drop it.
-    if (S == Alias)
+    if (S == Alias) {
       Alias.clear();
+
+}
   }
 
-  if (!Alias.empty())
+  if (!Alias.empty()) {
     return std::string("'") + Alias + "' (aka '" + S + "')";
+
+}
   return std::string("'") + S + "'";
 }
 
@@ -702,16 +754,22 @@ void OptionalAmount::toString(raw_ostream &os) const {
   case NotSpecified:
     return;
   case Arg:
-    if (UsesDotPrefix)
+    if (UsesDotPrefix) {
         os << ".";
-    if (usesPositionalArg())
+
+}
+    if (usesPositionalArg()) {
       os << "*" << getPositionalArgIndex() << "$";
-    else
+    } else {
       os << "*";
+
+}
     break;
   case Constant:
-    if (UsesDotPrefix)
+    if (UsesDotPrefix) {
         os << ".";
+
+}
     os << amt;
     break;
   }
@@ -726,8 +784,10 @@ bool FormatSpecifier::hasValidLengthModifier(const TargetInfo &Target,
     // Handle most integer flags
     case LengthModifier::AsShort:
       // Length modifier only applies to FP vectors.
-      if (LO.OpenCL && CS.isDoubleArg())
+      if (LO.OpenCL && CS.isDoubleArg()) {
         return !VectorNumElts.isInvalid();
+
+}
 
       if (Target.getTriple().isOSMSVCRT()) {
         switch (CS.getKind()) {
@@ -774,8 +834,10 @@ bool FormatSpecifier::hasValidLengthModifier(const TargetInfo &Target,
     case LengthModifier::AsLong: // or AsWideChar
       if (CS.isDoubleArg()) {
         // Invalid for OpenCL FP scalars.
-        if (LO.OpenCL && VectorNumElts.isInvalid())
+        if (LO.OpenCL && VectorNumElts.isInvalid()) {
           return false;
+
+}
         return true;
       }
 
@@ -1001,8 +1063,10 @@ bool FormatSpecifier::namedTypeToLengthModifier(QualType QT,
     }
 
     QualType T = Typedef->getUnderlyingType();
-    if (!isa<TypedefType>(T))
+    if (!isa<TypedefType>(T)) {
       break;
+
+}
 
     Typedef = cast<TypedefType>(T)->getDecl();
   }

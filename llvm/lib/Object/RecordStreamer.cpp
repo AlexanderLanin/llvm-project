@@ -98,10 +98,14 @@ void RecordStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
 
 bool RecordStreamer::emitSymbolAttribute(MCSymbol *Symbol,
                                          MCSymbolAttr Attribute) {
-  if (Attribute == MCSA_Global || Attribute == MCSA_Weak)
+  if (Attribute == MCSA_Global || Attribute == MCSA_Weak) {
     markGlobal(*Symbol, Attribute);
-  if (Attribute == MCSA_LazyReference)
+
+}
+  if (Attribute == MCSA_LazyReference) {
     markUsed(*Symbol);
+
+}
   return true;
 }
 
@@ -118,8 +122,10 @@ void RecordStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
 
 RecordStreamer::State RecordStreamer::getSymbolState(const MCSymbol *Sym) {
   auto SI = Symbols.find(Sym->getName());
-  if (SI == Symbols.end())
+  if (SI == Symbols.end()) {
     return NeverSeen;
+
+}
   return SI->second;
 }
 
@@ -141,8 +147,10 @@ void RecordStreamer::flushSymverDirectives() {
   Mangler Mang;
   SmallString<64> MangledName;
   for (const GlobalValue &GV : M.global_values()) {
-    if (!GV.hasName())
+    if (!GV.hasName()) {
       continue;
+
+}
     MangledName.clear();
     MangledName.reserve(GV.getName().size() + 1);
     Mang.getNameWithPrefix(MangledName, &GV, /*CannotUsePrivateLabel=*/false);
@@ -188,19 +196,23 @@ void RecordStreamer::flushSymverDirectives() {
       const GlobalValue *GV = M.getNamedValue(Aliasee->getName());
       if (!GV) {
         auto MI = MangledNameMap.find(Aliasee->getName());
-        if (MI != MangledNameMap.end())
+        if (MI != MangledNameMap.end()) {
           GV = MI->second;
+
+}
       }
       if (GV) {
         // If we don't have a symbol attribute from assembly, then check if
         // the aliasee was defined in the IR.
         if (Attr == MCSA_Invalid) {
-          if (GV->hasExternalLinkage())
+          if (GV->hasExternalLinkage()) {
             Attr = MCSA_Global;
-          else if (GV->hasLocalLinkage())
+          } else if (GV->hasLocalLinkage()) {
             Attr = MCSA_Local;
-          else if (GV->isWeakForLinker())
+          } else if (GV->isWeakForLinker()) {
             Attr = MCSA_Weak;
+
+}
         }
         IsDefined = IsDefined || !GV->isDeclarationForLinker();
       }
@@ -221,12 +233,16 @@ void RecordStreamer::flushSymverDirectives() {
       // TODO: Handle "@@@". Depending on SymbolAttribute value it needs to be
       // converted into @ or @@.
       const MCExpr *Value = MCSymbolRefExpr::create(Aliasee, getContext());
-      if (IsDefined)
+      if (IsDefined) {
         markDefined(*Alias);
+
+}
       // Don't use EmitAssignment override as it always marks alias as defined.
       MCStreamer::emitAssignment(Alias, Value);
-      if (Attr != MCSA_Invalid)
+      if (Attr != MCSA_Invalid) {
         emitSymbolAttribute(Alias, Attr);
+
+}
     }
   }
 }

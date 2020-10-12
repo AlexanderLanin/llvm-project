@@ -37,8 +37,10 @@ public:
   CanonicalIncludes takeCanonicalIncludes() { return std::move(CanonIncludes); }
 
   void AfterExecute(CompilerInstance &CI) override {
-    if (!ParsedCallback)
+    if (!ParsedCallback) {
       return;
+
+}
     trace::Span Tracer("Running PreambleCallback");
     ParsedCallback(CI.getASTContext(), CI.getPreprocessorPtr(), CanonIncludes);
   }
@@ -109,13 +111,15 @@ buildPreamble(PathRef FileName, CompilerInvocation &CI,
          OldPreamble->Version, Inputs.Version, FileName);
     return OldPreamble;
   }
-  if (OldPreamble)
+  if (OldPreamble) {
     vlog("Rebuilding invalidated preamble for {0} version {1} "
          "(previous was version {2})",
          FileName, Inputs.Version, OldPreamble->Version);
-  else
+  } else {
     vlog("Building first preamble for {0} verson {1}", FileName,
          Inputs.Version);
+
+}
 
   trace::Span Tracer("BuildPreamble");
   SPAN_ATTACH(Tracer, "File", FileName);

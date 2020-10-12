@@ -22,8 +22,10 @@ void BuryPointer(const void *Ptr) {
   LLVM_ATTRIBUTE_UNUSED static const void *GraveYard[kGraveYardMaxSize];
   static std::atomic<unsigned> GraveYardSize;
   unsigned Idx = GraveYardSize++;
-  if (Idx >= kGraveYardMaxSize)
+  if (Idx >= kGraveYardMaxSize) {
     return;
+
+}
   GraveYard[Idx] = Ptr;
 }
 

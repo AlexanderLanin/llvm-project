@@ -75,10 +75,14 @@ public:
         CommentStream(CommentToEmit), IsVerboseAsm(isVerboseAsm),
         ShowInst(showInst), UseDwarfDirectory(useDwarfDirectory) {
     assert(InstPrinter);
-    if (IsVerboseAsm)
+    if (IsVerboseAsm) {
         InstPrinter->setCommentStream(CommentStream);
-    if (Assembler->getBackendPtr())
+
+}
+    if (Assembler->getBackendPtr()) {
       setAllowAutoPadding(Assembler->getBackend().allowAutoPadding());
+
+}
 
     Context.setUseNamesOnTempLabels(true);
   }
@@ -119,8 +123,10 @@ public:
   /// Unlike AddComment, you are required to terminate comments with \n if you
   /// use this method.
   raw_ostream &GetCommentOS() override {
-    if (!IsVerboseAsm)
+    if (!IsVerboseAsm) {
       return nulls();  // Discard comments unless in verbose asm mode.
+
+}
     return CommentStream;
   }
 
@@ -360,12 +366,16 @@ public:
 } // end anonymous namespace.
 
 void MCAsmStreamer::AddComment(const Twine &T, bool EOL) {
-  if (!IsVerboseAsm) return;
+  if (!IsVerboseAsm) { return;
+
+}
 
   T.toVector(CommentToEmit);
 
-  if (EOL)
+  if (EOL) {
     CommentToEmit.push_back('\n'); // Place comment in a new line.
+
+}
 }
 
 void MCAsmStreamer::EmitCommentsAndEOL() {
@@ -396,16 +406,20 @@ static inline int64_t truncateToSize(int64_t Value, unsigned Bytes) {
 }
 
 void MCAsmStreamer::emitRawComment(const Twine &T, bool TabPrefix) {
-  if (TabPrefix)
+  if (TabPrefix) {
     OS << '\t';
+
+}
   OS << MAI->getCommentString() << T;
   EmitEOL();
 }
 
 void MCAsmStreamer::addExplicitComment(const Twine &T) {
   StringRef c = T.getSingleStringRef();
-  if (c.equals(StringRef(MAI->getSeparatorString())))
+  if (c.equals(StringRef(MAI->getSeparatorString()))) {
     return;
+
+}
   if (c.startswith(StringRef("//"))) {
     ExplicitCommentToEmit.append("\t");
     ExplicitCommentToEmit.append(MAI->getCommentString());
@@ -420,8 +434,10 @@ void MCAsmStreamer::addExplicitComment(const Twine &T) {
       ExplicitCommentToEmit.append(MAI->getCommentString());
       ExplicitCommentToEmit.append(c.slice(p, newp).str());
       // If we have another line in this comment add line
-      if (newp < len)
+      if (newp < len) {
         ExplicitCommentToEmit.append("\n");
+
+}
       p = newp + 1;
     } while (p < len);
   } else if (c.startswith(StringRef(MAI->getCommentString()))) {
@@ -432,17 +448,23 @@ void MCAsmStreamer::addExplicitComment(const Twine &T) {
     ExplicitCommentToEmit.append("\t");
     ExplicitCommentToEmit.append(MAI->getCommentString());
     ExplicitCommentToEmit.append(c.slice(1, c.size()).str());
-  } else
+  } else {
     assert(false && "Unexpected Assembly Comment");
+
+}
   // full line comments immediately output
-  if (c.back() == '\n')
+  if (c.back() == '\n') {
     emitExplicitComments();
+
+}
 }
 
 void MCAsmStreamer::emitExplicitComments() {
   StringRef Comments = ExplicitCommentToEmit;
-  if (!Comments.empty())
+  if (!Comments.empty()) {
     OS << Comments;
+
+}
   ExplicitCommentToEmit.clear();
 }
 
@@ -487,8 +509,10 @@ void MCAsmStreamer::emitLOHDirective(MCLOHType Kind, const MCLOHArgs &Args) {
   OS << "\t" << MCLOHDirectiveName() << " " << str << "\t";
   bool IsFirst = true;
   for (const MCSymbol *Arg : Args) {
-    if (!IsFirst)
+    if (!IsFirst) {
       OS << ", ";
+
+}
     IsFirst = false;
     Arg->print(OS, MAI);
   }
@@ -517,8 +541,10 @@ void MCAsmStreamer::emitLinkerOptions(ArrayRef<std::string> Options) {
 }
 
 void MCAsmStreamer::emitDataRegion(MCDataRegionType Kind) {
-  if (!MAI->doesSupportDataRegionDirectives())
+  if (!MAI->doesSupportDataRegionDirectives()) {
     return;
+
+}
   switch (Kind) {
   case MCDR_DataRegion:            OS << "\t.data_region"; break;
   case MCDR_DataRegionJT8:         OS << "\t.data_region jt8"; break;
@@ -541,8 +567,10 @@ static const char *getVersionMinDirective(MCVersionMinType Type) {
 
 static void EmitSDKVersionSuffix(raw_ostream &OS,
                                  const VersionTuple &SDKVersion) {
-  if (SDKVersion.empty())
+  if (SDKVersion.empty()) {
     return;
+
+}
   OS << '\t' << "sdk_version " << SDKVersion.getMajor();
   if (auto Minor = SDKVersion.getMinor()) {
     OS << ", " << *Minor;
@@ -556,8 +584,10 @@ void MCAsmStreamer::emitVersionMin(MCVersionMinType Type, unsigned Major,
                                    unsigned Minor, unsigned Update,
                                    VersionTuple SDKVersion) {
   OS << '\t' << getVersionMinDirective(Type) << ' ' << Major << ", " << Minor;
-  if (Update)
+  if (Update) {
     OS << ", " << Update;
+
+}
   EmitSDKVersionSuffix(OS, SDKVersion);
   EmitEOL();
 }
@@ -582,8 +612,10 @@ void MCAsmStreamer::emitBuildVersion(unsigned Platform, unsigned Major,
                                      VersionTuple SDKVersion) {
   const char *PlatformName = getPlatformName((MachO::PlatformType)Platform);
   OS << "\t.build_version " << PlatformName << ", " << Major << ", " << Minor;
-  if (Update)
+  if (Update) {
     OS << ", " << Update;
+
+}
   EmitSDKVersionSuffix(OS, SDKVersion);
   EmitEOL();
 }
@@ -603,9 +635,13 @@ void MCAsmStreamer::emitThumbFunc(MCSymbol *Func) {
 void MCAsmStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   // Do not emit a .set on inlined target assignments.
   bool EmitSet = true;
-  if (auto *E = dyn_cast<MCTargetExpr>(Value))
-    if (E->inlineAssignedExpr())
+  if (auto *E = dyn_cast<MCTargetExpr>(Value)) {
+    if (E->inlineAssignedExpr()) {
       EmitSet = false;
+
+}
+
+}
   if (EmitSet) {
     OS << ".set ";
     Symbol->print(OS, MAI);
@@ -637,8 +673,10 @@ bool MCAsmStreamer::emitSymbolAttribute(MCSymbol *Symbol,
   case MCSA_ELF_TypeCommon:      /// .type _foo, STT_COMMON  # aka @common
   case MCSA_ELF_TypeNoType:      /// .type _foo, STT_NOTYPE  # aka @notype
   case MCSA_ELF_TypeGnuUniqueObject:  /// .type _foo, @gnu_unique_object
-    if (!MAI->hasDotTypeDotSizeDirective())
+    if (!MAI->hasDotTypeDotSizeDirective()) {
       return false; // Symbol attribute not supported
+
+}
     OS << "\t.type\t";
     Symbol->print(OS, MAI);
     OS << ',' << ((MAI->getCommentString()[0] != '@') ? '@' : '%');
@@ -664,8 +702,10 @@ bool MCAsmStreamer::emitSymbolAttribute(MCSymbol *Symbol,
   case MCSA_LazyReference:  OS << "\t.lazy_reference\t";  break;
   case MCSA_Local:          OS << "\t.local\t";           break;
   case MCSA_NoDeadStrip:
-    if (!MAI->hasNoDeadStrip())
+    if (!MAI->hasNoDeadStrip()) {
       return false;
+
+}
     OS << "\t.no_dead_strip\t";
     break;
   case MCSA_SymbolResolver: OS << "\t.symbol_resolver\t"; break;
@@ -753,18 +793,22 @@ void MCAsmStreamer::EmitCOFFSectionIndex(MCSymbol const *Symbol) {
 void MCAsmStreamer::EmitCOFFSecRel32(MCSymbol const *Symbol, uint64_t Offset) {
   OS << "\t.secrel32\t";
   Symbol->print(OS, MAI);
-  if (Offset != 0)
+  if (Offset != 0) {
     OS << '+' << Offset;
+
+}
   EmitEOL();
 }
 
 void MCAsmStreamer::EmitCOFFImgRel32(MCSymbol const *Symbol, int64_t Offset) {
   OS << "\t.rva\t";
   Symbol->print(OS, MAI);
-  if (Offset > 0)
+  if (Offset > 0) {
     OS << '+' << Offset;
-  else if (Offset < 0)
+  } else if (Offset < 0) {
     OS << '-' << -Offset;
+
+}
   EmitEOL();
 }
 
@@ -804,10 +848,12 @@ void MCAsmStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
   OS << ',' << Size;
 
   if (ByteAlignment != 0) {
-    if (MAI->getCOMMDirectiveAlignmentIsInBytes())
+    if (MAI->getCOMMDirectiveAlignmentIsInBytes()) {
       OS << ',' << ByteAlignment;
-    else
+    } else {
       OS << ',' << Log2_32(ByteAlignment);
+
+}
   }
   EmitEOL();
 }
@@ -837,8 +883,10 @@ void MCAsmStreamer::emitLocalCommonSymbol(MCSymbol *Symbol, uint64_t Size,
 void MCAsmStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
                                  uint64_t Size, unsigned ByteAlignment,
                                  SMLoc Loc) {
-  if (Symbol)
+  if (Symbol) {
     AssignFragment(Symbol, &Section->getDummyFragment());
+
+}
 
   // Note: a .zerofill directive does not switch sections.
   OS << ".zerofill ";
@@ -854,8 +902,10 @@ void MCAsmStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
     OS << ',';
     Symbol->print(OS, MAI);
     OS << ',' << Size;
-    if (ByteAlignment != 0)
+    if (ByteAlignment != 0) {
       OS << ',' << Log2_32(ByteAlignment);
+
+}
   }
   EmitEOL();
 }
@@ -880,7 +930,9 @@ void MCAsmStreamer::emitTBSSSymbol(MCSection *Section, MCSymbol *Symbol,
 
   // Output align if we have it.  We default to 1 so don't bother printing
   // that.
-  if (ByteAlignment > 1) OS << ", " << Log2_32(ByteAlignment);
+  if (ByteAlignment > 1) { OS << ", " << Log2_32(ByteAlignment);
+
+}
 
   EmitEOL();
 }
@@ -923,7 +975,9 @@ static void PrintQuotedString(StringRef Data, raw_ostream &OS) {
 void MCAsmStreamer::emitBytes(StringRef Data) {
   assert(getCurrentSectionOnly() &&
          "Cannot emit contents before setting section!");
-  if (Data.empty()) return;
+  if (Data.empty()) { return;
+
+}
 
   // If only single byte is provided or no ascii or asciz directives is
   // supported, emit as vector of 8bits data.
@@ -961,8 +1015,10 @@ void MCAsmStreamer::emitBinaryData(StringRef Data) {
     size_t J = I, EJ = std::min(I + Cols, Data.size());
     assert(EJ > 0);
     OS << MAI->getData8bitsDirective();
-    for (; J < EJ - 1; ++J)
+    for (; J < EJ - 1; ++J) {
       OS << format("0x%02x", uint8_t(Data[J])) << ", ";
+
+}
     OS << format("0x%02x", uint8_t(Data[J]));
     EmitEOL();
   }
@@ -997,8 +1053,10 @@ void MCAsmStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
 
   if (!Directive) {
     int64_t IntValue;
-    if (!Value->evaluateAsAbsolute(IntValue))
+    if (!Value->evaluateAsAbsolute(IntValue)) {
       report_fatal_error("Don't know how to emit this value.");
+
+}
 
     // We couldn't handle the requested integer size so we fallback by breaking
     // the request down into several, smaller, integers.
@@ -1107,21 +1165,27 @@ void MCAsmStreamer::emitFill(const MCExpr &NumBytes, uint64_t FillValue,
                              SMLoc Loc) {
   int64_t IntNumBytes;
   const bool IsAbsolute = NumBytes.evaluateAsAbsolute(IntNumBytes);
-  if (IsAbsolute && IntNumBytes == 0)
+  if (IsAbsolute && IntNumBytes == 0) {
     return;
+
+}
 
   if (const char *ZeroDirective = MAI->getZeroDirective()) {
     if (MAI->doesZeroDirectiveSupportNonZeroValue() || FillValue == 0) {
       // FIXME: Emit location directives
       OS << ZeroDirective;
       NumBytes.print(OS, MAI);
-      if (FillValue != 0)
+      if (FillValue != 0) {
         OS << ',' << (int)FillValue;
+
+}
       EmitEOL();
     } else {
-      if (!IsAbsolute)
+      if (!IsAbsolute) {
         report_fatal_error(
             "Cannot emit non-absolute expression lengths of fill.");
+
+}
       for (int i = 0; i < IntNumBytes; ++i) {
         OS << MAI->getData8bitsDirective() << (int)FillValue;
         EmitEOL();
@@ -1147,9 +1211,11 @@ void MCAsmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
                                          unsigned ValueSize,
                                          unsigned MaxBytesToEmit) {
   if (MAI->useDotAlignForAlignment()) {
-    if (!isPowerOf2_32(ByteAlignment))
+    if (!isPowerOf2_32(ByteAlignment)) {
       report_fatal_error("Only power-of-two alignments are supported "
                          "with .align.");
+
+}
     OS << "\t.align\t";
     OS << Log2_32(ByteAlignment);
     EmitEOL();
@@ -1181,8 +1247,10 @@ void MCAsmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
       OS << ", 0x";
       OS.write_hex(truncateToSize(Value, ValueSize));
 
-      if (MaxBytesToEmit)
+      if (MaxBytesToEmit) {
         OS << ", " << MaxBytesToEmit;
+
+}
     }
     EmitEOL();
     return;
@@ -1200,8 +1268,10 @@ void MCAsmStreamer::emitValueToAlignment(unsigned ByteAlignment, int64_t Value,
 
   OS << ' ' << ByteAlignment;
   OS << ", " << truncateToSize(Value, ValueSize);
-  if (MaxBytesToEmit)
+  if (MaxBytesToEmit) {
     OS << ", " << MaxBytesToEmit;
+
+}
   EmitEOL();
 }
 
@@ -1238,9 +1308,9 @@ static void printDwarfFileDirective(unsigned FileNo, StringRef Directory,
   SmallString<128> FullPathName;
 
   if (!UseDwarfDirectory && !Directory.empty()) {
-    if (sys::path::is_absolute(Filename))
+    if (sys::path::is_absolute(Filename)) {
       Directory = "";
-    else {
+    } else {
       FullPathName = Directory;
       sys::path::append(FullPathName, Filename);
       Directory = "";
@@ -1254,8 +1324,10 @@ static void printDwarfFileDirective(unsigned FileNo, StringRef Directory,
     OS << ' ';
   }
   PrintQuotedString(Filename, OS);
-  if (Checksum)
+  if (Checksum) {
     OS << " md5 0x" << Checksum->digest();
+
+}
   if (Source) {
     OS << " source ";
     PrintQuotedString(*Source, OS);
@@ -1272,21 +1344,27 @@ Expected<unsigned> MCAsmStreamer::tryEmitDwarfFileDirective(
   Expected<unsigned> FileNoOrErr =
       Table.tryGetFile(Directory, Filename, Checksum, Source,
                        getContext().getDwarfVersion(), FileNo);
-  if (!FileNoOrErr)
+  if (!FileNoOrErr) {
     return FileNoOrErr.takeError();
+
+}
   FileNo = FileNoOrErr.get();
-  if (NumFiles == Table.getMCDwarfFiles().size())
+  if (NumFiles == Table.getMCDwarfFiles().size()) {
     return FileNo;
+
+}
 
   SmallString<128> Str;
   raw_svector_ostream OS1(Str);
   printDwarfFileDirective(FileNo, Directory, Filename, Checksum, Source,
                           UseDwarfDirectory, OS1);
 
-  if (MCTargetStreamer *TS = getTargetStreamer())
+  if (MCTargetStreamer *TS = getTargetStreamer()) {
     TS->emitDwarfFileDirective(OS1.str());
-  else
+  } else {
     emitRawText(OS1.str());
+
+}
 
   return FileNo;
 }
@@ -1298,8 +1376,10 @@ void MCAsmStreamer::emitDwarfFile0Directive(StringRef Directory,
                                             unsigned CUID) {
   assert(CUID == 0);
   // .file 0 is new for DWARF v5.
-  if (getContext().getDwarfVersion() < 5)
+  if (getContext().getDwarfVersion() < 5) {
     return;
+
+}
   // Inform MCDwarf about the root file.
   getContext().setMCLineTableRootFile(CUID, Directory, Filename, Checksum,
                                       Source);
@@ -1309,10 +1389,12 @@ void MCAsmStreamer::emitDwarfFile0Directive(StringRef Directory,
   printDwarfFileDirective(0, Directory, Filename, Checksum, Source,
                           UseDwarfDirectory, OS1);
 
-  if (MCTargetStreamer *TS = getTargetStreamer())
+  if (MCTargetStreamer *TS = getTargetStreamer()) {
     TS->emitDwarfFileDirective(OS1.str());
-  else
+  } else {
     emitRawText(OS1.str());
+
+}
 }
 
 void MCAsmStreamer::emitDwarfLocDirective(unsigned FileNo, unsigned Line,
@@ -1321,27 +1403,39 @@ void MCAsmStreamer::emitDwarfLocDirective(unsigned FileNo, unsigned Line,
                                           StringRef FileName) {
   OS << "\t.loc\t" << FileNo << " " << Line << " " << Column;
   if (MAI->supportsExtendedDwarfLocDirective()) {
-    if (Flags & DWARF2_FLAG_BASIC_BLOCK)
+    if (Flags & DWARF2_FLAG_BASIC_BLOCK) {
       OS << " basic_block";
-    if (Flags & DWARF2_FLAG_PROLOGUE_END)
+
+}
+    if (Flags & DWARF2_FLAG_PROLOGUE_END) {
       OS << " prologue_end";
-    if (Flags & DWARF2_FLAG_EPILOGUE_BEGIN)
+
+}
+    if (Flags & DWARF2_FLAG_EPILOGUE_BEGIN) {
       OS << " epilogue_begin";
+
+}
 
     unsigned OldFlags = getContext().getCurrentDwarfLoc().getFlags();
     if ((Flags & DWARF2_FLAG_IS_STMT) != (OldFlags & DWARF2_FLAG_IS_STMT)) {
       OS << " is_stmt ";
 
-      if (Flags & DWARF2_FLAG_IS_STMT)
+      if (Flags & DWARF2_FLAG_IS_STMT) {
         OS << "1";
-      else
+      } else {
         OS << "0";
+
+}
     }
 
-    if (Isa)
+    if (Isa) {
       OS << " isa " << Isa;
-    if (Discriminator)
+
+}
+    if (Discriminator) {
       OS << " discriminator " << Discriminator;
+
+}
   }
 
   if (IsVerboseAsm) {
@@ -1364,8 +1458,10 @@ bool MCAsmStreamer::EmitCVFileDirective(unsigned FileNo, StringRef Filename,
                                         ArrayRef<uint8_t> Checksum,
                                         unsigned ChecksumKind) {
   if (!getContext().getCVContext().addFile(*this, FileNo, Filename, Checksum,
-                                           ChecksumKind))
+                                           ChecksumKind)) {
     return false;
+
+}
 
   OS << "\t.cv_file\t" << FileNo << ' ';
   PrintQuotedString(Filename, OS);
@@ -1404,16 +1500,22 @@ void MCAsmStreamer::EmitCVLocDirective(unsigned FunctionId, unsigned FileNo,
                                        bool PrologueEnd, bool IsStmt,
                                        StringRef FileName, SMLoc Loc) {
   // Validate the directive.
-  if (!checkCVLocSection(FunctionId, FileNo, Loc))
+  if (!checkCVLocSection(FunctionId, FileNo, Loc)) {
     return;
+
+}
 
   OS << "\t.cv_loc\t" << FunctionId << " " << FileNo << " " << Line << " "
      << Column;
-  if (PrologueEnd)
+  if (PrologueEnd) {
     OS << " prologue_end";
 
-  if (IsStmt)
+}
+
+  if (IsStmt) {
     OS << " is_stmt 1";
+
+}
 
   if (IsVerboseAsm) {
     OS.PadToColumn(MAI->getCommentColumn());
@@ -1530,8 +1632,10 @@ void MCAsmStreamer::emitCFISections(bool EH, bool Debug) {
   OS << "\t.cfi_sections ";
   if (EH) {
     OS << ".eh_frame";
-    if (Debug)
+    if (Debug) {
       OS << ", .debug_frame";
+
+}
   } else if (Debug) {
     OS << ".debug_frame";
   }
@@ -1541,8 +1645,10 @@ void MCAsmStreamer::emitCFISections(bool EH, bool Debug) {
 
 void MCAsmStreamer::emitCFIStartProcImpl(MCDwarfFrameInfo &Frame) {
   OS << "\t.cfi_startproc";
-  if (Frame.IsSimple)
+  if (Frame.IsSimple) {
     OS << " simple";
+
+}
   EmitEOL();
 }
 
@@ -1584,8 +1690,10 @@ static void PrintCFIEscape(llvm::formatted_raw_ostream &OS, StringRef Values) {
   OS << "\t.cfi_escape ";
   if (!Values.empty()) {
     size_t e = Values.size() - 1;
-    for (size_t i = 0; i < e; ++i)
+    for (size_t i = 0; i < e; ++i) {
       OS << format("0x%02x", uint8_t(Values[i])) << ", ";
+
+}
     OS << format("0x%02x", uint8_t(Values[e]));
   }
 }
@@ -1762,10 +1870,14 @@ void MCAsmStreamer::EmitWinEHHandler(const MCSymbol *Sym, bool Unwind,
 
   OS << "\t.seh_handler ";
   Sym->print(OS, MAI);
-  if (Unwind)
+  if (Unwind) {
     OS << ", @unwind";
-  if (Except)
+
+}
+  if (Except) {
     OS << ", @except";
+
+}
   EmitEOL();
 }
 
@@ -1780,8 +1892,10 @@ void MCAsmStreamer::EmitWinEHHandlerData(SMLoc Loc) {
 
   // Do nothing if no frame is open. MCStreamer should've already reported an
   // error.
-  if (!CurFrame)
+  if (!CurFrame) {
     return;
+
+}
 
   MCSection *TextSec = &CurFrame->Function->getSection();
   MCSection *XData = getAssociatedXDataSection(TextSec);
@@ -1840,8 +1954,10 @@ void MCAsmStreamer::EmitWinCFIPushFrame(bool Code, SMLoc Loc) {
   MCStreamer::EmitWinCFIPushFrame(Code, Loc);
 
   OS << "\t.seh_pushframe";
-  if (Code)
+  if (Code) {
     OS << " @code";
+
+}
   EmitEOL();
 }
 
@@ -1871,8 +1987,10 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
   raw_svector_ostream VecOS(Code);
 
   // If we have no code emitter, don't emit code.
-  if (!getAssembler().getEmitterPtr())
+  if (!getAssembler().getEmitterPtr()) {
     return;
+
+}
 
   getAssembler().getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
 
@@ -1881,8 +1999,10 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
   // then trying to display it as nicely as possible.
   SmallVector<uint8_t, 64> FixupMap;
   FixupMap.resize(Code.size() * 8);
-  for (unsigned i = 0, e = Code.size() * 8; i != e; ++i)
+  for (unsigned i = 0, e = Code.size() * 8; i != e; ++i) {
     FixupMap[i] = 0;
+
+}
 
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i) {
     MCFixup &F = Fixups[i];
@@ -1899,14 +2019,18 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
   // high order halfword of a 32-bit Thumb2 instruction is emitted first.
   OS << "encoding: [";
   for (unsigned i = 0, e = Code.size(); i != e; ++i) {
-    if (i)
+    if (i) {
       OS << ',';
+
+}
 
     // See if all bits are the same map entry.
     uint8_t MapEntry = FixupMap[i * 8 + 0];
     for (unsigned j = 1; j != 8; ++j) {
-      if (FixupMap[i * 8 + j] == MapEntry)
+      if (FixupMap[i * 8 + j] == MapEntry) {
         continue;
+
+}
 
       MapEntry = uint8_t(~0U);
       break;
@@ -1920,8 +2044,10 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
           // FIXME: Some of the 8 bits require fix up.
           OS << format("0x%02x", uint8_t(Code[i])) << '\''
              << char('A' + MapEntry - 1) << '\'';
-        } else
+        } else {
           OS << char('A' + MapEntry - 1);
+
+}
       }
     } else {
       // Otherwise, write out in binary.
@@ -1930,16 +2056,20 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
         unsigned Bit = (Code[i] >> j) & 1;
 
         unsigned FixupBit;
-        if (MAI->isLittleEndian())
+        if (MAI->isLittleEndian()) {
           FixupBit = i * 8 + j;
-        else
+        } else {
           FixupBit = i * 8 + (7-j);
+
+}
 
         if (uint8_t MapEntry = FixupMap[FixupBit]) {
           assert(Bit == 0 && "Encoder wrote into fixed up bit!");
           OS << char('A' + MapEntry - 1);
-        } else
+        } else {
           OS << Bit;
+
+}
       }
     }
   }
@@ -1968,14 +2098,18 @@ void MCAsmStreamer::emitInstruction(const MCInst &Inst,
     GetCommentOS() << "\n";
   }
 
-  if(getTargetStreamer())
+  if(getTargetStreamer()) {
     getTargetStreamer()->prettyPrintAsm(*InstPrinter, 0, Inst, STI, OS);
-  else
+  } else {
     InstPrinter->printInst(&Inst, 0, "", STI, OS);
 
+}
+
   StringRef Comments = CommentToEmit;
-  if (Comments.size() && Comments.back() != '\n')
+  if (Comments.size() && Comments.back() != '\n') {
     GetCommentOS() << "\n";
+
+}
 
   EmitEOL();
 }
@@ -1987,8 +2121,10 @@ void MCAsmStreamer::emitBundleAlignMode(unsigned AlignPow2) {
 
 void MCAsmStreamer::emitBundleLock(bool AlignToEnd) {
   OS << "\t.bundle_lock";
-  if (AlignToEnd)
+  if (AlignToEnd) {
     OS << " align_to_end";
+
+}
   EmitEOL();
 }
 
@@ -2026,16 +2162,20 @@ void MCAsmStreamer::emitAddrsigSym(const MCSymbol *Sym) {
 /// the specified string in the output .s file.  This capability is
 /// indicated by the hasRawTextSupport() predicate.
 void MCAsmStreamer::emitRawTextImpl(StringRef String) {
-  if (!String.empty() && String.back() == '\n')
+  if (!String.empty() && String.back() == '\n') {
     String = String.substr(0, String.size()-1);
+
+}
   OS << String;
   EmitEOL();
 }
 
 void MCAsmStreamer::FinishImpl() {
   // If we are generating dwarf for assembly source files dump out the sections.
-  if (getContext().getGenDwarfForAssembly())
+  if (getContext().getGenDwarfForAssembly()) {
     MCGenDwarfInfo::Emit(this);
+
+}
 
   // Emit the label for the line table, if requested - since the rest of the
   // line table will be defined by .loc/.file directives, and not emitted

@@ -311,16 +311,22 @@ template <> struct MappingTraits<Relation> {
 template <> struct MappingTraits<VariantEntry> {
   static void mapping(IO &IO, VariantEntry &Variant) {
     if (IO.mapTag("!Symbol", Variant.Symbol.hasValue())) {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Variant.Symbol.emplace();
+
+}
       MappingTraits<Symbol>::mapping(IO, *Variant.Symbol);
     } else if (IO.mapTag("!Refs", Variant.Refs.hasValue())) {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Variant.Refs.emplace();
+
+}
       MappingTraits<RefBundle>::mapping(IO, *Variant.Refs);
     } else if (IO.mapTag("!Relations", Variant.Relation.hasValue())) {
-      if (!IO.outputting())
+      if (!IO.outputting()) {
         Variant.Relation.emplace();
+
+}
       MappingTraits<Relation>::mapping(IO, *Variant.Relation);
     }
   }
@@ -339,18 +345,22 @@ void writeYAML(const IndexFileOut &O, llvm::raw_ostream &OS) {
     Entry.Symbol = Sym;
     Yout << Entry;
   }
-  if (O.Refs)
+  if (O.Refs) {
     for (auto &Sym : *O.Refs) {
       VariantEntry Entry;
       Entry.Refs = Sym;
       Yout << Entry;
     }
-  if (O.Relations)
+
+}
+  if (O.Relations) {
     for (auto &R : *O.Relations) {
       VariantEntry Entry;
       Entry.Relation = R;
       Yout << Entry;
     }
+
+}
 }
 
 llvm::Expected<IndexFileIn> readYAML(llvm::StringRef Data) {
@@ -365,16 +375,26 @@ llvm::Expected<IndexFileIn> readYAML(llvm::StringRef Data) {
     llvm::yaml::EmptyContext Ctx;
     VariantEntry Variant;
     yamlize(Yin, Variant, true, Ctx);
-    if (Yin.error())
+    if (Yin.error()) {
       return llvm::errorCodeToError(Yin.error());
 
-    if (Variant.Symbol)
+}
+
+    if (Variant.Symbol) {
       Symbols.insert(*Variant.Symbol);
-    if (Variant.Refs)
-      for (const auto &Ref : Variant.Refs->second)
+
+}
+    if (Variant.Refs) {
+      for (const auto &Ref : Variant.Refs->second) {
         Refs.insert(Variant.Refs->first, Ref);
-    if (Variant.Relation)
+
+}
+
+}
+    if (Variant.Relation) {
       Relations.insert(*Variant.Relation);
+
+}
     Yin.nextDocument();
   }
 

@@ -81,8 +81,10 @@ static bool runOnFunction(Function &F, bool PostInlining) {
 
   if (!EntryFunc.empty()) {
     DebugLoc DL;
-    if (auto SP = F.getSubprogram())
+    if (auto SP = F.getSubprogram()) {
       DL = DebugLoc::get(SP->getScopeLine(), 0, SP);
+
+}
 
     insertCall(F, EntryFunc, &*F.begin()->getFirstInsertionPt(), DL);
     Changed = true;
@@ -92,23 +94,31 @@ static bool runOnFunction(Function &F, bool PostInlining) {
   if (!ExitFunc.empty()) {
     for (BasicBlock &BB : F) {
       Instruction *T = BB.getTerminator();
-      if (!isa<ReturnInst>(T))
+      if (!isa<ReturnInst>(T)) {
         continue;
+
+}
 
       // If T is preceded by a musttail call, that's the real terminator.
       Instruction *Prev = T->getPrevNode();
-      if (BitCastInst *BCI = dyn_cast_or_null<BitCastInst>(Prev))
+      if (BitCastInst *BCI = dyn_cast_or_null<BitCastInst>(Prev)) {
         Prev = BCI->getPrevNode();
+
+}
       if (CallInst *CI = dyn_cast_or_null<CallInst>(Prev)) {
-        if (CI->isMustTailCall())
+        if (CI->isMustTailCall()) {
           T = CI;
+
+}
       }
 
       DebugLoc DL;
-      if (DebugLoc TerminatorDL = T->getDebugLoc())
+      if (DebugLoc TerminatorDL = T->getDebugLoc()) {
         DL = TerminatorDL;
-      else if (auto SP = F.getSubprogram())
+      } else if (auto SP = F.getSubprogram()) {
         DL = DebugLoc::get(0, 0, SP);
+
+}
 
       insertCall(F, ExitFunc, T, DL);
       Changed = true;

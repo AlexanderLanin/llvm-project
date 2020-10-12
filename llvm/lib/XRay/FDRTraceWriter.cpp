@@ -49,8 +49,10 @@ Error writeMetadata(support::endian::Writer &OS, Values &&... Ds) {
   auto Bytes = IndexedWriter<0>::write(OS, T);
   assert(Bytes <= 15 && "Must only ever write at most 16 byte metadata!");
   // Pad out with appropriate numbers of zero's.
-  for (; Bytes < 15; ++Bytes)
+  for (; Bytes < 15; ++Bytes) {
     OS.write('\0');
+
+}
   return Error::success();
 }
 
@@ -93,8 +95,10 @@ Error FDRTraceWriter::visit(TSCWrapRecord &R) {
 }
 
 Error FDRTraceWriter::visit(CustomEventRecord &R) {
-  if (auto E = writeMetadata<5u>(OS, R.size(), R.tsc(), R.cpu()))
+  if (auto E = writeMetadata<5u>(OS, R.size(), R.tsc(), R.cpu())) {
     return E;
+
+}
   auto D = R.data();
   ArrayRef<char> Bytes(D.data(), D.size());
   OS.write(Bytes);
@@ -102,8 +106,10 @@ Error FDRTraceWriter::visit(CustomEventRecord &R) {
 }
 
 Error FDRTraceWriter::visit(CustomEventRecordV5 &R) {
-  if (auto E = writeMetadata<5u>(OS, R.size(), R.delta()))
+  if (auto E = writeMetadata<5u>(OS, R.size(), R.delta())) {
     return E;
+
+}
   auto D = R.data();
   ArrayRef<char> Bytes(D.data(), D.size());
   OS.write(Bytes);
@@ -111,8 +117,10 @@ Error FDRTraceWriter::visit(CustomEventRecordV5 &R) {
 }
 
 Error FDRTraceWriter::visit(TypedEventRecord &R) {
-  if (auto E = writeMetadata<8u>(OS, R.size(), R.delta(), R.eventType()))
+  if (auto E = writeMetadata<8u>(OS, R.size(), R.delta(), R.eventType())) {
     return E;
+
+}
   auto D = R.data();
   ArrayRef<char> Bytes(D.data(), D.size());
   OS.write(Bytes);

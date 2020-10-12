@@ -99,8 +99,10 @@ public:
     int FD;
     std::error_code EC;
     if (auto EC =
-            openFileForWrite(FinalPath, FD, CD_CreateAlways, OF_None, Mode))
+            openFileForWrite(FinalPath, FD, CD_CreateAlways, OF_None, Mode)) {
       return errorCodeToError(EC);
+
+}
     raw_fd_ostream OS(FD, /*shouldClose=*/true, /*unbuffered=*/true);
     OS << StringRef((const char *)Buffer.base(), BufferSize);
     return Error::success();
@@ -119,8 +121,10 @@ createInMemoryBuffer(StringRef Path, size_t Size, unsigned Mode) {
   std::error_code EC;
   MemoryBlock MB = Memory::allocateMappedMemory(
       Size, nullptr, sys::Memory::MF_READ | sys::Memory::MF_WRITE, EC);
-  if (EC)
+  if (EC) {
     return errorCodeToError(EC);
+
+}
   return std::make_unique<InMemoryBuffer>(Path, MB, Size, Mode);
 }
 
@@ -128,8 +132,10 @@ static Expected<std::unique_ptr<FileOutputBuffer>>
 createOnDiskBuffer(StringRef Path, size_t Size, unsigned Mode) {
   Expected<fs::TempFile> FileOrErr =
       fs::TempFile::create(Path + ".tmp%%%%%%%", Mode);
-  if (!FileOrErr)
+  if (!FileOrErr) {
     return FileOrErr.takeError();
+
+}
   fs::TempFile File = std::move(*FileOrErr);
 
 #ifndef _WIN32
@@ -165,12 +171,16 @@ createOnDiskBuffer(StringRef Path, size_t Size, unsigned Mode) {
 Expected<std::unique_ptr<FileOutputBuffer>>
 FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
   // Handle "-" as stdout just like llvm::raw_ostream does.
-  if (Path == "-")
+  if (Path == "-") {
     return createInMemoryBuffer("-", Size, /*Mode=*/0);
 
+}
+
   unsigned Mode = fs::all_read | fs::all_write;
-  if (Flags & F_executable)
+  if (Flags & F_executable) {
     Mode |= fs::all_exe;
+
+}
 
   fs::file_status Stat;
   fs::status(Path, Stat);
@@ -189,10 +199,12 @@ FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
   case fs::file_type::regular_file:
   case fs::file_type::file_not_found:
   case fs::file_type::status_error:
-    if (Flags & F_no_mmap)
+    if (Flags & F_no_mmap) {
       return createInMemoryBuffer(Path, Size, Mode);
-    else
+    } else {
       return createOnDiskBuffer(Path, Size, Mode);
+
+}
   default:
     return createInMemoryBuffer(Path, Size, Mode);
   }

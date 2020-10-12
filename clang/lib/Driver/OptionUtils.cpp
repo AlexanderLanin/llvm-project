@@ -22,9 +22,11 @@ IntTy getLastArgIntValueImpl(const ArgList &Args, OptSpecifier Id,
   IntTy Res = Default;
   if (Arg *A = Args.getLastArg(Id)) {
     if (StringRef(A->getValue()).getAsInteger(Base, Res)) {
-      if (Diags)
+      if (Diags) {
         Diags->Report(diag::err_drv_invalid_int_value)
             << A->getAsString(Args) << A->getValue();
+
+}
     }
   }
   return Res;

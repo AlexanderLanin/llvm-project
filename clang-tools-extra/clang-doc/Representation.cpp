@@ -33,13 +33,17 @@ const SymbolID EmptySID = SymbolID();
 template <typename T>
 llvm::Expected<std::unique_ptr<Info>>
 reduce(std::vector<std::unique_ptr<Info>> &Values) {
-  if (Values.empty())
+  if (Values.empty()) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "no value to reduce");
+
+}
   std::unique_ptr<Info> Merged = std::make_unique<T>(Values[0]->USR);
   T *Tmp = static_cast<T *>(Merged.get());
-  for (auto &I : Values)
+  for (auto &I : Values) {
     Tmp->merge(std::move(*static_cast<T *>(I.get())));
+
+}
   return std::move(Merged);
 }
 
@@ -48,8 +52,10 @@ reduce(std::vector<std::unique_ptr<Info>> &Values) {
 template <typename T>
 int getChildIndexIfExists(std::vector<T> &Children, T &ChildToMerge) {
   for (unsigned long I = 0; I < Children.size(); I++) {
-    if (ChildToMerge.USR == Children[I].USR)
+    if (ChildToMerge.USR == Children[I].USR) {
       return I;
+
+}
   }
   return -1;
 }
@@ -95,9 +101,11 @@ void reduceChildren(std::vector<EnumInfo> &Children,
 // Dispatch function.
 llvm::Expected<std::unique_ptr<Info>>
 mergeInfos(std::vector<std::unique_ptr<Info>> &Values) {
-  if (Values.empty())
+  if (Values.empty()) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "no info values to merge");
+
+}
 
   switch (Values[0]->IT) {
   case InfoType::IT_namespace:
@@ -123,15 +131,19 @@ calculateRelativeFilePath(const InfoType &Type, const StringRef &Path,
     // iterate back to the top
     for (llvm::sys::path::const_iterator I =
              llvm::sys::path::begin(CurrentPath);
-         I != llvm::sys::path::end(CurrentPath); ++I)
+         I != llvm::sys::path::end(CurrentPath); ++I) {
       llvm::sys::path::append(FilePath, "..");
+
+}
     llvm::sys::path::append(FilePath, Path);
   }
 
   // Namespace references have a Path to the parent namespace, but
   // the file is actually in the subdirectory for the namespace.
-  if (Type == doc::InfoType::IT_namespace)
+  if (Type == doc::InfoType::IT_namespace) {
     llvm::sys::path::append(FilePath, Name);
+
+}
 
   return llvm::sys::path::relative_path(FilePath);
 }
@@ -142,8 +154,10 @@ Reference::getRelativeFilePath(const StringRef &CurrentPath) const {
 }
 
 llvm::SmallString<16> Reference::getFileBaseName() const {
-  if (RefType == InfoType::IT_namespace)
+  if (RefType == InfoType::IT_namespace) {
     return llvm::SmallString<16>("index");
+
+}
 
   return Name;
 }
@@ -154,8 +168,10 @@ Info::getRelativeFilePath(const StringRef &CurrentPath) const {
 }
 
 llvm::SmallString<16> Info::getFileBaseName() const {
-  if (IT == InfoType::IT_namespace)
+  if (IT == InfoType::IT_namespace) {
     return llvm::SmallString<16>("index");
+
+}
 
   return extractName();
 }
@@ -166,24 +182,38 @@ bool Reference::mergeable(const Reference &Other) {
 
 void Reference::merge(Reference &&Other) {
   assert(mergeable(Other));
-  if (Name.empty())
+  if (Name.empty()) {
     Name = Other.Name;
-  if (Path.empty())
+
+}
+  if (Path.empty()) {
     Path = Other.Path;
-  if (!IsInGlobalNamespace)
+
+}
+  if (!IsInGlobalNamespace) {
     IsInGlobalNamespace = Other.IsInGlobalNamespace;
+
+}
 }
 
 void Info::mergeBase(Info &&Other) {
   assert(mergeable(Other));
-  if (USR == EmptySID)
+  if (USR == EmptySID) {
     USR = Other.USR;
-  if (Name == "")
+
+}
+  if (Name == "") {
     Name = Other.Name;
-  if (Path == "")
+
+}
+  if (Path == "") {
     Path = Other.Path;
-  if (Namespace.empty())
+
+}
+  if (Namespace.empty()) {
     Namespace = std::move(Other.Namespace);
+
+}
   // Unconditionally extend the description, since each decl may have a comment.
   std::move(Other.Description.begin(), Other.Description.end(),
             std::back_inserter(Description));
@@ -198,8 +228,10 @@ bool Info::mergeable(const Info &Other) {
 
 void SymbolInfo::merge(SymbolInfo &&Other) {
   assert(mergeable(Other));
-  if (!DefLoc)
+  if (!DefLoc) {
     DefLoc = std::move(Other.DefLoc);
+
+}
   // Unconditionally extend the list of locations, since we want all of them.
   std::move(Other.Loc.begin(), Other.Loc.end(), std::back_inserter(Loc));
   std::sort(Loc.begin(), Loc.end());
@@ -220,16 +252,26 @@ void NamespaceInfo::merge(NamespaceInfo &&Other) {
 
 void RecordInfo::merge(RecordInfo &&Other) {
   assert(mergeable(Other));
-  if (!TagType)
+  if (!TagType) {
     TagType = Other.TagType;
-  if (Members.empty())
+
+}
+  if (Members.empty()) {
     Members = std::move(Other.Members);
-  if (Bases.empty())
+
+}
+  if (Bases.empty()) {
     Bases = std::move(Other.Bases);
-  if (Parents.empty())
+
+}
+  if (Parents.empty()) {
     Parents = std::move(Other.Parents);
-  if (VirtualParents.empty())
+
+}
+  if (VirtualParents.empty()) {
     VirtualParents = std::move(Other.VirtualParents);
+
+}
   // Reduce children if necessary.
   reduceChildren(ChildRecords, std::move(Other.ChildRecords));
   reduceChildren(ChildFunctions, std::move(Other.ChildFunctions));
@@ -239,31 +281,47 @@ void RecordInfo::merge(RecordInfo &&Other) {
 
 void EnumInfo::merge(EnumInfo &&Other) {
   assert(mergeable(Other));
-  if (!Scoped)
+  if (!Scoped) {
     Scoped = Other.Scoped;
-  if (Members.empty())
+
+}
+  if (Members.empty()) {
     Members = std::move(Other.Members);
+
+}
   SymbolInfo::merge(std::move(Other));
 }
 
 void FunctionInfo::merge(FunctionInfo &&Other) {
   assert(mergeable(Other));
-  if (!IsMethod)
+  if (!IsMethod) {
     IsMethod = Other.IsMethod;
-  if (!Access)
+
+}
+  if (!Access) {
     Access = Other.Access;
-  if (ReturnType.Type.USR == EmptySID && ReturnType.Type.Name == "")
+
+}
+  if (ReturnType.Type.USR == EmptySID && ReturnType.Type.Name == "") {
     ReturnType = std::move(Other.ReturnType);
-  if (Parent.USR == EmptySID && Parent.Name == "")
+
+}
+  if (Parent.USR == EmptySID && Parent.Name == "") {
     Parent = std::move(Other.Parent);
-  if (Params.empty())
+
+}
+  if (Params.empty()) {
     Params = std::move(Other.Params);
+
+}
   SymbolInfo::merge(std::move(Other));
 }
 
 llvm::SmallString<16> Info::extractName() const {
-  if (!Name.empty())
+  if (!Name.empty()) {
     return Name;
+
+}
 
   switch (IT) {
   case InfoType::IT_namespace:
@@ -271,8 +329,10 @@ llvm::SmallString<16> Info::extractName() const {
     // 'GlobalNamespace' (i.e. a namespace at the same level as the global
     // namespace, which would conflict with the hard-coded global namespace name
     // below.)
-    if (Name == "GlobalNamespace" && Namespace.empty())
+    if (Name == "GlobalNamespace" && Namespace.empty()) {
       return llvm::SmallString<16>("@GlobalNamespace");
+
+}
     // The case of anonymous namespaces is taken care of in serialization,
     // so here we can safely assume an unnamed namespace is the global
     // one.
@@ -299,24 +359,30 @@ bool Index::operator<(const Index &Other) const {
   for (unsigned I = 0; I < Name.size() && I < Other.Name.size(); ++I) {
     // Compare them after converting both to lower case
     int D = tolower(Name[I]) - tolower(Other.Name[I]);
-    if (D == 0)
+    if (D == 0) {
       continue;
+
+}
     return D < 0;
   }
   // If both strings have the size it means they would be equal if changed to
   // lower case. In here, lower case will be smaller than upper case
   // Example: string < stRing = true
   // This is the opposite of how operator < handles strings
-  if (Name.size() == Other.Name.size())
+  if (Name.size() == Other.Name.size()) {
     return Name > Other.Name;
+
+}
   // If they are not the same size; the shorter string is smaller
   return Name.size() < Other.Name.size();
 }
 
 void Index::sort() {
   std::sort(Children.begin(), Children.end());
-  for (auto &C : Children)
+  for (auto &C : Children) {
     C.sort();
+
+}
 }
 
 ClangDocContext::ClangDocContext(tooling::ExecutionContext *ECtx,
@@ -329,15 +395,19 @@ ClangDocContext::ClangDocContext(tooling::ExecutionContext *ECtx,
       OutDirectory(OutDirectory), UserStylesheets(UserStylesheets),
       JsScripts(JsScripts) {
   llvm::SmallString<128> SourceRootDir(SourceRoot);
-  if (SourceRoot.empty())
+  if (SourceRoot.empty()) {
     // If no SourceRoot was provided the current path is used as the default
     llvm::sys::fs::current_path(SourceRootDir);
+
+}
   this->SourceRoot = std::string(SourceRootDir.str());
   if (!RepositoryUrl.empty()) {
     this->RepositoryUrl = std::string(RepositoryUrl);
     if (!RepositoryUrl.empty() && RepositoryUrl.find("http://") != 0 &&
-        RepositoryUrl.find("https://") != 0)
+        RepositoryUrl.find("https://") != 0) {
       this->RepositoryUrl->insert(0, "https://");
+
+}
   }
 }
 

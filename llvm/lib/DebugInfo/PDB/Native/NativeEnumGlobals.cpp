@@ -27,8 +27,10 @@ NativeEnumGlobals::NativeEnumGlobals(NativeSession &PDBSession,
   SymbolStream &SS = cantFail(Session.getPDBFile().getPDBSymbolStream());
   for (uint32_t Off : GS.getGlobalsTable()) {
     CVSymbol S = SS.readRecord(Off);
-    if (!llvm::is_contained(Kinds, S.kind()))
+    if (!llvm::is_contained(Kinds, S.kind())) {
       continue;
+
+}
     MatchOffsets.push_back(Off);
   }
 }
@@ -39,8 +41,10 @@ uint32_t NativeEnumGlobals::getChildCount() const {
 
 std::unique_ptr<PDBSymbol>
 NativeEnumGlobals::getChildAtIndex(uint32_t N) const {
-  if (N >= MatchOffsets.size())
+  if (N >= MatchOffsets.size()) {
     return nullptr;
+
+}
 
   SymIndexId Id =
       Session.getSymbolCache().getOrCreateGlobalSymbolByOffset(MatchOffsets[N]);

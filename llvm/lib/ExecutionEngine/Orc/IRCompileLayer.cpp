@@ -32,10 +32,12 @@ void IRCompileLayer::emit(MaterializationResponsibility R,
   if (auto Obj = TSM.withModuleDo(*Compile)) {
     {
       std::lock_guard<std::mutex> Lock(IRLayerMutex);
-      if (NotifyCompiled)
+      if (NotifyCompiled) {
         NotifyCompiled(R.getVModuleKey(), std::move(TSM));
-      else
+      } else {
         TSM = ThreadSafeModule();
+
+}
     }
     BaseLayer.emit(std::move(R), std::move(*Obj));
   } else {

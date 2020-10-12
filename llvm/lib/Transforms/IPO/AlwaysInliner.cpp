@@ -46,28 +46,38 @@ PreservedAnalyses AlwaysInlinerPass::run(Module &M,
   SmallSetVector<CallSite, 16> Calls;
   bool Changed = false;
   SmallVector<Function *, 16> InlinedFunctions;
-  for (Function &F : M)
+  for (Function &F : M) {
     if (!F.isDeclaration() && F.hasFnAttribute(Attribute::AlwaysInline) &&
         isInlineViable(F).isSuccess()) {
       Calls.clear();
 
-      for (User *U : F.users())
-        if (auto CS = CallSite(U))
-          if (CS.getCalledFunction() == &F)
+      for (User *U : F.users()) {
+        if (auto CS = CallSite(U)) {
+          if (CS.getCalledFunction() == &F) {
             Calls.insert(CS);
 
-      for (CallSite CS : Calls)
+}
+
+}
+
+}
+
+      for (CallSite CS : Calls) {
         // FIXME: We really shouldn't be able to fail to inline at this point!
         // We should do something to log or check the inline failures here.
         Changed |=
             InlineFunction(CS, IFI, /*CalleeAAR=*/nullptr, InsertLifetime)
                 .isSuccess();
 
+}
+
       // Remember to try and delete this function afterward. This both avoids
       // re-walking the rest of the module and avoids dealing with any iterator
       // invalidation issues while deleting functions.
       InlinedFunctions.push_back(&F);
     }
+
+}
 
   // Remove any live functions.
   erase_if(InlinedFunctions, [&](Function *F) {
@@ -78,8 +88,10 @@ PreservedAnalyses AlwaysInlinerPass::run(Module &M,
   // Delete the non-comdat ones from the module and also from our vector.
   auto NonComdatBegin = partition(
       InlinedFunctions, [&](Function *F) { return F->hasComdat(); });
-  for (Function *F : make_range(NonComdatBegin, InlinedFunctions.end()))
+  for (Function *F : make_range(NonComdatBegin, InlinedFunctions.end())) {
     M.getFunctionList().erase(F);
+
+}
   InlinedFunctions.erase(NonComdatBegin, InlinedFunctions.end());
 
   if (!InlinedFunctions.empty()) {
@@ -87,8 +99,10 @@ PreservedAnalyses AlwaysInlinerPass::run(Module &M,
     // are not actually dead.
     filterDeadComdatFunctions(M, InlinedFunctions);
     // The remaining functions are actually dead.
-    for (Function *F : InlinedFunctions)
+    for (Function *F : InlinedFunctions) {
       M.getFunctionList().erase(F);
+
+}
   }
 
   return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
@@ -157,19 +171,27 @@ InlineCost AlwaysInlinerLegacyPass::getInlineCost(CallSite CS) {
 
   // Only inline direct calls to functions with always-inline attributes
   // that are viable for inlining.
-  if (!Callee)
+  if (!Callee) {
     return InlineCost::getNever("indirect call");
 
+}
+
   // FIXME: We shouldn't even get here for declarations.
-  if (Callee->isDeclaration())
+  if (Callee->isDeclaration()) {
     return InlineCost::getNever("no definition");
 
-  if (!CS.hasFnAttr(Attribute::AlwaysInline))
+}
+
+  if (!CS.hasFnAttr(Attribute::AlwaysInline)) {
     return InlineCost::getNever("no alwaysinline attribute");
 
+}
+
   auto IsViable = isInlineViable(*Callee);
-  if (!IsViable.isSuccess())
+  if (!IsViable.isSuccess()) {
     return InlineCost::getNever(IsViable.getFailureReason());
+
+}
 
   return InlineCost::getAlways("always inliner");
 }

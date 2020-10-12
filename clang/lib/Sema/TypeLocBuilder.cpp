@@ -51,8 +51,10 @@ void TypeLocBuilder::grow(size_t NewCapacity) {
          &Buffer[Index],
          Capacity - Index);
 
-  if (Buffer != InlineBuffer)
+  if (Buffer != InlineBuffer) {
     delete[] Buffer;
+
+}
 
   Buffer = NewBuffer;
   Capacity = NewCapacity;
@@ -73,8 +75,10 @@ TypeLoc TypeLocBuilder::pushImpl(QualType T, size_t LocalSize, unsigned LocalAli
   if (LocalSize > Index) {
     size_t RequiredCapacity = Capacity + (LocalSize - Index);
     size_t NewCapacity = Capacity * 2;
-    while (RequiredCapacity > NewCapacity)
+    while (RequiredCapacity > NewCapacity) {
       NewCapacity *= 2;
+
+}
     grow(NewCapacity);
   }
 

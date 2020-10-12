@@ -96,8 +96,10 @@ void LPPassManager::addLoop(Loop &L) {
 // Recurse through all subloops and all loops  into LQ.
 static void addLoopIntoQueue(Loop *L, std::deque<Loop *> &LQ) {
   LQ.push_back(L);
-  for (Loop *I : reverse(*L))
+  for (Loop *I : reverse(*L)) {
     addLoopIntoQueue(I, LQ);
+
+}
 }
 
 /// Pass Manager itself does not invalidate any analysis info.
@@ -148,11 +150,15 @@ bool LPPassManager::runOnFunction(Function &F) {
   // Note that LoopInfo::iterator visits loops in reverse program
   // order. Here, reverse_iterator gives us a forward order, and the LoopQueue
   // reverses the order a third time by popping from the back.
-  for (Loop *L : reverse(*LI))
+  for (Loop *L : reverse(*LI)) {
     addLoopIntoQueue(L, LQ);
 
-  if (LQ.empty()) // No loops, skip calling finalizers
+}
+
+  if (LQ.empty()) { // No loops, skip calling finalizers
     return false;
+
+}
 
   // Initialization
   for (Loop *L : LQ) {
@@ -208,10 +214,12 @@ bool LPPassManager::runOnFunction(Function &F) {
         }
       }
 
-      if (LocalChanged)
+      if (LocalChanged) {
         dumpPassInfo(P, MODIFICATION_MSG, ON_LOOP_MSG,
                      CurrentLoopDeleted ? "<deleted loop>"
                                         : CurrentLoop->getName());
+
+}
       dumpPreservedSet(P);
 
       if (!CurrentLoopDeleted) {
@@ -248,9 +256,11 @@ bool LPPassManager::runOnFunction(Function &F) {
                                           : CurrentLoop->getHeader()->getName(),
                        ON_LOOP_MSG);
 
-      if (CurrentLoopDeleted)
+      if (CurrentLoopDeleted) {
         // Do not run other passes on this loop.
         break;
+
+}
     }
 
     // If the loop was deleted, release all the loop passes. This frees up
@@ -305,15 +315,19 @@ void LoopPass::preparePassManager(PMStack &PMS) {
 
   // Find LPPassManager
   while (!PMS.empty() &&
-         PMS.top()->getPassManagerType() > PMT_LoopPassManager)
+         PMS.top()->getPassManagerType() > PMT_LoopPassManager) {
     PMS.pop();
+
+}
 
   // If this pass is destroying high level information that is used
   // by other passes that are managed by LPM then do not insert
   // this pass in current LPM. Use new LPPassManager.
   if (PMS.top()->getPassManagerType() == PMT_LoopPassManager &&
-      !PMS.top()->preserveHigherLevelAnalysis(this))
+      !PMS.top()->preserveHigherLevelAnalysis(this)) {
     PMS.pop();
+
+}
 }
 
 /// Assign pass manager to manage this pass.
@@ -321,13 +335,15 @@ void LoopPass::assignPassManager(PMStack &PMS,
                                  PassManagerType PreferredType) {
   // Find LPPassManager
   while (!PMS.empty() &&
-         PMS.top()->getPassManagerType() > PMT_LoopPassManager)
+         PMS.top()->getPassManagerType() > PMT_LoopPassManager) {
     PMS.pop();
 
+}
+
   LPPassManager *LPPM;
-  if (PMS.top()->getPassManagerType() == PMT_LoopPassManager)
+  if (PMS.top()->getPassManagerType() == PMT_LoopPassManager) {
     LPPM = (LPPassManager*)PMS.top();
-  else {
+  } else {
     // Create new Loop Pass Manager if it does not exist.
     assert (!PMS.empty() && "Unable to create Loop Pass Manager");
     PMDataManager *PMD = PMS.top();
@@ -358,12 +374,16 @@ static std::string getDescription(const Loop &L) {
 
 bool LoopPass::skipLoop(const Loop *L) const {
   const Function *F = L->getHeader()->getParent();
-  if (!F)
+  if (!F) {
     return false;
+
+}
   // Check the opt bisect limit.
   OptPassGate &Gate = F->getContext().getOptPassGate();
-  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(*L)))
+  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(*L))) {
     return true;
+
+}
   // Check for the OptimizeNone attribute.
   if (F->hasOptNone()) {
     // FIXME: Report this to dbgs() only once per function.

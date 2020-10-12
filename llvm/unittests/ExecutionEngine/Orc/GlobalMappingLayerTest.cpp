@@ -25,8 +25,10 @@ TEST(GlobalMappingLayerTest, Empty) {
 
   TestBaseLayer.findSymbolImpl =
     [](const std::string &Name, bool ExportedSymbolsOnly) -> JITSymbol {
-      if (Name == "bar")
+      if (Name == "bar") {
         return llvm::JITSymbol(0x4567, JITSymbolFlags::Exported);
+
+}
       return nullptr;
     };
 

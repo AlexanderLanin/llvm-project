@@ -27,8 +27,10 @@ Error InstructionTables::execute(InstRef &IR) {
   for (const std::pair<const uint64_t, ResourceUsage> Resource :
        Desc.Resources) {
     // Skip zero-cycle resources (i.e., unused resources).
-    if (!Resource.second.size())
+    if (!Resource.second.size()) {
       continue;
+
+}
     unsigned Cycles = Resource.second.size();
     unsigned Index = std::distance(
         Masks.begin(), std::find(Masks.begin(), Masks.end(), Resource.first));

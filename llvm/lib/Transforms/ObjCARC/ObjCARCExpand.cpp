@@ -82,12 +82,16 @@ bool ObjCARCExpand::doInitialization(Module &M) {
 }
 
 bool ObjCARCExpand::runOnFunction(Function &F) {
-  if (!EnableARCOpts)
+  if (!EnableARCOpts) {
     return false;
 
+}
+
   // If nothing in the Module uses ARC, don't do anything.
-  if (!Run)
+  if (!Run) {
     return false;
+
+}
 
   bool Changed = false;
 

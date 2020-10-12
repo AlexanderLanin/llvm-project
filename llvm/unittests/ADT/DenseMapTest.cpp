@@ -202,13 +202,17 @@ TYPED_TEST(DenseMapTest, CopyConstructorTest) {
 
 // Test copy constructor method where SmallDenseMap isn't small.
 TYPED_TEST(DenseMapTest, CopyConstructorNotSmallTest) {
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     this->Map[this->getKey(Key)] = this->getValue(Key);
+
+}
   TypeParam copyMap(this->Map);
 
   EXPECT_EQ(5u, copyMap.size());
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     EXPECT_EQ(this->getValue(Key), copyMap[this->getKey(Key)]);
+
+}
 }
 
 // Test copying from a default-constructed map.
@@ -220,8 +224,10 @@ TYPED_TEST(DenseMapTest, CopyConstructorFromDefaultTest) {
 
 // Test copying from an empty map where SmallDenseMap isn't small.
 TYPED_TEST(DenseMapTest, CopyConstructorFromEmptyTest) {
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     this->Map[this->getKey(Key)] = this->getValue(Key);
+
+}
   this->Map.clear();
   TypeParam copyMap(this->Map);
 
@@ -243,19 +249,25 @@ TYPED_TEST(DenseMapTest, AssignmentTest) {
 }
 
 TYPED_TEST(DenseMapTest, AssignmentTestNotSmall) {
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     this->Map[this->getKey(Key)] = this->getValue(Key);
+
+}
   TypeParam copyMap = this->Map;
 
   EXPECT_EQ(5u, copyMap.size());
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     EXPECT_EQ(this->getValue(Key), copyMap[this->getKey(Key)]);
+
+}
 
   // test self-assignment.
   copyMap = static_cast<TypeParam &>(copyMap);
   EXPECT_EQ(5u, copyMap.size());
-  for (int Key = 0; Key < 5; ++Key)
+  for (int Key = 0; Key < 5; ++Key) {
     EXPECT_EQ(this->getValue(Key), copyMap[this->getKey(Key)]);
+
+}
 }
 
 // Test swap method
@@ -276,22 +288,28 @@ TYPED_TEST(DenseMapTest, SwapTest) {
   EXPECT_EQ(this->getValue(), this->Map[this->getKey()]);
 
   // Make this more interesting by inserting 100 numbers into the map.
-  for (int i = 0; i < 100; ++i)
+  for (int i = 0; i < 100; ++i) {
     this->Map[this->getKey(i)] = this->getValue(i);
+
+}
 
   this->Map.swap(otherMap);
   EXPECT_EQ(0u, this->Map.size());
   EXPECT_TRUE(this->Map.empty());
   EXPECT_EQ(100u, otherMap.size());
-  for (int i = 0; i < 100; ++i)
+  for (int i = 0; i < 100; ++i) {
     EXPECT_EQ(this->getValue(i), otherMap[this->getKey(i)]);
+
+}
 
   this->Map.swap(otherMap);
   EXPECT_EQ(0u, otherMap.size());
   EXPECT_TRUE(otherMap.empty());
   EXPECT_EQ(100u, this->Map.size());
-  for (int i = 0; i < 100; ++i)
+  for (int i = 0; i < 100; ++i) {
     EXPECT_EQ(this->getValue(i), this->Map[this->getKey(i)]);
+
+}
 }
 
 // A more complex iteration test
@@ -309,12 +327,16 @@ TYPED_TEST(DenseMapTest, IterationTest) {
 
   // Iterate over all numbers and mark each one found.
   for (typename TypeParam::iterator it = this->Map.begin();
-       it != this->Map.end(); ++it)
+       it != this->Map.end(); ++it) {
     visited[visitedIndex[it->first]] = true;
 
+}
+
   // Ensure every number was visited.
-  for (int i = 0; i < 100; ++i)
+  for (int i = 0; i < 100; ++i) {
     ASSERT_TRUE(visited[i]) << "Entry #" << i << " was never visited";
+
+}
 }
 
 // const_iterator test
@@ -386,10 +408,12 @@ TEST(DenseMapCustomTest, DefaultMinReservedSizeTest) {
   unsigned MemorySize = Map.getMemorySize();
   CountCopyAndMove::Copy = 0;
   CountCopyAndMove::Move = 0;
-  for (int i = 0; i < ExpectedMaxInitialEntries; ++i)
+  for (int i = 0; i < ExpectedMaxInitialEntries; ++i) {
     Map.insert(std::pair<int, CountCopyAndMove>(std::piecewise_construct,
                                                 std::forward_as_tuple(i),
                                                 std::forward_as_tuple()));
+
+}
   // Check that we didn't grow
   EXPECT_EQ(MemorySize, Map.getMemorySize());
   // Check that move was called the expected number of times
@@ -424,10 +448,12 @@ TEST(DenseMapCustomTest, InitialSizeTest) {
     unsigned MemorySize = Map.getMemorySize();
     CountCopyAndMove::Copy = 0;
     CountCopyAndMove::Move = 0;
-    for (int i = 0; i < Size; ++i)
+    for (int i = 0; i < Size; ++i) {
       Map.insert(std::pair<int, CountCopyAndMove>(std::piecewise_construct,
                                                   std::forward_as_tuple(i),
                                                   std::forward_as_tuple()));
+
+}
     // Check that we didn't grow
     EXPECT_EQ(MemorySize, Map.getMemorySize());
     // Check that move was called the expected number of times
@@ -442,8 +468,10 @@ TEST(DenseMapCustomTest, InitFromIterator) {
   std::vector<std::pair<int, CountCopyAndMove>> Values;
   // The size is a random value greater than 64 (hardcoded DenseMap min init)
   const int Count = 65;
-  for (int i = 0; i < Count; i++)
+  for (int i = 0; i < Count; i++) {
     Values.emplace_back(i, CountCopyAndMove());
+
+}
 
   CountCopyAndMove::Move = 0;
   CountCopyAndMove::Copy = 0;
@@ -468,10 +496,12 @@ TEST(DenseMapCustomTest, ReserveTest) {
     unsigned MemorySize = Map.getMemorySize();
     CountCopyAndMove::Copy = 0;
     CountCopyAndMove::Move = 0;
-    for (int i = 0; i < Size; ++i)
+    for (int i = 0; i < Size; ++i) {
       Map.insert(std::pair<int, CountCopyAndMove>(std::piecewise_construct,
                                                   std::forward_as_tuple(i),
                                                   std::forward_as_tuple()));
+
+}
     // Check that we didn't grow
     EXPECT_EQ(MemorySize, Map.getMemorySize());
     // Check that move was called the expected number of times
@@ -563,12 +593,18 @@ TEST(DenseMapCustomTest, SmallDenseMapGrowTest) {
   // Add some number of elements, then delete a few to leave us some tombstones.
   // If we just filled the map with 32 elements we'd grow because of not enough
   // tombstones which masks the issue here.
-  for (unsigned i = 0; i < 20; ++i)
+  for (unsigned i = 0; i < 20; ++i) {
     map[i] = i + 1;
-  for (unsigned i = 0; i < 10; ++i)
+
+}
+  for (unsigned i = 0; i < 10; ++i) {
     map.erase(i);
-  for (unsigned i = 20; i < 32; ++i)
+
+}
+  for (unsigned i = 20; i < 32; ++i) {
     map[i] = i + 1;
+
+}
 
   // Size tests
   EXPECT_EQ(22u, map.size());
@@ -583,14 +619,20 @@ TEST(DenseMapCustomTest, SmallDenseMapGrowTest) {
 TEST(DenseMapCustomTest, LargeSmallDenseMapCompaction) {
   SmallDenseMap<unsigned, unsigned, 128, ContiguousDenseMapInfo> map;
   // Fill to < 3/4 load.
-  for (unsigned i = 0; i < 95; ++i)
+  for (unsigned i = 0; i < 95; ++i) {
     map[i] = i;
+
+}
   // And erase, leaving behind tombstones.
-  for (unsigned i = 0; i < 95; ++i)
+  for (unsigned i = 0; i < 95; ++i) {
     map.erase(i);
+
+}
   // Fill further, so that less than 1/8 are empty, but still below 3/4 load.
-  for (unsigned i = 95; i < 128; ++i)
+  for (unsigned i = 95; i < 128; ++i) {
     map[i] = i;
+
+}
 
   EXPECT_EQ(33u, map.size());
   // Similar to the previous test, check for a non-existing element, as an

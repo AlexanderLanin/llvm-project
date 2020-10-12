@@ -38,10 +38,14 @@ PlatformKind mapToPlatformKind(const Triple &Target) {
   case Triple::MacOSX:
     return PlatformKind::macOS;
   case Triple::IOS:
-    if (Target.isSimulatorEnvironment())
+    if (Target.isSimulatorEnvironment()) {
       return PlatformKind::iOSSimulator;
-    if (Target.getEnvironment() == Triple::MacABI)
+
+}
+    if (Target.getEnvironment() == Triple::MacABI) {
       return PlatformKind::macCatalyst;
+
+}
     return PlatformKind::iOS;
   case Triple::TvOS:
     return Target.isSimulatorEnvironment() ? PlatformKind::tvOSSimulator
@@ -56,8 +60,10 @@ PlatformKind mapToPlatformKind(const Triple &Target) {
 
 PlatformSet mapToPlatformSet(ArrayRef<Triple> Targets) {
   PlatformSet Result;
-  for (const auto &Target : Targets)
+  for (const auto &Target : Targets) {
     Result.insert(mapToPlatformKind(Target));
+
+}
   return Result;
 }
 

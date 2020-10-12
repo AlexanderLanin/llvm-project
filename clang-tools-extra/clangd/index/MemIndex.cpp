@@ -40,20 +40,30 @@ bool MemIndex::fuzzyFind(
     const Symbol *Sym = Pair.second;
 
     // Exact match against all possible scopes.
-    if (!Req.AnyScope && !llvm::is_contained(Req.Scopes, Sym->Scope))
-      continue;
-    if (Req.RestrictForCodeCompletion &&
-        !(Sym->Flags & Symbol::IndexedForCodeCompletion))
+    if (!Req.AnyScope && !llvm::is_contained(Req.Scopes, Sym->Scope)) {
       continue;
 
-    if (auto Score = Filter.match(Sym->Name))
-      if (Top.push({*Score * quality(*Sym), Sym}))
+}
+    if (Req.RestrictForCodeCompletion &&
+        !(Sym->Flags & Symbol::IndexedForCodeCompletion)) {
+      continue;
+
+}
+
+    if (auto Score = Filter.match(Sym->Name)) {
+      if (Top.push({*Score * quality(*Sym), Sym})) {
         More = true; // An element with smallest score was discarded.
+
+}
+
+}
   }
   auto Results = std::move(Top).items();
   SPAN_ATTACH(Tracer, "results", static_cast<int>(Results.size()));
-  for (const auto &Item : Results)
+  for (const auto &Item : Results) {
     Callback(*Item.second);
+
+}
   return More;
 }
 
@@ -62,8 +72,10 @@ void MemIndex::lookup(const LookupRequest &Req,
   trace::Span Tracer("MemIndex lookup");
   for (const auto &ID : Req.IDs) {
     auto I = Index.find(ID);
-    if (I != Index.end())
+    if (I != Index.end()) {
       Callback(*I->second);
+
+}
   }
 }
 
@@ -74,13 +86,19 @@ bool MemIndex::refs(const RefsRequest &Req,
       Req.Limit.getValueOr(std::numeric_limits<uint32_t>::max());
   for (const auto &ReqID : Req.IDs) {
     auto SymRefs = Refs.find(ReqID);
-    if (SymRefs == Refs.end())
+    if (SymRefs == Refs.end()) {
       continue;
+
+}
     for (const auto &O : SymRefs->second) {
-      if (!static_cast<int>(Req.Filter & O.Kind))
+      if (!static_cast<int>(Req.Filter & O.Kind)) {
         continue;
-      if (Remaining == 0)
+
+}
+      if (Remaining == 0) {
         return true; // More refs were available.
+
+}
       --Remaining;
       Callback(O);
     }

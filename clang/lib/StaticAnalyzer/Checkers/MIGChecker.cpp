@@ -119,8 +119,10 @@ static const ParmVarDecl *getOriginParam(SVal V, CheckerContext &C,
                                          bool IncludeBaseRegions = false) {
   // TODO: We should most likely always include base regions here.
   SymbolRef Sym = V.getAsSymbol(IncludeBaseRegions);
-  if (!Sym)
+  if (!Sym) {
     return nullptr;
+
+}
 
   // If we optimistically assume that the MIG routine never re-uses the storage
   // that was passed to it as arguments when it invalidates it (but at most when
@@ -130,12 +132,16 @@ static const ParmVarDecl *getOriginParam(SVal V, CheckerContext &C,
   while (const MemRegion *MR = Sym->getOriginRegion()) {
     const auto *VR = dyn_cast<VarRegion>(MR);
     if (VR && VR->hasStackParametersStorage() &&
-           VR->getStackFrame()->inTopFrame())
+           VR->getStackFrame()->inTopFrame()) {
       return cast<ParmVarDecl>(VR->getDecl());
 
+}
+
     const SymbolicRegion *SR = MR->getSymbolicBase();
-    if (!SR)
+    if (!SR) {
       return nullptr;
+
+}
 
     Sym = SR->getSymbol();
   }
@@ -163,18 +169,28 @@ static bool isInMIGCall(CheckerContext &C) {
     // FIXME: AnyCall doesn't support blocks yet, so they remain unchecked
     // for now.
     if (!AC->getReturnType(C.getASTContext())
-             .getCanonicalType()->isSignedIntegerType())
+             .getCanonicalType()->isSignedIntegerType()) {
       return false;
+
+}
   }
 
-  if (D->hasAttr<MIGServerRoutineAttr>())
+  if (D->hasAttr<MIGServerRoutineAttr>()) {
     return true;
 
+}
+
   // See if there's an annotated method in the superclass.
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(D))
-    for (const auto *OMD: MD->overridden_methods())
-      if (OMD->hasAttr<MIGServerRoutineAttr>())
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
+    for (const auto *OMD: MD->overridden_methods()) {
+      if (OMD->hasAttr<MIGServerRoutineAttr>()) {
         return true;
+
+}
+
+}
+
+}
 
   return false;
 }
@@ -193,27 +209,35 @@ void MIGChecker::checkPostCall(const CallEvent &Call, CheckerContext &C) const {
     return;
   }
 
-  if (!isInMIGCall(C))
+  if (!isInMIGCall(C)) {
     return;
+
+}
 
   auto I = llvm::find_if(Deallocators,
                          [&](const std::pair<CallDescription, unsigned> &Item) {
                            return Call.isCalled(Item.first);
                          });
-  if (I == Deallocators.end())
+  if (I == Deallocators.end()) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
   unsigned ArgIdx = I->second;
   SVal Arg = Call.getArgSVal(ArgIdx);
   const ParmVarDecl *PVD = getOriginParam(Arg, C);
-  if (!PVD || State->contains<RefCountedParameters>(PVD))
+  if (!PVD || State->contains<RefCountedParameters>(PVD)) {
     return;
+
+}
 
   const NoteTag *T =
     C.getNoteTag([this, PVD](PathSensitiveBugReport &BR) -> std::string {
-        if (&BR.getBugType() != &BT)
+        if (&BR.getBugType() != &BT) {
           return "";
+
+}
         SmallString<64> Str;
         llvm::raw_svector_ostream OS(Str);
         OS << "Value passed through parameter '" << PVD->getName()
@@ -228,8 +252,10 @@ static bool mayBeSuccess(SVal V, CheckerContext &C) {
   ProgramStateRef State = C.getState();
 
   // Can V represent KERN_SUCCESS?
-  if (!State->isNull(V).isConstrainedFalse())
+  if (!State->isNull(V).isConstrainedFalse()) {
     return true;
+
+}
 
   SValBuilder &SVB = C.getSValBuilder();
   ASTContext &ACtx = C.getASTContext();
@@ -237,8 +263,10 @@ static bool mayBeSuccess(SVal V, CheckerContext &C) {
   // Can V represent MIG_NO_REPLY?
   static const int MigNoReply = -305;
   V = SVB.evalEQ(C.getState(), V, SVB.makeIntVal(MigNoReply, ACtx.IntTy));
-  if (!State->isNull(V).isConstrainedTrue())
+  if (!State->isNull(V).isConstrainedTrue()) {
     return true;
+
+}
 
   // If none of the above, it's definitely an error.
   return false;
@@ -253,28 +281,40 @@ void MIGChecker::checkReturnAux(const ReturnStmt *RS, CheckerContext &C) const {
   // a random routine in the middle of nowhere, but given that the convention is
   // fairly weird and hard to follow in the first place, there's relatively
   // little motivation to spread it this way.
-  if (!C.inTopFrame())
+  if (!C.inTopFrame()) {
     return;
 
-  if (!isInMIGCall(C))
+}
+
+  if (!isInMIGCall(C)) {
     return;
+
+}
 
   // We know that the function is non-void, but what if the return statement
   // is not there in the code? It's not a compile error, we should not crash.
-  if (!RS)
+  if (!RS) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
-  if (!State->get<ReleasedParameter>())
+  if (!State->get<ReleasedParameter>()) {
     return;
+
+}
 
   SVal V = C.getSVal(RS);
-  if (mayBeSuccess(V, C))
+  if (mayBeSuccess(V, C)) {
     return;
 
+}
+
   ExplodedNode *N = C.generateErrorNode();
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   auto R = std::make_unique<PathSensitiveBugReport>(
       BT,

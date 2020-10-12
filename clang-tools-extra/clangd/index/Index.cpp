@@ -40,8 +40,10 @@ bool fromJSON(const llvm::json::Value &Parameters, FuzzyFindRequest &Request) {
       O.map("RestrictForCodeCompletion", Request.RestrictForCodeCompletion) &&
       O.map("ProximityPaths", Request.ProximityPaths) &&
       O.map("PreferredTypes", Request.PreferredTypes);
-  if (OK && Limit <= std::numeric_limits<uint32_t>::max())
+  if (OK && Limit <= std::numeric_limits<uint32_t>::max()) {
     Request.Limit = Limit;
+
+}
   return OK;
 }
 

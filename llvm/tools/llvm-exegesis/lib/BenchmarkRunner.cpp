@@ -51,9 +51,11 @@ private:
     for (auto &CounterName : CounterNames) {
       CounterName = CounterName.trim();
       pfm::PerfEvent PerfEvent(CounterName);
-      if (!PerfEvent.valid())
+      if (!PerfEvent.valid()) {
         return make_error<Failure>(
             Twine("invalid perf event '").concat(CounterName).concat("'"));
+
+}
       pfm::Counter Counter(PerfEvent);
       Scratch->clear();
       {
@@ -66,8 +68,10 @@ private:
         });
         CrashRecoveryContext::Disable();
         // FIXME: Better diagnosis.
-        if (Crashed)
+        if (Crashed) {
           return make_error<SnippetCrash>("snippet crashed while running");
+
+}
       }
       CounterValue += Counter.read();
     }
@@ -143,8 +147,10 @@ Expected<InstructionBenchmark> BenchmarkRunner::runConfiguration(
                                       Scratch.get());
   auto Measurements = runMeasurements(Executor);
   if (Error E = Measurements.takeError()) {
-    if (!E.isA<SnippetCrash>())
+    if (!E.isA<SnippetCrash>()) {
       return std::move(E);
+
+}
     InstrBenchmark.Error = toString(std::move(E));
     return InstrBenchmark;
   }
@@ -167,8 +173,10 @@ BenchmarkRunner::writeObjectFile(const BenchmarkCode &BC,
   int ResultFD = 0;
   SmallString<256> ResultPath;
   if (Error E = errorCodeToError(
-          sys::fs::createTemporaryFile("snippet", "o", ResultFD, ResultPath)))
+          sys::fs::createTemporaryFile("snippet", "o", ResultFD, ResultPath))) {
     return std::move(E);
+
+}
   raw_fd_ostream OFS(ResultFD, true /*ShouldClose*/);
   if (Error E = assembleToStream(
           State.getExegesisTarget(), State.createTargetMachine(), BC.LiveIns,

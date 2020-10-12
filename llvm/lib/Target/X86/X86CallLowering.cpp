@@ -63,8 +63,10 @@ bool X86CallLowering::splitToValueTypes(const ArgInfo &OrigArg,
   ComputeValueVTs(TLI, DL, OrigArg.Ty, SplitVTs, &Offsets, 0);
   assert(OrigArg.Regs.size() == 1 && "Can't handle multple regs yet");
 
-  if (OrigArg.Ty->isVoidTy())
+  if (OrigArg.Ty->isVoidTy()) {
     return true;
+
+}
 
   EVT VT = SplitVTs[0];
   unsigned NumParts = TLI.getNumRegisters(Context, VT);
@@ -138,8 +140,10 @@ struct OutgoingValueHandler : public CallLowering::ValueHandler {
       assert((PhysRegSize == 128 || PhysRegSize == 80)  && "We expect that to be 128 bit");
       auto MIB = MIRBuilder.buildAnyExt(LLT::scalar(PhysRegSize), ValVReg);
       ExtReg = MIB.getReg(0);
-    } else
+    } else {
       ExtReg = extendRegister(ValVReg, VA);
+
+}
 
     MIRBuilder.buildCopy(PhysReg, ExtReg);
   }
@@ -166,8 +170,10 @@ struct OutgoingValueHandler : public CallLowering::ValueHandler {
     static const MCPhysReg XMMArgRegs[] = {X86::XMM0, X86::XMM1, X86::XMM2,
                                            X86::XMM3, X86::XMM4, X86::XMM5,
                                            X86::XMM6, X86::XMM7};
-    if (!Info.IsFixed)
+    if (!Info.IsFixed) {
       NumXMMRegs = State.getFirstUnallocated(XMMArgRegs);
+
+}
 
     return Res;
   }
@@ -212,13 +218,17 @@ bool X86CallLowering::lowerReturn(
       if (!splitToValueTypes(CurArgInfo, SplitArgs, DL, MRI,
                              [&](ArrayRef<Register> Regs) {
                                MIRBuilder.buildUnmerge(Regs, VRegs[i]);
-                             }))
+                             })) {
         return false;
+
+}
     }
 
     OutgoingValueHandler Handler(MIRBuilder, MRI, MIB, RetCC_X86);
-    if (!handleAssignments(MIRBuilder, SplitArgs, Handler))
+    if (!handleAssignments(MIRBuilder, SplitArgs, Handler)) {
       return false;
+
+}
   }
 
   MIRBuilder.insertInstr(MIB);
@@ -329,12 +339,16 @@ protected:
 bool X86CallLowering::lowerFormalArguments(
     MachineIRBuilder &MIRBuilder, const Function &F,
     ArrayRef<ArrayRef<Register>> VRegs) const {
-  if (F.arg_empty())
+  if (F.arg_empty()) {
     return true;
 
+}
+
   // TODO: handle variadic function
-  if (F.isVarArg())
+  if (F.isVarArg()) {
     return false;
+
+}
 
   MachineFunction &MF = MIRBuilder.getMF();
   MachineRegisterInfo &MRI = MF.getRegInfo();
@@ -350,26 +364,34 @@ bool X86CallLowering::lowerFormalArguments(
         Arg.hasAttribute(Attribute::StructRet) ||
         Arg.hasAttribute(Attribute::SwiftSelf) ||
         Arg.hasAttribute(Attribute::SwiftError) ||
-        Arg.hasAttribute(Attribute::Nest) || VRegs[Idx].size() > 1)
+        Arg.hasAttribute(Attribute::Nest) || VRegs[Idx].size() > 1) {
       return false;
+
+}
 
     ArgInfo OrigArg(VRegs[Idx], Arg.getType());
     setArgFlags(OrigArg, Idx + AttributeList::FirstArgIndex, DL, F);
     if (!splitToValueTypes(OrigArg, SplitArgs, DL, MRI,
                            [&](ArrayRef<Register> Regs) {
                              MIRBuilder.buildMerge(VRegs[Idx][0], Regs);
-                           }))
+                           })) {
       return false;
+
+}
     Idx++;
   }
 
   MachineBasicBlock &MBB = MIRBuilder.getMBB();
-  if (!MBB.empty())
+  if (!MBB.empty()) {
     MIRBuilder.setInstr(*MBB.begin());
 
+}
+
   FormalArgHandler Handler(MIRBuilder, MRI, CC_X86);
-  if (!handleAssignments(MIRBuilder, SplitArgs, Handler))
+  if (!handleAssignments(MIRBuilder, SplitArgs, Handler)) {
     return false;
+
+}
 
   // Move back to the end of the basic block.
   MIRBuilder.setMBB(MBB);
@@ -389,8 +411,10 @@ bool X86CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
 
   // Handle only Linux C, X86_64_SysV calling conventions for now.
   if (!STI.isTargetLinux() || !(Info.CallConv == CallingConv::C ||
-                                Info.CallConv == CallingConv::X86_64_SysV))
+                                Info.CallConv == CallingConv::X86_64_SysV)) {
     return false;
+
+}
 
   unsigned AdjStackDown = TII.getCallFrameSetupOpcode();
   auto CallSeqStart = MIRBuilder.buildInstr(AdjStackDown);
@@ -410,22 +434,30 @@ bool X86CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   for (const auto &OrigArg : Info.OrigArgs) {
 
     // TODO: handle not simple cases.
-    if (OrigArg.Flags[0].isByVal())
+    if (OrigArg.Flags[0].isByVal()) {
       return false;
 
-    if (OrigArg.Regs.size() > 1)
+}
+
+    if (OrigArg.Regs.size() > 1) {
       return false;
+
+}
 
     if (!splitToValueTypes(OrigArg, SplitArgs, DL, MRI,
                            [&](ArrayRef<Register> Regs) {
                              MIRBuilder.buildUnmerge(Regs, OrigArg.Regs[0]);
-                           }))
+                           })) {
       return false;
+
+}
   }
   // Do the actual argument marshalling.
   OutgoingValueHandler Handler(MIRBuilder, MRI, MIB, CC_X86);
-  if (!handleAssignments(MIRBuilder, SplitArgs, Handler))
+  if (!handleAssignments(MIRBuilder, SplitArgs, Handler)) {
     return false;
+
+}
 
   bool IsFixed = Info.OrigArgs.empty() ? true : Info.OrigArgs.back().IsFixed;
   if (STI.is64Bit() && !IsFixed && !STI.isCallingConvWin64(Info.CallConv)) {
@@ -449,19 +481,23 @@ bool X86CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   // If Callee is a reg, since it is used by a target specific
   // instruction, it must have a register class matching the
   // constraint of that instruction.
-  if (Info.Callee.isReg())
+  if (Info.Callee.isReg()) {
     MIB->getOperand(0).setReg(constrainOperandRegClass(
         MF, *TRI, MRI, *MF.getSubtarget().getInstrInfo(),
         *MF.getSubtarget().getRegBankInfo(), *MIB, MIB->getDesc(), Info.Callee,
         0));
+
+}
 
   // Finally we can copy the returned value back into its virtual-register. In
   // symmetry with the arguments, the physical register must be an
   // implicit-define of the call instruction.
 
   if (!Info.OrigRet.Ty->isVoidTy()) {
-    if (Info.OrigRet.Regs.size() > 1)
+    if (Info.OrigRet.Regs.size() > 1) {
       return false;
+
+}
 
     SplitArgs.clear();
     SmallVector<Register, 8> NewRegs;
@@ -469,15 +505,21 @@ bool X86CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
     if (!splitToValueTypes(Info.OrigRet, SplitArgs, DL, MRI,
                            [&](ArrayRef<Register> Regs) {
                              NewRegs.assign(Regs.begin(), Regs.end());
-                           }))
+                           })) {
       return false;
+
+}
 
     CallReturnHandler Handler(MIRBuilder, MRI, RetCC_X86, MIB);
-    if (!handleAssignments(MIRBuilder, SplitArgs, Handler))
+    if (!handleAssignments(MIRBuilder, SplitArgs, Handler)) {
       return false;
 
-    if (!NewRegs.empty())
+}
+
+    if (!NewRegs.empty()) {
       MIRBuilder.buildMerge(Info.OrigRet.Regs[0], NewRegs);
+
+}
   }
 
   CallSeqStart.addImm(Handler.getStackSize())

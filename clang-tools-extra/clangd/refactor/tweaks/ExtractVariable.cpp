@@ -90,8 +90,10 @@ ExtractionContext::ExtractionContext(const SelectionTree::Node *Node,
   Expr = Node->ASTNode.get<clang::Expr>();
   ReferencedDecls = computeReferencedDecls(Expr);
   InsertionPoint = computeInsertionPoint();
-  if (InsertionPoint)
+  if (InsertionPoint) {
     Extractable = true;
+
+}
 }
 
 // checks whether extracting before InsertionPoint will take a
@@ -101,8 +103,10 @@ bool ExtractionContext::exprIsValidOutside(const clang::Stmt *Scope) const {
   SourceLocation ScopeEnd = Scope->getEndLoc();
   for (const Decl *ReferencedDecl : ReferencedDecls) {
     if (SM.isPointWithin(ReferencedDecl->getBeginLoc(), ScopeBegin, ScopeEnd) &&
-        SM.isPointWithin(ReferencedDecl->getEndLoc(), ScopeBegin, ScopeEnd))
+        SM.isPointWithin(ReferencedDecl->getEndLoc(), ScopeBegin, ScopeEnd)) {
       return false;
+
+}
   }
   return true;
 }
@@ -123,8 +127,10 @@ const clang::Stmt *ExtractionContext::computeInsertionPoint() const {
     if (const clang::Stmt *Stmt = InsertionPoint->ASTNode.get<clang::Stmt>()) {
       // Allow all expressions except LambdaExpr since we don't want to extract
       // from the captures/default arguments of a lambda
-      if (isa<clang::Expr>(Stmt))
+      if (isa<clang::Expr>(Stmt)) {
         return !isa<LambdaExpr>(Stmt);
+
+}
       // We don't yet allow extraction from switch/case stmt as we would need to
       // jump over the switch stmt even if there is a CompoundStmt inside the
       // switch. And there are other Stmts which we don't care about (e.g.
@@ -135,8 +141,10 @@ const clang::Stmt *ExtractionContext::computeInsertionPoint() const {
              isa<DoStmt>(Stmt) || isa<ForStmt>(Stmt) || isa<IfStmt>(Stmt) ||
              isa<ReturnStmt>(Stmt) || isa<WhileStmt>(Stmt);
     }
-    if (InsertionPoint->ASTNode.get<VarDecl>())
+    if (InsertionPoint->ASTNode.get<VarDecl>()) {
       return true;
+
+}
     return false;
   };
   for (const SelectionTree::Node *CurNode = getExprNode();
@@ -144,13 +152,17 @@ const clang::Stmt *ExtractionContext::computeInsertionPoint() const {
        CurNode = CurNode->Parent) {
     const clang::Stmt *CurInsertionPoint = CurNode->ASTNode.get<Stmt>();
     // give up if extraction will take a variable out of scope
-    if (CurInsertionPoint && !exprIsValidOutside(CurInsertionPoint))
+    if (CurInsertionPoint && !exprIsValidOutside(CurInsertionPoint)) {
       break;
+
+}
     if (const clang::Stmt *CurParent = CurNode->Parent->ASTNode.get<Stmt>()) {
       if (isa<CompoundStmt>(CurParent)) {
         // Ensure we don't write inside a macro.
-        if (CurParent->getBeginLoc().isMacroID())
+        if (CurParent->getBeginLoc().isMacroID()) {
           continue;
+
+}
         return CurInsertionPoint;
       }
     }
@@ -218,8 +230,10 @@ struct ParsedBinaryOperator {
     if (const CXXOperatorCallExpr *Op =
             llvm::dyn_cast_or_null<CXXOperatorCallExpr>(
                 N.ASTNode.get<Expr>())) {
-      if (!Op->isInfixBinaryOp())
+      if (!Op->isInfixBinaryOp()) {
         return false;
+
+}
 
       Kind = BinaryOperator::getOverloadedOpcode(Op->getOperator());
       ExprLoc = Op->getExprLoc();
@@ -227,8 +241,10 @@ struct ParsedBinaryOperator {
       for (const auto* Child : N.Children) {
         const Expr *E = Child->ASTNode.get<Expr>();
         assert(E && "callee and args should be Exprs!");
-        if (E == Op->getArg(0) || E == Op->getArg(1))
+        if (E == Op->getArg(0) || E == Op->getArg(1)) {
           SelectedOperands.push_back(Child);
+
+}
       }
       return true;
     }
@@ -253,9 +269,13 @@ struct ParsedBinaryOperator {
 
   bool crossesMacroBoundary(const SourceManager &SM) {
     FileID F = SM.getFileID(ExprLoc);
-    for (const SelectionTree::Node *Child : SelectedOperands)
-      if (SM.getFileID(Child->ASTNode.get<Expr>()->getExprLoc()) != F)
+    for (const SelectionTree::Node *Child : SelectedOperands) {
+      if (SM.getFileID(Child->ASTNode.get<Expr>()->getExprLoc()) != F) {
         return true;
+
+}
+
+}
     return false;
   }
 };
@@ -278,8 +298,10 @@ const SourceRange getBinaryOperatorRange(const SelectionTree::Node &N,
   // If N is not a suitable binary operator, bail out.
   ParsedBinaryOperator Op;
   if (!Op.parse(N.ignoreImplicit()) || !Op.associative() ||
-      Op.crossesMacroBoundary(SM) || Op.SelectedOperands.size() != 2)
+      Op.crossesMacroBoundary(SM) || Op.SelectedOperands.size() != 2) {
     return SourceRange();
+
+}
   BinaryOperatorKind OuterOp = Op.Kind;
 
   // Because the tree we're interested in contains only one operator type, and
@@ -312,8 +334,10 @@ SourceRange ExtractionContext::getExtractionChars() const {
   // Special case: we're extracting an associative binary subexpression.
   SourceRange BinaryOperatorRange =
       getBinaryOperatorRange(*ExprNode, SM, Ctx.getLangOpts());
-  if (BinaryOperatorRange.isValid())
+  if (BinaryOperatorRange.isValid()) {
     return BinaryOperatorRange;
+
+}
 
   // Usual case: we're extracting the whole expression.
   return *toHalfOpenFileRange(SM, Ctx.getLangOpts(), Expr->getSourceRange());
@@ -323,38 +347,60 @@ SourceRange ExtractionContext::getExtractionChars() const {
 const SelectionTree::Node *getCallExpr(const SelectionTree::Node *DeclRef) {
   const SelectionTree::Node &MaybeCallee = DeclRef->outerImplicit();
   const SelectionTree::Node *MaybeCall = MaybeCallee.Parent;
-  if (!MaybeCall)
+  if (!MaybeCall) {
     return nullptr;
+
+}
   const CallExpr *CE =
       llvm::dyn_cast_or_null<CallExpr>(MaybeCall->ASTNode.get<Expr>());
-  if (!CE)
+  if (!CE) {
     return nullptr;
-  if (CE->getCallee() != MaybeCallee.ASTNode.get<Expr>())
+
+}
+  if (CE->getCallee() != MaybeCallee.ASTNode.get<Expr>()) {
     return nullptr;
+
+}
   return MaybeCall;
 }
 
 // Returns true if Inner (which is a direct child of Outer) is appearing as
 // a statement rather than an expression whose value can be used.
 bool childExprIsStmt(const Stmt *Outer, const Expr *Inner) {
-  if (!Outer || !Inner)
+  if (!Outer || !Inner) {
     return false;
+
+}
   // Blacklist the most common places where an expr can appear but be unused.
-  if (llvm::isa<CompoundStmt>(Outer))
+  if (llvm::isa<CompoundStmt>(Outer)) {
     return true;
-  if (llvm::isa<SwitchCase>(Outer))
+
+}
+  if (llvm::isa<SwitchCase>(Outer)) {
     return true;
+
+}
   // Control flow statements use condition etc, but not the body.
-  if (const auto* WS = llvm::dyn_cast<WhileStmt>(Outer))
+  if (const auto* WS = llvm::dyn_cast<WhileStmt>(Outer)) {
     return Inner == WS->getBody();
-  if (const auto* DS = llvm::dyn_cast<DoStmt>(Outer))
+
+}
+  if (const auto* DS = llvm::dyn_cast<DoStmt>(Outer)) {
     return Inner == DS->getBody();
-  if (const auto* FS = llvm::dyn_cast<ForStmt>(Outer))
+
+}
+  if (const auto* FS = llvm::dyn_cast<ForStmt>(Outer)) {
     return Inner == FS->getBody();
-  if (const auto* FS = llvm::dyn_cast<CXXForRangeStmt>(Outer))
+
+}
+  if (const auto* FS = llvm::dyn_cast<CXXForRangeStmt>(Outer)) {
     return Inner == FS->getBody();
-  if (const auto* IS = llvm::dyn_cast<IfStmt>(Outer))
+
+}
+  if (const auto* IS = llvm::dyn_cast<IfStmt>(Outer)) {
     return Inner == IS->getThen() || Inner == IS->getElse();
+
+}
   // Assume all other cases may be actual expressions.
   // This includes the important case of subexpressions (where Outer is Expr).
   return false;
@@ -363,24 +409,34 @@ bool childExprIsStmt(const Stmt *Outer, const Expr *Inner) {
 // check if N can and should be extracted (e.g. is not void-typed).
 bool eligibleForExtraction(const SelectionTree::Node *N) {
   const Expr *E = N->ASTNode.get<Expr>();
-  if (!E)
+  if (!E) {
     return false;
 
+}
+
   // Void expressions can't be assigned to variables.
-  if (const Type *ExprType = E->getType().getTypePtrOrNull())
-    if (ExprType->isVoidType())
+  if (const Type *ExprType = E->getType().getTypePtrOrNull()) {
+    if (ExprType->isVoidType()) {
       return false;
+
+}
+
+}
 
   // A plain reference to a name (e.g. variable) isn't  worth extracting.
   // FIXME: really? What if it's e.g. `std::is_same<void, void>::value`?
-  if (llvm::isa<DeclRefExpr>(E) || llvm::isa<MemberExpr>(E))
+  if (llvm::isa<DeclRefExpr>(E) || llvm::isa<MemberExpr>(E)) {
     return false;
+
+}
 
   // Extracting Exprs like a = 1 gives dummy = a = 1 which isn't useful.
   // FIXME: we could still hoist the assignment, and leave the variable there?
   ParsedBinaryOperator BinOp;
-  if (BinOp.parse(*N) && BinaryOperator::isAssignmentOp(BinOp.Kind))
+  if (BinOp.parse(*N) && BinaryOperator::isAssignmentOp(BinOp.Kind)) {
     return false;
+
+}
 
   // We don't want to extract expressions used as statements, that would leave
   // a `dummy;` around that has no effect.
@@ -389,8 +445,10 @@ bool eligibleForExtraction(const SelectionTree::Node *N) {
   const SelectionTree::Node &OuterImplicit = N->outerImplicit();
   if (!OuterImplicit.Parent ||
       childExprIsStmt(OuterImplicit.Parent->ASTNode.get<Stmt>(),
-                      OuterImplicit.ASTNode.get<Expr>()))
+                      OuterImplicit.ASTNode.get<Expr>())) {
     return false;
+
+}
 
   // FIXME: ban extracting the RHS of an assignment: `a = [[foo()]]`
   return true;
@@ -401,25 +459,37 @@ bool eligibleForExtraction(const SelectionTree::Node *N) {
 // DeclRefs. For function/member function, we want to extract the entire
 // function call.
 const SelectionTree::Node *computeExtractedExpr(const SelectionTree::Node *N) {
-  if (!N)
+  if (!N) {
     return nullptr;
+
+}
   const SelectionTree::Node *TargetNode = N;
   const clang::Expr *SelectedExpr = N->ASTNode.get<clang::Expr>();
-  if (!SelectedExpr)
+  if (!SelectedExpr) {
     return nullptr;
+
+}
   // For function and member function DeclRefs, extract the whole call.
   if (llvm::isa<DeclRefExpr>(SelectedExpr) ||
-      llvm::isa<MemberExpr>(SelectedExpr))
-    if (const SelectionTree::Node *Call = getCallExpr(N))
+      llvm::isa<MemberExpr>(SelectedExpr)) {
+    if (const SelectionTree::Node *Call = getCallExpr(N)) {
       TargetNode = Call;
+
+}
+
+}
   // Extracting Exprs like a = 1 gives dummy = a = 1 which isn't useful.
   if (const BinaryOperator *BinOpExpr =
           dyn_cast_or_null<BinaryOperator>(SelectedExpr)) {
-    if (BinOpExpr->getOpcode() == BinaryOperatorKind::BO_Assign)
+    if (BinOpExpr->getOpcode() == BinaryOperatorKind::BO_Assign) {
       return nullptr;
+
+}
   }
-  if (!TargetNode || !eligibleForExtraction(TargetNode))
+  if (!TargetNode || !eligibleForExtraction(TargetNode)) {
     return nullptr;
+
+}
   return TargetNode;
 }
 
@@ -447,17 +517,23 @@ private:
 REGISTER_TWEAK(ExtractVariable)
 bool ExtractVariable::prepare(const Selection &Inputs) {
   // we don't trigger on empty selections for now
-  if (Inputs.SelectionBegin == Inputs.SelectionEnd)
+  if (Inputs.SelectionBegin == Inputs.SelectionEnd) {
     return false;
+
+}
   const ASTContext &Ctx = Inputs.AST->getASTContext();
   // FIXME: Enable non-C++ cases once we start spelling types explicitly instead
   // of making use of auto.
-  if (!Ctx.getLangOpts().CPlusPlus)
+  if (!Ctx.getLangOpts().CPlusPlus) {
     return false;
+
+}
   const SourceManager &SM = Inputs.AST->getSourceManager();
   if (const SelectionTree::Node *N =
-          computeExtractedExpr(Inputs.ASTSelection.commonAncestor()))
+          computeExtractedExpr(Inputs.ASTSelection.commonAncestor())) {
     Target = std::make_unique<ExtractionContext>(N, SM, Ctx);
+
+}
   return Target && Target->isExtractable();
 }
 
@@ -467,11 +543,15 @@ Expected<Tweak::Effect> ExtractVariable::apply(const Selection &Inputs) {
   std::string VarName = "dummy";
   SourceRange Range = Target->getExtractionChars();
   // insert new variable declaration
-  if (auto Err = Result.add(Target->insertDeclaration(VarName, Range)))
+  if (auto Err = Result.add(Target->insertDeclaration(VarName, Range))) {
     return std::move(Err);
+
+}
   // replace expression with variable name
-  if (auto Err = Result.add(Target->replaceWithVar(Range, VarName)))
+  if (auto Err = Result.add(Target->replaceWithVar(Range, VarName))) {
     return std::move(Err);
+
+}
   return Effect::mainFileEdit(Inputs.AST->getSourceManager(),
                               std::move(Result));
 }

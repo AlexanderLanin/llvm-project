@@ -101,8 +101,10 @@ PassTimingInfo::~PassTimingInfo() {
 }
 
 void PassTimingInfo::init() {
-  if (!TimePassesIsEnabled || TheTimeInfo)
+  if (!TimePassesIsEnabled || TheTimeInfo) {
     return;
+
+}
 
   // Constructed the first time this is called, iff -time-passes is enabled.
   // This guarantees that the object will be constructed after static globals,
@@ -126,8 +128,10 @@ Timer *PassTimingInfo::newPassTimer(StringRef PassID, StringRef PassDesc) {
 }
 
 Timer *PassTimingInfo::getPassTimer(Pass *P, PassInstanceID Pass) {
-  if (P->getAsPMDataManager())
+  if (P->getAsPMDataManager()) {
     return nullptr;
+
+}
 
   init();
   sys::SmartScopedLock<true> Lock(*TimingInfoMutex);
@@ -136,8 +140,10 @@ Timer *PassTimingInfo::getPassTimer(Pass *P, PassInstanceID Pass) {
   if (!T) {
     StringRef PassName = P->getPassName();
     StringRef PassArgument;
-    if (const PassInfo *PI = Pass::lookupPassInfo(P->getPassID()))
+    if (const PassInfo *PI = Pass::lookupPassInfo(P->getPassID())) {
       PassArgument = PI->getPassArgument();
+
+}
     T.reset(newPassTimer(PassArgument.empty() ? PassName : PassArgument, PassName));
   }
   return T.get();
@@ -149,16 +155,20 @@ PassTimingInfo *PassTimingInfo::TheTimeInfo;
 
 Timer *getPassTimer(Pass *P) {
   legacy::PassTimingInfo::init();
-  if (legacy::PassTimingInfo::TheTimeInfo)
+  if (legacy::PassTimingInfo::TheTimeInfo) {
     return legacy::PassTimingInfo::TheTimeInfo->getPassTimer(P, P);
+
+}
   return nullptr;
 }
 
 /// If timing is enabled, report the times collected up to now and then reset
 /// them.
 void reportAndResetTimings(raw_ostream *OutStream) {
-  if (legacy::PassTimingInfo::TheTimeInfo)
+  if (legacy::PassTimingInfo::TheTimeInfo) {
     legacy::PassTimingInfo::TheTimeInfo->print(OutStream);
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -189,8 +199,10 @@ void TimePassesHandler::setOutStream(raw_ostream &Out) {
 }
 
 void TimePassesHandler::print() {
-  if (!Enabled)
+  if (!Enabled) {
     return;
+
+}
   TG.print(OutStream ? *OutStream : *CreateInfoOutputFile(), true);
 }
 
@@ -199,46 +211,58 @@ LLVM_DUMP_METHOD void TimePassesHandler::dump() const {
          << ":\n\tRunning:\n";
   for (auto &I : TimingData) {
     const Timer *MyTimer = I.second.get();
-    if (!MyTimer || MyTimer->isRunning())
+    if (!MyTimer || MyTimer->isRunning()) {
       dbgs() << "\tTimer " << MyTimer << " for pass " << I.first.first << "("
              << I.first.second << ")\n";
+
+}
   }
   dbgs() << "\tTriggered:\n";
   for (auto &I : TimingData) {
     const Timer *MyTimer = I.second.get();
-    if (!MyTimer || (MyTimer->hasTriggered() && !MyTimer->isRunning()))
+    if (!MyTimer || (MyTimer->hasTriggered() && !MyTimer->isRunning())) {
       dbgs() << "\tTimer " << MyTimer << " for pass " << I.first.first << "("
              << I.first.second << ")\n";
+
+}
   }
 }
 
 void TimePassesHandler::startTimer(StringRef PassID) {
   Timer &MyTimer = getPassTimer(PassID);
   TimerStack.push_back(&MyTimer);
-  if (!MyTimer.isRunning())
+  if (!MyTimer.isRunning()) {
     MyTimer.startTimer();
+
+}
 }
 
 void TimePassesHandler::stopTimer(StringRef PassID) {
   assert(TimerStack.size() > 0 && "empty stack in popTimer");
   Timer *MyTimer = TimerStack.pop_back_val();
   assert(MyTimer && "timer should be present");
-  if (MyTimer->isRunning())
+  if (MyTimer->isRunning()) {
     MyTimer->stopTimer();
+
+}
 }
 
 static bool matchPassManager(StringRef PassID) {
   size_t prefix_pos = PassID.find('<');
-  if (prefix_pos == StringRef::npos)
+  if (prefix_pos == StringRef::npos) {
     return false;
+
+}
   StringRef Prefix = PassID.substr(0, prefix_pos);
   return Prefix.endswith("PassManager") || Prefix.endswith("PassAdaptor") ||
          Prefix.endswith("AnalysisManagerProxy");
 }
 
 bool TimePassesHandler::runBeforePass(StringRef PassID) {
-  if (matchPassManager(PassID))
+  if (matchPassManager(PassID)) {
     return true;
+
+}
 
   startTimer(PassID);
 
@@ -250,8 +274,10 @@ bool TimePassesHandler::runBeforePass(StringRef PassID) {
 }
 
 void TimePassesHandler::runAfterPass(StringRef PassID) {
-  if (matchPassManager(PassID))
+  if (matchPassManager(PassID)) {
     return;
+
+}
 
   stopTimer(PassID);
 
@@ -260,8 +286,10 @@ void TimePassesHandler::runAfterPass(StringRef PassID) {
 }
 
 void TimePassesHandler::registerCallbacks(PassInstrumentationCallbacks &PIC) {
-  if (!Enabled)
+  if (!Enabled) {
     return;
+
+}
 
   PIC.registerBeforePassCallback(
       [this](StringRef P, Any) { return this->runBeforePass(P); });

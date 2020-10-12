@@ -33,8 +33,10 @@ static bool isDebugSection(const Section &Sec) {
 }
 
 static uint64_t getNextRVA(const Object &Obj) {
-  if (Obj.getSections().empty())
+  if (Obj.getSections().empty()) {
     return 0;
+
+}
   const Section &Last = Obj.getSections().back();
   return alignTo(Last.Header.VirtualAddress + Last.Header.VirtualSize,
                  Obj.IsPE ? Obj.PeHeader.SectionAlignment : 1);
@@ -43,8 +45,10 @@ static uint64_t getNextRVA(const Object &Obj) {
 static std::vector<uint8_t> createGnuDebugLinkSectionContents(StringRef File) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> LinkTargetOrErr =
       MemoryBuffer::getFile(File);
-  if (!LinkTargetOrErr)
+  if (!LinkTargetOrErr) {
     error("'" + File + "': " + LinkTargetOrErr.getError().message());
+
+}
   auto LinkTarget = std::move(*LinkTargetOrErr);
   uint32_t CRC32 = llvm::crc32(arrayRefFromStringRef(LinkTarget->getBuffer()));
 
@@ -105,23 +109,39 @@ static void setSectionFlags(Section &Sec, SectionFlag AllFlags) {
   uint32_t NewCharacteristics =
       (Sec.Header.Characteristics & PreserveMask) | IMAGE_SCN_MEM_READ;
 
-  if ((AllFlags & SectionFlag::SecAlloc) && !(AllFlags & SectionFlag::SecLoad))
+  if ((AllFlags & SectionFlag::SecAlloc) && !(AllFlags & SectionFlag::SecLoad)) {
     NewCharacteristics |= IMAGE_SCN_CNT_UNINITIALIZED_DATA;
-  if (AllFlags & SectionFlag::SecNoload)
+
+}
+  if (AllFlags & SectionFlag::SecNoload) {
     NewCharacteristics |= IMAGE_SCN_LNK_REMOVE;
-  if (!(AllFlags & SectionFlag::SecReadonly))
+
+}
+  if (!(AllFlags & SectionFlag::SecReadonly)) {
     NewCharacteristics |= IMAGE_SCN_MEM_WRITE;
-  if (AllFlags & SectionFlag::SecDebug)
+
+}
+  if (AllFlags & SectionFlag::SecDebug) {
     NewCharacteristics |=
         IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE;
-  if (AllFlags & SectionFlag::SecCode)
+
+}
+  if (AllFlags & SectionFlag::SecCode) {
     NewCharacteristics |= IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE;
-  if (AllFlags & SectionFlag::SecData)
+
+}
+  if (AllFlags & SectionFlag::SecData) {
     NewCharacteristics |= IMAGE_SCN_CNT_INITIALIZED_DATA;
-  if (AllFlags & SectionFlag::SecShare)
+
+}
+  if (AllFlags & SectionFlag::SecShare) {
     NewCharacteristics |= IMAGE_SCN_MEM_SHARED;
-  if (AllFlags & SectionFlag::SecExclude)
+
+}
+  if (AllFlags & SectionFlag::SecExclude) {
     NewCharacteristics |= IMAGE_SCN_LNK_REMOVE;
+
+}
 
   Sec.Header.Characteristics = NewCharacteristics;
 }
@@ -131,18 +151,24 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
   Obj.removeSections([&Config](const Section &Sec) {
     // Contrary to --only-keep-debug, --only-section fully removes sections that
     // aren't mentioned.
-    if (!Config.OnlySection.empty() && !Config.OnlySection.matches(Sec.Name))
+    if (!Config.OnlySection.empty() && !Config.OnlySection.matches(Sec.Name)) {
       return true;
+
+}
 
     if (Config.StripDebug || Config.StripAll || Config.StripAllGNU ||
         Config.DiscardMode == DiscardType::All || Config.StripUnneeded) {
       if (isDebugSection(Sec) &&
-          (Sec.Header.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0)
+          (Sec.Header.Characteristics & IMAGE_SCN_MEM_DISCARDABLE) != 0) {
         return true;
+
+}
     }
 
-    if (Config.ToRemove.matches(Sec.Name))
+    if (Config.ToRemove.matches(Sec.Name)) {
       return true;
+
+}
 
     return false;
   });
@@ -158,37 +184,51 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
   }
 
   // StripAll removes all symbols and thus also removes all relocations.
-  if (Config.StripAll || Config.StripAllGNU)
-    for (Section &Sec : Obj.getMutableSections())
+  if (Config.StripAll || Config.StripAllGNU) {
+    for (Section &Sec : Obj.getMutableSections()) {
       Sec.Relocs.clear();
+
+}
+
+}
 
   // If we need to do per-symbol removals, initialize the Referenced field.
   if (Config.StripUnneeded || Config.DiscardMode == DiscardType::All ||
-      !Config.SymbolsToRemove.empty())
-    if (Error E = Obj.markSymbols())
+      !Config.SymbolsToRemove.empty()) {
+    if (Error E = Obj.markSymbols()) {
       return E;
+
+}
+
+}
 
   for (Symbol &Sym : Obj.getMutableSymbols()) {
     auto I = Config.SymbolsToRename.find(Sym.Name);
-    if (I != Config.SymbolsToRename.end())
+    if (I != Config.SymbolsToRename.end()) {
       Sym.Name = I->getValue();
+
+}
   }
 
   // Actually do removals of symbols.
   Obj.removeSymbols([&](const Symbol &Sym) {
     // For StripAll, all relocations have been stripped and we remove all
     // symbols.
-    if (Config.StripAll || Config.StripAllGNU)
+    if (Config.StripAll || Config.StripAllGNU) {
       return true;
+
+}
 
     if (Config.SymbolsToRemove.matches(Sym.Name)) {
       // Explicitly removing a referenced symbol is an error.
-      if (Sym.Referenced)
+      if (Sym.Referenced) {
         reportError(Config.OutputFilename,
                     createStringError(llvm::errc::invalid_argument,
                                       "not stripping symbol '%s' because it is "
                                       "named in a relocation",
                                       Sym.Name.str().c_str()));
+
+}
       return true;
     }
 
@@ -198,37 +238,49 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
       // With --strip-unneeded-symbol we strip only specific unreferenced
       // local symbol instead of removing all of such.
       if (Sym.Sym.StorageClass == IMAGE_SYM_CLASS_STATIC ||
-          Sym.Sym.SectionNumber == 0)
+          Sym.Sym.SectionNumber == 0) {
         if (Config.StripUnneeded ||
-            Config.UnneededSymbolsToRemove.matches(Sym.Name))
+            Config.UnneededSymbolsToRemove.matches(Sym.Name)) {
           return true;
+
+}
+
+}
 
       // GNU objcopy keeps referenced local symbols and external symbols
       // if --discard-all is set, similar to what --strip-unneeded does,
       // but undefined local symbols are kept when --discard-all is set.
       if (Config.DiscardMode == DiscardType::All &&
           Sym.Sym.StorageClass == IMAGE_SYM_CLASS_STATIC &&
-          Sym.Sym.SectionNumber != 0)
+          Sym.Sym.SectionNumber != 0) {
         return true;
+
+}
     }
 
     return false;
   });
 
-  if (!Config.SetSectionFlags.empty())
+  if (!Config.SetSectionFlags.empty()) {
     for (Section &Sec : Obj.getMutableSections()) {
       const auto It = Config.SetSectionFlags.find(Sec.Name);
-      if (It != Config.SetSectionFlags.end())
+      if (It != Config.SetSectionFlags.end()) {
         setSectionFlags(Sec, It->second.NewFlags);
+
+}
     }
+
+}
 
   for (const auto &Flag : Config.AddSection) {
     StringRef SecName, FileName;
     std::tie(SecName, FileName) = Flag.split("=");
 
     auto BufOrErr = MemoryBuffer::getFile(FileName);
-    if (!BufOrErr)
+    if (!BufOrErr) {
       return createFileError(FileName, errorCodeToError(BufOrErr.getError()));
+
+}
     auto Buf = std::move(*BufOrErr);
 
     addSection(
@@ -238,8 +290,10 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
         IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_ALIGN_1BYTES);
   }
 
-  if (!Config.AddGnuDebugLink.empty())
+  if (!Config.AddGnuDebugLink.empty()) {
     addGnuDebugLink(Obj, Config.AddGnuDebugLink);
+
+}
 
   if (Config.AllowBrokenLinks || !Config.BuildIdLinkDir.empty() ||
       Config.BuildIdLinkInput || Config.BuildIdLinkOutput ||
@@ -266,15 +320,21 @@ Error executeObjcopyOnBinary(const CopyConfig &Config, COFFObjectFile &In,
                              Buffer &Out) {
   COFFReader Reader(In);
   Expected<std::unique_ptr<Object>> ObjOrErr = Reader.create();
-  if (!ObjOrErr)
+  if (!ObjOrErr) {
     return createFileError(Config.InputFilename, ObjOrErr.takeError());
+
+}
   Object *Obj = ObjOrErr->get();
   assert(Obj && "Unable to deserialize COFF object");
-  if (Error E = handleArgs(Config, *Obj))
+  if (Error E = handleArgs(Config, *Obj)) {
     return createFileError(Config.InputFilename, std::move(E));
+
+}
   COFFWriter Writer(*Obj, Out);
-  if (Error E = Writer.write())
+  if (Error E = Writer.write()) {
     return createFileError(Config.OutputFilename, std::move(E));
+
+}
   return Error::success();
 }
 

@@ -50,44 +50,60 @@ LLVMCreateDisasmCPUFeatures(const char *TT, const char *CPU,
   // Get the target.
   std::string Error;
   const Target *TheTarget = TargetRegistry::lookupTarget(TT, Error);
-  if (!TheTarget)
+  if (!TheTarget) {
     return nullptr;
 
+}
+
   std::unique_ptr<const MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TT));
-  if (!MRI)
+  if (!MRI) {
     return nullptr;
+
+}
 
   MCTargetOptions MCOptions;
   // Get the assembler info needed to setup the MCContext.
   std::unique_ptr<const MCAsmInfo> MAI(
       TheTarget->createMCAsmInfo(*MRI, TT, MCOptions));
-  if (!MAI)
+  if (!MAI) {
     return nullptr;
 
+}
+
   std::unique_ptr<const MCInstrInfo> MII(TheTarget->createMCInstrInfo());
-  if (!MII)
+  if (!MII) {
     return nullptr;
+
+}
 
   std::unique_ptr<const MCSubtargetInfo> STI(
       TheTarget->createMCSubtargetInfo(TT, CPU, Features));
-  if (!STI)
+  if (!STI) {
     return nullptr;
+
+}
 
   // Set up the MCContext for creating symbols and MCExpr's.
   std::unique_ptr<MCContext> Ctx(new MCContext(MAI.get(), MRI.get(), nullptr));
-  if (!Ctx)
+  if (!Ctx) {
     return nullptr;
+
+}
 
   // Set up disassembler.
   std::unique_ptr<MCDisassembler> DisAsm(
       TheTarget->createMCDisassembler(*STI, *Ctx));
-  if (!DisAsm)
+  if (!DisAsm) {
     return nullptr;
+
+}
 
   std::unique_ptr<MCRelocationInfo> RelInfo(
       TheTarget->createMCRelocationInfo(TT, *Ctx));
-  if (!RelInfo)
+  if (!RelInfo) {
     return nullptr;
+
+}
 
   std::unique_ptr<MCSymbolizer> Symbolizer(TheTarget->createMCSymbolizer(
       TT, GetOpInfo, SymbolLookUp, DisInfo, Ctx.get(), std::move(RelInfo)));
@@ -97,15 +113,19 @@ LLVMCreateDisasmCPUFeatures(const char *TT, const char *CPU,
   int AsmPrinterVariant = MAI->getAssemblerDialect();
   std::unique_ptr<MCInstPrinter> IP(TheTarget->createMCInstPrinter(
       Triple(TT), AsmPrinterVariant, *MAI, *MII, *MRI));
-  if (!IP)
+  if (!IP) {
     return nullptr;
+
+}
 
   LLVMDisasmContext *DC = new LLVMDisasmContext(
       TT, DisInfo, TagType, GetOpInfo, SymbolLookUp, TheTarget, std::move(MAI),
       std::move(MRI), std::move(STI), std::move(MII), std::move(Ctx),
       std::move(DisAsm), std::move(IP));
-  if (!DC)
+  if (!DC) {
     return nullptr;
+
+}
 
   DC->setCPU(CPU);
   return DC;
@@ -146,8 +166,10 @@ static void emitComments(LLVMDisasmContext *DC,
   unsigned CommentColumn = MAI->getCommentColumn();
   bool IsFirst = true;
   while (!Comments.empty()) {
-    if (!IsFirst)
+    if (!IsFirst) {
       FormattedOS << '\n';
+
+}
     // Emit a line of comments.
     FormattedOS.PadToColumn(CommentColumn);
     size_t Position = Comments.find('\n');
@@ -170,8 +192,10 @@ static int getItineraryLatency(LLVMDisasmContext *DC, const MCInst &Inst) {
   const int NoInformationAvailable = -1;
 
   // Check if we have a CPU to get the itinerary information.
-  if (DC->getCPU().empty())
+  if (DC->getCPU().empty()) {
     return NoInformationAvailable;
+
+}
 
   // Get itinerary information.
   const MCSubtargetInfo *STI = DC->getSubtargetInfo();
@@ -182,8 +206,10 @@ static int getItineraryLatency(LLVMDisasmContext *DC, const MCInst &Inst) {
 
   int Latency = 0;
   for (unsigned OpIdx = 0, OpIdxEnd = Inst.getNumOperands(); OpIdx != OpIdxEnd;
-       ++OpIdx)
+       ++OpIdx) {
     Latency = std::max(Latency, IID.getOperandCycle(SCClass, OpIdx));
+
+}
 
   return Latency;
 }
@@ -198,10 +224,12 @@ static int getLatency(LLVMDisasmContext *DC, const MCInst &Inst) {
   const int NoInformationAvailable = -1;
 
   // Check if we have a scheduling model for instructions.
-  if (!SCModel.hasInstrSchedModel())
+  if (!SCModel.hasInstrSchedModel()) {
     // Try to fall back to the itinerary model if the scheduling model doesn't
     // have a scheduling table.  Note the default does not have a table.
     return getItineraryLatency(DC, Inst);
+
+}
 
   // Get the scheduling class of the requested instruction.
   const MCInstrDesc& Desc = DC->getInstrInfo()->get(Inst.getOpcode());
@@ -209,8 +237,10 @@ static int getLatency(LLVMDisasmContext *DC, const MCInst &Inst) {
   const MCSchedClassDesc *SCDesc = SCModel.getSchedClassDesc(SCClass);
   // Resolving the variant SchedClass requires an MI to pass to
   // SubTargetInfo::resolveSchedClass.
-  if (!SCDesc || !SCDesc->isValid() || SCDesc->isVariant())
+  if (!SCDesc || !SCDesc->isValid() || SCDesc->isVariant()) {
     return NoInformationAvailable;
+
+}
 
   // Compute output latency.
   int16_t Latency = 0;
@@ -231,8 +261,10 @@ static void emitLatency(LLVMDisasmContext *DC, const MCInst &Inst) {
   int Latency = getLatency(DC, Inst);
 
   // Report only interesting latencies.
-  if (Latency < 2)
+  if (Latency < 2) {
     return;
+
+}
 
   DC->CommentStream << "Latency: " << Latency << '\n';
 }
@@ -279,8 +311,10 @@ size_t LLVMDisasmInstruction(LLVMDisasmContextRef DCR, uint8_t *Bytes,
     IP->printInst(&Inst, PC, AnnotationsStr, *DC->getSubtargetInfo(),
                   FormattedOS);
 
-    if (DC->getOptions() & LLVMDisassembler_Option_PrintLatency)
+    if (DC->getOptions() & LLVMDisassembler_Option_PrintLatency) {
       emitLatency(DC, Inst);
+
+}
 
     emitComments(DC, FormattedOS);
 

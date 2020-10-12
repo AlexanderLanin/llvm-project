@@ -41,9 +41,13 @@ bool DDGNode::collectInstructions(
     InstructionListType &IList) const {
   assert(IList.empty() && "Expected the IList to be empty on entry.");
   if (isa<SimpleDDGNode>(this)) {
-    for (Instruction *I : cast<const SimpleDDGNode>(this)->getInstructions())
-      if (Pred(I))
+    for (Instruction *I : cast<const SimpleDDGNode>(this)->getInstructions()) {
+      if (Pred(I)) {
         IList.push_back(I);
+
+}
+
+}
   } else if (isa<PiBlockDDGNode>(this)) {
     for (const DDGNode *PN : cast<const PiBlockDDGNode>(this)->getNodes()) {
       assert(!isa<PiBlockDDGNode>(PN) && "Nested PiBlocks are not supported.");
@@ -51,8 +55,10 @@ bool DDGNode::collectInstructions(
       PN->collectInstructions(Pred, TmpIList);
       IList.insert(IList.end(), TmpIList.begin(), TmpIList.end());
     }
-  } else
+  } else {
     llvm_unreachable("unimplemented type of node");
+
+}
   return !IList.empty();
 }
 
@@ -83,21 +89,29 @@ raw_ostream &llvm::operator<<(raw_ostream &OS, const DDGNode &N) {
   OS << "Node Address:" << &N << ":" << N.getKind() << "\n";
   if (isa<SimpleDDGNode>(N)) {
     OS << " Instructions:\n";
-    for (const Instruction *I : cast<const SimpleDDGNode>(N).getInstructions())
+    for (const Instruction *I : cast<const SimpleDDGNode>(N).getInstructions()) {
       OS.indent(2) << *I << "\n";
+
+}
   } else if (isa<PiBlockDDGNode>(&N)) {
     OS << "--- start of nodes in pi-block ---\n";
     auto &Nodes = cast<const PiBlockDDGNode>(&N)->getNodes();
     unsigned Count = 0;
-    for (const DDGNode *N : Nodes)
+    for (const DDGNode *N : Nodes) {
       OS << *N << (++Count == Nodes.size() ? "" : "\n");
+
+}
     OS << "--- end of nodes in pi-block ---\n";
-  } else if (!isa<RootDDGNode>(N))
+  } else if (!isa<RootDDGNode>(N)) {
     llvm_unreachable("unimplemented type of node");
 
+}
+
   OS << (N.getEdges().empty() ? " Edges:none!\n" : " Edges:\n");
-  for (auto &E : N.getEdges())
+  for (auto &E : N.getEdges()) {
     OS.indent(2) << *E;
+
+}
   return OS;
 }
 
@@ -189,9 +203,13 @@ DataDependenceGraph::DataDependenceGraph(Function &F, DependenceInfo &D)
   // Put the basic blocks in program order for correct dependence
   // directions.
   BasicBlockListType BBList;
-  for (auto &SCC : make_range(scc_begin(&F), scc_end(&F)))
-    for (BasicBlock * BB : SCC)
+  for (auto &SCC : make_range(scc_begin(&F), scc_end(&F))) {
+    for (BasicBlock * BB : SCC) {
       BBList.push_back(BB);
+
+}
+
+}
   std::reverse(BBList.begin(), BBList.end());
   DDGBuilder(*this, D, BBList).populate();
 }
@@ -207,22 +225,28 @@ DataDependenceGraph::DataDependenceGraph(Loop &L, LoopInfo &LI,
   LoopBlocksDFS DFS(&L);
   DFS.perform(&LI);
   BasicBlockListType BBList;
-  for (BasicBlock *BB : make_range(DFS.beginRPO(), DFS.endRPO()))
+  for (BasicBlock *BB : make_range(DFS.beginRPO(), DFS.endRPO())) {
     BBList.push_back(BB);
+
+}
   DDGBuilder(*this, D, BBList).populate();
 }
 
 DataDependenceGraph::~DataDependenceGraph() {
   for (auto *N : Nodes) {
-    for (auto *E : *N)
+    for (auto *E : *N) {
       delete E;
+
+}
     delete N;
   }
 }
 
 bool DataDependenceGraph::addNode(DDGNode &N) {
-  if (!DDGBase::addNode(N))
+  if (!DDGBase::addNode(N)) {
     return false;
+
+}
 
   // In general, if the root node is already created and linked, it is not safe
   // to add new nodes since they may be unreachable by the root. However,
@@ -233,19 +257,27 @@ bool DataDependenceGraph::addNode(DDGNode &N) {
   assert((!Root || Pi) &&
          "Root node is already added. No more nodes can be added.");
 
-  if (isa<RootDDGNode>(N))
+  if (isa<RootDDGNode>(N)) {
     Root = &N;
 
-  if (Pi)
-    for (DDGNode *NI : Pi->getNodes())
+}
+
+  if (Pi) {
+    for (DDGNode *NI : Pi->getNodes()) {
       PiBlockMap.insert(std::make_pair(NI, Pi));
+
+}
+
+}
 
   return true;
 }
 
 const PiBlockDDGNode *DataDependenceGraph::getPiBlock(const NodeType &N) const {
-  if (PiBlockMap.find(&N) == PiBlockMap.end())
+  if (PiBlockMap.find(&N) == PiBlockMap.end()) {
     return nullptr;
+
+}
   auto *Pi = PiBlockMap.find(&N)->second;
   assert(PiBlockMap.find(Pi) == PiBlockMap.end() &&
          "Nested pi-blocks detected.");
@@ -253,11 +285,15 @@ const PiBlockDDGNode *DataDependenceGraph::getPiBlock(const NodeType &N) const {
 }
 
 raw_ostream &llvm::operator<<(raw_ostream &OS, const DataDependenceGraph &G) {
-  for (DDGNode *Node : G)
+  for (DDGNode *Node : G) {
     // Avoid printing nodes that are part of a pi-block twice. They will get
     // printed when the pi-block is printed.
-    if (!G.getPiBlock(*Node))
+    if (!G.getPiBlock(*Node)) {
       OS << *Node << "\n";
+
+}
+
+}
   OS << "\n";
   return OS;
 }
@@ -272,8 +308,10 @@ bool DDGBuilder::areNodesMergeable(const DDGNode &Src,
   // instructions after merging belong to the same BB.
   const auto *SimpleSrc = dyn_cast<const SimpleDDGNode>(&Src);
   const auto *SimpleTgt = dyn_cast<const SimpleDDGNode>(&Tgt);
-  if (!SimpleSrc || !SimpleTgt)
+  if (!SimpleSrc || !SimpleTgt) {
     return false;
+
+}
 
   return SimpleSrc->getLastInstruction()->getParent() ==
          SimpleTgt->getFirstInstruction()->getParent();
@@ -290,8 +328,10 @@ void DDGBuilder::mergeNodes(DDGNode &A, DDGNode &B) {
   cast<SimpleDDGNode>(&A)->appendInstructions(*cast<SimpleDDGNode>(&B));
 
   // Move to A any outgoing edges from B.
-  for (DDGEdge *BE : B)
+  for (DDGEdge *BE : B) {
     Graph.connect(A, BE->getTargetNode(), *BE);
+
+}
 
   A.removeEdge(EdgeToFold);
   destroyEdge(EdgeToFold);

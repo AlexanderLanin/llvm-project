@@ -66,14 +66,18 @@ TEST(SymbolSlab, FindAndIterate) {
   B.insert(symbol("Y"));
   B.insert(symbol("X"));
   EXPECT_EQ(nullptr, B.find(SymbolID("W")));
-  for (const char *Sym : {"X", "Y", "Z"})
+  for (const char *Sym : {"X", "Y", "Z"}) {
     EXPECT_THAT(B.find(SymbolID(Sym)), Pointee(Named(Sym)));
+
+}
 
   SymbolSlab S = std::move(B).build();
   EXPECT_THAT(S, UnorderedElementsAre(Named("X"), Named("Y"), Named("Z")));
   EXPECT_EQ(S.end(), S.find(SymbolID("W")));
-  for (const char *Sym : {"X", "Y", "Z"})
+  for (const char *Sym : {"X", "Y", "Z"}) {
     EXPECT_THAT(*S.find(SymbolID(Sym)), Named(Sym));
+
+}
 }
 
 TEST(RelationSlab, Lookup) {

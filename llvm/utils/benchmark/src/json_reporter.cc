@@ -106,7 +106,9 @@ bool JSONReporter::ReportContext(const Context& context) {
         << FormatKV("num_sharing", static_cast<int64_t>(CI.num_sharing))
         << "\n";
     out << indent << "}";
-    if (i != info.caches.size() - 1) out << ",";
+    if (i != info.caches.size() - 1) { out << ",";
+
+}
     out << "\n";
   }
   indent = std::string(4, ' ');

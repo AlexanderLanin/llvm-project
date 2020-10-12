@@ -39,8 +39,10 @@ public:
   ARCAssignChecker(MigrationPass &pass) : Pass(pass) { }
 
   bool VisitBinaryOperator(BinaryOperator *Exp) {
-    if (Exp->getType()->isDependentType())
+    if (Exp->getType()->isDependentType()) {
       return true;
+
+}
 
     Expr *E = Exp->getLHS();
     SourceLocation OrigLoc = E->getExprLoc();
@@ -49,8 +51,10 @@ public:
     if (declRef && isa<VarDecl>(declRef->getDecl())) {
       ASTContext &Ctx = Pass.Ctx;
       Expr::isModifiableLvalueResult IsLV = E->isModifiableLvalue(Ctx, &Loc);
-      if (IsLV != Expr::MLV_ConstQualified)
+      if (IsLV != Expr::MLV_ConstQualified) {
         return true;
+
+}
       VarDecl *var = cast<VarDecl>(declRef->getDecl());
       if (var->isARCPseudoStrong()) {
         Transaction Trans(Pass.TA);

@@ -41,16 +41,22 @@ void closeBrackets(std::string &Code, const format::FormatStyle &Style) {
         Brackets.push_back(']');
         break;
       case tok::r_paren:
-        if (!Brackets.empty() && Brackets.back() == ')')
+        if (!Brackets.empty() && Brackets.back() == ')') {
           Brackets.pop_back();
+
+}
         break;
       case tok::r_brace:
-        if (!Brackets.empty() && Brackets.back() == '}')
+        if (!Brackets.empty() && Brackets.back() == '}') {
           Brackets.pop_back();
+
+}
         break;
       case tok::r_square:
-        if (!Brackets.empty() && Brackets.back() == ']')
+        if (!Brackets.empty() && Brackets.back() == ']') {
           Brackets.pop_back();
+
+}
         break;
       default:
         continue;
@@ -64,8 +70,10 @@ void closeBrackets(std::string &Code, const format::FormatStyle &Style) {
 static StringRef commentMarker(llvm::StringRef Line) {
   for (StringRef Marker : {"///", "//"}){
     auto I = Line.rfind(Marker);
-    if (I != StringRef::npos)
+    if (I != StringRef::npos) {
       return Line.substr(I, Marker.size());
+
+}
   }
   return "";
 }
@@ -76,8 +84,10 @@ llvm::StringRef firstLine(llvm::StringRef Code) {
 
 llvm::StringRef lastLine(llvm::StringRef Code) {
   llvm::StringRef Rest = Code;
-  while (!Rest.empty() && Rest.back() != '\n')
+  while (!Rest.empty() && Rest.back() != '\n') {
     Rest = Rest.drop_back();
+
+}
   return Code.substr(Rest.size());
 }
 
@@ -141,9 +151,11 @@ IncrementalChanges getIncrementalChangesAfterNewline(llvm::StringRef Code,
 
   // Strip leading whitespace on trailing line.
   StringRef TrailingTrim = Trailing.ltrim();
-  if (unsigned TrailWS = Trailing.size() - TrailingTrim.size())
+  if (unsigned TrailWS = Trailing.size() - TrailingTrim.size()) {
     cantFail(Result.Changes.add(
         replacement(Code, StringRef(Trailing.begin(), TrailWS), "")));
+
+}
 
   // If we split a comment, replace indentation with a comment marker.
   // If the editor made the new line a comment, also respect that.
@@ -193,8 +205,10 @@ IncrementalChanges getIncrementalChangesAfterNewline(llvm::StringRef Code,
 IncrementalChanges getIncrementalChanges(llvm::StringRef Code, unsigned Cursor,
                                          llvm::StringRef InsertedText) {
   IncrementalChanges Result;
-  if (InsertedText == "\n")
+  if (InsertedText == "\n") {
     return getIncrementalChangesAfterNewline(Code, Cursor);
+
+}
 
   Result.CursorPlaceholder = " /**/";
   return Result;
@@ -261,8 +275,10 @@ formatIncremental(llvm::StringRef OriginalCode, unsigned OriginalCursor,
   unsigned Cursor = Incremental.Changes.getShiftedCodePosition(OriginalCursor);
   // 2) Truncate code after the last interesting range.
   unsigned FormatLimit = Cursor;
-  for (tooling::Range &R : Incremental.FormatRanges)
+  for (tooling::Range &R : Incremental.FormatRanges) {
     FormatLimit = std::max(FormatLimit, R.getOffset() + R.getLength());
+
+}
   CodeToFormat.resize(FormatLimit);
   // 3) Insert a placeholder for the cursor.
   CodeToFormat.insert(Cursor, Incremental.CursorPlaceholder);
@@ -273,9 +289,11 @@ formatIncremental(llvm::StringRef OriginalCode, unsigned OriginalCursor,
   std::vector<tooling::Range> RangesToFormat = Incremental.FormatRanges;
   // Ranges after the cursor need to be adjusted for the placeholder.
   for (auto &R : RangesToFormat) {
-    if (R.getOffset() > Cursor)
+    if (R.getOffset() > Cursor) {
       R = tooling::Range(R.getOffset() + Incremental.CursorPlaceholder.size(),
                          R.getLength());
+
+}
   }
   // We also format the cursor.
   RangesToFormat.push_back(
@@ -288,20 +306,24 @@ formatIncremental(llvm::StringRef OriginalCode, unsigned OriginalCursor,
   format::FormattingAttemptStatus Status;
   for (const tooling::Replacement &R : format::reformat(
            Style, CodeToFormat, RangesToFormat, Filename, &Status)) {
-    if (R.getOffset() + R.getLength() <= FormatLimit) // Before limit.
+    if (R.getOffset() + R.getLength() <= FormatLimit) { // Before limit.
       cantFail(FormattingChanges.add(R));
-    else if(R.getOffset() < FormatLimit) { // Overlaps limit.
-      if (R.getReplacementText().empty()) // Deletions are easy to handle.
+    } else if(R.getOffset() < FormatLimit) { // Overlaps limit.
+      if (R.getReplacementText().empty()) { // Deletions are easy to handle.
         cantFail(FormattingChanges.add(tooling::Replacement(Filename,
             R.getOffset(), FormatLimit - R.getOffset(), "")));
-      else
+      } else {
         // Hopefully won't happen in practice?
         elog("Incremental clang-format edit overlapping cursor @ {0}!\n{1}",
              Cursor, CodeToFormat);
+
+}
     }
   }
-  if (!Status.FormatComplete)
+  if (!Status.FormatComplete) {
     vlog("Incremental format incomplete at line {0}", Status.Line);
+
+}
 
   // Now we are ready to compose the changes relative to OriginalCode.
   //   edits -> insert placeholder -> format -> remove placeholder.

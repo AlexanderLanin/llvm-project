@@ -145,8 +145,10 @@ static Optional<int> findPreviousSpillSlot(const Value *Val,
                                            SelectionDAGBuilder &Builder,
                                            int LookUpDepth) {
   // Can not look any further - give up now
-  if (LookUpDepth <= 0)
+  if (LookUpDepth <= 0) {
     return None;
+
+}
 
   // Spill location is known for gc relocates
   if (const auto *Relocate = dyn_cast<GCRelocateInst>(Val)) {
@@ -154,15 +156,19 @@ static Optional<int> findPreviousSpillSlot(const Value *Val,
         Builder.FuncInfo.StatepointSpillMaps[Relocate->getStatepoint()];
 
     auto It = SpillMap.find(Relocate->getDerivedPtr());
-    if (It == SpillMap.end())
+    if (It == SpillMap.end()) {
       return None;
+
+}
 
     return It->second;
   }
 
   // Look through bitcast instructions.
-  if (const BitCastInst *Cast = dyn_cast<BitCastInst>(Val))
+  if (const BitCastInst *Cast = dyn_cast<BitCastInst>(Val)) {
     return findPreviousSpillSlot(Cast->getOperand(0), Builder, LookUpDepth - 1);
+
+}
 
   // Look through phi nodes
   // All incoming values should have same known stack slot, otherwise result
@@ -173,11 +179,15 @@ static Optional<int> findPreviousSpillSlot(const Value *Val,
     for (auto &IncomingValue : Phi->incoming_values()) {
       Optional<int> SpillSlot =
           findPreviousSpillSlot(IncomingValue, Builder, LookUpDepth - 1);
-      if (!SpillSlot.hasValue())
+      if (!SpillSlot.hasValue()) {
         return None;
 
-      if (MergedResult.hasValue() && *MergedResult != *SpillSlot)
+}
+
+      if (MergedResult.hasValue() && *MergedResult != *SpillSlot) {
         return None;
+
+}
 
       MergedResult = SpillSlot;
     }
@@ -231,15 +241,19 @@ static void reservePreviousStackSlotForValue(const Value *IncomingValue,
   }
 
   SDValue OldLocation = Builder.StatepointLowering.getLocation(Incoming);
-  if (OldLocation.getNode())
+  if (OldLocation.getNode()) {
     // Duplicates in input
     return;
+
+}
 
   const int LookUpDepth = 6;
   Optional<int> Index =
       findPreviousSpillSlot(IncomingValue, Builder, LookUpDepth);
-  if (!Index.hasValue())
+  if (!Index.hasValue()) {
     return;
+
+}
 
   const auto &StatepointSlots = Builder.FuncInfo.StatepointStackSlots;
 
@@ -297,11 +311,15 @@ static std::pair<SDValue, SDNode *> lowerCallFromStatepointLoweringInfo(
 
   bool HasDef = !SI.CLI.RetTy->isVoidTy();
   if (HasDef) {
-    if (CallEnd->getOpcode() == ISD::LOAD)
+    if (CallEnd->getOpcode() == ISD::LOAD) {
       CallEnd = CallEnd->getOperand(0).getNode();
-    else
-      while (CallEnd->getOpcode() == ISD::CopyFromReg)
+    } else {
+      while (CallEnd->getOpcode() == ISD::CopyFromReg) {
         CallEnd = CallEnd->getOperand(0).getNode();
+
+}
+
+}
   }
 
   assert(CallEnd->getOpcode() == ISD::CALLSEQ_END && "expected!");
@@ -420,8 +438,10 @@ static void lowerIncomingStatepointValue(SDValue Incoming, bool LiveInOnly,
     // runtime side which not all would support.
     auto Res = spillIncomingStatepointValue(Incoming, Chain, Builder);
     Ops.push_back(std::get<0>(Res));
-    if (auto *MMO = std::get<2>(Res))
+    if (auto *MMO = std::get<2>(Res)) {
       MemRefs.push_back(MMO);
+
+}
     Chain = std::get<1>(Res);;
   }
 
@@ -493,8 +513,10 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
   // doesn't change semantics at all.  It is important for performance that we
   // reserve slots for both deopt and gc values before lowering either.
   for (const Value *V : SI.DeoptState) {
-    if (!LiveInDeopt || isGCValue(V))
+    if (!LiveInDeopt || isGCValue(V)) {
       reservePreviousStackSlotForValue(V, Builder);
+
+}
   }
   for (unsigned i = 0; i < SI.Bases.size(); ++i) {
     reservePreviousStackSlotForValue(SI.Bases[i], Builder);
@@ -515,11 +537,15 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
     // the frame index.
     if (const Argument *Arg = dyn_cast<Argument>(V)) {
       int FI = Builder.FuncInfo.getArgumentFrameIndex(Arg);
-      if (FI != INT_MAX)
+      if (FI != INT_MAX) {
         Incoming = Builder.DAG.getFrameIndex(FI, Builder.getFrameIndexTy());
+
+}
     }
-    if (!Incoming.getNode())
+    if (!Incoming.getNode()) {
       Incoming = Builder.getValue(V);
+
+}
     const bool LiveInValue = LiveInDeopt && !isGCValue(V);
     lowerIncomingStatepointValue(Incoming, LiveInValue, Ops, MemRefs, Builder);
   }
@@ -587,8 +613,10 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
       // uses of the corresponding values so that it would automatically
       // export them. Relocates of the spilled values does not use original
       // value.
-      if (Relocate->getParent() != StatepointInstr->getParent())
+      if (Relocate->getParent() != StatepointInstr->getParent()) {
         Builder.ExportFromCurrentBlock(V);
+
+}
     }
   }
 }
@@ -658,13 +686,17 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
     // Add GC transition arguments
     for (const Value *V : SI.GCTransitionArgs) {
       TSOps.push_back(getValue(V));
-      if (V->getType()->isPointerTy())
+      if (V->getType()->isPointerTy()) {
         TSOps.push_back(DAG.getSrcValue(V));
+
+}
     }
 
     // Add glue if necessary
-    if (CallHasIncomingGlue)
+    if (CallHasIncomingGlue) {
       TSOps.push_back(Glue);
+
+}
 
     SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
 
@@ -698,10 +730,12 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
   // Add call arguments
   // Get position of register mask in the call
   SDNode::op_iterator RegMaskIt;
-  if (CallHasIncomingGlue)
+  if (CallHasIncomingGlue) {
     RegMaskIt = CallNode->op_end() - 2;
-  else
+  } else {
     RegMaskIt = CallNode->op_end() - 1;
+
+}
   Ops.insert(Ops.end(), CallNode->op_begin() + 2, RegMaskIt);
 
   // Add a constant argument for the calling convention
@@ -723,8 +757,10 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
   Ops.push_back(Chain);
 
   // Same for the glue, but we add it only if original call had it
-  if (Glue.getNode())
+  if (Glue.getNode()) {
     Ops.push_back(Glue);
+
+}
 
   // Compute return values.  Provide a glue output since we consume one as
   // input.  This allows someone else to chain off us as needed.
@@ -749,8 +785,10 @@ SDValue SelectionDAGBuilder::LowerAsSTATEPOINT(
     // Add GC transition arguments
     for (const Value *V : SI.GCTransitionArgs) {
       TEOps.push_back(getValue(V));
-      if (V->getType()->isPointerTy())
+      if (V->getType()->isPointerTy()) {
         TEOps.push_back(DAG.getSrcValue(V));
+
+}
     }
 
     // Add glue
@@ -903,8 +941,10 @@ void SelectionDAGBuilder::LowerCallSiteWithDeoptBundleImpl(
       SI.CLI, Call, ArgBeginIndex, Call->getNumArgOperands(), Callee,
       ForceVoidReturnTy ? Type::getVoidTy(*DAG.getContext()) : Call->getType(),
       false);
-  if (!VarArgDisallowed)
+  if (!VarArgDisallowed) {
     SI.CLI.IsVarArg = Call->getFunctionType()->isVarArg();
+
+}
 
   auto DeoptBundle = *Call->getOperandBundle(LLVMContext::OB_deopt);
 
@@ -1035,7 +1075,9 @@ void SelectionDAGBuilder::LowerDeoptimizingReturn() {
   // We do not lower the return value from llvm.deoptimize to any virtual
   // register, and change the immediately following return to a trap
   // instruction.
-  if (DAG.getTarget().Options.TrapUnreachable)
+  if (DAG.getTarget().Options.TrapUnreachable) {
     DAG.setRoot(
         DAG.getNode(ISD::TRAP, getCurSDLoc(), MVT::Other, DAG.getRoot()));
+
+}
 }

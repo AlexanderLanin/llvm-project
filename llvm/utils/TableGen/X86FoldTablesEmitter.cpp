@@ -116,14 +116,22 @@ class X86FoldTablesEmitter {
       OS  << "X86::" << MemInst->TheDef->getName() << ",";
       OS.PadToColumn(75);
 
-      if (IsLoad)
+      if (IsLoad) {
         OS << "TB_FOLDED_LOAD | ";
-      if (IsStore)
+
+}
+      if (IsStore) {
         OS << "TB_FOLDED_STORE | ";
-      if (CannotUnfold)
+
+}
+      if (CannotUnfold) {
         OS << "TB_NO_REVERSE | ";
-      if (IsAligned)
+
+}
+      if (IsAligned) {
         OS << "TB_ALIGN_" << Alignment << " | ";
+
+}
 
       OS << "0 },\n";
     }
@@ -167,8 +175,10 @@ private:
     OS << "static const X86MemoryFoldTableEntry MemoryFold" << TableName
        << "[] = {\n";
 
-    for (const X86FoldTableEntry &E : Table)
+    for (const X86FoldTableEntry &E : Table) {
       E.print(OS);
+
+}
 
     OS << "};\n\n";
   }
@@ -202,24 +212,32 @@ static inline uint64_t getValueFromBitsInit(const BitsInit *B) {
 
 // Returns true if the two given BitsInits represent the same integer value
 static inline bool equalBitsInits(const BitsInit *B1, const BitsInit *B2) {
-  if (B1->getNumBits() != B2->getNumBits())
+  if (B1->getNumBits() != B2->getNumBits()) {
     PrintFatalError("Comparing two BitsInits with different sizes!");
+
+}
 
   for (unsigned i = 0, e = B1->getNumBits(); i != e; ++i) {
     BitInit *Bit1 = cast<BitInit>(B1->getBit(i));
     BitInit *Bit2 = cast<BitInit>(B2->getBit(i));
-    if (Bit1->getValue() != Bit2->getValue())
+    if (Bit1->getValue() != Bit2->getValue()) {
       return false;
+
+}
   }
   return true;
 }
 
 // Return the size of the register operand
 static inline unsigned int getRegOperandSize(const Record *RegRec) {
-  if (RegRec->isSubClassOf("RegisterOperand"))
+  if (RegRec->isSubClassOf("RegisterOperand")) {
     RegRec = RegRec->getValueAsDef("RegClass");
-  if (RegRec->isSubClassOf("RegisterClass"))
+
+}
+  if (RegRec->isSubClassOf("RegisterClass")) {
     return RegRec->getValueAsListOfDefs("RegTypes")[0]->getValueAsInt("Size");
+
+}
 
   llvm_unreachable("Register operand's size not known!");
 }
@@ -230,27 +248,45 @@ getMemOperandSize(const Record *MemRec, const bool IntrinsicSensitive = false) {
   if (MemRec->isSubClassOf("Operand")) {
     // Intrinsic memory instructions use ssmem/sdmem.
     if (IntrinsicSensitive &&
-        (MemRec->getName() == "sdmem" || MemRec->getName() == "ssmem"))
+        (MemRec->getName() == "sdmem" || MemRec->getName() == "ssmem")) {
       return 128;
+
+}
 
     StringRef Name =
         MemRec->getValueAsDef("ParserMatchClass")->getValueAsString("Name");
-    if (Name == "Mem8")
+    if (Name == "Mem8") {
       return 8;
-    if (Name == "Mem16")
+
+}
+    if (Name == "Mem16") {
       return 16;
-    if (Name == "Mem32")
+
+}
+    if (Name == "Mem32") {
       return 32;
-    if (Name == "Mem64")
+
+}
+    if (Name == "Mem64") {
       return 64;
-    if (Name == "Mem80")
+
+}
+    if (Name == "Mem80") {
       return 80;
-    if (Name == "Mem128")
+
+}
+    if (Name == "Mem128") {
       return 128;
-    if (Name == "Mem256")
+
+}
+    if (Name == "Mem256") {
       return 256;
-    if (Name == "Mem512")
+
+}
+    if (Name == "Mem512") {
       return 512;
+
+}
   }
 
   llvm_unreachable("Memory operand's size not known!");
@@ -365,8 +401,10 @@ public:
         !areOppositeForms(RegRec->getValueAsBitsInit("FormBits"),
                           MemRec->getValueAsBitsInit("FormBits")) ||
         RegRec->getValueAsBit("isAsmParserOnly") !=
-            MemRec->getValueAsBit("isAsmParserOnly"))
+            MemRec->getValueAsBit("isAsmParserOnly")) {
       return false;
+
+}
 
     // Make sure the sizes of the operands of both instructions suit each other.
     // This is needed for instructions with intrinsic version (_Int).
@@ -390,23 +428,33 @@ public:
       Record *MemOpRec = MemInst->Operands[i].Rec;
       Record *RegOpRec = RegInst->Operands[i + RegStartIdx].Rec;
 
-      if (MemOpRec == RegOpRec)
+      if (MemOpRec == RegOpRec) {
         continue;
+
+}
 
       if (isRegisterOperand(MemOpRec) && isRegisterOperand(RegOpRec)) {
         if (getRegOperandSize(MemOpRec) != getRegOperandSize(RegOpRec) ||
-            isNOREXRegClass(MemOpRec) != isNOREXRegClass(RegOpRec))
+            isNOREXRegClass(MemOpRec) != isNOREXRegClass(RegOpRec)) {
           return false;
+
+}
       } else if (isMemoryOperand(MemOpRec) && isMemoryOperand(RegOpRec)) {
-        if (getMemOperandSize(MemOpRec) != getMemOperandSize(RegOpRec))
+        if (getMemOperandSize(MemOpRec) != getMemOperandSize(RegOpRec)) {
           return false;
+
+}
       } else if (isImmediateOperand(MemOpRec) && isImmediateOperand(RegOpRec)) {
-        if (MemOpRec->getValueAsDef("Type") != RegOpRec->getValueAsDef("Type"))
+        if (MemOpRec->getValueAsDef("Type") != RegOpRec->getValueAsDef("Type")) {
           return false;
+
+}
       } else {
         // Only one operand can be folded.
-        if (ArgFolded)
+        if (ArgFolded) {
           return false;
+
+}
 
         assert(isRegisterOperand(RegOpRec) && isMemoryOperand(MemOpRec));
         ArgFolded = true;
@@ -442,8 +490,10 @@ private:
         (MemFormNum == X86Local::MRMSrcMemOp4 &&
          RegFormNum == X86Local::MRMSrcRegOp4) ||
         (MemFormNum == X86Local::MRMSrcMemCC &&
-         RegFormNum == X86Local::MRMSrcRegCC))
+         RegFormNum == X86Local::MRMSrcRegCC)) {
       return true;
+
+}
 
     return false;
   }
@@ -470,10 +520,12 @@ void X86FoldTablesEmitter::addEntryWithFlags(FoldTable &Table,
     // form instruction.
     // If the instruction reads from the folded operand, it well appear as in
     // input in both forms.
-    if (MemInOpsNum == RegInOpsNum)
+    if (MemInOpsNum == RegInOpsNum) {
       Result.IsLoad = true;
-    else
+    } else {
       Result.IsStore = true;
+
+}
   }
 
   Record *RegOpRec = RegInstr->Operands[FoldedInd].Rec;
@@ -483,12 +535,14 @@ void X86FoldTablesEmitter::addEntryWithFlags(FoldTable &Table,
   // the register in the register form instruction.
   // If the register's size is greater than the memory's operand size, do not
   // allow unfolding.
-  if (S == UNFOLD)
+  if (S == UNFOLD) {
     Result.CannotUnfold = false;
-  else if (S == NO_UNFOLD)
+  } else if (S == NO_UNFOLD) {
     Result.CannotUnfold = true;
-  else if (getRegOperandSize(RegOpRec) > getMemOperandSize(MemOpRec))
+  } else if (getRegOperandSize(RegOpRec) > getMemOperandSize(MemOpRec)) {
     Result.CannotUnfold = true; // S == NO_STRATEGY
+
+}
 
   uint64_t Enc = getValueFromBitsInit(RegRec->getValueAsBitsInit("OpEncBits"));
   if (isExplicitAlign(RegInstr)) {
@@ -565,8 +619,10 @@ void X86FoldTablesEmitter::updateTables(const CodeGenInstruction *RegInstr,
     Record *RegOpRec = RegInstr->Operands[RegOutSize - 1].Rec;
     Record *MemOpRec = MemInstr->Operands[RegOutSize - 1].Rec;
     if (isRegisterOperand(RegOpRec) && isMemoryOperand(MemOpRec) &&
-        getRegOperandSize(RegOpRec) == getMemOperandSize(MemOpRec))
+        getRegOperandSize(RegOpRec) == getMemOperandSize(MemOpRec)) {
       addEntryWithFlags(Table0, RegInstr, MemInstr, S, 0);
+
+}
   }
 
   return;
@@ -584,8 +640,10 @@ void X86FoldTablesEmitter::run(formatted_raw_ostream &OS) {
       Target.getInstructionsByEnumValue();
 
   for (const CodeGenInstruction *Inst : NumberedInstructions) {
-    if (!Inst->TheDef->getNameInit() || !Inst->TheDef->isSubClassOf("X86Inst"))
+    if (!Inst->TheDef->getNameInit() || !Inst->TheDef->isSubClassOf("X86Inst")) {
       continue;
+
+}
 
     const Record *Rec = Inst->TheDef;
 
@@ -598,15 +656,17 @@ void X86FoldTablesEmitter::run(formatted_raw_ostream &OS) {
     //   safe mapping of these instruction we manually map them and exclude
     //   them from the automation.
     if (Rec->getValueAsBit("isMemoryFoldable") == false ||
-        hasRSTRegClass(Inst) || hasPtrTailcallRegClass(Inst))
+        hasRSTRegClass(Inst) || hasPtrTailcallRegClass(Inst)) {
       continue;
+
+}
 
     // Add all the memory form instructions to MemInsts, and all the register
     // form instructions to RegInsts[Opc], where Opc in the opcode of each
     // instructions. this helps reducing the runtime of the backend.
-    if (hasMemoryFormat(Rec))
+    if (hasMemoryFormat(Rec)) {
       MemInsts.push_back(Inst);
-    else if (hasRegisterFormat(Rec)) {
+    } else if (hasRegisterFormat(Rec)) {
       uint8_t Opc = getValueFromBitsInit(Rec->getValueAsBitsInit("Opcode"));
       RegInsts[Opc].push_back(Inst);
     }
@@ -619,8 +679,10 @@ void X86FoldTablesEmitter::run(formatted_raw_ostream &OS) {
         getValueFromBitsInit(MemInst->TheDef->getValueAsBitsInit("Opcode"));
 
     auto RegInstsIt = RegInsts.find(Opc);
-    if (RegInstsIt == RegInsts.end())
+    if (RegInstsIt == RegInsts.end()) {
       continue;
+
+}
 
     // Two forms (memory & register) of the same instruction must have the same
     // opcode. try matching only with register form instructions with the same

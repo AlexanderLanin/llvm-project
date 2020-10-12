@@ -43,13 +43,17 @@ SelectionTree makeSelectionTree(const StringRef MarkedCode, ParsedAST &AST) {
 }
 
 Range nodeRange(const SelectionTree::Node *N, ParsedAST &AST) {
-  if (!N)
+  if (!N) {
     return Range{};
+
+}
   const SourceManager &SM = AST.getSourceManager();
   const LangOptions &LangOpts = AST.getLangOpts();
   StringRef Buffer = SM.getBufferData(SM.getMainFileID());
-  if (llvm::isa_and_nonnull<TranslationUnitDecl>(N->ASTNode.get<Decl>()))
+  if (llvm::isa_and_nonnull<TranslationUnitDecl>(N->ASTNode.get<Decl>())) {
     return Range{Position{}, offsetToPosition(Buffer, Buffer.size())};
+
+}
   auto FileRange =
       toHalfOpenFileRange(SM, LangOpts, N->ASTNode.getSourceRange());
   assert(FileRange && "We should be able to get the File Range");
@@ -76,17 +80,25 @@ std::vector<const SelectionTree::Node *> allNodes(const SelectionTree &T) {
 bool verifyCommonAncestor(const SelectionTree::Node &Root,
                           const SelectionTree::Node *Common,
                           StringRef MarkedCode) {
-  if (&Root == Common)
+  if (&Root == Common) {
     return true;
-  if (Root.Selected)
+
+}
+  if (Root.Selected) {
     ADD_FAILURE() << "Selected nodes outside common ancestor\n" << MarkedCode;
+
+}
   bool Seen = false;
-  for (const SelectionTree::Node *Child : Root.Children)
+  for (const SelectionTree::Node *Child : Root.Children) {
     if (verifyCommonAncestor(*Child, Common, MarkedCode)) {
-      if (Seen)
+      if (Seen) {
         ADD_FAILURE() << "Saw common ancestor twice\n" << MarkedCode;
+
+}
       Seen = true;
     }
+
+}
   return Seen;
 }
 
@@ -475,11 +487,15 @@ TEST(SelectionTest, Selected) {
     auto T = makeSelectionTree(C, AST);
 
     std::vector<Range> Complete, Partial;
-    for (const SelectionTree::Node *N : allNodes(T))
-      if (N->Selected == SelectionTree::Complete)
+    for (const SelectionTree::Node *N : allNodes(T)) {
+      if (N->Selected == SelectionTree::Complete) {
         Complete.push_back(nodeRange(N, AST));
-      else if (N->Selected == SelectionTree::Partial)
+      } else if (N->Selected == SelectionTree::Partial) {
         Partial.push_back(nodeRange(N, AST));
+
+}
+
+}
     EXPECT_THAT(Complete, UnorderedElementsAreArray(Test.ranges("C"))) << C;
     EXPECT_THAT(Partial, UnorderedElementsAreArray(Test.ranges())) << C;
   }
@@ -575,10 +591,12 @@ TEST(SelectionTest, CreateAll) {
       AST.getASTContext(), AST.getTokens(), Test.point("ambiguous"),
       Test.point("ambiguous"), [&](SelectionTree T) {
         // Expect to see the right-biased tree first.
-        if (Seen == 0)
+        if (Seen == 0) {
           EXPECT_EQ("BinaryOperator", nodeKind(T.commonAncestor()));
-        else if (Seen == 1)
+        } else if (Seen == 1) {
           EXPECT_EQ("IntegerLiteral", nodeKind(T.commonAncestor()));
+
+}
         ++Seen;
         return false;
       });

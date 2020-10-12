@@ -34,15 +34,19 @@ void IRSymbolMapper::add(ExecutionSession &ES, const ManglingOptions &MO,
                          ArrayRef<GlobalValue *> GVs,
                          SymbolFlagsMap &SymbolFlags,
                          SymbolNameToDefinitionMap *SymbolToDefinition) {
-  if (GVs.empty())
+  if (GVs.empty()) {
     return;
+
+}
 
   MangleAndInterner Mangle(ES, GVs[0]->getParent()->getDataLayout());
   for (auto *G : GVs) {
     assert(G && "GVs cannot contain null elements");
     if (!G->hasName() || G->isDeclaration() || G->hasLocalLinkage() ||
-        G->hasAvailableExternallyLinkage() || G->hasAppendingLinkage())
+        G->hasAvailableExternallyLinkage() || G->hasAppendingLinkage()) {
       continue;
+
+}
 
     if (G->isThreadLocal() && MO.EmulatedTLS) {
       auto *GV = cast<GlobalVariable>(G);
@@ -51,8 +55,10 @@ void IRSymbolMapper::add(ExecutionSession &ES, const ManglingOptions &MO,
 
       auto EmuTLSV = Mangle(("__emutls_v." + GV->getName()).str());
       SymbolFlags[EmuTLSV] = Flags;
-      if (SymbolToDefinition)
+      if (SymbolToDefinition) {
         (*SymbolToDefinition)[EmuTLSV] = GV;
+
+}
 
       // If this GV has a non-zero initializer we'll need to emit an
       // __emutls.t symbol too.
@@ -60,16 +66,22 @@ void IRSymbolMapper::add(ExecutionSession &ES, const ManglingOptions &MO,
         const auto *InitVal = GV->getInitializer();
 
         // Skip zero-initializers.
-        if (isa<ConstantAggregateZero>(InitVal))
+        if (isa<ConstantAggregateZero>(InitVal)) {
           continue;
+
+}
         const auto *InitIntValue = dyn_cast<ConstantInt>(InitVal);
-        if (InitIntValue && InitIntValue->isZero())
+        if (InitIntValue && InitIntValue->isZero()) {
           continue;
+
+}
 
         auto EmuTLST = Mangle(("__emutls_t." + GV->getName()).str());
         SymbolFlags[EmuTLST] = Flags;
-        if (SymbolToDefinition)
+        if (SymbolToDefinition) {
           (*SymbolToDefinition)[EmuTLST] = GV;
+
+}
       }
       continue;
     }
@@ -77,8 +89,10 @@ void IRSymbolMapper::add(ExecutionSession &ES, const ManglingOptions &MO,
     // Otherwise we just need a normal linker mangling.
     auto MangledName = Mangle(G->getName());
     SymbolFlags[MangledName] = JITSymbolFlags::fromGlobalValue(*G);
-    if (SymbolToDefinition)
+    if (SymbolToDefinition) {
       (*SymbolToDefinition)[MangledName] = G;
+
+}
   }
 }
 
@@ -86,39 +100,55 @@ Expected<std::pair<SymbolFlagsMap, SymbolStringPtr>>
 getObjectSymbolInfo(ExecutionSession &ES, MemoryBufferRef ObjBuffer) {
   auto Obj = object::ObjectFile::createObjectFile(ObjBuffer);
 
-  if (!Obj)
+  if (!Obj) {
     return Obj.takeError();
+
+}
 
   bool IsMachO = isa<object::MachOObjectFile>(Obj->get());
 
   SymbolFlagsMap SymbolFlags;
   for (auto &Sym : (*Obj)->symbols()) {
     // Skip symbols not defined in this object file.
-    if (Sym.getFlags() & object::BasicSymbolRef::SF_Undefined)
+    if (Sym.getFlags() & object::BasicSymbolRef::SF_Undefined) {
       continue;
 
+}
+
     // Skip symbols that are not global.
-    if (!(Sym.getFlags() & object::BasicSymbolRef::SF_Global))
+    if (!(Sym.getFlags() & object::BasicSymbolRef::SF_Global)) {
       continue;
+
+}
 
     // Skip symbols that have type SF_File.
     if (auto SymType = Sym.getType()) {
-      if (*SymType == object::SymbolRef::ST_File)
+      if (*SymType == object::SymbolRef::ST_File) {
         continue;
-    } else
+
+}
+    } else {
       return SymType.takeError();
 
+}
+
     auto Name = Sym.getName();
-    if (!Name)
+    if (!Name) {
       return Name.takeError();
+
+}
     auto InternedName = ES.intern(*Name);
     auto SymFlags = JITSymbolFlags::fromObjectSymbol(Sym);
-    if (!SymFlags)
+    if (!SymFlags) {
       return SymFlags.takeError();
 
+}
+
     // Strip the 'exported' flag from MachO linker-private symbols.
-    if (IsMachO && Name->startswith("l"))
+    if (IsMachO && Name->startswith("l")) {
       *SymFlags &= ~JITSymbolFlags::Exported;
+
+}
 
     SymbolFlags[InternedName] = std::move(*SymFlags);
   }

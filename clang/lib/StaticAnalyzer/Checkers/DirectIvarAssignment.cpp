@@ -76,9 +76,13 @@ class DirectIvarAssignment :
     void VisitBinaryOperator(const BinaryOperator *BO);
 
     void VisitChildren(const Stmt *S) {
-      for (const Stmt *Child : S->children())
-        if (Child)
+      for (const Stmt *Child : S->children()) {
+        if (Child) {
           this->Visit(Child);
+
+}
+
+}
     }
   };
 
@@ -96,15 +100,19 @@ static const ObjCIvarDecl *findPropertyBackingIvar(const ObjCPropertyDecl *PD,
                                                ASTContext &Ctx) {
   // Check for synthesized ivars.
   ObjCIvarDecl *ID = PD->getPropertyIvarDecl();
-  if (ID)
+  if (ID) {
     return ID;
+
+}
 
   ObjCInterfaceDecl *NonConstInterD = const_cast<ObjCInterfaceDecl*>(InterD);
 
   // Check for existing "_PropName".
   ID = NonConstInterD->lookupInstanceVariable(PD->getDefaultSynthIvarName(Ctx));
-  if (ID)
+  if (ID) {
     return ID;
+
+}
 
   // Check for existing "PropName".
   IdentifierInfo *PropIdent = PD->getIdentifier();
@@ -127,25 +135,33 @@ void DirectIvarAssignment::checkASTDecl(const ObjCImplementationDecl *D,
     const ObjCIvarDecl *ID = findPropertyBackingIvar(PD, InterD,
                                                      Mgr.getASTContext());
 
-    if (!ID)
+    if (!ID) {
       continue;
+
+}
 
     // Store the IVar to property mapping.
     IvarToPropMap[ID] = PD;
   }
 
-  if (IvarToPropMap.empty())
+  if (IvarToPropMap.empty()) {
     return;
+
+}
 
   for (const auto *M : D->instance_methods()) {
     AnalysisDeclContext *DCtx = Mgr.getAnalysisDeclContext(M);
 
-    if ((*ShouldSkipMethod)(M))
+    if ((*ShouldSkipMethod)(M)) {
       continue;
 
+}
+
     const Stmt *Body = M->getBody();
-    if (M->isSynthesizedAccessorStub())
+    if (M->isSynthesizedAccessorStub()) {
       continue;
+
+}
     assert(Body);
 
     MethodCrawler MC(IvarToPropMap, M->getCanonicalDecl(), InterD, BR, this,
@@ -155,23 +171,31 @@ void DirectIvarAssignment::checkASTDecl(const ObjCImplementationDecl *D,
 }
 
 static bool isAnnotatedToAllowDirectAssignment(const Decl *D) {
-  for (const auto *Ann : D->specific_attrs<AnnotateAttr>())
+  for (const auto *Ann : D->specific_attrs<AnnotateAttr>()) {
     if (Ann->getAnnotation() ==
-        "objc_allow_direct_instance_variable_assignment")
+        "objc_allow_direct_instance_variable_assignment") {
       return true;
+
+}
+
+}
   return false;
 }
 
 void DirectIvarAssignment::MethodCrawler::VisitBinaryOperator(
                                                     const BinaryOperator *BO) {
-  if (!BO->isAssignmentOp())
+  if (!BO->isAssignmentOp()) {
     return;
+
+}
 
   const ObjCIvarRefExpr *IvarRef =
           dyn_cast<ObjCIvarRefExpr>(BO->getLHS()->IgnoreParenCasts());
 
-  if (!IvarRef)
+  if (!IvarRef) {
     return;
+
+}
 
   if (const ObjCIvarDecl *D = IvarRef->getDecl()) {
     IvarToPropertyMapTy::const_iterator I = IvarToPropMap.find(D);
@@ -183,19 +207,25 @@ void DirectIvarAssignment::MethodCrawler::VisitBinaryOperator(
       // as a false positive suppression mechanism for the checker. The
       // annotation is allowed on properties and ivars.
       if (isAnnotatedToAllowDirectAssignment(PD) ||
-          isAnnotatedToAllowDirectAssignment(D))
+          isAnnotatedToAllowDirectAssignment(D)) {
         return;
+
+}
 
       ObjCMethodDecl *GetterMethod =
           InterfD->getInstanceMethod(PD->getGetterName());
       ObjCMethodDecl *SetterMethod =
           InterfD->getInstanceMethod(PD->getSetterName());
 
-      if (SetterMethod && SetterMethod->getCanonicalDecl() == MD)
+      if (SetterMethod && SetterMethod->getCanonicalDecl() == MD) {
         return;
 
-      if (GetterMethod && GetterMethod->getCanonicalDecl() == MD)
+}
+
+      if (GetterMethod && GetterMethod->getCanonicalDecl() == MD) {
         return;
+
+}
 
       BR.EmitBasicReport(
           MD, Checker, "Property access", categories::CoreFoundationObjectiveC,
@@ -210,9 +240,13 @@ void DirectIvarAssignment::MethodCrawler::VisitBinaryOperator(
 // Register the checker that checks for direct accesses in functions annotated
 // with __attribute__((annotate("objc_no_direct_instance_variable_assignment"))).
 static bool AttrFilter(const ObjCMethodDecl *M) {
-  for (const auto *Ann : M->specific_attrs<AnnotateAttr>())
-    if (Ann->getAnnotation() == "objc_no_direct_instance_variable_assignment")
+  for (const auto *Ann : M->specific_attrs<AnnotateAttr>()) {
+    if (Ann->getAnnotation() == "objc_no_direct_instance_variable_assignment") {
       return false;
+
+}
+
+}
   return true;
 }
 

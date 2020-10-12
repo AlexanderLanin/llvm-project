@@ -32,10 +32,14 @@ static uint32_t getHashForUdt(const TagRecord &Rec,
   bool HasUniqueName = bool(Opts & ClassOptions::HasUniqueName);
   bool IsAnon = HasUniqueName && isAnonymous(Rec.getName());
 
-  if (!ForwardRef && !Scoped && !IsAnon)
+  if (!ForwardRef && !Scoped && !IsAnon) {
     return hashStringV1(Rec.getName());
-  if (!ForwardRef && HasUniqueName && !IsAnon)
+
+}
+  if (!ForwardRef && HasUniqueName && !IsAnon) {
     return hashStringV1(Rec.getUniqueName());
+
+}
   return hashBufferV8(FullRecord);
 }
 
@@ -43,8 +47,10 @@ template <typename T>
 static Expected<uint32_t> getHashForUdt(const CVType &Rec) {
   T Deserialized;
   if (auto E = TypeDeserializer::deserializeAs(const_cast<CVType &>(Rec),
-                                               Deserialized))
+                                               Deserialized)) {
     return std::move(E);
+
+}
   return getHashForUdt(Deserialized, Rec.data());
 }
 
@@ -52,8 +58,10 @@ template <typename T>
 static Expected<TagRecordHash> getTagRecordHashForUdt(const CVType &Rec) {
   T Deserialized;
   if (auto E = TypeDeserializer::deserializeAs(const_cast<CVType &>(Rec),
-                                               Deserialized))
+                                               Deserialized)) {
     return std::move(E);
+
+}
 
   ClassOptions Opts = Deserialized.getOptions();
 
@@ -63,8 +71,10 @@ static Expected<TagRecordHash> getTagRecordHashForUdt(const CVType &Rec) {
 
   // If we don't have a forward ref we can't compute the hash of it from the
   // full record because it requires hashing the entire buffer.
-  if (!ForwardRef)
+  if (!ForwardRef) {
     return TagRecordHash{std::move(Deserialized), ThisRecordHash, 0};
+
+}
 
   bool Scoped = bool(Opts & ClassOptions::Scoped);
 
@@ -78,8 +88,10 @@ template <typename T>
 static Expected<uint32_t> getSourceLineHash(const CVType &Rec) {
   T Deserialized;
   if (auto E = TypeDeserializer::deserializeAs(const_cast<CVType &>(Rec),
-                                               Deserialized))
+                                               Deserialized)) {
     return std::move(E);
+
+}
   char Buf[4];
   support::endian::write32le(Buf, Deserialized.getUDT().getIndex());
   return hashStringV1(StringRef(Buf, 4));

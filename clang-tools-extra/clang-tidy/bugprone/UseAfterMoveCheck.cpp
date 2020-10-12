@@ -28,8 +28,10 @@ namespace bugprone {
 namespace {
 
 AST_MATCHER(Expr, hasUnevaluatedContext) {
-  if (isa<CXXNoexceptExpr>(Node) || isa<RequiresExpr>(Node))
+  if (isa<CXXNoexceptExpr>(Node) || isa<RequiresExpr>(Node)) {
     return true;
+
+}
   if (const auto *UnaryExpr = dyn_cast<UnaryExprOrTypeTraitExpr>(&Node)) {
     switch (UnaryExpr->getKind()) {
     case UETT_SizeOf:
@@ -39,8 +41,10 @@ AST_MATCHER(Expr, hasUnevaluatedContext) {
       return false;
     }
   }
-  if (const auto *TypeIDExpr = dyn_cast<CXXTypeidExpr>(&Node))
+  if (const auto *TypeIDExpr = dyn_cast<CXXTypeidExpr>(&Node)) {
     return !TypeIDExpr->isPotentiallyEvaluated();
+
+}
   return false;
 }
 
@@ -120,8 +124,10 @@ bool UseAfterMoveFinder::find(Stmt *FunctionBody, const Expr *MovingCall,
   Options.AddTemporaryDtors = true;
   std::unique_ptr<CFG> TheCFG =
       CFG::buildCFG(nullptr, FunctionBody, Context, Options);
-  if (!TheCFG)
+  if (!TheCFG) {
     return false;
+
+}
 
   Sequence =
       std::make_unique<ExprSequence>(TheCFG.get(), FunctionBody, Context);
@@ -129,8 +135,10 @@ bool UseAfterMoveFinder::find(Stmt *FunctionBody, const Expr *MovingCall,
   Visited.clear();
 
   const CFGBlock *Block = BlockMap->blockContainingStmt(MovingCall);
-  if (!Block)
+  if (!Block) {
     return false;
+
+}
 
   return findInternal(Block, MovingCall, MovedVariable, TheUseAfterMove);
 }
@@ -139,13 +147,17 @@ bool UseAfterMoveFinder::findInternal(const CFGBlock *Block,
                                       const Expr *MovingCall,
                                       const ValueDecl *MovedVariable,
                                       UseAfterMove *TheUseAfterMove) {
-  if (Visited.count(Block))
+  if (Visited.count(Block)) {
     return false;
+
+}
 
   // Mark the block as visited (except if this is the block containing the
   // std::move() and it's being visited the first time).
-  if (!MovingCall)
+  if (!MovingCall) {
     Visited.insert(Block);
+
+}
 
   // Get all uses and reinits in the block.
   llvm::SmallVector<const DeclRefExpr *, 1> Uses;
@@ -156,8 +168,10 @@ bool UseAfterMoveFinder::findInternal(const CFGBlock *Block,
   // reinit.
   llvm::SmallVector<const Stmt *, 1> ReinitsToDelete;
   for (const Stmt *Reinit : Reinits) {
-    if (MovingCall && Sequence->potentiallyAfter(MovingCall, Reinit))
+    if (MovingCall && Sequence->potentiallyAfter(MovingCall, Reinit)) {
       ReinitsToDelete.push_back(Reinit);
+
+}
   }
   for (const Stmt *Reinit : ReinitsToDelete) {
     Reinits.erase(Reinit);
@@ -171,8 +185,10 @@ bool UseAfterMoveFinder::findInternal(const CFGBlock *Block,
       // after the use.
       bool HaveSavingReinit = false;
       for (const Stmt *Reinit : Reinits) {
-        if (!Sequence->potentiallyAfter(Reinit, Use))
+        if (!Sequence->potentiallyAfter(Reinit, Use)) {
           HaveSavingReinit = true;
+
+}
       }
 
       if (!HaveSavingReinit) {
@@ -195,8 +211,10 @@ bool UseAfterMoveFinder::findInternal(const CFGBlock *Block,
   // successors.
   if (Reinits.empty()) {
     for (const auto &Succ : Block->succs()) {
-      if (Succ && findInternal(Succ, nullptr, MovedVariable, TheUseAfterMove))
+      if (Succ && findInternal(Succ, nullptr, MovedVariable, TheUseAfterMove)) {
         return true;
+
+}
     }
   }
 
@@ -216,8 +234,10 @@ void UseAfterMoveFinder::getUsesAndReinits(
   // All references to the variable that aren't reinitializations are uses.
   Uses->clear();
   for (const DeclRefExpr *DeclRef : DeclRefs) {
-    if (!ReinitDeclRefs.count(DeclRef))
+    if (!ReinitDeclRefs.count(DeclRef)) {
       Uses->push_back(DeclRef);
+
+}
   }
 
   // Sort the uses by their occurrence in the source code.
@@ -229,20 +249,28 @@ void UseAfterMoveFinder::getUsesAndReinits(
 
 bool isStandardSmartPointer(const ValueDecl *VD) {
   const Type *TheType = VD->getType().getNonReferenceType().getTypePtrOrNull();
-  if (!TheType)
+  if (!TheType) {
     return false;
+
+}
 
   const CXXRecordDecl *RecordDecl = TheType->getAsCXXRecordDecl();
-  if (!RecordDecl)
+  if (!RecordDecl) {
     return false;
+
+}
 
   const IdentifierInfo *ID = RecordDecl->getIdentifier();
-  if (!ID)
+  if (!ID) {
     return false;
 
+}
+
   StringRef Name = ID->getName();
-  if (Name != "unique_ptr" && Name != "shared_ptr" && Name != "weak_ptr")
+  if (Name != "unique_ptr" && Name != "shared_ptr" && Name != "weak_ptr") {
     return false;
+
+}
 
   return RecordDecl->getDeclContext()->isStdNamespace();
 }
@@ -253,8 +281,10 @@ void UseAfterMoveFinder::getDeclRefs(
   DeclRefs->clear();
   for (const auto &Elem : *Block) {
     Optional<CFGStmt> S = Elem.getAs<CFGStmt>();
-    if (!S)
+    if (!S) {
       continue;
+
+}
 
     auto addDeclRefs = [this, Block,
                         DeclRefs](const ArrayRef<BoundNodes> Matches) {
@@ -350,8 +380,10 @@ void UseAfterMoveFinder::getReinits(
   DeclRefs->clear();
   for (const auto &Elem : *Block) {
     Optional<CFGStmt> S = Elem.getAs<CFGStmt>();
-    if (!S)
+    if (!S) {
       continue;
+
+}
 
     SmallVector<BoundNodes, 1> Matches =
         match(findAll(ReinitMatcher), *S->getStmt(), *Context);
@@ -365,8 +397,10 @@ void UseAfterMoveFinder::getReinits(
         // We count DeclStmts as reinitializations, but they don't have a
         // DeclRefExpr associated with them -- so we need to check 'TheDeclRef'
         // before adding it to the set.
-        if (TheDeclRef)
+        if (TheDeclRef) {
           DeclRefs->insert(TheDeclRef);
+
+}
       }
     }
   }
@@ -428,26 +462,34 @@ void UseAfterMoveCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MovingCall = Result.Nodes.getNodeAs<Expr>("moving-call");
   const auto *Arg = Result.Nodes.getNodeAs<DeclRefExpr>("arg");
 
-  if (!MovingCall || !MovingCall->getExprLoc().isValid())
+  if (!MovingCall || !MovingCall->getExprLoc().isValid()) {
     MovingCall = CallMove;
 
+}
+
   Stmt *FunctionBody = nullptr;
-  if (ContainingLambda)
+  if (ContainingLambda) {
     FunctionBody = ContainingLambda->getBody();
-  else if (ContainingFunc)
+  } else if (ContainingFunc) {
     FunctionBody = ContainingFunc->getBody();
-  else
+  } else {
     return;
+
+}
 
   // Ignore the std::move if the variable that was passed to it isn't a local
   // variable.
-  if (!Arg->getDecl()->getDeclContext()->isFunctionOrMethod())
+  if (!Arg->getDecl()->getDeclContext()->isFunctionOrMethod()) {
     return;
+
+}
 
   UseAfterMoveFinder finder(Result.Context);
   UseAfterMove Use;
-  if (finder.find(FunctionBody, MovingCall, Arg->getDecl(), &Use))
+  if (finder.find(FunctionBody, MovingCall, Arg->getDecl(), &Use)) {
     emitDiagnostic(MovingCall, Arg, Use, this, Result.Context);
+
+}
 }
 
 } // namespace bugprone

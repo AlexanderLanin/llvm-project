@@ -111,8 +111,10 @@ static void emitDiagnostics(BoundNodes &Match, const Decl *D, BugReporter &BR,
 
   const auto *PVD = Match.getNodeAs<ParmVarDecl>(ParamBind);
   QualType Ty = PVD->getType();
-  if (Ty->getPointeeType().getObjCLifetime() != Qualifiers::OCL_Autoreleasing)
+  if (Ty->getPointeeType().getObjCLifetime() != Qualifiers::OCL_Autoreleasing) {
     return;
+
+}
   const char *ActionMsg = "Write to";
   const auto *MarkedStmt = Match.getNodeAs<Expr>(ProblematicWriteBind);
   bool IsCapture = false;
@@ -198,8 +200,10 @@ void ObjCAutoreleaseWriteChecker::checkASTCodeBody(const Decl *D,
       blockDecl(HasParamAndWritesInMarkedFuncM)));
 
   auto Matches = match(MatcherM, *D, AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, D, BR, AM, this);
+
+}
 }
 
 void ento::registerAutoreleaseWriteChecker(CheckerManager &Mgr) {

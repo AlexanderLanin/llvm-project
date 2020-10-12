@@ -28,8 +28,10 @@ using namespace llvm::pdb;
 static std::string formatLocalSymFlags(uint32_t IndentLevel,
                                        LocalSymFlags Flags) {
   std::vector<std::string> Opts;
-  if (Flags == LocalSymFlags::None)
+  if (Flags == LocalSymFlags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(LocalSymFlags, IsParameter, Flags, "param");
   PUSH_FLAG(LocalSymFlags, IsAddressTaken, Flags, "address is taken");
@@ -47,8 +49,10 @@ static std::string formatLocalSymFlags(uint32_t IndentLevel,
 
 static std::string formatExportFlags(uint32_t IndentLevel, ExportFlags Flags) {
   std::vector<std::string> Opts;
-  if (Flags == ExportFlags::None)
+  if (Flags == ExportFlags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(ExportFlags, IsConstant, Flags, "constant");
   PUSH_FLAG(ExportFlags, IsData, Flags, "data");
@@ -64,8 +68,10 @@ static std::string formatCompileSym2Flags(uint32_t IndentLevel,
                                           CompileSym2Flags Flags) {
   std::vector<std::string> Opts;
   Flags &= ~CompileSym2Flags::SourceLanguageMask;
-  if (Flags == CompileSym2Flags::None)
+  if (Flags == CompileSym2Flags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(CompileSym2Flags, EC, Flags, "edit and continue");
   PUSH_FLAG(CompileSym2Flags, NoDbgInfo, Flags, "no dbg info");
@@ -84,8 +90,10 @@ static std::string formatCompileSym3Flags(uint32_t IndentLevel,
   std::vector<std::string> Opts;
   Flags &= ~CompileSym3Flags::SourceLanguageMask;
 
-  if (Flags == CompileSym3Flags::None)
+  if (Flags == CompileSym3Flags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(CompileSym3Flags, EC, Flags, "edit and continue");
   PUSH_FLAG(CompileSym3Flags, NoDbgInfo, Flags, "no dbg info");
@@ -105,8 +113,10 @@ static std::string formatCompileSym3Flags(uint32_t IndentLevel,
 static std::string formatFrameProcedureOptions(uint32_t IndentLevel,
                                                FrameProcedureOptions FPO) {
   std::vector<std::string> Opts;
-  if (FPO == FrameProcedureOptions::None)
+  if (FPO == FrameProcedureOptions::None) {
     return "none";
+
+}
 
   PUSH_FLAG(FrameProcedureOptions, HasAlloca, FPO, "has alloca");
   PUSH_FLAG(FrameProcedureOptions, HasSetJmp, FPO, "has setjmp");
@@ -138,8 +148,10 @@ static std::string formatFrameProcedureOptions(uint32_t IndentLevel,
 static std::string formatPublicSymFlags(uint32_t IndentLevel,
                                         PublicSymFlags Flags) {
   std::vector<std::string> Opts;
-  if (Flags == PublicSymFlags::None)
+  if (Flags == PublicSymFlags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(PublicSymFlags, Code, Flags, "code");
   PUSH_FLAG(PublicSymFlags, Function, Flags, "function");
@@ -151,8 +163,10 @@ static std::string formatPublicSymFlags(uint32_t IndentLevel,
 static std::string formatProcSymFlags(uint32_t IndentLevel,
                                       ProcSymFlags Flags) {
   std::vector<std::string> Opts;
-  if (Flags == ProcSymFlags::None)
+  if (Flags == ProcSymFlags::None) {
     return "none";
+
+}
 
   PUSH_FLAG(ProcSymFlags, HasFP, Flags, "has fp");
   PUSH_FLAG(ProcSymFlags, HasIRET, Flags, "has iret");
@@ -365,15 +379,19 @@ Error MinimalSymbolDumper::visitSymbolEnd(CVSymbol &Record) {
 
 std::string MinimalSymbolDumper::typeOrIdIndex(codeview::TypeIndex TI,
                                                bool IsType) const {
-  if (TI.isSimple() || TI.isDecoratedItemId())
+  if (TI.isSimple() || TI.isDecoratedItemId()) {
     return formatv("{0}", TI).str();
+
+}
   auto &Container = IsType ? Types : Ids;
   StringRef Name = Container.getTypeName(TI);
   if (Name.size() > 32) {
     Name = Name.take_front(32);
     return std::string(formatv("{0} ({1}...)", TI, Name));
-  } else
+  } else {
     return std::string(formatv("{0} ({1})", TI, Name));
+
+}
 }
 
 std::string MinimalSymbolDumper::idIndex(codeview::TypeIndex TI) const {
@@ -728,10 +746,12 @@ Error MinimalSymbolDumper::visitKnownRecord(CVSymbol &CVR, InlineSiteSym &IS) {
       StringRef Filename = "<unknown>";
       if (SymGroup) {
         if (Expected<StringRef> MaybeFile =
-                SymGroup->getNameFromStringTable(FileOffset))
+                SymGroup->getNameFromStringTable(FileOffset)) {
           Filename = *MaybeFile;
-        else
+        } else {
           return MaybeFile.takeError();
+
+}
       }
       P.format(" setfile {0} 0x{1}", utohexstr(FileOffset));
       break;

@@ -52,10 +52,14 @@ static ThreadSafeModule extractSubModule(ThreadSafeModule &TSM,
         A.replaceAllUsesWith(G);
         A.eraseFromParent();
         G->setName(AliasName);
-      } else
+      } else {
         llvm_unreachable("Alias to unsupported type");
-    } else
+
+}
+    } else {
       llvm_unreachable("Unsupported global type");
+
+}
   };
 
   auto NewTSM = cloneToNewContext(TSM, ShouldExtract, DeleteExtractedDefs);
@@ -148,10 +152,12 @@ void CompileOnDemandLayer::emit(MaterializationResponsibility R,
   for (auto &KV : R.getSymbols()) {
     auto &Name = KV.first;
     auto &Flags = KV.second;
-    if (Flags.isCallable())
+    if (Flags.isCallable()) {
       Callables[Name] = SymbolAliasMapEntry(Name, Flags);
-    else
+    } else {
       NonCallables[Name] = SymbolAliasMapEntry(Name, Flags);
+
+}
   }
 
   // Create a partitioning materialization unit and lodge it with the
@@ -202,8 +208,10 @@ CompileOnDemandLayer::getPerDylibResources(JITDylib &TargetD) {
 
 void CompileOnDemandLayer::cleanUpModule(Module &M) {
   for (auto &F : M.functions()) {
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
+
+}
 
     if (F.hasAvailableExternallyLinkage()) {
       F.deleteBody();
@@ -226,23 +234,37 @@ void CompileOnDemandLayer::expandPartition(GlobalValueSet &Partition) {
   bool ContainsGlobalVariables = false;
   std::vector<const GlobalValue *> GVsToAdd;
 
-  for (auto *GV : Partition)
-    if (isa<GlobalAlias>(GV))
+  for (auto *GV : Partition) {
+    if (isa<GlobalAlias>(GV)) {
       GVsToAdd.push_back(
           cast<GlobalValue>(cast<GlobalAlias>(GV)->getAliasee()));
-    else if (isa<GlobalVariable>(GV))
+    } else if (isa<GlobalVariable>(GV)) {
       ContainsGlobalVariables = true;
 
-  for (auto &A : M.aliases())
-    if (Partition.count(cast<GlobalValue>(A.getAliasee())))
+}
+
+}
+
+  for (auto &A : M.aliases()) {
+    if (Partition.count(cast<GlobalValue>(A.getAliasee()))) {
       GVsToAdd.push_back(&A);
 
-  if (ContainsGlobalVariables)
-    for (auto &G : M.globals())
+}
+
+}
+
+  if (ContainsGlobalVariables) {
+    for (auto &G : M.globals()) {
       GVsToAdd.push_back(&G);
 
-  for (auto *GV : GVsToAdd)
+}
+
+}
+
+  for (auto *GV : GVsToAdd) {
     Partition.insert(GV);
+
+}
 }
 
 void CompileOnDemandLayer::emitPartition(
@@ -257,12 +279,14 @@ void CompileOnDemandLayer::emitPartition(
   auto &ES = getExecutionSession();
   GlobalValueSet RequestedGVs;
   for (auto &Name : R.getRequestedSymbols()) {
-    if (Name == R.getInitializerSymbol())
+    if (Name == R.getInitializerSymbol()) {
       TSM.withModuleDo([&](Module &M) {
-        for (auto &GV : getStaticInitGVs(M))
+        for (auto &GV : getStaticInitGVs(M)) {
           RequestedGVs.insert(&GV);
+
+}
       });
-    else {
+    } else {
       assert(Defs.count(Name) && "No definition for symbol");
       RequestedGVs.insert(Defs[Name]);
     }
@@ -307,8 +331,10 @@ void CompileOnDemandLayer::emitPartition(
           IRSymbolMapper::add(ES, *getManglingOptions(),
                               PromotedGlobals, SymbolFlags);
 
-          if (auto Err = R.defineMaterializing(SymbolFlags))
+          if (auto Err = R.defineMaterializing(SymbolFlags)) {
             return std::move(Err);
+
+}
         }
 
         expandPartition(*GVsToExtract);
@@ -318,8 +344,10 @@ void CompileOnDemandLayer::emitPartition(
         {
           std::vector<const GlobalValue*> HashGVs;
           HashGVs.reserve(GVsToExtract->size());
-          for (auto *GV : *GVsToExtract)
+          for (auto *GV : *GVsToExtract) {
             HashGVs.push_back(GV);
+
+}
           llvm::sort(HashGVs, [](const GlobalValue *LHS, const GlobalValue *RHS) {
               return LHS->getName() < RHS->getName();
             });

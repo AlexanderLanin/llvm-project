@@ -113,8 +113,10 @@ private:
     // use the special mapping from OldTypeStream -> NewTypeStream which was
     // computed externally.  Regardless, we use this special map if and only if
     // we are doing an id-only mapping.
-    if (!hasTypeStream())
+    if (!hasTypeStream()) {
       return remapIndex(Idx, TypeLookup);
+
+}
 
     assert(TypeLookup.empty());
     return remapIndex(Idx, IndexMap);
@@ -136,23 +138,29 @@ private:
                                  MutableArrayRef<uint8_t> Storage);
 
   inline bool remapIndex(TypeIndex &Idx, ArrayRef<TypeIndex> Map) {
-    if (LLVM_LIKELY(remapIndexSimple(Idx, Map)))
+    if (LLVM_LIKELY(remapIndexSimple(Idx, Map))) {
       return true;
+
+}
 
     return remapIndexFallback(Idx, Map);
   }
 
   inline bool remapIndexSimple(TypeIndex &Idx, ArrayRef<TypeIndex> Map) const {
     // Simple types are unchanged.
-    if (Idx.isSimple())
+    if (Idx.isSimple()) {
       return true;
+
+}
 
     // Check if this type index refers to a record we've already translated
     // successfully. If it refers to a type later in the stream or a record we
     // had to defer, defer it until later pass.
     unsigned MapPos = slotForIndex(Idx);
-    if (LLVM_UNLIKELY(MapPos >= Map.size() || Map[MapPos] == Untranslated))
+    if (LLVM_UNLIKELY(MapPos >= Map.size() || Map[MapPos] == Untranslated)) {
       return false;
+
+}
 
     Idx = Map[MapPos];
     return true;
@@ -223,10 +231,12 @@ bool TypeStreamMerger::remapIndexFallback(TypeIndex &Idx,
   if (IsSecondPass && MapPos >= Map.size()) {
     // FIXME: Print a more useful error. We can give the current record and the
     // index that we think its pointing to.
-    if (LastError)
+    if (LastError) {
       LastError = joinErrors(std::move(*LastError), errorCorruptRecord());
-    else
+    } else {
       LastError = errorCorruptRecord();
+
+}
   }
 
   ++NumBadIndices;
@@ -308,8 +318,10 @@ Error TypeStreamMerger::mergeTypesAndIds(GlobalTypeTableBuilder &DestIds,
 }
 
 Error TypeStreamMerger::doit(const CVTypeArray &Types) {
-  if (auto EC = remapAllTypes(Types))
+  if (auto EC = remapAllTypes(Types)) {
     return EC;
+
+}
 
   // If we found bad indices but no other errors, try doing another pass and see
   // if we can resolve the indices that weren't in the map on the first pass.
@@ -324,8 +336,10 @@ Error TypeStreamMerger::doit(const CVTypeArray &Types) {
     NumBadIndices = 0;
     CurIndex = TypeIndex(TypeIndex::FirstNonSimpleIndex);
 
-    if (auto EC = remapAllTypes(Types))
+    if (auto EC = remapAllTypes(Types)) {
       return EC;
+
+}
 
     assert(NumBadIndices <= BadIndicesRemaining &&
            "second pass found more bad indices");
@@ -335,8 +349,10 @@ Error TypeStreamMerger::doit(const CVTypeArray &Types) {
     }
   }
 
-  if (LastError)
+  if (LastError) {
     return std::move(*LastError);
+
+}
   return Error::success();
 }
 
@@ -351,8 +367,10 @@ Error TypeStreamMerger::remapAllTypes(const CVTypeArray &Types) {
 
 Error TypeStreamMerger::remapType(const CVType &Type) {
   auto R = shouldRemapType(Type);
-  if (!R)
+  if (!R) {
     return R.takeError();
+
+}
 
   TypeIndex DestIdx = Untranslated;
   if (*R) {
@@ -373,8 +391,10 @@ Error TypeStreamMerger::remapType(const CVType &Type) {
 
       RemapStorage.resize(AlignedSize);
       ArrayRef<uint8_t> Result = DoSerialize(RemapStorage);
-      if (!Result.empty())
+      if (!Result.empty()) {
         DestIdx = Dest.insertRecordBytes(Result);
+
+}
     }
   }
   addMapping(DestIdx);
@@ -397,8 +417,10 @@ TypeStreamMerger::remapIndices(const CVType &OriginalType,
 
   SmallVector<TiReference, 4> Refs;
   discoverTypeIndices(OriginalType.RecordData, Refs);
-  if (Refs.empty() && Align == 0)
+  if (Refs.empty() && Align == 0) {
     return OriginalType.RecordData;
+
+}
 
   ::memcpy(Storage.data(), OriginalType.RecordData.data(),
            OriginalType.RecordData.size());
@@ -413,8 +435,10 @@ TypeStreamMerger::remapIndices(const CVType &OriginalType,
       TypeIndex &TI = DestTIs[I];
       bool Success = (Ref.Kind == TiRefKind::IndexRef) ? remapItemIndex(TI)
                                                        : remapTypeIndex(TI);
-      if (LLVM_UNLIKELY(!Success))
+      if (LLVM_UNLIKELY(!Success)) {
         return {};
+
+}
     }
   }
 
@@ -424,8 +448,10 @@ TypeStreamMerger::remapIndices(const CVType &OriginalType,
     StorageHeader->RecordLen += 4 - Align;
 
     DestContent = Storage.data() + OriginalType.RecordData.size();
-    for (; Align < 4; ++Align)
+    for (; Align < 4; ++Align) {
       *DestContent++ = LF_PAD4 - Align;
+
+}
   }
   return Storage;
 }
@@ -487,10 +513,14 @@ Expected<bool> TypeStreamMerger::shouldRemapType(const CVType &Type) {
   if (Type.kind() == LF_ENDPRECOMP) {
     EndPrecompRecord EP;
     if (auto EC = TypeDeserializer::deserializeAs(const_cast<CVType &>(Type),
-                                                  EP))
+                                                  EP)) {
       return joinErrors(std::move(EC), errorCorruptRecord());
-    if (PCHSignature.hasValue())
+
+}
+    if (PCHSignature.hasValue()) {
       return errorCorruptRecord();
+
+}
     PCHSignature.emplace(EP.getSignature());
     return false;
   }

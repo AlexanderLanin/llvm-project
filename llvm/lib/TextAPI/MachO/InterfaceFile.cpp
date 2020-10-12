@@ -22,8 +22,10 @@ typename C::iterator addEntry(C &Container, StringRef InstallName) {
   auto I = partition_point(Container, [=](const InterfaceFileRef &O) {
     return O.getInstallName() < InstallName;
   });
-  if (I != Container.end() && I->getInstallName() == InstallName)
+  if (I != Container.end() && I->getInstallName() == InstallName) {
     return I;
+
+}
 
   return Container.emplace(I, InstallName);
 }
@@ -34,8 +36,10 @@ typename C::iterator addEntry(C &Container, const Target &Target_) {
       lower_bound(Container, Target_, [](const Target &LHS, const Target &RHS) {
         return LHS < RHS;
       });
-  if ((Iter != std::end(Container)) && !(Target_ < *Iter))
+  if ((Iter != std::end(Container)) && !(Target_ < *Iter)) {
     return Iter;
+
+}
 
   return Container.insert(Iter, Target_);
 }
@@ -88,8 +92,10 @@ void InterfaceFile::addUUID(const Target &Target_, StringRef UUID) {
 void InterfaceFile::addUUID(const Target &Target, uint8_t UUID[16]) {
   std::stringstream Stream;
   for (unsigned i = 0; i < 16; ++i) {
-    if (i == 4 || i == 6 || i == 8 || i == 10)
+    if (i == 4 || i == 6 || i == 8 || i == 10) {
       Stream << '-';
+
+}
     Stream << std::setfill('0') << std::setw(2) << std::uppercase << std::hex
            << static_cast<int>(UUID[i]);
   }
@@ -112,11 +118,15 @@ void InterfaceFile::addSymbol(SymbolKind Kind, StringRef Name,
                               const TargetList &Targets, SymbolFlags Flags) {
   Name = copyString(Name);
   auto result = Symbols.try_emplace(SymbolsMapKey{Kind, Name}, nullptr);
-  if (result.second)
+  if (result.second) {
     result.first->second = new (Allocator) Symbol{Kind, Name, Targets, Flags};
-  else
-    for (const auto &Target : Targets)
+  } else {
+    for (const auto &Target : Targets) {
       result.first->second->addTarget(Target);
+
+}
+
+}
 }
 
 } // end namespace MachO.

@@ -80,10 +80,14 @@ QualType APValue::LValueBase::getDynamicAllocType() const {
 namespace clang {
 bool operator==(const APValue::LValueBase &LHS,
                 const APValue::LValueBase &RHS) {
-  if (LHS.Ptr != RHS.Ptr)
+  if (LHS.Ptr != RHS.Ptr) {
     return false;
-  if (LHS.is<TypeInfoLValue>())
+
+}
+  if (LHS.is<TypeInfoLValue>()) {
     return true;
+
+}
   return LHS.Local.CallIndex == RHS.Local.CallIndex &&
          LHS.Local.Version == RHS.Local.Version;
 }
@@ -125,8 +129,10 @@ llvm::DenseMapInfo<clang::APValue::LValueBase>::getTombstoneKey() {
 
 namespace clang {
 llvm::hash_code hash_value(const APValue::LValueBase &Base) {
-  if (Base.is<TypeInfoLValue>() || Base.is<DynamicAllocLValue>())
+  if (Base.is<TypeInfoLValue>() || Base.is<DynamicAllocLValue>()) {
     return llvm::hash_value(Base.getOpaqueValue());
+
+}
   return llvm::hash_combine(Base.getOpaqueValue(), Base.getCallIndex(),
                             Base.getVersion());
 }
@@ -159,13 +165,19 @@ struct APValue::LV : LVBase {
   ~LV() { resizePath(0); }
 
   void resizePath(unsigned Length) {
-    if (Length == PathLength)
+    if (Length == PathLength) {
       return;
-    if (hasPathPtr())
+
+}
+    if (hasPathPtr()) {
       delete [] PathPtr;
+
+}
     PathLength = Length;
-    if (hasPathPtr())
+    if (hasPathPtr()) {
       PathPtr = new LValuePathEntry[Length];
+
+}
   }
 
   bool hasPath() const { return PathLength != (unsigned)-1; }
@@ -197,13 +209,19 @@ struct APValue::MemberPointerData : MemberPointerBase {
   ~MemberPointerData() { resizePath(0); }
 
   void resizePath(unsigned Length) {
-    if (Length == PathLength)
+    if (Length == PathLength) {
       return;
-    if (hasPathPtr())
+
+}
+    if (hasPathPtr()) {
       delete [] PathPtr;
+
+}
     PathLength = Length;
-    if (hasPathPtr())
+    if (hasPathPtr()) {
       PathPtr = new PathElem[Length];
+
+}
   }
 
   bool hasPathPtr() const { return PathLength > InlinePathSpace; }
@@ -267,26 +285,36 @@ APValue::APValue(const APValue &RHS) : Kind(None) {
     break;
   case LValue:
     MakeLValue();
-    if (RHS.hasLValuePath())
+    if (RHS.hasLValuePath()) {
       setLValue(RHS.getLValueBase(), RHS.getLValueOffset(), RHS.getLValuePath(),
                 RHS.isLValueOnePastTheEnd(), RHS.isNullPointer());
-    else
+    } else {
       setLValue(RHS.getLValueBase(), RHS.getLValueOffset(), NoLValuePath(),
                 RHS.isNullPointer());
+
+}
     break;
   case Array:
     MakeArray(RHS.getArrayInitializedElts(), RHS.getArraySize());
-    for (unsigned I = 0, N = RHS.getArrayInitializedElts(); I != N; ++I)
+    for (unsigned I = 0, N = RHS.getArrayInitializedElts(); I != N; ++I) {
       getArrayInitializedElt(I) = RHS.getArrayInitializedElt(I);
-    if (RHS.hasArrayFiller())
+
+}
+    if (RHS.hasArrayFiller()) {
       getArrayFiller() = RHS.getArrayFiller();
+
+}
     break;
   case Struct:
     MakeStruct(RHS.getStructNumBases(), RHS.getStructNumFields());
-    for (unsigned I = 0, N = RHS.getStructNumBases(); I != N; ++I)
+    for (unsigned I = 0, N = RHS.getStructNumBases(); I != N; ++I) {
       getStructBase(I) = RHS.getStructBase(I);
-    for (unsigned I = 0, N = RHS.getStructNumFields(); I != N; ++I)
+
+}
+    for (unsigned I = 0, N = RHS.getStructNumFields(); I != N; ++I) {
       getStructField(I) = RHS.getStructField(I);
+
+}
     break;
   case Union:
     MakeUnion();
@@ -305,30 +333,32 @@ APValue::APValue(const APValue &RHS) : Kind(None) {
 }
 
 void APValue::DestroyDataAndMakeUninit() {
-  if (Kind == Int)
+  if (Kind == Int) {
     ((APSInt*)(char*)Data.buffer)->~APSInt();
-  else if (Kind == Float)
+  } else if (Kind == Float) {
     ((APFloat*)(char*)Data.buffer)->~APFloat();
-  else if (Kind == FixedPoint)
+  } else if (Kind == FixedPoint) {
     ((APFixedPoint *)(char *)Data.buffer)->~APFixedPoint();
-  else if (Kind == Vector)
+  } else if (Kind == Vector) {
     ((Vec*)(char*)Data.buffer)->~Vec();
-  else if (Kind == ComplexInt)
+  } else if (Kind == ComplexInt) {
     ((ComplexAPSInt*)(char*)Data.buffer)->~ComplexAPSInt();
-  else if (Kind == ComplexFloat)
+  } else if (Kind == ComplexFloat) {
     ((ComplexAPFloat*)(char*)Data.buffer)->~ComplexAPFloat();
-  else if (Kind == LValue)
+  } else if (Kind == LValue) {
     ((LV*)(char*)Data.buffer)->~LV();
-  else if (Kind == Array)
+  } else if (Kind == Array) {
     ((Arr*)(char*)Data.buffer)->~Arr();
-  else if (Kind == Struct)
+  } else if (Kind == Struct) {
     ((StructData*)(char*)Data.buffer)->~StructData();
-  else if (Kind == Union)
+  } else if (Kind == Union) {
     ((UnionData*)(char*)Data.buffer)->~UnionData();
-  else if (Kind == MemberPointer)
+  } else if (Kind == MemberPointer) {
     ((MemberPointerData*)(char*)Data.buffer)->~MemberPointerData();
-  else if (Kind == AddrLabelDiff)
+  } else if (Kind == AddrLabelDiff) {
     ((AddrLabelDiffData*)(char*)Data.buffer)->~AddrLabelDiffData();
+
+}
   Kind = None;
 }
 
@@ -430,7 +460,9 @@ void APValue::dump(raw_ostream &OS) const {
     OS << "Array: ";
     for (unsigned I = 0, N = getArrayInitializedElts(); I != N; ++I) {
       getArrayInitializedElt(I).dump(OS);
-      if (I != getArraySize() - 1) OS << ", ";
+      if (I != getArraySize() - 1) { OS << ", ";
+
+}
     }
     if (hasArrayFiller()) {
       OS << getArraySize() - getArrayInitializedElts() << " x ";
@@ -480,10 +512,12 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
     Out << "<uninitialized>";
     return;
   case APValue::Int:
-    if (Ty->isBooleanType())
+    if (Ty->isBooleanType()) {
       Out << (getInt().getBoolValue() ? "true" : "false");
-    else
+    } else {
       Out << getInt();
+
+}
     return;
   case APValue::Float:
     Out << GetApproxValue(getFloat());
@@ -513,8 +547,10 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
     bool IsReference = Ty->isReferenceType();
     QualType InnerTy
       = IsReference ? Ty.getNonReferenceType() : Ty->getPointeeType();
-    if (InnerTy.isNull())
+    if (InnerTy.isNull()) {
       InnerTy = Ty;
+
+}
 
     LValueBase Base = getLValueBase();
     if (!Base) {
@@ -535,8 +571,10 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       CharUnits O = getLValueOffset();
       CharUnits S = Ctx.getTypeSizeInChars(InnerTy);
       if (!O.isZero()) {
-        if (IsReference)
+        if (IsReference) {
           Out << "*(";
+
+}
         if (O % S) {
           Out << "(char*)";
           S = CharUnits::One();
@@ -546,9 +584,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
         Out << '&';
       }
 
-      if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>())
+      if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>()) {
         Out << *VD;
-      else if (TypeInfoLValue TI = Base.dyn_cast<TypeInfoLValue>()) {
+      } else if (TypeInfoLValue TI = Base.dyn_cast<TypeInfoLValue>()) {
         TI.print(Out, Ctx.getPrintingPolicy());
       } else if (DynamicAllocLValue DA = Base.dyn_cast<DynamicAllocLValue>()) {
         Out << "{*new "
@@ -563,17 +601,21 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
 
       if (!O.isZero()) {
         Out << " + " << (O / S);
-        if (IsReference)
+        if (IsReference) {
           Out << ')';
+
+}
       }
       return;
     }
 
     // We have an lvalue path. Print it out nicely.
-    if (!IsReference)
+    if (!IsReference) {
       Out << '&';
-    else if (isLValueOnePastTheEnd())
+    } else if (isLValueOnePastTheEnd()) {
       Out << "*(&";
+
+}
 
     QualType ElemTy;
     if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>()) {
@@ -609,8 +651,10 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
         } else {
           const ValueDecl *VD = cast<ValueDecl>(BaseOrMember);
           Out << ".";
-          if (CastToBase)
+          if (CastToBase) {
             Out << *CastToBase << "::";
+
+}
           Out << *VD;
           ElemTy = VD->getType();
         }
@@ -626,8 +670,10 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       // FIXME: If CastToBase is non-0, we should prefix the output with
       // "(CastToBase*)".
       Out << " + 1";
-      if (IsReference)
+      if (IsReference) {
         Out << ')';
+
+}
     }
     return;
   }
@@ -659,16 +705,22 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       CXXRecordDecl::base_class_const_iterator BI = CD->bases_begin();
       for (unsigned I = 0; I != N; ++I, ++BI) {
         assert(BI != CD->bases_end());
-        if (!First)
+        if (!First) {
           Out << ", ";
+
+}
         getStructBase(I).printPretty(Out, Ctx, BI->getType());
         First = false;
       }
     }
     for (const auto *FI : RD->fields()) {
-      if (!First)
+      if (!First) {
         Out << ", ";
-      if (FI->isUnnamedBitfield()) continue;
+
+}
+      if (FI->isUnnamedBitfield()) { continue;
+
+}
       getStructField(FI->getFieldIndex()).
         printPretty(Out, Ctx, FI->getType());
       First = false;

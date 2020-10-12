@@ -30,8 +30,10 @@ NativeEnumTypes::NativeEnumTypes(NativeSession &PDBSession,
     TypeLeafKind K = CVT.kind();
     if (llvm::is_contained(Kinds, K)) {
       // Don't add forward refs, we'll find those later while enumerating.
-      if (!isUdtForwardRef(CVT))
+      if (!isUdtForwardRef(CVT)) {
         Matches.push_back(*TI);
+
+}
     } else if (K == TypeLeafKind::LF_MODIFIER) {
       TypeIndex ModifiedTI = getModifiedType(CVT);
       if (!ModifiedTI.isSimple()) {
@@ -39,8 +41,10 @@ NativeEnumTypes::NativeEnumTypes(NativeSession &PDBSession,
         // LF_MODIFIERs point to forward refs, but don't worry about that
         // here.  We're pushing the TypeIndex of the LF_MODIFIER itself,
         // so we'll worry about resolving forward refs later.
-        if (llvm::is_contained(Kinds, UnmodifiedCVT.kind()))
+        if (llvm::is_contained(Kinds, UnmodifiedCVT.kind())) {
           Matches.push_back(*TI);
+
+}
       }
     }
     TI = Types.getNext(*TI);

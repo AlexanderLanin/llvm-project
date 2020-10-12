@@ -50,8 +50,10 @@ Error InfoStreamBuilder::finalizeMsfLayout() {
   uint32_t Length = sizeof(InfoStreamHeader) +
                     NamedStreams.calculateSerializedLength() +
                     (Features.size() + 1) * sizeof(uint32_t);
-  if (auto EC = Msf.setStreamSize(StreamPDB, Length))
+  if (auto EC = Msf.setStreamSize(StreamPDB, Length)) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -66,16 +68,24 @@ Error InfoStreamBuilder::commit(const msf::MSFLayout &Layout,
   // committing the file to disk.
   ::memset(&H, 0, sizeof(H));
   H.Version = Ver;
-  if (auto EC = Writer.writeObject(H))
+  if (auto EC = Writer.writeObject(H)) {
     return EC;
 
-  if (auto EC = NamedStreams.commit(Writer))
+}
+
+  if (auto EC = NamedStreams.commit(Writer)) {
     return EC;
-  if (auto EC = Writer.writeInteger(0))
+
+}
+  if (auto EC = Writer.writeInteger(0)) {
     return EC;
+
+}
   for (auto E : Features) {
-    if (auto EC = Writer.writeEnum(E))
+    if (auto EC = Writer.writeEnum(E)) {
       return EC;
+
+}
   }
   assert(Writer.bytesRemaining() == 0);
   return Error::success();

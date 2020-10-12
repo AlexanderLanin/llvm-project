@@ -38,8 +38,10 @@ static inline bool isMemberPointer(uint32_t Attrs) {
 
 static inline uint32_t getEncodedIntegerLength(ArrayRef<uint8_t> Data) {
   uint16_t N = support::endian::read16le(Data.data());
-  if (N < LF_NUMERIC)
+  if (N < LF_NUMERIC) {
     return 2;
+
+}
 
   assert(N <= LF_UQUADWORD);
 
@@ -84,8 +86,10 @@ static void handleMethodOverloadList(ArrayRef<uint8_t> Content,
     uint16_t Attrs = support::endian::read16le(Content.data());
     Refs.push_back({TiRefKind::TypeRef, Offset + 4, 1});
 
-    if (LLVM_UNLIKELY(isIntroVirtual(Attrs)))
+    if (LLVM_UNLIKELY(isIntroVirtual(Attrs))) {
       Len += 4;
+
+}
     Offset += Len;
     Content = Content.drop_front(Len);
   }
@@ -145,8 +149,10 @@ static uint32_t handleOneMethod(ArrayRef<uint8_t> Data, uint32_t Offset,
   Refs.push_back({TiRefKind::TypeRef, Offset + 4, 1});
 
   uint16_t Attrs = support::endian::read16le(Data.drop_front(2).data());
-  if (LLVM_UNLIKELY(isIntroVirtual(Attrs)))
+  if (LLVM_UNLIKELY(isIntroVirtual(Attrs))) {
     Size += 4;
+
+}
 
   return Size + getCStringLength(Data.drop_front(Size));
 }
@@ -266,8 +272,10 @@ static void handlePointer(ArrayRef<uint8_t> Content,
   Refs.push_back({TiRefKind::TypeRef, 0, 1});
 
   uint32_t Attrs = support::endian::read32le(Content.drop_front(4).data());
-  if (isMemberPointer(Attrs))
+  if (isMemberPointer(Attrs)) {
     Refs.push_back({TiRefKind::TypeRef, 8, 1});
+
+}
 }
 
 static void discoverTypeIndices(ArrayRef<uint8_t> Content, TypeLeafKind Kind,
@@ -289,13 +297,17 @@ static void discoverTypeIndices(ArrayRef<uint8_t> Content, TypeLeafKind Kind,
     break;
   case TypeLeafKind::LF_SUBSTR_LIST:
     Count = support::endian::read32le(Content.data());
-    if (Count > 0)
+    if (Count > 0) {
       Refs.push_back({TiRefKind::IndexRef, 4, Count});
+
+}
     break;
   case TypeLeafKind::LF_BUILDINFO:
     Count = support::endian::read16le(Content.data());
-    if (Count > 0)
+    if (Count > 0) {
       Refs.push_back({TiRefKind::IndexRef, 2, Count});
+
+}
     break;
   case TypeLeafKind::LF_UDT_SRC_LINE:
     Refs.push_back({TiRefKind::TypeRef, 0, 1});
@@ -317,8 +329,10 @@ static void discoverTypeIndices(ArrayRef<uint8_t> Content, TypeLeafKind Kind,
     break;
   case TypeLeafKind::LF_ARGLIST:
     Count = support::endian::read32le(Content.data());
-    if (Count > 0)
+    if (Count > 0) {
       Refs.push_back({TiRefKind::TypeRef, 4, Count});
+
+}
     break;
   case TypeLeafKind::LF_ARRAY:
     Refs.push_back({TiRefKind::TypeRef, 0, 2});
@@ -463,8 +477,10 @@ static void resolveTypeIndexReferences(ArrayRef<uint8_t> RecordData,
                                        SmallVectorImpl<TypeIndex> &Indices) {
   Indices.clear();
 
-  if (Refs.empty())
+  if (Refs.empty()) {
     return;
+
+}
 
   RecordData = RecordData.drop_front(sizeof(RecordPrefix));
 
@@ -515,8 +531,10 @@ bool llvm::codeview::discoverTypeIndicesInSymbol(
 bool llvm::codeview::discoverTypeIndicesInSymbol(
     ArrayRef<uint8_t> RecordData, SmallVectorImpl<TypeIndex> &Indices) {
   SmallVector<TiReference, 2> Refs;
-  if (!discoverTypeIndicesInSymbol(RecordData, Refs))
+  if (!discoverTypeIndicesInSymbol(RecordData, Refs)) {
     return false;
+
+}
   resolveTypeIndexReferences(RecordData, Refs, Indices);
   return true;
 }

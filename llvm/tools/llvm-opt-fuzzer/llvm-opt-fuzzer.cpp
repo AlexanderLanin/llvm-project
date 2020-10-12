@@ -79,8 +79,10 @@ extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
     raw_string_ostream OS(Buf);
     WriteBitcodeToFile(*M, OS);
   }
-  if (Buf.size() > MaxSize)
+  if (Buf.size() > MaxSize) {
     return 0;
+
+}
   
   // There are some invariants which are not checked by the verifier in favor
   // of having them checked by the parser. They may be considered as bugs in the
@@ -105,9 +107,11 @@ extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   assert(TM && "Should have been created during fuzzer initialization");
 
-  if (Size <= 1)
+  if (Size <= 1) {
     // We get bogus data given an empty corpus - ignore it.
     return 0;
+
+}
 
   // Parse module
   //

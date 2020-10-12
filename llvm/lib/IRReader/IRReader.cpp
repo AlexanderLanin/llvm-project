@@ -83,8 +83,10 @@ std::unique_ptr<Module> llvm::parseIR(MemoryBufferRef Buffer, SMDiagnostic &Err,
       });
       return nullptr;
     }
-    if (!DataLayoutString.empty())
+    if (!DataLayoutString.empty()) {
       ModuleOrErr.get()->setDataLayout(DataLayoutString);
+
+}
     return std::move(ModuleOrErr.get());
   }
 

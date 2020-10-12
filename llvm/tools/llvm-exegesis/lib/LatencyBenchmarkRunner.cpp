@@ -33,10 +33,14 @@ Expected<std::vector<BenchmarkMeasure>> LatencyBenchmarkRunner::runMeasurements(
   const char *CounterName = State.getPfmCounters().CycleCounter;
   for (size_t I = 0; I < NumMeasurements; ++I) {
     auto ExpectedCounterValue = Executor.runAndMeasure(CounterName);
-    if (!ExpectedCounterValue)
+    if (!ExpectedCounterValue) {
       return ExpectedCounterValue.takeError();
-    if (*ExpectedCounterValue < MinValue)
+
+}
+    if (*ExpectedCounterValue < MinValue) {
       MinValue = *ExpectedCounterValue;
+
+}
   }
   std::vector<BenchmarkMeasure> Result;
   switch (Mode) {

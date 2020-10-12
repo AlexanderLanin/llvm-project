@@ -288,18 +288,28 @@ static MachineBasicBlock &splitBlock(MachineBasicBlock &MBB,
 
   // Copy the necessary succesors (and their probability info) into the new
   // block.
-  for (auto SI = MBB.succ_begin(), SE = MBB.succ_end(); SI != SE; ++SI)
-    if (IsEdgeSplit || *SI != &UnsplitSucc)
+  for (auto SI = MBB.succ_begin(), SE = MBB.succ_end(); SI != SE; ++SI) {
+    if (IsEdgeSplit || *SI != &UnsplitSucc) {
       NewMBB.copySuccessor(&MBB, SI);
+
+}
+
+}
   // Normalize the probabilities if we didn't end up splitting the edge.
-  if (!IsEdgeSplit)
+  if (!IsEdgeSplit) {
     NewMBB.normalizeSuccProbs();
+
+}
 
   // Now replace all of the moved successors in the original block with the new
   // block. This will merge their probabilities.
-  for (MachineBasicBlock *Succ : NewMBB.successors())
-    if (Succ != &UnsplitSucc)
+  for (MachineBasicBlock *Succ : NewMBB.successors()) {
+    if (Succ != &UnsplitSucc) {
       MBB.replaceSuccessor(Succ, &NewMBB);
+
+}
+
+}
 
   // We should always end up replacing at least one successor.
   assert(MBB.isSuccessor(&NewMBB) &&
@@ -308,16 +318,20 @@ static MachineBasicBlock &splitBlock(MachineBasicBlock &MBB,
   // Now update all the PHIs.
   for (MachineBasicBlock *Succ : NewMBB.successors()) {
     for (MachineInstr &MI : *Succ) {
-      if (!MI.isPHI())
+      if (!MI.isPHI()) {
         break;
+
+}
 
       for (int OpIdx = 1, NumOps = MI.getNumOperands(); OpIdx < NumOps;
            OpIdx += 2) {
         MachineOperand &OpV = MI.getOperand(OpIdx);
         MachineOperand &OpMBB = MI.getOperand(OpIdx + 1);
         assert(OpMBB.isMBB() && "Block operand to a PHI is not a block!");
-        if (OpMBB.getMBB() != &MBB)
+        if (OpMBB.getMBB() != &MBB) {
           continue;
+
+}
 
         // Replace the operand for unsplit successors
         if (!IsEdgeSplit || Succ != &UnsplitSucc) {
@@ -372,9 +386,11 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
   MDT = &getAnalysis<MachineDominatorTree>();
   PromoteRC = &X86::GR8RegClass;
 
-  if (MF.begin() == MF.end())
+  if (MF.begin() == MF.end()) {
     // Nothing to do for a degenerate empty function...
     return false;
+
+}
 
   // Collect the copies in RPO so that when there are chains where a copy is in
   // turn copied again we visit the first one first. This ensures we can find
@@ -382,11 +398,17 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
   // uses across complex CFGs.
   SmallVector<MachineInstr *, 4> Copies;
   ReversePostOrderTraversal<MachineFunction *> RPOT(&MF);
-  for (MachineBasicBlock *MBB : RPOT)
-    for (MachineInstr &MI : *MBB)
+  for (MachineBasicBlock *MBB : RPOT) {
+    for (MachineInstr &MI : *MBB) {
       if (MI.getOpcode() == TargetOpcode::COPY &&
-          MI.getOperand(0).getReg() == X86::EFLAGS)
+          MI.getOperand(0).getReg() == X86::EFLAGS) {
         Copies.push_back(&MI);
+
+}
+
+}
+
+}
 
   for (MachineInstr *CopyI : Copies) {
     MachineBasicBlock &MBB = *CopyI->getParent();
@@ -421,16 +443,20 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
       // All uses of the EFLAGS copy are now rewritten, kill the copy into
       // eflags and if dead the copy from.
       CopyI->eraseFromParent();
-      if (MRI->use_empty(CopyDefI.getOperand(0).getReg()))
+      if (MRI->use_empty(CopyDefI.getOperand(0).getReg())) {
         CopyDefI.eraseFromParent();
+
+}
       ++NumCopiesEliminated;
     });
 
     MachineOperand &DOp = CopyI->getOperand(0);
     assert(DOp.isDef() && "Expected register def!");
     assert(DOp.getReg() == X86::EFLAGS && "Unexpected copy def register!");
-    if (DOp.isDead())
+    if (DOp.isDead()) {
       continue;
+
+}
 
     MachineBasicBlock *TestMBB = CopyDefI.getParent();
     auto TestPos = CopyDefI.getIterator();
@@ -471,10 +497,14 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
       do {
         auto *MBB = Worklist.pop_back_val();
         for (auto *PredMBB : MBB->predecessors()) {
-          if (!Visited.insert(PredMBB).second)
+          if (!Visited.insert(PredMBB).second) {
             continue;
-          if (HasEFLAGSClobber(PredMBB->begin(), PredMBB->end()))
+
+}
+          if (HasEFLAGSClobber(PredMBB->begin(), PredMBB->end())) {
             return true;
+
+}
           // Enqueue this block to walk its predecessors.
           Worklist.push_back(PredMBB);
         }
@@ -496,13 +526,17 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
       // Now we need to scan all predecessors that may be reached along paths to
       // the hoist block. A clobber anywhere in any of these blocks the hoist.
       // Note that this even handles loops because we require *no* clobbers.
-      if (HasEFLAGSClobberPath(HoistMBB, TestMBB))
+      if (HasEFLAGSClobberPath(HoistMBB, TestMBB)) {
         break;
+
+}
 
       // We also need the terminators to not sneakily clobber flags.
       if (HasEFLAGSClobber(HoistMBB->getFirstTerminator()->getIterator(),
-                           HoistMBB->instr_end()))
+                           HoistMBB->instr_end())) {
         break;
+
+}
 
       // We found a viable location, hoist our test position to it.
       TestMBB = HoistMBB;
@@ -595,8 +629,10 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
         LLVM_DEBUG(dbgs() << "  Rewriting use: "; MI.dump());
 
         // Check the kill flag before we rewrite as that may change it.
-        if (FlagUse->isKill())
+        if (FlagUse->isKill()) {
           FlagsKilled = true;
+
+}
 
         // Once we encounter a branch, the rest of the instructions must also be
         // branches. We can't rewrite in place here, so we handle them below.
@@ -645,17 +681,21 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
         }
 
         // If this was the last use of the flags, we're done.
-        if (FlagsKilled)
+        if (FlagsKilled) {
           break;
+
+}
       }
 
       // If the flags were killed, we're done with this block.
-      if (FlagsKilled)
+      if (FlagsKilled) {
         continue;
+
+}
 
       // Otherwise we need to scan successors for ones where the flags live-in
       // and queue those up for processing.
-      for (MachineBasicBlock *SuccMBB : UseMBB.successors())
+      for (MachineBasicBlock *SuccMBB : UseMBB.successors()) {
         if (SuccMBB->isLiveIn(X86::EFLAGS) &&
             VisitedBlocks.insert(SuccMBB).second) {
           // We currently don't do any PHI insertion and so we require that the
@@ -692,6 +732,8 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
           // After this, EFLAGS will be recreated before each use.
           SuccMBB->removeLiveIn(X86::EFLAGS);
         }
+
+}
     } while (!Blocks.empty());
 
     // Now rewrite the jumps that use the flags. These we handle specially
@@ -701,10 +743,12 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
     for (MachineInstr *JmpI : JmpIs) {
       // Past the first jump within a basic block we need to split the blocks
       // apart.
-      if (JmpI->getParent() == LastJmpMBB)
+      if (JmpI->getParent() == LastJmpMBB) {
         splitBlock(*JmpI->getParent(), *JmpI, *TII);
-      else
+      } else {
         LastJmpMBB = JmpI->getParent();
+
+}
 
       rewriteCondJmp(*TestMBB, TestPos, TestLoc, *JmpI, CondRegs);
     }
@@ -748,8 +792,10 @@ CondRegArray X86FlagsCopyLoweringPass::collectCondsInRegs(
 
     // Stop scanning when we see the first definition of the EFLAGS as prior to
     // this we would potentially capture the wrong flag state.
-    if (MI.findRegisterDefOperand(X86::EFLAGS))
+    if (MI.findRegisterDefOperand(X86::EFLAGS)) {
       break;
+
+}
   }
   return CondRegs;
 }
@@ -771,13 +817,17 @@ std::pair<unsigned, bool> X86FlagsCopyLoweringPass::getCondOrInverseInReg(
     DebugLoc TestLoc, X86::CondCode Cond, CondRegArray &CondRegs) {
   unsigned &CondReg = CondRegs[Cond];
   unsigned &InvCondReg = CondRegs[X86::GetOppositeBranchCondition(Cond)];
-  if (!CondReg && !InvCondReg)
+  if (!CondReg && !InvCondReg) {
     CondReg = promoteCondToReg(TestMBB, TestPos, TestLoc, Cond);
 
-  if (CondReg)
+}
+
+  if (CondReg) {
     return {CondReg, false};
-  else
+  } else {
     return {InvCondReg, true};
+
+}
 }
 
 void X86FlagsCopyLoweringPass::insertTest(MachineBasicBlock &MBB,
@@ -826,8 +876,10 @@ void X86FlagsCopyLoweringPass::rewriteArithmetic(
   // arithmetic. We require exactly this flag to simplify the arithmetic
   // required to materialize it back into the flag.
   unsigned &CondReg = CondRegs[Cond];
-  if (!CondReg)
+  if (!CondReg) {
     CondReg = promoteCondToReg(TestMBB, TestPos, TestLoc, Cond);
+
+}
 
   MachineBasicBlock &MBB = *MI.getParent();
 
@@ -957,8 +1009,10 @@ void X86FlagsCopyLoweringPass::rewriteSetCC(MachineBasicBlock &TestMBB,
   // analysis of the users of the setCC. Largely we rely on duplicates which
   // could have been avoided already being avoided here.
   unsigned &CondReg = CondRegs[Cond];
-  if (!CondReg)
+  if (!CondReg) {
     CondReg = promoteCondToReg(TestMBB, TestPos, TestLoc, Cond);
+
+}
 
   // Rewriting a register def is trivial: we just replace the register and
   // remove the setcc.
@@ -974,8 +1028,10 @@ void X86FlagsCopyLoweringPass::rewriteSetCC(MachineBasicBlock &TestMBB,
   auto MIB = BuildMI(*SetCCI.getParent(), SetCCI.getIterator(),
                      SetCCI.getDebugLoc(), TII->get(X86::MOV8mr));
   // Copy the address operands.
-  for (int i = 0; i < X86::AddrNumOperands; ++i)
+  for (int i = 0; i < X86::AddrNumOperands; ++i) {
     MIB.add(SetCCI.getOperand(i));
+
+}
 
   MIB.addReg(CondReg);
 

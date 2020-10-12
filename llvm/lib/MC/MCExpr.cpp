@@ -47,7 +47,7 @@ void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI, bool InParens) const {
     auto Value = cast<MCConstantExpr>(*this).getValue();
     auto PrintInHex = cast<MCConstantExpr>(*this).useHexFormat();
     auto SizeInBytes = cast<MCConstantExpr>(*this).getSizeInBytes();
-    if (PrintInHex)
+    if (PrintInHex) {
       switch (SizeInBytes) {
       default:
         OS << "0x" << Twine::utohexstr(Value);
@@ -65,8 +65,10 @@ void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI, bool InParens) const {
         OS << format("0x%016" PRIx64, Value);
         break;
       }
-    else
+    } else {
       OS << Value;
+
+}
     return;
   }
   case MCExpr::SymbolRef: {
@@ -80,11 +82,15 @@ void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI, bool InParens) const {
       OS << '(';
       Sym.print(OS, MAI);
       OS << ')';
-    } else
+    } else {
       Sym.print(OS, MAI);
 
-    if (SRE.getKind() != MCSymbolRefExpr::VK_None)
+}
+
+    if (SRE.getKind() != MCSymbolRefExpr::VK_None) {
       SRE.printVariantKind(OS);
+
+}
 
     return;
   }
@@ -98,9 +104,13 @@ void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI, bool InParens) const {
     case MCUnaryExpr::Plus:  OS << '+'; break;
     }
     bool Binary = UE.getSubExpr()->getKind() == MCExpr::Binary;
-    if (Binary) OS << "(";
+    if (Binary) { OS << "(";
+
+}
     UE.getSubExpr()->print(OS, MAI);
-    if (Binary) OS << ")";
+    if (Binary) { OS << ")";
+
+}
     return;
   }
 
@@ -462,10 +472,12 @@ MCSymbolRefExpr::getVariantKindForName(StringRef Name) {
 }
 
 void MCSymbolRefExpr::printVariantKind(raw_ostream &OS) const {
-  if (UseParensForSymbolVariant)
+  if (UseParensForSymbolVariant) {
     OS << '(' << MCSymbolRefExpr::getVariantKindName(getKind()) << ')';
-  else
+  } else {
     OS << '@' << MCSymbolRefExpr::getVariantKindName(getKind());
+
+}
 }
 
 /* *** */
@@ -530,17 +542,23 @@ static void AttemptToFoldSymbolOffsetDifference(
     const MCAssembler *Asm, const MCAsmLayout *Layout,
     const SectionAddrMap *Addrs, bool InSet, const MCSymbolRefExpr *&A,
     const MCSymbolRefExpr *&B, int64_t &Addend) {
-  if (!A || !B)
+  if (!A || !B) {
     return;
+
+}
 
   const MCSymbol &SA = A->getSymbol();
   const MCSymbol &SB = B->getSymbol();
 
-  if (SA.isUndefined() || SB.isUndefined())
+  if (SA.isUndefined() || SB.isUndefined()) {
     return;
 
-  if (!Asm->getWriter().isSymbolRefDifferenceFullyResolved(*Asm, A, B, InSet))
+}
+
+  if (!Asm->getWriter().isSymbolRefDifferenceFullyResolved(*Asm, A, B, InSet)) {
     return;
+
+}
 
   if (SA.getFragment() == SB.getFragment() && !SA.isVariable() &&
       !SA.isUnset() && !SB.isVariable() && !SB.isUnset()) {
@@ -548,13 +566,17 @@ static void AttemptToFoldSymbolOffsetDifference(
 
     // Pointers to Thumb symbols need to have their low-bit set to allow
     // for interworking.
-    if (Asm->isThumbFunc(&SA))
+    if (Asm->isThumbFunc(&SA)) {
       Addend |= 1;
+
+}
 
     // If symbol is labeled as micromips, we set low-bit to ensure
     // correct offset in .gcc_except_table
-    if (Asm->getBackend().isMicroMips(&SA))
+    if (Asm->getBackend().isMicroMips(&SA)) {
       Addend |= 1;
+
+}
 
     // Clear the symbol expr pointers to indicate we have folded these
     // operands.
@@ -562,30 +584,40 @@ static void AttemptToFoldSymbolOffsetDifference(
     return;
   }
 
-  if (!Layout)
+  if (!Layout) {
     return;
+
+}
 
   const MCSection &SecA = *SA.getFragment()->getParent();
   const MCSection &SecB = *SB.getFragment()->getParent();
 
-  if ((&SecA != &SecB) && !Addrs)
+  if ((&SecA != &SecB) && !Addrs) {
     return;
+
+}
 
   // Eagerly evaluate.
   Addend += Layout->getSymbolOffset(A->getSymbol()) -
             Layout->getSymbolOffset(B->getSymbol());
-  if (Addrs && (&SecA != &SecB))
+  if (Addrs && (&SecA != &SecB)) {
     Addend += (Addrs->lookup(&SecA) - Addrs->lookup(&SecB));
+
+}
 
   // Pointers to Thumb symbols need to have their low-bit set to allow
   // for interworking.
-  if (Asm->isThumbFunc(&SA))
+  if (Asm->isThumbFunc(&SA)) {
     Addend |= 1;
+
+}
 
   // If symbol is labeled as micromips, we set low-bit to ensure
   // correct offset in .gcc_except_table
-  if (Asm->getBackend().isMicroMips(&SA))
+  if (Asm->getBackend().isMicroMips(&SA)) {
     Addend |= 1;
+
+}
 
   // Clear the symbol expr pointers to indicate we have folded these
   // operands.
@@ -594,18 +626,26 @@ static void AttemptToFoldSymbolOffsetDifference(
 
 static bool canFold(const MCAssembler *Asm, const MCSymbolRefExpr *A,
                     const MCSymbolRefExpr *B, bool InSet) {
-  if (InSet)
+  if (InSet) {
     return true;
 
-  if (!Asm->getBackend().requiresDiffExpressionRelocations())
+}
+
+  if (!Asm->getBackend().requiresDiffExpressionRelocations()) {
     return true;
+
+}
 
   const MCSymbol &CheckSym = A ? A->getSymbol() : B->getSymbol();
-  if (!CheckSym.isInSection())
+  if (!CheckSym.isInSection()) {
     return true;
 
-  if (!CheckSym.getSection().hasInstructions())
+}
+
+  if (!CheckSym.getSection().hasInstructions()) {
     return true;
+
+}
 
   return false;
 }
@@ -672,8 +712,10 @@ EvaluateSymbolicAdd(const MCAssembler *Asm, const MCAsmLayout *Layout,
   }
 
   // We can't represent the addition or subtraction of two symbols.
-  if ((LHS_A && RHS_A) || (LHS_B && RHS_B))
+  if ((LHS_A && RHS_A) || (LHS_B && RHS_B)) {
     return false;
+
+}
 
   // At this point, we have at most one additive symbol and one subtractive
   // symbol -- find them.
@@ -702,12 +744,16 @@ static bool canExpand(const MCSymbol &Sym, bool InSet) {
   const MCExpr *Expr = Sym.getVariableValue();
   const auto *Inner = dyn_cast<MCSymbolRefExpr>(Expr);
   if (Inner) {
-    if (Inner->getKind() == MCSymbolRefExpr::VK_WEAKREF)
+    if (Inner->getKind() == MCSymbolRefExpr::VK_WEAKREF) {
       return false;
+
+}
   }
 
-  if (InSet)
+  if (InSet) {
     return true;
+
+}
   return !Sym.isInSection();
 }
 
@@ -737,8 +783,10 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
       bool IsMachO = SRE->hasSubsectionsViaSymbols();
       if (Sym.getVariableValue()->evaluateAsRelocatableImpl(
               Res, Asm, Layout, Fixup, Addrs, InSet || IsMachO)) {
-        if (!IsMachO)
+        if (!IsMachO) {
           return true;
+
+}
 
         const MCSymbolRefExpr *A = Res.getSymA();
         const MCSymbolRefExpr *B = Res.getSymB();
@@ -749,11 +797,15 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
         // include it in the relocation or produce an error if that is not
         // possible.
         // Allow constant expressions.
-        if (!A && !B)
+        if (!A && !B) {
           return true;
+
+}
         // Allows aliases with zero offset.
-        if (Res.getConstant() == 0 && (!A || !B))
+        if (Res.getConstant() == 0 && (!A || !B)) {
           return true;
+
+}
       }
     }
 
@@ -766,27 +818,35 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
     MCValue Value;
 
     if (!AUE->getSubExpr()->evaluateAsRelocatableImpl(Value, Asm, Layout, Fixup,
-                                                      Addrs, InSet))
+                                                      Addrs, InSet)) {
       return false;
+
+}
 
     switch (AUE->getOpcode()) {
     case MCUnaryExpr::LNot:
-      if (!Value.isAbsolute())
+      if (!Value.isAbsolute()) {
         return false;
+
+}
       Res = MCValue::get(!Value.getConstant());
       break;
     case MCUnaryExpr::Minus:
       /// -(a - b + const) ==> (b - a - const)
-      if (Value.getSymA() && !Value.getSymB())
+      if (Value.getSymA() && !Value.getSymB()) {
         return false;
+
+}
 
       // The cast avoids undefined behavior if the constant is INT64_MIN.
       Res = MCValue::get(Value.getSymB(), Value.getSymA(),
                          -(uint64_t)Value.getConstant());
       break;
     case MCUnaryExpr::Not:
-      if (!Value.isAbsolute())
+      if (!Value.isAbsolute()) {
         return false;
+
+}
       Res = MCValue::get(~Value.getConstant());
       break;
     case MCUnaryExpr::Plus:
@@ -806,7 +866,7 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
         !ABE->getRHS()->evaluateAsRelocatableImpl(RHSValue, Asm, Layout, Fixup,
                                                   Addrs, InSet)) {
       // Check if both are Target Expressions, see if we can compare them.
-      if (const MCTargetExpr *L = dyn_cast<MCTargetExpr>(ABE->getLHS()))
+      if (const MCTargetExpr *L = dyn_cast<MCTargetExpr>(ABE->getLHS())) {
         if (const MCTargetExpr *R = cast<MCTargetExpr>(ABE->getRHS())) {
           switch (ABE->getOpcode()) {
           case MCBinaryExpr::EQ:
@@ -818,6 +878,8 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
           default: break;
           }
         }
+
+}
       return false;
     }
 
@@ -859,12 +921,16 @@ bool MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
       // we're bailing out because of 'division by zero'. Therefore, it will
       // emit a 'expected relocatable expression' error. It would be nice to
       // change this code to emit a better diagnostic.
-      if (RHS == 0)
+      if (RHS == 0) {
         return false;
-      if (ABE->getOpcode() == MCBinaryExpr::Div)
+
+}
+      if (ABE->getOpcode() == MCBinaryExpr::Div) {
         Result = LHS / RHS;
-      else
+      } else {
         Result = LHS % RHS;
+
+}
       break;
     case MCBinaryExpr::EQ:   Result = LHS == RHS; break;
     case MCBinaryExpr::GT:   Result = LHS > RHS; break;
@@ -928,14 +994,20 @@ MCFragment *MCExpr::findAssociatedFragment() const {
     MCFragment *RHS_F = BE->getRHS()->findAssociatedFragment();
 
     // If either is absolute, return the other.
-    if (LHS_F == MCSymbol::AbsolutePseudoFragment)
+    if (LHS_F == MCSymbol::AbsolutePseudoFragment) {
       return RHS_F;
-    if (RHS_F == MCSymbol::AbsolutePseudoFragment)
+
+}
+    if (RHS_F == MCSymbol::AbsolutePseudoFragment) {
       return LHS_F;
 
+}
+
     // Not always correct, but probably the best we can do without more context.
-    if (BE->getOpcode() == MCBinaryExpr::Sub)
+    if (BE->getOpcode() == MCBinaryExpr::Sub) {
       return MCSymbol::AbsolutePseudoFragment;
+
+}
 
     // Otherwise, return the first non-null fragment.
     return LHS_F ? LHS_F : RHS_F;

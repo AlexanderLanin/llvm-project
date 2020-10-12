@@ -33,8 +33,10 @@ std::unique_ptr<TargetMachine> createTargetMachine(bool EnableIPRA) {
   Triple TargetTriple("x86_64--");
   std::string Error;
   const Target *T = TargetRegistry::lookupTarget("", TargetTriple, Error);
-  if (!T)
+  if (!T) {
     return nullptr;
+
+}
 
   TargetOptions Options;
   Options.EnableIPRA = EnableIPRA;
@@ -47,8 +49,10 @@ typedef std::function<void(bool)> TargetOptionsTest;
 static void targetOptionsTest(bool EnableIPRA) {
   std::unique_ptr<TargetMachine> TM = createTargetMachine(EnableIPRA);
   // This test is designed for the X86 backend; stop if it is not available.
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   legacy::PassManager PM;
   LLVMTargetMachine *LLVMTM = static_cast<LLVMTargetMachine *>(TM.get());
 

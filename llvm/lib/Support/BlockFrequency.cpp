@@ -42,8 +42,10 @@ BlockFrequency &BlockFrequency::operator+=(BlockFrequency Freq) {
   Frequency += Freq.Frequency;
 
   // If overflow, set frequency to the maximum value.
-  if (Frequency < Before)
+  if (Frequency < Before) {
     Frequency = UINT64_MAX;
+
+}
 
   return *this;
 }
@@ -56,10 +58,12 @@ BlockFrequency BlockFrequency::operator+(BlockFrequency Freq) const {
 
 BlockFrequency &BlockFrequency::operator-=(BlockFrequency Freq) {
   // If underflow, set frequency to 0.
-  if (Frequency <= Freq.Frequency)
+  if (Frequency <= Freq.Frequency) {
     Frequency = 0;
-  else
+  } else {
     Frequency -= Freq.Frequency;
+
+}
   return *this;
 }
 

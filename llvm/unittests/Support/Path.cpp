@@ -314,8 +314,10 @@ TEST(Support, HomeDirectory) {
     convertUTF16ToUTF8String(ref, expected);
   }
 #else
-  if (char const *path = ::getenv("HOME"))
+  if (char const *path = ::getenv("HOME")) {
     expected = path;
+
+}
 #endif
   // Do not try to test it if we don't know what to expect.
   // On Windows we use something better than env vars.
@@ -340,7 +342,9 @@ TEST(Support, HomeDirectoryWithNoEnv) {
 
   // Don't run the test if we have nothing to compare against.
   struct passwd *pw = getpwuid(getuid());
-  if (!pw || !pw->pw_dir) return;
+  if (!pw || !pw->pw_dir) { return;
+
+}
 
   ::unsetenv("HOME");
   EXPECT_EQ(nullptr, ::getenv("HOME"));
@@ -353,7 +357,9 @@ TEST(Support, HomeDirectoryWithNoEnv) {
 
   // Now put the environment back to its original state (meaning that if it was
   // unset before, we don't reset it).
-  if (OriginalEnv) ::setenv("HOME", OriginalEnv, 1);
+  if (OriginalEnv) { ::setenv("HOME", OriginalEnv, 1);
+
+}
 }
 #endif
 
@@ -722,12 +728,18 @@ TEST_F(FileSystemTest, TempFileCollisions) {
   // 2191 attempts not producing a given hexadecimal digit is
   // (1 - 1/16) ** 2191 or 3.88e-62.
   int Successes = 0;
-  for (int i = 0; i < 32; ++i)
-    if (TryCreateTempFile()) ++Successes;
+  for (int i = 0; i < 32; ++i) {
+    if (TryCreateTempFile()) { ++Successes;
+
+}
+
+}
   EXPECT_EQ(Successes, 16);
 
-  for (fs::TempFile &T : TempFiles)
+  for (fs::TempFile &T : TempFiles) {
     cantFail(T.discard());
+
+}
 }
 
 TEST_F(FileSystemTest, CreateDir) {
@@ -845,10 +857,14 @@ TEST_F(FileSystemTest, DirectoryIteration) {
     if (path::filename(i->path()) == "p1") {
       i.pop();
       // FIXME: recursive_directory_iterator should be more robust.
-      if (i == e) break;
+      if (i == e) { break;
+
+}
     }
-    if (path::filename(i->path()) == "dontlookhere")
+    if (path::filename(i->path()) == "dontlookhere") {
       i.no_push();
+
+}
     visited.push_back(std::string(path::filename(i->path())));
   }
   v_t::const_iterator a0 = find(visited, "a0");
@@ -1009,8 +1025,10 @@ TEST_F(FileSystemTest, Remove) {
   ASSERT_NO_ERROR(fs::createUniqueFile(
       Twine(BaseDir) + "/foo/bar/buzz/%%%%%%.tmp", fds[3], Paths[3]));
 
-  for (int fd : fds)
+  for (int fd : fds) {
     ::close(fd);
+
+}
 
   EXPECT_TRUE(fs::exists(Twine(BaseDir) + "/foo/bar/baz"));
   EXPECT_TRUE(fs::exists(Twine(BaseDir) + "/foo/bar/buzz"));
@@ -1506,9 +1524,9 @@ static void verifyRead(int FD, StringRef Data, bool ShouldSucceed) {
 
 static void verifyWrite(int FD, StringRef Data, bool ShouldSucceed) {
   int Result = ::write(FD, Data.data(), Data.size());
-  if (ShouldSucceed)
+  if (ShouldSucceed) {
     ASSERT_EQ((size_t)Result, Data.size());
-  else {
+  } else {
     ASSERT_EQ(-1, Result);
     ASSERT_EQ(EBADF, errno);
   }
@@ -1556,14 +1574,18 @@ TEST_F(FileSystemTest, readNativeFile) {
   const auto &Read = [&](size_t ToRead) -> Expected<std::string> {
     std::string Buf(ToRead, '?');
     Expected<fs::file_t> FD = fs::openNativeFileForRead(NonExistantFile);
-    if (!FD)
+    if (!FD) {
       return FD.takeError();
+
+}
     auto Close = make_scope_exit([&] { fs::closeFile(*FD); });
     if (Expected<size_t> BytesRead = fs::readNativeFile(
-            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size())))
+            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size()))) {
       return Buf.substr(0, *BytesRead);
-    else
+    } else {
       return BytesRead.takeError();
+
+}
   };
   EXPECT_THAT_EXPECTED(Read(5), HasValue("01234"));
   EXPECT_THAT_EXPECTED(Read(3), HasValue("012"));
@@ -1580,10 +1602,12 @@ TEST_F(FileSystemTest, readNativeFileSlice) {
                          size_t ToRead) -> Expected<std::string> {
     std::string Buf(ToRead, '?');
     if (Expected<size_t> BytesRead = fs::readNativeFileSlice(
-            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size()), Offset))
+            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size()), Offset)) {
       return Buf.substr(0, *BytesRead);
-    else
+    } else {
       return BytesRead.takeError();
+
+}
   };
   EXPECT_THAT_EXPECTED(Read(0, 5), HasValue("01234"));
   EXPECT_THAT_EXPECTED(Read(0, 3), HasValue("012"));

@@ -57,8 +57,10 @@ TEST(LegacyCompileOnDemandLayerTest, FindSymbol) {
   MockBaseLayer<int, std::shared_ptr<Module>> TestBaseLayer;
   TestBaseLayer.findSymbolImpl =
     [](const std::string &Name, bool) {
-      if (Name == "foo")
+      if (Name == "foo") {
         return JITSymbol(1, JITSymbolFlags::Exported);
+
+}
       return JITSymbol(nullptr);
     };
 

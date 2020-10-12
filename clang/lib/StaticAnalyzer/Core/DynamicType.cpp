@@ -41,12 +41,16 @@ DynamicTypeInfo getDynamicTypeInfo(ProgramStateRef State, const MemRegion *MR) {
   MR = MR->StripCasts();
 
   // Look up the dynamic type in the GDM.
-  if (const DynamicTypeInfo *DTI = State->get<DynamicTypeMap>(MR))
+  if (const DynamicTypeInfo *DTI = State->get<DynamicTypeMap>(MR)) {
     return *DTI;
 
+}
+
   // Otherwise, fall back to what we know about the region.
-  if (const auto *TR = dyn_cast<TypedRegion>(MR))
+  if (const auto *TR = dyn_cast<TypedRegion>(MR)) {
     return DynamicTypeInfo(TR->getLocationType(), /*CanBeSub=*/false);
+
+}
 
   if (const auto *SR = dyn_cast<SymbolicRegion>(MR)) {
     SymbolRef Sym = SR->getSymbol();
@@ -66,12 +70,18 @@ const DynamicCastInfo *getDynamicCastInfo(ProgramStateRef State,
                                           QualType CastFromTy,
                                           QualType CastToTy) {
   const auto *Lookup = State->get<DynamicCastMap>().lookup(MR);
-  if (!Lookup)
+  if (!Lookup) {
     return nullptr;
 
-  for (const DynamicCastInfo &Cast : *Lookup)
-    if (Cast.equals(CastFromTy, CastToTy))
+}
+
+  for (const DynamicCastInfo &Cast : *Lookup) {
+    if (Cast.equals(CastFromTy, CastToTy)) {
       return &Cast;
+
+}
+
+}
 
   return nullptr;
 }
@@ -93,8 +103,10 @@ ProgramStateRef setDynamicTypeAndCastInfo(ProgramStateRef State,
                                           QualType CastFromTy,
                                           QualType CastToTy,
                                           bool CastSucceeds) {
-  if (!MR)
+  if (!MR) {
     return State;
+
+}
 
   if (CastSucceeds) {
     assert((CastToTy->isAnyPointerType() || CastToTy->isReferenceType()) &&
@@ -121,9 +133,13 @@ ProgramStateRef setDynamicTypeAndCastInfo(ProgramStateRef State,
 template <typename MapTy>
 ProgramStateRef removeDead(ProgramStateRef State, const MapTy &Map,
                            SymbolReaper &SR) {
-  for (const auto &Elem : Map)
-    if (!SR.isLiveRegion(Elem.first))
+  for (const auto &Elem : Map) {
+    if (!SR.isLiveRegion(Elem.first)) {
       State = State->remove<DynamicCastMap>(Elem.first);
+
+}
+
+}
 
   return State;
 }
@@ -163,8 +179,10 @@ static void printDynamicTypesJson(raw_ostream &Out, ProgramStateRef State,
     }
     Out << " }";
 
-    if (std::next(I) != Map.end())
+    if (std::next(I) != Map.end()) {
       Out << ',';
+
+}
     Out << NL;
   }
 
@@ -201,8 +219,10 @@ static void printDynamicCastsJson(raw_ostream &Out, ProgramStateRef State,
             << SI->to().getAsString() << "\", \"kind\": \""
             << (SI->succeeds() ? "success" : "fail") << "\" }";
 
-        if (std::next(SI) != Set.end())
+        if (std::next(SI) != Set.end()) {
           Out << ',';
+
+}
         Out << NL;
       }
       --Space;
@@ -210,8 +230,10 @@ static void printDynamicCastsJson(raw_ostream &Out, ProgramStateRef State,
     }
     Out << '}';
 
-    if (std::next(I) != Map.end())
+    if (std::next(I) != Map.end()) {
       Out << ',';
+
+}
     Out << NL;
   }
 

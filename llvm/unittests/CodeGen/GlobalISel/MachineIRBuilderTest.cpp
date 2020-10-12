@@ -11,8 +11,10 @@
 
 TEST_F(GISelMITest, TestBuildConstantFConstant) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   B.buildConstant(LLT::scalar(32), 42);
   B.buildFConstant(LLT::scalar(32), 1.0);
@@ -75,8 +77,10 @@ TEST_F(GISelMITest, TestBuildConstantFConstantDeath) {
 
 TEST_F(GISelMITest, DstOpSrcOp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   SmallVector<Register, 4> Copies;
   collectCopies(Copies, MF);
@@ -101,8 +105,10 @@ TEST_F(GISelMITest, DstOpSrcOp) {
 
 TEST_F(GISelMITest, BuildUnmerge) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   SmallVector<Register, 4> Copies;
   collectCopies(Copies, MF);
@@ -122,8 +128,10 @@ TEST_F(GISelMITest, BuildUnmerge) {
 
 TEST_F(GISelMITest, TestBuildFPInsts) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   SmallVector<Register, 4> Copies;
   collectCopies(Copies, MF);
@@ -158,8 +166,10 @@ TEST_F(GISelMITest, TestBuildFPInsts) {
 
 TEST_F(GISelMITest, BuildIntrinsic) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S64 = LLT::scalar(64);
   SmallVector<Register, 4> Copies;
@@ -187,8 +197,10 @@ TEST_F(GISelMITest, BuildIntrinsic) {
 
 TEST_F(GISelMITest, BuildXor) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S64 = LLT::scalar(64);
   LLT S128 = LLT::scalar(128);
@@ -216,8 +228,10 @@ TEST_F(GISelMITest, BuildXor) {
 
 TEST_F(GISelMITest, BuildBitCounts) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S32 = LLT::scalar(32);
   SmallVector<Register, 4> Copies;
@@ -244,8 +258,10 @@ TEST_F(GISelMITest, BuildBitCounts) {
 
 TEST_F(GISelMITest, BuildCasts) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S32 = LLT::scalar(32);
   SmallVector<Register, 4> Copies;
@@ -269,8 +285,10 @@ TEST_F(GISelMITest, BuildCasts) {
 
 TEST_F(GISelMITest, BuildMinMax) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S64 = LLT::scalar(64);
   SmallVector<Register, 4> Copies;
@@ -295,8 +313,10 @@ TEST_F(GISelMITest, BuildMinMax) {
 
 TEST_F(GISelMITest, BuildAtomicRMW) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S64 = LLT::scalar(64);
   LLT P0 = LLT::pointer(0, 64);
@@ -326,8 +346,10 @@ TEST_F(GISelMITest, BuildAtomicRMW) {
 
 TEST_F(GISelMITest, BuildMerge) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S32 = LLT::scalar(32);
   Register RegC0 = B.buildConstant(S32, 0).getReg(0);
@@ -365,8 +387,10 @@ TEST_F(GISelMITest, BuildMerge) {
 
 TEST_F(GISelMITest, BuildAddoSubo) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT S1 = LLT::scalar(1);
   LLT S64 = LLT::scalar(64);

@@ -34,11 +34,13 @@ ParsedStringTable::ParsedStringTable(StringRef InBuffer) : Buffer(InBuffer) {
 }
 
 Expected<StringRef> ParsedStringTable::operator[](size_t Index) const {
-  if (Index >= Offsets.size())
+  if (Index >= Offsets.size()) {
     return createStringError(
         std::make_error_code(std::errc::invalid_argument),
         "String with index %u is out of bounds (size = %u).", Index,
         Offsets.size());
+
+}
 
   size_t Offset = Offsets[Index];
   // If it's the last offset, we can't use the next offset to know the size of

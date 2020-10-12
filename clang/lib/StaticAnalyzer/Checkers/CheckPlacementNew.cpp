@@ -30,14 +30,20 @@ SVal PlacementNewChecker::getExtentSizeOfPlace(const Expr *Place,
                                                ProgramStateRef State,
                                                CheckerContext &C) const {
   const MemRegion *MRegion = C.getSVal(Place).getAsRegion();
-  if (!MRegion)
+  if (!MRegion) {
     return UnknownVal();
+
+}
   RegionOffset Offset = MRegion->getAsOffset();
-  if (Offset.hasSymbolicOffset())
+  if (Offset.hasSymbolicOffset()) {
     return UnknownVal();
+
+}
   const MemRegion *BaseRegion = MRegion->getBaseRegion();
-  if (!BaseRegion)
+  if (!BaseRegion) {
     return UnknownVal();
+
+}
 
   SValBuilder &SvalBuilder = C.getSValBuilder();
   NonLoc OffsetInBytes = SvalBuilder.makeArrayIndex(
@@ -82,21 +88,29 @@ SVal PlacementNewChecker::getExtentSizeOfNewTarget(const CXXNewExpr *NE,
 void PlacementNewChecker::checkPreStmt(const CXXNewExpr *NE,
                                        CheckerContext &C) const {
   // Check only the default placement new.
-  if (!NE->getOperatorNew()->isReservedGlobalPlacementOperator())
+  if (!NE->getOperatorNew()->isReservedGlobalPlacementOperator()) {
     return;
-  if (NE->getNumPlacementArgs() == 0)
+
+}
+  if (NE->getNumPlacementArgs() == 0) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
   SVal SizeOfTarget = getExtentSizeOfNewTarget(NE, State, C);
   const Expr *Place = NE->getPlacementArg(0);
   SVal SizeOfPlace = getExtentSizeOfPlace(Place, State, C);
   const auto SizeOfTargetCI = SizeOfTarget.getAs<nonloc::ConcreteInt>();
-  if (!SizeOfTargetCI)
+  if (!SizeOfTargetCI) {
     return;
+
+}
   const auto SizeOfPlaceCI = SizeOfPlace.getAs<nonloc::ConcreteInt>();
-  if (!SizeOfPlaceCI)
+  if (!SizeOfPlaceCI) {
     return;
+
+}
 
   if (SizeOfPlaceCI->getValue() < SizeOfTargetCI->getValue()) {
     if (ExplodedNode *N = C.generateErrorNode(State)) {

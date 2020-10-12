@@ -444,15 +444,19 @@ void CheckRelation(const Optional<T> &Lhs, const Optional<T> &Rhs,
                    bool Expected) {
   EXPECT_EQ(Expected, OperatorT::apply(Lhs, Rhs));
 
-  if (Lhs)
+  if (Lhs) {
     EXPECT_EQ(Expected, OperatorT::apply(*Lhs, Rhs));
-  else
+  } else {
     EXPECT_EQ(Expected, OperatorT::apply(None, Rhs));
 
-  if (Rhs)
+}
+
+  if (Rhs) {
     EXPECT_EQ(Expected, OperatorT::apply(Lhs, *Rhs));
-  else
+  } else {
     EXPECT_EQ(Expected, OperatorT::apply(Lhs, None));
+
+}
 }
 
 struct EqualityMock {};

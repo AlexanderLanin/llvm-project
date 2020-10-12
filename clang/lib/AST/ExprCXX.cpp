@@ -49,8 +49,10 @@ bool CXXOperatorCallExpr::isInfixBinaryOp() const {
   // operator() and operator[]. Note that none of these operators can have
   // default arguments, so it suffices to check the number of argument
   // expressions.
-  if (getNumArgs() != 2)
+  if (getNumArgs() != 2) {
     return false;
+
+}
 
   switch (getOperator()) {
   case OO_Call: case OO_Subscript:
@@ -101,12 +103,16 @@ CXXRewrittenBinaryOperator::getDecomposedForm() const {
 
   // Put the operands in the right order for == and !=, and canonicalize the
   // <=> subexpression onto the LHS for all other forms.
-  if (isReversed())
+  if (isReversed()) {
     std::swap(Result.LHS, Result.RHS);
 
+}
+
   // If this isn't a spaceship rewrite, we're done.
-  if (Result.Opcode == BO_EQ || Result.Opcode == BO_NE)
+  if (Result.Opcode == BO_EQ || Result.Opcode == BO_NE) {
     return Result;
+
+}
 
   // Otherwise, we expect a <=> to now be on the LHS.
   E = Result.LHS->IgnoreImplicitAsWritten();
@@ -125,22 +131,30 @@ CXXRewrittenBinaryOperator::getDecomposedForm() const {
   }
 
   // Put the comparison operands in the right order.
-  if (isReversed())
+  if (isReversed()) {
     std::swap(Result.LHS, Result.RHS);
+
+}
   return Result;
 }
 
 bool CXXTypeidExpr::isPotentiallyEvaluated() const {
-  if (isTypeOperand())
+  if (isTypeOperand()) {
     return false;
+
+}
 
   // C++11 [expr.typeid]p3:
   //   When typeid is applied to an expression other than a glvalue of
   //   polymorphic class type, [...] the expression is an unevaluated operand.
   const Expr *E = getExprOperand();
-  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl())
-    if (RD->isPolymorphic() && E->isGLValue())
+  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl()) {
+    if (RD->isPolymorphic() && E->isGLValue()) {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -195,8 +209,10 @@ CXXNewExpr::CXXNewExpr(bool IsGlobalNew, FunctionDecl *OperatorNew,
   CXXNewExprBits.NumPlacementArgs = PlacementArgs.size();
 
   if (ArraySize) {
-    if (Expr *SizeExpr = *ArraySize)
+    if (Expr *SizeExpr = *ArraySize) {
       addDependence(SizeExpr->getDependence() & ~ExprDependence::Type);
+
+}
 
     getTrailingObjects<Stmt *>()[arraySizeOffset()] = *ArraySize;
   }
@@ -214,8 +230,10 @@ CXXNewExpr::CXXNewExpr(bool IsGlobalNew, FunctionDecl *OperatorNew,
         PlacementArgs[I];
   }
 
-  if (IsParenTypeId)
+  if (IsParenTypeId) {
     getTrailingObjects<SourceRange>()[0] = TypeIdParens;
+
+}
 
   switch (getInitializationStyle()) {
   case CallInit:
@@ -225,8 +243,10 @@ CXXNewExpr::CXXNewExpr(bool IsGlobalNew, FunctionDecl *OperatorNew,
     this->Range.setEnd(getInitializer()->getSourceRange().getEnd());
     break;
   default:
-    if (IsParenTypeId)
+    if (IsParenTypeId) {
       this->Range.setEnd(TypeIdParens.getEnd());
+
+}
     break;
   }
 }
@@ -297,15 +317,19 @@ QualType CXXDeleteExpr::getDestroyedType() const {
               getOperatorDelete()->isDestroyingOperatorDelete()) &&
              "only a destroying operator delete can have a converted arg");
       Arg = ICE->getSubExpr();
-    } else
+    } else {
       break;
+
+}
   }
 
   // The type-to-delete may not be a pointer if it's a dependent type.
   const QualType ArgType = Arg->getType();
 
-  if (ArgType->isDependentType() && !ArgType->isPointerType())
+  if (ArgType->isDependentType() && !ArgType->isPointerType()) {
     return QualType();
+
+}
 
   return ArgType->castAs<PointerType>()->getPointeeType();
 }
@@ -352,16 +376,20 @@ CXXPseudoDestructorExpr::CXXPseudoDestructorExpr(const ASTContext &Context,
     DestroyedType(DestroyedType) {}
 
 QualType CXXPseudoDestructorExpr::getDestroyedType() const {
-  if (TypeSourceInfo *TInfo = DestroyedType.getTypeSourceInfo())
+  if (TypeSourceInfo *TInfo = DestroyedType.getTypeSourceInfo()) {
     return TInfo->getType();
+
+}
 
   return QualType();
 }
 
 SourceLocation CXXPseudoDestructorExpr::getEndLoc() const {
   SourceLocation End = DestroyedType.getLocation();
-  if (TypeSourceInfo *TInfo = DestroyedType.getTypeSourceInfo())
+  if (TypeSourceInfo *TInfo = DestroyedType.getTypeSourceInfo()) {
     End = TInfo->getTypeLoc().getLocalSourceRange().getEnd();
+
+}
   return End;
 }
 
@@ -459,8 +487,10 @@ OverloadExpr::OverloadExpr(StmtClass SC, const ASTContext &Context,
     // Determine whether this expression is type-dependent.
     for (UnresolvedSetImpl::const_iterator I = Begin; I != End; ++I) {
       if ((*I)->getDeclContext()->isDependentContext() ||
-          isa<UnresolvedUsingValueDecl>(*I))
+          isa<UnresolvedUsingValueDecl>(*I)) {
         addDependence(ExprDependence::TypeValueInstantiation);
+
+}
     }
 
     // Copy the results to the trailing array past UnresolvedLookupExpr
@@ -482,8 +512,10 @@ OverloadExpr::OverloadExpr(StmtClass SC, const ASTContext &Context,
     getTrailingASTTemplateKWAndArgsInfo()->initializeFrom(TemplateKWLoc);
   }
 
-  if (isTypeDependent())
+  if (isTypeDependent()) {
     setType(Context.DependentTy);
+
+}
 }
 
 OverloadExpr::OverloadExpr(StmtClass SC, EmptyShell Empty, unsigned NumResults,
@@ -514,8 +546,10 @@ DependentScopeDeclRefExpr::DependentScopeDeclRefExpr(
     auto Deps = TemplateArgumentDependence::None;
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc, *Args, getTrailingObjects<TemplateArgumentLoc>(), Deps);
-    if (Deps & TemplateArgumentDependence::UnexpandedPack)
+    if (Deps & TemplateArgumentDependence::UnexpandedPack) {
       addDependence(ExprDependence::UnexpandedPack);
+
+}
   } else if (TemplateKWLoc.isValid()) {
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc);
@@ -554,17 +588,23 @@ DependentScopeDeclRefExpr::CreateEmpty(const ASTContext &Context,
 }
 
 SourceLocation CXXConstructExpr::getBeginLoc() const {
-  if (isa<CXXTemporaryObjectExpr>(this))
+  if (isa<CXXTemporaryObjectExpr>(this)) {
     return cast<CXXTemporaryObjectExpr>(this)->getBeginLoc();
+
+}
   return getLocation();
 }
 
 SourceLocation CXXConstructExpr::getEndLoc() const {
-  if (isa<CXXTemporaryObjectExpr>(this))
+  if (isa<CXXTemporaryObjectExpr>(this)) {
     return cast<CXXTemporaryObjectExpr>(this)->getEndLoc();
 
-  if (ParenOrBraceRange.isValid())
+}
+
+  if (ParenOrBraceRange.isValid()) {
     return ParenOrBraceRange.getEnd();
+
+}
 
   SourceLocation End = getLocation();
   for (unsigned I = getNumArgs(); I > 0; --I) {
@@ -630,12 +670,14 @@ CXXOperatorCallExpr *CXXOperatorCallExpr::CreateEmpty(const ASTContext &Ctx,
 SourceRange CXXOperatorCallExpr::getSourceRangeImpl() const {
   OverloadedOperatorKind Kind = getOperator();
   if (Kind == OO_PlusPlus || Kind == OO_MinusMinus) {
-    if (getNumArgs() == 1)
+    if (getNumArgs() == 1) {
       // Prefix operator
       return SourceRange(getOperatorLoc(), getArg(0)->getEndLoc());
-    else
+    } else {
       // Postfix operator
       return SourceRange(getArg(0)->getBeginLoc(), getOperatorLoc());
+
+}
   } else if (Kind == OO_Arrow) {
     return SourceRange(getArg(0)->getBeginLoc(), getOperatorLoc());
   } else if (Kind == OO_Call) {
@@ -687,11 +729,17 @@ CXXMemberCallExpr *CXXMemberCallExpr::CreateEmpty(const ASTContext &Ctx,
 
 Expr *CXXMemberCallExpr::getImplicitObjectArgument() const {
   const Expr *Callee = getCallee()->IgnoreParens();
-  if (const auto *MemExpr = dyn_cast<MemberExpr>(Callee))
+  if (const auto *MemExpr = dyn_cast<MemberExpr>(Callee)) {
     return MemExpr->getBase();
-  if (const auto *BO = dyn_cast<BinaryOperator>(Callee))
-    if (BO->getOpcode() == BO_PtrMemD || BO->getOpcode() == BO_PtrMemI)
+
+}
+  if (const auto *BO = dyn_cast<BinaryOperator>(Callee)) {
+    if (BO->getOpcode() == BO_PtrMemD || BO->getOpcode() == BO_PtrMemI) {
       return BO->getLHS();
+
+}
+
+}
 
   // FIXME: Will eventually need to cope with member pointers.
   return nullptr;
@@ -699,14 +747,18 @@ Expr *CXXMemberCallExpr::getImplicitObjectArgument() const {
 
 QualType CXXMemberCallExpr::getObjectType() const {
   QualType Ty = getImplicitObjectArgument()->getType();
-  if (Ty->isPointerType())
+  if (Ty->isPointerType()) {
     Ty = Ty->getPointeeType();
+
+}
   return Ty;
 }
 
 CXXMethodDecl *CXXMemberCallExpr::getMethodDecl() const {
-  if (const auto *MemExpr = dyn_cast<MemberExpr>(getCallee()->IgnoreParens()))
+  if (const auto *MemExpr = dyn_cast<MemberExpr>(getCallee()->IgnoreParens())) {
     return cast<CXXMethodDecl>(MemExpr->getMemberDecl());
+
+}
 
   // FIXME: Will eventually need to cope with member pointers.
   return nullptr;
@@ -714,11 +766,15 @@ CXXMethodDecl *CXXMemberCallExpr::getMethodDecl() const {
 
 CXXRecordDecl *CXXMemberCallExpr::getRecordDecl() const {
   Expr* ThisArg = getImplicitObjectArgument();
-  if (!ThisArg)
+  if (!ThisArg) {
     return nullptr;
 
-  if (ThisArg->getType()->isAnyPointerType())
+}
+
+  if (ThisArg->getType()->isAnyPointerType()) {
     return ThisArg->getType()->getPointeeType()->getAsCXXRecordDecl();
+
+}
 
   return ThisArg->getType()->getAsCXXRecordDecl();
 }
@@ -753,9 +809,11 @@ CXXStaticCastExpr *CXXStaticCastExpr::Create(const ASTContext &C, QualType T,
   auto *E =
       new (Buffer) CXXStaticCastExpr(T, VK, K, Op, PathSize, WrittenTy, L,
                                      RParenLoc, AngleBrackets);
-  if (PathSize)
+  if (PathSize) {
     std::uninitialized_copy_n(BasePath->data(), BasePath->size(),
                               E->getTrailingObjects<CXXBaseSpecifier *>());
+
+}
   return E;
 }
 
@@ -778,9 +836,11 @@ CXXDynamicCastExpr *CXXDynamicCastExpr::Create(const ASTContext &C, QualType T,
   auto *E =
       new (Buffer) CXXDynamicCastExpr(T, VK, K, Op, PathSize, WrittenTy, L,
                                       RParenLoc, AngleBrackets);
-  if (PathSize)
+  if (PathSize) {
     std::uninitialized_copy_n(BasePath->data(), BasePath->size(),
                               E->getTrailingObjects<CXXBaseSpecifier *>());
+
+}
   return E;
 }
 
@@ -808,14 +868,18 @@ bool CXXDynamicCastExpr::isAlwaysNull() const
     DestType = DestType->castAs<PointerType>()->getPointeeType();
   }
 
-  if (DestType->isVoidType())
+  if (DestType->isVoidType()) {
     return false;
+
+}
 
   const auto *SrcRD =
       cast<CXXRecordDecl>(SrcType->castAs<RecordType>()->getDecl());
 
-  if (!SrcRD->hasAttr<FinalAttr>())
+  if (!SrcRD->hasAttr<FinalAttr>()) {
     return false;
+
+}
 
   const auto *DestRD =
       cast<CXXRecordDecl>(DestType->castAs<RecordType>()->getDecl());
@@ -835,9 +899,11 @@ CXXReinterpretCastExpr::Create(const ASTContext &C, QualType T,
   auto *E =
       new (Buffer) CXXReinterpretCastExpr(T, VK, K, Op, PathSize, WrittenTy, L,
                                           RParenLoc, AngleBrackets);
-  if (PathSize)
+  if (PathSize) {
     std::uninitialized_copy_n(BasePath->data(), BasePath->size(),
                               E->getTrailingObjects<CXXBaseSpecifier *>());
+
+}
   return E;
 }
 
@@ -869,9 +935,11 @@ CXXFunctionalCastExpr::Create(const ASTContext &C, QualType T, ExprValueKind VK,
   void *Buffer = C.Allocate(totalSizeToAlloc<CXXBaseSpecifier *>(PathSize));
   auto *E =
       new (Buffer) CXXFunctionalCastExpr(T, VK, Written, K, Op, PathSize, L, R);
-  if (PathSize)
+  if (PathSize) {
     std::uninitialized_copy_n(BasePath->data(), BasePath->size(),
                               E->getTrailingObjects<CXXBaseSpecifier *>());
+
+}
   return E;
 }
 
@@ -927,22 +995,34 @@ UserDefinedLiteral *UserDefinedLiteral::CreateEmpty(const ASTContext &Ctx,
 
 UserDefinedLiteral::LiteralOperatorKind
 UserDefinedLiteral::getLiteralOperatorKind() const {
-  if (getNumArgs() == 0)
+  if (getNumArgs() == 0) {
     return LOK_Template;
-  if (getNumArgs() == 2)
+
+}
+  if (getNumArgs() == 2) {
     return LOK_String;
+
+}
 
   assert(getNumArgs() == 1 && "unexpected #args in literal operator call");
   QualType ParamTy =
     cast<FunctionDecl>(getCalleeDecl())->getParamDecl(0)->getType();
-  if (ParamTy->isPointerType())
+  if (ParamTy->isPointerType()) {
     return LOK_Raw;
-  if (ParamTy->isAnyCharacterType())
+
+}
+  if (ParamTy->isAnyCharacterType()) {
     return LOK_Character;
-  if (ParamTy->isIntegerType())
+
+}
+  if (ParamTy->isIntegerType()) {
     return LOK_Integer;
-  if (ParamTy->isFloatingType())
+
+}
+  if (ParamTy->isFloatingType()) {
     return LOK_Floating;
+
+}
 
   llvm_unreachable("unknown kind of literal operator");
 }
@@ -1032,8 +1112,10 @@ SourceLocation CXXTemporaryObjectExpr::getBeginLoc() const {
 
 SourceLocation CXXTemporaryObjectExpr::getEndLoc() const {
   SourceLocation Loc = getParenOrBraceRange().getEnd();
-  if (Loc.isInvalid() && getNumArgs())
+  if (Loc.isInvalid() && getNumArgs()) {
     Loc = getArg(getNumArgs() - 1)->getEndLoc();
+
+}
   return Loc;
 }
 
@@ -1098,8 +1180,10 @@ LambdaCapture::LambdaCapture(SourceLocation Loc, bool Implicit,
                              SourceLocation EllipsisLoc)
     : DeclAndBits(Var, 0), Loc(Loc), EllipsisLoc(EllipsisLoc) {
   unsigned Bits = 0;
-  if (Implicit)
+  if (Implicit) {
     Bits |= Capture_Implicit;
+
+}
 
   switch (Kind) {
   case LCK_StarThis:
@@ -1124,11 +1208,15 @@ LambdaCapture::LambdaCapture(SourceLocation Loc, bool Implicit,
 }
 
 LambdaCaptureKind LambdaCapture::getCaptureKind() const {
-  if (capturesVLAType())
+  if (capturesVLAType()) {
     return LCK_VLAType;
+
+}
   bool CapByCopy = DeclAndBits.getInt() & Capture_ByCopy;
-  if (capturesThis())
+  if (capturesThis()) {
     return CapByCopy ? LCK_StarThis : LCK_This;
+
+}
   return CapByCopy ? LCK_ByCopy : LCK_ByRef;
 }
 
@@ -1160,16 +1248,20 @@ LambdaExpr::LambdaExpr(QualType T, SourceRange IntroducerRange,
       (LambdaCapture *)Context.Allocate(sizeof(LambdaCapture) * NumCaptures);
   LambdaCapture *ToCapture = Data.Captures;
   for (unsigned I = 0, N = Captures.size(); I != N; ++I) {
-    if (Captures[I].isExplicit())
+    if (Captures[I].isExplicit()) {
       ++Data.NumExplicitCaptures;
+
+}
 
     *ToCapture++ = Captures[I];
   }
 
   // Copy initialization expressions for the non-static data members.
   Stmt **Stored = getStoredStmts();
-  for (unsigned I = 0, N = CaptureInits.size(); I != N; ++I)
+  for (unsigned I = 0, N = CaptureInits.size(); I != N; ++I) {
     *Stored++ = CaptureInits[I];
+
+}
 
   // Copy the body of the lambda.
   *Stored++ = getCallOperator()->getBody();
@@ -1271,9 +1363,11 @@ CompoundStmt *LambdaExpr::getBody() const {
   // FIXME: this mutation in getBody is bogus. It should be
   // initialized in ASTStmtReader::VisitLambdaExpr, but for reasons I
   // don't understand, that doesn't work.
-  if (!getStoredStmts()[NumCaptures])
+  if (!getStoredStmts()[NumCaptures]) {
     *const_cast<Stmt **>(&getStoredStmts()[NumCaptures]) =
         getCallOperator()->getBody();
+
+}
 
   return static_cast<CompoundStmt *>(getStoredStmts()[NumCaptures]);
 }
@@ -1288,8 +1382,10 @@ ExprWithCleanups::ExprWithCleanups(Expr *subexpr,
     : FullExpr(ExprWithCleanupsClass, subexpr) {
   ExprWithCleanupsBits.CleanupsHaveSideEffects = CleanupsHaveSideEffects;
   ExprWithCleanupsBits.NumObjects = objects.size();
-  for (unsigned i = 0, e = objects.size(); i != e; ++i)
+  for (unsigned i = 0, e = objects.size(); i != e; ++i) {
     getTrailingObjects<CleanupObject>()[i] = objects[i];
+
+}
 }
 
 ExprWithCleanups *ExprWithCleanups::Create(const ASTContext &C, Expr *subexpr,
@@ -1332,8 +1428,10 @@ CXXUnresolvedConstructExpr::CXXUnresolvedConstructExpr(TypeSourceInfo *TSI,
   CXXUnresolvedConstructExprBits.NumArgs = Args.size();
   auto **StoredArgs = getTrailingObjects<Expr *>();
   for (unsigned I = 0; I != Args.size(); ++I) {
-    if (Args[I]->containsUnexpandedParameterPack())
+    if (Args[I]->containsUnexpandedParameterPack()) {
       addDependence(ExprDependence::UnexpandedPack);
+
+}
 
     StoredArgs[I] = Args[I];
   }
@@ -1383,15 +1481,19 @@ CXXDependentScopeMemberExpr::CXXDependentScopeMemberExpr(
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc, *TemplateArgs, getTrailingObjects<TemplateArgumentLoc>(),
         Deps);
-    if (Deps & TemplateArgumentDependence::UnexpandedPack)
+    if (Deps & TemplateArgumentDependence::UnexpandedPack) {
       addDependence(ExprDependence::UnexpandedPack);
+
+}
   } else if (TemplateKWLoc.isValid()) {
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc);
   }
 
-  if (hasFirstQualifierFoundInScope())
+  if (hasFirstQualifierFoundInScope()) {
     *getTrailingObjects<NamedDecl *>() = FirstQualifierFoundInScope;
+
+}
 }
 
 CXXDependentScopeMemberExpr::CXXDependentScopeMemberExpr(
@@ -1443,14 +1545,18 @@ static bool hasOnlyNonStaticMemberFunctions(UnresolvedSetIterator begin,
                                             UnresolvedSetIterator end) {
   do {
     NamedDecl *decl = *begin;
-    if (isa<UnresolvedUsingValueDecl>(decl))
+    if (isa<UnresolvedUsingValueDecl>(decl)) {
       return false;
+
+}
 
     // Unresolved member expressions should only contain methods and
     // method templates.
     if (cast<CXXMethodDecl>(decl->getUnderlyingDecl()->getAsFunction())
-            ->isStatic())
+            ->isStatic()) {
       return false;
+
+}
   } while (++begin != end);
 
   return true;
@@ -1479,8 +1585,10 @@ UnresolvedMemberExpr::UnresolvedMemberExpr(
 
   // Check whether all of the members are non-static member functions,
   // and if so, mark give this bound-member type instead of overload type.
-  if (hasOnlyNonStaticMemberFunctions(Begin, End))
+  if (hasOnlyNonStaticMemberFunctions(Begin, End)) {
     setType(Context.BoundMemberTy);
+
+}
 }
 
 UnresolvedMemberExpr::UnresolvedMemberExpr(EmptyShell Empty,
@@ -1490,8 +1598,10 @@ UnresolvedMemberExpr::UnresolvedMemberExpr(EmptyShell Empty,
                    HasTemplateKWAndArgsInfo) {}
 
 bool UnresolvedMemberExpr::isImplicitAccess() const {
-  if (!Base)
+  if (!Base) {
     return true;
+
+}
 
   return cast<Expr>(Base)->isImplicitCXXThis();
 }
@@ -1544,8 +1654,10 @@ CXXRecordDecl *UnresolvedMemberExpr::getNamingClass() {
   // Otherwise the naming class must have been the base class.
   else {
     QualType BaseType = getBaseType().getNonReferenceType();
-    if (isArrow())
+    if (isArrow()) {
       BaseType = BaseType->castAs<PointerType>()->getPointeeType();
+
+}
 
     Record = BaseType->getAsCXXRecordDecl();
     assert(Record && "base of member expression does not name record");
@@ -1595,9 +1707,11 @@ FunctionParmPackExpr::FunctionParmPackExpr(QualType T, VarDecl *ParamPack,
     : Expr(FunctionParmPackExprClass, T, VK_LValue, OK_Ordinary, true, true,
            true, true),
       ParamPack(ParamPack), NameLoc(NameLoc), NumParameters(NumParams) {
-  if (Params)
+  if (Params) {
     std::uninitialized_copy(Params, Params + NumParams,
                             getTrailingObjects<VarDecl *>());
+
+}
 }
 
 FunctionParmPackExpr *
@@ -1634,14 +1748,18 @@ MaterializeTemporaryExpr::MaterializeTemporaryExpr(
 void MaterializeTemporaryExpr::setExtendingDecl(ValueDecl *ExtendedBy,
                                                 unsigned ManglingNumber) {
   // We only need extra state if we have to remember more than just the Stmt.
-  if (!ExtendedBy)
+  if (!ExtendedBy) {
     return;
+
+}
 
   // We may need to allocate extra storage for the mangling number and the
   // extended-by ValueDecl.
-  if (!State.is<LifetimeExtendedTemporaryDecl *>())
+  if (!State.is<LifetimeExtendedTemporaryDecl *>()) {
     State = LifetimeExtendedTemporaryDecl::Create(
         cast<Expr>(State.get<Stmt *>()), ExtendedBy, ManglingNumber);
+
+}
 
   auto ES = State.get<LifetimeExtendedTemporaryDecl *>();
   ES->ExtendingDecl = ExtendedBy;

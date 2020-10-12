@@ -35,13 +35,17 @@ static bool eliminateAvailableExternally(Module &M) {
 
   // Drop initializers of available externally global variables.
   for (GlobalVariable &GV : M.globals()) {
-    if (!GV.hasAvailableExternallyLinkage())
+    if (!GV.hasAvailableExternallyLinkage()) {
       continue;
+
+}
     if (GV.hasInitializer()) {
       Constant *Init = GV.getInitializer();
       GV.setInitializer(nullptr);
-      if (isSafeToDestroyConstant(Init))
+      if (isSafeToDestroyConstant(Init)) {
         Init->destroyConstant();
+
+}
     }
     GV.removeDeadConstantUsers();
     GV.setLinkage(GlobalValue::ExternalLinkage);
@@ -51,11 +55,15 @@ static bool eliminateAvailableExternally(Module &M) {
 
   // Drop the bodies of available externally functions.
   for (Function &F : M) {
-    if (!F.hasAvailableExternallyLinkage())
+    if (!F.hasAvailableExternallyLinkage()) {
       continue;
-    if (!F.isDeclaration())
+
+}
+    if (!F.isDeclaration()) {
       // This will set the linkage to external
       F.deleteBody();
+
+}
     F.removeDeadConstantUsers();
     NumFunctions++;
     Changed = true;
@@ -66,8 +74,10 @@ static bool eliminateAvailableExternally(Module &M) {
 
 PreservedAnalyses
 EliminateAvailableExternallyPass::run(Module &M, ModuleAnalysisManager &) {
-  if (!eliminateAvailableExternally(M))
+  if (!eliminateAvailableExternally(M)) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }
 
@@ -84,8 +94,10 @@ struct EliminateAvailableExternallyLegacyPass : public ModulePass {
   // run - Do the EliminateAvailableExternally pass on the specified module,
   // optionally updating the specified callgraph to reflect the changes.
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
     return eliminateAvailableExternally(M);
   }
 };

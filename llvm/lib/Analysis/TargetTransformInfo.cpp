@@ -49,8 +49,10 @@ bool HardwareLoopInfo::canAnalyze(LoopInfo &LI) {
   // Hardware loop.
   LoopBlocksRPO RPOT(L);
   RPOT.perform(&LI);
-  if (containsIrreducibleCFG<const BasicBlock *>(RPOT, LI))
+  if (containsIrreducibleCFG<const BasicBlock *>(RPOT, LI)) {
     return false;
+
+}
   return true;
 }
 
@@ -65,27 +67,39 @@ bool HardwareLoopInfo::isHardwareLoopCandidate(ScalarEvolution &SE,
     // If we pass the updated counter back through a phi, we need to know
     // which latch the updated value will be coming from.
     if (!L->isLoopLatch(BB)) {
-      if (ForceHardwareLoopPHI || CounterInReg)
+      if (ForceHardwareLoopPHI || CounterInReg) {
         continue;
+
+}
     }
 
     const SCEV *EC = SE.getExitCount(L, BB);
-    if (isa<SCEVCouldNotCompute>(EC))
-      continue;
-    if (const SCEVConstant *ConstEC = dyn_cast<SCEVConstant>(EC)) {
-      if (ConstEC->getValue()->isZero())
-        continue;
-    } else if (!SE.isLoopInvariant(EC, L))
+    if (isa<SCEVCouldNotCompute>(EC)) {
       continue;
 
-    if (SE.getTypeSizeInBits(EC->getType()) > CountType->getBitWidth())
+}
+    if (const SCEVConstant *ConstEC = dyn_cast<SCEVConstant>(EC)) {
+      if (ConstEC->getValue()->isZero()) {
+        continue;
+
+}
+    } else if (!SE.isLoopInvariant(EC, L)) {
       continue;
+
+}
+
+    if (SE.getTypeSizeInBits(EC->getType()) > CountType->getBitWidth()) {
+      continue;
+
+}
 
     // If this exiting block is contained in a nested loop, it is not eligible
     // for insertion of the branch-and-decrement since the inner loop would
     // end up messing up the value in the CTR.
-    if (!IsNestingLegal && LI.getLoopFor(BB) != L && !ForceNestedLoop)
+    if (!IsNestingLegal && LI.getLoopFor(BB) != L && !ForceNestedLoop) {
       continue;
+
+}
 
     // We now have a loop-invariant count of loop iterations (which is not the
     // constant zero) for which we know that this loop will not exit via this
@@ -96,8 +110,10 @@ bool HardwareLoopInfo::isHardwareLoopCandidate(ScalarEvolution &SE,
     // blocks are in-loop predecessors to the header block.
     bool NotAlways = false;
     for (BasicBlock *Pred : predecessors(L->getHeader())) {
-      if (!L->contains(Pred))
+      if (!L->contains(Pred)) {
         continue;
+
+}
 
       if (!DT.dominates(BB, Pred)) {
         NotAlways = true;
@@ -105,21 +121,29 @@ bool HardwareLoopInfo::isHardwareLoopCandidate(ScalarEvolution &SE,
       }
     }
 
-    if (NotAlways)
+    if (NotAlways) {
       continue;
+
+}
 
     // Make sure this blocks ends with a conditional branch.
     Instruction *TI = BB->getTerminator();
-    if (!TI)
+    if (!TI) {
       continue;
+
+}
 
     if (BranchInst *BI = dyn_cast<BranchInst>(TI)) {
-      if (!BI->isConditional())
+      if (!BI->isConditional()) {
         continue;
 
+}
+
       ExitBranch = BI;
-    } else
+    } else {
       continue;
+
+}
 
     // Note that this block may not be the loop latch block, even if the loop
     // has a latch block.
@@ -128,8 +152,10 @@ bool HardwareLoopInfo::isHardwareLoopCandidate(ScalarEvolution &SE,
     break;
   }
 
-  if (!ExitBlock)
+  if (!ExitBlock) {
     return false;
+
+}
   return true;
 }
 
@@ -552,17 +578,23 @@ TargetTransformInfo::getOperandInfo(Value *V, OperandValueProperties &OpProps) {
   OpProps = OP_None;
 
   if (auto *CI = dyn_cast<ConstantInt>(V)) {
-    if (CI->getValue().isPowerOf2())
+    if (CI->getValue().isPowerOf2()) {
       OpProps = OP_PowerOf2;
+
+}
     return OK_UniformConstantValue;
   }
 
   // A broadcast shuffle creates a uniform value.
   // TODO: Add support for non-zero index broadcasts.
   // TODO: Add support for different source vector width.
-  if (auto *ShuffleInst = dyn_cast<ShuffleVectorInst>(V))
-    if (ShuffleInst->isZeroEltSplat())
+  if (auto *ShuffleInst = dyn_cast<ShuffleVectorInst>(V)) {
+    if (ShuffleInst->isZeroEltSplat()) {
       OpInfo = OK_UniformValue;
+
+}
+
+}
 
   const Value *Splat = getSplatValue(V);
 
@@ -572,15 +604,23 @@ TargetTransformInfo::getOperandInfo(Value *V, OperandValueProperties &OpProps) {
     OpInfo = OK_NonUniformConstantValue;
     if (Splat) {
       OpInfo = OK_UniformConstantValue;
-      if (auto *CI = dyn_cast<ConstantInt>(Splat))
-        if (CI->getValue().isPowerOf2())
+      if (auto *CI = dyn_cast<ConstantInt>(Splat)) {
+        if (CI->getValue().isPowerOf2()) {
           OpProps = OP_PowerOf2;
+
+}
+
+}
     } else if (auto *CDS = dyn_cast<ConstantDataSequential>(V)) {
       OpProps = OP_PowerOf2;
       for (unsigned I = 0, E = CDS->getNumElements(); I != E; ++I) {
-        if (auto *CI = dyn_cast<ConstantInt>(CDS->getElementAsConstant(I)))
-          if (CI->getValue().isPowerOf2())
+        if (auto *CI = dyn_cast<ConstantInt>(CDS->getElementAsConstant(I))) {
+          if (CI->getValue().isPowerOf2()) {
             continue;
+
+}
+
+}
         OpProps = OP_None;
         break;
       }
@@ -589,8 +629,10 @@ TargetTransformInfo::getOperandInfo(Value *V, OperandValueProperties &OpProps) {
 
   // Check for a splat of a uniform value. This is not loop aware, so return
   // true only for the obviously uniform cases (argument, globalvalue)
-  if (Splat && (isa<Argument>(Splat) || isa<GlobalValue>(Splat)))
+  if (Splat && (isa<Argument>(Splat) || isa<GlobalValue>(Splat))) {
     OpInfo = OK_UniformValue;
+
+}
 
   return OpInfo;
 }
@@ -876,17 +918,21 @@ static bool matchPairwiseShuffleMask(ShuffleVectorInst *SI, bool IsLeft,
                                      unsigned Level) {
   // We don't need a shuffle if we just want to have element 0 in position 0 of
   // the vector.
-  if (!SI && Level == 0 && IsLeft)
+  if (!SI && Level == 0 && IsLeft) {
     return true;
-  else if (!SI)
+  } else if (!SI) {
     return false;
+
+}
 
   SmallVector<int, 32> Mask(SI->getType()->getVectorNumElements(), -1);
 
   // Build a mask of 0, 2, ... (left) or 1, 3, ... (right) depending on whether
   // we look at the left or right side.
-  for (unsigned i = 0, e = (1 << Level), val = !IsLeft; i != e; ++i, val += 2)
+  for (unsigned i = 0, e = (1 << Level), val = !IsLeft; i != e; ++i, val += 2) {
     Mask[i] = val;
+
+}
 
   SmallVector<int, 16> ActualMask = SI->getShuffleMask();
   return Mask == ActualMask;
@@ -919,8 +965,10 @@ struct ReductionData {
 
 static Optional<ReductionData> getReductionData(Instruction *I) {
   Value *L, *R;
-  if (m_BinOp(m_Value(L), m_Value(R)).match(I))
+  if (m_BinOp(m_Value(L), m_Value(R)).match(I)) {
     return ReductionData(RK_Arithmetic, I->getOpcode(), L, R);
+
+}
   if (auto *SI = dyn_cast<SelectInst>(I)) {
     if (m_SMin(m_Value(L), m_Value(R)).match(SI) ||
         m_SMax(m_Value(L), m_Value(R)).match(SI) ||
@@ -949,25 +997,35 @@ static ReductionKind matchPairwiseReductionAtLevel(Instruction *I,
   // %rdx.shuf.0.1 = shufflevector <4 x float> %rdx, <4 x float> undef,
   //       <4 x i32> <i32 1, i32 3, i32 undef, i32 undef>
   // %bin.rdx.0 = fadd <4 x float> %rdx.shuf.0.0, %rdx.shuf.0.1
-  if (!I)
+  if (!I) {
     return RK_None;
+
+}
 
   assert(I->getType()->isVectorTy() && "Expecting a vector type");
 
   Optional<ReductionData> RD = getReductionData(I);
-  if (!RD)
+  if (!RD) {
     return RK_None;
+
+}
 
   ShuffleVectorInst *LS = dyn_cast<ShuffleVectorInst>(RD->LHS);
-  if (!LS && Level)
-    return RK_None;
-  ShuffleVectorInst *RS = dyn_cast<ShuffleVectorInst>(RD->RHS);
-  if (!RS && Level)
+  if (!LS && Level) {
     return RK_None;
 
-  // On level 0 we can omit one shufflevector instruction.
-  if (!Level && !RS && !LS)
+}
+  ShuffleVectorInst *RS = dyn_cast<ShuffleVectorInst>(RD->RHS);
+  if (!RS && Level) {
     return RK_None;
+
+}
+
+  // On level 0 we can omit one shufflevector instruction.
+  if (!Level && !RS && !LS) {
+    return RK_None;
+
+}
 
   // Shuffle inputs must match.
   Value *NextLevelOpL = LS ? LS->getOperand(0) : nullptr;
@@ -975,8 +1033,10 @@ static ReductionKind matchPairwiseReductionAtLevel(Instruction *I,
   Value *NextLevelOp = nullptr;
   if (NextLevelOpR && NextLevelOpL) {
     // If we have two shuffles their operands must match.
-    if (NextLevelOpL != NextLevelOpR)
+    if (NextLevelOpL != NextLevelOpR) {
       return RK_None;
+
+}
 
     NextLevelOp = NextLevelOpL;
   } else if (Level == 0 && (NextLevelOpR || NextLevelOpL)) {
@@ -986,37 +1046,49 @@ static ReductionKind matchPairwiseReductionAtLevel(Instruction *I,
     // Example:
     //  %NextLevelOpL = shufflevector %R, <1, undef ...>
     //  %BinOp        = fadd          %NextLevelOpL, %R
-    if (NextLevelOpL && NextLevelOpL != RD->RHS)
+    if (NextLevelOpL && NextLevelOpL != RD->RHS) {
       return RK_None;
-    else if (NextLevelOpR && NextLevelOpR != RD->LHS)
+    } else if (NextLevelOpR && NextLevelOpR != RD->LHS) {
       return RK_None;
 
+}
+
     NextLevelOp = NextLevelOpL ? RD->RHS : RD->LHS;
-  } else
+  } else {
     return RK_None;
+
+}
 
   // Check that the next levels binary operation exists and matches with the
   // current one.
   if (Level + 1 != NumLevels) {
     Optional<ReductionData> NextLevelRD =
         getReductionData(cast<Instruction>(NextLevelOp));
-    if (!NextLevelRD || !RD->hasSameData(*NextLevelRD))
+    if (!NextLevelRD || !RD->hasSameData(*NextLevelRD)) {
       return RK_None;
+
+}
   }
 
   // Shuffle mask for pairwise operation must match.
   if (matchPairwiseShuffleMask(LS, /*IsLeft=*/true, Level)) {
-    if (!matchPairwiseShuffleMask(RS, /*IsLeft=*/false, Level))
+    if (!matchPairwiseShuffleMask(RS, /*IsLeft=*/false, Level)) {
       return RK_None;
+
+}
   } else if (matchPairwiseShuffleMask(RS, /*IsLeft=*/true, Level)) {
-    if (!matchPairwiseShuffleMask(LS, /*IsLeft=*/false, Level))
+    if (!matchPairwiseShuffleMask(LS, /*IsLeft=*/false, Level)) {
       return RK_None;
+
+}
   } else {
     return RK_None;
   }
 
-  if (++Level == NumLevels)
+  if (++Level == NumLevels) {
     return RD->Kind;
+
+}
 
   // Match next level.
   return matchPairwiseReductionAtLevel(cast<Instruction>(NextLevelOp), Level,
@@ -1025,28 +1097,40 @@ static ReductionKind matchPairwiseReductionAtLevel(Instruction *I,
 
 static ReductionKind matchPairwiseReduction(const ExtractElementInst *ReduxRoot,
                                             unsigned &Opcode, Type *&Ty) {
-  if (!EnableReduxCost)
+  if (!EnableReduxCost) {
     return RK_None;
+
+}
 
   // Need to extract the first element.
   ConstantInt *CI = dyn_cast<ConstantInt>(ReduxRoot->getOperand(1));
   unsigned Idx = ~0u;
-  if (CI)
+  if (CI) {
     Idx = CI->getZExtValue();
-  if (Idx != 0)
+
+}
+  if (Idx != 0) {
     return RK_None;
 
+}
+
   auto *RdxStart = dyn_cast<Instruction>(ReduxRoot->getOperand(0));
-  if (!RdxStart)
+  if (!RdxStart) {
     return RK_None;
+
+}
   Optional<ReductionData> RD = getReductionData(RdxStart);
-  if (!RD)
+  if (!RD) {
     return RK_None;
+
+}
 
   Type *VecTy = RdxStart->getType();
   unsigned NumVecElems = VecTy->getVectorNumElements();
-  if (!isPowerOf2_32(NumVecElems))
+  if (!isPowerOf2_32(NumVecElems)) {
     return RK_None;
+
+}
 
   // We look for a sequence of shuffle,shuffle,add triples like the following
   // that builds a pairwise reduction tree.
@@ -1067,8 +1151,10 @@ static ReductionKind matchPairwiseReduction(const ExtractElementInst *ReduxRoot,
   // %bin.rdx8 = fadd <4 x float> %rdx.shuf.1.0, %rdx.shuf.1.1
   // %r = extractelement <4 x float> %bin.rdx8, i32 0
   if (matchPairwiseReductionAtLevel(RdxStart, 0, Log2_32(NumVecElems)) ==
-      RK_None)
+      RK_None) {
     return RK_None;
+
+}
 
   Opcode = RD->Opcode;
   Ty = VecTy;
@@ -1080,8 +1166,10 @@ static std::pair<Value *, ShuffleVectorInst *>
 getShuffleAndOtherOprd(Value *L, Value *R) {
   ShuffleVectorInst *S = nullptr;
 
-  if ((S = dyn_cast<ShuffleVectorInst>(L)))
+  if ((S = dyn_cast<ShuffleVectorInst>(L))) {
     return std::make_pair(R, S);
+
+}
 
   S = dyn_cast<ShuffleVectorInst>(R);
   return std::make_pair(L, S);
@@ -1090,28 +1178,40 @@ getShuffleAndOtherOprd(Value *L, Value *R) {
 static ReductionKind
 matchVectorSplittingReduction(const ExtractElementInst *ReduxRoot,
                               unsigned &Opcode, Type *&Ty) {
-  if (!EnableReduxCost)
+  if (!EnableReduxCost) {
     return RK_None;
+
+}
 
   // Need to extract the first element.
   ConstantInt *CI = dyn_cast<ConstantInt>(ReduxRoot->getOperand(1));
   unsigned Idx = ~0u;
-  if (CI)
+  if (CI) {
     Idx = CI->getZExtValue();
-  if (Idx != 0)
+
+}
+  if (Idx != 0) {
     return RK_None;
 
+}
+
   auto *RdxStart = dyn_cast<Instruction>(ReduxRoot->getOperand(0));
-  if (!RdxStart)
+  if (!RdxStart) {
     return RK_None;
+
+}
   Optional<ReductionData> RD = getReductionData(RdxStart);
-  if (!RD)
+  if (!RD) {
     return RK_None;
+
+}
 
   Type *VecTy = ReduxRoot->getOperand(0)->getType();
   unsigned NumVecElems = VecTy->getVectorNumElements();
-  if (!isPowerOf2_32(NumVecElems))
+  if (!isPowerOf2_32(NumVecElems)) {
     return RK_None;
+
+}
 
   // We look for a sequence of shuffles and adds like the following matching one
   // fadd, shuffle vector pair at a time.
@@ -1130,11 +1230,15 @@ matchVectorSplittingReduction(const ExtractElementInst *ReduxRoot,
   unsigned NumVecElemsRemain = NumVecElems;
   while (NumVecElemsRemain - 1) {
     // Check for the right reduction operation.
-    if (!RdxOp)
+    if (!RdxOp) {
       return RK_None;
+
+}
     Optional<ReductionData> RDLevel = getReductionData(RdxOp);
-    if (!RDLevel || !RDLevel->hasSameData(*RD))
+    if (!RDLevel || !RDLevel->hasSameData(*RD)) {
       return RK_None;
+
+}
 
     Value *NextRdxOp;
     ShuffleVectorInst *Shuffle;
@@ -1142,20 +1246,28 @@ matchVectorSplittingReduction(const ExtractElementInst *ReduxRoot,
         getShuffleAndOtherOprd(RDLevel->LHS, RDLevel->RHS);
 
     // Check the current reduction operation and the shuffle use the same value.
-    if (Shuffle == nullptr)
-      return RK_None;
-    if (Shuffle->getOperand(0) != NextRdxOp)
+    if (Shuffle == nullptr) {
       return RK_None;
 
+}
+    if (Shuffle->getOperand(0) != NextRdxOp) {
+      return RK_None;
+
+}
+
     // Check that shuffle masks matches.
-    for (unsigned j = 0; j != MaskStart; ++j)
+    for (unsigned j = 0; j != MaskStart; ++j) {
       ShuffleMask[j] = MaskStart + j;
+
+}
     // Fill the rest of the mask with -1 for undef.
     std::fill(&ShuffleMask[MaskStart], ShuffleMask.end(), -1);
 
     SmallVector<int, 16> Mask = Shuffle->getShuffleMask();
-    if (ShuffleMask != Mask)
+    if (ShuffleMask != Mask) {
       return RK_None;
+
+}
 
     RdxOp = dyn_cast<Instruction>(NextRdxOp);
     NumVecElemsRemain /= 2;
@@ -1256,8 +1368,10 @@ int TargetTransformInfo::getInstructionThroughput(const Instruction *I) const {
     const ExtractElementInst * EEI = cast<ExtractElementInst>(I);
     ConstantInt *CI = dyn_cast<ConstantInt>(I->getOperand(1));
     unsigned Idx = -1;
-    if (CI)
+    if (CI) {
       Idx = CI->getZExtValue();
+
+}
 
     // Try to match a reduction sequence (series of shufflevector and vector
     // adds followed by a extractelement).
@@ -1303,8 +1417,10 @@ int TargetTransformInfo::getInstructionThroughput(const Instruction *I) const {
     const InsertElementInst * IE = cast<InsertElementInst>(I);
     ConstantInt *CI = dyn_cast<ConstantInt>(IE->getOperand(2));
     unsigned Idx = -1;
-    if (CI)
+    if (CI) {
       Idx = CI->getZExtValue();
+
+}
     return getVectorInstrCost(I->getOpcode(),
                                    IE->getType(), Idx);
   }
@@ -1317,29 +1433,45 @@ int TargetTransformInfo::getInstructionThroughput(const Instruction *I) const {
 
     // TODO: Identify and add costs for insert subvector, etc.
     int SubIndex;
-    if (Shuffle->isExtractSubvectorMask(SubIndex))
+    if (Shuffle->isExtractSubvectorMask(SubIndex)) {
       return TTIImpl->getShuffleCost(SK_ExtractSubvector, SrcTy, SubIndex, Ty);
 
-    if (Shuffle->changesLength())
+}
+
+    if (Shuffle->changesLength()) {
       return -1;
 
-    if (Shuffle->isIdentity())
+}
+
+    if (Shuffle->isIdentity()) {
       return 0;
 
-    if (Shuffle->isReverse())
+}
+
+    if (Shuffle->isReverse()) {
       return TTIImpl->getShuffleCost(SK_Reverse, Ty, 0, nullptr);
 
-    if (Shuffle->isSelect())
+}
+
+    if (Shuffle->isSelect()) {
       return TTIImpl->getShuffleCost(SK_Select, Ty, 0, nullptr);
 
-    if (Shuffle->isTranspose())
+}
+
+    if (Shuffle->isTranspose()) {
       return TTIImpl->getShuffleCost(SK_Transpose, Ty, 0, nullptr);
 
-    if (Shuffle->isZeroEltSplat())
+}
+
+    if (Shuffle->isZeroEltSplat()) {
       return TTIImpl->getShuffleCost(SK_Broadcast, Ty, 0, nullptr);
 
-    if (Shuffle->isSingleSource())
+}
+
+    if (Shuffle->isSingleSource()) {
       return TTIImpl->getShuffleCost(SK_PermuteSingleSrc, Ty, 0, nullptr);
+
+}
 
     return TTIImpl->getShuffleCost(SK_PermuteTwoSrc, Ty, 0, nullptr);
   }
@@ -1348,8 +1480,10 @@ int TargetTransformInfo::getInstructionThroughput(const Instruction *I) const {
       SmallVector<Value *, 4> Args(II->arg_operands());
 
       FastMathFlags FMF;
-      if (auto *FPMO = dyn_cast<FPMathOperator>(II))
+      if (auto *FPMO = dyn_cast<FPMathOperator>(II)) {
         FMF = FPMO->getFastMathFlags();
+
+}
 
       return getIntrinsicInstrCost(II->getIntrinsicID(), II->getType(), Args,
                                    FMF, 1, II);

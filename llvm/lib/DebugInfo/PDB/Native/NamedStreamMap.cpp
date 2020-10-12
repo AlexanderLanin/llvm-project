@@ -50,14 +50,18 @@ NamedStreamMap::NamedStreamMap() : HashTraits(*this), OffsetIndexMap(1) {}
 
 Error NamedStreamMap::load(BinaryStreamReader &Stream) {
   uint32_t StringBufferSize;
-  if (auto EC = Stream.readInteger(StringBufferSize))
+  if (auto EC = Stream.readInteger(StringBufferSize)) {
     return joinErrors(std::move(EC),
                       make_error<RawError>(raw_error_code::corrupt_file,
                                            "Expected string buffer size"));
 
+}
+
   StringRef Buffer;
-  if (auto EC = Stream.readFixedString(Buffer, StringBufferSize))
+  if (auto EC = Stream.readFixedString(Buffer, StringBufferSize)) {
     return EC;
+
+}
   NamesBuffer.assign(Buffer.begin(), Buffer.end());
 
   return OffsetIndexMap.load(Stream);
@@ -65,17 +69,23 @@ Error NamedStreamMap::load(BinaryStreamReader &Stream) {
 
 Error NamedStreamMap::commit(BinaryStreamWriter &Writer) const {
   // The first field is the number of bytes of string data.
-  if (auto EC = Writer.writeInteger<uint32_t>(NamesBuffer.size()))
+  if (auto EC = Writer.writeInteger<uint32_t>(NamesBuffer.size())) {
     return EC;
+
+}
 
   // Then the actual string data.
   StringRef Data(NamesBuffer.data(), NamesBuffer.size());
-  if (auto EC = Writer.writeFixedString(Data))
+  if (auto EC = Writer.writeFixedString(Data)) {
     return EC;
 
+}
+
   // And finally the Offset Index map.
-  if (auto EC = OffsetIndexMap.commit(Writer))
+  if (auto EC = OffsetIndexMap.commit(Writer)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -99,8 +109,10 @@ uint32_t NamedStreamMap::hashString(uint32_t Offset) const {
 
 bool NamedStreamMap::get(StringRef Stream, uint32_t &StreamNo) const {
   auto Iter = OffsetIndexMap.find_as(Stream, HashTraits);
-  if (Iter == OffsetIndexMap.end())
+  if (Iter == OffsetIndexMap.end()) {
     return false;
+
+}
   StreamNo = (*Iter).second;
   return true;
 }

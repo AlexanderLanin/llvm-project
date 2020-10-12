@@ -29,8 +29,10 @@ public:
     Optional<FixItHint> Fix = addQualifierToVarDecl(
         *D, *Result.Context, DeclSpec::TQ::TQ_const, CT, CP);
     auto Diag = diag(D->getBeginLoc(), "doing const transformation");
-    if (Fix)
+    if (Fix) {
       Diag << *Fix;
+
+}
   }
 };
 } // namespace

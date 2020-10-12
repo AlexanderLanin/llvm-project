@@ -84,8 +84,10 @@ TEST(ParsePathMappingTests, ParsesMultiple) {
 bool mapsProperly(llvm::StringRef Orig, llvm::StringRef Expected,
                   llvm::StringRef RawMappings, PathMapping::Direction Dir) {
   llvm::Expected<PathMappings> Mappings = parsePathMappings(RawMappings);
-  if (!Mappings)
+  if (!Mappings) {
     return false;
+
+}
   llvm::Optional<std::string> MappedPath = doPathMapping(Orig, Dir, *Mappings);
   std::string Actual = MappedPath ? *MappedPath : Orig.str();
   EXPECT_STREQ(Expected.str().c_str(), Actual.c_str());

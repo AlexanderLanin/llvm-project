@@ -49,8 +49,10 @@ void WasmException::endFunction(const MachineFunction *MF) {
       break;
     }
   }
-  if (!ShouldEmitExceptionTable)
+  if (!ShouldEmitExceptionTable) {
     return;
+
+}
   MCSymbol *LSDALabel = emitExceptionTable();
   assert(LSDALabel && ".GCC_exception_table has not been emitted!");
 
@@ -83,14 +85,18 @@ void WasmException::computeCallSiteTable(
     const LandingPadInfo *Info = LandingPads[I];
     MachineBasicBlock *LPad = Info->LandingPadBlock;
     // We don't emit LSDA for single catch (...).
-    if (!MF.hasWasmLandingPadIndex(LPad))
+    if (!MF.hasWasmLandingPadIndex(LPad)) {
       continue;
+
+}
     // Wasm EH must maintain the EH pads in the order assigned to them by the
     // WasmEHPrepare pass.
     unsigned LPadIndex = MF.getWasmLandingPadIndex(LPad);
     CallSiteEntry Site = {nullptr, nullptr, Info, FirstActions[I]};
-    if (CallSites.size() < LPadIndex + 1)
+    if (CallSites.size() < LPadIndex + 1) {
       CallSites.resize(LPadIndex + 1);
+
+}
     CallSites[LPadIndex] = Site;
   }
 }

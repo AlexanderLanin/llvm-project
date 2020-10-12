@@ -62,15 +62,21 @@ bool checkAndConsumeDirectiveWithName(
                  Tok.getRawIdentifier() == Name && !Lex.LexFromRawLexer(Tok) &&
                  Tok.is(tok::raw_identifier) &&
                  (!RawIDName || Tok.getRawIdentifier() == *RawIDName);
-  if (Matched)
+  if (Matched) {
     Lex.LexFromRawLexer(Tok);
+
+}
   return Matched;
 }
 
 void skipComments(Lexer &Lex, Token &Tok) {
-  while (Tok.is(tok::comment))
-    if (Lex.LexFromRawLexer(Tok))
+  while (Tok.is(tok::comment)) {
+    if (Lex.LexFromRawLexer(Tok)) {
       return;
+
+}
+
+}
 }
 
 // Returns the offset after header guard directives and any comments
@@ -100,8 +106,10 @@ unsigned getOffsetAfterHeaderGuardsAndComments(StringRef FileName,
           [](const SourceManager &SM, Lexer &Lex, Token Tok) -> unsigned {
             if (checkAndConsumeDirectiveWithName(Lex, "ifndef", Tok)) {
               skipComments(Lex, Tok);
-              if (checkAndConsumeDirectiveWithName(Lex, "define", Tok))
+              if (checkAndConsumeDirectiveWithName(Lex, "define", Tok)) {
                 return SM.getFileOffset(Tok.getLocation());
+
+}
             }
             return 0;
           }),
@@ -109,8 +117,10 @@ unsigned getOffsetAfterHeaderGuardsAndComments(StringRef FileName,
       ConsumeHeaderGuardAndComment(
           [](const SourceManager &SM, Lexer &Lex, Token Tok) -> unsigned {
             if (checkAndConsumeDirectiveWithName(Lex, "pragma", Tok,
-                                                 StringRef("once")))
+                                                 StringRef("once"))) {
               return SM.getFileOffset(Tok.getLocation());
+
+}
             return 0;
           }));
 }
@@ -126,15 +136,21 @@ bool checkAndConsumeInclusiveDirective(Lexer &Lex, Token &Tok) {
   };
   if (Tok.is(tok::hash) && !Lex.LexFromRawLexer(Tok) &&
       Tok.is(tok::raw_identifier) && Tok.getRawIdentifier() == "include") {
-    if (Lex.LexFromRawLexer(Tok))
+    if (Lex.LexFromRawLexer(Tok)) {
       return false;
-    if (Tok.is(tok::string_literal))
+
+}
+    if (Tok.is(tok::string_literal)) {
       return Matched();
+
+}
     if (Tok.is(tok::less)) {
       while (!Lex.LexFromRawLexer(Tok) && Tok.isNot(tok::greater)) {
       }
-      if (Tok.is(tok::greater))
+      if (Tok.is(tok::greater)) {
         return Matched();
+
+}
     }
   }
   return false;
@@ -160,8 +176,10 @@ unsigned getMaxHeaderInsertionOffset(StringRef FileName, StringRef Code,
       [](const SourceManager &SM, Lexer &Lex, Token Tok) {
         skipComments(Lex, Tok);
         unsigned MaxOffset = SM.getFileOffset(Tok.getLocation());
-        while (checkAndConsumeInclusiveDirective(Lex, Tok))
+        while (checkAndConsumeInclusiveDirective(Lex, Tok)) {
           MaxOffset = SM.getFileOffset(Tok.getLocation());
+
+}
         return MaxOffset;
       });
 }
@@ -179,8 +197,10 @@ IncludeCategoryManager::IncludeCategoryManager(const IncludeStyle &Style,
                                                StringRef FileName)
     : Style(Style), FileName(FileName) {
   FileStem = llvm::sys::path::stem(FileName);
-  for (const auto &Category : Style.IncludeCategories)
+  for (const auto &Category : Style.IncludeCategories) {
     CategoryRegexs.emplace_back(Category.Regex, llvm::Regex::IgnoreCase);
+
+}
   IsMainFile = FileName.endswith(".c") || FileName.endswith(".cc") ||
                FileName.endswith(".cpp") || FileName.endswith(".c++") ||
                FileName.endswith(".cxx") || FileName.endswith(".m") ||
@@ -194,41 +214,55 @@ IncludeCategoryManager::IncludeCategoryManager(const IncludeStyle &Style,
 int IncludeCategoryManager::getIncludePriority(StringRef IncludeName,
                                                bool CheckMainHeader) const {
   int Ret = INT_MAX;
-  for (unsigned i = 0, e = CategoryRegexs.size(); i != e; ++i)
+  for (unsigned i = 0, e = CategoryRegexs.size(); i != e; ++i) {
     if (CategoryRegexs[i].match(IncludeName)) {
       Ret = Style.IncludeCategories[i].Priority;
       break;
     }
-  if (CheckMainHeader && IsMainFile && Ret > 0 && isMainHeader(IncludeName))
+
+}
+  if (CheckMainHeader && IsMainFile && Ret > 0 && isMainHeader(IncludeName)) {
     Ret = 0;
+
+}
   return Ret;
 }
 
 int IncludeCategoryManager::getSortIncludePriority(StringRef IncludeName,
                                                    bool CheckMainHeader) const {
   int Ret = INT_MAX;
-  for (unsigned i = 0, e = CategoryRegexs.size(); i != e; ++i)
+  for (unsigned i = 0, e = CategoryRegexs.size(); i != e; ++i) {
     if (CategoryRegexs[i].match(IncludeName)) {
       Ret = Style.IncludeCategories[i].SortPriority;
-      if (Ret == 0)
+      if (Ret == 0) {
         Ret = Style.IncludeCategories[i].Priority;
+
+}
       break;
     }
-  if (CheckMainHeader && IsMainFile && Ret > 0 && isMainHeader(IncludeName))
+
+}
+  if (CheckMainHeader && IsMainFile && Ret > 0 && isMainHeader(IncludeName)) {
     Ret = 0;
+
+}
   return Ret;
 }
 bool IncludeCategoryManager::isMainHeader(StringRef IncludeName) const {
-  if (!IncludeName.startswith("\""))
+  if (!IncludeName.startswith("\"")) {
     return false;
+
+}
   StringRef HeaderStem =
       llvm::sys::path::stem(IncludeName.drop_front(1).drop_back(1));
   if (FileStem.startswith(HeaderStem) ||
       FileStem.startswith_lower(HeaderStem)) {
     llvm::Regex MainIncludeRegex(HeaderStem.str() + Style.IncludeIsMainRegex,
                                  llvm::Regex::IgnoreCase);
-    if (MainIncludeRegex.match(FileStem))
+    if (MainIncludeRegex.match(FileStem)) {
       return true;
+
+}
   }
   return false;
 }
@@ -246,8 +280,10 @@ HeaderIncludes::HeaderIncludes(StringRef FileName, StringRef Code,
   // Add 0 for main header and INT_MAX for headers that are not in any
   // category.
   Priorities = {0, INT_MAX};
-  for (const auto &Category : Style.IncludeCategories)
+  for (const auto &Category : Style.IncludeCategories) {
     Priorities.insert(Category.Priority);
+
+}
   SmallVector<StringRef, 32> Lines;
   Code.drop_front(MinInsertOffset).split(Lines, "\n");
 
@@ -274,18 +310,24 @@ HeaderIncludes::HeaderIncludes(StringRef FileName, StringRef Code,
   // that is set, up to CategoryEndOffset[Highest].
   auto Highest = Priorities.begin();
   if (CategoryEndOffsets.find(*Highest) == CategoryEndOffsets.end()) {
-    if (FirstIncludeOffset >= 0)
+    if (FirstIncludeOffset >= 0) {
       CategoryEndOffsets[*Highest] = FirstIncludeOffset;
-    else
+    } else {
       CategoryEndOffsets[*Highest] = MinInsertOffset;
+
+}
   }
   // By this point, CategoryEndOffset[Highest] is always set appropriately:
   //  - to an appropriate location before/after existing #includes, or
   //  - to right after the header guard, or
   //  - to the beginning of the file.
-  for (auto I = ++Priorities.begin(), E = Priorities.end(); I != E; ++I)
-    if (CategoryEndOffsets.find(*I) == CategoryEndOffsets.end())
+  for (auto I = ++Priorities.begin(), E = Priorities.end(); I != E; ++I) {
+    if (CategoryEndOffsets.find(*I) == CategoryEndOffsets.end()) {
       CategoryEndOffsets[*I] = CategoryEndOffsets[*std::prev(I)];
+
+}
+
+}
 }
 
 // \p Offset: the start of the line following this include directive.
@@ -302,8 +344,10 @@ void HeaderIncludes::addExistingInclude(Include IncludeToAdd,
         CurInclude.Name, /*CheckMainHeader=*/FirstIncludeOffset < 0);
     CategoryEndOffsets[Priority] = NextLineOffset;
     IncludesByPriority[Priority].push_back(&CurInclude);
-    if (FirstIncludeOffset < 0)
+    if (FirstIncludeOffset < 0) {
       FirstIncludeOffset = CurInclude.R.getOffset();
+
+}
   }
 }
 
@@ -314,11 +358,17 @@ HeaderIncludes::insert(llvm::StringRef IncludeName, bool IsAngled) const {
   // different quotation will still be inserted.
   // FIXME: figure out if this is the best behavior.
   auto It = ExistingIncludes.find(IncludeName);
-  if (It != ExistingIncludes.end())
-    for (const auto &Inc : It->second)
+  if (It != ExistingIncludes.end()) {
+    for (const auto &Inc : It->second) {
       if ((IsAngled && StringRef(Inc.Name).startswith("<")) ||
-          (!IsAngled && StringRef(Inc.Name).startswith("\"")))
+          (!IsAngled && StringRef(Inc.Name).startswith("\""))) {
         return llvm::None;
+
+}
+
+}
+
+}
   std::string Quoted =
       std::string(llvm::formatv(IsAngled ? "<{0}>" : "\"{0}\"", IncludeName));
   StringRef QuotedName = Quoted;
@@ -343,8 +393,10 @@ HeaderIncludes::insert(llvm::StringRef IncludeName, bool IsAngled) const {
   // if it does not end with '\n'.
   // FIXME: when inserting multiple #includes at the end of code, only one
   // newline should be added.
-  if (InsertOffset == Code.size() && (!Code.empty() && Code.back() != '\n'))
+  if (InsertOffset == Code.size() && (!Code.empty() && Code.back() != '\n')) {
     NewInclude = "\n" + NewInclude;
+
+}
   return tooling::Replacement(FileName, InsertOffset, 0, NewInclude);
 }
 
@@ -353,12 +405,16 @@ tooling::Replacements HeaderIncludes::remove(llvm::StringRef IncludeName,
   assert(IncludeName == trimInclude(IncludeName));
   tooling::Replacements Result;
   auto Iter = ExistingIncludes.find(IncludeName);
-  if (Iter == ExistingIncludes.end())
+  if (Iter == ExistingIncludes.end()) {
     return Result;
+
+}
   for (const auto &Inc : Iter->second) {
     if ((IsAngled && StringRef(Inc.Name).startswith("\"")) ||
-        (!IsAngled && StringRef(Inc.Name).startswith("<")))
+        (!IsAngled && StringRef(Inc.Name).startswith("<"))) {
       continue;
+
+}
     llvm::Error Err = Result.add(tooling::Replacement(
         FileName, Inc.R.getOffset(), Inc.R.getLength(), ""));
     if (Err) {

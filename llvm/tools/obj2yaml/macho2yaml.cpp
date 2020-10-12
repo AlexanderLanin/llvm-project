@@ -77,9 +77,11 @@ MachOYAML::Section MachODumper::constructSectionCommon(SectionType Sec) {
   TempSec.reserved1 = Sec.reserved1;
   TempSec.reserved2 = Sec.reserved2;
   TempSec.reserved3 = 0;
-  if (!MachO::isVirtualSection(Sec.flags & MachO::SECTION_TYPE))
+  if (!MachO::isVirtualSection(Sec.flags & MachO::SECTION_TYPE)) {
     TempSec.content =
         yaml::BinaryRef(Obj.getSectionContents(Sec.offset, Sec.size));
+
+}
   return TempSec;
 }
 
@@ -182,8 +184,10 @@ const char *MachODumper::processLoadCommandData<MachO::build_version_command>(
     auto Curr = Start + i * sizeof(MachO::build_tool_version);
     MachO::build_tool_version BV;
     memcpy((void *)&BV, Curr, sizeof(MachO::build_tool_version));
-    if (Obj.isLittleEndian() != sys::IsLittleEndianHost)
+    if (Obj.isLittleEndian() != sys::IsLittleEndianHost) {
       MachO::swapStruct(BV);
+
+}
     LC.Tools.push_back(BV);
   }
   return Start + NTools * sizeof(MachO::build_tool_version);
@@ -197,8 +201,10 @@ Expected<std::unique_ptr<MachOYAML::Object>> MachODumper::dump() {
   dumpLinkEdit(Y);
 
   std::unique_ptr<DWARFContext> DICtx = DWARFContext::create(Obj);
-  if (auto Err = dwarf2yaml(*DICtx, Y->DWARF))
+  if (auto Err = dwarf2yaml(*DICtx, Y->DWARF)) {
     return std::move(Err);
+
+}
   return std::move(Y);
 }
 
@@ -221,8 +227,10 @@ void MachODumper::dumpLoadCommands(std::unique_ptr<MachOYAML::Object> &Y) {
     default:
       memcpy((void *)&(LC.Data.load_command_data), LoadCmd.Ptr,
              sizeof(MachO::load_command));
-      if (Obj.isLittleEndian() != sys::IsLittleEndianHost)
+      if (Obj.isLittleEndian() != sys::IsLittleEndianHost) {
         MachO::swapStruct(LC.Data.load_command_data);
+
+}
       EndPtr = processLoadCommandData<MachO::load_command>(LC, LoadCmd);
       break;
 #include "llvm/BinaryFormat/MachO.def"
@@ -287,15 +295,19 @@ void MachODumper::dumpRebaseOpcodes(std::unique_ptr<MachOYAML::Object> &Y) {
 
     LEData.RebaseOpcodes.push_back(RebaseOp);
 
-    if (RebaseOp.Opcode == MachO::REBASE_OPCODE_DONE)
+    if (RebaseOp.Opcode == MachO::REBASE_OPCODE_DONE) {
       break;
+
+}
   }
 }
 
 StringRef ReadStringRef(const uint8_t *Start) {
   const uint8_t *Itr = Start;
-  for (; *Itr; ++Itr)
+  for (; *Itr; ++Itr) {
     ;
+
+}
   return StringRef(reinterpret_cast<const char *>(Start), Itr - Start);
 }
 
@@ -348,8 +360,10 @@ void MachODumper::dumpBindOpcodes(
 
     // Lazy bindings have DONE opcodes between operations, so we need to keep
     // processing after a DONE.
-    if (!Lazy && BindOp.Opcode == MachO::BIND_OPCODE_DONE)
+    if (!Lazy && BindOp.Opcode == MachO::BIND_OPCODE_DONE) {
       break;
+
+}
   }
 }
 
@@ -417,8 +431,10 @@ void MachODumper::dumpBindOpcodes(
 const uint8_t *processExportNode(const uint8_t *CurrPtr,
                                  const uint8_t *const End,
                                  MachOYAML::ExportEntry &Entry) {
-  if (CurrPtr >= End)
+  if (CurrPtr >= End) {
     return CurrPtr;
+
+}
   unsigned Count = 0;
   Entry.TerminalSize = decodeULEB128(CurrPtr, &Count);
   CurrPtr += Count;
@@ -436,13 +452,17 @@ const uint8_t *processExportNode(const uint8_t *CurrPtr,
       if (Entry.Flags & MachO::EXPORT_SYMBOL_FLAGS_STUB_AND_RESOLVER) {
         Entry.Other = decodeULEB128(CurrPtr, &Count);
         CurrPtr += Count;
-      } else
+      } else {
         Entry.Other = 0;
+
+}
     }
   }
   uint8_t childrenCount = *CurrPtr++;
-  if (childrenCount == 0)
+  if (childrenCount == 0) {
     return CurrPtr;
+
+}
 
   Entry.Children.insert(Entry.Children.begin(), (size_t)childrenCount,
                         MachOYAML::ExportEntry());
@@ -499,8 +519,10 @@ void MachODumper::dumpSymbols(std::unique_ptr<MachOYAML::Object> &Y) {
 Error macho2yaml(raw_ostream &Out, const object::MachOObjectFile &Obj) {
   MachODumper Dumper(Obj);
   Expected<std::unique_ptr<MachOYAML::Object>> YAML = Dumper.dump();
-  if (!YAML)
+  if (!YAML) {
     return YAML.takeError();
+
+}
 
   yaml::YamlObjectFile YAMLFile;
   YAMLFile.MachO = std::move(YAML.get());
@@ -528,13 +550,17 @@ Error macho2yaml(raw_ostream &Out, const object::MachOUniversalBinary &Obj) {
     YAML.FatArchs.push_back(arch);
 
     auto SliceObj = Slice.getAsObjectFile();
-    if (!SliceObj)
+    if (!SliceObj) {
       return SliceObj.takeError();
+
+}
 
     MachODumper Dumper(*SliceObj.get());
     Expected<std::unique_ptr<MachOYAML::Object>> YAMLObj = Dumper.dump();
-    if (!YAMLObj)
+    if (!YAMLObj) {
       return YAMLObj.takeError();
+
+}
     YAML.Slices.push_back(*YAMLObj.get());
   }
 

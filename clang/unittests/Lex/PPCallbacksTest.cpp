@@ -219,8 +219,10 @@ protected:
     while (true) {
       Token Tok;
       PP.Lex(Tok);
-      if (Tok.is(tok::eof))
+      if (Tok.is(tok::eof)) {
         break;
+
+}
     }
 
     // Callbacks have been executed at this point -- return filename range.
@@ -249,8 +251,10 @@ protected:
     while (true) {
       Token Tok;
       PP.Lex(Tok);
-      if (Tok.is(tok::eof))
+      if (Tok.is(tok::eof)) {
         break;
+
+}
     }
 
     return Callbacks->Results;
@@ -293,8 +297,10 @@ protected:
     while (true) {
       Token Tok;
       PP.Lex(Tok);
-      if (Tok.is(tok::eof))
+      if (Tok.is(tok::eof)) {
         break;
+
+}
     }
 
     PragmaOpenCLExtensionCallbacks::CallbackParameters RetVal = {

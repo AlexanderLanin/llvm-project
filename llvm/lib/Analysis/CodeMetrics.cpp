@@ -29,13 +29,21 @@ appendSpeculatableOperands(const Value *V,
                            SmallPtrSetImpl<const Value *> &Visited,
                            SmallVectorImpl<const Value *> &Worklist) {
   const User *U = dyn_cast<User>(V);
-  if (!U)
+  if (!U) {
     return;
 
-  for (const Value *Operand : U->operands())
-    if (Visited.insert(Operand).second)
-      if (isSafeToSpeculativelyExecute(Operand))
+}
+
+  for (const Value *Operand : U->operands()) {
+    if (Visited.insert(Operand).second) {
+      if (isSafeToSpeculativelyExecute(Operand)) {
         Worklist.push_back(Operand);
+
+}
+
+}
+
+}
 }
 
 static void completeEphemeralValues(SmallPtrSetImpl<const Value *> &Visited,
@@ -55,8 +63,10 @@ static void completeEphemeralValues(SmallPtrSetImpl<const Value *> &Visited,
            "Failed to add a worklist entry to our visited set!");
 
     // If all uses of this value are ephemeral, then so is this value.
-    if (!all_of(V->users(), [&](const User *U) { return EphValues.count(U); }))
+    if (!all_of(V->users(), [&](const User *U) { return EphValues.count(U); })) {
       continue;
+
+}
 
     EphValues.insert(V);
     LLVM_DEBUG(dbgs() << "Ephemeral Value: " << *V << "\n");
@@ -74,18 +84,24 @@ void CodeMetrics::collectEphemeralValues(
   SmallVector<const Value *, 16> Worklist;
 
   for (auto &AssumeVH : AC->assumptions()) {
-    if (!AssumeVH)
+    if (!AssumeVH) {
       continue;
+
+}
     Instruction *I = cast<Instruction>(AssumeVH);
 
     // Filter out call sites outside of the loop so we don't do a function's
     // worth of work for each of its loops (and, in the common case, ephemeral
     // values in the loop are likely due to @llvm.assume calls in the loop).
-    if (!L->contains(I->getParent()))
+    if (!L->contains(I->getParent())) {
       continue;
 
-    if (EphValues.insert(I).second)
+}
+
+    if (EphValues.insert(I).second) {
       appendSpeculatableOperands(I, Visited, Worklist);
+
+}
   }
 
   completeEphemeralValues(Visited, Worklist, EphValues);
@@ -98,14 +114,18 @@ void CodeMetrics::collectEphemeralValues(
   SmallVector<const Value *, 16> Worklist;
 
   for (auto &AssumeVH : AC->assumptions()) {
-    if (!AssumeVH)
+    if (!AssumeVH) {
       continue;
+
+}
     Instruction *I = cast<Instruction>(AssumeVH);
     assert(I->getParent()->getParent() == F &&
            "Found assumption for the wrong function!");
 
-    if (EphValues.insert(I).second)
+    if (EphValues.insert(I).second) {
       appendSpeculatableOperands(I, Visited, Worklist);
+
+}
   }
 
   completeEphemeralValues(Visited, Worklist, EphValues);
@@ -120,8 +140,10 @@ void CodeMetrics::analyzeBasicBlock(const BasicBlock *BB,
   unsigned NumInstsBeforeThisBB = NumInsts;
   for (const Instruction &I : *BB) {
     // Skip ephemeral values.
-    if (EphValues.count(&I))
+    if (EphValues.count(&I)) {
       continue;
+
+}
 
     // Special handling for calls.
     if (const auto *Call = dyn_cast<CallBase>(&I)) {
@@ -129,53 +151,77 @@ void CodeMetrics::analyzeBasicBlock(const BasicBlock *BB,
         // If a function is both internal and has a single use, then it is
         // extremely likely to get inlined in the future (it was probably
         // exposed by an interleaved devirtualization pass).
-        if (!Call->isNoInline() && F->hasInternalLinkage() && F->hasOneUse())
+        if (!Call->isNoInline() && F->hasInternalLinkage() && F->hasOneUse()) {
           ++NumInlineCandidates;
+
+}
 
         // If this call is to function itself, then the function is recursive.
         // Inlining it into other functions is a bad idea, because this is
         // basically just a form of loop peeling, and our metrics aren't useful
         // for that case.
-        if (F == BB->getParent())
+        if (F == BB->getParent()) {
           isRecursive = true;
 
-        if (TTI.isLoweredToCall(F))
+}
+
+        if (TTI.isLoweredToCall(F)) {
           ++NumCalls;
+
+}
       } else {
         // We don't want inline asm to count as a call - that would prevent loop
         // unrolling. The argument setup cost is still real, though.
-        if (!Call->isInlineAsm())
+        if (!Call->isInlineAsm()) {
           ++NumCalls;
+
+}
       }
     }
 
     if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
-      if (!AI->isStaticAlloca())
+      if (!AI->isStaticAlloca()) {
         this->usesDynamicAlloca = true;
+
+}
     }
 
-    if (isa<ExtractElementInst>(I) || I.getType()->isVectorTy())
+    if (isa<ExtractElementInst>(I) || I.getType()->isVectorTy()) {
       ++NumVectorInsts;
 
-    if (I.getType()->isTokenTy() && I.isUsedOutsideOfBlock(BB))
+}
+
+    if (I.getType()->isTokenTy() && I.isUsedOutsideOfBlock(BB)) {
       notDuplicatable = true;
 
+}
+
     if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
-      if (CI->cannotDuplicate())
+      if (CI->cannotDuplicate()) {
         notDuplicatable = true;
-      if (CI->isConvergent())
+
+}
+      if (CI->isConvergent()) {
         convergent = true;
+
+}
     }
 
-    if (const InvokeInst *InvI = dyn_cast<InvokeInst>(&I))
-      if (InvI->cannotDuplicate())
+    if (const InvokeInst *InvI = dyn_cast<InvokeInst>(&I)) {
+      if (InvI->cannotDuplicate()) {
         notDuplicatable = true;
+
+}
+
+}
 
     NumInsts += TTI.getUserCost(&I);
   }
 
-  if (isa<ReturnInst>(BB->getTerminator()))
+  if (isa<ReturnInst>(BB->getTerminator())) {
     ++NumRets;
+
+}
 
   // We never want to inline functions that contain an indirectbr.  This is
   // incorrect because all the blockaddress's (in static global initializers

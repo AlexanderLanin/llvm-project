@@ -38,13 +38,17 @@ static bool CC_X86_32_RegCall_Assign2Regs(unsigned &ValNo, MVT &ValVT,
 
   // searching for the available registers.
   for (auto Reg : RegList) {
-    if (!State.isAllocated(Reg))
+    if (!State.isAllocated(Reg)) {
       AvailableRegs.push_back(Reg);
+
+}
   }
 
   const size_t RequiredGprsUponSplit = 2;
-  if (AvailableRegs.size() < RequiredGprsUponSplit)
+  if (AvailableRegs.size() < RequiredGprsUponSplit) {
     return false; // Not enough free registers - continue the search.
+
+}
 
   // Allocating the available registers.
   for (unsigned I = 0; I < RequiredGprsUponSplit; I++) {
@@ -130,9 +134,11 @@ static bool CC_X86_64_VectorCall(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
                                  ISD::ArgFlagsTy &ArgFlags, CCState &State) {
   // On the second pass, go through the HVAs only.
   if (ArgFlags.isSecArgPass()) {
-    if (ArgFlags.isHva())
+    if (ArgFlags.isHva()) {
       return CC_X86_VectorCallAssignRegister(ValNo, ValVT, LocVT, LocInfo,
                                              ArgFlags, State);
+
+}
     return true;
   }
 
@@ -165,8 +171,10 @@ static bool CC_X86_64_VectorCall(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
       const TargetRegisterInfo *TRI =
           State.getMachineFunction().getSubtarget().getRegisterInfo();
       if (TRI->regsOverlap(Reg, X86::XMM4) ||
-          TRI->regsOverlap(Reg, X86::XMM5))
+          TRI->regsOverlap(Reg, X86::XMM5)) {
         State.AllocateStack(8, 8);
+
+}
 
       if (!ArgFlags.isHva()) {
         State.addLoc(CCValAssign::getReg(ValNo, ValVT, Reg, LocVT, LocInfo));
@@ -190,9 +198,11 @@ static bool CC_X86_32_VectorCall(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
                                  ISD::ArgFlagsTy &ArgFlags, CCState &State) {
   // On the second pass, go through the HVAs only.
   if (ArgFlags.isSecArgPass()) {
-    if (ArgFlags.isHva())
+    if (ArgFlags.isHva()) {
       return CC_X86_VectorCallAssignRegister(ValNo, ValVT, LocVT, LocInfo,
                                              ArgFlags, State);
+
+}
     return true;
   }
 
@@ -204,8 +214,10 @@ static bool CC_X86_32_VectorCall(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
     return false;
   }
 
-  if (ArgFlags.isHva())
+  if (ArgFlags.isHva()) {
     return true; // If this is an HVA - Stop the search.
+
+}
 
   // Assign XMM register.
   if (unsigned Reg = State.AllocateReg(CC_X86_VectorCallGetSSEs(ValVT))) {
@@ -251,8 +263,10 @@ static bool CC_X86_32_MCUInReg(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
   if (ArgFlags.isSplit() || !PendingMembers.empty()) {
     PendingMembers.push_back(
         CCValAssign::getPending(ValNo, ValVT, LocVT, LocInfo));
-    if (!ArgFlags.isSplitEnd())
+    if (!ArgFlags.isSplitEnd()) {
       return true;
+
+}
   }
 
   // If there are no pending members, we are not in the middle of a split,
@@ -278,10 +292,12 @@ static bool CC_X86_32_MCUInReg(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
   bool UseRegs = PendingMembers.size() <= std::min(2U, NumRegs - FirstFree);
 
   for (auto &It : PendingMembers) {
-    if (UseRegs)
+    if (UseRegs) {
       It.convertToReg(State.AllocateReg(RegList[FirstFree++]));
-    else
+    } else {
       It.convertToMem(State.AllocateStack(4, 4));
+
+}
     State.addLoc(It);
   }
 
@@ -323,8 +339,10 @@ static bool CC_X86_Intr(unsigned &ValNo, MVT &ValVT, MVT &LocVT,
 
   // FIXME: This should be accounted for in
   // X86FrameLowering::getFrameIndexReference, not here.
-  if (Is64Bit && ArgCount == 2)
+  if (Is64Bit && ArgCount == 2) {
     Offset += SlotSize;
+
+}
 
   State.addLoc(CCValAssign::getMem(ValNo, ValVT, Offset, LocVT, LocInfo));
   return true;

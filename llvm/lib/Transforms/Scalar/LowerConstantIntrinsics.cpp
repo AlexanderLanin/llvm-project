@@ -55,10 +55,14 @@ static bool replaceConditionalBranchesOnConstant(Instruction *II,
                                 &Worklist);
   for (auto I : Worklist) {
     BranchInst *BI = dyn_cast<BranchInst>(I);
-    if (!BI)
+    if (!BI) {
       continue;
-    if (BI->isUnconditional())
+
+}
+    if (BI->isUnconditional()) {
       continue;
+
+}
 
     BasicBlock *Target, *Other;
     if (match(BI->getOperand(0), m_Zero())) {
@@ -76,8 +80,10 @@ static bool replaceConditionalBranchesOnConstant(Instruction *II,
       Other->removePredecessor(Source);
       BI->eraseFromParent();
       BranchInst::Create(Target, Source);
-      if (pred_begin(Other) == pred_end(Other))
+      if (pred_begin(Other) == pred_end(Other)) {
         HasDeadBlocks = true;
+
+}
     }
   }
   return HasDeadBlocks;
@@ -92,8 +98,10 @@ static bool lowerConstantIntrinsics(Function &F, const TargetLibraryInfo *TLI) {
   for (BasicBlock *BB : RPOT) {
     for (Instruction &I: *BB) {
       IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I);
-      if (!II)
+      if (!II) {
         continue;
+
+}
       switch (II->getIntrinsicID()) {
       default:
         break;
@@ -108,11 +116,15 @@ static bool lowerConstantIntrinsics(Function &F, const TargetLibraryInfo *TLI) {
     // Items on the worklist can be mutated by earlier recursive replaces.
     // This can remove the intrinsic as dead (VH == null), but also replace
     // the intrinsic in place.
-    if (!VH)
+    if (!VH) {
       continue;
+
+}
     IntrinsicInst *II = dyn_cast<IntrinsicInst>(&*VH);
-    if (!II)
+    if (!II) {
       continue;
+
+}
     Value *NewValue;
     switch (II->getIntrinsicID()) {
     default:
@@ -128,15 +140,19 @@ static bool lowerConstantIntrinsics(Function &F, const TargetLibraryInfo *TLI) {
     }
     HasDeadBlocks |= replaceConditionalBranchesOnConstant(II, NewValue);
   }
-  if (HasDeadBlocks)
+  if (HasDeadBlocks) {
     removeUnreachableBlocks(F);
+
+}
   return !Worklist.empty();
 }
 
 PreservedAnalyses
 LowerConstantIntrinsicsPass::run(Function &F, FunctionAnalysisManager &AM) {
-  if (lowerConstantIntrinsics(F, AM.getCachedResult<TargetLibraryAnalysis>(F)))
+  if (lowerConstantIntrinsics(F, AM.getCachedResult<TargetLibraryAnalysis>(F))) {
     return PreservedAnalyses::none();
+
+}
 
   return PreservedAnalyses::all();
 }

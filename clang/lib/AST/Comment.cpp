@@ -110,8 +110,10 @@ Comment::child_iterator Comment::child_end() const {
 bool TextComment::isWhitespaceNoCache() const {
   for (StringRef::const_iterator I = Text.begin(), E = Text.end();
        I != E; ++I) {
-    if (!clang::isWhitespace(*I))
+    if (!clang::isWhitespace(*I)) {
       return false;
+
+}
   }
   return true;
 }
@@ -119,10 +121,14 @@ bool TextComment::isWhitespaceNoCache() const {
 bool ParagraphComment::isWhitespaceNoCache() const {
   for (child_iterator I = child_begin(), E = child_end(); I != E; ++I) {
     if (const TextComment *TC = dyn_cast<TextComment>(*I)) {
-      if (!TC->isWhitespace())
+      if (!TC->isWhitespace()) {
         return false;
-    } else
+
+}
+    } else {
       return false;
+
+}
   }
   return true;
 }
@@ -131,26 +137,42 @@ static TypeLoc lookThroughTypedefOrTypeAliasLocs(TypeLoc &SrcTL) {
   TypeLoc TL = SrcTL.IgnoreParens();
 
   // Look through attribute types.
-  if (AttributedTypeLoc AttributeTL = TL.getAs<AttributedTypeLoc>())
+  if (AttributedTypeLoc AttributeTL = TL.getAs<AttributedTypeLoc>()) {
     return AttributeTL.getModifiedLoc();
+
+}
   // Look through qualified types.
-  if (QualifiedTypeLoc QualifiedTL = TL.getAs<QualifiedTypeLoc>())
+  if (QualifiedTypeLoc QualifiedTL = TL.getAs<QualifiedTypeLoc>()) {
     return QualifiedTL.getUnqualifiedLoc();
+
+}
   // Look through pointer types.
-  if (PointerTypeLoc PointerTL = TL.getAs<PointerTypeLoc>())
+  if (PointerTypeLoc PointerTL = TL.getAs<PointerTypeLoc>()) {
     return PointerTL.getPointeeLoc().getUnqualifiedLoc();
+
+}
   // Look through reference types.
-  if (ReferenceTypeLoc ReferenceTL = TL.getAs<ReferenceTypeLoc>())
+  if (ReferenceTypeLoc ReferenceTL = TL.getAs<ReferenceTypeLoc>()) {
     return ReferenceTL.getPointeeLoc().getUnqualifiedLoc();
+
+}
   // Look through adjusted types.
-  if (AdjustedTypeLoc ATL = TL.getAs<AdjustedTypeLoc>())
+  if (AdjustedTypeLoc ATL = TL.getAs<AdjustedTypeLoc>()) {
     return ATL.getOriginalLoc();
-  if (BlockPointerTypeLoc BlockPointerTL = TL.getAs<BlockPointerTypeLoc>())
+
+}
+  if (BlockPointerTypeLoc BlockPointerTL = TL.getAs<BlockPointerTypeLoc>()) {
     return BlockPointerTL.getPointeeLoc().getUnqualifiedLoc();
-  if (MemberPointerTypeLoc MemberPointerTL = TL.getAs<MemberPointerTypeLoc>())
+
+}
+  if (MemberPointerTypeLoc MemberPointerTL = TL.getAs<MemberPointerTypeLoc>()) {
     return MemberPointerTL.getPointeeLoc().getUnqualifiedLoc();
-  if (ElaboratedTypeLoc ETL = TL.getAs<ElaboratedTypeLoc>())
+
+}
+  if (ElaboratedTypeLoc ETL = TL.getAs<ElaboratedTypeLoc>()) {
     return ETL.getNamedTypeLoc();
+
+}
 
   return TL;
 }
@@ -173,11 +195,15 @@ static bool getFunctionTypeLoc(TypeLoc TL, FunctionTypeLoc &ResFTL) {
     // template argument of a function type, this looks like std::function,
     // boost::function, or other function wrapper.  Treat these typedefs as
     // functions.
-    if (STL.getNumArgs() != 1)
+    if (STL.getNumArgs() != 1) {
       return false;
+
+}
     TemplateArgumentLoc MaybeFunction = STL.getArgLoc(0);
-    if (MaybeFunction.getArgument().getKind() != TemplateArgument::Type)
+    if (MaybeFunction.getArgument().getKind() != TemplateArgument::Type) {
       return false;
+
+}
     TypeSourceInfo *MaybeFunctionTSI = MaybeFunction.getTypeSourceInfo();
     TypeLoc TL = MaybeFunctionTSI->getTypeLoc().getUnqualifiedLoc();
     if (FunctionTypeLoc FTL = TL.getAs<FunctionTypeLoc>()) {
@@ -299,12 +325,14 @@ void DeclInfo::fill() {
   case Decl::ObjCAtDefsField:
   case Decl::ObjCProperty: {
     const TypeSourceInfo *TSI;
-    if (const auto *VD = dyn_cast<DeclaratorDecl>(CommentDecl))
+    if (const auto *VD = dyn_cast<DeclaratorDecl>(CommentDecl)) {
       TSI = VD->getTypeSourceInfo();
-    else if (const auto *PD = dyn_cast<ObjCPropertyDecl>(CommentDecl))
+    } else if (const auto *PD = dyn_cast<ObjCPropertyDecl>(CommentDecl)) {
       TSI = PD->getTypeSourceInfo();
-    else
+    } else {
       TSI = nullptr;
+
+}
     if (TSI) {
       TypeLoc TL = TSI->getTypeLoc().getUnqualifiedLoc();
       FunctionTypeLoc FTL;
@@ -328,8 +356,10 @@ void DeclInfo::fill() {
         K == Decl::Typedef
             ? cast<TypedefDecl>(CommentDecl)->getTypeSourceInfo()
             : cast<TypeAliasDecl>(CommentDecl)->getTypeSourceInfo();
-    if (!TSI)
+    if (!TSI) {
       break;
+
+}
     TypeLoc TL = TSI->getTypeLoc().getUnqualifiedLoc();
     FunctionTypeLoc FTL;
     if (getFunctionTypeLoc(TL, FTL)) {
@@ -345,12 +375,16 @@ void DeclInfo::fill() {
     TemplateKind = Template;
     TemplateParameters = TAT->getTemplateParameters();
     TypeAliasDecl *TAD = TAT->getTemplatedDecl();
-    if (!TAD)
+    if (!TAD) {
       break;
 
+}
+
     const TypeSourceInfo *TSI = TAD->getTypeSourceInfo();
-    if (!TSI)
+    if (!TSI) {
       break;
+
+}
     TypeLoc TL = TSI->getTypeLoc().getUnqualifiedLoc();
     FunctionTypeLoc FTL;
     if (getFunctionTypeLoc(TL, FTL)) {
@@ -370,8 +404,10 @@ void DeclInfo::fill() {
 
 StringRef ParamCommandComment::getParamName(const FullComment *FC) const {
   assert(isParamIndexValid());
-  if (isVarArgParam())
+  if (isVarArgParam()) {
     return "...";
+
+}
   return FC->getDeclInfo()->ParamVars[getParamIndex()]->getName();
 }
 
@@ -380,11 +416,15 @@ StringRef TParamCommandComment::getParamName(const FullComment *FC) const {
   const TemplateParameterList *TPL = FC->getDeclInfo()->TemplateParameters;
   for (unsigned i = 0, e = getDepth(); i != e; ++i) {
     assert(TPL && "Unknown TemplateParameterList");
-    if (i == e - 1)
+    if (i == e - 1) {
       return TPL->getParam(getIndex(i))->getName();
+
+}
     const NamedDecl *Param = TPL->getParam(getIndex(i));
-    if (auto *TTP = dyn_cast<TemplateTemplateParmDecl>(Param))
+    if (auto *TTP = dyn_cast<TemplateTemplateParmDecl>(Param)) {
       TPL = TTP->getTemplateParameters();
+
+}
   }
   return "";
 }

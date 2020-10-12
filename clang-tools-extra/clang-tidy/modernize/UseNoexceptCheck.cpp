@@ -63,9 +63,11 @@ void UseNoexceptCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *FuncDecl = Result.Nodes.getNodeAs<FunctionDecl>("funcDecl")) {
     DtorOrOperatorDel = Result.Nodes.getNodeAs<FunctionDecl>("del-dtor");
     FnTy = FuncDecl->getType()->getAs<FunctionProtoType>();
-    if (const auto *TSI = FuncDecl->getTypeSourceInfo())
+    if (const auto *TSI = FuncDecl->getTypeSourceInfo()) {
       Range =
           TSI->getTypeLoc().castAs<FunctionTypeLoc>().getExceptionSpecRange();
+
+}
   } else if (const auto *ParmDecl =
                  Result.Nodes.getNodeAs<ParmVarDecl>("parmVarDecl")) {
     FnTy = ParmDecl->getType()
@@ -73,12 +75,14 @@ void UseNoexceptCheck::check(const MatchFinder::MatchResult &Result) {
                ->getPointeeType()
                ->getAs<FunctionProtoType>();
 
-    if (const auto *TSI = ParmDecl->getTypeSourceInfo())
+    if (const auto *TSI = ParmDecl->getTypeSourceInfo()) {
       Range = TSI->getTypeLoc()
                   .getNextTypeLoc()
                   .IgnoreParens()
                   .castAs<FunctionProtoTypeLoc>()
                   .getExceptionSpecRange();
+
+}
   }
   CharSourceRange CRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(Range), *Result.SourceManager,
@@ -95,8 +99,10 @@ void UseNoexceptCheck::check(const MatchFinder::MatchResult &Result) {
                 : "";
 
   FixItHint FixIt;
-  if ((IsNoThrow || NoexceptMacro.empty()) && CRange.isValid())
+  if ((IsNoThrow || NoexceptMacro.empty()) && CRange.isValid()) {
     FixIt = FixItHint::CreateReplacement(CRange, ReplacementStr);
+
+}
 
   diag(Range.getBegin(), "dynamic exception specification '%0' is deprecated; "
                          "consider %select{using '%2'|removing it}1 instead")

@@ -37,8 +37,10 @@ Error llvm::codeview::consume(BinaryStreamReader &Reader, APSInt &Num) {
   // Used to avoid overload ambiguity on APInt construtor.
   bool FalseVal = false;
   uint16_t Short;
-  if (auto EC = Reader.readInteger(Short))
+  if (auto EC = Reader.readInteger(Short)) {
     return EC;
+
+}
 
   if (Short < LF_NUMERIC) {
     Num = APSInt(APInt(/*numBits=*/16, Short, /*isSigned=*/false),
@@ -49,50 +51,64 @@ Error llvm::codeview::consume(BinaryStreamReader &Reader, APSInt &Num) {
   switch (Short) {
   case LF_CHAR: {
     int8_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(8, N, true), false);
     return Error::success();
   }
   case LF_SHORT: {
     int16_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(16, N, true), false);
     return Error::success();
   }
   case LF_USHORT: {
     uint16_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(16, N, false), true);
     return Error::success();
   }
   case LF_LONG: {
     int32_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(32, N, true), false);
     return Error::success();
   }
   case LF_ULONG: {
     uint32_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(32, N, FalseVal), true);
     return Error::success();
   }
   case LF_QUADWORD: {
     int64_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(64, N, true), false);
     return Error::success();
   }
   case LF_UQUADWORD: {
     uint64_t N;
-    if (auto EC = Reader.readInteger(N))
+    if (auto EC = Reader.readInteger(N)) {
       return EC;
+
+}
     Num = APSInt(APInt(64, N, false), true);
     return Error::success();
   }
@@ -114,11 +130,15 @@ Error llvm::codeview::consume(StringRef &Data, APSInt &Num) {
 Error llvm::codeview::consume_numeric(BinaryStreamReader &Reader,
                                       uint64_t &Num) {
   APSInt N;
-  if (auto EC = consume(Reader, N))
+  if (auto EC = consume(Reader, N)) {
     return EC;
-  if (N.isSigned() || !N.isIntN(64))
+
+}
+  if (N.isSigned() || !N.isIntN(64)) {
     return make_error<CodeViewError>(cv_error_code::corrupt_record,
                                      "Data is not a numeric value!");
+
+}
   Num = N.getLimitedValue();
   return Error::success();
 }
@@ -141,9 +161,11 @@ Error llvm::codeview::consume(BinaryStreamReader &Reader, int32_t &Item) {
 }
 
 Error llvm::codeview::consume(BinaryStreamReader &Reader, StringRef &Item) {
-  if (Reader.empty())
+  if (Reader.empty()) {
     return make_error<CodeViewError>(cv_error_code::corrupt_record,
                                      "Null terminated string buffer is empty!");
+
+}
 
   return Reader.readCString(Item);
 }

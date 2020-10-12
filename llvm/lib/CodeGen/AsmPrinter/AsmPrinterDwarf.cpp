@@ -37,16 +37,20 @@ using namespace llvm;
 
 /// EmitSLEB128 - emit the specified signed leb128 value.
 void AsmPrinter::emitSLEB128(int64_t Value, const char *Desc) const {
-  if (isVerbose() && Desc)
+  if (isVerbose() && Desc) {
     OutStreamer->AddComment(Desc);
+
+}
 
   OutStreamer->emitSLEB128IntValue(Value);
 }
 
 void AsmPrinter::emitULEB128(uint64_t Value, const char *Desc,
                              unsigned PadTo) const {
-  if (isVerbose() && Desc)
+  if (isVerbose() && Desc) {
     OutStreamer->AddComment(Desc);
+
+}
 
   OutStreamer->emitULEB128IntValue(Value, PadTo);
 }
@@ -108,11 +112,13 @@ static const char *DecodeDWARFEncoding(unsigned Encoding) {
 /// encoding is specifying (e.g. "LSDA").
 void AsmPrinter::emitEncodingByte(unsigned Val, const char *Desc) const {
   if (isVerbose()) {
-    if (Desc)
+    if (Desc) {
       OutStreamer->AddComment(Twine(Desc) + " Encoding = " +
                               Twine(DecodeDWARFEncoding(Val)));
-    else
+    } else {
       OutStreamer->AddComment(Twine("Encoding = ") + DecodeDWARFEncoding(Val));
+
+}
   }
 
   OutStreamer->emitIntValue(Val, 1);
@@ -120,8 +126,10 @@ void AsmPrinter::emitEncodingByte(unsigned Val, const char *Desc) const {
 
 /// GetSizeOfEncodedValue - Return the size of the encoding in bytes.
 unsigned AsmPrinter::GetSizeOfEncodedValue(unsigned Encoding) const {
-  if (Encoding == dwarf::DW_EH_PE_omit)
+  if (Encoding == dwarf::DW_EH_PE_omit) {
     return 0;
+
+}
 
   switch (Encoding & 0x07) {
   default:
@@ -145,8 +153,10 @@ void AsmPrinter::emitTTypeReference(const GlobalValue *GV,
     const MCExpr *Exp =
         TLOF.getTTypeGlobalReference(GV, Encoding, TM, MMI, *OutStreamer);
     OutStreamer->emitValue(Exp, GetSizeOfEncodedValue(Encoding));
-  } else
+  } else {
     OutStreamer->emitIntValue(0, GetSizeOfEncodedValue(Encoding));
+
+}
 }
 
 void AsmPrinter::emitDwarfSymbolReference(const MCSymbol *Label,
@@ -187,18 +197,22 @@ void AsmPrinter::emitDwarfOffset(const MCSymbol *Label, uint64_t Offset) const {
 void AsmPrinter::emitCallSiteOffset(const MCSymbol *Hi, const MCSymbol *Lo,
                                     unsigned Encoding) const {
   // The least significant 3 bits specify the width of the encoding
-  if ((Encoding & 0x7) == dwarf::DW_EH_PE_uleb128)
+  if ((Encoding & 0x7) == dwarf::DW_EH_PE_uleb128) {
     emitLabelDifferenceAsULEB128(Hi, Lo);
-  else
+  } else {
     emitLabelDifference(Hi, Lo, GetSizeOfEncodedValue(Encoding));
+
+}
 }
 
 void AsmPrinter::emitCallSiteValue(uint64_t Value, unsigned Encoding) const {
   // The least significant 3 bits specify the width of the encoding
-  if ((Encoding & 0x7) == dwarf::DW_EH_PE_uleb128)
+  if ((Encoding & 0x7) == dwarf::DW_EH_PE_uleb128) {
     emitULEB128(Value);
-  else
+  } else {
     OutStreamer->emitIntValue(Value, GetSizeOfEncodedValue(Encoding));
+
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -253,11 +267,13 @@ void AsmPrinter::emitCFIInstruction(const MCCFIInstruction &Inst) const {
 
 void AsmPrinter::emitDwarfDIE(const DIE &Die) const {
   // Emit the code (index) for the abbreviation.
-  if (isVerbose())
+  if (isVerbose()) {
     OutStreamer->AddComment("Abbrev [" + Twine(Die.getAbbrevNumber()) + "] 0x" +
                             Twine::utohexstr(Die.getOffset()) + ":0x" +
                             Twine::utohexstr(Die.getSize()) + " " +
                             dwarf::TagString(Die.getTag()));
+
+}
   emitULEB128(Die.getAbbrevNumber());
 
   // Emit the DIE attribute values.
@@ -267,9 +283,11 @@ void AsmPrinter::emitDwarfDIE(const DIE &Die) const {
 
     if (isVerbose()) {
       OutStreamer->AddComment(dwarf::AttributeString(Attr));
-      if (Attr == dwarf::DW_AT_accessibility)
+      if (Attr == dwarf::DW_AT_accessibility) {
         OutStreamer->AddComment(
             dwarf::AccessibilityString(V.getDIEInteger().getValue()));
+
+}
     }
 
     // Emit an attribute using the defined form.
@@ -278,8 +296,10 @@ void AsmPrinter::emitDwarfDIE(const DIE &Die) const {
 
   // Emit the DIE children if any.
   if (Die.hasChildren()) {
-    for (auto &Child : Die.children())
+    for (auto &Child : Die.children()) {
       emitDwarfDIE(Child);
+
+}
 
     OutStreamer->AddComment("End Of Children Mark");
     emitInt8(0);

@@ -39,8 +39,10 @@ ExecutionEngine *Interpreter::create(std::unique_ptr<Module> M,
     handleAllErrors(std::move(Err), [&](ErrorInfoBase &EIB) {
       Msg = EIB.message();
     });
-    if (ErrStr)
+    if (ErrStr) {
       *ErrStr = Msg;
+
+}
     // We got an error, just return 0
     return nullptr;
   }

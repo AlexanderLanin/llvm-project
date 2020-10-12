@@ -43,8 +43,10 @@ static Register isDescribedByReg(const MachineInstr &MI) {
   assert(MI.getNumOperands() == 4);
   // If the location of variable is an entry value (DW_OP_LLVM_entry_value)
   // do not consider it as a register location.
-  if (MI.getDebugExpression()->isEntryValue())
+  if (MI.getDebugExpression()->isEntryValue()) {
     return 0;
+
+}
   // If location of variable is described using a register (directly or
   // indirectly), this register is always a first operand.
   return MI.getOperand(0).isReg() ? MI.getOperand(0).getReg() : Register();
@@ -75,8 +77,10 @@ EntryIndex DbgValueHistoryMap::startClobber(InlinedEntity Var,
   auto &Entries = VarEntries[Var];
   // If an instruction clobbers multiple registers that the variable is
   // described by, then we may have already created a clobbering instruction.
-  if (Entries.back().isClobber() && Entries.back().getInstr() == &MI)
+  if (Entries.back().isClobber() && Entries.back().getInstr() == &MI) {
     return Entries.size() - 1;
+
+}
   Entries.emplace_back(&MI, Entry::Clobber);
   return Entries.size() - 1;
 }
@@ -118,8 +122,10 @@ static void dropRegDescribedVar(RegDescribedVarsMap &RegVars, unsigned RegNo,
   assert(VarPos != VarSet.end());
   VarSet.erase(VarPos);
   // Don't keep empty sets in a map to keep it as small as possible.
-  if (VarSet.empty())
+  if (VarSet.empty()) {
     RegVars.erase(I);
+
+}
 }
 
 // Claim that @Var is now described by @RegNo.
@@ -151,8 +157,10 @@ static void clobberRegEntries(InlinedEntity Var, unsigned RegNo,
   }
 
   // Drop all entries that have ended.
-  for (auto Index : IndicesToErase)
+  for (auto Index : IndicesToErase) {
     LiveEntries[Var].erase(Index);
+
+}
 }
 
 /// Add a new debug value for \p Var. Closes all overlapping debug values.
@@ -177,27 +185,37 @@ static void handleNewDebugValue(InlinedEntity Var, const MachineInstr &DV,
         IndicesToErase.push_back(Index);
         Entry.endEntry(NewIndex);
       }
-      if (Register Reg = isDescribedByReg(DV))
+      if (Register Reg = isDescribedByReg(DV)) {
         TrackedRegs[Reg] |= !Overlaps;
+
+}
     }
 
     // If the new debug value is described by a register, add tracking of
     // that register if it is not already tracked.
     if (Register NewReg = isDescribedByReg(DV)) {
-      if (!TrackedRegs.count(NewReg))
+      if (!TrackedRegs.count(NewReg)) {
         addRegDescribedVar(RegVars, NewReg, Var);
+
+}
       LiveEntries[Var].insert(NewIndex);
       TrackedRegs[NewReg] = true;
     }
 
     // Drop tracking of registers that are no longer used.
-    for (auto I : TrackedRegs)
-      if (!I.second)
+    for (auto I : TrackedRegs) {
+      if (!I.second) {
         dropRegDescribedVar(RegVars, I.first, Var);
 
+}
+
+}
+
     // Drop all entries that have ended, and mark the new entry as live.
-    for (auto Index : IndicesToErase)
+    for (auto Index : IndicesToErase) {
       LiveEntries[Var].erase(Index);
+
+}
     LiveEntries[Var].insert(NewIndex);
   }
 }
@@ -211,8 +229,10 @@ static void clobberRegisterUses(RegDescribedVarsMap &RegVars,
                                 const MachineInstr &ClobberingInstr) {
   // Iterate over all variables described by this register and add this
   // instruction to their history, clobbering it.
-  for (const auto &Var : I->second)
+  for (const auto &Var : I->second) {
     clobberRegEntries(Var, I->first, ClobberingInstr, LiveEntries, HistMap);
+
+}
   RegVars.erase(I);
 }
 
@@ -223,8 +243,10 @@ static void clobberRegisterUses(RegDescribedVarsMap &RegVars, unsigned RegNo,
                                 DbgValueEntriesMap &LiveEntries,
                                 const MachineInstr &ClobberingInstr) {
   const auto &I = RegVars.find(RegNo);
-  if (I == RegVars.end())
+  if (I == RegVars.end()) {
     return;
+
+}
   clobberRegisterUses(RegVars, I, HistMap, LiveEntries, ClobberingInstr);
 }
 
@@ -264,8 +286,10 @@ void llvm::calculateDbgEntityHistory(const MachineFunction *MF,
 
       // Meta Instructions have no output and do not change any values and so
       // can be safely ignored.
-      if (MI.isMetaInstruction())
+      if (MI.isMetaInstruction()) {
         continue;
+
+}
 
       // Not a DBG_VALUE instruction. It may clobber registers which describe
       // some variables.
@@ -273,23 +297,27 @@ void llvm::calculateDbgEntityHistory(const MachineFunction *MF,
         if (MO.isReg() && MO.isDef() && MO.getReg()) {
           // Ignore call instructions that claim to clobber SP. The AArch64
           // backend does this for aggregate function arguments.
-          if (MI.isCall() && MO.getReg() == SP)
+          if (MI.isCall() && MO.getReg() == SP) {
             continue;
+
+}
           // If this is a virtual register, only clobber it since it doesn't
           // have aliases.
-          if (Register::isVirtualRegister(MO.getReg()))
+          if (Register::isVirtualRegister(MO.getReg())) {
             clobberRegisterUses(RegVars, MO.getReg(), DbgValues, LiveEntries,
                                 MI);
           // If this is a register def operand, it may end a debug value
           // range. Ignore frame-register defs in the epilogue and prologue,
           // we expect debuggers to understand that stack-locations are
           // invalid outside of the function body.
-          else if (MO.getReg() != FrameReg ||
+          } else if (MO.getReg() != FrameReg ||
                    (!MI.getFlag(MachineInstr::FrameDestroy) &&
                    !MI.getFlag(MachineInstr::FrameSetup))) {
             for (MCRegAliasIterator AI(MO.getReg(), TRI, true); AI.isValid();
-                 ++AI)
+                 ++AI) {
               clobberRegisterUses(RegVars, *AI, DbgValues, LiveEntries, MI);
+
+}
           }
         } else if (MO.isRegMask()) {
           // If this is a register mask operand, clobber all debug values in
@@ -299,8 +327,10 @@ void llvm::calculateDbgEntityHistory(const MachineFunction *MF,
           for (auto It : RegVars) {
             unsigned int Reg = It.first;
             if (Reg != SP && Register::isPhysicalRegister(Reg) &&
-                MO.clobbersPhysReg(Reg))
+                MO.clobbersPhysReg(Reg)) {
               RegsToClobber.push_back(Reg);
+
+}
           }
 
           for (unsigned Reg : RegsToClobber) {
@@ -316,8 +346,10 @@ void llvm::calculateDbgEntityHistory(const MachineFunction *MF,
     if (!MBB.empty() && &MBB != &MF->back()) {
       // Iterate over all variables that have open debug values.
       for (auto &Pair : LiveEntries) {
-        if (Pair.second.empty())
+        if (Pair.second.empty()) {
           continue;
+
+}
 
         // Create a clobbering entry.
         EntryIndex ClobIdx = DbgValues.startClobber(Pair.first, MBB.back());

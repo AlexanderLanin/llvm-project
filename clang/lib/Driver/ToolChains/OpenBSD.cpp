@@ -67,10 +67,12 @@ void openbsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-mabi");
     CmdArgs.push_back(mips::getGnuCompatibleMipsABIName(ABIName).data());
 
-    if (getToolChain().getTriple().isLittleEndian())
+    if (getToolChain().getTriple().isLittleEndian()) {
       CmdArgs.push_back("-EL");
-    else
+    } else {
       CmdArgs.push_back("-EB");
+
+}
 
     AddAssemblerKPIC(getToolChain(), Args, CmdArgs);
     break;
@@ -85,8 +87,10 @@ void openbsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
@@ -110,10 +114,12 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (ToolChain.getArch() == llvm::Triple::mips64)
+  if (ToolChain.getArch() == llvm::Triple::mips64) {
     CmdArgs.push_back("-EB");
-  else if (ToolChain.getArch() == llvm::Triple::mips64el)
+  } else if (ToolChain.getArch() == llvm::Triple::mips64el) {
     CmdArgs.push_back("-EL");
+
+}
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_shared)) {
     CmdArgs.push_back("-e");
@@ -124,8 +130,10 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
   } else {
-    if (Args.hasArg(options::OPT_rdynamic))
+    if (Args.hasArg(options::OPT_rdynamic)) {
       CmdArgs.push_back("-export-dynamic");
+
+}
     CmdArgs.push_back("-Bdynamic");
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-shared");
@@ -135,10 +143,14 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     }
   }
 
-  if (Args.hasArg(options::OPT_pie))
+  if (Args.hasArg(options::OPT_pie)) {
     CmdArgs.push_back("-pie");
-  if (Args.hasArg(options::OPT_nopie) || Args.hasArg(options::OPT_pg))
+
+}
+  if (Args.hasArg(options::OPT_nopie) || Args.hasArg(options::OPT_pg)) {
     CmdArgs.push_back("-nopie");
+
+}
 
   if (Output.isFilename()) {
     CmdArgs.push_back("-o");
@@ -151,20 +163,24 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     const char *crt0 = nullptr;
     const char *crtbegin = nullptr;
     if (!Args.hasArg(options::OPT_shared)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         crt0 = "gcrt0.o";
-      else if (Args.hasArg(options::OPT_static) &&
-               !Args.hasArg(options::OPT_nopie))
+      } else if (Args.hasArg(options::OPT_static) &&
+               !Args.hasArg(options::OPT_nopie)) {
         crt0 = "rcrt0.o";
-      else
+      } else {
         crt0 = "crt0.o";
+
+}
       crtbegin = "crtbegin.o";
     } else {
       crtbegin = "crtbeginS.o";
     }
 
-    if (crt0)
+    if (crt0) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt0)));
+
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtbegin)));
   }
 
@@ -180,12 +196,16 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     if (D.CCCIsCXX()) {
-      if (ToolChain.ShouldLinkCXXStdlib(Args))
+      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
         ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
-      if (Args.hasArg(options::OPT_pg))
+
+}
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lm_p");
-      else
+      } else {
         CmdArgs.push_back("-lm");
+
+}
     }
     if (NeedsSanitizerDeps) {
       CmdArgs.push_back(ToolChain.getCompilerRTArgString(Args, "builtins"));
@@ -200,17 +220,21 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-lcompiler_rt");
 
     if (Args.hasArg(options::OPT_pthread)) {
-      if (!Args.hasArg(options::OPT_shared) && Args.hasArg(options::OPT_pg))
+      if (!Args.hasArg(options::OPT_shared) && Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lpthread_p");
-      else
+      } else {
         CmdArgs.push_back("-lpthread");
+
+}
     }
 
     if (!Args.hasArg(options::OPT_shared)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lc_p");
-      else
+      } else {
         CmdArgs.push_back("-lc");
+
+}
     }
 
     CmdArgs.push_back("-lcompiler_rt");
@@ -218,10 +242,12 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     const char *crtend = nullptr;
-    if (!Args.hasArg(options::OPT_shared))
+    if (!Args.hasArg(options::OPT_shared)) {
       crtend = "crtend.o";
-    else
+    } else {
       crtend = "crtendS.o";
+
+}
 
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtend)));
   }
@@ -273,6 +299,8 @@ void OpenBSD::addClangTargetOptions(const ArgList &DriverArgs,
                                     Action::OffloadKind) const {
   // Support for .init_array is still new (Aug 2016).
   if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
-                          options::OPT_fno_use_init_array, false))
+                          options::OPT_fno_use_init_array, false)) {
     CC1Args.push_back("-fno-use-init-array");
+
+}
 }

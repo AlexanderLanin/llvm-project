@@ -59,10 +59,14 @@ static cl::extrahelp
 
 static void strings(raw_ostream &OS, StringRef FileName, StringRef Contents) {
   auto print = [&OS, FileName](unsigned Offset, StringRef L) {
-    if (L.size() < static_cast<size_t>(MinLength))
+    if (L.size() < static_cast<size_t>(MinLength)) {
       return;
-    if (PrintFileName)
+
+}
+    if (PrintFileName) {
       OS << FileName << ": ";
+
+}
     switch (Radix) {
     case none:
       break;
@@ -83,15 +87,19 @@ static void strings(raw_ostream &OS, StringRef FileName, StringRef Contents) {
   const char *P = nullptr, *E = nullptr, *S = nullptr;
   for (P = Contents.begin(), E = Contents.end(); P < E; ++P) {
     if (isPrint(*P) || *P == '\t') {
-      if (S == nullptr)
+      if (S == nullptr) {
         S = P;
+
+}
     } else if (S) {
       print(S - B, StringRef(S, P - S));
       S = nullptr;
     }
   }
-  if (S)
+  if (S) {
     print(S - B, StringRef(S, E - S));
+
+}
 }
 
 int main(int argc, char **argv) {
@@ -103,17 +111,21 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  if (InputFileNames.empty())
+  if (InputFileNames.empty()) {
     InputFileNames.push_back("-");
+
+}
 
   for (const auto &File : InputFileNames) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer =
         MemoryBuffer::getFileOrSTDIN(File);
-    if (std::error_code EC = Buffer.getError())
+    if (std::error_code EC = Buffer.getError()) {
       errs() << File << ": " << EC.message() << '\n';
-    else
+    } else {
       strings(llvm::outs(), File == "-" ? "{standard input}" : File,
               Buffer.get()->getMemBufferRef().getBuffer());
+
+}
   }
 
   return EXIT_SUCCESS;

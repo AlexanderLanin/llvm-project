@@ -51,16 +51,26 @@ cl::list<std::string> Symbols(cl::Positional, cl::desc("<input symbols>"),
 static bool msDemangle(const std::string &S) {
   int Status;
   MSDemangleFlags Flags = MSDF_None;
-  if (DumpBackReferences)
+  if (DumpBackReferences) {
     Flags = MSDemangleFlags(Flags | MSDF_DumpBackrefs);
-  if (NoAccessSpecifier)
+
+}
+  if (NoAccessSpecifier) {
     Flags = MSDemangleFlags(Flags | MSDF_NoAccessSpecifier);
-  if (NoCallingConvention)
+
+}
+  if (NoCallingConvention) {
     Flags = MSDemangleFlags(Flags | MSDF_NoCallingConvention);
-  if (NoReturnType)
+
+}
+  if (NoReturnType) {
     Flags = MSDemangleFlags(Flags | MSDF_NoReturnType);
-  if (NoMemberType)
+
+}
+  if (NoMemberType) {
     Flags = MSDemangleFlags(Flags | MSDF_NoMemberType);
+
+}
 
   char *ResultBuf =
       microsoftDemangle(S.c_str(), nullptr, nullptr, &Status, Flags);
@@ -95,13 +105,17 @@ int main(int argc, char **argv) {
     while (true) {
       std::string LineStr;
       std::getline(std::cin, LineStr);
-      if (std::cin.eof())
+      if (std::cin.eof()) {
         break;
+
+}
 
       StringRef Line(LineStr);
       Line = Line.trim();
-      if (Line.empty() || Line.startswith("#") || Line.startswith(";"))
+      if (Line.empty() || Line.startswith("#") || Line.startswith(";")) {
         continue;
+
+}
 
       // If the user is manually typing in these decorated names, don't echo
       // them to the terminal a second time.  If they're coming from redirected
@@ -111,16 +125,20 @@ int main(int argc, char **argv) {
         outs() << Line << "\n";
         outs().flush();
       }
-      if (!msDemangle(std::string(Line)))
+      if (!msDemangle(std::string(Line))) {
         Success = false;
+
+}
       outs() << "\n";
     }
   } else {
     for (StringRef S : Symbols) {
       outs() << S << "\n";
       outs().flush();
-      if (!msDemangle(std::string(S)))
+      if (!msDemangle(std::string(S))) {
         Success = false;
+
+}
       outs() << "\n";
     }
   }

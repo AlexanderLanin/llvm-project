@@ -69,65 +69,83 @@ bool llvm::decomposeBitTestICmp(Value *LHS, Value *RHS,
   using namespace PatternMatch;
 
   const APInt *C;
-  if (!match(RHS, m_APInt(C)))
+  if (!match(RHS, m_APInt(C))) {
     return false;
+
+}
 
   switch (Pred) {
   default:
     return false;
   case ICmpInst::ICMP_SLT:
     // X < 0 is equivalent to (X & SignMask) != 0.
-    if (!C->isNullValue())
+    if (!C->isNullValue()) {
       return false;
+
+}
     Mask = APInt::getSignMask(C->getBitWidth());
     Pred = ICmpInst::ICMP_NE;
     break;
   case ICmpInst::ICMP_SLE:
     // X <= -1 is equivalent to (X & SignMask) != 0.
-    if (!C->isAllOnesValue())
+    if (!C->isAllOnesValue()) {
       return false;
+
+}
     Mask = APInt::getSignMask(C->getBitWidth());
     Pred = ICmpInst::ICMP_NE;
     break;
   case ICmpInst::ICMP_SGT:
     // X > -1 is equivalent to (X & SignMask) == 0.
-    if (!C->isAllOnesValue())
+    if (!C->isAllOnesValue()) {
       return false;
+
+}
     Mask = APInt::getSignMask(C->getBitWidth());
     Pred = ICmpInst::ICMP_EQ;
     break;
   case ICmpInst::ICMP_SGE:
     // X >= 0 is equivalent to (X & SignMask) == 0.
-    if (!C->isNullValue())
+    if (!C->isNullValue()) {
       return false;
+
+}
     Mask = APInt::getSignMask(C->getBitWidth());
     Pred = ICmpInst::ICMP_EQ;
     break;
   case ICmpInst::ICMP_ULT:
     // X <u 2^n is equivalent to (X & ~(2^n-1)) == 0.
-    if (!C->isPowerOf2())
+    if (!C->isPowerOf2()) {
       return false;
+
+}
     Mask = -*C;
     Pred = ICmpInst::ICMP_EQ;
     break;
   case ICmpInst::ICMP_ULE:
     // X <=u 2^n-1 is equivalent to (X & ~(2^n-1)) == 0.
-    if (!(*C + 1).isPowerOf2())
+    if (!(*C + 1).isPowerOf2()) {
       return false;
+
+}
     Mask = ~*C;
     Pred = ICmpInst::ICMP_EQ;
     break;
   case ICmpInst::ICMP_UGT:
     // X >u 2^n-1 is equivalent to (X & ~(2^n-1)) != 0.
-    if (!(*C + 1).isPowerOf2())
+    if (!(*C + 1).isPowerOf2()) {
       return false;
+
+}
     Mask = ~*C;
     Pred = ICmpInst::ICMP_NE;
     break;
   case ICmpInst::ICMP_UGE:
     // X >=u 2^n is equivalent to (X & ~(2^n-1)) != 0.
-    if (!C->isPowerOf2())
+    if (!C->isPowerOf2()) {
       return false;
+
+}
     Mask = -*C;
     Pred = ICmpInst::ICMP_NE;
     break;

@@ -49,10 +49,12 @@ protected:
 TEST_F(HostTest, NumPhysicalCores) {
   int Num = sys::getHostNumPhysicalCores();
 
-  if (isSupportedArchAndOS())
+  if (isSupportedArchAndOS()) {
     ASSERT_GT(Num, 0);
-  else
+  } else {
     ASSERT_EQ(Num, -1);
+
+}
 }
 
 TEST(getLinuxHostCPUName, ARM) {

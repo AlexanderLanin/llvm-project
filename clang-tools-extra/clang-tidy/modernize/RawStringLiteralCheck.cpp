@@ -21,12 +21,16 @@ namespace {
 
 bool containsEscapes(StringRef HayStack, StringRef Escapes) {
   size_t BackSlash = HayStack.find('\\');
-  if (BackSlash == StringRef::npos)
+  if (BackSlash == StringRef::npos) {
     return false;
 
+}
+
   while (BackSlash != StringRef::npos) {
-    if (Escapes.find(HayStack[BackSlash + 1]) == StringRef::npos)
+    if (Escapes.find(HayStack[BackSlash + 1]) == StringRef::npos) {
       return false;
+
+}
     BackSlash = HayStack.find('\\', BackSlash + 2);
   }
 
@@ -44,20 +48,28 @@ bool containsEscapedCharacters(const MatchFinder::MatchResult &Result,
                                const StringLiteral *Literal,
                                const CharsBitSet &DisallowedChars) {
   // FIXME: Handle L"", u8"", u"" and U"" literals.
-  if (!Literal->isAscii())
+  if (!Literal->isAscii()) {
     return false;
 
-  for (const unsigned char C : Literal->getBytes())
-    if (DisallowedChars.test(C))
+}
+
+  for (const unsigned char C : Literal->getBytes()) {
+    if (DisallowedChars.test(C)) {
       return false;
+
+}
+
+}
 
   CharSourceRange CharRange = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(Literal->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
   StringRef Text = Lexer::getSourceText(CharRange, *Result.SourceManager,
                                         Result.Context->getLangOpts());
-  if (isRawStringLiteral(Text))
+  if (isRawStringLiteral(Text)) {
     return false;
+
+}
 
   return containsEscapes(Text, R"('\"?x01)");
 }
@@ -76,8 +88,10 @@ std::string asRawStringLiteral(const StringLiteral *Literal,
     Delimiter = (I == 0) ? DelimiterStem : DelimiterStem + std::to_string(I);
   }
 
-  if (Delimiter.empty())
+  if (Delimiter.empty()) {
     return (R"(R"()" + Bytes + R"lit()")lit").str();
+
+}
 
   return (R"(R")" + Delimiter + "(" + Bytes + ")" + Delimiter + R"(")").str();
 }
@@ -103,12 +117,16 @@ RawStringLiteralCheck::RawStringLiteralCheck(StringRef Name,
                                          "\020\021\022\023\024\025\026\027"
                                          "\030\031\032\033\034\035\036\037"
                                          "\177",
-                                         33))
+                                         33)) {
     DisallowedChars.set(C);
 
+}
+
   // Non-ASCII are disallowed too.
-  for (unsigned int C = 0x80u; C <= 0xFFu; ++C)
+  for (unsigned int C = 0x80u; C <= 0xFFu; ++C) {
     DisallowedChars.set(static_cast<unsigned char>(C));
+
+}
 }
 
 void RawStringLiteralCheck::storeOptions(ClangTidyOptions::OptionMap &Options) {
@@ -124,16 +142,20 @@ void RawStringLiteralCheck::registerMatchers(MatchFinder *Finder) {
 
 void RawStringLiteralCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Literal = Result.Nodes.getNodeAs<StringLiteral>("lit");
-  if (Literal->getBeginLoc().isMacroID())
+  if (Literal->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   if (containsEscapedCharacters(Result, Literal, DisallowedChars)) {
     std::string Replacement = asRawStringLiteral(Literal, DelimiterStem);
     if (ReplaceShorterLiterals ||
         Replacement.length() <=
             Lexer::MeasureTokenLength(Literal->getBeginLoc(),
-                                      *Result.SourceManager, getLangOpts()))
+                                      *Result.SourceManager, getLangOpts())) {
       replaceWithRawStringLiteral(Result, Literal, Replacement);
+
+}
   }
 }
 

@@ -54,8 +54,10 @@ std::unique_ptr<MCObjectWriter>
 MCAsmBackend::createDwoObjectWriter(raw_pwrite_stream &OS,
                                     raw_pwrite_stream &DwoOS) const {
   auto TW = createObjectTargetWriter();
-  if (TW->getFormat() != Triple::ELF)
+  if (TW->getFormat() != Triple::ELF) {
     report_fatal_error("dwo only supported with ELF");
+
+}
   return createELFDwoObjectWriter(cast<MCELFObjectTargetWriter>(std::move(TW)),
                                   OS, DwoOS, Endian == support::little);
 }
@@ -107,7 +109,9 @@ bool MCAsmBackend::fixupNeedsRelaxationAdvanced(
     const MCFixup &Fixup, bool Resolved, uint64_t Value,
     const MCRelaxableFragment *DF, const MCAsmLayout &Layout,
     const bool WasForced) const {
-  if (!Resolved)
+  if (!Resolved) {
     return true;
+
+}
   return fixupNeedsRelaxation(Fixup, Value, DF, Layout);
 }

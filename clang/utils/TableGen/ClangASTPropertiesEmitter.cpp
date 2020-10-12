@@ -151,7 +151,9 @@ public:
            records.getAllDerivedDefinitions(PropertyTypeClassName)) {
       // Ignore generic specializations; they're generally not useful when
       // emitting basic emitters etc.
-      if (type.isGenericSpecialization()) continue;
+      if (type.isGenericSpecialization()) { continue;
+
+}
 
       AllPropertyTypes.push_back(type);
     }
@@ -195,8 +197,10 @@ public:
     visitAllNodesWithInfo(derived, derivedInfo,
                           [&](HasProperties node, const NodeInfo &info) {
       for (Property prop : info.Properties) {
-        if (ignoredProperties.count(prop.getName()))
+        if (ignoredProperties.count(prop.getName())) {
           continue;
+
+}
 
         visit(prop);
       }
@@ -216,7 +220,9 @@ public:
         auto it = NodeInfos.find(base);
 
         // Ignore intermediate nodes that don't add interesting properties.
-        if (it == NodeInfos.end()) continue;
+        if (it == NodeInfos.end()) { continue;
+
+}
         auto &baseInfo = it->second;
 
         visit(base, baseInfo);
@@ -293,7 +299,9 @@ void ASTPropsEmitter::Validator::validate() {
 
 void ASTPropsEmitter::Validator::validateNode(HasProperties derivedNode,
                                               const NodeInfo &derivedNodeInfo) {
-  if (!ValidatedNodes.insert(derivedNode).second) return;
+  if (!ValidatedNodes.insert(derivedNode).second) { return;
+
+}
 
   // A map from property name to property.
   std::map<StringRef, Property> allProperties;
@@ -327,7 +335,9 @@ void ASTPropsEmitter::Validator::validateType(PropertyType type,
     if (type.getCXXTypeName() == "") {
       PrintError(type.getLoc(),
                  "type is not generic but has no C++ type name");
-      if (context) PrintNote(context.getLoc(), "type used here");
+      if (context) { PrintNote(context.getLoc(), "type used here");
+
+}
     }
   } else if (auto eltType = type.getArrayElementType()) {
     validateType(eltType, context);
@@ -337,15 +347,21 @@ void ASTPropsEmitter::Validator::validateType(PropertyType type,
     if (valueType.getPackOptionalCode().empty()) {
       PrintError(valueType.getLoc(),
                  "type doesn't provide optional-packing code");
-      if (context) PrintNote(context.getLoc(), "type used here");
+      if (context) { PrintNote(context.getLoc(), "type used here");
+
+}
     } else if (valueType.getUnpackOptionalCode().empty()) {
       PrintError(valueType.getLoc(),
                  "type doesn't provide optional-unpacking code");
-      if (context) PrintNote(context.getLoc(), "type used here");
+      if (context) { PrintNote(context.getLoc(), "type used here");
+
+}
     }
   } else {
     PrintError(type.getLoc(), "unknown generic property type");
-    if (context) PrintNote(context.getLoc(), "type used here");
+    if (context) { PrintNote(context.getLoc(), "type used here");
+
+}
   }
 }
 
@@ -372,24 +388,32 @@ void ASTPropsEmitter::emitNodeReaderWriterClass(const ReaderWriterInfo &info) {
   // Emit a method that dispatches on a kind to the appropriate node-specific
   // method.
   Out << "  " << info.ResultType << " " << info.MethodPrefix << "(";
-  if (info.IsReader)
+  if (info.IsReader) {
     Out       << NodeClass::getASTIdTypeName() << " kind";
-  else
+  } else {
     Out       << "const " << info.HierarchyName << " *node";
+
+}
   Out         << ") {\n"
          "    switch (";
-  if (info.IsReader)
+  if (info.IsReader) {
     Out         << "kind";
-  else
+  } else {
     Out         << "node->" << NodeClass::getASTIdAccessorName() << "()";
+
+}
   Out           << ") {\n";
   visitASTNodeHierarchy<NodeClass>(Records, [&](NodeClass node, NodeClass _) {
-    if (node.isAbstract()) return;
+    if (node.isAbstract()) { return;
+
+}
     Out << "    case " << info.HierarchyName << "::" << node.getId() << ":\n"
            "      return " << info.MethodPrefix << node.getClassName() << "(";
-    if (!info.IsReader)
+    if (!info.IsReader) {
       Out                  << "static_cast<const " << node.getClassName()
                            << " *>(node)";
+
+}
     Out                    << ");\n";
   });
   Out << "    }\n"
@@ -399,7 +423,9 @@ void ASTPropsEmitter::emitNodeReaderWriterClass(const ReaderWriterInfo &info) {
   // Emit node-specific methods for all the concrete nodes.
   visitASTNodeHierarchy<NodeClass>(Records,
                                    [&](NodeClass node, NodeClass base) {
-    if (node.isAbstract()) return;
+    if (node.isAbstract()) { return;
+
+}
     emitNodeReaderWriterMethod(node, info);
   });
 
@@ -414,11 +440,15 @@ void ASTPropsEmitter::emitNodeReaderWriterMethod(NodeClass node,
   // Declare and start the method.
   Out << "  " << info.ResultType << " "
               << info.MethodPrefix << node.getClassName() << "(";
-  if (!info.IsReader)
+  if (!info.IsReader) {
     Out <<       "const " << node.getClassName() << " *node";
+
+}
   Out <<         ") {\n";
-  if (info.IsReader)
+  if (info.IsReader) {
     Out << "    auto &ctx = " << info.HelperVariable << ".getASTContext();\n";
+
+}
 
   emitPropertiedReaderWriterBody(node, info);
 
@@ -430,19 +460,23 @@ void ASTPropsEmitter::emitPropertiedReaderWriterBody(HasProperties node,
                                                const ReaderWriterInfo &info) {
   // Find the information for this node.
   auto it = NodeInfos.find(node);
-  if (it == NodeInfos.end())
+  if (it == NodeInfos.end()) {
     PrintFatalError(node.getLoc(),
                     "no information about how to deserialize \""
                       + node.getName() + "\"");
+
+}
   auto &nodeInfo = it->second;
 
   StringRef creationCode;
   if (info.IsReader) {
     // We should have a creation rule.
-    if (!nodeInfo.Creator)
+    if (!nodeInfo.Creator) {
       PrintFatalError(node.getLoc(),
                       "no " CreationRuleClassName " for \""
                         + node.getName() + "\"");
+
+}
 
     creationCode = nodeInfo.Creator.getCreationCode();
   }
@@ -455,22 +489,28 @@ void ASTPropsEmitter::emitPropertiedReaderWriterBody(HasProperties node,
   // Emit code to read all the properties.
   visitAllProperties(node, nodeInfo, [&](Property prop) {
     // Verify that the creation code refers to this property.
-    if (info.IsReader && creationCode.find(prop.getName()) == StringRef::npos)
+    if (info.IsReader && creationCode.find(prop.getName()) == StringRef::npos) {
       PrintFatalError(nodeInfo.Creator.getLoc(),
                       "creation code for " + node.getName()
                         + " doesn't refer to property \""
                         + prop.getName() + "\"");
 
+}
+
     // Emit code to read or write this property.
-    if (info.IsReader)
+    if (info.IsReader) {
       emitReadOfProperty(info.HelperVariable, prop);
-    else
+    } else {
       emitWriteOfProperty(info.HelperVariable, prop);
+
+}
   });
 
   // Emit the final creation code.
-  if (info.IsReader)
+  if (info.IsReader) {
     Out << "    " << creationCode << "\n";
+
+}
 }
 
 static void emitBasicReaderWriterMethodSuffix(raw_ostream &out,
@@ -525,9 +565,13 @@ void ASTPropsEmitter::emitReadOfProperty(StringRef readerName,
   // get a pr-value back from read(), and we should be able to forward
   // that in the creation rule.
   Out << "    ";
-  if (!condition.empty()) Out << "llvm::Optional<";
+  if (!condition.empty()) { Out << "llvm::Optional<";
+
+}
   type.emitCXXValueTypeName(true, Out);
-  if (!condition.empty()) Out << ">";
+  if (!condition.empty()) { Out << ">";
+
+}
   Out << " " << name;
 
   if (condition.empty()) {
@@ -693,12 +737,16 @@ ASTPropsEmitter::emitPackUnpackOptionalTemplate(const ReaderWriterInfo &info) {
   for (PropertyType type : AllPropertyTypes) {
     StringRef code = (info.IsReader ? type.getUnpackOptionalCode()
                                     : type.getPackOptionalCode());
-    if (code.empty()) continue;
+    if (code.empty()) { continue;
+
+}
 
     StringRef typeName = type.getCXXTypeName();
     declareSpecialization(typeName, code);
-    if (type.isConstWhenWriting() && !info.IsReader)
+    if (type.isConstWhenWriting() && !info.IsReader) {
       declareSpecialization("const " + typeName, code);
+
+}
   }
   Out << "\n";
 }
@@ -708,15 +756,19 @@ ASTPropsEmitter::emitBasicReaderWriterTemplate(const ReaderWriterInfo &info) {
   // Emit the Basic{Reader,Writer}Base template.
   Out << "template <class Impl>\n"
          "class Basic" << info.ClassSuffix << "Base {\n";
-  if (info.IsReader)
+  if (info.IsReader) {
     Out << "  ASTContext &C;\n";
+
+}
   Out << "protected:\n"
          "  Basic" << info.ClassSuffix << "Base"
                    << (info.IsReader ? "(ASTContext &ctx) : C(ctx)" : "()")
                    << " {}\n"
          "public:\n";
-  if (info.IsReader)
+  if (info.IsReader) {
     Out << "  ASTContext &getASTContext() { return C; }\n";
+
+}
   Out << "  Impl &asImpl() { return static_cast<Impl&>(*this); }\n";
 
   auto enterReaderWriterMethod = [&](StringRef cxxTypeName,
@@ -726,10 +778,12 @@ ASTPropsEmitter::emitBasicReaderWriterTemplate(const ReaderWriterInfo &info) {
                                      StringRef paramName) {
     Out << "  " << (info.IsReader ? cxxTypeName : "void")
                 << " " << info.MethodPrefix << abstractTypeName << "(";
-    if (!info.IsReader)
+    if (!info.IsReader) {
       Out       << (shouldPassByReference || constWhenWriting ? "const " : "")
                 << cxxTypeName
                 << (shouldPassByReference ? " &" : "") << " " << paramName;
+
+}
     Out         << ") {\n";
   };
 
@@ -756,23 +810,27 @@ ASTPropsEmitter::emitBasicReaderWriterTemplate(const ReaderWriterInfo &info) {
 
     } else if (type.isEnum()) {
       enterMethod("value");
-      if (info.IsReader)
+      if (info.IsReader) {
         Out << "    return asImpl().template readEnum<"
             <<         type.getCXXTypeName() << ">();\n";
-      else
+      } else {
         Out << "    asImpl().writeEnum(value);\n";
+
+}
       exitMethod();
 
     } else if (PropertyType superclass = type.getSuperclassType()) {
       enterMethod("value");
-      if (info.IsReader)
+      if (info.IsReader) {
         Out << "    return cast_or_null<" << type.getSubclassClassName()
                                           << ">(asImpl().read"
                                           << superclass.getAbstractTypeName()
                                           << "());\n";
-      else
+      } else {
         Out << "    asImpl().write" << superclass.getAbstractTypeName()
                                     << "(value);\n";
+
+}
       exitMethod();
 
     } else {
@@ -800,8 +858,10 @@ void ASTPropsEmitter::emitCasedReaderWriterMethodBody(PropertyType type,
   std::string subvar = ("sub" + var).str();
 
   // Bind `ctx` for readers.
-  if (info.IsReader)
+  if (info.IsReader) {
     Out << "    auto &ctx = asImpl().getASTContext();\n";
+
+}
 
   // Start an object.
   Out << "    auto &&" << subvar << " = asImpl()."
@@ -831,8 +891,10 @@ void ASTPropsEmitter::emitCasedReaderWriterMethodBody(PropertyType type,
     Out << "    case " << type.getCXXTypeName() << "::"
                        << typeCase.getCaseName() << ": {\n";
     emitPropertiedReaderWriterBody(typeCase, subInfo);
-    if (!info.IsReader)
+    if (!info.IsReader) {
       Out << "    return;\n";
+
+}
     Out << "    }\n\n";
   }
   Out << "    }\n"

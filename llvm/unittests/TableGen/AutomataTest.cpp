@@ -119,8 +119,10 @@ TEST(Automata, BinPackerAutomatonAccepts) {
   // Expect that we can pack BRK_0_to_6 five times to occupy five bins, then
   // cannot allocate any double-bins.
   A.reset();
-  for (unsigned I = 0; I < 5; ++I)
+  for (unsigned I = 0; I < 5; ++I) {
     EXPECT_TRUE(A.add(BRK_0_to_6));
+
+}
   EXPECT_FALSE(A.add(BRK_0_to_6_dbl));
 }
 

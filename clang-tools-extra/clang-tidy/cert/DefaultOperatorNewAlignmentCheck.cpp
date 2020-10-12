@@ -29,24 +29,32 @@ void DefaultOperatorNewAlignmentCheck::check(
 
   QualType T = NewExpr->getAllocatedType();
   // Dependent types do not have fixed alignment.
-  if (T->isDependentType())
+  if (T->isDependentType()) {
     return;
+
+}
   const TagDecl *D = T->getAsTagDecl();
   // Alignment can not be obtained for undefined type.
-  if (!D || !D->getDefinition() || !D->isCompleteDefinition())
+  if (!D || !D->getDefinition() || !D->isCompleteDefinition()) {
     return;
+
+}
 
   ASTContext &Context = D->getASTContext();
 
   // Check if no alignment was specified for the type.
-  if (!Context.isAlignmentRequired(T))
+  if (!Context.isAlignmentRequired(T)) {
     return;
+
+}
 
   // The user-specified alignment (in bits).
   unsigned SpecifiedAlignment = D->getMaxAlignment();
   // Double-check if no alignment was specified.
-  if (!SpecifiedAlignment)
+  if (!SpecifiedAlignment) {
     return;
+
+}
   // The alignment used by default 'operator new' (in bits).
   unsigned DefaultNewAlignment = Context.getTargetInfo().getNewAlign();
 
@@ -55,12 +63,14 @@ void DefaultOperatorNewAlignmentCheck::check(
       !NewExpr->getOperatorNew() || NewExpr->getOperatorNew()->isImplicit();
 
   unsigned CharWidth = Context.getTargetInfo().getCharWidth();
-  if (HasDefaultOperatorNew && OverAligned)
+  if (HasDefaultOperatorNew && OverAligned) {
     diag(NewExpr->getBeginLoc(),
          "allocation function returns a pointer with alignment %0 but the "
          "over-aligned type being allocated requires alignment %1")
         << (DefaultNewAlignment / CharWidth)
         << (SpecifiedAlignment / CharWidth);
+
+}
 }
 
 } // namespace cert

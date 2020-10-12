@@ -45,7 +45,9 @@ STATISTIC(NumIdenticalMerged, "Number of identical global constants merged");
 /// Find values that are marked as llvm.used.
 static void FindUsedValues(GlobalVariable *LLVMUsed,
                            SmallPtrSetImpl<const GlobalValue*> &UsedValues) {
-  if (!LLVMUsed) return;
+  if (!LLVMUsed) { return;
+
+}
   ConstantArray *Inits = cast<ConstantArray>(LLVMUsed->getInitializer());
 
   for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i) {
@@ -58,11 +60,15 @@ static void FindUsedValues(GlobalVariable *LLVMUsed,
 // True if A is better than B.
 static bool IsBetterCanonical(const GlobalVariable &A,
                               const GlobalVariable &B) {
-  if (!A.hasLocalLinkage() && B.hasLocalLinkage())
+  if (!A.hasLocalLinkage() && B.hasLocalLinkage()) {
     return true;
 
-  if (A.hasLocalLinkage() && !B.hasLocalLinkage())
+}
+
+  if (A.hasLocalLinkage() && !B.hasLocalLinkage()) {
     return false;
+
+}
 
   return A.hasGlobalUnnamedAddr();
 }
@@ -70,9 +76,13 @@ static bool IsBetterCanonical(const GlobalVariable &A,
 static bool hasMetadataOtherThanDebugLoc(const GlobalVariable *GV) {
   SmallVector<std::pair<unsigned, MDNode *>, 4> MDs;
   GV->getAllMetadata(MDs);
-  for (const auto &V : MDs)
-    if (V.first != LLVMContext::MD_dbg)
+  for (const auto &V : MDs) {
+    if (V.first != LLVMContext::MD_dbg) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -80,14 +90,18 @@ static void copyDebugLocMetadata(const GlobalVariable *From,
                                  GlobalVariable *To) {
   SmallVector<DIGlobalVariableExpression *, 1> MDs;
   From->getDebugInfo(MDs);
-  for (auto MD : MDs)
+  for (auto MD : MDs) {
     To->addDebugInfo(MD);
+
+}
 }
 
 static unsigned getAlignment(GlobalVariable *GV) {
   unsigned Align = GV->getAlignment();
-  if (Align)
+  if (Align) {
     return Align;
+
+}
   return GV->getParent()->getDataLayout().getPreferredAlignment(GV);
 }
 
@@ -103,13 +117,19 @@ isUnmergeableGlobal(GlobalVariable *GV,
 
 enum class CanMerge { No, Yes };
 static CanMerge makeMergeable(GlobalVariable *Old, GlobalVariable *New) {
-  if (!Old->hasGlobalUnnamedAddr() && !New->hasGlobalUnnamedAddr())
+  if (!Old->hasGlobalUnnamedAddr() && !New->hasGlobalUnnamedAddr()) {
     return CanMerge::No;
-  if (hasMetadataOtherThanDebugLoc(Old))
+
+}
+  if (hasMetadataOtherThanDebugLoc(Old)) {
     return CanMerge::No;
+
+}
   assert(!hasMetadataOtherThanDebugLoc(New));
-  if (!Old->hasGlobalUnnamedAddr())
+  if (!Old->hasGlobalUnnamedAddr()) {
     New->setUnnamedAddr(GlobalValue::UnnamedAddr::None);
+
+}
   return CanMerge::Yes;
 }
 
@@ -120,8 +140,10 @@ static void replace(Module &M, GlobalVariable *Old, GlobalVariable *New) {
                     << New->getName() << "\n");
 
   // Bump the alignment if necessary.
-  if (Old->getAlignment() || New->getAlignment())
+  if (Old->getAlignment() || New->getAlignment()) {
     New->setAlignment(Align(std::max(getAlignment(Old), getAlignment(New))));
+
+}
 
   copyDebugLocMetadata(Old, New);
   Old->replaceAllUsesWith(NewConstant);
@@ -165,19 +187,25 @@ static bool mergeConstants(Module &M) {
         continue;
       }
 
-      if (isUnmergeableGlobal(GV, UsedGlobals))
+      if (isUnmergeableGlobal(GV, UsedGlobals)) {
         continue;
+
+}
 
       // This transformation is legal for weak ODR globals in the sense it
       // doesn't change semantics, but we really don't want to perform it
       // anyway; it's likely to pessimize code generation, and some tools
       // (like the Darwin linker in cases involving CFString) don't expect it.
-      if (GV->isWeakForLinker())
+      if (GV->isWeakForLinker()) {
         continue;
 
+}
+
       // Don't touch globals with metadata other then !dbg.
-      if (hasMetadataOtherThanDebugLoc(GV))
+      if (hasMetadataOtherThanDebugLoc(GV)) {
         continue;
+
+}
 
       Constant *Init = GV->getInitializer();
 
@@ -203,26 +231,36 @@ static bool mergeConstants(Module &M) {
          GVI != E; ) {
       GlobalVariable *GV = &*GVI++;
 
-      if (isUnmergeableGlobal(GV, UsedGlobals))
+      if (isUnmergeableGlobal(GV, UsedGlobals)) {
         continue;
 
+}
+
       // We can only replace constant with local linkage.
-      if (!GV->hasLocalLinkage())
+      if (!GV->hasLocalLinkage()) {
         continue;
+
+}
 
       Constant *Init = GV->getInitializer();
 
       // Check to see if the initializer is already known.
       auto Found = CMap.find(Init);
-      if (Found == CMap.end())
+      if (Found == CMap.end()) {
         continue;
+
+}
 
       GlobalVariable *Slot = Found->second;
-      if (Slot == GV)
+      if (Slot == GV) {
         continue;
 
-      if (makeMergeable(GV, Slot) == CanMerge::No)
+}
+
+      if (makeMergeable(GV, Slot) == CanMerge::No) {
         continue;
+
+}
 
       // Make all uses of the duplicate constant use the canonical version.
       LLVM_DEBUG(dbgs() << "Will replace: @" << GV->getName() << " -> @"
@@ -241,8 +279,10 @@ static bool mergeConstants(Module &M) {
       ++NumIdenticalMerged;
     }
 
-    if (ChangesMade == OldChangesMade)
+    if (ChangesMade == OldChangesMade) {
       break;
+
+}
     OldChangesMade = ChangesMade;
 
     SameContentReplacements.clear();
@@ -253,8 +293,10 @@ static bool mergeConstants(Module &M) {
 }
 
 PreservedAnalyses ConstantMergePass::run(Module &M, ModuleAnalysisManager &) {
-  if (!mergeConstants(M))
+  if (!mergeConstants(M)) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }
 
@@ -270,8 +312,10 @@ struct ConstantMergeLegacyPass : public ModulePass {
   // For this pass, process all of the globals in the module, eliminating
   // duplicate constants.
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
     return mergeConstants(M);
   }
 };

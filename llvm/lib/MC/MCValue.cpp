@@ -23,8 +23,10 @@ void MCValue::print(raw_ostream &OS) const {
 
   // FIXME: prints as a number, which isn't ideal. But the meaning will be
   // target-specific anyway.
-  if (getRefKind())
+  if (getRefKind()) {
     OS << ':' << getRefKind() <<  ':';
+
+}
 
   OS << *getSymA();
 
@@ -33,8 +35,10 @@ void MCValue::print(raw_ostream &OS) const {
     OS << *getSymB();
   }
 
-  if (getConstant())
+  if (getConstant()) {
     OS << " + " << getConstant();
+
+}
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
@@ -46,13 +50,17 @@ LLVM_DUMP_METHOD void MCValue::dump() const {
 MCSymbolRefExpr::VariantKind MCValue::getAccessVariant() const {
   const MCSymbolRefExpr *B = getSymB();
   if (B) {
-    if (B->getKind() != MCSymbolRefExpr::VK_None)
+    if (B->getKind() != MCSymbolRefExpr::VK_None) {
       llvm_unreachable("unsupported");
+
+}
   }
 
   const MCSymbolRefExpr *A = getSymA();
-  if (!A)
+  if (!A) {
     return MCSymbolRefExpr::VK_None;
+
+}
 
   return A->getKind();
 }

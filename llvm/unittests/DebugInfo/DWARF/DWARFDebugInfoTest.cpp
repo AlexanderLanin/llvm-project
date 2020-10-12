@@ -42,8 +42,10 @@ namespace {
 template <uint16_t Version, class AddrType, class RefAddrType>
 void TestAllForms() {
   Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test that we can decode all DW_FORM values correctly.
   const AddrType AddrValue = (AddrType)0x0123456789abcdefULL;
@@ -78,8 +80,10 @@ void TestAllForms() {
   dwarfgen::CompileUnit &CU = DG->addCompileUnit();
   dwarfgen::DIE CUDie = CU.getUnitDIE();
 
-  if (Version >= 5)
+  if (Version >= 5) {
     CUDie.addStrOffsetsBaseAttribute();
+
+}
 
   uint16_t Attr = DW_AT_lo_user;
 
@@ -106,8 +110,10 @@ void TestAllForms() {
 
   // We handle data16 as a block form.
   const auto Attr_DW_FORM_data16 = static_cast<dwarf::Attribute>(Attr++);
-  if (Version >= 5)
+  if (Version >= 5) {
     CUDie.addAttribute(Attr_DW_FORM_data16, DW_FORM_data16, Data16, 16);
+
+}
 
   //----------------------------------------------------------------------
   // Test data forms
@@ -165,8 +171,10 @@ void TestAllForms() {
   CUDie.addAttribute(Attr_DW_FORM_ref8, DW_FORM_ref8, Data8);
 
   const auto Attr_DW_FORM_ref_sig8 = static_cast<dwarf::Attribute>(Attr++);
-  if (Version >= 4)
+  if (Version >= 4) {
     CUDie.addAttribute(Attr_DW_FORM_ref_sig8, DW_FORM_ref_sig8, Data8_2);
+
+}
 
   const auto Attr_DW_FORM_ref_udata = static_cast<dwarf::Attribute>(Attr++);
   CUDie.addAttribute(Attr_DW_FORM_ref_udata, DW_FORM_ref_udata, UData[0]);
@@ -181,8 +189,10 @@ void TestAllForms() {
   CUDie.addAttribute(Attr_DW_FORM_flag_false, DW_FORM_flag, false);
 
   const auto Attr_DW_FORM_flag_present = static_cast<dwarf::Attribute>(Attr++);
-  if (Version >= 4)
+  if (Version >= 4) {
     CUDie.addAttribute(Attr_DW_FORM_flag_present, DW_FORM_flag_present);
+
+}
 
   //----------------------------------------------------------------------
   // Test SLEB128 based forms
@@ -192,9 +202,11 @@ void TestAllForms() {
 
   const auto Attr_DW_FORM_implicit_const =
     static_cast<dwarf::Attribute>(Attr++);
-  if (Version >= 5)
+  if (Version >= 5) {
     CUDie.addAttribute(Attr_DW_FORM_implicit_const, DW_FORM_implicit_const,
                        ICSData);
+
+}
 
   //----------------------------------------------------------------------
   // Test ULEB128 based forms
@@ -210,9 +222,11 @@ void TestAllForms() {
                      Dwarf32Values[0]);
 
   const auto Attr_DW_FORM_sec_offset = static_cast<dwarf::Attribute>(Attr++);
-  if (Version >= 4)
+  if (Version >= 4) {
     CUDie.addAttribute(Attr_DW_FORM_sec_offset, DW_FORM_sec_offset,
                        Dwarf32Values[1]);
+
+}
 
   //----------------------------------------------------------------------
   // Add an address at the end to make sure we can decode this value
@@ -456,8 +470,10 @@ TEST(DWARFDebugInfo, TestDWARF32Version5Addr8AllForms) {
 
 template <uint16_t Version, class AddrType> void TestChildren() {
   Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test that we can decode DW_FORM_ref_addr values correctly in DWARF 2 with
   // 4 byte addresses. DW_FORM_ref_addr values should be 4 bytes when using
@@ -586,8 +602,10 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr8Children) {
 
 template <uint16_t Version, class AddrType> void TestReferences() {
   Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test that we can decode DW_FORM_refXXX values correctly in DWARF.
   auto ExpectedDG = dwarfgen::Generator::create(Triple, Version);
@@ -836,8 +854,10 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr8References) {
 
 template <uint16_t Version, class AddrType> void TestAddresses() {
   Triple Triple = getDefaultTargetTripleForAddrSize(sizeof(AddrType));
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test the DWARF APIs related to accessing the DW_AT_low_pc and
   // DW_AT_high_pc.
@@ -868,11 +888,13 @@ template <uint16_t Version, class AddrType> void TestAddresses() {
   SubprogramLowHighPC.addAttribute(DW_AT_name, DW_FORM_strp, "low_high_pc");
   SubprogramLowHighPC.addAttribute(DW_AT_low_pc, DW_FORM_addr, ActualLowPC);
   // Encode the high PC as an offset from the low PC if supported.
-  if (SupportsHighPCAsOffset)
+  if (SupportsHighPCAsOffset) {
     SubprogramLowHighPC.addAttribute(DW_AT_high_pc, DW_FORM_data4,
                                      ActualHighPCOffset);
-  else
+  } else {
     SubprogramLowHighPC.addAttribute(DW_AT_high_pc, DW_FORM_addr, ActualHighPC);
+
+}
 
   StringRef FileBytes = DG->generate();
   MemoryBufferRef FileBuffer(FileBytes, "dwarf");
@@ -1008,8 +1030,10 @@ TEST(DWARFDebugInfo, TestDWARF32Version4Addr8Addresses) {
 
 TEST(DWARFDebugInfo, TestStringOffsets) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   const char *String1 = "Hello";
   const char *String2 = "World";
@@ -1072,8 +1096,10 @@ TEST(DWARFDebugInfo, TestStringOffsets) {
 
 TEST(DWARFDebugInfo, TestEmptyStringOffsets) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   const char *String1 = "Hello";
 
@@ -1101,8 +1127,10 @@ TEST(DWARFDebugInfo, TestEmptyStringOffsets) {
 
 TEST(DWARFDebugInfo, TestRelations) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test the DWARF APIs related to accessing the DW_AT_low_pc and
   // DW_AT_high_pc.
@@ -1288,8 +1316,10 @@ TEST(DWARFDebugInfo, TestDWARFDie) {
 
 TEST(DWARFDebugInfo, TestChildIterators) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test the DWARF APIs related to iterating across the children of a DIE using
   // the DWARFDie::iterator class.
@@ -1402,8 +1432,10 @@ TEST(DWARFDebugInfo, TestEmptyChildren) {
 
 TEST(DWARFDebugInfo, TestAttributeIterators) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test the DWARF APIs related to iterating across all attribute values in a
   // a DWARFDie.
@@ -1464,8 +1496,10 @@ TEST(DWARFDebugInfo, TestAttributeIterators) {
 
 TEST(DWARFDebugInfo, TestFindRecurse) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   uint16_t Version = 4;
   auto ExpectedDG = dwarfgen::Generator::create(Triple, Version);
@@ -1678,8 +1712,10 @@ TEST(DWARFDebugInfo, TestDwarfToFunctions) {
 
 TEST(DWARFDebugInfo, TestFindAttrs) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   // Test the DWARFDie::find() and DWARFDie::findRecursively() that take an
   // ArrayRef<dwarf::Attribute> value to make sure they work correctly.
@@ -1741,8 +1777,10 @@ TEST(DWARFDebugInfo, TestFindAttrs) {
 
 TEST(DWARFDebugInfo, TestImplicitConstAbbrevs) {
   Triple Triple = getNormalizedDefaultTargetTriple();
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
     return;
+
+}
 
   uint16_t Version = 5;
   auto ExpectedDG = dwarfgen::Generator::create(Triple, Version);
@@ -1781,8 +1819,10 @@ TEST(DWARFDebugInfo, TestImplicitConstAbbrevs) {
   AbbrevIt Val1Abbrev = Abbrevs->end();
   AbbrevIt Val2Abbrev = Abbrevs->end();
   for(auto it = Abbrevs->begin(); it != Abbrevs->end(); ++it) {
-    if (it->getNumAttributes() == 0)
+    if (it->getNumAttributes() == 0) {
       continue; // root abbrev for DW_TAG_compile_unit
+
+}
 
     auto A = it->getAttrByIndex(0);
     EXPECT_EQ(A, Attr);
@@ -1851,8 +1891,10 @@ TEST(DWARFDebugInfo, TestImplicitConstAbbrevs) {
   EXPECT_EQ(DIEs.count(Val1), 2u);
   EXPECT_EQ(DIEs.count(Val2), 1u);
   auto Val1Range = DIEs.equal_range(Val1);
-  for (auto it = Val1Range.first; it != Val1Range.second; ++it)
+  for (auto it = Val1Range.first; it != Val1Range.second; ++it) {
     EXPECT_EQ(it->second, AbbrevPtrVal1);
+
+}
   EXPECT_EQ(DIEs.find(Val2)->second, AbbrevPtrVal2);
 }
 
@@ -2508,8 +2550,10 @@ TEST(DWARFDebugInfo, TestDwarfVerifyCUDontShareLineTable) {
 
 TEST(DWARFDebugInfo, TestErrorReporting) {
   Triple Triple("x86_64-pc-linux");
-  if (!isConfigurationSupported(Triple))
+  if (!isConfigurationSupported(Triple)) {
       return;
+
+}
 
   auto ExpectedDG = dwarfgen::Generator::create(Triple, 4 /*DwarfVersion*/);
   ASSERT_THAT_EXPECTED(ExpectedDG, Succeeded());

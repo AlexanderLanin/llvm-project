@@ -14,8 +14,10 @@ using namespace llvm;
 std::pair<uint64_t, dwarf::DwarfFormat>
 DWARFDataExtractor::getInitialLength(uint64_t *Off, Error *Err) const {
   ErrorAsOutParameter ErrAsOut(Err);
-  if (Err && *Err)
+  if (Err && *Err) {
     return {0, dwarf::DWARF32};
+
+}
 
   Cursor C(*Off);
   uint64_t Length = getRelocatedValue(C, 4);
@@ -25,10 +27,12 @@ DWARFDataExtractor::getInitialLength(uint64_t *Off, Error *Err) const {
     Format = dwarf::DWARF64;
   } else if (Length >= dwarf::DW_LENGTH_lo_reserved) {
     cantFail(C.takeError());
-    if (Err)
+    if (Err) {
       *Err = createStringError(
           errc::invalid_argument,
           "unsupported reserved unit length of value 0x%8.8" PRIx64, Length);
+
+}
     return {0, dwarf::DWARF32};
   }
 
@@ -36,37 +40,51 @@ DWARFDataExtractor::getInitialLength(uint64_t *Off, Error *Err) const {
     *Off = C.tell();
     return {Length, Format};
   }
-  if (Err)
+  if (Err) {
     *Err = C.takeError();
-  else
+  } else {
     consumeError(C.takeError());
+
+}
   return {0, dwarf::DWARF32};
 }
 
 uint64_t DWARFDataExtractor::getRelocatedValue(uint32_t Size, uint64_t *Off,
                                                uint64_t *SecNdx,
                                                Error *Err) const {
-  if (SecNdx)
+  if (SecNdx) {
     *SecNdx = object::SectionedAddress::UndefSection;
-  if (!Section)
+
+}
+  if (!Section) {
     return getUnsigned(Off, Size, Err);
+
+}
   Optional<RelocAddrEntry> E = Obj->find(*Section, *Off);
   uint64_t A = getUnsigned(Off, Size, Err);
-  if (!E)
+  if (!E) {
     return A;
-  if (SecNdx)
+
+}
+  if (SecNdx) {
     *SecNdx = E->SectionIndex;
+
+}
   uint64_t R = E->Resolver(E->Reloc, E->SymbolValue, A);
-  if (E->Reloc2)
+  if (E->Reloc2) {
     R = E->Resolver(*E->Reloc2, E->SymbolValue2, R);
+
+}
   return R;
 }
 
 Optional<uint64_t>
 DWARFDataExtractor::getEncodedPointer(uint64_t *Offset, uint8_t Encoding,
                                       uint64_t PCRelOffset) const {
-  if (Encoding == dwarf::DW_EH_PE_omit)
+  if (Encoding == dwarf::DW_EH_PE_omit) {
     return None;
+
+}
 
   uint64_t Result = 0;
   uint64_t OldOffset = *Offset;

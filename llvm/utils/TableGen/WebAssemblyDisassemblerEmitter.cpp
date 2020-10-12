@@ -31,14 +31,18 @@ void emitWebAssemblyDisassemblerTables(
   for (unsigned I = 0; I != NumberedInstructions.size(); ++I) {
     auto &CGI = *NumberedInstructions[I];
     auto &Def = *CGI.TheDef;
-    if (!Def.getValue("Inst"))
+    if (!Def.getValue("Inst")) {
       continue;
+
+}
     auto &Inst = *Def.getValueAsBitsInit("Inst");
     auto Opc = static_cast<unsigned>(
         reinterpret_cast<IntInit *>(Inst.convertInitializerTo(IntRecTy::get()))
             ->getValue());
-    if (Opc == 0xFFFFFFFF)
+    if (Opc == 0xFFFFFFFF) {
       continue; // No opcode defined.
+
+}
     assert(Opc <= 0xFFFF);
     auto Prefix = Opc >> 8;
     Opc = Opc & 0xFF;
@@ -50,8 +54,10 @@ void emitWebAssemblyDisassemblerTables(
     auto IsStackBased =
         StackString &&
         reinterpret_cast<const StringInit *>(StackString)->getValue() == "true";
-    if (!IsStackBased)
+    if (!IsStackBased) {
       continue;
+
+}
     if (CGIP.second) {
       // We already have an instruction for this slot, so decide which one
       // should be the canonical one. This determines which variant gets
@@ -61,8 +67,10 @@ void emitWebAssemblyDisassemblerTables(
                                      ->getValue()
                                      ->getAsString() == "1";
       // We already have one marked explicitly as canonical, so keep it.
-      if (IsCanonicalExisting)
+      if (IsCanonicalExisting) {
         continue;
+
+}
       auto IsCanonicalNew =
           Def.getValue("IsCanonical")->getValue()->getAsString() == "1";
       // If the new one is explicitly marked as canonical, take it.
@@ -71,8 +79,10 @@ void emitWebAssemblyDisassemblerTables(
         // Pick the one with the shortest name as heuristic.
         // Though ideally IsCanonical is always defined for at least one
         // variant so this never has to apply.
-        if (CGIP.second->AsmString.size() <= CGI.AsmString.size())
+        if (CGIP.second->AsmString.size() <= CGI.AsmString.size()) {
           continue;
+
+}
       }
     }
     // Set this instruction as the one to use.
@@ -94,8 +104,10 @@ void emitWebAssemblyDisassemblerTables(
   std::vector<std::string> OperandTable, CurOperandList;
   // Output one table per prefix.
   for (auto &PrefixPair : OpcodeTable) {
-    if (PrefixPair.second.empty())
+    if (PrefixPair.second.empty()) {
       continue;
+
+}
     OS << "WebAssemblyInstruction InstructionTable" << PrefixPair.first;
     OS << "[] = {\n";
     for (unsigned I = 0; I < WebAssemblyInstructionTableSize; I++) {
@@ -123,7 +135,9 @@ void emitWebAssemblyDisassemblerTables(
                ++J) {
             size_t K = 0;
             for (; K < CurOperandList.size(); ++K) {
-              if (OperandTable[J + K] != CurOperandList[K]) break;
+              if (OperandTable[J + K] != CurOperandList[K]) { break;
+
+}
             }
             if (K == CurOperandList.size()) {
               OperandStart = J;
@@ -160,8 +174,10 @@ void emitWebAssemblyDisassemblerTables(
   OS << "struct { uint8_t Prefix; const WebAssemblyInstruction *Table; }\n";
   OS << "PrefixTable[] = {\n";
   for (auto &PrefixPair : OpcodeTable) {
-    if (PrefixPair.second.empty() || !PrefixPair.first)
+    if (PrefixPair.second.empty() || !PrefixPair.first) {
       continue;
+
+}
     OS << "  { " << PrefixPair.first << ", InstructionTable"
        << PrefixPair.first;
     OS << " },\n";

@@ -22,20 +22,30 @@ static void ComputeNumbering(Function *F, DenseMap<Value*,unsigned> &Numbering){
 
   // Arguments get the first numbers.
   for (Function::arg_iterator
-         AI = F->arg_begin(), AE = F->arg_end(); AI != AE; ++AI)
-    if (!AI->hasName())
+         AI = F->arg_begin(), AE = F->arg_end(); AI != AE; ++AI) {
+    if (!AI->hasName()) {
       Numbering[&*AI] = IN++;
+
+}
+
+}
 
   // Walk the basic blocks in order.
   for (Function::iterator FI = F->begin(), FE = F->end(); FI != FE; ++FI) {
-    if (!FI->hasName())
+    if (!FI->hasName()) {
       Numbering[&*FI] = IN++;
 
+}
+
     // Walk the instructions in order.
-    for (BasicBlock::iterator BI = FI->begin(), BE = FI->end(); BI != BE; ++BI)
+    for (BasicBlock::iterator BI = FI->begin(), BE = FI->end(); BI != BE; ++BI) {
       // void instructions don't get numbers.
-      if (!BI->hasName() && !BI->getType()->isVoidTy())
+      if (!BI->hasName() && !BI->getType()->isVoidTy()) {
         Numbering[&*BI] = IN++;
+
+}
+
+}
   }
 
   assert(!Numbering.empty() && "asked for numbering but numbering was no-op");
@@ -73,15 +83,21 @@ void DiffConsumer::printValue(Value *V, bool isL) {
   while (N > 0) {
     --N;
     DiffContext &ctxt = contexts[N];
-    if (!ctxt.IsFunction) continue;
+    if (!ctxt.IsFunction) { continue;
+
+}
     if (isL) {
-      if (ctxt.LNumbering.empty())
+      if (ctxt.LNumbering.empty()) {
         ComputeNumbering(cast<Function>(ctxt.L), ctxt.LNumbering);
+
+}
       out << '%' << ctxt.LNumbering[V];
       return;
     } else {
-      if (ctxt.RNumbering.empty())
+      if (ctxt.RNumbering.empty()) {
         ComputeNumbering(cast<Function>(ctxt.R), ctxt.RNumbering);
+
+}
       out << '%' << ctxt.RNumbering[V];
       return;
     }
@@ -91,27 +107,35 @@ void DiffConsumer::printValue(Value *V, bool isL) {
 }
 
 void DiffConsumer::header() {
-  if (contexts.empty()) return;
+  if (contexts.empty()) { return;
+
+}
   for (SmallVectorImpl<DiffContext>::iterator
          I = contexts.begin(), E = contexts.end(); I != E; ++I) {
-    if (I->Differences) continue;
+    if (I->Differences) { continue;
+
+}
     if (isa<Function>(I->L)) {
       // Extra newline between functions.
-      if (Differences) out << "\n";
+      if (Differences) { out << "\n";
+
+}
 
       Function *L = cast<Function>(I->L);
       Function *R = cast<Function>(I->R);
-      if (L->getName() != R->getName())
+      if (L->getName() != R->getName()) {
         out << "in function " << L->getName()
             << " / " << R->getName() << ":\n";
-      else
+      } else {
         out << "in function " << L->getName() << ":\n";
+
+}
     } else if (isa<BasicBlock>(I->L)) {
       BasicBlock *L = cast<BasicBlock>(I->L);
       BasicBlock *R = cast<BasicBlock>(I->R);
-      if (L->hasName() && R->hasName() && L->getName() == R->getName())
+      if (L->hasName() && R->hasName() && L->getName() == R->getName()) {
         out << "  in block %" << L->getName() << ":\n";
-      else {
+      } else {
         out << "  in block ";
         printValue(L, true);
         out << " / ";
@@ -132,7 +156,9 @@ void DiffConsumer::header() {
 
 void DiffConsumer::indent() {
   unsigned N = Indent;
-  while (N--) out << ' ';
+  while (N--) { out << ' ';
+
+}
 }
 
 bool DiffConsumer::hadDifferences() const {
@@ -171,7 +197,9 @@ void DiffConsumer::logf(const LogBuilder &Log) {
     }
     assert(format[percent] == '%');
 
-    if (percent > 0) out << format.substr(0, percent);
+    if (percent > 0) { out << format.substr(0, percent);
+
+}
 
     switch (format[percent+1]) {
     case '%': out << '%'; break;

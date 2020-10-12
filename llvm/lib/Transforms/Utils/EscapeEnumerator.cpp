@@ -27,8 +27,10 @@ static FunctionCallee getDefaultPersonalityFn(Module *M) {
 }
 
 IRBuilder<> *EscapeEnumerator::Next() {
-  if (Done)
+  if (Done) {
     return nullptr;
+
+}
 
   // Find all 'return', 'resume', and 'unwind' instructions.
   while (StateBB != StateE) {
@@ -37,8 +39,10 @@ IRBuilder<> *EscapeEnumerator::Next() {
     // Branches and invokes do not escape, only unwind, resume, and return
     // do.
     Instruction *TI = CurBB->getTerminator();
-    if (!isa<ReturnInst>(TI) && !isa<ResumeInst>(TI))
+    if (!isa<ReturnInst>(TI) && !isa<ResumeInst>(TI)) {
       continue;
+
+}
 
     Builder.SetInsertPoint(TI);
     return &Builder;
@@ -46,22 +50,36 @@ IRBuilder<> *EscapeEnumerator::Next() {
 
   Done = true;
 
-  if (!HandleExceptions)
+  if (!HandleExceptions) {
     return nullptr;
 
-  if (F.doesNotThrow())
+}
+
+  if (F.doesNotThrow()) {
     return nullptr;
+
+}
 
   // Find all 'call' instructions that may throw.
   SmallVector<Instruction *, 16> Calls;
-  for (BasicBlock &BB : F)
-    for (Instruction &II : BB)
-      if (CallInst *CI = dyn_cast<CallInst>(&II))
-        if (!CI->doesNotThrow())
+  for (BasicBlock &BB : F) {
+    for (Instruction &II : BB) {
+      if (CallInst *CI = dyn_cast<CallInst>(&II)) {
+        if (!CI->doesNotThrow()) {
           Calls.push_back(CI);
 
-  if (Calls.empty())
+}
+
+}
+
+}
+
+}
+
+  if (Calls.empty()) {
     return nullptr;
+
+}
 
   // Create a cleanup block.
   LLVMContext &C = F.getContext();

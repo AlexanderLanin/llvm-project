@@ -450,8 +450,10 @@ YAMLInlineeLinesSubsection::toCodeViewSubsection(
   for (const auto &Site : InlineeLines.Sites) {
     Result->addInlineSite(TypeIndex(Site.Inlinee), Site.FileName,
                           Site.SourceLineNum);
-    if (!InlineeLines.HasExtraFiles)
+    if (!InlineeLines.HasExtraFiles) {
       continue;
+
+}
 
     for (auto EF : Site.ExtraFiles) {
       Result->addExtraFile(EF);
@@ -465,8 +467,10 @@ YAMLCrossModuleExportsSubsection::toCodeViewSubsection(
     BumpPtrAllocator &Allocator,
     const codeview::StringsAndChecksums &SC) const {
   auto Result = std::make_shared<DebugCrossModuleExportsSubsection>();
-  for (const auto &M : Exports)
+  for (const auto &M : Exports) {
     Result->addMapping(M.Local, M.Global);
+
+}
   return Result;
 }
 
@@ -479,8 +483,10 @@ YAMLCrossModuleImportsSubsection::toCodeViewSubsection(
   auto Result =
       std::make_shared<DebugCrossModuleImportsSubsection>(*SC.strings());
   for (const auto &M : Imports) {
-    for (const auto Id : M.ImportIds)
+    for (const auto Id : M.ImportIds) {
       Result->addImport(M.ModuleName, Id);
+
+}
   }
   return Result;
 }
@@ -489,9 +495,11 @@ std::shared_ptr<DebugSubsection> YAMLSymbolsSubsection::toCodeViewSubsection(
     BumpPtrAllocator &Allocator,
     const codeview::StringsAndChecksums &SC) const {
   auto Result = std::make_shared<DebugSymbolsSubsection>();
-  for (const auto &Sym : Symbols)
+  for (const auto &Sym : Symbols) {
     Result->addSymbol(
         Sym.toCodeViewSymbol(Allocator, CodeViewContainer::ObjectFile));
+
+}
   return Result;
 }
 
@@ -500,8 +508,10 @@ YAMLStringTableSubsection::toCodeViewSubsection(
     BumpPtrAllocator &Allocator,
     const codeview::StringsAndChecksums &SC) const {
   auto Result = std::make_shared<DebugStringTableSubsection>();
-  for (const auto &Str : this->Strings)
+  for (const auto &Str : this->Strings) {
     Result->insert(Str);
+
+}
   return Result;
 }
 
@@ -532,8 +542,10 @@ YAMLCoffSymbolRVASubsection::toCodeViewSubsection(
     BumpPtrAllocator &Allocator,
     const codeview::StringsAndChecksums &SC) const {
   auto Result = std::make_shared<DebugSymbolRVASubsection>();
-  for (const auto &RVA : RVAs)
+  for (const auto &RVA : RVAs) {
     Result->addRVA(RVA);
+
+}
   return Result;
 }
 
@@ -541,8 +553,10 @@ static Expected<SourceFileChecksumEntry>
 convertOneChecksum(const DebugStringTableSubsectionRef &Strings,
                    const FileChecksumEntry &CS) {
   auto ExpectedString = Strings.getString(CS.FileNameOffset);
-  if (!ExpectedString)
+  if (!ExpectedString) {
     return ExpectedString.takeError();
+
+}
 
   SourceFileChecksumEntry Result;
   Result.ChecksumBytes.Bytes = CS.Checksum;
@@ -555,8 +569,10 @@ static Expected<StringRef>
 getFileName(const DebugStringTableSubsectionRef &Strings,
             const DebugChecksumsSubsectionRef &Checksums, uint32_t FileID) {
   auto Iter = Checksums.getArray().at(FileID);
-  if (Iter == Checksums.getArray().end())
+  if (Iter == Checksums.getArray().end()) {
     return make_error<CodeViewError>(cv_error_code::no_records);
+
+}
   uint32_t Offset = Iter->FileNameOffset;
   return Strings.getString(Offset);
 }
@@ -569,8 +585,10 @@ YAMLChecksumsSubsection::fromCodeViewSubsection(
 
   for (const auto &CS : FC) {
     auto ConvertedCS = convertOneChecksum(Strings, CS);
-    if (!ConvertedCS)
+    if (!ConvertedCS) {
       return ConvertedCS.takeError();
+
+}
     Result->Checksums.push_back(*ConvertedCS);
   }
   return Result;
@@ -589,8 +607,10 @@ YAMLLinesSubsection::fromCodeViewSubsection(
   for (const auto &L : Lines) {
     SourceLineBlock Block;
     auto EF = getFileName(Strings, Checksums, L.NameIndex);
-    if (!EF)
+    if (!EF) {
       return EF.takeError();
+
+}
     Block.FileName = *EF;
     if (Lines.hasColumnInfo()) {
       for (const auto &C : L.Columns) {
@@ -625,16 +645,20 @@ YAMLInlineeLinesSubsection::fromCodeViewSubsection(
   for (const auto &IL : Lines) {
     InlineeSite Site;
     auto ExpF = getFileName(Strings, Checksums, IL.Header->FileID);
-    if (!ExpF)
+    if (!ExpF) {
       return ExpF.takeError();
+
+}
     Site.FileName = *ExpF;
     Site.Inlinee = IL.Header->Inlinee.getIndex();
     Site.SourceLineNum = IL.Header->SourceLineNum;
     if (Lines.hasExtraFiles()) {
       for (const auto EF : IL.ExtraFiles) {
         auto ExpF2 = getFileName(Strings, Checksums, EF);
-        if (!ExpF2)
+        if (!ExpF2) {
           return ExpF2.takeError();
+
+}
         Site.ExtraFiles.push_back(*ExpF2);
       }
     }
@@ -659,8 +683,10 @@ YAMLCrossModuleImportsSubsection::fromCodeViewSubsection(
   for (const auto &CMI : Imports) {
     YAMLCrossModuleImport YCMI;
     auto ExpectedStr = Strings.getString(CMI.Header->ModuleNameOffset);
-    if (!ExpectedStr)
+    if (!ExpectedStr) {
       return ExpectedStr.takeError();
+
+}
     YCMI.ModuleName = *ExpectedStr;
     YCMI.ImportIds.assign(CMI.Imports.begin(), CMI.Imports.end());
     Result->Imports.push_back(YCMI);
@@ -674,12 +700,14 @@ YAMLSymbolsSubsection::fromCodeViewSubsection(
   auto Result = std::make_shared<YAMLSymbolsSubsection>();
   for (const auto &Sym : Symbols) {
     auto S = CodeViewYAML::SymbolRecord::fromCodeViewSymbol(Sym);
-    if (!S)
+    if (!S) {
       return joinErrors(make_error<CodeViewError>(
                             cv_error_code::corrupt_record,
                             "Invalid CodeView Symbol Record in SymbolRecord "
                             "subsection of .debug$S while converting to YAML!"),
                         S.takeError());
+
+}
 
     Result->Symbols.push_back(*S);
   }
@@ -693,12 +721,16 @@ YAMLStringTableSubsection::fromCodeViewSubsection(
   BinaryStreamReader Reader(Strings.getBuffer());
   StringRef S;
   // First item is a single null string, skip it.
-  if (auto EC = Reader.readCString(S))
+  if (auto EC = Reader.readCString(S)) {
     return std::move(EC);
+
+}
   assert(S.empty());
   while (Reader.bytesRemaining() > 0) {
-    if (auto EC = Reader.readCString(S))
+    if (auto EC = Reader.readCString(S)) {
       return std::move(EC);
+
+}
     Result->Strings.push_back(S);
   }
   return Result;
@@ -721,12 +753,14 @@ YAMLFrameDataSubsection::fromCodeViewSubsection(
     YF.SavedRegsSize = F.SavedRegsSize;
 
     auto ES = Strings.getString(F.FrameFunc);
-    if (!ES)
+    if (!ES) {
       return joinErrors(
           make_error<CodeViewError>(
               cv_error_code::no_records,
               "Could not find string for string id while mapping FrameData!"),
           ES.takeError());
+
+}
     YF.FrameFunc = *ES;
     Result->Frames.push_back(YF);
   }
@@ -748,8 +782,10 @@ llvm::CodeViewYAML::toCodeViewSubsectionList(
     BumpPtrAllocator &Allocator, ArrayRef<YAMLDebugSubsection> Subsections,
     const codeview::StringsAndChecksums &SC) {
   std::vector<std::shared_ptr<DebugSubsection>> Result;
-  if (Subsections.empty())
+  if (Subsections.empty()) {
     return std::move(Result);
+
+}
 
   for (const auto &SS : Subsections) {
     std::shared_ptr<DebugSubsection> CVS;
@@ -799,8 +835,10 @@ Error SubsectionConversionVisitor::visitLines(
     DebugLinesSubsectionRef &Lines, const StringsAndChecksumsRef &State) {
   auto Result = YAMLLinesSubsection::fromCodeViewSubsection(
       State.strings(), State.checksums(), Lines);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -810,8 +848,10 @@ Error SubsectionConversionVisitor::visitFileChecksums(
     const StringsAndChecksumsRef &State) {
   auto Result = YAMLChecksumsSubsection::fromCodeViewSubsection(State.strings(),
                                                                 Checksums);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -821,8 +861,10 @@ Error SubsectionConversionVisitor::visitInlineeLines(
     const StringsAndChecksumsRef &State) {
   auto Result = YAMLInlineeLinesSubsection::fromCodeViewSubsection(
       State.strings(), State.checksums(), Inlinees);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -832,8 +874,10 @@ Error SubsectionConversionVisitor::visitCrossModuleExports(
     const StringsAndChecksumsRef &State) {
   auto Result =
       YAMLCrossModuleExportsSubsection::fromCodeViewSubsection(Exports);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -843,8 +887,10 @@ Error SubsectionConversionVisitor::visitCrossModuleImports(
     const StringsAndChecksumsRef &State) {
   auto Result = YAMLCrossModuleImportsSubsection::fromCodeViewSubsection(
       State.strings(), Imports);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -853,8 +899,10 @@ Error SubsectionConversionVisitor::visitStringTable(
     DebugStringTableSubsectionRef &Strings,
     const StringsAndChecksumsRef &State) {
   auto Result = YAMLStringTableSubsection::fromCodeViewSubsection(Strings);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -862,8 +910,10 @@ Error SubsectionConversionVisitor::visitStringTable(
 Error SubsectionConversionVisitor::visitSymbols(
     DebugSymbolsSubsectionRef &Symbols, const StringsAndChecksumsRef &State) {
   auto Result = YAMLSymbolsSubsection::fromCodeViewSubsection(Symbols);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -872,8 +922,10 @@ Error SubsectionConversionVisitor::visitFrameData(
     DebugFrameDataSubsectionRef &Frames, const StringsAndChecksumsRef &State) {
   auto Result =
       YAMLFrameDataSubsection::fromCodeViewSubsection(State.strings(), Frames);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -881,8 +933,10 @@ Error SubsectionConversionVisitor::visitFrameData(
 Error SubsectionConversionVisitor::visitCOFFSymbolRVAs(
     DebugSymbolRVASubsectionRef &RVAs, const StringsAndChecksumsRef &State) {
   auto Result = YAMLCoffSymbolRVASubsection::fromCodeViewSubsection(RVAs);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+
+}
   Subsection.Subsection = *Result;
   return Error::success();
 }
@@ -891,8 +945,10 @@ Expected<YAMLDebugSubsection>
 YAMLDebugSubsection::fromCodeViewSubection(const StringsAndChecksumsRef &SC,
                                            const DebugSubsectionRecord &SS) {
   SubsectionConversionVisitor V;
-  if (auto EC = visitDebugSubsection(SS, V, SC))
+  if (auto EC = visitDebugSubsection(SS, V, SC)) {
     return std::move(EC);
+
+}
 
   return V.Subsection;
 }
@@ -933,8 +989,10 @@ void llvm::CodeViewYAML::initializeStringsAndChecksums(
   // beginning.
   if (!SC.hasStrings()) {
     for (const auto &SS : Sections) {
-      if (SS.Subsection->Kind != DebugSubsectionKind::StringTable)
+      if (SS.Subsection->Kind != DebugSubsectionKind::StringTable) {
         continue;
+
+}
 
       auto Result = SS.Subsection->toCodeViewSubsection(Allocator, SC);
       SC.setStrings(
@@ -945,8 +1003,10 @@ void llvm::CodeViewYAML::initializeStringsAndChecksums(
 
   if (SC.hasStrings() && !SC.hasChecksums()) {
     for (const auto &SS : Sections) {
-      if (SS.Subsection->Kind != DebugSubsectionKind::FileChecksums)
+      if (SS.Subsection->Kind != DebugSubsectionKind::FileChecksums) {
         continue;
+
+}
 
       auto Result = SS.Subsection->toCodeViewSubsection(Allocator, SC);
       SC.setChecksums(

@@ -43,15 +43,21 @@ public:
     ASTContext &Ctx = Pass.Ctx;
     TransformActions &TA = Pass.TA;
 
-    if (ME->getReceiverKind() != ObjCMessageExpr::Instance)
-      return true;
-    Expr *receiver = ME->getInstanceReceiver();
-    if (!receiver)
+    if (ME->getReceiverKind() != ObjCMessageExpr::Instance) {
       return true;
 
-    DeclRefExpr *refE = dyn_cast<DeclRefExpr>(receiver->IgnoreParenCasts());
-    if (!refE || refE->getDecl() != SelfD)
+}
+    Expr *receiver = ME->getInstanceReceiver();
+    if (!receiver) {
       return true;
+
+}
+
+    DeclRefExpr *refE = dyn_cast<DeclRefExpr>(receiver->IgnoreParenCasts());
+    if (!refE || refE->getDecl() != SelfD) {
+      return true;
+
+}
 
     bool BackedBySynthesizeSetter = false;
     for (llvm::DenseMap<ObjCPropertyDecl*, ObjCPropertyImplDecl*>::iterator
@@ -63,8 +69,10 @@ public:
         break;
       }
     }
-    if (!BackedBySynthesizeSetter)
+    if (!BackedBySynthesizeSetter) {
       return true;
+
+}
 
     // Remove the setter message if RHS is null
     Transaction Trans(TA);
@@ -72,8 +80,10 @@ public:
     bool RHSIsNull =
       RHS->isNullPointerConstant(Ctx,
                                  Expr::NPC_ValueDependentIsNull);
-    if (RHSIsNull && isRemovable(ME))
+    if (RHSIsNull && isRemovable(ME)) {
       TA.removeStmt(ME);
+
+}
 
     return true;
   }
@@ -98,14 +108,20 @@ public:
 
   bool TraverseObjCMethodDecl(ObjCMethodDecl *D) {
     if (D->getMethodFamily() != OMF_dealloc &&
-        !(D->isInstanceMethod() && D->getSelector() == FinalizeSel))
-      return true;
-    if (!D->hasBody())
+        !(D->isInstanceMethod() && D->getSelector() == FinalizeSel)) {
       return true;
 
-    ObjCImplDecl *IMD = dyn_cast<ObjCImplDecl>(D->getDeclContext());
-    if (!IMD)
+}
+    if (!D->hasBody()) {
       return true;
+
+}
+
+    ObjCImplDecl *IMD = dyn_cast<ObjCImplDecl>(D->getDeclContext());
+    if (!IMD) {
+      return true;
+
+}
 
     SelfD = D->getSelfDecl();
     collectRemovables(D->getBody(), Removables);
@@ -123,8 +139,10 @@ public:
             if (AttrKind &
                 (ObjCPropertyDecl::OBJC_PR_retain |
                   ObjCPropertyDecl::OBJC_PR_copy   |
-                  ObjCPropertyDecl::OBJC_PR_strong))
+                  ObjCPropertyDecl::OBJC_PR_strong)) {
               SynthesizedProperties[PD] = PID;
+
+}
         }
       }
     }
@@ -150,26 +168,36 @@ private:
 
   bool isZeroingPropIvar(Expr *E) {
     E = E->IgnoreParens();
-    if (BinaryOperator *BO = dyn_cast<BinaryOperator>(E))
+    if (BinaryOperator *BO = dyn_cast<BinaryOperator>(E)) {
       return isZeroingPropIvar(BO);
-    if (PseudoObjectExpr *PO = dyn_cast<PseudoObjectExpr>(E))
+
+}
+    if (PseudoObjectExpr *PO = dyn_cast<PseudoObjectExpr>(E)) {
       return isZeroingPropIvar(PO);
+
+}
     return false;
   }
 
   bool isZeroingPropIvar(BinaryOperator *BOE) {
-    if (BOE->getOpcode() == BO_Comma)
+    if (BOE->getOpcode() == BO_Comma) {
       return isZeroingPropIvar(BOE->getLHS()) &&
              isZeroingPropIvar(BOE->getRHS());
 
-    if (BOE->getOpcode() != BO_Assign)
+}
+
+    if (BOE->getOpcode() != BO_Assign) {
       return false;
+
+}
 
     Expr *LHS = BOE->getLHS();
     if (ObjCIvarRefExpr *IV = dyn_cast<ObjCIvarRefExpr>(LHS)) {
       ObjCIvarDecl *IVDecl = IV->getDecl();
-      if (!IVDecl->getType()->isObjCObjectPointerType())
+      if (!IVDecl->getType()->isObjCObjectPointerType()) {
         return false;
+
+}
       bool IvarBacksPropertySynthesis = false;
       for (llvm::DenseMap<ObjCPropertyDecl*, ObjCPropertyImplDecl*>::iterator
            P = SynthesizedProperties.begin(),
@@ -180,39 +208,55 @@ private:
           break;
         }
       }
-      if (!IvarBacksPropertySynthesis)
+      if (!IvarBacksPropertySynthesis) {
         return false;
+
+}
     }
-    else
+    else {
         return false;
+
+}
 
     return isZero(BOE->getRHS());
   }
 
   bool isZeroingPropIvar(PseudoObjectExpr *PO) {
     BinaryOperator *BO = dyn_cast<BinaryOperator>(PO->getSyntacticForm());
-    if (!BO) return false;
-    if (BO->getOpcode() != BO_Assign) return false;
+    if (!BO) { return false;
+
+}
+    if (BO->getOpcode() != BO_Assign) { return false;
+
+}
 
     ObjCPropertyRefExpr *PropRefExp =
       dyn_cast<ObjCPropertyRefExpr>(BO->getLHS()->IgnoreParens());
-    if (!PropRefExp) return false;
+    if (!PropRefExp) { return false;
+
+}
 
     // TODO: Using implicit property decl.
-    if (PropRefExp->isImplicitProperty())
+    if (PropRefExp->isImplicitProperty()) {
       return false;
 
+}
+
     if (ObjCPropertyDecl *PDecl = PropRefExp->getExplicitProperty()) {
-      if (!SynthesizedProperties.count(PDecl))
+      if (!SynthesizedProperties.count(PDecl)) {
         return false;
+
+}
     }
 
     return isZero(cast<OpaqueValueExpr>(BO->getRHS())->getSourceExpr());
   }
 
   bool isZero(Expr *E) {
-    if (E->isNullPointerConstant(Pass.Ctx, Expr::NPC_ValueDependentIsNull))
+    if (E->isNullPointerConstant(Pass.Ctx, Expr::NPC_ValueDependentIsNull)) {
       return true;
+
+}
 
     return isZeroingPropIvar(E);
   }

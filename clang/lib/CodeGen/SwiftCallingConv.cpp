@@ -33,10 +33,16 @@ static llvm::Type *getCommonType(llvm::Type *first, llvm::Type *second) {
 
   // Allow pointers to merge with integers, but prefer the integer type.
   if (first->isIntegerTy()) {
-    if (second->isPointerTy()) return first;
+    if (second->isPointerTy()) { return first;
+
+}
   } else if (first->isPointerTy()) {
-    if (second->isIntegerTy()) return second;
-    if (second->isPointerTy()) return first;
+    if (second->isIntegerTy()) { return second;
+
+}
+    if (second->isPointerTy()) { return first;
+
+}
 
   // Allow two vectors to be merged (given that they have the same size).
   // This assumes that we never have two different vector register sets.
@@ -72,7 +78,9 @@ void SwiftAggLowering::addTypedData(QualType type, CharUnits begin) {
     // Incomplete array types (flexible array members?) don't provide
     // data to lay out, and the other cases shouldn't be possible.
     auto arrayType = CGM.getContext().getAsConstantArrayType(type);
-    if (!arrayType) return;
+    if (!arrayType) { return;
+
+}
 
     QualType eltType = arrayType->getElementType();
     auto eltSize = CGM.getContext().getTypeSizeInChars(eltType);
@@ -134,7 +142,9 @@ void SwiftAggLowering::addTypedData(const RecordDecl *record, CharUnits begin,
 
     //   - non-virtual bases
     for (auto &baseSpecifier : cxxRecord->bases()) {
-      if (baseSpecifier.isVirtual()) continue;
+      if (baseSpecifier.isVirtual()) { continue;
+
+}
 
       auto baseRecord = baseSpecifier.getType()->getAsCXXRecordDecl();
       addTypedData(baseRecord, begin + layout.getBaseClassOffset(baseRecord));
@@ -175,7 +185,9 @@ void SwiftAggLowering::addBitFieldData(const FieldDecl *bitfield,
   auto width = bitfield->getBitWidthValue(ctx);
 
   // We can ignore zero-width bit-fields.
-  if (width == 0) return;
+  if (width == 0) { return;
+
+}
 
   // toCharUnitsFromBits rounds down.
   CharUnits bitfieldByteBegin = ctx.toCharUnitsFromBits(bitfieldBitBegin);
@@ -220,8 +232,10 @@ void SwiftAggLowering::addTypedData(llvm::Type *type,
 
   // Legalize integer types.
   if (auto intTy = dyn_cast<llvm::IntegerType>(type)) {
-    if (!isLegalIntegerType(CGM, intTy))
+    if (!isLegalIntegerType(CGM, intTy)) {
       return addOpaqueData(begin, end);
+
+}
   }
 
   // All other types should be legal.
@@ -272,7 +286,9 @@ void SwiftAggLowering::addEntry(llvm::Type *type,
   // TODO: do a binary search if Entries is big enough for it to matter.
   size_t index = Entries.size() - 1;
   while (index != 0) {
-    if (Entries[index - 1].End <= begin) break;
+    if (Entries[index - 1].End <= begin) { break;
+
+}
     --index;
   }
 
@@ -293,7 +309,9 @@ restartAfterSplit:
   // Simplest case: an exact overlap.
   if (Entries[index].Begin == begin && Entries[index].End == end) {
     // If the types match exactly, great.
-    if (Entries[index].Type == type) return;
+    if (Entries[index].Type == type) { return;
+
+}
 
     // If either type is opaque, make the entry opaque and return.
     if (Entries[index].Type == nullptr) {
@@ -364,8 +382,10 @@ restartAfterSplit:
     index++;
 
     // This entry needs to be made opaque if it is not already.
-    if (Entries[index].Type == nullptr)
+    if (Entries[index].Type == nullptr) {
       continue;
+
+}
 
     // Split vector entries unless we completely subsume them.
     if (Entries[index].Type->isVectorTy() &&
@@ -416,7 +436,9 @@ static bool areBytesInSameUnit(CharUnits first, CharUnits second,
 
 static bool isMergeableEntryType(llvm::Type *type) {
   // Opaquely-typed memory is always mergeable.
-  if (type == nullptr) return true;
+  if (type == nullptr) { return true;
+
+}
 
   // Pointers and integers are always mergeable.  In theory we should not
   // merge pointers, but (1) it doesn't currently matter in practice because
@@ -441,8 +463,10 @@ bool SwiftAggLowering::shouldMergeEntries(const StorageEntry &first,
   // despite being a bit more expensive because this is the condition that
   // tends to prevent merging.
   if (!areBytesInSameUnit(first.End - CharUnits::One(), second.Begin,
-                          chunkSize))
+                          chunkSize)) {
     return false;
+
+}
 
   return (isMergeableEntryType(first.Type) &&
           isMergeableEntryType(second.Type));
@@ -521,7 +545,9 @@ void SwiftAggLowering::finish() {
         assert(unitSize <= chunkSize);
         unitBegin = getOffsetAtStartOfUnit(localBegin, unitSize);
         unitEnd = unitBegin + unitSize;
-        if (unitEnd >= localEnd) break;
+        if (unitEnd >= localEnd) { break;
+
+}
       }
 
       // Add an entry for this unit.
@@ -575,8 +601,10 @@ SwiftAggLowering::getCoerceAndExpandTypes() const {
 
     if (!packed && !entry.Begin.isMultipleOf(
           CharUnits::fromQuantity(
-            CGM.getDataLayout().getABITypeAlignment(entry.Type))))
+            CGM.getDataLayout().getABITypeAlignment(entry.Type)))) {
       packed = true;
+
+}
 
     elts.push_back(entry.Type);
 
@@ -610,7 +638,9 @@ bool SwiftAggLowering::shouldPassIndirectly(bool asReturnValue) const {
   assert(Finished && "haven't yet finished lowering");
 
   // Empty types don't need to be passed indirectly.
-  if (Entries.empty()) return false;
+  if (Entries.empty()) { return false;
+
+}
 
   // Avoid copying the array of types when there's just a single element.
   if (Entries.size() == 1) {
@@ -693,8 +723,10 @@ swiftcall::splitLegalVectorType(CodeGenModule &CGM, CharUnits vectorSize,
 
   // Try to split the vector type in half.
   if (numElts >= 4 && isPowerOf2(numElts)) {
-    if (isLegalVectorType(CGM, vectorSize / 2, eltTy, numElts / 2))
+    if (isLegalVectorType(CGM, vectorSize / 2, eltTy, numElts / 2)) {
       return {llvm::VectorType::get(eltTy, numElts / 2), 2};
+
+}
   }
 
   return {eltTy, numElts};
@@ -750,7 +782,9 @@ void swiftcall::legalizeVectorType(CodeGenModule &CGM, CharUnits origVectorSize,
     components.append(numVecs, llvm::VectorType::get(eltTy, candidateNumElts));
     numElts -= (numVecs << logCandidateNumElts);
 
-    if (numElts == 0) return;
+    if (numElts == 0) { return;
+
+}
 
     // It's possible that the number of elements remaining will be legal.
     // This can happen with e.g. <7 x float> when <3 x float> is legal.
@@ -800,8 +834,10 @@ static ABIArgInfo classifyType(CodeGenModule &CGM, CanQualType type,
     auto record = recordType->getDecl();
     auto &layout = CGM.getContext().getASTRecordLayout(record);
 
-    if (mustPassRecordIndirectly(CGM, record))
+    if (mustPassRecordIndirectly(CGM, record)) {
       return ABIArgInfo::getIndirect(layout.getAlignment(), /*byval*/ false);
+
+}
 
     SwiftAggLowering lowering(CGM);
     lowering.addTypedData(recordType->getDecl(), CharUnits::Zero(), layout);

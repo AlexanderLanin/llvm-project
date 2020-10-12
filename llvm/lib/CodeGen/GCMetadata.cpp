@@ -69,8 +69,10 @@ GCFunctionInfo &GCModuleInfo::getFunctionInfo(const Function &F) {
   assert(F.hasGC());
 
   finfo_map_type::iterator I = FInfoMap.find(&F);
-  if (I != FInfoMap.end())
+  if (I != FInfoMap.end()) {
     return *I->second;
+
+}
 
   GCStrategy *S = getGCStrategy(F.getGC());
   Functions.push_back(std::make_unique<GCFunctionInfo>(F, *S));
@@ -104,16 +106,20 @@ void Printer::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool Printer::runOnFunction(Function &F) {
-  if (F.hasGC())
+  if (F.hasGC()) {
     return false;
+
+}
 
   GCFunctionInfo *FD = &getAnalysis<GCModuleInfo>().getFunctionInfo(F);
 
   OS << "GC roots for " << FD->getFunction().getName() << ":\n";
   for (GCFunctionInfo::roots_iterator RI = FD->roots_begin(),
                                       RE = FD->roots_end();
-       RI != RE; ++RI)
+       RI != RE; ++RI) {
     OS << "\t" << RI->Num << "\t" << RI->StackOffset << "[sp]\n";
+
+}
 
   OS << "GC safe points for " << FD->getFunction().getName() << ":\n";
   for (GCFunctionInfo::iterator PI = FD->begin(), PE = FD->end(); PI != PE;
@@ -126,8 +132,10 @@ bool Printer::runOnFunction(Function &F) {
                                        RE = FD->live_end(PI);
          ;) {
       OS << " " << RI->Num;
-      if (++RI == RE)
+      if (++RI == RE) {
         break;
+
+}
       OS << ",";
     }
 
@@ -147,8 +155,10 @@ bool Printer::doFinalization(Module &M) {
 GCStrategy *GCModuleInfo::getGCStrategy(const StringRef Name) {
   // TODO: Arguably, just doing a linear search would be faster for small N
   auto NMI = GCStrategyMap.find(Name);
-  if (NMI != GCStrategyMap.end())
+  if (NMI != GCStrategyMap.end()) {
     return NMI->getValue();
+
+}
 
   for (auto& Entry : GCRegistry::entries()) {
     if (Name == Entry.getName()) {
@@ -168,6 +178,8 @@ GCStrategy *GCModuleInfo::getGCStrategy(const StringRef Name) {
     const std::string error = ("unsupported GC: " + Name).str() +
       " (did you remember to link and initialize the CodeGen library?)";
     report_fatal_error(error);
-  } else
+  } else {
     report_fatal_error(std::string("unsupported GC: ") + Name);
+
+}
 }

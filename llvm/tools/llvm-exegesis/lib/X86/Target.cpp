@@ -153,24 +153,38 @@ static const char *isInvalidMemoryInstr(const Instruction &Instr) {
 // the reason. nullptr indicates a valid opcode.
 static const char *isInvalidOpcode(const Instruction &Instr) {
   const auto OpcodeName = Instr.Name;
-  if ((Instr.Description.TSFlags & X86II::FormMask) == X86II::Pseudo)
+  if ((Instr.Description.TSFlags & X86II::FormMask) == X86II::Pseudo) {
     return "unsupported opcode: pseudo instruction";
+
+}
   if (OpcodeName.startswith("POP") || OpcodeName.startswith("PUSH") ||
-      OpcodeName.startswith("ADJCALLSTACK") || OpcodeName.startswith("LEAVE"))
+      OpcodeName.startswith("ADJCALLSTACK") || OpcodeName.startswith("LEAVE")) {
     return "unsupported opcode: Push/Pop/AdjCallStack/Leave";
-  if (const auto reason = isInvalidMemoryInstr(Instr))
+
+}
+  if (const auto reason = isInvalidMemoryInstr(Instr)) {
     return reason;
+
+}
   // We do not handle instructions with OPERAND_PCREL.
-  for (const Operand &Op : Instr.Operands)
+  for (const Operand &Op : Instr.Operands) {
     if (Op.isExplicit() &&
-        Op.getExplicitOperandInfo().OperandType == MCOI::OPERAND_PCREL)
+        Op.getExplicitOperandInfo().OperandType == MCOI::OPERAND_PCREL) {
       return "unsupported opcode: PC relative operand";
+
+}
+
+}
   // We do not handle second-form X87 instructions. We only handle first-form
   // ones (_Fp), see comment in X86InstrFPStack.td.
-  for (const Operand &Op : Instr.Operands)
+  for (const Operand &Op : Instr.Operands) {
     if (Op.isReg() && Op.isExplicit() &&
-        Op.getExplicitOperandInfo().RegClass == X86::RSTRegClassID)
+        Op.getExplicitOperandInfo().RegClass == X86::RSTRegClassID) {
       return "unsupported second-form X87 instruction";
+
+}
+
+}
   return nullptr;
 }
 
@@ -242,8 +256,10 @@ static Expected<std::vector<CodeTemplate>> generateLEATemplatesCommon(
                               RegInfo.getName(IndexReg), Scale, Disp)
                           .str();
           Result.push_back(std::move(CT));
-          if (Result.size() >= Opts.MaxConfigsPerOpcode)
+          if (Result.size() >= Opts.MaxConfigsPerOpcode) {
             return std::move(Result);
+
+}
         }
       }
     }
@@ -268,8 +284,10 @@ X86SerialSnippetGenerator::generateCodeTemplates(
     InstructionTemplate Variant, const BitVector &ForbiddenRegisters) const {
   const Instruction &Instr = Variant.getInstr();
 
-  if (const auto reason = isInvalidOpcode(Instr))
+  if (const auto reason = isInvalidOpcode(Instr)) {
     return make_error<Failure>(reason);
+
+}
 
   // LEA gets special attention.
   const auto Opcode = Instr.Description.getOpcode();
@@ -285,9 +303,11 @@ X86SerialSnippetGenerator::generateCodeTemplates(
         });
   }
 
-  if (Instr.hasMemoryOperands())
+  if (Instr.hasMemoryOperands()) {
     return make_error<Failure>(
         "unsupported memory operand in latency measurements");
+
+}
 
   switch (getX86FPFlags(Instr)) {
   case X86II::NotFP:
@@ -328,8 +348,10 @@ X86ParallelSnippetGenerator::generateCodeTemplates(
     InstructionTemplate Variant, const BitVector &ForbiddenRegisters) const {
   const Instruction &Instr = Variant.getInstr();
 
-  if (const auto reason = isInvalidOpcode(Instr))
+  if (const auto reason = isInvalidOpcode(Instr)) {
     return make_error<Failure>(reason);
+
+}
 
   // LEA gets special attention.
   const auto Opcode = Instr.Description.getOpcode();
@@ -390,8 +412,10 @@ static unsigned getLoadImmediateOpcode(unsigned RegBitWidth) {
 // Generates instruction to load an immediate value into a register.
 static MCInst loadImmediate(unsigned Reg, unsigned RegBitWidth,
                             const APInt &Value) {
-  if (Value.getBitWidth() > RegBitWidth)
+  if (Value.getBitWidth() > RegBitWidth) {
     llvm_unreachable("Value must fit in the Register");
+
+}
   return MCInstBuilder(getLoadImmediateOpcode(RegBitWidth))
       .addReg(Reg)
       .addImm(Value.getZExtValue());
@@ -491,8 +515,10 @@ std::vector<MCInst> ConstantInliner::loadX87STAndFinalize(unsigned Reg) {
           .addReg(0)        // IndexReg
           .addImm(0)        // Disp
           .addReg(0));      // Segment
-  if (Reg != X86::ST0)
+  if (Reg != X86::ST0) {
     add(MCInstBuilder(X86::ST_Frr).addReg(Reg));
+
+}
   add(releaseStackSpace(kF80Bytes));
   return std::move(Instructions);
 }
@@ -540,20 +566,24 @@ void ConstantInliner::initStack(unsigned Bytes) {
                                  : Constant_;
   add(allocateStackSpace(Bytes));
   size_t ByteOffset = 0;
-  for (; Bytes - ByteOffset >= 4; ByteOffset += 4)
+  for (; Bytes - ByteOffset >= 4; ByteOffset += 4) {
     add(fillStackSpace(
         X86::MOV32mi, ByteOffset,
         WideConstant.extractBits(32, ByteOffset * 8).getZExtValue()));
+
+}
   if (Bytes - ByteOffset >= 2) {
     add(fillStackSpace(
         X86::MOV16mi, ByteOffset,
         WideConstant.extractBits(16, ByteOffset * 8).getZExtValue()));
     ByteOffset += 2;
   }
-  if (Bytes - ByteOffset >= 1)
+  if (Bytes - ByteOffset >= 1) {
     add(fillStackSpace(
         X86::MOV8mi, ByteOffset,
         WideConstant.extractBits(8, ByteOffset * 8).getZExtValue()));
+
+}
 }
 
 #include "X86GenExegesis.inc"
@@ -702,33 +732,55 @@ void ExegesisX86Target::decrementLoopCounterAndJump(
 std::vector<MCInst> ExegesisX86Target::setRegTo(const MCSubtargetInfo &STI,
                                                 unsigned Reg,
                                                 const APInt &Value) const {
-  if (X86::GR8RegClass.contains(Reg))
+  if (X86::GR8RegClass.contains(Reg)) {
     return {loadImmediate(Reg, 8, Value)};
-  if (X86::GR16RegClass.contains(Reg))
+
+}
+  if (X86::GR16RegClass.contains(Reg)) {
     return {loadImmediate(Reg, 16, Value)};
-  if (X86::GR32RegClass.contains(Reg))
+
+}
+  if (X86::GR32RegClass.contains(Reg)) {
     return {loadImmediate(Reg, 32, Value)};
-  if (X86::GR64RegClass.contains(Reg))
+
+}
+  if (X86::GR64RegClass.contains(Reg)) {
     return {loadImmediate(Reg, 64, Value)};
+
+}
   ConstantInliner CI(Value);
-  if (X86::VR64RegClass.contains(Reg))
+  if (X86::VR64RegClass.contains(Reg)) {
     return CI.loadAndFinalize(Reg, 64, X86::MMX_MOVQ64rm);
+
+}
   if (X86::VR128XRegClass.contains(Reg)) {
-    if (STI.getFeatureBits()[X86::FeatureAVX512])
+    if (STI.getFeatureBits()[X86::FeatureAVX512]) {
       return CI.loadAndFinalize(Reg, 128, X86::VMOVDQU32Z128rm);
-    if (STI.getFeatureBits()[X86::FeatureAVX])
+
+}
+    if (STI.getFeatureBits()[X86::FeatureAVX]) {
       return CI.loadAndFinalize(Reg, 128, X86::VMOVDQUrm);
+
+}
     return CI.loadAndFinalize(Reg, 128, X86::MOVDQUrm);
   }
   if (X86::VR256XRegClass.contains(Reg)) {
-    if (STI.getFeatureBits()[X86::FeatureAVX512])
+    if (STI.getFeatureBits()[X86::FeatureAVX512]) {
       return CI.loadAndFinalize(Reg, 256, X86::VMOVDQU32Z256rm);
-    if (STI.getFeatureBits()[X86::FeatureAVX])
+
+}
+    if (STI.getFeatureBits()[X86::FeatureAVX]) {
       return CI.loadAndFinalize(Reg, 256, X86::VMOVDQUYrm);
+
+}
   }
-  if (X86::VR512RegClass.contains(Reg))
-    if (STI.getFeatureBits()[X86::FeatureAVX512])
+  if (X86::VR512RegClass.contains(Reg)) {
+    if (STI.getFeatureBits()[X86::FeatureAVX512]) {
       return CI.loadAndFinalize(Reg, 512, X86::VMOVDQU32Zrm);
+
+}
+
+}
   if (X86::RSTRegClass.contains(Reg)) {
     return CI.loadX87STAndFinalize(Reg);
   }
@@ -736,14 +788,20 @@ std::vector<MCInst> ExegesisX86Target::setRegTo(const MCSubtargetInfo &STI,
       X86::RFP80RegClass.contains(Reg)) {
     return CI.loadX87FPAndFinalize(Reg);
   }
-  if (Reg == X86::EFLAGS)
+  if (Reg == X86::EFLAGS) {
     return CI.popFlagAndFinalize();
-  if (Reg == X86::MXCSR)
+
+}
+  if (Reg == X86::MXCSR) {
     return CI.loadImplicitRegAndFinalize(
         STI.getFeatureBits()[X86::FeatureAVX] ? X86::VLDMXCSR : X86::LDMXCSR,
         0x1f80);
-  if (Reg == X86::FPCW)
+
+}
+  if (Reg == X86::FPCW) {
     return CI.loadImplicitRegAndFinalize(X86::FLDCW16m, 0x37f);
+
+}
   return {}; // Not yet implemented.
 }
 
@@ -770,17 +828,21 @@ std::vector<InstructionTemplate> ExegesisX86Target::generateInstructionVariants(
       auto CondCodes = seq((int)X86::CondCode::COND_O,
                            1 + (int)X86::CondCode::LAST_VALID_COND);
       Choices.reserve(std::distance(CondCodes.begin(), CondCodes.end()));
-      for (int CondCode : CondCodes)
+      for (int CondCode : CondCodes) {
         Choices.emplace_back(MCOperand::createImm(CondCode));
+
+}
       break;
     }
     }
   }
 
   // If we don't wish to explore any variables, defer to the baseline method.
-  if (!Exploration)
+  if (!Exploration) {
     return ExegesisTarget::generateInstructionVariants(Instr,
                                                        MaxConfigsPerOpcode);
+
+}
 
   std::vector<InstructionTemplate> Variants;
   size_t NumVariants;

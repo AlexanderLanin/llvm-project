@@ -30,26 +30,32 @@ ErrorEquals(coveragemap_error Expected, Error E) {
     Found = CME.get();
     FoundMsg = CME.message();
   });
-  if (Expected == Found)
+  if (Expected == Found) {
     return ::testing::AssertionSuccess();
+
+}
   return ::testing::AssertionFailure() << "error: " << FoundMsg << "\n";
 }
 
 namespace llvm {
 namespace coverage {
 void PrintTo(const Counter &C, ::std::ostream *os) {
-  if (C.isZero())
+  if (C.isZero()) {
     *os << "Zero";
-  else if (C.isExpression())
+  } else if (C.isExpression()) {
     *os << "Expression " << C.getExpressionID();
-  else
+  } else {
     *os << "Counter " << C.getCounterID();
+
+}
 }
 
 void PrintTo(const CoverageSegment &S, ::std::ostream *os) {
   *os << "CoverageSegment(" << S.Line << ", " << S.Col << ", ";
-  if (S.HasCount)
+  if (S.HasCount) {
     *os << S.Count << ", ";
+
+}
   *os << (S.IsRegionEntry ? "true" : "false") << ")";
 }
 }
@@ -90,8 +96,10 @@ struct CoverageMappingReaderMock : CoverageMappingReader {
       : Functions(Functions) {}
 
   Error readNextRecord(CoverageMappingRecord &Record) override {
-    if (Functions.empty())
+    if (Functions.empty()) {
       return make_error<CoverageMapError>(coveragemap_error::eof);
+
+}
 
     Functions.front().fillCoverageMappingRecord(Record);
     Functions = Functions.slice(1);
@@ -144,8 +152,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
 
   unsigned getGlobalFileIndex(StringRef Name) {
     auto R = Files.find(Name);
-    if (R != Files.end())
+    if (R != Files.end()) {
       return R->second;
+
+}
     unsigned Index = Files.size();
     Files.try_emplace(Name, Index);
     return Index;
@@ -160,8 +170,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
     auto &CurrentFunctionFileMapping =
         InputFunctions.back().ReverseVirtualFileMapping;
     auto R = CurrentFunctionFileMapping.find(GlobalIndex);
-    if (R != CurrentFunctionFileMapping.end())
+    if (R != CurrentFunctionFileMapping.end()) {
       return R->second;
+
+}
     unsigned IndexInFunction = CurrentFunctionFileMapping.size();
     CurrentFunctionFileMapping.insert(
         std::make_pair(GlobalIndex, IndexInFunction));
@@ -190,8 +202,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
 
   std::string writeCoverageRegions(InputFunctionCoverageData &Data) {
     SmallVector<unsigned, 8> FileIDs(Data.ReverseVirtualFileMapping.size());
-    for (const auto &E : Data.ReverseVirtualFileMapping)
+    for (const auto &E : Data.ReverseVirtualFileMapping) {
       FileIDs[E.second] = E.first;
+
+}
     std::string Coverage;
     llvm::raw_string_ostream OS(Coverage);
     CoverageMappingWriter(FileIDs, None, Data.Regions).write(OS);
@@ -201,8 +215,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
   void readCoverageRegions(const std::string &Coverage,
                            OutputFunctionCoverageData &Data) {
     SmallVector<StringRef, 8> Filenames(Files.size());
-    for (const auto &E : Files)
+    for (const auto &E : Files) {
       Filenames[E.getValue()] = E.getKey();
+
+}
     std::vector<CounterExpression> Expressions;
     RawCoverageMappingReader Reader(Coverage, Filenames, Data.Filenames,
                                     Expressions, Data.Regions);
@@ -216,8 +232,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
       readCoverageRegions(Regions, OutputFunctions[I]);
       OutputFunctions[I].Name = InputFunctions[I].Name;
       OutputFunctions[I].Hash = InputFunctions[I].Hash;
-      if (!EmitFilenames)
+      if (!EmitFilenames) {
         OutputFunctions[I].Filenames.clear();
+
+}
     }
   }
 
@@ -248,8 +266,10 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
     readProfCounts();
     writeAndReadCoverageRegions(EmitFilenames);
     auto CoverageOrErr = readOutputFunctions();
-    if (!CoverageOrErr)
+    if (!CoverageOrErr) {
       return CoverageOrErr.takeError();
+
+}
     LoadedCoverage = std::move(CoverageOrErr.get());
     return Error::success();
   }
@@ -285,10 +305,12 @@ TEST_P(CoverageMappingTest, correct_deserialize_for_more_than_two_files) {
   static const unsigned N = array_lengthof(FileNames);
 
   startFunction("func", 0x1234);
-  for (unsigned I = 0; I < N; ++I)
+  for (unsigned I = 0; I < N; ++I) {
     // Use LineStart to hold the index of the file name
     // in order to preserve that information during possible sorting of CMRs.
     addCMR(Counter::getCounter(0), FileNames[I], I, 1, I, 1);
+
+}
 
   writeAndReadCoverageRegions();
   ASSERT_EQ(1u, OutputFunctions.size());
@@ -314,10 +336,12 @@ TEST_P(CoverageMappingTest, load_coverage_for_more_than_two_files) {
   static const unsigned N = array_lengthof(FileNames);
 
   startFunction("func", 0x1234);
-  for (unsigned I = 0; I < N; ++I)
+  for (unsigned I = 0; I < N; ++I) {
     // Use LineStart to hold the index of the file name
     // in order to preserve that information during possible sorting of CMRs.
     addCMR(Counter::getCounter(0), FileNames[I], I, 1, I, 1);
+
+}
 
   EXPECT_THAT_ERROR(loadCoverageMapping(), Succeeded());
 
@@ -799,8 +823,10 @@ TEST_P(CoverageMappingTest, strip_filename_prefix) {
   EXPECT_THAT_ERROR(loadCoverageMapping(), Succeeded());
 
   std::vector<std::string> Names;
-  for (const auto &Func : LoadedCoverage->getCoveredFunctions())
+  for (const auto &Func : LoadedCoverage->getCoveredFunctions()) {
     Names.push_back(Func.Name);
+
+}
   ASSERT_EQ(1U, Names.size());
   ASSERT_EQ("func", Names[0]);
 }
@@ -813,8 +839,10 @@ TEST_P(CoverageMappingTest, strip_unknown_filename_prefix) {
   EXPECT_THAT_ERROR(loadCoverageMapping(/*EmitFilenames=*/false), Succeeded());
 
   std::vector<std::string> Names;
-  for (const auto &Func : LoadedCoverage->getCoveredFunctions())
+  for (const auto &Func : LoadedCoverage->getCoveredFunctions()) {
     Names.push_back(Func.Name);
+
+}
   ASSERT_EQ(1U, Names.size());
   ASSERT_EQ("func", Names[0]);
 }
@@ -835,8 +863,10 @@ TEST_P(CoverageMappingTest, dont_detect_false_instantiations) {
 
   std::vector<InstantiationGroup> InstantiationGroups =
       LoadedCoverage->getInstantiationGroups("expanded");
-  for (const auto &Group : InstantiationGroups)
+  for (const auto &Group : InstantiationGroups) {
     ASSERT_EQ(Group.size(), 1U);
+
+}
 }
 
 TEST_P(CoverageMappingTest, load_coverage_for_expanded_file) {
@@ -911,12 +941,16 @@ TEST(CoverageMappingTest, filename_roundtrip) {
     BinaryCoverageReader::DecompressedData Decompressed;
     EXPECT_THAT_ERROR(Reader.read(CovMapVersion::CurrentVersion, Decompressed),
                       Succeeded());
-    if (!Compress)
+    if (!Compress) {
       ASSERT_EQ(Decompressed.size(), 0U);
 
+}
+
     ASSERT_EQ(ReadFilenames.size(), Paths.size());
-    for (unsigned I = 0; I < Paths.size(); ++I)
+    for (unsigned I = 0; I < Paths.size(); ++I) {
       ASSERT_TRUE(ReadFilenames[I] == Paths[I]);
+
+}
   }
 }
 

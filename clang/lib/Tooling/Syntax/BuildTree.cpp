@@ -43,8 +43,10 @@ static bool isImplicitExpr(clang::Expr *E) { return E->IgnoreImplicit() != E; }
 static SourceLocation getQualifiedNameStart(DeclaratorDecl *D) {
   auto DN = D->getDeclName();
   bool IsAnonymous = DN.isIdentifier() && !DN.getAsIdentifierInfo();
-  if (IsAnonymous)
+  if (IsAnonymous) {
     return SourceLocation();
+
+}
   return D->getQualifierLoc() ? D->getQualifierLoc().getBeginLoc()
                               : D->getLocation();
 }
@@ -65,8 +67,10 @@ namespace {
 struct GetStartLoc : TypeLocVisitor<GetStartLoc, SourceLocation> {
   SourceLocation VisitParenTypeLoc(ParenTypeLoc T) {
     auto L = Visit(T.getInnerLoc());
-    if (L.isValid())
+    if (L.isValid()) {
       return L;
+
+}
     return T.getLParenLoc();
   }
 
@@ -97,22 +101,28 @@ struct GetStartLoc : TypeLocVisitor<GetStartLoc, SourceLocation> {
   // declarator themselves, but their underlying type can.
   SourceLocation VisitTypeLoc(TypeLoc T) {
     auto N = T.getNextTypeLoc();
-    if (!N)
+    if (!N) {
       return SourceLocation();
+
+}
     return Visit(N);
   }
 
   SourceLocation VisitFunctionProtoTypeLoc(FunctionProtoTypeLoc T) {
-    if (T.getTypePtr()->hasTrailingReturn())
+    if (T.getTypePtr()->hasTrailingReturn()) {
       return SourceLocation(); // avoid recursing into the suffix of declarator.
+
+}
     return VisitTypeLoc(T);
   }
 
 private:
   template <class PtrLoc> SourceLocation HandlePointer(PtrLoc T) {
     auto L = Visit(T.getPointeeLoc());
-    if (L.isValid())
+    if (L.isValid()) {
       return L;
+
+}
     return T.getLocalSourceRange().getBegin();
   }
 };
@@ -132,10 +142,14 @@ static SourceRange getDeclaratorRange(const SourceManager &SM, TypeLoc T,
   SourceLocation End = T.getSourceRange().getEnd();
   assert(End.isValid());
   if (Name.isValid()) {
-    if (Start.isInvalid())
+    if (Start.isInvalid()) {
       Start = Name;
-    if (SM.isBeforeInTranslationUnit(End, Name))
+
+}
+    if (SM.isBeforeInTranslationUnit(End, Name)) {
       End = Name;
+
+}
   }
   if (Initializer.isValid()) {
     assert(SM.isBeforeInTranslationUnit(End, Initializer.getEnd()));
@@ -162,8 +176,10 @@ static SourceRange getDeclaratorRange(const SourceManager &SM, TypeLoc T,
 class syntax::TreeBuilder {
 public:
   TreeBuilder(syntax::Arena &Arena) : Arena(Arena), Pending(Arena) {
-    for (const auto &T : Arena.tokenBuffer().expandedTokens())
+    for (const auto &T : Arena.tokenBuffer().expandedTokens()) {
       LocationToToken.insert({T.location().getRawEncoding(), &T});
+
+}
   }
 
   llvm::BumpPtrAllocator &allocator() { return Arena.allocator(); }
@@ -229,10 +245,14 @@ public:
   }
   llvm::ArrayRef<syntax::Token> getRange(const Decl *D) const {
     auto Tokens = getRange(D->getBeginLoc(), D->getEndLoc());
-    if (llvm::isa<NamespaceDecl>(D))
+    if (llvm::isa<NamespaceDecl>(D)) {
       return Tokens;
-    if (DeclsWithoutSemicolons.count(D))
+
+}
+    if (DeclsWithoutSemicolons.count(D)) {
       return Tokens;
+
+}
     // FIXME: do not consume trailing semicolon on function definitions.
     // Most declarations own a semicolon in syntax trees, but not in clang AST.
     return withTrailingSemicolon(Tokens);
@@ -244,13 +264,17 @@ public:
   /// semicolon when needed.
   llvm::ArrayRef<syntax::Token> getStmtRange(const Stmt *S) const {
     auto Tokens = getRange(S->getBeginLoc(), S->getEndLoc());
-    if (isa<CompoundStmt>(S))
+    if (isa<CompoundStmt>(S)) {
       return Tokens;
+
+}
 
     // Some statements miss a trailing semicolon, e.g. 'return', 'continue' and
     // all statements that end with those. Consume this semicolon here.
-    if (Tokens.back().kind() == tok::semi)
+    if (Tokens.back().kind() == tok::semi) {
       return Tokens;
+
+}
     return withTrailingSemicolon(Tokens);
   }
 
@@ -260,8 +284,10 @@ private:
     assert(!Tokens.empty());
     assert(Tokens.back().kind() != tok::eof);
     // We never consume 'eof', so looking at the next token is ok.
-    if (Tokens.back().kind() != tok::semi && Tokens.end()->kind() == tok::semi)
+    if (Tokens.back().kind() != tok::semi && Tokens.end()->kind() == tok::semi) {
       return llvm::makeArrayRef(Tokens.begin(), Tokens.end() + 1);
+
+}
     return Tokens;
   }
 
@@ -319,8 +345,10 @@ private:
       auto EndFolds = BeginFolds;
       for (; EndFolds != DelayedFolds.end() &&
              EndFolds->second.End <= Tokens.end();
-           ++EndFolds)
+           ++EndFolds) {
         ;
+
+}
       // We go in reverse order to ensure we fold deeper nodes first.
       for (auto RevIt = EndFolds; RevIt != BeginFolds; --RevIt) {
         auto It = std::prev(RevIt);
@@ -353,8 +381,10 @@ private:
     bool extendDelayedFold(llvm::ArrayRef<syntax::Token> ExtendedRange) {
       assert(!ExtendedRange.empty());
       auto It = DelayedFolds.find(ExtendedRange.data());
-      if (It == DelayedFolds.end())
+      if (It == DelayedFolds.end()) {
         return false;
+
+}
       assert(It->second.End <= ExtendedRange.end());
       It->second.End = ExtendedRange.end();
       return true;
@@ -403,9 +433,11 @@ private:
           "fold crosses boundaries of existing subtrees");
 
       // We need to go in reverse order, because we can only prepend.
-      for (auto It = EndChildren; It != BeginChildren; --It)
+      for (auto It = EndChildren; It != BeginChildren; --It) {
         Node->prependChildLowLevel(std::prev(It)->second.Node,
                                    std::prev(It)->second.Role);
+
+}
 
       // Mark that this node came from the AST and is backed by the source code.
       Node->Original = true;
@@ -467,8 +499,10 @@ public:
     if (auto *V = llvm::dyn_cast<VarDecl>(DD)) {
       auto *I = V->getInit();
       // Initializers in range-based-for are not part of the declarator
-      if (I && !V->isCXXForRangeDecl())
+      if (I && !V->isCXXForRangeDecl()) {
         Initializer = I->getSourceRange();
+
+}
     }
     auto Declarator = getDeclaratorRange(
         Builder.sourceManager(), DD->getTypeSourceInfo()->getTypeLoc(),
@@ -526,8 +560,10 @@ public:
     using NodeRole = syntax::NodeRole;
 
     Builder.markChildToken(S->getLBracLoc(), NodeRole::OpenParen);
-    for (auto *Child : S->body())
+    for (auto *Child : S->body()) {
       Builder.markStmtChild(Child, NodeRole::CompoundStatement_statement);
+
+}
     Builder.markChildToken(S->getRBracLoc(), NodeRole::CloseParen);
 
     Builder.foldNode(Builder.getStmtRange(S),
@@ -547,22 +583,32 @@ public:
     // RAV traverses it as a statement, we produce invalid node kinds in that
     // case.
     // FIXME: should do this in RAV instead?
-    if (S->getInit() && !TraverseStmt(S->getInit()))
+    if (S->getInit() && !TraverseStmt(S->getInit())) {
       return false;
-    if (S->getLoopVariable() && !TraverseDecl(S->getLoopVariable()))
+
+}
+    if (S->getLoopVariable() && !TraverseDecl(S->getLoopVariable())) {
       return false;
-    if (S->getRangeInit() && !TraverseStmt(S->getRangeInit()))
+
+}
+    if (S->getRangeInit() && !TraverseStmt(S->getRangeInit())) {
       return false;
-    if (S->getBody() && !TraverseStmt(S->getBody()))
+
+}
+    if (S->getBody() && !TraverseStmt(S->getBody())) {
       return false;
+
+}
     return true;
   }
 
   bool TraverseStmt(Stmt *S) {
     if (auto *DS = llvm::dyn_cast_or_null<DeclStmt>(S)) {
       // We want to consume the semicolon, make sure SimpleDeclaration does not.
-      for (auto *D : DS->decls())
+      for (auto *D : DS->decls()) {
         Builder.noticeDeclWithoutSemicolon(D);
+
+}
     } else if (auto *E = llvm::dyn_cast_or_null<Expr>(S)) {
       // Do not recurse into subexpressions.
       // We do not have syntax trees for expressions yet, so we only want to see
@@ -594,8 +640,10 @@ public:
 
   bool TraverseParenTypeLoc(ParenTypeLoc L) {
     // We reverse order of traversal to get the proper syntax structure.
-    if (!WalkUpFromParenTypeLoc(L))
+    if (!WalkUpFromParenTypeLoc(L)) {
       return false;
+
+}
     return TraverseTypeLoc(L.getInnerLoc());
   }
 
@@ -620,10 +668,12 @@ public:
 
   bool WalkUpFromFunctionTypeLoc(FunctionTypeLoc L) {
     Builder.markChildToken(L.getLParenLoc(), syntax::NodeRole::OpenParen);
-    for (auto *P : L.getParams())
+    for (auto *P : L.getParams()) {
       Builder.markDelayedChild(
           Builder.getRange(P),
           syntax::NodeRole::ParametersAndQualifiers_parameter);
+
+}
     Builder.markChildToken(L.getRParenLoc(), syntax::NodeRole::CloseParen);
     Builder.foldNode(Builder.getRange(L.getLParenLoc(), L.getEndLoc()),
                      new (allocator()) syntax::ParametersAndQualifiers);
@@ -631,8 +681,10 @@ public:
   }
 
   bool WalkUpFromFunctionProtoTypeLoc(FunctionProtoTypeLoc L) {
-    if (!L.getTypePtr()->hasTrailingReturn())
+    if (!L.getTypePtr()->hasTrailingReturn()) {
       return WalkUpFromFunctionTypeLoc(L);
+
+}
 
     auto TrailingReturnTokens = BuildTrailingReturn(L);
     // Finish building the node for parameters.
@@ -839,9 +891,11 @@ private:
     assert(Arrow->kind() == tok::arrow);
     auto Tokens = llvm::makeArrayRef(Arrow, Return.end());
     Builder.markChildToken(Arrow, syntax::NodeRole::TrailingReturnType_arrow);
-    if (!ReturnDeclaratorTokens.empty())
+    if (!ReturnDeclaratorTokens.empty()) {
       Builder.markChild(ReturnDeclaratorTokens,
                         syntax::NodeRole::TrailingReturnType_declarator);
+
+}
     Builder.foldNode(Tokens, new (allocator()) syntax::TrailingReturnType);
     return Tokens;
   }
@@ -859,8 +913,10 @@ void syntax::TreeBuilder::foldNode(llvm::ArrayRef<syntax::Token> Range,
 }
 
 void syntax::TreeBuilder::noticeDeclRange(llvm::ArrayRef<syntax::Token> Range) {
-  if (Pending.extendDelayedFold(Range))
+  if (Pending.extendDelayedFold(Range)) {
     return;
+
+}
   Pending.foldChildrenDelayed(Range,
                               new (allocator()) syntax::SimpleDeclaration);
 }
@@ -870,14 +926,18 @@ void syntax::TreeBuilder::noticeDeclWithoutSemicolon(Decl *D) {
 }
 
 void syntax::TreeBuilder::markChildToken(SourceLocation Loc, NodeRole Role) {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return;
+
+}
   Pending.assignRole(*findToken(Loc), Role);
 }
 
 void syntax::TreeBuilder::markChildToken(const syntax::Token *T, NodeRole R) {
-  if (!T)
+  if (!T) {
     return;
+
+}
   Pending.assignRole(*T, R);
 }
 
@@ -892,8 +952,10 @@ void syntax::TreeBuilder::markDelayedChild(llvm::ArrayRef<syntax::Token> Range,
 }
 
 void syntax::TreeBuilder::markStmtChild(Stmt *Child, NodeRole Role) {
-  if (!Child)
+  if (!Child) {
     return;
+
+}
 
   auto Range = getStmtRange(Child);
   // This is an expression in a statement position, consume the trailing
@@ -909,8 +971,10 @@ void syntax::TreeBuilder::markStmtChild(Stmt *Child, NodeRole Role) {
 }
 
 void syntax::TreeBuilder::markExprChild(Expr *Child, NodeRole Role) {
-  if (!Child)
+  if (!Child) {
     return;
+
+}
 
   Pending.assignRole(getExprRange(Child), Role);
 }

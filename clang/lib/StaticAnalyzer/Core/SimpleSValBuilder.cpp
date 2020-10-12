@@ -73,16 +73,22 @@ SVal SimpleSValBuilder::dispatchCast(SVal Val, QualType CastTy) {
 
 SVal SimpleSValBuilder::evalCastFromNonLoc(NonLoc val, QualType castTy) {
   bool isLocType = Loc::isLocType(castTy);
-  if (val.getAs<nonloc::PointerToMember>())
+  if (val.getAs<nonloc::PointerToMember>()) {
     return val;
 
+}
+
   if (Optional<nonloc::LocAsInteger> LI = val.getAs<nonloc::LocAsInteger>()) {
-    if (isLocType)
+    if (isLocType) {
       return LI->getLoc();
+
+}
     // FIXME: Correctly support promotions/truncations.
     unsigned castSize = Context.getIntWidth(castTy);
-    if (castSize == LI->getNumBits())
+    if (castSize == LI->getNumBits()) {
       return val;
+
+}
     return makeLocAsInteger(LI->getLoc(), castSize);
   }
 
@@ -95,17 +101,23 @@ SVal SimpleSValBuilder::evalCastFromNonLoc(NonLoc val, QualType castTy) {
     // extension/truncation of symbolic integers.  This prevents us from losing
     // precision when we assign 'x = y' and 'y' is symbolic and x and y are
     // different integer types.
-   if (haveSameType(T, castTy))
+   if (haveSameType(T, castTy)) {
       return val;
 
-    if (!isLocType)
+}
+
+    if (!isLocType) {
       return makeNonLoc(se, T, castTy);
+
+}
     return UnknownVal();
   }
 
   // If value is a non-integer constant, produce unknown.
-  if (!val.getAs<nonloc::ConcreteInt>())
+  if (!val.getAs<nonloc::ConcreteInt>()) {
     return UnknownVal();
+
+}
 
   // Handle casts to a boolean type.
   if (castTy->isBooleanType()) {
@@ -115,16 +127,20 @@ SVal SimpleSValBuilder::evalCastFromNonLoc(NonLoc val, QualType castTy) {
 
   // Only handle casts from integers to integers - if val is an integer constant
   // being cast to a non-integer type, produce unknown.
-  if (!isLocType && !castTy->isIntegralOrEnumerationType())
+  if (!isLocType && !castTy->isIntegralOrEnumerationType()) {
     return UnknownVal();
+
+}
 
   llvm::APSInt i = val.castAs<nonloc::ConcreteInt>().getValue();
   BasicVals.getAPSIntType(castTy).apply(i);
 
-  if (isLocType)
+  if (isLocType) {
     return makeIntLocVal(i);
-  else
+  } else {
     return makeIntVal(i);
+
+}
 }
 
 SVal SimpleSValBuilder::evalCastFromLoc(Loc val, QualType castTy) {
@@ -135,13 +151,17 @@ SVal SimpleSValBuilder::evalCastFromLoc(Loc val, QualType castTy) {
   //   can be introduced by the frontend for corner cases, e.g
   //   casting from va_list* to __builtin_va_list&.
   //
-  if (Loc::isLocType(castTy) || castTy->isReferenceType())
+  if (Loc::isLocType(castTy) || castTy->isReferenceType()) {
     return val;
+
+}
 
   // FIXME: Handle transparent unions where a value can be "transparently"
   //  lifted into a union type.
-  if (castTy->isUnionType())
+  if (castTy->isUnionType()) {
     return UnknownVal();
+
+}
 
   // Casting a Loc to a bool will almost always be true,
   // unless this is a weak function or a symbolic region.
@@ -149,17 +169,25 @@ SVal SimpleSValBuilder::evalCastFromLoc(Loc val, QualType castTy) {
     switch (val.getSubKind()) {
       case loc::MemRegionValKind: {
         const MemRegion *R = val.castAs<loc::MemRegionVal>().getRegion();
-        if (const FunctionCodeRegion *FTR = dyn_cast<FunctionCodeRegion>(R))
-          if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(FTR->getDecl()))
-            if (FD->isWeak())
+        if (const FunctionCodeRegion *FTR = dyn_cast<FunctionCodeRegion>(R)) {
+          if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(FTR->getDecl())) {
+            if (FD->isWeak()) {
               // FIXME: Currently we are using an extent symbol here,
               // because there are no generic region address metadata
               // symbols to use, only content metadata.
               return nonloc::SymbolVal(SymMgr.getExtentSymbol(FTR));
 
-        if (const SymbolicRegion *SymR = R->getSymbolicBase())
+}
+
+}
+
+}
+
+        if (const SymbolicRegion *SymR = R->getSymbolicBase()) {
           return makeNonLoc(SymR->getSymbol(), BO_NE,
                             BasicVals.getZeroWithPtrWidth(), castTy);
+
+}
 
         // FALL-THROUGH
         LLVM_FALLTHROUGH;
@@ -174,8 +202,10 @@ SVal SimpleSValBuilder::evalCastFromLoc(Loc val, QualType castTy) {
   if (castTy->isIntegralOrEnumerationType()) {
     unsigned BitWidth = Context.getIntWidth(castTy);
 
-    if (!val.getAs<loc::ConcreteInt>())
+    if (!val.getAs<loc::ConcreteInt>()) {
       return makeLocAsInteger(val, BitWidth);
+
+}
 
     llvm::APSInt i = val.castAs<loc::ConcreteInt>().getValue();
     BasicVals.getAPSIntType(castTy).apply(i);
@@ -227,26 +257,32 @@ SVal SimpleSValBuilder::MakeSymIntVal(const SymExpr *LHS,
     break;
   case BO_Mul:
     // a*0 and a*1
-    if (RHS == 0)
+    if (RHS == 0) {
       return makeIntVal(0, resultTy);
-    else if (RHS == 1)
+    } else if (RHS == 1) {
       isIdempotent = true;
+
+}
     break;
   case BO_Div:
     // a/0 and a/1
-    if (RHS == 0)
+    if (RHS == 0) {
       // This is also handled elsewhere.
       return UndefinedVal();
-    else if (RHS == 1)
+    } else if (RHS == 1) {
       isIdempotent = true;
+
+}
     break;
   case BO_Rem:
     // a%0 and a%1
-    if (RHS == 0)
+    if (RHS == 0) {
       // This is also handled elsewhere.
       return UndefinedVal();
-    else if (RHS == 1)
+    } else if (RHS == 1) {
       return makeIntVal(0, resultTy);
+
+}
     break;
   case BO_Add:
   case BO_Sub:
@@ -254,21 +290,25 @@ SVal SimpleSValBuilder::MakeSymIntVal(const SymExpr *LHS,
   case BO_Shr:
   case BO_Xor:
     // a+0, a-0, a<<0, a>>0, a^0
-    if (RHS == 0)
+    if (RHS == 0) {
       isIdempotent = true;
+
+}
     break;
   case BO_And:
     // a&0 and a&(~0)
-    if (RHS == 0)
+    if (RHS == 0) {
       return makeIntVal(0, resultTy);
-    else if (RHS.isAllOnesValue())
+    } else if (RHS.isAllOnesValue()) {
       isIdempotent = true;
+
+}
     break;
   case BO_Or:
     // a|0 and a|(~0)
-    if (RHS == 0)
+    if (RHS == 0) {
       isIdempotent = true;
-    else if (RHS.isAllOnesValue()) {
+    } else if (RHS.isAllOnesValue()) {
       const llvm::APSInt &Result = BasicVals.Convert(resultTy, RHS);
       return nonloc::ConcreteInt(Result);
     }
@@ -278,8 +318,10 @@ SVal SimpleSValBuilder::MakeSymIntVal(const SymExpr *LHS,
   // Idempotent ops (like a*1) can still change the type of an expression.
   // Wrap the LHS up in a NonLoc again and let evalCastFromNonLoc do the
   // dirty work.
-  if (isIdempotent)
+  if (isIdempotent) {
       return evalCastFromNonLoc(nonloc::SymbolVal(LHS), resultTy);
+
+}
 
   // If we reach this point, the expression cannot be simplified.
   // Make a SymbolVal for the entire expression, after converting the RHS.
@@ -300,11 +342,15 @@ SVal SimpleSValBuilder::MakeSymIntVal(const SymExpr *LHS,
       // If the value is signed but the symbol is unsigned, do the comparison
       // in unsigned space. [C99 6.3.1.8]
       // (For the opposite case, the value is already unsigned.)
-      if (RHS.isSigned() && !SymbolType->isSignedIntegerOrEnumerationType())
+      if (RHS.isSigned() && !SymbolType->isSignedIntegerOrEnumerationType()) {
         ConvertedRHS = &BasicVals.Convert(SymbolType, RHS);
+
+}
     }
-  } else
+  } else {
     ConvertedRHS = &BasicVals.Convert(resultTy, RHS);
+
+}
 
   return makeNonLoc(LHS, op, *ConvertedRHS, resultTy);
 }
@@ -354,12 +400,16 @@ static bool isWithinConstantOverflowBounds(llvm::APSInt I) {
 
 static std::pair<SymbolRef, llvm::APSInt>
 decomposeSymbol(SymbolRef Sym, BasicValueFactory &BV) {
-  if (const auto *SymInt = dyn_cast<SymIntExpr>(Sym))
-    if (BinaryOperator::isAdditiveOp(SymInt->getOpcode()))
+  if (const auto *SymInt = dyn_cast<SymIntExpr>(Sym)) {
+    if (BinaryOperator::isAdditiveOp(SymInt->getOpcode())) {
       return std::make_pair(SymInt->getLHS(),
                             (SymInt->getOpcode() == BO_Add) ?
                             (SymInt->getRHS()) :
                             (-SymInt->getRHS()));
+
+}
+
+}
 
   // Fail to decompose: "reduce" the problem to the "$x + 0" case.
   return std::make_pair(Sym, BV.getValue(0, Sym->getType()));
@@ -385,18 +435,22 @@ static NonLoc doRearrangeUnchecked(ProgramStateRef State,
          "Integers are not of the same type as symbols!");
 
   QualType ResultTy;
-  if (BinaryOperator::isComparisonOp(Op))
+  if (BinaryOperator::isComparisonOp(Op)) {
     ResultTy = SVB.getConditionType();
-  else if (BinaryOperator::isAdditiveOp(Op))
+  } else if (BinaryOperator::isAdditiveOp(Op)) {
     ResultTy = SymTy;
-  else
+  } else {
     llvm_unreachable("Operation not suitable for unchecked rearrangement!");
 
+}
+
   // FIXME: Can we use assume() without getting into an infinite recursion?
-  if (LSym == RSym)
+  if (LSym == RSym) {
     return SVB.evalBinOpNN(State, Op, nonloc::ConcreteInt(LInt),
                            nonloc::ConcreteInt(RInt), ResultTy)
         .castAs<NonLoc>();
+
+}
 
   SymbolRef ResultSym = nullptr;
   BinaryOperator::Opcode ResultOp;
@@ -458,22 +512,30 @@ static Optional<NonLoc> tryRearrange(ProgramStateRef State,
   // FIXME: After putting complexity threshold to the symbols we can always
   //        rearrange additive operations but rearrange comparisons only if
   //        option is set.
-  if(!Opts.ShouldAggressivelySimplifyBinaryOperation)
+  if(!Opts.ShouldAggressivelySimplifyBinaryOperation) {
     return None;
 
+}
+
   SymbolRef LSym = Lhs.getAsSymbol();
-  if (!LSym)
+  if (!LSym) {
     return None;
+
+}
 
   if (BinaryOperator::isComparisonOp(Op)) {
     SingleTy = LSym->getType();
-    if (ResultTy != SVB.getConditionType())
+    if (ResultTy != SVB.getConditionType()) {
       return None;
+
+}
     // Initialize SingleTy later with a symbol's type.
   } else if (BinaryOperator::isAdditiveOp(Op)) {
     SingleTy = ResultTy;
-    if (LSym->getType() != SingleTy)
+    if (LSym->getType() != SingleTy) {
       return None;
+
+}
   } else {
     // Don't rearrange other operations.
     return None;
@@ -482,20 +544,26 @@ static Optional<NonLoc> tryRearrange(ProgramStateRef State,
   assert(!SingleTy.isNull() && "We should have figured out the type by now!");
 
   // Rearrange signed symbolic expressions only
-  if (!SingleTy->isSignedIntegerOrEnumerationType())
+  if (!SingleTy->isSignedIntegerOrEnumerationType()) {
     return None;
 
+}
+
   SymbolRef RSym = Rhs.getAsSymbol();
-  if (!RSym || RSym->getType() != SingleTy)
+  if (!RSym || RSym->getType() != SingleTy) {
     return None;
+
+}
 
   BasicValueFactory &BV = State->getBasicVals();
   llvm::APSInt LInt, RInt;
   std::tie(LSym, LInt) = decomposeSymbol(LSym, BV);
   std::tie(RSym, RInt) = decomposeSymbol(RSym, BV);
   if (!shouldRearrange(State, Op, LSym, LInt, SingleTy) ||
-      !shouldRearrange(State, Op, RSym, RInt, SingleTy))
+      !shouldRearrange(State, Op, RSym, RInt, SingleTy)) {
     return None;
+
+}
 
   // We know that no overflows can occur anymore.
   return doRearrangeUnchecked(State, Op, LSym, LInt, RSym, RInt);
@@ -509,7 +577,7 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
   NonLoc InputRHS = rhs;
 
   // Handle trivial case where left-side and right-side are the same.
-  if (lhs == rhs)
+  if (lhs == rhs) {
     switch (op) {
       default:
         break;
@@ -523,13 +591,17 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
         return makeTruthVal(false, resultTy);
       case BO_Xor:
       case BO_Sub:
-        if (resultTy->isIntegralOrEnumerationType())
+        if (resultTy->isIntegralOrEnumerationType()) {
           return makeIntVal(0, resultTy);
+
+}
         return evalCastFromNonLoc(makeIntVal(0, /*isUnsigned=*/false), resultTy);
       case BO_Or:
       case BO_And:
         return evalCastFromNonLoc(lhs, resultTy);
     }
+
+}
 
   while (1) {
     switch (lhs.getSubKind()) {
@@ -556,16 +628,20 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
         case nonloc::LocAsIntegerKind:
           // FIXME: at the moment the implementation
           // of modeling "pointers as integers" is not complete.
-          if (!BinaryOperator::isComparisonOp(op))
+          if (!BinaryOperator::isComparisonOp(op)) {
             return UnknownVal();
+
+}
           return evalBinOpLL(state, op, lhsL,
                              rhs.castAs<nonloc::LocAsInteger>().getLoc(),
                              resultTy);
         case nonloc::ConcreteIntKind: {
           // FIXME: at the moment the implementation
           // of modeling "pointers as integers" is not complete.
-          if (!BinaryOperator::isComparisonOp(op))
+          if (!BinaryOperator::isComparisonOp(op)) {
             return UnknownVal();
+
+}
           // Transform the integer into a location and compare.
           // FIXME: This only makes sense for comparisons. If we want to, say,
           // add 1 to a LocAsInteger, we'd better unpack the Loc and add to it,
@@ -576,10 +652,12 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
           // regions it doesn't matter that much because such comparisons would
           // most likely evaluate to concrete false anyway. FIXME: We might
           // still need to handle the non-comparison case.
-          if (SymbolRef lSym = lhs.getAsLocSymbol(true))
+          if (SymbolRef lSym = lhs.getAsLocSymbol(true)) {
             BasicVals.getAPSIntType(lSym->getType()).apply(i);
-          else
+          } else {
             BasicVals.getAPSIntType(Context.VoidPtrTy).apply(i);
+
+}
           return evalBinOpLL(state, op, lhsL, makeLoc(i), resultTy);
         }
         default:
@@ -616,8 +694,10 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
 
         const llvm::APSInt *Result =
           BasicVals.evalAPSInt(op, LHSValue, RHSValue);
-        if (!Result)
+        if (!Result) {
           return UndefinedVal();
+
+}
 
         return nonloc::ConcreteInt(*Result);
       }
@@ -644,13 +724,17 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
         continue;
       case BO_Shr:
         // (~0)>>a
-        if (LHSValue.isAllOnesValue() && LHSValue.isSigned())
+        if (LHSValue.isAllOnesValue() && LHSValue.isSigned()) {
           return evalCastFromNonLoc(lhs, resultTy);
+
+}
         LLVM_FALLTHROUGH;
       case BO_Shl:
         // 0<<a and 0>>a
-        if (LHSValue == 0)
+        if (LHSValue == 0) {
           return evalCastFromNonLoc(lhs, resultTy);
+
+}
         return makeSymExprValNN(op, InputLHS, InputRHS, resultTy);
       default:
         return makeSymExprValNN(op, InputLHS, InputRHS, resultTy);
@@ -729,10 +813,12 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
               const llvm::APSInt &second = IntType.convert(*RHSValue);
 
               const llvm::APSInt *newRHS;
-              if (lop == op)
+              if (lop == op) {
                 newRHS = BasicVals.evalAPSInt(BO_Add, first, second);
-              else
+              } else {
                 newRHS = BasicVals.evalAPSInt(BO_Sub, first, second);
+
+}
 
               assert(newRHS && "Invalid operation despite common type!");
               rhs = nonloc::ConcreteInt(*newRHS);
@@ -751,18 +837,24 @@ SVal SimpleSValBuilder::evalBinOpNN(ProgramStateRef state,
       // If so, "fold" the constant by setting 'lhs' to a ConcreteInt
       // and try again.
       SVal simplifiedLhs = simplifySVal(state, lhs);
-      if (simplifiedLhs != lhs)
+      if (simplifiedLhs != lhs) {
         if (auto simplifiedLhsAsNonLoc = simplifiedLhs.getAs<NonLoc>()) {
           lhs = *simplifiedLhsAsNonLoc;
           continue;
         }
 
+}
+
       // Is the RHS a constant?
-      if (const llvm::APSInt *RHSValue = getKnownValue(state, rhs))
+      if (const llvm::APSInt *RHSValue = getKnownValue(state, rhs)) {
         return MakeSymIntVal(Sym, op, *RHSValue, resultTy);
 
-      if (Optional<NonLoc> V = tryRearrange(state, op, lhs, rhs, resultTy))
+}
+
+      if (Optional<NonLoc> V = tryRearrange(state, op, lhs, rhs, resultTy)) {
         return *V;
+
+}
 
       // Give up -- this is not a symbolic expression we can handle.
       return makeSymExprValNN(op, InputLHS, InputRHS, resultTy);
@@ -777,14 +869,18 @@ static SVal evalBinOpFieldRegionFieldRegion(const FieldRegion *LeftFR,
                                             QualType resultTy,
                                             SimpleSValBuilder &SVB) {
   // Only comparisons are meaningful here!
-  if (!BinaryOperator::isComparisonOp(op))
+  if (!BinaryOperator::isComparisonOp(op)) {
     return UnknownVal();
+
+}
 
   // Next, see if the two FRs have the same super-region.
   // FIXME: This doesn't handle casts yet, and simply stripping the casts
   // doesn't help.
-  if (LeftFR->getSuperRegion() != RightFR->getSuperRegion())
+  if (LeftFR->getSuperRegion() != RightFR->getSuperRegion()) {
     return UnknownVal();
+
+}
 
   const FieldDecl *LeftFD = LeftFR->getDecl();
   const FieldDecl *RightFD = RightFR->getDecl();
@@ -792,15 +888,21 @@ static SVal evalBinOpFieldRegionFieldRegion(const FieldRegion *LeftFR,
 
   // Make sure the two FRs are from the same kind of record. Just in case!
   // FIXME: This is probably where inheritance would be a problem.
-  if (RD != RightFD->getParent())
+  if (RD != RightFD->getParent()) {
     return UnknownVal();
+
+}
 
   // We know for sure that the two fields are not the same, since that
   // would have given us the same SVal.
-  if (op == BO_EQ)
+  if (op == BO_EQ) {
     return SVB.makeTruthVal(false, resultTy);
-  if (op == BO_NE)
+
+}
+  if (op == BO_NE) {
     return SVB.makeTruthVal(true, resultTy);
+
+}
 
   // Iterate through the fields and see which one comes first.
   // [C99 6.7.2.1.13] "Within a structure object, the non-bit-field
@@ -808,10 +910,14 @@ static SVal evalBinOpFieldRegionFieldRegion(const FieldRegion *LeftFR,
   // increase in the order in which they are declared."
   bool leftFirst = (op == BO_LT || op == BO_LE);
   for (const auto *I : RD->fields()) {
-    if (I == LeftFD)
+    if (I == LeftFD) {
       return SVB.makeTruthVal(leftFirst, resultTy);
-    if (I == RightFD)
+
+}
+    if (I == RightFD) {
       return SVB.makeTruthVal(!leftFirst, resultTy);
+
+}
   }
 
   llvm_unreachable("Fields not found in parent record's definition");
@@ -828,8 +934,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
   // calling this function with another operation (PR7527). We don't attempt to
   // model this for now, but it could be useful, particularly when the
   // "location" is actually an integer value that's been passed through a void*.
-  if (!(BinaryOperator::isComparisonOp(op) || op == BO_Sub))
+  if (!(BinaryOperator::isComparisonOp(op) || op == BO_Sub)) {
     return UnknownVal();
+
+}
 
   // Special cases for when both sides are identical.
   if (lhs == rhs) {
@@ -884,8 +992,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     if (SymbolRef rSym = rhs.getAsLocSymbol()) {
       // We can only build expressions with symbols on the left,
       // so we need a reversible operator.
-      if (!BinaryOperator::isComparisonOp(op) || op == BO_Cmp)
+      if (!BinaryOperator::isComparisonOp(op) || op == BO_Cmp) {
         return UnknownVal();
+
+}
 
       const llvm::APSInt &lVal = lhs.castAs<loc::ConcreteInt>().getValue();
       op = BinaryOperator::reverseComparisonOp(op);
@@ -896,8 +1006,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     if (Optional<loc::ConcreteInt> rInt = rhs.getAs<loc::ConcreteInt>()) {
       SVal ResultVal =
           lhs.castAs<loc::ConcreteInt>().evalBinOp(BasicVals, op, *rInt);
-      if (Optional<NonLoc> Result = ResultVal.getAs<NonLoc>())
+      if (Optional<NonLoc> Result = ResultVal.getAs<NonLoc>()) {
         return evalCastFromNonLoc(*Result, resultTy);
+
+}
 
       assert(!ResultVal.getAs<Loc>() && "Loc-Loc ops should not produce Locs");
       return UnknownVal();
@@ -932,8 +1044,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
       // If one of the operands is a symbol and the other is a constant,
       // build an expression for use by the constraint manager.
       if (SymbolRef lSym = lhs.getAsLocSymbol(true)) {
-        if (BinaryOperator::isComparisonOp(op))
+        if (BinaryOperator::isComparisonOp(op)) {
           return MakeSymIntVal(lSym, op, rInt->getValue(), resultTy);
+
+}
         return UnknownVal();
       }
       // Special case comparisons to NULL.
@@ -941,8 +1055,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
       // build constraints. The address of any non-symbolic region is guaranteed
       // to be non-NULL.
       if (rInt->isZeroConstant()) {
-        if (op == BO_Sub)
+        if (op == BO_Sub) {
           return evalCastFromLoc(lhs, resultTy);
+
+}
 
         if (BinaryOperator::isComparisonOp(op)) {
           QualType boolType = getContext().BoolTy;
@@ -961,11 +1077,13 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     assert(LeftMR && "MemRegionValKind SVal doesn't have a region!");
 
     const MemRegion *RightMR = rhs.getAsRegion();
-    if (!RightMR)
+    if (!RightMR) {
       // The RHS is probably a label, which in theory could address a region.
       // FIXME: we can probably make a more useful statement about non-code
       // regions, though.
       return UnknownVal();
+
+}
 
     const MemRegion *LeftBase = LeftMR->getBaseRegion();
     const MemRegion *RightBase = RightMR->getBaseRegion();
@@ -1026,22 +1144,30 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
         // If the index is unknown or undefined, bail out here.
         SVal LeftIndexVal = LeftER->getIndex();
         Optional<NonLoc> LeftIndex = LeftIndexVal.getAs<NonLoc>();
-        if (!LeftIndex)
+        if (!LeftIndex) {
           return UnknownVal();
+
+}
         LeftIndexVal = evalCastFromNonLoc(*LeftIndex, ArrayIndexTy);
         LeftIndex = LeftIndexVal.getAs<NonLoc>();
-        if (!LeftIndex)
+        if (!LeftIndex) {
           return UnknownVal();
+
+}
 
         // Do the same for the right index.
         SVal RightIndexVal = RightER->getIndex();
         Optional<NonLoc> RightIndex = RightIndexVal.getAs<NonLoc>();
-        if (!RightIndex)
+        if (!RightIndex) {
           return UnknownVal();
+
+}
         RightIndexVal = evalCastFromNonLoc(*RightIndex, ArrayIndexTy);
         RightIndex = RightIndexVal.getAs<NonLoc>();
-        if (!RightIndex)
+        if (!RightIndex) {
           return UnknownVal();
+
+}
 
         // Actually perform the operation.
         // evalBinOpNN expects the two indexes to already be the right type.
@@ -1055,8 +1181,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     if (RightFR && LeftFR) {
       SVal R = evalBinOpFieldRegionFieldRegion(LeftFR, RightFR, op, resultTy,
                                                *this);
-      if (!R.isUnknown())
+      if (!R.isUnknown()) {
         return R;
+
+}
     }
 
     // Compare the regions using the raw offsets.
@@ -1091,8 +1219,10 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     // conjuring an expression instead.
     SymbolRef LHSSym = lhs.getAsLocSymbol();
     SymbolRef RHSSym = rhs.getAsLocSymbol();
-    if (LHSSym && RHSSym)
+    if (LHSSym && RHSSym) {
       return makeNonLoc(LHSSym, op, RHSSym, resultTy);
+
+}
 
     // If we get here, we have no way of comparing the regions.
     return UnknownVal();
@@ -1105,14 +1235,18 @@ SVal SimpleSValBuilder::evalBinOpLN(ProgramStateRef state,
                                   Loc lhs, NonLoc rhs, QualType resultTy) {
   if (op >= BO_PtrMemD && op <= BO_PtrMemI) {
     if (auto PTMSV = rhs.getAs<nonloc::PointerToMember>()) {
-      if (PTMSV->isNullMemberPointer())
+      if (PTMSV->isNullMemberPointer()) {
         return UndefinedVal();
+
+}
       if (const FieldDecl *FD = PTMSV->getDeclAs<FieldDecl>()) {
         SVal Result = lhs;
 
-        for (const auto &I : *PTMSV)
+        for (const auto &I : *PTMSV) {
           Result = StateMgr.getStoreManager().evalDerivedToBase(
               Result, I->getType(),I->isVirtual());
+
+}
         return state->getLValue(FD, Result);
       }
     }
@@ -1124,12 +1258,16 @@ SVal SimpleSValBuilder::evalBinOpLN(ProgramStateRef state,
          "arguments to comparison ops must be of the same type");
 
   // Special case: rhs is a zero constant.
-  if (rhs.isZeroConstant())
+  if (rhs.isZeroConstant()) {
     return lhs;
 
+}
+
   // Perserve the null pointer so that it can be found by the DerefChecker.
-  if (lhs.isZeroConstant())
+  if (lhs.isZeroConstant()) {
     return lhs;
+
+}
 
   // We are dealing with pointer arithmetic.
 
@@ -1189,15 +1327,19 @@ SVal SimpleSValBuilder::evalBinOpLN(ProgramStateRef state,
       // hierarchy to provide typed regions for all non-void pointers would be
       // better. For instance, we cannot extend this towards LocAsInteger
       // operations, where result type of the expression is integer.
-      if (resultTy->isAnyPointerType())
+      if (resultTy->isAnyPointerType()) {
         elementType = resultTy->getPointeeType();
+
+}
     }
 
     // Represent arithmetic on void pointers as arithmetic on char pointers.
     // It is fine when a TypedValueRegion of char value type represents
     // a void pointer. Note that arithmetic on void pointers is a GCC extension.
-    if (elementType->isVoidType())
+    if (elementType->isVoidType()) {
       elementType = getContext().CharTy;
+
+}
 
     if (Optional<NonLoc> indexV = index.getAs<NonLoc>()) {
       return loc::MemRegionVal(MemMgr.getElementRegion(elementType, *indexV,
@@ -1210,17 +1352,25 @@ SVal SimpleSValBuilder::evalBinOpLN(ProgramStateRef state,
 const llvm::APSInt *SimpleSValBuilder::getKnownValue(ProgramStateRef state,
                                                    SVal V) {
   V = simplifySVal(state, V);
-  if (V.isUnknownOrUndef())
+  if (V.isUnknownOrUndef()) {
     return nullptr;
 
-  if (Optional<loc::ConcreteInt> X = V.getAs<loc::ConcreteInt>())
+}
+
+  if (Optional<loc::ConcreteInt> X = V.getAs<loc::ConcreteInt>()) {
     return &X->getValue();
 
-  if (Optional<nonloc::ConcreteInt> X = V.getAs<nonloc::ConcreteInt>())
+}
+
+  if (Optional<nonloc::ConcreteInt> X = V.getAs<nonloc::ConcreteInt>()) {
     return &X->getValue();
 
-  if (SymbolRef Sym = V.getAsSymbol())
+}
+
+  if (SymbolRef Sym = V.getAsSymbol()) {
     return state->getConstraintManager().getSymVal(state, Sym);
+
+}
 
   // FIXME: Add support for SymExprs.
   return nullptr;
@@ -1261,9 +1411,11 @@ SVal SimpleSValBuilder::simplifySVal(ProgramStateRef State, SVal V) {
     SVal VisitSymbolData(const SymbolData *S) {
       // No cache here.
       if (const llvm::APSInt *I =
-              SVB.getKnownValue(State, SVB.makeSymbolVal(S)))
+              SVB.getKnownValue(State, SVB.makeSymbolVal(S))) {
         return Loc::isLocType(S->getType()) ? (SVal)SVB.makeIntLocVal(*I)
                                             : (SVal)SVB.makeIntVal(*I);
+
+}
       return SVB.makeSymbolVal(S);
     }
 
@@ -1272,12 +1424,16 @@ SVal SimpleSValBuilder::simplifySVal(ProgramStateRef State, SVal V) {
 
     SVal VisitSymIntExpr(const SymIntExpr *S) {
       auto I = Cached.find(S);
-      if (I != Cached.end())
+      if (I != Cached.end()) {
         return I->second;
 
+}
+
       SVal LHS = Visit(S->getLHS());
-      if (isUnchanged(S->getLHS(), LHS))
+      if (isUnchanged(S->getLHS(), LHS)) {
         return skip(S);
+
+}
 
       SVal RHS;
       // By looking at the APSInt in the right-hand side of S, we cannot
@@ -1304,21 +1460,27 @@ SVal SimpleSValBuilder::simplifySVal(ProgramStateRef State, SVal V) {
 
     SVal VisitSymSymExpr(const SymSymExpr *S) {
       auto I = Cached.find(S);
-      if (I != Cached.end())
+      if (I != Cached.end()) {
         return I->second;
+
+}
 
       // For now don't try to simplify mixed Loc/NonLoc expressions
       // because they often appear from LocAsInteger operations
       // and we don't know how to combine a LocAsInteger
       // with a concrete value.
       if (Loc::isLocType(S->getLHS()->getType()) !=
-          Loc::isLocType(S->getRHS()->getType()))
+          Loc::isLocType(S->getRHS()->getType())) {
         return skip(S);
+
+}
 
       SVal LHS = Visit(S->getLHS());
       SVal RHS = Visit(S->getRHS());
-      if (isUnchanged(S->getLHS(), LHS) && isUnchanged(S->getRHS(), RHS))
+      if (isUnchanged(S->getLHS(), LHS) && isUnchanged(S->getRHS(), RHS)) {
         return skip(S);
+
+}
 
       return cache(
           S, SVB.evalBinOp(State, S->getOpcode(), LHS, RHS, S->getType()));
@@ -1339,8 +1501,10 @@ SVal SimpleSValBuilder::simplifySVal(ProgramStateRef State, SVal V) {
 
   // A crude way of preventing this function from calling itself from evalBinOp.
   static bool isReentering = false;
-  if (isReentering)
+  if (isReentering) {
     return V;
+
+}
 
   isReentering = true;
   SVal SimplifiedV = Simplifier(State).Visit(V);

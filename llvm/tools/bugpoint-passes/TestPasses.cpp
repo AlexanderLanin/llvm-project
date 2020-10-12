@@ -38,10 +38,16 @@ private:
   }
 
   bool runOnFunction(Function &F) override {
-    for (auto &BB : F)
-      for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
-        if (isa<CallInst>(*I))
+    for (auto &BB : F) {
+      for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I) {
+        if (isa<CallInst>(*I)) {
           abort();
+
+}
+
+}
+
+}
 
     return false;
   }
@@ -63,14 +69,20 @@ public:
 
 private:
   bool runOnFunction(Function &F) override {
-    for (auto &BB : F)
-      for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
+    for (auto &BB : F) {
+      for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I) {
         if (CallInst *CI = dyn_cast<CallInst>(I)) {
-          if (!CI->use_empty())
+          if (!CI->use_empty()) {
             CI->replaceAllUsesWith(Constant::getNullValue(CI->getType()));
+
+}
           CI->getParent()->getInstList().erase(CI);
           break;
         }
+
+}
+
+}
     return false;
   }
 };
@@ -93,8 +105,10 @@ public:
 private:
   bool runOnModule(Module &M) override {
     for (auto &F : M.functions()) {
-      if (F.isDeclaration())
+      if (F.isDeclaration()) {
         abort();
+
+}
     }
     return false;
   }
@@ -117,10 +131,14 @@ public:
 private:
   bool runOnModule(Module &M) override {
     NamedMDNode *CU_Nodes = M.getNamedMetadata("llvm.dbg.cu");
-    if (!CU_Nodes)
+    if (!CU_Nodes) {
       return false;
-    if (CU_Nodes->getNumOperands() >= 2)
+
+}
+    if (CU_Nodes->getNumOperands() >= 2) {
       abort();
+
+}
     return false;
   }
 };
@@ -144,8 +162,10 @@ private:
 
   bool runOnFunction(Function &F) override {
     AttributeSet A = F.getAttributes().getFnAttributes();
-    if (A.hasAttribute("bugpoint-crash"))
+    if (A.hasAttribute("bugpoint-crash")) {
       abort();
+
+}
     return false;
   }
 };
@@ -171,10 +191,14 @@ private:
   // ensures the fadd instruction sticks around and we can check that the
   // metadata there is dropped correctly.
   bool runOnFunction(Function &F) override {
-    for (Instruction &I : instructions(F))
+    for (Instruction &I : instructions(F)) {
       if (match(&I, m_FAbs(m_FAdd(m_Value(), m_Value()))) &&
-          I.hasMetadata("fpmath"))
+          I.hasMetadata("fpmath")) {
         abort();
+
+}
+
+}
     return false;
   }
 };

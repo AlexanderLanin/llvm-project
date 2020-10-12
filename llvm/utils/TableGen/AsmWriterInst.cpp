@@ -27,22 +27,32 @@ static bool isIdentChar(char C) {
 
 std::string AsmWriterOperand::getCode(bool PassSubtarget) const {
   if (OperandType == isLiteralTextOperand) {
-    if (Str.size() == 1)
+    if (Str.size() == 1) {
       return "O << '" + Str + "';";
+
+}
     return "O << \"" + Str + "\";";
   }
 
-  if (OperandType == isLiteralStatementOperand)
+  if (OperandType == isLiteralStatementOperand) {
     return Str;
 
+}
+
   std::string Result = Str + "(MI";
-  if (MIOpNo != ~0U)
+  if (MIOpNo != ~0U) {
     Result += ", " + utostr(MIOpNo);
-  if (PassSubtarget)
+
+}
+  if (PassSubtarget) {
     Result += ", STI";
+
+}
   Result += ", O";
-  if (!MiModifier.empty())
+  if (!MiModifier.empty()) {
     Result += ", \"" + MiModifier + '"';
+
+}
   return Result + ");";
 }
 
@@ -61,11 +71,13 @@ AsmWriterInst::AsmWriterInst(const CodeGenInstruction &CGI, unsigned CGIIndex,
   while (LastEmitted != AsmString.size()) {
     std::string::size_type DollarPos =
       AsmString.find_first_of("$\\", LastEmitted);
-    if (DollarPos == std::string::npos) DollarPos = AsmString.size();
+    if (DollarPos == std::string::npos) { DollarPos = AsmString.size();
+
+}
 
     // Emit a constant string fragment.
     if (DollarPos != LastEmitted) {
-      for (; LastEmitted != DollarPos; ++LastEmitted)
+      for (; LastEmitted != DollarPos; ++LastEmitted) {
         switch (AsmString[LastEmitted]) {
           case '\n':
             AddLiteralString("\\n");
@@ -83,6 +95,8 @@ AsmWriterInst::AsmWriterInst(const CodeGenInstruction &CGI, unsigned CGIIndex,
             AddLiteralString(std::string(1, AsmString[LastEmitted]));
             break;
         }
+
+}
     } else if (AsmString[DollarPos] == '\\') {
       if (DollarPos+1 != AsmString.size()) {
         if (AsmString[DollarPos+1] == 'n') {
@@ -119,8 +133,10 @@ AsmWriterInst::AsmWriterInst(const CodeGenInstruction &CGI, unsigned CGIIndex,
         ++VarEnd;
       }
 
-      while (VarEnd < AsmString.size() && isIdentChar(AsmString[VarEnd]))
+      while (VarEnd < AsmString.size() && isIdentChar(AsmString[VarEnd])) {
         ++VarEnd;
+
+}
       StringRef VarName(AsmString.data()+DollarPos+1, VarEnd-DollarPos-1);
 
       // Modifier - Support ${foo:modifier} syntax, where "modifier" is passed
@@ -132,43 +148,55 @@ AsmWriterInst::AsmWriterInst(const CodeGenInstruction &CGI, unsigned CGIIndex,
       // brace, advance the end position past it if we found an opening curly
       // brace.
       if (hasCurlyBraces) {
-        if (VarEnd >= AsmString.size())
+        if (VarEnd >= AsmString.size()) {
           PrintFatalError(
               CGI.TheDef->getLoc(),
               "Reached end of string before terminating curly brace in '" +
                   CGI.TheDef->getName() + "'");
 
+}
+
         // Look for a modifier string.
         if (AsmString[VarEnd] == ':') {
           ++VarEnd;
-          if (VarEnd >= AsmString.size())
+          if (VarEnd >= AsmString.size()) {
             PrintFatalError(
                 CGI.TheDef->getLoc(),
                 "Reached end of string before terminating curly brace in '" +
                     CGI.TheDef->getName() + "'");
 
+}
+
           std::string::size_type ModifierStart = VarEnd;
-          while (VarEnd < AsmString.size() && isIdentChar(AsmString[VarEnd]))
+          while (VarEnd < AsmString.size() && isIdentChar(AsmString[VarEnd])) {
             ++VarEnd;
+
+}
           Modifier = std::string(AsmString.begin()+ModifierStart,
                                  AsmString.begin()+VarEnd);
-          if (Modifier.empty())
+          if (Modifier.empty()) {
             PrintFatalError(CGI.TheDef->getLoc(),
                             "Bad operand modifier name in '" +
                                 CGI.TheDef->getName() + "'");
+
+}
         }
 
-        if (AsmString[VarEnd] != '}')
+        if (AsmString[VarEnd] != '}') {
           PrintFatalError(
               CGI.TheDef->getLoc(),
               "Variable name beginning with '{' did not end with '}' in '" +
                   CGI.TheDef->getName() + "'");
+
+}
         ++VarEnd;
       }
-      if (VarName.empty() && Modifier.empty())
+      if (VarName.empty() && Modifier.empty()) {
         PrintFatalError(CGI.TheDef->getLoc(),
                         "Stray '$' in '" + CGI.TheDef->getName() +
                             "' asm string, maybe you want $$?");
+
+}
 
       if (VarName.empty()) {
         // Just a modifier, pass this into PrintSpecial.
@@ -193,13 +221,17 @@ AsmWriterInst::AsmWriterInst(const CodeGenInstruction &CGI, unsigned CGIIndex,
 /// operand number.  If more than one operand mismatches, return ~1, otherwise
 /// if the instructions are identical return ~0.
 unsigned AsmWriterInst::MatchesAllButOneOp(const AsmWriterInst &Other)const{
-  if (Operands.size() != Other.Operands.size()) return ~1;
+  if (Operands.size() != Other.Operands.size()) { return ~1;
+
+}
 
   unsigned MismatchOperand = ~0U;
   for (unsigned i = 0, e = Operands.size(); i != e; ++i) {
     if (Operands[i] != Other.Operands[i]) {
-      if (MismatchOperand != ~0U)  // Already have one mismatch?
+      if (MismatchOperand != ~0U) {  // Already have one mismatch?
         return ~1U;
+
+}
       MismatchOperand = i;
     }
   }

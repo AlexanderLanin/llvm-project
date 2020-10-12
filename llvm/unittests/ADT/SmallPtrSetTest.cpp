@@ -19,8 +19,10 @@ using namespace llvm;
 
 TEST(SmallPtrSetTest, Assignment) {
   int buf[8];
-  for (int i = 0; i < 8; ++i)
+  for (int i = 0; i < 8; ++i) {
     buf[i] = 0;
+
+}
 
   SmallPtrSet<int *, 4> s1 = {&buf[0], &buf[1]};
   SmallPtrSet<int *, 4> s2;
@@ -31,26 +33,36 @@ TEST(SmallPtrSetTest, Assignment) {
 
   s1 = s2;
   EXPECT_EQ(4U, s1.size());
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_TRUE(s1.count(&buf[i]));
-    else
+    } else {
       EXPECT_FALSE(s1.count(&buf[i]));
+
+}
+
+}
 
   // Assign and insert with initializer lists, and ones that contain both
   // duplicates and out-of-order elements.
   (s2 = {&buf[6], &buf[7], &buf[6]}).insert({&buf[5], &buf[4]});
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_FALSE(s2.count(&buf[i]));
-    else
+    } else {
       EXPECT_TRUE(s2.count(&buf[i]));
+
+}
+
+}
 }
 
 TEST(SmallPtrSetTest, GrowthTest) {
   int i;
   int buf[8];
-  for(i=0; i<8; ++i) buf[i]=0;
+  for(i=0; i<8; ++i) { buf[i]=0;
+
+}
 
 
   SmallPtrSet<int *, 4> s;
@@ -63,11 +75,15 @@ TEST(SmallPtrSetTest, GrowthTest) {
   EXPECT_EQ(4U, s.size());
 
   i = 0;
-  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i)
+  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i) {
       (**I)++;
+
+}
   EXPECT_EQ(4, i);
-  for(i=0; i<8; ++i)
+  for(i=0; i<8; ++i) {
       EXPECT_EQ(i<4?1:0,buf[i]);
+
+}
 
   s.insert(&buf[4]);
   s.insert(&buf[5]);
@@ -75,8 +91,10 @@ TEST(SmallPtrSetTest, GrowthTest) {
   s.insert(&buf[7]);
 
   i = 0;
-  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i)
+  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i) {
       (**I)++;
+
+}
   EXPECT_EQ(8, i);
   s.erase(&buf[4]);
   s.erase(&buf[5]);
@@ -85,26 +103,40 @@ TEST(SmallPtrSetTest, GrowthTest) {
   EXPECT_EQ(4U, s.size());
 
   i = 0;
-  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i)
+  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i) {
       (**I)++;
+
+}
   EXPECT_EQ(4, i);
-  for(i=0; i<8; ++i)
+  for(i=0; i<8; ++i) {
       EXPECT_EQ(i<4?3:1,buf[i]);
 
+}
+
   s.clear();
-  for(i=0; i<8; ++i) buf[i]=0;
-  for(i=0; i<128; ++i) s.insert(&buf[i%8]); // test repeated entires
+  for(i=0; i<8; ++i) { buf[i]=0;
+
+}
+  for(i=0; i<128; ++i) { s.insert(&buf[i%8]); // test repeated entires
+
+}
   EXPECT_EQ(8U, s.size());
-  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i)
+  for(iter I=s.begin(), E=s.end(); I!=E; ++I, ++i) {
       (**I)++;
-  for(i=0; i<8; ++i)
+
+}
+  for(i=0; i<8; ++i) {
       EXPECT_EQ(1,buf[i]);
+
+}
 }
 
 TEST(SmallPtrSetTest, CopyAndMoveTest) {
   int buf[8];
-  for (int i = 0; i < 8; ++i)
+  for (int i = 0; i < 8; ++i) {
     buf[i] = 0;
+
+}
 
   SmallPtrSet<int *, 4> s1;
   s1.insert(&buf[0]);
@@ -112,37 +144,53 @@ TEST(SmallPtrSetTest, CopyAndMoveTest) {
   s1.insert(&buf[2]);
   s1.insert(&buf[3]);
   EXPECT_EQ(4U, s1.size());
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_TRUE(s1.count(&buf[i]));
-    else
+    } else {
       EXPECT_FALSE(s1.count(&buf[i]));
+
+}
+
+}
 
   SmallPtrSet<int *, 4> s2(s1);
   EXPECT_EQ(4U, s2.size());
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_TRUE(s2.count(&buf[i]));
-    else
+    } else {
       EXPECT_FALSE(s2.count(&buf[i]));
+
+}
+
+}
 
   s1 = s2;
   EXPECT_EQ(4U, s1.size());
   EXPECT_EQ(4U, s2.size());
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_TRUE(s1.count(&buf[i]));
-    else
+    } else {
       EXPECT_FALSE(s1.count(&buf[i]));
+
+}
+
+}
 
   SmallPtrSet<int *, 4> s3(std::move(s1));
   EXPECT_EQ(4U, s3.size());
   EXPECT_TRUE(s1.empty());
-  for (int i = 0; i < 8; ++i)
-    if (i < 4)
+  for (int i = 0; i < 8; ++i) {
+    if (i < 4) {
       EXPECT_TRUE(s3.count(&buf[i]));
-    else
+    } else {
       EXPECT_FALSE(s3.count(&buf[i]));
+
+}
+
+}
 
   // Move assign into the moved-from object. Also test move of a non-small
   // container.
@@ -153,15 +201,19 @@ TEST(SmallPtrSetTest, CopyAndMoveTest) {
   s1 = std::move(s3);
   EXPECT_EQ(8U, s1.size());
   EXPECT_TRUE(s3.empty());
-  for (int i = 0; i < 8; ++i)
+  for (int i = 0; i < 8; ++i) {
     EXPECT_TRUE(s1.count(&buf[i]));
+
+}
 
   // Copy assign into a moved-from object.
   s3 = s1;
   EXPECT_EQ(8U, s3.size());
   EXPECT_EQ(8U, s1.size());
-  for (int i = 0; i < 8; ++i)
+  for (int i = 0; i < 8; ++i) {
     EXPECT_TRUE(s3.count(&buf[i]));
+
+}
 }
 
 TEST(SmallPtrSetTest, SwapTest) {
@@ -292,15 +344,21 @@ TEST(SmallPtrSetTest, dereferenceAndIterate) {
 
   // Iterate from each and count how many times each element is found.
   int Found[sizeof(Ints)/sizeof(int)] = {0};
-  for (int &I : Ints)
-    for (auto F = S.find(&I), E = S.end(); F != E; ++F)
+  for (int &I : Ints) {
+    for (auto F = S.find(&I), E = S.end(); F != E; ++F) {
       ++Found[*F - Ints];
+
+}
+
+}
 
   // Sort.  We should hit the first element just once and the final element N
   // times.
   llvm::sort(std::begin(Found), std::end(Found));
-  for (auto F = std::begin(Found), E = std::end(Found); F != E; ++F)
+  for (auto F = std::begin(Found), E = std::end(Found); F != E; ++F) {
     EXPECT_EQ(F - Found + 1, *F);
+
+}
 }
 
 // Verify that const pointers work for count and find even when the underlying
@@ -333,8 +391,10 @@ TEST(SmallPtrSetTest, ConstNonPtrTest) {
 // Test equality comparison.
 TEST(SmallPtrSetTest, EqualityComparison) {
   int buf[3];
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < 3; ++i) {
     buf[i] = 0;
+
+}
 
   SmallPtrSet<int *, 1> a;
   a.insert(&buf[0]);

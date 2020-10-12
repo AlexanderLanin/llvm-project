@@ -26,18 +26,26 @@ Error VarStreamArrayExtractor<CrossModuleImportItem>::
 operator()(BinaryStreamRef Stream, uint32_t &Len,
            codeview::CrossModuleImportItem &Item) {
   BinaryStreamReader Reader(Stream);
-  if (Reader.bytesRemaining() < sizeof(CrossModuleImport))
+  if (Reader.bytesRemaining() < sizeof(CrossModuleImport)) {
     return make_error<CodeViewError>(
         cv_error_code::insufficient_buffer,
         "Not enough bytes for a Cross Module Import Header!");
-  if (auto EC = Reader.readObject(Item.Header))
+
+}
+  if (auto EC = Reader.readObject(Item.Header)) {
     return EC;
-  if (Reader.bytesRemaining() < Item.Header->Count * sizeof(uint32_t))
+
+}
+  if (Reader.bytesRemaining() < Item.Header->Count * sizeof(uint32_t)) {
     return make_error<CodeViewError>(
         cv_error_code::insufficient_buffer,
         "Not enough to read specified number of Cross Module References!");
-  if (auto EC = Reader.readArray(Item.Imports, Item.Header->Count))
+
+}
+  if (auto EC = Reader.readArray(Item.Imports, Item.Header->Count)) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -56,8 +64,10 @@ void DebugCrossModuleImportsSubsection::addImport(StringRef Module,
   Strings.insert(Module);
   std::vector<support::ulittle32_t> Targets = {support::ulittle32_t(ImportId)};
   auto Result = Mappings.insert(std::make_pair(Module, Targets));
-  if (!Result.second)
+  if (!Result.second) {
     Result.first->getValue().push_back(Targets[0]);
+
+}
 }
 
 uint32_t DebugCrossModuleImportsSubsection::calculateSerializedSize() const {
@@ -75,8 +85,10 @@ Error DebugCrossModuleImportsSubsection::commit(
   std::vector<T> Ids;
   Ids.reserve(Mappings.size());
 
-  for (const auto &M : Mappings)
+  for (const auto &M : Mappings) {
     Ids.push_back(&M);
+
+}
 
   llvm::sort(Ids, [this](const T &L1, const T &L2) {
     return Strings.getIdForString(L1->getKey()) <
@@ -87,10 +99,14 @@ Error DebugCrossModuleImportsSubsection::commit(
     CrossModuleImport Imp;
     Imp.ModuleNameOffset = Strings.getIdForString(Item->getKey());
     Imp.Count = Item->getValue().size();
-    if (auto EC = Writer.writeObject(Imp))
+    if (auto EC = Writer.writeObject(Imp)) {
       return EC;
-    if (auto EC = Writer.writeArray(makeArrayRef(Item->getValue())))
+
+}
+    if (auto EC = Writer.writeArray(makeArrayRef(Item->getValue()))) {
       return EC;
+
+}
   }
   return Error::success();
 }

@@ -5583,8 +5583,10 @@ lookupFoldTableImpl(ArrayRef<X86MemoryFoldTableEntry> Table, unsigned RegOp) {
 
   const X86MemoryFoldTableEntry *Data = llvm::lower_bound(Table, RegOp);
   if (Data != Table.end() && Data->KeyOp == RegOp &&
-      !(Data->Flags & TB_NO_FORWARD))
+      !(Data->Flags & TB_NO_FORWARD)) {
     return Data;
+
+}
   return nullptr;
 }
 
@@ -5596,18 +5598,20 @@ llvm::lookupTwoAddrFoldTable(unsigned RegOp) {
 const X86MemoryFoldTableEntry *
 llvm::lookupFoldTable(unsigned RegOp, unsigned OpNum) {
   ArrayRef<X86MemoryFoldTableEntry> FoldTable;
-  if (OpNum == 0)
+  if (OpNum == 0) {
     FoldTable = makeArrayRef(MemoryFoldTable0);
-  else if (OpNum == 1)
+  } else if (OpNum == 1) {
     FoldTable = makeArrayRef(MemoryFoldTable1);
-  else if (OpNum == 2)
+  } else if (OpNum == 2) {
     FoldTable = makeArrayRef(MemoryFoldTable2);
-  else if (OpNum == 3)
+  } else if (OpNum == 3) {
     FoldTable = makeArrayRef(MemoryFoldTable3);
-  else if (OpNum == 4)
+  } else if (OpNum == 4) {
     FoldTable = makeArrayRef(MemoryFoldTable4);
-  else
+  } else {
     return nullptr;
+
+}
 
   return lookupFoldTableImpl(FoldTable, RegOp);
 }
@@ -5621,38 +5625,54 @@ struct X86MemUnfoldTable {
   std::vector<X86MemoryFoldTableEntry> Table;
 
   X86MemUnfoldTable() {
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable2Addr)
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable2Addr) {
       // Index 0, folded load and store, no alignment requirement.
       addTableEntry(Entry, TB_INDEX_0 | TB_FOLDED_LOAD | TB_FOLDED_STORE);
 
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable0)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable0) {
       // Index 0, mix of loads and stores.
       addTableEntry(Entry, TB_INDEX_0);
 
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable1)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable1) {
       // Index 1, folded load
       addTableEntry(Entry, TB_INDEX_1 | TB_FOLDED_LOAD);
 
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable2)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable2) {
       // Index 2, folded load
       addTableEntry(Entry, TB_INDEX_2 | TB_FOLDED_LOAD);
 
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable3)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable3) {
       // Index 3, folded load
       addTableEntry(Entry, TB_INDEX_3 | TB_FOLDED_LOAD);
 
-    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable4)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : MemoryFoldTable4) {
       // Index 4, folded load
       addTableEntry(Entry, TB_INDEX_4 | TB_FOLDED_LOAD);
 
+}
+
     // Broadcast tables.
-    for (const X86MemoryFoldTableEntry &Entry : BroadcastFoldTable2)
+    for (const X86MemoryFoldTableEntry &Entry : BroadcastFoldTable2) {
       // Index 2, folded broadcast
       addTableEntry(Entry, TB_INDEX_2 | TB_FOLDED_LOAD | TB_FOLDED_BCAST);
 
-    for (const X86MemoryFoldTableEntry &Entry : BroadcastFoldTable3)
+}
+
+    for (const X86MemoryFoldTableEntry &Entry : BroadcastFoldTable3) {
       // Index 3, folded broadcast
       addTableEntry(Entry, TB_INDEX_3 | TB_FOLDED_LOAD | TB_FOLDED_BCAST);
+
+}
 
     // Sort the memory->reg unfold table.
     array_pod_sort(Table.begin(), Table.end());
@@ -5665,9 +5685,11 @@ struct X86MemUnfoldTable {
   void addTableEntry(const X86MemoryFoldTableEntry &Entry,
                      uint16_t ExtraFlags) {
     // NOTE: This swaps the KeyOp and DstOp in the table so we can sort it.
-    if ((Entry.Flags & TB_NO_REVERSE) == 0)
+    if ((Entry.Flags & TB_NO_REVERSE) == 0) {
       Table.push_back({Entry.DstOp, Entry.KeyOp,
                       static_cast<uint16_t>(Entry.Flags | ExtraFlags) });
+
+}
   }
 };
 }
@@ -5678,8 +5700,10 @@ const X86MemoryFoldTableEntry *
 llvm::lookupUnfoldTable(unsigned MemOp) {
   auto &Table = MemUnfoldTable->Table;
   auto I = llvm::lower_bound(Table, MemOp);
-  if (I != Table.end() && I->KeyOp == MemOp)
+  if (I != Table.end() && I->KeyOp == MemOp) {
     return &*I;
+
+}
   return nullptr;
 }
 

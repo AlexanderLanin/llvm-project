@@ -82,8 +82,10 @@ bool TruncInstCombine::buildTruncExpressionDag() {
     }
 
     auto *I = dyn_cast<Instruction>(Curr);
-    if (!I)
+    if (!I) {
       return false;
+
+}
 
     if (!Stack.empty() && Stack.back() == I) {
       // Already handled all instruction operands, can remove it from both the
@@ -122,8 +124,10 @@ bool TruncInstCombine::buildTruncExpressionDag() {
     case Instruction::Select: {
       SmallVector<Value *, 2> Operands;
       getRelevantOperands(I, Operands);
-      for (Value *Operand : Operands)
+      for (Value *Operand : Operands) {
         Worklist.push_back(Operand);
+
+}
       break;
     }
     default:
@@ -149,8 +153,10 @@ unsigned TruncInstCombine::getMinBitWidth() {
   unsigned OrigBitWidth =
       CurrentTruncInst->getOperand(0)->getType()->getScalarSizeInBits();
 
-  if (isa<Constant>(Src))
+  if (isa<Constant>(Src)) {
     return TruncBitWidth;
+
+}
 
   Worklist.push_back(Src);
   InstInfoMap[cast<Instruction>(Src)].ValidBitWidth = TruncBitWidth;
@@ -176,10 +182,14 @@ unsigned TruncInstCombine::getMinBitWidth() {
       // Worklist and the Stack, and update MinBitWidth.
       Worklist.pop_back();
       Stack.pop_back();
-      for (auto *Operand : Operands)
-        if (auto *IOp = dyn_cast<Instruction>(Operand))
+      for (auto *Operand : Operands) {
+        if (auto *IOp = dyn_cast<Instruction>(Operand)) {
           Info.MinBitWidth =
               std::max(Info.MinBitWidth, InstInfoMap[IOp].MinBitWidth);
+
+}
+
+}
       continue;
     }
 
@@ -191,17 +201,21 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // when the instruction is part of a loop.
     Info.MinBitWidth = std::max(Info.MinBitWidth, Info.ValidBitWidth);
 
-    for (auto *Operand : Operands)
+    for (auto *Operand : Operands) {
       if (auto *IOp = dyn_cast<Instruction>(Operand)) {
         // If we already calculated the minimum bit-width for this valid
         // bit-width, or for a smaller valid bit-width, then just keep the
         // answer we already calculated.
         unsigned IOpBitwidth = InstInfoMap.lookup(IOp).ValidBitWidth;
-        if (IOpBitwidth >= ValidBitWidth)
+        if (IOpBitwidth >= ValidBitWidth) {
           continue;
+
+}
         InstInfoMap[IOp].ValidBitWidth = ValidBitWidth;
         Worklist.push_back(IOp);
       }
+
+}
   }
   unsigned MinBitWidth = InstInfoMap.lookup(cast<Instruction>(Src)).MinBitWidth;
   assert(MinBitWidth >= TruncBitWidth);
@@ -210,8 +224,10 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // In this case reducing expression with vector type might generate a new
     // vector type, which is not preferable as it might result in generating
     // sub-optimal code.
-    if (DstTy->isVectorTy())
+    if (DstTy->isVectorTy()) {
       return OrigBitWidth;
+
+}
     // Use the smallest integer type in the range [MinBitWidth, OrigBitWidth).
     Type *Ty = DL.getSmallestLegalIntType(DstTy->getContext(), MinBitWidth);
     // Update minimum bit-width with the new destination type bit-width if
@@ -224,15 +240,19 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // type and the target type is illegal.
     bool FromLegal = MinBitWidth == 1 || DL.isLegalInteger(OrigBitWidth);
     bool ToLegal = MinBitWidth == 1 || DL.isLegalInteger(MinBitWidth);
-    if (!DstTy->isVectorTy() && FromLegal && !ToLegal)
+    if (!DstTy->isVectorTy() && FromLegal && !ToLegal) {
       return OrigBitWidth;
+
+}
   }
   return MinBitWidth;
 }
 
 Type *TruncInstCombine::getBestTruncatedType() {
-  if (!buildTruncExpressionDag())
+  if (!buildTruncExpressionDag()) {
     return nullptr;
+
+}
 
   // We don't want to duplicate instructions, which isn't profitable. Thus, we
   // can't shrink something that has multiple users, unless all users are
@@ -241,23 +261,33 @@ Type *TruncInstCombine::getBestTruncatedType() {
   unsigned DesiredBitWidth = 0;
   for (auto Itr : InstInfoMap) {
     Instruction *I = Itr.first;
-    if (I->hasOneUse())
+    if (I->hasOneUse()) {
       continue;
+
+}
     bool IsExtInst = (isa<ZExtInst>(I) || isa<SExtInst>(I));
-    for (auto *U : I->users())
-      if (auto *UI = dyn_cast<Instruction>(U))
+    for (auto *U : I->users()) {
+      if (auto *UI = dyn_cast<Instruction>(U)) {
         if (UI != CurrentTruncInst && !InstInfoMap.count(UI)) {
-          if (!IsExtInst)
+          if (!IsExtInst) {
             return nullptr;
+
+}
           // If this is an extension from the dest type, we can eliminate it,
           // even if it has multiple users. Thus, update the DesiredBitWidth and
           // validate all extension instructions agrees on same DesiredBitWidth.
           unsigned ExtInstBitWidth =
               I->getOperand(0)->getType()->getScalarSizeInBits();
-          if (DesiredBitWidth && DesiredBitWidth != ExtInstBitWidth)
+          if (DesiredBitWidth && DesiredBitWidth != ExtInstBitWidth) {
             return nullptr;
+
+}
           DesiredBitWidth = ExtInstBitWidth;
         }
+
+}
+
+}
   }
 
   unsigned OrigBitWidth =
@@ -270,8 +300,10 @@ Type *TruncInstCombine::getBestTruncatedType() {
   // Check that we can shrink to smaller bit-width than original one and that
   // it is similar to the DesiredBitWidth is such exists.
   if (MinBitWidth >= OrigBitWidth ||
-      (DesiredBitWidth && DesiredBitWidth != MinBitWidth))
+      (DesiredBitWidth && DesiredBitWidth != MinBitWidth)) {
     return nullptr;
+
+}
 
   return IntegerType::get(CurrentTruncInst->getContext(), MinBitWidth);
 }
@@ -281,8 +313,10 @@ Type *TruncInstCombine::getBestTruncatedType() {
 /// version of \p Ty, otherwise return \p Ty.
 static Type *getReducedType(Value *V, Type *Ty) {
   assert(Ty && !Ty->isVectorTy() && "Expect Scalar Type");
-  if (auto *VTy = dyn_cast<VectorType>(V->getType()))
+  if (auto *VTy = dyn_cast<VectorType>(V->getType())) {
     return VectorType::get(Ty, VTy->getNumElements());
+
+}
   return Ty;
 }
 
@@ -335,12 +369,16 @@ void TruncInstCombine::ReduceExpressionDag(Type *SclTy) {
       // 3. Add New-TruncInst (if Old node was not TruncInst).
       auto Entry = find(Worklist, I);
       if (Entry != Worklist.end()) {
-        if (auto *NewCI = dyn_cast<TruncInst>(Res))
+        if (auto *NewCI = dyn_cast<TruncInst>(Res)) {
           *Entry = NewCI;
-        else
+        } else {
           Worklist.erase(Entry);
-      } else if (auto *NewCI = dyn_cast<TruncInst>(Res))
+
+}
+      } else if (auto *NewCI = dyn_cast<TruncInst>(Res)) {
           Worklist.push_back(NewCI);
+
+}
       break;
     }
     case Instruction::Add:
@@ -366,8 +404,10 @@ void TruncInstCombine::ReduceExpressionDag(Type *SclTy) {
     }
 
     NodeInfo.NewValue = Res;
-    if (auto *ResI = dyn_cast<Instruction>(Res))
+    if (auto *ResI = dyn_cast<Instruction>(Res)) {
       ResI->takeName(I);
+
+}
   }
 
   Value *Res = getReducedOperand(CurrentTruncInst->getOperand(0), SclTy);
@@ -375,8 +415,10 @@ void TruncInstCombine::ReduceExpressionDag(Type *SclTy) {
   if (Res->getType() != DstTy) {
     IRBuilder<> Builder(CurrentTruncInst);
     Res = Builder.CreateIntCast(Res, DstTy, false);
-    if (auto *ResI = dyn_cast<Instruction>(Res))
+    if (auto *ResI = dyn_cast<Instruction>(Res)) {
       ResI->takeName(CurrentTruncInst);
+
+}
   }
   CurrentTruncInst->replaceAllUsesWith(Res);
 
@@ -389,8 +431,10 @@ void TruncInstCombine::ReduceExpressionDag(Type *SclTy) {
     // We still need to check that the instruction has no users before we erase
     // it, because {SExt, ZExt}Inst Instruction might have other users that was
     // not reduced, in such case, we need to keep that instruction.
-    if (I->first->use_empty())
+    if (I->first->use_empty()) {
       I->first->eraseFromParent();
+
+}
   }
 }
 
@@ -400,11 +444,17 @@ bool TruncInstCombine::run(Function &F) {
   // Collect all TruncInst in the function into the Worklist for evaluating.
   for (auto &BB : F) {
     // Ignore unreachable basic block.
-    if (!DT.isReachableFromEntry(&BB))
+    if (!DT.isReachableFromEntry(&BB)) {
       continue;
-    for (auto &I : BB)
-      if (auto *CI = dyn_cast<TruncInst>(&I))
+
+}
+    for (auto &I : BB) {
+      if (auto *CI = dyn_cast<TruncInst>(&I)) {
         Worklist.push_back(CI);
+
+}
+
+}
   }
 
   // Process all TruncInst in the Worklist, for each instruction:

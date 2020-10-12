@@ -42,12 +42,16 @@ bool VerifyObject(llvm::yaml::Node &N,
   llvm::SmallString<32> Tmp;
   for (auto &Prop : *M) {
     auto *K = llvm::dyn_cast_or_null<llvm::yaml::ScalarNode>(Prop.getKey());
-    if (!K)
+    if (!K) {
       continue;
+
+}
     std::string KS = K->getValue(Tmp).str();
     auto I = Expected.find(KS);
-    if (I == Expected.end())
+    if (I == Expected.end()) {
       continue; // Ignore properties with no assertion.
+
+}
 
     auto *V = llvm::dyn_cast_or_null<llvm::yaml::ScalarNode>(Prop.getValue());
     if (!V) {

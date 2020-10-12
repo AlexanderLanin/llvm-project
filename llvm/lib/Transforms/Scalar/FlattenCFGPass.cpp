@@ -60,8 +60,10 @@ static bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
   // to avoid using iterators invalidated by erasing blocks.
   std::vector<WeakVH> Blocks;
   Blocks.reserve(F.size());
-  for (auto &BB : F)
+  for (auto &BB : F) {
     Blocks.push_back(&BB);
+
+}
 
   while (LocalChange) {
     LocalChange = false;
@@ -69,9 +71,13 @@ static bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
     // Loop over all of the basic blocks and try to flatten them.
     for (WeakVH &BlockHandle : Blocks) {
       // Skip blocks erased by FlattenCFG.
-      if (auto *BB = cast_or_null<BasicBlock>(BlockHandle))
-        if (FlattenCFG(BB, AA))
+      if (auto *BB = cast_or_null<BasicBlock>(BlockHandle)) {
+        if (FlattenCFG(BB, AA)) {
           LocalChange = true;
+
+}
+
+}
     }
     Changed |= LocalChange;
   }

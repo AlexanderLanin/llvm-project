@@ -34,13 +34,21 @@ class UndefBranchChecker : public Checker<check::BranchCondition> {
         : St(std::move(S)), LCtx(L) {}
 
     const Expr *FindExpr(const Expr *Ex) {
-      if (!MatchesCriteria(Ex))
+      if (!MatchesCriteria(Ex)) {
         return nullptr;
 
-      for (const Stmt *SubStmt : Ex->children())
-        if (const Expr *ExI = dyn_cast_or_null<Expr>(SubStmt))
-          if (const Expr *E2 = FindExpr(ExI))
+}
+
+      for (const Stmt *SubStmt : Ex->children()) {
+        if (const Expr *ExI = dyn_cast_or_null<Expr>(SubStmt)) {
+          if (const Expr *E2 = FindExpr(ExI)) {
             return E2;
+
+}
+
+}
+
+}
 
       return Ex;
     }
@@ -64,9 +72,11 @@ void UndefBranchChecker::checkBranchCondition(const Stmt *Condition,
     // infeasible.
     ExplodedNode *N = Ctx.generateErrorNode();
     if (N) {
-      if (!BT)
+      if (!BT) {
         BT.reset(new BuiltinBug(
             this, "Branch condition evaluates to a garbage value"));
+
+}
 
       // What's going on here: we want to highlight the subexpression of the
       // condition that is the most likely source of the "uninitialized
@@ -88,9 +98,13 @@ void UndefBranchChecker::checkBranchCondition(const Stmt *Condition,
       ProgramPoint P = PrevN->getLocation();
       ProgramStateRef St = N->getState();
 
-      if (Optional<PostStmt> PS = P.getAs<PostStmt>())
-        if (PS->getStmt() == Ex)
+      if (Optional<PostStmt> PS = P.getAs<PostStmt>()) {
+        if (PS->getStmt() == Ex) {
           St = PrevN->getState();
+
+}
+
+}
 
       FindUndefExpr FindIt(St, Ctx.getLocationContext());
       Ex = FindIt.FindExpr(Ex);

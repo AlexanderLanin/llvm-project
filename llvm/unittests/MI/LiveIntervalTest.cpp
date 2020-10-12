@@ -40,8 +40,10 @@ std::unique_ptr<LLVMTargetMachine> createTargetMachine() {
   Triple TargetTriple("amdgcn--");
   std::string Error;
   const Target *T = TargetRegistry::lookupTarget("", TargetTriple, Error);
-  if (!T)
+  if (!T) {
     return nullptr;
+
+}
 
   TargetOptions Options;
   return std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine*>(
@@ -55,18 +57,24 @@ std::unique_ptr<Module> parseMIR(LLVMContext &Context,
   SMDiagnostic Diagnostic;
   std::unique_ptr<MemoryBuffer> MBuffer = MemoryBuffer::getMemBuffer(MIRCode);
   MIR = createMIRParser(std::move(MBuffer), Context);
-  if (!MIR)
+  if (!MIR) {
     return nullptr;
 
+}
+
   std::unique_ptr<Module> M = MIR->parseIRModule();
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
 
   M->setDataLayout(TM.createDataLayout());
 
   MachineModuleInfoWrapperPass *MMIWP = new MachineModuleInfoWrapperPass(&TM);
-  if (MIR->parseMachineFunctions(*M, MMIWP->getMMI()))
+  if (MIR->parseMachineFunctions(*M, MMIWP->getMMI())) {
     return nullptr;
+
+}
   PM.add(MMIWP);
 
   return M;
@@ -107,8 +115,10 @@ static MachineInstr &getMI(MachineFunction &MF, unsigned At,
 
   unsigned I = 0;
   for (MachineInstr &MI : MBB) {
-    if (I == At)
+    if (I == At) {
       return MI;
+
+}
     ++I;
   }
   llvm_unreachable("Instruction not found");
@@ -132,8 +142,10 @@ static void liveIntervalTest(StringRef MIRFunc, LiveIntervalTest T) {
   LLVMContext Context;
   std::unique_ptr<LLVMTargetMachine> TM = createTargetMachine();
   // This test is designed for the X86 backend; stop if it is not available.
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   legacy::PassManager PM;
 

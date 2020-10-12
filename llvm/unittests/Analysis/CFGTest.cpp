@@ -38,31 +38,43 @@ protected:
     Error.print("", os);
 
     // A failure here means that the test itself is buggy.
-    if (!M)
+    if (!M) {
       report_fatal_error(os.str().c_str());
 
+}
+
     Function *F = M->getFunction("test");
-    if (F == nullptr)
+    if (F == nullptr) {
       report_fatal_error("Test must have a function named @test");
+
+}
 
     A = B = nullptr;
     for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
       if (I->hasName()) {
-        if (I->getName() == "A")
+        if (I->getName() == "A") {
           A = &*I;
-        else if (I->getName() == "B")
+        } else if (I->getName() == "B") {
           B = &*I;
+
+}
       }
     }
-    if (A == nullptr)
+    if (A == nullptr) {
       report_fatal_error("@test must have an instruction %A");
-    if (B == nullptr)
+
+}
+    if (B == nullptr) {
       report_fatal_error("@test must have an instruction %B");
+
+}
 
     assert(ExclusionSet.empty());
     for (auto I = F->begin(), E = F->end(); I != E; ++I) {
-      if (I->hasName() && I->getName().startswith("excluded"))
+      if (I->hasName() && I->getName().startswith("excluded")) {
         ExclusionSet.insert(&*I);
+
+}
     }
   }
 
@@ -93,8 +105,10 @@ protected:
       }
 
       bool runOnFunction(Function &F) override {
-        if (!F.hasName() || F.getName() != "test")
+        if (!F.hasName() || F.getName() != "test") {
           return false;
+
+}
 
         LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
         DominatorTree *DT =

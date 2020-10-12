@@ -32,13 +32,17 @@ namespace symbolize {
 
 // Prints source code around in the FileName the Line.
 void DIPrinter::printContext(const std::string &FileName, int64_t Line) {
-  if (PrintSourceContext <= 0)
+  if (PrintSourceContext <= 0) {
     return;
+
+}
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
       MemoryBuffer::getFile(FileName);
-  if (!BufOrErr)
+  if (!BufOrErr) {
     return;
+
+}
 
   std::unique_ptr<MemoryBuffer> Buf = std::move(BufOrErr.get());
   int64_t FirstLine =
@@ -51,10 +55,12 @@ void DIPrinter::printContext(const std::string &FileName, int64_t Line) {
     int64_t L = I.line_number();
     if (L >= FirstLine && L <= LastLine) {
       OS << format_decimal(L, MaxLineNumberWidth);
-      if (L == Line)
+      if (L == Line) {
         OS << " >: ";
-      else
+      } else {
         OS << "  : ";
+
+}
       OS << *I << "\n";
     }
   }
@@ -63,35 +69,45 @@ void DIPrinter::printContext(const std::string &FileName, int64_t Line) {
 void DIPrinter::print(const DILineInfo &Info, bool Inlined) {
   if (PrintFunctionNames) {
     std::string FunctionName = Info.FunctionName;
-    if (FunctionName == DILineInfo::BadString)
+    if (FunctionName == DILineInfo::BadString) {
       FunctionName = DILineInfo::Addr2LineBadString;
+
+}
 
     StringRef Delimiter = PrintPretty ? " at " : "\n";
     StringRef Prefix = (PrintPretty && Inlined) ? " (inlined by) " : "";
     OS << Prefix << FunctionName << Delimiter;
   }
   std::string Filename = Info.FileName;
-  if (Filename == DILineInfo::BadString)
+  if (Filename == DILineInfo::BadString) {
     Filename = DILineInfo::Addr2LineBadString;
-  else if (Basenames)
+  } else if (Basenames) {
     Filename = std::string(llvm::sys::path::filename(Filename));
+
+}
   if (!Verbose) {
     OS << Filename << ":" << Info.Line;
-    if (Style == OutputStyle::LLVM)
+    if (Style == OutputStyle::LLVM) {
       OS << ":" << Info.Column;
-    else if (Style == OutputStyle::GNU && Info.Discriminator != 0)
+    } else if (Style == OutputStyle::GNU && Info.Discriminator != 0) {
       OS << " (discriminator " << Info.Discriminator << ")";
+
+}
     OS << "\n";
     printContext(Filename, Info.Line);
     return;
   }
   OS << "  Filename: " << Filename << "\n";
-  if (Info.StartLine)
+  if (Info.StartLine) {
     OS << "Function start line: " << Info.StartLine << "\n";
+
+}
   OS << "  Line: " << Info.Line << "\n";
   OS << "  Column: " << Info.Column << "\n";
-  if (Info.Discriminator)
+  if (Info.Discriminator) {
     OS << "  Discriminator: " << Info.Discriminator << "\n";
+
+}
 }
 
 DIPrinter &DIPrinter::operator<<(const DILineInfo &Info) {
@@ -105,51 +121,67 @@ DIPrinter &DIPrinter::operator<<(const DIInliningInfo &Info) {
     print(DILineInfo(), false);
     return *this;
   }
-  for (uint32_t i = 0; i < FramesNum; i++)
+  for (uint32_t i = 0; i < FramesNum; i++) {
     print(Info.getFrame(i), i > 0);
+
+}
   return *this;
 }
 
 DIPrinter &DIPrinter::operator<<(const DIGlobal &Global) {
   std::string Name = Global.Name;
-  if (Name == DILineInfo::BadString)
+  if (Name == DILineInfo::BadString) {
     Name = DILineInfo::Addr2LineBadString;
+
+}
   OS << Name << "\n";
   OS << Global.Start << " " << Global.Size << "\n";
   return *this;
 }
 
 DIPrinter &DIPrinter::operator<<(const DILocal &Local) {
-  if (Local.FunctionName.empty())
+  if (Local.FunctionName.empty()) {
     OS << "??\n";
-  else
+  } else {
     OS << Local.FunctionName << '\n';
 
-  if (Local.Name.empty())
+}
+
+  if (Local.Name.empty()) {
     OS << "??\n";
-  else
+  } else {
     OS << Local.Name << '\n';
 
-  if (Local.DeclFile.empty())
+}
+
+  if (Local.DeclFile.empty()) {
     OS << "??";
-  else
+  } else {
     OS << Local.DeclFile;
+
+}
   OS << ':' << Local.DeclLine << '\n';
 
-  if (Local.FrameOffset)
+  if (Local.FrameOffset) {
     OS << *Local.FrameOffset << ' ';
-  else
+  } else {
     OS << "?? ";
 
-  if (Local.Size)
+}
+
+  if (Local.Size) {
     OS << *Local.Size << ' ';
-  else
+  } else {
     OS << "?? ";
 
-  if (Local.TagOffset)
+}
+
+  if (Local.TagOffset) {
     OS << *Local.TagOffset << '\n';
-  else
+  } else {
     OS << "??\n";
+
+}
   return *this;
 }
 

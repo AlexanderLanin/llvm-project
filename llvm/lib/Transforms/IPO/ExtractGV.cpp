@@ -26,8 +26,10 @@ static void makeVisible(GlobalValue &GV, bool Delete) {
   bool Local = GV.hasLocalLinkage();
   if (Local || Delete) {
     GV.setLinkage(GlobalValue::ExternalLinkage);
-    if (Local)
+    if (Local) {
       GV.setVisibility(GlobalValue::HiddenVisibility);
+
+}
     return;
   }
 
@@ -67,12 +69,16 @@ namespace {
         keepConstInit(keepConstInit) {}
 
     bool runOnModule(Module &M) override {
-      if (skipModule(M))
+      if (skipModule(M)) {
         return false;
 
+}
+
       // Visit the global inline asm.
-      if (!deleteStuff)
+      if (!deleteStuff) {
         M.setModuleInlineAsm("");
+
+}
 
       // For simplicity, just give all GlobalValues ExternalLinkage. A trickier
       // implementation could figure out which GlobalValues are actually
@@ -88,10 +94,14 @@ namespace {
             deleteStuff == (bool)Named.count(&*I) && !I->isDeclaration() &&
             (!I->isConstant() || !keepConstInit);
         if (!Delete) {
-          if (I->hasAvailableExternallyLinkage())
+          if (I->hasAvailableExternallyLinkage()) {
             continue;
-          if (I->getName() == "llvm.global_ctors")
+
+}
+          if (I->getName() == "llvm.global_ctors") {
             continue;
+
+}
         }
 
         makeVisible(*I, Delete);
@@ -108,8 +118,10 @@ namespace {
         bool Delete =
             deleteStuff == (bool)Named.count(&F) && !F.isDeclaration();
         if (!Delete) {
-          if (F.hasAvailableExternallyLinkage())
+          if (F.hasAvailableExternallyLinkage()) {
             continue;
+
+}
         }
 
         makeVisible(F, Delete);

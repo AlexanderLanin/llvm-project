@@ -47,8 +47,10 @@ Documentation extractDocumentation(RecordKeeper &Records) {
   std::map<Record*, std::vector<Record*> > Aliases;
 
   std::map<std::string, Record*> OptionsByName;
-  for (Record *R : Records.getAllDerivedDefinitions("Option"))
+  for (Record *R : Records.getAllDerivedDefinitions("Option")) {
     OptionsByName[std::string(R->getValueAsString("Name"))] = R;
+
+}
 
   auto Flatten = [](Record *R) {
     return R->getValue("DocFlatten") && R->getValueAsBit("DocFlatten");
@@ -57,20 +59,26 @@ Documentation extractDocumentation(RecordKeeper &Records) {
   auto SkipFlattened = [&](Record *R) -> Record* {
     while (R && Flatten(R)) {
       auto *G = dyn_cast<DefInit>(R->getValueInit("Group"));
-      if (!G)
+      if (!G) {
         return nullptr;
+
+}
       R = G->getDef();
     }
     return R;
   };
 
   for (Record *R : Records.getAllDerivedDefinitions("OptionGroup")) {
-    if (Flatten(R))
+    if (Flatten(R)) {
       continue;
 
+}
+
     Record *Group = nullptr;
-    if (auto *G = dyn_cast<DefInit>(R->getValueInit("Group")))
+    if (auto *G = dyn_cast<DefInit>(R->getValueInit("Group"))) {
       Group = SkipFlattened(G->getDef());
+
+}
     GroupsInGroup[Group].push_back(R);
   }
 
@@ -94,8 +102,10 @@ Documentation extractDocumentation(RecordKeeper &Records) {
     }
 
     Record *Group = nullptr;
-    if (auto *G = dyn_cast<DefInit>(R->getValueInit("Group")))
+    if (auto *G = dyn_cast<DefInit>(R->getValueInit("Group"))) {
       Group = SkipFlattened(G->getDef());
+
+}
     OptionsInGroup[Group].push_back(R);
   }
 
@@ -128,8 +138,10 @@ Documentation extractDocumentation(RecordKeeper &Records) {
 
     auto &Options = OptionsInGroup[R];
     llvm::sort(Options, CompareByName);
-    for (Record *O : Options)
+    for (Record *O : Options) {
       D.Options.push_back(DocumentationForOption(O));
+
+}
 
     return D;
   };
@@ -162,43 +174,61 @@ unsigned getNumArgsForKind(Record *OptionKind, const Record *Option) {
 }
 
 bool hasFlag(const Record *OptionOrGroup, StringRef OptionFlag) {
-  for (const Record *Flag : OptionOrGroup->getValueAsListOfDefs("Flags"))
-    if (Flag->getName() == OptionFlag)
+  for (const Record *Flag : OptionOrGroup->getValueAsListOfDefs("Flags")) {
+    if (Flag->getName() == OptionFlag) {
       return true;
+
+}
+
+}
   return false;
 }
 
 bool isExcluded(const Record *OptionOrGroup, const Record *DocInfo) {
   // FIXME: Provide a flag to specify the set of exclusions.
-  for (StringRef Exclusion : DocInfo->getValueAsListOfStrings("ExcludedFlags"))
-    if (hasFlag(OptionOrGroup, Exclusion))
+  for (StringRef Exclusion : DocInfo->getValueAsListOfStrings("ExcludedFlags")) {
+    if (hasFlag(OptionOrGroup, Exclusion)) {
       return true;
+
+}
+
+}
   return false;
 }
 
 std::string escapeRST(StringRef Str) {
   std::string Out;
   for (auto K : Str) {
-    if (StringRef("`*|_[]\\").count(K))
+    if (StringRef("`*|_[]\\").count(K)) {
       Out.push_back('\\');
+
+}
     Out.push_back(K);
   }
   return Out;
 }
 
 StringRef getSphinxOptionID(StringRef OptionName) {
-  for (auto I = OptionName.begin(), E = OptionName.end(); I != E; ++I)
-    if (!isalnum(*I) && *I != '-')
+  for (auto I = OptionName.begin(), E = OptionName.end(); I != E; ++I) {
+    if (!isalnum(*I) && *I != '-') {
       return OptionName.substr(0, I - OptionName.begin());
+
+}
+
+}
   return OptionName;
 }
 
 bool canSphinxCopeWithOption(const Record *Option) {
   // HACK: Work arond sphinx's inability to cope with punctuation-only options
   // such as /? by suppressing them from the option list.
-  for (char C : Option->getValueAsString("Name"))
-    if (isalnum(C))
+  for (char C : Option->getValueAsString("Name")) {
+    if (isalnum(C)) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -215,12 +245,16 @@ std::string getRSTStringWithTextFallback(const Record *R, StringRef Primary,
   for (auto Field : {Primary, Fallback}) {
     if (auto *V = R->getValue(Field)) {
       StringRef Value;
-      if (auto *SV = dyn_cast_or_null<StringInit>(V->getValue()))
+      if (auto *SV = dyn_cast_or_null<StringInit>(V->getValue())) {
         Value = SV->getValue();
-      else if (auto *CV = dyn_cast_or_null<CodeInit>(V->getValue()))
+      } else if (auto *CV = dyn_cast_or_null<CodeInit>(V->getValue())) {
         Value = CV->getValue();
-      if (!Value.empty())
+
+}
+      if (!Value.empty()) {
         return Field == Primary ? Value.str() : escapeRST(Value);
+
+}
     }
   }
   return std::string(StringRef());
@@ -246,10 +280,12 @@ void emitOptionName(StringRef Prefix, const Record *Option, raw_ostream &OS) {
   bool HasMetaVarName = !Option->isValueUnset("MetaVarName");
 
   std::vector<std::string> Args;
-  if (HasMetaVarName)
+  if (HasMetaVarName) {
     Args.push_back(std::string(Option->getValueAsString("MetaVarName")));
-  else if (NumArgs == 1)
+  } else if (NumArgs == 1) {
     Args.push_back("<arg>");
+
+}
 
   // Fill up arguments if this option didn't provide a meta var name or it
   // supports an unlimited number of arguments. We can't see how many arguments
@@ -282,8 +318,10 @@ void emitOptionName(StringRef Prefix, const Record *Option, raw_ostream &OS) {
 
 bool emitOptionNames(const Record *Option, raw_ostream &OS, bool EmittedAny) {
   for (auto &Prefix : Option->getValueAsListOfStrings("Prefixes")) {
-    if (EmittedAny)
+    if (EmittedAny) {
       OS << ", ";
+
+}
     emitOptionName(Prefix, Option, OS);
     EmittedAny = true;
   }
@@ -295,29 +333,41 @@ void forEachOptionName(const DocumentedOption &Option, const Record *DocInfo,
                        Fn F) {
   F(Option.Option);
 
-  for (auto *Alias : Option.Aliases)
-    if (!isExcluded(Alias, DocInfo) && canSphinxCopeWithOption(Option.Option))
+  for (auto *Alias : Option.Aliases) {
+    if (!isExcluded(Alias, DocInfo) && canSphinxCopeWithOption(Option.Option)) {
       F(Alias);
+
+}
+
+}
 }
 
 void emitOption(const DocumentedOption &Option, const Record *DocInfo,
                 raw_ostream &OS) {
-  if (isExcluded(Option.Option, DocInfo))
+  if (isExcluded(Option.Option, DocInfo)) {
     return;
+
+}
   if (Option.Option->getValueAsDef("Kind")->getName() == "KIND_UNKNOWN" ||
-      Option.Option->getValueAsDef("Kind")->getName() == "KIND_INPUT")
+      Option.Option->getValueAsDef("Kind")->getName() == "KIND_INPUT") {
     return;
-  if (!canSphinxCopeWithOption(Option.Option))
+
+}
+  if (!canSphinxCopeWithOption(Option.Option)) {
     return;
+
+}
 
   // HACK: Emit a different program name with each option to work around
   // sphinx's inability to cope with options that differ only by punctuation
   // (eg -ObjC vs -ObjC++, -G vs -G=).
   std::vector<std::string> SphinxOptionIDs;
   forEachOptionName(Option, DocInfo, [&](const Record *Option) {
-    for (auto &Prefix : Option->getValueAsListOfStrings("Prefixes"))
+    for (auto &Prefix : Option->getValueAsListOfStrings("Prefixes")) {
       SphinxOptionIDs.push_back(std::string(getSphinxOptionID(
           (Prefix + Option->getValueAsString("Name")).str())));
+
+}
   });
   assert(!SphinxOptionIDs.empty() && "no flags for option");
   static std::map<std::string, int> NextSuffix;
@@ -326,11 +376,15 @@ void emitOption(const DocumentedOption &Option, const Record *DocInfo,
       [&](const std::string &A, const std::string &B) {
         return NextSuffix[A] < NextSuffix[B];
       })];
-  for (auto &S : SphinxOptionIDs)
+  for (auto &S : SphinxOptionIDs) {
     NextSuffix[S] = SphinxWorkaroundSuffix + 1;
-  if (SphinxWorkaroundSuffix)
+
+}
+  if (SphinxWorkaroundSuffix) {
     OS << ".. program:: " << DocInfo->getValueAsString("Program")
        << SphinxWorkaroundSuffix << "\n";
+
+}
 
   // Emit the names of the option.
   OS << ".. option:: ";
@@ -338,15 +392,19 @@ void emitOption(const DocumentedOption &Option, const Record *DocInfo,
   forEachOptionName(Option, DocInfo, [&](const Record *Option) {
     EmittedAny = emitOptionNames(Option, OS, EmittedAny);
   });
-  if (SphinxWorkaroundSuffix)
+  if (SphinxWorkaroundSuffix) {
     OS << "\n.. program:: " << DocInfo->getValueAsString("Program");
+
+}
   OS << "\n\n";
 
   // Emit the description, if we have one.
   std::string Description =
       getRSTStringWithTextFallback(Option.Option, "DocBrief", "HelpText");
-  if (!Description.empty())
+  if (!Description.empty()) {
     OS << Description << "\n\n";
+
+}
 }
 
 void emitDocumentation(int Depth, const Documentation &Doc,
@@ -354,8 +412,10 @@ void emitDocumentation(int Depth, const Documentation &Doc,
 
 void emitGroup(int Depth, const DocumentedGroup &Group, const Record *DocInfo,
                raw_ostream &OS) {
-  if (isExcluded(Group.Group, DocInfo))
+  if (isExcluded(Group.Group, DocInfo)) {
     return;
+
+}
 
   emitHeading(Depth,
               getRSTStringWithTextFallback(Group.Group, "DocName", "Name"), OS);
@@ -363,8 +423,10 @@ void emitGroup(int Depth, const DocumentedGroup &Group, const Record *DocInfo,
   // Emit the description, if we have one.
   std::string Description =
       getRSTStringWithTextFallback(Group.Group, "DocBrief", "HelpText");
-  if (!Description.empty())
+  if (!Description.empty()) {
     OS << Description << "\n\n";
+
+}
 
   // Emit contained options and groups.
   emitDocumentation(Depth + 1, Group, DocInfo, OS);
@@ -372,10 +434,14 @@ void emitGroup(int Depth, const DocumentedGroup &Group, const Record *DocInfo,
 
 void emitDocumentation(int Depth, const Documentation &Doc,
                        const Record *DocInfo, raw_ostream &OS) {
-  for (auto &O : Doc.Options)
+  for (auto &O : Doc.Options) {
     emitOption(O, DocInfo, OS);
-  for (auto &G : Doc.Groups)
+
+}
+  for (auto &G : Doc.Groups) {
     emitGroup(Depth, G, DocInfo, OS);
+
+}
 }
 
 }  // namespace

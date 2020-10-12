@@ -99,8 +99,10 @@ static ScanfSpecifierResult ParseScanfSpecifier(FormatStringHandler &H,
   }
 
     // No format specifier found?
-  if (!Start)
+  if (!Start) {
     return false;
+
+}
 
   if (I == E) {
       // No more characters left?
@@ -109,8 +111,10 @@ static ScanfSpecifierResult ParseScanfSpecifier(FormatStringHandler &H,
   }
 
   ScanfSpecifier FS;
-  if (ParseArgPosition(H, FS, Start, I, E))
+  if (ParseArgPosition(H, FS, Start, I, E)) {
     return true;
+
+}
 
   if (I == E) {
       // No more characters left?
@@ -185,27 +189,37 @@ static ScanfSpecifierResult ParseScanfSpecifier(FormatStringHandler &H,
     // Apple extensions
       // Apple-specific
     case 'D':
-      if (Target.getTriple().isOSDarwin())
+      if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::DArg;
+
+}
       break;
     case 'O':
-      if (Target.getTriple().isOSDarwin())
+      if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::OArg;
+
+}
       break;
     case 'U':
-      if (Target.getTriple().isOSDarwin())
+      if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::UArg;
+
+}
       break;
   }
   ScanfConversionSpecifier CS(conversionPosition, k);
   if (k == ScanfConversionSpecifier::ScanListArg) {
-    if (ParseScanList(H, CS, I, E))
+    if (ParseScanList(H, CS, I, E)) {
       return true;
+
+}
   }
   FS.setConversionSpecifier(CS);
   if (CS.consumesDataArgument() && !FS.getSuppressAssignment()
-      && !FS.usesPositionalArg())
+      && !FS.usesPositionalArg()) {
     FS.setArgIndex(argIndex++);
+
+}
 
   // FIXME: '%' and '*' doesn't make sense.  Issue a warning.
   // FIXME: 'ConsumedSoFar' and '*' doesn't make sense.
@@ -225,8 +239,10 @@ static ScanfSpecifierResult ParseScanfSpecifier(FormatStringHandler &H,
 ArgType ScanfSpecifier::getArgType(ASTContext &Ctx) const {
   const ScanfConversionSpecifier &CS = getConversionSpecifier();
 
-  if (!CS.consumesDataArgument())
+  if (!CS.consumesDataArgument()) {
     return ArgType::Invalid();
+
+}
 
   switch(CS.getKind()) {
     // Signed int.
@@ -341,8 +357,10 @@ ArgType ScanfSpecifier::getArgType(ASTContext &Ctx) const {
         case LengthModifier::AsMAllocate:
           return ArgType::PtrTo(ArgType::CStrTy);
         case LengthModifier::AsShort:
-          if (Ctx.getTargetInfo().getTriple().isOSMSVCRT())
+          if (Ctx.getTargetInfo().getTriple().isOSMSVCRT()) {
             return ArgType::PtrTo(ArgType::AnyCharTy);
+
+}
           LLVM_FALLTHROUGH;
         default:
           return ArgType::Invalid();
@@ -358,8 +376,10 @@ ArgType ScanfSpecifier::getArgType(ASTContext &Ctx) const {
         case LengthModifier::AsMAllocate:
           return ArgType::PtrTo(ArgType(ArgType::WCStrTy, "wchar_t *"));
         case LengthModifier::AsShort:
-          if (Ctx.getTargetInfo().getTriple().isOSMSVCRT())
+          if (Ctx.getTargetInfo().getTriple().isOSMSVCRT()) {
             return ArgType::PtrTo(ArgType::AnyCharTy);
+
+}
           LLVM_FALLTHROUGH;
         default:
           return ArgType::Invalid();
@@ -414,40 +434,52 @@ bool ScanfSpecifier::fixType(QualType QT, QualType RawQT,
                              ASTContext &Ctx) {
 
   // %n is different from other conversion specifiers; don't try to fix it.
-  if (CS.getKind() == ConversionSpecifier::nArg)
+  if (CS.getKind() == ConversionSpecifier::nArg) {
     return false;
 
-  if (!QT->isPointerType())
+}
+
+  if (!QT->isPointerType()) {
     return false;
+
+}
 
   QualType PT = QT->getPointeeType();
 
   // If it's an enum, get its underlying type.
   if (const EnumType *ETy = PT->getAs<EnumType>()) {
     // Don't try to fix incomplete enums.
-    if (!ETy->getDecl()->isComplete())
+    if (!ETy->getDecl()->isComplete()) {
       return false;
+
+}
     PT = ETy->getDecl()->getIntegerType();
   }
 
   const BuiltinType *BT = PT->getAs<BuiltinType>();
-  if (!BT)
+  if (!BT) {
     return false;
+
+}
 
   // Pointer to a character.
   if (PT->isAnyCharacterType()) {
     CS.setKind(ConversionSpecifier::sArg);
-    if (PT->isWideCharType())
+    if (PT->isWideCharType()) {
       LM.setKind(LengthModifier::AsWideChar);
-    else
+    } else {
       LM.setKind(LengthModifier::None);
+
+}
 
     // If we know the target array length, we can use it as a field width.
     if (const ConstantArrayType *CAT = Ctx.getAsConstantArrayType(RawQT)) {
-      if (CAT->getSizeModifier() == ArrayType::Normal)
+      if (CAT->getSizeModifier() == ArrayType::Normal) {
         FieldWidth = OptionalAmount(OptionalAmount::Constant,
                                     CAT->getSize().getZExtValue() - 1,
                                     "", 0, false);
+
+}
 
     }
     return true;
@@ -500,25 +532,31 @@ bool ScanfSpecifier::fixType(QualType QT, QualType RawQT,
   }
 
   // Handle size_t, ptrdiff_t, etc. that have dedicated length modifiers in C99.
-  if (isa<TypedefType>(PT) && (LangOpt.C99 || LangOpt.CPlusPlus11))
+  if (isa<TypedefType>(PT) && (LangOpt.C99 || LangOpt.CPlusPlus11)) {
     namedTypeToLengthModifier(PT, LM);
+
+}
 
   // If fixing the length modifier was enough, we are done.
   if (hasValidLengthModifier(Ctx.getTargetInfo(), LangOpt)) {
     const analyze_scanf::ArgType &AT = getArgType(Ctx);
-    if (AT.isValid() && AT.matchesType(Ctx, QT))
+    if (AT.isValid() && AT.matchesType(Ctx, QT)) {
       return true;
+
+}
   }
 
   // Figure out the conversion specifier.
-  if (PT->isRealFloatingType())
+  if (PT->isRealFloatingType()) {
     CS.setKind(ConversionSpecifier::fArg);
-  else if (PT->isSignedIntegerType())
+  } else if (PT->isSignedIntegerType()) {
     CS.setKind(ConversionSpecifier::dArg);
-  else if (PT->isUnsignedIntegerType())
+  } else if (PT->isUnsignedIntegerType()) {
     CS.setKind(ConversionSpecifier::uArg);
-  else
+  } else {
     llvm_unreachable("Unexpected type");
+
+}
 
   return true;
 }
@@ -526,10 +564,14 @@ bool ScanfSpecifier::fixType(QualType QT, QualType RawQT,
 void ScanfSpecifier::toString(raw_ostream &os) const {
   os << "%";
 
-  if (usesPositionalArg())
+  if (usesPositionalArg()) {
     os << getPositionalArgIndex() << "$";
-  if (SuppressAssignment)
+
+}
+  if (SuppressAssignment) {
     os << "*";
+
+}
 
   FieldWidth.toString(os);
   os << LM.toString();
@@ -550,12 +592,16 @@ bool clang::analyze_format_string::ParseScanfString(FormatStringHandler &H,
                                                           LO, Target);
     // Did a fail-stop error of any kind occur when parsing the specifier?
     // If so, don't do any more processing.
-    if (FSR.shouldStop())
+    if (FSR.shouldStop()) {
       return true;
+
+}
       // Did we exhaust the string or encounter an error that
       // we can recover from?
-    if (!FSR.hasValue())
+    if (!FSR.hasValue()) {
       continue;
+
+}
       // We have a format specifier.  Pass it to the callback.
     if (!H.HandleScanfSpecifier(FSR.getValue(), FSR.getStart(),
                                 I - FSR.getStart())) {

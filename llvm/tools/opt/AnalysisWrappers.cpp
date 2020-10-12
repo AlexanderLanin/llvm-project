@@ -33,19 +33,27 @@ namespace {
     ExternalFunctionsPassedConstants() : ModulePass(ID) {}
     bool runOnModule(Module &M) override {
       for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I) {
-        if (!I->isDeclaration()) continue;
+        if (!I->isDeclaration()) { continue;
+
+}
 
         bool PrintedFn = false;
         for (User *U : I->users()) {
           Instruction *UI = dyn_cast<Instruction>(U);
-          if (!UI) continue;
+          if (!UI) { continue;
+
+}
 
           CallSite CS(cast<Value>(UI));
-          if (!CS) continue;
+          if (!CS) { continue;
+
+}
 
           for (CallSite::arg_iterator AI = CS.arg_begin(),
                E = CS.arg_end(); AI != E; ++AI) {
-            if (!isa<Constant>(*AI)) continue;
+            if (!isa<Constant>(*AI)) { continue;
+
+}
 
             if (!PrintedFn) {
               errs() << "Function '" << I->getName() << "':\n";

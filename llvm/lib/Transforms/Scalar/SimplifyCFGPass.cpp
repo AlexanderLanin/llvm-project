@@ -81,7 +81,9 @@ static bool mergeEmptyReturnBlocks(Function &F) {
 
     // Only look at return blocks.
     ReturnInst *Ret = dyn_cast<ReturnInst>(BB.getTerminator());
-    if (!Ret) continue;
+    if (!Ret) { continue;
+
+}
 
     // Only look at the block if it is empty or the only other thing in it is a
     // single PHI node that is the operand to the return.
@@ -90,12 +92,16 @@ static bool mergeEmptyReturnBlocks(Function &F) {
       BasicBlock::iterator I(Ret);
       --I;
       // Skip over debug info.
-      while (isa<DbgInfoIntrinsic>(I) && I != BB.begin())
+      while (isa<DbgInfoIntrinsic>(I) && I != BB.begin()) {
         --I;
+
+}
       if (!isa<DbgInfoIntrinsic>(I) &&
           (!isa<PHINode>(I) || I != BB.begin() || Ret->getNumOperands() == 0 ||
-           Ret->getOperand(0) != &*I))
+           Ret->getOperand(0) != &*I)) {
         continue;
+
+}
     }
 
     // If this is the first returning block, remember it and keep going.
@@ -109,15 +115,21 @@ static bool mergeEmptyReturnBlocks(Function &F) {
     bool SkipCallBr = false;
     for (pred_iterator PI = pred_begin(&BB), E = pred_end(&BB);
          PI != E && !SkipCallBr; ++PI) {
-      if (auto *CBI = dyn_cast<CallBrInst>((*PI)->getTerminator()))
-        for (unsigned i = 0, e = CBI->getNumSuccessors(); i != e; ++i)
+      if (auto *CBI = dyn_cast<CallBrInst>((*PI)->getTerminator())) {
+        for (unsigned i = 0, e = CBI->getNumSuccessors(); i != e; ++i) {
           if (RetBlock == CBI->getSuccessor(i)) {
             SkipCallBr = true;
             break;
           }
+
+}
+
+}
     }
-    if (SkipCallBr)
+    if (SkipCallBr) {
       continue;
+
+}
 
     // Otherwise, we found a duplicate return block.  Merge the two.
     Changed = true;
@@ -142,8 +154,10 @@ static bool mergeEmptyReturnBlocks(Function &F) {
                                     std::distance(PB, PE), "merge",
                                     &RetBlock->front());
 
-      for (pred_iterator PI = PB; PI != PE; ++PI)
+      for (pred_iterator PI = PB; PI != PE; ++PI) {
         RetBlockPHI->addIncoming(InVal, *PI);
+
+}
       RetBlock->getTerminator()->setOperand(0, RetBlockPHI);
     }
 
@@ -168,8 +182,10 @@ static bool iterativelySimplifyCFG(Function &F, const TargetTransformInfo &TTI,
   SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 32> Edges;
   FindFunctionBackedges(F, Edges);
   SmallPtrSet<BasicBlock *, 16> LoopHeaders;
-  for (unsigned i = 0, e = Edges.size(); i != e; ++i)
+  for (unsigned i = 0, e = Edges.size(); i != e; ++i) {
     LoopHeaders.insert(const_cast<BasicBlock *>(Edges[i].second));
+
+}
 
   while (LocalChange) {
     LocalChange = false;
@@ -193,15 +209,19 @@ static bool simplifyFunctionCFG(Function &F, const TargetTransformInfo &TTI,
   EverChanged |= iterativelySimplifyCFG(F, TTI, Options);
 
   // If neither pass changed anything, we're done.
-  if (!EverChanged) return false;
+  if (!EverChanged) { return false;
+
+}
 
   // iterativelySimplifyCFG can (rarely) make some loops dead.  If this happens,
   // removeUnreachableBlocks is needed to nuke them, which means we should
   // iterate between the two optimizations.  We structure the code like this to
   // avoid rerunning iterativelySimplifyCFG if the second pass of
   // removeUnreachableBlocks doesn't do anything.
-  if (!removeUnreachableBlocks(F))
+  if (!removeUnreachableBlocks(F)) {
     return true;
+
+}
 
   do {
     EverChanged = iterativelySimplifyCFG(F, TTI, Options);
@@ -234,8 +254,10 @@ PreservedAnalyses SimplifyCFGPass::run(Function &F,
                                        FunctionAnalysisManager &AM) {
   auto &TTI = AM.getResult<TargetIRAnalysis>(F);
   Options.AC = &AM.getResult<AssumptionAnalysis>(F);
-  if (!simplifyFunctionCFG(F, TTI, Options))
+  if (!simplifyFunctionCFG(F, TTI, Options)) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<GlobalsAA>();
   return PA;
@@ -277,8 +299,10 @@ struct CFGSimplifyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F) || (PredicateFtor && !PredicateFtor(F)))
+    if (skipFunction(F) || (PredicateFtor && !PredicateFtor(F))) {
       return false;
+
+}
 
     Options.AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
     auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);

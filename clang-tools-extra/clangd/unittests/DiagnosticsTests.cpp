@@ -81,14 +81,20 @@ MATCHER_P(DiagName, N, "") { return arg.Name == N; }
 MATCHER_P(DiagSeverity, S, "") { return arg.Severity == S; }
 
 MATCHER_P(EqualToFix, Fix, "LSP fix " + llvm::to_string(Fix)) {
-  if (arg.Message != Fix.Message)
+  if (arg.Message != Fix.Message) {
     return false;
-  if (arg.Edits.size() != Fix.Edits.size())
+
+}
+  if (arg.Edits.size() != Fix.Edits.size()) {
     return false;
+
+}
   for (std::size_t I = 0; I < arg.Edits.size(); ++I) {
     if (arg.Edits[I].range != Fix.Edits[I].range ||
-        arg.Edits[I].newText != Fix.Edits[I].newText)
+        arg.Edits[I].newText != Fix.Edits[I].newText) {
       return false;
+
+}
   }
   return true;
 }

@@ -16,13 +16,17 @@ using namespace llvm;
 
 std::string Twine::str() const {
   // If we're storing only a std::string, just return it.
-  if (LHSKind == StdStringKind && RHSKind == EmptyKind)
+  if (LHSKind == StdStringKind && RHSKind == EmptyKind) {
     return *LHS.stdString;
+
+}
 
   // If we're storing a formatv_object, we can avoid an extra copy by formatting
   // it immediately and returning the result.
-  if (LHSKind == FormatvObjectKind && RHSKind == EmptyKind)
+  if (LHSKind == FormatvObjectKind && RHSKind == EmptyKind) {
     return LHS.formatvObject->str();
+
+}
 
   // Otherwise, flatten and copy the contents first.
   SmallString<256> Vec;

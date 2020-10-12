@@ -151,8 +151,10 @@ MemCmpExpansion::LoadEntryVector MemCmpExpansion::computeGreedyLoadSequence(
         LoadSequence.push_back({LoadSize, Offset});
         Offset += LoadSize;
       }
-      if (LoadSize > 1)
+      if (LoadSize > 1) {
         ++NumLoadsNonOneByte;
+
+}
       Size = Size % LoadSize;
     }
     LoadSizes = LoadSizes.drop_front();
@@ -166,8 +168,10 @@ MemCmpExpansion::computeOverlappingLoadSequence(uint64_t Size,
                                                 const unsigned MaxNumLoads,
                                                 unsigned &NumLoadsNonOneByte) {
   // These are already handled by the greedy approach.
-  if (Size < 2 || MaxLoadSize < 2)
+  if (Size < 2 || MaxLoadSize < 2) {
     return {};
+
+}
 
   // We try to do as many non-overlapping loads as possible starting from the
   // beginning.
@@ -178,12 +182,16 @@ MemCmpExpansion::computeOverlappingLoadSequence(uint64_t Size,
   Size = Size - NumNonOverlappingLoads * MaxLoadSize;
   // Bail if we do not need an overloapping store, this is already handled by
   // the greedy approach.
-  if (Size == 0)
+  if (Size == 0) {
     return {};
+
+}
   // Bail if the number of loads (non-overlapping + potential overlapping one)
   // is larger than the max allowed.
-  if ((NumNonOverlappingLoads + 1) > MaxNumLoads)
+  if ((NumNonOverlappingLoads + 1) > MaxNumLoads) {
     return {};
+
+}
 
   // Add non-overlapping loads.
   LoadEntryVector LoadSequence;
@@ -247,9 +255,11 @@ MemCmpExpansion::MemCmpExpansion(
 }
 
 unsigned MemCmpExpansion::getNumBlocks() {
-  if (IsUsedForZeroCmp)
+  if (IsUsedForZeroCmp) {
     return getNumLoads() / NumLoadsPerBlockForZeroCmp +
            (getNumLoads() % NumLoadsPerBlockForZeroCmp != 0 ? 1 : 0);
+
+}
   return getNumLoads();
 }
 
@@ -291,16 +301,24 @@ MemCmpExpansion::LoadPair MemCmpExpansion::getLoadPair(Type *LoadSizeType,
 
   // Create a constant or a load from the source.
   Value *Lhs = nullptr;
-  if (auto *C = dyn_cast<Constant>(LhsSource))
+  if (auto *C = dyn_cast<Constant>(LhsSource)) {
     Lhs = ConstantFoldLoadFromConstPtr(C, LoadSizeType, DL);
-  if (!Lhs)
+
+}
+  if (!Lhs) {
     Lhs = Builder.CreateAlignedLoad(LoadSizeType, LhsSource, LhsAlign);
 
+}
+
   Value *Rhs = nullptr;
-  if (auto *C = dyn_cast<Constant>(RhsSource))
+  if (auto *C = dyn_cast<Constant>(RhsSource)) {
     Rhs = ConstantFoldLoadFromConstPtr(C, LoadSizeType, DL);
-  if (!Rhs)
+
+}
+  if (!Rhs) {
     Rhs = Builder.CreateAlignedLoad(LoadSizeType, RhsSource, RhsAlign);
+
+}
 
   // Swap bytes if required.
   if (NeedsBSwap) {
@@ -361,10 +379,12 @@ Value *MemCmpExpansion::getCompareLoadPairs(unsigned BlockIndex,
       std::min(getNumLoads() - LoadIndex, NumLoadsPerBlockForZeroCmp);
 
   // For a single-block expansion, start inserting before the memcmp call.
-  if (LoadCmpBlocks.empty())
+  if (LoadCmpBlocks.empty()) {
     Builder.SetInsertPoint(CI);
-  else
+  } else {
     Builder.SetInsertPoint(LoadCmpBlocks[BlockIndex]);
+
+}
 
   Value *Cmp = nullptr;
   // If we have multiple loads per block, we need to generate a composite
@@ -397,8 +417,10 @@ Value *MemCmpExpansion::getCompareLoadPairs(unsigned BlockIndex,
       Value *Or = Builder.CreateOr(InList[i], InList[i + 1]);
       OutList.push_back(Or);
     }
-    if (InList.size() % 2 != 0)
+    if (InList.size() % 2 != 0) {
       OutList.push_back(InList.back());
+
+}
     return OutList;
   };
 
@@ -604,7 +626,9 @@ Value *MemCmpExpansion::getMemCmpExpansion() {
     // calculate which source was larger. The calculation requires the
     // two loaded source values of each load compare block.
     // These will be saved in the phi nodes created by setupResultBlockPHINodes.
-    if (!IsUsedForZeroCmp) setupResultBlockPHINodes();
+    if (!IsUsedForZeroCmp) { setupResultBlockPHINodes();
+
+}
 
     // Create the number of required load compare basic blocks.
     createLoadCmpBlocks();
@@ -616,12 +640,16 @@ Value *MemCmpExpansion::getMemCmpExpansion() {
 
   Builder.SetCurrentDebugLocation(CI->getDebugLoc());
 
-  if (IsUsedForZeroCmp)
+  if (IsUsedForZeroCmp) {
     return getNumBlocks() == 1 ? getMemCmpEqZeroOneBlock()
                                : getMemCmpExpansionZeroCase();
 
-  if (getNumBlocks() == 1)
+}
+
+  if (getNumBlocks() == 1) {
     return getMemCmpOneBlock();
+
+}
 
   for (unsigned I = 0; I < getNumBlocks(); ++I) {
     emitLoadCompareBlock(I);
@@ -710,8 +738,10 @@ static bool expandMemCmp(CallInst *CI, const TargetTransformInfo *TTI,
   NumMemCmpCalls++;
 
   // Early exit from expansion if -Oz.
-  if (CI->getFunction()->hasMinSize())
+  if (CI->getFunction()->hasMinSize()) {
     return false;
+
+}
 
   // Early exit from expansion if size is not a constant.
   ConstantInt *SizeCast = dyn_cast<ConstantInt>(CI->getArgOperand(2));
@@ -731,17 +761,25 @@ static bool expandMemCmp(CallInst *CI, const TargetTransformInfo *TTI,
                     llvm::shouldOptimizeForSize(CI->getParent(), PSI, BFI);
   auto Options = TTI->enableMemCmpExpansion(OptForSize,
                                             IsUsedForZeroCmp);
-  if (!Options) return false;
+  if (!Options) { return false;
 
-  if (MemCmpEqZeroNumLoadsPerBlock.getNumOccurrences())
+}
+
+  if (MemCmpEqZeroNumLoadsPerBlock.getNumOccurrences()) {
     Options.NumLoadsPerBlock = MemCmpEqZeroNumLoadsPerBlock;
 
+}
+
   if (OptForSize &&
-      MaxLoadsPerMemcmpOptSize.getNumOccurrences())
+      MaxLoadsPerMemcmpOptSize.getNumOccurrences()) {
     Options.MaxNumLoads = MaxLoadsPerMemcmpOptSize;
 
-  if (!OptForSize && MaxLoadsPerMemcmp.getNumOccurrences())
+}
+
+  if (!OptForSize && MaxLoadsPerMemcmp.getNumOccurrences()) {
     Options.MaxNumLoads = MaxLoadsPerMemcmp;
+
+}
 
   MemCmpExpansion Expansion(CI, SizeVal, Options, IsUsedForZeroCmp, *DL);
 
@@ -773,7 +811,9 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F)) return false;
+    if (skipFunction(F)) { return false;
+
+}
 
     auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
     if (!TPC) {
@@ -850,9 +890,13 @@ PreservedAnalyses ExpandMemCmpPass::runImpl(
       ++BBIt;
     }
   }
-  if (MadeChanges)
-    for (BasicBlock &BB : F)
+  if (MadeChanges) {
+    for (BasicBlock &BB : F) {
       SimplifyInstructionsInBlock(&BB);
+
+}
+
+}
   return MadeChanges ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }
 

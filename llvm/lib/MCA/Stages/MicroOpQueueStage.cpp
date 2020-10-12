@@ -21,8 +21,10 @@ namespace mca {
 Error MicroOpQueueStage::moveInstructions() {
   InstRef IR = Buffer[CurrentInstructionSlotIdx];
   while (IR && checkNextStage(IR)) {
-    if (llvm::Error Val = moveToTheNextStage(IR))
+    if (llvm::Error Val = moveToTheNextStage(IR)) {
       return Val;
+
+}
 
     Buffer[CurrentInstructionSlotIdx].invalidate();
     unsigned NormalizedOpcodes = getNormalizedOpcodes(IR);
@@ -55,14 +57,18 @@ Error MicroOpQueueStage::execute(InstRef &IR) {
 
 Error MicroOpQueueStage::cycleStart() {
   CurrentIPC = 0;
-  if (!IsZeroLatencyStage)
+  if (!IsZeroLatencyStage) {
     return moveInstructions();
+
+}
   return llvm::ErrorSuccess();
 }
 
 Error MicroOpQueueStage::cycleEnd() {
-  if (IsZeroLatencyStage)
+  if (IsZeroLatencyStage) {
     return moveInstructions();
+
+}
   return llvm::ErrorSuccess();
 }
 

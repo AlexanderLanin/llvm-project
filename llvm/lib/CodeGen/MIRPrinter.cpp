@@ -217,10 +217,14 @@ void MIRPrinter::print(const MachineFunction &MF) {
   convert(MST, YamlMF.FrameInfo, MF.getFrameInfo());
   convertStackObjects(YamlMF, MF, MST);
   convertCallSiteObjects(YamlMF, MF, MST);
-  if (const auto *ConstantPool = MF.getConstantPool())
+  if (const auto *ConstantPool = MF.getConstantPool()) {
     convert(YamlMF, *ConstantPool);
-  if (const auto *JumpTableInfo = MF.getJumpTableInfo())
+
+}
+  if (const auto *JumpTableInfo = MF.getJumpTableInfo()) {
     convert(MST, YamlMF.JumpTableInfo, *JumpTableInfo);
+
+}
 
   const TargetMachine &TM = MF.getTarget();
   YamlMF.MachineFuncInfo =
@@ -229,16 +233,20 @@ void MIRPrinter::print(const MachineFunction &MF) {
   raw_string_ostream StrOS(YamlMF.Body.Value.Value);
   bool IsNewlineNeeded = false;
   for (const auto &MBB : MF) {
-    if (IsNewlineNeeded)
+    if (IsNewlineNeeded) {
       StrOS << "\n";
+
+}
     MIPrinter(StrOS, MST, RegisterMaskIds, StackObjectOperandMapping)
         .print(MBB);
     IsNewlineNeeded = true;
   }
   StrOS.flush();
   yaml::Output Out(OS);
-  if (!SimplifyMIR)
+  if (!SimplifyMIR) {
       Out.setWriteDefaultValues(true);
+
+}
   Out << YamlMF;
 }
 
@@ -251,8 +259,10 @@ static void printCustomRegMask(const uint32_t *RegMask, raw_ostream &OS,
   for (int I = 0, E = TRI->getNumRegs(); I < E; I++) {
     // Check whether the register is asserted in regmask.
     if (RegMask[I / 32] & (1u << (I % 32))) {
-      if (IsRegInRegMaskFound)
+      if (IsRegInRegMaskFound) {
         OS << ',';
+
+}
       OS << printReg(I, TRI);
       IsRegInRegMaskFound = true;
     }
@@ -294,12 +304,16 @@ void MIRPrinter::convert(yaml::MachineFunction &MF,
     unsigned Reg = Register::index2VirtReg(I);
     yaml::VirtualRegisterDefinition VReg;
     VReg.ID = I;
-    if (RegInfo.getVRegName(Reg) != "")
+    if (RegInfo.getVRegName(Reg) != "") {
       continue;
+
+}
     ::printRegClassOrBank(Reg, VReg.Class, RegInfo, TRI);
     unsigned PreferredReg = RegInfo.getSimpleHint(Reg);
-    if (PreferredReg)
+    if (PreferredReg) {
       printRegMIR(PreferredReg, VReg.PreferredRegister, TRI);
+
+}
     MF.VirtualRegisters.push_back(VReg);
   }
 
@@ -307,8 +321,10 @@ void MIRPrinter::convert(yaml::MachineFunction &MF,
   for (std::pair<unsigned, unsigned> LI : RegInfo.liveins()) {
     yaml::MachineFunctionLiveIn LiveIn;
     printRegMIR(LI.first, LiveIn.Register, TRI);
-    if (LI.second)
+    if (LI.second) {
       printRegMIR(LI.second, LiveIn.VirtualRegister, TRI);
+
+}
     MF.LiveIns.push_back(LiveIn);
   }
 
@@ -363,8 +379,10 @@ void MIRPrinter::convertStackObjects(yaml::MachineFunction &YMF,
   // Process fixed stack objects.
   unsigned ID = 0;
   for (int I = MFI.getObjectIndexBegin(); I < 0; ++I, ++ID) {
-    if (MFI.isDeadObjectIndex(I))
+    if (MFI.isDeadObjectIndex(I)) {
       continue;
+
+}
 
     yaml::FixedMachineStackObject YamlObject;
     YamlObject.ID = ID;
@@ -385,14 +403,18 @@ void MIRPrinter::convertStackObjects(yaml::MachineFunction &YMF,
   // Process ordinary stack objects.
   ID = 0;
   for (int I = 0, E = MFI.getObjectIndexEnd(); I < E; ++I, ++ID) {
-    if (MFI.isDeadObjectIndex(I))
+    if (MFI.isDeadObjectIndex(I)) {
       continue;
+
+}
 
     yaml::MachineStackObject YamlObject;
     YamlObject.ID = ID;
-    if (const auto *Alloca = MFI.getObjectAllocation(I))
+    if (const auto *Alloca = MFI.getObjectAllocation(I)) {
       YamlObject.Name.Value = std::string(
           Alloca->hasName() ? Alloca->getName() : "<unnamed alloca>");
+
+}
     YamlObject.Type = MFI.isSpillSlotObjectIndex(I)
                           ? yaml::MachineStackObject::SpillSlot
                           : MFI.isVariableSizedObjectIndex(I)
@@ -409,8 +431,10 @@ void MIRPrinter::convertStackObjects(yaml::MachineFunction &YMF,
   }
 
   for (const auto &CSInfo : MFI.getCalleeSavedInfo()) {
-    if (!CSInfo.isSpilledToReg() && MFI.isDeadObjectIndex(CSInfo.getFrameIdx()))
+    if (!CSInfo.isSpilledToReg() && MFI.isDeadObjectIndex(CSInfo.getFrameIdx())) {
       continue;
+
+}
 
     yaml::StringValue Reg;
     printRegMIR(CSInfo.getReg(), Reg, TRI);
@@ -493,8 +517,10 @@ void MIRPrinter::convertCallSiteObjects(yaml::MachineFunction &YMF,
   // Sort call info by position of call instructions.
   llvm::sort(YMF.CallSitesInfo.begin(), YMF.CallSitesInfo.end(),
              [](yaml::CallSiteInfo A, yaml::CallSiteInfo B) {
-               if (A.CallLocation.BlockNum == B.CallLocation.BlockNum)
+               if (A.CallLocation.BlockNum == B.CallLocation.BlockNum) {
                  return A.CallLocation.Offset < B.CallLocation.Offset;
+
+}
                return A.CallLocation.BlockNum < B.CallLocation.BlockNum;
              });
 }
@@ -543,8 +569,10 @@ void MIRPrinter::convert(ModuleSlotTracker &MST,
 void MIRPrinter::initRegisterMaskIds(const MachineFunction &MF) {
   const auto *TRI = MF.getSubtarget().getRegisterInfo();
   unsigned I = 0;
-  for (const uint32_t *Mask : TRI->getRegMasks())
+  for (const uint32_t *Mask : TRI->getRegMasks()) {
     RegisterMaskIds.insert(std::make_pair(Mask, I++));
+
+}
 }
 
 void llvm::guessSuccessors(const MachineBasicBlock &MBB,
@@ -553,15 +581,21 @@ void llvm::guessSuccessors(const MachineBasicBlock &MBB,
   SmallPtrSet<MachineBasicBlock*,8> Seen;
 
   for (const MachineInstr &MI : MBB) {
-    if (MI.isPHI())
+    if (MI.isPHI()) {
       continue;
+
+}
     for (const MachineOperand &MO : MI.operands()) {
-      if (!MO.isMBB())
+      if (!MO.isMBB()) {
         continue;
+
+}
       MachineBasicBlock *Succ = MO.getMBB();
       auto RP = Seen.insert(Succ);
-      if (RP.second)
+      if (RP.second) {
         Result.push_back(Succ);
+
+}
     }
   }
   MachineBasicBlock::const_iterator I = MBB.getLastNonDebugInstr();
@@ -570,10 +604,14 @@ void llvm::guessSuccessors(const MachineBasicBlock &MBB,
 
 bool
 MIPrinter::canPredictBranchProbabilities(const MachineBasicBlock &MBB) const {
-  if (MBB.succ_size() <= 1)
+  if (MBB.succ_size() <= 1) {
     return true;
-  if (!MBB.hasSuccessorProbabilities())
+
+}
+  if (!MBB.hasSuccessorProbabilities()) {
     return true;
+
+}
 
   SmallVector<BranchProbability,8> Normalized(MBB.Probs.begin(),
                                               MBB.Probs.end());
@@ -594,12 +632,16 @@ bool MIPrinter::canPredictSuccessors(const MachineBasicBlock &MBB) const {
     MachineFunction::const_iterator NextI = std::next(MBB.getIterator());
     if (NextI != MF.end()) {
       MachineBasicBlock *Next = const_cast<MachineBasicBlock*>(&*NextI);
-      if (!is_contained(GuessedSuccs, Next))
+      if (!is_contained(GuessedSuccs, Next)) {
         GuessedSuccs.push_back(Next);
+
+}
     }
   }
-  if (GuessedSuccs.size() != MBB.succ_size())
+  if (GuessedSuccs.size() != MBB.succ_size()) {
     return false;
+
+}
   return std::equal(MBB.succ_begin(), MBB.succ_end(), GuessedSuccs.begin());
 }
 
@@ -614,10 +656,12 @@ void MIPrinter::print(const MachineBasicBlock &MBB) {
       HasAttributes = true;
       OS << " (";
       int Slot = MST.getLocalSlot(BB);
-      if (Slot == -1)
+      if (Slot == -1) {
         OS << "<ir-block badref>";
-      else
+      } else {
         OS << (Twine("%ir-block.") + Twine(Slot)).str();
+
+}
     }
   }
   if (MBB.hasAddressTaken()) {
@@ -656,8 +700,10 @@ void MIPrinter::print(const MachineBasicBlock &MBB) {
     }
     HasAttributes = true;
   }
-  if (HasAttributes)
+  if (HasAttributes) {
     OS << ")";
+
+}
   OS << ":\n";
 
   bool HasLineAttributes = false;
@@ -673,13 +719,17 @@ void MIPrinter::print(const MachineBasicBlock &MBB) {
       !canPredictSuccessors(MBB)) {
     OS.indent(2) << "successors: ";
     for (auto I = MBB.succ_begin(), E = MBB.succ_end(); I != E; ++I) {
-      if (I != MBB.succ_begin())
+      if (I != MBB.succ_begin()) {
         OS << ", ";
+
+}
       OS << printMBBReference(**I);
-      if (!SimplifyMIR || !canPredictProbs)
+      if (!SimplifyMIR || !canPredictProbs) {
         OS << '('
            << format("0x%08" PRIx32, MBB.getSuccProbability(I).getNumerator())
            << ')';
+
+}
     }
     OS << "\n";
     HasLineAttributes = true;
@@ -692,19 +742,25 @@ void MIPrinter::print(const MachineBasicBlock &MBB) {
     OS.indent(2) << "liveins: ";
     bool First = true;
     for (const auto &LI : MBB.liveins()) {
-      if (!First)
+      if (!First) {
         OS << ", ";
+
+}
       First = false;
       OS << printReg(LI.PhysReg, &TRI);
-      if (!LI.LaneMask.all())
+      if (!LI.LaneMask.all()) {
         OS << ":0x" << PrintLaneMask(LI.LaneMask);
+
+}
     }
     OS << "\n";
     HasLineAttributes = true;
   }
 
-  if (HasLineAttributes)
+  if (HasLineAttributes) {
     OS << "\n";
+
+}
   bool IsInBundle = false;
   for (auto I = MBB.instr_begin(), E = MBB.instr_end(); I != E; ++I) {
     const MachineInstr &MI = *I;
@@ -720,8 +776,10 @@ void MIPrinter::print(const MachineBasicBlock &MBB) {
     }
     OS << "\n";
   }
-  if (IsInBundle)
+  if (IsInBundle) {
     OS.indent(2) << "}\n";
+
+}
 }
 
 void MIPrinter::print(const MachineInstr &MI) {
@@ -732,8 +790,10 @@ void MIPrinter::print(const MachineInstr &MI) {
   assert(TRI && "Expected target register info");
   const auto *TII = SubTarget.getInstrInfo();
   assert(TII && "Expected target instruction info");
-  if (MI.isCFIInstruction())
+  if (MI.isCFIInstruction()) {
     assert(MI.getNumOperands() == 1 && "Expected 1 operand in CFI instruction");
+
+}
 
   SmallBitVector PrintedTypes(8);
   bool ShouldPrintRegisterTies = MI.hasComplexRegisterTies();
@@ -741,50 +801,84 @@ void MIPrinter::print(const MachineInstr &MI) {
   for (; I < E && MI.getOperand(I).isReg() && MI.getOperand(I).isDef() &&
          !MI.getOperand(I).isImplicit();
        ++I) {
-    if (I)
+    if (I) {
       OS << ", ";
+
+}
     print(MI, I, TRI, TII, ShouldPrintRegisterTies,
           MI.getTypeToPrint(I, PrintedTypes, MRI),
           /*PrintDef=*/false);
   }
 
-  if (I)
+  if (I) {
     OS << " = ";
-  if (MI.getFlag(MachineInstr::FrameSetup))
+
+}
+  if (MI.getFlag(MachineInstr::FrameSetup)) {
     OS << "frame-setup ";
-  if (MI.getFlag(MachineInstr::FrameDestroy))
+
+}
+  if (MI.getFlag(MachineInstr::FrameDestroy)) {
     OS << "frame-destroy ";
-  if (MI.getFlag(MachineInstr::FmNoNans))
+
+}
+  if (MI.getFlag(MachineInstr::FmNoNans)) {
     OS << "nnan ";
-  if (MI.getFlag(MachineInstr::FmNoInfs))
+
+}
+  if (MI.getFlag(MachineInstr::FmNoInfs)) {
     OS << "ninf ";
-  if (MI.getFlag(MachineInstr::FmNsz))
+
+}
+  if (MI.getFlag(MachineInstr::FmNsz)) {
     OS << "nsz ";
-  if (MI.getFlag(MachineInstr::FmArcp))
+
+}
+  if (MI.getFlag(MachineInstr::FmArcp)) {
     OS << "arcp ";
-  if (MI.getFlag(MachineInstr::FmContract))
+
+}
+  if (MI.getFlag(MachineInstr::FmContract)) {
     OS << "contract ";
-  if (MI.getFlag(MachineInstr::FmAfn))
+
+}
+  if (MI.getFlag(MachineInstr::FmAfn)) {
     OS << "afn ";
-  if (MI.getFlag(MachineInstr::FmReassoc))
+
+}
+  if (MI.getFlag(MachineInstr::FmReassoc)) {
     OS << "reassoc ";
-  if (MI.getFlag(MachineInstr::NoUWrap))
+
+}
+  if (MI.getFlag(MachineInstr::NoUWrap)) {
     OS << "nuw ";
-  if (MI.getFlag(MachineInstr::NoSWrap))
+
+}
+  if (MI.getFlag(MachineInstr::NoSWrap)) {
     OS << "nsw ";
-  if (MI.getFlag(MachineInstr::IsExact))
+
+}
+  if (MI.getFlag(MachineInstr::IsExact)) {
     OS << "exact ";
-  if (MI.getFlag(MachineInstr::NoFPExcept))
+
+}
+  if (MI.getFlag(MachineInstr::NoFPExcept)) {
     OS << "nofpexcept ";
 
+}
+
   OS << TII->getName(MI.getOpcode());
-  if (I < E)
+  if (I < E) {
     OS << ' ';
+
+}
 
   bool NeedComma = false;
   for (; I < E; ++I) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ", ";
+
+}
     print(MI, I, TRI, TII, ShouldPrintRegisterTies,
           MI.getTypeToPrint(I, PrintedTypes, MRI));
     NeedComma = true;
@@ -793,30 +887,38 @@ void MIPrinter::print(const MachineInstr &MI) {
   // Print any optional symbols attached to this instruction as-if they were
   // operands.
   if (MCSymbol *PreInstrSymbol = MI.getPreInstrSymbol()) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ',';
+
+}
     OS << " pre-instr-symbol ";
     MachineOperand::printSymbol(OS, *PreInstrSymbol);
     NeedComma = true;
   }
   if (MCSymbol *PostInstrSymbol = MI.getPostInstrSymbol()) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ',';
+
+}
     OS << " post-instr-symbol ";
     MachineOperand::printSymbol(OS, *PostInstrSymbol);
     NeedComma = true;
   }
   if (MDNode *HeapAllocMarker = MI.getHeapAllocMarker()) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ',';
+
+}
     OS << " heap-alloc-marker ";
     HeapAllocMarker->printAsOperand(OS, MST);
     NeedComma = true;
   }
 
   if (const DebugLoc &DL = MI.getDebugLoc()) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ',';
+
+}
     OS << " debug-location ";
     DL->printAsOperand(OS, MST);
   }
@@ -827,8 +929,10 @@ void MIPrinter::print(const MachineInstr &MI) {
     const MachineFrameInfo &MFI = MF->getFrameInfo();
     bool NeedComma = false;
     for (const auto *Op : MI.memoperands()) {
-      if (NeedComma)
+      if (NeedComma) {
         OS << ", ";
+
+}
       Op->print(OS, MST, SSNs, Context, &MFI, TII);
       NeedComma = true;
     }
@@ -845,8 +949,10 @@ void MIPrinter::printStackObjectReference(int FrameIndex) {
 }
 
 static std::string formatOperandComment(std::string Comment) {
-  if (Comment.empty())
+  if (Comment.empty()) {
     return Comment;
+
+}
   return std::string(" /* " + Comment + " */");
 }
 
@@ -884,8 +990,10 @@ void MIPrinter::print(const MachineInstr &MI, unsigned OpIdx,
   case MachineOperand::MO_BlockAddress:
   case MachineOperand::MO_ShuffleMask: {
     unsigned TiedOperandIdx = 0;
-    if (ShouldPrintRegisterTies && Op.isReg() && Op.isTied() && !Op.isDef())
+    if (ShouldPrintRegisterTies && Op.isReg() && Op.isTied() && !Op.isDef()) {
       TiedOperandIdx = Op.getParent()->findTiedOperandIdx(OpIdx);
+
+}
     const TargetIntrinsicInfo *TII = MI.getMF()->getTarget().getIntrinsicInfo();
     Op.print(OS, MST, TypeToPrint, OpIdx, PrintDef, /*IsStandalone=*/false,
              ShouldPrintRegisterTies, TiedOperandIdx, TRI, TII);
@@ -897,10 +1005,12 @@ void MIPrinter::print(const MachineInstr &MI, unsigned OpIdx,
     break;
   case MachineOperand::MO_RegisterMask: {
     auto RegMaskInfo = RegisterMaskIds.find(Op.getRegMask());
-    if (RegMaskInfo != RegisterMaskIds.end())
+    if (RegMaskInfo != RegisterMaskIds.end()) {
       OS << StringRef(TRI->getRegMaskNames()[RegMaskInfo->second]).lower();
-    else
+    } else {
       printCustomRegMask(Op.getRegMask(), OS, TRI);
+
+}
     break;
   }
   }

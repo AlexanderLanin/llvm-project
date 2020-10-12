@@ -35,10 +35,12 @@ private:
     switch (RI.r_type) {
     case MachO::ARM64_RELOC_UNSIGNED:
       if (!RI.r_pcrel) {
-        if (RI.r_length == 3)
+        if (RI.r_length == 3) {
           return RI.r_extern ? Pointer64 : Pointer64Anon;
-        else if (RI.r_length == 2)
+        } else if (RI.r_length == 2) {
           return Pointer32;
+
+}
       }
       break;
     case MachO::ARM64_RELOC_SUBTRACTOR:
@@ -46,39 +48,55 @@ private:
       // Initially represent SUBTRACTOR relocations with 'Delta<W>'.
       // They may be turned into NegDelta<W> by parsePairRelocation.
       if (!RI.r_pcrel && RI.r_extern) {
-        if (RI.r_length == 2)
+        if (RI.r_length == 2) {
           return Delta32;
-        else if (RI.r_length == 3)
+        } else if (RI.r_length == 3) {
           return Delta64;
+
+}
       }
       break;
     case MachO::ARM64_RELOC_BRANCH26:
-      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return Branch26;
+
+}
       break;
     case MachO::ARM64_RELOC_PAGE21:
-      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return Page21;
+
+}
       break;
     case MachO::ARM64_RELOC_PAGEOFF12:
-      if (!RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (!RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return PageOffset12;
+
+}
       break;
     case MachO::ARM64_RELOC_GOT_LOAD_PAGE21:
-      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return GOTPage21;
+
+}
       break;
     case MachO::ARM64_RELOC_GOT_LOAD_PAGEOFF12:
-      if (!RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (!RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return GOTPageOffset12;
+
+}
       break;
     case MachO::ARM64_RELOC_POINTER_TO_GOT:
-      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2)
+      if (RI.r_pcrel && RI.r_extern && RI.r_length == 2) {
         return PointerToGOT;
+
+}
       break;
     case MachO::ARM64_RELOC_ADDEND:
-      if (!RI.r_pcrel && !RI.r_extern && RI.r_length == 2)
+      if (!RI.r_pcrel && !RI.r_extern && RI.r_length == 2) {
         return PairedAddend;
+
+}
       break;
     }
 
@@ -120,47 +138,61 @@ private:
     assert(SubRI.r_extern && "SUBTRACTOR reloc symbol should be extern");
     assert(!SubRI.r_pcrel && "SUBTRACTOR reloc should not be PCRel");
 
-    if (UnsignedRelItr == RelEnd)
+    if (UnsignedRelItr == RelEnd) {
       return make_error<JITLinkError>("arm64 SUBTRACTOR without paired "
                                       "UNSIGNED relocation");
 
+}
+
     auto UnsignedRI = getRelocationInfo(UnsignedRelItr);
 
-    if (SubRI.r_address != UnsignedRI.r_address)
+    if (SubRI.r_address != UnsignedRI.r_address) {
       return make_error<JITLinkError>("arm64 SUBTRACTOR and paired UNSIGNED "
                                       "point to different addresses");
 
-    if (SubRI.r_length != UnsignedRI.r_length)
+}
+
+    if (SubRI.r_length != UnsignedRI.r_length) {
       return make_error<JITLinkError>("length of arm64 SUBTRACTOR and paired "
                                       "UNSIGNED reloc must match");
 
+}
+
     Symbol *FromSymbol;
-    if (auto FromSymbolOrErr = findSymbolByIndex(SubRI.r_symbolnum))
+    if (auto FromSymbolOrErr = findSymbolByIndex(SubRI.r_symbolnum)) {
       FromSymbol = FromSymbolOrErr->GraphSymbol;
-    else
+    } else {
       return FromSymbolOrErr.takeError();
+
+}
 
     // Read the current fixup value.
     uint64_t FixupValue = 0;
-    if (SubRI.r_length == 3)
+    if (SubRI.r_length == 3) {
       FixupValue = *(const little64_t *)FixupContent;
-    else
+    } else {
       FixupValue = *(const little32_t *)FixupContent;
+
+}
 
     // Find 'ToSymbol' using symbol number or address, depending on whether the
     // paired UNSIGNED relocation is extern.
     Symbol *ToSymbol = nullptr;
     if (UnsignedRI.r_extern) {
       // Find target symbol by symbol index.
-      if (auto ToSymbolOrErr = findSymbolByIndex(UnsignedRI.r_symbolnum))
+      if (auto ToSymbolOrErr = findSymbolByIndex(UnsignedRI.r_symbolnum)) {
         ToSymbol = ToSymbolOrErr->GraphSymbol;
-      else
+      } else {
         return ToSymbolOrErr.takeError();
+
+}
     } else {
-      if (auto ToSymbolOrErr = findSymbolByAddress(FixupValue))
+      if (auto ToSymbolOrErr = findSymbolByAddress(FixupValue)) {
         ToSymbol = &*ToSymbolOrErr;
-      else
+      } else {
         return ToSymbolOrErr.takeError();
+
+}
       FixupValue -= ToSymbol->getAddress();
     }
 
@@ -201,8 +233,10 @@ private:
 
         // Sanity check the relocation kind.
         auto Kind = getRelocationKind(RI);
-        if (!Kind)
+        if (!Kind) {
           return Kind.takeError();
+
+}
 
         // Find the address of the value to fix up.
         JITTargetAddress FixupAddress = SectionAddress + (uint32_t)RI.r_address;
@@ -217,15 +251,19 @@ private:
         Block *BlockToFix = nullptr;
         {
           auto SymbolToFixOrErr = findSymbolByAddress(FixupAddress);
-          if (!SymbolToFixOrErr)
+          if (!SymbolToFixOrErr) {
             return SymbolToFixOrErr.takeError();
+
+}
           BlockToFix = &SymbolToFixOrErr->getBlock();
         }
 
         if (FixupAddress + static_cast<JITTargetAddress>(1ULL << RI.r_length) >
-            BlockToFix->getAddress() + BlockToFix->getContent().size())
+            BlockToFix->getAddress() + BlockToFix->getContent().size()) {
           return make_error<JITLinkError>(
               "Relocation content extends past end of fixup block");
+
+}
 
         // Get a pointer to the fixup content.
         const char *FixupContent = BlockToFix->getContent().data() +
@@ -241,106 +279,136 @@ private:
 
           Addend = RI.r_symbolnum;
 
-          if (RelItr == RelEnd)
+          if (RelItr == RelEnd) {
             return make_error<JITLinkError>("Unpaired Addend reloc at " +
                                             formatv("{0:x16}", FixupAddress));
+
+}
           ++RelItr;
           RI = getRelocationInfo(RelItr);
 
           Kind = getRelocationKind(RI);
-          if (!Kind)
+          if (!Kind) {
             return Kind.takeError();
 
-          if (*Kind != Branch26 && *Kind != Page21 && *Kind != PageOffset12)
+}
+
+          if (*Kind != Branch26 && *Kind != Page21 && *Kind != PageOffset12) {
             return make_error<JITLinkError>(
                 "Invalid relocation pair: Addend + " +
                 getMachOARM64RelocationKindName(*Kind));
-          else
+          } else {
             LLVM_DEBUG({
               dbgs() << "  pair is " << getMachOARM64RelocationKindName(*Kind)
                      << "`\n";
             });
 
+}
+
           // Find the address of the value to fix up.
           JITTargetAddress PairedFixupAddress =
               SectionAddress + (uint32_t)RI.r_address;
-          if (PairedFixupAddress != FixupAddress)
+          if (PairedFixupAddress != FixupAddress) {
             return make_error<JITLinkError>("Paired relocation points at "
                                             "different target");
+
+}
         }
 
         switch (*Kind) {
         case Branch26: {
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           uint32_t Instr = *(const ulittle32_t *)FixupContent;
-          if ((Instr & 0x7fffffff) != 0x14000000)
+          if ((Instr & 0x7fffffff) != 0x14000000) {
             return make_error<JITLinkError>("BRANCH26 target is not a B or BL "
                                             "instruction with a zero addend");
+
+}
           break;
         }
         case Pointer32:
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           Addend = *(const ulittle32_t *)FixupContent;
           break;
         case Pointer64:
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           Addend = *(const ulittle64_t *)FixupContent;
           break;
         case Pointer64Anon: {
           JITTargetAddress TargetAddress = *(const ulittle64_t *)FixupContent;
-          if (auto TargetSymbolOrErr = findSymbolByAddress(TargetAddress))
+          if (auto TargetSymbolOrErr = findSymbolByAddress(TargetAddress)) {
             TargetSymbol = &*TargetSymbolOrErr;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           Addend = TargetAddress - TargetSymbol->getAddress();
           break;
         }
         case Page21:
         case GOTPage21: {
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           uint32_t Instr = *(const ulittle32_t *)FixupContent;
-          if ((Instr & 0xffffffe0) != 0x90000000)
+          if ((Instr & 0xffffffe0) != 0x90000000) {
             return make_error<JITLinkError>("PAGE21/GOTPAGE21 target is not an "
                                             "ADRP instruction with a zero "
                                             "addend");
+
+}
           break;
         }
         case PageOffset12: {
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           break;
         }
         case GOTPageOffset12: {
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           uint32_t Instr = *(const ulittle32_t *)FixupContent;
-          if ((Instr & 0xfffffc00) != 0xf9400000)
+          if ((Instr & 0xfffffc00) != 0xf9400000) {
             return make_error<JITLinkError>("GOTPAGEOFF12 target is not an LDR "
                                             "immediate instruction with a zero "
                                             "addend");
+
+}
           break;
         }
         case PointerToGOT:
-          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum))
+          if (auto TargetSymbolOrErr = findSymbolByIndex(RI.r_symbolnum)) {
             TargetSymbol = TargetSymbolOrErr->GraphSymbol;
-          else
+          } else {
             return TargetSymbolOrErr.takeError();
+
+}
           break;
         case Delta32:
         case Delta64: {
@@ -352,8 +420,10 @@ private:
           auto PairInfo =
               parsePairRelocation(*BlockToFix, *Kind, RI, FixupAddress,
                                   FixupContent, ++RelItr, RelEnd);
-          if (!PairInfo)
+          if (!PairInfo) {
             return PairInfo.takeError();
+
+}
           std::tie(*Kind, TargetSymbol, Addend) = *PairInfo;
           assert(TargetSymbol && "No target symbol from parsePairRelocation?");
           break;
@@ -405,8 +475,10 @@ public:
     } else if (E.getKind() == PointerToGOT) {
       E.setTarget(GOTEntry);
       E.setKind(Delta32);
-    } else
+    } else {
       llvm_unreachable("Not a GOT edge?");
+
+}
   }
 
   bool isExternalBranchEdge(Edge &E) {
@@ -430,8 +502,10 @@ public:
 
 private:
   Section &getGOTSection() {
-    if (!GOTSection)
+    if (!GOTSection) {
       GOTSection = &G.createSection("$__GOT", sys::Memory::MF_READ);
+
+}
     return *GOTSection;
   }
 
@@ -488,8 +562,10 @@ private:
   Expected<std::unique_ptr<LinkGraph>>
   buildGraph(MemoryBufferRef ObjBuffer) override {
     auto MachOObj = object::ObjectFile::createMachOObjectFile(ObjBuffer);
-    if (!MachOObj)
+    if (!MachOObj) {
       return MachOObj.takeError();
+
+}
     return MachOLinkGraphBuilder_arm64(**MachOObj).buildGraph();
   }
 
@@ -509,19 +585,25 @@ private:
 
     // Check for a GPR LDR immediate with a zero embedded literal.
     // If found, the top two bits contain the shift.
-    if ((Instr & LDRLiteralMask) == 0x39400000)
+    if ((Instr & LDRLiteralMask) == 0x39400000) {
       return Instr >> 30;
+
+}
 
     // Check for a Neon LDR immediate of size 64-bit or less with a zero
     // embedded literal. If found, the top two bits contain the shift.
-    if ((Instr & LDRLiteralMask) == 0x3d400000)
+    if ((Instr & LDRLiteralMask) == 0x3d400000) {
       return Instr >> 30;
+
+}
 
     // Check for a Neon LDR immediate of size 128-bit with a zero embedded
     // literal.
     constexpr uint32_t SizeBitsMask = 0xc0000000;
-    if ((Instr & (LDRLiteralMask | SizeBitsMask)) == 0x3dc00000)
+    if ((Instr & (LDRLiteralMask | SizeBitsMask)) == 0x3dc00000) {
       return 4;
+
+}
 
     return 0;
   }
@@ -538,12 +620,16 @@ private:
 
       int64_t Value = E.getTarget().getAddress() - FixupAddress + E.getAddend();
 
-      if (static_cast<uint64_t>(Value) & 0x3)
+      if (static_cast<uint64_t>(Value) & 0x3) {
         return make_error<JITLinkError>("Branch26 target is not 32-bit "
                                         "aligned");
 
-      if (Value < -(1 << 27) || Value > ((1 << 27) - 1))
+}
+
+      if (Value < -(1 << 27) || Value > ((1 << 27) - 1)) {
         return targetOutOfRangeError(B, E);
+
+}
 
       uint32_t RawInstr = *(little32_t *)FixupPtr;
       assert((RawInstr & 0x7fffffff) == 0x14000000 &&
@@ -555,8 +641,10 @@ private:
     }
     case Pointer32: {
       uint64_t Value = E.getTarget().getAddress() + E.getAddend();
-      if (Value > std::numeric_limits<uint32_t>::max())
+      if (Value > std::numeric_limits<uint32_t>::max()) {
         return targetOutOfRangeError(B, E);
+
+}
       *(ulittle32_t *)FixupPtr = Value;
       break;
     }
@@ -574,8 +662,10 @@ private:
       uint64_t PCPage = B.getAddress() & ~static_cast<uint64_t>(4096 - 1);
 
       int64_t PageDelta = TargetPage - PCPage;
-      if (PageDelta < -(1 << 30) || PageDelta > ((1 << 30) - 1))
+      if (PageDelta < -(1 << 30) || PageDelta > ((1 << 30) - 1)) {
         return targetOutOfRangeError(B, E);
+
+}
 
       uint32_t RawInstr = *(ulittle32_t *)FixupPtr;
       assert((RawInstr & 0xffffffe0) == 0x90000000 &&
@@ -593,8 +683,10 @@ private:
       uint32_t RawInstr = *(ulittle32_t *)FixupPtr;
       unsigned ImmShift = getPageOffset12Shift(RawInstr);
 
-      if (TargetOffset & ((1 << ImmShift) - 1))
+      if (TargetOffset & ((1 << ImmShift) - 1)) {
         return make_error<JITLinkError>("PAGEOFF12 target is not aligned");
+
+}
 
       uint32_t EncodedImm = (TargetOffset >> ImmShift) << 10;
       uint32_t FixedInstr = RawInstr | EncodedImm;
@@ -621,11 +713,15 @@ private:
       uint32_t RawInstr = *(ulittle32_t *)FixupPtr;
       assert(RawInstr == 0x58000010 && "RawInstr isn't a 64-bit LDR literal");
       int64_t Delta = E.getTarget().getAddress() - FixupAddress;
-      if (Delta & 0x3)
+      if (Delta & 0x3) {
         return make_error<JITLinkError>("LDR literal target is not 32-bit "
                                         "aligned");
-      if (Delta < -(1 << 20) || Delta > ((1 << 20) - 1))
+
+}
+      if (Delta < -(1 << 20) || Delta > ((1 << 20) - 1)) {
         return targetOutOfRangeError(B, E);
+
+}
 
       uint32_t EncodedImm = (static_cast<uint32_t>(Delta) >> 2) << 5;
       uint32_t FixedInstr = RawInstr | EncodedImm;
@@ -637,18 +733,24 @@ private:
     case NegDelta32:
     case NegDelta64: {
       int64_t Value;
-      if (E.getKind() == Delta32 || E.getKind() == Delta64)
+      if (E.getKind() == Delta32 || E.getKind() == Delta64) {
         Value = E.getTarget().getAddress() - FixupAddress + E.getAddend();
-      else
+      } else {
         Value = FixupAddress - E.getTarget().getAddress() + E.getAddend();
+
+}
 
       if (E.getKind() == Delta32 || E.getKind() == NegDelta32) {
         if (Value < std::numeric_limits<int32_t>::min() ||
-            Value > std::numeric_limits<int32_t>::max())
+            Value > std::numeric_limits<int32_t>::max()) {
           return targetOutOfRangeError(B, E);
+
+}
         *(little32_t *)FixupPtr = Value;
-      } else
+      } else {
         *(little64_t *)FixupPtr = Value;
+
+}
       break;
     }
     default:
@@ -667,10 +769,12 @@ void jitLink_MachO_arm64(std::unique_ptr<JITLinkContext> Ctx) {
 
   if (Ctx->shouldAddDefaultTargetPasses(TT)) {
     // Add a mark-live pass.
-    if (auto MarkLive = Ctx->getMarkLivePass(TT))
+    if (auto MarkLive = Ctx->getMarkLivePass(TT)) {
       Config.PrePrunePasses.push_back(std::move(MarkLive));
-    else
+    } else {
       Config.PrePrunePasses.push_back(markAllSymbolsLive);
+
+}
 
     // Add an in-place GOT/Stubs pass.
     Config.PostPrunePasses.push_back([](LinkGraph &G) -> Error {
@@ -679,8 +783,10 @@ void jitLink_MachO_arm64(std::unique_ptr<JITLinkContext> Ctx) {
     });
   }
 
-  if (auto Err = Ctx->modifyPassConfig(TT, Config))
+  if (auto Err = Ctx->modifyPassConfig(TT, Config)) {
     return Ctx->notifyFailed(std::move(Err));
+
+}
 
   // Construct a JITLinker and run the link function.
   MachOJITLinker_arm64::link(std::move(Ctx), std::move(Config));

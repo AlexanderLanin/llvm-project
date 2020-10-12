@@ -19,14 +19,18 @@ using namespace llvm;
 bool CSEMIRBuilder::dominates(MachineBasicBlock::const_iterator A,
                               MachineBasicBlock::const_iterator B) const {
   auto MBBEnd = getMBB().end();
-  if (B == MBBEnd)
+  if (B == MBBEnd) {
     return true;
+
+}
   assert(A->getParent() == B->getParent() &&
          "Iterators should be in same block");
   const MachineBasicBlock *BBA = A->getParent();
   MachineBasicBlock::const_iterator I = BBA->begin();
-  for (; &*I != A && &*I != B; ++I)
+  for (; &*I != A && &*I != B; ++I) {
     ;
+
+}
   return &*I == A;
 }
 
@@ -41,8 +45,10 @@ CSEMIRBuilder::getDominatingInstrForID(FoldingSetNodeID &ID,
   if (MI) {
     CSEInfo->countOpcodeHit(MI->getOpcode());
     auto CurrPos = getInsertPt();
-    if (!dominates(MI, CurrPos))
+    if (!dominates(MI, CurrPos)) {
       CurMBB->splice(CurrPos, CurMBB, MI);
+
+}
     return MachineInstrBuilder(getMF(), MI);
   }
   return MachineInstrBuilder();
@@ -50,8 +56,10 @@ CSEMIRBuilder::getDominatingInstrForID(FoldingSetNodeID &ID,
 
 bool CSEMIRBuilder::canPerformCSEForOpc(unsigned Opc) const {
   const GISelCSEInfo *CSEInfo = getCSEInfo();
-  if (!CSEInfo || !CSEInfo->shouldCSE(Opc))
+  if (!CSEInfo || !CSEInfo->shouldCSE(Opc)) {
     return false;
+
+}
   return true;
 }
 
@@ -98,8 +106,10 @@ void CSEMIRBuilder::profileEverything(unsigned Opc, ArrayRef<DstOp> DstOps,
   // Then add the SrcOps.
   profileSrcOps(SrcOps, B);
   // Add Flags if passed in.
-  if (Flags)
+  if (Flags) {
     B.addNodeIDFlag(*Flags);
+
+}
 }
 
 MachineInstrBuilder CSEMIRBuilder::memoizeMI(MachineInstrBuilder MIB,
@@ -112,8 +122,10 @@ MachineInstrBuilder CSEMIRBuilder::memoizeMI(MachineInstrBuilder MIB,
 }
 
 bool CSEMIRBuilder::checkCopyToDefsPossible(ArrayRef<DstOp> DstOps) {
-  if (DstOps.size() == 1)
+  if (DstOps.size() == 1) {
     return true; // always possible to emit copy to just 1 vreg.
+
+}
 
   return std::all_of(DstOps.begin(), DstOps.end(), [](const DstOp &Op) {
     DstOp::DstType DT = Op.getDstOpKind();
@@ -128,8 +140,10 @@ CSEMIRBuilder::generateCopiesIfRequired(ArrayRef<DstOp> DstOps,
          "Impossible return a single MIB with copies to multiple defs");
   if (DstOps.size() == 1) {
     const DstOp &Op = DstOps[0];
-    if (Op.getDstOpKind() == DstOp::DstType::Ty_Reg)
+    if (Op.getDstOpKind() == DstOp::DstType::Ty_Reg) {
       return buildCopy(Op.getReg(), MIB.getReg(0));
+
+}
   }
   return MIB;
 }
@@ -158,8 +172,10 @@ MachineInstrBuilder CSEMIRBuilder::buildInstr(unsigned Opc,
     assert(SrcOps.size() == 2 && "Invalid sources");
     assert(DstOps.size() == 1 && "Invalid dsts");
     if (Optional<APInt> Cst = ConstantFoldBinOp(Opc, SrcOps[0].getReg(),
-                                                SrcOps[1].getReg(), *getMRI()))
+                                                SrcOps[1].getReg(), *getMRI())) {
       return buildConstant(DstOps[0], Cst->getSExtValue());
+
+}
     break;
   }
   case TargetOpcode::G_SEXT_INREG: {
@@ -169,14 +185,18 @@ MachineInstrBuilder CSEMIRBuilder::buildInstr(unsigned Opc,
     const SrcOp &Src0 = SrcOps[0];
     const SrcOp &Src1 = SrcOps[1];
     if (auto MaybeCst =
-            ConstantFoldExtOp(Opc, Src0.getReg(), Src1.getImm(), *getMRI()))
+            ConstantFoldExtOp(Opc, Src0.getReg(), Src1.getImm(), *getMRI())) {
       return buildConstant(Dst, MaybeCst->getSExtValue());
+
+}
     break;
   }
   }
   bool CanCopy = checkCopyToDefsPossible(DstOps);
-  if (!canPerformCSEForOpc(Opc))
+  if (!canPerformCSEForOpc(Opc)) {
     return MachineIRBuilder::buildInstr(Opc, DstOps, SrcOps, Flag);
+
+}
   // If we can CSE this instruction, but involves generating copies to multiple
   // regs, give up. This frequently happens to UNMERGEs.
   if (!CanCopy) {
@@ -204,13 +224,17 @@ MachineInstrBuilder CSEMIRBuilder::buildInstr(unsigned Opc,
 MachineInstrBuilder CSEMIRBuilder::buildConstant(const DstOp &Res,
                                                  const ConstantInt &Val) {
   constexpr unsigned Opc = TargetOpcode::G_CONSTANT;
-  if (!canPerformCSEForOpc(Opc))
+  if (!canPerformCSEForOpc(Opc)) {
     return MachineIRBuilder::buildConstant(Res, Val);
+
+}
 
   // For vectors, CSE the element only for now.
   LLT Ty = Res.getLLTTy(*getMRI());
-  if (Ty.isVector())
+  if (Ty.isVector()) {
     return buildSplatVector(Res, buildConstant(Ty.getElementType(), Val));
+
+}
 
   FoldingSetNodeID ID;
   GISelInstProfileBuilder ProfBuilder(ID, *getMRI());
@@ -231,13 +255,17 @@ MachineInstrBuilder CSEMIRBuilder::buildConstant(const DstOp &Res,
 MachineInstrBuilder CSEMIRBuilder::buildFConstant(const DstOp &Res,
                                                   const ConstantFP &Val) {
   constexpr unsigned Opc = TargetOpcode::G_FCONSTANT;
-  if (!canPerformCSEForOpc(Opc))
+  if (!canPerformCSEForOpc(Opc)) {
     return MachineIRBuilder::buildFConstant(Res, Val);
+
+}
 
   // For vectors, CSE the element only for now.
   LLT Ty = Res.getLLTTy(*getMRI());
-  if (Ty.isVector())
+  if (Ty.isVector()) {
     return buildSplatVector(Res, buildFConstant(Ty.getElementType(), Val));
+
+}
 
   FoldingSetNodeID ID;
   GISelInstProfileBuilder ProfBuilder(ID, *getMRI());

@@ -34,13 +34,17 @@ public:
     InPath.toVector(Path);
 
     auto File = getUnderlyingFS().openFileForRead(Path);
-    if (!File)
+    if (!File) {
       return File;
+
+}
     // Try to guess preamble files, they can be memory-mapped even on Windows as
     // clangd has exclusive access to those and nothing else should touch them.
     llvm::StringRef FileName = llvm::sys::path::filename(Path);
-    if (FileName.startswith("preamble-") && FileName.endswith(".pch"))
+    if (FileName.startswith("preamble-") && FileName.endswith(".pch")) {
       return File;
+
+}
     return std::unique_ptr<VolatileFile>(new VolatileFile(std::move(*File)));
   }
 

@@ -27,8 +27,10 @@ SymbolStream::~SymbolStream() {}
 Error SymbolStream::reload() {
   BinaryStreamReader Reader(*Stream);
 
-  if (auto EC = Reader.readArray(SymbolRecords, Stream->getLength()))
+  if (auto EC = Reader.readArray(SymbolRecords, Stream->getLength())) {
     return EC;
+
+}
 
   return Error::success();
 }

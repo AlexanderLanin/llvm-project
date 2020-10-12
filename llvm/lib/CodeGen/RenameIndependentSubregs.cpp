@@ -121,13 +121,17 @@ INITIALIZE_PASS_END(RenameIndependentSubregs, DEBUG_TYPE,
 
 bool RenameIndependentSubregs::renameComponents(LiveInterval &LI) const {
   // Shortcut: We cannot have split components with a single definition.
-  if (LI.valnos.size() < 2)
+  if (LI.valnos.size() < 2) {
     return false;
+
+}
 
   SmallVector<SubRangeInfo, 4> SubRangeInfos;
   IntEqClasses Classes;
-  if (!findComponents(Classes, SubRangeInfos, LI))
+  if (!findComponents(Classes, SubRangeInfos, LI)) {
     return false;
+
+}
 
   // Create a new VReg for each class.
   unsigned Reg = LI.reg;
@@ -168,8 +172,10 @@ bool RenameIndependentSubregs::findComponents(IntEqClasses &Classes,
   // Shortcut: With only 1 subrange, the normal separate component tests are
   // enough and we do not need to perform the union-find on the subregister
   // segments.
-  if (SubRangeInfos.size() < 2)
+  if (SubRangeInfos.size() < 2) {
     return false;
+
+}
 
   // Next step: Build union-find structure over all subranges and merge classes
   // across subranges when they are affected by the same MachineOperand.
@@ -177,21 +183,27 @@ bool RenameIndependentSubregs::findComponents(IntEqClasses &Classes,
   Classes.grow(NumComponents);
   unsigned Reg = LI.reg;
   for (const MachineOperand &MO : MRI->reg_nodbg_operands(Reg)) {
-    if (!MO.isDef() && !MO.readsReg())
+    if (!MO.isDef() && !MO.readsReg()) {
       continue;
+
+}
     unsigned SubRegIdx = MO.getSubReg();
     LaneBitmask LaneMask = TRI.getSubRegIndexLaneMask(SubRegIdx);
     unsigned MergedID = ~0u;
     for (RenameIndependentSubregs::SubRangeInfo &SRInfo : SubRangeInfos) {
       const LiveInterval::SubRange &SR = *SRInfo.SR;
-      if ((SR.LaneMask & LaneMask).none())
+      if ((SR.LaneMask & LaneMask).none()) {
         continue;
+
+}
       SlotIndex Pos = LIS->getInstructionIndex(*MO.getParent());
       Pos = MO.isDef() ? Pos.getRegSlot(MO.isEarlyClobber())
                        : Pos.getBaseIndex();
       const VNInfo *VNI = SR.getVNInfoAt(Pos);
-      if (VNI == nullptr)
+      if (VNI == nullptr) {
         continue;
+
+}
 
       // Map to local representant ID.
       unsigned LocalID = SRInfo.ConEQ.getEqClass(VNI);
@@ -216,8 +228,10 @@ void RenameIndependentSubregs::rewriteOperands(const IntEqClasses &Classes,
   for (MachineRegisterInfo::reg_nodbg_iterator I = MRI->reg_nodbg_begin(Reg),
        E = MRI->reg_nodbg_end(); I != E; ) {
     MachineOperand &MO = *I++;
-    if (!MO.isDef() && !MO.readsReg())
+    if (!MO.isDef() && !MO.readsReg()) {
       continue;
+
+}
 
     auto *MI = MO.getParent();
     SlotIndex Pos = LIS->getInstructionIndex(*MI);
@@ -229,11 +243,15 @@ void RenameIndependentSubregs::rewriteOperands(const IntEqClasses &Classes,
     unsigned ID = ~0u;
     for (const SubRangeInfo &SRInfo : SubRangeInfos) {
       const LiveInterval::SubRange &SR = *SRInfo.SR;
-      if ((SR.LaneMask & LaneMask).none())
+      if ((SR.LaneMask & LaneMask).none()) {
         continue;
+
+}
       const VNInfo *VNI = SR.getVNInfoAt(Pos);
-      if (VNI == nullptr)
+      if (VNI == nullptr) {
         continue;
+
+}
 
       // Map to local representant ID.
       unsigned LocalID = SRInfo.ConEQ.getEqClass(VNI);
@@ -281,8 +299,10 @@ void RenameIndependentSubregs::distribute(const IntEqClasses &Classes,
       unsigned LocalID = SRInfo.ConEQ.getEqClass(&VNI);
       unsigned ID = Classes[LocalID + SRInfo.Index];
       VNIMapping.push_back(ID);
-      if (ID > 0 && SubRanges[ID-1] == nullptr)
+      if (ID > 0 && SubRanges[ID-1] == nullptr) {
         SubRanges[ID-1] = Intervals[ID]->createSubRange(Allocator, SR.LaneMask);
+
+}
     }
     DistributeRange(SR, SubRanges.data(), VNIMapping);
   }
@@ -290,8 +310,10 @@ void RenameIndependentSubregs::distribute(const IntEqClasses &Classes,
 
 static bool subRangeLiveAt(const LiveInterval &LI, SlotIndex Pos) {
   for (const LiveInterval::SubRange &SR : LI.subranges()) {
-    if (SR.liveAt(Pos))
+    if (SR.liveAt(Pos)) {
       return true;
+
+}
   }
   return false;
 }
@@ -317,15 +339,19 @@ void RenameIndependentSubregs::computeMainRangesFixFlags(
       // missing.
       for (unsigned I = 0; I < SR.valnos.size(); ++I) {
         const VNInfo &VNI = *SR.valnos[I];
-        if (VNI.isUnused() || !VNI.isPHIDef())
+        if (VNI.isUnused() || !VNI.isPHIDef()) {
           continue;
+
+}
 
         SlotIndex Def = VNI.def;
         MachineBasicBlock &MBB = *Indexes.getMBBFromIndex(Def);
         for (MachineBasicBlock *PredMBB : MBB.predecessors()) {
           SlotIndex PredEnd = Indexes.getMBBEndIdx(PredMBB);
-          if (subRangeLiveAt(LI, PredEnd.getPrevSlot()))
+          if (subRangeLiveAt(LI, PredEnd.getPrevSlot())) {
             continue;
+
+}
 
           MachineBasicBlock::iterator InsertPos =
             llvm::findPHICopyInsertPoint(PredMBB, &MBB, Reg);
@@ -343,28 +369,38 @@ void RenameIndependentSubregs::computeMainRangesFixFlags(
     }
 
     for (MachineOperand &MO : MRI->reg_nodbg_operands(Reg)) {
-      if (!MO.isDef())
+      if (!MO.isDef()) {
         continue;
+
+}
       unsigned SubRegIdx = MO.getSubReg();
-      if (SubRegIdx == 0)
+      if (SubRegIdx == 0) {
         continue;
+
+}
       // After assigning the new vreg we may not have any other sublanes living
       // in and out of the instruction anymore. We need to add new dead and
       // undef flags in these cases.
       if (!MO.isUndef()) {
         SlotIndex Pos = LIS->getInstructionIndex(*MO.getParent());
-        if (!subRangeLiveAt(LI, Pos))
+        if (!subRangeLiveAt(LI, Pos)) {
           MO.setIsUndef();
+
+}
       }
       if (!MO.isDead()) {
         SlotIndex Pos = LIS->getInstructionIndex(*MO.getParent()).getDeadSlot();
-        if (!subRangeLiveAt(LI, Pos))
+        if (!subRangeLiveAt(LI, Pos)) {
           MO.setIsDead();
+
+}
       }
     }
 
-    if (I == 0)
+    if (I == 0) {
       LI.clear();
+
+}
     LIS->constructMainRangeFromSubranges(LI);
     // A def of a subregister may be a use of other register lanes. Replacing
     // such a def with a def of a different register will eliminate the use,
@@ -377,8 +413,10 @@ void RenameIndependentSubregs::computeMainRangesFixFlags(
 bool RenameIndependentSubregs::runOnMachineFunction(MachineFunction &MF) {
   // Skip renaming if liveness of subregister is not tracked.
   MRI = &MF.getRegInfo();
-  if (!MRI->subRegLivenessEnabled())
+  if (!MRI->subRegLivenessEnabled()) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Renaming independent subregister live ranges in "
                     << MF.getName() << '\n');
@@ -392,11 +430,15 @@ bool RenameIndependentSubregs::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
   for (size_t I = 0, E = MRI->getNumVirtRegs(); I < E; ++I) {
     unsigned Reg = Register::index2VirtReg(I);
-    if (!LIS->hasInterval(Reg))
+    if (!LIS->hasInterval(Reg)) {
       continue;
+
+}
     LiveInterval &LI = LIS->getInterval(Reg);
-    if (!LI.hasSubRanges())
+    if (!LI.hasSubRanges()) {
       continue;
+
+}
 
     Changed |= renameComponents(LI);
   }

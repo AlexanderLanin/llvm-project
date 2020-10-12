@@ -31,15 +31,21 @@ bool X86SelectionDAGInfo::isBaseRegConflictPossible(
   // dynamic stack adjustments (hopefully rare) and the base pointer would
   // conflict if we had to use it.
   MachineFrameInfo &MFI = DAG.getMachineFunction().getFrameInfo();
-  if (!MFI.hasVarSizedObjects() && !MFI.hasOpaqueSPAdjustment())
+  if (!MFI.hasVarSizedObjects() && !MFI.hasOpaqueSPAdjustment()) {
     return false;
+
+}
 
   const X86RegisterInfo *TRI = static_cast<const X86RegisterInfo *>(
       DAG.getSubtarget().getRegisterInfo());
   Register BaseReg = TRI->getBaseRegister();
-  for (unsigned R : ClobberSet)
-    if (BaseReg == R)
+  for (unsigned R : ClobberSet) {
+    if (BaseReg == R) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -59,8 +65,10 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemset(
 #endif
 
   // If to a segment-relative address space, use the default lowering.
-  if (DstPtrInfo.getAddrSpace() >= 256)
+  if (DstPtrInfo.getAddrSpace() >= 256) {
     return SDValue();
+
+}
 
   // If not DWORD aligned or size is more than the threshold, call the library.
   // The libc version is likely to be faster for these cases. It can use the
@@ -240,18 +248,24 @@ static SDValue emitConstantSizeRepmov(
 
   /// TODO: Revisit next line: big copy with ERMSB on march >= haswell are very
   /// efficient.
-  if (!AlwaysInline && Size > Subtarget.getMaxInlineSizeThreshold())
+  if (!AlwaysInline && Size > Subtarget.getMaxInlineSizeThreshold()) {
     return SDValue();
 
+}
+
   /// If we have enhanced repmovs we use it.
-  if (Subtarget.hasERMSB())
+  if (Subtarget.hasERMSB()) {
     return emitRepmovsB(Subtarget, DAG, dl, Chain, Dst, Src, Size);
+
+}
 
   assert(!Subtarget.hasERMSB() && "No efficient RepMovs");
   /// We assume runtime memcpy will do a better job for unaligned copies when
   /// ERMS is not present.
-  if (!AlwaysInline && (Align & 3) != 0)
+  if (!AlwaysInline && (Align & 3) != 0) {
     return SDValue();
+
+}
 
   const MVT BlockType = getOptimalRepmovsType(Subtarget, Align);
   const uint64_t BlockBytes = BlockType.getSizeInBits() / 8;
@@ -262,15 +276,19 @@ static SDValue emitConstantSizeRepmov(
                   DAG.getIntPtrConstant(BlockCount, dl), BlockType);
 
   /// RepMov can process the whole length.
-  if (BytesLeft == 0)
+  if (BytesLeft == 0) {
     return RepMovs;
+
+}
 
   assert(BytesLeft && "We have leftover at this point");
 
   /// In case we optimize for size we use repmovsb even if it's less efficient
   /// so we can save the loads/stores of the leftover.
-  if (DAG.getMachineFunction().getFunction().hasMinSize())
+  if (DAG.getMachineFunction().getFunction().hasMinSize()) {
     return emitRepmovsB(Subtarget, DAG, dl, Chain, Dst, Src, Size);
+
+}
 
   // Handle the last 1 - 7 bytes.
   SmallVector<SDValue, 4> Results;
@@ -293,25 +311,31 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemcpy(
     SDValue Size, unsigned Align, bool isVolatile, bool AlwaysInline,
     MachinePointerInfo DstPtrInfo, MachinePointerInfo SrcPtrInfo) const {
   // If to a segment-relative address space, use the default lowering.
-  if (DstPtrInfo.getAddrSpace() >= 256 || SrcPtrInfo.getAddrSpace() >= 256)
+  if (DstPtrInfo.getAddrSpace() >= 256 || SrcPtrInfo.getAddrSpace() >= 256) {
     return SDValue();
+
+}
 
   // If the base registers conflict with our physical registers, use the default
   // lowering.
   const MCPhysReg ClobberSet[] = {X86::RCX, X86::RSI, X86::RDI,
                                   X86::ECX, X86::ESI, X86::EDI};
-  if (isBaseRegConflictPossible(DAG, ClobberSet))
+  if (isBaseRegConflictPossible(DAG, ClobberSet)) {
     return SDValue();
+
+}
 
   const X86Subtarget &Subtarget =
       DAG.getMachineFunction().getSubtarget<X86Subtarget>();
 
   /// Handle constant sizes,
-  if (ConstantSDNode *ConstantSize = dyn_cast<ConstantSDNode>(Size))
+  if (ConstantSDNode *ConstantSize = dyn_cast<ConstantSDNode>(Size)) {
     return emitConstantSizeRepmov(DAG, Subtarget, dl, Chain, Dst, Src,
                                   ConstantSize->getZExtValue(),
                                   Size.getValueType(), Align, isVolatile,
                                   AlwaysInline, DstPtrInfo, SrcPtrInfo);
+
+}
 
   return SDValue();
 }

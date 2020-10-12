@@ -70,17 +70,23 @@ static const SimpleTypeEntry SimpleTypeNames[] = {
 StringRef TypeIndex::simpleTypeName(TypeIndex TI) {
   assert(TI.isNoneType() || TI.isSimple());
 
-  if (TI.isNoneType())
+  if (TI.isNoneType()) {
     return "<no type>";
 
-  if (TI == TypeIndex::NullptrT())
+}
+
+  if (TI == TypeIndex::NullptrT()) {
     return "std::nullptr_t";
+
+}
 
   // This is a simple type.
   for (const auto &SimpleTypeName : SimpleTypeNames) {
     if (SimpleTypeName.Kind == TI.getSimpleKind()) {
-      if (TI.getSimpleMode() == SimpleTypeMode::Direct)
+      if (TI.getSimpleMode() == SimpleTypeMode::Direct) {
         return SimpleTypeName.Name.drop_back(1);
+
+}
       // Otherwise, this is a pointer type. We gloss over the distinction
       // between near, far, 64, 32, etc, and just give a pointer type.
       return SimpleTypeName.Name;
@@ -93,14 +99,18 @@ void llvm::codeview::printTypeIndex(ScopedPrinter &Printer, StringRef FieldName,
                                     TypeIndex TI, TypeCollection &Types) {
   StringRef TypeName;
   if (!TI.isNoneType()) {
-    if (TI.isSimple())
+    if (TI.isSimple()) {
       TypeName = TypeIndex::simpleTypeName(TI);
-    else
+    } else {
       TypeName = Types.getTypeName(TI);
+
+}
   }
 
-  if (!TypeName.empty())
+  if (!TypeName.empty()) {
     Printer.printHex(FieldName, TypeName, TI.getIndex());
-  else
+  } else {
     Printer.printHex(FieldName, TI.getIndex());
+
+}
 }

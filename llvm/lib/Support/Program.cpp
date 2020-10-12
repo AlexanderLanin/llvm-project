@@ -35,15 +35,19 @@ int sys::ExecuteAndWait(StringRef Program, ArrayRef<StringRef> Args,
   assert(Redirects.empty() || Redirects.size() == 3);
   ProcessInfo PI;
   if (Execute(PI, Program, Args, Env, Redirects, MemoryLimit, ErrMsg)) {
-    if (ExecutionFailed)
+    if (ExecutionFailed) {
       *ExecutionFailed = false;
+
+}
     ProcessInfo Result = Wait(
         PI, SecondsToWait, /*WaitUntilTerminates=*/SecondsToWait == 0, ErrMsg);
     return Result.ReturnCode;
   }
 
-  if (ExecutionFailed)
+  if (ExecutionFailed) {
     *ExecutionFailed = true;
+
+}
 
   return -1;
 }
@@ -55,11 +59,17 @@ ProcessInfo sys::ExecuteNoWait(StringRef Program, ArrayRef<StringRef> Args,
                                bool *ExecutionFailed) {
   assert(Redirects.empty() || Redirects.size() == 3);
   ProcessInfo PI;
-  if (ExecutionFailed)
+  if (ExecutionFailed) {
     *ExecutionFailed = false;
-  if (!Execute(PI, Program, Args, Env, Redirects, MemoryLimit, ErrMsg))
-    if (ExecutionFailed)
+
+}
+  if (!Execute(PI, Program, Args, Env, Redirects, MemoryLimit, ErrMsg)) {
+    if (ExecutionFailed) {
       *ExecutionFailed = true;
+
+}
+
+}
 
   return PI;
 }
@@ -68,8 +78,10 @@ bool sys::commandLineFitsWithinSystemLimits(StringRef Program,
                                             ArrayRef<const char *> Args) {
   SmallVector<StringRef, 8> StringRefArgs;
   StringRefArgs.reserve(Args.size());
-  for (const char *A : Args)
+  for (const char *A : Args) {
     StringRefArgs.emplace_back(A);
+
+}
   return commandLineFitsWithinSystemLimits(Program, StringRefArgs);
 }
 

@@ -43,18 +43,22 @@ struct BreakpointPrinter : public ModulePass {
 
   bool runOnModule(Module &M) override {
     StringSet<> Processed;
-    if (NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.sp"))
+    if (NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.sp")) {
       for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i) {
         std::string Name;
         auto *SP = cast_or_null<DISubprogram>(NMD->getOperand(i));
-        if (!SP)
+        if (!SP) {
           continue;
+
+}
         getContextName(SP->getScope(), Name);
         Name = Name + SP->getName().str();
         if (!Name.empty() && Processed.insert(Name).second) {
           Out << Name << "\n";
         }
       }
+
+}
     return false;
   }
 

@@ -90,8 +90,10 @@ cl::opt<std::string> PrintBlockFreqFuncName(
 namespace llvm {
 
 static GVDAGType getGVDT() {
-  if (PGOViewCounts == PGOVCT_Graph)
+  if (PGOViewCounts == PGOVCT_Graph) {
     return GVDT_Count;
+
+}
   return ViewBlockFreqPropagationDAG;
 }
 
@@ -184,8 +186,10 @@ bool BlockFrequencyInfo::invalidate(Function &F, const PreservedAnalyses &PA,
 void BlockFrequencyInfo::calculate(const Function &F,
                                    const BranchProbabilityInfo &BPI,
                                    const LoopInfo &LI) {
-  if (!BFI)
+  if (!BFI) {
     BFI.reset(new ImplType);
+
+}
   BFI->calculate(F, BPI, LI);
   if (ViewBlockFreqPropagationDAG != GVDT_None &&
       (ViewBlockFreqFuncName.empty() ||
@@ -206,16 +210,20 @@ BlockFrequency BlockFrequencyInfo::getBlockFreq(const BasicBlock *BB) const {
 Optional<uint64_t>
 BlockFrequencyInfo::getBlockProfileCount(const BasicBlock *BB,
                                          bool AllowSynthetic) const {
-  if (!BFI)
+  if (!BFI) {
     return None;
+
+}
 
   return BFI->getBlockProfileCount(*getFunction(), BB, AllowSynthetic);
 }
 
 Optional<uint64_t>
 BlockFrequencyInfo::getProfileCountFromFreq(uint64_t Freq) const {
-  if (!BFI)
+  if (!BFI) {
     return None;
+
+}
   return BFI->getProfileCountFromFreq(*getFunction(), Freq);
 }
 
@@ -283,8 +291,10 @@ uint64_t BlockFrequencyInfo::getEntryFreq() const {
 void BlockFrequencyInfo::releaseMemory() { BFI.reset(); }
 
 void BlockFrequencyInfo::print(raw_ostream &OS) const {
-  if (BFI)
+  if (BFI) {
     BFI->print(OS);
+
+}
 }
 
 INITIALIZE_PASS_BEGIN(BlockFrequencyInfoWrapperPass, "block-freq",

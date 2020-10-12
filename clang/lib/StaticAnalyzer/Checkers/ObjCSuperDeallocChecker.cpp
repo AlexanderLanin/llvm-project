@@ -90,8 +90,10 @@ void ObjCSuperDeallocChecker::checkPreObjCMessage(const ObjCMethodCall &M,
   }
 
   bool AlreadyCalled = State->contains<CalledSuperDealloc>(ReceiverSymbol);
-  if (!AlreadyCalled)
+  if (!AlreadyCalled) {
     return;
+
+}
 
   StringRef Desc;
 
@@ -112,8 +114,10 @@ void ObjCSuperDeallocChecker::checkPreCall(const CallEvent &Call,
 void ObjCSuperDeallocChecker::checkPostObjCMessage(const ObjCMethodCall &M,
                                                    CheckerContext &C) const {
   // Check for [super dealloc] method call.
-  if (!isSuperDeallocMessage(M))
+  if (!isSuperDeallocMessage(M)) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
   SymbolRef ReceiverSymbol = M.getSelfSVal().getAsSymbol();
@@ -129,17 +133,23 @@ void ObjCSuperDeallocChecker::checkPostObjCMessage(const ObjCMethodCall &M,
 void ObjCSuperDeallocChecker::checkLocation(SVal L, bool IsLoad, const Stmt *S,
                                   CheckerContext &C) const {
   SymbolRef BaseSym = L.getLocSymbolInBase();
-  if (!BaseSym)
+  if (!BaseSym) {
     return;
+
+}
 
   ProgramStateRef State = C.getState();
 
-  if (!State->contains<CalledSuperDealloc>(BaseSym))
+  if (!State->contains<CalledSuperDealloc>(BaseSym)) {
     return;
 
+}
+
   const MemRegion *R = L.getAsRegion();
-  if (!R)
+  if (!R) {
     return;
+
+}
 
   // Climb the super regions to find the base symbol while recording
   // the second-to-last region for error reporting.
@@ -180,11 +190,15 @@ void ObjCSuperDeallocChecker::reportUseAfterDealloc(SymbolRef Sym,
   // path by generating a sink.
   ExplodedNode *ErrNode = C.generateErrorNode();
   // If we've already reached this node on another path, return.
-  if (!ErrNode)
+  if (!ErrNode) {
     return;
 
-  if (Desc.empty())
+}
+
+  if (Desc.empty()) {
     Desc = "Use of 'self' after it has been deallocated";
+
+}
 
   // Generate the report.
   auto BR = std::make_unique<PathSensitiveBugReport>(*DoubleSuperDeallocBugType,
@@ -202,8 +216,10 @@ void ObjCSuperDeallocChecker::diagnoseCallArguments(const CallEvent &CE,
   unsigned ArgCount = CE.getNumArgs();
   for (unsigned I = 0; I < ArgCount; I++) {
     SymbolRef Sym = CE.getArgSVal(I).getAsSymbol();
-    if (!Sym)
+    if (!Sym) {
       continue;
+
+}
 
     if (State->contains<CalledSuperDealloc>(Sym)) {
       reportUseAfterDealloc(Sym, StringRef(), CE.getArgExpr(I), C);
@@ -222,8 +238,10 @@ ObjCSuperDeallocChecker::ObjCSuperDeallocChecker()
 
 void
 ObjCSuperDeallocChecker::initIdentifierInfoAndSelectors(ASTContext &Ctx) const {
-  if (IIdealloc)
+  if (IIdealloc) {
     return;
+
+}
 
   IIdealloc = &Ctx.Idents.get("dealloc");
   IINSObject = &Ctx.Idents.get("NSObject");
@@ -233,8 +251,10 @@ ObjCSuperDeallocChecker::initIdentifierInfoAndSelectors(ASTContext &Ctx) const {
 
 bool
 ObjCSuperDeallocChecker::isSuperDeallocMessage(const ObjCMethodCall &M) const {
-  if (M.getOriginExpr()->getReceiverKind() != ObjCMessageExpr::SuperInstance)
+  if (M.getOriginExpr()->getReceiverKind() != ObjCMessageExpr::SuperInstance) {
     return false;
+
+}
 
   ASTContext &Ctx = M.getState()->getStateManager().getContext();
   initIdentifierInfoAndSelectors(Ctx);
@@ -246,8 +266,10 @@ PathDiagnosticPieceRef
 SuperDeallocBRVisitor::VisitNode(const ExplodedNode *Succ,
                                  BugReporterContext &BRC,
                                  PathSensitiveBugReport &) {
-  if (Satisfied)
+  if (Satisfied) {
     return nullptr;
+
+}
 
   ProgramStateRef State = Succ->getState();
 
@@ -266,8 +288,10 @@ SuperDeallocBRVisitor::VisitNode(const ExplodedNode *Succ,
     PathDiagnosticLocation L =
         PathDiagnosticLocation::create(P, BRC.getSourceManager());
 
-    if (!L.isValid() || !L.asLocation().isValid())
+    if (!L.isValid() || !L.asLocation().isValid()) {
       return nullptr;
+
+}
 
     return std::make_shared<PathDiagnosticEventPiece>(
         L, "[super dealloc] called here");

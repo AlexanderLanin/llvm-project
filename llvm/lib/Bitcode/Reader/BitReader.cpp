@@ -45,8 +45,10 @@ LLVMBool LLVMParseBitcodeInContext(LLVMContextRef ContextRef,
     handleAllErrors(std::move(Err), [&](ErrorInfoBase &EIB) {
       Message = EIB.message();
     });
-    if (OutMessage)
+    if (OutMessage) {
       *OutMessage = strdup(Message.c_str());
+
+}
     *OutModule = wrap((Module *)nullptr);
     return 1;
   }
@@ -91,8 +93,10 @@ LLVMBool LLVMGetBitcodeModuleInContext(LLVMContextRef ContextRef,
     handleAllErrors(std::move(Err), [&](ErrorInfoBase &EIB) {
       Message = EIB.message();
     });
-    if (OutMessage)
+    if (OutMessage) {
       *OutMessage = strdup(Message.c_str());
+
+}
     *OutM = wrap((Module *)nullptr);
     return 1;
   }

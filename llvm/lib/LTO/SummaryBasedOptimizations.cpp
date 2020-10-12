@@ -43,8 +43,10 @@ static void initializeCounts(ModuleSummaryIndex &Index) {
 }
 
 void llvm::computeSyntheticCounts(ModuleSummaryIndex &Index) {
-  if (!ThinLTOSynthesizeEntryCounts)
+  if (!ThinLTOSynthesizeEntryCounts) {
     return;
+
+}
 
   using Scaled64 = ScaledNumber<uint64_t>;
   initializeCounts(Index);
@@ -61,8 +63,10 @@ void llvm::computeSyntheticCounts(ModuleSummaryIndex &Index) {
     }
   };
   auto AddToEntryCount = [](ValueInfo V, Scaled64 New) {
-    if (!V.getSummaryList().size())
+    if (!V.getSummaryList().size()) {
       return;
+
+}
     for (auto &GVS : V.getSummaryList()) {
       auto S = GVS.get()->getBaseObject();
       auto *F = cast<FunctionSummary>(S);

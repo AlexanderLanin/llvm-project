@@ -32,8 +32,10 @@ Register llvm::constrainRegToClass(MachineRegisterInfo &MRI,
                                    const TargetInstrInfo &TII,
                                    const RegisterBankInfo &RBI, Register Reg,
                                    const TargetRegisterClass &RegClass) {
-  if (!RBI.constrainGenericRegister(Reg, RegClass, MRI))
+  if (!RBI.constrainGenericRegister(Reg, RegClass, MRI)) {
     return MRI.createVirtualRegister(&RegClass);
+
+}
 
   return Reg;
 }
@@ -94,8 +96,10 @@ Register llvm::constrainOperandRegClass(
   // We can't constrain unallocatable register classes, because we can't create
   // virtual registers for these classes, so we need to let targets handled this
   // case.
-  if (RegClass && !RegClass->isAllocatable())
+  if (RegClass && !RegClass->isAllocatable()) {
     RegClass = TRI.getConstrainedRegClassForOperand(RegMO, MRI);
+
+}
 
   if (!RegClass) {
     assert((!isTargetSpecificOpcode(II.getOpcode()) || RegMO.isUse()) &&
@@ -131,21 +135,27 @@ bool llvm::constrainSelectedInstRegOperands(MachineInstr &I,
     MachineOperand &MO = I.getOperand(OpI);
 
     // There's nothing to be done on non-register operands.
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "Converting operand: " << MO << '\n');
     assert(MO.isReg() && "Unsupported non-reg operand");
 
     Register Reg = MO.getReg();
     // Physical registers don't need to be constrained.
-    if (Register::isPhysicalRegister(Reg))
+    if (Register::isPhysicalRegister(Reg)) {
       continue;
+
+}
 
     // Register operands with a value of 0 (e.g. predicate operands) don't need
     // to be constrained.
-    if (Reg == 0)
+    if (Reg == 0) {
       continue;
+
+}
 
     // If the operand is a vreg, we should constrain its regclass, and only
     // insert COPYs if that's impossible.
@@ -157,8 +167,10 @@ bool llvm::constrainSelectedInstRegOperands(MachineInstr &I,
     // done.
     if (MO.isUse()) {
       int DefIdx = I.getDesc().getOperandConstraint(OpI, MCOI::TIED_TO);
-      if (DefIdx != -1 && !I.isRegTiedToUseOperand(DefIdx))
+      if (DefIdx != -1 && !I.isRegTiedToUseOperand(DefIdx)) {
         I.tieOperands(DefIdx, OpI);
+
+}
     }
   }
   return true;
@@ -167,11 +179,15 @@ bool llvm::constrainSelectedInstRegOperands(MachineInstr &I,
 bool llvm::canReplaceReg(Register DstReg, Register SrcReg,
                          MachineRegisterInfo &MRI) {
   // Give up if either DstReg or SrcReg  is a physical register.
-  if (DstReg.isPhysical() || SrcReg.isPhysical())
+  if (DstReg.isPhysical() || SrcReg.isPhysical()) {
     return false;
+
+}
   // Give up if the types don't match.
-  if (MRI.getType(DstReg) != MRI.getType(SrcReg))
+  if (MRI.getType(DstReg) != MRI.getType(SrcReg)) {
     return false;
+
+}
   // Replace if either DstReg has no constraints or the register
   // constraints match.
   return !MRI.getRegClassOrRegBank(DstReg) ||
@@ -183,17 +199,23 @@ bool llvm::isTriviallyDead(const MachineInstr &MI,
   // If we can move an instruction, we can remove it.  Otherwise, it has
   // a side-effect of some sort.
   bool SawStore = false;
-  if (!MI.isSafeToMove(/*AA=*/nullptr, SawStore) && !MI.isPHI())
+  if (!MI.isSafeToMove(/*AA=*/nullptr, SawStore) && !MI.isPHI()) {
     return false;
+
+}
 
   // Instructions without side-effects are dead iff they only define dead vregs.
   for (auto &MO : MI.operands()) {
-    if (!MO.isReg() || !MO.isDef())
+    if (!MO.isReg() || !MO.isDef()) {
       continue;
 
+}
+
     Register Reg = MO.getReg();
-    if (Register::isPhysicalRegister(Reg) || !MRI.use_nodbg_empty(Reg))
+    if (Register::isPhysicalRegister(Reg) || !MRI.use_nodbg_empty(Reg)) {
       return false;
+
+}
   }
   return true;
 }
@@ -205,13 +227,17 @@ void llvm::reportGISelFailure(MachineFunction &MF, const TargetPassConfig &TPC,
 
   // Print the function name explicitly if we don't have a debug location (which
   // makes the diagnostic less useful) or if we're going to emit a raw error.
-  if (!R.getLocation().isValid() || TPC.isGlobalISelAbortEnabled())
+  if (!R.getLocation().isValid() || TPC.isGlobalISelAbortEnabled()) {
     R << (" (in function: " + MF.getName() + ")").str();
 
-  if (TPC.isGlobalISelAbortEnabled())
+}
+
+  if (TPC.isGlobalISelAbortEnabled()) {
     report_fatal_error(R.getMsg());
-  else
+  } else {
     MORE.emit(R);
+
+}
 }
 
 void llvm::reportGISelFailure(MachineFunction &MF, const TargetPassConfig &TPC,
@@ -222,8 +248,10 @@ void llvm::reportGISelFailure(MachineFunction &MF, const TargetPassConfig &TPC,
                                     MI.getDebugLoc(), MI.getParent());
   R << Msg;
   // Printing MI is expensive;  only do it if expensive remarks are enabled.
-  if (TPC.isGlobalISelAbortEnabled() || MORE.allowExtraAnalysis(PassName))
+  if (TPC.isGlobalISelAbortEnabled() || MORE.allowExtraAnalysis(PassName)) {
     R << ": " << ore::MNV("Inst", MI);
+
+}
   reportGISelFailure(MF, TPC, MORE, R);
 }
 
@@ -233,8 +261,10 @@ Optional<int64_t> llvm::getConstantVRegVal(Register VReg,
       getConstantVRegValWithLookThrough(VReg, MRI, /*LookThroughInstrs*/ false);
   assert((!ValAndVReg || ValAndVReg->VReg == VReg) &&
          "Value found while looking through instrs");
-  if (!ValAndVReg)
+  if (!ValAndVReg) {
     return None;
+
+}
   return ValAndVReg->Value;
 }
 
@@ -251,8 +281,10 @@ Optional<ValueAndVReg> llvm::getConstantVRegValWithLookThrough(
                             &MRI](const MachineInstr &MI) -> Optional<APInt> {
     const MachineOperand &CstVal = MI.getOperand(1);
     if (!CstVal.isImm() && !CstVal.isCImm() &&
-        (!HandleFConstant || !CstVal.isFPImm()))
+        (!HandleFConstant || !CstVal.isFPImm())) {
       return None;
+
+}
     if (!CstVal.isFPImm()) {
       unsigned BitWidth =
           MRI.getType(MI.getOperand(0).getReg()).getSizeInBits();
@@ -277,8 +309,10 @@ Optional<ValueAndVReg> llvm::getConstantVRegValWithLookThrough(
       break;
     case TargetOpcode::COPY:
       VReg = MI->getOperand(1).getReg();
-      if (Register::isPhysicalRegister(VReg))
+      if (Register::isPhysicalRegister(VReg)) {
         return None;
+
+}
       break;
     case TargetOpcode::G_INTTOPTR:
       VReg = MI->getOperand(1).getReg();
@@ -287,12 +321,16 @@ Optional<ValueAndVReg> llvm::getConstantVRegValWithLookThrough(
       return None;
     }
   }
-  if (!MI || !IsConstantOpcode(MI->getOpcode()))
+  if (!MI || !IsConstantOpcode(MI->getOpcode())) {
     return None;
 
+}
+
   Optional<APInt> MaybeVal = GetImmediateValue(*MI);
-  if (!MaybeVal)
+  if (!MaybeVal) {
     return None;
+
+}
   APInt &Val = *MaybeVal;
   while (!SeenOpcodes.empty()) {
     std::pair<unsigned, unsigned> OpcodeAndSize = SeenOpcodes.pop_back_val();
@@ -309,8 +347,10 @@ Optional<ValueAndVReg> llvm::getConstantVRegValWithLookThrough(
     }
   }
 
-  if (Val.getBitWidth() > 64)
+  if (Val.getBitWidth() > 64) {
     return None;
+
+}
 
   return ValueAndVReg{Val.getSExtValue(), VReg};
 }
@@ -318,8 +358,10 @@ Optional<ValueAndVReg> llvm::getConstantVRegValWithLookThrough(
 const llvm::ConstantFP *
 llvm::getConstantFPVRegVal(Register VReg, const MachineRegisterInfo &MRI) {
   MachineInstr *MI = MRI.getVRegDef(VReg);
-  if (TargetOpcode::G_FCONSTANT != MI->getOpcode())
+  if (TargetOpcode::G_FCONSTANT != MI->getOpcode()) {
     return nullptr;
+
+}
   return MI->getOperand(1).getFPImm();
 }
 
@@ -335,13 +377,17 @@ getDefSrcRegIgnoringCopies(Register Reg, const MachineRegisterInfo &MRI) {
   Register DefSrcReg = Reg;
   auto *DefMI = MRI.getVRegDef(Reg);
   auto DstTy = MRI.getType(DefMI->getOperand(0).getReg());
-  if (!DstTy.isValid())
+  if (!DstTy.isValid()) {
     return None;
+
+}
   while (DefMI->getOpcode() == TargetOpcode::COPY) {
     Register SrcReg = DefMI->getOperand(1).getReg();
     auto SrcTy = MRI.getType(SrcReg);
-    if (!SrcTy.isValid() || SrcTy != DstTy)
+    if (!SrcTy.isValid() || SrcTy != DstTy) {
       break;
+
+}
     DefMI = MRI.getVRegDef(SrcReg);
     DefSrcReg = SrcReg;
   }
@@ -369,12 +415,18 @@ llvm::MachineInstr *llvm::getOpcodeDef(unsigned Opcode, Register Reg,
 }
 
 APFloat llvm::getAPFloatFromSize(double Val, unsigned Size) {
-  if (Size == 32)
+  if (Size == 32) {
     return APFloat(float(Val));
-  if (Size == 64)
+
+}
+  if (Size == 64) {
     return APFloat(Val);
-  if (Size != 16)
+
+}
+  if (Size != 16) {
     llvm_unreachable("Unsupported FPConstant size");
+
+}
   bool Ignored;
   APFloat APF(Val);
   APF.convert(APFloat::IEEEhalf(), APFloat::rmNearestTiesToEven, &Ignored);
@@ -412,20 +464,28 @@ Optional<APInt> llvm::ConstantFoldBinOp(unsigned Opcode, const unsigned Op1,
     case TargetOpcode::G_XOR:
       return C1 ^ C2;
     case TargetOpcode::G_UDIV:
-      if (!C2.getBoolValue())
+      if (!C2.getBoolValue()) {
         break;
+
+}
       return C1.udiv(C2);
     case TargetOpcode::G_SDIV:
-      if (!C2.getBoolValue())
+      if (!C2.getBoolValue()) {
         break;
+
+}
       return C1.sdiv(C2);
     case TargetOpcode::G_UREM:
-      if (!C2.getBoolValue())
+      if (!C2.getBoolValue()) {
         break;
+
+}
       return C1.urem(C2);
     case TargetOpcode::G_SREM:
-      if (!C2.getBoolValue())
+      if (!C2.getBoolValue()) {
         break;
+
+}
       return C1.srem(C2);
     }
   }
@@ -435,11 +495,15 @@ Optional<APInt> llvm::ConstantFoldBinOp(unsigned Opcode, const unsigned Op1,
 bool llvm::isKnownNeverNaN(Register Val, const MachineRegisterInfo &MRI,
                            bool SNaN) {
   const MachineInstr *DefMI = MRI.getVRegDef(Val);
-  if (!DefMI)
+  if (!DefMI) {
     return false;
 
-  if (DefMI->getFlag(MachineInstr::FmNoNans))
+}
+
+  if (DefMI->getFlag(MachineInstr::FmNoNans)) {
     return true;
+
+}
 
   if (SNaN) {
     // FP operations quiet. For now, just handle the ones inserted during

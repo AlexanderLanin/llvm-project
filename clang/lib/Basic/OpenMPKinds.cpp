@@ -32,8 +32,10 @@ OpenMPClauseKind clang::getOpenMPClauseKind(StringRef Str) {
   if (llvm::StringSwitch<bool>(Str)
           .Case("flush", true)
           .Case("depobj", true)
-          .Default(false))
+          .Default(false)) {
     return OMPC_unknown;
+
+}
   return llvm::StringSwitch<OpenMPClauseKind>(Str)
 #define OPENMP_CLAUSE(Name, Class) .Case(#Name, OMPC_##Name)
 #include "clang/Basic/OpenMPKinds.def"
@@ -443,11 +445,15 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
   assert(unsigned(DKind) <= unsigned(OMPD_unknown));
   assert(CKind <= OMPC_unknown);
   // Nontemporal clause is not supported in OpenMP < 5.0.
-  if (OpenMPVersion < 50 && CKind == OMPC_nontemporal)
+  if (OpenMPVersion < 50 && CKind == OMPC_nontemporal) {
     return false;
+
+}
   // Order clause is not supported in OpenMP < 5.0.
-  if (OpenMPVersion < 50 && CKind == OMPC_order)
+  if (OpenMPVersion < 50 && CKind == OMPC_order) {
     return false;
+
+}
   switch (DKind) {
   case OMPD_parallel:
     switch (CKind) {
@@ -460,8 +466,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_simd:
-    if (OpenMPVersion < 50 && CKind == OMPC_if)
+    if (OpenMPVersion < 50 && CKind == OMPC_if) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_SIMD_CLAUSE(Name)                                               \
   case OMPC_##Name:                                                            \
@@ -482,8 +490,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_for_simd:
-    if (OpenMPVersion < 50 && CKind == OMPC_if)
+    if (OpenMPVersion < 50 && CKind == OMPC_if) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_FOR_SIMD_CLAUSE(Name)                                           \
   case OMPC_##Name:                                                            \
@@ -564,10 +574,14 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_flush:
-    if (CKind == OMPC_flush)
+    if (CKind == OMPC_flush) {
       return true;
-    if (OpenMPVersion < 50)
+
+}
+    if (OpenMPVersion < 50) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_FLUSH_CLAUSE(Name)                                              \
   case OMPC_##Name:                                                            \
@@ -578,8 +592,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_depobj:
-    if (OpenMPVersion < 50)
+    if (OpenMPVersion < 50) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_DEPOBJ_CLAUSE(Name)                                             \
   case OMPC_##Name:                                                            \
@@ -594,8 +610,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
   case OMPD_atomic:
     if (OpenMPVersion < 50 &&
         (CKind == OMPC_acq_rel || CKind == OMPC_acquire ||
-         CKind == OMPC_release || CKind == OMPC_relaxed || CKind == OMPC_hint))
+         CKind == OMPC_release || CKind == OMPC_relaxed || CKind == OMPC_hint)) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_ATOMIC_CLAUSE(Name)                                             \
   case OMPC_##Name:                                                            \
@@ -816,8 +834,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_distribute_simd:
-    if (OpenMPVersion < 50 && CKind == OMPC_if)
+    if (OpenMPVersion < 50 && CKind == OMPC_if) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_DISTRIBUTE_SIMD_CLAUSE(Name)                                    \
   case OMPC_##Name:                                                            \
@@ -858,8 +878,10 @@ bool clang::isAllowedClauseForDirective(OpenMPDirectiveKind DKind,
     }
     break;
   case OMPD_teams_distribute_simd:
-    if (OpenMPVersion < 50 && CKind == OMPC_if)
+    if (OpenMPVersion < 50 && CKind == OMPC_if) {
       return false;
+
+}
     switch (CKind) {
 #define OPENMP_TEAMS_DISTRIBUTE_SIMD_CLAUSE(Name)                              \
   case OMPC_##Name:                                                            \

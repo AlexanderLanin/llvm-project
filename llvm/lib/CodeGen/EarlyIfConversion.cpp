@@ -211,8 +211,10 @@ bool SSAIfConv::canSpeculateInstrs(MachineBasicBlock *MBB) {
   // terminators never have side effects or define any used register values.
   for (MachineBasicBlock::iterator I = MBB->begin(),
        E = MBB->getFirstTerminator(); I != E; ++I) {
-    if (I->isDebugInstr())
+    if (I->isDebugInstr()) {
       continue;
+
+}
 
     if (++InstrCount > BlockInstrLimit && !Stress) {
       LLVM_DEBUG(dbgs() << printMBBReference(*MBB) << " has more than "
@@ -242,8 +244,10 @@ bool SSAIfConv::canSpeculateInstrs(MachineBasicBlock *MBB) {
     }
 
     // Check for any dependencies on Head instructions.
-    if (!InstrDependenciesAllowIfConv(&(*I)))
+    if (!InstrDependenciesAllowIfConv(&(*I))) {
       return false;
+
+}
   }
   return true;
 }
@@ -258,23 +262,35 @@ bool SSAIfConv::InstrDependenciesAllowIfConv(MachineInstr *I) {
       LLVM_DEBUG(dbgs() << "Won't speculate regmask: " << *I);
       return false;
     }
-    if (!MO.isReg())
+    if (!MO.isReg()) {
       continue;
+
+}
     Register Reg = MO.getReg();
 
     // Remember clobbered regunits.
-    if (MO.isDef() && Register::isPhysicalRegister(Reg))
-      for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units)
+    if (MO.isDef() && Register::isPhysicalRegister(Reg)) {
+      for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units) {
         ClobberedRegUnits.set(*Units);
 
-    if (!MO.readsReg() || !Register::isVirtualRegister(Reg))
+}
+
+}
+
+    if (!MO.readsReg() || !Register::isVirtualRegister(Reg)) {
       continue;
+
+}
     MachineInstr *DefMI = MRI->getVRegDef(Reg);
-    if (!DefMI || DefMI->getParent() != Head)
+    if (!DefMI || DefMI->getParent() != Head) {
       continue;
-    if (InsertAfter.insert(DefMI).second)
+
+}
+    if (InsertAfter.insert(DefMI).second) {
       LLVM_DEBUG(dbgs() << printMBBReference(*I->getParent()) << " depends on "
                         << *DefMI);
+
+}
     if (DefMI->isTerminator()) {
       LLVM_DEBUG(dbgs() << "Can't insert instructions below terminator.\n");
       return false;
@@ -306,8 +322,10 @@ bool SSAIfConv::canPredicateInstrs(MachineBasicBlock *MBB) {
   for (MachineBasicBlock::iterator I = MBB->begin(),
                                    E = MBB->getFirstTerminator();
        I != E; ++I) {
-    if (I->isDebugInstr())
+    if (I->isDebugInstr()) {
       continue;
+
+}
 
     if (++InstrCount > BlockInstrLimit && !Stress) {
       LLVM_DEBUG(dbgs() << printMBBReference(*MBB) << " has more than "
@@ -328,8 +346,10 @@ bool SSAIfConv::canPredicateInstrs(MachineBasicBlock *MBB) {
     }
 
     // Check for any dependencies on Head instructions.
-    if (!InstrDependenciesAllowIfConv(&(*I)))
+    if (!InstrDependenciesAllowIfConv(&(*I))) {
       return false;
+
+}
   }
   return true;
 }
@@ -337,14 +357,18 @@ bool SSAIfConv::canPredicateInstrs(MachineBasicBlock *MBB) {
 // Apply predicate to all instructions in the machine block.
 void SSAIfConv::PredicateBlock(MachineBasicBlock *MBB, bool ReversePredicate) {
   auto Condition = Cond;
-  if (ReversePredicate)
+  if (ReversePredicate) {
     TII->reverseBranchCondition(Condition);
+
+}
   // Terminators don't need to be predicated as they will be removed.
   for (MachineBasicBlock::iterator I = MBB->begin(),
                                    E = MBB->getFirstTerminator();
        I != E; ++I) {
-    if (I->isDebugInstr())
+    if (I->isDebugInstr()) {
       continue;
+
+}
     TII->PredicateInstruction(*I, Condition);
   }
 }
@@ -378,29 +402,47 @@ bool SSAIfConv::findInsertionPoint() {
     // Update live regunits.
     for (const MachineOperand &MO : I->operands()) {
       // We're ignoring regmask operands. That is conservatively correct.
-      if (!MO.isReg())
+      if (!MO.isReg()) {
         continue;
+
+}
       Register Reg = MO.getReg();
-      if (!Register::isPhysicalRegister(Reg))
+      if (!Register::isPhysicalRegister(Reg)) {
         continue;
+
+}
       // I clobbers Reg, so it isn't live before I.
-      if (MO.isDef())
-        for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units)
+      if (MO.isDef()) {
+        for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units) {
           LiveRegUnits.erase(*Units);
+
+}
+
+}
       // Unless I reads Reg.
-      if (MO.readsReg())
+      if (MO.readsReg()) {
         Reads.push_back(Reg);
+
+}
     }
     // Anything read by I is live before I.
-    while (!Reads.empty())
+    while (!Reads.empty()) {
       for (MCRegUnitIterator Units(Reads.pop_back_val(), TRI); Units.isValid();
-           ++Units)
-        if (ClobberedRegUnits.test(*Units))
+           ++Units) {
+        if (ClobberedRegUnits.test(*Units)) {
           LiveRegUnits.insert(*Units);
 
+}
+
+}
+
+}
+
     // We can't insert before a terminator.
-    if (I != FirstTerm && I->isTerminator())
+    if (I != FirstTerm && I->isTerminator()) {
       continue;
+
+}
 
     // Some of the clobbered registers are live before I, not a valid insertion
     // point.
@@ -433,17 +475,23 @@ bool SSAIfConv::canConvertIf(MachineBasicBlock *MBB, bool Predicate) {
   Head = MBB;
   TBB = FBB = Tail = nullptr;
 
-  if (Head->succ_size() != 2)
+  if (Head->succ_size() != 2) {
     return false;
+
+}
   MachineBasicBlock *Succ0 = Head->succ_begin()[0];
   MachineBasicBlock *Succ1 = Head->succ_begin()[1];
 
   // Canonicalize so Succ0 has MBB as its single predecessor.
-  if (Succ0->pred_size() != 1)
+  if (Succ0->pred_size() != 1) {
     std::swap(Succ0, Succ1);
 
-  if (Succ0->pred_size() != 1 || Succ0->succ_size() != 1)
+}
+
+  if (Succ0->pred_size() != 1 || Succ0->succ_size() != 1) {
     return false;
+
+}
 
   Tail = Succ0->succ_begin()[0];
 
@@ -451,8 +499,10 @@ bool SSAIfConv::canConvertIf(MachineBasicBlock *MBB, bool Predicate) {
   if (Tail != Succ1) {
     // Check for a diamond. We won't deal with any critical edges.
     if (Succ1->pred_size() != 1 || Succ1->succ_size() != 1 ||
-        Succ1->succ_begin()[0] != Tail)
+        Succ1->succ_begin()[0] != Tail) {
       return false;
+
+}
     LLVM_DEBUG(dbgs() << "\nDiamond: " << printMBBReference(*Head) << " -> "
                       << printMBBReference(*Succ0) << "/"
                       << printMBBReference(*Succ1) << " -> "
@@ -511,10 +561,14 @@ bool SSAIfConv::canConvertIf(MachineBasicBlock *MBB, bool Predicate) {
     PHIInfo &PI = PHIs.back();
     // Find PHI operands corresponding to TPred and FPred.
     for (unsigned i = 1; i != PI.PHI->getNumOperands(); i += 2) {
-      if (PI.PHI->getOperand(i+1).getMBB() == TPred)
+      if (PI.PHI->getOperand(i+1).getMBB() == TPred) {
         PI.TReg = PI.PHI->getOperand(i).getReg();
-      if (PI.PHI->getOperand(i+1).getMBB() == FPred)
+
+}
+      if (PI.PHI->getOperand(i+1).getMBB() == FPred) {
         PI.FReg = PI.PHI->getOperand(i).getReg();
+
+}
     }
     assert(Register::isVirtualRegister(PI.TReg) && "Bad PHI");
     assert(Register::isVirtualRegister(PI.FReg) && "Bad PHI");
@@ -532,26 +586,38 @@ bool SSAIfConv::canConvertIf(MachineBasicBlock *MBB, bool Predicate) {
   InsertAfter.clear();
   ClobberedRegUnits.reset();
   if (Predicate) {
-    if (TBB != Tail && !canPredicateInstrs(TBB))
+    if (TBB != Tail && !canPredicateInstrs(TBB)) {
       return false;
-    if (FBB != Tail && !canPredicateInstrs(FBB))
+
+}
+    if (FBB != Tail && !canPredicateInstrs(FBB)) {
       return false;
+
+}
   } else {
-    if (TBB != Tail && !canSpeculateInstrs(TBB))
+    if (TBB != Tail && !canSpeculateInstrs(TBB)) {
       return false;
-    if (FBB != Tail && !canSpeculateInstrs(FBB))
+
+}
+    if (FBB != Tail && !canSpeculateInstrs(FBB)) {
       return false;
+
+}
   }
 
   // Try to find a valid insertion point for the speculated instructions in the
   // head basic block.
-  if (!findInsertionPoint())
+  if (!findInsertionPoint()) {
     return false;
 
-  if (isTriangle())
+}
+
+  if (isTriangle()) {
     ++NumTrianglesSeen;
-  else
+  } else {
     ++NumDiamondsSeen;
+
+}
   return true;
 }
 
@@ -627,36 +693,48 @@ void SSAIfConv::convertIf(SmallVectorImpl<MachineBasicBlock *> &RemovedBlocks,
   assert(Head && Tail && TBB && FBB && "Call canConvertIf first.");
 
   // Update statistics.
-  if (isTriangle())
+  if (isTriangle()) {
     ++NumTrianglesConv;
-  else
+  } else {
     ++NumDiamondsConv;
+
+}
 
   // Move all instructions into Head, except for the terminators.
   if (TBB != Tail) {
-    if (Predicate)
+    if (Predicate) {
       PredicateBlock(TBB, /*ReversePredicate=*/false);
+
+}
     Head->splice(InsertionPoint, TBB, TBB->begin(), TBB->getFirstTerminator());
   }
   if (FBB != Tail) {
-    if (Predicate)
+    if (Predicate) {
       PredicateBlock(FBB, /*ReversePredicate=*/true);
+
+}
     Head->splice(InsertionPoint, FBB, FBB->begin(), FBB->getFirstTerminator());
   }
   // Are there extra Tail predecessors?
   bool ExtraPreds = Tail->pred_size() != 2;
-  if (ExtraPreds)
+  if (ExtraPreds) {
     rewritePHIOperands();
-  else
+  } else {
     replacePHIInstrs();
+
+}
 
   // Fix up the CFG, temporarily leave Head without any successors.
   Head->removeSuccessor(TBB);
   Head->removeSuccessor(FBB, true);
-  if (TBB != Tail)
+  if (TBB != Tail) {
     TBB->removeSuccessor(Tail, true);
-  if (FBB != Tail)
+
+}
+  if (FBB != Tail) {
     FBB->removeSuccessor(Tail, true);
+
+}
 
   // Fix up Head's terminators.
   // It should become a single branch or a fallthrough.
@@ -768,12 +846,16 @@ void updateDomTree(MachineDominatorTree *DomTree, const SSAIfConv &IfConv,
 /// Update LoopInfo after if-conversion.
 void updateLoops(MachineLoopInfo *Loops,
                  ArrayRef<MachineBasicBlock *> Removed) {
-  if (!Loops)
+  if (!Loops) {
     return;
+
+}
   // If-conversion doesn't change loop structure, and it doesn't mess with back
   // edges, so updating LoopInfo is simply removing the dead blocks.
-  for (auto B : Removed)
+  for (auto B : Removed) {
     Loops->removeBlock(B);
+
+}
 }
 } // namespace
 
@@ -789,8 +871,10 @@ void EarlyIfConverter::invalidateTraces() {
 
 // Adjust cycles with downward saturation.
 static unsigned adjCycles(unsigned Cyc, int Delta) {
-  if (Delta < 0 && Cyc + Delta > Cyc)
+  if (Delta < 0 && Cyc + Delta > Cyc) {
     return 0;
+
+}
   return Cyc + Delta;
 }
 
@@ -799,11 +883,15 @@ static unsigned adjCycles(unsigned Cyc, int Delta) {
 ///
 bool EarlyIfConverter::shouldConvertIf() {
   // Stress testing mode disables all cost considerations.
-  if (Stress)
+  if (Stress) {
     return true;
 
-  if (!MinInstr)
+}
+
+  if (!MinInstr) {
     MinInstr = Traces->getEnsemble(MachineTraceMetrics::TS_MinInstrCount);
+
+}
 
   MachineTraceMetrics::Trace TBBTrace = MinInstr->getTrace(IfConv.getTPred());
   MachineTraceMetrics::Trace FBBTrace = MinInstr->getTrace(IfConv.getFPred());
@@ -818,8 +906,10 @@ bool EarlyIfConverter::shouldConvertIf() {
   // maximum-ILP resource length of the trace after if-conversion. Compare it
   // to the shortest critical path.
   SmallVector<const MachineBasicBlock*, 1> ExtraBlocks;
-  if (IfConv.TBB != IfConv.Tail)
+  if (IfConv.TBB != IfConv.Tail) {
     ExtraBlocks.push_back(IfConv.TBB);
+
+}
   unsigned ResLength = FBBTrace.getResourceLength(ExtraBlocks);
   LLVM_DEBUG(dbgs() << "Resource length " << ResLength
                     << ", minimal critical path " << MinCrit << '\n');
@@ -900,13 +990,17 @@ bool EarlyIfConverter::tryConvertIf(MachineBasicBlock *MBB) {
 bool EarlyIfConverter::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "********** EARLY IF-CONVERSION **********\n"
                     << "********** Function: " << MF.getName() << '\n');
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   // Only run if conversion if the target wants it.
   const TargetSubtargetInfo &STI = MF.getSubtarget();
-  if (!STI.enableEarlyIfConversion())
+  if (!STI.enableEarlyIfConversion()) {
     return false;
+
+}
 
   TII = STI.getInstrInfo();
   TRI = STI.getRegisterInfo();
@@ -924,9 +1018,13 @@ bool EarlyIfConverter::runOnMachineFunction(MachineFunction &MF) {
   // if-conversion in a single pass. The tryConvertIf() function may erase
   // blocks, but only blocks dominated by the head block. This makes it safe to
   // update the dominator tree while the post-order iterator is still active.
-  for (auto DomNode : post_order(DomTree))
-    if (tryConvertIf(DomNode->getBlock()))
+  for (auto DomNode : post_order(DomTree)) {
+    if (tryConvertIf(DomNode->getBlock())) {
       Changed = true;
+
+}
+
+}
 
   return Changed;
 }
@@ -992,8 +1090,10 @@ bool EarlyIfPredicator::shouldConvertIf() {
     unsigned Cycles = 0;
     for (MachineInstr &I : IfBlock) {
       unsigned NumCycles = SchedModel.computeInstrLatency(&I, false);
-      if (NumCycles > 1)
+      if (NumCycles > 1) {
         Cycles += NumCycles - 1;
+
+}
       ExtraPredCost += TII->getPredicationCost(I);
     }
 
@@ -1006,14 +1106,18 @@ bool EarlyIfPredicator::shouldConvertIf() {
   unsigned FCycle = 0;
   for (MachineInstr &I : *IfConv.TBB) {
     unsigned NumCycles = SchedModel.computeInstrLatency(&I, false);
-    if (NumCycles > 1)
+    if (NumCycles > 1) {
       TCycle += NumCycles - 1;
+
+}
     TExtra += TII->getPredicationCost(I);
   }
   for (MachineInstr &I : *IfConv.FBB) {
     unsigned NumCycles = SchedModel.computeInstrLatency(&I, false);
-    if (NumCycles > 1)
+    if (NumCycles > 1) {
       FCycle += NumCycles - 1;
+
+}
     FExtra += TII->getPredicationCost(I);
   }
   return TII->isProfitableToIfCvt(*IfConv.TBB, TCycle, TExtra, *IfConv.FBB,
@@ -1038,8 +1142,10 @@ bool EarlyIfPredicator::tryConvertIf(MachineBasicBlock *MBB) {
 bool EarlyIfPredicator::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "********** EARLY IF-PREDICATOR **********\n"
                     << "********** Function: " << MF.getName() << '\n');
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
+
+}
 
   const TargetSubtargetInfo &STI = MF.getSubtarget();
   TII = STI.getInstrInfo();
@@ -1057,9 +1163,13 @@ bool EarlyIfPredicator::runOnMachineFunction(MachineFunction &MF) {
   // if-conversion in a single pass. The tryConvertIf() function may erase
   // blocks, but only blocks dominated by the head block. This makes it safe to
   // update the dominator tree while the post-order iterator is still active.
-  for (auto DomNode : post_order(DomTree))
-    if (tryConvertIf(DomNode->getBlock()))
+  for (auto DomNode : post_order(DomTree)) {
+    if (tryConvertIf(DomNode->getBlock())) {
       Changed = true;
+
+}
+
+}
 
   return Changed;
 }

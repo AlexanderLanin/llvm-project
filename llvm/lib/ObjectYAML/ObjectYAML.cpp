@@ -22,15 +22,23 @@ using namespace yaml;
 void MappingTraits<YamlObjectFile>::mapping(IO &IO,
                                             YamlObjectFile &ObjectFile) {
   if (IO.outputting()) {
-    if (ObjectFile.Elf)
+    if (ObjectFile.Elf) {
       MappingTraits<ELFYAML::Object>::mapping(IO, *ObjectFile.Elf);
-    if (ObjectFile.Coff)
+
+}
+    if (ObjectFile.Coff) {
       MappingTraits<COFFYAML::Object>::mapping(IO, *ObjectFile.Coff);
-    if (ObjectFile.MachO)
+
+}
+    if (ObjectFile.MachO) {
       MappingTraits<MachOYAML::Object>::mapping(IO, *ObjectFile.MachO);
-    if (ObjectFile.FatMachO)
+
+}
+    if (ObjectFile.FatMachO) {
       MappingTraits<MachOYAML::UniversalBinary>::mapping(IO,
                                                          *ObjectFile.FatMachO);
+
+}
   } else {
     Input &In = (Input &)IO;
     if (IO.mapTag("!ELF")) {
@@ -53,11 +61,13 @@ void MappingTraits<YamlObjectFile>::mapping(IO &IO,
       ObjectFile.Wasm.reset(new WasmYAML::Object());
       MappingTraits<WasmYAML::Object>::mapping(IO, *ObjectFile.Wasm);
     } else if (const Node *N = In.getCurrentNode()) {
-      if (N->getRawTag().empty())
+      if (N->getRawTag().empty()) {
         IO.setError("YAML Object File missing document type tag!");
-      else
+      } else {
         IO.setError("YAML Object File unsupported document type tag '" +
                     N->getRawTag() + "'!");
+
+}
     }
   }
 }

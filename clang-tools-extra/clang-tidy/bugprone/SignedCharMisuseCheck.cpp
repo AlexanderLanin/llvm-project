@@ -115,8 +115,10 @@ void SignedCharMisuseCheck::check(const MatchFinder::MatchResult &Result) {
       SignedCastExpression->getSubExpr()->EvaluateAsInt(EVResult,
                                                         *Result.Context)) {
     llvm::APSInt Value = EVResult.Val.getInt();
-    if (Value.isNonNegative())
+    if (Value.isNonNegative()) {
       return;
+
+}
   }
 
   if (const auto *Comparison = Result.Nodes.getNodeAs<Expr>("comparison")) {
@@ -129,8 +131,10 @@ void SignedCharMisuseCheck::check(const MatchFinder::MatchResult &Result) {
         UnSignedCastExpression->getSubExpr()->EvaluateAsInt(EVResult,
                                                             *Result.Context)) {
       llvm::APSInt Value = EVResult.Val.getInt();
-      if (Value <= UnsignedASCIIUpperBound)
+      if (Value <= UnsignedASCIIUpperBound) {
         return;
+
+}
     }
 
     diag(Comparison->getBeginLoc(),
@@ -141,8 +145,10 @@ void SignedCharMisuseCheck::check(const MatchFinder::MatchResult &Result) {
          "'signed char' to %0 conversion; "
          "consider casting to 'unsigned char' first.")
         << *IntegerType;
-  } else
+  } else {
     llvm_unreachable("Unexpected match");
+
+}
 }
 
 } // namespace bugprone

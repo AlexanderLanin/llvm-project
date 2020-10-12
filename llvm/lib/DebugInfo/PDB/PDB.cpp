@@ -27,8 +27,10 @@ Error llvm::pdb::loadDataForPDB(PDB_ReaderType Type, StringRef Path,
     ErrorOr<std::unique_ptr<MemoryBuffer>> ErrorOrBuffer =
         MemoryBuffer::getFileOrSTDIN(Path, /*FileSize=*/-1,
                                      /*RequiresNullTerminator=*/false);
-    if (!ErrorOrBuffer)
+    if (!ErrorOrBuffer) {
       return errorCodeToError(ErrorOrBuffer.getError());
+
+}
 
     return NativeSession::createFromPdb(std::move(*ErrorOrBuffer), Session);
   }
@@ -43,8 +45,10 @@ Error llvm::pdb::loadDataForPDB(PDB_ReaderType Type, StringRef Path,
 Error llvm::pdb::loadDataForEXE(PDB_ReaderType Type, StringRef Path,
                                 std::unique_ptr<IPDBSession> &Session) {
   // Create the correct concrete instance type based on the value of Type.
-  if (Type == PDB_ReaderType::Native)
+  if (Type == PDB_ReaderType::Native) {
     return NativeSession::createFromExe(Path, Session);
+
+}
 
 #if LLVM_ENABLE_DIA_SDK
   return DIASession::createFromExe(Path, Session);

@@ -64,11 +64,17 @@ bool ProcessImplicitDefs::canTurnIntoImplicitDef(MachineInstr *MI) {
   if (!MI->isCopyLike() &&
       !MI->isInsertSubreg() &&
       !MI->isRegSequence() &&
-      !MI->isPHI())
+      !MI->isPHI()) {
     return false;
-  for (const MachineOperand &MO : MI->operands())
-    if (MO.isReg() && MO.isUse() && MO.readsReg())
+
+}
+  for (const MachineOperand &MO : MI->operands()) {
+    if (MO.isReg() && MO.isUse() && MO.readsReg()) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -82,8 +88,10 @@ void ProcessImplicitDefs::processImplicitDef(MachineInstr *MI) {
     for (MachineOperand &MO : MRI->use_nodbg_operands(Reg)) {
       MO.setIsUndef();
       MachineInstr *UserMI = MO.getParent();
-      if (!canTurnIntoImplicitDef(UserMI))
+      if (!canTurnIntoImplicitDef(UserMI)) {
         continue;
+
+}
       LLVM_DEBUG(dbgs() << "Converting to IMPLICIT_DEF: " << *UserMI);
       UserMI->setDesc(TII->get(TargetOpcode::IMPLICIT_DEF));
       WorkList.insert(UserMI);
@@ -99,19 +107,27 @@ void ProcessImplicitDefs::processImplicitDef(MachineInstr *MI) {
   bool Found = false;
   for (++UserMI; UserMI != UserE; ++UserMI) {
     for (MachineOperand &MO : UserMI->operands()) {
-      if (!MO.isReg())
+      if (!MO.isReg()) {
         continue;
+
+}
       Register UserReg = MO.getReg();
       if (!Register::isPhysicalRegister(UserReg) ||
-          !TRI->regsOverlap(Reg, UserReg))
+          !TRI->regsOverlap(Reg, UserReg)) {
         continue;
+
+}
       // UserMI uses or redefines Reg. Set <undef> flags on all uses.
       Found = true;
-      if (MO.isUse())
+      if (MO.isUse()) {
         MO.setIsUndef();
+
+}
     }
-    if (Found)
+    if (Found) {
       break;
+
+}
   }
 
   // If we found the using MI, we can erase the IMPLICIT_DEF.
@@ -123,8 +139,10 @@ void ProcessImplicitDefs::processImplicitDef(MachineInstr *MI) {
 
   // Using instr wasn't found, it could be in another block.
   // Leave the physreg IMPLICIT_DEF, but trim any extra operands.
-  for (unsigned i = MI->getNumOperands() - 1; i; --i)
+  for (unsigned i = MI->getNumOperands() - 1; i; --i) {
     MI->RemoveOperand(i);
+
+}
   LLVM_DEBUG(dbgs() << "Keeping physreg: " << *MI);
 }
 
@@ -147,20 +165,26 @@ bool ProcessImplicitDefs::runOnMachineFunction(MachineFunction &MF) {
        MFI != MFE; ++MFI) {
     // Scan the basic block for implicit defs.
     for (MachineBasicBlock::instr_iterator MBBI = MFI->instr_begin(),
-         MBBE = MFI->instr_end(); MBBI != MBBE; ++MBBI)
-      if (MBBI->isImplicitDef())
+         MBBE = MFI->instr_end(); MBBI != MBBE; ++MBBI) {
+      if (MBBI->isImplicitDef()) {
         WorkList.insert(&*MBBI);
 
-    if (WorkList.empty())
+}
+
+}
+
+    if (WorkList.empty()) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << printMBBReference(*MFI) << " has " << WorkList.size()
                       << " implicit defs.\n");
     Changed = true;
 
     // Drain the WorkList to recursively process any new implicit defs.
-    do processImplicitDef(WorkList.pop_back_val());
-    while (!WorkList.empty());
+    do { processImplicitDef(WorkList.pop_back_val());
+    } while (!WorkList.empty());
   }
   return Changed;
 }

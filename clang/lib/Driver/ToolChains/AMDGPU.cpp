@@ -39,8 +39,10 @@ void amdgpu::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 void amdgpu::getAMDGPUTargetFeatures(const Driver &D,
                                      const llvm::opt::ArgList &Args,
                                      std::vector<StringRef> &Features) {
-  if (const Arg *dAbi = Args.getLastArg(options::OPT_mamdgpu_debugger_abi))
+  if (const Arg *dAbi = Args.getLastArg(options::OPT_mamdgpu_debugger_abi)) {
     D.Diag(diag::err_drv_clang_unsupported) << dAbi->getAsString(Args);
+
+}
 
   if (Args.getLastArg(options::OPT_mwavefrontsize64)) {
     Features.push_back("-wavefrontsize16");
@@ -76,13 +78,19 @@ AMDGPUToolChain::TranslateArgs(const DerivedArgList &Args, StringRef BoundArch,
       Generic_ELF::TranslateArgs(Args, BoundArch, DeviceOffloadKind);
 
   // Do nothing if not OpenCL (-x cl)
-  if (!Args.getLastArgValue(options::OPT_x).equals("cl"))
+  if (!Args.getLastArgValue(options::OPT_x).equals("cl")) {
     return DAL;
 
-  if (!DAL)
+}
+
+  if (!DAL) {
     DAL = new DerivedArgList(Args.getBaseArgs());
-  for (auto *A : Args)
+
+}
+  for (auto *A : Args) {
     DAL->append(A);
+
+}
 
   const OptTable &Opts = getDriver().getOpts();
 
@@ -95,9 +103,11 @@ AMDGPUToolChain::TranslateArgs(const DerivedArgList &Args, StringRef BoundArch,
     // Have to check OPT_O4, OPT_O0 & OPT_Ofast separately
     // as they defined that way in Options.td
     if (!Args.hasArg(options::OPT_O, options::OPT_O0, options::OPT_O4,
-                     options::OPT_Ofast))
+                     options::OPT_Ofast)) {
       DAL->AddJoinedArg(nullptr, Opts.getOption(options::OPT_O),
                         getOptionDefault(options::OPT_O));
+
+}
   }
 
   return DAL;
@@ -107,15 +117,19 @@ llvm::DenormalMode AMDGPUToolChain::getDefaultDenormalModeForType(
     const llvm::opt::ArgList &DriverArgs, Action::OffloadKind DeviceOffloadKind,
     const llvm::fltSemantics *FPType) const {
   // Denormals should always be enabled for f16 and f64.
-  if (!FPType || FPType != &llvm::APFloat::IEEEsingle())
+  if (!FPType || FPType != &llvm::APFloat::IEEEsingle()) {
     return llvm::DenormalMode::getIEEE();
+
+}
 
   if (DeviceOffloadKind == Action::OFK_Cuda) {
     if (FPType && FPType == &llvm::APFloat::IEEEsingle() &&
         DriverArgs.hasFlag(options::OPT_fcuda_flush_denormals_to_zero,
                            options::OPT_fno_cuda_flush_denormals_to_zero,
-                           false))
+                           false)) {
       return llvm::DenormalMode::getPreserveSign();
+
+}
   }
 
   const StringRef GpuArch = DriverArgs.getLastArgValue(options::OPT_mcpu_EQ);

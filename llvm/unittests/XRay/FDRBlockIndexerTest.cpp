@@ -56,8 +56,10 @@ TEST(FDRBlockIndexerTest, IndexBlocksV3) {
   // Iterate through the contrived blocks we have created above.
   for (auto B : {std::ref(Block0), std::ref(Block1), std::ref(Block2)}) {
     // For each record in the block, we apply the indexer.
-    for (auto &R : B.get())
+    for (auto &R : B.get()) {
       ASSERT_FALSE(errorToBool(R->apply(Indexer)));
+
+}
     ASSERT_FALSE(errorToBool(Indexer.flush()));
   }
 

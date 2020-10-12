@@ -62,21 +62,27 @@ PassManager<LazyCallGraph::SCC, CGSCCAnalysisManager, LazyCallGraph &,
 
   PreservedAnalyses PA = PreservedAnalyses::all();
 
-  if (DebugLogging)
+  if (DebugLogging) {
     dbgs() << "Starting CGSCC pass manager run.\n";
+
+}
 
   // The SCC may be refined while we are running passes over it, so set up
   // a pointer that we can update.
   LazyCallGraph::SCC *C = &InitialC;
 
   for (auto &Pass : Passes) {
-    if (DebugLogging)
+    if (DebugLogging) {
       dbgs() << "Running pass: " << Pass->name() << " on " << *C << "\n";
+
+}
 
     // Check the PassInstrumentation's BeforePass callbacks before running the
     // pass, skip its execution completely if asked to (callback returns false).
-    if (!PI.runBeforePass(*Pass, *C))
+    if (!PI.runBeforePass(*Pass, *C)) {
       continue;
+
+}
 
     PreservedAnalyses PassPA;
     {
@@ -84,10 +90,12 @@ PassManager<LazyCallGraph::SCC, CGSCCAnalysisManager, LazyCallGraph &,
       PassPA = Pass->run(*C, AM, G, UR);
     }
 
-    if (UR.InvalidatedSCCs.count(C))
+    if (UR.InvalidatedSCCs.count(C)) {
       PI.runAfterPassInvalidated<LazyCallGraph::SCC>(*Pass);
-    else
+    } else {
       PI.runAfterPass<LazyCallGraph::SCC>(*Pass, *C);
+
+}
 
     // Update the SCC if necessary.
     C = UR.UpdatedC ? UR.UpdatedC : C;
@@ -128,8 +136,10 @@ PassManager<LazyCallGraph::SCC, CGSCCAnalysisManager, LazyCallGraph &,
   // one individually.
   PA.preserveSet<AllAnalysesOn<LazyCallGraph::SCC>>();
 
-  if (DebugLogging)
+  if (DebugLogging) {
     dbgs() << "Finished CGSCC pass manager run.\n";
+
+}
 
   return PA;
 }
@@ -138,8 +148,10 @@ bool CGSCCAnalysisManagerModuleProxy::Result::invalidate(
     Module &M, const PreservedAnalyses &PA,
     ModuleAnalysisManager::Invalidator &Inv) {
   // If literally everything is preserved, we're done.
-  if (PA.areAllPreserved())
+  if (PA.areAllPreserved()) {
     return false; // This is still a valid proxy.
+
+}
 
   // If this proxy or the call graph is going to be invalidated, we also need
   // to clear all the keys coming from that analysis.
@@ -168,7 +180,7 @@ bool CGSCCAnalysisManagerModuleProxy::Result::invalidate(
 
   // Ok, we have a graph, so we can propagate the invalidation down into it.
   G->buildRefSCCs();
-  for (auto &RC : G->postorder_ref_sccs())
+  for (auto &RC : G->postorder_ref_sccs()) {
     for (auto &C : RC) {
       Optional<PreservedAnalyses> InnerPA;
 
@@ -176,18 +188,24 @@ bool CGSCCAnalysisManagerModuleProxy::Result::invalidate(
       // module-level analysis invalidation triggering deferred invalidation
       // for this SCC.
       if (auto *OuterProxy =
-              InnerAM->getCachedResult<ModuleAnalysisManagerCGSCCProxy>(C))
+              InnerAM->getCachedResult<ModuleAnalysisManagerCGSCCProxy>(C)) {
         for (const auto &OuterInvalidationPair :
              OuterProxy->getOuterInvalidations()) {
           AnalysisKey *OuterAnalysisID = OuterInvalidationPair.first;
           const auto &InnerAnalysisIDs = OuterInvalidationPair.second;
           if (Inv.invalidate(OuterAnalysisID, M, PA)) {
-            if (!InnerPA)
+            if (!InnerPA) {
               InnerPA = PA;
-            for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs)
+
+}
+            for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs) {
               InnerPA->abandon(InnerAnalysisID);
+
+}
           }
         }
+
+}
 
       // Check if we needed a custom PA set. If so we'll need to run the inner
       // invalidation.
@@ -198,9 +216,13 @@ bool CGSCCAnalysisManagerModuleProxy::Result::invalidate(
 
       // Otherwise we only need to do invalidation if the original PA set didn't
       // preserve all SCC analyses.
-      if (!AreSCCAnalysesPreserved)
+      if (!AreSCCAnalysesPreserved) {
         InnerAM->invalidate(C, PA);
+
+}
     }
+
+}
 
   // Return false to indicate that this result is still a valid proxy.
   return false;
@@ -247,8 +269,10 @@ bool FunctionAnalysisManagerCGSCCProxy::Result::invalidate(
     LazyCallGraph::SCC &C, const PreservedAnalyses &PA,
     CGSCCAnalysisManager::Invalidator &Inv) {
   // If literally everything is preserved, we're done.
-  if (PA.areAllPreserved())
+  if (PA.areAllPreserved()) {
     return false; // This is still a valid proxy.
+
+}
 
   // If this proxy isn't marked as preserved, then even if the result remains
   // valid, the key itself may no longer be valid, so we clear everything.
@@ -260,8 +284,10 @@ bool FunctionAnalysisManagerCGSCCProxy::Result::invalidate(
   // cached on functions *still in the module* at the end of the module pass.
   auto PAC = PA.getChecker<FunctionAnalysisManagerCGSCCProxy>();
   if (!PAC.preserved() && !PAC.preservedSet<AllAnalysesOn<LazyCallGraph::SCC>>()) {
-    for (LazyCallGraph::Node &N : C)
+    for (LazyCallGraph::Node &N : C) {
       FAM->clear(N.getFunction(), N.getFunction().getName());
+
+}
 
     return true;
   }
@@ -280,18 +306,24 @@ bool FunctionAnalysisManagerCGSCCProxy::Result::invalidate(
     // SCC-level analysis invalidation that triggers deferred invalidation
     // registered with the outer analysis manager proxy for this function.
     if (auto *OuterProxy =
-            FAM->getCachedResult<CGSCCAnalysisManagerFunctionProxy>(F))
+            FAM->getCachedResult<CGSCCAnalysisManagerFunctionProxy>(F)) {
       for (const auto &OuterInvalidationPair :
            OuterProxy->getOuterInvalidations()) {
         AnalysisKey *OuterAnalysisID = OuterInvalidationPair.first;
         const auto &InnerAnalysisIDs = OuterInvalidationPair.second;
         if (Inv.invalidate(OuterAnalysisID, C, PA)) {
-          if (!FunctionPA)
+          if (!FunctionPA) {
             FunctionPA = PA;
-          for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs)
+
+}
+          for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs) {
             FunctionPA->abandon(InnerAnalysisID);
+
+}
         }
       }
+
+}
 
     // Check if we needed a custom PA set, and if so we'll need to run the
     // inner invalidation.
@@ -302,8 +334,10 @@ bool FunctionAnalysisManagerCGSCCProxy::Result::invalidate(
 
     // Otherwise we only need to do invalidation if the original PA set didn't
     // preserve all function analyses.
-    if (!AreFunctionAnalysesPreserved)
+    if (!AreFunctionAnalysesPreserved) {
       FAM->invalidate(F, PA);
+
+}
   }
 
   // Return false to indicate that this result is still a valid proxy.
@@ -338,9 +372,11 @@ static void updateNewSCCFunctionAnalyses(LazyCallGraph::SCC &C,
 
     auto *OuterProxy =
         FAM.getCachedResult<CGSCCAnalysisManagerFunctionProxy>(F);
-    if (!OuterProxy)
+    if (!OuterProxy) {
       // No outer analyses were queried, nothing to do.
       continue;
+
+}
 
     // Forcibly abandon all the inner analyses with dependencies, but
     // invalidate nothing else.
@@ -348,8 +384,10 @@ static void updateNewSCCFunctionAnalyses(LazyCallGraph::SCC &C,
     for (const auto &OuterInvalidationPair :
          OuterProxy->getOuterInvalidations()) {
       const auto &InnerAnalysisIDs = OuterInvalidationPair.second;
-      for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs)
+      for (AnalysisKey *InnerAnalysisID : InnerAnalysisIDs) {
         PA.abandon(InnerAnalysisID);
+
+}
     }
 
     // Now invalidate anything we found.
@@ -374,8 +412,10 @@ incorporateNewSCCRange(const SCCRangeT &NewSCCRange, LazyCallGraph &G,
                        CGSCCAnalysisManager &AM, CGSCCUpdateResult &UR) {
   using SCC = LazyCallGraph::SCC;
 
-  if (NewSCCRange.begin() == NewSCCRange.end())
+  if (NewSCCRange.begin() == NewSCCRange.end()) {
     return C;
+
+}
 
   // Add the current SCC to the worklist as its shape has changed.
   UR.CWorklist.insert(C);
@@ -408,8 +448,10 @@ incorporateNewSCCRange(const SCCRangeT &NewSCCRange, LazyCallGraph &G,
   AM.invalidate(*OldC, PA);
 
   // Ensure the now-current SCC's function analyses are updated.
-  if (NeedFAMProxy)
+  if (NeedFAMProxy) {
     updateNewSCCFunctionAnalyses(*C, G, AM);
+
+}
 
   for (SCC &NewC : llvm::reverse(make_range(std::next(NewSCCRange.begin()),
                                             NewSCCRange.end()))) {
@@ -419,8 +461,10 @@ incorporateNewSCCRange(const SCCRangeT &NewSCCRange, LazyCallGraph &G,
     LLVM_DEBUG(dbgs() << "Enqueuing a newly formed SCC:" << NewC << "\n");
 
     // Ensure new SCCs' function analyses are updated.
-    if (NeedFAMProxy)
+    if (NeedFAMProxy) {
       updateNewSCCFunctionAnalyses(NewC, G, AM);
+
+}
 
     // Also propagate a normal invalidation to the new SCC as only the current
     // will get one from the pass manager infrastructure.
@@ -455,9 +499,9 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
   // First walk the function and handle all called functions. We do this first
   // because if there is a single call edge, whether there are ref edges is
   // irrelevant.
-  for (Instruction &I : instructions(F))
-    if (auto CS = CallSite(&I))
-      if (Function *Callee = CS.getCalledFunction())
+  for (Instruction &I : instructions(F)) {
+    if (auto CS = CallSite(&I)) {
+      if (Function *Callee = CS.getCalledFunction()) {
         if (Visited.insert(Callee).second && !Callee->isDeclaration()) {
           Node &CalleeN = *G.lookup(*Callee);
           Edge *E = N->lookup(CalleeN);
@@ -468,18 +512,34 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
           bool Inserted = RetainedEdges.insert(&CalleeN).second;
           (void)Inserted;
           assert(Inserted && "We should never visit a function twice.");
-          if (!E)
+          if (!E) {
             NewCallEdges.insert(&CalleeN);
-          else if (!E->isCall())
+          } else if (!E->isCall()) {
             PromotedRefTargets.insert(&CalleeN);
+
+}
         }
 
+}
+
+}
+
+}
+
   // Now walk all references.
-  for (Instruction &I : instructions(F))
-    for (Value *Op : I.operand_values())
-      if (auto *C = dyn_cast<Constant>(Op))
-        if (Visited.insert(C).second)
+  for (Instruction &I : instructions(F)) {
+    for (Value *Op : I.operand_values()) {
+      if (auto *C = dyn_cast<Constant>(Op)) {
+        if (Visited.insert(C).second) {
           Worklist.push_back(C);
+
+}
+
+}
+
+}
+
+}
 
   auto VisitRef = [&](Function &Referee) {
     Node &RefereeN = *G.lookup(Referee);
@@ -491,10 +551,12 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
     bool Inserted = RetainedEdges.insert(&RefereeN).second;
     (void)Inserted;
     assert(Inserted && "We should never visit a function twice.");
-    if (!E)
+    if (!E) {
       NewRefEdges.insert(&RefereeN);
-    else if (E->isCall())
+    } else if (E->isCall()) {
       DemotedCallTargets.insert(&RefereeN);
+
+}
   };
   LazyCallGraph::visitReferences(Worklist, Visited, VisitRef);
 
@@ -521,19 +583,25 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
   }
 
   // Include synthetic reference edges to known, defined lib functions.
-  for (auto *F : G.getLibFunctions())
+  for (auto *F : G.getLibFunctions()) {
     // While the list of lib functions doesn't have repeats, don't re-visit
     // anything handled above.
-    if (!Visited.count(F))
+    if (!Visited.count(F)) {
       VisitRef(*F);
+
+}
+
+}
 
   // First remove all of the edges that are no longer present in this function.
   // The first step makes these edges uniformly ref edges and accumulates them
   // into a separate data structure so removal doesn't invalidate anything.
   SmallVector<Node *, 4> DeadTargets;
   for (Edge &E : *N) {
-    if (RetainedEdges.count(&E.getNode()))
+    if (RetainedEdges.count(&E.getNode())) {
       continue;
+
+}
 
     SCC &TargetC = *G.lookupSCC(E.getNode());
     RefSCC &TargetRC = TargetC.getOuterRefSCC();
@@ -560,8 +628,10 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
 
                         // We can't trivially remove internal targets, so skip
                         // those.
-                        if (&TargetRC == RC)
+                        if (&TargetRC == RC) {
                           return false;
+
+}
 
                         RC->removeOutgoingEdge(N, *TargetN);
                         LLVM_DEBUG(dbgs() << "Deleting outgoing edge from '"
@@ -686,8 +756,10 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
       // If one of the invalidated SCCs had a cached proxy to a function
       // analysis manager, we need to create a proxy in the new current SCC as
       // the invalidated SCCs had their functions moved.
-      if (HasFunctionAnalysisProxy)
+      if (HasFunctionAnalysisProxy) {
         AM.getResult<FunctionAnalysisManagerCGSCCProxy>(*C, G);
+
+}
 
       // Any analyses cached for this SCC are no longer precise as the shape
       // has changed by introducing this cycle. However, we have taken care to
@@ -729,10 +801,14 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
 
   // Record the current RefSCC and SCC for higher layers of the CGSCC pass
   // manager now that all the updates have been applied.
-  if (RC != &InitialRC)
+  if (RC != &InitialRC) {
     UR.UpdatedRC = RC;
-  if (C != &InitialC)
+
+}
+  if (C != &InitialC) {
     UR.UpdatedC = C;
+
+}
 
   return *C;
 }

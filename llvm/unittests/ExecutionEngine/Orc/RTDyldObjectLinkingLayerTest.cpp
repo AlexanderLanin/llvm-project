@@ -37,8 +37,10 @@ static bool testSetProcessAllSections(std::unique_ptr<MemoryBuffer> Obj,
     uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment,
                                  unsigned SectionID, StringRef SectionName,
                                  bool IsReadOnly) override {
-      if (SectionName == ".debug_str")
+      if (SectionName == ".debug_str") {
         DebugSeen = true;
+
+}
       return SectionMemoryManager::allocateDataSection(
           Size, Alignment, SectionID, SectionName, IsReadOnly);
     }
@@ -86,8 +88,10 @@ TEST(RTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
   OrcNativeTarget::initialize();
   std::unique_ptr<TargetMachine> TM(EngineBuilder().selectTarget(
       Triple(M->getTargetTriple()), "", "", SmallVector<std::string, 1>()));
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   auto Obj = cantFail(SimpleCompiler(*TM)(*M));
 
@@ -106,8 +110,10 @@ TEST(RTDyldObjectLinkingLayerTest, TestOverrideObjectFlags) {
       EngineBuilder().selectTarget(Triple("x86_64-unknown-linux-gnu"), "", "",
                                    SmallVector<std::string, 1>()));
 
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Our compiler is going to modify symbol visibility settings without telling
   // ORC. This will test our ability to override the flags later.
@@ -176,8 +182,10 @@ TEST(RTDyldObjectLinkingLayerTest, TestAutoClaimResponsibilityForSymbols) {
       EngineBuilder().selectTarget(Triple("x86_64-unknown-linux-gnu"), "", "",
                                    SmallVector<std::string, 1>()));
 
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   // Our compiler is going to add a new symbol without telling ORC.
   // This will test our ability to auto-claim responsibility later.

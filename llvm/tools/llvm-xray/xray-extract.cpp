@@ -61,8 +61,10 @@ void exportAsYAML(const InstrumentationMap &Map, raw_ostream &OS,
   YAMLSleds.reserve(std::distance(Sleds.begin(), Sleds.end()));
   for (const auto &Sled : Sleds) {
     auto FuncId = Map.getFunctionId(Sled.Function);
-    if (!FuncId)
+    if (!FuncId) {
       return;
+
+}
     YAMLSleds.push_back({*FuncId, Sled.Address, Sled.Function, Sled.Kind,
                          Sled.AlwaysInstrument,
                          ExtractSymbolize ? FH.SymbolOrNumber(*FuncId) : ""});
@@ -75,23 +77,29 @@ void exportAsYAML(const InstrumentationMap &Map, raw_ostream &OS,
 
 static CommandRegistration Unused(&Extract, []() -> Error {
   auto InstrumentationMapOrError = loadInstrumentationMap(ExtractInput);
-  if (!InstrumentationMapOrError)
+  if (!InstrumentationMapOrError) {
     return joinErrors(make_error<StringError>(
                           Twine("Cannot extract instrumentation map from '") +
                               ExtractInput + "'.",
                           std::make_error_code(std::errc::invalid_argument)),
                       InstrumentationMapOrError.takeError());
 
+}
+
   std::error_code EC;
   raw_fd_ostream OS(ExtractOutput, EC, sys::fs::OpenFlags::OF_Text);
-  if (EC)
+  if (EC) {
     return make_error<StringError>(
         Twine("Cannot open file '") + ExtractOutput + "' for writing.", EC);
+
+}
   const auto &FunctionAddresses =
       InstrumentationMapOrError->getFunctionAddresses();
   symbolize::LLVMSymbolizer::Options opts;
-  if (ExtractNoDemangle)
+  if (ExtractNoDemangle) {
     opts.Demangle = false;
+
+}
   symbolize::LLVMSymbolizer Symbolizer(opts);
   llvm::xray::FuncIdConversionHelper FuncIdHelper(ExtractInput, Symbolizer,
                                                   FunctionAddresses);

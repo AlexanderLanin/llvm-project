@@ -176,8 +176,10 @@ struct SuffixTreeNode {
   size_t size() const {
 
     // Is it the root? If so, it's the empty string so return 0.
-    if (isRoot())
+    if (isRoot()) {
       return 0;
+
+}
 
     assert(*EndIdx != EmptyIdx && "EndIdx is undefined!");
 
@@ -304,8 +306,10 @@ private:
     unsigned *E = new (InternalEndIdxAllocator) unsigned(EndIdx);
     SuffixTreeNode *N =
         new (NodeAllocator.Allocate()) SuffixTreeNode(StartIdx, E, Root);
-    if (Parent)
+    if (Parent) {
       Parent->Children[Edge] = N;
+
+}
 
     return N;
   }
@@ -334,8 +338,10 @@ private:
       }
 
       // No children, so we are at the end of the string.
-      if (CurrNode->Children.size() == 0 && !CurrNode->isRoot())
+      if (CurrNode->Children.size() == 0 && !CurrNode->isRoot()) {
         CurrNode->SuffixIdx = Str.size() - CurrNodeLen;
+
+}
     }
   }
 
@@ -444,8 +450,10 @@ private:
         SplitNode->Children[Str[NextNode->StartIdx]] = NextNode;
 
         // SplitNode is an internal node, update the suffix link.
-        if (NeedsLink)
+        if (NeedsLink) {
           NeedsLink->Link = SplitNode;
+
+}
 
         NeedsLink = SplitNode;
       }
@@ -538,27 +546,33 @@ public:
         // strings, which may repeat.
         for (auto &ChildPair : Curr->Children) {
           // Save all of this node's children for processing.
-          if (!ChildPair.second->isLeaf())
+          if (!ChildPair.second->isLeaf()) {
             ToVisit.push_back(ChildPair.second);
 
           // It's not an internal node, so it must be a leaf. If we have a
           // long enough string, then save the leaf children.
-          else if (Length >= MinLength)
+          } else if (Length >= MinLength) {
             LeafChildren.push_back(ChildPair.second);
+
+}
         }
 
         // The root never represents a repeated substring. If we're looking at
         // that, then skip it.
-        if (Curr->isRoot())
+        if (Curr->isRoot()) {
           continue;
+
+}
 
         // Do we have any repeated substrings?
         if (LeafChildren.size() >= 2) {
           // Yes. Update the state to reflect this, and then bail out.
           N = Curr;
           RS.Length = Length;
-          for (SuffixTreeNode *Leaf : LeafChildren)
+          for (SuffixTreeNode *Leaf : LeafChildren) {
             RS.StartIndices.push_back(Leaf->SuffixIdx);
+
+}
           break;
         }
       }
@@ -656,8 +670,10 @@ struct InstructionMapper {
 
     // If we have at least two adjacent legal instructions (which may have
     // invisible instructions in between), remember that.
-    if (CanOutlineWithPrevInstr)
+    if (CanOutlineWithPrevInstr) {
       HaveLegalRange = true;
+
+}
     CanOutlineWithPrevInstr = true;
 
     // Keep track of the number of legal instructions we insert.
@@ -675,14 +691,18 @@ struct InstructionMapper {
     unsigned MINumber = ResultIt->second;
 
     // There was an insertion.
-    if (WasInserted)
+    if (WasInserted) {
       LegalInstrNumber++;
+
+}
 
     UnsignedVecForMBB.push_back(MINumber);
 
     // Make sure we don't overflow or use any integers reserved by the DenseMap.
-    if (LegalInstrNumber >= IllegalInstrNumber)
+    if (LegalInstrNumber >= IllegalInstrNumber) {
       report_fatal_error("Instruction mapping overflow!");
+
+}
 
     assert(LegalInstrNumber != DenseMapInfo<unsigned>::getEmptyKey() &&
            "Tried to assign DenseMap tombstone or empty key to instruction.");
@@ -706,8 +726,10 @@ struct InstructionMapper {
     CanOutlineWithPrevInstr = false;
 
     // Only add one illegal number per range of legal numbers.
-    if (AddedIllegalLastTime)
+    if (AddedIllegalLastTime) {
       return IllegalInstrNumber;
+
+}
 
     // Remember that we added an illegal number last time.
     AddedIllegalLastTime = true;
@@ -744,8 +766,10 @@ struct InstructionMapper {
     unsigned Flags = 0;
 
     // Don't even map in this case.
-    if (!TII.isMBBSafeToOutlineFrom(MBB, Flags))
+    if (!TII.isMBBSafeToOutlineFrom(MBB, Flags)) {
       return;
+
+}
 
     // Store info for the MBB for later outlining.
     MBBFlagsMap[&MBB] = Flags;
@@ -910,10 +934,16 @@ struct MachineOutliner : public ModulePass {
   /// Return a DISubprogram for OF if one exists, and null otherwise. Helper
   /// function for remark emission.
   DISubprogram *getSubprogramOrNull(const OutlinedFunction &OF) {
-    for (const Candidate &C : OF.Candidates)
-      if (MachineFunction *MF = C.getMF())
-        if (DISubprogram *SP = MF->getFunction().getSubprogram())
+    for (const Candidate &C : OF.Candidates) {
+      if (MachineFunction *MF = C.getMF()) {
+        if (DISubprogram *SP = MF->getFunction().getSubprogram()) {
           return SP;
+
+}
+
+}
+
+}
     return nullptr;
   }
 
@@ -976,8 +1006,10 @@ void MachineOutliner::emitNotOutliningCheaperRemark(
     for (unsigned i = 1, e = CandidatesForRepeatedSeq.size(); i < e; i++) {
       R << NV((Twine("OtherStartLoc") + Twine(i)).str(),
               CandidatesForRepeatedSeq[i].front()->getDebugLoc());
-      if (i != e - 1)
+      if (i != e - 1) {
         R << ", ";
+
+}
     }
 
     R << ")";
@@ -1001,8 +1033,10 @@ void MachineOutliner::emitOutlinedFunctionRemark(OutlinedFunction &OF) {
 
     R << NV((Twine("StartLoc") + Twine(i)).str(),
             OF.Candidates[i].front()->getDebugLoc());
-    if (i != e - 1)
+    if (i != e - 1) {
       R << ", ";
+
+}
   }
 
   R << ")";
@@ -1067,8 +1101,10 @@ void MachineOutliner::findCandidates(
     // We've found something we might want to outline.
     // Create an OutlinedFunction to store it and check if it'd be beneficial
     // to outline.
-    if (CandidatesForRepeatedSeq.size() < 2)
+    if (CandidatesForRepeatedSeq.size() < 2) {
       continue;
+
+}
 
     // Arbitrarily choose a TII from the first candidate.
     // FIXME: Should getOutliningCandidateInfo move to TargetMachine?
@@ -1080,8 +1116,10 @@ void MachineOutliner::findCandidates(
 
     // If we deleted too many candidates, then there's nothing worth outlining.
     // FIXME: This should take target-specified instruction sizes into account.
-    if (OF.Candidates.size() < 2)
+    if (OF.Candidates.size() < 2) {
       continue;
+
+}
 
     // Is it better to outline this candidate than not?
     if (OF.getBenefit() < 1) {
@@ -1125,8 +1163,10 @@ MachineFunction *MachineOutliner::createOutlinedFunction(
   // must necessarily support the instructions that are in the outlined region.
   Candidate &FirstCand = OF.Candidates.front();
   const Function &ParentFn = FirstCand.getMF()->getFunction();
-  if (ParentFn.hasFnAttribute("target-features"))
+  if (ParentFn.hasFnAttribute("target-features")) {
     F->addFnAttr(ParentFn.getFnAttribute("target-features"));
+
+}
 
   BasicBlock *EntryBB = BasicBlock::Create(C, "entry", F);
   IRBuilder<> Builder(EntryBB);
@@ -1218,8 +1258,10 @@ bool MachineOutliner::outline(Module &M,
     });
 
     // If we made it unbeneficial to outline this function, skip it.
-    if (OF.getBenefit() < 1)
+    if (OF.getBenefit() < 1) {
       continue;
+
+}
 
     // It's beneficial. Create the function and outline its sequence's
     // occurrences.
@@ -1262,37 +1304,47 @@ bool MachineOutliner::outline(Module &M,
           MachineInstr *MI = &*Iter;
           for (MachineOperand &MOP : MI->operands()) {
             // Skip over anything that isn't a register.
-            if (!MOP.isReg())
+            if (!MOP.isReg()) {
               continue;
+
+}
 
             if (MOP.isDef()) {
               // Introduce DefRegs set to skip the redundant register.
               DefRegs.insert(MOP.getReg());
-              if (UseRegs.count(MOP.getReg()))
+              if (UseRegs.count(MOP.getReg())) {
                 // Since the regiester is modeled as defined,
                 // it is not necessary to be put in use register set.
                 UseRegs.erase(MOP.getReg());
+
+}
             } else if (!MOP.isUndef()) {
               // Any register which is not undefined should
               // be put in the use register set.
               UseRegs.insert(MOP.getReg());
             }
           }
-          if (MI->isCandidateForCallSiteEntry())
+          if (MI->isCandidateForCallSiteEntry()) {
             MI->getMF()->eraseCallSiteInfo(MI);
+
+}
         }
 
-        for (const Register &I : DefRegs)
+        for (const Register &I : DefRegs) {
            // If it's a def, add it to the call instruction.
           CallInst->addOperand(MachineOperand::CreateReg(
                   I, true, /* isDef = true */
                   true /* isImp = true */));
 
-        for (const Register &I : UseRegs)
+}
+
+        for (const Register &I : UseRegs) {
           // If it's a exposed use, add it to the call instruction.
           CallInst->addOperand(
               MachineOperand::CreateReg(I, false, /* isDef = false */
                                         true /* isImp = true */));
+
+}
       }
 
       // Erase from the point after where the call was inserted up to, and
@@ -1324,8 +1376,10 @@ void MachineOutliner::populateMapper(InstructionMapper &Mapper, Module &M,
 
     // If there's nothing in F, then there's no reason to try and outline from
     // it.
-    if (F.empty())
+    if (F.empty()) {
       continue;
+
+}
 
     // There's something in F. Check if it has a MachineFunction associated with
     // it.
@@ -1333,18 +1387,24 @@ void MachineOutliner::populateMapper(InstructionMapper &Mapper, Module &M,
 
     // If it doesn't, then there's nothing to outline from. Move to the next
     // Function.
-    if (!MF)
+    if (!MF) {
       continue;
+
+}
 
     const TargetInstrInfo *TII = MF->getSubtarget().getInstrInfo();
 
-    if (!RunOnAllFunctions && !TII->shouldOutlineFromFunctionByDefault(*MF))
+    if (!RunOnAllFunctions && !TII->shouldOutlineFromFunctionByDefault(*MF)) {
       continue;
+
+}
 
     // We have a MachineFunction. Ask the target if it's suitable for outlining.
     // If it isn't, then move on to the next Function in the module.
-    if (!TII->isFunctionSafeToOutlineFrom(*MF, OutlineFromLinkOnceODRs))
+    if (!TII->isFunctionSafeToOutlineFrom(*MF, OutlineFromLinkOnceODRs)) {
       continue;
+
+}
 
     // We have a function suitable for outlining. Iterate over every
     // MachineBasicBlock in MF and try to map its instructions to a list of
@@ -1356,13 +1416,17 @@ void MachineOutliner::populateMapper(InstructionMapper &Mapper, Module &M,
       // contain something worth outlining.
       // FIXME: This should be based off of the maximum size in B of an outlined
       // call versus the size in B of the MBB.
-      if (MBB.empty() || MBB.size() < 2)
+      if (MBB.empty() || MBB.size() < 2) {
         continue;
+
+}
 
       // Check if MBB could be the target of an indirect branch. If it is, then
       // we don't want to outline from it.
-      if (MBB.hasAddressTaken())
+      if (MBB.hasAddressTaken()) {
         continue;
+
+}
 
       // MBB is suitable for outlining. Map it to a list of unsigneds.
       Mapper.convertToUnsignedVec(MBB, *TII);
@@ -1380,8 +1444,10 @@ void MachineOutliner::initSizeRemarkInfo(
 
     // We only care about MI counts here. If there's no MachineFunction at this
     // point, then there won't be after the outliner runs, so let's move on.
-    if (!MF)
+    if (!MF) {
       continue;
+
+}
     FunctionToInstrCount[F.getName().str()] = MF->getInstructionCount();
   }
 }
@@ -1397,8 +1463,10 @@ void MachineOutliner::emitInstrCountChangedRemark(
 
     // The outliner never deletes functions. If we don't have a MF here, then we
     // didn't have one prior to outlining either.
-    if (!MF)
+    if (!MF) {
       continue;
+
+}
 
     std::string Fname = std::string(F.getName());
     unsigned FnCountAfter = MF->getInstructionCount();
@@ -1409,14 +1477,18 @@ void MachineOutliner::emitInstrCountChangedRemark(
 
     // Did we have a previously-recorded size? If yes, then set FnCountBefore
     // to that.
-    if (It != FunctionToInstrCount.end())
+    if (It != FunctionToInstrCount.end()) {
       FnCountBefore = It->second;
+
+}
 
     // Compute the delta and emit a remark if there was a change.
     int64_t FnDelta = static_cast<int64_t>(FnCountAfter) -
                       static_cast<int64_t>(FnCountBefore);
-    if (FnDelta == 0)
+    if (FnDelta == 0) {
       continue;
+
+}
 
     MachineOptimizationRemarkEmitter MORE(*MF, nullptr);
     MORE.emit([&]() {
@@ -1441,14 +1513,18 @@ void MachineOutliner::emitInstrCountChangedRemark(
 bool MachineOutliner::runOnModule(Module &M) {
   // Check if there's anything in the module. If it's empty, then there's
   // nothing to outline.
-  if (M.empty())
+  if (M.empty()) {
     return false;
+
+}
 
   // Number to append to the current outlined function.
   unsigned OutlinedFunctionNum = 0;
 
-  if (!doOutline(M, OutlinedFunctionNum))
+  if (!doOutline(M, OutlinedFunctionNum)) {
     return false;
+
+}
   return true;
 }
 
@@ -1492,8 +1568,10 @@ bool MachineOutliner::doOutline(Module &M, unsigned &OutlinedFunctionNum) {
   // Check if we want size remarks.
   bool ShouldEmitSizeRemarks = M.shouldEmitInstrCountChangedRemark();
   StringMap<unsigned> FunctionToInstrCount;
-  if (ShouldEmitSizeRemarks)
+  if (ShouldEmitSizeRemarks) {
     initSizeRemarkInfo(M, MMI, FunctionToInstrCount);
+
+}
 
   // Outline each of the candidates and return true if something was outlined.
   bool OutlinedSomething =
@@ -1502,8 +1580,10 @@ bool MachineOutliner::doOutline(Module &M, unsigned &OutlinedFunctionNum) {
   // If we outlined something, we definitely changed the MI count of the
   // module. If we've asked for size remarks, then output them.
   // FIXME: This should be in the pass manager.
-  if (ShouldEmitSizeRemarks && OutlinedSomething)
+  if (ShouldEmitSizeRemarks && OutlinedSomething) {
     emitInstrCountChangedRemark(M, MMI, FunctionToInstrCount);
+
+}
 
   return OutlinedSomething;
 }

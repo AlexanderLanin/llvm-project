@@ -55,8 +55,10 @@ CXString createNull() {
 }
 
 CXString createRef(const char *String) {
-  if (String && String[0] == '\0')
+  if (String && String[0] == '\0') {
     return createEmpty();
+
+}
 
   CXString Str;
   Str.data = String;
@@ -65,11 +67,15 @@ CXString createRef(const char *String) {
 }
 
 CXString createDup(const char *String) {
-  if (!String)
+  if (!String) {
     return createNull();
 
-  if (String[0] == '\0')
+}
+
+  if (String[0] == '\0') {
     return createEmpty();
+
+}
 
   CXString Str;
   Str.data = strdup(String);
@@ -84,8 +90,10 @@ CXString createRef(StringRef String) {
   // we don't manage, the API string can become unterminated at any time outside
   // our control.
 
-  if (!String.empty() && String.data()[String.size()] != 0)
+  if (!String.empty() && String.data()[String.size()] != 0) {
     return createDup(String);
+
+}
 
   CXString Result;
   Result.data = String.data();
@@ -114,8 +122,10 @@ CXStringSet *createSet(const std::vector<std::string> &Strings) {
   CXStringSet *Set = new CXStringSet;
   Set->Count = Strings.size();
   Set->Strings = new CXString[Set->Count];
-  for (unsigned SI = 0, SE = Set->Count; SI < SE; ++SI)
+  for (unsigned SI = 0, SE = Set->Count; SI < SE; ++SI) {
     Set->Strings[SI] = createDup(Strings[SI]);
+
+}
   return Set;
 }
 
@@ -132,8 +142,10 @@ CXStringPool::~CXStringPool() {
 }
 
 CXStringBuf *CXStringPool::getCXStringBuf(CXTranslationUnit TU) {
-  if (Pool.empty())
+  if (Pool.empty()) {
     return new CXStringBuf(TU);
+
+}
 
   CXStringBuf *Buf = Pool.back();
   Buf->Data.clear();
@@ -172,8 +184,10 @@ void clang_disposeString(CXString string) {
     case CXS_Unmanaged:
       break;
     case CXS_Malloc:
-      if (string.data)
+      if (string.data) {
         free(const_cast<void *>(string.data));
+
+}
       break;
     case CXS_StringBuf:
       static_cast<cxstring::CXStringBuf *>(
@@ -183,8 +197,10 @@ void clang_disposeString(CXString string) {
 }
 
 void clang_disposeStringSet(CXStringSet *set) {
-  for (unsigned SI = 0, SE = set->Count; SI < SE; ++SI)
+  for (unsigned SI = 0, SE = set->Count; SI < SE; ++SI) {
     clang_disposeString(set->Strings[SI]);
+
+}
   delete[] set->Strings;
   delete set;
 }

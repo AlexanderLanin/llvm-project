@@ -19,8 +19,10 @@ namespace {
 
 TEST_F(GISelMITest, FoldWithBuilder) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
   // Try to use the FoldableInstructionsBuilder to build binary ops.
   ConstantFoldingMIRBuilder CFB(B.getState());
   LLT s32 = LLT::scalar(32);
@@ -70,8 +72,10 @@ TEST_F(GISelMITest, FoldWithBuilder) {
 
 TEST_F(GISelMITest, FoldBinOp) {
   setUp();
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   LLT s32{LLT::scalar(32)};
   auto MIBCst1 = B.buildConstant(s32, 16);

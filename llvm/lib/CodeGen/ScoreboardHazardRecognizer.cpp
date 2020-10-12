@@ -39,8 +39,10 @@ ScoreboardHazardRecognizer::ScoreboardHazardRecognizer(
   unsigned ScoreboardDepth = 1;
   if (ItinData && !ItinData->isEmpty()) {
     for (unsigned idx = 0; ; ++idx) {
-      if (ItinData->isEndMarker(idx))
+      if (ItinData->isEndMarker(idx)) {
         break;
+
+}
 
       const InstrStage *IS = ItinData->beginStage(idx);
       const InstrStage *E = ItinData->endStage(idx);
@@ -48,7 +50,9 @@ ScoreboardHazardRecognizer::ScoreboardHazardRecognizer(
       unsigned ItinDepth = 0;
       for (; IS != E; ++IS) {
         unsigned StageDepth = CurCycle + IS->getCycles();
-        if (ItinDepth < StageDepth) ItinDepth = StageDepth;
+        if (ItinDepth < StageDepth) { ItinDepth = StageDepth;
+
+}
         CurCycle += IS->getNextCycles();
       }
 
@@ -67,9 +71,9 @@ ScoreboardHazardRecognizer::ScoreboardHazardRecognizer(
   RequiredScoreboard.reset(ScoreboardDepth);
 
   // If MaxLookAhead is not set above, then we are not enabled.
-  if (!isEnabled())
+  if (!isEnabled()) {
     LLVM_DEBUG(dbgs() << "Disabled scoreboard hazard recognizer\n");
-  else {
+  } else {
     // A nonempty itinerary must have a SchedModel.
     IssueWidth = ItinData->SchedModel.IssueWidth;
     LLVM_DEBUG(dbgs() << "Using scoreboard hazard recognizer: Depth = "
@@ -103,16 +107,20 @@ LLVM_DUMP_METHOD void ScoreboardHazardRecognizer::Scoreboard::dump() const {
 #endif
 
 bool ScoreboardHazardRecognizer::atIssueLimit() const {
-  if (IssueWidth == 0)
+  if (IssueWidth == 0) {
     return false;
+
+}
 
   return IssueCount == IssueWidth;
 }
 
 ScheduleHazardRecognizer::HazardType
 ScoreboardHazardRecognizer::getHazardType(SUnit *SU, int Stalls) {
-  if (!ItinData || ItinData->isEmpty())
+  if (!ItinData || ItinData->isEmpty()) {
     return NoHazard;
+
+}
 
   // Note that stalls will be negative for bottom-up scheduling.
   int cycle = Stalls;
@@ -133,8 +141,10 @@ ScoreboardHazardRecognizer::getHazardType(SUnit *SU, int Stalls) {
     // same unit free in all the cycles.
     for (unsigned int i = 0; i < IS->getCycles(); ++i) {
       int StageCycle = cycle + (int)i;
-      if (StageCycle < 0)
+      if (StageCycle < 0) {
         continue;
+
+}
 
       if (StageCycle >= (int)RequiredScoreboard.getDepth()) {
         assert((StageCycle - Stalls) < (int)RequiredScoreboard.getDepth() &&
@@ -170,15 +180,19 @@ ScoreboardHazardRecognizer::getHazardType(SUnit *SU, int Stalls) {
 }
 
 void ScoreboardHazardRecognizer::EmitInstruction(SUnit *SU) {
-  if (!ItinData || ItinData->isEmpty())
+  if (!ItinData || ItinData->isEmpty()) {
     return;
+
+}
 
   // Use the itinerary for the underlying instruction to reserve FU's
   // in the scoreboard at the appropriate future cycles.
   const MCInstrDesc *MCID = DAG->getInstrDesc(SU);
   assert(MCID && "The scheduler must filter non-machineinstrs");
-  if (DAG->TII->isZeroCost(MCID->Opcode))
+  if (DAG->TII->isZeroCost(MCID->Opcode)) {
     return;
+
+}
 
   ++IssueCount;
 
@@ -213,10 +227,12 @@ void ScoreboardHazardRecognizer::EmitInstruction(SUnit *SU) {
         freeUnits = freeUnit & (freeUnit - 1);
       } while (freeUnits);
 
-      if (IS->getReservationKind() == InstrStage::Required)
+      if (IS->getReservationKind() == InstrStage::Required) {
         RequiredScoreboard[cycle + i] |= freeUnit;
-      else
+      } else {
         ReservedScoreboard[cycle + i] |= freeUnit;
+
+}
     }
 
     // Advance the cycle to the next stage.

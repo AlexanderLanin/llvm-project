@@ -58,8 +58,10 @@ void checkNodesAreInitialized(const IndexFileIn &IndexFile,
 
 std::map<std::string, const IncludeGraphNode &> toMap(const IncludeGraph &IG) {
   std::map<std::string, const IncludeGraphNode &> Nodes;
-  for (auto &I : IG)
+  for (auto &I : IG) {
     Nodes.emplace(std::string(I.getKey()), I.getValue());
+
+}
   return Nodes;
 }
 

@@ -242,11 +242,15 @@ public:
 } // end anonymous namespace.
 
 static SectionKind computeSectionKind(unsigned Flags) {
-  if (Flags & COFF::IMAGE_SCN_MEM_EXECUTE)
+  if (Flags & COFF::IMAGE_SCN_MEM_EXECUTE) {
     return SectionKind::getText();
+
+}
   if (Flags & COFF::IMAGE_SCN_MEM_READ &&
-      (Flags & COFF::IMAGE_SCN_MEM_WRITE) == 0)
+      (Flags & COFF::IMAGE_SCN_MEM_WRITE) == 0) {
     return SectionKind::getReadOnly();
+
+}
   return SectionKind::getData();
 }
 
@@ -262,8 +266,10 @@ bool COFFMasmParser::ParseSectionSwitch(StringRef Section,
                                         SectionKind Kind,
                                         StringRef COMDATSymName,
                                         COFF::COMDATType Type) {
-  if (getLexer().isNot(AsmToken::EndOfStatement))
+  if (getLexer().isNot(AsmToken::EndOfStatement)) {
     return TokError("unexpected token in section switching directive");
+
+}
   Lex();
 
   getStreamer().SwitchSection(getContext().getCOFFSection(
@@ -274,8 +280,10 @@ bool COFFMasmParser::ParseSectionSwitch(StringRef Section,
 
 bool COFFMasmParser::ParseDirectiveSegment(StringRef Directive, SMLoc Loc) {
   StringRef SegmentName;
-  if (!getLexer().is(AsmToken::Identifier))
+  if (!getLexer().is(AsmToken::Identifier)) {
     return TokError("expected identifier in directive");
+
+}
   SegmentName = getTok().getIdentifier();
   Lex();
 
@@ -303,8 +311,10 @@ bool COFFMasmParser::ParseDirectiveSegment(StringRef Directive, SMLoc Loc) {
 ///  ::= identifier "ends"
 bool COFFMasmParser::ParseDirectiveSegmentEnd(StringRef Directive, SMLoc Loc) {
   StringRef SegmentName;
-  if (!getLexer().is(AsmToken::Identifier))
+  if (!getLexer().is(AsmToken::Identifier)) {
     return TokError("expected identifier in directive");
+
+}
   SegmentName = getTok().getIdentifier();
 
   // Ignore; no action necessary.
@@ -316,8 +326,10 @@ bool COFFMasmParser::ParseDirectiveSegmentEnd(StringRef Directive, SMLoc Loc) {
 ///  ::= "includelib" identifier
 bool COFFMasmParser::ParseDirectiveIncludelib(StringRef Directive, SMLoc Loc) {
   StringRef Lib;
-  if (getParser().parseIdentifier(Lib))
+  if (getParser().parseIdentifier(Lib)) {
     return TokError("expected identifier in includelib directive");
+
+}
 
   unsigned Flags = COFF::IMAGE_SCN_MEM_PRELOAD | COFF::IMAGE_SCN_MEM_16BIT;
   SectionKind Kind = computeSectionKind(Flags);
@@ -338,8 +350,10 @@ bool COFFMasmParser::ParseDirectiveIncludelib(StringRef Directive, SMLoc Loc) {
 ///      label "endproc"
 bool COFFMasmParser::ParseDirectiveProc(StringRef Directive, SMLoc Loc) {
   StringRef Label;
-  if (getParser().parseIdentifier(Label))
+  if (getParser().parseIdentifier(Label)) {
     return Error(Loc, "expected identifier for procedure");
+
+}
   if (getLexer().is(AsmToken::Identifier)) {
     StringRef nextVal = getTok().getString();
     SMLoc nextLoc = getTok().getLoc();
@@ -368,14 +382,18 @@ bool COFFMasmParser::ParseDirectiveProc(StringRef Directive, SMLoc Loc) {
 bool COFFMasmParser::ParseDirectiveEndProc(StringRef Directive, SMLoc Loc) {
   StringRef Label;
   SMLoc LabelLoc = getTok().getLoc();
-  if (getParser().parseIdentifier(Label))
+  if (getParser().parseIdentifier(Label)) {
     return Error(LabelLoc, "expected identifier for procedure end");
 
-  if (CurrentProcedure.empty())
+}
+
+  if (CurrentProcedure.empty()) {
     return Error(Loc, "endp outside of procedure block");
-  else if (CurrentProcedure != Label)
+  } else if (CurrentProcedure != Label) {
     return Error(LabelLoc, "endp does not match current procedure '" +
                                CurrentProcedure + "'");
+
+}
   return false;
 }
 

@@ -119,8 +119,10 @@ static unsigned calcUpperBoundMagnitudeBits(const ASTContext &Context,
     QualType RHSEType = RHSE->getType();
     QualType LHSEType = LHSE->getType();
 
-    if (!RHSEType->isIntegerType() || !LHSEType->isIntegerType())
+    if (!RHSEType->isIntegerType() || !LHSEType->isIntegerType()) {
       return 0;
+
+}
 
     bool RHSEIsConstantValue = RHSEType->isEnumeralType() ||
                                RHSEType.isConstQualified() ||
@@ -130,12 +132,18 @@ static unsigned calcUpperBoundMagnitudeBits(const ASTContext &Context,
                                isa<IntegerLiteral>(LHSE);
 
     // Avoid false positives produced by two constant values.
-    if (RHSEIsConstantValue && LHSEIsConstantValue)
+    if (RHSEIsConstantValue && LHSEIsConstantValue) {
       return 0;
-    if (RHSEIsConstantValue)
+
+}
+    if (RHSEIsConstantValue) {
       return calcMagnitudeBits(Context, LHSEType);
-    if (LHSEIsConstantValue)
+
+}
+    if (LHSEIsConstantValue) {
       return calcMagnitudeBits(Context, RHSEType);
+
+}
 
     return std::max(calcMagnitudeBits(Context, LHSEType),
                     calcMagnitudeBits(Context, RHSEType));
@@ -152,8 +160,10 @@ void TooSmallLoopVariableCheck::check(const MatchFinder::MatchResult &Result) {
       Result.Nodes.getNodeAs<Expr>(LoopIncrementName)->IgnoreParenImpCasts();
 
   // We matched the loop variable incorrectly.
-  if (LoopVar->getType() != LoopIncrement->getType())
+  if (LoopVar->getType() != LoopIncrement->getType()) {
     return;
+
+}
 
   QualType LoopVarType = LoopVar->getType();
   QualType UpperBoundType = UpperBound->getType();
@@ -164,16 +174,22 @@ void TooSmallLoopVariableCheck::check(const MatchFinder::MatchResult &Result) {
   unsigned UpperBoundMagnitudeBits =
       calcUpperBoundMagnitudeBits(Context, UpperBound, UpperBoundType);
 
-  if (UpperBoundMagnitudeBits == 0)
+  if (UpperBoundMagnitudeBits == 0) {
     return;
 
-  if (LoopVarMagnitudeBits > MagnitudeBitsUpperLimit)
+}
+
+  if (LoopVarMagnitudeBits > MagnitudeBitsUpperLimit) {
     return;
 
-  if (LoopVarMagnitudeBits < UpperBoundMagnitudeBits)
+}
+
+  if (LoopVarMagnitudeBits < UpperBoundMagnitudeBits) {
     diag(LoopVar->getBeginLoc(), "loop variable has narrower type %0 than "
                                  "iteration's upper bound %1")
         << LoopVarType << UpperBoundType;
+
+}
 }
 
 } // namespace bugprone

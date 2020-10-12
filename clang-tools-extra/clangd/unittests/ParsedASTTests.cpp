@@ -43,9 +43,13 @@ using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 
 MATCHER_P(DeclNamed, Name, "") {
-  if (NamedDecl *ND = dyn_cast<NamedDecl>(arg))
-    if (ND->getName() == Name)
+  if (NamedDecl *ND = dyn_cast<NamedDecl>(arg)) {
+    if (ND->getName() == Name) {
       return true;
+
+}
+
+}
   if (auto *Stream = result_listener->stream()) {
     llvm::raw_os_ostream OS(*Stream);
     arg->dump(OS);
@@ -64,17 +68,23 @@ MATCHER_P(WithTemplateArgs, ArgName, "") {
       PrintingPolicy Policy(LO);
       Policy.adjustForCPlusPlus();
       for (const auto &Arg : Args->asArray()) {
-        if (SpecializationArgs.size() > 0)
+        if (SpecializationArgs.size() > 0) {
           SpecializationArgs += ",";
+
+}
         SpecializationArgs += Arg.getAsType().getAsString(Policy);
       }
-      if (Args->size() == 0)
+      if (Args->size() == 0) {
         return ArgName == SpecializationArgs;
+
+}
       return ArgName == "<" + SpecializationArgs + ">";
     }
   }
-  if (const NamedDecl *ND = dyn_cast<NamedDecl>(arg))
+  if (const NamedDecl *ND = dyn_cast<NamedDecl>(arg)) {
     return printTemplateSpecializationArgs(*ND) == ArgName;
+
+}
   return false;
 }
 
@@ -298,11 +308,15 @@ TEST(ParsedASTTest, CollectsMainFileMacroExpansions) {
   ParsedAST AST = TU.build();
   std::vector<Position> MacroExpansionPositions;
   for (const auto &SIDToRefs : AST.getMacros().MacroRefs) {
-    for (const auto &R : SIDToRefs.second)
+    for (const auto &R : SIDToRefs.second) {
       MacroExpansionPositions.push_back(R.start);
+
+}
   }
-  for (const auto &R : AST.getMacros().UnknownMacros)
+  for (const auto &R : AST.getMacros().UnknownMacros) {
     MacroExpansionPositions.push_back(R.start);
+
+}
   EXPECT_THAT(MacroExpansionPositions,
               testing::UnorderedElementsAreArray(TestCase.points()));
 }

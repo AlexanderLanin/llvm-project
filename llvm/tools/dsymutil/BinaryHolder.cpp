@@ -47,13 +47,17 @@ Error BinaryHolder::ArchiveEntry::load(StringRef Filename,
 
   // Try to load archive and force it to be memory mapped.
   auto ErrOrBuff = MemoryBuffer::getFileOrSTDIN(ArchiveFilename, -1, false);
-  if (auto Err = ErrOrBuff.getError())
+  if (auto Err = ErrOrBuff.getError()) {
     return errorCodeToError(Err);
+
+}
 
   MemBuffer = std::move(*ErrOrBuff);
 
-  if (Verbose)
+  if (Verbose) {
     WithColor::note() << "loaded archive '" << ArchiveFilename << "'\n";
+
+}
 
   // Load one or more archive buffers, depending on whether we're dealing with
   // a fat binary.
@@ -75,8 +79,10 @@ Error BinaryHolder::ArchiveEntry::load(StringRef Filename,
   Archives.reserve(ArchiveBuffers.size());
   for (auto MemRef : ArchiveBuffers) {
     auto ErrOrArchive = object::Archive::create(MemRef);
-    if (!ErrOrArchive)
+    if (!ErrOrArchive) {
       return ErrOrArchive.takeError();
+
+}
     Archives.push_back(std::move(*ErrOrArchive));
   }
 
@@ -86,13 +92,17 @@ Error BinaryHolder::ArchiveEntry::load(StringRef Filename,
 Error BinaryHolder::ObjectEntry::load(StringRef Filename, bool Verbose) {
   // Try to load regular binary and force it to be memory mapped.
   auto ErrOrBuff = MemoryBuffer::getFileOrSTDIN(Filename, -1, false);
-  if (auto Err = ErrOrBuff.getError())
+  if (auto Err = ErrOrBuff.getError()) {
     return errorCodeToError(Err);
+
+}
 
   MemBuffer = std::move(*ErrOrBuff);
 
-  if (Verbose)
+  if (Verbose) {
     WithColor::note() << "loaded object.\n";
+
+}
 
   // Load one or more object buffers, depending on whether we're dealing with a
   // fat binary.
@@ -113,8 +123,10 @@ Error BinaryHolder::ObjectEntry::load(StringRef Filename, bool Verbose) {
   Objects.reserve(ObjectBuffers.size());
   for (auto MemRef : ObjectBuffers) {
     auto ErrOrObjectFile = object::ObjectFile::createObjectFile(MemRef);
-    if (!ErrOrObjectFile)
+    if (!ErrOrObjectFile) {
       return ErrOrObjectFile.takeError();
+
+}
     Objects.push_back(std::move(*ErrOrObjectFile));
   }
 
@@ -134,10 +146,14 @@ Expected<const object::ObjectFile &>
 BinaryHolder::ObjectEntry::getObject(const Triple &T) const {
   for (const auto &Obj : Objects) {
     if (const auto *MachO = dyn_cast<object::MachOObjectFile>(Obj.get())) {
-      if (MachO->getArchTriple().str() == T.str())
+      if (MachO->getArchTriple().str() == T.str()) {
         return *MachO;
-    } else if (Obj->getArch() == T.getArch())
+
+}
+    } else if (Obj->getArch() == T.getArch()) {
       return *Obj;
+
+}
   }
   return errorCodeToError(object::object_error::arch_not_found);
 }
@@ -155,8 +171,10 @@ BinaryHolder::ArchiveEntry::getObjectEntry(StringRef Filename,
 
   {
     std::lock_guard<std::mutex> Lock(MemberCacheMutex);
-    if (MemberCache.count(Key))
+    if (MemberCache.count(Key)) {
       return MemberCache[Key];
+
+}
   }
 
   // Create a new ObjectEntry, but don't add it to the cache yet. Loading of
@@ -170,38 +188,52 @@ BinaryHolder::ArchiveEntry::getObjectEntry(StringRef Filename,
       if (auto NameOrErr = Child.getName()) {
         if (*NameOrErr == ObjectFilename) {
           auto ModTimeOrErr = Child.getLastModified();
-          if (!ModTimeOrErr)
+          if (!ModTimeOrErr) {
             return ModTimeOrErr.takeError();
+
+}
 
           if (Timestamp != sys::TimePoint<>() &&
               Timestamp != ModTimeOrErr.get()) {
-            if (Verbose)
+            if (Verbose) {
               WithColor::warning() << "member has timestamp mismatch.\n";
+
+}
             continue;
           }
 
-          if (Verbose)
+          if (Verbose) {
             WithColor::note() << "found member in archive.\n";
 
+}
+
           auto ErrOrMem = Child.getMemoryBufferRef();
-          if (!ErrOrMem)
+          if (!ErrOrMem) {
             return ErrOrMem.takeError();
+
+}
 
           auto ErrOrObjectFile =
               object::ObjectFile::createObjectFile(*ErrOrMem);
-          if (!ErrOrObjectFile)
+          if (!ErrOrObjectFile) {
             return ErrOrObjectFile.takeError();
+
+}
 
           OE.Objects.push_back(std::move(*ErrOrObjectFile));
         }
       }
     }
-    if (Err)
+    if (Err) {
       return std::move(Err);
+
+}
   }
 
-  if (OE.Objects.empty())
+  if (OE.Objects.empty()) {
     return errorCodeToError(errc::no_such_file_or_directory);
+
+}
 
   std::lock_guard<std::mutex> Lock(MemberCacheMutex);
   MemberCache.try_emplace(Key, std::move(OE));
@@ -210,8 +242,10 @@ BinaryHolder::ArchiveEntry::getObjectEntry(StringRef Filename,
 
 Expected<const BinaryHolder::ObjectEntry &>
 BinaryHolder::getObjectEntry(StringRef Filename, TimestampTy Timestamp) {
-  if (Verbose)
+  if (Verbose) {
     WithColor::note() << "trying to open '" << Filename << "'\n";
+
+}
 
   // If this is an archive, we might have either the object or the archive
   // cached. In this case we can load it without accessing the file system.

@@ -270,20 +270,26 @@ TEST(DirectedGraphTest, SCC) {
   // 2. {N4}
   using NodeListTy = SmallPtrSet<DGTestNode *, 3>;
   SmallVector<NodeListTy, 4> ListOfSCCs;
-  for (auto &SCC : make_range(scc_begin(&DG), scc_end(&DG)))
+  for (auto &SCC : make_range(scc_begin(&DG), scc_end(&DG))) {
     ListOfSCCs.push_back(NodeListTy(SCC.begin(), SCC.end()));
+
+}
 
   EXPECT_TRUE(ListOfSCCs.size() == 2);
 
   for (auto &SCC : ListOfSCCs) {
-    if (SCC.size() > 1)
+    if (SCC.size() > 1) {
       continue;
+
+}
     EXPECT_TRUE(SCC.size() == 1);
     EXPECT_TRUE(SCC.count(&N4) == 1);
   }
   for (auto &SCC : ListOfSCCs) {
-    if (SCC.size() <= 1)
+    if (SCC.size() <= 1) {
       continue;
+
+}
     EXPECT_TRUE(SCC.size() == 3);
     EXPECT_TRUE(SCC.count(&N1) == 1);
     EXPECT_TRUE(SCC.count(&N2) == 1);

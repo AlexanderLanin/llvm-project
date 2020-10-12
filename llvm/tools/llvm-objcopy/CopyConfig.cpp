@@ -155,13 +155,15 @@ parseSectionFlagSet(ArrayRef<StringRef> SectionFlags) {
   SectionFlag ParsedFlags = SectionFlag::SecNone;
   for (StringRef Flag : SectionFlags) {
     SectionFlag ParsedFlag = parseSectionRenameFlag(Flag);
-    if (ParsedFlag == SectionFlag::SecNone)
+    if (ParsedFlag == SectionFlag::SecNone) {
       return createStringError(
           errc::invalid_argument,
           "unrecognized section flag '%s'. Flags supported for GNU "
           "compatibility: alloc, load, noload, readonly, exclude, debug, "
           "code, data, rom, share, contents, merge, strings",
           Flag.str().c_str());
+
+}
     ParsedFlags |= ParsedFlag;
   }
 
@@ -169,9 +171,11 @@ parseSectionFlagSet(ArrayRef<StringRef> SectionFlags) {
 }
 
 static Expected<SectionRename> parseRenameSectionValue(StringRef FlagValue) {
-  if (!FlagValue.contains('='))
+  if (!FlagValue.contains('=')) {
     return createStringError(errc::invalid_argument,
                              "bad format for --rename-section: missing '='");
+
+}
 
   // Initial split: ".foo" = ".bar,f1,f2,..."
   auto Old2New = FlagValue.split('=');
@@ -186,8 +190,10 @@ static Expected<SectionRename> parseRenameSectionValue(StringRef FlagValue) {
   if (NameAndFlags.size() > 1) {
     Expected<SectionFlag> ParsedFlagSet =
         parseSectionFlagSet(makeArrayRef(NameAndFlags).drop_front());
-    if (!ParsedFlagSet)
+    if (!ParsedFlagSet) {
       return ParsedFlagSet.takeError();
+
+}
     SR.NewFlags = *ParsedFlagSet;
   }
 
@@ -196,28 +202,36 @@ static Expected<SectionRename> parseRenameSectionValue(StringRef FlagValue) {
 
 static Expected<std::pair<StringRef, uint64_t>>
 parseSetSectionAlignment(StringRef FlagValue) {
-  if (!FlagValue.contains('='))
+  if (!FlagValue.contains('=')) {
     return createStringError(
         errc::invalid_argument,
         "bad format for --set-section-alignment: missing '='");
+
+}
   auto Split = StringRef(FlagValue).split('=');
-  if (Split.first.empty())
+  if (Split.first.empty()) {
     return createStringError(
         errc::invalid_argument,
         "bad format for --set-section-alignment: missing section name");
+
+}
   uint64_t NewAlign;
-  if (Split.second.getAsInteger(0, NewAlign))
+  if (Split.second.getAsInteger(0, NewAlign)) {
     return createStringError(errc::invalid_argument,
                              "invalid alignment for --set-section-alignment: '%s'",
                              Split.second.str().c_str());
+
+}
   return std::make_pair(Split.first, NewAlign);
 }
 
 static Expected<SectionFlagsUpdate>
 parseSetSectionFlagValue(StringRef FlagValue) {
-  if (!StringRef(FlagValue).contains('='))
+  if (!StringRef(FlagValue).contains('=')) {
     return createStringError(errc::invalid_argument,
                              "bad format for --set-section-flags: missing '='");
+
+}
 
   // Initial split: ".foo" = "f1,f2,..."
   auto Section2Flags = StringRef(FlagValue).split('=');
@@ -228,8 +242,10 @@ parseSetSectionFlagValue(StringRef FlagValue) {
   SmallVector<StringRef, 6> SectionFlags;
   Section2Flags.second.split(SectionFlags, ',');
   Expected<SectionFlag> ParsedFlagSet = parseSectionFlagSet(SectionFlags);
-  if (!ParsedFlagSet)
+  if (!ParsedFlagSet) {
     return ParsedFlagSet.takeError();
+
+}
   SFU.NewFlags = *ParsedFlagSet;
 
   return SFU;
@@ -280,21 +296,27 @@ getOutputTargetInfoByTargetName(StringRef TargetName) {
   StringRef OriginalTargetName = TargetName;
   bool IsFreeBSD = TargetName.consume_back("-freebsd");
   auto Iter = TargetMap.find(TargetName);
-  if (Iter == std::end(TargetMap))
+  if (Iter == std::end(TargetMap)) {
     return createStringError(errc::invalid_argument,
                              "invalid output format: '%s'",
                              OriginalTargetName.str().c_str());
+
+}
   MachineInfo MI = Iter->getValue();
-  if (IsFreeBSD)
+  if (IsFreeBSD) {
     MI.OSABI = ELF::ELFOSABI_FREEBSD;
 
+}
+
   FileFormat Format;
-  if (TargetName.startswith("elf"))
+  if (TargetName.startswith("elf")) {
     Format = FileFormat::ELF;
-  else
+  } else {
     // This should never happen because `TargetName` is valid (it certainly
     // exists in the TargetMap).
     llvm_unreachable("unknown target prefix");
+
+}
 
   return {TargetInfo{Format, MI}};
 }
@@ -306,18 +328,24 @@ addSymbolsFromFile(NameMatcher &Symbols, BumpPtrAllocator &Alloc,
   StringSaver Saver(Alloc);
   SmallVector<StringRef, 16> Lines;
   auto BufOrErr = MemoryBuffer::getFile(Filename);
-  if (!BufOrErr)
+  if (!BufOrErr) {
     return createFileError(Filename, BufOrErr.getError());
+
+}
 
   BufOrErr.get()->getBuffer().split(Lines, '\n');
   for (StringRef Line : Lines) {
     // Ignore everything after '#', trim whitespace, and only add the symbol if
     // it's not empty.
     auto TrimmedLine = Line.split('#').first.trim();
-    if (!TrimmedLine.empty())
+    if (!TrimmedLine.empty()) {
       if (Error E = Symbols.addMatcher(NameOrPattern::create(
-              Saver.save(TrimmedLine), MS, ErrorCallback)))
+              Saver.save(TrimmedLine), MS, ErrorCallback))) {
         return E;
+
+}
+
+}
   }
 
   return Error::success();
@@ -341,8 +369,10 @@ NameOrPattern::create(StringRef Pattern, MatchStyle MS,
     // If we couldn't create it as a glob, report the error, but try again with
     // a literal if the error reporting is non-fatal.
     if (!GlobOrErr) {
-      if (Error E = ErrorCallback(GlobOrErr.takeError()))
+      if (Error E = ErrorCallback(GlobOrErr.takeError())) {
         return std::move(E);
+
+}
       return create(Pattern, MatchStyle::Literal, ErrorCallback);
     }
 
@@ -364,22 +394,28 @@ static Error addSymbolsToRenameFromFile(StringMap<StringRef> &SymbolsToRename,
   StringSaver Saver(Alloc);
   SmallVector<StringRef, 16> Lines;
   auto BufOrErr = MemoryBuffer::getFile(Filename);
-  if (!BufOrErr)
+  if (!BufOrErr) {
     return createFileError(Filename, BufOrErr.getError());
+
+}
 
   BufOrErr.get()->getBuffer().split(Lines, '\n');
   size_t NumLines = Lines.size();
   for (size_t LineNo = 0; LineNo < NumLines; ++LineNo) {
     StringRef TrimmedLine = Lines[LineNo].split('#').first.trim();
-    if (TrimmedLine.empty())
+    if (TrimmedLine.empty()) {
       continue;
+
+}
 
     std::pair<StringRef, StringRef> Pair = Saver.save(TrimmedLine).split(' ');
     StringRef NewName = Pair.second.trim();
-    if (NewName.empty())
+    if (NewName.empty()) {
       return createStringError(errc::invalid_argument,
                                "%s:%zu: missing new symbol name",
                                Filename.str().c_str(), LineNo + 1);
+
+}
     SymbolsToRename.insert({Pair.first, NewName});
   }
   return Error::success();
@@ -387,8 +423,10 @@ static Error addSymbolsToRenameFromFile(StringMap<StringRef> &SymbolsToRename,
 
 template <class T> static ErrorOr<T> getAsInteger(StringRef Val) {
   T Result;
-  if (Val.getAsInteger(0, Result))
+  if (Val.getAsInteger(0, Result)) {
     return errc::invalid_argument;
+
+}
   return Result;
 }
 
@@ -432,33 +470,45 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
 
   SmallVector<const char *, 2> Positional;
 
-  for (auto Arg : InputArgs.filtered(OBJCOPY_UNKNOWN))
+  for (auto Arg : InputArgs.filtered(OBJCOPY_UNKNOWN)) {
     return createStringError(errc::invalid_argument, "unknown argument '%s'",
                              Arg->getAsString(InputArgs).c_str());
 
-  for (auto Arg : InputArgs.filtered(OBJCOPY_INPUT))
+}
+
+  for (auto Arg : InputArgs.filtered(OBJCOPY_INPUT)) {
     Positional.push_back(Arg->getValue());
 
-  if (Positional.empty())
+}
+
+  if (Positional.empty()) {
     return createStringError(errc::invalid_argument, "no input file specified");
 
-  if (Positional.size() > 2)
+}
+
+  if (Positional.size() > 2) {
     return createStringError(errc::invalid_argument,
                              "too many positional arguments");
+
+}
 
   CopyConfig Config;
   Config.InputFilename = Positional[0];
   Config.OutputFilename = Positional[Positional.size() == 1 ? 0 : 1];
   if (InputArgs.hasArg(OBJCOPY_target) &&
       (InputArgs.hasArg(OBJCOPY_input_target) ||
-       InputArgs.hasArg(OBJCOPY_output_target)))
+       InputArgs.hasArg(OBJCOPY_output_target))) {
     return createStringError(
         errc::invalid_argument,
         "--target cannot be used with --input-target or --output-target");
 
-  if (InputArgs.hasArg(OBJCOPY_regex) && InputArgs.hasArg(OBJCOPY_wildcard))
+}
+
+  if (InputArgs.hasArg(OBJCOPY_regex) && InputArgs.hasArg(OBJCOPY_wildcard)) {
     return createStringError(errc::invalid_argument,
                              "--regex and --wildcard are incompatible");
+
+}
 
   MatchStyle SectionMatchStyle = InputArgs.hasArg(OBJCOPY_regex)
                                      ? MatchStyle::Regex
@@ -485,9 +535,11 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
                            .Case("ihex", FileFormat::IHex)
                            .Default(FileFormat::Unspecified);
 
-  if (InputArgs.hasArg(OBJCOPY_new_symbol_visibility))
+  if (InputArgs.hasArg(OBJCOPY_new_symbol_visibility)) {
     Config.NewSymbolVisibility =
         InputArgs.getLastArgValue(OBJCOPY_new_symbol_visibility);
+
+}
 
   Config.OutputFormat = StringSwitch<FileFormat>(OutputFormat)
                             .Case("binary", FileFormat::Binary)
@@ -499,8 +551,10 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
     } else {
       Expected<TargetInfo> Target =
           getOutputTargetInfoByTargetName(OutputFormat);
-      if (!Target)
+      if (!Target) {
         return Target.takeError();
+
+}
       Config.OutputFormat = Target->Format;
       Config.OutputArch = Target->Machine;
     }
@@ -517,18 +571,22 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
               .Case("zlib-gnu", DebugCompressionType::GNU)
               .Case("zlib", DebugCompressionType::Z)
               .Default(DebugCompressionType::None);
-      if (Config.CompressionType == DebugCompressionType::None)
+      if (Config.CompressionType == DebugCompressionType::None) {
         return createStringError(
             errc::invalid_argument,
             "invalid or unsupported --compress-debug-sections format: %s",
             InputArgs.getLastArgValue(OBJCOPY_compress_debug_sections_eq)
                 .str()
                 .c_str());
+
+}
     }
-    if (!zlib::isAvailable())
+    if (!zlib::isAvailable()) {
       return createStringError(
           errc::invalid_argument,
           "LLVM was not compiled with LLVM_ENABLE_ZLIB: can not compress");
+
+}
   }
 
   Config.AddGnuDebugLink = InputArgs.getLastArgValue(OBJCOPY_add_gnu_debuglink);
@@ -538,113 +596,161 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
   // here. This prevents a significant amount of I/O.
   if (!Config.AddGnuDebugLink.empty()) {
     auto DebugOrErr = MemoryBuffer::getFile(Config.AddGnuDebugLink);
-    if (!DebugOrErr)
+    if (!DebugOrErr) {
       return createFileError(Config.AddGnuDebugLink, DebugOrErr.getError());
+
+}
     auto Debug = std::move(*DebugOrErr);
     Config.GnuDebugLinkCRC32 =
         llvm::crc32(arrayRefFromStringRef(Debug->getBuffer()));
   }
   Config.BuildIdLinkDir = InputArgs.getLastArgValue(OBJCOPY_build_id_link_dir);
-  if (InputArgs.hasArg(OBJCOPY_build_id_link_input))
+  if (InputArgs.hasArg(OBJCOPY_build_id_link_input)) {
     Config.BuildIdLinkInput =
         InputArgs.getLastArgValue(OBJCOPY_build_id_link_input);
-  if (InputArgs.hasArg(OBJCOPY_build_id_link_output))
+
+}
+  if (InputArgs.hasArg(OBJCOPY_build_id_link_output)) {
     Config.BuildIdLinkOutput =
         InputArgs.getLastArgValue(OBJCOPY_build_id_link_output);
+
+}
   Config.SplitDWO = InputArgs.getLastArgValue(OBJCOPY_split_dwo);
   Config.SymbolsPrefix = InputArgs.getLastArgValue(OBJCOPY_prefix_symbols);
   Config.AllocSectionsPrefix =
       InputArgs.getLastArgValue(OBJCOPY_prefix_alloc_sections);
-  if (auto Arg = InputArgs.getLastArg(OBJCOPY_extract_partition))
+  if (auto Arg = InputArgs.getLastArg(OBJCOPY_extract_partition)) {
     Config.ExtractPartition = Arg->getValue();
 
+}
+
   for (auto Arg : InputArgs.filtered(OBJCOPY_redefine_symbol)) {
-    if (!StringRef(Arg->getValue()).contains('='))
+    if (!StringRef(Arg->getValue()).contains('=')) {
       return createStringError(errc::invalid_argument,
                                "bad format for --redefine-sym");
+
+}
     auto Old2New = StringRef(Arg->getValue()).split('=');
-    if (!Config.SymbolsToRename.insert(Old2New).second)
+    if (!Config.SymbolsToRename.insert(Old2New).second) {
       return createStringError(errc::invalid_argument,
                                "multiple redefinition of symbol '%s'",
                                Old2New.first.str().c_str());
+
+}
   }
 
-  for (auto Arg : InputArgs.filtered(OBJCOPY_redefine_symbols))
+  for (auto Arg : InputArgs.filtered(OBJCOPY_redefine_symbols)) {
     if (Error E = addSymbolsToRenameFromFile(Config.SymbolsToRename, DC.Alloc,
-                                             Arg->getValue()))
+                                             Arg->getValue())) {
       return std::move(E);
+
+}
+
+}
 
   for (auto Arg : InputArgs.filtered(OBJCOPY_rename_section)) {
     Expected<SectionRename> SR =
         parseRenameSectionValue(StringRef(Arg->getValue()));
-    if (!SR)
+    if (!SR) {
       return SR.takeError();
-    if (!Config.SectionsToRename.try_emplace(SR->OriginalName, *SR).second)
+
+}
+    if (!Config.SectionsToRename.try_emplace(SR->OriginalName, *SR).second) {
       return createStringError(errc::invalid_argument,
                                "multiple renames of section '%s'",
                                SR->OriginalName.str().c_str());
+
+}
   }
   for (auto Arg : InputArgs.filtered(OBJCOPY_set_section_alignment)) {
     Expected<std::pair<StringRef, uint64_t>> NameAndAlign =
         parseSetSectionAlignment(Arg->getValue());
-    if (!NameAndAlign)
+    if (!NameAndAlign) {
       return NameAndAlign.takeError();
+
+}
     Config.SetSectionAlignment[NameAndAlign->first] = NameAndAlign->second;
   }
   for (auto Arg : InputArgs.filtered(OBJCOPY_set_section_flags)) {
     Expected<SectionFlagsUpdate> SFU =
         parseSetSectionFlagValue(Arg->getValue());
-    if (!SFU)
+    if (!SFU) {
       return SFU.takeError();
-    if (!Config.SetSectionFlags.try_emplace(SFU->Name, *SFU).second)
+
+}
+    if (!Config.SetSectionFlags.try_emplace(SFU->Name, *SFU).second) {
       return createStringError(
           errc::invalid_argument,
           "--set-section-flags set multiple times for section '%s'",
           SFU->Name.str().c_str());
+
+}
   }
   // Prohibit combinations of --set-section-flags when the section name is used
   // by --rename-section, either as a source or a destination.
   for (const auto &E : Config.SectionsToRename) {
     const SectionRename &SR = E.second;
-    if (Config.SetSectionFlags.count(SR.OriginalName))
+    if (Config.SetSectionFlags.count(SR.OriginalName)) {
       return createStringError(
           errc::invalid_argument,
           "--set-section-flags=%s conflicts with --rename-section=%s=%s",
           SR.OriginalName.str().c_str(), SR.OriginalName.str().c_str(),
           SR.NewName.str().c_str());
-    if (Config.SetSectionFlags.count(SR.NewName))
+
+}
+    if (Config.SetSectionFlags.count(SR.NewName)) {
       return createStringError(
           errc::invalid_argument,
           "--set-section-flags=%s conflicts with --rename-section=%s=%s",
           SR.NewName.str().c_str(), SR.OriginalName.str().c_str(),
           SR.NewName.str().c_str());
+
+}
   }
 
-  for (auto Arg : InputArgs.filtered(OBJCOPY_remove_section))
+  for (auto Arg : InputArgs.filtered(OBJCOPY_remove_section)) {
     if (Error E = Config.ToRemove.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SectionMatchStyle, ErrorCallback)))
+            Arg->getValue(), SectionMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_section))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_section)) {
     if (Error E = Config.KeepSection.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SectionMatchStyle, ErrorCallback)))
+            Arg->getValue(), SectionMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_only_section))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_only_section)) {
     if (Error E = Config.OnlySection.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SectionMatchStyle, ErrorCallback)))
+            Arg->getValue(), SectionMatchStyle, ErrorCallback))) {
       return std::move(E);
+
+}
+
+}
   for (auto Arg : InputArgs.filtered(OBJCOPY_add_section)) {
     StringRef ArgValue(Arg->getValue());
-    if (!ArgValue.contains('='))
+    if (!ArgValue.contains('=')) {
       return createStringError(errc::invalid_argument,
                                "bad format for --add-section: missing '='");
-    if (ArgValue.split("=").second.empty())
+
+}
+    if (ArgValue.split("=").second.empty()) {
       return createStringError(
           errc::invalid_argument,
           "bad format for --add-section: missing file name");
+
+}
     Config.AddSection.push_back(ArgValue);
   }
-  for (auto Arg : InputArgs.filtered(OBJCOPY_dump_section))
+  for (auto Arg : InputArgs.filtered(OBJCOPY_dump_section)) {
     Config.DumpSection.push_back(Arg->getValue());
+
+}
   Config.StripAll = InputArgs.hasArg(OBJCOPY_strip_all);
   Config.StripAllGNU = InputArgs.hasArg(OBJCOPY_strip_all_gnu);
   Config.StripDebug = InputArgs.hasArg(OBJCOPY_strip_debug);
@@ -657,83 +763,145 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
       InputArgs.hasArg(OBJCOPY_extract_main_partition);
   Config.LocalizeHidden = InputArgs.hasArg(OBJCOPY_localize_hidden);
   Config.Weaken = InputArgs.hasArg(OBJCOPY_weaken);
-  if (InputArgs.hasArg(OBJCOPY_discard_all, OBJCOPY_discard_locals))
+  if (InputArgs.hasArg(OBJCOPY_discard_all, OBJCOPY_discard_locals)) {
     Config.DiscardMode =
         InputArgs.hasFlag(OBJCOPY_discard_all, OBJCOPY_discard_locals)
             ? DiscardType::All
             : DiscardType::Locals;
+
+}
   Config.OnlyKeepDebug = InputArgs.hasArg(OBJCOPY_only_keep_debug);
   Config.KeepFileSymbols = InputArgs.hasArg(OBJCOPY_keep_file_symbols);
   Config.DecompressDebugSections =
       InputArgs.hasArg(OBJCOPY_decompress_debug_sections);
-  if (Config.DiscardMode == DiscardType::All)
+  if (Config.DiscardMode == DiscardType::All) {
     Config.StripDebug = true;
-  for (auto Arg : InputArgs.filtered(OBJCOPY_localize_symbol))
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_localize_symbol)) {
     if (Error E = Config.SymbolsToLocalize.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_localize_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_localize_symbols)) {
     if (Error E = addSymbolsFromFile(Config.SymbolsToLocalize, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_global_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_global_symbol)) {
     if (Error E = Config.SymbolsToKeepGlobal.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_global_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_global_symbols)) {
     if (Error E = addSymbolsFromFile(Config.SymbolsToKeepGlobal, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_globalize_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_globalize_symbol)) {
     if (Error E = Config.SymbolsToGlobalize.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_globalize_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_globalize_symbols)) {
     if (Error E = addSymbolsFromFile(Config.SymbolsToGlobalize, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_weaken_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_weaken_symbol)) {
     if (Error E = Config.SymbolsToWeaken.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_weaken_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_weaken_symbols)) {
     if (Error E = addSymbolsFromFile(Config.SymbolsToWeaken, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_symbol)) {
     if (Error E = Config.SymbolsToRemove.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_symbols)) {
     if (Error E = addSymbolsFromFile(Config.SymbolsToRemove, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_unneeded_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_unneeded_symbol)) {
     if (Error E =
             Config.UnneededSymbolsToRemove.addMatcher(NameOrPattern::create(
-                Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+                Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_unneeded_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_strip_unneeded_symbols)) {
     if (Error E = addSymbolsFromFile(Config.UnneededSymbolsToRemove, DC.Alloc,
                                      Arg->getValue(), SymbolMatchStyle,
-                                     ErrorCallback))
+                                     ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_symbol)) {
     if (Error E = Config.SymbolsToKeep.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_symbols))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_keep_symbols)) {
     if (Error E =
             addSymbolsFromFile(Config.SymbolsToKeep, DC.Alloc, Arg->getValue(),
-                               SymbolMatchStyle, ErrorCallback))
+                               SymbolMatchStyle, ErrorCallback)) {
       return std::move(E);
-  for (auto Arg : InputArgs.filtered(OBJCOPY_add_symbol))
+
+}
+
+}
+  for (auto Arg : InputArgs.filtered(OBJCOPY_add_symbol)) {
     Config.SymbolsToAdd.push_back(Arg->getValue());
+
+}
 
   Config.AllowBrokenLinks = InputArgs.hasArg(OBJCOPY_allow_broken_links);
 
@@ -744,30 +912,38 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
   Config.PreserveDates = InputArgs.hasArg(OBJCOPY_preserve_dates);
 
   if (Config.PreserveDates &&
-      (Config.OutputFilename == "-" || Config.InputFilename == "-"))
+      (Config.OutputFilename == "-" || Config.InputFilename == "-")) {
     return createStringError(errc::invalid_argument,
                              "--preserve-dates requires a file");
 
-  for (auto Arg : InputArgs)
+}
+
+  for (auto Arg : InputArgs) {
     if (Arg->getOption().matches(OBJCOPY_set_start)) {
       auto EAddr = getAsInteger<uint64_t>(Arg->getValue());
-      if (!EAddr)
+      if (!EAddr) {
         return createStringError(
             EAddr.getError(), "bad entry point address: '%s'", Arg->getValue());
+
+}
 
       Config.EntryExpr = [EAddr](uint64_t) { return *EAddr; };
     } else if (Arg->getOption().matches(OBJCOPY_change_start)) {
       auto EIncr = getAsInteger<int64_t>(Arg->getValue());
-      if (!EIncr)
+      if (!EIncr) {
         return createStringError(EIncr.getError(),
                                  "bad entry point increment: '%s'",
                                  Arg->getValue());
+
+}
       auto Expr = Config.EntryExpr ? std::move(Config.EntryExpr)
                                    : [](uint64_t A) { return A; };
       Config.EntryExpr = [Expr, EIncr](uint64_t EAddr) {
         return Expr(EAddr) + *EIncr;
       };
     }
+
+}
 
   if (Config.DecompressDebugSections &&
       Config.CompressionType != DebugCompressionType::None) {
@@ -777,15 +953,19 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
         "--decompress-debug-sections");
   }
 
-  if (Config.DecompressDebugSections && !zlib::isAvailable())
+  if (Config.DecompressDebugSections && !zlib::isAvailable()) {
     return createStringError(
         errc::invalid_argument,
         "LLVM was not compiled with LLVM_ENABLE_ZLIB: cannot decompress");
 
-  if (Config.ExtractPartition && Config.ExtractMainPartition)
+}
+
+  if (Config.ExtractPartition && Config.ExtractMainPartition) {
     return createStringError(errc::invalid_argument,
                              "cannot specify --extract-partition together with "
                              "--extract-main-partition");
+
+}
 
   DC.CopyConfigs.push_back(std::move(Config));
   return std::move(DC);
@@ -820,21 +1000,31 @@ parseInstallNameToolOptions(ArrayRef<const char *> ArgsArr) {
     exit(0);
   }
 
-  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_add_rpath))
+  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_add_rpath)) {
     Config.RPathToAdd.push_back(Arg->getValue());
 
+}
+
   SmallVector<StringRef, 2> Positional;
-  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_UNKNOWN))
+  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_UNKNOWN)) {
     return createStringError(errc::invalid_argument, "unknown argument '%s'",
                              Arg->getAsString(InputArgs).c_str());
-  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_INPUT))
+
+}
+  for (auto Arg : InputArgs.filtered(INSTALL_NAME_TOOL_INPUT)) {
     Positional.push_back(Arg->getValue());
-  if (Positional.empty())
+
+}
+  if (Positional.empty()) {
     return createStringError(errc::invalid_argument, "no input file specified");
-  if (Positional.size() > 1)
+
+}
+  if (Positional.size() > 1) {
     return createStringError(
         errc::invalid_argument,
         "llvm-install-name-tool expects a single input file");
+
+}
   Config.InputFilename = Positional[0];
   Config.OutputFilename = Positional[0];
 
@@ -870,25 +1060,35 @@ parseStripOptions(ArrayRef<const char *> ArgsArr,
   }
 
   SmallVector<StringRef, 2> Positional;
-  for (auto Arg : InputArgs.filtered(STRIP_UNKNOWN))
+  for (auto Arg : InputArgs.filtered(STRIP_UNKNOWN)) {
     return createStringError(errc::invalid_argument, "unknown argument '%s'",
                              Arg->getAsString(InputArgs).c_str());
-  for (auto Arg : InputArgs.filtered(STRIP_INPUT))
+
+}
+  for (auto Arg : InputArgs.filtered(STRIP_INPUT)) {
     Positional.push_back(Arg->getValue());
 
-  if (Positional.empty())
+}
+
+  if (Positional.empty()) {
     return createStringError(errc::invalid_argument, "no input file specified");
 
-  if (Positional.size() > 1 && InputArgs.hasArg(STRIP_output))
+}
+
+  if (Positional.size() > 1 && InputArgs.hasArg(STRIP_output)) {
     return createStringError(
         errc::invalid_argument,
         "multiple input files cannot be used in combination with -o");
 
+}
+
   CopyConfig Config;
 
-  if (InputArgs.hasArg(STRIP_regex) && InputArgs.hasArg(STRIP_wildcard))
+  if (InputArgs.hasArg(STRIP_regex) && InputArgs.hasArg(STRIP_wildcard)) {
     return createStringError(errc::invalid_argument,
                              "--regex and --wildcard are incompatible");
+
+}
   MatchStyle SectionMatchStyle =
       InputArgs.hasArg(STRIP_regex) ? MatchStyle::Regex : MatchStyle::Wildcard;
   MatchStyle SymbolMatchStyle = InputArgs.hasArg(STRIP_regex)
@@ -899,46 +1099,70 @@ parseStripOptions(ArrayRef<const char *> ArgsArr,
   Config.AllowBrokenLinks = InputArgs.hasArg(STRIP_allow_broken_links);
   Config.StripDebug = InputArgs.hasArg(STRIP_strip_debug);
 
-  if (InputArgs.hasArg(STRIP_discard_all, STRIP_discard_locals))
+  if (InputArgs.hasArg(STRIP_discard_all, STRIP_discard_locals)) {
     Config.DiscardMode =
         InputArgs.hasFlag(STRIP_discard_all, STRIP_discard_locals)
             ? DiscardType::All
             : DiscardType::Locals;
+
+}
   Config.StripSections = InputArgs.hasArg(STRIP_strip_sections);
   Config.StripUnneeded = InputArgs.hasArg(STRIP_strip_unneeded);
-  if (auto Arg = InputArgs.getLastArg(STRIP_strip_all, STRIP_no_strip_all))
+  if (auto Arg = InputArgs.getLastArg(STRIP_strip_all, STRIP_no_strip_all)) {
     Config.StripAll = Arg->getOption().getID() == STRIP_strip_all;
+
+}
   Config.StripAllGNU = InputArgs.hasArg(STRIP_strip_all_gnu);
   Config.OnlyKeepDebug = InputArgs.hasArg(STRIP_only_keep_debug);
   Config.KeepFileSymbols = InputArgs.hasArg(STRIP_keep_file_symbols);
 
-  for (auto Arg : InputArgs.filtered(STRIP_keep_section))
+  for (auto Arg : InputArgs.filtered(STRIP_keep_section)) {
     if (Error E = Config.KeepSection.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SectionMatchStyle, ErrorCallback)))
+            Arg->getValue(), SectionMatchStyle, ErrorCallback))) {
       return std::move(E);
 
-  for (auto Arg : InputArgs.filtered(STRIP_remove_section))
+}
+
+}
+
+  for (auto Arg : InputArgs.filtered(STRIP_remove_section)) {
     if (Error E = Config.ToRemove.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SectionMatchStyle, ErrorCallback)))
+            Arg->getValue(), SectionMatchStyle, ErrorCallback))) {
       return std::move(E);
 
-  for (auto Arg : InputArgs.filtered(STRIP_strip_symbol))
+}
+
+}
+
+  for (auto Arg : InputArgs.filtered(STRIP_strip_symbol)) {
     if (Error E = Config.SymbolsToRemove.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
 
-  for (auto Arg : InputArgs.filtered(STRIP_keep_symbol))
+}
+
+}
+
+  for (auto Arg : InputArgs.filtered(STRIP_keep_symbol)) {
     if (Error E = Config.SymbolsToKeep.addMatcher(NameOrPattern::create(
-            Arg->getValue(), SymbolMatchStyle, ErrorCallback)))
+            Arg->getValue(), SymbolMatchStyle, ErrorCallback))) {
       return std::move(E);
+
+}
+
+}
 
   if (!InputArgs.hasArg(STRIP_no_strip_all) && !Config.StripDebug &&
       !Config.StripUnneeded && Config.DiscardMode == DiscardType::None &&
-      !Config.StripAllGNU && Config.SymbolsToRemove.empty())
+      !Config.StripAllGNU && Config.SymbolsToRemove.empty()) {
     Config.StripAll = true;
 
-  if (Config.DiscardMode == DiscardType::All)
+}
+
+  if (Config.DiscardMode == DiscardType::All) {
     Config.StripDebug = true;
+
+}
 
   Config.DeterministicArchives =
       InputArgs.hasFlag(STRIP_enable_deterministic_archives,
@@ -958,14 +1182,18 @@ parseStripOptions(ArrayRef<const char *> ArgsArr,
     StringMap<unsigned> InputFiles;
     for (StringRef Filename : Positional) {
       if (InputFiles[Filename]++ == 1) {
-        if (Filename == "-")
+        if (Filename == "-") {
           return createStringError(
               errc::invalid_argument,
               "cannot specify '-' as an input file more than once");
+
+}
         if (Error E = ErrorCallback(createStringError(
                 errc::invalid_argument, "'%s' was already specified",
-                Filename.str().c_str())))
+                Filename.str().c_str()))) {
           return std::move(E);
+
+}
       }
       Config.InputFilename = Filename;
       Config.OutputFilename = Filename;
@@ -974,9 +1202,11 @@ parseStripOptions(ArrayRef<const char *> ArgsArr,
   }
 
   if (Config.PreserveDates && (is_contained(Positional, "-") ||
-                               InputArgs.getLastArgValue(STRIP_output) == "-"))
+                               InputArgs.getLastArgValue(STRIP_output) == "-")) {
     return createStringError(errc::invalid_argument,
                              "--preserve-dates requires a file");
+
+}
 
   return std::move(DC);
 }

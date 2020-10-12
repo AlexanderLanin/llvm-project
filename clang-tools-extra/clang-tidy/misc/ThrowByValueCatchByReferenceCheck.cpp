@@ -50,8 +50,10 @@ bool ThrowByValueCatchByReferenceCheck::isFunctionParameter(
 bool ThrowByValueCatchByReferenceCheck::isCatchVariable(
     const DeclRefExpr *declRefExpr) {
   auto *valueDecl = declRefExpr->getDecl();
-  if (auto *varDecl = dyn_cast<VarDecl>(valueDecl))
+  if (auto *varDecl = dyn_cast<VarDecl>(valueDecl)) {
     return varDecl->isExceptionVariable();
+
+}
   return false;
 }
 
@@ -62,18 +64,24 @@ bool ThrowByValueCatchByReferenceCheck::isFunctionOrCatchVar(
 
 void ThrowByValueCatchByReferenceCheck::diagnoseThrowLocations(
     const CXXThrowExpr *throwExpr) {
-  if (!throwExpr)
+  if (!throwExpr) {
     return;
+
+}
   auto *subExpr = throwExpr->getSubExpr();
-  if (!subExpr)
+  if (!subExpr) {
     return;
+
+}
   auto qualType = subExpr->getType();
   if (qualType->isPointerType()) {
     // The code is throwing a pointer.
     // In case it is strng literal, it is safe and we return.
     auto *inner = subExpr->IgnoreParenImpCasts();
-    if (isa<StringLiteral>(inner))
+    if (isa<StringLiteral>(inner)) {
       return;
+
+}
     // If it's a variable from a catch statement, we return as well.
     auto *declRef = dyn_cast<DeclRefExpr>(inner);
     if (declRef && isCatchVariable(declRef)) {
@@ -103,9 +111,9 @@ void ThrowByValueCatchByReferenceCheck::diagnoseThrowLocations(
     // If we have a DeclRefExpr, we flag for emitting a diagnosis message in
     // case the referenced variable is neither a function parameter nor a
     // variable declared in the catch statement.
-    if (variableReference)
+    if (variableReference) {
       emit = !isFunctionOrCatchVar(variableReference);
-    else if (constructorCall &&
+    } else if (constructorCall &&
              constructorCall->getConstructor()->isCopyOrMoveConstructor()) {
       // If we have a copy / move construction, we emit a diagnosis message if
       // the object that we copy construct from is neither a function parameter
@@ -115,25 +123,33 @@ void ThrowByValueCatchByReferenceCheck::diagnoseThrowLocations(
               ->arg_begin(); // there's only one for copy constructors
       auto *currentSubExpr = (*argIter)->IgnoreImpCasts();
       if (currentSubExpr->isLValue()) {
-        if (auto *tmp = dyn_cast<DeclRefExpr>(currentSubExpr))
+        if (auto *tmp = dyn_cast<DeclRefExpr>(currentSubExpr)) {
           emit = !isFunctionOrCatchVar(tmp);
-        else if (isa<CallExpr>(currentSubExpr))
+        } else if (isa<CallExpr>(currentSubExpr)) {
           emit = true;
+
+}
       }
     }
-    if (emit)
+    if (emit) {
       diag(subExpr->getBeginLoc(),
            "throw expression should throw anonymous temporary values instead");
+
+}
   }
 }
 
 void ThrowByValueCatchByReferenceCheck::diagnoseCatchLocations(
     const CXXCatchStmt *catchStmt, ASTContext &context) {
-  if (!catchStmt)
+  if (!catchStmt) {
     return;
+
+}
   auto caughtType = catchStmt->getCaughtType();
-  if (caughtType.isNull())
+  if (caughtType.isNull()) {
     return;
+
+}
   auto *varDecl = catchStmt->getExceptionDecl();
   if (const auto *PT = caughtType.getCanonicalType()->getAs<PointerType>()) {
     const char *diagMsgCatchReference = "catch handler catches a pointer value; "
@@ -141,8 +157,10 @@ void ThrowByValueCatchByReferenceCheck::diagnoseCatchLocations(
                                         "catch by reference instead";
     // We do not diagnose when catching pointer to strings since we also allow
     // throwing string literals.
-    if (!PT->getPointeeType()->isAnyCharacterType())
+    if (!PT->getPointeeType()->isAnyCharacterType()) {
       diag(varDecl->getBeginLoc(), diagMsgCatchReference);
+
+}
   } else if (!caughtType->isReferenceType()) {
     const char *diagMsgCatchReference = "catch handler catches by value; "
                                         "should catch by reference instead";
@@ -157,10 +175,14 @@ void ThrowByValueCatchByReferenceCheck::diagnoseCatchLocations(
 
       // We can now access `ASTContext` so if `MaxSize` is an extremal value
       // then set it to the size of `size_t`.
-      if (MaxSize == std::numeric_limits<uint64_t>::max())
+      if (MaxSize == std::numeric_limits<uint64_t>::max()) {
         MaxSize = context.getTypeSize(context.getSizeType());
-      if (context.getTypeSize(caughtType) > MaxSize)
+
+}
+      if (context.getTypeSize(caughtType) > MaxSize) {
         diag(varDecl->getBeginLoc(), diagMsgCatchReference);
+
+}
     }
   }
 }

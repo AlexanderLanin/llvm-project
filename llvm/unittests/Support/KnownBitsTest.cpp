@@ -25,8 +25,10 @@ void ForeachKnownBits(unsigned Bits, FnTy Fn) {
     for (unsigned One = 0; One < Max; ++One) {
       Known.Zero = Zero;
       Known.One = One;
-      if (Known.hasConflict())
+      if (Known.hasConflict()) {
         continue;
+
+}
 
       Fn(Known);
     }
@@ -39,8 +41,10 @@ void ForeachNumInKnownBits(const KnownBits &Known, FnTy Fn) {
   unsigned Max = 1 << Bits;
   for (unsigned N = 0; N < Max; ++N) {
     APInt Num(Bits, N);
-    if ((Num & Known.Zero) != 0 || (~Num & Known.One) != 0)
+    if ((Num & Known.Zero) != 0 || (~Num & Known.One) != 0) {
       continue;
+
+}
 
     Fn(Num);
   }
@@ -60,8 +64,10 @@ TEST(KnownBitsTest, AddCarryExhaustive) {
           ForeachNumInKnownBits(Known2, [&](const APInt &N2) {
             ForeachNumInKnownBits(KnownCarry, [&](const APInt &Carry) {
               APInt Add = N1 + N2;
-              if (Carry.getBoolValue())
+              if (Carry.getBoolValue()) {
                 ++Add;
+
+}
 
               Known.One &= Add;
               Known.Zero &= ~Add;
@@ -92,10 +98,12 @@ static void TestAddSubExhaustive(bool IsAdd) {
         ForeachNumInKnownBits(Known2, [&](const APInt &N2) {
           bool Overflow;
           APInt Res;
-          if (IsAdd)
+          if (IsAdd) {
             Res = N1.sadd_ov(N2, Overflow);
-          else
+          } else {
             Res = N1.ssub_ov(N2, Overflow);
+
+}
 
           Known.One &= Res;
           Known.Zero &= ~Res;

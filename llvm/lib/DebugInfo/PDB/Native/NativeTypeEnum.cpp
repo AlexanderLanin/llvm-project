@@ -93,8 +93,10 @@ uint32_t NativeEnumEnumEnumerators::getChildCount() const {
 
 std::unique_ptr<PDBSymbol>
 NativeEnumEnumEnumerators::getChildAtIndex(uint32_t Index) const {
-  if (Index >= getChildCount())
+  if (Index >= getChildCount()) {
     return nullptr;
+
+}
 
   SymIndexId Id = Session.getSymbolCache()
                       .getOrCreateFieldListMember<NativeSymbolEnumerator>(
@@ -104,8 +106,10 @@ NativeEnumEnumEnumerators::getChildAtIndex(uint32_t Index) const {
 }
 
 std::unique_ptr<PDBSymbol> NativeEnumEnumEnumerators::getNext() {
-  if (Index >= getChildCount())
+  if (Index >= getChildCount()) {
     return nullptr;
+
+}
 
   return getChildAtIndex(Index++);
 }
@@ -138,10 +142,12 @@ void NativeTypeEnum::dump(raw_ostream &OS, int Indent,
   dumpSymbolField(OS, "name", getName(), Indent);
   dumpSymbolIdField(OS, "typeId", getTypeId(), Indent, Session,
                     PdbSymbolIdField::Type, ShowIdFields, RecurseIdFields);
-  if (Modifiers.hasValue())
+  if (Modifiers.hasValue()) {
     dumpSymbolIdField(OS, "unmodifiedTypeId", getUnmodifiedTypeId(), Indent,
                       Session, PdbSymbolIdField::UnmodifiedType, ShowIdFields,
                       RecurseIdFields);
+
+}
   dumpSymbolField(OS, "length", getLength(), Indent);
   dumpSymbolField(OS, "constructor", hasConstructor(), Indent);
   dumpSymbolField(OS, "constType", isConstType(), Indent);
@@ -162,22 +168,28 @@ void NativeTypeEnum::dump(raw_ostream &OS, int Indent,
 
 std::unique_ptr<IPDBEnumSymbols>
 NativeTypeEnum::findChildren(PDB_SymType Type) const {
-  if (Type != PDB_SymType::Data)
+  if (Type != PDB_SymType::Data) {
     return std::make_unique<NullEnumerator<PDBSymbol>>();
 
+}
+
   const NativeTypeEnum *ClassParent = nullptr;
-  if (!Modifiers)
+  if (!Modifiers) {
     ClassParent = this;
-  else
+  } else {
     ClassParent = UnmodifiedType;
+
+}
   return std::make_unique<NativeEnumEnumEnumerators>(Session, *ClassParent);
 }
 
 PDB_SymType NativeTypeEnum::getSymTag() const { return PDB_SymType::Enum; }
 
 PDB_BuiltinType NativeTypeEnum::getBuiltinType() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getBuiltinType();
+
+}
 
   Session.getSymbolCache().findSymbolByTypeIndex(Record->getUnderlyingType());
 
@@ -252,47 +264,59 @@ SymIndexId NativeTypeEnum::getUnmodifiedTypeId() const {
 }
 
 bool NativeTypeEnum::hasConstructor() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasConstructor();
+
+}
 
   return bool(Record->getOptions() &
               codeview::ClassOptions::HasConstructorOrDestructor);
 }
 
 bool NativeTypeEnum::hasAssignmentOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasAssignmentOperator();
+
+}
 
   return bool(Record->getOptions() &
               codeview::ClassOptions::HasOverloadedAssignmentOperator);
 }
 
 bool NativeTypeEnum::hasNestedTypes() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasNestedTypes();
+
+}
 
   return bool(Record->getOptions() &
               codeview::ClassOptions::ContainsNestedClass);
 }
 
 bool NativeTypeEnum::isIntrinsic() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isIntrinsic();
+
+}
 
   return bool(Record->getOptions() & codeview::ClassOptions::Intrinsic);
 }
 
 bool NativeTypeEnum::hasCastOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasCastOperator();
+
+}
 
   return bool(Record->getOptions() &
               codeview::ClassOptions::HasConversionOperator);
 }
 
 uint64_t NativeTypeEnum::getLength() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getLength();
+
+}
 
   const auto Id = Session.getSymbolCache().findSymbolByTypeIndex(
       Record->getUnderlyingType());
@@ -302,44 +326,56 @@ uint64_t NativeTypeEnum::getLength() const {
 }
 
 std::string NativeTypeEnum::getName() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getName();
+
+}
 
   return std::string(Record->getName());
 }
 
 bool NativeTypeEnum::isNested() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isNested();
+
+}
 
   return bool(Record->getOptions() & codeview::ClassOptions::Nested);
 }
 
 bool NativeTypeEnum::hasOverloadedOperator() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->hasOverloadedOperator();
+
+}
 
   return bool(Record->getOptions() &
               codeview::ClassOptions::HasOverloadedOperator);
 }
 
 bool NativeTypeEnum::isPacked() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isPacked();
+
+}
 
   return bool(Record->getOptions() & codeview::ClassOptions::Packed);
 }
 
 bool NativeTypeEnum::isScoped() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->isScoped();
+
+}
 
   return bool(Record->getOptions() & codeview::ClassOptions::Scoped);
 }
 
 SymIndexId NativeTypeEnum::getTypeId() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getTypeId();
+
+}
 
   return Session.getSymbolCache().findSymbolByTypeIndex(
       Record->getUnderlyingType());
@@ -352,29 +388,37 @@ bool NativeTypeEnum::isValueUdt() const { return false; }
 bool NativeTypeEnum::isInterfaceUdt() const { return false; }
 
 bool NativeTypeEnum::isConstType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return ((Modifiers->getModifiers() & ModifierOptions::Const) !=
           ModifierOptions::None);
 }
 
 bool NativeTypeEnum::isVolatileType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return ((Modifiers->getModifiers() & ModifierOptions::Volatile) !=
           ModifierOptions::None);
 }
 
 bool NativeTypeEnum::isUnalignedType() const {
-  if (!Modifiers)
+  if (!Modifiers) {
     return false;
+
+}
   return ((Modifiers->getModifiers() & ModifierOptions::Unaligned) !=
           ModifierOptions::None);
 }
 
 const NativeTypeBuiltin &NativeTypeEnum::getUnderlyingBuiltinType() const {
-  if (UnmodifiedType)
+  if (UnmodifiedType) {
     return UnmodifiedType->getUnderlyingBuiltinType();
+
+}
 
   return Session.getSymbolCache().getNativeSymbolById<NativeTypeBuiltin>(
       getTypeId());

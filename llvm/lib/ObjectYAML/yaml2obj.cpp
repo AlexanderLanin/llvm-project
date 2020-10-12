@@ -22,8 +22,10 @@ bool convertYAML(yaml::Input &YIn, raw_ostream &Out, ErrorHandler ErrHandler,
                  unsigned DocNum) {
   unsigned CurDocNum = 0;
   do {
-    if (++CurDocNum != DocNum)
+    if (++CurDocNum != DocNum) {
       continue;
+
+}
 
     yaml::YamlObjectFile Doc;
     YIn >> Doc;
@@ -32,16 +34,26 @@ bool convertYAML(yaml::Input &YIn, raw_ostream &Out, ErrorHandler ErrHandler,
       return false;
     }
 
-    if (Doc.Elf)
+    if (Doc.Elf) {
       return yaml2elf(*Doc.Elf, Out, ErrHandler);
-    if (Doc.Coff)
+
+}
+    if (Doc.Coff) {
       return yaml2coff(*Doc.Coff, Out, ErrHandler);
-    if (Doc.MachO || Doc.FatMachO)
+
+}
+    if (Doc.MachO || Doc.FatMachO) {
       return yaml2macho(Doc, Out, ErrHandler);
-    if (Doc.Minidump)
+
+}
+    if (Doc.Minidump) {
       return yaml2minidump(*Doc.Minidump, Out, ErrHandler);
-    if (Doc.Wasm)
+
+}
+    if (Doc.Wasm) {
       return yaml2wasm(*Doc.Wasm, Out, ErrHandler);
+
+}
 
     ErrHandler("unknown document type");
     return false;
@@ -60,14 +72,18 @@ yaml2ObjectFile(SmallVectorImpl<char> &Storage, StringRef Yaml,
   raw_svector_ostream OS(Storage);
 
   yaml::Input YIn(Yaml);
-  if (!convertYAML(YIn, OS, ErrHandler))
+  if (!convertYAML(YIn, OS, ErrHandler)) {
     return {};
+
+}
 
   Expected<std::unique_ptr<object::ObjectFile>> ObjOrErr =
       object::ObjectFile::createObjectFile(
           MemoryBufferRef(OS.str(), "YamlObject"));
-  if (ObjOrErr)
+  if (ObjOrErr) {
     return std::move(*ObjOrErr);
+
+}
 
   ErrHandler(toString(ObjOrErr.takeError()));
   return {};

@@ -61,10 +61,12 @@ void FindIdenticalExprVisitor::reportIdenticalExpr(const BinaryOperator *B,
                                                    bool CheckBitwise,
                                                    ArrayRef<SourceRange> Sr) {
   StringRef Message;
-  if (CheckBitwise)
+  if (CheckBitwise) {
     Message = "identical expressions on both sides of bitwise operator";
-  else
+  } else {
     Message = "identical expressions on both sides of logical operator";
+
+}
 
   PathDiagnosticLocation ELoc =
       PathDiagnosticLocation::createOperatorLoc(B, BR.getSourceManager());
@@ -86,8 +88,10 @@ void FindIdenticalExprVisitor::checkBitwiseOrLogicalOp(const BinaryOperator *B,
   // to check every one against each other here, just the right most one with
   // the others.
   while (const BinaryOperator *B2 = dyn_cast<BinaryOperator>(LHS)) {
-    if (B->getOpcode() != B2->getOpcode())
+    if (B->getOpcode() != B2->getOpcode()) {
       break;
+
+}
     if (isIdenticalStmt(AC->getASTContext(), RHS, B2->getRHS())) {
       Sr[0] = RHS->getSourceRange();
       Sr[1] = B2->getRHS()->getSourceRange();
@@ -149,8 +153,10 @@ bool FindIdenticalExprVisitor::VisitIfStmt(const IfStmt *I) {
     }
   }
 
-  if (!Stmt1 || !Stmt2)
+  if (!Stmt1 || !Stmt2) {
     return true;
+
+}
 
   // Special handling for code like:
   //
@@ -159,12 +165,16 @@ bool FindIdenticalExprVisitor::VisitIfStmt(const IfStmt *I) {
   // } else
   //   i = 1;
   if (const CompoundStmt *CompStmt = dyn_cast<CompoundStmt>(Stmt1)) {
-    if (CompStmt->size() == 1)
+    if (CompStmt->size() == 1) {
       Stmt1 = CompStmt->body_back();
+
+}
   }
   if (const CompoundStmt *CompStmt = dyn_cast<CompoundStmt>(Stmt2)) {
-    if (CompStmt->size() == 1)
+    if (CompStmt->size() == 1) {
       Stmt2 = CompStmt->body_back();
+
+}
   }
 
   if (isIdenticalStmt(AC->getASTContext(), Stmt1, Stmt2, true)) {
@@ -181,14 +191,20 @@ bool FindIdenticalExprVisitor::VisitIfStmt(const IfStmt *I) {
 bool FindIdenticalExprVisitor::VisitBinaryOperator(const BinaryOperator *B) {
   BinaryOperator::Opcode Op = B->getOpcode();
 
-  if (BinaryOperator::isBitwiseOp(Op))
+  if (BinaryOperator::isBitwiseOp(Op)) {
     checkBitwiseOrLogicalOp(B, true);
 
-  if (BinaryOperator::isLogicalOp(Op))
+}
+
+  if (BinaryOperator::isLogicalOp(Op)) {
     checkBitwiseOrLogicalOp(B, false);
 
-  if (BinaryOperator::isComparisonOp(Op))
+}
+
+  if (BinaryOperator::isComparisonOp(Op)) {
     checkComparisonOp(B);
+
+}
 
   // We want to visit ALL nodes (subexpressions of binary comparison
   // expressions too) that contains comparison operators.
@@ -254,13 +270,15 @@ void FindIdenticalExprVisitor::checkComparisonOp(const BinaryOperator *B) {
     PathDiagnosticLocation ELoc =
         PathDiagnosticLocation::createOperatorLoc(B, BR.getSourceManager());
     StringRef Message;
-    if (Op == BO_Cmp)
+    if (Op == BO_Cmp) {
       Message = "comparison of identical expressions always evaluates to "
                 "'equal'";
-    else if (((Op == BO_EQ) || (Op == BO_LE) || (Op == BO_GE)))
+    } else if (((Op == BO_EQ) || (Op == BO_LE) || (Op == BO_GE))) {
       Message = "comparison of identical expressions always evaluates to true";
-    else
+    } else {
       Message = "comparison of identical expressions always evaluates to false";
+
+}
     BR.EmitBasicReport(AC->getDecl(), Checker,
                        "Compare of identical expressions",
                        categories::LogicError, Message, ELoc);
@@ -312,8 +330,10 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
 
   // If Stmt1 & Stmt2 are of different class then they are not
   // identical statements.
-  if (Stmt1->getStmtClass() != Stmt2->getStmtClass())
+  if (Stmt1->getStmtClass() != Stmt2->getStmtClass()) {
     return false;
+
+}
 
   const Expr *Expr1 = dyn_cast<Expr>(Stmt1);
   const Expr *Expr2 = dyn_cast<Expr>(Stmt2);
@@ -321,28 +341,38 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
   if (Expr1 && Expr2) {
     // If Stmt1 has side effects then don't warn even if expressions
     // are identical.
-    if (!IgnoreSideEffects && Expr1->HasSideEffects(Ctx))
+    if (!IgnoreSideEffects && Expr1->HasSideEffects(Ctx)) {
       return false;
+
+}
     // If either expression comes from a macro then don't warn even if
     // the expressions are identical.
-    if ((Expr1->getExprLoc().isMacroID()) || (Expr2->getExprLoc().isMacroID()))
+    if ((Expr1->getExprLoc().isMacroID()) || (Expr2->getExprLoc().isMacroID())) {
       return false;
+
+}
 
     // If all children of two expressions are identical, return true.
     Expr::const_child_iterator I1 = Expr1->child_begin();
     Expr::const_child_iterator I2 = Expr2->child_begin();
     while (I1 != Expr1->child_end() && I2 != Expr2->child_end()) {
-      if (!*I1 || !*I2 || !isIdenticalStmt(Ctx, *I1, *I2, IgnoreSideEffects))
+      if (!*I1 || !*I2 || !isIdenticalStmt(Ctx, *I1, *I2, IgnoreSideEffects)) {
         return false;
+
+}
       ++I1;
       ++I2;
     }
     // If there are different number of children in the statements, return
     // false.
-    if (I1 != Expr1->child_end())
+    if (I1 != Expr1->child_end()) {
       return false;
-    if (I2 != Expr2->child_end())
+
+}
+    if (I2 != Expr2->child_end()) {
       return false;
+
+}
   }
 
   switch (Stmt1->getStmtClass()) {
@@ -375,17 +405,25 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
     const ForStmt *ForStmt2 = cast<ForStmt>(Stmt2);
 
     if (!isIdenticalStmt(Ctx, ForStmt1->getInit(), ForStmt2->getInit(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, ForStmt1->getCond(), ForStmt2->getCond(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, ForStmt1->getInc(), ForStmt2->getInc(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, ForStmt1->getBody(), ForStmt2->getBody(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     return true;
   }
   case Stmt::DoStmtClass: {
@@ -393,11 +431,15 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
     const DoStmt *DStmt2 = cast<DoStmt>(Stmt2);
 
     if (!isIdenticalStmt(Ctx, DStmt1->getCond(), DStmt2->getCond(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, DStmt1->getBody(), DStmt2->getBody(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     return true;
   }
   case Stmt::WhileStmtClass: {
@@ -405,11 +447,15 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
     const WhileStmt *WStmt2 = cast<WhileStmt>(Stmt2);
 
     if (!isIdenticalStmt(Ctx, WStmt1->getCond(), WStmt2->getCond(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, WStmt1->getBody(), WStmt2->getBody(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     return true;
   }
   case Stmt::IfStmtClass: {
@@ -417,28 +463,38 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
     const IfStmt *IStmt2 = cast<IfStmt>(Stmt2);
 
     if (!isIdenticalStmt(Ctx, IStmt1->getCond(), IStmt2->getCond(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, IStmt1->getThen(), IStmt2->getThen(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     if (!isIdenticalStmt(Ctx, IStmt1->getElse(), IStmt2->getElse(),
-                         IgnoreSideEffects))
+                         IgnoreSideEffects)) {
       return false;
+
+}
     return true;
   }
   case Stmt::CompoundStmtClass: {
     const CompoundStmt *CompStmt1 = cast<CompoundStmt>(Stmt1);
     const CompoundStmt *CompStmt2 = cast<CompoundStmt>(Stmt2);
 
-    if (CompStmt1->size() != CompStmt2->size())
+    if (CompStmt1->size() != CompStmt2->size()) {
       return false;
+
+}
 
     CompoundStmt::const_body_iterator I1 = CompStmt1->body_begin();
     CompoundStmt::const_body_iterator I2 = CompStmt2->body_begin();
     while (I1 != CompStmt1->body_end() && I2 != CompStmt2->body_end()) {
-      if (!isIdenticalStmt(Ctx, *I1, *I2, IgnoreSideEffects))
+      if (!isIdenticalStmt(Ctx, *I1, *I2, IgnoreSideEffects)) {
         return false;
+
+}
       ++I1;
       ++I2;
     }
@@ -467,8 +523,10 @@ static bool isIdenticalStmt(const ASTContext &Ctx, const Stmt *Stmt1,
 
     llvm::APInt I1 = IntLit1->getValue();
     llvm::APInt I2 = IntLit2->getValue();
-    if (I1.getBitWidth() != I2.getBitWidth())
+    if (I1.getBitWidth() != I2.getBitWidth()) {
       return false;
+
+}
     return  I1 == I2;
   }
   case Stmt::FloatingLiteralClass: {

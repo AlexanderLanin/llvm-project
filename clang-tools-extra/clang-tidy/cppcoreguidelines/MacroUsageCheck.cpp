@@ -22,8 +22,10 @@ namespace {
 
 bool isCapsOnly(StringRef Name) {
   return std::all_of(Name.begin(), Name.end(), [](const char c) {
-    if (std::isupper(c) || std::isdigit(c) || c == '_')
+    if (std::isupper(c) || std::isdigit(c) || c == '_') {
       return true;
+
+}
     return false;
   });
 }
@@ -38,19 +40,27 @@ public:
                     const MacroDirective *MD) override {
     if (SM.isWrittenInBuiltinFile(MD->getLocation()) ||
         MD->getMacroInfo()->isUsedForHeaderGuard() ||
-        MD->getMacroInfo()->getNumTokens() == 0)
+        MD->getMacroInfo()->getNumTokens() == 0) {
       return;
+
+}
 
     if (IgnoreCommandLineMacros &&
-        SM.isWrittenInCommandLineFile(MD->getLocation()))
+        SM.isWrittenInCommandLineFile(MD->getLocation())) {
       return;
 
+}
+
     StringRef MacroName = MacroNameTok.getIdentifierInfo()->getName();
-    if (!CheckCapsOnly && !llvm::Regex(RegExp).match(MacroName))
+    if (!CheckCapsOnly && !llvm::Regex(RegExp).match(MacroName)) {
       Check->warnMacro(MD, MacroName);
 
-    if (CheckCapsOnly && !isCapsOnly(MacroName))
+}
+
+    if (CheckCapsOnly && !isCapsOnly(MacroName)) {
       Check->warnNaming(MD, MacroName);
+
+}
   }
 
 private:
@@ -83,12 +93,14 @@ void MacroUsageCheck::warnMacro(const MacroDirective *MD, StringRef MacroName) {
   /// A variadic macro is function-like at the same time. Therefore variadic
   /// macros are checked first and will be excluded for the function-like
   /// diagnostic.
-  if (MD->getMacroInfo()->isVariadic())
+  if (MD->getMacroInfo()->isVariadic()) {
     Message = "variadic macro '%0' used; consider using a 'constexpr' "
               "variadic template function";
-  else if (MD->getMacroInfo()->isFunctionLike())
+  } else if (MD->getMacroInfo()->isFunctionLike()) {
     Message = "function-like macro '%0' used; consider a 'constexpr' template "
               "function";
+
+}
 
   diag(MD->getLocation(), Message) << MacroName;
 }

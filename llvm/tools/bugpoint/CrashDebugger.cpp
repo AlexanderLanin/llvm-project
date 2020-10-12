@@ -93,8 +93,10 @@ ReducePassList::doTest(std::vector<std::string> &Prefix,
   if (!Prefix.empty()) {
     outs() << "Checking to see if these passes crash: "
            << getPassesString(Prefix) << ": ";
-    if (BD.runPasses(BD.getProgram(), Prefix, PrefixOutput))
+    if (BD.runPasses(BD.getProgram(), Prefix, PrefixOutput)) {
       return KeepPrefix;
+
+}
 
     OrigProgram = std::move(BD.Program);
 
@@ -110,12 +112,16 @@ ReducePassList::doTest(std::vector<std::string> &Prefix,
   outs() << "Checking to see if these passes crash: " << getPassesString(Suffix)
          << ": ";
 
-  if (BD.runPasses(BD.getProgram(), Suffix))
+  if (BD.runPasses(BD.getProgram(), Suffix)) {
     return KeepSuffix; // The suffix crashes alone...
 
+}
+
   // Nothing failed, restore state...
-  if (OrigProgram)
+  if (OrigProgram) {
     BD.Program = std::move(OrigProgram);
+
+}
   return NoFailure;
 }
 
@@ -135,10 +141,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<GlobalVariable *> &Prefix,
                               std::vector<GlobalVariable *> &Kept) override {
-    if (!Kept.empty() && TestGlobalVariables(Kept))
+    if (!Kept.empty() && TestGlobalVariables(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestGlobalVariables(Prefix))
+
+}
+    if (!Prefix.empty() && TestGlobalVariables(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -167,12 +177,14 @@ bool ReduceCrashingGlobalInitializers::TestGlobalVariables(
 
   // Loop over and delete any global variables which we aren't supposed to be
   // playing with...
-  for (GlobalVariable &I : M->globals())
+  for (GlobalVariable &I : M->globals()) {
     if (I.hasInitializer() && !GVSet.count(&I)) {
       DeleteGlobalInitializer(&I);
       I.setLinkage(GlobalValue::ExternalLinkage);
       I.setComdat(nullptr);
     }
+
+}
 
   // Try running the hacked up program...
   if (TestFn(BD, M.get())) {
@@ -202,10 +214,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<Function *> &Prefix,
                               std::vector<Function *> &Kept) override {
-    if (!Kept.empty() && TestFuncs(Kept))
+    if (!Kept.empty() && TestFuncs(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestFuncs(Prefix))
+
+}
+    if (!Prefix.empty() && TestFuncs(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -215,8 +231,10 @@ public:
 
 static void RemoveFunctionReferences(Module *M, const char *Name) {
   auto *UsedVar = M->getGlobalVariable(Name, true);
-  if (!UsedVar || !UsedVar->hasInitializer())
+  if (!UsedVar || !UsedVar->hasInitializer()) {
     return;
+
+}
   if (isa<ConstantAggregateZero>(UsedVar->getInitializer())) {
     assert(UsedVar->use_empty());
     UsedVar->eraseFromParent();
@@ -239,8 +257,10 @@ static void RemoveFunctionReferences(Module *M, const char *Name) {
 
 bool ReduceCrashingFunctions::TestFuncs(std::vector<Function *> &Funcs) {
   // If main isn't present, claim there is no problem.
-  if (KeepMain && !is_contained(Funcs, BD.getProgram().getFunction("main")))
+  if (KeepMain && !is_contained(Funcs, BD.getProgram().getFunction("main"))) {
     return false;
+
+}
 
   // Clone the program to try hacking it apart...
   ValueToValueMapTy VMap;
@@ -262,9 +282,13 @@ bool ReduceCrashingFunctions::TestFuncs(std::vector<Function *> &Funcs) {
   if (!ReplaceFuncsWithNull) {
     // Loop over and delete any functions which we aren't supposed to be playing
     // with...
-    for (Function &I : *M)
-      if (!I.isDeclaration() && !Functions.count(&I))
+    for (Function &I : *M) {
+      if (!I.isDeclaration() && !Functions.count(&I)) {
         DeleteFunctionBody(&I);
+
+}
+
+}
   } else {
     std::vector<GlobalValue *> ToRemove;
     // First, remove aliases to functions we're about to purge.
@@ -272,9 +296,11 @@ bool ReduceCrashingFunctions::TestFuncs(std::vector<Function *> &Funcs) {
       GlobalObject *Root = Alias.getBaseObject();
       Function *F = dyn_cast_or_null<Function>(Root);
       if (F) {
-        if (Functions.count(F))
+        if (Functions.count(F)) {
           // We're keeping this function.
           continue;
+
+}
       } else if (Root->isNullValue()) {
         // This referenced a globalalias that we've already replaced,
         // so we still need to replace this alias.
@@ -335,10 +361,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<Attribute> &Prefix,
                               std::vector<Attribute> &Kept) override {
-    if (!Kept.empty() && TestFuncAttrs(Kept))
+    if (!Kept.empty() && TestFuncAttrs(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestFuncAttrs(Prefix))
+
+}
+    if (!Prefix.empty() && TestFuncAttrs(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -355,8 +385,10 @@ bool ReduceCrashingFunctionAttributes::TestFuncAttrs(
   // Build up an AttributeList from the attributes we've been given by the
   // reducer.
   AttrBuilder AB;
-  for (auto A : Attrs)
+  for (auto A : Attrs) {
     AB.addAttribute(A);
+
+}
   AttributeList NewAttrs;
   NewAttrs =
       NewAttrs.addAttributes(BD.getContext(), AttributeList::FunctionIndex, AB);
@@ -366,8 +398,10 @@ bool ReduceCrashingFunctionAttributes::TestFuncAttrs(
 
   // If the attribute list includes "optnone" we need to make sure it also
   // includes "noinline" otherwise we will get a verifier failure.
-  if (F->hasFnAttribute(Attribute::OptimizeNone))
+  if (F->hasFnAttribute(Attribute::OptimizeNone)) {
     F->addFnAttr(Attribute::NoInline);
+
+}
 
   // Try running on the hacked up program...
   if (TestFn(BD, M.get())) {
@@ -389,8 +423,10 @@ namespace {
 /// unreachable blocks and constant fold terminators without deciding that
 /// certain undefined behavior cuts off the program at the legs".
 void simpleSimplifyCfg(Function &F, SmallVectorImpl<BasicBlock *> &BBs) {
-  if (F.empty())
+  if (F.empty()) {
     return;
+
+}
 
   for (auto *BB : BBs) {
     ConstantFoldTerminator(BB);
@@ -403,25 +439,37 @@ void simpleSimplifyCfg(Function &F, SmallVectorImpl<BasicBlock *> &BBs) {
   // generated the undefined behavior, and we don't want it to kill the entire
   // program.
   SmallPtrSet<BasicBlock *, 16> Visited;
-  for (auto *BB : depth_first(&F.getEntryBlock()))
+  for (auto *BB : depth_first(&F.getEntryBlock())) {
     Visited.insert(BB);
 
+}
+
   SmallVector<BasicBlock *, 16> Unreachable;
-  for (auto &BB : F)
-    if (!Visited.count(&BB))
+  for (auto &BB : F) {
+    if (!Visited.count(&BB)) {
       Unreachable.push_back(&BB);
+
+}
+
+}
 
   // The dead BB's may be in a dead cycle or otherwise have references to each
   // other.  Because of this, we have to drop all references first, then delete
   // them all at once.
   for (auto *BB : Unreachable) {
-    for (BasicBlock *Successor : successors(&*BB))
-      if (Visited.count(Successor))
+    for (BasicBlock *Successor : successors(&*BB)) {
+      if (Visited.count(Successor)) {
         Successor->removePredecessor(&*BB);
+
+}
+
+}
     BB->dropAllReferences();
   }
-  for (auto *BB : Unreachable)
+  for (auto *BB : Unreachable) {
     BB->eraseFromParent();
+
+}
 }
 /// ReduceCrashingBlocks reducer - This works by setting the terminators of
 /// all terminators except the specified basic blocks to a 'ret' instruction,
@@ -438,10 +486,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<const BasicBlock *> &Prefix,
                               std::vector<const BasicBlock *> &Kept) override {
-    if (!Kept.empty() && TestBlocks(Kept))
+    if (!Kept.empty() && TestBlocks(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestBlocks(Prefix))
+
+}
+    if (!Prefix.empty() && TestBlocks(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -456,17 +508,25 @@ bool ReduceCrashingBlocks::TestBlocks(std::vector<const BasicBlock *> &BBs) {
 
   // Convert list to set for fast lookup...
   SmallPtrSet<BasicBlock *, 8> Blocks;
-  for (unsigned i = 0, e = BBs.size(); i != e; ++i)
+  for (unsigned i = 0, e = BBs.size(); i != e; ++i) {
     Blocks.insert(cast<BasicBlock>(VMap[BBs[i]]));
+
+}
 
   outs() << "Checking for crash with only these blocks:";
   unsigned NumPrint = Blocks.size();
-  if (NumPrint > 10)
+  if (NumPrint > 10) {
     NumPrint = 10;
-  for (unsigned i = 0, e = NumPrint; i != e; ++i)
+
+}
+  for (unsigned i = 0, e = NumPrint; i != e; ++i) {
     outs() << " " << BBs[i]->getName();
-  if (NumPrint < Blocks.size())
+
+}
+  if (NumPrint < Blocks.size()) {
     outs() << "... <" << Blocks.size() << " total>";
+
+}
   outs() << ": ";
 
   // Loop over and delete any hack up any blocks that are not listed...
@@ -475,14 +535,20 @@ bool ReduceCrashingBlocks::TestBlocks(std::vector<const BasicBlock *> &BBs) {
       if (!Blocks.count(&BB) && BB.getTerminator()->getNumSuccessors()) {
         // Loop over all of the successors of this block, deleting any PHI nodes
         // that might include it.
-        for (BasicBlock *Succ : successors(&BB))
+        for (BasicBlock *Succ : successors(&BB)) {
           Succ->removePredecessor(&BB);
 
+}
+
         Instruction *BBTerm = BB.getTerminator();
-        if (BBTerm->isEHPad() || BBTerm->getType()->isTokenTy())
+        if (BBTerm->isEHPad() || BBTerm->getType()->isTokenTy()) {
           continue;
-        if (!BBTerm->getType()->isVoidTy())
+
+}
+        if (!BBTerm->getType()->isVoidTy()) {
           BBTerm->replaceAllUsesWith(Constant::getNullValue(BBTerm->getType()));
+
+}
 
         // Replace the old terminator instruction.
         BB.getInstList().pop_back();
@@ -498,15 +564,21 @@ bool ReduceCrashingBlocks::TestBlocks(std::vector<const BasicBlock *> &BBs) {
   // have to take. FIXME: Can we just name the blocks?
   std::vector<std::pair<std::string, std::string>> BlockInfo;
 
-  for (BasicBlock *BB : Blocks)
+  for (BasicBlock *BB : Blocks) {
     BlockInfo.emplace_back(std::string(BB->getParent()->getName()),
                            std::string(BB->getName()));
 
+}
+
   SmallVector<BasicBlock *, 16> ToProcess;
   for (auto &F : *M) {
-    for (auto &BB : F)
-      if (!Blocks.count(&BB))
+    for (auto &BB : F) {
+      if (!Blocks.count(&BB)) {
         ToProcess.push_back(&BB);
+
+}
+
+}
     simpleSimplifyCfg(F, ToProcess);
     ToProcess.clear();
   }
@@ -531,8 +603,10 @@ bool ReduceCrashingBlocks::TestBlocks(std::vector<const BasicBlock *> &BBs) {
     for (const auto &BI : BlockInfo) {
       Function *F = cast<Function>(GST.lookup(BI.first));
       Value *V = F->getValueSymbolTable()->lookup(BI.second);
-      if (V && V->getType() == Type::getLabelTy(V->getContext()))
+      if (V && V->getType() == Type::getLabelTy(V->getContext())) {
         BBs.push_back(cast<BasicBlock>(V));
+
+}
     }
     return true;
   }
@@ -557,10 +631,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<const BasicBlock *> &Prefix,
                               std::vector<const BasicBlock *> &Kept) override {
-    if (!Kept.empty() && TestBlocks(Kept))
+    if (!Kept.empty() && TestBlocks(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestBlocks(Prefix))
+
+}
+    if (!Prefix.empty() && TestBlocks(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -576,45 +654,67 @@ bool ReduceCrashingConditionals::TestBlocks(
 
   // Convert list to set for fast lookup...
   SmallPtrSet<const BasicBlock *, 8> Blocks;
-  for (const auto *BB : BBs)
+  for (const auto *BB : BBs) {
     Blocks.insert(cast<BasicBlock>(VMap[BB]));
+
+}
 
   outs() << "Checking for crash with changing conditionals to always jump to "
          << (Direction ? "true" : "false") << ":";
   unsigned NumPrint = Blocks.size();
-  if (NumPrint > 10)
+  if (NumPrint > 10) {
     NumPrint = 10;
-  for (unsigned i = 0, e = NumPrint; i != e; ++i)
+
+}
+  for (unsigned i = 0, e = NumPrint; i != e; ++i) {
     outs() << " " << BBs[i]->getName();
-  if (NumPrint < Blocks.size())
+
+}
+  if (NumPrint < Blocks.size()) {
     outs() << "... <" << Blocks.size() << " total>";
+
+}
   outs() << ": ";
 
   // Loop over and delete any hack up any blocks that are not listed...
-  for (auto &F : *M)
-    for (auto &BB : F)
+  for (auto &F : *M) {
+    for (auto &BB : F) {
       if (!Blocks.count(&BB)) {
         auto *BR = dyn_cast<BranchInst>(BB.getTerminator());
-        if (!BR || !BR->isConditional())
+        if (!BR || !BR->isConditional()) {
           continue;
-        if (Direction)
+
+}
+        if (Direction) {
           BR->setCondition(ConstantInt::getTrue(BR->getContext()));
-        else
+        } else {
           BR->setCondition(ConstantInt::getFalse(BR->getContext()));
+
+}
       }
+
+}
+
+}
 
   // The following may destroy some blocks, so we save them first
   std::vector<std::pair<std::string, std::string>> BlockInfo;
 
-  for (const BasicBlock *BB : Blocks)
+  for (const BasicBlock *BB : Blocks) {
     BlockInfo.emplace_back(std::string(BB->getParent()->getName()),
                            std::string(BB->getName()));
 
+}
+
   SmallVector<BasicBlock *, 16> ToProcess;
   for (auto &F : *M) {
-    for (auto &BB : F)
-      if (!Blocks.count(&BB))
+    for (auto &BB : F) {
+      if (!Blocks.count(&BB)) {
         ToProcess.push_back(&BB);
+
+}
+
+}
     simpleSimplifyCfg(F, ToProcess);
     ToProcess.clear();
   }
@@ -639,8 +739,10 @@ bool ReduceCrashingConditionals::TestBlocks(
     for (auto &BI : BlockInfo) {
       auto *F = cast<Function>(GST.lookup(BI.first));
       Value *V = F->getValueSymbolTable()->lookup(BI.second);
-      if (V && V->getType() == Type::getLabelTy(V->getContext()))
+      if (V && V->getType() == Type::getLabelTy(V->getContext())) {
         BBs.push_back(cast<BasicBlock>(V));
+
+}
     }
     return true;
   }
@@ -663,10 +765,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<const BasicBlock *> &Prefix,
                               std::vector<const BasicBlock *> &Kept) override {
-    if (!Kept.empty() && TestBlocks(Kept))
+    if (!Kept.empty() && TestBlocks(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestBlocks(Prefix))
+
+}
+    if (!Prefix.empty() && TestBlocks(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -681,28 +787,38 @@ bool ReduceSimplifyCFG::TestBlocks(std::vector<const BasicBlock *> &BBs) {
 
   // Convert list to set for fast lookup...
   SmallPtrSet<const BasicBlock *, 8> Blocks;
-  for (const auto *BB : BBs)
+  for (const auto *BB : BBs) {
     Blocks.insert(cast<BasicBlock>(VMap[BB]));
+
+}
 
   outs() << "Checking for crash with CFG simplifying:";
   unsigned NumPrint = Blocks.size();
-  if (NumPrint > 10)
+  if (NumPrint > 10) {
     NumPrint = 10;
-  for (unsigned i = 0, e = NumPrint; i != e; ++i)
+
+}
+  for (unsigned i = 0, e = NumPrint; i != e; ++i) {
     outs() << " " << BBs[i]->getName();
-  if (NumPrint < Blocks.size())
+
+}
+  if (NumPrint < Blocks.size()) {
     outs() << "... <" << Blocks.size() << " total>";
+
+}
   outs() << ": ";
 
   // The following may destroy some blocks, so we save them first
   std::vector<std::pair<std::string, std::string>> BlockInfo;
 
-  for (const BasicBlock *BB : Blocks)
+  for (const BasicBlock *BB : Blocks) {
     BlockInfo.emplace_back(std::string(BB->getParent()->getName()),
                            std::string(BB->getName()));
 
+}
+
   // Loop over and delete any hack up any blocks that are not listed...
-  for (auto &F : *M)
+  for (auto &F : *M) {
     // Loop over all of the basic blocks and remove them if they are unneeded.
     for (Function::iterator BBIt = F.begin(); BBIt != F.end();) {
       if (!Blocks.count(&*BBIt)) {
@@ -711,6 +827,8 @@ bool ReduceSimplifyCFG::TestBlocks(std::vector<const BasicBlock *> &BBs) {
       }
       simplifyCFG(&*BBIt++, TTI);
     }
+
+}
   // Verify we didn't break anything
   std::vector<std::string> Passes;
   Passes.push_back("verify");
@@ -732,8 +850,10 @@ bool ReduceSimplifyCFG::TestBlocks(std::vector<const BasicBlock *> &BBs) {
     for (auto &BI : BlockInfo) {
       auto *F = cast<Function>(GST.lookup(BI.first));
       Value *V = F->getValueSymbolTable()->lookup(BI.second);
-      if (V && V->getType() == Type::getLabelTy(V->getContext()))
+      if (V && V->getType() == Type::getLabelTy(V->getContext())) {
         BBs.push_back(cast<BasicBlock>(V));
+
+}
     }
     return true;
   }
@@ -755,10 +875,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<const Instruction *> &Prefix,
                               std::vector<const Instruction *> &Kept) override {
-    if (!Kept.empty() && TestInsts(Kept))
+    if (!Kept.empty() && TestInsts(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestInsts(Prefix))
+
+}
+    if (!Prefix.empty() && TestInsts(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -780,23 +904,31 @@ bool ReduceCrashingInstructions::TestInsts(
   }
 
   outs() << "Checking for crash with only " << Instructions.size();
-  if (Instructions.size() == 1)
+  if (Instructions.size() == 1) {
     outs() << " instruction: ";
-  else
+  } else {
     outs() << " instructions: ";
 
-  for (Module::iterator MI = M->begin(), ME = M->end(); MI != ME; ++MI)
-    for (Function::iterator FI = MI->begin(), FE = MI->end(); FI != FE; ++FI)
+}
+
+  for (Module::iterator MI = M->begin(), ME = M->end(); MI != ME; ++MI) {
+    for (Function::iterator FI = MI->begin(), FE = MI->end(); FI != FE; ++FI) {
       for (BasicBlock::iterator I = FI->begin(), E = FI->end(); I != E;) {
         Instruction *Inst = &*I++;
         if (!Instructions.count(Inst) && !Inst->isTerminator() &&
             !Inst->isEHPad() && !Inst->getType()->isTokenTy() &&
             !Inst->isSwiftError()) {
-          if (!Inst->getType()->isVoidTy())
+          if (!Inst->getType()->isVoidTy()) {
             Inst->replaceAllUsesWith(UndefValue::get(Inst->getType()));
+
+}
           Inst->eraseFromParent();
         }
       }
+
+}
+
+}
 
   // Verify that this is still valid.
   legacy::PassManager Passes;
@@ -810,8 +942,10 @@ bool ReduceCrashingInstructions::TestInsts(
     // Make sure to use instruction pointers that point into the now-current
     // module, and that they don't include any deleted blocks.
     Insts.clear();
-    for (Instruction *Inst : Instructions)
+    for (Instruction *Inst : Instructions) {
       Insts.push_back(Inst);
+
+}
     return true;
   }
   // It didn't crash, try something else.
@@ -832,10 +966,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<Instruction *> &Prefix,
                               std::vector<Instruction *> &Kept) override {
-    if (!Kept.empty() && TestInsts(Kept))
+    if (!Kept.empty() && TestInsts(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestInsts(Prefix))
+
+}
+    if (!Prefix.empty() && TestInsts(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -850,25 +988,31 @@ bool ReduceCrashingMetadata::TestInsts(std::vector<Instruction *> &Insts) {
 
   // Convert list to set for fast lookup...
   SmallPtrSet<Instruction *, 32> Instructions;
-  for (Instruction *I : Insts)
+  for (Instruction *I : Insts) {
     Instructions.insert(cast<Instruction>(VMap[I]));
+
+}
 
   outs() << "Checking for crash with metadata retained from "
          << Instructions.size();
-  if (Instructions.size() == 1)
+  if (Instructions.size() == 1) {
     outs() << " instruction: ";
-  else
+  } else {
     outs() << " instructions: ";
+
+}
 
   // Try to drop instruction metadata from all instructions, except the ones
   // selected in Instructions.
-  for (Function &F : *M)
+  for (Function &F : *M) {
     for (Instruction &Inst : instructions(F)) {
       if (Instructions.find(&Inst) == Instructions.end()) {
         Inst.dropUnknownNonDebugMetadata();
         Inst.setDebugLoc({});
       }
     }
+
+}
 
   // Verify that this is still valid.
   legacy::PassManager Passes;
@@ -882,8 +1026,10 @@ bool ReduceCrashingMetadata::TestInsts(std::vector<Instruction *> &Insts) {
     // Make sure to use instruction pointers that point into the now-current
     // module, and that they don't include any deleted blocks.
     Insts.clear();
-    for (Instruction *I : Instructions)
+    for (Instruction *I : Instructions) {
       Insts.push_back(I);
+
+}
     return true;
   }
   // It didn't crash, try something else.
@@ -903,10 +1049,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<std::string> &Prefix,
                               std::vector<std::string> &Kept) override {
-    if (!Kept.empty() && TestNamedMDs(Kept))
+    if (!Kept.empty() && TestNamedMDs(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestNamedMDs(Prefix))
+
+}
+    if (!Prefix.empty() && TestNamedMDs(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -921,29 +1071,41 @@ bool ReduceCrashingNamedMD::TestNamedMDs(std::vector<std::string> &NamedMDs) {
 
   outs() << "Checking for crash with only these named metadata nodes:";
   unsigned NumPrint = std::min<size_t>(NamedMDs.size(), 10);
-  for (unsigned i = 0, e = NumPrint; i != e; ++i)
+  for (unsigned i = 0, e = NumPrint; i != e; ++i) {
     outs() << " " << NamedMDs[i];
-  if (NumPrint < NamedMDs.size())
+
+}
+  if (NumPrint < NamedMDs.size()) {
     outs() << "... <" << NamedMDs.size() << " total>";
+
+}
   outs() << ": ";
 
   // Make a StringMap for faster lookup
   StringSet<> Names;
-  for (const std::string &Name : NamedMDs)
+  for (const std::string &Name : NamedMDs) {
     Names.insert(Name);
+
+}
 
   // First collect all the metadata to delete in a vector, then
   // delete them all at once to avoid invalidating the iterator
   std::vector<NamedMDNode *> ToDelete;
   ToDelete.reserve(M->named_metadata_size() - Names.size());
-  for (auto &NamedMD : M->named_metadata())
+  for (auto &NamedMD : M->named_metadata()) {
     // Always keep a nonempty llvm.dbg.cu because the Verifier would complain.
     if (!Names.count(NamedMD.getName()) &&
-        (!(NamedMD.getName() == "llvm.dbg.cu" && NamedMD.getNumOperands() > 0)))
+        (!(NamedMD.getName() == "llvm.dbg.cu" && NamedMD.getNumOperands() > 0))) {
       ToDelete.push_back(&NamedMD);
 
-  for (auto *NamedMD : ToDelete)
+}
+
+}
+
+  for (auto *NamedMD : ToDelete) {
     NamedMD->eraseFromParent();
+
+}
 
   // Verify that this is still valid.
   legacy::PassManager Passes;
@@ -970,10 +1132,14 @@ public:
 
   Expected<TestResult> doTest(std::vector<const MDNode *> &Prefix,
                               std::vector<const MDNode *> &Kept) override {
-    if (!Kept.empty() && TestNamedMDOps(Kept))
+    if (!Kept.empty() && TestNamedMDOps(Kept)) {
       return KeepSuffix;
-    if (!Prefix.empty() && TestNamedMDOps(Prefix))
+
+}
+    if (!Prefix.empty() && TestNamedMDOps(Prefix)) {
       return KeepPrefix;
+
+}
     return NoFailure;
   }
 
@@ -990,10 +1156,12 @@ bool ReduceCrashingNamedMDOps::TestNamedMDOps(
   }
 
   outs() << "Checking for crash with only " << OldMDNodeOps.size();
-  if (OldMDNodeOps.size() == 1)
+  if (OldMDNodeOps.size() == 1) {
     outs() << " named metadata operand: ";
-  else
+  } else {
     outs() << " named metadata operands: ";
+
+}
 
   ValueToValueMapTy VMap;
   std::unique_ptr<Module> M = CloneModule(BD.getProgram(), VMap);
@@ -1005,9 +1173,13 @@ bool ReduceCrashingNamedMDOps::TestNamedMDOps(
     M->eraseNamedMetadata(M->getNamedMetadata(NamedMD.getName()));
     NamedMDNode *NewNamedMDNode =
         M->getOrInsertNamedMetadata(NamedMD.getName());
-    for (MDNode *op : NamedMD.operands())
-      if (OldMDNodeOps.count(op))
+    for (MDNode *op : NamedMD.operands()) {
+      if (OldMDNodeOps.count(op)) {
         NewNamedMDNode->addOperand(cast<MDNode>(MapMetadata(op, VMap)));
+
+}
+
+}
   }
 
   // Verify that this is still valid.
@@ -1020,8 +1192,10 @@ bool ReduceCrashingNamedMDOps::TestNamedMDOps(
     // Make sure to use instruction pointers that point into the now-current
     // module, and that they don't include any deleted blocks.
     NamedMDOps.clear();
-    for (const MDNode *Node : OldMDNodeOps)
+    for (const MDNode *Node : OldMDNodeOps) {
       NamedMDOps.push_back(cast<MDNode>(*VMap.getMappedMD(Node)));
+
+}
 
     BD.setNewProgram(std::move(M)); // It crashed, keep the trimmed version...
     return true;
@@ -1033,8 +1207,10 @@ bool ReduceCrashingNamedMDOps::TestNamedMDOps(
 /// Attempt to eliminate as many global initializers as possible.
 static Error ReduceGlobalInitializers(BugDriver &BD, BugTester TestFn) {
   Module &OrigM = BD.getProgram();
-  if (OrigM.global_empty())
+  if (OrigM.global_empty()) {
     return Error::success();
+
+}
 
   // Now try to reduce the number of global variable initializers in the
   // module to something small.
@@ -1050,8 +1226,10 @@ static Error ReduceGlobalInitializers(BugDriver &BD, BugTester TestFn) {
     }
   }
 
-  if (!DeletedInit)
+  if (!DeletedInit) {
     return Error::success();
+
+}
 
   // See if the program still causes a crash...
   outs() << "\nChecking to see if we can delete global inits: ";
@@ -1066,9 +1244,13 @@ static Error ReduceGlobalInitializers(BugDriver &BD, BugTester TestFn) {
   outs() << "  - Removing all global inits hides problem!\n";
 
   std::vector<GlobalVariable *> GVs;
-  for (GlobalVariable &GV : OrigM.globals())
-    if (GV.hasInitializer())
+  for (GlobalVariable &GV : OrigM.globals()) {
+    if (GV.hasInitializer()) {
       GVs.push_back(&GV);
+
+}
+
+}
 
   if (GVs.size() > 1 && !BugpointIsInterrupted) {
     outs() << "\n*** Attempting to reduce the number of global initializers "
@@ -1077,11 +1259,15 @@ static Error ReduceGlobalInitializers(BugDriver &BD, BugTester TestFn) {
     unsigned OldSize = GVs.size();
     Expected<bool> Result =
         ReduceCrashingGlobalInitializers(BD, TestFn).reduceList(GVs);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
 
-    if (GVs.size() < OldSize)
+}
+
+    if (GVs.size() < OldSize) {
       BD.EmitProgressBitcode(BD.getProgram(), "reduced-global-variables");
+
+}
   }
   return Error::success();
 }
@@ -1091,23 +1277,35 @@ static Error ReduceInsts(BugDriver &BD, BugTester TestFn) {
   // cases with large basic blocks where the problem is at one end.
   if (!BugpointIsInterrupted) {
     std::vector<const Instruction *> Insts;
-    for (const Function &F : BD.getProgram())
-      for (const BasicBlock &BB : F)
-        for (const Instruction &I : BB)
-          if (!I.isTerminator())
+    for (const Function &F : BD.getProgram()) {
+      for (const BasicBlock &BB : F) {
+        for (const Instruction &I : BB) {
+          if (!I.isTerminator()) {
             Insts.push_back(&I);
+
+}
+
+}
+
+}
+
+}
 
     Expected<bool> Result =
         ReduceCrashingInstructions(BD, TestFn).reduceList(Insts);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
+
+}
   }
 
   unsigned Simplification = 2;
   do {
-    if (BugpointIsInterrupted)
+    if (BugpointIsInterrupted) {
       // TODO: Should we distinguish this with an "interrupted error"?
       return Error::success();
+
+}
     --Simplification;
     outs() << "\n*** Attempting to reduce testcase by deleting instruc"
            << "tions: Simplification Level #" << Simplification << '\n';
@@ -1128,22 +1326,26 @@ static Error ReduceInsts(BugDriver &BD, BugTester TestFn) {
     unsigned CurInstructionNum = 0;
     for (Module::const_iterator FI = BD.getProgram().begin(),
                                 E = BD.getProgram().end();
-         FI != E; ++FI)
-      if (!FI->isDeclaration())
+         FI != E; ++FI) {
+      if (!FI->isDeclaration()) {
         for (Function::const_iterator BI = FI->begin(), E = FI->end(); BI != E;
-             ++BI)
+             ++BI) {
           for (BasicBlock::const_iterator I = BI->begin(), E = --BI->end();
                I != E; ++I, ++CurInstructionNum) {
             if (InstructionsToSkipBeforeDeleting) {
               --InstructionsToSkipBeforeDeleting;
             } else {
-              if (BugpointIsInterrupted)
+              if (BugpointIsInterrupted) {
                 // TODO: Should this be some kind of interrupted error?
                 return Error::success();
 
+}
+
               if (I->isEHPad() || I->getType()->isTokenTy() ||
-                  I->isSwiftError())
+                  I->isSwiftError()) {
                 continue;
+
+}
 
               outs() << "Checking instruction: " << *I;
               std::unique_ptr<Module> M =
@@ -1160,6 +1362,12 @@ static Error ReduceInsts(BugDriver &BD, BugTester TestFn) {
             }
           }
 
+}
+
+}
+
+}
+
     if (InstructionsToSkipBeforeDeleting) {
       InstructionsToSkipBeforeDeleting = 0;
       goto TryAgain;
@@ -1171,14 +1379,20 @@ static Error ReduceInsts(BugDriver &BD, BugTester TestFn) {
   // crash.
   if (!BugpointIsInterrupted) {
     std::vector<Instruction *> Insts;
-    for (Function &F : BD.getProgram())
-      for (Instruction &I : instructions(F))
+    for (Function &F : BD.getProgram()) {
+      for (Instruction &I : instructions(F)) {
         Insts.push_back(&I);
+
+}
+
+}
 
     Expected<bool> Result =
         ReduceCrashingMetadata(BD, TestFn).reduceList(Insts);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
+
+}
   }
 
   BD.EmitProgressBitcode(BD.getProgram(), "reduced-instructions");
@@ -1191,15 +1405,23 @@ static Error ReduceInsts(BugDriver &BD, BugTester TestFn) {
 static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
   // See if we can get away with nuking some of the global variable initializers
   // in the program...
-  if (!NoGlobalRM)
-    if (Error E = ReduceGlobalInitializers(BD, TestFn))
+  if (!NoGlobalRM) {
+    if (Error E = ReduceGlobalInitializers(BD, TestFn)) {
       return E;
+
+}
+
+}
 
   // Now try to reduce the number of functions in the module to something small.
   std::vector<Function *> Functions;
-  for (Function &F : BD.getProgram())
-    if (!F.isDeclaration())
+  for (Function &F : BD.getProgram()) {
+    if (!F.isDeclaration()) {
       Functions.push_back(&F);
+
+}
+
+}
 
   if (Functions.size() > 1 && !BugpointIsInterrupted) {
     outs() << "\n*** Attempting to reduce the number of functions "
@@ -1208,18 +1430,24 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
     unsigned OldSize = Functions.size();
     Expected<bool> Result =
         ReduceCrashingFunctions(BD, TestFn).reduceList(Functions);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
 
-    if (Functions.size() < OldSize)
+}
+
+    if (Functions.size() < OldSize) {
       BD.EmitProgressBitcode(BD.getProgram(), "reduced-function");
+
+}
   }
 
   if (!NoAttributeRM) {
     // For each remaining function, try to reduce that function's attributes.
     std::vector<std::string> FunctionNames;
-    for (Function &F : BD.getProgram())
+    for (Function &F : BD.getProgram()) {
       FunctionNames.push_back(std::string(F.getName()));
+
+}
 
     if (!FunctionNames.empty() && !BugpointIsInterrupted) {
       outs() << "\n*** Attempting to reduce the number of function attributes"
@@ -1232,20 +1460,26 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
         assert(Fn && "Could not find funcion?");
 
         std::vector<Attribute> Attrs;
-        for (Attribute A : Fn->getAttributes().getFnAttributes())
+        for (Attribute A : Fn->getAttributes().getFnAttributes()) {
           Attrs.push_back(A);
+
+}
 
         OldSize += Attrs.size();
         Expected<bool> Result =
           ReduceCrashingFunctionAttributes(BD, Name, TestFn).reduceList(Attrs);
-        if (Error E = Result.takeError())
+        if (Error E = Result.takeError()) {
           return E;
+
+}
 
         NewSize += Attrs.size();
       }
 
-      if (OldSize < NewSize)
+      if (OldSize < NewSize) {
         BD.EmitProgressBitcode(BD.getProgram(), "reduced-function-attributes");
+
+}
     }
   }
 
@@ -1253,19 +1487,29 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
   // eliminate blocks.
   if (!DisableSimplifyCFG && !BugpointIsInterrupted) {
     std::vector<const BasicBlock *> Blocks;
-    for (Function &F : BD.getProgram())
-      for (BasicBlock &BB : F)
+    for (Function &F : BD.getProgram()) {
+      for (BasicBlock &BB : F) {
         Blocks.push_back(&BB);
+
+}
+
+}
     unsigned OldSize = Blocks.size();
     Expected<bool> Result =
         ReduceCrashingConditionals(BD, TestFn, true).reduceList(Blocks);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
+
+}
     Result = ReduceCrashingConditionals(BD, TestFn, false).reduceList(Blocks);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
-    if (Blocks.size() < OldSize)
+
+}
+    if (Blocks.size() < OldSize) {
       BD.EmitProgressBitcode(BD.getProgram(), "reduced-conditionals");
+
+}
   }
 
   // Attempt to delete entire basic blocks at a time to speed up
@@ -1275,42 +1519,64 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
   //
   if (!DisableSimplifyCFG && !BugpointIsInterrupted) {
     std::vector<const BasicBlock *> Blocks;
-    for (Function &F : BD.getProgram())
-      for (BasicBlock &BB : F)
+    for (Function &F : BD.getProgram()) {
+      for (BasicBlock &BB : F) {
         Blocks.push_back(&BB);
+
+}
+
+}
     unsigned OldSize = Blocks.size();
     Expected<bool> Result = ReduceCrashingBlocks(BD, TestFn).reduceList(Blocks);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
-    if (Blocks.size() < OldSize)
+
+}
+    if (Blocks.size() < OldSize) {
       BD.EmitProgressBitcode(BD.getProgram(), "reduced-blocks");
+
+}
   }
 
   if (!DisableSimplifyCFG && !BugpointIsInterrupted) {
     std::vector<const BasicBlock *> Blocks;
-    for (Function &F : BD.getProgram())
-      for (BasicBlock &BB : F)
+    for (Function &F : BD.getProgram()) {
+      for (BasicBlock &BB : F) {
         Blocks.push_back(&BB);
+
+}
+
+}
     unsigned OldSize = Blocks.size();
     Expected<bool> Result = ReduceSimplifyCFG(BD, TestFn).reduceList(Blocks);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
-    if (Blocks.size() < OldSize)
+
+}
+    if (Blocks.size() < OldSize) {
       BD.EmitProgressBitcode(BD.getProgram(), "reduced-simplifycfg");
+
+}
   }
 
   // Attempt to delete instructions using bisection. This should help out nasty
   // cases with large basic blocks where the problem is at one end.
-  if (!BugpointIsInterrupted)
-    if (Error E = ReduceInsts(BD, TestFn))
+  if (!BugpointIsInterrupted) {
+    if (Error E = ReduceInsts(BD, TestFn)) {
       return E;
+
+}
+
+}
 
   // Attempt to strip debug info metadata.
   auto stripMetadata = [&](std::function<bool(Module &)> strip) {
     std::unique_ptr<Module> M = CloneModule(BD.getProgram());
     strip(*M);
-    if (TestFn(BD, M.get()))
+    if (TestFn(BD, M.get())) {
       BD.setNewProgram(std::move(M));
+
+}
   };
   if (!NoStripDebugInfo && !BugpointIsInterrupted) {
     outs() << "\n*** Attempting to strip the debug info: ";
@@ -1327,25 +1593,35 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
       // by dropping global named metadata that anchors them
       outs() << "\n*** Attempting to remove named metadata: ";
       std::vector<std::string> NamedMDNames;
-      for (auto &NamedMD : BD.getProgram().named_metadata())
+      for (auto &NamedMD : BD.getProgram().named_metadata()) {
         NamedMDNames.push_back(NamedMD.getName().str());
+
+}
       Expected<bool> Result =
           ReduceCrashingNamedMD(BD, TestFn).reduceList(NamedMDNames);
-      if (Error E = Result.takeError())
+      if (Error E = Result.takeError()) {
         return E;
+
+}
     }
 
     if (!BugpointIsInterrupted) {
       // Now that we quickly dropped all the named metadata that doesn't
       // contribute to the crash, bisect the operands of the remaining ones
       std::vector<const MDNode *> NamedMDOps;
-      for (auto &NamedMD : BD.getProgram().named_metadata())
-        for (auto op : NamedMD.operands())
+      for (auto &NamedMD : BD.getProgram().named_metadata()) {
+        for (auto op : NamedMD.operands()) {
           NamedMDOps.push_back(op);
+
+}
+
+}
       Expected<bool> Result =
           ReduceCrashingNamedMDOps(BD, TestFn).reduceList(NamedMDOps);
-      if (Error E = Result.takeError())
+      if (Error E = Result.takeError()) {
         return E;
+
+}
     }
     BD.EmitProgressBitcode(BD.getProgram(), "reduced-named-md");
   }
@@ -1357,9 +1633,11 @@ static Error DebugACrash(BugDriver &BD, BugTester TestFn) {
     M = BD.performFinalCleanups(std::move(M), true);
 
     // Find out if the pass still crashes on the cleaned up program...
-    if (M && TestFn(BD, M.get()))
+    if (M && TestFn(BD, M.get())) {
       BD.setNewProgram(
           std::move(M)); // Yup, it does, keep the reduced version...
+
+}
   }
 
   BD.EmitProgressBitcode(BD.getProgram(), "reduced-simplified");
@@ -1381,8 +1659,10 @@ Error BugDriver::debugOptimizerCrash(const std::string &ID) {
   // Reduce the list of passes which causes the optimizer to crash...
   if (!BugpointIsInterrupted && !DontReducePassList) {
     Expected<bool> Result = ReducePassList(*this).reduceList(PassesToRun);
-    if (Error E = Result.takeError())
+    if (Error E = Result.takeError()) {
       return E;
+
+}
   }
 
   outs() << "\n*** Found crashing pass"
@@ -1392,14 +1672,18 @@ Error BugDriver::debugOptimizerCrash(const std::string &ID) {
   EmitProgressBitcode(*Program, ID);
 
   auto Res = DebugACrash(*this, TestForOptimizerCrash);
-  if (Res || DontReducePassList)
+  if (Res || DontReducePassList) {
     return Res;
+
+}
   // Try to reduce the pass list again. This covers additional cases
   // we failed to reduce earlier, because of more complex pass dependencies
   // triggering the crash.
   auto SecondRes = ReducePassList(*this).reduceList(PassesToRun);
-  if (Error E = SecondRes.takeError())
+  if (Error E = SecondRes.takeError()) {
     return E;
+
+}
   outs() << "\n*** Found crashing pass"
          << (PassesToRun.size() == 1 ? ": " : "es: ")
          << getPassesString(PassesToRun) << '\n';
@@ -1410,9 +1694,9 @@ Error BugDriver::debugOptimizerCrash(const std::string &ID) {
 
 static bool TestForCodeGenCrash(const BugDriver &BD, Module *M) {
   if (Error E = BD.compileProgram(*M)) {
-    if (VerboseErrors)
+    if (VerboseErrors) {
       errs() << toString(std::move(E)) << "\n";
-    else {
+    } else {
       consumeError(std::move(E));
       errs() << "<crash>\n";
     }

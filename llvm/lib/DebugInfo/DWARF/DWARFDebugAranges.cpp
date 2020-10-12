@@ -22,8 +22,10 @@ using namespace llvm;
 void DWARFDebugAranges::extract(
     DWARFDataExtractor DebugArangesData,
     function_ref<void(Error)> RecoverableErrorHandler) {
-  if (!DebugArangesData.isValidOffset(0))
+  if (!DebugArangesData.isValidOffset(0)) {
     return;
+
+}
   uint64_t Offset = 0;
   DWARFDebugArangeSet Set;
 
@@ -44,8 +46,10 @@ void DWARFDebugAranges::extract(
 
 void DWARFDebugAranges::generate(DWARFContext *CTX) {
   clear();
-  if (!CTX)
+  if (!CTX) {
     return;
+
+}
 
   // Extract aranges from .debug_aranges section.
   DWARFDataExtractor ArangesData(CTX->getDWARFObj().getArangesSection(),
@@ -59,11 +63,15 @@ void DWARFDebugAranges::generate(DWARFContext *CTX) {
     uint64_t CUOffset = CU->getOffset();
     if (ParsedCUOffsets.insert(CUOffset).second) {
       Expected<DWARFAddressRangesVector> CURanges = CU->collectAddressRanges();
-      if (!CURanges)
+      if (!CURanges) {
         CTX->getRecoverableErrorHandler()(CURanges.takeError());
-      else
-        for (const auto &R : *CURanges)
+      } else {
+        for (const auto &R : *CURanges) {
           appendRange(CUOffset, R.LowPC, R.HighPC);
+
+}
+
+}
     }
   }
 
@@ -78,8 +86,10 @@ void DWARFDebugAranges::clear() {
 
 void DWARFDebugAranges::appendRange(uint64_t CUOffset, uint64_t LowPC,
                                     uint64_t HighPC) {
-  if (LowPC >= HighPC)
+  if (LowPC >= HighPC) {
     return;
+
+}
   Endpoints.emplace_back(LowPC, CUOffset, true);
   Endpoints.emplace_back(HighPC, CUOffset, false);
 }
@@ -121,7 +131,9 @@ void DWARFDebugAranges::construct() {
 uint64_t DWARFDebugAranges::findAddress(uint64_t Address) const {
   RangeCollIterator It =
       partition_point(Aranges, [=](Range R) { return R.HighPC() <= Address; });
-  if (It != Aranges.end() && It->LowPC <= Address)
+  if (It != Aranges.end() && It->LowPC <= Address) {
     return It->CUOffset;
+
+}
   return -1ULL;
 }

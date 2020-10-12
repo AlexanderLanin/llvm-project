@@ -134,7 +134,9 @@ static void formatErrorString(StringRef FormatString,
   while (!FormatString.empty()) {
     std::pair<StringRef, StringRef> Pieces = FormatString.split("$");
     OS << Pieces.first.str();
-    if (Pieces.second.empty()) break;
+    if (Pieces.second.empty()) { break;
+
+}
 
     const char Next = Pieces.second.front();
     FormatString = Pieces.second.drop_front();
@@ -176,7 +178,9 @@ static void printErrorContentToStream(const Diagnostics::ErrorContent &Content,
     printMessageToStream(Content.Messages[0], "", OS);
   } else {
     for (size_t i = 0, e = Content.Messages.size(); i != e; ++i) {
-      if (i != 0) OS << "\n";
+      if (i != 0) { OS << "\n";
+
+}
       printMessageToStream(Content.Messages[i],
                            "Candidate " + Twine(i + 1) + ": ", OS);
     }
@@ -185,7 +189,9 @@ static void printErrorContentToStream(const Diagnostics::ErrorContent &Content,
 
 void Diagnostics::printToStream(llvm::raw_ostream &OS) const {
   for (size_t i = 0, e = Errors.size(); i != e; ++i) {
-    if (i != 0) OS << "\n";
+    if (i != 0) { OS << "\n";
+
+}
     printErrorContentToStream(Errors[i], OS);
   }
 }
@@ -199,7 +205,9 @@ std::string Diagnostics::toString() const {
 
 void Diagnostics::printToStreamFull(llvm::raw_ostream &OS) const {
   for (size_t i = 0, e = Errors.size(); i != e; ++i) {
-    if (i != 0) OS << "\n";
+    if (i != 0) { OS << "\n";
+
+}
     const ErrorContent &Error = Errors[i];
     for (size_t i = 0, e = Error.ContextStack.size(); i != e; ++i) {
       printContextFrameToStream(Error.ContextStack[i], OS);

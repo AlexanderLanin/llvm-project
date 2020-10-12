@@ -34,10 +34,12 @@ template <> void writeEscaped<kEscapeCsv>(raw_ostream &OS, const StringRef S) {
     // Needs escaping.
     OS << '"';
     for (const char C : S) {
-      if (C == '"')
+      if (C == '"') {
         OS << "\"\"";
-      else
+      } else {
         OS << C;
+
+}
     }
     OS << '"';
   }
@@ -45,24 +47,28 @@ template <> void writeEscaped<kEscapeCsv>(raw_ostream &OS, const StringRef S) {
 
 template <> void writeEscaped<kEscapeHtml>(raw_ostream &OS, const StringRef S) {
   for (const char C : S) {
-    if (C == '<')
+    if (C == '<') {
       OS << "&lt;";
-    else if (C == '>')
+    } else if (C == '>') {
       OS << "&gt;";
-    else if (C == '&')
+    } else if (C == '&') {
       OS << "&amp;";
-    else
+    } else {
       OS << C;
+
+}
   }
 }
 
 template <>
 void writeEscaped<kEscapeHtmlString>(raw_ostream &OS, const StringRef S) {
   for (const char C : S) {
-    if (C == '"')
+    if (C == '"') {
       OS << "\\\"";
-    else
+    } else {
       OS << C;
+
+}
   }
 }
 
@@ -72,12 +78,14 @@ template <EscapeTag Tag>
 static void
 writeClusterId(raw_ostream &OS,
                const InstructionBenchmarkClustering::ClusterId &CID) {
-  if (CID.isNoise())
+  if (CID.isNoise()) {
     writeEscaped<Tag>(OS, "[noise]");
-  else if (CID.isError())
+  } else if (CID.isError()) {
     writeEscaped<Tag>(OS, "[error]");
-  else
+  } else {
     OS << CID.getId();
+
+}
 }
 
 template <EscapeTag Tag>
@@ -159,8 +167,10 @@ Analysis::Analysis(const Target &Target, std::unique_ptr<MCInstrInfo> InstrInfo,
       AnalysisInconsistencyEpsilonSquared_(AnalysisInconsistencyEpsilon *
                                            AnalysisInconsistencyEpsilon),
       AnalysisDisplayUnstableOpcodes_(AnalysisDisplayUnstableOpcodes) {
-  if (Clustering.getPoints().empty())
+  if (Clustering.getPoints().empty()) {
     return;
+
+}
 
   const InstructionBenchmark &FirstPoint = Clustering.getPoints().front();
   RegInfo_.reset(Target.createMCRegInfo(FirstPoint.LLVMTriple));
@@ -182,8 +192,10 @@ Analysis::Analysis(const Target &Target, std::unique_ptr<MCInstrInfo> InstrInfo,
 
 template <>
 Error Analysis::run<Analysis::PrintClusters>(raw_ostream &OS) const {
-  if (Clustering_.getPoints().empty())
+  if (Clustering_.getPoints().empty()) {
     return Error::success();
+
+}
 
   // Write the header.
   OS << "cluster_id" << kCsvSep << "opcode_name" << kCsvSep << "config"
@@ -217,8 +229,10 @@ Analysis::makePointsPerSchedClass() const {
   const auto &Points = Clustering_.getPoints();
   for (size_t PointId = 0, E = Points.size(); PointId < E; ++PointId) {
     const InstructionBenchmark &Point = Points[PointId];
-    if (!Point.Error.empty())
+    if (!Point.Error.empty()) {
       continue;
+
+}
     assert(!Point.Key.Instructions.empty());
     // FIXME: we should be using the tuple of classes for instructions in the
     // snippet as key.
@@ -249,11 +263,15 @@ Analysis::makePointsPerSchedClass() const {
 static void writeParallelSnippetHtml(raw_ostream &OS,
                                  const std::vector<MCInst> &Instructions,
                                  const MCInstrInfo &InstrInfo) {
-  if (Instructions.empty())
+  if (Instructions.empty()) {
     return;
+
+}
   writeEscaped<kEscapeHtml>(OS, InstrInfo.getName(Instructions[0].getOpcode()));
-  if (Instructions.size() > 1)
+  if (Instructions.size() > 1) {
     OS << " (x" << Instructions.size() << ")";
+
+}
 }
 
 // Latency tries to find a serial path. Just show the opcode path and show the
@@ -263,10 +281,12 @@ static void writeLatencySnippetHtml(raw_ostream &OS,
                                     const MCInstrInfo &InstrInfo) {
   bool First = true;
   for (const MCInst &Instr : Instructions) {
-    if (First)
+    if (First) {
       First = false;
-    else
+    } else {
       OS << " &rarr; ";
+
+}
     writeEscaped<kEscapeHtml>(OS, InstrInfo.getName(Instr.getOpcode()));
   }
 }
@@ -337,8 +357,10 @@ void Analysis::SchedClassCluster::addPoint(
     size_t PointId, const InstructionBenchmarkClustering &Clustering) {
   PointIds.push_back(PointId);
   const auto &Point = Clustering.getPoints()[PointId];
-  if (ClusterId.isUndef())
+  if (ClusterId.isUndef()) {
     ClusterId = Clustering.getClusterIdForPoint(PointId);
+
+}
   assert(ClusterId == Clustering.getClusterIdForPoint(PointId));
 
   Centroid.addPoint(Point.Measurements);
@@ -351,16 +373,20 @@ bool Analysis::SchedClassCluster::measurementsMatch(
   assert(!Clustering.getPoints().empty());
   const InstructionBenchmark::ModeE Mode = Clustering.getPoints()[0].Mode;
 
-  if (!Centroid.validate(Mode))
+  if (!Centroid.validate(Mode)) {
     return false;
+
+}
 
   const std::vector<BenchmarkMeasure> ClusterCenterPoint =
       Centroid.getAsPoint();
 
   const std::vector<BenchmarkMeasure> SchedClassPoint =
       RSC.getAsPoint(Mode, STI, Centroid.getStats());
-  if (SchedClassPoint.empty())
+  if (SchedClassPoint.empty()) {
     return false; // In Uops mode validate() may not be enough.
+
+}
 
   assert(ClusterCenterPoint.size() == SchedClassPoint.size() &&
          "Expected measured/sched data dimensions to match.");
@@ -433,8 +459,10 @@ void Analysis::printClusterRawHtml(
     llvm::raw_ostream &OS) const {
   const auto &Points = Clustering_.getPoints();
   const auto &Cluster = Clustering_.getCluster(Id);
-  if (Cluster.PointIndices.empty())
+  if (Cluster.PointIndices.empty()) {
     return;
+
+}
 
   OS << "<div class=\"inconsistency\"><p>" << display_name << " Cluster ("
      << Cluster.PointIndices.size() << " points)</p>";
@@ -545,16 +573,22 @@ Error Analysis::run<Analysis::PrintSchedClassInconsistencies>(
   OS << "</span></h3>";
 
   for (const auto &RSCAndPoints : makePointsPerSchedClass()) {
-    if (!RSCAndPoints.RSC.SCDesc)
+    if (!RSCAndPoints.RSC.SCDesc) {
       continue;
+
+}
     // Bucket sched class points into sched class clusters.
     std::vector<SchedClassCluster> SchedClassClusters;
     for (const size_t PointId : RSCAndPoints.PointIds) {
       const auto &ClusterId = Clustering_.getClusterIdForPoint(PointId);
-      if (!ClusterId.isValid())
+      if (!ClusterId.isValid()) {
         continue; // Ignore noise and errors. FIXME: take noise into account ?
-      if (ClusterId.isUnstable() ^ AnalysisDisplayUnstableOpcodes_)
+
+}
+      if (ClusterId.isUnstable() ^ AnalysisDisplayUnstableOpcodes_) {
         continue; // Either display stable or unstable clusters only.
+
+}
       auto SchedClassClusterIt =
           std::find_if(SchedClassClusters.begin(), SchedClassClusters.end(),
                        [ClusterId](const SchedClassCluster &C) {
@@ -574,8 +608,10 @@ Error Analysis::run<Analysis::PrintSchedClassInconsistencies>(
           return C.measurementsMatch(*SubtargetInfo_, RSCAndPoints.RSC,
                                      Clustering_,
                                      AnalysisInconsistencyEpsilonSquared_);
-        }))
+        })) {
       continue; // Nothing weird.
+
+}
 
     OS << "<div class=\"inconsistency\"><p>Sched Class <span "
           "class=\"sched-class-name\">";

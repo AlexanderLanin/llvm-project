@@ -116,10 +116,12 @@ static cl::alias AccountInstrMap2("m", cl::aliasopt(AccountInstrMap),
 namespace {
 
 template <class T, class U> void setMinMax(std::pair<T, T> &MM, U &&V) {
-  if (MM.first == 0 || MM.second == 0)
+  if (MM.first == 0 || MM.second == 0) {
     MM = std::make_pair(std::forward<U>(V), std::forward<U>(V));
-  else
+  } else {
     MM = std::make_pair(std::min(MM.first, V), std::max(MM.second, V));
+
+}
 }
 
 template <class T> T diff(T L, T R) { return std::max(L, R) - std::min(L, R); }
@@ -130,11 +132,15 @@ bool LatencyAccountant::accountRecord(const XRayRecord &Record) {
   setMinMax(PerThreadMinMaxTSC[Record.TId], Record.TSC);
   setMinMax(PerCPUMinMaxTSC[Record.CPU], Record.TSC);
 
-  if (CurrentMaxTSC == 0)
+  if (CurrentMaxTSC == 0) {
     CurrentMaxTSC = Record.TSC;
 
-  if (Record.TSC < CurrentMaxTSC)
+}
+
+  if (Record.TSC < CurrentMaxTSC) {
     return false;
+
+}
 
   auto &ThreadStack = PerThreadFunctionStack[Record.TId];
   switch (Record.Type) {
@@ -149,8 +155,10 @@ bool LatencyAccountant::accountRecord(const XRayRecord &Record) {
   }
   case RecordTypes::EXIT:
   case RecordTypes::TAIL_EXIT: {
-    if (ThreadStack.empty())
+    if (ThreadStack.empty()) {
       return false;
+
+}
 
     if (ThreadStack.back().first == Record.FuncId) {
       const auto &Top = ThreadStack.back();
@@ -159,8 +167,10 @@ bool LatencyAccountant::accountRecord(const XRayRecord &Record) {
       break;
     }
 
-    if (!DeduceSiblingCalls)
+    if (!DeduceSiblingCalls) {
       return false;
+
+}
 
     // Look for the parent up the stack.
     auto Parent =
@@ -168,8 +178,10 @@ bool LatencyAccountant::accountRecord(const XRayRecord &Record) {
                      [&](const std::pair<const int32_t, uint64_t> &E) {
                        return E.first == Record.FuncId;
                      });
-    if (Parent == ThreadStack.rend())
+    if (Parent == ThreadStack.rend()) {
       return false;
+
+}
 
     // Account time for this apparently sibling call exit up the stack.
     // Considering the following case:
@@ -320,8 +332,10 @@ void LatencyAccountant::exportStats(const XRayFileHeader &Header, F Fn) const {
     Results.erase(Results.begin() + MaxTop, Results.end());
   }
 
-  for (const auto &R : Results)
+  for (const auto &R : Results) {
     Fn(std::get<0>(R), std::get<1>(R), std::get<2>(R));
+
+}
 }
 
 void LatencyAccountant::exportStatsAsText(raw_ostream &OS,
@@ -404,20 +418,24 @@ static CommandRegistration Unused(&Account, []() -> Error {
   InstrumentationMap Map;
   if (!AccountInstrMap.empty()) {
     auto InstrumentationMapOrError = loadInstrumentationMap(AccountInstrMap);
-    if (!InstrumentationMapOrError)
+    if (!InstrumentationMapOrError) {
       return joinErrors(make_error<StringError>(
                             Twine("Cannot open instrumentation map '") +
                                 AccountInstrMap + "'",
                             std::make_error_code(std::errc::invalid_argument)),
                         InstrumentationMapOrError.takeError());
+
+}
     Map = std::move(*InstrumentationMapOrError);
   }
 
   std::error_code EC;
   raw_fd_ostream OS(AccountOutput, EC, sys::fs::OpenFlags::OF_Text);
-  if (EC)
+  if (EC) {
     return make_error<StringError>(
         Twine("Cannot open file '") + AccountOutput + "' for writing.", EC);
+
+}
 
   const auto &FunctionAddresses = Map.getFunctionAddresses();
   symbolize::LLVMSymbolizer Symbolizer;
@@ -425,17 +443,21 @@ static CommandRegistration Unused(&Account, []() -> Error {
                                                   FunctionAddresses);
   xray::LatencyAccountant FCA(FuncIdHelper, AccountDeduceSiblingCalls);
   auto TraceOrErr = loadTraceFile(AccountInput);
-  if (!TraceOrErr)
+  if (!TraceOrErr) {
     return joinErrors(
         make_error<StringError>(
             Twine("Failed loading input file '") + AccountInput + "'",
             std::make_error_code(std::errc::executable_format_error)),
         TraceOrErr.takeError());
 
+}
+
   auto &T = *TraceOrErr;
   for (const auto &Record : T) {
-    if (FCA.accountRecord(Record))
+    if (FCA.accountRecord(Record)) {
       continue;
+
+}
     errs()
         << "Error processing record: "
         << llvm::formatv(
@@ -450,15 +472,19 @@ static CommandRegistration Unused(&Account, []() -> Error {
         continue;
       }
       auto Level = ThreadStack.second.size();
-      for (const auto &Entry : llvm::reverse(ThreadStack.second))
+      for (const auto &Entry : llvm::reverse(ThreadStack.second)) {
         errs() << "  #" << Level-- << "\t"
                << FuncIdHelper.SymbolOrNumber(Entry.first) << '\n';
+
+}
     }
-    if (!AccountKeepGoing)
+    if (!AccountKeepGoing) {
       return make_error<StringError>(
           Twine("Failed accounting function calls in file '") + AccountInput +
               "'.",
           std::make_error_code(std::errc::executable_format_error));
+
+}
   }
   switch (AccountOutputFormat) {
   case AccountOutputFormats::TEXT:

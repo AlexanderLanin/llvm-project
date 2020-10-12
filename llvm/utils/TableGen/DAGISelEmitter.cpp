@@ -39,18 +39,24 @@ public:
 /// latencies in this calculation.
 static unsigned getResultPatternCost(TreePatternNode *P,
                                      CodeGenDAGPatterns &CGP) {
-  if (P->isLeaf()) return 0;
+  if (P->isLeaf()) { return 0;
+
+}
 
   unsigned Cost = 0;
   Record *Op = P->getOperator();
   if (Op->isSubClassOf("Instruction")) {
     Cost++;
     CodeGenInstruction &II = CGP.getTargetInfo().getInstruction(Op);
-    if (II.usesCustomInserter)
+    if (II.usesCustomInserter) {
       Cost += 10;
+
+}
   }
-  for (unsigned i = 0, e = P->getNumChildren(); i != e; ++i)
+  for (unsigned i = 0, e = P->getNumChildren(); i != e; ++i) {
     Cost += getResultPatternCost(P->getChild(i), CGP);
+
+}
   return Cost;
 }
 
@@ -58,15 +64,19 @@ static unsigned getResultPatternCost(TreePatternNode *P,
 /// pattern.
 static unsigned getResultPatternSize(TreePatternNode *P,
                                      CodeGenDAGPatterns &CGP) {
-  if (P->isLeaf()) return 0;
+  if (P->isLeaf()) { return 0;
+
+}
 
   unsigned Cost = 0;
   Record *Op = P->getOperator();
   if (Op->isSubClassOf("Instruction")) {
     Cost += Op->getValueAsInt("CodeSize");
   }
-  for (unsigned i = 0, e = P->getNumChildren(); i != e; ++i)
+  for (unsigned i = 0, e = P->getNumChildren(); i != e; ++i) {
     Cost += getResultPatternSize(P->getChild(i), CGP);
+
+}
   return Cost;
 }
 
@@ -84,30 +94,46 @@ struct PatternSortingPredicate {
 
     MVT LHSVT = LT->getNumTypes() != 0 ? LT->getSimpleType(0) : MVT::Other;
     MVT RHSVT = RT->getNumTypes() != 0 ? RT->getSimpleType(0) : MVT::Other;
-    if (LHSVT.isVector() != RHSVT.isVector())
+    if (LHSVT.isVector() != RHSVT.isVector()) {
       return RHSVT.isVector();
 
-    if (LHSVT.isFloatingPoint() != RHSVT.isFloatingPoint())
+}
+
+    if (LHSVT.isFloatingPoint() != RHSVT.isFloatingPoint()) {
       return RHSVT.isFloatingPoint();
+
+}
 
     // Otherwise, if the patterns might both match, sort based on complexity,
     // which means that we prefer to match patterns that cover more nodes in the
     // input over nodes that cover fewer.
     int LHSSize = LHS->getPatternComplexity(CGP);
     int RHSSize = RHS->getPatternComplexity(CGP);
-    if (LHSSize > RHSSize) return true;   // LHS -> bigger -> less cost
-    if (LHSSize < RHSSize) return false;
+    if (LHSSize > RHSSize) { return true;   // LHS -> bigger -> less cost
+
+}
+    if (LHSSize < RHSSize) { return false;
+
+}
 
     // If the patterns have equal complexity, compare generated instruction cost
     unsigned LHSCost = getResultPatternCost(LHS->getDstPattern(), CGP);
     unsigned RHSCost = getResultPatternCost(RHS->getDstPattern(), CGP);
-    if (LHSCost < RHSCost) return true;
-    if (LHSCost > RHSCost) return false;
+    if (LHSCost < RHSCost) { return true;
+
+}
+    if (LHSCost > RHSCost) { return false;
+
+}
 
     unsigned LHSPatSize = getResultPatternSize(LHS->getDstPattern(), CGP);
     unsigned RHSPatSize = getResultPatternSize(RHS->getDstPattern(), CGP);
-    if (LHSPatSize < RHSPatSize) return true;
-    if (LHSPatSize > RHSPatSize) return false;
+    if (LHSPatSize < RHSPatSize) { return true;
+
+}
+    if (LHSPatSize > RHSPatSize) { return false;
+
+}
 
     // Sort based on the UID of the pattern, to reflect source order.
     // Note that this is not guaranteed to be unique, since a single source
@@ -152,8 +178,10 @@ void DAGISelEmitter::run(raw_ostream &OS) {
   // Add all the patterns to a temporary list so we can sort them.
   std::vector<const PatternToMatch*> Patterns;
   for (CodeGenDAGPatterns::ptm_iterator I = CGP.ptm_begin(), E = CGP.ptm_end();
-       I != E; ++I)
+       I != E; ++I) {
     Patterns.push_back(&*I);
+
+}
 
   // We want to process the matches in order of minimal cost.  Sort the patterns
   // so the least cost one is at the start.
@@ -165,10 +193,12 @@ void DAGISelEmitter::run(raw_ostream &OS) {
   std::vector<Matcher*> PatternMatchers;
   for (unsigned i = 0, e = Patterns.size(); i != e; ++i) {
     for (unsigned Variant = 0; ; ++Variant) {
-      if (Matcher *M = ConvertPatternToMatcher(*Patterns[i], Variant, CGP))
+      if (Matcher *M = ConvertPatternToMatcher(*Patterns[i], Variant, CGP)) {
         PatternMatchers.push_back(M);
-      else
+      } else {
         break;
+
+}
     }
   }
 

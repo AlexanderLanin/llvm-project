@@ -90,18 +90,22 @@ bool X86AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 void X86AsmPrinter::emitFunctionBodyStart() {
   if (EmitFPOData) {
     if (auto *XTS =
-        static_cast<X86TargetStreamer *>(OutStreamer->getTargetStreamer()))
+        static_cast<X86TargetStreamer *>(OutStreamer->getTargetStreamer())) {
       XTS->emitFPOProc(
           CurrentFnSym,
           MF->getInfo<X86MachineFunctionInfo>()->getArgumentStackSize());
+
+}
   }
 }
 
 void X86AsmPrinter::emitFunctionBodyEnd() {
   if (EmitFPOData) {
     if (auto *XTS =
-            static_cast<X86TargetStreamer *>(OutStreamer->getTargetStreamer()))
+            static_cast<X86TargetStreamer *>(OutStreamer->getTargetStreamer())) {
       XTS->emitFPOEndProc();
+
+}
   }
 }
 
@@ -121,33 +125,39 @@ void X86AsmPrinter::PrintSymbolOperand(const MachineOperand &MO,
 
     MCSymbol *GVSym;
     if (MO.getTargetFlags() == X86II::MO_DARWIN_NONLAZY ||
-        MO.getTargetFlags() == X86II::MO_DARWIN_NONLAZY_PIC_BASE)
+        MO.getTargetFlags() == X86II::MO_DARWIN_NONLAZY_PIC_BASE) {
       GVSym = getSymbolWithGlobalValueBase(GV, "$non_lazy_ptr");
-    else
+    } else {
       GVSym = getSymbolPreferLocal(*GV);
 
+}
+
     // Handle dllimport linkage.
-    if (MO.getTargetFlags() == X86II::MO_DLLIMPORT)
+    if (MO.getTargetFlags() == X86II::MO_DLLIMPORT) {
       GVSym = OutContext.getOrCreateSymbol(Twine("__imp_") + GVSym->getName());
-    else if (MO.getTargetFlags() == X86II::MO_COFFSTUB)
+    } else if (MO.getTargetFlags() == X86II::MO_COFFSTUB) {
       GVSym =
           OutContext.getOrCreateSymbol(Twine(".refptr.") + GVSym->getName());
+
+}
 
     if (MO.getTargetFlags() == X86II::MO_DARWIN_NONLAZY ||
         MO.getTargetFlags() == X86II::MO_DARWIN_NONLAZY_PIC_BASE) {
       MCSymbol *Sym = getSymbolWithGlobalValueBase(GV, "$non_lazy_ptr");
       MachineModuleInfoImpl::StubValueTy &StubSym =
           MMI->getObjFileInfo<MachineModuleInfoMachO>().getGVStubEntry(Sym);
-      if (!StubSym.getPointer())
+      if (!StubSym.getPointer()) {
         StubSym = MachineModuleInfoImpl::StubValueTy(getSymbol(GV),
                                                      !GV->hasInternalLinkage());
+
+}
     }
 
     // If the name begins with a dollar-sign, enclose it in parens.  We do this
     // to avoid having it look like an integer immediate to the assembler.
-    if (GVSym->getName()[0] != '$')
+    if (GVSym->getName()[0] != '$') {
       GVSym->print(O, MAI);
-    else {
+    } else {
       O << '(';
       GVSym->print(O, MAI);
       O << ')';
@@ -206,15 +216,19 @@ void X86AsmPrinter::PrintOperand(const MachineInstr *MI, unsigned OpNo,
   switch (MO.getType()) {
   default: llvm_unreachable("unknown operand type!");
   case MachineOperand::MO_Register: {
-    if (IsATT)
+    if (IsATT) {
       O << '%';
+
+}
     O << X86ATTInstPrinter::getRegisterName(MO.getReg());
     return;
   }
 
   case MachineOperand::MO_Immediate:
-    if (IsATT)
+    if (IsATT) {
       O << '$';
+
+}
     O << MO.getImm();
     return;
 
@@ -245,10 +259,14 @@ void X86AsmPrinter::PrintOperand(const MachineInstr *MI, unsigned OpNo,
 void X86AsmPrinter::PrintModifiedOperand(const MachineInstr *MI, unsigned OpNo,
                                          raw_ostream &O, const char *Modifier) {
   const MachineOperand &MO = MI->getOperand(OpNo);
-  if (!Modifier || MO.getType() != MachineOperand::MO_Register)
+  if (!Modifier || MO.getType() != MachineOperand::MO_Register) {
     return PrintOperand(MI, OpNo, O);
-  if (MI->getInlineAsmDialect() == InlineAsm::AD_ATT)
+
+}
+  if (MI->getInlineAsmDialect() == InlineAsm::AD_ATT) {
     O << '%';
+
+}
   Register Reg = MO.getReg();
   if (strncmp(Modifier, "subreg", strlen("subreg")) == 0) {
     unsigned Size = (strcmp(Modifier+6,"64") == 0) ? 64 :
@@ -289,8 +307,10 @@ void X86AsmPrinter::PrintLeaMemReference(const MachineInstr *MI, unsigned OpNo,
   // If we really don't want to print out (rip), don't.
   bool HasBaseReg = BaseReg.getReg() != 0;
   if (HasBaseReg && Modifier && !strcmp(Modifier, "no-rip") &&
-      BaseReg.getReg() == X86::RIP)
+      BaseReg.getReg() == X86::RIP) {
     HasBaseReg = false;
+
+}
 
   // HasParenPart - True if we will print out the () part of the mem ref.
   bool HasParenPart = IndexReg.getReg() || HasBaseReg;
@@ -300,8 +320,10 @@ void X86AsmPrinter::PrintLeaMemReference(const MachineInstr *MI, unsigned OpNo,
     llvm_unreachable("unknown operand type!");
   case MachineOperand::MO_Immediate: {
     int DispVal = DispSpec.getImm();
-    if (DispVal || !HasParenPart)
+    if (DispVal || !HasParenPart) {
       O << DispVal;
+
+}
     break;
   }
   case MachineOperand::MO_GlobalAddress:
@@ -310,23 +332,29 @@ void X86AsmPrinter::PrintLeaMemReference(const MachineInstr *MI, unsigned OpNo,
     break;
   }
 
-  if (Modifier && strcmp(Modifier, "H") == 0)
+  if (Modifier && strcmp(Modifier, "H") == 0) {
     O << "+8";
+
+}
 
   if (HasParenPart) {
     assert(IndexReg.getReg() != X86::ESP &&
            "X86 doesn't allow scaling by ESP");
 
     O << '(';
-    if (HasBaseReg)
+    if (HasBaseReg) {
       PrintModifiedOperand(MI, OpNo + X86::AddrBaseReg, O, Modifier);
+
+}
 
     if (IndexReg.getReg()) {
       O << ',';
       PrintModifiedOperand(MI, OpNo + X86::AddrIndexReg, O, Modifier);
       unsigned ScaleVal = MI->getOperand(OpNo + X86::AddrScaleAmt).getImm();
-      if (ScaleVal != 1)
+      if (ScaleVal != 1) {
         O << ',' << ScaleVal;
+
+}
     }
     O << ')';
   }
@@ -356,8 +384,10 @@ void X86AsmPrinter::PrintIntelMemReference(const MachineInstr *MI,
   // If we really don't want to print out (rip), don't.
   bool HasBaseReg = BaseReg.getReg() != 0;
   if (HasBaseReg && Modifier && !strcmp(Modifier, "no-rip") &&
-      BaseReg.getReg() == X86::RIP)
+      BaseReg.getReg() == X86::RIP) {
     HasBaseReg = false;
+
+}
 
   // If this has a segment register, print it.
   if (SegReg.getReg()) {
@@ -374,23 +404,29 @@ void X86AsmPrinter::PrintIntelMemReference(const MachineInstr *MI,
   }
 
   if (IndexReg.getReg()) {
-    if (NeedPlus) O << " + ";
-    if (ScaleVal != 1)
+    if (NeedPlus) { O << " + ";
+
+}
+    if (ScaleVal != 1) {
       O << ScaleVal << '*';
+
+}
     PrintOperand(MI, OpNo + X86::AddrIndexReg, O);
     NeedPlus = true;
   }
 
   if (!DispSpec.isImm()) {
-    if (NeedPlus) O << " + ";
+    if (NeedPlus) { O << " + ";
+
+}
     PrintOperand(MI, OpNo + X86::AddrDisp, O);
   } else {
     int64_t DispVal = DispSpec.getImm();
     if (DispVal || (!IndexReg.getReg() && !HasBaseReg)) {
       if (NeedPlus) {
-        if (DispVal > 0)
+        if (DispVal > 0) {
           O << " + ";
-        else {
+        } else {
           O << " - ";
           DispVal = -DispVal;
         }
@@ -409,8 +445,10 @@ static bool printAsmMRegister(X86AsmPrinter &P, const MachineOperand &MO,
   if (!X86::GR8RegClass.contains(Reg) &&
       !X86::GR16RegClass.contains(Reg) &&
       !X86::GR32RegClass.contains(Reg) &&
-      !X86::GR64RegClass.contains(Reg))
+      !X86::GR64RegClass.contains(Reg)) {
     return true;
+
+}
 
   switch (Mode) {
   default: return true;  // Unknown mode.
@@ -436,8 +474,10 @@ static bool printAsmMRegister(X86AsmPrinter &P, const MachineOperand &MO,
     break;
   }
 
-  if (EmitPercent)
+  if (EmitPercent) {
     O << '%';
+
+}
 
   O << X86ATTInstPrinter::getRegisterName(Reg);
   return false;
@@ -449,7 +489,9 @@ bool X86AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
                                     const char *ExtraCode, raw_ostream &O) {
   // Does this asm operand have a single letter operand modifier?
   if (ExtraCode && ExtraCode[0]) {
-    if (ExtraCode[1] != 0) return true; // Unknown modifier.
+    if (ExtraCode[1] != 0) { return true; // Unknown modifier.
+
+}
 
     const MachineOperand &MO = MI->getOperand(OpNo);
 
@@ -470,8 +512,10 @@ bool X86AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
         llvm_unreachable("unexpected operand type!");
       case MachineOperand::MO_GlobalAddress:
         PrintSymbolOperand(MO, O);
-        if (Subtarget->isPICStyleRIPRel())
+        if (Subtarget->isPICStyleRIPRel()) {
           O << "(%rip)";
+
+}
         return false;
       case MachineOperand::MO_Register:
         O << '(';
@@ -512,8 +556,10 @@ bool X86AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
     case 'k': // Print SImode register
     case 'q': // Print DImode register
     case 'V': // Print native register without '%'
-      if (MO.isReg())
+      if (MO.isReg()) {
         return printAsmMRegister(*this, MO, ExtraCode[0], O);
+
+}
       PrintOperand(MI, OpNo, O);
       return false;
 
@@ -540,7 +586,9 @@ bool X86AsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
                                           const char *ExtraCode,
                                           raw_ostream &O) {
   if (ExtraCode && ExtraCode[0]) {
-    if (ExtraCode[1] != 0) return true; // Unknown modifier.
+    if (ExtraCode[1] != 0) { return true; // Unknown modifier.
+
+}
 
     switch (ExtraCode[0]) {
     default: return true;  // Unknown modifier.
@@ -581,15 +629,21 @@ void X86AsmPrinter::emitStartOfAsmFile(Module &M) {
   if (TT.isOSBinFormatELF()) {
     // Assemble feature flags that may require creation of a note section.
     unsigned FeatureFlagsAnd = 0;
-    if (M.getModuleFlag("cf-protection-branch"))
+    if (M.getModuleFlag("cf-protection-branch")) {
       FeatureFlagsAnd |= ELF::GNU_PROPERTY_X86_FEATURE_1_IBT;
-    if (M.getModuleFlag("cf-protection-return"))
+
+}
+    if (M.getModuleFlag("cf-protection-return")) {
       FeatureFlagsAnd |= ELF::GNU_PROPERTY_X86_FEATURE_1_SHSTK;
+
+}
 
     if (FeatureFlagsAnd) {
       // Emit a .note.gnu.property section with the flags.
-      if (!TT.isArch32Bit() && !TT.isArch64Bit())
+      if (!TT.isArch32Bit() && !TT.isArch64Bit()) {
         llvm_unreachable("CFProtection used on invalid architecture!");
+
+}
       MCSection *Cur = OutStreamer->getCurrentSectionOnly();
       MCSection *Nt = MMI->getContext().getELFSection(
           ".note.gnu.property", ELF::SHT_NOTE, ELF::SHF_ALLOC);
@@ -614,8 +668,10 @@ void X86AsmPrinter::emitStartOfAsmFile(Module &M) {
     }
   }
 
-  if (TT.isOSBinFormatMachO())
+  if (TT.isOSBinFormatMachO()) {
     OutStreamer->SwitchSection(getObjFileLowering().getTextSection());
+
+}
 
   if (TT.isOSBinFormatCOFF()) {
     // Emit an absolute @feat.00 symbol.  This appears to be some kind of
@@ -636,8 +692,10 @@ void X86AsmPrinter::emitStartOfAsmFile(Module &M) {
       Feat00Flags |= 1;
     }
 
-    if (M.getModuleFlag("cfguard"))
+    if (M.getModuleFlag("cfguard")) {
       Feat00Flags |= 0x800; // Object is CFG-aware.
+
+}
 
     OutStreamer->emitSymbolAttribute(S, MCSA_Global);
     OutStreamer->emitAssignment(
@@ -648,8 +706,10 @@ void X86AsmPrinter::emitStartOfAsmFile(Module &M) {
   // If this is not inline asm and we're in 16-bit
   // mode prefix assembly with .code16.
   bool is16 = TT.getEnvironment() == Triple::CODE16;
-  if (M.getModuleInlineAsm().empty() && is16)
+  if (M.getModuleInlineAsm().empty() && is16) {
     OutStreamer->emitAssemblerFlag(MCAF_Code16);
+
+}
 }
 
 static void
@@ -660,10 +720,10 @@ emitNonLazySymbolPointer(MCStreamer &OutStreamer, MCSymbol *StubLabel,
   //   .indirect_symbol _foo
   OutStreamer.emitSymbolAttribute(MCSym.getPointer(), MCSA_IndirectSymbol);
 
-  if (MCSym.getInt())
+  if (MCSym.getInt()) {
     // External to current translation unit.
     OutStreamer.emitIntValue(0, 4/*size*/);
-  else
+  } else {
     // Internal to current translation unit.
     //
     // When we place the LSDA into the TEXT section, the type info
@@ -673,6 +733,8 @@ emitNonLazySymbolPointer(MCStreamer &OutStreamer, MCSymbol *StubLabel,
     OutStreamer.emitValue(
         MCSymbolRefExpr::create(MCSym.getPointer(), OutStreamer.getContext()),
         4 /*size*/);
+
+}
 }
 
 static void emitNonLazyStubs(MachineModuleInfo *MMI, MCStreamer &OutStreamer) {
@@ -690,8 +752,10 @@ static void emitNonLazyStubs(MachineModuleInfo *MMI, MCStreamer &OutStreamer) {
         "__IMPORT", "__pointers", MachO::S_NON_LAZY_SYMBOL_POINTERS,
         SectionKind::getMetadata()));
 
-    for (auto &Stub : Stubs)
+    for (auto &Stub : Stubs) {
       emitNonLazySymbolPointer(OutStreamer, Stub.first, Stub.second);
+
+}
 
     Stubs.clear();
     OutStreamer.AddBlankLine();

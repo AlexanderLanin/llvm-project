@@ -48,8 +48,10 @@ std::string Filter::run() {
     Pos = Data.find_first_not_of("\r\n", Pos);
     StringRef Line = Data.take_front(Pos).drop_front(LineStart);
 
-    if (parseLine(Line))
+    if (parseLine(Line)) {
       Output.push_back(Line);
+
+}
   }
 
   return llvm::join(Output, "");
@@ -67,8 +69,10 @@ bool Filter::parseLine(StringRef Line) {
   // false since the preprocessing directives should be filtered out.
 
   Line.consume_front("line");
-  if (!Line.startswith(" "))
+  if (!Line.startswith(" ")) {
     return false; // Not a line directive (pragma etc).
+
+}
 
   // #line 123 "path/file.h"
   // # 123 "path/file.h" 1
@@ -77,13 +81,17 @@ bool Filter::parseLine(StringRef Line) {
       Line.ltrim(); // There could be multiple spaces after the #line directive
 
   size_t N;
-  if (Line.consumeInteger(10, N)) // Returns true to signify an error
+  if (Line.consumeInteger(10, N)) { // Returns true to signify an error
     return false;
+
+}
 
   Line = Line.ltrim();
 
-  if (!Line.consume_front("\""))
+  if (!Line.consume_front("\"")) {
     return false; // Malformed line, no quote found.
+
+}
 
   // Split the string at the last quote (in case the path name had
   // escaped quotes as well).

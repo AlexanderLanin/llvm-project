@@ -73,15 +73,19 @@ public:
 
   bool isNext(AsmToken::TokenKind Kind) {
     auto Ok = Lexer->is(Kind);
-    if (Ok)
+    if (Ok) {
       Lex();
+
+}
     return Ok;
   }
 
   bool expect(AsmToken::TokenKind Kind, const char *KindName) {
-    if (!isNext(Kind))
+    if (!isNext(Kind)) {
       return error(std::string("Expected ") + KindName + ", instead got: ",
                    Lexer->getTok());
+
+}
     return false;
   }
 
@@ -95,24 +99,32 @@ public:
     // If there are no flags, keep Flags empty
     FlagStr.split(Flags, ",", -1, false);
     for (auto &Flag : Flags) {
-      if (Flag == "passive")
+      if (Flag == "passive") {
         Passive = true;
-      else
+      } else {
         return error("Expected section flags, instead got: ", Lexer->getTok());
+
+}
     }
     return false;
   }
 
   bool parseSectionDirective(StringRef, SMLoc) {
     StringRef Name;
-    if (Parser->parseIdentifier(Name))
+    if (Parser->parseIdentifier(Name)) {
       return TokError("expected identifier in directive");
 
-    if (expect(AsmToken::Comma, ","))
+}
+
+    if (expect(AsmToken::Comma, ",")) {
       return true;
 
-    if (Lexer->isNot(AsmToken::String))
+}
+
+    if (Lexer->isNot(AsmToken::String)) {
       return error("expected string in directive, instead got: ", Lexer->getTok());
+
+}
 
     auto Kind = StringSwitch<Optional<SectionKind>>(Name)
                     .StartsWith(".data", SectionKind::getData())
@@ -125,28 +137,36 @@ public:
                     .StartsWith(".init_array", SectionKind::getData())
                     .StartsWith(".debug_", SectionKind::getMetadata())
                     .Default(Optional<SectionKind>());
-    if (!Kind.hasValue())
+    if (!Kind.hasValue()) {
       return Parser->Error(Lexer->getLoc(), "unknown section kind: " + Name);
+
+}
 
     MCSectionWasm *Section = getContext().getWasmSection(Name, Kind.getValue());
 
     // Update section flags if present in this .section directive
     bool Passive = false;
-    if (parseSectionFlags(getTok().getStringContents(), Passive))
+    if (parseSectionFlags(getTok().getStringContents(), Passive)) {
       return true;
 
+}
+
     if (Passive) {
-      if (!Section->isWasmData())
+      if (!Section->isWasmData()) {
         return Parser->Error(getTok().getLoc(),
                              "Only data sections can be passive");
+
+}
       Section->setPassive();
     }
 
     Lex();
 
     if (expect(AsmToken::Comma, ",") || expect(AsmToken::At, "@") ||
-        expect(AsmToken::EndOfStatement, "eol"))
+        expect(AsmToken::EndOfStatement, "eol")) {
       return true;
+
+}
 
     auto WS = getContext().getWasmSection(Name, Kind.getValue());
     getStreamer().SwitchSection(WS);
@@ -157,16 +177,24 @@ public:
   // so maybe could be shared somehow.
   bool parseDirectiveSize(StringRef, SMLoc) {
     StringRef Name;
-    if (Parser->parseIdentifier(Name))
+    if (Parser->parseIdentifier(Name)) {
       return TokError("expected identifier in directive");
+
+}
     auto Sym = getContext().getOrCreateSymbol(Name);
-    if (expect(AsmToken::Comma, ","))
+    if (expect(AsmToken::Comma, ",")) {
       return true;
+
+}
     const MCExpr *Expr;
-    if (Parser->parseExpression(Expr))
+    if (Parser->parseExpression(Expr)) {
       return true;
-    if (expect(AsmToken::EndOfStatement, "eol"))
+
+}
+    if (expect(AsmToken::EndOfStatement, "eol")) {
       return true;
+
+}
     // This is done automatically by the assembler for functions currently,
     // so this is only currently needed for data sections:
     getStreamer().emitELFSize(Sym, Expr);
@@ -176,25 +204,31 @@ public:
   bool parseDirectiveType(StringRef, SMLoc) {
     // This could be the start of a function, check if followed by
     // "label,@function"
-    if (!Lexer->is(AsmToken::Identifier))
+    if (!Lexer->is(AsmToken::Identifier)) {
       return error("Expected label after .type directive, got: ",
                    Lexer->getTok());
+
+}
     auto WasmSym = cast<MCSymbolWasm>(
                      getStreamer().getContext().getOrCreateSymbol(
                        Lexer->getTok().getString()));
     Lex();
     if (!(isNext(AsmToken::Comma) && isNext(AsmToken::At) &&
-          Lexer->is(AsmToken::Identifier)))
+          Lexer->is(AsmToken::Identifier))) {
       return error("Expected label,@type declaration, got: ", Lexer->getTok());
+
+}
     auto TypeName = Lexer->getTok().getString();
-    if (TypeName == "function")
+    if (TypeName == "function") {
       WasmSym->setType(wasm::WASM_SYMBOL_TYPE_FUNCTION);
-    else if (TypeName == "global")
+    } else if (TypeName == "global") {
       WasmSym->setType(wasm::WASM_SYMBOL_TYPE_GLOBAL);
-    else if (TypeName == "object")
+    } else if (TypeName == "object") {
       WasmSym->setType(wasm::WASM_SYMBOL_TYPE_DATA);
-    else
+    } else {
       return error("Unknown WASM symbol type: ", Lexer->getTok());
+
+}
     Lex();
     return expect(AsmToken::EndOfStatement, "EOL");
   }
@@ -203,12 +237,16 @@ public:
   /// ParseDirectiveIdent
   ///  ::= .ident string
   bool ParseDirectiveIdent(StringRef, SMLoc) {
-    if (getLexer().isNot(AsmToken::String))
+    if (getLexer().isNot(AsmToken::String)) {
       return TokError("unexpected token in '.ident' directive");
+
+}
     StringRef Data = getTok().getIdentifier();
     Lex();
-    if (getLexer().isNot(AsmToken::EndOfStatement))
+    if (getLexer().isNot(AsmToken::EndOfStatement)) {
       return TokError("unexpected token in '.ident' directive");
+
+}
     Lex();
     getStreamer().emitIdent(Data);
     return false;
@@ -229,14 +267,20 @@ public:
     if (getLexer().isNot(AsmToken::EndOfStatement)) {
       while (true) {
         StringRef Name;
-        if (getParser().parseIdentifier(Name))
+        if (getParser().parseIdentifier(Name)) {
           return TokError("expected identifier in directive");
+
+}
         MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
         getStreamer().emitSymbolAttribute(Sym, Attr);
-        if (getLexer().is(AsmToken::EndOfStatement))
+        if (getLexer().is(AsmToken::EndOfStatement)) {
           break;
-        if (getLexer().isNot(AsmToken::Comma))
+
+}
+        if (getLexer().isNot(AsmToken::Comma)) {
           return TokError("unexpected token in directive");
+
+}
         Lex();
       }
     }

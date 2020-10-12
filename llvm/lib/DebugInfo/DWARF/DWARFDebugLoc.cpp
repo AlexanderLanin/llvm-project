@@ -53,25 +53,33 @@ DWARFLocationInterpreter::Interpret(const DWARFLocationEntry &E) {
     return None;
   case dwarf::DW_LLE_base_addressx: {
     Base = LookupAddr(E.Value0);
-    if (!Base)
+    if (!Base) {
       return createResolverError(E.Value0, E.Kind);
+
+}
     return None;
   }
   case dwarf::DW_LLE_startx_endx: {
     Optional<SectionedAddress> LowPC = LookupAddr(E.Value0);
-    if (!LowPC)
+    if (!LowPC) {
       return createResolverError(E.Value0, E.Kind);
+
+}
     Optional<SectionedAddress> HighPC = LookupAddr(E.Value1);
-    if (!HighPC)
+    if (!HighPC) {
       return createResolverError(E.Value1, E.Kind);
+
+}
     return DWARFLocationExpression{
         DWARFAddressRange{LowPC->Address, HighPC->Address, LowPC->SectionIndex},
         E.Loc};
   }
   case dwarf::DW_LLE_startx_length: {
     Optional<SectionedAddress> LowPC = LookupAddr(E.Value0);
-    if (!LowPC)
+    if (!LowPC) {
       return createResolverError(E.Value0, E.Kind);
+
+}
     return DWARFLocationExpression{DWARFAddressRange{LowPC->Address,
                                                      LowPC->Address + E.Value1,
                                                      LowPC->SectionIndex},
@@ -85,8 +93,10 @@ DWARFLocationInterpreter::Interpret(const DWARFLocationEntry &E) {
     }
     DWARFAddressRange Range{Base->Address + E.Value0, Base->Address + E.Value1,
                             Base->SectionIndex};
-    if (Range.SectionIndex == SectionedAddress::UndefSection)
+    if (Range.SectionIndex == SectionedAddress::UndefSection) {
       Range.SectionIndex = E.SectionIndex;
+
+}
     return DWARFLocationExpression{Range, E.Loc};
   }
   case dwarf::DW_LLE_default_location:
@@ -121,30 +131,40 @@ bool DWARFLocationTable::dumpLocationList(uint64_t *Offset, raw_ostream &OS,
                                           unsigned Indent) const {
   DWARFLocationInterpreter Interp(
       BaseAddr, [U](uint32_t Index) -> Optional<SectionedAddress> {
-        if (U)
+        if (U) {
           return U->getAddrOffsetSectionItem(Index);
+
+}
         return None;
       });
   OS << format("0x%8.8" PRIx64 ": ", *Offset);
   Error E = visitLocationList(Offset, [&](const DWARFLocationEntry &E) {
     Expected<Optional<DWARFLocationExpression>> Loc = Interp.Interpret(E);
-    if (!Loc || DumpOpts.DisplayRawContents)
+    if (!Loc || DumpOpts.DisplayRawContents) {
       dumpRawEntry(E, OS, Indent, DumpOpts, Obj);
+
+}
     if (Loc && *Loc) {
       OS << "\n";
       OS.indent(Indent);
-      if (DumpOpts.DisplayRawContents)
+      if (DumpOpts.DisplayRawContents) {
         OS << "          => ";
+
+}
 
       DIDumpOptions RangeDumpOpts(DumpOpts);
       RangeDumpOpts.DisplayRawContents = false;
-      if (Loc.get()->Range)
+      if (Loc.get()->Range) {
         Loc.get()->Range->dump(OS, Data.getAddressSize(), RangeDumpOpts, &Obj);
-      else
+      } else {
         OS << "<default>";
+
+}
     }
-    if (!Loc)
+    if (!Loc) {
       consumeError(Loc.takeError());
+
+}
 
     if (E.Kind != dwarf::DW_LLE_base_address &&
         E.Kind != dwarf::DW_LLE_base_addressx &&
@@ -171,10 +191,14 @@ Error DWARFLocationTable::visitAbsoluteLocationList(
   DWARFLocationInterpreter Interp(BaseAddr, std::move(LookupAddr));
   return visitLocationList(&Offset, [&](const DWARFLocationEntry &E) {
     Expected<Optional<DWARFLocationExpression>> Loc = Interp.Interpret(E);
-    if (!Loc)
+    if (!Loc) {
       return Callback(Loc.takeError());
-    if (*Loc)
+
+}
+    if (*Loc) {
       return Callback(**Loc);
+
+}
     return true;
   });
 }
@@ -233,10 +257,14 @@ Error DWARFDebugLoc::visitLocationList(
       Data.getU8(C, E.Loc, Bytes);
     }
 
-    if (!C)
+    if (!C) {
       return C.takeError();
-    if (!Callback(E) || E.Kind == dwarf::DW_LLE_end_of_list)
+
+}
+    if (!Callback(E) || E.Kind == dwarf::DW_LLE_end_of_list) {
       break;
+
+}
   }
   *Offset = C.tell();
   return Error::success();
@@ -291,10 +319,12 @@ Error DWARFDebugLoclists::visitLocationList(
       E.Value0 = Data.getULEB128(C);
       // Pre-DWARF 5 has different interpretation of the length field. We have
       // to support both pre- and standartized styles for the compatibility.
-      if (Version < 5)
+      if (Version < 5) {
         E.Value1 = Data.getU32(C);
-      else
+      } else {
         E.Value1 = Data.getULEB128(C);
+
+}
       break;
     case dwarf::DW_LLE_offset_pair:
       E.Value0 = Data.getULEB128(C);
@@ -328,8 +358,10 @@ Error DWARFDebugLoclists::visitLocationList(
       Data.getU8(C, E.Loc, Bytes);
     }
 
-    if (!C)
+    if (!C) {
       return C.takeError();
+
+}
     Continue = F(E) && E.Kind != dwarf::DW_LLE_end_of_list;
   }
   *Offset = C.tell();

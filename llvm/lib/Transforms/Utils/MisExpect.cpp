@@ -82,8 +82,10 @@ void emitMisexpectDiagnostic(Instruction *I, LLVMContext &Ctx,
       PerString);
   Twine Msg(PerString);
   Instruction *Cond = getOprndOrInst(I);
-  if (PGOWarnMisExpect)
+  if (PGOWarnMisExpect) {
     Ctx.diagnose(DiagnosticInfoMisExpect(Cond, Msg));
+
+}
   OptimizationRemarkEmitter ORE(I->getParent()->getParent());
   ORE.emit(OptimizationRemark(DEBUG_TYPE, "misexpect", Cond) << RemStr.str());
 }
@@ -115,8 +117,10 @@ void verifyMisExpect(Instruction *I, const SmallVector<uint32_t, 4> &Weights,
       const auto *UnlikelyCInt =
           mdconst::dyn_extract<ConstantInt>(MisExpectData->getOperand(3));
 
-      if (!IndexCint || !LikelyCInt || !UnlikelyCInt)
+      if (!IndexCint || !LikelyCInt || !UnlikelyCInt) {
         return;
+
+}
 
       const uint64_t Index = IndexCint->getZExtValue();
       const uint64_t LikelyBranchWeight = LikelyCInt->getZExtValue();
@@ -139,8 +143,10 @@ void verifyMisExpect(Instruction *I, const SmallVector<uint32_t, 4> &Weights,
       LLVM_DEBUG(llvm::dbgs()
                  << "Scaled Threshold: " << ScaledThreshold << ":\n");
       LLVM_DEBUG(llvm::dbgs() << "------------------\n");
-      if (ProfileCount < ScaledThreshold)
+      if (ProfileCount < ScaledThreshold) {
         emitMisexpectDiagnostic(I, Ctx, ProfileCount, CaseTotal);
+
+}
     }
   }
 }
@@ -155,8 +161,10 @@ void checkFrontendInstrumentation(Instruction &I) {
     //    2) not branch weight metadata
     //    3) completely deterministic
     // In these cases we should not emit any diagnostic related to misexpect.
-    if (NOps < 3)
+    if (NOps < 3) {
       return;
+
+}
 
     // Operand 0 is a string tag "branch_weights"
     if (MDString *Tag = cast<MDString>(MD->getOperand(0))) {

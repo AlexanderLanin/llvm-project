@@ -215,8 +215,10 @@ private:
 
     bool operator()(const FunctionNode &LHS, const FunctionNode &RHS) const {
       // Order first by hashes, then full function comparison.
-      if (LHS.getHash() != RHS.getHash())
+      if (LHS.getHash() != RHS.getHash()) {
         return LHS.getHash() < RHS.getHash();
+
+}
       FunctionComparator FCmp(LHS.getFunc(), RHS.getFunc(), GlobalNumbers);
       return FCmp.compare() == -1;
     }
@@ -304,8 +306,10 @@ public:
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
 
     MergeFunctions MF;
     return MF.runOnModule(M);
@@ -325,8 +329,10 @@ ModulePass *llvm::createMergeFunctionsPass() {
 PreservedAnalyses MergeFunctionsPass::run(Module &M,
                                           ModuleAnalysisManager &AM) {
   MergeFunctions MF;
-  if (!MF.runOnModule(M))
+  if (!MF.runOnModule(M)) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }
 
@@ -444,8 +450,10 @@ bool MergeFunctions::runOnModule(Module &M) {
 
     // Insert functions and merge them.
     for (WeakTrackingVH &I : Worklist) {
-      if (!I)
+      if (!I) {
         continue;
+
+}
       Function *F = cast<Function>(I);
       if (!F->isDeclaration() && !F->hasAvailableExternallyLinkage()) {
         Changed |= insert(F);
@@ -499,12 +507,14 @@ static Value *createCast(IRBuilder<> &Builder, Value *V, Type *DestTy) {
     return Result;
   }
   assert(!DestTy->isStructTy());
-  if (SrcTy->isIntegerTy() && DestTy->isPointerTy())
+  if (SrcTy->isIntegerTy() && DestTy->isPointerTy()) {
     return Builder.CreateIntToPtr(V, DestTy);
-  else if (SrcTy->isPointerTy() && DestTy->isIntegerTy())
+  } else if (SrcTy->isPointerTy() && DestTy->isIntegerTy()) {
     return Builder.CreatePtrToInt(V, DestTy);
-  else
+  } else {
     return Builder.CreateBitCast(V, DestTy);
+
+}
 }
 
 // Erase the instructions in PDIUnrelatedWL as they are unrelated to the
@@ -655,8 +665,10 @@ void MergeFunctions::filterInstsUnrelatedToPDI(
 
 /// Whether this function may be replaced by a forwarding thunk.
 static bool canCreateThunkFor(Function *F) {
-  if (F->isVarArg())
+  if (F->isVarArg()) {
     return false;
+
+}
 
   // Don't merge tiny functions using a thunk, since it can just end up
   // making the function larger.
@@ -754,8 +766,10 @@ void MergeFunctions::writeThunk(Function *F, Function *G) {
 
 // Whether this function may be replaced by an alias
 static bool canCreateAliasFor(Function *F) {
-  if (!MergeFunctionsAliases || !F->hasGlobalUnnamedAddr())
+  if (!MergeFunctionsAliases || !F->hasGlobalUnnamedAddr()) {
     return false;
+
+}
 
   // We should only see linkages supported by aliases here
   assert(F->hasLocalLinkage() || F->hasExternalLinkage()
@@ -807,8 +821,10 @@ void MergeFunctions::mergeTwoFunctions(Function *F, Function *G) {
     // create aliases for G and NewF, or because a thunk for F is profitable.
     // F here has the same signature as NewF below, so that's what we check.
     if (!canCreateThunkFor(F) &&
-        (!canCreateAliasFor(F) || !canCreateAliasFor(G)))
+        (!canCreateAliasFor(F) || !canCreateAliasFor(G))) {
       return;
+
+}
 
     // Make them both thunks to the same internal function.
     Function *NewF = Function::Create(F->getFunctionType(), F->getLinkage(),
@@ -948,7 +964,11 @@ void MergeFunctions::remove(Function *F) {
 // For each instruction used by the value, remove() the function that contains
 // the instruction. This should happen right before a call to RAUW.
 void MergeFunctions::removeUsers(Value *V) {
-  for (User *U : V->users())
-    if (auto *I = dyn_cast<Instruction>(U))
+  for (User *U : V->users()) {
+    if (auto *I = dyn_cast<Instruction>(U)) {
       remove(I->getFunction());
+
+}
+
+}
 }

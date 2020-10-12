@@ -64,8 +64,10 @@ bool PatchableFunction::runOnMachineFunction(MachineFunction &MF) {
     return true;
   }
 
-  if (!MF.getFunction().hasFnAttribute("patchable-function"))
+  if (!MF.getFunction().hasFnAttribute("patchable-function")) {
     return false;
+
+}
 
 #ifndef NDEBUG
   Attribute PatchAttr = MF.getFunction().getFnAttribute("patchable-function");
@@ -75,8 +77,10 @@ bool PatchableFunction::runOnMachineFunction(MachineFunction &MF) {
 
   auto &FirstMBB = *MF.begin();
   MachineBasicBlock::iterator FirstActualI = FirstMBB.begin();
-  for (; doesNotGeneratecode(*FirstActualI); ++FirstActualI)
+  for (; doesNotGeneratecode(*FirstActualI); ++FirstActualI) {
     assert(FirstActualI != FirstMBB.end());
+
+}
 
   auto *TII = MF.getSubtarget().getInstrInfo();
   auto MIB = BuildMI(FirstMBB, FirstActualI, FirstActualI->getDebugLoc(),
@@ -84,8 +88,10 @@ bool PatchableFunction::runOnMachineFunction(MachineFunction &MF) {
                  .addImm(2)
                  .addImm(FirstActualI->getOpcode());
 
-  for (auto &MO : FirstActualI->operands())
+  for (auto &MO : FirstActualI->operands()) {
     MIB.add(MO);
+
+}
 
   FirstActualI->eraseFromParent();
   MF.ensureAlignment(Align(16));

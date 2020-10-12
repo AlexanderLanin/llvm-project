@@ -64,8 +64,10 @@ public:
 void Callback::run(const MatchFinder::MatchResult &Result) {
   bool IsPedanticMatch =
       (Result.Nodes.getNodeAs<Stmt>("pedantic") != nullptr);
-  if (IsPedanticMatch && !C->Pedantic)
+  if (IsPedanticMatch && !C->Pedantic) {
     return;
+
+}
 
   ASTContext &ACtx = ADC->getASTContext();
 
@@ -80,10 +82,14 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
     if (Loc.isMacroID()) {
       StringRef MacroName = Lexer::getImmediateMacroName(
           Loc, ACtx.getSourceManager(), ACtx.getLangOpts());
-      if (MacroName == "NULL" || MacroName == "nil")
+      if (MacroName == "NULL" || MacroName == "nil") {
         return;
-      if (MacroName == "YES" || MacroName == "NO")
+
+}
+      if (MacroName == "YES" || MacroName == "NO") {
         MacroIndicatesWeShouldSkipTheCheck = true;
+
+}
     }
     if (!MacroIndicatesWeShouldSkipTheCheck) {
       Expr::EvalResult EVResult;
@@ -91,8 +97,10 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
               EVResult, ACtx, Expr::SE_AllowSideEffects)) {
         llvm::APSInt Result = EVResult.Val.getInt();
         if (Result == 0) {
-          if (!C->Pedantic)
+          if (!C->Pedantic) {
             return;
+
+}
           IsPedanticMatch = true;
         }
       }
@@ -138,10 +146,12 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
         ObjT->getPointeeType().getCanonicalType().getUnqualifiedType());
   }
 
-  if (IsComparison)
+  if (IsComparison) {
     OS << "Comparing ";
-  else
+  } else {
     OS << "Converting ";
+
+}
 
   OS << "a pointer value of type '" << ObjT.getAsString() << "' to a ";
 
@@ -161,29 +171,37 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
     EuphemismForPlain = "scalar";
   }
 
-  if (IsInteger)
+  if (IsInteger) {
     OS << EuphemismForPlain << " integer value";
-  else if (IsObjCBool)
+  } else if (IsObjCBool) {
     OS << EuphemismForPlain << " BOOL value";
-  else if (IsCppBool)
+  } else if (IsCppBool) {
     OS << EuphemismForPlain << " bool value";
-  else // Branch condition?
+  } else { // Branch condition?
     OS << EuphemismForPlain << " boolean value";
 
+}
 
-  if (IsPedanticMatch)
+
+  if (IsPedanticMatch) {
     OS << "; instead, either compare the pointer to "
        << (IsObjC ? "nil" : IsCpp ? "nullptr" : "NULL") << " or ";
-  else
+  } else {
     OS << "; did you mean to ";
 
-  if (IsComparison)
+}
+
+  if (IsComparison) {
     OS << "compare the result of calling " << SuggestedApi;
-  else
+  } else {
     OS << "call " << SuggestedApi;
 
-  if (!IsPedanticMatch)
+}
+
+  if (!IsPedanticMatch) {
     OS << "?";
+
+}
 
   BR.EmitBasicReport(
       ADC->getDecl(), C, "Suspicious number object conversion", "Logic error",

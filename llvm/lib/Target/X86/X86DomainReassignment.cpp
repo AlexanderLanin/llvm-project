@@ -55,10 +55,14 @@ static bool isMask(const TargetRegisterClass *RC,
 
 static RegDomain getDomain(const TargetRegisterClass *RC,
                            const TargetRegisterInfo *TRI) {
-  if (isGPR(RC))
+  if (isGPR(RC)) {
     return GPRDomain;
-  if (isMask(RC, TRI))
+
+}
+  if (isMask(RC, TRI)) {
     return MaskDomain;
+
+}
   return OtherDomain;
 }
 
@@ -66,14 +70,22 @@ static RegDomain getDomain(const TargetRegisterClass *RC,
 static const TargetRegisterClass *getDstRC(const TargetRegisterClass *SrcRC,
                                            RegDomain Domain) {
   assert(Domain == MaskDomain && "add domain");
-  if (X86::GR8RegClass.hasSubClassEq(SrcRC))
+  if (X86::GR8RegClass.hasSubClassEq(SrcRC)) {
     return &X86::VK8RegClass;
-  if (X86::GR16RegClass.hasSubClassEq(SrcRC))
+
+}
+  if (X86::GR16RegClass.hasSubClassEq(SrcRC)) {
     return &X86::VK16RegClass;
-  if (X86::GR32RegClass.hasSubClassEq(SrcRC))
+
+}
+  if (X86::GR32RegClass.hasSubClassEq(SrcRC)) {
     return &X86::VK32RegClass;
-  if (X86::GR64RegClass.hasSubClassEq(SrcRC))
+
+}
+  if (X86::GR64RegClass.hasSubClassEq(SrcRC)) {
     return &X86::VK64RegClass;
+
+}
   llvm_unreachable("add register class");
   return nullptr;
 }
@@ -137,14 +149,20 @@ public:
 
   bool isLegal(const MachineInstr *MI,
                const TargetInstrInfo *TII) const override {
-    if (!InstrConverterBase::isLegal(MI, TII))
+    if (!InstrConverterBase::isLegal(MI, TII)) {
       return false;
+
+}
     // It's illegal to replace an instruction that implicitly defines a register
     // with an instruction that doesn't, unless that register dead.
-    for (auto &MO : MI->implicit_operands())
+    for (auto &MO : MI->implicit_operands()) {
       if (MO.isReg() && MO.isDef() && !MO.isDead() &&
-          !TII->get(DstOpcode).hasImplicitDefOfPhysReg(MO.getReg()))
+          !TII->get(DstOpcode).hasImplicitDefOfPhysReg(MO.getReg())) {
         return false;
+
+}
+
+}
     return true;
   }
 
@@ -155,8 +173,10 @@ public:
         BuildMI(*MI->getParent(), MI, MI->getDebugLoc(), TII->get(DstOpcode));
     // Transfer explicit operands from original instruction. Implicit operands
     // are handled by BuildMI.
-    for (auto &Op : MI->explicit_operands())
+    for (auto &Op : MI->explicit_operands()) {
       Bld.add(Op);
+
+}
     return true;
   }
 
@@ -186,8 +206,10 @@ public:
         TII->getRegClass(TII->get(DstOpcode), 0, MRI->getTargetRegisterInfo(),
                          *MBB->getParent()));
     MachineInstrBuilder Bld = BuildMI(*MBB, MI, DL, TII->get(DstOpcode), Reg);
-    for (unsigned Idx = 1, End = MI->getNumOperands(); Idx < End; ++Idx)
+    for (unsigned Idx = 1, End = MI->getNumOperands(); Idx < End; ++Idx) {
       Bld.add(MI->getOperand(Idx));
+
+}
 
     BuildMI(*MBB, MI, DL, TII->get(TargetOpcode::COPY))
         .add(MI->getOperand(0))
@@ -214,21 +236,27 @@ public:
 
   bool isLegal(const MachineInstr *MI,
                const TargetInstrInfo *TII) const override {
-    if (!InstrConverterBase::isLegal(MI, TII))
+    if (!InstrConverterBase::isLegal(MI, TII)) {
       return false;
+
+}
 
     // Don't allow copies to/flow GR8/GR16 physical registers.
     // FIXME: Is there some better way to support this?
     Register DstReg = MI->getOperand(0).getReg();
     if (Register::isPhysicalRegister(DstReg) &&
         (X86::GR8RegClass.contains(DstReg) ||
-         X86::GR16RegClass.contains(DstReg)))
+         X86::GR16RegClass.contains(DstReg))) {
       return false;
+
+}
     Register SrcReg = MI->getOperand(1).getReg();
     if (Register::isPhysicalRegister(SrcReg) &&
         (X86::GR8RegClass.contains(SrcReg) ||
-         X86::GR16RegClass.contains(SrcReg)))
+         X86::GR16RegClass.contains(SrcReg))) {
       return false;
+
+}
 
     return true;
   }
@@ -241,15 +269,19 @@ public:
       // Physical registers will not be converted. Assume that converting the
       // COPY to the destination domain will eventually result in a actual
       // instruction.
-      if (Register::isPhysicalRegister(MO.getReg()))
+      if (Register::isPhysicalRegister(MO.getReg())) {
         return 1;
+
+}
 
       RegDomain OpDomain = getDomain(MRI->getRegClass(MO.getReg()),
                                      MRI->getTargetRegisterInfo());
       // Converting a cross domain COPY to a same domain COPY should eliminate
       // an insturction
-      if (OpDomain == DstDomain)
+      if (OpDomain == DstDomain) {
         return -1;
+
+}
     }
     return 0;
   }
@@ -314,8 +346,10 @@ private:
 
 public:
   Closure(unsigned ID, std::initializer_list<RegDomain> LegalDstDomainList) : ID(ID) {
-    for (RegDomain D : LegalDstDomainList)
+    for (RegDomain D : LegalDstDomainList) {
       LegalDstDomains.set(D);
+
+}
   }
 
   /// Mark this closure as illegal for reassignment to all domains.
@@ -353,8 +387,10 @@ public:
     dbgs() << "Registers: ";
     bool First = true;
     for (unsigned Reg : Edges) {
-      if (!First)
+      if (!First) {
         dbgs() << ", ";
+
+}
       First = false;
       dbgs() << printReg(Reg, MRI->getTargetRegisterInfo(), 0, MRI);
     }
@@ -433,22 +469,32 @@ char X86DomainReassignment::ID = 0;
 void X86DomainReassignment::visitRegister(Closure &C, unsigned Reg,
                                           RegDomain &Domain,
                                           SmallVectorImpl<unsigned> &Worklist) {
-  if (EnclosedEdges.count(Reg))
+  if (EnclosedEdges.count(Reg)) {
     return;
 
-  if (!Register::isVirtualRegister(Reg))
+}
+
+  if (!Register::isVirtualRegister(Reg)) {
     return;
 
-  if (!MRI->hasOneDef(Reg))
+}
+
+  if (!MRI->hasOneDef(Reg)) {
     return;
+
+}
 
   RegDomain RD = getDomain(MRI->getRegClass(Reg), MRI->getTargetRegisterInfo());
   // First edge in closure sets the domain.
-  if (Domain == NoDomain)
+  if (Domain == NoDomain) {
     Domain = RD;
 
-  if (Domain != RD)
+}
+
+  if (Domain != RD) {
     return;
+
+}
 
   Worklist.push_back(Reg);
 }
@@ -456,10 +502,12 @@ void X86DomainReassignment::visitRegister(Closure &C, unsigned Reg,
 void X86DomainReassignment::encloseInstr(Closure &C, MachineInstr *MI) {
   auto I = EnclosedInstrs.find(MI);
   if (I != EnclosedInstrs.end()) {
-    if (I->second != C.getID())
+    if (I->second != C.getID()) {
       // Instruction already belongs to another closure, avoid conflicts between
       // closure and mark this closure as illegal.
       C.setAllIllegal();
+
+}
     return;
   }
 
@@ -472,8 +520,10 @@ void X86DomainReassignment::encloseInstr(Closure &C, MachineInstr *MI) {
   for (int i = 0; i != NumDomains; ++i) {
     if (C.isLegal((RegDomain)i)) {
       InstrConverterBase *IC = Converters.lookup({i, MI->getOpcode()});
-      if (!IC || !IC->isLegal(MI, TII))
+      if (!IC || !IC->isLegal(MI, TII)) {
         C.setIllegal((RegDomain)i);
+
+}
     }
   }
 }
@@ -483,9 +533,11 @@ double X86DomainReassignment::calculateCost(const Closure &C,
   assert(C.isLegal(DstDomain) && "Cannot calculate cost for illegal closure");
 
   double Cost = 0.0;
-  for (auto *MI : C.instructions())
+  for (auto *MI : C.instructions()) {
     Cost +=
         Converters.lookup({DstDomain, MI->getOpcode()})->getExtraCost(MI, MRI);
+
+}
   return Cost;
 }
 
@@ -500,46 +552,60 @@ void X86DomainReassignment::reassign(const Closure &C, RegDomain Domain) const {
   // Iterate all instructions in the closure, convert each one using the
   // appropriate converter.
   SmallVector<MachineInstr *, 8> ToErase;
-  for (auto *MI : C.instructions())
+  for (auto *MI : C.instructions()) {
     if (Converters.lookup({Domain, MI->getOpcode()})
-            ->convertInstr(MI, TII, MRI))
+            ->convertInstr(MI, TII, MRI)) {
       ToErase.push_back(MI);
+
+}
+
+}
 
   // Iterate all registers in the closure, replace them with registers in the
   // destination domain.
   for (unsigned Reg : C.edges()) {
     MRI->setRegClass(Reg, getDstRC(MRI->getRegClass(Reg), Domain));
     for (auto &MO : MRI->use_operands(Reg)) {
-      if (MO.isReg())
+      if (MO.isReg()) {
         // Remove all subregister references as they are not valid in the
         // destination domain.
         MO.setSubReg(0);
+
+}
     }
   }
 
-  for (auto MI : ToErase)
+  for (auto MI : ToErase) {
     MI->eraseFromParent();
+
+}
 }
 
 /// \returns true when \p Reg is used as part of an address calculation in \p
 /// MI.
 static bool usedAsAddr(const MachineInstr &MI, unsigned Reg,
                        const TargetInstrInfo *TII) {
-  if (!MI.mayLoadOrStore())
+  if (!MI.mayLoadOrStore()) {
     return false;
+
+}
 
   const MCInstrDesc &Desc = TII->get(MI.getOpcode());
   int MemOpStart = X86II::getMemoryOperandNo(Desc.TSFlags);
-  if (MemOpStart == -1)
+  if (MemOpStart == -1) {
     return false;
+
+}
 
   MemOpStart += X86II::getOperandBias(Desc);
   for (unsigned MemOpIdx = MemOpStart,
                 MemOpEnd = MemOpStart + X86::AddrNumOperands;
        MemOpIdx < MemOpEnd; ++MemOpIdx) {
     auto &Op = MI.getOperand(MemOpIdx);
-    if (Op.isReg() && Op.getReg() == Reg)
+    if (Op.isReg() && Op.getReg() == Reg) {
       return true;
+
+}
   }
   return false;
 }
@@ -552,8 +618,10 @@ void X86DomainReassignment::buildClosure(Closure &C, unsigned Reg) {
     unsigned CurReg = Worklist.pop_back_val();
 
     // Register already in this closure.
-    if (!C.insertEdge(CurReg))
+    if (!C.insertEdge(CurReg)) {
       continue;
+
+}
     EnclosedEdges.insert(Reg);
 
     MachineInstr *DefMI = MRI->getVRegDef(CurReg);
@@ -565,8 +633,10 @@ void X86DomainReassignment::buildClosure(Closure &C, unsigned Reg) {
     int OpEnd = DefMI->getNumOperands();
     const MCInstrDesc &Desc = DefMI->getDesc();
     int MemOp = X86II::getMemoryOperandNo(Desc.TSFlags);
-    if (MemOp != -1)
+    if (MemOp != -1) {
       MemOp += X86II::getOperandBias(Desc);
+
+}
     for (int OpIdx = 0; OpIdx < OpEnd; ++OpIdx) {
       if (OpIdx == MemOp) {
         // skip address calculation.
@@ -574,8 +644,10 @@ void X86DomainReassignment::buildClosure(Closure &C, unsigned Reg) {
         continue;
       }
       auto &Op = DefMI->getOperand(OpIdx);
-      if (!Op.isReg() || !Op.isUse())
+      if (!Op.isReg() || !Op.isUse()) {
         continue;
+
+}
       visitRegister(C, Op.getReg(), Domain, Worklist);
     }
 
@@ -590,8 +662,10 @@ void X86DomainReassignment::buildClosure(Closure &C, unsigned Reg) {
       encloseInstr(C, &UseMI);
 
       for (auto &DefOp : UseMI.defs()) {
-        if (!DefOp.isReg())
+        if (!DefOp.isReg()) {
           continue;
+
+}
 
         Register DefReg = DefOp.getReg();
         if (!Register::isVirtualRegister(DefReg)) {
@@ -718,10 +792,14 @@ void X86DomainReassignment::initConverters() {
 }
 
 bool X86DomainReassignment::runOnMachineFunction(MachineFunction &MF) {
-  if (skipFunction(MF.getFunction()))
+  if (skipFunction(MF.getFunction())) {
     return false;
-  if (DisableX86DomainReassignment)
+
+}
+  if (DisableX86DomainReassignment) {
     return false;
+
+}
 
   LLVM_DEBUG(
       dbgs() << "***** Machine Function before Domain Reassignment *****\n");
@@ -733,8 +811,10 @@ bool X86DomainReassignment::runOnMachineFunction(MachineFunction &MF) {
   // TODO: We're also bailing of AVX512BW isn't supported since we use VK32 and
   // VK64 for GR32/GR64, but those aren't legal classes on KNL. If the register
   // coalescer doesn't clean it up and we generate a spill we will crash.
-  if (!STI->hasAVX512() || !STI->hasBWI())
+  if (!STI->hasAVX512() || !STI->hasBWI()) {
     return false;
+
+}
 
   MRI = &MF.getRegInfo();
   assert(MRI->isSSA() && "Expected MIR to be in SSA form");
@@ -754,20 +834,26 @@ bool X86DomainReassignment::runOnMachineFunction(MachineFunction &MF) {
     unsigned Reg = Register::index2VirtReg(Idx);
 
     // GPR only current source domain supported.
-    if (!isGPR(MRI->getRegClass(Reg)))
+    if (!isGPR(MRI->getRegClass(Reg))) {
       continue;
 
+}
+
     // Register already in closure.
-    if (EnclosedEdges.count(Reg))
+    if (EnclosedEdges.count(Reg)) {
       continue;
+
+}
 
     // Calculate closure starting with Reg.
     Closure C(ClosureID++, {MaskDomain});
     buildClosure(C, Reg);
 
     // Collect all closures that can potentially be converted.
-    if (!C.empty() && C.isLegal(MaskDomain))
+    if (!C.empty() && C.isLegal(MaskDomain)) {
       Closures.push_back(std::move(C));
+
+}
   }
 
   for (Closure &C : Closures) {

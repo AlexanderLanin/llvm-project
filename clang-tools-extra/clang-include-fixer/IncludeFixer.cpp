@@ -43,12 +43,16 @@ public:
 
     // Set up our hooks into sema and parse the AST.
     if (hasCodeCompletionSupport() &&
-        !Compiler->getFrontendOpts().CodeCompletionAt.FileName.empty())
+        !Compiler->getFrontendOpts().CodeCompletionAt.FileName.empty()) {
       Compiler->createCodeCompletionConsumer();
 
+}
+
     clang::CodeCompleteConsumer *CompletionConsumer = nullptr;
-    if (Compiler->hasCodeCompletionConsumer())
+    if (Compiler->hasCodeCompletionConsumer()) {
       CompletionConsumer = &Compiler->getCodeCompletionConsumer();
+
+}
 
     Compiler->createSema(getTranslationUnitKind(), CompletionConsumer);
     SemaSource.setCompilerInstance(Compiler);
@@ -123,8 +127,10 @@ static bool addDiagnosticsForContext(TypoCorrection &Correction,
                                      ASTContext &Ctx) {
   auto Reps = createIncludeFixerReplacements(
       Code, Context, format::getLLVMStyle(), /*AddQualifiers=*/false);
-  if (!Reps || Reps->size() != 1)
+  if (!Reps || Reps->size() != 1) {
     return false;
+
+}
 
   unsigned DiagID = Ctx.getDiagnostics().getCustomDiagID(
       DiagnosticsEngine::Note, "Add '#include %0' to provide the missing "
@@ -149,8 +155,10 @@ static bool addDiagnosticsForContext(TypoCorrection &Correction,
 bool IncludeFixerSemaSource::MaybeDiagnoseMissingCompleteType(
     clang::SourceLocation Loc, clang::QualType T) {
   // Ignore spurious callbacks from SFINAE contexts.
-  if (CI->getSema().isSFINAEContext())
+  if (CI->getSema().isSFINAEContext()) {
     return false;
+
+}
 
   clang::ASTContext &context = CI->getASTContext();
   std::string QueryString = QualType(T->getUnqualifiedDesugaredType(), 0)
@@ -173,8 +181,10 @@ bool IncludeFixerSemaSource::MaybeDiagnoseMissingCompleteType(
                                CI->getPreprocessor().getHeaderSearchInfo(),
                                MatchedSymbols),
         Code, StartOfFile, CI->getASTContext());
-    for (const PartialDiagnostic &PD : Correction.getExtraDiagnostics())
+    for (const PartialDiagnostic &PD : Correction.getExtraDiagnostics()) {
       CI->getSema().Diag(Loc, PD);
+
+}
   }
   return true;
 }
@@ -186,8 +196,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
     CorrectionCandidateCallback &CCC, DeclContext *MemberContext,
     bool EnteringContext, const ObjCObjectPointerType *OPT) {
   // Ignore spurious callbacks from SFINAE contexts.
-  if (CI->getSema().isSFINAEContext())
+  if (CI->getSema().isSFINAEContext()) {
     return clang::TypoCorrection();
+
+}
 
   // We currently ignore the unidentified symbol which is not from the
   // main file.
@@ -208,8 +220,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
   //
   // FIXME: Add the missing header to the header file where the symbol comes
   // from.
-  if (!CI->getSourceManager().isWrittenInMainFile(Typo.getLoc()))
+  if (!CI->getSourceManager().isWrittenInMainFile(Typo.getLoc())) {
     return clang::TypoCorrection();
+
+}
 
   std::string TypoScopeString;
   if (S) {
@@ -218,8 +232,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
     for (const auto *Context = S->getEntity(); Context;
          Context = Context->getParent()) {
       if (const auto *ND = dyn_cast<NamespaceDecl>(Context)) {
-        if (!ND->getName().empty())
+        if (!ND->getName().empty()) {
           TypoScopeString = ND->getNameAsString() + "::" + TypoScopeString;
+
+}
       }
     }
   }
@@ -245,8 +261,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
     // parent_path.
     // FIXME: Don't rely on source text.
     const char *End = Source.end();
-    while (isIdentifierBody(*End) || *End == ':')
+    while (isIdentifierBody(*End) || *End == ':') {
       ++End;
+
+}
 
     return std::string(Source.begin(), End);
   };
@@ -291,8 +309,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
             Correction, getIncludeFixerContext(
                             SM, CI->getPreprocessor().getHeaderSearchInfo(),
                             MatchedSymbols),
-            Code, StartOfFile, CI->getASTContext()))
+            Code, StartOfFile, CI->getASTContext())) {
       return Correction;
+
+}
   }
   return TypoCorrection();
 }
@@ -301,8 +321,10 @@ clang::TypoCorrection IncludeFixerSemaSource::CorrectTypo(
 std::string IncludeFixerSemaSource::minimizeInclude(
     StringRef Include, const clang::SourceManager &SourceManager,
     clang::HeaderSearch &HeaderSearch) const {
-  if (!MinimizeIncludePaths)
+  if (!MinimizeIncludePaths) {
     return std::string(Include);
+
+}
 
   // Get the FileEntry for the include.
   StringRef StrippedInclude = Include.trim("\"<>");
@@ -310,8 +332,10 @@ std::string IncludeFixerSemaSource::minimizeInclude(
 
   // If the file doesn't exist return the path from the database.
   // FIXME: This should never happen.
-  if (!Entry)
+  if (!Entry) {
     return std::string(Include);
+
+}
 
   bool IsSystem = false;
   std::string Suggestion =
@@ -389,9 +413,11 @@ IncludeFixerSemaSource::query(StringRef Query, StringRef ScopedQualifiers,
   // namespace.
   std::vector<find_all_symbols::SymbolInfo> MatchedSymbols =
       SymbolIndexMgr.search(QueryString, /*IsNestedSearch=*/false, FileName);
-  if (MatchedSymbols.empty())
+  if (MatchedSymbols.empty()) {
     MatchedSymbols =
         SymbolIndexMgr.search(Query, /*IsNestedSearch=*/true, FileName);
+
+}
   LLVM_DEBUG(llvm::dbgs() << "Having found " << MatchedSymbols.size()
                           << " symbols\n");
   // We store a copy of MatchedSymbols in a place where it's globally reachable.
@@ -403,8 +429,10 @@ IncludeFixerSemaSource::query(StringRef Query, StringRef ScopedQualifiers,
 llvm::Expected<tooling::Replacements> createIncludeFixerReplacements(
     StringRef Code, const IncludeFixerContext &Context,
     const clang::format::FormatStyle &Style, bool AddQualifiers) {
-  if (Context.getHeaderInfos().empty())
+  if (Context.getHeaderInfos().empty()) {
     return tooling::Replacements();
+
+}
   StringRef FilePath = Context.getFilePath();
   std::string IncludeName =
       "#include " + Context.getHeaderInfos().front().Header + "\n";
@@ -412,12 +440,16 @@ llvm::Expected<tooling::Replacements> createIncludeFixerReplacements(
   clang::tooling::Replacements Insertions;
   auto Err =
       Insertions.add(tooling::Replacement(FilePath, UINT_MAX, 0, IncludeName));
-  if (Err)
+  if (Err) {
     return std::move(Err);
 
+}
+
   auto CleanReplaces = cleanupAroundReplacements(Code, Insertions, Style);
-  if (!CleanReplaces)
+  if (!CleanReplaces) {
     return CleanReplaces;
+
+}
 
   auto Replaces = std::move(*CleanReplaces);
   if (AddQualifiers) {

@@ -49,10 +49,12 @@ static void verifyBlocksInRegion(const VPRegionBlock *Region) {
     assert(VPB->getParent() == Region && "VPBlockBase has wrong parent");
 
     // Check block's condition bit.
-    if (VPB->getNumSuccessors() > 1)
+    if (VPB->getNumSuccessors() > 1) {
       assert(VPB->getCondBit() && "Missing condition bit!");
-    else
+    } else {
       assert(!VPB->getCondBit() && "Unexpected condition bit!");
+
+}
 
     // Check block's successors.
     const auto &Successors = VPB->getSuccessors();
@@ -117,15 +119,19 @@ static void verifyRegionRec(const VPRegionBlock *Region) {
   for (const VPBlockBase *VPB :
        make_range(df_iterator<const VPBlockBase *>::begin(Region->getEntry()),
                   df_iterator<const VPBlockBase *>::end(Region->getExit()))) {
-    if (const auto *SubRegion = dyn_cast<VPRegionBlock>(VPB))
+    if (const auto *SubRegion = dyn_cast<VPRegionBlock>(VPB)) {
       verifyRegionRec(SubRegion);
+
+}
   }
 }
 
 void VPlanVerifier::verifyHierarchicalCFG(
     const VPRegionBlock *TopRegion) const {
-  if (!EnableHCFGVerifier)
+  if (!EnableHCFGVerifier) {
     return;
+
+}
 
   LLVM_DEBUG(dbgs() << "Verifying VPlan H-CFG.\n");
   assert(!TopRegion->getParent() && "VPlan Top Region should have no parent.");

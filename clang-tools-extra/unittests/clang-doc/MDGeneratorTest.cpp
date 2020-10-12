@@ -16,8 +16,10 @@ namespace doc {
 
 std::unique_ptr<Generator> getMDGenerator() {
   auto G = doc::findGeneratorByName("md");
-  if (!G)
+  if (!G) {
     return nullptr;
+
+}
   return std::move(G.get());
 }
 

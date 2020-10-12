@@ -276,16 +276,20 @@ namespace {
         OS << "note";
         break;
       }
-      if (!CurrentActivity.empty())
+      if (!CurrentActivity.empty()) {
         OS << ' ' << CurrentActivity;
+
+}
       OS << ": ";
   
       DiagnosticPrinterRawOStream DP(OS);
       DI.print(DP);
       OS << '\n';
   
-      if (DI.getSeverity() == DS_Error)
+      if (DI.getSeverity() == DS_Error) {
         exit(1);
+
+}
       return true;
     }
   };
@@ -297,8 +301,10 @@ static void error(const Twine &Msg) {
 }
 
 static void error(std::error_code EC, const Twine &Prefix) {
-  if (EC)
+  if (EC) {
     error(Prefix + ": " + EC.message());
+
+}
 }
 
 template <typename T>
@@ -307,8 +313,10 @@ static void error(const ErrorOr<T> &V, const Twine &Prefix) {
 }
 
 static void maybeVerifyModule(const Module &Mod) {
-  if (!DisableVerify && verifyModule(Mod, &errs()))
+  if (!DisableVerify && verifyModule(Mod, &errs())) {
     error("Broken Module");
+
+}
 }
 
 static std::unique_ptr<LTOModule>
@@ -337,8 +345,10 @@ void printIndexStats() {
     std::unique_ptr<ModuleSummaryIndex> Index =
         ExitOnErr(getModuleSummaryIndexForFile(Filename));
     // Skip files without a module summary.
-    if (!Index)
+    if (!Index) {
       report_fatal_error(Filename + " does not contain an index");
+
+}
 
     unsigned Calls = 0, Refs = 0, Functions = 0, Alias = 0, Globals = 0;
     for (auto &Summaries : *Index) {
@@ -347,10 +357,12 @@ void printIndexStats() {
         if (auto *FuncSummary = dyn_cast<FunctionSummary>(Summary.get())) {
           Functions++;
           Calls += FuncSummary->calls().size();
-        } else if (isa<AliasSummary>(Summary.get()))
+        } else if (isa<AliasSummary>(Summary.get())) {
           Alias++;
-        else
+        } else {
           Globals++;
+
+}
       }
     }
     outs() << "Index " << Filename << " contains "
@@ -375,8 +387,10 @@ static void listSymbols(const TargetOptions &Options) {
 
     // List the symbols.
     outs() << Filename << ":\n";
-    for (int I = 0, E = Module->getSymbolCount(); I != E; ++I)
+    for (int I = 0, E = Module->getSymbolCount(); I != E; ++I) {
       outs() << Module->getSymbolName(I) << "\n";
+
+}
   }
 }
 
@@ -393,8 +407,10 @@ static void listDependentLibraries() {
     std::unique_ptr<lto::InputFile> Input(LTOModule::createInputFile(
         Buffer->getBufferStart(), Buffer->getBufferSize(), Filename.c_str(),
         E));
-    if (!Input)
+    if (!Input) {
       error(E);
+
+}
 
     // List the dependent libraries.
     outs() << Filename << ":\n";
@@ -416,17 +432,23 @@ static void printMachOCPUOnly() {
   for (auto &Filename : InputFilenames) {
     ErrorOr<std::unique_ptr<LTOModule>> ModuleOrErr =
         LTOModule::createFromFile(Context, Filename, Options);
-    if (!ModuleOrErr)
+    if (!ModuleOrErr) {
       error(ModuleOrErr, "llvm-lto: ");
+
+}
 
     Expected<uint32_t> CPUType = (*ModuleOrErr)->getMachOCPUType();
     Expected<uint32_t> CPUSubType = (*ModuleOrErr)->getMachOCPUSubType();
-    if (!CPUType)
+    if (!CPUType) {
       error("Error while printing mach-o cputype: " +
             toString(CPUType.takeError()));
-    if (!CPUSubType)
+
+}
+    if (!CPUSubType) {
       error("Error while printing mach-o cpusubtype: " +
             toString(CPUSubType.takeError()));
+
+}
     outs() << llvm::format("%s:\ncputype: %u\ncpusubtype: %u\n",
                            Filename.c_str(), *CPUType, *CPUSubType);
   }
@@ -472,15 +494,19 @@ static void getThinLTOOldAndNewPrefix(std::string &OldPrefix,
 static std::string getThinLTOOutputFile(const std::string &Path,
                                         const std::string &OldPrefix,
                                         const std::string &NewPrefix) {
-  if (OldPrefix.empty() && NewPrefix.empty())
+  if (OldPrefix.empty() && NewPrefix.empty()) {
     return Path;
+
+}
   SmallString<128> NewPath(Path);
   llvm::sys::path::replace_path_prefix(NewPath, OldPrefix, NewPrefix);
   StringRef ParentPath = llvm::sys::path::parent_path(NewPath.str());
   if (!ParentPath.empty()) {
     // Make sure the new directory exists, creating it if necessary.
-    if (std::error_code EC = llvm::sys::fs::create_directories(ParentPath))
+    if (std::error_code EC = llvm::sys::fs::create_directories(ParentPath)) {
       error(EC, "error creating the directory '" + ParentPath + "'");
+
+}
   }
   return std::string(NewPath.str());
 }
@@ -502,8 +528,10 @@ loadAllFilesForIndex(const ModuleSummaryIndex &Index) {
 }
 
 std::unique_ptr<ModuleSummaryIndex> loadCombinedIndex() {
-  if (ThinLTOIndex.empty())
+  if (ThinLTOIndex.empty()) {
     report_fatal_error("Missing -thinlto-index for ThinLTO promotion stage");
+
+}
   ExitOnError ExitOnErr("llvm-lto: error loading file '" + ThinLTOIndex +
                         "': ");
   return ExitOnErr(getModuleSummaryIndexForFile(ThinLTOIndex));
@@ -529,8 +557,10 @@ static std::unique_ptr<Module> loadModuleFromInput(lto::InputFile &File,
   }
   maybeVerifyModule(**ModuleOrErr);
   if (ThinLTOModuleId.getNumOccurrences()) {
-    if (InputFilenames.size() != 1)
+    if (InputFilenames.size() != 1) {
       report_fatal_error("Can't override the module id for multiple files");
+
+}
     (*ModuleOrErr)->setModuleIdentifier(ThinLTOModuleId);
   }
   return std::move(*ModuleOrErr);
@@ -559,8 +589,10 @@ public:
     ThinGenerator.setFreestanding(EnableFreestanding);
 
     // Add all the exported symbols to the table of symbols to preserve.
-    for (unsigned i = 0; i < ExportedSymbols.size(); ++i)
+    for (unsigned i = 0; i < ExportedSymbols.size(); ++i) {
       ThinGenerator.preserveSymbol(ExportedSymbols[i]);
+
+}
   }
 
   void run() {
@@ -590,9 +622,11 @@ private:
   /// Load the input files, create the combined index, and write it out.
   void thinLink() {
     // Perform "ThinLink": just produce the index
-    if (OutputFilename.empty())
+    if (OutputFilename.empty()) {
       report_fatal_error(
           "OutputFilename is necessary to store the combined index.\n");
+
+}
 
     LLVMContext Ctx;
     std::vector<std::unique_ptr<MemoryBuffer>> InputBuffers;
@@ -606,8 +640,10 @@ private:
     }
 
     auto CombinedIndex = ThinGenerator.linkCombinedIndex();
-    if (!CombinedIndex)
+    if (!CombinedIndex) {
       report_fatal_error("ThinLink didn't create an index");
+
+}
     std::error_code EC;
     raw_fd_ostream OS(OutputFilename, EC, sys::fs::OpenFlags::OF_None);
     error(EC, "error opening the file '" + OutputFilename + "'");
@@ -619,11 +655,13 @@ private:
   /// on the files mentioned on the command line (these must match the index
   /// content).
   void distributedIndexes() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
+
+}
 
     std::string OldPrefix, NewPrefix;
     getThinLTOOldAndNewPrefix(OldPrefix, NewPrefix);
@@ -656,11 +694,13 @@ private:
   /// Load the combined index from disk, compute the imports, and emit
   /// the import file lists for each module to disk.
   void emitImports() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
+
+}
 
     std::string OldPrefix, NewPrefix;
     getThinLTOOldAndNewPrefix(OldPrefix, NewPrefix);
@@ -686,11 +726,13 @@ private:
   /// on the files mentioned on the command line (these must match the index
   /// content).
   void promote() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
+
+}
 
     auto Index = loadCombinedIndex();
     for (auto &Filename : InputFilenames) {
@@ -714,17 +756,21 @@ private:
   /// cross module importing on the files mentioned on the command line
   /// (these must match the index content).
   void import() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
 
+}
+
     auto Index = loadCombinedIndex();
     auto InputBuffers = loadAllFilesForIndex(*Index);
-    for (auto &MemBuffer : InputBuffers)
+    for (auto &MemBuffer : InputBuffers) {
       ThinGenerator.addModule(MemBuffer->getBufferIdentifier(),
                               MemBuffer->getBuffer());
+
+}
 
     for (auto &Filename : InputFilenames) {
       LLVMContext Ctx;
@@ -743,21 +789,27 @@ private:
   }
 
   void internalize() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
 
-    if (ExportedSymbols.empty())
+}
+
+    if (ExportedSymbols.empty()) {
       errs() << "Warning: -internalize will not perform without "
                 "-exported-symbol\n";
 
+}
+
     auto Index = loadCombinedIndex();
     auto InputBuffers = loadAllFilesForIndex(*Index);
-    for (auto &MemBuffer : InputBuffers)
+    for (auto &MemBuffer : InputBuffers) {
       ThinGenerator.addModule(MemBuffer->getBufferIdentifier(),
                               MemBuffer->getBuffer());
+
+}
 
     for (auto &Filename : InputFilenames) {
       LLVMContext Ctx;
@@ -776,13 +828,17 @@ private:
   }
 
   void optimize() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
-    if (!ThinLTOIndex.empty())
+
+}
+    if (!ThinLTOIndex.empty()) {
       errs() << "Warning: -thinlto-index ignored for optimize stage";
+
+}
 
     for (auto &Filename : InputFilenames) {
       LLVMContext Ctx;
@@ -801,13 +857,17 @@ private:
   }
 
   void codegen() {
-    if (InputFilenames.size() != 1 && !OutputFilename.empty())
+    if (InputFilenames.size() != 1 && !OutputFilename.empty()) {
       report_fatal_error("Can't handle a single output filename and multiple "
                          "input files, do not provide an output filename and "
                          "the output files will be suffixed from the input "
                          "ones.");
-    if (!ThinLTOIndex.empty())
+
+}
+    if (!ThinLTOIndex.empty()) {
       errs() << "Warning: -thinlto-index ignored for codegen stage";
+
+}
 
     std::vector<std::unique_ptr<MemoryBuffer>> InputBuffers;
     for (auto &Filename : InputFilenames) {
@@ -822,9 +882,9 @@ private:
     for (auto BinName :
          zip(ThinGenerator.getProducedBinaries(), InputFilenames)) {
       std::string OutputName = OutputFilename;
-      if (OutputName.empty())
+      if (OutputName.empty()) {
         OutputName = std::get<1>(BinName) + ".thinlto.o";
-      else if (OutputName == "-") {
+      } else if (OutputName == "-") {
         outs() << std::get<0>(BinName)->getBuffer();
         return;
       }
@@ -838,13 +898,17 @@ private:
 
   /// Full ThinLTO process
   void runAll() {
-    if (!OutputFilename.empty())
+    if (!OutputFilename.empty()) {
       report_fatal_error("Do not provide an output filename for ThinLTO "
                          " processing, the output files will be suffixed from "
                          "the input ones.");
 
-    if (!ThinLTOIndex.empty())
+}
+
+    if (!ThinLTOIndex.empty()) {
       errs() << "Warning: -thinlto-index ignored for full ThinLTO process";
+
+}
 
     LLVMContext Ctx;
     std::vector<std::unique_ptr<MemoryBuffer>> InputBuffers;
@@ -857,8 +921,10 @@ private:
       ThinGenerator.addModule(Filename, InputBuffers.back()->getBuffer());
     }
 
-    if (!ThinLTOSaveTempsPrefix.empty())
+    if (!ThinLTOSaveTempsPrefix.empty()) {
       ThinGenerator.setSaveTempsDir(ThinLTOSaveTempsPrefix);
+
+}
 
     if (!ThinLTOGeneratedObjectsDir.empty()) {
       ThinGenerator.setGeneratedObjectsDirectory(ThinLTOGeneratedObjectsDir);
@@ -869,9 +935,11 @@ private:
     ThinGenerator.run();
 
     auto &Binaries = ThinGenerator.getProducedBinaries();
-    if (Binaries.size() != InputFilenames.size())
+    if (Binaries.size() != InputFilenames.size()) {
       report_fatal_error("Number of output objects does not match the number "
                          "of inputs");
+
+}
 
     for (unsigned BufID = 0; BufID < Binaries.size(); ++BufID) {
       auto OutputName = InputFilenames[BufID] + ".thinlto.o";
@@ -891,8 +959,10 @@ int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
   cl::ParseCommandLineOptions(argc, argv, "llvm LTO linker\n");
 
-  if (OptLevel < '0' || OptLevel > '3')
+  if (OptLevel < '0' || OptLevel > '3') {
     error("optimization level must be between 0 and 3");
+
+}
 
   // Initialize the configured targets.
   InitializeAllTargets();
@@ -925,10 +995,12 @@ int main(int argc, char **argv) {
       std::unique_ptr<MemoryBuffer> BufferOrErr =
           ExitOnErr(errorOrToExpected(MemoryBuffer::getFile(Filename)));
       auto Buffer = std::move(BufferOrErr.get());
-      if (ExitOnErr(isBitcodeContainingObjCCategory(*Buffer)))
+      if (ExitOnErr(isBitcodeContainingObjCCategory(*Buffer))) {
         outs() << "Bitcode " << Filename << " contains ObjC\n";
-      else
+      } else {
         outs() << "Bitcode " << Filename << " does not contain ObjC\n";
+
+}
     }
     return 0;
   }
@@ -939,8 +1011,10 @@ int main(int argc, char **argv) {
   }
 
   if (ThinLTOMode.getNumOccurrences()) {
-    if (ThinLTOMode.getNumOccurrences() > 1)
+    if (ThinLTOMode.getNumOccurrences() > 1) {
       report_fatal_error("You can't specify more than one -thinlto-action");
+
+}
     thinlto::ThinLTOProcessing ThinLTOProcessor(Options);
     ThinLTOProcessor.run();
     return 0;
@@ -959,8 +1033,10 @@ int main(int argc, char **argv) {
 
   LTOCodeGenerator CodeGen(Context);
 
-  if (UseDiagnosticHandler)
+  if (UseDiagnosticHandler) {
     CodeGen.setDiagnosticHandler(handleDiagnostics, nullptr);
+
+}
 
   CodeGen.setCodePICModel(getRelocModel());
   CodeGen.setFreestanding(EnableFreestanding);
@@ -970,8 +1046,10 @@ int main(int argc, char **argv) {
   CodeGen.setShouldRestoreGlobalsLinkage(RestoreGlobalsLinkage);
 
   StringSet<MallocAllocator> DSOSymbolsSet;
-  for (unsigned i = 0; i < DSOSymbols.size(); ++i)
+  for (unsigned i = 0; i < DSOSymbols.size(); ++i) {
     DSOSymbolsSet.insert(DSOSymbols[i]);
+
+}
 
   std::vector<std::string> KeptDSOSyms;
 
@@ -985,12 +1063,16 @@ int main(int argc, char **argv) {
     unsigned NumSyms = Module->getSymbolCount();
     for (unsigned I = 0; I < NumSyms; ++I) {
       StringRef Name = Module->getSymbolName(I);
-      if (!DSOSymbolsSet.count(Name))
+      if (!DSOSymbolsSet.count(Name)) {
         continue;
+
+}
       lto_symbol_attributes Attrs = Module->getSymbolAttributes(I);
       unsigned Scope = Attrs & LTO_SYMBOL_SCOPE_MASK;
-      if (Scope != LTO_SYMBOL_SCOPE_DEFAULT_CAN_BE_HIDDEN)
+      if (Scope != LTO_SYMBOL_SCOPE_DEFAULT_CAN_BE_HIDDEN) {
         KeptDSOSyms.push_back(std::string(Name));
+
+}
     }
 
     // We use the first input module as the destination module when
@@ -1005,12 +1087,16 @@ int main(int argc, char **argv) {
   }
 
   // Add all the exported symbols to the table of symbols to preserve.
-  for (unsigned i = 0; i < ExportedSymbols.size(); ++i)
+  for (unsigned i = 0; i < ExportedSymbols.size(); ++i) {
     CodeGen.addMustPreserveSymbol(ExportedSymbols[i]);
 
+}
+
   // Add all the dso symbols to the table of symbols to expose.
-  for (unsigned i = 0; i < KeptDSOSyms.size(); ++i)
+  for (unsigned i = 0; i < KeptDSOSyms.size(); ++i) {
     CodeGen.addMustPreserveSymbol(KeptDSOSyms[i]);
+
+}
 
   // Set cpu and attrs strings for the default target/subtarget.
   CodeGen.setCpu(MCPU.c_str());
@@ -1019,16 +1105,22 @@ int main(int argc, char **argv) {
 
   std::string attrs;
   for (unsigned i = 0; i < MAttrs.size(); ++i) {
-    if (i > 0)
+    if (i > 0) {
       attrs.append(",");
+
+}
     attrs.append(MAttrs[i]);
   }
 
-  if (!attrs.empty())
+  if (!attrs.empty()) {
     CodeGen.setAttr(attrs);
 
-  if (FileType.getNumOccurrences())
+}
+
+  if (FileType.getNumOccurrences()) {
     CodeGen.setFileType(FileType);
+
+}
 
   if (!OutputFilename.empty()) {
     if (!CodeGen.optimize(DisableVerify, DisableInline, DisableGVNLoadPRE,
@@ -1042,40 +1134,56 @@ int main(int argc, char **argv) {
       ModuleFilename += ".merged.bc";
       std::string ErrMsg;
 
-      if (!CodeGen.writeMergedModules(ModuleFilename))
+      if (!CodeGen.writeMergedModules(ModuleFilename)) {
         error("writing merged module failed.");
+
+}
     }
 
     std::list<ToolOutputFile> OSs;
     std::vector<raw_pwrite_stream *> OSPtrs;
     for (unsigned I = 0; I != Parallelism; ++I) {
       std::string PartFilename = OutputFilename;
-      if (Parallelism != 1)
+      if (Parallelism != 1) {
         PartFilename += "." + utostr(I);
+
+}
       std::error_code EC;
       OSs.emplace_back(PartFilename, EC, sys::fs::OF_None);
-      if (EC)
+      if (EC) {
         error("error opening the file '" + PartFilename + "': " + EC.message());
+
+}
       OSPtrs.push_back(&OSs.back().os());
     }
 
-    if (!CodeGen.compileOptimized(OSPtrs))
+    if (!CodeGen.compileOptimized(OSPtrs)) {
       // Diagnostic messages should have been printed by the handler.
       error("error compiling the code");
 
-    for (ToolOutputFile &OS : OSs)
+}
+
+    for (ToolOutputFile &OS : OSs) {
       OS.keep();
+
+}
   } else {
-    if (Parallelism != 1)
+    if (Parallelism != 1) {
       error("-j must be specified together with -o");
 
-    if (SaveModuleFile)
+}
+
+    if (SaveModuleFile) {
       error(": -save-merged-module must be specified with -o");
+
+}
 
     const char *OutputName = nullptr;
     if (!CodeGen.compile_to_file(&OutputName, DisableVerify, DisableInline,
-                                 DisableGVNLoadPRE, DisableLTOVectorization))
+                                 DisableGVNLoadPRE, DisableLTOVectorization)) {
       error("error compiling the code");
+
+}
       // Diagnostic messages should have been printed by the handler.
 
     outs() << "Wrote native object file '" << OutputName << "'\n";

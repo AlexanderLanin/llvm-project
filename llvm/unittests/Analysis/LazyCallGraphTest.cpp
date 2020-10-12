@@ -31,8 +31,10 @@ std::unique_ptr<Module> parseAssembly(LLVMContext &Context,
   Error.print("", OS);
 
   // A failure here means that the test itself is buggy.
-  if (!M)
+  if (!M) {
     report_fatal_error(OS.str().c_str());
+
+}
 
   return M;
 }
@@ -263,8 +265,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
   // independent of order.
   std::vector<std::string> Nodes;
 
-  for (LazyCallGraph::Edge &E : A1.populate())
+  for (LazyCallGraph::Edge &E : A1.populate()) {
     Nodes.push_back(std::string(E.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ("a2", Nodes[0]);
   EXPECT_EQ("b2", Nodes[1]);
@@ -278,8 +282,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
   EXPECT_EQ(A3->end(), std::next(A3->begin()));
   EXPECT_EQ("a1", A3->begin()->getFunction().getName());
 
-  for (LazyCallGraph::Edge &E : B1.populate())
+  for (LazyCallGraph::Edge &E : B1.populate()) {
     Nodes.push_back(std::string(E.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ("b2", Nodes[0]);
   EXPECT_EQ("d3", Nodes[1]);
@@ -292,8 +298,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
   EXPECT_EQ(B3->end(), std::next(B3->begin()));
   EXPECT_EQ("b1", B3->begin()->getFunction().getName());
 
-  for (LazyCallGraph::Edge &E : C1.populate())
+  for (LazyCallGraph::Edge &E : C1.populate()) {
     Nodes.push_back(std::string(E.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ("c2", Nodes[0]);
   EXPECT_EQ("d2", Nodes[1]);
@@ -322,8 +330,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
 
   LazyCallGraph::RefSCC &D = *J++;
   ASSERT_EQ(1, D.size());
-  for (LazyCallGraph::Node &N : *D.begin())
+  for (LazyCallGraph::Node &N : *D.begin()) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("d1", Nodes[0]);
@@ -338,8 +348,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
 
   LazyCallGraph::RefSCC &C = *J++;
   ASSERT_EQ(1, C.size());
-  for (LazyCallGraph::Node &N : *C.begin())
+  for (LazyCallGraph::Node &N : *C.begin()) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("c1", Nodes[0]);
@@ -354,8 +366,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
 
   LazyCallGraph::RefSCC &B = *J++;
   ASSERT_EQ(1, B.size());
-  for (LazyCallGraph::Node &N : *B.begin())
+  for (LazyCallGraph::Node &N : *B.begin()) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("b1", Nodes[0]);
@@ -372,8 +386,10 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
 
   LazyCallGraph::RefSCC &A = *J++;
   ASSERT_EQ(1, A.size());
-  for (LazyCallGraph::Node &N : *A.begin())
+  for (LazyCallGraph::Node &N : *A.begin()) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("a1", Nodes[0]);
@@ -393,9 +409,13 @@ TEST(LazyCallGraphTest, BasicGraphFormation) {
 }
 
 static Function &lookupFunction(Module &M, StringRef Name) {
-  for (Function &F : M)
-    if (F.getName() == Name)
+  for (Function &F : M) {
+    if (F.getName() == Name) {
       return F;
+
+}
+
+}
   report_fatal_error("Couldn't find function!");
 }
 
@@ -517,8 +537,10 @@ TEST(LazyCallGraphTest, InnerSCCFormation) {
   // Now walk the four SCCs which should be in post-order.
   auto J = RC.begin();
   LazyCallGraph::SCC &D = *J++;
-  for (LazyCallGraph::Node &N : D)
+  for (LazyCallGraph::Node &N : D) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("d1", Nodes[0]);
@@ -527,8 +549,10 @@ TEST(LazyCallGraphTest, InnerSCCFormation) {
   Nodes.clear();
 
   LazyCallGraph::SCC &B = *J++;
-  for (LazyCallGraph::Node &N : B)
+  for (LazyCallGraph::Node &N : B) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("b1", Nodes[0]);
@@ -537,8 +561,10 @@ TEST(LazyCallGraphTest, InnerSCCFormation) {
   Nodes.clear();
 
   LazyCallGraph::SCC &C = *J++;
-  for (LazyCallGraph::Node &N : C)
+  for (LazyCallGraph::Node &N : C) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("c1", Nodes[0]);
@@ -547,8 +573,10 @@ TEST(LazyCallGraphTest, InnerSCCFormation) {
   Nodes.clear();
 
   LazyCallGraph::SCC &A = *J++;
-  for (LazyCallGraph::Node &N : A)
+  for (LazyCallGraph::Node &N : A) {
     Nodes.push_back(std::string(N.getFunction().getName()));
+
+}
   llvm::sort(Nodes);
   EXPECT_EQ(3u, Nodes.size());
   EXPECT_EQ("a1", Nodes[0]);
@@ -646,8 +674,10 @@ TEST(LazyCallGraphTest, OutgoingEdgeMutation) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A = *CG.lookup(lookupFunction(*M, "a"));
   LazyCallGraph::Node &B = *CG.lookup(lookupFunction(*M, "b"));
@@ -792,8 +822,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertion) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A1 = *CG.lookup(lookupFunction(*M, "a1"));
   LazyCallGraph::Node &A2 = *CG.lookup(lookupFunction(*M, "a2"));
@@ -837,8 +869,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertion) {
   auto MergedRCs = CRC.insertIncomingRefEdge(D2, C2);
   // Make sure we connected the nodes.
   for (LazyCallGraph::Edge E : *D2) {
-    if (&E.getNode() == &D3)
+    if (&E.getNode() == &D3) {
       continue;
+
+}
     EXPECT_EQ(&C2, &E.getNode());
   }
   // And marked the D ref-SCC as no longer valid.
@@ -884,8 +918,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertionRefGraph) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A1 = *CG.lookup(lookupFunction(*M, "a1"));
   LazyCallGraph::Node &A2 = *CG.lookup(lookupFunction(*M, "a2"));
@@ -929,8 +965,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertionRefGraph) {
   auto MergedRCs = CRC.insertIncomingRefEdge(D2, C2);
   // Make sure we connected the nodes.
   for (LazyCallGraph::Edge E : *D2) {
-    if (&E.getNode() == &D3)
+    if (&E.getNode() == &D3) {
       continue;
+
+}
     EXPECT_EQ(&C2, &E.getNode());
   }
   // And marked the D ref-SCC as no longer valid.
@@ -991,8 +1029,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertionLargeCallCycle) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A = *CG.lookup(lookupFunction(*M, "a"));
   LazyCallGraph::Node &B = *CG.lookup(lookupFunction(*M, "b"));
@@ -1068,8 +1108,10 @@ TEST(LazyCallGraphTest, IncomingEdgeInsertionLargeRefCycle) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A = *CG.lookup(lookupFunction(*M, "a"));
   LazyCallGraph::Node &B = *CG.lookup(lookupFunction(*M, "b"));
@@ -1130,8 +1172,10 @@ TEST(LazyCallGraphTest, InlineAndDeleteFunction) {
 
   // Force the graph to be fully expanded.
   CG.buildRefSCCs();
-  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs())
+  for (LazyCallGraph::RefSCC &RC : CG.postorder_ref_sccs()) {
     dbgs() << "Formed RefSCC: " << RC << "\n";
+
+}
 
   LazyCallGraph::Node &A1 = *CG.lookup(lookupFunction(*M, "a1"));
   LazyCallGraph::Node &A2 = *CG.lookup(lookupFunction(*M, "a2"));

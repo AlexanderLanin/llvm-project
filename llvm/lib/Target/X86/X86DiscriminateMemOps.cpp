@@ -86,12 +86,16 @@ char X86DiscriminateMemOps::ID = 0;
 X86DiscriminateMemOps::X86DiscriminateMemOps() : MachineFunctionPass(ID) {}
 
 bool X86DiscriminateMemOps::runOnMachineFunction(MachineFunction &MF) {
-  if (!EnableDiscriminateMemops)
+  if (!EnableDiscriminateMemops) {
     return false;
 
+}
+
   DISubprogram *FDI = MF.getFunction().getSubprogram();
-  if (!FDI || !FDI->getUnit()->getDebugInfoForProfiling())
+  if (!FDI || !FDI->getUnit()->getDebugInfoForProfiling()) {
     return false;
+
+}
 
   // Have a default DILocation, if we find instructions with memops that don't
   // have any debug info.
@@ -108,10 +112,14 @@ bool X86DiscriminateMemOps::runOnMachineFunction(MachineFunction &MF) {
   for (auto &MBB : MF) {
     for (auto &MI : MBB) {
       const auto &DI = MI.getDebugLoc();
-      if (!DI)
+      if (!DI) {
         continue;
-      if (BypassPrefetchInstructions && IsPrefetchOpcode(MI.getDesc().Opcode))
+
+}
+      if (BypassPrefetchInstructions && IsPrefetchOpcode(MI.getDesc().Opcode)) {
         continue;
+
+}
       Location Loc = diToLocation(DI);
       MemOpDiscriminators[Loc] =
           std::max(MemOpDiscriminators[Loc], DI->getBaseDiscriminator());
@@ -126,10 +134,14 @@ bool X86DiscriminateMemOps::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
   for (auto &MBB : MF) {
     for (auto &MI : MBB) {
-      if (X86II::getMemoryOperandNo(MI.getDesc().TSFlags) < 0)
+      if (X86II::getMemoryOperandNo(MI.getDesc().TSFlags) < 0) {
         continue;
-      if (BypassPrefetchInstructions && IsPrefetchOpcode(MI.getDesc().Opcode))
+
+}
+      if (BypassPrefetchInstructions && IsPrefetchOpcode(MI.getDesc().Opcode)) {
         continue;
+
+}
       const DILocation *DI = MI.getDebugLoc();
       bool HasDebug = DI;
       if (!HasDebug) {

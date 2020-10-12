@@ -56,8 +56,10 @@ private:
         Argv.push_back(Arg.c_str());
         SeenRSPFile |= Arg.front() == '@';
       }
-      if (!SeenRSPFile)
+      if (!SeenRSPFile) {
         continue;
+
+}
       llvm::BumpPtrAllocator Alloc;
       llvm::StringSaver Saver(Alloc);
       llvm::cl::ExpandResponseFiles(Saver, Tokenizer, Argv, false, false, *FS,

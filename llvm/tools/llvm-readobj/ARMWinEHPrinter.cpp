@@ -97,15 +97,19 @@ static std::string formatSymbol(StringRef Name, uint64_t Address,
   std::string Buffer;
   raw_string_ostream OS(Buffer);
 
-  if (!Name.empty())
+  if (!Name.empty()) {
     OS << Name << " ";
 
-  if (Offset)
+}
+
+  if (Offset) {
     OS << format("+0x%X (0x%" PRIX64 ")", Offset, Address);
-  else if (!Name.empty())
+  } else if (!Name.empty()) {
     OS << format("(0x%" PRIX64 ")", Address);
-  else
+  } else {
     OS << format("0x%" PRIX64, Address);
+
+}
 
   return OS.str();
 }
@@ -183,24 +187,30 @@ void Decoder::printRegisters(const std::pair<uint16_t, uint32_t> &RegisterMask) 
   bool Comma = false;
   for (unsigned RI = 0, RE = 11; RI < RE; ++RI) {
     if (GPRMask & (1 << RI)) {
-      if (Comma)
+      if (Comma) {
         OS << ", ";
+
+}
       OS << GPRRegisterNames[RI];
       Comma = true;
     }
   }
   for (unsigned RI = 0, RE = 32; RI < RE; ++RI) {
     if (VFPMask & (1 << RI)) {
-      if (Comma)
+      if (Comma) {
         OS << ", ";
+
+}
       OS << "d" << unsigned(RI);
       Comma = true;
     }
   }
   for (unsigned RI = 11, RE = 16; RI < RE; ++RI) {
     if (GPRMask & (1 << RI)) {
-      if (Comma)
+      if (Comma) {
         OS << ", ";
+
+}
       OS << GPRRegisterNames[RI];
       Comma = true;
     }
@@ -214,8 +224,10 @@ Decoder::getSectionContaining(const COFFObjectFile &COFF, uint64_t VA) {
     uint64_t Address = Section.getAddress();
     uint64_t Size = Section.getSize();
 
-    if (VA >= Address && (VA - Address) <= Size)
+    if (VA >= Address && (VA - Address) <= Size) {
       return Section;
+
+}
   }
   return readobj_error::unknown_symbol;
 }
@@ -224,16 +236,24 @@ ErrorOr<object::SymbolRef> Decoder::getSymbol(const COFFObjectFile &COFF,
                                               uint64_t VA, bool FunctionOnly) {
   for (const auto &Symbol : COFF.symbols()) {
     Expected<SymbolRef::Type> Type = Symbol.getType();
-    if (!Type)
+    if (!Type) {
       return errorToErrorCode(Type.takeError());
-    if (FunctionOnly && *Type != SymbolRef::ST_Function)
+
+}
+    if (FunctionOnly && *Type != SymbolRef::ST_Function) {
       continue;
 
+}
+
     Expected<uint64_t> Address = Symbol.getAddress();
-    if (!Address)
+    if (!Address) {
       return errorToErrorCode(Address.takeError());
-    if (*Address == VA)
+
+}
+    if (*Address == VA) {
       return Symbol;
+
+}
   }
   return readobj_error::unknown_symbol;
 }
@@ -243,8 +263,10 @@ ErrorOr<SymbolRef> Decoder::getRelocatedSymbol(const COFFObjectFile &,
                                                uint64_t Offset) {
   for (const auto &Relocation : Section.relocations()) {
     uint64_t RelocationOffset = Relocation.getOffset();
-    if (RelocationOffset == Offset)
+    if (RelocationOffset == Offset) {
       return *Relocation.getSymbol();
+
+}
   }
   return readobj_error::unknown_symbol;
 }
@@ -281,12 +303,14 @@ bool Decoder::opcode_10Lxxxxx(const uint8_t *OC, unsigned &Offset,
 
 bool Decoder::opcode_1100xxxx(const uint8_t *OC, unsigned &Offset,
                               unsigned Length, bool Prologue) {
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format("0x%02x                ; mov r%u, sp\n",
                              OC[Offset], OC[Offset] & 0xf);
-  else
+  } else {
     SW.startLine() << format("0x%02x                ; mov sp, r%u\n",
                              OC[Offset], OC[Offset] & 0xf);
+
+}
   ++Offset;
   return false;
 }
@@ -370,13 +394,15 @@ bool Decoder::opcode_11101110(const uint8_t *OC, unsigned &Offset,
                               unsigned Length, bool Prologue) {
   assert(!Prologue && "may not be used in prologue");
 
-  if (OC[Offset + 1] & 0xf0)
+  if (OC[Offset + 1] & 0xf0) {
     SW.startLine() << format("0x%02x 0x%02x           ; reserved\n",
                              OC[Offset + 0], OC[Offset +  1]);
-  else
+  } else {
     SW.startLine()
       << format("0x%02x 0x%02x           ; microsoft-specific (type: %u)\n",
                 OC[Offset + 0], OC[Offset + 1], OC[Offset + 1] & 0x0f);
+
+}
 
   Offset += 2;
   return false;
@@ -386,13 +412,15 @@ bool Decoder::opcode_11101111(const uint8_t *OC, unsigned &Offset,
                               unsigned Length, bool Prologue) {
   assert(!Prologue && "may not be used in prologue");
 
-  if (OC[Offset + 1] & 0xf0)
+  if (OC[Offset + 1] & 0xf0) {
     SW.startLine() << format("0x%02x 0x%02x           ; reserved\n",
                              OC[Offset + 0], OC[Offset +  1]);
-  else
+  } else {
     SW.startLine()
       << format("0x%02x 0x%02x           ; ldr.w lr, [sp], #%u\n",
                 OC[Offset + 0], OC[Offset + 1], OC[Offset + 1] << 2);
+
+}
 
   Offset += 2;
   return false;
@@ -532,12 +560,14 @@ bool Decoder::opcode_alloc_s(const uint8_t *OC, unsigned &Offset,
 bool Decoder::opcode_save_r19r20_x(const uint8_t *OC, unsigned &Offset,
                                    unsigned Length, bool Prologue) {
   uint32_t Off = (OC[Offset] & 0x1F) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format(
         "0x%02x                ; stp x19, x20, [sp, #-%u]!\n", OC[Offset], Off);
-  else
+  } else {
     SW.startLine() << format(
         "0x%02x                ; ldp x19, x20, [sp], #%u\n", OC[Offset], Off);
+
+}
   ++Offset;
   return false;
 }
@@ -555,12 +585,14 @@ bool Decoder::opcode_save_fplr(const uint8_t *OC, unsigned &Offset,
 bool Decoder::opcode_save_fplr_x(const uint8_t *OC, unsigned &Offset,
                                  unsigned Length, bool Prologue) {
   uint32_t Off = ((OC[Offset] & 0x3F) + 1) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format(
         "0x%02x                ; stp x29, x30, [sp, #-%u]!\n", OC[Offset], Off);
-  else
+  } else {
     SW.startLine() << format(
         "0x%02x                ; ldp x29, x30, [sp], #%u\n", OC[Offset], Off);
+
+}
   ++Offset;
   return false;
 }
@@ -600,16 +632,18 @@ bool Decoder::opcode_save_regp_x(const uint8_t *OC, unsigned &Offset,
   Reg >>= 6;
   Reg += 19;
   uint32_t Off = ((OC[Offset + 1] & 0x3F) + 1) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format(
         "0x%02x%02x              ; stp x%u, x%u, [sp, #-%u]!\n",
         OC[Offset], OC[Offset + 1], Reg,
         Reg + 1, Off);
-  else
+  } else {
     SW.startLine() << format(
         "0x%02x%02x              ; ldp x%u, x%u, [sp], #%u\n",
         OC[Offset], OC[Offset + 1], Reg,
         Reg + 1, Off);
+
+}
   Offset += 2;
   return false;
 }
@@ -636,12 +670,14 @@ bool Decoder::opcode_save_reg_x(const uint8_t *OC, unsigned &Offset,
   Reg >>= 5;
   Reg += 19;
   uint32_t Off = ((OC[Offset + 1] & 0x1F) + 1) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format("0x%02x%02x              ; str x%u, [sp, #%u]!\n",
                              OC[Offset], OC[Offset + 1], Reg, Off);
-  else
+  } else {
     SW.startLine() << format("0x%02x%02x              ; ldr x%u, [sp], #%u\n",
                              OC[Offset], OC[Offset + 1], Reg, Off);
+
+}
   Offset += 2;
   return false;
 }
@@ -684,14 +720,16 @@ bool Decoder::opcode_save_fregp_x(const uint8_t *OC, unsigned &Offset,
   Reg >>= 6;
   Reg += 8;
   uint32_t Off = ((OC[Offset + 1] & 0x3F) + 1) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format(
         "0x%02x%02x              ; stp d%u, d%u, [sp, #-%u]!\n", OC[Offset],
         OC[Offset + 1], Reg, Reg + 1, Off);
-  else
+  } else {
     SW.startLine() << format(
         "0x%02x%02x              ; ldp d%u, d%u, [sp], #%u\n", OC[Offset],
         OC[Offset + 1], Reg, Reg + 1, Off);
+
+}
   Offset += 2;
   return false;
 }
@@ -715,14 +753,16 @@ bool Decoder::opcode_save_freg_x(const uint8_t *OC, unsigned &Offset,
                                  unsigned Length, bool Prologue) {
   uint32_t Reg = ((OC[Offset + 1] & 0xE0) >> 5) + 8;
   uint32_t Off = ((OC[Offset + 1] & 0x1F) + 1) << 3;
-  if (Prologue)
+  if (Prologue) {
     SW.startLine() << format(
         "0x%02x%02x              ; str d%u, [sp, #-%u]!\n", OC[Offset],
         OC[Offset + 1], Reg, Off);
-  else
+  } else {
     SW.startLine() << format(
         "0x%02x%02x              ; ldr d%u, [sp], #%u\n", OC[Offset],
         OC[Offset + 1], Reg, Off);
+
+}
   Offset += 2;
   return false;
 }
@@ -811,8 +851,10 @@ bool Decoder::dumpXDataRecord(const COFFObjectFile &COFF,
                               const SectionRef &Section,
                               uint64_t FunctionAddress, uint64_t VA) {
   ArrayRef<uint8_t> Contents;
-  if (COFF.getSectionContents(COFF.getCOFFSection(Section), Contents))
+  if (COFF.getSectionContents(COFF.getCOFFSection(Section), Contents)) {
     return false;
+
+}
 
   uint64_t SectionVA = Section.getAddress();
   uint64_t Offset = VA - SectionVA;
@@ -822,8 +864,10 @@ bool Decoder::dumpXDataRecord(const COFFObjectFile &COFF,
   // Sanity check to ensure that the .xdata header is present.
   // A header is one or two words, followed by at least one word to describe
   // the unwind codes. Applicable to both ARM and AArch64.
-  if (Contents.size() - Offset < 8)
+  if (Contents.size() - Offset < 8) {
     report_fatal_error(".xdata must be at least 8 bytes in size");
+
+}
 
   const ExceptionDataRecord XData(Data, isAArch64);
   DictScope XRS(SW, "ExceptionData");
@@ -833,8 +877,10 @@ bool Decoder::dumpXDataRecord(const COFFObjectFile &COFF,
   SW.printNumber("Version", XData.Vers());
   SW.printBoolean("ExceptionData", XData.X());
   SW.printBoolean("EpiloguePacked", XData.E());
-  if (!isAArch64)
+  if (!isAArch64) {
     SW.printBoolean("Fragment", XData.F());
+
+}
   SW.printNumber(XData.E() ? "EpilogueOffset" : "EpilogueScopes",
                  XData.EpilogueCount());
   uint64_t ByteCodeLength = XData.CodeWords() * sizeof(uint32_t);
@@ -867,13 +913,17 @@ bool Decoder::dumpXDataRecord(const COFFObjectFile &COFF,
     for (const EpilogueScope ES : EpilogueScopes) {
       DictScope ESES(SW, "EpilogueScope");
       SW.printNumber("StartOffset", ES.EpilogueStartOffset());
-      if (!isAArch64)
+      if (!isAArch64) {
         SW.printNumber("Condition", ES.Condition());
+
+}
       SW.printNumber("EpilogueStartIndex",
                      isAArch64 ? ES.EpilogueStartIndexAArch64()
                                : ES.EpilogueStartIndexARM());
-      if (ES.ES & ~0xffc3ffff)
+      if (ES.ES & ~0xffc3ffff) {
         SW.printNumber("ReservedBits", (ES.ES >> 18) & 0xF);
+
+}
 
       ListScope Opcodes(SW, "Opcodes");
       decodeOpcodes(XData.UnwindByteCode(),
@@ -892,8 +942,10 @@ bool Decoder::dumpXDataRecord(const COFFObjectFile &COFF,
 
     ErrorOr<SymbolRef> Symbol = getRelocatedSymbol(
         COFF, Section, Offset + HandlerOffset * sizeof(uint32_t));
-    if (!Symbol)
+    if (!Symbol) {
       Symbol = getSymbol(COFF, Address, /*FunctionOnly=*/true);
+
+}
     if (!Symbol) {
       ListScope EHS(SW, "ExceptionHandler");
       SW.printHex("Routine", Address);
@@ -925,18 +977,26 @@ bool Decoder::dumpUnpackedEntry(const COFFObjectFile &COFF,
          "packed entry cannot be treated as an unpacked entry");
 
   ErrorOr<SymbolRef> Function = getRelocatedSymbol(COFF, Section, Offset);
-  if (!Function)
+  if (!Function) {
     Function = getSymbol(COFF, COFF.getImageBase() + RF.BeginAddress,
                          /*FunctionOnly=*/true);
 
+}
+
   ErrorOr<SymbolRef> XDataRecord = getRelocatedSymbol(COFF, Section, Offset + 4);
-  if (!XDataRecord)
+  if (!XDataRecord) {
     XDataRecord = getSymbol(COFF, RF.ExceptionInformationRVA());
 
-  if (!RF.BeginAddress && !Function)
+}
+
+  if (!RF.BeginAddress && !Function) {
     return false;
-  if (!RF.UnwindData && !XDataRecord)
+
+}
+  if (!RF.UnwindData && !XDataRecord) {
     return false;
+
+}
 
   StringRef FunctionName;
   uint64_t FunctionAddress;
@@ -1003,8 +1063,10 @@ bool Decoder::dumpUnpackedEntry(const COFFObjectFile &COFF,
     SW.printString("ExceptionRecord", formatSymbol("", Address));
 
     ErrorOr<SectionRef> Section = getSectionContaining(COFF, Address);
-    if (!Section)
+    if (!Section) {
       return false;
+
+}
 
     return dumpXDataRecord(COFF, *Section, FunctionAddress, Address);
   }
@@ -1018,8 +1080,10 @@ bool Decoder::dumpPackedEntry(const object::COFFObjectFile &COFF,
          "unpacked entry cannot be treated as a packed entry");
 
   ErrorOr<SymbolRef> Function = getRelocatedSymbol(COFF, Section, Offset);
-  if (!Function)
+  if (!Function) {
     Function = getSymbol(COFF, RF.BeginAddress, /*FunctionOnly=*/true);
+
+}
 
   StringRef FunctionName;
   uint64_t FunctionAddress;
@@ -1047,9 +1111,11 @@ bool Decoder::dumpPackedEntry(const object::COFFObjectFile &COFF,
   }
 
   SW.printString("Function", formatSymbol(FunctionName, FunctionAddress));
-  if (!isAArch64)
+  if (!isAArch64) {
     SW.printBoolean("Fragment",
                     RF.Flag() == RuntimeFunctionFlag::RFF_PackedFragment);
+
+}
   SW.printNumber("FunctionLength", RF.FunctionLength());
   SW.startLine() << "ReturnType: " << RF.Ret() << '\n';
   SW.printBoolean("HomedParameters", RF.H());
@@ -1070,8 +1136,10 @@ bool Decoder::dumpProcedureDataEntry(const COFFObjectFile &COFF,
 
   const RuntimeFunction Entry(Data);
   DictScope RFS(SW, "RuntimeFunction");
-  if (Entry.Flag() == RuntimeFunctionFlag::RFF_Unpacked)
+  if (Entry.Flag() == RuntimeFunctionFlag::RFF_Unpacked) {
     return dumpUnpackedEntry(COFF, Section, Offset, Index, Entry);
+
+}
   if (isAArch64) {
     SW.startLine() << "Packed unwind data not yet supported for ARM64\n";
     return true;
@@ -1082,28 +1150,38 @@ bool Decoder::dumpProcedureDataEntry(const COFFObjectFile &COFF,
 void Decoder::dumpProcedureData(const COFFObjectFile &COFF,
                                 const SectionRef Section) {
   ArrayRef<uint8_t> Contents;
-  if (COFF.getSectionContents(COFF.getCOFFSection(Section), Contents))
+  if (COFF.getSectionContents(COFF.getCOFFSection(Section), Contents)) {
     return;
+
+}
 
   if (Contents.size() % PDataEntrySize) {
     errs() << ".pdata content is not " << PDataEntrySize << "-byte aligned\n";
     return;
   }
 
-  for (unsigned EI = 0, EE = Contents.size() / PDataEntrySize; EI < EE; ++EI)
-    if (!dumpProcedureDataEntry(COFF, Section, EI, Contents))
+  for (unsigned EI = 0, EE = Contents.size() / PDataEntrySize; EI < EE; ++EI) {
+    if (!dumpProcedureDataEntry(COFF, Section, EI, Contents)) {
       break;
+
+}
+
+}
 }
 
 Error Decoder::dumpProcedureData(const COFFObjectFile &COFF) {
   for (const auto &Section : COFF.sections()) {
     Expected<StringRef> NameOrErr =
         COFF.getSectionName(COFF.getCOFFSection(Section));
-    if (!NameOrErr)
+    if (!NameOrErr) {
       return NameOrErr.takeError();
 
-    if (NameOrErr->startswith(".pdata"))
+}
+
+    if (NameOrErr->startswith(".pdata")) {
       dumpProcedureData(COFF, Section);
+
+}
   }
   return Error::success();
 }

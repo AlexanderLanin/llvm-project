@@ -32,8 +32,10 @@ getScaleForFactory(llvm::StringRef FactoryName) {
        {"Hours", DurationScale::Hours}});
 
   auto ScaleIter = ScaleMap.find(std::string(FactoryName));
-  if (ScaleIter == ScaleMap.end())
+  if (ScaleIter == ScaleMap.end()) {
     return llvm::None;
+
+}
 
   return ScaleIter->second;
 }
@@ -42,8 +44,10 @@ getScaleForFactory(llvm::StringRef FactoryName) {
 // One and only one of `IntLit` and `FloatLit` should be provided.
 static double GetValue(const IntegerLiteral *IntLit,
                        const FloatingLiteral *FloatLit) {
-  if (IntLit)
+  if (IntLit) {
     return IntLit->getValue().getLimitedValue();
+
+}
 
   assert(FloatLit != nullptr && "Neither IntLit nor FloatLit set");
   return FloatLit->getValueAsApproximateDouble();
@@ -56,41 +60,61 @@ static llvm::Optional<std::tuple<DurationScale, double>>
 GetNewScaleSingleStep(DurationScale OldScale, double Multiplier) {
   switch (OldScale) {
   case DurationScale::Hours:
-    if (Multiplier <= 1.0 / 60.0)
+    if (Multiplier <= 1.0 / 60.0) {
       return std::make_tuple(DurationScale::Minutes, Multiplier * 60.0);
+
+}
     break;
 
   case DurationScale::Minutes:
-    if (Multiplier >= 60.0)
+    if (Multiplier >= 60.0) {
       return std::make_tuple(DurationScale::Hours, Multiplier / 60.0);
-    if (Multiplier <= 1.0 / 60.0)
+
+}
+    if (Multiplier <= 1.0 / 60.0) {
       return std::make_tuple(DurationScale::Seconds, Multiplier * 60.0);
+
+}
     break;
 
   case DurationScale::Seconds:
-    if (Multiplier >= 60.0)
+    if (Multiplier >= 60.0) {
       return std::make_tuple(DurationScale::Minutes, Multiplier / 60.0);
-    if (Multiplier <= 1e-3)
+
+}
+    if (Multiplier <= 1e-3) {
       return std::make_tuple(DurationScale::Milliseconds, Multiplier * 1e3);
+
+}
     break;
 
   case DurationScale::Milliseconds:
-    if (Multiplier >= 1e3)
+    if (Multiplier >= 1e3) {
       return std::make_tuple(DurationScale::Seconds, Multiplier / 1e3);
-    if (Multiplier <= 1e-3)
+
+}
+    if (Multiplier <= 1e-3) {
       return std::make_tuple(DurationScale::Microseconds, Multiplier * 1e3);
+
+}
     break;
 
   case DurationScale::Microseconds:
-    if (Multiplier >= 1e3)
+    if (Multiplier >= 1e3) {
       return std::make_tuple(DurationScale::Milliseconds, Multiplier / 1e3);
-    if (Multiplier <= 1e-3)
+
+}
+    if (Multiplier <= 1e-3) {
       return std::make_tuple(DurationScale::Nanoseconds, Multiplier * 1e-3);
+
+}
     break;
 
   case DurationScale::Nanoseconds:
-    if (Multiplier >= 1e3)
+    if (Multiplier >= 1e3) {
       return std::make_tuple(DurationScale::Microseconds, Multiplier / 1e3);
+
+}
     break;
   }
 
@@ -104,10 +128,14 @@ static llvm::Optional<DurationScale> GetNewScale(DurationScale OldScale,
   while (Multiplier != 1.0) {
     llvm::Optional<std::tuple<DurationScale, double>> result =
         GetNewScaleSingleStep(OldScale, Multiplier);
-    if (!result)
+    if (!result) {
       break;
-    if (std::get<1>(*result) == 1.0)
+
+}
+    if (std::get<1>(*result) == 1.0) {
       return std::get<0>(*result);
+
+}
     Multiplier = std::get<1>(*result);
     OldScale = std::get<0>(*result);
   }
@@ -141,13 +169,17 @@ void DurationFactoryScaleCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Call = Result.Nodes.getNodeAs<CallExpr>("call");
 
   // Don't try to replace things inside of macro definitions.
-  if (Call->getExprLoc().isMacroID())
+  if (Call->getExprLoc().isMacroID()) {
     return;
+
+}
 
   const Expr *Arg = Call->getArg(0)->IgnoreParenImpCasts();
   // Arguments which are macros are ignored.
-  if (Arg->getBeginLoc().isMacroID())
+  if (Arg->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   // We first handle the cases of literal zero (both float and integer).
   if (IsLiteralZero(Result, *Arg)) {
@@ -161,8 +193,10 @@ void DurationFactoryScaleCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *CallDecl = Result.Nodes.getNodeAs<FunctionDecl>("call_decl");
   llvm::Optional<DurationScale> MaybeScale =
       getScaleForFactory(CallDecl->getName());
-  if (!MaybeScale)
+  if (!MaybeScale) {
     return;
+
+}
 
   DurationScale Scale = *MaybeScale;
   const Expr *Remainder;
@@ -179,8 +213,10 @@ void DurationFactoryScaleCheck::check(const MatchFinder::MatchResult &Result) {
     const auto *FloatLit = llvm::dyn_cast<FloatingLiteral>(MultBinOp->getLHS());
     if (IntLit || FloatLit) {
       NewScale = GetNewScale(Scale, GetValue(IntLit, FloatLit));
-      if (NewScale)
+      if (NewScale) {
         Remainder = MultBinOp->getRHS();
+
+}
     }
 
     // If we weren't able to scale based on the LHS, check the RHS
@@ -189,8 +225,10 @@ void DurationFactoryScaleCheck::check(const MatchFinder::MatchResult &Result) {
       FloatLit = llvm::dyn_cast<FloatingLiteral>(MultBinOp->getRHS());
       if (IntLit || FloatLit) {
         NewScale = GetNewScale(Scale, GetValue(IntLit, FloatLit));
-        if (NewScale)
+        if (NewScale) {
           Remainder = MultBinOp->getLHS();
+
+}
       }
     }
   } else if (const auto *DivBinOp =

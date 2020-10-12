@@ -116,16 +116,22 @@ SimpleStreamChecker::SimpleStreamChecker()
 
 void SimpleStreamChecker::checkPostCall(const CallEvent &Call,
                                         CheckerContext &C) const {
-  if (!Call.isGlobalCFunction())
+  if (!Call.isGlobalCFunction()) {
     return;
 
-  if (!Call.isCalled(OpenFn))
+}
+
+  if (!Call.isCalled(OpenFn)) {
     return;
+
+}
 
   // Get the symbolic value corresponding to the file handle.
   SymbolRef FileDesc = Call.getReturnValue().getAsSymbol();
-  if (!FileDesc)
+  if (!FileDesc) {
     return;
+
+}
 
   // Generate the next transition (an edge in the exploded graph).
   ProgramStateRef State = C.getState();
@@ -135,16 +141,22 @@ void SimpleStreamChecker::checkPostCall(const CallEvent &Call,
 
 void SimpleStreamChecker::checkPreCall(const CallEvent &Call,
                                        CheckerContext &C) const {
-  if (!Call.isGlobalCFunction())
+  if (!Call.isGlobalCFunction()) {
     return;
 
-  if (!Call.isCalled(CloseFn))
+}
+
+  if (!Call.isCalled(CloseFn)) {
     return;
+
+}
 
   // Get the symbolic value corresponding to the file handle.
   SymbolRef FileDesc = Call.getArgSVal(0).getAsSymbol();
-  if (!FileDesc)
+  if (!FileDesc) {
     return;
+
+}
 
   // Check if the stream has already been closed.
   ProgramStateRef State = C.getState();
@@ -182,17 +194,23 @@ void SimpleStreamChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     bool IsSymDead = SymReaper.isDead(Sym);
 
     // Collect leaked symbols.
-    if (isLeaked(Sym, I->second, IsSymDead, State))
+    if (isLeaked(Sym, I->second, IsSymDead, State)) {
       LeakedStreams.push_back(Sym);
 
+}
+
     // Remove the dead symbol from the streams map.
-    if (IsSymDead)
+    if (IsSymDead) {
       State = State->remove<StreamMap>(Sym);
+
+}
   }
 
   ExplodedNode *N = C.generateNonFatalErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
+
+}
   reportLeaks(LeakedStreams, C, N);
 }
 
@@ -202,8 +220,10 @@ void SimpleStreamChecker::reportDoubleClose(SymbolRef FileDescSym,
   // We reached a bug, stop exploring the path here by generating a sink.
   ExplodedNode *ErrNode = C.generateErrorNode();
   // If we've already reached this node on another path, return.
-  if (!ErrNode)
+  if (!ErrNode) {
     return;
+
+}
 
   // Generate the report.
   auto R = std::make_unique<PathSensitiveBugReport>(
@@ -229,12 +249,16 @@ void SimpleStreamChecker::reportLeaks(ArrayRef<SymbolRef> LeakedStreams,
 
 bool SimpleStreamChecker::guaranteedNotToCloseFile(const CallEvent &Call) const{
   // If it's not in a system header, assume it might close a file.
-  if (!Call.isInSystemHeader())
+  if (!Call.isInSystemHeader()) {
     return false;
 
+}
+
   // Handle cases where we know a buffer's /address/ can escape.
-  if (Call.argumentsMayEscape())
+  if (Call.argumentsMayEscape()) {
     return false;
+
+}
 
   // Note, even though fclose closes the file, we do not list it here
   // since the checker is modeling the call.

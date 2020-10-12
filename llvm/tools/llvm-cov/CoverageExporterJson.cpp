@@ -85,8 +85,10 @@ json::Array renderRegion(const coverage::CountedRegion &Region) {
 
 json::Array renderRegions(ArrayRef<coverage::CountedRegion> Regions) {
   json::Array RegionArray;
-  for (const auto &Region : Regions)
+  for (const auto &Region : Regions) {
     RegionArray.push_back(renderRegion(Region));
+
+}
   return RegionArray;
 }
 
@@ -128,16 +130,20 @@ json::Object renderSummary(const FileCoverageSummary &Summary) {
 json::Array renderFileExpansions(const coverage::CoverageData &FileCoverage,
                                  const FileCoverageSummary &FileReport) {
   json::Array ExpansionArray;
-  for (const auto &Expansion : FileCoverage.getExpansions())
+  for (const auto &Expansion : FileCoverage.getExpansions()) {
     ExpansionArray.push_back(renderExpansion(Expansion));
+
+}
   return ExpansionArray;
 }
 
 json::Array renderFileSegments(const coverage::CoverageData &FileCoverage,
                                const FileCoverageSummary &FileReport) {
   json::Array SegmentArray;
-  for (const auto &Segment : FileCoverage)
+  for (const auto &Segment : FileCoverage) {
     SegmentArray.push_back(renderSegment(Segment));
+
+}
   return SegmentArray;
 }
 
@@ -163,8 +169,10 @@ json::Array renderFiles(const coverage::CoverageMapping &Coverage,
                         ArrayRef<FileCoverageSummary> FileReports,
                         const CoverageViewOptions &Options) {
   auto NumThreads = Options.NumThreads;
-  if (NumThreads == 0)
+  if (NumThreads == 0) {
     NumThreads = SourceFiles.size();
+
+}
   ThreadPool Pool(heavyweight_hardware_concurrency(NumThreads));
   json::Array FileArray;
   std::mutex FileArrayMutex;
@@ -187,12 +195,14 @@ json::Array renderFiles(const coverage::CoverageMapping &Coverage,
 json::Array renderFunctions(
     const iterator_range<coverage::FunctionRecordIterator> &Functions) {
   json::Array FunctionArray;
-  for (const auto &F : Functions)
+  for (const auto &F : Functions) {
     FunctionArray.push_back(
         json::Object({{"name", F.Name},
                       {"count", clamp_uint64_to_int64(F.ExecutionCount)},
                       {"regions", renderRegions(F.CountedRegions)},
                       {"filenames", json::Array(F.Filenames)}}));
+
+}
   return FunctionArray;
 }
 
@@ -201,8 +211,10 @@ json::Array renderFunctions(
 void CoverageExporterJson::renderRoot(const CoverageFilters &IgnoreFilters) {
   std::vector<std::string> SourceFiles;
   for (StringRef SF : Coverage.getUniqueSourceFiles()) {
-    if (!IgnoreFilters.matchesFilename(SF))
+    if (!IgnoreFilters.matchesFilename(SF)) {
       SourceFiles.emplace_back(SF);
+
+}
   }
   renderRoot(SourceFiles);
 }
@@ -226,8 +238,10 @@ void CoverageExporterJson::renderRoot(ArrayRef<std::string> SourceFiles) {
   auto Export = json::Object(
       {{"files", std::move(Files)}, {"totals", renderSummary(Totals)}});
   // Skip functions-level information  if necessary.
-  if (!Options.ExportSummaryOnly && !Options.SkipFunctions)
+  if (!Options.ExportSummaryOnly && !Options.SkipFunctions) {
     Export["functions"] = renderFunctions(Coverage.getCoveredFunctions());
+
+}
 
   auto ExportArray = json::Array({std::move(Export)});
 

@@ -35,16 +35,20 @@ struct DOTGraphTraits<DomTreeNode*> : public DefaultDOTGraphTraits {
 
     BasicBlock *BB = Node->getBlock();
 
-    if (!BB)
+    if (!BB) {
       return "Post dominance root node";
 
+}
 
-    if (isSimple())
+
+    if (isSimple()) {
       return DOTGraphTraits<const Function*>
         ::getSimpleNodeLabel(BB, BB->getParent());
-    else
+    } else {
       return DOTGraphTraits<const Function*>
         ::getCompleteNodeLabel(BB, BB->getParent());
+
+}
   }
 };
 

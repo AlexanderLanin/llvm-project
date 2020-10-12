@@ -20,8 +20,10 @@ JITSymbolResolverAdapter::JITSymbolResolverAdapter(
 void JITSymbolResolverAdapter::lookup(const LookupSet &Symbols,
                                       OnResolvedFunction OnResolved) {
   SymbolNameSet InternedSymbols;
-  for (auto &S : Symbols)
+  for (auto &S : Symbols) {
     InternedSymbols.insert(ES.intern(S));
+
+}
 
   auto OnResolvedWithUnwrap = [OnResolved = std::move(OnResolved)](
                                   Expected<SymbolMap> InternedResult) mutable {
@@ -31,8 +33,10 @@ void JITSymbolResolverAdapter::lookup(const LookupSet &Symbols,
     }
 
     LookupResult Result;
-    for (auto &KV : *InternedResult)
+    for (auto &KV : *InternedResult) {
       Result[*KV.first] = std::move(KV.second);
+
+}
     OnResolved(Result);
   };
 
@@ -42,17 +46,23 @@ void JITSymbolResolverAdapter::lookup(const LookupSet &Symbols,
 
   auto Unresolved = R.lookup(Q, InternedSymbols);
   if (Unresolved.empty()) {
-    if (MR)
+    if (MR) {
       MR->addDependenciesForAll(Q->QueryRegistrations);
-  } else
+
+}
+  } else {
     ES.legacyFailQuery(*Q, make_error<SymbolsNotFound>(std::move(Unresolved)));
+
+}
 }
 
 Expected<JITSymbolResolverAdapter::LookupSet>
 JITSymbolResolverAdapter::getResponsibilitySet(const LookupSet &Symbols) {
   SymbolNameSet InternedSymbols;
-  for (auto &S : Symbols)
+  for (auto &S : Symbols) {
     InternedSymbols.insert(ES.intern(S));
+
+}
 
   auto InternedResult = R.getResponsibilitySet(InternedSymbols);
   LookupSet Result;

@@ -32,8 +32,10 @@ isMPITypeMatching(const std::multimap<BuiltinType::Kind, std::string> &MultiMap,
                   const std::string &MPIDatatype) {
   auto ItPair = MultiMap.equal_range(Kind);
   while (ItPair.first != ItPair.second) {
-    if (ItPair.first->second == MPIDatatype)
+    if (ItPair.first->second == MPIDatatype) {
       return true;
+
+}
     ++ItPair.first;
   }
   return false;
@@ -184,8 +186,10 @@ isCXXComplexTypeMatching(const TemplateSpecializationType *const Template,
       {BuiltinType::Double, "MPI_CXX_DOUBLE_COMPLEX"},
       {BuiltinType::LongDouble, "MPI_CXX_LONG_DOUBLE_COMPLEX"}};
 
-  if (Template->getAsCXXRecordDecl()->getName() != "complex")
+  if (Template->getAsCXXRecordDecl()->getName() != "complex") {
     return true;
+
+}
 
   const auto *Builtin =
       Template->getArg(0).getAsType().getTypePtr()->getAs<BuiltinType>();
@@ -243,12 +247,16 @@ void TypeMismatchCheck::registerMatchers(MatchFinder *Finder) {
 void TypeMismatchCheck::check(const MatchFinder::MatchResult &Result) {
   static ento::mpi::MPIFunctionClassifier FuncClassifier(*Result.Context);
   const auto *const CE = Result.Nodes.getNodeAs<CallExpr>("CE");
-  if (!CE->getDirectCallee())
+  if (!CE->getDirectCallee()) {
     return;
 
+}
+
   const IdentifierInfo *Identifier = CE->getDirectCallee()->getIdentifier();
-  if (!Identifier || !FuncClassifier.isMPIType(Identifier))
+  if (!Identifier || !FuncClassifier.isMPIType(Identifier)) {
     return;
+
+}
 
   // These containers are used, to capture buffer, MPI datatype pairs.
   SmallVector<const Type *, 1> BufferTypes;
@@ -263,8 +271,10 @@ void TypeMismatchCheck::check(const MatchFinder::MatchResult &Result) {
     if (CE->getArg(BufferIdx)->isNullPointerConstant(
             *Result.Context, Expr::NPC_ValueDependentIsNull) ||
         tooling::fixit::getText(*CE->getArg(BufferIdx), *Result.Context) ==
-            "MPI_IN_PLACE")
+            "MPI_IN_PLACE") {
       return;
+
+}
 
     StringRef MPIDatatype =
         tooling::fixit::getText(*CE->getArg(DatatypeIdx), *Result.Context);
@@ -272,8 +282,10 @@ void TypeMismatchCheck::check(const MatchFinder::MatchResult &Result) {
     const Type *ArgType = argumentType(CE, BufferIdx);
     // Skip unknown MPI datatypes and void pointers.
     if (!isStandardMPIDatatype(std::string(MPIDatatype)) ||
-        ArgType->isVoidType())
+        ArgType->isVoidType()) {
       return;
+
+}
 
     BufferTypes.push_back(ArgType);
     BufferExprs.push_back(CE->getArg(BufferIdx));

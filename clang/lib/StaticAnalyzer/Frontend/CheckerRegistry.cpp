@@ -31,8 +31,10 @@ using RegisterCheckersFn = void (*)(CheckerRegistry &);
 
 static bool isCompatibleAPIVersion(const char *VersionString) {
   // If the version string is null, its not an analyzer plugin.
-  if (!VersionString)
+  if (!VersionString) {
     return false;
+
+}
 
   // For now, none of the static analyzer API is considered stable.
   // Versions must match exactly.
@@ -73,16 +75,22 @@ static constexpr char PackageSeparator = '.';
 static bool isInPackage(const CheckerRegistry::CheckerInfo &Checker,
                         StringRef PackageName) {
   // Does the checker's full name have the package as a prefix?
-  if (!Checker.FullName.startswith(PackageName))
+  if (!Checker.FullName.startswith(PackageName)) {
     return false;
 
+}
+
   // Is the package actually just the name of a specific checker?
-  if (Checker.FullName.size() == PackageName.size())
+  if (Checker.FullName.size() == PackageName.size()) {
     return true;
 
+}
+
   // Is the checker in the package (or a subpackage)?
-  if (Checker.FullName[PackageName.size()] == PackageSeparator)
+  if (Checker.FullName[PackageName.size()] == PackageSeparator) {
     return true;
+
+}
 
   return false;
 }
@@ -91,8 +99,10 @@ CheckerRegistry::CheckerInfoListRange
 CheckerRegistry::getMutableCheckersForCmdLineArg(StringRef CmdLineArg) {
   auto It = binaryFind(Checkers, CmdLineArg);
 
-  if (!isInPackage(*It, CmdLineArg))
+  if (!isInPackage(*It, CmdLineArg)) {
     return {Checkers.end(), Checkers.end()};
+
+}
 
   // See how large the package is.
   // If the package doesn't exist, assume the option refers to a single
@@ -101,8 +111,10 @@ CheckerRegistry::getMutableCheckersForCmdLineArg(StringRef CmdLineArg) {
   llvm::StringMap<size_t>::const_iterator PackageSize =
       PackageSizes.find(CmdLineArg);
 
-  if (PackageSize != PackageSizes.end())
+  if (PackageSize != PackageSizes.end()) {
     Size = PackageSize->getValue();
+
+}
 
   return {It, It + Size};
 }
@@ -155,16 +167,20 @@ CheckerRegistry::CheckerRegistry(
     RegisterCheckersFn RegisterPluginCheckers =
         reinterpret_cast<RegisterCheckersFn>(
             Lib.getAddressOfSymbol("clang_registerCheckers"));
-    if (RegisterPluginCheckers)
+    if (RegisterPluginCheckers) {
       RegisterPluginCheckers(*this);
+
+}
   }
 
   // Register statically linked checkers, that aren't generated from the tblgen
   // file, but rather passed their registry function as a parameter in
   // checkerRegistrationFns.
 
-  for (const auto &Fn : CheckerRegistrationFns)
+  for (const auto &Fn : CheckerRegistrationFns) {
     Fn(*this);
+
+}
 
   // Sort checkers for efficient collection.
   // FIXME: Alphabetical sort puts 'experimental' in the middle.
@@ -230,8 +246,10 @@ collectDependencies(const CheckerRegistry::CheckerInfo &checker,
   CheckerRegistry::CheckerInfoSet Ret;
   // Add dependencies to the enabled checkers only if all of them can be
   // enabled.
-  if (!collectDependenciesImpl(checker.Dependencies, LO, Ret))
+  if (!collectDependenciesImpl(checker.Dependencies, LO, Ret)) {
     return None;
+
+}
 
   return Ret;
 }
@@ -243,12 +261,16 @@ collectDependenciesImpl(const CheckerRegistry::ConstCheckerInfoList &Deps,
 
   for (const CheckerRegistry::CheckerInfo *Dependency : Deps) {
 
-    if (Dependency->isDisabled(LO))
+    if (Dependency->isDisabled(LO)) {
       return false;
 
+}
+
     // Collect dependencies recursively.
-    if (!collectDependenciesImpl(Dependency->Dependencies, LO, Ret))
+    if (!collectDependenciesImpl(Dependency->Dependencies, LO, Ret)) {
       return false;
+
+}
 
     Ret.insert(Dependency);
   }
@@ -261,8 +283,10 @@ CheckerRegistry::CheckerInfoSet CheckerRegistry::getEnabledCheckers() const {
   CheckerInfoSet EnabledCheckers;
 
   for (const CheckerInfo &Checker : Checkers) {
-    if (!Checker.isEnabled(LangOpts))
+    if (!Checker.isEnabled(LangOpts)) {
       continue;
+
+}
 
     // Recursively enable its dependencies.
     llvm::Optional<CheckerInfoSet> Deps =
@@ -320,8 +344,10 @@ static void insertAndValidate(StringRef FullName,
 
   // Insertation was successful -- CmdLineOption's constructor will validate
   // whether values received from plugins or TableGen files are correct.
-  if (It.second)
+  if (It.second) {
     return;
+
+}
 
   // Insertion failed, the user supplied this package/checker option on the
   // command line. If the supplied value is invalid, we'll restore the option
@@ -447,8 +473,10 @@ isOptionContainedIn(const CheckerRegistry::CmdLineOptionList &OptionList,
                     StringRef SuppliedChecker, StringRef SuppliedOption,
                     const AnalyzerOptions &AnOpts, DiagnosticsEngine &Diags) {
 
-  if (!AnOpts.ShouldEmitErrorsOnInvalidConfigValue)
+  if (!AnOpts.ShouldEmitErrorsOnInvalidConfigValue) {
     return;
+
+}
 
   using CmdLineOption = CheckerRegistry::CmdLineOption;
 
@@ -473,8 +501,10 @@ void CheckerRegistry::validateCheckerOptions() const {
     std::tie(SuppliedCheckerOrPackage, SuppliedOption) =
         Config.getKey().split(':');
 
-    if (SuppliedOption.empty())
+    if (SuppliedOption.empty()) {
       continue;
+
+}
 
     // AnalyzerOptions' config table contains the user input, so an entry could
     // look like this:
@@ -517,8 +547,10 @@ void CheckerRegistry::printCheckerWithDescList(raw_ostream &Out,
     // Limit the amount of padding we are willing to give up for alignment.
     //   Package.Name     Description  [Hidden]
     size_t NameLength = Checker.FullName.size();
-    if (NameLength <= MaxNameChars)
+    if (NameLength <= MaxNameChars) {
       OptionFieldWidth = std::max(OptionFieldWidth, NameLength);
+
+}
   }
 
   const size_t InitialPad = 2;
@@ -538,20 +570,26 @@ void CheckerRegistry::printCheckerWithDescList(raw_ostream &Out,
     // checker) shouldn't normally tinker with whether they should be enabled.
 
     if (Checker.IsHidden) {
-      if (AnOpts.ShowCheckerHelpDeveloper)
+      if (AnOpts.ShowCheckerHelpDeveloper) {
         Print(Out, Checker, Checker.Desc);
+
+}
       continue;
     }
 
     if (Checker.FullName.startswith("alpha")) {
-      if (AnOpts.ShowCheckerHelpAlpha)
+      if (AnOpts.ShowCheckerHelpAlpha) {
         Print(Out, Checker,
               ("(Enable only for development!) " + Checker.Desc).str());
+
+}
       continue;
     }
 
-    if (AnOpts.ShowCheckerHelp)
+    if (AnOpts.ShowCheckerHelp) {
         Print(Out, Checker, Checker.Desc);
+
+}
   }
 }
 
@@ -559,8 +597,10 @@ void CheckerRegistry::printEnabledCheckerList(raw_ostream &Out) const {
   // Collect checkers enabled by the options.
   CheckerInfoSet EnabledCheckers = getEnabledCheckers();
 
-  for (const auto *i : EnabledCheckers)
+  for (const auto *i : EnabledCheckers) {
     Out << i->FullName << '\n';
+
+}
 }
 
 void CheckerRegistry::printCheckerOptionList(raw_ostream &Out) const {
@@ -606,20 +646,26 @@ void CheckerRegistry::printCheckerOptionList(raw_ostream &Out) const {
     // -analyzer-checker-option-help-alpha.
 
     if (Option.IsHidden) {
-      if (AnOpts.ShowCheckerOptionDeveloperList)
+      if (AnOpts.ShowCheckerOptionDeveloperList) {
         Print(Out, FullOption, Desc);
+
+}
       continue;
     }
 
     if (Option.DevelopmentStatus == "alpha" ||
         Entry.first.startswith("alpha")) {
-      if (AnOpts.ShowCheckerOptionAlphaList)
+      if (AnOpts.ShowCheckerOptionAlphaList) {
         Print(Out, FullOption,
               llvm::Twine("(Enable only for development!) " + Desc).str());
+
+}
       continue;
     }
 
-    if (AnOpts.ShowCheckerOptionList)
+    if (AnOpts.ShowCheckerOptionList) {
       Print(Out, FullOption, Desc);
+
+}
   }
 }

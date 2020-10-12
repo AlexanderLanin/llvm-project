@@ -23,8 +23,10 @@ namespace llvm {
 namespace dsymutil {
 
 StringRef SymbolMapTranslator::operator()(StringRef Input) {
-  if (!Input.startswith("__hidden#") && !Input.startswith("___hidden#"))
+  if (!Input.startswith("__hidden#") && !Input.startswith("___hidden#")) {
     return Input;
+
+}
 
   bool MightNeedUnderscore = false;
   StringRef Line = Input.drop_front(sizeof("__hidden#") - 1);
@@ -43,13 +45,17 @@ StringRef SymbolMapTranslator::operator()(StringRef Input) {
   }
 
   const std::string &Translation = UnobfuscatedStrings[LineNumber];
-  if (!MightNeedUnderscore || !MangleNames)
+  if (!MightNeedUnderscore || !MangleNames) {
     return Translation;
+
+}
 
   // Objective-C symbols for the MachO symbol table start with a \1. Please see
   // `CGObjCCommonMac::GetNameForMethod` in clang.
-  if (Translation[0] == 1)
+  if (Translation[0] == 1) {
     return StringRef(Translation).drop_front();
+
+}
 
   // We need permanent storage for the string we are about to create. Just
   // append it to the vector containing translations. This should only happen
@@ -61,8 +67,10 @@ StringRef SymbolMapTranslator::operator()(StringRef Input) {
 
 SymbolMapTranslator SymbolMapLoader::Load(StringRef InputFile,
                                           const DebugMap &Map) const {
-  if (SymbolMap.empty())
+  if (SymbolMap.empty()) {
     return {};
+
+}
 
   std::string SymbolMapPath = SymbolMap;
 

@@ -150,29 +150,37 @@ public:
 
       // First, add extra notes, even if paths should not be included.
       for (const auto &Piece : PD->path) {
-        if (!isa<PathDiagnosticNotePiece>(Piece.get()))
+        if (!isa<PathDiagnosticNotePiece>(Piece.get())) {
           continue;
+
+}
 
         reportPiece(NoteID, Piece->getLocation().asLocation(),
                     Piece->getString(), Piece->getRanges(), Piece->getFixits());
       }
 
-      if (!IncludePath)
+      if (!IncludePath) {
         continue;
+
+}
 
       // Then, add the path notes if necessary.
       PathPieces FlatPath = PD->path.flatten(/*ShouldFlattenMacros=*/true);
       for (const auto &Piece : FlatPath) {
-        if (isa<PathDiagnosticNotePiece>(Piece.get()))
+        if (isa<PathDiagnosticNotePiece>(Piece.get())) {
           continue;
+
+}
 
         reportPiece(NoteID, Piece->getLocation().asLocation(),
                     Piece->getString(), Piece->getRanges(), Piece->getFixits());
       }
     }
 
-    if (!ApplyFixIts || Repls.empty())
+    if (!ApplyFixIts || Repls.empty()) {
       return;
+
+}
 
     Rewriter Rewrite(SM, LO);
     if (!applyAllReplacements(Repls, Rewrite)) {
@@ -275,11 +283,15 @@ public:
           new ClangDiagPathDiagConsumer(PP.getDiagnostics(), PP.getLangOpts());
       PathConsumers.push_back(clangDiags);
 
-      if (Opts->AnalyzerWerror)
+      if (Opts->AnalyzerWerror) {
         clangDiags->enableWerror();
 
-      if (Opts->ShouldApplyFixIts)
+}
+
+      if (Opts->ShouldApplyFixIts) {
         clangDiags->enableApplyFixIts();
+
+}
 
       if (Opts->AnalysisDiagOpt == PD_TEXT) {
         clangDiags->enablePaths();
@@ -316,17 +328,19 @@ public:
 
   void DisplayFunction(const Decl *D, AnalysisMode Mode,
                        ExprEngine::InliningModes IMode) {
-    if (!Opts->AnalyzerDisplayProgress)
+    if (!Opts->AnalyzerDisplayProgress) {
       return;
+
+}
 
     SourceManager &SM = Mgr->getASTContext().getSourceManager();
     PresumedLoc Loc = SM.getPresumedLoc(D->getLocation());
     if (Loc.isValid()) {
       llvm::errs() << "ANALYZE";
 
-      if (Mode == AM_Syntax)
+      if (Mode == AM_Syntax) {
         llvm::errs() << " (Syntax)";
-      else if (Mode == AM_Path) {
+      } else if (Mode == AM_Path) {
         llvm::errs() << " (Path, ";
         switch (IMode) {
           case ExprEngine::Inline_Minimal:
@@ -338,8 +352,10 @@ public:
         }
         llvm::errs() << ")";
       }
-      else
+      else {
         assert(Mode == (AM_Syntax | AM_Path) && "Unexpected mode!");
+
+}
 
       llvm::errs() << ": " << Loc.getFilename() << ' '
                            << getFunctionName(D) << '\n';
@@ -394,29 +410,39 @@ public:
   bool VisitDecl(Decl *D) {
     AnalysisMode Mode = getModeForDecl(D, RecVisitorMode);
     if (Mode & AM_Syntax) {
-      if (SyntaxCheckTimer)
+      if (SyntaxCheckTimer) {
         SyntaxCheckTimer->startTimer();
+
+}
       checkerMgr->runCheckersOnASTDecl(D, *Mgr, *RecVisitorBR);
-      if (SyntaxCheckTimer)
+      if (SyntaxCheckTimer) {
         SyntaxCheckTimer->stopTimer();
+
+}
     }
     return true;
   }
 
   bool VisitVarDecl(VarDecl *VD) {
-    if (!Opts->IsNaiveCTUEnabled)
+    if (!Opts->IsNaiveCTUEnabled) {
       return true;
 
+}
+
     if (VD->hasExternalStorage() || VD->isStaticDataMember()) {
-      if (!cross_tu::containsConst(VD, *Ctx))
+      if (!cross_tu::containsConst(VD, *Ctx)) {
         return true;
+
+}
     } else {
       // Cannot be initialized in another TU.
       return true;
     }
 
-    if (VD->getAnyInitializer())
+    if (VD->getAnyInitializer()) {
       return true;
+
+}
 
     llvm::Expected<const VarDecl *> CTUDeclOrError =
       CTU.getCrossTUDefinition(VD, Opts->CTUDir, Opts->CTUIndexName,
@@ -434,8 +460,10 @@ public:
 
   bool VisitFunctionDecl(FunctionDecl *FD) {
     IdentifierInfo *II = FD->getIdentifier();
-    if (II && II->getName().startswith("__inline"))
+    if (II && II->getName().startswith("__inline")) {
       return true;
+
+}
 
     // We skip function template definitions, as their semantics is
     // only determined when they are instantiated.
@@ -506,8 +534,10 @@ void AnalysisConsumer::storeTopLevelDecls(DeclGroupRef DG) {
 
     // Skip ObjCMethodDecl, wait for the objc container to avoid
     // analyzing twice.
-    if (isa<ObjCMethodDecl>(*I))
+    if (isa<ObjCMethodDecl>(*I)) {
       continue;
+
+}
 
     LocalTUDecls.push_back(*I);
   }
@@ -516,15 +546,21 @@ void AnalysisConsumer::storeTopLevelDecls(DeclGroupRef DG) {
 static bool shouldSkipFunction(const Decl *D,
                                const SetOfConstDecls &Visited,
                                const SetOfConstDecls &VisitedAsTopLevel) {
-  if (VisitedAsTopLevel.count(D))
+  if (VisitedAsTopLevel.count(D)) {
     return true;
+
+}
 
   // Skip analysis of inheriting constructors as top-level functions. These
   // constructors don't even have a body written down in the code, so even if
   // we find a bug, we won't be able to display it.
-  if (const auto *CD = dyn_cast<CXXConstructorDecl>(D))
-    if (CD->isInheritingConstructor())
+  if (const auto *CD = dyn_cast<CXXConstructorDecl>(D)) {
+    if (CD->isInheritingConstructor()) {
       return true;
+
+}
+
+}
 
   // We want to re-analyse the functions as top level in the following cases:
   // - The 'init' methods should be reanalyzed because
@@ -533,14 +569,18 @@ static bool shouldSkipFunction(const Decl *D,
   //   not catch errors within defensive code.
   // - We want to reanalyze all ObjC methods as top level to report Retain
   //   Count naming convention errors more aggressively.
-  if (isa<ObjCMethodDecl>(D))
+  if (isa<ObjCMethodDecl>(D)) {
     return false;
+
+}
   // We also want to reanalyze all C++ copy and move assignment operators to
   // separately check the two cases where 'this' aliases with the parameter and
   // where it may not. (cplusplus.SelfAssignmentChecker)
   if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
-    if (MD->isCopyAssignmentOperator() || MD->isMoveAssignmentOperator())
+    if (MD->isCopyAssignmentOperator() || MD->isMoveAssignmentOperator()) {
       return false;
+
+}
   }
 
   // Otherwise, if we visited the function before, do not reanalyze it.
@@ -555,8 +595,10 @@ AnalysisConsumer::getInliningModeForFunction(const Decl *D,
   // inlining when reanalyzing an already inlined function.
   if (Visited.count(D) && isa<ObjCMethodDecl>(D)) {
     const ObjCMethodDecl *ObjCM = cast<ObjCMethodDecl>(D);
-    if (ObjCM->getMethodFamily() != OMF_init)
+    if (ObjCM->getMethodFamily() != OMF_init) {
       return ExprEngine::Inline_Minimal;
+
+}
   }
 
   return ExprEngine::Inline_Regular;
@@ -589,13 +631,17 @@ void AnalysisConsumer::HandleDeclsCallGraph(const unsigned LocalTUDeclsSize) {
     Decl *D = N->getDecl();
 
     // Skip the abstract root node.
-    if (!D)
+    if (!D) {
       continue;
+
+}
 
     // Skip the functions which have been processed already or previously
     // inlined.
-    if (shouldSkipFunction(D, Visited, VisitedAsTopLevel))
+    if (shouldSkipFunction(D, Visited, VisitedAsTopLevel)) {
       continue;
+
+}
 
     // Analyze the function.
     SetOfConstDecls VisitedCallees;
@@ -604,11 +650,13 @@ void AnalysisConsumer::HandleDeclsCallGraph(const unsigned LocalTUDeclsSize) {
                (Mgr->options.InliningMode == All ? nullptr : &VisitedCallees));
 
     // Add the visited callees to the global visited set.
-    for (const Decl *Callee : VisitedCallees)
+    for (const Decl *Callee : VisitedCallees) {
       // Decls from CallGraph are already canonical. But Decls coming from
       // CallExprs may be not. We should canonicalize them manually.
       Visited.insert(isa<ObjCMethodDecl>(Callee) ? Callee
                                                  : Callee->getCanonicalDecl());
+
+}
     VisitedAsTopLevel.insert(D);
   }
 }
@@ -617,26 +665,34 @@ static bool isBisonFile(ASTContext &C) {
   const SourceManager &SM = C.getSourceManager();
   FileID FID = SM.getMainFileID();
   StringRef Buffer = SM.getBuffer(FID)->getBuffer();
-  if (Buffer.startswith("/* A Bison parser, made by"))
+  if (Buffer.startswith("/* A Bison parser, made by")) {
     return true;
+
+}
   return false;
 }
 
 void AnalysisConsumer::runAnalysisOnTranslationUnit(ASTContext &C) {
   BugReporter BR(*Mgr);
   TranslationUnitDecl *TU = C.getTranslationUnitDecl();
-  if (SyntaxCheckTimer)
+  if (SyntaxCheckTimer) {
     SyntaxCheckTimer->startTimer();
+
+}
   checkerMgr->runCheckersOnASTDecl(TU, *Mgr, BR);
-  if (SyntaxCheckTimer)
+  if (SyntaxCheckTimer) {
     SyntaxCheckTimer->stopTimer();
+
+}
 
   // Run the AST-only checks using the order in which functions are defined.
   // If inlining is not turned on, use the simplest function order for path
   // sensitive analyzes as well.
   RecVisitorMode = AM_Syntax;
-  if (!Mgr->shouldInlineCall())
+  if (!Mgr->shouldInlineCall()) {
     RecVisitorMode |= AM_Path;
+
+}
   RecVisitorBR = &BR;
 
   // Process all the top level declarations.
@@ -650,8 +706,10 @@ void AnalysisConsumer::runAnalysisOnTranslationUnit(ASTContext &C) {
     TraverseDecl(LocalTUDecls[i]);
   }
 
-  if (Mgr->shouldInlineCall())
+  if (Mgr->shouldInlineCall()) {
     HandleDeclsCallGraph(LocalTUDeclsSize);
+
+}
 
   // After all decls handled, run checkers on the entire TranslationUnit.
   checkerMgr->runCheckersOnEndOfTranslationUnit(TU, *Mgr, BR);
@@ -661,16 +719,20 @@ void AnalysisConsumer::runAnalysisOnTranslationUnit(ASTContext &C) {
 }
 
 void AnalysisConsumer::reportAnalyzerProgress(StringRef S) {
-  if (Opts->AnalyzerDisplayProgress)
+  if (Opts->AnalyzerDisplayProgress) {
     llvm::errs() << S;
+
+}
 }
 
 void AnalysisConsumer::HandleTranslationUnit(ASTContext &C) {
 
   // Don't run the actions if an error has occurred with parsing the file.
   DiagnosticsEngine &Diags = PP.getDiagnostics();
-  if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
+  if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()) {
     return;
+
+}
 
   if (isBisonFile(C)) {
     reportAnalyzerProgress("Skipping bison-generated file\n");
@@ -688,10 +750,12 @@ void AnalysisConsumer::HandleTranslationUnit(ASTContext &C) {
   NumBlocksInAnalyzedFunctions = FunctionSummaries.getTotalNumBasicBlocks();
   NumVisitedBlocksInAnalyzedFunctions =
       FunctionSummaries.getTotalNumVisitedBasicBlocks();
-  if (NumBlocksInAnalyzedFunctions > 0)
+  if (NumBlocksInAnalyzedFunctions > 0) {
     PercentReachableBlocks =
       (FunctionSummaries.getTotalNumVisitedBasicBlocks() * 100) /
         NumBlocksInAnalyzedFunctions;
+
+}
 
   // Explicitly destroy the PathDiagnosticConsumer.  This will flush its output.
   // FIXME: This should be replaced with something that doesn't rely on
@@ -711,8 +775,10 @@ std::string AnalysisConsumer::getFunctionName(const Decl *D) {
     if (Ctx->getLangOpts().CPlusPlus) {
       OS << '(';
       for (const auto &P : FD->parameters()) {
-        if (P != *FD->param_begin())
+        if (P != *FD->param_begin()) {
           OS << ", ";
+
+}
         OS << P->getType().getAsString();
       }
       OS << ')';
@@ -756,8 +822,10 @@ std::string AnalysisConsumer::getFunctionName(const Decl *D) {
 AnalysisConsumer::AnalysisMode
 AnalysisConsumer::getModeForDecl(Decl *D, AnalysisMode Mode) {
   if (!Opts->AnalyzeSpecificFunction.empty() &&
-      getFunctionName(D) != Opts->AnalyzeSpecificFunction)
+      getFunctionName(D) != Opts->AnalyzeSpecificFunction) {
     return AM_None;
+
+}
 
   // Unless -analyze-all is specified, treat decls differently depending on
   // where they came from:
@@ -770,8 +838,10 @@ AnalysisConsumer::getModeForDecl(Decl *D, AnalysisMode Mode) {
   SL = SM.getExpansionLoc(SL);
 
   if (!Opts->AnalyzeAll && !Mgr->isInCodeFile(SL)) {
-    if (SL.isInvalid() || SM.isInSystemHeader(SL))
+    if (SL.isInvalid() || SM.isInSystemHeader(SL)) {
       return AM_None;
+
+}
     return Mode & ~AM_Path;
   }
 
@@ -781,39 +851,53 @@ AnalysisConsumer::getModeForDecl(Decl *D, AnalysisMode Mode) {
 void AnalysisConsumer::HandleCode(Decl *D, AnalysisMode Mode,
                                   ExprEngine::InliningModes IMode,
                                   SetOfConstDecls *VisitedCallees) {
-  if (!D->hasBody())
+  if (!D->hasBody()) {
     return;
+
+}
   Mode = getModeForDecl(D, Mode);
-  if (Mode == AM_None)
+  if (Mode == AM_None) {
     return;
+
+}
 
   // Clear the AnalysisManager of old AnalysisDeclContexts.
   Mgr->ClearContexts();
   // Ignore autosynthesized code.
-  if (Mgr->getAnalysisDeclContext(D)->isBodyAutosynthesized())
+  if (Mgr->getAnalysisDeclContext(D)->isBodyAutosynthesized()) {
     return;
+
+}
 
   DisplayFunction(D, Mode, IMode);
   CFG *DeclCFG = Mgr->getCFG(D);
-  if (DeclCFG)
+  if (DeclCFG) {
     MaxCFGSize.updateMax(DeclCFG->size());
+
+}
 
   BugReporter BR(*Mgr);
 
   if (Mode & AM_Syntax) {
-    if (SyntaxCheckTimer)
+    if (SyntaxCheckTimer) {
       SyntaxCheckTimer->startTimer();
+
+}
     checkerMgr->runCheckersOnASTBody(D, *Mgr, BR);
-    if (SyntaxCheckTimer)
+    if (SyntaxCheckTimer) {
       SyntaxCheckTimer->stopTimer();
+
+}
   }
 
   BR.FlushReports();
 
   if ((Mode & AM_Path) && checkerMgr->hasPathSensitiveCheckers()) {
     RunPathSensitiveChecks(D, IMode, VisitedCallees);
-    if (IMode != ExprEngine::Inline_Minimal)
+    if (IMode != ExprEngine::Inline_Minimal) {
       NumFunctionsAnalyzed++;
+
+}
   }
 }
 
@@ -826,36 +910,52 @@ void AnalysisConsumer::RunPathSensitiveChecks(Decl *D,
                                               SetOfConstDecls *VisitedCallees) {
   // Construct the analysis engine.  First check if the CFG is valid.
   // FIXME: Inter-procedural analysis will need to handle invalid CFGs.
-  if (!Mgr->getCFG(D))
+  if (!Mgr->getCFG(D)) {
     return;
 
+}
+
   // See if the LiveVariables analysis scales.
-  if (!Mgr->getAnalysisDeclContext(D)->getAnalysis<RelaxedLiveVariables>())
+  if (!Mgr->getAnalysisDeclContext(D)->getAnalysis<RelaxedLiveVariables>()) {
     return;
+
+}
 
   ExprEngine Eng(CTU, *Mgr, VisitedCallees, &FunctionSummaries, IMode);
 
   // Execute the worklist algorithm.
-  if (ExprEngineTimer)
+  if (ExprEngineTimer) {
     ExprEngineTimer->startTimer();
+
+}
   Eng.ExecuteWorkList(Mgr->getAnalysisDeclContextManager().getStackFrame(D),
                       Mgr->options.MaxNodesPerTopLevelFunction);
-  if (ExprEngineTimer)
+  if (ExprEngineTimer) {
     ExprEngineTimer->stopTimer();
 
-  if (!Mgr->options.DumpExplodedGraphTo.empty())
+}
+
+  if (!Mgr->options.DumpExplodedGraphTo.empty()) {
     Eng.DumpGraph(Mgr->options.TrimGraph, Mgr->options.DumpExplodedGraphTo);
 
+}
+
   // Visualize the exploded graph.
-  if (Mgr->options.visualizeExplodedGraphWithGraphViz)
+  if (Mgr->options.visualizeExplodedGraphWithGraphViz) {
     Eng.ViewGraph(Mgr->options.TrimGraph);
 
+}
+
   // Display warnings.
-  if (BugReporterTimer)
+  if (BugReporterTimer) {
     BugReporterTimer->startTimer();
+
+}
   Eng.getBugReporter().FlushReports();
-  if (BugReporterTimer)
+  if (BugReporterTimer) {
     BugReporterTimer->stopTimer();
+
+}
 }
 
 //===----------------------------------------------------------------------===//

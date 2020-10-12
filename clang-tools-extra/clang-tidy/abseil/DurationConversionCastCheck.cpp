@@ -37,8 +37,10 @@ void DurationConversionCastCheck::check(
   const auto *MatchedCast =
       Result.Nodes.getNodeAs<ExplicitCastExpr>("cast_expr");
 
-  if (isInMacro(Result, MatchedCast))
+  if (isInMacro(Result, MatchedCast)) {
     return;
+
+}
 
   const auto *FuncDecl = Result.Nodes.getNodeAs<FunctionDecl>("func_decl");
   const auto *Arg = Result.Nodes.getNodeAs<Expr>("arg");
@@ -46,8 +48,10 @@ void DurationConversionCastCheck::check(
 
   llvm::Optional<DurationScale> Scale =
       getScaleForDurationInverse(ConversionFuncName);
-  if (!Scale)
+  if (!Scale) {
     return;
+
+}
 
   // Casting a double to an integer.
   if (MatchedCast->getTypeAsWritten()->isIntegerType() &&

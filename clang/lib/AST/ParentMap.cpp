@@ -28,8 +28,10 @@ enum OpaqueValueMode {
 
 static void BuildParentMap(MapTy& M, Stmt* S,
                            OpaqueValueMode OVMode = OV_Transparent) {
-  if (!S)
+  if (!S) {
     return;
+
+}
 
   switch (S->getStmtClass()) {
   case Stmt::PseudoObjectExprClass: {
@@ -37,9 +39,13 @@ static void BuildParentMap(MapTy& M, Stmt* S,
     PseudoObjectExpr *POE = cast<PseudoObjectExpr>(S);
 
     // If we are rebuilding the map, clear out any existing state.
-    if (M[POE->getSyntacticForm()])
-      for (Stmt *SubStmt : S->children())
+    if (M[POE->getSyntacticForm()]) {
+      for (Stmt *SubStmt : S->children()) {
         M[SubStmt] = nullptr;
+
+}
+
+}
 
     M[POE->getSyntacticForm()] = S;
     BuildParentMap(M, POE->getSyntacticForm(), OV_Transparent);
@@ -179,8 +185,10 @@ bool ParentMap::isConsumedExpr(Expr* E) const {
     P = getParent(P);
   }
 
-  if (!P)
+  if (!P) {
     return false;
+
+}
 
   switch (P->getStmtClass()) {
     default:

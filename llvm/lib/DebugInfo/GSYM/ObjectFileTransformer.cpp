@@ -27,8 +27,10 @@ static std::vector<uint8_t> getUUID(const object::ObjectFile &Obj) {
   std::vector<uint8_t> UUID;
   if (auto *MachO = dyn_cast<object::MachOObjectFile>(&Obj)) {
     const ArrayRef<uint8_t> MachUUID = MachO->getUuid();
-    if (!MachUUID.empty())
+    if (!MachUUID.empty()) {
       UUID.assign(MachUUID.data(), MachUUID.data() + MachUUID.size());
+
+}
   } else if (isa<object::ELFObjectFileBase>(&Obj)) {
     const StringRef GNUBuildID(".note.gnu.build-id");
     for (const object::SectionRef &Sect : Obj.sections()) {
@@ -38,13 +40,15 @@ static std::vector<uint8_t> getUUID(const object::ObjectFile &Obj) {
         continue;
       }
       StringRef SectName(*SectNameOrErr);
-      if (SectName != GNUBuildID)
+      if (SectName != GNUBuildID) {
         continue;
+
+}
       StringRef BuildIDData;
       Expected<StringRef> E = Sect.getContents();
-      if (E)
+      if (E) {
         BuildIDData = *E;
-      else {
+      } else {
         consumeError(E.takeError());
         continue;
       }
@@ -84,8 +88,10 @@ llvm::Error ObjectFileTransformer::convert(const object::ObjectFile &Obj,
     Expected<SymbolRef::Type> SymType = Sym.getType();
     const uint64_t Addr = Sym.getValue();
     if (!SymType || SymType.get() != SymbolRef::Type::ST_Function ||
-        !Gsym.IsValidTextAddress(Addr) || Gsym.hasFunctionInfoForAddress(Addr))
+        !Gsym.IsValidTextAddress(Addr) || Gsym.hasFunctionInfoForAddress(Addr)) {
       continue;
+
+}
     // Function size for MachO files will be 0
     constexpr bool NoCopy = false;
     const uint64_t size = IsELF ? ELFSymbolRef(Sym).getSize() : 0;
@@ -96,8 +102,10 @@ llvm::Error ObjectFileTransformer::convert(const object::ObjectFile &Obj,
     }
     // Remove the leading '_' character in any symbol names if there is one
     // for mach-o files.
-    if (IsMachO)
+    if (IsMachO) {
       Name->consume_front("_");
+
+}
     Gsym.addFunctionInfo(FunctionInfo(Addr, size,
                                       Gsym.insertString(*Name, NoCopy)));
   }

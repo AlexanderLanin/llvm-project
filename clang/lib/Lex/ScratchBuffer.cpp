@@ -32,9 +32,9 @@ ScratchBuffer::ScratchBuffer(SourceManager &SM)
 /// token.
 SourceLocation ScratchBuffer::getToken(const char *Buf, unsigned Len,
                                        const char *&DestPtr) {
-  if (BytesUsed+Len+2 > ScratchBufSize)
+  if (BytesUsed+Len+2 > ScratchBufSize) {
     AllocScratchBuffer(Len+2);
-  else {
+  } else {
     // Clear out the source line cache if it's already been computed.
     // FIXME: Allow this to be incrementally extended.
     auto *ContentCache = const_cast<SrcMgr::ContentCache *>(
@@ -68,8 +68,10 @@ void ScratchBuffer::AllocScratchBuffer(unsigned RequestLen) {
   // Only pay attention to the requested length if it is larger than our default
   // page size.  If it is, we allocate an entire chunk for it.  This is to
   // support gigantic tokens, which almost certainly won't happen. :)
-  if (RequestLen < ScratchBufSize)
+  if (RequestLen < ScratchBufSize) {
     RequestLen = ScratchBufSize;
+
+}
 
   // Get scratch buffer. Zero-initialize it so it can be dumped into a PCH file
   // deterministically.

@@ -24,10 +24,14 @@ bool latency_sort::operator()(const SUnit *LHS, const SUnit *RHS) const {
   // The isScheduleHigh flag allows nodes with wraparound dependencies that
   // cannot easily be modeled as edges with latencies to be scheduled as
   // soon as possible in a top-down schedule.
-  if (LHS->isScheduleHigh && !RHS->isScheduleHigh)
+  if (LHS->isScheduleHigh && !RHS->isScheduleHigh) {
     return false;
-  if (!LHS->isScheduleHigh && RHS->isScheduleHigh)
+
+}
+  if (!LHS->isScheduleHigh && RHS->isScheduleHigh) {
     return true;
+
+}
 
   unsigned LHSNum = LHS->NodeNum;
   unsigned RHSNum = RHS->NodeNum;
@@ -35,15 +39,23 @@ bool latency_sort::operator()(const SUnit *LHS, const SUnit *RHS) const {
   // The most important heuristic is scheduling the critical path.
   unsigned LHSLatency = PQ->getLatency(LHSNum);
   unsigned RHSLatency = PQ->getLatency(RHSNum);
-  if (LHSLatency < RHSLatency) return true;
-  if (LHSLatency > RHSLatency) return false;
+  if (LHSLatency < RHSLatency) { return true;
+
+}
+  if (LHSLatency > RHSLatency) { return false;
+
+}
 
   // After that, if two nodes have identical latencies, look to see if one will
   // unblock more other nodes than the other.
   unsigned LHSBlocked = PQ->getNumSolelyBlockNodes(LHSNum);
   unsigned RHSBlocked = PQ->getNumSolelyBlockNodes(RHSNum);
-  if (LHSBlocked < RHSBlocked) return true;
-  if (LHSBlocked > RHSBlocked) return false;
+  if (LHSBlocked < RHSBlocked) { return true;
+
+}
+  if (LHSBlocked > RHSBlocked) { return false;
+
+}
 
   // Finally, just to provide a stable ordering, use the node number as a
   // deciding factor.
@@ -61,8 +73,10 @@ SUnit *LatencyPriorityQueue::getSingleUnscheduledPred(SUnit *SU) {
     if (!Pred.isScheduled) {
       // We found an available, but not scheduled, predecessor.  If it's the
       // only one we have found, keep track of it... otherwise give up.
-      if (OnlyAvailablePred && OnlyAvailablePred != &Pred)
+      if (OnlyAvailablePred && OnlyAvailablePred != &Pred) {
         return nullptr;
+
+}
       OnlyAvailablePred = &Pred;
     }
   }
@@ -76,8 +90,10 @@ void LatencyPriorityQueue::push(SUnit *SU) {
   unsigned NumNodesBlocking = 0;
   for (SUnit::const_succ_iterator I = SU->Succs.begin(), E = SU->Succs.end();
        I != E; ++I) {
-    if (getSingleUnscheduledPred(I->getSUnit()) == SU)
+    if (getSingleUnscheduledPred(I->getSUnit()) == SU) {
       ++NumNodesBlocking;
+
+}
   }
   NumNodesSolelyBlocking[SU->NodeNum] = NumNodesBlocking;
 
@@ -103,10 +119,14 @@ void LatencyPriorityQueue::scheduledNode(SUnit *SU) {
 /// scheduled will make this node available, so it is better than some other
 /// node of the same priority that will not make a node available.
 void LatencyPriorityQueue::AdjustPriorityOfUnscheduledPreds(SUnit *SU) {
-  if (SU->isAvailable) return;  // All preds scheduled.
+  if (SU->isAvailable) { return;  // All preds scheduled.
+
+}
 
   SUnit *OnlyAvailablePred = getSingleUnscheduledPred(SU);
-  if (!OnlyAvailablePred || !OnlyAvailablePred->isAvailable) return;
+  if (!OnlyAvailablePred || !OnlyAvailablePred->isAvailable) { return;
+
+}
 
   // Okay, we found a single predecessor that is available, but not scheduled.
   // Since it is available, it must be in the priority queue.  First remove it.
@@ -118,15 +138,23 @@ void LatencyPriorityQueue::AdjustPriorityOfUnscheduledPreds(SUnit *SU) {
 }
 
 SUnit *LatencyPriorityQueue::pop() {
-  if (empty()) return nullptr;
+  if (empty()) { return nullptr;
+
+}
   std::vector<SUnit *>::iterator Best = Queue.begin();
   for (std::vector<SUnit *>::iterator I = std::next(Queue.begin()),
-       E = Queue.end(); I != E; ++I)
-    if (Picker(*Best, *I))
+       E = Queue.end(); I != E; ++I) {
+    if (Picker(*Best, *I)) {
       Best = I;
+
+}
+
+}
   SUnit *V = *Best;
-  if (Best != std::prev(Queue.end()))
+  if (Best != std::prev(Queue.end())) {
     std::swap(*Best, Queue.back());
+
+}
   Queue.pop_back();
   return V;
 }
@@ -135,8 +163,10 @@ void LatencyPriorityQueue::remove(SUnit *SU) {
   assert(!Queue.empty() && "Queue is empty!");
   std::vector<SUnit *>::iterator I = find(Queue, SU);
   assert(I != Queue.end() && "Queue doesn't contain the SU being removed!");
-  if (I != std::prev(Queue.end()))
+  if (I != std::prev(Queue.end())) {
     std::swap(*I, Queue.back());
+
+}
   Queue.pop_back();
 }
 

@@ -76,8 +76,10 @@ class ASTWorker;
 static clang::clangd::Key<std::string> kFileBeingProcessed;
 
 llvm::Optional<llvm::StringRef> TUScheduler::getFileBeingProcessedInContext() {
-  if (auto *File = Context::current().get(kFileBeingProcessed))
+  if (auto *File = Context::current().get(kFileBeingProcessed)) {
     return llvm::StringRef(*File);
+
+}
   return None;
 }
 
@@ -96,8 +98,10 @@ public:
   std::size_t getUsedBytes(Key K) {
     std::lock_guard<std::mutex> Lock(Mut);
     auto It = findByKey(K);
-    if (It == LRU.end() || !It->second)
+    if (It == LRU.end() || !It->second) {
       return 0;
+
+}
     return It->second->getUsedBytes();
   }
 
@@ -108,8 +112,10 @@ public:
     assert(findByKey(K) == LRU.end());
 
     LRU.insert(LRU.begin(), {K, std::move(V)});
-    if (LRU.size() <= MaxRetainedASTs)
+    if (LRU.size() <= MaxRetainedASTs) {
       return;
+
+}
     // We're past the limit, remove the last element.
     std::unique_ptr<ParsedAST> ForCleanup = std::move(LRU.back().second);
     LRU.pop_back();
@@ -124,8 +130,10 @@ public:
   llvm::Optional<std::unique_ptr<ParsedAST>> take(Key K) {
     std::unique_lock<std::mutex> Lock(Mut);
     auto Existing = findByKey(K);
-    if (Existing == LRU.end())
+    if (Existing == LRU.end()) {
       return None;
+
+}
     std::unique_ptr<ParsedAST> V = std::move(Existing->second);
     LRU.erase(Existing);
     // GCC 4.8 fails to compile `return V;`, as it tries to call the copy
@@ -308,8 +316,10 @@ public:
   ASTWorkerHandle &operator=(ASTWorkerHandle &&) = default;
 
   ~ASTWorkerHandle() {
-    if (Worker)
+    if (Worker) {
       Worker->stop();
+
+}
   }
 
   ASTWorker &operator*() {
@@ -340,9 +350,11 @@ ASTWorker::create(PathRef FileName, const GlobalCompilationDatabase &CDB,
   std::shared_ptr<ASTWorker> Worker(
       new ASTWorker(FileName, CDB, IdleASTs, Barrier, /*RunSync=*/!Tasks,
                     UpdateDebounce, StorePreamblesInMemory, Callbacks));
-  if (Tasks)
+  if (Tasks) {
     Tasks->runAsync("worker:" + llvm::sys::path::filename(FileName),
                     [Worker]() { Worker->run(); });
+
+}
 
   return ASTWorkerHandle(std::move(Worker));
 }
@@ -383,8 +395,10 @@ void ASTWorker::update(ParseInputs Inputs, WantDiagnostics WantDiags) {
       // Ensure we only publish results from the worker if the file was not
       // removed, making sure there are not race conditions.
       std::lock_guard<std::mutex> Lock(PublishMu);
-      if (CanPublishResults)
+      if (CanPublishResults) {
         Publish();
+
+}
     };
 
     // Get the actual command as `Inputs` does not have a command.
@@ -392,11 +406,13 @@ void ASTWorker::update(ParseInputs Inputs, WantDiagnostics WantDiags) {
     // environment to build the file, it would be nice if we could emit a
     // "PreparingBuild" status to inform users, it is non-trivial given the
     // current implementation.
-    if (auto Cmd = CDB.getCompileCommand(FileName))
+    if (auto Cmd = CDB.getCompileCommand(FileName)) {
       Inputs.CompileCommand = *Cmd;
-    else
+    } else {
       // FIXME: consider using old command if it's not a fallback one.
       Inputs.CompileCommand = CDB.getFallbackCommand(FileName);
+
+}
     auto PrevInputs = getCurrentFileInputs();
     // Will be used to check if we can avoid rebuilding the AST.
     bool InputsAreTheSame =
@@ -420,8 +436,10 @@ void ASTWorker::update(ParseInputs Inputs, WantDiagnostics WantDiags) {
     std::unique_ptr<CompilerInvocation> Invocation = buildCompilerInvocation(
         Inputs, CompilerInvocationDiagConsumer, &CC1Args);
     // Log cc1 args even (especially!) if creating invocation failed.
-    if (!CC1Args.empty())
+    if (!CC1Args.empty()) {
       vlog("Driver produced command: cc1 {0}", llvm::join(CC1Args, " "));
+
+}
     std::vector<Diag> CompilerInvocationDiags =
         CompilerInvocationDiagConsumer.take();
     if (!Invocation) {
@@ -486,15 +504,19 @@ void ASTWorker::update(ParseInputs Inputs, WantDiagnostics WantDiags) {
     }
 
     // We only need to build the AST if diagnostics were requested.
-    if (WantDiags == WantDiagnostics::No)
+    if (WantDiags == WantDiagnostics::No) {
       return;
+
+}
 
     {
       std::lock_guard<std::mutex> Lock(PublishMu);
       // No need to rebuild the AST if we won't send the diagnostics. However,
       // note that we don't prevent preamble rebuilds.
-      if (!CanPublishResults)
+      if (!CanPublishResults) {
         return;
+
+}
     }
 
     // Get the AST for diagnostics.
@@ -529,8 +551,10 @@ void ASTWorker::update(ParseInputs Inputs, WantDiagnostics WantDiags) {
         std::unique_lock<std::mutex> Lock(Mutex, std::try_to_lock);
         if (Lock.owns_lock()) {
           // Do not let RebuildTimes grow beyond its small-size (i.e. capacity).
-          if (RebuildTimes.size() == RebuildTimes.capacity())
+          if (RebuildTimes.size() == RebuildTimes.capacity()) {
             RebuildTimes.erase(RebuildTimes.begin());
+
+}
           RebuildTimes.push_back(RebuildDuration);
         }
       }
@@ -557,8 +581,10 @@ void ASTWorker::runWithAST(
     llvm::unique_function<void(llvm::Expected<InputsAndAST>)> Action,
     TUScheduler::ASTActionInvalidation Invalidation) {
   auto Task = [=, Action = std::move(Action)]() mutable {
-    if (isCancelled())
+    if (isCancelled()) {
       return Action(llvm::make_error<CancelledError>());
+
+}
     llvm::Optional<std::unique_ptr<ParsedAST>> AST = IdleASTs.take(this);
     auto CurrentInputs = getCurrentFileInputs();
     if (!AST) {
@@ -581,9 +607,11 @@ void ASTWorker::runWithAST(
     auto _ = llvm::make_scope_exit(
         [&AST, this]() { IdleASTs.put(this, std::move(*AST)); });
     // Run the user-provided action.
-    if (!*AST)
+    if (!*AST) {
       return Action(llvm::make_error<llvm::StringError>(
           "invalid AST", llvm::errc::invalid_argument));
+
+}
     vlog("ASTWorker running {0} on version {2} of {1}", Name, FileName,
          CurrentInputs->Version);
     Action(InputsAndAST{*CurrentInputs, **AST});
@@ -644,8 +672,10 @@ std::size_t ASTWorker::getUsedBytes() const {
   // the in-flight requests. We used this information for debugging purposes
   // only, so this should be fine.
   std::size_t Result = IdleASTs.getUsedBytes(this);
-  if (auto Preamble = getPossiblyStalePreamble())
+  if (auto Preamble = getPossiblyStalePreamble()) {
     Result += Preamble->Preamble.getSize();
+
+}
   return Result;
 }
 
@@ -681,10 +711,14 @@ void ASTWorker::startTask(llvm::StringRef Name,
     // Cancel any requests invalidated by this request.
     if (UpdateType) {
       for (auto &R : llvm::reverse(Requests)) {
-        if (R.InvalidationPolicy == TUScheduler::InvalidateOnUpdate)
+        if (R.InvalidationPolicy == TUScheduler::InvalidateOnUpdate) {
           R.Invalidate();
-        if (R.UpdateType)
+
+}
+        if (R.UpdateType) {
           break; // Older requests were already invalidated by the older update.
+
+}
       }
     }
 
@@ -705,8 +739,10 @@ void ASTWorker::startTask(llvm::StringRef Name,
 void ASTWorker::emitTUStatus(TUAction Action,
                              const TUStatus::BuildDetails *Details) {
   Status.Action = std::move(Action);
-  if (Details)
+  if (Details) {
     Status.Details = *Details;
+
+}
   std::lock_guard<std::mutex> Lock(PublishMu);
   // Do not emit TU statuses when the ASTWorker is shutting down.
   if (CanPublishResults) {
@@ -722,10 +758,12 @@ void ASTWorker::run() {
       for (auto Wait = scheduleLocked(); !Wait.expired();
            Wait = scheduleLocked()) {
         if (Done) {
-          if (Requests.empty())
+          if (Requests.empty()) {
             return;
-          else     // Even though Done is set, finish pending requests.
+          } else {     // Even though Done is set, finish pending requests.
             break; // However, skip delays to shutdown fast.
+
+}
         }
 
         // Tracing: we have a next request, attribute this sleep to it.
@@ -770,21 +808,27 @@ void ASTWorker::run() {
       CurrentRequest.reset();
       IsEmpty = Requests.empty();
     }
-    if (IsEmpty)
+    if (IsEmpty) {
       emitTUStatus({TUAction::Idle, /*Name*/ ""});
+
+}
     RequestsCV.notify_all();
   }
 }
 
 Deadline ASTWorker::scheduleLocked() {
-  if (Requests.empty())
+  if (Requests.empty()) {
     return Deadline::infinity(); // Wait for new requests.
+
+}
   // Handle cancelled requests first so the rest of the scheduler doesn't.
   for (auto I = Requests.begin(), E = Requests.end(); I != E; ++I) {
     if (!isCancelled(I->Ctx)) {
       // Cancellations after the first read don't affect current scheduling.
-      if (I->UpdateType == None)
+      if (I->UpdateType == None) {
         break;
+
+}
       continue;
     }
     // Cancelled reads are moved to the front of the queue and run immediately.
@@ -795,8 +839,10 @@ Deadline ASTWorker::scheduleLocked() {
       return Deadline::zero();
     }
     // Cancelled updates are downgraded to auto-diagnostics, and may be elided.
-    if (I->UpdateType == WantDiagnostics::Yes)
+    if (I->UpdateType == WantDiagnostics::Yes) {
       I->UpdateType = WantDiagnostics::Auto;
+
+}
   }
 
   while (shouldSkipHeadLocked()) {
@@ -808,9 +854,13 @@ Deadline ASTWorker::scheduleLocked() {
   // e.g. the first keystroke is live until obsoleted by the second.
   // We debounce "maybe-unused" writes, sleeping in case they become dead.
   // But don't delay reads (including updates where diagnostics are needed).
-  for (const auto &R : Requests)
-    if (R.UpdateType == None || R.UpdateType == WantDiagnostics::Yes)
+  for (const auto &R : Requests) {
+    if (R.UpdateType == None || R.UpdateType == WantDiagnostics::Yes) {
       return Deadline::zero();
+
+}
+
+}
   // Front request needs to be debounced, so determine when we're ready.
   Deadline D(Requests.front().AddTime + UpdateDebounce.compute(RebuildTimes));
   return D;
@@ -821,13 +871,17 @@ bool ASTWorker::shouldSkipHeadLocked() const {
   assert(!Requests.empty());
   auto Next = Requests.begin();
   auto UpdateType = Next->UpdateType;
-  if (!UpdateType) // Only skip updates.
+  if (!UpdateType) { // Only skip updates.
     return false;
+
+}
   ++Next;
   // An update is live if its AST might still be read.
   // That is, if it's not immediately followed by another update.
-  if (Next == Requests.end() || !Next->UpdateType)
+  if (Next == Requests.end() || !Next->UpdateType) {
     return false;
+
+}
   // The other way an update can be live is if its diagnostics might be used.
   switch (*UpdateType) {
   case WantDiagnostics::Yes:
@@ -836,10 +890,14 @@ bool ASTWorker::shouldSkipHeadLocked() const {
     return true; // Always dead.
   case WantDiagnostics::Auto:
     // Used unless followed by an update that generates diagnostics.
-    for (; Next != Requests.end(); ++Next)
+    for (; Next != Requests.end(); ++Next) {
       if (Next->UpdateType == WantDiagnostics::Yes ||
-          Next->UpdateType == WantDiagnostics::Auto)
+          Next->UpdateType == WantDiagnostics::Auto) {
         return true; // Prefer later diagnostics.
+
+}
+
+}
     return false;
   }
   llvm_unreachable("Unknown WantDiagnostics");
@@ -918,19 +976,31 @@ TUScheduler::~TUScheduler() {
   Files.clear();
 
   // Wait for all in-flight tasks to finish.
-  if (PreambleTasks)
+  if (PreambleTasks) {
     PreambleTasks->wait();
-  if (WorkerThreads)
+
+}
+  if (WorkerThreads) {
     WorkerThreads->wait();
+
+}
 }
 
 bool TUScheduler::blockUntilIdle(Deadline D) const {
-  for (auto &File : Files)
-    if (!File.getValue()->Worker->blockUntilIdle(D))
+  for (auto &File : Files) {
+    if (!File.getValue()->Worker->blockUntilIdle(D)) {
       return false;
-  if (PreambleTasks)
-    if (!PreambleTasks->wait(D))
+
+}
+
+}
+  if (PreambleTasks) {
+    if (!PreambleTasks->wait(D)) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -955,22 +1025,28 @@ bool TUScheduler::update(PathRef File, ParseInputs Inputs,
 
 void TUScheduler::remove(PathRef File) {
   bool Removed = Files.erase(File);
-  if (!Removed)
+  if (!Removed) {
     elog("Trying to remove file from TUScheduler that is not tracked: {0}",
          File);
+
+}
 }
 
 llvm::StringMap<std::string> TUScheduler::getAllFileContents() const {
   llvm::StringMap<std::string> Results;
-  for (auto &It : Files)
+  for (auto &It : Files) {
     Results.try_emplace(It.getKey(), It.getValue()->Contents);
+
+}
   return Results;
 }
 
 void TUScheduler::run(llvm::StringRef Name,
                       llvm::unique_function<void()> Action) {
-  if (!PreambleTasks)
+  if (!PreambleTasks) {
     return Action();
+
+}
   PreambleTasks->runAsync(Name, [this, Ctx = Context::current().clone(),
                                  Action = std::move(Action)]() mutable {
     std::lock_guard<Semaphore> BarrierLock(Barrier);
@@ -1063,17 +1139,21 @@ std::vector<std::pair<Path, std::size_t>>
 TUScheduler::getUsedBytesPerFile() const {
   std::vector<std::pair<Path, std::size_t>> Result;
   Result.reserve(Files.size());
-  for (auto &&PathAndFile : Files)
+  for (auto &&PathAndFile : Files) {
     Result.push_back({std::string(PathAndFile.first()),
                       PathAndFile.second->Worker->getUsedBytes()});
+
+}
   return Result;
 }
 
 std::vector<Path> TUScheduler::getFilesWithCachedAST() const {
   std::vector<Path> Result;
   for (auto &&PathAndFile : Files) {
-    if (!PathAndFile.second->Worker->isASTCached())
+    if (!PathAndFile.second->Worker->isASTCached()) {
       continue;
+
+}
     Result.push_back(std::string(PathAndFile.first()));
   }
   return Result;
@@ -1082,8 +1162,10 @@ std::vector<Path> TUScheduler::getFilesWithCachedAST() const {
 DebouncePolicy::clock::duration
 DebouncePolicy::compute(llvm::ArrayRef<clock::duration> History) const {
   assert(Min <= Max && "Invalid policy");
-  if (History.empty())
+  if (History.empty()) {
     return Max; // Arbitrary.
+
+}
 
   // Base the result on the median rebuild.
   // nth_element needs a mutable array, take the chance to bound the data size.
@@ -1094,10 +1176,14 @@ DebouncePolicy::compute(llvm::ArrayRef<clock::duration> History) const {
 
   clock::duration Target =
       std::chrono::duration_cast<clock::duration>(RebuildRatio * *Median);
-  if (Target > Max)
+  if (Target > Max) {
     return Max;
-  if (Target < Min)
+
+}
+  if (Target < Min) {
     return Min;
+
+}
   return Target;
 }
 

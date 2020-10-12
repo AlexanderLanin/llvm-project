@@ -86,8 +86,10 @@ static int64_t getWinAllocaAmount(MachineInstr *MI, MachineRegisterInfo *MRI) {
 
   if (!Def ||
       (Def->getOpcode() != X86::MOV32ri && Def->getOpcode() != X86::MOV64ri) ||
-      !Def->getOperand(1).isImm())
+      !Def->getOperand(1).isImm()) {
     return -1;
+
+}
 
   return Def->getOperand(1).getImm();
 }
@@ -96,12 +98,16 @@ X86WinAllocaExpander::Lowering
 X86WinAllocaExpander::getLowering(int64_t CurrentOffset,
                                   int64_t AllocaAmount) {
   // For a non-constant amount or a large amount, we have to probe.
-  if (AllocaAmount < 0 || AllocaAmount > StackProbeSize)
+  if (AllocaAmount < 0 || AllocaAmount > StackProbeSize) {
     return Probe;
 
+}
+
   // If it fits within the safe region of the stack, just subtract.
-  if (CurrentOffset + AllocaAmount <= StackProbeSize)
+  if (CurrentOffset + AllocaAmount <= StackProbeSize) {
     return Sub;
+
+}
 
   // Otherwise, touch the current tip of the stack, then subtract.
   return TouchAndSub;
@@ -135,8 +141,10 @@ void X86WinAllocaExpander::computeLowerings(MachineFunction &MF,
 
   // Initialize OutOffset[B], the stack offset at exit from B, to something big.
   DenseMap<MachineBasicBlock *, int64_t> OutOffset;
-  for (MachineBasicBlock &MBB : MF)
+  for (MachineBasicBlock &MBB : MF) {
     OutOffset[&MBB] = INT32_MAX;
+
+}
 
   // Note: we don't know the offset at the start of the entry block since the
   // prologue hasn't been inserted yet, and how much that will adjust the stack
@@ -147,9 +155,13 @@ void X86WinAllocaExpander::computeLowerings(MachineFunction &MF,
 
   for (MachineBasicBlock *MBB : RPO) {
     int64_t Offset = -1;
-    for (MachineBasicBlock *Pred : MBB->predecessors())
+    for (MachineBasicBlock *Pred : MBB->predecessors()) {
       Offset = std::max(Offset, OutOffset[Pred]);
-    if (Offset == -1) Offset = INT32_MAX;
+
+}
+    if (Offset == -1) { Offset = INT32_MAX;
+
+}
 
     for (MachineInstr &MI : *MBB) {
       if (MI.getOpcode() == X86::WIN_ALLOCA_32 ||
@@ -189,8 +201,10 @@ void X86WinAllocaExpander::computeLowerings(MachineFunction &MF,
 }
 
 static unsigned getSubOpcode(bool Is64Bit, int64_t Amount) {
-  if (Is64Bit)
+  if (Is64Bit) {
     return isInt<8>(Amount) ? X86::SUB64ri8 : X86::SUB64ri32;
+
+}
   return isInt<8>(Amount) ? X86::SUB32ri8 : X86::SUB32ri;
 }
 
@@ -220,8 +234,10 @@ void X86WinAllocaExpander::lower(MachineInstr* MI, Lowering L) {
     BuildMI(*MBB, I, DL, TII->get(Is64Bit ? X86::PUSH64r : X86::PUSH32r))
         .addReg(RegA, RegState::Undef);
     Amount -= SlotSize;
-    if (!Amount)
+    if (!Amount) {
       break;
+
+}
 
     // Fall through to make any remaining adjustment.
     LLVM_FALLTHROUGH;
@@ -265,14 +281,20 @@ void X86WinAllocaExpander::lower(MachineInstr* MI, Lowering L) {
   MI->eraseFromParent();
 
   // Delete the definition of AmountReg.
-  if (MRI->use_empty(AmountReg))
-    if (MachineInstr *AmountDef = MRI->getUniqueVRegDef(AmountReg))
+  if (MRI->use_empty(AmountReg)) {
+    if (MachineInstr *AmountDef = MRI->getUniqueVRegDef(AmountReg)) {
       AmountDef->eraseFromParent();
+
+}
+
+}
 }
 
 bool X86WinAllocaExpander::runOnMachineFunction(MachineFunction &MF) {
-  if (!MF.getInfo<X86MachineFunctionInfo>()->hasWinAlloca())
+  if (!MF.getInfo<X86MachineFunctionInfo>()->hasWinAlloca()) {
     return false;
+
+}
 
   MRI = &MF.getRegInfo();
   STI = &MF.getSubtarget<X86Subtarget>();
@@ -289,13 +311,17 @@ bool X86WinAllocaExpander::runOnMachineFunction(MachineFunction &MF) {
         .getAsInteger(0, StackProbeSize);
   }
   NoStackArgProbe = MF.getFunction().hasFnAttribute("no-stack-arg-probe");
-  if (NoStackArgProbe)
+  if (NoStackArgProbe) {
     StackProbeSize = INT64_MAX;
+
+}
 
   LoweringMap Lowerings;
   computeLowerings(MF, Lowerings);
-  for (auto &P : Lowerings)
+  for (auto &P : Lowerings) {
     lower(P.first, P.second);
+
+}
 
   return true;
 }

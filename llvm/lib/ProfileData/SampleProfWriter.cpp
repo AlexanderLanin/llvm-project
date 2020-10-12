@@ -45,30 +45,40 @@ std::error_code SampleProfileWriter::writeFuncProfiles(
   // Sort the ProfileMap by total samples.
   typedef std::pair<StringRef, const FunctionSamples *> NameFunctionSamples;
   std::vector<NameFunctionSamples> V;
-  for (const auto &I : ProfileMap)
+  for (const auto &I : ProfileMap) {
     V.push_back(std::make_pair(I.getKey(), &I.second));
+
+}
 
   llvm::stable_sort(
       V, [](const NameFunctionSamples &A, const NameFunctionSamples &B) {
-        if (A.second->getTotalSamples() == B.second->getTotalSamples())
+        if (A.second->getTotalSamples() == B.second->getTotalSamples()) {
           return A.first > B.first;
+
+}
         return A.second->getTotalSamples() > B.second->getTotalSamples();
       });
 
   for (const auto &I : V) {
-    if (std::error_code EC = writeSample(*I.second))
+    if (std::error_code EC = writeSample(*I.second)) {
       return EC;
+
+}
   }
   return sampleprof_error::success;
 }
 
 std::error_code
 SampleProfileWriter::write(const StringMap<FunctionSamples> &ProfileMap) {
-  if (std::error_code EC = writeHeader(ProfileMap))
+  if (std::error_code EC = writeHeader(ProfileMap)) {
     return EC;
 
-  if (std::error_code EC = writeFuncProfiles(ProfileMap))
+}
+
+  if (std::error_code EC = writeFuncProfiles(ProfileMap)) {
     return EC;
+
+}
 
   return sampleprof_error::success;
 }
@@ -87,24 +97,32 @@ uint64_t SampleProfileWriterExtBinaryBase::markSectionStart(SecType Type) {
   uint64_t SectionStart = OutputStream->tell();
   auto &Entry = getEntryInLayout(Type);
   // Use LocalBuf as a temporary output for writting data.
-  if (hasSecFlag(Entry, SecFlagCompress))
+  if (hasSecFlag(Entry, SecFlagCompress)) {
     LocalBufStream.swap(OutputStream);
+
+}
   return SectionStart;
 }
 
 std::error_code SampleProfileWriterExtBinaryBase::compressAndOutput() {
-  if (!llvm::zlib::isAvailable())
+  if (!llvm::zlib::isAvailable()) {
     return sampleprof_error::zlib_unavailable;
+
+}
   std::string &UncompressedStrings =
       static_cast<raw_string_ostream *>(LocalBufStream.get())->str();
-  if (UncompressedStrings.size() == 0)
+  if (UncompressedStrings.size() == 0) {
     return sampleprof_error::success;
+
+}
   auto &OS = *OutputStream;
   SmallString<128> CompressedStrings;
   llvm::Error E = zlib::compress(UncompressedStrings, CompressedStrings,
                                  zlib::BestSizeCompression);
-  if (E)
+  if (E) {
     return sampleprof_error::compress_failed;
+
+}
   encodeULEB128(UncompressedStrings.size(), OS);
   encodeULEB128(CompressedStrings.size(), OS);
   OS << CompressedStrings.str();
@@ -119,8 +137,10 @@ SampleProfileWriterExtBinaryBase::addNewSection(SecType Type,
   auto Entry = getEntryInLayout(Type);
   if (hasSecFlag(Entry, SecFlagCompress)) {
     LocalBufStream.swap(OutputStream);
-    if (std::error_code EC = compressAndOutput())
+    if (std::error_code EC = compressAndOutput()) {
       return EC;
+
+}
   }
   SecHdrTable.push_back({Type, Entry.Flags, SectionStart - FileStart,
                          OutputStream->tell() - SectionStart});
@@ -129,16 +149,22 @@ SampleProfileWriterExtBinaryBase::addNewSection(SecType Type,
 
 std::error_code SampleProfileWriterExtBinaryBase::write(
     const StringMap<FunctionSamples> &ProfileMap) {
-  if (std::error_code EC = writeHeader(ProfileMap))
+  if (std::error_code EC = writeHeader(ProfileMap)) {
     return EC;
+
+}
 
   std::string LocalBuf;
   LocalBufStream = std::make_unique<raw_string_ostream>(LocalBuf);
-  if (std::error_code EC = writeSections(ProfileMap))
+  if (std::error_code EC = writeSections(ProfileMap)) {
     return EC;
 
-  if (std::error_code EC = writeSecHdrTable())
+}
+
+  if (std::error_code EC = writeSecHdrTable()) {
     return EC;
+
+}
 
   return sampleprof_error::success;
 }
@@ -170,10 +196,14 @@ std::error_code SampleProfileWriterExtBinary::writeSections(
     const StringMap<FunctionSamples> &ProfileMap) {
   uint64_t SectionStart = markSectionStart(SecProfSummary);
   computeSummary(ProfileMap);
-  if (auto EC = writeSummary())
+  if (auto EC = writeSummary()) {
     return EC;
-  if (std::error_code EC = addNewSection(SecProfSummary, SectionStart))
+
+}
+  if (std::error_code EC = addNewSection(SecProfSummary, SectionStart)) {
     return EC;
+
+}
 
   // Generate the name table for all the functions referenced in the profile.
   SectionStart = markSectionStart(SecNameTable);
@@ -182,41 +212,63 @@ std::error_code SampleProfileWriterExtBinary::writeSections(
     addNames(I.second);
   }
   writeNameTable();
-  if (std::error_code EC = addNewSection(SecNameTable, SectionStart))
+  if (std::error_code EC = addNewSection(SecNameTable, SectionStart)) {
     return EC;
+
+}
 
   SectionStart = markSectionStart(SecLBRProfile);
   SecLBRProfileStart = OutputStream->tell();
-  if (std::error_code EC = writeFuncProfiles(ProfileMap))
-    return EC;
-  if (std::error_code EC = addNewSection(SecLBRProfile, SectionStart))
+  if (std::error_code EC = writeFuncProfiles(ProfileMap)) {
     return EC;
 
-  if (ProfSymList && ProfSymList->toCompress())
+}
+  if (std::error_code EC = addNewSection(SecLBRProfile, SectionStart)) {
+    return EC;
+
+}
+
+  if (ProfSymList && ProfSymList->toCompress()) {
     setToCompressSection(SecProfileSymbolList);
 
+}
+
   SectionStart = markSectionStart(SecProfileSymbolList);
-  if (ProfSymList && ProfSymList->size() > 0)
-    if (std::error_code EC = ProfSymList->write(*OutputStream))
+  if (ProfSymList && ProfSymList->size() > 0) {
+    if (std::error_code EC = ProfSymList->write(*OutputStream)) {
       return EC;
-  if (std::error_code EC = addNewSection(SecProfileSymbolList, SectionStart))
+
+}
+
+}
+  if (std::error_code EC = addNewSection(SecProfileSymbolList, SectionStart)) {
     return EC;
 
+}
+
   SectionStart = markSectionStart(SecFuncOffsetTable);
-  if (std::error_code EC = writeFuncOffsetTable())
+  if (std::error_code EC = writeFuncOffsetTable()) {
     return EC;
-  if (std::error_code EC = addNewSection(SecFuncOffsetTable, SectionStart))
+
+}
+  if (std::error_code EC = addNewSection(SecFuncOffsetTable, SectionStart)) {
     return EC;
+
+}
 
   return sampleprof_error::success;
 }
 
 std::error_code SampleProfileWriterCompactBinary::write(
     const StringMap<FunctionSamples> &ProfileMap) {
-  if (std::error_code EC = SampleProfileWriter::write(ProfileMap))
+  if (std::error_code EC = SampleProfileWriter::write(ProfileMap)) {
     return EC;
-  if (std::error_code EC = writeFuncOffsetTable())
+
+}
+  if (std::error_code EC = writeFuncOffsetTable()) {
     return EC;
+
+}
   return sampleprof_error::success;
 }
 
@@ -231,8 +283,10 @@ std::error_code SampleProfileWriterCompactBinary::write(
 std::error_code SampleProfileWriterText::writeSample(const FunctionSamples &S) {
   auto &OS = *OutputStream;
   OS << S.getName() << ":" << S.getTotalSamples();
-  if (Indent == 0)
+  if (Indent == 0) {
     OS << ":" << S.getHeadSamples();
+
+}
   OS << "\n";
 
   SampleSorter<LineLocation, SampleRecord> SortedSamples(S.getBodySamples());
@@ -240,33 +294,43 @@ std::error_code SampleProfileWriterText::writeSample(const FunctionSamples &S) {
     LineLocation Loc = I->first;
     const SampleRecord &Sample = I->second;
     OS.indent(Indent + 1);
-    if (Loc.Discriminator == 0)
+    if (Loc.Discriminator == 0) {
       OS << Loc.LineOffset << ": ";
-    else
+    } else {
       OS << Loc.LineOffset << "." << Loc.Discriminator << ": ";
+
+}
 
     OS << Sample.getSamples();
 
-    for (const auto &J : Sample.getSortedCallTargets())
+    for (const auto &J : Sample.getSortedCallTargets()) {
       OS << " " << J.first << ":" << J.second;
+
+}
     OS << "\n";
   }
 
   SampleSorter<LineLocation, FunctionSamplesMap> SortedCallsiteSamples(
       S.getCallsiteSamples());
   Indent += 1;
-  for (const auto &I : SortedCallsiteSamples.get())
+  for (const auto &I : SortedCallsiteSamples.get()) {
     for (const auto &FS : I->second) {
       LineLocation Loc = I->first;
       const FunctionSamples &CalleeSamples = FS.second;
       OS.indent(Indent);
-      if (Loc.Discriminator == 0)
+      if (Loc.Discriminator == 0) {
         OS << Loc.LineOffset << ": ";
-      else
+      } else {
         OS << Loc.LineOffset << "." << Loc.Discriminator << ": ";
-      if (std::error_code EC = writeSample(CalleeSamples))
+
+}
+      if (std::error_code EC = writeSample(CalleeSamples)) {
         return EC;
+
+}
     }
+
+}
   Indent -= 1;
 
   return sampleprof_error::success;
@@ -274,8 +338,10 @@ std::error_code SampleProfileWriterText::writeSample(const FunctionSamples &S) {
 
 std::error_code SampleProfileWriterBinary::writeNameIdx(StringRef FName) {
   const auto &ret = NameTable.find(FName);
-  if (ret == NameTable.end())
+  if (ret == NameTable.end()) {
     return sampleprof_error::truncated_name_table;
+
+}
   encodeULEB128(ret->second, *OutputStream);
   return sampleprof_error::success;
 }
@@ -288,26 +354,34 @@ void SampleProfileWriterBinary::addNames(const FunctionSamples &S) {
   // Add all the names in indirect call targets.
   for (const auto &I : S.getBodySamples()) {
     const SampleRecord &Sample = I.second;
-    for (const auto &J : Sample.getCallTargets())
+    for (const auto &J : Sample.getCallTargets()) {
       addName(J.first());
+
+}
   }
 
   // Recursively add all the names for inlined callsites.
-  for (const auto &J : S.getCallsiteSamples())
+  for (const auto &J : S.getCallsiteSamples()) {
     for (const auto &FS : J.second) {
       const FunctionSamples &CalleeSamples = FS.second;
       addName(CalleeSamples.getName());
       addNames(CalleeSamples);
     }
+
+}
 }
 
 void SampleProfileWriterBinary::stablizeNameTable(std::set<StringRef> &V) {
   // Sort the names to make NameTable deterministic.
-  for (const auto &I : NameTable)
+  for (const auto &I : NameTable) {
     V.insert(I.first);
+
+}
   int i = 0;
-  for (const StringRef &N : V)
+  for (const StringRef &N : V) {
     NameTable[N] = i++;
+
+}
 }
 
 std::error_code SampleProfileWriterBinary::writeNameTable() {
@@ -330,12 +404,16 @@ std::error_code SampleProfileWriterCompactBinary::writeFuncOffsetTable() {
   // Fill the slot remembered by TableOffset with the offset of FuncOffsetTable.
   auto &OFS = static_cast<raw_fd_ostream &>(OS);
   uint64_t FuncOffsetTableStart = OS.tell();
-  if (OFS.seek(TableOffset) == (uint64_t)-1)
+  if (OFS.seek(TableOffset) == (uint64_t)-1) {
     return sampleprof_error::ostream_seek_unsupported;
+
+}
   support::endian::Writer Writer(*OutputStream, support::little);
   Writer.write(FuncOffsetTableStart);
-  if (OFS.seek(FuncOffsetTableStart) == (uint64_t)-1)
+  if (OFS.seek(FuncOffsetTableStart) == (uint64_t)-1) {
     return sampleprof_error::ostream_seek_unsupported;
+
+}
 
   // Write out the table size.
   encodeULEB128(FuncOffsetTable.size(), OS);
@@ -375,8 +453,10 @@ std::error_code SampleProfileWriterBinary::writeHeader(
   writeMagicIdent(Format);
 
   computeSummary(ProfileMap);
-  if (auto EC = writeSummary())
+  if (auto EC = writeSummary()) {
     return EC;
+
+}
 
   // Generate the name table for all the functions referenced in the profile.
   for (const auto &I : ProfileMap) {
@@ -389,8 +469,10 @@ std::error_code SampleProfileWriterBinary::writeHeader(
 }
 
 void SampleProfileWriterExtBinaryBase::setToCompressAllSections() {
-  for (auto &Entry : SectionHdrLayout)
+  for (auto &Entry : SectionHdrLayout) {
     addSecFlags(Entry, SecFlagCompress);
+
+}
 }
 
 void SampleProfileWriterExtBinaryBase::setToCompressSection(SecType Type) {
@@ -400,8 +482,10 @@ void SampleProfileWriterExtBinaryBase::setToCompressSection(SecType Type) {
 void SampleProfileWriterExtBinaryBase::addSectionFlags(SecType Type,
                                                        SecFlags Flags) {
   for (auto &Entry : SectionHdrLayout) {
-    if (Entry.Type == Type)
+    if (Entry.Type == Type) {
       addSecFlags(Entry, Flags);
+
+}
   }
 }
 
@@ -423,8 +507,10 @@ std::error_code SampleProfileWriterExtBinaryBase::writeSecHdrTable() {
   uint64_t Saved = OutputStream->tell();
 
   // Set OutputStream to the location saved in SecHdrTableOffset.
-  if (OFS.seek(SecHdrTableOffset) == (uint64_t)-1)
+  if (OFS.seek(SecHdrTableOffset) == (uint64_t)-1) {
     return sampleprof_error::ostream_seek_unsupported;
+
+}
   support::endian::Writer Writer(*OutputStream, support::little);
 
   DenseMap<uint32_t, uint32_t> IndexMap;
@@ -448,8 +534,10 @@ std::error_code SampleProfileWriterExtBinaryBase::writeSecHdrTable() {
   }
 
   // Reset OutputStream.
-  if (OFS.seek(Saved) == (uint64_t)-1)
+  if (OFS.seek(Saved) == (uint64_t)-1) {
     return sampleprof_error::ostream_seek_unsupported;
+
+}
 
   return sampleprof_error::success;
 }
@@ -467,8 +555,10 @@ std::error_code SampleProfileWriterExtBinaryBase::writeHeader(
 std::error_code SampleProfileWriterCompactBinary::writeHeader(
     const StringMap<FunctionSamples> &ProfileMap) {
   support::endian::Writer Writer(*OutputStream, support::little);
-  if (auto EC = SampleProfileWriterBinary::writeHeader(ProfileMap))
+  if (auto EC = SampleProfileWriterBinary::writeHeader(ProfileMap)) {
     return EC;
+
+}
 
   // Reserve a slot for the offset of function offset table. The slot will
   // be populated with the offset of FuncOffsetTable later.
@@ -496,8 +586,10 @@ std::error_code SampleProfileWriterBinary::writeSummary() {
 std::error_code SampleProfileWriterBinary::writeBody(const FunctionSamples &S) {
   auto &OS = *OutputStream;
 
-  if (std::error_code EC = writeNameIdx(S.getName()))
+  if (std::error_code EC = writeNameIdx(S.getName())) {
     return EC;
+
+}
 
   encodeULEB128(S.getTotalSamples(), OS);
 
@@ -513,26 +605,34 @@ std::error_code SampleProfileWriterBinary::writeBody(const FunctionSamples &S) {
     for (const auto &J : Sample.getSortedCallTargets()) {
       StringRef Callee = J.first;
       uint64_t CalleeSamples = J.second;
-      if (std::error_code EC = writeNameIdx(Callee))
+      if (std::error_code EC = writeNameIdx(Callee)) {
         return EC;
+
+}
       encodeULEB128(CalleeSamples, OS);
     }
   }
 
   // Recursively emit all the callsite samples.
   uint64_t NumCallsites = 0;
-  for (const auto &J : S.getCallsiteSamples())
+  for (const auto &J : S.getCallsiteSamples()) {
     NumCallsites += J.second.size();
+
+}
   encodeULEB128(NumCallsites, OS);
-  for (const auto &J : S.getCallsiteSamples())
+  for (const auto &J : S.getCallsiteSamples()) {
     for (const auto &FS : J.second) {
       LineLocation Loc = J.first;
       const FunctionSamples &CalleeSamples = FS.second;
       encodeULEB128(Loc.LineOffset, OS);
       encodeULEB128(Loc.Discriminator, OS);
-      if (std::error_code EC = writeBody(CalleeSamples))
+      if (std::error_code EC = writeBody(CalleeSamples)) {
         return EC;
+
+}
     }
+
+}
 
   return sampleprof_error::success;
 }
@@ -567,12 +667,16 @@ SampleProfileWriter::create(StringRef Filename, SampleProfileFormat Format) {
   std::error_code EC;
   std::unique_ptr<raw_ostream> OS;
   if (Format == SPF_Binary || Format == SPF_Ext_Binary ||
-      Format == SPF_Compact_Binary)
+      Format == SPF_Compact_Binary) {
     OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::OF_None));
-  else
+  } else {
     OS.reset(new raw_fd_ostream(Filename, EC, sys::fs::OF_Text));
-  if (EC)
+
+}
+  if (EC) {
     return EC;
+
+}
 
   return create(OS, Format);
 }
@@ -590,21 +694,25 @@ SampleProfileWriter::create(std::unique_ptr<raw_ostream> &OS,
   std::error_code EC;
   std::unique_ptr<SampleProfileWriter> Writer;
 
-  if (Format == SPF_Binary)
+  if (Format == SPF_Binary) {
     Writer.reset(new SampleProfileWriterRawBinary(OS));
-  else if (Format == SPF_Ext_Binary)
+  } else if (Format == SPF_Ext_Binary) {
     Writer.reset(new SampleProfileWriterExtBinary(OS));
-  else if (Format == SPF_Compact_Binary)
+  } else if (Format == SPF_Compact_Binary) {
     Writer.reset(new SampleProfileWriterCompactBinary(OS));
-  else if (Format == SPF_Text)
+  } else if (Format == SPF_Text) {
     Writer.reset(new SampleProfileWriterText(OS));
-  else if (Format == SPF_GCC)
+  } else if (Format == SPF_GCC) {
     EC = sampleprof_error::unsupported_writing_format;
-  else
+  } else {
     EC = sampleprof_error::unrecognized_format;
 
-  if (EC)
+}
+
+  if (EC) {
     return EC;
+
+}
 
   Writer->Format = Format;
   return std::move(Writer);

@@ -291,8 +291,10 @@ bool AVRTargetInfo::isValidCPUName(StringRef Name) const {
 
 void AVRTargetInfo::fillValidCPUList(SmallVectorImpl<StringRef> &Values) const {
   Values.append(std::begin(ValidFamilyNames), std::end(ValidFamilyNames));
-  for (const MCUInfo &Info : AVRMcus)
+  for (const MCUInfo &Info : AVRMcus) {
     Values.push_back(Info.Name);
+
+}
 }
 
 void AVRTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -305,7 +307,9 @@ void AVRTargetInfo::getTargetDefines(const LangOptions &Opts,
     auto It = llvm::find_if(
         AVRMcus, [&](const MCUInfo &Info) { return Info.Name == this->CPU; });
 
-    if (It != std::end(AVRMcus))
+    if (It != std::end(AVRMcus)) {
       Builder.defineMacro(It->DefineName);
+
+}
   }
 }

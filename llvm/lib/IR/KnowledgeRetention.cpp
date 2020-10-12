@@ -120,17 +120,23 @@ struct AssumeBuilderState {
   void addAttribute(Attribute Attr, Value *WasOn) {
     if (!ShouldPreserveAllAttributes &&
         (Attr.isTypeAttribute() || Attr.isStringAttribute() ||
-         !isUsefullToPreserve(Attr.getKindAsEnum())))
+         !isUsefullToPreserve(Attr.getKindAsEnum()))) {
       return;
+
+}
     StringRef Name;
     Value *AttrArg = nullptr;
-    if (Attr.isStringAttribute())
+    if (Attr.isStringAttribute()) {
       Name = Attr.getKindAsString();
-    else
+    } else {
       Name = Attribute::getNameFromAttrKind(Attr.getKindAsEnum());
-    if (Attr.isIntAttribute())
+
+}
+    if (Attr.isIntAttribute()) {
       AttrArg = ConstantInt::get(Type::getInt64Ty(M->getContext()),
                                  Attr.getValueAsInt());
+
+}
     AssumedKnowledgeSet.insert(
         {Name.data(), AttrArg, {WasOn, AssumedKnowledge::None}});
   }
@@ -138,20 +144,30 @@ struct AssumeBuilderState {
   void addCall(const CallBase *Call) {
     auto addAttrList = [&](AttributeList AttrList) {
       for (unsigned Idx = AttributeList::FirstArgIndex;
-           Idx < AttrList.getNumAttrSets(); Idx++)
-        for (Attribute Attr : AttrList.getAttributes(Idx))
+           Idx < AttrList.getNumAttrSets(); Idx++) {
+        for (Attribute Attr : AttrList.getAttributes(Idx)) {
           addAttribute(Attr, Call->getArgOperand(Idx - 1));
-      for (Attribute Attr : AttrList.getFnAttributes())
+
+}
+
+}
+      for (Attribute Attr : AttrList.getFnAttributes()) {
         addAttribute(Attr, nullptr);
+
+}
     };
     addAttrList(Call->getAttributes());
-    if (Function *Fn = Call->getCalledFunction())
+    if (Function *Fn = Call->getCalledFunction()) {
       addAttrList(Fn->getAttributes());
+
+}
   }
 
   CallInst *build() {
-    if (AssumedKnowledgeSet.empty())
+    if (AssumedKnowledgeSet.empty()) {
       return nullptr;
+
+}
     Function *FnAssume = Intrinsic::getDeclaration(M, Intrinsic::assume);
     LLVMContext &C = M->getContext();
     SmallVector<OperandBundleDef, 8> OpBundle;
@@ -162,10 +178,14 @@ struct AssumeBuilderState {
              static_cast<bool>(Elem.Argument) ==
                  Attribute::doesAttrKindHaveArgument(
                      Attribute::getAttrKindFromName(Elem.Name)));
-      if (Elem.WasOn.getPointer())
+      if (Elem.WasOn.getPointer()) {
         Args.push_back(Elem.WasOn.getPointer());
-      if (Elem.Argument)
+
+}
+      if (Elem.Argument) {
         Args.push_back(Elem.Argument);
+
+}
       OpBundle.push_back(OperandBundleDefT<Value *>(Elem.Name, Args));
     }
     llvm::sort(OpBundle, isLowerOpBundle);
@@ -174,8 +194,10 @@ struct AssumeBuilderState {
   }
 
   void addInstruction(const Instruction *I) {
-    if (auto *Call = dyn_cast<CallBase>(I))
+    if (auto *Call = dyn_cast<CallBase>(I)) {
       addCall(Call);
+
+}
     // TODO: Add support for the other Instructions.
     // TODO: Maybe we should look around and merge with other llvm.assume.
   }
@@ -184,8 +206,10 @@ struct AssumeBuilderState {
 } // namespace
 
 CallInst *llvm::BuildAssumeFromInst(const Instruction *I, Module *M) {
-  if (!EnableKnowledgeRetention)
+  if (!EnableKnowledgeRetention) {
     return nullptr;
+
+}
   AssumeBuilderState Builder(M);
   Builder.addInstruction(I);
   return Builder.build();
@@ -214,16 +238,22 @@ bool llvm::hasAttributeInAssume(CallInst &AssumeCI, Value *IsOn,
   assert((ArgVal == nullptr || Attribute::doesAttrKindHaveArgument(
                                    Attribute::getAttrKindFromName(AttrName))) &&
          "requested value for an attribute that has no argument");
-  if (Assume.bundle_op_infos().empty())
+  if (Assume.bundle_op_infos().empty()) {
     return false;
+
+}
 
   auto Loop = [&](auto &&Range) {
     for (auto &BOI : Range) {
-      if (BOI.Tag->getKey() != AttrName)
+      if (BOI.Tag->getKey() != AttrName) {
         continue;
+
+}
       if (IsOn && (BOI.End - BOI.Begin <= BOIE_WasOn ||
-                   IsOn != getValueFromBundleOpInfo(Assume, BOI, BOIE_WasOn)))
+                   IsOn != getValueFromBundleOpInfo(Assume, BOI, BOIE_WasOn))) {
         continue;
+
+}
       if (ArgVal) {
         assert(BOI.End - BOI.Begin > BOIE_Argument);
         *ArgVal = cast<ConstantInt>(
@@ -235,8 +265,10 @@ bool llvm::hasAttributeInAssume(CallInst &AssumeCI, Value *IsOn,
     return false;
   };
 
-  if (AQR == AssumeQuery::Lowest)
+  if (AQR == AssumeQuery::Lowest) {
     return Loop(Assume.bundle_op_infos());
+
+}
   return Loop(reverse(Assume.bundle_op_infos()));
 }
 
@@ -247,11 +279,15 @@ void llvm::fillMapFromAssume(CallInst &AssumeCI, RetainedKnowledgeMap &Result) {
   for (auto &Bundles : Assume.bundle_op_infos()) {
     std::pair<Value *, Attribute::AttrKind> Key{
         nullptr, Attribute::getAttrKindFromName(Bundles.Tag->getKey())};
-    if (BundleHasArguement(Bundles, BOIE_WasOn))
+    if (BundleHasArguement(Bundles, BOIE_WasOn)) {
       Key.first = getValueFromBundleOpInfo(Assume, Bundles, BOIE_WasOn);
 
-    if (Key.first == nullptr && Key.second == Attribute::None)
+}
+
+    if (Key.first == nullptr && Key.second == Attribute::None) {
       continue;
+
+}
     if (!BundleHasArguement(Bundles, BOIE_Argument)) {
       Result[Key] = {0, 0};
       continue;
@@ -278,18 +314,24 @@ RetainedKnowledge llvm::getKnowledgeFromOperandInAssume(CallInst &AssumeCI,
   RetainedKnowledge Result;
   Result.AttrKind = Attribute::getAttrKindFromName(BOI.Tag->getKey());
   Result.WasOn = getValueFromBundleOpInfo(Assume, BOI, BOIE_WasOn);
-  if (BOI.End - BOI.Begin > BOIE_Argument)
+  if (BOI.End - BOI.Begin > BOIE_Argument) {
     Result.ArgValue =
         cast<ConstantInt>(getValueFromBundleOpInfo(Assume, BOI, BOIE_Argument))
             ->getZExtValue();
+
+}
 
   return Result;
 }
 
 PreservedAnalyses AssumeBuilderPass::run(Function &F,
                                          FunctionAnalysisManager &AM) {
-  for (Instruction &I : instructions(F))
-    if (Instruction *Assume = BuildAssumeFromInst(&I))
+  for (Instruction &I : instructions(F)) {
+    if (Instruction *Assume = BuildAssumeFromInst(&I)) {
       Assume->insertBefore(&I);
+
+}
+
+}
   return PreservedAnalyses::all();
 }

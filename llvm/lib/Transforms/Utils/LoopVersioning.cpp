@@ -73,16 +73,22 @@ void LoopVersioning::versionLoop(
   auto *CI = dyn_cast<ConstantInt>(SCEVRuntimeCheck);
 
   // Discard the SCEV runtime check if it is always true.
-  if (CI && CI->isZero())
+  if (CI && CI->isZero()) {
     SCEVRuntimeCheck = nullptr;
+
+}
 
   if (MemRuntimeCheck && SCEVRuntimeCheck) {
     RuntimeCheck = BinaryOperator::Create(Instruction::Or, MemRuntimeCheck,
                                           SCEVRuntimeCheck, "lver.safe");
-    if (auto *I = dyn_cast<Instruction>(RuntimeCheck))
+    if (auto *I = dyn_cast<Instruction>(RuntimeCheck)) {
       I->insertBefore(RuntimeCheckBB->getTerminator());
-  } else
+
+}
+  } else {
     RuntimeCheck = MemRuntimeCheck ? MemRuntimeCheck : SCEVRuntimeCheck;
+
+}
 
   assert(RuntimeCheck && "called even though we don't need "
                          "any runtime checks");
@@ -134,19 +140,27 @@ void LoopVersioning::addPHINodes(
     // See if we have a single-operand PHI with the value defined by the
     // original loop.
     for (auto I = PHIBlock->begin(); (PN = dyn_cast<PHINode>(I)); ++I) {
-      if (PN->getIncomingValue(0) == Inst)
+      if (PN->getIncomingValue(0) == Inst) {
         break;
+
+}
     }
     // If not create it.
     if (!PN) {
       PN = PHINode::Create(Inst->getType(), 2, Inst->getName() + ".lver",
                            &PHIBlock->front());
       SmallVector<User*, 8> UsersToUpdate;
-      for (User *U : Inst->users())
-        if (!VersionedLoop->contains(cast<Instruction>(U)->getParent()))
+      for (User *U : Inst->users()) {
+        if (!VersionedLoop->contains(cast<Instruction>(U)->getParent())) {
           UsersToUpdate.push_back(U);
-      for (User *U : UsersToUpdate)
+
+}
+
+}
+      for (User *U : UsersToUpdate) {
         U->replaceUsesOfWith(Inst, PN);
+
+}
       PN->addIncoming(Inst, VersionedLoop->getExitingBlock());
     }
   }
@@ -159,8 +173,10 @@ void LoopVersioning::addPHINodes(
     // If the definition was cloned used that otherwise use the same value.
     Value *ClonedValue = PN->getIncomingValue(0);
     auto Mapped = VMap.find(ClonedValue);
-    if (Mapped != VMap.end())
+    if (Mapped != VMap.end()) {
       ClonedValue = Mapped->second;
+
+}
 
     PN->addIncoming(ClonedValue, NonVersionedLoop->getExitingBlock());
   }
@@ -188,8 +204,10 @@ void LoopVersioning::prepareNoAliasMetadata() {
   for (const auto &Group : RtPtrChecking->CheckingGroups) {
     GroupToScope[&Group] = MDB.createAnonymousAliasScope(Domain);
 
-    for (unsigned PtrIdx : Group.Members)
+    for (unsigned PtrIdx : Group.Members) {
       PtrToGroup[RtPtrChecking->getPointerInfo(PtrIdx).PointerValue] = &Group;
+
+}
   }
 
   // Go through the checks and for each pointer group, collect the scopes for
@@ -198,19 +216,25 @@ void LoopVersioning::prepareNoAliasMetadata() {
            SmallVector<Metadata *, 4>>
       GroupToNonAliasingScopes;
 
-  for (const auto &Check : AliasChecks)
+  for (const auto &Check : AliasChecks) {
     GroupToNonAliasingScopes[Check.first].push_back(GroupToScope[Check.second]);
+
+}
 
   // Finally, transform the above to actually map to scope list which is what
   // the metadata uses.
 
-  for (auto Pair : GroupToNonAliasingScopes)
+  for (auto Pair : GroupToNonAliasingScopes) {
     GroupToNonAliasingScopeList[Pair.first] = MDNode::get(Context, Pair.second);
+
+}
 }
 
 void LoopVersioning::annotateLoopWithNoAlias() {
-  if (!AnnotateNoAlias)
+  if (!AnnotateNoAlias) {
     return;
+
+}
 
   // First prepare the maps.
   prepareNoAliasMetadata();
@@ -223,8 +247,10 @@ void LoopVersioning::annotateLoopWithNoAlias() {
 
 void LoopVersioning::annotateInstWithNoAlias(Instruction *VersionedInst,
                                              const Instruction *OrigInst) {
-  if (!AnnotateNoAlias)
+  if (!AnnotateNoAlias) {
     return;
+
+}
 
   LLVMContext &Context = VersionedLoop->getHeader()->getContext();
   const Value *Ptr = isa<LoadInst>(OrigInst)
@@ -242,12 +268,14 @@ void LoopVersioning::annotateInstWithNoAlias(Instruction *VersionedInst,
 
     // Add the no-alias metadata.
     auto NonAliasingScopeList = GroupToNonAliasingScopeList.find(Group->second);
-    if (NonAliasingScopeList != GroupToNonAliasingScopeList.end())
+    if (NonAliasingScopeList != GroupToNonAliasingScopeList.end()) {
       VersionedInst->setMetadata(
           LLVMContext::MD_noalias,
           MDNode::concatenate(
               VersionedInst->getMetadata(LLVMContext::MD_noalias),
               NonAliasingScopeList->second));
+
+}
   }
 }
 
@@ -272,11 +300,17 @@ public:
     // across the loops.
     SmallVector<Loop *, 8> Worklist;
 
-    for (Loop *TopLevelLoop : *LI)
-      for (Loop *L : depth_first(TopLevelLoop))
+    for (Loop *TopLevelLoop : *LI) {
+      for (Loop *L : depth_first(TopLevelLoop)) {
         // We only handle inner-most loops.
-        if (L->empty())
+        if (L->empty()) {
           Worklist.push_back(L);
+
+}
+
+}
+
+}
 
     // Now walk the identified inner loops.
     bool Changed = false;

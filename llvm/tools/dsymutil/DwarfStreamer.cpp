@@ -30,39 +30,53 @@ bool DwarfStreamer::init(Triple TheTriple) {
   // Get the target.
   const Target *TheTarget =
       TargetRegistry::lookupTarget(TripleName, TheTriple, ErrorStr);
-  if (!TheTarget)
+  if (!TheTarget) {
     return error(ErrorStr, Context);
+
+}
   TripleName = TheTriple.getTriple();
 
   // Create all the MC Objects.
   MRI.reset(TheTarget->createMCRegInfo(TripleName));
-  if (!MRI)
+  if (!MRI) {
     return error(Twine("no register info for target ") + TripleName, Context);
+
+}
 
   MCTargetOptions MCOptions = InitMCTargetOptionsFromFlags();
   MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
-  if (!MAI)
+  if (!MAI) {
     return error("no asm info for target " + TripleName, Context);
+
+}
 
   MOFI.reset(new MCObjectFileInfo);
   MC.reset(new MCContext(MAI.get(), MRI.get(), MOFI.get()));
   MOFI->InitMCObjectFileInfo(TheTriple, /*PIC*/ false, *MC);
 
   MSTI.reset(TheTarget->createMCSubtargetInfo(TripleName, "", ""));
-  if (!MSTI)
+  if (!MSTI) {
     return error("no subtarget info for target " + TripleName, Context);
 
+}
+
   MAB = TheTarget->createMCAsmBackend(*MSTI, *MRI, MCOptions);
-  if (!MAB)
+  if (!MAB) {
     return error("no asm backend for target " + TripleName, Context);
 
+}
+
   MII.reset(TheTarget->createMCInstrInfo());
-  if (!MII)
+  if (!MII) {
     return error("no instr info info for target " + TripleName, Context);
 
+}
+
   MCE = TheTarget->createMCCodeEmitter(*MII, *MRI, *MC);
-  if (!MCE)
+  if (!MCE) {
     return error("no code emitter for target " + TripleName, Context);
+
+}
 
   switch (Options.FileType) {
   case OutputFileType::Assembly: {
@@ -84,18 +98,24 @@ bool DwarfStreamer::init(Triple TheTriple) {
   }
   }
 
-  if (!MS)
+  if (!MS) {
     return error("no object streamer for target " + TripleName, Context);
+
+}
 
   // Finally create the AsmPrinter we'll use to emit the DIEs.
   TM.reset(TheTarget->createTargetMachine(TripleName, "", "", TargetOptions(),
                                           None));
-  if (!TM)
+  if (!TM) {
     return error("no target machine for target " + TripleName, Context);
 
+}
+
   Asm.reset(TheTarget->createAsmPrinter(*TM, std::unique_ptr<MCStreamer>(MS)));
-  if (!Asm)
+  if (!Asm) {
     return error("no asm printer for target " + TripleName, Context);
+
+}
 
   RangesSectionSize = 0;
   LocSectionSize = 0;
@@ -109,10 +129,12 @@ bool DwarfStreamer::init(Triple TheTriple) {
 bool DwarfStreamer::finish(const DebugMap &DM, SymbolMapTranslator &T) {
   bool Result = true;
   if (DM.getTriple().isOSDarwin() && !DM.getBinaryPath().empty() &&
-      Options.FileType == OutputFileType::Object)
+      Options.FileType == OutputFileType::Object) {
     Result = MachOUtils::generateDsymCompanion(DM, T, *MS, OutFile);
-  else
+  } else {
     MS->Finish();
+
+}
   return Result;
 }
 
@@ -217,8 +239,10 @@ void DwarfStreamer::emitStrings(const NonRelocatableStringpool &Pool) {
 
 void DwarfStreamer::emitDebugNames(
     AccelTable<DWARF5AccelTableStaticData> &Table) {
-  if (EmittedUnits.empty())
+  if (EmittedUnits.empty()) {
     return;
+
+}
 
   // Build up data structures needed to emit this section.
   std::vector<MCSymbol *> CompUnits;
@@ -298,13 +322,17 @@ void DwarfStreamer::emitRangesEntries(
       break;
     }
     // Do not emit empty ranges.
-    if (Range.StartAddress == Range.EndAddress)
+    if (Range.StartAddress == Range.EndAddress) {
       continue;
+
+}
 
     // All range entries should lie in the function range.
     if (!(Range.StartAddress + OrigLowPc >= FuncRange.start() &&
-          Range.EndAddress + OrigLowPc <= FuncRange.stop()))
+          Range.EndAddress + OrigLowPc <= FuncRange.stop())) {
       warn("inconsistent range data.", "emitting debug_ranges");
+
+}
     MS->emitIntValue(Range.StartAddress + PcOffset, AddressSize);
     MS->emitIntValue(Range.EndAddress + PcOffset, AddressSize);
     RangesSectionSize += 2 * AddressSize;
@@ -330,9 +358,11 @@ void DwarfStreamer::emitUnitRangesEntries(CompileUnit &Unit,
   std::vector<std::pair<uint64_t, uint64_t>> Ranges;
   const auto &FunctionRanges = Unit.getFunctionRanges();
   for (auto Range = FunctionRanges.begin(), End = FunctionRanges.end();
-       Range != End; ++Range)
+       Range != End; ++Range) {
     Ranges.push_back(std::make_pair(Range.start() + Range.value(),
                                     Range.stop() + Range.value()));
+
+}
 
   // The object addresses where sorted, but again, the linked
   // addresses might end up in a different order.
@@ -367,8 +397,10 @@ void DwarfStreamer::emitUnitRangesEntries(CompileUnit &Unit,
          ++Range) {
       uint64_t RangeStart = Range->first;
       MS->emitIntValue(RangeStart, AddressSize);
-      while ((Range + 1) != End && Range->second == (Range + 1)->first)
+      while ((Range + 1) != End && Range->second == (Range + 1)->first) {
         ++Range;
+
+}
       MS->emitIntValue(Range->second - RangeStart, AddressSize);
     }
 
@@ -378,8 +410,10 @@ void DwarfStreamer::emitUnitRangesEntries(CompileUnit &Unit,
     Asm->OutStreamer->emitLabel(EndLabel);
   }
 
-  if (!DoDebugRanges)
+  if (!DoDebugRanges) {
     return;
+
+}
 
   MS->SwitchSection(MC->getObjectFileInfo()->getDwarfRangesSection());
   // Offset each range by the right amount.
@@ -387,8 +421,10 @@ void DwarfStreamer::emitUnitRangesEntries(CompileUnit &Unit,
   // Emit coalesced ranges.
   for (auto Range = Ranges.begin(), End = Ranges.end(); Range != End; ++Range) {
     MS->emitIntValue(Range->first + PcOffset, AddressSize);
-    while (Range + 1 != End && Range->second == (Range + 1)->first)
+    while (Range + 1 != End && Range->second == (Range + 1)->first) {
       ++Range;
+
+}
     MS->emitIntValue(Range->second + PcOffset, AddressSize);
     RangesSectionSize += 2 * AddressSize;
   }
@@ -406,8 +442,10 @@ void DwarfStreamer::emitLocationsForUnit(
     std::function<void(StringRef, SmallVectorImpl<uint8_t> &)> ProcessExpr) {
   const auto &Attributes = Unit.getLocationAttributes();
 
-  if (Attributes.empty())
+  if (Attributes.empty()) {
     return;
+
+}
 
   MS->SwitchSection(MC->getObjectFileInfo()->getDwarfLocSection());
 
@@ -420,8 +458,10 @@ void DwarfStreamer::emitLocationsForUnit(
   DWARFUnit &OrigUnit = Unit.getOrigUnit();
   auto OrigUnitDie = OrigUnit.getUnitDIE(false);
   int64_t UnitPcOffset = 0;
-  if (auto OrigLowPc = dwarf::toAddress(OrigUnitDie.find(dwarf::DW_AT_low_pc)))
+  if (auto OrigLowPc = dwarf::toAddress(OrigUnitDie.find(dwarf::DW_AT_low_pc))) {
     UnitPcOffset = int64_t(*OrigLowPc) - Unit.getLowPc();
+
+}
 
   SmallVector<uint8_t, 32> Buffer;
   for (const auto &Attr : Attributes) {
@@ -654,8 +694,10 @@ void DwarfStreamer::translateLineTable(DataExtractor Data, uint64_t Offset) {
 
   // Offset points to the first directory.
   while (const char *Dir = Data.getCStr(&Offset)) {
-    if (Dir[0] == 0)
+    if (Dir[0] == 0) {
       break;
+
+}
 
     StringRef Translated = Options.Translator(Dir);
     Asm->OutStreamer->emitBytes(Translated);
@@ -666,8 +708,10 @@ void DwarfStreamer::translateLineTable(DataExtractor Data, uint64_t Offset) {
   LineSectionSize += 1;
 
   while (const char *File = Data.getCStr(&Offset)) {
-    if (File[0] == 0)
+    if (File[0] == 0) {
       break;
+
+}
 
     StringRef Translated = Options.Translator(File);
     Asm->OutStreamer->emitBytes(Translated);
@@ -698,8 +742,10 @@ void DwarfStreamer::translateLineTable(DataExtractor Data, uint64_t Offset) {
 void DwarfStreamer::emitPubSectionForUnit(
     MCSection *Sec, StringRef SecName, const CompileUnit &Unit,
     const std::vector<CompileUnit::AccelInfo> &Names) {
-  if (Names.empty())
+  if (Names.empty()) {
     return;
+
+}
 
   // Start the dwarf pubnames section.
   Asm->OutStreamer->SwitchSection(Sec);
@@ -709,8 +755,10 @@ void DwarfStreamer::emitPubSectionForUnit(
   bool HeaderEmitted = false;
   // Emit the pubnames for this compilation unit.
   for (const auto &Name : Names) {
-    if (Name.SkipPubSection)
+    if (Name.SkipPubSection) {
       continue;
+
+}
 
     if (!HeaderEmitted) {
       // Emit the header.
@@ -729,24 +777,30 @@ void DwarfStreamer::emitPubSectionForUnit(
     Asm->emitInt8(0);
   }
 
-  if (!HeaderEmitted)
+  if (!HeaderEmitted) {
     return;
+
+}
   Asm->emitInt32(0); // End marker.
   Asm->OutStreamer->emitLabel(EndLabel);
 }
 
 /// Emit .debug_pubnames for \p Unit.
 void DwarfStreamer::emitPubNamesForUnit(const CompileUnit &Unit) {
-  if (Options.Minimize)
+  if (Options.Minimize) {
     return;
+
+}
   emitPubSectionForUnit(MC->getObjectFileInfo()->getDwarfPubNamesSection(),
                         "names", Unit, Unit.getPubnames());
 }
 
 /// Emit .debug_pubtypes for \p Unit.
 void DwarfStreamer::emitPubTypesForUnit(const CompileUnit &Unit) {
-  if (Options.Minimize)
+  if (Options.Minimize) {
     return;
+
+}
   emitPubSectionForUnit(MC->getObjectFileInfo()->getDwarfPubTypesSection(),
                         "types", Unit, Unit.getPubtypes());
 }

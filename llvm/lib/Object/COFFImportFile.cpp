@@ -97,12 +97,18 @@ static ImportNameType getNameType(StringRef Sym, StringRef ExtName,
   // stdcall function still omits the underscore (IMPORT_NAME_NOPREFIX).
   // See the comment in isDecorated in COFFModuleDefinition.cpp for more
   // details.
-  if (ExtName.startswith("_") && ExtName.contains('@') && !MinGW)
+  if (ExtName.startswith("_") && ExtName.contains('@') && !MinGW) {
     return IMPORT_NAME;
-  if (Sym != ExtName)
+
+}
+  if (Sym != ExtName) {
     return IMPORT_NAME_UNDECORATE;
-  if (Machine == IMAGE_FILE_MACHINE_I386 && Sym.startswith("_"))
+
+}
+  if (Machine == IMAGE_FILE_MACHINE_I386 && Sym.startswith("_")) {
     return IMPORT_NAME_NOPREFIX;
+
+}
   return IMPORT_NAME;
 }
 
@@ -432,13 +438,17 @@ NewArchiveMember ObjectFactory::createNullThunk(std::vector<uint8_t> &Buffer) {
 
   // .idata$5, ILT
   append(Buffer, u32(0));
-  if (!is32bit(Machine))
+  if (!is32bit(Machine)) {
     append(Buffer, u32(0));
+
+}
 
   // .idata$4, IAT
   append(Buffer, u32(0));
-  if (!is32bit(Machine))
+  if (!is32bit(Machine)) {
     append(Buffer, u32(0));
+
+}
 
   // Symbol Table
   coff_symbol16 SymbolTable[NumberOfSymbols] = {
@@ -475,8 +485,10 @@ NewArchiveMember ObjectFactory::createShortImport(StringRef Sym,
   Imp->Sig2 = 0xFFFF;
   Imp->Machine = Machine;
   Imp->SizeOfData = ImpSize;
-  if (Ordinal > 0)
+  if (Ordinal > 0) {
     Imp->OrdinalHint = Ordinal;
+
+}
   Imp->TypeInfo = (NameType << 2) | ImportType;
 
   // Write symbol name and DLL name.
@@ -585,14 +597,20 @@ Error writeImportLibrary(StringRef ImportName, StringRef Path,
   Members.push_back(OF.createNullThunk(NullThunk));
 
   for (COFFShortExport E : Exports) {
-    if (E.Private)
+    if (E.Private) {
       continue;
 
+}
+
     ImportType ImportType = IMPORT_CODE;
-    if (E.Data)
+    if (E.Data) {
       ImportType = IMPORT_DATA;
-    if (E.Constant)
+
+}
+    if (E.Constant) {
       ImportType = IMPORT_CONST;
+
+}
 
     StringRef SymbolName = E.SymbolName.empty() ? E.Name : E.SymbolName;
     ImportNameType NameType = E.Noname
@@ -603,8 +621,10 @@ Error writeImportLibrary(StringRef ImportName, StringRef Path,
                                      ? std::string(SymbolName)
                                      : replace(SymbolName, E.Name, E.ExtName);
 
-    if (!Name)
+    if (!Name) {
       return Name.takeError();
+
+}
 
     if (!E.AliasTarget.empty() && *Name != E.AliasTarget) {
       Members.push_back(OF.createWeakExternal(E.AliasTarget, *Name, false));

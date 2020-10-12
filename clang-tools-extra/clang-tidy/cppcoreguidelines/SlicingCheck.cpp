@@ -73,13 +73,17 @@ void SlicingCheck::registerMatchers(MatchFinder *Finder) {
 void SlicingCheck::DiagnoseSlicedOverriddenMethods(
     const Expr &Call, const CXXRecordDecl &DerivedDecl,
     const CXXRecordDecl &BaseDecl) {
-  if (DerivedDecl.getCanonicalDecl() == BaseDecl.getCanonicalDecl())
+  if (DerivedDecl.getCanonicalDecl() == BaseDecl.getCanonicalDecl()) {
     return;
+
+}
   for (const auto *Method : DerivedDecl.methods()) {
     // Virtual destructors are OK. We're ignoring constructors since they are
     // tagged as overrides.
-    if (isa<CXXConstructorDecl>(Method) || isa<CXXDestructorDecl>(Method))
+    if (isa<CXXConstructorDecl>(Method) || isa<CXXDestructorDecl>(Method)) {
       continue;
+
+}
     if (Method->size_overridden_methods() > 0) {
       diag(Call.getExprLoc(),
            "slicing object from type %0 to %1 discards override %2")
@@ -90,8 +94,10 @@ void SlicingCheck::DiagnoseSlicedOverriddenMethods(
   for (const auto &Base : DerivedDecl.bases()) {
     if (const auto *BaseRecordType = Base.getType()->getAs<RecordType>()) {
       if (const auto *BaseRecord = cast_or_null<CXXRecordDecl>(
-              BaseRecordType->getDecl()->getDefinition()))
+              BaseRecordType->getDecl()->getDefinition())) {
         DiagnoseSlicedOverriddenMethods(Call, *BaseRecord, BaseDecl);
+
+}
     }
   }
 }

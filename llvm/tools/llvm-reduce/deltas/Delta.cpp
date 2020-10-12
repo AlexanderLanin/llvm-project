@@ -49,8 +49,10 @@ static int getLines(StringRef Filepath) {
   std::string CurrLine;
   std::ifstream FileStream{std::string(Filepath)};
 
-  while (std::getline(FileStream, CurrLine))
+  while (std::getline(FileStream, CurrLine)) {
     ++Lines;
+
+}
 
   return Lines;
 }
@@ -63,9 +65,9 @@ static bool increaseGranularity(std::vector<Chunk> &Chunks) {
   bool SplitOne = false;
 
   for (auto &C : Chunks) {
-    if (C.end - C.begin == 0)
+    if (C.end - C.begin == 0) {
       NewChunks.push_back(C);
-    else {
+    } else {
       int Half = (C.begin + C.end) / 2;
       NewChunks.push_back({C.begin, Half});
       NewChunks.push_back({Half + 1, C.end});
@@ -119,12 +121,18 @@ void llvm::runDeltaPass(
     for (int I = Chunks.size() - 1; I >= 0; --I) {
       std::vector<Chunk> CurrentChunks;
 
-      for (auto C : Chunks)
-        if (!UninterestingChunks.count(C) && C != Chunks[I])
+      for (auto C : Chunks) {
+        if (!UninterestingChunks.count(C) && C != Chunks[I]) {
           CurrentChunks.push_back(C);
 
-      if (CurrentChunks.empty())
+}
+
+}
+
+      if (CurrentChunks.empty()) {
         continue;
+
+}
 
       // Clone module before hacking it up..
       std::unique_ptr<Module> Clone = CloneModule(*Test.getProgram());
@@ -133,8 +141,10 @@ void llvm::runDeltaPass(
 
       errs() << "Ignoring: ";
       Chunks[I].print();
-      for (auto C : UninterestingChunks)
+      for (auto C : UninterestingChunks) {
         C.print();
+
+}
 
 
 
@@ -156,7 +166,9 @@ void llvm::runDeltaPass(
   } while (!UninterestingChunks.empty() || increaseGranularity(Chunks));
 
   // If we reduced the testcase replace it
-  if (ReducedProgram)
+  if (ReducedProgram) {
     Test.setProgram(std::move(ReducedProgram));
+
+}
   errs() << "Couldn't increase anymore.\n";
 }

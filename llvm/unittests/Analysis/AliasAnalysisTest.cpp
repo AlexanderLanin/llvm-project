@@ -46,17 +46,29 @@ struct AATestPass : FunctionPass {
     AliasAnalysis &AA = getAnalysis<AAResultsWrapperPass>().getAAResults();
 
     SetVector<Value *> Pointers;
-    for (Argument &A : F.args())
-      if (A.getType()->isPointerTy())
+    for (Argument &A : F.args()) {
+      if (A.getType()->isPointerTy()) {
         Pointers.insert(&A);
-    for (Instruction &I : instructions(F))
-      if (I.getType()->isPointerTy())
+
+}
+
+}
+    for (Instruction &I : instructions(F)) {
+      if (I.getType()->isPointerTy()) {
         Pointers.insert(&I);
 
-    for (Value *P1 : Pointers)
-      for (Value *P2 : Pointers)
+}
+
+}
+
+    for (Value *P1 : Pointers) {
+      for (Value *P2 : Pointers) {
         (void)AA.alias(P1, LocationSize::unknown(), P2,
                        LocationSize::unknown());
+
+}
+
+}
 
     return false;
   }
@@ -236,8 +248,10 @@ TEST_F(AAPassInfraTest, injectExternalAA) {
   // Now add the external AA wrapper with a lambda which queries for the
   // wrapper around our custom AA and adds it to the results.
   PM.add(createExternalAAWrapperPass([](Pass &P, Function &, AAResults &AAR) {
-    if (auto *WrapperPass = P.getAnalysisIfAvailable<TestCustomAAWrapperPass>())
+    if (auto *WrapperPass = P.getAnalysisIfAvailable<TestCustomAAWrapperPass>()) {
       AAR.addAAResult(WrapperPass->getResult());
+
+}
   }));
 
   // And run a pass that will make some alias queries. This will automatically

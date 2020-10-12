@@ -42,8 +42,10 @@ using namespace llvm::pdb;
 
 static DbiStream *getDbiStreamPtr(PDBFile &File) {
   Expected<DbiStream &> DbiS = File.getPDBDbiStream();
-  if (DbiS)
+  if (DbiS) {
     return &DbiS.get();
+
+}
 
   consumeError(DbiS.takeError());
   return nullptr;
@@ -64,10 +66,14 @@ Error NativeSession::createFromPdb(std::unique_ptr<MemoryBuffer> Buffer,
 
   auto Allocator = std::make_unique<BumpPtrAllocator>();
   auto File = std::make_unique<PDBFile>(Path, std::move(Stream), *Allocator);
-  if (auto EC = File->parseFileHeaders())
+  if (auto EC = File->parseFileHeaders()) {
     return EC;
-  if (auto EC = File->parseStreamData())
+
+}
+  if (auto EC = File->parseStreamData()) {
     return EC;
+
+}
 
   Session =
       std::make_unique<NativeSession>(std::move(File), std::move(Allocator));
@@ -216,8 +222,10 @@ NativeSession::getFrameData() const {
 }
 
 void NativeSession::initializeExeSymbol() {
-  if (ExeSymbol == 0)
+  if (ExeSymbol == 0) {
     ExeSymbol = Cache.createSymbol<NativeExeSymbol>();
+
+}
 }
 
 NativeExeSymbol &NativeSession::getNativeGlobalScope() const {

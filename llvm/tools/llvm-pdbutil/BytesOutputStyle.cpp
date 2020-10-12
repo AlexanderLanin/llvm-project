@@ -41,23 +41,31 @@ struct StreamSpec {
 
 static Expected<StreamSpec> parseStreamSpec(StringRef Str) {
   StreamSpec Result;
-  if (Str.consumeInteger(0, Result.SI))
+  if (Str.consumeInteger(0, Result.SI)) {
     return make_error<RawError>(raw_error_code::invalid_format,
                                 "Invalid Stream Specification");
+
+}
   if (Str.consume_front(":")) {
-    if (Str.consumeInteger(0, Result.Begin))
+    if (Str.consumeInteger(0, Result.Begin)) {
       return make_error<RawError>(raw_error_code::invalid_format,
                                   "Invalid Stream Specification");
+
+}
   }
   if (Str.consume_front("@")) {
-    if (Str.consumeInteger(0, Result.Size))
+    if (Str.consumeInteger(0, Result.Size)) {
       return make_error<RawError>(raw_error_code::invalid_format,
                                   "Invalid Stream Specification");
+
+}
   }
 
-  if (!Str.empty())
+  if (!Str.empty()) {
     return make_error<RawError>(raw_error_code::invalid_format,
                                 "Invalid Stream Specification");
+
+}
   return Result;
 }
 
@@ -91,14 +99,18 @@ Error BytesOutputStyle::dump() {
     auto &R = *opts::bytes::DumpBlockRange;
     uint32_t Max = R.Max.getValueOr(R.Min);
 
-    if (Max < R.Min)
+    if (Max < R.Min) {
       return make_error<StringError>(
           "Invalid block range specified.  Max < Min",
           inconvertibleErrorCode());
-    if (Max >= File.getBlockCount())
+
+}
+    if (Max >= File.getBlockCount()) {
       return make_error<StringError>(
           "Invalid block range specified.  Requested block out of bounds",
           inconvertibleErrorCode());
+
+}
 
     dumpBlockRanges(R.Min, Max);
     P.NewLine();
@@ -108,13 +120,17 @@ Error BytesOutputStyle::dump() {
     auto &R = *opts::bytes::DumpByteRange;
     uint32_t Max = R.Max.getValueOr(File.getFileSize());
 
-    if (Max < R.Min)
+    if (Max < R.Min) {
       return make_error<StringError>("Invalid byte range specified.  Max < Min",
                                      inconvertibleErrorCode());
-    if (Max >= File.getFileSize())
+
+}
+    if (Max >= File.getFileSize()) {
       return make_error<StringError>(
           "Invalid byte range specified.  Requested byte larger than file size",
           inconvertibleErrorCode());
+
+}
 
     dumpByteRanges(R.Min, Max);
     P.NewLine();
@@ -337,8 +353,10 @@ static void iterateOneModule(PDBFile &File, LinePrinter &P,
 
   uint16_t ModiStream = Modi.getModuleStreamIndex();
   AutoIndent Indent2(P, IndentLevel);
-  if (ModiStream == kInvalidStreamIndex)
+  if (ModiStream == kInvalidStreamIndex) {
     return;
+
+}
 
   auto ModStreamData = File.createIndexedStream(ModiStream);
   ModuleDebugStreamRef ModStream(Modi, std::move(ModStreamData));
@@ -445,13 +463,17 @@ void BytesOutputStyle::dumpByteRanges(uint32_t Min, uint32_t Max) {
 Expected<codeview::LazyRandomTypeCollection &>
 BytesOutputStyle::initializeTypes(uint32_t StreamIdx) {
   auto &TypeCollection = (StreamIdx == StreamTPI) ? TpiTypes : IpiTypes;
-  if (TypeCollection)
+  if (TypeCollection) {
     return *TypeCollection;
+
+}
 
   auto Tpi = (StreamIdx == StreamTPI) ? File.getPDBTpiStream()
                                       : File.getPDBIpiStream();
-  if (!Tpi)
+  if (!Tpi) {
     return Tpi.takeError();
+
+}
 
   auto &Types = Tpi->typeArray();
   uint32_t Count = Tpi->getNumTypeRecords();
@@ -470,8 +492,10 @@ void BytesOutputStyle::dumpFpm() {
 }
 
 void BytesOutputStyle::dumpStreamBytes() {
-  if (StreamPurposes.empty())
+  if (StreamPurposes.empty()) {
     discoverStreamPurposes(File, StreamPurposes);
+
+}
 
   printHeader(P, "Stream Data");
   ExitOnError Err("Unexpected error reading stream data");

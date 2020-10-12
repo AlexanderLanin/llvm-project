@@ -224,13 +224,19 @@ ARCInstKind llvm::objcarc::GetARCInstKind(const Value *V) {
       // See if we have a function that we know something about.
       if (const Function *F = CI->getCalledFunction()) {
         ARCInstKind Class = GetFunctionClass(F);
-        if (Class != ARCInstKind::CallOrUser)
+        if (Class != ARCInstKind::CallOrUser) {
           return Class;
+
+}
         Intrinsic::ID ID = F->getIntrinsicID();
-        if (isInertIntrinsic(ID))
+        if (isInertIntrinsic(ID)) {
           return ARCInstKind::None;
-        if (isUseOnlyIntrinsic(ID))
+
+}
+        if (isUseOnlyIntrinsic(ID)) {
           return ARCInstKind::User;
+
+}
       }
 
       // Otherwise, be conservative.
@@ -287,8 +293,10 @@ ARCInstKind llvm::objcarc::GetARCInstKind(const Value *V) {
       // Comparing a pointer with null, or any other constant, isn't an
       // interesting use, because we don't care what the pointer points to, or
       // about the values of any other dynamic reference-counted pointers.
-      if (IsPotentialRetainableObjPtr(I->getOperand(1)))
+      if (IsPotentialRetainableObjPtr(I->getOperand(1))) {
         return ARCInstKind::User;
+
+}
       break;
     default:
       // For anything else, check all the operands.
@@ -297,9 +305,13 @@ ARCInstKind llvm::objcarc::GetARCInstKind(const Value *V) {
       // memory where we can no longer track who might read it and dereference
       // it, so we have to consider it potentially used.
       for (User::const_op_iterator OI = I->op_begin(), OE = I->op_end();
-           OI != OE; ++OI)
-        if (IsPotentialRetainableObjPtr(*OI))
+           OI != OE; ++OI) {
+        if (IsPotentialRetainableObjPtr(*OI)) {
           return ARCInstKind::User;
+
+}
+
+}
     }
   }
 

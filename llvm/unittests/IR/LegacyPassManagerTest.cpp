@@ -356,8 +356,10 @@ namespace llvm {
       bool Skip;
       CustomOptPassGate(bool Skip) : Skip(Skip) { }
       bool shouldRunPass(const Pass *P, StringRef IRDescription) {
-        if (P->getPassKind() == PT_Module)
+        if (P->getPassKind() == PT_Module) {
           return !Skip;
+
+}
         return OptPassGate::shouldRunPass(P, IRDescription);
       }
       bool isEnabled() const { return true; }
@@ -369,8 +371,10 @@ namespace llvm {
       static char ID;
       ModuleOpt() : ModulePass(ID) { }
       bool runOnModule(Module &M) override {
-        if (!skipModule(M))
+        if (!skipModule(M)) {
           run++;
+
+}
         return false;
       }
     };
@@ -569,14 +573,20 @@ namespace llvm {
 
       bool runOnSCC(CallGraphSCC &SCMM) override {
         ++NumSCCs;
-        for (CallGraphNode *N : SCMM)
-          if (N->getFunction())
+        for (CallGraphNode *N : SCMM) {
+          if (N->getFunction()) {
             ++NumFns;
+
+}
+
+}
 
         CGPass::run();
 
-        if (SCMM.size() <= 1)
+        if (SCMM.size() <= 1) {
           return false;
+
+}
 
         CallGraphNode *N = *(SCMM.begin());
         Function *F = N->getFunction();
@@ -591,12 +601,16 @@ namespace llvm {
         };
 
         if (!Test1F || !Test2F || !Test3F || !InSCC(Test1F) || !InSCC(Test2F) ||
-            !InSCC(Test3F))
+            !InSCC(Test3F)) {
           return SetupWorked = false;
 
+}
+
         CallInst *CI = dyn_cast<CallInst>(&Test1F->getEntryBlock().front());
-        if (!CI || CI->getCalledFunction() != Test2F)
+        if (!CI || CI->getCalledFunction() != Test2F) {
           return SetupWorked = false;
+
+}
 
         CI->setCalledFunction(Test3F);
 

@@ -41,15 +41,19 @@ public:
 
   std::unique_ptr<PDBSymbol> getChildAtIndex(uint32_t Index) const override {
     auto FunctionArgSymbol = Enumerator->getChildAtIndex(Index);
-    if (!FunctionArgSymbol)
+    if (!FunctionArgSymbol) {
       return nullptr;
+
+}
     return Session.getSymbolById(FunctionArgSymbol->getTypeId());
   }
 
   std::unique_ptr<PDBSymbol> getNext() override {
     auto FunctionArgSymbol = Enumerator->getNext();
-    if (!FunctionArgSymbol)
+    if (!FunctionArgSymbol) {
       return nullptr;
+
+}
     return Session.getSymbolById(FunctionArgSymbol->getTypeId());
   }
 
@@ -76,15 +80,21 @@ void PDBSymbolTypeFunctionSig::dumpRight(PDBSymDumper &Dumper) const {
 
 bool PDBSymbolTypeFunctionSig::isCVarArgs() const {
   auto SigArguments = getArguments();
-  if (!SigArguments)
+  if (!SigArguments) {
     return false;
+
+}
   uint32_t NumArgs = SigArguments->getChildCount();
-  if (NumArgs == 0)
+  if (NumArgs == 0) {
     return false;
+
+}
   auto Last = SigArguments->getChildAtIndex(NumArgs - 1);
   if (auto Builtin = llvm::dyn_cast_or_null<PDBSymbolTypeBuiltin>(Last.get())) {
-    if (Builtin->getBuiltinType() == PDB_BuiltinType::None)
+    if (Builtin->getBuiltinType() == PDB_BuiltinType::None) {
       return true;
+
+}
   }
 
   // Note that for a variadic template signature, this method always returns

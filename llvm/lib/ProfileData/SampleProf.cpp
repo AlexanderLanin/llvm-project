@@ -89,8 +89,10 @@ const std::error_category &llvm::sampleprof_category() {
 
 void LineLocation::print(raw_ostream &OS) const {
   OS << LineOffset;
-  if (Discriminator > 0)
+  if (Discriminator > 0) {
     OS << "." << Discriminator;
+
+}
 }
 
 raw_ostream &llvm::sampleprof::operator<<(raw_ostream &OS,
@@ -108,8 +110,10 @@ void SampleRecord::print(raw_ostream &OS, unsigned Indent) const {
   OS << NumSamples;
   if (hasCalls()) {
     OS << ", calls:";
-    for (const auto &I : getSortedCallTargets())
+    for (const auto &I : getSortedCallTargets()) {
       OS << " " << I.first << ":" << I.second;
+
+}
   }
   OS << "\n";
 }
@@ -185,8 +189,10 @@ FunctionSamples::findFunctionSamples(const DILocation *DIL) const {
         PrevDIL->getScope()->getSubprogram()->getLinkageName()));
     PrevDIL = DIL;
   }
-  if (S.size() == 0)
+  if (S.size() == 0) {
     return this;
+
+}
   const FunctionSamples *FS = this;
   for (int i = S.size() - 1; i >= 0 && FS != nullptr; i--) {
     FS = FS->findFunctionSamplesAt(S[i].first, S[i].second);
@@ -207,8 +213,10 @@ std::error_code ProfileSymbolList::read(const uint8_t *Data,
     add(Str);
     Size += Str.size() + 1;
   }
-  if (Size != ListSize)
+  if (Size != ListSize) {
     return sampleprof_error::malformed;
+
+}
   return sampleprof_error::success;
 }
 
@@ -235,6 +243,8 @@ void ProfileSymbolList::dump(raw_ostream &OS) const {
   SortedList.insert(SortedList.begin(), Syms.begin(), Syms.end());
   llvm::sort(SortedList);
 
-  for (auto &Sym : SortedList)
+  for (auto &Sym : SortedList) {
     OS << Sym << "\n";
+
+}
 }

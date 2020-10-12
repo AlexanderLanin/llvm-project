@@ -21,21 +21,27 @@ MachineBasicBlock::iterator
 llvm::findPHICopyInsertPoint(MachineBasicBlock* MBB, MachineBasicBlock* SuccMBB,
                              unsigned SrcReg) {
   // Handle the trivial case trivially.
-  if (MBB->empty())
+  if (MBB->empty()) {
     return MBB->begin();
+
+}
 
   // Usually, we just want to insert the copy before the first terminator
   // instruction. However, for the edge going to a landing pad, we must insert
   // the copy before the call/invoke instruction.
-  if (!SuccMBB->isEHPad())
+  if (!SuccMBB->isEHPad()) {
     return MBB->getFirstTerminator();
+
+}
 
   // Discover any defs/uses in this basic block.
   SmallPtrSet<MachineInstr*, 8> DefUsesInMBB;
   MachineRegisterInfo& MRI = MBB->getParent()->getRegInfo();
   for (MachineInstr &RI : MRI.reg_instructions(SrcReg)) {
-    if (RI.getParent() == MBB)
+    if (RI.getParent() == MBB) {
       DefUsesInMBB.insert(&RI);
+
+}
   }
 
   MachineBasicBlock::iterator InsertPoint;

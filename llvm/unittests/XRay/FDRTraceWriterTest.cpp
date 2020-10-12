@@ -50,15 +50,19 @@ TEST(FDRTraceWriterTest, WriteToStringBufferVersion3) {
                .add<FunctionRecord>(RecordTypes::ENTER, 1, 1)
                .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                .consume();
-  for (auto &P : L)
+  for (auto &P : L) {
     ASSERT_FALSE(errorToBool(P->apply(Writer)));
+
+}
   OS.flush();
 
   // Then from here we load the Trace file.
   DataExtractor DE(Data, sys::IsLittleEndianHost, 8);
   auto TraceOrErr = loadTrace(DE, true);
-  if (!TraceOrErr)
+  if (!TraceOrErr) {
     FAIL() << TraceOrErr.takeError();
+
+}
   auto &Trace = TraceOrErr.get();
 
   ASSERT_THAT(Trace, Not(IsEmpty()));
@@ -95,15 +99,19 @@ TEST(FDRTraceWriterTest, WriteToStringBufferVersion2) {
                .add<FunctionRecord>(RecordTypes::ENTER, 1, 1)
                .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                .consume();
-  for (auto &P : L)
+  for (auto &P : L) {
     ASSERT_FALSE(errorToBool(P->apply(Writer)));
+
+}
   OS.flush();
 
   // Then from here we load the Trace file.
   DataExtractor DE(Data, sys::IsLittleEndianHost, 8);
   auto TraceOrErr = loadTrace(DE, true);
-  if (!TraceOrErr)
+  if (!TraceOrErr) {
     FAIL() << TraceOrErr.takeError();
+
+}
   auto &Trace = TraceOrErr.get();
 
   ASSERT_THAT(Trace, Not(IsEmpty()));
@@ -147,8 +155,10 @@ TEST(FDRTraceWriterTest, WriteToStringBufferVersion1) {
                .add<FunctionRecord>(RecordTypes::EXIT, 1, 100)
                .add<EndBufferRecord>()
                .consume();
-  for (auto &P : L)
+  for (auto &P : L) {
     ASSERT_FALSE(errorToBool(P->apply(Writer)));
+
+}
 
   // We need to pad the buffer with 4016 (4096 - 80) bytes of zeros.
   OS.write_zeros(4016);
@@ -161,8 +171,10 @@ TEST(FDRTraceWriterTest, WriteToStringBufferVersion1) {
   // Then from here we load the Trace file.
   DataExtractor DE(Data, sys::IsLittleEndianHost, 8);
   auto TraceOrErr = loadTrace(DE, true);
-  if (!TraceOrErr)
+  if (!TraceOrErr) {
     FAIL() << TraceOrErr.takeError();
+
+}
   auto &Trace = TraceOrErr.get();
 
   ASSERT_THAT(Trace, Not(IsEmpty()));

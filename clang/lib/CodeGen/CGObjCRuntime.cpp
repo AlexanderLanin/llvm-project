@@ -131,10 +131,12 @@ namespace {
     llvm::FunctionCallee Fn;
 
     void Emit(CodeGenFunction &CGF, Flags flags) override {
-      if (MightThrow)
+      if (MightThrow) {
         CGF.EmitRuntimeCallOrInvoke(Fn);
-      else
+      } else {
         CGF.EmitNounwindRuntimeCall(Fn);
+
+}
     }
   };
 }
@@ -146,16 +148,22 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
                                      llvm::FunctionCallee exceptionRethrowFn) {
   // Jump destination for falling out of catch bodies.
   CodeGenFunction::JumpDest Cont;
-  if (S.getNumCatchStmts())
+  if (S.getNumCatchStmts()) {
     Cont = CGF.getJumpDestInCurrentScope("eh.cont");
+
+}
 
   bool useFunclets = EHPersonality::get(CGF).usesFuncletPads();
 
   CodeGenFunction::FinallyInfo FinallyInfo;
-  if (!useFunclets)
-    if (const ObjCAtFinallyStmt *Finally = S.getFinallyStmt())
+  if (!useFunclets) {
+    if (const ObjCAtFinallyStmt *Finally = S.getFinallyStmt()) {
       FinallyInfo.enter(CGF, Finally->getFinallyBody(),
                         beginCatchFn, endCatchFn, exceptionRethrowFn);
+
+}
+
+}
 
   SmallVector<CatchHandler, 8> Handlers;
 
@@ -186,15 +194,19 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
     }
 
     EHCatchScope *Catch = CGF.EHStack.pushCatch(Handlers.size());
-    for (unsigned I = 0, E = Handlers.size(); I != E; ++I)
+    for (unsigned I = 0, E = Handlers.size(); I != E; ++I) {
       Catch->setHandler(I, { Handlers[I].TypeInfo, Handlers[I].Flags }, Handlers[I].Block);
+
+}
   }
 
-  if (useFunclets)
+  if (useFunclets) {
     if (const ObjCAtFinallyStmt *Finally = S.getFinallyStmt()) {
         CodeGenFunction HelperCGF(CGM, /*suppressNewContext=*/true);
-        if (!CGF.CurSEHParent)
+        if (!CGF.CurSEHParent) {
             CGF.CurSEHParent = cast<NamedDecl>(CGF.CurFuncDecl);
+
+}
         // Outline the finally block.
         const Stmt *FinallyBlock = Finally->getFinallyBody();
         HelperCGF.startOutlinedSEHHelper(CGF, /*isFilter*/false, FinallyBlock);
@@ -211,13 +223,17 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
         CGF.pushSEHCleanup(NormalAndEHCleanup, FinallyFunc);
     }
 
+}
+
 
   // Emit the try body.
   CGF.EmitStmt(S.getTryBody());
 
   // Leave the try.
-  if (S.getNumCatchStmts())
+  if (S.getNumCatchStmts()) {
     CGF.popCatchScope();
+
+}
 
   // Remember where we were.
   CGBuilderTy::InsertPoint SavedIP = CGF.Builder.saveAndClearIP();
@@ -229,17 +245,21 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
     CGF.EmitBlock(Handler.Block);
     llvm::CatchPadInst *CPI = nullptr;
     SaveAndRestore<llvm::Instruction *> RestoreCurrentFuncletPad(CGF.CurrentFuncletPad);
-    if (useFunclets)
+    if (useFunclets) {
       if ((CPI = dyn_cast_or_null<llvm::CatchPadInst>(Handler.Block->getFirstNonPHI()))) {
         CGF.CurrentFuncletPad = CPI;
         CPI->setOperand(2, CGF.getExceptionSlot().getPointer());
       }
+
+}
     llvm::Value *RawExn = CGF.getExceptionFromSlot();
 
     // Enter the catch.
     llvm::Value *Exn = RawExn;
-    if (beginCatchFn)
+    if (beginCatchFn) {
       Exn = CGF.EmitNounwindRuntimeCall(beginCatchFn, RawExn, "exn.adjusted");
+
+}
 
     CodeGenFunction::LexicalScope cleanups(CGF, Handler.Body->getSourceRange());
 
@@ -260,8 +280,10 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
       CGF.EmitAutoVarDecl(*CatchParam);
       EmitInitOfCatchParam(CGF, CastExn, CatchParam);
     }
-    if (CPI)
+    if (CPI) {
         CGF.EHStack.pushCleanup<CatchRetScope>(NormalCleanup, CPI);
+
+}
 
     CGF.ObjCEHValueStack.push_back(Exn);
     CGF.EmitStmt(Handler.Body);
@@ -277,11 +299,15 @@ void CGObjCRuntime::EmitTryCatchStmt(CodeGenFunction &CGF,
   CGF.Builder.restoreIP(SavedIP);
 
   // Pop out of the finally.
-  if (!useFunclets && S.getFinallyStmt())
+  if (!useFunclets && S.getFinallyStmt()) {
     FinallyInfo.exit(CGF);
 
-  if (Cont.isValid())
+}
+
+  if (Cont.isValid()) {
     CGF.EmitBlock(Cont.getBlock());
+
+}
 }
 
 void CGObjCRuntime::EmitInitOfCatchParam(CodeGenFunction &CGF,

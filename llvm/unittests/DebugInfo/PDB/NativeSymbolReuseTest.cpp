@@ -71,11 +71,15 @@ TEST(NativeSymbolReuseTest, CompilandSymbolReuse) {
 
     // First try resetting the enumerator, then try destroying the enumerator
     // and constructing another one.
-    while (auto Compiland = Compilands->getNext())
+    while (auto Compiland = Compilands->getNext()) {
       CompilandIds.push_back(Compiland->getSymIndexId());
+
+}
     Compilands->reset();
-    while (auto Compiland = Compilands->getNext())
+    while (auto Compiland = Compilands->getNext()) {
       Ids2.push_back(Compiland->getSymIndexId());
+
+}
 
     EXPECT_EQ(CompilandIds, Ids2);
   }
@@ -86,8 +90,10 @@ TEST(NativeSymbolReuseTest, CompilandSymbolReuse) {
     ASSERT_EQ(2U, Compilands->getChildCount());
 
     std::vector<SymIndexId> Ids3;
-    while (auto Compiland = Compilands->getNext())
+    while (auto Compiland = Compilands->getNext()) {
       Ids3.push_back(Compiland->getSymIndexId());
+
+}
 
     EXPECT_EQ(CompilandIds, Ids3);
   }
@@ -119,8 +125,10 @@ TEST(NativeSymbolReuseTest, CompilandSymbolReuseBackwards) {
       CompilandIds.push_back(Compiland->getSymIndexId());
     }
 
-    while (auto Compiland = Compilands->getNext())
+    while (auto Compiland = Compilands->getNext()) {
       Ids2.push_back(Compiland->getSymIndexId());
+
+}
 
     auto ReversedIter = llvm::reverse(Ids2);
     std::vector<SymIndexId> Reversed{ReversedIter.begin(), ReversedIter.end()};

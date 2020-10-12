@@ -40,8 +40,10 @@ namespace {
 std::vector<DocID> consumeIDs(Iterator &It) {
   auto IDAndScore = consume(It);
   std::vector<DocID> IDs(IDAndScore.size());
-  for (size_t I = 0; I < IDAndScore.size(); ++I)
+  for (size_t I = 0; I < IDAndScore.size(); ++I) {
     IDs[I] = IDAndScore[I].first;
+
+}
   return IDs;
 }
 

@@ -33,13 +33,19 @@ static void createEmptyFunction(Module &M) {
 }
 
 void IRMutationStrategy::mutate(Module &M, RandomIRBuilder &IB) {
-  if (M.empty())
+  if (M.empty()) {
     createEmptyFunction(M);
 
+}
+
   auto RS = makeSampler<Function *>(IB.Rand);
-  for (Function &F : M)
-    if (!F.isDeclaration())
+  for (Function &F : M) {
+    if (!F.isDeclaration()) {
       RS.sample(&F, /*Weight=*/1);
+
+}
+
+}
   mutate(*RS.getSelection(), IB);
 }
 
@@ -54,14 +60,18 @@ void IRMutationStrategy::mutate(BasicBlock &BB, RandomIRBuilder &IB) {
 void IRMutator::mutateModule(Module &M, int Seed, size_t CurSize,
                              size_t MaxSize) {
   std::vector<Type *> Types;
-  for (const auto &Getter : AllowedTypes)
+  for (const auto &Getter : AllowedTypes) {
     Types.push_back(Getter(M.getContext()));
+
+}
   RandomIRBuilder IB(Seed, Types);
 
   auto RS = makeSampler<IRMutationStrategy *>(IB.Rand);
-  for (const auto &Strategy : Strategies)
+  for (const auto &Strategy : Strategies) {
     RS.sample(Strategy.get(),
               Strategy->getWeight(CurSize, MaxSize, RS.totalWeight()));
+
+}
   auto Strategy = RS.getSelection();
 
   Strategy->mutate(M, IB);
@@ -98,17 +108,23 @@ InjectorIRStrategy::chooseOperation(Value *Src, RandomIRBuilder &IB) {
     return Op.SourcePreds[0].matches({}, Src);
   };
   auto RS = makeSampler(IB.Rand, make_filter_range(Operations, OpMatchesPred));
-  if (RS.isEmpty())
+  if (RS.isEmpty()) {
     return None;
+
+}
   return *RS;
 }
 
 void InjectorIRStrategy::mutate(BasicBlock &BB, RandomIRBuilder &IB) {
   SmallVector<Instruction *, 32> Insts;
-  for (auto I = BB.getFirstInsertionPt(), E = BB.end(); I != E; ++I)
+  for (auto I = BB.getFirstInsertionPt(), E = BB.end(); I != E; ++I) {
     Insts.push_back(&*I);
-  if (Insts.size() < 1)
+
+}
+  if (Insts.size() < 1) {
     return;
+
+}
 
   // Choose an insertion point for our new instruction.
   size_t IP = uniform<size_t>(IB.Rand, 0, Insts.size() - 1);
@@ -124,11 +140,15 @@ void InjectorIRStrategy::mutate(BasicBlock &BB, RandomIRBuilder &IB) {
   // source, collect any other sources it needs, and then build it.
   auto OpDesc = chooseOperation(Srcs[0], IB);
   // Bail if no operation was found
-  if (!OpDesc)
+  if (!OpDesc) {
     return;
 
-  for (const auto &Pred : makeArrayRef(OpDesc->SourcePreds).slice(1))
+}
+
+  for (const auto &Pred : makeArrayRef(OpDesc->SourcePreds).slice(1)) {
     Srcs.push_back(IB.findOrCreateSource(BB, InstsBefore, Srcs, Pred));
+
+}
 
   if (Value *Op = OpDesc->BuilderFunc(Srcs, Insts[IP])) {
     // Find a sink and wire up the results of the operation.
@@ -139,14 +159,18 @@ void InjectorIRStrategy::mutate(BasicBlock &BB, RandomIRBuilder &IB) {
 uint64_t InstDeleterIRStrategy::getWeight(size_t CurrentSize, size_t MaxSize,
                                           uint64_t CurrentWeight) {
   // If we have less than 200 bytes, panic and try to always delete.
-  if (CurrentSize > MaxSize - 200)
+  if (CurrentSize > MaxSize - 200) {
     return CurrentWeight ? CurrentWeight * 100 : 1;
+
+}
   // Draw a line starting from when we only have 1k left and increasing linearly
   // to double the current weight.
   int Line = (-2 * CurrentWeight) * (MaxSize - CurrentSize + 1000);
   // Clamp negative weights to zero.
-  if (Line < 0)
+  if (Line < 0) {
     return 0;
+
+}
   return Line;
 }
 
@@ -155,13 +179,17 @@ void InstDeleterIRStrategy::mutate(Function &F, RandomIRBuilder &IB) {
   for (Instruction &Inst : instructions(F)) {
     // TODO: We can't handle these instructions.
     if (Inst.isTerminator() || Inst.isEHPad() ||
-        Inst.isSwiftError() || isa<PHINode>(Inst))
+        Inst.isSwiftError() || isa<PHINode>(Inst)) {
       continue;
+
+}
 
     RS.sample(&Inst, /*Weight=*/1);
   }
-  if (RS.isEmpty())
+  if (RS.isEmpty()) {
     return;
+
+}
 
   // Delete the instruction.
   mutate(*RS.getSelection(), IB);
@@ -187,12 +215,16 @@ void InstDeleterIRStrategy::mutate(Instruction &Inst, RandomIRBuilder &IB) {
   BasicBlock *BB = Inst.getParent();
   for (auto I = BB->getFirstInsertionPt(), E = Inst.getIterator(); I != E;
        ++I) {
-    if (Pred.matches({}, &*I))
+    if (Pred.matches({}, &*I)) {
       RS.sample(&*I, /*Weight=*/1);
+
+}
     InstsBefore.push_back(&*I);
   }
-  if (!RS)
+  if (!RS) {
     RS.sample(IB.newSource(*BB, InstsBefore, {}, Pred), /*Weight=*/1);
+
+}
 
   Inst.replaceAllUsesWith(RS.getSelection());
   Inst.eraseFromParent();

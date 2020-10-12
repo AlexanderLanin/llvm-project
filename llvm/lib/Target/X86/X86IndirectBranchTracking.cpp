@@ -85,14 +85,20 @@ bool X86IndirectBranchTrackingPass::addENDBR(
 }
 
 static bool IsCallReturnTwice(llvm::MachineOperand &MOp) {
-  if (!MOp.isGlobal())
+  if (!MOp.isGlobal()) {
     return false;
+
+}
   auto *CalleeFn = dyn_cast<Function>(MOp.getGlobal());
-  if (!CalleeFn)
+  if (!CalleeFn) {
     return false;
+
+}
   AttributeList Attrs = CalleeFn->getAttributes();
-  if (Attrs.hasAttribute(AttributeList::FunctionIndex, Attribute::ReturnsTwice))
+  if (Attrs.hasAttribute(AttributeList::FunctionIndex, Attribute::ReturnsTwice)) {
     return true;
+
+}
   return false;
 }
 
@@ -102,8 +108,10 @@ bool X86IndirectBranchTrackingPass::runOnMachineFunction(MachineFunction &MF) {
   // Check that the cf-protection-branch is enabled.
   Metadata *isCFProtectionSupported =
       MF.getMMI().getModule()->getModuleFlag("cf-protection-branch");
-  if (!isCFProtectionSupported && !IndirectBranchTracking)
+  if (!isCFProtectionSupported && !IndirectBranchTracking) {
     return false;
+
+}
 
   // True if the current MF was changed and false otherwise.
   bool Changed = false;
@@ -124,14 +132,20 @@ bool X86IndirectBranchTrackingPass::runOnMachineFunction(MachineFunction &MF) {
   for (auto &MBB : MF) {
     // Find all basic blocks that their address was taken (for example
     // in the case of indirect jump) and add ENDBR instruction.
-    if (MBB.hasAddressTaken())
+    if (MBB.hasAddressTaken()) {
       Changed |= addENDBR(MBB, MBB.begin());
 
+}
+
     for (MachineBasicBlock::iterator I = MBB.begin(); I != MBB.end(); ++I) {
-      if (!I->isCall())
+      if (!I->isCall()) {
         continue;
-      if (IsCallReturnTwice(I->getOperand(0)))
+
+}
+      if (IsCallReturnTwice(I->getOperand(0))) {
         Changed |= addENDBR(MBB, std::next(I));
+
+}
     }
   }
   return Changed;

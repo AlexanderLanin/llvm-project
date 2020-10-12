@@ -246,14 +246,18 @@ static void printStats(const ClangTidyStats &Stats) {
       llvm::errs() << Separator << Stats.ErrorsIgnoredNOLINT << " NOLINT";
       Separator = ", ";
     }
-    if (Stats.ErrorsIgnoredCheckFilter)
+    if (Stats.ErrorsIgnoredCheckFilter) {
       llvm::errs() << Separator << Stats.ErrorsIgnoredCheckFilter
                    << " with check filters";
+
+}
     llvm::errs() << ").\n";
-    if (Stats.ErrorsIgnoredNonUserCode)
+    if (Stats.ErrorsIgnoredNonUserCode) {
       llvm::errs() << "Use -header-filter=.* to display errors from all "
                       "non-system headers. Use -system-headers to display "
                       "errors from system headers as well.\n";
+
+}
   }
 }
 
@@ -274,20 +278,32 @@ static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider(
   DefaultOptions.FormatStyle = FormatStyle;
   DefaultOptions.User = llvm::sys::Process::GetEnv("USER");
   // USERNAME is used on Windows.
-  if (!DefaultOptions.User)
+  if (!DefaultOptions.User) {
     DefaultOptions.User = llvm::sys::Process::GetEnv("USERNAME");
 
+}
+
   ClangTidyOptions OverrideOptions;
-  if (Checks.getNumOccurrences() > 0)
+  if (Checks.getNumOccurrences() > 0) {
     OverrideOptions.Checks = Checks;
-  if (WarningsAsErrors.getNumOccurrences() > 0)
+
+}
+  if (WarningsAsErrors.getNumOccurrences() > 0) {
     OverrideOptions.WarningsAsErrors = WarningsAsErrors;
-  if (HeaderFilter.getNumOccurrences() > 0)
+
+}
+  if (HeaderFilter.getNumOccurrences() > 0) {
     OverrideOptions.HeaderFilterRegex = HeaderFilter;
-  if (SystemHeaders.getNumOccurrences() > 0)
+
+}
+  if (SystemHeaders.getNumOccurrences() > 0) {
     OverrideOptions.SystemHeaders = SystemHeaders;
-  if (FormatStyle.getNumOccurrences() > 0)
+
+}
+  if (FormatStyle.getNumOccurrences() > 0) {
     OverrideOptions.FormatStyle = FormatStyle;
+
+}
 
   if (!Config.empty()) {
     if (llvm::ErrorOr<ClangTidyOptions> ParsedConfig =
@@ -338,19 +354,25 @@ int clangTidyMain(int argc, const char **argv) {
   if (!VfsOverlay.empty()) {
     IntrusiveRefCntPtr<vfs::FileSystem> VfsFromFile =
         getVfsFromFile(VfsOverlay, BaseFS);
-    if (!VfsFromFile)
+    if (!VfsFromFile) {
       return 1;
+
+}
     BaseFS->pushOverlay(VfsFromFile);
   }
 
   auto OwningOptionsProvider = createOptionsProvider(BaseFS);
   auto *OptionsProvider = OwningOptionsProvider.get();
-  if (!OptionsProvider)
+  if (!OptionsProvider) {
     return 1;
 
+}
+
   auto MakeAbsolute = [](const std::string &Input) -> SmallString<256> {
-    if (Input.empty())
+    if (Input.empty()) {
       return {};
+
+}
     SmallString<256> AbsolutePath(Input);
     if (std::error_code EC = llvm::sys::fs::make_absolute(AbsolutePath)) {
       llvm::errs() << "Can't make absolute path from " << Input << ": "
@@ -395,8 +417,10 @@ int clangTidyMain(int argc, const char **argv) {
       return 1;
     }
     llvm::outs() << "Enabled checks:";
-    for (const auto &CheckName : EnabledChecks)
+    for (const auto &CheckName : EnabledChecks) {
       llvm::outs() << "\n    " << CheckName;
+
+}
     llvm::outs() << "\n\n";
     return 0;
   }
@@ -456,10 +480,12 @@ int clangTidyMain(int argc, const char **argv) {
 
   if (!Quiet) {
     printStats(Context.getStats());
-    if (DisableFixes)
+    if (DisableFixes) {
       llvm::errs()
           << "Found compiler errors, but -fix-errors was not specified.\n"
              "Fixes have NOT been applied.\n\n";
+
+}
   }
 
   if (WErrorCount) {
@@ -477,10 +503,14 @@ int clangTidyMain(int argc, const char **argv) {
     //   b. when a fix has been applied for all errors
     //   c. some other condition.
     // For now always returning zero when -fix-errors is used.
-    if (FixErrors)
+    if (FixErrors) {
       return 0;
-    if (!Quiet)
+
+}
+    if (!Quiet) {
       llvm::errs() << "Found compiler error(s).\n";
+
+}
     return 1;
   }
 

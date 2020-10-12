@@ -60,25 +60,35 @@ INITIALIZE_PASS(LowerEmuTLS, DEBUG_TYPE,
 ModulePass *llvm::createLowerEmuTLSPass() { return new LowerEmuTLS(); }
 
 bool LowerEmuTLS::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-  if (!TPC)
+  if (!TPC) {
     return false;
 
+}
+
   auto &TM = TPC->getTM<TargetMachine>();
-  if (!TM.useEmulatedTLS())
+  if (!TM.useEmulatedTLS()) {
     return false;
+
+}
 
   bool Changed = false;
   SmallVector<const GlobalVariable*, 8> TlsVars;
   for (const auto &G : M.globals()) {
-    if (G.isThreadLocal())
+    if (G.isThreadLocal()) {
       TlsVars.append({&G});
+
+}
   }
-  for (const auto G : TlsVars)
+  for (const auto G : TlsVars) {
     Changed |= addEmuTlsVar(M, G);
+
+}
   return Changed;
 }
 
@@ -88,8 +98,10 @@ bool LowerEmuTLS::addEmuTlsVar(Module &M, const GlobalVariable *GV) {
 
   std::string EmuTlsVarName = ("__emutls_v." + GV->getName()).str();
   GlobalVariable *EmuTlsVar = M.getNamedGlobal(EmuTlsVarName);
-  if (EmuTlsVar)
+  if (EmuTlsVar) {
     return false;  // It has been added before.
+
+}
 
   const DataLayout &DL = M.getDataLayout();
   Constant *NullPtr = ConstantPointerNull::get(VoidPtrType);
@@ -102,8 +114,10 @@ bool LowerEmuTLS::addEmuTlsVar(Module &M, const GlobalVariable *GV) {
     // When GV's init value is all 0, omit the EmuTlsTmplVar and let
     // the emutls library function to reset newly allocated TLS variables.
     if (isa<ConstantAggregateZero>(InitValue) ||
-        (InitIntValue && InitIntValue->isZero()))
+        (InitIntValue && InitIntValue->isZero())) {
       InitValue = nullptr;
+
+}
   }
 
   // Create the __emutls_v. symbol, whose type has 4 fields:
@@ -123,8 +137,10 @@ bool LowerEmuTLS::addEmuTlsVar(Module &M, const GlobalVariable *GV) {
   copyLinkageVisibility(M, GV, EmuTlsVar);
 
   // Define "__emutls_t.*" and "__emutls_v.*" only if GV is defined.
-  if (!GV->hasInitializer())
+  if (!GV->hasInitializer()) {
     return true;
+
+}
 
   Type *GVType = GV->getValueType();
   unsigned GVAlignment = GV->getAlignment();

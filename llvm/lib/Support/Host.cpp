@@ -84,8 +84,10 @@ StringRef sys::detail::getHostCPUNameForPowerPC(StringRef ProcCpuinfoContent) {
   // We need to find the first line which starts with cpu, spaces, and a colon.
   // After the colon, there may be some additional spaces and then the cpu type.
   while (CIP < CPUInfoEnd && CPUStart == 0) {
-    if (CIP < CPUInfoEnd && *CIP == '\n')
+    if (CIP < CPUInfoEnd && *CIP == '\n') {
       ++CIP;
+
+}
 
     if (CIP < CPUInfoEnd && *CIP == 'c') {
       ++CIP;
@@ -93,19 +95,25 @@ StringRef sys::detail::getHostCPUNameForPowerPC(StringRef ProcCpuinfoContent) {
         ++CIP;
         if (CIP < CPUInfoEnd && *CIP == 'u') {
           ++CIP;
-          while (CIP < CPUInfoEnd && (*CIP == ' ' || *CIP == '\t'))
+          while (CIP < CPUInfoEnd && (*CIP == ' ' || *CIP == '\t')) {
             ++CIP;
+
+}
 
           if (CIP < CPUInfoEnd && *CIP == ':') {
             ++CIP;
-            while (CIP < CPUInfoEnd && (*CIP == ' ' || *CIP == '\t'))
+            while (CIP < CPUInfoEnd && (*CIP == ' ' || *CIP == '\t')) {
               ++CIP;
+
+}
 
             if (CIP < CPUInfoEnd) {
               CPUStart = CIP;
               while (CIP < CPUInfoEnd && (*CIP != ' ' && *CIP != '\t' &&
-                                          *CIP != ',' && *CIP != '\n'))
+                                          *CIP != ',' && *CIP != '\n')) {
                 ++CIP;
+
+}
               CPULen = CIP - CPUStart;
             }
           }
@@ -113,13 +121,19 @@ StringRef sys::detail::getHostCPUNameForPowerPC(StringRef ProcCpuinfoContent) {
       }
     }
 
-    if (CPUStart == 0)
-      while (CIP < CPUInfoEnd && *CIP != '\n')
+    if (CPUStart == 0) {
+      while (CIP < CPUInfoEnd && *CIP != '\n') {
         ++CIP;
+
+}
+
+}
   }
 
-  if (CPUStart == 0)
+  if (CPUStart == 0) {
     return generic;
+
+}
 
   return StringSwitch<const char *>(StringRef(CPUStart, CPULen))
       .Case("604e", "604e")
@@ -160,22 +174,28 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
   StringRef Implementer;
   StringRef Hardware;
   for (unsigned I = 0, E = Lines.size(); I != E; ++I) {
-    if (Lines[I].startswith("CPU implementer"))
+    if (Lines[I].startswith("CPU implementer")) {
       Implementer = Lines[I].substr(15).ltrim("\t :");
-    if (Lines[I].startswith("Hardware"))
+
+}
+    if (Lines[I].startswith("Hardware")) {
       Hardware = Lines[I].substr(8).ltrim("\t :");
+
+}
   }
 
   if (Implementer == "0x41") { // ARM Ltd.
     // MSM8992/8994 may give cpu part for the core that the kernel is running on,
     // which is undeterministic and wrong. Always return cortex-a53 for these SoC.
-    if (Hardware.endswith("MSM8994") || Hardware.endswith("MSM8996"))
+    if (Hardware.endswith("MSM8994") || Hardware.endswith("MSM8996")) {
       return "cortex-a53";
+
+}
 
 
     // Look for the CPU part line.
-    for (unsigned I = 0, E = Lines.size(); I != E; ++I)
-      if (Lines[I].startswith("CPU part"))
+    for (unsigned I = 0, E = Lines.size(); I != E; ++I) {
+      if (Lines[I].startswith("CPU part")) {
         // The CPU part is a 3 digit hexadecimal number with a 0x prefix. The
         // values correspond to the "Part number" in the CP15/c0 register. The
         // contents are specified in the various processor manuals.
@@ -203,6 +223,10 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
             .Case("0xd0a", "cortex-a75")
             .Case("0xd0b", "cortex-a76")
             .Default("generic");
+
+}
+
+}
   }
 
   if (Implementer == "0x42" || Implementer == "0x43") { // Broadcom | Cavium.
@@ -230,10 +254,10 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
     }
   }
 
-  if (Implementer == "0x48") // HiSilicon Technologies, Inc.
+  if (Implementer == "0x48") { // HiSilicon Technologies, Inc.
     // Look for the CPU part line.
-    for (unsigned I = 0, E = Lines.size(); I != E; ++I)
-      if (Lines[I].startswith("CPU part"))
+    for (unsigned I = 0, E = Lines.size(); I != E; ++I) {
+      if (Lines[I].startswith("CPU part")) {
         // The CPU part is a 3 digit hexadecimal number with a 0x prefix. The
         // values correspond to the "Part number" in the CP15/c0 register. The
         // contents are specified in the various processor manuals.
@@ -241,10 +265,16 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
           .Case("0xd01", "tsv110")
           .Default("generic");
 
-  if (Implementer == "0x51") // Qualcomm Technologies, Inc.
+}
+
+}
+
+}
+
+  if (Implementer == "0x51") { // Qualcomm Technologies, Inc.
     // Look for the CPU part line.
-    for (unsigned I = 0, E = Lines.size(); I != E; ++I)
-      if (Lines[I].startswith("CPU part"))
+    for (unsigned I = 0, E = Lines.size(); I != E; ++I) {
+      if (Lines[I].startswith("CPU part")) {
         // The CPU part is a 3 digit hexadecimal number with a 0x prefix. The
         // values correspond to the "Part number" in the CP15/c0 register. The
         // contents are specified in the various processor manuals.
@@ -263,6 +293,12 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
             .Case("0xc01", "saphira")
             .Default("generic");
 
+}
+
+}
+
+}
+
   if (Implementer == "0x53") { // Samsung Electronics Co., Ltd.
     // The Exynos chips have a convoluted ID scheme that doesn't seem to follow
     // any predictive pattern across variants and parts.
@@ -270,15 +306,23 @@ StringRef sys::detail::getHostCPUNameForARM(StringRef ProcCpuinfoContent) {
 
     // Look for the CPU variant line, whose value is a 1 digit hexadecimal
     // number, corresponding to the Variant bits in the CP15/C0 register.
-    for (auto I : Lines)
-      if (I.consume_front("CPU variant"))
+    for (auto I : Lines) {
+      if (I.consume_front("CPU variant")) {
         I.ltrim("\t :").getAsInteger(0, Variant);
+
+}
+
+}
 
     // Look for the CPU part line, whose value is a 3 digit hexadecimal
     // number, corresponding to the PartNum bits in the CP15/C0 register.
-    for (auto I : Lines)
-      if (I.consume_front("CPU part"))
+    for (auto I : Lines) {
+      if (I.consume_front("CPU part")) {
         I.ltrim("\t :").getAsInteger(0, Part);
+
+}
+
+}
 
     unsigned Exynos = (Variant << 12) | Part;
     switch (Exynos) {
@@ -305,7 +349,7 @@ StringRef sys::detail::getHostCPUNameForS390x(StringRef ProcCpuinfoContent) {
 
   // Look for the CPU features.
   SmallVector<StringRef, 32> CPUFeatures;
-  for (unsigned I = 0, E = Lines.size(); I != E; ++I)
+  for (unsigned I = 0, E = Lines.size(); I != E; ++I) {
     if (Lines[I].startswith("features")) {
       size_t Pos = Lines[I].find(":");
       if (Pos != StringRef::npos) {
@@ -314,13 +358,17 @@ StringRef sys::detail::getHostCPUNameForS390x(StringRef ProcCpuinfoContent) {
       }
     }
 
+}
+
   // We need to check for the presence of vector support independently of
   // the machine type, since we may only use the vector register set when
   // supported by the kernel (and hypervisor).
   bool HaveVectorSupport = false;
   for (unsigned I = 0, E = CPUFeatures.size(); I != E; ++I) {
-    if (CPUFeatures[I] == "vx")
+    if (CPUFeatures[I] == "vx") {
       HaveVectorSupport = true;
+
+}
   }
 
   // Now check the processor machine type.
@@ -331,16 +379,26 @@ StringRef sys::detail::getHostCPUNameForS390x(StringRef ProcCpuinfoContent) {
         Pos += sizeof("machine = ") - 1;
         unsigned int Id;
         if (!Lines[I].drop_front(Pos).getAsInteger(10, Id)) {
-          if (Id >= 8561 && HaveVectorSupport)
+          if (Id >= 8561 && HaveVectorSupport) {
             return "z15";
-          if (Id >= 3906 && HaveVectorSupport)
+
+}
+          if (Id >= 3906 && HaveVectorSupport) {
             return "z14";
-          if (Id >= 2964 && HaveVectorSupport)
+
+}
+          if (Id >= 2964 && HaveVectorSupport) {
             return "z13";
-          if (Id >= 2827)
+
+}
+          if (Id >= 2827) {
             return "zEC12";
-          if (Id >= 2817)
+
+}
+          if (Id >= 2817) {
             return "z196";
+
+}
         }
       }
       break;
@@ -559,9 +617,11 @@ static void detectX86FamilyModel(unsigned EAX, unsigned *Family,
   *Family = (EAX >> 8) & 0xf; // Bits 8 - 11
   *Model = (EAX >> 4) & 0xf;  // Bits 4 - 7
   if (*Family == 6 || *Family == 0xf) {
-    if (*Family == 0xf)
+    if (*Family == 0xf) {
       // Examine extended family ID if family ID is F.
       *Family += (EAX >> 20) & 0xff; // Bits 20 - 27
+
+}
     // Examine extended model ID if family ID is 6 or F.
     *Model += ((EAX >> 16) & 0xf) << 4; // Bits 16 - 19
   }
@@ -572,8 +632,10 @@ getIntelProcessorTypeAndSubtype(unsigned Family, unsigned Model,
                                 unsigned Brand_id, unsigned Features,
                                 unsigned Features2, unsigned Features3,
                                 unsigned *Type, unsigned *Subtype) {
-  if (Brand_id != 0)
+  if (Brand_id != 0) {
     return;
+
+}
   switch (Family) {
   case 3:
     *Type = X86::INTEL_i386;
@@ -696,12 +758,14 @@ getIntelProcessorTypeAndSubtype(unsigned Family, unsigned Model,
     // Skylake Xeon:
     case 0x55:
       *Type = X86::INTEL_COREI7;
-      if (Features2 & (1 << (X86::FEATURE_AVX512BF16 - 32)))
+      if (Features2 & (1 << (X86::FEATURE_AVX512BF16 - 32))) {
         *Subtype = X86::INTEL_COREI7_COOPERLAKE; // "cooperlake"
-      else if (Features2 & (1 << (X86::FEATURE_AVX512VNNI - 32)))
+      } else if (Features2 & (1 << (X86::FEATURE_AVX512VNNI - 32))) {
         *Subtype = X86::INTEL_COREI7_CASCADELAKE; // "cascadelake"
-      else
+      } else {
         *Subtype = X86::INTEL_COREI7_SKYLAKE_AVX512; // "skylake-avx512"
+
+}
       break;
 
     // Cannonlake:
@@ -1000,44 +1064,72 @@ static void getAvailableFeatures(unsigned ECX, unsigned EDX, unsigned MaxLeaf,
   unsigned EAX, EBX;
 
   auto setFeature = [&](unsigned F) {
-    if (F < 32)
+    if (F < 32) {
       Features |= 1U << (F & 0x1f);
-    else if (F < 64)
+    } else if (F < 64) {
       Features2 |= 1U << ((F - 32) & 0x1f);
-    else if (F < 96)
+    } else if (F < 96) {
       Features3 |= 1U << ((F - 64) & 0x1f);
-    else
+    } else {
       llvm_unreachable("Unexpected FeatureBit");
+
+}
   };
 
-  if ((EDX >> 15) & 1)
+  if ((EDX >> 15) & 1) {
     setFeature(X86::FEATURE_CMOV);
-  if ((EDX >> 23) & 1)
+
+}
+  if ((EDX >> 23) & 1) {
     setFeature(X86::FEATURE_MMX);
-  if ((EDX >> 25) & 1)
+
+}
+  if ((EDX >> 25) & 1) {
     setFeature(X86::FEATURE_SSE);
-  if ((EDX >> 26) & 1)
+
+}
+  if ((EDX >> 26) & 1) {
     setFeature(X86::FEATURE_SSE2);
 
-  if ((ECX >> 0) & 1)
+}
+
+  if ((ECX >> 0) & 1) {
     setFeature(X86::FEATURE_SSE3);
-  if ((ECX >> 1) & 1)
+
+}
+  if ((ECX >> 1) & 1) {
     setFeature(X86::FEATURE_PCLMUL);
-  if ((ECX >> 9) & 1)
+
+}
+  if ((ECX >> 9) & 1) {
     setFeature(X86::FEATURE_SSSE3);
-  if ((ECX >> 12) & 1)
+
+}
+  if ((ECX >> 12) & 1) {
     setFeature(X86::FEATURE_FMA);
-  if ((ECX >> 19) & 1)
+
+}
+  if ((ECX >> 19) & 1) {
     setFeature(X86::FEATURE_SSE4_1);
-  if ((ECX >> 20) & 1)
+
+}
+  if ((ECX >> 20) & 1) {
     setFeature(X86::FEATURE_SSE4_2);
-  if ((ECX >> 23) & 1)
+
+}
+  if ((ECX >> 23) & 1) {
     setFeature(X86::FEATURE_POPCNT);
-  if ((ECX >> 25) & 1)
+
+}
+  if ((ECX >> 25) & 1) {
     setFeature(X86::FEATURE_AES);
 
-  if ((ECX >> 22) & 1)
+}
+
+  if ((ECX >> 22) & 1) {
     setFeature(X86::FEATURE_MOVBE);
+
+}
 
   // If CPUID indicates support for XSAVE, XRESTORE and AVX, and XGETBV
   // indicates that the AVX registers will be saved and restored on context
@@ -1055,82 +1147,142 @@ static void getAvailableFeatures(unsigned ECX, unsigned EDX, unsigned MaxLeaf,
   bool HasAVX512Save = HasAVX && ((EAX & 0xe0) == 0xe0);
 #endif
 
-  if (HasAVX)
+  if (HasAVX) {
     setFeature(X86::FEATURE_AVX);
+
+}
 
   bool HasLeaf7 =
       MaxLeaf >= 0x7 && !getX86CpuIDAndInfoEx(0x7, 0x0, &EAX, &EBX, &ECX, &EDX);
 
-  if (HasLeaf7 && ((EBX >> 3) & 1))
+  if (HasLeaf7 && ((EBX >> 3) & 1)) {
     setFeature(X86::FEATURE_BMI);
-  if (HasLeaf7 && ((EBX >> 5) & 1) && HasAVX)
+
+}
+  if (HasLeaf7 && ((EBX >> 5) & 1) && HasAVX) {
     setFeature(X86::FEATURE_AVX2);
-  if (HasLeaf7 && ((EBX >> 8) & 1))
+
+}
+  if (HasLeaf7 && ((EBX >> 8) & 1)) {
     setFeature(X86::FEATURE_BMI2);
-  if (HasLeaf7 && ((EBX >> 16) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 16) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512F);
-  if (HasLeaf7 && ((EBX >> 17) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 17) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512DQ);
-  if (HasLeaf7 && ((EBX >> 19) & 1))
+
+}
+  if (HasLeaf7 && ((EBX >> 19) & 1)) {
     setFeature(X86::FEATURE_ADX);
-  if (HasLeaf7 && ((EBX >> 21) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 21) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512IFMA);
-  if (HasLeaf7 && ((EBX >> 23) & 1))
+
+}
+  if (HasLeaf7 && ((EBX >> 23) & 1)) {
     setFeature(X86::FEATURE_CLFLUSHOPT);
-  if (HasLeaf7 && ((EBX >> 26) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 26) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512PF);
-  if (HasLeaf7 && ((EBX >> 27) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 27) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512ER);
-  if (HasLeaf7 && ((EBX >> 28) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 28) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512CD);
-  if (HasLeaf7 && ((EBX >> 29) & 1))
+
+}
+  if (HasLeaf7 && ((EBX >> 29) & 1)) {
     setFeature(X86::FEATURE_SHA);
-  if (HasLeaf7 && ((EBX >> 30) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 30) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512BW);
-  if (HasLeaf7 && ((EBX >> 31) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EBX >> 31) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VL);
 
-  if (HasLeaf7 && ((ECX >> 1) & 1) && HasAVX512Save)
+}
+
+  if (HasLeaf7 && ((ECX >> 1) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VBMI);
-  if (HasLeaf7 && ((ECX >> 6) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((ECX >> 6) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VBMI2);
-  if (HasLeaf7 && ((ECX >> 8) & 1))
+
+}
+  if (HasLeaf7 && ((ECX >> 8) & 1)) {
     setFeature(X86::FEATURE_GFNI);
-  if (HasLeaf7 && ((ECX >> 10) & 1) && HasAVX)
+
+}
+  if (HasLeaf7 && ((ECX >> 10) & 1) && HasAVX) {
     setFeature(X86::FEATURE_VPCLMULQDQ);
-  if (HasLeaf7 && ((ECX >> 11) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((ECX >> 11) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VNNI);
-  if (HasLeaf7 && ((ECX >> 12) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((ECX >> 12) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512BITALG);
-  if (HasLeaf7 && ((ECX >> 14) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((ECX >> 14) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VPOPCNTDQ);
 
-  if (HasLeaf7 && ((EDX >> 2) & 1) && HasAVX512Save)
+}
+
+  if (HasLeaf7 && ((EDX >> 2) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX5124VNNIW);
-  if (HasLeaf7 && ((EDX >> 3) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EDX >> 3) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX5124FMAPS);
-  if (HasLeaf7 && ((EDX >> 8) & 1) && HasAVX512Save)
+
+}
+  if (HasLeaf7 && ((EDX >> 8) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512VP2INTERSECT);
+
+}
 
   bool HasLeaf7Subleaf1 =
       MaxLeaf >= 7 && !getX86CpuIDAndInfoEx(0x7, 0x1, &EAX, &EBX, &ECX, &EDX);
-  if (HasLeaf7Subleaf1 && ((EAX >> 5) & 1) && HasAVX512Save)
+  if (HasLeaf7Subleaf1 && ((EAX >> 5) & 1) && HasAVX512Save) {
     setFeature(X86::FEATURE_AVX512BF16);
+
+}
 
   unsigned MaxExtLevel;
   getX86CpuIDAndInfo(0x80000000, &MaxExtLevel, &EBX, &ECX, &EDX);
 
   bool HasExtLeaf1 = MaxExtLevel >= 0x80000001 &&
                      !getX86CpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
-  if (HasExtLeaf1 && ((ECX >> 6) & 1))
+  if (HasExtLeaf1 && ((ECX >> 6) & 1)) {
     setFeature(X86::FEATURE_SSE4_A);
-  if (HasExtLeaf1 && ((ECX >> 11) & 1))
+
+}
+  if (HasExtLeaf1 && ((ECX >> 11) & 1)) {
     setFeature(X86::FEATURE_XOP);
-  if (HasExtLeaf1 && ((ECX >> 16) & 1))
+
+}
+  if (HasExtLeaf1 && ((ECX >> 16) & 1)) {
     setFeature(X86::FEATURE_FMA4);
 
-  if (HasExtLeaf1 && ((EDX >> 29) & 1))
+}
+
+  if (HasExtLeaf1 && ((EDX >> 29) & 1)) {
     setFeature(X86::FEATURE_EM64T);
+
+}
 
   *FeaturesOut  = Features;
   *Features2Out = Features2;
@@ -1146,11 +1298,15 @@ StringRef sys::getHostCPUName() {
   // and simplify it to not invoke __cpuid (like cpu_model.c in
   // compiler-rt/lib/builtins/cpu_model.c?
   // Opting for the second option.
-  if(!isCpuIdSupported())
+  if(!isCpuIdSupported()) {
     return "generic";
+
+}
 #endif
-  if (getX86CpuIDAndInfo(0, &MaxLeaf, &Vendor, &ECX, &EDX) || MaxLeaf < 1)
+  if (getX86CpuIDAndInfo(0, &MaxLeaf, &Vendor, &ECX, &EDX) || MaxLeaf < 1) {
     return "generic";
+
+}
   getX86CpuIDAndInfo(0x1, &EAX, &EBX, &ECX, &EDX);
 
   unsigned Brand_id = EBX & 0xff;
@@ -1299,8 +1455,10 @@ int computeHostNumPhysicalCores() {
   SmallSet<std::pair<int, int>, 32> UniqueItems;
   for (auto &Line : strs) {
     Line = Line.trim();
-    if (!Line.startswith("physical id") && !Line.startswith("core id"))
+    if (!Line.startswith("physical id") && !Line.startswith("core id")) {
       continue;
+
+}
     std::pair<StringRef, StringRef> Data = Line.split(':');
     auto Name = Data.first.trim();
     auto Val = Data.second.trim();
@@ -1365,8 +1523,10 @@ bool sys::getHostCPUFeatures(StringMap<bool> &Features) {
   } text;
 
   if (getX86CpuIDAndInfo(0, &MaxLevel, text.u + 0, text.u + 2, text.u + 1) ||
-      MaxLevel < 1)
+      MaxLevel < 1) {
     return false;
+
+}
 
   getX86CpuIDAndInfo(1, &EAX, &EBX, &ECX, &EDX);
 
@@ -1592,10 +1752,14 @@ std::string sys::getProcessTriple() {
   std::string TargetTripleString = updateTripleOSVersion(LLVM_HOST_TRIPLE);
   Triple PT(Triple::normalize(TargetTripleString));
 
-  if (sizeof(void *) == 8 && PT.isArch32Bit())
+  if (sizeof(void *) == 8 && PT.isArch32Bit()) {
     PT = PT.get64BitArchVariant();
-  if (sizeof(void *) == 4 && PT.isArch64Bit())
+
+}
+  if (sizeof(void *) == 4 && PT.isArch64Bit()) {
     PT = PT.get32BitArchVariant();
+
+}
 
   return PT.str();
 }

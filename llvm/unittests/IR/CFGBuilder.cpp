@@ -40,8 +40,10 @@ static void ConnectBlocks(BasicBlock *From, BasicBlock *To) {
              dbgs().flush());
   auto *IntTy = IntegerType::get(From->getContext(), 32);
 
-  if (isa<UnreachableInst>(From->getTerminator()))
+  if (isa<UnreachableInst>(From->getTerminator())) {
     From->getTerminator()->eraseFromParent();
+
+}
   if (!From->getTerminator()) {
     IRBuilder<> IRB(From);
     IRB.CreateSwitch(ConstantInt::get(IntTy, 0), To);
@@ -75,17 +77,21 @@ static void DisconnectBlocks(BasicBlock *From, BasicBlock *To) {
     return;
   }
 
-  for (auto CIt = SI->case_begin(); CIt != SI->case_end(); ++CIt)
+  for (auto CIt = SI->case_begin(); CIt != SI->case_end(); ++CIt) {
     if (CIt->getCaseSuccessor() == To) {
       SI->removeCase(CIt);
       return;
     }
+
+}
 }
 
 BasicBlock *CFGBuilder::getOrAddBlock(StringRef BlockName) {
   auto BIt = NameToBlock.find(BlockName);
-  if (BIt != NameToBlock.end())
+  if (BIt != NameToBlock.end()) {
     return BIt->second;
+
+}
 
   auto *BB = BasicBlock::Create(F->getParent()->getContext(), BlockName, F);
   IRBuilder<> IRB(BB);
@@ -97,8 +103,10 @@ BasicBlock *CFGBuilder::getOrAddBlock(StringRef BlockName) {
 bool CFGBuilder::connect(const Arc &A) {
   BasicBlock *From = getOrAddBlock(A.From);
   BasicBlock *To = getOrAddBlock(A.To);
-  if (Arcs.count(A) != 0)
+  if (Arcs.count(A) != 0) {
     return false;
+
+}
 
   Arcs.insert(A);
   ConnectBlocks(From, To);
@@ -108,8 +116,10 @@ bool CFGBuilder::connect(const Arc &A) {
 bool CFGBuilder::disconnect(const Arc &A) {
   assert(NameToBlock.count(A.From) != 0 && "No block to disconnect (From)");
   assert(NameToBlock.count(A.To) != 0 && "No block to disconnect (To)");
-  if (Arcs.count(A) == 0)
+  if (Arcs.count(A) == 0) {
     return false;
+
+}
 
   BasicBlock *From = getOrAddBlock(A.From);
   BasicBlock *To = getOrAddBlock(A.To);
@@ -127,19 +137,25 @@ void CFGBuilder::buildCFG(const std::vector<Arc> &NewArcs) {
 }
 
 Optional<CFGBuilder::Update> CFGBuilder::getNextUpdate() const {
-  if (UpdateIdx == Updates.size())
+  if (UpdateIdx == Updates.size()) {
     return None;
+
+}
   return Updates[UpdateIdx];
 }
 
 Optional<CFGBuilder::Update> CFGBuilder::applyUpdate() {
-  if (UpdateIdx == Updates.size())
+  if (UpdateIdx == Updates.size()) {
     return None;
+
+}
   Update NextUpdate = Updates[UpdateIdx++];
-  if (NextUpdate.Action == ActionKind::Insert)
+  if (NextUpdate.Action == ActionKind::Insert) {
     connect(NextUpdate.Edge);
-  else
+  } else {
     disconnect(NextUpdate.Edge);
+
+}
 
   return NextUpdate;
 }
@@ -147,8 +163,10 @@ Optional<CFGBuilder::Update> CFGBuilder::applyUpdate() {
 void CFGBuilder::dump(raw_ostream &OS) const {
   OS << "Arcs:\n";
   size_t i = 0;
-  for (const auto &A : Arcs)
+  for (const auto &A : Arcs) {
     OS << "  " << i++ << ":\t" << A.From << " -> " << A.To << "\n";
+
+}
 
   OS << "Updates:\n";
   i = 0;
@@ -193,8 +211,10 @@ TEST(CFGBuilder, Insertions) {
   CFGBuilder B(Holder.F, {}, Updates);
 
   size_t i = 0;
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ++i;
+
+}
   EXPECT_EQ(i, NumUpdates);
 
   EXPECT_TRUE(B.getOrAddBlock("entry") == &Holder.F->getEntryBlock());
@@ -235,8 +255,10 @@ TEST(CFGBuilder, Deletions) {
   EXPECT_TRUE(isa<UnreachableInst>(B.getOrAddBlock("c")->getTerminator()));
 
   size_t i = 1;
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ++i;
+
+}
   EXPECT_EQ(i, NumUpdates);
 
   EXPECT_TRUE(isa<SwitchInst>(B.getOrAddBlock("a")->getTerminator()));
@@ -257,8 +279,10 @@ TEST(CFGBuilder, Rebuild) {
 
   CFGBuilder B(Holder.F, Arcs, Updates);
   size_t i = 0;
-  while (B.applyUpdate())
+  while (B.applyUpdate()) {
     ++i;
+
+}
   EXPECT_EQ(i, NumUpdates);
 
   EXPECT_TRUE(isa<SwitchInst>(B.getOrAddBlock("entry")->getTerminator()));

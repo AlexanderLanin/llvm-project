@@ -105,8 +105,10 @@ void RedundantSmartptrGetCheck::registerMatchers(MatchFinder *Finder) {
 
 namespace {
 bool allReturnTypesMatch(const MatchFinder::MatchResult &Result) {
-  if (Result.Nodes.getNodeAs<Decl>("duck_typing") == nullptr)
+  if (Result.Nodes.getNodeAs<Decl>("duck_typing") == nullptr) {
     return true;
+
+}
   // Verify that the types match.
   // We can't do this on the matcher because the type nodes can be different,
   // even though they represent the same type. This difference comes from how
@@ -122,14 +124,18 @@ bool allReturnTypesMatch(const MatchFinder::MatchResult &Result) {
 } // namespace
 
 void RedundantSmartptrGetCheck::check(const MatchFinder::MatchResult &Result) {
-  if (!allReturnTypesMatch(Result))
+  if (!allReturnTypesMatch(Result)) {
     return;
+
+}
 
   bool IsPtrToPtr = Result.Nodes.getNodeAs<Decl>("ptr_to_ptr") != nullptr;
   bool IsMemberExpr = Result.Nodes.getNodeAs<Expr>("memberExpr") != nullptr;
   const auto *GetCall = Result.Nodes.getNodeAs<Expr>("redundant_get");
-  if (GetCall->getBeginLoc().isMacroID() && IgnoreMacros)
+  if (GetCall->getBeginLoc().isMacroID() && IgnoreMacros) {
     return;
+
+}
 
   const auto *Smartptr = Result.Nodes.getNodeAs<Expr>("smart_pointer");
 

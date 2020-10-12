@@ -94,19 +94,23 @@ static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
     // has non-zero flags. The latter is used to assemble dummy index files for
     // skipping modules by distributed ThinLTO backends. Otherwise we get an empty
     // summary section.
-    if (Index && (Index->begin() != Index->end() || Index->getFlags()))
+    if (Index && (Index->begin() != Index->end() || Index->getFlags())) {
       IndexToWrite = Index;
-    if (!IndexToWrite || (M && (!M->empty() || !M->global_empty())))
+
+}
+    if (!IndexToWrite || (M && (!M->empty() || !M->global_empty()))) {
       // If we have a non-empty Module, then we write the Module plus
       // any non-null Index along with it as a per-module Index.
       // If both are empty, this will give an empty module block, which is
       // the expected behavior.
       WriteBitcodeToFile(*M, Out->os(), PreserveBitcodeUseListOrder,
                          IndexToWrite, EmitModuleHash);
-    else
+    } else {
       // Otherwise, with an empty Module but non-empty Index, we write a
       // combined index.
       WriteIndexToFile(*IndexToWrite, Out->os());
+
+}
   }
 
   // Declare success.
@@ -144,12 +148,16 @@ int main(int argc, char **argv) {
 
   if (DumpAsm) {
     errs() << "Here's the assembly:\n" << *M.get();
-    if (Index.get() && Index->begin() != Index->end())
+    if (Index.get() && Index->begin() != Index->end()) {
       Index->print(errs());
+
+}
   }
 
-  if (!DisableOutput)
+  if (!DisableOutput) {
     WriteOutputFile(M.get(), Index.get());
+
+}
 
   return 0;
 }

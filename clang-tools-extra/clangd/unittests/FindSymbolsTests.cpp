@@ -27,8 +27,10 @@ using ::testing::UnorderedElementsAre;
 
 // GMock helpers for matching SymbolInfos items.
 MATCHER_P(QName, Name, "") {
-  if (arg.containerName.empty())
+  if (arg.containerName.empty()) {
     return arg.name == Name;
+
+}
   return (arg.containerName + "::" + arg.name) == Name;
 }
 MATCHER_P(WithName, N, "") { return arg.name == N; }

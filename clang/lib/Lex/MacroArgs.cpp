@@ -38,8 +38,10 @@ MacroArgs *MacroArgs::create(const MacroInfo *MI,
       ResultEnt = Entry;
 
       // If we have an exact match, use it.
-      if ((*Entry)->NumUnexpArgTokens == UnexpArgTokens.size())
+      if ((*Entry)->NumUnexpArgTokens == UnexpArgTokens.size()) {
         break;
+
+}
       // Otherwise, use the best fit.
       ClosestMatch = (*Entry)->NumUnexpArgTokens;
     }
@@ -78,8 +80,10 @@ MacroArgs *MacroArgs::create(const MacroInfo *MI,
 void MacroArgs::destroy(Preprocessor &PP) {
   // Don't clear PreExpArgTokens, just clear the entries.  Clearing the entries
   // would deallocate the element vectors.
-  for (unsigned i = 0, e = PreExpArgTokens.size(); i != e; ++i)
+  for (unsigned i = 0, e = PreExpArgTokens.size(); i != e; ++i) {
     PreExpArgTokens[i].clear();
+
+}
 
   // Add this to the preprocessor's free list.
   ArgCache = PP.MacroArgCache;
@@ -107,8 +111,10 @@ MacroArgs *MacroArgs::deallocate() {
 /// argument.
 unsigned MacroArgs::getArgLength(const Token *ArgPtr) {
   unsigned NumArgTokens = 0;
-  for (; ArgPtr->isNot(tok::eof); ++ArgPtr)
+  for (; ArgPtr->isNot(tok::eof); ++ArgPtr) {
     ++NumArgTokens;
+
+}
   return NumArgTokens;
 }
 
@@ -126,8 +132,10 @@ const Token *MacroArgs::getUnexpArgument(unsigned Arg) const {
   // Scan to find Arg.
   for (; Arg; ++Result) {
     assert(Result < Start+NumUnexpArgTokens && "Invalid arg #");
-    if (Result->is(tok::eof))
+    if (Result->is(tok::eof)) {
       --Arg;
+
+}
   }
   assert(Result < Start+NumUnexpArgTokens && "Invalid arg #");
   return Result;
@@ -135,8 +143,10 @@ const Token *MacroArgs::getUnexpArgument(unsigned Arg) const {
 
 bool MacroArgs::invokedWithVariadicArgument(const MacroInfo *const MI,
                                             Preprocessor &PP) {
-  if (!MI->isVariadic())
+  if (!MI->isVariadic()) {
     return false;
+
+}
   const int VariadicArgIndex = getNumMacroArguments() - 1;
   return getPreExpArgument(VariadicArgIndex, PP).front().isNot(tok::eof);
 }
@@ -147,12 +157,18 @@ bool MacroArgs::ArgNeedsPreexpansion(const Token *ArgTok,
                                      Preprocessor &PP) const {
   // If there are no identifiers in the argument list, or if the identifiers are
   // known to not be macros, pre-expansion won't modify it.
-  for (; ArgTok->isNot(tok::eof); ++ArgTok)
-    if (IdentifierInfo *II = ArgTok->getIdentifierInfo())
-      if (II->hasMacroDefinition())
+  for (; ArgTok->isNot(tok::eof); ++ArgTok) {
+    if (IdentifierInfo *II = ArgTok->getIdentifierInfo()) {
+      if (II->hasMacroDefinition()) {
         // Return true even though the macro could be a function-like macro
         // without a following '(' token, or could be disabled, or not visible.
         return true;
+
+}
+
+}
+
+}
   return false;
 }
 
@@ -163,11 +179,15 @@ const std::vector<Token> &MacroArgs::getPreExpArgument(unsigned Arg,
   assert(Arg < getNumMacroArguments() && "Invalid argument number!");
 
   // If we have already computed this, return it.
-  if (PreExpArgTokens.size() < getNumMacroArguments())
+  if (PreExpArgTokens.size() < getNumMacroArguments()) {
     PreExpArgTokens.resize(getNumMacroArguments());
 
+}
+
   std::vector<Token> &Result = PreExpArgTokens[Arg];
-  if (!Result.empty()) return Result;
+  if (!Result.empty()) { return Result;
+
+}
 
   SaveAndRestore<bool> PreExpandingMacroArgs(PP.InMacroArgPreExpansion, true);
 
@@ -193,8 +213,10 @@ const std::vector<Token> &MacroArgs::getPreExpArgument(unsigned Arg,
   // will not otherwise be popped until the next token is lexed.  The problem is
   // that the token may be lexed sometime after the vector of tokens itself is
   // destroyed, which would be badness.
-  if (PP.InCachingLexMode())
+  if (PP.InCachingLexMode()) {
     PP.ExitCachingLexMode();
+
+}
   PP.RemoveTopOfLexerStack();
   return Result;
 }
@@ -222,8 +244,10 @@ Token MacroArgs::StringifyArgument(const Token *ArgToks,
   bool isFirst = true;
   for (; ArgToks->isNot(tok::eof); ++ArgToks) {
     const Token &Tok = *ArgToks;
-    if (!isFirst && (Tok.hasLeadingSpace() || Tok.isAtStartOfLine()))
+    if (!isFirst && (Tok.hasLeadingSpace() || Tok.isAtStartOfLine())) {
       Result += ' ';
+
+}
     isFirst = false;
 
     // If this is a string or character constant, escape the token as specified
@@ -254,12 +278,16 @@ Token MacroArgs::StringifyArgument(const Token *ArgToks,
       if (!Invalid) {
         // If getSpelling returned a pointer to an already uniqued version of
         // the string instead of filling in BufPtr, memcpy it onto our string.
-        if (ActualTokLen && BufPtr != &Result[CurStrLen])
+        if (ActualTokLen && BufPtr != &Result[CurStrLen]) {
           memcpy(&Result[CurStrLen], BufPtr, ActualTokLen);
 
+}
+
         // If the token was dirty, the spelling may be shorter than the token.
-        if (ActualTokLen != Tok.getLength())
+        if (ActualTokLen != Tok.getLength()) {
           Result.resize(CurStrLen+ActualTokLen);
+
+}
       }
     }
   }
@@ -271,8 +299,10 @@ Token MacroArgs::StringifyArgument(const Token *ArgToks,
     // just escaped backslashes, otherwise it's an error.
     unsigned FirstNonSlash = Result.size()-2;
     // Guaranteed to find the starting " if nothing else.
-    while (Result[FirstNonSlash] == '\\')
+    while (Result[FirstNonSlash] == '\\') {
       --FirstNonSlash;
+
+}
     if ((Result.size()-1-FirstNonSlash) & 1) {
       // Diagnose errors for things like: #define F(X) #X   /   F(\)
       PP.Diag(ArgToks[-1], diag::pp_invalid_string_literal);
@@ -290,10 +320,12 @@ Token MacroArgs::StringifyArgument(const Token *ArgToks,
 
     // Check for bogus character.
     bool isBad = false;
-    if (Result.size() == 3)
+    if (Result.size() == 3) {
       isBad = Result[1] == '\'';   // ''' is not legal. '\' already fixed above.
-    else
+    } else {
       isBad = (Result.size() != 4 || Result[1] != '\\');  // Not '\x'
+
+}
 
     if (isBad) {
       PP.Diag(ArgTokStart[0], diag::err_invalid_character_to_charify);

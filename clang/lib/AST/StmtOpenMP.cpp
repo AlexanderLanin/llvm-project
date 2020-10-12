@@ -28,16 +28,20 @@ bool OMPExecutableDirective::isStandaloneDirective() const {
   // reasons they have empty synthetic structured block, to simplify codegen.
   if (isa<OMPTargetEnterDataDirective>(this) ||
       isa<OMPTargetExitDataDirective>(this) ||
-      isa<OMPTargetUpdateDirective>(this))
+      isa<OMPTargetUpdateDirective>(this)) {
     return true;
+
+}
   return !hasAssociatedStmt() || !getAssociatedStmt();
 }
 
 const Stmt *OMPExecutableDirective::getStructuredBlock() const {
   assert(!isStandaloneDirective() &&
          "Standalone Executable Directives don't have Structured Blocks.");
-  if (auto *LD = dyn_cast<OMPLoopDirective>(this))
+  if (auto *LD = dyn_cast<OMPLoopDirective>(this)) {
     return LD->getBody();
+
+}
   return getInnermostCapturedStmt()->getCapturedStmt();
 }
 
@@ -53,11 +57,15 @@ Stmt *OMPLoopDirective::tryToFindNextInnerLoop(Stmt *CurStmt,
       SmallVector<CompoundStmt *, 4> NextStatements;
       while (!Statements.empty()) {
         CS = Statements.pop_back_val();
-        if (!CS)
+        if (!CS) {
           continue;
+
+}
         for (Stmt *S : CS->body()) {
-          if (!S)
+          if (!S) {
             continue;
+
+}
           if (isa<ForStmt>(S) || isa<CXXForRangeStmt>(S)) {
             // Only single loop construct is allowed.
             if (CurStmt) {
@@ -68,18 +76,24 @@ Stmt *OMPLoopDirective::tryToFindNextInnerLoop(Stmt *CurStmt,
             continue;
           }
           S = S->IgnoreContainers();
-          if (auto *InnerCS = dyn_cast_or_null<CompoundStmt>(S))
+          if (auto *InnerCS = dyn_cast_or_null<CompoundStmt>(S)) {
             NextStatements.push_back(InnerCS);
+
+}
         }
         if (Statements.empty()) {
           // Found single inner loop or multiple loops - exit.
-          if (CurStmt)
+          if (CurStmt) {
             break;
+
+}
           Statements.swap(NextStatements);
         }
       }
-      if (!CurStmt)
+      if (!CurStmt) {
         CurStmt = OrigStmt;
+
+}
     }
   }
   return CurStmt;

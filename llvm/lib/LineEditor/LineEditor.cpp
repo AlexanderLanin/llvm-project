@@ -43,8 +43,10 @@ std::string LineEditor::ListCompleterConcept::getCommonPrefix(
     size_t Len = std::min(CommonPrefix.size(), I->TypedText.size());
     size_t CommonLen = 0;
     for (; CommonLen != Len; ++CommonLen) {
-      if (CommonPrefix[CommonLen] != I->TypedText[CommonLen])
+      if (CommonPrefix[CommonLen] != I->TypedText[CommonLen]) {
         break;
+
+}
     }
     CommonPrefix.resize(CommonLen);
   }
@@ -70,8 +72,10 @@ LineEditor::ListCompleterConcept::complete(StringRef Buffer, size_t Pos) const {
   if (CommonPrefix.empty()) {
     Action.Kind = CompletionAction::AK_ShowCompletions;
     for (std::vector<Completion>::iterator I = Comps.begin(), E = Comps.end();
-         I != E; ++I)
+         I != E; ++I) {
       Action.Completions.push_back(I->DisplayText);
+
+}
   } else {
     Action.Kind = CompletionAction::AK_Insert;
     Action.Text = CommonPrefix;
@@ -111,8 +115,10 @@ namespace {
 
 const char *ElGetPromptFn(EditLine *EL) {
   LineEditor::InternalData *Data;
-  if (el_get(EL, EL_CLIENTDATA, &Data) == 0)
+  if (el_get(EL, EL_CLIENTDATA, &Data) == 0) {
     return Data->LE->getPrompt().c_str();
+
+}
   return "> ";
 }
 
@@ -199,8 +205,10 @@ LineEditor::LineEditor(StringRef ProgName, StringRef HistoryPath, FILE *In,
                        FILE *Out, FILE *Err)
     : Prompt((ProgName + "> ").str()), HistoryPath(std::string(HistoryPath)),
       Data(new InternalData) {
-  if (HistoryPath.empty())
+  if (HistoryPath.empty()) {
     this->HistoryPath = getDefaultHistoryPath(ProgName);
+
+}
 
   Data->LE = this;
   Data->Out = Out;
@@ -259,17 +267,23 @@ Optional<std::string> LineEditor::readLine() const {
   const char *Line = ::el_gets(Data->EL, &LineLen);
 
   // Either of these may mean end-of-file.
-  if (!Line || LineLen == 0)
+  if (!Line || LineLen == 0) {
     return Optional<std::string>();
+
+}
 
   // Strip any newlines off the end of the string.
   while (LineLen > 0 &&
-         (Line[LineLen - 1] == '\n' || Line[LineLen - 1] == '\r'))
+         (Line[LineLen - 1] == '\n' || Line[LineLen - 1] == '\r')) {
     --LineLen;
 
+}
+
   HistEvent HE;
-  if (LineLen > 0)
+  if (LineLen > 0) {
     ::history(Data->Hist, &HE, H_ENTER, Line);
+
+}
 
   return std::string(Line, LineLen);
 }

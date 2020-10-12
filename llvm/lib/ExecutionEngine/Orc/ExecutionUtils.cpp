@@ -84,10 +84,12 @@ CtorDtorIterator::Element CtorDtorIterator::operator*() const {
       Func = F;
       break;
     } else if (ConstantExpr *CE = dyn_cast_or_null<ConstantExpr>(FuncC)) {
-      if (CE->isCast())
+      if (CE->isCast()) {
         FuncC = dyn_cast_or_null<ConstantExpr>(CE->getOperand(0));
-      else
+      } else {
         break;
+
+}
     } else {
       // This isn't anything we recognize. Bail out with Func left set to null.
       break;
@@ -96,8 +98,10 @@ CtorDtorIterator::Element CtorDtorIterator::operator*() const {
 
   auto *Priority = cast<ConstantInt>(CS->getOperand(0));
   Value *Data = CS->getNumOperands() == 3 ? CS->getOperand(2) : nullptr;
-  if (Data && !isa<GlobalValue>(Data))
+  if (Data && !isa<GlobalValue>(Data)) {
     Data = nullptr;
+
+}
   return Element(Priority->getZExtValue(), Func, Data);
 }
 
@@ -114,28 +118,36 @@ iterator_range<CtorDtorIterator> getDestructors(const Module &M) {
 }
 
 bool StaticInitGVIterator::isStaticInitGlobal(GlobalValue &GV) {
-  if (GV.isDeclaration())
+  if (GV.isDeclaration()) {
     return false;
 
+}
+
   if (GV.hasName() && (GV.getName() == "llvm.global_ctors" ||
-                       GV.getName() == "llvm.global_dtors"))
+                       GV.getName() == "llvm.global_dtors")) {
     return true;
+
+}
 
   if (ObjFmt == Triple::MachO) {
     // FIXME: These section checks are too strict: We should match first and
     // second word split by comma.
     if (GV.hasSection() &&
         (GV.getSection().startswith("__DATA,__objc_classlist") ||
-         GV.getSection().startswith("__DATA,__objc_selrefs")))
+         GV.getSection().startswith("__DATA,__objc_selrefs"))) {
       return true;
+
+}
   }
 
   return false;
 }
 
 void CtorDtorRunner::add(iterator_range<CtorDtorIterator> CtorDtors) {
-  if (CtorDtors.empty())
+  if (CtorDtors.empty()) {
     return;
+
+}
 
   MangleAndInterner Mangle(
       JD.getExecutionSession(),
@@ -165,9 +177,13 @@ Error CtorDtorRunner::run() {
   using CtorDtorTy = void (*)();
 
   SymbolLookupSet LookupSet;
-  for (auto &KV : CtorDtorsByPriority)
-    for (auto &Name : KV.second)
+  for (auto &KV : CtorDtorsByPriority) {
+    for (auto &Name : KV.second) {
       LookupSet.add(Name);
+
+}
+
+}
   assert(!LookupSet.containsDuplicates() &&
          "Ctor/Dtor list contains duplicates");
 
@@ -185,14 +201,18 @@ Error CtorDtorRunner::run() {
     }
     CtorDtorsByPriority.clear();
     return Error::success();
-  } else
+  } else {
     return CtorDtorMap.takeError();
+
+}
 }
 
 void LocalCXXRuntimeOverridesBase::runDestructors() {
   auto& CXXDestructorDataPairs = DSOHandleOverride;
-  for (auto &P : CXXDestructorDataPairs)
+  for (auto &P : CXXDestructorDataPairs) {
     P.first(P.second);
+
+}
   CXXDestructorDataPairs.clear();
 }
 
@@ -252,8 +272,10 @@ DynamicLibrarySearchGenerator::Load(const char *FileName, char GlobalPrefix,
                                     SymbolPredicate Allow) {
   std::string ErrMsg;
   auto Lib = sys::DynamicLibrary::getPermanentLibrary(FileName, &ErrMsg);
-  if (!Lib.isValid())
+  if (!Lib.isValid()) {
     return make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode());
+
+}
   return std::make_unique<DynamicLibrarySearchGenerator>(
       std::move(Lib), GlobalPrefix, std::move(Allow));
 }
@@ -268,14 +290,20 @@ Error DynamicLibrarySearchGenerator::tryToGenerate(
   for (auto &KV : Symbols) {
     auto &Name = KV.first;
 
-    if ((*Name).empty())
+    if ((*Name).empty()) {
       continue;
 
-    if (Allow && !Allow(Name))
+}
+
+    if (Allow && !Allow(Name)) {
       continue;
 
-    if (HasGlobalPrefix && (*Name).front() != GlobalPrefix)
+}
+
+    if (HasGlobalPrefix && (*Name).front() != GlobalPrefix) {
       continue;
+
+}
 
     std::string Tmp((*Name).data() + HasGlobalPrefix,
                     (*Name).size() - HasGlobalPrefix);
@@ -286,8 +314,10 @@ Error DynamicLibrarySearchGenerator::tryToGenerate(
     }
   }
 
-  if (NewSymbols.empty())
+  if (NewSymbols.empty()) {
     return Error::success();
+
+}
 
   return JD.define(absoluteSymbols(std::move(NewSymbols)));
 }
@@ -296,8 +326,10 @@ Expected<std::unique_ptr<StaticLibraryDefinitionGenerator>>
 StaticLibraryDefinitionGenerator::Load(ObjectLayer &L, const char *FileName) {
   auto ArchiveBuffer = errorOrToExpected(MemoryBuffer::getFile(FileName));
 
-  if (!ArchiveBuffer)
+  if (!ArchiveBuffer) {
     return ArchiveBuffer.takeError();
+
+}
 
   return Create(L, std::move(*ArchiveBuffer));
 }
@@ -310,8 +342,10 @@ StaticLibraryDefinitionGenerator::Create(
   std::unique_ptr<StaticLibraryDefinitionGenerator> ADG(
       new StaticLibraryDefinitionGenerator(L, std::move(ArchiveBuffer), Err));
 
-  if (Err)
+  if (Err) {
     return std::move(Err);
+
+}
 
   return std::move(ADG);
 }
@@ -322,25 +356,35 @@ Error StaticLibraryDefinitionGenerator::tryToGenerate(
 
   // Don't materialize symbols from static archives unless this is a static
   // lookup.
-  if (K != LookupKind::Static)
+  if (K != LookupKind::Static) {
     return Error::success();
 
+}
+
   // Bail out early if we've already freed the archive.
-  if (!Archive)
+  if (!Archive) {
     return Error::success();
+
+}
 
   DenseSet<std::pair<StringRef, StringRef>> ChildBufferInfos;
 
   for (const auto &KV : Symbols) {
     const auto &Name = KV.first;
     auto Child = Archive->findSym(*Name);
-    if (!Child)
+    if (!Child) {
       return Child.takeError();
-    if (*Child == None)
+
+}
+    if (*Child == None) {
       continue;
+
+}
     auto ChildBuffer = (*Child)->getMemoryBufferRef();
-    if (!ChildBuffer)
+    if (!ChildBuffer) {
       return ChildBuffer.takeError();
+
+}
     ChildBufferInfos.insert(
         {ChildBuffer->getBuffer(), ChildBuffer->getBufferIdentifier()});
   }
@@ -350,8 +394,10 @@ Error StaticLibraryDefinitionGenerator::tryToGenerate(
                                    ChildBufferInfo.second);
 
     if (auto Err =
-            L.add(JD, MemoryBuffer::getMemBuffer(ChildBufferRef), VModuleKey()))
+            L.add(JD, MemoryBuffer::getMemBuffer(ChildBufferRef), VModuleKey())) {
       return Err;
+
+}
   }
 
   return Error::success();

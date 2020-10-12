@@ -328,8 +328,10 @@ public:
   }
 
   bool runOnLoop(Loop *L, LPPassManager &LPM) override {
-    if (skipLoop(L))
+    if (skipLoop(L)) {
       return false;
+
+}
     auto *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
     auto *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     auto *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
@@ -365,8 +367,10 @@ PreservedAnalyses LoopPredicationPass::run(Loop &L, LoopAnalysisManager &AM,
   BranchProbabilityInfo BPI;
   BPI.calculate(*F, AR.LI);
   LoopPredication LP(&AR.AA, &AR.DT, &AR.SE, &AR.LI, &BPI);
-  if (!LP.runOnLoop(&L))
+  if (!LP.runOnLoop(&L)) {
     return PreservedAnalyses::all();
+
+}
 
   return getLoopPassPreservedAnalyses();
 }
@@ -378,11 +382,15 @@ LoopPredication::parseLoopICmp(ICmpInst *ICI) {
   auto *RHS = ICI->getOperand(1);
 
   const SCEV *LHSS = SE->getSCEV(LHS);
-  if (isa<SCEVCouldNotCompute>(LHSS))
+  if (isa<SCEVCouldNotCompute>(LHSS)) {
     return None;
+
+}
   const SCEV *RHSS = SE->getSCEV(RHS);
-  if (isa<SCEVCouldNotCompute>(RHSS))
+  if (isa<SCEVCouldNotCompute>(RHSS)) {
     return None;
+
+}
 
   // Canonicalize RHS to be loop invariant bound, LHS - a loop computable IV
   if (SE->isLoopInvariant(LHSS, L)) {
@@ -392,8 +400,10 @@ LoopPredication::parseLoopICmp(ICmpInst *ICI) {
   }
 
   const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(LHSS);
-  if (!AR || AR->getLoop() != L)
+  if (!AR || AR->getLoop() != L) {
     return None;
+
+}
 
   return LoopICmp(Pred, AR, RHSS);
 }
@@ -407,11 +417,15 @@ Value *LoopPredication::expandCheck(SCEVExpander &Expander,
 
   if (SE->isLoopInvariant(LHS, L) && SE->isLoopInvariant(RHS, L)) {
     IRBuilder<> Builder(Guard);
-    if (SE->isLoopEntryGuardedByCond(L, Pred, LHS, RHS))
+    if (SE->isLoopEntryGuardedByCond(L, Pred, LHS, RHS)) {
       return Builder.getTrue();
+
+}
     if (SE->isLoopEntryGuardedByCond(L, ICmpInst::getInversePredicate(Pred),
-                                     LHS, RHS))
+                                     LHS, RHS)) {
       return Builder.getFalse();
+
+}
   }
 
   Value *LHSV = Expander.expandCodeFor(LHS, Ty, findInsertPt(Guard, {LHS}));
@@ -438,8 +452,10 @@ static bool isSafeToTruncateWideIVType(const DataLayout &DL,
                                        ScalarEvolution &SE,
                                        const LoopICmp LatchCheck,
                                        Type *RangeCheckType) {
-  if (!EnableIVTruncation)
+  if (!EnableIVTruncation) {
     return false;
+
+}
   assert(DL.getTypeSizeInBits(LatchCheck.IV->getType()) >
              DL.getTypeSizeInBits(RangeCheckType) &&
          "Expected latch check IV type to be larger than range check operand "
@@ -448,16 +464,20 @@ static bool isSafeToTruncateWideIVType(const DataLayout &DL,
   // that truncating the wide type will not lose information.
   auto *Limit = dyn_cast<SCEVConstant>(LatchCheck.Limit);
   auto *Start = dyn_cast<SCEVConstant>(LatchCheck.IV->getStart());
-  if (!Limit || !Start)
+  if (!Limit || !Start) {
     return false;
+
+}
   // This check makes sure that the IV does not change sign during loop
   // iterations. Consider latchType = i64, LatchStart = 5, Pred = ICMP_SGE,
   // LatchEnd = 2, rangeCheckType = i32. If it's not a monotonic predicate, the
   // IV wraps around, and the truncation of the IV would lose the range of
   // iterations between 2^32 and 2^64.
   bool Increasing;
-  if (!SE.isMonotonicPredicate(LatchCheck.IV, LatchCheck.Pred, Increasing))
+  if (!SE.isMonotonicPredicate(LatchCheck.IV, LatchCheck.Pred, Increasing)) {
     return false;
+
+}
   // The active bits should be less than the bits in the RangeCheckType. This
   // guarantees that truncating the latch check to RangeCheckType is a safe
   // operation.
@@ -475,21 +495,29 @@ static Optional<LoopICmp> generateLoopLatchCheck(const DataLayout &DL,
                                                  Type *RangeCheckType) {
 
   auto *LatchType = LatchCheck.IV->getType();
-  if (RangeCheckType == LatchType)
+  if (RangeCheckType == LatchType) {
     return LatchCheck;
+
+}
   // For now, bail out if latch type is narrower than range type.
-  if (DL.getTypeSizeInBits(LatchType) < DL.getTypeSizeInBits(RangeCheckType))
+  if (DL.getTypeSizeInBits(LatchType) < DL.getTypeSizeInBits(RangeCheckType)) {
     return None;
-  if (!isSafeToTruncateWideIVType(DL, SE, LatchCheck, RangeCheckType))
+
+}
+  if (!isSafeToTruncateWideIVType(DL, SE, LatchCheck, RangeCheckType)) {
     return None;
+
+}
   // We can now safely identify the truncated version of the IV and limit for
   // RangeCheckType.
   LoopICmp NewLatchCheck;
   NewLatchCheck.Pred = LatchCheck.Pred;
   NewLatchCheck.IV = dyn_cast<SCEVAddRecExpr>(
       SE.getTruncateExpr(LatchCheck.IV, RangeCheckType));
-  if (!NewLatchCheck.IV)
+  if (!NewLatchCheck.IV) {
     return None;
+
+}
   NewLatchCheck.Limit = SE.getTruncateExpr(LatchCheck.Limit, RangeCheckType);
   LLVM_DEBUG(dbgs() << "IV of type: " << *LatchType
                     << "can be represented as range check type:"
@@ -505,9 +533,13 @@ bool LoopPredication::isSupportedStep(const SCEV* Step) {
 
 Instruction *LoopPredication::findInsertPt(Instruction *Use,
                                            ArrayRef<Value*> Ops) {
-  for (Value *Op : Ops)
-    if (!L->isLoopInvariant(Op))
+  for (Value *Op : Ops) {
+    if (!L->isLoopInvariant(Op)) {
       return Use;
+
+}
+
+}
   return Preheader->getTerminator();
 }
 
@@ -516,10 +548,14 @@ Instruction *LoopPredication::findInsertPt(Instruction *Use,
   // Subtlety: SCEV considers things to be invariant if the value produced is
   // the same across iterations.  This is not the same as being able to
   // evaluate outside the loop, which is what we actually need here.
-  for (const SCEV *Op : Ops)
+  for (const SCEV *Op : Ops) {
     if (!SE->isLoopInvariant(Op, L) ||
-        !isSafeToExpandAt(Op, Preheader->getTerminator(), *SE))
+        !isSafeToExpandAt(Op, Preheader->getTerminator(), *SE)) {
       return Use;
+
+}
+
+}
   return Preheader->getTerminator();
 }
 
@@ -543,20 +579,30 @@ bool LoopPredication::isLoopInvariantValue(const SCEV* S) {
   // Such cases are presumably rare, and hint at missing oppurtunities for
   // other passes. 
 
-  if (SE->isLoopInvariant(S, L))
+  if (SE->isLoopInvariant(S, L)) {
     // Note: This the SCEV variant, so the original Value* may be within the
     // loop even though SCEV has proven it is loop invariant.
     return true;
 
+}
+
   // Handle a particular important case which SCEV doesn't yet know about which
   // shows up in range checks on arrays with immutable lengths.  
   // TODO: This should be sunk inside SCEV.
-  if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S))
-    if (const auto *LI = dyn_cast<LoadInst>(U->getValue()))
-      if (LI->isUnordered() && L->hasLoopInvariantOperands(LI))
+  if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S)) {
+    if (const auto *LI = dyn_cast<LoadInst>(U->getValue())) {
+      if (LI->isUnordered() && L->hasLoopInvariantOperands(LI)) {
         if (AA->pointsToConstantMemory(LI->getOperand(0)) ||
-            LI->hasMetadata(LLVMContext::MD_invariant_load))
+            LI->hasMetadata(LLVMContext::MD_invariant_load)) {
           return true;
+
+}
+
+}
+
+}
+
+}
   return false;
 }
 
@@ -663,9 +709,11 @@ static void normalizePredicate(ScalarEvolution *SE, Loop *L,
   // ULT/UGE form for ease of handling by our caller. 
   if (ICmpInst::isEquality(RC.Pred) &&
       RC.IV->getStepRecurrence(*SE)->isOne() &&
-      SE->isKnownPredicate(ICmpInst::ICMP_ULE, RC.IV->getStart(), RC.Limit))
+      SE->isKnownPredicate(ICmpInst::ICMP_ULE, RC.IV->getStart(), RC.Limit)) {
     RC.Pred = RC.Pred == ICmpInst::ICMP_NE ?
       ICmpInst::ICMP_ULT : ICmpInst::ICMP_UGE;
+
+}
 }
 
 
@@ -726,10 +774,10 @@ Optional<Value *> LoopPredication::widenICmpRangeCheck(ICmpInst *ICI,
     return None;
   }
 
-  if (Step->isOne())
+  if (Step->isOne()) {
     return widenICmpRangeCheckIncrementingLoop(CurrLatchCheck, *RangeCheck,
                                                Expander, Guard);
-  else {
+  } else {
     assert(Step->isAllOnesValue() && "Step should be -1!");
     return widenICmpRangeCheckDecrementingLoop(CurrLatchCheck, *RangeCheck,
                                                Expander, Guard);
@@ -751,8 +799,10 @@ unsigned LoopPredication::collectChecks(SmallVectorImpl<Value *> &Checks,
   Value *WideableCond = nullptr;
   do {
     Value *Condition = Worklist.pop_back_val();
-    if (!Visited.insert(Condition).second)
+    if (!Visited.insert(Condition).second) {
       continue;
+
+}
 
     Value *LHS, *RHS;
     using namespace llvm::PatternMatch;
@@ -785,8 +835,10 @@ unsigned LoopPredication::collectChecks(SmallVectorImpl<Value *> &Checks,
   // assumes we preserve the form: (br (and Cond, WC())).  FIXME
   // Note that if there were multiple calls to wideable condition in the
   // traversal, we only need to keep one, and which one is arbitrary.
-  if (WideableCond)
+  if (WideableCond) {
     Checks.push_back(WideableCond);
+
+}
   return NumWidened;
 }
 
@@ -799,8 +851,10 @@ bool LoopPredication::widenGuardConditions(IntrinsicInst *Guard,
   SmallVector<Value *, 4> Checks;
   unsigned NumWidened = collectChecks(Checks, Guard->getOperand(0), Expander,
                                       Guard);
-  if (NumWidened == 0)
+  if (NumWidened == 0) {
     return false;
+
+}
 
   TotalWidened += NumWidened;
 
@@ -825,8 +879,10 @@ bool LoopPredication::widenWidenableBranchGuardConditions(
   SmallVector<Value *, 4> Checks;
   unsigned NumWidened = collectChecks(Checks, BI->getCondition(),
                                       Expander, BI);
-  if (NumWidened == 0)
+  if (NumWidened == 0) {
     return false;
+
+}
 
   TotalWidened += NumWidened;
 
@@ -873,8 +929,10 @@ Optional<LoopICmp> LoopPredication::parseLoopLatchICmp() {
     return None;
   }
 
-  if (TrueDest != L->getHeader())
+  if (TrueDest != L->getHeader()) {
     Result->Pred = ICmpInst::getInversePredicate(Result->Pred);
+
+}
 
   // Check affine first, so if it's not we don't try to compute the step
   // recurrence.
@@ -912,15 +970,19 @@ Optional<LoopICmp> LoopPredication::parseLoopLatchICmp() {
 
 
 bool LoopPredication::isLoopProfitableToPredicate() {
-  if (SkipProfitabilityChecks || !BPI)
+  if (SkipProfitabilityChecks || !BPI) {
     return true;
+
+}
 
   SmallVector<std::pair<BasicBlock *, BasicBlock *>, 8> ExitEdges;
   L->getExitEdges(ExitEdges);
   // If there is only one exiting edge in the loop, it is always profitable to
   // predicate the loop.
-  if (ExitEdges.size() == 1)
+  if (ExitEdges.size() == 1) {
     return true;
+
+}
 
   // Calculate the exiting probabilities of all exiting edges from the loop,
   // starting with the LatchExitProbability.
@@ -956,8 +1018,10 @@ bool LoopPredication::isLoopProfitableToPredicate() {
         BPI->getEdgeProbability(ExitEdge.first, ExitEdge.second);
     // Some exiting edge has higher probability than the latch exiting edge.
     // No longer profitable to predicate.
-    if (ExitingBlockProbability > LatchProbabilityThreshold)
+    if (ExitingBlockProbability > LatchProbabilityThreshold) {
       return false;
+
+}
   }
   // Using BPI, we have concluded that the most probable way to exit from the
   // loop is through the latch (or there's no profile information and all
@@ -975,14 +1039,18 @@ static BranchInst *FindWidenableTerminatorAboveLoop(Loop *L, LoopInfo &LI) {
   // afterwards even though that may cause the slow path to run in a case where
   // it wouldn't have otherwise.
   BasicBlock *BB = L->getLoopPreheader();
-  if (!BB)
+  if (!BB) {
     return nullptr;
+
+}
   do {
-    if (BasicBlock *Pred = BB->getSinglePredecessor())
+    if (BasicBlock *Pred = BB->getSinglePredecessor()) {
       if (BB == Pred->getSingleSuccessor()) {
         BB = Pred;
         continue;
       }
+
+}
     break;
   } while (true);
 
@@ -992,8 +1060,10 @@ static BranchInst *FindWidenableTerminatorAboveLoop(Loop *L, LoopInfo &LI) {
     Value *Cond, *WC;
     BasicBlock *IfTrueBB, *IfFalseBB;
     if (parseWidenableBranch(Term, Cond, WC, IfTrueBB, IfFalseBB) &&
-        IfTrueBB == BB)
+        IfTrueBB == BB) {
       return cast<BranchInst>(Term);
+
+}
   }
   return nullptr;
 }
@@ -1010,15 +1080,19 @@ static const SCEV *getMinAnalyzeableBackedgeTakenCount(ScalarEvolution &SE,
   SmallVector<const SCEV *, 4> ExitCounts;
   for (BasicBlock *ExitingBB : ExitingBlocks) {
     const SCEV *ExitCount = SE.getExitCount(L, ExitingBB);
-    if (isa<SCEVCouldNotCompute>(ExitCount))
+    if (isa<SCEVCouldNotCompute>(ExitCount)) {
       continue;
+
+}
     assert(DT.dominates(ExitingBB, L->getLoopLatch()) &&
            "We should only have known counts for exiting blocks that "
            "dominate latch!");
     ExitCounts.push_back(ExitCount);
   }
-  if (ExitCounts.size() < 2)
+  if (ExitCounts.size() < 2) {
     return SE.getCouldNotCompute();
+
+}
   return SE.getUMinFromMismatchedTypes(ExitCounts);
 }
 
@@ -1050,20 +1124,28 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
   SmallVector<BasicBlock *, 16> ExitingBlocks;
   L->getExitingBlocks(ExitingBlocks);
 
-  if (ExitingBlocks.empty())
+  if (ExitingBlocks.empty()) {
     return false; // Nothing to do.
 
+}
+
   auto *Latch = L->getLoopLatch();
-  if (!Latch)
+  if (!Latch) {
     return false;
+
+}
 
   auto *WidenableBR = FindWidenableTerminatorAboveLoop(L, *LI);
-  if (!WidenableBR)
+  if (!WidenableBR) {
     return false;
 
+}
+
   const SCEV *LatchEC = SE->getExitCount(L, Latch);
-  if (isa<SCEVCouldNotCompute>(LatchEC))
+  if (isa<SCEVCouldNotCompute>(LatchEC)) {
     return false; // profitability - want hot exit in analyzeable set
+
+}
 
   // At this point, we have found an analyzeable latch, and a widenable
   // condition above the loop.  If we have a widenable exit within the loop
@@ -1075,12 +1157,16 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
     bool Invalidate = false;
     
     for (auto *ExitingBB : ExitingBlocks) {
-      if (LI->getLoopFor(ExitingBB) != L)
+      if (LI->getLoopFor(ExitingBB) != L) {
         continue;
 
+}
+
       auto *BI = dyn_cast<BranchInst>(ExitingBB->getTerminator());
-      if (!BI)
+      if (!BI) {
         continue;
+
+}
 
       Use *Cond, *WC;
       BasicBlock *IfTrueBB, *IfFalseBB;
@@ -1090,8 +1176,10 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
         Invalidate = true;
       }
     }
-    if (Invalidate)
+    if (Invalidate) {
       SE->forgetLoop(L);
+
+}
   }
 
   // The use of umin(all analyzeable exits) instead of latch is subtle, but
@@ -1103,8 +1191,10 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
   const SCEV *MinEC = getMinAnalyzeableBackedgeTakenCount(*SE, *DT, L);
   if (isa<SCEVCouldNotCompute>(MinEC) || MinEC->getType()->isPointerTy() ||
       !SE->isLoopInvariant(MinEC, L) ||
-      !isSafeToExpandAt(MinEC, WidenableBR, *SE))
+      !isSafeToExpandAt(MinEC, WidenableBR, *SE)) {
     return false;
+
+}
 
   // Subtlety: We need to avoid inserting additional uses of the WC.  We know
   // that it can only have one transitive use at the moment, and thus moving
@@ -1121,28 +1211,38 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
     // If our exiting block exits multiple loops, we can only rewrite the
     // innermost one.  Otherwise, we're changing how many times the innermost
     // loop runs before it exits.
-    if (LI->getLoopFor(ExitingBB) != L)
+    if (LI->getLoopFor(ExitingBB) != L) {
       continue;
+
+}
 
     // Can't rewrite non-branch yet.
     auto *BI = dyn_cast<BranchInst>(ExitingBB->getTerminator());
-    if (!BI)
+    if (!BI) {
       continue;
 
+}
+
     // If already constant, nothing to do.
-    if (isa<Constant>(BI->getCondition()))
+    if (isa<Constant>(BI->getCondition())) {
       continue;
+
+}
 
     const SCEV *ExitCount = SE->getExitCount(L, ExitingBB);
     if (isa<SCEVCouldNotCompute>(ExitCount) ||
         ExitCount->getType()->isPointerTy() ||
-        !isSafeToExpandAt(ExitCount, WidenableBR, *SE))
+        !isSafeToExpandAt(ExitCount, WidenableBR, *SE)) {
       continue;
+
+}
 
     const bool ExitIfTrue = !L->contains(*succ_begin(ExitingBB));
     BasicBlock *ExitBB = BI->getSuccessor(ExitIfTrue ? 0 : 1);
-    if (!ExitBB->getPostdominatingDeoptimizeCall())
+    if (!ExitBB->getPostdominatingDeoptimizeCall()) {
       continue;
+
+}
 
     /// Here we can be fairly sure that executing this exit will most likely
     /// lead to executing llvm.experimental.deoptimize.
@@ -1153,8 +1253,10 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
     // 2) fold the branch to untaken - avoids infinite looping
 
     Value *ECV = Rewriter.expandCodeFor(ExitCount);
-    if (!MinECV)
+    if (!MinECV) {
       MinECV = Rewriter.expandCodeFor(MinEC);
+
+}
     Value *RHS = MinECV;
     if (ECV->getType() != RHS->getType()) {
       Type *WiderTy = SE->getWiderType(ECV->getType(), RHS->getType());
@@ -1175,12 +1277,14 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
     Changed = true;
   }
 
-  if (Changed)
+  if (Changed) {
     // We just mutated a bunch of loop exits changing there exit counts
     // widely.  We need to force recomputation of the exit counts given these
     // changes.  Note that all of the inserted exits are never taken, and
     // should be removed next time the CFG is modified.
     SE->forgetLoop(L);
+
+}
   return Changed;
 }
 
@@ -1200,18 +1304,24 @@ bool LoopPredication::runOnLoop(Loop *Loop) {
       Intrinsic::getName(Intrinsic::experimental_widenable_condition));
   bool HasWidenableConditions =
       PredicateWidenableBranchGuards && WCDecl && !WCDecl->use_empty();
-  if (!HasIntrinsicGuards && !HasWidenableConditions)
+  if (!HasIntrinsicGuards && !HasWidenableConditions) {
     return false;
+
+}
 
   DL = &M->getDataLayout();
 
   Preheader = L->getLoopPreheader();
-  if (!Preheader)
+  if (!Preheader) {
     return false;
 
+}
+
   auto LatchCheckOpt = parseLoopLatchICmp();
-  if (!LatchCheckOpt)
+  if (!LatchCheckOpt) {
     return false;
+
+}
   LatchCheck = *LatchCheckOpt;
 
   LLVM_DEBUG(dbgs() << "Latch check:\n");
@@ -1226,21 +1336,31 @@ bool LoopPredication::runOnLoop(Loop *Loop) {
   SmallVector<IntrinsicInst *, 4> Guards;
   SmallVector<BranchInst *, 4> GuardsAsWidenableBranches;
   for (const auto BB : L->blocks()) {
-    for (auto &I : *BB)
-      if (isGuard(&I))
+    for (auto &I : *BB) {
+      if (isGuard(&I)) {
         Guards.push_back(cast<IntrinsicInst>(&I));
+
+}
+
+}
     if (PredicateWidenableBranchGuards &&
-        isGuardAsWidenableBranch(BB->getTerminator()))
+        isGuardAsWidenableBranch(BB->getTerminator())) {
       GuardsAsWidenableBranches.push_back(
           cast<BranchInst>(BB->getTerminator()));
+
+}
   }
 
   SCEVExpander Expander(*SE, *DL, "loop-predication");
   bool Changed = false;
-  for (auto *Guard : Guards)
+  for (auto *Guard : Guards) {
     Changed |= widenGuardConditions(Guard, Expander);
-  for (auto *Guard : GuardsAsWidenableBranches)
+
+}
+  for (auto *Guard : GuardsAsWidenableBranches) {
     Changed |= widenWidenableBranchGuardConditions(Guard, Expander);
+
+}
   Changed |= predicateLoopExits(L, Expander);
   return Changed;
 }

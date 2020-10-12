@@ -28,8 +28,10 @@ RetireControlUnit::RetireControlUnit(const MCSchedModel &SM)
   // and the maximum number of instructions retired per cycle.
   if (SM.hasExtraProcessorInfo()) {
     const MCExtraProcessorInfo &EPI = SM.getExtraProcessorInfo();
-    if (EPI.ReorderBufferSize)
+    if (EPI.ReorderBufferSize) {
       AvailableEntries = EPI.ReorderBufferSize;
+
+}
     MaxRetirePerCycle = EPI.MaxRetirePerCycle;
   }
   NumROBEntries = AvailableEntries;

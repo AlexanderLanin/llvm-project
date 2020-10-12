@@ -125,13 +125,17 @@ FastDivInsertionTask::FastDivInsertionTask(Instruction *I,
 
   // Skip division on vector types. Only optimize integer instructions.
   IntegerType *SlowType = dyn_cast<IntegerType>(SlowDivOrRem->getType());
-  if (!SlowType)
+  if (!SlowType) {
     return;
+
+}
 
   // Skip if this bitwidth is not bypassed.
   auto BI = BypassWidths.find(SlowType->getBitWidth());
-  if (BI == BypassWidths.end())
+  if (BI == BypassWidths.end()) {
     return;
+
+}
 
   // Get type for div/rem instruction with bypass bitwidth.
   IntegerType *BT = IntegerType::get(I->getContext(), BI->second);
@@ -150,8 +154,10 @@ FastDivInsertionTask::FastDivInsertionTask(Instruction *I,
 /// If no replacement can be generated, nullptr is returned.
 Value *FastDivInsertionTask::getReplacement(DivCacheTy &Cache) {
   // First, make sure that the task is valid.
-  if (!IsValidTask)
+  if (!IsValidTask) {
     return nullptr;
+
+}
 
   // Then, look for a value in Cache.
   Value *Dividend = SlowDivOrRem->getOperand(0);
@@ -163,8 +169,10 @@ Value *FastDivInsertionTask::getReplacement(DivCacheTy &Cache) {
     // If previous instance does not exist, try to insert fast div.
     Optional<QuotRemPair> OptResult = insertFastDivAndRem();
     // Bail out if insertFastDivAndRem has failed.
-    if (!OptResult)
+    if (!OptResult) {
       return nullptr;
+
+}
     CacheI = Cache.insert({Key, *OptResult}).first;
   }
 
@@ -189,8 +197,10 @@ Value *FastDivInsertionTask::getReplacement(DivCacheTy &Cache) {
 /// nor hash-like.
 bool FastDivInsertionTask::isHashLikeValue(Value *V, VisitedSetTy &Visited) {
   Instruction *I = dyn_cast<Instruction>(V);
-  if (!I)
+  if (!I) {
     return false;
+
+}
 
   switch (I->getOpcode()) {
   case Instruction::Xor:
@@ -202,19 +212,25 @@ bool FastDivInsertionTask::isHashLikeValue(Value *V, VisitedSetTy &Visited) {
     // an operand is actually a constant.
     Value *Op1 = I->getOperand(1);
     ConstantInt *C = dyn_cast<ConstantInt>(Op1);
-    if (!C && isa<BitCastInst>(Op1))
+    if (!C && isa<BitCastInst>(Op1)) {
       C = dyn_cast<ConstantInt>(cast<BitCastInst>(Op1)->getOperand(0));
+
+}
     return C && C->getValue().getMinSignedBits() > BypassType->getBitWidth();
   }
   case Instruction::PHI:
     // Stop IR traversal in case of a crazy input code. This limits recursion
     // depth.
-    if (Visited.size() >= 16)
+    if (Visited.size() >= 16) {
       return false;
+
+}
     // Do not visit nodes that have been visited already. We return true because
     // it means that we couldn't find any value that doesn't look hash-like.
-    if (Visited.find(I) != Visited.end())
+    if (Visited.find(I) != Visited.end()) {
       return true;
+
+}
     Visited.insert(I);
     return llvm::all_of(cast<PHINode>(I)->incoming_values(), [&](Value *V) {
       // Ignore undef values as they probably don't affect the division
@@ -241,18 +257,24 @@ ValueRange FastDivInsertionTask::getValueRange(Value *V,
 
   computeKnownBits(V, Known, DL);
 
-  if (Known.countMinLeadingZeros() >= HiBits)
+  if (Known.countMinLeadingZeros() >= HiBits) {
     return VALRNG_KNOWN_SHORT;
 
-  if (Known.countMaxLeadingZeros() < HiBits)
+}
+
+  if (Known.countMaxLeadingZeros() < HiBits) {
     return VALRNG_LIKELY_LONG;
+
+}
 
   // Long integer divisions are often used in hashtable implementations. It's
   // not worth bypassing such divisions because hash values are extremely
   // unlikely to have enough leading zeros. The call below tries to detect
   // values that are unlikely to fit BypassType (including hashes).
-  if (isHashLikeValue(V, Visited))
+  if (isHashLikeValue(V, Visited)) {
     return VALRNG_LIKELY_LONG;
+
+}
 
   return VALRNG_UNKNOWN;
 }
@@ -330,10 +352,12 @@ Value *FastDivInsertionTask::insertOperandRuntimeCheck(Value *Op1, Value *Op2) {
   IRBuilder<> Builder(MainBB, MainBB->end());
 
   Value *OrV;
-  if (Op1 && Op2)
+  if (Op1 && Op2) {
     OrV = Builder.CreateOr(Op1, Op2);
-  else
+  } else {
     OrV = Op1 ? Op1 : Op2;
+
+}
 
   // BitMask is inverted to check if the operands are
   // larger than the bypass type
@@ -353,13 +377,17 @@ Optional<QuotRemPair> FastDivInsertionTask::insertFastDivAndRem() {
 
   VisitedSetTy SetL;
   ValueRange DividendRange = getValueRange(Dividend, SetL);
-  if (DividendRange == VALRNG_LIKELY_LONG)
+  if (DividendRange == VALRNG_LIKELY_LONG) {
     return None;
+
+}
 
   VisitedSetTy SetR;
   ValueRange DivisorRange = getValueRange(Divisor, SetR);
-  if (DivisorRange == VALRNG_LIKELY_LONG)
+  if (DivisorRange == VALRNG_LIKELY_LONG) {
     return None;
+
+}
 
   bool DividendShort = (DividendRange == VALRNG_KNOWN_SHORT);
   bool DivisorShort = (DivisorRange == VALRNG_KNOWN_SHORT);
@@ -391,10 +419,14 @@ Optional<QuotRemPair> FastDivInsertionTask::insertFastDivAndRem() {
   // bitcast instructions. As a result, some constants may look like an
   // instruction at first, and an additional check is necessary to find out if
   // an operand is actually a constant.
-  if (auto *BCI = dyn_cast<BitCastInst>(Divisor))
+  if (auto *BCI = dyn_cast<BitCastInst>(Divisor)) {
     if (BCI->getParent() == SlowDivOrRem->getParent() &&
-        isa<ConstantInt>(BCI->getOperand(0)))
+        isa<ConstantInt>(BCI->getOperand(0))) {
       return None;
+
+}
+
+}
 
   if (DividendShort && !isSignedOp()) {
     // If the division is unsigned and Dividend is known to be short, then
@@ -456,8 +488,10 @@ bool llvm::bypassSlowDivision(BasicBlock *BB,
     Next = Next->getNextNode();
 
     // Ignore dead code to save time and avoid bugs.
-    if (I->hasNUses(0))
+    if (I->hasNUses(0)) {
       continue;
+
+}
 
     FastDivInsertionTask Task(I, BypassWidths);
     if (Value *Replacement = Task.getReplacement(PerBBDivCache)) {
@@ -470,9 +504,13 @@ bool llvm::bypassSlowDivision(BasicBlock *BB,
   // Above we eagerly create divs and rems, as pairs, so that we can efficiently
   // create divrem machine instructions.  Now erase any unused divs / rems so we
   // don't leave extra instructions sitting around.
-  for (auto &KV : PerBBDivCache)
-    for (Value *V : {KV.second.Quotient, KV.second.Remainder})
+  for (auto &KV : PerBBDivCache) {
+    for (Value *V : {KV.second.Quotient, KV.second.Remainder}) {
       RecursivelyDeleteTriviallyDeadInstructions(V);
+
+}
+
+}
 
   return MadeChange;
 }

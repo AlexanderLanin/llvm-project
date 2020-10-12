@@ -23,9 +23,13 @@ using namespace llvm;
 
 namespace {
 BasicBlock *getBlockByName(Function *F, StringRef name) {
-  for (auto &BB : *F)
-    if (BB.getName() == name)
+  for (auto &BB : *F) {
+    if (BB.getName() == name) {
       return &BB;
+
+}
+
+}
   return nullptr;
 }
 

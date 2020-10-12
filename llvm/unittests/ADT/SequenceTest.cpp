@@ -25,8 +25,10 @@ TEST(SequenceTest, Basic) {
 
   auto my_seq = seq(0, 4);
   EXPECT_EQ(4, my_seq.end() - my_seq.begin());
-  for (int i : {0, 1, 2, 3})
+  for (int i : {0, 1, 2, 3}) {
     EXPECT_EQ(i, (int)my_seq.begin()[i]);
+
+}
 
   EXPECT_TRUE(my_seq.begin() < my_seq.end());
 

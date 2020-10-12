@@ -38,8 +38,10 @@ DWARFDebugPubTable::DWARFDebugPubTable(const DWARFObject &Obj,
 
     while (Offset < Sec.Data.size()) {
       uint64_t DieRef = PubNames.getUnsigned(&Offset, OffsetSize);
-      if (DieRef == 0)
+      if (DieRef == 0) {
         break;
+
+}
       uint8_t IndexEntryValue = GnuStyle ? PubNames.getU8(&Offset) : 0;
       StringRef Name = PubNames.getCStrRef(&Offset);
       SetData.Entries.push_back(

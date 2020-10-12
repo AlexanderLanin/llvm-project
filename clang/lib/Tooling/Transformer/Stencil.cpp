@@ -35,9 +35,11 @@ static llvm::Expected<DynTypedNode>
 getNode(const ast_matchers::BoundNodes &Nodes, StringRef Id) {
   auto &NodesMap = Nodes.getMap();
   auto It = NodesMap.find(Id);
-  if (It == NodesMap.end())
+  if (It == NodesMap.end()) {
     return llvm::make_error<llvm::StringError>(llvm::errc::invalid_argument,
                                                "Id not bound: " + Id);
+
+}
   return It->second;
 }
 
@@ -157,8 +159,10 @@ std::string toStringData(const MatchConsumer<std::string> &) {
 std::string toStringData(const SequenceData &Data) {
   llvm::SmallVector<std::string, 2> Parts;
   Parts.reserve(Data.Stencils.size());
-  for (const auto &S : Data.Stencils)
+  for (const auto &S : Data.Stencils) {
     Parts.push_back(S->toString());
+
+}
   return (llvm::Twine("seq(") + llvm::join(Parts, ", ") + ")").str();
 }
 
@@ -177,8 +181,10 @@ Error evalData(const DebugPrintNodeData &Data,
   std::string Output;
   llvm::raw_string_ostream Os(Output);
   auto NodeOrErr = getNode(Match.Nodes, Data.Id);
-  if (auto Err = NodeOrErr.takeError())
+  if (auto Err = NodeOrErr.takeError()) {
     return Err;
+
+}
   NodeOrErr->print(Os, PrintingPolicy(Match.Context->getLangOpts()));
   *Result += Os.str();
   return Error::success();
@@ -187,9 +193,11 @@ Error evalData(const DebugPrintNodeData &Data,
 Error evalData(const UnaryOperationData &Data,
                const MatchFinder::MatchResult &Match, std::string *Result) {
   const auto *E = Match.Nodes.getNodeAs<Expr>(Data.Id);
-  if (E == nullptr)
+  if (E == nullptr) {
     return llvm::make_error<StringError>(
         errc::invalid_argument, "Id not bound or not Expr: " + Data.Id);
+
+}
   llvm::Optional<std::string> Source;
   switch (Data.Op) {
   case UnaryNodeOperator::Parens:
@@ -216,10 +224,12 @@ Error evalData(const UnaryOperationData &Data,
     Source = tooling::buildAddressOf(*E, *Match.Context);
     break;
   }
-  if (!Source)
+  if (!Source) {
     return llvm::make_error<StringError>(
         errc::invalid_argument,
         "Could not construct expression source from ID: " + Data.Id);
+
+}
   *Result += *Source;
   return Error::success();
 }
@@ -227,10 +237,14 @@ Error evalData(const UnaryOperationData &Data,
 Error evalData(const SelectorData &Data, const MatchFinder::MatchResult &Match,
                std::string *Result) {
   auto Range = Data.Selector(Match);
-  if (!Range)
+  if (!Range) {
     return Range.takeError();
-  if (auto Err = tooling::validateEditRange(*Range, *Match.SourceManager))
+
+}
+  if (auto Err = tooling::validateEditRange(*Range, *Match.SourceManager)) {
     return Err;
+
+}
   *Result += tooling::getText(*Range, *Match.Context);
   return Error::success();
 }
@@ -238,19 +252,23 @@ Error evalData(const SelectorData &Data, const MatchFinder::MatchResult &Match,
 Error evalData(const AccessData &Data, const MatchFinder::MatchResult &Match,
                std::string *Result) {
   const auto *E = Match.Nodes.getNodeAs<Expr>(Data.BaseId);
-  if (E == nullptr)
+  if (E == nullptr) {
     return llvm::make_error<StringError>(errc::invalid_argument,
                                          "Id not bound: " + Data.BaseId);
+
+}
   if (!E->isImplicitCXXThis()) {
     if (llvm::Optional<std::string> S =
             E->getType()->isAnyPointerType()
                 ? tooling::buildArrow(*E, *Match.Context)
-                : tooling::buildDot(*E, *Match.Context))
+                : tooling::buildDot(*E, *Match.Context)) {
       *Result += *S;
-    else
+    } else {
       return llvm::make_error<StringError>(
           errc::invalid_argument,
           "Could not construct object text from ID: " + Data.BaseId);
+
+}
   }
   return Data.Member->eval(Match, Result);
 }
@@ -265,17 +283,23 @@ Error evalData(const IfBoundData &Data, const MatchFinder::MatchResult &Match,
 Error evalData(const MatchConsumer<std::string> &Fn,
                const MatchFinder::MatchResult &Match, std::string *Result) {
   Expected<std::string> Value = Fn(Match);
-  if (!Value)
+  if (!Value) {
     return Value.takeError();
+
+}
   *Result += *Value;
   return Error::success();
 }
 
 Error evalData(const SequenceData &Data, const MatchFinder::MatchResult &Match,
                std::string *Result) {
-  for (const auto &S : Data.Stencils)
-    if (auto Err = S->eval(Match, Result))
+  for (const auto &S : Data.Stencils) {
+    if (auto Err = S->eval(Match, Result)) {
       return Err;
+
+}
+
+}
   return Error::success();
 }
 
@@ -355,7 +379,9 @@ Stencil transformer::run(MatchConsumer<std::string> Fn) {
 
 Stencil transformer::catVector(std::vector<Stencil> Parts) {
   // Only one argument, so don't wrap in sequence.
-  if (Parts.size() == 1)
+  if (Parts.size() == 1) {
     return std::move(Parts[0]);
+
+}
   return std::make_shared<StencilImpl<SequenceData>>(std::move(Parts));
 }

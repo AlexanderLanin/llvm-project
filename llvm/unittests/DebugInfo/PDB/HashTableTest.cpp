@@ -169,15 +169,19 @@ TEST(HashTableTest, NamedStreamMap) {
   std::vector<StringRef> Streams = {"One",  "Two", "Three", "Four",
                                     "Five", "Six", "Seven"};
   StringMap<uint32_t> ExpectedIndices;
-  for (uint32_t I = 0; I < Streams.size(); ++I)
+  for (uint32_t I = 0; I < Streams.size(); ++I) {
     ExpectedIndices[Streams[I]] = I + 1;
+
+}
 
   // To verify the hash table actually works, we want to verify that insertion
   // order doesn't matter.  So try inserting in every possible order of 7 items.
   do {
     NamedStreamMap NSM;
-    for (StringRef S : Streams)
+    for (StringRef S : Streams) {
       NSM.set(S, ExpectedIndices[S]);
+
+}
 
     EXPECT_EQ(Streams.size(), NSM.size());
 
@@ -224,8 +228,10 @@ struct FooBarHashTraits {
   }
 
   StringRef storageKeyToLookupKey(uint32_t N) const {
-    if (N >= Buffer.size())
+    if (N >= Buffer.size()) {
       return StringRef();
+
+}
 
     return StringRef(Buffer.data() + N);
   }

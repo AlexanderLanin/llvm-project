@@ -140,18 +140,22 @@ const X86InstrFMA3Group *llvm::getFMA3Group(unsigned Opcode, uint64_t TSFlags) {
                 ((BaseOpcode >= 0x96 && BaseOpcode <= 0x9F) ||
                  (BaseOpcode >= 0xA6 && BaseOpcode <= 0xAF) ||
                  (BaseOpcode >= 0xB6 && BaseOpcode <= 0xBF));
-  if (!IsFMA3)
+  if (!IsFMA3) {
     return nullptr;
+
+}
 
   verifyTables();
 
   ArrayRef<X86InstrFMA3Group> Table;
-  if (TSFlags & X86II::EVEX_RC)
+  if (TSFlags & X86II::EVEX_RC) {
     Table = makeArrayRef(RoundGroups);
-  else if (TSFlags & X86II::EVEX_B)
+  } else if (TSFlags & X86II::EVEX_B) {
     Table = makeArrayRef(BroadcastGroups);
-  else
+  } else {
     Table = makeArrayRef(Groups);
+
+}
 
   // FMA 132 instructions have an opcode of 0x96-0x9F
   // FMA 213 instructions have an opcode of 0xA6-0xAF

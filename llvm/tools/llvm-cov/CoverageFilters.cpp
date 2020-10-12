@@ -60,16 +60,20 @@ void CoverageFilters::push_back(std::unique_ptr<CoverageFilter> Filter) {
 bool CoverageFilters::matches(const coverage::CoverageMapping &CM,
                               const coverage::FunctionRecord &Function) const {
   for (const auto &Filter : Filters) {
-    if (Filter->matches(CM, Function))
+    if (Filter->matches(CM, Function)) {
       return true;
+
+}
   }
   return false;
 }
 
 bool CoverageFilters::matchesFilename(StringRef Filename) const {
   for (const auto &Filter : Filters) {
-    if (Filter->matchesFilename(Filename))
+    if (Filter->matchesFilename(Filename)) {
       return true;
+
+}
   }
   return false;
 }
@@ -78,8 +82,10 @@ bool CoverageFiltersMatchAll::matches(
     const coverage::CoverageMapping &CM,
     const coverage::FunctionRecord &Function) const {
   for (const auto &Filter : Filters) {
-    if (!Filter->matches(CM, Function))
+    if (!Filter->matches(CM, Function)) {
       return false;
+
+}
   }
   return true;
 }

@@ -88,11 +88,15 @@ MappedBlockStream::createFpmStream(const MSFLayout &Layout,
 Error MappedBlockStream::readBytes(uint32_t Offset, uint32_t Size,
                                    ArrayRef<uint8_t> &Buffer) {
   // Make sure we aren't trying to read beyond the end of the stream.
-  if (auto EC = checkOffsetForRead(Offset, Size))
+  if (auto EC = checkOffsetForRead(Offset, Size)) {
     return EC;
 
-  if (tryReadContiguously(Offset, Size, Buffer))
+}
+
+  if (tryReadContiguously(Offset, Size, Buffer)) {
     return Error::success();
+
+}
 
   auto CacheIter = CacheMap.find(Offset);
   if (CacheIter != CacheMap.end()) {
@@ -112,31 +116,41 @@ Error MappedBlockStream::readBytes(uint32_t Offset, uint32_t Size,
     Interval RequestExtent = std::make_pair(Offset, Offset + Size);
 
     // We already checked this one on the fast path above.
-    if (CacheItem.first == Offset)
+    if (CacheItem.first == Offset) {
       continue;
+
+}
     // If the initial extent of the cached item is beyond the ending extent
     // of the request, there is no overlap.
-    if (CacheItem.first >= Offset + Size)
+    if (CacheItem.first >= Offset + Size) {
       continue;
+
+}
 
     // We really only have to check the last item in the list, since we append
     // in order of increasing length.
-    if (CacheItem.second.empty())
+    if (CacheItem.second.empty()) {
       continue;
+
+}
 
     auto CachedAlloc = CacheItem.second.back();
     // If the initial extent of the request is beyond the ending extent of
     // the cached item, there is no overlap.
     Interval CachedExtent =
         std::make_pair(CacheItem.first, CacheItem.first + CachedAlloc.size());
-    if (RequestExtent.first >= CachedExtent.first + CachedExtent.second)
+    if (RequestExtent.first >= CachedExtent.first + CachedExtent.second) {
       continue;
+
+}
 
     Interval Intersection = intersect(CachedExtent, RequestExtent);
     // Only use this if the entire request extent is contained in the cached
     // extent.
-    if (Intersection != RequestExtent)
+    if (Intersection != RequestExtent) {
       continue;
+
+}
 
     uint32_t CacheRangeOffset =
         AbsoluteDifference(CachedExtent.first, Intersection.first);
@@ -149,8 +163,10 @@ Error MappedBlockStream::readBytes(uint32_t Offset, uint32_t Size,
   // allocations, as existing clients may be holding a pointer which must
   // not be invalidated.
   uint8_t *WriteBuffer = static_cast<uint8_t *>(Allocator.Allocate(Size, 8));
-  if (auto EC = readBytes(Offset, MutableArrayRef<uint8_t>(WriteBuffer, Size)))
+  if (auto EC = readBytes(Offset, MutableArrayRef<uint8_t>(WriteBuffer, Size))) {
     return EC;
+
+}
 
   if (CacheIter != CacheMap.end()) {
     CacheIter->second.emplace_back(WriteBuffer, Size);
@@ -166,15 +182,19 @@ Error MappedBlockStream::readBytes(uint32_t Offset, uint32_t Size,
 Error MappedBlockStream::readLongestContiguousChunk(uint32_t Offset,
                                                     ArrayRef<uint8_t> &Buffer) {
   // Make sure we aren't trying to read beyond the end of the stream.
-  if (auto EC = checkOffsetForRead(Offset, 1))
+  if (auto EC = checkOffsetForRead(Offset, 1)) {
     return EC;
+
+}
 
   uint32_t First = Offset / BlockSize;
   uint32_t Last = First;
 
   while (Last < getNumBlocks() - 1) {
-    if (StreamLayout.Blocks[Last] != StreamLayout.Blocks[Last + 1] - 1)
+    if (StreamLayout.Blocks[Last] != StreamLayout.Blocks[Last + 1] - 1) {
       break;
+
+}
     ++Last;
   }
 
@@ -185,8 +205,10 @@ Error MappedBlockStream::readLongestContiguousChunk(uint32_t Offset,
 
   ArrayRef<uint8_t> BlockData;
   uint32_t MsfOffset = blockToOffset(StreamLayout.Blocks[First], BlockSize);
-  if (auto EC = MsfData.readBytes(MsfOffset, BlockSize, BlockData))
+  if (auto EC = MsfData.readBytes(MsfOffset, BlockSize, BlockData)) {
     return EC;
+
+}
 
   BlockData = BlockData.drop_front(OffsetInFirstBlock);
   Buffer = ArrayRef<uint8_t>(BlockData.data(), ByteSpan);
@@ -215,8 +237,10 @@ bool MappedBlockStream::tryReadContiguously(uint32_t Offset, uint32_t Size,
   uint32_t RequiredContiguousBlocks = NumAdditionalBlocks + 1;
   uint32_t E = StreamLayout.Blocks[BlockNum];
   for (uint32_t I = 0; I < RequiredContiguousBlocks; ++I, ++E) {
-    if (StreamLayout.Blocks[I + BlockNum] != E)
+    if (StreamLayout.Blocks[I + BlockNum] != E) {
       return false;
+
+}
   }
 
   // Read out the entire block where the requested offset starts.  Then drop
@@ -242,8 +266,10 @@ Error MappedBlockStream::readBytes(uint32_t Offset,
   uint32_t OffsetInBlock = Offset % BlockSize;
 
   // Make sure we aren't trying to read beyond the end of the stream.
-  if (auto EC = checkOffsetForRead(Offset, Buffer.size()))
+  if (auto EC = checkOffsetForRead(Offset, Buffer.size())) {
     return EC;
+
+}
 
   uint32_t BytesLeft = Buffer.size();
   uint32_t BytesWritten = 0;
@@ -253,8 +279,10 @@ Error MappedBlockStream::readBytes(uint32_t Offset,
 
     ArrayRef<uint8_t> BlockData;
     uint32_t Offset = blockToOffset(StreamBlockAddr, BlockSize);
-    if (auto EC = MsfData.readBytes(Offset, BlockSize, BlockData))
+    if (auto EC = MsfData.readBytes(Offset, BlockSize, BlockData)) {
       return EC;
+
+}
 
     const uint8_t *ChunkStart = BlockData.data() + OffsetInBlock;
     uint32_t BytesInChunk = std::min(BytesLeft, BlockSize - OffsetInBlock);
@@ -280,13 +308,17 @@ void MappedBlockStream::fixCacheAfterWrite(uint32_t Offset,
   for (const auto &MapEntry : CacheMap) {
     // If the end of the written extent precedes the beginning of the cached
     // extent, ignore this map entry.
-    if (Offset + Data.size() < MapEntry.first)
+    if (Offset + Data.size() < MapEntry.first) {
       continue;
+
+}
     for (const auto &Alloc : MapEntry.second) {
       // If the end of the cached extent precedes the beginning of the written
       // extent, ignore this alloc.
-      if (MapEntry.first + Alloc.size() < Offset)
+      if (MapEntry.first + Alloc.size() < Offset) {
         continue;
+
+}
 
       // If we get here, they are guaranteed to overlap.
       Interval WriteInterval = std::make_pair(Offset, Offset + Data.size());
@@ -361,12 +393,16 @@ WritableMappedBlockStream::createFpmStream(const MSFLayout &Layout,
   MSFStreamLayout FullLayout(getFpmStreamLayout(Layout, true, AltFpm));
   auto Result =
       createStream(Layout.SB->BlockSize, FullLayout, MsfData, Allocator);
-  if (!Result)
+  if (!Result) {
     return Result;
+
+}
   std::vector<uint8_t> InitData(Layout.SB->BlockSize, 0xFF);
   BinaryStreamWriter Initializer(*Result);
-  while (Initializer.bytesRemaining() > 0)
+  while (Initializer.bytesRemaining() > 0) {
     cantFail(Initializer.writeBytes(InitData));
+
+}
   return createStream(Layout.SB->BlockSize, MinLayout, MsfData, Allocator);
 }
 
@@ -387,8 +423,10 @@ uint32_t WritableMappedBlockStream::getLength() {
 Error WritableMappedBlockStream::writeBytes(uint32_t Offset,
                                             ArrayRef<uint8_t> Buffer) {
   // Make sure we aren't trying to write beyond the end of the stream.
-  if (auto EC = checkOffsetForWrite(Offset, Buffer.size()))
+  if (auto EC = checkOffsetForWrite(Offset, Buffer.size())) {
     return EC;
+
+}
 
   uint32_t BlockNum = Offset / getBlockSize();
   uint32_t OffsetInBlock = Offset % getBlockSize();
@@ -404,8 +442,10 @@ Error WritableMappedBlockStream::writeBytes(uint32_t Offset,
     ArrayRef<uint8_t> ChunkData(Chunk, BytesToWriteInChunk);
     uint32_t MsfOffset = blockToOffset(StreamBlockAddr, getBlockSize());
     MsfOffset += OffsetInBlock;
-    if (auto EC = WriteInterface.writeBytes(MsfOffset, ChunkData))
+    if (auto EC = WriteInterface.writeBytes(MsfOffset, ChunkData)) {
       return EC;
+
+}
 
     BytesLeft -= BytesToWriteInChunk;
     BytesWritten += BytesToWriteInChunk;

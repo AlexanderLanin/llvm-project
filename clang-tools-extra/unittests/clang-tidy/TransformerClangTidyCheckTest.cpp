@@ -120,8 +120,10 @@ TEST(TransformerClangTidyCheckTest, TwoMatchesInMacroExpansion) {
 // A trivial rewrite-rule generator that requires Objective-C code.
 Optional<RewriteRule> needsObjC(const LangOptions &LangOpts,
                                 const ClangTidyCheck::OptionsView &Options) {
-  if (!LangOpts.ObjC)
+  if (!LangOpts.ObjC) {
     return None;
+
+}
   return tooling::makeRule(clang::ast_matchers::functionDecl(),
                            change(cat("void changed() {}")), cat("no message"));
 }
@@ -145,8 +147,10 @@ TEST(TransformerClangTidyCheckTest, DisableByLang) {
 // A trivial rewrite rule generator that checks config options.
 Optional<RewriteRule> noSkip(const LangOptions &LangOpts,
                              const ClangTidyCheck::OptionsView &Options) {
-  if (Options.get("Skip", "false") == "true")
+  if (Options.get("Skip", "false") == "true") {
     return None;
+
+}
   return tooling::makeRule(clang::ast_matchers::functionDecl(),
                            change(cat("void nothing()")), cat("no message"));
 }

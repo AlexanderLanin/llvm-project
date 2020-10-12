@@ -48,13 +48,17 @@ static ManagedStatic<std::vector<std::string>> CurrentDebugType;
 /// specified on the command line, or if none was specified on the command line
 /// with the -debug-only=X option.
 bool isCurrentDebugType(const char *DebugType) {
-  if (CurrentDebugType->empty())
+  if (CurrentDebugType->empty()) {
     return true;
+
+}
   // See if DebugType is in list. Note: do not use find() as that forces us to
   // unnecessarily create an std::string instance.
   for (auto &d : *CurrentDebugType) {
-    if (d == DebugType)
+    if (d == DebugType) {
       return true;
+
+}
   }
   return false;
 }
@@ -71,8 +75,10 @@ void setCurrentDebugType(const char *Type) {
 
 void setCurrentDebugTypes(const char **Types, unsigned Count) {
   CurrentDebugType->clear();
-  for (size_t T = 0; T < Count; ++T)
+  for (size_t T = 0; T < Count; ++T) {
     CurrentDebugType->push_back(Types[T]);
+
+}
 }
 } // namespace llvm
 

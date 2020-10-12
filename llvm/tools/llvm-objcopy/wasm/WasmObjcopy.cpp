@@ -28,12 +28,16 @@ static Error dumpSectionToFile(StringRef SecName, StringRef Filename,
       ArrayRef<uint8_t> Contents = Sec.Contents;
       Expected<std::unique_ptr<FileOutputBuffer>> BufferOrErr =
           FileOutputBuffer::create(Filename, Contents.size());
-      if (!BufferOrErr)
+      if (!BufferOrErr) {
         return BufferOrErr.takeError();
+
+}
       std::unique_ptr<FileOutputBuffer> Buf = std::move(*BufferOrErr);
       std::copy(Contents.begin(), Contents.end(), Buf->getBufferStart());
-      if (Error E = Buf->commit())
+      if (Error E = Buf->commit()) {
         return E;
+
+}
       return Error::success();
     }
   }
@@ -46,13 +50,17 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
     StringRef SecName;
     StringRef FileName;
     std::tie(SecName, FileName) = Flag.split("=");
-    if (Error E = dumpSectionToFile(SecName, FileName, Obj))
+    if (Error E = dumpSectionToFile(SecName, FileName, Obj)) {
       return createFileError(FileName, std::move(E));
+
+}
   }
 
   Obj.removeSections([&Config](const Section &Sec) {
-    if (Config.ToRemove.matches(Sec.Name))
+    if (Config.ToRemove.matches(Sec.Name)) {
       return true;
+
+}
     return false;
   });
 
@@ -61,8 +69,10 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj) {
     std::tie(SecName, FileName) = Flag.split("=");
     ErrorOr<std::unique_ptr<MemoryBuffer>> BufOrErr =
         MemoryBuffer::getFile(FileName);
-    if (!BufOrErr)
+    if (!BufOrErr) {
       return createFileError(FileName, errorCodeToError(BufOrErr.getError()));
+
+}
     Section Sec;
     Sec.SectionType = llvm::wasm::WASM_SEC_CUSTOM;
     Sec.Name = SecName;
@@ -97,15 +107,21 @@ Error executeObjcopyOnBinary(const CopyConfig &Config,
                              object::WasmObjectFile &In, Buffer &Out) {
   Reader TheReader(In);
   Expected<std::unique_ptr<Object>> ObjOrErr = TheReader.create();
-  if (!ObjOrErr)
+  if (!ObjOrErr) {
     return createFileError(Config.InputFilename, ObjOrErr.takeError());
+
+}
   Object *Obj = ObjOrErr->get();
   assert(Obj && "Unable to deserialize Wasm object");
-  if (Error E = handleArgs(Config, *Obj))
+  if (Error E = handleArgs(Config, *Obj)) {
     return E;
+
+}
   Writer TheWriter(*Obj, Out);
-  if (Error E = TheWriter.write())
+  if (Error E = TheWriter.write()) {
     return createFileError(Config.OutputFilename, std::move(E));
+
+}
   return Error::success();
 }
 

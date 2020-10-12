@@ -17,8 +17,10 @@ public:
   Visitor(ASTContext *Context) { this->Context = Context; }
 
   bool VisitNamedDecl(NamedDecl *D) {
-    if (!D->isImplicit())
+    if (!D->isImplicit()) {
       Match(D->getName(), D->getLocation());
+
+}
     return true;
   }
 };

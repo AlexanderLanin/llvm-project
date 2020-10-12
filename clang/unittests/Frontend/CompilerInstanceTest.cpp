@@ -58,8 +58,10 @@ TEST(CompilerInstance, DefaultVFSOverlayFromInvocation) {
   std::shared_ptr<CompilerInvocation> CInvok =
       createInvocationFromCommandLine(Args, Diags);
 
-  if (!CInvok)
+  if (!CInvok) {
     FAIL() << "could not create compiler invocation";
+
+}
   // Create a minimal CompilerInstance which should use the VFS we specified
   // in the CompilerInvocation (as we don't explicitly set our own).
   CompilerInstance Instance;

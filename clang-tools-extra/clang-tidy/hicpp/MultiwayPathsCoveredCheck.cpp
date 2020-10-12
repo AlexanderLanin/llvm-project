@@ -55,8 +55,10 @@ static std::pair<std::size_t, bool> countCaseLabels(const SwitchStmt *Switch) {
   const SwitchCase *CurrentCase = Switch->getSwitchCaseList();
   while (CurrentCase) {
     ++CaseCount;
-    if (isa<DefaultStmt>(CurrentCase))
+    if (isa<DefaultStmt>(CurrentCase)) {
       HasDefault = true;
+
+}
 
     CurrentCase = CurrentCase->getNextSwitchCase();
   }
@@ -81,12 +83,14 @@ static std::size_t getNumberOfPossibleValues(QualType T,
                                              const ASTContext &Context) {
   // `isBooleanType` must come first because `bool` is an integral type as well
   // and would not return 2 as result.
-  if (T->isBooleanType())
+  if (T->isBooleanType()) {
     return 2;
-  else if (T->isIntegralType(Context))
+  } else if (T->isIntegralType(Context)) {
     return twoPow(Context.getTypeSize(T));
-  else
+  } else {
     return 1;
+
+}
 }
 
 void MultiwayPathsCoveredCheck::check(const MatchFinder::MatchResult &Result) {
@@ -129,11 +133,13 @@ void MultiwayPathsCoveredCheck::handleSwitchWithDefault(
     const SwitchStmt *Switch, std::size_t CaseCount) {
   assert(CaseCount > 0 && "Switch statement with supposedly one default "
                           "branch did not contain any case labels");
-  if (CaseCount == 1 || CaseCount == 2)
+  if (CaseCount == 1 || CaseCount == 2) {
     diag(Switch->getBeginLoc(),
          CaseCount == 1
              ? "degenerated switch with default label only"
              : "switch could be better written as an if/else statement");
+
+}
 }
 
 void MultiwayPathsCoveredCheck::handleSwitchWithoutDefault(
@@ -169,10 +175,12 @@ void MultiwayPathsCoveredCheck::handleSwitchWithoutDefault(
   }();
 
   // FIXME: Transform the 'switch' into an 'if' for CaseCount == 1.
-  if (CaseCount < MaxPathsPossible)
+  if (CaseCount < MaxPathsPossible) {
     diag(Switch->getBeginLoc(),
          CaseCount == 1 ? "switch with only one case; use an if statement"
                         : "potential uncovered code path; add a default label");
+
+}
 }
 } // namespace hicpp
 } // namespace tidy

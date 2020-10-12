@@ -27,8 +27,10 @@ void NamedParameterCheck::check(const MatchFinder::MatchResult &Result) {
   SmallVector<std::pair<const FunctionDecl *, unsigned>, 4> UnnamedParams;
 
   // Ignore implicitly generated members.
-  if (Function->isImplicit())
+  if (Function->isImplicit()) {
     return;
+
+}
 
   // Ignore declarations without a definition if we're not dealing with an
   // overriden method.
@@ -36,47 +38,65 @@ void NamedParameterCheck::check(const MatchFinder::MatchResult &Result) {
   if ((!Function->isDefined(Definition) || Function->isDefaulted() ||
        Function->isDeleted()) &&
       (!isa<CXXMethodDecl>(Function) ||
-       cast<CXXMethodDecl>(Function)->size_overridden_methods() == 0))
+       cast<CXXMethodDecl>(Function)->size_overridden_methods() == 0)) {
     return;
+
+}
 
   // TODO: Handle overloads.
   // TODO: We could check that all redeclarations use the same name for
   //       arguments in the same position.
   for (unsigned I = 0, E = Function->getNumParams(); I != E; ++I) {
     const ParmVarDecl *Parm = Function->getParamDecl(I);
-    if (Parm->isImplicit())
+    if (Parm->isImplicit()) {
       continue;
+
+}
     // Look for unnamed parameters.
-    if (!Parm->getName().empty())
+    if (!Parm->getName().empty()) {
       continue;
+
+}
 
     // Don't warn on the dummy argument on post-inc and post-dec operators.
     if ((Function->getOverloadedOperator() == OO_PlusPlus ||
          Function->getOverloadedOperator() == OO_MinusMinus) &&
-        Parm->getType()->isSpecificBuiltinType(BuiltinType::Int))
+        Parm->getType()->isSpecificBuiltinType(BuiltinType::Int)) {
       continue;
+
+}
 
     // Sanity check the source locations.
     if (!Parm->getLocation().isValid() || Parm->getLocation().isMacroID() ||
-        !SM.isWrittenInSameFile(Parm->getBeginLoc(), Parm->getLocation()))
+        !SM.isWrittenInSameFile(Parm->getBeginLoc(), Parm->getLocation())) {
       continue;
+
+}
 
     // Skip gmock testing::Unused parameters.
-    if (auto Typedef = Parm->getType()->getAs<clang::TypedefType>())
-      if (Typedef->getDecl()->getQualifiedNameAsString() == "testing::Unused")
+    if (auto Typedef = Parm->getType()->getAs<clang::TypedefType>()) {
+      if (Typedef->getDecl()->getQualifiedNameAsString() == "testing::Unused") {
         continue;
 
+}
+
+}
+
     // Skip std::nullptr_t.
-    if (Parm->getType().getCanonicalType()->isNullPtrType())
+    if (Parm->getType().getCanonicalType()->isNullPtrType()) {
       continue;
+
+}
 
     // Look for comments. We explicitly want to allow idioms like
     // void foo(int /*unused*/)
     const char *Begin = SM.getCharacterData(Parm->getBeginLoc());
     const char *End = SM.getCharacterData(Parm->getLocation());
     StringRef Data(Begin, End - Begin);
-    if (Data.find("/*") != StringRef::npos)
+    if (Data.find("/*") != StringRef::npos) {
       continue;
+
+}
 
     UnnamedParams.push_back(std::make_pair(Function, I));
   }
@@ -99,16 +119,20 @@ void NamedParameterCheck::check(const MatchFinder::MatchResult &Result) {
         const ParmVarDecl *OtherParm =
             (*M->begin_overridden_methods())->getParamDecl(P.second);
         StringRef Name = OtherParm->getName();
-        if (!Name.empty())
+        if (!Name.empty()) {
           NewName = Name;
+
+}
       }
 
       // If the definition has a named parameter use that name.
       if (Definition) {
         const ParmVarDecl *DefParm = Definition->getParamDecl(P.second);
         StringRef Name = DefParm->getName();
-        if (!Name.empty())
+        if (!Name.empty()) {
           NewName = Name;
+
+}
       }
 
       // Now insert the comment. Note that getLocation() points to the place

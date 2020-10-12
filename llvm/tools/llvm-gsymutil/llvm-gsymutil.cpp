@@ -119,16 +119,20 @@ static list<uint64_t> LookupAddresses("address",
 //===----------------------------------------------------------------------===//
 
 static void error(StringRef Prefix, llvm::Error Err) {
-  if (!Err)
+  if (!Err) {
     return;
+
+}
   errs() << Prefix << ": " << Err << "\n";
   consumeError(std::move(Err));
   exit(1);
 }
 
 static void error(StringRef Prefix, std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return;
+
+}
   errs() << Prefix << ": " << EC.message() << "\n";
   exit(1);
 }
@@ -162,36 +166,48 @@ static std::vector<std::string> expandBundle(const std::string &InputPath) {
     }
     error(BundlePath, EC);
   }
-  if (!BundlePaths.size())
+  if (!BundlePaths.size()) {
     BundlePaths.push_back(InputPath);
+
+}
   return BundlePaths;
 }
 
 static uint32_t getCPUType(MachOObjectFile &MachO) {
-  if (MachO.is64Bit())
+  if (MachO.is64Bit()) {
     return MachO.getHeader64().cputype;
-  else
+  } else {
     return MachO.getHeader().cputype;
+
+}
 }
 
 /// Return true if the object file has not been filtered by an --arch option.
 static bool filterArch(MachOObjectFile &Obj) {
-  if (ArchFilters.empty())
+  if (ArchFilters.empty()) {
     return true;
+
+}
 
   Triple ObjTriple(Obj.getArchTriple());
   StringRef ObjArch = ObjTriple.getArchName();
 
   for (auto Arch : ArchFilters) {
     // Match name.
-    if (Arch == ObjArch)
+    if (Arch == ObjArch) {
       return true;
+
+}
 
     // Match architecture number.
     unsigned Value;
-    if (!StringRef(Arch).getAsInteger(0, Value))
-      if (Value == getCPUType(Obj))
+    if (!StringRef(Arch).getAsInteger(0, Value)) {
+      if (Value == getCPUType(Obj)) {
         return true;
+
+}
+
+}
   }
   return false;
 }
@@ -213,9 +229,13 @@ getImageBaseAddress(const object::ELFFile<ELFT> *ELFFile) {
     consumeError(PhdrRangeOrErr.takeError());
     return llvm::None;
   }
-  for (const typename ELFT::Phdr &Phdr : *PhdrRangeOrErr)
-    if (Phdr.p_type == ELF::PT_LOAD)
+  for (const typename ELFT::Phdr &Phdr : *PhdrRangeOrErr) {
+    if (Phdr.p_type == ELF::PT_LOAD) {
       return (uint64_t)Phdr.p_vaddr;
+
+}
+
+}
   return llvm::None;
 }
 
@@ -233,13 +253,17 @@ getImageBaseAddress(const object::MachOObjectFile *MachO) {
     if (Command.C.cmd == MachO::LC_SEGMENT) {
       MachO::segment_command SLC = MachO->getSegmentLoadCommand(Command);
       StringRef SegName = SLC.segname;
-      if (SegName == "__TEXT")
+      if (SegName == "__TEXT") {
         return SLC.vmaddr;
+
+}
     } else if (Command.C.cmd == MachO::LC_SEGMENT_64) {
       MachO::segment_command_64 SLC = MachO->getSegment64LoadCommand(Command);
       StringRef SegName = SLC.segname;
-      if (SegName == "__TEXT")
+      if (SegName == "__TEXT") {
         return SLC.vmaddr;
+
+}
     }
   }
   return llvm::None;
@@ -258,16 +282,18 @@ getImageBaseAddress(const object::MachOObjectFile *MachO) {
 ///
 /// \returns A valid image base address if we are able to extract one.
 static llvm::Optional<uint64_t> getImageBaseAddress(object::ObjectFile &Obj) {
-  if (const auto *MachO = dyn_cast<object::MachOObjectFile>(&Obj))
+  if (const auto *MachO = dyn_cast<object::MachOObjectFile>(&Obj)) {
     return getImageBaseAddress(MachO);
-  else if (const auto *ELFObj = dyn_cast<object::ELF32LEObjectFile>(&Obj))
+  } else if (const auto *ELFObj = dyn_cast<object::ELF32LEObjectFile>(&Obj)) {
     return getImageBaseAddress(ELFObj->getELFFile());
-  else if (const auto *ELFObj = dyn_cast<object::ELF32BEObjectFile>(&Obj))
+  } else if (const auto *ELFObj = dyn_cast<object::ELF32BEObjectFile>(&Obj)) {
     return getImageBaseAddress(ELFObj->getELFFile());
-  else if (const auto *ELFObj = dyn_cast<object::ELF64LEObjectFile>(&Obj))
+  } else if (const auto *ELFObj = dyn_cast<object::ELF64LEObjectFile>(&Obj)) {
     return getImageBaseAddress(ELFObj->getELFFile());
-  else if (const auto *ELFObj = dyn_cast<object::ELF64BEObjectFile>(&Obj))
+  } else if (const auto *ELFObj = dyn_cast<object::ELF64BEObjectFile>(&Obj)) {
     return getImageBaseAddress(ELFObj->getELFFile());
+
+}
   return llvm::None;
 }
 
@@ -284,62 +310,82 @@ static llvm::Error handleObjectFile(ObjectFile &Obj,
   // we can, then set the base address to use to this value. This will ease
   // symbolication since clients can slide the GSYM lookup addresses by using
   // the load bias of the shared library.
-  if (auto ImageBaseAddr = getImageBaseAddress(Obj))
+  if (auto ImageBaseAddr = getImageBaseAddress(Obj)) {
     Gsym.setBaseAddress(*ImageBaseAddr);
+
+}
 
   // We need to know where the valid sections are that contain instructions.
   // See header documentation for DWARFTransformer::SetValidTextRanges() for
   // defails.
   AddressRanges TextRanges;
   for (const object::SectionRef &Sect : Obj.sections()) {
-    if (!Sect.isText())
+    if (!Sect.isText()) {
       continue;
+
+}
     const uint64_t Size = Sect.getSize();
-    if (Size == 0)
+    if (Size == 0) {
       continue;
+
+}
     const uint64_t StartAddr = Sect.getAddress();
     TextRanges.insert(AddressRange(StartAddr, StartAddr + Size));
   }
 
   // Make sure there is DWARF to convert first.
   std::unique_ptr<DWARFContext> DICtx = DWARFContext::create(Obj);
-  if (!DICtx)
+  if (!DICtx) {
     return createStringError(std::errc::invalid_argument,
                              "unable to create DWARF context");
+
+}
   logAllUnhandledErrors(DICtx->loadRegisterInfo(Obj), OS,
                         "DwarfTransformer: ");
 
   // Make a DWARF transformer object and populate the ranges of the code
   // so we don't end up adding invalid functions to GSYM data.
   DwarfTransformer DT(*DICtx, OS, Gsym);
-  if (!TextRanges.empty())
+  if (!TextRanges.empty()) {
     Gsym.SetValidTextRanges(TextRanges);
 
+}
+
   // Convert all DWARF to GSYM.
-  if (auto Err = DT.convert(ThreadCount))
+  if (auto Err = DT.convert(ThreadCount)) {
     return Err;
 
+}
+
   // Get the UUID and convert symbol table to GSYM.
-  if (auto Err = ObjectFileTransformer::convert(Obj, OS, Gsym))
+  if (auto Err = ObjectFileTransformer::convert(Obj, OS, Gsym)) {
     return Err;
+
+}
 
   // Finalize the GSYM to make it ready to save to disk. This will remove
   // duplicate FunctionInfo entries where we might have found an entry from
   // debug info and also a symbol table entry from the object file.
-  if (auto Err = Gsym.finalize(OS))
+  if (auto Err = Gsym.finalize(OS)) {
     return Err;
+
+}
 
   // Save the GSYM file to disk.
   support::endianness Endian = Obj.makeTriple().isLittleEndian() ?
       support::little : support::big;
-  if (auto Err = Gsym.save(OutFile.c_str(), Endian))
+  if (auto Err = Gsym.save(OutFile.c_str(), Endian)) {
     return Err;
+
+}
 
   // Verify the DWARF if requested. This will ensure all the info in the DWARF
   // can be looked up in the GSYM and that all lookups get matching data.
   if (Verify) {
-    if (auto Err = DT.verify(OutFile))
+    if (auto Err = DT.verify(OutFile)) {
       return Err;
+
+}
   }
 
   return Error::success();
@@ -354,8 +400,10 @@ static llvm::Error handleBuffer(StringRef Filename, MemoryBufferRef Buffer,
     Triple ObjTriple(Obj->makeTriple());
     auto ArchName = ObjTriple.getArchName();
     outs() << "Output file (" << ArchName << "): " << OutFile << "\n";
-    if (auto Err = handleObjectFile(*Obj, OutFile.c_str()))
+    if (auto Err = handleObjectFile(*Obj, OutFile.c_str())) {
       return Err;
+
+}
   } else if (auto *Fat = dyn_cast<MachOUniversalBinary>(BinOrErr->get())) {
     // Iterate over all contained architectures and filter out any that were
     // not specified with the "--arch <arch>" option. If the --arch option was
@@ -364,15 +412,19 @@ static llvm::Error handleBuffer(StringRef Filename, MemoryBufferRef Buffer,
     for (auto &ObjForArch : Fat->objects()) {
       if (auto MachOOrErr = ObjForArch.getAsObjectFile()) {
         auto &Obj = **MachOOrErr;
-        if (filterArch(Obj))
+        if (filterArch(Obj)) {
           FilterObjs.emplace_back(MachOOrErr->release());
+
+}
       } else {
         error(Filename, MachOOrErr.takeError());
       }
     }
-    if (FilterObjs.empty())
+    if (FilterObjs.empty()) {
       error(Filename, createStringError(std::errc::invalid_argument,
                                         "no matching architectures found"));
+
+}
 
     // Now handle each architecture we need to convert.
     for (auto &Obj: FilterObjs) {
@@ -388,8 +440,10 @@ static llvm::Error handleBuffer(StringRef Filename, MemoryBufferRef Buffer,
         ArchOutFile.append(ArchName.str());
       }
       outs() << "Output file (" << ArchName << "): " << ArchOutFile << "\n";
-      if (auto Err = handleObjectFile(*Obj, ArchOutFile))
+      if (auto Err = handleObjectFile(*Obj, ArchOutFile)) {
         return Err;
+
+}
     }
   }
   return Error::success();
@@ -419,8 +473,10 @@ static llvm::Error convertFileToGSYM(raw_ostream &OS) {
   Objects.insert(Objects.end(), Objs.begin(), Objs.end());
 
   for (auto Object : Objects) {
-    if (auto Err = handleFileConversionToGSYM(Object, OutFile))
+    if (auto Err = handleFileConversionToGSYM(Object, OutFile)) {
       return Err;
+
+}
   }
   return Error::success();
 }
@@ -460,16 +516,20 @@ int main(int argc, char const *argv[]) {
       return 1;
     }
     // Call error() if we have an error and it will exit with a status of 1
-    if (auto Err = convertFileToGSYM(OS))
+    if (auto Err = convertFileToGSYM(OS)) {
       error("DWARF conversion failed: ", std::move(Err));
+
+}
     return 0;
   }
 
   // Dump or access data inside GSYM files
   for (const auto &GSYMPath : InputFilenames) {
     auto Gsym = GsymReader::openFile(GSYMPath);
-    if (!Gsym)
+    if (!Gsym) {
       error(GSYMPath, Gsym.takeError());
+
+}
 
     if (LookupAddresses.empty()) {
       Gsym->dump(outs());
@@ -490,13 +550,17 @@ int main(int argc, char const *argv[]) {
         }
         OS << Result.get();
       } else {
-        if (Verbose)
+        if (Verbose) {
           OS << "\nLookupResult for " << HEX64(Addr) << ":\n";
+
+}
         OS << HEX64(Addr) << ": ";
         logAllUnhandledErrors(Result.takeError(), OS, "error: ");
       }
-      if (Verbose)
+      if (Verbose) {
         OS << "\n";
+
+}
     }
   }
   return EXIT_SUCCESS;

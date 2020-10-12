@@ -39,15 +39,21 @@ void PreferRegisterOverUnsignedCheck::check(
   StringRef Replacement = "llvm::Register";
   const DeclContext *Context = UserVarDecl->getDeclContext();
   while (Context) {
-    if (const auto *Namespace = dyn_cast<NamespaceDecl>(Context))
+    if (const auto *Namespace = dyn_cast<NamespaceDecl>(Context)) {
       if (isa<TranslationUnitDecl>(Namespace->getDeclContext()) &&
-          Namespace->getName() == "llvm")
+          Namespace->getName() == "llvm") {
         Replacement = "Register";
+
+}
+
+}
     for (const auto *UsingDirective : Context->using_directives()) {
       const NamespaceDecl *Namespace = UsingDirective->getNominatedNamespace();
       if (isa<TranslationUnitDecl>(Namespace->getDeclContext()) &&
-          Namespace->getName() == "llvm")
+          Namespace->getName() == "llvm") {
         Replacement = "Register";
+
+}
     }
     Context = Context->getParent();
   }

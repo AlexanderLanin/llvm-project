@@ -26,15 +26,21 @@ bool MCAsmInfoDarwin::isSectionAtomizableBySymbols(
   // contain.
   // Sections holding 2 byte strings require symbols in order to be atomized.
   // There is no dedicated section for 4 byte strings.
-  if (SMO.getType() == MachO::S_CSTRING_LITERALS)
+  if (SMO.getType() == MachO::S_CSTRING_LITERALS) {
     return false;
 
-  if (SMO.getSegmentName() == "__DATA" && SMO.getSectionName() == "__cfstring")
+}
+
+  if (SMO.getSegmentName() == "__DATA" && SMO.getSectionName() == "__cfstring") {
     return false;
+
+}
 
   if (SMO.getSegmentName() == "__DATA" &&
-      SMO.getSectionName() == "__objc_classrefs")
+      SMO.getSectionName() == "__objc_classrefs") {
     return false;
+
+}
 
   switch (SMO.getType()) {
   default:

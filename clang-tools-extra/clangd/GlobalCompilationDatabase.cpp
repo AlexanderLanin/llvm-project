@@ -35,8 +35,10 @@ void actOnAllParentDirectories(PathRef FileName,
                                llvm::function_ref<bool(PathRef)> Action) {
   for (auto Path = llvm::sys::path::parent_path(FileName);
        !Path.empty() && !Action(Path);
-       Path = llvm::sys::path::parent_path(Path))
+       Path = llvm::sys::path::parent_path(Path)) {
     ;
+
+}
 }
 
 } // namespace
@@ -48,8 +50,10 @@ GlobalCompilationDatabase::getFallbackCommand(PathRef File) const {
   // input, resulting in unhelpful diagnostics.
   // Parsing as Objective C++ is friendly to more cases.
   auto FileExtension = llvm::sys::path::extension(File);
-  if (FileExtension.empty() || FileExtension == ".h")
+  if (FileExtension.empty() || FileExtension == ".h") {
     Argv.push_back("-xobjective-c++-header");
+
+}
   Argv.push_back(std::string(File));
   tooling::CompileCommand Cmd(llvm::sys::path::parent_path(File),
                               llvm::sys::path::filename(File), std::move(Argv),
@@ -79,8 +83,10 @@ DirectoryBasedGlobalCompilationDatabase::getCompileCommand(PathRef File) const {
   }
 
   auto Candidates = Res->CDB->getCompileCommands(File);
-  if (!Candidates.empty())
+  if (!Candidates.empty()) {
     return std::move(Candidates.front());
+
+}
 
   return None;
 }
@@ -118,8 +124,10 @@ DirectoryBasedGlobalCompilationDatabase::getCDBInDirLocked(PathRef Dir) const {
     std::string Error;
     Entry.CDB = tooling::CompilationDatabase::loadFromDirectory(Dir, Error);
     Entry.Path = std::string(Dir);
-    if (Entry.CDB)
+    if (Entry.CDB) {
       log("Loaded compilation database from {0}", Dir);
+
+}
   }
   return R.first->second;
 }
@@ -149,8 +157,10 @@ DirectoryBasedGlobalCompilationDatabase::lookupCDB(
                                 });
     }
 
-    if (!Entry || !Entry->CDB)
+    if (!Entry || !Entry->CDB) {
       return llvm::None;
+
+}
 
     // Mark CDB as broadcasted to make sure discovery is performed once.
     if (Request.ShouldBroadcast && !Entry->SentBroadcast) {
@@ -164,8 +174,10 @@ DirectoryBasedGlobalCompilationDatabase::lookupCDB(
 
   // FIXME: Maybe make the following part async, since this can block retrieval
   // of compile commands.
-  if (ShouldBroadcast)
+  if (ShouldBroadcast) {
     broadcastCDB(Result);
+
+}
   return Result;
 }
 
@@ -191,8 +203,10 @@ void DirectoryBasedGlobalCompilationDatabase::broadcastCDB(
       actOnAllParentDirectories(File, [&](PathRef Path) {
         auto It = DirectoryHasCDB.try_emplace(Path);
         // Already seen this path, and all of its parents.
-        if (!It.second)
+        if (!It.second) {
           return true;
+
+}
 
         CachedCDB &Entry = getCDBInDirLocked(Path);
         It.first->second = Entry.CDB != nullptr;
@@ -207,9 +221,11 @@ void DirectoryBasedGlobalCompilationDatabase::broadcastCDB(
     // Independent of whether it has an entry for that file or not.
     actOnAllParentDirectories(File, [&](PathRef Path) {
       if (DirectoryHasCDB.lookup(Path)) {
-        if (pathEqual(Path, Result.PI.SourceRoot))
+        if (pathEqual(Path, Result.PI.SourceRoot)) {
           // Make sure listeners always get a canonical path for the file.
           GovernedFiles.push_back(removeDots(File));
+
+}
         // Stop as soon as we hit a CDB.
         return true;
       }
@@ -226,8 +242,10 @@ DirectoryBasedGlobalCompilationDatabase::getProjectInfo(PathRef File) const {
   Req.FileName = File;
   Req.ShouldBroadcast = false;
   auto Res = lookupCDB(Req);
-  if (!Res)
+  if (!Res) {
     return llvm::None;
+
+}
   return Res->PI;
 }
 
@@ -236,10 +254,12 @@ OverlayCDB::OverlayCDB(const GlobalCompilationDatabase *Base,
                        tooling::ArgumentsAdjuster Adjuster)
     : Base(Base), ArgsAdjuster(std::move(Adjuster)),
       FallbackFlags(std::move(FallbackFlags)) {
-  if (Base)
+  if (Base) {
     BaseChanged = Base->watch([this](const std::vector<std::string> Changes) {
       OnCommandChanged.broadcast(Changes);
     });
+
+}
 }
 
 llvm::Optional<tooling::CompileCommand>
@@ -248,15 +268,23 @@ OverlayCDB::getCompileCommand(PathRef File) const {
   {
     std::lock_guard<std::mutex> Lock(Mutex);
     auto It = Commands.find(removeDots(File));
-    if (It != Commands.end())
+    if (It != Commands.end()) {
       Cmd = It->second;
+
+}
   }
-  if (!Cmd && Base)
+  if (!Cmd && Base) {
     Cmd = Base->getCompileCommand(File);
-  if (!Cmd)
+
+}
+  if (!Cmd) {
     return llvm::None;
-  if (ArgsAdjuster)
+
+}
+  if (ArgsAdjuster) {
     Cmd->CommandLine = ArgsAdjuster(Cmd->CommandLine, Cmd->Filename);
+
+}
   return Cmd;
 }
 
@@ -266,8 +294,10 @@ tooling::CompileCommand OverlayCDB::getFallbackCommand(PathRef File) const {
   std::lock_guard<std::mutex> Lock(Mutex);
   Cmd.CommandLine.insert(Cmd.CommandLine.end(), FallbackFlags.begin(),
                          FallbackFlags.end());
-  if (ArgsAdjuster)
+  if (ArgsAdjuster) {
     Cmd.CommandLine = ArgsAdjuster(Cmd.CommandLine, Cmd.Filename);
+
+}
   return Cmd;
 }
 
@@ -279,10 +309,12 @@ void OverlayCDB::setCompileCommand(
   std::string CanonPath = removeDots(File);
   {
     std::unique_lock<std::mutex> Lock(Mutex);
-    if (Cmd)
+    if (Cmd) {
       Commands[CanonPath] = std::move(*Cmd);
-    else
+    } else {
       Commands.erase(CanonPath);
+
+}
   }
   OnCommandChanged.broadcast({CanonPath});
 }
@@ -291,11 +323,15 @@ llvm::Optional<ProjectInfo> OverlayCDB::getProjectInfo(PathRef File) const {
   {
     std::lock_guard<std::mutex> Lock(Mutex);
     auto It = Commands.find(removeDots(File));
-    if (It != Commands.end())
+    if (It != Commands.end()) {
       return ProjectInfo{};
+
+}
   }
-  if (Base)
+  if (Base) {
     return Base->getProjectInfo(File);
+
+}
 
   return llvm::None;
 }

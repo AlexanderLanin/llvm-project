@@ -27,14 +27,18 @@ public:
                              PP.getSourceManager(), PP.getLangOpts());
 
     SmallVector<StringRef, 4> Matches;
-    if (!TodoMatch.match(Text, &Matches))
+    if (!TodoMatch.match(Text, &Matches)) {
       return false;
+
+}
 
     StringRef Username = Matches[1];
     StringRef Comment = Matches[3];
 
-    if (!Username.empty())
+    if (!Username.empty()) {
       return false;
+
+}
 
     std::string NewText = ("// TODO(" + Twine(User) + "): " + Comment).str();
 

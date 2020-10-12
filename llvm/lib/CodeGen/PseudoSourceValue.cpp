@@ -33,23 +33,31 @@ PseudoSourceValue::PseudoSourceValue(unsigned Kind, const TargetInstrInfo &TII)
 PseudoSourceValue::~PseudoSourceValue() {}
 
 void PseudoSourceValue::printCustom(raw_ostream &O) const {
-  if (Kind < TargetCustom)
+  if (Kind < TargetCustom) {
     O << PSVNames[Kind];
-  else
+  } else {
     O << "TargetCustom" << Kind;
+
+}
 }
 
 bool PseudoSourceValue::isConstant(const MachineFrameInfo *) const {
-  if (isStack())
+  if (isStack()) {
     return false;
-  if (isGOT() || isConstantPool() || isJumpTable())
+
+}
+  if (isGOT() || isConstantPool() || isJumpTable()) {
     return true;
+
+}
   llvm_unreachable("Unknown PseudoSourceValue!");
 }
 
 bool PseudoSourceValue::isAliased(const MachineFrameInfo *) const {
-  if (isStack() || isGOT() || isConstantPool() || isJumpTable())
+  if (isStack() || isGOT() || isConstantPool() || isJumpTable()) {
     return false;
+
+}
   llvm_unreachable("Unknown PseudoSourceValue!");
 }
 
@@ -63,14 +71,18 @@ bool FixedStackPseudoSourceValue::isConstant(
 }
 
 bool FixedStackPseudoSourceValue::isAliased(const MachineFrameInfo *MFI) const {
-  if (!MFI)
+  if (!MFI) {
     return true;
+
+}
   return MFI->isAliasedObjectIndex(FI);
 }
 
 bool FixedStackPseudoSourceValue::mayAlias(const MachineFrameInfo *MFI) const {
-  if (!MFI)
+  if (!MFI) {
     return true;
+
+}
   // Spill slots will not alias any LLVM IR value.
   return !MFI->isSpillSlotObjectIndex(FI);
 }
@@ -128,8 +140,10 @@ const PseudoSourceValue *PseudoSourceValueManager::getJumpTable() {
 const PseudoSourceValue *
 PseudoSourceValueManager::getFixedStack(int FI) {
   std::unique_ptr<FixedStackPseudoSourceValue> &V = FSValues[FI];
-  if (!V)
+  if (!V) {
     V = std::make_unique<FixedStackPseudoSourceValue>(FI, TII);
+
+}
   return V.get();
 }
 
@@ -137,8 +151,10 @@ const PseudoSourceValue *
 PseudoSourceValueManager::getGlobalValueCallEntry(const GlobalValue *GV) {
   std::unique_ptr<const GlobalValuePseudoSourceValue> &E =
       GlobalCallEntries[GV];
-  if (!E)
+  if (!E) {
     E = std::make_unique<GlobalValuePseudoSourceValue>(GV, TII);
+
+}
   return E.get();
 }
 
@@ -146,7 +162,9 @@ const PseudoSourceValue *
 PseudoSourceValueManager::getExternalSymbolCallEntry(const char *ES) {
   std::unique_ptr<const ExternalSymbolPseudoSourceValue> &E =
       ExternalCallEntries[ES];
-  if (!E)
+  if (!E) {
     E = std::make_unique<ExternalSymbolPseudoSourceValue>(ES, TII);
+
+}
   return E.get();
 }

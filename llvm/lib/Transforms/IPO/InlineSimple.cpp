@@ -60,8 +60,10 @@ public:
     const auto &BBs = CS.getCaller()->getBasicBlockList();
     if (!BBs.empty()) {
       auto DI = OptimizationRemark(DEBUG_TYPE, "", DebugLoc(), &BBs.front());
-      if (DI.isEnabled())
+      if (DI.isEnabled()) {
         RemarksEnabled = true;
+
+}
     }
     OptimizationRemarkEmitter ORE(CS.getCaller());
 
@@ -105,8 +107,10 @@ Pass *llvm::createFunctionInliningPass(unsigned OptLevel,
                                        unsigned SizeOptLevel,
                                        bool DisableInlineHotCallSite) {
   auto Param = llvm::getInlineParams(OptLevel, SizeOptLevel);
-  if (DisableInlineHotCallSite)
+  if (DisableInlineHotCallSite) {
     Param.HotCallSiteThreshold = 0;
+
+}
   return new SimpleInliner(Param);
 }
 

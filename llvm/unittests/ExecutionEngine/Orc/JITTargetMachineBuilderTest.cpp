@@ -39,9 +39,9 @@ TEST(ExecutionUtilsTest, JITTargetMachineBuilder) {
 
   auto TM = JTMB.createTargetMachine();
 
-  if (!TM)
+  if (!TM) {
     consumeError(TM.takeError());
-  else {
+  } else {
     EXPECT_NE(TM.get(), nullptr)
         << "JITTargetMachineBuilder should return a non-null TargetMachine "
            "on success";

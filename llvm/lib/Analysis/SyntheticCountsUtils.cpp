@@ -30,17 +30,21 @@ void SyntheticCountsUtils<CallGraphType>::propagateFromSCC(
   DenseSet<NodeRef> SCCNodes;
   SmallVector<std::pair<NodeRef, EdgeRef>, 8> SCCEdges, NonSCCEdges;
 
-  for (auto &Node : SCC)
+  for (auto &Node : SCC) {
     SCCNodes.insert(Node);
+
+}
 
   // Partition the edges coming out of the SCC into those whose destination is
   // in the SCC and the rest.
   for (const auto &Node : SCCNodes) {
     for (auto &E : children_edges<CallGraphType>(Node)) {
-      if (SCCNodes.count(CGT::edge_dest(E)))
+      if (SCCNodes.count(CGT::edge_dest(E))) {
         SCCEdges.emplace_back(Node, E);
-      else
+      } else {
         NonSCCEdges.emplace_back(Node, E);
+
+}
     }
   }
 
@@ -55,21 +59,27 @@ void SyntheticCountsUtils<CallGraphType>::propagateFromSCC(
   DenseMap<NodeRef, Scaled64> AdditionalCounts;
   for (auto &E : SCCEdges) {
     auto OptProfCount = GetProfCount(E.first, E.second);
-    if (!OptProfCount)
+    if (!OptProfCount) {
       continue;
+
+}
     auto Callee = CGT::edge_dest(E.second);
     AdditionalCounts[Callee] += OptProfCount.getValue();
   }
 
   // Update the counts for the nodes in the SCC.
-  for (auto &Entry : AdditionalCounts)
+  for (auto &Entry : AdditionalCounts) {
     AddCount(Entry.first, Entry.second);
+
+}
 
   // Now update the counts for nodes outside the SCC.
   for (auto &E : NonSCCEdges) {
     auto OptProfCount = GetProfCount(E.first, E.second);
-    if (!OptProfCount)
+    if (!OptProfCount) {
       continue;
+
+}
     auto Callee = CGT::edge_dest(E.second);
     AddCount(Callee, OptProfCount.getValue());
   }
@@ -90,14 +100,18 @@ void SyntheticCountsUtils<CallGraphType>::propagate(const CallGraphType &CG,
   std::vector<SccTy> SCCs;
 
   // Collect all the SCCs.
-  for (auto I = scc_begin(CG); !I.isAtEnd(); ++I)
+  for (auto I = scc_begin(CG); !I.isAtEnd(); ++I) {
     SCCs.push_back(*I);
+
+}
 
   // The callgraph-scc needs to be visited in top-down order for propagation.
   // The scc iterator returns the scc in bottom-up order, so reverse the SCCs
   // and call propagateFromSCC.
-  for (auto &SCC : reverse(SCCs))
+  for (auto &SCC : reverse(SCCs)) {
     propagateFromSCC(SCC, GetProfCount, AddCount);
+
+}
 }
 
 template class llvm::SyntheticCountsUtils<const CallGraph *>;

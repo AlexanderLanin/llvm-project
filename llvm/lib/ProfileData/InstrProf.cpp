@@ -171,26 +171,36 @@ std::string getInstrProfSectionName(InstrProfSectKind IPSK,
                                     bool AddSegmentInfo) {
   std::string SectName;
 
-  if (OF == Triple::MachO && AddSegmentInfo)
+  if (OF == Triple::MachO && AddSegmentInfo) {
     SectName = InstrProfSectNamePrefix[IPSK];
 
-  if (OF == Triple::COFF)
+}
+
+  if (OF == Triple::COFF) {
     SectName += InstrProfSectNameCoff[IPSK];
-  else
+  } else {
     SectName += InstrProfSectNameCommon[IPSK];
 
-  if (OF == Triple::MachO && IPSK == IPSK_data && AddSegmentInfo)
+}
+
+  if (OF == Triple::MachO && IPSK == IPSK_data && AddSegmentInfo) {
     SectName += ",regular,live_support";
+
+}
 
   return SectName;
 }
 
 void SoftInstrProfErrors::addError(instrprof_error IE) {
-  if (IE == instrprof_error::success)
+  if (IE == instrprof_error::success) {
     return;
 
-  if (FirstError == instrprof_error::success)
+}
+
+  if (FirstError == instrprof_error::success) {
     FirstError = IE;
+
+}
 
   switch (IE) {
   case instrprof_error::hash_mismatch:
@@ -235,8 +245,10 @@ static StringRef stripDirPrefix(StringRef PathNameStr, uint32_t NumPrefix) {
       LastPos = Pos;
       --Count;
     }
-    if (Count == 0)
+    if (Count == 0) {
       break;
+
+}
   }
   return PathNameStr.substr(LastPos);
 }
@@ -258,10 +270,14 @@ std::string getPGOFuncName(const Function &F, bool InLTO, uint64_t Version) {
   if (!InLTO) {
     StringRef FileName(F.getParent()->getSourceFileName());
     uint32_t StripLevel = StaticFuncFullModulePrefix ? 0 : (uint32_t)-1;
-    if (StripLevel < StaticFuncStripDirNamePrefix)
+    if (StripLevel < StaticFuncStripDirNamePrefix) {
       StripLevel = StaticFuncStripDirNamePrefix;
-    if (StripLevel)
+
+}
+    if (StripLevel) {
       FileName = stripDirPrefix(FileName, StripLevel);
+
+}
     return getPGOFuncName(F.getName(), F.getLinkage(), FileName, Version);
   }
 
@@ -278,11 +294,15 @@ std::string getPGOFuncName(const Function &F, bool InLTO, uint64_t Version) {
 }
 
 StringRef getFuncNameWithoutPrefix(StringRef PGOFuncName, StringRef FileName) {
-  if (FileName.empty())
+  if (FileName.empty()) {
     return PGOFuncName;
+
+}
   // Drop the file name including ':'. See also getPGOFuncName.
-  if (PGOFuncName.startswith(FileName))
+  if (PGOFuncName.startswith(FileName)) {
     PGOFuncName = PGOFuncName.drop_front(FileName.size() + 1);
+
+}
   return PGOFuncName;
 }
 
@@ -293,8 +313,10 @@ std::string getPGOFuncNameVarName(StringRef FuncName,
   std::string VarName = std::string(getInstrProfNameVarPrefix());
   VarName += FuncName;
 
-  if (!GlobalValue::isLocalLinkage(Linkage))
+  if (!GlobalValue::isLocalLinkage(Linkage)) {
     return VarName;
+
+}
 
   // Now fix up illegal chars in local VarName that may upset the assembler.
   const char *InvalidChars = "-:<>/\"'";
@@ -312,13 +334,15 @@ GlobalVariable *createPGOFuncNameVar(Module &M,
   // We generally want to match the function's linkage, but available_externally
   // and extern_weak both have the wrong semantics, and anything that doesn't
   // need to link across compilation units doesn't need to be visible at all.
-  if (Linkage == GlobalValue::ExternalWeakLinkage)
+  if (Linkage == GlobalValue::ExternalWeakLinkage) {
     Linkage = GlobalValue::LinkOnceAnyLinkage;
-  else if (Linkage == GlobalValue::AvailableExternallyLinkage)
+  } else if (Linkage == GlobalValue::AvailableExternallyLinkage) {
     Linkage = GlobalValue::LinkOnceODRLinkage;
-  else if (Linkage == GlobalValue::InternalLinkage ||
-           Linkage == GlobalValue::ExternalLinkage)
+  } else if (Linkage == GlobalValue::InternalLinkage ||
+           Linkage == GlobalValue::ExternalLinkage) {
     Linkage = GlobalValue::PrivateLinkage;
+
+}
 
   auto *Value =
       ConstantDataArray::getString(M.getContext(), PGOFuncName, false);
@@ -327,8 +351,10 @@ GlobalVariable *createPGOFuncNameVar(Module &M,
                          getPGOFuncNameVarName(PGOFuncName, Linkage));
 
   // Hide the symbol so that we correctly get a copy for each executable.
-  if (!GlobalValue::isLocalLinkage(FuncNameVar->getLinkage()))
+  if (!GlobalValue::isLocalLinkage(FuncNameVar->getLinkage())) {
     FuncNameVar->setVisibility(GlobalValue::HiddenVisibility);
+
+}
 
   return FuncNameVar;
 }
@@ -341,11 +367,15 @@ Error InstrProfSymtab::create(Module &M, bool InLTO) {
   for (Function &F : M) {
     // Function may not have a name: like using asm("") to overwrite the name.
     // Ignore in this case.
-    if (!F.hasName())
+    if (!F.hasName()) {
       continue;
+
+}
     const std::string &PGOFuncName = getPGOFuncName(F, InLTO);
-    if (Error E = addFuncName(PGOFuncName))
+    if (Error E = addFuncName(PGOFuncName)) {
       return E;
+
+}
     MD5FuncMap.emplace_back(Function::getGUID(PGOFuncName), &F);
     // In ThinLTO, local function may have been promoted to global and have
     // suffix added to the function name. We need to add the stripped function
@@ -354,8 +384,10 @@ Error InstrProfSymtab::create(Module &M, bool InLTO) {
       auto pos = PGOFuncName.find('.');
       if (pos != std::string::npos) {
         const std::string &OtherFuncName = PGOFuncName.substr(0, pos);
-        if (Error E = addFuncName(OtherFuncName))
+        if (Error E = addFuncName(OtherFuncName)) {
           return E;
+
+}
         MD5FuncMap.emplace_back(Function::getGUID(OtherFuncName), &F);
       }
     }
@@ -374,8 +406,10 @@ uint64_t InstrProfSymtab::getFunctionHashFromAddress(uint64_t Address) {
   // external functions that are not instrumented. They won't have
   // mapping data to be used by the deserializer. Force the value to
   // be 0 in this case.
-  if (It != AddrToMD5Map.end() && It->first == Address)
+  if (It != AddrToMD5Map.end() && It->first == Address) {
     return (uint64_t)It->second;
+
+}
   return 0;
 }
 
@@ -450,8 +484,10 @@ Error readPGOFuncNameStrings(StringRef NameStrings, InstrProfSymtab &Symtab) {
     SmallString<128> UncompressedNameStrings;
     StringRef NameStrings;
     if (isCompressed) {
-      if (!llvm::zlib::isAvailable())
+      if (!llvm::zlib::isAvailable()) {
         return make_error<InstrProfError>(instrprof_error::zlib_unavailable);
+
+}
 
       StringRef CompressedNameStrings(reinterpret_cast<const char *>(P),
                                       CompressedSize);
@@ -472,12 +508,18 @@ Error readPGOFuncNameStrings(StringRef NameStrings, InstrProfSymtab &Symtab) {
     // Now parse the name strings.
     SmallVector<StringRef, 0> Names;
     NameStrings.split(Names, getInstrProfNameSeparator());
-    for (StringRef &Name : Names)
-      if (Error E = Symtab.addFuncName(Name))
+    for (StringRef &Name : Names) {
+      if (Error E = Symtab.addFuncName(Name)) {
         return E;
 
-    while (P < EndP && *P == 0)
+}
+
+}
+
+    while (P < EndP && *P == 0) {
       P++;
+
+}
   }
   return Error::success();
 }
@@ -485,8 +527,10 @@ Error readPGOFuncNameStrings(StringRef NameStrings, InstrProfSymtab &Symtab) {
 void InstrProfRecord::accumulateCounts(CountSumOrPercent &Sum) const {
   uint64_t FuncSum = 0;
   Sum.NumEntries += Counts.size();
-  for (size_t F = 0, E = Counts.size(); F < E; ++F)
+  for (size_t F = 0, E = Counts.size(); F < E; ++F) {
     FuncSum += Counts[F];
+
+}
   Sum.CountSum += FuncSum;
 
   for (uint32_t VK = IPVK_First; VK <= IPVK_Last; ++VK) {
@@ -495,8 +539,10 @@ void InstrProfRecord::accumulateCounts(CountSumOrPercent &Sum) const {
     for (size_t I = 0; I < NumValueSites; ++I) {
       uint32_t NV = getNumValueDataForSite(VK, I);
       std::unique_ptr<InstrProfValueData[]> VD = getValueForSite(VK, I);
-      for (uint32_t V = 0; V < NV; V++)
+      for (uint32_t V = 0; V < NV; V++) {
         KindSum += VD[V].Count;
+
+}
     }
     Sum.ValueCounts[VK] += KindSum;
   }
@@ -539,16 +585,20 @@ void InstrProfRecord::overlapValueProfData(uint32_t ValueKind,
                                            OverlapStats &FuncLevelOverlap) {
   uint32_t ThisNumValueSites = getNumValueSites(ValueKind);
   assert(ThisNumValueSites == Other.getNumValueSites(ValueKind));
-  if (!ThisNumValueSites)
+  if (!ThisNumValueSites) {
     return;
+
+}
 
   std::vector<InstrProfValueSiteRecord> &ThisSiteRecords =
       getOrCreateValueSitesForKind(ValueKind);
   MutableArrayRef<InstrProfValueSiteRecord> OtherSiteRecords =
       Other.getValueSitesForKind(ValueKind);
-  for (uint32_t I = 0; I < ThisNumValueSites; I++)
+  for (uint32_t I = 0; I < ThisNumValueSites; I++) {
     ThisSiteRecords[I].overlap(OtherSiteRecords[I], ValueKind, Overlap,
                                FuncLevelOverlap);
+
+}
 }
 
 void InstrProfRecord::overlap(InstrProfRecord &Other, OverlapStats &Overlap,
@@ -576,8 +626,10 @@ void InstrProfRecord::overlap(InstrProfRecord &Other, OverlapStats &Overlap,
   }
 
   // Compute overlap for value counts.
-  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
     overlapValueProfData(Kind, Other, Overlap, FuncLevelOverlap);
+
+}
 
   double Score = 0.0;
   uint64_t MaxCount = 0;
@@ -592,10 +644,12 @@ void InstrProfRecord::overlap(InstrProfRecord &Other, OverlapStats &Overlap,
 
   if (MaxCount >= ValueCutoff) {
     double FuncScore = 0.0;
-    for (size_t I = 0, E = Other.Counts.size(); I < E; ++I)
+    for (size_t I = 0, E = Other.Counts.size(); I < E; ++I) {
       FuncScore += OverlapStats::score(Counts[I], Other.Counts[I],
                                        FuncLevelOverlap.Base.CountSum,
                                        FuncLevelOverlap.Test.CountSum);
+
+}
     FuncLevelOverlap.Overlap.CountSum = FuncScore;
     FuncLevelOverlap.Overlap.NumEntries = Other.Counts.size();
     FuncLevelOverlap.Valid = true;
@@ -611,13 +665,17 @@ void InstrProfValueSiteRecord::merge(InstrProfValueSiteRecord &Input,
   auto IE = ValueData.end();
   for (auto J = Input.ValueData.begin(), JE = Input.ValueData.end(); J != JE;
        ++J) {
-    while (I != IE && I->Value < J->Value)
+    while (I != IE && I->Value < J->Value) {
       ++I;
+
+}
     if (I != IE && I->Value == J->Value) {
       bool Overflowed;
       I->Count = SaturatingMultiplyAdd(J->Count, Weight, I->Count, &Overflowed);
-      if (Overflowed)
+      if (Overflowed) {
         Warn(instrprof_error::counter_overflow);
+
+}
       ++I;
       continue;
     }
@@ -630,8 +688,10 @@ void InstrProfValueSiteRecord::scale(uint64_t Weight,
   for (auto I = ValueData.begin(), IE = ValueData.end(); I != IE; ++I) {
     bool Overflowed;
     I->Count = SaturatingMultiply(I->Count, Weight, &Overflowed);
-    if (Overflowed)
+    if (Overflowed) {
       Warn(instrprof_error::counter_overflow);
+
+}
   }
 }
 
@@ -646,14 +706,18 @@ void InstrProfRecord::mergeValueProfData(
     Warn(instrprof_error::value_site_count_mismatch);
     return;
   }
-  if (!ThisNumValueSites)
+  if (!ThisNumValueSites) {
     return;
+
+}
   std::vector<InstrProfValueSiteRecord> &ThisSiteRecords =
       getOrCreateValueSitesForKind(ValueKind);
   MutableArrayRef<InstrProfValueSiteRecord> OtherSiteRecords =
       Src.getValueSitesForKind(ValueKind);
-  for (uint32_t I = 0; I < ThisNumValueSites; I++)
+  for (uint32_t I = 0; I < ThisNumValueSites; I++) {
     ThisSiteRecords[I].merge(OtherSiteRecords[I], Weight, Warn);
+
+}
 }
 
 void InstrProfRecord::merge(InstrProfRecord &Other, uint64_t Weight,
@@ -669,19 +733,25 @@ void InstrProfRecord::merge(InstrProfRecord &Other, uint64_t Weight,
     bool Overflowed;
     Counts[I] =
         SaturatingMultiplyAdd(Other.Counts[I], Weight, Counts[I], &Overflowed);
-    if (Overflowed)
+    if (Overflowed) {
       Warn(instrprof_error::counter_overflow);
+
+}
   }
 
-  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
     mergeValueProfData(Kind, Other, Weight, Warn);
+
+}
 }
 
 void InstrProfRecord::scaleValueProfData(
     uint32_t ValueKind, uint64_t Weight,
     function_ref<void(instrprof_error)> Warn) {
-  for (auto &R : getValueSitesForKind(ValueKind))
+  for (auto &R : getValueSitesForKind(ValueKind)) {
     R.scale(Weight, Warn);
+
+}
 }
 
 void InstrProfRecord::scale(uint64_t Weight,
@@ -689,21 +759,29 @@ void InstrProfRecord::scale(uint64_t Weight,
   for (auto &Count : this->Counts) {
     bool Overflowed;
     Count = SaturatingMultiply(Count, Weight, &Overflowed);
-    if (Overflowed)
+    if (Overflowed) {
       Warn(instrprof_error::counter_overflow);
+
+}
   }
-  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind)
+  for (uint32_t Kind = IPVK_First; Kind <= IPVK_Last; ++Kind) {
     scaleValueProfData(Kind, Weight, Warn);
+
+}
 }
 
 // Map indirect call target name hash to name string.
 uint64_t InstrProfRecord::remapValue(uint64_t Value, uint32_t ValueKind,
                                      InstrProfSymtab *SymTab) {
-  if (!SymTab)
+  if (!SymTab) {
     return Value;
 
-  if (ValueKind == IPVK_IndirectCallTarget)
+}
+
+  if (ValueKind == IPVK_IndirectCallTarget) {
     return SymTab->getFunctionHashFromAddress(Value);
+
+}
 
   return Value;
 }
@@ -716,10 +794,12 @@ void InstrProfRecord::addValueData(uint32_t ValueKind, uint32_t Site,
   }
   std::vector<InstrProfValueSiteRecord> &ValueSites =
       getOrCreateValueSitesForKind(ValueKind);
-  if (N == 0)
+  if (N == 0) {
     ValueSites.emplace_back();
-  else
+  } else {
     ValueSites.emplace_back(VData, VData + N);
+
+}
 }
 
 #define INSTR_PROF_COMMON_API_IMPL
@@ -808,8 +888,10 @@ void ValueProfRecord::swapBytes(support::endianness Old,
                                 support::endianness New) {
   using namespace support;
 
-  if (Old == New)
+  if (Old == New) {
     return;
+
+}
 
   if (getHostEndianness() != Old) {
     sys::swapByteOrder<uint32_t>(NumValueSites);
@@ -831,8 +913,10 @@ void ValueProfRecord::swapBytes(support::endianness Old,
 
 void ValueProfData::deserializeTo(InstrProfRecord &Record,
                                   InstrProfSymtab *SymTab) {
-  if (NumValueKinds == 0)
+  if (NumValueKinds == 0) {
     return;
+
+}
 
   ValueProfRecord *VR = getFirstValueProfRecord(this);
   for (uint32_t K = 0; K < NumValueKinds; K++) {
@@ -845,10 +929,12 @@ template <class T>
 static T swapToHostOrder(const unsigned char *&D, support::endianness Orig) {
   using namespace support;
 
-  if (Orig == little)
+  if (Orig == little) {
     return endian::readNext<T, little, unaligned>(D);
-  else
+  } else {
     return endian::readNext<T, big, unaligned>(D);
+
+}
 }
 
 static std::unique_ptr<ValueProfData> allocValueProfData(uint32_t TotalSize) {
@@ -857,19 +943,27 @@ static std::unique_ptr<ValueProfData> allocValueProfData(uint32_t TotalSize) {
 }
 
 Error ValueProfData::checkIntegrity() {
-  if (NumValueKinds > IPVK_Last + 1)
+  if (NumValueKinds > IPVK_Last + 1) {
     return make_error<InstrProfError>(instrprof_error::malformed);
+
+}
   // Total size needs to be mulltiple of quadword size.
-  if (TotalSize % sizeof(uint64_t))
+  if (TotalSize % sizeof(uint64_t)) {
     return make_error<InstrProfError>(instrprof_error::malformed);
+
+}
 
   ValueProfRecord *VR = getFirstValueProfRecord(this);
   for (uint32_t K = 0; K < this->NumValueKinds; K++) {
-    if (VR->Kind > IPVK_Last)
+    if (VR->Kind > IPVK_Last) {
       return make_error<InstrProfError>(instrprof_error::malformed);
+
+}
     VR = getValueProfRecordNext(VR);
-    if ((char *)VR - (char *)this > (ptrdiff_t)TotalSize)
+    if ((char *)VR - (char *)this > (ptrdiff_t)TotalSize) {
       return make_error<InstrProfError>(instrprof_error::malformed);
+
+}
   }
   return Error::success();
 }
@@ -880,13 +974,17 @@ ValueProfData::getValueProfData(const unsigned char *D,
                                 support::endianness Endianness) {
   using namespace support;
 
-  if (D + sizeof(ValueProfData) > BufferEnd)
+  if (D + sizeof(ValueProfData) > BufferEnd) {
     return make_error<InstrProfError>(instrprof_error::truncated);
+
+}
 
   const unsigned char *Header = D;
   uint32_t TotalSize = swapToHostOrder<uint32_t>(Header, Endianness);
-  if (D + TotalSize > BufferEnd)
+  if (D + TotalSize > BufferEnd) {
     return make_error<InstrProfError>(instrprof_error::too_large);
+
+}
 
   std::unique_ptr<ValueProfData> VPD = allocValueProfData(TotalSize);
   memcpy(VPD.get(), D, TotalSize);
@@ -894,8 +992,10 @@ ValueProfData::getValueProfData(const unsigned char *D,
   VPD->swapBytesToHost(Endianness);
 
   Error E = VPD->checkIntegrity();
-  if (E)
+  if (E) {
     return std::move(E);
+
+}
 
   return std::move(VPD);
 }
@@ -903,8 +1003,10 @@ ValueProfData::getValueProfData(const unsigned char *D,
 void ValueProfData::swapBytesToHost(support::endianness Endianness) {
   using namespace support;
 
-  if (Endianness == getHostEndianness())
+  if (Endianness == getHostEndianness()) {
     return;
+
+}
 
   sys::swapByteOrder<uint32_t>(TotalSize);
   sys::swapByteOrder<uint32_t>(NumValueKinds);
@@ -919,8 +1021,10 @@ void ValueProfData::swapBytesToHost(support::endianness Endianness) {
 void ValueProfData::swapBytesFromHost(support::endianness Endianness) {
   using namespace support;
 
-  if (Endianness == getHostEndianness())
+  if (Endianness == getHostEndianness()) {
     return;
+
+}
 
   ValueProfRecord *VR = getFirstValueProfRecord(this);
   for (uint32_t K = 0; K < NumValueKinds; K++) {
@@ -937,8 +1041,10 @@ void annotateValueSite(Module &M, Instruction &Inst,
                        InstrProfValueKind ValueKind, uint32_t SiteIdx,
                        uint32_t MaxMDCount) {
   uint32_t NV = InstrProfR.getNumValueDataForSite(ValueKind, SiteIdx);
-  if (!NV)
+  if (!NV) {
     return;
+
+}
 
   uint64_t Sum = 0;
   std::unique_ptr<InstrProfValueData[]> VD =
@@ -971,8 +1077,10 @@ void annotateValueSite(Module &M, Instruction &Inst,
         ConstantInt::get(Type::getInt64Ty(Ctx), VD.Value)));
     Vals.push_back(MDHelper.createConstant(
         ConstantInt::get(Type::getInt64Ty(Ctx), VD.Count)));
-    if (--MDCount == 0)
+    if (--MDCount == 0) {
       break;
+
+}
   }
   Inst.setMetadata(LLVMContext::MD_prof, MDNode::get(Ctx, Vals));
 }
@@ -983,45 +1091,63 @@ bool getValueProfDataFromInst(const Instruction &Inst,
                               InstrProfValueData ValueData[],
                               uint32_t &ActualNumValueData, uint64_t &TotalC) {
   MDNode *MD = Inst.getMetadata(LLVMContext::MD_prof);
-  if (!MD)
+  if (!MD) {
     return false;
+
+}
 
   unsigned NOps = MD->getNumOperands();
 
-  if (NOps < 5)
+  if (NOps < 5) {
     return false;
+
+}
 
   // Operand 0 is a string tag "VP":
   MDString *Tag = cast<MDString>(MD->getOperand(0));
-  if (!Tag)
+  if (!Tag) {
     return false;
 
-  if (!Tag->getString().equals("VP"))
+}
+
+  if (!Tag->getString().equals("VP")) {
     return false;
+
+}
 
   // Now check kind:
   ConstantInt *KindInt = mdconst::dyn_extract<ConstantInt>(MD->getOperand(1));
-  if (!KindInt)
+  if (!KindInt) {
     return false;
-  if (KindInt->getZExtValue() != ValueKind)
+
+}
+  if (KindInt->getZExtValue() != ValueKind) {
     return false;
+
+}
 
   // Get total count
   ConstantInt *TotalCInt = mdconst::dyn_extract<ConstantInt>(MD->getOperand(2));
-  if (!TotalCInt)
+  if (!TotalCInt) {
     return false;
+
+}
   TotalC = TotalCInt->getZExtValue();
 
   ActualNumValueData = 0;
 
   for (unsigned I = 3; I < NOps; I += 2) {
-    if (ActualNumValueData >= MaxNumValueData)
+    if (ActualNumValueData >= MaxNumValueData) {
       break;
+
+}
     ConstantInt *Value = mdconst::dyn_extract<ConstantInt>(MD->getOperand(I));
     ConstantInt *Count =
         mdconst::dyn_extract<ConstantInt>(MD->getOperand(I + 1));
-    if (!Value || !Count)
+    if (!Value || !Count) {
       return false;
+
+}
     ValueData[ActualNumValueData].Value = Value->getZExtValue();
     ValueData[ActualNumValueData].Count = Count->getZExtValue();
     ActualNumValueData++;
@@ -1035,22 +1161,30 @@ MDNode *getPGOFuncNameMetadata(const Function &F) {
 
 void createPGOFuncNameMetadata(Function &F, StringRef PGOFuncName) {
   // Only for internal linkage functions.
-  if (PGOFuncName == F.getName())
+  if (PGOFuncName == F.getName()) {
       return;
+
+}
   // Don't create duplicated meta-data.
-  if (getPGOFuncNameMetadata(F))
+  if (getPGOFuncNameMetadata(F)) {
     return;
+
+}
   LLVMContext &C = F.getContext();
   MDNode *N = MDNode::get(C, MDString::get(C, PGOFuncName));
   F.setMetadata(getPGOFuncNameMetadataName(), N);
 }
 
 bool needsComdatForCounter(const Function &F, const Module &M) {
-  if (F.hasComdat())
+  if (F.hasComdat()) {
     return true;
 
-  if (!Triple(M.getTargetTriple()).supportsCOMDAT())
+}
+
+  if (!Triple(M.getTargetTriple()).supportsCOMDAT()) {
     return false;
+
+}
 
   // See createPGOFuncNameVar for more details. To avoid link errors, profile
   // counters for function with available_externally linkage needs to be changed
@@ -1064,8 +1198,10 @@ bool needsComdatForCounter(const Function &F, const Module &M) {
   // will be accumulated by the profile merger.
   GlobalValue::LinkageTypes Linkage = F.getLinkage();
   if (Linkage != GlobalValue::ExternalWeakLinkage &&
-      Linkage != GlobalValue::AvailableExternallyLinkage)
+      Linkage != GlobalValue::AvailableExternallyLinkage) {
     return false;
+
+}
 
   return true;
 }
@@ -1075,33 +1211,47 @@ bool isIRPGOFlagSet(const Module *M) {
   auto IRInstrVar =
       M->getNamedGlobal(INSTR_PROF_QUOTE(INSTR_PROF_RAW_VERSION_VAR));
   if (!IRInstrVar || IRInstrVar->isDeclaration() ||
-      IRInstrVar->hasLocalLinkage())
+      IRInstrVar->hasLocalLinkage()) {
     return false;
+
+}
 
   // Check if the flag is set.
-  if (!IRInstrVar->hasInitializer())
+  if (!IRInstrVar->hasInitializer()) {
     return false;
 
+}
+
   auto *InitVal = dyn_cast_or_null<ConstantInt>(IRInstrVar->getInitializer());
-  if (!InitVal)
+  if (!InitVal) {
     return false;
+
+}
   return (InitVal->getZExtValue() & VARIANT_MASK_IR_PROF) != 0;
 }
 
 // Check if we can safely rename this Comdat function.
 bool canRenameComdatFunc(const Function &F, bool CheckAddressTaken) {
-  if (F.getName().empty())
+  if (F.getName().empty()) {
     return false;
-  if (!needsComdatForCounter(F, *(F.getParent())))
+
+}
+  if (!needsComdatForCounter(F, *(F.getParent()))) {
     return false;
+
+}
   // Unsafe to rename the address-taken function (which can be used in
   // function comparison).
-  if (CheckAddressTaken && F.hasAddressTaken())
+  if (CheckAddressTaken && F.hasAddressTaken()) {
     return false;
+
+}
   // Only safe to do if this function may be discarded if it is not used
   // in the compilation unit.
-  if (!GlobalValue::isDiscardableIfUnused(F.getLinkage()))
+  if (!GlobalValue::isDiscardableIfUnused(F.getLinkage())) {
     return false;
+
+}
 
   // For AvailableExternallyLinkage functions.
   if (!F.hasComdat()) {
@@ -1122,12 +1272,18 @@ void getMemOPSizeRangeFromOption(StringRef MemOPSizeRange, int64_t &RangeStart,
   if (!MemOPSizeRange.empty()) {
     auto Pos = MemOPSizeRange.find(':');
     if (Pos != std::string::npos) {
-      if (Pos > 0)
+      if (Pos > 0) {
         MemOPSizeRange.substr(0, Pos).getAsInteger(10, RangeStart);
-      if (Pos < MemOPSizeRange.size() - 1)
+
+}
+      if (Pos < MemOPSizeRange.size() - 1) {
         MemOPSizeRange.substr(Pos + 1).getAsInteger(10, RangeLast);
-    } else
+
+}
+    } else {
       MemOPSizeRange.getAsInteger(10, RangeLast);
+
+}
   }
   assert(RangeLast >= RangeStart);
 }
@@ -1138,8 +1294,10 @@ void createIRLevelProfileFlagVar(Module &M, bool IsCS) {
   const StringRef VarName(INSTR_PROF_QUOTE(INSTR_PROF_RAW_VERSION_VAR));
   Type *IntTy64 = Type::getInt64Ty(M.getContext());
   uint64_t ProfileVersion = (INSTR_PROF_RAW_VERSION | VARIANT_MASK_IR_PROF);
-  if (IsCS)
+  if (IsCS) {
     ProfileVersion |= VARIANT_MASK_CSIR_PROF;
+
+}
   auto IRLevelVersionVariable = new GlobalVariable(
       M, IntTy64, true, GlobalValue::WeakAnyLinkage,
       Constant::getIntegerValue(IntTy64, APInt(64, ProfileVersion)), VarName);
@@ -1153,8 +1311,10 @@ void createIRLevelProfileFlagVar(Module &M, bool IsCS) {
 
 // Create the variable for the profile file name.
 void createProfileFileNameVar(Module &M, StringRef InstrProfileOutput) {
-  if (InstrProfileOutput.empty())
+  if (InstrProfileOutput.empty()) {
     return;
+
+}
   Constant *ProfileNameConst =
       ConstantDataArray::getString(M.getContext(), InstrProfileOutput, true);
   GlobalVariable *ProfileNameVar = new GlobalVariable(
@@ -1182,11 +1342,15 @@ Error OverlapStats::accumulateCounts(const std::string &BaseFilename,
     return Error::success();
   };
   auto Ret = getProfileSum(BaseFilename, Base);
-  if (Ret)
+  if (Ret) {
     return Ret;
+
+}
   Ret = getProfileSum(TestFilename, Test);
-  if (Ret)
+  if (Ret) {
     return Ret;
+
+}
   this->BaseFilename = &BaseFilename;
   this->TestFilename = &TestFilename;
   Valid = true;
@@ -1197,9 +1361,11 @@ void OverlapStats::addOneMismatch(const CountSumOrPercent &MismatchFunc) {
   Mismatch.NumEntries += 1;
   Mismatch.CountSum += MismatchFunc.CountSum / Test.CountSum;
   for (unsigned I = 0; I < IPVK_Last - IPVK_First + 1; I++) {
-    if (Test.ValueCounts[I] >= 1.0f)
+    if (Test.ValueCounts[I] >= 1.0f) {
       Mismatch.ValueCounts[I] +=
           MismatchFunc.ValueCounts[I] / Test.ValueCounts[I];
+
+}
   }
 }
 
@@ -1207,14 +1373,18 @@ void OverlapStats::addOneUnique(const CountSumOrPercent &UniqueFunc) {
   Unique.NumEntries += 1;
   Unique.CountSum += UniqueFunc.CountSum / Test.CountSum;
   for (unsigned I = 0; I < IPVK_Last - IPVK_First + 1; I++) {
-    if (Test.ValueCounts[I] >= 1.0f)
+    if (Test.ValueCounts[I] >= 1.0f) {
       Unique.ValueCounts[I] += UniqueFunc.ValueCounts[I] / Test.ValueCounts[I];
+
+}
   }
 }
 
 void OverlapStats::dump(raw_fd_ostream &OS) const {
-  if (!Valid)
+  if (!Valid) {
     return;
+
+}
 
   const char *EntryName =
       (Level == ProgramLevel ? "functions" : "edge counters");
@@ -1227,29 +1397,39 @@ void OverlapStats::dump(raw_fd_ostream &OS) const {
   }
 
   OS << "  # of " << EntryName << " overlap: " << Overlap.NumEntries << "\n";
-  if (Mismatch.NumEntries)
+  if (Mismatch.NumEntries) {
     OS << "  # of " << EntryName << " mismatch: " << Mismatch.NumEntries
        << "\n";
-  if (Unique.NumEntries)
+
+}
+  if (Unique.NumEntries) {
     OS << "  # of " << EntryName
        << " only in test_profile: " << Unique.NumEntries << "\n";
 
+}
+
   OS << "  Edge profile overlap: " << format("%.3f%%", Overlap.CountSum * 100)
      << "\n";
-  if (Mismatch.NumEntries)
+  if (Mismatch.NumEntries) {
     OS << "  Mismatched count percentage (Edge): "
        << format("%.3f%%", Mismatch.CountSum * 100) << "\n";
-  if (Unique.NumEntries)
+
+}
+  if (Unique.NumEntries) {
     OS << "  Percentage of Edge profile only in test_profile: "
        << format("%.3f%%", Unique.CountSum * 100) << "\n";
+
+}
   OS << "  Edge profile base count sum: " << format("%.0f", Base.CountSum)
      << "\n"
      << "  Edge profile test count sum: " << format("%.0f", Test.CountSum)
      << "\n";
 
   for (unsigned I = 0; I < IPVK_Last - IPVK_First + 1; I++) {
-    if (Base.ValueCounts[I] < 1.0f && Test.ValueCounts[I] < 1.0f)
+    if (Base.ValueCounts[I] < 1.0f && Test.ValueCounts[I] < 1.0f) {
       continue;
+
+}
     char ProfileKindName[20];
     switch (I) {
     case IPVK_IndirectCallTarget:
@@ -1265,13 +1445,17 @@ void OverlapStats::dump(raw_fd_ostream &OS) const {
     OS << "  " << ProfileKindName
        << " profile overlap: " << format("%.3f%%", Overlap.ValueCounts[I] * 100)
        << "\n";
-    if (Mismatch.NumEntries)
+    if (Mismatch.NumEntries) {
       OS << "  Mismatched count percentage (" << ProfileKindName
          << "): " << format("%.3f%%", Mismatch.ValueCounts[I] * 100) << "\n";
-    if (Unique.NumEntries)
+
+}
+    if (Unique.NumEntries) {
       OS << "  Percentage of " << ProfileKindName
          << " profile only in test_profile: "
          << format("%.3f%%", Unique.ValueCounts[I] * 100) << "\n";
+
+}
     OS << "  " << ProfileKindName
        << " profile base count sum: " << format("%.0f", Base.ValueCounts[I])
        << "\n"

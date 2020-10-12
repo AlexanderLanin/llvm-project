@@ -46,23 +46,33 @@ void NonConstReferences::check(const MatchFinder::MatchResult &Result) {
   const auto *Function =
       dyn_cast_or_null<FunctionDecl>(Parameter->getParentFunctionOrMethod());
 
-  if (Function == nullptr || Function->isImplicit())
+  if (Function == nullptr || Function->isImplicit()) {
     return;
 
-  if (Function->getLocation().isMacroID())
+}
+
+  if (Function->getLocation().isMacroID()) {
     return;
 
-  if (!Function->isCanonicalDecl())
+}
+
+  if (!Function->isCanonicalDecl()) {
     return;
+
+}
 
   if (const auto *Method = dyn_cast<CXXMethodDecl>(Function)) {
     // Don't warn on implementations of an interface using references.
-    if (Method->begin_overridden_methods() != Method->end_overridden_methods())
+    if (Method->begin_overridden_methods() != Method->end_overridden_methods()) {
       return;
+
+}
     // Don't warn on lambdas, as they frequently have to conform to the
     // interface defined elsewhere.
-    if (Method->getParent()->isLambda())
+    if (Method->getParent()->isLambda()) {
       return;
+
+}
   }
 
   auto ReferencedType = *Result.Nodes.getNodeAs<QualType>("referenced_type");
@@ -72,16 +82,22 @@ void NonConstReferences::check(const MatchFinder::MatchResult &Result) {
                      return ReferencedType.getCanonicalType().getAsString(
                                 Result.Context->getPrintingPolicy()) ==
                             WhiteListType;
-                   }) != WhiteListTypes.end())
+                   }) != WhiteListTypes.end()) {
     return;
+
+}
 
   // Don't warn on function references, they shouldn't be constant.
-  if (ReferencedType->isFunctionProtoType())
+  if (ReferencedType->isFunctionProtoType()) {
     return;
 
+}
+
   // Don't warn on dependent types in templates.
-  if (ReferencedType->isDependentType())
+  if (ReferencedType->isDependentType()) {
     return;
+
+}
 
   if (Function->isOverloadedOperator()) {
     switch (Function->getOverloadedOperator()) {
@@ -100,8 +116,10 @@ void NonConstReferences::check(const MatchFinder::MatchResult &Result) {
       case clang::OO_AmpEqual:
         // Don't warn on the first parameter of operator<<(Stream&, ...),
         // operator++, operator-- and operation+assignment operators.
-        if (Function->getParamDecl(0) == Parameter)
+        if (Function->getParamDecl(0) == Parameter) {
           return;
+
+}
         break;
       case clang::OO_GreaterGreater: {
         auto isNonConstRef = [](clang::QualType T) {
@@ -114,8 +132,10 @@ void NonConstReferences::check(const MatchFinder::MatchResult &Result) {
         if (isNonConstRef(Function->getParamDecl(0)->getType()) &&
             (Function->getNumParams() < 2 || // E.g. member operator>>.
              isNonConstRef(Function->getParamDecl(1)->getType())) &&
-            isNonConstRef(Function->getReturnType()))
+            isNonConstRef(Function->getReturnType())) {
           return;
+
+}
         break;
       }
       default:
@@ -124,12 +144,16 @@ void NonConstReferences::check(const MatchFinder::MatchResult &Result) {
   }
 
   // Some functions use references to comply with established standards.
-  if (Function->getDeclName().isIdentifier() && Function->getName() == "swap")
+  if (Function->getDeclName().isIdentifier() && Function->getName() == "swap") {
     return;
 
+}
+
   // iostream parameters are typically passed by non-const reference.
-  if (StringRef(ReferencedType.getAsString()).endswith("stream"))
+  if (StringRef(ReferencedType.getAsString()).endswith("stream")) {
     return;
+
+}
 
   if (Parameter->getName().empty()) {
     diag(Parameter->getLocation(), "non-const reference parameter at index %0, "

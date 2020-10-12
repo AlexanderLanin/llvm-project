@@ -64,18 +64,22 @@ ObjCDictionaryLiteral::ObjCDictionaryLiteral(ArrayRef<ObjCDictionaryElement> VK,
   for (unsigned I = 0; I < NumElements; I++) {
     auto Deps = turnTypeToValueDependence(VK[I].Key->getDependence() |
                                           VK[I].Value->getDependence());
-    if (VK[I].EllipsisLoc.isValid())
+    if (VK[I].EllipsisLoc.isValid()) {
       Deps &= ~ExprDependence::UnexpandedPack;
+
+}
     addDependence(Deps);
 
     KeyValues[I].Key = VK[I].Key;
     KeyValues[I].Value = VK[I].Value;
     if (Expansions) {
       Expansions[I].EllipsisLoc = VK[I].EllipsisLoc;
-      if (VK[I].NumExpansions)
+      if (VK[I].NumExpansions) {
         Expansions[I].NumExpansionsPlusOne = *VK[I].NumExpansions + 1;
-      else
+      } else {
         Expansions[I].NumExpansionsPlusOne = 0;
+
+}
     }
   }
 }
@@ -100,11 +104,15 @@ ObjCDictionaryLiteral::CreateEmpty(const ASTContext &C, unsigned NumElements,
 }
 
 QualType ObjCPropertyRefExpr::getReceiverType(const ASTContext &ctx) const {
-  if (isClassReceiver())
+  if (isClassReceiver()) {
     return ctx.getObjCInterfaceType(getClassReceiver());
 
-  if (isSuperReceiver())
+}
+
+  if (isSuperReceiver()) {
     return getSuperReceiverType();
+
+}
 
   return getBase()->getType();
 }
@@ -179,8 +187,10 @@ void ObjCMessageExpr::initArgsAndSelLocs(ArrayRef<Expr *> Args,
 
   SelLocsKind = SelLocsK;
   if (!isImplicit()) {
-    if (SelLocsK == SelLoc_NonStandard)
+    if (SelLocsK == SelLoc_NonStandard) {
       std::copy(SelLocs.begin(), SelLocs.end(), getStoredSelLocs());
+
+}
   }
 }
 
@@ -195,10 +205,12 @@ ObjCMessageExpr::Create(const ASTContext &Context, QualType T, ExprValueKind VK,
          "No selector locs for non-implicit message");
   ObjCMessageExpr *Mem;
   SelectorLocationsKind SelLocsK = SelectorLocationsKind();
-  if (isImplicit)
+  if (isImplicit) {
     Mem = alloc(Context, Args.size(), 0);
-  else
+  } else {
     Mem = alloc(Context, Args, RBracLoc, SelLocs, Sel, SelLocsK);
+
+}
   return new (Mem) ObjCMessageExpr(T, VK, LBracLoc, SuperLoc, IsInstanceSuper,
                                    SuperType, Sel, SelLocs, SelLocsK, Method,
                                    Args, RBracLoc, isImplicit);
@@ -214,10 +226,12 @@ ObjCMessageExpr::Create(const ASTContext &Context, QualType T, ExprValueKind VK,
          "No selector locs for non-implicit message");
   ObjCMessageExpr *Mem;
   SelectorLocationsKind SelLocsK = SelectorLocationsKind();
-  if (isImplicit)
+  if (isImplicit) {
     Mem = alloc(Context, Args.size(), 0);
-  else
+  } else {
     Mem = alloc(Context, Args, RBracLoc, SelLocs, Sel, SelLocsK);
+
+}
   return new (Mem)
       ObjCMessageExpr(T, VK, LBracLoc, Receiver, Sel, SelLocs, SelLocsK, Method,
                       Args, RBracLoc, isImplicit);
@@ -233,10 +247,12 @@ ObjCMessageExpr::Create(const ASTContext &Context, QualType T, ExprValueKind VK,
          "No selector locs for non-implicit message");
   ObjCMessageExpr *Mem;
   SelectorLocationsKind SelLocsK = SelectorLocationsKind();
-  if (isImplicit)
+  if (isImplicit) {
     Mem = alloc(Context, Args.size(), 0);
-  else
+  } else {
     Mem = alloc(Context, Args, RBracLoc, SelLocs, Sel, SelLocsK);
+
+}
   return new (Mem)
       ObjCMessageExpr(T, VK, LBracLoc, Receiver, Sel, SelLocs, SelLocsK, Method,
                       Args, RBracLoc, isImplicit);
@@ -270,8 +286,10 @@ ObjCMessageExpr *ObjCMessageExpr::alloc(const ASTContext &C, unsigned NumArgs,
 
 void ObjCMessageExpr::getSelectorLocs(
     SmallVectorImpl<SourceLocation> &SelLocs) const {
-  for (unsigned i = 0, e = getNumSelectorLocs(); i != e; ++i)
+  for (unsigned i = 0, e = getNumSelectorLocs(); i != e; ++i) {
     SelLocs.push_back(getSelectorLoc(i));
+
+}
 }
 
 
@@ -317,9 +335,11 @@ SourceRange ObjCMessageExpr::getReceiverRange() const {
 }
 
 Selector ObjCMessageExpr::getSelector() const {
-  if (HasMethod)
+  if (HasMethod) {
     return reinterpret_cast<const ObjCMethodDecl *>(SelectorOrMethod)
         ->getSelector();
+
+}
   return Selector(SelectorOrMethod);
 }
 
@@ -340,21 +360,27 @@ QualType ObjCMessageExpr::getReceiverType() const {
 ObjCInterfaceDecl *ObjCMessageExpr::getReceiverInterface() const {
   QualType T = getReceiverType();
 
-  if (const ObjCObjectPointerType *Ptr = T->getAs<ObjCObjectPointerType>())
+  if (const ObjCObjectPointerType *Ptr = T->getAs<ObjCObjectPointerType>()) {
     return Ptr->getInterfaceDecl();
 
-  if (const ObjCObjectType *Ty = T->getAs<ObjCObjectType>())
+}
+
+  if (const ObjCObjectType *Ty = T->getAs<ObjCObjectType>()) {
     return Ty->getInterface();
+
+}
 
   return nullptr;
 }
 
 Stmt::child_range ObjCMessageExpr::children() {
   Stmt **begin;
-  if (getReceiverKind() == Instance)
+  if (getReceiverKind() == Instance) {
     begin = reinterpret_cast<Stmt **>(getTrailingObjects<void *>());
-  else
+  } else {
     begin = reinterpret_cast<Stmt **>(getArgs());
+
+}
   return child_range(begin,
                      reinterpret_cast<Stmt **>(getArgs() + getNumArgs()));
 }

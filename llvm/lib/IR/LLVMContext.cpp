@@ -181,8 +181,10 @@ void LLVMContext::setYieldCallback(YieldCallbackTy Callback, void *OpaqueHandle)
 }
 
 void LLVMContext::yield() {
-  if (pImpl->YieldCallback)
+  if (pImpl->YieldCallback) {
     pImpl->YieldCallback(this, pImpl->YieldOpaqueHandle);
+
+}
 }
 
 void LLVMContext::emitError(const Twine &ErrorStr) {
@@ -202,9 +204,11 @@ static bool isDiagnosticEnabled(const DiagnosticInfo &DI) {
   //
   // Also noisy remarks are only enabled if we have hotness information to sort
   // them.
-  if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI))
+  if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI)) {
     return Remark->isEnabled() &&
            (!Remark->isVerbose() || Remark->getHotness());
+
+}
 
   return true;
 }
@@ -225,26 +229,36 @@ LLVMContext::getDiagnosticMessagePrefix(DiagnosticSeverity Severity) {
 }
 
 void LLVMContext::diagnose(const DiagnosticInfo &DI) {
-  if (auto *OptDiagBase = dyn_cast<DiagnosticInfoOptimizationBase>(&DI))
-    if (LLVMRemarkStreamer *RS = getLLVMRemarkStreamer())
+  if (auto *OptDiagBase = dyn_cast<DiagnosticInfoOptimizationBase>(&DI)) {
+    if (LLVMRemarkStreamer *RS = getLLVMRemarkStreamer()) {
       RS->emit(*OptDiagBase);
+
+}
+
+}
 
   // If there is a report handler, use it.
   if (pImpl->DiagHandler &&
       (!pImpl->RespectDiagnosticFilters || isDiagnosticEnabled(DI)) &&
-      pImpl->DiagHandler->handleDiagnostics(DI))
+      pImpl->DiagHandler->handleDiagnostics(DI)) {
     return;
 
-  if (!isDiagnosticEnabled(DI))
+}
+
+  if (!isDiagnosticEnabled(DI)) {
     return;
+
+}
 
   // Otherwise, print the message with a prefix based on the severity.
   DiagnosticPrinterRawOStream DP(errs());
   errs() << getDiagnosticMessagePrefix(DI.getSeverity()) << ": ";
   DI.print(DP);
   errs() << "\n";
-  if (DI.getSeverity() == DS_Error)
+  if (DI.getSeverity() == DS_Error) {
     exit(1);
+
+}
 }
 
 void LLVMContext::emitError(unsigned LocCookie, const Twine &ErrorStr) {
@@ -269,8 +283,10 @@ unsigned LLVMContext::getMDKindID(StringRef Name) const {
 void LLVMContext::getMDKindNames(SmallVectorImpl<StringRef> &Names) const {
   Names.resize(pImpl->CustomMDKindNames.size());
   for (StringMap<unsigned>::const_iterator I = pImpl->CustomMDKindNames.begin(),
-       E = pImpl->CustomMDKindNames.end(); I != E; ++I)
+       E = pImpl->CustomMDKindNames.end(); I != E; ++I) {
     Names[I->second] = I->first();
+
+}
 }
 
 void LLVMContext::getOperandBundleTags(SmallVectorImpl<StringRef> &Tags) const {
@@ -314,8 +330,10 @@ bool LLVMContext::shouldDiscardValueNames() const {
 bool LLVMContext::isODRUniquingDebugTypes() const { return !!pImpl->DITypeMap; }
 
 void LLVMContext::enableDebugTypeODRUniquing() {
-  if (pImpl->DITypeMap)
+  if (pImpl->DITypeMap) {
     return;
+
+}
 
   pImpl->DITypeMap.emplace();
 }

@@ -65,22 +65,28 @@ void StringTableBuilder::write(uint8_t *Buf) const {
   assert(isFinalized());
   for (const StringPair &P : StringIndexMap) {
     StringRef Data = P.first.val();
-    if (!Data.empty())
+    if (!Data.empty()) {
       memcpy(Buf + P.second, Data.data(), Data.size());
+
+}
   }
   // The COFF formats store the size of the string table in the first 4 bytes.
   // For Windows, the format is little-endian; for AIX, it is big-endian.
-  if (K == WinCOFF)
+  if (K == WinCOFF) {
     support::endian::write32le(Buf, Size);
-  else if (K == XCOFF)
+  } else if (K == XCOFF) {
     support::endian::write32be(Buf, Size);
+
+}
 }
 
 // Returns the character at Pos from end of a string.
 static int charTailAt(StringPair *P, size_t Pos) {
   StringRef S = P->first.val();
-  if (Pos >= S.size())
+  if (Pos >= S.size()) {
     return -1;
+
+}
   return (unsigned char)S[S.size() - Pos - 1];
 }
 
@@ -88,8 +94,10 @@ static int charTailAt(StringPair *P, size_t Pos) {
 // because it does not compare characters that we already know the same.
 static void multikeySort(MutableArrayRef<StringPair *> Vec, int Pos) {
 tailcall:
-  if (Vec.size() <= 1)
+  if (Vec.size() <= 1) {
     return;
+
+}
 
   // Partition items so that items in [0, I) are greater than the pivot,
   // [I, J) are the same as the pivot, and [J, Vec.size()) are less than
@@ -99,12 +107,14 @@ tailcall:
   size_t J = Vec.size();
   for (size_t K = 1; K < J;) {
     int C = charTailAt(Vec[K], Pos);
-    if (C > Pivot)
+    if (C > Pivot) {
       std::swap(Vec[I++], Vec[K++]);
-    else if (C < Pivot)
+    } else if (C < Pivot) {
       std::swap(Vec[--J], Vec[K]);
-    else
+    } else {
       K++;
+
+}
   }
 
   multikeySort(Vec.slice(0, I), Pos);
@@ -134,8 +144,10 @@ void StringTableBuilder::finalizeStringTable(bool Optimize) {
   if (Optimize) {
     std::vector<StringPair *> Strings;
     Strings.reserve(StringIndexMap.size());
-    for (StringPair &P : StringIndexMap)
+    for (StringPair &P : StringIndexMap) {
       Strings.push_back(&P);
+
+}
 
     multikeySort(Strings, 0);
     initSize();
@@ -155,21 +167,27 @@ void StringTableBuilder::finalizeStringTable(bool Optimize) {
       P->second = Size;
 
       Size += S.size();
-      if (K != RAW)
+      if (K != RAW) {
         ++Size;
+
+}
       Previous = S;
     }
   }
 
-  if (K == MachO)
+  if (K == MachO) {
     Size = alignTo(Size, 4); // Pad to multiple of 4.
+
+}
 
   // The first byte in an ELF string table must be null, according to the ELF
   // specification. In 'initSize()' we reserved the first byte to hold null for
   // this purpose and here we actually add the string to allow 'getOffset()' to
   // be called on an empty string.
-  if (K == ELF)
+  if (K == ELF) {
     StringIndexMap[CachedHashStringRef("")] = 0;
+
+}
 }
 
 void StringTableBuilder::clear() {
@@ -185,8 +203,10 @@ size_t StringTableBuilder::getOffset(CachedHashStringRef S) const {
 }
 
 size_t StringTableBuilder::add(CachedHashStringRef S) {
-  if (K == WinCOFF)
+  if (K == WinCOFF) {
     assert(S.size() > COFF::NameSize && "Short string in COFF string table!");
+
+}
 
   assert(!isFinalized());
   auto P = StringIndexMap.insert(std::make_pair(S, 0));

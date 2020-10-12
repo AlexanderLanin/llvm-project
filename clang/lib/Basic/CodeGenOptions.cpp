@@ -22,9 +22,13 @@ CodeGenOptions::CodeGenOptions() {
 
 bool CodeGenOptions::isNoBuiltinFunc(const char *Name) const {
   StringRef FuncName(Name);
-  for (unsigned i = 0, e = NoBuiltinFuncs.size(); i != e; ++i)
-    if (FuncName.equals(NoBuiltinFuncs[i]))
+  for (unsigned i = 0, e = NoBuiltinFuncs.size(); i != e; ++i) {
+    if (FuncName.equals(NoBuiltinFuncs[i])) {
       return true;
+
+}
+
+}
   return false;
 }
 

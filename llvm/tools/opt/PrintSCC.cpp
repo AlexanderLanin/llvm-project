@@ -77,10 +77,14 @@ bool CFGSCC::runOnFunction(Function &F) {
     const std::vector<BasicBlock *> &nextSCC = *SCCI;
     errs() << "\nSCC #" << ++sccNum << " : ";
     for (std::vector<BasicBlock*>::const_iterator I = nextSCC.begin(),
-           E = nextSCC.end(); I != E; ++I)
+           E = nextSCC.end(); I != E; ++I) {
       errs() << (*I)->getName() << ", ";
-    if (nextSCC.size() == 1 && SCCI.hasCycle())
+
+}
+    if (nextSCC.size() == 1 && SCCI.hasCycle()) {
       errs() << " (Has self-loop).";
+
+}
   }
   errs() << "\n";
 
@@ -98,11 +102,15 @@ bool CallGraphSCC::runOnModule(Module &M) {
     const std::vector<CallGraphNode*> &nextSCC = *SCCI;
     errs() << "\nSCC #" << ++sccNum << " : ";
     for (std::vector<CallGraphNode*>::const_iterator I = nextSCC.begin(),
-           E = nextSCC.end(); I != E; ++I)
+           E = nextSCC.end(); I != E; ++I) {
       errs() << ((*I)->getFunction() ? (*I)->getFunction()->getName()
                                      : "external node") << ", ";
-    if (nextSCC.size() == 1 && SCCI.hasCycle())
+
+}
+    if (nextSCC.size() == 1 && SCCI.hasCycle()) {
       errs() << " (Has self-loop).";
+
+}
   }
   errs() << "\n";
 

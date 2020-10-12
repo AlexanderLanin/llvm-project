@@ -38,19 +38,27 @@ enum CXErrorCode
 clang_VirtualFileOverlay_addFileMapping(CXVirtualFileOverlay VFO,
                                         const char *virtualPath,
                                         const char *realPath) {
-  if (!VFO || !virtualPath || !realPath)
+  if (!VFO || !virtualPath || !realPath) {
     return CXError_InvalidArguments;
-  if (!path::is_absolute(virtualPath))
+
+}
+  if (!path::is_absolute(virtualPath)) {
     return CXError_InvalidArguments;
-  if (!path::is_absolute(realPath))
+
+}
+  if (!path::is_absolute(realPath)) {
     return CXError_InvalidArguments;
+
+}
 
   for (path::const_iterator
          PI = path::begin(virtualPath),
          PE = path::end(virtualPath); PI != PE; ++PI) {
     StringRef Comp = *PI;
-    if (Comp == "." || Comp == "..")
+    if (Comp == "." || Comp == "..") {
       return CXError_InvalidArguments;
+
+}
   }
 
   unwrap(VFO)->addFileMapping(virtualPath, realPath);
@@ -60,8 +68,10 @@ clang_VirtualFileOverlay_addFileMapping(CXVirtualFileOverlay VFO,
 enum CXErrorCode
 clang_VirtualFileOverlay_setCaseSensitivity(CXVirtualFileOverlay VFO,
                                             int caseSensitive) {
-  if (!VFO)
+  if (!VFO) {
     return CXError_InvalidArguments;
+
+}
   unwrap(VFO)->setCaseSensitivity(caseSensitive);
   return CXError_Success;
 }
@@ -70,8 +80,10 @@ enum CXErrorCode
 clang_VirtualFileOverlay_writeToBuffer(CXVirtualFileOverlay VFO, unsigned,
                                        char **out_buffer_ptr,
                                        unsigned *out_buffer_size) {
-  if (!VFO || !out_buffer_ptr || !out_buffer_size)
+  if (!VFO || !out_buffer_ptr || !out_buffer_size) {
     return CXError_InvalidArguments;
+
+}
 
   llvm::SmallString<256> Buf;
   llvm::raw_svector_ostream OS(Buf);
@@ -105,8 +117,10 @@ CXModuleMapDescriptor clang_ModuleMapDescriptor_create(unsigned) {
 enum CXErrorCode
 clang_ModuleMapDescriptor_setFrameworkModuleName(CXModuleMapDescriptor MMD,
                                                  const char *name) {
-  if (!MMD || !name)
+  if (!MMD || !name) {
     return CXError_InvalidArguments;
+
+}
 
   MMD->ModuleName = name;
   return CXError_Success;
@@ -115,8 +129,10 @@ clang_ModuleMapDescriptor_setFrameworkModuleName(CXModuleMapDescriptor MMD,
 enum CXErrorCode
 clang_ModuleMapDescriptor_setUmbrellaHeader(CXModuleMapDescriptor MMD,
                                             const char *name) {
-  if (!MMD || !name)
+  if (!MMD || !name) {
     return CXError_InvalidArguments;
+
+}
 
   MMD->UmbrellaHeader = name;
   return CXError_Success;
@@ -126,8 +142,10 @@ enum CXErrorCode
 clang_ModuleMapDescriptor_writeToBuffer(CXModuleMapDescriptor MMD, unsigned,
                                        char **out_buffer_ptr,
                                        unsigned *out_buffer_size) {
-  if (!MMD || !out_buffer_ptr || !out_buffer_size)
+  if (!MMD || !out_buffer_ptr || !out_buffer_size) {
     return CXError_InvalidArguments;
+
+}
 
   llvm::SmallString<256> Buf;
   llvm::raw_svector_ostream OS(Buf);

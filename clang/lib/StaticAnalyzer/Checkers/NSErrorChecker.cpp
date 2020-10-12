@@ -51,13 +51,19 @@ public:
 void NSErrorMethodChecker::checkASTDecl(const ObjCMethodDecl *D,
                                         AnalysisManager &mgr,
                                         BugReporter &BR) const {
-  if (!D->isThisDeclarationADefinition())
-    return;
-  if (!D->getReturnType()->isVoidType())
+  if (!D->isThisDeclarationADefinition()) {
     return;
 
-  if (!II)
+}
+  if (!D->getReturnType()->isVoidType()) {
+    return;
+
+}
+
+  if (!II) {
     II = &D->getASTContext().Idents.get("NSError");
+
+}
 
   bool hasNSError = false;
   for (const auto *I : D->parameters())  {
@@ -98,13 +104,19 @@ public:
 void CFErrorFunctionChecker::checkASTDecl(const FunctionDecl *D,
                                         AnalysisManager &mgr,
                                         BugReporter &BR) const {
-  if (!D->doesThisDeclarationHaveABody())
-    return;
-  if (!D->getReturnType()->isVoidType())
+  if (!D->doesThisDeclarationHaveABody()) {
     return;
 
-  if (!II)
+}
+  if (!D->getReturnType()->isVoidType()) {
+    return;
+
+}
+
+  if (!II) {
     II = &D->getASTContext().Idents.get("CFErrorRef");
+
+}
 
   bool hasCFError = false;
   for (auto I : D->parameters())  {
@@ -171,28 +183,40 @@ REGISTER_TRAIT_WITH_PROGRAMSTATE(CFErrorOut, ErrorOutFlag)
 
 template <typename T>
 static bool hasFlag(SVal val, ProgramStateRef state) {
-  if (SymbolRef sym = val.getAsSymbol())
-    if (const unsigned *attachedFlags = state->get<T>(sym))
+  if (SymbolRef sym = val.getAsSymbol()) {
+    if (const unsigned *attachedFlags = state->get<T>(sym)) {
       return *attachedFlags;
+
+}
+
+}
   return false;
 }
 
 template <typename T>
 static void setFlag(ProgramStateRef state, SVal val, CheckerContext &C) {
   // We tag the symbol that the SVal wraps.
-  if (SymbolRef sym = val.getAsSymbol())
+  if (SymbolRef sym = val.getAsSymbol()) {
     C.addTransition(state->set<T>(sym, true));
+
+}
 }
 
 static QualType parameterTypeFromSVal(SVal val, CheckerContext &C) {
   const StackFrameContext * SFC = C.getStackFrame();
   if (Optional<loc::MemRegionVal> X = val.getAs<loc::MemRegionVal>()) {
     const MemRegion* R = X->getRegion();
-    if (const VarRegion *VR = R->getAs<VarRegion>())
+    if (const VarRegion *VR = R->getAs<VarRegion>()) {
       if (const StackArgumentsSpaceRegion *
-          stackReg = dyn_cast<StackArgumentsSpaceRegion>(VR->getMemorySpace()))
-        if (stackReg->getStackFrame() == SFC)
+          stackReg = dyn_cast<StackArgumentsSpaceRegion>(VR->getMemorySpace())) {
+        if (stackReg->getStackFrame() == SFC) {
           return VR->getValueType();
+
+}
+
+}
+
+}
   }
 
   return QualType();
@@ -201,10 +225,14 @@ static QualType parameterTypeFromSVal(SVal val, CheckerContext &C) {
 void NSOrCFErrorDerefChecker::checkLocation(SVal loc, bool isLoad,
                                             const Stmt *S,
                                             CheckerContext &C) const {
-  if (!isLoad)
+  if (!isLoad) {
     return;
-  if (loc.isUndef() || !loc.getAs<Loc>())
+
+}
+  if (loc.isUndef() || !loc.getAs<Loc>()) {
     return;
+
+}
 
   ASTContext &Ctx = C.getASTContext();
   ProgramStateRef state = C.getState();
@@ -216,13 +244,19 @@ void NSOrCFErrorDerefChecker::checkLocation(SVal loc, bool isLoad,
   // function ?
 
   QualType parmT = parameterTypeFromSVal(loc, C);
-  if (parmT.isNull())
+  if (parmT.isNull()) {
     return;
 
-  if (!NSErrorII)
+}
+
+  if (!NSErrorII) {
     NSErrorII = &Ctx.Idents.get("NSError");
-  if (!CFErrorII)
+
+}
+  if (!CFErrorII) {
     CFErrorII = &Ctx.Idents.get("CFErrorRef");
+
+}
 
   if (ShouldCheckNSError && IsNSError(parmT, NSErrorII)) {
     setFlag<NSErrorOut>(state, state->getSVal(loc.castAs<Loc>()), C);
@@ -236,8 +270,10 @@ void NSOrCFErrorDerefChecker::checkLocation(SVal loc, bool isLoad,
 }
 
 void NSOrCFErrorDerefChecker::checkEvent(ImplicitNullDerefEvent event) const {
-  if (event.IsLoad)
+  if (event.IsLoad) {
     return;
+
+}
 
   SVal loc = event.Location;
   ProgramStateRef state = event.SinkNode->getState();
@@ -245,11 +281,15 @@ void NSOrCFErrorDerefChecker::checkEvent(ImplicitNullDerefEvent event) const {
 
   bool isNSError = hasFlag<NSErrorOut>(loc, state);
   bool isCFError = false;
-  if (!isNSError)
+  if (!isNSError) {
     isCFError = hasFlag<CFErrorOut>(loc, state);
 
-  if (!(isNSError || isCFError))
+}
+
+  if (!(isNSError || isCFError)) {
     return;
+
+}
 
   // Storing to possible null NSError/CFErrorRef out parameter.
   SmallString<128> Buf;
@@ -264,13 +304,17 @@ void NSOrCFErrorDerefChecker::checkEvent(ImplicitNullDerefEvent event) const {
 
   BugType *bug = nullptr;
   if (isNSError) {
-    if (!NSBT)
+    if (!NSBT) {
       NSBT.reset(new NSErrorDerefBug(this));
+
+}
     bug = NSBT.get();
   }
   else {
-    if (!CFBT)
+    if (!CFBT) {
       CFBT.reset(new CFErrorDerefBug(this));
+
+}
     bug = CFBT.get();
   }
   BR.emitReport(
@@ -280,30 +324,40 @@ void NSOrCFErrorDerefChecker::checkEvent(ImplicitNullDerefEvent event) const {
 static bool IsNSError(QualType T, IdentifierInfo *II) {
 
   const PointerType* PPT = T->getAs<PointerType>();
-  if (!PPT)
+  if (!PPT) {
     return false;
+
+}
 
   const ObjCObjectPointerType* PT =
     PPT->getPointeeType()->getAs<ObjCObjectPointerType>();
 
-  if (!PT)
+  if (!PT) {
     return false;
+
+}
 
   const ObjCInterfaceDecl *ID = PT->getInterfaceDecl();
 
   // FIXME: Can ID ever be NULL?
-  if (ID)
+  if (ID) {
     return II == ID->getIdentifier();
+
+}
 
   return false;
 }
 
 static bool IsCFError(QualType T, IdentifierInfo *II) {
   const PointerType* PPT = T->getAs<PointerType>();
-  if (!PPT) return false;
+  if (!PPT) { return false;
+
+}
 
   const TypedefType* TT = PPT->getPointeeType()->getAs<TypedefType>();
-  if (!TT) return false;
+  if (!TT) { return false;
+
+}
 
   return TT->getDecl()->getIdentifier() == II;
 }

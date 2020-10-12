@@ -51,14 +51,22 @@ std::vector<Token> generateSearchTokens(const Symbol &Sym) {
   std::vector<Token> Result = generateIdentifierTrigrams(Sym.Name);
   Result.emplace_back(Token::Kind::Scope, Sym.Scope);
   // Skip token generation for symbols with unknown declaration location.
-  if (!llvm::StringRef(Sym.CanonicalDeclaration.FileURI).empty())
+  if (!llvm::StringRef(Sym.CanonicalDeclaration.FileURI).empty()) {
     for (const auto &ProximityURI :
-         generateProximityURIs(Sym.CanonicalDeclaration.FileURI))
+         generateProximityURIs(Sym.CanonicalDeclaration.FileURI)) {
       Result.emplace_back(Token::Kind::ProximityURI, ProximityURI);
-  if (Sym.Flags & Symbol::IndexedForCodeCompletion)
+
+}
+
+}
+  if (Sym.Flags & Symbol::IndexedForCodeCompletion) {
     Result.emplace_back(RestrictedForCodeCompletion);
-  if (!Sym.Type.empty())
+
+}
+  if (!Sym.Type.empty()) {
     Result.emplace_back(Token::Kind::Type, Sym.Type);
+
+}
   return Result;
 }
 
@@ -90,14 +98,18 @@ void Dex::buildIndex() {
   llvm::DenseMap<Token, std::vector<DocID>> TempInvertedIndex;
   for (DocID SymbolRank = 0; SymbolRank < Symbols.size(); ++SymbolRank) {
     const auto *Sym = Symbols[SymbolRank];
-    for (const auto &Token : generateSearchTokens(*Sym))
+    for (const auto &Token : generateSearchTokens(*Sym)) {
       TempInvertedIndex[Token].push_back(SymbolRank);
+
+}
   }
 
   // Convert lists of items to posting lists.
-  for (const auto &TokenToPostingList : TempInvertedIndex)
+  for (const auto &TokenToPostingList : TempInvertedIndex) {
     InvertedIndex.insert(
         {TokenToPostingList.first, PostingList(TokenToPostingList.second)});
+
+}
 }
 
 std::unique_ptr<Iterator> Dex::iterator(const Token &Tok) const {
@@ -117,8 +129,10 @@ std::unique_ptr<Iterator> Dex::createFileProximityIterator(
     Sources[Path] = SourceParams();
     auto PathURI = URI::create(Path);
     const auto PathProximityURIs = generateProximityURIs(PathURI.toString());
-    for (const auto &ProximityURI : PathProximityURIs)
+    for (const auto &ProximityURI : PathProximityURIs) {
       ParentURIs.insert(ProximityURI);
+
+}
   }
   // Use SymbolRelevanceSignals for symbol relevance evaluation: use defaults
   // for all parameters except for Proximity Path distance signal.
@@ -150,9 +164,11 @@ Dex::createTypeBoostingIterator(llvm::ArrayRef<std::string> Types) const {
   SymbolRelevanceSignals PreferredTypeSignals;
   PreferredTypeSignals.TypeMatchesPreferred = true;
   auto Boost = PreferredTypeSignals.evaluate();
-  for (const auto &T : Types)
+  for (const auto &T : Types) {
     BoostingIterators.push_back(
         Corpus.boost(iterator(Token(Token::Kind::Type, T)), Boost));
+
+}
   BoostingIterators.push_back(Corpus.all());
   return Corpus.unionOf(std::move(BoostingIterators));
 }
@@ -176,17 +192,23 @@ bool Dex::fuzzyFind(const FuzzyFindRequest &Req,
   // Generate query trigrams and construct AND iterator over all query
   // trigrams.
   std::vector<std::unique_ptr<Iterator>> TrigramIterators;
-  for (const auto &Trigram : TrigramTokens)
+  for (const auto &Trigram : TrigramTokens) {
     TrigramIterators.push_back(iterator(Trigram));
+
+}
   Criteria.push_back(Corpus.intersect(move(TrigramIterators)));
 
   // Generate scope tokens for search query.
   std::vector<std::unique_ptr<Iterator>> ScopeIterators;
-  for (const auto &Scope : Req.Scopes)
+  for (const auto &Scope : Req.Scopes) {
     ScopeIterators.push_back(iterator(Token(Token::Kind::Scope, Scope)));
-  if (Req.AnyScope)
+
+}
+  if (Req.AnyScope) {
     ScopeIterators.push_back(
         Corpus.boost(Corpus.all(), ScopeIterators.empty() ? 1.0 : 0.2));
+
+}
   Criteria.push_back(Corpus.unionOf(move(ScopeIterators)));
 
   // Add proximity paths boosting (all symbols, some boosted).
@@ -194,8 +216,10 @@ bool Dex::fuzzyFind(const FuzzyFindRequest &Req,
   // Add boosting for preferred types.
   Criteria.push_back(createTypeBoostingIterator(Req.PreferredTypes));
 
-  if (Req.RestrictForCodeCompletion)
+  if (Req.RestrictForCodeCompletion) {
     Criteria.push_back(iterator(RestrictedForCodeCompletion));
+
+}
 
   // Use TRUE iterator if both trigrams and scopes from the query are not
   // present in the symbol index.
@@ -203,8 +227,10 @@ bool Dex::fuzzyFind(const FuzzyFindRequest &Req,
   // Retrieve more items than it was requested: some of  the items with high
   // final score might not be retrieved otherwise.
   // FIXME(kbobyrev): Tune this ratio.
-  if (Req.Limit)
+  if (Req.Limit) {
     Root = Corpus.limit(move(Root), *Req.Limit * 100);
+
+}
   SPAN_ATTACH(Tracer, "query", llvm::to_string(*Root));
   vlog("Dex query tree: {0}", *Root);
 
@@ -220,22 +246,28 @@ bool Dex::fuzzyFind(const FuzzyFindRequest &Req,
     const DocID SymbolDocID = IDAndScore.first;
     const auto *Sym = Symbols[SymbolDocID];
     const llvm::Optional<float> Score = Filter.match(Sym->Name);
-    if (!Score)
+    if (!Score) {
       continue;
+
+}
     // Combine Fuzzy Matching score, precomputed symbol quality and boosting
     // score for a cumulative final symbol score.
     const float FinalScore =
         (*Score) * SymbolQuality[SymbolDocID] * IDAndScore.second;
     // If Top.push(...) returns true, it means that it had to pop an item. In
     // this case, it is possible to retrieve more symbols.
-    if (Top.push({SymbolDocID, FinalScore}))
+    if (Top.push({SymbolDocID, FinalScore})) {
       More = true;
+
+}
   }
 
   // Apply callback to the top Req.Limit items in the descending
   // order of cumulative score.
-  for (const auto &Item : std::move(Top).items())
+  for (const auto &Item : std::move(Top).items()) {
     Callback(*Symbols[Item.first]);
+
+}
   return More;
 }
 
@@ -244,8 +276,10 @@ void Dex::lookup(const LookupRequest &Req,
   trace::Span Tracer("Dex lookup");
   for (const auto &ID : Req.IDs) {
     auto I = LookupTable.find(ID);
-    if (I != LookupTable.end())
+    if (I != LookupTable.end()) {
       Callback(*I->second);
+
+}
   }
 }
 
@@ -254,15 +288,21 @@ bool Dex::refs(const RefsRequest &Req,
   trace::Span Tracer("Dex refs");
   uint32_t Remaining =
       Req.Limit.getValueOr(std::numeric_limits<uint32_t>::max());
-  for (const auto &ID : Req.IDs)
+  for (const auto &ID : Req.IDs) {
     for (const auto &Ref : Refs.lookup(ID)) {
-      if (!static_cast<int>(Req.Filter & Ref.Kind))
+      if (!static_cast<int>(Req.Filter & Ref.Kind)) {
         continue;
-      if (Remaining == 0)
+
+}
+      if (Remaining == 0) {
         return true; // More refs were available.
+
+}
       --Remaining;
       Callback(Ref);
     }
+
+}
   return false; // We reported all refs.
 }
 
@@ -293,8 +333,10 @@ size_t Dex::estimateMemoryUsage() const {
   Bytes += SymbolQuality.size() * sizeof(float);
   Bytes += LookupTable.getMemorySize();
   Bytes += InvertedIndex.getMemorySize();
-  for (const auto &TokenToPostingList : InvertedIndex)
+  for (const auto &TokenToPostingList : InvertedIndex) {
     Bytes += TokenToPostingList.second.bytes();
+
+}
   Bytes += Refs.getMemorySize();
   Bytes += Relations.getMemorySize();
   return Bytes + BackingDataSize;
@@ -320,9 +362,11 @@ std::vector<std::string> generateProximityURIs(llvm::StringRef URIPath) {
     // FIXME(kbobyrev): Parsing and encoding path to URIs is not necessary and
     // could be optimized.
     Body = llvm::sys::path::parent_path(Body, llvm::sys::path::Style::posix);
-    if (!Body.empty())
+    if (!Body.empty()) {
       Result.emplace_back(
           URI(ParsedURI->scheme(), ParsedURI->authority(), Body).toString());
+
+}
   }
   return Result;
 }

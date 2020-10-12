@@ -117,8 +117,10 @@ bool LocalStackSlotPass::runOnMachineFunction(MachineFunction &MF) {
 
   // If the target doesn't want/need this pass, or if there are no locals
   // to consider, early exit.
-  if (!TRI->requiresVirtualBaseRegisters(MF) || LocalObjectCount == 0)
+  if (!TRI->requiresVirtualBaseRegisters(MF) || LocalObjectCount == 0) {
     return true;
+
+}
 
   // Make sure we have enough space to store the local offsets.
   LocalOffsets.resize(MFI.getObjectIndexEnd());
@@ -145,8 +147,10 @@ void LocalStackSlotPass::AdjustStackOffset(MachineFrameInfo &MFI,
                                            bool StackGrowsDown,
                                            unsigned &MaxAlign) {
   // If the stack grows down, add the object size to find the lowest address.
-  if (StackGrowsDown)
+  if (StackGrowsDown) {
     Offset += MFI.getObjectSize(FrameIdx);
+
+}
 
   unsigned Align = MFI.getObjectAlignment(FrameIdx);
 
@@ -165,8 +169,10 @@ void LocalStackSlotPass::AdjustStackOffset(MachineFrameInfo &MFI,
   // And tell MFI about it for PEI to use later
   MFI.mapLocalFrameObject(FrameIdx, LocalOffset);
 
-  if (!StackGrowsDown)
+  if (!StackGrowsDown) {
     Offset += MFI.getObjectSize(FrameIdx);
+
+}
 
   ++NumAllocations;
 }
@@ -218,10 +224,14 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
     // Assign large stack objects first.
     for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
-      if (MFI.isDeadObjectIndex(i))
+      if (MFI.isDeadObjectIndex(i)) {
         continue;
-      if (StackProtectorFI == (int)i)
+
+}
+      if (StackProtectorFI == (int)i) {
         continue;
+
+}
 
       switch (MFI.getObjectSSPLayout(i)) {
       case MachineFrameInfo::SSPLK_None:
@@ -250,12 +260,18 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
   // Then assign frame offsets to stack objects that are not used to spill
   // callee saved registers.
   for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
-    if (MFI.isDeadObjectIndex(i))
+    if (MFI.isDeadObjectIndex(i)) {
       continue;
-    if (MFI.getStackProtectorIndex() == (int)i)
+
+}
+    if (MFI.getStackProtectorIndex() == (int)i) {
       continue;
-    if (ProtectedObjs.count(i))
+
+}
+    if (ProtectedObjs.count(i)) {
       continue;
+
+}
 
     AdjustStackOffset(MFI, i, Offset, StackGrowsDown, MaxAlign);
   }
@@ -307,8 +323,10 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
       // range, so they don't need any updates.
       if (MI.isDebugInstr() || MI.getOpcode() == TargetOpcode::STATEPOINT ||
           MI.getOpcode() == TargetOpcode::STACKMAP ||
-          MI.getOpcode() == TargetOpcode::PATCHPOINT)
+          MI.getOpcode() == TargetOpcode::PATCHPOINT) {
         continue;
+
+}
 
       // For now, allocate the base register(s) within the basic block
       // where they're used, and don't try to keep them around outside
@@ -321,12 +339,16 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
         // an object allocated in the local block.
         if (MI.getOperand(i).isFI()) {
           // Don't try this with values not in the local block.
-          if (!MFI.isObjectPreAllocated(MI.getOperand(i).getIndex()))
+          if (!MFI.isObjectPreAllocated(MI.getOperand(i).getIndex())) {
             break;
+
+}
           int Idx = MI.getOperand(i).getIndex();
           int64_t LocalOffset = LocalOffsets[Idx];
-          if (!TRI->needsFrameBaseReg(&MI, LocalOffset))
+          if (!TRI->needsFrameBaseReg(&MI, LocalOffset)) {
             break;
+
+}
           FrameReferenceInsns.push_back(FrameRef(&MI, LocalOffset, Idx, Order++));
           break;
         }
@@ -357,18 +379,24 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
     // This avoids accesses to the stack protector though virtual base
     // registers, and forces PEI to address it using fp/sp/bp.
     if (MFI.hasStackProtectorIndex() &&
-        FrameIdx == MFI.getStackProtectorIndex())
+        FrameIdx == MFI.getStackProtectorIndex()) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "Considering: " << MI);
 
     unsigned idx = 0;
     for (unsigned f = MI.getNumOperands(); idx != f; ++idx) {
-      if (!MI.getOperand(idx).isFI())
+      if (!MI.getOperand(idx).isFI()) {
         continue;
 
-      if (FrameIdx == MI.getOperand(idx).getIndex())
+}
+
+      if (FrameIdx == MI.getOperand(idx).getIndex()) {
         break;
+
+}
     }
 
     assert(idx < MI.getNumOperands() && "Cannot find FI operand");

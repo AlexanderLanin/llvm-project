@@ -53,8 +53,10 @@ std::string PDBSymbolCompiland::getSourceFileFullPath() const {
         }
         if (Var == "src") {
           EnvSrc = Env->getValue();
-          if (sys::path::is_absolute(EnvSrc))
+          if (sys::path::is_absolute(EnvSrc)) {
             return EnvSrc;
+
+}
           RecordedResult = EnvSrc;
           continue;
         }
@@ -65,22 +67,28 @@ std::string PDBSymbolCompiland::getSourceFileFullPath() const {
           std::string Path = EnvWorkingDir + "\\" + EnvSrc;
           std::replace(Path.begin(), Path.end(), '/', '\\');
           // We will return it as full path if we can't find a better one.
-          if (sys::path::is_absolute(Path))
+          if (sys::path::is_absolute(Path)) {
             SourceFileFullPath = Path;
+
+}
         }
       }
     }
   }
 
   if (!RecordedResult.empty()) {
-    if (sys::path::is_absolute(RecordedResult))
+    if (sys::path::is_absolute(RecordedResult)) {
       return RecordedResult;
+
+}
 
     // This searches name that has same basename as the one in RecordedResult.
     auto OneSrcFile = Session.findOneSourceFile(
         this, RecordedResult, PDB_NameSearchFlags::NS_CaseInsensitive);
-    if (OneSrcFile)
+    if (OneSrcFile) {
       return OneSrcFile->getFileName();
+
+}
   }
 
   // At this point, we have to walk through all source files of this compiland,
@@ -100,8 +108,10 @@ std::string PDBSymbolCompiland::getSourceFileFullPath() const {
               .Case(".c", Lang == PDB_Lang::C)
               .Case(".asm", Lang == PDB_Lang::Masm)
               .Case(".swift", Lang == PDB_Lang::Swift)
-              .Default(false))
+              .Default(false)) {
         return File->getFileName();
+
+}
     }
   }
 

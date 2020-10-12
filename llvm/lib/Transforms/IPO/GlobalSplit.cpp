@@ -41,28 +41,36 @@ using namespace llvm;
 static bool splitGlobal(GlobalVariable &GV) {
   // If the address of the global is taken outside of the module, we cannot
   // apply this transformation.
-  if (!GV.hasLocalLinkage())
+  if (!GV.hasLocalLinkage()) {
     return false;
+
+}
 
   // We currently only know how to split ConstantStructs.
   auto *Init = dyn_cast_or_null<ConstantStruct>(GV.getInitializer());
-  if (!Init)
+  if (!Init) {
     return false;
+
+}
 
   // Verify that each user of the global is an inrange getelementptr constant.
   // From this it follows that any loads from or stores to that global must use
   // a pointer derived from an inrange getelementptr constant, which is
   // sufficient to allow us to apply the splitting transform.
   for (User *U : GV.users()) {
-    if (!isa<Constant>(U))
+    if (!isa<Constant>(U)) {
       return false;
+
+}
 
     auto *GEP = dyn_cast<GEPOperator>(U);
     if (!GEP || !GEP->getInRangeIndex() || *GEP->getInRangeIndex() != 1 ||
         !isa<ConstantInt>(GEP->getOperand(1)) ||
         !cast<ConstantInt>(GEP->getOperand(1))->isZero() ||
-        !isa<ConstantInt>(GEP->getOperand(2)))
+        !isa<ConstantInt>(GEP->getOperand(2))) {
       return false;
+
+}
   }
 
   SmallVector<MDNode *, 2> Types;
@@ -102,8 +110,10 @@ static bool splitGlobal(GlobalVariable &GV) {
       // are either Itanium ABI vtable groups or contain a single vtable (i.e.
       // Microsoft ABI vtables).
       uint64_t AttachedTo = (ByteOffset == 0) ? ByteOffset : ByteOffset - 1;
-      if (AttachedTo < SplitBegin || AttachedTo >= SplitEnd)
+      if (AttachedTo < SplitBegin || AttachedTo >= SplitEnd) {
         continue;
+
+}
       SplitGV->addMetadata(
           LLVMContext::MD_type,
           *MDNode::get(GV.getContext(),
@@ -112,20 +122,26 @@ static bool splitGlobal(GlobalVariable &GV) {
                         Type->getOperand(1)}));
     }
 
-    if (GV.hasMetadata(LLVMContext::MD_vcall_visibility))
+    if (GV.hasMetadata(LLVMContext::MD_vcall_visibility)) {
       SplitGV->setVCallVisibilityMetadata(GV.getVCallVisibility());
+
+}
   }
 
   for (User *U : GV.users()) {
     auto *GEP = cast<GEPOperator>(U);
     unsigned I = cast<ConstantInt>(GEP->getOperand(2))->getZExtValue();
-    if (I >= SplitGlobals.size())
+    if (I >= SplitGlobals.size()) {
       continue;
+
+}
 
     SmallVector<Value *, 4> Ops;
     Ops.push_back(ConstantInt::get(Int32Ty, 0));
-    for (unsigned I = 3; I != GEP->getNumOperands(); ++I)
+    for (unsigned I = 3; I != GEP->getNumOperands(); ++I) {
       Ops.push_back(GEP->getOperand(I));
+
+}
 
     auto *NewGEP = ConstantExpr::getGetElementPtr(
         SplitGlobals[I]->getInitializer()->getType(), SplitGlobals[I], Ops,
@@ -135,8 +151,10 @@ static bool splitGlobal(GlobalVariable &GV) {
 
   // Finally, remove the original global. Any remaining uses refer to invalid
   // elements of the global, so replace with undef.
-  if (!GV.use_empty())
+  if (!GV.use_empty()) {
     GV.replaceAllUsesWith(UndefValue::get(GV.getType()));
+
+}
   GV.eraseFromParent();
   return true;
 }
@@ -150,8 +168,10 @@ static bool splitGlobals(Module &M) {
   Function *TypeCheckedLoadFunc =
       M.getFunction(Intrinsic::getName(Intrinsic::type_checked_load));
   if ((!TypeTestFunc || TypeTestFunc->use_empty()) &&
-      (!TypeCheckedLoadFunc || TypeCheckedLoadFunc->use_empty()))
+      (!TypeCheckedLoadFunc || TypeCheckedLoadFunc->use_empty())) {
     return false;
+
+}
 
   bool Changed = false;
   for (auto I = M.global_begin(); I != M.global_end();) {
@@ -172,8 +192,10 @@ struct GlobalSplit : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
 
     return splitGlobals(M);
   }
@@ -190,7 +212,9 @@ ModulePass *llvm::createGlobalSplitPass() {
 }
 
 PreservedAnalyses GlobalSplitPass::run(Module &M, ModuleAnalysisManager &AM) {
-  if (!splitGlobals(M))
+  if (!splitGlobals(M)) {
     return PreservedAnalyses::all();
+
+}
   return PreservedAnalyses::none();
 }

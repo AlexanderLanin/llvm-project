@@ -45,18 +45,24 @@ bool CastToStructVisitor::VisitCastExpr(const CastExpr *CE) {
   const PointerType *OrigPTy = dyn_cast<PointerType>(OrigTy.getTypePtr());
   const PointerType *ToPTy = dyn_cast<PointerType>(ToTy.getTypePtr());
 
-  if (!ToPTy || !OrigPTy)
+  if (!ToPTy || !OrigPTy) {
     return true;
+
+}
 
   QualType OrigPointeeTy = OrigPTy->getPointeeType();
   QualType ToPointeeTy = ToPTy->getPointeeType();
 
-  if (!ToPointeeTy->isStructureOrClassType())
+  if (!ToPointeeTy->isStructureOrClassType()) {
     return true;
 
+}
+
   // We allow cast from void*.
-  if (OrigPointeeTy->isVoidType())
+  if (OrigPointeeTy->isVoidType()) {
     return true;
+
+}
 
   // Now the cast-to-type is struct pointer, the original type is not void*.
   if (!OrigPointeeTy->isRecordType()) {
@@ -71,27 +77,37 @@ bool CastToStructVisitor::VisitCastExpr(const CastExpr *CE) {
   } else {
     // Don't warn when size of data is unknown.
     const auto *U = dyn_cast<UnaryOperator>(E);
-    if (!U || U->getOpcode() != UO_AddrOf)
+    if (!U || U->getOpcode() != UO_AddrOf) {
       return true;
+
+}
 
     // Don't warn for references
     const ValueDecl *VD = nullptr;
-    if (const auto *SE = dyn_cast<DeclRefExpr>(U->getSubExpr()))
+    if (const auto *SE = dyn_cast<DeclRefExpr>(U->getSubExpr())) {
       VD = SE->getDecl();
-    else if (const auto *SE = dyn_cast<MemberExpr>(U->getSubExpr()))
+    } else if (const auto *SE = dyn_cast<MemberExpr>(U->getSubExpr())) {
       VD = SE->getMemberDecl();
-    if (!VD || VD->getType()->isReferenceType())
+
+}
+    if (!VD || VD->getType()->isReferenceType()) {
       return true;
 
+}
+
     if (ToPointeeTy->isIncompleteType() ||
-        OrigPointeeTy->isIncompleteType())
+        OrigPointeeTy->isIncompleteType()) {
       return true;
+
+}
 
     // Warn when there is widening cast.
     unsigned ToWidth = Ctx.getTypeInfo(ToPointeeTy).Width;
     unsigned OrigWidth = Ctx.getTypeInfo(OrigPointeeTy).Width;
-    if (ToWidth <= OrigWidth)
+    if (ToWidth <= OrigWidth) {
       return true;
+
+}
 
     PathDiagnosticLocation Loc(CE, BR.getSourceManager(), AC);
     BR.EmitBasicReport(AC->getDecl(), Checker, "Widening cast to struct type",

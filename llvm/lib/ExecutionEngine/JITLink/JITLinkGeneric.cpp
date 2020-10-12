@@ -27,10 +27,12 @@ void JITLinkerBase::linkPhase1(std::unique_ptr<JITLinkerBase> Self) {
   LLVM_DEBUG({ dbgs() << "Building jitlink graph for new input...\n"; });
 
   // Build the link graph.
-  if (auto GraphOrErr = buildGraph(Ctx->getObjectBuffer()))
+  if (auto GraphOrErr = buildGraph(Ctx->getObjectBuffer())) {
     G = std::move(*GraphOrErr);
-  else
+  } else {
     return Ctx->notifyFailed(GraphOrErr.takeError());
+
+}
   assert(G && "Graph should have been created by buildGraph above");
 
   LLVM_DEBUG({
@@ -38,8 +40,10 @@ void JITLinkerBase::linkPhase1(std::unique_ptr<JITLinkerBase> Self) {
   });
 
   // Prune and optimize the graph.
-  if (auto Err = runPasses(Passes.PrePrunePasses))
+  if (auto Err = runPasses(Passes.PrePrunePasses)) {
     return Ctx->notifyFailed(std::move(Err));
+
+}
 
   LLVM_DEBUG({
     dbgs() << "Link graph \"" << G->getName() << "\" pre-pruning:\n";
@@ -54,15 +58,19 @@ void JITLinkerBase::linkPhase1(std::unique_ptr<JITLinkerBase> Self) {
   });
 
   // Run post-pruning passes.
-  if (auto Err = runPasses(Passes.PostPrunePasses))
+  if (auto Err = runPasses(Passes.PostPrunePasses)) {
     return Ctx->notifyFailed(std::move(Err));
+
+}
 
   // Sort blocks into segments.
   auto Layout = layOutBlocks();
 
   // Allocate memory for segments.
-  if (auto Err = allocateSegments(Layout))
+  if (auto Err = allocateSegments(Layout)) {
     return Ctx->notifyFailed(std::move(Err));
+
+}
 
   // Notify client that the defined symbols have been assigned addresses.
   LLVM_DEBUG(
@@ -106,8 +114,10 @@ void JITLinkerBase::linkPhase2(std::unique_ptr<JITLinkerBase> Self,
   });
 
   // If the lookup failed, bail out.
-  if (!LR)
+  if (!LR) {
     return deallocateAndBailOut(LR.takeError());
+
+}
 
   // Assign addresses to external addressables.
   applyLookupResult(*LR);
@@ -121,8 +131,10 @@ void JITLinkerBase::linkPhase2(std::unique_ptr<JITLinkerBase> Self,
     dumpGraph(dbgs());
   });
 
-  if (auto Err = runPasses(Passes.PostAllocationPasses))
+  if (auto Err = runPasses(Passes.PostAllocationPasses)) {
     return deallocateAndBailOut(std::move(Err));
+
+}
 
   LLVM_DEBUG({
     dbgs() << "Link graph \"" << G->getName() << "\" before copy-and-fixup:\n";
@@ -130,16 +142,20 @@ void JITLinkerBase::linkPhase2(std::unique_ptr<JITLinkerBase> Self,
   });
 
   // Fix up block content.
-  if (auto Err = fixUpBlocks(*G))
+  if (auto Err = fixUpBlocks(*G)) {
     return deallocateAndBailOut(std::move(Err));
+
+}
 
   LLVM_DEBUG({
     dbgs() << "Link graph \"" << G->getName() << "\" after copy-and-fixup:\n";
     dumpGraph(dbgs());
   });
 
-  if (auto Err = runPasses(Passes.PostFixupPasses))
+  if (auto Err = runPasses(Passes.PostFixupPasses)) {
     return deallocateAndBailOut(std::move(Err));
+
+}
 
   // FIXME: Use move capture once we have c++14.
   auto *UnownedSelf = Self.release();
@@ -157,17 +173,23 @@ void JITLinkerBase::linkPhase3(std::unique_ptr<JITLinkerBase> Self, Error Err) {
     dbgs() << "Starting link phase 3 for graph " << G->getName() << "\n";
   });
 
-  if (Err)
+  if (Err) {
     return deallocateAndBailOut(std::move(Err));
+
+}
   Ctx->notifyFinalized(std::move(Alloc));
 
   LLVM_DEBUG({ dbgs() << "Link of graph " << G->getName() << " complete\n"; });
 }
 
 Error JITLinkerBase::runPasses(LinkGraphPassList &Passes) {
-  for (auto &P : Passes)
-    if (auto Err = P(*G))
+  for (auto &P : Passes) {
+    if (auto Err = P(*G)) {
       return Err;
+
+}
+
+}
   return Error::success();
 }
 
@@ -178,10 +200,12 @@ JITLinkerBase::SegmentLayoutMap JITLinkerBase::layOutBlocks() {
   /// Partition blocks based on permissions and content vs. zero-fill.
   for (auto *B : G->blocks()) {
     auto &SegLists = Layout[B->getSection().getProtectionFlags()];
-    if (!B->isZeroFill())
+    if (!B->isZeroFill()) {
       SegLists.ContentBlocks.push_back(B);
-    else
+    } else {
       SegLists.ZeroFillBlocks.push_back(B);
+
+}
   }
 
   /// Sort blocks within each list.
@@ -189,10 +213,14 @@ JITLinkerBase::SegmentLayoutMap JITLinkerBase::layOutBlocks() {
 
     auto CompareBlocks = [](const Block *LHS, const Block *RHS) {
       // Sort by section, address and size
-      if (LHS->getSection().getOrdinal() != RHS->getSection().getOrdinal())
+      if (LHS->getSection().getOrdinal() != RHS->getSection().getOrdinal()) {
         return LHS->getSection().getOrdinal() < RHS->getSection().getOrdinal();
-      if (LHS->getAddress() != RHS->getAddress())
+
+}
+      if (LHS->getAddress() != RHS->getAddress()) {
         return LHS->getAddress() < RHS->getAddress();
+
+}
       return LHS->getSize() < RHS->getSize();
     };
 
@@ -261,10 +289,12 @@ Error JITLinkerBase::allocateSegments(const SegmentLayoutMap &Layout) {
   }
   LLVM_DEBUG(dbgs() << " }\n");
 
-  if (auto AllocOrErr = Ctx->getMemoryManager().allocate(Segments))
+  if (auto AllocOrErr = Ctx->getMemoryManager().allocate(Segments)) {
     Alloc = std::move(*AllocOrErr);
-  else
+  } else {
     return AllocOrErr.takeError();
+
+}
 
   LLVM_DEBUG({
     dbgs() << "JIT linker got working memory:\n";
@@ -283,12 +313,14 @@ Error JITLinkerBase::allocateSegments(const SegmentLayoutMap &Layout) {
     JITTargetAddress NextBlockAddr =
         Alloc->getTargetMemory(static_cast<sys::Memory::ProtectionFlags>(Prot));
 
-    for (auto *SIList : {&SL.ContentBlocks, &SL.ZeroFillBlocks})
+    for (auto *SIList : {&SL.ContentBlocks, &SL.ZeroFillBlocks}) {
       for (auto *B : *SIList) {
         NextBlockAddr = alignToBlock(NextBlockAddr, *B);
         B->setAddress(NextBlockAddr);
         NextBlockAddr += B->getSize();
       }
+
+}
   }
 
   return Error::success();
@@ -318,11 +350,13 @@ void JITLinkerBase::applyLookupResult(AsyncLookupResult Result) {
     assert(Sym->getAddress() == 0 && "Symbol already resolved");
     assert(!Sym->isDefined() && "Symbol being resolved is already defined");
     auto ResultI = Result.find(Sym->getName());
-    if (ResultI != Result.end())
+    if (ResultI != Result.end()) {
       Sym->getAddressable().setAddress(ResultI->second.getAddress());
-    else
+    } else {
       assert(Sym->getLinkage() == Linkage::Weak &&
              "Failed to resolve non-weak reference");
+
+}
   }
 
   LLVM_DEBUG({
@@ -379,8 +413,10 @@ void JITLinkerBase::copyBlockContentToWorkingMemory(
                  << " to " << (const void *)BlockDataPtr << "\n";
       });
 
-      while (LastBlockEnd != BlockDataPtr)
+      while (LastBlockEnd != BlockDataPtr) {
         *LastBlockEnd++ = 0;
+
+}
 
       // Copy initial block content.
       LLVM_DEBUG({
@@ -405,8 +441,10 @@ void JITLinkerBase::copyBlockContentToWorkingMemory(
              << (const void *)LastBlockEnd << " to "
              << (const void *)((char *)SegMem.data() + SegMem.size()) << "\n";
     });
-    while (LastBlockEnd != SegMem.data() + SegMem.size())
+    while (LastBlockEnd != SegMem.data() + SegMem.size()) {
       *LastBlockEnd++ = 0;
+
+}
   }
 }
 
@@ -426,9 +464,13 @@ void prune(LinkGraph &G) {
   DenseSet<Block *> VisitedBlocks;
 
   // Build the initial worklist from all symbols initially live.
-  for (auto *Sym : G.defined_symbols())
-    if (Sym->isLive())
+  for (auto *Sym : G.defined_symbols()) {
+    if (Sym->isLive()) {
       Worklist.push_back(Sym);
+
+}
+
+}
 
   // Propagate live flags to all symbols reachable from the initial live set.
   while (!Worklist.empty()) {
@@ -438,8 +480,10 @@ void prune(LinkGraph &G) {
     auto &B = Sym->getBlock();
 
     // Skip addressables that we've visited before.
-    if (VisitedBlocks.count(&B))
+    if (VisitedBlocks.count(&B)) {
       continue;
+
+}
 
     VisitedBlocks.insert(&B);
 
@@ -455,9 +499,13 @@ void prune(LinkGraph &G) {
   {
     LLVM_DEBUG(dbgs() << "Dead-stripping symbols:\n");
     std::vector<Symbol *> SymbolsToRemove;
-    for (auto *Sym : G.defined_symbols())
-      if (!Sym->isLive())
+    for (auto *Sym : G.defined_symbols()) {
+      if (!Sym->isLive()) {
         SymbolsToRemove.push_back(Sym);
+
+}
+
+}
     for (auto *Sym : SymbolsToRemove) {
       LLVM_DEBUG(dbgs() << "  " << *Sym << "...\n");
       G.removeDefinedSymbol(*Sym);
@@ -468,9 +516,13 @@ void prune(LinkGraph &G) {
   {
     LLVM_DEBUG(dbgs() << "Dead-stripping blocks:\n");
     std::vector<Block *> BlocksToRemove;
-    for (auto *B : G.blocks())
-      if (!VisitedBlocks.count(B))
+    for (auto *B : G.blocks()) {
+      if (!VisitedBlocks.count(B)) {
         BlocksToRemove.push_back(B);
+
+}
+
+}
     for (auto *B : BlocksToRemove) {
       LLVM_DEBUG(dbgs() << "  " << *B << "...\n");
       G.removeBlock(*B);

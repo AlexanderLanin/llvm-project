@@ -32,10 +32,14 @@ static const char Message[] =
     "identifier|not a reserved identifier|reserved in the global namespace}1";
 
 static int getMessageSelectIndex(StringRef Tag) {
-  if (Tag == NonReservedTag)
+  if (Tag == NonReservedTag) {
     return 1;
-  if (Tag == GlobalUnderscoreTag)
+
+}
+  if (Tag == GlobalUnderscoreTag) {
     return 2;
+
+}
   return 0;
 }
 
@@ -61,15 +65,19 @@ static std::string collapseConsecutive(StringRef Str, char C) {
 
 static bool hasReservedDoubleUnderscore(StringRef Name,
                                         const LangOptions &LangOpts) {
-  if (LangOpts.CPlusPlus)
+  if (LangOpts.CPlusPlus) {
     return Name.find("__") != StringRef::npos;
+
+}
   return Name.startswith("__");
 }
 
 static Optional<std::string>
 getDoubleUnderscoreFixup(StringRef Name, const LangOptions &LangOpts) {
-  if (hasReservedDoubleUnderscore(Name, LangOpts))
+  if (hasReservedDoubleUnderscore(Name, LangOpts)) {
     return collapseConsecutive(Name, '_');
+
+}
   return None;
 }
 
@@ -78,8 +86,10 @@ static bool startsWithUnderscoreCapital(StringRef Name) {
 }
 
 static Optional<std::string> getUnderscoreCapitalFixup(StringRef Name) {
-  if (startsWithUnderscoreCapital(Name))
+  if (startsWithUnderscoreCapital(Name)) {
     return std::string(Name.drop_front(1));
+
+}
   return None;
 }
 
@@ -90,17 +100,21 @@ static bool startsWithUnderscoreInGlobalNamespace(StringRef Name,
 
 static Optional<std::string>
 getUnderscoreGlobalNamespaceFixup(StringRef Name, bool IsInGlobalNamespace) {
-  if (startsWithUnderscoreInGlobalNamespace(Name, IsInGlobalNamespace))
+  if (startsWithUnderscoreInGlobalNamespace(Name, IsInGlobalNamespace)) {
     return std::string(Name.drop_front(1));
+
+}
   return None;
 }
 
 static std::string getNonReservedFixup(std::string Name) {
   assert(!Name.empty());
-  if (Name[0] == '_' || std::isupper(Name[0]))
+  if (Name[0] == '_' || std::isupper(Name[0])) {
     Name.insert(Name.begin(), '_');
-  else
+  } else {
     Name.insert(Name.begin(), 2, '_');
+
+}
   return Name;
 }
 
@@ -109,8 +123,10 @@ getFailureInfoImpl(StringRef Name, bool IsInGlobalNamespace,
                    const LangOptions &LangOpts, bool Invert,
                    ArrayRef<std::string> AllowedIdentifiers) {
   assert(!Name.empty());
-  if (llvm::is_contained(AllowedIdentifiers, Name))
+  if (llvm::is_contained(AllowedIdentifiers, Name)) {
     return None;
+
+}
 
   // TODO: Check for names identical to language keywords, and other names
   // specifically reserved by language standards, e.g. C++ 'zombie names' and C
@@ -132,20 +148,28 @@ getFailureInfoImpl(StringRef Name, bool IsInGlobalNamespace,
           .map([](const FailureInfo &Info) { return StringRef(Info.Fixup); })
           .getValueOr(Name);
     };
-    if (auto Fixup = getDoubleUnderscoreFixup(InProgressFixup(), LangOpts))
+    if (auto Fixup = getDoubleUnderscoreFixup(InProgressFixup(), LangOpts)) {
       AppendFailure(DoubleUnderscoreTag, std::move(*Fixup));
-    if (auto Fixup = getUnderscoreCapitalFixup(InProgressFixup()))
+
+}
+    if (auto Fixup = getUnderscoreCapitalFixup(InProgressFixup())) {
       AppendFailure(UnderscoreCapitalTag, std::move(*Fixup));
+
+}
     if (auto Fixup = getUnderscoreGlobalNamespaceFixup(InProgressFixup(),
-                                                       IsInGlobalNamespace))
+                                                       IsInGlobalNamespace)) {
       AppendFailure(GlobalUnderscoreTag, std::move(*Fixup));
+
+}
 
     return Info;
   }
   if (!(hasReservedDoubleUnderscore(Name, LangOpts) ||
         startsWithUnderscoreCapital(Name) ||
-        startsWithUnderscoreInGlobalNamespace(Name, IsInGlobalNamespace)))
+        startsWithUnderscoreInGlobalNamespace(Name, IsInGlobalNamespace))) {
     return FailureInfo{NonReservedTag, getNonReservedFixup(std::string(Name))};
+
+}
   return None;
 }
 

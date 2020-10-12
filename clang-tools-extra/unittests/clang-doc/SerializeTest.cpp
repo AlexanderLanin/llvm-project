@@ -38,10 +38,14 @@ public:
   template <typename T> bool mapDecl(const T *D) {
     auto I = serialize::emitInfo(D, getComment(D), /*Line=*/0,
                                  /*File=*/"test.cpp", true, Public);
-    if (I.first)
+    if (I.first) {
       EmittedInfos.emplace_back(std::move(I.first));
-    if (I.second)
+
+}
+    if (I.second) {
       EmittedInfos.emplace_back(std::move(I.second));
+
+}
     return true;
   }
 
@@ -49,8 +53,10 @@ public:
 
   bool VisitFunctionDecl(const FunctionDecl *D) {
     // Don't visit CXXMethodDecls twice
-    if (dyn_cast<CXXMethodDecl>(D))
+    if (dyn_cast<CXXMethodDecl>(D)) {
       return true;
+
+}
     return mapDecl(D);
   }
 

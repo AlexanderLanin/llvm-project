@@ -26,21 +26,29 @@ bool cocoa::isRefType(QualType RetTy, StringRef Prefix,
   // Recursively walk the typedef stack, allowing typedefs of reference types.
   while (const TypedefType *TD = RetTy->getAs<TypedefType>()) {
     StringRef TDName = TD->getDecl()->getIdentifier()->getName();
-    if (TDName.startswith(Prefix) && TDName.endswith("Ref"))
+    if (TDName.startswith(Prefix) && TDName.endswith("Ref")) {
       return true;
+
+}
     // XPC unfortunately uses CF-style function names, but aren't CF types.
-    if (TDName.startswith("xpc_"))
+    if (TDName.startswith("xpc_")) {
       return false;
+
+}
     RetTy = TD->getDecl()->getUnderlyingType();
   }
 
-  if (Name.empty())
+  if (Name.empty()) {
     return false;
+
+}
 
   // Is the type void*?
   const PointerType* PT = RetTy->castAs<PointerType>();
-  if (!PT || !PT->getPointeeType().getUnqualifiedType()->isVoidType())
+  if (!PT || !PT->getPointeeType().getUnqualifiedType()->isVoidType()) {
     return false;
+
+}
 
   // Does the name start with the prefix?
   return Name.startswith(Prefix);
@@ -63,20 +71,26 @@ bool coreFoundation::isCFObjectRef(QualType T) {
 
 
 bool cocoa::isCocoaObjectRef(QualType Ty) {
-  if (!Ty->isObjCObjectPointerType())
+  if (!Ty->isObjCObjectPointerType()) {
     return false;
+
+}
 
   const ObjCObjectPointerType *PT = Ty->getAs<ObjCObjectPointerType>();
 
   // Can be true for objects with the 'NSObject' attribute.
-  if (!PT)
+  if (!PT) {
     return true;
+
+}
 
   // We assume that id<..>, id, Class, and Class<..> all represent tracked
   // objects.
   if (PT->isObjCIdType() || PT->isObjCQualifiedIdType() ||
-      PT->isObjCClassType() || PT->isObjCQualifiedClassType())
+      PT->isObjCClassType() || PT->isObjCQualifiedClassType()) {
     return true;
+
+}
 
   // Does the interface subclass NSObject?
   // FIXME: We can memoize here if this gets too expensive.
@@ -84,12 +98,18 @@ bool cocoa::isCocoaObjectRef(QualType Ty) {
 
   // Assume that anything declared with a forward declaration and no
   // @interface subclasses NSObject.
-  if (!ID->hasDefinition())
+  if (!ID->hasDefinition()) {
     return true;
 
-  for ( ; ID ; ID = ID->getSuperClass())
-    if (ID->getIdentifier()->getName() == "NSObject")
+}
+
+  for ( ; ID ; ID = ID->getSuperClass()) {
+    if (ID->getIdentifier()->getName() == "NSObject") {
       return true;
+
+}
+
+}
 
   return false;
 }
@@ -98,7 +118,9 @@ bool coreFoundation::followsCreateRule(const FunctionDecl *fn) {
   // For now, *just* base this on the function name, not on anything else.
 
   const IdentifierInfo *ident = fn->getIdentifier();
-  if (!ident) return false;
+  if (!ident) { return false;
+
+}
   StringRef functionName = ident->getName();
 
   StringRef::iterator it = functionName.begin();
@@ -112,8 +134,10 @@ bool coreFoundation::followsCreateRule(const FunctionDecl *fn) {
       char ch = *it;
       if (ch == 'C' || ch == 'c') {
         // Make sure this isn't something like 'recreate' or 'Scopy'.
-        if (ch == 'c' && it != start && isLetter(*(it - 1)))
+        if (ch == 'c' && it != start && isLetter(*(it - 1))) {
           continue;
+
+}
 
         ++it;
         break;
@@ -121,8 +145,10 @@ bool coreFoundation::followsCreateRule(const FunctionDecl *fn) {
     }
 
     // Did we hit the end of the string?  If so, we didn't find a match.
-    if (it == endI)
+    if (it == endI) {
       return false;
+
+}
 
     // Scan for *lowercase* 'reate' or 'opy', followed by no lowercase
     // character.
@@ -137,8 +163,10 @@ bool coreFoundation::followsCreateRule(const FunctionDecl *fn) {
       continue;
     }
 
-    if (it == endI || !isLowercase(*it))
+    if (it == endI || !isLowercase(*it)) {
       return true;
+
+}
 
     // If we matched a lowercase character, it isn't the end of the
     // word.  Keep scanning.

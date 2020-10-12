@@ -16,8 +16,10 @@ using namespace LegalityPredicates;
 namespace {
 
 ::testing::AssertionResult isNullMIPtr(const MachineInstr *MI) {
-  if (MI == nullptr)
+  if (MI == nullptr) {
     return ::testing::AssertionSuccess();
+
+}
   std::string MIBuffer;
   raw_string_ostream MISStream(MIBuffer);
   MI->print(MISStream, /*IsStandalone=*/true, /*SkipOpers=*/false,
@@ -56,8 +58,10 @@ TEST_F(GISelMITest, BasicLegalizerTest) {
     $h4 = COPY %v:_(<2 x s8>)
   )";
   setUp(MIRString.rtrim(' '));
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   ALegalizerInfo LI(MF->getSubtarget());
 
@@ -94,8 +98,10 @@ TEST_F(GISelMITest, UnorderedArtifactCombiningTest) {
     $h4 = COPY %v0_ext:_(s16)
   )";
   setUp(MIRString.rtrim(' '));
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   ALegalizerInfo LI(MF->getSubtarget());
 
@@ -187,8 +193,10 @@ TEST_F(GISelMITest, UnorderedArtifactCombiningManyCopiesTest) {
     $w5 = COPY %v1_sext:_(s32)
   )";
   setUp(MIRString.rtrim(' '));
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   ALegalizerInfo LI(MF->getSubtarget());
 

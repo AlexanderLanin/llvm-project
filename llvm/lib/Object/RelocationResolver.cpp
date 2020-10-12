@@ -242,8 +242,10 @@ static bool supportsPPC32(uint64_t Type) {
 }
 
 static uint64_t resolvePPC32(RelocationRef R, uint64_t S, uint64_t A) {
-  if (R.getType() == ELF::R_PPC_ADDR32)
+  if (R.getType() == ELF::R_PPC_ADDR32) {
     return (S + getELFAddend(R)) & 0xFFFFFFFF;
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -252,8 +254,10 @@ static bool supportsARM(uint64_t Type) {
 }
 
 static uint64_t resolveARM(RelocationRef R, uint64_t S, uint64_t A) {
-  if (R.getType() == ELF::R_ARM_ABS32)
+  if (R.getType() == ELF::R_ARM_ABS32) {
     return (S + A) & 0xFFFFFFFF;
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -283,8 +287,10 @@ static bool supportsLanai(uint64_t Type) {
 }
 
 static uint64_t resolveLanai(RelocationRef R, uint64_t S, uint64_t A) {
-  if (R.getType() == ELF::R_LANAI_32)
+  if (R.getType() == ELF::R_LANAI_32) {
     return (S + getELFAddend(R)) & 0xFFFFFFFF;
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -301,10 +307,14 @@ static bool supportsMips32(uint64_t Type) {
 static uint64_t resolveMips32(RelocationRef R, uint64_t S, uint64_t A) {
   // FIXME: Take in account implicit addends to get correct results.
   uint32_t Rel = R.getType();
-  if (Rel == ELF::R_MIPS_32)
+  if (Rel == ELF::R_MIPS_32) {
     return (S + A) & 0xFFFFFFFF;
-  if (Rel == ELF::R_MIPS_TLS_DTPREL32)
+
+}
+  if (Rel == ELF::R_MIPS_TLS_DTPREL32) {
     return (S + A) & 0xFFFFFFFF;
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -320,8 +330,10 @@ static bool supportsSparc32(uint64_t Type) {
 
 static uint64_t resolveSparc32(RelocationRef R, uint64_t S, uint64_t A) {
   uint32_t Rel = R.getType();
-  if (Rel == ELF::R_SPARC_32 || Rel == ELF::R_SPARC_UA32)
+  if (Rel == ELF::R_SPARC_32 || Rel == ELF::R_SPARC_UA32) {
     return S + getELFAddend(R);
+
+}
   return A;
 }
 
@@ -330,8 +342,10 @@ static bool supportsHexagon(uint64_t Type) {
 }
 
 static uint64_t resolveHexagon(RelocationRef R, uint64_t S, uint64_t A) {
-  if (R.getType() == ELF::R_HEX_32)
+  if (R.getType() == ELF::R_HEX_32) {
     return S + getELFAddend(R);
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -480,8 +494,10 @@ static bool supportsMachOX86_64(uint64_t Type) {
 }
 
 static uint64_t resolveMachOX86_64(RelocationRef R, uint64_t S, uint64_t A) {
-  if (R.getType() == MachO::X86_64_RELOC_UNSIGNED)
+  if (R.getType() == MachO::X86_64_RELOC_UNSIGNED) {
     return S;
+
+}
   llvm_unreachable("Invalid relocation type");
 }
 
@@ -599,12 +615,16 @@ getRelocationResolver(const ObjectFile &Obj) {
       return {nullptr, nullptr};
     }
   } else if (Obj.isMachO()) {
-    if (Obj.getArch() == Triple::x86_64)
+    if (Obj.getArch() == Triple::x86_64) {
       return {supportsMachOX86_64, resolveMachOX86_64};
+
+}
     return {nullptr, nullptr};
   } else if (Obj.isWasm()) {
-    if (Obj.getArch() == Triple::wasm32)
+    if (Obj.getArch() == Triple::wasm32) {
       return {supportsWasm32, resolveWasm32};
+
+}
     return {nullptr, nullptr};
   }
 

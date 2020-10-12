@@ -34,8 +34,10 @@ TEST(CharInfoTest, validateInfoTable) {
     EXPECT_EQ((unsigned)CHAR_UPPER, InfoTable[i+'A'-'a']);
   }
 
-  for (unsigned i = '0'; i <= '9'; ++i)
+  for (unsigned i = '0'; i <= '9'; ++i) {
     EXPECT_EQ((unsigned)CHAR_DIGIT, InfoTable[i]);
+
+}
 }
 
 // Check various predicates.

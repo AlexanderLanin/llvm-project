@@ -47,10 +47,12 @@ namespace {
       ASTContext &C = CGF.getContext();
       if (lvalue.isSimple()) {
         AtomicTy = lvalue.getType();
-        if (auto *ATy = AtomicTy->getAs<AtomicType>())
+        if (auto *ATy = AtomicTy->getAs<AtomicType>()) {
           ValueTy = ATy->getValueType();
-        else
+        } else {
           ValueTy = AtomicTy;
+
+}
         EvaluationKind = CGF.getEvaluationKind(ValueTy);
 
         uint64_t ValueAlignInBits;
@@ -68,8 +70,10 @@ namespace {
 
         AtomicAlign = C.toCharUnitsFromBits(AtomicAlignInBits);
         ValueAlign = C.toCharUnitsFromBits(ValueAlignInBits);
-        if (lvalue.getAlignment().isZero())
+        if (lvalue.getAlignment().isZero()) {
           lvalue.setAlignment(AtomicAlign);
+
+}
 
         LVal = lvalue;
       } else if (lvalue.isBitField()) {
@@ -138,12 +142,14 @@ namespace {
     bool shouldUseLibcall() const { return UseLibcall; }
     const LValue &getAtomicLValue() const { return LVal; }
     llvm::Value *getAtomicPointer() const {
-      if (LVal.isSimple())
+      if (LVal.isSimple()) {
         return LVal.getPointer(CGF);
-      else if (LVal.isBitField())
+      } else if (LVal.isBitField()) {
         return LVal.getBitFieldPointer();
-      else if (LVal.isVectorElt())
+      } else if (LVal.isVectorElt()) {
         return LVal.getVectorPointer();
+
+}
       assert(LVal.isExtVectorElt());
       return LVal.getExtVectorPointer();
     }
@@ -199,8 +205,10 @@ namespace {
     LValue projectValue() const {
       assert(LVal.isSimple());
       Address addr = getAtomicAddress();
-      if (hasPadding())
+      if (hasPadding()) {
         addr = CGF.Builder.CreateStructGEP(addr, 0);
+
+}
 
       return LValue::MakeAddr(addr, getValueType(), CGF.getContext(),
                               LVal.getBaseInfo(), LVal.getTBAAInfo());
@@ -293,9 +301,11 @@ Address AtomicInfo::CreateTempAlloca() const {
       getAtomicAlignment(),
       "atomic-temp");
   // Cast to pointer to value type for bitfields.
-  if (LVal.isBitField())
+  if (LVal.isBitField()) {
     return CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(
         TempAlloca, getAtomicAddress().getType());
+
+}
   return TempAlloca;
 }
 
@@ -322,7 +332,9 @@ static bool isFullSizeType(CodeGenModule &CGM, llvm::Type *type,
 /// The IR type is provided as a way of making certain queries faster.
 bool AtomicInfo::requiresMemSetZero(llvm::Type *type) const {
   // If the atomic type has size padding, we definitely need a memset.
-  if (hasPadding()) return true;
+  if (hasPadding()) { return true;
+
+}
 
   // Otherwise, do some simple heuristics to try to avoid it:
   switch (getEvaluationKind()) {
@@ -344,8 +356,10 @@ bool AtomicInfo::requiresMemSetZero(llvm::Type *type) const {
 bool AtomicInfo::emitMemSetZeroIfNecessary() const {
   assert(LVal.isSimple());
   llvm::Value *addr = LVal.getPointer(CGF);
-  if (!requiresMemSetZero(addr->getType()->getPointerElementType()))
+  if (!requiresMemSetZero(addr->getType()->getPointerElementType())) {
     return false;
+
+}
 
   CGF.Builder.CreateMemSet(
       addr, llvm::ConstantInt::get(CGF.Int8Ty, 0),
@@ -414,9 +428,9 @@ static void emitAtomicCmpXchgFailureSet(CodeGenFunction &CGF, AtomicExpr *E,
   llvm::AtomicOrdering FailureOrder;
   if (llvm::ConstantInt *FO = dyn_cast<llvm::ConstantInt>(FailureOrderVal)) {
     auto FOS = FO->getSExtValue();
-    if (!llvm::isValidAtomicOrderingCABI(FOS))
+    if (!llvm::isValidAtomicOrderingCABI(FOS)) {
       FailureOrder = llvm::AtomicOrdering::Monotonic;
-    else
+    } else {
       switch ((llvm::AtomicOrderingCABI)FOS) {
       case llvm::AtomicOrderingCABI::relaxed:
       case llvm::AtomicOrderingCABI::release:
@@ -431,6 +445,8 @@ static void emitAtomicCmpXchgFailureSet(CodeGenFunction &CGF, AtomicExpr *E,
         FailureOrder = llvm::AtomicOrdering::SequentiallyConsistent;
         break;
       }
+
+}
     if (isStrongerThan(FailureOrder, SuccessOrder)) {
       // Don't assert on undefined behavior "failure argument shall be no
       // stronger than the success argument".
@@ -447,10 +463,14 @@ static void emitAtomicCmpXchgFailureSet(CodeGenFunction &CGF, AtomicExpr *E,
                    *SeqCstBB = nullptr;
   MonotonicBB = CGF.createBasicBlock("monotonic_fail", CGF.CurFn);
   if (SuccessOrder != llvm::AtomicOrdering::Monotonic &&
-      SuccessOrder != llvm::AtomicOrdering::Release)
+      SuccessOrder != llvm::AtomicOrdering::Release) {
     AcquireBB = CGF.createBasicBlock("acquire_fail", CGF.CurFn);
-  if (SuccessOrder == llvm::AtomicOrdering::SequentiallyConsistent)
+
+}
+  if (SuccessOrder == llvm::AtomicOrdering::SequentiallyConsistent) {
     SeqCstBB = CGF.createBasicBlock("seqcst_fail", CGF.CurFn);
+
+}
 
   llvm::BasicBlock *ContBB = CGF.createBasicBlock("atomic.continue", CGF.CurFn);
 
@@ -674,15 +694,19 @@ static void EmitAtomicOp(CodeGenFunction &CGF, AtomicExpr *E, Address Dest,
   // For __atomic_*_fetch operations, perform the operation again to
   // determine the value which was written.
   llvm::Value *Result = RMWI;
-  if (PostOpMinMax)
+  if (PostOpMinMax) {
     Result = EmitPostAtomicMinMax(CGF.Builder, E->getOp(),
                                   E->getValueType()->isSignedIntegerType(),
                                   RMWI, LoadVal1);
-  else if (PostOp)
+  } else if (PostOp) {
     Result = CGF.Builder.CreateBinOp((llvm::Instruction::BinaryOps)PostOp, RMWI,
                                      LoadVal1);
-  if (E->getOp() == AtomicExpr::AO__atomic_nand_fetch)
+
+}
+  if (E->getOp() == AtomicExpr::AO__atomic_nand_fetch) {
     Result = CGF.Builder.CreateNot(Result);
+
+}
   CGF.Builder.CreateStore(Result, Dest);
 }
 
@@ -725,8 +749,10 @@ static void EmitAtomicOp(CodeGenFunction &CGF, AtomicExpr *Expr, Address Dest,
   auto &Builder = CGF.Builder;
   auto Scopes = ScopeModel->getRuntimeValues();
   llvm::DenseMap<unsigned, llvm::BasicBlock *> BB;
-  for (auto S : Scopes)
+  for (auto S : Scopes) {
     BB[S] = CGF.createBasicBlock(getAsString(ScopeModel->map(S)), CGF.CurFn);
+
+}
 
   llvm::BasicBlock *ContBB =
       CGF.createBasicBlock("atomic.scope.continue", CGF.CurFn);
@@ -738,8 +764,10 @@ static void EmitAtomicOp(CodeGenFunction &CGF, AtomicExpr *Expr, Address Dest,
   llvm::SwitchInst *SI = Builder.CreateSwitch(SC, BB[FallBack]);
   for (auto S : Scopes) {
     auto *B = BB[S];
-    if (S != FallBack)
+    if (S != FallBack) {
       SI->addCase(Builder.getInt32(S), B);
+
+}
 
     Builder.SetInsertPoint(B);
     EmitAtomicOp(CGF, Expr, Dest, Ptr, Val1, Val2, IsWeak, FailureOrder, Size,
@@ -782,8 +810,10 @@ AddDirectArgument(CodeGenFunction &CGF, CallArgList &Args,
 RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
   QualType AtomicTy = E->getPtr()->getType()->getPointeeType();
   QualType MemTy = AtomicTy;
-  if (const AtomicType *AT = AtomicTy->getAs<AtomicType>())
+  if (const AtomicType *AT = AtomicTy->getAs<AtomicType>()) {
     MemTy = AT->getValueType();
+
+}
   llvm::Value *IsWeak = nullptr, *OrderFail = nullptr;
 
   Address Val1 = Address::invalid();
@@ -846,14 +876,18 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
   case AtomicExpr::AO__atomic_compare_exchange_n:
   case AtomicExpr::AO__atomic_compare_exchange:
     Val1 = EmitPointerWithAlignment(E->getVal1());
-    if (E->getOp() == AtomicExpr::AO__atomic_compare_exchange)
+    if (E->getOp() == AtomicExpr::AO__atomic_compare_exchange) {
       Val2 = EmitPointerWithAlignment(E->getVal2());
-    else
+    } else {
       Val2 = EmitValToTemp(*this, E->getVal2());
+
+}
     OrderFail = EmitScalarExpr(E->getOrderFail());
     if (E->getOp() == AtomicExpr::AO__atomic_compare_exchange_n ||
-        E->getOp() == AtomicExpr::AO__atomic_compare_exchange)
+        E->getOp() == AtomicExpr::AO__atomic_compare_exchange) {
       IsWeak = EmitScalarExpr(E->getWeak());
+
+}
     break;
 
   case AtomicExpr::AO__c11_atomic_fetch_add:
@@ -921,14 +955,20 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
   AtomicInfo Atomics(*this, AtomicVal);
 
   Ptr = Atomics.emitCastToAtomicIntPointer(Ptr);
-  if (Val1.isValid()) Val1 = Atomics.convertToAtomicIntPointer(Val1);
-  if (Val2.isValid()) Val2 = Atomics.convertToAtomicIntPointer(Val2);
-  if (Dest.isValid())
+  if (Val1.isValid()) { Val1 = Atomics.convertToAtomicIntPointer(Val1);
+
+}
+  if (Val2.isValid()) { Val2 = Atomics.convertToAtomicIntPointer(Val2);
+
+}
+  if (Dest.isValid()) {
     Dest = Atomics.emitCastToAtomicIntPointer(Dest);
-  else if (E->isCmpXChg())
+  } else if (E->isCmpXChg()) {
     Dest = CreateMemTemp(RValTy, "cmpxchg.bool");
-  else if (!RValTy->isVoidType())
+  } else if (!RValTy->isVoidType()) {
     Dest = Atomics.emitCastToAtomicIntPointer(Atomics.CreateTempAlloca());
+
+}
 
   // Use a library call.  See: http://gcc.gnu.org/wiki/Atomic/GCCMM/LIbrary .
   if (UseLibcall) {
@@ -978,8 +1018,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
     case AtomicExpr::AO__atomic_compare_exchange:
       // Use the generic version if we don't know that the operand will be
       // suitably aligned for the optimized version.
-      if (Misaligned)
+      if (Misaligned) {
         break;
+
+}
       LLVM_FALLTHROUGH;
     case AtomicExpr::AO__c11_atomic_load:
     case AtomicExpr::AO__c11_atomic_store:
@@ -997,8 +1039,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
     case AtomicExpr::AO__atomic_compare_exchange_n:
       // Only use optimized library calls for sizes for which they exist.
       // FIXME: Size == 16 optimized library functions exist too.
-      if (Size == 1 || Size == 2 || Size == 4 || Size == 8)
+      if (Size == 1 || Size == 2 || Size == 4 || Size == 8) {
         UseOptimizedLibcall = true;
+
+}
       break;
     }
 
@@ -1012,11 +1056,15 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
     // The OpenCL atomic library functions only accept pointer arguments to
     // generic address space.
     auto CastToGenericAddrSpace = [&](llvm::Value *V, QualType PT) {
-      if (!E->isOpenCL())
+      if (!E->isOpenCL()) {
         return V;
+
+}
       auto AS = PT->castAs<PointerType>()->getPointeeType().getAddressSpace();
-      if (AS == LangAS::opencl_generic)
+      if (AS == LangAS::opencl_generic) {
         return V;
+
+}
       auto DestAS = getContext().getTargetAddressSpace(LangAS::opencl_generic);
       auto T = V->getType();
       auto *DestType = T->getPointerElementType()->getPointerTo(DestAS);
@@ -1199,8 +1247,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
 
     }
     // Optimized functions have the size in their name.
-    if (UseOptimizedLibcall)
+    if (UseOptimizedLibcall) {
       LibCallName += "_" + llvm::utostr(Size);
+
+}
     // By default, assume we return a value of the atomic type.
     if (!HaveRetTy) {
       if (UseOptimizedLibcall) {
@@ -1218,8 +1268,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
     // order is always the last parameter
     Args.add(RValue::get(Order),
              getContext().IntTy);
-    if (E->isOpenCL())
+    if (E->isOpenCL()) {
       Args.add(RValue::get(Scope), getContext().IntTy);
+
+}
 
     // PostOp is only needed for the atomic_*_fetch operations, and
     // thus is only needed for and implemented in the
@@ -1228,8 +1280,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
 
     RValue Res = emitAtomicLibcall(*this, LibCallName, RetTy, Args);
     // The value is returned directly from the libcall.
-    if (E->isCmpXChg())
+    if (E->isCmpXChg()) {
       return Res;
+
+}
 
     // The value is returned directly for optimized libcalls but the expr
     // provided an out-param.
@@ -1244,16 +1298,20 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
         llvm::Value *LoadVal1 = Args[1].getRValue(*this).getScalarVal();
         ResVal = Builder.CreateBinOp(PostOp, ResVal, LoadVal1);
       }
-      if (E->getOp() == AtomicExpr::AO__atomic_nand_fetch)
+      if (E->getOp() == AtomicExpr::AO__atomic_nand_fetch) {
         ResVal = Builder.CreateNot(ResVal);
+
+}
 
       Builder.CreateStore(
           ResVal,
           Builder.CreateBitCast(Dest, ResVal->getType()->getPointerTo()));
     }
 
-    if (RValTy->isVoidType())
+    if (RValTy->isVoidType()) {
       return RValue::get(nullptr);
+
+}
 
     return convertTempToRValue(
         Builder.CreateBitCast(Dest, ConvertTypeForMem(RValTy)->getPointerTo()),
@@ -1273,7 +1331,7 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
     auto ord = cast<llvm::ConstantInt>(Order)->getZExtValue();
     // We should not ever get to a case where the ordering isn't a valid C ABI
     // value, but it's hard to enforce that in general.
-    if (llvm::isValidAtomicOrderingCABI(ord))
+    if (llvm::isValidAtomicOrderingCABI(ord)) {
       switch ((llvm::AtomicOrderingCABI)ord) {
       case llvm::AtomicOrderingCABI::relaxed:
         EmitAtomicOp(*this, E, Dest, Ptr, Val1, Val2, IsWeak, OrderFail, Size,
@@ -1281,20 +1339,26 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
         break;
       case llvm::AtomicOrderingCABI::consume:
       case llvm::AtomicOrderingCABI::acquire:
-        if (IsStore)
+        if (IsStore) {
           break; // Avoid crashing on code with undefined behavior
+
+}
         EmitAtomicOp(*this, E, Dest, Ptr, Val1, Val2, IsWeak, OrderFail, Size,
                      llvm::AtomicOrdering::Acquire, Scope);
         break;
       case llvm::AtomicOrderingCABI::release:
-        if (IsLoad)
+        if (IsLoad) {
           break; // Avoid crashing on code with undefined behavior
+
+}
         EmitAtomicOp(*this, E, Dest, Ptr, Val1, Val2, IsWeak, OrderFail, Size,
                      llvm::AtomicOrdering::Release, Scope);
         break;
       case llvm::AtomicOrderingCABI::acq_rel:
-        if (IsLoad || IsStore)
+        if (IsLoad || IsStore) {
           break; // Avoid crashing on code with undefined behavior
+
+}
         EmitAtomicOp(*this, E, Dest, Ptr, Val1, Val2, IsWeak, OrderFail, Size,
                      llvm::AtomicOrdering::AcquireRelease, Scope);
         break;
@@ -1303,8 +1367,12 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
                      llvm::AtomicOrdering::SequentiallyConsistent, Scope);
         break;
       }
-    if (RValTy->isVoidType())
+
+}
+    if (RValTy->isVoidType()) {
       return RValue::get(nullptr);
+
+}
 
     return convertTempToRValue(
         Builder.CreateBitCast(Dest, ConvertTypeForMem(RValTy)->getPointerTo(
@@ -1319,12 +1387,18 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
                    *ReleaseBB = nullptr, *AcqRelBB = nullptr,
                    *SeqCstBB = nullptr;
   MonotonicBB = createBasicBlock("monotonic", CurFn);
-  if (!IsStore)
+  if (!IsStore) {
     AcquireBB = createBasicBlock("acquire", CurFn);
-  if (!IsLoad)
+
+}
+  if (!IsLoad) {
     ReleaseBB = createBasicBlock("release", CurFn);
-  if (!IsLoad && !IsStore)
+
+}
+  if (!IsLoad && !IsStore) {
     AcqRelBB = createBasicBlock("acqrel", CurFn);
+
+}
   SeqCstBB = createBasicBlock("seqcst", CurFn);
   llvm::BasicBlock *ContBB = createBasicBlock("atomic.continue", CurFn);
 
@@ -1375,8 +1449,10 @@ RValue CodeGenFunction::EmitAtomicExpr(AtomicExpr *E) {
 
   // Cleanup and return
   Builder.SetInsertPoint(ContBB);
-  if (RValTy->isVoidType())
+  if (RValTy->isVoidType()) {
     return RValue::get(nullptr);
+
+}
 
   assert(Atomics.getValueSizeInBits() <= Atomics.getAtomicSizeInBits());
   return convertTempToRValue(
@@ -1411,28 +1487,38 @@ RValue AtomicInfo::convertAtomicTempToRValue(Address addr,
                                              SourceLocation loc,
                                              bool asValue) const {
   if (LVal.isSimple()) {
-    if (EvaluationKind == TEK_Aggregate)
+    if (EvaluationKind == TEK_Aggregate) {
       return resultSlot.asRValue();
 
+}
+
     // Drill into the padding structure if we have one.
-    if (hasPadding())
+    if (hasPadding()) {
       addr = CGF.Builder.CreateStructGEP(addr, 0);
+
+}
 
     // Otherwise, just convert the temporary to an r-value using the
     // normal conversion routine.
     return CGF.convertTempToRValue(addr, getValueType(), loc);
   }
-  if (!asValue)
+  if (!asValue) {
     // Get RValue from temp memory as atomic for non-simple lvalues
     return RValue::get(CGF.Builder.CreateLoad(addr));
-  if (LVal.isBitField())
+
+}
+  if (LVal.isBitField()) {
     return CGF.EmitLoadOfBitfieldLValue(
         LValue::MakeBitfield(addr, LVal.getBitFieldInfo(), LVal.getType(),
                              LVal.getBaseInfo(), TBAAAccessInfo()), loc);
-  if (LVal.isVectorElt())
+
+}
+  if (LVal.isVectorElt()) {
     return CGF.EmitLoadOfLValue(
         LValue::MakeVectorElt(addr, LVal.getVectorIdx(), LVal.getType(),
                               LVal.getBaseInfo(), TBAAAccessInfo()), loc);
+
+}
   assert(LVal.isExtVectorElt());
   return CGF.EmitLoadOfExtVectorElementLValue(LValue::MakeExtVectorElt(
       addr, LVal.getExtVectorElts(), LVal.getType(),
@@ -1456,10 +1542,12 @@ RValue AtomicInfo::ConvertIntToValueOrAtomic(llvm::Value *IntVal,
     if (ValTy->isIntegerTy()) {
       assert(IntVal->getType() == ValTy && "Different integer types.");
       return RValue::get(CGF.EmitFromMemory(IntVal, ValueTy));
-    } else if (ValTy->isPointerTy())
+    } else if (ValTy->isPointerTy()) {
       return RValue::get(CGF.Builder.CreateIntToPtr(IntVal, ValTy));
-    else if (llvm::CastInst::isBitCastable(IntVal->getType(), ValTy))
+    } else if (llvm::CastInst::isBitCastable(IntVal->getType(), ValTy)) {
       return RValue::get(CGF.Builder.CreateBitCast(IntVal, ValTy));
+
+}
   }
 
   // Create a temporary.  This needs to be big enough to hold the
@@ -1505,8 +1593,10 @@ llvm::Value *AtomicInfo::EmitAtomicLoadOp(llvm::AtomicOrdering AO,
   Load->setAtomic(AO);
 
   // Other decoration.
-  if (IsVolatile)
+  if (IsVolatile) {
     Load->setVolatile(true);
+
+}
   CGF.CGM.DecorateInstructionWithTBAA(Load, LVal.getTBAAInfo());
   return Load;
 }
@@ -1515,15 +1605,19 @@ llvm::Value *AtomicInfo::EmitAtomicLoadOp(llvm::AtomicOrdering AO,
 /// we are operating under /volatile:ms *and* the LValue itself is volatile and
 /// performing such an operation can be performed without a libcall.
 bool CodeGenFunction::LValueIsSuitableForInlineAtomic(LValue LV) {
-  if (!CGM.getCodeGenOpts().MSVolatile) return false;
+  if (!CGM.getCodeGenOpts().MSVolatile) { return false;
+
+}
   AtomicInfo AI(*this, LV);
   bool IsVolatile = LV.isVolatile() || hasVolatileMember(LV.getType());
   // An atomic is inline if we don't need to use a libcall.
   bool AtomicIsInline = !AI.shouldUseLibcall();
   // MSVC doesn't seem to do this for types wider than a pointer.
   if (getContext().getTypeSize(LV.getType()) >
-      getContext().getTypeSize(getContext().getIntPtrType()))
+      getContext().getTypeSize(getContext().getIntPtrType())) {
     return false;
+
+}
   return IsVolatile && AtomicIsInline;
 }
 
@@ -1549,8 +1643,10 @@ RValue AtomicInfo::EmitAtomicLoad(AggValueSlot ResultSlot, SourceLocation Loc,
     if (LVal.isSimple() && !ResultSlot.isIgnored()) {
       assert(getEvaluationKind() == TEK_Aggregate);
       TempAddr = ResultSlot.getAddress();
-    } else
+    } else {
       TempAddr = CreateTempAlloca();
+
+}
 
     EmitAtomicLoadLibcall(TempAddr.getPointer(), AO, IsVolatile);
 
@@ -1563,8 +1659,10 @@ RValue AtomicInfo::EmitAtomicLoad(AggValueSlot ResultSlot, SourceLocation Loc,
   auto *Load = EmitAtomicLoadOp(AO, IsVolatile);
 
   // If we're ignoring an aggregate return, don't do anything.
-  if (getEvaluationKind() == TEK_Aggregate && ResultSlot.isIgnored())
+  if (getEvaluationKind() == TEK_Aggregate && ResultSlot.isIgnored()) {
     return RValue::getAggregate(Address::invalid(), false);
+
+}
 
   // Okay, turn that back into the original value or atomic (for non-simple
   // lvalues) type.
@@ -1621,8 +1719,10 @@ void AtomicInfo::emitCopyIntoMemory(RValue rvalue) const {
 Address AtomicInfo::materializeRValue(RValue rvalue) const {
   // Aggregate r-values are already in memory, and EmitAtomicStore
   // requires them to be values of the atomic type.
-  if (rvalue.isAggregate())
+  if (rvalue.isAggregate()) {
     return rvalue.getAggregateAddress();
+
+}
 
   // Otherwise, make a temporary and materialize into it.
   LValue TempLV = CGF.MakeAddrLValue(CreateTempAlloca(), getAtomicType());
@@ -1636,16 +1736,18 @@ llvm::Value *AtomicInfo::convertRValueToInt(RValue RVal) const {
   // through memory.
   if (RVal.isScalar() && (!hasPadding() || !LVal.isSimple())) {
     llvm::Value *Value = RVal.getScalarVal();
-    if (isa<llvm::IntegerType>(Value->getType()))
+    if (isa<llvm::IntegerType>(Value->getType())) {
       return CGF.EmitToMemory(Value, ValueTy);
-    else {
+    } else {
       llvm::IntegerType *InputIntTy = llvm::IntegerType::get(
           CGF.getLLVMContext(),
           LVal.isSimple() ? getValueSizeInBits() : getAtomicSizeInBits());
-      if (isa<llvm::PointerType>(Value->getType()))
+      if (isa<llvm::PointerType>(Value->getType())) {
         return CGF.Builder.CreatePtrToInt(Value, InputIntTy);
-      else if (llvm::BitCastInst::isBitCastable(Value->getType(), InputIntTy))
+      } else if (llvm::BitCastInst::isBitCastable(Value->getType(), InputIntTy)) {
         return CGF.Builder.CreateBitCast(Value, InputIntTy);
+
+}
     }
   }
   // Otherwise, we need to go through memory.
@@ -1705,10 +1807,12 @@ AtomicInfo::EmitAtomicCompareExchangeLibcall(llvm::Value *ExpectedAddr,
 std::pair<RValue, llvm::Value *> AtomicInfo::EmitAtomicCompareExchange(
     RValue Expected, RValue Desired, llvm::AtomicOrdering Success,
     llvm::AtomicOrdering Failure, bool IsWeak) {
-  if (isStrongerThan(Failure, Success))
+  if (isStrongerThan(Failure, Success)) {
     // Don't assert on undefined behavior "failure argument shall be no stronger
     // than the success argument".
     Failure = llvm::AtomicCmpXchgInst::getStrongestFailureOrdering(Success);
+
+}
 
   // Check whether we should use a library call.
   if (shouldUseLibcall()) {
@@ -2018,17 +2122,23 @@ void CodeGenFunction::EmitAtomicStore(RValue rvalue, LValue dest,
         intValue, addr.getElementType(), /*isSigned=*/false);
     llvm::StoreInst *store = Builder.CreateStore(intValue, addr);
 
-    if (AO == llvm::AtomicOrdering::Acquire)
+    if (AO == llvm::AtomicOrdering::Acquire) {
       AO = llvm::AtomicOrdering::Monotonic;
-    else if (AO == llvm::AtomicOrdering::AcquireRelease)
+    } else if (AO == llvm::AtomicOrdering::AcquireRelease) {
       AO = llvm::AtomicOrdering::Release;
+
+}
     // Initializations don't need to be atomic.
-    if (!isInit)
+    if (!isInit) {
       store->setAtomic(AO);
 
+}
+
     // Other decoration.
-    if (IsVolatile)
+    if (IsVolatile) {
       store->setVolatile(true);
+
+}
     CGM.DecorateInstructionWithTBAA(store, dest.getTBAAInfo());
     return;
   }

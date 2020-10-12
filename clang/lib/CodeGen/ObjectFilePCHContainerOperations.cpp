@@ -69,8 +69,10 @@ class PCHContainerGenerator : public ASTConsumer {
     }
 
     bool VisitImportDecl(ImportDecl *D) {
-      if (!D->getImportedOwningModule())
+      if (!D->getImportedOwningModule()) {
         DI.EmitImportDecl(*D);
+
+}
       return true;
     }
 
@@ -78,56 +80,76 @@ class PCHContainerGenerator : public ASTConsumer {
       // TagDecls may be deferred until after all decls have been merged and we
       // know the complete type. Pure forward declarations will be skipped, but
       // they don't need to be emitted into the module anyway.
-      if (auto *TD = dyn_cast<TagDecl>(D))
-        if (!TD->isCompleteDefinition())
+      if (auto *TD = dyn_cast<TagDecl>(D)) {
+        if (!TD->isCompleteDefinition()) {
           return true;
 
+}
+
+}
+
       QualType QualTy = Ctx.getTypeDeclType(D);
-      if (!QualTy.isNull() && CanRepresent(QualTy.getTypePtr()))
+      if (!QualTy.isNull() && CanRepresent(QualTy.getTypePtr())) {
         DI.getOrCreateStandaloneType(QualTy, D->getLocation());
+
+}
       return true;
     }
 
     bool VisitObjCInterfaceDecl(ObjCInterfaceDecl *D) {
       QualType QualTy(D->getTypeForDecl(), 0);
-      if (!QualTy.isNull() && CanRepresent(QualTy.getTypePtr()))
+      if (!QualTy.isNull() && CanRepresent(QualTy.getTypePtr())) {
         DI.getOrCreateStandaloneType(QualTy, D->getLocation());
+
+}
       return true;
     }
 
     bool VisitFunctionDecl(FunctionDecl *D) {
-      if (isa<CXXMethodDecl>(D))
+      if (isa<CXXMethodDecl>(D)) {
         // This is not yet supported. Constructing the `this' argument
         // mandates a CodeGenFunction.
         return true;
 
+}
+
       SmallVector<QualType, 16> ArgTypes;
-      for (auto i : D->parameters())
+      for (auto i : D->parameters()) {
         ArgTypes.push_back(i->getType());
+
+}
       QualType RetTy = D->getReturnType();
       QualType FnTy = Ctx.getFunctionType(RetTy, ArgTypes,
                                           FunctionProtoType::ExtProtoInfo());
-      if (CanRepresent(FnTy.getTypePtr()))
+      if (CanRepresent(FnTy.getTypePtr())) {
         DI.EmitFunctionDecl(D, D->getLocation(), FnTy);
+
+}
       return true;
     }
 
     bool VisitObjCMethodDecl(ObjCMethodDecl *D) {
-      if (!D->getClassInterface())
+      if (!D->getClassInterface()) {
         return true;
+
+}
 
       bool selfIsPseudoStrong, selfIsConsumed;
       SmallVector<QualType, 16> ArgTypes;
       ArgTypes.push_back(D->getSelfType(Ctx, D->getClassInterface(),
                                         selfIsPseudoStrong, selfIsConsumed));
       ArgTypes.push_back(Ctx.getObjCSelType());
-      for (auto i : D->parameters())
+      for (auto i : D->parameters()) {
         ArgTypes.push_back(i->getType());
+
+}
       QualType RetTy = D->getReturnType();
       QualType FnTy = Ctx.getFunctionType(RetTy, ArgTypes,
                                           FunctionProtoType::ExtProtoInfo());
-      if (CanRepresent(FnTy.getTypePtr()))
+      if (CanRepresent(FnTy.getTypePtr())) {
         DI.EmitFunctionDecl(D, D->getLocation(), FnTy);
+
+}
       return true;
     }
   };
@@ -179,15 +201,19 @@ public:
   }
 
   bool HandleTopLevelDecl(DeclGroupRef D) override {
-    if (Diags.hasErrorOccurred())
+    if (Diags.hasErrorOccurred()) {
       return true;
 
+}
+
     // Collect debug info for all decls in this group.
-    for (auto *I : D)
+    for (auto *I : D) {
       if (!I->isFromASTFile()) {
         DebugTypeVisitor DTV(*Builder->getModuleDebugInfo(), *Ctx);
         DTV.TraverseDecl(I);
       }
+
+}
     return true;
   }
 
@@ -196,22 +222,32 @@ public:
   }
 
   void HandleTagDeclDefinition(TagDecl *D) override {
-    if (Diags.hasErrorOccurred())
+    if (Diags.hasErrorOccurred()) {
       return;
 
-    if (D->isFromASTFile())
+}
+
+    if (D->isFromASTFile()) {
       return;
+
+}
 
     // Anonymous tag decls are deferred until we are building their declcontext.
-    if (D->getName().empty())
+    if (D->getName().empty()) {
       return;
+
+}
 
     // Defer tag decls until their declcontext is complete.
     auto *DeclCtx = D->getDeclContext();
     while (DeclCtx) {
-      if (auto *D = dyn_cast<TagDecl>(DeclCtx))
-        if (!D->isCompleteDefinition())
+      if (auto *D = dyn_cast<TagDecl>(DeclCtx)) {
+        if (!D->isCompleteDefinition()) {
           return;
+
+}
+
+}
       DeclCtx = DeclCtx->getParent();
     }
 
@@ -221,16 +257,22 @@ public:
   }
 
   void HandleTagDeclRequiredDefinition(const TagDecl *D) override {
-    if (Diags.hasErrorOccurred())
+    if (Diags.hasErrorOccurred()) {
       return;
 
-    if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
+}
+
+    if (const RecordDecl *RD = dyn_cast<RecordDecl>(D)) {
       Builder->getModuleDebugInfo()->completeRequiredType(RD);
+
+}
   }
 
   void HandleImplicitImportDecl(ImportDecl *D) override {
-    if (!D->getImportedOwningModule())
+    if (!D->getImportedOwningModule()) {
       Builder->getModuleDebugInfo()->EmitImportDecl(*D);
+
+}
   }
 
   /// Emit a container holding the serialized AST.
@@ -241,8 +283,10 @@ public:
     std::unique_ptr<llvm::Module> M = std::move(this->M);
     std::unique_ptr<CodeGen::CodeGenModule> Builder = std::move(this->Builder);
 
-    if (Diags.hasErrorOccurred())
+    if (Diags.hasErrorOccurred()) {
       return;
+
+}
 
     M->setTargetTriple(Ctx.getTargetInfo().getTriple().getTriple());
     M->setDataLayout(Ctx.getTargetInfo().getDataLayout());
@@ -257,14 +301,18 @@ public:
     Builder->getModuleDebugInfo()->setDwoId(Signature);
 
     // Finalize the Builder.
-    if (Builder)
+    if (Builder) {
       Builder->Release();
+
+}
 
     // Ensure the target exists.
     std::string Error;
     auto Triple = Ctx.getTargetInfo().getTriple();
-    if (!llvm::TargetRegistry::lookupTarget(Triple.getTriple(), Error))
+    if (!llvm::TargetRegistry::lookupTarget(Triple.getTriple(), Error)) {
       llvm::report_fatal_error(Error);
+
+}
 
     // Emit the serialized Clang AST into its own section.
     assert(Buffer->IsComplete && "serialization did not complete");
@@ -282,13 +330,15 @@ public:
     ASTSym->setAlignment(llvm::Align(8));
 
     // Mach-O also needs a segment name.
-    if (Triple.isOSBinFormatMachO())
+    if (Triple.isOSBinFormatMachO()) {
       ASTSym->setSection("__CLANG,__clangast");
     // COFF has an eight character length limit.
-    else if (Triple.isOSBinFormatCOFF())
+    } else if (Triple.isOSBinFormatCOFF()) {
       ASTSym->setSection("clangast");
-    else
+    } else {
       ASTSym->setSection("__clangast");
+
+}
 
     LLVM_DEBUG({
       // Print the IR for the PCH container to the debug output.
@@ -335,15 +385,17 @@ ObjectFilePCHContainerReader::ExtractPCH(llvm::MemoryBufferRef Buffer) const {
     // Find the clang AST section in the container.
     for (auto &Section : OF->sections()) {
       StringRef Name;
-      if (Expected<StringRef> NameOrErr = Section.getName())
+      if (Expected<StringRef> NameOrErr = Section.getName()) {
         Name = *NameOrErr;
-      else
+      } else {
         consumeError(NameOrErr.takeError());
 
+}
+
       if ((!IsCOFF && Name == "__clangast") || (IsCOFF && Name == "clangast")) {
-        if (Expected<StringRef> E = Section.getContents())
+        if (Expected<StringRef> E = Section.getContents()) {
           return *E;
-        else {
+        } else {
           handleAllErrors(E.takeError(), [&](const llvm::ErrorInfoBase &EIB) {
             EIB.log(llvm::errs());
           });
@@ -354,11 +406,13 @@ ObjectFilePCHContainerReader::ExtractPCH(llvm::MemoryBufferRef Buffer) const {
   }
   handleAllErrors(OFOrErr.takeError(), [&](const llvm::ErrorInfoBase &EIB) {
     if (EIB.convertToErrorCode() ==
-        llvm::object::object_error::invalid_file_type)
+        llvm::object::object_error::invalid_file_type) {
       // As a fallback, treat the buffer as a raw AST.
       PCH = Buffer.getBuffer();
-    else
+    } else {
       EIB.log(llvm::errs());
+
+}
   });
   return PCH;
 }

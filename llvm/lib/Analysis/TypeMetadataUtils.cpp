@@ -32,8 +32,10 @@ findCallsAtConstantOffset(SmallVectorImpl<DevirtCallSite> &DevirtCalls,
     // after indirect call promotion and inlining, where we may have uses
     // of the vtable pointer guarded by a function pointer check, and a fallback
     // indirect call.
-    if (!DT.dominates(CI, User))
+    if (!DT.dominates(CI, User)) {
       continue;
+
+}
     if (isa<BitCastInst>(User)) {
       findCallsAtConstantOffset(DevirtCalls, HasNonCallUses, User, Offset, CI,
                                 DT);
@@ -82,16 +84,20 @@ void llvm::findDevirtualizableCallsForTypeTest(
   for (const Use &CIU : CI->uses()) {
     if (auto *AssumeCI = dyn_cast<CallInst>(CIU.getUser())) {
       Function *F = AssumeCI->getCalledFunction();
-      if (F && F->getIntrinsicID() == Intrinsic::assume)
+      if (F && F->getIntrinsicID() == Intrinsic::assume) {
         Assumes.push_back(AssumeCI);
+
+}
     }
   }
 
   // If we found any, search for virtual calls based on %p and add them to
   // DevirtCalls.
-  if (!Assumes.empty())
+  if (!Assumes.empty()) {
     findLoadCallsAtConstantOffset(
         M, DevirtCalls, CI->getArgOperand(0)->stripPointerCasts(), 0, CI, DT);
+
+}
 }
 
 void llvm::findDevirtualizableCallsForTypeCheckedLoad(
@@ -123,15 +129,19 @@ void llvm::findDevirtualizableCallsForTypeCheckedLoad(
     HasNonCallUses = true;
   }
 
-  for (Value *LoadedPtr : LoadedPtrs)
+  for (Value *LoadedPtr : LoadedPtrs) {
     findCallsAtConstantOffset(DevirtCalls, &HasNonCallUses, LoadedPtr,
                               Offset->getZExtValue(), CI, DT);
+
+}
 }
 
 Constant *llvm::getPointerAtOffset(Constant *I, uint64_t Offset, Module &M) {
   if (I->getType()->isPointerTy()) {
-    if (Offset == 0)
+    if (Offset == 0) {
       return I;
+
+}
     return nullptr;
   }
 
@@ -139,8 +149,10 @@ Constant *llvm::getPointerAtOffset(Constant *I, uint64_t Offset, Module &M) {
 
   if (auto *C = dyn_cast<ConstantStruct>(I)) {
     const StructLayout *SL = DL.getStructLayout(C->getType());
-    if (Offset >= SL->getSizeInBytes())
+    if (Offset >= SL->getSizeInBytes()) {
       return nullptr;
+
+}
 
     unsigned Op = SL->getElementContainingOffset(Offset);
     return getPointerAtOffset(cast<Constant>(I->getOperand(Op)),
@@ -151,8 +163,10 @@ Constant *llvm::getPointerAtOffset(Constant *I, uint64_t Offset, Module &M) {
     uint64_t ElemSize = DL.getTypeAllocSize(VTableTy->getElementType());
 
     unsigned Op = Offset / ElemSize;
-    if (Op >= C->getNumOperands())
+    if (Op >= C->getNumOperands()) {
       return nullptr;
+
+}
 
     return getPointerAtOffset(cast<Constant>(I->getOperand(Op)),
                               Offset % ElemSize, M);

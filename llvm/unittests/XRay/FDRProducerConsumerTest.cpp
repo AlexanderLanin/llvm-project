@@ -133,25 +133,33 @@ TYPED_TEST_P(RoundTripTest, RoundTripsSingleValue) {
   DataExtractor DE(this->Data, sys::IsLittleEndianHost, 8);
   uint64_t OffsetPtr = 0;
   auto HeaderOrErr = readBinaryFormatHeader(DE, OffsetPtr);
-  if (!HeaderOrErr)
+  if (!HeaderOrErr) {
     FAIL() << HeaderOrErr.takeError();
+
+}
 
   FileBasedRecordProducer P(HeaderOrErr.get(), DE, OffsetPtr);
   std::vector<std::unique_ptr<Record>> Records;
   LogBuilderConsumer C(Records);
   while (DE.isValidOffsetForDataOfSize(OffsetPtr, 1)) {
     auto R = P.produce();
-    if (!R)
+    if (!R) {
       FAIL() << R.takeError();
-    if (auto E = C.consume(std::move(R.get())))
+
+}
+    if (auto E = C.consume(std::move(R.get()))) {
       FAIL() << E;
+
+}
   }
   ASSERT_THAT(Records, Not(IsEmpty()));
   std::string Data2;
   raw_string_ostream OS2(Data2);
   FDRTraceWriter Writer2(OS2, this->H);
-  for (auto &P : Records)
+  for (auto &P : Records) {
     ASSERT_FALSE(errorToBool(P->apply(Writer2)));
+
+}
   OS2.flush();
 
   EXPECT_EQ(Data2.substr(sizeof(XRayFileHeader)),
@@ -174,25 +182,33 @@ TYPED_TEST_P(RoundTripTestV5, RoundTripsSingleValue) {
   DataExtractor DE(this->Data, sys::IsLittleEndianHost, 8);
   uint64_t OffsetPtr = 0;
   auto HeaderOrErr = readBinaryFormatHeader(DE, OffsetPtr);
-  if (!HeaderOrErr)
+  if (!HeaderOrErr) {
     FAIL() << HeaderOrErr.takeError();
+
+}
 
   FileBasedRecordProducer P(HeaderOrErr.get(), DE, OffsetPtr);
   std::vector<std::unique_ptr<Record>> Records;
   LogBuilderConsumer C(Records);
   while (DE.isValidOffsetForDataOfSize(OffsetPtr, 1)) {
     auto R = P.produce();
-    if (!R)
+    if (!R) {
       FAIL() << R.takeError();
-    if (auto E = C.consume(std::move(R.get())))
+
+}
+    if (auto E = C.consume(std::move(R.get()))) {
       FAIL() << E;
+
+}
   }
   ASSERT_THAT(Records, Not(IsEmpty()));
   std::string Data2;
   raw_string_ostream OS2(Data2);
   FDRTraceWriter Writer2(OS2, this->H);
-  for (auto &P : Records)
+  for (auto &P : Records) {
     ASSERT_FALSE(errorToBool(P->apply(Writer2)));
+
+}
   OS2.flush();
 
   EXPECT_EQ(Data2.substr(sizeof(XRayFileHeader)),

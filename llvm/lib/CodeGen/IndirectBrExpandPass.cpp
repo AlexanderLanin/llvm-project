@@ -76,13 +76,17 @@ FunctionPass *llvm::createIndirectBrExpandPass() {
 bool IndirectBrExpandPass::runOnFunction(Function &F) {
   auto &DL = F.getParent()->getDataLayout();
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-  if (!TPC)
+  if (!TPC) {
     return false;
+
+}
 
   auto &TM = TPC->getTM<TargetMachine>();
   auto &STI = *TM.getSubtargetImpl(F);
-  if (!STI.enableIndirectBrExpand())
+  if (!STI.enableIndirectBrExpand()) {
     return false;
+
+}
   TLI = STI.getTargetLowering();
 
   SmallVector<IndirectBrInst *, 1> IndirectBrs;
@@ -91,7 +95,7 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
   SmallPtrSet<BasicBlock *, 4> IndirectBrSuccs;
 
   // Build a list of indirectbrs that we want to rewrite.
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : F) {
     if (auto *IBr = dyn_cast<IndirectBrInst>(BB.getTerminator())) {
       // Handle the degenerate case of no successors by replacing the indirectbr
       // with unreachable as there is no successor available.
@@ -102,12 +106,18 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
       }
 
       IndirectBrs.push_back(IBr);
-      for (BasicBlock *SuccBB : IBr->successors())
+      for (BasicBlock *SuccBB : IBr->successors()) {
         IndirectBrSuccs.insert(SuccBB);
+
+}
     }
 
-  if (IndirectBrs.empty())
+}
+
+  if (IndirectBrs.empty()) {
     return false;
+
+}
 
   // If we need to replace any indirectbrs we need to establish integer
   // constants that will correspond to each of the basic blocks in the function
@@ -118,15 +128,19 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
   for (BasicBlock &BB : F) {
     // Skip blocks that aren't successors to an indirectbr we're going to
     // rewrite.
-    if (!IndirectBrSuccs.count(&BB))
+    if (!IndirectBrSuccs.count(&BB)) {
       continue;
+
+}
 
     auto IsBlockAddressUse = [&](const Use &U) {
       return isa<BlockAddress>(U.getUser());
     };
     auto BlockAddressUseIt = llvm::find_if(BB.uses(), IsBlockAddressUse);
-    if (BlockAddressUseIt == BB.use_end())
+    if (BlockAddressUseIt == BB.use_end()) {
       continue;
+
+}
 
     assert(std::find_if(std::next(BlockAddressUseIt), BB.use_end(),
                         IsBlockAddressUse) == BB.use_end() &&
@@ -137,8 +151,10 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
 
     // Skip if the constant was formed but ended up not being used (due to DCE
     // or whatever).
-    if (!BA->isConstantUsed())
+    if (!BA->isConstantUsed()) {
       continue;
+
+}
 
     // Compute the index we want to use for this basic block. We can't use zero
     // because null can be compared with block addresses.
@@ -173,8 +189,10 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
   for (auto *IBr : IndirectBrs) {
     auto *ITy =
         cast<IntegerType>(DL.getIntPtrType(IBr->getAddress()->getType()));
-    if (!CommonITy || ITy->getBitWidth() > CommonITy->getBitWidth())
+    if (!CommonITy || ITy->getBitWidth() > CommonITy->getBitWidth()) {
       CommonITy = ITy;
+
+}
   }
 
   auto GetSwitchValue = [DL, CommonITy](IndirectBrInst *IBr) {
@@ -212,8 +230,10 @@ bool IndirectBrExpandPass::runOnFunction(Function &F) {
   auto *SI = SwitchInst::Create(SwitchValue, BBs[0], BBs.size(), SwitchBB);
 
   // Add a case for each block.
-  for (int i : llvm::seq<int>(1, BBs.size()))
+  for (int i : llvm::seq<int>(1, BBs.size())) {
     SI->addCase(ConstantInt::get(CommonITy, i + 1), BBs[i]);
+
+}
 
   return true;
 }

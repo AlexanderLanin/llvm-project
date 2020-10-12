@@ -76,8 +76,10 @@ void ScalarTraits<TypeName>::output(const TypeName &T, void *V,
 void ScalarEnumerationTraits<SymbolKind>::enumeration(IO &io,
                                                       SymbolKind &Value) {
   auto SymbolNames = getSymbolTypeNames();
-  for (const auto &E : SymbolNames)
+  for (const auto &E : SymbolNames) {
     io.enumCase(Value, E.Name.str().c_str(), E.Value);
+
+}
 }
 
 void ScalarBitSetTraits<CompileSym2Flags>::bitset(IO &io,
@@ -264,8 +266,10 @@ template <> void SymbolRecordImpl<ScopeEndSym>::map(IO &IO) {}
 
 void UnknownSymbolRecord::map(yaml::IO &io) {
   yaml::BinaryRef Binary;
-  if (io.outputting())
+  if (io.outputting()) {
     Binary = yaml::BinaryRef(Data);
+
+}
   io.mapRequired("Data", Binary);
   if (!io.outputting()) {
     std::string Str;
@@ -584,8 +588,10 @@ fromCodeViewSymbolImpl(CVSymbol Symbol) {
   CodeViewYAML::SymbolRecord Result;
 
   auto Impl = std::make_shared<SymbolType>(Symbol.kind());
-  if (auto EC = Impl->fromCodeViewSymbol(Symbol))
+  if (auto EC = Impl->fromCodeViewSymbol(Symbol)) {
     return std::move(EC);
+
+}
   Result.Symbol = Impl;
   return Result;
 }
@@ -608,8 +614,10 @@ CodeViewYAML::SymbolRecord::fromCodeViewSymbol(CVSymbol Symbol) {
 template <typename ConcreteType>
 static void mapSymbolRecordImpl(IO &IO, const char *Class, SymbolKind Kind,
                                 CodeViewYAML::SymbolRecord &Obj) {
-  if (!IO.outputting())
+  if (!IO.outputting()) {
     Obj.Symbol = std::make_shared<ConcreteType>(Kind);
+
+}
 
   IO.mapRequired(Class, *Obj.Symbol);
 }
@@ -617,8 +625,10 @@ static void mapSymbolRecordImpl(IO &IO, const char *Class, SymbolKind Kind,
 void MappingTraits<CodeViewYAML::SymbolRecord>::mapping(
     IO &IO, CodeViewYAML::SymbolRecord &Obj) {
   SymbolKind Kind;
-  if (IO.outputting())
+  if (IO.outputting()) {
     Kind = Obj.Symbol->Kind;
+
+}
   IO.mapRequired("Kind", Kind);
 
 #define SYMBOL_RECORD(EnumName, EnumVal, ClassName)                            \

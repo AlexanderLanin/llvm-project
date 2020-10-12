@@ -755,8 +755,10 @@ TEST(CommandLineTest, ArgumentLimit) {
 }
 
 TEST(CommandLineTest, ResponseFileWindows) {
-  if (!Triple(sys::getProcessTriple()).isOSWindows())
+  if (!Triple(sys::getProcessTriple()).isOSWindows()) {
     return;
+
+}
 
   StackOption<std::string, cl::list<std::string>> InputFilenames(
       cl::Positional, cl::desc("<input files>"), cl::ZeroOrMore);
@@ -943,8 +945,10 @@ TEST(CommandLineTest, ResponseFilesAtArguments) {
   ASSERT_EQ(Argv.size(), 1 + NON_RSP_AT_ARGS + 2);
   size_t i = 0;
   EXPECT_STREQ(Argv[i++], "test/test");
-  for (; i < 1 + NON_RSP_AT_ARGS; ++i)
+  for (; i < 1 + NON_RSP_AT_ARGS; ++i) {
     EXPECT_STREQ(Argv[i], "@non_rsp_at_arg");
+
+}
   EXPECT_STREQ(Argv[i++], "-foo");
   EXPECT_STREQ(Argv[i++], "-bar");
 }
@@ -1125,8 +1129,10 @@ public:
     if (OldFD == -1 ||
         sys::fs::createTemporaryFile("unittest-redirect", "", NewFD,
                                      FilePath) ||
-        dup2(NewFD, RedirectFD) == -1)
+        dup2(NewFD, RedirectFD) == -1) {
       Valid = false;
+
+}
   }
 
   ~OutputRedirector() {
@@ -1147,8 +1153,10 @@ private:
 struct AutoDeleteFile {
   SmallVector<char, 128> FilePath;
   ~AutoDeleteFile() {
-    if (!FilePath.empty())
+    if (!FilePath.empty()) {
       sys::fs::remove(std::string(FilePath.data(), FilePath.size()));
+
+}
   }
 };
 
@@ -1161,8 +1169,10 @@ public:
     AutoDeleteFile File;
     {
       OutputRedirector Stdout(fileno(stdout));
-      if (!Stdout.Valid)
+      if (!Stdout.Valid) {
         return "";
+
+}
       File.FilePath = Stdout.FilePath;
 
       StackOption<OptionValue> TestOption(Opt, cl::desc(HelpText),
@@ -1171,8 +1181,10 @@ public:
       outs().flush();
     }
     auto Buffer = MemoryBuffer::getFile(File.FilePath);
-    if (!Buffer)
+    if (!Buffer) {
       return "";
+
+}
     return Buffer->get()->getBuffer().str();
   }
 
@@ -1740,8 +1752,10 @@ TEST(CommandLineTest, Callback) {
                "'foo' is included in list"),
       cl::CommaSeparated,
       cl::callback([&](const std::string &Str) {
-        if (Str == "foo")
+        if (Str == "foo") {
           OptC = true;
+
+}
       }));
 
   const char *args1[] = {"prog", "-a"};

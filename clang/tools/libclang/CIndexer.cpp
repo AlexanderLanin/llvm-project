@@ -98,8 +98,10 @@ void getClangResourcesPathImplAIX(LibClangPathType &LibClangPath) {
 
 const std::string &CIndexer::getClangResourcesPath() {
   // Did we already compute the path?
-  if (!ResourcesPath.empty())
+  if (!ResourcesPath.empty()) {
     return ResourcesPath;
+
+}
 
   SmallString<128> LibClangPath;
 
@@ -127,8 +129,10 @@ const std::string &CIndexer::getClangResourcesPath() {
 #else
   // This silly cast below avoids a C++ warning.
   Dl_info info;
-  if (dladdr((void *)(uintptr_t)clang_createTranslationUnit, &info) == 0)
+  if (dladdr((void *)(uintptr_t)clang_createTranslationUnit, &info) == 0) {
     llvm_unreachable("Call to dladdr() failed");
+
+}
 
   // We now have the CIndex directory, locate clang relative to it.
   LibClangPath += info.dli_fname;
@@ -140,8 +144,10 @@ const std::string &CIndexer::getClangResourcesPath() {
 }
 
 StringRef CIndexer::getClangToolchainPath() {
-  if (!ToolchainPath.empty())
+  if (!ToolchainPath.empty()) {
     return ToolchainPath;
+
+}
   StringRef ResourcePath = getClangResourcesPath();
   ToolchainPath =
       std::string(llvm::sys::path::parent_path(llvm::sys::path::parent_path(
@@ -155,16 +161,20 @@ LibclangInvocationReporter::LibclangInvocationReporter(
     llvm::ArrayRef<std::string> InvocationArgs,
     llvm::ArrayRef<CXUnsavedFile> UnsavedFiles) {
   StringRef Path = Idx.getInvocationEmissionPath();
-  if (Path.empty())
+  if (Path.empty()) {
     return;
+
+}
 
   // Create a temporary file for the invocation log.
   SmallString<256> TempPath;
   TempPath = Path;
   llvm::sys::path::append(TempPath, "libclang-%%%%%%%%%%%%");
   int FD;
-  if (llvm::sys::fs::createUniqueFile(TempPath, FD, TempPath))
+  if (llvm::sys::fs::createUniqueFile(TempPath, FD, TempPath)) {
     return;
+
+}
   File = std::string(TempPath.begin(), TempPath.end());
   llvm::raw_fd_ostream OS(FD, /*ShouldClose=*/true);
 
@@ -183,23 +193,29 @@ LibclangInvocationReporter::LibclangInvocationReporter(
   OS << ',';
   OS << R"("args":[)";
   for (const auto &I : llvm::enumerate(Args)) {
-    if (I.index())
+    if (I.index()) {
       OS << ',';
+
+}
     OS << '"' << llvm::yaml::escape(I.value()) << '"';
   }
   if (!InvocationArgs.empty()) {
     OS << R"(],"invocation-args":[)";
     for (const auto &I : llvm::enumerate(InvocationArgs)) {
-      if (I.index())
+      if (I.index()) {
         OS << ',';
+
+}
       OS << '"' << llvm::yaml::escape(I.value()) << '"';
     }
   }
   if (!UnsavedFiles.empty()) {
     OS << R"(],"unsaved_file_hashes":[)";
     for (const auto &UF : llvm::enumerate(UnsavedFiles)) {
-      if (UF.index())
+      if (UF.index()) {
         OS << ',';
+
+}
       OS << '{';
       WriteStringKey("name", UF.value().Filename);
       OS << ',';
@@ -216,6 +232,8 @@ LibclangInvocationReporter::LibclangInvocationReporter(
 }
 
 LibclangInvocationReporter::~LibclangInvocationReporter() {
-  if (!File.empty())
+  if (!File.empty()) {
     llvm::sys::fs::remove(File);
+
+}
 }

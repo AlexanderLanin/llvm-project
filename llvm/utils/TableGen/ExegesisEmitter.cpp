@@ -41,8 +41,10 @@ public:
 private:
   unsigned getPfmCounterId(llvm::StringRef Name) const {
     const auto It = PfmCounterNameTable.find(Name);
-    if (It == PfmCounterNameTable.end())
+    if (It == PfmCounterNameTable.end()) {
       PrintFatalError("no pfm counter id for " + Name);
+
+}
     return It->second;
   }
 
@@ -68,8 +70,10 @@ collectPfmCounters(const RecordKeeper &Records) {
   const auto AddPfmCounterName = [&PfmCounterNameTable](
                                      const Record *PfmCounterDef) {
     const llvm::StringRef Counter = PfmCounterDef->getValueAsString("Counter");
-    if (!Counter.empty())
+    if (!Counter.empty()) {
       PfmCounterNameTable.emplace(Counter, 0);
+
+}
   };
   for (Record *Def : Records.getAllDerivedDefinitions("ProcPfmCounters")) {
     // Check that ResourceNames are unique.
@@ -78,29 +82,39 @@ collectPfmCounters(const RecordKeeper &Records) {
          Def->getValueAsListOfDefs("IssueCounters")) {
       const llvm::StringRef ResourceName =
           IssueCounter->getValueAsString("ResourceName");
-      if (ResourceName.empty())
+      if (ResourceName.empty()) {
         PrintFatalError(IssueCounter->getLoc(), "invalid empty ResourceName");
-      if (!Seen.insert(ResourceName).second)
+
+}
+      if (!Seen.insert(ResourceName).second) {
         PrintFatalError(IssueCounter->getLoc(),
                         "duplicate ResourceName " + ResourceName);
+
+}
       AddPfmCounterName(IssueCounter);
     }
     AddPfmCounterName(Def->getValueAsDef("CycleCounter"));
     AddPfmCounterName(Def->getValueAsDef("UopsCounter"));
   }
   unsigned Index = 0;
-  for (auto &NameAndIndex : PfmCounterNameTable)
+  for (auto &NameAndIndex : PfmCounterNameTable) {
     NameAndIndex.second = Index++;
+
+}
   return PfmCounterNameTable;
 }
 
 ExegesisEmitter::ExegesisEmitter(RecordKeeper &RK)
     : Records(RK), PfmCounterNameTable(collectPfmCounters(RK)) {
   std::vector<Record *> Targets = Records.getAllDerivedDefinitions("Target");
-  if (Targets.size() == 0)
+  if (Targets.size() == 0) {
     PrintFatalError("ERROR: No 'Target' subclasses defined!");
-  if (Targets.size() != 1)
+
+}
+  if (Targets.size() != 1) {
     PrintFatalError("ERROR: Multiple subclasses of Target defined!");
+
+}
   Target = std::string(Targets[0]->getName());
 }
 
@@ -118,25 +132,31 @@ void ExegesisEmitter::emitPfmCountersInfo(const Record &Def,
      << " = {\n";
 
   // Cycle Counter.
-  if (CycleCounter.empty())
+  if (CycleCounter.empty()) {
     OS << "  nullptr,  // No cycle counter.\n";
-  else
+  } else {
     OS << "  " << Target << "PfmCounterNames[" << getPfmCounterId(CycleCounter)
        << "],  // Cycle counter\n";
 
+}
+
   // Uops Counter.
-  if (UopsCounter.empty())
+  if (UopsCounter.empty()) {
     OS << "  nullptr,  // No uops counter.\n";
-  else
+  } else {
     OS << "  " << Target << "PfmCounterNames[" << getPfmCounterId(UopsCounter)
        << "],  // Uops counter\n";
 
+}
+
   // Issue Counters
-  if (NumIssueCounters == 0)
+  if (NumIssueCounters == 0) {
     OS << "  nullptr,  // No issue counters.\n  0\n";
-  else
+  } else {
     OS << "  " << Target << "PfmIssueCounters + " << IssueCountersTableOffset
        << ", " << NumIssueCounters << " // Issue counters.\n";
+
+}
 
   OS << "};\n";
   IssueCountersTableOffset += NumIssueCounters;
@@ -145,9 +165,11 @@ void ExegesisEmitter::emitPfmCountersInfo(const Record &Def,
 void ExegesisEmitter::emitPfmCounters(raw_ostream &OS) const {
   // Emit the counter name table.
   OS << "\nstatic const char* " << Target << "PfmCounterNames[] = {\n";
-  for (const auto &NameAndIndex : PfmCounterNameTable)
+  for (const auto &NameAndIndex : PfmCounterNameTable) {
     OS << "  \"" << NameAndIndex.first << "\", // " << NameAndIndex.second
        << "\n";
+
+}
   OS << "};\n\n";
 
   // Emit the IssueCounters table.
@@ -162,18 +184,22 @@ void ExegesisEmitter::emitPfmCounters(raw_ostream &OS) const {
     OS << "static const PfmCountersInfo::IssueCounter " << Target
        << "PfmIssueCounters[] = {\n";
     for (const Record *Def : PfmCounterDefs) {
-      for (const Record *ICDef : Def->getValueAsListOfDefs("IssueCounters"))
+      for (const Record *ICDef : Def->getValueAsListOfDefs("IssueCounters")) {
         OS << "  { " << Target << "PfmCounterNames["
            << getPfmCounterId(ICDef->getValueAsString("Counter")) << "], \""
            << ICDef->getValueAsString("ResourceName") << "\"},\n";
+
+}
     }
     OS << "};\n";
   }
 
   // Now generate the PfmCountersInfo.
   unsigned IssueCountersTableOffset = 0;
-  for (const Record *Def : PfmCounterDefs)
+  for (const Record *Def : PfmCounterDefs) {
     emitPfmCountersInfo(*Def, IssueCountersTableOffset, OS);
+
+}
 
   OS << "\n";
 } // namespace

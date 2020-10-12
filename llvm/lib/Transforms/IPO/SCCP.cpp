@@ -21,8 +21,10 @@ PreservedAnalyses IPSCCPPass::run(Module &M, ModuleAnalysisManager &AM) {
         &DT, FAM.getCachedResult<PostDominatorTreeAnalysis>(F)};
   };
 
-  if (!runIPSCCP(M, DL, GetTLI, getAnalysis))
+  if (!runIPSCCP(M, DL, GetTLI, getAnalysis)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserve<DominatorTreeAnalysis>();
@@ -47,8 +49,10 @@ public:
   }
 
   bool runOnModule(Module &M) override {
-    if (skipModule(M))
+    if (skipModule(M)) {
       return false;
+
+}
     const DataLayout &DL = M.getDataLayout();
     auto GetTLI = [this](Function &F) -> const TargetLibraryInfo & {
       return this->getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);

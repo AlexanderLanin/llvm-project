@@ -108,15 +108,21 @@ int main(int argc, char **argv) {
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> Buf =
       MemoryBuffer::getFileOrSTDIN(Input);
-  if (!Buf)
+  if (!Buf) {
     return 1;
 
+}
+
   Optional<std::string> Buffer = preprocess(Buf.get()->getBuffer(), ErrHandler);
-  if (!Buffer)
+  if (!Buffer) {
     return 1;
+
+}
   yaml::Input YIn(*Buffer);
-  if (!convertYAML(YIn, Out->os(), ErrHandler, DocNum))
+  if (!convertYAML(YIn, Out->os(), ErrHandler, DocNum)) {
     return 1;
+
+}
 
   Out->keep();
   Out->os().flush();

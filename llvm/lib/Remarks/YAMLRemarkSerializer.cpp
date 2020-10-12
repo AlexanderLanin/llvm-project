@@ -39,22 +39,24 @@ template <> struct MappingTraits<remarks::Remark *> {
   static void mapping(IO &io, remarks::Remark *&Remark) {
     assert(io.outputting() && "input not yet implemented");
 
-    if (io.mapTag("!Passed", (Remark->RemarkType == Type::Passed)))
+    if (io.mapTag("!Passed", (Remark->RemarkType == Type::Passed))) {
       ;
-    else if (io.mapTag("!Missed", (Remark->RemarkType == Type::Missed)))
+    } else if (io.mapTag("!Missed", (Remark->RemarkType == Type::Missed))) {
       ;
-    else if (io.mapTag("!Analysis", (Remark->RemarkType == Type::Analysis)))
+    } else if (io.mapTag("!Analysis", (Remark->RemarkType == Type::Analysis))) {
       ;
-    else if (io.mapTag("!AnalysisFPCommute",
-                       (Remark->RemarkType == Type::AnalysisFPCommute)))
+    } else if (io.mapTag("!AnalysisFPCommute",
+                       (Remark->RemarkType == Type::AnalysisFPCommute))) {
       ;
-    else if (io.mapTag("!AnalysisAliasing",
-                       (Remark->RemarkType == Type::AnalysisAliasing)))
+    } else if (io.mapTag("!AnalysisAliasing",
+                       (Remark->RemarkType == Type::AnalysisAliasing))) {
       ;
-    else if (io.mapTag("!Failure", (Remark->RemarkType == Type::Failure)))
+    } else if (io.mapTag("!Failure", (Remark->RemarkType == Type::Failure))) {
       ;
-    else
+    } else {
       llvm_unreachable("Unknown remark type");
+
+}
 
     if (auto *Serializer = dyn_cast<YAMLStrTabRemarkSerializer>(
             reinterpret_cast<RemarkSerializer *>(io.getContext()))) {
@@ -227,8 +229,10 @@ static void emitStrTab(raw_ostream &OS, Optional<const StringTable *> StrTab) {
   std::array<char, 8> StrTabSizeBuf;
   support::endian::write64le(StrTabSizeBuf.data(), StrTabSize);
   OS.write(StrTabSizeBuf.data(), StrTabSizeBuf.size());
-  if (StrTab)
+  if (StrTab) {
     (*StrTab)->serialize(OS);
+
+}
 }
 
 static void emitExternalFile(raw_ostream &OS, StringRef Filename) {
@@ -244,14 +248,18 @@ void YAMLMetaSerializer::emit() {
   emitMagic(OS);
   emitVersion(OS);
   emitStrTab(OS, None);
-  if (ExternalFilename)
+  if (ExternalFilename) {
     emitExternalFile(OS, *ExternalFilename);
+
+}
 }
 
 void YAMLStrTabMetaSerializer::emit() {
   emitMagic(OS);
   emitVersion(OS);
   emitStrTab(OS, &StrTab);
-  if (ExternalFilename)
+  if (ExternalFilename) {
     emitExternalFile(OS, *ExternalFilename);
+
+}
 }

@@ -95,8 +95,10 @@ static cl::opt<unsigned> PragmaUnrollAndJamThreshold(
 // "llvm.loop.unroll.count").  If no such metadata node exists, then nullptr is
 // returned.
 static MDNode *getUnrollMetadataForLoop(const Loop *L, StringRef Name) {
-  if (MDNode *LoopID = L->getLoopID())
+  if (MDNode *LoopID = L->getLoopID()) {
     return GetUnrollMetadata(LoopID, Name);
+
+}
   return nullptr;
 }
 
@@ -110,15 +112,21 @@ static bool hasAnyUnrollPragma(const Loop *L, StringRef Prefix) {
 
     for (unsigned I = 1, E = LoopID->getNumOperands(); I < E; ++I) {
       MDNode *MD = dyn_cast<MDNode>(LoopID->getOperand(I));
-      if (!MD)
+      if (!MD) {
         continue;
+
+}
 
       MDString *S = dyn_cast<MDString>(MD->getOperand(0));
-      if (!S)
+      if (!S) {
         continue;
 
-      if (S->getString().startswith(Prefix))
+}
+
+      if (S->getString().startswith(Prefix)) {
         return true;
+
+}
     }
   }
   return false;
@@ -188,8 +196,10 @@ static bool computeUnrollAndJamCount(
     if (UP.AllowRemainder &&
         getUnrollAndJammedLoopSize(OuterLoopSize, UP) < UP.Threshold &&
         getUnrollAndJammedLoopSize(InnerLoopSize, UP) <
-            UP.UnrollAndJamInnerLoopThreshold)
+            UP.UnrollAndJamInnerLoopThreshold) {
       return true;
+
+}
   }
 
   // Check for unroll_and_jam pragmas
@@ -201,8 +211,10 @@ static bool computeUnrollAndJamCount(
     if ((UP.AllowRemainder || (OuterTripMultiple % PragmaCount == 0)) &&
         getUnrollAndJammedLoopSize(OuterLoopSize, UP) < UP.Threshold &&
         getUnrollAndJammedLoopSize(InnerLoopSize, UP) <
-            UP.UnrollAndJamInnerLoopThreshold)
+            UP.UnrollAndJamInnerLoopThreshold) {
       return true;
+
+}
   }
 
   bool PragmaEnableUnroll = hasUnrollAndJamEnablePragma(L);
@@ -211,8 +223,10 @@ static bool computeUnrollAndJamCount(
 
   // If the loop has an unrolling pragma, we want to be more aggressive with
   // unrolling limits.
-  if (ExplicitUnrollAndJam)
+  if (ExplicitUnrollAndJam) {
     UP.UnrollAndJamInnerLoopThreshold = PragmaUnrollAndJamThreshold;
+
+}
 
   if (!UP.AllowRemainder && getUnrollAndJammedLoopSize(InnerLoopSize, UP) >=
                                 UP.UnrollAndJamInnerLoopThreshold) {
@@ -227,14 +241,18 @@ static bool computeUnrollAndJamCount(
   // explicitly, we want to stick to it.
   if (!ExplicitUnrollAndJamCount && UP.AllowRemainder) {
     while (UP.Count != 0 && getUnrollAndJammedLoopSize(InnerLoopSize, UP) >=
-                                UP.UnrollAndJamInnerLoopThreshold)
+                                UP.UnrollAndJamInnerLoopThreshold) {
       UP.Count--;
+
+}
   }
 
   // If we are explicitly unroll and jamming, we are done. Otherwise there are a
   // number of extra performance heuristics to check.
-  if (ExplicitUnrollAndJam)
+  if (ExplicitUnrollAndJam) {
     return true;
+
+}
 
   // If the inner loop count is known and small, leave the entire loop nest to
   // be the unroller
@@ -263,8 +281,10 @@ static bool computeUnrollAndJamCount(
       if (auto *Ld = dyn_cast<LoadInst>(&I)) {
         Value *V = Ld->getPointerOperand();
         const SCEV *LSCEV = SE.getSCEVAtScope(V, L);
-        if (SE.isLoopInvariant(LSCEV, L))
+        if (SE.isLoopInvariant(LSCEV, L)) {
           NumInvariant++;
+
+}
       }
     }
   }
@@ -283,38 +303,52 @@ tryToUnrollAndJamLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
                       AssumptionCache &AC, DependenceInfo &DI,
                       OptimizationRemarkEmitter &ORE, int OptLevel) {
   // Quick checks of the correct loop form
-  if (!L->isLoopSimplifyForm() || L->getSubLoops().size() != 1)
+  if (!L->isLoopSimplifyForm() || L->getSubLoops().size() != 1) {
     return LoopUnrollResult::Unmodified;
+
+}
   Loop *SubLoop = L->getSubLoops()[0];
-  if (!SubLoop->isLoopSimplifyForm())
+  if (!SubLoop->isLoopSimplifyForm()) {
     return LoopUnrollResult::Unmodified;
+
+}
 
   BasicBlock *Latch = L->getLoopLatch();
   BasicBlock *Exit = L->getExitingBlock();
   BasicBlock *SubLoopLatch = SubLoop->getLoopLatch();
   BasicBlock *SubLoopExit = SubLoop->getExitingBlock();
 
-  if (Latch != Exit || SubLoopLatch != SubLoopExit)
+  if (Latch != Exit || SubLoopLatch != SubLoopExit) {
     return LoopUnrollResult::Unmodified;
+
+}
 
   TargetTransformInfo::UnrollingPreferences UP =
       gatherUnrollingPreferences(L, SE, TTI, nullptr, nullptr, OptLevel, None,
                                  None, None, None, None, None, None, None);
-  if (AllowUnrollAndJam.getNumOccurrences() > 0)
+  if (AllowUnrollAndJam.getNumOccurrences() > 0) {
     UP.UnrollAndJam = AllowUnrollAndJam;
-  if (UnrollAndJamThreshold.getNumOccurrences() > 0)
+
+}
+  if (UnrollAndJamThreshold.getNumOccurrences() > 0) {
     UP.UnrollAndJamInnerLoopThreshold = UnrollAndJamThreshold;
+
+}
   // Exit early if unrolling is disabled.
-  if (!UP.UnrollAndJam || UP.UnrollAndJamInnerLoopThreshold == 0)
+  if (!UP.UnrollAndJam || UP.UnrollAndJamInnerLoopThreshold == 0) {
     return LoopUnrollResult::Unmodified;
+
+}
 
   LLVM_DEBUG(dbgs() << "Loop Unroll and Jam: F["
                     << L->getHeader()->getParent()->getName() << "] Loop %"
                     << L->getHeader()->getName() << "\n");
 
   TransformationMode EnableMode = hasUnrollAndJamTransformation(L);
-  if (EnableMode & TM_Disable)
+  if (EnableMode & TM_Disable) {
     return LoopUnrollResult::Unmodified;
+
+}
 
   // A loop with any unroll pragma (enabling/disabling/count/etc) is left for
   // the unroller, so long as it does not explicitly have unroll_and_jam
@@ -370,8 +404,10 @@ tryToUnrollAndJamLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
   Optional<MDNode *> NewInnerEpilogueLoopID = makeFollowupLoopID(
       OrigOuterLoopID, {LLVMLoopUnrollAndJamFollowupAll,
                         LLVMLoopUnrollAndJamFollowupRemainderInner});
-  if (NewInnerEpilogueLoopID.hasValue())
+  if (NewInnerEpilogueLoopID.hasValue()) {
     SubLoop->setLoopID(NewInnerEpilogueLoopID.getValue());
+
+}
 
   // Find trip count and trip multiple
   unsigned OuterTripCount = SE.getSmallConstantTripCount(L, Latch);
@@ -382,11 +418,15 @@ tryToUnrollAndJamLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
   bool IsCountSetExplicitly = computeUnrollAndJamCount(
       L, SubLoop, TTI, DT, LI, SE, EphValues, &ORE, OuterTripCount,
       OuterTripMultiple, OuterLoopSize, InnerTripCount, InnerLoopSize, UP);
-  if (UP.Count <= 1)
+  if (UP.Count <= 1) {
     return LoopUnrollResult::Unmodified;
+
+}
   // Unroll factor (Count) must be less or equal to TripCount.
-  if (OuterTripCount && UP.Count > OuterTripCount)
+  if (OuterTripCount && UP.Count > OuterTripCount) {
     UP.Count = OuterTripCount;
+
+}
 
   Loop *EpilogueOuterLoop = nullptr;
   LoopUnrollResult UnrollResult = UnrollAndJamLoop(
@@ -398,17 +438,21 @@ tryToUnrollAndJamLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
     Optional<MDNode *> NewOuterEpilogueLoopID = makeFollowupLoopID(
         OrigOuterLoopID, {LLVMLoopUnrollAndJamFollowupAll,
                           LLVMLoopUnrollAndJamFollowupRemainderOuter});
-    if (NewOuterEpilogueLoopID.hasValue())
+    if (NewOuterEpilogueLoopID.hasValue()) {
       EpilogueOuterLoop->setLoopID(NewOuterEpilogueLoopID.getValue());
+
+}
   }
 
   Optional<MDNode *> NewInnerLoopID =
       makeFollowupLoopID(OrigOuterLoopID, {LLVMLoopUnrollAndJamFollowupAll,
                                            LLVMLoopUnrollAndJamFollowupInner});
-  if (NewInnerLoopID.hasValue())
+  if (NewInnerLoopID.hasValue()) {
     SubLoop->setLoopID(NewInnerLoopID.getValue());
-  else
+  } else {
     SubLoop->setLoopID(OrigSubLoopID);
+
+}
 
   if (UnrollResult == LoopUnrollResult::PartiallyUnrolled) {
     Optional<MDNode *> NewOuterLoopID = makeFollowupLoopID(
@@ -424,8 +468,10 @@ tryToUnrollAndJamLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
 
   // If loop has an unroll count pragma or unrolled by explicitly set count
   // mark loop as unrolled to prevent unrolling beyond that requested.
-  if (UnrollResult != LoopUnrollResult::FullyUnrolled && IsCountSetExplicitly)
+  if (UnrollResult != LoopUnrollResult::FullyUnrolled && IsCountSetExplicitly) {
     L->setLoopAlreadyUnrolled();
+
+}
 
   return UnrollResult;
 }
@@ -457,8 +503,10 @@ static bool tryToUnrollAndJamLoop(Function &F, DominatorTree &DT, LoopInfo &LI,
     Loop *L = Worklist.pop_back_val();
     LoopUnrollResult Result =
         tryToUnrollAndJamLoop(L, DT, &LI, SE, TTI, AC, DI, ORE, OptLevel);
-    if (Result != LoopUnrollResult::Unmodified)
+    if (Result != LoopUnrollResult::Unmodified) {
       DidSomething = true;
+
+}
   }
 
   return DidSomething;
@@ -476,8 +524,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
 
     auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
@@ -535,8 +585,10 @@ PreservedAnalyses LoopUnrollAndJamPass::run(Function &F,
   OptimizationRemarkEmitter &ORE =
       AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
 
-  if (!tryToUnrollAndJamLoop(F, DT, LI, SE, TTI, AC, DI, ORE, OptLevel))
+  if (!tryToUnrollAndJamLoop(F, DT, LI, SE, TTI, AC, DI, ORE, OptLevel)) {
     return PreservedAnalyses::all();
+
+}
 
   return getLoopPassPreservedAnalyses();
 }

@@ -31,20 +31,26 @@ raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const Header &H) {
   OS << "  StrtabOffset = " << HEX32(H.StrtabOffset) << '\n';
   OS << "  StrtabSize   = " << HEX32(H.StrtabSize) << '\n';
   OS << "  UUID         = ";
-  for (uint8_t I = 0; I < H.UUIDSize; ++I)
+  for (uint8_t I = 0; I < H.UUIDSize; ++I) {
     OS << format_hex_no_prefix(H.UUID[I], 2);
+
+}
   OS << '\n';
   return OS;
 }
 
 /// Check the header and detect any errors.
 llvm::Error Header::checkForError() const {
-  if (Magic != GSYM_MAGIC)
+  if (Magic != GSYM_MAGIC) {
     return createStringError(std::errc::invalid_argument,
                              "invalid GSYM magic 0x%8.8x", Magic);
-  if (Version != GSYM_VERSION)
+
+}
+  if (Version != GSYM_VERSION) {
     return createStringError(std::errc::invalid_argument,
                              "unsupported GSYM version %u", Version);
+
+}
   switch (AddrOffSize) {
     case 1: break;
     case 2: break;
@@ -55,18 +61,22 @@ llvm::Error Header::checkForError() const {
                                  "invalid address offset size %u",
                                  AddrOffSize);
   }
-  if (UUIDSize > GSYM_MAX_UUID_SIZE)
+  if (UUIDSize > GSYM_MAX_UUID_SIZE) {
     return createStringError(std::errc::invalid_argument,
                              "invalid UUID size %u", UUIDSize);
+
+}
   return Error::success();
 }
 
 llvm::Expected<Header> Header::decode(DataExtractor &Data) {
   uint64_t Offset = 0;
   // The header is stored as a single blob of data that has a fixed byte size.
-  if (!Data.isValidOffsetForDataOfSize(Offset, sizeof(Header)))
+  if (!Data.isValidOffsetForDataOfSize(Offset, sizeof(Header))) {
     return createStringError(std::errc::invalid_argument,
                              "not enough data for a gsym::Header");
+
+}
   Header H;
   H.Magic = Data.getU32(&Offset);
   H.Version = Data.getU16(&Offset);
@@ -77,15 +87,19 @@ llvm::Expected<Header> Header::decode(DataExtractor &Data) {
   H.StrtabOffset = Data.getU32(&Offset);
   H.StrtabSize = Data.getU32(&Offset);
   Data.getU8(&Offset, H.UUID, GSYM_MAX_UUID_SIZE);
-  if (llvm::Error Err = H.checkForError())
+  if (llvm::Error Err = H.checkForError()) {
     return std::move(Err);
+
+}
   return H;
 }
 
 llvm::Error Header::encode(FileWriter &O) const {
   // Users must verify the Header is valid prior to calling this funtion.
-  if (llvm::Error Err = checkForError())
+  if (llvm::Error Err = checkForError()) {
     return Err;
+
+}
   O.writeU32(Magic);
   O.writeU16(Version);
   O.writeU8(AddrOffSize);

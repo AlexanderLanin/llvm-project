@@ -77,28 +77,36 @@ static void reportError(StringRef Input, std::error_code EC) {
 }
 
 void error(std::error_code EC) {
-  if (!EC)
+  if (!EC) {
     return;
+
+}
   reportError(EC.message() + ".\n");
 }
 
 void error(Error EC) {
-  if (!EC)
+  if (!EC) {
     return;
+
+}
   handleAllErrors(std::move(EC),
                   [&](const ErrorInfoBase &EI) { reportError(EI.message()); });
 }
 
 static uint32_t getTime() {
   std::time_t Now = time(nullptr);
-  if (Now < 0 || !isUInt<32>(Now))
+  if (Now < 0 || !isUInt<32>(Now)) {
     return UINT32_MAX;
+
+}
   return static_cast<uint32_t>(Now);
 }
 
 template <typename T> T error(Expected<T> EC) {
-  if (!EC)
+  if (!EC) {
     error(EC.takeError());
+
+}
   return std::move(EC.get());
 }
 
@@ -126,8 +134,10 @@ int main(int Argc, const char **Argv) {
                   "\n");
     }
   } else {
-    if (Verbose)
+    if (Verbose) {
       outs() << "Machine architecture not specified; assumed X64.\n";
+
+}
     MachineType = COFF::IMAGE_FILE_MACHINE_AMD64;
   }
 
@@ -149,28 +159,36 @@ int main(int Argc, const char **Argv) {
   uint32_t DateTimeStamp;
   if (llvm::opt::Arg *Arg = InputArgs.getLastArg(OPT_TIMESTAMP)) {
     StringRef Value(Arg->getValue());
-    if (Value.getAsInteger(0, DateTimeStamp))
+    if (Value.getAsInteger(0, DateTimeStamp)) {
       reportError(Twine("invalid timestamp: ") + Value +
             ".  Expected 32-bit integer\n");
+
+}
   } else {
     DateTimeStamp = getTime();
   }
 
-  if (Verbose)
+  if (Verbose) {
     outs() << "Machine: " << machineToStr(MachineType) << '\n';
+
+}
 
   WindowsResourceParser Parser;
 
   for (const auto &File : InputFiles) {
     Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(File);
-    if (!BinaryOrErr)
+    if (!BinaryOrErr) {
       reportError(File, errorToErrorCode(BinaryOrErr.takeError()));
+
+}
 
     Binary &Binary = *BinaryOrErr.get().getBinary();
 
     WindowsResource *RF = dyn_cast<WindowsResource>(&Binary);
-    if (!RF)
+    if (!RF) {
       reportError(File + ": unrecognized file format.\n");
+
+}
 
     if (Verbose) {
       int EntryNumber = 0;
@@ -185,8 +203,10 @@ int main(int Argc, const char **Argv) {
 
     std::vector<std::string> Duplicates;
     error(Parser.parse(RF, Duplicates));
-    for (const auto& DupeDiag : Duplicates)
+    for (const auto& DupeDiag : Duplicates) {
       reportError(DupeDiag);
+
+}
   }
 
   if (Verbose) {
@@ -198,8 +218,10 @@ int main(int Argc, const char **Argv) {
                                                    DateTimeStamp));
   auto FileOrErr =
       FileOutputBuffer::create(OutputFile, OutputBuffer->getBufferSize());
-  if (!FileOrErr)
+  if (!FileOrErr) {
     reportError(OutputFile, errorToErrorCode(FileOrErr.takeError()));
+
+}
   std::unique_ptr<FileOutputBuffer> FileBuffer = std::move(*FileOrErr);
   std::copy(OutputBuffer->getBufferStart(), OutputBuffer->getBufferEnd(),
             FileBuffer->getBufferStart());
@@ -207,8 +229,10 @@ int main(int Argc, const char **Argv) {
 
   if (Verbose) {
     Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(OutputFile);
-    if (!BinaryOrErr)
+    if (!BinaryOrErr) {
       reportError(OutputFile, errorToErrorCode(BinaryOrErr.takeError()));
+
+}
     Binary &Binary = *BinaryOrErr.get().getBinary();
     ScopedPrinter W(errs());
     W.printBinaryBlock("Output File Raw Data", Binary.getData());

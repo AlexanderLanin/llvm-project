@@ -35,30 +35,36 @@ Error ExplainOutputStyle::dump() {
   P.formatLine("Explaining file offset {0} of file '{1}'.", FileOffset,
                File.getFilePath());
 
-  if (File.isPdb())
+  if (File.isPdb()) {
     return explainPdbFile();
+
+}
 
   return explainBinaryFile();
 }
 
 Error ExplainOutputStyle::explainPdbFile() {
   bool IsAllocated = explainPdbBlockStatus();
-  if (!IsAllocated)
+  if (!IsAllocated) {
     return Error::success();
 
+}
+
   AutoIndent Indent(P);
-  if (isPdbSuperBlock())
+  if (isPdbSuperBlock()) {
     explainPdbSuperBlockOffset();
-  else if (isPdbFpmBlock())
+  } else if (isPdbFpmBlock()) {
     explainPdbFpmBlockOffset();
-  else if (isPdbBlockMapBlock())
+  } else if (isPdbBlockMapBlock()) {
     explainPdbBlockMapOffset();
-  else if (isPdbStreamDirectoryBlock())
+  } else if (isPdbStreamDirectoryBlock()) {
     explainPdbStreamDirectoryOffset();
-  else if (auto Index = getPdbBlockStreamIndex())
+  } else if (auto Index = getPdbBlockStreamIndex()) {
     explainPdbStreamOffset(*Index);
-  else
+  } else {
     explainPdbUnknownBlock();
+
+}
   return Error::success();
 }
 
@@ -69,15 +75,19 @@ Error ExplainOutputStyle::explainBinaryFile() {
   switch (opts::explain::InputType) {
   case opts::explain::InputFileType::DBIStream: {
     DbiStream Dbi(std::move(Stream));
-    if (auto EC = Dbi.reload(nullptr))
+    if (auto EC = Dbi.reload(nullptr)) {
       return EC;
+
+}
     explainStreamOffset(Dbi, FileOffset);
     break;
   }
   case opts::explain::InputFileType::PDBStream: {
     InfoStream Info(std::move(Stream));
-    if (auto EC = Info.reload())
+    if (auto EC = Info.reload()) {
       return EC;
+
+}
     explainStreamOffset(Info, FileOffset);
     break;
   }
@@ -124,8 +134,10 @@ bool ExplainOutputStyle::isPdbStreamDirectoryBlock() const {
 Optional<uint32_t> ExplainOutputStyle::getPdbBlockStreamIndex() const {
   const auto &Layout = File.pdb().getMsfLayout();
   for (const auto &Entry : enumerate(Layout.StreamMap)) {
-    if (!llvm::is_contained(Entry.value(), pdbBlockIndex()))
+    if (!llvm::is_contained(Entry.value(), pdbBlockIndex())) {
       continue;
+
+}
     return Entry.index();
   }
   return None;
@@ -151,9 +163,9 @@ bool ExplainOutputStyle::explainPdbBlockStatus() {
 void ExplainOutputStyle::explainPdbSuperBlockOffset() {
   P.formatLine("This corresponds to offset {0} of the MSF super block, ",
                pdbBlockOffset());
-  if (pdbBlockOffset() < endof(SuperBlock, MagicBytes))
+  if (pdbBlockOffset() < endof(SuperBlock, MagicBytes)) {
     P.printLine("which is part of the MSF file magic.");
-  else if (pdbBlockOffset() < endof(SuperBlock, BlockSize)) {
+  } else if (pdbBlockOffset() < endof(SuperBlock, BlockSize)) {
     P.printLine("which contains the block size of the file.");
     P.formatLine("The current value is {0}.",
                  uint32_t(File.pdb().getMsfLayout().SB->BlockSize));
@@ -298,60 +310,62 @@ static void explainDbiHeaderOffset(LinePrinter &P, DbiStream &Dbi,
   const DbiStreamHeader *Header = Dbi.getHeader();
   assert(Header != nullptr);
 
-  if (Offset < endof(DbiStreamHeader, VersionSignature))
+  if (Offset < endof(DbiStreamHeader, VersionSignature)) {
     printStructField(P, "the DBI Stream Version Signature",
                      int32_t(Header->VersionSignature));
-  else if (Offset < endof(DbiStreamHeader, VersionHeader))
+  } else if (Offset < endof(DbiStreamHeader, VersionHeader)) {
     printStructField(P, "the DBI Stream Version Header",
                      uint32_t(Header->VersionHeader));
-  else if (Offset < endof(DbiStreamHeader, Age))
+  } else if (Offset < endof(DbiStreamHeader, Age)) {
     printStructField(P, "the age of the DBI Stream", uint32_t(Header->Age));
-  else if (Offset < endof(DbiStreamHeader, GlobalSymbolStreamIndex))
+  } else if (Offset < endof(DbiStreamHeader, GlobalSymbolStreamIndex)) {
     printStructField(P, "the index of the Global Symbol Stream",
                      uint16_t(Header->GlobalSymbolStreamIndex));
-  else if (Offset < endof(DbiStreamHeader, BuildNumber))
+  } else if (Offset < endof(DbiStreamHeader, BuildNumber)) {
     printStructField(P, "the build number", uint16_t(Header->BuildNumber));
-  else if (Offset < endof(DbiStreamHeader, PublicSymbolStreamIndex))
+  } else if (Offset < endof(DbiStreamHeader, PublicSymbolStreamIndex)) {
     printStructField(P, "the index of the Public Symbol Stream",
                      uint16_t(Header->PublicSymbolStreamIndex));
-  else if (Offset < endof(DbiStreamHeader, PdbDllVersion))
+  } else if (Offset < endof(DbiStreamHeader, PdbDllVersion)) {
     printStructField(P, "the version of mspdb.dll",
                      uint16_t(Header->PdbDllVersion));
-  else if (Offset < endof(DbiStreamHeader, SymRecordStreamIndex))
+  } else if (Offset < endof(DbiStreamHeader, SymRecordStreamIndex)) {
     printStructField(P, "the index of the Symbol Record Stream",
                      uint16_t(Header->SymRecordStreamIndex));
-  else if (Offset < endof(DbiStreamHeader, PdbDllRbld))
+  } else if (Offset < endof(DbiStreamHeader, PdbDllRbld)) {
     printStructField(P, "the rbld of mspdb.dll", uint16_t(Header->PdbDllRbld));
-  else if (Offset < endof(DbiStreamHeader, ModiSubstreamSize))
+  } else if (Offset < endof(DbiStreamHeader, ModiSubstreamSize)) {
     printStructField(P, "the size of the Module Info Substream",
                      int32_t(Header->ModiSubstreamSize));
-  else if (Offset < endof(DbiStreamHeader, SecContrSubstreamSize))
+  } else if (Offset < endof(DbiStreamHeader, SecContrSubstreamSize)) {
     printStructField(P, "the size of the Section Contribution Substream",
                      int32_t(Header->SecContrSubstreamSize));
-  else if (Offset < endof(DbiStreamHeader, SectionMapSize))
+  } else if (Offset < endof(DbiStreamHeader, SectionMapSize)) {
     printStructField(P, "the size of the Section Map Substream",
                      int32_t(Header->SectionMapSize));
-  else if (Offset < endof(DbiStreamHeader, FileInfoSize))
+  } else if (Offset < endof(DbiStreamHeader, FileInfoSize)) {
     printStructField(P, "the size of the File Info Substream",
                      int32_t(Header->FileInfoSize));
-  else if (Offset < endof(DbiStreamHeader, TypeServerSize))
+  } else if (Offset < endof(DbiStreamHeader, TypeServerSize)) {
     printStructField(P, "the size of the Type Server Map",
                      int32_t(Header->TypeServerSize));
-  else if (Offset < endof(DbiStreamHeader, MFCTypeServerIndex))
+  } else if (Offset < endof(DbiStreamHeader, MFCTypeServerIndex)) {
     printStructField(P, "the index of the MFC Type Server stream",
                      uint32_t(Header->MFCTypeServerIndex));
-  else if (Offset < endof(DbiStreamHeader, OptionalDbgHdrSize))
+  } else if (Offset < endof(DbiStreamHeader, OptionalDbgHdrSize)) {
     printStructField(P, "the size of the Optional Debug Stream array",
                      int32_t(Header->OptionalDbgHdrSize));
-  else if (Offset < endof(DbiStreamHeader, ECSubstreamSize))
+  } else if (Offset < endof(DbiStreamHeader, ECSubstreamSize)) {
     printStructField(P, "the size of the Edit & Continue Substream",
                      int32_t(Header->ECSubstreamSize));
-  else if (Offset < endof(DbiStreamHeader, Flags))
+  } else if (Offset < endof(DbiStreamHeader, Flags)) {
     printStructField(P, "the DBI Stream flags", uint16_t(Header->Flags));
-  else if (Offset < endof(DbiStreamHeader, MachineType))
+  } else if (Offset < endof(DbiStreamHeader, MachineType)) {
     printStructField(P, "the machine type", uint16_t(Header->MachineType));
-  else if (Offset < endof(DbiStreamHeader, Reserved))
+  } else if (Offset < endof(DbiStreamHeader, Reserved)) {
     printStructField(P, "reserved data", uint32_t(Header->Reserved));
+
+}
 }
 
 static void explainDbiModiSubstreamOffset(LinePrinter &P, DbiStream &Dbi,
@@ -368,8 +382,10 @@ static void explainDbiModiSubstreamOffset(LinePrinter &P, DbiStream &Dbi,
   while (true) {
     Prev = Current;
     ++Current;
-    if (Current == ModuleDescriptors.end() || Offset < Current.offset())
+    if (Current == ModuleDescriptors.end() || Offset < Current.offset()) {
       break;
+
+}
     ++Index;
   }
 
@@ -387,8 +403,10 @@ static void explainSubstreamOffset(LinePrinter &P, uint32_t OffsetInStream,
                                    const SubstreamRangeT &Substreams) {
   uint32_t SubOffset = OffsetInStream;
   for (const auto &Entry : Substreams) {
-    if (Entry.Size <= 0)
+    if (Entry.Size <= 0) {
       continue;
+
+}
     uint32_t S = static_cast<uint32_t>(Entry.Size);
     if (SubOffset < S) {
       P.formatLine("address is at offset {0}/{1} of the {2}.", SubOffset, S,
@@ -436,16 +454,18 @@ static void explainPdbStreamHeaderOffset(LinePrinter &P, InfoStream &Info,
   const InfoStreamHeader *Header = Info.getHeader();
   assert(Header != nullptr);
 
-  if (Offset < endof(InfoStreamHeader, Version))
+  if (Offset < endof(InfoStreamHeader, Version)) {
     printStructField(P, "the PDB Stream Version Signature",
                      uint32_t(Header->Version));
-  else if (Offset < endof(InfoStreamHeader, Signature))
+  } else if (Offset < endof(InfoStreamHeader, Signature)) {
     printStructField(P, "the signature of the PDB Stream",
                      uint32_t(Header->Signature));
-  else if (Offset < endof(InfoStreamHeader, Age))
+  } else if (Offset < endof(InfoStreamHeader, Age)) {
     printStructField(P, "the age of the PDB", uint32_t(Header->Age));
-  else if (Offset < endof(InfoStreamHeader, Guid))
+  } else if (Offset < endof(InfoStreamHeader, Guid)) {
     printStructField(P, "the guid of the PDB", fmt_guid(Header->Guid.Guid));
+
+}
 }
 
 void ExplainOutputStyle::explainStreamOffset(InfoStream &Info,

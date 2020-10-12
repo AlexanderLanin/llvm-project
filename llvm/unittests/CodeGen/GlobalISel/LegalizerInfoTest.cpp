@@ -49,8 +49,10 @@ TEST(LegalizerInfoTest, ScalarRISC) {
   LegalizerInfo L;
   // Typical RISCy set of operations based on AArch64.
   for (unsigned Op : {G_ADD, G_SUB}) {
-    for (unsigned Size : {32, 64})
+    for (unsigned Size : {32, 64}) {
       L.setAction({Op, 0, LLT::scalar(Size)}, Legal);
+
+}
     L.setLegalizeScalarToDifferentSizeStrategy(
         Op, 0, LegalizerInfo::widenToLargerTypesAndNarrowToLargest);
   }
@@ -170,8 +172,10 @@ TEST(LegalizerInfoTest, MultipleSteps) {
 TEST(LegalizerInfoTest, SizeChangeStrategy) {
   using namespace TargetOpcode;
   LegalizerInfo L;
-  for (unsigned Size : {1, 8, 16, 32})
+  for (unsigned Size : {1, 8, 16, 32}) {
     L.setAction({G_UREM, 0, LLT::scalar(Size)}, Legal);
+
+}
 
   L.setLegalizeScalarToDifferentSizeStrategy(
       G_UREM, 0, LegalizerInfo::widenToLargerTypesUnsupportedOtherwise);

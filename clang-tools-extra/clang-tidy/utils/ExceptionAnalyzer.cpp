@@ -21,8 +21,10 @@ void ExceptionAnalyzer::ExceptionInfo::registerException(
 
 void ExceptionAnalyzer::ExceptionInfo::registerExceptions(
     const Throwables &Exceptions) {
-  if (Exceptions.size() == 0)
+  if (Exceptions.size() == 0) {
     return;
+
+}
   Behaviour = State::Throwing;
   ThrownExceptions.insert(Exceptions.begin(), Exceptions.end());
 }
@@ -35,10 +37,12 @@ ExceptionAnalyzer::ExceptionInfo &ExceptionAnalyzer::ExceptionInfo::merge(
   // as well.
   // If one of both entities is 'Unknown' and the other one does not throw
   // the merged entity is 'Unknown' as well.
-  if (Other.Behaviour == State::Throwing)
+  if (Other.Behaviour == State::Throwing) {
     Behaviour = State::Throwing;
-  else if (Other.Behaviour == State::Unknown && Behaviour == State::NotThrowing)
+  } else if (Other.Behaviour == State::Unknown && Behaviour == State::NotThrowing) {
     Behaviour = State::Unknown;
+
+}
 
   ContainsUnknown = ContainsUnknown || Other.ContainsUnknown;
   ThrownExceptions.insert(Other.ThrownExceptions.begin(),
@@ -49,8 +53,10 @@ ExceptionAnalyzer::ExceptionInfo &ExceptionAnalyzer::ExceptionInfo::merge(
 static bool isBaseOf(const Type *DerivedType, const Type *BaseType) {
   const auto *DerivedClass = DerivedType->getAsCXXRecordDecl();
   const auto *BaseClass = BaseType->getAsCXXRecordDecl();
-  if (!DerivedClass || !BaseClass)
+  if (!DerivedClass || !BaseClass) {
     return false;
+
+}
 
   return !DerivedClass->forallBases(
       [BaseClass](const CXXRecordDecl *Cur) { return Cur != BaseClass; });
@@ -59,12 +65,16 @@ static bool isBaseOf(const Type *DerivedType, const Type *BaseType) {
 bool ExceptionAnalyzer::ExceptionInfo::filterByCatch(const Type *BaseClass) {
   llvm::SmallVector<const Type *, 8> TypesToDelete;
   for (const Type *T : ThrownExceptions) {
-    if (T == BaseClass || isBaseOf(T, BaseClass))
+    if (T == BaseClass || isBaseOf(T, BaseClass)) {
       TypesToDelete.push_back(T);
+
+}
   }
 
-  for (const Type *T : TypesToDelete)
+  for (const Type *T : TypesToDelete) {
     ThrownExceptions.erase(T);
+
+}
 
   reevaluateBehaviour();
   return TypesToDelete.size() > 0;
@@ -81,13 +91,17 @@ ExceptionAnalyzer::ExceptionInfo::filterIgnoredExceptions(
       if (TD->getDeclName().isIdentifier()) {
         if ((IgnoreBadAlloc &&
              (TD->getName() == "bad_alloc" && TD->isInStdNamespace())) ||
-            (IgnoredTypes.count(TD->getName()) > 0))
+            (IgnoredTypes.count(TD->getName()) > 0)) {
           TypesToDelete.push_back(T);
+
+}
       }
     }
   }
-  for (const Type *T : TypesToDelete)
+  for (const Type *T : TypesToDelete) {
     ThrownExceptions.erase(T);
+
+}
 
   reevaluateBehaviour();
   return *this;
@@ -100,20 +114,26 @@ void ExceptionAnalyzer::ExceptionInfo::clear() {
 }
 
 void ExceptionAnalyzer::ExceptionInfo::reevaluateBehaviour() {
-  if (ThrownExceptions.size() == 0)
-    if (ContainsUnknown)
+  if (ThrownExceptions.size() == 0) {
+    if (ContainsUnknown) {
       Behaviour = State::Unknown;
-    else
+    } else {
       Behaviour = State::NotThrowing;
-  else
+
+}
+  } else {
     Behaviour = State::Throwing;
+
+}
 }
 
 ExceptionAnalyzer::ExceptionInfo ExceptionAnalyzer::throwsException(
     const FunctionDecl *Func,
     llvm::SmallSet<const FunctionDecl *, 32> &CallStack) {
-  if (CallStack.count(Func))
+  if (CallStack.count(Func)) {
     return ExceptionInfo::createNonThrowing();
+
+}
 
   if (const Stmt *Body = Func->getBody()) {
     CallStack.insert(Func);
@@ -125,8 +145,10 @@ ExceptionAnalyzer::ExceptionInfo ExceptionAnalyzer::throwsException(
 
   auto Result = ExceptionInfo::createUnknown();
   if (const auto *FPT = Func->getType()->getAs<FunctionProtoType>()) {
-    for (const QualType &Ex : FPT->exceptions())
+    for (const QualType &Ex : FPT->exceptions()) {
       Result.registerException(Ex.getTypePtr());
+
+}
   }
   return Result;
 }
@@ -137,24 +159,30 @@ ExceptionAnalyzer::ExceptionInfo ExceptionAnalyzer::throwsException(
     const Stmt *St, const ExceptionInfo::Throwables &Caught,
     llvm::SmallSet<const FunctionDecl *, 32> &CallStack) {
   auto Results = ExceptionInfo::createNonThrowing();
-  if (!St)
+  if (!St) {
     return Results;
+
+}
 
   if (const auto *Throw = dyn_cast<CXXThrowExpr>(St)) {
     if (const auto *ThrownExpr = Throw->getSubExpr()) {
       const auto *ThrownType =
           ThrownExpr->getType()->getUnqualifiedDesugaredType();
-      if (ThrownType->isReferenceType())
+      if (ThrownType->isReferenceType()) {
         ThrownType = ThrownType->castAs<ReferenceType>()
                          ->getPointeeType()
                          ->getUnqualifiedDesugaredType();
+
+}
       Results.registerException(
           ThrownExpr->getType()->getUnqualifiedDesugaredType());
-    } else
+    } else {
       // A rethrow of a caught exception happens which makes it possible
       // to throw all exception that are caught in the 'catch' clause of
       // the parent try-catch block.
       Results.registerExceptions(Caught);
+
+}
   } else if (const auto *Try = dyn_cast<CXXTryStmt>(St)) {
     ExceptionInfo Uncaught =
         throwsException(Try->getTryBlock(), Caught, CallStack);
@@ -218,8 +246,10 @@ ExceptionAnalyzer::analyzeImpl(const FunctionDecl *Func) {
     // The results here might be relevant to different analysis passes
     // with different needs as well.
     FunctionCache.insert(std::make_pair(Func, ExceptionList));
-  } else
+  } else {
     ExceptionList = FunctionCache[Func];
+
+}
 
   return ExceptionList;
 }
@@ -236,8 +266,10 @@ ExceptionAnalyzer::analyzeDispatch(const T *Node) {
   ExceptionInfo ExceptionList = analyzeImpl(Node);
 
   if (ExceptionList.getBehaviour() == State::NotThrowing ||
-      ExceptionList.getBehaviour() == State::Unknown)
+      ExceptionList.getBehaviour() == State::Unknown) {
     return ExceptionList;
+
+}
 
   // Remove all ignored exceptions from the list of exceptions that can be
   // thrown.

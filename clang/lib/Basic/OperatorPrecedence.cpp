@@ -22,8 +22,10 @@ prec::Level getBinOpPrecedence(tok::TokenKind Kind, bool GreaterThanIsOperator,
     //   [...] When parsing a template-argument-list, the first
     //   non-nested > is taken as the ending delimiter rather than a
     //   greater-than operator. [...]
-    if (GreaterThanIsOperator)
+    if (GreaterThanIsOperator) {
       return prec::Relational;
+
+}
     return prec::Unknown;
 
   case tok::greatergreater:
@@ -33,8 +35,10 @@ prec::Level getBinOpPrecedence(tok::TokenKind Kind, bool GreaterThanIsOperator,
     //   consecutive but distinct > tokens, the first of which is
     //   taken as the end of the template-argument-list and completes
     //   the template-id. [...]
-    if (GreaterThanIsOperator || !CPlusPlus11)
+    if (GreaterThanIsOperator || !CPlusPlus11) {
       return prec::Shift;
+
+}
     return prec::Unknown;
 
   default:                        return prec::Unknown;

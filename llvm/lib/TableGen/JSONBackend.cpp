@@ -52,8 +52,10 @@ json::Value JSONEmitter::translateInit(const Init &I) {
     return Bit->getValue() ? 1 : 0;
   } else if (auto *Bits = dyn_cast<BitsInit>(&I)) {
     json::Array array;
-    for (unsigned i = 0, limit = Bits->getNumBits(); i < limit; i++)
+    for (unsigned i = 0, limit = Bits->getNumBits(); i < limit; i++) {
       array.push_back(translateInit(*Bits->getBit(i)));
+
+}
     return std::move(array);
   } else if (auto *Int = dyn_cast<IntInit>(&I)) {
     return Int->getValue();
@@ -63,8 +65,10 @@ json::Value JSONEmitter::translateInit(const Init &I) {
     return Code->getValue();
   } else if (auto *List = dyn_cast<ListInit>(&I)) {
     json::Array array;
-    for (auto val : *List)
+    for (auto val : *List) {
       array.push_back(translateInit(*val));
+
+}
     return std::move(array);
   }
 
@@ -94,16 +98,20 @@ json::Value JSONEmitter::translateInit(const Init &I) {
   } else if (auto *Dag = dyn_cast<DagInit>(&I)) {
     obj["kind"] = "dag";
     obj["operator"] = translateInit(*Dag->getOperator());
-    if (auto name = Dag->getName())
+    if (auto name = Dag->getName()) {
       obj["name"] = name->getAsUnquotedString();
+
+}
     json::Array args;
     for (unsigned i = 0, limit = Dag->getNumArgs(); i < limit; ++i) {
       json::Array arg;
       arg.push_back(translateInit(*Dag->getArg(i)));
-      if (auto argname = Dag->getArgName(i))
+      if (auto argname = Dag->getArgName(i)) {
         arg.push_back(argname->getAsUnquotedString());
-      else
+      } else {
         arg.push_back(nullptr);
+
+}
       args.push_back(std::move(arg));
     }
     obj["args"] = std::move(args);
@@ -147,8 +155,10 @@ void JSONEmitter::run(raw_ostream &OS) {
     for (const RecordVal &RV : Def.getValues()) {
       if (!Def.isTemplateArg(RV.getNameInit())) {
         auto Name = RV.getNameInitAsString();
-        if (RV.getPrefix())
+        if (RV.getPrefix()) {
           fields.push_back(Name);
+
+}
         obj[Name] = translateInit(*RV.getValue());
       }
     }
@@ -156,8 +166,10 @@ void JSONEmitter::run(raw_ostream &OS) {
     obj["!fields"] = std::move(fields);
 
     json::Array superclasses;
-    for (const auto &SuperPair : Def.getSuperClasses())
+    for (const auto &SuperPair : Def.getSuperClasses()) {
       superclasses.push_back(SuperPair.first->getNameInitAsString());
+
+}
     obj["!superclasses"] = std::move(superclasses);
 
     obj["!name"] = Name;
@@ -174,8 +186,10 @@ void JSONEmitter::run(raw_ostream &OS) {
 
   // Make a JSON object from the std::map of instance lists.
   json::Object instanceof;
-  for (auto kv: instance_lists)
+  for (auto kv: instance_lists) {
     instanceof[kv.first] = std::move(kv.second);
+
+}
   root["!instanceof"] = std::move(instanceof);
 
   // Done. Write the output.

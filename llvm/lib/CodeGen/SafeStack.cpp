@@ -111,8 +111,10 @@ public:
       : SCEVRewriteVisitor(SE), AllocaPtr(AllocaPtr) {}
 
   const SCEV *visitUnknown(const SCEVUnknown *Expr) {
-    if (Expr->getValue() == AllocaPtr)
+    if (Expr->getValue() == AllocaPtr) {
       return SE.getZero(Expr->getType());
+
+}
     return Expr;
   }
 };
@@ -221,8 +223,10 @@ uint64_t SafeStack::getStaticAllocaAllocationSize(const AllocaInst* AI) {
   uint64_t Size = DL.getTypeAllocSize(AI->getAllocatedType());
   if (AI->isArrayAllocation()) {
     auto C = dyn_cast<ConstantInt>(AI->getArraySize());
-    if (!C)
+    if (!C) {
       return 0;
+
+}
     Size *= C->getZExtValue();
   }
   return Size;
@@ -261,16 +265,22 @@ bool SafeStack::IsMemIntrinsicSafe(const MemIntrinsic *MI, const Use &U,
                                    const Value *AllocaPtr,
                                    uint64_t AllocaSize) {
   if (auto MTI = dyn_cast<MemTransferInst>(MI)) {
-    if (MTI->getRawSource() != U && MTI->getRawDest() != U)
+    if (MTI->getRawSource() != U && MTI->getRawDest() != U) {
       return true;
+
+}
   } else {
-    if (MI->getRawDest() != U)
+    if (MI->getRawDest() != U) {
       return true;
+
+}
   }
 
   const auto *Len = dyn_cast<ConstantInt>(MI->getLength());
   // Non-constant size => unsafe. FIXME: try SCEV getRange.
-  if (!Len) return false;
+  if (!Len) { return false;
+
+}
   return IsAccessSafe(U, Len->getZExtValue(), AllocaPtr, AllocaSize);
 }
 
@@ -295,8 +305,10 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
       switch (I->getOpcode()) {
       case Instruction::Load:
         if (!IsAccessSafe(UI, DL.getTypeStoreSize(I->getType()), AllocaPtr,
-                          AllocaSize))
+                          AllocaSize)) {
           return false;
+
+}
         break;
 
       case Instruction::VAArg:
@@ -312,8 +324,10 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
         }
 
         if (!IsAccessSafe(UI, DL.getTypeStoreSize(I->getOperand(0)->getType()),
-                          AllocaPtr, AllocaSize))
+                          AllocaPtr, AllocaSize)) {
           return false;
+
+}
         break;
 
       case Instruction::Ret:
@@ -324,8 +338,10 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
       case Instruction::Invoke: {
         ImmutableCallSite CS(I);
 
-        if (I->isLifetimeStartOrEnd())
+        if (I->isLifetimeStartOrEnd()) {
           continue;
+
+}
 
         if (const MemIntrinsic *MI = dyn_cast<MemIntrinsic>(I)) {
           if (!IsMemIntrinsicSafe(MI, UI, AllocaPtr, AllocaSize)) {
@@ -345,20 +361,26 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
         // analysis here, which would look at all uses of an argument inside
         // the function being called.
         ImmutableCallSite::arg_iterator B = CS.arg_begin(), E = CS.arg_end();
-        for (ImmutableCallSite::arg_iterator A = B; A != E; ++A)
-          if (A->get() == V)
+        for (ImmutableCallSite::arg_iterator A = B; A != E; ++A) {
+          if (A->get() == V) {
             if (!(CS.doesNotCapture(A - B) && (CS.doesNotAccessMemory(A - B) ||
                                                CS.doesNotAccessMemory()))) {
               LLVM_DEBUG(dbgs() << "[SafeStack] Unsafe alloca: " << *AllocaPtr
                                 << "\n            unsafe call: " << *I << "\n");
               return false;
             }
+
+}
+
+}
         continue;
       }
 
       default:
-        if (Visited.insert(I).second)
+        if (Visited.insert(I).second) {
           WorkList.push_back(cast<const Instruction>(I));
+
+}
       }
     }
   }
@@ -369,9 +391,11 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
 
 Value *SafeStack::getStackGuard(IRBuilder<> &IRB, Function &F) {
   Value *StackGuardVar = TL.getIRStackGuard(IRB);
-  if (!StackGuardVar)
+  if (!StackGuardVar) {
     StackGuardVar =
         F.getParent()->getOrInsertGlobal("__stack_chk_guard", StackPtrTy);
+
+}
   return IRB.CreateLoad(StackPtrTy, StackGuardVar, "StackGuard");
 }
 
@@ -386,8 +410,10 @@ void SafeStack::findInsts(Function &F,
       ++NumAllocas;
 
       uint64_t Size = getStaticAllocaAllocationSize(AI);
-      if (IsSafeStackAlloca(AI, Size))
+      if (IsSafeStackAlloca(AI, Size)) {
         continue;
+
+}
 
       if (AI->isStaticAlloca()) {
         ++NumUnsafeStaticAllocas;
@@ -400,24 +426,32 @@ void SafeStack::findInsts(Function &F,
       Returns.push_back(RI);
     } else if (auto CI = dyn_cast<CallInst>(&I)) {
       // setjmps require stack restore.
-      if (CI->getCalledFunction() && CI->canReturnTwice())
+      if (CI->getCalledFunction() && CI->canReturnTwice()) {
         StackRestorePoints.push_back(CI);
+
+}
     } else if (auto LP = dyn_cast<LandingPadInst>(&I)) {
       // Exception landing pads require stack restore.
       StackRestorePoints.push_back(LP);
     } else if (auto II = dyn_cast<IntrinsicInst>(&I)) {
-      if (II->getIntrinsicID() == Intrinsic::gcroot)
+      if (II->getIntrinsicID() == Intrinsic::gcroot) {
         report_fatal_error(
             "gcroot intrinsic not compatible with safestack attribute");
+
+}
     }
   }
   for (Argument &Arg : F.args()) {
-    if (!Arg.hasByValAttr())
+    if (!Arg.hasByValAttr()) {
       continue;
+
+}
     uint64_t Size =
         DL.getTypeStoreSize(Arg.getType()->getPointerElementType());
-    if (IsSafeStackAlloca(&Arg, Size))
+    if (IsSafeStackAlloca(&Arg, Size)) {
       continue;
+
+}
 
     ++NumUnsafeByValArguments;
     ByValArguments.push_back(&Arg);
@@ -430,8 +464,10 @@ SafeStack::createStackRestorePoints(IRBuilder<> &IRB, Function &F,
                                     Value *StaticTop, bool NeedDynamicTop) {
   assert(StaticTop && "The stack top isn't set.");
 
-  if (StackRestorePoints.empty())
+  if (StackRestorePoints.empty()) {
     return nullptr;
+
+}
 
   // We need the current value of the shadow stack pointer to restore
   // after longjmp or exception catching.
@@ -488,8 +524,10 @@ Value *SafeStack::moveStaticAllocasToUnsafeStack(
     IRBuilder<> &IRB, Function &F, ArrayRef<AllocaInst *> StaticAllocas,
     ArrayRef<Argument *> ByValArguments, ArrayRef<ReturnInst *> Returns,
     Instruction *BasePointer, AllocaInst *StackGuardSlot) {
-  if (StaticAllocas.empty() && ByValArguments.empty())
+  if (StaticAllocas.empty() && ByValArguments.empty()) {
     return BasePointer;
+
+}
 
   DIBuilder DIB(*F.getParent());
 
@@ -510,8 +548,10 @@ Value *SafeStack::moveStaticAllocasToUnsafeStack(
   for (Argument *Arg : ByValArguments) {
     Type *Ty = Arg->getType()->getPointerElementType();
     uint64_t Size = DL.getTypeStoreSize(Ty);
-    if (Size == 0)
+    if (Size == 0) {
       Size = 1; // Don't create zero-sized stack objects.
+
+}
 
     // Ensure the object is properly aligned.
     unsigned Align = std::max((unsigned)DL.getPrefTypeAlignment(Ty),
@@ -522,8 +562,10 @@ Value *SafeStack::moveStaticAllocasToUnsafeStack(
   for (AllocaInst *AI : StaticAllocas) {
     Type *Ty = AI->getAllocatedType();
     uint64_t Size = getStaticAllocaAllocationSize(AI);
-    if (Size == 0)
+    if (Size == 0) {
       Size = 1; // Don't create zero-sized stack objects.
+
+}
 
     // Ensure the object is properly aligned.
     unsigned Align =
@@ -567,8 +609,10 @@ Value *SafeStack::moveStaticAllocasToUnsafeStack(
     Type *Ty = Arg->getType()->getPointerElementType();
 
     uint64_t Size = DL.getTypeStoreSize(Ty);
-    if (Size == 0)
+    if (Size == 0) {
       Size = 1; // Don't create zero-sized stack objects.
+
+}
 
     Value *Off = IRB.CreateGEP(Int8Ty, BasePointer, // BasePointer is i8*
                                ConstantInt::get(Int32Ty, -Offset));
@@ -599,22 +643,26 @@ Value *SafeStack::moveStaticAllocasToUnsafeStack(
       Instruction *User = cast<Instruction>(U.getUser());
 
       Instruction *InsertBefore;
-      if (auto *PHI = dyn_cast<PHINode>(User))
+      if (auto *PHI = dyn_cast<PHINode>(User)) {
         InsertBefore = PHI->getIncomingBlock(U)->getTerminator();
-      else
+      } else {
         InsertBefore = User;
+
+}
 
       IRBuilder<> IRBUser(InsertBefore);
       Value *Off = IRBUser.CreateGEP(Int8Ty, BasePointer, // BasePointer is i8*
                                      ConstantInt::get(Int32Ty, -Offset));
       Value *Replacement = IRBUser.CreateBitCast(Off, AI->getType(), Name);
 
-      if (auto *PHI = dyn_cast<PHINode>(User))
+      if (auto *PHI = dyn_cast<PHINode>(User)) {
         // PHI nodes may have multiple incoming edges from the same BB (why??),
         // all must be updated at once with the same incoming value.
         PHI->setIncomingValueForBlock(PHI->getIncomingBlock(U), Replacement);
-      else
+      } else {
         U.set(Replacement);
+
+}
     }
 
     AI->eraseFromParent();
@@ -645,8 +693,10 @@ void SafeStack::moveDynamicAllocasToUnsafeStack(
 
     // Compute the new SP value (after AI).
     Value *ArraySize = AI->getArraySize();
-    if (ArraySize->getType() != IntPtrTy)
+    if (ArraySize->getType() != IntPtrTy) {
       ArraySize = IRB.CreateIntCast(ArraySize, IntPtrTy, false);
+
+}
 
     Type *Ty = AI->getAllocatedType();
     uint64_t TySize = DL.getTypeAllocSize(Ty);
@@ -668,12 +718,16 @@ void SafeStack::moveDynamicAllocasToUnsafeStack(
 
     // Save the stack pointer.
     IRB.CreateStore(NewTop, UnsafeStackPtr);
-    if (DynamicTop)
+    if (DynamicTop) {
       IRB.CreateStore(NewTop, DynamicTop);
 
+}
+
     Value *NewAI = IRB.CreatePointerCast(NewTop, AI->getType());
-    if (AI->hasName() && isa<Instruction>(NewAI))
+    if (AI->hasName() && isa<Instruction>(NewAI)) {
       NewAI->takeName(AI);
+
+}
 
     replaceDbgDeclare(AI, NewAI, DIB, DIExpression::ApplyOffset, 0);
     AI->replaceAllUsesWith(NewAI);
@@ -685,8 +739,10 @@ void SafeStack::moveDynamicAllocasToUnsafeStack(
     for (inst_iterator It = inst_begin(&F), Ie = inst_end(&F); It != Ie;) {
       Instruction *I = &*(It++);
       auto II = dyn_cast<IntrinsicInst>(I);
-      if (!II)
+      if (!II) {
         continue;
+
+}
 
       if (II->getIntrinsicID() == Intrinsic::stacksave) {
         IRBuilder<> IRB(II);
@@ -708,28 +764,40 @@ void SafeStack::moveDynamicAllocasToUnsafeStack(
 bool SafeStack::ShouldInlinePointerAddress(CallSite &CS) {
   Function *Callee = CS.getCalledFunction();
   if (CS.hasFnAttr(Attribute::AlwaysInline) &&
-      isInlineViable(*Callee).isSuccess())
+      isInlineViable(*Callee).isSuccess()) {
     return true;
+
+}
   if (Callee->isInterposable() || Callee->hasFnAttribute(Attribute::NoInline) ||
-      CS.isNoInline())
+      CS.isNoInline()) {
     return false;
+
+}
   return true;
 }
 
 void SafeStack::TryInlinePointerAddress() {
-  if (!isa<CallInst>(UnsafeStackPtr))
+  if (!isa<CallInst>(UnsafeStackPtr)) {
     return;
 
-  if(F.hasOptNone())
+}
+
+  if(F.hasOptNone()) {
     return;
+
+}
 
   CallSite CS(UnsafeStackPtr);
   Function *Callee = CS.getCalledFunction();
-  if (!Callee || Callee->isDeclaration())
+  if (!Callee || Callee->isDeclaration()) {
     return;
 
-  if (!ShouldInlinePointerAddress(CS))
+}
+
+  if (!ShouldInlinePointerAddress(CS)) {
     return;
+
+}
 
   InlineFunctionInfo IFI;
   InlineFunction(CS, IFI);
@@ -760,21 +828,29 @@ bool SafeStack::run() {
             StackRestorePoints);
 
   if (StaticAllocas.empty() && DynamicAllocas.empty() &&
-      ByValArguments.empty() && StackRestorePoints.empty())
+      ByValArguments.empty() && StackRestorePoints.empty()) {
     return false; // Nothing to do in this function.
 
+}
+
   if (!StaticAllocas.empty() || !DynamicAllocas.empty() ||
-      !ByValArguments.empty())
+      !ByValArguments.empty()) {
     ++NumUnsafeStackFunctions; // This function has the unsafe stack.
 
-  if (!StackRestorePoints.empty())
+}
+
+  if (!StackRestorePoints.empty()) {
     ++NumUnsafeStackRestorePointsFunctions;
+
+}
 
   IRBuilder<> IRB(&F.front(), F.begin()->getFirstInsertionPt());
   // Calls must always have a debug location, or else inlining breaks. So
   // we explicitly set a artificial debug location here.
-  if (DISubprogram *SP = F.getSubprogram())
+  if (DISubprogram *SP = F.getSubprogram()) {
     IRB.SetCurrentDebugLocation(DebugLoc::get(SP->getScopeLine(), 0, SP));
+
+}
   if (SafeStackUsePointerAddress) {
     FunctionCallee Fn = F.getParent()->getOrInsertFunction(
         "__safestack_pointer_address", StackPtrTy->getPointerTo(0));
@@ -868,8 +944,10 @@ public:
 
     TM = &getAnalysis<TargetPassConfig>().getTM<TargetMachine>();
     auto *TL = TM->getSubtargetImpl(F)->getTargetLowering();
-    if (!TL)
+    if (!TL) {
       report_fatal_error("TargetLowering instance is required");
+
+}
 
     auto *DL = &F.getParent()->getDataLayout();
     auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);

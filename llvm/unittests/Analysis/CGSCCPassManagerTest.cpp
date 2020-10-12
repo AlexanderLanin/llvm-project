@@ -309,8 +309,10 @@ TEST_F(CGSCCPassManagerTest, Basic) {
             AM.getResult<FunctionAnalysisManagerCGSCCProxy>(C, CG).getManager();
         if (TestModuleAnalysis::Result *TMA =
                 MAM.getCachedResult<TestModuleAnalysis>(
-                    *C.begin()->getFunction().getParent()))
+                    *C.begin()->getFunction().getParent())) {
           AnalyzedModuleFunctionCount1 += TMA->FunctionCount;
+
+}
 
         TestSCCAnalysis::Result &AR = AM.getResult<TestSCCAnalysis>(C, CG);
         AnalyzedSCCFunctionCount1 += AR.FunctionCount;
@@ -383,8 +385,10 @@ TEST_F(CGSCCPassManagerTest, TestSCCPassInvalidatesModuleAnalysis) {
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(
             *C.begin()->getFunction().getParent());
 
-        if (TMA)
+        if (TMA) {
           ++CountFoundModuleAnalysis1;
+
+}
 
         return PreservedAnalyses::all();
       }));
@@ -402,8 +406,10 @@ TEST_F(CGSCCPassManagerTest, TestSCCPassInvalidatesModuleAnalysis) {
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(
             *C.begin()->getFunction().getParent());
 
-        if (TMA)
+        if (TMA) {
           ++CountFoundModuleAnalysis2;
+
+}
 
         // Only fail to preserve analyses on one SCC and make sure that gets
         // propagated.
@@ -424,8 +430,10 @@ TEST_F(CGSCCPassManagerTest, TestSCCPassInvalidatesModuleAnalysis) {
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(
             *C.begin()->getFunction().getParent());
 
-        if (TMA)
+        if (TMA) {
           ++CountFoundModuleAnalysis3;
+
+}
 
         return PreservedAnalyses::none();
       }));
@@ -461,8 +469,10 @@ TEST_F(CGSCCPassManagerTest, TestFunctionPassInsideCGSCCInvalidatesModuleAnalysi
             AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(*F.getParent());
 
-        if (!TMA)
+        if (!TMA) {
           FoundModuleAnalysis1 = false;
+
+}
 
         return PreservedAnalyses::all();
       }));
@@ -482,8 +492,10 @@ TEST_F(CGSCCPassManagerTest, TestFunctionPassInsideCGSCCInvalidatesModuleAnalysi
             AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(*F.getParent());
 
-        if (!TMA)
+        if (!TMA) {
           FoundModuleAnalysis2 = false;
+
+}
 
         // Only fail to preserve analyses on one SCC and make sure that gets
         // propagated.
@@ -506,8 +518,10 @@ TEST_F(CGSCCPassManagerTest, TestFunctionPassInsideCGSCCInvalidatesModuleAnalysi
             AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
         auto *TMA = MAM.getCachedResult<TestModuleAnalysis>(*F.getParent());
 
-        if (TMA)
+        if (TMA) {
           FoundModuleAnalysis3 = true;
+
+}
 
         return PreservedAnalyses::none();
       }));
@@ -1066,10 +1080,12 @@ TEST_F(CGSCCPassManagerTest, TestIndirectAnalysisInvalidation) {
         auto PA = PreservedAnalyses::none();
         PA.preserve<FunctionAnalysisManagerCGSCCProxy>();
         PA.preserveSet<AllAnalysesOn<Function>>();
-        if (C.getName() == "(g)")
+        if (C.getName() == "(g)") {
           PA.preserve<TestSCCAnalysis>();
-        else if (C.getName() == "(h3, h1, h2)")
+        } else if (C.getName() == "(h3, h1, h2)") {
           PA.preserve<TestIndirectSCCAnalysis>();
+
+}
         return PA;
       }));
   // Finally, use the analysis again on each SCC (and function), forcing
@@ -1175,8 +1191,10 @@ TEST_F(CGSCCPassManagerTest, TestAnalysisInvalidationCGSCCUpdate) {
       LambdaSCCPass([&](LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM,
                         LazyCallGraph &CG, CGSCCUpdateResult &UR) {
         (void)AM.getResult<TestDoublyIndirectSCCAnalysis>(C, CG);
-        if (C.getName() != "(h3, h1, h2)")
+        if (C.getName() != "(h3, h1, h2)") {
           return PreservedAnalyses::all();
+
+}
 
         // Build the preserved set.
         auto PA = PreservedAnalyses::none();
@@ -1224,8 +1242,10 @@ TEST_F(CGSCCPassManagerTest, TestAnalysisInvalidationCGSCCUpdate) {
       LambdaSCCPass([&](LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM,
                         LazyCallGraph &CG, CGSCCUpdateResult &UR) {
         (void)AM.getResult<TestDoublyIndirectSCCAnalysis>(C, CG);
-        if (C.getName() != "(h2)")
+        if (C.getName() != "(h2)") {
           return PreservedAnalyses::all();
+
+}
 
         // Build the preserved set.
         auto PA = PreservedAnalyses::none();

@@ -90,8 +90,10 @@ void WasmDumper::printRelocation(const SectionRef &Section,
 
   StringRef SymName;
   symbol_iterator SI = Reloc.getSymbol();
-  if (SI != Obj->symbol_end())
+  if (SI != Obj->symbol_end()) {
     SymName = unwrapOrError(Obj->getFileName(), SI->getName());
+
+}
 
   bool HasAddend = false;
   switch (RelocType) {
@@ -109,21 +111,29 @@ void WasmDumper::printRelocation(const SectionRef &Section,
     DictScope Group(W, "Relocation");
     W.printNumber("Type", RelocTypeName, RelocType);
     W.printHex("Offset", Reloc.getOffset());
-    if (!SymName.empty())
+    if (!SymName.empty()) {
       W.printString("Symbol", SymName);
-    else
+    } else {
       W.printHex("Index", WasmReloc.Index);
-    if (HasAddend)
+
+}
+    if (HasAddend) {
       W.printNumber("Addend", WasmReloc.Addend);
+
+}
   } else {
     raw_ostream &OS = W.startLine();
     OS << W.hex(Reloc.getOffset()) << " " << RelocTypeName << " ";
-    if (!SymName.empty())
+    if (!SymName.empty()) {
       OS << SymName;
-    else
+    } else {
       OS << WasmReloc.Index;
-    if (HasAddend)
+
+}
+    if (HasAddend) {
       OS << " " << WasmReloc.Addend;
+
+}
     OS << "\n";
   }
 }
@@ -158,8 +168,10 @@ void WasmDumper::printRelocations() {
 void WasmDumper::printSymbols() {
   ListScope Group(W, "Symbols");
 
-  for (const SymbolRef &Symbol : Obj->symbols())
+  for (const SymbolRef &Symbol : Obj->symbols()) {
     printSymbol(Symbol);
+
+}
 }
 
 void WasmDumper::printSectionHeaders() {
@@ -177,8 +189,10 @@ void WasmDumper::printSectionHeaders() {
         const wasm::WasmLinkingData &LinkingData = Obj->linkingData();
         if (!LinkingData.InitFunctions.empty()) {
           ListScope Group(W, "InitFunctions");
-          for (const wasm::WasmInitFunc &F : LinkingData.InitFunctions)
+          for (const wasm::WasmInitFunc &F : LinkingData.InitFunctions) {
             W.startLine() << F.Symbol << " (priority=" << F.Priority << ")\n";
+
+}
         }
       }
       break;
@@ -187,11 +201,15 @@ void WasmDumper::printSectionHeaders() {
       for (const WasmSegment &Segment : Obj->dataSegments()) {
         const wasm::WasmDataSegment &Seg = Segment.Data;
         DictScope Group(W, "Segment");
-        if (!Seg.Name.empty())
+        if (!Seg.Name.empty()) {
           W.printString("Name", Seg.Name);
+
+}
         W.printNumber("Size", static_cast<uint64_t>(Seg.Content.size()));
-        if (Seg.Offset.Opcode == wasm::WASM_OPCODE_I32_CONST)
+        if (Seg.Offset.Opcode == wasm::WASM_OPCODE_I32_CONST) {
           W.printNumber("Offset", Seg.Offset.Value.Int32);
+
+}
       }
       break;
     }
@@ -209,8 +227,10 @@ void WasmDumper::printSectionHeaders() {
 
     if (opts::SectionRelocations) {
       ListScope D(W, "Relocations");
-      for (const RelocationRef &Reloc : Section.relocations())
+      for (const RelocationRef &Reloc : Section.relocations()) {
         printRelocation(Section, Reloc);
+
+}
     }
 
     if (opts::SectionData) {

@@ -340,8 +340,10 @@ static std::string findInputFile(const CommandLineArguments &CLArgs) {
   const unsigned IncludedFlagsBitmask = options::CC1Option;
   unsigned MissingArgIndex, MissingArgCount;
   SmallVector<const char *, 256> Argv;
-  for (auto I = CLArgs.begin(), E = CLArgs.end(); I != E; ++I)
+  for (auto I = CLArgs.begin(), E = CLArgs.end(); I != E; ++I) {
     Argv.push_back(I->c_str());
+
+}
   InputArgList Args = getDriverOptTable().ParseArgs(
       Argv, MissingArgIndex, MissingArgCount, IncludedFlagsBitmask);
   std::vector<std::string> Inputs = Args.getAllArgValues(OPT_INPUT);
@@ -388,13 +390,17 @@ struct Location {
 
   Location(SourceManager &SM, SourceLocation Loc) : File(), Line(), Column() {
     Loc = SM.getExpansionLoc(Loc);
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       return;
+
+}
 
     std::pair<FileID, unsigned> Decomposed = SM.getDecomposedLoc(Loc);
     File = SM.getFileEntryForID(Decomposed.first);
-    if (!File)
+    if (!File) {
       return;
+
+}
 
     Line = SM.getLineNumber(Decomposed.first, Decomposed.second);
     Column = SM.getColumnNumber(Decomposed.first, Decomposed.second);
@@ -411,10 +417,14 @@ struct Location {
   }
 
   friend bool operator<(const Location &X, const Location &Y) {
-    if (X.File != Y.File)
+    if (X.File != Y.File) {
       return X.File < Y.File;
-    if (X.Line != Y.Line)
+
+}
+    if (X.Line != Y.Line) {
       return X.Line < Y.Line;
+
+}
     return X.Column < Y.Column;
   }
   friend bool operator>(const Location &X, const Location &Y) { return Y < X; }
@@ -494,8 +504,10 @@ public:
     // Check whether we've seen this entry before.
     SmallVector<Entry, 2> &Entries = (*this)[Name];
     for (unsigned I = 0, N = Entries.size(); I != N; ++I) {
-      if (Entries[I].Kind == Kind && Entries[I].Loc == Loc)
+      if (Entries[I].Kind == Kind && Entries[I].Loc == Loc) {
         return;
+
+}
     }
 
     // We have not seen this entry before; record it.
@@ -521,8 +533,10 @@ public:
       }
 
       // If the header contents are the same, we're done.
-      if (H->second == KnownH->second)
+      if (H->second == KnownH->second) {
         continue;
+
+}
 
       // Determine what changed.
       std::set_symmetric_difference(
@@ -576,8 +590,10 @@ public:
   // Check 'extern "*" {}' block for #include directives.
   bool VisitLinkageSpecDecl(LinkageSpecDecl *D) {
     // Bail if not a block.
-    if (!D->hasBraces())
+    if (!D->hasBraces()) {
       return true;
+
+}
     SourceRange BlockRange = D->getSourceRange();
     const char *LinkageLabel;
     switch (D->getLanguage()) {
@@ -589,8 +605,10 @@ public:
       break;
     }
     if (!PPTracker.checkForIncludesInBlock(PP, BlockRange, LinkageLabel,
-                                           errs()))
+                                           errs())) {
       HadErrors = 1;
+
+}
     return true;
   }
 
@@ -601,16 +619,20 @@ public:
     Label += D->getName();
     Label += " {}";
     if (!PPTracker.checkForIncludesInBlock(PP, BlockRange, Label.c_str(),
-                                           errs()))
+                                           errs())) {
       HadErrors = 1;
+
+}
     return true;
   }
 
   // Collect definition entities.
   bool VisitNamedDecl(NamedDecl *ND) {
     // We only care about file-context variables.
-    if (!ND->getDeclContext()->isFileContext())
+    if (!ND->getDeclContext()->isFileContext()) {
       return true;
+
+}
 
     // Skip declarations that tend to be properly multiply-declared.
     if (isa<NamespaceDecl>(ND) || isa<UsingDirectiveDecl>(ND) ||
@@ -620,24 +642,32 @@ public:
         isa<TypeAliasTemplateDecl>(ND) || isa<UsingShadowDecl>(ND) ||
         isa<FunctionDecl>(ND) || isa<FunctionTemplateDecl>(ND) ||
         (isa<TagDecl>(ND) &&
-         !cast<TagDecl>(ND)->isThisDeclarationADefinition()))
+         !cast<TagDecl>(ND)->isThisDeclarationADefinition())) {
       return true;
 
+}
+
     // Skip anonymous declarations.
-    if (!ND->getDeclName())
+    if (!ND->getDeclName()) {
       return true;
+
+}
 
     // Get the qualified name.
     std::string Name;
     llvm::raw_string_ostream OS(Name);
     ND->printQualifiedName(OS);
     OS.flush();
-    if (Name.empty())
+    if (Name.empty()) {
       return true;
 
+}
+
     Location Loc(SM, ND->getLocation());
-    if (!Loc)
+    if (!Loc) {
       return true;
+
+}
 
     Entities.add(Name, isa<TagDecl>(ND) ? Entry::EK_Tag : Entry::EK_Value, Loc);
     return true;
@@ -675,8 +705,10 @@ public:
                                       MEnd = PP.macro_end();
          M != MEnd; ++M) {
       Location Loc(SM, M->second.getLatest()->getLocation());
-      if (!Loc)
+      if (!Loc) {
         continue;
+
+}
 
       Entities.add(M->first->getName().str(), Entry::EK_Macro, Loc);
     }
@@ -836,28 +868,36 @@ int main(int Argc, const char **Argv) {
       ListFileNames, HeaderPrefix, ProblemFilesList));
 
   // Get header file names and dependencies.
-  if (ModUtil->loadAllHeaderListsAndDependencies())
+  if (ModUtil->loadAllHeaderListsAndDependencies()) {
     HadErrors = 1;
+
+}
 
   // If we are in assistant mode, output the module map and quit.
   if (ModuleMapPath.length() != 0) {
     if (!createModuleMap(ModuleMapPath, ModUtil->HeaderFileNames,
                          ModUtil->ProblemFileNames,
-                         ModUtil->Dependencies, HeaderPrefix, RootModule))
+                         ModUtil->Dependencies, HeaderPrefix, RootModule)) {
       return 1; // Failed.
+
+}
     return 0;   // Success - Skip checks in assistant mode.
   }
 
   // If we're doing module maps.
   if (!NoCoverageCheck && ModUtil->HasModuleMap) {
     // Do coverage check.
-    if (ModUtil->doCoverageCheck(IncludePaths, CommandLine))
+    if (ModUtil->doCoverageCheck(IncludePaths, CommandLine)) {
       HadErrors = 1;
+
+}
   }
 
   // Bail early if only doing the coverage check.
-  if (CoverageCheckOnly)
+  if (CoverageCheckOnly) {
     return HadErrors;
+
+}
 
   // Create the compilation database.
   SmallString<256> PathBuf;
@@ -894,8 +934,10 @@ int main(int Argc, const char **Argv) {
         ModUtil->addUniqueProblemFile(CompileCheckFile);   // Save problem file.
         HadErrors |= 1;
       }
-      else
+      else {
         ModUtil->addNoCompileErrorsFile(CompileCheckFile); // Save good file.
+
+}
     }
   }
 
@@ -921,8 +963,10 @@ int main(int Argc, const char **Argv) {
   for (EntityMap::iterator E = Entities.begin(), EEnd = Entities.end();
        E != EEnd; ++E) {
     // If only one occurrence, exit early.
-    if (E->second.size() == 1)
+    if (E->second.size() == 1) {
       continue;
+
+}
     // Clear entity locations.
     for (EntryBinArray::iterator CI = EntryBins.begin(), CE = EntryBins.end();
          CI != CE; ++CI) {
@@ -939,8 +983,10 @@ int main(int Argc, const char **Argv) {
          DI != DE; ++DI, ++KindIndex) {
       int ECount = DI->size();
       // If only 1 occurrence of this entity, skip it, we only report duplicates.
-      if (ECount <= 1)
+      if (ECount <= 1) {
         continue;
+
+}
       LocationArray::iterator FI = DI->begin();
       StringRef kindName = Entry::getKindName((Entry::EntryKind)KindIndex);
       errs() << "error: " << kindName << " '" << E->first()
@@ -956,13 +1002,17 @@ int main(int Argc, const char **Argv) {
 
   // Complain about macro instance in header files that differ based on how
   // they are included.
-  if (PPTracker->reportInconsistentMacros(errs()))
+  if (PPTracker->reportInconsistentMacros(errs())) {
     HadErrors = 1;
+
+}
 
   // Complain about preprocessor conditional directives in header files that
   // differ based on how they are included.
-  if (PPTracker->reportInconsistentConditionals(errs()))
+  if (PPTracker->reportInconsistentConditionals(errs())) {
     HadErrors = 1;
+
+}
 
   // Complain about any headers that have contents that differ based on how
   // they are included.

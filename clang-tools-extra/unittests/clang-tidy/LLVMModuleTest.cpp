@@ -16,11 +16,15 @@ static std::string runHeaderGuardCheck(StringRef Code, const Twine &Filename,
   std::vector<ClangTidyError> Errors;
   std::string Result = test::runCheckOnCode<LLVMHeaderGuardCheck>(
       Code, &Errors, Filename, std::string("-xc++-header"));
-  if (Errors.size() != (size_t)ExpectedWarning.hasValue())
+  if (Errors.size() != (size_t)ExpectedWarning.hasValue()) {
     return "invalid error count";
-  if (ExpectedWarning && *ExpectedWarning != Errors.back().Message.Message)
+
+}
+  if (ExpectedWarning && *ExpectedWarning != Errors.back().Message.Message) {
     return "expected: '" + ExpectedWarning->str() + "', saw: '" +
            Errors.back().Message.Message + "'";
+
+}
   return Result;
 }
 
@@ -38,11 +42,15 @@ runHeaderGuardCheckWithEndif(StringRef Code, const Twine &Filename,
   std::vector<ClangTidyError> Errors;
   std::string Result = test::runCheckOnCode<WithEndifComment>(
       Code, &Errors, Filename, std::string("-xc++-header"));
-  if (Errors.size() != (size_t)ExpectedWarning.hasValue())
+  if (Errors.size() != (size_t)ExpectedWarning.hasValue()) {
     return "invalid error count";
-  if (ExpectedWarning && *ExpectedWarning != Errors.back().Message.Message)
+
+}
+  if (ExpectedWarning && *ExpectedWarning != Errors.back().Message.Message) {
     return "expected: '" + ExpectedWarning->str() + "', saw: '" +
            Errors.back().Message.Message + "'";
+
+}
   return Result;
 }
 

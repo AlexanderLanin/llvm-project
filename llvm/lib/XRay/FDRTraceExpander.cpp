@@ -11,8 +11,10 @@ namespace llvm {
 namespace xray {
 
 void TraceExpander::resetCurrentRecord() {
-  if (BuildingRecord)
+  if (BuildingRecord) {
     C(CurrentRecord);
+
+}
   BuildingRecord = false;
   CurrentRecord.CallArgs.clear();
   CurrentRecord.Data.clear();
@@ -93,11 +95,15 @@ Error TraceExpander::visit(PIDRecord &R) {
 }
 
 Error TraceExpander::visit(NewBufferRecord &R) {
-  if (IgnoringRecords)
+  if (IgnoringRecords) {
     IgnoringRecords = false;
+
+}
   TID = R.tid();
-  if (LogVersion == 2)
+  if (LogVersion == 2) {
     PID = R.tid();
+
+}
   return Error::success();
 }
 

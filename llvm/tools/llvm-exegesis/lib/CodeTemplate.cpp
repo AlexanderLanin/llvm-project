@@ -57,9 +57,13 @@ bool InstructionTemplate::hasImmediateVariables() const {
 MCInst InstructionTemplate::build() const {
   MCInst Result;
   Result.setOpcode(Instr->Description.Opcode);
-  for (const auto &Op : Instr->Operands)
-    if (Op.isExplicit())
+  for (const auto &Op : Instr->Operands) {
+    if (Op.isExplicit()) {
       Result.addOperand(getValueFor(Op));
+
+}
+
+}
   return Result;
 }
 
@@ -105,9 +109,13 @@ ArrayRef<ExecutionMode> getAllExecutionBits() {
 
 SmallVector<ExecutionMode, 4> getExecutionModeBits(ExecutionMode Execution) {
   SmallVector<ExecutionMode, 4> Result;
-  for (const auto Bit : getAllExecutionBits())
-    if ((Execution & Bit) == Bit)
+  for (const auto Bit : getAllExecutionBits()) {
+    if ((Execution & Bit) == Bit) {
       Result.push_back(Bit);
+
+}
+
+}
   return Result;
 }
 

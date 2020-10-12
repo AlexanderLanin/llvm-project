@@ -102,16 +102,20 @@ join(ArrayRef<SpecialMemberFunctionsCheck::SpecialMemberFunctionKind> SMFS,
 void SpecialMemberFunctionsCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXRecordDecl>("class-def");
-  if (!MatchedDecl)
+  if (!MatchedDecl) {
     return;
+
+}
 
   ClassDefId ID(MatchedDecl->getLocation(), std::string(MatchedDecl->getName()));
 
   auto StoreMember = [this, &ID](SpecialMemberFunctionData data) {
     llvm::SmallVectorImpl<SpecialMemberFunctionData> &Members =
         ClassWithSpecialMembers[ID];
-    if (!llvm::is_contained(Members, data))
+    if (!llvm::is_contained(Members, data)) {
       Members.push_back(std::move(data));
+
+}
   };
 
   if (const auto *Dtor = Result.Nodes.getNodeAs<CXXMethodDecl>("dtor")) {
@@ -127,11 +131,13 @@ void SpecialMemberFunctionsCheck::check(
                   {"move-ctor", SpecialMemberFunctionKind::MoveConstructor},
                   {"move-assign", SpecialMemberFunctionKind::MoveAssignment}};
 
-  for (const auto &KV : Matchers)
+  for (const auto &KV : Matchers) {
     if (const auto *MethodDecl =
             Result.Nodes.getNodeAs<CXXMethodDecl>(KV.first)) {
       StoreMember({KV.second, MethodDecl->isDeleted()});
     }
+
+}
 }
 
 void SpecialMemberFunctionsCheck::onEndOfTranslationUnit() {
@@ -158,8 +164,10 @@ void SpecialMemberFunctionsCheck::checkForMissingMembers(
   };
 
   auto RequireMember = [&](SpecialMemberFunctionKind Kind) {
-    if (!HasMember(Kind))
+    if (!HasMember(Kind)) {
       MissingMembers.push_back(Kind);
+
+}
   };
 
   bool RequireThree =
@@ -178,8 +186,10 @@ void SpecialMemberFunctionsCheck::checkForMissingMembers(
 
   if (RequireThree) {
     if (!HasMember(SpecialMemberFunctionKind::DefaultDestructor) &&
-        !HasMember(SpecialMemberFunctionKind::NonDefaultDestructor))
+        !HasMember(SpecialMemberFunctionKind::NonDefaultDestructor)) {
       MissingMembers.push_back(SpecialMemberFunctionKind::Destructor);
+
+}
 
     RequireMember(SpecialMemberFunctionKind::CopyConstructor);
     RequireMember(SpecialMemberFunctionKind::CopyAssignment);

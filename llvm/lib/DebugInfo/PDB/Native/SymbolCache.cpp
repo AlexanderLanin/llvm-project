@@ -66,8 +66,10 @@ SymbolCache::SymbolCache(NativeSession &Session, DbiStream *Dbi)
   // Id 0 is reserved for the invalid symbol.
   Cache.push_back(nullptr);
 
-  if (Dbi)
+  if (Dbi) {
     Compilands.resize(Dbi->modules().getModuleCount());
+
+}
 }
 
 std::unique_ptr<IPDBEnumSymbols>
@@ -95,15 +97,19 @@ SymbolCache::createGlobalsEnumerator(codeview::SymbolKind Kind) {
 
 SymIndexId SymbolCache::createSimpleType(TypeIndex Index,
                                          ModifierOptions Mods) {
-  if (Index.getSimpleMode() != codeview::SimpleTypeMode::Direct)
+  if (Index.getSimpleMode() != codeview::SimpleTypeMode::Direct) {
     return createSymbol<NativeTypePointer>(Index);
+
+}
 
   const auto Kind = Index.getSimpleKind();
   const auto It = std::find_if(
       std::begin(BuiltinTypes), std::end(BuiltinTypes),
       [Kind](const BuiltinTypeEntry &Builtin) { return Builtin.Kind == Kind; });
-  if (It == std::end(BuiltinTypes))
+  if (It == std::end(BuiltinTypes)) {
     return 0;
+
+}
   return createSymbol<NativeTypeBuiltin>(Mods, It->Type, It->Size);
 }
 
@@ -116,8 +122,10 @@ SymbolCache::createSymbolForModifiedType(codeview::TypeIndex ModifierTI,
     return 0;
   }
 
-  if (Record.ModifiedType.isSimple())
+  if (Record.ModifiedType.isSimple()) {
     return createSimpleType(Record.ModifiedType, Record.Modifiers);
+
+}
 
   // Make sure we create and cache a record for the unmodified type.
   SymIndexId UnmodifiedId = findSymbolByTypeIndex(Record.ModifiedType);
@@ -142,8 +150,10 @@ SymbolCache::createSymbolForModifiedType(codeview::TypeIndex ModifierTI,
 SymIndexId SymbolCache::findSymbolByTypeIndex(codeview::TypeIndex Index) {
   // First see if it's already in our cache.
   const auto Entry = TypeIndexToSymbolId.find(Index);
-  if (Entry != TypeIndexToSymbolId.end())
+  if (Entry != TypeIndexToSymbolId.end()) {
     return Entry->second;
+
+}
 
   // Symbols for built-in types are created on the fly.
   if (Index.isSimple()) {
@@ -165,9 +175,9 @@ SymIndexId SymbolCache::findSymbolByTypeIndex(codeview::TypeIndex Index) {
   if (isUdtForwardRef(CVT)) {
     Expected<TypeIndex> EFD = Tpi->findFullDeclForForwardRef(Index);
 
-    if (!EFD)
+    if (!EFD) {
       consumeError(EFD.takeError());
-    else if (*EFD != Index) {
+    } else if (*EFD != Index) {
       assert(!isUdtForwardRef(Types.getType(*EFD)));
       SymIndexId Result = findSymbolByTypeIndex(*EFD);
       // Record a mapping from ForwardRef -> SymIndex of complete type so that
@@ -232,14 +242,18 @@ SymbolCache::getSymbolById(SymIndexId SymbolId) const {
   assert(SymbolId < Cache.size());
 
   // Id 0 is reserved.
-  if (SymbolId == 0 || SymbolId >= Cache.size())
+  if (SymbolId == 0 || SymbolId >= Cache.size()) {
     return nullptr;
+
+}
 
   // Make sure to handle the case where we've inserted a placeholder symbol
   // for types we don't yet suppport.
   NativeRawSymbol *NRS = Cache[SymbolId].get();
-  if (!NRS)
+  if (!NRS) {
     return nullptr;
+
+}
 
   return PDBSymbol::create(Session, *NRS);
 }
@@ -249,16 +263,20 @@ NativeRawSymbol &SymbolCache::getNativeSymbolById(SymIndexId SymbolId) const {
 }
 
 uint32_t SymbolCache::getNumCompilands() const {
-  if (!Dbi)
+  if (!Dbi) {
     return 0;
+
+}
 
   return Dbi->modules().getModuleCount();
 }
 
 SymIndexId SymbolCache::getOrCreateGlobalSymbolByOffset(uint32_t Offset) {
   auto Iter = GlobalOffsetToSymbolId.find(Offset);
-  if (Iter != GlobalOffsetToSymbolId.end())
+  if (Iter != GlobalOffsetToSymbolId.end()) {
     return Iter->second;
+
+}
 
   SymbolStream &SS = cantFail(Session.getPDBFile().getPDBSymbolStream());
   CVSymbol CVS = SS.readRecord(Offset);
@@ -283,11 +301,15 @@ SymIndexId SymbolCache::getOrCreateGlobalSymbolByOffset(uint32_t Offset) {
 
 std::unique_ptr<PDBSymbolCompiland>
 SymbolCache::getOrCreateCompiland(uint32_t Index) {
-  if (!Dbi)
+  if (!Dbi) {
     return nullptr;
 
-  if (Index >= Compilands.size())
+}
+
+  if (Index >= Compilands.size()) {
     return nullptr;
+
+}
 
   if (Compilands[Index] == 0) {
     const DbiModuleList &Modules = Dbi->modules();

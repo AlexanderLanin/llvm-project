@@ -66,12 +66,18 @@ private:
 int CodeEmitterGen::getVariableBit(const std::string &VarName,
                                    BitsInit *BI, int bit) {
   if (VarBitInit *VBI = dyn_cast<VarBitInit>(BI->getBit(bit))) {
-    if (VarInit *VI = dyn_cast<VarInit>(VBI->getBitVar()))
-      if (VI->getName() == VarName)
+    if (VarInit *VI = dyn_cast<VarInit>(VBI->getBitVar())) {
+      if (VI->getName() == VarName) {
         return VBI->getBitNum();
+
+}
+
+}
   } else if (VarInit *VI = dyn_cast<VarInit>(BI->getBit(bit))) {
-    if (VI->getName() == VarName)
+    if (VI->getName() == VarName) {
       return 0;
+
+}
   }
 
   return -1;
@@ -89,15 +95,19 @@ AddCodeToMergeInOperand(Record *R, BitsInit *BI, const std::string &VarName,
 
   // Scan for a bit that this contributed to.
   for (; bit >= 0; ) {
-    if (getVariableBit(VarName, BI, bit) != -1)
+    if (getVariableBit(VarName, BI, bit) != -1) {
       break;
+
+}
     
     --bit;
   }
   
   // If we found no bits, ignore this value, otherwise emit the call to get the
   // operand encoding.
-  if (bit < 0) return;
+  if (bit < 0) { return;
+
+}
   
   // If the operand matches by name, reference according to that
   // operand number. Non-matching operands are assumed to be in
@@ -135,8 +145,10 @@ AddCodeToMergeInOperand(Record *R, BitsInit *BI, const std::string &VarName,
   std::pair<unsigned, unsigned> SO = CGI.Operands.getSubOperandNumber(OpIdx);
   std::string &EncoderMethodName = CGI.Operands[SO.first].EncoderMethodName;
 
-  if (UseAPInt)
+  if (UseAPInt) {
     Case += "      op.clearAllBits();\n";
+
+}
 
   // If the source operand has a custom encoder, use it. This will
   // get the encoding for all of the suboperands.
@@ -185,8 +197,10 @@ AddCodeToMergeInOperand(Record *R, BitsInit *BI, const std::string &VarName,
     int N = 1;
     for (--tmpBit; tmpBit >= 0;) {
       varBit = getVariableBit(VarName, BI, tmpBit);
-      if (varBit == -1 || varBit != (beginVarBit - N))
+      if (varBit == -1 || varBit != (beginVarBit - N)) {
         break;
+
+}
       ++N;
       --tmpBit;
     }
@@ -209,7 +223,9 @@ AddCodeToMergeInOperand(Record *R, BitsInit *BI, const std::string &VarName,
     int N = 1;
     for (--bit; bit >= 0;) {
       varBit = getVariableBit(VarName, BI, bit);
-      if (varBit == -1 || varBit != (beginVarBit - N)) break;
+      if (varBit == -1 || varBit != (beginVarBit - N)) { break;
+
+}
       ++N;
       --bit;
     }
@@ -299,8 +315,10 @@ std::string CodeEmitterGen::getInstructionCaseForEncoding(Record *R, Record *Enc
     CodeGenInstruction &CGI = Target.getInstruction(R);
     for (const RecordVal &RV : R->getValues()) {
       unsigned OpIdx;
-      if (!CGI.Operands.hasOperandNamed(RV.getName(), OpIdx))
+      if (!CGI.Operands.hasOperandNamed(RV.getName(), OpIdx)) {
         continue;
+
+}
 
       NamedOpIndices.insert(OpIdx);
     }
@@ -311,8 +329,10 @@ std::string CodeEmitterGen::getInstructionCaseForEncoding(Record *R, Record *Enc
   for (const RecordVal &RV : EncodingDef->getValues()) {
     // Ignore fixed fields in the record, we're looking for values like:
     //    bits<5> RST = { ?, ?, ?, ?, ? };
-    if (RV.getPrefix() || RV.getValue()->isComplete())
+    if (RV.getPrefix() || RV.getValue()->isComplete()) {
       continue;
+
+}
 
     AddCodeToMergeInOperand(R, BI, std::string(RV.getName()), NumberedOp,
                             NamedOpIndices, Case, Target);
@@ -333,26 +353,32 @@ std::string CodeEmitterGen::getInstructionCaseForEncoding(Record *R, Record *Enc
 static std::string
 getNameForFeatureBitset(const std::vector<Record *> &FeatureBitset) {
   std::string Name = "CEFBS";
-  for (const auto &Feature : FeatureBitset)
+  for (const auto &Feature : FeatureBitset) {
     Name += ("_" + Feature->getName()).str();
+
+}
   return Name;
 }
 
 static void emitInstBits(raw_ostream &OS, const APInt &Bits) {
-  for (unsigned I = 0; I < Bits.getNumWords(); ++I)
+  for (unsigned I = 0; I < Bits.getNumWords(); ++I) {
     OS << ((I > 0) ? ", " : "") << "UINT64_C(" << utostr(Bits.getRawData()[I])
        << ")";
+
+}
 }
 
 void CodeEmitterGen::emitInstructionBaseValues(
     raw_ostream &o, ArrayRef<const CodeGenInstruction *> NumberedInstructions,
     CodeGenTarget &Target, int HwMode) {
   const CodeGenHwModes &HWM = Target.getHwModes();
-  if (HwMode == -1)
+  if (HwMode == -1) {
     o << "  static const uint64_t InstBits[] = {\n";
-  else
+  } else {
     o << "  static const uint64_t InstBits_" << HWM.getMode(HwMode).Name
       << "[] = {\n";
+
+}
 
   for (const CodeGenInstruction *CGI : NumberedInstructions) {
     Record *R = CGI->TheDef;
@@ -367,8 +393,10 @@ void CodeEmitterGen::emitInstructionBaseValues(
     if (const RecordVal *RV = R->getValue("EncodingInfos")) {
       if (auto *DI = dyn_cast_or_null<DefInit>(RV->getValue())) {
         EncodingInfoByHwMode EBM(DI->getDef(), HWM);
-        if (EBM.hasMode(HwMode))
+        if (EBM.hasMode(HwMode)) {
           EncodingDef = EBM.get(HwMode);
+
+}
       }
     }
     BitsInit *BI = EncodingDef->getValueAsBitsInit("Inst");
@@ -376,8 +404,10 @@ void CodeEmitterGen::emitInstructionBaseValues(
     // Start by filling in fixed values.
     APInt Value(BitWidth, 0);
     for (unsigned i = 0, e = BI->getNumBits(); i != e; ++i) {
-      if (BitInit *B = dyn_cast<BitInit>(BI->getBit(e - i - 1)))
+      if (BitInit *B = dyn_cast<BitInit>(BI->getBit(e - i - 1))) {
         Value |= APInt(BitWidth, (uint64_t)B->getValue()) << (e - i - 1);
+
+}
     }
     o << "    ";
     emitInstBits(o, Value);
@@ -403,8 +433,10 @@ void CodeEmitterGen::run(raw_ostream &o) {
   for (const CodeGenInstruction *CGI : NumberedInstructions) {
     Record *R = CGI->TheDef;
     if (R->getValueAsString("Namespace") == "TargetOpcode" ||
-        R->getValueAsBit("isPseudo"))
+        R->getValueAsBit("isPseudo")) {
       continue;
+
+}
 
     if (const RecordVal *RV = R->getValue("EncodingInfos")) {
       if (DefInit *DI = dyn_cast_or_null<DefInit>(RV->getValue())) {
@@ -441,8 +473,10 @@ void CodeEmitterGen::run(raw_ostream &o) {
   if (HwModes.empty()) {
     emitInstructionBaseValues(o, NumberedInstructions, Target, -1);
   } else {
-    for (unsigned HwMode : HwModes)
+    for (unsigned HwMode : HwModes) {
       emitInstructionBaseValues(o, NumberedInstructions, Target, (int)HwMode);
+
+}
   }
 
   if (!HwModes.empty()) {
@@ -465,8 +499,10 @@ void CodeEmitterGen::run(raw_ostream &o) {
         IC != EC; ++IC) {
     Record *R = *IC;
     if (R->getValueAsString("Namespace") == "TargetOpcode" ||
-        R->getValueAsBit("isPseudo"))
+        R->getValueAsBit("isPseudo")) {
       continue;
+
+}
     std::string InstName =
         (R->getValueAsString("Namespace") + "::" + R->getName()).str();
     std::string Case = getInstructionCase(R, Target);
@@ -503,7 +539,9 @@ void CodeEmitterGen::run(raw_ostream &o) {
     std::vector<std::string> &InstList = IE->second;
 
     for (int i = 0, N = InstList.size(); i < N; i++) {
-      if (i) o << "\n";
+      if (i) { o << "\n";
+
+}
       o << "    case " << InstList[i]  << ":";
     }
     o << " {\n";
@@ -519,10 +557,12 @@ void CodeEmitterGen::run(raw_ostream &o) {
     << "    Msg << \"Not supported instr: \" << MI;\n"
     << "    report_fatal_error(Msg.str());\n"
     << "  }\n";
-  if (UseAPInt)
+  if (UseAPInt) {
     o << "  Inst = Value;\n";
-  else
+  } else {
     o << "  return Value;\n";
+
+}
   o << "}\n\n";
 
   const auto &All = SubtargetFeatureInfo::getAll(Records);
@@ -552,22 +592,32 @@ void CodeEmitterGen::run(raw_ostream &o) {
     FeatureBitsets.emplace_back();
     for (Record *Predicate : Inst->TheDef->getValueAsListOfDefs("Predicates")) {
       const auto &I = SubtargetFeatures.find(Predicate);
-      if (I != SubtargetFeatures.end())
+      if (I != SubtargetFeatures.end()) {
         FeatureBitsets.back().push_back(I->second.TheDef);
+
+}
     }
   }
 
   llvm::sort(FeatureBitsets, [&](const std::vector<Record *> &A,
                                  const std::vector<Record *> &B) {
-    if (A.size() < B.size())
+    if (A.size() < B.size()) {
       return true;
-    if (A.size() > B.size())
+
+}
+    if (A.size() > B.size()) {
       return false;
+
+}
     for (auto Pair : zip(A, B)) {
-      if (std::get<0>(Pair)->getName() < std::get<1>(Pair)->getName())
+      if (std::get<0>(Pair)->getName() < std::get<1>(Pair)->getName()) {
         return true;
-      if (std::get<0>(Pair)->getName() > std::get<1>(Pair)->getName())
+
+}
+      if (std::get<0>(Pair)->getName() > std::get<1>(Pair)->getName()) {
         return false;
+
+}
     }
     return false;
   });
@@ -579,16 +629,20 @@ void CodeEmitterGen::run(raw_ostream &o) {
     << "enum : " << getMinimalTypeForRange(FeatureBitsets.size()) << " {\n"
     << "  CEFBS_None,\n";
   for (const auto &FeatureBitset : FeatureBitsets) {
-    if (FeatureBitset.empty())
+    if (FeatureBitset.empty()) {
       continue;
+
+}
     o << "  " << getNameForFeatureBitset(FeatureBitset) << ",\n";
   }
   o << "};\n\n"
     << "static constexpr FeatureBitset FeatureBitsets[] = {\n"
     << "  {}, // CEFBS_None\n";
   for (const auto &FeatureBitset : FeatureBitsets) {
-    if (FeatureBitset.empty())
+    if (FeatureBitset.empty()) {
       continue;
+
+}
     o << "  {";
     for (const auto &Feature : FeatureBitset) {
       const auto &I = SubtargetFeatures.find(Feature);
@@ -619,8 +673,10 @@ void CodeEmitterGen::run(raw_ostream &o) {
         NumPredicates++;
       }
     }
-    if (!NumPredicates)
+    if (!NumPredicates) {
       o << "_None";
+
+}
     o << ", // " << Inst->TheDef->getName() << " = " << InstIdx << "\n";
     InstIdx++;
   }

@@ -32,8 +32,10 @@ VRegRenamer::getVRegRenameMap(const std::vector<NamedVReg> &VRegs) {
   StringMap<unsigned> VRegNameCollisionMap;
 
   auto GetUniqueVRegName = [&VRegNameCollisionMap](const NamedVReg &Reg) {
-    if (VRegNameCollisionMap.find(Reg.getName()) == VRegNameCollisionMap.end())
+    if (VRegNameCollisionMap.find(Reg.getName()) == VRegNameCollisionMap.end()) {
       VRegNameCollisionMap[Reg.getName()] = 0;
+
+}
     const unsigned Counter = ++VRegNameCollisionMap[Reg.getName()];
     return Reg.getName() + "__" + std::to_string(Counter);
   };
@@ -61,8 +63,10 @@ std::string VRegRenamer::getInstructionOpcodeHash(MachineInstr &MI) {
           MO.getType(), MO.getTargetFlags(),
           MO.getFPImm()->getValueAPF().bitcastToAPInt().getZExtValue());
     case MachineOperand::MO_Register:
-      if (Register::isVirtualRegister(MO.getReg()))
+      if (Register::isVirtualRegister(MO.getReg())) {
         return MRI.getVRegDef(MO.getReg())->getOpcode();
+
+}
       return MO.getReg();
     case MachineOperand::MO_Immediate:
       return MO.getImm();
@@ -131,15 +135,21 @@ bool VRegRenamer::renameInstsInMBB(MachineBasicBlock *MBB) {
   std::string Prefix = "bb" + std::to_string(CurrentBBNumber) + "_";
   for (MachineInstr &Candidate : *MBB) {
     // Don't rename stores/branches.
-    if (Candidate.mayStore() || Candidate.isBranch())
+    if (Candidate.mayStore() || Candidate.isBranch()) {
       continue;
-    if (!Candidate.getNumOperands())
+
+}
+    if (!Candidate.getNumOperands()) {
       continue;
+
+}
     // Look for instructions that define VRegs in operand 0.
     MachineOperand &MO = Candidate.getOperand(0);
     // Avoid non regs, instructions defining physical regs.
-    if (!MO.isReg() || !Register::isVirtualRegister(MO.getReg()))
+    if (!MO.isReg() || !Register::isVirtualRegister(MO.getReg())) {
       continue;
+
+}
     VRegs.push_back(
         NamedVReg(MO.getReg(), Prefix + getInstructionOpcodeHash(Candidate)));
   }

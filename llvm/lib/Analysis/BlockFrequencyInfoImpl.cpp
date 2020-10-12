@@ -47,8 +47,10 @@ cl::opt<bool> CheckBFIUnknownBlockQueries(
              "for debugging missed BFI updates"));
 
 ScaledNumber<uint64_t> BlockMass::toScaled() const {
-  if (isFull())
+  if (isFull()) {
     return ScaledNumber<uint64_t>(1, 0);
+
+}
   return ScaledNumber<uint64_t>(getMass() + 1, -64);
 }
 
@@ -58,14 +60,18 @@ LLVM_DUMP_METHOD void BlockMass::dump() const { print(dbgs()); }
 
 static char getHexDigit(int N) {
   assert(N < 16);
-  if (N < 10)
+  if (N < 10) {
     return '0' + N;
+
+}
   return 'a' + N - 10;
 }
 
 raw_ostream &BlockMass::print(raw_ostream &OS) const {
-  for (int Digits = 0; Digits < 16; ++Digits)
+  for (int Digits = 0; Digits < 16; ++Digits) {
     OS << getHexDigit(Mass >> (60 - Digits * 4) & 0xf);
+
+}
   return OS;
 }
 
@@ -152,11 +158,13 @@ static void combineWeight(Weight &W, const Weight &OtherW) {
   assert(W.Type == OtherW.Type);
   assert(W.TargetNode == OtherW.TargetNode);
   assert(OtherW.Amount && "Expected non-zero weight");
-  if (W.Amount > W.Amount + OtherW.Amount)
+  if (W.Amount > W.Amount + OtherW.Amount) {
     // Saturate on overflow.
     W.Amount = UINT64_MAX;
-  else
+  } else {
     W.Amount += OtherW.Amount;
+
+}
 }
 
 static void combineWeightsBySorting(WeightList &Weights) {
@@ -172,8 +180,10 @@ static void combineWeightsBySorting(WeightList &Weights) {
     *O = *I;
 
     // Find the adjacent weights to the same node.
-    for (++L; L != E && I->TargetNode == L->TargetNode; ++L)
+    for (++L; L != E && I->TargetNode == L->TargetNode; ++L) {
       combineWeight(*O, *L);
+
+}
   }
 
   // Erase extra entries.
@@ -185,18 +195,24 @@ static void combineWeightsByHashing(WeightList &Weights) {
   using HashTable = DenseMap<BlockNode::IndexType, Weight>;
 
   HashTable Combined(NextPowerOf2(2 * Weights.size()));
-  for (const Weight &W : Weights)
+  for (const Weight &W : Weights) {
     combineWeight(Combined[W.TargetNode.Index], W);
 
+}
+
   // Check whether anything changed.
-  if (Weights.size() == Combined.size())
+  if (Weights.size() == Combined.size()) {
     return;
+
+}
 
   // Fill in the new weights.
   Weights.clear();
   Weights.reserve(Combined.size());
-  for (const auto &I : Combined)
+  for (const auto &I : Combined) {
     Weights.push_back(I.second);
+
+}
 }
 
 static void combineWeights(WeightList &Weights) {
@@ -212,19 +228,25 @@ static void combineWeights(WeightList &Weights) {
 static uint64_t shiftRightAndRound(uint64_t N, int Shift) {
   assert(Shift >= 0);
   assert(Shift < 64);
-  if (!Shift)
+  if (!Shift) {
     return N;
+
+}
   return (N >> Shift) + (UINT64_C(1) & N >> (Shift - 1));
 }
 
 void Distribution::normalize() {
   // Early exit for termination nodes.
-  if (Weights.empty())
+  if (Weights.empty()) {
     return;
 
+}
+
   // Only bother if there are multiple successors.
-  if (Weights.size() > 1)
+  if (Weights.size() > 1) {
     combineWeights(Weights);
+
+}
 
   // Early exit when combined into a single successor.
   if (Weights.size() == 1) {
@@ -238,10 +260,12 @@ void Distribution::normalize() {
   // If we shift at all, shift by 1 extra.  Otherwise, the lower limit of 1
   // for each weight can cause a 32-bit overflow.
   int Shift = 0;
-  if (DidOverflow)
+  if (DidOverflow) {
     Shift = 33;
-  else if (Total > UINT32_MAX)
+  } else if (Total > UINT32_MAX) {
     Shift = 33 - countLeadingZeros(Total);
+
+}
 
   // Early exit if nothing needs to be scaled.
   if (!Shift) {
@@ -298,8 +322,10 @@ bool BlockFrequencyInfoImplBase::addToDist(Distribution &Dist,
                                            const BlockNode &Pred,
                                            const BlockNode &Succ,
                                            uint64_t Weight) {
-  if (!Weight)
+  if (!Weight) {
     Weight = 1;
+
+}
 
   auto isLoopHeader = [&OuterLoop](const BlockNode &Node) {
     return OuterLoop && OuterLoop->isHeader(Node);
@@ -358,11 +384,15 @@ bool BlockFrequencyInfoImplBase::addToDist(Distribution &Dist,
 bool BlockFrequencyInfoImplBase::addLoopSuccessorsToDist(
     const LoopData *OuterLoop, LoopData &Loop, Distribution &Dist) {
   // Copy the exit map into Dist.
-  for (const auto &I : Loop.Exits)
+  for (const auto &I : Loop.Exits) {
     if (!addToDist(Dist, OuterLoop, Loop.getHeader(), I.first,
-                   I.second.getMass()))
+                   I.second.getMass())) {
       // Irreducible backedge.
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -386,8 +416,10 @@ void BlockFrequencyInfoImplBase::computeLoopScale(LoopData &Loop) {
   // LoopScale == 1 / ExitMass
   // ExitMass == HeadMass - BackedgeMass
   BlockMass TotalBackedgeMass;
-  for (auto &Mass : Loop.BackedgeMass)
+  for (auto &Mass : Loop.BackedgeMass) {
     TotalBackedgeMass += Mass;
+
+}
   BlockMass ExitMass = BlockMass::getFull() - TotalBackedgeMass;
 
   // Block scale stores the inverse of the scale. If this is an infinite loop,
@@ -408,8 +440,10 @@ void BlockFrequencyInfoImplBase::packageLoop(LoopData &Loop) {
 
   // Clear the subloop exits to prevent quadratic memory usage.
   for (const BlockNode &M : Loop.Nodes) {
-    if (auto *Loop = Working[M.Index].getPackagedLoop())
+    if (auto *Loop = Working[M.Index].getPackagedLoop()) {
       Loop->Exits.clear();
+
+}
     LLVM_DEBUG(dbgs() << " - node: " << getBlockName(M.Index) << "\n");
   }
   Loop.IsPackaged = true;
@@ -526,11 +560,15 @@ static void unwrapLoop(BlockFrequencyInfoImplBase &BFI, LoopData &Loop) {
 
 void BlockFrequencyInfoImplBase::unwrapLoops() {
   // Set initial frequencies from loop-local masses.
-  for (size_t Index = 0; Index < Working.size(); ++Index)
+  for (size_t Index = 0; Index < Working.size(); ++Index) {
     Freqs[Index].Scaled = Working[Index].Mass.toScaled();
 
-  for (LoopData &Loop : Loops)
+}
+
+  for (LoopData &Loop : Loops) {
     unwrapLoop(*this, Loop);
+
+}
 }
 
 void BlockFrequencyInfoImplBase::finalizeMetrics() {
@@ -583,8 +621,10 @@ BlockFrequencyInfoImplBase::getProfileCountFromFreq(const Function &F,
                                                     uint64_t Freq,
                                                     bool AllowSynthetic) const {
   auto EntryCount = F.getEntryCount(AllowSynthetic);
-  if (!EntryCount)
+  if (!EntryCount) {
     return None;
+
+}
   // Use 128 bit APInt to do the arithmetic to avoid overflow.
   APInt BlockCount(128, EntryCount.getCount());
   APInt BlockFreq(128, Freq);
@@ -598,15 +638,19 @@ BlockFrequencyInfoImplBase::getProfileCountFromFreq(const Function &F,
 
 bool
 BlockFrequencyInfoImplBase::isIrrLoopHeader(const BlockNode &Node) {
-  if (!Node.isValid())
+  if (!Node.isValid()) {
     return false;
+
+}
   return IsIrrLoopHeader.test(Node.Index);
 }
 
 Scaled64
 BlockFrequencyInfoImplBase::getFloatingBlockFreq(const BlockNode &Node) const {
-  if (!Node.isValid())
+  if (!Node.isValid()) {
     return Scaled64::getZero();
+
+}
   return Freqs[Node.Index].Scaled;
 }
 
@@ -645,31 +689,43 @@ BlockFrequencyInfoImplBase::printBlockFreq(raw_ostream &OS,
 void IrreducibleGraph::addNodesInLoop(const BFIBase::LoopData &OuterLoop) {
   Start = OuterLoop.getHeader();
   Nodes.reserve(OuterLoop.Nodes.size());
-  for (auto N : OuterLoop.Nodes)
+  for (auto N : OuterLoop.Nodes) {
     addNode(N);
+
+}
   indexNodes();
 }
 
 void IrreducibleGraph::addNodesInFunction() {
   Start = 0;
-  for (uint32_t Index = 0; Index < BFI.Working.size(); ++Index)
-    if (!BFI.Working[Index].isPackaged())
+  for (uint32_t Index = 0; Index < BFI.Working.size(); ++Index) {
+    if (!BFI.Working[Index].isPackaged()) {
       addNode(Index);
+
+}
+
+}
   indexNodes();
 }
 
 void IrreducibleGraph::indexNodes() {
-  for (auto &I : Nodes)
+  for (auto &I : Nodes) {
     Lookup[I.Node.Index] = &I;
+
+}
 }
 
 void IrreducibleGraph::addEdge(IrrNode &Irr, const BlockNode &Succ,
                                const BFIBase::LoopData *OuterLoop) {
-  if (OuterLoop && OuterLoop->isHeader(Succ))
+  if (OuterLoop && OuterLoop->isHeader(Succ)) {
     return;
+
+}
   auto L = Lookup.find(Succ.Index);
-  if (L == Lookup.end())
+  if (L == Lookup.end()) {
     return;
+
+}
   IrrNode &SuccIrr = *L->second;
   Irr.Edges.push_back(&SuccIrr);
   SuccIrr.Edges.push_front(&Irr);
@@ -703,14 +759,18 @@ static void findIrreducibleHeaders(
   SmallDenseMap<const IrreducibleGraph::IrrNode *, bool, 8> InSCC;
 
   // InSCC also acts the set of nodes in the graph.  Seed it.
-  for (const auto *I : SCC)
+  for (const auto *I : SCC) {
     InSCC[I] = false;
+
+}
 
   for (auto I = InSCC.begin(), E = InSCC.end(); I != E; ++I) {
     auto &Irr = *I->first;
     for (const auto *P : make_range(Irr.pred_begin(), Irr.pred_end())) {
-      if (InSCC.count(P))
+      if (InSCC.count(P)) {
         continue;
+
+}
 
       // This is an entry block.
       I->second = true;
@@ -731,19 +791,25 @@ static void findIrreducibleHeaders(
   // Look for extra headers from irreducible sub-SCCs.
   for (const auto &I : InSCC) {
     // Entry blocks are already headers.
-    if (I.second)
+    if (I.second) {
       continue;
+
+}
 
     auto &Irr = *I.first;
     for (const auto *P : make_range(Irr.pred_begin(), Irr.pred_end())) {
       // Skip forward edges.
-      if (P->Node < Irr.Node)
+      if (P->Node < Irr.Node) {
         continue;
+
+}
 
       // Skip predecessors from entry blocks.  These can have inverted
       // ordering.
-      if (InSCC.lookup(P))
+      if (InSCC.lookup(P)) {
         continue;
+
+}
 
       // Store the extra header.
       Headers.push_back(Irr.Node);
@@ -751,9 +817,11 @@ static void findIrreducibleHeaders(
                         << "\n");
       break;
     }
-    if (Headers.back() == Irr.Node)
+    if (Headers.back() == Irr.Node) {
       // Added this as a header.
       continue;
+
+}
 
     // This is not a header.
     Others.push_back(Irr.Node);
@@ -778,11 +846,15 @@ static void createIrreducibleLoop(
                                 Headers.end(), Others.begin(), Others.end());
 
   // Update loop hierarchy.
-  for (const auto &N : Loop->Nodes)
-    if (BFI.Working[N.Index].isLoopHeader())
+  for (const auto &N : Loop->Nodes) {
+    if (BFI.Working[N.Index].isLoopHeader()) {
       BFI.Working[N.Index].Loop->Parent = &*Loop;
-    else
+    } else {
       BFI.Working[N.Index].Loop = &*Loop;
+
+}
+
+}
 }
 
 iterator_range<std::list<LoopData>::iterator>
@@ -793,27 +865,37 @@ BlockFrequencyInfoImplBase::analyzeIrreducible(
   auto Prev = OuterLoop ? std::prev(Insert) : Loops.end();
 
   for (auto I = scc_begin(G); !I.isAtEnd(); ++I) {
-    if (I->size() < 2)
+    if (I->size() < 2) {
       continue;
+
+}
 
     // Translate the SCC into RPO.
     createIrreducibleLoop(*this, G, OuterLoop, Insert, *I);
   }
 
-  if (OuterLoop)
+  if (OuterLoop) {
     return make_range(std::next(Prev), Insert);
+
+}
   return make_range(Loops.begin(), Insert);
 }
 
 void
 BlockFrequencyInfoImplBase::updateLoopWithIrreducible(LoopData &OuterLoop) {
   OuterLoop.Exits.clear();
-  for (auto &Mass : OuterLoop.BackedgeMass)
+  for (auto &Mass : OuterLoop.BackedgeMass) {
     Mass = BlockMass::getEmpty();
+
+}
   auto O = OuterLoop.Nodes.begin() + 1;
-  for (auto I = O, E = OuterLoop.Nodes.end(); I != E; ++I)
-    if (!Working[I->Index].isPackaged())
+  for (auto I = O, E = OuterLoop.Nodes.end(); I != E; ++I) {
+    if (!Working[I->Index].isPackaged()) {
       *O++ = *I;
+
+}
+
+}
   OuterLoop.Nodes.erase(O, OuterLoop.Nodes.end());
 }
 
@@ -836,10 +918,12 @@ void BlockFrequencyInfoImplBase::adjustLoopHeaderMass(LoopData &Loop) {
     LLVM_DEBUG(dbgs() << " - Add back edge mass for node "
                       << getBlockName(HeaderNode) << ": " << BackedgeMass
                       << "\n");
-    if (BackedgeMass.getMass() > 0)
+    if (BackedgeMass.getMass() > 0) {
       Dist.addLocal(HeaderNode, BackedgeMass.getMass());
-    else
+    } else {
       LLVM_DEBUG(dbgs() << "   Nothing added. Back edge mass is zero\n");
+
+}
   }
 
   DitheringDistributer D(Dist, LoopMass);

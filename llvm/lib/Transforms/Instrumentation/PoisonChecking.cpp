@@ -84,22 +84,32 @@ LocalCheck("poison-checking-function-local",
 
 static bool isConstantFalse(Value* V) {
   assert(V->getType()->isIntegerTy(1));
-  if (auto *CI = dyn_cast<ConstantInt>(V))
+  if (auto *CI = dyn_cast<ConstantInt>(V)) {
     return CI->isZero();
+
+}
   return false;
 }
 
 static Value *buildOrChain(IRBuilder<> &B, ArrayRef<Value*> Ops) {
-  if (Ops.size() == 0)
+  if (Ops.size() == 0) {
     return B.getFalse();
+
+}
   unsigned i = 0;
   for (; i < Ops.size() && isConstantFalse(Ops[i]); i++) {}
-  if (i == Ops.size())
+  if (i == Ops.size()) {
     return B.getFalse();
+
+}
   Value *Accum = Ops[i++];
-  for (; i < Ops.size(); i++)
-    if (!isConstantFalse(Ops[i]))
+  for (; i < Ops.size(); i++) {
+    if (!isConstantFalse(Ops[i])) {
       Accum = B.CreateOr(Accum, Ops[i]);
+
+}
+
+}
   return Accum;
 }
 
@@ -186,8 +196,10 @@ static void generatePoisonChecksForBinOp(Instruction &I,
 static Value* generatePoisonChecks(Instruction &I) {
   IRBuilder<> B(&I);
   SmallVector<Value*, 2> Checks;
-  if (isa<BinaryOperator>(I) && !I.getType()->isVectorTy())
+  if (isa<BinaryOperator>(I) && !I.getType()->isVectorTy()) {
     generatePoisonChecksForBinOp(I, Checks);
+
+}
 
   // Handle non-binops seperately
   switch (I.getOpcode()) {
@@ -195,8 +207,10 @@ static Value* generatePoisonChecks(Instruction &I) {
     break;
   case Instruction::ExtractElement: {
     Value *Vec = I.getOperand(0);
-    if (Vec->getType()->getVectorIsScalable())
+    if (Vec->getType()->getVectorIsScalable()) {
       break;
+
+}
     Value *Idx = I.getOperand(1);
     unsigned NumElts = Vec->getType()->getVectorNumElements();
     Value *Check =
@@ -207,8 +221,10 @@ static Value* generatePoisonChecks(Instruction &I) {
   }
   case Instruction::InsertElement: {
     Value *Vec = I.getOperand(0);
-    if (Vec->getType()->getVectorIsScalable())
+    if (Vec->getType()->getVectorIsScalable()) {
       break;
+
+}
     Value *Idx = I.getOperand(2);
     unsigned NumElts = Vec->getType()->getVectorNumElements();
     Value *Check =
@@ -223,8 +239,10 @@ static Value* generatePoisonChecks(Instruction &I) {
 
 static Value *getPoisonFor(DenseMap<Value *, Value *> &ValToPoison, Value *V) {
   auto Itr = ValToPoison.find(V);
-  if (Itr != ValToPoison.end())
+  if (Itr != ValToPoison.end()) {
     return Itr->second;
+
+}
   if (isa<Constant>(V)) {
     return ConstantInt::getFalse(V->getContext());
   }
@@ -237,9 +255,13 @@ static Value *getPoisonFor(DenseMap<Value *, Value *> &ValToPoison, Value *V) {
 
 static void CreateAssert(IRBuilder<> &B, Value *Cond) {
   assert(Cond->getType()->isIntegerTy(1));
-  if (auto *CI = dyn_cast<ConstantInt>(Cond))
-    if (CI->isAllOnesValue())
+  if (auto *CI = dyn_cast<ConstantInt>(Cond)) {
+    if (CI->isAllOnesValue()) {
       return;
+
+}
+
+}
 
   Module *M = B.GetInsertBlock()->getModule();
   M->getOrInsertFunction("__poison_checker_assert",
@@ -259,57 +281,81 @@ static bool rewrite(Function &F) {
 
   DenseMap<Value *, Value *> ValToPoison;
 
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : F) {
     for (auto I = BB.begin(); isa<PHINode>(&*I); I++) {
       auto *OldPHI = cast<PHINode>(&*I);
       auto *NewPHI = PHINode::Create(Int1Ty, 
                                      OldPHI->getNumIncomingValues());
-      for (unsigned i = 0; i < OldPHI->getNumIncomingValues(); i++)
+      for (unsigned i = 0; i < OldPHI->getNumIncomingValues(); i++) {
         NewPHI->addIncoming(UndefValue::get(Int1Ty),
                             OldPHI->getIncomingBlock(i));
+
+}
       NewPHI->insertBefore(OldPHI);
       ValToPoison[OldPHI] = NewPHI;
     }
+
+}
   
-  for (BasicBlock &BB : F)
+  for (BasicBlock &BB : F) {
     for (Instruction &I : BB) {
-      if (isa<PHINode>(I)) continue;
+      if (isa<PHINode>(I)) { continue;
+
+}
 
       IRBuilder<> B(cast<Instruction>(&I));
       
       // Note: There are many more sources of documented UB, but this pass only
       // attempts to find UB triggered by propagation of poison.
-      if (Value *Op = const_cast<Value*>(getGuaranteedNonFullPoisonOp(&I)))
+      if (Value *Op = const_cast<Value*>(getGuaranteedNonFullPoisonOp(&I))) {
         CreateAssertNot(B, getPoisonFor(ValToPoison, Op));
 
-      if (LocalCheck)
-        if (auto *RI = dyn_cast<ReturnInst>(&I))
+}
+
+      if (LocalCheck) {
+        if (auto *RI = dyn_cast<ReturnInst>(&I)) {
           if (RI->getNumOperands() != 0) {
             Value *Op = RI->getOperand(0);
             CreateAssertNot(B, getPoisonFor(ValToPoison, Op));
           }
 
+}
+
+}
+
       SmallVector<Value*, 4> Checks;
-      if (propagatesFullPoison(&I))
-        for (Value *V : I.operands())
+      if (propagatesFullPoison(&I)) {
+        for (Value *V : I.operands()) {
           Checks.push_back(getPoisonFor(ValToPoison, V));
 
-      if (auto *Check = generatePoisonChecks(I))
+}
+
+}
+
+      if (auto *Check = generatePoisonChecks(I)) {
         Checks.push_back(Check);
+
+}
       ValToPoison[&I] = buildOrChain(B, Checks);
     }
 
-  for (BasicBlock &BB : F)
+}
+
+  for (BasicBlock &BB : F) {
     for (auto I = BB.begin(); isa<PHINode>(&*I); I++) {
       auto *OldPHI = cast<PHINode>(&*I);
-      if (!ValToPoison.count(OldPHI))
+      if (!ValToPoison.count(OldPHI)) {
         continue; // skip the newly inserted phis
+
+}
       auto *NewPHI = cast<PHINode>(ValToPoison[OldPHI]);
       for (unsigned i = 0; i < OldPHI->getNumIncomingValues(); i++) {
         auto *OldVal = OldPHI->getIncomingValue(i);
         NewPHI->setIncomingValue(i, getPoisonFor(ValToPoison, OldVal));
       }
     }
+
+}
   return true;
 }
 
@@ -317,8 +363,10 @@ static bool rewrite(Function &F) {
 PreservedAnalyses PoisonCheckingPass::run(Module &M,
                                           ModuleAnalysisManager &AM) {
   bool Changed = false;
-  for (auto &F : M)
+  for (auto &F : M) {
     Changed |= rewrite(F);
+
+}
 
   return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }

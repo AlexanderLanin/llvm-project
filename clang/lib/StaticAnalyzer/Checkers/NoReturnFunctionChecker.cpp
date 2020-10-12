@@ -41,12 +41,16 @@ void NoReturnFunctionChecker::checkPostCall(const CallEvent &CE,
                                             CheckerContext &C) const {
   bool BuildSinks = false;
 
-  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(CE.getDecl()))
+  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(CE.getDecl())) {
     BuildSinks = FD->hasAttr<AnalyzerNoReturnAttr>() || FD->isNoReturn();
 
+}
+
   const Expr *Callee = CE.getOriginExpr();
-  if (!BuildSinks && Callee)
+  if (!BuildSinks && Callee) {
     BuildSinks = getFunctionExtInfo(Callee->getType()).getNoReturn();
+
+}
 
   if (!BuildSinks && CE.isGlobalCFunction()) {
     if (const IdentifierInfo *II = CE.getCalleeIdentifier()) {
@@ -80,8 +84,10 @@ void NoReturnFunctionChecker::checkPostCall(const CallEvent &CE,
     }
   }
 
-  if (BuildSinks)
+  if (BuildSinks) {
     C.generateSink(C.getState(), C.getPredecessor());
+
+}
 }
 
 void NoReturnFunctionChecker::checkPostObjCMessage(const ObjCMethodCall &Msg,
@@ -106,14 +112,20 @@ void NoReturnFunctionChecker::checkPostObjCMessage(const ObjCMethodCall &Msg,
   // see if you can mark the methods noreturn or analyzer_noreturn instead of
   // adding more explicit checks to this method.
 
-  if (!Msg.isInstanceMessage())
+  if (!Msg.isInstanceMessage()) {
     return;
 
+}
+
   const ObjCInterfaceDecl *Receiver = Msg.getReceiverInterface();
-  if (!Receiver)
+  if (!Receiver) {
     return;
-  if (!Receiver->getIdentifier()->isStr("NSAssertionHandler"))
+
+}
+  if (!Receiver->getIdentifier()->isStr("NSAssertionHandler")) {
     return;
+
+}
 
   Selector Sel = Msg.getSelector();
   switch (Sel.getNumArgs()) {
@@ -123,15 +135,19 @@ void NoReturnFunctionChecker::checkPostObjCMessage(const ObjCMethodCall &Msg,
     lazyInitKeywordSelector(HandleFailureInFunctionSel, C.getASTContext(),
                             "handleFailureInFunction", "file", "lineNumber",
                             "description");
-    if (Sel != HandleFailureInFunctionSel)
+    if (Sel != HandleFailureInFunctionSel) {
       return;
+
+}
     break;
   case 5:
     lazyInitKeywordSelector(HandleFailureInMethodSel, C.getASTContext(),
                             "handleFailureInMethod", "object", "file",
                             "lineNumber", "description");
-    if (Sel != HandleFailureInMethodSel)
+    if (Sel != HandleFailureInMethodSel) {
       return;
+
+}
     break;
   }
 

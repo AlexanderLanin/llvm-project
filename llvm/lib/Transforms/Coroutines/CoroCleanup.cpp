@@ -104,8 +104,10 @@ PreservedAnalyses CoroCleanupPass::run(Function &F,
                                        FunctionAnalysisManager &AM) {
   auto &M = *F.getParent();
   if (!declaresCoroCleanupIntrinsics(M) ||
-      !Lowerer(M).lowerRemainingCoroIntrinsics(F))
+      !Lowerer(M).lowerRemainingCoroIntrinsics(F)) {
     return PreservedAnalyses::all();
+
+}
 
   return PreservedAnalyses::none();
 }
@@ -124,19 +126,25 @@ struct CoroCleanupLegacy : FunctionPass {
   // This pass has work to do only if we find intrinsics we are going to lower
   // in the module.
   bool doInitialization(Module &M) override {
-    if (declaresCoroCleanupIntrinsics(M))
+    if (declaresCoroCleanupIntrinsics(M)) {
       L = std::make_unique<Lowerer>(M);
+
+}
     return false;
   }
 
   bool runOnFunction(Function &F) override {
-    if (L)
+    if (L) {
       return L->lowerRemainingCoroIntrinsics(F);
+
+}
     return false;
   }
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    if (!L)
+    if (!L) {
       AU.setPreservesAll();
+
+}
   }
   StringRef getPassName() const override { return "Coroutine Cleanup"; }
 };

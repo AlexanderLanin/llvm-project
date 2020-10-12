@@ -23,8 +23,10 @@ Expected<std::string> readStreamData(BinaryStream &Stream, uint32_t Limit) {
   Result.reserve(DataLength);
   while (Offset < DataLength) {
     ArrayRef<uint8_t> Data;
-    if (auto E = Stream.readLongestContiguousChunk(Offset, Data))
+    if (auto E = Stream.readLongestContiguousChunk(Offset, Data)) {
       return std::move(E);
+
+}
     Data = Data.take_front(DataLength - Offset);
     Offset += Data.size();
     Result += toStringRef(Data);
@@ -103,15 +105,19 @@ uint32_t NativeEnumInjectedSources::getChildCount() const {
 
 std::unique_ptr<IPDBInjectedSource>
 NativeEnumInjectedSources::getChildAtIndex(uint32_t N) const {
-  if (N >= getChildCount())
+  if (N >= getChildCount()) {
     return nullptr;
+
+}
   return std::make_unique<NativeInjectedSource>(std::next(Stream.begin(), N)->second,
                                            File, Strings);
 }
 
 std::unique_ptr<IPDBInjectedSource> NativeEnumInjectedSources::getNext() {
-  if (Cur == Stream.end())
+  if (Cur == Stream.end()) {
     return nullptr;
+
+}
   return std::make_unique<NativeInjectedSource>((Cur++)->second, File, Strings);
 }
 

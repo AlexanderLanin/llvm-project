@@ -104,14 +104,20 @@ LLVMBool LLVMVerifyModule(LLVMModuleRef M, LLVMVerifierFailureAction Action,
   LLVMBool Result = verifyModule(*unwrap(M), OutMessages ? &MsgsOS : DebugOS);
 
   // Duplicate the output to stderr.
-  if (DebugOS && OutMessages)
+  if (DebugOS && OutMessages) {
     *DebugOS << MsgsOS.str();
 
-  if (Action == LLVMAbortProcessAction && Result)
+}
+
+  if (Action == LLVMAbortProcessAction && Result) {
     report_fatal_error("Broken module found, compilation aborted!");
 
-  if (OutMessages)
+}
+
+  if (OutMessages) {
     *OutMessages = strdup(MsgsOS.str().c_str());
+
+}
 
   return Result;
 }
@@ -121,8 +127,10 @@ LLVMBool LLVMVerifyFunction(LLVMValueRef Fn, LLVMVerifierFailureAction Action) {
       *unwrap<Function>(Fn), Action != LLVMReturnStatusAction ? &errs()
                                                               : nullptr);
 
-  if (Action == LLVMAbortProcessAction && Result)
+  if (Action == LLVMAbortProcessAction && Result) {
     report_fatal_error("Broken function found, compilation aborted!");
+
+}
 
   return Result;
 }

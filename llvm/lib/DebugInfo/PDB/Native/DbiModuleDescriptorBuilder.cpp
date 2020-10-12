@@ -71,8 +71,10 @@ void DbiModuleDescriptorBuilder::addSymbol(CVSymbol Symbol) {
 void DbiModuleDescriptorBuilder::addSymbolsInBulk(
     ArrayRef<uint8_t> BulkSymbols) {
   // Do nothing for empty runs of symbols.
-  if (BulkSymbols.empty())
+  if (BulkSymbols.empty()) {
     return;
+
+}
 
   Symbols.push_back(BulkSymbols);
   // Symbols written to a PDB file are required to be 4 byte aligned. The same
@@ -122,12 +124,16 @@ void DbiModuleDescriptorBuilder::finalize() {
 Error DbiModuleDescriptorBuilder::finalizeMsfLayout() {
   this->Layout.ModDiStream = kInvalidStreamIndex;
   uint32_t C13Size = calculateC13DebugInfoSize();
-  if (!C13Size && !SymbolByteSize)
+  if (!C13Size && !SymbolByteSize) {
     return Error::success();
+
+}
   auto ExpectedSN =
       MSF.addStream(calculateDiSymbolStreamSize(SymbolByteSize, C13Size));
-  if (!ExpectedSN)
+  if (!ExpectedSN) {
     return ExpectedSN.takeError();
+
+}
   Layout.ModDiStream = *ExpectedSN;
   return Error::success();
 }
@@ -137,14 +143,22 @@ Error DbiModuleDescriptorBuilder::commit(BinaryStreamWriter &ModiWriter,
                                          WritableBinaryStreamRef MsfBuffer) {
   // We write the Modi record to the `ModiWriter`, but we additionally write its
   // symbol stream to a brand new stream.
-  if (auto EC = ModiWriter.writeObject(Layout))
+  if (auto EC = ModiWriter.writeObject(Layout)) {
     return EC;
-  if (auto EC = ModiWriter.writeCString(ModuleName))
+
+}
+  if (auto EC = ModiWriter.writeCString(ModuleName)) {
     return EC;
-  if (auto EC = ModiWriter.writeCString(ObjFileName))
+
+}
+  if (auto EC = ModiWriter.writeCString(ObjFileName)) {
     return EC;
-  if (auto EC = ModiWriter.padToAlignment(sizeof(uint32_t)))
+
+}
+  if (auto EC = ModiWriter.padToAlignment(sizeof(uint32_t))) {
     return EC;
+
+}
 
   if (Layout.ModDiStream != kInvalidStreamIndex) {
     auto NS = WritableMappedBlockStream::createIndexedStream(
@@ -153,26 +167,36 @@ Error DbiModuleDescriptorBuilder::commit(BinaryStreamWriter &ModiWriter,
     BinaryStreamWriter SymbolWriter(Ref);
     // Write the symbols.
     if (auto EC =
-            SymbolWriter.writeInteger<uint32_t>(COFF::DEBUG_SECTION_MAGIC))
+            SymbolWriter.writeInteger<uint32_t>(COFF::DEBUG_SECTION_MAGIC)) {
       return EC;
+
+}
     for (ArrayRef<uint8_t> Syms : Symbols) {
-      if (auto EC = SymbolWriter.writeBytes(Syms))
+      if (auto EC = SymbolWriter.writeBytes(Syms)) {
         return EC;
+
+}
     }
     assert(SymbolWriter.getOffset() % alignOf(CodeViewContainer::Pdb) == 0 &&
            "Invalid debug section alignment!");
     // TODO: Write C11 Line data
     for (const auto &Builder : C13Builders) {
       assert(Builder && "Empty C13 Fragment Builder!");
-      if (auto EC = Builder->commit(SymbolWriter))
+      if (auto EC = Builder->commit(SymbolWriter)) {
         return EC;
+
+}
     }
 
     // TODO: Figure out what GlobalRefs substream actually is and populate it.
-    if (auto EC = SymbolWriter.writeInteger<uint32_t>(0))
+    if (auto EC = SymbolWriter.writeInteger<uint32_t>(0)) {
       return EC;
-    if (SymbolWriter.bytesRemaining() > 0)
+
+}
+    if (SymbolWriter.bytesRemaining() > 0) {
       return make_error<RawError>(raw_error_code::stream_too_long);
+
+}
   }
   return Error::success();
 }

@@ -33,14 +33,20 @@ void GIMatchDag::writeDOTGraph(raw_ostream &OS, StringRef ID) const {
     OS << "  " << format("Node%p", &*N) << " [shape=record,label=\"{";
     writePorts("s", N->getOperandInfo());
     OS << "|" << N->getName();
-    if (N->getOpcodeAnnotation())
+    if (N->getOpcodeAnnotation()) {
       OS << "|" << N->getOpcodeAnnotation()->TheDef->getName();
-    if (N->isMatchRoot())
+
+}
+    if (N->isMatchRoot()) {
       OS << "|Match starts here";
+
+}
     OS << "|";
     SmallVector<std::pair<unsigned, StringRef>, 8> ToPrint;
-    for (const auto &Assignment : N->user_assigned_operand_names())
+    for (const auto &Assignment : N->user_assigned_operand_names()) {
       ToPrint.emplace_back(Assignment.first, Assignment.second);
+
+}
     llvm::sort(ToPrint.begin(), ToPrint.end());
     StringRef Separator = "";
     for (const auto &Assignment : ToPrint) {
@@ -51,29 +57,39 @@ void GIMatchDag::writeDOTGraph(raw_ostream &OS, StringRef ID) const {
     OS << format("|%p|", &N);
     writePorts("d", N->getOperandInfo());
     OS << "}\"";
-    if (N->isMatchRoot())
+    if (N->isMatchRoot()) {
       OS << ",color=red";
+
+}
     OS << "]\n";
   }
 
   for (const auto &E : Edges) {
     const char *FromFmt = "Node%p:s%d:n";
     const char *ToFmt = "Node%p:d%d:s";
-    if (E->getFromMO()->isDef() && !E->getToMO()->isDef())
+    if (E->getFromMO()->isDef() && !E->getToMO()->isDef()) {
       std::swap(FromFmt, ToFmt);
+
+}
     auto From = format(FromFmt, E->getFromMI(), E->getFromMO()->getIdx());
     auto To = format(ToFmt, E->getToMI(), E->getToMO()->getIdx());
-    if (E->getFromMO()->isDef() && !E->getToMO()->isDef())
+    if (E->getFromMO()->isDef() && !E->getToMO()->isDef()) {
       std::swap(From, To);
 
+}
+
     OS << "  " << From << " -> " << To << " [label=\"$" << E->getName();
-    if (E->getFromMO()->isDef() == E->getToMO()->isDef())
+    if (E->getFromMO()->isDef() == E->getToMO()->isDef()) {
       OS << " INVALID EDGE!";
+
+}
     OS << "\"";
-    if (E->getFromMO()->isDef() == E->getToMO()->isDef())
+    if (E->getFromMO()->isDef() == E->getToMO()->isDef()) {
       OS << ",color=red";
-    else if (E->getFromMO()->isDef() && !E->getToMO()->isDef())
+    } else if (E->getFromMO()->isDef() && !E->getToMO()->isDef()) {
       OS << ",dir=back,arrowtail=crow";
+
+}
     OS << "]\n";
   }
 

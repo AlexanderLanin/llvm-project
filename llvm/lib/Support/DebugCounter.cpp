@@ -56,8 +56,10 @@ static ManagedStatic<DebugCounter> DC;
 
 // Print information when destroyed, iff command line option is specified.
 DebugCounter::~DebugCounter() {
-  if (isCountingEnabled() && PrintDebugCounter)
+  if (isCountingEnabled() && PrintDebugCounter) {
     print(dbgs());
+
+}
 }
 
 DebugCounter &DebugCounter::instance() { return *DC; }
@@ -65,8 +67,10 @@ DebugCounter &DebugCounter::instance() { return *DC; }
 // This is called by the command line parser when it sees a value for the
 // debug-counter option defined above.
 void DebugCounter::push_back(const std::string &Val) {
-  if (Val.empty())
+  if (Val.empty()) {
     return;
+
+}
   // The strings should come in as counter=value
   auto CounterPair = StringRef(Val).split('=');
   if (CounterPair.second.empty()) {

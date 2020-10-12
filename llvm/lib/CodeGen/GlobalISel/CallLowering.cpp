@@ -53,14 +53,18 @@ bool CallLowering::lowerCall(MachineIRBuilder &MIRBuilder, ImmutableCallSite CS,
   // Try looking through a bitcast from one function type to another.
   // Commonly happens with calls to objc_msgSend().
   const Value *CalleeV = CS.getCalledValue()->stripPointerCasts();
-  if (const Function *F = dyn_cast<Function>(CalleeV))
+  if (const Function *F = dyn_cast<Function>(CalleeV)) {
     Info.Callee = MachineOperand::CreateGA(F, 0);
-  else
+  } else {
     Info.Callee = MachineOperand::CreateReg(GetCalleeReg(), false);
 
+}
+
   Info.OrigRet = ArgInfo{ResRegs, CS.getType(), ISD::ArgFlagsTy{}};
-  if (!Info.OrigRet.Ty->isVoidTy())
+  if (!Info.OrigRet.Ty->isVoidTy()) {
     setArgFlags(Info.OrigRet, AttributeList::ReturnIndex, DL, CS);
+
+}
 
   Info.KnownCallees =
       CS.getInstruction()->getMetadata(LLVMContext::MD_callees);
@@ -83,22 +87,38 @@ void CallLowering::setArgFlags(CallLowering::ArgInfo &Arg, unsigned OpIdx,
                                const FuncInfoTy &FuncInfo) const {
   auto &Flags = Arg.Flags[0];
   const AttributeList &Attrs = FuncInfo.getAttributes();
-  if (Attrs.hasAttribute(OpIdx, Attribute::ZExt))
+  if (Attrs.hasAttribute(OpIdx, Attribute::ZExt)) {
     Flags.setZExt();
-  if (Attrs.hasAttribute(OpIdx, Attribute::SExt))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::SExt)) {
     Flags.setSExt();
-  if (Attrs.hasAttribute(OpIdx, Attribute::InReg))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::InReg)) {
     Flags.setInReg();
-  if (Attrs.hasAttribute(OpIdx, Attribute::StructRet))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::StructRet)) {
     Flags.setSRet();
-  if (Attrs.hasAttribute(OpIdx, Attribute::SwiftSelf))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::SwiftSelf)) {
     Flags.setSwiftSelf();
-  if (Attrs.hasAttribute(OpIdx, Attribute::SwiftError))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::SwiftError)) {
     Flags.setSwiftError();
-  if (Attrs.hasAttribute(OpIdx, Attribute::ByVal))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::ByVal)) {
     Flags.setByVal();
-  if (Attrs.hasAttribute(OpIdx, Attribute::InAlloca))
+
+}
+  if (Attrs.hasAttribute(OpIdx, Attribute::InAlloca)) {
     Flags.setInAlloca();
+
+}
 
   if (Flags.isByVal() || Flags.isInAlloca()) {
     Type *ElementTy = cast<PointerType>(Arg.Ty)->getElementType();
@@ -109,14 +129,18 @@ void CallLowering::setArgFlags(CallLowering::ArgInfo &Arg, unsigned OpIdx,
     // For ByVal, alignment should be passed from FE.  BE will guess if
     // this info is not there but there are cases it cannot get right.
     unsigned FrameAlign;
-    if (FuncInfo.getParamAlignment(OpIdx - 2))
+    if (FuncInfo.getParamAlignment(OpIdx - 2)) {
       FrameAlign = FuncInfo.getParamAlignment(OpIdx - 2);
-    else
+    } else {
       FrameAlign = getTLI()->getByValTypeAlignment(ElementTy, DL);
+
+}
     Flags.setByValAlign(Align(FrameAlign));
   }
-  if (Attrs.hasAttribute(OpIdx, Attribute::Nest))
+  if (Attrs.hasAttribute(OpIdx, Attribute::Nest)) {
     Flags.setNest();
+
+}
   Flags.setOrigAlign(Align(DL.getABITypeAlignment(Arg.Ty)));
 }
 
@@ -167,8 +191,10 @@ void CallLowering::unpackRegs(ArrayRef<Register> DstRegs, Register SrcReg,
   computeValueLLTs(DL, *PackedTy, LLTs, &Offsets);
   assert(LLTs.size() == DstRegs.size() && "Regs / types mismatch");
 
-  for (unsigned i = 0; i < DstRegs.size(); ++i)
+  for (unsigned i = 0; i < DstRegs.size(); ++i) {
     MIRBuilder.buildExtract(DstRegs[i], SrcReg, Offsets[i]);
+
+}
 }
 
 bool CallLowering::handleAssignments(MachineIRBuilder &MIRBuilder,
@@ -195,8 +221,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
     MVT CurVT = MVT::getVT(Args[i].Ty);
     if (Handler.assignArg(i, CurVT, CurVT, CCValAssign::Full, Args[i],
                           Args[i].Flags[0], CCInfo)) {
-      if (!CurVT.isValid())
+      if (!CurVT.isValid()) {
         return false;
+
+}
       MVT NewVT = TLI->getRegisterTypeForCallingConv(
           F.getContext(), F.getCallingConv(), EVT(CurVT));
 
@@ -206,8 +234,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
           F.getContext(), F.getCallingConv(), CurVT);
       if (NumParts > 1) {
         // For now only handle exact splits.
-        if (NewVT.getSizeInBits() * NumParts != CurVT.getSizeInBits())
+        if (NewVT.getSizeInBits() * NumParts != CurVT.getSizeInBits()) {
           return false;
+
+}
       }
 
       // For incoming arguments (physregs to vregs), we could have values in
@@ -222,8 +252,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
         if (NumParts == 1) {
           // Try to use the register type if we couldn't assign the VT.
           if (Handler.assignArg(i, NewVT, NewVT, CCValAssign::Full, Args[i],
-                                Args[i].Flags[0], CCInfo))
+                                Args[i].Flags[0], CCInfo)) {
             return false;
+
+}
         } else {
           // We're handling an incoming arg which is split over multiple regs.
           // E.g. passing an s128 on AArch64.
@@ -243,8 +275,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
               Flags.setSplit();
             } else {
               Flags.setOrigAlign(Align(1));
-              if (Part == NumParts - 1)
+              if (Part == NumParts - 1) {
                 Flags.setSplitEnd();
+
+}
             }
             Args[i].Regs.push_back(Reg);
             Args[i].Flags.push_back(Flags);
@@ -257,8 +291,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
         }
       } else {
         // Handling an outgoing arg that might need to be split.
-        if (NumParts < 2)
+        if (NumParts < 2) {
           return false; // Don't know how to deal with this type combination.
+
+}
 
         // This type is passed via multiple registers in the calling convention.
         // We need to extract the individual parts.
@@ -276,14 +312,18 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
             Flags.setSplit();
           } else {
             Flags.setOrigAlign(Align(1));
-            if (PartIdx == NumParts - 1)
+            if (PartIdx == NumParts - 1) {
               Flags.setSplitEnd();
+
+}
           }
           Args[i].Regs.push_back(Unmerge.getReg(PartIdx));
           Args[i].Flags.push_back(Flags);
           if (Handler.assignArg(i + PartIdx, NewVT, NewVT, CCValAssign::Full,
-                                Args[i], Args[i].Flags[PartIdx], CCInfo))
+                                Args[i], Args[i].Flags[PartIdx], CCInfo)) {
             return false;
+
+}
         }
       }
     }
@@ -310,8 +350,10 @@ bool CallLowering::handleAssignments(CCState &CCInfo,
         if (VAVT.getSizeInBits() < OrigVT.getSizeInBits()) {
           // Expected to be multiple regs for a single incoming arg.
           unsigned NumArgRegs = Args[i].Regs.size();
-          if (NumArgRegs < 2)
+          if (NumArgRegs < 2) {
             return false;
+
+}
 
           assert((j + (NumArgRegs - 1)) < ArgLocs.size() &&
                  "Too many regs for number of args");
@@ -411,25 +453,33 @@ bool CallLowering::resultsCompatible(CallLoweringInfo &Info,
   CallingConv::ID CalleeCC = Info.CallConv;
   CallingConv::ID CallerCC = F.getCallingConv();
 
-  if (CallerCC == CalleeCC)
+  if (CallerCC == CalleeCC) {
     return true;
+
+}
 
   SmallVector<CCValAssign, 16> ArgLocs1;
   CCState CCInfo1(CalleeCC, false, MF, ArgLocs1, F.getContext());
   if (!analyzeArgInfo(CCInfo1, InArgs, CalleeAssignFnFixed,
-                      CalleeAssignFnVarArg))
+                      CalleeAssignFnVarArg)) {
     return false;
+
+}
 
   SmallVector<CCValAssign, 16> ArgLocs2;
   CCState CCInfo2(CallerCC, false, MF, ArgLocs2, F.getContext());
   if (!analyzeArgInfo(CCInfo2, InArgs, CallerAssignFnFixed,
-                      CalleeAssignFnVarArg))
+                      CalleeAssignFnVarArg)) {
     return false;
+
+}
 
   // We need the argument locations to match up exactly. If there's more in
   // one than the other, then we are done.
-  if (ArgLocs1.size() != ArgLocs2.size())
+  if (ArgLocs1.size() != ArgLocs2.size()) {
     return false;
+
+}
 
   // Make sure that each location is passed in exactly the same way.
   for (unsigned i = 0, e = ArgLocs1.size(); i < e; ++i) {
@@ -438,21 +488,27 @@ bool CallLowering::resultsCompatible(CallLoweringInfo &Info,
 
     // We need both of them to be the same. So if one is a register and one
     // isn't, we're done.
-    if (Loc1.isRegLoc() != Loc2.isRegLoc())
+    if (Loc1.isRegLoc() != Loc2.isRegLoc()) {
       return false;
+
+}
 
     if (Loc1.isRegLoc()) {
       // If they don't have the same register location, we're done.
-      if (Loc1.getLocReg() != Loc2.getLocReg())
+      if (Loc1.getLocReg() != Loc2.getLocReg()) {
         return false;
+
+}
 
       // They matched, so we can move to the next ArgLoc.
       continue;
     }
 
     // Loc1 wasn't a RegLoc, so they both must be MemLocs. Check if they match.
-    if (Loc1.getLocMemOffset() != Loc2.getLocMemOffset())
+    if (Loc1.getLocMemOffset() != Loc2.getLocMemOffset()) {
       return false;
+
+}
   }
 
   return true;
@@ -461,8 +517,10 @@ bool CallLowering::resultsCompatible(CallLoweringInfo &Info,
 Register CallLowering::ValueHandler::extendRegister(Register ValReg,
                                                     CCValAssign &VA) {
   LLT LocTy{VA.getLocVT()};
-  if (LocTy.getSizeInBits() == MRI.getType(ValReg).getSizeInBits())
+  if (LocTy.getSizeInBits() == MRI.getType(ValReg).getSizeInBits()) {
     return ValReg;
+
+}
   switch (VA.getLocInfo()) {
   default: break;
   case CCValAssign::Full:

@@ -21,9 +21,9 @@ namespace mca {
 #define DEBUG_TYPE "llvm-mca"
 
 ResourceCycles &ResourceCycles::operator+=(const ResourceCycles &RHS) {
-  if (Denominator == RHS.Denominator)
+  if (Denominator == RHS.Denominator) {
     Numerator += RHS.Numerator;
-  else {
+  } else {
     // Create a common denominator for LHS and RHS by calculating the least
     // common multiple from the GCD.
     unsigned GCD = GreatestCommonDivisor64(Denominator, RHS.Denominator);
@@ -48,8 +48,10 @@ void computeProcResourceMasks(const MCSchedModel &SM,
   // Create a unique bitmask for every processor resource unit.
   for (unsigned I = 1, E = SM.getNumProcResourceKinds(); I < E; ++I) {
     const MCProcResourceDesc &Desc = *SM.getProcResource(I);
-    if (Desc.SubUnitsIdxBegin)
+    if (Desc.SubUnitsIdxBegin) {
       continue;
+
+}
     Masks[I] = 1ULL << ProcResourceID;
     ProcResourceID++;
   }
@@ -57,8 +59,10 @@ void computeProcResourceMasks(const MCSchedModel &SM,
   // Create a unique bitmask for every processor resource group.
   for (unsigned I = 1, E = SM.getNumProcResourceKinds(); I < E; ++I) {
     const MCProcResourceDesc &Desc = *SM.getProcResource(I);
-    if (!Desc.SubUnitsIdxBegin)
+    if (!Desc.SubUnitsIdxBegin) {
       continue;
+
+}
     Masks[I] = 1ULL << ProcResourceID;
     for (unsigned U = 0; U < Desc.NumUnits; ++U) {
       uint64_t OtherMask = Masks[Desc.SubUnitsIdxBegin[U]];
@@ -92,8 +96,10 @@ double computeBlockRThroughput(const MCSchedModel &SM, unsigned DispatchWidth,
   // distribution, as well as how many blocks can be executed every cycle.
   for (unsigned I = 0, E = SM.getNumProcResourceKinds(); I < E; ++I) {
     unsigned ResourceCycles = ProcResourceUsage[I];
-    if (!ResourceCycles)
+    if (!ResourceCycles) {
       continue;
+
+}
 
     const MCProcResourceDesc &MCDesc = *SM.getProcResource(I);
     double Throughput = static_cast<double>(ResourceCycles) / MCDesc.NumUnits;

@@ -34,8 +34,10 @@ void GuidAdapter::format(raw_ostream &Stream, StringRef Style) {
     uint8_t LowNibble = Byte & 0xF;
     Stream << Lookup[HighNibble] << Lookup[LowNibble];
     ++i;
-    if (i >= 4 && i <= 10 && i % 2 == 0)
+    if (i >= 4 && i <= 10 && i % 2 == 0) {
       Stream << "-";
+
+}
   }
   Stream << "}";
 }

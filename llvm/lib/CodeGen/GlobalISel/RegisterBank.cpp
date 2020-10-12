@@ -33,8 +33,10 @@ bool RegisterBank::verify(const TargetRegisterInfo &TRI) const {
   for (unsigned RCId = 0, End = TRI.getNumRegClasses(); RCId != End; ++RCId) {
     const TargetRegisterClass &RC = *TRI.getRegClass(RCId);
 
-    if (!covers(RC))
+    if (!covers(RC)) {
       continue;
+
+}
     // Verify that the register bank covers all the sub classes of the
     // classes it covers.
 
@@ -44,8 +46,10 @@ bool RegisterBank::verify(const TargetRegisterInfo &TRI) const {
     for (unsigned SubRCId = 0; SubRCId != End; ++SubRCId) {
       const TargetRegisterClass &SubRC = *TRI.getRegClass(RCId);
 
-      if (!RC.hasSubClassEq(&SubRC))
+      if (!RC.hasSubClassEq(&SubRC)) {
         continue;
+
+}
 
       // Verify that the Size of the register bank is big enough to cover
       // all the register classes it covers.
@@ -86,16 +90,20 @@ LLVM_DUMP_METHOD void RegisterBank::dump(const TargetRegisterInfo *TRI) const {
 void RegisterBank::print(raw_ostream &OS, bool IsForDebug,
                          const TargetRegisterInfo *TRI) const {
   OS << getName();
-  if (!IsForDebug)
+  if (!IsForDebug) {
     return;
+
+}
   OS << "(ID:" << getID() << ", Size:" << getSize() << ")\n"
      << "isValid:" << isValid() << '\n'
      << "Number of Covered register classes: " << ContainedRegClasses.count()
      << '\n';
   // Print all the subclasses if we can.
   // This register classes may not be properly initialized yet.
-  if (!TRI || ContainedRegClasses.empty())
+  if (!TRI || ContainedRegClasses.empty()) {
     return;
+
+}
   assert(ContainedRegClasses.size() == TRI->getNumRegClasses() &&
          "TRI does not match the initialization process?");
   bool IsFirst = true;
@@ -103,11 +111,15 @@ void RegisterBank::print(raw_ostream &OS, bool IsForDebug,
   for (unsigned RCId = 0, End = TRI->getNumRegClasses(); RCId != End; ++RCId) {
     const TargetRegisterClass &RC = *TRI->getRegClass(RCId);
 
-    if (!covers(RC))
+    if (!covers(RC)) {
       continue;
 
-    if (!IsFirst)
+}
+
+    if (!IsFirst) {
       OS << ", ";
+
+}
     OS << TRI->getRegClassName(&RC);
     IsFirst = false;
   }

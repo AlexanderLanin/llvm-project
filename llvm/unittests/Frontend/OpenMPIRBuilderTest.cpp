@@ -284,24 +284,32 @@ TEST_F(OpenMPIRBuilderTest, DbgLoc) {
   EXPECT_EQ(GTID->getDebugLoc(), DL);
   EXPECT_EQ(Barrier->getDebugLoc(), DL);
   EXPECT_TRUE(isa<GlobalVariable>(Barrier->getOperand(0)));
-  if (!isa<GlobalVariable>(Barrier->getOperand(0)))
+  if (!isa<GlobalVariable>(Barrier->getOperand(0))) {
     return;
+
+}
   GlobalVariable *Ident = cast<GlobalVariable>(Barrier->getOperand(0));
   EXPECT_TRUE(Ident->hasInitializer());
-  if (!Ident->hasInitializer())
+  if (!Ident->hasInitializer()) {
     return;
+
+}
   Constant *Initializer = Ident->getInitializer();
   EXPECT_TRUE(
       isa<GlobalVariable>(Initializer->getOperand(4)->stripPointerCasts()));
   GlobalVariable *SrcStrGlob =
       cast<GlobalVariable>(Initializer->getOperand(4)->stripPointerCasts());
-  if (!SrcStrGlob)
+  if (!SrcStrGlob) {
     return;
+
+}
   EXPECT_TRUE(isa<ConstantDataArray>(SrcStrGlob->getInitializer()));
   ConstantDataArray *SrcSrc =
       dyn_cast<ConstantDataArray>(SrcStrGlob->getInitializer());
-  if (!SrcSrc)
+  if (!SrcSrc) {
     return;
+
+}
   EXPECT_EQ(SrcSrc->getAsCString(), ";test.dbg;foo;3;7;;");
 }
 
@@ -608,10 +616,12 @@ TEST_F(OpenMPIRBuilderTest, ParallelCancelBarrier) {
     ASSERT_EQ(CI->getCalledFunction(), FakeDestructor);
     ASSERT_TRUE(isa<BranchInst>(CI->getNextNode()));
     ASSERT_EQ(CI->getNextNode()->getNumSuccessors(), 1U);
-    if (ExitBB)
+    if (ExitBB) {
       ASSERT_EQ(CI->getNextNode()->getSuccessor(0), ExitBB);
-    else
+    } else {
       ExitBB = CI->getNextNode()->getSuccessor(0);
+
+}
     ASSERT_EQ(ExitBB->size(), 1U);
     if (!isa<ReturnInst>(ExitBB->front())) {
       ASSERT_TRUE(isa<BranchInst>(ExitBB->front()));
@@ -639,10 +649,12 @@ TEST_F(OpenMPIRBuilderTest, MasterDirective) {
 
   auto BodyGenCB = [&](InsertPointTy AllocaIP, InsertPointTy CodeGenIP,
                        BasicBlock &FiniBB) {
-    if (AllocaIP.isSet())
+    if (AllocaIP.isSet()) {
       Builder.restoreIP(AllocaIP);
-    else
+    } else {
       Builder.SetInsertPoint(&*(F->getEntryBlock().getFirstInsertionPt()));
+
+}
     PrivAI = Builder.CreateAlloca(F->arg_begin()->getType());
     Builder.CreateStore(F->arg_begin(), PrivAI);
 
@@ -690,8 +702,10 @@ TEST_F(OpenMPIRBuilderTest, MasterDirective) {
     Instruction *cur = &FI;
     if (isa<CallInst>(cur)) {
       MasterEndCI = cast<CallInst>(cur);
-      if (MasterEndCI->getCalledFunction()->getName() == "__kmpc_end_master")
+      if (MasterEndCI->getCalledFunction()->getName() == "__kmpc_end_master") {
         break;
+
+}
       MasterEndCI = nullptr;
     }
   }
@@ -748,8 +762,10 @@ TEST_F(OpenMPIRBuilderTest, CriticalDirective) {
     Instruction *cur = &EI;
     if (isa<CallInst>(cur)) {
       CriticalEntryCI = cast<CallInst>(cur);
-      if (CriticalEntryCI->getCalledFunction()->getName() == "__kmpc_critical")
+      if (CriticalEntryCI->getCalledFunction()->getName() == "__kmpc_critical") {
         break;
+
+}
       CriticalEntryCI = nullptr;
     }
   }
@@ -764,8 +780,10 @@ TEST_F(OpenMPIRBuilderTest, CriticalDirective) {
     if (isa<CallInst>(cur)) {
       CriticalEndCI = cast<CallInst>(cur);
       if (CriticalEndCI->getCalledFunction()->getName() ==
-          "__kmpc_end_critical")
+          "__kmpc_end_critical") {
         break;
+
+}
       CriticalEndCI = nullptr;
     }
   }

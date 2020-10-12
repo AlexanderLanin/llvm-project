@@ -198,8 +198,10 @@ TEST(DenseSetCustomTest, ReserveTest) {
     unsigned MemorySize = Set.getMemorySize();
     CountCopyAndMove::Copy = 0;
     CountCopyAndMove::Move = 0;
-    for (int i = 0; i < Size; ++i)
+    for (int i = 0; i < Size; ++i) {
       Set.insert(CountCopyAndMove(i));
+
+}
     // Check that we didn't grow
     EXPECT_EQ(MemorySize, Set.getMemorySize());
     // Check that move was called the expected number of times

@@ -38,8 +38,10 @@ Pass *MachineFunctionPass::createPrinterPass(raw_ostream &O,
 bool MachineFunctionPass::runOnFunction(Function &F) {
   // Do not codegen any 'available_externally' functions at all, they have
   // definitions outside the translation unit.
-  if (F.hasAvailableExternallyLinkage())
+  if (F.hasAvailableExternallyLinkage()) {
     return false;
+
+}
 
   MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
   MachineFunction &MF = MMI.getOrCreateMachineFunction(F);
@@ -67,8 +69,10 @@ bool MachineFunctionPass::runOnFunction(Function &F) {
 
   // If we want size remarks, collect the number of MachineInstrs in our
   // MachineFunction before the pass runs.
-  if (ShouldEmitSizeRemarks)
+  if (ShouldEmitSizeRemarks) {
     CountBefore = MF.getInstructionCount();
+
+}
 
   bool RV = runOnMachineFunction(MF);
 

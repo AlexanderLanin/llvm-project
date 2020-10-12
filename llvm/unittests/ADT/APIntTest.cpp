@@ -356,7 +356,7 @@ TEST(APIntTest, compare) {
     APInt{16, (uint64_t)-2, true},
   }};
 
-  for (auto &arg1 : testVals)
+  for (auto &arg1 : testVals) {
     for (auto &arg2 : testVals) {
       auto uv1 = arg1.getZExtValue();
       auto uv2 = arg2.getZExtValue();
@@ -383,6 +383,8 @@ TEST(APIntTest, compare) {
       EXPECT_EQ(sv1 >  sv2, arg1.sgt(sv2));
       EXPECT_EQ(sv1 >= sv2, arg1.sge(sv2));
     }
+
+}
 }
 
 TEST(APIntTest, compareWithRawIntegers) {
@@ -1020,17 +1022,21 @@ void testDiv(APInt a, uint64_t b, APInt c) {
   q = p.sdiv(b);
   r = p.srem(b);
   EXPECT_EQ(a, q);
-  if (c.isNegative())
+  if (c.isNegative()) {
     EXPECT_EQ(-c, -r); // Need to negate so the uint64_t compare will work.
-  else
+  } else {
     EXPECT_EQ(c, r);
+
+}
   int64_t sr;
   APInt::sdivrem(p, b, q, sr);
   EXPECT_EQ(a, q);
-  if (c.isNegative())
+  if (c.isNegative()) {
     EXPECT_EQ(-c, -sr); // Need to negate so the uint64_t compare will work.
-  else
+  } else {
     EXPECT_EQ(c, sr);
+
+}
 }
 
 TEST(APIntTest, divremuint) {
@@ -2626,8 +2632,10 @@ TEST(APIntTest, RoundingSDiv) {
     }
 
     for (int64_t Bi = -128; Bi <= 127; Bi++) {
-      if (Bi == 0)
+      if (Bi == 0) {
         continue;
+
+}
 
       APInt B(8, Bi);
       APInt QuoTowardZero = A.sdiv(B);
@@ -2686,13 +2694,17 @@ TEST(APIntTest, umul_ov) {
     EXPECT_FALSE(Overflow);
   }
 
-  for (unsigned Bits = 1; Bits <= 5; ++Bits)
-    for (unsigned A = 0; A != 1u << Bits; ++A)
+  for (unsigned Bits = 1; Bits <= 5; ++Bits) {
+    for (unsigned A = 0; A != 1u << Bits; ++A) {
       for (unsigned B = 0; B != 1u << Bits; ++B) {
         APInt C = APInt(Bits, A).umul_ov(APInt(Bits, B), Overflow);
         APInt D = APInt(2 * Bits, A) * APInt(2 * Bits, B);
         EXPECT_TRUE(D.getHiBits(Bits).isNullValue() != Overflow);
       }
+
+}
+
+}
 }
 
 TEST(APIntTest, SolveQuadraticEquationWrap) {
@@ -2724,18 +2736,22 @@ TEST(APIntTest, SolveQuadraticEquationWrap) {
     };
 
     auto IsSolution = [&] (const char *X_str, int X) {
-      if (IsZeroOrOverflow(X))
+      if (IsZeroOrOverflow(X)) {
         return ::testing::AssertionSuccess()
                   << X << " is a solution of " << EquationToString(X_str);
+
+}
       return ::testing::AssertionFailure()
                 << X << " is not an expected solution of "
                 << EquationToString(X_str);
     };
 
     auto IsNotSolution = [&] (const char *X_str, int X) {
-      if (!IsZeroOrOverflow(X))
+      if (!IsZeroOrOverflow(X)) {
         return ::testing::AssertionSuccess()
                   << X << " is not a solution of " << EquationToString(X_str);
+
+}
       return ::testing::AssertionFailure()
                 << X << " is an unexpected solution of "
                 << EquationToString(X_str);
@@ -2744,8 +2760,10 @@ TEST(APIntTest, SolveQuadraticEquationWrap) {
     // This is the important part: make sure that there is no solution that
     // is less than the calculated one.
     if (Solution > 0) {
-      for (int X = 1; X < Solution-1; ++X)
+      for (int X = 1; X < Solution-1; ++X) {
         EXPECT_PRED_FORMAT1(IsNotSolution, X);
+
+}
     }
 
     // Verify that the calculated solution is indeed a solution.
@@ -2761,23 +2779,29 @@ TEST(APIntTest, SolveQuadraticEquationWrap) {
     int High = (1 << (Width-1));
 
     for (int A = Low; A != High; ++A) {
-      if (A == 0)
+      if (A == 0) {
         continue;
+
+}
       for (int B = Low; B != High; ++B) {
         for (int C = Low; C != High; ++C) {
           Optional<APInt> S = APIntOps::SolveQuadraticEquationWrap(
                                 APInt(Width, A), APInt(Width, B),
                                 APInt(Width, C), Width);
-          if (S.hasValue())
+          if (S.hasValue()) {
             Validate(A, B, C, Width, S->getSExtValue());
+
+}
         }
       }
     }
   };
 
   // Test all widths in [2..6].
-  for (unsigned i = 2; i <= 6; ++i)
+  for (unsigned i = 2; i <= 6; ++i) {
     Iterate(i);
+
+}
 }
 
 TEST(APIntTest, MultiplicativeInverseExaustive) {
@@ -2829,12 +2853,16 @@ TEST(APIntTest, GetMostSignificantDifferentBitExaustive) {
   auto GetHighestDifferentBitBruteforce =
       [](const APInt &V0, const APInt &V1) -> llvm::Optional<unsigned> {
     assert(V0.getBitWidth() == V1.getBitWidth() && "Must have same bitwidth");
-    if (V0 == V1)
+    if (V0 == V1) {
       return llvm::None; // Bitwise identical.
+
+}
     // There is a mismatch. Let's find the most significant different bit.
     for (int Bit = V0.getBitWidth() - 1; Bit >= 0; --Bit) {
-      if (V0[Bit] == V1[Bit])
+      if (V0[Bit] == V1[Bit]) {
         continue;
+
+}
       return Bit;
     }
     llvm_unreachable("Must have found bit mismatch.");
@@ -2849,9 +2877,9 @@ TEST(APIntTest, GetMostSignificantDifferentBitExaustive) {
         auto Bit = APIntOps::GetMostSignificantDifferentBit(A, B);
         EXPECT_EQ(Bit, GetHighestDifferentBitBruteforce(A, B));
 
-        if (!Bit.hasValue())
+        if (!Bit.hasValue()) {
           EXPECT_EQ(A, B);
-        else {
+        } else {
           EXPECT_NE(A, B);
           for (unsigned NumLowBits = 0; NumLowBits <= BitWidth; ++NumLowBits) {
             APInt Adash = A;
@@ -2860,10 +2888,12 @@ TEST(APIntTest, GetMostSignificantDifferentBitExaustive) {
             Bdash.clearLowBits(NumLowBits);
             // Clearing only low bits up to and including *Bit is sufficient
             // to make values equal.
-            if (NumLowBits >= 1 + *Bit)
+            if (NumLowBits >= 1 + *Bit) {
               EXPECT_EQ(Adash, Bdash);
-            else
+            } else {
               EXPECT_NE(Adash, Bdash);
+
+}
           }
         }
       }

@@ -23,8 +23,10 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
                                        const llvm::Triple &TargetOrHost) {
   // If we don't target Linux, no need to check the distro. This saves a few
   // OS calls.
-  if (!TargetOrHost.isOSLinux())
+  if (!TargetOrHost.isOSLinux()) {
     return Distro::UnknownDistro;
+
+}
 
   // If the host is not running Linux, and we're backed by a real file system,
   // no need to check the distro. This is the case where someone is
@@ -33,8 +35,10 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> RealFS =
       llvm::vfs::getRealFileSystem();
   llvm::Triple HostTriple(llvm::sys::getProcessTriple());
-  if (!HostTriple.isOSLinux() && &VFS == RealFS.get())
+  if (!HostTriple.isOSLinux() && &VFS == RealFS.get()) {
     return Distro::UnknownDistro;
+
+}
 
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> File =
       VFS.getBufferForFile("/etc/lsb-release");
@@ -43,8 +47,8 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
     SmallVector<StringRef, 16> Lines;
     Data.split(Lines, "\n");
     Distro::DistroType Version = Distro::UnknownDistro;
-    for (StringRef Line : Lines)
-      if (Version == Distro::UnknownDistro && Line.startswith("DISTRIB_CODENAME="))
+    for (StringRef Line : Lines) {
+      if (Version == Distro::UnknownDistro && Line.startswith("DISTRIB_CODENAME=")) {
         Version = llvm::StringSwitch<Distro::DistroType>(Line.substr(17))
                       .Case("hardy", Distro::UbuntuHardy)
                       .Case("intrepid", Distro::UbuntuIntrepid)
@@ -72,24 +76,34 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
                       .Case("eoan", Distro::UbuntuEoan)
                       .Case("focal", Distro::UbuntuFocal)
                       .Default(Distro::UnknownDistro);
-    if (Version != Distro::UnknownDistro)
+
+}
+
+}
+    if (Version != Distro::UnknownDistro) {
       return Version;
+
+}
   }
 
   File = VFS.getBufferForFile("/etc/redhat-release");
   if (File) {
     StringRef Data = File.get()->getBuffer();
-    if (Data.startswith("Fedora release"))
+    if (Data.startswith("Fedora release")) {
       return Distro::Fedora;
+
+}
     if (Data.startswith("Red Hat Enterprise Linux") ||
         Data.startswith("CentOS") ||
         Data.startswith("Scientific Linux")) {
-      if (Data.find("release 7") != StringRef::npos)
+      if (Data.find("release 7") != StringRef::npos) {
         return Distro::RHEL7;
-      else if (Data.find("release 6") != StringRef::npos)
+      } else if (Data.find("release 6") != StringRef::npos) {
         return Distro::RHEL6;
-      else if (Data.find("release 5") != StringRef::npos)
+      } else if (Data.find("release 5") != StringRef::npos) {
         return Distro::RHEL5;
+
+}
     }
     return Distro::UnknownDistro;
   }
@@ -135,8 +149,10 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
     SmallVector<StringRef, 8> Lines;
     Data.split(Lines, "\n");
     for (const StringRef& Line : Lines) {
-      if (!Line.trim().startswith("VERSION"))
+      if (!Line.trim().startswith("VERSION")) {
         continue;
+
+}
       std::pair<StringRef, StringRef> SplitLine = Line.split('=');
       // Old versions have split VERSION and PATCHLEVEL
       // Newer versions use VERSION = x.y
@@ -145,24 +161,34 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
 
       // OpenSUSE/SLES 10 and older are not supported and not compatible
       // with our rules, so just treat them as Distro::UnknownDistro.
-      if (!SplitVer.first.getAsInteger(10, Version) && Version > 10)
+      if (!SplitVer.first.getAsInteger(10, Version) && Version > 10) {
         return Distro::OpenSUSE;
+
+}
       return Distro::UnknownDistro;
     }
     return Distro::UnknownDistro;
   }
 
-  if (VFS.exists("/etc/exherbo-release"))
+  if (VFS.exists("/etc/exherbo-release")) {
     return Distro::Exherbo;
 
-  if (VFS.exists("/etc/alpine-release"))
+}
+
+  if (VFS.exists("/etc/alpine-release")) {
     return Distro::AlpineLinux;
 
-  if (VFS.exists("/etc/arch-release"))
+}
+
+  if (VFS.exists("/etc/arch-release")) {
     return Distro::ArchLinux;
 
-  if (VFS.exists("/etc/gentoo-release"))
+}
+
+  if (VFS.exists("/etc/gentoo-release")) {
     return Distro::Gentoo;
+
+}
 
   return Distro::UnknownDistro;
 }

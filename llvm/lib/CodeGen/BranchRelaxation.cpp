@@ -68,8 +68,10 @@ class BranchRelaxation : public MachineFunctionPass {
       const unsigned PO = Offset + Size;
       const Align Alignment = MBB.getAlignment();
       const Align ParentAlign = MBB.getParent()->getAlignment();
-      if (Alignment <= ParentAlign)
+      if (Alignment <= ParentAlign) {
         return alignTo(PO, Alignment);
+
+}
 
       // The alignment of this MBB is larger than the function's alignment, so we
       // can't tell whether or not it will insert nops. Assume that it will.
@@ -154,8 +156,10 @@ void BranchRelaxation::scanFunction() {
   // has any inline assembly in it. If so, we have to be conservative about
   // alignment assumptions, as we don't know for sure the size of any
   // instructions in the inline assembly.
-  for (MachineBasicBlock &MBB : *MF)
+  for (MachineBasicBlock &MBB : *MF) {
     BlockInfo[MBB.getNumber()].Size = computeBlockSize(MBB);
+
+}
 
   // Compute block offsets and known bits.
   adjustBlockOffsets(*MF->begin());
@@ -164,8 +168,10 @@ void BranchRelaxation::scanFunction() {
 /// computeBlockSize - Compute the size for MBB.
 uint64_t BranchRelaxation::computeBlockSize(const MachineBasicBlock &MBB) const {
   uint64_t Size = 0;
-  for (const MachineInstr &MI : MBB)
+  for (const MachineInstr &MI : MBB) {
     Size += TII->getInstSizeInBytes(MI);
+
+}
   return Size;
 }
 
@@ -263,8 +269,10 @@ MachineBasicBlock *BranchRelaxation::splitBlockBeforeInstr(MachineInstr &MI,
   adjustBlockOffsets(*OrigBB);
 
   // Need to fix live-in lists if we track liveness.
-  if (TRI->trackLivenessAfterRegAlloc(*MF))
+  if (TRI->trackLivenessAfterRegAlloc(*MF)) {
     computeAndAddLiveIns(LiveRegs, *NewBB);
+
+}
 
   ++NumSplit;
 
@@ -278,8 +286,10 @@ bool BranchRelaxation::isBlockInRange(
   int64_t BrOffset = getInstrOffset(MI);
   int64_t DestOffset = BlockInfo[DestBB.getNumber()].Offset;
 
-  if (TII->isBranchOffsetInRange(MI.getOpcode(), DestOffset - BrOffset))
+  if (TII->isBranchOffsetInRange(MI.getOpcode(), DestOffset - BrOffset)) {
     return true;
+
+}
 
   LLVM_DEBUG(dbgs() << "Out of range branch to destination "
                     << printMBBReference(DestBB) << " from "
@@ -328,8 +338,10 @@ bool BranchRelaxation::fixupConditionalBranch(MachineInstr &MI) {
     adjustBlockOffsets(*MBB);
 
     // Need to fix live-in lists if we track liveness.
-    if (NewBB && TRI->trackLivenessAfterRegAlloc(*MF))
+    if (NewBB && TRI->trackLivenessAfterRegAlloc(*MF)) {
       computeAndAddLiveIns(LiveRegs, *NewBB);
+
+}
   };
 
   bool Fail = TII->analyzeBranch(*MBB, TBB, FBB, Cond);
@@ -395,8 +407,10 @@ bool BranchRelaxation::fixupConditionalBranch(MachineInstr &MI) {
   LLVM_DEBUG(dbgs() << "  The branch condition can't be inverted. "
                     << "  Insert a new BB after " << MBB->back());
 
-  if (!FBB)
+  if (!FBB) {
     FBB = &(*std::next(MachineFunction::iterator(MBB)));
+
+}
 
   // This is the block with cond. branch and the distance to TBB is too long.
   //    beq L1
@@ -453,8 +467,10 @@ bool BranchRelaxation::fixupUnconditionalBranch(MachineInstr &MI) {
 
     // Add live outs.
     for (const MachineBasicBlock *Succ : MBB->successors()) {
-      for (const MachineBasicBlock::RegisterMaskPair &LiveIn : Succ->liveins())
+      for (const MachineBasicBlock::RegisterMaskPair &LiveIn : Succ->liveins()) {
         BranchBB->addLiveIn(LiveIn);
+
+}
     }
 
     BranchBB->sortUniqueLiveIns();
@@ -481,8 +497,10 @@ bool BranchRelaxation::relaxBranchInstructions() {
 
     // Empty block?
     MachineBasicBlock::iterator Last = MBB.getLastNonDebugInstr();
-    if (Last == MBB.end())
+    if (Last == MBB.end()) {
       continue;
+
+}
 
     // Expand the unconditional branch first if necessary. If there is a
     // conditional branch, this will end up changing the branch destination of
@@ -543,8 +561,10 @@ bool BranchRelaxation::runOnMachineFunction(MachineFunction &mf) {
   TII = ST.getInstrInfo();
 
   TRI = ST.getRegisterInfo();
-  if (TRI->trackLivenessAfterRegAlloc(*MF))
+  if (TRI->trackLivenessAfterRegAlloc(*MF)) {
     RS.reset(new RegScavenger());
+
+}
 
   // Renumber all of the machine basic blocks in the function, guaranteeing that
   // the numbers agree with the position of the block in the function.
@@ -557,8 +577,10 @@ bool BranchRelaxation::runOnMachineFunction(MachineFunction &mf) {
   LLVM_DEBUG(dbgs() << "  Basic blocks before relaxation\n"; dumpBBs(););
 
   bool MadeChange = false;
-  while (relaxBranchInstructions())
+  while (relaxBranchInstructions()) {
     MadeChange = true;
+
+}
 
   // After a while, this might be made debug-only, but it is not expensive.
   verify();

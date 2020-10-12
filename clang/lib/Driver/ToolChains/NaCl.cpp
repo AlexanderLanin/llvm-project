@@ -69,54 +69,70 @@ void nacltools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
 
-  if (Args.hasArg(options::OPT_rdynamic))
+}
+
+  if (Args.hasArg(options::OPT_rdynamic)) {
     CmdArgs.push_back("-export-dynamic");
 
-  if (Args.hasArg(options::OPT_s))
+}
+
+  if (Args.hasArg(options::OPT_s)) {
     CmdArgs.push_back("-s");
+
+}
 
   // NaClToolChain doesn't have ExtraOpts like Linux; the only relevant flag
   // from there is --build-id, which we do want.
   CmdArgs.push_back("--build-id");
 
-  if (!IsStatic)
+  if (!IsStatic) {
     CmdArgs.push_back("--eh-frame-hdr");
 
+}
+
   CmdArgs.push_back("-m");
-  if (Arch == llvm::Triple::x86)
+  if (Arch == llvm::Triple::x86) {
     CmdArgs.push_back("elf_i386_nacl");
-  else if (Arch == llvm::Triple::arm)
+  } else if (Arch == llvm::Triple::arm) {
     CmdArgs.push_back("armelf_nacl");
-  else if (Arch == llvm::Triple::x86_64)
+  } else if (Arch == llvm::Triple::x86_64) {
     CmdArgs.push_back("elf_x86_64_nacl");
-  else if (Arch == llvm::Triple::mipsel)
+  } else if (Arch == llvm::Triple::mipsel) {
     CmdArgs.push_back("mipselelf_nacl");
-  else
+  } else {
     D.Diag(diag::err_target_unsupported_arch) << ToolChain.getArchName()
                                               << "Native Client";
 
-  if (IsStatic)
+}
+
+  if (IsStatic) {
     CmdArgs.push_back("-static");
-  else if (Args.hasArg(options::OPT_shared))
+  } else if (Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("-shared");
+
+}
 
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (!Args.hasArg(options::OPT_shared))
+    if (!Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crt1.o")));
+
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
 
     const char *crtbegin;
-    if (IsStatic)
+    if (IsStatic) {
       crtbegin = "crtbeginT.o";
-    else if (Args.hasArg(options::OPT_shared))
+    } else if (Args.hasArg(options::OPT_shared)) {
       crtbegin = "crtbeginS.o";
-    else
+    } else {
       crtbegin = "crtbegin.o";
+
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtbegin)));
   }
 
@@ -125,8 +141,10 @@ void nacltools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
 
-  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle))
+  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle)) {
     CmdArgs.push_back("--no-demangle");
+
+}
 
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
@@ -135,11 +153,15 @@ void nacltools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (ToolChain.ShouldLinkCXXStdlib(Args)) {
       bool OnlyLibstdcxxStatic =
           Args.hasArg(options::OPT_static_libstdcxx) && !IsStatic;
-      if (OnlyLibstdcxxStatic)
+      if (OnlyLibstdcxxStatic) {
         CmdArgs.push_back("-Bstatic");
+
+}
       ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
-      if (OnlyLibstdcxxStatic)
+      if (OnlyLibstdcxxStatic) {
         CmdArgs.push_back("-Bdynamic");
+
+}
     }
     CmdArgs.push_back("-lm");
   }
@@ -157,35 +179,43 @@ void nacltools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         // without '-lnacl' it prefers symbols from libpthread.a over libnacl.a,
         // which is not a desired behaviour here.
         // See https://sourceware.org/ml/binutils/2015-03/msg00034.html
-        if (getToolChain().getArch() == llvm::Triple::mipsel)
+        if (getToolChain().getArch() == llvm::Triple::mipsel) {
           CmdArgs.push_back("-lnacl");
+
+}
 
         CmdArgs.push_back("-lpthread");
       }
 
       CmdArgs.push_back("-lgcc");
       CmdArgs.push_back("--as-needed");
-      if (IsStatic)
+      if (IsStatic) {
         CmdArgs.push_back("-lgcc_eh");
-      else
+      } else {
         CmdArgs.push_back("-lgcc_s");
+
+}
       CmdArgs.push_back("--no-as-needed");
 
       // Mips needs to create and use pnacl_legacy library that contains
       // definitions from bitcode/pnaclmm.c and definitions for
       // __nacl_tp_tls_offset() and __nacl_tp_tdb_offset().
-      if (getToolChain().getArch() == llvm::Triple::mipsel)
+      if (getToolChain().getArch() == llvm::Triple::mipsel) {
         CmdArgs.push_back("-lpnacl_legacy");
+
+}
 
       CmdArgs.push_back("--end-group");
     }
 
     if (!Args.hasArg(options::OPT_nostartfiles)) {
       const char *crtend;
-      if (Args.hasArg(options::OPT_shared))
+      if (Args.hasArg(options::OPT_shared)) {
         crtend = "crtendS.o";
-      else
+      } else {
         crtend = "crtend.o";
+
+}
 
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtend)));
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtn.o")));
@@ -254,8 +284,10 @@ NaClToolChain::NaClToolChain(const Driver &D, const llvm::Triple &Triple,
 void NaClToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                               ArgStringList &CC1Args) const {
   const Driver &D = getDriver();
-  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     return;
+
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> P(D.ResourceDir);
@@ -263,8 +295,10 @@ void NaClToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, P.str());
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   SmallString<128> P(D.Dir + "/../");
   switch (getTriple().getArch()) {
@@ -340,8 +374,10 @@ ToolChain::CXXStdlibType
 NaClToolChain::GetCXXStdlibType(const ArgList &Args) const {
   if (Arg *A = Args.getLastArg(options::OPT_stdlib_EQ)) {
     StringRef Value = A->getValue();
-    if (Value == "libc++")
+    if (Value == "libc++") {
       return ToolChain::CST_Libcxx;
+
+}
     getDriver().Diag(clang::diag::err_drv_invalid_stdlib_name)
         << A->getAsString(Args);
   }
@@ -354,8 +390,10 @@ NaClToolChain::ComputeEffectiveClangTriple(const ArgList &Args,
                                            types::ID InputType) const {
   llvm::Triple TheTriple(ComputeLLVMTriple(Args, InputType));
   if (TheTriple.getArch() == llvm::Triple::arm &&
-      TheTriple.getEnvironment() == llvm::Triple::UnknownEnvironment)
+      TheTriple.getEnvironment() == llvm::Triple::UnknownEnvironment) {
     TheTriple.setEnvironment(llvm::Triple::GNUEABIHF);
+
+}
   return TheTriple.getTriple();
 }
 
@@ -364,7 +402,9 @@ Tool *NaClToolChain::buildLinker() const {
 }
 
 Tool *NaClToolChain::buildAssembler() const {
-  if (getTriple().getArch() == llvm::Triple::arm)
+  if (getTriple().getArch() == llvm::Triple::arm) {
     return new tools::nacltools::AssemblerARM(*this);
+
+}
   return new tools::gnutools::Assembler(*this);
 }

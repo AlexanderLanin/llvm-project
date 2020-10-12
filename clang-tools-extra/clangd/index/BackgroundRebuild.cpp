@@ -50,8 +50,10 @@ namespace clang {
 namespace clangd {
 
 bool BackgroundIndexRebuilder::enoughTUsToRebuild() const {
-  if (!ActiveVersion)                         // never built
+  if (!ActiveVersion) {                         // never built
     return IndexedTUs == TUsBeforeFirstBuild; // use low threshold
+
+}
   // rebuild if we've reached the (higher) threshold
   return IndexedTUs >= IndexedTUsAtLastRebuild + TUsBeforeRebuild;
 }
@@ -59,10 +61,14 @@ bool BackgroundIndexRebuilder::enoughTUsToRebuild() const {
 void BackgroundIndexRebuilder::indexedTU() {
   maybeRebuild("after indexing enough files", [this] {
     ++IndexedTUs;
-    if (Loading)
+    if (Loading) {
       return false;                      // rebuild once loading finishes
-    if (ActiveVersion != StartedVersion) // currently building
+
+}
+    if (ActiveVersion != StartedVersion) { // currently building
       return false;                      // no urgency, avoid overlapping builds
+
+}
     return enoughTUsToRebuild();
   });
 }
@@ -77,8 +83,10 @@ void BackgroundIndexRebuilder::idle() {
 
 void BackgroundIndexRebuilder::startLoading() {
   std::lock_guard<std::mutex> Lock(Mu);
-  if (!Loading)
+  if (!Loading) {
     LoadedShards = 0;
+
+}
   ++Loading;
 }
 void BackgroundIndexRebuilder::loadedShard(size_t ShardCount) {
@@ -90,8 +98,10 @@ void BackgroundIndexRebuilder::doneLoading() {
   maybeRebuild("after loading index from disk", [this] {
     assert(Loading);
     --Loading;
-    if (Loading)    // was loading multiple batches concurrently
+    if (Loading) {    // was loading multiple batches concurrently
       return false; // rebuild once the last batch is done.
+
+}
     // Rebuild if we loaded any shards, or if we stopped an indexedTU rebuild.
     return LoadedShards > 0 || enoughTUsToRebuild();
   });

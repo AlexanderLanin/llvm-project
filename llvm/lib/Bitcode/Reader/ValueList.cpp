@@ -71,8 +71,10 @@ void BitcodeReaderValueList::assignValue(Value *V, unsigned Idx, Type *FullTy) {
     return;
   }
 
-  if (Idx >= size())
+  if (Idx >= size()) {
     resize(Idx + 1);
+
+}
 
   assert(FullTypes[Idx] == nullptr || FullTypes[Idx] == FullTy);
   FullTypes[Idx] = FullTy;
@@ -98,15 +100,21 @@ void BitcodeReaderValueList::assignValue(Value *V, unsigned Idx, Type *FullTy) {
 
 Constant *BitcodeReaderValueList::getConstantFwdRef(unsigned Idx, Type *Ty) {
   // Bail out for a clearly invalid value.
-  if (Idx >= RefsUpperBound)
+  if (Idx >= RefsUpperBound) {
     return nullptr;
 
-  if (Idx >= size())
+}
+
+  if (Idx >= size()) {
     resize(Idx + 1);
 
+}
+
   if (Value *V = ValuePtrs[Idx]) {
-    if (Ty != V->getType())
+    if (Ty != V->getType()) {
       report_fatal_error("Type mismatch in constant table!");
+
+}
     return cast<Constant>(V);
   }
 
@@ -119,24 +127,34 @@ Constant *BitcodeReaderValueList::getConstantFwdRef(unsigned Idx, Type *Ty) {
 Value *BitcodeReaderValueList::getValueFwdRef(unsigned Idx, Type *Ty,
                                               Type **FullTy) {
   // Bail out for a clearly invalid value.
-  if (Idx >= RefsUpperBound)
+  if (Idx >= RefsUpperBound) {
     return nullptr;
 
-  if (Idx >= size())
+}
+
+  if (Idx >= size()) {
     resize(Idx + 1);
+
+}
 
   if (Value *V = ValuePtrs[Idx]) {
     // If the types don't match, it's invalid.
-    if (Ty && Ty != V->getType())
+    if (Ty && Ty != V->getType()) {
       return nullptr;
-    if (FullTy)
+
+}
+    if (FullTy) {
       *FullTy = FullTypes[Idx];
+
+}
     return V;
   }
 
   // No type specified, must be invalid reference.
-  if (!Ty)
+  if (!Ty) {
     return nullptr;
+
+}
 
   // Create and return a placeholder, which will later be RAUW'd.
   Value *V = new Argument(Ty);

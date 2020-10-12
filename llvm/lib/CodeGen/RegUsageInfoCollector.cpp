@@ -145,30 +145,42 @@ bool RegUsageInfoCollector::runOnMachineFunction(MachineFunction &MF) {
 
   // Some targets can clobber registers "inside" a call, typically in
   // linker-generated code.
-  for (const MCPhysReg Reg : TRI->getIntraCallClobberedRegs(&MF))
-    for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI)
+  for (const MCPhysReg Reg : TRI->getIntraCallClobberedRegs(&MF)) {
+    for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI) {
       SetRegAsDefined(*AI);
+
+}
+
+}
 
   // Scan all the physical registers. When a register is defined in the current
   // function set it and all the aliasing registers as defined in the regmask.
   // FIXME: Rewrite to use regunits.
   for (unsigned PReg = 1, PRegE = TRI->getNumRegs(); PReg < PRegE; ++PReg) {
     // Don't count registers that are saved and restored.
-    if (SavedRegs.test(PReg))
+    if (SavedRegs.test(PReg)) {
       continue;
+
+}
     // If a register is defined by an instruction mark it as defined together
     // with all it's unsaved aliases.
     if (!MRI->def_empty(PReg)) {
-      for (MCRegAliasIterator AI(PReg, TRI, true); AI.isValid(); ++AI)
-        if (!SavedRegs.test(*AI))
+      for (MCRegAliasIterator AI(PReg, TRI, true); AI.isValid(); ++AI) {
+        if (!SavedRegs.test(*AI)) {
           SetRegAsDefined(*AI);
+
+}
+
+}
       continue;
     }
     // If a register is in the UsedPhysRegsMask set then mark it as defined.
     // All clobbered aliases will also be in the set, so we can skip setting
     // as defined all the aliases here.
-    if (UsedPhysRegsMask.test(PReg))
+    if (UsedPhysRegsMask.test(PReg)) {
       SetRegAsDefined(PReg);
+
+}
   }
 
   if (TargetFrameLowering::isSafeForNoCSROpt(F) &&
@@ -200,8 +212,10 @@ computeCalleeSavedRegs(BitVector &SavedRegs, MachineFunction &MF) {
   // Target will return the set of registers that it saves/restores as needed.
   SavedRegs.clear();
   TFI.getCalleeSaves(MF, SavedRegs);
-  if (SavedRegs.none())
+  if (SavedRegs.none()) {
     return;
+
+}
 
   // Insert subregs.
   const MCPhysReg *CSRegs = TRI.getCalleeSavedRegs(&MF);
@@ -209,8 +223,10 @@ computeCalleeSavedRegs(BitVector &SavedRegs, MachineFunction &MF) {
     MCPhysReg Reg = CSRegs[i];
     if (SavedRegs.test(Reg)) {
       // Save subregisters
-      for (MCSubRegIterator SR(Reg, &TRI); SR.isValid(); ++SR)
+      for (MCSubRegIterator SR(Reg, &TRI); SR.isValid(); ++SR) {
         SavedRegs.set(*SR);
+
+}
     }
   }
 }

@@ -28,8 +28,10 @@ void UnaryStaticAssertCheck::check(const MatchFinder::MatchResult &Result) {
   SourceLocation Loc = MatchedDecl->getLocation();
 
   if (!AssertMessage || AssertMessage->getLength() ||
-      AssertMessage->getBeginLoc().isMacroID() || Loc.isMacroID())
+      AssertMessage->getBeginLoc().isMacroID() || Loc.isMacroID()) {
     return;
+
+}
 
   diag(Loc,
        "use unary 'static_assert' when the string literal is an empty string")

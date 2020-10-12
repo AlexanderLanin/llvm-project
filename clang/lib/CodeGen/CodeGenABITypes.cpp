@@ -68,8 +68,10 @@ CodeGen::convertFreeFunctionType(CodeGenModule &CGM, const FunctionDecl *FD) {
   assert(FD != nullptr && "Expected a non-null function declaration!");
   llvm::Type *T = CGM.getTypes().ConvertType(FD->getType());
 
-  if (auto FT = dyn_cast<llvm::FunctionType>(T))
+  if (auto FT = dyn_cast<llvm::FunctionType>(T)) {
     return FT;
+
+}
 
   return nullptr;
 }

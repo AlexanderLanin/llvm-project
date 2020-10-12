@@ -157,8 +157,10 @@ static void eraseDeadBBsAndChildren(const Container &BBs) {
   SmallVector<BasicBlock *, 8> WL(BBs.begin(), BBs.end());
   while (!WL.empty()) {
     auto *BB = WL.pop_back_val();
-    if (pred_begin(BB) != pred_end(BB))
+    if (pred_begin(BB) != pred_end(BB)) {
       continue;
+
+}
     WL.append(succ_begin(BB), succ_end(BB));
     DeleteDeadBlock(BB);
   }
@@ -185,8 +187,10 @@ bool WasmEHPrepare::prepareThrows(Function &F) {
     // A call to @llvm.wasm.throw() is only generated from __cxa_throw()
     // builtin call within libcxxabi, and cannot be an InvokeInst.
     auto *ThrowI = cast<CallInst>(U);
-    if (ThrowI->getFunction() != &F)
+    if (ThrowI->getFunction() != &F) {
       continue;
+
+}
     Changed = true;
     auto *BB = ThrowI->getParent();
     SmallVector<BasicBlock *, 4> Succs(succ_begin(BB), succ_end(BB));
@@ -207,17 +211,23 @@ bool WasmEHPrepare::prepareEHPads(Function &F) {
   SmallVector<BasicBlock *, 16> CatchPads;
   SmallVector<BasicBlock *, 16> CleanupPads;
   for (BasicBlock &BB : F) {
-    if (!BB.isEHPad())
+    if (!BB.isEHPad()) {
       continue;
+
+}
     auto *Pad = BB.getFirstNonPHI();
-    if (isa<CatchPadInst>(Pad))
+    if (isa<CatchPadInst>(Pad)) {
       CatchPads.push_back(&BB);
-    else if (isa<CleanupPadInst>(Pad))
+    } else if (isa<CleanupPadInst>(Pad)) {
       CleanupPads.push_back(&BB);
+
+}
   }
 
-  if (CatchPads.empty() && CleanupPads.empty())
+  if (CatchPads.empty() && CleanupPads.empty()) {
     return false;
+
+}
   assert(F.hasPersonalityFn() && "Personality function not found");
 
   // __wasm_lpad_context global variable
@@ -250,23 +260,29 @@ bool WasmEHPrepare::prepareEHPads(Function &F) {
   // _Unwind_CallPersonality() wrapper function, which calls the personality
   CallPersonalityF = M.getOrInsertFunction(
       "_Unwind_CallPersonality", IRB.getInt32Ty(), IRB.getInt8PtrTy());
-  if (Function *F = dyn_cast<Function>(CallPersonalityF.getCallee()))
+  if (Function *F = dyn_cast<Function>(CallPersonalityF.getCallee())) {
     F->setDoesNotThrow();
+
+}
 
   unsigned Index = 0;
   for (auto *BB : CatchPads) {
     auto *CPI = cast<CatchPadInst>(BB->getFirstNonPHI());
     // In case of a single catch (...), we don't need to emit LSDA
     if (CPI->getNumArgOperands() == 1 &&
-        cast<Constant>(CPI->getArgOperand(0))->isNullValue())
+        cast<Constant>(CPI->getArgOperand(0))->isNullValue()) {
       prepareEHPad(BB, false);
-    else
+    } else {
       prepareEHPad(BB, true, Index++);
+
+}
   }
 
   // Cleanup pads don't need LSDA.
-  for (auto *BB : CleanupPads)
+  for (auto *BB : CleanupPads) {
     prepareEHPad(BB, false);
+
+}
 
   return true;
 }
@@ -283,10 +299,14 @@ void WasmEHPrepare::prepareEHPad(BasicBlock *BB, bool NeedLSDA,
   Instruction *GetExnCI = nullptr, *GetSelectorCI = nullptr;
   for (auto &U : FPI->uses()) {
     if (auto *CI = dyn_cast<CallInst>(U.getUser())) {
-      if (CI->getCalledValue() == GetExnF)
+      if (CI->getCalledValue() == GetExnF) {
         GetExnCI = CI;
-      if (CI->getCalledValue() == GetSelectorF)
+
+}
+      if (CI->getCalledValue() == GetSelectorF) {
         GetSelectorCI = CI;
+
+}
     }
   }
 
@@ -329,9 +349,11 @@ void WasmEHPrepare::prepareEHPad(BasicBlock *BB, bool NeedLSDA,
   // TODO Can we not store LSDA address in user function but make libcxxabi
   // compute it?
   auto *CPI = cast<CatchPadInst>(FPI);
-  if (isa<ConstantTokenNone>(CPI->getCatchSwitch()->getParentPad()))
+  if (isa<ConstantTokenNone>(CPI->getCatchSwitch()->getParentPad())) {
     // Pseudocode: __wasm_lpad_context.lsda = wasm.lsda();
     IRB.CreateStore(IRB.CreateCall(LSDAF), LSDAField);
+
+}
 
   // Pseudocode: _Unwind_CallPersonality(exn);
   CallInst *PersCI = IRB.CreateCall(CallPersonalityF, ExtractExnCI,
@@ -355,20 +377,26 @@ void llvm::calculateWasmEHInfo(const Function *F, WasmEHFuncInfo &EHInfo) {
   // We don't record an unwind destination for cleanuppads because every
   // exception should be caught by it.
   for (const auto &BB : *F) {
-    if (!BB.isEHPad())
+    if (!BB.isEHPad()) {
       continue;
+
+}
     const Instruction *Pad = BB.getFirstNonPHI();
 
     if (const auto *CatchPad = dyn_cast<CatchPadInst>(Pad)) {
       const auto *UnwindBB = CatchPad->getCatchSwitch()->getUnwindDest();
-      if (!UnwindBB)
+      if (!UnwindBB) {
         continue;
+
+}
       const Instruction *UnwindPad = UnwindBB->getFirstNonPHI();
-      if (const auto *CatchSwitch = dyn_cast<CatchSwitchInst>(UnwindPad))
+      if (const auto *CatchSwitch = dyn_cast<CatchSwitchInst>(UnwindPad)) {
         // Currently there should be only one handler per a catchswitch.
         EHInfo.setEHPadUnwindDest(&BB, *CatchSwitch->handlers().begin());
-      else // cleanuppad
+      } else { // cleanuppad
         EHInfo.setEHPadUnwindDest(&BB, UnwindBB);
+
+}
     }
   }
 }

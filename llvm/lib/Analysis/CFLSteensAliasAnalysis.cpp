@@ -119,8 +119,10 @@ CFLSteensAAResult::FunctionInfo::FunctionInfo(
     : Sets(std::move(S)) {
   // Historically, an arbitrary upper-bound of 50 args was selected. We may want
   // to remove this if it doesn't really matter in practice.
-  if (Fn.arg_size() > MaxSupportedArgsInSummary)
+  if (Fn.arg_size() > MaxSupportedArgsInSummary) {
     return;
+
+}
 
   DenseMap<StratifiedIndex, InterfaceValue> InterfaceMap;
 
@@ -139,21 +141,27 @@ CFLSteensAAResult::FunctionInfo::FunctionInfo(
 
       auto Itr = InterfaceMap.find(SetIndex);
       if (Itr != InterfaceMap.end()) {
-        if (CurrValue != Itr->second)
+        if (CurrValue != Itr->second) {
           Summary.RetParamRelations.push_back(
               ExternalRelation{CurrValue, Itr->second, UnknownOffset});
+
+}
         break;
       }
 
       auto &Link = Sets.getLink(SetIndex);
       InterfaceMap.insert(std::make_pair(SetIndex, CurrValue));
       auto ExternalAttrs = getExternallyVisibleAttrs(Link.Attrs);
-      if (ExternalAttrs.any())
+      if (ExternalAttrs.any()) {
         Summary.RetParamAttributes.push_back(
             ExternalAttribute{CurrValue, ExternalAttrs});
 
-      if (!Link.hasBelow())
+}
+
+      if (!Link.hasBelow()) {
         break;
+
+}
 
       ++Level;
       SetIndex = Link.Below;
@@ -165,8 +173,10 @@ CFLSteensAAResult::FunctionInfo::FunctionInfo(
     assert(RetVal != nullptr);
     assert(RetVal->getType()->isPointerTy());
     auto RetInfo = Sets.find(InstantiatedValue{RetVal, 0});
-    if (RetInfo.hasValue())
+    if (RetInfo.hasValue()) {
       AddToRetParamRelations(0, RetInfo->Index);
+
+}
   }
 
   // Populate RetParamRelations for parameters
@@ -174,8 +184,10 @@ CFLSteensAAResult::FunctionInfo::FunctionInfo(
   for (auto &Param : Fn.args()) {
     if (Param.getType()->isPointerTy()) {
       auto ParamInfo = Sets.find(InstantiatedValue{&Param, 0});
-      if (ParamInfo.hasValue())
+      if (ParamInfo.hasValue()) {
         AddToRetParamRelations(I + 1, ParamInfo->Index);
+
+}
     }
     ++I;
   }
@@ -190,8 +202,10 @@ CFLSteensAAResult::FunctionInfo CFLSteensAAResult::buildSetsFrom(Function *Fn) {
   auto &Graph = GraphBuilder.getCFLGraph();
   for (const auto &Mapping : Graph.value_mappings()) {
     auto Val = Mapping.first;
-    if (canSkipAddingToSets(Val))
+    if (canSkipAddingToSets(Val)) {
       continue;
+
+}
     auto &ValueInfo = Mapping.second;
 
     assert(ValueInfo.getNumLevels() > 0);
@@ -210,14 +224,18 @@ CFLSteensAAResult::FunctionInfo CFLSteensAAResult::buildSetsFrom(Function *Fn) {
   // Add all assign edges to StratifiedSets
   for (const auto &Mapping : Graph.value_mappings()) {
     auto Val = Mapping.first;
-    if (canSkipAddingToSets(Val))
+    if (canSkipAddingToSets(Val)) {
       continue;
+
+}
     auto &ValueInfo = Mapping.second;
 
     for (unsigned I = 0, E = ValueInfo.getNumLevels(); I < E; ++I) {
       auto Src = InstantiatedValue{Val, I};
-      for (auto &Edge : ValueInfo.getNodeInfoAtLevel(I).Edges)
+      for (auto &Edge : ValueInfo.getNodeInfoAtLevel(I).Edges) {
         SetBuilder.addWith(Src, Edge.Other);
+
+}
     }
   }
 
@@ -257,10 +275,12 @@ CFLSteensAAResult::ensureCached(Function *Fn) {
 
 const AliasSummary *CFLSteensAAResult::getAliasSummary(Function &Fn) {
   auto &FunInfo = ensureCached(&Fn);
-  if (FunInfo.hasValue())
+  if (FunInfo.hasValue()) {
     return &FunInfo->getAliasSummary();
-  else
+  } else {
     return nullptr;
+
+}
 }
 
 AliasResult CFLSteensAAResult::query(const MemoryLocation &LocA,
@@ -268,8 +288,10 @@ AliasResult CFLSteensAAResult::query(const MemoryLocation &LocA,
   auto *ValA = const_cast<Value *>(LocA.Ptr);
   auto *ValB = const_cast<Value *>(LocB.Ptr);
 
-  if (!ValA->getType()->isPointerTy() || !ValB->getType()->isPointerTy())
+  if (!ValA->getType()->isPointerTy() || !ValB->getType()->isPointerTy()) {
     return NoAlias;
+
+}
 
   Function *Fn = nullptr;
   Function *MaybeFnA = const_cast<Function *>(parentFunctionOfValue(ValA));
@@ -297,12 +319,16 @@ AliasResult CFLSteensAAResult::query(const MemoryLocation &LocA,
 
   auto &Sets = MaybeInfo->getStratifiedSets();
   auto MaybeA = Sets.find(InstantiatedValue{ValA, 0});
-  if (!MaybeA.hasValue())
+  if (!MaybeA.hasValue()) {
     return MayAlias;
 
+}
+
   auto MaybeB = Sets.find(InstantiatedValue{ValB, 0});
-  if (!MaybeB.hasValue())
+  if (!MaybeB.hasValue()) {
     return MayAlias;
+
+}
 
   auto SetA = *MaybeA;
   auto SetB = *MaybeB;
@@ -319,14 +345,22 @@ AliasResult CFLSteensAAResult::query(const MemoryLocation &LocA,
   // - AttrNone values do not alias any non-local values
   // - AttrEscaped do not alias globals/arguments, but they may alias
   // AttrUnknown values
-  if (SetA.Index == SetB.Index)
+  if (SetA.Index == SetB.Index) {
     return MayAlias;
-  if (AttrsA.none() || AttrsB.none())
+
+}
+  if (AttrsA.none() || AttrsB.none()) {
     return NoAlias;
-  if (hasUnknownOrCallerAttr(AttrsA) || hasUnknownOrCallerAttr(AttrsB))
+
+}
+  if (hasUnknownOrCallerAttr(AttrsA) || hasUnknownOrCallerAttr(AttrsB)) {
     return MayAlias;
-  if (isGlobalOrArgAttr(AttrsA) && isGlobalOrArgAttr(AttrsB))
+
+}
+  if (isGlobalOrArgAttr(AttrsA) && isGlobalOrArgAttr(AttrsB)) {
     return MayAlias;
+
+}
   return NoAlias;
 }
 

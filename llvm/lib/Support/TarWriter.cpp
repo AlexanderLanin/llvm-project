@@ -92,8 +92,10 @@ static void computeChecksum(UstarHeader &Hdr) {
 
   // Compute a checksum and set it to the checksum field.
   unsigned Chksum = 0;
-  for (size_t I = 0; I < sizeof(Hdr); ++I)
+  for (size_t I = 0; I < sizeof(Hdr); ++I) {
     Chksum += reinterpret_cast<uint8_t *>(&Hdr)[I];
+
+}
   snprintf(Hdr.Checksum, sizeof(Hdr.Checksum), "%06o", Chksum);
 }
 
@@ -132,10 +134,14 @@ static bool splitUstar(StringRef Path, StringRef &Prefix, StringRef &Name) {
   }
 
   size_t Sep = Path.rfind('/', sizeof(UstarHeader::Prefix) + 1);
-  if (Sep == StringRef::npos)
+  if (Sep == StringRef::npos) {
     return false;
-  if (Path.size() - Sep - 1 >= sizeof(UstarHeader::Name))
+
+}
+  if (Path.size() - Sep - 1 >= sizeof(UstarHeader::Name)) {
     return false;
+
+}
 
   Prefix = Path.substr(0, Sep);
   Name = Path.substr(Sep + 1);
@@ -161,8 +167,10 @@ Expected<std::unique_ptr<TarWriter>> TarWriter::create(StringRef OutputPath,
   using namespace sys::fs;
   int FD;
   if (std::error_code EC =
-          openFileForWrite(OutputPath, FD, CD_CreateAlways, OF_None))
+          openFileForWrite(OutputPath, FD, CD_CreateAlways, OF_None)) {
     return make_error<StringError>("cannot open " + OutputPath, EC);
+
+}
   return std::unique_ptr<TarWriter>(new TarWriter(FD, BaseDir));
 }
 
@@ -176,8 +184,10 @@ void TarWriter::append(StringRef Path, StringRef Data) {
   std::string Fullpath = BaseDir + "/" + sys::path::convert_to_slash(Path);
 
   // We do not want to include the same file more than once.
-  if (!Files.insert(Fullpath).second)
+  if (!Files.insert(Fullpath).second) {
     return;
+
+}
 
   StringRef Prefix;
   StringRef Name;

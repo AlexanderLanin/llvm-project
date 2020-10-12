@@ -96,15 +96,19 @@ static bool findRefEdges(ModuleSummaryIndex &Index, const User *CurUser,
   while (!Worklist.empty()) {
     const User *U = Worklist.pop_back_val();
 
-    if (!Visited.insert(U).second)
+    if (!Visited.insert(U).second) {
       continue;
+
+}
 
     ImmutableCallSite CS(U);
 
     for (const auto &OI : U->operands()) {
       const User *Operand = dyn_cast<User>(OI);
-      if (!Operand)
+      if (!Operand) {
         continue;
+
+}
       if (isa<BlockAddress>(Operand)) {
         HasBlockAddress = true;
         continue;
@@ -113,8 +117,10 @@ static bool findRefEdges(ModuleSummaryIndex &Index, const User *CurUser,
         // We have a reference to a global value. This should be added to
         // the reference set unless it is a callee. Callees are handled
         // specially by WriteFunction and are added to a separate list.
-        if (!(CS && CS.isCallee(&OI)))
+        if (!(CS && CS.isCallee(&OI))) {
           RefEdges.insert(Index.getOrInsertValueInfo(GV));
+
+}
         continue;
       }
       Worklist.push_back(Operand);
@@ -125,12 +131,18 @@ static bool findRefEdges(ModuleSummaryIndex &Index, const User *CurUser,
 
 static CalleeInfo::HotnessType getHotness(uint64_t ProfileCount,
                                           ProfileSummaryInfo *PSI) {
-  if (!PSI)
+  if (!PSI) {
     return CalleeInfo::HotnessType::Unknown;
-  if (PSI->isHotCount(ProfileCount))
+
+}
+  if (PSI->isHotCount(ProfileCount)) {
     return CalleeInfo::HotnessType::Hot;
-  if (PSI->isColdCount(ProfileCount))
+
+}
+  if (PSI->isColdCount(ProfileCount)) {
     return CalleeInfo::HotnessType::Cold;
+
+}
   return CalleeInfo::HotnessType::None;
 }
 
@@ -169,8 +181,10 @@ static void addIntrinsicToSummary(
   case Intrinsic::type_test: {
     auto *TypeMDVal = cast<MetadataAsValue>(CI->getArgOperand(1));
     auto *TypeId = dyn_cast<MDString>(TypeMDVal->getMetadata());
-    if (!TypeId)
+    if (!TypeId) {
       break;
+
+}
     GlobalValue::GUID Guid = GlobalValue::getGUID(TypeId->getString());
 
     // Produce a summary from type.test intrinsics. We only summarize type.test
@@ -179,20 +193,26 @@ static void addIntrinsicToSummary(
     // pass, not the type test lowering pass.
     bool HasNonAssumeUses = llvm::any_of(CI->uses(), [](const Use &CIU) {
       auto *AssumeCI = dyn_cast<CallInst>(CIU.getUser());
-      if (!AssumeCI)
+      if (!AssumeCI) {
         return true;
+
+}
       Function *F = AssumeCI->getCalledFunction();
       return !F || F->getIntrinsicID() != Intrinsic::assume;
     });
-    if (HasNonAssumeUses)
+    if (HasNonAssumeUses) {
       TypeTests.insert(Guid);
+
+}
 
     SmallVector<DevirtCallSite, 4> DevirtCalls;
     SmallVector<CallInst *, 4> Assumes;
     findDevirtualizableCallsForTypeTest(DevirtCalls, Assumes, CI, DT);
-    for (auto &Call : DevirtCalls)
+    for (auto &Call : DevirtCalls) {
       addVCallToSet(Call, Guid, TypeTestAssumeVCalls,
                     TypeTestAssumeConstVCalls);
+
+}
 
     break;
   }
@@ -200,8 +220,10 @@ static void addIntrinsicToSummary(
   case Intrinsic::type_checked_load: {
     auto *TypeMDVal = cast<MetadataAsValue>(CI->getArgOperand(2));
     auto *TypeId = dyn_cast<MDString>(TypeMDVal->getMetadata());
-    if (!TypeId)
+    if (!TypeId) {
       break;
+
+}
     GlobalValue::GUID Guid = GlobalValue::getGUID(TypeId->getString());
 
     SmallVector<DevirtCallSite, 4> DevirtCalls;
@@ -212,11 +234,15 @@ static void addIntrinsicToSummary(
                                                HasNonCallUses, CI, DT);
     // Any non-call uses of the result of llvm.type.checked.load will
     // prevent us from optimizing away the llvm.type.test.
-    if (HasNonCallUses)
+    if (HasNonCallUses) {
       TypeTests.insert(Guid);
-    for (auto &Call : DevirtCalls)
+
+}
+    for (auto &Call : DevirtCalls) {
       addVCallToSet(Call, Guid, TypeCheckedLoadVCalls,
                     TypeCheckedLoadConstVCalls);
+
+}
 
     break;
   }
@@ -226,15 +252,19 @@ static void addIntrinsicToSummary(
 }
 
 static bool isNonVolatileLoad(const Instruction *I) {
-  if (const auto *LI = dyn_cast<LoadInst>(I))
+  if (const auto *LI = dyn_cast<LoadInst>(I)) {
     return !LI->isVolatile();
+
+}
 
   return false;
 }
 
 static bool isNonVolatileStore(const Instruction *I) {
-  if (const auto *SI = dyn_cast<StoreInst>(I))
+  if (const auto *SI = dyn_cast<StoreInst>(I)) {
     return !SI->isVolatile();
+
+}
 
   return false;
 }
@@ -269,10 +299,12 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
   std::vector<const Instruction *> NonVolatileStores;
 
   bool HasInlineAsmMaybeReferencingInternal = false;
-  for (const BasicBlock &BB : F)
+  for (const BasicBlock &BB : F) {
     for (const Instruction &I : BB) {
-      if (isa<DbgInfoIntrinsic>(I))
+      if (isa<DbgInfoIntrinsic>(I)) {
         continue;
+
+}
       ++NumInsts;
       // Regular LTO module doesn't participate in ThinLTO import,
       // so no reference from it can be read/writeonly, since this
@@ -294,19 +326,23 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
           // so we add them to RefEdges as we do with all other instructions
           // except non-volatile load.
           Value *Stored = I.getOperand(0);
-          if (auto *GV = dyn_cast<GlobalValue>(Stored))
+          if (auto *GV = dyn_cast<GlobalValue>(Stored)) {
             // findRefEdges will try to examine GV operands, so instead
             // of calling it we should add GV to RefEdges directly.
             RefEdges.insert(Index.getOrInsertValueInfo(GV));
-          else if (auto *U = dyn_cast<User>(Stored))
+          } else if (auto *U = dyn_cast<User>(Stored)) {
             findRefEdges(Index, U, RefEdges, Visited);
+
+}
           continue;
         }
       }
       findRefEdges(Index, &I, RefEdges, Visited);
       auto CS = ImmutableCallSite(&I);
-      if (!CS)
+      if (!CS) {
         continue;
+
+}
 
       const auto *CI = dyn_cast<CallInst>(&I);
       // Since we don't know exactly which local values are referenced in inline
@@ -314,8 +350,10 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
       // a local value from inline assembly to ensure we don't export a
       // reference (which would require renaming and promotion of the
       // referenced value).
-      if (HasLocalsInUsedOrAsm && CI && CI->isInlineAsm())
+      if (HasLocalsInUsedOrAsm && CI && CI->isInlineAsm()) {
         HasInlineAsmMaybeReferencingInternal = true;
+
+}
 
       auto *CalledValue = CS.getCalledValue();
       auto *CalledFunction = CS.getCalledFunction();
@@ -344,8 +382,10 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
         auto ScaledCount = PSI->getProfileCount(&I, BFI);
         auto Hotness = ScaledCount ? getHotness(ScaledCount.getValue(), PSI)
                                    : CalleeInfo::HotnessType::Unknown;
-        if (ForceSummaryEdgesCold != FunctionSummary::FSHT_None)
+        if (ForceSummaryEdgesCold != FunctionSummary::FSHT_None) {
           Hotness = CalleeInfo::HotnessType::Cold;
+
+}
 
         // Use the original CalledValue, in case it was an alias. We want
         // to record the call edge to the alias in that case. Eventually
@@ -363,11 +403,15 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
         }
       } else {
         // Skip inline assembly calls.
-        if (CI && CI->isInlineAsm())
+        if (CI && CI->isInlineAsm()) {
           continue;
+
+}
         // Skip direct calls.
-        if (!CalledValue || isa<Constant>(CalledValue))
+        if (!CalledValue || isa<Constant>(CalledValue)) {
           continue;
+
+}
 
         // Check if the instruction has a callees metadata. If so, add callees
         // to CallGraphEdges to reflect the references from the metadata, and
@@ -376,8 +420,10 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
         if (auto *MD = I.getMetadata(LLVMContext::MD_callees)) {
           for (auto &Op : MD->operands()) {
             Function *Callee = mdconst::extract_or_null<Function>(Op);
-            if (Callee)
+            if (Callee) {
               CallGraphEdges[Index.getOrInsertValueInfo(Callee)];
+
+}
           }
         }
 
@@ -386,11 +432,15 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
         auto CandidateProfileData =
             ICallAnalysis.getPromotionCandidatesForInstruction(
                 &I, NumVals, TotalCount, NumCandidates);
-        for (auto &Candidate : CandidateProfileData)
+        for (auto &Candidate : CandidateProfileData) {
           CallGraphEdges[Index.getOrInsertValueInfo(Candidate.Value)]
               .updateHotness(getHotness(Candidate.Count, PSI));
+
+}
       }
     }
+
+}
 
   std::vector<ValueInfo> Refs;
   if (IsThinLTO) {
@@ -423,37 +473,51 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
     // If both load and store instruction reference the same variable
     // we won't be able to optimize it. Add all such reference edges
     // to RefEdges set.
-    for (auto &VI : StoreRefEdges)
-      if (LoadRefEdges.remove(VI))
+    for (auto &VI : StoreRefEdges) {
+      if (LoadRefEdges.remove(VI)) {
         RefEdges.insert(VI);
+
+}
+
+}
 
     unsigned RefCnt = RefEdges.size();
     // All new reference edges inserted in two loops below are either
     // read or write only. They will be grouped in the end of RefEdges
     // vector, so we can use a single integer value to identify them.
-    for (auto &VI : LoadRefEdges)
+    for (auto &VI : LoadRefEdges) {
       RefEdges.insert(VI);
+
+}
 
     unsigned FirstWORef = RefEdges.size();
-    for (auto &VI : StoreRefEdges)
+    for (auto &VI : StoreRefEdges) {
       RefEdges.insert(VI);
 
+}
+
     Refs = RefEdges.takeVector();
-    for (; RefCnt < FirstWORef; ++RefCnt)
+    for (; RefCnt < FirstWORef; ++RefCnt) {
       Refs[RefCnt].setReadOnly();
 
-    for (; RefCnt < Refs.size(); ++RefCnt)
+}
+
+    for (; RefCnt < Refs.size(); ++RefCnt) {
       Refs[RefCnt].setWriteOnly();
+
+}
   } else {
     Refs = RefEdges.takeVector();
   }
   // Explicit add hot edges to enforce importing for designated GUIDs for
   // sample PGO, to enable the same inlines as the profiled optimized binary.
-  for (auto &I : F.getImportGUIDs())
+  for (auto &I : F.getImportGUIDs()) {
     CallGraphEdges[Index.getOrInsertValueInfo(I)].updateHotness(
         ForceSummaryEdgesCold == FunctionSummary::FSHT_All
             ? CalleeInfo::HotnessType::Cold
             : CalleeInfo::HotnessType::Critical);
+
+}
 
   bool NonRenamableLocal = isNonRenamableLocal(F);
   bool NotEligibleForImport =
@@ -475,8 +539,10 @@ static void computeFunctionSummary(ModuleSummaryIndex &Index, const Module &M,
       TypeTestAssumeVCalls.takeVector(), TypeCheckedLoadVCalls.takeVector(),
       TypeTestAssumeConstVCalls.takeVector(),
       TypeCheckedLoadConstVCalls.takeVector());
-  if (NonRenamableLocal)
+  if (NonRenamableLocal) {
     CantBePromoted.insert(F.getGUID());
+
+}
   Index.addGlobalValueSummary(F, std::move(FuncSummary));
 }
 
@@ -493,8 +559,10 @@ static void findFuncPointers(const Constant *I, uint64_t StartingOffset,
     auto Fn = dyn_cast<Function>(I->stripPointerCasts());
     // We can disregard __cxa_pure_virtual as a possible call target, as
     // calls to pure virtuals are UB.
-    if (Fn && Fn->getName() != "__cxa_pure_virtual")
+    if (Fn && Fn->getName() != "__cxa_pure_virtual") {
       VTableFuncs.push_back({Index.getOrInsertValueInfo(Fn), StartingOffset});
+
+}
     return;
   }
 
@@ -529,8 +597,10 @@ static void findFuncPointers(const Constant *I, uint64_t StartingOffset,
 static void computeVTableFuncs(ModuleSummaryIndex &Index,
                                const GlobalVariable &V, const Module &M,
                                VTableFuncList &VTableFuncs) {
-  if (!V.isConstant())
+  if (!V.isConstant()) {
     return;
+
+}
 
   findFuncPointers(V.getInitializer(), /*StartingOffset=*/0, M, Index,
                    VTableFuncs);
@@ -561,9 +631,11 @@ recordTypeIdCompatibleVtableReferences(ModuleSummaryIndex &Index,
             cast<ConstantAsMetadata>(Type->getOperand(0))->getValue())
             ->getZExtValue();
 
-    if (auto *TypeId = dyn_cast<MDString>(TypeID))
+    if (auto *TypeId = dyn_cast<MDString>(TypeID)) {
       Index.getOrInsertTypeIdCompatibleVtableSummary(TypeId->getString())
           .push_back({Offset, Index.getOrInsertValueInfo(&V)});
+
+}
   }
 }
 
@@ -605,12 +677,18 @@ static void computeVariableSummary(ModuleSummaryIndex &Index,
                                        Constant, V.getVCallVisibility());
   auto GVarSummary = std::make_unique<GlobalVarSummary>(Flags, VarFlags,
                                                          RefEdges.takeVector());
-  if (NonRenamableLocal)
+  if (NonRenamableLocal) {
     CantBePromoted.insert(V.getGUID());
-  if (HasBlockAddress)
+
+}
+  if (HasBlockAddress) {
     GVarSummary->setNotEligibleToImport();
-  if (!VTableFuncs.empty())
+
+}
+  if (!VTableFuncs.empty()) {
     GVarSummary->setVTableFuncs(VTableFuncs);
+
+}
   Index.addGlobalValueSummary(V, std::move(GVarSummary));
 }
 
@@ -628,16 +706,22 @@ computeAliasSummary(ModuleSummaryIndex &Index, const GlobalAlias &A,
   assert(AliaseeVI.getSummaryList().size() == 1 &&
          "Expected a single entry per aliasee in per-module index");
   AS->setAliasee(AliaseeVI, AliaseeVI.getSummaryList()[0].get());
-  if (NonRenamableLocal)
+  if (NonRenamableLocal) {
     CantBePromoted.insert(A.getGUID());
+
+}
   Index.addGlobalValueSummary(A, std::move(AS));
 }
 
 // Set LiveRoot flag on entries matching the given value name.
 static void setLiveRoot(ModuleSummaryIndex &Index, StringRef Name) {
-  if (ValueInfo VI = Index.getValueInfo(GlobalValue::getGUID(Name)))
-    for (auto &Summary : VI.getSummaryList())
+  if (ValueInfo VI = Index.getValueInfo(GlobalValue::getGUID(Name))) {
+    for (auto &Summary : VI.getSummaryList()) {
       Summary->setLive(true);
+
+}
+
+}
 }
 
 ModuleSummaryIndex llvm::buildModuleSummaryIndex(
@@ -647,8 +731,10 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
   assert(PSI);
   bool EnableSplitLTOUnit = false;
   if (auto *MD = mdconst::extract_or_null<ConstantInt>(
-          M.getModuleFlag("EnableSplitLTOUnit")))
+          M.getModuleFlag("EnableSplitLTOUnit"))) {
     EnableSplitLTOUnit = MD->getZExtValue();
+
+}
   ModuleSummaryIndex Index(/*HaveGVs=*/true, EnableSplitLTOUnit);
 
   // Identify the local values in the llvm.used and llvm.compiler.used sets,
@@ -685,12 +771,16 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
         M, [&](StringRef Name, object::BasicSymbolRef::Flags Flags) {
           // Symbols not marked as Weak or Global are local definitions.
           if (Flags & (object::BasicSymbolRef::SF_Weak |
-                       object::BasicSymbolRef::SF_Global))
+                       object::BasicSymbolRef::SF_Global)) {
             return;
+
+}
           HasLocalInlineAsmSymbol = true;
           GlobalValue *GV = M.getNamedValue(Name);
-          if (!GV)
+          if (!GV) {
             return;
+
+}
           assert(GV->isDeclaration() && "Def in module asm already has definition");
           GlobalValueSummary::GVFlags GVFlags(GlobalValue::InternalLinkage,
                                               /* NotEligibleToImport = */ true,
@@ -733,21 +823,25 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
 
   bool IsThinLTO = true;
   if (auto *MD =
-          mdconst::extract_or_null<ConstantInt>(M.getModuleFlag("ThinLTO")))
+          mdconst::extract_or_null<ConstantInt>(M.getModuleFlag("ThinLTO"))) {
     IsThinLTO = MD->getZExtValue();
+
+}
 
   // Compute summaries for all functions defined in module, and save in the
   // index.
   for (auto &F : M) {
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
+
+}
 
     DominatorTree DT(const_cast<Function &>(F));
     BlockFrequencyInfo *BFI = nullptr;
     std::unique_ptr<BlockFrequencyInfo> BFIPtr;
-    if (GetBFICallback)
+    if (GetBFICallback) {
       BFI = GetBFICallback(F);
-    else if (F.hasProfileData()) {
+    } else if (F.hasProfileData()) {
       LoopInfo LI{DT};
       BranchProbabilityInfo BPI{F, LI};
       BFIPtr = std::make_unique<BlockFrequencyInfo>(F, BPI, LI);
@@ -763,15 +857,19 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
   // index.
   SmallVector<MDNode *, 2> Types;
   for (const GlobalVariable &G : M.globals()) {
-    if (G.isDeclaration())
+    if (G.isDeclaration()) {
       continue;
+
+}
     computeVariableSummary(Index, G, CantBePromoted, M, Types);
   }
 
   // Compute summaries for all aliases defined in module, and save in the
   // index.
-  for (const GlobalAlias &A : M.aliases())
+  for (const GlobalAlias &A : M.aliases()) {
     computeAliasSummary(Index, A, CantBePromoted);
+
+}
 
   for (auto *V : LocalsUsed) {
     auto *Summary = Index.getGlobalValueSummary(*V);
@@ -790,8 +888,10 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
 
   for (auto &GlobalList : Index) {
     // Ignore entries for references that are undefined in the current module.
-    if (GlobalList.second.SummaryList.empty())
+    if (GlobalList.second.SummaryList.empty()) {
       continue;
+
+}
 
     assert(GlobalList.second.SummaryList.size() == 1 &&
            "Expected module's index to have one summary per GUID");
@@ -815,17 +915,21 @@ ModuleSummaryIndex llvm::buildModuleSummaryIndex(
           FuncSummary->calls(), [&](const FunctionSummary::EdgeTy &Edge) {
             return !CantBePromoted.count(Edge.first.getGUID());
           });
-      if (!AllCallsCanBeExternallyReferenced)
+      if (!AllCallsCanBeExternallyReferenced) {
         Summary->setNotEligibleToImport();
+
+}
     }
   }
 
   if (!ModuleSummaryDotFile.empty()) {
     std::error_code EC;
     raw_fd_ostream OSDot(ModuleSummaryDotFile, EC, sys::fs::OpenFlags::OF_None);
-    if (EC)
+    if (EC) {
       report_fatal_error(Twine("Failed to open dot file ") +
                          ModuleSummaryDotFile + ": " + EC.message() + "\n");
+
+}
     Index.exportToDot(OSDot, {});
   }
 

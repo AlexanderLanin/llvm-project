@@ -82,8 +82,10 @@ private:
       for (auto *B : S.blocks()) {
         dbgs() << "    block@" << formatv("{0:x16}", B->getAddress()) << ":\n";
 
-        if (B->isZeroFill())
+        if (B->isZeroFill()) {
           continue;
+
+}
 
         JITTargetAddress InitAddr = B->getAddress() & ~(LineWidth - 1);
         JITTargetAddress StartAddr = B->getAddress();
@@ -92,17 +94,25 @@ private:
 
         for (JITTargetAddress CurAddr = InitAddr; CurAddr != EndAddr;
              ++CurAddr) {
-          if (CurAddr % LineWidth == 0)
+          if (CurAddr % LineWidth == 0) {
             dbgs() << "    " << formatv("{0:x16}", CurAddr) << ": ";
-          if (CurAddr < StartAddr)
+
+}
+          if (CurAddr < StartAddr) {
             dbgs() << "   ";
-          else
+          } else {
             dbgs() << formatv("{0:x-2}", Data[CurAddr - StartAddr]) << " ";
-          if (CurAddr % LineWidth == LineWidth - 1)
+
+}
+          if (CurAddr % LineWidth == LineWidth - 1) {
             dbgs() << "\n";
+
+}
         }
-        if (EndAddr % LineWidth != 0)
+        if (EndAddr % LineWidth != 0) {
           dbgs() << "\n";
+
+}
         dbgs() << "\n";
       }
     }

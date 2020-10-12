@@ -114,28 +114,40 @@ static bool checkReplacementError(llvm::Error &&Error,
   llvm::raw_string_ostream OS(ErrorMessage);
   llvm::handleAllErrors(std::move(Error), [&](const ReplacementError &RE) {
     llvm::errs() << "Handling error...\n";
-    if (ExpectedErr != RE.get())
+    if (ExpectedErr != RE.get()) {
       OS << "Unexpected error code: " << int(RE.get()) << "\n";
+
+}
     if (ExpectedExisting != RE.getExistingReplacement()) {
       OS << "Expected Existing != Actual Existing.\n";
-      if (ExpectedExisting.hasValue())
+      if (ExpectedExisting.hasValue()) {
         OS << "Expected existing replacement: " << ExpectedExisting->toString()
            << "\n";
-      if (RE.getExistingReplacement().hasValue())
+
+}
+      if (RE.getExistingReplacement().hasValue()) {
         OS << "Actual existing replacement: "
            << RE.getExistingReplacement()->toString() << "\n";
+
+}
     }
     if (ExpectedNew != RE.getNewReplacement()) {
       OS << "Expected New != Actual New.\n";
-      if (ExpectedNew.hasValue())
+      if (ExpectedNew.hasValue()) {
         OS << "Expected new replacement: " << ExpectedNew->toString() << "\n";
-      if (RE.getNewReplacement().hasValue())
+
+}
+      if (RE.getNewReplacement().hasValue()) {
         OS << "Actual new replacement: " << RE.getNewReplacement()->toString()
            << "\n";
+
+}
     }
   });
   OS.flush();
-  if (ErrorMessage.empty()) return true;
+  if (ErrorMessage.empty()) { return true;
+
+}
   llvm::errs() << ErrorMessage;
   return false;
 }
@@ -571,8 +583,10 @@ TEST(ShiftedCodePositionTest, FindsNewCodePositionWithInserts) {
 TEST(ShiftedCodePositionTest, FindsNewCodePositionInReplacedText) {
   // Replace the first four characters with "abcd".
   auto Replaces = toReplacements({Replacement("", 0, 4, "abcd")});
-  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned i = 0; i < 3; ++i) {
     EXPECT_EQ(i, Replaces.getShiftedCodePosition(i));
+
+}
 }
 
 TEST(ShiftedCodePositionTest, NoReplacementText) {
@@ -930,10 +944,14 @@ protected:
     auto MergedRewrite = applyAllReplacements(Code, Merged);
     EXPECT_TRUE(static_cast<bool>(MergedRewrite));
     EXPECT_EQ(*InSequenceRewrite, *MergedRewrite);
-    if (*InSequenceRewrite != *MergedRewrite)
-      for (tooling::Replacement M : Merged)
+    if (*InSequenceRewrite != *MergedRewrite) {
+      for (tooling::Replacement M : Merged) {
         llvm::errs() << M.getOffset() << " " << M.getLength() << " "
                      << M.getReplacementText() << "\n";
+
+}
+
+}
   }
   void mergeAndTestRewrite(StringRef Code, const Replacements &First,
                            const Replacements &Second) {
@@ -944,10 +962,14 @@ protected:
     auto MergedRewrite = applyAllReplacements(Code, Merged);
     EXPECT_TRUE(static_cast<bool>(MergedRewrite));
     EXPECT_EQ(*InSequenceRewrite, *MergedRewrite);
-    if (*InSequenceRewrite != *MergedRewrite)
-      for (tooling::Replacement M : Merged)
+    if (*InSequenceRewrite != *MergedRewrite) {
+      for (tooling::Replacement M : Merged) {
         llvm::errs() << M.getOffset() << " " << M.getLength() << " "
                      << M.getReplacementText() << "\n";
+
+}
+
+}
   }
 };
 

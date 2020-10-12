@@ -130,8 +130,10 @@ filterAndSortClassDefs(LinePrinter &Printer, Enumerator &E,
     Filtered.push_back(std::move(Layout));
   }
 
-  if (Comp)
+  if (Comp) {
     llvm::sort(Filtered, Comp);
+
+}
   return Filtered;
 }
 
@@ -144,11 +146,15 @@ static bool isTypeExcluded(LinePrinter &Printer, const T &Symbol) {
 
 static bool isTypeExcluded(LinePrinter &Printer,
                            const PDBSymbolTypeEnum &Enum) {
-  if (Printer.IsTypeExcluded(Enum.getName(), Enum.getLength()))
+  if (Printer.IsTypeExcluded(Enum.getName(), Enum.getLength())) {
     return true;
+
+}
   // Dump member enums when dumping their class definition.
-  if (nullptr != Enum.getClassParent())
+  if (nullptr != Enum.getClassParent()) {
     return true;
+
+}
   return false;
 }
 
@@ -166,8 +172,10 @@ static void dumpSymbolCategory(LinePrinter &Printer, const PDBSymbolExe &Exe,
     Printer << ": (" << Children->getChildCount() << " items)";
     Printer.Indent();
     while (auto Child = Children->getNext()) {
-      if (isTypeExcluded(Printer, *Child))
+      if (isTypeExcluded(Printer, *Child)) {
         continue;
+
+}
 
       Printer.NewLine();
       Child->dump(TD);
@@ -179,37 +187,55 @@ static void dumpSymbolCategory(LinePrinter &Printer, const PDBSymbolExe &Exe,
 static void printClassDecl(LinePrinter &Printer,
                            const PDBSymbolTypeUDT &Class) {
   if (Class.getUnmodifiedTypeId() != 0) {
-    if (Class.isConstType())
+    if (Class.isConstType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "const ";
-    if (Class.isVolatileType())
+
+}
+    if (Class.isVolatileType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "volatile ";
-    if (Class.isUnalignedType())
+
+}
+    if (Class.isUnalignedType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "unaligned ";
+
+}
   }
   WithColor(Printer, PDB_ColorItem::Keyword).get() << Class.getUdtKind() << " ";
   WithColor(Printer, PDB_ColorItem::Type).get() << Class.getName();
 }
 
 void TypeDumper::start(const PDBSymbolExe &Exe) {
-  if (opts::pretty::Enums)
+  if (opts::pretty::Enums) {
     dumpSymbolCategory<PDBSymbolTypeEnum>(Printer, Exe, *this, "Enums");
 
-  if (opts::pretty::Funcsigs)
+}
+
+  if (opts::pretty::Funcsigs) {
     dumpSymbolCategory<PDBSymbolTypeFunctionSig>(Printer, Exe, *this,
                                                  "Function Signatures");
 
-  if (opts::pretty::Typedefs)
+}
+
+  if (opts::pretty::Typedefs) {
     dumpSymbolCategory<PDBSymbolTypeTypedef>(Printer, Exe, *this, "Typedefs");
 
-  if (opts::pretty::Arrays)
+}
+
+  if (opts::pretty::Arrays) {
     dumpSymbolCategory<PDBSymbolTypeArray>(Printer, Exe, *this, "Arrays");
 
-  if (opts::pretty::Pointers)
+}
+
+  if (opts::pretty::Pointers) {
     dumpSymbolCategory<PDBSymbolTypePointer>(Printer, Exe, *this, "Pointers");
 
-  if (opts::pretty::VTShapes)
+}
+
+  if (opts::pretty::VTShapes) {
     dumpSymbolCategory<PDBSymbolTypeVTableShape>(Printer, Exe, *this,
                                                  "VFTable Shapes");
+
+}
 
   if (opts::pretty::Classes) {
     if (auto Classes = Exe.findAllChildren<PDBSymbolTypeUDT>()) {
@@ -236,20 +262,26 @@ void TypeDumper::start(const PDBSymbolExe &Exe) {
       }
 
       Printer << ": (Showing " << Shown << " items";
-      if (Shown < All)
+      if (Shown < All) {
         Printer << ", " << (All - Shown) << " filtered";
+
+}
       Printer << ")";
       Printer.Indent();
 
       // If we pre-computed, iterate the filtered/sorted list, otherwise iterate
       // the DIA enumerator and filter on the fly.
       if (Precompute) {
-        for (auto &Class : Filtered)
+        for (auto &Class : Filtered) {
           dumpClassLayout(*Class);
+
+}
       } else {
         while (auto Class = Classes->getNext()) {
-          if (Printer.IsTypeExcluded(Class->getName(), Class->getLength()))
+          if (Printer.IsTypeExcluded(Class->getName(), Class->getLength())) {
             continue;
+
+}
 
           // No point duplicating a full class layout.  Just print the modified
           // declaration and continue.
@@ -260,8 +292,10 @@ void TypeDumper::start(const PDBSymbolExe &Exe) {
           }
 
           auto Layout = std::make_unique<ClassLayout>(std::move(Class));
-          if (Layout->deepPaddingSize() < opts::pretty::PaddingThreshold)
+          if (Layout->deepPaddingSize() < opts::pretty::PaddingThreshold) {
             continue;
+
+}
 
           dumpClassLayout(*Layout);
         }
@@ -329,16 +363,20 @@ void TypeDumper::dump(const PDBSymbolTypePointer &Symbol) {
 
   if (auto Parent = Symbol.getClassParent()) {
     auto UDT = llvm::unique_dyn_cast<PDBSymbolTypeUDT>(std::move(Parent));
-    if (UDT)
+    if (UDT) {
       Printer << " " << UDT->getName() << "::";
+
+}
   }
 
-  if (Symbol.isReference())
+  if (Symbol.isReference()) {
     Printer << "&";
-  else if (Symbol.isRValueReference())
+  } else if (Symbol.isRValueReference()) {
     Printer << "&&";
-  else
+  } else {
     Printer << "*";
+
+}
 }
 
 void TypeDumper::dump(const PDBSymbolTypeVTableShape &Symbol) {

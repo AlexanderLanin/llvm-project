@@ -59,8 +59,10 @@ static auto HasOpcode = [](unsigned Opcode) {
 
 MATCHER_P2(RegisterInitialValueIs, Reg, Val, "") {
   if (arg.Register == Reg &&
-      arg.Value.getLimitedValue() == static_cast<uint64_t>(Val))
+      arg.Value.getLimitedValue() == static_cast<uint64_t>(Val)) {
     return true;
+
+}
   *result_listener << "expected: {" << Reg << ", " << Val << "} ";
   *result_listener << "actual: {" << arg.Register << ", "
                    << arg.Value.getLimitedValue() << "}";

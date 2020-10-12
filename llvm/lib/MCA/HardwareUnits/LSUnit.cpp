@@ -42,8 +42,10 @@ LSUnitBase::LSUnitBase(const MCSchedModel &SM, unsigned LQ, unsigned SQ,
 LSUnitBase::~LSUnitBase() {}
 
 void LSUnitBase::cycleEvent() {
-  for (const std::pair<unsigned, std::unique_ptr<MemoryGroup>> &G : Groups)
+  for (const std::pair<unsigned, std::unique_ptr<MemoryGroup>> &G : Groups) {
     G.second->cycleEvent();
+
+}
 }
 
 #ifndef NDEBUG
@@ -71,10 +73,14 @@ unsigned LSUnit::dispatch(const InstRef &IR) {
   unsigned IsMemBarrier = Desc.HasSideEffects;
   assert((Desc.MayLoad || Desc.MayStore) && "Not a memory operation!");
 
-  if (Desc.MayLoad)
+  if (Desc.MayLoad) {
     acquireLQSlot();
-  if (Desc.MayStore)
+
+}
+  if (Desc.MayStore) {
     acquireSQSlot();
+
+}
 
   if (Desc.MayStore) {
     // Always create a new group for store operations.
@@ -103,8 +109,10 @@ unsigned LSUnit::dispatch(const InstRef &IR) {
     CurrentStoreGroupID = NewGID;
     if (Desc.MayLoad) {
       CurrentLoadGroupID = NewGID;
-      if (IsMemBarrier)
+      if (IsMemBarrier) {
         CurrentLoadBarrierGroupID = NewGID;
+
+}
     }
 
     return NewGID;
@@ -140,8 +148,10 @@ unsigned LSUnit::dispatch(const InstRef &IR) {
     }
 
     CurrentLoadGroupID = NewGID;
-    if (IsMemBarrier)
+    if (IsMemBarrier) {
       CurrentLoadBarrierGroupID = NewGID;
+
+}
     return NewGID;
   }
 
@@ -152,10 +162,14 @@ unsigned LSUnit::dispatch(const InstRef &IR) {
 
 LSUnit::Status LSUnit::isAvailable(const InstRef &IR) const {
   const InstrDesc &Desc = IR.getInstruction()->getDesc();
-  if (Desc.MayLoad && isLQFull())
+  if (Desc.MayLoad && isLQFull()) {
     return LSUnit::LSU_LQUEUE_FULL;
-  if (Desc.MayStore && isSQFull())
+
+}
+  if (Desc.MayStore && isSQFull()) {
     return LSUnit::LSU_SQUEUE_FULL;
+
+}
   return LSUnit::LSU_AVAILABLE;
 }
 
@@ -164,8 +178,10 @@ void LSUnitBase::onInstructionExecuted(const InstRef &IR) {
   auto It = Groups.find(GroupID);
   assert(It != Groups.end() && "Instruction not dispatched to the LS unit");
   It->second->onInstructionExecuted();
-  if (It->second->isExecuted())
+  if (It->second->isExecuted()) {
     Groups.erase(It);
+
+}
 }
 
 void LSUnitBase::onInstructionRetired(const InstRef &IR) {
@@ -189,18 +205,26 @@ void LSUnitBase::onInstructionRetired(const InstRef &IR) {
 
 void LSUnit::onInstructionExecuted(const InstRef &IR) {
   const Instruction &IS = *IR.getInstruction();
-  if (!IS.isMemOp())
+  if (!IS.isMemOp()) {
     return;
+
+}
 
   LSUnitBase::onInstructionExecuted(IR);
   unsigned GroupID = IS.getLSUTokenID();
   if (!isValidGroupID(GroupID)) {
-    if (GroupID == CurrentLoadGroupID)
+    if (GroupID == CurrentLoadGroupID) {
       CurrentLoadGroupID = 0;
-    if (GroupID == CurrentStoreGroupID)
+
+}
+    if (GroupID == CurrentStoreGroupID) {
       CurrentStoreGroupID = 0;
-    if (GroupID == CurrentLoadBarrierGroupID)
+
+}
+    if (GroupID == CurrentLoadBarrierGroupID) {
       CurrentLoadBarrierGroupID = 0;
+
+}
   }
 }
 

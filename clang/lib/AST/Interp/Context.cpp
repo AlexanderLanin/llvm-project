@@ -39,8 +39,10 @@ bool Context::isPotentialConstantExpr(State &Parent, const FunctionDecl *FD) {
     }
   }
 
-  if (!Func->isConstexpr())
+  if (!Func->isConstexpr()) {
     return false;
+
+}
 
   APValue Dummy;
   return Run(Parent, Func, Dummy);
@@ -64,8 +66,10 @@ llvm::Optional<PrimType> Context::classify(QualType T) {
     return PT_Ptr;
   }
 
-  if (T->isBooleanType())
+  if (T->isBooleanType()) {
     return PT_Bool;
+
+}
 
   if (T->isSignedIntegerOrEnumerationType()) {
     switch (Ctx.getIntWidth(T)) {
@@ -97,11 +101,15 @@ llvm::Optional<PrimType> Context::classify(QualType T) {
     }
   }
 
-  if (T->isNullPtrType())
+  if (T->isNullPtrType()) {
     return PT_Ptr;
 
-  if (auto *AT = dyn_cast<AtomicType>(T))
+}
+
+  if (auto *AT = dyn_cast<AtomicType>(T)) {
     return classify(AT->getValueType());
+
+}
 
   return {};
 }
@@ -113,15 +121,19 @@ unsigned Context::getCharBit() const {
 bool Context::Run(State &Parent, Function *Func, APValue &Result) {
   InterpState State(Parent, *P, Stk, *this);
   State.Current = new InterpFrame(State, Func, nullptr, {}, {});
-  if (Interpret(State, Result))
+  if (Interpret(State, Result)) {
     return true;
+
+}
   Stk.clear();
   return false;
 }
 
 bool Context::Check(State &Parent, llvm::Expected<bool> &&Flag) {
-  if (Flag)
+  if (Flag) {
     return *Flag;
+
+}
   handleAllErrors(Flag.takeError(), [&Parent](ByteCodeGenError &Err) {
     Parent.FFDiag(Err.getLoc(), diag::err_experimental_clang_interp_failed);
   });

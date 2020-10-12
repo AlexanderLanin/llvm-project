@@ -78,6 +78,8 @@ void ManagedStaticBase::destroy() const {
 void llvm::llvm_shutdown() {
   std::lock_guard<std::recursive_mutex> Lock(*getManagedStaticMutex());
 
-  while (StaticList)
+  while (StaticList) {
     StaticList->destroy();
+
+}
 }

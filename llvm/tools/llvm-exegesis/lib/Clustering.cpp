@@ -43,11 +43,15 @@ void InstructionBenchmarkClustering::rangeQuery(
   Neighbors.reserve(Points_.size() - 1); // The Q itself isn't a neighbor.
   const auto &QMeasurements = Points_[Q].Measurements;
   for (size_t P = 0, NumPoints = Points_.size(); P < NumPoints; ++P) {
-    if (P == Q)
+    if (P == Q) {
       continue;
+
+}
     const auto &PMeasurements = Points_[P].Measurements;
-    if (PMeasurements.empty()) // Error point.
+    if (PMeasurements.empty()) { // Error point.
       continue;
+
+}
     if (isNeighbour(PMeasurements, QMeasurements,
                     AnalysisClusteringEpsilonSquared_)) {
       Neighbors.push_back(P);
@@ -64,8 +68,10 @@ bool InstructionBenchmarkClustering::areAllNeighbours(
   for_each(Pts, [this, &G](size_t P) {
     assert(P < Points_.size());
     ArrayRef<BenchmarkMeasure> Measurements = Points_[P].Measurements;
-    if (Measurements.empty()) // Error point.
+    if (Measurements.empty()) { // Error point.
       return;
+
+}
     G.addPoint(Measurements);
   });
   const std::vector<BenchmarkMeasure> Centroid = G.getAsPoint();
@@ -79,8 +85,10 @@ bool InstructionBenchmarkClustering::areAllNeighbours(
       Pts, [this, &Centroid, AnalysisClusteringEpsilonHalvedSquared](size_t P) {
         assert(P < Points_.size());
         const auto &PMeasurements = Points_[P].Measurements;
-        if (PMeasurements.empty()) // Error point.
+        if (PMeasurements.empty()) { // Error point.
           return true;             // Pretend that error point is a neighbour.
+
+}
         return isNeighbour(PMeasurements, Centroid,
                            AnalysisClusteringEpsilonHalvedSquared);
       });
@@ -129,8 +137,10 @@ Error InstructionBenchmarkClustering::validateAndSetup() {
 void InstructionBenchmarkClustering::clusterizeDbScan(const size_t MinPts) {
   std::vector<size_t> Neighbors; // Persistent buffer to avoid allocs.
   for (size_t P = 0, NumPoints = Points_.size(); P < NumPoints; ++P) {
-    if (!ClusterIdForPoint_[P].isUndef())
+    if (!ClusterIdForPoint_[P].isUndef()) {
       continue; // Previously processed in inner loop.
+
+}
     rangeQuery(P, Neighbors);
     if (Neighbors.size() + 1 < MinPts) { // Density check.
       // The region around P is not dense enough to create a new cluster, mark
@@ -193,8 +203,10 @@ void InstructionBenchmarkClustering::clusterizeNaive(unsigned NumOpcodes) {
     const unsigned Opcode = Point.keyInstruction().getOpcode();
     assert(Opcode < NumOpcodes && "NumOpcodes is incorrect (too small)");
     SmallVectorImpl<size_t> &PointsOfOpcode = OpcodeToPoints[Opcode];
-    if (PointsOfOpcode.empty()) // If we previously have not seen any points of
+    if (PointsOfOpcode.empty()) { // If we previously have not seen any points of
       ++NumOpcodesSeen; // this opcode, then naturally this is the new opcode.
+
+}
     PointsOfOpcode.emplace_back(P);
   }
   assert(OpcodeToPoints.size() == NumOpcodes && "sanity check");
@@ -255,8 +267,10 @@ void InstructionBenchmarkClustering::stabilize(unsigned NumOpcodes) {
   assert(ClusterIdForPoint_.size() == Points_.size() && "size mismatch");
   for (auto Point : zip(Points_, ClusterIdForPoint_)) {
     const ClusterId &ClusterIdOfPoint = std::get<1>(Point);
-    if (!ClusterIdOfPoint.isValid())
+    if (!ClusterIdOfPoint.isValid()) {
       continue; // Only process fully valid clusters.
+
+}
     const OpcodeAndConfig Key(std::get<0>(Point));
     SmallSet<ClusterId, 1> &ClusterIDsOfOpcode = OpcodeConfigToClusterIDs[Key];
     ClusterIDsOfOpcode.insert(ClusterIdOfPoint);
@@ -266,8 +280,10 @@ void InstructionBenchmarkClustering::stabilize(unsigned NumOpcodes) {
     const SmallSet<ClusterId, 1> &ClusterIDs = OpcodeConfigToClusterID.second;
     const OpcodeAndConfig &Key = OpcodeConfigToClusterID.first;
     // We only care about unstable instructions.
-    if (ClusterIDs.size() < 2)
+    if (ClusterIDs.size() < 2) {
       continue;
+
+}
 
     // Create a new unstable cluster, one per Opcode.
     Clusters_.emplace_back(ClusterId::makeValidUnstable(Clusters_.size()));
@@ -330,12 +346,16 @@ Expected<InstructionBenchmarkClustering> InstructionBenchmarkClustering::create(
   if (Mode == ModeE::Dbscan) {
     Clustering.clusterizeDbScan(DbscanMinPts);
 
-    if (NumOpcodes.hasValue())
+    if (NumOpcodes.hasValue()) {
       Clustering.stabilize(NumOpcodes.getValue());
+
+}
   } else /*if(Mode == ModeE::Naive)*/ {
-    if (!NumOpcodes.hasValue())
+    if (!NumOpcodes.hasValue()) {
       return make_error<Failure>(
           "'naive' clustering mode requires opcode count to be specified");
+
+}
     Clustering.clusterizeNaive(NumOpcodes.getValue());
   }
 
@@ -343,19 +363,25 @@ Expected<InstructionBenchmarkClustering> InstructionBenchmarkClustering::create(
 }
 
 void SchedClassClusterCentroid::addPoint(ArrayRef<BenchmarkMeasure> Point) {
-  if (Representative.empty())
+  if (Representative.empty()) {
     Representative.resize(Point.size());
+
+}
   assert(Representative.size() == Point.size() &&
          "All points should have identical dimensions.");
 
-  for (auto I : zip(Representative, Point))
+  for (auto I : zip(Representative, Point)) {
     std::get<0>(I).push(std::get<1>(I));
+
+}
 }
 
 std::vector<BenchmarkMeasure> SchedClassClusterCentroid::getAsPoint() const {
   std::vector<BenchmarkMeasure> ClusterCenterPoint(Representative.size());
-  for (auto I : zip(ClusterCenterPoint, Representative))
+  for (auto I : zip(ClusterCenterPoint, Representative)) {
     std::get<0>(I).PerInstructionValue = std::get<1>(I).avg();
+
+}
   return ClusterCenterPoint;
 }
 

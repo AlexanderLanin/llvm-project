@@ -40,10 +40,12 @@ bool testARMCPU(StringRef CPUName, StringRef ExpectedArch,
   pass &= ARM::getFPUName(FPUKind).equals(ExpectedFPU);
 
   uint64_t ExtKind = ARM::getDefaultExtensions(CPUName, AK);
-  if (ExtKind > 1 && (ExtKind & ARM::AEK_NONE))
+  if (ExtKind > 1 && (ExtKind & ARM::AEK_NONE)) {
     pass &= ((ExtKind ^ ARM::AEK_NONE) == ExpectedFlags);
-  else
+  } else {
     pass &= (ExtKind == ExpectedFlags);
+
+}
   pass &= ARM::getCPUAttr(AK).equals(CPUAttr);
 
   return pass;
@@ -320,8 +322,10 @@ TEST(TargetParserTest, testARMCPUArchList) {
 
 TEST(TargetParserTest, testInvalidARMArch) {
   auto InvalidArchStrings = {"armv", "armv99", "noarm"};
-  for (const char* InvalidArch : InvalidArchStrings)
+  for (const char* InvalidArch : InvalidArchStrings) {
     EXPECT_EQ(ARM::parseArch(InvalidArch), ARM::ArchKind::INVALID);
+
+}
 }
 
 bool testARMArch(StringRef Arch, StringRef DefaultCPU, StringRef SubArch,
@@ -535,25 +539,33 @@ TEST(TargetParserTest, testARMExtension) {
 TEST(TargetParserTest, ARMFPUVersion) {
   for (ARM::FPUKind FK = static_cast<ARM::FPUKind>(0);
        FK <= ARM::FPUKind::FK_LAST;
-       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1))
+       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1)) {
     if (FK == ARM::FK_LAST || ARM::getFPUName(FK) == "invalid" ||
-        ARM::getFPUName(FK) == "none" || ARM::getFPUName(FK) == "softvfp")
+        ARM::getFPUName(FK) == "none" || ARM::getFPUName(FK) == "softvfp") {
       EXPECT_EQ(ARM::FPUVersion::NONE, ARM::getFPUVersion(FK));
-    else
+    } else {
       EXPECT_NE(ARM::FPUVersion::NONE, ARM::getFPUVersion(FK));
+
+}
+
+}
 }
 
 TEST(TargetParserTest, ARMFPUNeonSupportLevel) {
   for (ARM::FPUKind FK = static_cast<ARM::FPUKind>(0);
        FK <= ARM::FPUKind::FK_LAST;
-       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1))
+       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1)) {
     if (FK == ARM::FK_LAST ||
-        ARM::getFPUName(FK).find("neon") == std::string::npos)
+        ARM::getFPUName(FK).find("neon") == std::string::npos) {
       EXPECT_EQ(ARM::NeonSupportLevel::None,
                  ARM::getFPUNeonSupportLevel(FK));
-    else
+    } else {
       EXPECT_NE(ARM::NeonSupportLevel::None,
                 ARM::getFPUNeonSupportLevel(FK));
+
+}
+
+}
 }
 
 TEST(TargetParserTest, ARMFPURestriction) {
@@ -562,10 +574,12 @@ TEST(TargetParserTest, ARMFPURestriction) {
        FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1)) {
     if (FK == ARM::FK_LAST ||
         (ARM::getFPUName(FK).find("d16") == std::string::npos &&
-         ARM::getFPUName(FK).find("vfpv3xd") == std::string::npos))
+         ARM::getFPUName(FK).find("vfpv3xd") == std::string::npos)) {
       EXPECT_EQ(ARM::FPURestriction::None, ARM::getFPURestriction(FK));
-    else
+    } else {
       EXPECT_NE(ARM::FPURestriction::None, ARM::getFPURestriction(FK));
+
+}
   }
 }
 
@@ -573,9 +587,11 @@ TEST(TargetParserTest, ARMExtensionFeatures) {
   std::map<uint64_t, std::vector<StringRef>> Extensions;
 
   for (auto &Ext : ARM::ARCHExtNames) {
-    if (Ext.Feature && Ext.NegFeature)
+    if (Ext.Feature && Ext.NegFeature) {
       Extensions[Ext.ID] = { StringRef(Ext.Feature),
                              StringRef(Ext.NegFeature) };
+
+}
   }
 
   Extensions[ARM::AEK_HWDIVARM]   = { "+hwdiv-arm", "-hwdiv-arm" };
@@ -607,10 +623,12 @@ TEST(TargetParserTest, ARMFPUFeatures) {
   std::vector<StringRef> Features;
   for (ARM::FPUKind FK = static_cast<ARM::FPUKind>(0);
        FK <= ARM::FPUKind::FK_LAST;
-       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1))
+       FK = static_cast<ARM::FPUKind>(static_cast<unsigned>(FK) + 1)) {
     EXPECT_TRUE((FK == ARM::FK_INVALID || FK >= ARM::FK_LAST)
                     ? !ARM::getFPUFeatures(FK, Features)
                     : ARM::getFPUFeatures(FK, Features));
+
+}
 }
 
 TEST(TargetParserTest, ARMArchExtFeature) {
@@ -648,8 +666,10 @@ testArchExtDependency(const char *ArchExt,
   std::vector<StringRef> Features;
 
   if (!ARM::appendArchExtFeatures("", ARM::ArchKind::ARMV8_1MMainline, ArchExt,
-                                  Features))
+                                  Features)) {
     return false;
+
+}
 
   return llvm::all_of(Expected, [&](StringRef Ext) {
     return llvm::is_contained(Features, Ext);
@@ -666,8 +686,10 @@ TEST(TargetParserTest, ARMArchExtDependencies) {
 TEST(TargetParserTest, ARMparseHWDiv) {
   const char *hwdiv[] = {"thumb", "arm", "arm,thumb", "thumb,arm"};
 
-  for (unsigned i = 0; i < array_lengthof(hwdiv); i++)
+  for (unsigned i = 0; i < array_lengthof(hwdiv); i++) {
     EXPECT_NE(ARM::AEK_INVALID, ARM::parseHWDiv((StringRef)hwdiv[i]));
+
+}
 }
 
 TEST(TargetParserTest, ARMparseArchEndianAndISA) {
@@ -753,11 +775,15 @@ TEST(TargetParserTest, ARMparseArchProfile) {
 }
 
 TEST(TargetParserTest, ARMparseArchVersion) {
-  for (unsigned i = 0; i < array_lengthof(ARMArch); i++)
-    if (((std::string)ARMArch[i]).substr(0, 4) == "armv")
+  for (unsigned i = 0; i < array_lengthof(ARMArch); i++) {
+    if (((std::string)ARMArch[i]).substr(0, 4) == "armv") {
       EXPECT_EQ((ARMArch[i][4] - 48u), ARM::parseArchVersion(ARMArch[i]));
-    else
+    } else {
       EXPECT_EQ(5u, ARM::parseArchVersion(ARMArch[i]));
+
+}
+
+}
 }
 
 bool testAArch64CPU(StringRef CPUName, StringRef ExpectedArch,
@@ -767,10 +793,12 @@ bool testAArch64CPU(StringRef CPUName, StringRef ExpectedArch,
   bool pass = AArch64::getArchName(AK).equals(ExpectedArch);
 
   unsigned ExtKind = AArch64::getDefaultExtensions(CPUName, AK);
-  if (ExtKind > 1 && (ExtKind & AArch64::AEK_NONE))
+  if (ExtKind > 1 && (ExtKind & AArch64::AEK_NONE)) {
     pass &= ((ExtKind ^ AArch64::AEK_NONE) == ExpectedFlags);
-  else
+  } else {
     pass &= (ExtKind == ExpectedFlags);
+
+}
 
   pass &= AArch64::getCPUAttr(AK).equals(CPUAttr);
 
@@ -1155,8 +1183,10 @@ TEST(TargetParserTest, AArch64ExtensionFeatures) {
   std::vector<StringRef> Features;
 
   unsigned ExtVal = 0;
-  for (auto Ext : Extensions)
+  for (auto Ext : Extensions) {
     ExtVal |= Ext;
+
+}
 
   EXPECT_FALSE(AArch64::getExtensionFeatures(AArch64::AEK_INVALID, Features));
   EXPECT_TRUE(!Features.size());
@@ -1190,10 +1220,12 @@ TEST(TargetParserTest, AArch64ExtensionFeatures) {
 TEST(TargetParserTest, AArch64ArchFeatures) {
   std::vector<StringRef> Features;
 
-  for (auto AK : AArch64::ArchKinds)
+  for (auto AK : AArch64::ArchKinds) {
     EXPECT_TRUE((AK == AArch64::ArchKind::INVALID)
                     ? !AArch64::getArchFeatures(AK, Features)
                     : AArch64::getArchFeatures(AK, Features));
+
+}
 }
 
 TEST(TargetParserTest, AArch64ArchExtFeature) {

@@ -26,8 +26,10 @@ llvm::json::Object encodeError(llvm::Error E) {
             Message = L.Message;
             Code = L.Code;
             return llvm::Error::success();
-          }))
+          })) {
     Message = llvm::toString(std::move(Unhandled));
+
+}
 
   return llvm::json::Object{
       {"message", std::move(Message)},
@@ -38,8 +40,10 @@ llvm::json::Object encodeError(llvm::Error E) {
 llvm::Error decodeError(const llvm::json::Object &O) {
   std::string Msg =
       std::string(O.getString("message").getValueOr("Unspecified error"));
-  if (auto Code = O.getInteger("code"))
+  if (auto Code = O.getInteger("code")) {
     return llvm::make_error<LSPError>(std::move(Msg), ErrorCode(*Code));
+
+}
   return llvm::make_error<llvm::StringError>(std::move(Msg),
                                              llvm::inconvertibleErrorCode());
 }
@@ -86,18 +90,24 @@ public:
 
   llvm::Error loop(MessageHandler &Handler) override {
     while (!feof(In)) {
-      if (shutdownRequested())
+      if (shutdownRequested()) {
         return llvm::createStringError(
             std::make_error_code(std::errc::operation_canceled),
             "Got signal, shutting down");
-      if (ferror(In))
+
+}
+      if (ferror(In)) {
         return llvm::errorCodeToError(
             std::error_code(errno, std::system_category()));
+
+}
       if (auto JSON = readRawMessage()) {
         if (auto Doc = llvm::json::parse(*JSON)) {
           vlog(Pretty ? "<<< {0:2}\n" : "<<< {0}\n", *Doc);
-          if (!handleMessage(std::move(*Doc), Handler))
+          if (!handleMessage(std::move(*Doc), Handler)) {
             return llvm::Error::success(); // we saw the "exit" notification.
+
+}
         } else {
           // Parse error. Log the raw message.
           vlog("<<< {0}\n", *JSON);
@@ -148,31 +158,41 @@ bool JSONTransport::handleMessage(llvm::json::Value Message,
   }
   // ID may be any JSON value. If absent, this is a notification.
   llvm::Optional<llvm::json::Value> ID;
-  if (auto *I = Object->get("id"))
+  if (auto *I = Object->get("id")) {
     ID = std::move(*I);
+
+}
   auto Method = Object->getString("method");
   if (!Method) { // This is a response.
     if (!ID) {
       elog("No method and no response ID: {0:2}", Message);
       return false;
     }
-    if (auto *Err = Object->getObject("error"))
+    if (auto *Err = Object->getObject("error")) {
       return Handler.onReply(std::move(*ID), decodeError(*Err));
+
+}
     // Result should be given, use null if not.
     llvm::json::Value Result = nullptr;
-    if (auto *R = Object->get("result"))
+    if (auto *R = Object->get("result")) {
       Result = std::move(*R);
+
+}
     return Handler.onReply(std::move(*ID), std::move(Result));
   }
   // Params should be given, use null if not.
   llvm::json::Value Params = nullptr;
-  if (auto *P = Object->get("params"))
+  if (auto *P = Object->get("params")) {
     Params = std::move(*P);
 
-  if (ID)
+}
+
+  if (ID) {
     return Handler.onCall(*Method, std::move(Params), std::move(*ID));
-  else
+  } else {
     return Handler.onNotify(*Method, std::move(Params));
+
+}
 }
 
 // Tries to read a line up to and including \n.
@@ -185,8 +205,10 @@ bool readLine(std::FILE *In, std::string &Out) {
     Out.resize(Size + BufSize);
     // Handle EINTR which is sent when a debugger attaches on some platforms.
     if (!retryAfterSignalUnlessShutdown(
-            nullptr, [&] { return std::fgets(&Out[Size], BufSize, In); }))
+            nullptr, [&] { return std::fgets(&Out[Size], BufSize, In); })) {
       return false;
+
+}
     clearerr(In);
     // If the line contained null bytes, anything after it (including \n) will
     // be ignored. Fortunately this is not a legal header or JSON.
@@ -208,8 +230,10 @@ llvm::Optional<std::string> JSONTransport::readStandardMessage() {
   unsigned long long ContentLength = 0;
   std::string Line;
   while (true) {
-    if (feof(In) || ferror(In) || !readLine(In, Line))
+    if (feof(In) || ferror(In) || !readLine(In, Line)) {
       return llvm::None;
+
+}
     InMirror << Line;
 
     llvm::StringRef LineRef(Line);
@@ -217,8 +241,10 @@ llvm::Optional<std::string> JSONTransport::readStandardMessage() {
     // We allow comments in headers. Technically this isn't part
 
     // of the LSP specification, but makes writing tests easier.
-    if (LineRef.startswith("#"))
+    if (LineRef.startswith("#")) {
       continue;
+
+}
 
     // Content-Length is a mandatory header, and the only one we handle.
     if (LineRef.consume_front("Content-Length: ")) {
@@ -281,18 +307,24 @@ llvm::Optional<std::string> JSONTransport::readDelimitedMessage() {
   while (readLine(In, Line)) {
     InMirror << Line;
     auto LineRef = llvm::StringRef(Line).trim();
-    if (LineRef.startswith("#")) // comment
+    if (LineRef.startswith("#")) { // comment
       continue;
 
+}
+
     // found a delimiter
-    if (LineRef.rtrim() == "---")
+    if (LineRef.rtrim() == "---") {
       break;
+
+}
 
     JSON += Line;
   }
 
-  if (shutdownRequested())
+  if (shutdownRequested()) {
     return llvm::None;
+
+}
   if (ferror(In)) {
     elog("Input error while reading message!");
     return llvm::None;

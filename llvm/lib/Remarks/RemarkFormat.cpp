@@ -24,10 +24,12 @@ Expected<Format> llvm::remarks::parseFormat(StringRef FormatStr) {
                     .Case("bitstream", Format::Bitstream)
                     .Default(Format::Unknown);
 
-  if (Result == Format::Unknown)
+  if (Result == Format::Unknown) {
     return createStringError(std::make_error_code(std::errc::invalid_argument),
                              "Unknown remark format: '%s'",
                              FormatStr.data());
+
+}
 
   return Result;
 }
@@ -40,8 +42,10 @@ Expected<Format> llvm::remarks::magicToFormat(StringRef MagicStr) {
           .StartsWith(remarks::ContainerMagic, Format::Bitstream)
           .Default(Format::Unknown);
 
-  if (Result == Format::Unknown)
+  if (Result == Format::Unknown) {
     return createStringError(std::make_error_code(std::errc::invalid_argument),
                              "Unknown remark magic: '%s'", MagicStr.data());
+
+}
   return Result;
 }

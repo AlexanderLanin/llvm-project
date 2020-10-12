@@ -78,8 +78,10 @@ struct GenericTable {
 
   const GenericField *getFieldByName(StringRef Name) const {
     for (const auto &Field : Fields) {
-      if (Name == Field.Name)
+      if (Name == Field.Name) {
         return &Field;
+
+}
     }
     return nullptr;
   }
@@ -107,35 +109,41 @@ private:
   };
 
   std::string primaryRepresentation(const GenericField &Field, Init *I) {
-    if (StringInit *SI = dyn_cast<StringInit>(I))
+    if (StringInit *SI = dyn_cast<StringInit>(I)) {
       return SI->getAsString();
-    else if (BitsInit *BI = dyn_cast<BitsInit>(I))
+    } else if (BitsInit *BI = dyn_cast<BitsInit>(I)) {
       return "0x" + utohexstr(getAsInt(BI));
-    else if (BitInit *BI = dyn_cast<BitInit>(I))
+    } else if (BitInit *BI = dyn_cast<BitInit>(I)) {
       return BI->getValue() ? "true" : "false";
-    else if (CodeInit *CI = dyn_cast<CodeInit>(I))
+    } else if (CodeInit *CI = dyn_cast<CodeInit>(I)) {
       return std::string(CI->getValue());
-    else if (Field.IsIntrinsic)
+    } else if (Field.IsIntrinsic) {
       return "Intrinsic::" + getIntrinsic(I).EnumName;
-    else if (Field.IsInstruction)
+    } else if (Field.IsInstruction) {
       return I->getAsString();
-    else if (Field.Enum)
+    } else if (Field.Enum) {
       return std::string(
           Field.Enum->EntryMap[cast<DefInit>(I)->getDef()]->first);
+
+}
     PrintFatalError(Twine("invalid field type for field '") + Field.Name +
                     "', expected: string, bits, bit or code");
   }
 
   bool isIntrinsic(Init *I) {
-    if (DefInit *DI = dyn_cast<DefInit>(I))
+    if (DefInit *DI = dyn_cast<DefInit>(I)) {
       return DI->getDef()->isSubClassOf("Intrinsic");
+
+}
     return false;
   }
 
   CodeGenIntrinsic &getIntrinsic(Init *I) {
     std::unique_ptr<CodeGenIntrinsic> &Intr = Intrinsics[I];
-    if (!Intr)
+    if (!Intr) {
       Intr = std::make_unique<CodeGenIntrinsic>(cast<DefInit>(I)->getDef());
+
+}
     return *Intr;
   }
 
@@ -147,25 +155,39 @@ private:
 
   std::string searchableFieldType(const GenericField &Field, TypeContext Ctx) {
     if (isa<StringRecTy>(Field.RecType)) {
-      if (Ctx == TypeInStaticStruct)
+      if (Ctx == TypeInStaticStruct) {
         return "const char *";
-      if (Ctx == TypeInTempStruct)
+
+}
+      if (Ctx == TypeInTempStruct) {
         return "std::string";
+
+}
       return "StringRef";
     } else if (BitsRecTy *BI = dyn_cast<BitsRecTy>(Field.RecType)) {
       unsigned NumBits = BI->getNumBits();
-      if (NumBits <= 8)
+      if (NumBits <= 8) {
         return "uint8_t";
-      if (NumBits <= 16)
+
+}
+      if (NumBits <= 16) {
         return "uint16_t";
-      if (NumBits <= 32)
+
+}
+      if (NumBits <= 32) {
         return "uint32_t";
-      if (NumBits <= 64)
+
+}
+      if (NumBits <= 64) {
         return "uint64_t";
+
+}
       PrintFatalError(Twine("bitfield '") + Field.Name +
                       "' too large to search");
-    } else if (Field.Enum || Field.IsIntrinsic || Field.IsInstruction)
+    } else if (Field.Enum || Field.IsIntrinsic || Field.IsInstruction) {
       return "unsigned";
+
+}
     PrintFatalError(Twine("Field '") + Field.Name + "' has unknown type '" +
                     Field.RecType->getAsString() + "' to search by");
   }
@@ -215,19 +237,27 @@ bool SearchableTableEmitter::compareBy(Record *LHS, Record *RHS,
     if (isa<BitsRecTy>(Field.RecType) || isa<IntRecTy>(Field.RecType)) {
       int64_t LHSi = getAsInt(LHSI);
       int64_t RHSi = getAsInt(RHSI);
-      if (LHSi < RHSi)
+      if (LHSi < RHSi) {
         return true;
-      if (LHSi > RHSi)
+
+}
+      if (LHSi > RHSi) {
         return false;
+
+}
     } else if (Field.IsIntrinsic) {
       CodeGenIntrinsic &LHSi = getIntrinsic(LHSI);
       CodeGenIntrinsic &RHSi = getIntrinsic(RHSI);
       if (std::tie(LHSi.TargetPrefix, LHSi.Name) <
-          std::tie(RHSi.TargetPrefix, RHSi.Name))
+          std::tie(RHSi.TargetPrefix, RHSi.Name)) {
         return true;
+
+}
       if (std::tie(LHSi.TargetPrefix, LHSi.Name) >
-          std::tie(RHSi.TargetPrefix, RHSi.Name))
+          std::tie(RHSi.TargetPrefix, RHSi.Name)) {
         return false;
+
+}
     } else if (Field.IsInstruction) {
       // This does not correctly compare the predefined instructions!
       Record *LHSr = cast<DefInit>(LHSI)->getDef();
@@ -235,25 +265,37 @@ bool SearchableTableEmitter::compareBy(Record *LHS, Record *RHS,
 
       bool LHSpseudo = LHSr->getValueAsBit("isPseudo");
       bool RHSpseudo = RHSr->getValueAsBit("isPseudo");
-      if (LHSpseudo && !RHSpseudo)
+      if (LHSpseudo && !RHSpseudo) {
         return true;
-      if (!LHSpseudo && RHSpseudo)
+
+}
+      if (!LHSpseudo && RHSpseudo) {
         return false;
 
+}
+
       int comp = LHSr->getName().compare(RHSr->getName());
-      if (comp < 0)
+      if (comp < 0) {
         return true;
-      if (comp > 0)
+
+}
+      if (comp > 0) {
         return false;
+
+}
     } else if (Field.Enum) {
       auto LHSr = cast<DefInit>(LHSI)->getDef();
       auto RHSr = cast<DefInit>(RHSI)->getDef();
       int64_t LHSv = Field.Enum->EntryMap[LHSr]->second;
       int64_t RHSv = Field.Enum->EntryMap[RHSr]->second;
-      if (LHSv < RHSv)
+      if (LHSv < RHSv) {
         return true;
-      if (LHSv > RHSv)
+
+}
+      if (LHSv > RHSv) {
         return false;
+
+}
     } else {
       std::string LHSs = primaryRepresentation(Field, LHSI);
       std::string RHSs = primaryRepresentation(Field, RHSI);
@@ -264,10 +306,14 @@ bool SearchableTableEmitter::compareBy(Record *LHS, Record *RHS,
       }
 
       int comp = LHSs.compare(RHSs);
-      if (comp < 0)
+      if (comp < 0) {
         return true;
-      if (comp > 0)
+
+}
+      if (comp > 0) {
         return false;
+
+}
     }
   }
   return false;
@@ -284,8 +330,10 @@ void SearchableTableEmitter::emitGenericEnum(const GenericEnum &Enum,
   emitIfdef((Twine("GET_") + Enum.PreprocessorGuard + "_DECL").str(), OS);
 
   OS << "enum " << Enum.Name << " {\n";
-  for (const auto &Entry : Enum.Entries)
+  for (const auto &Entry : Enum.Entries) {
     OS << "  " << Entry->first << " = " << Entry->second << ",\n";
+
+}
   OS << "};\n";
 
   OS << "#endif\n\n";
@@ -321,8 +369,10 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
 
     std::vector<std::pair<Record *, unsigned>> Entries;
     Entries.reserve(Table.Entries.size());
-    for (unsigned i = 0; i < Table.Entries.size(); ++i)
+    for (unsigned i = 0; i < Table.Entries.size(); ++i) {
       Entries.emplace_back(Table.Entries[i], i);
+
+}
 
     std::stable_sort(Entries.begin(), Entries.end(),
                      [&](const std::pair<Record *, unsigned> &LHS,
@@ -337,14 +387,18 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
       OS << "    { ";
       bool NeedComma = false;
       for (const auto &Field : Index.Fields) {
-        if (NeedComma)
+        if (NeedComma) {
           OS << ", ";
+
+}
         NeedComma = true;
 
         std::string Repr =
             primaryRepresentation(Field, Entry.first->getValueInit(Field.Name));
-        if (isa<StringRecTy>(Field.RecType))
+        if (isa<StringRecTy>(Field.RecType)) {
           Repr = StringRef(Repr).upper();
+
+}
         OS << Repr;
       }
       OS << ", " << Entry.second << " },\n";
@@ -374,10 +428,12 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
     OS << "  auto Table = makeArrayRef(" << IndexName << ");\n";
     OS << "  size_t Idx = " << Index.Fields[0].Name << ";\n";
     OS << "  return Idx >= Table.size() ? nullptr : ";
-    if (IsPrimary)
+    if (IsPrimary) {
       OS << "&Table[Idx]";
-    else
+    } else {
       OS << "&" << Table.Name << "[Table[Idx]._index]";
+
+}
     OS << ";\n";
     OS << "}\n";
     return;
@@ -403,17 +459,21 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
   OS << "  KeyType Key = { ";
   bool NeedComma = false;
   for (const auto &Field : Index.Fields) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ", ";
+
+}
     NeedComma = true;
 
     OS << Field.Name;
     if (isa<StringRecTy>(Field.RecType)) {
       OS << ".upper()";
-      if (IsPrimary)
+      if (IsPrimary) {
         PrintFatalError(Twine("Use a secondary index for case-insensitive "
                               "comparison of field '") +
                         Field.Name + "' in table '" + Table.Name + "'");
+
+}
     }
   }
   OS << " };\n";
@@ -450,14 +510,18 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
 
   OS << "  if (Idx == Table.end()";
 
-  for (const auto &Field : Index.Fields)
+  for (const auto &Field : Index.Fields) {
     OS << " ||\n      Key." << Field.Name << " != Idx->" << Field.Name;
+
+}
   OS << ")\n    return nullptr;\n";
 
-  if (IsPrimary)
+  if (IsPrimary) {
     OS << "  return &*Idx;\n";
-  else
+  } else {
     OS << "  return &" << Table.Name << "[Idx->_index];\n";
+
+}
 
   OS << "}\n";
 }
@@ -469,8 +533,10 @@ void SearchableTableEmitter::emitLookupDeclaration(const GenericTable &Table,
 
   bool NeedComma = false;
   for (const auto &Field : Index.Fields) {
-    if (NeedComma)
+    if (NeedComma) {
       OS << ", ";
+
+}
     NeedComma = true;
 
     OS << searchableFieldType(Field, TypeInArgument) << " " << Field.Name;
@@ -504,8 +570,10 @@ void SearchableTableEmitter::emitGenericTable(const GenericTable &Table,
 
     bool NeedComma = false;
     for (const auto &Field : Table.Fields) {
-      if (NeedComma)
+      if (NeedComma) {
         OS << ", ";
+
+}
       NeedComma = true;
 
       OS << primaryRepresentation(Field, Entry->getValueInit(Field.Name));
@@ -517,10 +585,14 @@ void SearchableTableEmitter::emitGenericTable(const GenericTable &Table,
 
   // Indexes are sorted "{ Thing, PrimaryIdx }" arrays, so that a binary
   // search can be performed by "Thing".
-  if (Table.PrimaryKey)
+  if (Table.PrimaryKey) {
     emitLookupFunction(Table, *Table.PrimaryKey, true, OS);
-  for (const auto &Index : Table.Indices)
+
+}
+  for (const auto &Index : Table.Indices) {
     emitLookupFunction(Table, *Index, false, OS);
+
+}
 
   OS << "#endif\n\n";
 }
@@ -548,10 +620,12 @@ SearchableTableEmitter::parseSearchIndex(GenericTable &Table, StringRef Name,
 
   for (const auto &FieldName : Key) {
     const GenericField *Field = Table.getFieldByName(FieldName);
-    if (!Field)
+    if (!Field) {
       PrintFatalError(Twine("Search index '") + Name +
                       "' refers to non-existing field '" + FieldName +
                       "' in table '" + Table.Name + "'");
+
+}
     Index->Fields.push_back(*Field);
   }
 
@@ -569,14 +643,18 @@ void SearchableTableEmitter::collectEnumEntries(
     const std::vector<Record *> &Items) {
   for (auto EntryRec : Items) {
     StringRef Name;
-    if (NameField.empty())
+    if (NameField.empty()) {
       Name = EntryRec->getName();
-    else
+    } else {
       Name = EntryRec->getValueAsString(NameField);
 
+}
+
     int64_t Value = 0;
-    if (!ValueField.empty())
+    if (!ValueField.empty()) {
       Value = getInt(EntryRec, ValueField);
+
+}
 
     Enum.Entries.push_back(std::make_unique<GenericEnum::Entry>(Name, Value));
     Enum.EntryMap.insert(std::make_pair(EntryRec, Enum.Entries.back().get()));
@@ -589,8 +667,10 @@ void SearchableTableEmitter::collectEnumEntries(
                        return LHS->first < RHS->first;
                      });
 
-    for (size_t i = 0; i < Enum.Entries.size(); ++i)
+    for (size_t i = 0; i < Enum.Entries.size(); ++i) {
       Enum.Entries[i]->second = i;
+
+}
   }
 }
 
@@ -609,11 +689,13 @@ void SearchableTableEmitter::collectTableEntries(
         Field.RecType = TI->getType();
       } else {
         RecTy *Ty = resolveTypes(Field.RecType, TI->getType());
-        if (!Ty)
+        if (!Ty) {
           PrintFatalError(Twine("Field '") + Field.Name + "' of table '" +
                           Table.Name + "' has incompatible type: " +
                           Field.RecType->getAsString() + " vs. " +
                           TI->getType()->getAsString());
+
+}
         Field.RecType = Ty;
       }
     }
@@ -625,10 +707,12 @@ void SearchableTableEmitter::collectTableEntries(
   Record *InstructionClass = Records.getClass("Instruction");
   for (auto &Field : Table.Fields) {
     if (auto RecordTy = dyn_cast<RecordRecTy>(Field.RecType)) {
-      if (IntrinsicClass && RecordTy->isSubClassOf(IntrinsicClass))
+      if (IntrinsicClass && RecordTy->isSubClassOf(IntrinsicClass)) {
         Field.IsIntrinsic = true;
-      else if (InstructionClass && RecordTy->isSubClassOf(InstructionClass))
+      } else if (InstructionClass && RecordTy->isSubClassOf(InstructionClass)) {
         Field.IsInstruction = true;
+
+}
     }
   }
 }
@@ -641,12 +725,16 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
   // Collect all definitions first.
   for (auto EnumRec : Records.getAllDerivedDefinitions("GenericEnum")) {
     StringRef NameField;
-    if (!EnumRec->isValueUnset("NameField"))
+    if (!EnumRec->isValueUnset("NameField")) {
       NameField = EnumRec->getValueAsString("NameField");
 
+}
+
     StringRef ValueField;
-    if (!EnumRec->isValueUnset("ValueField"))
+    if (!EnumRec->isValueUnset("ValueField")) {
       ValueField = EnumRec->getValueAsString("ValueField");
+
+}
 
     auto Enum = std::make_unique<GenericEnum>();
     Enum->Name = std::string(EnumRec->getName());
@@ -654,9 +742,11 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
 
     StringRef FilterClass = EnumRec->getValueAsString("FilterClass");
     Enum->Class = Records.getClass(FilterClass);
-    if (!Enum->Class)
+    if (!Enum->Class) {
       PrintFatalError(EnumRec->getLoc(), Twine("Enum FilterClass '") +
                                              FilterClass + "' does not exist");
+
+}
 
     collectEnumEntries(*Enum, NameField, ValueField,
                        Records.getAllDerivedDefinitions(FilterClass));
@@ -706,11 +796,13 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
   for (Record *IndexRec : Records.getAllDerivedDefinitions("SearchIndex")) {
     Record *TableRec = IndexRec->getValueAsDef("Table");
     auto It = TableMap.find(TableRec);
-    if (It == TableMap.end())
+    if (It == TableMap.end()) {
       PrintFatalError(IndexRec->getLoc(),
                       Twine("SearchIndex '") + IndexRec->getName() +
                           "' refers to non-existing table '" +
                           TableRec->getName());
+
+}
 
     GenericTable &Table = *It->second;
     Table.Indices.push_back(parseSearchIndex(
@@ -723,16 +815,20 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
   for (auto &NameRec : Records.getClasses()) {
     Record *Class = NameRec.second.get();
     if (Class->getSuperClasses().size() != 1 ||
-        !Class->isSubClassOf(SearchableTable))
+        !Class->isSubClassOf(SearchableTable)) {
       continue;
+
+}
 
     StringRef TableName = Class->getName();
     std::vector<Record *> Items = Records.getAllDerivedDefinitions(TableName);
     if (!Class->isValueUnset("EnumNameField")) {
       StringRef NameField = Class->getValueAsString("EnumNameField");
       StringRef ValueField;
-      if (!Class->isValueUnset("EnumValueField"))
+      if (!Class->isValueUnset("EnumValueField")) {
         ValueField = Class->getValueAsString("EnumValueField");
+
+}
 
       auto Enum = std::make_unique<GenericEnum>();
       Enum->Name = (Twine(Class->getName()) + "Values").str();
@@ -756,8 +852,10 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
       // template parameters (if they contain a ':').
       if (FieldName.find(':') != std::string::npos ||
           FieldName == "SearchableFields" || FieldName == "EnumNameField" ||
-          FieldName == "EnumValueField")
+          FieldName == "EnumValueField") {
         continue;
+
+}
 
       Table->Fields.emplace_back(FieldName);
     }
@@ -775,16 +873,22 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
   }
 
   // Emit everything.
-  for (const auto &Enum : Enums)
+  for (const auto &Enum : Enums) {
     emitGenericEnum(*Enum, OS);
 
-  for (const auto &Table : Tables)
+}
+
+  for (const auto &Table : Tables) {
     emitGenericTable(*Table, OS);
+
+}
 
   // Put all #undefs last, to allow multiple sections guarded by the same
   // define.
-  for (const auto &Guard : PreprocessorGuards)
+  for (const auto &Guard : PreprocessorGuards) {
     OS << "#undef " << Guard << "\n";
+
+}
 }
 
 namespace llvm {

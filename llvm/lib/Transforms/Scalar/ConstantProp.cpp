@@ -66,8 +66,10 @@ FunctionPass *llvm::createConstantPropagationPass() {
 }
 
 bool ConstantPropagation::runOnFunction(Function &F) {
-  if (skipFunction(F))
+  if (skipFunction(F)) {
     return false;
+
+}
 
   // Initialize the worklist to all of the instructions ready to process...
   SmallPtrSet<Instruction *, 16> WorkList;
@@ -90,17 +92,21 @@ bool ConstantPropagation::runOnFunction(Function &F) {
     for (auto *I : WorkListVec) {
       WorkList.erase(I); // Remove element from the worklist...
 
-      if (!I->use_empty()) // Don't muck with dead instructions...
+      if (!I->use_empty()) { // Don't muck with dead instructions...
         if (Constant *C = ConstantFoldInstruction(I, DL, TLI)) {
-          if (!DebugCounter::shouldExecute(CPCounter))
+          if (!DebugCounter::shouldExecute(CPCounter)) {
             continue;
+
+}
 
           // Add all of the users of this instruction to the worklist, they might
           // be constant propagatable now...
           for (User *U : I->users()) {
             // If user not in the set, then add it to the vector.
-            if (WorkList.insert(cast<Instruction>(U)).second)
+            if (WorkList.insert(cast<Instruction>(U)).second) {
               NewWorkListVec.push_back(cast<Instruction>(U));
+
+}
           }
 
           // Replace all of the uses of a variable with uses of the constant.
@@ -114,6 +120,8 @@ bool ConstantPropagation::runOnFunction(Function &F) {
           // We made a change to the function...
           Changed = true;
         }
+
+}
     }
     WorkListVec = std::move(NewWorkListVec);
   }

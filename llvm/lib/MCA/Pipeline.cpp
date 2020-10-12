@@ -22,10 +22,14 @@ namespace mca {
 #define DEBUG_TYPE "llvm-mca"
 
 void Pipeline::addEventListener(HWEventListener *Listener) {
-  if (Listener)
+  if (Listener) {
     Listeners.insert(Listener);
-  for (auto &S : Stages)
+
+}
+  for (auto &S : Stages) {
     S->addListener(Listener);
+
+}
 }
 
 bool Pipeline::hasWorkToProcess() {
@@ -39,8 +43,10 @@ Expected<unsigned> Pipeline::run() {
 
   do {
     notifyCycleBegin();
-    if (Error Err = runCycle())
+    if (Error Err = runCycle()) {
       return std::move(Err);
+
+}
     notifyCycleEnd();
     ++Cycles;
   } while (hasWorkToProcess());
@@ -59,14 +65,18 @@ Error Pipeline::runCycle() {
   // Now fetch and execute new instructions.
   InstRef IR;
   Stage &FirstStage = *Stages[0];
-  while (!Err && FirstStage.isAvailable(IR))
+  while (!Err && FirstStage.isAvailable(IR)) {
     Err = FirstStage.execute(IR);
+
+}
 
   // Update stages in preparation for a new cycle.
   for (const std::unique_ptr<Stage> &S : Stages) {
     Err = S->cycleEnd();
-    if (Err)
+    if (Err) {
       break;
+
+}
   }
 
   return Err;
@@ -84,14 +94,18 @@ void Pipeline::appendStage(std::unique_ptr<Stage> S) {
 
 void Pipeline::notifyCycleBegin() {
   LLVM_DEBUG(dbgs() << "\n[E] Cycle begin: " << Cycles << '\n');
-  for (HWEventListener *Listener : Listeners)
+  for (HWEventListener *Listener : Listeners) {
     Listener->onCycleBegin();
+
+}
 }
 
 void Pipeline::notifyCycleEnd() {
   LLVM_DEBUG(dbgs() << "[E] Cycle end: " << Cycles << "\n");
-  for (HWEventListener *Listener : Listeners)
+  for (HWEventListener *Listener : Listeners) {
     Listener->onCycleEnd();
+
+}
 }
 } // namespace mca.
 } // namespace llvm

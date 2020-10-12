@@ -68,22 +68,30 @@ class MachineSizeOptsTest : public testing::Test {
     std::unique_ptr<MemoryBuffer> MBuffer =
         MemoryBuffer::getMemBuffer(MIRString);
     Parser = createMIRParser(std::move(MBuffer), Context);
-    if (!Parser)
+    if (!Parser) {
       report_fatal_error("null MIRParser");
+
+}
     M = Parser->parseIRModule();
-    if (!M)
+    if (!M) {
       report_fatal_error("parseIRModule failed");
+
+}
     M->setTargetTriple(TM->getTargetTriple().getTriple());
     M->setDataLayout(TM->createDataLayout());
     MMI = std::make_unique<MachineModuleInfo>(TM.get());
-    if (Parser->parseMachineFunctions(*M, *MMI.get()))
+    if (Parser->parseMachineFunctions(*M, *MMI.get())) {
       report_fatal_error("parseMachineFunctions failed");
+
+}
   }
 
   MachineFunction *getMachineFunction(Module *M, StringRef Name) {
     auto F = M->getFunction(Name);
-    if (!F)
+    if (!F) {
       report_fatal_error("null Function");
+
+}
     auto &MF = MMI->getOrCreateMachineFunction(*F);
     return &MF;
   }

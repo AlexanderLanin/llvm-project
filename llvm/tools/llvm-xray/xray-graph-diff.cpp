@@ -224,10 +224,14 @@ Expected<GraphDiffRenderer> GraphDiffRenderer::Factory::getGraphDiffRenderer() {
       auto &EdgeHeadID = E.first.second;
       auto EdgeTailAttrOrErr = G.at(EdgeTailID);
       auto EdgeHeadAttrOrErr = G.at(EdgeHeadID);
-      if (!EdgeTailAttrOrErr)
+      if (!EdgeTailAttrOrErr) {
         return EdgeTailAttrOrErr.takeError();
-      if (!EdgeHeadAttrOrErr)
+
+}
+      if (!EdgeHeadAttrOrErr) {
         return EdgeHeadAttrOrErr.takeError();
+
+}
       GraphT::EdgeIdentifier ID{EdgeTailAttrOrErr->SymbolName,
                                 EdgeHeadAttrOrErr->SymbolName};
       R.G[ID].CorrEdgePtr[i] = &E;
@@ -251,13 +255,19 @@ static std::string getColor(const GraphDiffRenderer::GraphT::EdgeValueType &E,
                             const GraphDiffRenderer::GraphT &G, ColorHelper H,
                             GraphDiffRenderer::StatType T) {
   auto &EdgeAttr = E.second;
-  if (EdgeAttr.CorrEdgePtr[0] == nullptr)
+  if (EdgeAttr.CorrEdgePtr[0] == nullptr) {
     return H.getColorString(2.0); // A number greater than 1.0
-  if (EdgeAttr.CorrEdgePtr[1] == nullptr)
+
+}
+  if (EdgeAttr.CorrEdgePtr[1] == nullptr) {
     return H.getColorString(-2.0); // A number less than -1.0
 
-  if (T == GraphDiffRenderer::StatType::NONE)
+}
+
+  if (T == GraphDiffRenderer::StatType::NONE) {
     return H.getDefaultColorString();
+
+}
 
   const auto &LeftStat = EdgeAttr.CorrEdgePtr[0]->second.S;
   const auto &RightStat = EdgeAttr.CorrEdgePtr[1]->second.S;
@@ -272,13 +282,19 @@ static std::string getColor(const GraphDiffRenderer::GraphT::VertexValueType &V,
                             const GraphDiffRenderer::GraphT &G, ColorHelper H,
                             GraphDiffRenderer::StatType T) {
   auto &VertexAttr = V.second;
-  if (VertexAttr.CorrVertexPtr[0] == nullptr)
+  if (VertexAttr.CorrVertexPtr[0] == nullptr) {
     return H.getColorString(2.0); // A number greater than 1.0
-  if (VertexAttr.CorrVertexPtr[1] == nullptr)
+
+}
+  if (VertexAttr.CorrVertexPtr[1] == nullptr) {
     return H.getColorString(-2.0); // A number less than -1.0
 
-  if (T == GraphDiffRenderer::StatType::NONE)
+}
+
+  if (T == GraphDiffRenderer::StatType::NONE) {
     return H.getDefaultColorString();
+
+}
 
   const auto &LeftStat = VertexAttr.CorrVertexPtr[0]->second.S;
   const auto &RightStat = VertexAttr.CorrVertexPtr[1]->second.S;
@@ -294,9 +310,13 @@ static Twine truncateString(const StringRef &S, size_t n) {
 }
 
 template <typename T> static bool containsNullptr(const T &Collection) {
-  for (const auto &E : Collection)
-    if (E == nullptr)
+  for (const auto &E : Collection) {
+    if (E == nullptr) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -307,8 +327,10 @@ static std::string getLabel(const GraphDiffRenderer::GraphT::EdgeValueType &E,
   case GraphDiffRenderer::StatType::NONE:
     return "";
   default:
-    if (containsNullptr(EdgeAttr.CorrEdgePtr))
+    if (containsNullptr(EdgeAttr.CorrEdgePtr)) {
       return "";
+
+}
 
     const auto &LeftStat = EdgeAttr.CorrEdgePtr[0]->second.S;
     const auto &RightStat = EdgeAttr.CorrEdgePtr[1]->second.S;
@@ -327,9 +349,11 @@ static std::string getLabel(const GraphDiffRenderer::GraphT::VertexValueType &V,
     return std::string(
         formatv(R"({0})", truncateString(VertexId, TrunLen).str()));
   default:
-    if (containsNullptr(VertexAttr.CorrVertexPtr))
+    if (containsNullptr(VertexAttr.CorrVertexPtr)) {
       return std::string(
           formatv(R"({0})", truncateString(VertexId, TrunLen).str()));
+
+}
 
     const auto &LeftStat = VertexAttr.CorrVertexPtr[0]->second.S;
     const auto &RightStat = VertexAttr.CorrVertexPtr[1]->second.S;
@@ -347,8 +371,10 @@ static double getLineWidth(const GraphDiffRenderer::GraphT::EdgeValueType &E,
   case GraphDiffRenderer::StatType::NONE:
     return 1.0;
   default:
-    if (containsNullptr(EdgeAttr.CorrEdgePtr))
+    if (containsNullptr(EdgeAttr.CorrEdgePtr)) {
       return 1.0;
+
+}
 
     const auto &LeftStat = EdgeAttr.CorrEdgePtr[0]->second.S;
     const auto &RightStat = EdgeAttr.CorrEdgePtr[1]->second.S;
@@ -374,8 +400,10 @@ void GraphDiffRenderer::exportGraphAsDOT(raw_ostream &OS, StatType EdgeLabel,
 
   OS << "digraph xrayDiff {\n";
 
-  if (VertexLabel != StatType::NONE)
+  if (VertexLabel != StatType::NONE) {
     OS << "node [shape=record]\n";
+
+}
 
   for (const auto &E : G.edges()) {
     const auto &HeadId = E.first.first;
@@ -407,8 +435,10 @@ void GraphDiffRenderer::exportGraphAsDOT(raw_ostream &OS, StatType EdgeLabel,
 }
 
 template <typename T> static T &ifSpecified(T &A, cl::alias &AA, T &B) {
-  if (A.getPosition() == 0 && AA.getPosition() == 0)
+  if (A.getPosition() == 0 && AA.getPosition() == 0) {
     return B;
+
+}
 
   return A;
 }
@@ -434,16 +464,20 @@ static CommandRegistration Unused(&GraphDiff, []() -> Error {
 
   for (int i = 0; i < 2; i++) {
     auto TraceOrErr = loadTraceFile(Inputs[i], true);
-    if (!TraceOrErr)
+    if (!TraceOrErr) {
       return make_error<StringError>(
           Twine("Failed Loading Input File '") + Inputs[i] + "'",
           make_error_code(llvm::errc::invalid_argument));
+
+}
     Factories[i].Trace = std::move(*TraceOrErr);
 
     auto GraphRendererOrErr = Factories[i].getGraphRenderer();
 
-    if (!GraphRendererOrErr)
+    if (!GraphRendererOrErr) {
       return GraphRendererOrErr.takeError();
+
+}
 
     auto GraphRenderer = *GraphRendererOrErr;
 
@@ -453,16 +487,20 @@ static CommandRegistration Unused(&GraphDiff, []() -> Error {
   GraphDiffRenderer::Factory DGF(Graphs[0], Graphs[1]);
 
   auto GDROrErr = DGF.getGraphDiffRenderer();
-  if (!GDROrErr)
+  if (!GDROrErr) {
     return GDROrErr.takeError();
+
+}
 
   auto &GDR = *GDROrErr;
 
   std::error_code EC;
   raw_fd_ostream OS(GraphDiffOutput, EC, sys::fs::OpenFlags::OF_Text);
-  if (EC)
+  if (EC) {
     return make_error<StringError>(
         Twine("Cannot open file '") + GraphDiffOutput + "' for writing.", EC);
+
+}
 
   GDR.exportGraphAsDOT(OS, GraphDiffEdgeLabel, GraphDiffEdgeColor,
                        GraphDiffVertexLabel, GraphDiffVertexColor,

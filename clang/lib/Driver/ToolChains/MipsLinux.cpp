@@ -40,8 +40,10 @@ MipsLLVMToolChain::MipsLLVMToolChain(const Driver &D,
 
 void MipsLLVMToolChain::AddClangSystemIncludeArgs(
     const ArgList &DriverArgs, ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     return;
+
+}
 
   const Driver &D = getDriver();
 
@@ -51,14 +53,18 @@ void MipsLLVMToolChain::AddClangSystemIncludeArgs(
     addSystemInclude(DriverArgs, CC1Args, P);
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+
+}
 
   const auto &Callback = Multilibs.includeDirsCallback();
   if (Callback) {
-    for (const auto &Path : Callback(SelectedMultilib))
+    for (const auto &Path : Callback(SelectedMultilib)) {
       addExternCSystemIncludeIfExists(DriverArgs, CC1Args,
                                       D.getInstalledDir() + Path);
+
+}
   }
 }
 
@@ -67,14 +73,18 @@ Tool *MipsLLVMToolChain::buildLinker() const {
 }
 
 std::string MipsLLVMToolChain::computeSysRoot() const {
-  if (!getDriver().SysRoot.empty())
+  if (!getDriver().SysRoot.empty()) {
     return getDriver().SysRoot + SelectedMultilib.osSuffix();
+
+}
 
   const std::string InstalledDir(getDriver().getInstalledDir());
   std::string SysRootPath =
       InstalledDir + "/../sysroot" + SelectedMultilib.osSuffix();
-  if (llvm::sys::fs::exists(SysRootPath))
+  if (llvm::sys::fs::exists(SysRootPath)) {
     return SysRootPath;
+
+}
 
   return std::string();
 }
@@ -84,9 +94,11 @@ MipsLLVMToolChain::GetCXXStdlibType(const ArgList &Args) const {
   Arg *A = Args.getLastArg(options::OPT_stdlib_EQ);
   if (A) {
     StringRef Value = A->getValue();
-    if (Value != "libc++")
+    if (Value != "libc++") {
       getDriver().Diag(clang::diag::err_drv_invalid_stdlib_name)
           << A->getAsString(Args);
+
+}
   }
 
   return ToolChain::CST_Libcxx;

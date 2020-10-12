@@ -131,9 +131,13 @@ ModulePass *llvm::createStripDeadDebugInfoPass() {
 
 /// OnlyUsedBy - Return true if V is only used by Usr.
 static bool OnlyUsedBy(Value *V, Value *Usr) {
-  for (User *U : V->users())
-    if (U != Usr)
+  for (User *U : V->users()) {
+    if (U != Usr) {
       return false;
+
+}
+
+}
 
   return true;
 }
@@ -141,20 +145,32 @@ static bool OnlyUsedBy(Value *V, Value *Usr) {
 static void RemoveDeadConstant(Constant *C) {
   assert(C->use_empty() && "Constant is not dead!");
   SmallPtrSet<Constant*, 4> Operands;
-  for (Value *Op : C->operands())
-    if (OnlyUsedBy(Op, C))
+  for (Value *Op : C->operands()) {
+    if (OnlyUsedBy(Op, C)) {
       Operands.insert(cast<Constant>(Op));
+
+}
+
+}
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
-    if (!GV->hasLocalLinkage()) return;   // Don't delete non-static globals.
+    if (!GV->hasLocalLinkage()) { return;   // Don't delete non-static globals.
+
+}
     GV->eraseFromParent();
   }
-  else if (!isa<Function>(C))
-    if (isa<CompositeType>(C->getType()))
+  else if (!isa<Function>(C)) {
+    if (isa<CompositeType>(C->getType())) {
       C->destroyConstant();
 
+}
+
+}
+
   // If the constant referenced anything, see if we can delete it as well.
-  for (Constant *O : Operands)
+  for (Constant *O : Operands) {
     RemoveDeadConstant(O);
+
+}
 }
 
 // Strip the symbol table of its names.
@@ -164,9 +180,11 @@ static void StripSymtab(ValueSymbolTable &ST, bool PreserveDbgInfo) {
     Value *V = VI->getValue();
     ++VI;
     if (!isa<GlobalValue>(V) || cast<GlobalValue>(V)->hasLocalLinkage()) {
-      if (!PreserveDbgInfo || !V->getName().startswith("llvm.dbg"))
+      if (!PreserveDbgInfo || !V->getName().startswith("llvm.dbg")) {
         // Set name to "", removing from symbol table!
         V->setName("");
+
+}
     }
   }
 }
@@ -178,10 +196,14 @@ static void StripTypeNames(Module &M, bool PreserveDbgInfo) {
 
   for (unsigned i = 0, e = StructTypes.size(); i != e; ++i) {
     StructType *STy = StructTypes[i];
-    if (STy->isLiteral() || STy->getName().empty()) continue;
+    if (STy->isLiteral() || STy->getName().empty()) { continue;
 
-    if (PreserveDbgInfo && STy->getName().startswith("llvm.dbg"))
+}
+
+    if (PreserveDbgInfo && STy->getName().startswith("llvm.dbg")) {
       continue;
+
+}
 
     STy->setName("");
   }
@@ -190,15 +212,21 @@ static void StripTypeNames(Module &M, bool PreserveDbgInfo) {
 /// Find values that are marked as llvm.used.
 static void findUsedValues(GlobalVariable *LLVMUsed,
                            SmallPtrSetImpl<const GlobalValue*> &UsedValues) {
-  if (!LLVMUsed) return;
+  if (!LLVMUsed) { return;
+
+}
   UsedValues.insert(LLVMUsed);
 
   ConstantArray *Inits = cast<ConstantArray>(LLVMUsed->getInitializer());
 
-  for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i)
+  for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i) {
     if (GlobalValue *GV =
-          dyn_cast<GlobalValue>(Inits->getOperand(i)->stripPointerCasts()))
+          dyn_cast<GlobalValue>(Inits->getOperand(i)->stripPointerCasts())) {
       UsedValues.insert(GV);
+
+}
+
+}
 }
 
 /// StripSymbolNames - Strip symbol names.
@@ -210,17 +238,27 @@ static bool StripSymbolNames(Module &M, bool PreserveDbgInfo) {
 
   for (Module::global_iterator I = M.global_begin(), E = M.global_end();
        I != E; ++I) {
-    if (I->hasLocalLinkage() && llvmUsedValues.count(&*I) == 0)
-      if (!PreserveDbgInfo || !I->getName().startswith("llvm.dbg"))
+    if (I->hasLocalLinkage() && llvmUsedValues.count(&*I) == 0) {
+      if (!PreserveDbgInfo || !I->getName().startswith("llvm.dbg")) {
         I->setName("");     // Internal symbols can't participate in linkage
+
+}
+
+}
   }
 
   for (Function &I : M) {
-    if (I.hasLocalLinkage() && llvmUsedValues.count(&I) == 0)
-      if (!PreserveDbgInfo || !I.getName().startswith("llvm.dbg"))
+    if (I.hasLocalLinkage() && llvmUsedValues.count(&I) == 0) {
+      if (!PreserveDbgInfo || !I.getName().startswith("llvm.dbg")) {
         I.setName(""); // Internal symbols can't participate in linkage
-    if (auto *Symtab = I.getValueSymbolTable())
+
+}
+
+}
+    if (auto *Symtab = I.getValueSymbolTable()) {
       StripSymtab(*Symtab, PreserveDbgInfo);
+
+}
   }
 
   // Remove all names from types.
@@ -230,26 +268,34 @@ static bool StripSymbolNames(Module &M, bool PreserveDbgInfo) {
 }
 
 bool StripSymbols::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   bool Changed = false;
   Changed |= StripDebugInfo(M);
-  if (!OnlyDebugInfo)
+  if (!OnlyDebugInfo) {
     Changed |= StripSymbolNames(M, false);
+
+}
   return Changed;
 }
 
 bool StripNonDebugSymbols::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   return StripSymbolNames(M, true);
 }
 
 bool StripDebugDeclare::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   Function *Declare = M.getFunction("llvm.dbg.declare");
   std::vector<Constant*> DeadConstants;
@@ -262,14 +308,20 @@ bool StripDebugDeclare::runOnModule(Module &M) {
       assert(CI->use_empty() && "llvm.dbg intrinsic should have void result");
       CI->eraseFromParent();
       if (Arg1->use_empty()) {
-        if (Constant *C = dyn_cast<Constant>(Arg1))
+        if (Constant *C = dyn_cast<Constant>(Arg1)) {
           DeadConstants.push_back(C);
-        else
+        } else {
           RecursivelyDeleteTriviallyDeadInstructions(Arg1);
+
+}
       }
-      if (Arg2->use_empty())
-        if (Constant *C = dyn_cast<Constant>(Arg2))
+      if (Arg2->use_empty()) {
+        if (Constant *C = dyn_cast<Constant>(Arg2)) {
           DeadConstants.push_back(C);
+
+}
+
+}
     }
     Declare->eraseFromParent();
   }
@@ -278,10 +330,14 @@ bool StripDebugDeclare::runOnModule(Module &M) {
     Constant *C = DeadConstants.back();
     DeadConstants.pop_back();
     if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
-      if (GV->hasLocalLinkage())
+      if (GV->hasLocalLinkage()) {
         RemoveDeadConstant(GV);
-    } else
+
+}
+    } else {
       RemoveDeadConstant(C);
+
+}
   }
 
   return true;
@@ -295,8 +351,10 @@ bool StripDebugDeclare::runOnModule(Module &M) {
 /// optimized away by the optimizer. This special pass removes debug info for
 /// such symbols.
 bool StripDeadDebugInfo::runOnModule(Module &M) {
-  if (skipModule(M))
+  if (skipModule(M)) {
     return false;
+
+}
 
   bool Changed = false;
 
@@ -319,15 +377,19 @@ bool StripDeadDebugInfo::runOnModule(Module &M) {
   for (GlobalVariable &GV : M.globals()) {
     SmallVector<DIGlobalVariableExpression *, 1> GVEs;
     GV.getDebugInfo(GVEs);
-    for (auto *GVE : GVEs)
+    for (auto *GVE : GVEs) {
       LiveGVs.insert(GVE);
+
+}
   }
 
   std::set<DICompileUnit *> LiveCUs;
   // Any CU referenced from a subprogram is live.
   for (DISubprogram *SP : F.subprograms()) {
-    if (SP->getUnit())
+    if (SP->getUnit()) {
       LiveCUs.insert(SP->getUnit());
+
+}
   }
 
   bool HasDeadCUs = false;
@@ -335,24 +397,32 @@ bool StripDeadDebugInfo::runOnModule(Module &M) {
     // Create our live global variable list.
     bool GlobalVariableChange = false;
     for (auto *DIG : DIC->getGlobalVariables()) {
-      if (DIG->getExpression() && DIG->getExpression()->isConstant())
+      if (DIG->getExpression() && DIG->getExpression()->isConstant()) {
         LiveGVs.insert(DIG);
 
+}
+
       // Make sure we only visit each global variable only once.
-      if (!VisitedSet.insert(DIG).second)
+      if (!VisitedSet.insert(DIG).second) {
         continue;
 
+}
+
       // If a global variable references DIG, the global variable is live.
-      if (LiveGVs.count(DIG))
+      if (LiveGVs.count(DIG)) {
         LiveGlobalVariables.push_back(DIG);
-      else
+      } else {
         GlobalVariableChange = true;
+
+}
     }
 
-    if (!LiveGlobalVariables.empty())
+    if (!LiveGlobalVariables.empty()) {
       LiveCUs.insert(DIC);
-    else if (!LiveCUs.count(DIC))
+    } else if (!LiveCUs.count(DIC)) {
       HasDeadCUs = true;
+
+}
 
     // If we found dead global variables, replace the current global
     // variable list with our new live global variable list.
@@ -370,8 +440,10 @@ bool StripDeadDebugInfo::runOnModule(Module &M) {
     NamedMDNode *NMD = M.getOrInsertNamedMetadata("llvm.dbg.cu");
     NMD->clearOperands();
     if (!LiveCUs.empty()) {
-      for (DICompileUnit *CU : LiveCUs)
+      for (DICompileUnit *CU : LiveCUs) {
         NMD->addOperand(CU);
+
+}
     }
     Changed = true;
   }

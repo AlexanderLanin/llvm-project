@@ -41,8 +41,10 @@ static bool generateSnippetSetupCode(
   for (const RegisterValue &RV : RegisterInitialValues) {
     // Load a constant in the register.
     const auto SetRegisterCode = ET.setRegTo(*MSI, RV.Register, RV.Value);
-    if (SetRegisterCode.empty())
+    if (SetRegisterCode.empty()) {
       IsSnippetSetupComplete = false;
+
+}
     BBF.addInstructions(SetRegisterCode);
   }
   return IsSnippetSetupComplete;
@@ -101,8 +103,10 @@ void BasicBlockFiller::addInstruction(const MCInst &Inst, const DebugLoc &DL) {
       const bool IsDef = OpIndex < MCID.getNumDefs();
       unsigned Flags = 0;
       const MCOperandInfo &OpInfo = MCID.operands().begin()[OpIndex];
-      if (IsDef && !OpInfo.isOptionalDef())
+      if (IsDef && !OpInfo.isOptionalDef()) {
         Flags |= RegState::Define;
+
+}
       Builder.addReg(Op.getReg(), Flags);
     } else if (Op.isImm()) {
       Builder.addImm(Op.getImm());
@@ -116,8 +120,10 @@ void BasicBlockFiller::addInstruction(const MCInst &Inst, const DebugLoc &DL) {
 
 void BasicBlockFiller::addInstructions(ArrayRef<MCInst> Insts,
                                        const DebugLoc &DL) {
-  for (const MCInst &Inst : Insts)
+  for (const MCInst &Inst : Insts) {
     addInstruction(Inst, DL);
+
+}
 }
 
 void BasicBlockFiller::addReturn(const DebugLoc &DL) {
@@ -187,8 +193,10 @@ Error assembleToStream(const ExegesisTarget &ET,
   Properties.reset(MachineFunctionProperties::Property::IsSSA);
   Properties.set(MachineFunctionProperties::Property::NoPHIs);
 
-  for (const unsigned Reg : LiveIns)
+  for (const unsigned Reg : LiveIns) {
     MF.getRegInfo().addLiveIn(Reg);
+
+}
 
   std::vector<unsigned> RegistersSetUp;
   for (const auto &InitValue : RegisterInitialValues) {
@@ -196,16 +204,20 @@ Error assembleToStream(const ExegesisTarget &ET,
   }
   FunctionFiller Sink(MF, std::move(RegistersSetUp));
   auto Entry = Sink.getEntry();
-  for (const unsigned Reg : LiveIns)
+  for (const unsigned Reg : LiveIns) {
     Entry.MBB->addLiveIn(Reg);
+
+}
 
   const bool IsSnippetSetupComplete = generateSnippetSetupCode(
       ET, TM->getMCSubtargetInfo(), RegisterInitialValues, Entry);
 
   // If the snippet setup is not complete, we disable liveliness tracking. This
   // means that we won't know what values are in the registers.
-  if (!IsSnippetSetupComplete)
+  if (!IsSnippetSetupComplete) {
     Properties.reset(MachineFunctionProperties::Property::TracksLiveness);
+
+}
 
   Fill(Sink);
 
@@ -232,14 +244,20 @@ Error assembleToStream(const ExegesisTarget &ET,
   // - machineverifier: checks that the MachineFunction is well formed.
   // - prologepilog: saves and restore callee saved registers.
   for (const char *PassName :
-       {"postrapseudos", "machineverifier", "prologepilog"})
-    if (addPass(PM, PassName, *TPC))
+       {"postrapseudos", "machineverifier", "prologepilog"}) {
+    if (addPass(PM, PassName, *TPC)) {
       return make_error<Failure>("Unable to add a mandatory pass");
+
+}
+
+}
   TPC->setInitialized();
 
   // AsmPrinter is responsible for generating the assembly into AsmBuffer.
-  if (TM->addAsmPrinter(PM, AsmStream, nullptr, CGFT_ObjectFile, MCContext))
+  if (TM->addAsmPrinter(PM, AsmStream, nullptr, CGFT_ObjectFile, MCContext)) {
     return make_error<Failure>("Cannot add AsmPrinter passes");
+
+}
 
   PM.run(*Module); // Run all the passes
   return Error::success();
@@ -303,8 +321,10 @@ ExecutableFunction::ExecutableFunction(
           .setMCJITMemoryManager(
               std::make_unique<TrackingSectionMemoryManager>(&CodeSize))
           .create(TM.release()));
-  if (!ExecEngine)
+  if (!ExecEngine) {
     report_fatal_error(Error);
+
+}
   // Adding the generated object file containing the assembled function.
   // The ExecutionEngine makes sure the object file is copied into an
   // executable page.

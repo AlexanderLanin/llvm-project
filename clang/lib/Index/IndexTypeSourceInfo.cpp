@@ -78,8 +78,10 @@ public:
 
   bool traverseParamVarHelper(ParmVarDecl *D) {
     TRY_TO(TraverseNestedNameSpecifierLoc(D->getQualifierLoc()));
-    if (D->getTypeSourceInfo())
+    if (D->getTypeSourceInfo()) {
       TRY_TO(TraverseTypeLoc(D->getTypeSourceInfo()->getTypeLoc()));
+
+}
     return true;
   }
 
@@ -107,8 +109,10 @@ public:
   bool VisitTagTypeLoc(TagTypeLoc TL) {
     TagDecl *D = TL.getDecl();
     if (!IndexCtx.shouldIndexFunctionLocalSymbols() &&
-        D->getParentFunctionOrMethod())
+        D->getParentFunctionOrMethod()) {
       return true;
+
+}
 
     if (TL.isDefinition()) {
       IndexCtx.indexTagDecl(D);
@@ -152,8 +156,10 @@ public:
 
   bool VisitTemplateSpecializationTypeLoc(TemplateSpecializationTypeLoc TL) {
     auto *T = TL.getTypePtr();
-    if (!T)
+    if (!T) {
       return true;
+
+}
     HandleTemplateSpecializationTypeLoc(
         T->getTemplateName(), TL.getTemplateNameLoc(), T->getAsCXXRecordDecl(),
         T->isTypeAlias());
@@ -162,8 +168,10 @@ public:
 
   bool VisitDeducedTemplateSpecializationTypeLoc(DeducedTemplateSpecializationTypeLoc TL) {
     auto *T = TL.getTypePtr();
-    if (!T)
+    if (!T) {
       return true;
+
+}
     HandleTemplateSpecializationTypeLoc(
         T->getTemplateName(), TL.getTemplateNameLoc(), T->getAsCXXRecordDecl(),
         /*IsTypeAlias=*/false);
@@ -179,26 +187,36 @@ public:
     const DependentNameType *DNT = TL.getTypePtr();
     const NestedNameSpecifier *NNS = DNT->getQualifier();
     const Type *T = NNS->getAsType();
-    if (!T)
+    if (!T) {
       return true;
+
+}
     const TemplateSpecializationType *TST =
         T->getAs<TemplateSpecializationType>();
-    if (!TST)
+    if (!TST) {
       return true;
+
+}
     TemplateName TN = TST->getTemplateName();
     const ClassTemplateDecl *TD =
         dyn_cast_or_null<ClassTemplateDecl>(TN.getAsTemplateDecl());
-    if (!TD)
+    if (!TD) {
       return true;
+
+}
     CXXRecordDecl *RD = TD->getTemplatedDecl();
-    if (!RD->hasDefinition())
+    if (!RD->hasDefinition()) {
       return true;
+
+}
     RD = RD->getDefinition();
     DeclarationName Name(DNT->getIdentifier());
     std::vector<const NamedDecl *> Symbols = RD->lookupDependentName(
         Name, [](const NamedDecl *ND) { return isa<TypeDecl>(ND); });
-    if (Symbols.size() != 1)
+    if (Symbols.size() != 1) {
       return true;
+
+}
     return IndexCtx.handleReference(Symbols[0], TL.getNameLoc(), Parent,
                                     ParentDC, SymbolRoleSet(), Relations);
   }
@@ -216,8 +234,10 @@ void IndexingContext::indexTypeSourceInfo(TypeSourceInfo *TInfo,
                                           const DeclContext *DC,
                                           bool isBase,
                                           bool isIBType) {
-  if (!TInfo || TInfo->getTypeLoc().isNull())
+  if (!TInfo || TInfo->getTypeLoc().isNull()) {
     return;
+
+}
 
   indexTypeLoc(TInfo->getTypeLoc(), Parent, DC, isBase, isIBType);
 }
@@ -227,25 +247,35 @@ void IndexingContext::indexTypeLoc(TypeLoc TL,
                                    const DeclContext *DC,
                                    bool isBase,
                                    bool isIBType) {
-  if (TL.isNull())
+  if (TL.isNull()) {
     return;
 
-  if (!DC)
+}
+
+  if (!DC) {
     DC = Parent->getLexicalDeclContext();
+
+}
   TypeIndexer(*this, Parent, DC, isBase, isIBType).TraverseTypeLoc(TL);
 }
 
 void IndexingContext::indexNestedNameSpecifierLoc(NestedNameSpecifierLoc NNS,
                                                   const NamedDecl *Parent,
                                                   const DeclContext *DC) {
-  if (!NNS)
+  if (!NNS) {
     return;
 
-  if (NestedNameSpecifierLoc Prefix = NNS.getPrefix())
+}
+
+  if (NestedNameSpecifierLoc Prefix = NNS.getPrefix()) {
     indexNestedNameSpecifierLoc(Prefix, Parent, DC);
 
-  if (!DC)
+}
+
+  if (!DC) {
     DC = Parent->getLexicalDeclContext();
+
+}
   SourceLocation Loc = NNS.getLocalBeginLoc();
 
   switch (NNS.getNestedNameSpecifier()->getKind()) {
@@ -272,10 +302,14 @@ void IndexingContext::indexNestedNameSpecifierLoc(NestedNameSpecifierLoc NNS,
 
 void IndexingContext::indexTagDecl(const TagDecl *D,
                                    ArrayRef<SymbolRelation> Relations) {
-  if (!shouldIndex(D))
+  if (!shouldIndex(D)) {
     return;
-  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalSymbol(D))
+
+}
+  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalSymbol(D)) {
     return;
+
+}
 
   if (handleDecl(D, /*Roles=*/SymbolRoleSet(), Relations)) {
     if (D->isThisDeclarationADefinition()) {

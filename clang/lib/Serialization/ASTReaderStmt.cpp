@@ -132,8 +132,10 @@ void ASTStmtReader::ReadTemplateKWAndArgsInfo(ASTTemplateKWAndArgsInfo &Args,
   TemplateArgumentListInfo ArgInfo;
   ArgInfo.setLAngleLoc(readSourceLocation());
   ArgInfo.setRAngleLoc(readSourceLocation());
-  for (unsigned i = 0; i != NumTemplateArgs; ++i)
+  for (unsigned i = 0; i != NumTemplateArgs; ++i) {
     ArgInfo.addArgument(Record.readTemplateArgumentLoc());
+
+}
   Args.initializeFrom(TemplateKWLoc, ArgInfo, ArgsLocArray);
 }
 
@@ -151,8 +153,10 @@ void ASTStmtReader::VisitCompoundStmt(CompoundStmt *S) {
   VisitStmt(S);
   SmallVector<Stmt *, 16> Stmts;
   unsigned NumStmts = Record.readInt();
-  while (NumStmts--)
+  while (NumStmts--) {
     Stmts.push_back(Record.readSubStmt());
+
+}
   S->setStmts(Stmts);
   S->CompoundStmtBits.LBraceLoc = readSourceLocation();
   S->RBraceLoc = readSourceLocation();
@@ -216,16 +220,24 @@ void ASTStmtReader::VisitIfStmt(IfStmt *S) {
 
   S->setCond(Record.readSubExpr());
   S->setThen(Record.readSubStmt());
-  if (HasElse)
+  if (HasElse) {
     S->setElse(Record.readSubStmt());
-  if (HasVar)
+
+}
+  if (HasVar) {
     S->setConditionVariable(Record.getContext(), readDeclAs<VarDecl>());
-  if (HasInit)
+
+}
+  if (HasInit) {
     S->setInit(Record.readSubStmt());
 
+}
+
   S->setIfLoc(readSourceLocation());
-  if (HasElse)
+  if (HasElse) {
     S->setElseLoc(readSourceLocation());
+
+}
 }
 
 void ASTStmtReader::VisitSwitchStmt(SwitchStmt *S) {
@@ -234,25 +246,33 @@ void ASTStmtReader::VisitSwitchStmt(SwitchStmt *S) {
   bool HasInit = Record.readInt();
   bool HasVar = Record.readInt();
   bool AllEnumCasesCovered = Record.readInt();
-  if (AllEnumCasesCovered)
+  if (AllEnumCasesCovered) {
     S->setAllEnumCasesCovered();
+
+}
 
   S->setCond(Record.readSubExpr());
   S->setBody(Record.readSubStmt());
-  if (HasInit)
+  if (HasInit) {
     S->setInit(Record.readSubStmt());
-  if (HasVar)
+
+}
+  if (HasVar) {
     S->setConditionVariable(Record.getContext(), readDeclAs<VarDecl>());
+
+}
 
   S->setSwitchLoc(readSourceLocation());
 
   SwitchCase *PrevSC = nullptr;
   for (auto E = Record.size(); Record.getIdx() != E; ) {
     SwitchCase *SC = Record.getSwitchCaseWithID(Record.readInt());
-    if (PrevSC)
+    if (PrevSC) {
       PrevSC->setNextSwitchCase(SC);
-    else
+    } else {
       S->setSwitchCaseList(SC);
+
+}
 
     PrevSC = SC;
   }
@@ -265,8 +285,10 @@ void ASTStmtReader::VisitWhileStmt(WhileStmt *S) {
 
   S->setCond(Record.readSubExpr());
   S->setBody(Record.readSubStmt());
-  if (HasVar)
+  if (HasVar) {
     S->setConditionVariable(Record.getContext(), readDeclAs<VarDecl>());
+
+}
 
   S->setWhileLoc(readSourceLocation());
 }
@@ -322,8 +344,10 @@ void ASTStmtReader::VisitReturnStmt(ReturnStmt *S) {
   bool HasNRVOCandidate = Record.readInt();
 
   S->setRetValue(Record.readSubExpr());
-  if (HasNRVOCandidate)
+  if (HasNRVOCandidate) {
     S->setNRVOCandidate(readDeclAs<VarDecl>());
+
+}
 
   S->setReturnLoc(readSourceLocation());
 }
@@ -340,8 +364,10 @@ void ASTStmtReader::VisitDeclStmt(DeclStmt *S) {
     SmallVector<Decl *, 16> Decls;
     int N = Record.size() - Record.getIdx();
     Decls.reserve(N);
-    for (int I = 0; I < N; ++I)
+    for (int I = 0; I < N; ++I) {
       Decls.push_back(readDecl());
+
+}
     S->setDeclGroup(DeclGroupRef(DeclGroup::Create(Record.getContext(),
                                                    Decls.data(),
                                                    Decls.size())));
@@ -381,12 +407,16 @@ void ASTStmtReader::VisitGCCAsmStmt(GCCAsmStmt *S) {
 
   // Constraints
   SmallVector<StringLiteral*, 16> Clobbers;
-  for (unsigned I = 0; I != NumClobbers; ++I)
+  for (unsigned I = 0; I != NumClobbers; ++I) {
     Clobbers.push_back(cast_or_null<StringLiteral>(Record.readSubStmt()));
 
+}
+
   // Labels
-  for (unsigned I = 0, N = NumLabels; I != N; ++I)
+  for (unsigned I = 0, N = NumLabels; I != N; ++I) {
     Exprs.push_back(Record.readSubStmt());
+
+}
 
   S->setOutputsAndInputsAndClobbers(Record.getContext(),
                                     Names.data(), Constraints.data(),
@@ -446,23 +476,29 @@ void ASTStmtReader::VisitCoroutineBodyStmt(CoroutineBodyStmt *S) {
   Record.skipInts(1);
   auto *StoredStmts = S->getStoredStmts();
   for (unsigned i = 0;
-       i < CoroutineBodyStmt::SubStmt::FirstParamMove + S->NumParams; ++i)
+       i < CoroutineBodyStmt::SubStmt::FirstParamMove + S->NumParams; ++i) {
     StoredStmts[i] = Record.readSubStmt();
+
+}
 }
 
 void ASTStmtReader::VisitCoreturnStmt(CoreturnStmt *S) {
   VisitStmt(S);
   S->CoreturnLoc = Record.readSourceLocation();
-  for (auto &SubStmt: S->SubStmts)
+  for (auto &SubStmt: S->SubStmts) {
     SubStmt = Record.readSubStmt();
+
+}
   S->IsImplicit = Record.readInt() != 0;
 }
 
 void ASTStmtReader::VisitCoawaitExpr(CoawaitExpr *E) {
   VisitExpr(E);
   E->KeywordLoc = readSourceLocation();
-  for (auto &SubExpr: E->SubExprs)
+  for (auto &SubExpr: E->SubExprs) {
     SubExpr = Record.readSubStmt();
+
+}
   E->OpaqueValue = cast_or_null<OpaqueValueExpr>(Record.readSubStmt());
   E->setIsImplicit(Record.readInt() != 0);
 }
@@ -470,16 +506,20 @@ void ASTStmtReader::VisitCoawaitExpr(CoawaitExpr *E) {
 void ASTStmtReader::VisitCoyieldExpr(CoyieldExpr *E) {
   VisitExpr(E);
   E->KeywordLoc = readSourceLocation();
-  for (auto &SubExpr: E->SubExprs)
+  for (auto &SubExpr: E->SubExprs) {
     SubExpr = Record.readSubStmt();
+
+}
   E->OpaqueValue = cast_or_null<OpaqueValueExpr>(Record.readSubStmt());
 }
 
 void ASTStmtReader::VisitDependentCoawaitExpr(DependentCoawaitExpr *E) {
   VisitExpr(E);
   E->KeywordLoc = readSourceLocation();
-  for (auto &SubExpr: E->SubExprs)
+  for (auto &SubExpr: E->SubExprs) {
     SubExpr = Record.readSubStmt();
+
+}
 }
 
 void ASTStmtReader::VisitCapturedStmt(CapturedStmt *S) {
@@ -492,8 +532,10 @@ void ASTStmtReader::VisitCapturedStmt(CapturedStmt *S) {
   // Capture inits
   for (CapturedStmt::capture_init_iterator I = S->capture_init_begin(),
                                            E = S->capture_init_end();
-       I != E; ++I)
+       I != E; ++I) {
     *I = Record.readSubExpr();
+
+}
 
   // Body
   S->setCapturedStmt(Record.readSubStmt());
@@ -518,14 +560,22 @@ void ASTStmtReader::VisitExpr(Expr *E) {
   bool InstantiationDependent = Record.readInt();
   bool ContainsUnexpandedTemplateParameters = Record.readInt();
   auto Deps = ExprDependence::None;
-  if (TypeDependent)
+  if (TypeDependent) {
     Deps |= ExprDependence::Type;
-  if (ValueDependent)
+
+}
+  if (ValueDependent) {
     Deps |= ExprDependence::Value;
-  if (InstantiationDependent)
+
+}
+  if (InstantiationDependent) {
     Deps |= ExprDependence::Instantiation;
-  if (ContainsUnexpandedTemplateParameters)
+
+}
+  if (ContainsUnexpandedTemplateParameters) {
     Deps |= ExprDependence::UnexpandedPack;
+
+}
   E->setDependence(Deps);
 
   E->setValueKind(static_cast<ExprValueKind>(Record.readInt()));
@@ -557,8 +607,10 @@ void ASTStmtReader::VisitPredefinedExpr(PredefinedExpr *E) {
   E->PredefinedExprBits.HasFunctionName = HasFunctionName;
   E->PredefinedExprBits.Kind = Record.readInt();
   E->setLocation(readSourceLocation());
-  if (HasFunctionName)
+  if (HasFunctionName) {
     E->setFunctionName(cast<StringLiteral>(Record.readSubExpr()));
+
+}
 }
 
 void ASTStmtReader::VisitDeclRefExpr(DeclRefExpr *E) {
@@ -571,20 +623,28 @@ void ASTStmtReader::VisitDeclRefExpr(DeclRefExpr *E) {
   E->DeclRefExprBits.RefersToEnclosingVariableOrCapture = Record.readInt();
   E->DeclRefExprBits.NonOdrUseReason = Record.readInt();
   unsigned NumTemplateArgs = 0;
-  if (E->hasTemplateKWAndArgsInfo())
+  if (E->hasTemplateKWAndArgsInfo()) {
     NumTemplateArgs = Record.readInt();
 
-  if (E->hasQualifier())
+}
+
+  if (E->hasQualifier()) {
     new (E->getTrailingObjects<NestedNameSpecifierLoc>())
         NestedNameSpecifierLoc(Record.readNestedNameSpecifierLoc());
 
-  if (E->hasFoundDecl())
+}
+
+  if (E->hasFoundDecl()) {
     *E->getTrailingObjects<NamedDecl *>() = readDeclAs<NamedDecl>();
 
-  if (E->hasTemplateKWAndArgsInfo())
+}
+
+  if (E->hasTemplateKWAndArgsInfo()) {
     ReadTemplateKWAndArgsInfo(
         *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>(),
         E->getTrailingObjects<TemplateArgumentLoc>(), NumTemplateArgs);
+
+}
 
   E->setDecl(readDeclAs<ValueDecl>());
   E->setLocation(readSourceLocation());
@@ -641,13 +701,17 @@ void ASTStmtReader::VisitStringLiteral(StringLiteral *E) {
          "Wrong character width!");
 
   // Deserialize the trailing array of SourceLocation.
-  for (unsigned I = 0; I < NumConcatenated; ++I)
+  for (unsigned I = 0; I < NumConcatenated; ++I) {
     E->setStrTokenLoc(I, readSourceLocation());
+
+}
 
   // Deserialize the trailing array of char holding the string data.
   char *StrData = E->getStrDataAsChar();
-  for (unsigned I = 0; I < Length * CharByteWidth; ++I)
+  for (unsigned I = 0; I < Length * CharByteWidth; ++I) {
     StrData[I] = Record.readInt();
+
+}
 }
 
 void ASTStmtReader::VisitCharacterLiteral(CharacterLiteral *E) {
@@ -668,8 +732,10 @@ void ASTStmtReader::VisitParenListExpr(ParenListExpr *E) {
   VisitExpr(E);
   unsigned NumExprs = Record.readInt();
   assert((NumExprs == E->getNumExprs()) && "Wrong NumExprs!");
-  for (unsigned I = 0; I != NumExprs; ++I)
+  for (unsigned I = 0; I != NumExprs; ++I) {
     E->getTrailingObjects<Stmt *>()[I] = Record.readSubStmt();
+
+}
   E->LParenLoc = readSourceLocation();
   E->RParenLoc = readSourceLocation();
 }
@@ -720,8 +786,10 @@ void ASTStmtReader::VisitOffsetOfExpr(OffsetOfExpr *E) {
     }
   }
 
-  for (unsigned I = 0, N = E->getNumExpressions(); I != N; ++I)
+  for (unsigned I = 0, N = E->getNumExpressions(); I != N; ++I) {
     E->setIndexExpr(I, Record.readSubExpr());
+
+}
 }
 
 void ASTStmtReader::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *E) {
@@ -752,8 +820,10 @@ readConstraintSatisfaction(ASTRecordReader &Record) {
             ConstraintExpr, new (Record.getContext())
                                 ConstraintSatisfaction::SubstitutionDiagnostic{
                                     DiagLocation, DiagMessage});
-      } else
+      } else {
         Satisfaction.Details.emplace_back(ConstraintExpr, Record.readExpr());
+
+}
     }
   }
   return Satisfaction;
@@ -770,8 +840,10 @@ void ASTStmtReader::VisitConceptSpecializationExpr(
   E->FoundDecl = Record.readDeclAs<NamedDecl>();
   E->ArgsAsWritten = Record.readASTTemplateArgumentListInfo();
   llvm::SmallVector<TemplateArgument, 4> Args;
-  for (unsigned I = 0; I < NumTemplateArgs; ++I)
+  for (unsigned I = 0; I < NumTemplateArgs; ++I) {
     Args.push_back(Record.readTemplateArgument());
+
+}
   E->setTemplateArguments(Args);
   E->Satisfaction = E->isValueDependent() ? nullptr :
       ASTConstraintSatisfaction::Create(Record.getContext(),
@@ -796,8 +868,10 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
   E->RequiresExprBits.IsSatisfied = Record.readInt();
   E->Body = Record.readDeclAs<RequiresExprBodyDecl>();
   llvm::SmallVector<ParmVarDecl *, 4> LocalParameters;
-  for (unsigned i = 0; i < NumLocalParameters; ++i)
+  for (unsigned i = 0; i < NumLocalParameters; ++i) {
     LocalParameters.push_back(cast<ParmVarDecl>(Record.readDecl()));
+
+}
   std::copy(LocalParameters.begin(), LocalParameters.end(),
             E->getTrailingObjects<ParmVarDecl *>());
   llvm::SmallVector<concepts::Requirement *, 4> Requirements;
@@ -810,12 +884,14 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
         auto Status =
             static_cast<concepts::TypeRequirement::SatisfactionStatus>(
                 Record.readInt());
-        if (Status == concepts::TypeRequirement::SS_SubstitutionFailure)
+        if (Status == concepts::TypeRequirement::SS_SubstitutionFailure) {
           R = new (Record.getContext())
               concepts::TypeRequirement(readSubstitutionDiagnostic(Record));
-        else
+        } else {
           R = new (Record.getContext())
               concepts::TypeRequirement(Record.readTypeSourceInfo());
+
+}
       } break;
       case concepts::Requirement::RK_Simple:
       case concepts::Requirement::RK_Compound: {
@@ -826,8 +902,10 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
                            Expr *> E;
         if (Status == concepts::ExprRequirement::SS_ExprSubstitutionFailure) {
           E = readSubstitutionDiagnostic(Record);
-        } else
+        } else {
           E = Record.readExpr();
+
+}
 
         llvm::Optional<concepts::ExprRequirement::ReturnTypeRequirement> Req;
         ConceptSpecializationExpr *SubstitutedConstraintExpr = nullptr;
@@ -845,9 +923,11 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
               // type-constraint
               TemplateParameterList *TPL = Record.readTemplateParameterList();
               if (Status >=
-                  concepts::ExprRequirement::SS_ConstraintsNotSatisfied)
+                  concepts::ExprRequirement::SS_ConstraintsNotSatisfied) {
                 SubstitutedConstraintExpr =
                     cast<ConceptSpecializationExpr>(Record.readExpr());
+
+}
               Req.emplace(TPL);
             } break;
             case 2:
@@ -856,15 +936,17 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
               break;
           }
         }
-        if (Expr *Ex = E.dyn_cast<Expr *>())
+        if (Expr *Ex = E.dyn_cast<Expr *>()) {
           R = new (Record.getContext()) concepts::ExprRequirement(
                   Ex, RK == concepts::Requirement::RK_Simple, NoexceptLoc,
                   std::move(*Req), Status, SubstitutedConstraintExpr);
-        else
+        } else {
           R = new (Record.getContext()) concepts::ExprRequirement(
                   E.get<concepts::Requirement::SubstitutionDiagnostic *>(),
                   RK == concepts::Requirement::RK_Simple, NoexceptLoc,
                   std::move(*Req));
+
+}
       } break;
       case concepts::Requirement::RK_Nested: {
         if (/* IsSubstitutionDiagnostic */Record.readInt()) {
@@ -873,16 +955,20 @@ void ASTStmtReader::VisitRequiresExpr(RequiresExpr *E) {
           break;
         }
         Expr *E = Record.readExpr();
-        if (E->isInstantiationDependent())
+        if (E->isInstantiationDependent()) {
           R = new (Record.getContext()) concepts::NestedRequirement(E);
-        else
+        } else {
           R = new (Record.getContext())
               concepts::NestedRequirement(Record.getContext(), E,
                                           readConstraintSatisfaction(Record));
+
+}
       } break;
     }
-    if (!R)
+    if (!R) {
       continue;
+
+}
     Requirements.push_back(R);
   }
   std::copy(Requirements.begin(), Requirements.end(),
@@ -912,8 +998,10 @@ void ASTStmtReader::VisitCallExpr(CallExpr *E) {
   assert((NumArgs == E->getNumArgs()) && "Wrong NumArgs!");
   E->setRParenLoc(readSourceLocation());
   E->setCallee(Record.readSubExpr());
-  for (unsigned I = 0; I != NumArgs; ++I)
+  for (unsigned I = 0; I != NumArgs; ++I) {
     E->setArg(I, Record.readSubExpr());
+
+}
   E->setADLCallKind(static_cast<CallExpr::ADLCallKind>(Record.readInt()));
 }
 
@@ -953,16 +1041,20 @@ void ASTStmtReader::VisitMemberExpr(MemberExpr *E) {
     E->getTrailingObjects<MemberExprNameQualifier>()->FoundDecl = FoundDecl;
 
     NestedNameSpecifierLoc QualifierLoc;
-    if (HasQualifier)
+    if (HasQualifier) {
       QualifierLoc = Record.readNestedNameSpecifierLoc();
+
+}
     E->getTrailingObjects<MemberExprNameQualifier>()->QualifierLoc =
         QualifierLoc;
   }
 
-  if (HasTemplateInfo)
+  if (HasTemplateInfo) {
     ReadTemplateKWAndArgsInfo(
         *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>(),
         E->getTrailingObjects<TemplateArgumentLoc>(), NumTemplateArgs);
+
+}
 }
 
 void ASTStmtReader::VisitObjCIsaExpr(ObjCIsaExpr *E) {
@@ -1070,8 +1162,10 @@ void ASTStmtReader::VisitExtVectorElementExpr(ExtVectorElementExpr *E) {
 
 void ASTStmtReader::VisitInitListExpr(InitListExpr *E) {
   VisitExpr(E);
-  if (auto *SyntForm = cast_or_null<InitListExpr>(Record.readSubStmt()))
+  if (auto *SyntForm = cast_or_null<InitListExpr>(Record.readSubStmt())) {
     E->setSyntacticForm(SyntForm);
+
+}
   E->setLBraceLoc(readSourceLocation());
   E->setRBraceLoc(readSourceLocation());
   bool isArrayFiller = Record.readInt();
@@ -1079,8 +1173,10 @@ void ASTStmtReader::VisitInitListExpr(InitListExpr *E) {
   if (isArrayFiller) {
     filler = Record.readSubExpr();
     E->ArrayFillerOrUnionFieldInit = filler;
-  } else
+  } else {
     E->ArrayFillerOrUnionFieldInit = readDeclAs<FieldDecl>();
+
+}
   E->sawArrayRangeDesignator(Record.readInt());
   unsigned NumInits = Record.readInt();
   E->reserveInits(Record.getContext(), NumInits);
@@ -1090,8 +1186,10 @@ void ASTStmtReader::VisitInitListExpr(InitListExpr *E) {
       E->updateInit(Record.getContext(), I, init ? init : filler);
     }
   } else {
-    for (unsigned I = 0; I != NumInits; ++I)
+    for (unsigned I = 0; I != NumInits; ++I) {
       E->updateInit(Record.getContext(), I, Record.readSubExpr());
+
+}
   }
 }
 
@@ -1101,8 +1199,10 @@ void ASTStmtReader::VisitDesignatedInitExpr(DesignatedInitExpr *E) {
   VisitExpr(E);
   unsigned NumSubExprs = Record.readInt();
   assert(NumSubExprs == E->getNumSubExprs() && "Wrong number of subexprs");
-  for (unsigned I = 0; I != NumSubExprs; ++I)
+  for (unsigned I = 0; I != NumSubExprs; ++I) {
     E->setSubExpr(I, Record.readSubExpr());
+
+}
   E->setEqualOrColonLoc(readSourceLocation());
   E->setGNUSyntax(Record.readInt());
 
@@ -1226,8 +1326,10 @@ void ASTStmtReader::VisitShuffleVectorExpr(ShuffleVectorExpr *E) {
   VisitExpr(E);
   SmallVector<Expr *, 16> Exprs;
   unsigned NumExprs = Record.readInt();
-  while (NumExprs--)
+  while (NumExprs--) {
     Exprs.push_back(Record.readSubExpr());
+
+}
   E->setExprs(Record.getContext(), Exprs);
   E->setBuiltinLoc(readSourceLocation());
   E->setRParenLoc(readSourceLocation());
@@ -1260,12 +1362,16 @@ void ASTStmtReader::VisitGenericSelectionExpr(GenericSelectionExpr *E) {
   // Add 1 to account for the controlling expression which is the first
   // expression in the trailing array of Stmt *. This is not needed for
   // the trailing array of TypeSourceInfo *.
-  for (unsigned I = 0, N = NumAssocs + 1; I < N; ++I)
+  for (unsigned I = 0, N = NumAssocs + 1; I < N; ++I) {
     Stmts[I] = Record.readSubExpr();
 
+}
+
   TypeSourceInfo **TSIs = E->getTrailingObjects<TypeSourceInfo *>();
-  for (unsigned I = 0, N = NumAssocs; I < N; ++I)
+  for (unsigned I = 0, N = NumAssocs; I < N; ++I) {
     TSIs[I] = readTypeSourceInfo();
+
+}
 }
 
 void ASTStmtReader::VisitPseudoObjectExpr(PseudoObjectExpr *E) {
@@ -1288,8 +1394,10 @@ void ASTStmtReader::VisitAtomicExpr(AtomicExpr *E) {
   VisitExpr(E);
   E->Op = AtomicExpr::AtomicOp(Record.readInt());
   E->NumSubExprs = AtomicExpr::getNumSubExprs(E->Op);
-  for (unsigned I = 0; I != E->NumSubExprs; ++I)
+  for (unsigned I = 0; I != E->NumSubExprs; ++I) {
     E->SubExprs[I] = Record.readSubExpr();
+
+}
   E->BuiltinLoc = readSourceLocation();
   E->RParenLoc = readSourceLocation();
 }
@@ -1316,8 +1424,10 @@ void ASTStmtReader::VisitObjCArrayLiteral(ObjCArrayLiteral *E) {
   unsigned NumElements = Record.readInt();
   assert(NumElements == E->getNumElements() && "Wrong number of elements");
   Expr **Elements = E->getElements();
-  for (unsigned I = 0, N = NumElements; I != N; ++I)
+  for (unsigned I = 0, N = NumElements; I != N; ++I) {
     Elements[I] = Record.readSubExpr();
+
+}
   E->ArrayWithObjectsMethod = readDeclAs<ObjCMethodDecl>();
   E->Range = readSourceRange();
 }
@@ -1440,20 +1550,26 @@ void ASTStmtReader::VisitObjCMessageExpr(ObjCMessageExpr *E) {
 
   assert(Kind == E->getReceiverKind());
 
-  if (Record.readInt())
+  if (Record.readInt()) {
     E->setMethodDecl(readDeclAs<ObjCMethodDecl>());
-  else
+  } else {
     E->setSelector(Record.readSelector());
+
+}
 
   E->LBracLoc = readSourceLocation();
   E->RBracLoc = readSourceLocation();
 
-  for (unsigned I = 0, N = E->getNumArgs(); I != N; ++I)
+  for (unsigned I = 0, N = E->getNumArgs(); I != N; ++I) {
     E->setArg(I, Record.readSubExpr());
 
+}
+
   SourceLocation *Locs = E->getStoredSelLocs();
-  for (unsigned I = 0; I != NumStoredSelLocs; ++I)
+  for (unsigned I = 0; I != NumStoredSelLocs; ++I) {
     Locs[I] = readSourceLocation();
+
+}
 }
 
 void ASTStmtReader::VisitObjCForCollectionStmt(ObjCForCollectionStmt *S) {
@@ -1491,11 +1607,15 @@ void ASTStmtReader::VisitObjCAtTryStmt(ObjCAtTryStmt *S) {
   Record.skipInts(1);
   bool HasFinally = Record.readInt();
   S->setTryBody(Record.readSubStmt());
-  for (unsigned I = 0, N = S->getNumCatchStmts(); I != N; ++I)
+  for (unsigned I = 0, N = S->getNumCatchStmts(); I != N; ++I) {
     S->setCatchStmt(I, cast_or_null<ObjCAtCatchStmt>(Record.readSubStmt()));
 
-  if (HasFinally)
+}
+
+  if (HasFinally) {
     S->setFinallyStmt(Record.readSubStmt());
+
+}
   S->setAtTryLoc(readSourceLocation());
 }
 
@@ -1543,8 +1663,10 @@ void ASTStmtReader::VisitCXXTryStmt(CXXTryStmt *S) {
   Record.skipInts(1);
   S->TryLoc = readSourceLocation();
   S->getStmts()[0] = Record.readSubStmt();
-  for (unsigned i = 0, e = S->getNumHandlers(); i != e; ++i)
+  for (unsigned i = 0, e = S->getNumHandlers(); i != e; ++i) {
     S->getStmts()[i + 1] = Record.readSubStmt();
+
+}
 }
 
 void ASTStmtReader::VisitCXXForRangeStmt(CXXForRangeStmt *S) {
@@ -1602,8 +1724,10 @@ void ASTStmtReader::VisitCXXConstructExpr(CXXConstructExpr *E) {
   E->Constructor = readDeclAs<CXXConstructorDecl>();
   E->ParenOrBraceRange = readSourceRange();
 
-  for (unsigned I = 0; I != NumArgs; ++I)
+  for (unsigned I = 0; I != NumArgs; ++I) {
     E->setArg(I, Record.readSubExpr());
+
+}
 }
 
 void ASTStmtReader::VisitCXXInheritedCtorInitExpr(CXXInheritedCtorInitExpr *E) {
@@ -1633,8 +1757,10 @@ void ASTStmtReader::VisitLambdaExpr(LambdaExpr *E) {
   // Read capture initializers.
   for (LambdaExpr::capture_init_iterator C = E->capture_init_begin(),
                                       CEnd = E->capture_init_end();
-       C != CEnd; ++C)
+       C != CEnd; ++C) {
     *C = Record.readSubExpr();
+
+}
 }
 
 void
@@ -1773,16 +1899,20 @@ void ASTStmtReader::VisitCXXNewExpr(CXXNewExpr *E) {
   E->setOperatorNew(readDeclAs<FunctionDecl>());
   E->setOperatorDelete(readDeclAs<FunctionDecl>());
   E->AllocatedTypeInfo = readTypeSourceInfo();
-  if (IsParenTypeId)
+  if (IsParenTypeId) {
     E->getTrailingObjects<SourceRange>()[0] = readSourceRange();
+
+}
   E->Range = readSourceRange();
   E->DirectInitRange = readSourceRange();
 
   // Install all the subexpressions.
   for (CXXNewExpr::raw_arg_iterator I = E->raw_arg_begin(),
                                     N = E->raw_arg_end();
-       I != N; ++I)
+       I != N; ++I) {
     *I = Record.readSubStmt();
+
+}
 }
 
 void ASTStmtReader::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
@@ -1808,10 +1938,12 @@ void ASTStmtReader::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {
   E->TildeLoc = readSourceLocation();
 
   IdentifierInfo *II = Record.readIdentifier();
-  if (II)
+  if (II) {
     E->setDestroyedType(II, readSourceLocation());
-  else
+  } else {
     E->setDestroyedType(readTypeSourceInfo());
+
+}
 }
 
 void ASTStmtReader::VisitExprWithCleanups(ExprWithCleanups *E) {
@@ -1822,12 +1954,14 @@ void ASTStmtReader::VisitExprWithCleanups(ExprWithCleanups *E) {
   for (unsigned i = 0; i != NumObjects; ++i) {
     unsigned CleanupKind = Record.readInt();
     ExprWithCleanups::CleanupObject Obj;
-    if (CleanupKind == COK_Block)
+    if (CleanupKind == COK_Block) {
       Obj = readDeclAs<BlockDecl>();
-    else if (CleanupKind == COK_CompoundLiteral)
+    } else if (CleanupKind == COK_CompoundLiteral) {
       Obj = cast<CompoundLiteralExpr>(Record.readSubExpr());
-    else
+    } else {
       llvm_unreachable("unexpected cleanup object type");
+
+}
     E->getTrailingObjects<ExprWithCleanups::CleanupObject>()[i] = Obj;
   }
 
@@ -1849,10 +1983,12 @@ void ASTStmtReader::VisitCXXDependentScopeMemberExpr(
       (HasFirstQualifierFoundInScope == E->hasFirstQualifierFoundInScope()) &&
       "Wrong HasFirstQualifierFoundInScope!");
 
-  if (HasTemplateKWAndArgsInfo)
+  if (HasTemplateKWAndArgsInfo) {
     ReadTemplateKWAndArgsInfo(
         *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>(),
         E->getTrailingObjects<TemplateArgumentLoc>(), NumTemplateArgs);
+
+}
 
   assert((NumTemplateArgs == E->getNumTemplateArgs()) &&
          "Wrong NumTemplateArgs!");
@@ -1863,8 +1999,10 @@ void ASTStmtReader::VisitCXXDependentScopeMemberExpr(
   E->QualifierLoc = Record.readNestedNameSpecifierLoc();
   E->Base = Record.readSubExpr();
 
-  if (HasFirstQualifierFoundInScope)
+  if (HasFirstQualifierFoundInScope) {
     *E->getTrailingObjects<NamedDecl *>() = readDeclAs<NamedDecl>();
+
+}
 
   E->MemberNameInfo = Record.readDeclarationNameInfo();
 }
@@ -1873,11 +2011,13 @@ void
 ASTStmtReader::VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E) {
   VisitExpr(E);
 
-  if (Record.readInt()) // HasTemplateKWAndArgsInfo
+  if (Record.readInt()) { // HasTemplateKWAndArgsInfo
     ReadTemplateKWAndArgsInfo(
         *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>(),
         E->getTrailingObjects<TemplateArgumentLoc>(),
         /*NumTemplateArgs=*/Record.readInt());
+
+}
 
   E->QualifierLoc = Record.readNestedNameSpecifierLoc();
   E->NameInfo = Record.readDeclarationNameInfo();
@@ -1889,8 +2029,10 @@ ASTStmtReader::VisitCXXUnresolvedConstructExpr(CXXUnresolvedConstructExpr *E) {
   assert(Record.peekInt() == E->arg_size() &&
          "Read wrong record during creation ?");
   Record.skipInts(1);
-  for (unsigned I = 0, N = E->arg_size(); I != N; ++I)
+  for (unsigned I = 0, N = E->arg_size(); I != N; ++I) {
     E->setArg(I, Record.readSubExpr());
+
+}
   E->TSI = readTypeSourceInfo();
   E->setLParenLoc(readSourceLocation());
   E->setRParenLoc(readSourceLocation());
@@ -1957,8 +2099,10 @@ void ASTStmtReader::VisitTypeTraitExpr(TypeTraitExpr *E) {
   E->RParenLoc = Range.getEnd();
 
   auto **Args = E->getTrailingObjects<TypeSourceInfo *>();
-  for (unsigned I = 0, N = E->getNumArgs(); I != N; ++I)
+  for (unsigned I = 0, N = E->getNumArgs(); I != N; ++I) {
     Args[I] = readTypeSourceInfo();
+
+}
 }
 
 void ASTStmtReader::VisitArrayTypeTraitExpr(ArrayTypeTraitExpr *E) {
@@ -2007,8 +2151,10 @@ void ASTStmtReader::VisitSizeOfPackExpr(SizeOfPackExpr *E) {
     assert(E->Length == NumPartialArgs);
     for (auto *I = E->getTrailingObjects<TemplateArgument>(),
               *E = I + NumPartialArgs;
-         I != E; ++I)
+         I != E; ++I) {
       new (I) TemplateArgument(Record.readTemplateArgument());
+
+}
   } else if (!E->isValueDependent()) {
     E->Length = Record.readInt();
   }
@@ -2027,8 +2173,10 @@ void ASTStmtReader::VisitSubstNonTypeTemplateParmPackExpr(
   VisitExpr(E);
   E->Param = readDeclAs<NonTypeTemplateParmDecl>();
   TemplateArgument ArgPack = Record.readTemplateArgument();
-  if (ArgPack.getKind() != TemplateArgument::Pack)
+  if (ArgPack.getKind() != TemplateArgument::Pack) {
     return;
+
+}
 
   E->Arguments = ArgPack.pack_begin();
   E->NumArguments = ArgPack.pack_size();
@@ -2041,17 +2189,21 @@ void ASTStmtReader::VisitFunctionParmPackExpr(FunctionParmPackExpr *E) {
   E->ParamPack = readDeclAs<ParmVarDecl>();
   E->NameLoc = readSourceLocation();
   auto **Parms = E->getTrailingObjects<VarDecl *>();
-  for (unsigned i = 0, n = E->NumParameters; i != n; ++i)
+  for (unsigned i = 0, n = E->NumParameters; i != n; ++i) {
     Parms[i] = readDeclAs<VarDecl>();
+
+}
 }
 
 void ASTStmtReader::VisitMaterializeTemporaryExpr(MaterializeTemporaryExpr *E) {
   VisitExpr(E);
   bool HasMaterialzedDecl = Record.readInt();
-  if (HasMaterialzedDecl)
+  if (HasMaterialzedDecl) {
     E->State = cast<LifetimeExtendedTemporaryDecl>(Record.readDecl());
-  else
+  } else {
     E->State = Record.readSubExpr();
+
+}
 }
 
 void ASTStmtReader::VisitCXXFoldExpr(CXXFoldExpr *E) {
@@ -2163,11 +2315,15 @@ void ASTStmtReader::VisitOMPExecutableDirective(OMPExecutableDirective *E) {
   E->setLocStart(readSourceLocation());
   E->setLocEnd(readSourceLocation());
   SmallVector<OMPClause *, 5> Clauses;
-  for (unsigned i = 0; i < E->getNumClauses(); ++i)
+  for (unsigned i = 0; i < E->getNumClauses(); ++i) {
     Clauses.push_back(Record.readOMPClause());
+
+}
   E->setClauses(Clauses);
-  if (E->hasAssociatedStmt())
+  if (E->hasAssociatedStmt()) {
     E->setAssociatedStmt(Record.readSubStmt());
+
+}
 }
 
 void ASTStmtReader::VisitOMPLoopDirective(OMPLoopDirective *D) {
@@ -2213,36 +2369,52 @@ void ASTStmtReader::VisitOMPLoopDirective(OMPLoopDirective *D) {
   SmallVector<Expr *, 4> Sub;
   unsigned CollapsedNum = D->getCollapsedNumber();
   Sub.reserve(CollapsedNum);
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setCounters(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setPrivateCounters(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setInits(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setUpdates(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setFinals(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setDependentCounters(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setDependentInits(Sub);
   Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
+  for (unsigned i = 0; i < CollapsedNum; ++i) {
     Sub.push_back(Record.readSubExpr());
+
+}
   D->setFinalsConditions(Sub);
 }
 
@@ -3736,8 +3908,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     }
 
     // We hit a STMT_STOP, so we're done with this expression.
-    if (Finished)
+    if (Finished) {
       break;
+
+}
 
     ++NumStatementsRead;
 

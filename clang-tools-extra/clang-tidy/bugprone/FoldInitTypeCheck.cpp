@@ -83,20 +83,26 @@ static bool isValidBuiltinFold(const BuiltinType &ValueType,
   const auto InitTypeSize = Context.getTypeSize(&InitType);
   // It's OK to fold a float into a float of bigger or equal size, but not OK to
   // fold into an int.
-  if (ValueType.isFloatingPoint())
+  if (ValueType.isFloatingPoint()) {
     return InitType.isFloatingPoint() && InitTypeSize >= ValueTypeSize;
+
+}
   // It's OK to fold an int into:
   //  - an int of the same size and signedness.
   //  - a bigger int, regardless of signedness.
   //  - FIXME: should it be a warning to fold into floating point?
   if (ValueType.isInteger()) {
     if (InitType.isInteger()) {
-      if (InitType.isSignedInteger() == ValueType.isSignedInteger())
+      if (InitType.isSignedInteger() == ValueType.isSignedInteger()) {
         return InitTypeSize >= ValueTypeSize;
+
+}
       return InitTypeSize > ValueTypeSize;
     }
-    if (InitType.isFloatingPoint())
+    if (InitType.isFloatingPoint()) {
       return InitTypeSize >= ValueTypeSize;
+
+}
   }
   return false;
 }
@@ -130,8 +136,10 @@ void FoldInitTypeCheck::check(const MatchFinder::MatchResult &Result) {
   doCheck(*IterValueType, *InitType, *Result.Context, *CallNode);
 
   if (const auto *Iter2ValueType =
-          Result.Nodes.getNodeAs<BuiltinType>("Iter2ValueType"))
+          Result.Nodes.getNodeAs<BuiltinType>("Iter2ValueType")) {
     doCheck(*Iter2ValueType, *InitType, *Result.Context, *CallNode);
+
+}
 }
 
 } // namespace bugprone

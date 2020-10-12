@@ -70,8 +70,10 @@ FunctionPass *llvm::createUnreachableBlockEliminationPass() {
 PreservedAnalyses UnreachableBlockElimPass::run(Function &F,
                                                 FunctionAnalysisManager &AM) {
   bool Changed = llvm::EliminateUnreachableBlocks(F);
-  if (!Changed)
+  if (!Changed) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserve<DominatorTreeAnalysis>();
   return PA;
@@ -110,8 +112,10 @@ bool UnreachableMachineBlockElim::runOnMachineFunction(MachineFunction &F) {
   MachineLoopInfo *MLI = getAnalysisIfAvailable<MachineLoopInfo>();
 
   // Mark all reachable blocks.
-  for (MachineBasicBlock *BB : depth_first_ext(&F, Reachable))
+  for (MachineBasicBlock *BB : depth_first_ext(&F, Reachable)) {
     (void)BB/* Mark all reachable blocks */;
+
+}
 
   // Loop over all dead blocks, remembering them and deleting all instructions
   // in them.
@@ -124,20 +128,26 @@ bool UnreachableMachineBlockElim::runOnMachineFunction(MachineFunction &F) {
       DeadBlocks.push_back(BB);
 
       // Update dominator and loop info.
-      if (MLI) MLI->removeBlock(BB);
-      if (MDT && MDT->getNode(BB)) MDT->eraseNode(BB);
+      if (MLI) { MLI->removeBlock(BB);
+
+}
+      if (MDT && MDT->getNode(BB)) { MDT->eraseNode(BB);
+
+}
 
       while (BB->succ_begin() != BB->succ_end()) {
         MachineBasicBlock* succ = *BB->succ_begin();
 
         MachineBasicBlock::iterator start = succ->begin();
         while (start != succ->end() && start->isPHI()) {
-          for (unsigned i = start->getNumOperands() - 1; i >= 2; i-=2)
+          for (unsigned i = start->getNumOperands() - 1; i >= 2; i-=2) {
             if (start->getOperand(i).isMBB() &&
                 start->getOperand(i).getMBB() == BB) {
               start->RemoveOperand(i);
               start->RemoveOperand(i-1);
             }
+
+}
 
           start++;
         }
@@ -150,9 +160,13 @@ bool UnreachableMachineBlockElim::runOnMachineFunction(MachineFunction &F) {
   // Actually remove the blocks now.
   for (unsigned i = 0, e = DeadBlocks.size(); i != e; ++i) {
     // Remove any call site information for calls in the block.
-    for (auto &I : DeadBlocks[i]->instrs())
-      if (I.shouldUpdateCallSiteInfo())
+    for (auto &I : DeadBlocks[i]->instrs()) {
+      if (I.shouldUpdateCallSiteInfo()) {
         DeadBlocks[i]->getParent()->eraseCallSiteInfo(&I);
+
+}
+
+}
 
     DeadBlocks[i]->eraseFromParent();
   }
@@ -165,12 +179,14 @@ bool UnreachableMachineBlockElim::runOnMachineFunction(MachineFunction &F) {
                                              BB->pred_end());
     MachineBasicBlock::iterator phi = BB->begin();
     while (phi != BB->end() && phi->isPHI()) {
-      for (unsigned i = phi->getNumOperands() - 1; i >= 2; i-=2)
+      for (unsigned i = phi->getNumOperands() - 1; i >= 2; i-=2) {
         if (!preds.count(phi->getOperand(i).getMBB())) {
           phi->RemoveOperand(i);
           phi->RemoveOperand(i-1);
           ModifiedPHI = true;
         }
+
+}
 
       if (phi->getNumOperands() == 3) {
         const MachineOperand &Input = phi->getOperand(1);

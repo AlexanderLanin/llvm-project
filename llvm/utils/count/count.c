@@ -30,9 +30,13 @@ int main(int argc, char **argv) {
 
     NumRead = fread(Buffer, 1, sizeof(Buffer), stdin);
 
-    for (i = 0; i != NumRead; ++i)
-      if (Buffer[i] == '\n')
+    for (i = 0; i != NumRead; ++i) {
+      if (Buffer[i] == '\n') {
         ++NumLines;
+
+}
+
+}
   } while (NumRead == sizeof(Buffer));
     
   if (!feof(stdin)) {

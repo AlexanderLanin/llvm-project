@@ -28,11 +28,15 @@
 using namespace llvm;
 
 static MaybeAlign getBaseAlign(const Value *Base, const DataLayout &DL) {
-  if (const MaybeAlign PA = Base->getPointerAlignment(DL))
+  if (const MaybeAlign PA = Base->getPointerAlignment(DL)) {
     return *PA;
+
+}
   Type *const Ty = Base->getType()->getPointerElementType();
-  if (!Ty->isSized())
+  if (!Ty->isSized()) {
     return None;
+
+}
   return Align(DL.getABITypeAlignment(Ty));
 }
 
@@ -55,26 +59,32 @@ static bool isDereferenceableAndAlignedPointer(
     SmallPtrSetImpl<const Value *> &Visited, unsigned MaxDepth) {
 
   // Recursion limit.
-  if (MaxDepth-- == 0)
+  if (MaxDepth-- == 0) {
     return false;
 
+}
+
   // Already visited?  Bail out, we've likely hit unreachable code.
-  if (!Visited.insert(V).second)
+  if (!Visited.insert(V).second) {
     return false;
+
+}
 
   // Note that it is not safe to speculate into a malloc'd region because
   // malloc may return null.
 
   // bitcast instructions are no-ops as far as dereferenceability is concerned.
-  if (const BitCastOperator *BC = dyn_cast<BitCastOperator>(V))
+  if (const BitCastOperator *BC = dyn_cast<BitCastOperator>(V)) {
     return isDereferenceableAndAlignedPointer(BC->getOperand(0), Alignment,
                                               Size, DL, CtxI, DT, Visited,
                                               MaxDepth);
 
+}
+
   bool CheckForNonNull = false;
   APInt KnownDerefBytes(Size.getBitWidth(),
                         V->getPointerDereferenceableBytes(DL, CheckForNonNull));
-  if (KnownDerefBytes.getBoolValue() && KnownDerefBytes.uge(Size))
+  if (KnownDerefBytes.getBoolValue() && KnownDerefBytes.uge(Size)) {
     if (!CheckForNonNull || isKnownNonZero(V, DL, 0, nullptr, CtxI, DT)) {
       // As we recursed through GEPs to get here, we've incrementally checked
       // that each step advanced by a multiple of the alignment. If our base is
@@ -85,6 +95,8 @@ static bool isDereferenceableAndAlignedPointer(
       return isAligned(V, Offset, Alignment, DL);
     }
 
+}
+
   // For GEPs, determine if the indexing lands within the allocated object.
   if (const GEPOperator *GEP = dyn_cast<GEPOperator>(V)) {
     const Value *Base = GEP->getPointerOperand();
@@ -92,8 +104,10 @@ static bool isDereferenceableAndAlignedPointer(
     APInt Offset(DL.getIndexTypeSizeInBits(GEP->getType()), 0);
     if (!GEP->accumulateConstantOffset(DL, Offset) || Offset.isNegative() ||
         !Offset.urem(APInt(Offset.getBitWidth(), Alignment.value()))
-             .isMinValue())
+             .isMinValue()) {
       return false;
+
+}
 
     // If the base pointer is dereferenceable for Offset+Size bytes, then the
     // GEP (== Base + Offset) is dereferenceable for Size bytes.  If the base
@@ -109,18 +123,26 @@ static bool isDereferenceableAndAlignedPointer(
   }
 
   // For gc.relocate, look through relocations
-  if (const GCRelocateInst *RelocateInst = dyn_cast<GCRelocateInst>(V))
+  if (const GCRelocateInst *RelocateInst = dyn_cast<GCRelocateInst>(V)) {
     return isDereferenceableAndAlignedPointer(
       RelocateInst->getDerivedPtr(), Alignment, Size, DL, CtxI, DT, Visited, MaxDepth);
 
-  if (const AddrSpaceCastInst *ASC = dyn_cast<AddrSpaceCastInst>(V))
+}
+
+  if (const AddrSpaceCastInst *ASC = dyn_cast<AddrSpaceCastInst>(V)) {
     return isDereferenceableAndAlignedPointer(ASC->getOperand(0), Alignment,
                                               Size, DL, CtxI, DT, Visited, MaxDepth);
 
-  if (const auto *Call = dyn_cast<CallBase>(V))
-    if (auto *RP = getArgumentAliasingToReturnedPointer(Call, true))
+}
+
+  if (const auto *Call = dyn_cast<CallBase>(V)) {
+    if (auto *RP = getArgumentAliasingToReturnedPointer(Call, true)) {
       return isDereferenceableAndAlignedPointer(RP, Alignment, Size, DL, CtxI,
                                                 DT, Visited, MaxDepth);
+
+}
+
+}
 
   // If we don't know, assume the worst.
   return false;
@@ -148,8 +170,10 @@ bool llvm::isDereferenceableAndAlignedPointer(const Value *V, Type *Ty,
                                               const DominatorTree *DT) {
   // For unsized types or scalable vectors we don't know exactly how many bytes
   // are dereferenced, so bail out.
-  if (!Ty->isSized() || (Ty->isVectorTy() && Ty->getVectorIsScalable()))
+  if (!Ty->isSized() || (Ty->isVectorTy() && Ty->getVectorIsScalable())) {
     return false;
+
+}
 
   // When dereferenceability information is provided by a dereferenceable
   // attribute, we know exactly how many bytes are dereferenceable. If we can
@@ -184,8 +208,10 @@ bool llvm::isDereferenceablePointer(const Value *V, Type *Ty,
 ///
 static bool AreEquivalentAddressValues(const Value *A, const Value *B) {
   // Test if the values are trivially equivalent.
-  if (A == B)
+  if (A == B) {
     return true;
+
+}
 
   // Test if the values come from identical arithmetic instructions.
   // Use isIdenticalToWhenDefined instead of isIdenticalTo because
@@ -193,10 +219,16 @@ static bool AreEquivalentAddressValues(const Value *A, const Value *B) {
   // other, which means that they'll always either have the same
   // value or one of them will have an undefined value.
   if (isa<BinaryOperator>(A) || isa<CastInst>(A) || isa<PHINode>(A) ||
-      isa<GetElementPtrInst>(A))
-    if (const Instruction *BI = dyn_cast<Instruction>(B))
-      if (cast<Instruction>(A)->isIdenticalToWhenDefined(BI))
+      isa<GetElementPtrInst>(A)) {
+    if (const Instruction *BI = dyn_cast<Instruction>(B)) {
+      if (cast<Instruction>(A)->isIdenticalToWhenDefined(BI)) {
         return true;
+
+}
+
+}
+
+}
 
   // Otherwise they may not be equivalent.
   return false;
@@ -217,41 +249,55 @@ bool llvm::isDereferenceableAndAlignedInLoop(LoadInst *LI, Loop *L,
 
   // If given a uniform (i.e. non-varying) address, see if we can prove the
   // access is safe within the loop w/o needing predication.
-  if (L->isLoopInvariant(Ptr))
+  if (L->isLoopInvariant(Ptr)) {
     return isDereferenceableAndAlignedPointer(Ptr, Alignment, EltSize, DL,
                                               HeaderFirstNonPHI, &DT);
+
+}
 
   // Otherwise, check to see if we have a repeating access pattern where we can
   // prove that all accesses are well aligned and dereferenceable.
   auto *AddRec = dyn_cast<SCEVAddRecExpr>(SE.getSCEV(Ptr));
-  if (!AddRec || AddRec->getLoop() != L || !AddRec->isAffine())
+  if (!AddRec || AddRec->getLoop() != L || !AddRec->isAffine()) {
     return false;
+
+}
   auto* Step = dyn_cast<SCEVConstant>(AddRec->getStepRecurrence(SE));
-  if (!Step)
+  if (!Step) {
     return false;
+
+}
   // TODO: generalize to access patterns which have gaps
-  if (Step->getAPInt() != EltSize)
+  if (Step->getAPInt() != EltSize) {
     return false;
+
+}
 
   // TODO: If the symbolic trip count has a small bound (max count), we might
   // be able to prove safety.
   auto TC = SE.getSmallConstantTripCount(L);
-  if (!TC)
+  if (!TC) {
     return false;
+
+}
 
   const APInt AccessSize = TC * EltSize;
 
   auto *StartS = dyn_cast<SCEVUnknown>(AddRec->getStart());
-  if (!StartS)
+  if (!StartS) {
     return false;
+
+}
   assert(SE.isLoopInvariant(StartS, L) && "implied by addrec definition");
   Value *Base = StartS->getValue();
 
   // For the moment, restrict ourselves to the case where the access size is a
   // multiple of the requested alignment and the base is aligned.
   // TODO: generalize if a case found which warrants
-  if (EltSize.urem(Alignment.value()) != 0)
+  if (EltSize.urem(Alignment.value()) != 0) {
     return false;
+
+}
   return isDereferenceableAndAlignedPointer(Base, Alignment, AccessSize, DL,
                                             HeaderFirstNonPHI, &DT);
 }
@@ -277,14 +323,20 @@ bool llvm::isSafeToLoadUnconditionally(Value *V, MaybeAlign MA, APInt &Size,
 
   // If DT is not specified we can't make context-sensitive query
   const Instruction* CtxI = DT ? ScanFrom : nullptr;
-  if (isDereferenceableAndAlignedPointer(V, Alignment, Size, DL, CtxI, DT))
+  if (isDereferenceableAndAlignedPointer(V, Alignment, Size, DL, CtxI, DT)) {
     return true;
 
-  if (!ScanFrom)
+}
+
+  if (!ScanFrom) {
     return false;
 
-  if (Size.getBitWidth() > 64)
+}
+
+  if (Size.getBitWidth() > 64) {
     return false;
+
+}
   const uint64_t LoadSize = Size.getZExtValue();
 
   // Otherwise, be a little bit aggressive by scanning the local block where we
@@ -305,8 +357,10 @@ bool llvm::isSafeToLoadUnconditionally(Value *V, MaybeAlign MA, APInt &Size,
     // If we see a free or a call which may write to memory (i.e. which might do
     // a free) the pointer could be marked invalid.
     if (isa<CallInst>(BBI) && BBI->mayWriteToMemory() &&
-        !isa<DbgInfoIntrinsic>(BBI))
+        !isa<DbgInfoIntrinsic>(BBI)) {
       return false;
+
+}
 
     Value *AccessedPtr;
     MaybeAlign MaybeAccessedAlign;
@@ -314,34 +368,46 @@ bool llvm::isSafeToLoadUnconditionally(Value *V, MaybeAlign MA, APInt &Size,
       // Ignore volatile loads. The execution of a volatile load cannot
       // be used to prove an address is backed by regular memory; it can,
       // for example, point to an MMIO register.
-      if (LI->isVolatile())
+      if (LI->isVolatile()) {
         continue;
+
+}
       AccessedPtr = LI->getPointerOperand();
       MaybeAccessedAlign = MaybeAlign(LI->getAlignment());
     } else if (StoreInst *SI = dyn_cast<StoreInst>(BBI)) {
       // Ignore volatile stores (see comment for loads).
-      if (SI->isVolatile())
+      if (SI->isVolatile()) {
         continue;
+
+}
       AccessedPtr = SI->getPointerOperand();
       MaybeAccessedAlign = MaybeAlign(SI->getAlignment());
-    } else
+    } else {
       continue;
+
+}
 
     Type *AccessedTy = AccessedPtr->getType()->getPointerElementType();
 
     const Align AccessedAlign =
         DL.getValueOrABITypeAlignment(MaybeAccessedAlign, AccessedTy);
-    if (AccessedAlign < Alignment)
+    if (AccessedAlign < Alignment) {
       continue;
+
+}
 
     // Handle trivial cases.
     if (AccessedPtr == V &&
-        LoadSize <= DL.getTypeStoreSize(AccessedTy))
+        LoadSize <= DL.getTypeStoreSize(AccessedTy)) {
       return true;
 
+}
+
     if (AreEquivalentAddressValues(AccessedPtr->stripPointerCasts(), V) &&
-        LoadSize <= DL.getTypeStoreSize(AccessedTy))
+        LoadSize <= DL.getTypeStoreSize(AccessedTy)) {
       return true;
+
+}
   }
   return false;
 }
@@ -373,8 +439,10 @@ Value *llvm::FindAvailableLoadedValue(LoadInst *Load,
                                       AliasAnalysis *AA, bool *IsLoad,
                                       unsigned *NumScanedInst) {
   // Don't CSE load that is volatile or anything stronger than unordered.
-  if (!Load->isUnordered())
+  if (!Load->isUnordered()) {
     return nullptr;
+
+}
 
   return FindAvailablePtrLoadStore(
       Load->getPointerOperand(), Load->getType(), Load->isAtomic(), ScanBB,
@@ -392,8 +460,10 @@ static bool AreNonOverlapSameBaseLoadAndStore(
       DL, LoadOffset, /* AllowNonInbounds */ false);
   Value *StoreBase = StorePtr->stripAndAccumulateConstantOffsets(
       DL, StoreOffset, /* AllowNonInbounds */ false);
-  if (LoadBase != StoreBase)
+  if (LoadBase != StoreBase) {
     return false;
+
+}
   auto LoadAccessSize = LocationSize::precise(DL.getTypeStoreSize(LoadTy));
   auto StoreAccessSize = LocationSize::precise(DL.getTypeStoreSize(StoreTy));
   ConstantRange LoadRange(LoadOffset,
@@ -409,8 +479,10 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
                                        unsigned MaxInstsToScan,
                                        AliasAnalysis *AA, bool *IsLoadCSE,
                                        unsigned *NumScanedInst) {
-  if (MaxInstsToScan == 0)
+  if (MaxInstsToScan == 0) {
     MaxInstsToScan = ~0U;
+
+}
 
   const DataLayout &DL = ScanBB->getModule()->getDataLayout();
   Value *StrippedPtr = Ptr->stripPointerCasts();
@@ -419,37 +491,49 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
     // We must ignore debug info directives when counting (otherwise they
     // would affect codegen).
     Instruction *Inst = &*--ScanFrom;
-    if (isa<DbgInfoIntrinsic>(Inst))
+    if (isa<DbgInfoIntrinsic>(Inst)) {
       continue;
+
+}
 
     // Restore ScanFrom to expected value in case next test succeeds
     ScanFrom++;
 
-    if (NumScanedInst)
+    if (NumScanedInst) {
       ++(*NumScanedInst);
 
+}
+
     // Don't scan huge blocks.
-    if (MaxInstsToScan-- == 0)
+    if (MaxInstsToScan-- == 0) {
       return nullptr;
+
+}
 
     --ScanFrom;
     // If this is a load of Ptr, the loaded value is available.
     // (This is true even if the load is volatile or atomic, although
     // those cases are unlikely.)
-    if (LoadInst *LI = dyn_cast<LoadInst>(Inst))
+    if (LoadInst *LI = dyn_cast<LoadInst>(Inst)) {
       if (AreEquivalentAddressValues(
               LI->getPointerOperand()->stripPointerCasts(), StrippedPtr) &&
           CastInst::isBitOrNoopPointerCastable(LI->getType(), AccessTy, DL)) {
 
         // We can value forward from an atomic to a non-atomic, but not the
         // other way around.
-        if (LI->isAtomic() < AtLeastAtomic)
+        if (LI->isAtomic() < AtLeastAtomic) {
           return nullptr;
 
-        if (IsLoadCSE)
+}
+
+        if (IsLoadCSE) {
             *IsLoadCSE = true;
+
+}
         return LI;
       }
+
+}
 
     // Try to get the store size for the type.
     auto AccessSize = LocationSize::precise(DL.getTypeStoreSize(AccessTy));
@@ -465,11 +549,15 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
 
         // We can value forward from an atomic to a non-atomic, but not the
         // other way around.
-        if (SI->isAtomic() < AtLeastAtomic)
+        if (SI->isAtomic() < AtLeastAtomic) {
           return nullptr;
 
-        if (IsLoadCSE)
+}
+
+        if (IsLoadCSE) {
           *IsLoadCSE = false;
+
+}
         return SI->getOperand(0);
       }
 
@@ -478,8 +566,10 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
       // of alias analysis that is important for reg2mem'd code.
       if ((isa<AllocaInst>(StrippedPtr) || isa<GlobalVariable>(StrippedPtr)) &&
           (isa<AllocaInst>(StorePtr) || isa<GlobalVariable>(StorePtr)) &&
-          StrippedPtr != StorePtr)
+          StrippedPtr != StorePtr) {
         continue;
+
+}
 
       if (!AA) {
         // When AA isn't available, but if the load and the store have the same
@@ -488,13 +578,17 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
         // inliner. FIXME: use BasicAA if possible.
         if (AreNonOverlapSameBaseLoadAndStore(
                 Ptr, AccessTy, SI->getPointerOperand(),
-                SI->getValueOperand()->getType(), DL))
+                SI->getValueOperand()->getType(), DL)) {
           continue;
+
+}
       } else {
         // If we have alias analysis and it says the store won't modify the
         // loaded value, ignore the store.
-        if (!isModSet(AA->getModRefInfo(SI, StrippedPtr, AccessSize)))
+        if (!isModSet(AA->getModRefInfo(SI, StrippedPtr, AccessSize))) {
           continue;
+
+}
       }
 
       // Otherwise the store that may or may not alias the pointer, bail out.
@@ -506,8 +600,10 @@ Value *llvm::FindAvailablePtrLoadStore(Value *Ptr, Type *AccessTy,
     if (Inst->mayWriteToMemory()) {
       // If alias analysis claims that it really won't modify the load,
       // ignore it.
-      if (AA && !isModSet(AA->getModRefInfo(Inst, StrippedPtr, AccessSize)))
+      if (AA && !isModSet(AA->getModRefInfo(Inst, StrippedPtr, AccessSize))) {
         continue;
+
+}
 
       // May modify the pointer, bail out.
       ++ScanFrom;

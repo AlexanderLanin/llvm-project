@@ -44,8 +44,10 @@ void MCWasmStreamer::mergeFragment(MCDataFragment *DF, MCDataFragment *EF) {
                                  DF->getContents().size());
     DF->getFixups().push_back(EF->getFixups()[I]);
   }
-  if (DF->getSubtargetInfo() == nullptr && EF->getSubtargetInfo())
+  if (DF->getSubtargetInfo() == nullptr && EF->getSubtargetInfo()) {
     DF->setHasInstructions(*EF->getSubtargetInfo());
+
+}
   DF->getContents().append(EF->getContents().begin(), EF->getContents().end());
 }
 
@@ -62,8 +64,10 @@ void MCWasmStreamer::ChangeSection(MCSection *Section,
   MCAssembler &Asm = getAssembler();
   auto *SectionWasm = cast<MCSectionWasm>(Section);
   const MCSymbol *Grp = SectionWasm->getGroup();
-  if (Grp)
+  if (Grp) {
     Asm.registerSymbol(*Grp);
+
+}
 
   this->MCObjectStreamer::ChangeSection(Section, Subsection);
   Asm.registerSymbol(*Section->getBeginSymbol());
@@ -204,8 +208,10 @@ MCStreamer *llvm::createWasmStreamer(MCContext &Context,
                                      bool RelaxAll) {
   MCWasmStreamer *S =
       new MCWasmStreamer(Context, std::move(MAB), std::move(OW), std::move(CE));
-  if (RelaxAll)
+  if (RelaxAll) {
     S->getAssembler().setRelaxAll(true);
+
+}
   return S;
 }
 

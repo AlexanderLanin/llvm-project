@@ -23,12 +23,18 @@ EnumDumper::EnumDumper(LinePrinter &P) : PDBSymDumper(true), Printer(P) {}
 
 void EnumDumper::start(const PDBSymbolTypeEnum &Symbol) {
   if (Symbol.getUnmodifiedTypeId() != 0) {
-    if (Symbol.isConstType())
+    if (Symbol.isConstType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "const ";
-    if (Symbol.isVolatileType())
+
+}
+    if (Symbol.isVolatileType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "volatile ";
-    if (Symbol.isUnalignedType())
+
+}
+    if (Symbol.isUnalignedType()) {
       WithColor(Printer, PDB_ColorItem::Keyword).get() << "unaligned ";
+
+}
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "enum ";
     WithColor(Printer, PDB_ColorItem::Type).get() << Symbol.getName();
     return;
@@ -38,8 +44,10 @@ void EnumDumper::start(const PDBSymbolTypeEnum &Symbol) {
   WithColor(Printer, PDB_ColorItem::Type).get() << Symbol.getName();
   if (!opts::pretty::NoEnumDefs) {
     auto UnderlyingType = Symbol.getUnderlyingType();
-    if (!UnderlyingType)
+    if (!UnderlyingType) {
       return;
+
+}
     if (UnderlyingType->getBuiltinType() != PDB_BuiltinType::Int ||
         UnderlyingType->getLength() != 4) {
       Printer << " : ";
@@ -51,8 +59,10 @@ void EnumDumper::start(const PDBSymbolTypeEnum &Symbol) {
     Printer.Indent();
     if (EnumValues && EnumValues->getChildCount() > 0) {
       while (auto EnumValue = EnumValues->getNext()) {
-        if (EnumValue->getDataKind() != PDB_DataKind::Constant)
+        if (EnumValue->getDataKind() != PDB_DataKind::Constant) {
           continue;
+
+}
         Printer.NewLine();
         WithColor(Printer, PDB_ColorItem::Identifier).get()
             << EnumValue->getName();

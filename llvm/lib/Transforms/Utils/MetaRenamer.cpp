@@ -87,16 +87,20 @@ namespace {
       // simply avoid always having the same function names, and we need to
       // remain deterministic.
       unsigned int randSeed = 0;
-      for (auto C : M.getModuleIdentifier())
+      for (auto C : M.getModuleIdentifier()) {
         randSeed += C;
+
+}
 
       Renamer renamer(randSeed);
 
       // Rename all aliases
       for (auto AI = M.alias_begin(), AE = M.alias_end(); AI != AE; ++AI) {
         StringRef Name = AI->getName();
-        if (Name.startswith("llvm.") || (!Name.empty() && Name[0] == 1))
+        if (Name.startswith("llvm.") || (!Name.empty() && Name[0] == 1)) {
           continue;
+
+}
 
         AI->setName("alias");
       }
@@ -104,8 +108,10 @@ namespace {
       // Rename all global variables
       for (auto GI = M.global_begin(), GE = M.global_end(); GI != GE; ++GI) {
         StringRef Name = GI->getName();
-        if (Name.startswith("llvm.") || (!Name.empty() && Name[0] == 1))
+        if (Name.startswith("llvm.") || (!Name.empty() && Name[0] == 1)) {
           continue;
+
+}
 
         GI->setName("global");
       }
@@ -114,7 +120,9 @@ namespace {
       TypeFinder StructTypes;
       StructTypes.run(M, true);
       for (StructType *STy : StructTypes) {
-        if (STy->isLiteral() || STy->getName().empty()) continue;
+        if (STy->isLiteral() || STy->getName().empty()) { continue;
+
+}
 
         SmallString<128> NameStorage;
         STy->setName((Twine("struct.") +
@@ -129,13 +137,17 @@ namespace {
         // affect the behavior of other passes.
         if (Name.startswith("llvm.") || (!Name.empty() && Name[0] == 1) ||
             getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F).getLibFunc(
-                F, Tmp))
+                F, Tmp)) {
           continue;
+
+}
 
         // Leave @main alone. The output of -metarenamer might be passed to
         // lli for execution and the latter needs a main entry point.
-        if (Name != "main")
+        if (Name != "main") {
           F.setName(renamer.newName());
+
+}
 
         runOnFunction(F);
       }
@@ -143,16 +155,24 @@ namespace {
     }
 
     bool runOnFunction(Function &F) {
-      for (auto AI = F.arg_begin(), AE = F.arg_end(); AI != AE; ++AI)
-        if (!AI->getType()->isVoidTy())
+      for (auto AI = F.arg_begin(), AE = F.arg_end(); AI != AE; ++AI) {
+        if (!AI->getType()->isVoidTy()) {
           AI->setName("arg");
+
+}
+
+}
 
       for (auto &BB : F) {
         BB.setName("bb");
 
-        for (auto &I : BB)
-          if (!I.getType()->isVoidTy())
+        for (auto &I : BB) {
+          if (!I.getType()->isVoidTy()) {
             I.setName("tmp");
+
+}
+
+}
       }
       return true;
     }

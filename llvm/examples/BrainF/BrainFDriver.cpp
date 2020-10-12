@@ -132,19 +132,25 @@ int main(int argc, char **argv) {
 
   //Get the input stream
   std::istream *in = &std::cin;
-  if (InputFilename != "-")
+  if (InputFilename != "-") {
     in = new std::ifstream(InputFilename.c_str());
+
+}
 
   //Gather the compile flags
   BrainF::CompileFlags cf = BrainF::flag_off;
-  if (ArrayBoundsChecking)
+  if (ArrayBoundsChecking) {
     cf = BrainF::CompileFlags(cf | BrainF::flag_arraybounds);
+
+}
 
   //Read the BrainF program
   BrainF bf;
   std::unique_ptr<Module> Mod(bf.parse(in, 65536, cf, Context)); // 64 KiB
-  if (in != &std::cin)
+  if (in != &std::cin) {
     delete in;
+
+}
   addMainFunction(Mod.get());
 
   //Verify generated code
@@ -177,8 +183,10 @@ int main(int argc, char **argv) {
   }
 
   //Clean up
-  if (out != &outs())
+  if (out != &outs()) {
     delete out;
+
+}
 
   llvm_shutdown();
 

@@ -70,8 +70,10 @@ bool BugDriver::writeProgramToFile(int FD, const Module &M) const {
   raw_fd_ostream OS(FD, /*shouldClose*/ false);
   WriteBitcodeToFile(M, OS, PreserveBitcodeUseListOrder);
   OS.flush();
-  if (!OS.has_error())
+  if (!OS.has_error()) {
     return false;
+
+}
   OS.clear_error();
   return true;
 }
@@ -80,8 +82,10 @@ bool BugDriver::writeProgramToFile(const std::string &Filename,
                                    const Module &M) const {
   std::error_code EC;
   ToolOutputFile Out(Filename, EC, sys::fs::OF_None);
-  if (!EC)
+  if (!EC) {
     return writeProgramToFileAux(Out, M);
+
+}
   return true;
 }
 
@@ -99,11 +103,15 @@ void BugDriver::EmitProgressBitcode(const Module &M, const std::string &ID,
   }
 
   outs() << "Emitted bitcode to '" << Filename << "'\n";
-  if (NoFlyer || PassesToRun.empty())
+  if (NoFlyer || PassesToRun.empty()) {
     return;
+
+}
   outs() << "\n*** You can reproduce the problem with: ";
-  if (UseValgrind)
+  if (UseValgrind) {
     outs() << "valgrind ";
+
+}
   outs() << "opt " << Filename;
   for (unsigned i = 0, e = PluginLoader::getNumPlugins(); i != e; ++i) {
     outs() << " -load " << PluginLoader::getPlugin(i);
@@ -166,10 +174,12 @@ bool BugDriver::runPasses(Module &Program,
   std::string tool = OptCmd;
   if (OptCmd.empty()) {
     if (ErrorOr<std::string> Path =
-            FindProgramByName("opt", getToolName(), &OutputPrefix))
+            FindProgramByName("opt", getToolName(), &OutputPrefix)) {
       tool = *Path;
-    else
+    } else {
       errs() << Path.getError().message() << "\n";
+
+}
   }
   if (tool.empty()) {
     errs() << "Cannot find `opt' in PATH!\n";
@@ -182,12 +192,16 @@ bool BugDriver::runPasses(Module &Program,
 
   std::string Prog;
   if (UseValgrind) {
-    if (ErrorOr<std::string> Path = sys::findProgramByName("valgrind"))
+    if (ErrorOr<std::string> Path = sys::findProgramByName("valgrind")) {
       Prog = *Path;
-    else
+    } else {
       errs() << Path.getError().message() << "\n";
-  } else
+
+}
+  } else {
     Prog = tool;
+
+}
   if (Prog.empty()) {
     errs() << "Cannot find `valgrind' in PATH!\n";
     return 1;
@@ -200,11 +214,15 @@ bool BugDriver::runPasses(Module &Program,
     Args.push_back("--error-exitcode=1");
     Args.push_back("-q");
     Args.push_back(tool);
-  } else
+  } else {
     Args.push_back(tool);
 
-  for (unsigned i = 0, e = OptArgs.size(); i != e; ++i)
+}
+
+  for (unsigned i = 0, e = OptArgs.size(); i != e; ++i) {
     Args.push_back(OptArgs[i]);
+
+}
   Args.push_back("-disable-symbolication");
   Args.push_back("-o");
   Args.push_back(OutputFilename);
@@ -215,12 +233,16 @@ bool BugDriver::runPasses(Module &Program,
   }
   for (std::vector<std::string>::const_iterator I = Passes.begin(),
                                                 E = Passes.end();
-       I != E; ++I)
+       I != E; ++I) {
     pass_args.push_back(std::string("-") + (*I));
+
+}
   for (std::vector<std::string>::const_iterator I = pass_args.begin(),
                                                 E = pass_args.end();
-       I != E; ++I)
+       I != E; ++I) {
     Args.push_back(I->c_str());
+
+}
   Args.push_back(Temp->TmpName.c_str());
   Args.append(ExtraArgs.begin(), ExtraArgs.end());
 
@@ -242,22 +264,28 @@ bool BugDriver::runPasses(Module &Program,
 
   // If we are supposed to delete the bitcode file or if the passes crashed,
   // remove it now.  This may fail if the file was never created, but that's ok.
-  if (DeleteOutput || result != 0)
+  if (DeleteOutput || result != 0) {
     sys::fs::remove(OutputFilename);
 
+}
+
   if (!Quiet) {
-    if (result == 0)
+    if (result == 0) {
       outs() << "Success!\n";
-    else if (result > 0)
+    } else if (result > 0) {
       outs() << "Exited with error code '" << result << "'\n";
-    else if (result < 0) {
-      if (result == -1)
+    } else if (result < 0) {
+      if (result == -1) {
         outs() << "Execute failed: " << ErrMsg << "\n";
-      else
+      } else {
         outs() << "Crashed: " << ErrMsg << "\n";
+
+}
     }
-    if (result & 0x01000000)
+    if (result & 0x01000000) {
       outs() << "Dumped core\n";
+
+}
   }
 
   // Was the child successful?

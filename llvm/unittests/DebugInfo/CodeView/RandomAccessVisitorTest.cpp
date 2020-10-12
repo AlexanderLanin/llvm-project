@@ -28,14 +28,22 @@ using namespace llvm::pdb;
 namespace llvm {
 namespace codeview {
 inline bool operator==(const ArrayRecord &R1, const ArrayRecord &R2) {
-  if (R1.ElementType != R2.ElementType)
+  if (R1.ElementType != R2.ElementType) {
     return false;
-  if (R1.IndexType != R2.IndexType)
+
+}
+  if (R1.IndexType != R2.IndexType) {
     return false;
-  if (R1.Name != R2.Name)
+
+}
+  if (R1.Name != R2.Name) {
     return false;
-  if (R1.Size != R2.Size)
+
+}
+  if (R1.Size != R2.Size) {
     return false;
+
+}
   return true;
 }
 inline bool operator!=(const ArrayRecord &R1, const ArrayRecord &R2) {
@@ -43,8 +51,10 @@ inline bool operator!=(const ArrayRecord &R1, const ArrayRecord &R2) {
 }
 
 inline bool operator==(const CVType &R1, const CVType &R2) {
-  if (R1.RecordData != R2.RecordData)
+  if (R1.RecordData != R2.RecordData) {
     return false;
+
+}
   return true;
 }
 inline bool operator!=(const CVType &R1, const CVType &R2) {
@@ -129,26 +139,36 @@ public:
 protected:
   bool ValidateDatabaseRecord(LazyRandomTypeCollection &Types, uint32_t Index) {
     TypeIndex TI = TypeIndex::fromArrayIndex(Index);
-    if (!Types.contains(TI))
+    if (!Types.contains(TI)) {
       return false;
-    if (GlobalState->TypeVector[Index] != Types.getType(TI))
+
+}
+    if (GlobalState->TypeVector[Index] != Types.getType(TI)) {
       return false;
+
+}
     return true;
   }
 
   bool ValidateVisitedRecord(uint32_t VisitationOrder,
                              uint32_t GlobalArrayIndex) {
     TypeIndex TI = TypeIndex::fromArrayIndex(GlobalArrayIndex);
-    if (TI != TestState->Callbacks.Indices[VisitationOrder])
+    if (TI != TestState->Callbacks.Indices[VisitationOrder]) {
       return false;
+
+}
 
     if (GlobalState->TypeVector[TI.toArrayIndex()] !=
-        TestState->Callbacks.RawRecords[VisitationOrder])
+        TestState->Callbacks.RawRecords[VisitationOrder]) {
       return false;
 
+}
+
     if (GlobalState->Records[TI.toArrayIndex()] !=
-        TestState->Callbacks.VisitedRecords[VisitationOrder])
+        TestState->Callbacks.VisitedRecords[VisitationOrder]) {
       return false;
+
+}
 
     return true;
   }
@@ -185,8 +205,10 @@ protected:
     MutableArrayRef<uint8_t> Bytes(Buffer, Size);
     Storage = MutableBinaryByteStream(Bytes, support::little);
     BinaryStreamWriter Writer(Storage);
-    for (const auto I : Indices)
+    for (const auto I : Indices) {
       consumeError(Writer.writeObject(GlobalState->AllOffsets[I]));
+
+}
 
     BinaryStreamReader Reader(Storage);
     FixedStreamArray<TypeIndexOffset> Result;
@@ -219,13 +241,17 @@ TEST_F(RandomAccessVisitorTest, MultipleVisits) {
 
   // [0,8) should be present
   EXPECT_EQ(8u, Types.size());
-  for (uint32_t I = 0; I < 8; ++I)
+  for (uint32_t I = 0; I < 8; ++I) {
     EXPECT_TRUE(ValidateDatabaseRecord(Types, I));
+
+}
 
   // 5, 5, 5
   EXPECT_EQ(3u, TestState->Callbacks.count());
-  for (auto I : enumerate(IndicesToVisit))
+  for (auto I : enumerate(IndicesToVisit)) {
     EXPECT_TRUE(ValidateVisitedRecord(I.index(), I.value()));
+
+}
 }
 
 TEST_F(RandomAccessVisitorTest, DescendingWithinChunk) {
@@ -248,13 +274,17 @@ TEST_F(RandomAccessVisitorTest, DescendingWithinChunk) {
 
   // [0, 7]
   EXPECT_EQ(8u, Types.size());
-  for (uint32_t I = 0; I < 8; ++I)
+  for (uint32_t I = 0; I < 8; ++I) {
     EXPECT_TRUE(ValidateDatabaseRecord(Types, I));
+
+}
 
   // 2, 4, 7
   EXPECT_EQ(3u, TestState->Callbacks.count());
-  for (auto I : enumerate(IndicesToVisit))
+  for (auto I : enumerate(IndicesToVisit)) {
     EXPECT_TRUE(ValidateVisitedRecord(I.index(), I.value()));
+
+}
 }
 
 TEST_F(RandomAccessVisitorTest, AscendingWithinChunk) {
@@ -277,13 +307,17 @@ TEST_F(RandomAccessVisitorTest, AscendingWithinChunk) {
 
   // [0, 7]
   EXPECT_EQ(8u, Types.size());
-  for (uint32_t I = 0; I < 8; ++I)
+  for (uint32_t I = 0; I < 8; ++I) {
     EXPECT_TRUE(ValidateDatabaseRecord(Types, I));
+
+}
 
   // 2, 4, 7
   EXPECT_EQ(3u, TestState->Callbacks.count());
-  for (auto &I : enumerate(IndicesToVisit))
+  for (auto &I : enumerate(IndicesToVisit)) {
     EXPECT_TRUE(ValidateVisitedRecord(I.index(), I.value()));
+
+}
 }
 
 TEST_F(RandomAccessVisitorTest, StopPrematurelyInChunk) {
@@ -308,13 +342,17 @@ TEST_F(RandomAccessVisitorTest, StopPrematurelyInChunk) {
 
   // [0, 8) should be visited.
   EXPECT_EQ(8u, Types.size());
-  for (uint32_t I = 0; I < 8; ++I)
+  for (uint32_t I = 0; I < 8; ++I) {
     EXPECT_TRUE(ValidateDatabaseRecord(Types, I));
+
+}
 
   // [0, 2]
   EXPECT_EQ(3u, TestState->Callbacks.count());
-  for (auto I : enumerate(IndicesToVisit))
+  for (auto I : enumerate(IndicesToVisit)) {
     EXPECT_TRUE(ValidateVisitedRecord(I.index(), I.value()));
+
+}
 }
 
 TEST_F(RandomAccessVisitorTest, InnerChunk) {
@@ -338,13 +376,17 @@ TEST_F(RandomAccessVisitorTest, InnerChunk) {
 
   // [4, 9)
   EXPECT_EQ(5u, Types.size());
-  for (uint32_t I = 4; I < 9; ++I)
+  for (uint32_t I = 4; I < 9; ++I) {
     EXPECT_TRUE(ValidateDatabaseRecord(Types, I));
+
+}
 
   // 5, 7
   EXPECT_EQ(2u, TestState->Callbacks.count());
-  for (auto &I : enumerate(IndicesToVisit))
+  for (auto &I : enumerate(IndicesToVisit)) {
     EXPECT_TRUE(ValidateVisitedRecord(I.index(), I.value()));
+
+}
 }
 
 TEST_F(RandomAccessVisitorTest, CrossChunkName) {

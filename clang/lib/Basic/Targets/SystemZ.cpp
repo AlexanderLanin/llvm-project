@@ -100,15 +100,19 @@ int SystemZTargetInfo::getISARevision(StringRef Name) const {
       llvm::find_if(ISARevisions, [Name](const ISANameRevision &CR) {
         return CR.Name == Name;
       });
-  if (Rev == std::end(ISARevisions))
+  if (Rev == std::end(ISARevisions)) {
     return -1;
+
+}
   return Rev->ISARevisionID;
 }
 
 void SystemZTargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  for (const ISANameRevision &Rev : ISARevisions)
+  for (const ISANameRevision &Rev : ISARevisions) {
     Values.push_back(Rev.Name);
+
+}
 }
 
 bool SystemZTargetInfo::hasFeature(StringRef Feature) const {
@@ -139,12 +143,18 @@ void SystemZTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4");
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8");
 
-  if (HasTransactionalExecution)
+  if (HasTransactionalExecution) {
     Builder.defineMacro("__HTM__");
-  if (HasVector)
+
+}
+  if (HasVector) {
     Builder.defineMacro("__VX__");
-  if (Opts.ZVector)
+
+}
+  if (Opts.ZVector) {
     Builder.defineMacro("__VEC__", "10303");
+
+}
 }
 
 ArrayRef<Builtin::Info> SystemZTargetInfo::getTargetBuiltins() const {

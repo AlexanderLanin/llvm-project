@@ -182,12 +182,18 @@ template <std::size_t N> struct ScalarTraits<FixedSizeHex<N>> {
   }
 
   static StringRef input(StringRef Scalar, void *, FixedSizeHex<N> &Fixed) {
-    if (!all_of(Scalar, isHexDigit))
+    if (!all_of(Scalar, isHexDigit)) {
       return "Invalid hex digit in input";
-    if (Scalar.size() < 2 * N)
+
+}
+    if (Scalar.size() < 2 * N) {
       return "String too short";
-    if (Scalar.size() > 2 * N)
+
+}
+    if (Scalar.size() > 2 * N) {
       return "String too long";
+
+}
     copy(fromHex(Scalar), Fixed.Storage);
     return "";
   }
@@ -219,10 +225,14 @@ template <std::size_t N> struct ScalarTraits<FixedSizeString<N>> {
   }
 
   static StringRef input(StringRef Scalar, void *, FixedSizeString<N> &Fixed) {
-    if (Scalar.size() < N)
+    if (Scalar.size() < N) {
       return "String too short";
-    if (Scalar.size() > N)
+
+}
+    if (Scalar.size() > N) {
       return "String too long";
+
+}
     copy(Scalar, Fixed.Storage);
     return "";
   }
@@ -293,8 +303,10 @@ static void streamMapping(yaml::IO &IO, RawContentStream &Stream) {
 }
 
 static StringRef streamValidate(RawContentStream &Stream) {
-  if (Stream.Size.value < Stream.Content.binary_size())
+  if (Stream.Size.value < Stream.Content.binary_size()) {
     return "Stream size must be greater or equal to the content size";
+
+}
   return "";
 }
 
@@ -390,22 +402,28 @@ void yaml::MappingTraits<minidump::Exception>::mapping(
     Twine(Index).toVector(Name);
     support::ulittle64_t &Field = Exception.ExceptionInformation[Index];
 
-    if (Index < Exception.NumberParameters)
+    if (Index < Exception.NumberParameters) {
       mapRequiredHex(IO, Name.c_str(), Field);
-    else
+    } else {
       mapOptionalHex(IO, Name.c_str(), Field, 0);
+
+}
   }
 }
 
 void yaml::MappingTraits<std::unique_ptr<Stream>>::mapping(
     yaml::IO &IO, std::unique_ptr<MinidumpYAML::Stream> &S) {
   StreamType Type;
-  if (IO.outputting())
+  if (IO.outputting()) {
     Type = S->Type;
+
+}
   IO.mapRequired("Type", Type);
 
-  if (!IO.outputting())
+  if (!IO.outputting()) {
     S = MinidumpYAML::Stream::create(Type);
+
+}
   switch (S->Kind) {
   case MinidumpYAML::Stream::StreamKind::Exception:
     streamMapping(IO, llvm::cast<MinidumpYAML::ExceptionStream>(*S));
@@ -466,49 +484,67 @@ Stream::create(const Directory &StreamDesc, const object::MinidumpFile &File) {
   case StreamKind::Exception: {
     Expected<const minidump::ExceptionStream &> ExpectedExceptionStream =
         File.getExceptionStream();
-    if (!ExpectedExceptionStream)
+    if (!ExpectedExceptionStream) {
       return ExpectedExceptionStream.takeError();
+
+}
     Expected<ArrayRef<uint8_t>> ExpectedThreadContext =
         File.getRawData(ExpectedExceptionStream->ThreadContext);
-    if (!ExpectedThreadContext)
+    if (!ExpectedThreadContext) {
       return ExpectedThreadContext.takeError();
+
+}
     return std::make_unique<ExceptionStream>(*ExpectedExceptionStream,
                                              *ExpectedThreadContext);
   }
   case StreamKind::MemoryInfoList: {
-    if (auto ExpectedList = File.getMemoryInfoList())
+    if (auto ExpectedList = File.getMemoryInfoList()) {
       return std::make_unique<MemoryInfoListStream>(*ExpectedList);
-    else
+    } else {
       return ExpectedList.takeError();
+
+}
   }
   case StreamKind::MemoryList: {
     auto ExpectedList = File.getMemoryList();
-    if (!ExpectedList)
+    if (!ExpectedList) {
       return ExpectedList.takeError();
+
+}
     std::vector<MemoryListStream::entry_type> Ranges;
     for (const MemoryDescriptor &MD : *ExpectedList) {
       auto ExpectedContent = File.getRawData(MD.Memory);
-      if (!ExpectedContent)
+      if (!ExpectedContent) {
         return ExpectedContent.takeError();
+
+}
       Ranges.push_back({MD, *ExpectedContent});
     }
     return std::make_unique<MemoryListStream>(std::move(Ranges));
   }
   case StreamKind::ModuleList: {
     auto ExpectedList = File.getModuleList();
-    if (!ExpectedList)
+    if (!ExpectedList) {
       return ExpectedList.takeError();
+
+}
     std::vector<ModuleListStream::entry_type> Modules;
     for (const Module &M : *ExpectedList) {
       auto ExpectedName = File.getString(M.ModuleNameRVA);
-      if (!ExpectedName)
+      if (!ExpectedName) {
         return ExpectedName.takeError();
+
+}
       auto ExpectedCv = File.getRawData(M.CvRecord);
-      if (!ExpectedCv)
+      if (!ExpectedCv) {
         return ExpectedCv.takeError();
+
+}
       auto ExpectedMisc = File.getRawData(M.MiscRecord);
-      if (!ExpectedMisc)
+      if (!ExpectedMisc) {
         return ExpectedMisc.takeError();
+
+}
       Modules.push_back(
           {M, std::move(*ExpectedName), *ExpectedCv, *ExpectedMisc});
     }
@@ -519,11 +555,15 @@ Stream::create(const Directory &StreamDesc, const object::MinidumpFile &File) {
                                                File.getRawStream(StreamDesc));
   case StreamKind::SystemInfo: {
     auto ExpectedInfo = File.getSystemInfo();
-    if (!ExpectedInfo)
+    if (!ExpectedInfo) {
       return ExpectedInfo.takeError();
+
+}
     auto ExpectedCSDVersion = File.getString(ExpectedInfo->CSDVersionRVA);
-    if (!ExpectedCSDVersion)
+    if (!ExpectedCSDVersion) {
       return ExpectedInfo.takeError();
+
+}
     return std::make_unique<SystemInfoStream>(*ExpectedInfo,
                                                std::move(*ExpectedCSDVersion));
   }
@@ -532,16 +572,22 @@ Stream::create(const Directory &StreamDesc, const object::MinidumpFile &File) {
         StreamDesc.Type, toStringRef(File.getRawStream(StreamDesc)));
   case StreamKind::ThreadList: {
     auto ExpectedList = File.getThreadList();
-    if (!ExpectedList)
+    if (!ExpectedList) {
       return ExpectedList.takeError();
+
+}
     std::vector<ThreadListStream::entry_type> Threads;
     for (const Thread &T : *ExpectedList) {
       auto ExpectedStack = File.getRawData(T.Stack.Memory);
-      if (!ExpectedStack)
+      if (!ExpectedStack) {
         return ExpectedStack.takeError();
+
+}
       auto ExpectedContext = File.getRawData(T.Context);
-      if (!ExpectedContext)
+      if (!ExpectedContext) {
         return ExpectedContext.takeError();
+
+}
       Threads.push_back({T, *ExpectedStack, *ExpectedContext});
     }
     return std::make_unique<ThreadListStream>(std::move(Threads));
@@ -555,8 +601,10 @@ Expected<Object> Object::create(const object::MinidumpFile &File) {
   Streams.reserve(File.streams().size());
   for (const Directory &StreamDesc : File.streams()) {
     auto ExpectedStream = Stream::create(StreamDesc, File);
-    if (!ExpectedStream)
+    if (!ExpectedStream) {
       return ExpectedStream.takeError();
+
+}
     Streams.push_back(std::move(*ExpectedStream));
   }
   return Object(File.header(), std::move(Streams));

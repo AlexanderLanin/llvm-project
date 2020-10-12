@@ -203,23 +203,31 @@ public:
 
   /// Increment and clamp the number of undefined bits.
   void incErrorMSBs(unsigned amt) {
-    if (ErrorMSBs == (unsigned)-1)
+    if (ErrorMSBs == (unsigned)-1) {
       return;
 
+}
+
     ErrorMSBs += amt;
-    if (ErrorMSBs > A.getBitWidth())
+    if (ErrorMSBs > A.getBitWidth()) {
       ErrorMSBs = A.getBitWidth();
+
+}
   }
 
   /// Decrement and clamp the number of undefined bits.
   void decErrorMSBs(unsigned amt) {
-    if (ErrorMSBs == (unsigned)-1)
+    if (ErrorMSBs == (unsigned)-1) {
       return;
 
-    if (ErrorMSBs > amt)
+}
+
+    if (ErrorMSBs > amt) {
       ErrorMSBs -= amt;
-    else
+    } else {
       ErrorMSBs = 0;
+
+}
   }
 
   /// Apply an add on the polynomial
@@ -463,23 +471,29 @@ public:
       return *this;
     }
 
-    if (C.isNullValue())
+    if (C.isNullValue()) {
       return *this;
+
+}
 
     // Test if the result will be zero
     unsigned shiftAmt = C.getZExtValue();
-    if (shiftAmt >= C.getBitWidth())
+    if (shiftAmt >= C.getBitWidth()) {
       return mul(APInt(C.getBitWidth(), 0));
+
+}
 
     // The proof that shiftAmt LSBs are zero for at least one summand is only
     // possible for the constant number.
     //
     // If this can be proven add shiftAmt to the error counter
     // `ErrorMSBs`. Otherwise set all bits as undefined.
-    if (A.countTrailingZeros() < shiftAmt)
+    if (A.countTrailingZeros() < shiftAmt) {
       ErrorMSBs = A.getBitWidth();
-    else
+    } else {
       incErrorMSBs(shiftAmt);
+
+}
 
     // Apply the operation.
     pushBOperation(LShr, C);
@@ -514,25 +528,35 @@ public:
   /// Test coefficient B of two Polynomials are equal.
   bool isCompatibleTo(const Polynomial &o) const {
     // The polynomial use different bit width.
-    if (A.getBitWidth() != o.A.getBitWidth())
+    if (A.getBitWidth() != o.A.getBitWidth()) {
       return false;
+
+}
 
     // If neither Polynomial has the Coefficient B.
-    if (!isFirstOrder() && !o.isFirstOrder())
+    if (!isFirstOrder() && !o.isFirstOrder()) {
       return true;
 
+}
+
     // The index variable is different.
-    if (V != o.V)
+    if (V != o.V) {
       return false;
 
+}
+
     // Check the operations.
-    if (B.size() != o.B.size())
+    if (B.size() != o.B.size()) {
       return false;
+
+}
 
     auto ob = o.B.begin();
     for (auto &b : B) {
-      if (b != *ob)
+      if (b != *ob) {
         return false;
+
+}
       ob++;
     }
 
@@ -543,8 +567,10 @@ public:
   /// subtraction is not possible.
   Polynomial operator-(const Polynomial &o) const {
     // Return an undefined polynomial if incompatible.
-    if (!isCompatibleTo(o))
+    if (!isCompatibleTo(o)) {
       return Polynomial();
+
+}
 
     // If the polynomials are compatible (meaning they have the same
     // coefficient on B), B is eliminated. Thus a polynomial solely
@@ -578,8 +604,10 @@ public:
     OS << "[{#ErrBits:" << ErrorMSBs << "} ";
 
     if (V) {
-      for (auto b : B)
+      for (auto b : B) {
         OS << "(";
+
+}
       OS << "(" << *V << ") ";
 
       for (auto b : B) {
@@ -711,14 +739,20 @@ public:
   /// \returns false if no sensible information can be gathered.
   static bool compute(Value *V, VectorInfo &Result, const DataLayout &DL) {
     ShuffleVectorInst *SVI = dyn_cast<ShuffleVectorInst>(V);
-    if (SVI)
+    if (SVI) {
       return computeFromSVI(SVI, Result, DL);
+
+}
     LoadInst *LI = dyn_cast<LoadInst>(V);
-    if (LI)
+    if (LI) {
       return computeFromLI(LI, Result, DL);
+
+}
     BitCastInst *BCI = dyn_cast<BitCastInst>(V);
-    if (BCI)
+    if (BCI) {
       return computeFromBCI(BCI, Result, DL);
+
+}
     return false;
   }
 
@@ -732,27 +766,37 @@ public:
                              const DataLayout &DL) {
     Instruction *Op = dyn_cast<Instruction>(BCI->getOperand(0));
 
-    if (!Op)
+    if (!Op) {
       return false;
+
+}
 
     VectorType *VTy = dyn_cast<VectorType>(Op->getType());
-    if (!VTy)
+    if (!VTy) {
       return false;
 
+}
+
     // We can only cast from large to smaller vectors
-    if (Result.VTy->getNumElements() % VTy->getNumElements())
+    if (Result.VTy->getNumElements() % VTy->getNumElements()) {
       return false;
+
+}
 
     unsigned Factor = Result.VTy->getNumElements() / VTy->getNumElements();
     unsigned NewSize = DL.getTypeAllocSize(Result.VTy->getElementType());
     unsigned OldSize = DL.getTypeAllocSize(VTy->getElementType());
 
-    if (NewSize * Factor != OldSize)
+    if (NewSize * Factor != OldSize) {
       return false;
 
+}
+
     VectorInfo Old(VTy);
-    if (!compute(Op, Old, DL))
+    if (!compute(Op, Old, DL)) {
       return false;
+
+}
 
     for (unsigned i = 0; i < Result.VTy->getNumElements(); i += Factor) {
       for (unsigned j = 0; j < Factor; j++) {
@@ -790,19 +834,23 @@ public:
 
     // Compute the left hand vector information.
     VectorInfo LHS(ArgTy);
-    if (!compute(SVI->getOperand(0), LHS, DL))
+    if (!compute(SVI->getOperand(0), LHS, DL)) {
       LHS.BB = nullptr;
+
+}
 
     // Compute the right hand vector information.
     VectorInfo RHS(ArgTy);
-    if (!compute(SVI->getOperand(1), RHS, DL))
+    if (!compute(SVI->getOperand(1), RHS, DL)) {
       RHS.BB = nullptr;
 
+}
+
     // Neither operand produced sensible results?
-    if (!LHS.BB && !RHS.BB)
+    if (!LHS.BB && !RHS.BB) {
       return false;
     // Only RHS produced sensible results?
-    else if (!LHS.BB) {
+    } else if (!LHS.BB) {
       Result.BB = RHS.BB;
       Result.PV = RHS.PV;
     }
@@ -838,18 +886,22 @@ public:
       assert((i < 2 * (signed)ArgTy->getNumElements()) &&
              "Invalid ShuffleVectorInst (index out of bounds)");
 
-      if (i < 0)
+      if (i < 0) {
         Result.EI[j] = ElementInfo();
-      else if (i < (signed)ArgTy->getNumElements()) {
-        if (LHS.BB)
+      } else if (i < (signed)ArgTy->getNumElements()) {
+        if (LHS.BB) {
           Result.EI[j] = LHS.EI[i];
-        else
+        } else {
           Result.EI[j] = ElementInfo();
+
+}
       } else {
-        if (RHS.BB)
+        if (RHS.BB) {
           Result.EI[j] = RHS.EI[i - ArgTy->getNumElements()];
-        else
+        } else {
           Result.EI[j] = ElementInfo();
+
+}
       }
       j++;
     }
@@ -870,11 +922,15 @@ public:
     Value *BasePtr;
     Polynomial Offset;
 
-    if (LI->isVolatile())
+    if (LI->isVolatile()) {
       return false;
 
-    if (LI->isAtomic())
+}
+
+    if (LI->isAtomic()) {
       return false;
+
+}
 
     // Get the base polynomial
     computePolynomialFromPointer(*LI->getPointerOperand(), Offset, BasePtr, DL);
@@ -908,22 +964,28 @@ public:
     ConstantInt *C = dyn_cast<ConstantInt>(RHS);
     if ((!C) && BO.isCommutative()) {
       C = dyn_cast<ConstantInt>(LHS);
-      if (C)
+      if (C) {
         std::swap(LHS, RHS);
+
+}
     }
 
     switch (BO.getOpcode()) {
     case Instruction::Add:
-      if (!C)
+      if (!C) {
         break;
+
+}
 
       computePolynomial(*LHS, Result);
       Result.add(C->getValue());
       return;
 
     case Instruction::LShr:
-      if (!C)
+      if (!C) {
         break;
+
+}
 
       computePolynomial(*LHS, Result);
       Result.lshr(C->getValue());
@@ -941,10 +1003,12 @@ public:
   /// \param V input value
   /// \param Result result polynomial
   static void computePolynomial(Value &V, Polynomial &Result) {
-    if (auto *BO = dyn_cast<BinaryOperator>(&V))
+    if (auto *BO = dyn_cast<BinaryOperator>(&V)) {
       computePolynomialBinOp(*BO, Result);
-    else
+    } else {
       Result = Polynomial(&V);
+
+}
   }
 
   /// Compute the Polynomial representation of a Pointer type.
@@ -998,8 +1062,10 @@ public:
         for (idxOperand = 1, e = GEP.getNumOperands(); idxOperand < e;
              idxOperand++) {
           ConstantInt *IDX = dyn_cast<ConstantInt>(GEP.getOperand(idxOperand));
-          if (!IDX)
+          if (!IDX) {
             break;
+
+}
           Indices.push_back(IDX);
         }
 
@@ -1062,12 +1128,18 @@ bool InterleavedLoadCombineImpl::findPattern(
     std::vector<std::list<VectorInfo>::iterator> Res(Factor, Candidates.end());
 
     for (auto C = Candidates.begin(), E = Candidates.end(); C != E; C++) {
-      if (C->VTy != C0->VTy)
+      if (C->VTy != C0->VTy) {
         continue;
-      if (C->BB != C0->BB)
+
+}
+      if (C->BB != C0->BB) {
         continue;
-      if (C->PV != C0->PV)
+
+}
+      if (C->PV != C0->PV) {
         continue;
+
+}
 
       // Check the current value matches any of factor - 1 remaining lines
       for (i = 1; i < Factor; i++) {
@@ -1077,8 +1149,10 @@ bool InterleavedLoadCombineImpl::findPattern(
       }
 
       for (i = 1; i < Factor; i++) {
-        if (Res[i] == Candidates.end())
+        if (Res[i] == Candidates.end()) {
           break;
+
+}
       }
       if (i == Factor) {
         Res[0] = C0;
@@ -1123,8 +1197,10 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
   LoadInst *InsertionPoint = InterleavedLoad.front().EI[0].LI;
 
   // Test if the offset is computed
-  if (!InsertionPoint)
+  if (!InsertionPoint) {
     return false;
+
+}
 
   std::set<LoadInst *> LIs;
   std::set<Instruction *> Is;
@@ -1151,8 +1227,10 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
   }
 
   // There is nothing to combine.
-  if (LIs.size() < 2)
+  if (LIs.size() < 2) {
     return false;
+
+}
 
   // Test if all participating instruction will be dead after the
   // transformation. If intermediate results are used, no performance gain can
@@ -1163,14 +1241,18 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
         TTI.getInstructionCost(I, TargetTransformInfo::TCK_Latency);
 
     // The final SVIs are allowed not to be dead, all uses will be replaced
-    if (SVIs.find(I) != SVIs.end())
+    if (SVIs.find(I) != SVIs.end()) {
       continue;
+
+}
 
     // If there are users outside the set to be eliminated, we abort the
     // transformation. No gain can be expected.
     for (auto *U : I->users()) {
-      if (Is.find(dyn_cast<Instruction>(U)) == Is.end())
+      if (Is.find(dyn_cast<Instruction>(U)) == Is.end()) {
         return false;
+
+}
     }
   }
 
@@ -1184,15 +1266,19 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
   auto FMA = MSSA.getMemoryAccess(First);
   for (auto LI : LIs) {
     auto MADef = MSSA.getMemoryAccess(LI)->getDefiningAccess();
-    if (!MSSA.dominates(MADef, FMA))
+    if (!MSSA.dominates(MADef, FMA)) {
       return false;
+
+}
   }
   assert(!LIs.empty() && "There are no LoadInst to combine");
 
   // It is necessary that insertion point dominates all final ShuffleVectorInst.
   for (auto &VI : InterleavedLoad) {
-    if (!DT.dominates(InsertionPoint, VI.SVI))
+    if (!DT.dominates(InsertionPoint, VI.SVI)) {
       return false;
+
+}
   }
 
   // All checks are done. Add instructions detectable by InterleavedAccessPass
@@ -1204,8 +1290,10 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
   VectorType *ILTy = VectorType::get(ETy, Factor * ElementsPerSVI);
 
   SmallVector<unsigned, 4> Indices;
-  for (unsigned i = 0; i < Factor; i++)
+  for (unsigned i = 0; i < Factor; i++) {
     Indices.push_back(i);
+
+}
   InterleavedCost = TTI.getInterleavedMemoryOpCost(
       Instruction::Load, ILTy, Factor, Indices, InsertionPoint->getAlignment(),
       InsertionPoint->getPointerAddressSpace());
@@ -1231,8 +1319,10 @@ bool InterleavedLoadCombineImpl::combine(std::list<VectorInfo> &InterleavedLoad,
   int i = 0;
   for (auto &VI : InterleavedLoad) {
     SmallVector<uint32_t, 4> Mask;
-    for (unsigned j = 0; j < ElementsPerSVI; j++)
+    for (unsigned j = 0; j < ElementsPerSVI; j++) {
       Mask.push_back(i + j * Factor);
+
+}
 
     Builder.SetInsertPoint(VI.SVI);
     auto SVI = Builder.CreateShuffleVector(LI, UndefValue::get(LI->getType()),
@@ -1313,12 +1403,16 @@ struct InterleavedLoadCombine : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    if (DisableInterleavedLoadCombine)
+    if (DisableInterleavedLoadCombine) {
       return false;
 
+}
+
     auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-    if (!TPC)
+    if (!TPC) {
       return false;
+
+}
 
     LLVM_DEBUG(dbgs() << "*** " << getPassName() << ": " << F.getName()
                       << "\n");

@@ -30,11 +30,15 @@ namespace clangd {
 namespace {
 
 llvm::Optional<std::string> toURI(const FileEntry *File) {
-  if (!File)
+  if (!File) {
     return llvm::None;
+
+}
   auto AbsolutePath = File->tryGetRealPathName();
-  if (AbsolutePath.empty())
+  if (AbsolutePath.empty()) {
     return llvm::None;
+
+}
   return URI::create(AbsolutePath).toString();
 }
 
@@ -55,14 +59,18 @@ public:
                    FileID PrevFID) override {
     // We only need to process each file once. So we don't care about anything
     // but entries.
-    if (Reason != FileChangeReason::EnterFile)
+    if (Reason != FileChangeReason::EnterFile) {
       return;
+
+}
 
     const auto FileID = SM.getFileID(Loc);
     const auto File = SM.getFileEntryForID(FileID);
     auto URI = toURI(File);
-    if (!URI)
+    if (!URI) {
       return;
+
+}
     auto I = IG.try_emplace(*URI).first;
 
     auto &Node = I->getValue();
@@ -75,10 +83,14 @@ public:
 #endif
       return;
     }
-    if (auto Digest = digestFile(SM, FileID))
+    if (auto Digest = digestFile(SM, FileID)) {
       Node.Digest = std::move(*Digest);
-    if (FileID == SM.getMainFileID())
+
+}
+    if (FileID == SM.getMainFileID()) {
       Node.Flags |= IncludeGraphNode::SourceFlag::IsTU;
+
+}
     Node.URI = I->getKey();
   }
 
@@ -90,12 +102,16 @@ public:
                           llvm::StringRef RelativePath, const Module *Imported,
                           SrcMgr::CharacteristicKind FileType) override {
     auto IncludeURI = toURI(File);
-    if (!IncludeURI)
+    if (!IncludeURI) {
       return;
 
+}
+
     auto IncludingURI = toURI(SM.getFileEntryForID(SM.getFileID(HashLoc)));
-    if (!IncludingURI)
+    if (!IncludingURI) {
       return;
+
+}
 
     auto NodeForInclude = IG.try_emplace(*IncludeURI).first->getKey();
     auto NodeForIncluding = IG.try_emplace(*IncludingURI);
@@ -142,17 +158,21 @@ public:
   CreateASTConsumer(CompilerInstance &CI, llvm::StringRef InFile) override {
     CI.getPreprocessor().addCommentHandler(PragmaHandler.get());
     Includes->addSystemHeadersMapping(CI.getLangOpts());
-    if (IncludeGraphCallback != nullptr)
+    if (IncludeGraphCallback != nullptr) {
       CI.getPreprocessor().addPPCallbacks(
           std::make_unique<IncludeGraphCollector>(CI.getSourceManager(), IG));
+
+}
 
     return index::createIndexingASTConsumer(
         Collector, Opts, CI.getPreprocessorPtr(),
         /*ShouldSkipFunctionBody=*/[this](const Decl *D) {
           auto &SM = D->getASTContext().getSourceManager();
           auto FID = SM.getFileID(SM.getExpansionLoc(D->getLocation()));
-          if (!FID.isValid())
+          if (!FID.isValid()) {
             return false;
+
+}
           return !Collector->shouldIndexFile(FID);
         });
   }
@@ -174,10 +194,14 @@ public:
 
   void EndSourceFileAction() override {
     SymbolsCallback(Collector->takeSymbols());
-    if (RefsCallback != nullptr)
+    if (RefsCallback != nullptr) {
       RefsCallback(Collector->takeRefs());
-    if (RelationsCallback != nullptr)
+
+}
+    if (RelationsCallback != nullptr) {
       RelationsCallback(Collector->takeRelations());
+
+}
     if (IncludeGraphCallback != nullptr) {
 #ifndef NDEBUG
       // This checks if all nodes are initialized.
@@ -212,8 +236,10 @@ std::unique_ptr<FrontendAction> createStaticIndexingAction(
   IndexOpts.SystemSymbolFilter =
       index::IndexingOptions::SystemSymbolFilterKind::All;
   Opts.CollectIncludePath = true;
-  if (Opts.Origin == SymbolOrigin::Unknown)
+  if (Opts.Origin == SymbolOrigin::Unknown) {
     Opts.Origin = SymbolOrigin::Static;
+
+}
   Opts.StoreAllDocumentation = false;
   if (RefsCallback != nullptr) {
     Opts.RefFilter = RefKind::All;

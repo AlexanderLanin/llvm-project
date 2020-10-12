@@ -29,46 +29,58 @@ static bool isMachOStubsSection(Section &S) {
 static Expected<Edge &> getFirstRelocationEdge(LinkGraph &G, Block &B) {
   auto EItr = std::find_if(B.edges().begin(), B.edges().end(),
                            [](Edge &E) { return E.isRelocation(); });
-  if (EItr == B.edges().end())
+  if (EItr == B.edges().end()) {
     return make_error<StringError>("GOT entry in " + G.getName() + ", \"" +
                                        B.getSection().getName() +
                                        "\" has no relocations",
                                    inconvertibleErrorCode());
+
+}
   return *EItr;
 }
 
 static Expected<Symbol &> getMachOGOTTarget(LinkGraph &G, Block &B) {
   auto E = getFirstRelocationEdge(G, B);
-  if (!E)
+  if (!E) {
     return E.takeError();
+
+}
   auto &TargetSym = E->getTarget();
-  if (!TargetSym.hasName())
+  if (!TargetSym.hasName()) {
     return make_error<StringError>(
         "GOT entry in " + G.getName() + ", \"" +
             TargetSym.getBlock().getSection().getName() +
             "\" points to anonymous "
             "symbol",
         inconvertibleErrorCode());
-  if (TargetSym.isDefined() || TargetSym.isAbsolute())
+
+}
+  if (TargetSym.isDefined() || TargetSym.isAbsolute()) {
     return make_error<StringError>(
         "GOT entry \"" + TargetSym.getName() + "\" in " + G.getName() + ", \"" +
             TargetSym.getBlock().getSection().getName() +
             "\" does not point to an external symbol",
         inconvertibleErrorCode());
+
+}
   return TargetSym;
 }
 
 static Expected<Symbol &> getMachOStubTarget(LinkGraph &G, Block &B) {
   auto E = getFirstRelocationEdge(G, B);
-  if (!E)
+  if (!E) {
     return E.takeError();
+
+}
   auto &GOTSym = E->getTarget();
-  if (!GOTSym.isDefined() || !isMachOGOTSection(GOTSym.getBlock().getSection()))
+  if (!GOTSym.isDefined() || !isMachOGOTSection(GOTSym.getBlock().getSection())) {
     return make_error<StringError>(
         "Stubs entry in " + G.getName() + ", \"" +
             GOTSym.getBlock().getSection().getName() +
             "\" does not point to GOT entry",
         inconvertibleErrorCode());
+
+}
   return getMachOGOTTarget(G, GOTSym.getBlock());
 }
 
@@ -95,14 +107,18 @@ Error registerMachOStubsAndGOT(Session &S, LinkGraph &G) {
     });
 
     // Skip empty sections.
-    if (llvm::empty(Sec.symbols()))
+    if (llvm::empty(Sec.symbols())) {
       continue;
 
-    if (FileInfo.SectionInfos.count(Sec.getName()))
+}
+
+    if (FileInfo.SectionInfos.count(Sec.getName())) {
       return make_error<StringError>("Encountered duplicate section name \"" +
                                          Sec.getName() + "\" in \"" + FileName +
                                          "\"",
                                      inconvertibleErrorCode());
+
+}
 
     bool isGOTSection = isMachOGOTSection(Sec);
     bool isStubsSection = isMachOStubsSection(Sec);
@@ -113,31 +129,43 @@ Error registerMachOStubsAndGOT(Session &S, LinkGraph &G) {
     auto *FirstSym = *Sec.symbols().begin();
     auto *LastSym = FirstSym;
     for (auto *Sym : Sec.symbols()) {
-      if (Sym->getAddress() < FirstSym->getAddress())
+      if (Sym->getAddress() < FirstSym->getAddress()) {
         FirstSym = Sym;
-      if (Sym->getAddress() > LastSym->getAddress())
+
+}
+      if (Sym->getAddress() > LastSym->getAddress()) {
         LastSym = Sym;
+
+}
       if (isGOTSection) {
-        if (Sym->isSymbolZeroFill())
+        if (Sym->isSymbolZeroFill()) {
           return make_error<StringError>("zero-fill atom in GOT section",
                                          inconvertibleErrorCode());
 
-        if (auto TS = getMachOGOTTarget(G, Sym->getBlock()))
+}
+
+        if (auto TS = getMachOGOTTarget(G, Sym->getBlock())) {
           FileInfo.GOTEntryInfos[TS->getName()] = {Sym->getSymbolContent(),
                                                    Sym->getAddress()};
-        else
+        } else {
           return TS.takeError();
+
+}
         SectionContainsContent = true;
       } else if (isStubsSection) {
-        if (Sym->isSymbolZeroFill())
+        if (Sym->isSymbolZeroFill()) {
           return make_error<StringError>("zero-fill atom in Stub section",
                                          inconvertibleErrorCode());
 
-        if (auto TS = getMachOStubTarget(G, Sym->getBlock()))
+}
+
+        if (auto TS = getMachOStubTarget(G, Sym->getBlock())) {
           FileInfo.StubInfos[TS->getName()] = {Sym->getSymbolContent(),
                                                Sym->getAddress()};
-        else
+        } else {
           return TS.takeError();
+
+}
         SectionContainsContent = true;
       } else if (Sym->hasName()) {
         if (Sym->isSymbolZeroFill()) {
@@ -156,16 +184,20 @@ Error registerMachOStubsAndGOT(Session &S, LinkGraph &G) {
         (LastSym->getBlock().getAddress() + LastSym->getBlock().getSize()) -
         SecAddr;
 
-    if (SectionContainsZeroFill && SectionContainsContent)
+    if (SectionContainsZeroFill && SectionContainsContent) {
       return make_error<StringError>("Mixed zero-fill and content sections not "
                                      "supported yet",
                                      inconvertibleErrorCode());
-    if (SectionContainsZeroFill)
+
+}
+    if (SectionContainsZeroFill) {
       FileInfo.SectionInfos[Sec.getName()] = {SecSize, SecAddr};
-    else
+    } else {
       FileInfo.SectionInfos[Sec.getName()] = {
           StringRef(FirstSym->getBlock().getContent().data(), SecSize),
           SecAddr};
+
+}
   }
 
   return Error::success();

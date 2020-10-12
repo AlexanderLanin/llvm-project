@@ -57,8 +57,10 @@ void MachineIRBuilder::setInsertPt(MachineBasicBlock &MBB,
 }
 
 void MachineIRBuilder::recordInsertion(MachineInstr *InsertedInstr) const {
-  if (State.Observer)
+  if (State.Observer) {
     State.Observer->createdInstr(*InsertedInstr);
+
+}
 }
 
 void MachineIRBuilder::setChangeObserver(GISelChangeObserver &Observer) {
@@ -137,10 +139,12 @@ MachineInstrBuilder MachineIRBuilder::buildConstDbgValue(const Constant &C,
       "Expected inlined-at fields to agree");
   auto MIB = buildInstr(TargetOpcode::DBG_VALUE);
   if (auto *CI = dyn_cast<ConstantInt>(&C)) {
-    if (CI->getBitWidth() > 64)
+    if (CI->getBitWidth() > 64) {
       MIB.addCImm(CI);
-    else
+    } else {
       MIB.addImm(CI->getZExtValue());
+
+}
   } else if (auto *CFP = dyn_cast<ConstantFP>(&C)) {
     MIB.addFPImm(CFP);
   } else {
@@ -437,13 +441,15 @@ MachineInstrBuilder MachineIRBuilder::buildExtOrTrunc(unsigned ExtOpc,
 
   unsigned Opcode = TargetOpcode::COPY;
   if (Res.getLLTTy(*getMRI()).getSizeInBits() >
-      Op.getLLTTy(*getMRI()).getSizeInBits())
+      Op.getLLTTy(*getMRI()).getSizeInBits()) {
     Opcode = ExtOpc;
-  else if (Res.getLLTTy(*getMRI()).getSizeInBits() <
-           Op.getLLTTy(*getMRI()).getSizeInBits())
+  } else if (Res.getLLTTy(*getMRI()).getSizeInBits() <
+           Op.getLLTTy(*getMRI()).getSizeInBits()) {
     Opcode = TargetOpcode::G_TRUNC;
-  else
+  } else {
     assert(Res.getLLTTy(*getMRI()) == Op.getLLTTy(*getMRI()));
+
+}
 
   return buildInstr(Opcode, Res, Op);
 }
@@ -467,15 +473,17 @@ MachineInstrBuilder MachineIRBuilder::buildCast(const DstOp &Dst,
                                                 const SrcOp &Src) {
   LLT SrcTy = Src.getLLTTy(*getMRI());
   LLT DstTy = Dst.getLLTTy(*getMRI());
-  if (SrcTy == DstTy)
+  if (SrcTy == DstTy) {
     return buildCopy(Dst, Src);
 
+}
+
   unsigned Opcode;
-  if (SrcTy.isPointer() && DstTy.isScalar())
+  if (SrcTy.isPointer() && DstTy.isScalar()) {
     Opcode = TargetOpcode::G_PTRTOINT;
-  else if (DstTy.isPointer() && SrcTy.isScalar())
+  } else if (DstTy.isPointer() && SrcTy.isScalar()) {
     Opcode = TargetOpcode::G_INTTOPTR;
-  else {
+  } else {
     assert(!SrcTy.isPointer() && !DstTy.isPointer() && "n G_ADDRCAST yet");
     Opcode = TargetOpcode::G_BITCAST;
   }
@@ -584,8 +592,10 @@ MachineInstrBuilder MachineIRBuilder::buildUnmerge(LLT Res,
                                                    const SrcOp &Op) {
   unsigned NumReg = Op.getLLTTy(*getMRI()).getSizeInBits() / Res.getSizeInBits();
   SmallVector<Register, 8> TmpVec;
-  for (unsigned I = 0; I != NumReg; ++I)
+  for (unsigned I = 0; I != NumReg; ++I) {
     TmpVec.push_back(getMRI()->createGenericVirtualRegister(Res));
+
+}
   return buildUnmerge(TmpVec, Op);
 }
 
@@ -655,8 +665,10 @@ MachineInstrBuilder MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
   auto MIB =
       buildInstr(HasSideEffects ? TargetOpcode::G_INTRINSIC_W_SIDE_EFFECTS
                                 : TargetOpcode::G_INTRINSIC);
-  for (unsigned ResultReg : ResultRegs)
+  for (unsigned ResultReg : ResultRegs) {
     MIB.addDef(ResultReg);
+
+}
   MIB.addIntrinsicID(ID);
   return MIB;
 }
@@ -667,8 +679,10 @@ MachineInstrBuilder MachineIRBuilder::buildIntrinsic(Intrinsic::ID ID,
   auto MIB =
       buildInstr(HasSideEffects ? TargetOpcode::G_INTRINSIC_W_SIDE_EFFECTS
                                 : TargetOpcode::G_INTRINSIC);
-  for (DstOp Result : Results)
+  for (DstOp Result : Results) {
     Result.addDefToMIB(*getMRI(), MIB);
+
+}
   MIB.addIntrinsicID(ID);
   return MIB;
 }
@@ -1058,11 +1072,15 @@ MachineInstrBuilder MachineIRBuilder::buildInstr(unsigned Opc,
     assert(SrcOps.size() * SrcOps[0].getLLTTy(*getMRI()).getSizeInBits() ==
                DstOps[0].getLLTTy(*getMRI()).getSizeInBits() &&
            "input operands do not cover output register");
-    if (SrcOps.size() == 1)
+    if (SrcOps.size() == 1) {
       return buildCast(DstOps[0], SrcOps[0]);
+
+}
     if (DstOps[0].getLLTTy(*getMRI()).isVector()) {
-      if (SrcOps[0].getLLTTy(*getMRI()).isVector())
+      if (SrcOps[0].getLLTTy(*getMRI()).isVector()) {
         return buildInstr(TargetOpcode::G_CONCAT_VECTORS, DstOps, SrcOps);
+
+}
       return buildInstr(TargetOpcode::G_BUILD_VECTOR, DstOps, SrcOps);
     }
     break;
@@ -1124,8 +1142,10 @@ MachineInstrBuilder MachineIRBuilder::buildInstr(unsigned Opc,
                        }) &&
            "type mismatch in input list");
     if (SrcOps[0].getLLTTy(*getMRI()).getSizeInBits() ==
-        DstOps[0].getLLTTy(*getMRI()).getElementType().getSizeInBits())
+        DstOps[0].getLLTTy(*getMRI()).getElementType().getSizeInBits()) {
       return buildInstr(TargetOpcode::G_BUILD_VECTOR, DstOps, SrcOps);
+
+}
     break;
   }
   case TargetOpcode::G_CONCAT_VECTORS: {
@@ -1159,11 +1179,17 @@ MachineInstrBuilder MachineIRBuilder::buildInstr(unsigned Opc,
   }
 
   auto MIB = buildInstr(Opc);
-  for (const DstOp &Op : DstOps)
+  for (const DstOp &Op : DstOps) {
     Op.addDefToMIB(*getMRI(), MIB);
-  for (const SrcOp &Op : SrcOps)
+
+}
+  for (const SrcOp &Op : SrcOps) {
     Op.addSrcToMIB(MIB);
-  if (Flags)
+
+}
+  if (Flags) {
     MIB->setFlags(*Flags);
+
+}
   return MIB;
 }

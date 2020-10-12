@@ -51,8 +51,10 @@ static Error createError(const Twine &Message,
 static Error checkNumberFits(uint32_t Number, size_t MaxBits,
                              const Twine &FieldName) {
   assert(1 <= MaxBits && MaxBits <= 32);
-  if (!(Number >> MaxBits))
+  if (!(Number >> MaxBits)) {
     return Error::success();
+
+}
   return createError(FieldName + " (" + Twine(Number) + ") does not fit in " +
                          Twine(MaxBits) + " bits.",
                      std::errc::value_too_large);
@@ -69,39 +71,51 @@ static Error checkSignedNumberFits(uint32_t Number, const Twine &FieldName,
                                    bool CanBeNegative) {
   int32_t SignedNum = Number;
   if (SignedNum < std::numeric_limits<FitType>::min() ||
-      SignedNum > std::numeric_limits<FitType>::max())
+      SignedNum > std::numeric_limits<FitType>::max()) {
     return createError(FieldName + " (" + Twine(SignedNum) +
                            ") does not fit in " + Twine(sizeof(FitType) * 8) +
                            "-bit signed integer type.",
                        std::errc::value_too_large);
 
-  if (!CanBeNegative && SignedNum < 0)
+}
+
+  if (!CanBeNegative && SignedNum < 0) {
     return createError(FieldName + " (" + Twine(SignedNum) +
                        ") cannot be negative.");
+
+}
 
   return Error::success();
 }
 
 static Error checkRCInt(RCInt Number, const Twine &FieldName) {
-  if (Number.isLong())
+  if (Number.isLong()) {
     return Error::success();
+
+}
   return checkNumberFits<uint16_t>(Number, FieldName);
 }
 
 static Error checkIntOrString(IntOrString Value, const Twine &FieldName) {
-  if (!Value.isInt())
+  if (!Value.isInt()) {
     return Error::success();
+
+}
   return checkNumberFits<uint16_t>(Value.getInt(), FieldName);
 }
 
 static bool stripQuotes(StringRef &Str, bool &IsLongString) {
-  if (!Str.contains('"'))
+  if (!Str.contains('"')) {
     return false;
+
+}
 
   // Just take the contents of the string, checking if it's been marked long.
   IsLongString = Str.startswith_lower("L");
-  if (IsLongString)
+  if (IsLongString) {
     Str = Str.drop_front();
+
+}
 
   bool StripSuccess = Str.consume_front("\"") && Str.consume_back("\"");
   (void)StripSuccess;
@@ -116,8 +130,10 @@ static UTF16 cp1252ToUnicode(unsigned char C) {
       0x0090, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014,
       0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0x009d, 0x017e, 0x0178,
   };
-  if (C >= 0x80 && C <= 0x9F)
+  if (C >= 0x80 && C <= 0x9F) {
     return Map80[C - 0x80];
+
+}
   return C;
 }
 
@@ -152,14 +168,18 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
   if (CodePage == CpUtf8) {
     convertUTF8ToUTF16String(Str, Chars);
   } else if (CodePage == CpWin1252) {
-    for (char C : Str)
+    for (char C : Str) {
       Chars.push_back(cp1252ToUnicode((unsigned char)C));
+
+}
   } else {
     // For other, unknown codepages, only allow plain ASCII input.
     for (char C : Str) {
-      if ((unsigned char)C > 0x7F)
+      if ((unsigned char)C > 0x7F) {
         return createError("Non-ASCII 8-bit codepoint (" + Twine(C) +
                            ") can't be interpreted in the current codepage");
+
+}
       Chars.push_back((unsigned char)C);
     }
   }
@@ -181,9 +201,11 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
       if (NullHandler == NullHandlingMethod::UserResource) {
         // Narrow strings in user-defined resources are *not* output in
         // UTF-16 format.
-        if (Char > 0xFF)
+        if (Char > 0xFF) {
           return createError("Non-8-bit codepoint (" + Twine(Char) +
                              ") can't occur in a user-defined narrow string");
+
+}
       }
     }
 
@@ -194,21 +216,27 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
     if (!IsLongString) {
       // Escaped chars in narrow strings have to be interpreted according to
       // the chosen code page.
-      if (Char > 0xFF)
+      if (Char > 0xFF) {
         return createError("Non-8-bit escaped char (" + Twine(Char) +
                            ") can't occur in narrow string");
+
+}
       if (CodePage == CpUtf8) {
-        if (Char >= 0x80)
+        if (Char >= 0x80) {
           return createError("Unable to interpret single byte (" + Twine(Char) +
                              ") as UTF-8");
+
+}
       } else if (CodePage == CpWin1252) {
         Char = cp1252ToUnicode(Char);
       } else {
         // Unknown/unsupported codepage, only allow ASCII input.
-        if (Char > 0x7F)
+        if (Char > 0x7F) {
           return createError("Non-ASCII 8-bit codepoint (" + Twine(Char) +
                              ") can't "
                              "occur in a non-Unicode string");
+
+}
       }
     }
 
@@ -221,8 +249,10 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
 
     // Strip double "".
     if (CurChar == '"') {
-      if (Pos == Chars.size() || Chars[Pos] != '"')
+      if (Pos == Chars.size() || Chars[Pos] != '"') {
         return createError("Expected \"\"");
+
+}
       ++Pos;
       RETURN_IF_ERROR(AddRes('"'));
       continue;
@@ -250,16 +280,20 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
         // We think it's infeasible to try to reproduce this behavior, nor to
         // put effort in order to detect it.
         while (RemainingChars && Pos < Chars.size() && Chars[Pos] < 0x80) {
-          if (!isxdigit(Chars[Pos]))
+          if (!isxdigit(Chars[Pos])) {
             break;
+
+}
           char Digit = tolower(Chars[Pos]);
           ++Pos;
 
           ReadInt <<= 4;
-          if (isdigit(Digit))
+          if (isdigit(Digit)) {
             ReadInt |= Digit - '0';
-          else
+          } else {
             ReadInt |= Digit - 'a' + 10;
+
+}
 
           --RemainingChars;
         }
@@ -313,8 +347,10 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
       case '"':
         // RC accepts \" only if another " comes afterwards; then, \"" means
         // a single ".
-        if (Pos == Chars.size() || Chars[Pos] != '"')
+        if (Pos == Chars.size() || Chars[Pos] != '"') {
           return createError("Expected \\\"\"");
+
+}
         ++Pos;
         RETURN_IF_ERROR(AddRes('"'));
         break;
@@ -339,17 +375,27 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
 
   switch (NullHandler) {
   case NullHandlingMethod::CutAtNull:
-    for (size_t Pos = 0; Pos < Result.size(); ++Pos)
-      if (Result[Pos] == '\0')
+    for (size_t Pos = 0; Pos < Result.size(); ++Pos) {
+      if (Result[Pos] == '\0') {
         Result.resize(Pos);
+
+}
+
+}
     break;
 
   case NullHandlingMethod::CutAtDoubleNull:
-    for (size_t Pos = 0; Pos + 1 < Result.size(); ++Pos)
-      if (Result[Pos] == '\0' && Result[Pos + 1] == '\0')
+    for (size_t Pos = 0; Pos + 1 < Result.size(); ++Pos) {
+      if (Result[Pos] == '\0' && Result[Pos + 1] == '\0') {
         Result.resize(Pos);
-    if (Result.size() > 0 && Result.back() == '\0')
+
+}
+
+}
+    if (Result.size() > 0 && Result.back() == '\0') {
       Result.pop_back();
+
+}
     break;
 
   case NullHandlingMethod::UserResource:
@@ -371,10 +417,14 @@ Error ResourceFileWriter::writeCString(StringRef Str, bool WriteTerminator) {
   RETURN_IF_ERROR(processString(Str, NullHandlingMethod::CutAtNull,
                                 IsLongString, ProcessedString,
                                 Params.CodePage));
-  for (auto Ch : ProcessedString)
+  for (auto Ch : ProcessedString) {
     writeInt<uint16_t>(Ch);
-  if (WriteTerminator)
+
+}
+  if (WriteTerminator) {
     writeInt<uint16_t>(0);
+
+}
   return Error::success();
 }
 
@@ -383,8 +433,10 @@ Error ResourceFileWriter::writeIdentifier(const IntOrString &Ident) {
 }
 
 Error ResourceFileWriter::writeIntOrString(const IntOrString &Value) {
-  if (!Value.isInt())
+  if (!Value.isInt()) {
     return writeCString(Value.getString());
+
+}
 
   writeInt<uint16_t>(0xFFFF);
   writeInt<uint16_t>(Value.getInt());
@@ -392,10 +444,12 @@ Error ResourceFileWriter::writeIntOrString(const IntOrString &Value) {
 }
 
 void ResourceFileWriter::writeRCInt(RCInt Value) {
-  if (Value.isLong())
+  if (Value.isLong()) {
     writeInt<uint32_t>(Value);
-  else
+  } else {
     writeInt<uint16_t>(Value);
+
+}
 }
 
 Error ResourceFileWriter::appendFile(StringRef Filename) {
@@ -403,8 +457,10 @@ Error ResourceFileWriter::appendFile(StringRef Filename) {
   stripQuotes(Filename, IsLong);
 
   auto File = loadFile(Filename);
-  if (!File)
+  if (!File) {
     return File.takeError();
+
+}
 
   *FS << (*File)->getBuffer();
   return Error::success();
@@ -415,16 +471,20 @@ void ResourceFileWriter::padStream(uint64_t Length) {
   uint64_t Location = tell();
   Location %= Length;
   uint64_t Pad = (Length - Location) % Length;
-  for (uint64_t i = 0; i < Pad; ++i)
+  for (uint64_t i = 0; i < Pad; ++i) {
     writeInt<uint8_t>(0);
+
+}
 }
 
 Error ResourceFileWriter::handleError(Error Err, const RCResource *Res) {
-  if (Err)
+  if (Err) {
     return joinErrors(createError("Error in " + Res->getResourceTypeName() +
                                   " statement (ID " + Twine(Res->ResName) +
                                   "): "),
                       std::move(Err));
+
+}
   return Error::success();
 }
 
@@ -608,8 +668,10 @@ Error ResourceFileWriter::writeSingleAccelerator(
   // Remove ASCII flags (which doesn't occur in .res files).
   Entry.Flags = Obj.Flags & ~Opt::ASCII;
 
-  if (IsLastItem)
+  if (IsLastItem) {
     Entry.Flags |= 0x80;
+
+}
 
   RETURN_IF_ERROR(checkNumberFits<uint16_t>(Obj.Id, "ACCELERATORS entry ID"));
   Entry.Id = ulittle16_t(Obj.Id);
@@ -618,18 +680,24 @@ Error ResourceFileWriter::writeSingleAccelerator(
     return createError("Accelerator ID " + Twine(Obj.Id) + ": " + Msg);
   };
 
-  if (IsASCII && IsVirtKey)
+  if (IsASCII && IsVirtKey) {
     return createAccError("Accelerator can't be both ASCII and VIRTKEY");
 
-  if (!IsVirtKey && (Obj.Flags & (Opt::ALT | Opt::SHIFT | Opt::CONTROL)))
+}
+
+  if (!IsVirtKey && (Obj.Flags & (Opt::ALT | Opt::SHIFT | Opt::CONTROL))) {
     return createAccError("Can only apply ALT, SHIFT or CONTROL to VIRTKEY"
                           " accelerators");
 
+}
+
   if (Obj.Event.isInt()) {
-    if (!IsASCII && !IsVirtKey)
+    if (!IsASCII && !IsVirtKey) {
       return createAccError(
           "Accelerator with a numeric event must be either ASCII"
           " or VIRTKEY");
+
+}
 
     uint32_t EventVal = Obj.Event.getInt();
     RETURN_IF_ERROR(
@@ -643,44 +711,60 @@ Error ResourceFileWriter::writeSingleAccelerator(
   bool IsWide;
   stripQuotes(Str, IsWide);
 
-  if (Str.size() == 0 || Str.size() > 2)
+  if (Str.size() == 0 || Str.size() > 2) {
     return createAccError(
         "Accelerator string events should have length 1 or 2");
 
+}
+
   if (Str[0] == '^') {
-    if (Str.size() == 1)
+    if (Str.size() == 1) {
       return createAccError("No character following '^' in accelerator event");
-    if (IsVirtKey)
+
+}
+    if (IsVirtKey) {
       return createAccError(
           "VIRTKEY accelerator events can't be preceded by '^'");
 
+}
+
     char Ch = Str[1];
-    if (Ch >= 'a' && Ch <= 'z')
+    if (Ch >= 'a' && Ch <= 'z') {
       Entry.ANSICode = ulittle16_t(Ch - 'a' + 1);
-    else if (Ch >= 'A' && Ch <= 'Z')
+    } else if (Ch >= 'A' && Ch <= 'Z') {
       Entry.ANSICode = ulittle16_t(Ch - 'A' + 1);
-    else
+    } else {
       return createAccError("Control character accelerator event should be"
                             " alphabetic");
+
+}
 
     writeObject(Entry);
     return Error::success();
   }
 
-  if (Str.size() == 2)
+  if (Str.size() == 2) {
     return createAccError("Event string should be one-character, possibly"
                           " preceded by '^'");
 
+}
+
   uint8_t EventCh = Str[0];
   // The original tool just warns in this situation. We chose to fail.
-  if (IsVirtKey && !isalnum(EventCh))
+  if (IsVirtKey && !isalnum(EventCh)) {
     return createAccError("Non-alphanumeric characters cannot describe virtual"
                           " keys");
-  if (EventCh > 0x7F)
+
+}
+  if (EventCh > 0x7F) {
     return createAccError("Non-ASCII description of accelerator");
 
-  if (IsVirtKey)
+}
+
+  if (IsVirtKey) {
     EventCh = toupper(EventCh);
+
+}
   Entry.ANSICode = ulittle16_t(EventCh);
   writeObject(Entry);
   return Error::success();
@@ -705,16 +789,20 @@ Error ResourceFileWriter::writeBitmapBody(const RCResource *Base) {
   stripQuotes(Filename, IsLong);
 
   auto File = loadFile(Filename);
-  if (!File)
+  if (!File) {
     return File.takeError();
+
+}
 
   StringRef Buffer = (*File)->getBuffer();
 
   // Skip the 14 byte BITMAPFILEHEADER.
   constexpr size_t BITMAPFILEHEADER_size = 14;
   if (Buffer.size() < BITMAPFILEHEADER_size || Buffer[0] != 'B' ||
-      Buffer[1] != 'M')
+      Buffer[1] != 'M') {
     return createError("Incorrect bitmap file.");
+
+}
 
   *FS << Buffer.substr(BITMAPFILEHEADER_size);
   return Error::success();
@@ -883,8 +971,10 @@ Error ResourceFileWriter::visitIconOrCursorResource(const RCResource *Base) {
   stripQuotes(FileStr, IsLong);
   auto File = loadFile(FileStr);
 
-  if (!File)
+  if (!File) {
     return File.takeError();
+
+}
 
   BinaryStreamReader Reader((*File)->getBuffer(), support::little);
 
@@ -895,12 +985,16 @@ Error ResourceFileWriter::visitIconOrCursorResource(const RCResource *Base) {
   const GroupIconDir *Header;
 
   RETURN_IF_ERROR(Reader.readObject(Header));
-  if (Header->Reserved != 0)
+  if (Header->Reserved != 0) {
     return createError("Incorrect icon/cursor Reserved field; should be 0.");
+
+}
   uint16_t NeededType = Type == IconCursorGroupType::Icon ? 1 : 2;
-  if (Header->ResType != NeededType)
+  if (Header->ResType != NeededType) {
     return createError("Incorrect icon/cursor ResType field; should be " +
                        Twine(NeededType) + ".");
+
+}
 
   uint16_t NumItems = Header->ResCount;
 
@@ -1059,15 +1153,19 @@ Error ResourceFileWriter::writeDialogBody(const RCResource *Base) {
   const uint32_t StyleCaptionFlag = 0x00C00000;
 
   uint32_t UsedStyle = ObjectData.Style.getValueOr(DefaultStyle);
-  if (ObjectData.Font)
+  if (ObjectData.Font) {
     UsedStyle |= StyleFontFlag;
-  else
+  } else {
     UsedStyle &= ~StyleFontFlag;
+
+}
 
   // Actually, in case of empty (but existent) caption, the examined field
   // is equal to "\"\"". That's why empty captions are still noticed.
-  if (ObjectData.Caption != "")
+  if (ObjectData.Caption != "") {
     UsedStyle |= StyleCaptionFlag;
+
+}
 
   const uint16_t DialogExMagic = 0xFFFF;
   uint32_t ExStyle = ObjectData.ExStyle.getValueOr(0);
@@ -1081,9 +1179,11 @@ Error ResourceFileWriter::writeDialogBody(const RCResource *Base) {
     //   1 DIALOG 0, 0, 0, 65432
     //   STYLE 0xFFFF0001 {}
     // would be compiled to a DIALOGEX with 65432 controls.
-    if ((UsedStyle >> 16) == DialogExMagic)
+    if ((UsedStyle >> 16) == DialogExMagic) {
       return createError("16 higher bits of DIALOG resource style cannot be"
                          " equal to 0xFFFF");
+
+}
 
     struct {
       ulittle32_t Style;
@@ -1151,8 +1251,10 @@ Error ResourceFileWriter::writeDialogBody(const RCResource *Base) {
   }
 
   auto handleCtlError = [&](Error &&Err, const Control &Ctl) -> Error {
-    if (!Err)
+    if (!Err) {
       return Error::success();
+
+}
     return joinErrors(createError("Error in " + Twine(Ctl.Type) +
                                   " control  (ID " + Twine(Ctl.ID) + "):"),
                       std::move(Err));
@@ -1205,8 +1307,10 @@ Error ResourceFileWriter::writeMenuDefinitionList(
     uint16_t Flags = Def->getResFlags();
     // Last element receives an additional 0x80 flag.
     const uint16_t LastElementFlag = 0x0080;
-    if (&Def == &List.Definitions.back())
+    if (&Def == &List.Definitions.back()) {
       Flags |= LastElementFlag;
+
+}
 
     RETURN_IF_ERROR(writeMenuDefinition(Def, Flags));
   }
@@ -1246,9 +1350,11 @@ Error ResourceFileWriter::visitStringTableBundle(const RCResource *Res) {
 Error ResourceFileWriter::insertStringIntoBundle(
     StringTableInfo::Bundle &Bundle, uint16_t StringID, StringRef String) {
   uint16_t StringLoc = StringID & 15;
-  if (Bundle.Data[StringLoc])
+  if (Bundle.Data[StringLoc]) {
     return createError("Multiple STRINGTABLE strings located under ID " +
                        Twine(StringID));
+
+}
   Bundle.Data[StringLoc] = String;
   return Error::success();
 }
@@ -1264,13 +1370,17 @@ Error ResourceFileWriter::writeStringTableBundleBody(const RCResource *Base) {
     RETURN_IF_ERROR(processString(Res->Bundle.Data[ID].getValueOr(StringRef()),
                                   NullHandlingMethod::CutAtDoubleNull,
                                   IsLongString, Data, Params.CodePage));
-    if (AppendNull && Res->Bundle.Data[ID])
+    if (AppendNull && Res->Bundle.Data[ID]) {
       Data.push_back('\0');
+
+}
     RETURN_IF_ERROR(
         checkNumberFits<uint16_t>(Data.size(), "STRINGTABLE string size"));
     writeInt<uint16_t>(Data.size());
-    for (auto Char : Data)
+    for (auto Char : Data) {
       writeInt(Char);
+
+}
   }
   return Error::success();
 }
@@ -1297,8 +1407,10 @@ Error ResourceFileWriter::dumpAllStringTables() {
 Error ResourceFileWriter::writeUserDefinedBody(const RCResource *Base) {
   auto *Res = cast<UserDefinedResource>(Base);
 
-  if (Res->IsFileResource)
+  if (Res->IsFileResource) {
     return appendFile(Res->FileLoc);
+
+}
 
   for (auto &Elem : Res->Contents) {
     if (Elem.isInt()) {
@@ -1383,13 +1495,17 @@ Error ResourceFileWriter::writeVersionInfoValue(const VersionInfoValue &Val) {
   //
   // Ref: msdn.microsoft.com/en-us/library/windows/desktop/ms646994.aspx
   bool HasStrings = false, HasInts = false;
-  for (auto &Item : Val.Values)
+  for (auto &Item : Val.Values) {
     (Item.isInt() ? HasInts : HasStrings) = true;
 
+}
+
   assert((HasStrings || HasInts) && "VALUE must have at least one argument");
-  if (HasStrings && HasInts)
+  if (HasStrings && HasInts) {
     return createError(Twine("VALUE ") + Val.Key +
                        " cannot contain both strings and integers");
+
+}
 
   padStream(sizeof(uint32_t));
   auto LengthLoc = writeInt<uint16_t>(0);
@@ -1428,8 +1544,10 @@ template <typename Ty>
 static Ty getWithDefault(const StringMap<Ty> &Map, StringRef Key,
                          const Ty &Default) {
   auto Iter = Map.find(Key);
-  if (Iter != Map.end())
+  if (Iter != Map.end()) {
     return Iter->getValue();
+
+}
   return Default;
 }
 
@@ -1467,8 +1585,10 @@ Error ResourceFileWriter::writeVersionInfoBody(const RCResource *Base) {
   using VersionInfoFixed = VersionInfoResource::VersionInfoFixed;
   auto GetField = [&](VersionInfoFixed::VersionInfoFixedType Type) {
     static const SmallVector<uint32_t, 4> DefaultOut{0, 0, 0, 0};
-    if (!FixedData.IsTypePresent[(int)Type])
+    if (!FixedData.IsTypePresent[(int)Type]) {
       return DefaultOut;
+
+}
     return FixedData.FixedInfo[(int)Type];
   };
 
@@ -1509,35 +1629,45 @@ ResourceFileWriter::loadFile(StringRef File) const {
   std::unique_ptr<MemoryBuffer> Result;
 
   // 0. The file path is absolute and the file exists.
-  if (sys::path::is_absolute(File))
+  if (sys::path::is_absolute(File)) {
     return errorOrToExpected(MemoryBuffer::getFile(File, -1, false));
+
+}
 
   // 1. The current working directory.
   sys::fs::current_path(Cwd);
   Path.assign(Cwd.begin(), Cwd.end());
   sys::path::append(Path, File);
-  if (sys::fs::exists(Path))
+  if (sys::fs::exists(Path)) {
     return errorOrToExpected(MemoryBuffer::getFile(Path, -1, false));
+
+}
 
   // 2. The directory of the input resource file, if it is different from the
   // current working directory.
   StringRef InputFileDir = sys::path::parent_path(Params.InputFilePath);
   Path.assign(InputFileDir.begin(), InputFileDir.end());
   sys::path::append(Path, File);
-  if (sys::fs::exists(Path))
+  if (sys::fs::exists(Path)) {
     return errorOrToExpected(MemoryBuffer::getFile(Path, -1, false));
+
+}
 
   // 3. All of the include directories specified on the command line.
   for (StringRef ForceInclude : Params.Include) {
     Path.assign(ForceInclude.begin(), ForceInclude.end());
     sys::path::append(Path, File);
-    if (sys::fs::exists(Path))
+    if (sys::fs::exists(Path)) {
       return errorOrToExpected(MemoryBuffer::getFile(Path, -1, false));
+
+}
   }
 
   if (auto Result =
-          llvm::sys::Process::FindInEnvPath("INCLUDE", File, Params.NoInclude))
+          llvm::sys::Process::FindInEnvPath("INCLUDE", File, Params.NoInclude)) {
     return errorOrToExpected(MemoryBuffer::getFile(*Result, -1, false));
+
+}
 
   return make_error<StringError>("error : file not found : " + Twine(File),
                                  inconvertibleErrorCode());

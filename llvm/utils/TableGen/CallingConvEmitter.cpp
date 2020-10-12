@@ -57,8 +57,10 @@ void CallingConvEmitter::run(raw_ostream &O) {
 
   // Emit each non-custom calling convention description in full.
   for (Record *CC : CCs) {
-    if (!CC->getValueAsBit("Custom"))
+    if (!CC->getValueAsBit("Custom")) {
       EmitCallingConv(CC, O);
+
+}
   }
 }
 
@@ -100,7 +102,9 @@ void CallingConvEmitter::EmitAction(Record *Action,
       ListInit *VTs = Action->getValueAsListInit("VTs");
       for (unsigned i = 0, e = VTs->size(); i != e; ++i) {
         Record *VT = VTs->getElementAsRecord(i);
-        if (i != 0) O << " ||\n    " << IndentStr;
+        if (i != 0) { O << " ||\n    " << IndentStr;
+
+}
         O << "LocVT == " << getEnumName(getValueType(VT));
       }
 
@@ -130,7 +134,9 @@ void CallingConvEmitter::EmitAction(Record *Action,
           << "[] = {\n";
         O << IndentStr << "  ";
         for (unsigned i = 0, e = RegList->size(); i != e; ++i) {
-          if (i != 0) O << ", ";
+          if (i != 0) { O << ", ";
+
+}
           O << getQualifiedName(RegList->getElementAsRecord(i));
         }
         O << "\n" << IndentStr << "};\n";
@@ -144,9 +150,11 @@ void CallingConvEmitter::EmitAction(Record *Action,
     } else if (Action->isSubClassOf("CCAssignToRegWithShadow")) {
       ListInit *RegList = Action->getValueAsListInit("RegList");
       ListInit *ShadowRegList = Action->getValueAsListInit("ShadowRegList");
-      if (!ShadowRegList->empty() && ShadowRegList->size() != RegList->size())
+      if (!ShadowRegList->empty() && ShadowRegList->size() != RegList->size()) {
         PrintFatalError(Action->getLoc(),
                         "Invalid length of list of shadowed registers");
+
+}
 
       if (RegList->size() == 1) {
         O << IndentStr << "if (unsigned Reg = State.AllocateReg(";
@@ -161,7 +169,9 @@ void CallingConvEmitter::EmitAction(Record *Action,
           << "[] = {\n";
         O << IndentStr << "  ";
         for (unsigned i = 0, e = RegList->size(); i != e; ++i) {
-          if (i != 0) O << ", ";
+          if (i != 0) { O << ", ";
+
+}
           O << getQualifiedName(RegList->getElementAsRecord(i));
         }
         O << "\n" << IndentStr << "};\n";
@@ -170,7 +180,9 @@ void CallingConvEmitter::EmitAction(Record *Action,
           << ShadowRegListNumber << "[] = {\n";
         O << IndentStr << "  ";
         for (unsigned i = 0, e = ShadowRegList->size(); i != e; ++i) {
-          if (i != 0) O << ", ";
+          if (i != 0) { O << ", ";
+
+}
           O << getQualifiedName(ShadowRegList->getElementAsRecord(i));
         }
         O << "\n" << IndentStr << "};\n";
@@ -189,20 +201,24 @@ void CallingConvEmitter::EmitAction(Record *Action,
 
       O << IndentStr << "unsigned Offset" << ++Counter
         << " = State.AllocateStack(";
-      if (Size)
+      if (Size) {
         O << Size << ", ";
-      else
+      } else {
         O << "\n" << IndentStr
           << "  State.getMachineFunction().getDataLayout()."
              "getTypeAllocSize(EVT(LocVT).getTypeForEVT(State.getContext())),"
              " ";
-      if (Align)
+
+}
+      if (Align) {
         O << Align;
-      else
+      } else {
         O << "\n" << IndentStr
           << "  State.getMachineFunction().getDataLayout()."
              "getABITypeAlignment(EVT(LocVT).getTypeForEVT(State.getContext()"
              "))";
+
+}
       O << ");\n" << IndentStr
         << "State.addLoc(CCValAssign::getMem(ValNo, ValVT, Offset"
         << Counter << ", LocVT, LocInfo));\n";
@@ -218,7 +234,9 @@ void CallingConvEmitter::EmitAction(Record *Action,
           << ShadowRegListNumber << "[] = {\n";
       O << IndentStr << "  ";
       for (unsigned i = 0, e = ShadowRegList->size(); i != e; ++i) {
-        if (i != 0) O << ", ";
+        if (i != 0) { O << ", ";
+
+}
         O << getQualifiedName(ShadowRegList->getElementAsRecord(i));
       }
       O << "\n" << IndentStr << "};\n";

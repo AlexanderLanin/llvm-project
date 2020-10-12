@@ -40,21 +40,29 @@ const char *itanium_demangle::parse_discriminator(const char *first,
     if (*first == '_') {
       const char *t1 = first + 1;
       if (t1 != last) {
-        if (std::isdigit(*t1))
+        if (std::isdigit(*t1)) {
           first = t1 + 1;
-        else if (*t1 == '_') {
-          for (++t1; t1 != last && std::isdigit(*t1); ++t1)
+        } else if (*t1 == '_') {
+          for (++t1; t1 != last && std::isdigit(*t1); ++t1) {
             ;
-          if (t1 != last && *t1 == '_')
+
+}
+          if (t1 != last && *t1 == '_') {
             first = t1 + 1;
+
+}
         }
       }
     } else if (std::isdigit(*first)) {
       const char *t1 = first + 1;
-      for (; t1 != last && std::isdigit(*t1); ++t1)
+      for (; t1 != last && std::isdigit(*t1); ++t1) {
         ;
-      if (t1 == last)
+
+}
+      if (t1 == last) {
         first = last;
+
+}
     }
   }
   return first;
@@ -257,16 +265,20 @@ class BumpPointerAllocator {
 
   void grow() {
     char* NewMeta = static_cast<char *>(std::malloc(AllocSize));
-    if (NewMeta == nullptr)
+    if (NewMeta == nullptr) {
       std::terminate();
+
+}
     BlockList = new (NewMeta) BlockMeta{BlockList, 0};
   }
 
   void* allocateMassive(size_t NBytes) {
     NBytes += sizeof(BlockMeta);
     BlockMeta* NewMeta = reinterpret_cast<BlockMeta*>(std::malloc(NBytes));
-    if (NewMeta == nullptr)
+    if (NewMeta == nullptr) {
       std::terminate();
+
+}
     BlockList->Next = new (NewMeta) BlockMeta{BlockList->Next, 0};
     return static_cast<void*>(NewMeta + 1);
   }
@@ -278,8 +290,10 @@ public:
   void* allocate(size_t N) {
     N = (N + 15u) & ~15u;
     if (N + BlockList->Current >= UsableAllocSize) {
-      if (N > UsableAllocSize)
+      if (N > UsableAllocSize) {
         return allocateMassive(N);
+
+}
       grow();
     }
     BlockList->Current += N;
@@ -291,8 +305,10 @@ public:
     while (BlockList) {
       BlockMeta* Tmp = BlockList;
       BlockList = BlockList->Next;
-      if (reinterpret_cast<char*>(Tmp) != InitialBuffer)
+      if (reinterpret_cast<char*>(Tmp) != InitialBuffer) {
         std::free(Tmp);
+
+}
     }
     BlockList = new (InitialBuffer) BlockMeta{nullptr, 0};
   }
@@ -326,8 +342,10 @@ using Demangler = itanium_demangle::ManglingParser<DefaultAllocator>;
 char *llvm::itaniumDemangle(const char *MangledName, char *Buf,
                             size_t *N, int *Status) {
   if (MangledName == nullptr || (Buf != nullptr && N == nullptr)) {
-    if (Status)
+    if (Status) {
       *Status = demangle_invalid_args;
+
+}
     return nullptr;
   }
 
@@ -337,21 +355,25 @@ char *llvm::itaniumDemangle(const char *MangledName, char *Buf,
 
   Node *AST = Parser.parse();
 
-  if (AST == nullptr)
+  if (AST == nullptr) {
     InternalStatus = demangle_invalid_mangled_name;
-  else if (!initializeOutputStream(Buf, N, S, 1024))
+  } else if (!initializeOutputStream(Buf, N, S, 1024)) {
     InternalStatus = demangle_memory_alloc_failure;
-  else {
+  } else {
     assert(Parser.ForwardTemplateRefs.empty());
     AST->print(S);
     S += '\0';
-    if (N != nullptr)
+    if (N != nullptr) {
       *N = S.getCurrentPosition();
+
+}
     Buf = S.getBuffer();
   }
 
-  if (Status)
+  if (Status) {
     *Status = InternalStatus;
+
+}
   return InternalStatus == demangle_success ? Buf : nullptr;
 }
 
@@ -386,18 +408,24 @@ bool ItaniumPartialDemangler::partialDemangle(const char *MangledName) {
 
 static char *printNode(const Node *RootNode, char *Buf, size_t *N) {
   OutputStream S;
-  if (!initializeOutputStream(Buf, N, S, 128))
+  if (!initializeOutputStream(Buf, N, S, 128)) {
     return nullptr;
+
+}
   RootNode->print(S);
   S += '\0';
-  if (N != nullptr)
+  if (N != nullptr) {
     *N = S.getCurrentPosition();
+
+}
   return S.getBuffer();
 }
 
 char *ItaniumPartialDemangler::getFunctionBaseName(char *Buf, size_t *N) const {
-  if (!isFunction())
+  if (!isFunction()) {
     return nullptr;
+
+}
 
   const Node *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
 
@@ -426,13 +454,17 @@ char *ItaniumPartialDemangler::getFunctionBaseName(char *Buf, size_t *N) const {
 
 char *ItaniumPartialDemangler::getFunctionDeclContextName(char *Buf,
                                                           size_t *N) const {
-  if (!isFunction())
+  if (!isFunction()) {
     return nullptr;
+
+}
   const Node *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
 
   OutputStream S;
-  if (!initializeOutputStream(Buf, N, S, 128))
+  if (!initializeOutputStream(Buf, N, S, 128)) {
     return nullptr;
+
+}
 
  KeepGoingLocalFunction:
   while (true) {
@@ -465,53 +497,71 @@ char *ItaniumPartialDemangler::getFunctionDeclContextName(char *Buf,
     break;
   }
   S += '\0';
-  if (N != nullptr)
+  if (N != nullptr) {
     *N = S.getCurrentPosition();
+
+}
   return S.getBuffer();
 }
 
 char *ItaniumPartialDemangler::getFunctionName(char *Buf, size_t *N) const {
-  if (!isFunction())
+  if (!isFunction()) {
     return nullptr;
+
+}
   auto *Name = static_cast<FunctionEncoding *>(RootNode)->getName();
   return printNode(Name, Buf, N);
 }
 
 char *ItaniumPartialDemangler::getFunctionParameters(char *Buf,
                                                      size_t *N) const {
-  if (!isFunction())
+  if (!isFunction()) {
     return nullptr;
+
+}
   NodeArray Params = static_cast<FunctionEncoding *>(RootNode)->getParams();
 
   OutputStream S;
-  if (!initializeOutputStream(Buf, N, S, 128))
+  if (!initializeOutputStream(Buf, N, S, 128)) {
     return nullptr;
+
+}
 
   S += '(';
   Params.printWithComma(S);
   S += ')';
   S += '\0';
-  if (N != nullptr)
+  if (N != nullptr) {
     *N = S.getCurrentPosition();
+
+}
   return S.getBuffer();
 }
 
 char *ItaniumPartialDemangler::getFunctionReturnType(
     char *Buf, size_t *N) const {
-  if (!isFunction())
+  if (!isFunction()) {
     return nullptr;
+
+}
 
   OutputStream S;
-  if (!initializeOutputStream(Buf, N, S, 128))
+  if (!initializeOutputStream(Buf, N, S, 128)) {
     return nullptr;
 
+}
+
   if (const Node *Ret =
-          static_cast<const FunctionEncoding *>(RootNode)->getReturnType())
+          static_cast<const FunctionEncoding *>(RootNode)->getReturnType()) {
     Ret->print(S);
 
+}
+
   S += '\0';
-  if (N != nullptr)
+  if (N != nullptr) {
     *N = S.getCurrentPosition();
+
+}
   return S.getBuffer();
 }
 
@@ -522,8 +572,10 @@ char *ItaniumPartialDemangler::finishDemangle(char *Buf, size_t *N) const {
 
 bool ItaniumPartialDemangler::hasFunctionQualifiers() const {
   assert(RootNode != nullptr && "must call partialDemangle()");
-  if (!isFunction())
+  if (!isFunction()) {
     return false;
+
+}
   auto *E = static_cast<const FunctionEncoding *>(RootNode);
   return E->getCVQuals() != QualNone || E->getRefQual() != FrefQualNone;
 }

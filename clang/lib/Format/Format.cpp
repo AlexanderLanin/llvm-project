@@ -418,12 +418,14 @@ template <> struct MappingTraits<FormatStyle> {
     // former for backwards compatibility.
     if (Style.AlwaysBreakAfterDefinitionReturnType != FormatStyle::DRTBS_None &&
         Style.AlwaysBreakAfterReturnType == FormatStyle::RTBS_None) {
-      if (Style.AlwaysBreakAfterDefinitionReturnType == FormatStyle::DRTBS_All)
+      if (Style.AlwaysBreakAfterDefinitionReturnType == FormatStyle::DRTBS_All) {
         Style.AlwaysBreakAfterReturnType = FormatStyle::RTBS_AllDefinitions;
-      else if (Style.AlwaysBreakAfterDefinitionReturnType ==
-               FormatStyle::DRTBS_TopLevel)
+      } else if (Style.AlwaysBreakAfterDefinitionReturnType ==
+               FormatStyle::DRTBS_TopLevel) {
         Style.AlwaysBreakAfterReturnType =
             FormatStyle::RTBS_TopLevelDefinitions;
+
+}
     }
 
     IO.mapOptional("AlwaysBreakBeforeMultilineStrings",
@@ -444,8 +446,10 @@ template <> struct MappingTraits<FormatStyle> {
     // BreakInheritance was not, initialize the latter from the
     // former for backwards compatibility.
     if (BreakBeforeInheritanceComma &&
-        Style.BreakInheritanceList == FormatStyle::BILS_BeforeColon)
+        Style.BreakInheritanceList == FormatStyle::BILS_BeforeColon) {
       Style.BreakInheritanceList = FormatStyle::BILS_BeforeComma;
+
+}
 
     IO.mapOptional("BreakBeforeTernaryOperators",
                    Style.BreakBeforeTernaryOperators);
@@ -459,8 +463,10 @@ template <> struct MappingTraits<FormatStyle> {
     // BreakConstructorInitializers was not, initialize the latter from the
     // former for backwards compatibility.
     if (BreakConstructorInitializersBeforeComma &&
-        Style.BreakConstructorInitializers == FormatStyle::BCIS_BeforeColon)
+        Style.BreakConstructorInitializers == FormatStyle::BCIS_BeforeColon) {
       Style.BreakConstructorInitializers = FormatStyle::BCIS_BeforeComma;
+
+}
 
     IO.mapOptional("BreakAfterJavaFieldAnnotations",
                    Style.BreakAfterJavaFieldAnnotations);
@@ -662,8 +668,10 @@ std::string ParseErrorCategory::message(int EV) const {
 }
 
 static FormatStyle expandPresets(const FormatStyle &Style) {
-  if (Style.BreakBeforeBraces == FormatStyle::BS_Custom)
+  if (Style.BreakBeforeBraces == FormatStyle::BS_Custom) {
     return Style;
+
+}
   FormatStyle Expanded = Style;
   Expanded.BraceWrapping = {false, false, FormatStyle::BWACS_Never,
                             false, false, false,
@@ -1048,8 +1056,10 @@ FormatStyle getChromiumStyle(FormatStyle::LanguageKind Language) {
     ChromiumStyle.AllowShortLoopsOnASingleLine = false;
     ChromiumStyle.BinPackParameters = false;
     ChromiumStyle.DerivePointerAlignment = false;
-    if (Language == FormatStyle::LK_ObjC)
+    if (Language == FormatStyle::LK_ObjC) {
       ChromiumStyle.ColumnLimit = 80;
+
+}
   }
   return ChromiumStyle;
 }
@@ -1183,8 +1193,10 @@ std::error_code parseConfiguration(StringRef Text, FormatStyle *Style) {
   assert(Style);
   FormatStyle::LanguageKind Language = Style->Language;
   assert(Language != FormatStyle::LK_None);
-  if (Text.trim().empty())
+  if (Text.trim().empty()) {
     return make_error_code(ParseError::Error);
+
+}
   Style->StyleSet.Clear();
   std::vector<FormatStyle> Styles;
   llvm::yaml::Input Input(Text);
@@ -1194,13 +1206,17 @@ std::error_code parseConfiguration(StringRef Text, FormatStyle *Style) {
   // base style.
   Input.setContext(Style);
   Input >> Styles;
-  if (Input.error())
+  if (Input.error()) {
     return Input.error();
+
+}
 
   for (unsigned i = 0; i < Styles.size(); ++i) {
     // Ensures that only the first configuration can skip the Language option.
-    if (Styles[i].Language == FormatStyle::LK_None && i != 0)
+    if (Styles[i].Language == FormatStyle::LK_None && i != 0) {
       return make_error_code(ParseError::Error);
+
+}
     // Ensure that each language is configured at most once.
     for (unsigned j = 0; j < i; ++j) {
       if (Styles[i].Language == Styles[j].Language) {
@@ -1217,14 +1233,20 @@ std::error_code parseConfiguration(StringRef Text, FormatStyle *Style) {
   FormatStyle::FormatStyleSet StyleSet;
   bool LanguageFound = false;
   for (int i = Styles.size() - 1; i >= 0; --i) {
-    if (Styles[i].Language != FormatStyle::LK_None)
+    if (Styles[i].Language != FormatStyle::LK_None) {
       StyleSet.Add(Styles[i]);
-    if (Styles[i].Language == Language)
+
+}
+    if (Styles[i].Language == Language) {
       LanguageFound = true;
+
+}
   }
   if (!LanguageFound) {
-    if (Styles.empty() || Styles[0].Language != FormatStyle::LK_None)
+    if (Styles.empty() || Styles[0].Language != FormatStyle::LK_None) {
       return make_error_code(ParseError::Unsuitable);
+
+}
     FormatStyle DefaultStyle = Styles[0];
     DefaultStyle.Language = Language;
     StyleSet.Add(std::move(DefaultStyle));
@@ -1251,11 +1273,15 @@ std::string configurationAsText(const FormatStyle &Style) {
 
 llvm::Optional<FormatStyle>
 FormatStyle::FormatStyleSet::Get(FormatStyle::LanguageKind Language) const {
-  if (!Styles)
+  if (!Styles) {
     return None;
+
+}
   auto It = Styles->find(Language);
-  if (It == Styles->end())
+  if (It == Styles->end()) {
     return None;
+
+}
   FormatStyle Style = It->second;
   Style.StyleSet = *this;
   return Style;
@@ -1267,8 +1293,10 @@ void FormatStyle::FormatStyleSet::Add(FormatStyle Style) {
   assert(
       !Style.StyleSet.Styles &&
       "Cannot add a style associated with an existing StyleSet to a StyleSet");
-  if (!Styles)
+  if (!Styles) {
     Styles = std::make_shared<MapType>();
+
+}
   (*Styles)[Style.Language] = std::move(Style);
 }
 
@@ -1303,8 +1331,10 @@ private:
                               tooling::Replacements &Result) {
     for (AnnotatedLine *Line : Lines) {
       requoteJSStringLiteral(Line->Children, Result);
-      if (!Line->Affected)
+      if (!Line->Affected) {
         continue;
+
+}
       for (FormatToken *FormatTok = Line->First; FormatTok;
            FormatTok = FormatTok->Next) {
         StringRef Input = FormatTok->TokenText;
@@ -1314,8 +1344,10 @@ private:
             (Style.JavaScriptQuotes == FormatStyle::JSQS_Single &&
              !Input.startswith("\"")) ||
             (Style.JavaScriptQuotes == FormatStyle::JSQS_Double &&
-             !Input.startswith("\'")))
+             !Input.startswith("\'"))) {
           continue;
+
+}
 
         // Change start and end quote.
         bool IsSingle = Style.JavaScriptQuotes == FormatStyle::JSQS_Single;
@@ -1406,9 +1438,13 @@ public:
                     /*FirstStartColumn=*/Env.getFirstStartColumn(),
                     /*NextStartColumn=*/Env.getNextStartColumn(),
                     /*LastStartColumn=*/Env.getLastStartColumn());
-    for (const auto &R : Whitespaces.generateReplacements())
-      if (Result.add(R))
+    for (const auto &R : Whitespaces.generateReplacements()) {
+      if (Result.add(R)) {
         return std::make_pair(Result, 0);
+
+}
+
+}
     return std::make_pair(Result, Penalty);
   }
 
@@ -1422,15 +1458,21 @@ private:
   bool
   hasCpp03IncompatibleFormat(const SmallVectorImpl<AnnotatedLine *> &Lines) {
     for (const AnnotatedLine *Line : Lines) {
-      if (hasCpp03IncompatibleFormat(Line->Children))
+      if (hasCpp03IncompatibleFormat(Line->Children)) {
         return true;
+
+}
       for (FormatToken *Tok = Line->First->Next; Tok; Tok = Tok->Next) {
         if (Tok->WhitespaceRange.getBegin() == Tok->WhitespaceRange.getEnd()) {
-          if (Tok->is(tok::coloncolon) && Tok->Previous->is(TT_TemplateOpener))
+          if (Tok->is(tok::coloncolon) && Tok->Previous->is(TT_TemplateOpener)) {
             return true;
+
+}
           if (Tok->is(TT_TemplateCloser) &&
-              Tok->Previous->is(TT_TemplateCloser))
+              Tok->Previous->is(TT_TemplateCloser)) {
             return true;
+
+}
         }
       }
     }
@@ -1442,16 +1484,22 @@ private:
     for (const AnnotatedLine *Line : Lines) {
       AlignmentDiff += countVariableAlignments(Line->Children);
       for (FormatToken *Tok = Line->First; Tok && Tok->Next; Tok = Tok->Next) {
-        if (!Tok->is(TT_PointerOrReference))
+        if (!Tok->is(TT_PointerOrReference)) {
           continue;
+
+}
         bool SpaceBefore =
             Tok->WhitespaceRange.getBegin() != Tok->WhitespaceRange.getEnd();
         bool SpaceAfter = Tok->Next->WhitespaceRange.getBegin() !=
                           Tok->Next->WhitespaceRange.getEnd();
-        if (SpaceBefore && !SpaceAfter)
+        if (SpaceBefore && !SpaceAfter) {
           ++AlignmentDiff;
-        if (!SpaceBefore && SpaceAfter)
+
+}
+        if (!SpaceBefore && SpaceAfter) {
           --AlignmentDiff;
+
+}
       }
     }
     return AlignmentDiff;
@@ -1462,26 +1510,36 @@ private:
     bool HasBinPackedFunction = false;
     bool HasOnePerLineFunction = false;
     for (unsigned i = 0, e = AnnotatedLines.size(); i != e; ++i) {
-      if (!AnnotatedLines[i]->First->Next)
+      if (!AnnotatedLines[i]->First->Next) {
         continue;
+
+}
       FormatToken *Tok = AnnotatedLines[i]->First->Next;
       while (Tok->Next) {
-        if (Tok->PackingKind == PPK_BinPacked)
+        if (Tok->PackingKind == PPK_BinPacked) {
           HasBinPackedFunction = true;
-        if (Tok->PackingKind == PPK_OnePerLine)
+
+}
+        if (Tok->PackingKind == PPK_OnePerLine) {
           HasOnePerLineFunction = true;
+
+}
 
         Tok = Tok->Next;
       }
     }
-    if (Style.DerivePointerAlignment)
+    if (Style.DerivePointerAlignment) {
       Style.PointerAlignment = countVariableAlignments(AnnotatedLines) <= 0
                                    ? FormatStyle::PAS_Left
                                    : FormatStyle::PAS_Right;
-    if (Style.Standard == FormatStyle::LS_Auto)
+
+}
+    if (Style.Standard == FormatStyle::LS_Auto) {
       Style.Standard = hasCpp03IncompatibleFormat(AnnotatedLines)
                            ? FormatStyle::LS_Latest
                            : FormatStyle::LS_Cpp03;
+
+}
     BinPackInconclusiveFunctions =
         HasBinPackedFunction || !HasOnePerLineFunction;
   }
@@ -1523,22 +1581,32 @@ private:
                             tooling::Replacements &Result) {
     for (AnnotatedLine *Line : Lines) {
       insertTrailingCommas(Line->Children, Result);
-      if (!Line->Affected)
+      if (!Line->Affected) {
         continue;
+
+}
       for (FormatToken *FormatTok = Line->First; FormatTok;
            FormatTok = FormatTok->Next) {
-        if (FormatTok->NewlinesBefore == 0)
+        if (FormatTok->NewlinesBefore == 0) {
           continue;
+
+}
         FormatToken *Matching = FormatTok->MatchingParen;
-        if (!Matching || !FormatTok->getPreviousNonComment())
+        if (!Matching || !FormatTok->getPreviousNonComment()) {
           continue;
+
+}
         if (!(FormatTok->is(tok::r_square) &&
               Matching->is(TT_ArrayInitializerLSquare)) &&
-            !(FormatTok->is(tok::r_brace) && Matching->is(TT_DictLiteral)))
+            !(FormatTok->is(tok::r_brace) && Matching->is(TT_DictLiteral))) {
           continue;
+
+}
         FormatToken *Prev = FormatTok->getPreviousNonComment();
-        if (Prev->is(tok::comma) || Prev->is(tok::semi))
+        if (Prev->is(tok::comma) || Prev->is(tok::semi)) {
           continue;
+
+}
         // getEndLoc is not reliably set during re-lexing, use text length
         // instead.
         SourceLocation Start =
@@ -1548,8 +1616,10 @@ private:
         // required reflow.
         unsigned ColumnNumber =
             Env.getSourceManager().getSpellingColumnNumber(Start);
-        if (ColumnNumber > Style.ColumnLimit)
+        if (ColumnNumber > Style.ColumnLimit) {
           continue;
+
+}
         // Comma insertions cannot conflict with each other, and this pass has a
         // clean set of Replacements, so the operation below cannot fail.
         cantFail(Result.add(
@@ -1583,8 +1653,10 @@ public:
 
     checkEmptyNamespace(AnnotatedLines);
 
-    for (auto *Line : AnnotatedLines)
+    for (auto *Line : AnnotatedLines) {
       cleanupLine(Line);
+
+}
 
     return {generateFixes(), 0};
   }
@@ -1608,8 +1680,10 @@ private:
 
   bool containsOnlyComments(const AnnotatedLine &Line) {
     for (FormatToken *Tok = Line.First; Tok != nullptr; Tok = Tok->Next) {
-      if (Tok->isNot(tok::comment))
+      if (Tok->isNot(tok::comment)) {
         return false;
+
+}
     }
     return true;
   }
@@ -1653,19 +1727,25 @@ private:
       return false;
     }
     while (++CurrentLine < End) {
-      if (AnnotatedLines[CurrentLine]->startsWith(tok::r_brace))
+      if (AnnotatedLines[CurrentLine]->startsWith(tok::r_brace)) {
         break;
+
+}
 
       if (AnnotatedLines[CurrentLine]->startsWithNamespace()) {
         if (!checkEmptyNamespace(AnnotatedLines, CurrentLine, NewLine,
-                                 DeletedLines))
+                                 DeletedLines)) {
           return false;
+
+}
         CurrentLine = NewLine;
         continue;
       }
 
-      if (containsOnlyComments(*AnnotatedLines[CurrentLine]))
+      if (containsOnlyComments(*AnnotatedLines[CurrentLine])) {
         continue;
+
+}
 
       // If there is anything other than comments or nested namespaces in the
       // current namespace, the namespace cannot be empty.
@@ -1674,14 +1754,18 @@ private:
     }
 
     NewLine = CurrentLine;
-    if (CurrentLine >= End)
+    if (CurrentLine >= End) {
       return false;
+
+}
 
     // Check if the empty namespace is actually affected by changed ranges.
     if (!AffectedRangeMgr.affectsCharSourceRange(CharSourceRange::getCharRange(
             AnnotatedLines[InitLine]->First->Tok.getLocation(),
-            AnnotatedLines[CurrentLine]->Last->Tok.getEndLoc())))
+            AnnotatedLines[CurrentLine]->Last->Tok.getEndLoc()))) {
       return false;
+
+}
 
     for (unsigned i = InitLine; i <= CurrentLine; ++i) {
       DeletedLines.insert(i);
@@ -1698,24 +1782,34 @@ private:
   void cleanupPair(FormatToken *Start, LeftKind LK, RightKind RK,
                    bool DeleteLeft) {
     auto NextNotDeleted = [this](const FormatToken &Tok) -> FormatToken * {
-      for (auto *Res = Tok.Next; Res; Res = Res->Next)
+      for (auto *Res = Tok.Next; Res; Res = Res->Next) {
         if (!Res->is(tok::comment) &&
-            DeletedTokens.find(Res) == DeletedTokens.end())
+            DeletedTokens.find(Res) == DeletedTokens.end()) {
           return Res;
+
+}
+
+}
       return nullptr;
     };
     for (auto *Left = Start; Left;) {
       auto *Right = NextNotDeleted(*Left);
-      if (!Right)
+      if (!Right) {
         break;
+
+}
       if (Left->is(LK) && Right->is(RK)) {
         deleteToken(DeleteLeft ? Left : Right);
-        for (auto *Tok = Left->Next; Tok && Tok != Right; Tok = Tok->Next)
+        for (auto *Tok = Left->Next; Tok && Tok != Right; Tok = Tok->Next) {
           deleteToken(Tok);
+
+}
         // If the right token is deleted, we should keep the left token
         // unchanged and pair it with the new right token.
-        if (!DeleteLeft)
+        if (!DeleteLeft) {
           continue;
+
+}
       }
       Left = Right;
     }
@@ -1733,8 +1827,10 @@ private:
 
   // Delete the given token.
   inline void deleteToken(FormatToken *Tok) {
-    if (Tok)
+    if (Tok) {
       DeletedTokens.insert(Tok);
+
+}
   }
 
   tooling::Replacements generateFixes() {
@@ -1908,8 +2004,10 @@ private:
                      << getTokenTypeName(FormatTok->Type) << "\n");
           return true;
         }
-        if (guessIsObjC(SourceManager, Line->Children, Keywords))
+        if (guessIsObjC(SourceManager, Line->Children, Keywords)) {
           return true;
+
+}
       }
     }
     return false;
@@ -1941,8 +2039,10 @@ static bool affectsRange(ArrayRef<tooling::Range> Ranges, unsigned Start,
                          unsigned End) {
   for (auto Range : Ranges) {
     if (Range.getOffset() < End &&
-        Range.getOffset() + Range.getLength() > Start)
+        Range.getOffset() + Range.getLength() > Start) {
       return true;
+
+}
   }
   return false;
 }
@@ -1962,14 +2062,18 @@ FindCursorIndex(const SmallVectorImpl<IncludeDirective> &Includes,
   for (int i = 0, e = Includes.size(); i != e; ++i) {
     unsigned Start = Includes[Indices[i]].Offset;
     unsigned End = Start + Includes[Indices[i]].Text.size();
-    if (!(Cursor >= Start && Cursor < End))
+    if (!(Cursor >= Start && Cursor < End)) {
       continue;
+
+}
     CursorIndex = Indices[i];
     OffsetToEOL = End - Cursor;
     // Put the cursor on the only remaining #include among the duplicate
     // #includes.
-    while (--i >= 0 && Includes[CursorIndex].Text == Includes[Indices[i]].Text)
+    while (--i >= 0 && Includes[CursorIndex].Text == Includes[Indices[i]].Text) {
       CursorIndex = i;
+
+}
     break;
   }
   return std::make_pair(CursorIndex, OffsetToEOL);
@@ -2014,8 +2118,10 @@ static void sortCppIncludes(const FormatStyle &Style,
   unsigned IncludesEndOffset =
       Includes.back().Offset + Includes.back().Text.size();
   unsigned IncludesBlockSize = IncludesEndOffset - IncludesBeginOffset;
-  if (!affectsRange(Ranges, IncludesBeginOffset, IncludesEndOffset))
+  if (!affectsRange(Ranges, IncludesBeginOffset, IncludesEndOffset)) {
     return;
+
+}
   SmallVector<unsigned, 16> Indices;
   for (unsigned i = 0, e = Includes.size(); i != e; ++i) {
     Indices.push_back(i);
@@ -2029,9 +2135,11 @@ static void sortCppIncludes(const FormatStyle &Style,
   unsigned CursorIndex;
   // The offset from cursor to the end of line.
   unsigned CursorToEOLOffset;
-  if (Cursor)
+  if (Cursor) {
     std::tie(CursorIndex, CursorToEOLOffset) =
         FindCursorIndex(Includes, Indices, *Cursor);
+
+}
 
   // Deduplicate #includes.
   Indices.erase(std::unique(Indices.begin(), Indices.end(),
@@ -2050,8 +2158,10 @@ static void sortCppIncludes(const FormatStyle &Style,
   // comparing it to the original.
   if (Indices.size() == Includes.size() &&
       std::is_sorted(Indices.begin(), Indices.end()) &&
-      Style.IncludeStyle.IncludeBlocks == tooling::IncludeStyle::IBS_Preserve)
+      Style.IncludeStyle.IncludeBlocks == tooling::IncludeStyle::IBS_Preserve) {
     return;
+
+}
 
   std::string result;
   for (unsigned Index : Indices) {
@@ -2059,20 +2169,26 @@ static void sortCppIncludes(const FormatStyle &Style,
       result += "\n";
       if (Style.IncludeStyle.IncludeBlocks ==
               tooling::IncludeStyle::IBS_Regroup &&
-          CurrentCategory != Includes[Index].Category)
+          CurrentCategory != Includes[Index].Category) {
         result += "\n";
+
+}
     }
     result += Includes[Index].Text;
-    if (Cursor && CursorIndex == Index)
+    if (Cursor && CursorIndex == Index) {
       *Cursor = IncludesBeginOffset + result.size() - CursorToEOLOffset;
+
+}
     CurrentCategory = Includes[Index].Category;
   }
 
   // If the #includes are out of order, we generate a single replacement fixing
   // the entire range of blocks. Otherwise, no replacement is generated.
   if (replaceCRLF(result) == replaceCRLF(std::string(Code.substr(
-                                 IncludesBeginOffset, IncludesBlockSize))))
+                                 IncludesBeginOffset, IncludesBlockSize)))) {
     return;
+
+}
 
   auto Err = Replaces.add(tooling::Replacement(
       FileName, Includes.front().Offset, IncludesBlockSize, result));
@@ -2120,11 +2236,13 @@ tooling::Replacements sortCppIncludes(const FormatStyle &Style, StringRef Code,
         Code.substr(Prev, (Pos != StringRef::npos ? Pos : Code.size()) - Prev);
 
     StringRef Trimmed = Line.trim();
-    if (Trimmed == "// clang-format off" || Trimmed == "/* clang-format off */")
+    if (Trimmed == "// clang-format off" || Trimmed == "/* clang-format off */") {
       FormattingOff = true;
-    else if (Trimmed == "// clang-format on" ||
-             Trimmed == "/* clang-format on */")
+    } else if (Trimmed == "// clang-format on" ||
+             Trimmed == "/* clang-format on */") {
       FormattingOff = false;
+
+}
 
     const bool EmptyLineSkipped =
         Trimmed.empty() &&
@@ -2140,8 +2258,10 @@ tooling::Replacements sortCppIncludes(const FormatStyle &Style, StringRef Code,
             /*CheckMainHeader=*/!MainIncludeFound && FirstIncludeBlock);
         int Priority = Categories.getSortIncludePriority(
             IncludeName, !MainIncludeFound && FirstIncludeBlock);
-        if (Category == 0)
+        if (Category == 0) {
           MainIncludeFound = true;
+
+}
         IncludesInBlock.push_back(
             {IncludeName, Line, Prev, Category, Priority});
       } else if (!IncludesInBlock.empty() && !EmptyLineSkipped) {
@@ -2152,8 +2272,10 @@ tooling::Replacements sortCppIncludes(const FormatStyle &Style, StringRef Code,
       }
       Prev = Pos + 1;
     }
-    if (Pos == StringRef::npos || Pos + 1 == Code.size())
+    if (Pos == StringRef::npos || Pos + 1 == Code.size()) {
       break;
+
+}
     SearchFrom = Pos + 1;
   }
   if (!IncludesInBlock.empty()) {
@@ -2193,8 +2315,10 @@ static void sortJavaImports(const FormatStyle &Style,
   unsigned ImportsEndOffset =
       Imports.back().Offset + Imports.back().Text.size();
   unsigned ImportsBlockSize = ImportsEndOffset - ImportsBeginOffset;
-  if (!affectsRange(Ranges, ImportsBeginOffset, ImportsEndOffset))
+  if (!affectsRange(Ranges, ImportsBeginOffset, ImportsEndOffset)) {
     return;
+
+}
   SmallVector<unsigned, 16> Indices;
   SmallVector<unsigned, 16> JavaImportGroups;
   for (unsigned i = 0, e = Imports.size(); i != e; ++i) {
@@ -2225,8 +2349,10 @@ static void sortJavaImports(const FormatStyle &Style,
     if (!result.empty()) {
       result += "\n";
       if (CurrentIsStatic != Imports[Index].IsStatic ||
-          CurrentImportGroup != JavaImportGroups[Index])
+          CurrentImportGroup != JavaImportGroups[Index]) {
         result += "\n";
+
+}
     }
     for (StringRef CommentLine : Imports[Index].AssociatedCommentLines) {
       result += CommentLine;
@@ -2240,8 +2366,10 @@ static void sortJavaImports(const FormatStyle &Style,
   // If the imports are out of order, we generate a single replacement fixing
   // the entire block. Otherwise, no replacement is generated.
   if (replaceCRLF(result) == replaceCRLF(std::string(Code.substr(
-                                 Imports.front().Offset, ImportsBlockSize))))
+                                 Imports.front().Offset, ImportsBlockSize)))) {
     return;
+
+}
 
   auto Err = Replaces.add(tooling::Replacement(FileName, Imports.front().Offset,
                                                ImportsBlockSize, result));
@@ -2279,10 +2407,12 @@ tooling::Replacements sortJavaImports(const FormatStyle &Style, StringRef Code,
         Code.substr(Prev, (Pos != StringRef::npos ? Pos : Code.size()) - Prev);
 
     StringRef Trimmed = Line.trim();
-    if (Trimmed == "// clang-format off")
+    if (Trimmed == "// clang-format off") {
       FormattingOff = true;
-    else if (Trimmed == "// clang-format on")
+    } else if (Trimmed == "// clang-format on") {
       FormattingOff = false;
+
+}
 
     if (ImportRegex.match(Line, &Matches)) {
       if (FormattingOff) {
@@ -2304,12 +2434,16 @@ tooling::Replacements sortJavaImports(const FormatStyle &Style, StringRef Code,
       AssociatedCommentLines.push_back(Line);
     }
     Prev = Pos + 1;
-    if (Pos == StringRef::npos || Pos + 1 == Code.size())
+    if (Pos == StringRef::npos || Pos + 1 == Code.size()) {
       break;
+
+}
     SearchFrom = Pos + 1;
   }
-  if (!ImportsInBlock.empty())
+  if (!ImportsInBlock.empty()) {
     sortJavaImports(Style, ImportsInBlock, Ranges, FileName, Code, Replaces);
+
+}
   return Replaces;
 }
 
@@ -2326,17 +2460,27 @@ tooling::Replacements sortIncludes(const FormatStyle &Style, StringRef Code,
                                    ArrayRef<tooling::Range> Ranges,
                                    StringRef FileName, unsigned *Cursor) {
   tooling::Replacements Replaces;
-  if (!Style.SortIncludes)
+  if (!Style.SortIncludes) {
     return Replaces;
-  if (isLikelyXml(Code))
+
+}
+  if (isLikelyXml(Code)) {
     return Replaces;
+
+}
   if (Style.Language == FormatStyle::LanguageKind::LK_JavaScript &&
-      isMpegTS(Code))
+      isMpegTS(Code)) {
     return Replaces;
-  if (Style.Language == FormatStyle::LanguageKind::LK_JavaScript)
+
+}
+  if (Style.Language == FormatStyle::LanguageKind::LK_JavaScript) {
     return sortJavaScriptImports(Style, Code, Ranges, FileName);
-  if (Style.Language == FormatStyle::LanguageKind::LK_Java)
+
+}
+  if (Style.Language == FormatStyle::LanguageKind::LK_Java) {
     return sortJavaImports(Style, Code, Ranges, FileName, Replaces);
+
+}
   sortCppIncludes(Style, Code, Ranges, FileName, Replaces, Cursor);
   return Replaces;
 }
@@ -2346,12 +2490,16 @@ static llvm::Expected<tooling::Replacements>
 processReplacements(T ProcessFunc, StringRef Code,
                     const tooling::Replacements &Replaces,
                     const FormatStyle &Style) {
-  if (Replaces.empty())
+  if (Replaces.empty()) {
     return tooling::Replacements();
 
+}
+
   auto NewCode = applyAllReplacements(Code, Replaces);
-  if (!NewCode)
+  if (!NewCode) {
     return NewCode.takeError();
+
+}
   std::vector<tooling::Range> ChangedRanges = Replaces.getAffectedRanges();
   StringRef FileName = Replaces.begin()->getFilePath();
 
@@ -2373,8 +2521,10 @@ formatReplacements(StringRef Code, const tooling::Replacements &Replaces,
   };
   auto SortedReplaces =
       processReplacements(SortIncludes, Code, Replaces, Style);
-  if (!SortedReplaces)
+  if (!SortedReplaces) {
     return SortedReplaces.takeError();
+
+}
 
   // We need to use lambda function here since there are two versions of
   // `reformat`.
@@ -2402,8 +2552,10 @@ inline bool isHeaderDeletion(const tooling::Replacement &Replace) {
 tooling::Replacements
 fixCppIncludeInsertions(StringRef Code, const tooling::Replacements &Replaces,
                         const FormatStyle &Style) {
-  if (!Style.isCpp())
+  if (!Style.isCpp()) {
     return Replaces;
+
+}
 
   tooling::Replacements HeaderInsertions;
   std::set<llvm::StringRef> HeadersToDelete;
@@ -2423,8 +2575,10 @@ fixCppIncludeInsertions(StringRef Code, const tooling::Replacements &Replaces,
       llvm::consumeError(Result.add(R));
     }
   }
-  if (HeaderInsertions.empty() && HeadersToDelete.empty())
+  if (HeaderInsertions.empty() && HeadersToDelete.empty()) {
     return Replaces;
+
+}
 
   StringRef FileName = Replaces.begin()->getFilePath();
   tooling::HeaderIncludes Includes(FileName, Code, Style.IncludeStyle);
@@ -2494,12 +2648,18 @@ reformat(const FormatStyle &Style, StringRef Code,
          unsigned NextStartColumn, unsigned LastStartColumn, StringRef FileName,
          FormattingAttemptStatus *Status) {
   FormatStyle Expanded = expandPresets(Style);
-  if (Expanded.DisableFormat)
+  if (Expanded.DisableFormat) {
     return {tooling::Replacements(), 0};
-  if (isLikelyXml(Code))
+
+}
+  if (isLikelyXml(Code)) {
     return {tooling::Replacements(), 0};
-  if (Expanded.Language == FormatStyle::LK_JavaScript && isMpegTS(Code))
+
+}
+  if (Expanded.Language == FormatStyle::LK_JavaScript && isMpegTS(Code)) {
     return {tooling::Replacements(), 0};
+
+}
 
   typedef std::function<std::pair<tooling::Replacements, unsigned>(
       const Environment &)>
@@ -2507,32 +2667,40 @@ reformat(const FormatStyle &Style, StringRef Code,
   SmallVector<AnalyzerPass, 4> Passes;
 
   if (Style.Language == FormatStyle::LK_Cpp) {
-    if (Style.FixNamespaceComments)
+    if (Style.FixNamespaceComments) {
       Passes.emplace_back([&](const Environment &Env) {
         return NamespaceEndCommentsFixer(Env, Expanded).process();
       });
 
-    if (Style.SortUsingDeclarations)
+}
+
+    if (Style.SortUsingDeclarations) {
       Passes.emplace_back([&](const Environment &Env) {
         return UsingDeclarationsSorter(Env, Expanded).process();
       });
+
+}
   }
 
   if (Style.Language == FormatStyle::LK_JavaScript &&
-      Style.JavaScriptQuotes != FormatStyle::JSQS_Leave)
+      Style.JavaScriptQuotes != FormatStyle::JSQS_Leave) {
     Passes.emplace_back([&](const Environment &Env) {
       return JavaScriptRequoter(Env, Expanded).process();
     });
+
+}
 
   Passes.emplace_back([&](const Environment &Env) {
     return Formatter(Env, Expanded, Status).process();
   });
 
   if (Style.Language == FormatStyle::LK_JavaScript &&
-      Style.InsertTrailingCommas == FormatStyle::TCS_Wrapped)
+      Style.InsertTrailingCommas == FormatStyle::TCS_Wrapped) {
     Passes.emplace_back([&](const Environment &Env) {
       return TrailingCommaInserter(Env, Expanded).process();
     });
+
+}
 
   auto Env =
       std::make_unique<Environment>(Code, FileName, Ranges, FirstStartColumn,
@@ -2576,8 +2744,10 @@ tooling::Replacements cleanup(const FormatStyle &Style, StringRef Code,
                               ArrayRef<tooling::Range> Ranges,
                               StringRef FileName) {
   // cleanups only apply to C++ (they mostly concern ctor commas etc.)
-  if (Style.Language != FormatStyle::LK_Cpp)
+  if (Style.Language != FormatStyle::LK_Cpp) {
     return tooling::Replacements();
+
+}
   return Cleaner(Environment(Code, FileName, Ranges), Style).process().first;
 }
 
@@ -2586,8 +2756,10 @@ tooling::Replacements reformat(const FormatStyle &Style, StringRef Code,
                                StringRef FileName, bool *IncompleteFormat) {
   FormattingAttemptStatus Status;
   auto Result = reformat(Style, Code, Ranges, FileName, &Status);
-  if (!Status.FormatComplete)
+  if (!Status.FormatComplete) {
     *IncompleteFormat = true;
+
+}
   return Result;
 }
 
@@ -2613,10 +2785,14 @@ LangOptions getFormattingLangOpts(const FormatStyle &Style) {
   LangOptions LangOpts;
 
   FormatStyle::LanguageStandard LexingStd = Style.Standard;
-  if (LexingStd == FormatStyle::LS_Auto)
+  if (LexingStd == FormatStyle::LS_Auto) {
     LexingStd = FormatStyle::LS_Latest;
-  if (LexingStd == FormatStyle::LS_Latest)
+
+}
+  if (LexingStd == FormatStyle::LS_Latest) {
     LexingStd = FormatStyle::LS_Cpp20;
+
+}
   LangOpts.CPlusPlus = 1;
   LangOpts.CPlusPlus11 = LexingStd >= FormatStyle::LS_Cpp11;
   LangOpts.CPlusPlus14 = LexingStd >= FormatStyle::LS_Cpp14;
@@ -2645,25 +2821,39 @@ const char *StyleOptionHelpDescription =
     "  -style=\"{BasedOnStyle: llvm, IndentWidth: 8}\"";
 
 static FormatStyle::LanguageKind getLanguageByFileName(StringRef FileName) {
-  if (FileName.endswith(".java"))
+  if (FileName.endswith(".java")) {
     return FormatStyle::LK_Java;
+
+}
   if (FileName.endswith_lower(".js") || FileName.endswith_lower(".mjs") ||
-      FileName.endswith_lower(".ts"))
+      FileName.endswith_lower(".ts")) {
     return FormatStyle::LK_JavaScript; // (module) JavaScript or TypeScript.
-  if (FileName.endswith(".m") || FileName.endswith(".mm"))
+
+}
+  if (FileName.endswith(".m") || FileName.endswith(".mm")) {
     return FormatStyle::LK_ObjC;
+
+}
   if (FileName.endswith_lower(".proto") ||
-      FileName.endswith_lower(".protodevel"))
+      FileName.endswith_lower(".protodevel")) {
     return FormatStyle::LK_Proto;
+
+}
   if (FileName.endswith_lower(".textpb") ||
       FileName.endswith_lower(".pb.txt") ||
       FileName.endswith_lower(".textproto") ||
-      FileName.endswith_lower(".asciipb"))
+      FileName.endswith_lower(".asciipb")) {
     return FormatStyle::LK_TextProto;
-  if (FileName.endswith_lower(".td"))
+
+}
+  if (FileName.endswith_lower(".td")) {
     return FormatStyle::LK_TableGen;
-  if (FileName.endswith_lower(".cs"))
+
+}
+  if (FileName.endswith_lower(".cs")) {
     return FormatStyle::LK_CSharp;
+
+}
   return FormatStyle::LK_Cpp;
 }
 
@@ -2678,8 +2868,10 @@ FormatStyle::LanguageKind guessLanguage(StringRef FileName, StringRef Code) {
       Environment Env(Code, NonEmptyFileName, /*Ranges=*/{});
       ObjCHeaderStyleGuesser Guesser(Env, getLLVMStyle());
       Guesser.process();
-      if (Guesser.isObjC())
+      if (Guesser.isObjC()) {
         return FormatStyle::LK_ObjC;
+
+}
     }
   }
   return GuessedLanguage;
@@ -2699,27 +2891,35 @@ llvm::Expected<FormatStyle> getStyle(StringRef StyleName, StringRef FileName,
   FormatStyle Style = getLLVMStyle(guessLanguage(FileName, Code));
 
   FormatStyle FallbackStyle = getNoStyle();
-  if (!getPredefinedStyle(FallbackStyleName, Style.Language, &FallbackStyle))
+  if (!getPredefinedStyle(FallbackStyleName, Style.Language, &FallbackStyle)) {
     return make_string_error("Invalid fallback style \"" + FallbackStyleName);
+
+}
 
   if (StyleName.startswith("{")) {
     // Parse YAML/JSON style from the command line.
-    if (std::error_code ec = parseConfiguration(StyleName, &Style))
+    if (std::error_code ec = parseConfiguration(StyleName, &Style)) {
       return make_string_error("Error parsing -style: " + ec.message());
+
+}
     return Style;
   }
 
   if (!StyleName.equals_lower("file")) {
-    if (!getPredefinedStyle(StyleName, Style.Language, &Style))
+    if (!getPredefinedStyle(StyleName, Style.Language, &Style)) {
       return make_string_error("Invalid value for -style");
+
+}
     return Style;
   }
 
   // Look for .clang-format/_clang-format file in the file's parent directories.
   SmallString<128> UnsuitableConfigFiles;
   SmallString<128> Path(FileName);
-  if (std::error_code EC = FS->makeAbsolute(Path))
+  if (std::error_code EC = FS->makeAbsolute(Path)) {
     return make_string_error(EC.message());
+
+}
 
   llvm::SmallVector<std::string, 2> FilesToLookFor;
   FilesToLookFor.push_back(".clang-format");
@@ -2746,13 +2946,17 @@ llvm::Expected<FormatStyle> getStyle(StringRef StyleName, StringRef FileName,
           (Status->getType() == llvm::sys::fs::file_type::regular_file)) {
         llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Text =
             FS->getBufferForFile(ConfigFile.str());
-        if (std::error_code EC = Text.getError())
+        if (std::error_code EC = Text.getError()) {
           return make_string_error(EC.message());
+
+}
         if (std::error_code ec =
                 parseConfiguration(Text.get()->getBuffer(), &Style)) {
           if (ec == ParseError::Unsuitable) {
-            if (!UnsuitableConfigFiles.empty())
+            if (!UnsuitableConfigFiles.empty()) {
               UnsuitableConfigFiles.append(", ");
+
+}
             UnsuitableConfigFiles.append(ConfigFile);
             continue;
           }
@@ -2765,10 +2969,12 @@ llvm::Expected<FormatStyle> getStyle(StringRef StyleName, StringRef FileName,
       }
     }
   }
-  if (!UnsuitableConfigFiles.empty())
+  if (!UnsuitableConfigFiles.empty()) {
     return make_string_error("Configuration file(s) do(es) not support " +
                              getLanguageName(Style.Language) + ": " +
                              UnsuitableConfigFiles);
+
+}
   return FallbackStyle;
 }
 

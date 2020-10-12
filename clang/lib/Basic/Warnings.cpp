@@ -53,22 +53,30 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
   Diags.setShowColors(Opts.ShowColors);
 
   // Handle -ferror-limit
-  if (Opts.ErrorLimit)
+  if (Opts.ErrorLimit) {
     Diags.setErrorLimit(Opts.ErrorLimit);
-  if (Opts.TemplateBacktraceLimit)
+
+}
+  if (Opts.TemplateBacktraceLimit) {
     Diags.setTemplateBacktraceLimit(Opts.TemplateBacktraceLimit);
-  if (Opts.ConstexprBacktraceLimit)
+
+}
+  if (Opts.ConstexprBacktraceLimit) {
     Diags.setConstexprBacktraceLimit(Opts.ConstexprBacktraceLimit);
+
+}
 
   // If -pedantic or -pedantic-errors was specified, then we want to map all
   // extension diagnostics onto WARNING or ERROR unless the user has futz'd
   // around with them explicitly.
-  if (Opts.PedanticErrors)
+  if (Opts.PedanticErrors) {
     Diags.setExtensionHandlingBehavior(diag::Severity::Error);
-  else if (Opts.Pedantic)
+  } else if (Opts.Pedantic) {
     Diags.setExtensionHandlingBehavior(diag::Severity::Warning);
-  else
+  } else {
     Diags.setExtensionHandlingBehavior(diag::Severity::Ignored);
+
+}
 
   SmallVector<diag::kind, 10> _Diags;
   const IntrusiveRefCntPtr< DiagnosticIDs > DiagIDs =
@@ -82,8 +90,10 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
 
     // If we've set the diagnostic state and are not reporting diagnostics then
     // we're done.
-    if (!SetDiagnostic && !ReportDiags)
+    if (!SetDiagnostic && !ReportDiags) {
       break;
+
+}
 
     for (unsigned i = 0, e = Opts.Warnings.size(); i != e; ++i) {
       const auto Flavor = diag::Flavor::WarningOrError;
@@ -91,8 +101,10 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
       StringRef OrigOpt = Opts.Warnings[i];
 
       // Treat -Wformat=0 as an alias for -Wno-format.
-      if (Opt == "format=0")
+      if (Opt == "format=0") {
         Opt = "no-format";
+
+}
 
       // Check to see if this warning starts with "no-", if so, this is a
       // negative form of the option.
@@ -110,8 +122,10 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
       // -Wsystem-headers is a special case, not driven by the option table.  It
       // cannot be controlled with -Werror.
       if (Opt == "system-headers") {
-        if (SetDiagnostic)
+        if (SetDiagnostic) {
           Diags.setSuppressSystemWarnings(!isPositive);
+
+}
         continue;
       }
 
@@ -135,17 +149,21 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
         StringRef Specifier;
         if (Opt.size() > 5) {  // Specifier must be present.
           if ((Opt[5] != '=' && Opt[5] != '-') || Opt.size() == 6) {
-            if (Report)
+            if (Report) {
               Diags.Report(diag::warn_unknown_warning_specifier)
                 << "-Werror" << ("-W" + OrigOpt.str());
+
+}
             continue;
           }
           Specifier = Opt.substr(6);
         }
 
         if (Specifier.empty()) {
-          if (SetDiagnostic)
+          if (SetDiagnostic) {
             Diags.setWarningsAsErrors(isPositive);
+
+}
           continue;
         }
 
@@ -163,17 +181,21 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
         StringRef Specifier;
         if (Opt.size() != 12) {
           if ((Opt[12] != '=' && Opt[12] != '-') || Opt.size() == 13) {
-            if (Report)
+            if (Report) {
               Diags.Report(diag::warn_unknown_warning_specifier)
                 << "-Wfatal-errors" << ("-W" + OrigOpt.str());
+
+}
             continue;
           }
           Specifier = Opt.substr(13);
         }
 
         if (Specifier.empty()) {
-          if (SetDiagnostic)
+          if (SetDiagnostic) {
             Diags.setErrorsAsFatal(isPositive);
+
+}
           continue;
         }
 
@@ -187,9 +209,11 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
       }
 
       if (Report) {
-        if (DiagIDs->getDiagnosticsInGroup(Flavor, Opt, _Diags))
+        if (DiagIDs->getDiagnosticsInGroup(Flavor, Opt, _Diags)) {
           EmitUnknownDiagWarning(Diags, Flavor, isPositive ? "-W" : "-Wno-",
                                  Opt);
+
+}
       } else {
         Diags.setSeverityForGroup(Flavor, Opt, Mapping);
       }
@@ -202,7 +226,9 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
       // Check to see if this warning starts with "no-", if so, this is a
       // negative form of the option.
       bool IsPositive = !Opt.startswith("no-");
-      if (!IsPositive) Opt = Opt.substr(3);
+      if (!IsPositive) { Opt = Opt.substr(3);
+
+}
 
       auto Severity = IsPositive ? diag::Severity::Remark
                                  : diag::Severity::Ignored;
@@ -211,15 +237,19 @@ void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,
       // in remark groups, so we don't need a separate 'all remarks enabled'
       // flag.
       if (Opt == "everything") {
-        if (SetDiagnostic)
+        if (SetDiagnostic) {
           Diags.setSeverityForAll(Flavor, Severity);
+
+}
         continue;
       }
 
       if (Report) {
-        if (DiagIDs->getDiagnosticsInGroup(Flavor, Opt, _Diags))
+        if (DiagIDs->getDiagnosticsInGroup(Flavor, Opt, _Diags)) {
           EmitUnknownDiagWarning(Diags, Flavor, IsPositive ? "-R" : "-Rno-",
                                  Opt);
+
+}
       } else {
         Diags.setSeverityForGroup(Flavor, Opt,
                                   IsPositive ? diag::Severity::Remark

@@ -57,10 +57,14 @@ static bool isPrepeocessedModuleType(ID Id) {
 }
 
 types::ID types::getPrecompiledType(ID Id) {
-  if (isPrepeocessedModuleType(Id))
+  if (isPrepeocessedModuleType(Id)) {
     return TY_ModuleFile;
-  if (onlyPrecompileType(Id))
+
+}
+  if (onlyPrecompileType(Id)) {
     return TY_PCH;
+
+}
   return TY_INVALID;
 }
 
@@ -292,8 +296,10 @@ types::ID types::lookupTypeForTypeSpecifier(const char *Name) {
   for (unsigned i=0; i<numTypes; ++i) {
     types::ID Id = (types::ID) (i + 1);
     if (canTypeBeUserSpecified(Id) &&
-        strcmp(Name, getInfo(Id).Name) == 0)
+        strcmp(Name, getInfo(Id).Name) == 0) {
       return Id;
+
+}
   }
 
   return TY_INVALID;
@@ -320,18 +326,18 @@ void types::getCompilationPhases(const clang::driver::Driver &Driver,
   if (Driver.CCCIsCPP() || DAL.getLastArg(options::OPT_E) ||
       DAL.getLastArg(options::OPT__SLASH_EP) ||
       DAL.getLastArg(options::OPT_M, options::OPT_MM) ||
-      DAL.getLastArg(options::OPT__SLASH_P))
+      DAL.getLastArg(options::OPT__SLASH_P)) {
     llvm::copy_if(PhaseList, std::back_inserter(P),
                   [](phases::ID Phase) { return Phase <= phases::Preprocess; });
 
   // --precompile only runs up to precompilation.
   // This is a clang extension and is not compatible with GCC.
-  else if (DAL.getLastArg(options::OPT__precompile))
+  } else if (DAL.getLastArg(options::OPT__precompile)) {
     llvm::copy_if(PhaseList, std::back_inserter(P),
                   [](phases::ID Phase) { return Phase <= phases::Precompile; });
 
   // -{fsyntax-only,-analyze,emit-ast} only run up to the compiler.
-  else if (DAL.getLastArg(options::OPT_fsyntax_only) ||
+  } else if (DAL.getLastArg(options::OPT_fsyntax_only) ||
            DAL.getLastArg(options::OPT_print_supported_cpus) ||
            DAL.getLastArg(options::OPT_module_file_info) ||
            DAL.getLastArg(options::OPT_verify_pch) ||
@@ -339,22 +345,24 @@ void types::getCompilationPhases(const clang::driver::Driver &Driver,
            DAL.getLastArg(options::OPT_rewrite_legacy_objc) ||
            DAL.getLastArg(options::OPT__migrate) ||
            DAL.getLastArg(options::OPT__analyze) ||
-           DAL.getLastArg(options::OPT_emit_ast))
+           DAL.getLastArg(options::OPT_emit_ast)) {
     llvm::copy_if(PhaseList, std::back_inserter(P),
                   [](phases::ID Phase) { return Phase <= phases::Compile; });
 
-  else if (DAL.getLastArg(options::OPT_S) ||
-           DAL.getLastArg(options::OPT_emit_llvm))
+  } else if (DAL.getLastArg(options::OPT_S) ||
+           DAL.getLastArg(options::OPT_emit_llvm)) {
     llvm::copy_if(PhaseList, std::back_inserter(P),
                   [](phases::ID Phase) { return Phase <= phases::Backend; });
 
-  else if (DAL.getLastArg(options::OPT_c))
+  } else if (DAL.getLastArg(options::OPT_c)) {
     llvm::copy_if(PhaseList, std::back_inserter(P),
                   [](phases::ID Phase) { return Phase <= phases::Assemble; });
 
   // Generally means, do every phase until Link.
-  else
+  } else {
     P = PhaseList;
+
+}
 }
 
 ID types::lookupCXXTypeForCType(ID Id) {

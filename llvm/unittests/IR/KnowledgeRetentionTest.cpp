@@ -34,8 +34,10 @@ static void RunTest(
     LLVMContext C;
     SMDiagnostic Err;
     std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
-    if (!Mod)
+    if (!Mod) {
       Err.print("AssumeQueryAPI", errs());
+
+}
     Elem.second(&*(Mod->getFunction("test")->begin()->begin()));
   }
 }
@@ -50,8 +52,10 @@ bool hasMatchesExactlyAttributes(CallInst *Assume, Value *WasOn,
 #include "llvm/IR/Attributes.inc"
        }) {
     bool ShouldHaveAttr = Reg.match(Attr, &Matches) && Matches[0] == Attr;
-    if (ShouldHaveAttr != hasAttributeInAssume(*Assume, WasOn, Attr))
+    if (ShouldHaveAttr != hasAttributeInAssume(*Assume, WasOn, Attr)) {
       return false;
+
+}
   }
   return true;
 }
@@ -61,10 +65,14 @@ bool hasTheRightValue(CallInst *Assume, Value *WasOn,
                             AssumeQuery AQ = AssumeQuery::Highest) {
   if (!Both) {
     uint64_t ArgVal = 0;
-    if (!hasAttributeInAssume(*Assume, WasOn, Kind, &ArgVal, AQ))
+    if (!hasAttributeInAssume(*Assume, WasOn, Kind, &ArgVal, AQ)) {
       return false;
-    if (ArgVal != Value)
+
+}
+    if (ArgVal != Value) {
       return false;
+
+}
     return true;
   }
   uint64_t ArgValLow = 0;
@@ -73,10 +81,14 @@ bool hasTheRightValue(CallInst *Assume, Value *WasOn,
                                         AssumeQuery::Lowest);
   bool ResultHigh = hasAttributeInAssume(*Assume, WasOn, Kind, &ArgValHigh,
                                          AssumeQuery::Highest);
-  if (ResultLow != ResultHigh || ResultHigh == false)
+  if (ResultLow != ResultHigh || ResultHigh == false) {
     return false;
-  if (ArgValLow != Value || ArgValLow != ArgValHigh)
+
+}
+  if (ArgValLow != Value || ArgValLow != ArgValHigh) {
     return false;
+
+}
   return true;
 }
 
@@ -254,8 +266,10 @@ static bool FindExactlyAttributes(RetainedKnowledgeMap &Map, Value *WasOn,
        }) {
     bool ShouldHaveAttr = Reg.match(Attr, &Matches) && Matches[0] == Attr;
 
-    if (ShouldHaveAttr != (Map.find(RetainedKnowledgeKey{WasOn, Attribute::getAttrKindFromName(Attr)}) != Map.end()))
+    if (ShouldHaveAttr != (Map.find(RetainedKnowledgeKey{WasOn, Attribute::getAttrKindFromName(Attr)}) != Map.end())) {
       return false;
+
+}
   }
   return true;
 }
@@ -425,12 +439,16 @@ static void RunRandTest(uint64_t Seed, int Size, int MinCount, int MaxCount,
                                                    Attribute::EndAttrKinds - 1);
 
   std::unique_ptr<Module> Mod = std::make_unique<Module>("AssumeQueryAPI", C);
-  if (!Mod)
+  if (!Mod) {
     Err.print("AssumeQueryAPI", errs());
 
+}
+
   std::vector<Type *> TypeArgs;
-  for (int i = 0; i < (Size * 2); i++)
+  for (int i = 0; i < (Size * 2); i++) {
     TypeArgs.push_back(Type::getInt32PtrTy(C));
+
+}
   FunctionType *FuncType =
       FunctionType::get(Type::getVoidTy(C), TypeArgs, false);
 
@@ -469,8 +487,10 @@ static void RunRandTest(uint64_t Seed, int Size, int MinCount, int MaxCount,
       Args.push_back(ShuffledArgs[i]);
       HasArg[i] = true;
     }
-    if (count > 1)
+    if (count > 1) {
       Args.push_back(ConstantInt::get(Type::getInt32Ty(C), value));
+
+}
 
     OpBundle.push_back(OperandBundleDef{ss.str().c_str(), std::move(Args)});
   }
@@ -482,8 +502,10 @@ static void RunRandTest(uint64_t Seed, int Size, int MinCount, int MaxCount,
   RetainedKnowledgeMap Map;
   fillMapFromAssume(*cast<CallInst>(Assume), Map);
   for (int i = 0; i < (Size * 2); i++) {
-    if (!HasArg[i])
+    if (!HasArg[i]) {
       continue;
+
+}
     RetainedKnowledge K =
         getKnowledgeFromUseInAssume(&*ShuffledArgs[i]->use_begin());
     auto LookupIt = Map.find(RetainedKnowledgeKey{K.WasOn, K.AttrKind});

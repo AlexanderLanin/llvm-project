@@ -88,18 +88,20 @@ OrcMCJITReplacement::runFunction(Function *F,
       llvm_unreachable("Unknown return type for function call!");
     case Type::IntegerTyID: {
       unsigned BitWidth = cast<IntegerType>(RetTy)->getBitWidth();
-      if (BitWidth == 1)
+      if (BitWidth == 1) {
         rv.IntVal = APInt(BitWidth, ((bool (*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 8)
+      } else if (BitWidth <= 8) {
         rv.IntVal = APInt(BitWidth, ((char (*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 16)
+      } else if (BitWidth <= 16) {
         rv.IntVal = APInt(BitWidth, ((short (*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 32)
+      } else if (BitWidth <= 32) {
         rv.IntVal = APInt(BitWidth, ((int (*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 64)
+      } else if (BitWidth <= 64) {
         rv.IntVal = APInt(BitWidth, ((int64_t (*)())(intptr_t)FPtr)());
-      else
+      } else {
         llvm_unreachable("Integer types > 64 bits not supported");
+
+}
       return rv;
     }
     case Type::VoidTyID:
@@ -126,10 +128,12 @@ OrcMCJITReplacement::runFunction(Function *F,
 void OrcMCJITReplacement::runStaticConstructorsDestructors(bool isDtors) {
   auto &CtorDtorsMap = isDtors ? UnexecutedDestructors : UnexecutedConstructors;
 
-  for (auto &KV : CtorDtorsMap)
+  for (auto &KV : CtorDtorsMap) {
     cantFail(LegacyCtorDtorRunner<LazyEmitLayerT>(
                  AcknowledgeORCv1Deprecation, std::move(KV.second), KV.first)
                  .runViaLayer(LazyEmitLayer));
+
+}
 
   CtorDtorsMap.clear();
 }

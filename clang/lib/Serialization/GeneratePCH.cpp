@@ -40,12 +40,16 @@ PCHGenerator::~PCHGenerator() {
 
 void PCHGenerator::HandleTranslationUnit(ASTContext &Ctx) {
   // Don't create a PCH if there were fatal failures during module loading.
-  if (PP.getModuleLoader().HadFatalFailure)
+  if (PP.getModuleLoader().HadFatalFailure) {
     return;
 
+}
+
   bool hasErrors = PP.getDiagnostics().hasErrorOccurred();
-  if (hasErrors && !AllowASTWithErrors)
+  if (hasErrors && !AllowASTWithErrors) {
     return;
+
+}
 
   Module *Module = nullptr;
   if (PP.getLangOpts().isCompilingModule()) {

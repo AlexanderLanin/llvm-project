@@ -82,47 +82,69 @@ Metadata *ProfileSummary::getMD(LLVMContext &Context) {
 
 // Parse an MDTuple representing (Key, Val) pair.
 static bool getVal(MDTuple *MD, const char *Key, uint64_t &Val) {
-  if (!MD)
+  if (!MD) {
     return false;
-  if (MD->getNumOperands() != 2)
+
+}
+  if (MD->getNumOperands() != 2) {
     return false;
+
+}
   MDString *KeyMD = dyn_cast<MDString>(MD->getOperand(0));
   ConstantAsMetadata *ValMD = dyn_cast<ConstantAsMetadata>(MD->getOperand(1));
-  if (!KeyMD || !ValMD)
+  if (!KeyMD || !ValMD) {
     return false;
-  if (!KeyMD->getString().equals(Key))
+
+}
+  if (!KeyMD->getString().equals(Key)) {
     return false;
+
+}
   Val = cast<ConstantInt>(ValMD->getValue())->getZExtValue();
   return true;
 }
 
 // Check if an MDTuple represents a (Key, Val) pair.
 static bool isKeyValuePair(MDTuple *MD, const char *Key, const char *Val) {
-  if (!MD || MD->getNumOperands() != 2)
+  if (!MD || MD->getNumOperands() != 2) {
     return false;
+
+}
   MDString *KeyMD = dyn_cast<MDString>(MD->getOperand(0));
   MDString *ValMD = dyn_cast<MDString>(MD->getOperand(1));
-  if (!KeyMD || !ValMD)
+  if (!KeyMD || !ValMD) {
     return false;
-  if (!KeyMD->getString().equals(Key) || !ValMD->getString().equals(Val))
+
+}
+  if (!KeyMD->getString().equals(Key) || !ValMD->getString().equals(Val)) {
     return false;
+
+}
   return true;
 }
 
 // Parse an MDTuple representing detailed summary.
 static bool getSummaryFromMD(MDTuple *MD, SummaryEntryVector &Summary) {
-  if (!MD || MD->getNumOperands() != 2)
+  if (!MD || MD->getNumOperands() != 2) {
     return false;
+
+}
   MDString *KeyMD = dyn_cast<MDString>(MD->getOperand(0));
-  if (!KeyMD || !KeyMD->getString().equals("DetailedSummary"))
+  if (!KeyMD || !KeyMD->getString().equals("DetailedSummary")) {
     return false;
+
+}
   MDTuple *EntriesMD = dyn_cast<MDTuple>(MD->getOperand(1));
-  if (!EntriesMD)
+  if (!EntriesMD) {
     return false;
+
+}
   for (auto &&MDOp : EntriesMD->operands()) {
     MDTuple *EntryMD = dyn_cast<MDTuple>(MDOp);
-    if (!EntryMD || EntryMD->getNumOperands() != 3)
+    if (!EntryMD || EntryMD->getNumOperands() != 3) {
       return false;
+
+}
     ConstantAsMetadata *Op0 =
         dyn_cast<ConstantAsMetadata>(EntryMD->getOperand(0));
     ConstantAsMetadata *Op1 =
@@ -130,8 +152,10 @@ static bool getSummaryFromMD(MDTuple *MD, SummaryEntryVector &Summary) {
     ConstantAsMetadata *Op2 =
         dyn_cast<ConstantAsMetadata>(EntryMD->getOperand(2));
 
-    if (!Op0 || !Op1 || !Op2)
+    if (!Op0 || !Op1 || !Op2) {
       return false;
+
+}
     Summary.emplace_back(cast<ConstantInt>(Op0->getValue())->getZExtValue(),
                          cast<ConstantInt>(Op1->getValue())->getZExtValue(),
                          cast<ConstantInt>(Op2->getValue())->getZExtValue());
@@ -141,45 +165,63 @@ static bool getSummaryFromMD(MDTuple *MD, SummaryEntryVector &Summary) {
 
 ProfileSummary *ProfileSummary::getFromMD(Metadata *MD) {
   MDTuple *Tuple = dyn_cast_or_null<MDTuple>(MD);
-  if (!Tuple || Tuple->getNumOperands() != 8)
+  if (!Tuple || Tuple->getNumOperands() != 8) {
     return nullptr;
+
+}
 
   auto &FormatMD = Tuple->getOperand(0);
   ProfileSummary::Kind SummaryKind;
   if (isKeyValuePair(dyn_cast_or_null<MDTuple>(FormatMD), "ProfileFormat",
-                     "SampleProfile"))
+                     "SampleProfile")) {
     SummaryKind = PSK_Sample;
-  else if (isKeyValuePair(dyn_cast_or_null<MDTuple>(FormatMD), "ProfileFormat",
-                          "InstrProf"))
+  } else if (isKeyValuePair(dyn_cast_or_null<MDTuple>(FormatMD), "ProfileFormat",
+                          "InstrProf")) {
     SummaryKind = PSK_Instr;
-  else if (isKeyValuePair(dyn_cast_or_null<MDTuple>(FormatMD), "ProfileFormat",
-                          "CSInstrProf"))
+  } else if (isKeyValuePair(dyn_cast_or_null<MDTuple>(FormatMD), "ProfileFormat",
+                          "CSInstrProf")) {
     SummaryKind = PSK_CSInstr;
-  else
+  } else {
     return nullptr;
+
+}
 
   uint64_t NumCounts, TotalCount, NumFunctions, MaxFunctionCount, MaxCount,
       MaxInternalCount;
   if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(1)), "TotalCount",
-              TotalCount))
-    return nullptr;
-  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(2)), "MaxCount", MaxCount))
-    return nullptr;
-  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(3)), "MaxInternalCount",
-              MaxInternalCount))
-    return nullptr;
-  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(4)), "MaxFunctionCount",
-              MaxFunctionCount))
-    return nullptr;
-  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(5)), "NumCounts", NumCounts))
-    return nullptr;
-  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(6)), "NumFunctions",
-              NumFunctions))
+              TotalCount)) {
     return nullptr;
 
-  SummaryEntryVector Summary;
-  if (!getSummaryFromMD(dyn_cast<MDTuple>(Tuple->getOperand(7)), Summary))
+}
+  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(2)), "MaxCount", MaxCount)) {
     return nullptr;
+
+}
+  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(3)), "MaxInternalCount",
+              MaxInternalCount)) {
+    return nullptr;
+
+}
+  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(4)), "MaxFunctionCount",
+              MaxFunctionCount)) {
+    return nullptr;
+
+}
+  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(5)), "NumCounts", NumCounts)) {
+    return nullptr;
+
+}
+  if (!getVal(dyn_cast<MDTuple>(Tuple->getOperand(6)), "NumFunctions",
+              NumFunctions)) {
+    return nullptr;
+
+}
+
+  SummaryEntryVector Summary;
+  if (!getSummaryFromMD(dyn_cast<MDTuple>(Tuple->getOperand(7)), Summary)) {
+    return nullptr;
+
+}
   return new ProfileSummary(SummaryKind, std::move(Summary), TotalCount,
                             MaxCount, MaxInternalCount, MaxFunctionCount,
                             NumCounts, NumFunctions);

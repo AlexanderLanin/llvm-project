@@ -69,11 +69,13 @@ void MutatingCopyCheck::registerMatchers(MatchFinder *Finder) {
 
 void MutatingCopyCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *MemberCall =
-          Result.Nodes.getNodeAs<CXXMemberCallExpr>(MutatingCallName))
+          Result.Nodes.getNodeAs<CXXMemberCallExpr>(MutatingCallName)) {
     diag(MemberCall->getBeginLoc(), "call mutates copied object");
-  else if (const auto *Assignment =
-               Result.Nodes.getNodeAs<Expr>(MutatingOperatorName))
+  } else if (const auto *Assignment =
+               Result.Nodes.getNodeAs<Expr>(MutatingOperatorName)) {
     diag(Assignment->getBeginLoc(), "mutating copied object");
+
+}
 }
 
 } // namespace cert

@@ -85,8 +85,10 @@ void registerDummyErrorSerialization() {
         [](ChannelT &C, Error &Err) -> Error {
           ErrorAsOutParameter EAO(&Err);
           uint32_t Val;
-          if (auto Err = deserializeSeq(C, Val))
+          if (auto Err = deserializeSeq(C, Val)) {
             return Err;
+
+}
           Err = make_error<DummyError>(Val);
           return Error::success();
         });
@@ -627,8 +629,10 @@ TEST(DummyRPC, ReturnErrorSuccess) {
         });
 
       // Handle the negotiate plus one call.
-      for (unsigned I = 0; I != 2; ++I)
+      for (unsigned I = 0; I != 2; ++I) {
         cantFail(Server.handleOne());
+
+}
     });
 
   cantFail(Client.callAsync<DummyRPCAPI::ErrorFunc>(
@@ -656,8 +660,10 @@ TEST(DummyRPC, ReturnErrorFailure) {
         });
 
       // Handle the negotiate plus one call.
-      for (unsigned I = 0; I != 2; ++I)
+      for (unsigned I = 0; I != 2; ++I) {
         cantFail(Server.handleOne());
+
+}
     });
 
   cantFail(Client.callAsync<DummyRPCAPI::ErrorFunc>(
@@ -691,8 +697,10 @@ TEST(DummyRPC, ReturnExpectedSuccess) {
         });
 
       // Handle the negotiate plus one call.
-      for (unsigned I = 0; I != 2; ++I)
+      for (unsigned I = 0; I != 2; ++I) {
         cantFail(Server.handleOne());
+
+}
     });
 
   cantFail(Client.callAsync<DummyRPCAPI::ExpectedFunc>(
@@ -723,8 +731,10 @@ TEST(DummyRPC, ReturnExpectedFailure) {
         });
 
       // Handle the negotiate plus one call.
-      for (unsigned I = 0; I != 2; ++I)
+      for (unsigned I = 0; I != 2; ++I) {
         cantFail(Server.handleOne());
+
+}
     });
 
   cantFail(Client.callAsync<DummyRPCAPI::ExpectedFunc>(

@@ -52,8 +52,10 @@ std::error_code collectReplacementsFromDirectory(
       continue;
     }
 
-    if (extension(I->path()) != ".yaml")
+    if (extension(I->path()) != ".yaml") {
       continue;
+
+}
 
     TUFiles.push_back(I->path());
 
@@ -96,8 +98,10 @@ std::error_code collectReplacementsFromDirectory(
       continue;
     }
 
-    if (extension(I->path()) != ".yaml")
+    if (extension(I->path()) != ".yaml") {
       continue;
+
+}
 
     TUFiles.push_back(I->path());
 
@@ -154,8 +158,10 @@ groupReplacements(const TUReplacements &TUs, const TUDiagnostics &TUDs,
     if (auto Entry = SM.getFileManager().getFile(R.getFilePath())) {
       if (FromDiag) {
         auto &Replaces = DiagReplacements[*Entry];
-        if (!Replaces.insert(R).second)
+        if (!Replaces.insert(R).second) {
           return;
+
+}
       }
       GroupedReplacements[*Entry].push_back(R);
     } else if (Warned.insert(R.getFilePath()).second) {
@@ -164,17 +170,29 @@ groupReplacements(const TUReplacements &TUs, const TUDiagnostics &TUDs,
     }
   };
 
-  for (const auto &TU : TUs)
-    for (const tooling::Replacement &R : TU.Replacements)
+  for (const auto &TU : TUs) {
+    for (const tooling::Replacement &R : TU.Replacements) {
       AddToGroup(R, false);
 
-  for (const auto &TU : TUDs)
-    for (const auto &D : TU.Diagnostics)
+}
+
+}
+
+  for (const auto &TU : TUDs) {
+    for (const auto &D : TU.Diagnostics) {
       if (const auto *ChoosenFix = tooling::selectFirstFix(D)) {
-        for (const auto &Fix : *ChoosenFix)
-          for (const tooling::Replacement &R : Fix.second)
+        for (const auto &Fix : *ChoosenFix) {
+          for (const tooling::Replacement &R : Fix.second) {
             AddToGroup(R, true);
+
+}
+
+}
       }
+
+}
+
+}
 
   // Sort replacements per file to keep consistent behavior when
   // clang-apply-replacements run on differents machine.
@@ -236,8 +254,10 @@ applyChanges(StringRef File, const std::vector<tooling::AtomicChange> &Changes,
 
   llvm::ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer =
       SM.getFileManager().getBufferForFile(File);
-  if (!Buffer)
+  if (!Buffer) {
     return errorCodeToError(Buffer.getError());
+
+}
   return tooling::applyAtomicChanges(File, Buffer.get()->getBuffer(), Changes,
                                      Spec);
 }

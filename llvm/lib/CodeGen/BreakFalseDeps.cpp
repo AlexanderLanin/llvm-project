@@ -116,8 +116,10 @@ bool BreakFalseDeps::pickBestRegisterForUndef(MachineInstr *MI, unsigned OpIdx,
     unsigned NumRoots = 0;
     for (MCRegUnitRootIterator Root(*Unit, TRI); Root.isValid(); ++Root) {
       NumRoots++;
-      if (NumRoots > 1)
+      if (NumRoots > 1) {
         return false;
+
+}
     }
   }
 
@@ -129,8 +131,10 @@ bool BreakFalseDeps::pickBestRegisterForUndef(MachineInstr *MI, unsigned OpIdx,
   // behind it.
   for (MachineOperand &CurrMO : MI->operands()) {
     if (!CurrMO.isReg() || CurrMO.isDef() || CurrMO.isUndef() ||
-      !OpRC->contains(CurrMO.getReg()))
+      !OpRC->contains(CurrMO.getReg())) {
       continue;
+
+}
     // We found a true dependency - replace the undef register with the true
     // dependency.
     MO.setReg(CurrMO.getReg());
@@ -144,18 +148,24 @@ bool BreakFalseDeps::pickBestRegisterForUndef(MachineInstr *MI, unsigned OpIdx,
   ArrayRef<MCPhysReg> Order = RegClassInfo.getOrder(OpRC);
   for (MCPhysReg Reg : Order) {
     unsigned Clearance = RDA->getClearance(MI, Reg);
-    if (Clearance <= MaxClearance)
+    if (Clearance <= MaxClearance) {
       continue;
+
+}
     MaxClearance = Clearance;
     MaxClearanceReg = Reg;
 
-    if (MaxClearance > Pref)
+    if (MaxClearance > Pref) {
       break;
+
+}
   }
 
   // Update the operand if we found a register with better clearance.
-  if (MaxClearanceReg != OriginalReg)
+  if (MaxClearanceReg != OriginalReg) {
     MO.setReg(MaxClearanceReg);
+
+}
 
   return false;
 }
@@ -186,39 +196,53 @@ void BreakFalseDeps::processDefs(MachineInstr *MI) {
     // We don't need to bother trying to break a dependency if this
     // instruction has a true dependency on that register through another
     // operand - we'll have to wait for it to be available regardless.
-    if (!HadTrueDependency && shouldBreakDependence(MI, OpNum, Pref))
+    if (!HadTrueDependency && shouldBreakDependence(MI, OpNum, Pref)) {
       UndefReads.push_back(std::make_pair(MI, OpNum));
+
+}
   }
 
   // The code below allows the target to create a new instruction to break the
   // dependence. That opposes the goal of minimizing size, so bail out now.
-  if (MF->getFunction().hasMinSize())
+  if (MF->getFunction().hasMinSize()) {
     return;
+
+}
 
   const MCInstrDesc &MCID = MI->getDesc();
   for (unsigned i = 0,
     e = MI->isVariadic() ? MI->getNumOperands() : MCID.getNumDefs();
     i != e; ++i) {
     MachineOperand &MO = MI->getOperand(i);
-    if (!MO.isReg() || !MO.getReg())
+    if (!MO.isReg() || !MO.getReg()) {
       continue;
-    if (MO.isUse())
+
+}
+    if (MO.isUse()) {
       continue;
+
+}
     // Check clearance before partial register updates.
     unsigned Pref = TII->getPartialRegUpdateClearance(*MI, i, TRI);
-    if (Pref && shouldBreakDependence(MI, i, Pref))
+    if (Pref && shouldBreakDependence(MI, i, Pref)) {
       TII->breakPartialRegDependency(*MI, i, TRI);
+
+}
   }
 }
 
 void BreakFalseDeps::processUndefReads(MachineBasicBlock *MBB) {
-  if (UndefReads.empty())
+  if (UndefReads.empty()) {
     return;
+
+}
 
   // The code below allows the target to create a new instruction to break the
   // dependence. That opposes the goal of minimizing size, so bail out now.
-  if (MF->getFunction().hasMinSize())
+  if (MF->getFunction().hasMinSize()) {
     return;
+
+}
 
   // Collect this block's live out register units.
   LiveRegSet.init(*TRI);
@@ -234,12 +258,16 @@ void BreakFalseDeps::processUndefReads(MachineBasicBlock *MBB) {
     LiveRegSet.stepBackward(I);
 
     if (UndefMI == &I) {
-      if (!LiveRegSet.contains(UndefMI->getOperand(OpIdx).getReg()))
+      if (!LiveRegSet.contains(UndefMI->getOperand(OpIdx).getReg())) {
         TII->breakPartialRegDependency(*UndefMI, OpIdx, TRI);
 
+}
+
       UndefReads.pop_back();
-      if (UndefReads.empty())
+      if (UndefReads.empty()) {
         return;
+
+}
 
       UndefMI = UndefReads.back().first;
       OpIdx = UndefReads.back().second;
@@ -254,15 +282,19 @@ void BreakFalseDeps::processBasicBlock(MachineBasicBlock *MBB) {
   // and by then we'll have better information, so we can avoid doing the work
   // to try and break dependencies now.
   for (MachineInstr &MI : *MBB) {
-    if (!MI.isDebugInstr())
+    if (!MI.isDebugInstr()) {
       processDefs(&MI);
+
+}
   }
   processUndefReads(MBB);
 }
 
 bool BreakFalseDeps::runOnMachineFunction(MachineFunction &mf) {
-  if (skipFunction(mf.getFunction()))
+  if (skipFunction(mf.getFunction())) {
     return false;
+
+}
   MF = &mf;
   TII = MF->getSubtarget().getInstrInfo();
   TRI = MF->getSubtarget().getRegisterInfo();

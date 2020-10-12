@@ -43,8 +43,10 @@ void ErrorCollector::log(raw_ostream &OS) {
   OS << "Encountered multiple errors:\n";
   for (size_t i = 0; i < Errors.size(); ++i) {
     WithColor::error(OS) << "(" << Tags[i] << ") " << Errors[i];
-    if (i != Errors.size() - 1)
+    if (i != Errors.size() - 1) {
       OS << "\n";
+
+}
   }
 }
 
@@ -53,8 +55,10 @@ bool ErrorCollector::allErrorsHandled() const {
 }
 
 ErrorCollector::~ErrorCollector() {
-  if (ErrorsAreFatal && !allErrorsHandled())
+  if (ErrorsAreFatal && !allErrorsHandled()) {
     fatalUnhandledError();
+
+}
 
   for (Error &E : Errors) {
     consumeError(std::move(E));

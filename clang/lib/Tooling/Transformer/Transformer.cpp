@@ -21,13 +21,17 @@ using namespace tooling;
 using ast_matchers::MatchFinder;
 
 void Transformer::registerMatchers(MatchFinder *MatchFinder) {
-  for (auto &Matcher : transformer::detail::buildMatchers(Rule))
+  for (auto &Matcher : transformer::detail::buildMatchers(Rule)) {
     MatchFinder->addDynamicMatcher(Matcher, this);
+
+}
 }
 
 void Transformer::run(const MatchFinder::MatchResult &Result) {
-  if (Result.Context->getDiagnostics().hasErrorOccurred())
+  if (Result.Context->getDiagnostics().hasErrorOccurred()) {
     return;
+
+}
 
   transformer::RewriteRule::Case Case =
       transformer::detail::findSelectedCase(Result, Rule);

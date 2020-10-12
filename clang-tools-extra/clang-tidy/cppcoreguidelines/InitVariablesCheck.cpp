@@ -68,23 +68,27 @@ void InitVariablesCheck::check(const MatchFinder::MatchResult &Result) {
   //
   // Thus check that the variable name does
   // not come from a macro expansion.
-  if (MatchedDecl->getEndLoc().isMacroID())
+  if (MatchedDecl->getEndLoc().isMacroID()) {
     return;
+
+}
 
   QualType TypePtr = MatchedDecl->getType();
   const char *InitializationString = nullptr;
   bool AddMathInclude = false;
 
-  if (TypePtr->isIntegerType())
+  if (TypePtr->isIntegerType()) {
     InitializationString = " = 0";
-  else if (TypePtr->isFloatingType()) {
+  } else if (TypePtr->isFloatingType()) {
     InitializationString = " = NAN";
     AddMathInclude = true;
   } else if (TypePtr->isAnyPointerType()) {
-    if (getLangOpts().CPlusPlus11)
+    if (getLangOpts().CPlusPlus11) {
       InitializationString = " = nullptr";
-    else
+    } else {
       InitializationString = " = NULL";
+
+}
   }
 
   if (InitializationString) {

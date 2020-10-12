@@ -91,8 +91,10 @@ private:
 static void LazyInitialize(const CheckerBase *Checker,
                            std::unique_ptr<BugType> &BT,
                            const char *name) {
-  if (BT)
+  if (BT) {
     return;
+
+}
   BT.reset(new BugType(Checker, name, categories::UnixAPI));
 }
 
@@ -103,35 +105,45 @@ static void LazyInitialize(const CheckerBase *Checker,
 void UnixAPIMisuseChecker::checkPreStmt(const CallExpr *CE,
                                         CheckerContext &C) const {
   const FunctionDecl *FD = C.getCalleeDecl(CE);
-  if (!FD || FD->getKind() != Decl::Function)
+  if (!FD || FD->getKind() != Decl::Function) {
     return;
+
+}
 
   // Don't treat functions in namespaces with the same name a Unix function
   // as a call to the Unix function.
   const DeclContext *NamespaceCtx = FD->getEnclosingNamespaceContext();
-  if (NamespaceCtx && isa<NamespaceDecl>(NamespaceCtx))
+  if (NamespaceCtx && isa<NamespaceDecl>(NamespaceCtx)) {
     return;
+
+}
 
   StringRef FName = C.getCalleeName(FD);
-  if (FName.empty())
+  if (FName.empty()) {
     return;
 
-  if (FName == "open")
+}
+
+  if (FName == "open") {
     CheckOpen(C, CE);
 
-  else if (FName == "openat")
+  } else if (FName == "openat") {
     CheckOpenAt(C, CE);
 
-  else if (FName == "pthread_once")
+  } else if (FName == "pthread_once") {
     CheckPthreadOnce(C, CE);
+
+}
 }
 void UnixAPIMisuseChecker::ReportOpenBug(CheckerContext &C,
                                          ProgramStateRef State,
                                          const char *Msg,
                                          SourceRange SR) const {
   ExplodedNode *N = C.generateErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   LazyInitialize(this, BT_open, "Improper use of 'open'");
 
@@ -215,9 +227,9 @@ void UnixAPIMisuseChecker::CheckOpenVariant(CheckerContext &C,
   // of querying this information from the checking environment.
   if (!Val_O_CREAT.hasValue()) {
     if (C.getASTContext().getTargetInfo().getTriple().getVendor()
-                                                      == llvm::Triple::Apple)
+                                                      == llvm::Triple::Apple) {
       Val_O_CREAT = 0x0200;
-    else {
+    } else {
       // FIXME: We need a more general way of getting the O_CREAT value.
       // We could possibly grovel through the preprocessor state, but
       // that would require passing the Preprocessor object to the ExprEngine.
@@ -240,8 +252,10 @@ void UnixAPIMisuseChecker::CheckOpenVariant(CheckerContext &C,
   SVal maskedFlagsUC = C.getSValBuilder().evalBinOpNN(state, BO_And,
                                                       oflags, ocreateFlag,
                                                       oflagsEx->getType());
-  if (maskedFlagsUC.isUnknownOrUndef())
+  if (maskedFlagsUC.isUnknownOrUndef()) {
     return;
+
+}
   DefinedSVal maskedFlags = maskedFlagsUC.castAs<DefinedSVal>();
 
   // Check if maskedFlags is non-zero.
@@ -250,8 +264,10 @@ void UnixAPIMisuseChecker::CheckOpenVariant(CheckerContext &C,
 
   // Only emit an error if the value of 'maskedFlags' is properly
   // constrained;
-  if (!(trueState && !falseState))
+  if (!(trueState && !falseState)) {
     return;
+
+}
 
   if (CE->getNumArgs() < MaxArgCount) {
     SmallString<256> SBuf;
@@ -276,31 +292,41 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
   // This is similar to 'CheckDispatchOnce' in the MacOSXAPIChecker.
   // They can possibly be refactored.
 
-  if (CE->getNumArgs() < 1)
+  if (CE->getNumArgs() < 1) {
     return;
+
+}
 
   // Check if the first argument is stack allocated.  If so, issue a warning
   // because that's likely to be bad news.
   ProgramStateRef state = C.getState();
   const MemRegion *R = C.getSVal(CE->getArg(0)).getAsRegion();
-  if (!R || !isa<StackSpaceRegion>(R->getMemorySpace()))
+  if (!R || !isa<StackSpaceRegion>(R->getMemorySpace())) {
     return;
 
+}
+
   ExplodedNode *N = C.generateErrorNode(state);
-  if (!N)
+  if (!N) {
     return;
+
+}
 
   SmallString<256> S;
   llvm::raw_svector_ostream os(S);
   os << "Call to 'pthread_once' uses";
-  if (const VarRegion *VR = dyn_cast<VarRegion>(R))
+  if (const VarRegion *VR = dyn_cast<VarRegion>(R)) {
     os << " the local variable '" << VR->getDecl()->getName() << '\'';
-  else
+  } else {
     os << " stack allocated memory";
+
+}
   os << " for the \"control\" value.  Using such transient memory for "
   "the control value is potentially dangerous.";
-  if (isa<VarRegion>(R) && isa<StackLocalsSpaceRegion>(R->getMemorySpace()))
+  if (isa<VarRegion>(R) && isa<StackLocalsSpaceRegion>(R->getMemorySpace())) {
     os << "  Perhaps you intended to declare the variable as 'static'?";
+
+}
 
   LazyInitialize(this, BT_pthreadOnce, "Improper use of 'pthread_once'");
 
@@ -339,8 +365,10 @@ bool UnixAPIPortabilityChecker::ReportZeroByteAllocation(
                                                     const Expr *arg,
                                                     const char *fn_name) const {
   ExplodedNode *N = C.generateErrorNode(falseState);
-  if (!N)
+  if (!N) {
     return false;
+
+}
 
   LazyInitialize(this, BT_mallocZero,
                  "Undefined allocation of 0 bytes (CERT MEM04-C; CWE-131)");
@@ -366,8 +394,10 @@ void UnixAPIPortabilityChecker::BasicAllocationCheck(CheckerContext &C,
                                                      const unsigned sizeArg,
                                                      const char *fn) const {
   // Sanity check for the correct number of arguments
-  if (CE->getNumArgs() != numArgs)
+  if (CE->getNumArgs() != numArgs) {
     return;
+
+}
 
   // Check if the allocation size is 0.
   ProgramStateRef state = C.getState();
@@ -375,8 +405,10 @@ void UnixAPIPortabilityChecker::BasicAllocationCheck(CheckerContext &C,
   const Expr *arg = CE->getArg(sizeArg);
   SVal argVal = C.getSVal(arg);
 
-  if (argVal.isUnknownOrUndef())
+  if (argVal.isUnknownOrUndef()) {
     return;
+
+}
 
   // Is the value perfectly constrained to zero?
   if (IsZeroByteAllocation(state, argVal, &trueState, &falseState)) {
@@ -385,15 +417,19 @@ void UnixAPIPortabilityChecker::BasicAllocationCheck(CheckerContext &C,
   }
   // Assume the value is non-zero going forward.
   assert(trueState);
-  if (trueState != state)
+  if (trueState != state) {
     C.addTransition(trueState);
+
+}
 }
 
 void UnixAPIPortabilityChecker::CheckCallocZero(CheckerContext &C,
                                                 const CallExpr *CE) const {
   unsigned int nArgs = CE->getNumArgs();
-  if (nArgs != 2)
+  if (nArgs != 2) {
     return;
+
+}
 
   ProgramStateRef state = C.getState();
   ProgramStateRef trueState = nullptr, falseState = nullptr;
@@ -403,26 +439,32 @@ void UnixAPIPortabilityChecker::CheckCallocZero(CheckerContext &C,
     const Expr *arg = CE->getArg(i);
     SVal argVal = C.getSVal(arg);
     if (argVal.isUnknownOrUndef()) {
-      if (i == 0)
+      if (i == 0) {
         continue;
-      else
+      } else {
         return;
+
+}
     }
 
     if (IsZeroByteAllocation(state, argVal, &trueState, &falseState)) {
-      if (ReportZeroByteAllocation(C, falseState, arg, "calloc"))
+      if (ReportZeroByteAllocation(C, falseState, arg, "calloc")) {
         return;
-      else if (i == 0)
+      } else if (i == 0) {
         continue;
-      else
+      } else {
         return;
+
+}
     }
   }
 
   // Assume the value is non-zero going forward.
   assert(trueState);
-  if (trueState != state)
+  if (trueState != state) {
     C.addTransition(trueState);
+
+}
 }
 
 void UnixAPIPortabilityChecker::CheckMallocZero(CheckerContext &C,
@@ -459,39 +501,47 @@ void UnixAPIPortabilityChecker::CheckVallocZero(CheckerContext &C,
 void UnixAPIPortabilityChecker::checkPreStmt(const CallExpr *CE,
                                              CheckerContext &C) const {
   const FunctionDecl *FD = C.getCalleeDecl(CE);
-  if (!FD || FD->getKind() != Decl::Function)
+  if (!FD || FD->getKind() != Decl::Function) {
     return;
+
+}
 
   // Don't treat functions in namespaces with the same name a Unix function
   // as a call to the Unix function.
   const DeclContext *NamespaceCtx = FD->getEnclosingNamespaceContext();
-  if (NamespaceCtx && isa<NamespaceDecl>(NamespaceCtx))
+  if (NamespaceCtx && isa<NamespaceDecl>(NamespaceCtx)) {
     return;
+
+}
 
   StringRef FName = C.getCalleeName(FD);
-  if (FName.empty())
+  if (FName.empty()) {
     return;
 
-  if (FName == "calloc")
+}
+
+  if (FName == "calloc") {
     CheckCallocZero(C, CE);
 
-  else if (FName == "malloc")
+  } else if (FName == "malloc") {
     CheckMallocZero(C, CE);
 
-  else if (FName == "realloc")
+  } else if (FName == "realloc") {
     CheckReallocZero(C, CE);
 
-  else if (FName == "reallocf")
+  } else if (FName == "reallocf") {
     CheckReallocfZero(C, CE);
 
-  else if (FName == "alloca" || FName ==  "__builtin_alloca")
+  } else if (FName == "alloca" || FName ==  "__builtin_alloca") {
     CheckAllocaZero(C, CE);
 
-  else if (FName == "__builtin_alloca_with_align")
+  } else if (FName == "__builtin_alloca_with_align") {
     CheckAllocaWithAlignZero(C, CE);
 
-  else if (FName == "valloc")
+  } else if (FName == "valloc") {
     CheckVallocZero(C, CE);
+
+}
 }
 
 //===----------------------------------------------------------------------===//

@@ -71,10 +71,12 @@ public:
 static SVal computeExtentBegin(SValBuilder &svalBuilder,
                                const MemRegion *region) {
   const MemSpaceRegion *SR = region->getMemorySpace();
-  if (SR->getKind() == MemRegion::UnknownSpaceRegionKind)
+  if (SR->getKind() == MemRegion::UnknownSpaceRegionKind) {
     return UnknownVal();
-  else
+  } else {
     return svalBuilder.makeZeroArrayIndex();
+
+}
 }
 
 // TODO: once the constraint manager is smart enough to handle non simplified
@@ -93,13 +95,15 @@ getSimplifiedOffsets(NonLoc offset, nonloc::ConcreteInt extent,
       case BO_Mul:
         // The constant should never be 0 here, since it the result of scaling
         // based on the size of a type which is never 0.
-        if ((extent.getValue() % constant) != 0)
+        if ((extent.getValue() % constant) != 0) {
           return std::pair<NonLoc, nonloc::ConcreteInt>(offset, extent);
-        else
+        } else {
           return getSimplifiedOffsets(
               nonloc::SymbolVal(SIE->getLHS()),
               svalBuilder.makeIntVal(extent.getValue() / constant),
               svalBuilder);
+
+}
       case BO_Add:
         return getSimplifiedOffsets(
             nonloc::SymbolVal(SIE->getLHS()),
@@ -132,8 +136,10 @@ void ArrayBoundCheckerV2::checkLocation(SVal location, bool isLoad,
   const RegionRawOffsetV2 &rawOffset =
     RegionRawOffsetV2::computeOffset(state, svalBuilder, location);
 
-  if (!rawOffset.getRegion())
+  if (!rawOffset.getRegion()) {
     return;
+
+}
 
   NonLoc rawOffsetVal = rawOffset.getByteOffset();
 
@@ -157,8 +163,10 @@ void ArrayBoundCheckerV2::checkLocation(SVal location, bool isLoad,
                                               svalBuilder.getConditionType());
 
     Optional<NonLoc> lowerBoundToCheck = lowerBound.getAs<NonLoc>();
-    if (!lowerBoundToCheck)
+    if (!lowerBoundToCheck) {
       return;
+
+}
 
     ProgramStateRef state_precedesLowerBound, state_withinLowerBound;
     std::tie(state_precedesLowerBound, state_withinLowerBound) =
@@ -180,8 +188,10 @@ void ArrayBoundCheckerV2::checkLocation(SVal location, bool isLoad,
     // we are doing a load/store after the last valid offset.
     const MemRegion *MR = rawOffset.getRegion();
     DefinedOrUnknownSVal Size = getDynamicSize(state, MR, svalBuilder);
-    if (!Size.getAs<NonLoc>())
+    if (!Size.getAs<NonLoc>()) {
       break;
+
+}
 
     if (Size.getAs<nonloc::ConcreteInt>()) {
       std::pair<NonLoc, nonloc::ConcreteInt> simplifiedOffsets =
@@ -196,8 +206,10 @@ void ArrayBoundCheckerV2::checkLocation(SVal location, bool isLoad,
                                               svalBuilder.getConditionType());
 
     Optional<NonLoc> upperboundToCheck = upperbound.getAs<NonLoc>();
-    if (!upperboundToCheck)
+    if (!upperboundToCheck) {
       break;
+
+}
 
     ProgramStateRef state_exceedsUpperBound, state_withinUpperBound;
     std::tie(state_exceedsUpperBound, state_withinUpperBound) =
@@ -232,11 +244,15 @@ void ArrayBoundCheckerV2::reportOOB(
     std::unique_ptr<BugReporterVisitor> Visitor) const {
 
   ExplodedNode *errorNode = checkerContext.generateErrorNode(errorState);
-  if (!errorNode)
+  if (!errorNode) {
     return;
 
-  if (!BT)
+}
+
+  if (!BT) {
     BT.reset(new BuiltinBug(this, "Out-of-bound access"));
+
+}
 
   // FIXME: This diagnostics are preliminary.  We should get far better
   // diagnostics for explaining buffer overruns.
@@ -294,8 +310,10 @@ static SVal addValue(ProgramStateRef state, SVal x, SVal y,
                      SValBuilder &svalBuilder) {
   // We treat UnknownVals and UndefinedVals the same here because we
   // only care about computing offsets.
-  if (x.isUnknownOrUndef() || y.isUnknownOrUndef())
+  if (x.isUnknownOrUndef() || y.isUnknownOrUndef()) {
     return UnknownVal();
+
+}
 
   return svalBuilder.evalBinOpNN(state, BO_Add, x.castAs<NonLoc>(),
                                  y.castAs<NonLoc>(),
@@ -316,21 +334,27 @@ RegionRawOffsetV2 RegionRawOffsetV2::computeOffset(ProgramStateRef state,
       default: {
         if (const SubRegion *subReg = dyn_cast<SubRegion>(region)) {
           offset = getValue(offset, svalBuilder);
-          if (!offset.isUnknownOrUndef())
+          if (!offset.isUnknownOrUndef()) {
             return RegionRawOffsetV2(subReg, offset);
+
+}
         }
         return RegionRawOffsetV2();
       }
       case MemRegion::ElementRegionKind: {
         const ElementRegion *elemReg = cast<ElementRegion>(region);
         SVal index = elemReg->getIndex();
-        if (!index.getAs<NonLoc>())
+        if (!index.getAs<NonLoc>()) {
           return RegionRawOffsetV2();
+
+}
         QualType elemType = elemReg->getElementType();
         // If the element is an incomplete type, go no further.
         ASTContext &astContext = svalBuilder.getContext();
-        if (elemType->isIncompleteType())
+        if (elemType->isIncompleteType()) {
           return RegionRawOffsetV2();
+
+}
 
         // Update the offset.
         offset = addValue(state,
@@ -341,8 +365,10 @@ RegionRawOffsetV2 RegionRawOffsetV2::computeOffset(ProgramStateRef state,
                           svalBuilder),
                           svalBuilder);
 
-        if (offset.isUnknownOrUndef())
+        if (offset.isUnknownOrUndef()) {
           return RegionRawOffsetV2();
+
+}
 
         region = elemReg->getSuperRegion();
         continue;

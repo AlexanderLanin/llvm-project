@@ -41,40 +41,56 @@ TpiStream::~TpiStream() = default;
 Error TpiStream::reload() {
   BinaryStreamReader Reader(*Stream);
 
-  if (Reader.bytesRemaining() < sizeof(TpiStreamHeader))
+  if (Reader.bytesRemaining() < sizeof(TpiStreamHeader)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "TPI Stream does not contain a header.");
 
-  if (Reader.readObject(Header))
+}
+
+  if (Reader.readObject(Header)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "TPI Stream does not contain a header.");
 
-  if (Header->Version != PdbTpiV80)
+}
+
+  if (Header->Version != PdbTpiV80) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Unsupported TPI Version.");
 
-  if (Header->HeaderSize != sizeof(TpiStreamHeader))
+}
+
+  if (Header->HeaderSize != sizeof(TpiStreamHeader)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "Corrupt TPI Header size.");
 
-  if (Header->HashKeySize != sizeof(ulittle32_t))
+}
+
+  if (Header->HashKeySize != sizeof(ulittle32_t)) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "TPI Stream expected 4 byte hash key size.");
 
+}
+
   if (Header->NumHashBuckets < MinTpiHashBuckets ||
-      Header->NumHashBuckets > MaxTpiHashBuckets)
+      Header->NumHashBuckets > MaxTpiHashBuckets) {
     return make_error<RawError>(raw_error_code::corrupt_file,
                                 "TPI Stream Invalid number of hash buckets.");
 
+}
+
   // The actual type records themselves come from this stream
   if (auto EC =
-          Reader.readSubstream(TypeRecordsSubstream, Header->TypeRecordBytes))
+          Reader.readSubstream(TypeRecordsSubstream, Header->TypeRecordBytes)) {
     return EC;
+
+}
 
   BinaryStreamReader RecordReader(TypeRecordsSubstream.StreamData);
   if (auto EC =
-          RecordReader.readArray(TypeRecords, TypeRecordsSubstream.size()))
+          RecordReader.readArray(TypeRecords, TypeRecordsSubstream.size())) {
     return EC;
+
+}
 
   // Hash indices, hash values, etc come from the hash stream.
   if (Header->HashStreamIndex != kInvalidStreamIndex) {
@@ -89,24 +105,32 @@ Error TpiStream::reload() {
     // There should be a hash value for every type record, or no hashes at all.
     uint32_t NumHashValues =
         Header->HashValueBuffer.Length / sizeof(ulittle32_t);
-    if (NumHashValues != getNumTypeRecords() && NumHashValues != 0)
+    if (NumHashValues != getNumTypeRecords() && NumHashValues != 0) {
       return make_error<RawError>(
           raw_error_code::corrupt_file,
           "TPI hash count does not match with the number of type records.");
+
+}
     HSR.setOffset(Header->HashValueBuffer.Off);
-    if (auto EC = HSR.readArray(HashValues, NumHashValues))
+    if (auto EC = HSR.readArray(HashValues, NumHashValues)) {
       return EC;
+
+}
 
     HSR.setOffset(Header->IndexOffsetBuffer.Off);
     uint32_t NumTypeIndexOffsets =
         Header->IndexOffsetBuffer.Length / sizeof(TypeIndexOffset);
-    if (auto EC = HSR.readArray(TypeIndexOffsets, NumTypeIndexOffsets))
+    if (auto EC = HSR.readArray(TypeIndexOffsets, NumTypeIndexOffsets)) {
       return EC;
+
+}
 
     if (Header->HashAdjBuffer.Length > 0) {
       HSR.setOffset(Header->HashAdjBuffer.Off);
-      if (auto EC = HashAdjusters.load(HSR))
+      if (auto EC = HashAdjusters.load(HSR)) {
         return EC;
+
+}
     }
 
     HashStream = std::move(*HS);
@@ -142,10 +166,14 @@ uint32_t TpiStream::getNumHashBuckets() const { return Header->NumHashBuckets; }
 uint32_t TpiStream::getHashKeySize() const { return Header->HashKeySize; }
 
 void TpiStream::buildHashMap() {
-  if (!HashMap.empty())
+  if (!HashMap.empty()) {
     return;
-  if (HashValues.empty())
+
+}
+  if (HashValues.empty()) {
     return;
+
+}
 
   HashMap.resize(Header->NumHashBuckets);
 
@@ -158,18 +186,24 @@ void TpiStream::buildHashMap() {
 }
 
 std::vector<TypeIndex> TpiStream::findRecordsByName(StringRef Name) const {
-  if (!supportsTypeLookup())
+  if (!supportsTypeLookup()) {
     const_cast<TpiStream*>(this)->buildHashMap();
 
+}
+
   uint32_t Bucket = hashStringV1(Name) % Header->NumHashBuckets;
-  if (Bucket > HashMap.size())
+  if (Bucket > HashMap.size()) {
     return {};
+
+}
 
   std::vector<TypeIndex> Result;
   for (TypeIndex TI : HashMap[Bucket]) {
     std::string ThisName = computeTypeName(*Types, TI);
-    if (ThisName == Name)
+    if (ThisName == Name) {
       Result.push_back(TI);
+
+}
   }
   return Result;
 }
@@ -178,42 +212,60 @@ bool TpiStream::supportsTypeLookup() const { return !HashMap.empty(); }
 
 Expected<TypeIndex>
 TpiStream::findFullDeclForForwardRef(TypeIndex ForwardRefTI) const {
-  if (!supportsTypeLookup())
+  if (!supportsTypeLookup()) {
     const_cast<TpiStream*>(this)->buildHashMap();
 
+}
+
   CVType F = Types->getType(ForwardRefTI);
-  if (!isUdtForwardRef(F))
+  if (!isUdtForwardRef(F)) {
     return ForwardRefTI;
 
+}
+
   Expected<TagRecordHash> ForwardTRH = hashTagRecord(F);
-  if (!ForwardTRH)
+  if (!ForwardTRH) {
     return ForwardTRH.takeError();
+
+}
 
   uint32_t BucketIdx = ForwardTRH->FullRecordHash % Header->NumHashBuckets;
 
   for (TypeIndex TI : HashMap[BucketIdx]) {
     CVType CVT = Types->getType(TI);
-    if (CVT.kind() != F.kind())
+    if (CVT.kind() != F.kind()) {
       continue;
 
+}
+
     Expected<TagRecordHash> FullTRH = hashTagRecord(CVT);
-    if (!FullTRH)
+    if (!FullTRH) {
       return FullTRH.takeError();
-    if (ForwardTRH->FullRecordHash != FullTRH->FullRecordHash)
+
+}
+    if (ForwardTRH->FullRecordHash != FullTRH->FullRecordHash) {
       continue;
+
+}
     TagRecord &ForwardTR = ForwardTRH->getRecord();
     TagRecord &FullTR = FullTRH->getRecord();
 
     if (!ForwardTR.hasUniqueName()) {
-      if (ForwardTR.getName() == FullTR.getName())
+      if (ForwardTR.getName() == FullTR.getName()) {
         return TI;
+
+}
       continue;
     }
 
-    if (!FullTR.hasUniqueName())
+    if (!FullTR.hasUniqueName()) {
       continue;
-    if (ForwardTR.getUniqueName() == FullTR.getUniqueName())
+
+}
+    if (ForwardTR.getUniqueName() == FullTR.getUniqueName()) {
       return TI;
+
+}
   }
   return ForwardRefTI;
 }

@@ -20,16 +20,18 @@ using namespace llvm;
 
 void LocationSize::print(raw_ostream &OS) const {
   OS << "LocationSize::";
-  if (*this == unknown())
+  if (*this == unknown()) {
     OS << "unknown";
-  else if (*this == mapEmpty())
+  } else if (*this == mapEmpty()) {
     OS << "mapEmpty";
-  else if (*this == mapTombstone())
+  } else if (*this == mapTombstone()) {
     OS << "mapTombstone";
-  else if (isPrecise())
+  } else if (isPrecise()) {
     OS << "precise(" << getValue() << ')';
-  else
+  } else {
     OS << "upperBound(" << getValue() << ')';
+
+}
 }
 
 MemoryLocation MemoryLocation::get(const LoadInst *LI) {
@@ -93,8 +95,10 @@ MemoryLocation MemoryLocation::getForSource(const AtomicMemTransferInst *MTI) {
 
 MemoryLocation MemoryLocation::getForSource(const AnyMemTransferInst *MTI) {
   auto Size = LocationSize::unknown();
-  if (ConstantInt *C = dyn_cast<ConstantInt>(MTI->getLength()))
+  if (ConstantInt *C = dyn_cast<ConstantInt>(MTI->getLength())) {
     Size = LocationSize::precise(C->getValue().getZExtValue());
+
+}
 
   // memcpy/memmove can have AA tags. For memcpy, they apply
   // to both the source and the destination.
@@ -114,8 +118,10 @@ MemoryLocation MemoryLocation::getForDest(const AtomicMemIntrinsic *MI) {
 
 MemoryLocation MemoryLocation::getForDest(const AnyMemIntrinsic *MI) {
   auto Size = LocationSize::unknown();
-  if (ConstantInt *C = dyn_cast<ConstantInt>(MI->getLength()))
+  if (ConstantInt *C = dyn_cast<ConstantInt>(MI->getLength())) {
     Size = LocationSize::precise(C->getValue().getZExtValue());
+
+}
 
   // memcpy/memmove can have AA tags. For memcpy, they apply
   // to both the source and the destination.
@@ -144,9 +150,11 @@ MemoryLocation MemoryLocation::getForArgument(const CallBase *Call,
     case Intrinsic::memmove:
       assert((ArgIdx == 0 || ArgIdx == 1) &&
              "Invalid argument index for memory intrinsic");
-      if (ConstantInt *LenCI = dyn_cast<ConstantInt>(II->getArgOperand(2)))
+      if (ConstantInt *LenCI = dyn_cast<ConstantInt>(II->getArgOperand(2))) {
         return MemoryLocation(Arg, LocationSize::precise(LenCI->getZExtValue()),
                               AATags);
+
+}
       break;
 
     case Intrinsic::lifetime_start:
@@ -162,8 +170,10 @@ MemoryLocation MemoryLocation::getForArgument(const CallBase *Call,
     case Intrinsic::invariant_end:
       // The first argument to an invariant.end is a "descriptor" type (e.g. a
       // pointer to a empty struct) which is never actually dereferenced.
-      if (ArgIdx == 0)
+      if (ArgIdx == 0) {
         return MemoryLocation(Arg, LocationSize::precise(0), AATags);
+
+}
       assert(ArgIdx == 2 && "Invalid argument index");
       return MemoryLocation(
           Arg,
@@ -198,12 +208,16 @@ MemoryLocation MemoryLocation::getForArgument(const CallBase *Call,
       F == LibFunc_memset_pattern16 && TLI->has(F)) {
     assert((ArgIdx == 0 || ArgIdx == 1) &&
            "Invalid argument index for memset_pattern16");
-    if (ArgIdx == 1)
+    if (ArgIdx == 1) {
       return MemoryLocation(Arg, LocationSize::precise(16), AATags);
+
+}
     if (const ConstantInt *LenCI =
-            dyn_cast<ConstantInt>(Call->getArgOperand(2)))
+            dyn_cast<ConstantInt>(Call->getArgOperand(2))) {
       return MemoryLocation(Arg, LocationSize::precise(LenCI->getZExtValue()),
                             AATags);
+
+}
   }
   // FIXME: Handle memset_pattern4 and memset_pattern8 also.
 

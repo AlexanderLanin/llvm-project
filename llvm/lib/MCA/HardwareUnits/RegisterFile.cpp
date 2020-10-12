@@ -36,8 +36,10 @@ void RegisterFile::initialize(const MCSchedModel &SM, unsigned NumRegs) {
   // register file is set equal to `NumRegs`. A value of zero for `NumRegs`
   // means: this register file has an unbounded number of physical registers.
   RegisterFiles.emplace_back(NumRegs);
-  if (!SM.hasExtraProcessorInfo())
+  if (!SM.hasExtraProcessorInfo()) {
     return;
+
+}
 
   // For each user defined register file, allocate a RegisterMappingTracker
   // object. The size of every register file, as well as the mapping between
@@ -59,8 +61,10 @@ void RegisterFile::initialize(const MCSchedModel &SM, unsigned NumRegs) {
 }
 
 void RegisterFile::cycleStart() {
-  for (RegisterMappingTracker &RMT : RegisterFiles)
+  for (RegisterMappingTracker &RMT : RegisterFiles) {
     RMT.NumMoveEliminated = 0;
+
+}
 }
 
 void RegisterFile::addRegisterFile(const MCRegisterFileDesc &RF,
@@ -80,8 +84,10 @@ void RegisterFile::addRegisterFile(const MCRegisterFileDesc &RF,
   // We optimistically assume that a register can be renamed at the cost of a
   // single physical register. The constructor of RegisterFile ensures that
   // a RegisterMapping exists for each logical register defined by the Target.
-  if (Entries.empty())
+  if (Entries.empty()) {
     return;
+
+}
 
   // Now update the cost of individual registers.
   for (const MCRegisterCostEntry &RCE : Entries) {
@@ -198,12 +204,16 @@ void RegisterFile::addRegisterWrite(WriteRef Write,
       WS.clearsSuperRegisters() ? RegID : WS.getRegisterID();
   if (IsWriteZero) {
     ZeroRegisters.setBit(ZeroRegisterID);
-    for (MCSubRegIterator I(ZeroRegisterID, &MRI); I.isValid(); ++I)
+    for (MCSubRegIterator I(ZeroRegisterID, &MRI); I.isValid(); ++I) {
       ZeroRegisters.setBit(*I);
+
+}
   } else {
     ZeroRegisters.clearBit(ZeroRegisterID);
-    for (MCSubRegIterator I(ZeroRegisterID, &MRI); I.isValid(); ++I)
+    for (MCSubRegIterator I(ZeroRegisterID, &MRI); I.isValid(); ++I) {
       ZeroRegisters.clearBit(*I);
+
+}
   }
 
   // If this is move has been eliminated, then the call to tryEliminateMove
@@ -220,12 +230,16 @@ void RegisterFile::addRegisterWrite(WriteRef Write,
     // No physical registers are allocated for instructions that are optimized
     // in hardware. For example, zero-latency data-dependency breaking
     // instructions don't consume physical registers.
-    if (ShouldAllocatePhysRegs)
+    if (ShouldAllocatePhysRegs) {
       allocatePhysRegs(RegisterMappings[RegID].second, UsedPhysRegs);
+
+}
   }
 
-  if (!WS.clearsSuperRegisters())
+  if (!WS.clearsSuperRegisters()) {
     return;
+
+}
 
   for (MCSuperRegIterator I(RegID, &MRI); I.isValid(); ++I) {
     if (!IsEliminated) {
@@ -233,10 +247,12 @@ void RegisterFile::addRegisterWrite(WriteRef Write,
       RegisterMappings[*I].second.AliasRegID = 0U;
     }
 
-    if (IsWriteZero)
+    if (IsWriteZero) {
       ZeroRegisters.setBit(*I);
-    else
+    } else {
       ZeroRegisters.clearBit(*I);
+
+}
   }
 }
 
@@ -244,8 +260,10 @@ void RegisterFile::removeRegisterWrite(
     const WriteState &WS, MutableArrayRef<unsigned> FreedPhysRegs) {
   // Early exit if this write was eliminated. A write eliminated at register
   // renaming stage generates an alias, and it is not added to the PRF.
-  if (WS.isEliminated())
+  if (WS.isEliminated()) {
     return;
+
+}
 
   MCPhysReg RegID = WS.getRegisterID();
 
@@ -265,26 +283,36 @@ void RegisterFile::removeRegisterWrite(
     }
   }
 
-  if (ShouldFreePhysRegs)
+  if (ShouldFreePhysRegs) {
     freePhysRegs(RegisterMappings[RegID].second, FreedPhysRegs);
 
+}
+
   WriteRef &WR = RegisterMappings[RegID].first;
-  if (WR.getWriteState() == &WS)
+  if (WR.getWriteState() == &WS) {
     WR.invalidate();
+
+}
 
   for (MCSubRegIterator I(RegID, &MRI); I.isValid(); ++I) {
     WriteRef &OtherWR = RegisterMappings[*I].first;
-    if (OtherWR.getWriteState() == &WS)
+    if (OtherWR.getWriteState() == &WS) {
       OtherWR.invalidate();
+
+}
   }
 
-  if (!WS.clearsSuperRegisters())
+  if (!WS.clearsSuperRegisters()) {
     return;
+
+}
 
   for (MCSuperRegIterator I(RegID, &MRI); I.isValid(); ++I) {
     WriteRef &OtherWR = RegisterMappings[*I].first;
-    if (OtherWR.getWriteState() == &WS)
+    if (OtherWR.getWriteState() == &WS) {
       OtherWR.invalidate();
+
+}
   }
 }
 
@@ -296,8 +324,10 @@ bool RegisterFile::tryEliminateMove(WriteState &WS, ReadState &RS) {
   const RegisterRenamingInfo &RRIFrom = RMFrom.second;
   const RegisterRenamingInfo &RRITo = RMTo.second;
   unsigned RegisterFileIndex = RRIFrom.IndexPlusCost.first;
-  if (RegisterFileIndex != RRITo.IndexPlusCost.first)
+  if (RegisterFileIndex != RRITo.IndexPlusCost.first) {
     return false;
+
+}
 
   // We only allow move elimination for writes that update a full physical
   // register. On X86, move elimination is possible with 32-bit general purpose
@@ -315,20 +345,28 @@ bool RegisterFile::tryEliminateMove(WriteState &WS, ReadState &RS) {
   // hardware.
   if (RRITo.RenameAs && RRITo.RenameAs != WS.getRegisterID()) {
     // Early exit if the PRF doesn't support move elimination for this register.
-    if (!RegisterMappings[RRITo.RenameAs].second.AllowMoveElimination)
+    if (!RegisterMappings[RRITo.RenameAs].second.AllowMoveElimination) {
       return false;
-    if (!WS.clearsSuperRegisters())
+
+}
+    if (!WS.clearsSuperRegisters()) {
       return false;
+
+}
   }
 
   RegisterMappingTracker &RMT = RegisterFiles[RegisterFileIndex];
   if (RMT.MaxMoveEliminatedPerCycle &&
-      RMT.NumMoveEliminated == RMT.MaxMoveEliminatedPerCycle)
+      RMT.NumMoveEliminated == RMT.MaxMoveEliminatedPerCycle) {
     return false;
 
+}
+
   bool IsZeroMove = ZeroRegisters[RS.getRegisterID()];
-  if (RMT.AllowZeroMoveEliminationOnly && !IsZeroMove)
+  if (RMT.AllowZeroMoveEliminationOnly && !IsZeroMove) {
     return false;
+
+}
 
   // Construct an alias.
   MCPhysReg AliasedReg =
@@ -336,12 +374,16 @@ bool RegisterFile::tryEliminateMove(WriteState &WS, ReadState &RS) {
   MCPhysReg AliasReg = RRITo.RenameAs ? RRITo.RenameAs : WS.getRegisterID();
 
   const RegisterRenamingInfo &RMAlias = RegisterMappings[AliasedReg].second;
-  if (RMAlias.AliasRegID)
+  if (RMAlias.AliasRegID) {
     AliasedReg = RMAlias.AliasRegID;
 
+}
+
   RegisterMappings[AliasReg].second.AliasRegID = AliasedReg;
-  for (MCSubRegIterator I(AliasReg, &MRI); I.isValid(); ++I)
+  for (MCSubRegIterator I(AliasReg, &MRI); I.isValid(); ++I) {
     RegisterMappings[*I].second.AliasRegID = AliasedReg;
+
+}
 
   if (IsZeroMove) {
     WS.setWriteZero();
@@ -362,18 +404,24 @@ void RegisterFile::collectWrites(const ReadState &RS,
 
   // Check if this is an alias.
   const RegisterRenamingInfo &RRI = RegisterMappings[RegID].second;
-  if (RRI.AliasRegID)
+  if (RRI.AliasRegID) {
     RegID = RRI.AliasRegID;
 
+}
+
   const WriteRef &WR = RegisterMappings[RegID].first;
-  if (WR.isValid())
+  if (WR.isValid()) {
     Writes.push_back(WR);
+
+}
 
   // Handle potential partial register updates.
   for (MCSubRegIterator I(RegID, &MRI); I.isValid(); ++I) {
     const WriteRef &WR = RegisterMappings[*I].first;
-    if (WR.isValid())
+    if (WR.isValid()) {
       Writes.push_back(WR);
+
+}
   }
 
   // Remove duplicate entries and resize the input vector.
@@ -400,11 +448,15 @@ void RegisterFile::addRegisterRead(ReadState &RS,
   MCPhysReg RegID = RS.getRegisterID();
   const RegisterRenamingInfo &RRI = RegisterMappings[RegID].second;
   RS.setPRF(RRI.IndexPlusCost.first);
-  if (RS.isIndependentFromDef())
+  if (RS.isIndependentFromDef()) {
     return;
 
-  if (ZeroRegisters[RS.getRegisterID()])
+}
+
+  if (ZeroRegisters[RS.getRegisterID()]) {
     RS.setReadZero();
+
+}
 
   SmallVector<WriteRef, 4> DependentWrites;
   collectWrites(RS, DependentWrites);
@@ -431,16 +483,20 @@ unsigned RegisterFile::isAvailable(ArrayRef<MCPhysReg> Regs) const {
   for (const MCPhysReg RegID : Regs) {
     const RegisterRenamingInfo &RRI = RegisterMappings[RegID].second;
     const IndexPlusCostPairTy &Entry = RRI.IndexPlusCost;
-    if (Entry.first)
+    if (Entry.first) {
       NumPhysRegs[Entry.first] += Entry.second;
+
+}
     NumPhysRegs[0] += Entry.second;
   }
 
   unsigned Response = 0;
   for (unsigned I = 0, E = getNumRegisterFiles(); I < E; ++I) {
     unsigned NumRegs = NumPhysRegs[I];
-    if (!NumRegs)
+    if (!NumRegs) {
       continue;
+
+}
 
     const RegisterMappingTracker &RMT = RegisterFiles[I];
     if (!RMT.NumPhysRegs) {
@@ -464,8 +520,10 @@ unsigned RegisterFile::isAvailable(ArrayRef<MCPhysReg> Regs) const {
       NumRegs = RMT.NumPhysRegs;
     }
 
-    if (RMT.NumPhysRegs < (RMT.NumUsedPhysRegs + NumRegs))
+    if (RMT.NumPhysRegs < (RMT.NumUsedPhysRegs + NumRegs)) {
       Response |= (1U << I);
+
+}
   }
 
   return Response;

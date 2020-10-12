@@ -61,8 +61,10 @@ void ImportedFunctionsInliningStatistics::recordInline(const Function &Caller,
 void ImportedFunctionsInliningStatistics::setModuleInfo(const Module &M) {
   ModuleName = M.getName();
   for (const auto &F : M.functions()) {
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
+
+}
     AllFunctions++;
     ImportedFunctions += int(F.hasMetadata("thinlto_src_module"));
   }
@@ -71,14 +73,18 @@ static std::string getStatString(const char *Msg, int32_t Fraction, int32_t All,
                                  const char *PercentageOfMsg,
                                  bool LineEnd = true) {
   double Result = 0;
-  if (All != 0)
+  if (All != 0) {
     Result = 100 * static_cast<double>(Fraction) / All;
+
+}
 
   std::stringstream Str;
   Str << std::setprecision(4) << Msg << ": " << Fraction << " [" << Result
       << "% of " << PercentageOfMsg << "]";
-  if (LineEnd)
+  if (LineEnd) {
     Str << "\n";
+
+}
   return Str.str();
 }
 
@@ -100,13 +106,17 @@ void ImportedFunctionsInliningStatistics::dump(const bool Verbose) {
   Ostream << "------- Dumping inliner stats for [" << ModuleName
           << "] -------\n";
 
-  if (Verbose)
+  if (Verbose) {
     Ostream << "-- List of inlined functions:\n";
+
+}
 
   for (const auto &Node : SortedNodes) {
     assert(Node->second->NumberOfInlines >= Node->second->NumberOfRealInlines);
-    if (Node->second->NumberOfInlines == 0)
+    if (Node->second->NumberOfInlines == 0) {
       continue;
+
+}
 
     if (Node->second->Imported) {
       InlinedImportedFunctionsCount++;
@@ -118,13 +128,15 @@ void ImportedFunctionsInliningStatistics::dump(const bool Verbose) {
           int(Node->second->NumberOfRealInlines > 0);
     }
 
-    if (Verbose)
+    if (Verbose) {
       Ostream << "Inlined "
               << (Node->second->Imported ? "imported " : "not imported ")
               << "function [" << Node->first() << "]"
               << ": #inlines = " << Node->second->NumberOfInlines
               << ", #inlines_to_importing_module = "
               << Node->second->NumberOfRealInlines << "\n";
+
+}
   }
 
   auto InlinedFunctionsCount =
@@ -167,8 +179,10 @@ void ImportedFunctionsInliningStatistics::calculateRealInlines() {
 
   for (const auto &Name : NonImportedCallers) {
     auto &Node = *NodesMap[Name];
-    if (!Node.Visited)
+    if (!Node.Visited) {
       dfs(Node);
+
+}
   }
 }
 
@@ -177,8 +191,10 @@ void ImportedFunctionsInliningStatistics::dfs(InlineGraphNode &GraphNode) {
   GraphNode.Visited = true;
   for (auto *const InlinedFunctionNode : GraphNode.InlinedCallees) {
     InlinedFunctionNode->NumberOfRealInlines++;
-    if (!InlinedFunctionNode->Visited)
+    if (!InlinedFunctionNode->Visited) {
       dfs(*InlinedFunctionNode);
+
+}
   }
 }
 
@@ -186,16 +202,22 @@ ImportedFunctionsInliningStatistics::SortedNodesTy
 ImportedFunctionsInliningStatistics::getSortedNodes() {
   SortedNodesTy SortedNodes;
   SortedNodes.reserve(NodesMap.size());
-  for (const NodesMapTy::value_type& Node : NodesMap)
+  for (const NodesMapTy::value_type& Node : NodesMap) {
     SortedNodes.push_back(&Node);
+
+}
 
   llvm::sort(SortedNodes, [&](const SortedNodesTy::value_type &Lhs,
                               const SortedNodesTy::value_type &Rhs) {
-    if (Lhs->second->NumberOfInlines != Rhs->second->NumberOfInlines)
+    if (Lhs->second->NumberOfInlines != Rhs->second->NumberOfInlines) {
       return Lhs->second->NumberOfInlines > Rhs->second->NumberOfInlines;
-    if (Lhs->second->NumberOfRealInlines != Rhs->second->NumberOfRealInlines)
+
+}
+    if (Lhs->second->NumberOfRealInlines != Rhs->second->NumberOfRealInlines) {
       return Lhs->second->NumberOfRealInlines >
              Rhs->second->NumberOfRealInlines;
+
+}
     return Lhs->first() < Rhs->first();
   });
   return SortedNodes;

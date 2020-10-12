@@ -44,8 +44,10 @@ struct MachineFunctionPrinterPass : public MachineFunctionPass {
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override {
-    if (!llvm::isFunctionInPrintList(MF.getName()))
+    if (!llvm::isFunctionInPrintList(MF.getName())) {
       return false;
+
+}
     OS << "# " << Banner << ":\n";
     MF.print(OS, getAnalysisIfAvailable<SlotIndexes>());
     return false;

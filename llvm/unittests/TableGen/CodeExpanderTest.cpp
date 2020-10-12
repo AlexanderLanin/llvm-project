@@ -47,8 +47,10 @@ public:
       EXPECT_EQ(Received[i].getRanges(), Expected[i].getRanges());
     }
 
-    if (testing::Test::HasFailure())
+    if (testing::Test::HasFailure()) {
       errs() << "Emitted diagnostic:\n" << OS.str();
+
+}
   }
 
   void expect(SMDiagnostic D) { Expected.push_back(D); }

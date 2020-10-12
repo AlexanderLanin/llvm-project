@@ -45,16 +45,24 @@ static bool lowerGuardIntrinsic(Function &F) {
   // do.
   auto *GuardDecl = F.getParent()->getFunction(
       Intrinsic::getName(Intrinsic::experimental_guard));
-  if (!GuardDecl || GuardDecl->use_empty())
+  if (!GuardDecl || GuardDecl->use_empty()) {
     return false;
+
+}
 
   SmallVector<CallInst *, 8> ToLower;
-  for (auto &I : instructions(F))
-    if (isGuard(&I))
+  for (auto &I : instructions(F)) {
+    if (isGuard(&I)) {
       ToLower.push_back(cast<CallInst>(&I));
 
-  if (ToLower.empty())
+}
+
+}
+
+  if (ToLower.empty()) {
     return false;
+
+}
 
   auto *DeoptIntrinsic = Intrinsic::getDeclaration(
       F.getParent(), Intrinsic::experimental_deoptimize, {F.getReturnType()});
@@ -83,8 +91,10 @@ Pass *llvm::createLowerGuardIntrinsicPass() {
 
 PreservedAnalyses LowerGuardIntrinsicPass::run(Function &F,
                                                FunctionAnalysisManager &AM) {
-  if (lowerGuardIntrinsic(F))
+  if (lowerGuardIntrinsic(F)) {
     return PreservedAnalyses::none();
+
+}
 
   return PreservedAnalyses::all();
 }

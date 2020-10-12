@@ -133,6 +133,8 @@ TEST(MSFCommonTest, FpmStreamLayout) {
   SL = getFpmStreamLayout(L, true, false);
   EXPECT_EQ(SB.BlockSize * 9, SL.Length);
   EXPECT_EQ(9u, SL.Blocks.size());
-  for (int I = 0; I < 9; ++I)
+  for (int I = 0; I < 9; ++I) {
     EXPECT_EQ(I * SB.BlockSize + SB.FreeBlockMapBlock, SL.Blocks[I]);
+
+}
 }

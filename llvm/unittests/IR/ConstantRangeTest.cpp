@@ -32,8 +32,10 @@ static void EnumerateConstantRanges(unsigned Bits, Fn TestFn) {
   for (unsigned Lo = 0; Lo < Max; Lo++) {
     for (unsigned Hi = 0; Hi < Max; Hi++) {
       // Enforce ConstantRange invariant.
-      if (Lo == Hi && Lo != 0 && Lo != Max - 1)
+      if (Lo == Hi && Lo != 0 && Lo != Max - 1) {
         continue;
+
+}
 
       ConstantRange CR(APInt(Bits, Lo), APInt(Bits, Hi));
       TestFn(CR);
@@ -54,8 +56,8 @@ template<typename Fn>
 static void ForeachNumInConstantRange(const ConstantRange &CR, Fn TestFn) {
   if (!CR.isEmptySet()) {
     APInt N = CR.getLower();
-    do TestFn(N);
-    while (++N != CR.getUpper());
+    do { TestFn(N);
+    } while (++N != CR.getUpper());
   }
 }
 
@@ -70,14 +72,20 @@ static void TestUnsignedBinOpExhaustive(
     APInt Max = APInt::getMinValue(Bits);
     ForeachNumInConstantRange(CR1, [&](const APInt &N1) {
       ForeachNumInConstantRange(CR2, [&](const APInt &N2) {
-        if (SkipZeroRHS && N2 == 0)
+        if (SkipZeroRHS && N2 == 0) {
           return;
 
+}
+
         APInt N = IntFn(N1, N2);
-        if (N.ult(Min))
+        if (N.ult(Min)) {
           Min = N;
-        if (N.ugt(Max))
+
+}
+        if (N.ugt(Max)) {
           Max = N;
+
+}
       });
     });
 
@@ -107,14 +115,20 @@ static void TestSignedBinOpExhaustive(
     APInt Max = APInt::getSignedMinValue(Bits);
     ForeachNumInConstantRange(CR1, [&](const APInt &N1) {
       ForeachNumInConstantRange(CR2, [&](const APInt &N2) {
-        if (SkipZeroRHS && N2 == 0)
+        if (SkipZeroRHS && N2 == 0) {
           return;
 
+}
+
         APInt N = IntFn(N1, N2);
-        if (N.slt(Min))
+        if (N.slt(Min)) {
           Min = N;
-        if (N.sgt(Max))
+
+}
+        if (N.sgt(Max)) {
           Max = N;
+
+}
       });
     });
 
@@ -443,12 +457,14 @@ void testBinarySetOperationExhaustive(Fn1 OpFn, Fn2 InResultFn) {
         APInt Num(Bits, 0);
         for (unsigned I = 0, Limit = 1 << Bits; I < Limit; ++I, ++Num) {
           if (!InResultFn(CR1, CR2, Num)) {
-            if (HaveRange3)
+            if (HaveRange3) {
               HaveInterrupt3 = true;
-            else if (HaveRange2)
+            } else if (HaveRange2) {
               HaveInterrupt2 = true;
-            else if (HaveRange1)
+            } else if (HaveRange1) {
               HaveInterrupt1 = true;
+
+}
             continue;
           }
 
@@ -502,10 +518,14 @@ void testBinarySetOperationExhaustive(Fn1 OpFn, Fn2 InResultFn) {
         ConstantRange Variant2(Bits, /*full*/ true);
         if (!HaveRange3) {
           // Compute the two possible ways to cover two disjoint ranges.
-          if (Lower1 != Upper2 + 1)
+          if (Lower1 != Upper2 + 1) {
             Variant1 = ConstantRange(Lower1, Upper2 + 1);
-          if (Lower2 != Upper1 + 1)
+
+}
+          if (Lower2 != Upper1 + 1) {
             Variant2 = ConstantRange(Lower2, Upper1 + 1);
+
+}
         } else {
           // If we have three ranges, the first and last one have to be adjacent
           // to the unsigned domain. It's better to think of this as having two
@@ -516,40 +536,46 @@ void testBinarySetOperationExhaustive(Fn1 OpFn, Fn2 InResultFn) {
         }
 
         // Smallest: Smaller set, then any set.
-        if (Variant1.isSizeStrictlySmallerThan(Variant2))
+        if (Variant1.isSizeStrictlySmallerThan(Variant2)) {
           EXPECT_EQ(Variant1, SmallestCR);
-        else if (Variant2.isSizeStrictlySmallerThan(Variant1))
+        } else if (Variant2.isSizeStrictlySmallerThan(Variant1)) {
           EXPECT_EQ(Variant2, SmallestCR);
-        else
+        } else {
           EXPECT_TRUE(Variant1 == SmallestCR || Variant2 == SmallestCR);
+
+}
 
         // Unsigned: Non-wrapped set, then smaller set, then any set.
         bool Variant1Full = Variant1.isFullSet() || Variant1.isWrappedSet();
         bool Variant2Full = Variant2.isFullSet() || Variant2.isWrappedSet();
-        if (!Variant1Full && Variant2Full)
+        if (!Variant1Full && Variant2Full) {
           EXPECT_EQ(Variant1, UnsignedCR);
-        else if (Variant1Full && !Variant2Full)
+        } else if (Variant1Full && !Variant2Full) {
           EXPECT_EQ(Variant2, UnsignedCR);
-        else if (Variant1.isSizeStrictlySmallerThan(Variant2))
+        } else if (Variant1.isSizeStrictlySmallerThan(Variant2)) {
           EXPECT_EQ(Variant1, UnsignedCR);
-        else if (Variant2.isSizeStrictlySmallerThan(Variant1))
+        } else if (Variant2.isSizeStrictlySmallerThan(Variant1)) {
           EXPECT_EQ(Variant2, UnsignedCR);
-        else
+        } else {
           EXPECT_TRUE(Variant1 == UnsignedCR || Variant2 == UnsignedCR);
+
+}
 
         // Signed: Signed non-wrapped set, then smaller set, then any set.
         Variant1Full = Variant1.isFullSet() || Variant1.isSignWrappedSet();
         Variant2Full = Variant2.isFullSet() || Variant2.isSignWrappedSet();
-        if (!Variant1Full && Variant2Full)
+        if (!Variant1Full && Variant2Full) {
           EXPECT_EQ(Variant1, SignedCR);
-        else if (Variant1Full && !Variant2Full)
+        } else if (Variant1Full && !Variant2Full) {
           EXPECT_EQ(Variant2, SignedCR);
-        else if (Variant1.isSizeStrictlySmallerThan(Variant2))
+        } else if (Variant1.isSizeStrictlySmallerThan(Variant2)) {
           EXPECT_EQ(Variant1, SignedCR);
-        else if (Variant2.isSizeStrictlySmallerThan(Variant1))
+        } else if (Variant2.isSizeStrictlySmallerThan(Variant1)) {
           EXPECT_EQ(Variant2, SignedCR);
-        else
+        } else {
           EXPECT_TRUE(Variant1 == SignedCR || Variant2 == SignedCR);
+
+}
       });
 }
 
@@ -658,10 +684,14 @@ static void TestAddWithNoSignedWrapExhaustive(Fn1 RangeFn, Fn2 IntFn) {
         APInt N = IntFn(IsOverflow, N1, N2);
         if (!IsOverflow) {
           AllOverflow = false;
-          if (N.slt(Min))
+          if (N.slt(Min)) {
             Min = N;
-          if (N.sgt(Max))
+
+}
+          if (N.sgt(Max)) {
             Max = N;
+
+}
           EXPECT_TRUE(CR.contains(N));
         }
       });
@@ -696,10 +726,14 @@ static void TestAddWithNoUnsignedWrapExhaustive(Fn1 RangeFn, Fn2 IntFn) {
         APInt N = IntFn(IsOverflow, N1, N2);
         if (!IsOverflow) {
           AllOverflow = false;
-          if (N.ult(Min))
+          if (N.ult(Min)) {
             Min = N;
-          if (N.ugt(Max))
+
+}
+          if (N.ugt(Max)) {
             Max = N;
+
+}
           EXPECT_TRUE(CR.contains(N));
         }
       });
@@ -739,14 +773,22 @@ static void TestAddWithNoSignedUnsignedWrapExhaustive(Fn1 RangeFn,
             (void) IntFnUnsigned(IsOverflow, N1, N2);
             if (!IsSignedOverflow && !IsOverflow) {
               AllOverflow = false;
-              if (N.slt(SMin))
+              if (N.slt(SMin)) {
                 SMin = N;
-              if (N.sgt(SMax))
+
+}
+              if (N.sgt(SMax)) {
                 SMax = N;
-              if (N.ult(UMin))
+
+}
+              if (N.ult(UMin)) {
                 UMin = N;
-              if (N.ugt(UMax))
+
+}
+              if (N.ugt(UMax)) {
                 UMax = N;
+
+}
               EXPECT_TRUE(CR.contains(N));
             }
           });
@@ -1127,12 +1169,16 @@ TEST_F(ConstantRangeTest, SDiv) {
     ForeachNumInConstantRange(CR1, [&](const APInt &N1) {
       ForeachNumInConstantRange(CR2, [&](const APInt &N2) {
         // Division by zero is UB.
-        if (N2 == 0)
+        if (N2 == 0) {
           return;
 
+}
+
         // SignedMin / -1 is UB.
-        if (N1.isMinSignedValue() && N2.isAllOnesValue())
+        if (N1.isMinSignedValue() && N2.isAllOnesValue()) {
           return;
+
+}
 
         APInt N = N1.sdiv(N2);
         Results.set(N.getSExtValue() + Bias);
@@ -1160,10 +1206,12 @@ TEST_F(ConstantRangeTest, SDiv) {
     int LastNeg = Results.find_last_in(0, Bias) - Bias;
     int LastPos = Results.find_next(Bias) - Bias;
     if (Results[Bias]) {
-      if (LastNeg == -1)
+      if (LastNeg == -1) {
         ++LastNeg;
-      else if (LastPos == 1)
+      } else if (LastPos == 1) {
         --LastPos;
+
+}
     }
 
     APInt WMax(Bits, LastNeg);
@@ -1642,10 +1690,14 @@ void TestNoWrapRegionExhaustive(Instruction::BinaryOps BinOp,
                                 unsigned NoWrapKind, Fn OverflowFn) {
   unsigned Bits = 5;
   EnumerateConstantRanges(Bits, [&](const ConstantRange &CR) {
-    if (CR.isEmptySet())
+    if (CR.isEmptySet()) {
       return;
-    if (Instruction::isShift(BinOp) && CR.getUnsignedMax().uge(Bits))
+
+}
+    if (Instruction::isShift(BinOp) && CR.getUnsignedMax().uge(Bits)) {
       return;
+
+}
 
     ConstantRange NoWrap =
         ConstantRange::makeGuaranteedNoWrapRegion(BinOp, CR, NoWrapKind);
@@ -1654,10 +1706,12 @@ void TestNoWrapRegionExhaustive(Instruction::BinaryOps BinOp,
       bool NoOverflow = true;
       bool Overflow = true;
       ForeachNumInConstantRange(CR, [&](const APInt &N2) {
-        if (OverflowFn(N1, N2))
+        if (OverflowFn(N1, N2)) {
           NoOverflow = false;
-        else
+        } else {
           Overflow = false;
+
+}
       });
       EXPECT_EQ(NoOverflow, NoWrap.contains(N1));
 
@@ -2003,10 +2057,12 @@ static void TestOverflowExhaustive(Fn1 OverflowFn, Fn2 MayOverflowFn) {
           return;
         }
 
-        if (IsOverflowHigh)
+        if (IsOverflowHigh) {
           RangeHasOverflowHigh = true;
-        else
+        } else {
           RangeHasOverflowLow = true;
+
+}
       });
     });
 
@@ -2031,8 +2087,10 @@ static void TestOverflowExhaustive(Fn1 OverflowFn, Fn2 MayOverflowFn) {
       // We return MayOverflow for empty sets as a conservative result,
       // but of course neither the RangeHasOverflow nor the
       // RangeHasNoOverflow flags will be set.
-      if (CR1.isEmptySet() || CR2.isEmptySet())
+      if (CR1.isEmptySet() || CR2.isEmptySet()) {
         break;
+
+}
 
       EXPECT_TRUE(RangeHasOverflowLow || RangeHasOverflowHigh);
       EXPECT_TRUE(RangeHasNoOverflow);
@@ -2144,8 +2202,10 @@ TEST_F(ConstantRangeTest, FromKnownBitsExhaustive) {
     for (unsigned One = 0; One < Max; ++One) {
       Known.Zero = Zero;
       Known.One = One;
-      if (Known.hasConflict() || Known.isUnknown())
+      if (Known.hasConflict() || Known.isUnknown()) {
         continue;
+
+}
 
       APInt MinUnsigned = APInt::getMaxValue(Bits);
       APInt MaxUnsigned = APInt::getMinValue(Bits);
@@ -2153,13 +2213,23 @@ TEST_F(ConstantRangeTest, FromKnownBitsExhaustive) {
       APInt MaxSigned = APInt::getSignedMinValue(Bits);
       for (unsigned N = 0; N < Max; ++N) {
         APInt Num(Bits, N);
-        if ((Num & Known.Zero) != 0 || (~Num & Known.One) != 0)
+        if ((Num & Known.Zero) != 0 || (~Num & Known.One) != 0) {
           continue;
 
-        if (Num.ult(MinUnsigned)) MinUnsigned = Num;
-        if (Num.ugt(MaxUnsigned)) MaxUnsigned = Num;
-        if (Num.slt(MinSigned)) MinSigned = Num;
-        if (Num.sgt(MaxSigned)) MaxSigned = Num;
+}
+
+        if (Num.ult(MinUnsigned)) { MinUnsigned = Num;
+
+}
+        if (Num.ugt(MaxUnsigned)) { MaxUnsigned = Num;
+
+}
+        if (Num.slt(MinSigned)) { MinSigned = Num;
+
+}
+        if (Num.sgt(MaxSigned)) { MaxSigned = Num;
+
+}
       }
 
       ConstantRange UnsignedCR(MinUnsigned, MaxUnsigned + 1);
@@ -2184,10 +2254,14 @@ TEST_F(ConstantRangeTest, Negative) {
     bool AllNegative = true;
     bool AllNonNegative = true;
     ForeachNumInConstantRange(CR, [&](const APInt &N) {
-      if (!N.isNegative())
+      if (!N.isNegative()) {
         AllNegative = false;
-      if (!N.isNonNegative())
+
+}
+      if (!N.isNonNegative()) {
         AllNonNegative = false;
+
+}
     });
     assert((CR.isEmptySet() || !AllNegative || !AllNonNegative) &&
            "Only empty set can be both all negative and all non-negative");
@@ -2278,10 +2352,14 @@ TEST_F(ConstantRangeTest, Abs) {
     APInt Max = APInt::getMinValue(Bits);
     ForeachNumInConstantRange(CR, [&](const APInt &N) {
       APInt AbsN = N.abs();
-      if (AbsN.ult(Min))
+      if (AbsN.ult(Min)) {
         Min = AbsN;
-      if (AbsN.ugt(Max))
+
+}
+      if (AbsN.ugt(Max)) {
         Max = AbsN;
+
+}
     });
 
     ConstantRange AbsCR = CR.abs();

@@ -74,15 +74,19 @@ static void reportError(StringRef Input, std::error_code EC) {
 }
 
 void error(std::error_code EC) {
-  if (EC)
+  if (EC) {
     reportError(EC.message());
+
+}
 }
 
 void error(Error EC) {
-  if (EC)
+  if (EC) {
     handleAllErrors(std::move(EC), [&](const ErrorInfoBase &EI) {
       reportError(EI.message());
     });
+
+}
 }
 
 int main(int Argc, const char **Argv) {
@@ -100,8 +104,10 @@ int main(int Argc, const char **Argv) {
     OS << "invalid option '" << ArgString << "'";
 
     std::string Nearest;
-    if (T.findNearest(ArgString, Nearest) < 2)
+    if (T.findNearest(ArgString, Nearest) < 2) {
       OS << ", did you mean '" << Nearest << "'?";
+
+}
 
     reportError(OS.str());
   }
@@ -138,19 +144,25 @@ int main(int Argc, const char **Argv) {
   for (const auto &File : InputFiles) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> ManifestOrErr =
         MemoryBuffer::getFile(File);
-    if (!ManifestOrErr)
+    if (!ManifestOrErr) {
       reportError(File, ManifestOrErr.getError());
+
+}
     MemoryBuffer &Manifest = *ManifestOrErr.get();
     error(Merger.merge(Manifest));
   }
 
   std::unique_ptr<MemoryBuffer> OutputBuffer = Merger.getMergedManifest();
-  if (!OutputBuffer)
+  if (!OutputBuffer) {
     reportError("empty manifest not written");
+
+}
   Expected<std::unique_ptr<FileOutputBuffer>> FileOrErr =
       FileOutputBuffer::create(OutputFile, OutputBuffer->getBufferSize());
-  if (!FileOrErr)
+  if (!FileOrErr) {
     reportError(OutputFile, errorToErrorCode(FileOrErr.takeError()));
+
+}
   std::unique_ptr<FileOutputBuffer> FileBuffer = std::move(*FileOrErr);
   std::copy(OutputBuffer->getBufferStart(), OutputBuffer->getBufferEnd(),
             FileBuffer->getBufferStart());

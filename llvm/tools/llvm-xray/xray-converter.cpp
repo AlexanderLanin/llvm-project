@@ -100,10 +100,14 @@ void TraceConverter::exportAsRAWv1(const Trace &Records, raw_ostream &OS) {
   Writer.write(FH.Version);
   Writer.write(FH.Type);
   uint32_t Bitfield{0};
-  if (FH.ConstantTSC)
+  if (FH.ConstantTSC) {
     Bitfield |= 1uL;
-  if (FH.NonstopTSC)
+
+}
+  if (FH.NonstopTSC) {
     Bitfield |= 1uL << 1;
+
+}
   Writer.write(Bitfield);
   Writer.write(FH.CycleFrequency);
 
@@ -143,10 +147,12 @@ void TraceConverter::exportAsRAWv1(const Trace &Records, raw_ostream &OS) {
     Writer.write(R.TSC);
     Writer.write(R.TId);
 
-    if (FH.Version >= 3)
+    if (FH.Version >= 3) {
       Writer.write(R.PId);
-    else
+    } else {
       Writer.write(Padding4B);
+
+}
 
     Writer.write(Padding4B);
     Writer.write(Padding4B);
@@ -183,19 +189,29 @@ findSiblings(StackTrieNode *parent, int32_t FnId, uint32_t TId,
   if (parent == nullptr) {
     for (auto map_iter : StackRootsByThreadId) {
       // Only look for siblings in other threads.
-      if (map_iter.first != TId)
+      if (map_iter.first != TId) {
         for (auto node_iter : map_iter.second) {
-          if (node_iter->FuncId == FnId)
+          if (node_iter->FuncId == FnId) {
             Siblings.push_back(node_iter);
+
+}
         }
+
+}
     }
     return Siblings;
   }
 
-  for (auto *ParentSibling : parent->ExtraData.siblings)
-    for (auto node_iter : ParentSibling->Callees)
-      if (node_iter->FuncId == FnId)
+  for (auto *ParentSibling : parent->ExtraData.siblings) {
+    for (auto node_iter : ParentSibling->Callees) {
+      if (node_iter->FuncId == FnId) {
         Siblings.push_back(node_iter);
+
+}
+
+}
+
+}
 
   return Siblings;
 }
@@ -214,8 +230,10 @@ StackTrieNode *findOrCreateStackNode(
   auto match = find_if(ParentCallees, [FuncId](StackTrieNode *ParentCallee) {
     return FuncId == ParentCallee->FuncId;
   });
-  if (match != ParentCallees.end())
+  if (match != ParentCallees.end()) {
     return *match;
+
+}
 
   SmallVector<StackTrieNode *, 4> siblings =
       findSiblings(Parent, FuncId, TId, StackRootsByThreadId);
@@ -229,8 +247,10 @@ StackTrieNode *findOrCreateStackNode(
   unsigned stack_id = siblings[0]->ExtraData.id;
   NodeStore.push_front({FuncId, Parent, {}, {stack_id, std::move(siblings)}});
   StackTrieNode *CurrentStack = &NodeStore.front();
-  for (auto *sibling : CurrentStack->ExtraData.siblings)
+  for (auto *sibling : CurrentStack->ExtraData.siblings) {
     sibling->ExtraData.siblings.push_back(CurrentStack);
+
+}
   ParentCallees.push_back(CurrentStack);
   return CurrentStack;
 }
@@ -277,10 +297,12 @@ void TraceConverter::exportAsChromeTraceEventFormat(const Trace &Records,
   std::forward_list<StackTrieNode> NodeStore{};
   int loop_count = 0;
   for (const auto &R : Records) {
-    if (loop_count++ == 0)
+    if (loop_count++ == 0) {
       OS << "\n";
-    else
+    } else {
       OS << ",\n";
+
+}
 
     // Chrome trace event format always wants data in micros.
     // CyclesPerMicro = CycleHertz / 10^6
@@ -312,8 +334,10 @@ void TraceConverter::exportAsChromeTraceEventFormat(const Trace &Records,
     case RecordTypes::EXIT:
     case RecordTypes::TAIL_EXIT:
       // No entries to record end for.
-      if (StackCursor == nullptr)
+      if (StackCursor == nullptr) {
         break;
+
+}
       // Should we emit an END record anyway or account this condition?
       // (And/Or in loop termination below)
       StackTrieNode *PreviousCursor = nullptr;
@@ -339,18 +363,22 @@ void TraceConverter::exportAsChromeTraceEventFormat(const Trace &Records,
   OS << R"(  "stackFrames": {)";
   int stack_frame_count = 0;
   for (auto map_iter : StacksByStackId) {
-    if (stack_frame_count++ == 0)
+    if (stack_frame_count++ == 0) {
       OS << "\n";
-    else
+    } else {
       OS << ",\n";
+
+}
     OS << "    ";
     OS << llvm::formatv(
         R"("{0}" : { "name" : "{1}")", map_iter.first,
         (Symbolize ? FuncIdHelper.SymbolOrNumber(map_iter.second->FuncId)
                    : llvm::to_string(map_iter.second->FuncId)));
-    if (map_iter.second->Parent != nullptr)
+    if (map_iter.second->Parent != nullptr) {
       OS << llvm::formatv(R"(, "parent": "{0}")",
                           map_iter.second->Parent->ExtraData.id);
+
+}
     OS << " }";
   }
   OS << "\n  }\n"; // Close the stack frames map.
@@ -365,12 +393,14 @@ static CommandRegistration Unused(&Convert, []() -> Error {
   InstrumentationMap Map;
   if (!ConvertInstrMap.empty()) {
     auto InstrumentationMapOrError = loadInstrumentationMap(ConvertInstrMap);
-    if (!InstrumentationMapOrError)
+    if (!InstrumentationMapOrError) {
       return joinErrors(make_error<StringError>(
                             Twine("Cannot open instrumentation map '") +
                                 ConvertInstrMap + "'",
                             std::make_error_code(std::errc::invalid_argument)),
                         InstrumentationMapOrError.takeError());
+
+}
     Map = std::move(*InstrumentationMapOrError);
   }
 
@@ -384,17 +414,21 @@ static CommandRegistration Unused(&Convert, []() -> Error {
                     ConvertOutputFormat == ConvertFormats::BINARY
                         ? sys::fs::OpenFlags::OF_None
                         : sys::fs::OpenFlags::OF_Text);
-  if (EC)
+  if (EC) {
     return make_error<StringError>(
         Twine("Cannot open file '") + ConvertOutput + "' for writing.", EC);
 
+}
+
   auto TraceOrErr = loadTraceFile(ConvertInput, ConvertSortInput);
-  if (!TraceOrErr)
+  if (!TraceOrErr) {
     return joinErrors(
         make_error<StringError>(
             Twine("Failed loading input file '") + ConvertInput + "'.",
             std::make_error_code(std::errc::executable_format_error)),
         TraceOrErr.takeError());
+
+}
 
   auto &T = *TraceOrErr;
   switch (ConvertOutputFormat) {

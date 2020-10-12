@@ -143,33 +143,45 @@ operator<<(raw_ostream &OS, const Session::MemoryRegionInfo &MRI) {
 static raw_ostream &
 operator<<(raw_ostream &OS, const Session::SymbolInfoMap &SIM) {
   OS << "Symbols:\n";
-  for (auto &SKV : SIM)
+  for (auto &SKV : SIM) {
     OS << "  \"" << SKV.first() << "\" " << SKV.second << "\n";
+
+}
   return OS;
 }
 
 static raw_ostream &
 operator<<(raw_ostream &OS, const Session::FileInfo &FI) {
-  for (auto &SIKV : FI.SectionInfos)
+  for (auto &SIKV : FI.SectionInfos) {
     OS << "  Section \"" << SIKV.first() << "\": " << SIKV.second << "\n";
-  for (auto &GOTKV : FI.GOTEntryInfos)
+
+}
+  for (auto &GOTKV : FI.GOTEntryInfos) {
     OS << "  GOT \"" << GOTKV.first() << "\": " << GOTKV.second << "\n";
-  for (auto &StubKV : FI.StubInfos)
+
+}
+  for (auto &StubKV : FI.StubInfos) {
     OS << "  Stub \"" << StubKV.first() << "\": " << StubKV.second << "\n";
+
+}
   return OS;
 }
 
 static raw_ostream &
 operator<<(raw_ostream &OS, const Session::FileInfoMap &FIM) {
-  for (auto &FIKV : FIM)
+  for (auto &FIKV : FIM) {
     OS << "File \"" << FIKV.first() << "\":\n" << FIKV.second;
+
+}
   return OS;
 }
 
 static uint64_t computeTotalBlockSizes(LinkGraph &G) {
   uint64_t TotalSize = 0;
-  for (auto *B : G.blocks())
+  for (auto *B : G.blocks()) {
     TotalSize += B->getSize();
+
+}
   return TotalSize;
 }
 
@@ -179,17 +191,25 @@ static void dumpSectionContents(raw_ostream &OS, LinkGraph &G) {
 
   // Put sections in address order.
   std::vector<Section *> Sections;
-  for (auto &S : G.sections())
+  for (auto &S : G.sections()) {
     Sections.push_back(&S);
+
+}
 
   std::sort(Sections.begin(), Sections.end(),
             [](const Section *LHS, const Section *RHS) {
-              if (llvm::empty(LHS->symbols()) && llvm::empty(RHS->symbols()))
+              if (llvm::empty(LHS->symbols()) && llvm::empty(RHS->symbols())) {
                 return false;
-              if (llvm::empty(LHS->symbols()))
+
+}
+              if (llvm::empty(LHS->symbols())) {
                 return false;
-              if (llvm::empty(RHS->symbols()))
+
+}
+              if (llvm::empty(RHS->symbols())) {
                 return true;
+
+}
               SectionRange LHSRange(*LHS);
               SectionRange RHSRange(*RHS);
               return LHSRange.getStart() < RHSRange.getStart();
@@ -219,20 +239,26 @@ static void dumpSectionContents(raw_ostream &OS, LinkGraph &G) {
 
       // Pad any space before the symbol starts.
       while (NextAddr != SymStart) {
-        if (NextAddr % DumpWidth == 0)
+        if (NextAddr % DumpWidth == 0) {
           OS << formatv("\n{0:x16}:", NextAddr);
+
+}
         OS << "   ";
         ++NextAddr;
       }
 
       // Render the symbol content.
       while (NextAddr != SymEnd) {
-        if (NextAddr % DumpWidth == 0)
+        if (NextAddr % DumpWidth == 0) {
           OS << formatv("\n{0:x16}:", NextAddr);
-        if (IsZeroFill)
+
+}
+        if (IsZeroFill) {
           OS << " 00";
-        else
+        } else {
           OS << formatv(" {0:x-2}", SymData[NextAddr - SymStart]);
+
+}
         ++NextAddr;
       }
     }
@@ -247,8 +273,10 @@ public:
     Error Err = Error::success();
     std::unique_ptr<JITLinkSlabAllocator> Allocator(
         new JITLinkSlabAllocator(SlabSize, Err));
-    if (Err)
+    if (Err) {
       return std::move(Err);
+
+}
     return std::move(Allocator);
   }
 
@@ -276,9 +304,13 @@ public:
         OnFinalize(applyProtections());
       }
       Error deallocate() override {
-        for (auto &KV : SegBlocks)
-          if (auto EC = sys::Memory::releaseMappedMemory(KV.second))
+        for (auto &KV : SegBlocks) {
+          if (auto EC = sys::Memory::releaseMappedMemory(KV.second)) {
             return errorCodeToError(EC);
+
+}
+
+}
         return Error::success();
       }
 
@@ -287,11 +319,15 @@ public:
         for (auto &KV : SegBlocks) {
           auto &Prot = KV.first;
           auto &Block = KV.second;
-          if (auto EC = sys::Memory::protectMappedMemory(Block, Prot))
+          if (auto EC = sys::Memory::protectMappedMemory(Block, Prot)) {
             return errorCodeToError(EC);
-          if (Prot & sys::Memory::MF_EXEC)
+
+}
+          if (Prot & sys::Memory::MF_EXEC) {
             sys::Memory::InvalidateInstructionCache(Block.base(),
                                                     Block.allocatedSize());
+
+}
         }
         return Error::success();
       }
@@ -305,15 +341,19 @@ public:
     for (auto &KV : Request) {
       auto &Seg = KV.second;
 
-      if (Seg.getAlignment() > PageSize)
+      if (Seg.getAlignment() > PageSize) {
         return make_error<StringError>("Cannot request higher than page "
                                        "alignment",
                                        inconvertibleErrorCode());
 
-      if (PageSize % Seg.getAlignment() != 0)
+}
+
+      if (PageSize % Seg.getAlignment() != 0) {
         return make_error<StringError>("Page size is not a multiple of "
                                        "alignment",
                                        inconvertibleErrorCode());
+
+}
 
       uint64_t ZeroFillStart = Seg.getContentSize();
       uint64_t SegmentSize = ZeroFillStart + Seg.getZeroFillSize();
@@ -325,9 +365,11 @@ public:
       void *SlabBase = SlabRemaining.base();
       uint64_t SlabRemainingSize = SlabRemaining.allocatedSize();
 
-      if (SegmentSize > SlabRemainingSize)
+      if (SegmentSize > SlabRemainingSize) {
         return make_error<StringError>("Slab allocator out of memory",
                                        inconvertibleErrorCode());
+
+}
 
       sys::MemoryBlock SegMem(SlabBase, SegmentSize);
       SlabRemaining =
@@ -375,9 +417,11 @@ private:
 
     // Calculate the target address delta to link as-if slab were at
     // SlabAddress.
-    if (SlabAddress != ~0ULL)
+    if (SlabAddress != ~0ULL) {
       TargetDelta =
           SlabAddress - pointerToJITTargetAddress(SlabRemaining.base());
+
+}
   }
 
   sys::MemoryBlock SlabRemaining;
@@ -390,9 +434,9 @@ Expected<uint64_t> getSlabAllocSize(StringRef SizeString) {
 
   uint64_t Units = 1024;
 
-  if (SizeString.endswith_lower("kb"))
+  if (SizeString.endswith_lower("kb")) {
     SizeString = SizeString.drop_back(2).rtrim();
-  else if (SizeString.endswith_lower("mb")) {
+  } else if (SizeString.endswith_lower("mb")) {
     Units = 1024 * 1024;
     SizeString = SizeString.drop_back(2).rtrim();
   } else if (SizeString.endswith_lower("gb")) {
@@ -401,9 +445,11 @@ Expected<uint64_t> getSlabAllocSize(StringRef SizeString) {
   }
 
   uint64_t SlabSize = 0;
-  if (SizeString.getAsInteger(10, SlabSize))
+  if (SizeString.getAsInteger(10, SlabSize)) {
     return make_error<StringError>("Invalid numeric format for slab size",
                                    inconvertibleErrorCode());
+
+}
 
   return SlabSize * Units;
 }
@@ -419,8 +465,10 @@ static std::unique_ptr<jitlink::JITLinkMemoryManager> createMemoryManager() {
 Expected<std::unique_ptr<Session>> Session::Create(Triple TT) {
   Error Err = Error::success();
   std::unique_ptr<Session> S(new Session(std::move(TT), Err));
-  if (Err)
+  if (Err) {
     return std::move(Err);
+
+}
   return std::move(S);
 }
 
@@ -445,16 +493,18 @@ Session::Session(Triple TT, Error &Err)
 
   ErrorAsOutParameter _(&Err);
 
-  if (auto MainJDOrErr = ES.createJITDylib("main"))
+  if (auto MainJDOrErr = ES.createJITDylib("main")) {
     MainJD = &*MainJDOrErr;
-  else {
+  } else {
     Err = MainJDOrErr.takeError();
     return;
   }
 
-  if (!NoExec && !TT.isOSWindows())
+  if (!NoExec && !TT.isOSWindows()) {
     ObjLayer.addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
         InProcessEHFrameRegistrar::getInstance()));
+
+}
 
   ObjLayer.addPlugin(std::make_unique<JITLinkSessionPlugin>(*this));
 }
@@ -465,21 +515,27 @@ void Session::dumpSessionInfo(raw_ostream &OS) {
 
 void Session::modifyPassConfig(const Triple &FTT,
                                PassConfiguration &PassConfig) {
-  if (!CheckFiles.empty())
+  if (!CheckFiles.empty()) {
     PassConfig.PostFixupPasses.push_back([this](LinkGraph &G) {
-      if (TT.getObjectFormat() == Triple::MachO)
+      if (TT.getObjectFormat() == Triple::MachO) {
         return registerMachOStubsAndGOT(*this, G);
+
+}
       return make_error<StringError>("Unsupported object format for GOT/stub "
                                      "registration",
                                      inconvertibleErrorCode());
     });
 
-  if (ShowLinkGraph)
+}
+
+  if (ShowLinkGraph) {
     PassConfig.PostFixupPasses.push_back([](LinkGraph &G) -> Error {
       outs() << "Link graph post-fixup:\n";
       G.dump(outs());
       return Error::success();
     });
+
+}
 
   if (ShowSizes) {
     PassConfig.PrePrunePasses.push_back([this](LinkGraph &G) -> Error {
@@ -492,61 +548,77 @@ void Session::modifyPassConfig(const Triple &FTT,
     });
   }
 
-  if (ShowRelocatedSectionContents)
+  if (ShowRelocatedSectionContents) {
     PassConfig.PostFixupPasses.push_back([](LinkGraph &G) -> Error {
       outs() << "Relocated section contents for " << G.getName() << ":\n";
       dumpSectionContents(outs(), G);
       return Error::success();
     });
+
+}
 }
 
 Expected<Session::FileInfo &> Session::findFileInfo(StringRef FileName) {
   auto FileInfoItr = FileInfos.find(FileName);
-  if (FileInfoItr == FileInfos.end())
+  if (FileInfoItr == FileInfos.end()) {
     return make_error<StringError>("file \"" + FileName + "\" not recognized",
                                    inconvertibleErrorCode());
+
+}
   return FileInfoItr->second;
 }
 
 Expected<Session::MemoryRegionInfo &>
 Session::findSectionInfo(StringRef FileName, StringRef SectionName) {
   auto FI = findFileInfo(FileName);
-  if (!FI)
+  if (!FI) {
     return FI.takeError();
+
+}
   auto SecInfoItr = FI->SectionInfos.find(SectionName);
-  if (SecInfoItr == FI->SectionInfos.end())
+  if (SecInfoItr == FI->SectionInfos.end()) {
     return make_error<StringError>("no section \"" + SectionName +
                                        "\" registered for file \"" + FileName +
                                        "\"",
                                    inconvertibleErrorCode());
+
+}
   return SecInfoItr->second;
 }
 
 Expected<Session::MemoryRegionInfo &>
 Session::findStubInfo(StringRef FileName, StringRef TargetName) {
   auto FI = findFileInfo(FileName);
-  if (!FI)
+  if (!FI) {
     return FI.takeError();
+
+}
   auto StubInfoItr = FI->StubInfos.find(TargetName);
-  if (StubInfoItr == FI->StubInfos.end())
+  if (StubInfoItr == FI->StubInfos.end()) {
     return make_error<StringError>("no stub for \"" + TargetName +
                                        "\" registered for file \"" + FileName +
                                        "\"",
                                    inconvertibleErrorCode());
+
+}
   return StubInfoItr->second;
 }
 
 Expected<Session::MemoryRegionInfo &>
 Session::findGOTEntryInfo(StringRef FileName, StringRef TargetName) {
   auto FI = findFileInfo(FileName);
-  if (!FI)
+  if (!FI) {
     return FI.takeError();
+
+}
   auto GOTInfoItr = FI->GOTEntryInfos.find(TargetName);
-  if (GOTInfoItr == FI->GOTEntryInfos.end())
+  if (GOTInfoItr == FI->GOTEntryInfos.end()) {
     return make_error<StringError>("no GOT entry for \"" + TargetName +
                                        "\" registered for file \"" + FileName +
                                        "\"",
                                    inconvertibleErrorCode());
+
+}
   return GOTInfoItr->second;
 }
 
@@ -557,10 +629,12 @@ bool Session::isSymbolRegistered(StringRef SymbolName) {
 Expected<Session::MemoryRegionInfo &>
 Session::findSymbolInfo(StringRef SymbolName, Twine ErrorMsgStem) {
   auto SymInfoItr = SymbolInfos.find(SymbolName);
-  if (SymInfoItr == SymbolInfos.end())
+  if (SymInfoItr == SymbolInfos.end()) {
     return make_error<StringError>(ErrorMsgStem + ": symbol " + SymbolName +
                                        " not found",
                                    inconvertibleErrorCode());
+
+}
   return SymInfoItr->second;
 }
 
@@ -577,21 +651,27 @@ Triple getFirstFileTriple() {
 
 Error sanitizeArguments(const Session &S) {
   if (EntryPointName.empty()) {
-    if (S.TT.getObjectFormat() == Triple::MachO)
+    if (S.TT.getObjectFormat() == Triple::MachO) {
       EntryPointName = "_main";
-    else
+    } else {
       EntryPointName = "main";
+
+}
   }
 
-  if (NoExec && !InputArgv.empty())
+  if (NoExec && !InputArgv.empty()) {
     outs() << "Warning: --args passed to -noexec run will be ignored.\n";
+
+}
 
   // If -slab-address is passed, require -slab-allocate and -noexec
   if (SlabAddress != ~0ULL) {
-    if (SlabAllocateSizeString == "" || !NoExec)
+    if (SlabAllocateSizeString == "" || !NoExec) {
       return make_error<StringError>(
           "-slab-address requires -slab-allocate and -noexec",
           inconvertibleErrorCode());
+
+}
   }
 
   return Error::success();
@@ -599,8 +679,10 @@ Error sanitizeArguments(const Session &S) {
 
 Error loadProcessSymbols(Session &S) {
   std::string ErrMsg;
-  if (sys::DynamicLibrary::LoadLibraryPermanently(nullptr, &ErrMsg))
+  if (sys::DynamicLibrary::LoadLibraryPermanently(nullptr, &ErrMsg)) {
     return make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode());
+
+}
 
   char GlobalPrefix = S.TT.getObjectFormat() == Triple::MachO ? '_' : '\0';
   auto InternedEntryPointName = S.ES.intern(EntryPointName);
@@ -617,12 +699,16 @@ Error loadProcessSymbols(Session &S) {
 Error loadDylibs() {
   // FIXME: This should all be handled inside DynamicLibrary.
   for (const auto &Dylib : Dylibs) {
-    if (!sys::fs::is_regular_file(Dylib))
+    if (!sys::fs::is_regular_file(Dylib)) {
       return make_error<StringError>("\"" + Dylib + "\" is not a regular file",
                                      inconvertibleErrorCode());
+
+}
     std::string ErrMsg;
-    if (sys::DynamicLibrary::LoadLibraryPermanently(Dylib.c_str(), &ErrMsg))
+    if (sys::DynamicLibrary::LoadLibraryPermanently(Dylib.c_str(), &ErrMsg)) {
       return make_error<StringError>(ErrMsg, inconvertibleErrorCode());
+
+}
   }
 
   return Error::success();
@@ -645,8 +731,10 @@ Error loadObjects(Session &S) {
     for (auto JLDItr = JITLinkDylibs.begin(), JLDEnd = JITLinkDylibs.end();
          JLDItr != JLDEnd; ++JLDItr) {
       auto JD = S.ES.createJITDylib(JDNamePrefix + *JLDItr);
-      if (!JD)
+      if (!JD) {
         return JD.takeError();
+
+}
       unsigned JDIdx =
           JITLinkDylibs.getPosition(JLDItr - JITLinkDylibs.begin());
       IdxToJLD[JDIdx] = &*JD;
@@ -659,8 +747,10 @@ Error loadObjects(Session &S) {
       auto LookupFlags = JITDylibLookupFlags::MatchExportedSymbolsOnly;
       JITDylibSearchOrder O;
       for (auto *JD2 : S.JDSearchOrder) {
-        if (JD2 == JD)
+        if (JD2 == JD) {
           continue;
+
+}
         O.push_back(std::make_pair(JD2, LookupFlags));
       }
       JD->setSearchOrder(std::move(O));
@@ -692,22 +782,28 @@ Error loadObjects(Session &S) {
 
     StringRef AbsDefStmt = *AbsDefItr;
     size_t EqIdx = AbsDefStmt.find_first_of('=');
-    if (EqIdx == StringRef::npos)
+    if (EqIdx == StringRef::npos) {
       return make_error<StringError>("Invalid absolute define \"" + AbsDefStmt +
                                      "\". Syntax: <name>=<addr>",
                                      inconvertibleErrorCode());
+
+}
     StringRef Name = AbsDefStmt.substr(0, EqIdx).trim();
     StringRef AddrStr = AbsDefStmt.substr(EqIdx + 1).trim();
 
     uint64_t Addr;
-    if (AddrStr.getAsInteger(0, Addr))
+    if (AddrStr.getAsInteger(0, Addr)) {
       return make_error<StringError>("Invalid address expression \"" + AddrStr +
                                      "\" in absolute define \"" + AbsDefStmt +
                                      "\"",
                                      inconvertibleErrorCode());
+
+}
     JITEvaluatedSymbol AbsDef(Addr, JITSymbolFlags::Exported);
-    if (auto Err = JD.define(absoluteSymbols({{S.ES.intern(Name), AbsDef}})))
+    if (auto Err = JD.define(absoluteSymbols({{S.ES.intern(Name), AbsDef}}))) {
       return Err;
+
+}
 
     // Register the absolute symbol with the session symbol infos.
     S.SymbolInfos[Name] = { StringRef(), Addr };
@@ -728,41 +824,51 @@ Error runChecks(Session &S) {
   auto TripleName = S.TT.str();
   std::string ErrorStr;
   const Target *TheTarget = TargetRegistry::lookupTarget("", S.TT, ErrorStr);
-  if (!TheTarget)
+  if (!TheTarget) {
     ExitOnErr(make_error<StringError>("Error accessing target '" + TripleName +
                                           "': " + ErrorStr,
                                       inconvertibleErrorCode()));
 
+}
+
   std::unique_ptr<MCSubtargetInfo> STI(
       TheTarget->createMCSubtargetInfo(TripleName, "", ""));
-  if (!STI)
+  if (!STI) {
     ExitOnErr(
         make_error<StringError>("Unable to create subtarget for " + TripleName,
                                 inconvertibleErrorCode()));
 
+}
+
   std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TripleName));
-  if (!MRI)
+  if (!MRI) {
     ExitOnErr(make_error<StringError>("Unable to create target register info "
                                       "for " +
                                           TripleName,
                                       inconvertibleErrorCode()));
 
+}
+
   MCTargetOptions MCOptions;
   std::unique_ptr<MCAsmInfo> MAI(
       TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
-  if (!MAI)
+  if (!MAI) {
     ExitOnErr(make_error<StringError>("Unable to create target asm info " +
                                           TripleName,
                                       inconvertibleErrorCode()));
+
+}
 
   MCContext Ctx(MAI.get(), MRI.get(), nullptr);
 
   std::unique_ptr<MCDisassembler> Disassembler(
       TheTarget->createMCDisassembler(*STI, Ctx));
-  if (!Disassembler)
+  if (!Disassembler) {
     ExitOnErr(make_error<StringError>("Unable to create disassembler for " +
                                           TripleName,
                                       inconvertibleErrorCode()));
+
+}
 
   std::unique_ptr<MCInstrInfo> MII(TheTarget->createMCInstrInfo());
 
@@ -798,19 +904,23 @@ Error runChecks(Session &S) {
   for (auto &CheckFile : CheckFiles) {
     auto CheckerFileBuf =
         ExitOnErr(errorOrToExpected(MemoryBuffer::getFile(CheckFile)));
-    if (!Checker.checkAllRulesInBuffer(CheckLineStart, &*CheckerFileBuf))
+    if (!Checker.checkAllRulesInBuffer(CheckLineStart, &*CheckerFileBuf)) {
       ExitOnErr(make_error<StringError>(
           "Some checks in " + CheckFile + " failed", inconvertibleErrorCode()));
+
+}
   }
 
   return Error::success();
 }
 
 static void dumpSessionStats(Session &S) {
-  if (ShowSizes)
+  if (ShowSizes) {
     outs() << "Total size of all blocks before pruning: " << S.SizeBeforePruning
            << "\nTotal size of all blocks after fixups: " << S.SizeAfterFixups
            << "\n";
+
+}
 }
 
 static Expected<JITEvaluatedSymbol> getMainEntryPoint(Session &S) {
@@ -842,8 +952,10 @@ int main(int argc, char *argv[]) {
 
   ExitOnErr(sanitizeArguments(*S));
 
-  if (!NoProcessSymbols)
+  if (!NoProcessSymbols) {
     ExitOnErr(loadProcessSymbols(*S));
+
+}
   ExitOnErr(loadDylibs());
 
   {
@@ -851,8 +963,10 @@ int main(int argc, char *argv[]) {
     ExitOnErr(loadObjects(*S));
   }
 
-  if (ShowInitialExecutionSessionState)
+  if (ShowInitialExecutionSessionState) {
     S->ES.dump(outs());
+
+}
 
   JITEvaluatedSymbol EntryPoint = 0;
   {
@@ -860,15 +974,19 @@ int main(int argc, char *argv[]) {
     EntryPoint = ExitOnErr(getMainEntryPoint(*S));
   }
 
-  if (ShowAddrs)
+  if (ShowAddrs) {
     S->dumpSessionInfo(outs());
+
+}
 
   ExitOnErr(runChecks(*S));
 
   dumpSessionStats(*S);
 
-  if (NoExec)
+  if (NoExec) {
     return 0;
+
+}
 
   int Result = 0;
   {

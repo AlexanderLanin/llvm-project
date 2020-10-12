@@ -211,8 +211,10 @@ MachineModuleInfo::~MachineModuleInfo() { finalize(); }
 ArrayRef<MCSymbol *>
 MachineModuleInfo::getAddrLabelSymbolToEmit(const BasicBlock *BB) {
   // Lazily create AddrLabelSymbols.
-  if (!AddrLabelSymbols)
+  if (!AddrLabelSymbols) {
     AddrLabelSymbols = new MMIAddrLabelMap(Context);
+
+}
  return AddrLabelSymbols->getAddrLabelSymbolToEmit(const_cast<BasicBlock*>(BB));
 }
 
@@ -220,9 +222,13 @@ MachineModuleInfo::getAddrLabelSymbolToEmit(const BasicBlock *BB) {
 /// \{
 
 void MachineModuleInfo::addPersonality(const Function *Personality) {
-  for (unsigned i = 0; i < Personalities.size(); ++i)
-    if (Personalities[i] == Personality)
+  for (unsigned i = 0; i < Personalities.size(); ++i) {
+    if (Personalities[i] == Personality) {
       return;
+
+}
+
+}
   Personalities.push_back(Personality);
 }
 
@@ -238,8 +244,10 @@ MachineFunction &
 MachineModuleInfo::getOrCreateMachineFunction(const Function &F) {
   // Shortcut for the common case where a sequence of MachineFunctionPasses
   // all query for the same Function.
-  if (LastRequest == &F)
+  if (LastRequest == &F) {
     return *LastResult;
+
+}
 
   auto I = MachineFunctions.insert(
       std::make_pair(&F, std::unique_ptr<MachineFunction>()));

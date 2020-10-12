@@ -43,10 +43,14 @@ void clang::EmitClangCommentHTMLTagsProperties(RecordKeeper &Records,
   for (Record *Tag : Tags) {
     std::string Spelling = std::string(Tag->getValueAsString("Spelling"));
     StringMatcher::StringPair Match(Spelling, "return true;");
-    if (Tag->getValueAsBit("EndTagOptional"))
+    if (Tag->getValueAsBit("EndTagOptional")) {
       MatchesEndTagOptional.push_back(Match);
-    if (Tag->getValueAsBit("EndTagForbidden"))
+
+}
+    if (Tag->getValueAsBit("EndTagForbidden")) {
       MatchesEndTagForbidden.push_back(Match);
+
+}
   }
 
   emitSourceFileHeader("HTML tag properties", OS);

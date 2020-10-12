@@ -82,12 +82,16 @@ void GraphResult::printToDOT(const FileAnalysis &Analysis,
   std::map<uint64_t, uint64_t> SortedIntermediateNodes(
       IntermediateNodes.begin(), IntermediateNodes.end());
   OS << "digraph graph_" << format_hex(BaseAddress, 2) << " {\n";
-  for (const auto &KV : SortedIntermediateNodes)
+  for (const auto &KV : SortedIntermediateNodes) {
     printPairToDOT(Analysis, OS, KV.first, KV.second);
 
+}
+
   for (auto &BranchNode : ConditionalBranchNodes) {
-    for (auto &V : {BranchNode.Target, BranchNode.Fallthrough})
+    for (auto &V : {BranchNode.Target, BranchNode.Fallthrough}) {
       printPairToDOT(Analysis, OS, BranchNode.Address, V);
+
+}
   }
   OS << "}\n";
 }
@@ -175,8 +179,10 @@ void GraphBuilder::buildFlowsToUndefined(const FileAnalysis &Analysis,
 
     // Find the metadata of the next instruction.
     NextMetaPtr = Analysis.getDefiniteNextInstruction(*CurrentMetaPtr);
-    if (!NextMetaPtr)
+    if (!NextMetaPtr) {
       return;
+
+}
 
     // Setup the next node.
     NextAddress = NextMetaPtr->VMAddress;
@@ -190,8 +196,10 @@ void GraphBuilder::buildFlowsToUndefined(const FileAnalysis &Analysis,
   }
 
   // Final check of the last thing we added to the block.
-  if (Analysis.isCFITrap(*CurrentMetaPtr))
+  if (Analysis.isCFITrap(*CurrentMetaPtr)) {
     BranchNode.CFIProtection = true;
+
+}
 }
 
 void GraphBuilder::buildFlowGraphImpl(const FileAnalysis &Analysis,
@@ -205,12 +213,16 @@ void GraphBuilder::buildFlowGraphImpl(const FileAnalysis &Analysis,
   }
 
   // Ensure this flow is acyclic.
-  if (OpenedNodes.count(Address))
+  if (OpenedNodes.count(Address)) {
     Result.OrphanedNodes.push_back(Address);
 
+}
+
   // If this flow is already explored, stop here.
-  if (Result.IntermediateNodes.count(Address))
+  if (Result.IntermediateNodes.count(Address)) {
     return;
+
+}
 
   // Get the metadata for the node instruction.
   const auto &InstrMetaPtr = Analysis.getInstruction(Address);
@@ -302,10 +314,12 @@ void GraphBuilder::buildFlowGraphImpl(const FileAnalysis &Analysis,
     BranchNode.CFIProtection = false;
     BranchNode.IndirectCFIsOnTargetPath = (BranchTarget == Address);
 
-    if (BranchTarget == Address)
+    if (BranchTarget == Address) {
       BranchNode.Target = Address;
-    else
+    } else {
       BranchNode.Fallthrough = Address;
+
+}
 
     HasValidCrossRef = true;
     buildFlowsToUndefined(Analysis, Result, BranchNode, ParentMeta);
@@ -330,8 +344,10 @@ void GraphBuilder::buildFlowGraphImpl(const FileAnalysis &Analysis,
     }
   }
 
-  if (!HasValidCrossRef)
+  if (!HasValidCrossRef) {
     Result.OrphanedNodes.push_back(Address);
+
+}
 
   OpenedNodes.erase(Address);
 }

@@ -139,10 +139,12 @@ Action(cl::desc("Action to perform:"),
 static const Target *GetTarget(const char *ProgName) {
   // Figure out the target triple.
   if (TripleName.empty()) {
-    if (Bitness == m32)
+    if (Bitness == m32) {
       TripleName = "i386-pc-windows";
-    else if (Bitness == m64)
+    } else if (Bitness == m64) {
       TripleName = "x86_64-pc-windows";
+
+}
   }
   Triple TheTriple(Triple::normalize(TripleName));
 
@@ -178,8 +180,10 @@ static int AsLexInput(SourceMgr &SrcMgr, MCAsmInfo &MAI, raw_ostream &OS) {
   while (Lexer.Lex().isNot(AsmToken::Eof)) {
     Lexer.getTok().dump(OS);
     OS << "\n";
-    if (Lexer.getTok().getKind() == AsmToken::Error)
+    if (Lexer.getTok().getKind() == AsmToken::Error) {
       Error = true;
+
+}
   }
 
   return Error;
@@ -227,8 +231,10 @@ int main(int argc, char **argv) {
 
   const char *ProgName = argv[0];
   const Target *TheTarget = GetTarget(ProgName);
-  if (!TheTarget)
+  if (!TheTarget) {
     return 1;
+
+}
   // Now that GetTarget() has (potentially) replaced TripleName, it's safe to
   // construct the Triple object.
   Triple TheTriple(TripleName);
@@ -267,27 +273,35 @@ int main(int argc, char **argv) {
   MOFI.InitMCObjectFileInfo(TheTriple, /*PIC=*/false, Ctx,
                             /*LargeCodeModel=*/true);
 
-  if (SaveTempLabels)
+  if (SaveTempLabels) {
     Ctx.setAllowTemporaryLabels(false);
+
+}
 
   if (!DebugCompilationDir.empty()) {
     Ctx.setCompilationDir(DebugCompilationDir);
   } else {
     // If no compilation dir is set, try to use the current directory.
     SmallString<128> CWD;
-    if (!sys::fs::current_path(CWD))
+    if (!sys::fs::current_path(CWD)) {
       Ctx.setCompilationDir(CWD);
+
+}
   }
   for (const auto &Arg : DebugPrefixMap) {
     const auto &KV = StringRef(Arg).split('=');
     Ctx.addDebugPrefixMapEntry(std::string(KV.first), std::string(KV.second));
   }
-  if (!MainFileName.empty())
+  if (!MainFileName.empty()) {
     Ctx.setMainFileName(MainFileName);
 
+}
+
   std::unique_ptr<ToolOutputFile> Out = GetOutputStream(OutputFilename);
-  if (!Out)
+  if (!Out) {
     return 1;
+
+}
 
   std::unique_ptr<buffer_ostream> BOS;
   raw_pwrite_stream *OS = &Out->os();
@@ -317,8 +331,10 @@ int main(int argc, char **argv) {
 
     // Set up the AsmStreamer.
     std::unique_ptr<MCCodeEmitter> CE;
-    if (ShowEncoding)
+    if (ShowEncoding) {
       CE.reset(TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx));
+
+}
 
     std::unique_ptr<MCAsmBackend> MAB(
         TheTarget->createMCAsmBackend(*STI, *MRI, MCOptions));
@@ -369,12 +385,16 @@ int main(int argc, char **argv) {
     disassemble = true;
     break;
   }
-  if (disassemble)
+  if (disassemble) {
     Res = Disassembler::disassemble(*TheTarget, TripleName, *STI, *Str, *Buffer,
                                     SrcMgr, Out->os());
 
+}
+
   // Keep output if no errors.
-  if (Res == 0)
+  if (Res == 0) {
     Out->keep();
+
+}
   return Res;
 }

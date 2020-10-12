@@ -57,8 +57,10 @@ void ReplaceRandomShuffleCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedArgumentThree = Result.Nodes.getNodeAs<Expr>("randomFunc");
   const auto *MatchedCallExpr = Result.Nodes.getNodeAs<CallExpr>("match");
 
-  if (MatchedCallExpr->getBeginLoc().isMacroID())
+  if (MatchedCallExpr->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   auto Diag = [&] {
     if (MatchedCallExpr->getNumArgs() == 3) {
@@ -85,8 +87,10 @@ void ReplaceRandomShuffleCheck::check(const MatchFinder::MatchResult &Result) {
   StringRef ContainerText = Lexer::getSourceText(
       CharSourceRange::getTokenRange(MatchedDecl->getSourceRange()),
       *Result.SourceManager, getLangOpts());
-  if (ContainerText.startswith("std::"))
+  if (ContainerText.startswith("std::")) {
     NewName = "std::" + NewName;
+
+}
 
   Diag << FixItHint::CreateRemoval(MatchedDecl->getSourceRange());
   Diag << FixItHint::CreateInsertion(MatchedDecl->getBeginLoc(), NewName);
@@ -95,8 +99,10 @@ void ReplaceRandomShuffleCheck::check(const MatchFinder::MatchResult &Result) {
           IncludeInserter->CreateIncludeInsertion(
               Result.Context->getSourceManager().getFileID(
                   MatchedCallExpr->getBeginLoc()),
-              "random", /*IsAngled=*/true))
+              "random", /*IsAngled=*/true)) {
     Diag << IncludeFixit.getValue();
+
+}
 }
 
 } // namespace modernize

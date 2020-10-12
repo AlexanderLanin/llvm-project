@@ -21,8 +21,10 @@ BitstreamRemarkSerializerHelper::BitstreamRemarkSerializerHelper(
     : Encoded(), R(), Bitstream(Encoded), ContainerType(ContainerType) {}
 
 static void push(SmallVectorImpl<uint64_t> &R, StringRef Str) {
-  for (const char C : Str)
+  for (const char C : Str) {
     R.push_back(C);
+
+}
 }
 
 static void setRecordName(unsigned RecordID, BitstreamWriter &Bitstream,
@@ -195,8 +197,10 @@ void BitstreamRemarkSerializerHelper::setupRemarkBlockInfo() {
 
 void BitstreamRemarkSerializerHelper::setupBlockInfo() {
   // Emit magic number.
-  for (const char C : ContainerMagic)
+  for (const char C : ContainerMagic) {
     Bitstream.Emit(static_cast<unsigned>(C), 8);
+
+}
 
   Bitstream.EnterBlockInfoBlock();
 

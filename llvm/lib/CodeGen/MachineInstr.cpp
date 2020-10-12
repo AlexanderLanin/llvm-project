@@ -78,9 +78,13 @@
 using namespace llvm;
 
 static const MachineFunction *getMFIfAvailable(const MachineInstr &MI) {
-  if (const MachineBasicBlock *MBB = MI.getParent())
-    if (const MachineFunction *MF = MBB->getParent())
+  if (const MachineBasicBlock *MBB = MI.getParent()) {
+    if (const MachineFunction *MF = MBB->getParent()) {
       return MF;
+
+}
+
+}
   return nullptr;
 }
 
@@ -101,14 +105,22 @@ static void tryToGetTargetInfo(const MachineInstr &MI,
 }
 
 void MachineInstr::addImplicitDefUseOperands(MachineFunction &MF) {
-  if (MCID->ImplicitDefs)
+  if (MCID->ImplicitDefs) {
     for (const MCPhysReg *ImpDefs = MCID->getImplicitDefs(); *ImpDefs;
-           ++ImpDefs)
+           ++ImpDefs) {
       addOperand(MF, MachineOperand::CreateReg(*ImpDefs, true, true));
-  if (MCID->ImplicitUses)
+
+}
+
+}
+  if (MCID->ImplicitUses) {
     for (const MCPhysReg *ImpUses = MCID->getImplicitUses(); *ImpUses;
-           ++ImpUses)
+           ++ImpUses) {
       addOperand(MF, MachineOperand::CreateReg(*ImpUses, false, true));
+
+}
+
+}
 }
 
 /// MachineInstr ctor - This constructor creates a MachineInstr and adds the
@@ -126,8 +138,10 @@ MachineInstr::MachineInstr(MachineFunction &MF, const MCInstrDesc &tid,
     Operands = MF.allocateOperandArray(CapOperands);
   }
 
-  if (!NoImp)
+  if (!NoImp) {
     addImplicitDefUseOperands(MF);
+
+}
 }
 
 /// MachineInstr ctor - Copies MachineInstr arg exactly
@@ -140,8 +154,10 @@ MachineInstr::MachineInstr(MachineFunction &MF, const MachineInstr &MI)
   Operands = MF.allocateOperandArray(CapOperands);
 
   // Copy operands.
-  for (const MachineOperand &MO : MI.operands())
+  for (const MachineOperand &MO : MI.operands()) {
     addOperand(MF, MO);
+
+}
 
   // Copy all the sensible flags.
   setFlags(MI.Flags);
@@ -151,8 +167,10 @@ MachineInstr::MachineInstr(MachineFunction &MF, const MachineInstr &MI)
 /// return the MachineRegisterInfo object for the current function, otherwise
 /// return null.
 MachineRegisterInfo *MachineInstr::getRegInfo() {
-  if (MachineBasicBlock *MBB = getParent())
+  if (MachineBasicBlock *MBB = getParent()) {
     return &MBB->getParent()->getRegInfo();
+
+}
   return nullptr;
 }
 
@@ -160,18 +178,26 @@ MachineRegisterInfo *MachineInstr::getRegInfo() {
 /// this instruction from their respective use lists.  This requires that the
 /// operands already be on their use lists.
 void MachineInstr::RemoveRegOperandsFromUseLists(MachineRegisterInfo &MRI) {
-  for (MachineOperand &MO : operands())
-    if (MO.isReg())
+  for (MachineOperand &MO : operands()) {
+    if (MO.isReg()) {
       MRI.removeRegOperandFromUseList(&MO);
+
+}
+
+}
 }
 
 /// AddRegOperandsToUseLists - Add all of the register operands in
 /// this instruction from their respective use lists.  This requires that the
 /// operands not be on their use lists yet.
 void MachineInstr::AddRegOperandsToUseLists(MachineRegisterInfo &MRI) {
-  for (MachineOperand &MO : operands())
-    if (MO.isReg())
+  for (MachineOperand &MO : operands()) {
+    if (MO.isReg()) {
       MRI.addRegOperandToUseList(&MO);
+
+}
+
+}
 }
 
 void MachineInstr::addOperand(const MachineOperand &Op) {
@@ -186,8 +212,10 @@ void MachineInstr::addOperand(const MachineOperand &Op) {
 /// ranges. If MRI is non-null also update use-def chains.
 static void moveOperands(MachineOperand *Dst, MachineOperand *Src,
                          unsigned NumOps, MachineRegisterInfo *MRI) {
-  if (MRI)
+  if (MRI) {
     return MRI->moveOperands(Dst, Src, NumOps);
+
+}
   // MachineOperand is a trivially copyable type so we can just use memmove.
   assert(Dst && Src && "Unknown operands");
   std::memmove(Dst, Src, NumOps * sizeof(MachineOperand));
@@ -246,19 +274,25 @@ void MachineInstr::addOperand(MachineFunction &MF, const MachineOperand &Op) {
     CapOperands = OldOperands ? OldCap.getNext() : OldCap.get(1);
     Operands = MF.allocateOperandArray(CapOperands);
     // Move the operands before the insertion point.
-    if (OpNo)
+    if (OpNo) {
       moveOperands(Operands, OldOperands, OpNo, MRI);
+
+}
   }
 
   // Move the operands following the insertion point.
-  if (OpNo != NumOperands)
+  if (OpNo != NumOperands) {
     moveOperands(Operands + OpNo + 1, OldOperands + OpNo, NumOperands - OpNo,
                  MRI);
+
+}
   ++NumOperands;
 
   // Deallocate the old operand array.
-  if (OldOperands != Operands && OldOperands)
+  if (OldOperands != Operands && OldOperands) {
     MF.deallocateOperandArray(OldCap, OldOperands);
+
+}
 
   // Copy Op into place. It still needs to be inserted into the MRI use lists.
   MachineOperand *NewMO = new (Operands + OpNo) MachineOperand(Op);
@@ -271,8 +305,10 @@ void MachineInstr::addOperand(MachineFunction &MF, const MachineOperand &Op) {
     // Ignore existing ties. This is not a property that can be copied.
     NewMO->TiedTo = 0;
     // Add the new operand to MRI, but only for instructions in an MBB.
-    if (MRI)
+    if (MRI) {
       MRI->addRegOperandToUseList(NewMO);
+
+}
     // The MCID operand information isn't accurate until we start adding
     // explicit operands. The implicit operands are added first, then the
     // explicits are inserted before them.
@@ -280,12 +316,16 @@ void MachineInstr::addOperand(MachineFunction &MF, const MachineOperand &Op) {
       // Tie uses to defs as indicated in MCInstrDesc.
       if (NewMO->isUse()) {
         int DefIdx = MCID->getOperandConstraint(OpNo, MCOI::TIED_TO);
-        if (DefIdx != -1)
+        if (DefIdx != -1) {
           tieOperands(DefIdx, OpNo);
+
+}
       }
       // If the register operand is flagged as early, mark the operand as such.
-      if (MCID->getOperandConstraint(OpNo, MCOI::EARLY_CLOBBER) != -1)
+      if (MCID->getOperandConstraint(OpNo, MCOI::EARLY_CLOBBER) != -1) {
         NewMO->setIsEarlyClobber(true);
+
+}
     }
   }
 }
@@ -305,15 +345,19 @@ void MachineInstr::RemoveOperand(unsigned OpNo) {
 #endif
 
   MachineRegisterInfo *MRI = getRegInfo();
-  if (MRI && Operands[OpNo].isReg())
+  if (MRI && Operands[OpNo].isReg()) {
     MRI->removeRegOperandFromUseList(Operands + OpNo);
+
+}
 
   // Don't call the MachineOperand destructor. A lot of this code depends on
   // MachineOperand having a trivial destructor anyway, and adding a call here
   // wouldn't make it 'destructor-correct'.
 
-  if (unsigned N = NumOperands - 1 - OpNo)
+  if (unsigned N = NumOperands - 1 - OpNo) {
     moveOperands(Operands + OpNo, Operands + OpNo + 1, N, MRI);
+
+}
   --NumOperands;
 }
 
@@ -345,17 +389,21 @@ void MachineInstr::setExtraInfo(MachineFunction &MF,
   }
 
   // Otherwise store the single pointer inline.
-  if (HasPreInstrSymbol)
+  if (HasPreInstrSymbol) {
     Info.set<EIIK_PreInstrSymbol>(PreInstrSymbol);
-  else if (HasPostInstrSymbol)
+  } else if (HasPostInstrSymbol) {
     Info.set<EIIK_PostInstrSymbol>(PostInstrSymbol);
-  else
+  } else {
     Info.set<EIIK_MMO>(MMOs[0]);
+
+}
 }
 
 void MachineInstr::dropMemRefs(MachineFunction &MF) {
-  if (memoperands_empty())
+  if (memoperands_empty()) {
     return;
+
+}
 
   setExtraInfo(MF, {}, getPreInstrSymbol(), getPostInstrSymbol(),
                getHeapAllocMarker());
@@ -381,9 +429,11 @@ void MachineInstr::addMemOperand(MachineFunction &MF,
 }
 
 void MachineInstr::cloneMemRefs(MachineFunction &MF, const MachineInstr &MI) {
-  if (this == &MI)
+  if (this == &MI) {
     // Nothing to do for a self-clone!
     return;
+
+}
 
   assert(&MF == MI.getMF() &&
          "Invalid machine functions when cloning memory refrences!");
@@ -405,8 +455,10 @@ void MachineInstr::cloneMemRefs(MachineFunction &MF, const MachineInstr &MI) {
 /// identical.
 static bool hasIdenticalMMOs(ArrayRef<MachineMemOperand *> LHS,
                              ArrayRef<MachineMemOperand *> RHS) {
-  if (LHS.size() != RHS.size())
+  if (LHS.size() != RHS.size()) {
     return false;
+
+}
 
   auto LHSPointees = make_pointee_range(LHS);
   auto RHSPointees = make_pointee_range(RHS);
@@ -447,8 +499,10 @@ void MachineInstr::cloneMergedMemRefs(MachineFunction &MF,
     // Skip MIs with identical operands to the first. This is a somewhat
     // arbitrary hack but will catch common cases without being quadratic.
     // TODO: We could fully implement merge semantics here if needed.
-    if (hasIdenticalMMOs(MIs[0]->memoperands(), MI.memoperands()))
+    if (hasIdenticalMMOs(MIs[0]->memoperands(), MI.memoperands())) {
       continue;
+
+}
 
     // Because an empty memoperands list provides *no* information and must be
     // handled conservatively (assuming the instruction can do anything), the
@@ -467,8 +521,10 @@ void MachineInstr::cloneMergedMemRefs(MachineFunction &MF,
 
 void MachineInstr::setPreInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
   // Do nothing if old and new symbols are the same.
-  if (Symbol == getPreInstrSymbol())
+  if (Symbol == getPreInstrSymbol()) {
     return;
+
+}
 
   // If there was only one symbol and we're removing it, just clear info.
   if (!Symbol && Info.is<EIIK_PreInstrSymbol>()) {
@@ -482,8 +538,10 @@ void MachineInstr::setPreInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
 
 void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
   // Do nothing if old and new symbols are the same.
-  if (Symbol == getPostInstrSymbol())
+  if (Symbol == getPostInstrSymbol()) {
     return;
+
+}
 
   // If there was only one symbol and we're removing it, just clear info.
   if (!Symbol && Info.is<EIIK_PostInstrSymbol>()) {
@@ -497,8 +555,10 @@ void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
 
 void MachineInstr::setHeapAllocMarker(MachineFunction &MF, MDNode *Marker) {
   // Do nothing if old and new symbols are the same.
-  if (Marker == getHeapAllocMarker())
+  if (Marker == getHeapAllocMarker()) {
     return;
+
+}
 
   setExtraInfo(MF, memoperands(), getPreInstrSymbol(), getPostInstrSymbol(),
                Marker);
@@ -506,9 +566,11 @@ void MachineInstr::setHeapAllocMarker(MachineFunction &MF, MDNode *Marker) {
 
 void MachineInstr::cloneInstrSymbols(MachineFunction &MF,
                                      const MachineInstr &MI) {
-  if (this == &MI)
+  if (this == &MI) {
     // Nothing to do for a self-clone!
     return;
+
+}
 
   assert(&MF == MI.getMF() &&
          "Invalid machine functions when cloning instruction symbols!");
@@ -529,34 +591,56 @@ uint16_t MachineInstr::copyFlagsFromInstruction(const Instruction &I) {
   // Copy the wrapping flags.
   if (const OverflowingBinaryOperator *OB =
           dyn_cast<OverflowingBinaryOperator>(&I)) {
-    if (OB->hasNoSignedWrap())
+    if (OB->hasNoSignedWrap()) {
       MIFlags |= MachineInstr::MIFlag::NoSWrap;
-    if (OB->hasNoUnsignedWrap())
+
+}
+    if (OB->hasNoUnsignedWrap()) {
       MIFlags |= MachineInstr::MIFlag::NoUWrap;
+
+}
   }
 
   // Copy the exact flag.
-  if (const PossiblyExactOperator *PE = dyn_cast<PossiblyExactOperator>(&I))
-    if (PE->isExact())
+  if (const PossiblyExactOperator *PE = dyn_cast<PossiblyExactOperator>(&I)) {
+    if (PE->isExact()) {
       MIFlags |= MachineInstr::MIFlag::IsExact;
+
+}
+
+}
 
   // Copy the fast-math flags.
   if (const FPMathOperator *FP = dyn_cast<FPMathOperator>(&I)) {
     const FastMathFlags Flags = FP->getFastMathFlags();
-    if (Flags.noNaNs())
+    if (Flags.noNaNs()) {
       MIFlags |= MachineInstr::MIFlag::FmNoNans;
-    if (Flags.noInfs())
+
+}
+    if (Flags.noInfs()) {
       MIFlags |= MachineInstr::MIFlag::FmNoInfs;
-    if (Flags.noSignedZeros())
+
+}
+    if (Flags.noSignedZeros()) {
       MIFlags |= MachineInstr::MIFlag::FmNsz;
-    if (Flags.allowReciprocal())
+
+}
+    if (Flags.allowReciprocal()) {
       MIFlags |= MachineInstr::MIFlag::FmArcp;
-    if (Flags.allowContract())
+
+}
+    if (Flags.allowContract()) {
       MIFlags |= MachineInstr::MIFlag::FmContract;
-    if (Flags.approxFunc())
+
+}
+    if (Flags.approxFunc()) {
       MIFlags |= MachineInstr::MIFlag::FmAfn;
-    if (Flags.allowReassoc())
+
+}
+    if (Flags.allowReassoc()) {
       MIFlags |= MachineInstr::MIFlag::FmReassoc;
+
+}
   }
 
   return MIFlags;
@@ -570,15 +654,21 @@ bool MachineInstr::hasPropertyInBundle(uint64_t Mask, QueryType Type) const {
   assert(!isBundledWithPred() && "Must be called on bundle header");
   for (MachineBasicBlock::const_instr_iterator MII = getIterator();; ++MII) {
     if (MII->getDesc().getFlags() & Mask) {
-      if (Type == AnyInBundle)
+      if (Type == AnyInBundle) {
         return true;
+
+}
     } else {
-      if (Type == AllInBundle && !MII->isBundle())
+      if (Type == AllInBundle && !MII->isBundle()) {
         return false;
+
+}
     }
     // This was the last instruction in the bundle.
-    if (!MII->isBundledWithSucc())
+    if (!MII->isBundledWithSucc()) {
       return Type == AllInBundle;
+
+}
   }
 }
 
@@ -587,8 +677,10 @@ bool MachineInstr::isIdenticalTo(const MachineInstr &Other,
   // If opcodes or number of operands are not the same then the two
   // instructions are obviously not identical.
   if (Other.getOpcode() != getOpcode() ||
-      Other.getNumOperands() != getNumOperands())
+      Other.getNumOperands() != getNumOperands()) {
     return false;
+
+}
 
   if (isBundle()) {
     // We have passed the test above that both instructions have the same
@@ -602,13 +694,17 @@ bool MachineInstr::isIdenticalTo(const MachineInstr &Other,
     while (I1->isBundledWithSucc() && I2->isBundledWithSucc()) {
       ++I1;
       ++I2;
-      if (!I1->isIdenticalTo(*I2, Check))
+      if (!I1->isIdenticalTo(*I2, Check)) {
         return false;
+
+}
     }
     // If we've reached the end of just one of the two bundles, but not both,
     // the instructions are not identical.
-    if (I1->isBundledWithSucc() || I2->isBundledWithSucc())
+    if (I1->isBundledWithSucc() || I2->isBundledWithSucc()) {
       return false;
+
+}
   }
 
   // Check operands to make sure they match.
@@ -616,8 +712,10 @@ bool MachineInstr::isIdenticalTo(const MachineInstr &Other,
     const MachineOperand &MO = getOperand(i);
     const MachineOperand &OMO = Other.getOperand(i);
     if (!MO.isReg()) {
-      if (!MO.isIdenticalTo(OMO))
+      if (!MO.isIdenticalTo(OMO)) {
         return false;
+
+}
       continue;
     }
 
@@ -625,31 +723,47 @@ bool MachineInstr::isIdenticalTo(const MachineInstr &Other,
     // For example, machine CSE pass only cares about finding common
     // subexpressions, so it's safe to ignore virtual register defs.
     if (MO.isDef()) {
-      if (Check == IgnoreDefs)
+      if (Check == IgnoreDefs) {
         continue;
-      else if (Check == IgnoreVRegDefs) {
+      } else if (Check == IgnoreVRegDefs) {
         if (!Register::isVirtualRegister(MO.getReg()) ||
-            !Register::isVirtualRegister(OMO.getReg()))
-          if (!MO.isIdenticalTo(OMO))
+            !Register::isVirtualRegister(OMO.getReg())) {
+          if (!MO.isIdenticalTo(OMO)) {
             return false;
+
+}
+
+}
       } else {
-        if (!MO.isIdenticalTo(OMO))
+        if (!MO.isIdenticalTo(OMO)) {
           return false;
-        if (Check == CheckKillDead && MO.isDead() != OMO.isDead())
+
+}
+        if (Check == CheckKillDead && MO.isDead() != OMO.isDead()) {
           return false;
+
+}
       }
     } else {
-      if (!MO.isIdenticalTo(OMO))
+      if (!MO.isIdenticalTo(OMO)) {
         return false;
-      if (Check == CheckKillDead && MO.isKill() != OMO.isKill())
+
+}
+      if (Check == CheckKillDead && MO.isKill() != OMO.isKill()) {
         return false;
+
+}
     }
   }
   // If DebugLoc does not match then two debug instructions are not identical.
-  if (isDebugInstr())
+  if (isDebugInstr()) {
     if (getDebugLoc() && Other.getDebugLoc() &&
-        getDebugLoc() != Other.getDebugLoc())
+        getDebugLoc() != Other.getDebugLoc()) {
       return false;
+
+}
+
+}
   return true;
 }
 
@@ -682,11 +796,15 @@ void MachineInstr::eraseFromParentAndMarkDBGValuesForRemoval() {
   MachineRegisterInfo &MRI = MF->getRegInfo();
 
   for (const MachineOperand &MO : MI->operands()) {
-    if (!MO.isReg() || !MO.isDef())
+    if (!MO.isReg() || !MO.isDef()) {
       continue;
+
+}
     Register Reg = MO.getReg();
-    if (!Reg.isVirtual())
+    if (!Reg.isVirtual()) {
       continue;
+
+}
     MRI.markUsesInDebugValueAsUndef(Reg);
   }
   MI->eraseFromParent();
@@ -698,8 +816,10 @@ void MachineInstr::eraseFromBundle() {
 }
 
 bool MachineInstr::isCandidateForCallSiteEntry(QueryType Type) const {
-  if (!isCall(Type))
+  if (!isCall(Type)) {
     return false;
+
+}
   switch (getOpcode()) {
   case TargetOpcode::PATCHABLE_EVENT_CALL:
   case TargetOpcode::PATCHABLE_TYPED_EVENT_CALL:
@@ -712,15 +832,19 @@ bool MachineInstr::isCandidateForCallSiteEntry(QueryType Type) const {
 }
 
 bool MachineInstr::shouldUpdateCallSiteInfo() const {
-  if (isBundle())
+  if (isBundle()) {
     return isCandidateForCallSiteEntry(MachineInstr::AnyInBundle);
+
+}
   return isCandidateForCallSiteEntry();
 }
 
 unsigned MachineInstr::getNumExplicitOperands() const {
   unsigned NumOperands = MCID->getNumOperands();
-  if (!MCID->isVariadic())
+  if (!MCID->isVariadic()) {
     return NumOperands;
+
+}
 
   for (unsigned I = NumOperands, E = getNumOperands(); I != E; ++I) {
     const MachineOperand &MO = getOperand(I);
@@ -729,8 +853,10 @@ unsigned MachineInstr::getNumExplicitOperands() const {
     // - other explicit operands (reg uses, immediates, etc.),
     // - implicit reg defs
     // - implicit reg uses
-    if (MO.isReg() && MO.isImplicit())
+    if (MO.isReg() && MO.isImplicit()) {
       break;
+
+}
     ++NumOperands;
   }
   return NumOperands;
@@ -738,13 +864,17 @@ unsigned MachineInstr::getNumExplicitOperands() const {
 
 unsigned MachineInstr::getNumExplicitDefs() const {
   unsigned NumDefs = MCID->getNumDefs();
-  if (!MCID->isVariadic())
+  if (!MCID->isVariadic()) {
     return NumDefs;
+
+}
 
   for (unsigned I = NumDefs, E = getNumOperands(); I != E; ++I) {
     const MachineOperand &MO = getOperand(I);
-    if (!MO.isReg() || !MO.isDef() || MO.isImplicit())
+    if (!MO.isReg() || !MO.isDef() || MO.isImplicit()) {
       break;
+
+}
     ++NumDefs;
   }
   return NumDefs;
@@ -789,8 +919,10 @@ void MachineInstr::unbundleFromSucc() {
 bool MachineInstr::isStackAligningInlineAsm() const {
   if (isInlineAsm()) {
     unsigned ExtraInfo = getOperand(InlineAsm::MIOp_ExtraInfo).getImm();
-    if (ExtraInfo & InlineAsm::Extra_IsAlignStack)
+    if (ExtraInfo & InlineAsm::Extra_IsAlignStack) {
       return true;
+
+}
   }
   return false;
 }
@@ -807,8 +939,10 @@ int MachineInstr::findInlineAsmFlagIdx(unsigned OpIdx,
   assert(OpIdx < getNumOperands() && "OpIdx out of range");
 
   // Ignore queries about the initial operands.
-  if (OpIdx < InlineAsm::MIOp_FirstOperand)
+  if (OpIdx < InlineAsm::MIOp_FirstOperand) {
     return -1;
+
+}
 
   unsigned Group = 0;
   unsigned NumOps;
@@ -816,12 +950,16 @@ int MachineInstr::findInlineAsmFlagIdx(unsigned OpIdx,
        i += NumOps) {
     const MachineOperand &FlagMO = getOperand(i);
     // If we reach the implicit register operands, stop looking.
-    if (!FlagMO.isImm())
+    if (!FlagMO.isImm()) {
       return -1;
+
+}
     NumOps = 1 + InlineAsm::getNumOperandRegisters(FlagMO.getImm());
     if (i + NumOps > OpIdx) {
-      if (GroupNo)
+      if (GroupNo) {
         *GroupNo = Group;
+
+}
       return i;
     }
     ++Group;
@@ -857,33 +995,45 @@ MachineInstr::getRegClassConstraint(unsigned OpIdx,
   const MachineFunction &MF = *getMF();
 
   // Most opcodes have fixed constraints in their MCInstrDesc.
-  if (!isInlineAsm())
+  if (!isInlineAsm()) {
     return TII->getRegClass(getDesc(), OpIdx, TRI, MF);
 
-  if (!getOperand(OpIdx).isReg())
+}
+
+  if (!getOperand(OpIdx).isReg()) {
     return nullptr;
+
+}
 
   // For tied uses on inline asm, get the constraint from the def.
   unsigned DefIdx;
-  if (getOperand(OpIdx).isUse() && isRegTiedToDefOperand(OpIdx, &DefIdx))
+  if (getOperand(OpIdx).isUse() && isRegTiedToDefOperand(OpIdx, &DefIdx)) {
     OpIdx = DefIdx;
+
+}
 
   // Inline asm stores register class constraints in the flag word.
   int FlagIdx = findInlineAsmFlagIdx(OpIdx);
-  if (FlagIdx < 0)
+  if (FlagIdx < 0) {
     return nullptr;
+
+}
 
   unsigned Flag = getOperand(FlagIdx).getImm();
   unsigned RCID;
   if ((InlineAsm::getKind(Flag) == InlineAsm::Kind_RegUse ||
        InlineAsm::getKind(Flag) == InlineAsm::Kind_RegDef ||
        InlineAsm::getKind(Flag) == InlineAsm::Kind_RegDefEarlyClobber) &&
-      InlineAsm::hasRegClassConstraint(Flag, RCID))
+      InlineAsm::hasRegClassConstraint(Flag, RCID)) {
     return TRI->getRegClass(RCID);
 
+}
+
   // Assume that all registers in a memory operand are pointers.
-  if (InlineAsm::getKind(Flag) == InlineAsm::Kind_Mem)
+  if (InlineAsm::getKind(Flag) == InlineAsm::Kind_Mem) {
     return TRI->getPointerRegClass(MF);
+
+}
 
   return nullptr;
 }
@@ -893,15 +1043,21 @@ const TargetRegisterClass *MachineInstr::getRegClassConstraintEffectForVReg(
     const TargetRegisterInfo *TRI, bool ExploreBundle) const {
   // Check every operands inside the bundle if we have
   // been asked to.
-  if (ExploreBundle)
+  if (ExploreBundle) {
     for (ConstMIBundleOperands OpndIt(*this); OpndIt.isValid() && CurRC;
-         ++OpndIt)
+         ++OpndIt) {
       CurRC = OpndIt->getParent()->getRegClassConstraintEffectForVRegImpl(
           OpndIt.getOperandNo(), Reg, CurRC, TII, TRI);
-  else
+
+}
+  } else {
     // Otherwise, just check the current operands.
-    for (unsigned i = 0, e = NumOperands; i < e && CurRC; ++i)
+    for (unsigned i = 0, e = NumOperands; i < e && CurRC; ++i) {
       CurRC = getRegClassConstraintEffectForVRegImpl(i, Reg, CurRC, TII, TRI);
+
+}
+
+}
   return CurRC;
 }
 
@@ -911,8 +1067,10 @@ const TargetRegisterClass *MachineInstr::getRegClassConstraintEffectForVRegImpl(
   assert(CurRC && "Invalid initial register class");
   // Check if Reg is constrained by some of its use/def from MI.
   const MachineOperand &MO = getOperand(OpIdx);
-  if (!MO.isReg() || MO.getReg() != Reg)
+  if (!MO.isReg() || MO.getReg() != Reg) {
     return CurRC;
+
+}
   // If yes, accumulate the constraints through the operand.
   return getRegClassConstraintEffect(OpIdx, CurRC, TII, TRI);
 }
@@ -926,12 +1084,16 @@ const TargetRegisterClass *MachineInstr::getRegClassConstraintEffect(
          "Cannot get register constraints for non-register operand");
   assert(CurRC && "Invalid initial register class");
   if (unsigned SubIdx = MO.getSubReg()) {
-    if (OpRC)
+    if (OpRC) {
       CurRC = TRI->getMatchingSuperRegClass(CurRC, OpRC, SubIdx);
-    else
+    } else {
       CurRC = TRI->getSubClassWithSubReg(CurRC, SubIdx);
-  } else if (OpRC)
+
+}
+  } else if (OpRC) {
     CurRC = TRI->getCommonSubClass(CurRC, OpRC);
+
+}
   return CurRC;
 }
 
@@ -952,8 +1114,10 @@ unsigned MachineInstr::getBundleSize() const {
 bool MachineInstr::hasRegisterImplicitUseOperand(Register Reg) const {
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     const MachineOperand &MO = getOperand(i);
-    if (MO.isReg() && MO.isUse() && MO.isImplicit() && MO.getReg() == Reg)
+    if (MO.isReg() && MO.isUse() && MO.isImplicit() && MO.getReg() == Reg) {
       return true;
+
+}
   }
   return false;
 }
@@ -965,14 +1129,22 @@ int MachineInstr::findRegisterUseOperandIdx(
     Register Reg, bool isKill, const TargetRegisterInfo *TRI) const {
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     const MachineOperand &MO = getOperand(i);
-    if (!MO.isReg() || !MO.isUse())
+    if (!MO.isReg() || !MO.isUse()) {
       continue;
+
+}
     Register MOReg = MO.getReg();
-    if (!MOReg)
+    if (!MOReg) {
       continue;
-    if (MOReg == Reg || (TRI && Reg && MOReg && TRI->regsOverlap(MOReg, Reg)))
-      if (!isKill || MO.isKill())
+
+}
+    if (MOReg == Reg || (TRI && Reg && MOReg && TRI->regsOverlap(MOReg, Reg))) {
+      if (!isKill || MO.isKill()) {
         return i;
+
+}
+
+}
   }
   return -1;
 }
@@ -989,17 +1161,23 @@ MachineInstr::readsWritesVirtualRegister(Register Reg,
 
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     const MachineOperand &MO = getOperand(i);
-    if (!MO.isReg() || MO.getReg() != Reg)
+    if (!MO.isReg() || MO.getReg() != Reg) {
       continue;
-    if (Ops)
+
+}
+    if (Ops) {
       Ops->push_back(i);
-    if (MO.isUse())
+
+}
+    if (MO.isUse()) {
       Use |= !MO.isUndef();
-    else if (MO.getSubReg() && !MO.isUndef())
+    } else if (MO.getSubReg() && !MO.isUndef()) {
       // A partial def undef doesn't count as reading the register.
       PartDef = true;
-    else
+    } else {
       FullDef = true;
+
+}
   }
   // A partial redefine uses Reg unless there is also a full define.
   return std::make_pair(Use || (PartDef && !FullDef), PartDef || FullDef);
@@ -1017,20 +1195,28 @@ MachineInstr::findRegisterDefOperandIdx(Register Reg, bool isDead, bool Overlap,
     const MachineOperand &MO = getOperand(i);
     // Accept regmask operands when Overlap is set.
     // Ignore them when looking for a specific def operand (Overlap == false).
-    if (isPhys && Overlap && MO.isRegMask() && MO.clobbersPhysReg(Reg))
+    if (isPhys && Overlap && MO.isRegMask() && MO.clobbersPhysReg(Reg)) {
       return i;
-    if (!MO.isReg() || !MO.isDef())
+
+}
+    if (!MO.isReg() || !MO.isDef()) {
       continue;
+
+}
     Register MOReg = MO.getReg();
     bool Found = (MOReg == Reg);
     if (!Found && TRI && isPhys && Register::isPhysicalRegister(MOReg)) {
-      if (Overlap)
+      if (Overlap) {
         Found = TRI->regsOverlap(MOReg, Reg);
-      else
+      } else {
         Found = TRI->isSubRegister(MOReg, Reg);
+
+}
     }
-    if (Found && (!isDead || MO.isDead()))
+    if (Found && (!isDead || MO.isDead())) {
       return i;
+
+}
   }
   return -1;
 }
@@ -1045,9 +1231,13 @@ int MachineInstr::findFirstPredOperandIdx() const {
   // particular, the PTX target does this.
   const MCInstrDesc &MCID = getDesc();
   if (MCID.isPredicable()) {
-    for (unsigned i = 0, e = getNumOperands(); i != e; ++i)
-      if (MCID.OpInfo[i].isPredicate())
+    for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
+      if (MCID.OpInfo[i].isPredicate()) {
         return i;
+
+}
+
+}
   }
 
   return -1;
@@ -1076,9 +1266,9 @@ void MachineInstr::tieOperands(unsigned DefIdx, unsigned UseIdx) {
   assert(!DefMO.isTied() && "Def is already tied to another use");
   assert(!UseMO.isTied() && "Use is already tied to another def");
 
-  if (DefIdx < TiedMax)
+  if (DefIdx < TiedMax) {
     UseMO.TiedTo = DefIdx + 1;
-  else {
+  } else {
     // Inline asm can use the group descriptors to find tied operands, but on
     // normal instruction, the tied def must be within the first TiedMax
     // operands.
@@ -1098,19 +1288,25 @@ unsigned MachineInstr::findTiedOperandIdx(unsigned OpIdx) const {
   assert(MO.isTied() && "Operand isn't tied");
 
   // Normally TiedTo is in range.
-  if (MO.TiedTo < TiedMax)
+  if (MO.TiedTo < TiedMax) {
     return MO.TiedTo - 1;
+
+}
 
   // Uses on normal instructions can be out of range.
   if (!isInlineAsm()) {
     // Normal tied defs must be in the 0..TiedMax-1 range.
-    if (MO.isUse())
+    if (MO.isUse()) {
       return TiedMax - 1;
+
+}
     // MO is a def. Search for the tied use.
     for (unsigned i = TiedMax - 1, e = getNumOperands(); i != e; ++i) {
       const MachineOperand &UseMO = getOperand(i);
-      if (UseMO.isReg() && UseMO.isUse() && UseMO.TiedTo == OpIdx + 1)
+      if (UseMO.isReg() && UseMO.isUse() && UseMO.TiedTo == OpIdx + 1) {
         return i;
+
+}
     }
     llvm_unreachable("Can't find tied use");
   }
@@ -1128,22 +1324,30 @@ unsigned MachineInstr::findTiedOperandIdx(unsigned OpIdx) const {
     GroupIdx.push_back(i);
     NumOps = 1 + InlineAsm::getNumOperandRegisters(FlagMO.getImm());
     // OpIdx belongs to this operand group.
-    if (OpIdx > i && OpIdx < i + NumOps)
+    if (OpIdx > i && OpIdx < i + NumOps) {
       OpIdxGroup = CurGroup;
+
+}
     unsigned TiedGroup;
-    if (!InlineAsm::isUseOperandTiedToDef(FlagMO.getImm(), TiedGroup))
+    if (!InlineAsm::isUseOperandTiedToDef(FlagMO.getImm(), TiedGroup)) {
       continue;
+
+}
     // Operands in this group are tied to operands in TiedGroup which must be
     // earlier. Find the number of operands between the two groups.
     unsigned Delta = i - GroupIdx[TiedGroup];
 
     // OpIdx is a use tied to TiedGroup.
-    if (OpIdxGroup == CurGroup)
+    if (OpIdxGroup == CurGroup) {
       return OpIdx - Delta;
 
+}
+
     // OpIdx is a def tied to this use group.
-    if (OpIdxGroup == TiedGroup)
+    if (OpIdxGroup == TiedGroup) {
       return OpIdx + Delta;
+
+}
   }
   llvm_unreachable("Invalid tied operand on inline asm");
 }
@@ -1152,8 +1356,10 @@ unsigned MachineInstr::findTiedOperandIdx(unsigned OpIdx) const {
 ///
 void MachineInstr::clearKillInfo() {
   for (MachineOperand &MO : operands()) {
-    if (MO.isReg() && MO.isUse())
+    if (MO.isReg() && MO.isUse()) {
       MO.setIsKill(false);
+
+}
   }
 }
 
@@ -1161,17 +1367,23 @@ void MachineInstr::substituteRegister(Register FromReg, Register ToReg,
                                       unsigned SubIdx,
                                       const TargetRegisterInfo &RegInfo) {
   if (Register::isPhysicalRegister(ToReg)) {
-    if (SubIdx)
+    if (SubIdx) {
       ToReg = RegInfo.getSubReg(ToReg, SubIdx);
+
+}
     for (MachineOperand &MO : operands()) {
-      if (!MO.isReg() || MO.getReg() != FromReg)
+      if (!MO.isReg() || MO.getReg() != FromReg) {
         continue;
+
+}
       MO.substPhysReg(ToReg, RegInfo);
     }
   } else {
     for (MachineOperand &MO : operands()) {
-      if (!MO.isReg() || MO.getReg() != FromReg)
+      if (!MO.isReg() || MO.getReg() != FromReg) {
         continue;
+
+}
       MO.substVirtReg(ToReg, SubIdx, RegInfo);
     }
   }
@@ -1193,18 +1405,22 @@ bool MachineInstr::isSafeToMove(AAResults *AA, bool &SawStore) const {
   }
 
   if (isPosition() || isDebugInstr() || isTerminator() ||
-      mayRaiseFPException() || hasUnmodeledSideEffects())
+      mayRaiseFPException() || hasUnmodeledSideEffects()) {
     return false;
+
+}
 
   // See if this instruction does a load.  If so, we have to guarantee that the
   // loaded value doesn't change between the load and the its intended
   // destination. The check for isInvariantLoad gives the targe the chance to
   // classify the load as always returning a constant, e.g. a constant pool
   // load.
-  if (mayLoad() && !isDereferenceableInvariantLoad(AA))
+  if (mayLoad() && !isDereferenceableInvariantLoad(AA)) {
     // Otherwise, this is a real load.  If there is a store between the load and
     // end of block, we can't move it.
     return !SawStore;
+
+}
 
   return true;
 }
@@ -1217,16 +1433,22 @@ bool MachineInstr::mayAlias(AAResults *AA, const MachineInstr &Other,
 
   // If neither instruction stores to memory, they can't alias in any
   // meaningful way, even if they read from the same address.
-  if (!mayStore() && !Other.mayStore())
+  if (!mayStore() && !Other.mayStore()) {
     return false;
+
+}
 
   // Let the target decide if memory accesses cannot possibly overlap.
-  if (TII->areMemAccessesTriviallyDisjoint(*this, Other))
+  if (TII->areMemAccessesTriviallyDisjoint(*this, Other)) {
     return false;
 
+}
+
   // FIXME: Need to handle multiple memory operands to support all targets.
-  if (!hasOneMemOperand() || !Other.hasOneMemOperand())
+  if (!hasOneMemOperand() || !Other.hasOneMemOperand()) {
     return true;
+
+}
 
   MachineMemOperand *MMOa = *memoperands_begin();
   MachineMemOperand *MMOb = *Other.memoperands_begin();
@@ -1262,27 +1484,39 @@ bool MachineInstr::mayAlias(AAResults *AA, const MachineInstr &Other,
   if (!SameVal) {
     const PseudoSourceValue *PSVa = MMOa->getPseudoValue();
     const PseudoSourceValue *PSVb = MMOb->getPseudoValue();
-    if (PSVa && ValB && !PSVa->mayAlias(&MFI))
+    if (PSVa && ValB && !PSVa->mayAlias(&MFI)) {
       return false;
-    if (PSVb && ValA && !PSVb->mayAlias(&MFI))
+
+}
+    if (PSVb && ValA && !PSVb->mayAlias(&MFI)) {
       return false;
-    if (PSVa && PSVb && (PSVa == PSVb))
+
+}
+    if (PSVa && PSVb && (PSVa == PSVb)) {
       SameVal = true;
+
+}
   }
 
   if (SameVal) {
-    if (!KnownWidthA || !KnownWidthB)
+    if (!KnownWidthA || !KnownWidthB) {
       return true;
+
+}
     int64_t MaxOffset = std::max(OffsetA, OffsetB);
     int64_t LowWidth = (MinOffset == OffsetA) ? WidthA : WidthB;
     return (MinOffset + LowWidth > MaxOffset);
   }
 
-  if (!AA)
+  if (!AA) {
     return true;
 
-  if (!ValA || !ValB)
+}
+
+  if (!ValA || !ValB) {
     return true;
+
+}
 
   assert((OffsetA >= 0) && "Negative MachineMemOperand offset");
   assert((OffsetB >= 0) && "Negative MachineMemOperand offset");
@@ -1310,13 +1544,17 @@ bool MachineInstr::hasOrderedMemoryRef() const {
   if (!mayStore() &&
       !mayLoad() &&
       !isCall() &&
-      !hasUnmodeledSideEffects())
+      !hasUnmodeledSideEffects()) {
     return false;
+
+}
 
   // Otherwise, if the instruction has no memory reference information,
   // conservatively assume it wasn't preserved.
-  if (memoperands_empty())
+  if (memoperands_empty()) {
     return true;
+
+}
 
   // Check if any of our memory operands are ordered.
   return llvm::any_of(memoperands(), [](const MachineMemOperand *MMO) {
@@ -1329,37 +1567,53 @@ bool MachineInstr::hasOrderedMemoryRef() const {
 /// this function.
 bool MachineInstr::isDereferenceableInvariantLoad(AAResults *AA) const {
   // If the instruction doesn't load at all, it isn't an invariant load.
-  if (!mayLoad())
+  if (!mayLoad()) {
     return false;
+
+}
 
   // If the instruction has lost its memoperands, conservatively assume that
   // it may not be an invariant load.
-  if (memoperands_empty())
+  if (memoperands_empty()) {
     return false;
+
+}
 
   const MachineFrameInfo &MFI = getParent()->getParent()->getFrameInfo();
 
   for (MachineMemOperand *MMO : memoperands()) {
-    if (!MMO->isUnordered())
+    if (!MMO->isUnordered()) {
       // If the memory operand has ordering side effects, we can't move the
       // instruction.  Such an instruction is technically an invariant load,
       // but the caller code would need updated to expect that.
       return false;
-    if (MMO->isStore()) return false;
-    if (MMO->isInvariant() && MMO->isDereferenceable())
+
+}
+    if (MMO->isStore()) { return false;
+
+}
+    if (MMO->isInvariant() && MMO->isDereferenceable()) {
       continue;
 
+}
+
     // A load from a constant PseudoSourceValue is invariant.
-    if (const PseudoSourceValue *PSV = MMO->getPseudoValue())
-      if (PSV->isConstant(&MFI))
+    if (const PseudoSourceValue *PSV = MMO->getPseudoValue()) {
+      if (PSV->isConstant(&MFI)) {
         continue;
+
+}
+
+}
 
     if (const Value *V = MMO->getValue()) {
       // If we have an AliasAnalysis, ask it whether the memory is constant.
       if (AA &&
           AA->pointsToConstantMemory(
-              MemoryLocation(V, MMO->getSize(), MMO->getAAInfo())))
+              MemoryLocation(V, MMO->getSize(), MMO->getAAInfo()))) {
         continue;
+
+}
     }
 
     // Otherwise assume conservatively.
@@ -1374,25 +1628,35 @@ bool MachineInstr::isDereferenceableInvariantLoad(AAResults *AA) const {
 /// merges together the same virtual register, return the register, otherwise
 /// return 0.
 unsigned MachineInstr::isConstantValuePHI() const {
-  if (!isPHI())
+  if (!isPHI()) {
     return 0;
+
+}
   assert(getNumOperands() >= 3 &&
          "It's illegal to have a PHI without source operands");
 
   Register Reg = getOperand(1).getReg();
-  for (unsigned i = 3, e = getNumOperands(); i < e; i += 2)
-    if (getOperand(i).getReg() != Reg)
+  for (unsigned i = 3, e = getNumOperands(); i < e; i += 2) {
+    if (getOperand(i).getReg() != Reg) {
       return 0;
+
+}
+
+}
   return Reg;
 }
 
 bool MachineInstr::hasUnmodeledSideEffects() const {
-  if (hasProperty(MCID::UnmodeledSideEffects))
+  if (hasProperty(MCID::UnmodeledSideEffects)) {
     return true;
+
+}
   if (isInlineAsm()) {
     unsigned ExtraInfo = getOperand(InlineAsm::MIOp_ExtraInfo).getImm();
-    if (ExtraInfo & InlineAsm::Extra_HasSideEffects)
+    if (ExtraInfo & InlineAsm::Extra_HasSideEffects) {
       return true;
+
+}
   }
 
   return false;
@@ -1406,10 +1670,14 @@ bool MachineInstr::isLoadFoldBarrier() const {
 ///
 bool MachineInstr::allDefsAreDead() const {
   for (const MachineOperand &MO : operands()) {
-    if (!MO.isReg() || MO.isUse())
+    if (!MO.isReg() || MO.isUse()) {
       continue;
-    if (!MO.isDead())
+
+}
+    if (!MO.isDead()) {
       return false;
+
+}
   }
   return true;
 }
@@ -1421,8 +1689,10 @@ void MachineInstr::copyImplicitOps(MachineFunction &MF,
   for (unsigned i = MI.getDesc().getNumOperands(), e = MI.getNumOperands();
        i != e; ++i) {
     const MachineOperand &MO = MI.getOperand(i);
-    if ((MO.isReg() && MO.isImplicit()) || MO.isRegMask())
+    if ((MO.isReg() && MO.isImplicit()) || MO.isRegMask()) {
       addOperand(MF, MO);
+
+}
   }
 }
 
@@ -1430,13 +1700,17 @@ bool MachineInstr::hasComplexRegisterTies() const {
   const MCInstrDesc &MCID = getDesc();
   for (unsigned I = 0, E = getNumOperands(); I < E; ++I) {
     const auto &Operand = getOperand(I);
-    if (!Operand.isReg() || Operand.isDef())
+    if (!Operand.isReg() || Operand.isDef()) {
       // Ignore the defined registers as MCID marks only the uses as tied.
       continue;
+
+}
     int ExpectedTiedIdx = MCID.getOperandConstraint(I, MCOI::TIED_TO);
     int TiedIdx = Operand.isTied() ? int(findTiedOperandIdx(I)) : -1;
-    if (ExpectedTiedIdx != TiedIdx)
+    if (ExpectedTiedIdx != TiedIdx) {
       return true;
+
+}
   }
   return false;
 }
@@ -1444,24 +1718,34 @@ bool MachineInstr::hasComplexRegisterTies() const {
 LLT MachineInstr::getTypeToPrint(unsigned OpIdx, SmallBitVector &PrintedTypes,
                                  const MachineRegisterInfo &MRI) const {
   const MachineOperand &Op = getOperand(OpIdx);
-  if (!Op.isReg())
+  if (!Op.isReg()) {
     return LLT{};
 
-  if (isVariadic() || OpIdx >= getNumExplicitOperands())
+}
+
+  if (isVariadic() || OpIdx >= getNumExplicitOperands()) {
     return MRI.getType(Op.getReg());
+
+}
 
   auto &OpInfo = getDesc().OpInfo[OpIdx];
-  if (!OpInfo.isGenericType())
+  if (!OpInfo.isGenericType()) {
     return MRI.getType(Op.getReg());
 
-  if (PrintedTypes[OpInfo.getGenericTypeIndex()])
+}
+
+  if (PrintedTypes[OpInfo.getGenericTypeIndex()]) {
     return LLT{};
+
+}
 
   LLT TypeToPrint = MRI.getType(Op.getReg());
   // Don't mark the type index printed if it wasn't actually printed: maybe
   // another operand with the same type index has an actual type attached:
-  if (TypeToPrint.isValid())
+  if (TypeToPrint.isValid()) {
     PrintedTypes.set(OpInfo.getGenericTypeIndex());
+
+}
   return TypeToPrint;
 }
 
@@ -1511,13 +1795,17 @@ void MachineInstr::print(raw_ostream &OS, bool IsStandalone, bool SkipOpers,
   if (const MachineFunction *MF = getMFIfAvailable(*this)) {
     F = &MF->getFunction();
     M = F->getParent();
-    if (!TII)
+    if (!TII) {
       TII = MF->getSubtarget().getInstrInfo();
+
+}
   }
 
   ModuleSlotTracker MST(M);
-  if (F)
+  if (F) {
     MST.incorporateFunction(*F);
+
+}
   print(OS, MST, IsStandalone, SkipOpers, SkipDebugLoc, AddNewLine, TII);
 }
 
@@ -1530,17 +1818,23 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
   const TargetIntrinsicInfo *IntrinsicInfo = nullptr;
   tryToGetTargetInfo(*this, TRI, MRI, IntrinsicInfo, TII);
 
-  if (isCFIInstruction())
+  if (isCFIInstruction()) {
     assert(getNumOperands() == 1 && "Expected 1 operand in CFI instruction");
+
+}
 
   SmallBitVector PrintedTypes(8);
   bool ShouldPrintRegisterTies = IsStandalone || hasComplexRegisterTies();
   auto getTiedOperandIdx = [&](unsigned OpIdx) {
-    if (!ShouldPrintRegisterTies)
+    if (!ShouldPrintRegisterTies) {
       return 0U;
+
+}
     const MachineOperand &MO = getOperand(OpIdx);
-    if (MO.isReg() && MO.isTied() && !MO.isDef())
+    if (MO.isReg() && MO.isTied() && !MO.isDef()) {
       return findTiedOperandIdx(OpIdx);
+
+}
     return 0U;
   };
   unsigned StartOp = 0;
@@ -1549,11 +1843,15 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
   // Print explicitly defined operands on the left of an assignment syntax.
   while (StartOp < e) {
     const MachineOperand &MO = getOperand(StartOp);
-    if (!MO.isReg() || !MO.isDef() || MO.isImplicit())
+    if (!MO.isReg() || !MO.isDef() || MO.isImplicit()) {
       break;
 
-    if (StartOp != 0)
+}
+
+    if (StartOp != 0) {
       OS << ", ";
+
+}
 
     LLT TypeToPrint = MRI ? getTypeToPrint(StartOp, PrintedTypes, *MRI) : LLT{};
     unsigned TiedOperandIdx = getTiedOperandIdx(StartOp);
@@ -1562,44 +1860,76 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     ++StartOp;
   }
 
-  if (StartOp != 0)
+  if (StartOp != 0) {
     OS << " = ";
 
-  if (getFlag(MachineInstr::FrameSetup))
+}
+
+  if (getFlag(MachineInstr::FrameSetup)) {
     OS << "frame-setup ";
-  if (getFlag(MachineInstr::FrameDestroy))
+
+}
+  if (getFlag(MachineInstr::FrameDestroy)) {
     OS << "frame-destroy ";
-  if (getFlag(MachineInstr::FmNoNans))
+
+}
+  if (getFlag(MachineInstr::FmNoNans)) {
     OS << "nnan ";
-  if (getFlag(MachineInstr::FmNoInfs))
+
+}
+  if (getFlag(MachineInstr::FmNoInfs)) {
     OS << "ninf ";
-  if (getFlag(MachineInstr::FmNsz))
+
+}
+  if (getFlag(MachineInstr::FmNsz)) {
     OS << "nsz ";
-  if (getFlag(MachineInstr::FmArcp))
+
+}
+  if (getFlag(MachineInstr::FmArcp)) {
     OS << "arcp ";
-  if (getFlag(MachineInstr::FmContract))
+
+}
+  if (getFlag(MachineInstr::FmContract)) {
     OS << "contract ";
-  if (getFlag(MachineInstr::FmAfn))
+
+}
+  if (getFlag(MachineInstr::FmAfn)) {
     OS << "afn ";
-  if (getFlag(MachineInstr::FmReassoc))
+
+}
+  if (getFlag(MachineInstr::FmReassoc)) {
     OS << "reassoc ";
-  if (getFlag(MachineInstr::NoUWrap))
+
+}
+  if (getFlag(MachineInstr::NoUWrap)) {
     OS << "nuw ";
-  if (getFlag(MachineInstr::NoSWrap))
+
+}
+  if (getFlag(MachineInstr::NoSWrap)) {
     OS << "nsw ";
-  if (getFlag(MachineInstr::IsExact))
+
+}
+  if (getFlag(MachineInstr::IsExact)) {
     OS << "exact ";
-  if (getFlag(MachineInstr::NoFPExcept))
+
+}
+  if (getFlag(MachineInstr::NoFPExcept)) {
     OS << "nofpexcept ";
 
+}
+
   // Print the opcode name.
-  if (TII)
+  if (TII) {
     OS << TII->getName(getOpcode());
-  else
+  } else {
     OS << "UNKNOWN";
 
-  if (SkipOpers)
+}
+
+  if (SkipOpers) {
     return;
+
+}
 
   // Print the rest of the operands.
   bool FirstOp = true;
@@ -1618,20 +1948,34 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
 
     // Print HasSideEffects, MayLoad, MayStore, IsAlignStack
     unsigned ExtraInfo = getOperand(InlineAsm::MIOp_ExtraInfo).getImm();
-    if (ExtraInfo & InlineAsm::Extra_HasSideEffects)
+    if (ExtraInfo & InlineAsm::Extra_HasSideEffects) {
       OS << " [sideeffect]";
-    if (ExtraInfo & InlineAsm::Extra_MayLoad)
+
+}
+    if (ExtraInfo & InlineAsm::Extra_MayLoad) {
       OS << " [mayload]";
-    if (ExtraInfo & InlineAsm::Extra_MayStore)
+
+}
+    if (ExtraInfo & InlineAsm::Extra_MayStore) {
       OS << " [maystore]";
-    if (ExtraInfo & InlineAsm::Extra_IsConvergent)
+
+}
+    if (ExtraInfo & InlineAsm::Extra_IsConvergent) {
       OS << " [isconvergent]";
-    if (ExtraInfo & InlineAsm::Extra_IsAlignStack)
+
+}
+    if (ExtraInfo & InlineAsm::Extra_IsAlignStack) {
       OS << " [alignstack]";
-    if (getInlineAsmDialect() == InlineAsm::AD_ATT)
+
+}
+    if (getInlineAsmDialect() == InlineAsm::AD_ATT) {
       OS << " [attdialect]";
-    if (getInlineAsmDialect() == InlineAsm::AD_Intel)
+
+}
+    if (getInlineAsmDialect() == InlineAsm::AD_Intel) {
       OS << " [inteldialect]";
+
+}
 
     StartOp = AsmDescOp = InlineAsm::MIOp_FirstOperand;
     FirstOp = false;
@@ -1640,15 +1984,17 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
   for (unsigned i = StartOp, e = getNumOperands(); i != e; ++i) {
     const MachineOperand &MO = getOperand(i);
 
-    if (FirstOp) FirstOp = false; else OS << ",";
+    if (FirstOp) { FirstOp = false; } else { OS << ",";
+
+}
     OS << " ";
 
     if (isDebugValue() && MO.isMetadata()) {
       // Pretty print DBG_VALUE instructions.
       auto *DIV = dyn_cast<DILocalVariable>(MO.getMetadata());
-      if (DIV && !DIV->getName().empty())
+      if (DIV && !DIV->getName().empty()) {
         OS << "!\"" << DIV->getName() << '\"';
-      else {
+      } else {
         LLT TypeToPrint = MRI ? getTypeToPrint(i, PrintedTypes, *MRI) : LLT{};
         unsigned TiedOperandIdx = getTiedOperandIdx(i);
         MO.print(OS, MST, TypeToPrint, i, /*PrintDef=*/true, IsStandalone,
@@ -1657,9 +2003,9 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     } else if (isDebugLabel() && MO.isMetadata()) {
       // Pretty print DBG_LABEL instructions.
       auto *DIL = dyn_cast<DILabel>(MO.getMetadata());
-      if (DIL && !DIL->getName().empty())
+      if (DIL && !DIL->getName().empty()) {
         OS << "\"" << DIL->getName() << '\"';
-      else {
+      } else {
         LLT TypeToPrint = MRI ? getTypeToPrint(i, PrintedTypes, *MRI) : LLT{};
         unsigned TiedOperandIdx = getTiedOperandIdx(i);
         MO.print(OS, MST, TypeToPrint, i, /*PrintDef=*/true, IsStandalone,
@@ -1684,8 +2030,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
           InlineAsm::hasRegClassConstraint(Flag, RCID)) {
         if (TRI) {
           OS << ':' << TRI->getRegClassName(TRI->getRegClass(RCID));
-        } else
+        } else {
           OS << ":RC" << RCID;
+
+}
       }
 
       if (InlineAsm::isMemKind(Flag)) {
@@ -1716,8 +2064,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
       }
 
       unsigned TiedTo = 0;
-      if (InlineAsm::isUseOperandTiedToDef(Flag, TiedTo))
+      if (InlineAsm::isUseOperandTiedToDef(Flag, TiedTo)) {
         OS << " tiedto:$" << TiedTo;
+
+}
 
       OS << ']';
 
@@ -1726,11 +2076,13 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     } else {
       LLT TypeToPrint = MRI ? getTypeToPrint(i, PrintedTypes, *MRI) : LLT{};
       unsigned TiedOperandIdx = getTiedOperandIdx(i);
-      if (MO.isImm() && isOperandSubregIdx(i))
+      if (MO.isImm() && isOperandSubregIdx(i)) {
         MachineOperand::printSubRegIdx(OS, MO.getImm(), TRI);
-      else
+      } else {
         MO.print(OS, MST, TypeToPrint, i, /*PrintDef=*/true, IsStandalone,
                  ShouldPrintRegisterTies, TiedOperandIdx, TRI, IntrinsicInfo);
+
+}
     }
   }
 
@@ -1763,8 +2115,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
 
   if (!SkipDebugLoc) {
     if (const DebugLoc &DL = getDebugLoc()) {
-      if (!FirstOp)
+      if (!FirstOp) {
         OS << ',';
+
+}
       OS << " debug-location ";
       DL->printAsOperand(OS, MST);
     }
@@ -1786,15 +2140,19 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << " :: ";
     bool NeedComma = false;
     for (const MachineMemOperand *Op : memoperands()) {
-      if (NeedComma)
+      if (NeedComma) {
         OS << ", ";
+
+}
       Op->print(OS, MST, SSNs, *Context, MFI, TII);
       NeedComma = true;
     }
   }
 
-  if (SkipDebugLoc)
+  if (SkipDebugLoc) {
     return;
+
+}
 
   bool HaveSemi = false;
 
@@ -1816,13 +2174,17 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     }
     auto *DV = cast<DILocalVariable>(getOperand(e - 2).getMetadata());
     OS << " line no:" <<  DV->getLine();
-    if (isIndirectDebugValue())
+    if (isIndirectDebugValue()) {
       OS << " indirect";
+
+}
   }
   // TODO: DBG_LABEL
 
-  if (AddNewLine)
+  if (AddNewLine) {
     OS << '\n';
+
+}
 }
 
 bool MachineInstr::addRegisterKilled(Register IncomingReg,
@@ -1835,36 +2197,50 @@ bool MachineInstr::addRegisterKilled(Register IncomingReg,
   SmallVector<unsigned,4> DeadOps;
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     MachineOperand &MO = getOperand(i);
-    if (!MO.isReg() || !MO.isUse() || MO.isUndef())
+    if (!MO.isReg() || !MO.isUse() || MO.isUndef()) {
       continue;
+
+}
 
     // DEBUG_VALUE nodes do not contribute to code generation and should
     // always be ignored. Failure to do so may result in trying to modify
     // KILL flags on DEBUG_VALUE nodes.
-    if (MO.isDebug())
+    if (MO.isDebug()) {
       continue;
 
+}
+
     Register Reg = MO.getReg();
-    if (!Reg)
+    if (!Reg) {
       continue;
+
+}
 
     if (Reg == IncomingReg) {
       if (!Found) {
-        if (MO.isKill())
+        if (MO.isKill()) {
           // The register is already marked kill.
           return true;
-        if (isPhysReg && isRegTiedToDefOperand(i))
+
+}
+        if (isPhysReg && isRegTiedToDefOperand(i)) {
           // Two-address uses of physregs must not be marked kill.
           return true;
+
+}
         MO.setIsKill();
         Found = true;
       }
     } else if (hasAliases && MO.isKill() && Register::isPhysicalRegister(Reg)) {
       // A super-register kill already exists.
-      if (RegInfo->isSuperRegister(IncomingReg, Reg))
+      if (RegInfo->isSuperRegister(IncomingReg, Reg)) {
         return true;
-      if (RegInfo->isSubRegister(IncomingReg, Reg))
+
+}
+      if (RegInfo->isSubRegister(IncomingReg, Reg)) {
         DeadOps.push_back(i);
+
+}
     }
   }
 
@@ -1872,10 +2248,12 @@ bool MachineInstr::addRegisterKilled(Register IncomingReg,
   while (!DeadOps.empty()) {
     unsigned OpIdx = DeadOps.back();
     if (getOperand(OpIdx).isImplicit() &&
-        (!isInlineAsm() || findInlineAsmFlagIdx(OpIdx) < 0))
+        (!isInlineAsm() || findInlineAsmFlagIdx(OpIdx) < 0)) {
       RemoveOperand(OpIdx);
-    else
+    } else {
       getOperand(OpIdx).setIsKill(false);
+
+}
     DeadOps.pop_back();
   }
 
@@ -1893,14 +2271,20 @@ bool MachineInstr::addRegisterKilled(Register IncomingReg,
 
 void MachineInstr::clearRegisterKills(Register Reg,
                                       const TargetRegisterInfo *RegInfo) {
-  if (!Register::isPhysicalRegister(Reg))
+  if (!Register::isPhysicalRegister(Reg)) {
     RegInfo = nullptr;
+
+}
   for (MachineOperand &MO : operands()) {
-    if (!MO.isReg() || !MO.isUse() || !MO.isKill())
+    if (!MO.isReg() || !MO.isUse() || !MO.isKill()) {
       continue;
+
+}
     Register OpReg = MO.getReg();
-    if ((RegInfo && RegInfo->regsOverlap(Reg, OpReg)) || Reg == OpReg)
+    if ((RegInfo && RegInfo->regsOverlap(Reg, OpReg)) || Reg == OpReg) {
       MO.setIsKill(false);
+
+}
   }
 }
 
@@ -1914,11 +2298,15 @@ bool MachineInstr::addRegisterDead(Register Reg,
   SmallVector<unsigned,4> DeadOps;
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
     MachineOperand &MO = getOperand(i);
-    if (!MO.isReg() || !MO.isDef())
+    if (!MO.isReg() || !MO.isDef()) {
       continue;
+
+}
     Register MOReg = MO.getReg();
-    if (!MOReg)
+    if (!MOReg) {
       continue;
+
+}
 
     if (MOReg == Reg) {
       MO.setIsDead();
@@ -1926,10 +2314,14 @@ bool MachineInstr::addRegisterDead(Register Reg,
     } else if (hasAliases && MO.isDead() &&
                Register::isPhysicalRegister(MOReg)) {
       // There exists a super-register that's marked dead.
-      if (RegInfo->isSuperRegister(Reg, MOReg))
+      if (RegInfo->isSuperRegister(Reg, MOReg)) {
         return true;
-      if (RegInfo->isSubRegister(Reg, MOReg))
+
+}
+      if (RegInfo->isSubRegister(Reg, MOReg)) {
         DeadOps.push_back(i);
+
+}
     }
   }
 
@@ -1937,17 +2329,21 @@ bool MachineInstr::addRegisterDead(Register Reg,
   while (!DeadOps.empty()) {
     unsigned OpIdx = DeadOps.back();
     if (getOperand(OpIdx).isImplicit() &&
-        (!isInlineAsm() || findInlineAsmFlagIdx(OpIdx) < 0))
+        (!isInlineAsm() || findInlineAsmFlagIdx(OpIdx) < 0)) {
       RemoveOperand(OpIdx);
-    else
+    } else {
       getOperand(OpIdx).setIsDead(false);
+
+}
     DeadOps.pop_back();
   }
 
   // If not found, this means an alias of one of the operands is dead. Add a
   // new implicit operand if required.
-  if (Found || !AddIfNotFound)
+  if (Found || !AddIfNotFound) {
     return Found;
+
+}
 
   addOperand(MachineOperand::CreateReg(Reg,
                                        true  /*IsDef*/,
@@ -1959,16 +2355,20 @@ bool MachineInstr::addRegisterDead(Register Reg,
 
 void MachineInstr::clearRegisterDeads(Register Reg) {
   for (MachineOperand &MO : operands()) {
-    if (!MO.isReg() || !MO.isDef() || MO.getReg() != Reg)
+    if (!MO.isReg() || !MO.isDef() || MO.getReg() != Reg) {
       continue;
+
+}
     MO.setIsDead(false);
   }
 }
 
 void MachineInstr::setRegisterDefReadUndef(Register Reg, bool IsUndef) {
   for (MachineOperand &MO : operands()) {
-    if (!MO.isReg() || !MO.isDef() || MO.getReg() != Reg || MO.getSubReg() == 0)
+    if (!MO.isReg() || !MO.isDef() || MO.getReg() != Reg || MO.getSubReg() == 0) {
       continue;
+
+}
     MO.setIsUndef(IsUndef);
   }
 }
@@ -1977,13 +2377,17 @@ void MachineInstr::addRegisterDefined(Register Reg,
                                       const TargetRegisterInfo *RegInfo) {
   if (Register::isPhysicalRegister(Reg)) {
     MachineOperand *MO = findRegisterDefOperand(Reg, false, false, RegInfo);
-    if (MO)
+    if (MO) {
       return;
+
+}
   } else {
     for (const MachineOperand &MO : operands()) {
       if (MO.isReg() && MO.getReg() == Reg && MO.isDef() &&
-          MO.getSubReg() == 0)
+          MO.getSubReg() == 0) {
         return;
+
+}
     }
   }
   addOperand(MachineOperand::CreateReg(Reg,
@@ -1999,22 +2403,32 @@ void MachineInstr::setPhysRegsDeadExcept(ArrayRef<Register> UsedRegs,
       HasRegMask = true;
       continue;
     }
-    if (!MO.isReg() || !MO.isDef()) continue;
+    if (!MO.isReg() || !MO.isDef()) { continue;
+
+}
     Register Reg = MO.getReg();
-    if (!Reg.isPhysical())
+    if (!Reg.isPhysical()) {
       continue;
+
+}
     // If there are no uses, including partial uses, the def is dead.
     if (llvm::none_of(UsedRegs,
-                      [&](MCRegister Use) { return TRI.regsOverlap(Use, Reg); }))
+                      [&](MCRegister Use) { return TRI.regsOverlap(Use, Reg); })) {
       MO.setIsDead();
+
+}
   }
 
   // This is a call with a register mask operand.
   // Mask clobbers are always dead, so add defs for the non-dead defines.
-  if (HasRegMask)
+  if (HasRegMask) {
     for (ArrayRef<Register>::iterator I = UsedRegs.begin(), E = UsedRegs.end();
-         I != E; ++I)
+         I != E; ++I) {
       addRegisterDefined(*I, &TRI);
+
+}
+
+}
 }
 
 unsigned
@@ -2024,8 +2438,10 @@ MachineInstrExpressionTrait::getHashValue(const MachineInstr* const &MI) {
   HashComponents.reserve(MI->getNumOperands() + 1);
   HashComponents.push_back(MI->getOpcode());
   for (const MachineOperand &MO : MI->operands()) {
-    if (MO.isReg() && MO.isDef() && Register::isVirtualRegister(MO.getReg()))
+    if (MO.isReg() && MO.isDef() && Register::isVirtualRegister(MO.getReg())) {
       continue;  // Skip virtual register defs.
+
+}
 
     HashComponents.push_back(hash_value(MO));
   }
@@ -2048,9 +2464,13 @@ void MachineInstr::emitError(StringRef Msg) const {
     }
   }
 
-  if (const MachineBasicBlock *MBB = getParent())
-    if (const MachineFunction *MF = MBB->getParent())
+  if (const MachineBasicBlock *MBB = getParent()) {
+    if (const MachineFunction *MF = MBB->getParent()) {
       return MF->getMMI().getModule()->getContext().emitError(LocCookie, Msg);
+
+}
+
+}
   report_fatal_error(Msg);
 }
 
@@ -2063,10 +2483,12 @@ MachineInstrBuilder llvm::BuildMI(MachineFunction &MF, const DebugLoc &DL,
   assert(cast<DILocalVariable>(Variable)->isValidLocationForIntrinsic(DL) &&
          "Expected inlined-at fields to agree");
   auto MIB = BuildMI(MF, DL, MCID).addReg(Reg, RegState::Debug);
-  if (IsIndirect)
+  if (IsIndirect) {
     MIB.addImm(0U);
-  else
+  } else {
     MIB.addReg(0U, RegState::Debug);
+
+}
   return MIB.addMetadata(Variable).addMetadata(Expr);
 }
 
@@ -2078,14 +2500,18 @@ MachineInstrBuilder llvm::BuildMI(MachineFunction &MF, const DebugLoc &DL,
   assert(cast<DIExpression>(Expr)->isValid() && "not an expression");
   assert(cast<DILocalVariable>(Variable)->isValidLocationForIntrinsic(DL) &&
          "Expected inlined-at fields to agree");
-  if (MO.isReg())
+  if (MO.isReg()) {
     return BuildMI(MF, DL, MCID, IsIndirect, MO.getReg(), Variable, Expr);
 
+}
+
   auto MIB = BuildMI(MF, DL, MCID).add(MO);
-  if (IsIndirect)
+  if (IsIndirect) {
     MIB.addImm(0U);
-  else
+  } else {
     MIB.addReg(0U, RegState::Debug);
+
+}
   return MIB.addMetadata(Variable).addMetadata(Expr);
  }
 
@@ -2148,17 +2574,23 @@ void llvm::updateDbgValueForSpill(MachineInstr &Orig, int FrameIndex) {
 void MachineInstr::collectDebugValues(
                                 SmallVectorImpl<MachineInstr *> &DbgValues) {
   MachineInstr &MI = *this;
-  if (!MI.getOperand(0).isReg())
+  if (!MI.getOperand(0).isReg()) {
     return;
+
+}
 
   MachineBasicBlock::iterator DI = MI; ++DI;
   for (MachineBasicBlock::iterator DE = MI.getParent()->end();
        DI != DE; ++DI) {
-    if (!DI->isDebugValue())
+    if (!DI->isDebugValue()) {
       return;
+
+}
     if (DI->getOperand(0).isReg() &&
-        DI->getOperand(0).getReg() == MI.getOperand(0).getReg())
+        DI->getOperand(0).getReg() == MI.getOperand(0).getReg()) {
       DbgValues.push_back(&*DI);
+
+}
   }
 }
 
@@ -2166,15 +2598,19 @@ void MachineInstr::changeDebugValuesDefReg(Register Reg) {
   // Collect matching debug values.
   SmallVector<MachineInstr *, 2> DbgValues;
 
-  if (!getOperand(0).isReg())
+  if (!getOperand(0).isReg()) {
     return;
+
+}
 
   unsigned DefReg = getOperand(0).getReg();
   auto *MRI = getRegInfo();
   for (auto &MO : MRI->use_operands(DefReg)) {
     auto *DI = MO.getParent();
-    if (!DI->isDebugValue())
+    if (!DI->isDebugValue()) {
       continue;
+
+}
     if (DI->getOperand(0).isReg() &&
         DI->getOperand(0).getReg() == DefReg){
       DbgValues.push_back(DI);
@@ -2182,8 +2618,10 @@ void MachineInstr::changeDebugValuesDefReg(Register Reg) {
   }
 
   // Propagate Reg to debug value instructions.
-  for (auto *DBI : DbgValues)
+  for (auto *DBI : DbgValues) {
     DBI->getOperand(0).setReg(Reg);
+
+}
 }
 
 using MMOList = SmallVector<const MachineMemOperand *, 2>;
@@ -2191,11 +2629,15 @@ using MMOList = SmallVector<const MachineMemOperand *, 2>;
 static unsigned getSpillSlotSize(const MMOList &Accesses,
                                  const MachineFrameInfo &MFI) {
   unsigned Size = 0;
-  for (auto A : Accesses)
+  for (auto A : Accesses) {
     if (MFI.isSpillSlotObjectIndex(
             cast<FixedStackPseudoSourceValue>(A->getPseudoValue())
-                ->getFrameIndex()))
+                ->getFrameIndex())) {
       Size += A->getSize();
+
+}
+
+}
   return Size;
 }
 
@@ -2204,8 +2646,10 @@ MachineInstr::getSpillSize(const TargetInstrInfo *TII) const {
   int FI;
   if (TII->isStoreToStackSlotPostFE(*this, FI)) {
     const MachineFrameInfo &MFI = getMF()->getFrameInfo();
-    if (MFI.isSpillSlotObjectIndex(FI))
+    if (MFI.isSpillSlotObjectIndex(FI)) {
       return (*memoperands_begin())->getSize();
+
+}
   }
   return None;
 }
@@ -2213,8 +2657,10 @@ MachineInstr::getSpillSize(const TargetInstrInfo *TII) const {
 Optional<unsigned>
 MachineInstr::getFoldedSpillSize(const TargetInstrInfo *TII) const {
   MMOList Accesses;
-  if (TII->hasStoreToStackSlot(*this, Accesses))
+  if (TII->hasStoreToStackSlot(*this, Accesses)) {
     return getSpillSlotSize(Accesses, getMF()->getFrameInfo());
+
+}
   return None;
 }
 
@@ -2223,8 +2669,10 @@ MachineInstr::getRestoreSize(const TargetInstrInfo *TII) const {
   int FI;
   if (TII->isLoadFromStackSlotPostFE(*this, FI)) {
     const MachineFrameInfo &MFI = getMF()->getFrameInfo();
-    if (MFI.isSpillSlotObjectIndex(FI))
+    if (MFI.isSpillSlotObjectIndex(FI)) {
       return (*memoperands_begin())->getSize();
+
+}
   }
   return None;
 }
@@ -2232,7 +2680,9 @@ MachineInstr::getRestoreSize(const TargetInstrInfo *TII) const {
 Optional<unsigned>
 MachineInstr::getFoldedRestoreSize(const TargetInstrInfo *TII) const {
   MMOList Accesses;
-  if (TII->hasLoadFromStackSlot(*this, Accesses))
+  if (TII->hasLoadFromStackSlot(*this, Accesses)) {
     return getSpillSlotSize(Accesses, getMF()->getFrameInfo());
+
+}
   return None;
 }

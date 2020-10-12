@@ -26,15 +26,21 @@ bool llvm::canTrackReturnsInterprocedurally(Function *F) {
 
 bool llvm::canTrackGlobalVariableInterprocedurally(GlobalVariable *GV) {
   if (GV->isConstant() || !GV->hasLocalLinkage() ||
-      !GV->hasDefinitiveInitializer())
+      !GV->hasDefinitiveInitializer()) {
     return false;
+
+}
   return !any_of(GV->users(), [&](User *U) {
     if (auto *Store = dyn_cast<StoreInst>(U)) {
-      if (Store->getValueOperand() == GV || Store->isVolatile())
+      if (Store->getValueOperand() == GV || Store->isVolatile()) {
         return true;
+
+}
     } else if (auto *Load = dyn_cast<LoadInst>(U)) {
-      if (Load->isVolatile())
+      if (Load->isVolatile()) {
         return true;
+
+}
     } else {
       return true;
     }

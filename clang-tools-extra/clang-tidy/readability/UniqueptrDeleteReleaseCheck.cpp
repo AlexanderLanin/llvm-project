@@ -41,14 +41,18 @@ void UniqueptrDeleteReleaseCheck::check(
   const auto *PtrExpr = Result.Nodes.getNodeAs<Expr>("uptr");
   const auto *DeleteExpr = Result.Nodes.getNodeAs<Expr>("delete");
 
-  if (PtrExpr->getBeginLoc().isMacroID())
+  if (PtrExpr->getBeginLoc().isMacroID()) {
     return;
+
+}
 
   // Ignore dependent types.
   // It can give us false positives, so we go with false negatives instead to
   // be safe.
-  if (PtrExpr->getType()->isDependentType())
+  if (PtrExpr->getType()->isDependentType()) {
     return;
+
+}
 
   SourceLocation AfterPtr = Lexer::getLocForEndOfToken(
       PtrExpr->getEndLoc(), 0, *Result.SourceManager, getLangOpts());

@@ -36,8 +36,10 @@ static void appendToGlobalArray(const char *Array, Module &M, Function *F,
     if (Constant *Init = GVCtor->getInitializer()) {
       unsigned n = Init->getNumOperands();
       CurrentCtors.reserve(n + 1);
-      for (unsigned i = 0; i != n; ++i)
+      for (unsigned i = 0; i != n; ++i) {
         CurrentCtors.push_back(cast<Constant>(Init->getOperand(i)));
+
+}
     }
     GVCtor->eraseFromParent();
   }
@@ -79,8 +81,10 @@ static void appendToUsedList(Module &M, StringRef Name, ArrayRef<GlobalValue *> 
     auto *CA = cast<ConstantArray>(GV->getInitializer());
     for (auto &Op : CA->operands()) {
       Constant *C = cast_or_null<Constant>(Op);
-      if (InitAsSet.insert(C).second)
+      if (InitAsSet.insert(C).second) {
         Init.push_back(C);
+
+}
     }
     GV->eraseFromParent();
   }
@@ -88,12 +92,16 @@ static void appendToUsedList(Module &M, StringRef Name, ArrayRef<GlobalValue *> 
   Type *Int8PtrTy = llvm::Type::getInt8PtrTy(M.getContext());
   for (auto *V : Values) {
     Constant *C = ConstantExpr::getBitCast(V, Int8PtrTy);
-    if (InitAsSet.insert(C).second)
+    if (InitAsSet.insert(C).second) {
       Init.push_back(C);
+
+}
   }
 
-  if (Init.empty())
+  if (Init.empty()) {
     return;
+
+}
 
   ArrayType *ATy = ArrayType::get(Int8PtrTy, Init.size());
   GV = new llvm::GlobalVariable(M, ATy, false, GlobalValue::AppendingLinkage,
@@ -151,12 +159,16 @@ llvm::getOrCreateSanitizerCtorAndInitFunctions(
     StringRef VersionCheckName) {
   assert(!CtorName.empty() && "Expected ctor function name");
 
-  if (Function *Ctor = M.getFunction(CtorName))
+  if (Function *Ctor = M.getFunction(CtorName)) {
     // FIXME: Sink this logic into the module, similar to the handling of
     // globals. This will make moving to a concurrent model much easier.
     if (Ctor->arg_size() == 0 ||
-        Ctor->getReturnType() == Type::getVoidTy(M.getContext()))
+        Ctor->getReturnType() == Type::getVoidTy(M.getContext())) {
       return {Ctor, declareSanitizerInitFunction(M, InitName, InitArgTypes)};
+
+}
+
+}
 
   Function *Ctor;
   FunctionCallee InitFunction;
@@ -203,8 +215,10 @@ void llvm::filterDeadComdatFunctions(
 
   auto CheckComdat = [&](Comdat &C) {
     auto CI = ComdatEntriesCovered.find(&C);
-    if (CI == ComdatEntriesCovered.end())
+    if (CI == ComdatEntriesCovered.end()) {
       return;
+
+}
 
     // If this could have been covered by a dead entry, just subtract one to
     // account for it.
@@ -219,24 +233,36 @@ void llvm::filterDeadComdatFunctions(
   };
 
   auto CheckAllComdats = [&] {
-    for (Function &F : M.functions())
+    for (Function &F : M.functions()) {
       if (Comdat *C = F.getComdat()) {
         CheckComdat(*C);
-        if (ComdatEntriesCovered.empty())
+        if (ComdatEntriesCovered.empty()) {
           return;
+
+}
       }
-    for (GlobalVariable &GV : M.globals())
+
+}
+    for (GlobalVariable &GV : M.globals()) {
       if (Comdat *C = GV.getComdat()) {
         CheckComdat(*C);
-        if (ComdatEntriesCovered.empty())
+        if (ComdatEntriesCovered.empty()) {
           return;
+
+}
       }
-    for (GlobalAlias &GA : M.aliases())
+
+}
+    for (GlobalAlias &GA : M.aliases()) {
       if (Comdat *C = GA.getComdat()) {
         CheckComdat(*C);
-        if (ComdatEntriesCovered.empty())
+        if (ComdatEntriesCovered.empty()) {
           return;
+
+}
       }
+
+}
   };
   CheckAllComdats();
 
@@ -257,24 +283,36 @@ std::string llvm::getUniqueModuleId(Module *M) {
   bool ExportsSymbols = false;
   auto AddGlobal = [&](GlobalValue &GV) {
     if (GV.isDeclaration() || GV.getName().startswith("llvm.") ||
-        !GV.hasExternalLinkage() || GV.hasComdat())
+        !GV.hasExternalLinkage() || GV.hasComdat()) {
       return;
+
+}
     ExportsSymbols = true;
     Md5.update(GV.getName());
     Md5.update(ArrayRef<uint8_t>{0});
   };
 
-  for (auto &F : *M)
+  for (auto &F : *M) {
     AddGlobal(F);
-  for (auto &GV : M->globals())
+
+}
+  for (auto &GV : M->globals()) {
     AddGlobal(GV);
-  for (auto &GA : M->aliases())
+
+}
+  for (auto &GA : M->aliases()) {
     AddGlobal(GA);
-  for (auto &IF : M->ifuncs())
+
+}
+  for (auto &IF : M->ifuncs()) {
     AddGlobal(IF);
 
-  if (!ExportsSymbols)
+}
+
+  if (!ExportsSymbols) {
     return "";
+
+}
 
   MD5::MD5Result R;
   Md5.final(R);
@@ -286,13 +324,17 @@ std::string llvm::getUniqueModuleId(Module *M) {
 
 void VFABI::setVectorVariantNames(
     CallInst *CI, const SmallVector<std::string, 8> &VariantMappings) {
-  if (VariantMappings.empty())
+  if (VariantMappings.empty()) {
     return;
+
+}
 
   SmallString<256> Buffer;
   llvm::raw_svector_ostream Out(Buffer);
-  for (const std::string &VariantMapping : VariantMappings)
+  for (const std::string &VariantMapping : VariantMappings) {
     Out << VariantMapping << ",";
+
+}
   // Get rid of the trailing ','.
   assert(!Buffer.str().empty() && "Must have at least one char.");
   Buffer.pop_back();

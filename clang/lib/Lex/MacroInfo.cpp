@@ -39,8 +39,10 @@ unsigned MacroInfo::getDefinitionLengthSlow(const SourceManager &SM) const {
   assert(!IsDefinitionLengthCached);
   IsDefinitionLengthCached = true;
 
-  if (ReplacementTokens.empty())
+  if (ReplacementTokens.empty()) {
     return (DefinitionLength = 0);
+
+}
 
   const Token &firstToken = ReplacementTokens.front();
   const Token &lastToken = ReplacementTokens.back();
@@ -80,50 +82,70 @@ bool MacroInfo::isIdenticalTo(const MacroInfo &Other, Preprocessor &PP,
       getNumParams() != Other.getNumParams() ||
       isFunctionLike() != Other.isFunctionLike() ||
       isC99Varargs() != Other.isC99Varargs() ||
-      isGNUVarargs() != Other.isGNUVarargs())
+      isGNUVarargs() != Other.isGNUVarargs()) {
     return false;
+
+}
 
   if (Lexically) {
     // Check arguments.
     for (param_iterator I = param_begin(), OI = Other.param_begin(),
                         E = param_end();
-         I != E; ++I, ++OI)
-      if (*I != *OI) return false;
+         I != E; ++I, ++OI) {
+      if (*I != *OI) { return false;
+
+}
+
+}
   }
 
   // Check all the tokens.
   for (unsigned i = 0, e = ReplacementTokens.size(); i != e; ++i) {
     const Token &A = ReplacementTokens[i];
     const Token &B = Other.ReplacementTokens[i];
-    if (A.getKind() != B.getKind())
+    if (A.getKind() != B.getKind()) {
       return false;
+
+}
 
     // If this isn't the first first token, check that the whitespace and
     // start-of-line characteristics match.
     if (i != 0 &&
         (A.isAtStartOfLine() != B.isAtStartOfLine() ||
-         A.hasLeadingSpace() != B.hasLeadingSpace()))
+         A.hasLeadingSpace() != B.hasLeadingSpace())) {
       return false;
+
+}
 
     // If this is an identifier, it is easy.
     if (A.getIdentifierInfo() || B.getIdentifierInfo()) {
-      if (A.getIdentifierInfo() == B.getIdentifierInfo())
+      if (A.getIdentifierInfo() == B.getIdentifierInfo()) {
         continue;
-      if (Lexically)
+
+}
+      if (Lexically) {
         return false;
+
+}
       // With syntactic equivalence the parameter names can be different as long
       // as they are used in the same place.
       int AArgNum = getParameterNum(A.getIdentifierInfo());
-      if (AArgNum == -1)
+      if (AArgNum == -1) {
         return false;
-      if (AArgNum != Other.getParameterNum(B.getIdentifierInfo()))
+
+}
+      if (AArgNum != Other.getParameterNum(B.getIdentifierInfo())) {
         return false;
+
+}
       continue;
     }
 
     // Otherwise, check the spelling.
-    if (PP.getSpelling(A) != PP.getSpelling(B))
+    if (PP.getSpelling(A) != PP.getSpelling(B)) {
       return false;
+
+}
   }
 
   return true;
@@ -134,23 +156,39 @@ LLVM_DUMP_METHOD void MacroInfo::dump() const {
 
   // FIXME: Dump locations.
   Out << "MacroInfo " << this;
-  if (IsBuiltinMacro) Out << " builtin";
-  if (IsDisabled) Out << " disabled";
-  if (IsUsed) Out << " used";
-  if (IsAllowRedefinitionsWithoutWarning)
+  if (IsBuiltinMacro) { Out << " builtin";
+
+}
+  if (IsDisabled) { Out << " disabled";
+
+}
+  if (IsUsed) { Out << " used";
+
+}
+  if (IsAllowRedefinitionsWithoutWarning) {
     Out << " allow_redefinitions_without_warning";
-  if (IsWarnIfUnused) Out << " warn_if_unused";
-  if (UsedForHeaderGuard) Out << " header_guard";
+
+}
+  if (IsWarnIfUnused) { Out << " warn_if_unused";
+
+}
+  if (UsedForHeaderGuard) { Out << " header_guard";
+
+}
 
   Out << "\n    #define <macro>";
   if (IsFunctionLike) {
     Out << "(";
     for (unsigned I = 0; I != NumParameters; ++I) {
-      if (I) Out << ", ";
+      if (I) { Out << ", ";
+
+}
       Out << ParameterList[I]->getName();
     }
     if (IsC99Varargs || IsGNUVarargs) {
-      if (NumParameters && IsC99Varargs) Out << ", ";
+      if (NumParameters && IsC99Varargs) { Out << ", ";
+
+}
       Out << "...";
     }
     Out << ")";
@@ -160,18 +198,22 @@ LLVM_DUMP_METHOD void MacroInfo::dump() const {
   for (const Token &Tok : ReplacementTokens) {
     // Leading space is semantically meaningful in a macro definition,
     // so preserve it in the dump output.
-    if (First || Tok.hasLeadingSpace())
+    if (First || Tok.hasLeadingSpace()) {
       Out << " ";
+
+}
     First = false;
 
-    if (const char *Punc = tok::getPunctuatorSpelling(Tok.getKind()))
+    if (const char *Punc = tok::getPunctuatorSpelling(Tok.getKind())) {
       Out << Punc;
-    else if (Tok.isLiteral() && Tok.getLiteralData())
+    } else if (Tok.isLiteral() && Tok.getLiteralData()) {
       Out << StringRef(Tok.getLiteralData(), Tok.getLength());
-    else if (auto *II = Tok.getIdentifierInfo())
+    } else if (auto *II = Tok.getIdentifierInfo()) {
       Out << II->getName();
-    else
+    } else {
       Out << Tok.getName();
+
+}
   }
 }
 
@@ -180,9 +222,11 @@ MacroDirective::DefInfo MacroDirective::getDefinition() {
   SourceLocation UndefLoc;
   Optional<bool> isPublic;
   for (; MD; MD = MD->getPrevious()) {
-    if (DefMacroDirective *DefMD = dyn_cast<DefMacroDirective>(MD))
+    if (DefMacroDirective *DefMD = dyn_cast<DefMacroDirective>(MD)) {
       return DefInfo(DefMD, UndefLoc,
                      !isPublic.hasValue() || isPublic.getValue());
+
+}
 
     if (UndefMacroDirective *UndefMD = dyn_cast<UndefMacroDirective>(MD)) {
       UndefLoc = UndefMD->getLocation();
@@ -190,8 +234,10 @@ MacroDirective::DefInfo MacroDirective::getDefinition() {
     }
 
     VisibilityMacroDirective *VisMD = cast<VisibilityMacroDirective>(MD);
-    if (!isPublic.hasValue())
+    if (!isPublic.hasValue()) {
       isPublic = VisMD->isPublic();
+
+}
   }
 
   return DefInfo(nullptr, UndefLoc,
@@ -204,10 +250,12 @@ MacroDirective::findDirectiveAtLoc(SourceLocation L,
   assert(L.isValid() && "SourceLocation is invalid.");
   for (DefInfo Def = getDefinition(); Def; Def = Def.getPreviousDefinition()) {
     if (Def.getLocation().isInvalid() ||  // For macros defined on the command line.
-        SM.isBeforeInTranslationUnit(Def.getLocation(), L))
+        SM.isBeforeInTranslationUnit(Def.getLocation(), L)) {
       return (!Def.isUndefined() ||
               SM.isBeforeInTranslationUnit(L, Def.getUndefLocation()))
                   ? Def : DefInfo();
+
+}
   }
   return DefInfo();
 }
@@ -222,12 +270,18 @@ LLVM_DUMP_METHOD void MacroDirective::dump() const {
   }
   Out << " " << this;
   // FIXME: Dump SourceLocation.
-  if (auto *Prev = getPrevious())
+  if (auto *Prev = getPrevious()) {
     Out << " prev " << Prev;
-  if (IsFromPCH) Out << " from_pch";
 
-  if (isa<VisibilityMacroDirective>(this))
+}
+  if (IsFromPCH) { Out << " from_pch";
+
+}
+
+  if (isa<VisibilityMacroDirective>(this)) {
     Out << (IsPublic ? " public" : " private");
+
+}
 
   if (auto *DMD = dyn_cast<DefMacroDirective>(this)) {
     if (auto *Info = DMD->getInfo()) {

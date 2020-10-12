@@ -82,8 +82,10 @@ static std::string pointerOptions(PointerOptions Options) {
   PUSH_FLAG(PointerOptions, Unaligned, Options, "unaligned");
   PUSH_FLAG(PointerOptions, Restrict, Options, "restrict");
   PUSH_FLAG(PointerOptions, WinRTSmartPointer, Options, "winrt");
-  if (Opts.empty())
+  if (Opts.empty()) {
     return "None";
+
+}
   return join(Opts, " | ");
 }
 
@@ -92,8 +94,10 @@ static std::string modifierOptions(ModifierOptions Options) {
   PUSH_FLAG(ModifierOptions, Const, Options, "const");
   PUSH_FLAG(ModifierOptions, Volatile, Options, "volatile");
   PUSH_FLAG(ModifierOptions, Unaligned, Options, "unaligned");
-  if (Opts.empty())
+  if (Opts.empty()) {
     return "None";
+
+}
   return join(Opts, " | ");
 }
 
@@ -184,10 +188,14 @@ static std::string memberAttributes(const MemberAttributes &Attrs) {
   std::vector<std::string> Opts;
   std::string Access = memberAccess(Attrs.getAccess());
   std::string Kind = methodKind(Attrs.getMethodKind());
-  if (!Access.empty())
+  if (!Access.empty()) {
     Opts.push_back(Access);
-  if (!Kind.empty())
+
+}
+  if (!Kind.empty()) {
     Opts.push_back(Kind);
+
+}
   MethodOptions Flags = Attrs.getFlags();
   PUSH_FLAG(MethodOptions, Pseudo, Flags, "pseudo");
   PUSH_FLAG(MethodOptions, NoInherit, Flags, "noinherit");
@@ -213,8 +221,10 @@ static std::string formatFunctionOptions(FunctionOptions Options) {
   PUSH_FLAG(FunctionOptions, ConstructorWithVirtualBases, Options,
             "constructor with virtual bases");
   PUSH_FLAG(FunctionOptions, Constructor, Options, "constructor");
-  if (Opts.empty())
+  if (Opts.empty()) {
     return "None";
+
+}
   return join(Opts, " | ");
 }
 
@@ -233,22 +243,28 @@ Error MinimalTypeDumpVisitor::visitTypeBegin(CVType &Record, TypeIndex Index) {
     } else {
       uint32_t Hash = HashValues[Index.toArrayIndex()];
       Expected<uint32_t> MaybeHash = hashTypeRecord(Record);
-      if (!MaybeHash)
+      if (!MaybeHash) {
         return MaybeHash.takeError();
+
+}
       uint32_t OurHash = *MaybeHash;
       OurHash %= NumHashBuckets;
-      if (Hash == OurHash)
+      if (Hash == OurHash) {
         H = "0x" + utohexstr(Hash);
-      else
+      } else {
         H = "0x" + utohexstr(Hash) + ", our hash = 0x" + utohexstr(OurHash);
+
+}
     }
     P.format(", hash = {0}", H);
   }
   if (RefTracker) {
-    if (RefTracker->isTypeReferenced(Index))
+    if (RefTracker->isTypeReferenced(Index)) {
       P.format(", referenced");
-    else
+    } else {
       P.format(", unreferenced");
+
+}
   }
   P.format("]");
   P.Indent(Width + 3);
@@ -278,15 +294,19 @@ Error MinimalTypeDumpVisitor::visitMemberEnd(CVMemberRecord &Record) {
 }
 
 StringRef MinimalTypeDumpVisitor::getTypeName(TypeIndex TI) const {
-  if (TI.isNoneType())
+  if (TI.isNoneType()) {
     return "";
+
+}
   return Types.getTypeName(TI);
 }
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                FieldListRecord &FieldList) {
-  if (auto EC = codeview::visitMemberRecordStream(FieldList.Data, *this))
+  if (auto EC = codeview::visitMemberRecordStream(FieldList.Data, *this)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -300,38 +320,48 @@ Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                ArgListRecord &Args) {
   auto Indices = Args.getIndices();
-  if (Indices.empty())
+  if (Indices.empty()) {
     return Error::success();
+
+}
 
   auto Max = std::max_element(Indices.begin(), Indices.end());
   uint32_t W = NumDigits(Max->getIndex()) + 2;
 
-  for (auto I : Indices)
+  for (auto I : Indices) {
     P.formatLine("{0}: `{1}`", fmt_align(I, AlignStyle::Right, W),
                  getTypeName(I));
+
+}
   return Error::success();
 }
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                StringListRecord &Strings) {
   auto Indices = Strings.getIndices();
-  if (Indices.empty())
+  if (Indices.empty()) {
     return Error::success();
+
+}
 
   auto Max = std::max_element(Indices.begin(), Indices.end());
   uint32_t W = NumDigits(Max->getIndex()) + 2;
 
-  for (auto I : Indices)
+  for (auto I : Indices) {
     P.formatLine("{0}: `{1}`", fmt_align(I, AlignStyle::Right, W),
                  getTypeName(I));
+
+}
   return Error::success();
 }
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                ClassRecord &Class) {
   P.format(" `{0}`", Class.Name);
-  if (Class.hasUniqueName())
+  if (Class.hasUniqueName()) {
     P.formatLine("unique name: `{0}`", Class.UniqueName);
+
+}
   P.formatLine("vtable: {0}, base list: {1}, field list: {2}",
                Class.VTableShape, Class.DerivationList, Class.FieldList);
   P.formatLine("options: {0}, sizeof {1}",
@@ -344,8 +374,10 @@ Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                UnionRecord &Union) {
   P.format(" `{0}`", Union.Name);
-  if (Union.hasUniqueName())
+  if (Union.hasUniqueName()) {
     P.formatLine("unique name: `{0}`", Union.UniqueName);
+
+}
   P.formatLine("field list: {0}", Union.FieldList);
   P.formatLine("options: {0}, sizeof {1}",
                formatClassOptions(P.getIndentLevel(), Union.Options, Stream,
@@ -356,8 +388,10 @@ Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR, EnumRecord &Enum) {
   P.format(" `{0}`", Enum.Name);
-  if (Enum.hasUniqueName())
+  if (Enum.hasUniqueName()) {
     P.formatLine("unique name: `{0}`", Enum.UniqueName);
+
+}
   P.formatLine("field list: {0}, underlying type: {1}", Enum.FieldList,
                Enum.UnderlyingType);
   P.formatLine("options: {0}",
@@ -476,24 +510,30 @@ Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(
     CVType &CVR, MethodOverloadListRecord &Overloads) {
-  for (auto &M : Overloads.Methods)
+  for (auto &M : Overloads.Methods) {
     P.formatLine("- Method [type = {0}, vftable offset = {1}, attrs = {2}]",
                  M.Type, M.VFTableOffset, memberAttributes(M.Attrs));
+
+}
   return Error::success();
 }
 
 Error MinimalTypeDumpVisitor::visitKnownRecord(CVType &CVR,
                                                BuildInfoRecord &BI) {
   auto Indices = BI.ArgIndices;
-  if (Indices.empty())
+  if (Indices.empty()) {
     return Error::success();
+
+}
 
   auto Max = std::max_element(Indices.begin(), Indices.end());
   uint32_t W = NumDigits(Max->getIndex()) + 2;
 
-  for (auto I : Indices)
+  for (auto I : Indices) {
     P.formatLine("{0}: `{1}`", fmt_align(I, AlignStyle::Right, W),
                  getTypeName(I));
+
+}
   return Error::success();
 }
 

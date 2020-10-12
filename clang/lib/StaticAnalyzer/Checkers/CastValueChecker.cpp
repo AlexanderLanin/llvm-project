@@ -94,8 +94,10 @@ private:
 
 static bool isInfeasibleCast(const DynamicCastInfo *CastInfo,
                              bool CastSucceeds) {
-  if (!CastInfo)
+  if (!CastInfo) {
     return false;
+
+}
 
   return CastSucceeds ? CastInfo->fails() : CastInfo->succeeds();
 }
@@ -114,8 +116,10 @@ static const NoteTag *getNoteTag(CheckerContext &C,
         SmallString<128> Msg;
         llvm::raw_svector_ostream Out(Msg);
 
-        if (!IsKnownCast)
+        if (!IsKnownCast) {
           Out << "Assuming ";
+
+}
 
         if (const auto *DRE = dyn_cast<DeclRefExpr>(Object)) {
           Out << '\'' << DRE->getDecl()->getNameAsString() << '\'';
@@ -144,10 +148,12 @@ static QualType alignReferenceTypes(QualType toAlign, QualType alignTowards,
       alignTowards.isConstQualified()) {
     toAlign.addConst();
     return ACtx.getLValueReferenceType(toAlign);
-  } else if (alignTowards->isLValueReferenceType())
+  } else if (alignTowards->isLValueReferenceType()) {
     return ACtx.getLValueReferenceType(toAlign);
-  else if (alignTowards->isRValueReferenceType())
+  } else if (alignTowards->isRValueReferenceType()) {
     return ACtx.getRValueReferenceType(toAlign);
+
+}
 
   llvm_unreachable("Must align towards a reference type!");
 }
@@ -157,8 +163,10 @@ static void addCastTransition(const CallEvent &Call, DefinedOrUnknownSVal DV,
                               bool IsNonNullReturn,
                               bool IsCheckedCast = false) {
   ProgramStateRef State = C.getState()->assume(DV, IsNonNullParam);
-  if (!State)
+  if (!State) {
     return;
+
+}
 
   const Expr *Object;
   QualType CastFromTy;
@@ -171,11 +179,15 @@ static void addCastTransition(const CallEvent &Call, DefinedOrUnknownSVal DV,
     Object = cast<CXXInstanceCall>(&Call)->getCXXThisExpr();
     CastFromTy = Object->getType();
     if (CastToTy->isPointerType()) {
-      if (!CastFromTy->isPointerType())
+      if (!CastFromTy->isPointerType()) {
         return;
+
+}
     } else {
-      if (!CastFromTy->isReferenceType())
+      if (!CastFromTy->isReferenceType()) {
         return;
+
+}
 
       CastFromTy = alignReferenceTypes(CastFromTy, CastToTy, C.getASTContext());
     }
@@ -188,10 +200,12 @@ static void addCastTransition(const CallEvent &Call, DefinedOrUnknownSVal DV,
   // We assume that every checked cast succeeds.
   bool CastSucceeds = IsCheckedCast || CastFromTy == CastToTy;
   if (!CastSucceeds) {
-    if (CastInfo)
+    if (CastInfo) {
       CastSucceeds = IsNonNullReturn && CastInfo->succeeds();
-    else
+    } else {
       CastSucceeds = IsNonNullReturn;
+
+}
   }
 
   // Check for infeasible casts.
@@ -202,9 +216,11 @@ static void addCastTransition(const CallEvent &Call, DefinedOrUnknownSVal DV,
 
   // Store the type and the cast information.
   bool IsKnownCast = CastInfo || IsCheckedCast || CastFromTy == CastToTy;
-  if (!IsKnownCast || IsCheckedCast)
+  if (!IsKnownCast || IsCheckedCast) {
     State = setDynamicTypeAndCastInfo(State, MR, CastFromTy, CastToTy,
                                       CastSucceeds);
+
+}
 
   SVal V = CastSucceeds ? C.getSValBuilder().evalCast(DV, CastToTy, CastFromTy)
                         : C.getSValBuilder().makeNull();
@@ -220,22 +236,26 @@ static void addInstanceOfTransition(const CallEvent &Call,
   const FunctionDecl *FD = Call.getDecl()->getAsFunction();
   QualType CastFromTy = Call.parameters()[0]->getType();
   QualType CastToTy = FD->getTemplateSpecializationArgs()->get(0).getAsType();
-  if (CastFromTy->isPointerType())
+  if (CastFromTy->isPointerType()) {
     CastToTy = C.getASTContext().getPointerType(CastToTy);
-  else if (CastFromTy->isReferenceType())
+  } else if (CastFromTy->isReferenceType()) {
     CastToTy = alignReferenceTypes(CastToTy, CastFromTy, C.getASTContext());
-  else
+  } else {
     return;
+
+}
 
   const MemRegion *MR = DV.getAsRegion();
   const DynamicCastInfo *CastInfo =
       getDynamicCastInfo(State, MR, CastFromTy, CastToTy);
 
   bool CastSucceeds;
-  if (CastInfo)
+  if (CastInfo) {
     CastSucceeds = IsInstanceOf && CastInfo->succeeds();
-  else
+  } else {
     CastSucceeds = IsInstanceOf || CastFromTy == CastToTy;
+
+}
 
   if (isInfeasibleCast(CastInfo, CastSucceeds)) {
     C.generateSink(State, C.getPredecessor());
@@ -244,9 +264,11 @@ static void addInstanceOfTransition(const CallEvent &Call,
 
   // Store the type and the cast information.
   bool IsKnownCast = CastInfo || CastFromTy == CastToTy;
-  if (!IsKnownCast)
+  if (!IsKnownCast) {
     State = setDynamicTypeAndCastInfo(State, MR, CastFromTy, CastToTy,
                                       IsInstanceOf);
+
+}
 
   C.addTransition(
       State->BindExpr(Call.getOriginExpr(), C.getLocationContext(),
@@ -277,12 +299,14 @@ static void evalNonNullParamNullReturn(const CallEvent &Call,
 static void evalNullParamNullReturn(const CallEvent &Call,
                                     DefinedOrUnknownSVal DV,
                                     CheckerContext &C) {
-  if (ProgramStateRef State = C.getState()->assume(DV, false))
+  if (ProgramStateRef State = C.getState()->assume(DV, false)) {
     C.addTransition(State->BindExpr(Call.getOriginExpr(),
                                     C.getLocationContext(),
                                     C.getSValBuilder().makeNull(), false),
                     C.getNoteTag("Assuming null pointer is passed into cast",
                                  /*IsPrunable=*/true));
+
+}
 }
 
 void CastValueChecker::evalCast(const CallEvent &Call, DefinedOrUnknownSVal DV,
@@ -385,8 +409,10 @@ void CastValueChecker::evalIsaAndNonNull(const CallEvent &Call,
 bool CastValueChecker::evalCall(const CallEvent &Call,
                                 CheckerContext &C) const {
   const auto *Lookup = CDM.lookup(Call);
-  if (!Lookup)
+  if (!Lookup) {
     return false;
+
+}
 
   const CastCheck &Check = Lookup->first;
   CallKind Kind = Lookup->second;
@@ -401,8 +427,10 @@ bool CastValueChecker::evalCall(const CallEvent &Call,
     QualType ParamT = Call.parameters()[0]->getType();
     QualType ResultT = Call.getResultType();
     if (!(ParamT->isPointerType() && ResultT->isPointerType()) &&
-        !(ParamT->isReferenceType() && ResultT->isReferenceType()))
+        !(ParamT->isReferenceType() && ResultT->isReferenceType())) {
       return false;
+
+}
 
     DV = Call.getArgSVal(0).getAs<DefinedOrUnknownSVal>();
     break;
@@ -410,23 +438,29 @@ bool CastValueChecker::evalCall(const CallEvent &Call,
   case CallKind::InstanceOf: {
     // We need to obtain the only template argument to determinte the type.
     const FunctionDecl *FD = Call.getDecl()->getAsFunction();
-    if (!FD || !FD->getTemplateSpecializationArgs())
+    if (!FD || !FD->getTemplateSpecializationArgs()) {
       return false;
+
+}
 
     DV = Call.getArgSVal(0).getAs<DefinedOrUnknownSVal>();
     break;
   }
   case CallKind::Method:
     const auto *InstanceCall = dyn_cast<CXXInstanceCall>(&Call);
-    if (!InstanceCall)
+    if (!InstanceCall) {
       return false;
+
+}
 
     DV = InstanceCall->getCXXThisVal().getAs<DefinedOrUnknownSVal>();
     break;
   }
 
-  if (!DV)
+  if (!DV) {
     return false;
+
+}
 
   Check(this, Call, *DV, C);
   return true;

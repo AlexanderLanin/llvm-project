@@ -48,12 +48,18 @@ LoopTraversal::TraversalOrder LoopTraversal::traverse(MachineFunction &MF) {
         assert(SuccNumber < MBBInfos.size() &&
                "Unexpected basic block number.");
         if (!isBlockDone(Succ)) {
-          if (Primary)
+          if (Primary) {
             MBBInfos[SuccNumber].IncomingProcessed++;
-          if (Done)
+
+}
+          if (Done) {
             MBBInfos[SuccNumber].IncomingCompleted++;
-          if (isBlockDone(Succ))
+
+}
+          if (isBlockDone(Succ)) {
             Workqueue.push_back(Succ);
+
+}
         }
       }
       Primary = false;
@@ -64,8 +70,10 @@ LoopTraversal::TraversalOrder LoopTraversal::traverse(MachineFunction &MF) {
   // This is possible if blocks have dead predecessors, so we didn't visit them
   // above.
   for (MachineBasicBlock *MBB : RPOT) {
-    if (!isBlockDone(MBB))
+    if (!isBlockDone(MBB)) {
       MBBTraversalOrder.push_back(TraversedMBBInfo(MBB, false, true));
+
+}
     // Don't update successors here. We'll get to them anyway through this
     // loop.
   }

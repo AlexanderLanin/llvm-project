@@ -211,7 +211,7 @@ static bool isPotentialBlockingStoreInst(int Opcode, int LoadOpcode) {
             Opcode == X86::MOV32mr || Opcode == X86::MOV32mi ||
             Opcode == X86::MOV16mr || Opcode == X86::MOV16mi ||
             Opcode == X86::MOV8mr || Opcode == X86::MOV8mi;
-  if (isYMMLoadOpcode(LoadOpcode))
+  if (isYMMLoadOpcode(LoadOpcode)) {
     PBlock |= Opcode == X86::VMOVUPSmr || Opcode == X86::VMOVAPSmr ||
               Opcode == X86::VMOVUPDmr || Opcode == X86::VMOVAPDmr ||
               Opcode == X86::VMOVDQUmr || Opcode == X86::VMOVDQAmr ||
@@ -220,6 +220,8 @@ static bool isPotentialBlockingStoreInst(int Opcode, int LoadOpcode) {
               Opcode == X86::VMOVDQU64Z128mr ||
               Opcode == X86::VMOVDQA64Z128mr ||
               Opcode == X86::VMOVDQU32Z128mr || Opcode == X86::VMOVDQA32Z128mr;
+
+}
   return PBlock;
 }
 
@@ -316,16 +318,26 @@ static bool isRelevantAddressingMode(MachineInstr *MI) {
   MachineOperand &Index = MI->getOperand(AddrOffset + X86::AddrIndexReg);
   MachineOperand &Segment = MI->getOperand(AddrOffset + X86::AddrSegmentReg);
 
-  if (!((Base.isReg() && Base.getReg() != X86::NoRegister) || Base.isFI()))
+  if (!((Base.isReg() && Base.getReg() != X86::NoRegister) || Base.isFI())) {
     return false;
-  if (!Disp.isImm())
+
+}
+  if (!Disp.isImm()) {
     return false;
-  if (Scale.getImm() != 1)
+
+}
+  if (Scale.getImm() != 1) {
     return false;
-  if (!(Index.isReg() && Index.getReg() == X86::NoRegister))
+
+}
+  if (!(Index.isReg() && Index.getReg() == X86::NoRegister)) {
     return false;
-  if (!(Segment.isReg() && Segment.getReg() == X86::NoRegister))
+
+}
+  if (!(Segment.isReg() && Segment.getReg() == X86::NoRegister)) {
     return false;
+
+}
   return true;
 }
 
@@ -342,14 +354,20 @@ findPotentialBlockers(MachineInstr *LoadInst) {
   for (auto PBInst = std::next(MachineBasicBlock::reverse_iterator(LoadInst)),
             E = LoadInst->getParent()->rend();
        PBInst != E; ++PBInst) {
-    if (PBInst->isMetaInstruction())
+    if (PBInst->isMetaInstruction()) {
       continue;
+
+}
     BlockCount++;
-    if (BlockCount >= InspectionLimit)
+    if (BlockCount >= InspectionLimit) {
       break;
+
+}
     MachineInstr &MI = *PBInst;
-    if (MI.getDesc().isCall())
+    if (MI.getDesc().isCall()) {
       return PotentialBlockers;
+
+}
     PotentialBlockers.push_back(&MI);
   }
   // If we didn't get to the instructions limit try predecessing blocks.
@@ -367,13 +385,19 @@ findPotentialBlockers(MachineInstr *LoadInst) {
       for (MachineBasicBlock::reverse_iterator PBInst = PMBB->rbegin(),
                                                PME = PMBB->rend();
            PBInst != PME; ++PBInst) {
-        if (PBInst->isMetaInstruction())
+        if (PBInst->isMetaInstruction()) {
           continue;
+
+}
         PredCount++;
-        if (PredCount >= LimitLeft)
+        if (PredCount >= LimitLeft) {
           break;
-        if (PBInst->getDesc().isCall())
+
+}
+        if (PBInst->getDesc().isCall()) {
           break;
+
+}
         PotentialBlockers.push_back(&*PBInst);
       }
     }
@@ -404,8 +428,10 @@ void X86AvoidSFBPass::buildCopy(MachineInstr *LoadInst, unsigned NLoadOpcode,
           .addReg(X86::NoRegister)
           .addMemOperand(
               MBB->getParent()->getMachineMemOperand(LMMO, LMMOffset, Size));
-  if (LoadBase.isReg())
+  if (LoadBase.isReg()) {
     getBaseOperand(NewLoad).setIsKill(false);
+
+}
   LLVM_DEBUG(NewLoad->dump());
   // If the load and store are consecutive, use the loadInst location to
   // reduce register pressure.
@@ -413,8 +439,10 @@ void X86AvoidSFBPass::buildCopy(MachineInstr *LoadInst, unsigned NLoadOpcode,
   auto PrevInstrIt = skipDebugInstructionsBackward(
       std::prev(MachineBasicBlock::instr_iterator(StoreInst)),
       MBB->instr_begin());
-  if (PrevInstrIt.getNodePtr() == LoadInst)
+  if (PrevInstrIt.getNodePtr() == LoadInst) {
     StInst = LoadInst;
+
+}
   MachineInstr *NewStore =
       BuildMI(*MBB, StInst, StInst->getDebugLoc(), TII->get(NStoreOpcode))
           .add(StoreBase)
@@ -425,8 +453,10 @@ void X86AvoidSFBPass::buildCopy(MachineInstr *LoadInst, unsigned NLoadOpcode,
           .addReg(Reg1)
           .addMemOperand(
               MBB->getParent()->getMachineMemOperand(SMMO, SMMOffset, Size));
-  if (StoreBase.isReg())
+  if (StoreBase.isReg()) {
     getBaseOperand(NewStore).setIsKill(false);
+
+}
   MachineOperand &StoreSrcVReg = StoreInst->getOperand(X86::AddrNumOperands);
   assert(StoreSrcVReg.isReg() && "Expected virtual register");
   NewStore->getOperand(X86::AddrNumOperands).setIsKill(StoreSrcVReg.isKill());
@@ -507,22 +537,28 @@ static void updateKillStatus(MachineInstr *LoadInst, MachineInstr *StoreInst) {
     // then the partial copies were also created in
     // a consecutive order to reduce register pressure,
     // and the location of the last load is before the last store.
-    if (StorePrevNonDbgInstr == LoadInst)
+    if (StorePrevNonDbgInstr == LoadInst) {
       LastLoad = LoadInst->getPrevNode()->getPrevNode();
+
+}
     getBaseOperand(LastLoad).setIsKill(LoadBase.isKill());
   }
   if (StoreBase.isReg()) {
     MachineInstr *StInst = StoreInst;
-    if (StorePrevNonDbgInstr == LoadInst)
+    if (StorePrevNonDbgInstr == LoadInst) {
       StInst = LoadInst;
+
+}
     getBaseOperand(StInst->getPrevNode()).setIsKill(StoreBase.isKill());
   }
 }
 
 bool X86AvoidSFBPass::alias(const MachineMemOperand &Op1,
                             const MachineMemOperand &Op2) const {
-  if (!Op1.getValue() || !Op2.getValue())
+  if (!Op1.getValue() || !Op2.getValue()) {
     return true;
+
+}
 
   int64_t MinOffset = std::min(Op1.getOffset(), Op2.getOffset());
   int64_t Overlapa = Op1.getSize() + Op1.getOffset() - MinOffset;
@@ -535,13 +571,17 @@ bool X86AvoidSFBPass::alias(const MachineMemOperand &Op1,
 }
 
 void X86AvoidSFBPass::findPotentiallylBlockedCopies(MachineFunction &MF) {
-  for (auto &MBB : MF)
+  for (auto &MBB : MF) {
     for (auto &MI : MBB) {
-      if (!isPotentialBlockedMemCpyLd(MI.getOpcode()))
+      if (!isPotentialBlockedMemCpyLd(MI.getOpcode())) {
         continue;
+
+}
       int DefVR = MI.getOperand(0).getReg();
-      if (!MRI->hasOneNonDBGUse(DefVR))
+      if (!MRI->hasOneNonDBGUse(DefVR)) {
         continue;
+
+}
       for (auto UI = MRI->use_nodbg_begin(DefVR), UE = MRI->use_nodbg_end();
            UI != UE;) {
         MachineOperand &StoreMO = *UI++;
@@ -555,11 +595,15 @@ void X86AvoidSFBPass::findPotentiallylBlockedCopies(MachineFunction &MF) {
                  "Expected one memory operand for load instruction");
           assert(StoreMI.hasOneMemOperand() &&
                  "Expected one memory operand for store instruction");
-          if (!alias(**MI.memoperands_begin(), **StoreMI.memoperands_begin()))
+          if (!alias(**MI.memoperands_begin(), **StoreMI.memoperands_begin())) {
             BlockedLoadsStoresPairs.push_back(std::make_pair(&MI, &StoreMI));
+
+}
         }
       }
     }
+
+}
 }
 
 unsigned X86AvoidSFBPass::getRegSizeInBytes(MachineInstr *LoadInst) {
@@ -618,10 +662,14 @@ static bool hasSameBaseOpValue(MachineInstr *LoadInst,
                                MachineInstr *StoreInst) {
   MachineOperand &LoadBase = getBaseOperand(LoadInst);
   MachineOperand &StoreBase = getBaseOperand(StoreInst);
-  if (LoadBase.isReg() != StoreBase.isReg())
+  if (LoadBase.isReg() != StoreBase.isReg()) {
     return false;
-  if (LoadBase.isReg())
+
+}
+  if (LoadBase.isReg()) {
     return LoadBase.getReg() == StoreBase.getReg();
+
+}
   return LoadBase.getIndex() == StoreBase.getIndex();
 }
 
@@ -637,18 +685,24 @@ updateBlockingStoresDispSizeMap(DisplacementSizeMap &BlockingStoresDispSizeMap,
                                 int64_t DispImm, unsigned Size) {
   if (BlockingStoresDispSizeMap.count(DispImm)) {
     // Choose the smallest blocking store starting at this displacement.
-    if (BlockingStoresDispSizeMap[DispImm] > Size)
+    if (BlockingStoresDispSizeMap[DispImm] > Size) {
       BlockingStoresDispSizeMap[DispImm] = Size;
 
-  } else
+}
+
+  } else {
     BlockingStoresDispSizeMap[DispImm] = Size;
+
+}
 }
 
 // Remove blocking stores contained in each other.
 static void
 removeRedundantBlockingStores(DisplacementSizeMap &BlockingStoresDispSizeMap) {
-  if (BlockingStoresDispSizeMap.size() <= 1)
+  if (BlockingStoresDispSizeMap.size() <= 1) {
     return;
+
+}
 
   SmallVector<std::pair<int64_t, unsigned>, 0> DispSizeStack;
   for (auto DispSizePair : BlockingStoresDispSizeMap) {
@@ -657,23 +711,29 @@ removeRedundantBlockingStores(DisplacementSizeMap &BlockingStoresDispSizeMap) {
     while (DispSizeStack.size()) {
       int64_t PrevDisp = DispSizeStack.back().first;
       unsigned PrevSize = DispSizeStack.back().second;
-      if (CurrDisp + CurrSize > PrevDisp + PrevSize)
+      if (CurrDisp + CurrSize > PrevDisp + PrevSize) {
         break;
+
+}
       DispSizeStack.pop_back();
     }
     DispSizeStack.push_back(DispSizePair);
   }
   BlockingStoresDispSizeMap.clear();
-  for (auto Disp : DispSizeStack)
+  for (auto Disp : DispSizeStack) {
     BlockingStoresDispSizeMap.insert(Disp);
+
+}
 }
 
 bool X86AvoidSFBPass::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
 
   if (DisableX86AvoidStoreForwardBlocks || skipFunction(MF.getFunction()) ||
-      !MF.getSubtarget<X86Subtarget>().is64Bit())
+      !MF.getSubtarget<X86Subtarget>().is64Bit()) {
     return false;
+
+}
 
   MRI = &MF.getRegInfo();
   assert(MRI->isSSA() && "Expected MIR to be in SSA form");
@@ -694,8 +754,10 @@ bool X86AvoidSFBPass::runOnMachineFunction(MachineFunction &MF) {
     for (auto PBInst : PotentialBlockers) {
       if (!isPotentialBlockingStoreInst(PBInst->getOpcode(),
                                         LoadInst->getOpcode()) ||
-          !isRelevantAddressingMode(PBInst))
+          !isRelevantAddressingMode(PBInst)) {
         continue;
+
+}
       int64_t PBstDispImm = getDispOperand(PBInst).getImm();
       assert(PBInst->hasOneMemOperand() && "Expected One Memory Operand");
       unsigned PBstSize = (*PBInst->memoperands_begin())->getSize();
@@ -705,13 +767,17 @@ bool X86AvoidSFBPass::runOnMachineFunction(MachineFunction &MF) {
       // performance.
       if (hasSameBaseOpValue(LoadInst, PBInst) &&
           isBlockingStore(LdDispImm, getRegSizeInBytes(LoadInst), PBstDispImm,
-                          PBstSize))
+                          PBstSize)) {
         updateBlockingStoresDispSizeMap(BlockingStoresDispSizeMap, PBstDispImm,
                                         PBstSize);
+
+}
     }
 
-    if (BlockingStoresDispSizeMap.empty())
+    if (BlockingStoresDispSizeMap.empty()) {
       continue;
+
+}
 
     // We found a store forward block, break the memcpy's load and store
     // into smaller copies such that each smaller store that was causing

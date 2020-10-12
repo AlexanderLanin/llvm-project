@@ -41,14 +41,18 @@ protected:
 
     Function *F = M->getFunction("test");
     ASSERT_TRUE(F) << "Test must have a function @test";
-    if (!F)
+    if (!F) {
       return;
+
+}
 
     A = nullptr;
     for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
       if (I->hasName()) {
-        if (I->getName() == "A")
+        if (I->getName() == "A") {
           A = &*I;
+
+}
       }
     }
     ASSERT_TRUE(A) << "@test must have an instruction %A";
@@ -942,7 +946,9 @@ TEST_P(IsBytewiseValueTest, IsBytewiseValue) {
   Value *Actual = isBytewiseValue(GV->getInitializer(), M->getDataLayout());
   std::string Buff;
   raw_string_ostream S(Buff);
-  if (Actual)
+  if (Actual) {
     S << *Actual;
+
+}
   EXPECT_EQ(GetParam().first, S.str());
 }

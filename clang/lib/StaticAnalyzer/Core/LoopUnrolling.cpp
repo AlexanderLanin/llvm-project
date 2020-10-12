@@ -74,8 +74,10 @@ static bool isLoopStmt(const Stmt *S) {
 
 ProgramStateRef processLoopEnd(const Stmt *LoopStmt, ProgramStateRef State) {
   auto LS = State->get<LoopStack>();
-  if (!LS.isEmpty() && LS.getHead().getLoopStmt() == LoopStmt)
+  if (!LS.isEmpty() && LS.getHead().getLoopStmt() == LoopStmt) {
     State = State->set<LoopStack>(LS.getTail());
+
+}
   return State;
 }
 
@@ -161,8 +163,10 @@ static internal::Matcher<Stmt> forLoopMatcher() {
 
 static bool isPossiblyEscaped(const VarDecl *VD, ExplodedNode *N) {
   // Global variables assumed as escaped variables.
-  if (VD->hasGlobalStorage())
+  if (VD->hasGlobalStorage()) {
     return true;
+
+}
 
   while (!N->pred_empty()) {
     // FIXME: getStmtForDiagnostics() does nasty things in order to provide
@@ -176,8 +180,10 @@ static bool isPossiblyEscaped(const VarDecl *VD, ExplodedNode *N) {
     if (const DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
       for (const Decl *D : DS->decls()) {
         // Once we reach the declaration of the VD we can return.
-        if (D->getCanonicalDecl() == VD)
+        if (D->getCanonicalDecl() == VD) {
           return false;
+
+}
       }
     }
     // Check the usage of the pass-by-ref function calls and adress-of operator
@@ -188,8 +194,10 @@ static bool isPossiblyEscaped(const VarDecl *VD, ExplodedNode *N) {
         match(stmt(anyOf(callByRef(equalsNode(VD)), getAddrTo(equalsNode(VD)),
                          assignedToRef(equalsNode(VD)))),
               *S, ASTCtx);
-    if (!Match.empty())
+    if (!Match.empty()) {
       return true;
+
+}
 
     N = N->getFirstPred();
   }
@@ -199,14 +207,18 @@ static bool isPossiblyEscaped(const VarDecl *VD, ExplodedNode *N) {
 bool shouldCompletelyUnroll(const Stmt *LoopStmt, ASTContext &ASTCtx,
                             ExplodedNode *Pred, unsigned &maxStep) {
 
-  if (!isLoopStmt(LoopStmt))
+  if (!isLoopStmt(LoopStmt)) {
     return false;
+
+}
 
   // TODO: Match the cases where the bound is not a concrete literal but an
   // integer with known value
   auto Matches = match(forLoopMatcher(), *LoopStmt, ASTCtx);
-  if (Matches.empty())
+  if (Matches.empty()) {
     return false;
+
+}
 
   auto CounterVar = Matches[0].getNodeAs<VarDecl>("initVarName");
   llvm::APInt BoundNum =
@@ -219,10 +231,12 @@ bool shouldCompletelyUnroll(const Stmt *LoopStmt, ASTContext &ASTCtx,
     BoundNum = BoundNum.zextOrSelf(InitNum.getBitWidth());
   }
 
-  if (CondOp->getOpcode() == BO_GE || CondOp->getOpcode() == BO_LE)
+  if (CondOp->getOpcode() == BO_GE || CondOp->getOpcode() == BO_LE) {
     maxStep = (BoundNum - InitNum + 1).abs().getZExtValue();
-  else
+  } else {
     maxStep = (BoundNum - InitNum).abs().getZExtValue();
+
+}
 
   // Check if the counter of the loop is not escaped before.
   return !isPossiblyEscaped(CounterVar->getCanonicalDecl(), Pred);
@@ -231,15 +245,21 @@ bool shouldCompletelyUnroll(const Stmt *LoopStmt, ASTContext &ASTCtx,
 bool madeNewBranch(ExplodedNode *N, const Stmt *LoopStmt) {
   const Stmt *S = nullptr;
   while (!N->pred_empty()) {
-    if (N->succ_size() > 1)
+    if (N->succ_size() > 1) {
       return true;
 
+}
+
     ProgramPoint P = N->getLocation();
-    if (Optional<BlockEntrance> BE = P.getAs<BlockEntrance>())
+    if (Optional<BlockEntrance> BE = P.getAs<BlockEntrance>()) {
       S = BE->getBlock()->getTerminatorStmt();
 
-    if (S == LoopStmt)
+}
+
+    if (S == LoopStmt) {
       return false;
+
+}
 
     N = N->getFirstPred();
   }
@@ -253,8 +273,10 @@ ProgramStateRef updateLoopStack(const Stmt *LoopStmt, ASTContext &ASTCtx,
   auto State = Pred->getState();
   auto LCtx = Pred->getLocationContext();
 
-  if (!isLoopStmt(LoopStmt))
+  if (!isLoopStmt(LoopStmt)) {
     return State;
+
+}
 
   auto LS = State->get<LoopStack>();
   if (!LS.isEmpty() && LoopStmt == LS.getHead().getLoopStmt() &&
@@ -276,19 +298,23 @@ ProgramStateRef updateLoopStack(const Stmt *LoopStmt, ASTContext &ASTCtx,
   unsigned outerStep = (LS.isEmpty() ? 1 : LS.getHead().getMaxStep());
 
   unsigned innerMaxStep = maxStep * outerStep;
-  if (innerMaxStep > MAXIMUM_STEP_UNROLLED)
+  if (innerMaxStep > MAXIMUM_STEP_UNROLLED) {
     State = State->add<LoopStack>(
         LoopState::getNormal(LoopStmt, LCtx, maxVisitOnPath));
-  else
+  } else {
     State = State->add<LoopStack>(
         LoopState::getUnrolled(LoopStmt, LCtx, innerMaxStep));
+
+}
   return State;
 }
 
 bool isUnrolledState(ProgramStateRef State) {
   auto LS = State->get<LoopStack>();
-  if (LS.isEmpty() || !LS.getHead().isUnrolled())
+  if (LS.isEmpty() || !LS.getHead().isUnrolled()) {
     return false;
+
+}
   return true;
 }
 }

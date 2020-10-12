@@ -78,11 +78,13 @@ EnumValueVector getDeclValuesForEnum(const EnumDecl *ED) {
 
 void EnumCastOutOfRangeChecker::reportWarning(CheckerContext &C) const {
   if (const ExplodedNode *N = C.generateNonFatalErrorNode()) {
-    if (!EnumValueCastOutOfRange)
+    if (!EnumValueCastOutOfRange) {
       EnumValueCastOutOfRange.reset(
           new BuiltinBug(this, "Enum cast out of range",
                          "The value provided to the cast expression is not in "
                          "the valid range of values for the enum"));
+
+}
     C.emitReport(std::make_unique<PathSensitiveBugReport>(
         *EnumValueCastOutOfRange, EnumValueCastOutOfRange->getDescription(),
         N));
@@ -113,13 +115,17 @@ void EnumCastOutOfRangeChecker::checkPreStmt(const CastExpr *CE,
 
   // If the value cannot be reasoned about (not even a DefinedOrUnknownSVal),
   // don't analyze further.
-  if (!ValueToCast)
+  if (!ValueToCast) {
     return;
+
+}
 
   const QualType T = CE->getType();
   // Check whether the cast type is an enum.
-  if (!T->isEnumeralType())
+  if (!T->isEnumeralType()) {
     return;
+
+}
 
   // If the cast is an enum, get its declaration.
   // If the isEnumeralType() returned true, then the declaration must exist
@@ -134,8 +140,10 @@ void EnumCastOutOfRangeChecker::checkPreStmt(const CastExpr *CE,
 
   // If there is no value that can possibly match any of the enum values, then
   // warn.
-  if (!PossibleValueMatch)
+  if (!PossibleValueMatch) {
     reportWarning(C);
+
+}
 }
 
 void ento::registerEnumCastOutOfRangeChecker(CheckerManager &mgr) {

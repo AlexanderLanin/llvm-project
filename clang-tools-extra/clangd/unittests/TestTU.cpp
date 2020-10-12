@@ -43,8 +43,10 @@ ParsedAST TestTU::build() const {
                                       : FullHeaderName.c_str());
     // ms-compatibility changes the meaning of #import.
     // The default is OS-dependent (on on windows), ensure it's off.
-    if (ImplicitHeaderGuard)
+    if (ImplicitHeaderGuard) {
       Cmd.push_back("-fno-ms-compatibility");
+
+}
   }
   Cmd.insert(Cmd.end(), ExtraArgs.begin(), ExtraArgs.end());
   // Put the file name at the end -- this allows the extra arg (-xc++) to
@@ -60,8 +62,10 @@ ParsedAST TestTU::build() const {
   Inputs.Opts.ClangTidyOpts.Checks = ClangTidyChecks;
   Inputs.Opts.ClangTidyOpts.WarningsAsErrors = ClangTidyWarningsAsErrors;
   Inputs.Index = ExternalIndex;
-  if (Inputs.Index)
+  if (Inputs.Index) {
     Inputs.Opts.SuggestMissingIncludes = true;
+
+}
   StoreDiags Diags;
   auto CI = buildCompilerInvocation(Inputs, Diags);
   assert(CI && "Failed to build compilation invocation.");
@@ -82,7 +86,7 @@ ParsedAST TestTU::build() const {
   if (llvm::none_of(Files, [](const auto &KV) {
         return llvm::StringRef(KV.second).contains("error-ok");
       })) {
-    for (const auto &D : AST->getDiagnostics())
+    for (const auto &D : AST->getDiagnostics()) {
       if (D.Severity >= DiagnosticsEngine::Error) {
         ADD_FAILURE()
             << "TestTU failed to build (suppress with /*error-ok*/): \n"
@@ -90,6 +94,8 @@ ParsedAST TestTU::build() const {
             << Code;
         break; // Just report first error for simplicity.
       }
+
+}
   }
   return std::move(*AST);
 }
@@ -113,8 +119,10 @@ std::unique_ptr<SymbolIndex> TestTU::index() const {
 const Symbol &findSymbol(const SymbolSlab &Slab, llvm::StringRef QName) {
   const Symbol *Result = nullptr;
   for (const Symbol &S : Slab) {
-    if (QName != (S.Scope + S.Name).str())
+    if (QName != (S.Scope + S.Name).str()) {
       continue;
+
+}
     if (Result) {
       ADD_FAILURE() << "Multiple symbols named " << QName << ":\n"
                     << *Result << "\n---\n"
@@ -158,8 +166,10 @@ const NamedDecl &findDecl(ParsedAST &AST,
     decltype(Filter) F;
     llvm::SmallVector<const NamedDecl *, 1> Decls;
     bool VisitNamedDecl(const NamedDecl *ND) {
-      if (F(*ND))
+      if (F(*ND)) {
         Decls.push_back(ND);
+
+}
       return true;
     }
   } Visitor;
@@ -174,9 +184,13 @@ const NamedDecl &findDecl(ParsedAST &AST,
 
 const NamedDecl &findUnqualifiedDecl(ParsedAST &AST, llvm::StringRef Name) {
   return findDecl(AST, [Name](const NamedDecl &ND) {
-    if (auto *ID = ND.getIdentifier())
-      if (ID->getName() == Name)
+    if (auto *ID = ND.getIdentifier()) {
+      if (ID->getName() == Name) {
         return true;
+
+}
+
+}
     return false;
   });
 }

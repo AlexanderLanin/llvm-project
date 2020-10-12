@@ -46,16 +46,20 @@ void ReturnBracedInitListCheck::check(const MatchFinder::MatchResult &Result) {
 
   // Don't make replacements in macro.
   SourceLocation Loc = MatchedConstructExpr->getExprLoc();
-  if (Loc.isMacroID())
+  if (Loc.isMacroID()) {
     return;
+
+}
 
   // Make sure that the return type matches the constructed type.
   const QualType ReturnType =
       MatchedFunctionDecl->getReturnType().getCanonicalType();
   const QualType ConstructType =
       MatchedConstructExpr->getType().getCanonicalType();
-  if (ReturnType != ConstructType)
+  if (ReturnType != ConstructType) {
     return;
+
+}
 
   auto Diag = diag(Loc, "avoid repeating the return type from the "
                         "declaration; use a braced initializer list instead");
@@ -64,8 +68,10 @@ void ReturnBracedInitListCheck::check(const MatchFinder::MatchResult &Result) {
       MatchedConstructExpr->getParenOrBraceRange();
 
   // Make sure there is an explicit constructor call.
-  if (CallParensRange.isInvalid())
+  if (CallParensRange.isInvalid()) {
     return;
+
+}
 
   // Make sure that the ctor arguments match the declaration.
   for (unsigned I = 0, NumParams = MatchedConstructExpr->getNumArgs();
@@ -73,8 +79,10 @@ void ReturnBracedInitListCheck::check(const MatchFinder::MatchResult &Result) {
     if (const auto *VD = dyn_cast<VarDecl>(
             MatchedConstructExpr->getConstructor()->getParamDecl(I))) {
       if (MatchedConstructExpr->getArg(I)->getType().getCanonicalType() !=
-          VD->getType().getCanonicalType())
+          VD->getType().getCanonicalType()) {
         return;
+
+}
     }
   }
 

@@ -100,9 +100,11 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
     return 1;
   }
 
-  for (auto *Arg : Args.filtered(OPT_UNKNOWN))
+  for (auto *Arg : Args.filtered(OPT_UNKNOWN)) {
     llvm::errs() << "ignoring unknown argument: " << Arg->getAsString(Args)
                  << "\n";
+
+}
 
   if (!Args.hasArg(OPT_d)) {
     llvm::errs() << "no definition file specified\n";
@@ -111,8 +113,10 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
 
   std::unique_ptr<MemoryBuffer> MB =
       openFile(Args.getLastArg(OPT_d)->getValue());
-  if (!MB)
+  if (!MB) {
     return 1;
+
+}
 
   if (!MB->getBufferSize()) {
     llvm::errs() << "definition file empty\n";
@@ -120,8 +124,10 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
   }
 
   COFF::MachineTypes Machine = IMAGE_FILE_MACHINE_UNKNOWN;
-  if (auto *Arg = Args.getLastArg(OPT_m))
+  if (auto *Arg = Args.getLastArg(OPT_m)) {
     Machine = getEmulation(Arg->getValue());
+
+}
 
   if (Machine == IMAGE_FILE_MACHINE_UNKNOWN) {
     llvm::errs() << "unknown target\n";
@@ -138,8 +144,10 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
   }
 
   // Do this after the parser because parseCOFFModuleDefinition sets OutputFile.
-  if (auto *Arg = Args.getLastArg(OPT_D))
+  if (auto *Arg = Args.getLastArg(OPT_D)) {
     Def->OutputFile = Arg->getValue();
+
+}
 
   if (Def->OutputFile.empty()) {
     llvm::errs() << "no DLL name specified\n";
@@ -162,8 +170,10 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
 
   if (Machine == IMAGE_FILE_MACHINE_I386 && Args.getLastArg(OPT_k)) {
     for (COFFShortExport& E : Def->Exports) {
-      if (!E.AliasTarget.empty() || (!E.Name.empty() && E.Name[0] == '?'))
+      if (!E.AliasTarget.empty() || (!E.Name.empty() && E.Name[0] == '?')) {
         continue;
+
+}
       E.SymbolName = E.Name;
       // Trim off the trailing decoration. Symbols will always have a
       // starting prefix here (either _ for cdecl/stdcall, @ for fastcall
@@ -178,7 +188,9 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
   }
 
   if (!Path.empty() &&
-      writeImportLibrary(Def->OutputFile, Path, Def->Exports, Machine, true))
+      writeImportLibrary(Def->OutputFile, Path, Def->Exports, Machine, true)) {
     return 1;
+
+}
   return 0;
 }

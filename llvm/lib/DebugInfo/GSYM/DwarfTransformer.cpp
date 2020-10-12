@@ -35,8 +35,10 @@ struct llvm::gsym::CUInfo {
     LineTable = DICtx.getLineTableForUnit(CU);
     CompDir = CU->getCompilationDir();
     FileCache.clear();
-    if (LineTable)
+    if (LineTable) {
       FileCache.assign(LineTable->Prologue.FileNames.size() + 1, UINT32_MAX);
+
+}
     DWARFDie Die = CU->getUnitDIE();
     Language = dwarf::toUnsigned(Die.find(dwarf::DW_AT_language), 0);
     AddrSize = CU->getAddressByteSize();
@@ -47,10 +49,12 @@ struct llvm::gsym::CUInfo {
   /// addresses are used by some linkers to indicate that a function has been
   /// dead stripped or didn't end up in the linked executable.
   bool isHighestAddress(uint64_t Addr) const {
-    if (AddrSize == 4)
+    if (AddrSize == 4) {
       return Addr == UINT32_MAX;
-    else if (AddrSize == 8)
+    } else if (AddrSize == 8) {
       return Addr == UINT64_MAX;
+
+}
     return false;
   }
 
@@ -64,19 +68,25 @@ struct llvm::gsym::CUInfo {
   /// doing the conversion, and subsequent clients will get the cached GSYM
   /// index.
   uint32_t DWARFToGSYMFileIndex(GsymCreator &Gsym, uint32_t DwarfFileIdx) {
-    if (!LineTable)
+    if (!LineTable) {
       return 0;
+
+}
     assert(DwarfFileIdx < FileCache.size());
     uint32_t &GsymFileIdx = FileCache[DwarfFileIdx];
-    if (GsymFileIdx != UINT32_MAX)
+    if (GsymFileIdx != UINT32_MAX) {
       return GsymFileIdx;
+
+}
     std::string File;
     if (LineTable->getFileNameByIndex(
             DwarfFileIdx, CompDir,
-            DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File))
+            DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File)) {
       GsymFileIdx = Gsym.insertFile(File);
-    else
+    } else {
       GsymFileIdx = 0;
+
+}
     return GsymFileIdx;
   }
 };
@@ -85,24 +95,32 @@ struct llvm::gsym::CUInfo {
 static DWARFDie GetParentDeclContextDIE(DWARFDie &Die) {
   if (DWARFDie SpecDie =
           Die.getAttributeValueAsReferencedDie(dwarf::DW_AT_specification)) {
-    if (DWARFDie SpecParent = GetParentDeclContextDIE(SpecDie))
+    if (DWARFDie SpecParent = GetParentDeclContextDIE(SpecDie)) {
       return SpecParent;
+
+}
   }
   if (DWARFDie AbstDie =
           Die.getAttributeValueAsReferencedDie(dwarf::DW_AT_abstract_origin)) {
-    if (DWARFDie AbstParent = GetParentDeclContextDIE(AbstDie))
+    if (DWARFDie AbstParent = GetParentDeclContextDIE(AbstDie)) {
       return AbstParent;
+
+}
   }
 
   // We never want to follow parent for inlined subroutine - that would
   // give us information about where the function is inlined, not what
   // function is inlined
-  if (Die.getTag() == dwarf::DW_TAG_inlined_subroutine)
+  if (Die.getTag() == dwarf::DW_TAG_inlined_subroutine) {
     return DWARFDie();
 
+}
+
   DWARFDie ParentDie = Die.getParent();
-  if (!ParentDie)
+  if (!ParentDie) {
     return DWARFDie();
+
+}
 
   switch (ParentDie.getTag()) {
   case dwarf::DW_TAG_namespace:
@@ -134,12 +152,16 @@ static Optional<uint32_t> getQualifiedNameIndex(DWARFDie &Die,
   if (auto LinkageName =
           dwarf::toString(Die.findRecursively({dwarf::DW_AT_MIPS_linkage_name,
                                                dwarf::DW_AT_linkage_name}),
-                          nullptr))
+                          nullptr)) {
     return Gsym.insertString(LinkageName, /* Copy */ false);
 
+}
+
   StringRef ShortName(Die.getName(DINameKind::ShortName));
-  if (ShortName.empty())
+  if (ShortName.empty()) {
     return llvm::None;
+
+}
 
   // For C++ and ObjC, prepend names of all parent declaration contexts
   if (!(Language == dwarf::DW_LANG_C_plus_plus ||
@@ -149,15 +171,19 @@ static Optional<uint32_t> getQualifiedNameIndex(DWARFDie &Die,
         Language == dwarf::DW_LANG_ObjC_plus_plus ||
         // This should not be needed for C, but we see C++ code marked as C
         // in some binaries. This should hurt, so let's do it for C as well
-        Language == dwarf::DW_LANG_C))
+        Language == dwarf::DW_LANG_C)) {
     return Gsym.insertString(ShortName, /* Copy */ false);
+
+}
 
   // Some GCC optimizations create functions with names ending with .isra.<num>
   // or .part.<num> and those names are just DW_AT_name, not DW_AT_linkage_name
   // If it looks like it could be the case, don't add any prefix
   if (ShortName.startswith("_Z") &&
-      (ShortName.contains(".isra.") || ShortName.contains(".part.")))
+      (ShortName.contains(".isra.") || ShortName.contains(".part."))) {
     return Gsym.insertString(ShortName, /* Copy */ false);
+
+}
 
   DWARFDie ParentDeclCtxDie = GetParentDeclContextDIE(Die);
   if (ParentDeclCtxDie) {
@@ -168,11 +194,13 @@ static Optional<uint32_t> getQualifiedNameIndex(DWARFDie &Die,
         // "lambda" names are wrapped in < >. Replace with { }
         // to be consistent with demangled names and not to confuse with
         // templates
-        if (ParentName.front() == '<' && ParentName.back() == '>')
+        if (ParentName.front() == '<' && ParentName.back() == '>') {
           Name = "{" + ParentName.substr(1, ParentName.size() - 2).str() + "}" +
                 "::" + Name;
-        else
+        } else {
           Name = ParentName.str() + "::" + Name;
+
+}
       }
       ParentDeclCtxDie = GetParentDeclContextDIE(ParentDeclCtxDie);
     }
@@ -195,11 +223,15 @@ static bool hasInlineInfo(DWARFDie Die, uint32_t Depth) {
   default:
     break;
   }
-  if (!CheckChildren)
+  if (!CheckChildren) {
     return false;
+
+}
   for (DWARFDie ChildDie : Die.children()) {
-    if (hasInlineInfo(ChildDie, Depth + 1))
+    if (hasInlineInfo(ChildDie, Depth + 1)) {
       return true;
+
+}
   }
   return false;
 }
@@ -207,8 +239,10 @@ static bool hasInlineInfo(DWARFDie Die, uint32_t Depth) {
 static void parseInlineInfo(GsymCreator &Gsym, CUInfo &CUI, DWARFDie Die,
                             uint32_t Depth, FunctionInfo &FI,
                             InlineInfo &parent) {
-  if (!hasInlineInfo(Die, Depth))
+  if (!hasInlineInfo(Die, Depth)) {
     return;
+
+}
 
   dwarf::Tag Tag = Die.getTag();
   if (Tag == dwarf::DW_TAG_inlined_subroutine) {
@@ -221,28 +255,38 @@ static void parseInlineInfo(GsymCreator &Gsym, CUInfo &CUI, DWARFDie Die,
       for (const DWARFAddressRange &Range : RangesOrError.get()) {
         // Check that the inlined function is within the range of the function
         // info, it might not be in case of split functions
-        if (FuncRange.LowPC <= Range.LowPC && Range.HighPC <= FuncRange.HighPC)
+        if (FuncRange.LowPC <= Range.LowPC && Range.HighPC <= FuncRange.HighPC) {
           II.Ranges.insert(AddressRange(Range.LowPC, Range.HighPC));
+
+}
       }
     }
-    if (II.Ranges.empty())
+    if (II.Ranges.empty()) {
       return;
 
-    if (auto NameIndex = getQualifiedNameIndex(Die, CUI.Language, Gsym))
+}
+
+    if (auto NameIndex = getQualifiedNameIndex(Die, CUI.Language, Gsym)) {
       II.Name = *NameIndex;
+
+}
     II.CallFile = CUI.DWARFToGSYMFileIndex(
         Gsym, dwarf::toUnsigned(Die.find(dwarf::DW_AT_call_file), 0));
     II.CallLine = dwarf::toUnsigned(Die.find(dwarf::DW_AT_call_line), 0);
     // parse all children and append to parent
-    for (DWARFDie ChildDie : Die.children())
+    for (DWARFDie ChildDie : Die.children()) {
       parseInlineInfo(Gsym, CUI, ChildDie, Depth + 1, FI, II);
+
+}
     parent.Children.emplace_back(std::move(II));
     return;
   }
   if (Tag == dwarf::DW_TAG_subprogram || Tag == dwarf::DW_TAG_lexical_block) {
     // skip this Die and just recurse down
-    for (DWARFDie ChildDie : Die.children())
+    for (DWARFDie ChildDie : Die.children()) {
       parseInlineInfo(Gsym, CUI, ChildDie, Depth + 1, FI, parent);
+
+}
   }
 }
 
@@ -326,8 +370,10 @@ static void convertFunctionLineTable(raw_ostream &Log, CUInfo &CUI,
 
     // Skip multiple line entries for the same file and line.
     auto LastLE = FI.OptLineTable->last();
-    if (LastLE && LastLE->File == FileIdx && LastLE->Line == Row.Line)
+    if (LastLE && LastLE->File == FileIdx && LastLE->Line == Row.Line) {
         continue;
+
+}
     // Only push a row if it isn't an end sequence. End sequence markers are
     // included for the last address in a function or the last contiguous
     // address in a sequence.
@@ -344,8 +390,10 @@ static void convertFunctionLineTable(raw_ostream &Log, CUInfo &CUI,
   }
   // If not line table rows were added, clear the line table so we don't encode
   // on in the GSYM file.
-  if (FI.OptLineTable->empty())
+  if (FI.OptLineTable->empty()) {
     FI.OptLineTable = llvm::None;
+
+}
 }
 
 void DwarfTransformer::handleDie(raw_ostream &OS, CUInfo &CUI, DWARFDie Die) {
@@ -357,8 +405,10 @@ void DwarfTransformer::handleDie(raw_ostream &OS, CUInfo &CUI, DWARFDie Die) {
       break;
     }
     const DWARFAddressRangesVector &Ranges = RangesOrError.get();
-    if (Ranges.empty())
+    if (Ranges.empty()) {
       break;
+
+}
     auto NameIndex = getQualifiedNameIndex(Die, CUI.Language, Gsym);
     if (!NameIndex) {
       OS << "error: function at " << HEX64(Die.getOffset())
@@ -377,8 +427,10 @@ void DwarfTransformer::handleDie(raw_ostream &OS, CUInfo &CUI, DWARFDie Die) {
       // PC values to a UINT32_MAX for 4 byte addresses and UINT64_MAX for 8
       // byte addresses to indicate the function isn't valid. The check below
       // tries to watch for these cases and abort if it runs into them.
-      if (Range.LowPC >= Range.HighPC || CUI.isHighestAddress(Range.LowPC))
+      if (Range.LowPC >= Range.HighPC || CUI.isHighestAddress(Range.LowPC)) {
         break;
+
+}
 
       // Many linkers can't remove DWARF and might set the LowPC to zero. Since
       // high PC can be an offset from the low PC in more recent DWARF versions
@@ -418,8 +470,10 @@ void DwarfTransformer::handleDie(raw_ostream &OS, CUInfo &CUI, DWARFDie Die) {
   default:
     break;
   }
-  for (DWARFDie ChildDie : Die.children())
+  for (DWARFDie ChildDie : Die.children()) {
     handleDie(OS, CUI, ChildDie);
+
+}
 }
 
 Error DwarfTransformer::convert(uint32_t NumThreads) {
@@ -440,14 +494,18 @@ Error DwarfTransformer::convert(uint32_t NumThreads) {
 
     // We need to call getAbbreviations sequentially first so that getUnitDIE()
     // only works with its local data.
-    for (const auto &CU : DICtx.compile_units())
+    for (const auto &CU : DICtx.compile_units()) {
       CU->getAbbreviations();
+
+}
 
     // Now parse all DIEs in case we have cross compile unit references in a
     // thread pool.
     ThreadPool pool(hardware_concurrency(NumThreads));
-    for (const auto &CU : DICtx.compile_units())
+    for (const auto &CU : DICtx.compile_units()) {
       pool.async([&CU]() { CU->getUnitDIE(false /*CUDieOnly*/); });
+
+}
     pool.wait();
 
     // Now convert all DWARF to GSYM in a thread pool.
@@ -480,8 +538,10 @@ llvm::Error DwarfTransformer::verify(StringRef GsymPath) {
   Log << "Verifying GSYM file \"" << GsymPath << "\":\n";
 
   auto Gsym = GsymReader::openFile(GsymPath);
-  if (!Gsym)
+  if (!Gsym) {
     return Gsym.takeError();
+
+}
 
   auto NumAddrs = Gsym->getNumAddresses();
   DILineInfoSpecifier DLIS(
@@ -490,22 +550,28 @@ llvm::Error DwarfTransformer::verify(StringRef GsymPath) {
   std::string gsymFilename;
   for (uint32_t I = 0; I < NumAddrs; ++I) {
     auto FuncAddr = Gsym->getAddress(I);
-    if (!FuncAddr)
+    if (!FuncAddr) {
         return createStringError(std::errc::invalid_argument,
                                   "failed to extract address[%i]", I);
 
+}
+
     auto FI = Gsym->getFunctionInfo(*FuncAddr);
-    if (!FI)
+    if (!FI) {
       return createStringError(std::errc::invalid_argument,
                             "failed to extract function info for address 0x%"
                             PRIu64, *FuncAddr);
+
+}
 
     for (auto Addr = *FuncAddr; Addr < *FuncAddr + FI->size(); ++Addr) {
       const object::SectionedAddress SectAddr{
           Addr, object::SectionedAddress::UndefSection};
       auto LR = Gsym->lookup(Addr);
-      if (!LR)
+      if (!LR) {
         return LR.takeError();
+
+}
 
       auto DwarfInlineInfos =
           DICtx.getInliningInfoForAddress(SectAddr, DLIS);
@@ -551,19 +617,25 @@ llvm::Error DwarfTransformer::verify(StringRef GsymPath) {
           const auto dii = DwarfInlineInfos.getFrame(Idx);
           gsymFilename = LR->getSourceFile(Idx);
           // Verify function name
-          if (dii.FunctionName.find(gii.Name.str()) != 0)
+          if (dii.FunctionName.find(gii.Name.str()) != 0) {
             Log << "error: address " << HEX64(Addr) << " DWARF function \""
                 << dii.FunctionName.c_str()
                 << "\" doesn't match GSYM function \"" << gii.Name << "\"\n";
+
+}
           // Verify source file path
-          if (dii.FileName != gsymFilename)
+          if (dii.FileName != gsymFilename) {
             Log << "error: address " << HEX64(Addr) << " DWARF path \""
                 << dii.FileName.c_str() << "\" doesn't match GSYM path \""
                 << gsymFilename.c_str() << "\"\n";
+
+}
           // Verify source file line
-          if (dii.Line != gii.Line)
+          if (dii.Line != gii.Line) {
             Log << "error: address " << HEX64(Addr) << " DWARF line "
                 << dii.Line << " != GSYM line " << gii.Line << "\n";
+
+}
         }
       }
     }

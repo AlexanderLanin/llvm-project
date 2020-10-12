@@ -47,8 +47,10 @@ public:
     CurrentContext->set(this);
   }
   ~CrashRecoveryContextImpl() {
-    if (!SwitchedThread)
+    if (!SwitchedThread) {
       CurrentContext->set(Next);
+
+}
   }
 
   /// Called when the separate crash-recovery thread was finished, to
@@ -71,14 +73,18 @@ public:
     assert(!Failed && "Crash recovery context already failed!");
     Failed = true;
 
-    if (CRC->DumpStackAndCleanupOnFailure)
+    if (CRC->DumpStackAndCleanupOnFailure) {
       sys::CleanupOnSignal(Context);
+
+}
 
     CRC->RetCode = RetCode;
 
     // Jump back to the RunSafely we were called under.
-    if (ValidJumpBuffer)
+    if (ValidJumpBuffer) {
       longjmp(JumpBuffer, 1);
+
+}
 
     // Otherwise let the caller decide of the outcome of the crash. Currently
     // this occurs when using SEH on Windows with MSVC or clang-cl.
@@ -120,12 +126,16 @@ bool CrashRecoveryContext::isRecoveringFromCrash() {
 }
 
 CrashRecoveryContext *CrashRecoveryContext::GetCurrent() {
-  if (!gCrashRecoveryEnabled)
+  if (!gCrashRecoveryEnabled) {
     return nullptr;
 
+}
+
   const CrashRecoveryContextImpl *CRCI = CurrentContext->get();
-  if (!CRCI)
+  if (!CRCI) {
     return nullptr;
+
+}
 
   return CRCI->CRC;
 }
@@ -133,43 +143,57 @@ CrashRecoveryContext *CrashRecoveryContext::GetCurrent() {
 void CrashRecoveryContext::Enable() {
   std::lock_guard<std::mutex> L(*gCrashRecoveryContextMutex);
   // FIXME: Shouldn't this be a refcount or something?
-  if (gCrashRecoveryEnabled)
+  if (gCrashRecoveryEnabled) {
     return;
+
+}
   gCrashRecoveryEnabled = true;
   installExceptionOrSignalHandlers();
 }
 
 void CrashRecoveryContext::Disable() {
   std::lock_guard<std::mutex> L(*gCrashRecoveryContextMutex);
-  if (!gCrashRecoveryEnabled)
+  if (!gCrashRecoveryEnabled) {
     return;
+
+}
   gCrashRecoveryEnabled = false;
   uninstallExceptionOrSignalHandlers();
 }
 
 void CrashRecoveryContext::registerCleanup(CrashRecoveryContextCleanup *cleanup)
 {
-  if (!cleanup)
+  if (!cleanup) {
     return;
-  if (head)
+
+}
+  if (head) {
     head->prev = cleanup;
+
+}
   cleanup->next = head;
   head = cleanup;
 }
 
 void
 CrashRecoveryContext::unregisterCleanup(CrashRecoveryContextCleanup *cleanup) {
-  if (!cleanup)
+  if (!cleanup) {
     return;
+
+}
   if (cleanup == head) {
     head = cleanup->next;
-    if (head)
+    if (head) {
       head->prev = nullptr;
+
+}
   }
   else {
     cleanup->prev->next = cleanup->next;
-    if (cleanup->next)
+    if (cleanup->next) {
       cleanup->next->prev = cleanup->prev;
+
+}
   }
   delete cleanup;
 }
@@ -375,11 +399,15 @@ static void CrashRecoverySignalHandler(int Signal) {
   int RetCode = -2;
 
   // Don't consider a broken pipe as a crash (see clang/lib/Driver/Driver.cpp)
-  if (Signal == SIGPIPE)
+  if (Signal == SIGPIPE) {
     RetCode = EX_IOERR;
 
-  if (CRCI)
+}
+
+  if (CRCI) {
     const_cast<CrashRecoveryContextImpl *>(CRCI)->HandleCrash(RetCode, Signal);
+
+}
 }
 
 static void installExceptionOrSignalHandlers() {
@@ -396,8 +424,10 @@ static void installExceptionOrSignalHandlers() {
 
 static void uninstallExceptionOrSignalHandlers() {
   // Restore the previous signal handlers.
-  for (unsigned i = 0; i != NumSignals; ++i)
+  for (unsigned i = 0; i != NumSignals; ++i) {
     sigaction(Signals[i], &PrevActions[i], nullptr);
+
+}
 }
 
 #endif // !_WIN32
@@ -464,8 +494,10 @@ static void RunSafelyOnThread_Dispatch(void *UserData) {
   RunSafelyOnThreadInfo *Info =
     reinterpret_cast<RunSafelyOnThreadInfo*>(UserData);
 
-  if (Info->UseBackgroundPriority)
+  if (Info->UseBackgroundPriority) {
     setThreadBackgroundPriority();
+
+}
 
   Info->Result = Info->CRC->RunSafely(Info->Fn);
 }
@@ -477,7 +509,9 @@ bool CrashRecoveryContext::RunSafelyOnThread(function_ref<void()> Fn,
                          RequestedStackSize == 0
                              ? llvm::None
                              : llvm::Optional<unsigned>(RequestedStackSize));
-  if (CrashRecoveryContextImpl *CRC = (CrashRecoveryContextImpl *)Impl)
+  if (CrashRecoveryContextImpl *CRC = (CrashRecoveryContextImpl *)Impl) {
     CRC->setSwitchedThread();
+
+}
   return Info.Result;
 }

@@ -140,8 +140,10 @@ static cl::opt<std::string>
     StatsFile("stats-file", cl::desc("Filename to write statistics to"));
 
 static void check(Error E, std::string Msg) {
-  if (!E)
+  if (!E) {
     return;
+
+}
   handleAllErrors(std::move(E), [&](ErrorInfoBase &EIB) {
     errs() << "llvm-lto2: " << Msg << ": " << EIB.message().c_str() << '\n';
   });
@@ -149,8 +151,10 @@ static void check(Error E, std::string Msg) {
 }
 
 template <typename T> static T check(Expected<T> E, std::string Msg) {
-  if (E)
+  if (E) {
     return std::move(*E);
+
+}
   check(E.takeError(), Msg);
   return T();
 }
@@ -160,8 +164,10 @@ static void check(std::error_code EC, std::string Msg) {
 }
 
 template <typename T> static T check(ErrorOr<T> E, std::string Msg) {
-  if (E)
+  if (E) {
     return std::move(*E);
+
+}
   check(E.getError(), Msg);
   return T();
 }
@@ -191,15 +197,15 @@ static int run(int argc, char **argv) {
     std::tie(SymbolName, Rest) = Rest.split(',');
     SymbolResolution Res;
     for (char C : Rest) {
-      if (C == 'p')
+      if (C == 'p') {
         Res.Prevailing = true;
-      else if (C == 'l')
+      } else if (C == 'l') {
         Res.FinalDefinitionInLinkageUnit = true;
-      else if (C == 'x')
+      } else if (C == 'x') {
         Res.VisibleToRegularObj = true;
-      else if (C == 'r')
+      } else if (C == 'r') {
         Res.LinkerRedefined = true;
-      else {
+      } else {
         llvm::errs() << "invalid character " << C << " in resolution: " << R
                      << '\n';
         return 1;
@@ -216,22 +222,28 @@ static int run(int argc, char **argv) {
     DiagnosticPrinterRawOStream DP(errs());
     DI.print(DP);
     errs() << '\n';
-    if (DI.getSeverity() == DS_Error)
+    if (DI.getSeverity() == DS_Error) {
       exit(1);
+
+}
   };
 
   Conf.CPU = MCPU;
   Conf.Options = InitTargetOptionsFromCodeGenFlags();
   Conf.MAttrs = MAttrs;
-  if (auto RM = getRelocModel())
+  if (auto RM = getRelocModel()) {
     Conf.RelocModel = *RM;
+
+}
   Conf.CodeModel = getCodeModel();
 
   Conf.DebugPassManager = DebugPassManager;
 
-  if (SaveTemps)
+  if (SaveTemps) {
     check(Conf.addSaveTemps(OutputFilename + "."),
           "Config::addSaveTemps failed");
+
+}
 
   // Optimization remarks.
   Conf.RemarksFilename = RemarksFilename;
@@ -267,8 +279,10 @@ static int run(int argc, char **argv) {
     return 1;
   }
 
-  if (FileType.getNumOccurrences())
+  if (FileType.getNumOccurrences()) {
     Conf.CGFileType = FileType;
+
+}
 
   Conf.OverrideTriple = OverrideTriple;
   Conf.DefaultTriple = DefaultTriple;
@@ -277,14 +291,16 @@ static int run(int argc, char **argv) {
   Conf.PTO.SLPVectorization = Conf.OptLevel > 1;
 
   ThinBackend Backend;
-  if (ThinLTODistributedIndexes)
+  if (ThinLTODistributedIndexes) {
     Backend = createWriteIndexesThinBackend(/* OldPrefix */ "",
                                             /* NewPrefix */ "",
                                             /* ShouldEmitImportsFiles */ true,
                                             /* LinkedObjectsFile */ nullptr,
                                             /* OnWrite */ {});
-  else
+  } else {
     Backend = createInProcessThinBackend(Threads);
+
+}
   LTO Lto(std::move(Conf), std::move(Backend));
 
   bool HasErrors = false;
@@ -311,13 +327,17 @@ static int run(int argc, char **argv) {
       } else {
         Res.push_back(I->second.front());
         I->second.pop_front();
-        if (I->second.empty())
+        if (I->second.empty()) {
           CommandLineResolutions.erase(I);
+
+}
       }
     }
 
-    if (HasErrors)
+    if (HasErrors) {
       continue;
+
+}
 
     MBs.push_back(std::move(MB));
     check(Lto.add(std::move(Input), Res), F);
@@ -325,13 +345,17 @@ static int run(int argc, char **argv) {
 
   if (!CommandLineResolutions.empty()) {
     HasErrors = true;
-    for (auto UnusedRes : CommandLineResolutions)
+    for (auto UnusedRes : CommandLineResolutions) {
       llvm::errs() << argv[0] << ": unused symbol resolution for "
                    << UnusedRes.first.first << ',' << UnusedRes.first.second
                    << '\n';
+
+}
   }
-  if (HasErrors)
+  if (HasErrors) {
     return 1;
+
+}
 
   auto AddStream =
       [&](size_t Task) -> std::unique_ptr<lto::NativeObjectStream> {
@@ -348,8 +372,10 @@ static int run(int argc, char **argv) {
   };
 
   NativeObjectCache Cache;
-  if (!CacheDir.empty())
+  if (!CacheDir.empty()) {
     Cache = check(localCache(CacheDir, AddBuffer), "failed to create cache");
+
+}
 
   check(Lto.run(AddStream, Cache), "LTO::run failed");
   return 0;
@@ -366,9 +392,11 @@ static int dumpSymtab(int argc, char **argv) {
       auto *Hdr = reinterpret_cast<const irsymtab::storage::Header *>(
           BFC.Symtab.data());
       outs() << "version: " << Hdr->Version << '\n';
-      if (Hdr->Version == irsymtab::storage::Header::kCurrentVersion)
+      if (Hdr->Version == irsymtab::storage::Header::kCurrentVersion) {
         outs() << "producer: " << Hdr->Producer.get(BFC.StrtabForSymtab)
                << '\n';
+
+}
     }
 
     std::unique_ptr<InputFile> Input =
@@ -379,13 +407,17 @@ static int dumpSymtab(int argc, char **argv) {
 
     outs() << "source filename: " << Input->getSourceFileName() << '\n';
 
-    if (TT.isOSBinFormatCOFF())
+    if (TT.isOSBinFormatCOFF()) {
       outs() << "linker opts: " << Input->getCOFFLinkerOpts() << '\n';
+
+}
 
     if (TT.isOSBinFormatELF()) {
       outs() << "dependent libraries:";
-      for (auto L : Input->getDependentLibraries())
+      for (auto L : Input->getDependentLibraries()) {
         outs() << " \"" << L << "\"";
+
+}
       outs() << '\n';
     }
 
@@ -413,19 +445,27 @@ static int dumpSymtab(int argc, char **argv) {
       PrintBool('X', Sym.isExecutable());
       outs() << ' ' << Sym.getName() << '\n';
 
-      if (Sym.isCommon())
+      if (Sym.isCommon()) {
         outs() << "         size " << Sym.getCommonSize() << " align "
                << Sym.getCommonAlignment() << '\n';
 
+}
+
       int Comdat = Sym.getComdatIndex();
-      if (Comdat != -1)
+      if (Comdat != -1) {
         outs() << "         comdat " << ComdatTable[Comdat] << '\n';
 
-      if (TT.isOSBinFormatCOFF() && Sym.isWeak() && Sym.isIndirect())
+}
+
+      if (TT.isOSBinFormatCOFF() && Sym.isWeak() && Sym.isIndirect()) {
         outs() << "         fallback " << Sym.getCOFFWeakExternalFallback() << '\n';
 
-      if (!Sym.getSectionName().empty())
+}
+
+      if (!Sym.getSectionName().empty()) {
         outs() << "         section " << Sym.getSectionName() << "\n";
+
+}
     }
 
     outs() << '\n';
@@ -444,15 +484,21 @@ int main(int argc, char **argv) {
   // FIXME: This should use llvm::cl subcommands, but it isn't currently
   // possible to pass an argument not associated with a subcommand to a
   // subcommand (e.g. -use-new-pm).
-  if (argc < 2)
+  if (argc < 2) {
     return usage();
+
+}
 
   StringRef Subcommand = argv[1];
   // Ensure that argv[0] is correct after adjusting argv/argc.
   argv[1] = argv[0];
-  if (Subcommand == "dump-symtab")
+  if (Subcommand == "dump-symtab") {
     return dumpSymtab(argc - 1, argv + 1);
-  if (Subcommand == "run")
+
+}
+  if (Subcommand == "run") {
     return run(argc - 1, argv + 1);
+
+}
   return usage();
 }

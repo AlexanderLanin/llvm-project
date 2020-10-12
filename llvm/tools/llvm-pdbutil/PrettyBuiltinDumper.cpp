@@ -18,10 +18,14 @@ BuiltinDumper::BuiltinDumper(LinePrinter &P)
     : PDBSymDumper(false), Printer(P) {}
 
 void BuiltinDumper::start(const PDBSymbolTypeBuiltin &Symbol) {
-  if (Symbol.isConstType())
+  if (Symbol.isConstType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "const ";
-  if (Symbol.isVolatileType())
+
+}
+  if (Symbol.isVolatileType()) {
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "volatile ";
+
+}
   WithColor(Printer, PDB_ColorItem::Type).get() << getTypeName(Symbol);
 }
 
@@ -29,8 +33,10 @@ StringRef BuiltinDumper::getTypeName(const PDBSymbolTypeBuiltin &Symbol) {
   PDB_BuiltinType Type = Symbol.getBuiltinType();
   switch (Type) {
   case PDB_BuiltinType::Float:
-    if (Symbol.getLength() == 4)
+    if (Symbol.getLength() == 4) {
       return "float";
+
+}
     return "double";
   case PDB_BuiltinType::UInt:
     switch (Symbol.getLength()) {

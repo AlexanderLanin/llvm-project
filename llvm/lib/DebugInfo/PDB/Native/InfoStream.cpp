@@ -25,11 +25,13 @@ InfoStream::InfoStream(std::unique_ptr<BinaryStream> Stream)
 Error InfoStream::reload() {
   BinaryStreamReader Reader(*Stream);
 
-  if (auto EC = Reader.readObject(Header))
+  if (auto EC = Reader.readObject(Header)) {
     return joinErrors(
         std::move(EC),
         make_error<RawError>(raw_error_code::corrupt_file,
                              "PDB Stream does not contain a header."));
+
+}
 
   switch (Header->Version) {
   case PdbImplVC70:
@@ -43,20 +45,26 @@ Error InfoStream::reload() {
   }
 
   uint32_t Offset = Reader.getOffset();
-  if (auto EC = NamedStreams.load(Reader))
+  if (auto EC = NamedStreams.load(Reader)) {
     return EC;
+
+}
   uint32_t NewOffset = Reader.getOffset();
   NamedStreamMapByteSize = NewOffset - Offset;
 
   Reader.setOffset(Offset);
-  if (auto EC = Reader.readSubstream(SubNamedStreams, NamedStreamMapByteSize))
+  if (auto EC = Reader.readSubstream(SubNamedStreams, NamedStreamMapByteSize)) {
     return EC;
+
+}
 
   bool Stop = false;
   while (!Stop && !Reader.empty()) {
     PdbRaw_FeatureSig Sig;
-    if (auto EC = Reader.readEnum(Sig))
+    if (auto EC = Reader.readEnum(Sig)) {
       return EC;
+
+}
     // Since this value comes from a file, it's possible we have some strange
     // value which doesn't correspond to any value.  We don't want to warn on
     // -Wcovered-switch-default in this case, so switch on the integral value
@@ -87,8 +95,10 @@ uint32_t InfoStream::getStreamSize() const { return Stream->getLength(); }
 
 Expected<uint32_t> InfoStream::getNamedStreamIndex(llvm::StringRef Name) const {
   uint32_t Result;
-  if (!NamedStreams.get(Name, Result))
+  if (!NamedStreams.get(Name, Result)) {
     return make_error<RawError>(raw_error_code::no_stream);
+
+}
   return Result;
 }
 

@@ -25,7 +25,9 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
                           const CodeGenDAGPatterns &CGP) {
   // If we reached the end of the chain, we're done.
   Matcher *N = MatcherPtr.get();
-  if (!N) return;
+  if (!N) { return;
+
+}
   
   // If we have a scope node, walk down all of the children.
   if (ScopeMatcher *Scope = dyn_cast<ScopeMatcher>(N)) {
@@ -41,27 +43,47 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
   // transform it.
   if (MoveChildMatcher *MC = dyn_cast<MoveChildMatcher>(N)) {
     Matcher *New = nullptr;
-    if (RecordMatcher *RM = dyn_cast<RecordMatcher>(MC->getNext()))
-      if (MC->getChildNo() < 8)  // Only have RecordChild0...7
+    if (RecordMatcher *RM = dyn_cast<RecordMatcher>(MC->getNext())) {
+      if (MC->getChildNo() < 8) {  // Only have RecordChild0...7
         New = new RecordChildMatcher(MC->getChildNo(), RM->getWhatFor(),
                                      RM->getResultNo());
 
-    if (CheckTypeMatcher *CT = dyn_cast<CheckTypeMatcher>(MC->getNext()))
+}
+
+}
+
+    if (CheckTypeMatcher *CT = dyn_cast<CheckTypeMatcher>(MC->getNext())) {
       if (MC->getChildNo() < 8 &&  // Only have CheckChildType0...7
-          CT->getResNo() == 0)     // CheckChildType checks res #0
+          CT->getResNo() == 0) {     // CheckChildType checks res #0
         New = new CheckChildTypeMatcher(MC->getChildNo(), CT->getType());
 
-    if (CheckSameMatcher *CS = dyn_cast<CheckSameMatcher>(MC->getNext()))
-      if (MC->getChildNo() < 4)  // Only have CheckChildSame0...3
+}
+
+}
+
+    if (CheckSameMatcher *CS = dyn_cast<CheckSameMatcher>(MC->getNext())) {
+      if (MC->getChildNo() < 4) {  // Only have CheckChildSame0...3
         New = new CheckChildSameMatcher(MC->getChildNo(), CS->getMatchNumber());
 
-    if (CheckIntegerMatcher *CI = dyn_cast<CheckIntegerMatcher>(MC->getNext()))
-      if (MC->getChildNo() < 5)  // Only have CheckChildInteger0...4
+}
+
+}
+
+    if (CheckIntegerMatcher *CI = dyn_cast<CheckIntegerMatcher>(MC->getNext())) {
+      if (MC->getChildNo() < 5) {  // Only have CheckChildInteger0...4
         New = new CheckChildIntegerMatcher(MC->getChildNo(), CI->getValue());
 
-    if (auto *CCC = dyn_cast<CheckCondCodeMatcher>(MC->getNext()))
-      if (MC->getChildNo() == 2)  // Only have CheckChild2CondCode
+}
+
+}
+
+    if (auto *CCC = dyn_cast<CheckCondCodeMatcher>(MC->getNext())) {
+      if (MC->getChildNo() == 2) {  // Only have CheckChild2CondCode
         New = new CheckChild2CondCodeMatcher(CCC->getCondCodeName());
+
+}
+
+}
 
     if (New) {
       // Insert the new node.
@@ -74,23 +96,29 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
   }
   
   // Zap movechild -> moveparent.
-  if (MoveChildMatcher *MC = dyn_cast<MoveChildMatcher>(N))
+  if (MoveChildMatcher *MC = dyn_cast<MoveChildMatcher>(N)) {
     if (MoveParentMatcher *MP = 
           dyn_cast<MoveParentMatcher>(MC->getNext())) {
       MatcherPtr.reset(MP->takeNext());
       return ContractNodes(MatcherPtr, CGP);
     }
 
+}
+
   // Turn EmitNode->CompleteMatch into MorphNodeTo if we can.
-  if (EmitNodeMatcher *EN = dyn_cast<EmitNodeMatcher>(N))
+  if (EmitNodeMatcher *EN = dyn_cast<EmitNodeMatcher>(N)) {
     if (CompleteMatchMatcher *CM =
           dyn_cast<CompleteMatchMatcher>(EN->getNext())) {
       // We can only use MorphNodeTo if the result values match up.
       unsigned RootResultFirst = EN->getFirstResultSlot();
       bool ResultsMatch = true;
-      for (unsigned i = 0, e = CM->getNumResults(); i != e; ++i)
-        if (CM->getResult(i) != RootResultFirst+i)
+      for (unsigned i = 0, e = CM->getNumResults(); i != e; ++i) {
+        if (CM->getResult(i) != RootResultFirst+i) {
           ResultsMatch = false;
+
+}
+
+}
       
       // If the selected node defines a subset of the glue/chain results, we
       // can't use MorphNodeTo.  For example, we can't use MorphNodeTo if the
@@ -98,8 +126,10 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       const PatternToMatch &Pattern = CM->getPattern();
       
       if (!EN->hasChain() &&
-          Pattern.getSrcPattern()->NodeHasProperty(SDNPHasChain, CGP))
+          Pattern.getSrcPattern()->NodeHasProperty(SDNPHasChain, CGP)) {
         ResultsMatch = false;
+
+}
 
       // If the matched node has glue and the output root doesn't, we can't
       // use MorphNodeTo.
@@ -108,8 +138,10 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       // because the code in the pattern generator doesn't handle it right.  We
       // do it anyway for thoroughness.
       if (!EN->hasOutFlag() &&
-          Pattern.getSrcPattern()->NodeHasProperty(SDNPOutGlue, CGP))
+          Pattern.getSrcPattern()->NodeHasProperty(SDNPOutGlue, CGP)) {
         ResultsMatch = false;
+
+}
       
       
       // If the root result node defines more results than the source root node
@@ -137,6 +169,8 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
       // FIXME2: Kill off all the SelectionDAG::SelectNodeTo and getMachineNode
       // variants.
     }
+
+}
   
   ContractNodes(N->getNextPtr(), CGP);
   
@@ -165,9 +199,13 @@ static void ContractNodes(std::unique_ptr<Matcher> &MatcherPtr,
 /// specified kind.  Return null if we didn't find one otherwise return the
 /// matcher.
 static Matcher *FindNodeWithKind(Matcher *M, Matcher::KindTy Kind) {
-  for (; M; M = M->getNext())
-    if (M->getKind() == Kind)
+  for (; M; M = M->getNext()) {
+    if (M->getKind() == Kind) {
       return M;
+
+}
+
+}
   return nullptr;
 }
 
@@ -191,12 +229,16 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
   while (!Scope) {
     // If we reached the end of the chain, we're done.
     Matcher *N = RebindableMatcherPtr->get();
-    if (!N) return;
+    if (!N) { return;
+
+}
 
     // If this is not a push node, just scan for one.
     Scope = dyn_cast<ScopeMatcher>(N);
-    if (!Scope)
+    if (!Scope) {
       RebindableMatcherPtr = &(N->getNextPtr());
+
+}
   }
   std::unique_ptr<Matcher> &MatcherPtr = *RebindableMatcherPtr;
   
@@ -212,8 +254,10 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
     if (Child) {
       // If the child is a ScopeMatcher we can just merge its contents.
       if (auto *SM = dyn_cast<ScopeMatcher>(Child.get())) {
-        for (unsigned j = 0, e = SM->getNumChildren(); j != e; ++j)
+        for (unsigned j = 0, e = SM->getNumChildren(); j != e; ++j) {
           OptionsToMatch.push_back(SM->takeChild(j));
+
+}
       } else {
         OptionsToMatch.push_back(Child.release());
       }
@@ -242,8 +286,10 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
     
     // Factor all of the known-equal matchers after this one into the same
     // group.
-    while (OptionIdx != e && OptionsToMatch[OptionIdx]->isEqual(Optn))
+    while (OptionIdx != e && OptionsToMatch[OptionIdx]->isEqual(Optn)) {
       EqualMatchers.push_back(OptionsToMatch[OptionIdx++]);
+
+}
 
     // If we found a non-equal matcher, see if it is contradictory with the
     // current node.  If so, we know that the ordering relation between the
@@ -252,7 +298,9 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
     unsigned Scan = OptionIdx;
     while (1) {
       // If we ran out of stuff to scan, we're done.
-      if (Scan == e) break;
+      if (Scan == e) { break;
+
+}
       
       Matcher *ScanMatcher = OptionsToMatch[Scan];
       
@@ -459,8 +507,10 @@ static void FactorNodes(std::unique_ptr<Matcher> &InputMatcherPtr) {
 
   // Reassemble the Scope node with the adjusted children.
   Scope->setNumChildren(NewOptionsToMatch.size());
-  for (unsigned i = 0, e = NewOptionsToMatch.size(); i != e; ++i)
+  for (unsigned i = 0, e = NewOptionsToMatch.size(); i != e; ++i) {
     Scope->resetChild(i, NewOptionsToMatch[i]);
+
+}
 }
 
 void

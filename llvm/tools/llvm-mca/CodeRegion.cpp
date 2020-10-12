@@ -22,10 +22,14 @@ CodeRegions::CodeRegions(llvm::SourceMgr &S) : SM(S), FoundErrors(false) {
 }
 
 bool CodeRegion::isLocInRange(SMLoc Loc) const {
-  if (RangeEnd.isValid() && Loc.getPointer() > RangeEnd.getPointer())
+  if (RangeEnd.isValid() && Loc.getPointer() > RangeEnd.getPointer()) {
     return false;
-  if (RangeStart.isValid() && Loc.getPointer() < RangeStart.getPointer())
+
+}
+  if (RangeStart.isValid() && Loc.getPointer() < RangeStart.getPointer()) {
     return false;
+
+}
   return true;
 }
 
@@ -108,9 +112,13 @@ void CodeRegions::endRegion(StringRef Description, SMLoc Loc) {
 
 void CodeRegions::addInstruction(const MCInst &Instruction) {
   SMLoc Loc = Instruction.getLoc();
-  for (UniqueCodeRegion &Region : Regions)
-    if (Region->isLocInRange(Loc))
+  for (UniqueCodeRegion &Region : Regions) {
+    if (Region->isLocInRange(Loc)) {
       Region->addInstruction(Instruction);
+
+}
+
+}
 }
 
 } // namespace mca

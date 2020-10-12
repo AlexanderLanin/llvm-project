@@ -82,9 +82,13 @@ namespace exegesis {
 static SmallVector<const Variable *, 8>
 getVariablesWithTiedOperands(const Instruction &Instr) {
   SmallVector<const Variable *, 8> Result;
-  for (const auto &Var : Instr.Variables)
-    if (Var.hasTiedOperands())
+  for (const auto &Var : Instr.Variables) {
+    if (Var.hasTiedOperands()) {
       Result.push_back(&Var);
+
+}
+
+}
   return Result;
 }
 
@@ -93,8 +97,10 @@ ParallelSnippetGenerator::~ParallelSnippetGenerator() = default;
 void ParallelSnippetGenerator::instantiateMemoryOperands(
     const unsigned ScratchSpacePointerInReg,
     std::vector<InstructionTemplate> &Instructions) const {
-  if (ScratchSpacePointerInReg == 0)
+  if (ScratchSpacePointerInReg == 0) {
     return; // no memory operands.
+
+}
   const auto &ET = State.getExegesisTarget();
   const unsigned MemStep = ET.getMaxMemoryAccessSize();
   const size_t OriginalInstructionsSize = Instructions.size();

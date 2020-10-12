@@ -65,8 +65,10 @@ public:
       const APInt LoopCount(32, (MinInstructions + Instructions.size() - 1) /
                                     Instructions.size());
       for (const MCInst &Inst :
-           ET.setRegTo(State.getSubtargetInfo(), LoopCounter, LoopCount))
+           ET.setRegTo(State.getSubtargetInfo(), LoopCounter, LoopCount)) {
         Entry.addInstruction(Inst);
+
+}
 
       // Set up the loop basic block.
       Entry.MBB->addSuccessor(Loop.MBB, BranchProbability::getOne());
@@ -74,10 +76,14 @@ public:
       // The live ins are: the loop counter, the registers that were setup by
       // the entry block, and entry block live ins.
       Loop.MBB->addLiveIn(LoopCounter);
-      for (unsigned Reg : Filler.getRegistersSetUp())
+      for (unsigned Reg : Filler.getRegistersSetUp()) {
         Loop.MBB->addLiveIn(Reg);
-      for (const auto &LiveIn : Entry.MBB->liveins())
+
+}
+      for (const auto &LiveIn : Entry.MBB->liveins()) {
         Loop.MBB->addLiveIn(LiveIn);
+
+}
       Loop.addInstructions(Instructions);
       ET.decrementLoopCounterAndJump(*Loop.MBB, *Loop.MBB,
                                      State.getInstrInfo());

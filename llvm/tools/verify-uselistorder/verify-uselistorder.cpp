@@ -115,8 +115,10 @@ bool TempFile::init(const std::string &Ext) {
 
   Filename.assign(Vector.data(), Vector.data() + Vector.size());
   Remover.setFile(Filename, !SaveTemps);
-  if (SaveTemps)
+  if (SaveTemps) {
     outs() << " - filename = " << Filename << "\n";
+
+}
   return false;
 }
 
@@ -171,8 +173,10 @@ std::unique_ptr<Module> TempFile::readAssembly(LLVMContext &Context) const {
   LLVM_DEBUG(dbgs() << " - read assembly\n");
   SMDiagnostic Err;
   std::unique_ptr<Module> M = parseAssemblyFile(Filename, Err, Context);
-  if (!M.get())
+  if (!M.get()) {
     Err.print("verify-uselistorder", errs());
+
+}
   return M;
 }
 
@@ -185,60 +189,106 @@ ValueMapping::ValueMapping(const Module &M) {
   // aren't (and needn't be) in sync.
 
   // Globals.
-  for (const GlobalVariable &G : M.globals())
+  for (const GlobalVariable &G : M.globals()) {
     map(&G);
-  for (const GlobalAlias &A : M.aliases())
+
+}
+  for (const GlobalAlias &A : M.aliases()) {
     map(&A);
-  for (const GlobalIFunc &IF : M.ifuncs())
+
+}
+  for (const GlobalIFunc &IF : M.ifuncs()) {
     map(&IF);
-  for (const Function &F : M)
+
+}
+  for (const Function &F : M) {
     map(&F);
 
+}
+
   // Constants used by globals.
-  for (const GlobalVariable &G : M.globals())
-    if (G.hasInitializer())
+  for (const GlobalVariable &G : M.globals()) {
+    if (G.hasInitializer()) {
       map(G.getInitializer());
-  for (const GlobalAlias &A : M.aliases())
+
+}
+
+}
+  for (const GlobalAlias &A : M.aliases()) {
     map(A.getAliasee());
-  for (const GlobalIFunc &IF : M.ifuncs())
+
+}
+  for (const GlobalIFunc &IF : M.ifuncs()) {
     map(IF.getResolver());
+
+}
   for (const Function &F : M) {
-    if (F.hasPrefixData())
+    if (F.hasPrefixData()) {
       map(F.getPrefixData());
-    if (F.hasPrologueData())
+
+}
+    if (F.hasPrologueData()) {
       map(F.getPrologueData());
-    if (F.hasPersonalityFn())
+
+}
+    if (F.hasPersonalityFn()) {
       map(F.getPersonalityFn());
+
+}
   }
 
   // Function bodies.
   for (const Function &F : M) {
-    for (const Argument &A : F.args())
+    for (const Argument &A : F.args()) {
       map(&A);
-    for (const BasicBlock &BB : F)
+
+}
+    for (const BasicBlock &BB : F) {
       map(&BB);
-    for (const BasicBlock &BB : F)
-      for (const Instruction &I : BB)
+
+}
+    for (const BasicBlock &BB : F) {
+      for (const Instruction &I : BB) {
         map(&I);
 
+}
+
+}
+
     // Constants used by instructions.
-    for (const BasicBlock &BB : F)
-      for (const Instruction &I : BB)
-        for (const Value *Op : I.operands())
+    for (const BasicBlock &BB : F) {
+      for (const Instruction &I : BB) {
+        for (const Value *Op : I.operands()) {
           if ((isa<Constant>(Op) && !isa<GlobalValue>(*Op)) ||
-              isa<InlineAsm>(Op))
+              isa<InlineAsm>(Op)) {
             map(Op);
+
+}
+
+}
+
+}
+
+}
   }
 }
 
 void ValueMapping::map(const Value *V) {
-  if (IDs.lookup(V))
+  if (IDs.lookup(V)) {
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (const Value *Op : C->operands())
+}
+
+  if (auto *C = dyn_cast<Constant>(V)) {
+    if (!isa<GlobalValue>(C)) {
+      for (const Value *Op : C->operands()) {
         map(Op);
+
+}
+
+}
+
+}
 
   Values.push_back(V);
   IDs[V] = Values.size();
@@ -300,8 +350,10 @@ static bool matches(const ValueMapping &LM, const ValueMapping &RM) {
   auto skipUnmappedUsers =
       [&](Value::const_use_iterator &U, Value::const_use_iterator E,
           const ValueMapping &M) {
-    while (U != E && !M.lookup(U->getUser()))
+    while (U != E && !M.lookup(U->getUser())) {
       ++U;
+
+}
   };
 
   // Iterate through all values, and check that both mappings have the same
@@ -341,21 +393,31 @@ static bool matches(const ValueMapping &LM, const ValueMapping &RM) {
 
 static void verifyAfterRoundTrip(const Module &M,
                                  std::unique_ptr<Module> OtherM) {
-  if (!OtherM)
+  if (!OtherM) {
     report_fatal_error("parsing failed");
-  if (verifyModule(*OtherM, &errs()))
+
+}
+  if (verifyModule(*OtherM, &errs())) {
     report_fatal_error("verification failed");
-  if (!matches(ValueMapping(M), ValueMapping(*OtherM)))
+
+}
+  if (!matches(ValueMapping(M), ValueMapping(*OtherM))) {
     report_fatal_error("use-list order changed");
+
+}
 }
 
 static void verifyBitcodeUseListOrder(const Module &M) {
   TempFile F;
-  if (F.init("bc"))
+  if (F.init("bc")) {
     report_fatal_error("failed to initialize bitcode file");
 
-  if (F.writeBitcode(M))
+}
+
+  if (F.writeBitcode(M)) {
     report_fatal_error("failed to write bitcode");
+
+}
 
   LLVMContext Context;
   verifyAfterRoundTrip(M, F.readBitcode(Context));
@@ -363,11 +425,15 @@ static void verifyBitcodeUseListOrder(const Module &M) {
 
 static void verifyAssemblyUseListOrder(const Module &M) {
   TempFile F;
-  if (F.init("ll"))
+  if (F.init("ll")) {
     report_fatal_error("failed to initialize assembly file");
 
-  if (F.writeAssembly(M))
+}
+
+  if (F.writeAssembly(M)) {
     report_fatal_error("failed to write assembly");
+
+}
 
   LLVMContext Context;
   verifyAfterRoundTrip(M, F.readAssembly(Context));
@@ -382,17 +448,27 @@ static void verifyUseListOrder(const Module &M) {
 
 static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
                                  DenseSet<Value *> &Seen) {
-  if (!Seen.insert(V).second)
+  if (!Seen.insert(V).second) {
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (Value *Op : C->operands())
+}
+
+  if (auto *C = dyn_cast<Constant>(V)) {
+    if (!isa<GlobalValue>(C)) {
+      for (Value *Op : C->operands()) {
         shuffleValueUseLists(Op, Gen, Seen);
 
-  if (V->use_empty() || std::next(V->use_begin()) == V->use_end())
+}
+
+}
+
+}
+
+  if (V->use_empty() || std::next(V->use_begin()) == V->use_end()) {
     // Nothing to shuffle for 0 or 1 users.
     return;
+
+}
 
   // Generate random numbers between 10 and 99, which will line up nicely in
   // debug output.  We're not worried about collisons here.
@@ -424,17 +500,27 @@ static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
 }
 
 static void reverseValueUseLists(Value *V, DenseSet<Value *> &Seen) {
-  if (!Seen.insert(V).second)
+  if (!Seen.insert(V).second) {
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (Value *Op : C->operands())
+}
+
+  if (auto *C = dyn_cast<Constant>(V)) {
+    if (!isa<GlobalValue>(C)) {
+      for (Value *Op : C->operands()) {
         reverseValueUseLists(Op, Seen);
 
-  if (V->use_empty() || std::next(V->use_begin()) == V->use_end())
+}
+
+}
+
+}
+
+  if (V->use_empty() || std::next(V->use_begin()) == V->use_end()) {
     // Nothing to shuffle for 0 or 1 users.
     return;
+
+}
 
   LLVM_DEBUG({
     dbgs() << "V = ";
@@ -461,53 +547,93 @@ static void changeUseLists(Module &M, Changer changeValueUseList) {
   // Visit every value that would be serialized to an IR file.
   //
   // Globals.
-  for (GlobalVariable &G : M.globals())
+  for (GlobalVariable &G : M.globals()) {
     changeValueUseList(&G);
-  for (GlobalAlias &A : M.aliases())
+
+}
+  for (GlobalAlias &A : M.aliases()) {
     changeValueUseList(&A);
-  for (GlobalIFunc &IF : M.ifuncs())
+
+}
+  for (GlobalIFunc &IF : M.ifuncs()) {
     changeValueUseList(&IF);
-  for (Function &F : M)
+
+}
+  for (Function &F : M) {
     changeValueUseList(&F);
 
+}
+
   // Constants used by globals.
-  for (GlobalVariable &G : M.globals())
-    if (G.hasInitializer())
+  for (GlobalVariable &G : M.globals()) {
+    if (G.hasInitializer()) {
       changeValueUseList(G.getInitializer());
-  for (GlobalAlias &A : M.aliases())
+
+}
+
+}
+  for (GlobalAlias &A : M.aliases()) {
     changeValueUseList(A.getAliasee());
-  for (GlobalIFunc &IF : M.ifuncs())
+
+}
+  for (GlobalIFunc &IF : M.ifuncs()) {
     changeValueUseList(IF.getResolver());
+
+}
   for (Function &F : M) {
-    if (F.hasPrefixData())
+    if (F.hasPrefixData()) {
       changeValueUseList(F.getPrefixData());
-    if (F.hasPrologueData())
+
+}
+    if (F.hasPrologueData()) {
       changeValueUseList(F.getPrologueData());
-    if (F.hasPersonalityFn())
+
+}
+    if (F.hasPersonalityFn()) {
       changeValueUseList(F.getPersonalityFn());
+
+}
   }
 
   // Function bodies.
   for (Function &F : M) {
-    for (Argument &A : F.args())
+    for (Argument &A : F.args()) {
       changeValueUseList(&A);
-    for (BasicBlock &BB : F)
+
+}
+    for (BasicBlock &BB : F) {
       changeValueUseList(&BB);
-    for (BasicBlock &BB : F)
-      for (Instruction &I : BB)
+
+}
+    for (BasicBlock &BB : F) {
+      for (Instruction &I : BB) {
         changeValueUseList(&I);
 
+}
+
+}
+
     // Constants used by instructions.
-    for (BasicBlock &BB : F)
-      for (Instruction &I : BB)
-        for (Value *Op : I.operands())
+    for (BasicBlock &BB : F) {
+      for (Instruction &I : BB) {
+        for (Value *Op : I.operands()) {
           if ((isa<Constant>(Op) && !isa<GlobalValue>(*Op)) ||
-              isa<InlineAsm>(Op))
+              isa<InlineAsm>(Op)) {
             changeValueUseList(Op);
+
+}
+
+}
+
+}
+
+}
   }
 
-  if (verifyModule(M, &errs()))
+  if (verifyModule(M, &errs())) {
     report_fatal_error("verification failed");
+
+}
 }
 
 static void shuffleUseLists(Module &M, unsigned SeedOffset) {

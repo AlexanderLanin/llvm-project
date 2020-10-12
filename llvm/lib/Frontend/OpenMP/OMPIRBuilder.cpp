@@ -138,8 +138,10 @@ void OpenMPIRBuilder::finalize() {
     assert(OutlinedFn && OutlinedFn->getNumUses() == 1);
 
     // Run a user callback, e.g. to add attributes.
-    if (OI.PostOutlineCB)
+    if (OI.PostOutlineCB) {
       OI.PostOutlineCB(*OutlinedFn);
+
+}
   }
 
   // Allow finalize to be called multiple times.
@@ -162,10 +164,16 @@ Value *OpenMPIRBuilder::getOrCreateIdent(Constant *SrcLocStr,
 
     // Look for existing encoding of the location + flags, not needed but
     // minimizes the difference to the existing solution while we transition.
-    for (GlobalVariable &GV : M.getGlobalList())
-      if (GV.getType() == IdentPtr && GV.hasInitializer())
-        if (GV.getInitializer() == Initializer)
+    for (GlobalVariable &GV : M.getGlobalList()) {
+      if (GV.getType() == IdentPtr && GV.hasInitializer()) {
+        if (GV.getInitializer() == Initializer) {
           return DefaultIdent = &GV;
+
+}
+
+}
+
+}
 
     DefaultIdent = new GlobalVariable(M, IdentPtr->getPointerElementType(),
                                       /* isConstant = */ false,
@@ -184,10 +192,14 @@ Constant *OpenMPIRBuilder::getOrCreateSrcLocStr(StringRef LocStr) {
 
     // Look for existing encoding of the location, not needed but minimizes the
     // difference to the existing solution while we transition.
-    for (GlobalVariable &GV : M.getGlobalList())
+    for (GlobalVariable &GV : M.getGlobalList()) {
       if (GV.isConstant() && GV.hasInitializer() &&
-          GV.getInitializer() == Initializer)
+          GV.getInitializer() == Initializer) {
         return SrcLocStr = ConstantExpr::getPointerCast(&GV, Int8Ptr);
+
+}
+
+}
 
     SrcLocStr = Builder.CreateGlobalStringPtr(LocStr);
   }
@@ -201,8 +213,10 @@ Constant *OpenMPIRBuilder::getOrCreateDefaultSrcLocStr() {
 Constant *
 OpenMPIRBuilder::getOrCreateSrcLocStr(const LocationDescription &Loc) {
   DILocation *DIL = Loc.DL.get();
-  if (!DIL)
+  if (!DIL) {
     return getOrCreateDefaultSrcLocStr();
+
+}
   StringRef Filename =
       !DIL->getFilename().empty() ? DIL->getFilename() : M.getName();
   StringRef Function = DIL->getScope()->getSubprogram()->getName();
@@ -225,8 +239,10 @@ Value *OpenMPIRBuilder::getOrCreateThreadID(Value *Ident) {
 OpenMPIRBuilder::InsertPointTy
 OpenMPIRBuilder::CreateBarrier(const LocationDescription &Loc, Directive DK,
                                bool ForceSimpleCall, bool CheckCancelFlag) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return Loc.IP;
+
+}
   return emitBarrierImpl(Loc, DK, ForceSimpleCall, CheckCancelFlag);
 }
 
@@ -270,8 +286,10 @@ OpenMPIRBuilder::emitBarrierImpl(const LocationDescription &Loc, Directive Kind,
                                                   : OMPRTL___kmpc_barrier),
       Args);
 
-  if (UseCancelBarrier && CheckCancelFlag)
+  if (UseCancelBarrier && CheckCancelFlag) {
     emitCancelationCheckImpl(Result, OMPD_parallel);
+
+}
 
   return Builder.saveIP();
 }
@@ -280,15 +298,19 @@ OpenMPIRBuilder::InsertPointTy
 OpenMPIRBuilder::CreateCancel(const LocationDescription &Loc,
                               Value *IfCondition,
                               omp::Directive CanceledDirective) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return Loc.IP;
+
+}
 
   // LLVM utilities like blocks with terminators.
   auto *UI = Builder.CreateUnreachable();
 
   Instruction *ThenTI = UI, *ElseTI = nullptr;
-  if (IfCondition)
+  if (IfCondition) {
     SplitBlockAndInsertIfThenElse(IfCondition, UI, &ThenTI, &ElseTI);
+
+}
   Builder.SetInsertPoint(ThenTI);
 
   Value *CancelKind = nullptr;
@@ -358,8 +380,10 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
     const LocationDescription &Loc, BodyGenCallbackTy BodyGenCB,
     PrivatizeCallbackTy PrivCB, FinalizeCallbackTy FiniCB, Value *IfCondition,
     Value *NumThreads, omp::ProcBindKind ProcBind, bool IsCancellable) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return Loc.IP;
+
+}
 
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
   Value *Ident = getOrCreateIdent(SrcLocStr);
@@ -411,8 +435,10 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
   auto *UI = new UnreachableInst(Builder.getContext(), InsertBB);
 
   Instruction *ThenTI = UI, *ElseTI = nullptr;
-  if (IfCondition)
+  if (IfCondition) {
     SplitBlockAndInsertIfThenElse(IfCondition, UI, &ThenTI, &ElseTI);
+
+}
 
   BasicBlock *ThenBB = ThenTI->getParent();
   BasicBlock *PRegEntryBB = ThenBB->splitBasicBlock(ThenTI, "omp.par.entry");
@@ -563,8 +589,10 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
                         << *Builder.GetInsertBlock()->getParent() << "\n");
     }
 
-    for (Instruction *I : ToBeDeleted)
+    for (Instruction *I : ToBeDeleted) {
       I->eraseFromParent();
+
+}
   };
 
   // Adjust the finalization stack, verify the adjustment, and call the
@@ -593,9 +621,13 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
   while (!Worklist.empty()) {
     BasicBlock *BB = Worklist.pop_back_val();
     OI.Blocks.push_back(BB);
-    for (BasicBlock *SuccBB : successors(BB))
-      if (ParallelRegionBlockSet.insert(SuccBB).second)
+    for (BasicBlock *SuccBB : successors(BB)) {
+      if (ParallelRegionBlockSet.insert(SuccBB).second) {
         Worklist.push_back(SuccBB);
+
+}
+
+}
   }
 
   // Ensure a single exit node for the outlined region by creating one.
@@ -628,14 +660,22 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
       getOrCreateRuntimeFunction(OMPRTL___kmpc_global_thread_num);
 
   auto PrivHelper = [&](Value &V) {
-    if (&V == TIDAddr || &V == ZeroAddr)
+    if (&V == TIDAddr || &V == ZeroAddr) {
       return;
 
+}
+
     SmallVector<Use *, 8> Uses;
-    for (Use &U : V.uses())
-      if (auto *UserI = dyn_cast<Instruction>(U.getUser()))
-        if (ParallelRegionBlockSet.count(UserI->getParent()))
+    for (Use &U : V.uses()) {
+      if (auto *UserI = dyn_cast<Instruction>(U.getUser())) {
+        if (ParallelRegionBlockSet.count(UserI->getParent())) {
           Uses.push_back(&U);
+
+}
+
+}
+
+}
 
     Value *ReplacementValue = nullptr;
     CallInst *CI = dyn_cast<CallInst>(&V);
@@ -646,12 +686,16 @@ IRBuilder<>::InsertPoint OpenMPIRBuilder::CreateParallel(
           PrivCB(AllocaIP, Builder.saveIP(), V, ReplacementValue));
       assert(ReplacementValue &&
              "Expected copy/create callback to set replacement value!");
-      if (ReplacementValue == &V)
+      if (ReplacementValue == &V) {
         return;
+
+}
     }
 
-    for (Use *UPtr : Uses)
+    for (Use *UPtr : Uses) {
       UPtr->set(ReplacementValue);
+
+}
   };
 
   for (Value *Input : Inputs) {
@@ -685,8 +729,10 @@ void OpenMPIRBuilder::emitFlush(const LocationDescription &Loc) {
 }
 
 void OpenMPIRBuilder::CreateFlush(const LocationDescription &Loc) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return;
+
+}
   emitFlush(Loc);
 }
 
@@ -703,8 +749,10 @@ void OpenMPIRBuilder::emitTaskwaitImpl(const LocationDescription &Loc) {
 }
 
 void OpenMPIRBuilder::CreateTaskwait(const LocationDescription &Loc) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return;
+
+}
   emitTaskwaitImpl(Loc);
 }
 
@@ -720,8 +768,10 @@ void OpenMPIRBuilder::emitTaskyieldImpl(const LocationDescription &Loc) {
 }
 
 void OpenMPIRBuilder::CreateTaskyield(const LocationDescription &Loc) {
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return;
+
+}
   emitTaskyieldImpl(Loc);
 }
 
@@ -730,8 +780,10 @@ OpenMPIRBuilder::CreateMaster(const LocationDescription &Loc,
                               BodyGenCallbackTy BodyGenCB,
                               FinalizeCallbackTy FiniCB) {
 
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return Loc.IP;
+
+}
 
   Directive OMPD = Directive::OMPD_master;
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
@@ -753,8 +805,10 @@ OpenMPIRBuilder::InsertPointTy OpenMPIRBuilder::CreateCritical(
     const LocationDescription &Loc, BodyGenCallbackTy BodyGenCB,
     FinalizeCallbackTy FiniCB, StringRef CriticalName, Value *HintInst) {
 
-  if (!updateToLocation(Loc))
+  if (!updateToLocation(Loc)) {
     return Loc.IP;
+
+}
 
   Directive OMPD = Directive::OMPD_critical;
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
@@ -786,15 +840,19 @@ OpenMPIRBuilder::InsertPointTy OpenMPIRBuilder::EmitOMPInlinedRegion(
     BodyGenCallbackTy BodyGenCB, FinalizeCallbackTy FiniCB, bool Conditional,
     bool HasFinalize) {
 
-  if (HasFinalize)
+  if (HasFinalize) {
     FinalizationStack.push_back({FiniCB, OMPD, /*IsCancellable*/ false});
+
+}
 
   // Create inlined region's entry and body blocks, in preparation
   // for conditional creation
   BasicBlock *EntryBB = Builder.GetInsertBlock();
   Instruction *SplitPos = EntryBB->getTerminator();
-  if (!isa_and_nonnull<BranchInst>(SplitPos))
+  if (!isa_and_nonnull<BranchInst>(SplitPos)) {
     SplitPos = new UnreachableInst(Builder.getContext(), EntryBB);
+
+}
   BasicBlock *ExitBB = EntryBB->splitBasicBlock(SplitPos, "omp_region.end");
   BasicBlock *FiniBB =
       EntryBB->splitBasicBlock(EntryBB->getTerminator(), "omp_region.finalize");
@@ -842,8 +900,10 @@ OpenMPIRBuilder::InsertPointTy OpenMPIRBuilder::EmitOMPInlinedRegion(
     auto merged = MergeBlockIntoPredecessor(ExitBB);
     BasicBlock *ExitPredBB = SplitPos->getParent();
     auto InsertBB = merged ? ExitPredBB : ExitBB;
-    if (!isa_and_nonnull<BranchInst>(SplitPos))
+    if (!isa_and_nonnull<BranchInst>(SplitPos)) {
       SplitPos->eraseFromParent();
+
+}
     Builder.SetInsertPoint(InsertBB);
   }
 
@@ -854,8 +914,10 @@ OpenMPIRBuilder::InsertPointTy OpenMPIRBuilder::emitCommonDirectiveEntry(
     Directive OMPD, Value *EntryCall, BasicBlock *ExitBB, bool Conditional) {
 
   // if nothing to do, Return current insertion point.
-  if (!Conditional)
+  if (!Conditional) {
     return Builder.saveIP();
+
+}
 
   BasicBlock *EntryBB = Builder.GetInsertBlock();
   Value *CallBool = Builder.CreateIsNotNull(EntryCall);

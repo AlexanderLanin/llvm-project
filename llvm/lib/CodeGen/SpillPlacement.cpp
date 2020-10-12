@@ -125,11 +125,13 @@ struct SpillPlacement::Node {
     SumLinkWeights += w;
 
     // There can be multiple links to the same bundle, add them up.
-    for (LinkVector::iterator I = Links.begin(), E = Links.end(); I != E; ++I)
+    for (LinkVector::iterator I = Links.begin(), E = Links.end(); I != E; ++I) {
       if (I->second == b) {
         I->first += w;
         return;
       }
+
+}
     // This must be the first link to b.
     Links.push_back(std::make_pair(w, b));
   }
@@ -158,10 +160,12 @@ struct SpillPlacement::Node {
     BlockFrequency SumN = BiasN;
     BlockFrequency SumP = BiasP;
     for (LinkVector::iterator I = Links.begin(), E = Links.end(); I != E; ++I) {
-      if (nodes[I->second].Value == -1)
+      if (nodes[I->second].Value == -1) {
         SumN += I->first;
-      else if (nodes[I->second].Value == 1)
+      } else if (nodes[I->second].Value == 1) {
         SumP += I->first;
+
+}
     }
 
     // Each weighted sum is going to be less than the total frequency of the
@@ -173,12 +177,14 @@ struct SpillPlacement::Node {
     //  2. It helps tame rounding errors when the links nominally sum to 0.
     //
     bool Before = preferReg();
-    if (SumN >= SumP + Threshold)
+    if (SumN >= SumP + Threshold) {
       Value = -1;
-    else if (SumP >= SumN + Threshold)
+    } else if (SumP >= SumN + Threshold) {
       Value = 1;
-    else
+    } else {
       Value = 0;
+
+}
     return Before != preferReg();
   }
 
@@ -188,8 +194,10 @@ struct SpillPlacement::Node {
       unsigned n = Elt.second;
       // Neighbors that already have the same value are not going to
       // change because of this node changing.
-      if (Value != nodes[n].Value)
+      if (Value != nodes[n].Value) {
         List.insert(n);
+
+}
     }
   }
 };
@@ -226,8 +234,10 @@ void SpillPlacement::releaseMemory() {
 /// activate - mark node n as active if it wasn't already.
 void SpillPlacement::activate(unsigned n) {
   TodoList.insert(n);
-  if (ActiveNodes->test(n))
+  if (ActiveNodes->test(n)) {
     return;
+
+}
   ActiveNodes->set(n);
   nodes[n].clear(Threshold);
 
@@ -287,8 +297,10 @@ void SpillPlacement::addPrefSpill(ArrayRef<unsigned> Blocks, bool Strong) {
   for (ArrayRef<unsigned>::iterator I = Blocks.begin(), E = Blocks.end();
        I != E; ++I) {
     BlockFrequency Freq = BlockFrequencies[*I];
-    if (Strong)
+    if (Strong) {
       Freq += Freq;
+
+}
     unsigned ib = bundles->getBundle(*I, false);
     unsigned ob = bundles->getBundle(*I, true);
     activate(ib);
@@ -306,8 +318,10 @@ void SpillPlacement::addLinks(ArrayRef<unsigned> Links) {
     unsigned ob = bundles->getBundle(Number, true);
 
     // Ignore self-loops.
-    if (ib == ob)
+    if (ib == ob) {
       continue;
+
+}
     activate(ib);
     activate(ob);
     BlockFrequency Freq = BlockFrequencies[Number];
@@ -322,17 +336,23 @@ bool SpillPlacement::scanActiveBundles() {
     update(n);
     // A node that must spill, or a node without any links is not going to
     // change its value ever again, so exclude it from iterations.
-    if (nodes[n].mustSpill())
+    if (nodes[n].mustSpill()) {
       continue;
-    if (nodes[n].preferReg())
+
+}
+    if (nodes[n].preferReg()) {
       RecentPositive.push_back(n);
+
+}
   }
   return !RecentPositive.empty();
 }
 
 bool SpillPlacement::update(unsigned n) {
-  if (!nodes[n].update(nodes, Threshold))
+  if (!nodes[n].update(nodes, Threshold)) {
     return false;
+
+}
   nodes[n].getDissentingNeighbors(TodoList, nodes);
   return true;
 }
@@ -351,10 +371,14 @@ void SpillPlacement::iterate() {
   unsigned Limit = bundles->getNumBundles() * 10;
   while(Limit-- > 0 && !TodoList.empty()) {
     unsigned n = TodoList.pop_back_val();
-    if (!update(n))
+    if (!update(n)) {
       continue;
-    if (nodes[n].preferReg())
+
+}
+    if (nodes[n].preferReg()) {
       RecentPositive.push_back(n);
+
+}
   }
 }
 
@@ -373,11 +397,13 @@ SpillPlacement::finish() {
 
   // Write preferences back to ActiveNodes.
   bool Perfect = true;
-  for (unsigned n : ActiveNodes->set_bits())
+  for (unsigned n : ActiveNodes->set_bits()) {
     if (!nodes[n].preferReg()) {
       ActiveNodes->reset(n);
       Perfect = false;
     }
+
+}
   ActiveNodes = nullptr;
   return Perfect;
 }

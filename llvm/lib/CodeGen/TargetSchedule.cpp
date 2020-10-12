@@ -71,8 +71,10 @@ void TargetSchedModel::init(const TargetSubtargetInfo *TSInfo) {
   ResourceLCM = SchedModel.IssueWidth;
   for (unsigned Idx = 0; Idx < NumRes; ++Idx) {
     unsigned NumUnits = SchedModel.getProcResource(Idx)->NumUnits;
-    if (NumUnits > 0)
+    if (NumUnits > 0) {
       ResourceLCM = lcm(ResourceLCM, NumUnits);
+
+}
   }
   MicroOpFactor = ResourceLCM / SchedModel.IssueWidth;
   for (unsigned Idx = 0; Idx < NumRes; ++Idx) {
@@ -85,10 +87,14 @@ void TargetSchedModel::init(const TargetSubtargetInfo *TSInfo) {
 bool TargetSchedModel::mustBeginGroup(const MachineInstr *MI,
                                      const MCSchedClassDesc *SC) const {
   if (hasInstrSchedModel()) {
-    if (!SC)
+    if (!SC) {
       SC = resolveSchedClass(MI);
-    if (SC->isValid())
+
+}
+    if (SC->isValid()) {
       return SC->BeginGroup;
+
+}
   }
   return false;
 }
@@ -96,10 +102,14 @@ bool TargetSchedModel::mustBeginGroup(const MachineInstr *MI,
 bool TargetSchedModel::mustEndGroup(const MachineInstr *MI,
                                      const MCSchedClassDesc *SC) const {
   if (hasInstrSchedModel()) {
-    if (!SC)
+    if (!SC) {
       SC = resolveSchedClass(MI);
-    if (SC->isValid())
+
+}
+    if (SC->isValid()) {
       return SC->EndGroup;
+
+}
   }
   return false;
 }
@@ -111,10 +121,14 @@ unsigned TargetSchedModel::getNumMicroOps(const MachineInstr *MI,
     return (UOps >= 0) ? UOps : TII->getNumMicroOps(&InstrItins, *MI);
   }
   if (hasInstrSchedModel()) {
-    if (!SC)
+    if (!SC) {
       SC = resolveSchedClass(MI);
-    if (SC->isValid())
+
+}
+    if (SC->isValid()) {
       return SC->NumMicroOps;
+
+}
   }
   return MI->isTransient() ? 0 : 1;
 }
@@ -134,8 +148,10 @@ resolveSchedClass(const MachineInstr *MI) const {
   // Get the definition's scheduling class descriptor from this machine model.
   unsigned SchedClass = MI->getDesc().getSchedClass();
   const MCSchedClassDesc *SCDesc = SchedModel.getSchedClassDesc(SchedClass);
-  if (!SCDesc->isValid())
+  if (!SCDesc->isValid()) {
     return SCDesc;
+
+}
 
 #ifndef NDEBUG
   unsigned NIter = 0;
@@ -158,8 +174,10 @@ static unsigned findDefIdx(const MachineInstr *MI, unsigned DefOperIdx) {
   unsigned DefIdx = 0;
   for (unsigned i = 0; i != DefOperIdx; ++i) {
     const MachineOperand &MO = MI->getOperand(i);
-    if (MO.isReg() && MO.isDef())
+    if (MO.isReg() && MO.isDef()) {
       ++DefIdx;
+
+}
   }
   return DefIdx;
 }
@@ -174,8 +192,10 @@ static unsigned findUseIdx(const MachineInstr *MI, unsigned UseOperIdx) {
   unsigned UseIdx = 0;
   for (unsigned i = 0; i != UseOperIdx; ++i) {
     const MachineOperand &MO = MI->getOperand(i);
-    if (MO.isReg() && MO.readsReg() && !MO.isDef())
+    if (MO.isReg() && MO.readsReg() && !MO.isDef()) {
       ++UseIdx;
+
+}
   }
   return UseIdx;
 }
@@ -185,8 +205,10 @@ unsigned TargetSchedModel::computeOperandLatency(
   const MachineInstr *DefMI, unsigned DefOperIdx,
   const MachineInstr *UseMI, unsigned UseOperIdx) const {
 
-  if (!hasInstrSchedModel() && !hasInstrItineraries())
+  if (!hasInstrSchedModel() && !hasInstrItineraries()) {
     return TII->defaultDefLatency(SchedModel, *DefMI);
+
+}
 
   if (hasInstrItineraries()) {
     int OperLatency = 0;
@@ -198,8 +220,10 @@ unsigned TargetSchedModel::computeOperandLatency(
       unsigned DefClass = DefMI->getDesc().getSchedClass();
       OperLatency = InstrItins.getOperandCycle(DefClass, DefOperIdx);
     }
-    if (OperLatency >= 0)
+    if (OperLatency >= 0) {
       return OperLatency;
+
+}
 
     // No operand latency was found.
     unsigned InstrLatency = TII->getInstrLatency(&InstrItins, *DefMI);
@@ -222,17 +246,23 @@ unsigned TargetSchedModel::computeOperandLatency(
       STI->getWriteLatencyEntry(SCDesc, DefIdx);
     unsigned WriteID = WLEntry->WriteResourceID;
     unsigned Latency = capLatency(WLEntry->Cycles);
-    if (!UseMI)
+    if (!UseMI) {
       return Latency;
+
+}
 
     // Lookup the use's latency adjustment in SubtargetInfo.
     const MCSchedClassDesc *UseDesc = resolveSchedClass(UseMI);
-    if (UseDesc->NumReadAdvanceEntries == 0)
+    if (UseDesc->NumReadAdvanceEntries == 0) {
       return Latency;
+
+}
     unsigned UseIdx = findUseIdx(UseMI, UseOperIdx);
     int Advance = STI->getReadAdvanceCycles(UseDesc, UseIdx, WriteID);
-    if (Advance > 0 && (unsigned)Advance > Latency) // unsigned wrap
+    if (Advance > 0 && (unsigned)Advance > Latency) { // unsigned wrap
       return 0;
+
+}
     return Latency - Advance;
   }
   // If DefIdx does not exist in the model (e.g. implicit defs), then return
@@ -264,8 +294,10 @@ unsigned TargetSchedModel::computeInstrLatency(unsigned Opcode) const {
 }
 
 unsigned TargetSchedModel::computeInstrLatency(const MCInst &Inst) const {
-  if (hasInstrSchedModel())
+  if (hasInstrSchedModel()) {
     return capLatency(SchedModel.computeInstrLatency(*STI, *TII, Inst));
+
+}
   return computeInstrLatency(Inst.getOpcode());
 }
 
@@ -275,13 +307,17 @@ TargetSchedModel::computeInstrLatency(const MachineInstr *MI,
   // For the itinerary model, fall back to the old subtarget hook.
   // Allow subtargets to compute Bundle latencies outside the machine model.
   if (hasInstrItineraries() || MI->isBundle() ||
-      (!hasInstrSchedModel() && !UseDefaultDefLatency))
+      (!hasInstrSchedModel() && !UseDefaultDefLatency)) {
     return TII->getInstrLatency(&InstrItins, *MI);
+
+}
 
   if (hasInstrSchedModel()) {
     const MCSchedClassDesc *SCDesc = resolveSchedClass(MI);
-    if (SCDesc->isValid())
+    if (SCDesc->isValid()) {
       return computeInstrLatency(*SCDesc);
+
+}
   }
   return TII->defaultDefLatency(SchedModel, *MI);
 }
@@ -289,8 +325,10 @@ TargetSchedModel::computeInstrLatency(const MachineInstr *MI,
 unsigned TargetSchedModel::
 computeOutputLatency(const MachineInstr *DefMI, unsigned DefOperIdx,
                      const MachineInstr *DepMI) const {
-  if (!SchedModel.isOutOfOrder())
+  if (!SchedModel.isOutOfOrder()) {
     return 1;
+
+}
 
   // Out-of-order processor can dispatch WAW dependencies in the same cycle.
 
@@ -303,8 +341,10 @@ computeOutputLatency(const MachineInstr *DefMI, unsigned DefOperIdx,
   Register Reg = DefMI->getOperand(DefOperIdx).getReg();
   const MachineFunction &MF = *DefMI->getMF();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
-  if (!DepMI->readsRegister(Reg, TRI) && TII->isPredicated(*DepMI))
+  if (!DepMI->readsRegister(Reg, TRI) && TII->isPredicated(*DepMI)) {
     return computeInstrLatency(DefMI);
+
+}
 
   // If we have a per operand scheduling model, check if this def is writing
   // an unbuffered resource. If so, it treated like an in-order cpu.
@@ -313,8 +353,10 @@ computeOutputLatency(const MachineInstr *DefMI, unsigned DefOperIdx,
     if (SCDesc->isValid()) {
       for (const MCWriteProcResEntry *PRI = STI->getWriteProcResBegin(SCDesc),
              *PRE = STI->getWriteProcResEnd(SCDesc); PRI != PRE; ++PRI) {
-        if (!SchedModel.getProcResource(PRI->ProcResourceIdx)->BufferSize)
+        if (!SchedModel.getProcResource(PRI->ProcResourceIdx)->BufferSize) {
           return 1;
+
+}
       }
     }
   }
@@ -329,8 +371,10 @@ TargetSchedModel::computeReciprocalThroughput(const MachineInstr *MI) const {
                                                  *getInstrItineraries());
   }
 
-  if (hasInstrSchedModel())
+  if (hasInstrSchedModel()) {
     return MCSchedModel::getReciprocalThroughput(*STI, *resolveSchedClass(MI));
+
+}
 
   return 0.0;
 }
@@ -338,13 +382,17 @@ TargetSchedModel::computeReciprocalThroughput(const MachineInstr *MI) const {
 double
 TargetSchedModel::computeReciprocalThroughput(unsigned Opcode) const {
   unsigned SchedClass = TII->get(Opcode).getSchedClass();
-  if (hasInstrItineraries())
+  if (hasInstrItineraries()) {
     return MCSchedModel::getReciprocalThroughput(SchedClass,
                                                  *getInstrItineraries());
+
+}
   if (hasInstrSchedModel()) {
     const MCSchedClassDesc &SCDesc = *SchedModel.getSchedClassDesc(SchedClass);
-    if (SCDesc.isValid() && !SCDesc.isVariant())
+    if (SCDesc.isValid() && !SCDesc.isVariant()) {
       return MCSchedModel::getReciprocalThroughput(*STI, SCDesc);
+
+}
   }
 
   return 0.0;
@@ -352,8 +400,10 @@ TargetSchedModel::computeReciprocalThroughput(unsigned Opcode) const {
 
 double
 TargetSchedModel::computeReciprocalThroughput(const MCInst &MI) const {
-  if (hasInstrSchedModel())
+  if (hasInstrSchedModel()) {
     return SchedModel.getReciprocalThroughput(*STI, *TII, MI);
+
+}
   return computeReciprocalThroughput(MI.getOpcode());
 }
 

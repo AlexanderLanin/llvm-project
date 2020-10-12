@@ -71,30 +71,48 @@ bool llvm::isAllocaPromotable(const AllocaInst *AI) {
     if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       // Note that atomic loads can be transformed; atomic semantics do
       // not have any meaning for a local alloca.
-      if (LI->isVolatile())
+      if (LI->isVolatile()) {
         return false;
+
+}
     } else if (const StoreInst *SI = dyn_cast<StoreInst>(U)) {
-      if (SI->getOperand(0) == AI)
+      if (SI->getOperand(0) == AI) {
         return false; // Don't allow a store OF the AI, only INTO the AI.
+
+}
       // Note that atomic stores can be transformed; atomic semantics do
       // not have any meaning for a local alloca.
-      if (SI->isVolatile())
+      if (SI->isVolatile()) {
         return false;
+
+}
     } else if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(U)) {
-      if (!II->isLifetimeStartOrEnd())
+      if (!II->isLifetimeStartOrEnd()) {
         return false;
+
+}
     } else if (const BitCastInst *BCI = dyn_cast<BitCastInst>(U)) {
-      if (BCI->getType() != Type::getInt8PtrTy(U->getContext(), AS))
+      if (BCI->getType() != Type::getInt8PtrTy(U->getContext(), AS)) {
         return false;
-      if (!onlyUsedByLifetimeMarkers(BCI))
+
+}
+      if (!onlyUsedByLifetimeMarkers(BCI)) {
         return false;
+
+}
     } else if (const GetElementPtrInst *GEPI = dyn_cast<GetElementPtrInst>(U)) {
-      if (GEPI->getType() != Type::getInt8PtrTy(U->getContext(), AS))
+      if (GEPI->getType() != Type::getInt8PtrTy(U->getContext(), AS)) {
         return false;
-      if (!GEPI->hasAllZeroIndices())
+
+}
+      if (!GEPI->hasAllZeroIndices()) {
         return false;
-      if (!onlyUsedByLifetimeMarkers(GEPI))
+
+}
+      if (!onlyUsedByLifetimeMarkers(GEPI)) {
         return false;
+
+}
     } else {
       return false;
     }
@@ -147,10 +165,12 @@ struct AllocaInfo {
       }
 
       if (OnlyUsedInOneBlock) {
-        if (!OnlyBlock)
+        if (!OnlyBlock) {
           OnlyBlock = User->getParent();
-        else if (OnlyBlock != User->getParent())
+        } else if (OnlyBlock != User->getParent()) {
           OnlyUsedInOneBlock = false;
+
+}
       }
     }
 
@@ -200,17 +220,23 @@ public:
 
     // If we already have this instruction number, return it.
     DenseMap<const Instruction *, unsigned>::iterator It = InstNumbers.find(I);
-    if (It != InstNumbers.end())
+    if (It != InstNumbers.end()) {
       return It->second;
+
+}
 
     // Scan the whole block to get the instruction.  This accumulates
     // information for every interesting instruction in the block, in order to
     // avoid gratuitus rescans.
     const BasicBlock *BB = I->getParent();
     unsigned InstNo = 0;
-    for (const Instruction &BBI : *BB)
-      if (isInterestingInstruction(&BBI))
+    for (const Instruction &BBI : *BB) {
+      if (isInterestingInstruction(&BBI)) {
         InstNumbers[&BBI] = InstNo++;
+
+}
+
+}
     It = InstNumbers.find(I);
 
     assert(It != InstNumbers.end() && "Didn't insert instruction?");
@@ -283,8 +309,10 @@ private:
 
   unsigned getNumPreds(const BasicBlock *BB) {
     unsigned &NP = BBNumPreds[BB];
-    if (NP == 0)
+    if (NP == 0) {
       NP = pred_size(BB) + 1;
+
+}
     return NP - 1;
   }
 
@@ -319,8 +347,10 @@ static void removeLifetimeIntrinsicUsers(AllocaInst *AI) {
   for (auto UI = AI->user_begin(), UE = AI->user_end(); UI != UE;) {
     Instruction *I = cast<Instruction>(*UI);
     ++UI;
-    if (isa<LoadInst>(I) || isa<StoreInst>(I))
+    if (isa<LoadInst>(I) || isa<StoreInst>(I)) {
       continue;
+
+}
 
     if (!I->getType()->isVoidTy()) {
       // The only users of this bitcast/GEP instruction are lifetime intrinsics.
@@ -357,8 +387,10 @@ static bool rewriteSingleStoreAlloca(AllocaInst *AI, AllocaInfo &Info,
 
   for (auto UI = AI->user_begin(), E = AI->user_end(); UI != E;) {
     Instruction *UserInst = cast<Instruction>(*UI++);
-    if (UserInst == OnlyStore)
+    if (UserInst == OnlyStore) {
       continue;
+
+}
     LoadInst *LI = cast<LoadInst>(UserInst);
 
     // Okay, if we have a load from the alloca, we want to replace it with the
@@ -370,8 +402,10 @@ static bool rewriteSingleStoreAlloca(AllocaInst *AI, AllocaInfo &Info,
         // If we have a use that is in the same block as the store, compare the
         // indices of the two instructions to see which one came first.  If the
         // load came before the store, we can't handle it.
-        if (StoreIndex == -1)
+        if (StoreIndex == -1) {
           StoreIndex = LBI.getInstructionIndex(OnlyStore);
+
+}
 
         if (unsigned(StoreIndex) > LBI.getInstructionIndex(LI)) {
           // Can't handle this load, bail out.
@@ -391,15 +425,19 @@ static bool rewriteSingleStoreAlloca(AllocaInst *AI, AllocaInfo &Info,
     Value *ReplVal = OnlyStore->getOperand(0);
     // If the replacement value is the load, this must occur in unreachable
     // code.
-    if (ReplVal == LI)
+    if (ReplVal == LI) {
       ReplVal = UndefValue::get(LI->getType());
+
+}
 
     // If the load was marked as nonnull we don't want to lose
     // that information when we erase this Load. So we preserve
     // it with an assume.
     if (AC && LI->getMetadata(LLVMContext::MD_nonnull) &&
-        !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT))
+        !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT)) {
       addAssumeNonNull(AC, LI);
+
+}
 
     LI->replaceAllUsesWith(ReplVal);
     LI->eraseFromParent();
@@ -407,8 +445,10 @@ static bool rewriteSingleStoreAlloca(AllocaInst *AI, AllocaInfo &Info,
   }
 
   // Finally, after the scan, check to see if the store is all that is left.
-  if (!Info.UsingBlocks.empty())
+  if (!Info.UsingBlocks.empty()) {
     return false; // If not, we'll have to fall back for the remainder.
+
+}
 
   // Record debuginfo for the store and remove the declaration's
   // debuginfo.
@@ -455,9 +495,13 @@ static bool promoteSingleBlockAlloca(AllocaInst *AI, const AllocaInfo &Info,
   using StoresByIndexTy = SmallVector<std::pair<unsigned, StoreInst *>, 64>;
   StoresByIndexTy StoresByIndex;
 
-  for (User *U : AI->users())
-    if (StoreInst *SI = dyn_cast<StoreInst>(U))
+  for (User *U : AI->users()) {
+    if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
       StoresByIndex.push_back(std::make_pair(LBI.getInstructionIndex(SI), SI));
+
+}
+
+}
 
   // Sort the stores by their index, making it efficient to do a lookup with a
   // binary search.
@@ -467,8 +511,10 @@ static bool promoteSingleBlockAlloca(AllocaInst *AI, const AllocaInfo &Info,
   // store above them, if any.
   for (auto UI = AI->user_begin(), E = AI->user_end(); UI != E;) {
     LoadInst *LI = dyn_cast<LoadInst>(*UI++);
-    if (!LI)
+    if (!LI) {
       continue;
+
+}
 
     unsigned LoadIdx = LBI.getInstructionIndex(LI);
 
@@ -478,26 +524,32 @@ static bool promoteSingleBlockAlloca(AllocaInst *AI, const AllocaInfo &Info,
         std::make_pair(LoadIdx, static_cast<StoreInst *>(nullptr)),
         less_first());
     if (I == StoresByIndex.begin()) {
-      if (StoresByIndex.empty())
+      if (StoresByIndex.empty()) {
         // If there are no stores, the load takes the undef value.
         LI->replaceAllUsesWith(UndefValue::get(LI->getType()));
-      else
+      } else {
         // There is no store before this load, bail out (load may be affected
         // by the following stores - see main comment).
         return false;
+
+}
     } else {
       // Otherwise, there was a store before this load, the load takes its value.
       // Note, if the load was marked as nonnull we don't want to lose that
       // information when we erase it. So we preserve it with an assume.
       Value *ReplVal = std::prev(I)->second->getOperand(0);
       if (AC && LI->getMetadata(LLVMContext::MD_nonnull) &&
-          !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT))
+          !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT)) {
         addAssumeNonNull(AC, LI);
+
+}
 
       // If the replacement value is the load, this must occur in unreachable
       // code.
-      if (ReplVal == LI)
+      if (ReplVal == LI) {
         ReplVal = UndefValue::get(LI->getType());
+
+}
 
       LI->replaceAllUsesWith(ReplVal);
     }
@@ -521,8 +573,10 @@ static bool promoteSingleBlockAlloca(AllocaInst *AI, const AllocaInfo &Info,
   AI->eraseFromParent();
 
   // The alloca's debuginfo can be removed as well.
-  for (DbgVariableIntrinsic *DII : Info.DbgDeclares)
+  for (DbgVariableIntrinsic *DII : Info.DbgDeclares) {
     DII->eraseFromParent();
+
+}
 
   ++NumLocalPromoted;
   return true;
@@ -584,13 +638,17 @@ void PromoteMem2Reg::run() {
     // now.
     if (BBNumbers.empty()) {
       unsigned ID = 0;
-      for (auto &BB : F)
+      for (auto &BB : F) {
         BBNumbers[&BB] = ID++;
+
+}
     }
 
     // Remember the dbg.declare intrinsic describing this alloca, if any.
-    if (!Info.DbgDeclares.empty())
+    if (!Info.DbgDeclares.empty()) {
       AllocaDbgDeclares[AllocaNum] = Info.DbgDeclares;
+
+}
 
     // Keep the reverse mapping of the 'Allocas' array for the rename pass.
     AllocaLookup[Allocas[AllocaNum]] = AllocaNum;
@@ -622,12 +680,16 @@ void PromoteMem2Reg::run() {
     });
 
     unsigned CurrentVersion = 0;
-    for (BasicBlock *BB : PHIBlocks)
+    for (BasicBlock *BB : PHIBlocks) {
       QueuePhiNode(BB, AllocaNum, CurrentVersion);
+
+}
   }
 
-  if (Allocas.empty())
+  if (Allocas.empty()) {
     return; // All of the allocas must have been trivial!
+
+}
 
   LBI.clear();
 
@@ -635,8 +697,10 @@ void PromoteMem2Reg::run() {
   // the alloca's.  We do this in case there is a load of a value that has not
   // been stored yet.  In this case, it will get this null value.
   RenamePassData::ValVector Values(Allocas.size());
-  for (unsigned i = 0, e = Allocas.size(); i != e; ++i)
+  for (unsigned i = 0, e = Allocas.size(); i != e; ++i) {
     Values[i] = UndefValue::get(Allocas[i]->getAllocatedType());
+
+}
 
   // When handling debug info, treat all incoming values as if they have unknown
   // locations until proven otherwise.
@@ -662,15 +726,21 @@ void PromoteMem2Reg::run() {
     // If there are any uses of the alloca instructions left, they must be in
     // unreachable basic blocks that were not processed by walking the dominator
     // tree. Just delete the users now.
-    if (!A->use_empty())
+    if (!A->use_empty()) {
       A->replaceAllUsesWith(UndefValue::get(A->getType()));
+
+}
     A->eraseFromParent();
   }
 
   // Remove alloca's dbg.declare instrinsics from the function.
-  for (auto &Declares : AllocaDbgDeclares)
-    for (auto *DII : Declares)
+  for (auto &Declares : AllocaDbgDeclares) {
+    for (auto *DII : Declares) {
       DII->eraseFromParent();
+
+}
+
+}
 
   // Loop over all of the PHI nodes and see if there are any that we can get
   // rid of because they merge all of the same incoming values.  This can
@@ -715,14 +785,18 @@ void PromoteMem2Reg::run() {
     // when we find the PHI that is the first entry in the block.
     PHINode *SomePHI = I->second;
     BasicBlock *BB = SomePHI->getParent();
-    if (&BB->front() != SomePHI)
+    if (&BB->front() != SomePHI) {
       continue;
+
+}
 
     // Only do work here if there the PHI nodes are missing incoming values.  We
     // know that all PHI nodes that were inserted in a block will have the same
     // number of incoming values, so we can just check any of them.
-    if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
+    if (SomePHI->getNumIncomingValues() == getNumPreds(BB)) {
       continue;
+
+}
 
     // Get the preds for BB.
     SmallVector<BasicBlock *, 16> Preds(pred_begin(BB), pred_end(BB));
@@ -757,8 +831,10 @@ void PromoteMem2Reg::run() {
     while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
            SomePHI->getNumIncomingValues() == NumBadPreds) {
       Value *UndefVal = UndefValue::get(SomePHI->getType());
-      for (BasicBlock *Pred : Preds)
+      for (BasicBlock *Pred : Preds) {
         SomePHI->addIncoming(UndefVal, Pred);
+
+}
     }
   }
 
@@ -785,15 +861,19 @@ void PromoteMem2Reg::ComputeLiveInBlocks(
   // the value isn't really live-in.
   for (unsigned i = 0, e = LiveInBlockWorklist.size(); i != e; ++i) {
     BasicBlock *BB = LiveInBlockWorklist[i];
-    if (!DefBlocks.count(BB))
+    if (!DefBlocks.count(BB)) {
       continue;
+
+}
 
     // Okay, this is a block that both uses and defines the value.  If the first
     // reference to the alloca is a def (store), then we know it isn't live-in.
     for (BasicBlock::iterator I = BB->begin();; ++I) {
       if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
-        if (SI->getOperand(1) != AI)
+        if (SI->getOperand(1) != AI) {
           continue;
+
+}
 
         // We found a store to the alloca before a load.  The alloca is not
         // actually live-in here.
@@ -804,11 +884,15 @@ void PromoteMem2Reg::ComputeLiveInBlocks(
         break;
       }
 
-      if (LoadInst *LI = dyn_cast<LoadInst>(I))
+      if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
         // Okay, we found a load before a store to the alloca.  It is actually
         // live into this block.
-        if (LI->getOperand(0) == AI)
+        if (LI->getOperand(0) == AI) {
           break;
+
+}
+
+}
     }
   }
 
@@ -819,16 +903,20 @@ void PromoteMem2Reg::ComputeLiveInBlocks(
 
     // The block really is live in here, insert it into the set.  If already in
     // the set, then it has already been processed.
-    if (!LiveInBlocks.insert(BB).second)
+    if (!LiveInBlocks.insert(BB).second) {
       continue;
+
+}
 
     // Since the value is live into BB, it is either defined in a predecessor or
     // live into it to.  Add the preds to the worklist unless they are a
     // defining block.
     for (BasicBlock *P : predecessors(BB)) {
       // The value is not live into a predecessor if it defines the value.
-      if (DefBlocks.count(P))
+      if (DefBlocks.count(P)) {
         continue;
+
+}
 
       // Otherwise it is, add to the worklist.
       LiveInBlockWorklist.push_back(P);
@@ -845,8 +933,10 @@ bool PromoteMem2Reg::QueuePhiNode(BasicBlock *BB, unsigned AllocaNo,
   PHINode *&PN = NewPhiNodes[std::make_pair(BBNumbers[BB], AllocaNo)];
 
   // If the BB already has a phi node added for the i'th alloca then we're done!
-  if (PN)
+  if (PN) {
     return false;
+
+}
 
   // Create a PhiNode using the dereferenced type... and add the phi-node to the
   // BasicBlock.
@@ -862,10 +952,12 @@ bool PromoteMem2Reg::QueuePhiNode(BasicBlock *BB, unsigned AllocaNo,
 /// create a merged location incorporating \p DL, or to set \p DL directly.
 static void updateForIncomingValueLocation(PHINode *PN, DebugLoc DL,
                                            bool ApplyMergedLoc) {
-  if (ApplyMergedLoc)
+  if (ApplyMergedLoc) {
     PN->applyMergedLocation(PN->getDebugLoc(), DL);
-  else
+  } else {
     PN->setDebugLoc(DL);
+
+}
 }
 
 /// Recursively traverse the CFG of the function, renaming loads and
@@ -905,19 +997,25 @@ NextIteration:
                                        APN->getNumIncomingValues() > 0);
 
         // Add N incoming values to the PHI node.
-        for (unsigned i = 0; i != NumEdges; ++i)
+        for (unsigned i = 0; i != NumEdges; ++i) {
           APN->addIncoming(IncomingVals[AllocaNo], Pred);
+
+}
 
         // The currently active variable for this block is now the PHI.
         IncomingVals[AllocaNo] = APN;
-        for (DbgVariableIntrinsic *DII : AllocaDbgDeclares[AllocaNo])
+        for (DbgVariableIntrinsic *DII : AllocaDbgDeclares[AllocaNo]) {
           ConvertDebugDeclareToDebugValue(DII, APN, DIB);
+
+}
 
         // Get the next phi node.
         ++PNI;
         APN = dyn_cast<PHINode>(PNI);
-        if (!APN)
+        if (!APN) {
           break;
+
+}
 
         // Verify that it is missing entries.  If not, it is not being inserted
         // by this mem2reg invocation so we want to ignore it.
@@ -926,20 +1024,26 @@ NextIteration:
   }
 
   // Don't revisit blocks.
-  if (!Visited.insert(BB).second)
+  if (!Visited.insert(BB).second) {
     return;
+
+}
 
   for (BasicBlock::iterator II = BB->begin(); !II->isTerminator();) {
     Instruction *I = &*II++; // get the instruction, increment iterator
 
     if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
       AllocaInst *Src = dyn_cast<AllocaInst>(LI->getPointerOperand());
-      if (!Src)
+      if (!Src) {
         continue;
 
+}
+
       DenseMap<AllocaInst *, unsigned>::iterator AI = AllocaLookup.find(Src);
-      if (AI == AllocaLookup.end())
+      if (AI == AllocaLookup.end()) {
         continue;
+
+}
 
       Value *V = IncomingVals[AI->second];
 
@@ -947,8 +1051,10 @@ NextIteration:
       // that information when we erase this Load. So we preserve
       // it with an assume.
       if (AC && LI->getMetadata(LLVMContext::MD_nonnull) &&
-          !isKnownNonZero(V, SQ.DL, 0, AC, LI, &DT))
+          !isKnownNonZero(V, SQ.DL, 0, AC, LI, &DT)) {
         addAssumeNonNull(AC, LI);
+
+}
 
       // Anything using the load now uses the current value.
       LI->replaceAllUsesWith(V);
@@ -957,12 +1063,16 @@ NextIteration:
       // Delete this instruction and mark the name as the current holder of the
       // value
       AllocaInst *Dest = dyn_cast<AllocaInst>(SI->getPointerOperand());
-      if (!Dest)
+      if (!Dest) {
         continue;
 
+}
+
       DenseMap<AllocaInst *, unsigned>::iterator ai = AllocaLookup.find(Dest);
-      if (ai == AllocaLookup.end())
+      if (ai == AllocaLookup.end()) {
         continue;
+
+}
 
       // what value were we writing?
       unsigned AllocaNo = ai->second;
@@ -970,16 +1080,20 @@ NextIteration:
 
       // Record debuginfo for the store before removing it.
       IncomingLocs[AllocaNo] = SI->getDebugLoc();
-      for (DbgVariableIntrinsic *DII : AllocaDbgDeclares[ai->second])
+      for (DbgVariableIntrinsic *DII : AllocaDbgDeclares[ai->second]) {
         ConvertDebugDeclareToDebugValue(DII, SI, DIB);
+
+}
       BB->getInstList().erase(SI);
     }
   }
 
   // 'Recurse' to our successors.
   succ_iterator I = succ_begin(BB), E = succ_end(BB);
-  if (I == E)
+  if (I == E) {
     return;
+
+}
 
   // Keep track of the successors so we don't visit the same successor twice
   SmallPtrSet<BasicBlock *, 8> VisitedSuccs;
@@ -990,9 +1104,13 @@ NextIteration:
   BB = *I;
   ++I;
 
-  for (; I != E; ++I)
-    if (VisitedSuccs.insert(*I).second)
+  for (; I != E; ++I) {
+    if (VisitedSuccs.insert(*I).second) {
       Worklist.emplace_back(*I, Pred, IncomingVals, IncomingLocs);
+
+}
+
+}
 
   goto NextIteration;
 }
@@ -1000,8 +1118,10 @@ NextIteration:
 void llvm::PromoteMemToReg(ArrayRef<AllocaInst *> Allocas, DominatorTree &DT,
                            AssumptionCache *AC) {
   // If there is nothing to do, bail out...
-  if (Allocas.empty())
+  if (Allocas.empty()) {
     return;
+
+}
 
   PromoteMem2Reg(Allocas, DT, AC).run();
 }

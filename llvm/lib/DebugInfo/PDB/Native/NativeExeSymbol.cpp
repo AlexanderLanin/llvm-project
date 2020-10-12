@@ -22,8 +22,10 @@ using namespace llvm::pdb;
 
 static DbiStream *getDbiStreamPtr(NativeSession &Session) {
   Expected<DbiStream &> DbiS = Session.getPDBFile().getPDBDbiStream();
-  if (DbiS)
+  if (DbiS) {
     return &DbiS.get();
+
+}
 
   consumeError(DbiS.takeError());
   return nullptr;
@@ -66,8 +68,10 @@ NativeExeSymbol::findChildren(PDB_SymType Type) const {
 
 uint32_t NativeExeSymbol::getAge() const {
   auto IS = Session.getPDBFile().getPDBInfoStream();
-  if (IS)
+  if (IS) {
     return IS->getAge();
+
+}
   consumeError(IS.takeError());
   return 0;
 }
@@ -78,24 +82,30 @@ std::string NativeExeSymbol::getSymbolsFileName() const {
 
 codeview::GUID NativeExeSymbol::getGuid() const {
   auto IS = Session.getPDBFile().getPDBInfoStream();
-  if (IS)
+  if (IS) {
     return IS->getGuid();
+
+}
   consumeError(IS.takeError());
   return codeview::GUID{{0}};
 }
 
 bool NativeExeSymbol::hasCTypes() const {
   auto Dbi = Session.getPDBFile().getPDBDbiStream();
-  if (Dbi)
+  if (Dbi) {
     return Dbi->hasCTypes();
+
+}
   consumeError(Dbi.takeError());
   return false;
 }
 
 bool NativeExeSymbol::hasPrivateSymbols() const {
   auto Dbi = Session.getPDBFile().getPDBDbiStream();
-  if (Dbi)
+  if (Dbi) {
     return !Dbi->isStripped();
+
+}
   consumeError(Dbi.takeError());
   return false;
 }

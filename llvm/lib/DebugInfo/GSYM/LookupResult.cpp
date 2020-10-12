@@ -28,29 +28,37 @@ std::string LookupResult::getSourceFile(uint32_t Index) const {
                                 Locations[Index].Base);
         Fullpath.assign(Storage.begin(), Storage.end());
       }
-    } else if (!Locations[Index].Base.empty())
+    } else if (!Locations[Index].Base.empty()) {
       Fullpath = std::string(Locations[Index].Base);
+
+}
   }
   return Fullpath;
 }
 
 raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const SourceLocation &SL) {
   OS << SL.Name;
-  if (SL.Offset > 0)
+  if (SL.Offset > 0) {
     OS << " + " << SL.Offset;
+
+}
   if (SL.Dir.size() || SL.Base.size()) {
     OS << " @ ";
     if (!SL.Dir.empty()) {
       OS << SL.Dir;
-      if (SL.Dir.contains('\\') and not SL.Dir.contains('/'))
+      if (SL.Dir.contains('\\') and not SL.Dir.contains('/')) {
         OS << '\\';
-      else
+      } else {
         OS << '/';
+
+}
     }
-    if (SL.Base.empty())
+    if (SL.Base.empty()) {
       OS << "<invalid-file>";
-    else
+    } else {
       OS << SL.Base;
+
+}
     OS << ':' << SL.Line;
   }
   return OS;
@@ -66,8 +74,10 @@ raw_ostream &llvm::gsym::operator<<(raw_ostream &OS, const LookupResult &LR) {
     }
     const bool IsInlined = I + 1 != NumLocations;
     OS << LR.Locations[I];
-    if (IsInlined)
+    if (IsInlined) {
       OS << " [inlined]";
+
+}
   }
   OS << '\n';
   return OS;

@@ -50,10 +50,14 @@ MCJIT::createJIT(std::unique_ptr<Module> M, std::string *ErrorStr,
 
   if (!MemMgr || !Resolver) {
     auto RTDyldMM = std::make_shared<SectionMemoryManager>();
-    if (!MemMgr)
+    if (!MemMgr) {
       MemMgr = RTDyldMM;
-    if (!Resolver)
+
+}
+    if (!Resolver) {
       Resolver = RTDyldMM;
+
+}
   }
 
   return new MCJIT(std::move(M), std::move(TM), std::move(MemMgr),
@@ -80,8 +84,10 @@ MCJIT::MCJIT(std::unique_ptr<Module> M, std::unique_ptr<TargetMachine> TM,
   std::unique_ptr<Module> First = std::move(Modules[0]);
   Modules.clear();
 
-  if (First->getDataLayout().isDefault())
+  if (First->getDataLayout().isDefault()) {
     First->setDataLayout(getDataLayout());
+
+}
 
   OwnedModules.addModule(std::move(First));
   RegisterJITEventListener(JITEventListener::createGDBRegistrationListener());
@@ -92,9 +98,13 @@ MCJIT::~MCJIT() {
 
   Dyld.deregisterEHFrames();
 
-  for (auto &Obj : LoadedObjects)
-    if (Obj)
+  for (auto &Obj : LoadedObjects) {
+    if (Obj) {
       notifyFreeingObject(*Obj);
+
+}
+
+}
 
   Archives.clear();
 }
@@ -102,8 +112,10 @@ MCJIT::~MCJIT() {
 void MCJIT::addModule(std::unique_ptr<Module> M) {
   std::lock_guard<sys::Mutex> locked(lock);
 
-  if (M->getDataLayout().isDefault())
+  if (M->getDataLayout().isDefault()) {
     M->setDataLayout(getDataLayout());
+
+}
 
   OwnedModules.addModule(std::move(M));
 }
@@ -115,8 +127,10 @@ bool MCJIT::removeModule(Module *M) {
 
 void MCJIT::addObjectFile(std::unique_ptr<object::ObjectFile> Obj) {
   std::unique_ptr<RuntimeDyld::LoadedObjectInfo> L = Dyld.loadObject(*Obj);
-  if (Dyld.hasError())
+  if (Dyld.hasError()) {
     report_fatal_error(Dyld.getErrorString());
+
+}
 
   notifyObjectLoaded(*Obj, *L);
 
@@ -161,8 +175,10 @@ std::unique_ptr<MemoryBuffer> MCJIT::emitObject(Module *M) {
 
   // Turn the machine code intermediate representation into bytes in memory
   // that may be executed.
-  if (TM->addPassesToEmitMC(PM, Ctx, ObjStream, !getVerifyModules()))
+  if (TM->addPassesToEmitMC(PM, Ctx, ObjStream, !getVerifyModules())) {
     report_fatal_error("Target does not support MC emission!");
+
+}
 
   // Initialize passes.
   PM.run(*M);
@@ -192,13 +208,17 @@ void MCJIT::generateCodeForModule(Module *M) {
          "MCJIT::generateCodeForModule: Unknown module.");
 
   // Re-compilation is not supported
-  if (OwnedModules.hasModuleBeenLoaded(M))
+  if (OwnedModules.hasModuleBeenLoaded(M)) {
     return;
+
+}
 
   std::unique_ptr<MemoryBuffer> ObjectToLoad;
   // Try to load the pre-compiled object from cache if possible
-  if (ObjCache)
+  if (ObjCache) {
     ObjectToLoad = ObjCache->getObject(M);
+
+}
 
   assert(M->getDataLayout() == getDataLayout() && "DataLayout Mismatch");
 
@@ -222,8 +242,10 @@ void MCJIT::generateCodeForModule(Module *M) {
   std::unique_ptr<RuntimeDyld::LoadedObjectInfo> L =
     Dyld.loadObject(*LoadedObject.get());
 
-  if (Dyld.hasError())
+  if (Dyld.hasError()) {
     report_fatal_error(Dyld.getErrorString());
+
+}
 
   notifyObjectLoaded(*LoadedObject.get(), *L);
 
@@ -240,8 +262,10 @@ void MCJIT::finalizeLoadedModules() {
   Dyld.resolveRelocations();
 
   // Check for Dyld error.
-  if (Dyld.hasError())
+  if (Dyld.hasError()) {
     ErrMsg = Dyld.getErrorString().str();
+
+}
 
   OwnedModules.markAllLoadedModulesAsFinalized();
 
@@ -259,11 +283,15 @@ void MCJIT::finalizeObject() {
   // Generate code for module is going to move objects out of the 'added' list,
   // so we need to copy that out before using it:
   SmallVector<Module*, 16> ModsToAdd;
-  for (auto M : OwnedModules.added())
+  for (auto M : OwnedModules.added()) {
     ModsToAdd.push_back(M);
 
-  for (auto M : ModsToAdd)
+}
+
+  for (auto M : ModsToAdd) {
     generateCodeForModule(M);
+
+}
 
   finalizeLoadedModules();
 }
@@ -275,17 +303,21 @@ void MCJIT::finalizeModule(Module *M) {
   assert(OwnedModules.ownsModule(M) && "MCJIT::finalizeModule: Unknown module.");
 
   // If the module hasn't been compiled, just do that.
-  if (!OwnedModules.hasModuleBeenLoaded(M))
+  if (!OwnedModules.hasModuleBeenLoaded(M)) {
     generateCodeForModule(M);
+
+}
 
   finalizeLoadedModules();
 }
 
 JITSymbol MCJIT::findExistingSymbol(const std::string &Name) {
-  if (void *Addr = getPointerToGlobalIfAvailable(Name))
+  if (void *Addr = getPointerToGlobalIfAvailable(Name)) {
     return JITSymbol(static_cast<uint64_t>(
                          reinterpret_cast<uintptr_t>(Addr)),
                      JITSymbolFlags::Exported);
+
+}
 
   return Dyld.getSymbol(Name);
 }
@@ -293,8 +325,10 @@ JITSymbol MCJIT::findExistingSymbol(const std::string &Name) {
 Module *MCJIT::findModuleForSymbol(const std::string &Name,
                                    bool CheckFunctionsOnly) {
   StringRef DemangledName = Name;
-  if (DemangledName[0] == getDataLayout().getGlobalPrefix())
+  if (DemangledName[0] == getDataLayout().getGlobalPrefix()) {
     DemangledName = DemangledName.substr(1);
+
+}
 
   std::lock_guard<sys::Mutex> locked(lock);
 
@@ -304,12 +338,16 @@ Module *MCJIT::findModuleForSymbol(const std::string &Name,
        I != E; ++I) {
     Module *M = *I;
     Function *F = M->getFunction(DemangledName);
-    if (F && !F->isDeclaration())
+    if (F && !F->isDeclaration()) {
       return M;
+
+}
     if (!CheckFunctionsOnly) {
       GlobalVariable *G = M->getGlobalVariable(DemangledName);
-      if (G && !G->isDeclaration())
+      if (G && !G->isDeclaration()) {
         return M;
+
+}
       // FIXME: Do we need to worry about global aliases?
     }
   }
@@ -325,12 +363,16 @@ uint64_t MCJIT::getSymbolAddress(const std::string &Name,
     Mangler::getNameWithPrefix(MangledNameStream, Name, getDataLayout());
   }
   if (auto Sym = findSymbol(MangledName, CheckFunctionsOnly)) {
-    if (auto AddrOrErr = Sym.getAddress())
+    if (auto AddrOrErr = Sym.getAddress()) {
       return *AddrOrErr;
-    else
+    } else {
       report_fatal_error(AddrOrErr.takeError());
-  } else if (auto Err = Sym.takeError())
+
+}
+  } else if (auto Err = Sym.takeError()) {
     report_fatal_error(Sym.takeError());
+
+}
   return 0;
 }
 
@@ -339,15 +381,19 @@ JITSymbol MCJIT::findSymbol(const std::string &Name,
   std::lock_guard<sys::Mutex> locked(lock);
 
   // First, check to see if we already have this symbol.
-  if (auto Sym = findExistingSymbol(Name))
+  if (auto Sym = findExistingSymbol(Name)) {
     return Sym;
+
+}
 
   for (object::OwningBinary<object::Archive> &OB : Archives) {
     object::Archive *A = OB.getBinary();
     // Look for our symbols in each Archive
     auto OptionalChildOrErr = A->findSym(Name);
-    if (!OptionalChildOrErr)
+    if (!OptionalChildOrErr) {
       report_fatal_error(OptionalChildOrErr.takeError());
+
+}
     auto &OptionalChild = *OptionalChildOrErr;
     if (OptionalChild) {
       // FIXME: Support nested archives?
@@ -365,8 +411,10 @@ JITSymbol MCJIT::findSymbol(const std::string &Name,
         // This causes the object file to be loaded.
         addObjectFile(std::move(OF));
         // The address should be here now.
-        if (auto Sym = findExistingSymbol(Name))
+        if (auto Sym = findExistingSymbol(Name)) {
           return Sym;
+
+}
       }
     }
   }
@@ -394,16 +442,20 @@ JITSymbol MCJIT::findSymbol(const std::string &Name,
 uint64_t MCJIT::getGlobalValueAddress(const std::string &Name) {
   std::lock_guard<sys::Mutex> locked(lock);
   uint64_t Result = getSymbolAddress(Name, false);
-  if (Result != 0)
+  if (Result != 0) {
     finalizeLoadedModules();
+
+}
   return Result;
 }
 
 uint64_t MCJIT::getFunctionAddress(const std::string &Name) {
   std::lock_guard<sys::Mutex> locked(lock);
   uint64_t Result = getSymbolAddress(Name, true);
-  if (Result != 0)
+  if (Result != 0) {
     finalizeLoadedModules();
+
+}
   return Result;
 }
 
@@ -426,9 +478,9 @@ void *MCJIT::getPointerToFunction(Function *F) {
   bool HasBeenAddedButNotLoaded = OwnedModules.hasModuleBeenAddedButNotLoaded(M);
 
   // Make sure the relevant module has been compiled and loaded.
-  if (HasBeenAddedButNotLoaded)
+  if (HasBeenAddedButNotLoaded) {
     generateCodeForModule(M);
-  else if (!OwnedModules.hasModuleBeenLoaded(M)) {
+  } else if (!OwnedModules.hasModuleBeenLoaded(M)) {
     // If this function doesn't belong to one of our modules, we're done.
     // FIXME: Asking for the pointer to a function that hasn't been registered,
     //        and isn't a declaration (which is handled above) should probably
@@ -465,8 +517,10 @@ Function *MCJIT::FindFunctionNamedInModulePtrSet(StringRef FnName,
                                                  ModulePtrSet::iterator E) {
   for (; I != E; ++I) {
     Function *F = (*I)->getFunction(FnName);
-    if (F && !F->isDeclaration())
+    if (F && !F->isDeclaration()) {
       return F;
+
+}
   }
   return nullptr;
 }
@@ -477,8 +531,10 @@ GlobalVariable *MCJIT::FindGlobalVariableNamedInModulePtrSet(StringRef Name,
                                                              ModulePtrSet::iterator E) {
   for (; I != E; ++I) {
     GlobalVariable *GV = (*I)->getGlobalVariable(Name, AllowInternal);
-    if (GV && !GV->isDeclaration())
+    if (GV && !GV->isDeclaration()) {
       return GV;
+
+}
   }
   return nullptr;
 }
@@ -487,24 +543,32 @@ GlobalVariable *MCJIT::FindGlobalVariableNamedInModulePtrSet(StringRef Name,
 Function *MCJIT::FindFunctionNamed(StringRef FnName) {
   Function *F = FindFunctionNamedInModulePtrSet(
       FnName, OwnedModules.begin_added(), OwnedModules.end_added());
-  if (!F)
+  if (!F) {
     F = FindFunctionNamedInModulePtrSet(FnName, OwnedModules.begin_loaded(),
                                         OwnedModules.end_loaded());
-  if (!F)
+
+}
+  if (!F) {
     F = FindFunctionNamedInModulePtrSet(FnName, OwnedModules.begin_finalized(),
                                         OwnedModules.end_finalized());
+
+}
   return F;
 }
 
 GlobalVariable *MCJIT::FindGlobalVariableNamed(StringRef Name, bool AllowInternal) {
   GlobalVariable *GV = FindGlobalVariableNamedInModulePtrSet(
       Name, AllowInternal, OwnedModules.begin_added(), OwnedModules.end_added());
-  if (!GV)
+  if (!GV) {
     GV = FindGlobalVariableNamedInModulePtrSet(Name, AllowInternal, OwnedModules.begin_loaded(),
                                         OwnedModules.end_loaded());
-  if (!GV)
+
+}
+  if (!GV) {
     GV = FindGlobalVariableNamedInModulePtrSet(Name, AllowInternal, OwnedModules.begin_finalized(),
                                         OwnedModules.end_finalized());
+
+}
   return GV;
 }
 
@@ -573,18 +637,20 @@ GenericValue MCJIT::runFunction(Function *F, ArrayRef<GenericValue> ArgValues) {
     default: llvm_unreachable("Unknown return type for function call!");
     case Type::IntegerTyID: {
       unsigned BitWidth = cast<IntegerType>(RetTy)->getBitWidth();
-      if (BitWidth == 1)
+      if (BitWidth == 1) {
         rv.IntVal = APInt(BitWidth, ((bool(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 8)
+      } else if (BitWidth <= 8) {
         rv.IntVal = APInt(BitWidth, ((char(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 16)
+      } else if (BitWidth <= 16) {
         rv.IntVal = APInt(BitWidth, ((short(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 32)
+      } else if (BitWidth <= 32) {
         rv.IntVal = APInt(BitWidth, ((int(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 64)
+      } else if (BitWidth <= 64) {
         rv.IntVal = APInt(BitWidth, ((int64_t(*)())(intptr_t)FPtr)());
-      else
+      } else {
         llvm_unreachable("Integer types > 64 bits not supported");
+
+}
       return rv;
     }
     case Type::VoidTyID:
@@ -614,17 +680,25 @@ GenericValue MCJIT::runFunction(Function *F, ArrayRef<GenericValue> ArgValues) {
 void *MCJIT::getPointerToNamedFunction(StringRef Name, bool AbortOnFailure) {
   if (!isSymbolSearchingDisabled()) {
     if (auto Sym = Resolver.findSymbol(std::string(Name))) {
-      if (auto AddrOrErr = Sym.getAddress())
+      if (auto AddrOrErr = Sym.getAddress()) {
         return reinterpret_cast<void*>(
                  static_cast<uintptr_t>(*AddrOrErr));
-    } else if (auto Err = Sym.takeError())
+
+}
+    } else if (auto Err = Sym.takeError()) {
       report_fatal_error(std::move(Err));
+
+}
   }
 
   /// If a LazyFunctionCreator is installed, use it to get/create the function.
-  if (LazyFunctionCreator)
-    if (void *RP = LazyFunctionCreator(std::string(Name)))
+  if (LazyFunctionCreator) {
+    if (void *RP = LazyFunctionCreator(std::string(Name))) {
       return RP;
+
+}
+
+}
 
   if (AbortOnFailure) {
     report_fatal_error("Program used external function '"+Name+
@@ -634,15 +708,19 @@ void *MCJIT::getPointerToNamedFunction(StringRef Name, bool AbortOnFailure) {
 }
 
 void MCJIT::RegisterJITEventListener(JITEventListener *L) {
-  if (!L)
+  if (!L) {
     return;
+
+}
   std::lock_guard<sys::Mutex> locked(lock);
   EventListeners.push_back(L);
 }
 
 void MCJIT::UnregisterJITEventListener(JITEventListener *L) {
-  if (!L)
+  if (!L) {
     return;
+
+}
   std::lock_guard<sys::Mutex> locked(lock);
   auto I = find(reverse(EventListeners), L);
   if (I != EventListeners.rend()) {
@@ -666,17 +744,23 @@ void MCJIT::notifyFreeingObject(const object::ObjectFile &Obj) {
   uint64_t Key =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(Obj.getData().data()));
   std::lock_guard<sys::Mutex> locked(lock);
-  for (JITEventListener *L : EventListeners)
+  for (JITEventListener *L : EventListeners) {
     L->notifyFreeingObject(Key);
+
+}
 }
 
 JITSymbol
 LinkingSymbolResolver::findSymbol(const std::string &Name) {
   auto Result = ParentEngine.findSymbol(Name, false);
-  if (Result)
+  if (Result) {
     return Result;
-  if (ParentEngine.isSymbolSearchingDisabled())
+
+}
+  if (ParentEngine.isSymbolSearchingDisabled()) {
     return nullptr;
+
+}
   return ClientResolver->findSymbol(Name);
 }
 

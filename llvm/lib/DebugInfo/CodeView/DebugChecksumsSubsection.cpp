@@ -36,21 +36,27 @@ operator()(BinaryStreamRef Stream, uint32_t &Len, FileChecksumEntry &Item) {
   BinaryStreamReader Reader(Stream);
 
   const FileChecksumEntryHeader *Header;
-  if (auto EC = Reader.readObject(Header))
+  if (auto EC = Reader.readObject(Header)) {
     return EC;
+
+}
 
   Item.FileNameOffset = Header->FileNameOffset;
   Item.Kind = static_cast<FileChecksumKind>(Header->ChecksumKind);
-  if (auto EC = Reader.readBytes(Item.Checksum, Header->ChecksumSize))
+  if (auto EC = Reader.readBytes(Item.Checksum, Header->ChecksumSize)) {
     return EC;
+
+}
 
   Len = alignTo(Header->ChecksumSize + sizeof(FileChecksumEntryHeader), 4);
   return Error::success();
 }
 
 Error DebugChecksumsSubsectionRef::initialize(BinaryStreamReader Reader) {
-  if (auto EC = Reader.readArray(Checksums, Reader.bytesRemaining()))
+  if (auto EC = Reader.readArray(Checksums, Reader.bytesRemaining())) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -97,12 +103,18 @@ Error DebugChecksumsSubsection::commit(BinaryStreamWriter &Writer) const {
     Header.ChecksumKind = uint8_t(FC.Kind);
     Header.ChecksumSize = FC.Checksum.size();
     Header.FileNameOffset = FC.FileNameOffset;
-    if (auto EC = Writer.writeObject(Header))
+    if (auto EC = Writer.writeObject(Header)) {
       return EC;
-    if (auto EC = Writer.writeArray(makeArrayRef(FC.Checksum)))
+
+}
+    if (auto EC = Writer.writeArray(makeArrayRef(FC.Checksum))) {
       return EC;
-    if (auto EC = Writer.padToAlignment(4))
+
+}
+    if (auto EC = Writer.padToAlignment(4)) {
       return EC;
+
+}
   }
   return Error::success();
 }

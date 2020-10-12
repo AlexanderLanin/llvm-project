@@ -689,8 +689,10 @@ TEST(TripleTest, Normalization) {
     } while (std::next_permutation(std::begin(J), std::end(J)));
   }
   for (int OS = FirstOSType; OS <= Triple::LastOSType; ++OS) {
-    if (OS == Triple::Win32)
+    if (OS == Triple::Win32) {
       continue;
+
+}
     StringRef C[] = {InitialC[0], InitialC[1], InitialC[2], InitialC[3]};
     C[2] = Triple::getOSTypeName(Triple::OSType(OS));
     std::string E = Join(C[0], C[1], C[2]);

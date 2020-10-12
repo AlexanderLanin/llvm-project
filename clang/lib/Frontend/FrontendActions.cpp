@@ -41,12 +41,16 @@ CodeCompleteConsumer *GetCodeCompletionConsumer(CompilerInstance &CI) {
 
 void EnsureSemaIsCreated(CompilerInstance &CI, FrontendAction &Action) {
   if (Action.hasCodeCompletionSupport() &&
-      !CI.getFrontendOpts().CodeCompletionAt.FileName.empty())
+      !CI.getFrontendOpts().CodeCompletionAt.FileName.empty()) {
     CI.createCodeCompletionConsumer();
 
-  if (!CI.hasSema())
+}
+
+  if (!CI.hasSema()) {
     CI.createSema(Action.getTranslationUnitKind(),
                   GetCodeCompletionConsumer(CI));
+
+}
 }
 } // namespace
 
@@ -69,8 +73,10 @@ void InitOnlyAction::ExecuteAction() {
 std::unique_ptr<ASTConsumer>
 ASTPrintAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
   if (std::unique_ptr<raw_ostream> OS =
-          CI.createDefaultOutputFile(false, InFile))
+          CI.createDefaultOutputFile(false, InFile)) {
     return CreateASTPrinter(std::move(OS), CI.getFrontendOpts().ASTDumpFilter);
+
+}
   return nullptr;
 }
 
@@ -95,17 +101,23 @@ ASTViewAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
 std::unique_ptr<ASTConsumer>
 GeneratePCHAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
   std::string Sysroot;
-  if (!ComputeASTConsumerArguments(CI, /*ref*/ Sysroot))
+  if (!ComputeASTConsumerArguments(CI, /*ref*/ Sysroot)) {
     return nullptr;
+
+}
 
   std::string OutputFile;
   std::unique_ptr<raw_pwrite_stream> OS =
       CreateOutputFile(CI, InFile, /*ref*/ OutputFile);
-  if (!OS)
+  if (!OS) {
     return nullptr;
 
-  if (!CI.getFrontendOpts().RelocatablePCH)
+}
+
+  if (!CI.getFrontendOpts().RelocatablePCH) {
     Sysroot.clear();
+
+}
 
   const auto &FrontendOpts = CI.getFrontendOpts();
   auto Buffer = std::make_shared<PCHBuffer>();
@@ -142,16 +154,20 @@ GeneratePCHAction::CreateOutputFile(CompilerInstance &CI, StringRef InFile,
       CI.createOutputFile(CI.getFrontendOpts().OutputFile, /*Binary=*/true,
                           /*RemoveFileOnSignal=*/false, InFile,
                           /*Extension=*/"", CI.getFrontendOpts().UseTemporary);
-  if (!OS)
+  if (!OS) {
     return nullptr;
+
+}
 
   OutputFile = CI.getFrontendOpts().OutputFile;
   return OS;
 }
 
 bool GeneratePCHAction::shouldEraseOutputFiles() {
-  if (getCompilerInstance().getPreprocessorOpts().AllowPCHWithCompilerErrors)
+  if (getCompilerInstance().getPreprocessorOpts().AllowPCHWithCompilerErrors) {
     return false;
+
+}
   return ASTFrontendAction::shouldEraseOutputFiles();
 }
 
@@ -164,8 +180,10 @@ std::unique_ptr<ASTConsumer>
 GenerateModuleAction::CreateASTConsumer(CompilerInstance &CI,
                                         StringRef InFile) {
   std::unique_ptr<raw_pwrite_stream> OS = CreateOutputFile(CI, InFile);
-  if (!OS)
+  if (!OS) {
     return nullptr;
+
+}
 
   std::string OutputFile = CI.getFrontendOpts().OutputFile;
   std::string Sysroot;
@@ -203,8 +221,10 @@ GenerateModuleFromModuleMapAction::CreateOutputFile(CompilerInstance &CI,
   // in the module cache.
   if (CI.getFrontendOpts().OutputFile.empty()) {
     StringRef ModuleMapFile = CI.getFrontendOpts().OriginalModuleMap;
-    if (ModuleMapFile.empty())
+    if (ModuleMapFile.empty()) {
       ModuleMapFile = InFile;
+
+}
 
     HeaderSearch &HS = CI.getPreprocessor().getHeaderSearchInfo();
     CI.getFrontendOpts().OutputFile =
@@ -247,8 +267,10 @@ bool GenerateHeaderModuleAction::PrepareToExecuteAction(
   }
 
   auto &Inputs = CI.getFrontendOpts().Inputs;
-  if (Inputs.empty())
+  if (Inputs.empty()) {
     return GenerateModuleAction::BeginInvocation(CI);
+
+}
 
   auto Kind = Inputs[0].getKind();
 
@@ -464,10 +486,12 @@ private:
       NamedTemplate->getNameForDiagnostic(OS, TheSema.getLangOpts(), true);
       const PresumedLoc DefLoc =
         TheSema.getSourceManager().getPresumedLoc(Inst.Entity->getLocation());
-      if(!DefLoc.isInvalid())
+      if(!DefLoc.isInvalid()) {
         Entry.DefinitionLocation = std::string(DefLoc.getFilename()) + ":" +
                                    std::to_string(DefLoc.getLine()) + ":" +
                                    std::to_string(DefLoc.getColumn());
+
+}
     }
     const PresumedLoc PoiLoc =
         TheSema.getSourceManager().getPresumedLoc(Inst.PointOfInstantiation);
@@ -544,8 +568,10 @@ namespace {
 
       if (!LangOpts.ModuleFeatures.empty()) {
         Out.indent(4) << "Module features:\n";
-        for (StringRef Feature : LangOpts.ModuleFeatures)
+        for (StringRef Feature : LangOpts.ModuleFeatures) {
           Out.indent(6) << Feature << "\n";
+
+}
       }
 
       return false;
@@ -580,10 +606,14 @@ namespace {
 #include "clang/Basic/DiagnosticOptions.def"
 
       Out.indent(4) << "Diagnostic flags:\n";
-      for (const std::string &Warning : DiagOpts->Warnings)
+      for (const std::string &Warning : DiagOpts->Warnings) {
         Out.indent(6) << "-W" << Warning << "\n";
-      for (const std::string &Remark : DiagOpts->Remarks)
+
+}
+      for (const std::string &Remark : DiagOpts->Remarks) {
         Out.indent(6) << "-R" << Remark << "\n";
+
+}
 
       return false;
     }
@@ -623,10 +653,12 @@ namespace {
              I = PPOpts.Macros.begin(), IEnd = PPOpts.Macros.end();
            I != IEnd; ++I) {
         Out.indent(6);
-        if (I->second)
+        if (I->second) {
           Out << "-U";
-        else
+        } else {
           Out << "-D";
+
+}
         Out << I->first << "\n";
       }
       return false;
@@ -666,16 +698,22 @@ namespace {
         Out << " [";
         if (isSystem) {
           Out << "System";
-          if (isOverridden || isExplicitModule)
+          if (isOverridden || isExplicitModule) {
             Out << ", ";
+
+}
         }
         if (isOverridden) {
           Out << "Overridden";
-          if (isExplicitModule)
+          if (isExplicitModule) {
             Out << ", ";
+
+}
         }
-        if (isExplicitModule)
+        if (isExplicitModule) {
           Out << "ExplicitModule";
+
+}
 
         Out << "]";
       }
@@ -811,16 +849,22 @@ void PrintPreprocessedAction::ExecuteAction() {
     // Limit ourselves to only scanning 256 characters into the source
     // file.  This is mostly a sanity check in case the file has no
     // newlines whatsoever.
-    if (end - cur > 256) end = cur + 256;
+    if (end - cur > 256) { end = cur + 256;
+
+}
 
     while (next < end) {
       if (*cur == 0x0D) {  // CR
-        if (*next == 0x0A)  // CRLF
+        if (*next == 0x0A) {  // CRLF
           BinaryMode = false;
 
+}
+
         break;
-      } else if (*cur == 0x0A)  // LF
+      } else if (*cur == 0x0A) {  // LF
         break;
+
+}
 
       ++cur;
       ++next;
@@ -829,7 +873,9 @@ void PrintPreprocessedAction::ExecuteAction() {
 
   std::unique_ptr<raw_ostream> OS =
       CI.createDefaultOutputFile(BinaryMode, getCurrentFileOrBufferName());
-  if (!OS) return;
+  if (!OS) { return;
+
+}
 
   // If we're preprocessing a module map, start by dumping the contents of the
   // module itself before switching to the input buffer.
@@ -868,8 +914,10 @@ void PrintPreambleAction::ExecuteAction() {
   }
 
   // We don't expect to find any #include directives in a preprocessed input.
-  if (getCurrentFileKind().isPreprocessed())
+  if (getCurrentFileKind().isPreprocessed()) {
     return;
+
+}
 
   CompilerInstance &CI = getCompilerInstance();
   auto Buffer = CI.getFileManager().getBufferForFile(getCurrentFile());
@@ -884,8 +932,10 @@ void DumpCompilerOptionsAction::ExecuteAction() {
   CompilerInstance &CI = getCompilerInstance();
   std::unique_ptr<raw_ostream> OSP =
       CI.createDefaultOutputFile(false, getCurrentFile());
-  if (!OSP)
+  if (!OSP) {
     return;
+
+}
 
   raw_ostream &OS = *OSP;
   const Preprocessor &PP = CI.getPreprocessor();

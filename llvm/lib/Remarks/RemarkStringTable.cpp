@@ -21,19 +21,25 @@ using namespace llvm;
 using namespace llvm::remarks;
 
 StringTable::StringTable(const ParsedStringTable &Other) : StrTab() {
-  for (unsigned i = 0, e = Other.size(); i < e; ++i)
-    if (Expected<StringRef> MaybeStr = Other[i])
+  for (unsigned i = 0, e = Other.size(); i < e; ++i) {
+    if (Expected<StringRef> MaybeStr = Other[i]) {
       add(*MaybeStr);
-    else
+    } else {
       llvm_unreachable("Unexpected error while building remarks string table.");
+
+}
+
+}
 }
 
 std::pair<unsigned, StringRef> StringTable::add(StringRef Str) {
   size_t NextID = StrTab.size();
   auto KV = StrTab.insert({Str, NextID});
   // If it's a new string, add it to the final size.
-  if (KV.second)
+  if (KV.second) {
     SerializedSize += KV.first->first().size() + 1; // +1 for the '\0'
+
+}
   // Can be either NextID or the previous ID if the string is already there.
   return {KV.first->second, KV.first->first()};
 }
@@ -43,13 +49,17 @@ void StringTable::internalize(Remark &R) {
   Impl(R.PassName);
   Impl(R.RemarkName);
   Impl(R.FunctionName);
-  if (R.Loc)
+  if (R.Loc) {
     Impl(R.Loc->SourceFilePath);
+
+}
   for (Argument &Arg : R.Args) {
     Impl(Arg.Key);
     Impl(Arg.Val);
-    if (Arg.Loc)
+    if (Arg.Loc) {
       Impl(Arg.Loc->SourceFilePath);
+
+}
   }
 }
 
@@ -64,7 +74,9 @@ void StringTable::serialize(raw_ostream &OS) const {
 
 std::vector<StringRef> StringTable::serialize() const {
   std::vector<StringRef> Strings{StrTab.size()};
-  for (const auto &KV : StrTab)
+  for (const auto &KV : StrTab) {
     Strings[KV.second] = KV.first();
+
+}
   return Strings;
 }

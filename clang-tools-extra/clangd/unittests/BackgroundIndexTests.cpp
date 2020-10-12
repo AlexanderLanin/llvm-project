@@ -223,17 +223,21 @@ TEST_F(BackgroundIndexTest, ShardStorageTest) {
       *ShardHeader->Symbols,
       UnorderedElementsAre(Named("common"), Named("A_CC"),
                            AllOf(Named("f_b"), Declared(), Not(Defined()))));
-  for (const auto &Ref : *ShardHeader->Refs)
+  for (const auto &Ref : *ShardHeader->Refs) {
     EXPECT_THAT(Ref.second,
                 UnorderedElementsAre(FileURI("unittest:///root/A.h")));
+
+}
 
   auto ShardSource = MSS.loadShard(testPath("root/A.cc"));
   EXPECT_NE(ShardSource, nullptr);
   EXPECT_THAT(*ShardSource->Symbols,
               UnorderedElementsAre(Named("g"), Named("B_CC")));
-  for (const auto &Ref : *ShardSource->Refs)
+  for (const auto &Ref : *ShardSource->Refs) {
     EXPECT_THAT(Ref.second,
                 UnorderedElementsAre(FileURI("unittest:///root/A.cc")));
+
+}
 
   // The BaseOf relationship between A_CC and B_CC is stored in the file
   // containing the definition of the subject (A_CC)
@@ -610,11 +614,15 @@ protected:
 };
 
 TEST_F(BackgroundIndexRebuilderTest, IndexingTUs) {
-  for (unsigned I = 0; I < Rebuilder.TUsBeforeFirstBuild - 1; ++I)
+  for (unsigned I = 0; I < Rebuilder.TUsBeforeFirstBuild - 1; ++I) {
     EXPECT_FALSE(checkRebuild([&] { Rebuilder.indexedTU(); }));
+
+}
   EXPECT_TRUE(checkRebuild([&] { Rebuilder.indexedTU(); }));
-  for (unsigned I = 0; I < Rebuilder.TUsBeforeRebuild - 1; ++I)
+  for (unsigned I = 0; I < Rebuilder.TUsBeforeRebuild - 1; ++I) {
     EXPECT_FALSE(checkRebuild([&] { Rebuilder.indexedTU(); }));
+
+}
   EXPECT_TRUE(checkRebuild([&] { Rebuilder.indexedTU(); }));
 }
 
@@ -639,8 +647,10 @@ TEST_F(BackgroundIndexRebuilderTest, LoadingShards) {
 
   // No rebuilding for indexed files while loading.
   Rebuilder.startLoading();
-  for (unsigned I = 0; I < 3 * Rebuilder.TUsBeforeRebuild; ++I)
+  for (unsigned I = 0; I < 3 * Rebuilder.TUsBeforeRebuild; ++I) {
     EXPECT_FALSE(checkRebuild([&] { Rebuilder.indexedTU(); }));
+
+}
   // But they get indexed when we're done, even if no shards were loaded.
   EXPECT_TRUE(checkRebuild([&] { Rebuilder.doneLoading(); }));
 }
@@ -653,19 +663,25 @@ TEST(BackgroundQueueTest, Priority) {
   std::atomic<unsigned> HiRan(0), LoRan(0);
   BackgroundQueue::Task Lo([&] { ++LoRan; });
   BackgroundQueue::Task Hi([&] {
-    if (++HiRan >= 10)
+    if (++HiRan >= 10) {
       Q.stop();
+
+}
   });
   Hi.QueuePri = 100;
 
   // Enqueuing the low-priority ones first shouldn't make them run first.
   Q.append(std::vector<BackgroundQueue::Task>(30, Lo));
-  for (unsigned I = 0; I < 30; ++I)
+  for (unsigned I = 0; I < 30; ++I) {
     Q.push(Hi);
 
+}
+
   AsyncTaskRunner ThreadPool;
-  for (unsigned I = 0; I < 5; ++I)
+  for (unsigned I = 0; I < 5; ++I) {
     ThreadPool.runAsync("worker", [&] { Q.work(); });
+
+}
   // We should test enqueue with active workers, but it's hard to avoid races.
   // Just make sure we don't crash.
   Q.push(Lo);
@@ -742,12 +758,16 @@ TEST(BackgroundQueueTest, Progress) {
     Q.push(Pong);
   });
 
-  for (int I = 0; I < 1000; ++I)
+  for (int I = 0; I < 1000; ++I) {
     Q.push(Ping);
+
+}
   // Spin up some workers and stop while idle.
   AsyncTaskRunner ThreadPool;
-  for (unsigned I = 0; I < 5; ++I)
+  for (unsigned I = 0; I < 5; ++I) {
     ThreadPool.runAsync("worker", [&] { Q.work([&] { Q.stop(); }); });
+
+}
   ThreadPool.wait();
 
   // Everything's done, check final stats.

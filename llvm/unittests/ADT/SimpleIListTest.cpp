@@ -447,8 +447,10 @@ TEST(SimpleIListTest, merge) {
     EXPECT_FALSE(LHS.empty());
     EXPECT_TRUE(std::is_sorted(LHS.begin(), LHS.end()));
     auto I = LHS.begin();
-    for (Node &N : Ns)
+    for (Node &N : Ns) {
       EXPECT_EQ(&N, &*I++);
+
+}
     EXPECT_EQ(LHS.end(), I);
   }
 }
@@ -531,8 +533,10 @@ TEST(SimpleIListTest, mergeEmpty) {
     EXPECT_FALSE(LHS.empty());
     EXPECT_TRUE(std::is_sorted(LHS.begin(), LHS.end()));
     auto I = LHS.begin();
-    for (Node &N : Ns)
+    for (Node &N : Ns) {
       EXPECT_EQ(&N, &*I++);
+
+}
     EXPECT_EQ(LHS.end(), I);
   }
 }
@@ -549,8 +553,10 @@ TEST(SimpleIListTest, sort) {
   Node Ns[10];
 
   // Fill L.
-  for (int I : {3, 4, 0, 8, 1, 2, 6, 7, 9, 5})
+  for (int I : {3, 4, 0, 8, 1, 2, 6, 7, 9, 5}) {
     L.push_back(Ns[I]);
+
+}
 
   // Check setup.
   EXPECT_EQ(10u, L.size());
@@ -560,8 +566,10 @@ TEST(SimpleIListTest, sort) {
   L.sort();
   EXPECT_TRUE(std::is_sorted(L.begin(), L.end()));
   auto I = L.begin();
-  for (Node &N : Ns)
+  for (Node &N : Ns) {
     EXPECT_EQ(&N, &*I++);
+
+}
   EXPECT_EQ(L.end(), I);
 }
 
@@ -576,8 +584,10 @@ TEST(SimpleIListTest, sortIsStable) {
   };
 
   // Fill L.
-  for (int I : {3, 4, 7, 8, 1, 2, 6, 0, 9, 5})
+  for (int I : {3, 4, 7, 8, 1, 2, 6, 0, 9, 5}) {
     L.push_back(Ns[I]);
+
+}
 
   // Check setup.
   EXPECT_EQ(10u, L.size());
@@ -587,10 +597,14 @@ TEST(SimpleIListTest, sortIsStable) {
   L.sort(compare);
   EXPECT_TRUE(std::is_sorted(L.begin(), L.end(), compare));
   auto I = L.begin();
-  for (int O : {3, 4, 1, 2, 0})
+  for (int O : {3, 4, 1, 2, 0}) {
     EXPECT_EQ(&Ns[O], &*I++);
-  for (int O : {7, 8, 6, 9, 5})
+
+}
+  for (int O : {7, 8, 6, 9, 5}) {
     EXPECT_EQ(&Ns[O], &*I++);
+
+}
   EXPECT_EQ(L.end(), I);
 }
 
@@ -627,10 +641,14 @@ TEST(SimpleIListTest, TaggedLists) {
   DoubleNode Ns[10];
   int Order1[] = {0, 1, 2, 3, 4, 7, 9};
   int Order2[] = {2, 5, 6, 7, 8, 4, 9, 1};
-  for (int I : Order1)
+  for (int I : Order1) {
     L1.push_back(Ns[I]);
-  for (int I : Order2)
+
+}
+  for (int I : Order2) {
     L2.push_back(Ns[I]);
+
+}
 
   // Check that each list is correct.
   EXPECT_EQ(sizeof(Order1) / sizeof(int), L1.size());

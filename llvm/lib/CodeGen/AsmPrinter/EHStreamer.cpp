@@ -48,9 +48,13 @@ unsigned EHStreamer::sharedTypeIDs(const LandingPadInfo *L,
   unsigned MinSize = LSize < RSize ? LSize : RSize;
   unsigned Count = 0;
 
-  for (; Count != MinSize; ++Count)
-    if (LIds[Count] != RIds[Count])
+  for (; Count != MinSize; ++Count) {
+    if (LIds[Count] != RIds[Count]) {
       return Count;
+
+}
+
+}
 
   return Count;
 }
@@ -174,10 +178,14 @@ bool EHStreamer::callToNoUnwindFunction(const MachineInstr *MI) {
   for (unsigned I = 0, E = MI->getNumOperands(); I != E; ++I) {
     const MachineOperand &MO = MI->getOperand(I);
 
-    if (!MO.isGlobal()) continue;
+    if (!MO.isGlobal()) { continue;
+
+}
 
     const Function *F = dyn_cast<Function>(MO.getGlobal());
-    if (!F) continue;
+    if (!F) { continue;
+
+}
 
     if (SawFunc) {
       // Be conservative. If we have more than one function operand for this
@@ -243,21 +251,27 @@ computeCallSiteTable(SmallVectorImpl<CallSiteEntry> &CallSites,
   for (const auto &MBB : *Asm->MF) {
     for (const auto &MI : MBB) {
       if (!MI.isEHLabel()) {
-        if (MI.isCall())
+        if (MI.isCall()) {
           SawPotentiallyThrowing |= !callToNoUnwindFunction(&MI);
+
+}
         continue;
       }
 
       // End of the previous try-range?
       MCSymbol *BeginLabel = MI.getOperand(0).getMCSymbol();
-      if (BeginLabel == LastLabel)
+      if (BeginLabel == LastLabel) {
         SawPotentiallyThrowing = false;
+
+}
 
       // Beginning of a new try-range?
       RangeMapType::const_iterator L = PadMap.find(BeginLabel);
-      if (L == PadMap.end())
+      if (L == PadMap.end()) {
         // Nope, it was just some random label.
         continue;
+
+}
 
       const PadRange &P = L->second;
       const LandingPadInfo *LandingPad = LandingPads[P.PadIndex];
@@ -300,14 +314,16 @@ computeCallSiteTable(SmallVectorImpl<CallSiteEntry> &CallSites,
         }
 
         // Otherwise, create a new call-site.
-        if (!IsSJLJ)
+        if (!IsSJLJ) {
           CallSites.push_back(Site);
-        else {
+        } else {
           // SjLj EH must maintain the call sites in the order assigned
           // to them by the SjLjPrepare pass.
           unsigned SiteNo = Asm->MF->getCallSiteBeginLabel(BeginLabel);
-          if (CallSites.size() < SiteNo)
+          if (CallSites.size() < SiteNo) {
             CallSites.resize(SiteNo);
+
+}
           CallSites[SiteNo - 1] = Site;
         }
         PreviousIsInvoke = true;
@@ -357,8 +373,10 @@ MCSymbol *EHStreamer::emitExceptionTable() {
   SmallVector<const LandingPadInfo *, 64> LandingPads;
   LandingPads.reserve(PadInfos.size());
 
-  for (unsigned i = 0, N = PadInfos.size(); i != N; ++i)
+  for (unsigned i = 0, N = PadInfos.size(); i != N; ++i) {
     LandingPads.push_back(&PadInfos[i]);
+
+}
 
   // Order landing pads lexicographically by type id.
   llvm::sort(LandingPads, [](const LandingPadInfo *L, const LandingPadInfo *R) {
@@ -424,8 +442,10 @@ MCSymbol *EHStreamer::emitExceptionTable() {
   // Begin the exception table.
   // Sometimes we want not to emit the data into separate section (e.g. ARM
   // EHABI). In this case LSDASection will be NULL.
-  if (LSDASection)
+  if (LSDASection) {
     Asm->OutStreamer->SwitchSection(LSDASection);
+
+}
   Asm->emitAlignment(Align(4));
 
   // Emit the LSDA.
@@ -478,11 +498,13 @@ MCSymbol *EHStreamer::emitExceptionTable() {
       // the action table. This value is biased by 1 (1 indicates the start of
       // the action table), and 0 indicates that there are no actions.
       if (VerboseAsm) {
-        if (S.Action == 0)
+        if (S.Action == 0) {
           Asm->OutStreamer->AddComment("  Action: cleanup");
-        else
+        } else {
           Asm->OutStreamer->AddComment("  Action: " +
                                        Twine((S.Action - 1) / 2 + 1));
+
+}
       }
       Asm->emitULEB128(S.Action);
     }
@@ -515,31 +537,43 @@ MCSymbol *EHStreamer::emitExceptionTable() {
       MCSymbol *EHFuncBeginSym = Asm->getFunctionBegin();
 
       MCSymbol *BeginLabel = S.BeginLabel;
-      if (!BeginLabel)
+      if (!BeginLabel) {
         BeginLabel = EHFuncBeginSym;
+
+}
       MCSymbol *EndLabel = S.EndLabel;
-      if (!EndLabel)
+      if (!EndLabel) {
         EndLabel = Asm->getFunctionEnd();
 
+}
+
       // Offset of the call site relative to the start of the procedure.
-      if (VerboseAsm)
+      if (VerboseAsm) {
         Asm->OutStreamer->AddComment(">> Call Site " + Twine(++Entry) + " <<");
+
+}
       Asm->emitCallSiteOffset(BeginLabel, EHFuncBeginSym, CallSiteEncoding);
-      if (VerboseAsm)
+      if (VerboseAsm) {
         Asm->OutStreamer->AddComment(Twine("  Call between ") +
                                      BeginLabel->getName() + " and " +
                                      EndLabel->getName());
+
+}
       Asm->emitCallSiteOffset(EndLabel, BeginLabel, CallSiteEncoding);
 
       // Offset of the landing pad relative to the start of the procedure.
       if (!S.LPad) {
-        if (VerboseAsm)
+        if (VerboseAsm) {
           Asm->OutStreamer->AddComment("    has no landing pad");
+
+}
         Asm->emitCallSiteValue(0, CallSiteEncoding);
       } else {
-        if (VerboseAsm)
+        if (VerboseAsm) {
           Asm->OutStreamer->AddComment(Twine("    jumps to ") +
                                        S.LPad->LandingPadLabel->getName());
+
+}
         Asm->emitCallSiteOffset(S.LPad->LandingPadLabel, EHFuncBeginSym,
                                 CallSiteEncoding);
       }
@@ -548,11 +582,13 @@ MCSymbol *EHStreamer::emitExceptionTable() {
       // the action table. This value is biased by 1 (1 indicates the start of
       // the action table), and 0 indicates that there are no actions.
       if (VerboseAsm) {
-        if (S.Action == 0)
+        if (S.Action == 0) {
           Asm->OutStreamer->AddComment("  On action: cleanup");
-        else
+        } else {
           Asm->OutStreamer->AddComment("  On action: " +
                                        Twine((S.Action - 1) / 2 + 1));
+
+}
       }
       Asm->emitULEB128(S.Action);
     }
@@ -575,14 +611,16 @@ MCSymbol *EHStreamer::emitExceptionTable() {
     //   Used by the runtime to match the type of the thrown exception to the
     //   type of the catch clauses or the types in the exception specification.
     if (VerboseAsm) {
-      if (Action.ValueForTypeID > 0)
+      if (Action.ValueForTypeID > 0) {
         Asm->OutStreamer->AddComment("  Catch TypeInfo " +
                                      Twine(Action.ValueForTypeID));
-      else if (Action.ValueForTypeID < 0)
+      } else if (Action.ValueForTypeID < 0) {
         Asm->OutStreamer->AddComment("  Filter TypeInfo " +
                                      Twine(Action.ValueForTypeID));
-      else
+      } else {
         Asm->OutStreamer->AddComment("  Cleanup");
+
+}
     }
     Asm->emitSLEB128(Action.ValueForTypeID);
 
@@ -627,8 +665,10 @@ void EHStreamer::emitTypeInfos(unsigned TTypeEncoding, MCSymbol *TTBaseLabel) {
 
   for (const GlobalValue *GV : make_range(TypeInfos.rbegin(),
                                           TypeInfos.rend())) {
-    if (VerboseAsm)
+    if (VerboseAsm) {
       Asm->OutStreamer->AddComment("TypeInfo " + Twine(Entry--));
+
+}
     Asm->emitTTypeReference(GV, TTypeEncoding);
   }
 
@@ -645,8 +685,10 @@ void EHStreamer::emitTypeInfos(unsigned TTypeEncoding, MCSymbol *TTBaseLabel) {
     unsigned TypeID = *I;
     if (VerboseAsm) {
       --Entry;
-      if (isFilterEHSelector(TypeID))
+      if (isFilterEHSelector(TypeID)) {
         Asm->OutStreamer->AddComment("FilterInfo " + Twine(Entry));
+
+}
     }
 
     Asm->emitULEB128(TypeID);

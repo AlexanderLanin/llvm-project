@@ -148,15 +148,21 @@ llvm_regexec(const llvm_regex_t *preg, const char *string, size_t nmatch,
 #	define	GOODFLAGS(f)	((f)&(REG_NOTBOL|REG_NOTEOL|REG_STARTEND))
 #endif
 
-	if (preg->re_magic != MAGIC1 || g->magic != MAGIC2)
+	if (preg->re_magic != MAGIC1 || g->magic != MAGIC2) {
 		return(REG_BADPAT);
+
+}
 	assert(!(g->iflags&REGEX_BAD));
-	if (g->iflags&REGEX_BAD)		/* backstop for no-debug case */
+	if (g->iflags&REGEX_BAD) {		/* backstop for no-debug case */
 		return(REG_BADPAT);
+
+}
 	eflags = GOODFLAGS(eflags);
 
-	if (g->nstates <= (long)(CHAR_BIT*sizeof(states1)) && !(eflags&REG_LARGE))
+	if (g->nstates <= (long)(CHAR_BIT*sizeof(states1)) && !(eflags&REG_LARGE)) {
 		return(smatcher(g, string, nmatch, pmatch, eflags));
-	else
+	} else {
 		return(lmatcher(g, string, nmatch, pmatch, eflags));
+
+}
 }

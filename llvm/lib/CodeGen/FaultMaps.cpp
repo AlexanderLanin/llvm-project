@@ -45,8 +45,10 @@ void FaultMaps::recordFaultingOp(FaultKind FaultTy,
 }
 
 void FaultMaps::serializeToFaultMapSection() {
-  if (FunctionInfos.empty())
+  if (FunctionInfos.empty()) {
     return;
+
+}
 
   MCContext &OutContext = AP.OutStreamer->getContext();
   MCStreamer &OS = *AP.OutStreamer;
@@ -71,8 +73,10 @@ void FaultMaps::serializeToFaultMapSection() {
 
   LLVM_DEBUG(dbgs() << WFMP << "functions:\n");
 
-  for (const auto &FFI : FunctionInfos)
+  for (const auto &FFI : FunctionInfos) {
     emitFunctionInfo(FFI.first, FFI.second);
+
+}
 }
 
 void FaultMaps::emitFunctionInfo(const MCSymbol *FnLabel,
@@ -129,8 +133,10 @@ raw_ostream &llvm::
 operator<<(raw_ostream &OS, const FaultMapParser::FunctionInfoAccessor &FI) {
   OS << "FunctionAddress: " << format_hex(FI.getFunctionAddr(), 8)
      << ", NumFaultingPCs: " << FI.getNumFaultingPCs() << "\n";
-  for (unsigned i = 0, e = FI.getNumFaultingPCs(); i != e; ++i)
+  for (unsigned i = 0, e = FI.getNumFaultingPCs(); i != e; ++i) {
     OS << FI.getFunctionFaultInfoAt(i) << "\n";
+
+}
   return OS;
 }
 
@@ -138,8 +144,10 @@ raw_ostream &llvm::operator<<(raw_ostream &OS, const FaultMapParser &FMP) {
   OS << "Version: " << format_hex(FMP.getFaultMapVersion(), 2) << "\n";
   OS << "NumFunctions: " << FMP.getNumFunctions() << "\n";
 
-  if (FMP.getNumFunctions() == 0)
+  if (FMP.getNumFunctions() == 0) {
     return OS;
+
+}
 
   FaultMapParser::FunctionInfoAccessor FI;
 

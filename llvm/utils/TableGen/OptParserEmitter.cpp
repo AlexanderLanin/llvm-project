@@ -20,8 +20,10 @@ using namespace llvm;
 
 static const std::string getOptionName(const Record &R) {
   // Use the record name unless EnumName is defined.
-  if (isa<UnsetInit>(R.getValueInit("EnumName")))
+  if (isa<UnsetInit>(R.getValueInit("EnumName"))) {
     return std::string(R.getName());
+
+}
 
   return std::string(R.getValueAsString("EnumName"));
 }
@@ -58,8 +60,10 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
     PrefixKeyT prfkey(prf.begin(), prf.end());
     unsigned NewPrefix = CurPrefix + 1;
     if (Prefixes.insert(std::make_pair(prfkey, (Twine("prefix_") +
-                                              Twine(NewPrefix)).str())).second)
+                                              Twine(NewPrefix)).str())).second) {
       CurPrefix = NewPrefix;
+
+}
   }
 
   // Dump prefixes.
@@ -109,10 +113,12 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
 
     // The containing option group (if any).
     OS << ", ";
-    if (const DefInit *DI = dyn_cast<DefInit>(R.getValueInit("Group")))
+    if (const DefInit *DI = dyn_cast<DefInit>(R.getValueInit("Group"))) {
       OS << getOptionName(*DI->getDef());
-    else
+    } else {
       OS << "INVALID";
+
+}
 
     // The other option arguments (unused for groups).
     OS << ", INVALID, nullptr, 0, 0";
@@ -122,8 +128,10 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
       OS << ",\n";
       OS << "       ";
       write_cstring(OS, R.getValueAsString("HelpText"));
-    } else
+    } else {
       OS << ", nullptr";
+
+}
 
     // The option meta-variable name (unused).
     OS << ", nullptr";
@@ -160,15 +168,19 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
     if (const DefInit *DI = dyn_cast<DefInit>(R.getValueInit("Group"))) {
       GroupFlags = DI->getDef()->getValueAsListInit("Flags");
       OS << getOptionName(*DI->getDef());
-    } else
+    } else {
       OS << "INVALID";
+
+}
 
     // The option alias (if any).
     OS << ", ";
-    if (const DefInit *DI = dyn_cast<DefInit>(R.getValueInit("Alias")))
+    if (const DefInit *DI = dyn_cast<DefInit>(R.getValueInit("Alias"))) {
       OS << getOptionName(*DI->getDef());
-    else
+    } else {
       OS << "INVALID";
+
+}
 
     // The option alias arguments (if any).
     // Emitted as a \0 separated list in a string, e.g. ["foo", "bar"]
@@ -180,8 +192,10 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
       OS << "nullptr";
     } else {
       OS << "\"";
-      for (size_t i = 0, e = AliasArgs.size(); i != e; ++i)
+      for (size_t i = 0, e = AliasArgs.size(); i != e; ++i) {
         OS << AliasArgs[i] << "\\0";
+
+}
       OS << "\"";
     }
 
@@ -189,16 +203,22 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
     OS << ", ";
     int NumFlags = 0;
     const ListInit *LI = R.getValueAsListInit("Flags");
-    for (Init *I : *LI)
+    for (Init *I : *LI) {
       OS << (NumFlags++ ? " | " : "")
          << cast<DefInit>(I)->getDef()->getName();
+
+}
     if (GroupFlags) {
-      for (Init *I : *GroupFlags)
+      for (Init *I : *GroupFlags) {
         OS << (NumFlags++ ? " | " : "")
            << cast<DefInit>(I)->getDef()->getName();
+
+}
     }
-    if (NumFlags == 0)
+    if (NumFlags == 0) {
       OS << '0';
+
+}
 
     // The option parameter field.
     OS << ", " << R.getValueAsInt("NumArgs");
@@ -208,22 +228,28 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
       OS << ",\n";
       OS << "       ";
       write_cstring(OS, R.getValueAsString("HelpText"));
-    } else
+    } else {
       OS << ", nullptr";
+
+}
 
     // The option meta-variable name.
     OS << ", ";
-    if (!isa<UnsetInit>(R.getValueInit("MetaVarName")))
+    if (!isa<UnsetInit>(R.getValueInit("MetaVarName"))) {
       write_cstring(OS, R.getValueAsString("MetaVarName"));
-    else
+    } else {
       OS << "nullptr";
+
+}
 
     // The option Values. Used for shell autocompletion.
     OS << ", ";
-    if (!isa<UnsetInit>(R.getValueInit("Values")))
+    if (!isa<UnsetInit>(R.getValueInit("Values"))) {
       write_cstring(OS, R.getValueAsString("Values"));
-    else
+    } else {
       OS << "nullptr";
+
+}
 
     OS << ")\n";
   }
@@ -235,8 +261,10 @@ void EmitOptParser(RecordKeeper &Records, raw_ostream &OS) {
   OS << "// Option Values\n\n";
   for (unsigned I = 0, E = Opts.size(); I != E; ++I) {
     const Record &R = *Opts[I];
-    if (isa<UnsetInit>(R.getValueInit("ValuesCode")))
+    if (isa<UnsetInit>(R.getValueInit("ValuesCode"))) {
       continue;
+
+}
     OS << "{\n";
     OS << "bool ValuesWereAdded;\n";
     OS << R.getValueAsString("ValuesCode");

@@ -51,8 +51,10 @@ static void PrintResults(AliasResult AR, bool P, const Value *V1,
       V2->printAsOperand(os2, true, M);
     }
 
-    if (o2 < o1)
+    if (o2 < o1) {
       std::swap(o1, o2);
+
+}
     errs() << "  " << AR << ":\t" << o1 << ", " << o2 << "\n";
   }
 }
@@ -101,55 +103,81 @@ void AAEvaluator::runInternal(Function &F, AAResults &AA) {
   SetVector<Value *> Loads;
   SetVector<Value *> Stores;
 
-  for (auto &I : F.args())
-    if (I.getType()->isPointerTy())    // Add all pointer arguments.
+  for (auto &I : F.args()) {
+    if (I.getType()->isPointerTy()) {    // Add all pointer arguments.
       Pointers.insert(&I);
 
+}
+
+}
+
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-    if (I->getType()->isPointerTy()) // Add all pointer instructions.
+    if (I->getType()->isPointerTy()) { // Add all pointer instructions.
       Pointers.insert(&*I);
-    if (EvalAAMD && isa<LoadInst>(&*I))
+
+}
+    if (EvalAAMD && isa<LoadInst>(&*I)) {
       Loads.insert(&*I);
-    if (EvalAAMD && isa<StoreInst>(&*I))
+
+}
+    if (EvalAAMD && isa<StoreInst>(&*I)) {
       Stores.insert(&*I);
+
+}
     Instruction &Inst = *I;
     if (auto *Call = dyn_cast<CallBase>(&Inst)) {
       Value *Callee = Call->getCalledValue();
       // Skip actual functions for direct function calls.
-      if (!isa<Function>(Callee) && isInterestingPointer(Callee))
+      if (!isa<Function>(Callee) && isInterestingPointer(Callee)) {
         Pointers.insert(Callee);
+
+}
       // Consider formals.
-      for (Use &DataOp : Call->data_ops())
-        if (isInterestingPointer(DataOp))
+      for (Use &DataOp : Call->data_ops()) {
+        if (isInterestingPointer(DataOp)) {
           Pointers.insert(DataOp);
+
+}
+
+}
       Calls.insert(Call);
     } else {
       // Consider all operands.
       for (Instruction::op_iterator OI = Inst.op_begin(), OE = Inst.op_end();
-           OI != OE; ++OI)
-        if (isInterestingPointer(*OI))
+           OI != OE; ++OI) {
+        if (isInterestingPointer(*OI)) {
           Pointers.insert(*OI);
+
+}
+
+}
     }
   }
 
   if (PrintAll || PrintNoAlias || PrintMayAlias || PrintPartialAlias ||
-      PrintMustAlias || PrintNoModRef || PrintMod || PrintRef || PrintModRef)
+      PrintMustAlias || PrintNoModRef || PrintMod || PrintRef || PrintModRef) {
     errs() << "Function: " << F.getName() << ": " << Pointers.size()
            << " pointers, " << Calls.size() << " call sites\n";
+
+}
 
   // iterate over the worklist, and run the full (n^2)/2 disambiguations
   for (SetVector<Value *>::iterator I1 = Pointers.begin(), E = Pointers.end();
        I1 != E; ++I1) {
     auto I1Size = LocationSize::unknown();
     Type *I1ElTy = cast<PointerType>((*I1)->getType())->getElementType();
-    if (I1ElTy->isSized())
+    if (I1ElTy->isSized()) {
       I1Size = LocationSize::precise(DL.getTypeStoreSize(I1ElTy));
+
+}
 
     for (SetVector<Value *>::iterator I2 = Pointers.begin(); I2 != I1; ++I2) {
       auto I2Size = LocationSize::unknown();
       Type *I2ElTy = cast<PointerType>((*I2)->getType())->getElementType();
-      if (I2ElTy->isSized())
+      if (I2ElTy->isSized()) {
         I2Size = LocationSize::precise(DL.getTypeStoreSize(I2ElTy));
+
+}
 
       AliasResult AR = AA.alias(*I1, I1Size, *I2, I2Size);
       switch (AR) {
@@ -233,8 +261,10 @@ void AAEvaluator::runInternal(Function &F, AAResults &AA) {
     for (auto Pointer : Pointers) {
       auto Size = LocationSize::unknown();
       Type *ElTy = cast<PointerType>(Pointer->getType())->getElementType();
-      if (ElTy->isSized())
+      if (ElTy->isSized()) {
         Size = LocationSize::precise(DL.getTypeStoreSize(ElTy));
+
+}
 
       switch (AA.getModRefInfo(Call, Pointer, Size)) {
       case ModRefInfo::NoModRef:
@@ -281,8 +311,10 @@ void AAEvaluator::runInternal(Function &F, AAResults &AA) {
   // Mod/ref alias analysis: compare all pairs of calls
   for (CallBase *CallA : Calls) {
     for (CallBase *CallB : Calls) {
-      if (CallA == CallB)
+      if (CallA == CallB) {
         continue;
+
+}
       switch (AA.getModRefInfo(CallA, CallB)) {
       case ModRefInfo::NoModRef:
         PrintModRefResults("NoModRef", PrintNoModRef, CallA, CallB,
@@ -332,8 +364,10 @@ static void PrintPercent(int64_t Num, int64_t Sum) {
 }
 
 AAEvaluator::~AAEvaluator() {
-  if (FunctionCount == 0)
+  if (FunctionCount == 0) {
     return;
+
+}
 
   int64_t AliasSum =
       NoAliasCount + MayAliasCount + PartialAliasCount + MustAliasCount;

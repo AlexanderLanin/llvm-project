@@ -20,8 +20,10 @@ using namespace llvm;
 
 bool MCInstrDesc::getDeprecatedInfo(MCInst &MI, const MCSubtargetInfo &STI,
                                     std::string &Info) const {
-  if (ComplexDeprecationInfo)
+  if (ComplexDeprecationInfo) {
     return ComplexDeprecationInfo(MI, STI, Info);
+
+}
   if (DeprecatedFeature != -1 && STI.getFeatureBits()[DeprecatedFeature]) {
     // FIXME: it would be nice to include the subtarget feature here.
     Info = "deprecated";
@@ -31,35 +33,57 @@ bool MCInstrDesc::getDeprecatedInfo(MCInst &MI, const MCSubtargetInfo &STI,
 }
 bool MCInstrDesc::mayAffectControlFlow(const MCInst &MI,
                                        const MCRegisterInfo &RI) const {
-  if (isBranch() || isCall() || isReturn() || isIndirectBranch())
+  if (isBranch() || isCall() || isReturn() || isIndirectBranch()) {
     return true;
+
+}
   unsigned PC = RI.getProgramCounter();
-  if (PC == 0)
+  if (PC == 0) {
     return false;
-  if (hasDefOfPhysReg(MI, PC, RI))
+
+}
+  if (hasDefOfPhysReg(MI, PC, RI)) {
     return true;
+
+}
   return false;
 }
 
 bool MCInstrDesc::hasImplicitDefOfPhysReg(unsigned Reg,
                                           const MCRegisterInfo *MRI) const {
-  if (const MCPhysReg *ImpDefs = ImplicitDefs)
-    for (; *ImpDefs; ++ImpDefs)
-      if (*ImpDefs == Reg || (MRI && MRI->isSubRegister(Reg, *ImpDefs)))
+  if (const MCPhysReg *ImpDefs = ImplicitDefs) {
+    for (; *ImpDefs; ++ImpDefs) {
+      if (*ImpDefs == Reg || (MRI && MRI->isSubRegister(Reg, *ImpDefs))) {
         return true;
+
+}
+
+}
+
+}
   return false;
 }
 
 bool MCInstrDesc::hasDefOfPhysReg(const MCInst &MI, unsigned Reg,
                                   const MCRegisterInfo &RI) const {
-  for (int i = 0, e = NumDefs; i != e; ++i)
+  for (int i = 0, e = NumDefs; i != e; ++i) {
     if (MI.getOperand(i).isReg() &&
-        RI.isSubRegisterEq(Reg, MI.getOperand(i).getReg()))
+        RI.isSubRegisterEq(Reg, MI.getOperand(i).getReg())) {
       return true;
-  if (variadicOpsAreDefs())
-    for (int i = NumOperands - 1, e = MI.getNumOperands(); i != e; ++i)
+
+}
+
+}
+  if (variadicOpsAreDefs()) {
+    for (int i = NumOperands - 1, e = MI.getNumOperands(); i != e; ++i) {
       if (MI.getOperand(i).isReg() &&
-          RI.isSubRegisterEq(Reg, MI.getOperand(i).getReg()))
+          RI.isSubRegisterEq(Reg, MI.getOperand(i).getReg())) {
         return true;
+
+}
+
+}
+
+}
   return hasImplicitDefOfPhysReg(Reg, &RI);
 }

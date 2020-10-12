@@ -89,30 +89,42 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
                                       const SetVector<BasicBlock *> &Result,
                                       bool AllowVarArgs, bool AllowAlloca) {
   // taking the address of a basic block moved to another function is illegal
-  if (BB.hasAddressTaken())
+  if (BB.hasAddressTaken()) {
     return false;
+
+}
 
   // don't hoist code that uses another basicblock address, as it's likely to
   // lead to unexpected behavior, like cross-function jumps
   SmallPtrSet<User const *, 16> Visited;
   SmallVector<User const *, 16> ToVisit;
 
-  for (Instruction const &Inst : BB)
+  for (Instruction const &Inst : BB) {
     ToVisit.push_back(&Inst);
+
+}
 
   while (!ToVisit.empty()) {
     User const *Curr = ToVisit.pop_back_val();
-    if (!Visited.insert(Curr).second)
+    if (!Visited.insert(Curr).second) {
       continue;
-    if (isa<BlockAddress const>(Curr))
+
+}
+    if (isa<BlockAddress const>(Curr)) {
       return false; // even a reference to self is likely to be not compatible
 
-    if (isa<Instruction>(Curr) && cast<Instruction>(Curr)->getParent() != &BB)
+}
+
+    if (isa<Instruction>(Curr) && cast<Instruction>(Curr)->getParent() != &BB) {
       continue;
 
+}
+
     for (auto const &U : Curr->operands()) {
-      if (auto *UU = dyn_cast<User>(U))
+      if (auto *UU = dyn_cast<User>(U)) {
         ToVisit.push_back(UU);
+
+}
     }
   }
 
@@ -120,39 +132,59 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
   // verify that extraction is valid.
   for (BasicBlock::const_iterator I = BB.begin(), E = BB.end(); I != E; ++I) {
     if (isa<AllocaInst>(I)) {
-       if (!AllowAlloca)
+       if (!AllowAlloca) {
          return false;
+
+}
        continue;
     }
 
     if (const auto *II = dyn_cast<InvokeInst>(I)) {
       // Unwind destination (either a landingpad, catchswitch, or cleanuppad)
       // must be a part of the subgraph which is being extracted.
-      if (auto *UBB = II->getUnwindDest())
-        if (!Result.count(UBB))
+      if (auto *UBB = II->getUnwindDest()) {
+        if (!Result.count(UBB)) {
           return false;
+
+}
+
+}
       continue;
     }
 
     // All catch handlers of a catchswitch instruction as well as the unwind
     // destination must be in the subgraph.
     if (const auto *CSI = dyn_cast<CatchSwitchInst>(I)) {
-      if (auto *UBB = CSI->getUnwindDest())
-        if (!Result.count(UBB))
+      if (auto *UBB = CSI->getUnwindDest()) {
+        if (!Result.count(UBB)) {
           return false;
-      for (auto *HBB : CSI->handlers())
-        if (!Result.count(const_cast<BasicBlock*>(HBB)))
+
+}
+
+}
+      for (auto *HBB : CSI->handlers()) {
+        if (!Result.count(const_cast<BasicBlock*>(HBB))) {
           return false;
+
+}
+
+}
       continue;
     }
 
     // Make sure that entire catch handler is within subgraph. It is sufficient
     // to check that catch return's block is in the list.
     if (const auto *CPI = dyn_cast<CatchPadInst>(I)) {
-      for (const auto *U : CPI->users())
-        if (const auto *CRI = dyn_cast<CatchReturnInst>(U))
-          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent())))
+      for (const auto *U : CPI->users()) {
+        if (const auto *CRI = dyn_cast<CatchReturnInst>(U)) {
+          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent()))) {
             return false;
+
+}
+
+}
+
+}
       continue;
     }
 
@@ -160,16 +192,26 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
     // in subgraph which is going to be extracted. For cleanup return should
     // additionally check that the unwind destination is also in the subgraph.
     if (const auto *CPI = dyn_cast<CleanupPadInst>(I)) {
-      for (const auto *U : CPI->users())
-        if (const auto *CRI = dyn_cast<CleanupReturnInst>(U))
-          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent())))
+      for (const auto *U : CPI->users()) {
+        if (const auto *CRI = dyn_cast<CleanupReturnInst>(U)) {
+          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent()))) {
             return false;
+
+}
+
+}
+
+}
       continue;
     }
     if (const auto *CRI = dyn_cast<CleanupReturnInst>(I)) {
-      if (auto *UBB = CRI->getUnwindDest())
-        if (!Result.count(UBB))
+      if (auto *UBB = CRI->getUnwindDest()) {
+        if (!Result.count(UBB)) {
           return false;
+
+}
+
+}
       continue;
     }
 
@@ -177,16 +219,20 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
       if (const Function *F = CI->getCalledFunction()) {
         auto IID = F->getIntrinsicID();
         if (IID == Intrinsic::vastart) {
-          if (AllowVarArgs)
+          if (AllowVarArgs) {
             continue;
-          else
+          } else {
             return false;
+
+}
         }
 
         // Currently, we miscompile outlined copies of eh_typid_for. There are
         // proposals for fixing this in llvm.org/PR39545.
-        if (IID == Intrinsic::eh_typeid_for)
+        if (IID == Intrinsic::eh_typeid_for) {
           return false;
+
+}
       }
     }
   }
@@ -205,19 +251,25 @@ buildExtractionBlockSet(ArrayRef<BasicBlock *> BBs, DominatorTree *DT,
   // empty set if we encounter invalid blocks.
   for (BasicBlock *BB : BBs) {
     // If this block is dead, don't process it.
-    if (DT && !DT->isReachableFromEntry(BB))
+    if (DT && !DT->isReachableFromEntry(BB)) {
       continue;
 
-    if (!Result.insert(BB))
+}
+
+    if (!Result.insert(BB)) {
       llvm_unreachable("Repeated basic blocks in extraction input");
+
+}
   }
 
   LLVM_DEBUG(dbgs() << "Region front block: " << Result.front()->getName()
                     << '\n');
 
   for (auto *BB : Result) {
-    if (!isBlockValidForExtraction(*BB, Result, AllowVarArgs, AllowAlloca))
+    if (!isBlockValidForExtraction(*BB, Result, AllowVarArgs, AllowAlloca)) {
       return {};
+
+}
 
     // Make sure that the first block is not a landing pad.
     if (BB == Result.front()) {
@@ -230,7 +282,7 @@ buildExtractionBlockSet(ArrayRef<BasicBlock *> BBs, DominatorTree *DT,
 
     // All blocks other than the first must not have predecessors outside of
     // the subgraph which is being extracted.
-    for (auto *PBB : predecessors(BB))
+    for (auto *PBB : predecessors(BB)) {
       if (!Result.count(PBB)) {
         LLVM_DEBUG(dbgs() << "No blocks in this region may have entries from "
                              "outside the region except for the first block!\n"
@@ -239,6 +291,8 @@ buildExtractionBlockSet(ArrayRef<BasicBlock *> BBs, DominatorTree *DT,
                           << "\n");
         return {};
       }
+
+}
   }
 
   return Result;
@@ -268,9 +322,13 @@ CodeExtractor::CodeExtractor(DominatorTree &DT, Loop &L, bool AggregateArgs,
 /// definedInRegion - Return true if the specified value is defined in the
 /// extracted region.
 static bool definedInRegion(const SetVector<BasicBlock *> &Blocks, Value *V) {
-  if (Instruction *I = dyn_cast<Instruction>(V))
-    if (Blocks.count(I->getParent()))
+  if (Instruction *I = dyn_cast<Instruction>(V)) {
+    if (Blocks.count(I->getParent())) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -278,10 +336,16 @@ static bool definedInRegion(const SetVector<BasicBlock *> &Blocks, Value *V) {
 /// function being code extracted, but not in the region being extracted.
 /// These values must be passed in as live-ins to the function.
 static bool definedInCaller(const SetVector<BasicBlock *> &Blocks, Value *V) {
-  if (isa<Argument>(V)) return true;
-  if (Instruction *I = dyn_cast<Instruction>(V))
-    if (!Blocks.count(I->getParent()))
+  if (isa<Argument>(V)) { return true;
+
+}
+  if (Instruction *I = dyn_cast<Instruction>(V)) {
+    if (!Blocks.count(I->getParent())) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -290,29 +354,39 @@ static BasicBlock *getCommonExitBlock(const SetVector<BasicBlock *> &Blocks) {
   auto hasNonCommonExitSucc = [&](BasicBlock *Block) {
     for (auto *Succ : successors(Block)) {
       // Internal edges, ok.
-      if (Blocks.count(Succ))
+      if (Blocks.count(Succ)) {
         continue;
+
+}
       if (!CommonExitBlock) {
         CommonExitBlock = Succ;
         continue;
       }
-      if (CommonExitBlock != Succ)
+      if (CommonExitBlock != Succ) {
         return true;
+
+}
     }
     return false;
   };
 
-  if (any_of(Blocks, hasNonCommonExitSucc))
+  if (any_of(Blocks, hasNonCommonExitSucc)) {
     return nullptr;
+
+}
 
   return CommonExitBlock;
 }
 
 CodeExtractorAnalysisCache::CodeExtractorAnalysisCache(Function &F) {
   for (BasicBlock &BB : F) {
-    for (Instruction &II : BB.instructionsWithoutDebug())
-      if (auto *AI = dyn_cast<AllocaInst>(&II))
+    for (Instruction &II : BB.instructionsWithoutDebug()) {
+      if (auto *AI = dyn_cast<AllocaInst>(&II)) {
         Allocas.push_back(AI);
+
+}
+
+}
 
     findSideEffectInfoForBlock(BB);
   }
@@ -333,8 +407,10 @@ void CodeExtractorAnalysisCache::findSideEffectInfoForBlock(BasicBlock &BB) {
         MemAddr = LI->getPointerOperand();
       }
       // Global variable can not be aliased with locals.
-      if (dyn_cast<Constant>(MemAddr))
+      if (dyn_cast<Constant>(MemAddr)) {
         break;
+
+}
       Value *Base = MemAddr->stripInBoundsConstantOffsets();
       if (!isa<AllocaInst>(Base)) {
         SideEffectingBlocks.insert(&BB);
@@ -346,8 +422,10 @@ void CodeExtractorAnalysisCache::findSideEffectInfoForBlock(BasicBlock &BB) {
     default: {
       IntrinsicInst *IntrInst = dyn_cast<IntrinsicInst>(&II);
       if (IntrInst) {
-        if (IntrInst->isLifetimeStartOrEnd())
+        if (IntrInst->isLifetimeStartOrEnd()) {
           break;
+
+}
         SideEffectingBlocks.insert(&BB);
         return;
       }
@@ -363,11 +441,15 @@ void CodeExtractorAnalysisCache::findSideEffectInfoForBlock(BasicBlock &BB) {
 
 bool CodeExtractorAnalysisCache::doesBlockContainClobberOfAddr(
     BasicBlock &BB, AllocaInst *Addr) const {
-  if (SideEffectingBlocks.count(&BB))
+  if (SideEffectingBlocks.count(&BB)) {
     return true;
+
+}
   auto It = BaseMemAddrs.find(&BB);
-  if (It != BaseMemAddrs.end())
+  if (It != BaseMemAddrs.end()) {
     return It->second.count(Addr);
+
+}
   return false;
 }
 
@@ -376,10 +458,14 @@ bool CodeExtractor::isLegalToShrinkwrapLifetimeMarkers(
   AllocaInst *AI = cast<AllocaInst>(Addr->stripInBoundsConstantOffsets());
   Function *Func = (*Blocks.begin())->getParent();
   for (BasicBlock &BB : *Func) {
-    if (Blocks.count(&BB))
+    if (Blocks.count(&BB)) {
       continue;
-    if (CEAC.doesBlockContainClobberOfAddr(BB, AI))
+
+}
+    if (CEAC.doesBlockContainClobberOfAddr(BB, AI)) {
       return false;
+
+}
   }
   return true;
 }
@@ -390,8 +476,10 @@ CodeExtractor::findOrCreateBlockForHoisting(BasicBlock *CommonExitBlock) {
   assert(!Blocks.count(CommonExitBlock) &&
          "Expect a block outside the region!");
   for (auto *Pred : predecessors(CommonExitBlock)) {
-    if (!Blocks.count(Pred))
+    if (!Blocks.count(Pred)) {
       continue;
+
+}
     if (!SinglePredFromOutlineRegion) {
       SinglePredFromOutlineRegion = Pred;
     } else if (SinglePredFromOutlineRegion != Pred) {
@@ -400,8 +488,10 @@ CodeExtractor::findOrCreateBlockForHoisting(BasicBlock *CommonExitBlock) {
     }
   }
 
-  if (SinglePredFromOutlineRegion)
+  if (SinglePredFromOutlineRegion) {
     return SinglePredFromOutlineRegion;
+
+}
 
 #ifndef NDEBUG
   auto getFirstPHI = [](BasicBlock *BB) {
@@ -429,8 +519,10 @@ CodeExtractor::findOrCreateBlockForHoisting(BasicBlock *CommonExitBlock) {
   for (auto PI = pred_begin(CommonExitBlock), PE = pred_end(CommonExitBlock);
        PI != PE;) {
     BasicBlock *Pred = *PI++;
-    if (Blocks.count(Pred))
+    if (Blocks.count(Pred)) {
       continue;
+
+}
     Pred->getTerminator()->replaceUsesOfWith(CommonExitBlock, NewExitBlock);
   }
   // Now add the old exit block to the outline region.
@@ -453,35 +545,47 @@ CodeExtractor::getLifetimeMarkers(const CodeExtractorAnalysisCache &CEAC,
     if (IntrInst) {
       if (IntrInst->getIntrinsicID() == Intrinsic::lifetime_start) {
         // Do not handle the case where Addr has multiple start markers.
-        if (Info.LifeStart)
+        if (Info.LifeStart) {
           return {};
+
+}
         Info.LifeStart = IntrInst;
       }
       if (IntrInst->getIntrinsicID() == Intrinsic::lifetime_end) {
-        if (Info.LifeEnd)
+        if (Info.LifeEnd) {
           return {};
+
+}
         Info.LifeEnd = IntrInst;
       }
       continue;
     }
     // Find untracked uses of the address, bail.
-    if (!definedInRegion(Blocks, U))
+    if (!definedInRegion(Blocks, U)) {
       return {};
+
+}
   }
 
-  if (!Info.LifeStart || !Info.LifeEnd)
+  if (!Info.LifeStart || !Info.LifeEnd) {
     return {};
+
+}
 
   Info.SinkLifeStart = !definedInRegion(Blocks, Info.LifeStart);
   Info.HoistLifeEnd = !definedInRegion(Blocks, Info.LifeEnd);
   // Do legality check.
   if ((Info.SinkLifeStart || Info.HoistLifeEnd) &&
-      !isLegalToShrinkwrapLifetimeMarkers(CEAC, Addr))
+      !isLegalToShrinkwrapLifetimeMarkers(CEAC, Addr)) {
     return {};
 
+}
+
   // Check to see if we have a place to do hoisting, if not, bail.
-  if (Info.HoistLifeEnd && !ExitBlock)
+  if (Info.HoistLifeEnd && !ExitBlock) {
     return {};
+
+}
 
   return Info;
 }
@@ -494,8 +598,10 @@ void CodeExtractor::findAllocas(const CodeExtractorAnalysisCache &CEAC,
 
   auto moveOrIgnoreLifetimeMarkers =
       [&](const LifetimeMarkerInfo &LMI) -> bool {
-    if (!LMI.LifeStart)
+    if (!LMI.LifeStart) {
       return false;
+
+}
     if (LMI.SinkLifeStart) {
       LLVM_DEBUG(dbgs() << "Sinking lifetime.start: " << *LMI.LifeStart
                         << "\n");
@@ -512,14 +618,18 @@ void CodeExtractor::findAllocas(const CodeExtractorAnalysisCache &CEAC,
   // this is much faster than walking all the instructions.
   for (AllocaInst *AI : CEAC.getAllocas()) {
     BasicBlock *BB = AI->getParent();
-    if (Blocks.count(BB))
+    if (Blocks.count(BB)) {
       continue;
+
+}
 
     // As a prior call to extractCodeRegion() may have shrinkwrapped the alloca,
     // check whether it is actually still in the original function.
     Function *AIFunc = BB->getParent();
-    if (AIFunc != Func)
+    if (AIFunc != Func) {
       continue;
+
+}
 
     LifetimeMarkerInfo MarkerInfo = getLifetimeMarkers(CEAC, AI, ExitBlock);
     bool Moved = moveOrIgnoreLifetimeMarkers(MarkerInfo);
@@ -551,8 +661,10 @@ void CodeExtractor::findAllocas(const CodeExtractorAnalysisCache &CEAC,
     }
 
     // Either no bitcasts reference the alloca or there are unknown uses.
-    if (Bitcasts.empty())
+    if (Bitcasts.empty()) {
       continue;
+
+}
 
     LLVM_DEBUG(dbgs() << "Sinking alloca (via bitcast): " << *AI << "\n");
     SinkCands.insert(AI);
@@ -572,8 +684,10 @@ void CodeExtractor::findAllocas(const CodeExtractorAnalysisCache &CEAC,
 }
 
 bool CodeExtractor::isEligible() const {
-  if (Blocks.empty())
+  if (Blocks.empty()) {
     return false;
+
+}
   BasicBlock *Header = *Blocks.begin();
   Function *F = Header->getParent();
 
@@ -581,18 +695,26 @@ bool CodeExtractor::isEligible() const {
   // outlined function, i.e vastart and vaend are only used in outlined blocks.
   if (AllowVarArgs && F->getFunctionType()->isVarArg()) {
     auto containsVarArgIntrinsic = [](const Instruction &I) {
-      if (const CallInst *CI = dyn_cast<CallInst>(&I))
-        if (const Function *Callee = CI->getCalledFunction())
+      if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
+        if (const Function *Callee = CI->getCalledFunction()) {
           return Callee->getIntrinsicID() == Intrinsic::vastart ||
                  Callee->getIntrinsicID() == Intrinsic::vaend;
+
+}
+
+}
       return false;
     };
 
     for (auto &BB : *F) {
-      if (Blocks.count(&BB))
+      if (Blocks.count(&BB)) {
         continue;
-      if (llvm::any_of(BB, containsVarArgIntrinsic))
+
+}
+      if (llvm::any_of(BB, containsVarArgIntrinsic)) {
         return false;
+
+}
     }
   }
   return true;
@@ -606,15 +728,19 @@ void CodeExtractor::findInputsOutputs(ValueSet &Inputs, ValueSet &Outputs,
     for (Instruction &II : *BB) {
       for (auto &OI : II.operands()) {
         Value *V = OI;
-        if (!SinkCands.count(V) && definedInCaller(Blocks, V))
+        if (!SinkCands.count(V) && definedInCaller(Blocks, V)) {
           Inputs.insert(V);
+
+}
       }
 
-      for (User *U : II.users())
+      for (User *U : II.users()) {
         if (!definedInRegion(Blocks, U)) {
           Outputs.insert(&II);
           break;
         }
+
+}
     }
   }
 }
@@ -628,20 +754,28 @@ void CodeExtractor::severSplitPHINodesOfEntry(BasicBlock *&Header) {
 
   if (Header != &Header->getParent()->getEntryBlock()) {
     PHINode *PN = dyn_cast<PHINode>(Header->begin());
-    if (!PN) return;  // No PHI nodes.
+    if (!PN) { return;  // No PHI nodes.
+
+}
 
     // If the header node contains any PHI nodes, check to see if there is more
     // than one entry from outside the region.  If so, we need to sever the
     // header block into two.
-    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
-      if (Blocks.count(PN->getIncomingBlock(i)))
+    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
+      if (Blocks.count(PN->getIncomingBlock(i))) {
         ++NumPredsFromRegion;
-      else
+      } else {
         ++NumPredsOutsideRegion;
+
+}
+
+}
 
     // If there is one (or fewer) predecessor from outside the region, we don't
     // need to do anything special.
-    if (NumPredsOutsideRegion <= 1) return;
+    if (NumPredsOutsideRegion <= 1) { return;
+
+}
   }
 
   // Otherwise, we need to split the header block into two pieces: one
@@ -663,11 +797,13 @@ void CodeExtractor::severSplitPHINodesOfEntry(BasicBlock *&Header) {
     PHINode *PN = cast<PHINode>(OldPred->begin());
     // Loop over all of the predecessors of OldPred that are in the region,
     // changing them to branch to NewBB instead.
-    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
+    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
       if (Blocks.count(PN->getIncomingBlock(i))) {
         Instruction *TI = PN->getIncomingBlock(i)->getTerminator();
         TI->replaceUsesOfWith(OldPred, NewBB);
       }
+
+}
 
     // Okay, everything within the region is now branching to the right block, we
     // just have to update the PHI nodes now, inserting PHI nodes into NewBB.
@@ -706,15 +842,21 @@ void CodeExtractor::severSplitPHINodesOfExits(
     for (PHINode &PN : ExitBB->phis()) {
       // Find all incoming values from the outlining region.
       SmallVector<unsigned, 2> IncomingVals;
-      for (unsigned i = 0; i < PN.getNumIncomingValues(); ++i)
-        if (Blocks.count(PN.getIncomingBlock(i)))
+      for (unsigned i = 0; i < PN.getNumIncomingValues(); ++i) {
+        if (Blocks.count(PN.getIncomingBlock(i))) {
           IncomingVals.push_back(i);
+
+}
+
+}
 
       // Do not process PHI if there is one (or fewer) predecessor from region.
       // If PHI has exactly one predecessor from region, only this one incoming
       // will be replaced on codeRepl block, so it should be safe to skip PHI.
-      if (IncomingVals.size() <= 1)
+      if (IncomingVals.size() <= 1) {
         continue;
+
+}
 
       // Create block for new PHIs and add it to the list of outlined if it
       // wasn't done before.
@@ -724,9 +866,13 @@ void CodeExtractor::severSplitPHINodesOfExits(
                                    ExitBB->getParent(), ExitBB);
         SmallVector<BasicBlock *, 4> Preds(pred_begin(ExitBB),
                                            pred_end(ExitBB));
-        for (BasicBlock *PredBB : Preds)
-          if (Blocks.count(PredBB))
+        for (BasicBlock *PredBB : Preds) {
+          if (Blocks.count(PredBB)) {
             PredBB->getTerminator()->replaceUsesOfWith(ExitBB, NewBB);
+
+}
+
+}
         BranchInst::Create(ExitBB, NewBB);
         Blocks.insert(NewBB);
       }
@@ -735,17 +881,21 @@ void CodeExtractor::severSplitPHINodesOfExits(
       PHINode *NewPN =
           PHINode::Create(PN.getType(), IncomingVals.size(),
                           PN.getName() + ".ce", NewBB->getFirstNonPHI());
-      for (unsigned i : IncomingVals)
+      for (unsigned i : IncomingVals) {
         NewPN->addIncoming(PN.getIncomingValue(i), PN.getIncomingBlock(i));
-      for (unsigned i : reverse(IncomingVals))
+
+}
+      for (unsigned i : reverse(IncomingVals)) {
         PN.removeIncomingValue(i, false);
+
+}
       PN.addIncoming(NewPN, NewBB);
     }
   }
 }
 
 void CodeExtractor::splitReturnBlocks() {
-  for (BasicBlock *Block : Blocks)
+  for (BasicBlock *Block : Blocks) {
     if (ReturnInst *RI = dyn_cast<ReturnInst>(Block->getTerminator())) {
       BasicBlock *New =
           Block->splitBasicBlock(RI->getIterator(), Block->getName() + ".ret");
@@ -758,10 +908,14 @@ void CodeExtractor::splitReturnBlocks() {
 
         DomTreeNode *NewNode = DT->addNewBlock(New, Block);
 
-        for (DomTreeNode *I : Children)
+        for (DomTreeNode *I : Children) {
           DT->changeImmediateDominator(I, NewNode);
+
+}
       }
     }
+
+}
 }
 
 /// constructFunction - make a function based on inputs and outputs, as follows:
@@ -795,10 +949,12 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
   // Add the types of the output values to the function's argument list.
   for (Value *output : outputs) {
     LLVM_DEBUG(dbgs() << "instr used in func: " << *output << "\n");
-    if (AggregateArgs)
+    if (AggregateArgs) {
       paramTy.push_back(output->getType());
-    else
+    } else {
       paramTy.push_back(PointerType::getUnqual(output->getType()));
+
+}
   }
 
   LLVM_DEBUG({
@@ -827,12 +983,16 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
       funcType, GlobalValue::InternalLinkage, oldFunction->getAddressSpace(),
       oldFunction->getName() + "." + SuffixToUse, M);
   // If the old function is no-throw, so is the new one.
-  if (oldFunction->doesNotThrow())
+  if (oldFunction->doesNotThrow()) {
     newFunction->setDoesNotThrow();
 
+}
+
   // Inherit the uwtable attribute if we need to.
-  if (oldFunction->hasUWTable())
+  if (oldFunction->hasUWTable()) {
     newFunction->setHasUWTable();
+
+}
 
   // Inherit all of the target dependent attributes and white-listed
   // target independent attributes.
@@ -843,9 +1003,11 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
   //           attribute can not be inherited.
   for (const auto &Attr : oldFunction->getAttributes().getFnAttributes()) {
     if (Attr.isStringAttribute()) {
-      if (Attr.getKindAsString() == "thunk")
+      if (Attr.getKindAsString() == "thunk") {
         continue;
-    } else
+
+}
+    } else {
       switch (Attr.getKindAsEnum()) {
       // Those attributes cannot be propagated safely. Explicitly list them
       // here so we get a warning if new attributes are added. This list also
@@ -923,6 +1085,8 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
         break;
       }
 
+}
+
     newFunction->addFnAttr(Attr);
   }
   newFunction->getBasicBlockList().push_back(newRootNode);
@@ -943,36 +1107,54 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
           StructTy, &*AI, Idx, "gep_" + inputs[i]->getName(), TI);
       RewriteVal = new LoadInst(StructTy->getElementType(i), GEP,
                                 "loadgep_" + inputs[i]->getName(), TI);
-    } else
+    } else {
       RewriteVal = &*AI++;
 
+}
+
     std::vector<User *> Users(inputs[i]->user_begin(), inputs[i]->user_end());
-    for (User *use : Users)
-      if (Instruction *inst = dyn_cast<Instruction>(use))
-        if (Blocks.count(inst->getParent()))
+    for (User *use : Users) {
+      if (Instruction *inst = dyn_cast<Instruction>(use)) {
+        if (Blocks.count(inst->getParent())) {
           inst->replaceUsesOfWith(inputs[i], RewriteVal);
+
+}
+
+}
+
+}
   }
 
   // Set names for input and output arguments.
   if (!AggregateArgs) {
     AI = newFunction->arg_begin();
-    for (unsigned i = 0, e = inputs.size(); i != e; ++i, ++AI)
+    for (unsigned i = 0, e = inputs.size(); i != e; ++i, ++AI) {
       AI->setName(inputs[i]->getName());
-    for (unsigned i = 0, e = outputs.size(); i != e; ++i, ++AI)
+
+}
+    for (unsigned i = 0, e = outputs.size(); i != e; ++i, ++AI) {
       AI->setName(outputs[i]->getName()+".out");
+
+}
   }
 
   // Rewrite branches to basic blocks outside of the loop to new dummy blocks
   // within the new function. This must be done before we lose track of which
   // blocks were originally in the code region.
   std::vector<User *> Users(header->user_begin(), header->user_end());
-  for (auto &U : Users)
+  for (auto &U : Users) {
     // The BasicBlock which contains the branch is not in the region
     // modify the branch target to a new block
-    if (Instruction *I = dyn_cast<Instruction>(U))
+    if (Instruction *I = dyn_cast<Instruction>(U)) {
       if (I->isTerminator() && I->getFunction() == oldFunction &&
-          !Blocks.count(I->getParent()))
+          !Blocks.count(I->getParent())) {
         I->replaceUsesOfWith(header, newHeader);
+
+}
+
+}
+
+}
 
   return newFunction;
 }
@@ -990,18 +1172,24 @@ static void eraseLifetimeMarkersOnInputs(const SetVector<BasicBlock *> &Blocks,
     for (auto It = BB->begin(), End = BB->end(); It != End;) {
       auto *II = dyn_cast<IntrinsicInst>(&*It);
       ++It;
-      if (!II || !II->isLifetimeStartOrEnd())
+      if (!II || !II->isLifetimeStartOrEnd()) {
         continue;
+
+}
 
       // Get the memory operand of the lifetime marker. If the underlying
       // object is a sunk alloca, or is otherwise defined in the extraction
       // region, the lifetime marker must not be erased.
       Value *Mem = II->getOperand(1)->stripInBoundsOffsets();
-      if (SunkAllocas.count(Mem) || definedInRegion(Blocks, Mem))
+      if (SunkAllocas.count(Mem) || definedInRegion(Blocks, Mem)) {
         continue;
 
-      if (II->getIntrinsicID() == Intrinsic::lifetime_start)
+}
+
+      if (II->getIntrinsicID() == Intrinsic::lifetime_start) {
         LifetimesStart.insert(Mem);
+
+}
       II->eraseFromParent();
     }
   }
@@ -1031,18 +1219,22 @@ static void insertLifetimeMarkersSurroundingCall(
              "Input memory not defined in original function");
       Value *&MemAsI8Ptr = Bitcasts[Mem];
       if (!MemAsI8Ptr) {
-        if (Mem->getType() == Int8PtrTy)
+        if (Mem->getType() == Int8PtrTy) {
           MemAsI8Ptr = Mem;
-        else
+        } else {
           MemAsI8Ptr =
               CastInst::CreatePointerCast(Mem, Int8PtrTy, "lt.cast", TheCall);
+
+}
       }
 
       auto Marker = CallInst::Create(MarkerFunc, {NegativeOne, MemAsI8Ptr});
-      if (InsertBefore)
+      if (InsertBefore) {
         Marker->insertBefore(TheCall);
-      else
+      } else {
         Marker->insertBefore(Term);
+
+}
     }
   };
 
@@ -1079,12 +1271,14 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
   unsigned ArgNo = 0;
   SmallVector<unsigned, 1> SwiftErrorArgs;
   for (Value *input : inputs) {
-    if (AggregateArgs)
+    if (AggregateArgs) {
       StructValues.push_back(input);
-    else {
+    } else {
       params.push_back(input);
-      if (input->isSwiftError())
+      if (input->isSwiftError()) {
         SwiftErrorArgs.push_back(ArgNo);
+
+}
     }
     ++ArgNo;
   }
@@ -1108,8 +1302,10 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
   if (AggregateArgs && (inputs.size() + outputs.size() > 0)) {
     std::vector<Type *> ArgTypes;
     for (ValueSet::iterator v = StructValues.begin(),
-           ve = StructValues.end(); v != ve; ++v)
+           ve = StructValues.end(); v != ve; ++v) {
       ArgTypes.push_back((*v)->getType());
+
+}
 
     // Allocate a struct at the beginning of this function
     StructArgTy = StructType::get(newFunction->getContext(), ArgTypes);
@@ -1138,8 +1334,10 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
   // function contains the first debug location of the extracted function,
   // set in extractCodeRegion.
   if (codeReplacer->getParent()->getSubprogram()) {
-    if (auto DL = newFunction->getEntryBlock().getTerminator()->getDebugLoc())
+    if (auto DL = newFunction->getEntryBlock().getTerminator()->getDebugLoc()) {
       call->setDebugLoc(DL);
+
+}
   }
   codeReplacer->getInstList().push_back(call);
 
@@ -1151,8 +1349,10 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
 
   Function::arg_iterator OutputArgBegin = newFunction->arg_begin();
   unsigned FirstOut = inputs.size();
-  if (!AggregateArgs)
+  if (!AggregateArgs) {
     std::advance(OutputArgBegin, inputs.size());
+
+}
 
   // Reload the outputs passed in by reference.
   for (unsigned i = 0, e = outputs.size(); i != e; ++i) {
@@ -1175,8 +1375,10 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
     std::vector<User *> Users(outputs[i]->user_begin(), outputs[i]->user_end());
     for (unsigned u = 0, e = Users.size(); u != e; ++u) {
       Instruction *inst = cast<Instruction>(Users[u]);
-      if (!Blocks.count(inst->getParent()))
+      if (!Blocks.count(inst->getParent())) {
         inst->replaceUsesOfWith(outputs[i], load);
+
+}
     }
   }
 
@@ -1195,7 +1397,7 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
   unsigned switchVal = 0;
   for (BasicBlock *Block : Blocks) {
     Instruction *TI = Block->getTerminator();
-    for (unsigned i = 0, e = TI->getNumSuccessors(); i != e; ++i)
+    for (unsigned i = 0, e = TI->getNumSuccessors(); i != e; ++i) {
       if (!Blocks.count(TI->getSuccessor(i))) {
         BasicBlock *OldTarget = TI->getSuccessor(i);
         // add a new basic block which returns the appropriate value
@@ -1231,6 +1433,8 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
         // rewrite the original branch instruction with this new target
         TI->setSuccessor(i, NewTarget);
       }
+
+}
   }
 
   // Store the arguments right after the definition of output value.
@@ -1239,19 +1443,23 @@ CallInst *CodeExtractor::emitCallAndSwitchStatement(Function *newFunction,
   Function::arg_iterator OAI = OutputArgBegin;
   for (unsigned i = 0, e = outputs.size(); i != e; ++i) {
     auto *OutI = dyn_cast<Instruction>(outputs[i]);
-    if (!OutI)
+    if (!OutI) {
       continue;
+
+}
 
     // Find proper insertion point.
     BasicBlock::iterator InsertPt;
     // In case OutI is an invoke, we insert the store at the beginning in the
     // 'normal destination' BB. Otherwise we insert the store right after OutI.
-    if (auto *InvokeI = dyn_cast<InvokeInst>(OutI))
+    if (auto *InvokeI = dyn_cast<InvokeInst>(OutI)) {
       InsertPt = InvokeI->getNormalDest()->getFirstInsertionPt();
-    else if (auto *Phi = dyn_cast<PHINode>(OutI))
+    } else if (auto *Phi = dyn_cast<PHINode>(OutI)) {
       InsertPt = Phi->getParent()->getFirstInsertionPt();
-    else
+    } else {
       InsertPt = std::next(OutI->getIterator());
+
+}
 
     Instruction *InsertBefore = &*InsertPt;
     assert((InsertBefore->getFunction() == newFunction ||
@@ -1360,15 +1568,19 @@ void CodeExtractor::calculateNewCallTerminatorWeights(
   for (unsigned i = 0, e = TI->getNumSuccessors(); i < e; ++i) {
     BlockNode ExitNode(i);
     uint64_t ExitFreq = ExitWeights[TI->getSuccessor(i)].getFrequency();
-    if (ExitFreq != 0)
+    if (ExitFreq != 0) {
       BranchDist.addExit(ExitNode, ExitFreq);
-    else
+    } else {
       BPI->setEdgeProbability(CodeReplacer, i, BranchProbability::getZero());
+
+}
   }
 
   // Check for no total weight.
-  if (BranchDist.Total == 0)
+  if (BranchDist.Total == 0) {
     return;
+
+}
 
   // Normalize the distribution so that they can fit in unsigned.
   BranchDist.normalize();
@@ -1393,9 +1605,13 @@ static void eraseDebugIntrinsicsWithNonLocalRefs(Function &F) {
   for (Instruction &I : instructions(F)) {
     SmallVector<DbgVariableIntrinsic *, 4> DbgUsers;
     findDbgUsers(DbgUsers, &I);
-    for (DbgVariableIntrinsic *DVI : DbgUsers)
-      if (DVI->getFunction() != &F)
+    for (DbgVariableIntrinsic *DVI : DbgUsers) {
+      if (DVI->getFunction() != &F) {
         DVI->eraseFromParent();
+
+}
+
+}
   }
 }
 
@@ -1440,16 +1656,20 @@ static void fixupDebugInfoPostExtraction(Function &OldFunc, Function &NewFunc,
   SmallVector<Instruction *, 4> DebugIntrinsicsToDelete;
   for (Instruction &I : instructions(NewFunc)) {
     auto *DII = dyn_cast<DbgInfoIntrinsic>(&I);
-    if (!DII)
+    if (!DII) {
       continue;
+
+}
 
     // Point the intrinsic to a fresh label within the new function.
     if (auto *DLI = dyn_cast<DbgLabelInst>(&I)) {
       DILabel *OldLabel = DLI->getLabel();
       DINode *&NewLabel = RemappedMetadata[OldLabel];
-      if (!NewLabel)
+      if (!NewLabel) {
         NewLabel = DILabel::get(Ctx, NewSP, OldLabel->getName(),
                                 OldLabel->getFile(), OldLabel->getLine());
+
+}
       DLI->setArgOperand(0, MetadataAsValue::get(Ctx, NewLabel));
       continue;
     }
@@ -1475,22 +1695,28 @@ static void fixupDebugInfoPostExtraction(Function &OldFunc, Function &NewFunc,
     // Point the intrinsic to a fresh variable within the new function.
     DILocalVariable *OldVar = DVI->getVariable();
     DINode *&NewVar = RemappedMetadata[OldVar];
-    if (!NewVar)
+    if (!NewVar) {
       NewVar = DIB.createAutoVariable(
           NewSP, OldVar->getName(), OldVar->getFile(), OldVar->getLine(),
           OldVar->getType(), /*AlwaysPreserve=*/false, DINode::FlagZero,
           OldVar->getAlignInBits());
+
+}
     DVI->setArgOperand(1, MetadataAsValue::get(Ctx, NewVar));
   }
-  for (auto *DII : DebugIntrinsicsToDelete)
+  for (auto *DII : DebugIntrinsicsToDelete) {
     DII->eraseFromParent();
+
+}
   DIB.finalizeSubprogram(NewSP);
 
   // Fix up the scope information attached to the line locations in the new
   // function.
   for (Instruction &I : instructions(NewFunc)) {
-    if (const DebugLoc &DL = I.getDebugLoc())
+    if (const DebugLoc &DL = I.getDebugLoc()) {
       I.setDebugLoc(DebugLoc::get(DL.getLine(), DL.getCol(), NewSP));
+
+}
 
     // Loop info metadata may contain line locations. Fix them up.
     auto updateLoopInfoLoc = [&Ctx,
@@ -1500,16 +1726,20 @@ static void fixupDebugInfoPostExtraction(Function &OldFunc, Function &NewFunc,
     };
     updateLoopMetadataDebugLocations(I, updateLoopInfoLoc);
   }
-  if (!TheCall.getDebugLoc())
+  if (!TheCall.getDebugLoc()) {
     TheCall.setDebugLoc(DebugLoc::get(0, 0, OldSP));
+
+}
 
   eraseDebugIntrinsicsWithNonLocalRefs(NewFunc);
 }
 
 Function *
 CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
-  if (!isEligible())
+  if (!isEligible()) {
     return nullptr;
+
+}
 
   // Assumption: this is a single-entry code region, and the header is the first
   // block in the region.
@@ -1522,8 +1752,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
   if (BFI) {
     assert(BPI && "Both BPI and BFI are required to preserve profile info");
     for (BasicBlock *Pred : predecessors(header)) {
-      if (Blocks.count(Pred))
+      if (Blocks.count(Pred)) {
         continue;
+
+}
       EntryFreq +=
           BFI->getBlockFreq(Pred) * BPI->getEdgeProbability(Pred, header);
     }
@@ -1537,8 +1769,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
       ++It;
 
       if (match(I, m_Intrinsic<Intrinsic::assume>())) {
-        if (AC)
+        if (AC) {
           AC->unregisterAssumption(cast<CallInst>(I));
+
+}
         I->eraseFromParent();
       }
     }
@@ -1588,8 +1822,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
   if (oldFunction->getSubprogram()) {
     any_of(Blocks, [&BranchI](const BasicBlock *BB) {
       return any_of(*BB, [&BranchI](const Instruction &I) {
-        if (!I.getDebugLoc())
+        if (!I.getDebugLoc()) {
           return false;
+
+}
         BranchI->setDebugLoc(I.getDebugLoc());
         return true;
       });
@@ -1612,8 +1848,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
   for (auto *II : SinkingCands) {
     if (auto *AI = dyn_cast<AllocaInst>(II)) {
       AI->moveBefore(*newFuncRoot, newFuncRoot->getFirstInsertionPt());
-      if (!FirstSunkAlloca)
+      if (!FirstSunkAlloca) {
         FirstSunkAlloca = AI;
+
+}
     }
   }
   assert((SinkingCands.empty() || FirstSunkAlloca) &&
@@ -1627,8 +1865,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
   if (!HoistingCands.empty()) {
     auto *HoistToBlock = findOrCreateBlockForHoisting(CommonExit);
     Instruction *TI = HoistToBlock->getTerminator();
-    for (auto *II : HoistingCands)
+    for (auto *II : HoistingCands) {
       cast<Instruction>(II)->moveBefore(TI);
+
+}
   }
 
   // Collect objects which are inputs to the extraction region and also
@@ -1646,9 +1886,11 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
   // Update the entry count of the function.
   if (BFI) {
     auto Count = BFI->getProfileCountFromFreq(EntryFreq.getFrequency());
-    if (Count.hasValue())
+    if (Count.hasValue()) {
       newFunction->setEntryCount(
           ProfileCount(Count.getValue(), Function::PCT_Real)); // FIXME
+
+}
     BFI->setBlockFreq(codeReplacer, EntryFreq.getFrequency());
   }
 
@@ -1663,39 +1905,53 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
       oldFunction->getParent(), LifetimesStart.getArrayRef(), {}, TheCall);
 
   // Propagate personality info to the new function if there is one.
-  if (oldFunction->hasPersonalityFn())
+  if (oldFunction->hasPersonalityFn()) {
     newFunction->setPersonalityFn(oldFunction->getPersonalityFn());
 
+}
+
   // Update the branch weights for the exit block.
-  if (BFI && NumExitBlocks > 1)
+  if (BFI && NumExitBlocks > 1) {
     calculateNewCallTerminatorWeights(codeReplacer, ExitWeights, BPI);
+
+}
 
   // Loop over all of the PHI nodes in the header and exit blocks, and change
   // any references to the old incoming edge to be the new incoming edge.
   for (BasicBlock::iterator I = header->begin(); isa<PHINode>(I); ++I) {
     PHINode *PN = cast<PHINode>(I);
-    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
-      if (!Blocks.count(PN->getIncomingBlock(i)))
+    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
+      if (!Blocks.count(PN->getIncomingBlock(i))) {
         PN->setIncomingBlock(i, newFuncRoot);
+
+}
+
+}
   }
 
-  for (BasicBlock *ExitBB : ExitBlocks)
+  for (BasicBlock *ExitBB : ExitBlocks) {
     for (PHINode &PN : ExitBB->phis()) {
       Value *IncomingCodeReplacerVal = nullptr;
       for (unsigned i = 0, e = PN.getNumIncomingValues(); i != e; ++i) {
         // Ignore incoming values from outside of the extracted region.
-        if (!Blocks.count(PN.getIncomingBlock(i)))
+        if (!Blocks.count(PN.getIncomingBlock(i))) {
           continue;
+
+}
 
         // Ensure that there is only one incoming value from codeReplacer.
         if (!IncomingCodeReplacerVal) {
           PN.setIncomingBlock(i, codeReplacer);
           IncomingCodeReplacerVal = PN.getIncomingValue(i);
-        } else
+        } else {
           assert(IncomingCodeReplacerVal == PN.getIncomingValue(i) &&
                  "PHI has two incompatbile incoming values from codeRepl");
+
+}
       }
     }
+
+}
 
   fixupDebugInfoPostExtraction(*oldFunction, *newFunction, *TheCall);
 
@@ -1706,8 +1962,10 @@ CodeExtractor::extractCodeRegion(const CodeExtractorAnalysisCache &CEAC) {
     const Instruction *Term = BB.getTerminator();
     return isa<ReturnInst>(Term) || isa<ResumeInst>(Term);
   });
-  if (doesNotReturn)
+  if (doesNotReturn) {
     newFunction->setDoesNotReturn();
+
+}
 
   LLVM_DEBUG(if (verifyFunction(*newFunction, &errs())) {
     newFunction->dump();
@@ -1725,25 +1983,35 @@ bool CodeExtractor::verifyAssumptionCache(const Function &OldFunc,
                                           AssumptionCache *AC) {
   for (auto AssumeVH : AC->assumptions()) {
     CallInst *I = dyn_cast_or_null<CallInst>(AssumeVH);
-    if (!I)
+    if (!I) {
       continue;
 
+}
+
     // There shouldn't be any llvm.assume intrinsics in the new function.
-    if (I->getFunction() != &OldFunc)
+    if (I->getFunction() != &OldFunc) {
       return true;
+
+}
 
     // There shouldn't be any stale affected values in the assumption cache
     // that were previously in the old function, but that have now been moved
     // to the new function.
     for (auto AffectedValVH : AC->assumptionsFor(I->getOperand(0))) {
       CallInst *AffectedCI = dyn_cast_or_null<CallInst>(AffectedValVH);
-      if (!AffectedCI)
+      if (!AffectedCI) {
         continue;
-      if (AffectedCI->getFunction() != &OldFunc)
+
+}
+      if (AffectedCI->getFunction() != &OldFunc) {
         return true;
+
+}
       auto *AssumedInst = dyn_cast<Instruction>(AffectedCI->getOperand(0));
-      if (AssumedInst->getFunction() != &OldFunc)
+      if (AssumedInst->getFunction() != &OldFunc) {
         return true;
+
+}
     }
   }
   return false;

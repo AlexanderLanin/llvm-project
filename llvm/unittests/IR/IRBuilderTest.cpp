@@ -143,8 +143,10 @@ TEST_F(IRBuilderTest, IntrinsicsWithScalableVectors) {
                                  ArgTys, nullptr, "aarch64.sve.fcvtzs.i32f16");
   FTy = Call->getFunctionType();
   EXPECT_EQ(FTy->getReturnType(), DstVecTy);
-  for (unsigned i = 0; i != ArgTys.size(); ++i)
+  for (unsigned i = 0; i != ArgTys.size(); ++i) {
     EXPECT_EQ(FTy->getParamType(i), ArgTys[i]->getType());
+
+}
 
   // Test scalable flag isn't dropped for intrinsic defined with
   // LLVMScalarOrSameVectorWidth.
@@ -164,8 +166,10 @@ TEST_F(IRBuilderTest, IntrinsicsWithScalableVectors) {
                                  nullptr, "masked.load");
   FTy = Call->getFunctionType();
   EXPECT_EQ(FTy->getReturnType(), VecTy);
-  for (unsigned i = 0; i != ArgTys.size(); ++i)
+  for (unsigned i = 0; i != ArgTys.size(); ++i) {
     EXPECT_EQ(FTy->getParamType(i), ArgTys[i]->getType());
+
+}
 }
 
 TEST_F(IRBuilderTest, ConstrainedFP) {

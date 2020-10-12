@@ -123,10 +123,12 @@ MODIFIERS:
 )";
 
 void printHelpMessage() {
-  if (Stem.contains_lower("ranlib"))
+  if (Stem.contains_lower("ranlib")) {
     outs() << RanlibHelp;
-  else if (Stem.contains_lower("ar"))
+  } else if (Stem.contains_lower("ar")) {
     outs() << ArHelp;
+
+}
 }
 
 static unsigned MRILineNumber;
@@ -151,23 +153,31 @@ LLVM_ATTRIBUTE_NORETURN static void fail(Twine Error) {
 }
 
 static void failIfError(std::error_code EC, Twine Context = "") {
-  if (!EC)
+  if (!EC) {
     return;
 
+}
+
   std::string ContextStr = Context.str();
-  if (ContextStr.empty())
+  if (ContextStr.empty()) {
     fail(EC.message());
+
+}
   fail(Context + ": " + EC.message());
 }
 
 static void failIfError(Error E, Twine Context = "") {
-  if (!E)
+  if (!E) {
     return;
+
+}
 
   handleAllErrors(std::move(E), [&](const llvm::ErrorInfoBase &EIB) {
     std::string ContextStr = Context.str();
-    if (ContextStr.empty())
+    if (ContextStr.empty()) {
       fail(EIB.message());
+
+}
     fail(Context + ": " + EIB.message());
   });
 }
@@ -239,8 +249,10 @@ static BumpPtrAllocator Alloc;
 // Extract the member filename from the command line for the [relpos] argument
 // associated with a, b, and i modifiers
 static void getRelPos() {
-  if (PositionalArgs.empty())
+  if (PositionalArgs.empty()) {
     fail("expected [relpos] for 'a', 'b', or 'i' modifier");
+
+}
   RelPos = PositionalArgs[0];
   PositionalArgs.erase(PositionalArgs.begin());
 }
@@ -248,20 +260,28 @@ static void getRelPos() {
 // Extract the parameter from the command line for the [count] argument
 // associated with the N modifier
 static void getCountParam() {
-  if (PositionalArgs.empty())
+  if (PositionalArgs.empty()) {
     badUsage("expected [count] for 'N' modifier");
+
+}
   auto CountParamArg = StringRef(PositionalArgs[0]);
-  if (CountParamArg.getAsInteger(10, CountParam))
+  if (CountParamArg.getAsInteger(10, CountParam)) {
     badUsage("value for [count] must be numeric, got: " + CountParamArg);
-  if (CountParam < 1)
+
+}
+  if (CountParam < 1) {
     badUsage("value for [count] must be positive, got: " + CountParamArg);
+
+}
   PositionalArgs.erase(PositionalArgs.begin());
 }
 
 // Get the archive file name from the command line
 static void getArchive() {
-  if (PositionalArgs.empty())
+  if (PositionalArgs.empty()) {
     badUsage("an archive name must be specified");
+
+}
   ArchiveName = PositionalArgs[0];
   PositionalArgs.erase(PositionalArgs.begin());
 }
@@ -285,8 +305,10 @@ static void runMRIScript();
 // modifier/operation pairs have not been violated.
 static ArchiveOperation parseCommandLine() {
   if (MRI) {
-    if (!PositionalArgs.empty() || !Options.empty())
+    if (!PositionalArgs.empty() || !Options.empty()) {
       badUsage("cannot mix -M and other options");
+
+}
     runMRIScript();
   }
 
@@ -413,32 +435,54 @@ static ArchiveOperation parseCommandLine() {
   if (NumOperations == 0 && MaybeJustCreateSymTab) {
     NumOperations = 1;
     Operation = CreateSymTab;
-    if (!Members.empty())
+    if (!Members.empty()) {
       badUsage("the 's' operation takes only an archive as argument");
+
+}
   }
 
   // Perform various checks on the operation/modifier specification
   // to make sure we are dealing with a legal request.
-  if (NumOperations == 0)
+  if (NumOperations == 0) {
     badUsage("you must specify at least one of the operations");
-  if (NumOperations > 1)
+
+}
+  if (NumOperations > 1) {
     badUsage("only one operation may be specified");
-  if (NumPositional > 1)
+
+}
+  if (NumPositional > 1) {
     badUsage("you may only specify one of 'a', 'b', and 'i' modifiers");
-  if (AddAfter || AddBefore)
-    if (Operation != Move && Operation != ReplaceOrInsert)
+
+}
+  if (AddAfter || AddBefore) {
+    if (Operation != Move && Operation != ReplaceOrInsert) {
       badUsage("the 'a', 'b' and 'i' modifiers can only be specified with "
                "the 'm' or 'r' operations");
-  if (CountParam)
-    if (Operation != Extract && Operation != Delete)
+
+}
+
+}
+  if (CountParam) {
+    if (Operation != Extract && Operation != Delete) {
       badUsage("the 'N' modifier can only be specified with the 'x' or 'd' "
                "operations");
-  if (OriginalDates && Operation != Extract)
+
+}
+
+}
+  if (OriginalDates && Operation != Extract) {
     badUsage("the 'o' modifier is only applicable to the 'x' operation");
-  if (OnlyUpdate && Operation != ReplaceOrInsert)
+
+}
+  if (OnlyUpdate && Operation != ReplaceOrInsert) {
     badUsage("the 'u' modifier is only applicable to the 'r' operation");
-  if (AddLibrary && Operation != QuickAppend)
+
+}
+  if (AddLibrary && Operation != QuickAppend) {
     badUsage("the 'L' modifier is only applicable to the 'q' operation");
+
+}
 
   // Return the parsed operation to the caller
   return Operation;
@@ -447,8 +491,10 @@ static ArchiveOperation parseCommandLine() {
 // Implements the 'p' operation. This function traverses the archive
 // looking for members that match the path list.
 static void doPrint(StringRef Name, const object::Archive::Child &C) {
-  if (Verbose)
+  if (Verbose) {
     outs() << "Printing " << Name << "\n";
+
+}
 
   Expected<StringRef> DataOrErr = C.getBuffer();
   failIfError(DataOrErr.takeError());
@@ -498,14 +544,18 @@ static void doDisplayTable(StringRef Name, const object::Archive::Child &C) {
   if (C.getParent()->isThin()) {
     if (!sys::path::is_absolute(Name)) {
       StringRef ParentDir = sys::path::parent_path(ArchiveName);
-      if (!ParentDir.empty())
+      if (!ParentDir.empty()) {
         outs() << sys::path::convert_to_slash(ParentDir) << '/';
+
+}
     }
     outs() << Name;
   } else {
     outs() << Name;
-    if (DisplayMemberOffsets)
+    if (DisplayMemberOffsets) {
       outs() << " 0x" << utohexstr(C.getDataOffset(), true);
+
+}
   }
   outs() << '\n';
 }
@@ -541,8 +591,10 @@ static void doExtract(StringRef Name, const object::Archive::Child &C) {
   sys::fs::perms Mode = ModeOrErr.get();
 
   llvm::StringRef outputFilePath = sys::path::filename(Name);
-  if (Verbose)
+  if (Verbose) {
     outs() << "x - " << outputFilePath << '\n';
+
+}
 
   int FD;
   failIfError(sys::fs::openFileForWrite(outputFilePath, FD,
@@ -571,8 +623,10 @@ static void doExtract(StringRef Name, const object::Archive::Child &C) {
         sys::fs::setLastAccessAndModificationTime(FD, ModTimeOrErr.get()));
   }
 
-  if (close(FD))
+  if (close(FD)) {
     fail("Could not close the file");
+
+}
 }
 
 static bool shouldCreateArchive(ArchiveOperation Op) {
@@ -595,8 +649,10 @@ static bool shouldCreateArchive(ArchiveOperation Op) {
 
 static void performReadOperation(ArchiveOperation Operation,
                                  object::Archive *OldArchive) {
-  if (Operation == Extract && OldArchive->isThin())
+  if (Operation == Extract && OldArchive->isThin()) {
     fail("extracting from a thin archive is not supported");
+
+}
 
   bool Filter = !Members.empty();
   StringMap<int> MemberCount;
@@ -611,10 +667,14 @@ static void performReadOperation(ArchiveOperation Operation,
         auto I = find_if(Members, [Name](StringRef Path) {
           return comparePaths(Name, Path);
         });
-        if (I == Members.end())
+        if (I == Members.end()) {
           continue;
-        if (CountParam && ++MemberCount[Name] != CountParam)
+
+}
+        if (CountParam && ++MemberCount[Name] != CountParam) {
           continue;
+
+}
         Members.erase(I);
       }
 
@@ -635,18 +695,24 @@ static void performReadOperation(ArchiveOperation Operation,
     failIfError(std::move(Err));
   }
 
-  if (Members.empty())
+  if (Members.empty()) {
     return;
-  for (StringRef Name : Members)
+
+}
+  for (StringRef Name : Members) {
     WithColor::error(errs(), ToolName) << "'" << Name << "' was not found\n";
+
+}
   exit(1);
 }
 
 static void addChildMember(std::vector<NewArchiveMember> &Members,
                            const object::Archive::Child &M,
                            bool FlattenArchive = false) {
-  if (Thin && !M.getParent()->isThin())
+  if (Thin && !M.getParent()->isThin()) {
     fail("cannot convert a regular archive to a thin one");
+
+}
   Expected<NewArchiveMember> NMOrErr =
       NewArchiveMember::getOldMember(M, Deterministic);
   failIfError(NMOrErr.takeError());
@@ -676,8 +742,10 @@ static void addChildMember(std::vector<NewArchiveMember> &Members,
     if (!Thin || Lib.isThin()) {
       Error Err = Error::success();
       // Only Thin archives are recursively flattened.
-      for (auto &Child : Lib.children(Err))
+      for (auto &Child : Lib.children(Err)) {
         addChildMember(Members, Child, /*FlattenArchive=*/Thin);
+
+}
       failIfError(std::move(Err));
       return;
     }
@@ -697,9 +765,9 @@ static void addMember(std::vector<NewArchiveMember> &Members,
   if (!Thin) {
     NMOrErr->MemberName = sys::path::filename(NMOrErr->MemberName);
   } else {
-    if (sys::path::is_absolute(FileName))
+    if (sys::path::is_absolute(FileName)) {
       NMOrErr->MemberName = Saver.save(sys::path::convert_to_slash(FileName));
-    else {
+    } else {
       Expected<std::string> PathOrErr =
           computeArchiveRelativePath(ArchiveName, FileName);
       NMOrErr->MemberName = Saver.save(
@@ -714,8 +782,10 @@ static void addMember(std::vector<NewArchiveMember> &Members,
     if (!Thin || Lib.isThin()) {
       Error Err = Error::success();
       // Only Thin archives are recursively flattened.
-      for (auto &Child : Lib.children(Err))
+      for (auto &Child : Lib.children(Err)) {
         addChildMember(Members, Child, /*FlattenArchive=*/Thin);
+
+}
       failIfError(std::move(Err));
       return;
     }
@@ -736,29 +806,39 @@ static InsertAction computeInsertAction(ArchiveOperation Operation,
                                         StringRef Name,
                                         std::vector<StringRef>::iterator &Pos,
                                         StringMap<int> &MemberCount) {
-  if (Operation == QuickAppend || Members.empty())
+  if (Operation == QuickAppend || Members.empty()) {
     return IA_AddOldMember;
+
+}
   auto MI = find_if(
       Members, [Name](StringRef Path) { return comparePaths(Name, Path); });
 
-  if (MI == Members.end())
+  if (MI == Members.end()) {
     return IA_AddOldMember;
+
+}
 
   Pos = MI;
 
   if (Operation == Delete) {
-    if (CountParam && ++MemberCount[Name] != CountParam)
+    if (CountParam && ++MemberCount[Name] != CountParam) {
       return IA_AddOldMember;
+
+}
     return IA_Delete;
   }
 
-  if (Operation == Move)
+  if (Operation == Move) {
     return IA_MoveOldMember;
+
+}
 
   if (Operation == ReplaceOrInsert) {
     if (!OnlyUpdate) {
-      if (RelPos.empty())
+      if (RelPos.empty()) {
         return IA_AddNewMember;
+
+}
       return IA_MoveNewMember;
     }
 
@@ -769,13 +849,17 @@ static InsertAction computeInsertAction(ArchiveOperation Operation,
     auto ModTimeOrErr = Member.getLastModified();
     failIfError(ModTimeOrErr.takeError());
     if (Status.getLastModificationTime() < ModTimeOrErr.get()) {
-      if (RelPos.empty())
+      if (RelPos.empty()) {
         return IA_AddOldMember;
+
+}
       return IA_MoveOldMember;
     }
 
-    if (RelPos.empty())
+    if (RelPos.empty()) {
       return IA_AddNewMember;
+
+}
     return IA_MoveNewMember;
   }
   llvm_unreachable("No such operation");
@@ -799,10 +883,12 @@ computeNewArchiveMembers(ArchiveOperation Operation,
       std::string Name = std::string(NameOrErr.get());
       if (comparePaths(Name, RelPos)) {
         assert(AddAfter || AddBefore);
-        if (AddBefore)
+        if (AddBefore) {
           InsertPos = Pos;
-        else
+        } else {
           InsertPos = Pos + 1;
+
+}
       }
 
       std::vector<StringRef>::iterator MemberI = Members.end();
@@ -829,20 +915,28 @@ computeNewArchiveMembers(ArchiveOperation Operation,
       // instance, "llvm-ar dN 2 archive.a member.o" should delete the second
       // file named member.o it sees; we are not done with member.o the first
       // time we see it in the archive.
-      if (MemberI != Members.end() && !CountParam)
+      if (MemberI != Members.end() && !CountParam) {
         Members.erase(MemberI);
+
+}
     }
     failIfError(std::move(Err));
   }
 
-  if (Operation == Delete)
+  if (Operation == Delete) {
     return Ret;
 
-  if (!RelPos.empty() && InsertPos == -1)
+}
+
+  if (!RelPos.empty() && InsertPos == -1) {
     fail("insertion point not found");
 
-  if (RelPos.empty())
+}
+
+  if (RelPos.empty()) {
     InsertPos = Ret.size();
+
+}
 
   assert(unsigned(InsertPos) <= Ret.size());
   int Pos = InsertPos;
@@ -853,14 +947,18 @@ computeNewArchiveMembers(ArchiveOperation Operation,
 
   if (AddLibrary) {
     assert(Operation == QuickAppend);
-    for (auto &Member : Members)
+    for (auto &Member : Members) {
       addMember(Ret, Member, /*FlattenArchive=*/true);
+
+}
     return Ret;
   }
 
   std::vector<NewArchiveMember> NewMembers;
-  for (auto &Member : Members)
+  for (auto &Member : Members) {
     addMember(NewMembers, Member, /*FlattenArchive=*/Thin);
+
+}
   Ret.reserve(Ret.size() + NewMembers.size());
   std::move(NewMembers.begin(), NewMembers.end(),
             std::inserter(Ret, std::next(Ret.begin(), InsertPos)));
@@ -878,10 +976,12 @@ static object::Archive::Kind getKindFromMember(const NewArchiveMember &Member) {
   Expected<std::unique_ptr<object::ObjectFile>> OptionalObject =
       object::ObjectFile::createObjectFile(Member.Buf->getMemBufferRef());
 
-  if (OptionalObject)
+  if (OptionalObject) {
     return isa<object::MachOObjectFile>(**OptionalObject)
                ? object::Archive::K_DARWIN
                : object::Archive::K_GNU;
+
+}
 
   // squelch the error in case we had a non-object file
   consumeError(OptionalObject.takeError());
@@ -893,34 +993,42 @@ static void performWriteOperation(ArchiveOperation Operation,
                                   std::unique_ptr<MemoryBuffer> OldArchiveBuf,
                                   std::vector<NewArchiveMember> *NewMembersP) {
   std::vector<NewArchiveMember> NewMembers;
-  if (!NewMembersP)
+  if (!NewMembersP) {
     NewMembers = computeNewArchiveMembers(Operation, OldArchive);
+
+}
 
   object::Archive::Kind Kind;
   switch (FormatType) {
   case Default:
-    if (Thin)
+    if (Thin) {
       Kind = object::Archive::K_GNU;
-    else if (OldArchive)
+    } else if (OldArchive) {
       Kind = OldArchive->kind();
-    else if (NewMembersP)
+    } else if (NewMembersP) {
       Kind = !NewMembersP->empty() ? getKindFromMember(NewMembersP->front())
                                    : getDefaultForHost();
-    else
+    } else {
       Kind = !NewMembers.empty() ? getKindFromMember(NewMembers.front())
                                  : getDefaultForHost();
+
+}
     break;
   case GNU:
     Kind = object::Archive::K_GNU;
     break;
   case BSD:
-    if (Thin)
+    if (Thin) {
       fail("only the gnu format has a thin mode");
+
+}
     Kind = object::Archive::K_BSD;
     break;
   case DARWIN:
-    if (Thin)
+    if (Thin) {
       fail("only the gnu format has a thin mode");
+
+}
     Kind = object::Archive::K_DARWIN;
     break;
   case Unknown:
@@ -940,8 +1048,10 @@ static void createSymbolTable(object::Archive *OldArchive) {
   // In summary, we only need to update the symbol table if we have none.
   // This is actually very common because of broken build systems that think
   // they have to run ranlib.
-  if (OldArchive->hasSymbolTable())
+  if (OldArchive->hasSymbolTable()) {
     return;
+
+}
 
   performWriteOperation(CreateSymTab, OldArchive, nullptr, nullptr);
 }
@@ -977,15 +1087,19 @@ static int performOperation(ArchiveOperation Operation,
   ErrorOr<std::unique_ptr<MemoryBuffer>> Buf =
       MemoryBuffer::getFile(ArchiveName, -1, false);
   std::error_code EC = Buf.getError();
-  if (EC && EC != errc::no_such_file_or_directory)
+  if (EC && EC != errc::no_such_file_or_directory) {
     fail("error opening '" + ArchiveName + "': " + EC.message());
+
+}
 
   if (!EC) {
     Error Err = Error::success();
     object::Archive Archive(Buf.get()->getMemBufferRef(), Err);
     failIfError(std::move(Err), "unable to load '" + ArchiveName + "'");
-    if (Archive.isThin())
+    if (Archive.isThin()) {
       CompareFullPath = true;
+
+}
     performOperation(Operation, &Archive, std::move(Buf.get()), NewMembers);
     return 0;
   }
@@ -1022,13 +1136,17 @@ static void runMRIScript() {
     Line = Line.split(';').first;
     Line = Line.split('*').first;
     Line = Line.trim();
-    if (Line.empty())
+    if (Line.empty()) {
       continue;
+
+}
     StringRef CommandStr, Rest;
     std::tie(CommandStr, Rest) = Line.split(' ');
     Rest = Rest.trim();
-    if (!Rest.empty() && Rest.front() == '"' && Rest.back() == '"')
+    if (!Rest.empty() && Rest.front() == '"' && Rest.back() == '"') {
       Rest = Rest.drop_front().drop_back();
+
+}
     auto Command = StringSwitch<MRICommand>(CommandStr.lower())
                        .Case("addlib", MRICommand::AddLib)
                        .Case("addmod", MRICommand::AddMod)
@@ -1044,8 +1162,10 @@ static void runMRIScript() {
       object::Archive &Lib = readLibrary(Rest);
       {
         Error Err = Error::success();
-        for (auto &Member : Lib.children(Err))
+        for (auto &Member : Lib.children(Err)) {
           addChildMember(NewMembers, Member, /*FlattenArchive=*/Thin);
+
+}
         failIfError(std::move(Err));
       }
       break;
@@ -1058,10 +1178,14 @@ static void runMRIScript() {
       LLVM_FALLTHROUGH;
     case MRICommand::Create:
       Create = true;
-      if (!ArchiveName.empty())
+      if (!ArchiveName.empty()) {
         fail("editing multiple archives not supported");
-      if (Saved)
+
+}
+      if (Saved) {
         fail("file already saved");
+
+}
       ArchiveName = std::string(Rest);
       break;
     case MRICommand::Delete: {
@@ -1083,8 +1207,10 @@ static void runMRIScript() {
   ParsingMRIScript = false;
   
   // Nothing to do if not saved.
-  if (Saved)
+  if (Saved) {
     performOperation(ReplaceOrInsert, &NewMembers);
+
+}
   exit(0);
 }
 
@@ -1105,20 +1231,26 @@ static const char *matchFlagWithArg(StringRef Expected,
                                     ArrayRef<const char *> Args) {
   StringRef Arg = *ArgIt;
 
-  if (Arg.startswith("--"))
+  if (Arg.startswith("--")) {
     Arg = Arg.substr(2);
-  else if (Arg.startswith("-"))
+  } else if (Arg.startswith("-")) {
     Arg = Arg.substr(1);
+
+}
 
   size_t len = Expected.size();
   if (Arg == Expected) {
-    if (++ArgIt == Args.end())
+    if (++ArgIt == Args.end()) {
       fail(std::string(Expected) + " requires an argument");
+
+}
 
     return *ArgIt;
   }
-  if (Arg.startswith(Expected) && Arg.size() > len && Arg[len] == '=')
+  if (Arg.startswith(Expected) && Arg.size() > len && Arg[len] == '=') {
     return Arg.data() + len + 1;
+
+}
 
   return nullptr;
 }
@@ -1133,12 +1265,14 @@ static cl::TokenizerCallback getRspQuoting(ArrayRef<const char *> ArgsArr) {
        ArgIt != ArgsArr.end(); ++ArgIt) {
     if (const char *Match = matchFlagWithArg("rsp-quoting", ArgIt, ArgsArr)) {
       StringRef MatchRef = Match;
-      if (MatchRef == "posix")
+      if (MatchRef == "posix") {
         Ret = cl::TokenizeGNUCommandLine;
-      else if (MatchRef == "windows")
+      } else if (MatchRef == "windows") {
         Ret = cl::TokenizeWindowsCommandLine;
-      else
+      } else {
         fail(std::string("Invalid response file quoting style ") + Match);
+
+}
     }
   }
 
@@ -1155,20 +1289,26 @@ static int ar_main(int argc, char **argv) {
        ArgIt != Argv.end(); ++ArgIt) {
     const char *Match = nullptr;
 
-    if (handleGenericOption(*ArgIt))
+    if (handleGenericOption(*ArgIt)) {
       return 0;
+
+}
     if (strcmp(*ArgIt, "--") == 0) {
       ++ArgIt;
-      for (; ArgIt != Argv.end(); ++ArgIt)
+      for (; ArgIt != Argv.end(); ++ArgIt) {
         PositionalArgs.push_back(*ArgIt);
+
+}
       break;
     }
 
     if (*ArgIt[0] != '-') {
-      if (Options.empty())
+      if (Options.empty()) {
         Options += *ArgIt;
-      else
+      } else {
         PositionalArgs.push_back(*ArgIt);
+
+}
       continue;
     }
 
@@ -1185,14 +1325,18 @@ static int ar_main(int argc, char **argv) {
                        .Case("darwin", DARWIN)
                        .Case("bsd", BSD)
                        .Default(Unknown);
-      if (FormatType == Unknown)
+      if (FormatType == Unknown) {
         fail(std::string("Invalid format ") + Match);
+
+}
       continue;
     }
 
     if (matchFlagWithArg("plugin", ArgIt, Argv) ||
-        matchFlagWithArg("rsp-quoting", ArgIt, Argv))
+        matchFlagWithArg("rsp-quoting", ArgIt, Argv)) {
       continue;
+
+}
 
     Options += *ArgIt + 1;
   }
@@ -1227,8 +1371,10 @@ static int ranlib_main(int argc, char **argv) {
         arg = arg.drop_front(1);
       }
     } else {
-      if (ArchiveSpecified)
+      if (ArchiveSpecified) {
         fail("exactly one archive should be specified");
+
+}
       ArchiveSpecified = true;
       ArchiveName = arg.str();
     }
@@ -1259,14 +1405,22 @@ int main(int argc, char **argv) {
            (I + Tool.size() == Stem.size() || !isAlnum(Stem[I + Tool.size()]));
   };
 
-  if (Is("dlltool"))
+  if (Is("dlltool")) {
     return dlltoolDriverMain(makeArrayRef(argv, argc));
-  if (Is("ranlib"))
+
+}
+  if (Is("ranlib")) {
     return ranlib_main(argc, argv);
-  if (Is("lib"))
+
+}
+  if (Is("lib")) {
     return libDriverMain(makeArrayRef(argv, argc));
-  if (Is("ar"))
+
+}
+  if (Is("ar")) {
     return ar_main(argc, argv);
+
+}
 
   fail("not ranlib, ar, lib or dlltool");
 }

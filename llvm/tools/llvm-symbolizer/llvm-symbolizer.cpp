@@ -170,8 +170,10 @@ static cl::extrahelp
 
 template<typename T>
 static bool error(Expected<T> &ResOrErr) {
-  if (ResOrErr)
+  if (ResOrErr) {
     return false;
+
+}
   logAllUnhandledErrors(ResOrErr.takeError(), errs(),
                         "LLVMSymbolizer: error reading file: ");
   return true;
@@ -205,8 +207,10 @@ static bool parseCommand(StringRef InputString, Command &Cmd,
       char quote = *pos;
       pos++;
       const char *end = strchr(pos, quote);
-      if (!end)
+      if (!end) {
         return false;
+
+}
       ModuleName = std::string(pos, end - pos);
       pos = end + 1;
     } else {
@@ -248,10 +252,14 @@ static void symbolizeInput(StringRef InputString, LLVMSymbolizer &Symbolizer,
     auto ResOrErr = Symbolizer.symbolizeFrame(
         ModuleName, {Offset, object::SectionedAddress::UndefSection});
     if (!error(ResOrErr)) {
-      for (DILocal Local : *ResOrErr)
+      for (DILocal Local : *ResOrErr) {
         Printer << Local;
-      if (ResOrErr->empty())
+
+}
+      if (ResOrErr->empty()) {
         outs() << "??\n";
+
+}
     }
   } else if (ClPrintInlining) {
     auto ResOrErr = Symbolizer.symbolizeInlinedCode(
@@ -272,8 +280,10 @@ static void symbolizeInput(StringRef InputString, LLVMSymbolizer &Symbolizer,
         ModuleName, {Offset, object::SectionedAddress::UndefSection});
     Printer << (error(ResOrErr) ? DILineInfo() : ResOrErr.get());
   }
-  if (ClOutputStyle == DIPrinter::OutputStyle::LLVM)
+  if (ClOutputStyle == DIPrinter::OutputStyle::LLVM) {
     outs() << "\n";
+
+}
 }
 
 int main(int argc, char **argv) {
@@ -296,8 +306,10 @@ int main(int argc, char **argv) {
       IsAddr2Line ? "LLVM_ADDR2LINE_OPTS" : "LLVM_SYMBOLIZER_OPTS");
 
   // If both --demangle and --no-demangle are specified then pick the last one.
-  if (ClNoDemangle.getPosition() > ClDemangle.getPosition())
+  if (ClNoDemangle.getPosition() > ClDemangle.getPosition()) {
     ClDemangle = !ClNoDemangle;
+
+}
 
   LLVMSymbolizer::Options Opts;
   Opts.PrintFunctions = ClPrintFunctions;
@@ -339,8 +351,10 @@ int main(int argc, char **argv) {
       outs().flush();
     }
   } else {
-    for (StringRef Address : ClInputAddresses)
+    for (StringRef Address : ClInputAddresses) {
       symbolizeInput(Address, Symbolizer, Printer);
+
+}
   }
 
   return 0;

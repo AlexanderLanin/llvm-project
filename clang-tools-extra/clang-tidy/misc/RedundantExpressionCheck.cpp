@@ -58,28 +58,36 @@ static bool areEquivalentNameSpecifier(const NestedNameSpecifier *Left,
 }
 
 static bool areEquivalentExpr(const Expr *Left, const Expr *Right) {
-  if (!Left || !Right)
+  if (!Left || !Right) {
     return !Left && !Right;
+
+}
 
   Left = Left->IgnoreParens();
   Right = Right->IgnoreParens();
 
   // Compare classes.
-  if (Left->getStmtClass() != Right->getStmtClass())
+  if (Left->getStmtClass() != Right->getStmtClass()) {
     return false;
+
+}
 
   // Compare children.
   Expr::const_child_iterator LeftIter = Left->child_begin();
   Expr::const_child_iterator RightIter = Right->child_begin();
   while (LeftIter != Left->child_end() && RightIter != Right->child_end()) {
     if (!areEquivalentExpr(dyn_cast<Expr>(*LeftIter),
-                           dyn_cast<Expr>(*RightIter)))
+                           dyn_cast<Expr>(*RightIter))) {
       return false;
+
+}
     ++LeftIter;
     ++RightIter;
   }
-  if (LeftIter != Left->child_end() || RightIter != Right->child_end())
+  if (LeftIter != Left->child_end() || RightIter != Right->child_end()) {
     return false;
+
+}
 
   // Perform extra checks.
   switch (Left->getStmtClass()) {
@@ -106,8 +114,10 @@ static bool areEquivalentExpr(const Expr *Left, const Expr *Right) {
            cast<CXXOperatorCallExpr>(Right)->getOperator();
   case Stmt::DependentScopeDeclRefExprClass:
     if (cast<DependentScopeDeclRefExpr>(Left)->getDeclName() !=
-        cast<DependentScopeDeclRefExpr>(Right)->getDeclName())
+        cast<DependentScopeDeclRefExpr>(Right)->getDeclName()) {
       return false;
+
+}
     return areEquivalentNameSpecifier(
         cast<DependentScopeDeclRefExpr>(Left)->getQualifier(),
         cast<DependentScopeDeclRefExpr>(Right)->getQualifier());
@@ -126,8 +136,10 @@ static bool areEquivalentExpr(const Expr *Left, const Expr *Right) {
   case Stmt::ArraySubscriptExprClass:
     return true;
   case Stmt::UnaryOperatorClass:
-    if (cast<UnaryOperator>(Left)->isIncrementDecrementOp())
+    if (cast<UnaryOperator>(Left)->isIncrementDecrementOp()) {
       return false;
+
+}
     return cast<UnaryOperator>(Left)->getOpcode() ==
            cast<UnaryOperator>(Right)->getOpcode();
   case Stmt::BinaryOperatorClass:
@@ -138,13 +150,15 @@ static bool areEquivalentExpr(const Expr *Left, const Expr *Right) {
         cast<UnaryExprOrTypeTraitExpr>(Left);
     const auto *RightUnaryExpr =
         cast<UnaryExprOrTypeTraitExpr>(Right);
-    if (LeftUnaryExpr->isArgumentType() && RightUnaryExpr->isArgumentType())
+    if (LeftUnaryExpr->isArgumentType() && RightUnaryExpr->isArgumentType()) {
       return LeftUnaryExpr->getArgumentType() ==
              RightUnaryExpr->getArgumentType();
-    else if (!LeftUnaryExpr->isArgumentType() &&
-             !RightUnaryExpr->isArgumentType())
+    } else if (!LeftUnaryExpr->isArgumentType() &&
+             !RightUnaryExpr->isArgumentType()) {
       return areEquivalentExpr(LeftUnaryExpr->getArgumentExpr(),
                                RightUnaryExpr->getArgumentExpr());
+
+}
 
     return false;
   }
@@ -159,8 +173,10 @@ static bool areEquivalentRanges(BinaryOperatorKind OpcodeLHS,
   assert(APSInt::compareValues(ValueLHS, ValueRHS) <= 0 &&
          "Values must be ordered");
   // Handle the case where constants are the same: x <= 4  <==>  x <= 4.
-  if (APSInt::compareValues(ValueLHS, ValueRHS) == 0)
+  if (APSInt::compareValues(ValueLHS, ValueRHS) == 0) {
     return OpcodeLHS == OpcodeRHS;
+
+}
 
   // Handle the case where constants are off by one: x <= 4  <==>  x < 5.
   APSInt ValueLHS_plus1;
@@ -201,15 +217,19 @@ static bool areExclusiveRanges(BinaryOperatorKind OpcodeLHS,
 
   // Handle cases where the constants are different.
   if ((OpcodeLHS == BO_EQ || OpcodeLHS == BO_LT || OpcodeLHS == BO_LE) &&
-      (OpcodeRHS == BO_EQ || OpcodeRHS == BO_GT || OpcodeRHS == BO_GE))
+      (OpcodeRHS == BO_EQ || OpcodeRHS == BO_GT || OpcodeRHS == BO_GE)) {
     return true;
+
+}
 
   // Handle the case where constants are off by one: x > 5 && x < 6.
   APSInt ValueLHS_plus1;
   if (OpcodeLHS == BO_GT && OpcodeRHS == BO_LT &&
       incrementWithoutOverflow(ValueLHS, ValueLHS_plus1) &&
-      APSInt::compareValues(ValueLHS_plus1, ValueRHS) == 0)
+      APSInt::compareValues(ValueLHS_plus1, ValueRHS) == 0) {
     return true;
+
+}
 
   return false;
 }
@@ -247,18 +267,24 @@ static bool rangesFullyCoverDomain(BinaryOperatorKind OpcodeLHS,
   APSInt ValueLHS_plus1;
   if (OpcodeLHS == BO_LE && OpcodeRHS == BO_GE &&
       incrementWithoutOverflow(ValueLHS, ValueLHS_plus1) &&
-      APSInt::compareValues(ValueLHS_plus1, ValueRHS) == 0)
+      APSInt::compareValues(ValueLHS_plus1, ValueRHS) == 0) {
     return true;
+
+}
 
   // Handle cases where the constants are different: x > 4 || x <= 7.
   if ((OpcodeLHS == BO_GT || OpcodeLHS == BO_GE) &&
-      (OpcodeRHS == BO_LT || OpcodeRHS == BO_LE))
+      (OpcodeRHS == BO_LT || OpcodeRHS == BO_LE)) {
     return true;
+
+}
 
   // Handle cases where constants are different but both ops are !=, like:
   // x != 5 || x != 10
-  if (OpcodeLHS == BO_NE && OpcodeRHS == BO_NE)
+  if (OpcodeLHS == BO_NE && OpcodeRHS == BO_NE) {
     return true;
+
+}
 
   return false;
 }
@@ -312,8 +338,10 @@ static OverloadedOperatorKind getOp(const BinaryOperator *Op) {
 }
 
 static OverloadedOperatorKind getOp(const CXXOperatorCallExpr *Op) {
-  if (Op->getNumArgs() != 2)
+  if (Op->getNumArgs() != 2) {
     return OO_None;
+
+}
   return Op->getOperator();
 }
 
@@ -333,8 +361,10 @@ template <typename TExpr>
 static const TExpr *checkOpKind(const Expr *TheExpr,
                                 OverloadedOperatorKind OpKind) {
   const auto *AsTExpr = dyn_cast_or_null<TExpr>(TheExpr);
-  if (AsTExpr && getOp(AsTExpr) == OpKind)
+  if (AsTExpr && getOp(AsTExpr) == OpKind) {
     return AsTExpr;
+
+}
 
   return nullptr;
 }
@@ -347,8 +377,10 @@ static bool collectOperands(const Expr *Part,
                             OverloadedOperatorKind OpKind) {
   if (const auto *BinOp = checkOpKind<TExpr>(Part, OpKind)) {
     const std::pair<const Expr *, const Expr *> Operands = getOperands(BinOp);
-    if (areEquivalentExpr(Operands.first, Operands.second))
+    if (areEquivalentExpr(Operands.first, Operands.second)) {
       return true;
+
+}
     return collectOperands<TExpr>(Operands.first, AllOperands, OpKind) ||
            collectOperands<TExpr>(Operands.second, AllOperands, OpKind);
   }
@@ -368,10 +400,14 @@ static bool hasSameOperatorParent(const Expr *TheExpr,
       bool Skip = isa<ParenExpr>(Parent) || isa<ImplicitCastExpr>(Parent) ||
                   isa<FullExpr>(Parent) ||
                   isa<MaterializeTemporaryExpr>(Parent);
-      if (Skip && hasSameOperatorParent<TExpr>(Parent, OpKind, Context))
+      if (Skip && hasSameOperatorParent<TExpr>(Parent, OpKind, Context)) {
         return true;
-      if (checkOpKind<TExpr>(Parent, OpKind))
+
+}
+      if (checkOpKind<TExpr>(Parent, OpKind)) {
         return true;
+
+}
     }
   }
 
@@ -384,35 +420,49 @@ markDuplicateOperands(const TExpr *TheExpr,
                       ast_matchers::internal::BoundNodesTreeBuilder *Builder,
                       ASTContext &Context) {
   const OverloadedOperatorKind OpKind = getOp(TheExpr);
-  if (OpKind == OO_None)
+  if (OpKind == OO_None) {
     return false;
+
+}
   // if there are no nested operators of the same kind, it's handled by
   // operands/parametersAreEquivalent
   const std::pair<const Expr *, const Expr *> Operands = getOperands(TheExpr);
   if (!(checkOpKind<TExpr>(Operands.first, OpKind) ||
-        checkOpKind<TExpr>(Operands.second, OpKind)))
+        checkOpKind<TExpr>(Operands.second, OpKind))) {
     return false;
+
+}
 
   // if parent is the same kind of operator, it's handled by a previous call to
   // markDuplicateOperands
-  if (hasSameOperatorParent<TExpr>(TheExpr, OpKind, Context))
+  if (hasSameOperatorParent<TExpr>(TheExpr, OpKind, Context)) {
     return false;
 
+}
+
   SmallVector<const Expr *, 4> AllOperands;
-  if (collectOperands<TExpr>(Operands.first, AllOperands, OpKind))
+  if (collectOperands<TExpr>(Operands.first, AllOperands, OpKind)) {
     return false;
-  if (collectOperands<TExpr>(Operands.second, AllOperands, OpKind))
+
+}
+  if (collectOperands<TExpr>(Operands.second, AllOperands, OpKind)) {
     return false;
+
+}
   size_t NumOperands = AllOperands.size();
   llvm::SmallBitVector Duplicates(NumOperands);
   for (size_t I = 0; I < NumOperands; I++) {
-    if (Duplicates[I])
+    if (Duplicates[I]) {
       continue;
+
+}
     bool FoundDuplicates = false;
 
     for (size_t J = I + 1; J < NumOperands; J++) {
-      if (AllOperands[J]->HasSideEffects(Context))
+      if (AllOperands[J]->HasSideEffects(Context)) {
         break;
+
+}
 
       if (areEquivalentExpr(AllOperands[I], AllOperands[J])) {
         FoundDuplicates = true;
@@ -423,18 +473,22 @@ markDuplicateOperands(const TExpr *TheExpr,
       }
     }
 
-    if (FoundDuplicates)
+    if (FoundDuplicates) {
       Builder->setBinding(
           SmallString<11>(llvm::formatv("duplicate{0}", I)),
           ast_type_traits::DynTypedNode::create(*AllOperands[I]));
+
+}
   }
 
   return Duplicates.any();
 }
 
 AST_MATCHER(Expr, isIntegerConstantExpr) {
-  if (Node.isInstantiationDependent())
+  if (Node.isInstantiationDependent()) {
     return false;
+
+}
   return Node.isIntegerConstantExpr(Finder->getASTContext());
 }
 
@@ -475,8 +529,10 @@ AST_MATCHER_P(Expr, expandedByMacro, ArrayRef<llvm::StringLiteral>, Names) {
   SourceLocation Loc = Node.getExprLoc();
   while (Loc.isMacroID()) {
     StringRef MacroName = Lexer::getImmediateMacroName(Loc, SM, LO);
-    if (llvm::is_contained(Names, MacroName))
+    if (llvm::is_contained(Names, MacroName)) {
       return true;
+
+}
     Loc = SM.getImmediateMacroCallerLoc(Loc);
   }
   return false;
@@ -621,8 +677,10 @@ canOverloadedOperatorArgsBeModified(const CXXOperatorCallExpr *OperatorCall,
       dyn_cast_or_null<FunctionDecl>(OperatorCall->getCalleeDecl());
   // if we can't find the declaration, conservatively assume it can modify
   // arguments
-  if (!OperatorDecl)
+  if (!OperatorDecl) {
     return true;
+
+}
 
   unsigned ParamCount = OperatorDecl->getNumParams();
 
@@ -630,11 +688,15 @@ canOverloadedOperatorArgsBeModified(const CXXOperatorCallExpr *OperatorCall,
   // These functions must be declared const in order to not be able to modify
   // the instance of the class they are called through.
   if (ParamCount == 1 &&
-      !OperatorDecl->getType()->castAs<FunctionType>()->isConst())
+      !OperatorDecl->getType()->castAs<FunctionType>()->isConst()) {
     return true;
 
-  if (isNonConstReferenceType(OperatorDecl->getParamDecl(0)->getType()))
+}
+
+  if (isNonConstReferenceType(OperatorDecl->getParamDecl(0)->getType())) {
     return true;
+
+}
 
   return checkSecondParam && ParamCount == 2 &&
          isNonConstReferenceType(OperatorDecl->getParamDecl(1)->getType());
@@ -656,8 +718,10 @@ static bool retrieveRelationalIntegerConstantExpr(
     Opcode = Bin->getOpcode();
     OperandExpr = Bin;
 
-    if (!retrieveIntegerConstantExpr(Result, Id, Value, ConstExpr))
+    if (!retrieveIntegerConstantExpr(Result, Id, Value, ConstExpr)) {
       return false;
+
+}
   } else if (const auto *Cast = Result.Nodes.getNodeAs<CastExpr>(CastId)) {
     // Operand received with implicit comparator (cast).
     Opcode = BO_NE;
@@ -665,13 +729,17 @@ static bool retrieveRelationalIntegerConstantExpr(
     Value = APSInt(32, false);
   } else if (const auto *OverloadedOperatorExpr =
                  Result.Nodes.getNodeAs<CXXOperatorCallExpr>(OverloadId)) {
-    if (canOverloadedOperatorArgsBeModified(OverloadedOperatorExpr, false))
+    if (canOverloadedOperatorArgsBeModified(OverloadedOperatorExpr, false)) {
       return false;
+
+}
 
     if (const auto *Arg = OverloadedOperatorExpr->getArg(1)) {
       if (!Arg->isValueDependent() &&
-          !Arg->isIntegerConstantExpr(Value, *Result.Context))
+          !Arg->isIntegerConstantExpr(Value, *Result.Context)) {
         return false;
+
+}
     }
     Symbol = OverloadedOperatorExpr->getArg(0);
     OperandExpr = OverloadedOperatorExpr;
@@ -682,13 +750,19 @@ static bool retrieveRelationalIntegerConstantExpr(
     return false;
   }
 
-  if (!retrieveSymbolicExpr(Result, Id, Symbol))
+  if (!retrieveSymbolicExpr(Result, Id, Symbol)) {
     return false;
 
-  if (Result.Nodes.getNodeAs<Expr>(SwapId))
+}
+
+  if (Result.Nodes.getNodeAs<Expr>(SwapId)) {
     Opcode = BinaryOperator::reverseComparisonOp(Opcode);
-  if (Result.Nodes.getNodeAs<Expr>(NegateId))
+
+}
+  if (Result.Nodes.getNodeAs<Expr>(NegateId)) {
     Opcode = BinaryOperator::negateComparisonOp(Opcode);
+
+}
   return true;
 }
 
@@ -697,8 +771,10 @@ static bool areSidesBinaryConstExpressions(const BinaryOperator *&BinOp, const A
   const auto *LhsBinOp = dyn_cast<BinaryOperator>(BinOp->getLHS());
   const auto *RhsBinOp = dyn_cast<BinaryOperator>(BinOp->getRHS());
 
-  if (!LhsBinOp || !RhsBinOp)
+  if (!LhsBinOp || !RhsBinOp) {
     return false;
+
+}
 
   auto IsIntegerConstantExpr = [AstCtx](const Expr *E) {
     return !E->isValueDependent() && E->isIntegerConstantExpr(*AstCtx);
@@ -707,8 +783,10 @@ static bool areSidesBinaryConstExpressions(const BinaryOperator *&BinOp, const A
   if ((IsIntegerConstantExpr(LhsBinOp->getLHS()) ||
        IsIntegerConstantExpr(LhsBinOp->getRHS())) &&
       (IsIntegerConstantExpr(RhsBinOp->getLHS()) ||
-       IsIntegerConstantExpr(RhsBinOp->getRHS())))
+       IsIntegerConstantExpr(RhsBinOp->getRHS()))) {
     return true;
+
+}
   return false;
 }
 
@@ -738,8 +816,10 @@ static bool retrieveConstExprFromBothSides(const BinaryOperator *&BinOp,
   RhsConst = IsIntegerConstantExpr(BinOpRhs->getLHS()) ? BinOpRhs->getLHS()
                                                        : BinOpRhs->getRHS();
 
-  if (!LhsConst || !RhsConst)
+  if (!LhsConst || !RhsConst) {
     return false;
+
+}
 
   assert(BinOpLhs->getOpcode() == BinOpRhs->getOpcode() &&
          "Sides of the binary operator must be equivalent expressions!");
@@ -751,12 +831,18 @@ static bool retrieveConstExprFromBothSides(const BinaryOperator *&BinOp,
 
 static bool isSameRawIdentifierToken(const Token &T1, const Token &T2,
                         const SourceManager &SM) {
-  if (T1.getKind() != T2.getKind())
+  if (T1.getKind() != T2.getKind()) {
     return false;
-  if (T1.isNot(tok::raw_identifier))
+
+}
+  if (T1.isNot(tok::raw_identifier)) {
     return true;
-  if (T1.getLength() != T2.getLength())
+
+}
+  if (T1.getLength() != T2.getLength()) {
     return false;
+
+}
   return StringRef(SM.getCharacterData(T1.getLocation()), T1.getLength()) ==
          StringRef(SM.getCharacterData(T2.getLocation()), T2.getLength());
 }
@@ -771,12 +857,16 @@ bool isTokAtEndOfExpr(SourceRange ExprSR, Token T, const SourceManager &SM) {
 static bool areExprsFromDifferentMacros(const Expr *LhsExpr,
                                         const Expr *RhsExpr,
                                         const ASTContext *AstCtx) {
-  if (!LhsExpr || !RhsExpr)
+  if (!LhsExpr || !RhsExpr) {
     return false;
+
+}
   SourceRange Lsr = LhsExpr->getSourceRange();
   SourceRange Rsr = RhsExpr->getSourceRange();
-  if (!Lsr.getBegin().isMacroID() || !Rsr.getBegin().isMacroID())
+  if (!Lsr.getBegin().isMacroID() || !Rsr.getBegin().isMacroID()) {
     return false;
+
+}
 
   const SourceManager &SM = AstCtx->getSourceManager();
   const LangOptions &LO = AstCtx->getLangOpts();
@@ -809,8 +899,10 @@ static bool areExprsFromDifferentMacros(const Expr *LhsExpr,
 
 static bool areExprsMacroAndNonMacro(const Expr *&LhsExpr,
                                      const Expr *&RhsExpr) {
-  if (!LhsExpr || !RhsExpr)
+  if (!LhsExpr || !RhsExpr) {
     return false;
+
+}
 
   SourceLocation LhsLoc = LhsExpr->getExprLoc();
   SourceLocation RhsLoc = RhsExpr->getExprLoc();
@@ -972,19 +1064,23 @@ void RedundantExpressionCheck::checkArithmeticExpr(
     if (!retrieveBinOpIntegerConstantExpr(Result, "lhs", LhsOpcode, LhsSymbol,
                                           LhsValue) ||
         !retrieveSymbolicExpr(Result, "rhs", RhsSymbol) ||
-        !areEquivalentExpr(LhsSymbol, RhsSymbol))
+        !areEquivalentExpr(LhsSymbol, RhsSymbol)) {
       return;
+
+}
 
     // Check expressions: x + k == x  or  x - k == x.
     if (LhsOpcode == BO_Add || LhsOpcode == BO_Sub) {
       if ((LhsValue != 0 && Opcode == BO_EQ) ||
-          (LhsValue == 0 && Opcode == BO_NE))
+          (LhsValue == 0 && Opcode == BO_NE)) {
         diag(ComparisonOperator->getOperatorLoc(),
              "logical expression is always false");
-      else if ((LhsValue == 0 && Opcode == BO_EQ) ||
-               (LhsValue != 0 && Opcode == BO_NE))
+      } else if ((LhsValue == 0 && Opcode == BO_EQ) ||
+               (LhsValue != 0 && Opcode == BO_NE)) {
         diag(ComparisonOperator->getOperatorLoc(),
              "logical expression is always true");
+
+}
     }
   } else if (const auto *ComparisonOperator =
                  Result.Nodes.getNodeAs<BinaryOperator>(
@@ -995,8 +1091,10 @@ void RedundantExpressionCheck::checkArithmeticExpr(
                                           LhsValue) ||
         !retrieveBinOpIntegerConstantExpr(Result, "rhs", RhsOpcode, RhsSymbol,
                                           RhsValue) ||
-        !areEquivalentExpr(LhsSymbol, RhsSymbol))
+        !areEquivalentExpr(LhsSymbol, RhsSymbol)) {
       return;
+
+}
 
     transformSubToCanonicalAddExpr(LhsOpcode, LhsValue);
     transformSubToCanonicalAddExpr(RhsOpcode, RhsValue);
@@ -1044,8 +1142,10 @@ void RedundantExpressionCheck::checkBitwiseExpr(
     BinaryOperatorKind LhsOpcode;
     if (!retrieveBinOpIntegerConstantExpr(Result, "lhs", LhsOpcode, LhsSymbol,
                                           LhsValue) ||
-        !retrieveIntegerConstantExpr(Result, "rhs", RhsValue))
+        !retrieveIntegerConstantExpr(Result, "rhs", RhsValue)) {
       return;
+
+}
 
     uint64_t LhsConstant = LhsValue.getZExtValue();
     uint64_t RhsConstant = RhsValue.getZExtValue();
@@ -1053,18 +1153,22 @@ void RedundantExpressionCheck::checkBitwiseExpr(
 
     // Check expression: x & k1 == k2  (i.e. x & 0xFF == 0xF00)
     if (LhsOpcode == BO_And && (LhsConstant & RhsConstant) != RhsConstant) {
-      if (Opcode == BO_EQ)
+      if (Opcode == BO_EQ) {
         diag(Loc, "logical expression is always false");
-      else if (Opcode == BO_NE)
+      } else if (Opcode == BO_NE) {
         diag(Loc, "logical expression is always true");
+
+}
     }
 
     // Check expression: x | k1 == k2  (i.e. x | 0xFF == 0xF00)
     if (LhsOpcode == BO_Or && (LhsConstant | RhsConstant) != RhsConstant) {
-      if (Opcode == BO_EQ)
+      if (Opcode == BO_EQ) {
         diag(Loc, "logical expression is always false");
-      else if (Opcode == BO_NE)
+      } else if (Opcode == BO_NE) {
         diag(Loc, "logical expression is always true");
+
+}
     }
   } else if (const auto *IneffectiveOperator =
                  Result.Nodes.getNodeAs<BinaryOperator>(
@@ -1074,11 +1178,15 @@ void RedundantExpressionCheck::checkBitwiseExpr(
 
     if (!retrieveSymbolicExpr(Result, "ineffective-bitwise", Sym) ||
         !retrieveIntegerConstantExpr(Result, "ineffective-bitwise", Value,
-                                     ConstExpr))
+                                     ConstExpr)) {
       return;
 
-    if((Value != 0 && ~Value != 0) || Sym->getExprLoc().isMacroID())
+}
+
+    if((Value != 0 && ~Value != 0) || Sym->getExprLoc().isMacroID()) {
         return;
+
+}
 
     SourceLocation Loc = IneffectiveOperator->getOperatorLoc();
 
@@ -1124,8 +1232,10 @@ void RedundantExpressionCheck::checkRelationalExpr(
             Result, "lhs", LhsExpr, LhsOpcode, LhsSymbol, LhsValue, LhsConst) ||
         !retrieveRelationalIntegerConstantExpr(
             Result, "rhs", RhsExpr, RhsOpcode, RhsSymbol, RhsValue, RhsConst) ||
-        !areEquivalentExpr(LhsSymbol, RhsSymbol))
+        !areEquivalentExpr(LhsSymbol, RhsSymbol)) {
       return;
+
+}
 
     // Bring expr to a canonical form: smallest constant must be on the left.
     if (APSInt::compareValues(LhsValue, RhsValue) > 0) {
@@ -1137,8 +1247,10 @@ void RedundantExpressionCheck::checkRelationalExpr(
 
     // Constants come from two different macros, or one of them is a macro.
     if (areExprsFromDifferentMacros(LhsConst, RhsConst, Result.Context) ||
-        areExprsMacroAndNonMacro(LhsConst, RhsConst))
+        areExprsMacroAndNonMacro(LhsConst, RhsConst)) {
       return;
+
+}
 
     if ((Opcode == BO_LAnd || Opcode == BO_LOr) &&
         areEquivalentRanges(LhsOpcode, LhsValue, RhsOpcode, RhsValue)) {
@@ -1180,12 +1292,16 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
       BinaryOperatorKind MainOpcode, SideOpcode;
 
       if (!retrieveConstExprFromBothSides(BinOp, MainOpcode, SideOpcode,
-                                          LhsConst, RhsConst, Result.Context))
+                                          LhsConst, RhsConst, Result.Context)) {
         return;
 
+}
+
       if (areExprsFromDifferentMacros(LhsConst, RhsConst, Result.Context) ||
-          areExprsMacroAndNonMacro(LhsConst, RhsConst))
+          areExprsMacroAndNonMacro(LhsConst, RhsConst)) {
         return;
+
+}
     }
 
     diag(BinOp->getOperatorLoc(), "both sides of operator are equivalent");
@@ -1197,15 +1313,19 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     const Expr *FalseExpr = CondOp->getFalseExpr();
 
     if (areExprsFromDifferentMacros(TrueExpr, FalseExpr, Result.Context) ||
-        areExprsMacroAndNonMacro(TrueExpr, FalseExpr))
+        areExprsMacroAndNonMacro(TrueExpr, FalseExpr)) {
       return;
+
+}
     diag(CondOp->getColonLoc(),
          "'true' and 'false' expressions are equivalent");
   }
 
   if (const auto *Call = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("call")) {
-    if (canOverloadedOperatorArgsBeModified(Call, true))
+    if (canOverloadedOperatorArgsBeModified(Call, true)) {
       return;
+
+}
 
     diag(Call->getOperatorLoc(),
          "both sides of overloaded operator are equivalent");
@@ -1213,8 +1333,10 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *Op = Result.Nodes.getNodeAs<Expr>("nested-duplicates")) {
     const auto *Call = dyn_cast<CXXOperatorCallExpr>(Op);
-    if (Call && canOverloadedOperatorArgsBeModified(Call, true))
+    if (Call && canOverloadedOperatorArgsBeModified(Call, true)) {
       return;
+
+}
 
     StringRef Message =
         Call ? "overloaded operator has equivalent nested operands"
@@ -1222,8 +1344,10 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
 
     const auto Diag = diag(Op->getExprLoc(), Message);
     for (const auto &KeyValue : Result.Nodes.getMap()) {
-      if (StringRef(KeyValue.first).startswith("duplicate"))
+      if (StringRef(KeyValue.first).startswith("duplicate")) {
         Diag << KeyValue.second.getSourceRange();
+
+}
     }
   }
 
@@ -1236,9 +1360,11 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
              "ineffective logical negation operator used; did you mean '~'?");
     SourceLocation LogicalNotLocation = OperatorLoc.getLocWithOffset(1);
 
-    if (!LogicalNotLocation.isMacroID())
+    if (!LogicalNotLocation.isMacroID()) {
       Diag << FixItHint::CreateReplacement(
           CharSourceRange::getCharRange(OperatorLoc, LogicalNotLocation), "~");
+
+}
   }
 
   if (const auto *BinaryAndExpr = Result.Nodes.getNodeAs<BinaryOperator>(
@@ -1247,20 +1373,26 @@ void RedundantExpressionCheck::check(const MatchFinder::MatchResult &Result) {
     assert(ShiftingConst && "Expr* 'ShiftingConst' is nullptr!");
     APSInt ShiftingValue;
 
-    if (!ShiftingConst->isIntegerConstantExpr(ShiftingValue, *Result.Context))
+    if (!ShiftingConst->isIntegerConstantExpr(ShiftingValue, *Result.Context)) {
       return;
+
+}
 
     const auto *AndConst = Result.Nodes.getNodeAs<Expr>("and-const");
     assert(AndConst && "Expr* 'AndCont' is nullptr!");
     APSInt AndValue;
-    if (!AndConst->isIntegerConstantExpr(AndValue, *Result.Context))
+    if (!AndConst->isIntegerConstantExpr(AndValue, *Result.Context)) {
       return;
+
+}
 
     // If ShiftingConst is shifted left with more bits than the position of the
     // leftmost 1 in the bit representation of AndValue, AndConstant is
     // ineffective.
-    if (AndValue.getActiveBits() > ShiftingValue)
+    if (AndValue.getActiveBits() > ShiftingValue) {
       return;
+
+}
 
     auto Diag = diag(BinaryAndExpr->getOperatorLoc(),
                      "ineffective bitwise and operation");

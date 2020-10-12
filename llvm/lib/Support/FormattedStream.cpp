@@ -49,12 +49,14 @@ void formatted_raw_ostream::ComputePosition(const char *Ptr, size_t Size) {
   // If our previous scan pointer is inside the buffer, assume we already
   // scanned those bytes. This depends on raw_ostream to not change our buffer
   // in unexpected ways.
-  if (Ptr <= Scanned && Scanned <= Ptr + Size)
+  if (Ptr <= Scanned && Scanned <= Ptr + Size) {
     // Scan all characters added since our last scan to determine the new
     // column.
     UpdatePosition(Position, Scanned, Size - (Scanned - Ptr));
-  else
+  } else {
     UpdatePosition(Position, Ptr, Size);
+
+}
 
   // Update the scanning pointer.
   Scanned = Ptr + Size;

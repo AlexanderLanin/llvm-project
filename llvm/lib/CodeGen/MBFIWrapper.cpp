@@ -19,8 +19,10 @@ using namespace llvm;
 BlockFrequency MBFIWrapper::getBlockFreq(const MachineBasicBlock *MBB) const {
   auto I = MergedBBFreq.find(MBB);
 
-  if (I != MergedBBFreq.end())
+  if (I != MergedBBFreq.end()) {
     return I->second;
+
+}
 
   return MBFI.getBlockFreq(MBB);
 }

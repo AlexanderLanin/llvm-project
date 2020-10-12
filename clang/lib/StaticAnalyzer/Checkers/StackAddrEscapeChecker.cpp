@@ -123,12 +123,16 @@ bool StackAddrEscapeChecker::isNotInCurrentFrame(const MemRegion *R,
 }
 
 bool StackAddrEscapeChecker::isSemaphoreCaptured(const BlockDecl &B) const {
-  if (!dispatch_semaphore_tII)
+  if (!dispatch_semaphore_tII) {
     dispatch_semaphore_tII = &B.getASTContext().Idents.get("dispatch_semaphore_t");
+
+}
   for (const auto &C : B.captures()) {
     const auto *T = C.getVariable()->getType()->getAs<TypedefType>();
-    if (T && T->getDecl()->getIdentifier() == dispatch_semaphore_tII)
+    if (T && T->getDecl()->getIdentifier() == dispatch_semaphore_tII) {
       return true;
+
+}
   }
   return false;
 }
@@ -142,8 +146,10 @@ StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
   for (; I != E; ++I) {
     SVal Val = C.getState()->getSVal(I.getCapturedRegion());
     const MemRegion *Region = Val.getAsRegion();
-    if (Region && isa<StackSpaceRegion>(Region->getMemorySpace()))
+    if (Region && isa<StackSpaceRegion>(Region->getMemorySpace())) {
       Regions.push_back(Region);
+
+}
   }
   return Regions;
 }
@@ -152,11 +158,15 @@ void StackAddrEscapeChecker::EmitStackError(CheckerContext &C,
                                             const MemRegion *R,
                                             const Expr *RetE) const {
   ExplodedNode *N = C.generateNonFatalErrorNode();
-  if (!N)
+  if (!N) {
     return;
-  if (!BT_returnstack)
+
+}
+  if (!BT_returnstack) {
     BT_returnstack = std::make_unique<BuiltinBug>(
         this, "Return of address to stack-allocated memory");
+
+}
   // Generate a report for this bug.
   SmallString<128> buf;
   llvm::raw_svector_ostream os(buf);
@@ -165,8 +175,10 @@ void StackAddrEscapeChecker::EmitStackError(CheckerContext &C,
   auto report =
       std::make_unique<PathSensitiveBugReport>(*BT_returnstack, os.str(), N);
   report->addRange(RetE->getSourceRange());
-  if (range.isValid())
+  if (range.isValid()) {
     report->addRange(range);
+
+}
   C.emitReport(std::move(report));
 }
 
@@ -179,8 +191,10 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
   // via dispatch_semaphore_wait. To avoid false-positives (for now)
   // we ignore all the blocks which have captured
   // a variable of the type "dispatch_semaphore_t".
-  if (isSemaphoreCaptured(*B.getDecl()))
+  if (isSemaphoreCaptured(*B.getDecl())) {
     return;
+
+}
   for (const MemRegion *Region : getCapturedStackRegions(B, C)) {
     // The block passed to dispatch_async may capture another block
     // created on the stack. However, there is no leak in this situaton,
@@ -188,22 +202,30 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
     // dispatch_async copies the passed "outer" block (via Block_copy)
     // and if the block has captured another "inner" block,
     // the "inner" block will be copied as well.
-    if (isa<BlockDataRegion>(Region))
+    if (isa<BlockDataRegion>(Region)) {
       continue;
+
+}
     ExplodedNode *N = C.generateNonFatalErrorNode();
-    if (!N)
+    if (!N) {
       continue;
-    if (!BT_capturedstackasync)
+
+}
+    if (!BT_capturedstackasync) {
       BT_capturedstackasync = std::make_unique<BuiltinBug>(
           this, "Address of stack-allocated memory is captured");
+
+}
     SmallString<128> Buf;
     llvm::raw_svector_ostream Out(Buf);
     SourceRange Range = genName(Out, Region, C.getASTContext());
     Out << " is captured by an asynchronously-executed block";
     auto Report = std::make_unique<PathSensitiveBugReport>(
         *BT_capturedstackasync, Out.str(), N);
-    if (Range.isValid())
+    if (Range.isValid()) {
       Report->addRange(Range);
+
+}
     C.emitReport(std::move(Report));
   }
 }
@@ -211,69 +233,97 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
 void StackAddrEscapeChecker::checkReturnedBlockCaptures(
     const BlockDataRegion &B, CheckerContext &C) const {
   for (const MemRegion *Region : getCapturedStackRegions(B, C)) {
-    if (isArcManagedBlock(Region, C) || isNotInCurrentFrame(Region, C))
+    if (isArcManagedBlock(Region, C) || isNotInCurrentFrame(Region, C)) {
       continue;
+
+}
     ExplodedNode *N = C.generateNonFatalErrorNode();
-    if (!N)
+    if (!N) {
       continue;
-    if (!BT_capturedstackret)
+
+}
+    if (!BT_capturedstackret) {
       BT_capturedstackret = std::make_unique<BuiltinBug>(
           this, "Address of stack-allocated memory is captured");
+
+}
     SmallString<128> Buf;
     llvm::raw_svector_ostream Out(Buf);
     SourceRange Range = genName(Out, Region, C.getASTContext());
     Out << " is captured by a returned block";
     auto Report = std::make_unique<PathSensitiveBugReport>(*BT_capturedstackret,
                                                            Out.str(), N);
-    if (Range.isValid())
+    if (Range.isValid()) {
       Report->addRange(Range);
+
+}
     C.emitReport(std::move(Report));
   }
 }
 
 void StackAddrEscapeChecker::checkPreCall(const CallEvent &Call,
                                           CheckerContext &C) const {
-  if (!ChecksEnabled[CK_StackAddrAsyncEscapeChecker])
+  if (!ChecksEnabled[CK_StackAddrAsyncEscapeChecker]) {
     return;
+
+}
   if (!Call.isGlobalCFunction("dispatch_after") &&
-      !Call.isGlobalCFunction("dispatch_async"))
+      !Call.isGlobalCFunction("dispatch_async")) {
     return;
+
+}
   for (unsigned Idx = 0, NumArgs = Call.getNumArgs(); Idx < NumArgs; ++Idx) {
     if (const BlockDataRegion *B = dyn_cast_or_null<BlockDataRegion>(
-            Call.getArgSVal(Idx).getAsRegion()))
+            Call.getArgSVal(Idx).getAsRegion())) {
       checkAsyncExecutedBlockCaptures(*B, C);
+
+}
   }
 }
 
 void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
                                           CheckerContext &C) const {
-  if (!ChecksEnabled[CK_StackAddrEscapeChecker])
+  if (!ChecksEnabled[CK_StackAddrEscapeChecker]) {
     return;
 
+}
+
   const Expr *RetE = RS->getRetValue();
-  if (!RetE)
+  if (!RetE) {
     return;
+
+}
   RetE = RetE->IgnoreParens();
 
   SVal V = C.getSVal(RetE);
   const MemRegion *R = V.getAsRegion();
-  if (!R)
+  if (!R) {
     return;
 
-  if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R))
+}
+
+  if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R)) {
     checkReturnedBlockCaptures(*B, C);
 
+}
+
   if (!isa<StackSpaceRegion>(R->getMemorySpace()) ||
-      isNotInCurrentFrame(R, C) || isArcManagedBlock(R, C))
+      isNotInCurrentFrame(R, C) || isArcManagedBlock(R, C)) {
     return;
+
+}
 
   // Returning a record by value is fine. (In this case, the returned
   // expression will be a copy-constructor, possibly wrapped in an
   // ExprWithCleanups node.)
-  if (const ExprWithCleanups *Cleanup = dyn_cast<ExprWithCleanups>(RetE))
+  if (const ExprWithCleanups *Cleanup = dyn_cast<ExprWithCleanups>(RetE)) {
     RetE = Cleanup->getSubExpr();
-  if (isa<CXXConstructExpr>(RetE) && RetE->getType()->isRecordType())
+
+}
+  if (isa<CXXConstructExpr>(RetE) && RetE->getType()->isRecordType()) {
     return;
+
+}
 
   // The CK_CopyAndAutoreleaseBlockObject cast causes the block to be copied
   // so the stack address is not escaping here.
@@ -289,8 +339,10 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
 
 void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
                                               CheckerContext &Ctx) const {
-  if (!ChecksEnabled[CK_StackAddrEscapeChecker])
+  if (!ChecksEnabled[CK_StackAddrEscapeChecker]) {
     return;
+
+}
 
   ProgramStateRef State = Ctx.getState();
 
@@ -309,12 +361,16 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     bool HandleBinding(StoreManager &SMgr, Store S, const MemRegion *Region,
                        SVal Val) override {
 
-      if (!isa<GlobalsSpaceRegion>(Region->getMemorySpace()))
+      if (!isa<GlobalsSpaceRegion>(Region->getMemorySpace())) {
         return true;
+
+}
       const MemRegion *VR = Val.getAsRegion();
       if (VR && isa<StackSpaceRegion>(VR->getMemorySpace()) &&
-          !isArcManagedBlock(VR, Ctx) && !isNotInCurrentFrame(VR, Ctx))
+          !isArcManagedBlock(VR, Ctx) && !isNotInCurrentFrame(VR, Ctx)) {
         V.emplace_back(Region, VR);
+
+}
       return true;
     }
   };
@@ -323,20 +379,26 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
   State->getStateManager().getStoreManager().iterBindings(State->getStore(),
                                                           Cb);
 
-  if (Cb.V.empty())
+  if (Cb.V.empty()) {
     return;
+
+}
 
   // Generate an error node.
   ExplodedNode *N = Ctx.generateNonFatalErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
 
-  if (!BT_stackleak)
+}
+
+  if (!BT_stackleak) {
     BT_stackleak = std::make_unique<BuiltinBug>(
         this, "Stack address stored into global variable",
         "Stack address was saved into a global variable. "
         "This is dangerous because the address will become "
         "invalid after returning from the function");
+
+}
 
   for (const auto &P : Cb.V) {
     // Generate a report for this bug.
@@ -344,18 +406,22 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     llvm::raw_svector_ostream Out(Buf);
     SourceRange Range = genName(Out, P.second, Ctx.getASTContext());
     Out << " is still referred to by the ";
-    if (isa<StaticGlobalSpaceRegion>(P.first->getMemorySpace()))
+    if (isa<StaticGlobalSpaceRegion>(P.first->getMemorySpace())) {
       Out << "static";
-    else
+    } else {
       Out << "global";
+
+}
     Out << " variable '";
     const VarRegion *VR = cast<VarRegion>(P.first->getBaseRegion());
     Out << *VR->getDecl()
         << "' upon returning to the caller.  This will be a dangling reference";
     auto Report =
         std::make_unique<PathSensitiveBugReport>(*BT_stackleak, Out.str(), N);
-    if (Range.isValid())
+    if (Range.isValid()) {
       Report->addRange(Range);
+
+}
 
     Ctx.emitReport(std::move(Report));
   }

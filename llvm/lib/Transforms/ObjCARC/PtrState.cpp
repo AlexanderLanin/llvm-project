@@ -59,28 +59,42 @@ raw_ostream &llvm::objcarc::operator<<(raw_ostream &OS, const Sequence S) {
 
 static Sequence MergeSeqs(Sequence A, Sequence B, bool TopDown) {
   // The easy cases.
-  if (A == B)
+  if (A == B) {
     return A;
-  if (A == S_None || B == S_None)
+
+}
+  if (A == S_None || B == S_None) {
     return S_None;
 
-  if (A > B)
+}
+
+  if (A > B) {
     std::swap(A, B);
+
+}
   if (TopDown) {
     // Choose the side which is further along in the sequence.
     if ((A == S_Retain || A == S_CanRelease) &&
-        (B == S_CanRelease || B == S_Use))
+        (B == S_CanRelease || B == S_Use)) {
       return B;
+
+}
   } else {
     // Choose the side which is further along in the sequence.
     if ((A == S_Use || A == S_CanRelease) &&
-        (B == S_Use || B == S_Release || B == S_Stop || B == S_MovableRelease))
+        (B == S_Use || B == S_Release || B == S_Stop || B == S_MovableRelease)) {
       return A;
+
+}
     // If both sides are releases, choose the more conservative one.
-    if (A == S_Stop && (B == S_Release || B == S_MovableRelease))
+    if (A == S_Stop && (B == S_Release || B == S_MovableRelease)) {
       return A;
-    if (A == S_Release && B == S_MovableRelease)
+
+}
+    if (A == S_Release && B == S_MovableRelease) {
       return A;
+
+}
   }
 
   return S_None;
@@ -101,8 +115,10 @@ void RRInfo::clear() {
 
 bool RRInfo::Merge(const RRInfo &Other) {
   // Conservatively merge the ReleaseMetadata information.
-  if (ReleaseMetadata != Other.ReleaseMetadata)
+  if (ReleaseMetadata != Other.ReleaseMetadata) {
     ReleaseMetadata = nullptr;
+
+}
 
   // Conservatively merge the boolean state.
   KnownSafe &= Other.KnownSafe;
@@ -115,8 +131,10 @@ bool RRInfo::Merge(const RRInfo &Other) {
   // Merge the insert point sets. If there are any differences,
   // that makes this a partial merge.
   bool Partial = ReverseInsertPts.size() != Other.ReverseInsertPts.size();
-  for (Instruction *Inst : Other.ReverseInsertPts)
+  for (Instruction *Inst : Other.ReverseInsertPts) {
     Partial |= ReverseInsertPts.insert(Inst).second;
+
+}
   return Partial;
 }
 
@@ -212,8 +230,10 @@ bool BottomUpPtrState::MatchWithRetain() {
   case S_Use:
     // If OldSeq is not S_Use or OldSeq is S_Use and we are tracking an
     // imprecise release, clear our reverse insertion points.
-    if (OldSeq != S_Use || IsTrackingImpreciseReleases())
+    if (OldSeq != S_Use || IsTrackingImpreciseReleases()) {
       ClearReverseInsertPts();
+
+}
     LLVM_FALLTHROUGH;
   case S_CanRelease:
     return true;
@@ -232,8 +252,10 @@ bool BottomUpPtrState::HandlePotentialAlterRefCount(Instruction *Inst,
   Sequence S = GetSeq();
 
   // Check for possible releases.
-  if (!CanAlterRefCount(Inst, Ptr, PA, Class))
+  if (!CanAlterRefCount(Inst, Ptr, PA, Class)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "            CanAlterRefCount: Seq: " << S << "; "
                     << *Ptr << "\n");
@@ -267,17 +289,21 @@ void BottomUpPtrState::HandlePotentialUse(BasicBlock *BB, Instruction *Inst,
     if (isa<InvokeInst>(Inst)) {
       const auto IP = BB->getFirstInsertionPt();
       InsertAfter = IP == BB->end() ? std::prev(BB->end()) : IP;
-      if (isa<CatchSwitchInst>(InsertAfter))
+      if (isa<CatchSwitchInst>(InsertAfter)) {
         // A catchswitch must be the only non-phi instruction in its basic
         // block, so attempting to insert an instruction into such a block would
         // produce invalid IR.
         SetCFGHazardAfflicted(true);
+
+}
     } else {
       InsertAfter = std::next(Inst->getIterator());
     }
 
-    if (InsertAfter != BB->end())
+    if (InsertAfter != BB->end()) {
       InsertAfter = skipDebugIntrinsics(InsertAfter);
+
+}
 
     InsertReverseInsertPt(&*InsertAfter);
   };
@@ -336,8 +362,10 @@ bool TopDownPtrState::InitTopDown(ARCInstKind Kind, Instruction *I) {
     // Theoretically we could implement removal of nested retain+release
     // pairs by making PtrState hold a stack of states, but this is
     // simple and avoids adding overhead for the non-nested case.
-    if (GetSeq() == S_Retain)
+    if (GetSeq() == S_Retain) {
       NestingDetected = true;
+
+}
 
     ResetSequenceProgress(S_Retain);
     SetKnownSafe(HasKnownPositiveRefCount());
@@ -360,8 +388,10 @@ bool TopDownPtrState::MatchWithRelease(ARCMDKindCache &Cache,
   switch (OldSeq) {
   case S_Retain:
   case S_CanRelease:
-    if (OldSeq == S_Retain || ReleaseMetadata != nullptr)
+    if (OldSeq == S_Retain || ReleaseMetadata != nullptr) {
       ClearReverseInsertPts();
+
+}
     LLVM_FALLTHROUGH;
   case S_Use:
     SetReleaseMetadata(ReleaseMetadata);
@@ -384,8 +414,10 @@ bool TopDownPtrState::HandlePotentialAlterRefCount(Instruction *Inst,
   // Check for possible releases. Treat clang.arc.use as a releasing instruction
   // to prevent sinking a retain past it.
   if (!CanAlterRefCount(Inst, Ptr, PA, Class) &&
-      Class != ARCInstKind::IntrinsicUser)
+      Class != ARCInstKind::IntrinsicUser) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "            CanAlterRefCount: Seq: " << GetSeq() << "; "
                     << *Ptr << "\n");
@@ -418,8 +450,10 @@ void TopDownPtrState::HandlePotentialUse(Instruction *Inst, const Value *Ptr,
   // Check for possible direct uses.
   switch (GetSeq()) {
   case S_CanRelease:
-    if (!CanUse(Inst, Ptr, PA, Class))
+    if (!CanUse(Inst, Ptr, PA, Class)) {
       return;
+
+}
     LLVM_DEBUG(dbgs() << "             CanUse: Seq: " << GetSeq() << "; "
                       << *Ptr << "\n");
     SetSeq(S_Use);

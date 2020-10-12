@@ -94,8 +94,10 @@ protected:
     OS << "---\n";
     for (const CallbackCall &Callback : CallbackCalls) {
       OS << "- Callback: " << Callback.Name << "\n";
-      for (const Argument &Arg : Callback.Arguments)
+      for (const Argument &Arg : Callback.Arguments) {
         OS << "  " << Arg.Name << ": " << Arg.Value << "\n";
+
+}
     }
     OS << "...\n";
 
@@ -130,8 +132,10 @@ int main(int argc, const char **argv) {
   InitLLVM X(argc, argv);
   auto OptionsParser = clang::tooling::CommonOptionsParser::create(
       argc, argv, Cat, llvm::cl::ZeroOrMore);
-  if (!OptionsParser)
+  if (!OptionsParser) {
     error(toString(OptionsParser.takeError()));
+
+}
   // Parse the IgnoreCallbacks list into strings.
   SmallVector<StringRef, 32> Patterns;
   FilterType Filters;
@@ -141,10 +145,12 @@ int main(int argc, const char **argv) {
     Pattern = Pattern.trim();
     bool Enabled = !Pattern.consume_front("-");
     Expected<GlobPattern> Pat = GlobPattern::create(Pattern);
-    if (Pat)
+    if (Pat) {
       Filters.emplace_back(std::move(*Pat), Enabled);
-    else
+    } else {
       error(toString(Pat.takeError()));
+
+}
   }
 
   // Create the tool and run the compilation.
@@ -153,14 +159,18 @@ int main(int argc, const char **argv) {
 
   std::error_code EC;
   llvm::ToolOutputFile Out(OutputFileName, EC, llvm::sys::fs::OF_Text);
-  if (EC)
+  if (EC) {
     error(EC.message());
+
+}
   PPTraceFrontendActionFactory Factory(Filters, Out.os());
   int HadErrors = Tool.run(&Factory);
 
   // If we had errors, exit early.
-  if (HadErrors)
+  if (HadErrors) {
     return HadErrors;
+
+}
 
   Out.keep();
 

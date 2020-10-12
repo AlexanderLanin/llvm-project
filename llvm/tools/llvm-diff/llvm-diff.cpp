@@ -33,26 +33,32 @@ static std::unique_ptr<Module> readModule(LLVMContext &Context,
                                           StringRef Name) {
   SMDiagnostic Diag;
   std::unique_ptr<Module> M = parseIRFile(Name, Diag, Context);
-  if (!M)
+  if (!M) {
     Diag.print("llvm-diff", errs());
+
+}
   return M;
 }
 
 static void diffGlobal(DifferenceEngine &Engine, Module &L, Module &R,
                        StringRef Name) {
   // Drop leading sigils from the global name.
-  if (Name.startswith("@")) Name = Name.substr(1);
+  if (Name.startswith("@")) { Name = Name.substr(1);
+
+}
 
   Function *LFn = L.getFunction(Name);
   Function *RFn = R.getFunction(Name);
-  if (LFn && RFn)
+  if (LFn && RFn) {
     Engine.diff(LFn, RFn);
-  else if (!LFn && !RFn)
+  } else if (!LFn && !RFn) {
     errs() << "No function named @" << Name << " in either module\n";
-  else if (!LFn)
+  } else if (!LFn) {
     errs() << "No function named @" << Name << " in left module\n";
-  else
+  } else {
     errs() << "No function named @" << Name << " in right module\n";
+
+}
 }
 
 static cl::opt<std::string> LeftFilename(cl::Positional,
@@ -72,15 +78,19 @@ int main(int argc, char **argv) {
   // Load both modules.  Die if that fails.
   std::unique_ptr<Module> LModule = readModule(Context, LeftFilename);
   std::unique_ptr<Module> RModule = readModule(Context, RightFilename);
-  if (!LModule || !RModule) return 1;
+  if (!LModule || !RModule) { return 1;
+
+}
 
   DiffConsumer Consumer;
   DifferenceEngine Engine(Consumer);
 
   // If any global names were given, just diff those.
   if (!GlobalsToCompare.empty()) {
-    for (unsigned I = 0, E = GlobalsToCompare.size(); I != E; ++I)
+    for (unsigned I = 0, E = GlobalsToCompare.size(); I != E; ++I) {
       diffGlobal(Engine, *LModule, *RModule, GlobalsToCompare[I]);
+
+}
 
   // Otherwise, diff everything in the module.
   } else {

@@ -43,21 +43,29 @@ void SymIntExpr::dumpToStream(raw_ostream &os) const {
   getLHS()->dumpToStream(os);
   os << ") "
      << BinaryOperator::getOpcodeStr(getOpcode()) << ' ';
-  if (getRHS().isUnsigned())
+  if (getRHS().isUnsigned()) {
     os << getRHS().getZExtValue();
-  else
+  } else {
     os << getRHS().getSExtValue();
-  if (getRHS().isUnsigned())
+
+}
+  if (getRHS().isUnsigned()) {
     os << 'U';
+
+}
 }
 
 void IntSymExpr::dumpToStream(raw_ostream &os) const {
-  if (getLHS().isUnsigned())
+  if (getLHS().isUnsigned()) {
     os << getLHS().getZExtValue();
-  else
+  } else {
     os << getLHS().getSExtValue();
-  if (getLHS().isUnsigned())
+
+}
+  if (getLHS().isUnsigned()) {
     os << 'U';
+
+}
   os << ' '
      << BinaryOperator::getOpcodeStr(getOpcode())
      << " (";
@@ -84,10 +92,12 @@ void SymbolCast::dumpToStream(raw_ostream &os) const {
 void SymbolConjured::dumpToStream(raw_ostream &os) const {
   os << "conj_$" << getSymbolID() << '{' << T.getAsString() << ", LC"
      << LCtx->getID();
-  if (S)
+  if (S) {
     os << ", S" << S->getID(LCtx->getDecl()->getASTContext());
-  else
+  } else {
     os << ", no stmt";
+
+}
   os << ", #" << Count << '}';
 }
 
@@ -348,14 +358,20 @@ SymbolManager::~SymbolManager() {
 bool SymbolManager::canSymbolicate(QualType T) {
   T = T.getCanonicalType();
 
-  if (Loc::isLocType(T))
+  if (Loc::isLocType(T)) {
     return true;
 
-  if (T->isIntegralOrEnumerationType())
+}
+
+  if (T->isIntegralOrEnumerationType()) {
     return true;
 
-  if (T->isRecordType() && !T->isUnionType())
+}
+
+  if (T->isRecordType() && !T->isUnionType()) {
     return true;
+
+}
 
   return false;
 }
@@ -376,8 +392,10 @@ void SymbolManager::addSymbolDependency(const SymbolRef Primary,
 const SymbolRefSmallVectorTy *SymbolManager::getDependentSymbols(
                                                      const SymbolRef Primary) {
   SymbolDependTy::const_iterator I = SymbolDependencies.find(Primary);
-  if (I == SymbolDependencies.end())
+  if (I == SymbolDependencies.end()) {
     return nullptr;
+
+}
   return I->second;
 }
 
@@ -385,14 +403,18 @@ void SymbolReaper::markDependentsLive(SymbolRef sym) {
   // Do not mark dependents more then once.
   SymbolMapTy::iterator LI = TheLiving.find(sym);
   assert(LI != TheLiving.end() && "The primary symbol is not live.");
-  if (LI->second == HaveMarkedDependents)
+  if (LI->second == HaveMarkedDependents) {
     return;
+
+}
   LI->second = HaveMarkedDependents;
 
   if (const SymbolRefSmallVectorTy *Deps = SymMgr.getDependentSymbols(sym)) {
     for (const auto I : *Deps) {
-      if (TheLiving.find(I) != TheLiving.end())
+      if (TheLiving.find(I) != TheLiving.end()) {
         continue;
+
+}
       markLive(I);
     }
   }
@@ -413,15 +435,19 @@ void SymbolReaper::markElementIndicesLive(const MemRegion *region) {
        SR = dyn_cast<SubRegion>(SR->getSuperRegion())) {
     if (const auto ER = dyn_cast<ElementRegion>(SR)) {
       SVal Idx = ER->getIndex();
-      for (auto SI = Idx.symbol_begin(), SE = Idx.symbol_end(); SI != SE; ++SI)
+      for (auto SI = Idx.symbol_begin(), SE = Idx.symbol_end(); SI != SE; ++SI) {
         markLive(*SI);
+
+}
     }
   }
 }
 
 void SymbolReaper::markInUse(SymbolRef sym) {
-  if (isa<SymbolMetadata>(sym))
+  if (isa<SymbolMetadata>(sym)) {
     MetadataInUse.insert(sym);
+
+}
 }
 
 bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
@@ -431,30 +457,44 @@ bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
   // that field earlier than, say, the variable that contains the field dies.
   MR = MR->getBaseRegion();
 
-  if (RegionRoots.count(MR))
+  if (RegionRoots.count(MR)) {
     return true;
 
-  if (const auto *SR = dyn_cast<SymbolicRegion>(MR))
+}
+
+  if (const auto *SR = dyn_cast<SymbolicRegion>(MR)) {
     return isLive(SR->getSymbol());
 
-  if (const auto *VR = dyn_cast<VarRegion>(MR))
+}
+
+  if (const auto *VR = dyn_cast<VarRegion>(MR)) {
     return isLive(VR, true);
+
+}
 
   // FIXME: This is a gross over-approximation. What we really need is a way to
   // tell if anything still refers to this region. Unlike SymbolicRegions,
   // AllocaRegions don't have associated symbols, though, so we don't actually
   // have a way to track their liveness.
-  if (isa<AllocaRegion>(MR))
+  if (isa<AllocaRegion>(MR)) {
     return true;
 
-  if (isa<CXXThisRegion>(MR))
+}
+
+  if (isa<CXXThisRegion>(MR)) {
     return true;
 
-  if (isa<MemSpaceRegion>(MR))
+}
+
+  if (isa<MemSpaceRegion>(MR)) {
     return true;
 
-  if (isa<CodeTextRegion>(MR))
+}
+
+  if (isa<CodeTextRegion>(MR)) {
     return true;
+
+}
 
   return false;
 }
@@ -483,8 +523,10 @@ bool SymbolReaper::isLive(SymbolRef sym) {
   case SymExpr::SymbolMetadataKind:
     KnownLive = MetadataInUse.count(sym) &&
                 isLiveRegion(cast<SymbolMetadata>(sym)->getRegion());
-    if (KnownLive)
+    if (KnownLive) {
       MetadataInUse.erase(sym);
+
+}
     break;
   case SymExpr::SymIntExprKind:
     KnownLive = isLive(cast<SymIntExpr>(sym)->getLHS());
@@ -501,28 +543,36 @@ bool SymbolReaper::isLive(SymbolRef sym) {
     break;
   }
 
-  if (KnownLive)
+  if (KnownLive) {
     markLive(sym);
+
+}
 
   return KnownLive;
 }
 
 bool
 SymbolReaper::isLive(const Stmt *ExprVal, const LocationContext *ELCtx) const {
-  if (LCtx == nullptr)
+  if (LCtx == nullptr) {
     return false;
+
+}
 
   if (LCtx != ELCtx) {
     // If the reaper's location context is a parent of the expression's
     // location context, then the expression value is now "out of scope".
-    if (LCtx->isParentOf(ELCtx))
+    if (LCtx->isParentOf(ELCtx)) {
       return false;
+
+}
     return true;
   }
 
   // If no statement is provided, everything is this and parent contexts is live.
-  if (!Loc)
+  if (!Loc) {
     return true;
+
+}
 
   return LCtx->getAnalysis<RelaxedLiveVariables>()->isLive(Loc, ExprVal);
 }
@@ -530,28 +580,40 @@ SymbolReaper::isLive(const Stmt *ExprVal, const LocationContext *ELCtx) const {
 bool SymbolReaper::isLive(const VarRegion *VR, bool includeStoreBindings) const{
   const StackFrameContext *VarContext = VR->getStackFrame();
 
-  if (!VarContext)
+  if (!VarContext) {
     return true;
 
-  if (!LCtx)
+}
+
+  if (!LCtx) {
     return false;
+
+}
   const StackFrameContext *CurrentContext = LCtx->getStackFrame();
 
   if (VarContext == CurrentContext) {
     // If no statement is provided, everything is live.
-    if (!Loc)
+    if (!Loc) {
       return true;
+
+}
 
     // Anonymous parameters of an inheriting constructor are live for the entire
     // duration of the constructor.
-    if (isa<CXXInheritedCtorInitExpr>(Loc))
+    if (isa<CXXInheritedCtorInitExpr>(Loc)) {
       return true;
 
-    if (LCtx->getAnalysis<RelaxedLiveVariables>()->isLive(Loc, VR->getDecl()))
+}
+
+    if (LCtx->getAnalysis<RelaxedLiveVariables>()->isLive(Loc, VR->getDecl())) {
       return true;
 
-    if (!includeStoreBindings)
+}
+
+    if (!includeStoreBindings) {
       return false;
+
+}
 
     unsigned &cachedQuery =
       const_cast<SymbolReaper *>(this)->includedRegionCache[VR];

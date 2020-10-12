@@ -32,8 +32,10 @@ template<typename Key, typename Offset, unsigned InitialCapacity>
 static void
 dumpLocalRemap(StringRef Name,
                const ContinuousRangeMap<Key, Offset, InitialCapacity> &Map) {
-  if (Map.begin() == Map.end())
+  if (Map.begin() == Map.end()) {
     return;
+
+}
 
   using MapType = ContinuousRangeMap<Key, Offset, InitialCapacity>;
 
@@ -49,8 +51,10 @@ LLVM_DUMP_METHOD void ModuleFile::dump() {
   if (!Imports.empty()) {
     llvm::errs() << "  Imports: ";
     for (unsigned I = 0, N = Imports.size(); I != N; ++I) {
-      if (I)
+      if (I) {
         llvm::errs() << ", ";
+
+}
       llvm::errs() << Imports[I]->FileName;
     }
     llvm::errs() << "\n";

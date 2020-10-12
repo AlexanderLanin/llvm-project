@@ -306,9 +306,13 @@ static void testTestcases(ArrayRef<Testcase> Testcases) {
     using CanonKey = llvm::ItaniumManglingCanonicalizer::Key;
 
     std::map<const EquivalenceClass*, CanonKey> Keys;
-    if (CanonicalizeFirst)
-      for (const auto &Class : Testcase.Classes)
+    if (CanonicalizeFirst) {
+      for (const auto &Class : Testcase.Classes) {
         Keys.insert({&Class, Canonicalizer.canonicalize(*Class.begin())});
+
+}
+
+}
 
     std::map<CanonKey, llvm::StringRef> Found;
     for (const auto &Class : Testcase.Classes) {

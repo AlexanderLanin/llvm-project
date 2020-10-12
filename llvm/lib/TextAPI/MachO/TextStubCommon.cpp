@@ -111,12 +111,18 @@ StringRef ScalarTraits<PlatformSet>::input(StringRef Scalar, void *IO,
                       .Case("iosmac", PlatformKind::macCatalyst)
                       .Default(PlatformKind::unknown);
 
-  if (Platform == PlatformKind::macCatalyst)
-    if (Ctx && Ctx->FileKind != FileType::TBD_V3)
+  if (Platform == PlatformKind::macCatalyst) {
+    if (Ctx && Ctx->FileKind != FileType::TBD_V3) {
       return "invalid platform";
 
-  if (Platform == PlatformKind::unknown)
+}
+
+}
+
+  if (Platform == PlatformKind::unknown) {
     return "unknown platform";
+
+}
 
   Values.insert(Platform);
   return {};
@@ -153,8 +159,10 @@ void ScalarTraits<PackedVersion>::output(const PackedVersion &Value, void *,
 }
 StringRef ScalarTraits<PackedVersion>::input(StringRef Scalar, void *,
                                              PackedVersion &Value) {
-  if (!Value.parse32(Scalar))
+  if (!Value.parse32(Scalar)) {
     return "invalid packed version string.";
+
+}
   return {};
 }
 QuotingType ScalarTraits<PackedVersion>::mustQuote(StringRef) {
@@ -188,8 +196,10 @@ StringRef ScalarTraits<SwiftVersion>::input(StringRef Scalar, void *IO,
          "File type is not set in context");
 
   if (Ctx->FileKind == FileType::TBD_V4) {
-    if (Scalar.getAsInteger(10, Value))
+    if (Scalar.getAsInteger(10, Value)) {
       return "invalid Swift ABI version.";
+
+}
     return {};
   } else {
     Value = StringSwitch<SwiftVersion>(Scalar)
@@ -200,11 +210,15 @@ StringRef ScalarTraits<SwiftVersion>::input(StringRef Scalar, void *IO,
                 .Default(0);
   }
 
-  if (Value != SwiftVersion(0))
+  if (Value != SwiftVersion(0)) {
     return {};
 
-  if (Scalar.getAsInteger(10, Value))
+}
+
+  if (Scalar.getAsInteger(10, Value)) {
     return "invalid Swift ABI version.";
+
+}
 
   return StringRef();
 }
@@ -219,8 +233,10 @@ StringRef ScalarTraits<UUID>::input(StringRef Scalar, void *, UUID &Value) {
   auto Split = Scalar.split(':');
   auto Arch = Split.first.trim();
   auto UUID = Split.second.trim();
-  if (UUID.empty())
+  if (UUID.empty()) {
     return "invalid uuid string pair";
+
+}
   Value.second = std::string(UUID);
   Value.first = Target{getArchitectureFromName(Arch), PlatformKind::unknown};
   return {};

@@ -28,8 +28,10 @@ static llvm::Optional<llvm::APSInt>
 truncateIfIntegral(const FloatingLiteral &FloatLiteral) {
   double Value = FloatLiteral.getValueAsApproximateDouble();
   if (std::fmod(Value, 1) == 0) {
-    if (Value >= static_cast<double>(1u << 31))
+    if (Value >= static_cast<double>(1u << 31)) {
       return llvm::None;
+
+}
 
     return llvm::APSInt::get(static_cast<int64_t>(Value));
   }
@@ -164,8 +166,10 @@ bool IsLiteralZero(const MatchFinder::MatchResult &Result, const Expr &Node) {
   // Check to see if we're using a zero directly.
   if (selectFirst<const clang::Expr>(
           "val", match(expr(ignoringImpCasts(ZeroMatcher)).bind("val"), Node,
-                       *Result.Context)) != nullptr)
+                       *Result.Context)) != nullptr) {
     return true;
+
+}
 
   // Now check to see if we're using a functional cast with a scalar
   // initializer expression, e.g. `int{0}`.
@@ -176,8 +180,10 @@ bool IsLiteralZero(const MatchFinder::MatchResult &Result, const Expr &Node) {
                            hasSourceExpression(initListExpr(
                                hasInit(0, ignoringParenImpCasts(ZeroMatcher)))))
                            .bind("val"),
-                       Node, *Result.Context)) != nullptr)
+                       Node, *Result.Context)) != nullptr) {
     return true;
+
+}
 
   return false;
 }
@@ -196,8 +202,10 @@ stripFloatCast(const ast_matchers::MatchFinder::MatchResult &Result,
                            cxxFunctionalCastExpr(
                                hasDestinationType(realFloatingPointType()),
                                hasSourceExpression(expr().bind("cast_arg"))))),
-                Node, *Result.Context)))
+                Node, *Result.Context))) {
     return tooling::fixit::getText(*MaybeCastArg, *Result.Context).str();
+
+}
 
   return llvm::None;
 }
@@ -205,10 +213,14 @@ stripFloatCast(const ast_matchers::MatchFinder::MatchResult &Result,
 llvm::Optional<std::string>
 stripFloatLiteralFraction(const MatchFinder::MatchResult &Result,
                           const Expr &Node) {
-  if (const auto *LitFloat = llvm::dyn_cast<FloatingLiteral>(&Node))
+  if (const auto *LitFloat = llvm::dyn_cast<FloatingLiteral>(&Node)) {
     // Attempt to simplify a `Duration` factory call with a literal argument.
-    if (llvm::Optional<llvm::APSInt> IntValue = truncateIfIntegral(*LitFloat))
+    if (llvm::Optional<llvm::APSInt> IntValue = truncateIfIntegral(*LitFloat)) {
       return IntValue->toString(/*radix=*/10);
+
+}
+
+}
 
   return llvm::None;
 }
@@ -216,13 +228,17 @@ stripFloatLiteralFraction(const MatchFinder::MatchResult &Result,
 std::string simplifyDurationFactoryArg(const MatchFinder::MatchResult &Result,
                                        const Expr &Node) {
   // Check for an explicit cast to `float` or `double`.
-  if (llvm::Optional<std::string> MaybeArg = stripFloatCast(Result, Node))
+  if (llvm::Optional<std::string> MaybeArg = stripFloatCast(Result, Node)) {
     return *MaybeArg;
+
+}
 
   // Check for floats without fractional components.
   if (llvm::Optional<std::string> MaybeArg =
-          stripFloatLiteralFraction(Result, Node))
+          stripFloatLiteralFraction(Result, Node)) {
     return *MaybeArg;
+
+}
 
   // We couldn't simplify any further, so return the argument text.
   return tooling::fixit::getText(Node, *Result.Context).str();
@@ -244,8 +260,10 @@ llvm::Optional<DurationScale> getScaleForDurationInverse(llvm::StringRef Name) {
        {"ToInt64Nanoseconds", DurationScale::Nanoseconds}});
 
   auto ScaleIter = ScaleMap.find(std::string(Name));
-  if (ScaleIter == ScaleMap.end())
+  if (ScaleIter == ScaleMap.end()) {
     return llvm::None;
+
+}
 
   return ScaleIter->second;
 }
@@ -260,8 +278,10 @@ llvm::Optional<DurationScale> getScaleForTimeInverse(llvm::StringRef Name) {
        {"ToUnixNanos", DurationScale::Nanoseconds}});
 
   auto ScaleIter = ScaleMap.find(std::string(Name));
-  if (ScaleIter == ScaleMap.end())
+  if (ScaleIter == ScaleMap.end()) {
     return llvm::None;
+
+}
 
   return ScaleIter->second;
 }
@@ -273,11 +293,15 @@ std::string rewriteExprFromNumberToDuration(
 
   // First check to see if we can undo a complimentary function call.
   if (llvm::Optional<std::string> MaybeRewrite =
-          rewriteInverseDurationCall(Result, Scale, RootNode))
+          rewriteInverseDurationCall(Result, Scale, RootNode)) {
     return *MaybeRewrite;
 
-  if (IsLiteralZero(Result, RootNode))
+}
+
+  if (IsLiteralZero(Result, RootNode)) {
     return std::string("absl::ZeroDuration()");
+
+}
 
   return (llvm::Twine(getDurationFactoryForScale(Scale)) + "(" +
           simplifyDurationFactoryArg(Result, RootNode) + ")")
@@ -291,11 +315,15 @@ std::string rewriteExprFromNumberToTime(
 
   // First check to see if we can undo a complimentary function call.
   if (llvm::Optional<std::string> MaybeRewrite =
-          rewriteInverseTimeCall(Result, Scale, RootNode))
+          rewriteInverseTimeCall(Result, Scale, RootNode)) {
     return *MaybeRewrite;
 
-  if (IsLiteralZero(Result, RootNode))
+}
+
+  if (IsLiteralZero(Result, RootNode)) {
     return std::string("absl::UnixEpoch()");
+
+}
 
   return (llvm::Twine(getTimeFactoryForScale(Scale)) + "(" +
           tooling::fixit::getText(RootNode, *Result.Context) + ")")
@@ -303,8 +331,10 @@ std::string rewriteExprFromNumberToTime(
 }
 
 bool isInMacro(const MatchFinder::MatchResult &Result, const Expr *E) {
-  if (!E->getBeginLoc().isMacroID())
+  if (!E->getBeginLoc().isMacroID()) {
     return false;
+
+}
 
   SourceLocation Loc = E->getBeginLoc();
   // We want to get closer towards the initial macro typed into the source only

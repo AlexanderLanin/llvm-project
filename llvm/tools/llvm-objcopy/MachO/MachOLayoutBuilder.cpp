@@ -45,15 +45,19 @@ uint32_t MachOLayoutBuilder::computeSizeOfCmds() const {
 }
 
 void MachOLayoutBuilder::constructStringTable() {
-  for (std::unique_ptr<SymbolEntry> &Sym : O.SymTable.Symbols)
+  for (std::unique_ptr<SymbolEntry> &Sym : O.SymTable.Symbols) {
     StrTableBuilder.add(Sym->Name);
+
+}
   StrTableBuilder.finalize();
 }
 
 void MachOLayoutBuilder::updateSymbolIndexes() {
   uint32_t Index = 0;
-  for (auto &Symbol : O.SymTable.Symbols)
+  for (auto &Symbol : O.SymTable.Symbols) {
     Symbol->Index = Index++;
+
+}
 }
 
 // Updates the index and the number of local/external/undefined symbols.
@@ -76,16 +80,20 @@ void MachOLayoutBuilder::updateDySymTab(MachO::macho_load_command &MLC) {
   auto Iter = O.SymTable.Symbols.begin();
   auto End = O.SymTable.Symbols.end();
   for (; Iter != End; ++Iter) {
-    if ((*Iter)->isExternalSymbol())
+    if ((*Iter)->isExternalSymbol()) {
       break;
+
+}
 
     ++NumLocalSymbols;
   }
 
   uint32_t NumExtDefSymbols = 0;
   for (; Iter != End; ++Iter) {
-    if ((*Iter)->isUndefinedSymbol())
+    if ((*Iter)->isUndefinedSymbol()) {
       break;
+
+}
 
     ++NumExtDefSymbols;
   }
@@ -204,12 +212,14 @@ uint64_t MachOLayoutBuilder::layoutSegments() {
 }
 
 uint64_t MachOLayoutBuilder::layoutRelocations(uint64_t Offset) {
-  for (LoadCommand &LC : O.LoadCommands)
+  for (LoadCommand &LC : O.LoadCommands) {
     for (std::unique_ptr<Section> &Sec : LC.Sections) {
       Sec->RelOff = Sec->Relocations.empty() ? 0 : Offset;
       Sec->NReloc = Sec->Relocations.size();
       Offset += sizeof(MachO::any_relocation_info) * Sec->NReloc;
     }
+
+}
 
   return Offset;
 }
@@ -275,9 +285,11 @@ Error MachOLayoutBuilder::layoutTail(uint64_t Offset) {
           MLC.dysymtab_command_data.nmodtab != 0 ||
           MLC.dysymtab_command_data.nextrefsyms != 0 ||
           MLC.dysymtab_command_data.nlocrel != 0 ||
-          MLC.dysymtab_command_data.nextrel != 0)
+          MLC.dysymtab_command_data.nextrel != 0) {
         return createStringError(llvm::errc::not_supported,
                                  "shared library is not yet supported");
+
+}
 
       if (!O.IndirectSymTable.Symbols.empty()) {
         MLC.dysymtab_command_data.indirectsymoff = StartOfIndirectSymbols;

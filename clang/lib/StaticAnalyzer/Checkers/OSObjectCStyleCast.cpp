@@ -75,8 +75,10 @@ void OSObjectCStyleCastChecker::checkASTCodeBody(const Decl *D, AnalysisManager 
           OSObjSubclassM)).bind(WarnAtNode);
 
   auto Matches = match(stmt(forEachDescendant(CastM)), *D->getBody(), AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, BR, ADC, this);
+
+}
 }
 }
 

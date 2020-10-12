@@ -136,8 +136,10 @@ TEST(DomTreeUpdater, EagerUpdateBasicOperations) {
       BB2->removePredecessor(BB0);
       i = SI->removeCase(i);
       e = SI->case_end();
-    } else
+    } else {
       ++i;
+
+}
   }
   ASSERT_FALSE(DT.verify());
   ASSERT_FALSE(PDT.verify());
@@ -687,8 +689,10 @@ TEST(DomTreeUpdater, LazyUpdateStepTest) {
       i = SI->removeCase(i);
       e = SI->case_end();
       Updates.push_back({DominatorTree::Delete, BB0, BB2});
-    } else
+    } else {
       ++i;
+
+}
   }
 
   DTU.applyUpdatesPermissive(Updates);

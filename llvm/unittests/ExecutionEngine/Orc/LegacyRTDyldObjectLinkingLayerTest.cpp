@@ -52,8 +52,10 @@ TEST(LegacyRTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
                                  unsigned SectionID,
                                  StringRef SectionName,
                                  bool IsReadOnly) override {
-      if (SectionName == ".debug_str")
+      if (SectionName == ".debug_str") {
         DebugSeen = true;
+
+}
       return SectionMemoryManager::allocateDataSection(Size, Alignment,
                                                          SectionID,
                                                          SectionName,
@@ -91,8 +93,10 @@ TEST(LegacyRTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
   std::unique_ptr<TargetMachine> TM(
     EngineBuilder().selectTarget(Triple(M->getTargetTriple()), "", "",
                                  SmallVector<std::string, 1>()));
-  if (!TM)
+  if (!TM) {
     return;
+
+}
 
   auto Obj = cantFail(SimpleCompiler(*TM)(*M));
 
@@ -120,8 +124,10 @@ TEST(LegacyRTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
 }
 
 TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoDuplicateFinalization) {
-  if (!SupportsJIT)
+  if (!SupportsJIT) {
     return;
+
+}
 
   Type *Int32Ty = IntegerType::get(Context, 32);
 
@@ -210,8 +216,10 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoDuplicateFinalization) {
 }
 
 TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoPrematureAllocation) {
-  if (!SupportsJIT)
+  if (!SupportsJIT) {
     return;
+
+}
 
   Type *Int32Ty = IntegerType::get(Context, 32);
 

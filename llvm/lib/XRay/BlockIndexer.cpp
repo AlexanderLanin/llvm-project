@@ -60,9 +60,13 @@ Error BlockIndexer::visit(PIDRecord &R) {
 }
 
 Error BlockIndexer::visit(NewBufferRecord &R) {
-  if (!CurrentBlock.Records.empty())
-    if (auto E = flush())
+  if (!CurrentBlock.Records.empty()) {
+    if (auto E = flush()) {
       return E;
+
+}
+
+}
 
   CurrentBlock.ThreadID = R.tid();
   CurrentBlock.Records.push_back(&R);

@@ -30,36 +30,48 @@ PreservedAnalyses CGProfilePass::run(Module &M, ModuleAnalysisManager &MAM) {
   InstrProfSymtab Symtab;
   auto UpdateCounts = [&](TargetTransformInfo &TTI, Function *F,
                           Function *CalledF, uint64_t NewCount) {
-    if (!CalledF || !TTI.isLoweredToCall(CalledF))
+    if (!CalledF || !TTI.isLoweredToCall(CalledF)) {
       return;
+
+}
     uint64_t &Count = Counts[std::make_pair(F, CalledF)];
     Count = SaturatingAdd(Count, NewCount);
   };
   // Ignore error here.  Indirect calls are ignored if this fails.
   (void)(bool)Symtab.create(M);
   for (auto &F : M) {
-    if (F.isDeclaration())
+    if (F.isDeclaration()) {
       continue;
+
+}
     auto &BFI = FAM.getResult<BlockFrequencyAnalysis>(F);
-    if (BFI.getEntryFreq() == 0)
+    if (BFI.getEntryFreq() == 0) {
       continue;
+
+}
     TargetTransformInfo &TTI = FAM.getResult<TargetIRAnalysis>(F);
     for (auto &BB : F) {
       Optional<uint64_t> BBCount = BFI.getBlockProfileCount(&BB);
-      if (!BBCount)
+      if (!BBCount) {
         continue;
+
+}
       for (auto &I : BB) {
         CallSite CS(&I);
-        if (!CS)
+        if (!CS) {
           continue;
+
+}
         if (CS.isIndirectCall()) {
           InstrProfValueData ValueData[8];
           uint32_t ActualNumValueData;
           uint64_t TotalC;
           if (!getValueProfDataFromInst(*CS.getInstruction(),
                                         IPVK_IndirectCallTarget, 8, ValueData,
-                                        ActualNumValueData, TotalC))
+                                        ActualNumValueData, TotalC)) {
             continue;
+
+}
           for (const auto &VD :
                ArrayRef<InstrProfValueData>(ValueData, ActualNumValueData)) {
             UpdateCounts(TTI, &F, Symtab.getFunction(VD.Value), VD.Count);
@@ -79,8 +91,10 @@ PreservedAnalyses CGProfilePass::run(Module &M, ModuleAnalysisManager &MAM) {
 void CGProfilePass::addModuleFlags(
     Module &M,
     MapVector<std::pair<Function *, Function *>, uint64_t> &Counts) const {
-  if (Counts.empty())
+  if (Counts.empty()) {
     return;
+
+}
 
   LLVMContext &Context = M.getContext();
   MDBuilder MDB(Context);

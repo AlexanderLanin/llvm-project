@@ -39,8 +39,10 @@ static SourceRange FindToken(const SourceManager &Sources,
                              const LangOptions &LangOpts,
                              SourceLocation StartLoc, SourceLocation EndLoc,
                              bool (*Pred)(const Token &)) {
-  if (StartLoc.isMacroID() || EndLoc.isMacroID())
+  if (StartLoc.isMacroID() || EndLoc.isMacroID()) {
     return SourceRange();
+
+}
   FileID File = Sources.getFileID(Sources.getSpellingLoc(StartLoc));
   StringRef Buf = Sources.getBufferData(File);
   const char *StartChar = Sources.getCharacterData(StartLoc);
@@ -69,13 +71,17 @@ static bool declIsStdInitializerList(const NamedDecl *D) {
 static bool isStdInitializerList(QualType Type) {
   Type = Type.getCanonicalType();
   if (const auto *TS = Type->getAs<TemplateSpecializationType>()) {
-    if (const TemplateDecl *TD = TS->getTemplateName().getAsTemplateDecl())
+    if (const TemplateDecl *TD = TS->getTemplateName().getAsTemplateDecl()) {
       return declIsStdInitializerList(TD);
+
+}
   }
   if (const auto *RT = Type->getAs<RecordType>()) {
     if (const auto *Specialization =
-            dyn_cast<ClassTemplateSpecializationDecl>(RT->getDecl()))
+            dyn_cast<ClassTemplateSpecializationDecl>(RT->getDecl())) {
       return declIsStdInitializerList(Specialization->getSpecializedTemplate());
+
+}
   }
   return false;
 }
@@ -86,13 +92,17 @@ void ExplicitConstructorCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *Conversion =
       Result.Nodes.getNodeAs<CXXConversionDecl>("conversion")) {
-    if (Conversion->isOutOfLine())
+    if (Conversion->isOutOfLine()) {
       return;
+
+}
     SourceLocation Loc = Conversion->getLocation();
     // Ignore all macros until we learn to ignore specific ones (e.g. used in
     // gmock to define matchers).
-    if (Loc.isMacroID())
+    if (Loc.isMacroID()) {
       return;
+
+}
     diag(Loc, WarningMessage)
         << Conversion << FixItHint::CreateInsertion(Loc, "explicit ");
     return;
@@ -100,8 +110,10 @@ void ExplicitConstructorCheck::check(const MatchFinder::MatchResult &Result) {
 
   const auto *Ctor = Result.Nodes.getNodeAs<CXXConstructorDecl>("ctor");
   if (Ctor->isOutOfLine() || Ctor->getNumParams() == 0 ||
-      Ctor->getMinRequiredArguments() > 1)
+      Ctor->getMinRequiredArguments() > 1) {
     return;
+
+}
 
   bool takesInitializerList = isStdInitializerList(
       Ctor->getParamDecl(0)->getType().getNonReferenceType());
@@ -115,12 +127,14 @@ void ExplicitConstructorCheck::check(const MatchFinder::MatchResult &Result) {
         FindToken(*Result.SourceManager, getLangOpts(),
                   Ctor->getOuterLocStart(), Ctor->getEndLoc(), isKWExplicit);
     StringRef ConstructorDescription;
-    if (Ctor->isMoveConstructor())
+    if (Ctor->isMoveConstructor()) {
       ConstructorDescription = "move";
-    else if (Ctor->isCopyConstructor())
+    } else if (Ctor->isCopyConstructor()) {
       ConstructorDescription = "copy";
-    else
+    } else {
       ConstructorDescription = "initializer-list";
+
+}
 
     auto Diag = diag(Ctor->getLocation(),
                      "%0 constructor should not be declared explicit")
@@ -133,8 +147,10 @@ void ExplicitConstructorCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   if (Ctor->isExplicit() || Ctor->isCopyOrMoveConstructor() ||
-      takesInitializerList)
+      takesInitializerList) {
     return;
+
+}
 
   bool SingleArgument =
       Ctor->getNumParams() == 1 && !Ctor->getParamDecl(0)->isParameterPack();

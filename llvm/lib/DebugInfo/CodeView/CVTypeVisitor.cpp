@@ -24,8 +24,10 @@ template <typename T>
 static Error visitKnownRecord(CVType &Record, TypeVisitorCallbacks &Callbacks) {
   TypeRecordKind RK = static_cast<TypeRecordKind>(Record.kind());
   T KnownRecord(RK);
-  if (auto EC = Callbacks.visitKnownRecord(Record, KnownRecord))
+  if (auto EC = Callbacks.visitKnownRecord(Record, KnownRecord)) {
     return EC;
+
+}
   return Error::success();
 }
 
@@ -34,20 +36,26 @@ static Error visitKnownMember(CVMemberRecord &Record,
                               TypeVisitorCallbacks &Callbacks) {
   TypeRecordKind RK = static_cast<TypeRecordKind>(Record.Kind);
   T KnownRecord(RK);
-  if (auto EC = Callbacks.visitKnownMember(Record, KnownRecord))
+  if (auto EC = Callbacks.visitKnownMember(Record, KnownRecord)) {
     return EC;
+
+}
   return Error::success();
 }
 
 static Error visitMemberRecord(CVMemberRecord &Record,
                                TypeVisitorCallbacks &Callbacks) {
-  if (auto EC = Callbacks.visitMemberBegin(Record))
+  if (auto EC = Callbacks.visitMemberBegin(Record)) {
     return EC;
+
+}
 
   switch (Record.Kind) {
   default:
-    if (auto EC = Callbacks.visitUnknownMember(Record))
+    if (auto EC = Callbacks.visitUnknownMember(Record)) {
       return EC;
+
+}
     break;
 #define MEMBER_RECORD(EnumName, EnumVal, Name)                                 \
   case EnumName: {                                                             \
@@ -62,8 +70,10 @@ static Error visitMemberRecord(CVMemberRecord &Record,
 #include "llvm/DebugInfo/CodeView/CodeViewTypes.def"
   }
 
-  if (auto EC = Callbacks.visitMemberEnd(Record))
+  if (auto EC = Callbacks.visitMemberEnd(Record)) {
     return EC;
+
+}
 
   return Error::success();
 }
@@ -98,8 +108,10 @@ CVTypeVisitor::CVTypeVisitor(TypeVisitorCallbacks &Callbacks)
 Error CVTypeVisitor::finishVisitation(CVType &Record) {
   switch (Record.kind()) {
   default:
-    if (auto EC = Callbacks.visitUnknownType(Record))
+    if (auto EC = Callbacks.visitUnknownType(Record)) {
       return EC;
+
+}
     break;
 #define TYPE_RECORD(EnumName, EnumVal, Name)                                   \
   case EnumName: {                                                             \
@@ -114,22 +126,28 @@ Error CVTypeVisitor::finishVisitation(CVType &Record) {
 #include "llvm/DebugInfo/CodeView/CodeViewTypes.def"
   }
 
-  if (auto EC = Callbacks.visitTypeEnd(Record))
+  if (auto EC = Callbacks.visitTypeEnd(Record)) {
     return EC;
+
+}
 
   return Error::success();
 }
 
 Error CVTypeVisitor::visitTypeRecord(CVType &Record, TypeIndex Index) {
-  if (auto EC = Callbacks.visitTypeBegin(Record, Index))
+  if (auto EC = Callbacks.visitTypeBegin(Record, Index)) {
     return EC;
+
+}
 
   return finishVisitation(Record);
 }
 
 Error CVTypeVisitor::visitTypeRecord(CVType &Record) {
-  if (auto EC = Callbacks.visitTypeBegin(Record))
+  if (auto EC = Callbacks.visitTypeBegin(Record)) {
     return EC;
+
+}
 
   return finishVisitation(Record);
 }
@@ -141,16 +159,20 @@ Error CVTypeVisitor::visitMemberRecord(CVMemberRecord Record) {
 /// Visits the type records in Data. Sets the error flag on parse failures.
 Error CVTypeVisitor::visitTypeStream(const CVTypeArray &Types) {
   for (auto I : Types) {
-    if (auto EC = visitTypeRecord(I))
+    if (auto EC = visitTypeRecord(I)) {
       return EC;
+
+}
   }
   return Error::success();
 }
 
 Error CVTypeVisitor::visitTypeStream(CVTypeRange Types) {
   for (auto I : Types) {
-    if (auto EC = visitTypeRecord(I))
+    if (auto EC = visitTypeRecord(I)) {
       return EC;
+
+}
   }
   return Error::success();
 }
@@ -159,8 +181,10 @@ Error CVTypeVisitor::visitTypeStream(TypeCollection &Types) {
   Optional<TypeIndex> I = Types.getFirst();
   while (I) {
     CVType Type = Types.getType(*I);
-    if (auto EC = visitTypeRecord(Type, *I))
+    if (auto EC = visitTypeRecord(Type, *I)) {
       return EC;
+
+}
     I = Types.getNext(*I);
   }
   return Error::success();
@@ -169,13 +193,17 @@ Error CVTypeVisitor::visitTypeStream(TypeCollection &Types) {
 Error CVTypeVisitor::visitFieldListMemberStream(BinaryStreamReader &Reader) {
   TypeLeafKind Leaf;
   while (!Reader.empty()) {
-    if (auto EC = Reader.readEnum(Leaf))
+    if (auto EC = Reader.readEnum(Leaf)) {
       return EC;
+
+}
 
     CVMemberRecord Record;
     Record.Kind = Leaf;
-    if (auto EC = ::visitMemberRecord(Record, Callbacks))
+    if (auto EC = ::visitMemberRecord(Record, Callbacks)) {
       return EC;
+
+}
   }
 
   return Error::success();

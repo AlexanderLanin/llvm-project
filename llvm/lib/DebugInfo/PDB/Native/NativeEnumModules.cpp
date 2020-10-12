@@ -32,8 +32,10 @@ NativeEnumModules::getChildAtIndex(uint32_t N) const {
 }
 
 std::unique_ptr<PDBSymbol> NativeEnumModules::getNext() {
-  if (Index >= getChildCount())
+  if (Index >= getChildCount()) {
     return nullptr;
+
+}
   return getChildAtIndex(Index++);
 }
 

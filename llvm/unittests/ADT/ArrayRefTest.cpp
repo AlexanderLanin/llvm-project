@@ -192,8 +192,10 @@ TEST(ArrayRefTest, EmptyEquals) {
 
 TEST(ArrayRefTest, ConstConvert) {
   int buf[4];
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 4; ++i) {
     buf[i] = i;
+
+}
 
   static int *A[] = {&buf[0], &buf[1], &buf[2], &buf[3]};
   ArrayRef<const int *> a((ArrayRef<int *>(A)));
@@ -210,8 +212,10 @@ static void ArgTest12(ArrayRef<int> A) {
 TEST(ArrayRefTest, InitializerList) {
   std::initializer_list<int> init_list = { 0, 1, 2, 3, 4 };
   ArrayRef<int> A = init_list;
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(i, A[i]);
+
+}
 
   std::vector<int> B = ReturnTest12();
   A = B;

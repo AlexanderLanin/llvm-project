@@ -44,8 +44,10 @@ bool SmartPtrModeling::isNullAfterMoveMethod(const CallEvent &Call) const {
 
 bool SmartPtrModeling::evalCall(const CallEvent &Call,
                                 CheckerContext &C) const {
-  if (!isNullAfterMoveMethod(Call))
+  if (!isNullAfterMoveMethod(Call)) {
     return false;
+
+}
 
   ProgramStateRef State = C.getState();
   const MemRegion *ThisR =

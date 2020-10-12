@@ -36,8 +36,10 @@ static CallInst *ReplaceCallWith(const char *NewFn, CallInst *CI,
   Module *M = CI->getModule();
   // Get or insert the definition now.
   std::vector<Type *> ParamTys;
-  for (ArgIt I = ArgBegin; I != ArgEnd; ++I)
+  for (ArgIt I = ArgBegin; I != ArgEnd; ++I) {
     ParamTys.push_back((*I)->getType());
+
+}
   FunctionCallee FCache =
       M->getOrInsertFunction(NewFn, FunctionType::get(RetTy, ParamTys, false));
 
@@ -45,8 +47,10 @@ static CallInst *ReplaceCallWith(const char *NewFn, CallInst *CI,
   SmallVector<Value *, 8> Args(ArgBegin, ArgEnd);
   CallInst *NewCI = Builder.CreateCall(FCache, Args);
   NewCI->setName(CI->getName());
-  if (!CI->use_empty())
+  if (!CI->use_empty()) {
     CI->replaceAllUsesWith(NewCI);
+
+}
   return NewCI;
 }
 
@@ -272,13 +276,17 @@ void IntrinsicLowering::LowerIntrinsicCall(CallInst *CI) {
 
   case Intrinsic::stacksave:
   case Intrinsic::stackrestore: {
-    if (!Warned)
+    if (!Warned) {
       errs() << "WARNING: this target does not support the llvm.stack"
              << (Callee->getIntrinsicID() == Intrinsic::stacksave ?
                "save" : "restore") << " intrinsic.\n";
+
+}
     Warned = true;
-    if (Callee->getIntrinsicID() == Intrinsic::stacksave)
+    if (Callee->getIntrinsicID() == Intrinsic::stacksave) {
       CI->replaceAllUsesWith(Constant::getNullValue(CI->getType()));
+
+}
     break;
   }
 
@@ -430,8 +438,10 @@ void IntrinsicLowering::LowerIntrinsicCall(CallInst *CI) {
   }
   case Intrinsic::flt_rounds:
      // Lower to "round to the nearest"
-     if (!CI->getType()->isVoidTy())
+     if (!CI->getType()->isVoidTy()) {
        CI->replaceAllUsesWith(ConstantInt::get(CI->getType(), 1));
+
+}
      break;
   case Intrinsic::invariant_start:
   case Intrinsic::lifetime_start:
@@ -453,12 +463,16 @@ bool IntrinsicLowering::LowerToByteSwap(CallInst *CI) {
   // Verify this is a simple bswap.
   if (CI->getNumArgOperands() != 1 ||
       CI->getType() != CI->getArgOperand(0)->getType() ||
-      !CI->getType()->isIntegerTy())
+      !CI->getType()->isIntegerTy()) {
     return false;
 
+}
+
   IntegerType *Ty = dyn_cast<IntegerType>(CI->getType());
-  if (!Ty)
+  if (!Ty) {
     return false;
+
+}
 
   // Okay, we can do this xform, do so now.
   Module *M = CI->getModule();

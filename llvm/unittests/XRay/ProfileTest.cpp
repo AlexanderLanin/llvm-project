@@ -38,8 +38,10 @@ TEST(ProfileTest, ExpandPath) {
   Profile P;
   auto PathID = P.internPath({3, 2, 1});
   auto PathOrError = P.expandPath(PathID);
-  if (!PathOrError)
+  if (!PathOrError) {
     FAIL() << "Error: " << PathOrError.takeError();
+
+}
   EXPECT_THAT(PathOrError.get(), ElementsAre(3, 2, 1));
 }
 

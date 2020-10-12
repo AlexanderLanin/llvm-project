@@ -52,8 +52,10 @@ void UseTransparentFunctorsCheck::registerMatchers(MatchFinder *Finder) {
           .bind("FunctorParentLoc"),
       this);
 
-  if (SafeMode)
+  if (SafeMode) {
     return;
+
+}
 
   // Non-transparent functor constructed. No FIXIT. There is no easy way
   // to rule out the problematic char* vs string case.
@@ -91,34 +93,46 @@ void UseTransparentFunctorsCheck::check(
       Result.Nodes.getNodeAs<TypeLoc>("FunctorParentLoc")
           ->getAs<TemplateSpecializationTypeLoc>();
 
-  if (!FunctorParentLoc)
+  if (!FunctorParentLoc) {
     return;
+
+}
 
   unsigned ArgNum = 0;
   const auto *FunctorParentType =
       FunctorParentLoc.getType()->castAs<TemplateSpecializationType>();
   for (; ArgNum < FunctorParentType->getNumArgs(); ++ArgNum) {
     const TemplateArgument &Arg = FunctorParentType->getArg(ArgNum);
-    if (Arg.getKind() != TemplateArgument::Type)
+    if (Arg.getKind() != TemplateArgument::Type) {
       continue;
+
+}
     QualType ParentArgType = Arg.getAsType();
     if (ParentArgType->isRecordType() &&
         ParentArgType->getAsCXXRecordDecl() ==
-            Functor->getAsType()->getAsCXXRecordDecl())
+            Functor->getAsType()->getAsCXXRecordDecl()) {
       break;
+
+}
   }
   // Functor is a default template argument.
-  if (ArgNum == FunctorParentType->getNumArgs())
+  if (ArgNum == FunctorParentType->getNumArgs()) {
     return;
+
+}
   TemplateArgumentLoc FunctorLoc = FunctorParentLoc.getArgLoc(ArgNum);
   auto FunctorTypeLoc = getInnerTypeLocAs<TemplateSpecializationTypeLoc>(
       FunctorLoc.getTypeSourceInfo()->getTypeLoc());
-  if (FunctorTypeLoc.isNull())
+  if (FunctorTypeLoc.isNull()) {
     return;
 
+}
+
   SourceLocation ReportLoc = FunctorLoc.getLocation();
-  if (ReportLoc.isInvalid())
+  if (ReportLoc.isInvalid()) {
     return;
+
+}
   diag(ReportLoc, Message) << (FuncClass->getName() + "<>").str()
                            << FixItHint::CreateRemoval(
                                   FunctorTypeLoc.getArgLoc(0).getSourceRange());

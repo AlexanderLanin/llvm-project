@@ -63,10 +63,14 @@ std::pair<unsigned, unsigned> FunctionSummary::specialRefCounts() const {
   auto Refs = refs();
   unsigned RORefCnt = 0, WORefCnt = 0;
   int I;
-  for (I = Refs.size() - 1; I >= 0 && Refs[I].isWriteOnly(); --I)
+  for (I = Refs.size() - 1; I >= 0 && Refs[I].isWriteOnly(); --I) {
     WORefCnt++;
-  for (; I >= 0 && Refs[I].isReadOnly(); --I)
+
+}
+  for (; I >= 0 && Refs[I].isReadOnly(); --I) {
     RORefCnt++;
+
+}
   return {RORefCnt, WORefCnt};
 }
 
@@ -74,18 +78,30 @@ constexpr uint64_t ModuleSummaryIndex::BitcodeSummaryVersion;
 
 uint64_t ModuleSummaryIndex::getFlags() const {
   uint64_t Flags = 0;
-  if (withGlobalValueDeadStripping())
+  if (withGlobalValueDeadStripping()) {
     Flags |= 0x1;
-  if (skipModuleByDistributedBackend())
+
+}
+  if (skipModuleByDistributedBackend()) {
     Flags |= 0x2;
-  if (hasSyntheticEntryCounts())
+
+}
+  if (hasSyntheticEntryCounts()) {
     Flags |= 0x4;
-  if (enableSplitLTOUnit())
+
+}
+  if (enableSplitLTOUnit()) {
     Flags |= 0x8;
-  if (partiallySplitLTOUnits())
+
+}
+  if (partiallySplitLTOUnits()) {
     Flags |= 0x10;
-  if (withAttributePropagation())
+
+}
+  if (withAttributePropagation()) {
     Flags |= 0x20;
+
+}
   return Flags;
 }
 
@@ -93,29 +109,41 @@ void ModuleSummaryIndex::setFlags(uint64_t Flags) {
   assert(Flags <= 0x3f && "Unexpected bits in flag");
   // 1 bit: WithGlobalValueDeadStripping flag.
   // Set on combined index only.
-  if (Flags & 0x1)
+  if (Flags & 0x1) {
     setWithGlobalValueDeadStripping();
+
+}
   // 1 bit: SkipModuleByDistributedBackend flag.
   // Set on combined index only.
-  if (Flags & 0x2)
+  if (Flags & 0x2) {
     setSkipModuleByDistributedBackend();
+
+}
   // 1 bit: HasSyntheticEntryCounts flag.
   // Set on combined index only.
-  if (Flags & 0x4)
+  if (Flags & 0x4) {
     setHasSyntheticEntryCounts();
+
+}
   // 1 bit: DisableSplitLTOUnit flag.
   // Set on per module indexes. It is up to the client to validate
   // the consistency of this flag across modules being linked.
-  if (Flags & 0x8)
+  if (Flags & 0x8) {
     setEnableSplitLTOUnit();
+
+}
   // 1 bit: PartiallySplitLTOUnits flag.
   // Set on combined index only.
-  if (Flags & 0x10)
+  if (Flags & 0x10) {
     setPartiallySplitLTOUnits();
+
+}
   // 1 bit: WithAttributePropagation flag.
   // Set on combined index only.
-  if (Flags & 0x20)
+  if (Flags & 0x20) {
     setWithAttributePropagation();
+
+}
 }
 
 // Collect for the given module the list of function it defines
@@ -126,12 +154,16 @@ void ModuleSummaryIndex::collectDefinedFunctionsForModule(
     auto GUID = GlobalList.first;
     for (auto &GlobSummary : GlobalList.second.SummaryList) {
       auto *Summary = dyn_cast_or_null<FunctionSummary>(GlobSummary.get());
-      if (!Summary)
+      if (!Summary) {
         // Ignore global variable, focus on functions
         continue;
+
+}
       // Ignore summaries from other modules.
-      if (Summary->modulePath() != ModulePath)
+      if (Summary->modulePath() != ModulePath) {
         continue;
+
+}
       GVSummaryMap[GUID] = Summary;
     }
   }
@@ -150,14 +182,22 @@ ModuleSummaryIndex::getGlobalValueSummary(uint64_t ValueGUID,
 
 bool ModuleSummaryIndex::isGUIDLive(GlobalValue::GUID GUID) const {
   auto VI = getValueInfo(GUID);
-  if (!VI)
+  if (!VI) {
     return true;
+
+}
   const auto &SummaryList = VI.getSummaryList();
-  if (SummaryList.empty())
+  if (SummaryList.empty()) {
     return true;
-  for (auto &I : SummaryList)
-    if (isGlobalValueLive(I.get()))
+
+}
+  for (auto &I : SummaryList) {
+    if (isGlobalValueLive(I.get())) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -172,15 +212,21 @@ static void propagateAttributesToRefs(GlobalValueSummary *S) {
   //   for them.
   for (auto &VI : S->refs()) {
     assert(VI.getAccessSpecifier() == 0 || isa<FunctionSummary>(S));
-    for (auto &Ref : VI.getSummaryList())
+    for (auto &Ref : VI.getSummaryList()) {
       // If references to alias is not read/writeonly then aliasee
       // is not read/writeonly
       if (auto *GVS = dyn_cast<GlobalVarSummary>(Ref->getBaseObject())) {
-        if (!VI.isReadOnly())
+        if (!VI.isReadOnly()) {
           GVS->setReadOnly(false);
-        if (!VI.isWriteOnly())
+
+}
+        if (!VI.isWriteOnly()) {
           GVS->setWriteOnly(false);
+
+}
       }
+
+}
   }
 }
 
@@ -212,13 +258,17 @@ static void propagateAttributesToRefs(GlobalValueSummary *S) {
 // See internalizeGVsAfterImport.
 void ModuleSummaryIndex::propagateAttributes(
     const DenseSet<GlobalValue::GUID> &GUIDPreservedSymbols) {
-  if (!PropagateAttrs)
+  if (!PropagateAttrs) {
     return;
-  for (auto &P : *this)
+
+}
+  for (auto &P : *this) {
     for (auto &S : P.second.SummaryList) {
-      if (!isGlobalValueLive(S.get()))
+      if (!isGlobalValueLive(S.get())) {
         // We don't examine references from dead objects
         continue;
+
+}
 
       // Global variable can't be marked read/writeonly if it is not eligible
       // to import since we need to ensure that all external references get
@@ -229,7 +279,7 @@ void ModuleSummaryIndex::propagateAttributes(
       // preserved means it could have external to DSO writes or reads, and
       // notEligibleToImport means it could have writes or reads via inline
       // assembly leading it to be in the @llvm.*used).
-      if (auto *GVS = dyn_cast<GlobalVarSummary>(S->getBaseObject()))
+      if (auto *GVS = dyn_cast<GlobalVarSummary>(S->getBaseObject())) {
         // Here we intentionally pass S.get() not GVS, because S could be
         // an alias. We don't analyze references here, because we have to
         // know exactly if GV is readonly to do so.
@@ -238,20 +288,36 @@ void ModuleSummaryIndex::propagateAttributes(
           GVS->setReadOnly(false);
           GVS->setWriteOnly(false);
         }
+
+}
       propagateAttributesToRefs(S.get());
     }
+
+}
   setWithAttributePropagation();
-  if (llvm::AreStatisticsEnabled())
-    for (auto &P : *this)
-      if (P.second.SummaryList.size())
+  if (llvm::AreStatisticsEnabled()) {
+    for (auto &P : *this) {
+      if (P.second.SummaryList.size()) {
         if (auto *GVS = dyn_cast<GlobalVarSummary>(
-                P.second.SummaryList[0]->getBaseObject()))
+                P.second.SummaryList[0]->getBaseObject())) {
           if (isGlobalValueLive(GVS)) {
-            if (GVS->maybeReadOnly())
+            if (GVS->maybeReadOnly()) {
               ReadOnlyLiveGVars++;
-            if (GVS->maybeWriteOnly())
+
+}
+            if (GVS->maybeWriteOnly()) {
               WriteOnlyLiveGVars++;
+
+}
           }
+
+}
+
+}
+
+}
+
+}
 }
 
 bool ModuleSummaryIndex::canImportGlobalVar(GlobalValueSummary *S,
@@ -297,8 +363,10 @@ void ModuleSummaryIndex::dumpSCCs(raw_ostream &O) {
       << ") {\n";
     for (const ValueInfo &V : *I) {
       FunctionSummary *F = nullptr;
-      if (V.getSummaryList().size())
+      if (V.getSummaryList().size()) {
         F = cast<FunctionSummary>(V.getSummaryList().front().get());
+
+}
       O << " " << (F == nullptr ? "External" : "") << " " << utostr(V.getGUID())
         << (I.hasCycle() ? " (has cycle)" : "") << "\n";
     }
@@ -337,21 +405,27 @@ void Attributes::add(const Twine &Name, const Twine &Value,
 
 void Attributes::addComment(const Twine &Comment) {
   if (!Comment.isTriviallyEmpty()) {
-    if (Comments.empty())
+    if (Comments.empty()) {
       Comments = " // ";
-    else
+    } else {
       Comments += ", ";
+
+}
     Comments += Comment.str();
   }
 }
 
 std::string Attributes::getAsString() const {
-  if (Attrs.empty())
+  if (Attrs.empty()) {
     return "";
 
+}
+
   std::string Ret = "[";
-  for (auto &A : Attrs)
+  for (auto &A : Attrs) {
     Ret += A + ",";
+
+}
   Ret.pop_back();
   Ret += "];";
   Ret += Comments;
@@ -399,8 +473,10 @@ static std::string fflagsToString(FunctionSummary::FFlags F) {
 // Get string representation of function instruction count and flags.
 static std::string getSummaryAttributes(GlobalValueSummary* GVS) {
   auto *FS = dyn_cast_or_null<FunctionSummary>(GVS);
-  if (!FS)
+  if (!FS) {
     return "";
+
+}
 
   return std::string("inst: ") + std::to_string(FS->instCount()) +
          ", ffl: " + fflagsToString(FS->fflags());
@@ -415,14 +491,18 @@ static std::string getNodeVisualName(const ValueInfo &VI) {
 }
 
 static std::string getNodeLabel(const ValueInfo &VI, GlobalValueSummary *GVS) {
-  if (isa<AliasSummary>(GVS))
+  if (isa<AliasSummary>(GVS)) {
     return getNodeVisualName(VI);
+
+}
 
   std::string Attrs = getSummaryAttributes(GVS);
   std::string Label =
       getNodeVisualName(VI) + "|" + linkageToString(GVS->linkage());
-  if (!Attrs.empty())
+  if (!Attrs.empty()) {
     Label += std::string(" (") + Attrs + ")";
+
+}
   Label += "}";
 
   return Label;
@@ -445,20 +525,26 @@ static void defineExternalNode(raw_ostream &OS, const char *Pfx,
 }
 
 static bool hasReadOnlyFlag(const GlobalValueSummary *S) {
-  if (auto *GVS = dyn_cast<GlobalVarSummary>(S))
+  if (auto *GVS = dyn_cast<GlobalVarSummary>(S)) {
     return GVS->maybeReadOnly();
+
+}
   return false;
 }
 
 static bool hasWriteOnlyFlag(const GlobalValueSummary *S) {
-  if (auto *GVS = dyn_cast<GlobalVarSummary>(S))
+  if (auto *GVS = dyn_cast<GlobalVarSummary>(S)) {
     return GVS->maybeWriteOnly();
+
+}
   return false;
 }
 
 static bool hasConstantFlag(const GlobalValueSummary *S) {
-  if (auto *GVS = dyn_cast<GlobalVarSummary>(S))
+  if (auto *GVS = dyn_cast<GlobalVarSummary>(S)) {
     return GVS->isConstant();
+
+}
   return false;
 }
 
@@ -535,26 +621,40 @@ void ModuleSummaryIndex::exportToDot(
         A.add("shape", "box");
       } else {
         A.add("shape", "Mrecord", "variable");
-        if (Flags.Live && hasReadOnlyFlag(SummaryIt.second))
+        if (Flags.Live && hasReadOnlyFlag(SummaryIt.second)) {
           A.addComment("immutable");
-        if (Flags.Live && hasWriteOnlyFlag(SummaryIt.second))
+
+}
+        if (Flags.Live && hasWriteOnlyFlag(SummaryIt.second)) {
           A.addComment("writeOnly");
-        if (Flags.Live && hasConstantFlag(SummaryIt.second))
+
+}
+        if (Flags.Live && hasConstantFlag(SummaryIt.second)) {
           A.addComment("constant");
+
+}
       }
-      if (Flags.DSOLocal)
+      if (Flags.DSOLocal) {
         A.addComment("dsoLocal");
-      if (Flags.CanAutoHide)
+
+}
+      if (Flags.CanAutoHide) {
         A.addComment("canAutoHide");
-      if (GUIDPreservedSymbols.count(SummaryIt.first))
+
+}
+      if (GUIDPreservedSymbols.count(SummaryIt.first)) {
         A.addComment("preserved");
+
+}
 
       auto VI = getValueInfo(SummaryIt.first);
       A.add("label", getNodeLabel(VI, SummaryIt.second));
-      if (!Flags.Live)
+      if (!Flags.Live) {
         A.add("fillcolor", "red", "dead");
-      else if (Flags.NotEligibleToImport)
+      } else if (Flags.NotEligibleToImport) {
         A.add("fillcolor", "yellow", "not eligible to import");
+
+}
 
       OS << "    " << NodeId(ModId, SummaryIt.first) << " " << A.getAsString()
          << "\n";
@@ -563,19 +663,25 @@ void ModuleSummaryIndex::exportToDot(
 
     for (auto &SummaryIt : GVSMap) {
       auto *GVS = SummaryIt.second;
-      for (auto &R : GVS->refs())
+      for (auto &R : GVS->refs()) {
         Draw(SummaryIt.first, R.getGUID(),
              R.isWriteOnly() ? -1 : (R.isReadOnly() ? -2 : -3));
+
+}
 
       if (auto *AS = dyn_cast_or_null<AliasSummary>(SummaryIt.second)) {
         Draw(SummaryIt.first, AS->getAliaseeGUID(), -4);
         continue;
       }
 
-      if (auto *FS = dyn_cast_or_null<FunctionSummary>(SummaryIt.second))
-        for (auto &CGEdge : FS->calls())
+      if (auto *FS = dyn_cast_or_null<FunctionSummary>(SummaryIt.second)) {
+        for (auto &CGEdge : FS->calls()) {
           Draw(SummaryIt.first, CGEdge.first.getGUID(),
                static_cast<int>(CGEdge.second.Hotness));
+
+}
+
+}
     }
     OS << "  }\n";
   }
@@ -589,14 +695,18 @@ void ModuleSummaryIndex::exportToDot(
       // in the loop below.
       ModList.push_back(-1);
     }
-    for (auto DstMod : ModList)
+    for (auto DstMod : ModList) {
       // The edge representing call or ref is drawn to every module where target
       // symbol is defined. When target is a linkonce symbol there can be
       // multiple edges representing a single call or ref, both intra-module and
       // cross-module. As we've already drawn all intra-module edges before we
       // skip it here.
-      if (DstMod != E.SrcMod)
+      if (DstMod != E.SrcMod) {
         DrawEdge("  ", E.SrcMod, E.Src, DstMod, E.Dst, E.Hotness);
+
+}
+
+}
   }
 
   OS << "}";

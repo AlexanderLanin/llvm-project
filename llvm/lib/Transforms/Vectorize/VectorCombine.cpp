@@ -117,8 +117,10 @@ static bool isExtractExtractCheap(Instruction *Ext0, Instruction *Ext1,
     // If the extract indexes are identical, no shuffle is needed.
     ConvertToShuffle = nullptr;
   } else {
-    if (IsBinOp && DisableBinopExtractShuffle)
+    if (IsBinOp && DisableBinopExtractShuffle) {
       return true;
+
+}
 
     // If we are extracting from 2 different indexes, then one operand must be
     // shuffled before performing the vector operation. The shuffle mask is
@@ -132,12 +134,14 @@ static bool isExtractExtractCheap(Instruction *Ext0, Instruction *Ext1,
 
     // The more expensive extract will be replaced by a shuffle. If the extracts
     // have the same cost, replace the extract with the higher index.
-    if (Extract0Cost > Extract1Cost)
+    if (Extract0Cost > Extract1Cost) {
       ConvertToShuffle = Ext0;
-    else if (Extract1Cost > Extract0Cost)
+    } else if (Extract1Cost > Extract0Cost) {
       ConvertToShuffle = Ext1;
-    else
+    } else {
       ConvertToShuffle = Ext0Index > Ext1Index ? Ext0 : Ext1;
+
+}
   }
 
   // Aggressively form a vector op if the cost is equal because the transform
@@ -181,8 +185,10 @@ static void foldExtExtBinop(Instruction *Ext0, Instruction *Ext1,
 
   // All IR flags are safe to back-propagate because any potential poison
   // created in unused vector elements is discarded by the extract.
-  if (auto *VecBOInst = dyn_cast<Instruction>(VecBO))
+  if (auto *VecBOInst = dyn_cast<Instruction>(VecBO)) {
     VecBOInst->copyIRFlags(&I);
+
+}
 
   Value *Extract = Builder.CreateExtractElement(VecBO, Ext0->getOperand(1));
   I.replaceAllUsesWith(Extract);
@@ -192,25 +198,33 @@ static void foldExtExtBinop(Instruction *Ext0, Instruction *Ext1,
 static bool foldExtractExtract(Instruction &I, const TargetTransformInfo &TTI) {
   // It is not safe to transform things like div, urem, etc. because we may
   // create undefined behavior when executing those on unknown vector elements.
-  if (!isSafeToSpeculativelyExecute(&I))
+  if (!isSafeToSpeculativelyExecute(&I)) {
     return false;
+
+}
 
   Instruction *Ext0, *Ext1;
   CmpInst::Predicate Pred = CmpInst::BAD_ICMP_PREDICATE;
   if (!match(&I, m_Cmp(Pred, m_Instruction(Ext0), m_Instruction(Ext1))) &&
-      !match(&I, m_BinOp(m_Instruction(Ext0), m_Instruction(Ext1))))
+      !match(&I, m_BinOp(m_Instruction(Ext0), m_Instruction(Ext1)))) {
     return false;
+
+}
 
   Value *V0, *V1;
   uint64_t C0, C1;
   if (!match(Ext0, m_ExtractElement(m_Value(V0), m_ConstantInt(C0))) ||
       !match(Ext1, m_ExtractElement(m_Value(V1), m_ConstantInt(C1))) ||
-      V0->getType() != V1->getType())
+      V0->getType() != V1->getType()) {
     return false;
 
+}
+
   Instruction *ConvertToShuffle;
-  if (isExtractExtractCheap(Ext0, Ext1, I.getOpcode(), TTI, ConvertToShuffle))
+  if (isExtractExtractCheap(Ext0, Ext1, I.getOpcode(), TTI, ConvertToShuffle)) {
     return false;
+
+}
 
   if (ConvertToShuffle) {
     // The shuffle mask is undefined except for 1 lane that is being translated
@@ -230,16 +244,20 @@ static bool foldExtractExtract(Instruction &I, const TargetTransformInfo &TTI) {
                                               UndefValue::get(VecTy),
                                               ConstantVector::get(ShufMask));
     Value *NewExt = Builder.CreateExtractElement(Shuf, CheapExtIndex);
-    if (ConvertToShuffle == Ext0)
+    if (ConvertToShuffle == Ext0) {
       Ext0 = cast<Instruction>(NewExt);
-    else
+    } else {
       Ext1 = cast<Instruction>(NewExt);
+
+}
   }
 
-  if (Pred != CmpInst::BAD_ICMP_PREDICATE)
+  if (Pred != CmpInst::BAD_ICMP_PREDICATE) {
     foldExtExtCmp(Ext0, Ext1, I, TTI);
-  else
+  } else {
     foldExtExtBinop(Ext0, Ext1, I, TTI);
+
+}
 
   return true;
 }
@@ -248,27 +266,37 @@ static bool foldExtractExtract(Instruction &I, const TargetTransformInfo &TTI) {
 /// handled in the callers of this function.
 static bool runImpl(Function &F, const TargetTransformInfo &TTI,
                     const DominatorTree &DT) {
-  if (DisableVectorCombine)
+  if (DisableVectorCombine) {
     return false;
+
+}
 
   bool MadeChange = false;
   for (BasicBlock &BB : F) {
     // Ignore unreachable basic blocks.
-    if (!DT.isReachableFromEntry(&BB))
+    if (!DT.isReachableFromEntry(&BB)) {
       continue;
+
+}
     // Do not delete instructions under here and invalidate the iterator.
     // Walk the block backwards for efficiency. We're matching a chain of
     // use->defs, so we're more likely to succeed by starting from the bottom.
     // TODO: It could be more efficient to remove dead instructions
     //       iteratively in this loop rather than waiting until the end.
-    for (Instruction &I : make_range(BB.rbegin(), BB.rend()))
+    for (Instruction &I : make_range(BB.rbegin(), BB.rend())) {
       MadeChange |= foldExtractExtract(I, TTI);
+
+}
   }
 
   // We're done with transforms, so remove dead instructions.
-  if (MadeChange)
-    for (BasicBlock &BB : F)
+  if (MadeChange) {
+    for (BasicBlock &BB : F) {
       SimplifyInstructionsInBlock(&BB);
+
+}
+
+}
 
   return MadeChange;
 }
@@ -293,8 +321,10 @@ public:
   }
 
   bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
+    if (skipFunction(F)) {
       return false;
+
+}
     auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
     auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     return runImpl(F, TTI, DT);
@@ -317,8 +347,10 @@ PreservedAnalyses VectorCombinePass::run(Function &F,
                                          FunctionAnalysisManager &FAM) {
   TargetTransformInfo &TTI = FAM.getResult<TargetIRAnalysis>(F);
   DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-  if (!runImpl(F, TTI, DT))
+  if (!runImpl(F, TTI, DT)) {
     return PreservedAnalyses::all();
+
+}
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   PA.preserve<GlobalsAA>();

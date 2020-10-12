@@ -66,8 +66,10 @@ TEST(CommandMangler, StripPlugins) {
   std::vector<std::string> Cmd = {"clang++", "-Xclang", "-load",
                                   "-Xclang", "plugin",  "foo.cc"};
   Mangler.adjust(Cmd);
-  for (const char* Stripped : {"-Xclang", "-load", "plugin"})
+  for (const char* Stripped : {"-Xclang", "-load", "plugin"}) {
     EXPECT_THAT(Cmd, Not(Contains(Stripped)));
+
+}
 }
 
 TEST(CommandMangler, StripOutput) {
@@ -75,8 +77,10 @@ TEST(CommandMangler, StripOutput) {
   std::vector<std::string> Cmd = {"clang++", "-MF", "dependency", "-c",
                                   "foo.cc"};
   Mangler.adjust(Cmd);
-  for (const char* Stripped : {"-MF", "dependency"})
+  for (const char* Stripped : {"-MF", "dependency"}) {
     EXPECT_THAT(Cmd, Not(Contains(Stripped)));
+
+}
 }
 
 TEST(CommandMangler, ClangPath) {

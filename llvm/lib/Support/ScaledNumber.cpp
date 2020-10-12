@@ -40,14 +40,18 @@ std::pair<uint64_t, int16_t> ScaledNumbers::multiply64(uint64_t LHS,
   addWithCarry(P3);
 
   // Check whether the upper digit is empty.
-  if (!Upper)
+  if (!Upper) {
     return std::make_pair(Lower, 0);
+
+}
 
   // Shift as little as possible to maximize precision.
   unsigned LeadingZeros = countLeadingZeros(Upper);
   int Shift = 64 - LeadingZeros;
-  if (LeadingZeros)
+  if (LeadingZeros) {
     Upper = Upper << LeadingZeros | Lower >> Shift;
+
+}
   return getRounded(Upper, Shift,
                     Shift && (Lower & UINT64_C(1) << (Shift - 1)));
 }
@@ -70,8 +74,10 @@ std::pair<uint32_t, int16_t> ScaledNumbers::divide32(uint32_t Dividend,
   uint64_t Remainder = Dividend64 % Divisor;
 
   // If Quotient needs to be shifted, leave the rounding to getAdjusted().
-  if (Quotient > UINT32_MAX)
+  if (Quotient > UINT32_MAX) {
     return getAdjusted<uint32_t>(Quotient, Shift);
+
+}
 
   // Round based on the value of the next bit.
   return getRounded<uint32_t>(Quotient, Shift, Remainder >= getHalf(Divisor));
@@ -90,8 +96,10 @@ std::pair<uint64_t, int16_t> ScaledNumbers::divide64(uint64_t Dividend,
   }
 
   // Check for powers of two.
-  if (Divisor == 1)
+  if (Divisor == 1) {
     return std::make_pair(Dividend, Shift);
+
+}
 
   // Maximize size of dividend.
   if (int Zeros = countLeadingZeros(Dividend)) {
@@ -126,10 +134,14 @@ int ScaledNumbers::compareImpl(uint64_t L, uint64_t R, int ScaleDiff) {
   assert(ScaleDiff < 64 && "numbers too far apart");
 
   uint64_t L_adjusted = L >> ScaleDiff;
-  if (L_adjusted < R)
+  if (L_adjusted < R) {
     return -1;
-  if (L_adjusted > R)
+
+}
+  if (L_adjusted > R) {
     return 1;
+
+}
 
   return L > L_adjusted << ScaleDiff ? 1 : 0;
 }
@@ -192,16 +204,20 @@ static std::string stripTrailingZeros(const std::string &Float) {
   size_t NonZero = Float.find_last_not_of('0');
   assert(NonZero != std::string::npos && "no . in floating point string");
 
-  if (Float[NonZero] == '.')
+  if (Float[NonZero] == '.') {
     ++NonZero;
+
+}
 
   return Float.substr(0, NonZero + 1);
 }
 
 std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
                                        unsigned Precision) {
-  if (!D)
+  if (!D) {
     return "0.0";
+
+}
 
   // Canonicalize exponent and digits.
   uint64_t Above0 = 0;
@@ -215,8 +231,10 @@ std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
       D <<= Shift;
       E -= Shift;
 
-      if (!E)
+      if (!E) {
         Above0 = D;
+
+}
     }
   } else if (E > -64) {
     Above0 = D >> -E;
@@ -231,8 +249,10 @@ std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
   }
 
   // Fall back on APFloat for very small and very large numbers.
-  if (!Above0 && !Below0)
+  if (!Above0 && !Below0) {
     return toStringAPFloat(D, E, Precision);
+
+}
 
   // Append the digits before the decimal.
   std::string Str;
@@ -240,13 +260,17 @@ std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
   if (Above0) {
     appendNumber(Str, Above0);
     DigitsOut = Str.size();
-  } else
+  } else {
     appendDigit(Str, 0);
+
+}
   std::reverse(Str.begin(), Str.end());
 
   // Return early if there's nothing after the decimal.
-  if (!Below0)
+  if (!Below0) {
     return Str + ".0";
+
+}
 
   // Append the decimal and beyond.
   Str += '.';
@@ -262,8 +286,10 @@ std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
     if (ExtraShift) {
       --ExtraShift;
       Error *= 5;
-    } else
+    } else {
       Error *= 10;
+
+}
 
     Below0 *= 10;
     Extra *= 10;
@@ -271,33 +297,43 @@ std::string ScaledNumberBase::toString(uint64_t D, int16_t E, int Width,
     Extra = Extra & (UINT64_MAX >> 4);
     appendDigit(Str, Below0 >> 60);
     Below0 = Below0 & (UINT64_MAX >> 4);
-    if (DigitsOut || Str.back() != '0')
+    if (DigitsOut || Str.back() != '0') {
       ++DigitsOut;
+
+}
     ++SinceDot;
   } while (Error && (Below0 << 4 | Extra >> 60) >= Error / 2 &&
            (!Precision || DigitsOut <= Precision || SinceDot < 2));
 
   // Return early for maximum precision.
-  if (!Precision || DigitsOut <= Precision)
+  if (!Precision || DigitsOut <= Precision) {
     return stripTrailingZeros(Str);
+
+}
 
   // Find where to truncate.
   size_t Truncate =
       std::max(Str.size() - (DigitsOut - Precision), AfterDot + 1);
 
   // Check if there's anything to truncate.
-  if (Truncate >= Str.size())
+  if (Truncate >= Str.size()) {
     return stripTrailingZeros(Str);
 
+}
+
   bool Carry = doesRoundUp(Str[Truncate]);
-  if (!Carry)
+  if (!Carry) {
     return stripTrailingZeros(Str.substr(0, Truncate));
+
+}
 
   // Round with the first truncated digit.
   for (std::string::reverse_iterator I(Str.begin() + Truncate), E = Str.rend();
        I != E; ++I) {
-    if (*I == '.')
+    if (*I == '.') {
       continue;
+
+}
     if (*I == '9') {
       *I = '0';
       continue;

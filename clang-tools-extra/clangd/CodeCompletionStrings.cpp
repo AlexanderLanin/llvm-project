@@ -26,8 +26,10 @@ bool isInformativeQualifierChunk(CodeCompletionString::Chunk const &Chunk) {
 
 void appendEscapeSnippet(const llvm::StringRef Text, std::string *Out) {
   for (const auto Character : Text) {
-    if (Character == '$' || Character == '}' || Character == '\\')
+    if (Character == '$' || Character == '}' || Character == '\\') {
       Out->push_back('\\');
+
+}
     Out->push_back(Character);
   }
 }
@@ -64,8 +66,10 @@ std::string getDocComment(const ASTContext &Ctx,
   // FIXME: clang's completion also returns documentation for RK_Pattern if they
   // contain a pattern for ObjC properties. Unfortunately, there is no API to
   // get this declaration, so we don't show documentation in that case.
-  if (Result.Kind != CodeCompletionResult::RK_Declaration)
+  if (Result.Kind != CodeCompletionResult::RK_Declaration) {
     return "";
+
+}
   return Result.getDeclaration() ? getDeclComment(Ctx, *Result.getDeclaration())
                                  : "";
 }
@@ -79,8 +83,10 @@ std::string getDeclComment(const ASTContext &Ctx, const NamedDecl &Decl) {
     return "";
   }
   const RawComment *RC = getCompletionComment(Ctx, &Decl);
-  if (!RC)
+  if (!RC) {
     return "";
+
+}
   // Sanity check that the comment does not come from the PCH. We choose to not
   // write them into PCH, because they are racy and slow to load.
   assert(!Ctx.getSourceManager().isLoadedSourceLocation(RC->getBeginLoc()));
@@ -111,8 +117,10 @@ void getSignature(const CodeCompletionString &CCS, std::string *Signature,
   for (const auto &Chunk : CCS) {
     // Informative qualifier chunks only clutter completion results, skip
     // them.
-    if (isInformativeQualifierChunk(Chunk))
+    if (isInformativeQualifierChunk(Chunk)) {
       continue;
+
+}
 
     switch (Chunk.Kind) {
     case CodeCompletionString::CK_TypedText:
@@ -128,8 +136,10 @@ void getSignature(const CodeCompletionString &CCS, std::string *Signature,
       //   will end in ':' (unless there are no arguments, in which case we
       //   can safely treat them as C++).
       if (!llvm::StringRef(Chunk.Text).endswith(":")) { // Treat as C++.
-        if (RequiredQualifiers)
+        if (RequiredQualifiers) {
           *RequiredQualifiers = std::move(*Signature);
+
+}
         Signature->clear();
         Snippet->clear();
       } else { // Objective-C method with args.
@@ -236,9 +246,13 @@ std::string formatDocumentation(const CodeCompletionString &CCS,
 }
 
 std::string getReturnType(const CodeCompletionString &CCS) {
-  for (const auto &Chunk : CCS)
-    if (Chunk.Kind == CodeCompletionString::CK_ResultType)
+  for (const auto &Chunk : CCS) {
+    if (Chunk.Kind == CodeCompletionString::CK_ResultType) {
       return Chunk.Text;
+
+}
+
+}
   return "";
 }
 

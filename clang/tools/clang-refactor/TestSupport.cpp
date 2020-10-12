@@ -67,17 +67,23 @@ bool TestSelectionRangesInFile::foreachRange(
 namespace {
 
 void dumpChanges(const tooling::AtomicChanges &Changes, raw_ostream &OS) {
-  for (const auto &Change : Changes)
+  for (const auto &Change : Changes) {
     OS << const_cast<tooling::AtomicChange &>(Change).toYAMLString() << "\n";
+
+}
 }
 
 bool areChangesSame(const tooling::AtomicChanges &LHS,
                     const tooling::AtomicChanges &RHS) {
-  if (LHS.size() != RHS.size())
+  if (LHS.size() != RHS.size()) {
     return false;
+
+}
   for (auto I : llvm::zip(LHS, RHS)) {
-    if (!(std::get<0>(I) == std::get<1>(I)))
+    if (!(std::get<0>(I) == std::get<1>(I))) {
       return false;
+
+}
   }
   return true;
 }
@@ -85,8 +91,10 @@ bool areChangesSame(const tooling::AtomicChanges &LHS,
 bool printRewrittenSources(const tooling::AtomicChanges &Changes,
                            raw_ostream &OS) {
   std::set<std::string> Files;
-  for (const auto &Change : Changes)
+  for (const auto &Change : Changes) {
     Files.insert(Change.getFilePath());
+
+}
   tooling::ApplyChangesSpec Spec;
   Spec.Cleanup = false;
   for (const auto &File : Files) {
@@ -146,8 +154,10 @@ private:
         TestRanges.GroupedRanges[GroupIndex].Ranges.size()) {
       ++GroupIndex;
       if (GroupIndex >= TestRanges.GroupedRanges.size()) {
-        if (handleAllResults())
+        if (handleAllResults()) {
           exit(1); // error has occurred.
+
+}
         return;
       }
       Results.push_back({});
@@ -162,8 +172,10 @@ std::pair<unsigned, unsigned> getLineColumn(StringRef Filename,
                                             unsigned Offset) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> ErrOrFile =
       MemoryBuffer::getFile(Filename);
-  if (!ErrOrFile)
+  if (!ErrOrFile) {
     return {0, 0};
+
+}
   StringRef Source = ErrOrFile.get()->getBuffer();
   Source = Source.take_front(Offset);
   size_t LastLine = Source.find_last_of("\r\n");
@@ -195,23 +207,29 @@ bool TestRefactoringResultConsumer::handleAllResults() {
             });
       }
       if (!CanonicalResult && !CanonicalErrorMessage) {
-        if (HasResult)
+        if (HasResult) {
           CanonicalResult = std::move(*Result);
-        else
+        } else {
           CanonicalErrorMessage = std::move(ErrorMessage);
+
+}
         continue;
       }
 
       // Verify that this result corresponds to the canonical result.
       if (CanonicalErrorMessage) {
         // The error messages must match.
-        if (!HasResult && ErrorMessage == *CanonicalErrorMessage)
+        if (!HasResult && ErrorMessage == *CanonicalErrorMessage) {
           continue;
+
+}
       } else {
         assert(CanonicalResult && "missing canonical result");
         // The results must match.
-        if (HasResult && areChangesSame(*Result, *CanonicalResult))
+        if (HasResult && areChangesSame(*Result, *CanonicalResult)) {
           continue;
+
+}
       }
       Failed = true;
       // Report the mismatch.
@@ -222,15 +240,19 @@ bool TestRefactoringResultConsumer::handleAllResults() {
           << "error: unexpected refactoring result for range starting at "
           << LineColumn.first << ':' << LineColumn.second << " in group '"
           << TestRanges.GroupedRanges[Group.index()].Name << "':\n  ";
-      if (HasResult)
+      if (HasResult) {
         llvm::errs() << "valid result";
-      else
+      } else {
         llvm::errs() << "error '" << ErrorMessage << "'";
+
+}
       llvm::errs() << " does not match initial ";
-      if (CanonicalErrorMessage)
+      if (CanonicalErrorMessage) {
         llvm::errs() << "error '" << *CanonicalErrorMessage << "'\n";
-      else
+      } else {
         llvm::errs() << "valid result\n";
+
+}
       if (HasResult && !CanonicalErrorMessage) {
         llvm::errs() << "  Expected to Produce:\n";
         dumpChanges(*CanonicalResult, llvm::errs());
@@ -248,8 +270,10 @@ bool TestRefactoringResultConsumer::handleAllResults() {
     } else {
       llvm::outs() << TestGroup.Ranges.size() << " '" << TestGroup.Name
                    << "' results:\n";
-      if (printRewrittenSources(*CanonicalResult, llvm::outs()))
+      if (printRewrittenSources(*CanonicalResult, llvm::outs())) {
         return true;
+
+}
     }
   }
   return Failed;
@@ -264,8 +288,10 @@ TestSelectionRangesInFile::createConsumer() const {
 /// newline.
 static unsigned addColumnOffset(StringRef Source, unsigned Offset,
                                 unsigned ColumnOffset) {
-  if (!ColumnOffset)
+  if (!ColumnOffset) {
     return Offset;
+
+}
   StringRef Substr = Source.drop_front(Offset).take_front(ColumnOffset);
   size_t NewlinePos = Substr.find_first_of("\r\n");
   return Offset +
@@ -280,8 +306,10 @@ static unsigned addEndLineOffsetAndEndColumn(StringRef Source, unsigned Offset,
   for (; LineNumberOffset != 0; --LineNumberOffset) {
     size_t NewlinePos = Line.find_first_of("\r\n");
     // Line offset goes out of bounds.
-    if (NewlinePos == StringRef::npos)
+    if (NewlinePos == StringRef::npos) {
       break;
+
+}
     LineOffset += NewlinePos + 1;
     Line = Line.drop_front(NewlinePos + 1);
   }
@@ -320,8 +348,10 @@ findTestSelectionRanges(StringRef Filename) {
   Token Tok;
   for (Lex.LexFromRawLexer(Tok); Tok.isNot(tok::eof);
        Lex.LexFromRawLexer(Tok)) {
-    if (Tok.isNot(tok::comment))
+    if (Tok.isNot(tok::comment)) {
       continue;
+
+}
     StringRef Comment =
         Source.substr(Tok.getLocation().getRawEncoding(), Tok.getLength());
     SmallVector<StringRef, 4> Matches;
@@ -339,16 +369,20 @@ findTestSelectionRanges(StringRef Filename) {
     };
     // Allow CHECK: comments to contain range= commands.
     if (!RangeRegex.match(Comment, &Matches) || Comment.contains("CHECK")) {
-      if (DetectMistypedCommand())
+      if (DetectMistypedCommand()) {
         return None;
+
+}
       continue;
     }
     unsigned Offset = Tok.getEndLoc().getRawEncoding();
     unsigned ColumnOffset = 0;
     if (!Matches[2].empty()) {
       // Don't forget to drop the '+'!
-      if (Matches[2].drop_front().getAsInteger(10, ColumnOffset))
+      if (Matches[2].drop_front().getAsInteger(10, ColumnOffset)) {
         assert(false && "regex should have produced a number");
+
+}
     }
     Offset = addColumnOffset(Source, Offset, ColumnOffset);
     unsigned EndOffset;
@@ -358,14 +392,18 @@ findTestSelectionRanges(StringRef Filename) {
           "->[[:blank:]]*(\\+[[:digit:]]+):([[:digit:]]+)");
       SmallVector<StringRef, 4> EndLocMatches;
       if (!EndLocRegex.match(Matches[3], &EndLocMatches)) {
-        if (DetectMistypedCommand())
+        if (DetectMistypedCommand()) {
           return None;
+
+}
         continue;
       }
       unsigned EndLineOffset = 0, EndColumn = 0;
       if (EndLocMatches[1].drop_front().getAsInteger(10, EndLineOffset) ||
-          EndLocMatches[2].getAsInteger(10, EndColumn))
+          EndLocMatches[2].getAsInteger(10, EndColumn)) {
         assert(false && "regex should have produced a number");
+
+}
       EndOffset = addEndLineOffsetAndEndColumn(Source, Offset, EndLineOffset,
                                                EndColumn);
     } else {
@@ -374,8 +412,10 @@ findTestSelectionRanges(StringRef Filename) {
     TestSelectionRange Range = {Offset, EndOffset};
     auto It = GroupedRanges.insert(std::make_pair(
         Matches[1].str(), SmallVector<TestSelectionRange, 8>{Range}));
-    if (!It.second)
+    if (!It.second) {
       It.first->second.push_back(Range);
+
+}
   }
   if (GroupedRanges.empty()) {
     llvm::errs() << "error: -selection=test:" << Filename
@@ -384,8 +424,10 @@ findTestSelectionRanges(StringRef Filename) {
   }
 
   TestSelectionRangesInFile TestRanges = {Filename.str(), {}};
-  for (auto &Group : GroupedRanges)
+  for (auto &Group : GroupedRanges) {
     TestRanges.GroupedRanges.push_back({Group.first, std::move(Group.second)});
+
+}
   return std::move(TestRanges);
 }
 

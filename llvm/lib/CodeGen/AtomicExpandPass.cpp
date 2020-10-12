@@ -197,12 +197,16 @@ static bool atomicSizeSupported(const TargetLowering *TLI, Inst *I) {
 
 bool AtomicExpand::runOnFunction(Function &F) {
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
-  if (!TPC)
+  if (!TPC) {
     return false;
 
+}
+
   auto &TM = TPC->getTM<TargetMachine>();
-  if (!TM.getSubtargetImpl(F)->enableAtomicExpand())
+  if (!TM.getSubtargetImpl(F)->enableAtomicExpand()) {
     return false;
+
+}
   TLI = TM.getSubtargetImpl(F)->getTargetLowering();
 
   SmallVector<Instruction *, 1> AtomicInsts;
@@ -211,8 +215,10 @@ bool AtomicExpand::runOnFunction(Function &F) {
   // list of all atomic instructions before we start.
   for (inst_iterator II = inst_begin(F), E = inst_end(F); II != E; ++II) {
     Instruction *I = &*II;
-    if (I->isAtomic() && !isa<FenceInst>(I))
+    if (I->isAtomic() && !isa<FenceInst>(I)) {
       AtomicInsts.push_back(I);
+
+}
   }
 
   bool MadeChange = false;
@@ -301,8 +307,10 @@ bool AtomicExpand::runOnFunction(Function &F) {
         MadeChange = true;
       }
 
-      if (TLI->shouldExpandAtomicStoreInIR(SI))
+      if (TLI->shouldExpandAtomicStoreInIR(SI)) {
         MadeChange |= expandAtomicStore(SI);
+
+}
     } else if (RMWI) {
       // There are two different ways of expanding RMW instructions:
       // - into a load if it is idempotent
@@ -352,8 +360,10 @@ bool AtomicExpand::bracketInstWithFences(Instruction *I, AtomicOrdering Order) {
   auto TrailingFence = TLI->emitTrailingFence(Builder, I, Order);
   // We have a guard here because not every atomic operation generates a
   // trailing fence.
-  if (TrailingFence)
+  if (TrailingFence) {
     TrailingFence->moveAfter(I);
+
+}
 
   return (LeadingFence || TrailingFence);
 }
@@ -431,8 +441,10 @@ bool AtomicExpand::expandAtomicLoadToLL(LoadInst *LI) {
 bool AtomicExpand::expandAtomicLoadToCmpXchg(LoadInst *LI) {
   IRBuilder<> Builder(LI);
   AtomicOrdering Order = LI->getOrdering();
-  if (Order == AtomicOrdering::Unordered)
+  if (Order == AtomicOrdering::Unordered) {
     Order = AtomicOrdering::Monotonic;
+
+}
 
   Value *Addr = LI->getPointerOperand();
   Type *Ty = cast<PointerType>(Addr->getType())->getElementType();
@@ -517,8 +529,10 @@ static void createCmpXchgInstFun(IRBuilder<> &Builder, Value *Addr,
   Success = Builder.CreateExtractValue(Pair, 1, "success");
   NewLoaded = Builder.CreateExtractValue(Pair, 0, "newloaded");
 
-  if (NeedBitcast)
+  if (NeedBitcast) {
     NewLoaded = Builder.CreateBitCast(NewLoaded, OrigTy);
+
+}
 }
 
 /// Emit IR to implement the given atomicrmw operation on values in registers,
@@ -587,8 +601,10 @@ bool AtomicExpand::tryExpandAtomicRMW(AtomicRMWInst *AI) {
     unsigned ValueSize = getAtomicOpSize(AI);
     if (ValueSize < MinCASSize) {
       // TODO: Handle atomicrmw fadd/fsub
-      if (AI->getType()->isFloatingPointTy())
+      if (AI->getType()->isFloatingPointTy()) {
         return false;
+
+}
 
       expandPartwordAtomicRMW(AI,
                               TargetLoweringBase::AtomicExpansionKind::CmpXChg);
@@ -791,11 +807,13 @@ AtomicRMWInst *AtomicExpand::widenPartwordAtomicRMW(AtomicRMWInst *AI) {
 
   Value *NewOperand;
 
-  if (Op == AtomicRMWInst::And)
+  if (Op == AtomicRMWInst::And) {
     NewOperand =
         Builder.CreateOr(PMV.Inv_Mask, ValOperand_Shifted, "AndOperand");
-  else
+  } else {
     NewOperand = ValOperand_Shifted;
+
+}
 
   AtomicRMWInst *NewAI = Builder.CreateAtomicRMW(Op, PMV.AlignedAddr,
                                                  NewOperand, AI->getOrdering());
@@ -903,10 +921,12 @@ void AtomicExpand::expandPartwordCmpXchg(AtomicCmpXchgInst *CI) {
   Value *OldVal = Builder.CreateExtractValue(NewCI, 0);
   Value *Success = Builder.CreateExtractValue(NewCI, 1);
 
-  if (CI->isWeak())
+  if (CI->isWeak()) {
     Builder.CreateBr(EndBB);
-  else
+  } else {
     Builder.CreateCondBr(Success, EndBB, FailureBB);
+
+}
 
   // partword.cmpxchg.failure:
   Builder.SetInsertPoint(FailureBB);
@@ -956,8 +976,10 @@ void AtomicExpand::expandAtomicRMWToMaskedIntrinsic(AtomicRMWInst *AI) {
   // zero-ext.
   Instruction::CastOps CastOp = Instruction::ZExt;
   AtomicRMWInst::BinOp RMWOp = AI->getOperation();
-  if (RMWOp == AtomicRMWInst::Max || RMWOp == AtomicRMWInst::Min)
+  if (RMWOp == AtomicRMWInst::Max || RMWOp == AtomicRMWInst::Min) {
     CastOp = Instruction::SExt;
+
+}
 
   Value *ValOperand_Shifted = Builder.CreateShl(
       Builder.CreateCast(CastOp, AI->getValOperand(), PMV.WordType),
@@ -1185,8 +1207,10 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
   // the branch entirely.
   std::prev(BB->end())->eraseFromParent();
   Builder.SetInsertPoint(BB);
-  if (ShouldInsertFencesForAtomic && UseUnconditionalReleaseBarrier)
+  if (ShouldInsertFencesForAtomic && UseUnconditionalReleaseBarrier) {
     TLI->emitLeadingFence(Builder, CI, SuccessOrder);
+
+}
   Builder.CreateBr(StartBB);
 
   // Start the main loop block now that we've taken care of the preliminaries.
@@ -1200,8 +1224,10 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
   Builder.CreateCondBr(ShouldStore, ReleasingStoreBB, NoStoreBB);
 
   Builder.SetInsertPoint(ReleasingStoreBB);
-  if (ShouldInsertFencesForAtomic && !UseUnconditionalReleaseBarrier)
+  if (ShouldInsertFencesForAtomic && !UseUnconditionalReleaseBarrier) {
     TLI->emitLeadingFence(Builder, CI, SuccessOrder);
+
+}
   Builder.CreateBr(TryStoreBB);
 
   Builder.SetInsertPoint(TryStoreBB);
@@ -1223,14 +1249,18 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
     // If the cmpxchg doesn't actually need any ordering when it fails, we can
     // jump straight past that fence instruction (if it exists).
     Builder.CreateCondBr(ShouldStore, TryStoreBB, NoStoreBB);
-  } else
+  } else {
     Builder.CreateUnreachable();
+
+}
 
   // Make sure later instructions don't get reordered with a fence if
   // necessary.
   Builder.SetInsertPoint(SuccessBB);
-  if (ShouldInsertFencesForAtomic)
+  if (ShouldInsertFencesForAtomic) {
     TLI->emitTrailingFence(Builder, CI, SuccessOrder);
+
+}
   Builder.CreateBr(ExitBB);
 
   Builder.SetInsertPoint(NoStoreBB);
@@ -1241,8 +1271,10 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
   Builder.CreateBr(FailureBB);
 
   Builder.SetInsertPoint(FailureBB);
-  if (ShouldInsertFencesForAtomic)
+  if (ShouldInsertFencesForAtomic) {
     TLI->emitTrailingFence(Builder, CI, FailureOrder);
+
+}
   Builder.CreateBr(ExitBB);
 
   // Finally, we have control-flow based knowledge of whether the cmpxchg
@@ -1256,9 +1288,9 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
 
   // Setup the builder so we can create any PHIs we need.
   Value *Loaded;
-  if (!HasReleasedLoadBB)
+  if (!HasReleasedLoadBB) {
     Loaded = UnreleasedLoad;
-  else {
+  } else {
     Builder.SetInsertPoint(TryStoreBB, TryStoreBB->begin());
     PHINode *TryStoreLoaded = Builder.CreatePHI(UnreleasedLoad->getType(), 2);
     TryStoreLoaded->addIncoming(UnreleasedLoad, ReleasingStoreBB);
@@ -1282,23 +1314,29 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
   SmallVector<ExtractValueInst *, 2> PrunedInsts;
   for (auto User : CI->users()) {
     ExtractValueInst *EV = dyn_cast<ExtractValueInst>(User);
-    if (!EV)
+    if (!EV) {
       continue;
+
+}
 
     assert(EV->getNumIndices() == 1 && EV->getIndices()[0] <= 1 &&
            "weird extraction from { iN, i1 }");
 
-    if (EV->getIndices()[0] == 0)
+    if (EV->getIndices()[0] == 0) {
       EV->replaceAllUsesWith(Loaded);
-    else
+    } else {
       EV->replaceAllUsesWith(Success);
+
+}
 
     PrunedInsts.push_back(EV);
   }
 
   // We can remove the instructions now we're no longer iterating through them.
-  for (auto EV : PrunedInsts)
+  for (auto EV : PrunedInsts) {
     EV->eraseFromParent();
+
+}
 
   if (!CI->use_empty()) {
     // Some use of the full struct return that we don't understand has happened,
@@ -1316,8 +1354,10 @@ bool AtomicExpand::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
 
 bool AtomicExpand::isIdempotentRMW(AtomicRMWInst* RMWI) {
   auto C = dyn_cast<ConstantInt>(RMWI->getValOperand());
-  if(!C)
+  if(!C) {
     return false;
+
+}
 
   AtomicRMWInst::BinOp Op = RMWI->getOperation();
   switch(Op) {
@@ -1413,8 +1453,10 @@ bool AtomicExpand::tryExpandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
   default:
     llvm_unreachable("Unhandled case in tryExpandAtomicCmpXchg");
   case TargetLoweringBase::AtomicExpansionKind::None:
-    if (ValueSize < MinCASSize)
+    if (ValueSize < MinCASSize) {
       expandPartwordCmpXchg(CI);
+
+}
     return false;
   case TargetLoweringBase::AtomicExpansionKind::LLSC: {
     assert(ValueSize >= MinCASSize &&
@@ -1574,10 +1616,12 @@ void AtomicExpand::expandAtomicRMWToLibcall(AtomicRMWInst *I) {
   unsigned Align = getAtomicOpAlign(I);
 
   bool Success = false;
-  if (!Libcalls.empty())
+  if (!Libcalls.empty()) {
     Success = expandAtomicOpToLibcall(
         I, Size, Align, I->getPointerOperand(), I->getValOperand(), nullptr,
         I->getOrdering(), AtomicOrdering::NotAtomic, Libcalls);
+
+}
 
   // The expansion failed: either there were no libcalls at all for
   // the operation (min/max), or there were only size-specialized
@@ -1755,22 +1799,28 @@ bool AtomicExpand::expandAtomicOpToLibcall(
   Args.push_back(OrderingVal);
 
   // 'failure_order' argument, if present.
-  if (Ordering2Val)
+  if (Ordering2Val) {
     Args.push_back(Ordering2Val);
+
+}
 
   // Now, the return type.
   if (CASExpected) {
     ResultTy = Type::getInt1Ty(Ctx);
     Attr = Attr.addAttribute(Ctx, AttributeList::ReturnIndex, Attribute::ZExt);
-  } else if (HasResult && UseSizedLibcall)
+  } else if (HasResult && UseSizedLibcall) {
     ResultTy = SizedIntTy;
-  else
+  } else {
     ResultTy = Type::getVoidTy(Ctx);
+
+}
 
   // Done with setting up arguments and return types, create the call:
   SmallVector<Type *, 6> ArgTys;
-  for (Value *Arg : Args)
+  for (Value *Arg : Args) {
     ArgTys.push_back(Arg->getType());
+
+}
   FunctionType *FnType = FunctionType::get(ResultTy, ArgTys, false);
   FunctionCallee LibcallFn =
       M->getOrInsertFunction(TLI->getLibcallName(RTLibType), FnType, Attr);
@@ -1779,8 +1829,10 @@ bool AtomicExpand::expandAtomicOpToLibcall(
   Value *Result = Call;
 
   // And then, extract the results...
-  if (ValueOperand && !UseSizedLibcall)
+  if (ValueOperand && !UseSizedLibcall) {
     Builder.CreateLifetimeEnd(AllocaValue_i8, SizeVal64);
+
+}
 
   if (CASExpected) {
     // The final result from the CAS is {load of 'expected' alloca, bool result
@@ -1795,9 +1847,9 @@ bool AtomicExpand::expandAtomicOpToLibcall(
     I->replaceAllUsesWith(V);
   } else if (HasResult) {
     Value *V;
-    if (UseSizedLibcall)
+    if (UseSizedLibcall) {
       V = Builder.CreateBitOrPointerCast(Result, I->getType());
-    else {
+    } else {
       V = Builder.CreateAlignedLoad(I->getType(), AllocaResult,
                                     AllocaAlignment);
       Builder.CreateLifetimeEnd(AllocaResult_i8, SizeVal64);

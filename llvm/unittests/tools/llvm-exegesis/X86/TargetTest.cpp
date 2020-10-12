@@ -22,21 +22,31 @@
 namespace llvm {
 
 bool operator==(const MCOperand &a, const MCOperand &b) {
-  if (a.isImm() && b.isImm())
+  if (a.isImm() && b.isImm()) {
     return a.getImm() == b.getImm();
-  if (a.isReg() && b.isReg())
+
+}
+  if (a.isReg() && b.isReg()) {
     return a.getReg() == b.getReg();
+
+}
   return false;
 }
 
 bool operator==(const MCInst &a, const MCInst &b) {
-  if (a.getOpcode() != b.getOpcode())
+  if (a.getOpcode() != b.getOpcode()) {
     return false;
-  if (a.getNumOperands() != b.getNumOperands())
+
+}
+  if (a.getNumOperands() != b.getNumOperands()) {
     return false;
+
+}
   for (unsigned I = 0; I < a.getNumOperands(); ++I) {
-    if (!(a.getOperand(I) == b.getOperand(I)))
+    if (!(a.getOperand(I) == b.getOperand(I))) {
       return false;
+
+}
   }
   return true;
 }

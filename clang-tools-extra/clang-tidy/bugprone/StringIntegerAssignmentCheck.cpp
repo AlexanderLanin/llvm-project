@@ -48,29 +48,37 @@ public:
       : CharType(CharType), Ctx(Ctx) {}
 
   bool isLikelyCharExpression(const Expr *E) const {
-    if (isCharTyped(E))
+    if (isCharTyped(E)) {
       return true;
+
+}
 
     if (const auto *BinOp = dyn_cast<BinaryOperator>(E)) {
       const auto *LHS = BinOp->getLHS()->IgnoreParenImpCasts();
       const auto *RHS = BinOp->getRHS()->IgnoreParenImpCasts();
       // Handle both directions, e.g. `'a' + (i % 26)` and `(i % 26) + 'a'`.
-      if (BinOp->isAdditiveOp() || BinOp->isBitwiseOp())
+      if (BinOp->isAdditiveOp() || BinOp->isBitwiseOp()) {
         return handleBinaryOp(BinOp->getOpcode(), LHS, RHS) ||
                handleBinaryOp(BinOp->getOpcode(), RHS, LHS);
+
+}
       // Except in the case of '%'.
-      if (BinOp->getOpcode() == BO_Rem)
+      if (BinOp->getOpcode() == BO_Rem) {
         return handleBinaryOp(BinOp->getOpcode(), LHS, RHS);
+
+}
       return false;
     }
 
     // Ternary where at least one branch is a likely char expression, e.g.
     //    i < 265 ? i : ' '
-    if (const auto *CondOp = dyn_cast<AbstractConditionalOperator>(E))
+    if (const auto *CondOp = dyn_cast<AbstractConditionalOperator>(E)) {
       return isLikelyCharExpression(
                  CondOp->getFalseExpr()->IgnoreParenImpCasts()) ||
              isLikelyCharExpression(
                  CondOp->getTrueExpr()->IgnoreParenImpCasts());
+
+}
     return false;
   }
 
@@ -80,23 +88,31 @@ private:
     // <char_expr> <op> <char_expr> (c++ integer promotion rules make this an
     // int), e.g.
     //    'a' + c
-    if (isCharTyped(LHS) && isCharTyped(RHS))
+    if (isCharTyped(LHS) && isCharTyped(RHS)) {
       return true;
+
+}
 
     // <expr> & <char_valued_constant> or <expr> % <char_valued_constant>, e.g.
     //    i & 0xff
-    if ((Opcode == BO_And || Opcode == BO_Rem) && isCharValuedConstant(RHS))
+    if ((Opcode == BO_And || Opcode == BO_Rem) && isCharValuedConstant(RHS)) {
       return true;
+
+}
 
     // <char_expr> | <char_valued_constant>, e.g.
     //    c | 0x80
-    if (Opcode == BO_Or && isCharTyped(LHS) && isCharValuedConstant(RHS))
+    if (Opcode == BO_Or && isCharTyped(LHS) && isCharValuedConstant(RHS)) {
       return true;
+
+}
 
     // <char_constant> + <likely_char_expr>, e.g.
     //    'a' + (i % 26)
-    if (Opcode == BO_Add)
+    if (Opcode == BO_Add) {
       return isCharConstant(LHS) && isLikelyCharExpression(RHS);
+
+}
 
     return false;
   }
@@ -108,11 +124,15 @@ private:
 
   // Returns true if `E` is an integer constant which fits in `CharType`.
   bool isCharValuedConstant(const Expr *E) const {
-    if (E->isInstantiationDependent())
+    if (E->isInstantiationDependent()) {
       return false;
+
+}
     Expr::EvalResult EvalResult;
-    if (!E->EvaluateAsInt(EvalResult, Ctx, Expr::SE_AllowSideEffects))
+    if (!E->EvaluateAsInt(EvalResult, Ctx, Expr::SE_AllowSideEffects)) {
       return false;
+
+}
     return EvalResult.Val.getInt().getActiveBits() <= Ctx.getTypeSize(CharType);
   };
 
@@ -135,8 +155,10 @@ void StringIntegerAssignmentCheck::check(
 
   // Try to detect a few common expressions to reduce false positives.
   if (CharExpressionDetector(CharType, *Result.Context)
-          .isLikelyCharExpression(Argument))
+          .isLikelyCharExpression(Argument)) {
     return;
+
+}
 
   auto Diag =
       diag(Loc, "an integer is interpreted as a character code when assigning "
@@ -144,12 +166,16 @@ void StringIntegerAssignmentCheck::check(
                 "appropriate character type; if you want a string "
                 "representation, use the appropriate conversion facility");
 
-  if (Loc.isMacroID())
+  if (Loc.isMacroID()) {
     return;
 
+}
+
   bool IsWideCharType = CharType->isWideCharType();
-  if (!CharType->isCharType() && !IsWideCharType)
+  if (!CharType->isCharType() && !IsWideCharType) {
     return;
+
+}
   bool IsOneDigit = false;
   bool IsLiteral = false;
   if (const auto *Literal = dyn_cast<IntegerLiteral>(Argument)) {

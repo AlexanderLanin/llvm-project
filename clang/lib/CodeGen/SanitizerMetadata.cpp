@@ -32,8 +32,10 @@ void SanitizerMetadata::reportGlobalToASan(llvm::GlobalVariable *GV,
                                            SourceLocation Loc, StringRef Name,
                                            QualType Ty, bool IsDynInit,
                                            bool IsBlacklisted) {
-  if (!isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize))
+  if (!isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize)) {
     return;
+
+}
   IsDynInit &= !CGM.isInSanitizerBlacklist(GV, Loc, Ty, "init");
   IsBlacklisted |= CGM.isInSanitizerBlacklist(GV, Loc, Ty);
 
@@ -44,8 +46,10 @@ void SanitizerMetadata::reportGlobalToASan(llvm::GlobalVariable *GV,
     // Don't generate source location and global name if it is blacklisted -
     // it won't be instrumented anyway.
     LocDescr = getLocationMetadata(Loc);
-    if (!Name.empty())
+    if (!Name.empty()) {
       GlobalName = llvm::MDString::get(VMContext, Name);
+
+}
   }
 
   llvm::Metadata *GlobalMetadata[] = {
@@ -63,16 +67,22 @@ void SanitizerMetadata::reportGlobalToASan(llvm::GlobalVariable *GV,
 
 void SanitizerMetadata::reportGlobalToASan(llvm::GlobalVariable *GV,
                                            const VarDecl &D, bool IsDynInit) {
-  if (!isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize))
+  if (!isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize)) {
     return;
+
+}
   std::string QualName;
   llvm::raw_string_ostream OS(QualName);
   D.printQualifiedName(OS);
 
   bool IsBlacklisted = false;
-  for (auto Attr : D.specific_attrs<NoSanitizeAttr>())
-    if (Attr->getMask() & SanitizerKind::Address)
+  for (auto Attr : D.specific_attrs<NoSanitizeAttr>()) {
+    if (Attr->getMask() & SanitizerKind::Address) {
       IsBlacklisted = true;
+
+}
+
+}
   reportGlobalToASan(GV, D.getLocation(), OS.str(), D.getType(), IsDynInit,
                      IsBlacklisted);
 }
@@ -80,8 +90,10 @@ void SanitizerMetadata::reportGlobalToASan(llvm::GlobalVariable *GV,
 void SanitizerMetadata::disableSanitizerForGlobal(llvm::GlobalVariable *GV) {
   // For now, just make sure the global is not modified by the ASan
   // instrumentation.
-  if (isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize))
+  if (isAsanHwasanOrMemTag(CGM.getLangOpts().Sanitize)) {
     reportGlobalToASan(GV, SourceLocation(), "", QualType(), false, true);
+
+}
 }
 
 void SanitizerMetadata::disableSanitizerForInstruction(llvm::Instruction *I) {
@@ -91,8 +103,10 @@ void SanitizerMetadata::disableSanitizerForInstruction(llvm::Instruction *I) {
 
 llvm::MDNode *SanitizerMetadata::getLocationMetadata(SourceLocation Loc) {
   PresumedLoc PLoc = CGM.getContext().getSourceManager().getPresumedLoc(Loc);
-  if (!PLoc.isValid())
+  if (!PLoc.isValid()) {
     return nullptr;
+
+}
   llvm::LLVMContext &VMContext = CGM.getLLVMContext();
   llvm::Metadata *LocMetadata[] = {
       llvm::MDString::get(VMContext, PLoc.getFilename()),

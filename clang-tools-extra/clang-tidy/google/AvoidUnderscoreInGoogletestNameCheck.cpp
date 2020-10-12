@@ -42,31 +42,41 @@ public:
                     const MacroDefinition &MacroDefinition, SourceRange Range,
                     const MacroArgs *Args) override {
     IdentifierInfo *NameIdentifierInfo = MacroNameToken.getIdentifierInfo();
-    if (!NameIdentifierInfo)
+    if (!NameIdentifierInfo) {
       return;
+
+}
     StringRef MacroName = NameIdentifierInfo->getName();
     if (!isGoogletestTestMacro(MacroName) || !Args ||
-        Args->getNumMacroArguments() < 2)
+        Args->getNumMacroArguments() < 2) {
       return;
+
+}
     const Token *TestCaseNameToken = Args->getUnexpArgument(0);
     const Token *TestNameToken = Args->getUnexpArgument(1);
-    if (!TestCaseNameToken || !TestNameToken)
+    if (!TestCaseNameToken || !TestNameToken) {
       return;
+
+}
     std::string TestCaseName = PP->getSpelling(*TestCaseNameToken);
-    if (TestCaseName.find('_') != std::string::npos)
+    if (TestCaseName.find('_') != std::string::npos) {
       Check->diag(TestCaseNameToken->getLocation(),
                   "avoid using \"_\" in test case name \"%0\" according to "
                   "Googletest FAQ")
           << TestCaseName;
 
+}
+
     std::string TestNameMaybeDisabled = PP->getSpelling(*TestNameToken);
     StringRef TestName = TestNameMaybeDisabled;
     TestName.consume_front(kDisabledTestPrefix);
-    if (TestName.contains('_'))
+    if (TestName.contains('_')) {
       Check->diag(TestNameToken->getLocation(),
                   "avoid using \"_\" in test name \"%0\" according to "
                   "Googletest FAQ")
           << TestName;
+
+}
   }
 
 private:

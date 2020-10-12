@@ -23,8 +23,10 @@ static bool needsConstCast(QualType SourceType, QualType DestType) {
   while (SourceType->isPointerType() && DestType->isPointerType()) {
     SourceType = SourceType->getPointeeType();
     DestType = DestType->getPointeeType();
-    if (SourceType.isConstQualified() && !DestType.isConstQualified())
+    if (SourceType.isConstQualified() && !DestType.isConstQualified()) {
       return true;
+
+}
   }
   return false;
 }
@@ -51,10 +53,14 @@ void ProTypeCstyleCastCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (MatchedCast->getCastKind() == CK_BaseToDerived) {
     const auto *SourceDecl = SourceType->getPointeeCXXRecordDecl();
-    if (!SourceDecl) // The cast is from object to reference.
+    if (!SourceDecl) { // The cast is from object to reference.
       SourceDecl = SourceType->getAsCXXRecordDecl();
-    if (!SourceDecl)
+
+}
+    if (!SourceDecl) {
       return;
+
+}
 
     if (SourceDecl->isPolymorphic()) {
       // Leave type spelling exactly as it was (unlike

@@ -45,10 +45,14 @@ bool isFunctionSkipped(Function &F) {
 /// Special care is needed to handle musttail and deopt calls, as these behave
 /// like (but are in fact not) terminators.
 Instruction *findTerminatingInstruction(BasicBlock &BB) {
-  if (auto *I = BB.getTerminatingMustTailCall())
+  if (auto *I = BB.getTerminatingMustTailCall()) {
     return I;
-  if (auto *I = BB.getTerminatingDeoptimizeCall())
+
+}
+  if (auto *I = BB.getTerminatingDeoptimizeCall()) {
     return I;
+
+}
   return BB.getTerminator();
 }
 
@@ -84,25 +88,33 @@ bool applyDebugifyMetadata(Module &M,
 
   // Visit each instruction.
   for (Function &F : Functions) {
-    if (isFunctionSkipped(F))
+    if (isFunctionSkipped(F)) {
       continue;
+
+}
 
     auto SPType = DIB.createSubroutineType(DIB.getOrCreateTypeArray(None));
     DISubprogram::DISPFlags SPFlags =
         DISubprogram::SPFlagDefinition | DISubprogram::SPFlagOptimized;
-    if (F.hasPrivateLinkage() || F.hasInternalLinkage())
+    if (F.hasPrivateLinkage() || F.hasInternalLinkage()) {
       SPFlags |= DISubprogram::SPFlagLocalToUnit;
+
+}
     auto SP = DIB.createFunction(CU, F.getName(), F.getName(), File, NextLine,
                                  SPType, NextLine, DINode::FlagZero, SPFlags);
     F.setSubprogram(SP);
     for (BasicBlock &BB : F) {
       // Attach debug locations.
-      for (Instruction &I : BB)
+      for (Instruction &I : BB) {
         I.setDebugLoc(DILocation::get(Ctx, NextLine++, 1, SP));
 
+}
+
       // Inserting debug values into EH pads can break IR invariants.
-      if (BB.isEHPad())
+      if (BB.isEHPad()) {
         continue;
+
+}
 
       // Find the terminating instruction, after which no debug values are
       // attached.
@@ -118,13 +130,17 @@ bool applyDebugifyMetadata(Module &M,
       // Attach debug values.
       for (Instruction *I = &*BB.begin(); I != LastInst; I = I->getNextNode()) {
         // Skip void-valued instructions.
-        if (I->getType()->isVoidTy())
+        if (I->getType()->isVoidTy()) {
           continue;
+
+}
 
         // Phis and EH pads must be grouped at the beginning of the block.
         // Only advance the insertion point when we finish visiting these.
-        if (!isa<PHINode>(I) && !I->isEHPad())
+        if (!isa<PHINode>(I) && !I->isEHPad()) {
           InsertBefore = I->getNextNode();
+
+}
 
         std::string Name = utostr(NextVar++);
         const DILocation *Loc = I->getDebugLoc().get();
@@ -153,8 +169,10 @@ bool applyDebugifyMetadata(Module &M,
 
   // Claim that this synthetic debug info is valid.
   StringRef DIVersionKey = "Debug Info Version";
-  if (!M.getModuleFlag(DIVersionKey))
+  if (!M.getModuleFlag(DIVersionKey)) {
     M.addModuleFlag(Module::Warning, DIVersionKey, DEBUG_METADATA_VERSION);
+
+}
 
   return true;
 }
@@ -167,25 +185,33 @@ bool diagnoseMisSizedDbgValue(Module &M, DbgValueInst *DVI) {
   // TODO: This, along with a check for non-null value operands, should be
   // promoted to verifier failures.
   Value *V = DVI->getValue();
-  if (!V)
+  if (!V) {
     return false;
+
+}
 
   // For now, don't try to interpret anything more complicated than an empty
   // DIExpression. Eventually we should try to handle OP_deref and fragments.
-  if (DVI->getExpression()->getNumElements())
+  if (DVI->getExpression()->getNumElements()) {
     return false;
+
+}
 
   Type *Ty = V->getType();
   uint64_t ValueOperandSize = getAllocSizeInBits(M, Ty);
   Optional<uint64_t> DbgVarSize = DVI->getFragmentSizeInBits();
-  if (!ValueOperandSize || !DbgVarSize)
+  if (!ValueOperandSize || !DbgVarSize) {
     return false;
+
+}
 
   bool HasBadSize = false;
   if (Ty->isIntegerTy()) {
     auto Signedness = DVI->getVariable()->getSignedness();
-    if (Signedness && *Signedness == DIBasicType::Signedness::Signed)
+    if (Signedness && *Signedness == DIBasicType::Signedness::Signed) {
       HasBadSize = ValueOperandSize < *DbgVarSize;
+
+}
   } else {
     HasBadSize = ValueOperandSize != *DbgVarSize;
   }
@@ -222,19 +248,25 @@ bool checkDebugifyMetadata(Module &M,
 
   // Track debug info loss statistics if able.
   DebugifyStatistics *Stats = nullptr;
-  if (StatsMap && !NameOfWrappedPass.empty())
+  if (StatsMap && !NameOfWrappedPass.empty()) {
     Stats = &StatsMap->operator[](NameOfWrappedPass);
+
+}
 
   BitVector MissingLines{OriginalNumLines, true};
   BitVector MissingVars{OriginalNumVars, true};
   for (Function &F : Functions) {
-    if (isFunctionSkipped(F))
+    if (isFunctionSkipped(F)) {
       continue;
+
+}
 
     // Find missing lines.
     for (Instruction &I : instructions(F)) {
-      if (isa<DbgValueInst>(&I) || isa<PHINode>(&I))
+      if (isa<DbgValueInst>(&I) || isa<PHINode>(&I)) {
         continue;
+
+}
 
       auto DL = I.getDebugLoc();
       if (DL && DL.getLine() != 0) {
@@ -254,25 +286,33 @@ bool checkDebugifyMetadata(Module &M,
     // Find missing variables and mis-sized debug values.
     for (Instruction &I : instructions(F)) {
       auto *DVI = dyn_cast<DbgValueInst>(&I);
-      if (!DVI)
+      if (!DVI) {
         continue;
+
+}
 
       unsigned Var = ~0U;
       (void)to_integer(DVI->getVariable()->getName(), Var, 10);
       assert(Var <= OriginalNumVars && "Unexpected name for DILocalVariable");
       bool HasBadSize = diagnoseMisSizedDbgValue(M, DVI);
-      if (!HasBadSize)
+      if (!HasBadSize) {
         MissingVars.reset(Var - 1);
+
+}
       HasErrors |= HasBadSize;
     }
   }
 
   // Print the results.
-  for (unsigned Idx : MissingLines.set_bits())
+  for (unsigned Idx : MissingLines.set_bits()) {
     dbg() << "WARNING: Missing line " << Idx + 1 << "\n";
 
-  for (unsigned Idx : MissingVars.set_bits())
+}
+
+  for (unsigned Idx : MissingVars.set_bits()) {
     dbg() << "WARNING: Missing variable " << Idx + 1 << "\n";
+
+}
 
   // Update DI loss statistics.
   if (Stats) {
@@ -283,8 +323,10 @@ bool checkDebugifyMetadata(Module &M,
   }
 
   dbg() << Banner;
-  if (!NameOfWrappedPass.empty())
+  if (!NameOfWrappedPass.empty()) {
     dbg() << " [" << NameOfWrappedPass << "]";
+
+}
   dbg() << ": " << (HasErrors ? "FAIL" : "PASS") << '\n';
 
   // Strip the Debugify Metadata if required.

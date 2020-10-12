@@ -40,8 +40,10 @@ IRMaterializationUnit::IRMaterializationUnit(
       // Skip globals that don't generate symbols.
 
       if (!G.hasName() || G.isDeclaration() || G.hasLocalLinkage() ||
-          G.hasAvailableExternallyLinkage() || G.hasAppendingLinkage())
+          G.hasAvailableExternallyLinkage() || G.hasAppendingLinkage()) {
         continue;
+
+}
 
       // thread locals generate different symbols depending on whether or not
       // emulated TLS is enabled.
@@ -60,11 +62,15 @@ IRMaterializationUnit::IRMaterializationUnit(
           const auto *InitVal = GV.getInitializer();
 
           // Skip zero-initializers.
-          if (isa<ConstantAggregateZero>(InitVal))
+          if (isa<ConstantAggregateZero>(InitVal)) {
             continue;
+
+}
           const auto *InitIntValue = dyn_cast<ConstantInt>(InitVal);
-          if (InitIntValue && InitIntValue->isZero())
+          if (InitIntValue && InitIntValue->isZero()) {
             continue;
+
+}
 
           auto EmuTLST = Mangle(("__emutls_t." + GV.getName()).str());
           SymbolFlags[EmuTLST] = Flags;
@@ -97,9 +103,11 @@ IRMaterializationUnit::IRMaterializationUnit(
       TSM(std::move(TSM)), SymbolToDefinition(std::move(SymbolToDefinition)) {}
 
 StringRef IRMaterializationUnit::getName() const {
-  if (TSM)
+  if (TSM) {
     return TSM.withModuleDo(
         [](const Module &M) -> StringRef { return M.getModuleIdentifier(); });
+
+}
   return "<null module>";
 }
 
@@ -134,8 +142,10 @@ void BasicIRLayerMaterializationUnit::materialize(
   SymbolToDefinition.clear();
 
   // If cloneToNewContextOnEmit is set, clone the module now.
-  if (L.getCloneToNewContextOnEmit())
+  if (L.getCloneToNewContextOnEmit()) {
     TSM = cloneToNewContext(TSM);
+
+}
 
 #ifndef NDEBUG
   auto &ES = R.getTargetJITDylib().getExecutionSession();
@@ -158,8 +168,10 @@ Error ObjectLayer::add(JITDylib &JD, std::unique_ptr<MemoryBuffer> O,
                        VModuleKey K) {
   auto ObjMU = BasicObjectLayerMaterializationUnit::Create(*this, std::move(K),
                                                            std::move(O));
-  if (!ObjMU)
+  if (!ObjMU) {
     return ObjMU.takeError();
+
+}
   return JD.define(std::move(*ObjMU));
 }
 
@@ -169,8 +181,10 @@ BasicObjectLayerMaterializationUnit::Create(ObjectLayer &L, VModuleKey K,
   auto ObjSymInfo =
       getObjectSymbolInfo(L.getExecutionSession(), O->getMemBufferRef());
 
-  if (!ObjSymInfo)
+  if (!ObjSymInfo) {
     return ObjSymInfo.takeError();
+
+}
 
   auto &SymbolFlags = ObjSymInfo->first;
   auto &InitSymbol = ObjSymInfo->second;
@@ -188,8 +202,10 @@ BasicObjectLayerMaterializationUnit::BasicObjectLayerMaterializationUnit(
       L(L), O(std::move(O)) {}
 
 StringRef BasicObjectLayerMaterializationUnit::getName() const {
-  if (O)
+  if (O) {
     return O->getBufferIdentifier();
+
+}
   return "<null object>";
 }
 

@@ -143,14 +143,20 @@ TEST(SparseMultiSetTest, MultipleEntrySet) {
   Set.setUniverse(1000);
 
   // Add more than 256 elements.
-  for (unsigned i = 100; i != 800; ++i)
+  for (unsigned i = 100; i != 800; ++i) {
     Set.insert(i);
 
-  for (unsigned i = 0; i != 10; ++i)
+}
+
+  for (unsigned i = 0; i != 10; ++i) {
     Set.eraseAll(i);
 
-  for (unsigned i = 100; i != 800; ++i)
+}
+
+  for (unsigned i = 100; i != 800; ++i) {
     EXPECT_EQ(1u, Set.count(i));
+
+}
 
   EXPECT_FALSE(Set.contains(99));
   EXPECT_FALSE(Set.contains(800));

@@ -51,8 +51,10 @@ static bool AllUsesDominatedByBlock(Instruction *Inst, BasicBlock *BB,
       UseBlock = PN->getIncomingBlock(Num);
     }
     // Check that it dominates.
-    if (!DT.dominates(BB, UseBlock))
+    if (!DT.dominates(BB, UseBlock)) {
       return false;
+
+}
   }
   return true;
 }
@@ -67,24 +69,36 @@ static bool isSafeToMove(Instruction *Inst, AliasAnalysis &AA,
 
   if (LoadInst *L = dyn_cast<LoadInst>(Inst)) {
     MemoryLocation Loc = MemoryLocation::get(L);
-    for (Instruction *S : Stores)
-      if (isModSet(AA.getModRefInfo(S, Loc)))
+    for (Instruction *S : Stores) {
+      if (isModSet(AA.getModRefInfo(S, Loc))) {
         return false;
+
+}
+
+}
   }
 
   if (Inst->isTerminator() || isa<PHINode>(Inst) || Inst->isEHPad() ||
-      Inst->mayThrow())
+      Inst->mayThrow()) {
     return false;
+
+}
 
   if (auto *Call = dyn_cast<CallBase>(Inst)) {
     // Convergent operations cannot be made control-dependent on additional
     // values.
-    if (Call->isConvergent())
+    if (Call->isConvergent()) {
       return false;
 
-    for (Instruction *S : Stores)
-      if (isModSet(AA.getModRefInfo(S, Call)))
+}
+
+    for (Instruction *S : Stores) {
+      if (isModSet(AA.getModRefInfo(S, Call))) {
         return false;
+
+}
+
+}
   }
 
   return true;
@@ -99,13 +113,17 @@ static bool IsAcceptableTarget(Instruction *Inst, BasicBlock *SuccToSinkTo,
 
   // It is not possible to sink an instruction into its own block.  This can
   // happen with loops.
-  if (Inst->getParent() == SuccToSinkTo)
+  if (Inst->getParent() == SuccToSinkTo) {
     return false;
+
+}
 
   // It's never legal to sink an instruction into a block which terminates in an
   // EH-pad.
-  if (SuccToSinkTo->getTerminator()->isExceptionalTerminator())
+  if (SuccToSinkTo->getTerminator()->isExceptionalTerminator()) {
     return false;
+
+}
 
   // If the block has multiple predecessors, this would introduce computation
   // on different code paths.  We could split the critical edge, but for now we
@@ -114,19 +132,25 @@ static bool IsAcceptableTarget(Instruction *Inst, BasicBlock *SuccToSinkTo,
   if (SuccToSinkTo->getUniquePredecessor() != Inst->getParent()) {
     // We cannot sink a load across a critical edge - there may be stores in
     // other code paths.
-    if (Inst->mayReadFromMemory())
+    if (Inst->mayReadFromMemory()) {
       return false;
+
+}
 
     // We don't want to sink across a critical edge if we don't dominate the
     // successor. We could be introducing calculations to new code paths.
-    if (!DT.dominates(Inst->getParent(), SuccToSinkTo))
+    if (!DT.dominates(Inst->getParent(), SuccToSinkTo)) {
       return false;
+
+}
 
     // Don't sink instructions into a loop.
     Loop *succ = LI.getLoopFor(SuccToSinkTo);
     Loop *cur = LI.getLoopFor(Inst->getParent());
-    if (succ != nullptr && succ != cur)
+    if (succ != nullptr && succ != cur) {
       return false;
+
+}
   }
 
   // Finally, check that all the uses of the instruction are actually
@@ -142,13 +166,19 @@ static bool SinkInstruction(Instruction *Inst,
 
   // Don't sink static alloca instructions.  CodeGen assumes allocas outside the
   // entry block are dynamically sized stack objects.
-  if (AllocaInst *AI = dyn_cast<AllocaInst>(Inst))
-    if (AI->isStaticAlloca())
+  if (AllocaInst *AI = dyn_cast<AllocaInst>(Inst)) {
+    if (AI->isStaticAlloca()) {
       return false;
 
+}
+
+}
+
   // Check if it's safe to move the instruction.
-  if (!isSafeToMove(Inst, AA, Stores))
+  if (!isSafeToMove(Inst, AA, Stores)) {
     return false;
+
+}
 
   // FIXME: This should include support for sinking instructions within the
   // block they are currently in to shorten the live ranges.  We often get
@@ -171,21 +201,27 @@ static bool SinkInstruction(Instruction *Inst,
     BasicBlock *Candidate = (*I)->getBlock();
     // A node always immediate-dominates its children on the dominator
     // tree.
-    if (IsAcceptableTarget(Inst, Candidate, DT, LI))
+    if (IsAcceptableTarget(Inst, Candidate, DT, LI)) {
       SuccToSinkTo = Candidate;
+
+}
   }
 
   // If no suitable postdominator was found, look at all the successors and
   // decide which one we should sink to, if any.
   for (succ_iterator I = succ_begin(Inst->getParent()),
       E = succ_end(Inst->getParent()); I != E && !SuccToSinkTo; ++I) {
-    if (IsAcceptableTarget(Inst, *I, DT, LI))
+    if (IsAcceptableTarget(Inst, *I, DT, LI)) {
       SuccToSinkTo = *I;
+
+}
   }
 
   // If we couldn't find a block to sink to, ignore this instruction.
-  if (!SuccToSinkTo)
+  if (!SuccToSinkTo) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Sink" << *Inst << " (";
              Inst->getParent()->printAsOperand(dbgs(), false); dbgs() << " -> ";
@@ -199,12 +235,16 @@ static bool SinkInstruction(Instruction *Inst,
 static bool ProcessBlock(BasicBlock &BB, DominatorTree &DT, LoopInfo &LI,
                          AAResults &AA) {
   // Can't sink anything out of a block that has less than two successors.
-  if (BB.getTerminator()->getNumSuccessors() <= 1) return false;
+  if (BB.getTerminator()->getNumSuccessors() <= 1) { return false;
+
+}
 
   // Don't bother sinking code out of unreachable blocks. In addition to being
   // unprofitable, it can also lead to infinite looping, because in an
   // unreachable loop there may be nowhere to stop.
-  if (!DT.isReachableFromEntry(&BB)) return false;
+  if (!DT.isReachableFromEntry(&BB)) { return false;
+
+}
 
   bool MadeChange = false;
 
@@ -219,11 +259,15 @@ static bool ProcessBlock(BasicBlock &BB, DominatorTree &DT, LoopInfo &LI,
     // Predecrement I (if it's not begin) so that it isn't invalidated by
     // sinking.
     ProcessedBegin = I == BB.begin();
-    if (!ProcessedBegin)
+    if (!ProcessedBegin) {
       --I;
 
-    if (isa<DbgInfoIntrinsic>(Inst))
+}
+
+    if (isa<DbgInfoIntrinsic>(Inst)) {
       continue;
+
+}
 
     if (SinkInstruction(Inst, Stores, DT, LI, AA)) {
       ++NumSunk;
@@ -244,8 +288,10 @@ static bool iterativelySinkInstructions(Function &F, DominatorTree &DT,
     MadeChange = false;
     LLVM_DEBUG(dbgs() << "Sinking iteration " << NumSinkIter << "\n");
     // Process all basic blocks.
-    for (BasicBlock &I : F)
+    for (BasicBlock &I : F) {
       MadeChange |= ProcessBlock(I, DT, LI, AA);
+
+}
     EverMadeChange |= MadeChange;
     NumSinkIter++;
   } while (MadeChange);
@@ -258,8 +304,10 @@ PreservedAnalyses SinkingPass::run(Function &F, FunctionAnalysisManager &AM) {
   auto &LI = AM.getResult<LoopAnalysis>(F);
   auto &AA = AM.getResult<AAManager>(F);
 
-  if (!iterativelySinkInstructions(F, DT, LI, AA))
+  if (!iterativelySinkInstructions(F, DT, LI, AA)) {
     return PreservedAnalyses::all();
+
+}
 
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();

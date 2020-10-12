@@ -22,27 +22,45 @@ static void extractInstrFromModule(std::vector<Chunk> ChunksToKeep,
   int I = 0, InstCount = 0;
   std::set<Instruction *> InstToKeep;
 
-  for (auto &F : *Program)
-    for (auto &BB : F)
-      for (auto &Inst : BB)
+  for (auto &F : *Program) {
+    for (auto &BB : F) {
+      for (auto &Inst : BB) {
         if (I < (int)ChunksToKeep.size()) {
-          if (ChunksToKeep[I].contains(++InstCount))
+          if (ChunksToKeep[I].contains(++InstCount)) {
             InstToKeep.insert(&Inst);
-          if (ChunksToKeep[I].end == InstCount)
+
+}
+          if (ChunksToKeep[I].end == InstCount) {
             ++I;
+
+}
         }
 
+}
+
+}
+
+}
+
   std::vector<Instruction *> InstToDelete;
-  for (auto &F : *Program)
-    for (auto &BB : F)
-      for (auto &Inst : BB)
+  for (auto &F : *Program) {
+    for (auto &BB : F) {
+      for (auto &Inst : BB) {
         if (!InstToKeep.count(&Inst)) {
           Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
           InstToDelete.push_back(&Inst);
         }
 
-  for (auto &I : InstToDelete)
+}
+
+}
+
+}
+
+  for (auto &I : InstToDelete) {
     I->eraseFromParent();
+
+}
 }
 
 /// Counts the amount of basic blocks and prints their name & respective index
@@ -50,9 +68,13 @@ static unsigned countInstructions(Module *Program) {
   // TODO: Silence index with --quiet flag
   outs() << "----------------------------\n";
   int InstCount = 0;
-  for (auto &F : *Program)
-    for (auto &BB : F)
+  for (auto &F : *Program) {
+    for (auto &BB : F) {
         InstCount += BB.getInstList().size();
+
+}
+
+}
   outs() << "Number of instructions: " << InstCount << "\n";
 
   return InstCount;

@@ -51,8 +51,10 @@ bool Localizer::isLocalUse(MachineOperand &MOUse, const MachineInstr &Def,
                            MachineBasicBlock *&InsertMBB) {
   MachineInstr &MIUse = *MOUse.getParent();
   InsertMBB = MIUse.getParent();
-  if (MIUse.isPHI())
+  if (MIUse.isPHI()) {
     InsertMBB = MIUse.getOperand(MIUse.getOperandNo(&MOUse) + 1).getMBB();
+
+}
   return InsertMBB == Def.getParent();
 }
 
@@ -69,8 +71,10 @@ bool Localizer::localizeInterBlock(MachineFunction &MF,
   auto &TL = *MF.getSubtarget().getTargetLowering();
   for (auto RI = MBB.rbegin(), RE = MBB.rend(); RI != RE; ++RI) {
     MachineInstr &MI = *RI;
-    if (!TL.shouldLocalize(MI, TTI))
+    if (!TL.shouldLocalize(MI, TTI)) {
       continue;
+
+}
     LLVM_DEBUG(dbgs() << "Should localize: " << MI);
     assert(MI.getDesc().getNumDefs() == 1 &&
            "More than one definition not supported yet");
@@ -102,11 +106,13 @@ bool Localizer::localizeInterBlock(MachineFunction &MF,
         MachineInstr *LocalizedMI = MF.CloneMachineInstr(&MI);
         LocalizedInstrs.insert(LocalizedMI);
         MachineInstr &UseMI = *MOUse.getParent();
-        if (MRI->hasOneUse(Reg) && !UseMI.isPHI())
+        if (MRI->hasOneUse(Reg) && !UseMI.isPHI()) {
           InsertMBB->insert(InsertMBB->SkipPHIsAndLabels(UseMI), LocalizedMI);
-        else
+        } else {
           InsertMBB->insert(InsertMBB->SkipPHIsAndLabels(InsertMBB->begin()),
                             LocalizedMI);
+
+}
 
         // Set a new register for the definition.
         Register NewReg = MRI->createGenericVirtualRegister(MRI->getType(Reg));
@@ -140,18 +146,24 @@ bool Localizer::localizeIntraBlock(LocalizedSetVecT &LocalizedInstrs) {
     // All of the user MIs of this reg.
     SmallPtrSet<MachineInstr *, 32> Users;
     for (MachineInstr &UseMI : MRI->use_nodbg_instructions(Reg)) {
-      if (!UseMI.isPHI())
+      if (!UseMI.isPHI()) {
         Users.insert(&UseMI);
+
+}
     }
     // If all the users were PHIs then they're not going to be in our block,
     // don't try to move this instruction.
-    if (Users.empty())
+    if (Users.empty()) {
       continue;
+
+}
 
     MachineBasicBlock::iterator II(MI);
     ++II;
-    while (II != MBB.end() && !Users.count(&*II))
+    while (II != MBB.end() && !Users.count(&*II)) {
       ++II;
+
+}
 
     LLVM_DEBUG(dbgs() << "Intra-block: moving " << *MI << " before " << *&*II
                       << "\n");
@@ -166,12 +178,16 @@ bool Localizer::localizeIntraBlock(LocalizedSetVecT &LocalizedInstrs) {
 bool Localizer::runOnMachineFunction(MachineFunction &MF) {
   // If the ISel pipeline failed, do not bother running that pass.
   if (MF.getProperties().hasProperty(
-          MachineFunctionProperties::Property::FailedISel))
+          MachineFunctionProperties::Property::FailedISel)) {
     return false;
 
+}
+
   // Don't run the pass if the target asked so.
-  if (DoNotRunPass(MF))
+  if (DoNotRunPass(MF)) {
     return false;
+
+}
 
   LLVM_DEBUG(dbgs() << "Localize instructions for: " << MF.getName() << '\n');
 

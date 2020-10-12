@@ -78,25 +78,33 @@ BinaryStreamRef::BinaryStreamRef(StringRef Data, endianness Endian)
 
 Error BinaryStreamRef::readBytes(uint32_t Offset, uint32_t Size,
                                  ArrayRef<uint8_t> &Buffer) const {
-  if (auto EC = checkOffsetForRead(Offset, Size))
+  if (auto EC = checkOffsetForRead(Offset, Size)) {
     return EC;
+
+}
   return BorrowedImpl->readBytes(ViewOffset + Offset, Size, Buffer);
 }
 
 Error BinaryStreamRef::readLongestContiguousChunk(
     uint32_t Offset, ArrayRef<uint8_t> &Buffer) const {
-  if (auto EC = checkOffsetForRead(Offset, 1))
+  if (auto EC = checkOffsetForRead(Offset, 1)) {
     return EC;
 
+}
+
   if (auto EC =
-          BorrowedImpl->readLongestContiguousChunk(ViewOffset + Offset, Buffer))
+          BorrowedImpl->readLongestContiguousChunk(ViewOffset + Offset, Buffer)) {
     return EC;
+
+}
   // This StreamRef might refer to a smaller window over a larger stream.  In
   // that case we will have read out more bytes than we should return, because
   // we should not read past the end of the current view.
   uint32_t MaxLength = getLength() - Offset;
-  if (Buffer.size() > MaxLength)
+  if (Buffer.size() > MaxLength) {
     Buffer = Buffer.slice(0, MaxLength);
+
+}
   return Error::success();
 }
 
@@ -116,8 +124,10 @@ WritableBinaryStreamRef::WritableBinaryStreamRef(MutableArrayRef<uint8_t> Data,
 
 Error WritableBinaryStreamRef::writeBytes(uint32_t Offset,
                                           ArrayRef<uint8_t> Data) const {
-  if (auto EC = checkOffsetForWrite(Offset, Data.size()))
+  if (auto EC = checkOffsetForWrite(Offset, Data.size())) {
     return EC;
+
+}
 
   return BorrowedImpl->writeBytes(ViewOffset + Offset, Data);
 }

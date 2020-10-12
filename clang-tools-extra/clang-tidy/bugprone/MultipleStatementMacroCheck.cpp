@@ -23,15 +23,21 @@ AST_MATCHER(Expr, isInMacro) { return Node.getBeginLoc().isMacroID(); }
 /// Find the next statement after `S`.
 const Stmt *nextStmt(const MatchFinder::MatchResult &Result, const Stmt *S) {
   auto Parents = Result.Context->getParents(*S);
-  if (Parents.empty())
+  if (Parents.empty()) {
     return nullptr;
+
+}
   const auto *Parent = Parents[0].get<Stmt>();
-  if (!Parent)
+  if (!Parent) {
     return nullptr;
+
+}
   const Stmt *Prev = nullptr;
   for (const Stmt *Child : Parent->children()) {
-    if (Prev == S)
+    if (Prev == S) {
       return Child;
+
+}
     Prev = Child;
   }
   return nextStmt(Result, Parent);
@@ -69,12 +75,16 @@ void MultipleStatementMacroCheck::check(
   const auto *Inner = Result.Nodes.getNodeAs<Expr>("inner");
   const auto *Outer = Result.Nodes.getNodeAs<Stmt>("outer");
   const auto *Next = nextStmt(Result, Outer);
-  if (!Next)
+  if (!Next) {
     return;
 
+}
+
   SourceLocation OuterLoc = Outer->getBeginLoc();
-  if (Result.Nodes.getNodeAs<Stmt>("else"))
+  if (Result.Nodes.getNodeAs<Stmt>("else")) {
     OuterLoc = cast<IfStmt>(Outer)->getElseLoc();
+
+}
 
   auto InnerRanges = getExpansionRanges(Inner->getBeginLoc(), Result);
   auto OuterRanges = getExpansionRanges(OuterLoc, Result);
@@ -93,8 +103,10 @@ void MultipleStatementMacroCheck::check(
   // Inner and Next must have at least one more macro that Outer doesn't have,
   // and that range must be common to both.
   if (InnerRanges.empty() || NextRanges.empty() ||
-      InnerRanges.back() != NextRanges.back())
+      InnerRanges.back() != NextRanges.back()) {
     return;
+
+}
 
   diag(InnerRanges.back().getBegin(), "multiple statement macro used without "
                                       "braces; some statements will be "

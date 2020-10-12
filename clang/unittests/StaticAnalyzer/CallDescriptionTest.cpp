@@ -35,8 +35,10 @@ public:
   const bool *lookup(const CallEvent &Call) {
     const bool *Result = Impl.lookup(Call);
     // If it's a function we expected to find, remember that we've found it.
-    if (Result && *Result)
+    if (Result && *Result) {
       ++Found;
+
+}
     return Result;
   }
 
@@ -53,8 +55,10 @@ class CallDescriptionConsumer : public ExprEngineConsumer {
   void performTest(const Decl *D) {
     using namespace ast_matchers;
 
-    if (!D->hasBody())
+    if (!D->hasBody()) {
       return;
+
+}
 
     const CallExpr *CE = findNode<CallExpr>(D, callExpr());
     const StackFrameContext *SFC =
@@ -77,8 +81,10 @@ public:
       : ExprEngineConsumer(C), RM(RM) {}
 
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
-    for (const auto *D : DG)
+    for (const auto *D : DG) {
       performTest(D);
+
+}
     return true;
   }
 };

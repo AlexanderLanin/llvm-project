@@ -35,21 +35,31 @@ void
 UndefinedArraySubscriptChecker::checkPreStmt(const ArraySubscriptExpr *A,
                                              CheckerContext &C) const {
   const Expr *Index = A->getIdx();
-  if (!C.getSVal(Index).isUndef())
+  if (!C.getSVal(Index).isUndef()) {
     return;
+
+}
 
   // Sema generates anonymous array variables for copying array struct fields.
   // Don't warn if we're in an implicitly-generated constructor.
   const Decl *D = C.getLocationContext()->getDecl();
-  if (const CXXConstructorDecl *Ctor = dyn_cast<CXXConstructorDecl>(D))
-    if (Ctor->isDefaulted())
+  if (const CXXConstructorDecl *Ctor = dyn_cast<CXXConstructorDecl>(D)) {
+    if (Ctor->isDefaulted()) {
       return;
 
+}
+
+}
+
   ExplodedNode *N = C.generateErrorNode();
-  if (!N)
+  if (!N) {
     return;
-  if (!BT)
+
+}
+  if (!BT) {
     BT.reset(new BuiltinBug(this, "Array subscript is undefined"));
+
+}
 
   // Generate a report for this bug.
   auto R = std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);

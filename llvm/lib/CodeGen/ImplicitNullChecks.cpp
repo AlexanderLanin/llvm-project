@@ -231,8 +231,10 @@ public:
 
 bool ImplicitNullChecks::canHandle(const MachineInstr *MI) {
   if (MI->isCall() || MI->mayRaiseFPException() ||
-      MI->hasUnmodeledSideEffects())
+      MI->hasUnmodeledSideEffects()) {
     return false;
+
+}
   auto IsRegMask = [](const MachineOperand &MO) { return MO.isRegMask(); };
   (void)IsRegMask;
 
@@ -252,8 +254,10 @@ ImplicitNullChecks::computeDependence(const MachineInstr *MI,
   Optional<ArrayRef<MachineInstr *>::iterator> Dep;
 
   for (auto I = Block.begin(), E = Block.end(); I != E; ++I) {
-    if (canReorder(*I, MI))
+    if (canReorder(*I, MI)) {
       continue;
+
+}
 
     if (Dep == None) {
       // Found one possible dependency, keep track of it.
@@ -276,18 +280,24 @@ bool ImplicitNullChecks::canReorder(const MachineInstr *A,
   // load-store dependencies here.
 
   for (auto MOA : A->operands()) {
-    if (!(MOA.isReg() && MOA.getReg()))
+    if (!(MOA.isReg() && MOA.getReg())) {
       continue;
+
+}
 
     Register RegA = MOA.getReg();
     for (auto MOB : B->operands()) {
-      if (!(MOB.isReg() && MOB.getReg()))
+      if (!(MOB.isReg() && MOB.getReg())) {
         continue;
+
+}
 
       Register RegB = MOB.getReg();
 
-      if (TRI->regsOverlap(RegA, RegB) && (MOA.isDef() || MOB.isDef()))
+      if (TRI->regsOverlap(RegA, RegB) && (MOA.isDef() || MOB.isDef())) {
         return false;
+
+}
     }
   }
 
@@ -302,11 +312,15 @@ bool ImplicitNullChecks::runOnMachineFunction(MachineFunction &MF) {
 
   SmallVector<NullCheck, 16> NullCheckList;
 
-  for (auto &MBB : MF)
+  for (auto &MBB : MF) {
     analyzeBlockForNullChecks(MBB, NullCheckList);
 
-  if (!NullCheckList.empty())
+}
+
+  if (!NullCheckList.empty()) {
     rewriteNullChecks(NullCheckList);
+
+}
 
   return !NullCheckList.empty();
 }
@@ -315,9 +329,13 @@ bool ImplicitNullChecks::runOnMachineFunction(MachineFunction &MF) {
 static bool AnyAliasLiveIn(const TargetRegisterInfo *TRI,
                            MachineBasicBlock *MBB, unsigned Reg) {
   for (MCRegAliasIterator AR(Reg, TRI, /*IncludeSelf*/ true); AR.isValid();
-       ++AR)
-    if (MBB->isLiveIn(*AR))
+       ++AR) {
+    if (MBB->isLiveIn(*AR)) {
       return true;
+
+}
+
+}
   return false;
 }
 
@@ -325,17 +343,25 @@ ImplicitNullChecks::AliasResult
 ImplicitNullChecks::areMemoryOpsAliased(const MachineInstr &MI,
                                         const MachineInstr *PrevMI) const {
   // If it is not memory access, skip the check.
-  if (!(PrevMI->mayStore() || PrevMI->mayLoad()))
+  if (!(PrevMI->mayStore() || PrevMI->mayLoad())) {
     return AR_NoAlias;
+
+}
   // Load-Load may alias
-  if (!(MI.mayStore() || PrevMI->mayStore()))
+  if (!(MI.mayStore() || PrevMI->mayStore())) {
     return AR_NoAlias;
+
+}
   // We lost info, conservatively alias. If it was store then no sense to
   // continue because we won't be able to check against it further.
-  if (MI.memoperands_empty())
+  if (MI.memoperands_empty()) {
     return MI.mayStore() ? AR_WillAliasEverything : AR_MayAlias;
-  if (PrevMI->memoperands_empty())
+
+}
+  if (PrevMI->memoperands_empty()) {
     return PrevMI->mayStore() ? AR_WillAliasEverything : AR_MayAlias;
+
+}
 
   for (MachineMemOperand *MMO1 : MI.memoperands()) {
     // MMO1 should have a value due it comes from operation we'd like to use
@@ -343,8 +369,10 @@ ImplicitNullChecks::areMemoryOpsAliased(const MachineInstr &MI,
     assert(MMO1->getValue() && "MMO1 should have a Value!");
     for (MachineMemOperand *MMO2 : PrevMI->memoperands()) {
       if (const PseudoSourceValue *PSV = MMO2->getPseudoValue()) {
-        if (PSV->mayAlias(MFI))
+        if (PSV->mayAlias(MFI)) {
           return AR_MayAlias;
+
+}
         continue;
       }
       llvm::AliasResult AAResult =
@@ -352,8 +380,10 @@ ImplicitNullChecks::areMemoryOpsAliased(const MachineInstr &MI,
                                    MMO1->getAAInfo()),
                     MemoryLocation(MMO2->getValue(), LocationSize::unknown(),
                                    MMO2->getAAInfo()));
-      if (AAResult != NoAlias)
+      if (AAResult != NoAlias) {
         return AR_MayAlias;
+
+}
     }
   }
   return AR_NoAlias;
@@ -369,26 +399,36 @@ ImplicitNullChecks::isSuitableMemoryOp(const MachineInstr &MI,
 
 
   if (!TII->getMemOperandWithOffset(MI, BaseOp, Offset, OffsetIsScalable, TRI) ||
-      !BaseOp->isReg() || BaseOp->getReg() != PointerReg)
+      !BaseOp->isReg() || BaseOp->getReg() != PointerReg) {
     return SR_Unsuitable;
 
+}
+
   // FIXME: This algorithm assumes instructions have fixed-size offsets.
-  if (OffsetIsScalable)
+  if (OffsetIsScalable) {
     return SR_Unsuitable;
+
+}
 
   // We want the mem access to be issued at a sane offset from PointerReg,
   // so that if PointerReg is null then the access reliably page faults.
   if (!(MI.mayLoadOrStore() && !MI.isPredicable() &&
-        -PageSize < Offset && Offset < PageSize))
+        -PageSize < Offset && Offset < PageSize)) {
     return SR_Unsuitable;
+
+}
 
   // Finally, check whether the current memory access aliases with previous one.
   for (auto *PrevMI : PrevInsts) {
     AliasResult AR = areMemoryOpsAliased(MI, PrevMI);
-    if (AR == AR_WillAliasEverything)
+    if (AR == AR_WillAliasEverything) {
       return SR_Impossible;
-    if (AR == AR_MayAlias)
+
+}
+    if (AR == AR_MayAlias) {
       return SR_Unsuitable;
+
+}
   }
   return SR_Suitable;
 }
@@ -399,8 +439,10 @@ bool ImplicitNullChecks::canHoistInst(MachineInstr *FaultingMI,
                                       MachineBasicBlock *NullSucc,
                                       MachineInstr *&Dependence) {
   auto DepResult = computeDependence(FaultingMI, InstsSeenSoFar);
-  if (!DepResult.CanReorder)
+  if (!DepResult.CanReorder) {
     return false;
+
+}
 
   if (!DepResult.PotentialDependence) {
     Dependence = nullptr;
@@ -416,12 +458,16 @@ bool ImplicitNullChecks::canHoistInst(MachineInstr *FaultingMI,
   // We also do not want to hoist stores because it might change the memory
   // while the FaultingMI may result in faulting.
   assert(canHandle(DependenceMI) && "Should never have reached here!");
-  if (DependenceMI->mayLoadOrStore())
+  if (DependenceMI->mayLoadOrStore()) {
     return false;
 
+}
+
   for (auto &DependenceMO : DependenceMI->operands()) {
-    if (!(DependenceMO.isReg() && DependenceMO.getReg()))
+    if (!(DependenceMO.isReg() && DependenceMO.getReg())) {
       continue;
+
+}
 
     // Make sure that we won't clobber any live ins to the sibling block by
     // hoisting Dependency.  For instance, we can't hoist INST to before the
@@ -440,8 +486,10 @@ bool ImplicitNullChecks::canHoistInst(MachineInstr *FaultingMI,
     // was loading into %rax and it faults, the value of %rax should stay the
     // same as it would have been had the load not have executed and we'd have
     // branched to NullSucc directly.
-    if (AnyAliasLiveIn(TRI, NullSucc, DependenceMO.getReg()))
+    if (AnyAliasLiveIn(TRI, NullSucc, DependenceMO.getReg())) {
       return false;
+
+}
 
     // The Dependency can't be re-defining the base register -- then we won't
     // get the memory operation on the address we want.  This is already
@@ -454,8 +502,10 @@ bool ImplicitNullChecks::canHoistInst(MachineInstr *FaultingMI,
   auto DepDepResult =
       computeDependence(DependenceMI, {InstsSeenSoFar.begin(), DependenceItr});
 
-  if (!DepDepResult.CanReorder || DepDepResult.PotentialDependence)
+  if (!DepDepResult.CanReorder || DepDepResult.PotentialDependence) {
     return false;
+
+}
 
   Dependence = DependenceMI;
   return true;
@@ -469,27 +519,37 @@ bool ImplicitNullChecks::analyzeBlockForNullChecks(
   using MachineBranchPredicate = TargetInstrInfo::MachineBranchPredicate;
 
   MDNode *BranchMD = nullptr;
-  if (auto *BB = MBB.getBasicBlock())
+  if (auto *BB = MBB.getBasicBlock()) {
     BranchMD = BB->getTerminator()->getMetadata(LLVMContext::MD_make_implicit);
 
-  if (!BranchMD)
+}
+
+  if (!BranchMD) {
     return false;
+
+}
 
   MachineBranchPredicate MBP;
 
-  if (TII->analyzeBranchPredicate(MBB, MBP, true))
+  if (TII->analyzeBranchPredicate(MBB, MBP, true)) {
     return false;
+
+}
 
   // Is the predicate comparing an integer to zero?
   if (!(MBP.LHS.isReg() && MBP.RHS.isImm() && MBP.RHS.getImm() == 0 &&
         (MBP.Predicate == MachineBranchPredicate::PRED_NE ||
-         MBP.Predicate == MachineBranchPredicate::PRED_EQ)))
+         MBP.Predicate == MachineBranchPredicate::PRED_EQ))) {
     return false;
+
+}
 
   // If we cannot erase the test instruction itself, then making the null check
   // implicit does not buy us much.
-  if (!MBP.SingleUseCondition)
+  if (!MBP.SingleUseCondition) {
     return false;
+
+}
 
   MachineBasicBlock *NotNullSucc, *NullSucc;
 
@@ -503,8 +563,10 @@ bool ImplicitNullChecks::analyzeBlockForNullChecks(
 
   // We handle the simplest case for now.  We can potentially do better by using
   // the machine dominator tree.
-  if (NotNullSucc->pred_size() != 1)
+  if (NotNullSucc->pred_size() != 1) {
     return false;
+
+}
 
   // To prevent the invalid transformation of the following code:
   //
@@ -528,9 +590,13 @@ bool ImplicitNullChecks::analyzeBlockForNullChecks(
 
   assert(MBP.ConditionDef->getParent() ==  &MBB && "Should be in basic block");
 
-  for (auto I = MBB.rbegin(); MBP.ConditionDef != &*I; ++I)
-    if (I->modifiesRegister(PointerReg, TRI))
+  for (auto I = MBB.rbegin(); MBP.ConditionDef != &*I; ++I) {
+    if (I->modifiesRegister(PointerReg, TRI)) {
       return false;
+
+}
+
+}
 
   // Starting with a code fragment like:
   //
@@ -589,13 +655,17 @@ bool ImplicitNullChecks::analyzeBlockForNullChecks(
   SmallVector<MachineInstr *, 8> InstsSeenSoFar;
 
   for (auto &MI : *NotNullSucc) {
-    if (!canHandle(&MI) || InstsSeenSoFar.size() >= MaxInstsToConsider)
+    if (!canHandle(&MI) || InstsSeenSoFar.size() >= MaxInstsToConsider) {
       return false;
+
+}
 
     MachineInstr *Dependence;
     SuitabilityResult SR = isSuitableMemoryOp(MI, PointerReg, InstsSeenSoFar);
-    if (SR == SR_Impossible)
+    if (SR == SR_Impossible) {
       return false;
+
+}
     if (SR == SR_Suitable &&
         canHoistInst(&MI, PointerReg, InstsSeenSoFar, NullSucc, Dependence)) {
       NullCheckList.emplace_back(&MI, MBP.ConditionDef, &MBB, NotNullSucc,
@@ -607,8 +677,10 @@ bool ImplicitNullChecks::analyzeBlockForNullChecks(
     if (llvm::any_of(MI.operands(), [&](MachineOperand &MO) {
           return MO.isReg() && MO.getReg() && MO.isDef() &&
                  TRI->regsOverlap(MO.getReg(), PointerReg);
-        }))
+        })) {
       return false;
+
+}
     InstsSeenSoFar.push_back(&MI);
   }
 
@@ -635,11 +707,13 @@ MachineInstr *ImplicitNullChecks::insertFaultingInstr(
   }
 
   FaultMaps::FaultKind FK;
-  if (MI->mayLoad())
+  if (MI->mayLoad()) {
     FK =
         MI->mayStore() ? FaultMaps::FaultingLoadStore : FaultMaps::FaultingLoad;
-  else
+  } else {
     FK = FaultMaps::FaultingStore;
+
+}
 
   auto MIB = BuildMI(MBB, DL, TII->get(TargetOpcode::FAULTING_OP), DefReg)
                  .addImm(FK)
@@ -694,20 +768,28 @@ void ImplicitNullChecks::rewriteNullChecks(
     // the value.
     MachineBasicBlock *MBB = NC.getMemOperation()->getParent();
     for (const MachineOperand &MO : FaultingInstr->operands()) {
-      if (!MO.isReg() || !MO.isDef())
+      if (!MO.isReg() || !MO.isDef()) {
         continue;
+
+}
       Register Reg = MO.getReg();
-      if (!Reg || MBB->isLiveIn(Reg))
+      if (!Reg || MBB->isLiveIn(Reg)) {
         continue;
+
+}
       MBB->addLiveIn(Reg);
     }
 
     if (auto *DepMI = NC.getOnlyDependency()) {
       for (auto &MO : DepMI->operands()) {
-        if (!MO.isReg() || !MO.getReg() || !MO.isDef() || MO.isDead())
+        if (!MO.isReg() || !MO.getReg() || !MO.isDef() || MO.isDead()) {
           continue;
-        if (!NC.getNotNullSucc()->isLiveIn(MO.getReg()))
+
+}
+        if (!NC.getNotNullSucc()->isLiveIn(MO.getReg())) {
           NC.getNotNullSucc()->addLiveIn(MO.getReg());
+
+}
       }
     }
 

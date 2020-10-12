@@ -107,27 +107,33 @@ Error BlockVerifier::transition(State To) {
 
                        {State::EndOfBuffer, {}}}};
 
-  if (CurrentRecord >= State::StateMax)
+  if (CurrentRecord >= State::StateMax) {
     return createStringError(
         std::make_error_code(std::errc::executable_format_error),
         "BUG (BlockVerifier): Cannot find transition table entry for %s, "
         "transitioning to %s.",
         recordToString(CurrentRecord).data(), recordToString(To).data());
 
+}
+
   // If we're at an EndOfBuffer record, we ignore anything that follows that
   // isn't a NewBuffer record.
-  if (CurrentRecord == State::EndOfBuffer && To != State::NewBuffer)
+  if (CurrentRecord == State::EndOfBuffer && To != State::NewBuffer) {
     return Error::success();
+
+}
 
   auto &Mapping = TransitionTable[number(CurrentRecord)];
   auto &Destinations = Mapping.ToStates;
   assert(Mapping.From == CurrentRecord &&
          "BUG: Wrong index for record mapping.");
-  if ((Destinations & ToSet(mask(To))) == 0)
+  if ((Destinations & ToSet(mask(To))) == 0) {
     return createStringError(
         std::make_error_code(std::errc::executable_format_error),
         "BlockVerifier: Invalid transition from %s to %s.",
         recordToString(CurrentRecord).data(), recordToString(To).data());
+
+}
 
   CurrentRecord = To;
   return Error::success();

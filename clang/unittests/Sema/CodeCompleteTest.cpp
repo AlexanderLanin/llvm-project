@@ -62,9 +62,13 @@ private:
   std::vector<std::string> getVisitedNamespace(
       CodeCompletionContext::VisitedContextSet VisitedContexts) const {
     std::vector<std::string> NSNames;
-    for (const auto *Context : VisitedContexts)
-      if (const auto *NS = llvm::dyn_cast<NamespaceDecl>(Context))
+    for (const auto *Context : VisitedContexts) {
+      if (const auto *NS = llvm::dyn_cast<NamespaceDecl>(Context)) {
         NSNames.push_back(NS->getQualifiedNameAsString());
+
+}
+
+}
     return NSNames;
   }
 

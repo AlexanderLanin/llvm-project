@@ -157,16 +157,20 @@ static void lto_add_attrs(lto_code_gen_t cg) {
   if (MAttrs.size()) {
     std::string attrs;
     for (unsigned i = 0; i < MAttrs.size(); ++i) {
-      if (i > 0)
+      if (i > 0) {
         attrs.append(",");
+
+}
       attrs.append(MAttrs[i]);
     }
 
     CG->setAttr(attrs);
   }
 
-  if (OptLevel < '0' || OptLevel > '3')
+  if (OptLevel < '0' || OptLevel > '3') {
     report_fatal_error("Optimization level must be between 0 and 3");
+
+}
   CG->setOptLevel(OptLevel - '0');
   CG->setFreestanding(EnableFreestanding);
 }
@@ -186,16 +190,20 @@ bool lto_module_is_object_file(const char* path) {
 bool lto_module_is_object_file_for_target(const char* path,
                                           const char* target_triplet_prefix) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer = MemoryBuffer::getFile(path);
-  if (!Buffer)
+  if (!Buffer) {
     return false;
+
+}
   return LTOModule::isBitcodeForTarget(Buffer->get(),
                                        StringRef(target_triplet_prefix));
 }
 
 bool lto_module_has_objc_category(const void *mem, size_t length) {
   std::unique_ptr<MemoryBuffer> Buffer(LTOModule::makeBuffer(mem, length));
-  if (!Buffer)
+  if (!Buffer) {
     return false;
+
+}
   LLVMContext Ctx;
   ErrorOr<bool> Result = expectedToErrorOrAndEmitErrors(
       Ctx, llvm::isBitcodeContainingObjCCategory(*Buffer));
@@ -211,8 +219,10 @@ lto_module_is_object_file_in_memory_for_target(const void* mem,
                                             size_t length,
                                             const char* target_triplet_prefix) {
   std::unique_ptr<MemoryBuffer> buffer(LTOModule::makeBuffer(mem, length));
-  if (!buffer)
+  if (!buffer) {
     return false;
+
+}
   return LTOModule::isBitcodeForTarget(buffer.get(),
                                        StringRef(target_triplet_prefix));
 }
@@ -222,8 +232,10 @@ lto_module_t lto_module_create(const char* path) {
   llvm::TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
   ErrorOr<std::unique_ptr<LTOModule>> M =
       LTOModule::createFromFile(*LTOContext, StringRef(path), Options);
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -232,8 +244,10 @@ lto_module_t lto_module_create_from_fd(int fd, const char *path, size_t size) {
   llvm::TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromOpenFile(
       *LTOContext, fd, StringRef(path), size, Options);
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -245,8 +259,10 @@ lto_module_t lto_module_create_from_fd_at_offset(int fd, const char *path,
   llvm::TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromOpenFileSlice(
       *LTOContext, fd, StringRef(path), map_size, offset, Options);
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -255,8 +271,10 @@ lto_module_t lto_module_create_from_memory(const void* mem, size_t length) {
   llvm::TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
   ErrorOr<std::unique_ptr<LTOModule>> M =
       LTOModule::createFromBuffer(*LTOContext, mem, length, Options);
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -267,8 +285,10 @@ lto_module_t lto_module_create_from_memory_with_path(const void* mem,
   llvm::TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createFromBuffer(
       *LTOContext, mem, length, Options, StringRef(path));
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -284,8 +304,10 @@ lto_module_t lto_module_create_in_local_context(const void *mem, size_t length,
 
   ErrorOr<std::unique_ptr<LTOModule>> M = LTOModule::createInLocalContext(
       std::move(Context), mem, length, Options, StringRef(path));
-  if (!M)
+  if (!M) {
     return nullptr;
+
+}
   return wrap(M->release());
 }
 
@@ -445,8 +467,10 @@ const void *lto_codegen_compile(lto_code_gen_t cg, size_t *length) {
   CG->NativeObjectFile =
       CG->compile(DisableVerify, DisableInline, DisableGVNLoadPRE,
                   DisableLTOVectorization);
-  if (!CG->NativeObjectFile)
+  if (!CG->NativeObjectFile) {
     return nullptr;
+
+}
   *length = CG->NativeObjectFile->getBufferSize();
   return CG->NativeObjectFile->getBufferStart();
 }
@@ -461,8 +485,10 @@ const void *lto_codegen_compile_optimized(lto_code_gen_t cg, size_t *length) {
   maybeParseOptions(cg);
   LibLTOCodeGenerator *CG = unwrap(cg);
   CG->NativeObjectFile = CG->compileOptimized();
-  if (!CG->NativeObjectFile)
+  if (!CG->NativeObjectFile) {
     return nullptr;
+
+}
   *length = CG->NativeObjectFile->getBufferSize();
   return CG->NativeObjectFile->getBufferStart();
 }
@@ -477,8 +503,10 @@ bool lto_codegen_compile_to_file(lto_code_gen_t cg, const char **name) {
 void lto_codegen_debug_options(lto_code_gen_t cg, const char *opt) {
   std::vector<const char *> Options;
   for (std::pair<StringRef, StringRef> o = getToken(opt); !o.first.empty();
-       o = getToken(o.second))
+       o = getToken(o.second)) {
     Options.push_back(o.first.data());
+
+}
 
   unwrap(cg)->setCodeGenDebugOptions(Options);
 }
@@ -509,8 +537,10 @@ thinlto_code_gen_t thinlto_create_codegen(void) {
   CodeGen->setFreestanding(EnableFreestanding);
 
   if (OptLevel.getNumOccurrences()) {
-    if (OptLevel < '0' || OptLevel > '3')
+    if (OptLevel < '0' || OptLevel > '3') {
       report_fatal_error("Optimization level must be between 0 and 3");
+
+}
     CodeGen->setOptLevel(OptLevel - '0');
     switch (OptLevel) {
     case '0':
@@ -574,8 +604,10 @@ void thinlto_debug_options(const char *const *options, int number) {
   // if options were requested, set them
   if (number && options) {
     std::vector<const char *> CodegenArgv(1, "libLTO");
-    for (auto Arg : ArrayRef<const char *>(options, number))
+    for (auto Arg : ArrayRef<const char *>(options, number)) {
       CodegenArgv.push_back(Arg);
+
+}
     cl::ParseCommandLineOptions(CodegenArgv.size(), CodegenArgv.data());
   }
 }

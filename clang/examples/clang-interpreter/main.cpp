@@ -74,12 +74,16 @@ private:
 public:
   static Expected<std::unique_ptr<SimpleJIT>> Create() {
     auto JTMB = JITTargetMachineBuilder::detectHost();
-    if (!JTMB)
+    if (!JTMB) {
       return JTMB.takeError();
 
+}
+
     auto TM = JTMB->createTargetMachine();
-    if (!TM)
+    if (!TM) {
       return TM.takeError();
+
+}
 
     auto DL = (*TM)->createDataLayout();
 
@@ -87,8 +91,10 @@ public:
         DynamicLibrarySearchGenerator::GetForCurrentProcess(
             DL.getGlobalPrefix());
 
-    if (!ProcessSymbolsGenerator)
+    if (!ProcessSymbolsGenerator) {
       return ProcessSymbolsGenerator.takeError();
+
+}
 
     return std::unique_ptr<SimpleJIT>(new SimpleJIT(
         std::move(*TM), std::move(DL), std::move(*ProcessSymbolsGenerator)));
@@ -106,8 +112,10 @@ public:
 
   Expected<JITTargetAddress> getSymbolAddress(const StringRef &Name) {
     auto Sym = findSymbol(Name);
-    if (!Sym)
+    if (!Sym) {
       return Sym.takeError();
+
+}
     return Sym->getAddress();
   }
 };
@@ -134,8 +142,10 @@ int main(int argc, const char **argv) {
 
   // Use ELF on Windows-32 and MingW for now.
 #ifndef CLANG_INTERPRETER_COFF_FORMAT
-  if (T.isOSBinFormatCOFF())
+  if (T.isOSBinFormatCOFF()) {
     T.setObjectFormat(llvm::Triple::ELF);
+
+}
 #endif
 
   ExitOnErr.setBanner("clang interpreter");
@@ -150,8 +160,10 @@ int main(int argc, const char **argv) {
   SmallVector<const char *, 16> Args(argv, argv + argc);
   Args.push_back("-fsyntax-only");
   std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(Args));
-  if (!C)
+  if (!C) {
     return 0;
+
+}
 
   // FIXME: This is copied from ASTUnit.cpp; simplify and eliminate.
 
@@ -192,19 +204,25 @@ int main(int argc, const char **argv) {
 
   // Create the compilers actual diagnostics engine.
   Clang.createDiagnostics();
-  if (!Clang.hasDiagnostics())
+  if (!Clang.hasDiagnostics()) {
     return 1;
+
+}
 
   // Infer the builtin include path if unspecified.
   if (Clang.getHeaderSearchOpts().UseBuiltinIncludes &&
-      Clang.getHeaderSearchOpts().ResourceDir.empty())
+      Clang.getHeaderSearchOpts().ResourceDir.empty()) {
     Clang.getHeaderSearchOpts().ResourceDir =
       CompilerInvocation::GetResourcesPath(argv[0], MainAddr);
 
+}
+
   // Create and execute the frontend to generate an LLVM bitcode module.
   std::unique_ptr<CodeGenAction> Act(new EmitLLVMOnlyAction());
-  if (!Clang.ExecuteAction(*Act))
+  if (!Clang.ExecuteAction(*Act)) {
     return 1;
+
+}
 
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();

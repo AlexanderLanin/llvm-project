@@ -72,8 +72,10 @@ bool PostRAHazardRecognizer::runOnMachineFunction(MachineFunction &Fn) {
       TII->CreateTargetPostRAHazardRecognizer(Fn));
 
   // Return if the target has not implemented a hazard recognizer.
-  if (!HazardRec.get())
+  if (!HazardRec.get()) {
     return false;
+
+}
 
   // Loop over all of the basic blocks
   for (auto &MBB : Fn) {

@@ -36,20 +36,26 @@ protected:
     raw_string_ostream os(errMsg);
     Error.print("", os);
 
-    if (!M)
+    if (!M) {
       report_fatal_error(os.str());
+
+}
   }
 
   ::testing::AssertionResult isLibFunc(const Function *FDecl,
                                        LibFunc ExpectedLF) {
     StringRef ExpectedLFName = TLI.getName(ExpectedLF);
 
-    if (!FDecl)
+    if (!FDecl) {
       return ::testing::AssertionFailure() << ExpectedLFName << " not found";
 
+}
+
     LibFunc F;
-    if (!TLI.getLibFunc(*FDecl, F))
+    if (!TLI.getLibFunc(*FDecl, F)) {
       return ::testing::AssertionFailure() << ExpectedLFName << " invalid";
+
+}
 
     return ::testing::AssertionSuccess() << ExpectedLFName << " is LibFunc";
   }

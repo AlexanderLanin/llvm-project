@@ -23,17 +23,23 @@ namespace llvm {
 namespace mca {
 
 llvm::Error RetireStage::cycleStart() {
-  if (RCU.isEmpty())
+  if (RCU.isEmpty()) {
     return llvm::ErrorSuccess();
+
+}
 
   const unsigned MaxRetirePerCycle = RCU.getMaxRetirePerCycle();
   unsigned NumRetired = 0;
   while (!RCU.isEmpty()) {
-    if (MaxRetirePerCycle != 0 && NumRetired == MaxRetirePerCycle)
+    if (MaxRetirePerCycle != 0 && NumRetired == MaxRetirePerCycle) {
       break;
+
+}
     const RetireControlUnit::RUToken &Current = RCU.getCurrentToken();
-    if (!Current.Executed)
+    if (!Current.Executed) {
       break;
+
+}
     notifyInstructionRetired(Current.IR);
     RCU.consumeCurrentToken();
     NumRetired++;
@@ -53,11 +59,15 @@ void RetireStage::notifyInstructionRetired(const InstRef &IR) const {
   const Instruction &Inst = *IR.getInstruction();
 
   // Release the load/store queue entries.
-  if (Inst.isMemOp())
+  if (Inst.isMemOp()) {
     LSU.onInstructionRetired(IR);
 
-  for (const WriteState &WS : Inst.getDefs())
+}
+
+  for (const WriteState &WS : Inst.getDefs()) {
     PRF.removeRegisterWrite(WS, FreedRegs);
+
+}
   notifyEvent<HWInstructionEvent>(HWInstructionRetiredEvent(IR, FreedRegs));
 }
 

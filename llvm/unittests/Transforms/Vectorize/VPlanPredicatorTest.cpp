@@ -226,8 +226,10 @@ TEST_F(VPlanPredicatorTest, PredicatorNegOrTest) {
 
   bool ValidOrOperands = false;
   if (((OrOp0Inst == And) && (OrOp1Inst == NotAnd)) ||
-      ((OrOp0Inst == NotAnd) && (OrOp1Inst == And)))
+      ((OrOp0Inst == NotAnd) && (OrOp1Inst == And))) {
     ValidOrOperands = true;
+
+}
 
   EXPECT_TRUE(ValidOrOperands);
 }

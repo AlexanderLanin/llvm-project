@@ -37,15 +37,19 @@ AppendingTypeTableBuilder::AppendingTypeTableBuilder(BumpPtrAllocator &Storage)
 AppendingTypeTableBuilder::~AppendingTypeTableBuilder() = default;
 
 Optional<TypeIndex> AppendingTypeTableBuilder::getFirst() {
-  if (empty())
+  if (empty()) {
     return None;
+
+}
 
   return TypeIndex(TypeIndex::FirstNonSimpleIndex);
 }
 
 Optional<TypeIndex> AppendingTypeTableBuilder::getNext(TypeIndex Prev) {
-  if (++Prev == nextTypeIndex())
+  if (++Prev == nextTypeIndex()) {
     return None;
+
+}
   return Prev;
 }
 
@@ -58,8 +62,10 @@ StringRef AppendingTypeTableBuilder::getTypeName(TypeIndex Index) {
 }
 
 bool AppendingTypeTableBuilder::contains(TypeIndex Index) {
-  if (Index.isSimple() || Index.isNoneType())
+  if (Index.isSimple() || Index.isNoneType()) {
     return false;
+
+}
 
   return Index.toArrayIndex() < SeenRecords.size();
 }
@@ -89,7 +95,9 @@ AppendingTypeTableBuilder::insertRecord(ContinuationRecordBuilder &Builder) {
   TypeIndex TI;
   auto Fragments = Builder.end(nextTypeIndex());
   assert(!Fragments.empty());
-  for (auto C : Fragments)
+  for (auto C : Fragments) {
     TI = insertRecordBytes(C.RecordData);
+
+}
   return TI;
 }

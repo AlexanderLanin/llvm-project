@@ -96,8 +96,10 @@ static std::string OptLLVM(const std::string &IR, CodeGenOpt::Level OLvl) {
   SMDiagnostic Err;
   LLVMContext Context;
   std::unique_ptr<Module> M = parseIR(MemoryBufferRef(IR, "IR"), Err, Context);
-  if (!M || verifyModule(*M, &errs()))
+  if (!M || verifyModule(*M, &errs())) {
     ErrorAndExit("Could not parse IR");
+
+}
 
   Triple ModuleTriple(M->getTargetTriple());
   const TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
@@ -135,9 +137,11 @@ static std::string OptLLVM(const std::string &IR, CodeGenOpt::Level OLvl) {
 // Takes a function and runs it on a set of inputs
 // First determines whether f is the optimized or unoptimized function
 static void RunFuncOnInputs(LLVMFunc f, int Arr[kNumArrays][kArraySize]) {
-  for (int i = 0; i < kNumArrays / 3; i++)
+  for (int i = 0; i < kNumArrays / 3; i++) {
     f(Arr[i], Arr[i + (kNumArrays / 3)], Arr[i + (2 * kNumArrays / 3)],
       kArraySize);
+
+}
 }
 
 // Takes a string of IR and compiles it using LLVM's JIT Engine
@@ -145,12 +149,16 @@ static void CreateAndRunJITFunc(const std::string &IR, CodeGenOpt::Level OLvl) {
   SMDiagnostic Err;
   LLVMContext Context;
   std::unique_ptr<Module> M = parseIR(MemoryBufferRef(IR, "IR"), Err, Context);
-  if (!M)
+  if (!M) {
     ErrorAndExit("Could not parse IR");
 
+}
+
   Function *EntryFunc = M->getFunction("foo");
-  if (!EntryFunc)
+  if (!EntryFunc) {
     ErrorAndExit("Function not found in module");
+
+}
 
   std::string ErrorMsg;
   EngineBuilder builder(std::move(M));
@@ -164,8 +172,10 @@ static void CreateAndRunJITFunc(const std::string &IR, CodeGenOpt::Level OLvl) {
   builder.setTargetOptions(InitTargetOptionsFromCodeGenFlags());
 
   std::unique_ptr<ExecutionEngine> EE(builder.create());
-  if (!EE)
+  if (!EE) {
     ErrorAndExit("Could not create execution engine");
+
+}
 
   EE->finalizeObject();
   EE->runStaticConstructorsDestructors(false);
@@ -212,8 +222,10 @@ void clang_fuzzer::HandleLLVM(const std::string &IR,
   CreateAndRunJITFunc(OptIR, OLvl);
   CreateAndRunJITFunc(IR, CodeGenOpt::None);
 
-  if (memcmp(OptArrays, UnoptArrays, kTotalSize))
+  if (memcmp(OptArrays, UnoptArrays, kTotalSize)) {
     ErrorAndExit("!!!BUG!!!");
+
+}
 
   return;
 }

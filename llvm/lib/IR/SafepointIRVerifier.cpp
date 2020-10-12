@@ -88,8 +88,10 @@ public:
     bool Listed = false;
     for (const_pred_iterator PredIt(BB), End(BB, true); PredIt != End; ++PredIt) {
       if (InBB == *PredIt) {
-        if (!isDeadEdge(&getEdge(PredIt)))
+        if (!isDeadEdge(&getEdge(PredIt))) {
           return true;
+
+}
         Listed = true;
       }
     }
@@ -118,8 +120,10 @@ public:
     for (const_pred_iterator PredIt(BB), End(BB, true); PredIt != End; ++PredIt) {
       auto &PU = PredIt.getUse();
       const Use &U = PU.getUser()->getOperandUse(PU.getOperandNo());
-      if (!isDeadBlock(*PredIt) && !isDeadEdge(&U))
+      if (!isDeadBlock(*PredIt) && !isDeadEdge(&U)) {
         return true; // Found a live edge.
+
+}
     }
     return false;
   }
@@ -128,9 +132,13 @@ public:
     this->DT = &DT;
 
     // Start with all blocks unreachable from entry.
-    for (const BasicBlock &BB : F)
-      if (!DT.isReachableFromEntry(&BB))
+    for (const BasicBlock &BB : F) {
+      if (!DT.isReachableFromEntry(&BB)) {
         DeadBlocks.insert(&BB);
+
+}
+
+}
 
     // Top-down walk of the dominator tree
     ReversePostOrderTraversal<const Function *> RPOT(&F);
@@ -141,16 +149,22 @@ public:
       // For conditional branches, we can perform simple conditional propagation on
       // the condition value itself.
       const BranchInst *BI = dyn_cast<BranchInst>(TI);
-      if (!BI || !BI->isConditional() || !isa<Constant>(BI->getCondition()))
+      if (!BI || !BI->isConditional() || !isa<Constant>(BI->getCondition())) {
         continue;
+
+}
 
       // If a branch has two identical successors, we cannot declare either dead.
-      if (BI->getSuccessor(0) == BI->getSuccessor(1))
+      if (BI->getSuccessor(0) == BI->getSuccessor(1)) {
         continue;
 
+}
+
       ConstantInt *Cond = dyn_cast<ConstantInt>(BI->getCondition());
-      if (!Cond)
+      if (!Cond) {
         continue;
+
+}
 
       addDeadEdge(BI->getOperandUse(Cond->getZExtValue() ? 1 : 2));
     }
@@ -164,8 +178,10 @@ protected:
     NewDead.push_back(BB);
     while (!NewDead.empty()) {
       const BasicBlock *D = NewDead.pop_back_val();
-      if (isDeadBlock(D))
+      if (isDeadBlock(D)) {
         continue;
+
+}
 
       // All blocks dominated by D are dead.
       SmallVector<BasicBlock *, 8> Dom;
@@ -176,20 +192,30 @@ protected:
       DeadBlocks.insert(Dom.begin(), Dom.end());
 
       // Figure out the dominance-frontier(D).
-      for (BasicBlock *B : Dom)
-        for (BasicBlock *S : successors(B))
-          if (!isDeadBlock(S) && !hasLiveIncomingEdges(S))
+      for (BasicBlock *B : Dom) {
+        for (BasicBlock *S : successors(B)) {
+          if (!isDeadBlock(S) && !hasLiveIncomingEdges(S)) {
             NewDead.push_back(S);
+
+}
+
+}
+
+}
     }
   }
 
   void addDeadEdge(const Use &DeadEdge) {
-    if (!DeadEdges.insert(&DeadEdge))
+    if (!DeadEdges.insert(&DeadEdge)) {
       return;
 
+}
+
     BasicBlock *BB = cast_or_null<BasicBlock>(DeadEdge.get());
-    if (hasLiveIncomingEdges(BB))
+    if (hasLiveIncomingEdges(BB)) {
       return;
+
+}
 
     addDeadBlock(BB);
   }
@@ -253,23 +279,33 @@ INITIALIZE_PASS_END(SafepointIRVerifier, "verify-safepoint-ir",
                     "Safepoint IR Verifier", false, false)
 
 static bool isGCPointerType(Type *T) {
-  if (auto *PT = dyn_cast<PointerType>(T))
+  if (auto *PT = dyn_cast<PointerType>(T)) {
     // For the sake of this example GC, we arbitrarily pick addrspace(1) as our
     // GC managed heap.  We know that a pointer into this heap needs to be
     // updated and that no other pointer does.
     return (1 == PT->getAddressSpace());
+
+}
   return false;
 }
 
 static bool containsGCPtrType(Type *Ty) {
-  if (isGCPointerType(Ty))
+  if (isGCPointerType(Ty)) {
     return true;
-  if (VectorType *VT = dyn_cast<VectorType>(Ty))
+
+}
+  if (VectorType *VT = dyn_cast<VectorType>(Ty)) {
     return isGCPointerType(VT->getScalarType());
-  if (ArrayType *AT = dyn_cast<ArrayType>(Ty))
+
+}
+  if (ArrayType *AT = dyn_cast<ArrayType>(Ty)) {
     return containsGCPtrType(AT->getElementType());
-  if (StructType *ST = dyn_cast<StructType>(Ty))
+
+}
+  if (StructType *ST = dyn_cast<StructType>(Ty)) {
     return llvm::any_of(ST->elements(), containsGCPtrType);
+
+}
   return false;
 }
 
@@ -336,8 +372,10 @@ static enum BaseType getBaseType(const Value *Val) {
   // or selects).
   while(!Worklist.empty()) {
     const Value *V = Worklist.pop_back_val();
-    if (!Visited.insert(V).second)
+    if (!Visited.insert(V).second) {
       continue;
+
+}
 
     if (const auto *CI = dyn_cast<CastInst>(V)) {
       Worklist.push_back(CI->stripPointerCasts());
@@ -350,8 +388,10 @@ static enum BaseType getBaseType(const Value *Val) {
     // Push all the incoming values of phi node into the worklist for
     // processing.
     if (const auto *PN = dyn_cast<PHINode>(V)) {
-      for (Value *InV: PN->incoming_values())
+      for (Value *InV: PN->incoming_values()) {
         Worklist.push_back(InV);
+
+}
       continue;
     }
     if (const auto *SI = dyn_cast<SelectInst>(V)) {
@@ -363,8 +403,10 @@ static enum BaseType getBaseType(const Value *Val) {
     if (isa<Constant>(V)) {
       // We found at least one base pointer which is non-null, so this derived
       // pointer is not exclusively derived from null.
-      if (V != Constant::getNullValue(V->getType()))
+      if (V != Constant::getNullValue(V->getType())) {
         isExclusivelyDerivedFromNull = false;
+
+}
       // Continue processing the remaining values to make sure it's exclusively
       // constant.
       continue;
@@ -539,13 +581,17 @@ GCPtrTracker::GCPtrTracker(const Function &F, const DominatorTree &DT,
                            const CFGDeadness &CD) : F(F), CD(CD) {
   // Calculate Contribution of each live BB.
   // Allocate BB states for live blocks.
-  for (const BasicBlock &BB : F)
+  for (const BasicBlock &BB : F) {
     if (!CD.isDeadBlock(&BB)) {
       BasicBlockState *BBS = new (BSAllocator.Allocate()) BasicBlockState;
-      for (const auto &I : BB)
+      for (const auto &I : BB) {
         transferInstruction(I, BBS->Cleared, BBS->Contribution);
+
+}
       BlockMap[&BB] = BBS;
     }
+
+}
 
   // Initialize AvailableIn/Out sets of each BB using only information about
   // dominating BBs.
@@ -583,15 +629,19 @@ void GCPtrTracker::verifyFunction(GCPtrTracker &&Tracker,
   ReversePostOrderTraversal<const Function *> RPOT(&Tracker.F);
   for (const BasicBlock *BB : RPOT) {
     BasicBlockState *BBS = Tracker.getBasicBlockState(BB);
-    if (!BBS)
+    if (!BBS) {
       continue;
+
+}
 
     // We destructively modify AvailableIn as we traverse the block instruction
     // by instruction.
     AvailableValueSet &AvailableSet = BBS->AvailableIn;
     for (const Instruction &I : *BB) {
-      if (Tracker.instructionMayBeSkipped(&I))
+      if (Tracker.instructionMayBeSkipped(&I)) {
         continue; // This instruction shouldn't be added to AvailableSet.
+
+}
 
       Verifier.verifyInstruction(&Tracker, I, AvailableSet);
 
@@ -608,23 +658,29 @@ void GCPtrTracker::recalculateBBsStates() {
   SetVector<const BasicBlock *> Worklist;
   // TODO: This order is suboptimal, it's better to replace it with priority
   // queue where priority is RPO number of BB.
-  for (auto &BBI : BlockMap)
+  for (auto &BBI : BlockMap) {
     Worklist.insert(BBI.first);
+
+}
 
   // This loop iterates the AvailableIn/Out sets until it converges.
   // The AvailableIn and AvailableOut sets decrease as we iterate.
   while (!Worklist.empty()) {
     const BasicBlock *BB = Worklist.pop_back_val();
     BasicBlockState *BBS = getBasicBlockState(BB);
-    if (!BBS)
+    if (!BBS) {
       continue; // Ignore dead successors.
+
+}
 
     size_t OldInCount = BBS->AvailableIn.size();
     for (const_pred_iterator PredIt(BB), End(BB, true); PredIt != End; ++PredIt) {
       const BasicBlock *PBB = *PredIt;
       BasicBlockState *PBBS = getBasicBlockState(PBB);
-      if (PBBS && !CD.isDeadEdge(&CFGDeadness::getEdge(PredIt)))
+      if (PBBS && !CD.isDeadEdge(&CFGDeadness::getEdge(PredIt))) {
         set_intersect(BBS->AvailableIn, PBBS->AvailableOut);
+
+}
     }
 
     assert(OldInCount >= BBS->AvailableIn.size() && "invariant!");
@@ -632,8 +688,10 @@ void GCPtrTracker::recalculateBBsStates() {
     bool InputsChanged = OldInCount != BBS->AvailableIn.size();
     bool ContributionChanged =
         removeValidUnrelocatedDefs(BB, BBS, BBS->Contribution);
-    if (!InputsChanged && !ContributionChanged)
+    if (!InputsChanged && !ContributionChanged) {
       continue;
+
+}
 
     size_t OldOutCount = BBS->AvailableOut.size();
     transferBlock(BB, *BBS, ContributionChanged);
@@ -665,8 +723,10 @@ bool GCPtrTracker::removeValidUnrelocatedDefs(const BasicBlock *BB,
         for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
           const BasicBlock *InBB = PN->getIncomingBlock(i);
           if (!isMapped(InBB) ||
-              !CD.hasLiveIncomingEdge(PN, InBB))
+              !CD.hasLiveIncomingEdge(PN, InBB)) {
             continue; // Skip dead block or dead edge.
+
+}
 
           const Value *InValue = PN->getIncomingValue(i);
 
@@ -677,32 +737,40 @@ bool GCPtrTracker::removeValidUnrelocatedDefs(const BasicBlock *BB,
               HasUnrelocatedInputs = true;
               break;
             }
-            if (BlockMap[InBB]->AvailableOut.count(InValue))
+            if (BlockMap[InBB]->AvailableOut.count(InValue)) {
               HasRelocatedInputs = true;
-            else
+            } else {
               HasUnrelocatedInputs = true;
+
+}
           }
         }
         if (HasUnrelocatedInputs) {
-          if (HasRelocatedInputs)
+          if (HasRelocatedInputs) {
             PoisonedPointerDef = true;
-          else
+          } else {
             ValidUnrelocatedPointerDef = true;
+
+}
         }
       }
     } else if ((isa<GetElementPtrInst>(I) || isa<BitCastInst>(I)) &&
                containsGCPtrType(I.getType())) {
       // GEP/bitcast of unrelocated pointer is legal by itself but this def
       // shouldn't appear in any AvailableSet.
-      for (const Value *V : I.operands())
+      for (const Value *V : I.operands()) {
         if (containsGCPtrType(V->getType()) &&
             isNotExclusivelyConstantDerived(V) && !AvailableSet.count(V)) {
-          if (isValuePoisoned(V))
+          if (isValuePoisoned(V)) {
             PoisonedPointerDef = true;
-          else
+          } else {
             ValidUnrelocatedPointerDef = true;
+
+}
           break;
         }
+
+}
     }
     assert(!(ValidUnrelocatedPointerDef && PoisonedPointerDef) &&
            "Value cannot be both unrelocated and poisoned!");
@@ -748,13 +816,19 @@ void GCPtrTracker::gatherDominatingDefs(const BasicBlock *BB,
     // available after this block completes.  Note: This turns out to be
     // really important for reducing memory consuption of the initial available
     // sets and thus peak memory usage by this verifier.
-    if (BBS->Cleared)
+    if (BBS->Cleared) {
       return;
+
+}
   }
 
-  for (const Argument &A : BB->getParent()->args())
-    if (containsGCPtrType(A.getType()))
+  for (const Argument &A : BB->getParent()->args()) {
+    if (containsGCPtrType(A.getType())) {
       Result.insert(&A);
+
+}
+
+}
 }
 
 void GCPtrTracker::transferBlock(const BasicBlock *BB, BasicBlockState &BBS,
@@ -764,8 +838,10 @@ void GCPtrTracker::transferBlock(const BasicBlock *BB, BasicBlockState &BBS,
 
   if (BBS.Cleared) {
     // AvailableOut will change only when Contribution changed.
-    if (ContributionChanged)
+    if (ContributionChanged) {
       AvailableOut = BBS.Contribution;
+
+}
   } else {
     // Otherwise, we need to reduce the AvailableOut set by things which are no
     // longer in our AvailableIn
@@ -786,28 +862,36 @@ void GCPtrTracker::transferInstruction(const Instruction &I, bool &Cleared,
   if (isStatepoint(I)) {
     Cleared = true;
     Available.clear();
-  } else if (containsGCPtrType(I.getType()))
+  } else if (containsGCPtrType(I.getType())) {
     Available.insert(&I);
+
+}
 }
 
 void InstructionVerifier::verifyInstruction(
     const GCPtrTracker *Tracker, const Instruction &I,
     const AvailableValueSet &AvailableSet) {
   if (const PHINode *PN = dyn_cast<PHINode>(&I)) {
-    if (containsGCPtrType(PN->getType()))
+    if (containsGCPtrType(PN->getType())) {
       for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
         const BasicBlock *InBB = PN->getIncomingBlock(i);
         const BasicBlockState *InBBS = Tracker->getBasicBlockState(InBB);
         if (!InBBS ||
-            !Tracker->hasLiveIncomingEdge(PN, InBB))
+            !Tracker->hasLiveIncomingEdge(PN, InBB)) {
           continue; // Skip dead block or dead edge.
+
+}
 
         const Value *InValue = PN->getIncomingValue(i);
 
         if (isNotExclusivelyConstantDerived(InValue) &&
-            !InBBS->AvailableOut.count(InValue))
+            !InBBS->AvailableOut.count(InValue)) {
           reportInvalidUse(*InValue, *PN);
+
+}
       }
+
+}
   } else if (isa<CmpInst>(I) &&
              containsGCPtrType(I.getOperand(0)->getType())) {
     Value *LHS = I.getOperand(0), *RHS = I.getOperand(1);
@@ -825,8 +909,10 @@ void InstructionVerifier::verifyInstruction(
         // instruction to contain valid unrelocated uses. This unrelocated
         // use can be a null constant as well, or another unrelocated
         // pointer.
-        if (AvailableSet.count(LHS) || AvailableSet.count(RHS))
+        if (AvailableSet.count(LHS) || AvailableSet.count(RHS)) {
           return false;
+
+}
         // Constant pointers (that are not exclusively null) may have
         // meaning in different VMs, so we cannot reorder the compare
         // against constant pointers before the safepoint. In other words,
@@ -835,16 +921,20 @@ void InstructionVerifier::verifyInstruction(
         if ((baseTyLHS == BaseType::ExclusivelySomeConstant &&
              baseTyRHS == BaseType::NonConstant) ||
             (baseTyLHS == BaseType::NonConstant &&
-             baseTyRHS == BaseType::ExclusivelySomeConstant))
+             baseTyRHS == BaseType::ExclusivelySomeConstant)) {
           return false;
+
+}
 
         // If one of pointers is poisoned and other is not exclusively derived
         // from null it is an invalid expression: it produces poisoned result
         // and unless we want to track all defs (not only gc pointers) the only
         // option is to prohibit such instructions.
         if ((Tracker->isValuePoisoned(LHS) && baseTyRHS != ExclusivelyNull) ||
-            (Tracker->isValuePoisoned(RHS) && baseTyLHS != ExclusivelyNull))
+            (Tracker->isValuePoisoned(RHS) && baseTyLHS != ExclusivelyNull)) {
             return false;
+
+}
 
         // All other cases are valid cases enumerated below:
         // 1. Comparison between an exclusively derived null pointer and a
@@ -859,16 +949,24 @@ void InstructionVerifier::verifyInstruction(
     if (!hasValidUnrelocatedUse()) {
       // Print out all non-constant derived pointers that are unrelocated
       // uses, which are invalid.
-      if (baseTyLHS == BaseType::NonConstant && !AvailableSet.count(LHS))
+      if (baseTyLHS == BaseType::NonConstant && !AvailableSet.count(LHS)) {
         reportInvalidUse(*LHS, I);
-      if (baseTyRHS == BaseType::NonConstant && !AvailableSet.count(RHS))
+
+}
+      if (baseTyRHS == BaseType::NonConstant && !AvailableSet.count(RHS)) {
         reportInvalidUse(*RHS, I);
+
+}
     }
   } else {
-    for (const Value *V : I.operands())
+    for (const Value *V : I.operands()) {
       if (containsGCPtrType(V->getType()) &&
-          isNotExclusivelyConstantDerived(V) && !AvailableSet.count(V))
+          isNotExclusivelyConstantDerived(V) && !AvailableSet.count(V)) {
         reportInvalidUse(*V, I);
+
+}
+
+}
   }
 }
 
@@ -877,8 +975,10 @@ void InstructionVerifier::reportInvalidUse(const Value &V,
   errs() << "Illegal use of unrelocated value found!\n";
   errs() << "Def: " << V << "\n";
   errs() << "Use: " << I << "\n";
-  if (!PrintOnly)
+  if (!PrintOnly) {
     abort();
+
+}
   AnyInvalidUses = true;
 }
 
@@ -886,8 +986,10 @@ static void Verify(const Function &F, const DominatorTree &DT,
                    const CFGDeadness &CD) {
   LLVM_DEBUG(dbgs() << "Verifying gc pointers in function: " << F.getName()
                     << "\n");
-  if (PrintOnly)
+  if (PrintOnly) {
     dbgs() << "Verifying gc pointers in function: " << F.getName() << "\n";
+
+}
 
   GCPtrTracker Tracker(F, DT, CD);
 

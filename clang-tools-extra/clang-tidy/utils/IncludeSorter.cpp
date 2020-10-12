@@ -100,14 +100,18 @@ void IncludeSorter::AddInclude(StringRef FileName, bool IsAngled,
   SourceLocations.push_back(IncludeLocations[FileName].back());
 
   // Stop if this inclusion is a duplicate.
-  if (IncludeLocations[FileName].size() > 1)
+  if (IncludeLocations[FileName].size() > 1) {
     return;
+
+}
 
   // Add the included file's name to the appropriate bucket.
   IncludeKinds Kind =
       DetermineIncludeKind(CanonicalFile, FileName, IsAngled, Style);
-  if (Kind != IK_InvalidInclude)
+  if (Kind != IK_InvalidInclude) {
     IncludeBucket[Kind].push_back(FileName.str());
+
+}
 }
 
 Optional<FixItHint> IncludeSorter::CreateIncludeInsertion(StringRef FileName,
@@ -151,8 +155,10 @@ Optional<FixItHint> IncludeSorter::CreateIncludeInsertion(StringRef FileName,
   for (int i = IK_InvalidInclude - 1; i >= 0; --i) {
     if (!IncludeBucket[i].empty()) {
       NonEmptyKind = static_cast<IncludeKinds>(i);
-      if (NonEmptyKind < IncludeKind)
+      if (NonEmptyKind < IncludeKind) {
         break;
+
+}
     }
   }
   if (NonEmptyKind == IK_InvalidInclude) {
@@ -176,8 +182,10 @@ Optional<FixItHint> IncludeSorter::CreateIncludeInsertion(StringRef FileName,
 }
 
 std::vector<FixItHint> IncludeSorter::GetEdits() {
-  if (SourceLocations.empty())
+  if (SourceLocations.empty()) {
     return {};
+
+}
 
   typedef std::map<int, std::pair<SourceRange, std::string>>
       FileLineToSourceEditMap;
@@ -198,8 +206,10 @@ std::vector<FixItHint> IncludeSorter::GetEdits() {
 
       // If the first occurrence of a particular include is on the current
       // source line we are examining, leave it alone.
-      if (FirstLocation == *SourceLocationIterator)
+      if (FirstLocation == *SourceLocationIterator) {
         ++LocationIterator;
+
+}
 
       // Add the deletion Edits for any (remaining) instances of this inclusion,
       // and remove their Locations from the source Locations to be processed.
