@@ -238,8 +238,9 @@ public:
 
   /// Returns index of a function parameter with the name closest to a given
   /// typo.
-  unsigned correctTypoInParmVarReference(StringRef Typo,
-                                         ArrayRef<const ParmVarDecl *> ParamVars);
+  static unsigned
+  correctTypoInParmVarReference(StringRef Typo,
+                                ArrayRef<const ParmVarDecl *> ParamVars);
 
   bool resolveTParamReference(StringRef Name,
                               const TemplateParameterList *TemplateParameters,

@@ -531,6 +531,9 @@ TEST(StringRefTest, Count) {
 
 TEST(StringRefTest, EditDistance) {
   StringRef Hello("hello");
+  EXPECT_EQ(2U, Hello.edit_distance("hellooo"));
+  EXPECT_EQ(2U, Hello.edit_distance("hel"));
+  EXPECT_EQ(2U, Hello.edit_distance("Hallo"));
   EXPECT_EQ(2U, Hello.edit_distance("hill"));
 
   StringRef Industry("industry");
