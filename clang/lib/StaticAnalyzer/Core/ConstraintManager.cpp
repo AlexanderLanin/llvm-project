@@ -35,9 +35,11 @@ ConditionTruthVal ConstraintManager::checkNull(ProgramStateRef State,
   DefinedSVal V = Loc::isLocType(Ty) ? getLocFromSymbol(State, Sym)
                                      : nonloc::SymbolVal(Sym);
   const ProgramStatePair &P = assumeDual(State, V);
-  if (P.first && !P.second)
+  if (P.first && !P.second) {
     return ConditionTruthVal(false);
-  if (!P.first && P.second)
+}
+  if (!P.first && P.second) {
     return ConditionTruthVal(true);
+}
   return {};
 }

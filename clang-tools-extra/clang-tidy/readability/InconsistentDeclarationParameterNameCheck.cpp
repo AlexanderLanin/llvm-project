@@ -26,8 +26,9 @@ AST_MATCHER(FunctionDecl, hasOtherDeclarations) {
   auto It = Node.redecls_begin();
   auto EndIt = Node.redecls_end();
 
-  if (It == EndIt)
+  if (It == EndIt) {
     return false;
+}
 
   ++It;
   return It != EndIt;
@@ -70,28 +71,32 @@ bool checkIfFixItHintIsApplicable(
   //    which is up-to-date and which is not, so don't do anything.
   // TODO: This may be changed later, but for now it seems the reasonable
   // solution.
-  if (!ParameterSourceDeclaration->isThisDeclarationADefinition())
+  if (!ParameterSourceDeclaration->isThisDeclarationADefinition()) {
     return false;
+}
 
   // Assumption: if parameter is not referenced in function definition body, it
   // may indicate that it's outdated, so don't touch it.
-  if (!SourceParam->isReferenced())
+  if (!SourceParam->isReferenced()) {
     return false;
+}
 
   // In case there is the primary template definition and (possibly several)
   // template specializations (and each with possibly several redeclarations),
   // it is not at all clear what to change.
   if (OriginalDeclaration->getTemplatedKind() ==
-      FunctionDecl::TK_FunctionTemplateSpecialization)
+      FunctionDecl::TK_FunctionTemplateSpecialization) {
     return false;
+}
 
   // Other cases seem OK to allow replacements.
   return true;
 }
 
 bool nameMatch(StringRef L, StringRef R, bool Strict) {
-  if (Strict)
+  if (Strict) {
     return L.empty() || R.empty() || L == R;
+}
   // We allow two names if one is a prefix/suffix of the other, ignoring case.
   // Important special case: this is true if either parameter has no name!
   return L.startswith_lower(R) || R.startswith_lower(L) ||
@@ -180,8 +185,9 @@ getParameterSourceDeclaration(const FunctionDecl *OriginalDeclaration) {
 
   // In other cases, try to change to function definition, if available.
 
-  if (OriginalDeclaration->isThisDeclarationADefinition())
+  if (OriginalDeclaration->isThisDeclarationADefinition()) {
     return OriginalDeclaration;
+}
 
   for (const FunctionDecl *OtherDeclaration : OriginalDeclaration->redecls()) {
     if (OtherDeclaration->isThisDeclarationADefinition()) {
@@ -200,10 +206,11 @@ std::string joinParameterNames(
   llvm::raw_svector_ostream Str(Buffer);
   bool First = true;
   for (const DifferingParamInfo &ParamInfo : DifferingParams) {
-    if (First)
+    if (First) {
       First = false;
-    else
+    } else {
       Str << ", ";
+}
 
     Str << "'" << ChooseParamName(ParamInfo).str() << "'";
   }
@@ -307,8 +314,9 @@ void InconsistentDeclarationParameterNameCheck::check(
   const auto *OriginalDeclaration =
       Result.Nodes.getNodeAs<FunctionDecl>("functionDecl");
 
-  if (VisitedDeclarations.count(OriginalDeclaration) > 0)
+  if (VisitedDeclarations.count(OriginalDeclaration) > 0) {
     return; // Avoid multiple warnings.
+}
 
   const FunctionDecl *ParameterSourceDeclaration =
       getParameterSourceDeclaration(OriginalDeclaration);

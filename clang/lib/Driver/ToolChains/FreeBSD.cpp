@@ -58,10 +58,11 @@ void freebsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-mabi");
     CmdArgs.push_back(mips::getGnuCompatibleMipsABIName(ABIName).data());
 
-    if (getToolChain().getTriple().isLittleEndian())
+    if (getToolChain().getTriple().isLittleEndian()) {
       CmdArgs.push_back("-EL");
-    else
+    } else {
       CmdArgs.push_back("-EB");
+}
 
     if (Arg *A = Args.getLastArg(options::OPT_G)) {
       StringRef v = A->getValue();
@@ -78,10 +79,11 @@ void freebsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   case llvm::Triple::thumbeb: {
     arm::FloatABI ABI = arm::getARMFloatABI(getToolChain(), Args);
 
-    if (ABI == arm::FloatABI::Hard)
+    if (ABI == arm::FloatABI::Hard) {
       CmdArgs.push_back("-mfpu=vfp");
-    else
+    } else {
       CmdArgs.push_back("-mfpu=softvfp");
+}
 
     switch (getToolChain().getTriple().getEnvironment()) {
     case llvm::Triple::GNUEABIHF:
@@ -109,10 +111,10 @@ void freebsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   for (const Arg *A : Args.filtered(options::OPT_ffile_prefix_map_EQ,
                                     options::OPT_fdebug_prefix_map_EQ)) {
     StringRef Map = A->getValue();
-    if (Map.find('=') == StringRef::npos)
+    if (Map.find('=') == StringRef::npos) {
       D.Diag(diag::err_drv_invalid_argument_to_option)
           << Map << A->getOption().getName();
-    else {
+    } else {
       CmdArgs.push_back(Args.MakeArgString("--debug-prefix-map"));
       CmdArgs.push_back(Args.MakeArgString(Map));
     }
@@ -124,8 +126,9 @@ void freebsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this,
@@ -155,18 +158,21 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+}
 
-  if (IsPIE)
+  if (IsPIE) {
     CmdArgs.push_back("-pie");
+}
 
   CmdArgs.push_back("--eh-frame-hdr");
   if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
   } else {
-    if (Args.hasArg(options::OPT_rdynamic))
+    if (Args.hasArg(options::OPT_rdynamic)) {
       CmdArgs.push_back("-export-dynamic");
+}
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-Bshareable");
     } else {
@@ -175,8 +181,9 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     }
     const llvm::Triple &T = ToolChain.getTriple();
     if (T.getOSMajorVersion() >= 9) {
-      if (Arch == llvm::Triple::arm || Arch == llvm::Triple::sparc || T.isX86())
+      if (Arch == llvm::Triple::arm || Arch == llvm::Triple::sparc || T.isX86()) {
         CmdArgs.push_back("--hash-style=both");
+}
     }
     CmdArgs.push_back("--enable-new-dtags");
   }
@@ -202,17 +209,19 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     break;
   case llvm::Triple::mips64:
     CmdArgs.push_back("-m");
-    if (tools::mips::hasMipsAbiArg(Args, "n32"))
+    if (tools::mips::hasMipsAbiArg(Args, "n32")) {
       CmdArgs.push_back("elf32btsmipn32_fbsd");
-    else
+    } else {
       CmdArgs.push_back("elf64btsmip_fbsd");
+}
     break;
   case llvm::Triple::mips64el:
     CmdArgs.push_back("-m");
-    if (tools::mips::hasMipsAbiArg(Args, "n32"))
+    if (tools::mips::hasMipsAbiArg(Args, "n32")) {
       CmdArgs.push_back("elf32ltsmipn32_fbsd");
-    else
+    } else {
       CmdArgs.push_back("elf64ltsmip_fbsd");
+}
     break;
   case llvm::Triple::riscv32:
     CmdArgs.push_back("-m");
@@ -244,25 +253,28 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     const char *crt1 = nullptr;
     if (!Args.hasArg(options::OPT_shared)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         crt1 = "gcrt1.o";
-      else if (IsPIE)
+      } else if (IsPIE) {
         crt1 = "Scrt1.o";
-      else
+      } else {
         crt1 = "crt1.o";
+}
     }
-    if (crt1)
+    if (crt1) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
+}
 
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
 
     const char *crtbegin = nullptr;
-    if (Args.hasArg(options::OPT_static))
+    if (Args.hasArg(options::OPT_static)) {
       crtbegin = "crtbeginT.o";
-    else if (Args.hasArg(options::OPT_shared) || IsPIE)
+    } else if (Args.hasArg(options::OPT_shared) || IsPIE) {
       crtbegin = "crtbeginS.o";
-    else
+    } else {
       crtbegin = "crtbegin.o";
+}
 
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtbegin)));
   }
@@ -293,23 +305,28 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     addOpenMPRuntime(CmdArgs, ToolChain, Args, StaticOpenMP);
 
     if (D.CCCIsCXX()) {
-      if (ToolChain.ShouldLinkCXXStdlib(Args))
+      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
         ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
-      if (Args.hasArg(options::OPT_pg))
+}
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lm_p");
-      else
+      } else {
         CmdArgs.push_back("-lm");
+}
     }
-    if (NeedsSanitizerDeps)
+    if (NeedsSanitizerDeps) {
       linkSanitizerRuntimeDeps(ToolChain, CmdArgs);
-    if (NeedsXRayDeps)
+}
+    if (NeedsXRayDeps) {
       linkXRayRuntimeDeps(ToolChain, CmdArgs);
+}
     // FIXME: For some reason GCC passes -lgcc and -lgcc_s before adding
     // the default system libraries. Just mimic this for now.
-    if (Args.hasArg(options::OPT_pg))
+    if (Args.hasArg(options::OPT_pg)) {
       CmdArgs.push_back("-lgcc_p");
-    else
+    } else {
       CmdArgs.push_back("-lgcc");
+}
     if (Args.hasArg(options::OPT_static)) {
       CmdArgs.push_back("-lgcc_eh");
     } else if (Args.hasArg(options::OPT_pg)) {
@@ -321,17 +338,19 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     }
 
     if (Args.hasArg(options::OPT_pthread)) {
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lpthread_p");
-      else
+      } else {
         CmdArgs.push_back("-lpthread");
+}
     }
 
     if (Args.hasArg(options::OPT_pg)) {
-      if (Args.hasArg(options::OPT_shared))
+      if (Args.hasArg(options::OPT_shared)) {
         CmdArgs.push_back("-lc");
-      else
+      } else {
         CmdArgs.push_back("-lc_p");
+}
       CmdArgs.push_back("-lgcc_p");
     } else {
       CmdArgs.push_back("-lc");
@@ -350,10 +369,11 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (Args.hasArg(options::OPT_shared) || IsPIE)
+    if (Args.hasArg(options::OPT_shared) || IsPIE) {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtendS.o")));
-    else
+    } else {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtend.o")));
+}
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crtn.o")));
   }
 
@@ -375,21 +395,24 @@ FreeBSD::FreeBSD(const Driver &D, const llvm::Triple &Triple,
   // back to '/usr/lib' if it doesn't exist.
   if ((Triple.getArch() == llvm::Triple::x86 || Triple.isMIPS32() ||
        Triple.getArch() == llvm::Triple::ppc) &&
-      D.getVFS().exists(getDriver().SysRoot + "/usr/lib32/crt1.o"))
+      D.getVFS().exists(getDriver().SysRoot + "/usr/lib32/crt1.o")) {
     getFilePaths().push_back(getDriver().SysRoot + "/usr/lib32");
-  else
+  } else {
     getFilePaths().push_back(getDriver().SysRoot + "/usr/lib");
+}
 }
 
 ToolChain::CXXStdlibType FreeBSD::GetDefaultCXXStdlibType() const {
-  if (getTriple().getOSMajorVersion() >= 10)
+  if (getTriple().getOSMajorVersion() >= 10) {
     return ToolChain::CST_Libcxx;
+}
   return ToolChain::CST_Libstdcxx;
 }
 
 unsigned FreeBSD::GetDefaultDwarfVersion() const {
-  if (getTriple().getOSMajorVersion() < 12)
+  if (getTriple().getOSMajorVersion() < 12) {
     return 2;
+}
   return 4;
 }
 
@@ -447,8 +470,9 @@ llvm::ExceptionHandling FreeBSD::GetExceptionModel(const ArgList &Args) const {
     return llvm::ExceptionHandling::None;
   default:
     if (getTriple().getArch() == llvm::Triple::arm ||
-        getTriple().getArch() == llvm::Triple::thumb)
+        getTriple().getArch() == llvm::Triple::thumb) {
       return llvm::ExceptionHandling::SjLj;
+}
     return llvm::ExceptionHandling::None;
   }
 }
@@ -478,8 +502,9 @@ SanitizerMask FreeBSD::getSupportedSanitizers() const {
     Res |= SanitizerKind::Fuzzer;
     Res |= SanitizerKind::FuzzerNoLink;
   }
-  if (IsX86_64)
+  if (IsX86_64) {
     Res |= SanitizerKind::Memory;
+}
   return Res;
 }
 
@@ -488,6 +513,7 @@ void FreeBSD::addClangTargetOptions(const ArgList &DriverArgs,
                                     Action::OffloadKind) const {
   if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
                           options::OPT_fno_use_init_array,
-                          getTriple().getOSMajorVersion() >= 12))
+                          getTriple().getOSMajorVersion() >= 12)) {
     CC1Args.push_back("-fno-use-init-array");
+}
 }

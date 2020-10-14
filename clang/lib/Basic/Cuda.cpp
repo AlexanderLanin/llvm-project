@@ -99,8 +99,9 @@ const char *CudaArchToString(CudaArch A) {
   auto result = std::find_if(
       std::begin(arch_names), std::end(arch_names),
       [A](const CudaArchToStringMap &map) { return A == map.arch; });
-  if (result == std::end(arch_names))
+  if (result == std::end(arch_names)) {
     return "unknown";
+}
   return result->arch_name;
 }
 
@@ -108,8 +109,9 @@ const char *CudaArchToVirtualArchString(CudaArch A) {
   auto result = std::find_if(
       std::begin(arch_names), std::end(arch_names),
       [A](const CudaArchToStringMap &map) { return A == map.arch; });
-  if (result == std::end(arch_names))
+  if (result == std::end(arch_names)) {
     return "unknown";
+}
   return result->virtual_arch_name;
 }
 
@@ -117,18 +119,21 @@ CudaArch StringToCudaArch(llvm::StringRef S) {
   auto result = std::find_if(
       std::begin(arch_names), std::end(arch_names),
       [S](const CudaArchToStringMap &map) { return S == map.arch_name; });
-  if (result == std::end(arch_names))
+  if (result == std::end(arch_names)) {
     return CudaArch::UNKNOWN;
+}
   return result->arch;
 }
 
 CudaVersion MinVersionForCudaArch(CudaArch A) {
-  if (A == CudaArch::UNKNOWN)
+  if (A == CudaArch::UNKNOWN) {
     return CudaVersion::UNKNOWN;
+}
 
   // AMD GPUs do not depend on CUDA versions.
-  if (IsAMDGpuArch(A))
+  if (IsAMDGpuArch(A)) {
     return CudaVersion::CUDA_70;
+}
 
   switch (A) {
   case CudaArch::SM_20:
@@ -160,8 +165,9 @@ CudaVersion MinVersionForCudaArch(CudaArch A) {
 
 CudaVersion MaxVersionForCudaArch(CudaArch A) {
   // AMD GPUs do not depend on CUDA versions.
-  if (IsAMDGpuArch(A))
+  if (IsAMDGpuArch(A)) {
     return CudaVersion::LATEST;
+}
 
   switch (A) {
   case CudaArch::UNKNOWN:

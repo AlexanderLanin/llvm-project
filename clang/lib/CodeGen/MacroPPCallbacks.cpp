@@ -34,15 +34,17 @@ void MacroPPCallbacks::writeMacroDefinition(const IdentifierInfo &II,
       }
 
       // Last argument.
-      if ((*AI)->getName() == "__VA_ARGS__")
+      if ((*AI)->getName() == "__VA_ARGS__") {
         Name << "...";
-      else
+      } else {
         Name << (*AI)->getName();
+}
     }
 
-    if (MI.isGNUVarargs())
+    if (MI.isGNUVarargs()) {
       // #define foo(x...)
       Name << "...";
+}
 
     Name << ')';
   }
@@ -50,8 +52,9 @@ void MacroPPCallbacks::writeMacroDefinition(const IdentifierInfo &II,
   SmallString<128> SpellingBuffer;
   bool First = true;
   for (const auto &T : MI.tokens()) {
-    if (!First && T.hasLeadingSpace())
+    if (!First && T.hasLeadingSpace()) {
       Value << ' ';
+}
 
     Value << PP.getSpelling(T, SpellingBuffer);
     First = false;
@@ -74,14 +77,16 @@ MacroPPCallbacks::MacroPPCallbacks(CodeGenerator *Gen, Preprocessor &PP)
 //   {User code macro definitions and file includes} - (Line!=0, Parent scope)
 
 llvm::DIMacroFile *MacroPPCallbacks::getCurrentScope() {
-  if (Status == MainFileScope || Status == CommandLineIncludeScope)
+  if (Status == MainFileScope || Status == CommandLineIncludeScope) {
     return Scopes.back();
+}
   return nullptr;
 }
 
 SourceLocation MacroPPCallbacks::getCorrectLocation(SourceLocation Loc) {
-  if (Status == MainFileScope || EnteredCommandLineIncludeFiles)
+  if (Status == MainFileScope || EnteredCommandLineIncludeFiles) {
     return Loc;
+}
 
   // While parsing skipped files, location of macros is invalid.
   // Invalid location represents line zero.
@@ -117,8 +122,9 @@ void MacroPPCallbacks::FileEntered(SourceLocation Loc) {
     updateStatusToNextScope();
     return;
   case BuiltinScope:
-    if (PP.getSourceManager().isWrittenInCommandLineFile(Loc))
+    if (PP.getSourceManager().isWrittenInCommandLineFile(Loc)) {
       return;
+}
     updateStatusToNextScope();
     LLVM_FALLTHROUGH;
   case CommandLineIncludeScope:
@@ -137,9 +143,10 @@ void MacroPPCallbacks::FileExited(SourceLocation Loc) {
   default:
     llvm_unreachable("Do not expect to exit a file from current scope");
   case BuiltinScope:
-    if (!PP.getSourceManager().isWrittenInBuiltinFile(Loc))
+    if (!PP.getSourceManager().isWrittenInBuiltinFile(Loc)) {
       // Skip next scope and change status to MainFileScope.
       Status = MainFileScope;
+}
     return;
   case CommandLineIncludeScope:
     if (!EnteredCommandLineIncludeFiles) {
@@ -159,10 +166,11 @@ void MacroPPCallbacks::FileChanged(SourceLocation Loc, FileChangeReason Reason,
                                    SrcMgr::CharacteristicKind FileType,
                                    FileID PrevFID) {
   // Only care about enter file or exit file changes.
-  if (Reason == EnterFile)
+  if (Reason == EnterFile) {
     FileEntered(Loc);
-  else if (Reason == ExitFile)
+  } else if (Reason == ExitFile) {
     FileExited(Loc);
+}
 }
 
 void MacroPPCallbacks::InclusionDirective(

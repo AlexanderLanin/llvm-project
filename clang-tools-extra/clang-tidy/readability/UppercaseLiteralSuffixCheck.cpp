@@ -65,12 +65,14 @@ struct NewSuffix {
 llvm::Optional<SourceLocation> GetMacroAwareLocation(SourceLocation Loc,
                                                      const SourceManager &SM) {
   // Do nothing if the provided location is invalid.
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return llvm::None;
+}
   // Look where the location was *actually* written.
   SourceLocation SpellingLoc = SM.getSpellingLoc(Loc);
-  if (SpellingLoc.isInvalid())
+  if (SpellingLoc.isInvalid()) {
     return llvm::None;
+}
   return SpellingLoc;
 }
 
@@ -79,8 +81,9 @@ llvm::Optional<SourceRange> GetMacroAwareSourceRange(SourceRange Loc,
   llvm::Optional<SourceLocation> Begin =
       GetMacroAwareLocation(Loc.getBegin(), SM);
   llvm::Optional<SourceLocation> End = GetMacroAwareLocation(Loc.getEnd(), SM);
-  if (!Begin || !End)
+  if (!Begin || !End) {
     return llvm::None;
+}
   return SourceRange(*Begin, *End);
 }
 
@@ -88,16 +91,18 @@ llvm::Optional<std::string>
 getNewSuffix(llvm::StringRef OldSuffix,
              const std::vector<std::string> &NewSuffixes) {
   // If there is no config, just uppercase the entirety of the suffix.
-  if (NewSuffixes.empty())
+  if (NewSuffixes.empty()) {
     return OldSuffix.upper();
+}
   // Else, find matching suffix, case-*insensitive*ly.
   auto NewSuffix = llvm::find_if(
       NewSuffixes, [OldSuffix](const std::string &PotentialNewSuffix) {
         return OldSuffix.equals_lower(PotentialNewSuffix);
       });
   // Have a match, return it.
-  if (NewSuffix != NewSuffixes.end())
+  if (NewSuffix != NewSuffixes.end()) {
     return *NewSuffix;
+}
   // Nope, I guess we have to keep it as-is.
   return llvm::None;
 }
@@ -121,11 +126,13 @@ shouldReplaceLiteralSuffix(const Expr &Literal,
   // The literal may have macro expansion, we need the final expanded src range.
   llvm::Optional<SourceRange> Range =
       GetMacroAwareSourceRange(ReplacementDsc.LiteralLocation, SM);
-  if (!Range)
+  if (!Range) {
     return llvm::None;
+}
 
-  if (RangeCanBeFixed)
+  if (RangeCanBeFixed) {
     ReplacementDsc.LiteralLocation = *Range;
+}
   // Else keep the naive literal location!
 
   // Get the whole literal from the source buffer.
@@ -143,8 +150,9 @@ shouldReplaceLiteralSuffix(const Expr &Literal,
     // because hex-digit-sequence may contain 'f'.
     Skip = LiteralSourceText.find_first_of(LiteralType::SkipFirst);
     // We could be in non-hexadecimal floating-point literal, with no exponent.
-    if (Skip == StringRef::npos)
+    if (Skip == StringRef::npos) {
       Skip = 0;
+}
   }
 
   // Find the beginning of the suffix by looking for the first char that is
@@ -154,8 +162,9 @@ shouldReplaceLiteralSuffix(const Expr &Literal,
 
   // We can't check whether the *Literal has any suffix or not without actually
   // looking for the suffix. So it is totally possible that there is no suffix.
-  if (Skip == StringRef::npos)
+  if (Skip == StringRef::npos) {
     return llvm::None;
+}
 
   // Move the cursor in the source range to the beginning of the suffix.
   Range->setBegin(Range->getBegin().getLocWithOffset(Skip));
@@ -167,11 +176,13 @@ shouldReplaceLiteralSuffix(const Expr &Literal,
   // And get the replacement suffix.
   llvm::Optional<std::string> NewSuffix =
       getNewSuffix(ReplacementDsc.OldSuffix, NewSuffixes);
-  if (!NewSuffix || ReplacementDsc.OldSuffix == *NewSuffix)
+  if (!NewSuffix || ReplacementDsc.OldSuffix == *NewSuffix) {
     return llvm::None; // The suffix was already the way it should be.
+}
 
-  if (RangeCanBeFixed)
+  if (RangeCanBeFixed) {
     ReplacementDsc.FixIt = FixItHint::CreateReplacement(*Range, *NewSuffix);
+}
 
   return ReplacementDsc;
 }
@@ -210,20 +221,23 @@ bool UppercaseLiteralSuffixCheck::checkBoundMatch(
     const MatchFinder::MatchResult &Result) {
   const auto *Literal =
       Result.Nodes.getNodeAs<typename LiteralType::type>(LiteralType::Name);
-  if (!Literal)
+  if (!Literal) {
     return false;
+}
 
   // We won't *always* want to diagnose.
   // We might have a suffix that is already uppercase.
   if (auto Details = shouldReplaceLiteralSuffix<LiteralType>(
           *Literal, NewSuffixes, *Result.SourceManager, getLangOpts())) {
-    if (Details->LiteralLocation.getBegin().isMacroID() && IgnoreMacros)
+    if (Details->LiteralLocation.getBegin().isMacroID() && IgnoreMacros) {
       return true;
+}
     auto Complaint = diag(Details->LiteralLocation.getBegin(),
                           "%0 literal has suffix '%1', which is not uppercase")
                      << LiteralType::Name << Details->OldSuffix;
-    if (Details->FixIt) // Similarly, a fix-it is not always possible.
+    if (Details->FixIt) { // Similarly, a fix-it is not always possible.
       Complaint << *(Details->FixIt);
+}
   }
 
   return true;
@@ -231,8 +245,9 @@ bool UppercaseLiteralSuffixCheck::checkBoundMatch(
 
 void UppercaseLiteralSuffixCheck::check(
     const MatchFinder::MatchResult &Result) {
-  if (checkBoundMatch<IntegerLiteralCheck>(Result))
+  if (checkBoundMatch<IntegerLiteralCheck>(Result)) {
     return; // If it *was* IntegerLiteral, don't check for FloatingLiteral.
+}
   checkBoundMatch<FloatingLiteralCheck>(Result);
 }
 

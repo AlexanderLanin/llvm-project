@@ -39,9 +39,9 @@ FileSystemStatCache::get(StringRef Path, llvm::vfs::Status &Status,
   std::error_code RetCode;
 
   // If we have a cache, use it to resolve the stat query.
-  if (Cache)
+  if (Cache) {
     RetCode = Cache->getStat(Path, Status, isFile, F, FS);
-  else if (isForDir || !F) {
+  } else if (isForDir || !F) {
     // If this is a directory or a file descriptor is not needed and we have
     // no cache, just go to the file system.
     llvm::ErrorOr<llvm::vfs::Status> StatusOrErr = FS.status(Path);
@@ -81,15 +81,17 @@ FileSystemStatCache::get(StringRef Path, llvm::vfs::Status &Status,
   }
 
   // If the path doesn't exist, return failure.
-  if (RetCode)
+  if (RetCode) {
     return RetCode;
+}
 
   // If the path exists, make sure that its "directoryness" matches the clients
   // demands.
   if (Status.isDirectory() != isForDir) {
     // If not, close the file if opened.
-    if (F)
+    if (F) {
       *F = nullptr;
+}
     return std::make_error_code(
         Status.isDirectory() ?
             std::errc::is_a_directory : std::errc::not_a_directory);
@@ -113,8 +115,9 @@ MemorizeStatCalls::getStat(StringRef Path, llvm::vfs::Status &Status,
   }
 
   // Cache file 'stat' results and directories with absolutely paths.
-  if (!Status.isDirectory() || llvm::sys::path::is_absolute(Path))
+  if (!Status.isDirectory() || llvm::sys::path::is_absolute(Path)) {
     StatCalls[Path] = Status;
+}
 
   return std::error_code();
 }

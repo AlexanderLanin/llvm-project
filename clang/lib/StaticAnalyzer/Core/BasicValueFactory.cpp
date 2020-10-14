@@ -79,8 +79,9 @@ BasicValueFactory::~BasicValueFactory() {
   // Note that the dstor for the contents of APSIntSet will never be called,
   // so we iterate over the set and invoke the dstor for each APSInt.  This
   // frees an aux. memory allocated to represent very large constants.
-  for (const auto &I : APSIntSet)
+  for (const auto &I : APSIntSet) {
     I.getValue().~APSInt();
+}
 
   delete (PersistentSValsTy*) PersistentSVals;
   delete (PersistentSValPairsTy*) PersistentSValPairs;
@@ -184,8 +185,9 @@ const PointerToMemberData *BasicValueFactory::accumCXXBase(
   llvm::ImmutableList<const CXXBaseSpecifier *> PathList;
 
   if (PTMDT.isNull() || PTMDT.is<const NamedDecl *>()) {
-    if (PTMDT.is<const NamedDecl *>())
+    if (PTMDT.is<const NamedDecl *>()) {
       ND = PTMDT.get<const NamedDecl *>();
+}
 
     PathList = CXXBaseListFactory.getEmptyList();
   } else { // const PointerToMemberData *
@@ -195,8 +197,9 @@ const PointerToMemberData *BasicValueFactory::accumCXXBase(
     PathList = PTMD->getCXXBaseList();
   }
 
-  for (const auto &I : llvm::reverse(PathRange))
+  for (const auto &I : llvm::reverse(PathRange)) {
     PathList = prependCXXBase(I, PathList);
+}
   return getPointerToMemberData(ND, PathList);
 }
 
@@ -211,13 +214,15 @@ BasicValueFactory::evalAPSInt(BinaryOperator::Opcode Op,
       return &getValue( V1 * V2 );
 
     case BO_Div:
-      if (V2 == 0) // Avoid division by zero
+      if (V2 == 0) { // Avoid division by zero
         return nullptr;
+}
       return &getValue( V1 / V2 );
 
     case BO_Rem:
-      if (V2 == 0) // Avoid division by zero
+      if (V2 == 0) { // Avoid division by zero
         return nullptr;
+}
       return &getValue( V1 % V2 );
 
     case BO_Add:
@@ -230,20 +235,24 @@ BasicValueFactory::evalAPSInt(BinaryOperator::Opcode Op,
       // FIXME: This logic should probably go higher up, where we can
       // test these conditions symbolically.
 
-      if (V2.isSigned() && V2.isNegative())
+      if (V2.isSigned() && V2.isNegative()) {
         return nullptr;
+}
 
       uint64_t Amt = V2.getZExtValue();
 
-      if (Amt >= V1.getBitWidth())
+      if (Amt >= V1.getBitWidth()) {
         return nullptr;
+}
 
       if (!Ctx.getLangOpts().CPlusPlus20) {
-        if (V1.isSigned() && V1.isNegative())
+        if (V1.isSigned() && V1.isNegative()) {
           return nullptr;
+}
 
-        if (V1.isSigned() && Amt > V1.countLeadingZeros())
+        if (V1.isSigned() && Amt > V1.countLeadingZeros()) {
           return nullptr;
+}
       }
 
       return &getValue( V1.operator<<( (unsigned) Amt ));
@@ -253,13 +262,15 @@ BasicValueFactory::evalAPSInt(BinaryOperator::Opcode Op,
       // FIXME: This logic should probably go higher up, where we can
       // test these conditions symbolically.
 
-      if (V2.isSigned() && V2.isNegative())
+      if (V2.isSigned() && V2.isNegative()) {
         return nullptr;
+}
 
       uint64_t Amt = V2.getZExtValue();
 
-      if (Amt >= V1.getBitWidth())
+      if (Amt >= V1.getBitWidth()) {
         return nullptr;
+}
 
       return &getValue( V1.operator>>( (unsigned) Amt ));
     }
@@ -298,7 +309,8 @@ BasicValueFactory::evalAPSInt(BinaryOperator::Opcode Op,
 const std::pair<SVal, uintptr_t>&
 BasicValueFactory::getPersistentSValWithData(const SVal& V, uintptr_t Data) {
   // Lazily create the folding set.
-  if (!PersistentSVals) PersistentSVals = new PersistentSValsTy();
+  if (!PersistentSVals) { PersistentSVals = new PersistentSValsTy();
+}
 
   llvm::FoldingSetNodeID ID;
   void *InsertPos;
@@ -323,7 +335,8 @@ BasicValueFactory::getPersistentSValWithData(const SVal& V, uintptr_t Data) {
 const std::pair<SVal, SVal>&
 BasicValueFactory::getPersistentSValPair(const SVal& V1, const SVal& V2) {
   // Lazily create the folding set.
-  if (!PersistentSValPairs) PersistentSValPairs = new PersistentSValPairsTy();
+  if (!PersistentSValPairs) { PersistentSValPairs = new PersistentSValPairsTy();
+}
 
   llvm::FoldingSetNodeID ID;
   void *InsertPos;

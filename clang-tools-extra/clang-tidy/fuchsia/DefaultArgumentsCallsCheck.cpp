@@ -21,8 +21,9 @@ void DefaultArgumentsCallsCheck::registerMatchers(MatchFinder *Finder) {
 
 void DefaultArgumentsCallsCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *S = Result.Nodes.getNodeAs<CXXDefaultArgExpr>("stmt");
-  if (!S)
+  if (!S) {
     return;
+}
 
   diag(S->getUsedLocation(),
        "calling a function that uses a default argument is disallowed");

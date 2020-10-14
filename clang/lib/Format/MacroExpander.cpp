@@ -56,17 +56,20 @@ public:
   // Parse the token stream and return the corresonding Definition object.
   // Returns an empty definition object with a null-Name on error.
   MacroExpander::Definition parse() {
-    if (!Current->is(tok::identifier))
+    if (!Current->is(tok::identifier)) {
       return {};
+}
     Def.Name = Current->TokenText;
     nextToken();
     if (Current->is(tok::l_paren)) {
       Def.ObjectLike = false;
-      if (!parseParams())
+      if (!parseParams()) {
         return {};
+}
     }
-    if (!parseExpansion())
+    if (!parseExpansion()) {
       return {};
+}
 
     return Def;
   }
@@ -79,21 +82,25 @@ private:
       Def.Params.push_back(Current);
       Def.ArgMap[Def.Params.back()->TokenText] = Def.Params.size() - 1;
       nextToken();
-      if (Current->isNot(tok::comma))
+      if (Current->isNot(tok::comma)) {
         break;
+}
       nextToken();
     }
-    if (Current->isNot(tok::r_paren))
+    if (Current->isNot(tok::r_paren)) {
       return false;
+}
     nextToken();
     return true;
   }
 
   bool parseExpansion() {
-    if (!Current->isOneOf(tok::equal, tok::eof))
+    if (!Current->isOneOf(tok::equal, tok::eof)) {
       return false;
-    if (Current->is(tok::equal))
+}
+    if (Current->is(tok::equal)) {
       nextToken();
+}
     parseTail();
     return true;
   }
@@ -107,8 +114,9 @@ private:
   }
 
   void nextToken() {
-    if (Pos + 1 < Tokens.size())
+    if (Pos + 1 < Tokens.size()) {
       ++Pos;
+}
     Current = Tokens[Pos];
     Current->Finalized = true;
   }
@@ -176,25 +184,29 @@ llvm::SmallVector<FormatToken *, 8> MacroExpander::expand(FormatToken *ID,
   auto expandArgument = [&](FormatToken *Tok) -> bool {
     // If the current token references a parameter, expand the corresponding
     // argument.
-    if (!Tok->is(tok::identifier) || ExpandedArgs.contains(Tok->TokenText))
+    if (!Tok->is(tok::identifier) || ExpandedArgs.contains(Tok->TokenText)) {
       return false;
+}
     ExpandedArgs.insert(Tok->TokenText);
     auto I = Def.ArgMap.find(Tok->TokenText);
-    if (I == Def.ArgMap.end())
+    if (I == Def.ArgMap.end()) {
       return false;
+}
     // If there are fewer arguments than referenced parameters, treat the
     // parameter as empty.
     // FIXME: Potentially fully abort the expansion instead.
-    if (I->getValue() >= Args.size())
+    if (I->getValue() >= Args.size()) {
       return true;
+}
     for (FormatToken *Arg : Args[I->getValue()]) {
       // A token can be part of a macro argument at multiple levels.
       // For example, with "ID(x) x":
       // in ID(ID(x)), 'x' is expanded first as argument to the inner
       // ID, then again as argument to the outer ID. We keep the macro
       // role the token had from the inner expansion.
-      if (!Arg->MacroCtx)
+      if (!Arg->MacroCtx) {
         Arg->MacroCtx = MacroExpansion(MR_ExpandedArg);
+}
       pushToken(Arg);
     }
     return true;
@@ -202,8 +214,9 @@ llvm::SmallVector<FormatToken *, 8> MacroExpander::expand(FormatToken *ID,
 
   // Expand the definition into Result.
   for (FormatToken *Tok : Def.Body) {
-    if (expandArgument(Tok))
+    if (expandArgument(Tok)) {
       continue;
+}
     // Create a copy of the tokens from the macro body, i.e. were not provided
     // by user code.
     FormatToken *New = new (Allocator.Allocate()) FormatToken;

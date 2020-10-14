@@ -17,14 +17,16 @@ class MemberPointerTypeLocVisitor
     : public ExpectedLocationVisitor<MemberPointerTypeLocVisitor> {
 public:
   bool VisitTemplateTypeParmTypeLoc(TemplateTypeParmTypeLoc TL) {
-    if (!TL)
+    if (!TL) {
       return true;
+}
     Match(TL.getDecl()->getName(), TL.getNameLoc());
     return true;
   }
   bool VisitRecordTypeLoc(RecordTypeLoc RTL) {
-    if (!RTL)
+    if (!RTL) {
       return true;
+}
     Match(RTL.getDecl()->getName(), RTL.getNameLoc());
     return true;
   }

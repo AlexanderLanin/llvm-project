@@ -101,12 +101,15 @@ ConceptSpecializationExpr::ConceptSpecializationExpr(
                        : nullptr) {
   setTemplateArguments(ConvertedArgs);
   ExprDependence D = ExprDependence::None;
-  if (!Satisfaction)
+  if (!Satisfaction) {
     D |= ExprDependence::Value;
-  if (Dependent)
+}
+  if (Dependent) {
     D |= ExprDependence::Instantiation;
-  if (ContainsUnexpandedParameterPack)
+}
+  if (ContainsUnexpandedParameterPack) {
     D |= ExprDependence::UnexpandedPack;
+}
   setDependence(D);
 }
 
@@ -164,8 +167,9 @@ RequiresExpr::RequiresExpr(ASTContext &C, SourceLocation RequiresKWLoc,
     ContainsUnexpandedParameterPack |= R->containsUnexpandedParameterPack();
     if (!Dependent) {
       RequiresExprBits.IsSatisfied = R->isSatisfied();
-      if (!RequiresExprBits.IsSatisfied)
+      if (!RequiresExprBits.IsSatisfied) {
         break;
+}
     }
   }
   std::copy(LocalParameters.begin(), LocalParameters.end(),
@@ -174,14 +178,16 @@ RequiresExpr::RequiresExpr(ASTContext &C, SourceLocation RequiresKWLoc,
             getTrailingObjects<concepts::Requirement *>());
   RequiresExprBits.IsSatisfied |= Dependent;
   // FIXME: move the computing dependency logic to ComputeDependence.h
-  if (ContainsUnexpandedParameterPack)
+  if (ContainsUnexpandedParameterPack) {
     setDependence(getDependence() | ExprDependence::UnexpandedPack);
+}
   // FIXME: this is incorrect for cases where we have a non-dependent
   // requirement, but its parameters are instantiation-dependent. RequiresExpr
   // should be instantiation-dependent if it has instantiation-dependent
   // parameters.
-  if (Dependent)
+  if (Dependent) {
     setDependence(getDependence() | ExprDependence::ValueInstantiation);
+}
 }
 
 RequiresExpr::RequiresExpr(ASTContext &C, EmptyShell Empty,

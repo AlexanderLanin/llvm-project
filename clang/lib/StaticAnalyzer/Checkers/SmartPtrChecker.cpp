@@ -59,28 +59,33 @@ const BugType *getNullDereferenceBugType() { return NullDereferenceBugTypePtr; }
 
 void SmartPtrChecker::checkPreCall(const CallEvent &Call,
                                    CheckerContext &C) const {
-  if (!smartptr::isStdSmartPtrCall(Call))
+  if (!smartptr::isStdSmartPtrCall(Call)) {
     return;
+}
   ProgramStateRef State = C.getState();
   const auto *OC = dyn_cast<CXXMemberOperatorCall>(&Call);
-  if (!OC)
+  if (!OC) {
     return;
+}
   const MemRegion *ThisRegion = OC->getCXXThisVal().getAsRegion();
-  if (!ThisRegion)
+  if (!ThisRegion) {
     return;
+}
 
   OverloadedOperatorKind OOK = OC->getOverloadedOperator();
   if (OOK == OO_Star || OOK == OO_Arrow) {
-    if (smartptr::isNullSmartPtr(State, ThisRegion))
+    if (smartptr::isNullSmartPtr(State, ThisRegion)) {
       reportBug(C, ThisRegion, Call);
+}
   }
 }
 
 void SmartPtrChecker::reportBug(CheckerContext &C, const MemRegion *DerefRegion,
                                 const CallEvent &Call) const {
   ExplodedNode *ErrNode = C.generateErrorNode();
-  if (!ErrNode)
+  if (!ErrNode) {
     return;
+}
   llvm::SmallString<128> Str;
   llvm::raw_svector_ostream OS(Str);
   explainDereference(OS, DerefRegion, Call);

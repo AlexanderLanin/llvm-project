@@ -28,8 +28,9 @@ using namespace arcmt;
 
 bool CapturedDiagList::clearDiagnostic(ArrayRef<unsigned> IDs,
                                        SourceRange range) {
-  if (range.isInvalid())
+  if (range.isInvalid()) {
     return false;
+}
 
   bool cleared = false;
   ListTy::iterator I = List.begin();
@@ -42,9 +43,11 @@ bool CapturedDiagList::clearDiagnostic(ArrayRef<unsigned> IDs,
          diagLoc.isBeforeInTranslationUnitThan(range.getEnd()))) {
       cleared = true;
       ListTy::iterator eraseS = I++;
-      if (eraseS->getLevel() != DiagnosticsEngine::Note)
-        while (I != List.end() && I->getLevel() == DiagnosticsEngine::Note)
+      if (eraseS->getLevel() != DiagnosticsEngine::Note) {
+        while (I != List.end() && I->getLevel() == DiagnosticsEngine::Note) {
           ++I;
+}
+}
       // Clear the diagnostic and any notes following it.
       I = List.erase(eraseS, I);
       continue;
@@ -58,8 +61,9 @@ bool CapturedDiagList::clearDiagnostic(ArrayRef<unsigned> IDs,
 
 bool CapturedDiagList::hasDiagnostic(ArrayRef<unsigned> IDs,
                                      SourceRange range) const {
-  if (range.isInvalid())
+  if (range.isInvalid()) {
     return false;
+}
 
   ListTy::const_iterator I = List.begin();
   while (I != List.end()) {
@@ -79,14 +83,17 @@ bool CapturedDiagList::hasDiagnostic(ArrayRef<unsigned> IDs,
 }
 
 void CapturedDiagList::reportDiagnostics(DiagnosticsEngine &Diags) const {
-  for (ListTy::const_iterator I = List.begin(), E = List.end(); I != E; ++I)
+  for (ListTy::const_iterator I = List.begin(), E = List.end(); I != E; ++I) {
     Diags.Report(*I);
+}
 }
 
 bool CapturedDiagList::hasErrors() const {
-  for (ListTy::const_iterator I = List.begin(), E = List.end(); I != E; ++I)
-    if (I->getLevel() >= DiagnosticsEngine::Error)
+  for (ListTy::const_iterator I = List.begin(), E = List.end(); I != E; ++I) {
+    if (I->getLevel() >= DiagnosticsEngine::Error) {
       return true;
+}
+}
 
   return false;
 }
@@ -134,8 +141,9 @@ public:
                         const Diagnostic &Info) override {
     if (DiagnosticIDs::isARCDiagnostic(Info.getID()) ||
         level >= DiagnosticsEngine::Error || level == DiagnosticsEngine::Note) {
-      if (Info.getLocation().isValid())
+      if (Info.getLocation().isValid()) {
         CapturedDiags.push_back(StoredDiagnostic(level, Info));
+}
       return;
     }
 
@@ -152,14 +160,17 @@ static bool HasARCRuntime(CompilerInvocation &origCI) {
   // and avoid unrelated complications.
   llvm::Triple triple(origCI.getTargetOpts().Triple);
 
-  if (triple.isiOS())
+  if (triple.isiOS()) {
     return triple.getOSMajorVersion() >= 5;
+}
 
-  if (triple.isWatchOS())
+  if (triple.isWatchOS()) {
     return true;
+}
 
-  if (triple.getOS() == llvm::Triple::Darwin)
+  if (triple.getOS() == llvm::Triple::Darwin) {
     return triple.getOSMajorVersion() >= 11;
+}
 
   if (triple.getOS() == llvm::Triple::MacOSX) {
     unsigned Major, Minor, Micro;
@@ -186,8 +197,9 @@ createInvocationForMigration(CompilerInvocation &origCI,
                               new IgnoringDiagConsumer()));
     std::string OriginalFile = ASTReader::getOriginalSourceFile(
         PPOpts.ImplicitPCHInclude, FileMgr, PCHContainerRdr, *Diags);
-    if (!OriginalFile.empty())
+    if (!OriginalFile.empty()) {
       PPOpts.Includes.insert(PPOpts.Includes.begin(), OriginalFile);
+}
     PPOpts.ImplicitPCHInclude.clear();
   }
   std::string define = std::string(getARCMTMacroName());
@@ -203,8 +215,9 @@ createInvocationForMigration(CompilerInvocation &origCI,
   for (std::vector<std::string>::iterator
          I = CInvok->getDiagnosticOpts().Warnings.begin(),
          E = CInvok->getDiagnosticOpts().Warnings.end(); I != E; ++I) {
-    if (!StringRef(*I).startswith("error"))
+    if (!StringRef(*I).startswith("error")) {
       WarnOpts.push_back(*I);
+}
   }
   WarnOpts.push_back("error=arc-unsafe-retained-assign");
   CInvok->getDiagnosticOpts().Warnings = std::move(WarnOpts);
@@ -239,8 +252,9 @@ bool arcmt::checkForManualIssues(
     std::shared_ptr<PCHContainerOperations> PCHContainerOps,
     DiagnosticConsumer *DiagClient, bool emitPremigrationARCErrors,
     StringRef plistOut) {
-  if (!origCI.getLangOpts()->ObjC)
+  if (!origCI.getLangOpts()->ObjC) {
     return false;
+}
 
   LangOptions::GCMode OrigGCMode = origCI.getLangOpts()->getGC();
   bool NoNSAllocReallocError = origCI.getMigratorOpts().NoNSAllocReallocError;
@@ -289,14 +303,16 @@ bool arcmt::checkForManualIssues(
     return true;
   }
 
-  if (emitPremigrationARCErrors)
+  if (emitPremigrationARCErrors) {
     emitPremigrationErrors(capturedDiags, &origCI.getDiagnosticOpts(),
                            Unit->getPreprocessor());
+}
   if (!plistOut.empty()) {
     SmallVector<StoredDiagnostic, 8> arcDiags;
     for (CapturedDiagList::iterator
-           I = capturedDiags.begin(), E = capturedDiags.end(); I != E; ++I)
+           I = capturedDiags.begin(), E = capturedDiags.end(); I != E; ++I) {
       arcDiags.push_back(*I);
+}
     writeARCDiagsToPlist(std::string(plistOut), arcDiags,
                          Ctx.getSourceManager(), Ctx.getLangOpts());
   }
@@ -316,12 +332,14 @@ bool arcmt::checkForManualIssues(
   MigrationPass pass(Ctx, OrigGCMode, Unit->getSema(), testAct, capturedDiags,
                      ARCMTMacroLocs);
   pass.setNoFinalizeRemoval(NoFinalizeRemoval);
-  if (!NoNSAllocReallocError)
+  if (!NoNSAllocReallocError) {
     Diags->setSeverity(diag::warn_arcmt_nsalloc_realloc, diag::Severity::Error,
                        SourceLocation());
+}
 
-  for (unsigned i=0, e = transforms.size(); i != e; ++i)
+  for (unsigned i=0, e = transforms.size(); i != e; ++i) {
     transforms[i](pass);
+}
 
   capturedDiags.reportDiagnostics(*Diags);
 
@@ -340,8 +358,9 @@ applyTransforms(CompilerInvocation &origCI, const FrontendInputFile &Input,
                 std::shared_ptr<PCHContainerOperations> PCHContainerOps,
                 DiagnosticConsumer *DiagClient, StringRef outputDir,
                 bool emitPremigrationARCErrors, StringRef plistOut) {
-  if (!origCI.getLangOpts()->ObjC)
+  if (!origCI.getLangOpts()->ObjC) {
     return false;
+}
 
   LangOptions::GCMode OrigGCMode = origCI.getLangOpts()->getGC();
 
@@ -349,8 +368,9 @@ applyTransforms(CompilerInvocation &origCI, const FrontendInputFile &Input,
   CompilerInvocation CInvokForCheck(origCI);
   if (arcmt::checkForManualIssues(CInvokForCheck, Input, PCHContainerOps,
                                   DiagClient, emitPremigrationARCErrors,
-                                  plistOut))
+                                  plistOut)) {
     return true;
+}
 
   CompilerInvocation CInvok(origCI);
   CInvok.getFrontendOpts().Inputs.clear();
@@ -365,7 +385,8 @@ applyTransforms(CompilerInvocation &origCI, const FrontendInputFile &Input,
 
   for (unsigned i=0, e = transforms.size(); i != e; ++i) {
     bool err = migration.applyTransform(transforms[i]);
-    if (err) return true;
+    if (err) { return true;
+}
   }
 
   IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
@@ -413,8 +434,9 @@ bool arcmt::getFileRemappings(std::vector<std::pair<std::string,std::string> > &
   FileRemapper remapper;
   bool err = remapper.initFromDisk(outputDir, *Diags,
                                    /*ignoreIfFilesChanged=*/true);
-  if (err)
+  if (err) {
     return true;
+}
 
   PreprocessorOptions PPOpts;
   remapper.applyMappings(PPOpts);
@@ -439,8 +461,9 @@ public:
 
   void MacroExpands(const Token &MacroNameTok, const MacroDefinition &MD,
                     SourceRange Range, const MacroArgs *Args) override {
-    if (MacroNameTok.getIdentifierInfo()->getName() == getARCMTMacroName())
+    if (MacroNameTok.getIdentifierInfo()->getName() == getARCMTMacroName()) {
       ARCMTMacroLocs.push_back(MacroNameTok.getLocation());
+}
   }
 };
 
@@ -467,19 +490,22 @@ public:
   RewritesApplicator(Rewriter &rewriter, ASTContext &ctx,
                      MigrationProcess::RewriteListener *listener)
     : rewriter(rewriter), Listener(listener) {
-    if (Listener)
+    if (Listener) {
       Listener->start(ctx);
+}
   }
   ~RewritesApplicator() override {
-    if (Listener)
+    if (Listener) {
       Listener->finish();
+}
   }
 
   void insert(SourceLocation loc, StringRef text) override {
     bool err = rewriter.InsertText(loc, text, /*InsertAfter=*/true,
                                    /*indentNewLines=*/true);
-    if (!err && Listener)
+    if (!err && Listener) {
       Listener->insert(loc, text);
+}
   }
 
   void remove(CharSourceRange range) override {
@@ -489,8 +515,9 @@ public:
     removeOpts.RemoveLineIfEmpty = true;
 
     bool err = rewriter.RemoveText(range, removeOpts);
-    if (!err && Listener)
+    if (!err && Listener) {
       Listener->remove(range);
+}
   }
 
   void increaseIndentation(CharSourceRange range,
@@ -590,8 +617,9 @@ bool MigrationProcess::applyTransform(TransformFn trans,
   DiagClient->EndSourceFile();
   errRec.FinishCapture();
 
-  if (DiagClient->getNumErrors())
+  if (DiagClient->getNumErrors()) {
     return true;
+}
 
   for (Rewriter::buffer_iterator
         I = rewriter.buffer_begin(), E = rewriter.buffer_end(); I != E; ++I) {

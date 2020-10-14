@@ -59,8 +59,9 @@ unsigned clang::getOpenMPSimpleClauseType(OpenMPClauseKind Kind, StringRef Str,
   .Case(#Name, static_cast<unsigned>(OMPC_MAP_MODIFIER_##Name))
 #include "clang/Basic/OpenMPKinds.def"
         .Default(OMPC_MAP_unknown);
-    if (OpenMPVersion < 51 && Type == OMPC_MAP_MODIFIER_present)
+    if (OpenMPVersion < 51 && Type == OMPC_MAP_MODIFIER_present) {
       return OMPC_MAP_MODIFIER_unknown;
+}
     return Type;
   }
   case OMPC_to:
@@ -70,8 +71,9 @@ unsigned clang::getOpenMPSimpleClauseType(OpenMPClauseKind Kind, StringRef Str,
   .Case(#Name, static_cast<unsigned>(OMPC_MOTION_MODIFIER_##Name))
 #include "clang/Basic/OpenMPKinds.def"
         .Default(OMPC_MOTION_MODIFIER_unknown);
-    if (OpenMPVersion < 51 && Type == OMPC_MOTION_MODIFIER_present)
+    if (OpenMPVersion < 51 && Type == OMPC_MOTION_MODIFIER_present) {
       return OMPC_MOTION_MODIFIER_unknown;
+}
     return Type;
   }
   case OMPC_dist_schedule:

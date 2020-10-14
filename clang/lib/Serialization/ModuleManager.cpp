@@ -44,24 +44,28 @@ using namespace serialization;
 ModuleFile *ModuleManager::lookupByFileName(StringRef Name) const {
   auto Entry = FileMgr.getFile(Name, /*OpenFile=*/false,
                                /*CacheFailure=*/false);
-  if (Entry)
+  if (Entry) {
     return lookup(*Entry);
+}
 
   return nullptr;
 }
 
 ModuleFile *ModuleManager::lookupByModuleName(StringRef Name) const {
-  if (const Module *Mod = HeaderSearchInfo.getModuleMap().findModule(Name))
-    if (const FileEntry *File = Mod->getASTFile())
+  if (const Module *Mod = HeaderSearchInfo.getModuleMap().findModule(Name)) {
+    if (const FileEntry *File = Mod->getASTFile()) {
       return lookup(File);
+}
+}
 
   return nullptr;
 }
 
 ModuleFile *ModuleManager::lookup(const FileEntry *File) const {
   auto Known = Modules.find(File);
-  if (Known == Modules.end())
+  if (Known == Modules.end()) {
     return nullptr;
+}
 
   return Known->second;
 }
@@ -70,16 +74,18 @@ std::unique_ptr<llvm::MemoryBuffer>
 ModuleManager::lookupBuffer(StringRef Name) {
   auto Entry = FileMgr.getFile(Name, /*OpenFile=*/false,
                                /*CacheFailure=*/false);
-  if (!Entry)
+  if (!Entry) {
     return nullptr;
+}
   return std::move(InMemoryBuffers[*Entry]);
 }
 
 static bool checkSignature(ASTFileSignature Signature,
                            ASTFileSignature ExpectedSignature,
                            std::string &ErrorStr) {
-  if (!ExpectedSignature || Signature == ExpectedSignature)
+  if (!ExpectedSignature || Signature == ExpectedSignature) {
     return false;
+}
 
   ErrorStr =
       Signature ? "signature mismatch" : "could not read module signature";
@@ -92,8 +98,9 @@ static void updateModuleImports(ModuleFile &MF, ModuleFile *ImportedBy,
     MF.ImportedBy.insert(ImportedBy);
     ImportedBy->Imports.insert(&MF);
   } else {
-    if (!MF.DirectlyImported)
+    if (!MF.DirectlyImported) {
       MF.ImportLoc = ImportLoc;
+}
 
     MF.DirectlyImported = true;
   }
@@ -148,8 +155,9 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
   // to the Modules map.
   auto implicitModuleNamesMatch = [](ModuleKind Kind, const ModuleFile *MF,
                                      const FileEntry *Entry) -> bool {
-    if (Kind != MK_ImplicitModule)
+    if (Kind != MK_ImplicitModule) {
       return true;
+}
     return Entry->getName() == MF->FileName;
   };
 
@@ -157,8 +165,9 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
   if (ModuleFile *ModuleEntry = Modules.lookup(Entry)) {
     if (implicitModuleNamesMatch(Type, ModuleEntry, Entry)) {
       // Check the stored signature.
-      if (checkSignature(ModuleEntry->Signature, ExpectedSignature, ErrorStr))
+      if (checkSignature(ModuleEntry->Signature, ExpectedSignature, ErrorStr)) {
         return OutOfDate;
+}
 
       Module = ModuleEntry;
       updateModuleImports(*ModuleEntry, ImportedBy, ImportLoc);
@@ -178,9 +187,10 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
     std::string TimestampFilename = NewModule->getTimestampFilename();
     llvm::vfs::Status Status;
     // A cached stat value would be fine as well.
-    if (!FileMgr.getNoncachedStatValue(TimestampFilename, Status))
+    if (!FileMgr.getNoncachedStatValue(TimestampFilename, Status)) {
       NewModule->InputFilesValidationTimestamp =
           llvm::sys::toTimeT(Status.getLastModificationTime());
+}
   }
 
   // Load the contents of the module
@@ -232,18 +242,21 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
   // Read the signature eagerly now so that we can check it.  Avoid calling
   // ReadSignature unless there's something to check though.
   if (ExpectedSignature && checkSignature(ReadSignature(NewModule->Data),
-                                          ExpectedSignature, ErrorStr))
+                                          ExpectedSignature, ErrorStr)) {
     return OutOfDate;
+}
 
   // We're keeping this module.  Store it everywhere.
   Module = Modules[Entry] = NewModule.get();
 
   updateModuleImports(*NewModule, ImportedBy, ImportLoc);
 
-  if (!NewModule->isModule())
+  if (!NewModule->isModule()) {
     PCHChain.push_back(NewModule.get());
-  if (!ImportedBy)
+}
+  if (!ImportedBy) {
     Roots.push_back(NewModule.get());
+}
 
   Chain.push_back(std::move(NewModule));
   return NewlyLoaded;
@@ -251,8 +264,9 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
 
 void ModuleManager::removeModules(ModuleIterator First, ModuleMap *modMap) {
   auto Last = end();
-  if (First == Last)
+  if (First == Last) {
     return;
+}
 
   // Explicitly clear VisitOrder since we might not notice it is stale.
   VisitOrder.clear();
@@ -333,14 +347,17 @@ void ModuleManager::setGlobalIndex(GlobalModuleIndex *Index) {
 
   // Notify the global module index about all of the modules we've already
   // loaded.
-  for (ModuleFile &M : *this)
-    if (!GlobalIndex->loadedModuleFile(&M))
+  for (ModuleFile &M : *this) {
+    if (!GlobalIndex->loadedModuleFile(&M)) {
       ModulesInCommonWithGlobalIndex.push_back(&M);
+}
+}
 }
 
 void ModuleManager::moduleFileAccepted(ModuleFile *MF) {
-  if (!GlobalIndex || GlobalIndex->loadedModuleFile(MF))
+  if (!GlobalIndex || GlobalIndex->loadedModuleFile(MF)) {
     return;
+}
 
   ModulesInCommonWithGlobalIndex.push_back(MF);
 }
@@ -372,8 +389,9 @@ void ModuleManager::visit(llvm::function_ref<bool(ModuleFile &M)> Visitor,
     for (ModuleFile &M : llvm::reverse(*this)) {
       unsigned Size = M.ImportedBy.size();
       UnusedIncomingEdges[M.Index] = Size;
-      if (!Size)
+      if (!Size) {
         Queue.push_back(&M);
+}
     }
 
     // Traverse the graph, making sure to visit a module before visiting any
@@ -392,8 +410,9 @@ void ModuleManager::visit(llvm::function_ref<bool(ModuleFile &M)> Visitor,
         // that depends on this particular module, push it into the
         // queue to be visited.
         unsigned &NumUnusedEdges = UnusedIncomingEdges[(*M)->Index];
-        if (NumUnusedEdges && (--NumUnusedEdges == 0))
+        if (NumUnusedEdges && (--NumUnusedEdges == 0)) {
           Queue.push_back(*M);
+}
       }
     }
 
@@ -413,22 +432,25 @@ void ModuleManager::visit(llvm::function_ref<bool(ModuleFile &M)> Visitor,
     for (unsigned I = 0, N = ModulesInCommonWithGlobalIndex.size(); I != N; ++I)
     {
       ModuleFile *M = ModulesInCommonWithGlobalIndex[I];
-      if (!ModuleFilesHit->count(M))
+      if (!ModuleFilesHit->count(M)) {
         State->VisitNumber[M->Index] = VisitNumber;
+}
     }
   }
 
   for (unsigned I = 0, N = VisitOrder.size(); I != N; ++I) {
     ModuleFile *CurrentModule = VisitOrder[I];
     // Should we skip this module file?
-    if (State->VisitNumber[CurrentModule->Index] == VisitNumber)
+    if (State->VisitNumber[CurrentModule->Index] == VisitNumber) {
       continue;
+}
 
     // Visit the module.
     assert(State->VisitNumber[CurrentModule->Index] == VisitNumber - 1);
     State->VisitNumber[CurrentModule->Index] = VisitNumber;
-    if (!Visitor(*CurrentModule))
+    if (!Visitor(*CurrentModule)) {
       continue;
+}
 
     // The visitor has requested that cut off visitation of any
     // module that the current module depends on. To indicate this
@@ -447,8 +469,9 @@ void ModuleManager::visit(llvm::function_ref<bool(ModuleFile &M)> Visitor,
         }
       }
 
-      if (State->Stack.empty())
+      if (State->Stack.empty()) {
         break;
+}
 
       // Pop the next module off the stack.
       NextModule = State->Stack.pop_back_val();
@@ -478,10 +501,11 @@ bool ModuleManager::lookupModuleFile(StringRef FileName,
   File = *FileOrErr;
 
   if ((ExpectedSize && ExpectedSize != File->getSize()) ||
-      (ExpectedModTime && ExpectedModTime != File->getModificationTime()))
+      (ExpectedModTime && ExpectedModTime != File->getModificationTime())) {
     // Do not destroy File, as it may be referenced. If we need to rebuild it,
     // it will be destroyed by removeModules.
     return true;
+}
 
   return false;
 }

@@ -24,8 +24,9 @@ namespace include_fixer {
 llvm::ErrorOr<std::unique_ptr<YamlSymbolIndex>>
 YamlSymbolIndex::createFromFile(llvm::StringRef FilePath) {
   auto Buffer = llvm::MemoryBuffer::getFile(FilePath);
-  if (!Buffer)
+  if (!Buffer) {
     return Buffer.getError();
+}
 
   return std::unique_ptr<YamlSymbolIndex>(new YamlSymbolIndex(
       find_all_symbols::ReadSymbolInfosFromYAML(Buffer.get()->getBuffer())));
@@ -40,8 +41,9 @@ YamlSymbolIndex::createFromDirectory(llvm::StringRef Directory,
     assert(Directory.size() <= PathStorage.size());
     PathStorage.resize(Directory.size()); // Shrink to parent.
     llvm::sys::path::append(PathStorage, Name);
-    if (auto DB = createFromFile(PathStorage))
+    if (auto DB = createFromFile(PathStorage)) {
       return DB;
+}
   }
   return llvm::make_error_code(llvm::errc::no_such_file_or_directory);
 }
@@ -50,8 +52,9 @@ std::vector<SymbolAndSignals>
 YamlSymbolIndex::search(llvm::StringRef Identifier) {
   std::vector<SymbolAndSignals> Results;
   for (const auto &Symbol : Symbols) {
-    if (Symbol.Symbol.getName() == Identifier)
+    if (Symbol.Symbol.getName() == Identifier) {
       Results.push_back(Symbol);
+}
   }
   return Results;
 }

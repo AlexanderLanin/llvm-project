@@ -22,8 +22,9 @@ static bool doesNoDiscardMacroExist(ASTContext &Context,
                                     const llvm::StringRef &MacroId) {
   // Don't check for the Macro existence if we are using an attribute
   // either a C++17 standard attribute or pre C++17 syntax
-  if (MacroId.startswith("[[") || MacroId.startswith("__attribute__"))
+  if (MacroId.startswith("[[") || MacroId.startswith("__attribute__")) {
     return true;
+}
 
   // Otherwise look up the macro name in the context to see if its defined.
   return Context.Idents.get(MacroId).hasMacroDefinition();
@@ -113,8 +114,9 @@ void UseNodiscardCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<CXXMethodDecl>("no_discard");
   // Don't make replacements if the location is invalid or in a macro.
   SourceLocation Loc = MatchedDecl->getLocation();
-  if (Loc.isInvalid() || Loc.isMacroID())
+  if (Loc.isInvalid() || Loc.isMacroID()) {
     return;
+}
 
   SourceLocation RetLoc = MatchedDecl->getInnerLocStart();
 
@@ -124,8 +126,9 @@ void UseNodiscardCheck::check(const MatchFinder::MatchResult &Result) {
               << MatchedDecl;
 
   // Check for the existence of the keyword being used as the ``[[nodiscard]]``.
-  if (!doesNoDiscardMacroExist(Context, NoDiscardMacro))
+  if (!doesNoDiscardMacroExist(Context, NoDiscardMacro)) {
     return;
+}
 
   // Possible false positives include:
   // 1. A const member function which returns a variable which is ignored
@@ -140,8 +143,9 @@ bool UseNodiscardCheck::isLanguageVersionSupported(
   // macro or ``__attribute__`` with pre c++17 compilers by using
   // ReplacementString option.
 
-  if (NoDiscardMacro == "[[nodiscard]]")
+  if (NoDiscardMacro == "[[nodiscard]]") {
     return LangOpts.CPlusPlus17;
+}
 
   return LangOpts.CPlusPlus;
 }

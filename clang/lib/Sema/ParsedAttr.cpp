@@ -37,15 +37,16 @@ IdentifierLoc *IdentifierLoc::create(ASTContext &Ctx, SourceLocation Loc,
 }
 
 size_t ParsedAttr::allocated_size() const {
-  if (IsAvailability) return AttributeFactory::AvailabilityAllocSize;
-  else if (IsTypeTagForDatatype)
+  if (IsAvailability) { return AttributeFactory::AvailabilityAllocSize;
+  } else if (IsTypeTagForDatatype) {
     return AttributeFactory::TypeTagForDatatypeAllocSize;
-  else if (IsProperty)
+  } else if (IsProperty) {
     return AttributeFactory::PropertyAllocSize;
-  else if (HasParsedType)
+  } else if (HasParsedType) {
     return totalSizeToAlloc<ArgsUnion, detail::AvailabilityData,
                             detail::TypeTagForDatatypeData, ParsedType,
                             detail::PropertyData>(0, 0, 0, 1, 0);
+}
   return totalSizeToAlloc<ArgsUnion, detail::AvailabilityData,
                           detail::TypeTagForDatatypeData, ParsedType,
                           detail::PropertyData>(NumArgs, 0, 0, 0, 0);
@@ -81,8 +82,9 @@ void AttributeFactory::deallocate(ParsedAttr *Attr) {
   size_t freeListIndex = getFreeListIndexForSize(size);
 
   // Expand FreeLists to the appropriate size, if required.
-  if (freeListIndex >= FreeLists.size())
+  if (freeListIndex >= FreeLists.size()) {
     FreeLists.resize(freeListIndex + 1);
+}
 
 #ifndef NDEBUG
   // In debug mode, zero out the attribute to help find memory overwriting.
@@ -94,8 +96,9 @@ void AttributeFactory::deallocate(ParsedAttr *Attr) {
 }
 
 void AttributeFactory::reclaimPool(AttributePool &cur) {
-  for (ParsedAttr *AL : cur.Attrs)
+  for (ParsedAttr *AL : cur.Attrs) {
     deallocate(AL);
+}
 }
 
 void AttributePool::takePool(AttributePool &pool) {
@@ -111,33 +114,41 @@ namespace {
 
 const ParsedAttrInfo &ParsedAttrInfo::get(const AttributeCommonInfo &A) {
   // If we have a ParsedAttrInfo for this ParsedAttr then return that.
-  if ((size_t)A.getParsedKind() < llvm::array_lengthof(AttrInfoMap))
+  if ((size_t)A.getParsedKind() < llvm::array_lengthof(AttrInfoMap)) {
     return *AttrInfoMap[A.getParsedKind()];
+}
 
   // If this is an ignored attribute then return an appropriate ParsedAttrInfo.
   static const ParsedAttrInfo IgnoredParsedAttrInfo(
       AttributeCommonInfo::IgnoredAttribute);
-  if (A.getParsedKind() == AttributeCommonInfo::IgnoredAttribute)
+  if (A.getParsedKind() == AttributeCommonInfo::IgnoredAttribute) {
     return IgnoredParsedAttrInfo;
+}
 
   // Otherwise this may be an attribute defined by a plugin. First instantiate
   // all plugin attributes if we haven't already done so.
   static llvm::ManagedStatic<std::list<std::unique_ptr<ParsedAttrInfo>>>
       PluginAttrInstances;
-  if (PluginAttrInstances->empty())
-    for (auto It : ParsedAttrInfoRegistry::entries())
+  if (PluginAttrInstances->empty()) {
+    for (auto It : ParsedAttrInfoRegistry::entries()) {
       PluginAttrInstances->emplace_back(It.instantiate());
+}
+}
 
   // Search for a ParsedAttrInfo whose name and syntax match.
   std::string FullName = A.getNormalizedFullName();
   AttributeCommonInfo::Syntax SyntaxUsed = A.getSyntax();
-  if (SyntaxUsed == AttributeCommonInfo::AS_ContextSensitiveKeyword)
+  if (SyntaxUsed == AttributeCommonInfo::AS_ContextSensitiveKeyword) {
     SyntaxUsed = AttributeCommonInfo::AS_Keyword;
+}
 
-  for (auto &Ptr : *PluginAttrInstances)
-    for (auto &S : Ptr->Spellings)
-      if (S.Syntax == SyntaxUsed && S.NormalizedFullName == FullName)
+  for (auto &Ptr : *PluginAttrInstances) {
+    for (auto &S : Ptr->Spellings) {
+      if (S.Syntax == SyntaxUsed && S.NormalizedFullName == FullName) {
         return *Ptr;
+}
+}
+}
 
   // If we failed to find a match then return a default ParsedAttrInfo.
   static const ParsedAttrInfo DefaultParsedAttrInfo(

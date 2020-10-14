@@ -90,8 +90,9 @@ TEST_F(PPConditionalDirectiveRecordTest, PPRecAPI) {
   while (1) {
     Token tok;
     PP.Lex(tok);
-    if (tok.is(tok::eof))
+    if (tok.is(tok::eof)) {
       break;
+}
     toks.push_back(tok);
   }
 

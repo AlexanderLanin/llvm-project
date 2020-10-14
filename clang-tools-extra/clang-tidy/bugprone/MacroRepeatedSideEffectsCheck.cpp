@@ -42,8 +42,9 @@ void MacroRepeatedPPCallbacks::MacroExpands(const Token &MacroNameTok,
                                             SourceRange Range,
                                             const MacroArgs *Args) {
   // Ignore macro argument expansions.
-  if (!Range.getBegin().isFileID())
+  if (!Range.getBegin().isFileID()) {
     return;
+}
 
   const MacroInfo *MI = MD.getMacroInfo();
 
@@ -55,8 +56,9 @@ void MacroRepeatedPPCallbacks::MacroExpands(const Token &MacroNameTok,
                              tok::kw_case, tok::kw_break, tok::kw_while,
                              tok::kw_do, tok::kw_for, tok::kw_continue,
                              tok::kw_goto, tok::kw_return);
-          }) != MI->tokens().end())
+          }) != MI->tokens().end()) {
     return;
+}
 
   for (unsigned ArgNo = 0U; ArgNo < MI->getNumParams(); ++ArgNo) {
     const IdentifierInfo *Arg = *(MI->param_begin() + ArgNo);
@@ -96,8 +98,9 @@ unsigned MacroRepeatedPPCallbacks::countArgumentExpansions(
     // "?" "&&" or "||", then we need to reason about control flow to report
     // warnings correctly. Until such reasoning is added, bail out when this
     // happens.
-    if (FoundBuiltin && T.isOneOf(tok::question, tok::ampamp, tok::pipepipe))
+    if (FoundBuiltin && T.isOneOf(tok::question, tok::ampamp, tok::pipepipe)) {
       return Max;
+}
 
     // Skip stringified tokens.
     if (T.is(tok::hash)) {
@@ -113,27 +116,31 @@ unsigned MacroRepeatedPPCallbacks::countArgumentExpansions(
     if (T.is(tok::question)) {
       CountAtQuestion.push(Current);
     } else if (T.is(tok::colon)) {
-      if (CountAtQuestion.empty())
+      if (CountAtQuestion.empty()) {
         return 0;
+}
       Current = CountAtQuestion.top();
       CountAtQuestion.pop();
     }
 
     // If current token is a parenthesis, skip it.
     if (SkipParen) {
-      if (T.is(tok::l_paren))
+      if (T.is(tok::l_paren)) {
         SkipParenCount++;
-      else if (T.is(tok::r_paren))
+      } else if (T.is(tok::r_paren)) {
         SkipParenCount--;
+}
       SkipParen = (SkipParenCount != 0);
-      if (SkipParen)
+      if (SkipParen) {
         continue;
+}
     }
 
     IdentifierInfo *TII = T.getIdentifierInfo();
     // If not existent, skip it.
-    if (TII == nullptr)
+    if (TII == nullptr) {
       continue;
+}
 
     // If a __builtin_constant_p is found within the macro definition, don't
     // count arguments inside the parentheses and remember that it has been
@@ -148,16 +155,18 @@ unsigned MacroRepeatedPPCallbacks::countArgumentExpansions(
     // and the eventual arguments.
     if (TII->hasMacroDefinition()) {
       const MacroInfo *M = PP.getMacroDefinition(TII).getMacroInfo();
-      if (M != nullptr && M->isFunctionLike())
+      if (M != nullptr && M->isFunctionLike()) {
         SkipParen = true;
+}
       continue;
     }
 
     // Count argument.
     if (TII == Arg) {
       Current++;
-      if (Current > Max)
+      if (Current > Max) {
         Max = Current;
+}
     }
   }
   return Max;
@@ -166,8 +175,9 @@ unsigned MacroRepeatedPPCallbacks::countArgumentExpansions(
 bool MacroRepeatedPPCallbacks::hasSideEffects(
     const Token *ResultArgToks) const {
   for (; ResultArgToks->isNot(tok::eof); ++ResultArgToks) {
-    if (ResultArgToks->isOneOf(tok::plusplus, tok::minusminus))
+    if (ResultArgToks->isOneOf(tok::plusplus, tok::minusminus)) {
       return true;
+}
   }
   return false;
 }

@@ -189,10 +189,11 @@ void TypePromotionInMathFnCheck::check(const MatchFinder::MatchResult &Result) {
   // <cmath> and it's not already included.  We never have to suggest including
   // <math.h>, because the functions we're suggesting moving away from are all
   // declared in <math.h>.
-  if (FnInCmath)
+  if (FnInCmath) {
     Diag << IncludeInserter.createIncludeInsertion(
         Result.Context->getSourceManager().getFileID(Call->getBeginLoc()),
         "<cmath>");
+}
 }
 
 } // namespace performance

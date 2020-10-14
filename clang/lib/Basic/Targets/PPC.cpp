@@ -96,21 +96,25 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("_LITTLE_ENDIAN");
   } else {
     if (!getTriple().isOSNetBSD() &&
-        !getTriple().isOSOpenBSD())
+        !getTriple().isOSOpenBSD()) {
       Builder.defineMacro("_BIG_ENDIAN");
+}
   }
 
   // ABI options.
-  if (ABI == "elfv1")
+  if (ABI == "elfv1") {
     Builder.defineMacro("_CALL_ELF", "1");
-  if (ABI == "elfv2")
+}
+  if (ABI == "elfv2") {
     Builder.defineMacro("_CALL_ELF", "2");
+}
 
   // This typically is only for a new enough linker (bfd >= 2.16.2 or gold), but
   // our support post-dates this and it should work on all 64-bit ppc linux
   // platforms. It is guaranteed to work on all elfv2 platforms.
-  if (getTriple().getOS() == llvm::Triple::Linux && PointerWidth == 64)
+  if (getTriple().getOS() == llvm::Triple::Linux && PointerWidth == 64) {
     Builder.defineMacro("_CALL_LINUX", "1");
+}
 
   // Subtarget options.
   if (!getTriple().isOSAIX()){
@@ -126,45 +130,64 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
 
   // Define this for elfv2 (64-bit only) or 64-bit darwin.
   if (ABI == "elfv2" ||
-      (getTriple().getOS() == llvm::Triple::Darwin && PointerWidth == 64))
+      (getTriple().getOS() == llvm::Triple::Darwin && PointerWidth == 64)) {
     Builder.defineMacro("__STRUCT_PARM_ALIGN__", "16");
+}
 
-  if (ArchDefs & ArchDefineName)
+  if (ArchDefs & ArchDefineName) {
     Builder.defineMacro(Twine("_ARCH_", StringRef(CPU).upper()));
-  if (ArchDefs & ArchDefinePpcgr)
+}
+  if (ArchDefs & ArchDefinePpcgr) {
     Builder.defineMacro("_ARCH_PPCGR");
-  if (ArchDefs & ArchDefinePpcsq)
+}
+  if (ArchDefs & ArchDefinePpcsq) {
     Builder.defineMacro("_ARCH_PPCSQ");
-  if (ArchDefs & ArchDefine440)
+}
+  if (ArchDefs & ArchDefine440) {
     Builder.defineMacro("_ARCH_440");
-  if (ArchDefs & ArchDefine603)
+}
+  if (ArchDefs & ArchDefine603) {
     Builder.defineMacro("_ARCH_603");
-  if (ArchDefs & ArchDefine604)
+}
+  if (ArchDefs & ArchDefine604) {
     Builder.defineMacro("_ARCH_604");
-  if (ArchDefs & ArchDefinePwr4)
+}
+  if (ArchDefs & ArchDefinePwr4) {
     Builder.defineMacro("_ARCH_PWR4");
-  if (ArchDefs & ArchDefinePwr5)
+}
+  if (ArchDefs & ArchDefinePwr5) {
     Builder.defineMacro("_ARCH_PWR5");
-  if (ArchDefs & ArchDefinePwr5x)
+}
+  if (ArchDefs & ArchDefinePwr5x) {
     Builder.defineMacro("_ARCH_PWR5X");
-  if (ArchDefs & ArchDefinePwr6)
+}
+  if (ArchDefs & ArchDefinePwr6) {
     Builder.defineMacro("_ARCH_PWR6");
-  if (ArchDefs & ArchDefinePwr6x)
+}
+  if (ArchDefs & ArchDefinePwr6x) {
     Builder.defineMacro("_ARCH_PWR6X");
-  if (ArchDefs & ArchDefinePwr7)
+}
+  if (ArchDefs & ArchDefinePwr7) {
     Builder.defineMacro("_ARCH_PWR7");
-  if (ArchDefs & ArchDefinePwr8)
+}
+  if (ArchDefs & ArchDefinePwr8) {
     Builder.defineMacro("_ARCH_PWR8");
-  if (ArchDefs & ArchDefinePwr9)
+}
+  if (ArchDefs & ArchDefinePwr9) {
     Builder.defineMacro("_ARCH_PWR9");
-  if (ArchDefs & ArchDefinePwr10)
+}
+  if (ArchDefs & ArchDefinePwr10) {
     Builder.defineMacro("_ARCH_PWR10");
-  if (ArchDefs & ArchDefineA2)
+}
+  if (ArchDefs & ArchDefineA2) {
     Builder.defineMacro("_ARCH_A2");
-  if (ArchDefs & ArchDefineE500)
+}
+  if (ArchDefs & ArchDefineE500) {
     Builder.defineMacro("__NO_LWSYNC__");
-  if (ArchDefs & ArchDefineFuture)
+}
+  if (ArchDefs & ArchDefineFuture) {
     Builder.defineMacro("_ARCH_PWR_FUTURE");
+}
 
   if (HasAltivec) {
     Builder.defineMacro("__VEC__", "10206");
@@ -174,28 +197,37 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__SPE__");
     Builder.defineMacro("__NO_FPRS__");
   }
-  if (HasVSX)
+  if (HasVSX) {
     Builder.defineMacro("__VSX__");
-  if (HasP8Vector)
+}
+  if (HasP8Vector) {
     Builder.defineMacro("__POWER8_VECTOR__");
-  if (HasP8Crypto)
+}
+  if (HasP8Crypto) {
     Builder.defineMacro("__CRYPTO__");
-  if (HasHTM)
+}
+  if (HasHTM) {
     Builder.defineMacro("__HTM__");
-  if (HasFloat128)
+}
+  if (HasFloat128) {
     Builder.defineMacro("__FLOAT128__");
-  if (HasP9Vector)
+}
+  if (HasP9Vector) {
     Builder.defineMacro("__POWER9_VECTOR__");
-  if (HasMMA)
+}
+  if (HasMMA) {
     Builder.defineMacro("__MMA__");
-  if (HasP10Vector)
+}
+  if (HasP10Vector) {
     Builder.defineMacro("__POWER10_VECTOR__");
+}
 
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1");
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2");
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4");
-  if (PointerWidth == 64)
+  if (PointerWidth == 64) {
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8");
+}
 
   // We have support for the bswap intrinsics so we can define this.
   Builder.defineMacro("__HAVE_BSWAP__", "1");
@@ -233,8 +265,9 @@ static bool ppcUserFeaturesCheck(DiagnosticsEngine &Diags,
                                  const std::vector<std::string> &FeaturesVec) {
 
   // vsx was not explicitly turned off.
-  if (llvm::find(FeaturesVec, "-vsx") == FeaturesVec.end())
+  if (llvm::find(FeaturesVec, "-vsx") == FeaturesVec.end()) {
     return true;
+}
 
   auto FindVSXSubfeature = [&](StringRef Feature, StringRef Option) {
     if (llvm::find(FeaturesVec, Feature) != FeaturesVec.end()) {
@@ -333,8 +366,9 @@ bool PPCTargetInfo::initFeatureMap(
     addFutureSpecificFeatures(Features);
   }
 
-  if (!ppcUserFeaturesCheck(Diags, FeaturesVec))
+  if (!ppcUserFeaturesCheck(Diags, FeaturesVec)) {
     return false;
+}
 
   if (!(ArchDefs & ArchDefinePwr9) && (ArchDefs & ArchDefinePpcgr) &&
       llvm::find(FeaturesVec, "+float128") != FeaturesVec.end()) {
@@ -399,34 +433,40 @@ void PPCTargetInfo::setFeatureEnabled(llvm::StringMap<bool> &Features,
                              .Case("float128", true)
                              .Case("mma", true)
                              .Default(false);
-    if (FeatureHasVSX)
+    if (FeatureHasVSX) {
       Features["vsx"] = Features["altivec"] = true;
-    if (Name == "power9-vector")
+}
+    if (Name == "power9-vector") {
       Features["power8-vector"] = true;
-    else if (Name == "power10-vector")
+    } else if (Name == "power10-vector") {
       Features["power8-vector"] = Features["power9-vector"] = true;
-    if (Name == "pcrel")
+}
+    if (Name == "pcrel") {
       Features["pcrelative-memops"] = true;
-    else
+    } else {
       Features[Name] = true;
+}
   } else {
     // If we're disabling altivec or vsx go ahead and disable all of the vsx
     // features.
-    if ((Name == "altivec") || (Name == "vsx"))
+    if ((Name == "altivec") || (Name == "vsx")) {
       Features["vsx"] = Features["direct-move"] = Features["power8-vector"] =
           Features["float128"] = Features["power9-vector"] =
               Features["paired-vector-memops"] = Features["mma"] =
                   Features["power10-vector"] = false;
-    if (Name == "power8-vector")
+}
+    if (Name == "power8-vector") {
       Features["power9-vector"] = Features["paired-vector-memops"] =
           Features["mma"] = Features["power10-vector"] = false;
-    else if (Name == "power9-vector")
+    } else if (Name == "power9-vector") {
       Features["paired-vector-memops"] = Features["mma"] =
           Features["power10-vector"] = false;
-    if (Name == "pcrel")
+}
+    if (Name == "pcrel") {
       Features["pcrelative-memops"] = false;
-    else
+    } else {
       Features[Name] = false;
+}
   }
 }
 
@@ -500,10 +540,11 @@ const TargetInfo::AddlRegName GCCAddlRegNames[] = {
 };
 
 ArrayRef<TargetInfo::AddlRegName> PPCTargetInfo::getGCCAddlRegNames() const {
-  if (ABI == "elfv2")
+  if (ABI == "elfv2") {
     return llvm::makeArrayRef(GCCAddlRegNames);
-  else 
+  } else { 
     return TargetInfo::getGCCAddlRegNames(); 
+}
 }
 
 static constexpr llvm::StringLiteral ValidCPUNames[] = {
@@ -528,13 +569,15 @@ void PPCTargetInfo::fillValidCPUList(SmallVectorImpl<StringRef> &Values) const {
 }
 
 void PPCTargetInfo::adjust(LangOptions &Opts) {
-  if (HasAltivec)
+  if (HasAltivec) {
     Opts.AltiVec = 1;
+}
   TargetInfo::adjust(Opts);
-  if (LongDoubleFormat != &llvm::APFloat::IEEEdouble())
+  if (LongDoubleFormat != &llvm::APFloat::IEEEdouble()) {
     LongDoubleFormat = Opts.PPCIEEELongDouble
                            ? &llvm::APFloat::IEEEquad()
                            : &llvm::APFloat::PPCDoubleDouble();
+}
 }
 
 ArrayRef<Builtin::Info> PPCTargetInfo::getTargetBuiltins() const {

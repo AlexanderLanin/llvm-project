@@ -176,8 +176,9 @@ void InefficientVectorOperationCheck::registerMatchers(MatchFinder *Finder) {
 void InefficientVectorOperationCheck::check(
     const MatchFinder::MatchResult &Result) {
   auto* Context = Result.Context;
-  if (Context->getDiagnostics().hasUncompilableErrorOccurred())
+  if (Context->getDiagnostics().hasUncompilableErrorOccurred()) {
     return;
+}
 
   const SourceManager &SM = *Result.SourceManager;
   const auto *VectorVarDecl =
@@ -198,12 +199,14 @@ void InefficientVectorOperationCheck::check(
   assert(AppendCall && "no append call expression");
 
   const Stmt *LoopStmt = ForLoop;
-  if (!LoopStmt)
+  if (!LoopStmt) {
     LoopStmt = RangeLoop;
+}
 
   const auto *TargetVarDecl = VectorVarDecl;
-  if (!TargetVarDecl)
+  if (!TargetVarDecl) {
     TargetVarDecl = ProtoVarDecl;
+}
 
   llvm::SmallPtrSet<const DeclRefExpr *, 16> AllVarRefs =
       utils::decl_ref_expr::allDeclRefExprs(*TargetVarDecl, *LoopParent,

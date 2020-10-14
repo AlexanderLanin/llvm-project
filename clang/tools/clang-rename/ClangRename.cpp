@@ -114,10 +114,11 @@ int main(int argc, const char **argv) {
     llvm::yaml::Input YAML(Buffer.get()->getBuffer());
     YAML >> Infos;
     for (const auto &Info : Infos) {
-      if (!Info.QualifiedName.empty())
+      if (!Info.QualifiedName.empty()) {
         QualifiedNames.push_back(Info.QualifiedName);
-      else
+      } else {
         SymbolOffsets.push_back(Info.Offset);
+}
       NewNames.push_back(Info.NewName);
     }
   }
@@ -197,9 +198,10 @@ int main(int argc, const char **argv) {
       // Export replacements.
       tooling::TranslationUnitReplacements TUR;
       const auto &FileToReplacements = Tool.getReplacements();
-      for (const auto &Entry : FileToReplacements)
+      for (const auto &Entry : FileToReplacements) {
         TUR.Replacements.insert(TUR.Replacements.end(), Entry.second.begin(),
                                 Entry.second.end());
+}
 
       yaml::Output YAML(OS);
       YAML << TUR;

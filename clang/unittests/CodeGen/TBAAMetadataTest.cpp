@@ -80,15 +80,19 @@ struct TestCompiler {
 
     // Do not expect more than one function definition.
     auto FuncPtr = M->begin();
-    for (; FuncPtr != M->end(); ++FuncPtr)
-      if (!FuncPtr->isDeclaration())
+    for (; FuncPtr != M->end(); ++FuncPtr) {
+      if (!FuncPtr->isDeclaration()) {
         break;
+}
+}
     assert(FuncPtr != M->end());
     const llvm::Function &Func = *FuncPtr;
     ++FuncPtr;
-    for (; FuncPtr != M->end(); ++FuncPtr)
-      if (!FuncPtr->isDeclaration())
+    for (; FuncPtr != M->end(); ++FuncPtr) {
+      if (!FuncPtr->isDeclaration()) {
         break;
+}
+}
     assert(FuncPtr == M->end());
 
     // The function must consist of single basic block.

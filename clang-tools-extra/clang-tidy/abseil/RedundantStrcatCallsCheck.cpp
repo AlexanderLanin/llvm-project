@@ -90,8 +90,9 @@ StrCatCheckResult ProcessCall(const CallExpr* RootCall, bool IsAppend,
 
     int StartArg = CallExpr == RootCall && IsAppend;
     for (const auto *Arg : CallExpr->arguments()) {
-      if (StartArg-- > 0) 
+      if (StartArg-- > 0) { 
       	continue;
+}
       if (const clang::CallExpr* Sub =
               ProcessArgument(Arg, Result, &CheckResult)) {
         CallsToProcess.push_back(Sub);
@@ -106,12 +107,13 @@ void RedundantStrcatCallsCheck::check(const MatchFinder::MatchResult& Result) {
   bool IsAppend;
 
   const CallExpr* RootCall;
-  if ((RootCall = Result.Nodes.getNodeAs<CallExpr>("StrCat"))) 
+  if ((RootCall = Result.Nodes.getNodeAs<CallExpr>("StrCat"))) { 
   	IsAppend = false;
-  else if ((RootCall = Result.Nodes.getNodeAs<CallExpr>("StrAppend"))) 
+  } else if ((RootCall = Result.Nodes.getNodeAs<CallExpr>("StrAppend"))) { 
   	IsAppend = true;
-  else 
+  } else { 
   	return;
+}
 
   if (RootCall->getBeginLoc().isMacroID()) {
     // Ignore calls within macros.

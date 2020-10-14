@@ -21,8 +21,9 @@ public:
   bool shouldVisitImplicitCode() const { return VisitImplicitCode; }
 
   bool TraverseConstructorInitializer(CXXCtorInitializer *Init) {
-    if (!Init->isWritten())
+    if (!Init->isWritten()) {
       VisitedImplicitInitializer = true;
+}
     Match("initializer", Init->getSourceLocation());
     return ExpectedLocationVisitor<
         CXXCtorInitializerVisitor>::TraverseConstructorInitializer(Init);

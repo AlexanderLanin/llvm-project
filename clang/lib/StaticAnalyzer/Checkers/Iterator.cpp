@@ -17,21 +17,24 @@ namespace ento {
 namespace iterator {
 
 bool isIteratorType(const QualType &Type) {
-  if (Type->isPointerType())
+  if (Type->isPointerType()) {
     return true;
+}
 
   const auto *CRD = Type->getUnqualifiedDesugaredType()->getAsCXXRecordDecl();
   return isIterator(CRD);
 }
 
 bool isIterator(const CXXRecordDecl *CRD) {
-  if (!CRD)
+  if (!CRD) {
     return false;
+}
 
   const auto Name = CRD->getName();
   if (!(Name.endswith_lower("iterator") || Name.endswith_lower("iter") ||
-        Name.endswith_lower("it")))
+        Name.endswith_lower("it"))) {
     return false;
+}
 
   bool HasCopyCtor = false, HasCopyAssign = true, HasDtor = false,
        HasPreIncrOp = false, HasPostIncrOp = false, HasDerefOp = false;
@@ -50,8 +53,9 @@ bool isIterator(const CXXRecordDecl *CRD) {
       HasCopyAssign = !Method->isDeleted() && Method->getAccess() == AS_public;
       continue;
     }
-    if (!Method->isOverloadedOperator())
+    if (!Method->isOverloadedOperator()) {
       continue;
+}
     const auto OPK = Method->getOverloadedOperator();
     if (OPK == OO_PlusPlus) {
       HasPreIncrOp = HasPreIncrOp || (Method->getNumParams() == 0);
@@ -75,51 +79,65 @@ bool isComparisonOperator(OverloadedOperatorKind OK) {
 
 bool isInsertCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
-  if (Func->getNumParams() < 2 || Func->getNumParams() > 3)
+}
+  if (Func->getNumParams() < 2 || Func->getNumParams() > 3) {
     return false;
-  if (!isIteratorType(Func->getParamDecl(0)->getType()))
+}
+  if (!isIteratorType(Func->getParamDecl(0)->getType())) {
     return false;
+}
   return IdInfo->getName() == "insert";
 }
 
 bool isEmplaceCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
-  if (Func->getNumParams() < 2)
+}
+  if (Func->getNumParams() < 2) {
     return false;
-  if (!isIteratorType(Func->getParamDecl(0)->getType()))
+}
+  if (!isIteratorType(Func->getParamDecl(0)->getType())) {
     return false;
+}
   return IdInfo->getName() == "emplace";
 }
 
 bool isEraseCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
-  if (Func->getNumParams() < 1 || Func->getNumParams() > 2)
+}
+  if (Func->getNumParams() < 1 || Func->getNumParams() > 2) {
     return false;
-  if (!isIteratorType(Func->getParamDecl(0)->getType()))
+}
+  if (!isIteratorType(Func->getParamDecl(0)->getType())) {
     return false;
+}
   if (Func->getNumParams() == 2 &&
-      !isIteratorType(Func->getParamDecl(1)->getType()))
+      !isIteratorType(Func->getParamDecl(1)->getType())) {
     return false;
+}
   return IdInfo->getName() == "erase";
 }
 
 bool isEraseAfterCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
-  if (Func->getNumParams() < 1 || Func->getNumParams() > 2)
+}
+  if (Func->getNumParams() < 1 || Func->getNumParams() > 2) {
     return false;
-  if (!isIteratorType(Func->getParamDecl(0)->getType()))
+}
+  if (!isIteratorType(Func->getParamDecl(0)->getType())) {
     return false;
+}
   if (Func->getNumParams() == 2 &&
-      !isIteratorType(Func->getParamDecl(1)->getType()))
+      !isIteratorType(Func->getParamDecl(1)->getType())) {
     return false;
+}
   return IdInfo->getName() == "erase_after";
 }
 
@@ -225,8 +243,9 @@ ProgramStateRef advancePosition(ProgramStateRef State, const SVal &Iter,
                                 OverloadedOperatorKind Op,
                                 const SVal &Distance) {
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return nullptr;
+}
 
   auto &SymMgr = State->getStateManager().getSymbolManager();
   auto &SVB = State->getStateManager().getSValBuilder();
@@ -237,8 +256,9 @@ ProgramStateRef advancePosition(ProgramStateRef State, const SVal &Iter,
           "Advance operator must be one of +, -, += and -=.");
   auto BinOp = (Op == OO_Plus || Op == OO_PlusEqual) ? BO_Add : BO_Sub;
   const auto IntDistOp = Distance.getAs<nonloc::ConcreteInt>();
-  if (!IntDistOp)
+  if (!IntDistOp) {
     return nullptr;
+}
 
   // For concrete integers we can calculate the new position
   nonloc::ConcreteInt IntDist = *IntDistOp;
@@ -279,8 +299,9 @@ ProgramStateRef assumeNoOverflow(ProgramStateRef State, SymbolRef Sym,
                       nonloc::ConcreteInt(Max), SVB.getConditionType());
   if (auto DV = IsCappedFromAbove.getAs<DefinedSVal>()) {
     NewState = NewState->assume(*DV, true);
-    if (!NewState)
+    if (!NewState) {
       return State;
+}
   }
 
   llvm::APSInt Min = -Max;
@@ -289,8 +310,9 @@ ProgramStateRef assumeNoOverflow(ProgramStateRef State, SymbolRef Sym,
                       nonloc::ConcreteInt(Min), SVB.getConditionType());
   if (auto DV = IsCappedFromBelow.getAs<DefinedSVal>()) {
     NewState = NewState->assume(*DV, true);
-    if (!NewState)
+    if (!NewState) {
       return State;
+}
   }
 
   return NewState;

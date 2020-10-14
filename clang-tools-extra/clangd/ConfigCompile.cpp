@@ -59,8 +59,9 @@ struct CompiledFragmentImpl {
       }
     }
     dlog("Config fragment {0}: applying {1} rules", this, Apply.size());
-    for (const auto &A : Apply)
+    for (const auto &A : Apply) {
       A(C);
+}
     return true;
   }
 };
@@ -98,19 +99,21 @@ struct FragmentCompiler {
     EnumSwitch &map(llvm::StringLiteral Name, T Value) {
       assert(!llvm::is_contained(ValidValues, Name) && "Duplicate value!");
       ValidValues.push_back(Name);
-      if (!Result && *Input == Name)
+      if (!Result && *Input == Name) {
         Result = Value;
+}
       return *this;
     }
 
     llvm::Optional<T> value() {
-      if (!Result)
+      if (!Result) {
         Outer.diag(
             Warning,
             llvm::formatv("Invalid {0} value '{1}'. Valid values are {2}.",
                           EnumName, *Input, llvm::join(ValidValues, ", "))
                 .str(),
             Input.Range);
+}
       return Result;
     };
   };
@@ -135,19 +138,22 @@ struct FragmentCompiler {
   }
 
   void compile(Fragment::IfBlock &&F) {
-    if (F.HasUnrecognizedCondition)
+    if (F.HasUnrecognizedCondition) {
       Out.Conditions.push_back([&](const Params &) { return false; });
+}
 
     auto PathMatch = std::make_unique<std::vector<llvm::Regex>>();
     for (auto &Entry : F.PathMatch) {
-      if (auto RE = compileRegex(Entry))
+      if (auto RE = compileRegex(Entry)) {
         PathMatch->push_back(std::move(*RE));
+}
     }
     if (!PathMatch->empty()) {
       Out.Conditions.push_back(
           [PathMatch(std::move(PathMatch))](const Params &P) {
-            if (P.Path.empty())
+            if (P.Path.empty()) {
               return false;
+}
             return llvm::any_of(*PathMatch, [&](const llvm::Regex &RE) {
               return RE.match(P.Path);
             });
@@ -156,14 +162,16 @@ struct FragmentCompiler {
 
     auto PathExclude = std::make_unique<std::vector<llvm::Regex>>();
     for (auto &Entry : F.PathExclude) {
-      if (auto RE = compileRegex(Entry))
+      if (auto RE = compileRegex(Entry)) {
         PathExclude->push_back(std::move(*RE));
+}
     }
     if (!PathExclude->empty()) {
       Out.Conditions.push_back(
           [PathExclude(std::move(PathExclude))](const Params &P) {
-            if (P.Path.empty())
+            if (P.Path.empty()) {
               return false;
+}
             return llvm::none_of(*PathExclude, [&](const llvm::Regex &RE) {
               return RE.match(P.Path);
             });
@@ -174,8 +182,9 @@ struct FragmentCompiler {
   void compile(Fragment::CompileFlagsBlock &&F) {
     if (!F.Remove.empty()) {
       auto Remove = std::make_shared<ArgStripper>();
-      for (auto &A : F.Remove)
+      for (auto &A : F.Remove) {
         Remove->strip(*A);
+}
       Out.Apply.push_back([Remove(std::shared_ptr<const ArgStripper>(
                               std::move(Remove)))](Config &C) {
         C.CompileFlags.Edits.push_back(
@@ -187,8 +196,9 @@ struct FragmentCompiler {
 
     if (!F.Add.empty()) {
       std::vector<std::string> Add;
-      for (auto &A : F.Add)
+      for (auto &A : F.Add) {
         Add.push_back(std::move(*A));
+}
       Out.Apply.push_back([Add(std::move(Add))](Config &C) {
         C.CompileFlags.Edits.push_back([Add](std::vector<std::string> &Args) {
           Args.insert(Args.end(), Add.begin(), Add.end());
@@ -203,8 +213,9 @@ struct FragmentCompiler {
                                                            **F.Background)
                          .map("Build", Config::BackgroundPolicy::Build)
                          .map("Skip", Config::BackgroundPolicy::Skip)
-                         .value())
+                         .value()) {
         Out.Apply.push_back([Val](Config &C) { C.Index.Background = *Val; });
+}
     }
   }
 
@@ -232,10 +243,11 @@ struct FragmentCompiler {
       llvm::SourceMgr::DK_Warning;
   void diag(llvm::SourceMgr::DiagKind Kind, llvm::StringRef Message,
             llvm::SMRange Range) {
-    if (Range.isValid() && SourceMgr != nullptr)
+    if (Range.isValid() && SourceMgr != nullptr) {
       Diagnostic(SourceMgr->GetMessage(Range.Start, Kind, Message, Range));
-    else
+    } else {
       Diagnostic(llvm::SMDiagnostic("", Kind, Message));
+}
   }
 };
 

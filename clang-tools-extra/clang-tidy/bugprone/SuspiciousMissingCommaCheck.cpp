@@ -25,8 +25,9 @@ bool isConcatenatedLiteralsOnPurpose(ASTContext *Ctx,
 
   TraversalKindScope RAII(*Ctx, ast_type_traits::TK_AsIs);
   auto Parents = Ctx->getParents(*Lit);
-  if (Parents.size() == 1 && Parents[0].get<ParenExpr>() != nullptr)
+  if (Parents.size() == 1 && Parents[0].get<ParenExpr>() != nullptr) {
     return true;
+}
 
   // Appropriately indented string literals are assumed to be on purpose.
   // The following frequent indentation is accepted:
@@ -53,8 +54,9 @@ bool isConcatenatedLiteralsOnPurpose(ASTContext *Ctx,
       break;
     }
   }
-  if (IndentedCorrectly)
+  if (IndentedCorrectly) {
     return true;
+}
 
   // There is no pattern recognized by the checker, assume it's not on purpose.
   return false;
@@ -103,23 +105,26 @@ void SuspiciousMissingCommaCheck::check(
 
   // Skip small arrays as they often generate false-positive.
   unsigned int Size = InitializerList->getNumInits();
-  if (Size < SizeThreshold)
+  if (Size < SizeThreshold) {
     return;
+}
 
   // Count the number of occurrence of concatenated string literal.
   unsigned int Count = 0;
   for (unsigned int i = 0; i < Size; ++i) {
     const Expr *Child = InitializerList->getInit(i)->IgnoreImpCasts();
     if (const auto *Literal = dyn_cast<StringLiteral>(Child)) {
-      if (Literal->getNumConcatenated() > 1)
+      if (Literal->getNumConcatenated() > 1) {
         ++Count;
+}
     }
   }
 
   // Warn only when concatenation is not common in this initializer list.
   // The current threshold is set to less than 1/5 of the string literals.
-  if (double(Count) / Size > RatioThreshold)
+  if (double(Count) / Size > RatioThreshold) {
     return;
+}
 
   diag(ConcatenatedLiteral->getBeginLoc(),
        "suspicious string literal, probably missing a comma");

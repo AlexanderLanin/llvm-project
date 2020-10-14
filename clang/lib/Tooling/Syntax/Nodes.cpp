@@ -552,8 +552,9 @@ std::vector<syntax::SimpleDeclarator *>
 syntax::SimpleDeclaration::getDeclarators() {
   std::vector<syntax::SimpleDeclarator *> Children;
   for (auto *C = getFirstChild(); C; C = C->getNextSibling()) {
-    if (C->getRole() == syntax::NodeRole::Declarator)
+    if (C->getRole() == syntax::NodeRole::Declarator) {
       Children.push_back(cast<syntax::SimpleDeclarator>(C));
+}
   }
   return Children;
 }

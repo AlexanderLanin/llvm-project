@@ -18,8 +18,9 @@ namespace {
 
 CharSourceRange getLexicalDeclRange(Decl *D, const SourceManager &SM,
                                     const LangOptions &LangOpts) {
-  if (!isa<ObjCImplDecl>(D))
+  if (!isa<ObjCImplDecl>(D)) {
     return CharSourceRange::getTokenRange(D->getSourceRange());
+}
   // Objective-C implementation declarations end at the '@' instead of the 'end'
   // keyword. Use the lexer to find the location right after 'end'.
   SourceRange R = D->getSourceRange();
@@ -54,8 +55,9 @@ public:
     assert(SelectionStack.size() == 1 && "stack was not popped");
     SelectedASTNode Result = std::move(SelectionStack.back());
     SelectionStack.pop_back();
-    if (Result.Children.empty())
+    if (Result.Children.empty()) {
       return None;
+}
     return std::move(Result);
   }
 
@@ -68,28 +70,33 @@ public:
   }
 
   bool TraverseOpaqueValueExpr(OpaqueValueExpr *E) {
-    if (!LookThroughOpaqueValueExprs)
+    if (!LookThroughOpaqueValueExprs) {
       return true;
+}
     llvm::SaveAndRestore<bool> LookThrough(LookThroughOpaqueValueExprs, false);
     return TraverseStmt(E->getSourceExpr());
   }
 
   bool TraverseDecl(Decl *D) {
-    if (isa<TranslationUnitDecl>(D))
+    if (isa<TranslationUnitDecl>(D)) {
       return LexicallyOrderedRecursiveASTVisitor::TraverseDecl(D);
-    if (D->isImplicit())
+}
+    if (D->isImplicit()) {
       return true;
+}
 
     // Check if this declaration is written in the file of interest.
     const SourceRange DeclRange = D->getSourceRange();
     const SourceManager &SM = Context.getSourceManager();
     SourceLocation FileLoc;
-    if (DeclRange.getBegin().isMacroID() && !DeclRange.getEnd().isMacroID())
+    if (DeclRange.getBegin().isMacroID() && !DeclRange.getEnd().isMacroID()) {
       FileLoc = DeclRange.getEnd();
-    else
+    } else {
       FileLoc = SM.getSpellingLoc(DeclRange.getBegin());
-    if (SM.getFileID(FileLoc) != TargetFile)
+}
+    if (SM.getFileID(FileLoc) != TargetFile) {
       return true;
+}
 
     SourceSelectionKind SelectionKind =
         selectionKindFor(getLexicalDeclRange(D, SM, Context.getLangOpts()));
@@ -109,14 +116,17 @@ public:
   }
 
   bool TraverseStmt(Stmt *S) {
-    if (!S)
+    if (!S) {
       return true;
-    if (auto *Opaque = dyn_cast<OpaqueValueExpr>(S))
+}
+    if (auto *Opaque = dyn_cast<OpaqueValueExpr>(S)) {
       return TraverseOpaqueValueExpr(Opaque);
+}
     // Avoid selecting implicit 'this' expressions.
     if (auto *TE = dyn_cast<CXXThisExpr>(S)) {
-      if (TE->isImplicit())
+      if (TE->isImplicit()) {
         return true;
+}
     }
     // FIXME (Alex Lorenz): Improve handling for macro locations.
     SourceSelectionKind SelectionKind =
@@ -132,36 +142,44 @@ private:
   void popAndAddToSelectionIfSelected(SourceSelectionKind SelectionKind) {
     SelectedASTNode Node = std::move(SelectionStack.back());
     SelectionStack.pop_back();
-    if (SelectionKind != SourceSelectionKind::None || !Node.Children.empty())
+    if (SelectionKind != SourceSelectionKind::None || !Node.Children.empty()) {
       SelectionStack.back().Children.push_back(std::move(Node));
+}
   }
 
   SourceSelectionKind selectionKindFor(CharSourceRange Range) {
     SourceLocation End = Range.getEnd();
     const SourceManager &SM = Context.getSourceManager();
-    if (Range.isTokenRange())
+    if (Range.isTokenRange()) {
       End = Lexer::getLocForEndOfToken(End, 0, SM, Context.getLangOpts());
-    if (!SourceLocation::isPairOfFileLocations(Range.getBegin(), End))
+}
+    if (!SourceLocation::isPairOfFileLocations(Range.getBegin(), End)) {
       return SourceSelectionKind::None;
+}
     if (!SelectionEnd.isValid()) {
       // Do a quick check when the selection is of length 0.
-      if (SM.isPointWithin(SelectionBegin, Range.getBegin(), End))
+      if (SM.isPointWithin(SelectionBegin, Range.getBegin(), End)) {
         return SourceSelectionKind::ContainsSelection;
+}
       return SourceSelectionKind::None;
     }
     bool HasStart = SM.isPointWithin(SelectionBegin, Range.getBegin(), End);
     bool HasEnd = SM.isPointWithin(SelectionEnd, Range.getBegin(), End);
-    if (HasStart && HasEnd)
+    if (HasStart && HasEnd) {
       return SourceSelectionKind::ContainsSelection;
+}
     if (SM.isPointWithin(Range.getBegin(), SelectionBegin, SelectionEnd) &&
-        SM.isPointWithin(End, SelectionBegin, SelectionEnd))
+        SM.isPointWithin(End, SelectionBegin, SelectionEnd)) {
       return SourceSelectionKind::InsideSelection;
+}
     // Ensure there's at least some overlap with the 'start'/'end' selection
     // types.
-    if (HasStart && SelectionBegin != End)
+    if (HasStart && SelectionBegin != End) {
       return SourceSelectionKind::ContainsSelectionStart;
-    if (HasEnd && SelectionEnd != Range.getBegin())
+}
+    if (HasEnd && SelectionEnd != Range.getBegin()) {
       return SourceSelectionKind::ContainsSelectionEnd;
+}
 
     return SourceSelectionKind::None;
   }
@@ -217,14 +235,16 @@ static void dump(const SelectedASTNode &Node, llvm::raw_ostream &OS,
   OS.indent(Indent * 2);
   if (const Decl *D = Node.Node.get<Decl>()) {
     OS << D->getDeclKindName() << "Decl";
-    if (const auto *ND = dyn_cast<NamedDecl>(D))
+    if (const auto *ND = dyn_cast<NamedDecl>(D)) {
       OS << " \"" << ND->getDeclName() << '"';
+}
   } else if (const Stmt *S = Node.Node.get<Stmt>()) {
     OS << S->getStmtClassName();
   }
   OS << ' ' << selectionKindToString(Node.SelectionKind) << "\n";
-  for (const auto &Child : Node.Children)
+  for (const auto &Child : Node.Children) {
     dump(Child, OS, Indent + 1);
+}
 }
 
 void SelectedASTNode::dump(llvm::raw_ostream &OS) const { ::dump(*this, OS); }
@@ -238,10 +258,12 @@ static bool hasAnyDirectChildrenWithKind(const SelectedASTNode &Node,
                                          SourceSelectionKind Kind) {
   assert(Kind != SourceSelectionKind::None && "invalid predicate!");
   for (const auto &Child : Node.Children) {
-    if (Child.SelectionKind == Kind)
+    if (Child.SelectionKind == Kind) {
       return true;
-    if (Child.SelectionKind == SourceSelectionKind::None)
+}
+    if (Child.SelectionKind == SourceSelectionKind::None) {
       return hasAnyDirectChildrenWithKind(Child, Kind);
+}
   }
   return false;
 }
@@ -266,7 +288,7 @@ getSelectionCanonizalizationAction(const Stmt *S, const Stmt *Parent) {
   // - The string literal in ObjC string literal is selected, e.g.:
   //     @"test"   becomes   @"test"
   //      ~~~~~~             ~~~~~~~
-  if (isa<StringLiteral>(S) && isa<ObjCStringLiteral>(Parent))
+  if (isa<StringLiteral>(S) && isa<ObjCStringLiteral>(Parent)) {
     return SelectParent;
   // The entire call should be selected when just the member expression
   // that refers to the method or the decl ref that refers to the function
@@ -275,10 +297,11 @@ getSelectionCanonizalizationAction(const Stmt *S, const Stmt *Parent) {
   //      ~~~~                 ~~~~~~~~~~~~
   //    func(args)  becomes  func(args)
   //    ~~~~                 ~~~~~~~~~~
-  else if (const auto *CE = dyn_cast<CallExpr>(Parent)) {
+  } else if (const auto *CE = dyn_cast<CallExpr>(Parent)) {
     if ((isa<MemberExpr>(S) || isa<DeclRefExpr>(S)) &&
-        CE->getCallee()->IgnoreImpCasts() == S)
+        CE->getCallee()->IgnoreImpCasts() == S) {
       return SelectParent;
+}
   }
   // FIXME: Syntactic form -> Entire pseudo-object expr.
   return KeepSelection;
@@ -290,8 +313,9 @@ void SelectedNodeWithParents::canonicalize() {
   const Stmt *S = Node.get().Node.get<Stmt>();
   assert(S && "non statement selection!");
   const Stmt *Parent = Parents[Parents.size() - 1].get().Node.get<Stmt>();
-  if (!Parent)
+  if (!Parent) {
     return;
+}
 
   // Look through the implicit casts in the parents.
   unsigned ParentIndex = 1;
@@ -299,16 +323,18 @@ void SelectedNodeWithParents::canonicalize() {
        ++ParentIndex) {
     const Stmt *NewParent =
         Parents[Parents.size() - ParentIndex - 1].get().Node.get<Stmt>();
-    if (!NewParent)
+    if (!NewParent) {
       break;
+}
     Parent = NewParent;
   }
 
   switch (getSelectionCanonizalizationAction(S, Parent)) {
   case SelectParent:
     Node = Parents[Parents.size() - ParentIndex];
-    for (; ParentIndex != 0; --ParentIndex)
+    for (; ParentIndex != 0; --ParentIndex) {
       Parents.pop_back();
+}
     break;
   case KeepSelection:
     break;
@@ -362,8 +388,9 @@ static void findDeepestWithKind(
   }
   // Search in the children.
   ParentStack.push_back(std::cref(ASTSelection));
-  for (const auto &Child : ASTSelection.Children)
+  for (const auto &Child : ASTSelection.Children) {
     findDeepestWithKind(Child, MatchingNodes, Kind, ParentStack);
+}
   ParentStack.pop_back();
 }
 
@@ -379,18 +406,21 @@ Optional<CodeRangeASTSelection>
 CodeRangeASTSelection::create(SourceRange SelectionRange,
                               const SelectedASTNode &ASTSelection) {
   // Code range is selected when the selection range is not empty.
-  if (SelectionRange.getBegin() == SelectionRange.getEnd())
+  if (SelectionRange.getBegin() == SelectionRange.getEnd()) {
     return None;
+}
   llvm::SmallVector<SelectedNodeWithParents, 4> ContainSelection;
   findDeepestWithKind(ASTSelection, ContainSelection,
                       SourceSelectionKind::ContainsSelection);
   // We are looking for a selection in one body of code, so let's focus on
   // one matching result.
-  if (ContainSelection.size() != 1)
+  if (ContainSelection.size() != 1) {
     return None;
+}
   SelectedNodeWithParents &Selected = ContainSelection[0];
-  if (!Selected.Node.get().Node.get<Stmt>())
+  if (!Selected.Node.get().Node.get<Stmt>()) {
     return None;
+}
   const Stmt *CodeRangeStmt = Selected.Node.get().Node.get<Stmt>();
   if (!isa<CompoundStmt>(CodeRangeStmt)) {
     Selected.canonicalize();
@@ -423,14 +453,16 @@ bool CodeRangeASTSelection::isInFunctionLikeBodyOfCode() const {
   for (const auto &Parent : llvm::reverse(Parents)) {
     const DynTypedNode &Node = Parent.get().Node;
     if (const auto *D = Node.get<Decl>()) {
-      if (isFunctionLikeDeclaration(D))
+      if (isFunctionLikeDeclaration(D)) {
         return IsPrevCompound;
+}
       // Stop the search at any type declaration to avoid returning true for
       // expressions in type declarations in functions, like:
       // function foo() { struct X {
       //   int m = /*selection:*/ 1 + 2 /*selection end*/; }; };
-      if (isa<TypeDecl>(D))
+      if (isa<TypeDecl>(D)) {
         return false;
+}
     }
     IsPrevCompound = Node.get<CompoundStmt>() != nullptr;
   }
@@ -441,8 +473,9 @@ const Decl *CodeRangeASTSelection::getFunctionLikeNearestParent() const {
   for (const auto &Parent : llvm::reverse(Parents)) {
     const DynTypedNode &Node = Parent.get().Node;
     if (const auto *D = Node.get<Decl>()) {
-      if (isFunctionLikeDeclaration(D))
+      if (isFunctionLikeDeclaration(D)) {
         return D;
+}
     }
   }
   return nullptr;

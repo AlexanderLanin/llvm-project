@@ -136,8 +136,9 @@ public:
   bool Next(StringRef S) {
     P = C;
     PEnd = C + S.size();
-    if (PEnd > End)
+    if (PEnd > End) {
       return false;
+}
     return memcmp(P, S.data(), S.size()) == 0;
   }
 
@@ -151,8 +152,9 @@ public:
       TMP *= 10;
       TMP += *PEnd - '0';
     }
-    if (PEnd == C)
+    if (PEnd == C) {
       return false;
+}
     N = TMP;
     return true;
   }
@@ -161,13 +163,15 @@ public:
   // A marker is the longest match for /#[A-Za-z0-9_-]+/.
   bool NextMarker() {
     P = C;
-    if (P == End || *P != '#')
+    if (P == End || *P != '#') {
       return false;
+}
     PEnd = P;
     ++PEnd;
     while ((isAlphanumeric(*PEnd) || *PEnd == '-' || *PEnd == '_') &&
-           PEnd < End)
+           PEnd < End) {
       ++PEnd;
+}
     return PEnd > P + 1;
   }
 
@@ -189,32 +193,37 @@ public:
       }
       else {
         P = C;
-        while (P != End && !isLetter(*P))
+        while (P != End && !isLetter(*P)) {
           ++P;
+}
         PEnd = P + 1;
       }
-      if (P == End)
+      if (P == End) {
         break;
+}
       // If not start of word but required, skip and search again.
       if (EnsureStartOfWord
                // Check if string literal starts a new word.
           && !(P == Begin || isWhitespace(P[-1])
                // Or it could be preceded by the start of a comment.
                || (P > (Begin + 1) && (P[-1] == '/' || P[-1] == '*')
-                                   &&  P[-2] == '/')))
+                                   &&  P[-2] == '/'))) {
         continue;
+}
       if (FinishDirectiveToken) {
         while (PEnd != End && (isAlphanumeric(*PEnd)
-                               || *PEnd == '-' || *PEnd == '_'))
+                               || *PEnd == '-' || *PEnd == '_')) {
           ++PEnd;
+}
         // Put back trailing digits and hyphens to be parsed later as a count
         // or count range.  Because -verify prefixes must start with letters,
         // we know the actual directive we found starts with a letter, so
         // we won't put back the entire directive word and thus record an empty
         // string.
         assert(isLetter(*P) && "-verify prefix must start with a letter");
-        while (isDigit(PEnd[-1]) || PEnd[-1] == '-')
+        while (isDigit(PEnd[-1]) || PEnd[-1] == '-') {
           --PEnd;
+}
       }
       return true;
     } while (Advance());
@@ -258,8 +267,9 @@ public:
 
   // Skip zero or more whitespace.
   void SkipWhitespace() {
-    for (; C < End && isWhitespace(*C); ++C)
+    for (; C < End && isWhitespace(*C); ++C) {
       ;
+}
   }
 
   // Return true if EOF reached.
@@ -356,8 +366,9 @@ public:
       auto Deferred = DeferredDirectives.find(MarkerName);
       if (Deferred != DeferredDirectives.end()) {
         for (auto &UD : Deferred->second) {
-          if (M.UseLoc.isInvalid())
+          if (M.UseLoc.isInvalid()) {
             M.UseLoc = UD.DirectivePos;
+}
           attachDirective(Diags, UD, Pos);
         }
         DeferredDirectives.erase(Deferred);
@@ -370,8 +381,9 @@ public:
     auto MarkerIt = Markers.find(MarkerName);
     if (MarkerIt != Markers.end()) {
       Marker &M = MarkerIt->second;
-      if (M.UseLoc.isInvalid())
+      if (M.UseLoc.isInvalid()) {
         M.UseLoc = UD.DirectivePos;
+}
       return attachDirective(Diags, UD, M.DefLoc);
     }
     DeferredDirectives[MarkerName].push_back(UD);
@@ -410,8 +422,9 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
 
   // First, scan the comment looking for markers.
   for (ParseHelper PH(S); !PH.Done();) {
-    if (!PH.Search("#", true))
+    if (!PH.Search("#", true)) {
       break;
+}
     PH.C = PH.P;
     if (!PH.NextMarker()) {
       PH.Next("#");
@@ -430,8 +443,9 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
     // Otherwise, search for any potential directive token and check it later.
     const auto &Prefixes = Diags.getDiagnosticOptions().VerifyPrefixes;
     if (!(Prefixes.size() == 1 ? PH.Search(*Prefixes.begin(), true, true)
-                               : PH.Search("", true, true)))
+                               : PH.Search("", true, true))) {
       break;
+}
 
     StringRef DToken = PH.Match();
     PH.Advance();
@@ -456,35 +470,39 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
     // Type in initial directive token: -{error|warning|note|no-diagnostics}
     bool NoDiag = false;
     StringRef DType;
-    if (DToken.endswith(DType="-error"))
+    if (DToken.endswith(DType="-error")) {
       D.DL = ED ? &ED->Errors : nullptr;
-    else if (DToken.endswith(DType="-warning"))
+    } else if (DToken.endswith(DType="-warning")) {
       D.DL = ED ? &ED->Warnings : nullptr;
-    else if (DToken.endswith(DType="-remark"))
+    } else if (DToken.endswith(DType="-remark")) {
       D.DL = ED ? &ED->Remarks : nullptr;
-    else if (DToken.endswith(DType="-note"))
+    } else if (DToken.endswith(DType="-note")) {
       D.DL = ED ? &ED->Notes : nullptr;
-    else if (DToken.endswith(DType="-no-diagnostics")) {
+    } else if (DToken.endswith(DType="-no-diagnostics")) {
       NoDiag = true;
-      if (D.RegexKind)
+      if (D.RegexKind) {
         continue;
+}
     }
-    else
+    else {
       continue;
+}
     DToken = DToken.substr(0, DToken.size()-DType.size());
 
     // What's left in DToken is the actual prefix.  That might not be a -verify
     // prefix even if there is only one -verify prefix (for example, the full
     // DToken is foo-bar-warning, but foo is the only -verify prefix).
-    if (!std::binary_search(Prefixes.begin(), Prefixes.end(), DToken))
+    if (!std::binary_search(Prefixes.begin(), Prefixes.end(), DToken)) {
       continue;
+}
 
     if (NoDiag) {
-      if (Status == VerifyDiagnosticConsumer::HasOtherExpectedDirectives)
+      if (Status == VerifyDiagnosticConsumer::HasOtherExpectedDirectives) {
         Diags.Report(Pos, diag::err_verify_invalid_no_diags)
           << /*IsExpectedNoDiagnostics=*/true;
-      else
+      } else {
         Status = VerifyDiagnosticConsumer::HasExpectedNoDiagnostics;
+}
       continue;
     }
     if (Status == VerifyDiagnosticConsumer::HasExpectedNoDiagnostics) {
@@ -496,8 +514,9 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
 
     // If a directive has been found but we're not interested
     // in storing the directive information, return now.
-    if (!D.DL)
+    if (!D.DL) {
       return true;
+}
 
     // Next optional token: @
     SourceLocation ExpectedLoc;
@@ -516,14 +535,16 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
         bool Invalid = false;
         unsigned ExpectedLine = SM.getSpellingLineNumber(Pos, &Invalid);
         if (!Invalid && PH.Next(Line) && (FoundPlus || Line < ExpectedLine)) {
-          if (FoundPlus) ExpectedLine += Line;
-          else ExpectedLine -= Line;
+          if (FoundPlus) { ExpectedLine += Line;
+          } else { ExpectedLine -= Line;
+}
           ExpectedLoc = SM.translateLineCol(SM.getFileID(Pos), ExpectedLine, 1);
         }
       } else if (PH.Next(Line)) {
         // Absolute line number.
-        if (Line > 0)
+        if (Line > 0) {
           ExpectedLoc = SM.translateLineCol(SM.getFileID(Pos), Line, 1);
+}
       } else if (PH.NextMarker()) {
         Marker = PH.Match();
       } else if (PP && PH.Search(":")) {
@@ -555,12 +576,13 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
           }
 
           const FileEntry *FE = &File->getFileEntry();
-          if (SM.translateFile(FE).isInvalid())
+          if (SM.translateFile(FE).isInvalid()) {
             SM.createFileID(FE, Pos, SrcMgr::C_User);
+}
 
-          if (PH.Next(Line) && Line > 0)
+          if (PH.Next(Line) && Line > 0) {
             ExpectedLoc = SM.translateFileLineCol(FE, Line, 1);
-          else if (PH.Next("*")) {
+          } else if (PH.Next("*")) {
             MatchAnyLine = true;
             ExpectedLoc = SM.translateFileLineCol(FE, 1, 1);
           }
@@ -639,8 +661,9 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
       D.Text += '\n';
       CPos = FPos + NewlineStr.size();
     }
-    if (D.Text.empty())
+    if (D.Text.empty()) {
       D.Text.assign(ContentBegin, ContentEnd);
+}
 
     // Check that regex directives contain at least one regex.
     if (D.RegexKind && D.Text.find("{{") == StringRef::npos) {
@@ -648,10 +671,11 @@ static bool ParseDirective(StringRef S, ExpectedData *ED, SourceManager &SM,
       return false;
     }
 
-    if (Marker.empty())
+    if (Marker.empty()) {
       attachDirective(Diags, D, ExpectedLoc, MatchAnyFileAndLine, MatchAnyLine);
-    else
+    } else {
       Markers.addDirective(Marker, D);
+}
     FoundDirective = true;
   }
 
@@ -663,8 +687,9 @@ VerifyDiagnosticConsumer::VerifyDiagnosticConsumer(DiagnosticsEngine &Diags_)
       PrimaryClientOwner(Diags.takeClient()),
       Buffer(new TextDiagnosticBuffer()), Markers(new MarkerTracker(Diags)),
       Status(HasNoDirectives) {
-  if (Diags.hasSourceManager())
+  if (Diags.hasSourceManager()) {
     setSourceManager(Diags.getSourceManager());
+}
 }
 
 VerifyDiagnosticConsumer::~VerifyDiagnosticConsumer() {
@@ -705,9 +730,10 @@ void VerifyDiagnosticConsumer::EndSourceFile() {
 
   // Detach comment handler once last active source file completed.
   if (--ActiveSourceFiles == 0) {
-    if (CurrentPreprocessor)
+    if (CurrentPreprocessor) {
       const_cast<Preprocessor *>(CurrentPreprocessor)->
           removeCommentHandler(this);
+}
 
     // Diagnose any used-but-not-defined markers.
     Markers->finalize();
@@ -723,8 +749,9 @@ void VerifyDiagnosticConsumer::HandleDiagnostic(
       DiagnosticsEngine::Level DiagLevel, const Diagnostic &Info) {
   if (Info.hasSourceManager()) {
     // If this diagnostic is for a different source manager, ignore it.
-    if (SrcManager && &Info.getSourceManager() != SrcManager)
+    if (SrcManager && &Info.getSourceManager() != SrcManager) {
       return;
+}
 
     setSourceManager(Info.getSourceManager());
   }
@@ -766,16 +793,18 @@ bool VerifyDiagnosticConsumer::HandleComment(Preprocessor &PP,
   SourceManager &SM = PP.getSourceManager();
 
   // If this comment is for a different source manager, ignore it.
-  if (SrcManager && &SM != SrcManager)
+  if (SrcManager && &SM != SrcManager) {
     return false;
+}
 
   SourceLocation CommentBegin = Comment.getBegin();
 
   const char *CommentRaw = SM.getCharacterData(CommentBegin);
   StringRef C(CommentRaw, SM.getCharacterData(Comment.getEnd()) - CommentRaw);
 
-  if (C.empty())
+  if (C.empty()) {
     return false;
+}
 
   // Fold any "\<EOL>" sequences
   size_t loc = C.find('\\');
@@ -799,18 +828,22 @@ bool VerifyDiagnosticConsumer::HandleComment(Preprocessor &PP,
       ++last;
 
       // Escape \r\n  or \n\r, but not \n\n.
-      if (last < C.size())
-        if (C[last] == '\n' || C[last] == '\r')
-          if (C[last] != C[last-1])
+      if (last < C.size()) {
+        if (C[last] == '\n' || C[last] == '\r') {
+          if (C[last] != C[last-1]) {
             ++last;
+}
+}
+}
     } else {
       // This was just a normal backslash.
       C2 += '\\';
     }
   }
 
-  if (!C2.empty())
+  if (!C2.empty()) {
     ParseDirective(C2, &ED, SM, &PP, CommentBegin, Status, *Markers);
+}
   return false;
 }
 
@@ -862,18 +895,20 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags, SourceManager *SourceM
                                 const_diag_iterator diag_begin,
                                 const_diag_iterator diag_end,
                                 const char *Kind) {
-  if (diag_begin == diag_end) return 0;
+  if (diag_begin == diag_end) { return 0;
+}
 
   SmallString<256> Fmt;
   llvm::raw_svector_ostream OS(Fmt);
   for (const_diag_iterator I = diag_begin, E = diag_end; I != E; ++I) {
-    if (I->first.isInvalid() || !SourceMgr)
+    if (I->first.isInvalid() || !SourceMgr) {
       OS << "\n  (frontend)";
-    else {
+    } else {
       OS << "\n ";
       if (const FileEntry *File = SourceMgr->getFileEntryForID(
-                                                SourceMgr->getFileID(I->first)))
+                                                SourceMgr->getFileID(I->first))) {
         OS << " File " << File->getName();
+}
       OS << " Line " << SourceMgr->getPresumedLineNumber(I->first);
     }
     OS << ": " << I->second;
@@ -889,24 +924,28 @@ static unsigned PrintUnexpected(DiagnosticsEngine &Diags, SourceManager *SourceM
 static unsigned PrintExpected(DiagnosticsEngine &Diags,
                               SourceManager &SourceMgr,
                               std::vector<Directive *> &DL, const char *Kind) {
-  if (DL.empty())
+  if (DL.empty()) {
     return 0;
+}
 
   SmallString<256> Fmt;
   llvm::raw_svector_ostream OS(Fmt);
   for (const auto *D : DL) {
-    if (D->DiagnosticLoc.isInvalid() || D->MatchAnyFileAndLine)
+    if (D->DiagnosticLoc.isInvalid() || D->MatchAnyFileAndLine) {
       OS << "\n  File *";
-    else
+    } else {
       OS << "\n  File " << SourceMgr.getFilename(D->DiagnosticLoc);
-    if (D->MatchAnyLine)
+}
+    if (D->MatchAnyLine) {
       OS << " Line *";
-    else
+    } else {
       OS << " Line " << SourceMgr.getPresumedLineNumber(D->DiagnosticLoc);
-    if (D->DirectiveLoc != D->DiagnosticLoc)
+}
+    if (D->DirectiveLoc != D->DiagnosticLoc) {
       OS << " (directive at "
          << SourceMgr.getFilename(D->DirectiveLoc) << ':'
          << SourceMgr.getPresumedLineNumber(D->DirectiveLoc) << ')';
+}
     OS << ": " << D->Text;
   }
 
@@ -918,15 +957,18 @@ static unsigned PrintExpected(DiagnosticsEngine &Diags,
 /// Determine whether two source locations come from the same file.
 static bool IsFromSameFile(SourceManager &SM, SourceLocation DirectiveLoc,
                            SourceLocation DiagnosticLoc) {
-  while (DiagnosticLoc.isMacroID())
+  while (DiagnosticLoc.isMacroID()) {
     DiagnosticLoc = SM.getImmediateMacroCallerLoc(DiagnosticLoc);
+}
 
-  if (SM.isWrittenInSameFile(DirectiveLoc, DiagnosticLoc))
+  if (SM.isWrittenInSameFile(DirectiveLoc, DiagnosticLoc)) {
     return true;
+}
 
   const FileEntry *DiagFile = SM.getFileEntryForID(SM.getFileID(DiagnosticLoc));
-  if (!DiagFile && SM.isWrittenInMainFile(DirectiveLoc))
+  if (!DiagFile && SM.isWrittenInMainFile(DirectiveLoc)) {
     return true;
+}
 
   return (DiagFile == SM.getFileEntryForID(SM.getFileID(DirectiveLoc)));
 }
@@ -951,21 +993,25 @@ static unsigned CheckLists(DiagnosticsEngine &Diags, SourceManager &SourceMgr,
       for (II = Right.begin(), IE = Right.end(); II != IE; ++II) {
         if (!D.MatchAnyLine) {
           unsigned LineNo2 = SourceMgr.getPresumedLineNumber(II->first);
-          if (LineNo1 != LineNo2)
+          if (LineNo1 != LineNo2) {
             continue;
+}
         }
 
         if (!D.DiagnosticLoc.isInvalid() && !D.MatchAnyFileAndLine &&
-            !IsFromSameFile(SourceMgr, D.DiagnosticLoc, II->first))
+            !IsFromSameFile(SourceMgr, D.DiagnosticLoc, II->first)) {
           continue;
+}
 
         const std::string &RightText = II->second;
-        if (D.match(RightText))
+        if (D.match(RightText)) {
           break;
+}
       }
       if (II == IE) {
         // Not found.
-        if (i >= D.Min) break;
+        if (i >= D.Min) { break;
+}
         LeftOnly.push_back(&D);
       } else {
         // Found. The same cannot be found twice.
@@ -975,8 +1021,9 @@ static unsigned CheckLists(DiagnosticsEngine &Diags, SourceManager &SourceMgr,
   }
   // Now all that's left in Right are those that were not matched.
   unsigned num = PrintExpected(Diags, SourceMgr, LeftOnly, Label);
-  if (!IgnoreUnexpected)
+  if (!IgnoreUnexpected) {
     num += PrintUnexpected(Diags, &SourceMgr, Right.begin(), Right.end(), Label);
+}
   return num;
 }
 
@@ -1108,18 +1155,22 @@ void VerifyDiagnosticConsumer::CheckDiagnostics() {
   } else {
     const DiagnosticLevelMask DiagMask =
         ~Diags.getDiagnosticOptions().getVerifyIgnoreUnexpected();
-    if (bool(DiagnosticLevelMask::Error & DiagMask))
+    if (bool(DiagnosticLevelMask::Error & DiagMask)) {
       NumErrors += PrintUnexpected(Diags, nullptr, Buffer->err_begin(),
                                    Buffer->err_end(), "error");
-    if (bool(DiagnosticLevelMask::Warning & DiagMask))
+}
+    if (bool(DiagnosticLevelMask::Warning & DiagMask)) {
       NumErrors += PrintUnexpected(Diags, nullptr, Buffer->warn_begin(),
                                    Buffer->warn_end(), "warn");
-    if (bool(DiagnosticLevelMask::Remark & DiagMask))
+}
+    if (bool(DiagnosticLevelMask::Remark & DiagMask)) {
       NumErrors += PrintUnexpected(Diags, nullptr, Buffer->remark_begin(),
                                    Buffer->remark_end(), "remark");
-    if (bool(DiagnosticLevelMask::Note & DiagMask))
+}
+    if (bool(DiagnosticLevelMask::Note & DiagMask)) {
       NumErrors += PrintUnexpected(Diags, nullptr, Buffer->note_begin(),
                                    Buffer->note_end(), "note");
+}
   }
 
   Diags.setClient(CurClient, Owner.release() != nullptr);
@@ -1135,10 +1186,11 @@ std::unique_ptr<Directive> Directive::create(bool RegexKind,
                                              bool MatchAnyFileAndLine,
                                              bool MatchAnyLine, StringRef Text,
                                              unsigned Min, unsigned Max) {
-  if (!RegexKind)
+  if (!RegexKind) {
     return std::make_unique<StandardDirective>(DirectiveLoc, DiagnosticLoc,
                                                MatchAnyFileAndLine,
                                                MatchAnyLine, Text, Min, Max);
+}
 
   // Parse the directive into a regular expression.
   std::string RegexStr;
@@ -1155,8 +1207,9 @@ std::unique_ptr<Directive> Directive::create(bool RegexKind,
       S = S.drop_front(RegexMatchLength + 2);
     } else {
       size_t VerbatimMatchLength = S.find("{{");
-      if (VerbatimMatchLength == StringRef::npos)
+      if (VerbatimMatchLength == StringRef::npos) {
         VerbatimMatchLength = S.size();
+}
       // Escape and append the fixed string.
       RegexStr += llvm::Regex::escape(S.substr(0, VerbatimMatchLength));
       S = S.drop_front(VerbatimMatchLength);

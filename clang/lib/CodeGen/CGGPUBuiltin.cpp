@@ -97,8 +97,9 @@ CodeGenFunction::EmitNVPTXDevicePrintfCallExpr(const CallExpr *E,
     BufferPtr = llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(Ctx));
   } else {
     llvm::SmallVector<llvm::Type *, 8> ArgTypes;
-    for (unsigned I = 1, NumArgs = Args.size(); I < NumArgs; ++I)
+    for (unsigned I = 1, NumArgs = Args.size(); I < NumArgs; ++I) {
       ArgTypes.push_back(Args[I].getRValue(*this).getScalarVal()->getType());
+}
 
     // Using llvm::StructType is correct only because printf doesn't accept
     // aggregates.  If we had to handle aggregates here, we'd have to manually

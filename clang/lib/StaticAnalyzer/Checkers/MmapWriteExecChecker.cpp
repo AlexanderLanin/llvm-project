@@ -50,22 +50,27 @@ void MmapWriteExecChecker::checkPreCall(const CallEvent &Call,
     SVal ProtVal = Call.getArgSVal(2);
     Optional<nonloc::ConcreteInt> ProtLoc = ProtVal.getAs<nonloc::ConcreteInt>();
     int64_t Prot = ProtLoc->getValue().getSExtValue();
-    if (ProtExecOv != ProtExec)
+    if (ProtExecOv != ProtExec) {
       ProtExec = ProtExecOv;
-    if (ProtReadOv != ProtRead)
+}
+    if (ProtReadOv != ProtRead) {
       ProtRead = ProtReadOv;
+}
 
     // Wrong settings
-    if (ProtRead == ProtExec)
+    if (ProtRead == ProtExec) {
       return;
+}
 
     if ((Prot & (ProtWrite | ProtExec)) == (ProtWrite | ProtExec)) {
-      if (!BT)
+      if (!BT) {
         BT.reset(new BugType(this, "W^X check fails, Write Exec prot flags set", "Security"));
+}
 
       ExplodedNode *N = C.generateNonFatalErrorNode();
-      if (!N)
+      if (!N) {
         return;
+}
 
       auto Report = std::make_unique<PathSensitiveBugReport>(
           *BT, "Both PROT_WRITE and PROT_EXEC flags are set. This can "

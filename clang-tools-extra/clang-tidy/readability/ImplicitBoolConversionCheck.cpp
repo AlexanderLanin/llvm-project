@@ -227,11 +227,13 @@ bool isCastAllowedInCondition(const ImplicitCastExpr *Cast,
   while (!Q.empty()) {
     for (const auto &N : Context.getParents(*Q.front())) {
       const Stmt *S = N.get<Stmt>();
-      if (!S)
+      if (!S) {
         return false;
+}
       if (isa<IfStmt>(S) || isa<ConditionalOperator>(S) || isa<ForStmt>(S) ||
-          isa<WhileStmt>(S) || isa<BinaryConditionalOperator>(S))
+          isa<WhileStmt>(S) || isa<BinaryConditionalOperator>(S)) {
         return true;
+}
       if (isa<ParenExpr>(S) || isa<ImplicitCastExpr>(S) ||
           isUnaryLogicalNotOperator(S) ||
           (isa<BinaryOperator>(S) && cast<BinaryOperator>(S)->isLogicalOp())) {

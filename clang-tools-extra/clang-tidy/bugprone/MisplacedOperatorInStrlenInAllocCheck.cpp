@@ -75,8 +75,9 @@ void MisplacedOperatorInStrlenInAllocCheck::registerMatchers(
 void MisplacedOperatorInStrlenInAllocCheck::check(
     const MatchFinder::MatchResult &Result) {
   const Expr *Alloc = Result.Nodes.getNodeAs<CallExpr>("Alloc");
-  if (!Alloc)
+  if (!Alloc) {
     Alloc = Result.Nodes.getNodeAs<CXXNewExpr>("Alloc");
+}
   assert(Alloc && "Matched node bound by 'Alloc' should be either 'CallExpr'"
          " or 'CXXNewExpr'");
 

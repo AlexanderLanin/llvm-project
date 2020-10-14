@@ -56,8 +56,9 @@ static llvm::Optional<FixItHint>
 fixItHintReplacementForOwnershipString(StringRef Text, CharSourceRange Range,
                                        StringRef Ownership) {
   size_t Index = Text.find(Ownership);
-  if (Index == StringRef::npos)
+  if (Index == StringRef::npos) {
     return llvm::None;
+}
 
   SourceLocation Begin = Range.getBegin().getLocWithOffset(Index);
   SourceLocation End = Begin.getLocWithOffset(Ownership.size());
@@ -70,8 +71,9 @@ fixItHintForVarDecl(const VarDecl *VD, const SourceManager &SM,
                     const LangOptions &LangOpts) {
   assert(VD && "VarDecl parameter must not be null");
   // Don't provide fix-its for any parameter variables at this time.
-  if (isa<ParmVarDecl>(VD))
+  if (isa<ParmVarDecl>(VD)) {
     return llvm::None;
+}
 
   // Currently there is no way to directly get the source range for the
   // __weak/__strong ObjC lifetime qualifiers, so it's necessary to string
@@ -86,12 +88,14 @@ fixItHintForVarDecl(const VarDecl *VD, const SourceManager &SM,
 
   StringRef VarDeclText = Lexer::getSourceText(Range, SM, LangOpts);
   if (llvm::Optional<FixItHint> Hint =
-          fixItHintReplacementForOwnershipString(VarDeclText, Range, WeakText))
+          fixItHintReplacementForOwnershipString(VarDeclText, Range, WeakText)) {
     return Hint;
+}
 
   if (llvm::Optional<FixItHint> Hint = fixItHintReplacementForOwnershipString(
-          VarDeclText, Range, StrongText))
+          VarDeclText, Range, StrongText)) {
     return Hint;
+}
 
   return FixItHint::CreateInsertion(Range.getBegin(), "__unsafe_unretained ");
 }
@@ -135,12 +139,14 @@ void NSInvocationArgumentLifetimeCheck::check(
   // Only provide fix-it hints for references to local variables; fixes for
   // instance variable references don't have as clear an automated fix.
   const auto *VD = Result.Nodes.getNodeAs<VarDecl>("var");
-  if (!VD)
+  if (!VD) {
     return;
+}
 
   if (auto Hint = fixItHintForVarDecl(VD, *Result.SourceManager,
-                                      Result.Context->getLangOpts()))
+                                      Result.Context->getLangOpts())) {
     Diag << *Hint;
+}
 }
 
 } // namespace objc

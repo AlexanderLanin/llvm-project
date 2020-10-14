@@ -33,8 +33,9 @@ IdentifierInfo *NSAPI::getNSClassId(NSClassIdKindKind K) const {
     "NSValue"
   };
 
-  if (!ClassIds[K])
+  if (!ClassIds[K]) {
     return (ClassIds[K] = &Ctx.Idents.get(ClassName[K]));
+}
 
   return ClassIds[K];
 }
@@ -145,8 +146,9 @@ Selector NSAPI::getNSArraySelector(NSArrayMethodKind MK) const {
 Optional<NSAPI::NSArrayMethodKind> NSAPI::getNSArrayMethodKind(Selector Sel) {
   for (unsigned i = 0; i != NumNSArrayMethods; ++i) {
     NSArrayMethodKind MK = NSArrayMethodKind(i);
-    if (Sel == getNSArraySelector(MK))
+    if (Sel == getNSArraySelector(MK)) {
       return MK;
+}
   }
 
   return None;
@@ -247,8 +249,9 @@ Optional<NSAPI::NSDictionaryMethodKind>
 NSAPI::getNSDictionaryMethodKind(Selector Sel) {
   for (unsigned i = 0; i != NumNSDictionaryMethods; ++i) {
     NSDictionaryMethodKind MK = NSDictionaryMethodKind(i);
-    if (Sel == getNSDictionarySelector(MK))
+    if (Sel == getNSDictionarySelector(MK)) {
       return MK;
+}
   }
 
   return None;
@@ -304,8 +307,9 @@ Optional<NSAPI::NSSetMethodKind>
 NSAPI::getNSSetMethodKind(Selector Sel) {
   for (unsigned i = 0; i != NumNSSetMethods; ++i) {
     NSSetMethodKind MK = NSSetMethodKind(i);
-    if (Sel == getNSSetSelector(MK))
+    if (Sel == getNSSetSelector(MK)) {
       return MK;
+}
   }
 
   return None;
@@ -358,8 +362,9 @@ Selector NSAPI::getNSNumberLiteralSelector(NSNumberLiteralMethodKind MK,
     Names = ClassSelectorName;
   }
 
-  if (Sels[MK].isNull())
+  if (Sels[MK].isNull()) {
     Sels[MK] = Ctx.Selectors.getUnarySelector(&Ctx.Idents.get(Names[MK]));
+}
   return Sels[MK];
 }
 
@@ -367,8 +372,9 @@ Optional<NSAPI::NSNumberLiteralMethodKind>
 NSAPI::getNSNumberLiteralMethodKind(Selector Sel) const {
   for (unsigned i = 0; i != NumNSNumberLiteralMethods; ++i) {
     NSNumberLiteralMethodKind MK = NSNumberLiteralMethodKind(i);
-    if (isNSNumberLiteralSelector(MK, Sel))
+    if (isNSNumberLiteralSelector(MK, Sel)) {
       return MK;
+}
   }
 
   return None;
@@ -377,18 +383,22 @@ NSAPI::getNSNumberLiteralMethodKind(Selector Sel) const {
 Optional<NSAPI::NSNumberLiteralMethodKind>
 NSAPI::getNSNumberFactoryMethodKind(QualType T) const {
   const BuiltinType *BT = T->getAs<BuiltinType>();
-  if (!BT)
+  if (!BT) {
     return None;
+}
 
   const TypedefType *TDT = T->getAs<TypedefType>();
   if (TDT) {
     QualType TDTTy = QualType(TDT, 0);
-    if (isObjCBOOLType(TDTTy))
+    if (isObjCBOOLType(TDTTy)) {
       return NSAPI::NSNumberWithBool;
-    if (isObjCNSIntegerType(TDTTy))
+}
+    if (isObjCNSIntegerType(TDTTy)) {
       return NSAPI::NSNumberWithInteger;
-    if (isObjCNSUIntegerType(TDTTy))
+}
+    if (isObjCNSUIntegerType(TDTTy)) {
       return NSAPI::NSNumberWithUnsignedInteger;
+}
   }
 
   switch (BT->getKind()) {
@@ -507,8 +517,9 @@ bool NSAPI::isObjCNSUIntegerType(QualType T) const {
 }
 
 StringRef NSAPI::GetNSIntegralKind(QualType T) const {
-  if (!Ctx.getLangOpts().ObjC || T.isNull())
+  if (!Ctx.getLangOpts().ObjC || T.isNull()) {
     return StringRef();
+}
 
   while (const TypedefType *TDT = T->getAs<TypedefType>()) {
     StringRef NSIntegralResust =
@@ -525,8 +536,9 @@ StringRef NSAPI::GetNSIntegralKind(QualType T) const {
     .Case("NSUInteger", "NSUInteger")
     .Case("uint64_t", "uint64_t")
     .Default(StringRef());
-    if (!NSIntegralResust.empty())
+    if (!NSIntegralResust.empty()) {
       return NSIntegralResust;
+}
     T = TDT->desugar();
   }
   return StringRef();
@@ -559,17 +571,21 @@ bool NSAPI::isSubclassOfNSClass(ObjCInterfaceDecl *InterfaceDecl,
 
 bool NSAPI::isObjCTypedef(QualType T,
                           StringRef name, IdentifierInfo *&II) const {
-  if (!Ctx.getLangOpts().ObjC)
+  if (!Ctx.getLangOpts().ObjC) {
     return false;
-  if (T.isNull())
+}
+  if (T.isNull()) {
     return false;
+}
 
-  if (!II)
+  if (!II) {
     II = &Ctx.Idents.get(name);
+}
 
   while (const TypedefType *TDT = T->getAs<TypedefType>()) {
-    if (TDT->getDecl()->getDeclName().getAsIdentifierInfo() == II)
+    if (TDT->getDecl()->getDeclName().getAsIdentifierInfo() == II) {
       return true;
+}
     T = TDT->desugar();
   }
 
@@ -578,18 +594,23 @@ bool NSAPI::isObjCTypedef(QualType T,
 
 bool NSAPI::isObjCEnumerator(const Expr *E,
                              StringRef name, IdentifierInfo *&II) const {
-  if (!Ctx.getLangOpts().ObjC)
+  if (!Ctx.getLangOpts().ObjC) {
     return false;
-  if (!E)
+}
+  if (!E) {
     return false;
+}
 
-  if (!II)
+  if (!II) {
     II = &Ctx.Idents.get(name);
+}
 
-  if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->IgnoreParenImpCasts()))
+  if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->IgnoreParenImpCasts())) {
     if (const EnumConstantDecl *
-          EnumD = dyn_cast_or_null<EnumConstantDecl>(DRE->getDecl()))
+          EnumD = dyn_cast_or_null<EnumConstantDecl>(DRE->getDecl())) {
       return EnumD->getIdentifier() == II;
+}
+}
 
   return false;
 }
@@ -599,8 +620,9 @@ Selector NSAPI::getOrInitSelector(ArrayRef<StringRef> Ids,
   if (Sel.isNull()) {
     SmallVector<IdentifierInfo *, 4> Idents;
     for (ArrayRef<StringRef>::const_iterator
-           I = Ids.begin(), E = Ids.end(); I != E; ++I)
+           I = Ids.begin(), E = Ids.end(); I != E; ++I) {
       Idents.push_back(&Ctx.Idents.get(*I));
+}
     Sel = Ctx.Selectors.getSelector(Idents.size(), Idents.data());
   }
   return Sel;

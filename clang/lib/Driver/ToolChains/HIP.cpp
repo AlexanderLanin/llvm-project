@@ -77,25 +77,29 @@ void AMDGCN::Linker::constructLldCommand(Compilation &C, const JobAction &JA,
   std::string MAttrString = "-plugin-opt=-mattr=";
   for (auto OneFeature : unifyTargetFeatures(Features)) {
     MAttrString.append(Args.MakeArgString(OneFeature));
-    if (OneFeature != Features.back())
+    if (OneFeature != Features.back()) {
       MAttrString.append(",");
+}
   }
-  if (!Features.empty())
+  if (!Features.empty()) {
     LldArgs.push_back(Args.MakeArgString(MAttrString));
+}
 
   for (const Arg *A : Args.filtered(options::OPT_mllvm)) {
     LldArgs.push_back(
         Args.MakeArgString(Twine("-plugin-opt=") + A->getValue(0)));
   }
 
-  if (C.getDriver().isSaveTempsEnabled())
+  if (C.getDriver().isSaveTempsEnabled()) {
     LldArgs.push_back("-save-temps");
+}
 
   addLinkerCompressDebugSectionsOption(TC, Args, LldArgs);
 
   LldArgs.append({"-o", Output.getFilename()});
-  for (auto Input : Inputs)
+  for (auto Input : Inputs) {
     LldArgs.push_back(Input.getFilename());
+}
   const char *Lld = Args.MakeArgString(getToolChain().GetProgramPath("lld"));
   C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
                                          Lld, LldArgs, Inputs, Output));
@@ -189,8 +193,9 @@ void AMDGCN::Linker::constructGenerateObjFileFromHIPFatBinary(
 
   // Dump the contents of the temp object file gen if the user requested that.
   // We support this option to enable testing of behavior with -###.
-  if (C.getArgs().hasArg(options::OPT_fhip_dump_offload_linker_script))
+  if (C.getArgs().hasArg(options::OPT_fhip_dump_offload_linker_script)) {
     llvm::errs() << ObjBuffer;
+}
 
   // Open script file and write the contents.
   std::error_code EC;
@@ -219,11 +224,13 @@ void AMDGCN::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                    const char *LinkingOutput) const {
   if (Inputs.size() > 0 &&
       Inputs[0].getType() == types::TY_Image &&
-      JA.getType() == types::TY_Object)
+      JA.getType() == types::TY_Object) {
     return constructGenerateObjFileFromHIPFatBinary(C, Output, Inputs, Args, JA);
+}
 
-  if (JA.getType() == types::TY_HIP_FATBIN)
+  if (JA.getType() == types::TY_HIP_FATBIN) {
     return constructHIPFatbinCommand(C, JA, Output.getFilename(), Inputs, Args, *this);
+}
 
   return constructLldCommand(C, JA, Inputs, Output, Args);
 }
@@ -253,14 +260,16 @@ void HIPToolChain::addClangTargetOptions(
   CC1Args.push_back("-fcuda-is-device");
 
   if (DriverArgs.hasFlag(options::OPT_fcuda_approx_transcendentals,
-                         options::OPT_fno_cuda_approx_transcendentals, false))
+                         options::OPT_fno_cuda_approx_transcendentals, false)) {
     CC1Args.push_back("-fcuda-approx-transcendentals");
+}
 
   if (DriverArgs.hasFlag(options::OPT_fgpu_rdc, options::OPT_fno_gpu_rdc,
-                         false))
+                         false)) {
     CC1Args.push_back("-fgpu-rdc");
-  else
+  } else {
     CC1Args.append({"-mllvm", "-amdgpu-internalize-symbols"});
+}
 
   StringRef MaxThreadsPerBlock =
       DriverArgs.getLastArgValue(options::OPT_gpu_max_threads_per_block_EQ);
@@ -280,21 +289,24 @@ void HIPToolChain::addClangTargetOptions(
     CC1Args.push_back("-fapply-global-visibility-to-externs");
   }
 
-  if (DriverArgs.hasArg(options::OPT_nogpulib))
+  if (DriverArgs.hasArg(options::OPT_nogpulib)) {
     return;
+}
   ArgStringList LibraryPaths;
 
   // Find in --hip-device-lib-path and HIP_LIBRARY_PATH.
-  for (auto Path : RocmInstallation.getRocmDeviceLibPathArg())
+  for (auto Path : RocmInstallation.getRocmDeviceLibPathArg()) {
     LibraryPaths.push_back(DriverArgs.MakeArgString(Path));
+}
 
   addDirectoryList(DriverArgs, LibraryPaths, "", "HIP_DEVICE_LIB_PATH");
 
   // Maintain compatability with --hip-device-lib.
   auto BCLibs = DriverArgs.getAllArgValues(options::OPT_hip_device_lib_EQ);
   if (!BCLibs.empty()) {
-    for (auto Lib : BCLibs)
+    for (auto Lib : BCLibs) {
       addBCLib(getDriver(), DriverArgs, CC1Args, LibraryPaths, Lib);
+}
   } else {
     if (!RocmInstallation.hasDeviceLibrary()) {
       getDriver().Diag(diag::err_drv_no_rocm_device_lib) << 0;
@@ -332,13 +344,15 @@ void HIPToolChain::addClangTargetOptions(
     // Add instrument lib.
     auto InstLib =
         DriverArgs.getLastArgValue(options::OPT_gpu_instrument_lib_EQ);
-    if (InstLib.empty())
+    if (InstLib.empty()) {
       return;
+}
     if (llvm::sys::fs::exists(InstLib)) {
       CC1Args.push_back("-mlink-builtin-bitcode");
       CC1Args.push_back(DriverArgs.MakeArgString(InstLib));
-    } else
+    } else {
       getDriver().Diag(diag::err_drv_no_such_file) << InstLib;
+}
   }
 }
 
@@ -348,14 +362,16 @@ HIPToolChain::TranslateArgs(const llvm::opt::DerivedArgList &Args,
                              Action::OffloadKind DeviceOffloadKind) const {
   DerivedArgList *DAL =
       HostTC.TranslateArgs(Args, BoundArch, DeviceOffloadKind);
-  if (!DAL)
+  if (!DAL) {
     DAL = new DerivedArgList(Args.getBaseArgs());
+}
 
   const OptTable &Opts = getDriver().getOpts();
 
   for (Arg *A : Args) {
-    if (!shouldSkipArgument(A))
+    if (!shouldSkipArgument(A)) {
       DAL->append(A);
+}
   }
 
   if (!BoundArch.empty()) {

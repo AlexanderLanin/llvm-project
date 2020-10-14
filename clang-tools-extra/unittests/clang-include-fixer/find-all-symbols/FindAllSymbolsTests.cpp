@@ -37,8 +37,9 @@ public:
 
   void reportSymbols(llvm::StringRef FileName,
                      const SymbolInfo::SignalMap &NewSymbols) override {
-    for (const auto &Entry : NewSymbols)
+    for (const auto &Entry : NewSymbols) {
       Symbols[Entry.first] += Entry.second;
+}
   }
 
   int seen(const SymbolInfo &Symbol) const {

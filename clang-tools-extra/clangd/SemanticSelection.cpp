@@ -37,8 +37,9 @@ void collectFoldingRanges(DocumentSymbol Symbol,
   Range.endLine = Symbol.range.end.line;
   Range.endCharacter = Symbol.range.end.character;
   Result.push_back(Range);
-  for (const auto &Child : Symbol.children)
+  for (const auto &Child : Symbol.children) {
     collectFoldingRanges(Child, Result);
+}
 }
 
 } // namespace
@@ -108,11 +109,13 @@ llvm::Expected<std::vector<FoldingRange>> getFoldingRanges(ParsedAST &AST) {
   // nodes themselves instead of their contents which is less useful). Replace
   // this with a more general RecursiveASTVisitor implementation instead.
   auto DocumentSymbols = getDocumentSymbols(AST);
-  if (!DocumentSymbols)
+  if (!DocumentSymbols) {
     return DocumentSymbols.takeError();
+}
   std::vector<FoldingRange> Result;
-  for (const auto &Symbol : *DocumentSymbols)
+  for (const auto &Symbol : *DocumentSymbols) {
     collectFoldingRanges(Symbol, Result);
+}
   return Result;
 }
 

@@ -42,8 +42,9 @@ CheckerManager::CheckerManager(AnalyzerOptions &AOptions,
 }
 
 CheckerManager::~CheckerManager() {
-  for (const auto &CheckerDtor : CheckerDtors)
+  for (const auto &CheckerDtor : CheckerDtors) {
     CheckerDtor();
+}
 }
 
 } // namespace ento

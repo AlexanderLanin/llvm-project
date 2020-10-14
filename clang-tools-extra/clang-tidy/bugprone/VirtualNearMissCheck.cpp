@@ -48,19 +48,22 @@ static bool checkOverridingFunctionReturnType(const ASTContext *Context,
                                  ->getReturnType()
                                  .getCanonicalType();
 
-  if (DerivedReturnTy->isDependentType() || BaseReturnTy->isDependentType())
+  if (DerivedReturnTy->isDependentType() || BaseReturnTy->isDependentType()) {
     return false;
+}
 
   // Check if return types are identical.
-  if (Context->hasSameType(DerivedReturnTy, BaseReturnTy))
+  if (Context->hasSameType(DerivedReturnTy, BaseReturnTy)) {
     return true;
+}
 
   /// Check if the return types are covariant.
 
   // Both types must be pointers or references to classes.
   if (!(BaseReturnTy->isPointerType() && DerivedReturnTy->isPointerType()) &&
-      !(BaseReturnTy->isReferenceType() && DerivedReturnTy->isReferenceType()))
+      !(BaseReturnTy->isReferenceType() && DerivedReturnTy->isReferenceType())) {
     return false;
+}
 
   /// BTy is the class type in return type of BaseMD. For example,
   ///    B* Base::md()
@@ -70,14 +73,17 @@ static bool checkOverridingFunctionReturnType(const ASTContext *Context,
 
   const CXXRecordDecl *DRD = DTy->getAsCXXRecordDecl();
   const CXXRecordDecl *BRD = BTy->getAsCXXRecordDecl();
-  if (DRD == nullptr || BRD == nullptr)
+  if (DRD == nullptr || BRD == nullptr) {
     return false;
+}
 
-  if (!DRD->hasDefinition() || !BRD->hasDefinition())
+  if (!DRD->hasDefinition() || !BRD->hasDefinition()) {
     return false;
+}
 
-  if (DRD == BRD)
+  if (DRD == BRD) {
     return true;
+}
 
   if (!Context->hasSameUnqualifiedType(DTy, BTy)) {
     // Begin checking whether the conversion from D to B is valid.
@@ -85,12 +91,14 @@ static bool checkOverridingFunctionReturnType(const ASTContext *Context,
                        /*DetectVirtual=*/false);
 
     // Check whether D is derived from B, and fill in a CXXBasePaths object.
-    if (!DRD->isDerivedFrom(BRD, Paths))
+    if (!DRD->isDerivedFrom(BRD, Paths)) {
       return false;
+}
 
     // Check ambiguity.
-    if (Paths.isAmbiguous(Context->getCanonicalType(BTy).getUnqualifiedType()))
+    if (Paths.isAmbiguous(Context->getCanonicalType(BTy).getUnqualifiedType())) {
       return false;
+}
 
     // Check accessibility.
     // FIXME: We currently only support checking if B is accessible base class
@@ -99,31 +107,36 @@ static bool checkOverridingFunctionReturnType(const ASTContext *Context,
         DRD->getCanonicalDecl() == DerivedMD->getParent()->getCanonicalDecl();
     bool HasPublicAccess = false;
     for (const auto &Path : Paths) {
-      if (Path.Access == AS_public)
+      if (Path.Access == AS_public) {
         HasPublicAccess = true;
+}
     }
-    if (!HasPublicAccess && !IsItself)
+    if (!HasPublicAccess && !IsItself) {
       return false;
+}
     // End checking conversion from D to B.
   }
 
   // Both pointers or references should have the same cv-qualification.
   if (DerivedReturnTy.getLocalCVRQualifiers() !=
-      BaseReturnTy.getLocalCVRQualifiers())
+      BaseReturnTy.getLocalCVRQualifiers()) {
     return false;
+}
 
   // The class type D should have the same cv-qualification as or less
   // cv-qualification than the class type B.
-  if (DTy.isMoreQualifiedThan(BTy))
+  if (DTy.isMoreQualifiedThan(BTy)) {
     return false;
+}
 
   return true;
 }
 
 /// \returns decayed type for arrays and functions.
 static QualType getDecayedType(QualType Type) {
-  if (const auto *Decayed = Type->getAs<DecayedType>())
+  if (const auto *Decayed = Type->getAs<DecayedType>()) {
     return Decayed->getDecayedType();
+}
   return Type;
 }
 
@@ -132,14 +145,16 @@ static bool checkParamTypes(const CXXMethodDecl *BaseMD,
                             const CXXMethodDecl *DerivedMD) {
   unsigned NumParamA = BaseMD->getNumParams();
   unsigned NumParamB = DerivedMD->getNumParams();
-  if (NumParamA != NumParamB)
+  if (NumParamA != NumParamB) {
     return false;
+}
 
   for (unsigned I = 0; I < NumParamA; I++) {
     if (getDecayedType(BaseMD->getParamDecl(I)->getType().getCanonicalType()) !=
         getDecayedType(
-            DerivedMD->getParamDecl(I)->getType().getCanonicalType()))
+            DerivedMD->getParamDecl(I)->getType().getCanonicalType())) {
       return false;
+}
   }
   return true;
 }
@@ -149,16 +164,19 @@ static bool checkParamTypes(const CXXMethodDecl *BaseMD,
 static bool checkOverrideWithoutName(const ASTContext *Context,
                                      const CXXMethodDecl *BaseMD,
                                      const CXXMethodDecl *DerivedMD) {
-  if (BaseMD->isStatic() != DerivedMD->isStatic())
+  if (BaseMD->isStatic() != DerivedMD->isStatic()) {
     return false;
+}
 
-  if (BaseMD->getType() == DerivedMD->getType())
+  if (BaseMD->getType() == DerivedMD->getType()) {
     return true;
+}
 
   // Now the function types are not identical. Then check if the return types
   // are covariant and if the param types are the same.
-  if (!checkOverridingFunctionReturnType(Context, BaseMD, DerivedMD))
+  if (!checkOverridingFunctionReturnType(Context, BaseMD, DerivedMD)) {
     return false;
+}
   return checkParamTypes(BaseMD, DerivedMD);
 }
 
@@ -172,8 +190,9 @@ static bool checkOverrideByDerivedMethod(const CXXMethodDecl *BaseMD,
                                       E = DerivedMD->end_overridden_methods();
        I != E; ++I) {
     const CXXMethodDecl *OverriddenMD = *I;
-    if (BaseMD->getCanonicalDecl() == OverriddenMD->getCanonicalDecl())
+    if (BaseMD->getCanonicalDecl() == OverriddenMD->getCanonicalDecl()) {
       return true;
+}
   }
 
   return false;
@@ -182,8 +201,9 @@ static bool checkOverrideByDerivedMethod(const CXXMethodDecl *BaseMD,
 bool VirtualNearMissCheck::isPossibleToBeOverridden(
     const CXXMethodDecl *BaseMD) {
   auto Iter = PossibleMap.find(BaseMD);
-  if (Iter != PossibleMap.end())
+  if (Iter != PossibleMap.end()) {
     return Iter->second;
+}
 
   bool IsPossible = !BaseMD->isImplicit() && !isa<CXXConstructorDecl>(BaseMD) &&
                     !isa<CXXDestructorDecl>(BaseMD) && BaseMD->isVirtual() &&
@@ -197,13 +217,15 @@ bool VirtualNearMissCheck::isOverriddenByDerivedClass(
     const CXXMethodDecl *BaseMD, const CXXRecordDecl *DerivedRD) {
   auto Key = std::make_pair(BaseMD, DerivedRD);
   auto Iter = OverriddenMap.find(Key);
-  if (Iter != OverriddenMap.end())
+  if (Iter != OverriddenMap.end()) {
     return Iter->second;
+}
 
   bool IsOverridden = false;
   for (const CXXMethodDecl *DerivedMD : DerivedRD->methods()) {
-    if (!isOverrideMethod(DerivedMD))
+    if (!isOverrideMethod(DerivedMD)) {
       continue;
+}
 
     if (checkOverrideByDerivedMethod(BaseMD, DerivedMD)) {
       IsOverridden = true;
@@ -236,11 +258,13 @@ void VirtualNearMissCheck::check(const MatchFinder::MatchResult &Result) {
   for (const auto &BaseSpec : DerivedRD->bases()) {
     if (const auto *BaseRD = BaseSpec.getType()->getAsCXXRecordDecl()) {
       for (const auto *BaseMD : BaseRD->methods()) {
-        if (!isPossibleToBeOverridden(BaseMD))
+        if (!isPossibleToBeOverridden(BaseMD)) {
           continue;
+}
 
-        if (isOverriddenByDerivedClass(BaseMD, DerivedRD))
+        if (isOverriddenByDerivedClass(BaseMD, DerivedRD)) {
           continue;
+}
 
         unsigned EditDistance = BaseMD->getName().edit_distance(
             DerivedMD->getName(), EditDistanceThreshold);
@@ -258,8 +282,9 @@ void VirtualNearMissCheck::check(const MatchFinder::MatchResult &Result) {
                      "virtual method '%1'; did you mean to override it?")
                 << DerivedMD->getQualifiedNameAsString()
                 << BaseMD->getQualifiedNameAsString();
-            if (ApplyFix)
+            if (ApplyFix) {
               Diag << FixItHint::CreateReplacement(Range, BaseMD->getName());
+}
           }
         }
       }

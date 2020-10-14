@@ -36,14 +36,17 @@ public:
 CXXSelfAssignmentChecker::CXXSelfAssignmentChecker() {}
 
 void CXXSelfAssignmentChecker::checkBeginFunction(CheckerContext &C) const {
-  if (!C.inTopFrame())
+  if (!C.inTopFrame()) {
     return;
+}
   const auto *LCtx = C.getLocationContext();
   const auto *MD = dyn_cast<CXXMethodDecl>(LCtx->getDecl());
-  if (!MD)
+  if (!MD) {
     return;
-  if (!MD->isCopyAssignmentOperator() && !MD->isMoveAssignmentOperator())
+}
+  if (!MD->isCopyAssignmentOperator() && !MD->isMoveAssignmentOperator()) {
     return;
+}
   auto &State = C.getState();
   auto &SVB = C.getSValBuilder();
   auto ThisVal =

@@ -70,8 +70,9 @@ bool LiveVariables::LivenessValues::isLive(const Expr *E) const {
 bool LiveVariables::LivenessValues::isLive(const VarDecl *D) const {
   if (const auto *DD = dyn_cast<DecompositionDecl>(D)) {
     bool alive = false;
-    for (const BindingDecl *BD : DD->bindings())
+    for (const BindingDecl *BD : DD->bindings()) {
       alive |= liveBindings.contains(BD);
+}
     return alive;
   }
   return liveDecls.contains(D);
@@ -80,8 +81,9 @@ bool LiveVariables::LivenessValues::isLive(const VarDecl *D) const {
 namespace {
   template <typename SET>
   SET mergeSets(SET A, SET B) {
-    if (A.isEmpty())
+    if (A.isEmpty()) {
       return B;
+}
 
     for (typename SET::iterator it = B.begin(), ei = B.end(); it != ei; ++it) {
       A = A.add(*it);
@@ -175,9 +177,11 @@ public:
 static const VariableArrayType *FindVA(QualType Ty) {
   const Type *ty = Ty.getTypePtr();
   while (const ArrayType *VT = dyn_cast<ArrayType>(ty)) {
-    if (const VariableArrayType *VAT = dyn_cast<VariableArrayType>(VT))
-      if (VAT->getSizeExpr())
+    if (const VariableArrayType *VAT = dyn_cast<VariableArrayType>(VT)) {
+      if (VAT->getSizeExpr()) {
         return VAT;
+}
+}
 
     ty = VT->getElementType().getTypePtr();
   }
@@ -187,8 +191,9 @@ static const VariableArrayType *FindVA(QualType Ty) {
 
 static const Expr *LookThroughExpr(const Expr *E) {
   while (E) {
-    if (const Expr *Ex = dyn_cast<Expr>(E))
+    if (const Expr *Ex = dyn_cast<Expr>(E)) {
       E = Ex->IgnoreParens();
+}
     if (const FullExpr *FE = dyn_cast<FullExpr>(E)) {
       E = FE->getSubExpr();
       continue;
@@ -209,8 +214,9 @@ static void AddLiveExpr(llvm::ImmutableSet<const Expr *> &Set,
 }
 
 void TransferFunctions::Visit(Stmt *S) {
-  if (observer)
+  if (observer) {
     observer->observeStmt(S, currentBlock, val);
+}
 
   StmtVisitor<TransferFunctions>::Visit(S);
 
@@ -239,9 +245,10 @@ void TransferFunctions::Visit(Stmt *S) {
     case Stmt::ObjCMessageExprClass: {
       // In calls to super, include the implicit "self" pointer as being live.
       ObjCMessageExpr *CE = cast<ObjCMessageExpr>(S);
-      if (CE->getReceiverKind() == ObjCMessageExpr::SuperInstance)
+      if (CE->getReceiverKind() == ObjCMessageExpr::SuperInstance) {
         val.liveDecls = LV.DSetFact.add(val.liveDecls,
                                         LV.analysisContext.getSelfDecl());
+}
       break;
     }
     case Stmt::DeclStmtClass: {
@@ -258,9 +265,11 @@ void TransferFunctions::Visit(Stmt *S) {
       // A pseudo-object operation only directly consumes its result
       // expression.
       Expr *child = cast<PseudoObjectExpr>(S)->getResultExpr();
-      if (!child) return;
-      if (OpaqueValueExpr *OV = dyn_cast<OpaqueValueExpr>(child))
+      if (!child) { return;
+}
+      if (OpaqueValueExpr *OV = dyn_cast<OpaqueValueExpr>(child)) {
         child = OV->getSourceExpr();
+}
       child = child->IgnoreParens();
       val.liveExprs = LV.ESetFact.add(val.liveExprs, child);
       return;
@@ -314,8 +323,9 @@ void TransferFunctions::Visit(Stmt *S) {
   // fish for live values, for example, arguments from a call expression.
   // Maybe we could take inspiration from UninitializedVariable analysis?
   for (Stmt *Child : S->children()) {
-    if (const auto *E = dyn_cast_or_null<Expr>(Child))
+    if (const auto *E = dyn_cast_or_null<Expr>(Child)) {
       AddLiveExpr(val.liveExprs, LV.ESetFact, E);
+}
   }
 }
 
@@ -326,8 +336,9 @@ static bool writeShouldKill(const VarDecl *VD) {
 
 void TransferFunctions::VisitBinaryOperator(BinaryOperator *B) {
   if (B->isAssignmentOp()) {
-    if (!LV.killAtAssign)
+    if (!LV.killAtAssign) {
       return;
+}
 
     // Assigning to a variable?
     Expr *LHS = B->getLHS()->IgnoreParens();
@@ -338,17 +349,20 @@ void TransferFunctions::VisitBinaryOperator(BinaryOperator *B) {
 
       if (const BindingDecl* BD = dyn_cast<BindingDecl>(D)) {
         Killed = !BD->getType()->isReferenceType();
-        if (Killed)
+        if (Killed) {
           val.liveBindings = LV.BSetFact.remove(val.liveBindings, BD);
+}
       } else if (const auto *VD = dyn_cast<VarDecl>(D)) {
         Killed = writeShouldKill(VD);
-        if (Killed)
+        if (Killed) {
           val.liveDecls = LV.DSetFact.remove(val.liveDecls, VD);
+}
 
       }
 
-      if (Killed && observer)
+      if (Killed && observer) {
         observer->observerKill(DR);
+}
     }
   }
 }
@@ -356,8 +370,9 @@ void TransferFunctions::VisitBinaryOperator(BinaryOperator *B) {
 void TransferFunctions::VisitBlockExpr(BlockExpr *BE) {
   for (const VarDecl *VD :
        LV.analysisContext.getReferencedBlockVars(BE->getBlockDecl())) {
-    if (isAlwaysAlive(VD))
+    if (isAlwaysAlive(VD)) {
       continue;
+}
     val.liveDecls = LV.DSetFact.add(val.liveDecls, VD);
   }
 }
@@ -366,22 +381,26 @@ void TransferFunctions::VisitDeclRefExpr(DeclRefExpr *DR) {
   const Decl* D = DR->getDecl();
   bool InAssignment = LV.inAssignment[DR];
   if (const auto *BD = dyn_cast<BindingDecl>(D)) {
-    if (!InAssignment)
+    if (!InAssignment) {
       val.liveBindings = LV.BSetFact.add(val.liveBindings, BD);
+}
   } else if (const auto *VD = dyn_cast<VarDecl>(D)) {
-    if (!InAssignment && !isAlwaysAlive(VD))
+    if (!InAssignment && !isAlwaysAlive(VD)) {
       val.liveDecls = LV.DSetFact.add(val.liveDecls, VD);
+}
   }
 }
 
 void TransferFunctions::VisitDeclStmt(DeclStmt *DS) {
   for (const auto *DI : DS->decls()) {
     if (const auto *DD = dyn_cast<DecompositionDecl>(DI)) {
-      for (const auto *BD : DD->bindings())
+      for (const auto *BD : DD->bindings()) {
         val.liveBindings = LV.BSetFact.remove(val.liveBindings, BD);
+}
     } else if (const auto *VD = dyn_cast<VarDecl>(DI)) {
-      if (!isAlwaysAlive(VD))
+      if (!isAlwaysAlive(VD)) {
         val.liveDecls = LV.DSetFact.remove(val.liveDecls, VD);
+}
     }
   }
 }
@@ -401,8 +420,9 @@ void TransferFunctions::VisitObjCForCollectionStmt(ObjCForCollectionStmt *OS) {
 
   if (VD) {
     val.liveDecls = LV.DSetFact.remove(val.liveDecls, VD);
-    if (observer && DR)
+    if (observer && DR) {
       observer->observerKill(DR);
+}
   }
 }
 
@@ -412,8 +432,9 @@ VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *UE)
   // While sizeof(var) doesn't technically extend the liveness of 'var', it
   // does extent the liveness of metadata if 'var' is a VariableArrayType.
   // We handle that special case here.
-  if (UE->getKind() != UETT_SizeOf || UE->isArgumentType())
+  if (UE->getKind() != UETT_SizeOf || UE->isArgumentType()) {
     return;
+}
 
   const Expr *subEx = UE->getArgumentExpr();
   if (subEx->getType()->isVariableArrayType()) {
@@ -426,8 +447,9 @@ void TransferFunctions::VisitUnaryOperator(UnaryOperator *UO) {
   // Treat ++/-- as a kill.
   // Note we don't actually have to do anything if we don't have an observer,
   // since a ++/-- acts as both a kill and a "use".
-  if (!observer)
+  if (!observer) {
     return;
+}
 
   switch (UO->getOpcode()) {
   default:
@@ -456,8 +478,9 @@ LiveVariablesImpl::runOnBlock(const CFGBlock *block,
   TransferFunctions TF(*this, val, obs, block);
 
   // Visit the terminator (if any).
-  if (const Stmt *term = block->getTerminatorStmt())
+  if (const Stmt *term = block->getTerminatorStmt()) {
     TF.Visit(const_cast<Stmt*>(term));
+}
 
   // Apply the transfer function for all Stmts in the block.
   for (CFGBlock::const_reverse_iterator it = block->rbegin(),
@@ -470,8 +493,9 @@ LiveVariablesImpl::runOnBlock(const CFGBlock *block,
       continue;
     }
 
-    if (!elem.getAs<CFGStmt>())
+    if (!elem.getAs<CFGStmt>()) {
       continue;
+}
 
     const Stmt *S = elem.castAs<CFGStmt>().getStmt();
     TF.Visit(const_cast<Stmt*>(S));
@@ -482,8 +506,9 @@ LiveVariablesImpl::runOnBlock(const CFGBlock *block,
 
 void LiveVariables::runOnAllBlocks(LiveVariables::Observer &obs) {
   const CFG *cfg = getImpl(impl).analysisContext.getCFG();
-  for (CFG::const_iterator it = cfg->begin(), ei = cfg->end(); it != ei; ++it)
+  for (CFG::const_iterator it = cfg->begin(), ei = cfg->end(); it != ei; ++it) {
     getImpl(impl).runOnBlock(*it, getImpl(impl).blocksEndToLiveness[*it], &obs);
+}
 }
 
 LiveVariables::LiveVariables(void *im) : impl(im) {}
@@ -497,13 +522,15 @@ LiveVariables::computeLiveness(AnalysisDeclContext &AC, bool killAtAssign) {
 
   // No CFG?  Bail out.
   CFG *cfg = AC.getCFG();
-  if (!cfg)
+  if (!cfg) {
     return nullptr;
+}
 
   // The analysis currently has scalability issues for very large CFGs.
   // Bail out if it looks too large.
-  if (cfg->getNumBlockIDs() > 300000)
+  if (cfg->getNumBlockIDs() > 300000) {
     return nullptr;
+}
 
   LiveVariablesImpl *LV = new LiveVariablesImpl(AC, killAtAssign);
 
@@ -521,7 +548,7 @@ LiveVariables::computeLiveness(AnalysisDeclContext &AC, bool killAtAssign) {
     // We need to do this because we lack context in the reverse analysis
     // to determine if a DeclRefExpr appears in such a context, and thus
     // doesn't constitute a "use".
-    if (killAtAssign)
+    if (killAtAssign) {
       for (CFGBlock::const_iterator bi = block->begin(), be = block->end();
            bi != be; ++bi) {
         if (Optional<CFGStmt> cs = bi->getAs<CFGStmt>()) {
@@ -536,6 +563,7 @@ LiveVariables::computeLiveness(AnalysisDeclContext &AC, bool killAtAssign) {
           }
         }
       }
+}
   }
 
   while (const CFGBlock *block = worklist.dequeue()) {
@@ -552,10 +580,11 @@ LiveVariables::computeLiveness(AnalysisDeclContext &AC, bool killAtAssign) {
       }
     }
 
-    if (!everAnalyzedBlock[block->getBlockID()])
+    if (!everAnalyzedBlock[block->getBlockID()]) {
       everAnalyzedBlock[block->getBlockID()] = true;
-    else if (prevVal.equals(val))
+    } else if (prevVal.equals(val)) {
       continue;
+}
 
     prevVal = val;
 

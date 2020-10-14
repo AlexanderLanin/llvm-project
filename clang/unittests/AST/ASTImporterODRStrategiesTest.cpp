@@ -279,10 +279,12 @@ struct ODRViolation : ASTImporterOptionSpecificTestBase {
     EXPECT_EQ(DeclCounter<DeclTy>().match(ToTU, getPattern()), 2u);
 
     // There may be a hidden fwd spec decl before a function spec decl.
-    if (auto *ImportedF = dyn_cast<FunctionDecl>(ImportedD))
+    if (auto *ImportedF = dyn_cast<FunctionDecl>(ImportedD)) {
       if (ImportedF->getTemplatedKind() ==
-          FunctionDecl::TK_FunctionTemplateSpecialization)
+          FunctionDecl::TK_FunctionTemplateSpecialization) {
         return;
+}
+}
 
     EXPECT_FALSE(ImportedD->getPreviousDecl());
   }

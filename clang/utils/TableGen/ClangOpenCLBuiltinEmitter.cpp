@@ -740,17 +740,20 @@ static void OCL2Qual(ASTContext &Context, const OpenCLTypeStruct &Ty,
 
   for (const auto *T : Types) {
     // Check this is not an image type
-    if (ImageTypesMap.find(T->getValueAsString("Name")) != ImageTypesMap.end())
+    if (ImageTypesMap.find(T->getValueAsString("Name")) != ImageTypesMap.end()) {
       continue;
+}
     // Check we have not seen this Type
-    if (TypesSeen.find(T->getValueAsString("Name")) != TypesSeen.end())
+    if (TypesSeen.find(T->getValueAsString("Name")) != TypesSeen.end()) {
       continue;
+}
     TypesSeen.insert(std::make_pair(T->getValueAsString("Name"), true));
 
     // Check the Type does not have an "abstract" QualType
     auto QT = T->getValueAsDef("QTName");
-    if (QT->getValueAsBit("IsAbstract") == 1)
+    if (QT->getValueAsBit("IsAbstract") == 1) {
       continue;
+}
     // Emit the cases for non generic, non image types.
     OS << "    case OCLT_" << T->getValueAsString("Name") << ":\n";
     OS << "      QT.push_back(Context." << QT->getValueAsString("Name")

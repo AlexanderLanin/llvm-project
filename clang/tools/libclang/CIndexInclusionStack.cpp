@@ -31,18 +31,21 @@ void getInclusions(bool IsLocal, unsigned n, CXTranslationUnit TU,
     bool Invalid = false;
     const SrcMgr::SLocEntry &SL =
         IsLocal ? SM.getLocalSLocEntry(i) : SM.getLoadedSLocEntry(i, &Invalid);
-    if (!SL.isFile() || Invalid)
+    if (!SL.isFile() || Invalid) {
       continue;
+}
 
     const SrcMgr::FileInfo &FI = SL.getFile();
-    if (!FI.getContentCache()->OrigEntry)
+    if (!FI.getContentCache()->OrigEntry) {
       continue;
+}
 
     // If this is the main file, and there is a preamble, skip this SLoc. The
     // inclusions of the preamble already showed it.
     SourceLocation L = FI.getIncludeLoc();
-    if (HasPreamble && CXXUnit->isInMainFileID(L))
+    if (HasPreamble && CXXUnit->isInMainFileID(L)) {
       continue;
+}
 
     // Build the inclusion stack.
     InclusionStack.clear();
@@ -54,8 +57,9 @@ void getInclusions(bool IsLocal, unsigned n, CXTranslationUnit TU,
 
     // If there is a preamble, the last entry is the "inclusion" of that
     // preamble into the main file, which has the bogus entry of main.c:1:1
-    if (HasPreamble && !InclusionStack.empty())
+    if (HasPreamble && !InclusionStack.empty()) {
       InclusionStack.pop_back();
+}
 
     // Callback to the client.
     // FIXME: We should have a function to construct CXFiles.
@@ -89,6 +93,7 @@ void clang_getInclusions(CXTranslationUnit TU, CXInclusionVisitor CB,
   // Not a PCH/AST file. Note, if there is a preamble, it could still be that
   // there are #includes in this file (e.g. for any include after the first
   // declaration).
-  if (n != 1)
+  if (n != 1) {
     getInclusions(/*IsLocal=*/true, n, TU, CB, clientData);
+}
 }

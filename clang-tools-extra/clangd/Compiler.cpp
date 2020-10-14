@@ -45,8 +45,9 @@ std::unique_ptr<CompilerInvocation>
 buildCompilerInvocation(const ParseInputs &Inputs, clang::DiagnosticConsumer &D,
                         std::vector<std::string> *CC1Args) {
   std::vector<const char *> ArgStrs;
-  for (const auto &S : Inputs.CompileCommand.CommandLine)
+  for (const auto &S : Inputs.CompileCommand.CommandLine) {
     ArgStrs.push_back(S.c_str());
+}
 
   auto VFS = Inputs.TFS->view(Inputs.CompileCommand.Directory);
   llvm::IntrusiveRefCntPtr<DiagnosticsEngine> CommandLineDiagsEngine =
@@ -54,8 +55,9 @@ buildCompilerInvocation(const ParseInputs &Inputs, clang::DiagnosticConsumer &D,
   std::unique_ptr<CompilerInvocation> CI = createInvocationFromCommandLine(
       ArgStrs, CommandLineDiagsEngine, std::move(VFS),
       /*ShouldRecoverOnErrors=*/true, CC1Args);
-  if (!CI)
+  if (!CI) {
     return nullptr;
+}
   // createInvocationFromCommandLine sets DisableFree.
   CI->getFrontendOpts().DisableFree = false;
   CI->getLangOpts()->CommentOpts.ParseAllComments = true;
@@ -115,14 +117,16 @@ prepareCompilerInstance(std::unique_ptr<clang::CompilerInvocation> CI,
   Clang->createDiagnostics(&DiagsClient, false);
 
   if (auto VFSWithRemapping = createVFSFromCompilerInvocation(
-          Clang->getInvocation(), Clang->getDiagnostics(), VFS))
+          Clang->getInvocation(), Clang->getDiagnostics(), VFS)) {
     VFS = VFSWithRemapping;
+}
   Clang->createFileManager(VFS);
 
   Clang->setTarget(TargetInfo::CreateTargetInfo(
       Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
-  if (!Clang->hasTarget())
+  if (!Clang->hasTarget()) {
     return nullptr;
+}
 
   // RemappedFileBuffers will handle the lifetime of the Buffer pointer,
   // release it.

@@ -25,23 +25,27 @@ FindAllMacros::CreateMacroSymbol(const Token &MacroNameTok,
                                  const MacroInfo *info) {
   std::string FilePath =
       getIncludePath(*SM, info->getDefinitionLoc(), Collector);
-  if (FilePath.empty())
+  if (FilePath.empty()) {
     return llvm::None;
+}
   return SymbolInfo(MacroNameTok.getIdentifierInfo()->getName(),
                     SymbolInfo::SymbolKind::Macro, FilePath, {});
 }
 
 void FindAllMacros::MacroDefined(const Token &MacroNameTok,
                                  const MacroDirective *MD) {
-  if (auto Symbol = CreateMacroSymbol(MacroNameTok, MD->getMacroInfo()))
+  if (auto Symbol = CreateMacroSymbol(MacroNameTok, MD->getMacroInfo())) {
     ++FileSymbols[*Symbol].Seen;
+}
 }
 
 void FindAllMacros::MacroUsed(const Token &Name, const MacroDefinition &MD) {
-  if (!MD || !SM->isInMainFile(SM->getExpansionLoc(Name.getLocation())))
+  if (!MD || !SM->isInMainFile(SM->getExpansionLoc(Name.getLocation()))) {
     return;
-  if (auto Symbol = CreateMacroSymbol(Name, MD.getMacroInfo()))
+}
+  if (auto Symbol = CreateMacroSymbol(Name, MD.getMacroInfo())) {
     ++FileSymbols[*Symbol].Used;
+}
 }
 
 void FindAllMacros::MacroExpands(const Token &MacroNameTok,

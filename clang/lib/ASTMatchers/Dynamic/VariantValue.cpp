@@ -36,19 +36,23 @@ std::string ArgKind::asString() const {
 }
 
 bool ArgKind::isConvertibleTo(ArgKind To, unsigned *Specificity) const {
-  if (K != To.K)
+  if (K != To.K) {
     return false;
+}
   if (K != AK_Matcher) {
-    if (Specificity)
+    if (Specificity) {
       *Specificity = 1;
+}
     return true;
   }
   unsigned Distance;
-  if (!MatcherKind.isBaseOf(To.MatcherKind, &Distance))
+  if (!MatcherKind.isBaseOf(To.MatcherKind, &Distance)) {
     return false;
+}
 
-  if (Specificity)
+  if (Specificity) {
     *Specificity = 100 - Distance;
+}
   return true;
 }
 
@@ -67,12 +71,14 @@ VariantMatcher::MatcherOps::constructVariadicOperator(
   for (const auto &InnerMatcher : InnerMatchers) {
     // Abort if any of the inner matchers can't be converted to
     // Matcher<T>.
-    if (!InnerMatcher.Value)
+    if (!InnerMatcher.Value) {
       return llvm::None;
+}
     llvm::Optional<DynTypedMatcher> Inner =
         InnerMatcher.Value->getTypedMatcher(*this);
-    if (!Inner)
+    if (!Inner) {
       return llvm::None;
+}
     DynMatchers.push_back(*Inner);
   }
   return DynTypedMatcher::constructVariadic(Op, NodeKind, DynMatchers);
@@ -96,8 +102,9 @@ public:
   llvm::Optional<DynTypedMatcher>
   getTypedMatcher(const MatcherOps &Ops) const override {
     bool Ignore;
-    if (Ops.canConstructFrom(Matcher, Ignore))
+    if (Ops.canConstructFrom(Matcher, Ignore)) {
       return Matcher;
+}
     return llvm::None;
   }
 
@@ -118,16 +125,18 @@ public:
   ~PolymorphicPayload() override {}
 
   llvm::Optional<DynTypedMatcher> getSingleMatcher() const override {
-    if (Matchers.size() != 1)
+    if (Matchers.size() != 1) {
       return llvm::Optional<DynTypedMatcher>();
+}
     return Matchers[0];
   }
 
   std::string getTypeAsString() const override {
     std::string Inner;
     for (size_t i = 0, e = Matchers.size(); i != e; ++i) {
-      if (i != 0)
+      if (i != 0) {
         Inner += "|";
+}
       Inner += Matchers[i].getSupportedKind().asStringRef();
     }
     return (Twine("Matcher<") + Inner + ">").str();
@@ -153,8 +162,9 @@ public:
       }
     }
     // We only succeed if we found exactly one, or if we found an exact match.
-    if (Found && (FoundIsExact || NumFound == 1))
+    if (Found && (FoundIsExact || NumFound == 1)) {
       return *Found;
+}
     return llvm::None;
   }
 
@@ -167,8 +177,9 @@ public:
         MaxSpecificity = std::max(MaxSpecificity, ThisSpecificity);
       }
     }
-    if (Specificity)
+    if (Specificity) {
       *Specificity = MaxSpecificity;
+}
     return MaxSpecificity > 0;
   }
 
@@ -188,8 +199,9 @@ public:
   std::string getTypeAsString() const override {
     std::string Inner;
     for (size_t i = 0, e = Args.size(); i != e; ++i) {
-      if (i != 0)
+      if (i != 0) {
         Inner += "&";
+}
       Inner += Args[i].getTypeAsString();
     }
     return Inner;
@@ -202,8 +214,9 @@ public:
 
   bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity) const override {
     for (const VariantMatcher &Matcher : Args) {
-      if (!Matcher.isConvertibleTo(Kind, Specificity))
+      if (!Matcher.isConvertibleTo(Kind, Specificity)) {
         return false;
+}
     }
     return true;
   }
@@ -239,7 +252,8 @@ llvm::Optional<DynTypedMatcher> VariantMatcher::getSingleMatcher() const {
 void VariantMatcher::reset() { Value.reset(); }
 
 std::string VariantMatcher::getTypeAsString() const {
-  if (Value) return Value->getTypeAsString();
+  if (Value) { return Value->getTypeAsString();
+}
   return "<Nothing>";
 }
 
@@ -270,7 +284,8 @@ VariantValue::VariantValue(const VariantMatcher &Matcher) : Type(VT_Nothing) {
 VariantValue::~VariantValue() { reset(); }
 
 VariantValue &VariantValue::operator=(const VariantValue &Other) {
-  if (this == &Other) return *this;
+  if (this == &Other) { return *this;
+}
   reset();
   switch (Other.Type) {
   case VT_Boolean:
@@ -391,32 +406,37 @@ void VariantValue::setMatcher(const VariantMatcher &NewValue) {
 bool VariantValue::isConvertibleTo(ArgKind Kind, unsigned *Specificity) const {
   switch (Kind.getArgKind()) {
   case ArgKind::AK_Boolean:
-    if (!isBoolean())
+    if (!isBoolean()) {
       return false;
+}
     *Specificity = 1;
     return true;
 
   case ArgKind::AK_Double:
-    if (!isDouble())
+    if (!isDouble()) {
       return false;
+}
     *Specificity = 1;
     return true;
 
   case ArgKind::AK_Unsigned:
-    if (!isUnsigned())
+    if (!isUnsigned()) {
       return false;
+}
     *Specificity = 1;
     return true;
 
   case ArgKind::AK_String:
-    if (!isString())
+    if (!isString()) {
       return false;
+}
     *Specificity = 1;
     return true;
 
   case ArgKind::AK_Matcher:
-    if (!isMatcher())
+    if (!isMatcher()) {
       return false;
+}
     return getMatcher().isConvertibleTo(Kind.getMatcherKind(), Specificity);
   }
   llvm_unreachable("Invalid Type");
@@ -427,8 +447,9 @@ bool VariantValue::isConvertibleTo(ArrayRef<ArgKind> Kinds,
   unsigned MaxSpecificity = 0;
   for (const ArgKind& Kind : Kinds) {
     unsigned ThisSpecificity;
-    if (!isConvertibleTo(Kind, &ThisSpecificity))
+    if (!isConvertibleTo(Kind, &ThisSpecificity)) {
       continue;
+}
     MaxSpecificity = std::max(MaxSpecificity, ThisSpecificity);
   }
   if (Specificity && MaxSpecificity > 0) {

@@ -37,11 +37,13 @@ void BackgroundQueue::work(std::function<void()> OnIdle) {
     }
 
     if (Task->ThreadPri != llvm::ThreadPriority::Default &&
-        !PreventStarvation.load())
+        !PreventStarvation.load()) {
       llvm::set_thread_priority(Task->ThreadPri);
+}
     Task->Run();
-    if (Task->ThreadPri != llvm::ThreadPriority::Default)
+    if (Task->ThreadPri != llvm::ThreadPriority::Default) {
       llvm::set_thread_priority(llvm::ThreadPriority::Default);
+}
 
     {
       std::unique_lock<std::mutex> Lock(Mu);
@@ -87,8 +89,9 @@ void BackgroundQueue::push(Task T) {
 void BackgroundQueue::append(std::vector<Task> Tasks) {
   {
     std::lock_guard<std::mutex> Lock(Mu);
-    for (Task &T : Tasks)
+    for (Task &T : Tasks) {
       T.QueuePri = std::max(T.QueuePri, Boosts.lookup(T.Tag));
+}
     std::move(Tasks.begin(), Tasks.end(), std::back_inserter(Queue));
     std::make_heap(Queue.begin(), Queue.end());
     Stat.Enqueued += Tasks.size();
@@ -102,17 +105,20 @@ void BackgroundQueue::boost(llvm::StringRef Tag, unsigned NewPriority) {
   unsigned &Boost = Boosts[Tag];
   bool Increase = NewPriority > Boost;
   Boost = NewPriority;
-  if (!Increase)
+  if (!Increase) {
     return; // existing tasks unaffected
+}
 
   unsigned Changes = 0;
-  for (Task &T : Queue)
+  for (Task &T : Queue) {
     if (Tag == T.Tag && NewPriority > T.QueuePri) {
       T.QueuePri = NewPriority;
       ++Changes;
     }
-  if (Changes)
+}
+  if (Changes) {
     std::make_heap(Queue.begin(), Queue.end());
+}
   // No need to signal, only rearranged items in the queue.
 }
 
@@ -126,8 +132,9 @@ bool BackgroundQueue::blockUntilIdleForTest(
 void BackgroundQueue::notifyProgress() const {
   dlog("Queue: {0}/{1} ({2} active). Last idle at {3}", Stat.Completed,
        Stat.Enqueued, Stat.Active, Stat.LastIdle);
-  if (OnProgress)
+  if (OnProgress) {
     OnProgress(Stat);
+}
 }
 
 } // namespace clangd

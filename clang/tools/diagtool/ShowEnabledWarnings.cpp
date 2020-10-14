@@ -68,14 +68,16 @@ createDiagnostics(unsigned int argc, char **argv) {
   Args.append(argv, argv + argc);
   std::unique_ptr<CompilerInvocation> Invocation =
       createInvocationFromCommandLine(Args, InterimDiags);
-  if (!Invocation)
+  if (!Invocation) {
     return nullptr;
+}
 
   // Build the diagnostics parser
   IntrusiveRefCntPtr<DiagnosticsEngine> FinalDiags =
     CompilerInstance::createDiagnostics(&Invocation->getDiagnosticOpts());
-  if (!FinalDiags)
+  if (!FinalDiags) {
     return nullptr;
+}
 
   // Flush any errors created when initializing everything. This could happen
   // for invalid command lines, which will probably give non-sensical results.
@@ -116,16 +118,19 @@ int ShowEnabledWarnings::run(unsigned int argc, char **argv, raw_ostream &Out) {
   for (const DiagnosticRecord &DR : getBuiltinDiagnosticsByName()) {
     unsigned DiagID = DR.DiagID;
 
-    if (DiagnosticIDs::isBuiltinNote(DiagID))
+    if (DiagnosticIDs::isBuiltinNote(DiagID)) {
       continue;
+}
 
-    if (!DiagnosticIDs::isBuiltinWarningOrExtension(DiagID))
+    if (!DiagnosticIDs::isBuiltinWarningOrExtension(DiagID)) {
       continue;
+}
 
     DiagnosticsEngine::Level DiagLevel =
       Diags->getDiagnosticLevel(DiagID, SourceLocation());
-    if (DiagLevel == DiagnosticsEngine::Ignored)
+    if (DiagLevel == DiagnosticsEngine::Ignored) {
       continue;
+}
 
     StringRef WarningOpt = DiagnosticIDs::getWarningOptionForDiag(DiagID);
     Active.push_back(PrettyDiag(DR.getName(), WarningOpt, DiagLevel));
@@ -133,11 +138,13 @@ int ShowEnabledWarnings::run(unsigned int argc, char **argv, raw_ostream &Out) {
 
   // Print them all out.
   for (const PrettyDiag &PD : Active) {
-    if (ShouldShowLevels)
+    if (ShouldShowLevels) {
       Out << getCharForLevel(PD.Level) << "  ";
+}
     Out << PD.Name;
-    if (!PD.Flag.empty())
+    if (!PD.Flag.empty()) {
       Out << " [-W" << PD.Flag << "]";
+}
     Out << '\n';
   }
 

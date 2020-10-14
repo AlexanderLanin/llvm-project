@@ -30,9 +30,9 @@ LoggingSession::~LoggingSession() { L = nullptr; }
 
 void detail::log(Logger::Level Level,
                  const llvm::formatv_object_base &Message) {
-  if (L)
+  if (L) {
     L->log(Level, Message);
-  else {
+  } else {
     static std::mutex Mu;
     std::lock_guard<std::mutex> Guard(Mu);
     llvm::errs() << Message << "\n";
@@ -40,17 +40,20 @@ void detail::log(Logger::Level Level,
 }
 
 const char *detail::debugType(const char *Filename) {
-  if (const char *Slash = strrchr(Filename, '/'))
+  if (const char *Slash = strrchr(Filename, '/')) {
     return Slash + 1;
-  if (const char *Backslash = strrchr(Filename, '\\'))
+}
+  if (const char *Backslash = strrchr(Filename, '\\')) {
     return Backslash + 1;
+}
   return Filename;
 }
 
 void StreamLogger::log(Logger::Level Level,
                        const llvm::formatv_object_base &Message) {
-  if (Level < MinLevel)
+  if (Level < MinLevel) {
     return;
+}
   llvm::sys::TimePoint<> Timestamp = std::chrono::system_clock::now();
   trace::log(Message);
   std::lock_guard<std::mutex> Guard(StreamMutex);

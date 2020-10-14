@@ -103,9 +103,10 @@ public:
   }
   ComplexPairTy VisitExpr(Expr *S);
   ComplexPairTy VisitConstantExpr(ConstantExpr *E) {
-    if (llvm::Constant *Result = ConstantEmitter(CGF).tryEmitConstantExpr(E))
+    if (llvm::Constant *Result = ConstantEmitter(CGF).tryEmitConstantExpr(E)) {
       return ComplexPairTy(Result->getAggregateElement(0U),
                            Result->getAggregateElement(1U));
+}
     return Visit(E->getSubExpr());
   }
   ComplexPairTy VisitParenExpr(ParenExpr *PE) { return Visit(PE->getSubExpr());}
@@ -130,9 +131,10 @@ public:
   ComplexPairTy emitConstant(const CodeGenFunction::ConstantEmission &Constant,
                              Expr *E) {
     assert(Constant && "not a constant");
-    if (Constant.isReference())
+    if (Constant.isReference()) {
       return EmitLoadOfLValue(Constant.getReferenceLValue(CGF, E),
                               E->getExprLoc());
+}
 
     llvm::Constant *pair = Constant.getValue();
     return ComplexPairTy(pair->getAggregateElement(0U),
@@ -141,8 +143,9 @@ public:
 
   // l-values.
   ComplexPairTy VisitDeclRefExpr(DeclRefExpr *E) {
-    if (CodeGenFunction::ConstantEmission Constant = CGF.tryEmitAsConstant(E))
+    if (CodeGenFunction::ConstantEmission Constant = CGF.tryEmitAsConstant(E)) {
       return emitConstant(Constant, E);
+}
     return EmitLoadOfLValue(E);
   }
   ComplexPairTy VisitObjCIvarRefExpr(ObjCIvarRefExpr *E) {
@@ -161,9 +164,10 @@ public:
     return EmitLoadOfLValue(ME);
   }
   ComplexPairTy VisitOpaqueValueExpr(OpaqueValueExpr *E) {
-    if (E->isGLValue())
+    if (E->isGLValue()) {
       return EmitLoadOfLValue(CGF.getOrCreateOpaqueLValueMapping(E),
                               E->getExprLoc());
+}
     return CGF.getOrCreateOpaqueRValueMapping(E).getComplexVal();
   }
 
@@ -180,8 +184,9 @@ public:
     return EmitCast(E->getCastKind(), E->getSubExpr(), E->getType());
   }
   ComplexPairTy VisitCastExpr(CastExpr *E) {
-    if (const auto *ECE = dyn_cast<ExplicitCastExpr>(E))
+    if (const auto *ECE = dyn_cast<ExplicitCastExpr>(E)) {
       CGF.CGM.EmitExplicitCastExprType(ECE, &CGF);
+}
     return EmitCast(E->getCastKind(), E->getSubExpr(), E->getType());
   }
   ComplexPairTy VisitCallExpr(const CallExpr *E);
@@ -349,8 +354,9 @@ Address CodeGenFunction::emitAddrOfImagComponent(Address addr,
 ComplexPairTy ComplexExprEmitter::EmitLoadOfLValue(LValue lvalue,
                                                    SourceLocation loc) {
   assert(lvalue.isSimple() && "non-simple complex l-value?");
-  if (lvalue.getType()->isAtomicType())
+  if (lvalue.getType()->isAtomicType()) {
     return CGF.EmitAtomicLoad(lvalue, loc).getComplexVal();
+}
 
   Address SrcPtr = lvalue.getAddress(CGF);
   bool isVolatile = lvalue.isVolatileQualified();
@@ -375,8 +381,9 @@ ComplexPairTy ComplexExprEmitter::EmitLoadOfLValue(LValue lvalue,
 void ComplexExprEmitter::EmitStoreOfComplex(ComplexPairTy Val, LValue lvalue,
                                             bool isInit) {
   if (lvalue.getType()->isAtomicType() ||
-      (!isInit && CGF.LValueIsSuitableForInlineAtomic(lvalue)))
+      (!isInit && CGF.LValueIsSuitableForInlineAtomic(lvalue))) {
     return CGF.EmitAtomicStore(RValue::getComplex(Val), lvalue, isInit);
+}
 
   Address Ptr = lvalue.getAddress(CGF);
   Address RealPtr = CGF.emitAddrOfRealComponent(Ptr, lvalue.getType());
@@ -408,8 +415,9 @@ VisitImaginaryLiteral(const ImaginaryLiteral *IL) {
 
 
 ComplexPairTy ComplexExprEmitter::VisitCallExpr(const CallExpr *E) {
-  if (E->getCallReturnType(CGF.getContext())->isReferenceType())
+  if (E->getCallReturnType(CGF.getContext())->isReferenceType()) {
     return EmitLoadOfLValue(E);
+}
 
   return CGF.EmitCallExpr(E).getComplexVal();
 }
@@ -434,10 +442,12 @@ ComplexPairTy ComplexExprEmitter::EmitComplexToComplexCast(ComplexPairTy Val,
   // C99 6.3.1.6: When a value of complex type is converted to another
   // complex type, both the real and imaginary parts follow the conversion
   // rules for the corresponding real types.
-  if (Val.first)
+  if (Val.first) {
     Val.first = CGF.EmitScalarConversion(Val.first, SrcType, DestType, Loc);
-  if (Val.second)
+}
+  if (Val.second) {
     Val.second = CGF.EmitScalarConversion(Val.second, SrcType, DestType, Loc);
+}
   return Val;
 }
 
@@ -571,10 +581,11 @@ ComplexPairTy ComplexExprEmitter::VisitUnaryNot(const UnaryOperator *E) {
   // ~(a+ib) = a + i*-b
   ComplexPairTy Op = Visit(E->getSubExpr());
   llvm::Value *ResI;
-  if (Op.second->getType()->isFloatingPointTy())
+  if (Op.second->getType()->isFloatingPointTy()) {
     ResI = Builder.CreateFNeg(Op.second, "conj.i");
-  else
+  } else {
     ResI = Builder.CreateNeg(Op.second, "conj.i");
+}
 
   return ComplexPairTy(Op.first, ResI);
 }
@@ -584,10 +595,11 @@ ComplexPairTy ComplexExprEmitter::EmitBinAdd(const BinOpInfo &Op) {
 
   if (Op.LHS.first->getType()->isFloatingPointTy()) {
     ResR = Builder.CreateFAdd(Op.LHS.first,  Op.RHS.first,  "add.r");
-    if (Op.LHS.second && Op.RHS.second)
+    if (Op.LHS.second && Op.RHS.second) {
       ResI = Builder.CreateFAdd(Op.LHS.second, Op.RHS.second, "add.i");
-    else
+    } else {
       ResI = Op.LHS.second ? Op.LHS.second : Op.RHS.second;
+}
     assert(ResI && "Only one operand may be real!");
   } else {
     ResR = Builder.CreateAdd(Op.LHS.first,  Op.RHS.first,  "add.r");
@@ -602,11 +614,12 @@ ComplexPairTy ComplexExprEmitter::EmitBinSub(const BinOpInfo &Op) {
   llvm::Value *ResR, *ResI;
   if (Op.LHS.first->getType()->isFloatingPointTy()) {
     ResR = Builder.CreateFSub(Op.LHS.first, Op.RHS.first, "sub.r");
-    if (Op.LHS.second && Op.RHS.second)
+    if (Op.LHS.second && Op.RHS.second) {
       ResI = Builder.CreateFSub(Op.LHS.second, Op.RHS.second, "sub.i");
-    else
+    } else {
       ResI = Op.LHS.second ? Op.LHS.second
                            : Builder.CreateFNeg(Op.RHS.second, "sub.i");
+}
     assert(ResI && "Only one operand may be real!");
   } else {
     ResR = Builder.CreateSub(Op.LHS.first, Op.RHS.first, "sub.r");
@@ -797,8 +810,9 @@ ComplexPairTy ComplexExprEmitter::EmitBinDiv(const BinOpInfo &Op) {
     if (RHSi && !CGF.getLangOpts().FastMath) {
       BinOpInfo LibCallOp = Op;
       // If LHS was a real, supply a null imaginary part.
-      if (!LHSi)
+      if (!LHSi) {
         LibCallOp.LHS.second = llvm::Constant::getNullValue(LHSr->getType());
+}
 
       switch (LHSr->getType()->getTypeID()) {
       default:
@@ -817,8 +831,9 @@ ComplexPairTy ComplexExprEmitter::EmitBinDiv(const BinOpInfo &Op) {
         return EmitComplexBinOpLibCall("__divtc3", LibCallOp);
       }
     } else if (RHSi) {
-      if (!LHSi)
+      if (!LHSi) {
         LHSi = llvm::Constant::getNullValue(RHSi->getType());
+}
 
       // (a+ib) / (c+id) = ((ac+bd)/(cc+dd)) + i((bc-ad)/(cc+dd))
       llvm::Value *AC = Builder.CreateFMul(LHSr, RHSr); // a*c
@@ -874,14 +889,16 @@ ComplexExprEmitter::EmitBinOps(const BinaryOperator *E) {
   TestAndClearIgnoreReal();
   TestAndClearIgnoreImag();
   BinOpInfo Ops;
-  if (E->getLHS()->getType()->isRealFloatingType())
+  if (E->getLHS()->getType()->isRealFloatingType()) {
     Ops.LHS = ComplexPairTy(CGF.EmitScalarExpr(E->getLHS()), nullptr);
-  else
+  } else {
     Ops.LHS = Visit(E->getLHS());
-  if (E->getRHS()->getType()->isRealFloatingType())
+}
+  if (E->getRHS()->getType()->isRealFloatingType()) {
     Ops.RHS = ComplexPairTy(CGF.EmitScalarExpr(E->getRHS()), nullptr);
-  else
+  } else {
     Ops.RHS = Visit(E->getRHS());
+}
 
   Ops.Ty = E->getType();
   return Ops;
@@ -895,8 +912,9 @@ EmitCompoundAssignLValue(const CompoundAssignOperator *E,
   TestAndClearIgnoreReal();
   TestAndClearIgnoreImag();
   QualType LHSTy = E->getLHS()->getType();
-  if (const AtomicType *AT = LHSTy->getAs<AtomicType>())
+  if (const AtomicType *AT = LHSTy->getAs<AtomicType>()) {
     LHSTy = AT->getValueType();
+}
 
   BinOpInfo OpInfo;
 
@@ -930,8 +948,9 @@ EmitCompoundAssignLValue(const CompoundAssignOperator *E,
     // For floating point real operands we can directly pass the scalar form
     // to the binary operator emission and potentially get more efficient code.
     if (LHSTy->isRealFloatingType()) {
-      if (!CGF.getContext().hasSameUnqualifiedType(ComplexElementTy, LHSTy))
+      if (!CGF.getContext().hasSameUnqualifiedType(ComplexElementTy, LHSTy)) {
         LHSVal = CGF.EmitScalarConversion(LHSVal, LHSTy, ComplexElementTy, Loc);
+}
       OpInfo.LHS = ComplexPairTy(LHSVal, nullptr);
     } else {
       OpInfo.LHS = EmitScalarToComplexCast(LHSVal, LHSTy, OpInfo.Ty, Loc);
@@ -965,12 +984,14 @@ EmitCompoundAssign(const CompoundAssignOperator *E,
   LValue LV = EmitCompoundAssignLValue(E, Func, Val);
 
   // The result of an assignment in C is the assigned r-value.
-  if (!CGF.getLangOpts().CPlusPlus)
+  if (!CGF.getLangOpts().CPlusPlus) {
     return Val.getComplexVal();
+}
 
   // If the lvalue is non-volatile, return the computed value of the assignment.
-  if (!LV.isVolatileQualified())
+  if (!LV.isVolatileQualified()) {
     return Val.getComplexVal();
+}
 
   return EmitLoadOfLValue(LV, E->getExprLoc());
 }
@@ -1000,12 +1021,14 @@ ComplexPairTy ComplexExprEmitter::VisitBinAssign(const BinaryOperator *E) {
   LValue LV = EmitBinAssignLValue(E, Val);
 
   // The result of an assignment in C is the assigned r-value.
-  if (!CGF.getLangOpts().CPlusPlus)
+  if (!CGF.getLangOpts().CPlusPlus) {
     return Val;
+}
 
   // If the lvalue is non-volatile, return the computed value of the assignment.
-  if (!LV.isVolatileQualified())
+  if (!LV.isVolatileQualified()) {
     return Val;
+}
 
   return EmitLoadOfLValue(LV, E->getExprLoc());
 }
@@ -1143,9 +1166,10 @@ LValue CodeGenFunction::EmitComplexAssignmentLValue(const BinaryOperator *E) {
   assert(E->getOpcode() == BO_Assign);
   ComplexPairTy Val; // ignored
   LValue LVal = ComplexExprEmitter(*this).EmitBinAssignLValue(E, Val);
-  if (getLangOpts().OpenMP)
+  if (getLangOpts().OpenMP) {
     CGM.getOpenMPRuntime().checkAndEmitLastprivateConditional(*this,
                                                               E->getLHS());
+}
   return LVal;
 }
 

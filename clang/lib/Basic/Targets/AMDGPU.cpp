@@ -256,8 +256,9 @@ bool AMDGPUTargetInfo::initFeatureMap(
       llvm_unreachable("Unhandled GPU!");
     }
   } else {
-    if (CPU.empty())
+    if (CPU.empty()) {
       CPU = "r600";
+}
 
     switch (llvm::AMDGPU::parseArchR600(CPU)) {
     case GK_CAYMAN:
@@ -289,10 +290,11 @@ bool AMDGPUTargetInfo::initFeatureMap(
 
 void AMDGPUTargetInfo::fillValidCPUList(
     SmallVectorImpl<StringRef> &Values) const {
-  if (isAMDGCN(getTriple()))
+  if (isAMDGCN(getTriple())) {
     llvm::AMDGPU::fillValidArchListAMDGCN(Values);
-  else
+  } else {
     llvm::AMDGPU::fillValidArchListR600(Values);
+}
 }
 
 void AMDGPUTargetInfo::setAddressSpaceMap(bool DefaultIsPrivate) {
@@ -352,10 +354,11 @@ void AMDGPUTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__AMD__");
   Builder.defineMacro("__AMDGPU__");
 
-  if (isAMDGCN(getTriple()))
+  if (isAMDGCN(getTriple())) {
     Builder.defineMacro("__AMDGCN__");
-  else
+  } else {
     Builder.defineMacro("__R600__");
+}
 
   if (GPUKind != llvm::AMDGPU::GK_NONE) {
     StringRef CanonName = isAMDGCN(getTriple()) ?
@@ -382,16 +385,21 @@ void AMDGPUTargetInfo::getTargetDefines(const LangOptions &Opts,
 
   // TODO: __HAS_FMAF__, __HAS_LDEXPF__, __HAS_FP64__ are deprecated and will be
   // removed in the near future.
-  if (hasFMAF())
+  if (hasFMAF()) {
     Builder.defineMacro("__HAS_FMAF__");
-  if (hasFastFMAF())
+}
+  if (hasFastFMAF()) {
     Builder.defineMacro("FP_FAST_FMAF");
-  if (hasLDEXPF())
+}
+  if (hasLDEXPF()) {
     Builder.defineMacro("__HAS_LDEXPF__");
-  if (hasFP64())
+}
+  if (hasFP64()) {
     Builder.defineMacro("__HAS_FP64__");
-  if (hasFastFMA())
+}
+  if (hasFastFMA()) {
     Builder.defineMacro("FP_FAST_FMA");
+}
 
   Builder.defineMacro("__AMDGCN_WAVEFRONT_SIZE", Twine(WavefrontSize));
 }

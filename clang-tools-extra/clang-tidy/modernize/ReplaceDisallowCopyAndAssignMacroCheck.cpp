@@ -28,20 +28,24 @@ public:
   void MacroExpands(const Token &MacroNameTok, const MacroDefinition &MD,
                     SourceRange Range, const MacroArgs *Args) override {
     IdentifierInfo *Info = MacroNameTok.getIdentifierInfo();
-    if (!Info || !Args || Args->getNumMacroArguments() != 1)
+    if (!Info || !Args || Args->getNumMacroArguments() != 1) {
       return;
-    if (Info->getName() != Check.getMacroName())
+}
+    if (Info->getName() != Check.getMacroName()) {
       return;
+}
     // The first argument to the DISALLOW_COPY_AND_ASSIGN macro is exptected to
     // be the class name.
     const Token *ClassNameTok = Args->getUnexpArgument(0);
-    if (Args->ArgNeedsPreexpansion(ClassNameTok, PP))
+    if (Args->ArgNeedsPreexpansion(ClassNameTok, PP)) {
       // For now we only support simple argument that don't need to be
       // pre-expanded.
       return;
+}
     clang::IdentifierInfo *ClassIdent = ClassNameTok->getIdentifierInfo();
-    if (!ClassIdent)
+    if (!ClassIdent) {
       return;
+}
 
     std::string Replacement = llvm::formatv(
         R"cpp({0}(const {0} &) = delete;

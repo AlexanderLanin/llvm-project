@@ -74,8 +74,9 @@ Symbol symbol(llvm::StringRef ID) {
 
 std::unique_ptr<SymbolSlab> numSlab(int Begin, int End) {
   SymbolSlab::Builder Slab;
-  for (int i = Begin; i <= End; i++)
+  for (int i = Begin; i <= End; i++) {
     Slab.insert(symbol(std::to_string(i)));
+}
   return std::make_unique<SymbolSlab>(std::move(Slab).build());
 }
 
@@ -104,10 +105,11 @@ TEST(FileSymbolsTest, Overlap) {
   FileSymbols FS;
   FS.update("f1", numSlab(1, 3), nullptr, nullptr, false);
   FS.update("f2", numSlab(3, 5), nullptr, nullptr, false);
-  for (auto Type : {IndexType::Light, IndexType::Heavy})
+  for (auto Type : {IndexType::Light, IndexType::Heavy}) {
     EXPECT_THAT(runFuzzyFind(*FS.buildIndex(Type), ""),
                 UnorderedElementsAre(QName("1"), QName("2"), QName("3"),
                                      QName("4"), QName("5")));
+}
 }
 
 TEST(FileSymbolsTest, MergeOverlap) {
@@ -124,11 +126,12 @@ TEST(FileSymbolsTest, MergeOverlap) {
 
   FS.update("f1", OneSymboSlab(X1), nullptr, nullptr, false);
   FS.update("f2", OneSymboSlab(X2), nullptr, nullptr, false);
-  for (auto Type : {IndexType::Light, IndexType::Heavy})
+  for (auto Type : {IndexType::Light, IndexType::Heavy}) {
     EXPECT_THAT(
         runFuzzyFind(*FS.buildIndex(Type, DuplicateHandling::Merge), "x"),
         UnorderedElementsAre(
             AllOf(QName("x"), DeclURI("file:///x1"), DefURI("file:///x2"))));
+}
 }
 
 TEST(FileSymbolsTest, SnapshotAliveAfterRemove) {
@@ -254,8 +257,9 @@ vector<Ty> make_vector(Arg A) {}
   auto It = Symbols.begin();
   Symbol Vector = *It++;
   Symbol MakeVector = *It++;
-  if (MakeVector.Name == "vector")
+  if (MakeVector.Name == "vector") {
     std::swap(MakeVector, Vector);
+}
 
   EXPECT_EQ(Vector.Signature, "<class Ty>");
   EXPECT_EQ(Vector.CompletionSnippetSuffix, "<${1:class Ty}>");

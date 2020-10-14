@@ -39,8 +39,9 @@ AST_MATCHER(QualType, isEnableIf) {
   if (const auto *Dependent = BaseType->getAs<DependentNameType>()) {
     BaseType = Dependent->getQualifier()->getAsType();
   }
-  if (!BaseType)
+  if (!BaseType) {
     return false;
+}
   if (CheckTemplate(BaseType->getAs<TemplateSpecializationType>())) {
     return true; // Case: enable_if_t< >.
   } else if (const auto *Elaborated = BaseType->getAs<ElaboratedType>()) {
@@ -90,40 +91,46 @@ void ForwardingReferenceOverloadCheck::check(
   // Get the FunctionDecl and FunctionTemplateDecl containing the function
   // parameter.
   const auto *FuncForParam = dyn_cast<FunctionDecl>(ParmVar->getDeclContext());
-  if (!FuncForParam)
+  if (!FuncForParam) {
     return;
+}
   const FunctionTemplateDecl *FuncTemplate =
       FuncForParam->getDescribedFunctionTemplate();
-  if (!FuncTemplate)
+  if (!FuncTemplate) {
     return;
+}
 
   // Check that the template type parameter belongs to the same function
   // template as the function parameter of that type. (This implies that type
   // deduction will happen on the type.)
   const TemplateParameterList *Params = FuncTemplate->getTemplateParameters();
-  if (!llvm::is_contained(*Params, TypeParmDecl))
+  if (!llvm::is_contained(*Params, TypeParmDecl)) {
     return;
+}
 
   // Every parameter after the first must have a default value.
   const auto *Ctor = Result.Nodes.getNodeAs<CXXConstructorDecl>("ctor");
   for (auto Iter = Ctor->param_begin() + 1; Iter != Ctor->param_end(); ++Iter) {
-    if (!(*Iter)->hasDefaultArg())
+    if (!(*Iter)->hasDefaultArg()) {
       return;
+}
   }
   bool EnabledCopy = false, DisabledCopy = false, EnabledMove = false,
        DisabledMove = false;
   for (const auto *OtherCtor : Ctor->getParent()->ctors()) {
     if (OtherCtor->isCopyOrMoveConstructor()) {
-      if (OtherCtor->isDeleted() || OtherCtor->getAccess() == AS_private)
+      if (OtherCtor->isDeleted() || OtherCtor->getAccess() == AS_private) {
         (OtherCtor->isCopyConstructor() ? DisabledCopy : DisabledMove) = true;
-      else
+      } else {
         (OtherCtor->isCopyConstructor() ? EnabledCopy : EnabledMove) = true;
+}
     }
   }
   bool Copy = (!EnabledMove && !DisabledMove && !DisabledCopy) || EnabledCopy;
   bool Move = !DisabledMove || EnabledMove;
-  if (!Copy && !Move)
+  if (!Copy && !Move) {
     return;
+}
   diag(Ctor->getLocation(),
        "constructor accepting a forwarding reference can "
        "hide the %select{copy|move|copy and move}0 constructor%s1")

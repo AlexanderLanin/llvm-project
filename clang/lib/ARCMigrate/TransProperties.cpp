@@ -76,12 +76,15 @@ public:
   static void collectProperties(ObjCContainerDecl *D, AtPropDeclsTy &AtProps,
                                 AtPropDeclsTy *PrevAtProps = nullptr) {
     for (auto *Prop : D->instance_properties()) {
-      if (Prop->getAtLoc().isInvalid())
+      if (Prop->getAtLoc().isInvalid()) {
         continue;
+}
       unsigned RawLoc = Prop->getAtLoc().getRawEncoding();
-      if (PrevAtProps)
-        if (PrevAtProps->find(RawLoc) != PrevAtProps->end())
+      if (PrevAtProps) {
+        if (PrevAtProps->find(RawLoc) != PrevAtProps->end()) {
           continue;
+}
+}
       PropsTy &props = AtProps[RawLoc];
       props.push_back(Prop);
     }
@@ -90,14 +93,16 @@ public:
   void doTransform(ObjCImplementationDecl *D) {
     CurImplD = D;
     ObjCInterfaceDecl *iface = D->getClassInterface();
-    if (!iface)
+    if (!iface) {
       return;
+}
 
     collectProperties(iface, AtProps);
 
     // Look through extensions.
-    for (auto *Ext : iface->visible_extensions())
+    for (auto *Ext : iface->visible_extensions()) {
       collectProperties(Ext, AtProps);
+}
 
     typedef DeclContext::specific_decl_iterator<ObjCPropertyImplDecl>
         prop_impl_iterator;
@@ -105,18 +110,22 @@ public:
            I = prop_impl_iterator(D->decls_begin()),
            E = prop_impl_iterator(D->decls_end()); I != E; ++I) {
       ObjCPropertyImplDecl *implD = *I;
-      if (implD->getPropertyImplementation() != ObjCPropertyImplDecl::Synthesize)
+      if (implD->getPropertyImplementation() != ObjCPropertyImplDecl::Synthesize) {
         continue;
+}
       ObjCPropertyDecl *propD = implD->getPropertyDecl();
-      if (!propD || propD->isInvalidDecl())
+      if (!propD || propD->isInvalidDecl()) {
         continue;
+}
       ObjCIvarDecl *ivarD = implD->getPropertyIvarDecl();
-      if (!ivarD || ivarD->isInvalidDecl())
+      if (!ivarD || ivarD->isInvalidDecl()) {
         continue;
+}
       unsigned rawAtLoc = propD->getAtLoc().getRawEncoding();
       AtPropDeclsTy::iterator findAtLoc = AtProps.find(rawAtLoc);
-      if (findAtLoc == AtProps.end())
+      if (findAtLoc == AtProps.end()) {
         continue;
+}
 
       PropsTy &props = findAtLoc->second;
       for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
@@ -132,10 +141,12 @@ public:
            I = AtProps.begin(), E = AtProps.end(); I != E; ++I) {
       SourceLocation atLoc = SourceLocation::getFromRawEncoding(I->first);
       PropsTy &props = I->second;
-      if (!getPropertyType(props)->isObjCRetainableType())
+      if (!getPropertyType(props)->isObjCRetainableType()) {
         continue;
-      if (hasIvarWithExplicitARCOwnership(props))
+}
+      if (hasIvarWithExplicitARCOwnership(props)) {
         continue;
+}
 
       Transaction Trans(Pass.TA);
       rewriteProperty(props, atLoc);
@@ -146,9 +157,11 @@ private:
   void doPropAction(PropActionKind kind,
                     PropsTy &props, SourceLocation atLoc,
                     bool markAction = true) {
-    if (markAction)
-      for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I)
+    if (markAction) {
+      for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
         ActionOnProp[I->PropD->getIdentifier()] = kind;
+}
+}
 
     switch (kind) {
     case PropAction_None:
@@ -173,8 +186,9 @@ private:
     if (propAttrs &
         (ObjCPropertyAttribute::kind_copy |
          ObjCPropertyAttribute::kind_unsafe_unretained |
-         ObjCPropertyAttribute::kind_strong | ObjCPropertyAttribute::kind_weak))
+         ObjCPropertyAttribute::kind_strong | ObjCPropertyAttribute::kind_weak)) {
       return;
+}
 
     if (propAttrs & ObjCPropertyAttribute::kind_retain) {
       // strong is the default.
@@ -184,14 +198,16 @@ private:
     bool HasIvarAssignedAPlusOneObject = hasIvarAssignedAPlusOneObject(props);
 
     if (propAttrs & ObjCPropertyAttribute::kind_assign) {
-      if (HasIvarAssignedAPlusOneObject)
+      if (HasIvarAssignedAPlusOneObject) {
         return doPropAction(PropAction_AssignRemoved, props, atLoc);
+}
       return doPropAction(PropAction_AssignRewritten, props, atLoc);
     }
 
     if (HasIvarAssignedAPlusOneObject ||
-        (Pass.isGCMigration() && !hasGCWeak(props, atLoc)))
+        (Pass.isGCMigration() && !hasGCWeak(props, atLoc))) {
       return; // 'strong' by default.
+}
 
     return doPropAction(PropAction_MaybeAddWeakOrUnsafe, props, atLoc);
   }
@@ -199,15 +215,17 @@ private:
   void removeAssignForDefaultStrong(PropsTy &props,
                                     SourceLocation atLoc) const {
     removeAttribute("retain", atLoc);
-    if (!removeAttribute("assign", atLoc))
+    if (!removeAttribute("assign", atLoc)) {
       return;
+}
 
     for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
-      if (I->ImplD)
+      if (I->ImplD) {
         Pass.TA.clearDiagnostic(diag::err_arc_strong_property_ownership,
                                 diag::err_arc_assign_property_ownership,
                                 diag::err_arc_inconsistent_property_ownership,
                                 I->IvarD->getLocation());
+}
     }
   }
 
@@ -219,8 +237,9 @@ private:
       (canUseWeak ? "weak" : "unsafe_unretained");
 
     bool rewroteAttr = rewriteAttribute("assign", toWhich, atLoc);
-    if (!rewroteAttr)
+    if (!rewroteAttr) {
       canUseWeak = false;
+}
 
     for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
       if (isUserDeclared(I->IvarD)) {
@@ -232,11 +251,12 @@ private:
           Pass.TA.insert(I->IvarD->getLocation(), toWhich);
         }
       }
-      if (I->ImplD)
+      if (I->ImplD) {
         Pass.TA.clearDiagnostic(diag::err_arc_strong_property_ownership,
                                 diag::err_arc_assign_property_ownership,
                                 diag::err_arc_inconsistent_property_ownership,
                                 I->IvarD->getLocation());
+}
     }
   }
 
@@ -247,15 +267,17 @@ private:
 
     bool addedAttr = addAttribute(canUseWeak ? "weak" : "unsafe_unretained",
                                   atLoc);
-    if (!addedAttr)
+    if (!addedAttr) {
       canUseWeak = false;
+}
 
     for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
       if (isUserDeclared(I->IvarD)) {
         if (I->IvarD &&
-            I->IvarD->getType().getObjCLifetime() != Qualifiers::OCL_Weak)
+            I->IvarD->getType().getObjCLifetime() != Qualifiers::OCL_Weak) {
           Pass.TA.insert(I->IvarD->getLocation(),
                          canUseWeak ? "__weak " : "__unsafe_unretained ");
+}
       }
       if (I->ImplD) {
         Pass.TA.clearDiagnostic(diag::err_arc_strong_property_ownership,
@@ -288,16 +310,19 @@ private:
     PlusOneAssign(ObjCIvarDecl *D) : Ivar(D) {}
 
     bool VisitBinaryOperator(BinaryOperator *E) {
-      if (E->getOpcode() != BO_Assign)
+      if (E->getOpcode() != BO_Assign) {
         return true;
+}
 
       Expr *lhs = E->getLHS()->IgnoreParenImpCasts();
       if (ObjCIvarRefExpr *RE = dyn_cast<ObjCIvarRefExpr>(lhs)) {
-        if (RE->getDecl() != Ivar)
+        if (RE->getDecl() != Ivar) {
           return true;
+}
 
-        if (isPlusOneAssign(E))
+        if (isPlusOneAssign(E)) {
           return false;
+}
       }
 
       return true;
@@ -308,24 +333,28 @@ private:
     for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
       PlusOneAssign oneAssign(I->IvarD);
       bool notFound = oneAssign.TraverseDecl(CurImplD);
-      if (!notFound)
+      if (!notFound) {
         return true;
+}
     }
 
     return false;
   }
 
   bool hasIvarWithExplicitARCOwnership(PropsTy &props) const {
-    if (Pass.isGCMigration())
+    if (Pass.isGCMigration()) {
       return false;
+}
 
     for (PropsTy::iterator I = props.begin(), E = props.end(); I != E; ++I) {
       if (isUserDeclared(I->IvarD)) {
-        if (isa<AttributedType>(I->IvarD->getType()))
+        if (isa<AttributedType>(I->IvarD->getType())) {
           return true;
+}
         if (I->IvarD->getType().getLocalQualifiers().getObjCLifetime()
-              != Qualifiers::OCL_Strong)
+              != Qualifiers::OCL_Strong) {
           return true;
+}
       }
     }
 
@@ -334,10 +363,12 @@ private:
 
   // Returns true if all declarations in the @property have GC __weak.
   bool hasGCWeak(PropsTy &props, SourceLocation atLoc) const {
-    if (!Pass.isGCMigration())
+    if (!Pass.isGCMigration()) {
       return false;
-    if (props.empty())
+}
+    if (props.empty()) {
       return false;
+}
     return MigrateCtx.AtPropsWeak.count(atLoc.getRawEncoding());
   }
 

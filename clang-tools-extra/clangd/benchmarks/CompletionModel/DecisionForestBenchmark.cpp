@@ -63,8 +63,9 @@ std::vector<Example> generateRandomDataset(int NumExamples) {
 }
 
 void runDecisionForestPrediciton(const std::vector<Example> Examples) {
-  for (const Example &E : Examples)
+  for (const Example &E : Examples) {
     Evaluate(E);
+}
 }
 
 static void decisionForestPredict(benchmark::State &State) {

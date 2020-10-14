@@ -100,14 +100,16 @@ void IncludeSorter::AddInclude(StringRef FileName, bool IsAngled,
   SourceLocations.push_back(IncludeLocations[FileName].back());
 
   // Stop if this inclusion is a duplicate.
-  if (IncludeLocations[FileName].size() > 1)
+  if (IncludeLocations[FileName].size() > 1) {
     return;
+}
 
   // Add the included file's name to the appropriate bucket.
   IncludeKinds Kind =
       DetermineIncludeKind(CanonicalFile, FileName, IsAngled, Style);
-  if (Kind != IK_InvalidInclude)
+  if (Kind != IK_InvalidInclude) {
     IncludeBucket[Kind].push_back(FileName.str());
+}
 }
 
 Optional<FixItHint> IncludeSorter::CreateIncludeInsertion(StringRef FileName,
@@ -151,8 +153,9 @@ Optional<FixItHint> IncludeSorter::CreateIncludeInsertion(StringRef FileName,
   for (int i = IK_InvalidInclude - 1; i >= 0; --i) {
     if (!IncludeBucket[i].empty()) {
       NonEmptyKind = static_cast<IncludeKinds>(i);
-      if (NonEmptyKind < IncludeKind)
+      if (NonEmptyKind < IncludeKind) {
         break;
+}
     }
   }
   if (NonEmptyKind == IK_InvalidInclude) {

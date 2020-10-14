@@ -72,11 +72,13 @@ void RedundantBranchConditionCheck::check(const MatchFinder::MatchResult &Result
   // If the variable has an alias then it can be changed by that alias as well.
   // FIXME: could potentially support tracking pointers and references in the
   // future to improve catching true positives through aliases.
-  if (hasPtrOrReferenceInFunc(Func, CondVar))
+  if (hasPtrOrReferenceInFunc(Func, CondVar)) {
     return;
+}
 
-  if (isChangedBefore(OuterIf->getThen(), InnerIf, CondVar, Result.Context))
+  if (isChangedBefore(OuterIf->getThen(), InnerIf, CondVar, Result.Context)) {
     return;
+}
 
   auto Diag = diag(InnerIf->getBeginLoc(), "redundant condition %0") << CondVar;
 
@@ -91,17 +93,19 @@ void RedundantBranchConditionCheck::check(const MatchFinder::MatchResult &Result
     if (BinOpCond) {
       const auto *LeftDRE =
           dyn_cast<DeclRefExpr>(BinOpCond->getLHS()->IgnoreParenImpCasts());
-      if (LeftDRE && LeftDRE->getDecl() == CondVar)
+      if (LeftDRE && LeftDRE->getDecl() == CondVar) {
         OtherSide = BinOpCond->getRHS();
-      else
+      } else {
         OtherSide = BinOpCond->getLHS();
+}
     }
 
     SourceLocation IfEnd = Body->getBeginLoc().getLocWithOffset(-1);
 
     // For compound statements also remove the left brace.
-    if (isa<CompoundStmt>(Body))
+    if (isa<CompoundStmt>(Body)) {
       IfEnd = Body->getBeginLoc();
+}
 
     // If the other side has side effects then keep it.
     if (OtherSide && OtherSide->HasSideEffects(*Result.Context)) {
@@ -122,9 +126,10 @@ void RedundantBranchConditionCheck::check(const MatchFinder::MatchResult &Result
     }
 
     // For comound statements also remove the right brace at the end.
-    if (isa<CompoundStmt>(Body))
+    if (isa<CompoundStmt>(Body)) {
       Diag << FixItHint::CreateRemoval(
           CharSourceRange::getTokenRange(Body->getEndLoc(), Body->getEndLoc()));
+}
 
     // For "and" binary operations we remove the "and" operation with the
     // condition variable from the inner if.

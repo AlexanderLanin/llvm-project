@@ -169,10 +169,11 @@ static bool hasFlag(const Multilib &M, StringRef Flag) {
   for (Multilib::flags_list::const_iterator I = M.flags().begin(),
                                             E = M.flags().end();
        I != E; ++I) {
-    if (*I == Flag)
+    if (*I == Flag) {
       return true;
-    else if (StringRef(*I).substr(1) == Flag.substr(1))
+    } else if (StringRef(*I).substr(1) == Flag.substr(1)) {
       return false;
+}
   }
   return false;
 }
@@ -184,12 +185,13 @@ TEST(MultilibTest, SetConstruction1) {
   MS.Maybe(Multilib("64").flag("+m64"));
   ASSERT_TRUE(MS.size() == 2);
   for (MultilibSet::const_iterator I = MS.begin(), E = MS.end(); I != E; ++I) {
-    if (I->gccSuffix() == "/64")
+    if (I->gccSuffix() == "/64") {
       ASSERT_TRUE(I->flags()[0] == "+m64");
-    else if (I->gccSuffix() == "")
+    } else if (I->gccSuffix() == "") {
       ASSERT_TRUE(I->flags()[0] == "-m64");
-    else
+    } else {
       FAIL() << "Unrecognized gccSufix: " << I->gccSuffix();
+}
   }
 }
 
@@ -311,15 +313,17 @@ TEST(MultilibTest, SetSelection2) {
     bool IsEL = I & 0x1;
     bool IsSF = I & 0x2;
     Multilib::flags_list Flags;
-    if (IsEL)
+    if (IsEL) {
       Flags.push_back("+EL");
-    else
+    } else {
       Flags.push_back("-EL");
+}
 
-    if (IsSF)
+    if (IsSF) {
       Flags.push_back("+SF");
-    else
+    } else {
       Flags.push_back("-SF");
+}
 
     Multilib Selection;
     ASSERT_TRUE(MS2.select(Flags, Selection)) << "Selection failed for "
@@ -327,10 +331,12 @@ TEST(MultilibTest, SetSelection2) {
                                               << (IsSF ? "+SF" : "-SF");
 
     std::string Suffix;
-    if (IsEL)
+    if (IsEL) {
       Suffix += "/el";
-    if (IsSF)
+}
+    if (IsSF) {
       Suffix += "/sf";
+}
 
     ASSERT_EQ(Selection.gccSuffix(), Suffix) << "Selection picked " << Selection
                                              << " which was not expected ";

@@ -56,7 +56,8 @@ TokenRewriter::~TokenRewriter() = default;
 /// RemapIterator - Convert from token_iterator (a const iterator) to
 /// TokenRefTy (a non-const iterator).
 TokenRewriter::TokenRefTy TokenRewriter::RemapIterator(token_iterator I) {
-  if (I == token_end()) return TokenList.end();
+  if (I == token_end()) { return TokenList.end();
+}
 
   // FIXME: This is horrible, we should use our own list or something to avoid
   // this.

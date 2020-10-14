@@ -46,8 +46,9 @@ public:
 
   void Ifndef(SourceLocation Loc, const Token &MacroNameTok,
               const MacroDefinition &MD) override {
-    if (MD)
+    if (MD) {
       return;
+}
 
     // Record #ifndefs that succeeded. We also need the Location of the Name.
     Ifndefs[MacroNameTok.getIdentifierInfo()] =
@@ -76,8 +77,9 @@ public:
       // We use clang's header guard detection. This has the advantage of also
       // emitting a warning for cases where a pseudo header guard is found but
       // preceded by something blocking the header guard optimization.
-      if (!MI->isUsedForHeaderGuard())
+      if (!MI->isUsedForHeaderGuard()) {
         continue;
+}
 
       const FileEntry *FE =
           SM.getFileEntryForID(SM.getFileID(MI->getDefinitionLoc()));
@@ -85,8 +87,9 @@ public:
       Files.erase(FileName);
 
       // See if we should check and fix this header guard.
-      if (!Check->shouldFixHeaderGuard(FileName))
+      if (!Check->shouldFixHeaderGuard(FileName)) {
         continue;
+}
 
       // Look up Locations for this guard.
       SourceLocation Ifndef =
@@ -129,12 +132,14 @@ public:
   bool wouldFixEndifComment(StringRef FileName, SourceLocation EndIf,
                             StringRef HeaderGuard,
                             size_t *EndIfLenPtr = nullptr) {
-    if (!EndIf.isValid())
+    if (!EndIf.isValid()) {
       return false;
+}
     const char *EndIfData = PP->getSourceManager().getCharacterData(EndIf);
     size_t EndIfLen = std::strcspn(EndIfData, "\r\n");
-    if (EndIfLenPtr)
+    if (EndIfLenPtr) {
       *EndIfLenPtr = EndIfLen;
+}
 
     StringRef EndIfStr(EndIfData, EndIfLen);
     EndIfStr = EndIfStr.substr(EndIfStr.find_first_not_of("#endif \t"));
@@ -142,13 +147,15 @@ public:
     // Give up if there's an escaped newline.
     size_t FindEscapedNewline = EndIfStr.find_last_not_of(' ');
     if (FindEscapedNewline != StringRef::npos &&
-        EndIfStr[FindEscapedNewline] == '\\')
+        EndIfStr[FindEscapedNewline] == '\\') {
       return false;
+}
 
     if (!Check->shouldSuggestEndifComment(FileName) &&
         !(EndIfStr.startswith("//") ||
-          (EndIfStr.startswith("/*") && EndIfStr.endswith("*/"))))
+          (EndIfStr.startswith("/*") && EndIfStr.endswith("*/")))) {
       return false;
+}
 
     return (EndIfStr != "// " + HeaderGuard.str()) &&
            (EndIfStr != "/* " + HeaderGuard.str() + " */");
@@ -206,14 +213,16 @@ public:
     // TODO: Insert the guard after top comments.
     for (const auto &FE : Files) {
       StringRef FileName = FE.getKey();
-      if (!Check->shouldSuggestToAddHeaderGuard(FileName))
+      if (!Check->shouldSuggestToAddHeaderGuard(FileName)) {
         continue;
+}
 
       SourceManager &SM = PP->getSourceManager();
       FileID FID = SM.translateFile(FE.getValue());
       SourceLocation StartLoc = SM.getLocForStartOfFile(FID);
-      if (StartLoc.isInvalid())
+      if (StartLoc.isInvalid()) {
         continue;
+}
 
       std::string CPPVar = Check->getHeaderGuard(FileName);
       std::string CPPVarUnder = CPPVar + '_'; // Allow a trailing underscore.
@@ -235,8 +244,9 @@ public:
         }
       }
 
-      if (SeenMacro)
+      if (SeenMacro) {
         continue;
+}
 
       Check->diag(StartLoc, "header is missing header guard")
           << FixItHint::CreateInsertion(

@@ -127,8 +127,9 @@ protected:
       void reportDiagnostics(PathRef File, llvm::ArrayRef<Diag> Diags,
                              PublishFn Publish) {
         auto D = Context::current().get(DiagsCallbackKey);
-        if (!D)
+        if (!D) {
           return;
+}
         Publish([&]() {
           const_cast<
               llvm::unique_function<void(PathRef, std::vector<Diag>)> &> (*D)(
@@ -528,8 +529,9 @@ TEST_F(TUSchedulerTests, ManyUpdates) {
   EXPECT_GE(TotalUpdates, FilesCount);
   EXPECT_LE(TotalUpdates, FilesCount * UpdatesPerFile);
   // We should receive diags for last update.
-  for (const auto &Entry : LatestDiagVersion)
+  for (const auto &Entry : LatestDiagVersion) {
     EXPECT_EQ(Entry.second, UpdatesPerFile - 1);
+}
   EXPECT_EQ(TotalASTReads, FilesCount * UpdatesPerFile);
   EXPECT_EQ(TotalPreambleReads, FilesCount * UpdatesPerFile);
 }
@@ -715,8 +717,9 @@ TEST_F(TUSchedulerTests, NoopOnEmptyChanges) {
     updateWithDiags(S, Source, Contents, WantDiagnostics::Yes,
                     [&Updated](std::vector<Diag>) { Updated = true; });
     bool UpdateFinished = S.blockUntilIdle(timeoutSeconds(10));
-    if (!UpdateFinished)
+    if (!UpdateFinished) {
       ADD_FAILURE() << "Updated has not finished in one second. Threading bug?";
+}
     return Updated;
   };
 
@@ -866,8 +869,9 @@ TEST_F(TUSchedulerTests, NoChangeDiags) {
 TEST_F(TUSchedulerTests, Run) {
   for (bool Sync : {false, true}) {
     auto Opts = optsForTest();
-    if (Sync)
+    if (Sync) {
       Opts.AsyncThreadsCount = 0;
+}
     TUScheduler S(CDB, Opts);
     std::atomic<int> Counter(0);
     S.run("add 1", /*Path=*/"", [&] { ++Counter; });
@@ -901,10 +905,12 @@ TEST_F(TUSchedulerTests, TUStatus) {
       // Note that this can result in missing some updates when something other
       // than action kind changes, e.g. when AST is built/reused the action kind
       // stays as Building.
-      if (ASTActions.empty() || ASTActions.back() != ASTAction)
+      if (ASTActions.empty() || ASTActions.back() != ASTAction) {
         ASTActions.push_back(ASTAction);
-      if (PreambleActions.empty() || PreambleActions.back() != PreambleAction)
+}
+      if (PreambleActions.empty() || PreambleActions.back() != PreambleAction) {
         PreambleActions.push_back(PreambleAction);
+}
     }
 
     std::vector<PreambleAction> preambleStatuses() {
@@ -1044,8 +1050,9 @@ TEST_F(TUSchedulerTests, AsyncPreambleThread) {
     void onPreambleAST(PathRef Path, llvm::StringRef Version, ASTContext &Ctx,
                        std::shared_ptr<clang::Preprocessor> PP,
                        const CanonicalIncludes &) override {
-      if (Version == BlockVersion)
+      if (Version == BlockVersion) {
         N.wait();
+}
     }
 
   private:

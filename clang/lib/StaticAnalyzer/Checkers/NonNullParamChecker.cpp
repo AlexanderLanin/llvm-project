@@ -63,8 +63,9 @@ void setBitsAccordingToFunctionAttributes(const CallType &Call,
       // 'nonnull' attribute's parameters are 1-based and should be adjusted to
       // match actual AST parameter/argument indices.
       unsigned IdxAST = Idx.getASTIndex();
-      if (IdxAST >= AttrNonNull.size())
+      if (IdxAST >= AttrNonNull.size()) {
         continue;
+}
       AttrNonNull.set(IdxAST);
     }
   }
@@ -75,11 +76,13 @@ void setBitsAccordingToParameterAttributes(const CallType &Call,
                                            llvm::SmallBitVector &AttrNonNull) {
   for (const ParmVarDecl *Parameter : Call.parameters()) {
     unsigned ParameterIndex = Parameter->getFunctionScopeIndex();
-    if (ParameterIndex == AttrNonNull.size())
+    if (ParameterIndex == AttrNonNull.size()) {
       break;
+}
 
-    if (Parameter->hasAttr<NonNullAttr>())
+    if (Parameter->hasAttr<NonNullAttr>()) {
       AttrNonNull.set(ParameterIndex);
+}
   }
 }
 
@@ -107,8 +110,9 @@ llvm::SmallBitVector getNonNullAttrs(const AnyCall &Call) {
 
 void NonNullParamChecker::checkPreCall(const CallEvent &Call,
                                        CheckerContext &C) const {
-  if (!Call.getDecl())
+  if (!Call.getDecl()) {
     return;
+}
 
   llvm::SmallBitVector AttrNonNull = getNonNullAttrs(Call);
   unsigned NumArgs = Call.getNumArgs();
@@ -126,15 +130,17 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
         HasParam ? parms[idx]->getType()->isReferenceType() : false;
     bool ExpectedToBeNonNull = AttrNonNull.test(idx);
 
-    if (!ExpectedToBeNonNull && !HasRefTypeParam)
+    if (!ExpectedToBeNonNull && !HasRefTypeParam) {
       continue;
+}
 
     // If the value is unknown or undefined, we can't perform this check.
     const Expr *ArgE = Call.getArgExpr(idx);
     SVal V = Call.getArgSVal(idx);
     auto DV = V.getAs<DefinedSVal>();
-    if (!DV)
+    if (!DV) {
       continue;
+}
 
     assert(!HasRefTypeParam || DV->getAs<Loc>());
 
@@ -142,32 +148,38 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
     if (ExpectedToBeNonNull && !DV->getAs<Loc>()) {
       // If the argument is a union type, we want to handle a potential
       // transparent_union GCC extension.
-      if (!ArgE)
+      if (!ArgE) {
         continue;
+}
 
       QualType T = ArgE->getType();
       const RecordType *UT = T->getAsUnionType();
-      if (!UT || !UT->getDecl()->hasAttr<TransparentUnionAttr>())
+      if (!UT || !UT->getDecl()->hasAttr<TransparentUnionAttr>()) {
         continue;
+}
 
       auto CSV = DV->getAs<nonloc::CompoundVal>();
 
       // FIXME: Handle LazyCompoundVals?
-      if (!CSV)
+      if (!CSV) {
         continue;
+}
 
       V = *(CSV->begin());
       DV = V.getAs<DefinedSVal>();
       assert(++CSV->begin() == CSV->end());
       // FIXME: Handle (some_union){ some_other_union_val }, which turns into
       // a LazyCompoundVal inside a CompoundVal.
-      if (!V.getAs<Loc>())
+      if (!V.getAs<Loc>()) {
         continue;
+}
 
       // Retrieve the corresponding expression.
-      if (const auto *CE = dyn_cast<CompoundLiteralExpr>(ArgE))
-        if (const auto *IE = dyn_cast<InitListExpr>(CE->getInitializer()))
+      if (const auto *CE = dyn_cast<CompoundLiteralExpr>(ArgE)) {
+        if (const auto *IE = dyn_cast<InitListExpr>(CE->getInitializer())) {
           ArgE = dyn_cast<Expr>(*(IE->begin()));
+}
+}
     }
 
     ConstraintManager &CM = C.getConstraintManager();
@@ -180,10 +192,11 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
       if (ExplodedNode *errorNode = C.generateErrorNode(stateNull)) {
 
         std::unique_ptr<BugReport> R;
-        if (ExpectedToBeNonNull)
+        if (ExpectedToBeNonNull) {
           R = genReportNullAttrNonNull(errorNode, ArgE, idx + 1);
-        else if (HasRefTypeParam)
+        } else if (HasRefTypeParam) {
           R = genReportReferenceToNullPointer(errorNode, ArgE);
+}
 
         // Highlight the range of the argument that was null.
         R->addRange(Call.getArgSourceRange(idx));
@@ -234,8 +247,9 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
 void NonNullParamChecker::checkBeginFunction(CheckerContext &Context) const {
   // Planned assumption makes sense only for top-level functions.
   // Inlined functions will get similar constraints as part of 'checkPreCall'.
-  if (!Context.inTopFrame())
+  if (!Context.inTopFrame()) {
     return;
+}
 
   const LocationContext *LocContext = Context.getLocationContext();
 
@@ -243,22 +257,25 @@ void NonNullParamChecker::checkBeginFunction(CheckerContext &Context) const {
   // AnyCall helps us here to avoid checking for FunctionDecl and ObjCMethodDecl
   // separately and aggregates interfaces of these classes.
   auto AbstractCall = AnyCall::forDecl(FD);
-  if (!AbstractCall)
+  if (!AbstractCall) {
     return;
+}
 
   ProgramStateRef State = Context.getState();
   llvm::SmallBitVector ParameterNonNullMarks = getNonNullAttrs(*AbstractCall);
 
   for (const ParmVarDecl *Parameter : AbstractCall->parameters()) {
     // 1. Check parameter if it is annotated as non-null
-    if (!ParameterNonNullMarks.test(Parameter->getFunctionScopeIndex()))
+    if (!ParameterNonNullMarks.test(Parameter->getFunctionScopeIndex())) {
       continue;
+}
 
     // 2. Check that parameter is a pointer.
     //    Nonnull attribute can be applied to non-pointers (by default
     //    __attribute__(nonnull) implies "all parameters").
-    if (!Parameter->getType()->isPointerType())
+    if (!Parameter->getType()->isPointerType()) {
       continue;
+}
 
     Loc ParameterLoc = State->getLValue(Parameter, LocContext);
     // We never consider top-level function parameters undefined.
@@ -281,9 +298,10 @@ NonNullParamChecker::genReportNullAttrNonNull(const ExplodedNode *ErrorNode,
   // Lazily allocate the BugType object if it hasn't already been
   // created. Ownership is transferred to the BugReporter object once
   // the BugReport is passed to 'EmitWarning'.
-  if (!BTAttrNonNull)
+  if (!BTAttrNonNull) {
     BTAttrNonNull.reset(new BugType(
         this, "Argument with 'nonnull' attribute passed null", "API"));
+}
 
   llvm::SmallString<256> SBuf;
   llvm::raw_svector_ostream OS(SBuf);
@@ -293,8 +311,9 @@ NonNullParamChecker::genReportNullAttrNonNull(const ExplodedNode *ErrorNode,
 
   auto R =
       std::make_unique<PathSensitiveBugReport>(*BTAttrNonNull, SBuf, ErrorNode);
-  if (ArgE)
+  if (ArgE) {
     bugreporter::trackExpressionValue(ErrorNode, ArgE, *R);
+}
 
   return R;
 }
@@ -302,15 +321,17 @@ NonNullParamChecker::genReportNullAttrNonNull(const ExplodedNode *ErrorNode,
 std::unique_ptr<PathSensitiveBugReport>
 NonNullParamChecker::genReportReferenceToNullPointer(
     const ExplodedNode *ErrorNode, const Expr *ArgE) const {
-  if (!BTNullRefArg)
+  if (!BTNullRefArg) {
     BTNullRefArg.reset(new BuiltinBug(this, "Dereference of null pointer"));
+}
 
   auto R = std::make_unique<PathSensitiveBugReport>(
       *BTNullRefArg, "Forming reference to null pointer", ErrorNode);
   if (ArgE) {
     const Expr *ArgEDeref = bugreporter::getDerefExpr(ArgE);
-    if (!ArgEDeref)
+    if (!ArgEDeref) {
       ArgEDeref = ArgE;
+}
     bugreporter::trackExpressionValue(ErrorNode, ArgEDeref, *R);
   }
   return R;

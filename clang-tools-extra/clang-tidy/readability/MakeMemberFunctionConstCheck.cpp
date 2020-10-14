@@ -60,8 +60,9 @@ public:
 
   template <class T> const T *getParent(const Expr *E) {
     DynTypedNodeList Parents = Ctxt.getParents(*E);
-    if (Parents.size() != 1)
+    if (Parents.size() != 1) {
       return nullptr;
+}
 
     return Parents.begin()->get<T>();
   }
@@ -92,30 +93,37 @@ public:
   //  (possibly `-UnaryOperator Deref)
   //        `-CXXThisExpr 'S *' this
   bool VisitUser(const ImplicitCastExpr *Cast) {
-    if (Cast->getCastKind() != CK_NoOp)
+    if (Cast->getCastKind() != CK_NoOp) {
       return false; // Stop traversal.
+}
 
     // Only allow NoOp cast to 'const S' or 'const S *'.
     QualType QT = Cast->getType();
-    if (QT->isPointerType())
+    if (QT->isPointerType()) {
       QT = QT->getPointeeType();
+}
 
-    if (!QT.isConstQualified())
+    if (!QT.isConstQualified()) {
       return false; // Stop traversal.
+}
 
     const auto *Parent = getParent<Stmt>(Cast);
-    if (!Parent)
+    if (!Parent) {
       return false; // Stop traversal.
+}
 
-    if (isa<ReturnStmt>(Parent))
+    if (isa<ReturnStmt>(Parent)) {
       return true; // return (const S*)this;
+}
 
-    if (isa<CallExpr>(Parent))
+    if (isa<CallExpr>(Parent)) {
       return true; // use((const S*)this);
+}
 
     // ((const S*)this)->Member
-    if (const auto *Member = dyn_cast<MemberExpr>(Parent))
+    if (const auto *Member = dyn_cast<MemberExpr>(Parent)) {
       return VisitUser(Member, /*OnConstObject=*/true);
+}
 
     return false; // Stop traversal.
   }
@@ -148,18 +156,22 @@ public:
       // 2) or it's a public member (the pointee of a public 'int * const' can
       // can be modified by any user of the class).
       if (Member->getFoundDecl().getAccess() != AS_public &&
-          !Cast->getType()->isBuiltinType())
+          !Cast->getType()->isBuiltinType()) {
         return false;
+}
 
-      if (Cast->getCastKind() == CK_LValueToRValue)
+      if (Cast->getCastKind() == CK_LValueToRValue) {
         return true;
+}
 
-      if (Cast->getCastKind() == CK_NoOp && Cast->getType().isConstQualified())
+      if (Cast->getCastKind() == CK_NoOp && Cast->getType().isConstQualified()) {
         return true;
+}
     }
 
-    if (const auto *M = dyn_cast_or_null<MemberExpr>(Parent))
+    if (const auto *M = dyn_cast_or_null<MemberExpr>(Parent)) {
       return VisitUser(M, /*OnConstObject=*/false);
+}
 
     return false; // Stop traversal.
   }
@@ -182,16 +194,18 @@ public:
     //  ((const S*)this)->f()
     // when 'f' is a public member function.
     if (const auto *Cast = dyn_cast_or_null<ImplicitCastExpr>(Parent)) {
-      if (VisitUser(Cast))
+      if (VisitUser(Cast)) {
         return true;
+}
 
       // And it's also okay to
       //   (const T)(S->t)
       //   (LValueToRValue)(S->t)
       // when 't' is either of builtin type or a public member.
     } else if (const auto *Member = dyn_cast_or_null<MemberExpr>(Parent)) {
-      if (VisitUser(Member, /*OnConstObject=*/false))
+      if (VisitUser(Member, /*OnConstObject=*/false)) {
         return true;
+}
     }
 
     // Unknown user of this.
@@ -233,13 +247,15 @@ void MakeMemberFunctionConstCheck::registerMatchers(MatchFinder *Finder) {
 
 static SourceLocation getConstInsertionPoint(const CXXMethodDecl *M) {
   TypeSourceInfo *TSI = M->getTypeSourceInfo();
-  if (!TSI)
+  if (!TSI) {
     return {};
+}
 
   FunctionTypeLoc FTL =
       TSI->getTypeLoc().IgnoreParens().getAs<FunctionTypeLoc>();
-  if (!FTL)
+  if (!FTL) {
     return {};
+}
 
   return FTL.getRParenLoc().getLocWithOffset(1);
 }

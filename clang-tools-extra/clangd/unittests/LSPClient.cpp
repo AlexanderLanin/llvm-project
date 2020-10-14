@@ -84,8 +84,9 @@ public:
 private:
   void reply(llvm::json::Value ID,
              llvm::Expected<llvm::json::Value> V) override {
-    if (V) // Nothing additional to log for error.
+    if (V) { // Nothing additional to log for error.
       logBody("reply", *V, /*Send=*/false);
+}
     std::lock_guard<std::mutex> Lock(Mu);
     if (auto I = ID.getAsInteger()) {
       if (*I >= 0 && *I < static_cast<int64_t>(CallResults.size())) {
@@ -113,8 +114,9 @@ private:
     std::unique_lock<std::mutex> Lock(Mu);
     while (true) {
       CV.wait(Lock, [&] { return !Actions.empty(); });
-      if (!Actions.front()) // Stop!
+      if (!Actions.front()) { // Stop!
         return llvm::Error::success();
+}
       auto Action = std::move(Actions.front());
       Actions.pop();
       Lock.unlock();
@@ -165,8 +167,9 @@ using Obj = llvm::json::Object;
 
 llvm::json::Value LSPClient::uri(llvm::StringRef Path) {
   std::string Storage;
-  if (!llvm::sys::path::is_absolute(Path))
+  if (!llvm::sys::path::is_absolute(Path)) {
     Path = Storage = testPath(Path);
+}
   return toJSON(URIForFile::canonicalize(Path, Path));
 }
 llvm::json::Value LSPClient::documentID(llvm::StringRef Path) {
@@ -202,8 +205,9 @@ LSPClient::diagnostics(llvm::StringRef Path) {
         ADD_FAILURE() << "Bad PublishDiagnosticsParams: " << PubDiagsParams;
         continue;
       }
-      if (*U == uri(Path))
+      if (*U == uri(Path)) {
         return std::vector<llvm::json::Value>(D->begin(), D->end());
+}
     }
   }
   return {};

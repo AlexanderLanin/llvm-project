@@ -59,9 +59,11 @@ private:
 
 static std::string getName(const CallEvent &Call) {
   std::string Name = "";
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(Call.getDecl()))
-    if (const CXXRecordDecl *RD = MD->getParent())
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(Call.getDecl())) {
+    if (const CXXRecordDecl *RD = MD->getParent()) {
       Name += RD->getNameAsString() + "::";
+}
+}
 
   Name += Call.getCalleeIdentifier()->getName();
   return Name;
@@ -72,11 +74,13 @@ static std::string getName(const CallEvent &Call) {
 static Optional<bool> isInvariantBreak(bool ExpectedValue, SVal ReturnV,
                                        CheckerContext &C) {
   auto ReturnDV = ReturnV.getAs<DefinedOrUnknownSVal>();
-  if (!ReturnDV)
+  if (!ReturnDV) {
     return None;
+}
 
-  if (ExpectedValue)
+  if (ExpectedValue) {
     return C.getState()->isNull(*ReturnDV).isConstrainedTrue();
+}
 
   return C.getState()->isNull(*ReturnDV).isConstrainedFalse();
 }
@@ -84,18 +88,21 @@ static Optional<bool> isInvariantBreak(bool ExpectedValue, SVal ReturnV,
 void ReturnValueChecker::checkPostCall(const CallEvent &Call,
                                        CheckerContext &C) const {
   const bool *RawExpectedValue = CDM.lookup(Call);
-  if (!RawExpectedValue)
+  if (!RawExpectedValue) {
     return;
+}
 
   SVal ReturnV = Call.getReturnValue();
   bool ExpectedValue = *RawExpectedValue;
   Optional<bool> IsInvariantBreak = isInvariantBreak(ExpectedValue, ReturnV, C);
-  if (!IsInvariantBreak)
+  if (!IsInvariantBreak) {
     return;
+}
 
   // If the invariant is broken it is reported by 'checkEndFunction()'.
-  if (*IsInvariantBreak)
+  if (*IsInvariantBreak) {
     return;
+}
 
   std::string Name = getName(Call);
   const NoteTag *CallTag = C.getNoteTag(
@@ -116,33 +123,39 @@ void ReturnValueChecker::checkPostCall(const CallEvent &Call,
 
 void ReturnValueChecker::checkEndFunction(const ReturnStmt *RS,
                                           CheckerContext &C) const {
-  if (!RS || !RS->getRetValue())
+  if (!RS || !RS->getRetValue()) {
     return;
+}
 
   // We cannot get the caller in the top-frame.
   const StackFrameContext *SFC = C.getStackFrame();
-  if (C.getStackFrame()->inTopFrame())
+  if (C.getStackFrame()->inTopFrame()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   CallEventManager &CMgr = C.getStateManager().getCallEventManager();
   CallEventRef<> Call = CMgr.getCaller(SFC, State);
-  if (!Call)
+  if (!Call) {
     return;
+}
 
   const bool *RawExpectedValue = CDM.lookup(*Call);
-  if (!RawExpectedValue)
+  if (!RawExpectedValue) {
     return;
+}
 
   SVal ReturnV = State->getSVal(RS->getRetValue(), C.getLocationContext());
   bool ExpectedValue = *RawExpectedValue;
   Optional<bool> IsInvariantBreak = isInvariantBreak(ExpectedValue, ReturnV, C);
-  if (!IsInvariantBreak)
+  if (!IsInvariantBreak) {
     return;
+}
 
   // If the invariant is appropriate it is reported by 'checkPostCall()'.
-  if (!*IsInvariantBreak)
+  if (!*IsInvariantBreak) {
     return;
+}
 
   std::string Name = getName(*Call);
   const NoteTag *CallTag = C.getNoteTag(

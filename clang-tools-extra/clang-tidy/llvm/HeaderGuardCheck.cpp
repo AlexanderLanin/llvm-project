@@ -26,37 +26,43 @@ std::string LLVMHeaderGuardCheck::getHeaderGuard(StringRef Filename,
 
   // We don't want _INCLUDE_ in our guards.
   size_t PosInclude = Guard.rfind("include/");
-  if (PosInclude != StringRef::npos)
+  if (PosInclude != StringRef::npos) {
     Guard = Guard.substr(PosInclude + std::strlen("include/"));
+}
 
   // For clang we drop the _TOOLS_.
   size_t PosToolsClang = Guard.rfind("tools/clang/");
-  if (PosToolsClang != StringRef::npos)
+  if (PosToolsClang != StringRef::npos) {
     Guard = Guard.substr(PosToolsClang + std::strlen("tools/"));
+}
 
   // Unlike LLVM svn, LLVM git monorepo is named llvm-project, so we replace
   // "/llvm-project/" with the cannonical "/llvm/".
   const static StringRef LLVMProject = "/llvm-project/";
   size_t PosLLVMProject = Guard.rfind(std::string(LLVMProject));
-  if (PosLLVMProject != StringRef::npos)
+  if (PosLLVMProject != StringRef::npos) {
     Guard = Guard.replace(PosLLVMProject, LLVMProject.size(), "/llvm/");
+}
 
   // The remainder is LLVM_FULL_PATH_TO_HEADER_H
   size_t PosLLVM = Guard.rfind("llvm/");
-  if (PosLLVM != StringRef::npos)
+  if (PosLLVM != StringRef::npos) {
     Guard = Guard.substr(PosLLVM);
+}
 
   std::replace(Guard.begin(), Guard.end(), '/', '_');
   std::replace(Guard.begin(), Guard.end(), '.', '_');
   std::replace(Guard.begin(), Guard.end(), '-', '_');
 
   // The prevalent style in clang is LLVM_CLANG_FOO_BAR_H
-  if (StringRef(Guard).startswith("clang"))
+  if (StringRef(Guard).startswith("clang")) {
     Guard = "LLVM_" + Guard;
+}
 
   // The prevalent style in flang is FORTRAN_FOO_BAR_H
-  if (StringRef(Guard).startswith("flang"))
+  if (StringRef(Guard).startswith("flang")) {
     Guard = "FORTRAN" + Guard.substr(sizeof("flang") - 1);
+}
 
   return StringRef(Guard).upper();
 }

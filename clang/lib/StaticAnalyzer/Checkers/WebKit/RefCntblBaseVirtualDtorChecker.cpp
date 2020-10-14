@@ -59,8 +59,9 @@ public:
   }
 
   void visitCXXRecordDecl(const CXXRecordDecl *RD) const {
-    if (shouldSkipDecl(RD))
+    if (shouldSkipDecl(RD)) {
       return;
+}
 
     CXXBasePaths Paths;
     Paths.setOrigin(RD);
@@ -73,13 +74,15 @@ public:
          &ProblematicBaseClass](const CXXBaseSpecifier *Base, CXXBasePath &) {
           const auto AccSpec = Base->getAccessSpecifier();
           if (AccSpec == AS_protected || AccSpec == AS_private ||
-              (AccSpec == AS_none && RD->isClass()))
+              (AccSpec == AS_none && RD->isClass())) {
             return false;
+}
 
           llvm::Optional<const CXXRecordDecl *> RefCntblBaseRD =
               isRefCountable(Base);
-          if (!RefCntblBaseRD || !(*RefCntblBaseRD))
+          if (!RefCntblBaseRD || !(*RefCntblBaseRD)) {
             return false;
+}
 
           const auto *Dtor = (*RefCntblBaseRD)->getDestructor();
           if (!Dtor || !Dtor->isVirtual()) {
@@ -98,29 +101,35 @@ public:
   }
 
   bool shouldSkipDecl(const CXXRecordDecl *RD) const {
-    if (!RD->isThisDeclarationADefinition())
+    if (!RD->isThisDeclarationADefinition()) {
       return true;
+}
 
-    if (RD->isImplicit())
+    if (RD->isImplicit()) {
       return true;
+}
 
-    if (RD->isLambda())
+    if (RD->isLambda()) {
       return true;
+}
 
     // If the construct doesn't have a source file, then it's not something
     // we want to diagnose.
     const auto RDLocation = RD->getLocation();
-    if (!RDLocation.isValid())
+    if (!RDLocation.isValid()) {
       return true;
+}
 
     const auto Kind = RD->getTagKind();
-    if (Kind != TTK_Struct && Kind != TTK_Class)
+    if (Kind != TTK_Struct && Kind != TTK_Class) {
       return true;
+}
 
     // Ignore CXXRecords that come from system headers.
     if (BR->getSourceManager().getFileCharacteristic(RDLocation) !=
-        SrcMgr::C_User)
+        SrcMgr::C_User) {
       return true;
+}
 
     return false;
   }

@@ -42,11 +42,13 @@ public:
 
   void run(const MatchFinder::MatchResult &Result) override {
     const NamedDecl *ND = Result.Nodes.getNodeAs<NamedDecl>("id");
-    if (!ND)
+    if (!ND) {
       return;
+}
     NumFoundDecls++;
-    if (NumFoundDecls > 1)
+    if (NumFoundDecls > 1) {
       return;
+}
 
     llvm::raw_svector_ostream Out(Printed);
     Printer(Out, ND);
@@ -72,23 +74,27 @@ public:
   std::unique_ptr<FrontendActionFactory> Factory =
       newFrontendActionFactory(&Finder);
 
-  if (!runToolOnCodeWithArgs(Factory->create(), Code, Args, FileName))
+  if (!runToolOnCodeWithArgs(Factory->create(), Code, Args, FileName)) {
     return testing::AssertionFailure()
         << "Parsing error in \"" << Code.str() << "\"";
+}
 
-  if (Printer.getNumFoundDecls() == 0)
+  if (Printer.getNumFoundDecls() == 0) {
     return testing::AssertionFailure()
         << "Matcher didn't find any named declarations";
+}
 
-  if (Printer.getNumFoundDecls() > 1)
+  if (Printer.getNumFoundDecls() > 1) {
     return testing::AssertionFailure()
         << "Matcher should match only one named declaration "
            "(found " << Printer.getNumFoundDecls() << ")";
+}
 
-  if (Printer.getPrinted() != ExpectedPrinted)
+  if (Printer.getPrinted() != ExpectedPrinted) {
     return ::testing::AssertionFailure()
         << "Expected \"" << ExpectedPrinted.str() << "\", "
            "got \"" << Printer.getPrinted().str() << "\"";
+}
 
   return ::testing::AssertionSuccess();
 }

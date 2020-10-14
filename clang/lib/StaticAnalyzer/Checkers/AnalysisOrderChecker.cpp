@@ -59,74 +59,87 @@ class AnalysisOrderChecker
 
 public:
   void checkPreStmt(const CastExpr *CE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtCastExpr"))
+    if (isCallbackEnabled(C, "PreStmtCastExpr")) {
       llvm::errs() << "PreStmt<CastExpr> (Kind : " << CE->getCastKindName()
                    << ")\n";
+}
   }
 
   void checkPostStmt(const CastExpr *CE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtCastExpr"))
+    if (isCallbackEnabled(C, "PostStmtCastExpr")) {
       llvm::errs() << "PostStmt<CastExpr> (Kind : " << CE->getCastKindName()
                    << ")\n";
+}
   }
 
   void checkPreStmt(const ArraySubscriptExpr *SubExpr,
                     CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtArraySubscriptExpr"))
+    if (isCallbackEnabled(C, "PreStmtArraySubscriptExpr")) {
       llvm::errs() << "PreStmt<ArraySubscriptExpr>\n";
+}
   }
 
   void checkPostStmt(const ArraySubscriptExpr *SubExpr,
                      CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtArraySubscriptExpr"))
+    if (isCallbackEnabled(C, "PostStmtArraySubscriptExpr")) {
       llvm::errs() << "PostStmt<ArraySubscriptExpr>\n";
+}
   }
 
   void checkPreStmt(const CXXNewExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtCXXNewExpr"))
+    if (isCallbackEnabled(C, "PreStmtCXXNewExpr")) {
       llvm::errs() << "PreStmt<CXXNewExpr>\n";
+}
   }
 
   void checkPostStmt(const CXXNewExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtCXXNewExpr"))
+    if (isCallbackEnabled(C, "PostStmtCXXNewExpr")) {
       llvm::errs() << "PostStmt<CXXNewExpr>\n";
+}
   }
 
   void checkPreStmt(const CXXDeleteExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtCXXDeleteExpr"))
+    if (isCallbackEnabled(C, "PreStmtCXXDeleteExpr")) {
       llvm::errs() << "PreStmt<CXXDeleteExpr>\n";
+}
   }
 
   void checkPostStmt(const CXXDeleteExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtCXXDeleteExpr"))
+    if (isCallbackEnabled(C, "PostStmtCXXDeleteExpr")) {
       llvm::errs() << "PostStmt<CXXDeleteExpr>\n";
+}
   }
 
   void checkPreStmt(const CXXConstructExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtCXXConstructExpr"))
+    if (isCallbackEnabled(C, "PreStmtCXXConstructExpr")) {
       llvm::errs() << "PreStmt<CXXConstructExpr>\n";
+}
   }
 
   void checkPostStmt(const CXXConstructExpr *NE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtCXXConstructExpr"))
+    if (isCallbackEnabled(C, "PostStmtCXXConstructExpr")) {
       llvm::errs() << "PostStmt<CXXConstructExpr>\n";
+}
   }
 
   void checkPreStmt(const OffsetOfExpr *OOE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PreStmtOffsetOfExpr"))
+    if (isCallbackEnabled(C, "PreStmtOffsetOfExpr")) {
       llvm::errs() << "PreStmt<OffsetOfExpr>\n";
+}
   }
 
   void checkPostStmt(const OffsetOfExpr *OOE, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "PostStmtOffsetOfExpr"))
+    if (isCallbackEnabled(C, "PostStmtOffsetOfExpr")) {
       llvm::errs() << "PostStmt<OffsetOfExpr>\n";
+}
   }
 
   bool evalCall(const CallEvent &Call, CheckerContext &C) const {
     if (isCallbackEnabled(C, "EvalCall")) {
       llvm::errs() << "EvalCall";
-      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl()))
+      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl())) {
         llvm::errs() << " (" << ND->getQualifiedNameAsString() << ')';
+}
       llvm::errs() << " {argno: " << Call.getNumArgs() << '}';
       llvm::errs() << " [" << Call.getKindAsString() << ']';
       llvm::errs() << '\n';
@@ -138,8 +151,9 @@ public:
   void checkPreCall(const CallEvent &Call, CheckerContext &C) const {
     if (isCallbackEnabled(C, "PreCall")) {
       llvm::errs() << "PreCall";
-      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl()))
+      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl())) {
         llvm::errs() << " (" << ND->getQualifiedNameAsString() << ')';
+}
       llvm::errs() << " [" << Call.getKindAsString() << ']';
       llvm::errs() << '\n';
     }
@@ -148,8 +162,9 @@ public:
   void checkPostCall(const CallEvent &Call, CheckerContext &C) const {
     if (isCallbackEnabled(C, "PostCall")) {
       llvm::errs() << "PostCall";
-      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl()))
+      if (const NamedDecl *ND = dyn_cast_or_null<NamedDecl>(Call.getDecl())) {
         llvm::errs() << " (" << ND->getQualifiedNameAsString() << ')';
+}
       llvm::errs() << " [" << Call.getKindAsString() << ']';
       llvm::errs() << '\n';
     }
@@ -158,40 +173,46 @@ public:
   void checkEndFunction(const ReturnStmt *S, CheckerContext &C) const {
     if (isCallbackEnabled(C, "EndFunction")) {
       llvm::errs() << "EndFunction\nReturnStmt: " << (S ? "yes" : "no") << "\n";
-      if (!S)
+      if (!S) {
         return;
+}
 
       llvm::errs() << "CFGElement: ";
       CFGStmtMap *Map = C.getCurrentAnalysisDeclContext()->getCFGStmtMap();
       CFGElement LastElement = Map->getBlock(S)->back();
 
-      if (LastElement.getAs<CFGStmt>())
+      if (LastElement.getAs<CFGStmt>()) {
         llvm::errs() << "CFGStmt\n";
-      else if (LastElement.getAs<CFGAutomaticObjDtor>())
+      } else if (LastElement.getAs<CFGAutomaticObjDtor>()) {
         llvm::errs() << "CFGAutomaticObjDtor\n";
+}
     }
   }
 
   void checkEndAnalysis(ExplodedGraph &G, BugReporter &BR,
                         ExprEngine &Eng) const {
-    if (isCallbackEnabled(BR.getAnalyzerOptions(), "EndAnalysis"))
+    if (isCallbackEnabled(BR.getAnalyzerOptions(), "EndAnalysis")) {
       llvm::errs() << "EndAnalysis\n";
+}
   }
 
   void checkNewAllocator(const CXXAllocatorCall &Call,
                          CheckerContext &C) const {
-    if (isCallbackEnabled(C, "NewAllocator"))
+    if (isCallbackEnabled(C, "NewAllocator")) {
       llvm::errs() << "NewAllocator\n";
+}
   }
 
   void checkBind(SVal Loc, SVal Val, const Stmt *S, CheckerContext &C) const {
-    if (isCallbackEnabled(C, "Bind"))
+    if (isCallbackEnabled(C, "Bind")) {
       llvm::errs() << "Bind\n";
+}
   }
 
   void checkLiveSymbols(ProgramStateRef State, SymbolReaper &SymReaper) const {
-    if (isCallbackEnabled(State, "LiveSymbols"))
+    if (isCallbackEnabled(State, "LiveSymbols")) {
       llvm::errs() << "LiveSymbols\n";
+}
   }
 
   ProgramStateRef
@@ -200,8 +221,9 @@ public:
                      ArrayRef<const MemRegion *> ExplicitRegions,
                      ArrayRef<const MemRegion *> Regions,
                      const LocationContext *LCtx, const CallEvent *Call) const {
-    if (isCallbackEnabled(State, "RegionChanges"))
+    if (isCallbackEnabled(State, "RegionChanges")) {
       llvm::errs() << "RegionChanges\n";
+}
     return State;
   }
 
@@ -209,8 +231,9 @@ public:
                                      const InvalidatedSymbols &Escaped,
                                      const CallEvent *Call,
                                      PointerEscapeKind Kind) const {
-    if (isCallbackEnabled(State, "PointerEscape"))
+    if (isCallbackEnabled(State, "PointerEscape")) {
       llvm::errs() << "PointerEscape\n";
+}
     return State;
   }
 };

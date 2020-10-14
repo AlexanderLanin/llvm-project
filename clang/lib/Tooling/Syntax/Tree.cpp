@@ -19,8 +19,9 @@ namespace {
 static void traverse(const syntax::Node *N,
                      llvm::function_ref<void(const syntax::Node *)> Visit) {
   if (auto *T = dyn_cast<syntax::Tree>(N)) {
-    for (const auto *C = T->getFirstChild(); C; C = C->getNextSibling())
+    for (const auto *C = T->getFirstChild(); C; C = C->getNextSibling()) {
       traverse(C, Visit);
+}
   }
   Visit(N);
 }
@@ -112,17 +113,19 @@ void syntax::Tree::replaceChildRangeLowLevel(Node *BeforeBegin, Node *End,
     N->setRole(NodeRole::Detached);
     N->Parent = nullptr;
     N->NextSibling = nullptr;
-    if (N->Original)
+    if (N->Original) {
       traverse(N, [&](Node *C) { C->Original = false; });
+}
 
     N = Next;
   }
 
   // Attach new nodes.
-  if (BeforeBegin)
+  if (BeforeBegin) {
     BeforeBegin->NextSibling = New ? New : End;
-  else
+  } else {
     FirstChild = New ? New : End;
+}
 
   if (New) {
     auto *Last = New;
@@ -134,8 +137,9 @@ void syntax::Tree::replaceChildRangeLowLevel(Node *BeforeBegin, Node *End,
   }
 
   // Mark the node as modified.
-  for (auto *T = this; T && T->Original; T = T->Parent)
+  for (auto *T = this; T && T->Original; T = T->Parent) {
     T->Original = false;
+}
 }
 
 namespace {
@@ -145,21 +149,25 @@ static void dumpLeaf(raw_ostream &OS, const syntax::Leaf *L,
   const auto *Token = L->getToken();
   assert(Token);
   // Handle 'eof' separately, calling text() on it produces an empty string.
-  if (Token->kind() == tok::eof)
+  if (Token->kind() == tok::eof) {
     OS << "<eof>";
-  else
+  } else {
     OS << Token->text(SM);
+}
 }
 
 static void dumpNode(raw_ostream &OS, const syntax::Node *N,
                      const SourceManager &SM, std::vector<bool> IndentMask) {
   auto DumpExtraInfo = [&OS](const syntax::Node *N) {
-    if (N->getRole() != syntax::NodeRole::Unknown)
+    if (N->getRole() != syntax::NodeRole::Unknown) {
       OS << " " << N->getRole();
-    if (!N->isOriginal())
+}
+    if (!N->isOriginal()) {
       OS << " synthesized";
-    if (!N->canModify())
+}
+    if (!N->canModify()) {
       OS << " unmodifiable";
+}
   };
 
   assert(N);
@@ -179,10 +187,11 @@ static void dumpNode(raw_ostream &OS, const syntax::Node *N,
 
   for (const auto *It = T->getFirstChild(); It; It = It->getNextSibling()) {
     for (bool Filled : IndentMask) {
-      if (Filled)
+      if (Filled) {
         OS << "| ";
-      else
+      } else {
         OS << "  ";
+}
     }
     if (!It->getNextSibling()) {
       OS << "`-";
@@ -256,10 +265,12 @@ void syntax::Node::assertInvariantsRecursive() const {
 
 syntax::Leaf *syntax::Tree::findFirstLeaf() {
   for (auto *C = getFirstChild(); C; C = C->getNextSibling()) {
-    if (auto *L = dyn_cast<syntax::Leaf>(C))
+    if (auto *L = dyn_cast<syntax::Leaf>(C)) {
       return L;
-    if (auto *L = cast<syntax::Tree>(C)->findFirstLeaf())
+}
+    if (auto *L = cast<syntax::Tree>(C)->findFirstLeaf()) {
       return L;
+}
   }
   return nullptr;
 }
@@ -267,18 +278,20 @@ syntax::Leaf *syntax::Tree::findFirstLeaf() {
 syntax::Leaf *syntax::Tree::findLastLeaf() {
   syntax::Leaf *Last = nullptr;
   for (auto *C = getFirstChild(); C; C = C->getNextSibling()) {
-    if (auto *L = dyn_cast<syntax::Leaf>(C))
+    if (auto *L = dyn_cast<syntax::Leaf>(C)) {
       Last = L;
-    else if (auto *L = cast<syntax::Tree>(C)->findLastLeaf())
+    } else if (auto *L = cast<syntax::Tree>(C)->findLastLeaf()) {
       Last = L;
+}
   }
   return Last;
 }
 
 syntax::Node *syntax::Tree::findChild(NodeRole R) {
   for (auto *C = FirstChild; C; C = C->getNextSibling()) {
-    if (C->getRole() == R)
+    if (C->getRole() == R) {
       return C;
+}
   }
   return nullptr;
 }
@@ -296,8 +309,9 @@ bool syntax::List::classof(const syntax::Node *N) {
 
 std::vector<syntax::List::ElementAndDelimiter<syntax::Node>>
 syntax::List::getElementsAsNodesAndDelimiters() {
-  if (!getFirstChild())
+  if (!getFirstChild()) {
     return {};
+}
 
   std::vector<syntax::List::ElementAndDelimiter<Node>> Children;
   syntax::Node *ElementWithoutDelimiter = nullptr;
@@ -341,8 +355,9 @@ syntax::List::getElementsAsNodesAndDelimiters() {
 // Almost the same implementation of `getElementsAsNodesAndDelimiters` but
 // ignoring delimiters
 std::vector<syntax::Node *> syntax::List::getElementsAsNodes() {
-  if (!getFirstChild())
+  if (!getFirstChild()) {
     return {};
+}
 
   std::vector<syntax::Node *> Children;
   syntax::Node *ElementWithoutDelimiter = nullptr;

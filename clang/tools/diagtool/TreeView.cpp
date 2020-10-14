@@ -37,25 +37,30 @@ public:
   }
 
   static bool unimplemented(const GroupRecord &Group) {
-    if (!Group.diagnostics().empty())
+    if (!Group.diagnostics().empty()) {
       return false;
+}
 
-    for (const GroupRecord &GR : Group.subgroups())
-      if (!unimplemented(GR))
+    for (const GroupRecord &GR : Group.subgroups()) {
+      if (!unimplemented(GR)) {
         return false;
+}
+}
 
     return true;
   }
 
   static bool enabledByDefault(const GroupRecord &Group) {
     for (const DiagnosticRecord &DR : Group.diagnostics()) {
-      if (isIgnored(DR.DiagID))
+      if (isIgnored(DR.DiagID)) {
         return false;
+}
     }
 
     for (const GroupRecord &GR : Group.subgroups()) {
-      if (!enabledByDefault(GR))
+      if (!enabledByDefault(GR)) {
         return false;
+}
     }
 
     return true;
@@ -64,12 +69,13 @@ public:
   void printGroup(const GroupRecord &Group, unsigned Indent = 0) {
     out.indent(Indent * 2);
 
-    if (unimplemented(Group))
+    if (unimplemented(Group)) {
       out << Colors::RED;
-    else if (enabledByDefault(Group))
+    } else if (enabledByDefault(Group)) {
       out << Colors::GREEN;
-    else
+    } else {
       out << Colors::YELLOW;
+}
 
     out << "-W" << Group.getName() << "\n" << Colors::RESET;
 
@@ -80,8 +86,9 @@ public:
 
     if (Internal) {
       for (const DiagnosticRecord &DR : Group.diagnostics()) {
-        if (!isIgnored(DR.DiagID))
+        if (!isIgnored(DR.DiagID)) {
           out << Colors::GREEN;
+}
         out.indent(Indent * 2);
         out << DR.getName() << Colors::RESET << "\n";
       }
@@ -121,8 +128,9 @@ public:
     assert(NonRootGroupIDs.size() < AllGroups.size());
 
     for (unsigned i = 0, e = AllGroups.size(); i != e; ++i) {
-      if (!NonRootGroupIDs.count(i))
+      if (!NonRootGroupIDs.count(i)) {
         printGroup(AllGroups[i]);
+}
     }
 
     return 0;
@@ -161,10 +169,12 @@ int TreeView::run(unsigned int argc, char **argv, llvm::raw_ostream &out) {
     break;
   case 1:
     RootGroup = argv[0];
-    if (RootGroup.startswith("-W"))
+    if (RootGroup.startswith("-W")) {
       RootGroup = RootGroup.substr(2);
-    if (RootGroup == "everything")
+}
+    if (RootGroup == "everything") {
       ShowAll = true;
+}
     // FIXME: Handle other special warning flags, like -pedantic.
     break;
   default:

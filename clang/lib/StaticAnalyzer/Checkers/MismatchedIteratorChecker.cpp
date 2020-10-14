@@ -63,35 +63,41 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
                                              CheckerContext &C) const {
   // Check for iterator mismatches
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+}
 
   if (Func->isOverloadedOperator() &&
       isComparisonOperator(Func->getOverloadedOperator())) {
     // Check for comparisons of iterators of different containers
     if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
-      if (Call.getNumArgs() < 1)
+      if (Call.getNumArgs() < 1) {
         return;
+}
 
       if (!isIteratorType(InstCall->getCXXThisExpr()->getType()) ||
-          !isIteratorType(Call.getArgExpr(0)->getType()))
+          !isIteratorType(Call.getArgExpr(0)->getType())) {
         return;
+}
 
       verifyMatch(C, InstCall->getCXXThisVal(), Call.getArgSVal(0));
     } else {
-      if (Call.getNumArgs() < 2)
+      if (Call.getNumArgs() < 2) {
         return;
+}
 
       if (!isIteratorType(Call.getArgExpr(0)->getType()) ||
-          !isIteratorType(Call.getArgExpr(1)->getType()))
+          !isIteratorType(Call.getArgExpr(1)->getType())) {
         return;
+}
 
       verifyMatch(C, Call.getArgSVal(0), Call.getArgSVal(1));
     }
   } else if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
     const auto *ContReg = InstCall->getCXXThisVal().getAsRegion();
-    if (!ContReg)
+    if (!ContReg) {
       return;
+}
     // Check for erase, insert and emplace using iterator of another container
     if (isEraseCall(Func) || isEraseAfterCall(Func)) {
       verifyMatch(C, Call.getArgSVal(0),
@@ -114,20 +120,24 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
     }
   } else if (isa<CXXConstructorCall>(&Call)) {
     // Check match of first-last iterator pair in a constructor of a container
-    if (Call.getNumArgs() < 2)
+    if (Call.getNumArgs() < 2) {
       return;
+}
 
     const auto *Ctr = cast<CXXConstructorDecl>(Call.getDecl());
-    if (Ctr->getNumParams() < 2)
+    if (Ctr->getNumParams() < 2) {
       return;
+}
 
     if (Ctr->getParamDecl(0)->getName() != "first" ||
-        Ctr->getParamDecl(1)->getName() != "last")
+        Ctr->getParamDecl(1)->getName() != "last") {
       return;
+}
 
     if (!isIteratorType(Call.getArgExpr(0)->getType()) ||
-        !isIteratorType(Call.getArgExpr(1)->getType()))
+        !isIteratorType(Call.getArgExpr(1)->getType())) {
       return;
+}
 
     verifyMatch(C, Call.getArgSVal(0), Call.getArgSVal(1));
   } else {
@@ -148,8 +158,9 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
     // not necessarily to the same as the first two.
 
     const auto *Templ = Func->getPrimaryTemplate();
-    if (!Templ)
+    if (!Templ) {
       return;
+}
 
     const auto *TParams = Templ->getTemplateParameters();
     const auto *TArgs = Func->getTemplateSpecializationArgs();
@@ -157,15 +168,18 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
     // Iterate over all the template parameters
     for (size_t I = 0; I < TParams->size(); ++I) {
       const auto *TPDecl = dyn_cast<TemplateTypeParmDecl>(TParams->getParam(I));
-      if (!TPDecl)
+      if (!TPDecl) {
         continue;
+}
 
-      if (TPDecl->isParameterPack())
+      if (TPDecl->isParameterPack()) {
         continue;
+}
 
       const auto TAType = TArgs->get(I).getAsType();
-      if (!isIteratorType(TAType))
+      if (!isIteratorType(TAType)) {
         continue;
+}
 
       SVal LHS = UndefinedVal();
 
@@ -177,8 +191,9 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
         const auto *ParamType =
             Param->getType()->getAs<SubstTemplateTypeParmType>();
         if (!ParamType ||
-            ParamType->getReplacedParameter()->getDecl() != TPDecl)
+            ParamType->getReplacedParameter()->getDecl() != TPDecl) {
           continue;
+}
         if (LHS.isUndef()) {
           LHS = Call.getArgSVal(J);
         } else {
@@ -191,8 +206,9 @@ void MismatchedIteratorChecker::checkPreCall(const CallEvent &Call,
 
 void MismatchedIteratorChecker::checkPreStmt(const BinaryOperator *BO,
                                              CheckerContext &C) const {
-  if (!BO->isComparisonOp())
+  if (!BO->isComparisonOp()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   SVal LVal = State->getSVal(BO->getLHS(), C.getLocationContext());
@@ -206,14 +222,16 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C, const SVal &Iter,
   Cont = Cont->getMostDerivedObjectRegion();
 
   if (const auto *ContSym = Cont->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
+    if (isa<SymbolConjured>(ContSym->getSymbol())) {
       return;
+}
   }
 
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   const auto *IterCont = Pos->getContainer();
 
@@ -222,8 +240,9 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C, const SVal &Iter,
   // the same or a different container but we get different conjured symbols
   // for each call. This may cause false positives so omit them from the check.
   if (const auto *ContSym = IterCont->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
+    if (isa<SymbolConjured>(ContSym->getSymbol())) {
       return;
+}
   }
 
   if (IterCont != Cont) {
@@ -242,8 +261,9 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C,
   // Verify match between the containers of two iterators
   auto State = C.getState();
   const auto *Pos1 = getIteratorPosition(State, Iter1);
-  if (!Pos1)
+  if (!Pos1) {
     return;
+}
 
   const auto *IterCont1 = Pos1->getContainer();
 
@@ -252,24 +272,28 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C,
   // the same or a different container but we get different conjured symbols
   // for each call. This may cause false positives so omit them from the check.
   if (const auto *ContSym = IterCont1->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
+    if (isa<SymbolConjured>(ContSym->getSymbol())) {
       return;
+}
   }
 
   const auto *Pos2 = getIteratorPosition(State, Iter2);
-  if (!Pos2)
+  if (!Pos2) {
     return;
+}
 
   const auto *IterCont2 = Pos2->getContainer();
   if (const auto *ContSym = IterCont2->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
+    if (isa<SymbolConjured>(ContSym->getSymbol())) {
       return;
+}
   }
 
   if (IterCont1 != IterCont2) {
     auto *N = C.generateNonFatalErrorNode(State);
-    if (!N)
+    if (!N) {
       return;
+}
     reportBug("Iterators of different containers used where the "
                         "same container is expected.", Iter1, Iter2, C, N);
   }

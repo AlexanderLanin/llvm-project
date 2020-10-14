@@ -43,9 +43,11 @@ public:
   explicit FindSuperCallVisitor(Selector S) : DoesCallSuper(false), Sel(S) {}
 
   bool VisitObjCMessageExpr(ObjCMessageExpr *E) {
-    if (E->getSelector() == Sel)
-      if (E->getReceiverKind() == ObjCMessageExpr::SuperInstance)
+    if (E->getSelector() == Sel) {
+      if (E->getReceiverKind() == ObjCMessageExpr::SuperInstance) {
         DoesCallSuper = true;
+}
+}
 
     // Recurse if we didn't find the super call yet.
     return !DoesCallSuper;
@@ -91,8 +93,9 @@ bool ObjCSuperCallChecker::isCheckableClass(const ObjCImplementationDecl *D,
   for ( ; ID ; ID = ID->getSuperClass())
   {
     SuperclassName = ID->getIdentifier()->getName();
-    if (SelectorsForClass.count(SuperclassName))
+    if (SelectorsForClass.count(SuperclassName)) {
       return true;
+}
   }
   return false;
 }
@@ -169,21 +172,24 @@ void ObjCSuperCallChecker::checkASTDecl(const ObjCImplementationDecl *D,
   ASTContext &Ctx = BR.getContext();
 
   // We need to initialize the selector table once.
-  if (!IsInitialized)
+  if (!IsInitialized) {
     initializeSelectors(Ctx);
+}
 
   // Find out whether this class has a superclass that we are supposed to check.
   StringRef SuperclassName;
-  if (!isCheckableClass(D, SuperclassName))
+  if (!isCheckableClass(D, SuperclassName)) {
     return;
+}
 
 
   // Iterate over all instance methods.
   for (auto *MD : D->instance_methods()) {
     Selector S = MD->getSelector();
     // Find out whether this is a selector that we want to check.
-    if (!SelectorsForClass[SuperclassName].count(S))
+    if (!SelectorsForClass[SuperclassName].count(S)) {
       continue;
+}
 
     // Check if the method calls its superclass implementation.
     if (MD->getBody())

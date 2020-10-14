@@ -149,14 +149,16 @@ SourceSelectionArgument::fromString(StringRef Value) {
     StringRef Filename = Value.drop_front(strlen("test:"));
     Optional<TestSelectionRangesInFile> ParsedTestSelection =
         findTestSelectionRanges(Filename);
-    if (!ParsedTestSelection)
+    if (!ParsedTestSelection) {
       return nullptr; // A parsing error was already reported.
+}
     return std::make_unique<TestSourceSelectionArgument>(
         std::move(*ParsedTestSelection));
   }
   Optional<ParsedSourceRange> Range = ParsedSourceRange::fromString(Value);
-  if (Range)
+  if (Range) {
     return std::make_unique<SourceRangeSelectionArgument>(std::move(*Range));
+}
   llvm::errs() << "error: '-selection' option must be specified using "
                   "<file>:<line>:<column> or "
                   "<file>:<line>:<column>-<line>:<column> format\n";
@@ -201,8 +203,9 @@ public:
       return;
     }
     Value = None;
-    if (Opt.isRequired())
+    if (Opt.isRequired()) {
       MissingRequiredOptions.push_back(&Opt);
+}
   }
 
   ArrayRef<const RefactoringOption *> getMissingRequiredOptions() const {
@@ -225,16 +228,18 @@ public:
       : Category(Category), Subcommand(Subcommand), Options(Options) {}
 
   void visit(const RefactoringOption &Opt, Optional<std::string> &) override {
-    if (Visited.insert(&Opt).second)
+    if (Visited.insert(&Opt).second) {
       Options.addStringOption(Opt, create<std::string>(Opt));
+}
   }
 
 private:
   template <typename T>
   std::unique_ptr<cl::opt<T>> create(const RefactoringOption &Opt) {
-    if (!OptionNames.insert(Opt.getName()).second)
+    if (!OptionNames.insert(Opt.getName()).second) {
       llvm::report_fatal_error("Multiple identical refactoring options "
                                "specified for one refactoring action");
+}
     // FIXME: cl::Required can be specified when this option is present
     // in all rules in an action.
     return std::make_unique<cl::opt<T>>(
@@ -288,8 +293,9 @@ public:
   bool parseSelectionArgument() {
     if (Selection) {
       ParsedSelection = SourceSelectionArgument::fromString(*Selection);
-      if (!ParsedSelection)
+      if (!ParsedSelection) {
         return true;
+}
     }
     return false;
   }
@@ -371,11 +377,13 @@ public:
   // command line options.
   llvm::Error Init() {
     auto Subcommand = getSelectedSubcommand();
-    if (!Subcommand)
+    if (!Subcommand) {
       return Subcommand.takeError();
+}
     auto Rule = getMatchingRule(**Subcommand);
-    if (!Rule)
+    if (!Rule) {
       return Rule.takeError();
+}
 
     SelectedSubcommand = *Subcommand;
     MatchingRule = *Rule;
@@ -397,28 +405,32 @@ public:
     // consumer.
     std::unique_ptr<ClangRefactorToolConsumerInterface> TestConsumer;
     bool HasSelection = MatchingRule->hasSelectionRequirement();
-    if (HasSelection)
+    if (HasSelection) {
       TestConsumer = SelectedSubcommand->getSelection()->createCustomConsumer();
+}
     ClangRefactorToolConsumerInterface *ActiveConsumer =
         TestConsumer ? TestConsumer.get() : Consumer.get();
     ActiveConsumer->beginTU(AST);
 
     auto InvokeRule = [&](RefactoringResultConsumer &Consumer) {
-      if (opts::Verbose)
+      if (opts::Verbose) {
         logInvocation(*SelectedSubcommand, Context);
+}
       MatchingRule->invoke(*ActiveConsumer, Context);
     };
     if (HasSelection) {
       assert(SelectedSubcommand->getSelection() &&
              "Missing selection argument?");
-      if (opts::Verbose)
+      if (opts::Verbose) {
         SelectedSubcommand->getSelection()->print(llvm::outs());
+}
       if (SelectedSubcommand->getSelection()->forAllRanges(
               Context.getSources(), [&](SourceRange R) {
                 Context.setSelectionRange(R);
                 InvokeRule(*ActiveConsumer);
-              }))
+              })) {
         HasFailed = true;
+}
       ActiveConsumer->endTU();
       return;
     }
@@ -477,8 +489,9 @@ public:
   // this point.
   bool applySourceChanges() {
     std::set<std::string> Files;
-    for (const auto &Change : Changes)
+    for (const auto &Change : Changes) {
       Files.insert(Change.getFilePath());
+}
     // FIXME: Add automatic formatting support as well.
     tooling::ApplyChangesSpec Spec;
     // FIXME: We should probably cleanup the result by default as well.
@@ -548,16 +561,18 @@ private:
           }
         }
       }
-      for (const RefactoringOption *Opt : Visitor.getMissingRequiredOptions())
+      for (const RefactoringOption *Opt : Visitor.getMissingRequiredOptions()) {
         MissingOptions.insert(Opt->getName());
+}
     }
     if (MatchingRules.empty()) {
       std::string Error;
       llvm::raw_string_ostream OS(Error);
       OS << "ERROR: '" << Subcommand.getName()
          << "' can't be invoked with the given arguments:\n";
-      for (const auto &Opt : MissingOptions)
+      for (const auto &Opt : MissingOptions) {
         OS << "  missing '-" << Opt.getKey() << "' option\n";
+}
       OS.flush();
       return llvm::make_error<llvm::StringError>(
           Error, llvm::inconvertibleErrorCode());
@@ -587,8 +602,9 @@ private:
       llvm::raw_string_ostream OS(Error);
       OS << "error: no refactoring action given\n";
       OS << "note: the following actions are supported:\n";
-      for (const auto &Subcommand : SubCommands)
+      for (const auto &Subcommand : SubCommands) {
         OS.indent(2) << Subcommand->getName() << "\n";
+}
       OS.flush();
       return llvm::make_error<llvm::StringError>(
           Error, llvm::inconvertibleErrorCode());

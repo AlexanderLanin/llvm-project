@@ -84,8 +84,9 @@ void CloneChecker::checkEndOfTranslationUnit(const TranslationUnitDecl *TU,
 
   // We are done for this translation unit unless we also need to report normal
   // clones.
-  if (!ReportNormalClones)
+  if (!ReportNormalClones) {
     return;
+}
 
   // Now that the suspicious clone detector has checked for pattern errors,
   // we also filter all clones who don't have matching patterns
@@ -108,8 +109,9 @@ void CloneChecker::reportClones(
     BugReporter &BR, AnalysisManager &Mgr,
     std::vector<CloneDetector::CloneGroup> &CloneGroups) const {
 
-  if (!BT_Exact)
+  if (!BT_Exact) {
     BT_Exact.reset(new BugType(this, "Exact code clone", "Code clone"));
+}
 
   for (const CloneDetector::CloneGroup &Group : CloneGroups) {
     // We group the clones by printing the first as a warning and all others
@@ -118,9 +120,10 @@ void CloneChecker::reportClones(
         *BT_Exact, "Duplicate code detected", makeLocation(Group.front(), Mgr));
     R->addRange(Group.front().getSourceRange());
 
-    for (unsigned i = 1; i < Group.size(); ++i)
+    for (unsigned i = 1; i < Group.size(); ++i) {
       R->addNote("Similar code here", makeLocation(Group[i], Mgr),
                  Group[i].getSourceRange());
+}
     BR.emitReport(std::move(R));
   }
 }
@@ -154,9 +157,10 @@ void CloneChecker::reportSuspiciousClones(
     }
   }
 
-  if (!BT_Suspicious)
+  if (!BT_Suspicious) {
     BT_Suspicious.reset(
         new BugType(this, "Suspicious code clone", "Code clone"));
+}
 
   ASTContext &ACtx = BR.getContext();
   SourceManager &SM = ACtx.getSourceManager();
@@ -197,9 +201,10 @@ void ento::registerCloneChecker(CheckerManager &Mgr) {
   Checker->MinComplexity = Mgr.getAnalyzerOptions().getCheckerIntegerOption(
       Checker, "MinimumCloneComplexity");
 
-  if (Checker->MinComplexity < 0)
+  if (Checker->MinComplexity < 0) {
     Mgr.reportInvalidCheckerOptionValue(
         Checker, "MinimumCloneComplexity", "a non-negative value");
+}
 
   Checker->ReportNormalClones = Mgr.getAnalyzerOptions().getCheckerBooleanOption(
       Checker, "ReportNormalClones");

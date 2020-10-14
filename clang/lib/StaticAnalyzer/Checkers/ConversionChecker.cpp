@@ -57,18 +57,21 @@ void ConversionChecker::checkPreStmt(const ImplicitCastExpr *Cast,
                                      CheckerContext &C) const {
   // TODO: For now we only warn about DeclRefExpr, to avoid noise. Warn for
   // calculations also.
-  if (!isa<DeclRefExpr>(Cast->IgnoreParenImpCasts()))
+  if (!isa<DeclRefExpr>(Cast->IgnoreParenImpCasts())) {
     return;
+}
 
   // Don't warn for loss of sign/precision in macros.
-  if (Cast->getExprLoc().isMacroID())
+  if (Cast->getExprLoc().isMacroID()) {
     return;
+}
 
   // Get Parent.
   const ParentMap &PM = C.getLocationContext()->getParentMap();
   const Stmt *Parent = PM.getParent(Cast);
-  if (!Parent)
+  if (!Parent) {
     return;
+}
 
   bool LossOfSign = false;
   bool LossOfPrecision = false;
@@ -105,20 +108,24 @@ void ConversionChecker::checkPreStmt(const ImplicitCastExpr *Cast,
   if (LossOfSign || LossOfPrecision) {
     // Generate an error node.
     ExplodedNode *N = C.generateNonFatalErrorNode(C.getState());
-    if (!N)
+    if (!N) {
       return;
-    if (LossOfSign)
+}
+    if (LossOfSign) {
       reportBug(N, C, "Loss of sign in implicit conversion");
-    if (LossOfPrecision)
+}
+    if (LossOfPrecision) {
       reportBug(N, C, "Loss of precision in implicit conversion");
+}
   }
 }
 
 void ConversionChecker::reportBug(ExplodedNode *N, CheckerContext &C,
                                   const char Msg[]) const {
-  if (!BT)
+  if (!BT) {
     BT.reset(
         new BuiltinBug(this, "Conversion", "Possible loss of sign/precision."));
+}
 
   // Generate a report for this bug.
   auto R = std::make_unique<PathSensitiveBugReport>(*BT, Msg, N);
@@ -129,13 +136,15 @@ bool ConversionChecker::isLossOfPrecision(const ImplicitCastExpr *Cast,
                                           QualType DestType,
                                           CheckerContext &C) const {
   // Don't warn about explicit loss of precision.
-  if (Cast->isEvaluatable(C.getASTContext()))
+  if (Cast->isEvaluatable(C.getASTContext())) {
     return false;
+}
 
   QualType SubType = Cast->IgnoreParenImpCasts()->getType();
 
-  if (!DestType->isRealType() || !SubType->isIntegerType())
+  if (!DestType->isRealType() || !SubType->isIntegerType()) {
     return false;
+}
 
   const bool isFloat = DestType->isFloatingType();
 
@@ -154,8 +163,9 @@ bool ConversionChecker::isLossOfPrecision(const ImplicitCastExpr *Cast,
       // This is just casting a number to bool, probably not a bug.
       return false;
     }
-    if (DestType->isSignedIntegerType())
+    if (DestType->isSignedIntegerType()) {
       RepresentsUntilExp--;
+}
   }
 
   if (RepresentsUntilExp >= sizeof(unsigned long long) * CHAR_BIT) {
@@ -164,8 +174,9 @@ bool ConversionChecker::isLossOfPrecision(const ImplicitCastExpr *Cast,
   }
 
   unsigned CorrectedSrcWidth = AC.getIntWidth(SubType);
-  if (SubType->isSignedIntegerType())
+  if (SubType->isSignedIntegerType()) {
     CorrectedSrcWidth--;
+}
 
   if (RepresentsUntilExp >= CorrectedSrcWidth) {
     // Simple case: the destination can store all values of the source type.
@@ -186,8 +197,9 @@ bool ConversionChecker::isLossOfSign(const ImplicitCastExpr *Cast,
   QualType CastType = Cast->getType();
   QualType SubType = Cast->IgnoreParenImpCasts()->getType();
 
-  if (!CastType->isUnsignedIntegerType() || !SubType->isSignedIntegerType())
+  if (!CastType->isUnsignedIntegerType() || !SubType->isSignedIntegerType()) {
     return false;
+}
 
   return C.isNegative(Cast->getSubExpr());
 }

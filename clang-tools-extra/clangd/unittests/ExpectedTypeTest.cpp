@@ -54,8 +54,9 @@ protected:
 
     std::vector<Matcher<MapEntry>> Elements;
     Elements.reserve(Classes.size());
-    for (auto &Cls : Classes)
+    for (auto &Cls : Classes) {
       Elements.push_back(Field(&MapEntry::second, Cls));
+}
     return UnorderedElementsAreArray(Elements);
   }
 

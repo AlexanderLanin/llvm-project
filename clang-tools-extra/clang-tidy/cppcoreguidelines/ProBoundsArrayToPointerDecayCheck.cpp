@@ -20,9 +20,11 @@ namespace cppcoreguidelines {
 namespace {
 AST_MATCHER_P(CXXForRangeStmt, hasRangeBeginEndStmt,
               ast_matchers::internal::Matcher<DeclStmt>, InnerMatcher) {
-  for (const DeclStmt *Stmt : {Node.getBeginStmt(), Node.getEndStmt()})
-    if (Stmt != nullptr && InnerMatcher.matches(*Stmt, Finder, Builder))
+  for (const DeclStmt *Stmt : {Node.getBeginStmt(), Node.getEndStmt()}) {
+    if (Stmt != nullptr && InnerMatcher.matches(*Stmt, Finder, Builder)) {
       return true;
+}
+}
   return false;
 }
 
@@ -37,11 +39,13 @@ AST_MATCHER_P(Expr, hasParentIgnoringImpCasts,
   const Expr *E = &Node;
   do {
     DynTypedNodeList Parents = Finder->getASTContext().getParents(*E);
-    if (Parents.size() != 1)
+    if (Parents.size() != 1) {
       return false;
+}
     E = Parents[0].get<Expr>();
-    if (!E)
+    if (!E) {
       return false;
+}
   } while (isa<ImplicitCastExpr>(E));
 
   return InnerMatcher.matches(*E, Finder, Builder);
@@ -67,8 +71,9 @@ void ProBoundsArrayToPointerDecayCheck::registerMatchers(MatchFinder *Finder) {
 void ProBoundsArrayToPointerDecayCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedCast = Result.Nodes.getNodeAs<ImplicitCastExpr>("cast");
-  if (MatchedCast->getCastKind() != CK_ArrayToPointerDecay)
+  if (MatchedCast->getCastKind() != CK_ArrayToPointerDecay) {
     return;
+}
 
   diag(MatchedCast->getExprLoc(), "do not implicitly decay an array into a "
                                   "pointer; consider using gsl::array_view or "

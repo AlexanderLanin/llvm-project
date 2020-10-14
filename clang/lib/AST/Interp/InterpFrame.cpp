@@ -36,10 +36,12 @@ InterpFrame::InterpFrame(InterpState &S, Function *Func, InterpFrame *Caller,
 }
 
 InterpFrame::~InterpFrame() {
-  if (Func && Func->isConstructor() && This.isBaseClass())
+  if (Func && Func->isConstructor() && This.isBaseClass()) {
     This.initialize();
-  for (auto &Param : Params)
+}
+  for (auto &Param : Params) {
     S.deallocate(reinterpret_cast<Block *>(Param.second.get()));
+}
 }
 
 void InterpFrame::destroy(unsigned Idx) {
@@ -86,8 +88,9 @@ void print(llvm::raw_ostream &OS, const Pointer &P, ASTContext &Ctx,
     llvm_unreachable("Invalid descriptor type");
   };
 
-  if (!Ty->isReferenceType())
+  if (!Ty->isReferenceType()) {
     OS << "&";
+}
   llvm::SmallVector<Pointer, 2> Levels;
   for (Pointer F = P; !F.isRoot(); ) {
     Levels.push_back(F);
@@ -130,21 +133,24 @@ void InterpFrame::describe(llvm::raw_ostream &OS) {
 
     TYPE_SWITCH(PrimTy, print(OS, stackRef<T>(Off), S.getCtx(), Ty));
     Off += align(primSize(PrimTy));
-    if (I + 1 != N)
+    if (I + 1 != N) {
       OS << ", ";
+}
   }
   OS << ")";
 }
 
 Frame *InterpFrame::getCaller() const {
-  if (Caller->Caller)
+  if (Caller->Caller) {
     return Caller;
+}
   return S.getSplitFrame();
 }
 
 SourceLocation InterpFrame::getCallLocation() const {
-  if (!Caller->Func)
+  if (!Caller->Func) {
     return S.getLocation(nullptr, {});
+}
   return S.getLocation(Caller->Func, RetPC - sizeof(uintptr_t));
 }
 

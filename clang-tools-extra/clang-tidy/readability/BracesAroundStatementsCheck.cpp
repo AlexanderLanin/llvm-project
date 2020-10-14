@@ -27,8 +27,9 @@ static tok::TokenKind getTokenKind(SourceLocation Loc, const SourceManager &SM,
       Lexer::getRawToken(Beginning, Tok, SM, Context->getLangOpts());
   assert(!Invalid && "Expected a valid token.");
 
-  if (Invalid)
+  if (Invalid) {
     return tok::NUM_TOKENS;
+}
 
   return Tok.getKind();
 }
@@ -38,12 +39,14 @@ forwardSkipWhitespaceAndComments(SourceLocation Loc, const SourceManager &SM,
                                  const ASTContext *Context) {
   assert(Loc.isValid());
   for (;;) {
-    while (isWhitespace(*SM.getCharacterData(Loc)))
+    while (isWhitespace(*SM.getCharacterData(Loc))) {
       Loc = Loc.getLocWithOffset(1);
+}
 
     tok::TokenKind TokKind = getTokenKind(Loc, SM, Context);
-    if (TokKind != tok::comment)
+    if (TokKind != tok::comment) {
       return Loc;
+}
 
     // Fast-forward current token.
     Loc = Lexer::getLocForEndOfToken(Loc, 0, SM, Context->getLangOpts());
@@ -54,8 +57,9 @@ static SourceLocation findEndLocation(const Stmt &S, const SourceManager &SM,
                                       const ASTContext *Context) {
   SourceLocation Loc =
       utils::lexer::getUnifiedEndLoc(S, SM, Context->getLangOpts());
-  if (!Loc.isValid())
+  if (!Loc.isValid()) {
     return Loc;
+}
 
   // Start searching right after S.
   Loc = Loc.getLocWithOffset(1);
@@ -129,19 +133,23 @@ void BracesAroundStatementsCheck::check(
     checkStmt(Result, S->getBody(), S->getDoLoc(), S->getWhileLoc());
   } else if (auto S = Result.Nodes.getNodeAs<WhileStmt>("while")) {
     SourceLocation StartLoc = findRParenLoc(S, SM, Context);
-    if (StartLoc.isInvalid())
+    if (StartLoc.isInvalid()) {
       return;
+}
     checkStmt(Result, S->getBody(), StartLoc);
   } else if (auto S = Result.Nodes.getNodeAs<IfStmt>("if")) {
     SourceLocation StartLoc = findRParenLoc(S, SM, Context);
-    if (StartLoc.isInvalid())
+    if (StartLoc.isInvalid()) {
       return;
-    if (ForceBracesStmts.erase(S))
+}
+    if (ForceBracesStmts.erase(S)) {
       ForceBracesStmts.insert(S->getThen());
+}
     bool BracedIf = checkStmt(Result, S->getThen(), StartLoc, S->getElseLoc());
     const Stmt *Else = S->getElse();
-    if (Else && BracedIf)
+    if (Else && BracedIf) {
       ForceBracesStmts.insert(Else);
+}
     if (Else && !isa<IfStmt>(Else)) {
       // Omit 'else if' statements here, they will be handled directly.
       checkStmt(Result, Else, S->getElseLoc());
@@ -158,12 +166,14 @@ BracesAroundStatementsCheck::findRParenLoc(const IfOrWhileStmt *S,
                                            const SourceManager &SM,
                                            const ASTContext *Context) {
   // Skip macros.
-  if (S->getBeginLoc().isMacroID())
+  if (S->getBeginLoc().isMacroID()) {
     return SourceLocation();
+}
 
   SourceLocation CondEndLoc = S->getCond()->getEndLoc();
-  if (const DeclStmt *CondVar = S->getConditionVariableDeclStmt())
+  if (const DeclStmt *CondVar = S->getConditionVariableDeclStmt()) {
     CondEndLoc = CondVar->getEndLoc();
+}
 
   if (!CondEndLoc.isValid()) {
     return SourceLocation();
@@ -171,15 +181,18 @@ BracesAroundStatementsCheck::findRParenLoc(const IfOrWhileStmt *S,
 
   SourceLocation PastCondEndLoc =
       Lexer::getLocForEndOfToken(CondEndLoc, 0, SM, Context->getLangOpts());
-  if (PastCondEndLoc.isInvalid())
+  if (PastCondEndLoc.isInvalid()) {
     return SourceLocation();
+}
   SourceLocation RParenLoc =
       forwardSkipWhitespaceAndComments(PastCondEndLoc, SM, Context);
-  if (RParenLoc.isInvalid())
+  if (RParenLoc.isInvalid()) {
     return SourceLocation();
+}
   tok::TokenKind TokKind = getTokenKind(RParenLoc, SM, Context);
-  if (TokKind != tok::r_paren)
+  if (TokKind != tok::r_paren) {
     return SourceLocation();
+}
   return RParenLoc;
 }
 
@@ -200,8 +213,9 @@ bool BracesAroundStatementsCheck::checkStmt(
     return false;
   }
 
-  if (!InitialLoc.isValid())
+  if (!InitialLoc.isValid()) {
     return false;
+}
   const SourceManager &SM = *Result.SourceManager;
   const ASTContext *Context = Result.Context;
 
@@ -212,8 +226,9 @@ bool BracesAroundStatementsCheck::checkStmt(
                    CharSourceRange::getCharRange(InitialLoc, S->getBeginLoc()),
                    SM, Context->getLangOpts())
                    .getBegin();
-  if (InitialLoc.isInvalid())
+  if (InitialLoc.isInvalid()) {
     return false;
+}
   SourceLocation StartLoc =
       Lexer::getLocForEndOfToken(InitialLoc, 0, SM, Context->getLangOpts());
 
@@ -235,8 +250,9 @@ bool BracesAroundStatementsCheck::checkStmt(
   if (ShortStatementLines && !ForceBracesStmts.erase(S)) {
     unsigned StartLine = SM.getSpellingLineNumber(StartLoc);
     unsigned EndLine = SM.getSpellingLineNumber(EndLoc);
-    if (EndLine - StartLine < ShortStatementLines)
+    if (EndLine - StartLine < ShortStatementLines) {
       return false;
+}
   }
 
   auto Diag = diag(StartLoc, "statement should be inside braces");
@@ -251,8 +267,9 @@ bool BracesAroundStatementsCheck::checkStmt(
           CharSourceRange::getTokenRange(SourceRange(
               SM.getSpellingLoc(StartLoc), SM.getSpellingLoc(EndLoc))),
           SM, Context->getLangOpts())
-          .isInvalid())
+          .isInvalid()) {
     return false;
+}
 
   Diag << FixItHint::CreateInsertion(StartLoc, " {")
        << FixItHint::CreateInsertion(EndLoc, ClosingInsertion);

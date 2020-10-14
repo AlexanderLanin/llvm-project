@@ -29,12 +29,14 @@ bool hasPublicRefAndDeref(const CXXRecordDecl *R) {
     const auto MethodName = safeGetName(MD);
 
     if (MethodName == "ref" && MD->getAccess() == AS_public) {
-      if (hasDeref)
+      if (hasDeref) {
         return true;
+}
       hasRef = true;
     } else if (MethodName == "deref" && MD->getAccess() == AS_public) {
-      if (hasRef)
+      if (hasRef) {
         return true;
+}
       hasDeref = true;
     }
   }
@@ -50,14 +52,17 @@ isRefCountable(const CXXBaseSpecifier *Base) {
   assert(Base);
 
   const Type *T = Base->getType().getTypePtrOrNull();
-  if (!T)
+  if (!T) {
     return llvm::None;
+}
 
   const CXXRecordDecl *R = T->getAsCXXRecordDecl();
-  if (!R)
+  if (!R) {
     return llvm::None;
-  if (!R->hasDefinition())
+}
+  if (!R->hasDefinition()) {
     return llvm::None;
+}
 
   return hasPublicRefAndDeref(R) ? R : nullptr;
 }
@@ -66,11 +71,13 @@ llvm::Optional<bool> isRefCountable(const CXXRecordDecl *R) {
   assert(R);
 
   R = R->getDefinition();
-  if (!R)
+  if (!R) {
     return llvm::None;
+}
 
-  if (hasPublicRefAndDeref(R))
+  if (hasPublicRefAndDeref(R)) {
     return true;
+}
 
   CXXBasePaths Paths;
   Paths.setOrigin(const_cast<CXXRecordDecl *>(R));
@@ -89,8 +96,9 @@ llvm::Optional<bool> isRefCountable(const CXXRecordDecl *R) {
 
   bool BasesResult = R->lookupInBases(isRefCountableBase, Paths,
                                       /*LookupInDependent =*/true);
-  if (AnyInconclusiveBase)
+  if (AnyInconclusiveBase) {
     return llvm::None;
+}
 
   return BasesResult;
 }
@@ -114,12 +122,14 @@ bool isCtorOfRefCounted(const clang::FunctionDecl *F) {
 
 llvm::Optional<bool> isUncounted(const CXXRecordDecl *Class) {
   // Keep isRefCounted first as it's cheaper.
-  if (isRefCounted(Class))
+  if (isRefCounted(Class)) {
     return false;
+}
 
   llvm::Optional<bool> IsRefCountable = isRefCountable(Class);
-  if (!IsRefCountable)
+  if (!IsRefCountable) {
     return llvm::None;
+}
 
   return (*IsRefCountable);
 }
@@ -148,8 +158,9 @@ Optional<bool> isGetterOfRefCounted(const CXXMethodDecl *M) {
         ((className == "String" || className == "AtomString" ||
           className == "AtomStringImpl" || className == "UniqueString" ||
           className == "UniqueStringImpl" || className == "Identifier") &&
-         methodName == "impl"))
+         methodName == "impl")) {
       return true;
+}
 
     // Ref<T> -> T conversion
     // FIXME: Currently allowing any Ref<T> -> whatever cast.
@@ -177,16 +188,18 @@ bool isRefCounted(const CXXRecordDecl *R) {
 
 bool isPtrConversion(const FunctionDecl *F) {
   assert(F);
-  if (isCtorOfRefCounted(F))
+  if (isCtorOfRefCounted(F)) {
     return true;
+}
 
   // FIXME: check # of params == 1
   const auto FunctionName = safeGetName(F);
   if (FunctionName == "getPtr" || FunctionName == "WeakPtr" ||
       FunctionName == "makeWeakPtr"
 
-      || FunctionName == "downcast" || FunctionName == "bitwise_cast")
+      || FunctionName == "downcast" || FunctionName == "bitwise_cast") {
     return true;
+}
 
   return false;
 }

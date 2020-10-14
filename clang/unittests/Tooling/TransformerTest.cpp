@@ -73,8 +73,9 @@ static void compareSnippets(StringRef Expected,
   auto Actual = *MaybeActual;
   std::string HL = "#include \"header.h\"\n";
   auto I = Actual.find(HL);
-  if (I != std::string::npos)
+  if (I != std::string::npos) {
     Actual.erase(I, HL.size());
+}
   EXPECT_EQ(format(Expected), format(Actual));
 }
 

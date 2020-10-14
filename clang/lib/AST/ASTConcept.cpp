@@ -26,12 +26,12 @@ ASTConstraintSatisfaction::ASTConstraintSatisfaction(const ASTContext &C,
     IsSatisfied{Satisfaction.IsSatisfied} {
   for (unsigned I = 0; I < NumRecords; ++I) {
     auto &Detail = Satisfaction.Details[I];
-    if (Detail.second.is<Expr *>())
+    if (Detail.second.is<Expr *>()) {
       new (getTrailingObjects<UnsatisfiedConstraintRecord>() + I)
          UnsatisfiedConstraintRecord{Detail.first,
                                      UnsatisfiedConstraintRecord::second_type(
                                          Detail.second.get<Expr *>())};
-    else {
+    } else {
       auto &SubstitutionDiagnostic =
           *Detail.second.get<std::pair<SourceLocation, StringRef> *>();
       unsigned MessageSize = SubstitutionDiagnostic.second.size();
@@ -63,6 +63,7 @@ void ConstraintSatisfaction::Profile(
     const NamedDecl *ConstraintOwner, ArrayRef<TemplateArgument> TemplateArgs) {
   ID.AddPointer(ConstraintOwner);
   ID.AddInteger(TemplateArgs.size());
-  for (auto &Arg : TemplateArgs)
+  for (auto &Arg : TemplateArgs) {
     Arg.Profile(ID, C);
+}
 }

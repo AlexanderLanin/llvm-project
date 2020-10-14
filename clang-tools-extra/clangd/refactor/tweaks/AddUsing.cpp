@@ -90,8 +90,9 @@ private:
 };
 
 bool isFullyQualified(const NestedNameSpecifier *NNS) {
-  if (!NNS)
+  if (!NNS) {
     return false;
+}
   return NNS->getKind() == NestedNameSpecifier::Global ||
          isFullyQualified(NNS->getPrefix());
 }
@@ -135,12 +136,14 @@ findInsertionPoint(const Tweak::Selection &Inputs,
   for (auto &U : Usings) {
     // Only "upgrade" to fully qualified is all relevant using decls are fully
     // qualified. Otherwise trust what the user typed.
-    if (!isFullyQualified(U->getQualifier()))
+    if (!isFullyQualified(U->getQualifier())) {
       AlwaysFullyQualify = false;
+}
 
-    if (SM.isBeforeInTranslationUnit(Inputs.Cursor, U->getUsingLoc()))
+    if (SM.isBeforeInTranslationUnit(Inputs.Cursor, U->getUsingLoc())) {
       // "Usings" is sorted, so we're done.
       break;
+}
     if (U->getQualifier()->getAsNamespace()->getCanonicalDecl() ==
             QualifierToRemove.getNestedNameSpecifier()
                 ->getAsNamespace()
@@ -199,8 +202,9 @@ bool isNamespaceForbidden(const Tweak::Selection &Inputs,
 
   for (StringRef Banned : Config::current().Style.FullyQualifiedNamespaces) {
     StringRef PrefixMatch = NamespaceStr;
-    if (PrefixMatch.consume_front(Banned) && PrefixMatch.consume_front("::"))
+    if (PrefixMatch.consume_front(Banned) && PrefixMatch.consume_front("::")) {
       return true;
+}
   }
 
   return false;
@@ -211,12 +215,14 @@ bool AddUsing::prepare(const Selection &Inputs) {
 
   // Do not suggest "using" in header files. That way madness lies.
   if (isHeaderFile(SM.getFileEntryForID(SM.getMainFileID())->getName(),
-                   Inputs.AST->getLangOpts()))
+                   Inputs.AST->getLangOpts())) {
     return false;
+}
 
   auto *Node = Inputs.ASTSelection.commonAncestor();
-  if (Node == nullptr)
+  if (Node == nullptr) {
     return false;
+}
 
   // If we're looking at a type or NestedNameSpecifier, walk up the tree until
   // we find the "main" node we care about, which would be ElaboratedTypeLoc or
@@ -237,8 +243,9 @@ bool AddUsing::prepare(const Selection &Inputs) {
     }
     break;
   }
-  if (Node == nullptr)
+  if (Node == nullptr) {
     return false;
+}
 
   if (auto *D = Node->ASTNode.get<DeclRefExpr>()) {
     if (auto *II = D->getDecl()->getIdentifier()) {
@@ -264,8 +271,9 @@ bool AddUsing::prepare(const Selection &Inputs) {
     return false;
   }
 
-  if (isNamespaceForbidden(Inputs, *QualifierToRemove.getNestedNameSpecifier()))
+  if (isNamespaceForbidden(Inputs, *QualifierToRemove.getNestedNameSpecifier())) {
     return false;
+}
 
   // Macros are difficult. We only want to offer code action when what's spelled
   // under the cursor is a namespace qualifier. If it's a macro that expands to
@@ -311,8 +319,9 @@ Expected<Tweak::Effect> AddUsing::apply(const Selection &Inputs) {
     llvm::raw_string_ostream UsingTextStream(UsingText);
     UsingTextStream << "using ";
     if (InsertionPoint->AlwaysFullyQualify &&
-        !isFullyQualified(QualifierToRemove.getNestedNameSpecifier()))
+        !isFullyQualified(QualifierToRemove.getNestedNameSpecifier())) {
       UsingTextStream << "::";
+}
     QualifierToRemove.getNestedNameSpecifier()->print(
         UsingTextStream, Inputs.AST->getASTContext().getPrintingPolicy());
     UsingTextStream << Name << ";" << InsertionPoint->Suffix;

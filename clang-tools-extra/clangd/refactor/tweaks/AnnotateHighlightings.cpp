@@ -38,8 +38,9 @@ REGISTER_TWEAK(AnnotateHighlightings)
 Expected<Tweak::Effect> AnnotateHighlightings::apply(const Selection &Inputs) {
   const Decl *CommonDecl = nullptr;
   for (auto N = Inputs.ASTSelection.commonAncestor(); N && !CommonDecl;
-       N = N->Parent)
+       N = N->Parent) {
     CommonDecl = N->ASTNode.get<Decl>();
+}
 
   std::vector<HighlightingToken> HighlightingTokens;
   if (!CommonDecl) {
@@ -64,14 +65,16 @@ Expected<Tweak::Effect> AnnotateHighlightings::apply(const Selection &Inputs) {
     assert(Token.R.start.line == Token.R.end.line &&
            "Token must be at the same line");
     auto InsertOffset = positionToOffset(Inputs.Code, Token.R.start);
-    if (!InsertOffset)
+    if (!InsertOffset) {
       return InsertOffset.takeError();
+}
 
     auto InsertReplacement = tooling::Replacement(
         FilePath, *InsertOffset, 0,
         ("/* " + toTextMateScope(Token.Kind) + " */").str());
-    if (auto Err = Result.add(InsertReplacement))
+    if (auto Err = Result.add(InsertReplacement)) {
       return std::move(Err);
+}
   }
   return Effect::mainFileEdit(SM, std::move(Result));
 }

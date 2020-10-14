@@ -70,19 +70,22 @@ void ImplicitConversionInLoopCheck::check(
   const auto *OperatorCall =
       Result.Nodes.getNodeAs<Expr>("operator-call");
 
-  if (const auto *Cleanup = dyn_cast<ExprWithCleanups>(Init))
+  if (const auto *Cleanup = dyn_cast<ExprWithCleanups>(Init)) {
     Init = Cleanup->getSubExpr();
+}
 
   const auto *Materialized = dyn_cast<MaterializeTemporaryExpr>(Init);
-  if (!Materialized)
+  if (!Materialized) {
     return;
+}
 
   // We ignore NoOp casts. Those are generated if the * operator on the
   // iterator returns a value instead of a reference, and the loop variable
   // is a reference. This situation is fine (it probably produces the same
   // code at the end).
-  if (IsNonTrivialImplicitCast(Materialized->getSubExpr()))
+  if (IsNonTrivialImplicitCast(Materialized->getSubExpr())) {
     ReportAndFix(Result.Context, VD, OperatorCall);
+}
 }
 
 void ImplicitConversionInLoopCheck::ReportAndFix(

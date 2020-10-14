@@ -357,11 +357,12 @@ struct CheckColoredDiagnosticsAction : public clang::ASTFrontendAction {
       : ShouldShowColor(ShouldShowColor) {}
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &Compiler,
                                                  StringRef) override {
-    if (Compiler.getDiagnosticOpts().ShowColors != ShouldShowColor)
+    if (Compiler.getDiagnosticOpts().ShowColors != ShouldShowColor) {
       Compiler.getDiagnostics().Report(
           Compiler.getDiagnostics().getCustomDiagID(
               DiagnosticsEngine::Fatal,
               "getDiagnosticOpts().ShowColors != ShouldShowColor"));
+}
     return std::make_unique<ASTConsumer>();
   }
 
@@ -406,8 +407,9 @@ TEST(ClangToolTest, ArgumentAdjusters) {
   ArgumentsAdjuster CheckSyntaxOnlyAdjuster =
       [&Found, &Ran](const CommandLineArguments &Args, StringRef /*unused*/) {
     Ran = true;
-    if (llvm::is_contained(Args, "-fsyntax-only"))
+    if (llvm::is_contained(Args, "-fsyntax-only")) {
       Found = true;
+}
     return Args;
   };
   Tool.appendArgumentsAdjuster(CheckSyntaxOnlyAdjuster);
@@ -438,8 +440,9 @@ TEST(ClangToolTest, NoDoubleSyntaxOnly) {
       [&SyntaxOnlyCount](const CommandLineArguments &Args,
                          StringRef /*unused*/) {
         for (llvm::StringRef Arg : Args) {
-          if (Arg == "-fsyntax-only")
+          if (Arg == "-fsyntax-only") {
             ++SyntaxOnlyCount;
+}
         }
         return Args;
       };
@@ -468,8 +471,9 @@ TEST(ClangToolTest, NoOutputCommands) {
       [&OutputCommands, &Ran](const CommandLineArguments &Args,
                               StringRef /*unused*/) {
         for (llvm::StringRef Arg : Args) {
-          for (llvm::StringRef OutputCommand : OutputCommands)
+          for (llvm::StringRef OutputCommand : OutputCommands) {
             EXPECT_FALSE(Arg.contains(OutputCommand));
+}
         }
         Ran = true;
         return Args;
@@ -636,8 +640,9 @@ std::string getAnyTarget() {
   for (const auto &Target : llvm::TargetRegistry::targets()) {
     std::string Error;
     StringRef TargetName(Target.getName());
-    if (TargetName == "x86-64")
+    if (TargetName == "x86-64") {
       TargetName = "x86_64";
+}
     if (llvm::TargetRegistry::lookupTarget(std::string(TargetName), Error) ==
         &Target) {
       return std::string(TargetName);

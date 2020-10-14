@@ -100,8 +100,9 @@ bool ByteCodeExprGen<Emitter>::VisitCastExpr(const CastExpr *CE) {
         },
         [this, CE](PrimType T) {
           // Pointer on stack - dereference it.
-          if (!this->emitLoadPop(T, CE))
+          if (!this->emitLoadPop(T, CE)) {
             return false;
+}
           return DiscardResult ? this->emitPop(T, CE) : true;
         });
   }
@@ -127,13 +128,15 @@ bool ByteCodeExprGen<Emitter>::VisitCastExpr(const CastExpr *CE) {
 
 template <class Emitter>
 bool ByteCodeExprGen<Emitter>::VisitIntegerLiteral(const IntegerLiteral *LE) {
-  if (DiscardResult)
+  if (DiscardResult) {
     return true;
+}
 
   auto Val = LE->getValue();
   QualType LitTy = LE->getType();
-  if (Optional<PrimType> T = classify(LitTy))
+  if (Optional<PrimType> T = classify(LitTy)) {
     return emitConst(*T, getIntWidth(LitTy), LE->getValue(), LE);
+}
   return this->bail(LE);
 }
 
@@ -150,10 +153,12 @@ bool ByteCodeExprGen<Emitter>::VisitBinaryOperator(const BinaryOperator *BO) {
   // Deal with operations which have composite or void types.
   switch (BO->getOpcode()) {
   case BO_Comma:
-    if (!discard(LHS))
+    if (!discard(LHS)) {
       return false;
-    if (!this->Visit(RHS))
+}
+    if (!this->Visit(RHS)) {
       return false;
+}
     return true;
   default:
     break;
@@ -167,14 +172,17 @@ bool ByteCodeExprGen<Emitter>::VisitBinaryOperator(const BinaryOperator *BO) {
   }
 
   if (Optional<PrimType> T = classify(BO->getType())) {
-    if (!visit(LHS))
+    if (!visit(LHS)) {
       return false;
-    if (!visit(RHS))
+}
+    if (!visit(RHS)) {
       return false;
+}
 
     auto Discard = [this, T, BO](bool Result) {
-      if (!Result)
+      if (!Result) {
         return false;
+}
       return DiscardResult ? this->emitPop(*T, BO) : true;
     };
 
@@ -262,16 +270,19 @@ bool ByteCodeExprGen<Emitter>::dereference(
       // Only primitive, non bit-field types can be dereferenced directly.
       if (auto *DE = dyn_cast<DeclRefExpr>(LV)) {
         if (!DE->getDecl()->getType()->isReferenceType()) {
-          if (auto *PD = dyn_cast<ParmVarDecl>(DE->getDecl()))
+          if (auto *PD = dyn_cast<ParmVarDecl>(DE->getDecl())) {
             return dereferenceParam(LV, *T, PD, AK, Direct, Indirect);
-          if (auto *VD = dyn_cast<VarDecl>(DE->getDecl()))
+}
+          if (auto *VD = dyn_cast<VarDecl>(DE->getDecl())) {
             return dereferenceVar(LV, *T, VD, AK, Direct, Indirect);
+}
         }
       }
     }
 
-    if (!visit(LV))
+    if (!visit(LV)) {
       return false;
+}
     return Indirect(*T);
   }
 
@@ -291,19 +302,24 @@ bool ByteCodeExprGen<Emitter>::dereferenceParam(
       return DiscardResult ? true : this->emitGetParam(T, Idx, LV);
 
     case DerefKind::Write:
-      if (!Direct(T))
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetParam(T, Idx, LV))
+}
+      if (!this->emitSetParam(T, Idx, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrParam(Idx, LV);
 
     case DerefKind::ReadWrite:
-      if (!this->emitGetParam(T, Idx, LV))
+      if (!this->emitGetParam(T, Idx, LV)) {
         return false;
-      if (!Direct(T))
+}
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetParam(T, Idx, LV))
+}
+      if (!this->emitSetParam(T, Idx, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrParam(Idx, LV);
     }
     return true;
@@ -311,8 +327,9 @@ bool ByteCodeExprGen<Emitter>::dereferenceParam(
 
   // If the param is a pointer, we can dereference a dummy value.
   if (!DiscardResult && T == PT_Ptr && AK == DerefKind::Read) {
-    if (auto Idx = P.getOrCreateDummy(PD))
+    if (auto Idx = P.getOrCreateDummy(PD)) {
       return this->emitGetPtrGlobal(*Idx, PD);
+}
     return false;
   }
 
@@ -330,47 +347,59 @@ bool ByteCodeExprGen<Emitter>::dereferenceVar(
     const auto &L = It->second;
     switch (AK) {
     case DerefKind::Read:
-      if (!this->emitGetLocal(T, L.Offset, LV))
+      if (!this->emitGetLocal(T, L.Offset, LV)) {
         return false;
+}
       return DiscardResult ? this->emitPop(T, LV) : true;
 
     case DerefKind::Write:
-      if (!Direct(T))
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetLocal(T, L.Offset, LV))
+}
+      if (!this->emitSetLocal(T, L.Offset, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrLocal(L.Offset, LV);
 
     case DerefKind::ReadWrite:
-      if (!this->emitGetLocal(T, L.Offset, LV))
+      if (!this->emitGetLocal(T, L.Offset, LV)) {
         return false;
-      if (!Direct(T))
+}
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetLocal(T, L.Offset, LV))
+}
+      if (!this->emitSetLocal(T, L.Offset, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrLocal(L.Offset, LV);
     }
   } else if (auto Idx = getGlobalIdx(VD)) {
     switch (AK) {
     case DerefKind::Read:
-      if (!this->emitGetGlobal(T, *Idx, LV))
+      if (!this->emitGetGlobal(T, *Idx, LV)) {
         return false;
+}
       return DiscardResult ? this->emitPop(T, LV) : true;
 
     case DerefKind::Write:
-      if (!Direct(T))
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetGlobal(T, *Idx, LV))
+}
+      if (!this->emitSetGlobal(T, *Idx, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrGlobal(*Idx, LV);
 
     case DerefKind::ReadWrite:
-      if (!this->emitGetGlobal(T, *Idx, LV))
+      if (!this->emitGetGlobal(T, *Idx, LV)) {
         return false;
-      if (!Direct(T))
+}
+      if (!Direct(T)) {
         return false;
-      if (!this->emitSetGlobal(T, *Idx, LV))
+}
+      if (!this->emitSetGlobal(T, *Idx, LV)) {
         return false;
+}
       return DiscardResult ? true : this->emitGetPtrGlobal(*Idx, LV);
     }
   }
@@ -381,8 +410,9 @@ bool ByteCodeExprGen<Emitter>::dereferenceVar(
   if (!DiscardResult && AK == DerefKind::Read) {
     if (VD->hasLocalStorage() && VD->hasInit() && !VD->isConstexpr()) {
       QualType VT = VD->getType();
-      if (VT.isConstQualified() && VT->isFundamentalType())
+      if (VT.isConstQualified() && VT->isFundamentalType()) {
         return this->Visit(VD->getInit());
+}
     }
   }
 
@@ -426,8 +456,9 @@ unsigned ByteCodeExprGen<Emitter>::allocateLocalPrimitive(DeclTy &&Src,
                                                           bool IsExtended) {
   Descriptor *D = P.createDescriptor(Src, Ty, IsConst, Src.is<const Expr *>());
   Scope::Local Local = this->createLocal(D);
-  if (auto *VD = dyn_cast_or_null<ValueDecl>(Src.dyn_cast<const Decl *>()))
+  if (auto *VD = dyn_cast_or_null<ValueDecl>(Src.dyn_cast<const Decl *>())) {
     Locals.insert({VD, Local});
+}
   VarScope->add(Local, IsExtended);
   return Local.Offset;
 }
@@ -450,12 +481,14 @@ ByteCodeExprGen<Emitter>::allocateLocal(DeclTy &&Src, bool IsExtended) {
 
   Descriptor *D = P.createDescriptor(Src, Ty.getTypePtr(),
                                      Ty.isConstQualified(), IsTemporary);
-  if (!D)
+  if (!D) {
     return {};
+}
 
   Scope::Local Local = this->createLocal(D);
-  if (Key)
+  if (Key) {
     Locals.insert({Key, Local});
+}
   VarScope->add(Local, IsExtended);
   return Local.Offset;
 }
@@ -471,10 +504,11 @@ template <class Emitter>
 bool ByteCodeExprGen<Emitter>::getPtrVarDecl(const VarDecl *VD, const Expr *E) {
   // Generate a pointer to the local, loading refs.
   if (Optional<unsigned> Idx = getGlobalIdx(VD)) {
-    if (VD->getType()->isReferenceType())
+    if (VD->getType()->isReferenceType()) {
       return this->emitGetGlobalPtr(*Idx, E);
-    else
+    } else {
       return this->emitGetPtrGlobal(*Idx, E);
+}
   }
   return this->bail(VD);
 }
@@ -496,10 +530,11 @@ ByteCodeExprGen<Emitter>::getGlobalIdx(const VarDecl *VD) {
 
 template <class Emitter>
 const RecordType *ByteCodeExprGen<Emitter>::getRecordTy(QualType Ty) {
-  if (auto *PT = dyn_cast<PointerType>(Ty))
+  if (auto *PT = dyn_cast<PointerType>(Ty)) {
     return PT->getPointeeType()->getAs<RecordType>();
-  else
+  } else {
     return Ty->getAs<RecordType>();
+}
 }
 
 template <class Emitter>
@@ -518,13 +553,15 @@ Record *ByteCodeExprGen<Emitter>::getRecord(const RecordDecl *RD) {
 template <class Emitter>
 bool ByteCodeExprGen<Emitter>::visitExpr(const Expr *Exp) {
   ExprScope<Emitter> RootScope(this);
-  if (!visit(Exp))
+  if (!visit(Exp)) {
     return false;
+}
 
-  if (Optional<PrimType> T = classify(Exp))
+  if (Optional<PrimType> T = classify(Exp)) {
     return this->emitRet(*T, Exp);
-  else
+  } else {
     return this->emitRetValue(Exp);
+}
 }
 
 template <class Emitter>
@@ -536,27 +573,32 @@ bool ByteCodeExprGen<Emitter>::visitDecl(const VarDecl *VD) {
       {
         // Primitive declarations - compute the value and set it.
         DeclScope<Emitter> LocalScope(this, VD);
-        if (!visit(Init))
+        if (!visit(Init)) {
           return false;
+}
       }
 
       // If the declaration is global, save the value for later use.
-      if (!this->emitDup(*T, VD))
+      if (!this->emitDup(*T, VD)) {
         return false;
-      if (!this->emitInitGlobal(*T, *I, VD))
+}
+      if (!this->emitInitGlobal(*T, *I, VD)) {
         return false;
+}
       return this->emitRet(*T, VD);
     } else {
       {
         // Composite declarations - allocate storage and initialize it.
         DeclScope<Emitter> LocalScope(this, VD);
-        if (!visitGlobalInitializer(Init, *I))
+        if (!visitGlobalInitializer(Init, *I)) {
           return false;
+}
       }
 
       // Return a pointer to the global.
-      if (!this->emitGetPtrGlobal(*I, VD))
+      if (!this->emitGetPtrGlobal(*I, VD)) {
         return false;
+}
       return this->emitRetValue(VD);
     }
   }
@@ -566,8 +608,9 @@ bool ByteCodeExprGen<Emitter>::visitDecl(const VarDecl *VD) {
 
 template <class Emitter>
 void ByteCodeExprGen<Emitter>::emitCleanup() {
-  for (VariableScope<Emitter> *C = VarScope; C; C = C->getParent())
+  for (VariableScope<Emitter> *C = VarScope; C; C = C->getParent()) {
     C->emitDestruction();
+}
 }
 
 namespace clang {

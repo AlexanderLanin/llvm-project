@@ -28,8 +28,9 @@ using namespace llvm::omp;
 
 CGOpenMPRuntimeNVPTX::CGOpenMPRuntimeNVPTX(CodeGenModule &CGM)
     : CGOpenMPRuntimeGPU(CGM) {
-  if (!CGM.getLangOpts().OpenMPIsDevice)
+  if (!CGM.getLangOpts().OpenMPIsDevice) {
     llvm_unreachable("OpenMP NVPTX can only handle device code.");
+}
 }
 
 llvm::Value *CGOpenMPRuntimeNVPTX::getGPUWarpSize(CodeGenFunction &CGF) {

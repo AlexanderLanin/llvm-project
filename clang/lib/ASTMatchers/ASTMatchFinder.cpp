@@ -112,25 +112,26 @@ public:
   //     recursion.
   bool findMatch(const DynTypedNode &DynNode) {
     reset();
-    if (const Decl *D = DynNode.get<Decl>())
+    if (const Decl *D = DynNode.get<Decl>()) {
       traverse(*D);
-    else if (const Stmt *S = DynNode.get<Stmt>())
+    } else if (const Stmt *S = DynNode.get<Stmt>()) {
       traverse(*S);
-    else if (const NestedNameSpecifier *NNS =
-             DynNode.get<NestedNameSpecifier>())
+    } else if (const NestedNameSpecifier *NNS =
+             DynNode.get<NestedNameSpecifier>()) {
       traverse(*NNS);
-    else if (const NestedNameSpecifierLoc *NNSLoc =
-             DynNode.get<NestedNameSpecifierLoc>())
+    } else if (const NestedNameSpecifierLoc *NNSLoc =
+             DynNode.get<NestedNameSpecifierLoc>()) {
       traverse(*NNSLoc);
-    else if (const QualType *Q = DynNode.get<QualType>())
+    } else if (const QualType *Q = DynNode.get<QualType>()) {
       traverse(*Q);
-    else if (const TypeLoc *T = DynNode.get<TypeLoc>())
+    } else if (const TypeLoc *T = DynNode.get<TypeLoc>()) {
       traverse(*T);
-    else if (const auto *C = DynNode.get<CXXCtorInitializer>())
+    } else if (const auto *C = DynNode.get<CXXCtorInitializer>()) {
       traverse(*C);
-    else if (const TemplateArgumentLoc *TALoc =
-                 DynNode.get<TemplateArgumentLoc>())
+    } else if (const TemplateArgumentLoc *TALoc =
+                 DynNode.get<TemplateArgumentLoc>()) {
       traverse(*TALoc);
+}
     // FIXME: Add other base types after adding tests.
 
     // It's OK to always overwrite the bound nodes, as if there was
@@ -155,57 +156,67 @@ public:
       auto *LambdaNode = dyn_cast_or_null<LambdaExpr>(StmtNode);
       if (LambdaNode &&
           Finder->getASTContext().getParentMapContext().getTraversalKind() ==
-              TK_IgnoreUnlessSpelledInSource)
+              TK_IgnoreUnlessSpelledInSource) {
         StmtToTraverse = LambdaNode;
-      else
+      } else {
         StmtToTraverse =
             Finder->getASTContext().getParentMapContext().traverseIgnored(
                 ExprNode);
+}
     }
     if (Traversal == TraversalKind::TK_IgnoreImplicitCastsAndParentheses) {
-      if (Expr *ExprNode = dyn_cast_or_null<Expr>(StmtNode))
+      if (Expr *ExprNode = dyn_cast_or_null<Expr>(StmtNode)) {
         StmtToTraverse = ExprNode->IgnoreParenImpCasts();
+}
     }
     return StmtToTraverse;
   }
 
   bool TraverseStmt(Stmt *StmtNode, DataRecursionQueue *Queue = nullptr) {
     // If we need to keep track of the depth, we can't perform data recursion.
-    if (CurrentDepth == 0 || (CurrentDepth <= MaxDepth && MaxDepth < INT_MAX))
+    if (CurrentDepth == 0 || (CurrentDepth <= MaxDepth && MaxDepth < INT_MAX)) {
       Queue = nullptr;
+}
 
     ScopedIncrement ScopedDepth(&CurrentDepth);
     Stmt *StmtToTraverse = getStmtToTraverse(StmtNode);
-    if (!StmtToTraverse)
+    if (!StmtToTraverse) {
       return true;
-    if (!match(*StmtToTraverse))
+}
+    if (!match(*StmtToTraverse)) {
       return false;
+}
     return VisitorBase::TraverseStmt(StmtToTraverse, Queue);
   }
   // We assume that the QualType and the contained type are on the same
   // hierarchy level. Thus, we try to match either of them.
   bool TraverseType(QualType TypeNode) {
-    if (TypeNode.isNull())
+    if (TypeNode.isNull()) {
       return true;
+}
     ScopedIncrement ScopedDepth(&CurrentDepth);
     // Match the Type.
-    if (!match(*TypeNode))
+    if (!match(*TypeNode)) {
       return false;
+}
     // The QualType is matched inside traverse.
     return traverse(TypeNode);
   }
   // We assume that the TypeLoc, contained QualType and contained Type all are
   // on the same hierarchy level. Thus, we try to match all of them.
   bool TraverseTypeLoc(TypeLoc TypeLocNode) {
-    if (TypeLocNode.isNull())
+    if (TypeLocNode.isNull()) {
       return true;
+}
     ScopedIncrement ScopedDepth(&CurrentDepth);
     // Match the Type.
-    if (!match(*TypeLocNode.getType()))
+    if (!match(*TypeLocNode.getType())) {
       return false;
+}
     // Match the QualType.
-    if (!match(TypeLocNode.getType()))
+    if (!match(TypeLocNode.getType())) {
       return false;
+}
     // The TypeLoc is matched inside traverse.
     return traverse(TypeLocNode);
   }
@@ -214,16 +225,19 @@ public:
     return (NNS == nullptr) || traverse(*NNS);
   }
   bool TraverseNestedNameSpecifierLoc(NestedNameSpecifierLoc NNS) {
-    if (!NNS)
+    if (!NNS) {
       return true;
+}
     ScopedIncrement ScopedDepth(&CurrentDepth);
-    if (!match(*NNS.getNestedNameSpecifier()))
+    if (!match(*NNS.getNestedNameSpecifier())) {
       return false;
+}
     return traverse(NNS);
   }
   bool TraverseConstructorInitializer(CXXCtorInitializer *CtorInit) {
-    if (!CtorInit)
+    if (!CtorInit) {
       return true;
+}
     ScopedIncrement ScopedDepth(&CurrentDepth);
     return traverse(*CtorInit);
   }
@@ -233,36 +247,44 @@ public:
   }
   bool TraverseLambdaExpr(LambdaExpr *Node) {
     if (Finder->getASTContext().getParentMapContext().getTraversalKind() !=
-        TK_IgnoreUnlessSpelledInSource)
+        TK_IgnoreUnlessSpelledInSource) {
       return VisitorBase::TraverseLambdaExpr(Node);
-    if (!Node)
+}
+    if (!Node) {
       return true;
+}
     ScopedIncrement ScopedDepth(&CurrentDepth);
 
     for (unsigned I = 0, N = Node->capture_size(); I != N; ++I) {
       const auto *C = Node->capture_begin() + I;
-      if (!C->isExplicit())
+      if (!C->isExplicit()) {
         continue;
-      if (Node->isInitCapture(C) && !match(*C->getCapturedVar()))
+}
+      if (Node->isInitCapture(C) && !match(*C->getCapturedVar())) {
         return false;
-      if (!match(*Node->capture_init_begin()[I]))
+}
+      if (!match(*Node->capture_init_begin()[I])) {
         return false;
+}
     }
 
     if (const auto *TPL = Node->getTemplateParameterList()) {
       for (const auto *TP : *TPL) {
-        if (!match(*TP))
+        if (!match(*TP)) {
           return false;
+}
       }
     }
 
     for (const auto *P : Node->getCallOperator()->parameters()) {
-      if (!match(*P))
+      if (!match(*P)) {
         return false;
+}
     }
 
-    if (!match(*Node->getBody()))
+    if (!match(*Node->getBody())) {
       return false;
+}
 
     return true;
   }
@@ -351,8 +373,9 @@ private:
   bool traverse(const T &Node) {
     static_assert(IsBaseType<T>::value,
                   "traverse can only be instantiated with base type");
-    if (!match(Node))
+    if (!match(Node)) {
       return false;
+}
     return baseTraverse(Node);
   }
 
@@ -386,8 +409,9 @@ public:
     const bool EnableCheckProfiling = Options.CheckProfiling.hasValue();
     TimeBucketRegion Timer;
     for (MatchCallback *MC : Matchers->AllCallbacks) {
-      if (EnableCheckProfiling)
+      if (EnableCheckProfiling) {
         Timer.setBucket(&TimeByBucket[MC->getID()]);
+}
       MC->onStartOfTranslationUnit();
     }
   }
@@ -396,8 +420,9 @@ public:
     const bool EnableCheckProfiling = Options.CheckProfiling.hasValue();
     TimeBucketRegion Timer;
     for (MatchCallback *MC : Matchers->AllCallbacks) {
-      if (EnableCheckProfiling)
+      if (EnableCheckProfiling) {
         Timer.setBucket(&TimeByBucket[MC->getID()]);
+}
       MC->onEndOfTranslationUnit();
     }
   }
@@ -465,9 +490,10 @@ public:
                                   BoundNodesTreeBuilder *Builder, int MaxDepth,
                                   TraversalKind Traversal, BindKind Bind) {
     // For AST-nodes that don't have an identity, we can't memoize.
-    if (!Node.getMemoizationData() || !Builder->isComparable())
+    if (!Node.getMemoizationData() || !Builder->isComparable()) {
       return matchesRecursively(Node, Matcher, Builder, MaxDepth, Traversal,
                                 Bind);
+}
 
     MatchKey Key;
     Key.MatcherID = Matcher.getID();
@@ -520,8 +546,9 @@ public:
                       const DynTypedMatcher &Matcher,
                       BoundNodesTreeBuilder *Builder, TraversalKind Traversal,
                       BindKind Bind) override {
-    if (ResultCache.size() > MaxMemoizationEntries)
+    if (ResultCache.size() > MaxMemoizationEntries) {
       ResultCache.clear();
+}
     return memoizedMatchesRecursively(Node, Ctx, Matcher, Builder, 1, Traversal,
                                       Bind);
   }
@@ -530,8 +557,9 @@ public:
                            const DynTypedMatcher &Matcher,
                            BoundNodesTreeBuilder *Builder,
                            BindKind Bind) override {
-    if (ResultCache.size() > MaxMemoizationEntries)
+    if (ResultCache.size() > MaxMemoizationEntries) {
       ResultCache.clear();
+}
     return memoizedMatchesRecursively(Node, Ctx, Matcher, Builder, INT_MAX,
                                       TraversalKind::TK_AsIs, Bind);
   }
@@ -542,10 +570,12 @@ public:
                          AncestorMatchMode MatchMode) override {
     // Reset the cache outside of the recursive call to make sure we
     // don't invalidate any iterators.
-    if (ResultCache.size() > MaxMemoizationEntries)
+    if (ResultCache.size() > MaxMemoizationEntries) {
       ResultCache.clear();
-    if (MatchMode == AncestorMatchMode::AMM_ParentOnly)
+}
+    if (MatchMode == AncestorMatchMode::AMM_ParentOnly) {
       return matchesParentOf(Node, Matcher, Builder);
+}
     return matchesAnyAncestorOf(Node, Ctx, Matcher, Builder);
   }
 
@@ -601,10 +631,12 @@ private:
     void setBucket(llvm::TimeRecord *NewBucket) {
       if (Bucket != NewBucket) {
         auto Now = llvm::TimeRecord::getCurrentTime(true);
-        if (Bucket)
+        if (Bucket) {
           *Bucket += Now;
-        if (NewBucket)
+}
+        if (NewBucket) {
           *NewBucket -= Now;
+}
         Bucket = NewBucket;
       }
     }
@@ -621,8 +653,9 @@ private:
     const bool EnableCheckProfiling = Options.CheckProfiling.hasValue();
     TimeBucketRegion Timer;
     for (const auto &MP : Matchers) {
-      if (EnableCheckProfiling)
+      if (EnableCheckProfiling) {
         Timer.setBucket(&TimeByBucket[MP.second->getID()]);
+}
       BoundNodesTreeBuilder Builder;
       if (MP.first.matches(Node, this, &Builder)) {
         MatchVisitor Visitor(ActiveASTContext, MP.second);
@@ -637,16 +670,18 @@ private:
     const auto &Filter =
         it != MatcherFiltersMap.end() ? it->second : getFilterForKind(Kind);
 
-    if (Filter.empty())
+    if (Filter.empty()) {
       return;
+}
 
     const bool EnableCheckProfiling = Options.CheckProfiling.hasValue();
     TimeBucketRegion Timer;
     auto &Matchers = this->Matchers->DeclOrStmt;
     for (unsigned short I : Filter) {
       auto &MP = Matchers[I];
-      if (EnableCheckProfiling)
+      if (EnableCheckProfiling) {
         Timer.setBucket(&TimeByBucket[MP.second->getID()]);
+}
       BoundNodesTreeBuilder Builder;
       if (MP.first.matches(DynNode, this, &Builder)) {
         MatchVisitor Visitor(ActiveASTContext, MP.second);
@@ -772,8 +807,9 @@ private:
       Parents = ActiveASTContext->getParents(Node);
       // Either no parents or multiple parents: leave chain+memoize mode and
       // enter bfs+forgetful mode.
-      if (Parents.size() != 1)
+      if (Parents.size() != 1) {
         break;
+}
 
       // Check the next parent.
       Node = *Parents.begin();
@@ -820,8 +856,9 @@ private:
           // Make sure we do not visit the same node twice.
           // Otherwise, we'll visit the common ancestors as often as there
           // are splits on the way down.
-          if (Visited.insert(Parent.getMemoizationData()).second)
+          if (Visited.insert(Parent.getMemoizationData()).second) {
             Queue.push_back(Parent);
+}
         }
         Queue.pop_front();
       }
@@ -854,8 +891,9 @@ private:
     const Type *const CanonicalType =
       ActiveASTContext->getCanonicalType(TypeNode);
     auto Aliases = TypeAliases.find(CanonicalType);
-    if (Aliases == TypeAliases.end())
+    if (Aliases == TypeAliases.end()) {
       return false;
+}
     for (const TypedefNameDecl *Alias : Aliases->second) {
       BoundNodesTreeBuilder Result(*Builder);
       if (Matcher.matches(*Alias, this, &Result)) {
@@ -871,8 +909,9 @@ private:
                                          const Matcher<NamedDecl> &Matcher,
                                          BoundNodesTreeBuilder *Builder) {
     auto Aliases = CompatibleAliases.find(InterfaceDecl);
-    if (Aliases == CompatibleAliases.end())
+    if (Aliases == CompatibleAliases.end()) {
       return false;
+}
     for (const ObjCCompatibleAliasDecl *Alias : Aliases->second) {
       BoundNodesTreeBuilder Result(*Builder);
       if (Matcher.matches(*Alias, this, &Result)) {
@@ -916,21 +955,25 @@ private:
 
 static CXXRecordDecl *
 getAsCXXRecordDeclOrPrimaryTemplate(const Type *TypeNode) {
-  if (auto *RD = TypeNode->getAsCXXRecordDecl())
+  if (auto *RD = TypeNode->getAsCXXRecordDecl()) {
     return RD;
+}
 
   // Find the innermost TemplateSpecializationType that isn't an alias template.
   auto *TemplateType = TypeNode->getAs<TemplateSpecializationType>();
-  while (TemplateType && TemplateType->isTypeAlias())
+  while (TemplateType && TemplateType->isTypeAlias()) {
     TemplateType =
         TemplateType->getAliasedType()->getAs<TemplateSpecializationType>();
+}
 
   // If this is the name of a (dependent) template specialization, use the
   // definition of the template, even though it might be specialized later.
-  if (TemplateType)
+  if (TemplateType) {
     if (auto *ClassTemplate = dyn_cast_or_null<ClassTemplateDecl>(
-          TemplateType->getTemplateName().getAsTemplateDecl()))
+          TemplateType->getTemplateName().getAsTemplateDecl())) {
       return ClassTemplate->getTemplatedDecl();
+}
+}
 
   return nullptr;
 }
@@ -942,20 +985,23 @@ bool MatchASTVisitor::classIsDerivedFrom(const CXXRecordDecl *Declaration,
                                          const Matcher<NamedDecl> &Base,
                                          BoundNodesTreeBuilder *Builder,
                                          bool Directly) {
-  if (!Declaration->hasDefinition())
+  if (!Declaration->hasDefinition()) {
     return false;
+}
   for (const auto &It : Declaration->bases()) {
     const Type *TypeNode = It.getType().getTypePtr();
 
-    if (typeHasMatchingAlias(TypeNode, Base, Builder))
+    if (typeHasMatchingAlias(TypeNode, Base, Builder)) {
       return true;
+}
 
     // FIXME: Going to the primary template here isn't really correct, but
     // unfortunately we accept a Decl matcher for the base class not a Type
     // matcher, so it's the best thing we can do with our current interface.
     CXXRecordDecl *ClassDecl = getAsCXXRecordDeclOrPrimaryTemplate(TypeNode);
-    if (!ClassDecl)
+    if (!ClassDecl) {
       continue;
+}
     if (ClassDecl == Declaration) {
       // This can happen for recursive template definitions.
       continue;
@@ -965,8 +1011,9 @@ bool MatchASTVisitor::classIsDerivedFrom(const CXXRecordDecl *Declaration,
       *Builder = std::move(Result);
       return true;
     }
-    if (!Directly && classIsDerivedFrom(ClassDecl, Base, Builder, Directly))
+    if (!Directly && classIsDerivedFrom(ClassDecl, Base, Builder, Directly)) {
       return true;
+}
   }
   return false;
 }
@@ -981,20 +1028,24 @@ bool MatchASTVisitor::objcClassIsDerivedFrom(
   for (const ObjCInterfaceDecl *ClassDecl = Declaration->getSuperClass();
        ClassDecl != nullptr; ClassDecl = ClassDecl->getSuperClass()) {
     // Check if there are any matching compatibility aliases.
-    if (objcClassHasMatchingCompatibilityAlias(ClassDecl, Base, Builder))
+    if (objcClassHasMatchingCompatibilityAlias(ClassDecl, Base, Builder)) {
       return true;
+}
 
     // Check if there are any matching type aliases.
     const Type *TypeNode = ClassDecl->getTypeForDecl();
-    if (typeHasMatchingAlias(TypeNode, Base, Builder))
+    if (typeHasMatchingAlias(TypeNode, Base, Builder)) {
       return true;
+}
 
-    if (Base.matches(*ClassDecl, this, Builder))
+    if (Base.matches(*ClassDecl, this, Builder)) {
       return true;
+}
 
     // Not `return false` as a temporary workaround for PR43879.
-    if (Directly)
+    if (Directly) {
       break;
+}
   }
 
   return false;
@@ -1039,23 +1090,26 @@ bool MatchASTVisitor::TraverseNestedNameSpecifier(NestedNameSpecifier *NNS) {
 
 bool MatchASTVisitor::TraverseNestedNameSpecifierLoc(
     NestedNameSpecifierLoc NNS) {
-  if (!NNS)
+  if (!NNS) {
     return true;
+}
 
   match(NNS);
 
   // We only match the nested name specifier here (as opposed to traversing it)
   // because the traversal is already done in the parallel "Loc"-hierarchy.
-  if (NNS.hasQualifier())
+  if (NNS.hasQualifier()) {
     match(*NNS.getNestedNameSpecifier());
+}
   return
       RecursiveASTVisitor<MatchASTVisitor>::TraverseNestedNameSpecifierLoc(NNS);
 }
 
 bool MatchASTVisitor::TraverseConstructorInitializer(
     CXXCtorInitializer *CtorInit) {
-  if (!CtorInit)
+  if (!CtorInit) {
     return true;
+}
 
   match(*CtorInit);
 

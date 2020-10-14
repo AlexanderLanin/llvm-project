@@ -42,8 +42,9 @@ void tools::PS4cpu::addProfileRTArgs(const ToolChain &TC, const ArgList &Args,
        Args.hasFlag(options::OPT_fcs_profile_generate_EQ,
                     options::OPT_fno_profile_generate, false) ||
        Args.hasArg(options::OPT_fcreate_profile) ||
-       Args.hasArg(options::OPT_coverage)))
+       Args.hasArg(options::OPT_coverage))) {
     CmdArgs.push_back("--dependent-lib=libclang_rt.profile-x86_64.a");
+}
 }
 
 void tools::PS4cpu::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
@@ -84,10 +85,12 @@ static void AddPS4SanitizerArgs(const ToolChain &TC, ArgStringList &CmdArgs) {
 void tools::PS4cpu::addSanitizerArgs(const ToolChain &TC,
                                      ArgStringList &CmdArgs) {
   const SanitizerArgs &SanArgs = TC.getSanitizerArgs();
-  if (SanArgs.needsUbsanRt())
+  if (SanArgs.needsUbsanRt()) {
     CmdArgs.push_back("--dependent-lib=libSceDbgUBSanitizer_stub_weak.a");
-  if (SanArgs.needsAsanRt())
+}
+  if (SanArgs.needsAsanRt()) {
     CmdArgs.push_back("--dependent-lib=libSceDbgAddressSanitizer_stub_weak.a");
+}
 }
 
 void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
@@ -108,16 +111,20 @@ void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+}
 
-  if (Args.hasArg(options::OPT_pie))
+  if (Args.hasArg(options::OPT_pie)) {
     CmdArgs.push_back("-pie");
+}
 
-  if (Args.hasArg(options::OPT_rdynamic))
+  if (Args.hasArg(options::OPT_rdynamic)) {
     CmdArgs.push_back("-export-dynamic");
-  if (Args.hasArg(options::OPT_shared))
+}
+  if (Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("--oformat=so");
+}
 
   if (Output.isFilename()) {
     CmdArgs.push_back("-o");
@@ -126,8 +133,9 @@ void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
     assert(Output.isNothing() && "Invalid output.");
   }
 
-  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs))
+  if(!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     AddPS4SanitizerArgs(ToolChain, CmdArgs);
+}
 
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   Args.AddAllArgs(CmdArgs, options::OPT_T_Group);
@@ -136,8 +144,9 @@ void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddAllArgs(CmdArgs, options::OPT_t);
   Args.AddAllArgs(CmdArgs, options::OPT_r);
 
-  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle))
+  if (Args.hasArg(options::OPT_Z_Xlinker__no_demangle)) {
     CmdArgs.push_back("--no-demangle");
+}
 
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
@@ -161,9 +170,10 @@ void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
 toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
                            const ArgList &Args)
     : Generic_ELF(D, Triple, Args) {
-  if (Args.hasArg(clang::driver::options::OPT_static))
+  if (Args.hasArg(clang::driver::options::OPT_static)) {
     D.Diag(clang::diag::err_drv_unsupported_opt_for_target) << "-static"
                                                             << "PS4";
+}
 
   // Determine where to find the PS4 libraries. We use SCE_ORBIS_SDK_DIR
   // if it exists; otherwise use the driver's installation path, which
@@ -171,8 +181,9 @@ toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
 
   SmallString<512> PS4SDKDir;
   if (const char *EnvValue = getenv("SCE_ORBIS_SDK_DIR")) {
-    if (!llvm::sys::fs::exists(EnvValue))
+    if (!llvm::sys::fs::exists(EnvValue)) {
       getDriver().Diag(clang::diag::warn_drv_ps4_sdk_dir) << EnvValue;
+}
     PS4SDKDir = EnvValue;
   } else {
     PS4SDKDir = getDriver().Dir;
@@ -186,10 +197,12 @@ toolchains::PS4CPU::PS4CPU(const Driver &D, const llvm::Triple &Triple,
   std::string PrefixDir;
   if (const Arg *A = Args.getLastArg(options::OPT_isysroot)) {
     PrefixDir = A->getValue();
-    if (!llvm::sys::fs::exists(PrefixDir))
+    if (!llvm::sys::fs::exists(PrefixDir)) {
       getDriver().Diag(clang::diag::warn_missing_sysroot) << PrefixDir;
-  } else
+}
+  } else {
     PrefixDir = std::string(PS4SDKDir.str());
+}
 
   SmallString<512> PS4SDKIncludeDir(PrefixDir);
   llvm::sys::path::append(PS4SDKIncludeDir, "target/include");

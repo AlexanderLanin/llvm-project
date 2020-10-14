@@ -73,8 +73,9 @@ std::string clang::tblgen::StmtNode::getId() const {
 /// Emit a string spelling out the C++ value type.
 void PropertyType::emitCXXValueTypeName(bool forRead, raw_ostream &out) const {
   if (!isGenericSpecialization()) {
-    if (!forRead && isConstWhenWriting())
+    if (!forRead && isConstWhenWriting()) {
       out << "const ";
+}
     out << getCXXTypeName();
   } else if (auto elementType = getArrayElementType()) {
     out << "llvm::ArrayRef<";
@@ -120,16 +121,18 @@ static void visitHierarchy(RecordKeeper &records,
   ChildMap hierarchy;
   ASTNode root;
   for (ASTNode node : nodes) {
-    if (auto base = node.getBase())
+    if (auto base = node.getBase()) {
       hierarchy.insert(std::make_pair(base, node));
-    else if (root)
+    } else if (root) {
       PrintFatalError(node.getLoc(),
                       "multiple root nodes in " + nodeClassName + " hierarchy");
-    else
+    } else {
       root = node;
+}
   }
-  if (!root)
+  if (!root) {
     PrintFatalError(Twine("no root node in ") + nodeClassName + " hierarchy");
+}
 
   // Now visit the map recursively, starting at the root node.
   visitASTNodeRecursive(root, ASTNode(), hierarchy, visit);

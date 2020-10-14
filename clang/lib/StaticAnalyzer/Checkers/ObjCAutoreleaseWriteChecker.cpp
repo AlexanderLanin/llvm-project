@@ -113,8 +113,9 @@ static void emitDiagnostics(BoundNodes &Match, const Decl *D, BugReporter &BR,
 
   const auto *PVD = Match.getNodeAs<ParmVarDecl>(ParamBind);
   QualType Ty = PVD->getType();
-  if (Ty->getPointeeType().getObjCLifetime() != Qualifiers::OCL_Autoreleasing)
+  if (Ty->getPointeeType().getObjCLifetime() != Qualifiers::OCL_Autoreleasing) {
     return;
+}
   const char *ActionMsg = "Write to";
   const auto *MarkedStmt = Match.getNodeAs<Expr>(ProblematicWriteBind);
   bool IsCapture = false;
@@ -143,22 +144,25 @@ static void emitDiagnostics(BoundNodes &Match, const Decl *D, BugReporter &BR,
   llvm::SmallString<128> BugMessageBuf;
   llvm::raw_svector_ostream BugMessage(BugMessageBuf);
   BugMessage << ActionMsg << " autoreleasing out parameter ";
-  if (IsCapture)
+  if (IsCapture) {
     BugMessage << "'" + PVD->getName() + "' ";
+}
 
   BugMessage << "inside ";
-  if (IsARP)
+  if (IsARP) {
     BugMessage << "locally-scoped autorelease pool;";
-  else
+  } else {
     BugMessage << "autorelease pool that may exit before "
                << FunctionDescription << " returns;";
+}
 
   BugMessage << " consider writing first to a strong local variable"
                 " declared outside ";
-  if (IsARP)
+  if (IsARP) {
     BugMessage << "of the autorelease pool";
-  else
+  } else {
     BugMessage << "of the block";
+}
 
   BR.EmitBasicReport(ADC->getDecl(), Checker, BugName.str(),
                      categories::MemoryRefCount, BugMessage.str(), Location,
@@ -225,8 +229,9 @@ void ObjCAutoreleaseWriteChecker::checkASTCodeBody(const Decl *D,
       blockDecl(HasParamAndWritesInMarkedFuncM)));
 
   auto Matches = match(MatcherM, *D, AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, D, BR, AM, this);
+}
 }
 
 void ento::registerAutoreleaseWriteChecker(CheckerManager &Mgr) {

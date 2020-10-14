@@ -59,13 +59,15 @@ void AvoidCStyleCastsCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *CastExpr = Result.Nodes.getNodeAs<CStyleCastExpr>("cast");
 
   // Ignore casts in macros.
-  if (CastExpr->getExprLoc().isMacroID())
+  if (CastExpr->getExprLoc().isMacroID()) {
     return;
+}
 
   // Casting to void is an idiomatic way to mute "unused variable" and similar
   // warnings.
-  if (CastExpr->getCastKind() == CK_ToVoid)
+  if (CastExpr->getCastKind() == CK_ToVoid) {
     return;
+}
 
   auto isFunction = [](QualType T) {
     T = T.getCanonicalType().getNonReferenceType();
@@ -104,23 +106,27 @@ void AvoidCStyleCastsCheck::check(const MatchFinder::MatchResult &Result) {
 
   // The rest of this check is only relevant to C++.
   // We also disable it for Objective-C++.
-  if (!getLangOpts().CPlusPlus || getLangOpts().ObjC)
+  if (!getLangOpts().CPlusPlus || getLangOpts().ObjC) {
     return;
+}
   // Ignore code inside extern "C" {} blocks.
   if (!match(expr(hasAncestor(linkageSpecDecl())), *CastExpr, *Result.Context)
-           .empty())
+           .empty()) {
     return;
+}
   // Ignore code in .c files and headers included from them, even if they are
   // compiled as C++.
-  if (getCurrentMainFile().endswith(".c"))
+  if (getCurrentMainFile().endswith(".c")) {
     return;
+}
 
   SourceManager &SM = *Result.SourceManager;
 
   // Ignore code in .c files #included in other files (which shouldn't be done,
   // but people still do this for test and other purposes).
-  if (SM.getFilename(SM.getSpellingLoc(CastExpr->getBeginLoc())).endswith(".c"))
+  if (SM.getFilename(SM.getSpellingLoc(CastExpr->getBeginLoc())).endswith(".c")) {
     return;
+}
 
   // Leave type spelling exactly as it was (unlike
   // getTypeAsWritten().getAsString() which would spell enum types 'enum X').
@@ -208,10 +214,11 @@ void AvoidCStyleCastsCheck::check(const MatchFinder::MatchResult &Result) {
   case CK_BitCast:
     // FIXME: Suggest const_cast<...>(reinterpret_cast<...>(...)) replacement.
     if (!needsConstCast(SourceType, DestType)) {
-      if (SourceType->isVoidPointerType())
+      if (SourceType->isVoidPointerType()) {
         ReplaceWithNamedCast("static_cast");
-      else
+      } else {
         ReplaceWithNamedCast("reinterpret_cast");
+}
       return;
     }
     break;

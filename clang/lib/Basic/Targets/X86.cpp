@@ -107,18 +107,21 @@ bool X86TargetInfo::initFeatureMap(
     const std::vector<std::string> &FeaturesVec) const {
   // FIXME: This *really* should not be here.
   // X86_64 always has SSE2.
-  if (getTriple().getArch() == llvm::Triple::x86_64)
+  if (getTriple().getArch() == llvm::Triple::x86_64) {
     setFeatureEnabled(Features, "sse2", true);
+}
 
   using namespace llvm::X86;
 
   SmallVector<StringRef, 16> CPUFeatures;
   getFeaturesForCPU(CPU, CPUFeatures);
-  for (auto &F : CPUFeatures)
+  for (auto &F : CPUFeatures) {
     setFeatureEnabled(Features, F, true);
+}
 
-  if (!TargetInfo::initFeatureMap(Features, Diags, CPU, FeaturesVec))
+  if (!TargetInfo::initFeatureMap(Features, Diags, CPU, FeaturesVec)) {
     return false;
+}
 
   // Can't do this earlier because we need to be able to explicitly enable
   // or disable these features and the things that they depend upon.
@@ -126,21 +129,24 @@ bool X86TargetInfo::initFeatureMap(
   // Enable popcnt if sse4.2 is enabled and popcnt is not explicitly disabled.
   auto I = Features.find("sse4.2");
   if (I != Features.end() && I->getValue() &&
-      llvm::find(FeaturesVec, "-popcnt") == FeaturesVec.end())
+      llvm::find(FeaturesVec, "-popcnt") == FeaturesVec.end()) {
     Features["popcnt"] = true;
+}
 
   // Additionally, if SSE is enabled and mmx is not explicitly disabled,
   // then enable MMX.
   I = Features.find("sse");
   if (I != Features.end() && I->getValue() &&
-      llvm::find(FeaturesVec, "-mmx") == FeaturesVec.end())
+      llvm::find(FeaturesVec, "-mmx") == FeaturesVec.end()) {
     Features["mmx"] = true;
+}
 
   // Enable xsave if avx is enabled and xsave is not explicitly disabled.
   I = Features.find("avx");
   if (I != Features.end() && I->getValue() &&
-      llvm::find(FeaturesVec, "-xsave") == FeaturesVec.end())
+      llvm::find(FeaturesVec, "-xsave") == FeaturesVec.end()) {
     Features["xsave"] = true;
+}
 
   return true;
 }
@@ -152,10 +158,11 @@ void X86TargetInfo::setFeatureEnabled(llvm::StringMap<bool> &Features,
     // via the -msse4/-mno-sse4 command line alias. Handle this the same way
     // here - turn on the sse4.2 if enabled, turn off the sse4.1 level if
     // disabled.
-    if (Enabled)
+    if (Enabled) {
       Name = "sse4.2";
-    else
+    } else {
       Name = "sse4.1";
+}
   }
 
   Features[Name] = Enabled;
@@ -167,8 +174,9 @@ void X86TargetInfo::setFeatureEnabled(llvm::StringMap<bool> &Features,
 bool X86TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
                                          DiagnosticsEngine &Diags) {
   for (const auto &Feature : Features) {
-    if (Feature[0] != '+')
+    if (Feature[0] != '+') {
       continue;
+}
 
     if (Feature == "+aes") {
       HasAES = true;
@@ -360,8 +368,9 @@ void X86TargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__GCC_ASM_FLAG_OUTPUTS__");
 
   std::string CodeModel = getTargetOpts().CodeModel;
-  if (CodeModel == "default")
+  if (CodeModel == "default") {
     CodeModel = "small";
+}
   Builder.defineMacro("__code_model_" + CodeModel + "__");
 
   // Target identification.
@@ -548,64 +557,83 @@ void X86TargetInfo::getTargetDefines(const LangOptions &Opts,
   // backend can't deal with (PR879).
   Builder.defineMacro("__NO_MATH_INLINES");
 
-  if (HasAES)
+  if (HasAES) {
     Builder.defineMacro("__AES__");
+}
 
-  if (HasVAES)
+  if (HasVAES) {
     Builder.defineMacro("__VAES__");
+}
 
-  if (HasPCLMUL)
+  if (HasPCLMUL) {
     Builder.defineMacro("__PCLMUL__");
+}
 
-  if (HasVPCLMULQDQ)
+  if (HasVPCLMULQDQ) {
     Builder.defineMacro("__VPCLMULQDQ__");
+}
 
   // Note, in 32-bit mode, GCC does not define the macro if -mno-sahf. In LLVM,
   // the feature flag only applies to 64-bit mode.
-  if (HasLAHFSAHF || getTriple().getArch() == llvm::Triple::x86)
+  if (HasLAHFSAHF || getTriple().getArch() == llvm::Triple::x86) {
     Builder.defineMacro("__LAHF_SAHF__");
+}
 
-  if (HasLZCNT)
+  if (HasLZCNT) {
     Builder.defineMacro("__LZCNT__");
+}
 
-  if (HasRDRND)
+  if (HasRDRND) {
     Builder.defineMacro("__RDRND__");
+}
 
-  if (HasFSGSBASE)
+  if (HasFSGSBASE) {
     Builder.defineMacro("__FSGSBASE__");
+}
 
-  if (HasBMI)
+  if (HasBMI) {
     Builder.defineMacro("__BMI__");
+}
 
-  if (HasBMI2)
+  if (HasBMI2) {
     Builder.defineMacro("__BMI2__");
+}
 
-  if (HasPOPCNT)
+  if (HasPOPCNT) {
     Builder.defineMacro("__POPCNT__");
+}
 
-  if (HasRTM)
+  if (HasRTM) {
     Builder.defineMacro("__RTM__");
+}
 
-  if (HasPRFCHW)
+  if (HasPRFCHW) {
     Builder.defineMacro("__PRFCHW__");
+}
 
-  if (HasRDSEED)
+  if (HasRDSEED) {
     Builder.defineMacro("__RDSEED__");
+}
 
-  if (HasADX)
+  if (HasADX) {
     Builder.defineMacro("__ADX__");
+}
 
-  if (HasTBM)
+  if (HasTBM) {
     Builder.defineMacro("__TBM__");
+}
 
-  if (HasLWP)
+  if (HasLWP) {
     Builder.defineMacro("__LWP__");
+}
 
-  if (HasMWAITX)
+  if (HasMWAITX) {
     Builder.defineMacro("__MWAITX__");
+}
 
-  if (HasMOVBE)
+  if (HasMOVBE) {
     Builder.defineMacro("__MOVBE__");
+}
 
   switch (XOPLevel) {
   case XOP:
@@ -621,104 +649,151 @@ void X86TargetInfo::getTargetDefines(const LangOptions &Opts,
     break;
   }
 
-  if (HasFMA)
+  if (HasFMA) {
     Builder.defineMacro("__FMA__");
+}
 
-  if (HasF16C)
+  if (HasF16C) {
     Builder.defineMacro("__F16C__");
+}
 
-  if (HasGFNI)
+  if (HasGFNI) {
     Builder.defineMacro("__GFNI__");
+}
 
-  if (HasAVX512CD)
+  if (HasAVX512CD) {
     Builder.defineMacro("__AVX512CD__");
-  if (HasAVX512VPOPCNTDQ)
+}
+  if (HasAVX512VPOPCNTDQ) {
     Builder.defineMacro("__AVX512VPOPCNTDQ__");
-  if (HasAVX512VNNI)
+}
+  if (HasAVX512VNNI) {
     Builder.defineMacro("__AVX512VNNI__");
-  if (HasAVX512BF16)
+}
+  if (HasAVX512BF16) {
     Builder.defineMacro("__AVX512BF16__");
-  if (HasAVX512ER)
+}
+  if (HasAVX512ER) {
     Builder.defineMacro("__AVX512ER__");
-  if (HasAVX512PF)
+}
+  if (HasAVX512PF) {
     Builder.defineMacro("__AVX512PF__");
-  if (HasAVX512DQ)
+}
+  if (HasAVX512DQ) {
     Builder.defineMacro("__AVX512DQ__");
-  if (HasAVX512BITALG)
+}
+  if (HasAVX512BITALG) {
     Builder.defineMacro("__AVX512BITALG__");
-  if (HasAVX512BW)
+}
+  if (HasAVX512BW) {
     Builder.defineMacro("__AVX512BW__");
-  if (HasAVX512VL)
+}
+  if (HasAVX512VL) {
     Builder.defineMacro("__AVX512VL__");
-  if (HasAVX512VBMI)
+}
+  if (HasAVX512VBMI) {
     Builder.defineMacro("__AVX512VBMI__");
-  if (HasAVX512VBMI2)
+}
+  if (HasAVX512VBMI2) {
     Builder.defineMacro("__AVX512VBMI2__");
-  if (HasAVX512IFMA)
+}
+  if (HasAVX512IFMA) {
     Builder.defineMacro("__AVX512IFMA__");
-  if (HasAVX512VP2INTERSECT)
+}
+  if (HasAVX512VP2INTERSECT) {
     Builder.defineMacro("__AVX512VP2INTERSECT__");
-  if (HasSHA)
+}
+  if (HasSHA) {
     Builder.defineMacro("__SHA__");
+}
 
-  if (HasFXSR)
+  if (HasFXSR) {
     Builder.defineMacro("__FXSR__");
-  if (HasXSAVE)
+}
+  if (HasXSAVE) {
     Builder.defineMacro("__XSAVE__");
-  if (HasXSAVEOPT)
+}
+  if (HasXSAVEOPT) {
     Builder.defineMacro("__XSAVEOPT__");
-  if (HasXSAVEC)
+}
+  if (HasXSAVEC) {
     Builder.defineMacro("__XSAVEC__");
-  if (HasXSAVES)
+}
+  if (HasXSAVES) {
     Builder.defineMacro("__XSAVES__");
-  if (HasPKU)
+}
+  if (HasPKU) {
     Builder.defineMacro("__PKU__");
-  if (HasCLFLUSHOPT)
+}
+  if (HasCLFLUSHOPT) {
     Builder.defineMacro("__CLFLUSHOPT__");
-  if (HasCLWB)
+}
+  if (HasCLWB) {
     Builder.defineMacro("__CLWB__");
-  if (HasWBNOINVD)
+}
+  if (HasWBNOINVD) {
     Builder.defineMacro("__WBNOINVD__");
-  if (HasSHSTK)
+}
+  if (HasSHSTK) {
     Builder.defineMacro("__SHSTK__");
-  if (HasSGX)
+}
+  if (HasSGX) {
     Builder.defineMacro("__SGX__");
-  if (HasPREFETCHWT1)
+}
+  if (HasPREFETCHWT1) {
     Builder.defineMacro("__PREFETCHWT1__");
-  if (HasCLZERO)
+}
+  if (HasCLZERO) {
     Builder.defineMacro("__CLZERO__");
-  if (HasKL)
+}
+  if (HasKL) {
     Builder.defineMacro("__KL__");
-  if (HasWIDEKL)
+}
+  if (HasWIDEKL) {
     Builder.defineMacro("__WIDEKL__");
-  if (HasRDPID)
+}
+  if (HasRDPID) {
     Builder.defineMacro("__RDPID__");
-  if (HasCLDEMOTE)
+}
+  if (HasCLDEMOTE) {
     Builder.defineMacro("__CLDEMOTE__");
-  if (HasWAITPKG)
+}
+  if (HasWAITPKG) {
     Builder.defineMacro("__WAITPKG__");
-  if (HasMOVDIRI)
+}
+  if (HasMOVDIRI) {
     Builder.defineMacro("__MOVDIRI__");
-  if (HasMOVDIR64B)
+}
+  if (HasMOVDIR64B) {
     Builder.defineMacro("__MOVDIR64B__");
-  if (HasPCONFIG)
+}
+  if (HasPCONFIG) {
     Builder.defineMacro("__PCONFIG__");
-  if (HasPTWRITE)
+}
+  if (HasPTWRITE) {
     Builder.defineMacro("__PTWRITE__");
-  if (HasINVPCID)
+}
+  if (HasINVPCID) {
     Builder.defineMacro("__INVPCID__");
-  if (HasENQCMD)
+}
+  if (HasENQCMD) {
     Builder.defineMacro("__ENQCMD__");
-  if (HasAMXTILE)
+}
+  if (HasAMXTILE) {
     Builder.defineMacro("__AMXTILE__");
-  if (HasAMXINT8)
+}
+  if (HasAMXINT8) {
     Builder.defineMacro("__AMXINT8__");
-  if (HasAMXBF16)
+}
+  if (HasAMXBF16) {
     Builder.defineMacro("__AMXBF16__");
-  if (HasSERIALIZE)
+}
+  if (HasSERIALIZE) {
     Builder.defineMacro("__SERIALIZE__");
-  if (HasTSXLDTRK)
+}
+  if (HasTSXLDTRK) {
     Builder.defineMacro("__TSXLDTRK__");
+}
 
   // Each case falls through to the previous one here.
   switch (SSELevel) {
@@ -796,13 +871,16 @@ void X86TargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2");
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4");
   }
-  if (HasCX8)
+  if (HasCX8) {
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8");
-  if (HasCX16 && getTriple().getArch() == llvm::Triple::x86_64)
+}
+  if (HasCX16 && getTriple().getArch() == llvm::Triple::x86_64) {
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16");
+}
 
-  if (HasFloat128)
+  if (HasFloat128) {
     Builder.defineMacro("__SIZEOF_FLOAT128__", "16");
+}
 }
 
 bool X86TargetInfo::isValidFeatureName(StringRef Name) const {
@@ -1169,8 +1247,9 @@ bool X86TargetInfo::validateAsmConstraint(
     }
   case 'f': // Any x87 floating point stack register.
     // Constraint 'f' cannot be used for output operands.
-    if (Info.ConstraintStr[0] == '=')
+    if (Info.ConstraintStr[0] == '=') {
       return false;
+}
     Info.setAllowsRegister();
     return true;
   case 'a': // eax.
@@ -1329,8 +1408,9 @@ bool X86TargetInfo::validateOutputSize(const llvm::StringMap<bool> &FeatureMap,
                                        StringRef Constraint,
                                        unsigned Size) const {
   // Strip off constraint modifiers.
-  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&')
+  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&') {
     Constraint = Constraint.substr(1);
+}
 
   return validateOperandSize(FeatureMap, Constraint, Size);
 }
@@ -1366,32 +1446,35 @@ bool X86TargetInfo::validateOperandSize(const llvm::StringMap<bool> &FeatureMap,
       return Size <= 64;
     case 'z':
       // XMM0/YMM/ZMM0
-      if (FeatureMap.lookup("avx512f"))
+      if (FeatureMap.lookup("avx512f")) {
         // ZMM0 can be used if target supports AVX512F.
         return Size <= 512U;
-      else if (FeatureMap.lookup("avx"))
+      } else if (FeatureMap.lookup("avx")) {
         // YMM0 can be used if target supports AVX.
         return Size <= 256U;
-      else if (FeatureMap.lookup("sse"))
+      } else if (FeatureMap.lookup("sse")) {
         return Size <= 128U;
+}
       return false;
     case 'i':
     case 't':
     case '2':
       // 'Yi','Yt','Y2' are synonymous with 'x' when SSE2 is enabled.
-      if (SSELevel < SSE2)
+      if (SSELevel < SSE2) {
         return false;
+}
       break;
     }
     break;
   case 'v':
   case 'x':
-    if (FeatureMap.lookup("avx512f"))
+    if (FeatureMap.lookup("avx512f")) {
       // 512-bit zmm registers can be used if target supports AVX512F.
       return Size <= 512U;
-    else if (FeatureMap.lookup("avx"))
+    } else if (FeatureMap.lookup("avx")) {
       // 256-bit ymm registers can be used if target supports AVX.
       return Size <= 256U;
+}
     return Size <= 128U;
 
   }

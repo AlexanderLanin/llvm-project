@@ -21,15 +21,19 @@ namespace ento {
 
 // Recursively find any substatements containing macros
 bool containsMacro(const Stmt *S) {
-  if (S->getBeginLoc().isMacroID())
+  if (S->getBeginLoc().isMacroID()) {
     return true;
+}
 
-  if (S->getEndLoc().isMacroID())
+  if (S->getEndLoc().isMacroID()) {
     return true;
+}
 
-  for (const Stmt *Child : S->children())
-    if (Child && containsMacro(Child))
+  for (const Stmt *Child : S->children()) {
+    if (Child && containsMacro(Child)) {
       return true;
+}
+}
 
   return false;
 }
@@ -38,12 +42,15 @@ bool containsMacro(const Stmt *S) {
 bool containsEnum(const Stmt *S) {
   const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(S);
 
-  if (DR && isa<EnumConstantDecl>(DR->getDecl()))
+  if (DR && isa<EnumConstantDecl>(DR->getDecl())) {
     return true;
+}
 
-  for (const Stmt *Child : S->children())
-    if (Child && containsEnum(Child))
+  for (const Stmt *Child : S->children()) {
+    if (Child && containsEnum(Child)) {
       return true;
+}
+}
 
   return false;
 }
@@ -52,26 +59,34 @@ bool containsEnum(const Stmt *S) {
 bool containsStaticLocal(const Stmt *S) {
   const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(S);
 
-  if (DR)
-    if (const VarDecl *VD = dyn_cast<VarDecl>(DR->getDecl()))
-      if (VD->isStaticLocal())
+  if (DR) {
+    if (const VarDecl *VD = dyn_cast<VarDecl>(DR->getDecl())) {
+      if (VD->isStaticLocal()) {
         return true;
+}
+}
+}
 
-  for (const Stmt *Child : S->children())
-    if (Child && containsStaticLocal(Child))
+  for (const Stmt *Child : S->children()) {
+    if (Child && containsStaticLocal(Child)) {
       return true;
+}
+}
 
   return false;
 }
 
 // Recursively find any substatements containing __builtin_offsetof
 bool containsBuiltinOffsetOf(const Stmt *S) {
-  if (isa<OffsetOfExpr>(S))
+  if (isa<OffsetOfExpr>(S)) {
     return true;
+}
 
-  for (const Stmt *Child : S->children())
-    if (Child && containsBuiltinOffsetOf(Child))
+  for (const Stmt *Child : S->children()) {
+    if (Child && containsBuiltinOffsetOf(Child)) {
       return true;
+}
+}
 
   return false;
 }
@@ -86,8 +101,9 @@ parseAssignment(const Stmt *S) {
     if (Assign->isAssignmentOp()) {
       // Ordinary assignment
       RHS = Assign->getRHS();
-      if (auto DE = dyn_cast_or_null<DeclRefExpr>(Assign->getLHS()))
+      if (auto DE = dyn_cast_or_null<DeclRefExpr>(Assign->getLHS())) {
         VD = dyn_cast_or_null<VarDecl>(DE->getDecl());
+}
     }
   } else if (auto PD = dyn_cast_or_null<DeclStmt>(S)) {
     // Initialization
@@ -101,48 +117,57 @@ parseAssignment(const Stmt *S) {
 
 Nullability getNullabilityAnnotation(QualType Type) {
   const auto *AttrType = Type->getAs<AttributedType>();
-  if (!AttrType)
+  if (!AttrType) {
     return Nullability::Unspecified;
-  if (AttrType->getAttrKind() == attr::TypeNullable)
+}
+  if (AttrType->getAttrKind() == attr::TypeNullable) {
     return Nullability::Nullable;
-  else if (AttrType->getAttrKind() == attr::TypeNonNull)
+  } else if (AttrType->getAttrKind() == attr::TypeNonNull) {
     return Nullability::Nonnull;
+}
   return Nullability::Unspecified;
 }
 
 llvm::Optional<int> tryExpandAsInteger(StringRef Macro,
                                        const Preprocessor &PP) {
   const auto *MacroII = PP.getIdentifierInfo(Macro);
-  if (!MacroII)
+  if (!MacroII) {
     return llvm::None;
+}
   const MacroInfo *MI = PP.getMacroInfo(MacroII);
-  if (!MI)
+  if (!MI) {
     return llvm::None;
+}
 
   // Filter out parens.
   std::vector<Token> FilteredTokens;
   FilteredTokens.reserve(MI->tokens().size());
-  for (auto &T : MI->tokens())
-    if (!T.isOneOf(tok::l_paren, tok::r_paren))
+  for (auto &T : MI->tokens()) {
+    if (!T.isOneOf(tok::l_paren, tok::r_paren)) {
       FilteredTokens.push_back(T);
+}
+}
 
   // Parse an integer at the end of the macro definition.
   const Token &T = FilteredTokens.back();
   // FIXME: EOF macro token coming from a PCH file on macOS while marked as
   //        literal, doesn't contain any literal data
-  if (!T.isLiteral() || !T.getLiteralData())
+  if (!T.isLiteral() || !T.getLiteralData()) {
     return llvm::None;
+}
   StringRef ValueStr = StringRef(T.getLiteralData(), T.getLength());
   llvm::APInt IntValue;
   constexpr unsigned AutoSenseRadix = 0;
-  if (ValueStr.getAsInteger(AutoSenseRadix, IntValue))
+  if (ValueStr.getAsInteger(AutoSenseRadix, IntValue)) {
     return llvm::None;
+}
 
   // Parse an optional minus sign.
   size_t Size = FilteredTokens.size();
   if (Size >= 2) {
-    if (FilteredTokens[Size - 2].is(tok::minus))
+    if (FilteredTokens[Size - 2].is(tok::minus)) {
       IntValue = -IntValue;
+}
   }
 
   return IntValue.getSExtValue();

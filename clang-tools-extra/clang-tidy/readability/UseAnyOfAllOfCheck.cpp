@@ -22,17 +22,20 @@ namespace {
 AST_MATCHER_P(Stmt, nextStmt, ast_matchers::internal::Matcher<Stmt>,
               InnerMatcher) {
   DynTypedNodeList Parents = Finder->getASTContext().getParents(Node);
-  if (Parents.size() != 1)
+  if (Parents.size() != 1) {
     return false;
+}
 
   auto *C = Parents[0].get<CompoundStmt>();
-  if (!C)
+  if (!C) {
     return false;
+}
 
   const auto *I = llvm::find(C->body(), &Node);
   assert(I != C->body_end() && "C is parent of Node");
-  if (++I == C->body_end())
+  if (++I == C->body_end()) {
     return false; // Node is last statement.
+}
 
   return InnerMatcher.matches(**I, Finder, Builder);
 }
@@ -75,8 +78,9 @@ void UseAnyOfAllOfCheck::registerMatchers(MatchFinder *Finder) {
 static bool isViableLoop(const CXXForRangeStmt &S, ASTContext &Context) {
 
   ExprMutationAnalyzer Mutations(*S.getBody(), Context);
-  if (Mutations.isMutated(S.getLoopVariable()))
+  if (Mutations.isMutated(S.getLoopVariable())) {
     return false;
+}
   const auto Matches =
       match(findAll(declRefExpr().bind("decl_ref")), *S.getBody(), Context);
 
@@ -91,14 +95,16 @@ void UseAnyOfAllOfCheck::check(const MatchFinder::MatchResult &Result) {
   StringRef Ranges = getLangOpts().CPlusPlus20 ? "::ranges" : "";
 
   if (const auto *S = Result.Nodes.getNodeAs<CXXForRangeStmt>("any_of_loop")) {
-    if (!isViableLoop(*S, *Result.Context))
+    if (!isViableLoop(*S, *Result.Context)) {
       return;
+}
 
     diag(S->getForLoc(), "replace loop by 'std%0::any_of()'") << Ranges;
   } else if (const auto *S =
                  Result.Nodes.getNodeAs<CXXForRangeStmt>("all_of_loop")) {
-    if (!isViableLoop(*S, *Result.Context))
+    if (!isViableLoop(*S, *Result.Context)) {
       return;
+}
 
     diag(S->getForLoc(), "replace loop by 'std%0::all_of()'") << Ranges;
   }

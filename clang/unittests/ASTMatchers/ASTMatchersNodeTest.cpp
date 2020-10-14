@@ -409,8 +409,9 @@ TEST_P(ASTMatchersTest, TemplateTypeParmDecl) {
 }
 
 TEST_P(ASTMatchersTest, TemplateTemplateParmDecl) {
-  if (!GetParam().isCXX())
+  if (!GetParam().isCXX()) {
     return;
+}
   EXPECT_TRUE(matches("template <template <typename> class Z> void f();",
                       templateTemplateParmDecl(hasName("Z"))));
   EXPECT_TRUE(notMatches("template <typename, int> void f();",

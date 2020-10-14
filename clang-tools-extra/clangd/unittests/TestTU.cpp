@@ -45,8 +45,9 @@ ParseInputs TestTU::inputs(MockFS &FS) const {
     Argv.push_back(ImplicitHeaderGuard ? ImportThunk : FullHeaderName);
     // ms-compatibility changes the meaning of #import.
     // The default is OS-dependent (on on windows), ensure it's off.
-    if (ImplicitHeaderGuard)
+    if (ImplicitHeaderGuard) {
       Inputs.CompileCommand.CommandLine.push_back("-fno-ms-compatibility");
+}
   }
   Argv.insert(Argv.end(), ExtraArgs.begin(), ExtraArgs.end());
   // Put the file name at the end -- this allows the extra arg (-xc++) to
@@ -55,8 +56,9 @@ ParseInputs TestTU::inputs(MockFS &FS) const {
   Inputs.CompileCommand.Filename = FullFilename;
   Inputs.CompileCommand.Directory = testRoot();
   Inputs.Contents = Code;
-  if (OverlayRealFileSystemForModules)
+  if (OverlayRealFileSystemForModules) {
     FS.OverlayRealFileSystemForModules = true;
+}
   Inputs.TFS = &FS;
   Inputs.Opts = ParseOptions();
   Inputs.Opts.BuildRecoveryAST = true;
@@ -64,8 +66,9 @@ ParseInputs TestTU::inputs(MockFS &FS) const {
   Inputs.Opts.ClangTidyOpts.Checks = ClangTidyChecks;
   Inputs.Opts.ClangTidyOpts.WarningsAsErrors = ClangTidyWarningsAsErrors;
   Inputs.Index = ExternalIndex;
-  if (Inputs.Index)
+  if (Inputs.Index) {
     Inputs.Opts.SuggestMissingIncludes = true;
+}
   return Inputs;
 }
 
@@ -88,8 +91,9 @@ std::shared_ptr<const PreambleData> TestTU::preamble() const {
   IgnoreDiagnostics Diags;
   auto CI = buildCompilerInvocation(Inputs, Diags);
   assert(CI && "Failed to build compilation invocation.");
-  if (OverlayRealFileSystemForModules)
+  if (OverlayRealFileSystemForModules) {
     initializeModuleCache(*CI);
+}
   auto ModuleCacheDeleter = llvm::make_scope_exit(
       std::bind(deleteModuleCache, CI->getHeaderSearchOpts().ModuleCachePath));
   return clang::clangd::buildPreamble(testPath(Filename), *CI, Inputs,
@@ -103,8 +107,9 @@ ParsedAST TestTU::build() const {
   StoreDiags Diags;
   auto CI = buildCompilerInvocation(Inputs, Diags);
   assert(CI && "Failed to build compilation invocation.");
-  if (OverlayRealFileSystemForModules)
+  if (OverlayRealFileSystemForModules) {
     initializeModuleCache(*CI);
+}
   auto ModuleCacheDeleter = llvm::make_scope_exit(
       std::bind(deleteModuleCache, CI->getHeaderSearchOpts().ModuleCachePath));
 
@@ -124,15 +129,18 @@ ParsedAST TestTU::build() const {
   bool ErrorOk = [&, this] {
     llvm::StringLiteral Marker = "error-ok";
     if (llvm::StringRef(Code).contains(Marker) ||
-        llvm::StringRef(HeaderCode).contains(Marker))
+        llvm::StringRef(HeaderCode).contains(Marker)) {
       return true;
-    for (const auto &KV : this->AdditionalFiles)
-      if (llvm::StringRef(KV.second).contains(Marker))
+}
+    for (const auto &KV : this->AdditionalFiles) {
+      if (llvm::StringRef(KV.second).contains(Marker)) {
         return true;
+}
+}
     return false;
   }();
   if (!ErrorOk) {
-    for (const auto &D : AST->getDiagnostics())
+    for (const auto &D : AST->getDiagnostics()) {
       if (D.Severity >= DiagnosticsEngine::Error) {
         ADD_FAILURE()
             << "TestTU failed to build (suppress with /*error-ok*/): \n"
@@ -140,6 +148,7 @@ ParsedAST TestTU::build() const {
             << Code;
         break; // Just report first error for simplicity.
       }
+}
   }
   return std::move(*AST);
 }
@@ -169,8 +178,9 @@ std::unique_ptr<SymbolIndex> TestTU::index() const {
 const Symbol &findSymbol(const SymbolSlab &Slab, llvm::StringRef QName) {
   const Symbol *Result = nullptr;
   for (const Symbol &S : Slab) {
-    if (QName != (S.Scope + S.Name).str())
+    if (QName != (S.Scope + S.Name).str()) {
       continue;
+}
     if (Result) {
       ADD_FAILURE() << "Multiple symbols named " << QName << ":\n"
                     << *Result << "\n---\n"
@@ -214,8 +224,9 @@ const NamedDecl &findDecl(ParsedAST &AST,
     decltype(Filter) F;
     llvm::SmallVector<const NamedDecl *, 1> Decls;
     bool VisitNamedDecl(const NamedDecl *ND) {
-      if (F(*ND))
+      if (F(*ND)) {
         Decls.push_back(ND);
+}
       return true;
     }
   } Visitor;
@@ -230,9 +241,11 @@ const NamedDecl &findDecl(ParsedAST &AST,
 
 const NamedDecl &findUnqualifiedDecl(ParsedAST &AST, llvm::StringRef Name) {
   return findDecl(AST, [Name](const NamedDecl &ND) {
-    if (auto *ID = ND.getIdentifier())
-      if (ID->getName() == Name)
+    if (auto *ID = ND.getIdentifier()) {
+      if (ID->getName() == Name) {
         return true;
+}
+}
     return false;
   });
 }

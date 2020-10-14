@@ -58,11 +58,13 @@ AST_MATCHER(Expr, isLValue) { return Node.getValueKind() == VK_LValue; }
 AST_MATCHER(Decl, isFromStdNamespace) {
   const DeclContext *D = Node.getDeclContext();
 
-  while (D->isInlineNamespace())
+  while (D->isInlineNamespace()) {
     D = D->getParent();
+}
 
-  if (!D->isNamespace() || !D->getParent()->isTranslationUnit())
+  if (!D->isNamespace() || !D->getParent()->isTranslationUnit()) {
     return false;
+}
 
   const IdentifierInfo *Info = cast<NamespaceDecl>(D)->getIdentifier();
 
@@ -141,8 +143,9 @@ void ReplaceAutoPtrCheck::check(const MatchFinder::MatchResult &Result) {
     CharSourceRange Range = Lexer::makeFileCharRange(
         CharSourceRange::getTokenRange(E->getSourceRange()), SM, LangOptions());
 
-    if (Range.isInvalid())
+    if (Range.isInvalid()) {
       return;
+}
 
     auto Diag = diag(Range.getBegin(), "use std::move to transfer ownership")
                 << FixItHint::CreateInsertion(Range.getBegin(), "std::move(")
@@ -156,8 +159,9 @@ void ReplaceAutoPtrCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *TL = Result.Nodes.getNodeAs<TypeLoc>(AutoPtrTokenId)) {
     //   std::auto_ptr<int> i;
     //        ^
-    if (auto Loc = TL->getAs<TemplateSpecializationTypeLoc>())
+    if (auto Loc = TL->getAs<TemplateSpecializationTypeLoc>()) {
       AutoPtrLoc = Loc.getTemplateNameLoc();
+}
   } else if (const auto *D =
                  Result.Nodes.getNodeAs<UsingDecl>(AutoPtrTokenId)) {
     // using std::auto_ptr;
@@ -167,14 +171,16 @@ void ReplaceAutoPtrCheck::check(const MatchFinder::MatchResult &Result) {
     llvm_unreachable("Bad Callback. No node provided.");
   }
 
-  if (AutoPtrLoc.isMacroID())
+  if (AutoPtrLoc.isMacroID()) {
     AutoPtrLoc = SM.getSpellingLoc(AutoPtrLoc);
+}
 
   // Ensure that only the 'auto_ptr' token is replaced and not the template
   // aliases.
   if (StringRef(SM.getCharacterData(AutoPtrLoc), strlen("auto_ptr")) !=
-      "auto_ptr")
+      "auto_ptr") {
     return;
+}
 
   SourceLocation EndLoc =
       AutoPtrLoc.getLocWithOffset(strlen("auto_ptr") - 1);

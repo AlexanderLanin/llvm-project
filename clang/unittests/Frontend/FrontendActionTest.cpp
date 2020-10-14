@@ -40,8 +40,9 @@ public:
   std::vector<std::string> decl_names;
 
   bool BeginSourceFileAction(CompilerInstance &ci) override {
-    if (EnableIncrementalProcessing)
+    if (EnableIncrementalProcessing) {
       ci.getPreprocessor().enableIncrementalProcessing();
+}
 
     return ASTFrontendAction::BeginSourceFileAction(ci);
   }
@@ -284,12 +285,13 @@ TEST(GeneratePCHFrontendAction, CacheGeneratedPCH) {
     ASSERT_TRUE(Compiler.ExecuteAction(TestAction));
 
     // Check whether the PCH was cached.
-    if (ShouldCache)
+    if (ShouldCache) {
       EXPECT_EQ(InMemoryModuleCache::Final,
                 Compiler.getModuleCache().getPCMState(PCHFilename));
-    else
+    } else {
       EXPECT_EQ(InMemoryModuleCache::Unknown,
                 Compiler.getModuleCache().getPCMState(PCHFilename));
+}
   }
 }
 

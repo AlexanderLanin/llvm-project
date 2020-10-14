@@ -13,24 +13,29 @@ using namespace clang;
 using namespace clang::interp;
 
 SourceLocation SourceInfo::getLoc() const {
-  if (const Expr *E = asExpr())
+  if (const Expr *E = asExpr()) {
     return E->getExprLoc();
-  if (const Stmt *S = asStmt())
+}
+  if (const Stmt *S = asStmt()) {
     return S->getBeginLoc();
-  if (const Decl *D = asDecl())
+}
+  if (const Decl *D = asDecl()) {
     return D->getBeginLoc();
+}
   return SourceLocation();
 }
 
 const Expr *SourceInfo::asExpr() const {
-  if (auto *S = Source.dyn_cast<const Stmt *>())
+  if (auto *S = Source.dyn_cast<const Stmt *>()) {
     return dyn_cast<Expr>(S);
+}
   return nullptr;
 }
 
 const Expr *SourceMapper::getExpr(Function *F, CodePtr PC) const {
-  if (const Expr *E = getSource(F, PC).asExpr())
+  if (const Expr *E = getSource(F, PC).asExpr()) {
     return E;
+}
   llvm::report_fatal_error("missing source expression");
 }
 

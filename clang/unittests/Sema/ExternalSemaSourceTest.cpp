@@ -54,30 +54,35 @@ public:
 
   void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
                         const Diagnostic &Info) override {
-    if (Chained)
+    if (Chained) {
       Chained->HandleDiagnostic(DiagLevel, Info);
+}
     if (Info.getID() - 1 == diag::err_using_directive_member_suggest) {
       const IdentifierInfo *Ident = Info.getArgIdentifier(0);
       const std::string &CorrectedQuotedStr = Info.getArgStdStr(1);
-      if (Ident->getName() == FromName && CorrectedQuotedStr == ToName)
+      if (Ident->getName() == FromName && CorrectedQuotedStr == ToName) {
         ++SeenCount;
+}
     } else if (Info.getID() == diag::err_no_member_suggest) {
       auto Ident = DeclarationName::getFromOpaqueInteger(Info.getRawArg(0));
       const std::string &CorrectedQuotedStr = Info.getArgStdStr(3);
-      if (Ident.getAsString() == FromName && CorrectedQuotedStr == ToName)
+      if (Ident.getAsString() == FromName && CorrectedQuotedStr == ToName) {
         ++SeenCount;
+}
     }
   }
 
   void clear() override {
     DiagnosticConsumer::clear();
-    if (Chained)
+    if (Chained) {
       Chained->clear();
+}
   }
 
   bool IncludeInDiagnosticCounts() const override {
-    if (Chained)
+    if (Chained) {
       return Chained->IncludeInDiagnosticCounts();
+}
     return false;
   }
 
@@ -113,10 +118,12 @@ public:
     if (CurrentSema && Typo.getName().getAsString() == CorrectFrom) {
       DeclContext *DestContext = nullptr;
       ASTContext &Context = CurrentSema->getASTContext();
-      if (SS)
+      if (SS) {
         DestContext = CurrentSema->computeDeclContext(*SS, EnteringContext);
-      if (!DestContext)
+}
+      if (!DestContext) {
         DestContext = Context.getTranslationUnitDecl();
+}
       IdentifierInfo *ToIdent =
           CurrentSema->getPreprocessor().getIdentifierInfo(CorrectTo);
       NamespaceDecl *NewNamespace =
@@ -155,10 +162,12 @@ public:
     if (CurrentSema && Typo.getName().getAsString() == CorrectFrom) {
       DeclContext *DestContext = nullptr;
       ASTContext &Context = CurrentSema->getASTContext();
-      if (SS)
+      if (SS) {
         DestContext = CurrentSema->computeDeclContext(*SS, EnteringContext);
-      if (!DestContext)
+}
+      if (!DestContext) {
         DestContext = Context.getTranslationUnitDecl();
+}
       IdentifierInfo *ToIdent =
           CurrentSema->getPreprocessor().getIdentifierInfo(CorrectTo);
       auto *NewFunction = FunctionDecl::Create(
@@ -197,10 +206,12 @@ protected:
     ASSERT_TRUE(CI.hasDiagnostics());
     DiagnosticsEngine &Diagnostics = CI.getDiagnostics();
     DiagnosticConsumer *Client = Diagnostics.getClient();
-    if (Diagnostics.ownsClient())
+    if (Diagnostics.ownsClient()) {
       OwnedClient = Diagnostics.takeClient();
-    for (size_t I = 0, E = Watchers.size(); I < E; ++I)
+}
+    for (size_t I = 0, E = Watchers.size(); I < E; ++I) {
       Client = Watchers[I]->Chain(Client);
+}
     Diagnostics.setClient(Client, false);
     for (size_t I = 0, E = Sources.size(); I < E; ++I) {
       Sources[I]->InitializeSema(CI.getSema());

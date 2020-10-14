@@ -120,8 +120,9 @@ private:
 
     for (LineEnd = LineBegin; *LineEnd != '\n' && *LineEnd != '\r' &&
                               LineEnd < Buffer->getBufferEnd();
-         ++LineEnd)
+         ++LineEnd) {
       ;
+}
 
     llvm::StringRef LineString(LineBegin, LineEnd - LineBegin);
 
@@ -253,8 +254,9 @@ struct CIAndOrigins {
   FileManager &getFileManager() { return CI->getFileManager(); }
   const OriginMap &getOriginMap() {
     static const OriginMap EmptyOriginMap{};
-    if (ExternalASTSource *Source = CI->getASTContext().getExternalSource())
+    if (ExternalASTSource *Source = CI->getASTContext().getExternalSource()) {
       return static_cast<ExternalASTMerger *>(Source)->GetOrigins();
+}
     return EmptyOriginMap;
   }
   DiagnosticConsumer &getDiagnosticClient() {
@@ -268,9 +270,10 @@ void AddExternalSource(CIAndOrigins &CI,
   ExternalASTMerger::ImporterTarget Target(
       {CI.getASTContext(), CI.getFileManager()});
   llvm::SmallVector<ExternalASTMerger::ImporterSource, 3> Sources;
-  for (CIAndOrigins &Import : Imports)
+  for (CIAndOrigins &Import : Imports) {
     Sources.emplace_back(Import.getASTContext(), Import.getFileManager(),
                          Import.getOriginMap());
+}
   auto ES = std::make_unique<ExternalASTMerger>(Target, Sources);
   CI.getASTContext().setExternalSource(ES.release());
   CI.getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage();
@@ -309,8 +312,9 @@ llvm::Expected<CIAndOrigins> Parse(const std::string &Path,
   std::unique_ptr<ASTContext> AST =
       init_convenience::BuildASTContext(CI.getCompilerInstance(), *ST, *BC);
   CI.getCompilerInstance().setASTContext(AST.release());
-  if (Imports.size())
+  if (Imports.size()) {
     AddExternalSource(CI, Imports);
+}
 
   std::vector<std::unique_ptr<ASTConsumer>> ASTConsumers;
 
@@ -319,10 +323,11 @@ llvm::Expected<CIAndOrigins> Parse(const std::string &Path,
       init_convenience::BuildCodeGen(CI.getCompilerInstance(), *LLVMCtx));
   auto &CG = *static_cast<CodeGenerator *>(ASTConsumers.back().get());
 
-  if (ShouldDumpAST)
+  if (ShouldDumpAST) {
     ASTConsumers.push_back(CreateASTDumper(nullptr /*Dump to stdout.*/, "",
                                            true, false, false, false,
                                            clang::ADOF_Default));
+}
 
   CI.getDiagnosticClient().BeginSourceFile(
       CI.getCompilerInstance().getLangOpts(),
@@ -330,22 +335,26 @@ llvm::Expected<CIAndOrigins> Parse(const std::string &Path,
   MultiplexConsumer Consumers(std::move(ASTConsumers));
   Consumers.Initialize(CI.getASTContext());
 
-  if (llvm::Error PE = ParseSource(Path, CI.getCompilerInstance(), Consumers))
+  if (llvm::Error PE = ParseSource(Path, CI.getCompilerInstance(), Consumers)) {
     return std::move(PE);
+}
   CI.getDiagnosticClient().EndSourceFile();
-  if (ShouldDumpIR)
+  if (ShouldDumpIR) {
     CG.GetModule()->print(llvm::outs(), nullptr);
-  if (CI.getDiagnosticClient().getNumErrors())
+}
+  if (CI.getDiagnosticClient().getNumErrors()) {
     return llvm::make_error<llvm::StringError>(
         "Errors occurred while parsing the expression.", std::error_code());
+}
   return std::move(CI);
 }
 
 void Forget(CIAndOrigins &CI, llvm::MutableArrayRef<CIAndOrigins> Imports) {
   llvm::SmallVector<ExternalASTMerger::ImporterSource, 3> Sources;
-  for (CIAndOrigins &Import : Imports)
+  for (CIAndOrigins &Import : Imports) {
     Sources.push_back({Import.getASTContext(), Import.getFileManager(),
                        Import.getOriginMap()});
+}
   ExternalASTSource *Source = CI.CI->getASTContext().getExternalSource();
   auto *Merger = static_cast<ExternalASTMerger *>(Source);
   Merger->RemoveSources(Sources);
@@ -373,9 +382,11 @@ int main(int argc, const char **argv) {
       IndirectCIs.push_back(std::move(IndirectCI));
     }
   }
-  if (UseOrigins)
-    for (auto &ImportCI : ImportCIs)
+  if (UseOrigins) {
+    for (auto &ImportCI : ImportCIs) {
       IndirectCIs.push_back(std::move(ImportCI));
+}
+}
   llvm::Expected<CIAndOrigins> ExpressionCI =
       Parse(Expression, (Direct && !UseOrigins) ? ImportCIs : IndirectCIs,
             DumpAST, DumpIR);

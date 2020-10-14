@@ -22,9 +22,9 @@ void LoopHintAttr::printPrettyPragma(raw_ostream &OS,
   // For "#pragma unroll" and "#pragma nounroll" the string "unroll" or
   // "nounroll" is already emitted as the pragma name.
   if (SpellingIndex == Pragma_nounroll ||
-      SpellingIndex == Pragma_nounroll_and_jam)
+      SpellingIndex == Pragma_nounroll_and_jam) {
     return;
-  else if (SpellingIndex == Pragma_unroll ||
+  } else if (SpellingIndex == Pragma_unroll ||
            SpellingIndex == Pragma_unroll_and_jam) {
     OS << ' ' << getValueString(Policy);
     return;
@@ -40,16 +40,17 @@ std::string LoopHintAttr::getValueString(const PrintingPolicy &Policy) const {
   std::string ValueName;
   llvm::raw_string_ostream OS(ValueName);
   OS << "(";
-  if (state == Numeric)
+  if (state == Numeric) {
     value->printPretty(OS, nullptr, Policy);
-  else if (state == Enable)
+  } else if (state == Enable) {
     OS << "enable";
-  else if (state == Full)
+  } else if (state == Full) {
     OS << "full";
-  else if (state == AssumeSafety)
+  } else if (state == AssumeSafety) {
     OS << "assume_safety";
-  else
+  } else {
     OS << "disable";
+}
   OS << ")";
   return OS.str();
 }
@@ -58,16 +59,17 @@ std::string LoopHintAttr::getValueString(const PrintingPolicy &Policy) const {
 std::string
 LoopHintAttr::getDiagnosticName(const PrintingPolicy &Policy) const {
   unsigned SpellingIndex = getAttributeSpellingListIndex();
-  if (SpellingIndex == Pragma_nounroll)
+  if (SpellingIndex == Pragma_nounroll) {
     return "#pragma nounroll";
-  else if (SpellingIndex == Pragma_unroll)
+  } else if (SpellingIndex == Pragma_unroll) {
     return "#pragma unroll" +
            (option == UnrollCount ? getValueString(Policy) : "");
-  else if (SpellingIndex == Pragma_nounroll_and_jam)
+  } else if (SpellingIndex == Pragma_nounroll_and_jam) {
     return "#pragma nounroll_and_jam";
-  else if (SpellingIndex == Pragma_unroll_and_jam)
+  } else if (SpellingIndex == Pragma_unroll_and_jam) {
     return "#pragma unroll_and_jam" +
            (option == UnrollAndJamCount ? getValueString(Policy) : "");
+}
 
   assert(SpellingIndex == Pragma_clang_loop && "Unexpected spelling");
   return getOptionName(option) + getValueString(Policy);
@@ -75,8 +77,9 @@ LoopHintAttr::getDiagnosticName(const PrintingPolicy &Policy) const {
 
 void OMPDeclareSimdDeclAttr::printPrettyPragma(
     raw_ostream &OS, const PrintingPolicy &Policy) const {
-  if (getBranchState() != BS_Undefined)
+  if (getBranchState() != BS_Undefined) {
     OS << ' ' << ConvertBranchStateTyToStr(getBranchState());
+}
   if (auto *E = getSimdlen()) {
     OS << " simdlen(";
     E->printPretty(OS, nullptr, Policy);
@@ -107,12 +110,14 @@ void OMPDeclareSimdDeclAttr::printPrettyPragma(
   modifiers_iterator MI = modifiers_begin();
   for (auto *E : linears()) {
     OS << " linear(";
-    if (*MI != OMPC_LINEAR_unknown)
+    if (*MI != OMPC_LINEAR_unknown) {
       OS << getOpenMPSimpleClauseTypeName(llvm::omp::Clause::OMPC_linear, *MI)
          << "(";
+}
     E->printPretty(OS, nullptr, Policy);
-    if (*MI != OMPC_LINEAR_unknown)
+    if (*MI != OMPC_LINEAR_unknown) {
       OS << ")";
+}
     if (*I) {
       OS << ": ";
       (*I)->printPretty(OS, nullptr, Policy);
@@ -126,16 +131,19 @@ void OMPDeclareSimdDeclAttr::printPrettyPragma(
 void OMPDeclareTargetDeclAttr::printPrettyPragma(
     raw_ostream &OS, const PrintingPolicy &Policy) const {
   // Use fake syntax because it is for testing and debugging purpose only.
-  if (getDevType() != DT_Any)
+  if (getDevType() != DT_Any) {
     OS << " device_type(" << ConvertDevTypeTyToStr(getDevType()) << ")";
-  if (getMapType() != MT_To)
+}
+  if (getMapType() != MT_To) {
     OS << ' ' << ConvertMapTypeTyToStr(getMapType());
+}
 }
 
 llvm::Optional<OMPDeclareTargetDeclAttr::MapTypeTy>
 OMPDeclareTargetDeclAttr::isDeclareTargetDeclaration(const ValueDecl *VD) {
-  if (!VD->hasAttrs())
+  if (!VD->hasAttrs()) {
     return llvm::None;
+}
   unsigned Level = 0;
   const OMPDeclareTargetDeclAttr *FoundAttr = nullptr;
   for (const auto *Attr : VD->specific_attrs<OMPDeclareTargetDeclAttr>()) {
@@ -144,16 +152,18 @@ OMPDeclareTargetDeclAttr::isDeclareTargetDeclaration(const ValueDecl *VD) {
       FoundAttr = Attr;
     }
   }
-  if (FoundAttr)
+  if (FoundAttr) {
     return FoundAttr->getMapType();
+}
 
   return llvm::None;
 }
 
 llvm::Optional<OMPDeclareTargetDeclAttr::DevTypeTy>
 OMPDeclareTargetDeclAttr::getDeviceType(const ValueDecl *VD) {
-  if (!VD->hasAttrs())
+  if (!VD->hasAttrs()) {
     return llvm::None;
+}
   unsigned Level = 0;
   const OMPDeclareTargetDeclAttr *FoundAttr = nullptr;
   for (const auto *Attr : VD->specific_attrs<OMPDeclareTargetDeclAttr>()) {
@@ -162,16 +172,18 @@ OMPDeclareTargetDeclAttr::getDeviceType(const ValueDecl *VD) {
       FoundAttr = Attr;
     }
   }
-  if (FoundAttr)
+  if (FoundAttr) {
     return FoundAttr->getDevType();
+}
 
   return llvm::None;
 }
 
 llvm::Optional<SourceLocation>
 OMPDeclareTargetDeclAttr::getLocation(const ValueDecl *VD) {
-  if (!VD->hasAttrs())
+  if (!VD->hasAttrs()) {
     return llvm::None;
+}
   unsigned Level = 0;
   const OMPDeclareTargetDeclAttr *FoundAttr = nullptr;
   for (const auto *Attr : VD->specific_attrs<OMPDeclareTargetDeclAttr>()) {
@@ -180,8 +192,9 @@ OMPDeclareTargetDeclAttr::getLocation(const ValueDecl *VD) {
       FoundAttr = Attr;
     }
   }
-  if (FoundAttr)
+  if (FoundAttr) {
     return FoundAttr->getRange().getBegin();
+}
 
   return llvm::None;
 }

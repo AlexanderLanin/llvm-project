@@ -35,13 +35,15 @@ void DurationAdditionCheck::check(const MatchFinder::MatchResult &Result) {
   const CallExpr *Call = Result.Nodes.getNodeAs<clang::CallExpr>("call");
 
   // Don't try to replace things inside of macro definitions.
-  if (Binop->getExprLoc().isMacroID() || Binop->getExprLoc().isInvalid())
+  if (Binop->getExprLoc().isMacroID() || Binop->getExprLoc().isInvalid()) {
     return;
+}
 
   llvm::Optional<DurationScale> Scale = getScaleForTimeInverse(
       Result.Nodes.getNodeAs<clang::FunctionDecl>("function_decl")->getName());
-  if (!Scale)
+  if (!Scale) {
     return;
+}
 
   llvm::StringRef TimeFactory = getTimeInverseForScale(*Scale);
 

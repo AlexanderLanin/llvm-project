@@ -44,8 +44,9 @@ static bool isReserved(llvm::StringRef Name) {
 static bool hasDeclInMainFile(const Decl &D) {
   auto &SourceMgr = D.getASTContext().getSourceManager();
   for (auto *Redecl : D.redecls()) {
-    if (isInsideMainFile(Redecl->getLocation(), SourceMgr))
+    if (isInsideMainFile(Redecl->getLocation(), SourceMgr)) {
       return true;
+}
   }
   return false;
 }
@@ -54,16 +55,18 @@ static bool hasUsingDeclInMainFile(const CodeCompletionResult &R) {
   const auto &Context = R.Declaration->getASTContext();
   const auto &SourceMgr = Context.getSourceManager();
   if (R.ShadowDecl) {
-    if (isInsideMainFile(R.ShadowDecl->getLocation(), SourceMgr))
+    if (isInsideMainFile(R.ShadowDecl->getLocation(), SourceMgr)) {
       return true;
+}
   }
   return false;
 }
 
 static SymbolQualitySignals::SymbolCategory categorize(const NamedDecl &ND) {
   if (const auto *FD = dyn_cast<FunctionDecl>(&ND)) {
-    if (FD->isOverloadedOperator())
+    if (FD->isOverloadedOperator()) {
       return SymbolQualitySignals::Operator;
+}
   }
   class Switch
       : public ConstDeclVisitor<Switch, SymbolQualitySignals::SymbolCategory> {
@@ -91,10 +94,12 @@ static SymbolQualitySignals::SymbolCategory categorize(const NamedDecl &ND) {
 
 static SymbolQualitySignals::SymbolCategory
 categorize(const CodeCompletionResult &R) {
-  if (R.Declaration)
+  if (R.Declaration) {
     return categorize(*R.Declaration);
-  if (R.Kind == CodeCompletionResult::RK_Macro)
+}
+  if (R.Kind == CodeCompletionResult::RK_Macro) {
     return SymbolQualitySignals::Macro;
+}
   // Everything else is a keyword or a pattern. Patterns are mostly keywords
   // too, except a few which we recognize by cursor kind.
   switch (R.CursorKind) {
@@ -161,12 +166,15 @@ categorize(const index::SymbolInfo &D) {
 }
 
 static bool isInstanceMember(const NamedDecl *ND) {
-  if (!ND)
+  if (!ND) {
     return false;
-  if (const auto *TP = dyn_cast<FunctionTemplateDecl>(ND))
+}
+  if (const auto *TP = dyn_cast<FunctionTemplateDecl>(ND)) {
     ND = TP->TemplateDecl::getTemplatedDecl();
-  if (const auto *CM = dyn_cast<CXXMethodDecl>(ND))
+}
+  if (const auto *CM = dyn_cast<CXXMethodDecl>(ND)) {
     return !CM->isStatic();
+}
   return isa<FieldDecl>(ND); // Note that static fields are VarDecl.
 }
 
@@ -187,10 +195,12 @@ void SymbolQualitySignals::merge(const CodeCompletionResult &SemaCCResult) {
 
   if (SemaCCResult.Declaration) {
     ImplementationDetail |= isImplementationDetail(SemaCCResult.Declaration);
-    if (auto *ID = SemaCCResult.Declaration->getIdentifier())
+    if (auto *ID = SemaCCResult.Declaration->getIdentifier()) {
       ReservedName = ReservedName || isReserved(ID->getName());
-  } else if (SemaCCResult.Kind == CodeCompletionResult::RK_Macro)
+}
+  } else if (SemaCCResult.Kind == CodeCompletionResult::RK_Macro) {
     ReservedName = ReservedName || isReserved(SemaCCResult.Macro->getName());
+}
 }
 
 void SymbolQualitySignals::merge(const Symbol &IndexResult) {
@@ -219,12 +229,15 @@ float SymbolQualitySignals::evaluateHeuristics() const {
     Score *= 6.0 * (1 - S) / (1 + S) + 0.59;
   }
 
-  if (Deprecated)
+  if (Deprecated) {
     Score *= 0.1f;
-  if (ReservedName)
+}
+  if (ReservedName) {
     Score *= 0.1f;
-  if (ImplementationDetail)
+}
+  if (ImplementationDetail) {
     Score *= 0.2f;
+}
 
   switch (Category) {
   case Keyword: // Often relevant, but misses most signals.
@@ -265,24 +278,30 @@ static SymbolRelevanceSignals::AccessibleScope
 computeScope(const NamedDecl *D) {
   // Injected "Foo" within the class "Foo" has file scope, not class scope.
   const DeclContext *DC = D->getDeclContext();
-  if (auto *R = dyn_cast_or_null<RecordDecl>(D))
-    if (R->isInjectedClassName())
+  if (auto *R = dyn_cast_or_null<RecordDecl>(D)) {
+    if (R->isInjectedClassName()) {
       DC = DC->getParent();
+}
+}
   // Class constructor should have the same scope as the class.
-  if (isa<CXXConstructorDecl>(D))
+  if (isa<CXXConstructorDecl>(D)) {
     DC = DC->getParent();
+}
   bool InClass = false;
   for (; !DC->isFileContext(); DC = DC->getParent()) {
-    if (DC->isFunctionOrMethod())
+    if (DC->isFunctionOrMethod()) {
       return SymbolRelevanceSignals::FunctionScope;
+}
     InClass = InClass || DC->isRecord();
   }
-  if (InClass)
+  if (InClass) {
     return SymbolRelevanceSignals::ClassScope;
+}
   // ExternalLinkage threshold could be tweaked, e.g. module-visible as global.
   // Avoid caching linkage if it may change after enclosing code completion.
-  if (hasUnstableLinkage(D) || D->getLinkageInternal() < ExternalLinkage)
+  if (hasUnstableLinkage(D) || D->getLinkageInternal() < ExternalLinkage) {
     return SymbolRelevanceSignals::FileScope;
+}
   return SymbolRelevanceSignals::GlobalScope;
 }
 
@@ -297,8 +316,9 @@ void SymbolRelevanceSignals::merge(const Symbol &IndexResult) {
 
 void SymbolRelevanceSignals::merge(const CodeCompletionResult &SemaCCResult) {
   if (SemaCCResult.Availability == CXAvailability_NotAvailable ||
-      SemaCCResult.Availability == CXAvailability_NotAccessible)
+      SemaCCResult.Availability == CXAvailability_NotAccessible) {
     Forbidden = true;
+}
 
   if (SemaCCResult.Declaration) {
     SemaSaysInScope = true;
@@ -315,8 +335,9 @@ void SymbolRelevanceSignals::merge(const CodeCompletionResult &SemaCCResult) {
   }
 
   // Declarations are scoped, others (like macros) are assumed global.
-  if (SemaCCResult.Declaration)
+  if (SemaCCResult.Declaration) {
     Scope = std::min(Scope, computeScope(SemaCCResult.Declaration));
+}
 
   NeedsFixIts = !SemaCCResult.FixIts.empty();
 }
@@ -325,8 +346,9 @@ static float fileProximityScore(unsigned FileDistance) {
   // Range: [0, 1]
   // FileDistance = [0, 1, 2, 3, 4, .., FileDistance::Unreachable]
   // Score = [1, 0.82, 0.67, 0.55, 0.45, .., 0]
-  if (FileDistance == FileDistance::Unreachable)
+  if (FileDistance == FileDistance::Unreachable) {
     return 0;
+}
   // Assume approximately default options are used for sensible scoring.
   return std::exp(FileDistance * -0.4f / FileDistanceOptions().UpCost);
 }
@@ -335,17 +357,21 @@ static float scopeProximityScore(unsigned ScopeDistance) {
   // Range: [0.6, 2].
   // ScopeDistance = [0, 1, 2, 3, 4, 5, 6, 7, .., FileDistance::Unreachable]
   // Score = [2.0, 1.55, 1.2, 0.93, 0.72, 0.65, 0.65, 0.65, .., 0.6]
-  if (ScopeDistance == FileDistance::Unreachable)
+  if (ScopeDistance == FileDistance::Unreachable) {
     return 0.6f;
+}
   return std::max(0.65, 2.0 * std::pow(0.6, ScopeDistance / 2.0));
 }
 
 static llvm::Optional<llvm::StringRef>
 wordMatching(llvm::StringRef Name, const llvm::StringSet<> *ContextWords) {
-  if (ContextWords)
-    for (const auto &Word : ContextWords->keys())
-      if (Name.contains_lower(Word))
+  if (ContextWords) {
+    for (const auto &Word : ContextWords->keys()) {
+      if (Name.contains_lower(Word)) {
         return Word;
+}
+}
+}
   return llvm::None;
 }
 
@@ -368,8 +394,9 @@ float SymbolRelevanceSignals::evaluateHeuristics() const {
   DerivedSignals Derived = calculateDerivedSignals();
   float Score = 1;
 
-  if (Forbidden)
+  if (Forbidden) {
     return 0;
+}
 
   Score *= NameMatch;
 
@@ -378,7 +405,7 @@ float SymbolRelevanceSignals::evaluateHeuristics() const {
   Score *= 1 + 2 * std::max(fileProximityScore(Derived.FileProximityDistance),
                             SemaFileProximityScore);
 
-  if (ScopeProximityMatch)
+  if (ScopeProximityMatch) {
     // Use a constant scope boost for sema results, as scopes of sema results
     // can be tricky (e.g. class/function scope). Set to the max boost as we
     // don't load top-level symbols from the preamble and sema results are
@@ -386,9 +413,11 @@ float SymbolRelevanceSignals::evaluateHeuristics() const {
     Score *= SemaSaysInScope
                  ? 2.0
                  : scopeProximityScore(Derived.ScopeProximityDistance);
+}
 
-  if (Derived.NameMatchesContext)
+  if (Derived.NameMatchesContext) {
     Score *= 1.5;
+}
 
   // Symbols like local variables may only be referenced within their scope.
   // Conversely if we're in that scope, it's likely we'll reference them.
@@ -423,8 +452,9 @@ float SymbolRelevanceSignals::evaluateHeuristics() const {
     }
   }
 
-  if (TypeMatchesPreferred)
+  if (TypeMatchesPreferred) {
     Score *= 5.0;
+}
 
   // Penalize non-instance members when they are accessed via a class instance.
   if (!IsInstanceMember &&
@@ -433,12 +463,14 @@ float SymbolRelevanceSignals::evaluateHeuristics() const {
     Score *= 0.2f;
   }
 
-  if (InBaseClass)
+  if (InBaseClass) {
     Score *= 0.5f;
+}
 
   // Penalize for FixIts.
-  if (NeedsFixIts)
+  if (NeedsFixIts) {
     Score *= 0.5f;
+}
 
   return Score;
 }
@@ -448,10 +480,11 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   OS << llvm::formatv("=== Symbol relevance: {0}\n", S.evaluateHeuristics());
   OS << llvm::formatv("\tName: {0}\n", S.Name);
   OS << llvm::formatv("\tName match: {0}\n", S.NameMatch);
-  if (S.ContextWords)
+  if (S.ContextWords) {
     OS << llvm::formatv(
         "\tMatching context word: {0}\n",
         wordMatching(S.Name, S.ContextWords).getValueOr("<none>"));
+}
   OS << llvm::formatv("\tForbidden: {0}\n", S.Forbidden);
   OS << llvm::formatv("\tNeedsFixIts: {0}\n", S.NeedsFixIts);
   OS << llvm::formatv("\tIsInstanceMember: {0}\n", S.IsInstanceMember);
@@ -472,9 +505,10 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   OS << llvm::formatv("\tSema file proximity: {0}\n", S.SemaFileProximityScore);
 
   OS << llvm::formatv("\tSema says in scope: {0}\n", S.SemaSaysInScope);
-  if (S.ScopeProximityMatch)
+  if (S.ScopeProximityMatch) {
     OS << llvm::formatv("\tIndex scope boost: {0}\n",
                         scopeProximityScore(Derived.ScopeProximityDistance));
+}
 
   OS << llvm::formatv(
       "\tType matched preferred: {0} (Context type: {1}, Symbol type: {2}\n",
@@ -524,8 +558,9 @@ static uint32_t encodeFloat(float F) {
   // Get the bits of the float. Endianness is the same as for integers.
   uint32_t U = llvm::FloatToBits(F);
   // IEEE 754 floats compare like sign-magnitude integers.
-  if (U & TopBit)    // Negative float.
+  if (U & TopBit) {    // Negative float.
     return 0 - U;    // Map onto the low half of integers, order reversed.
+}
   return U + TopBit; // Positive floats map onto the high half of integers.
 }
 

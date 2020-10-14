@@ -51,8 +51,9 @@ FixItHint generateFixItHint(const FunctionDecl *Decl) {
   // A fixit can be generated for functions of static storage class but
   // otherwise the check cannot determine the appropriate function name prefix
   // to use.
-  if (Decl->getStorageClass() != SC_Static)
+  if (Decl->getStorageClass() != SC_Static) {
     return FixItHint();
+}
 
   StringRef Name = Decl->getName();
   std::string NewName = Decl->getName().str();
@@ -78,10 +79,11 @@ FixItHint generateFixItHint(const FunctionDecl *Decl) {
   }
 
   // Generate a fixit hint if the new name is different.
-  if (NewName != Name)
+  if (NewName != Name) {
     return FixItHint::CreateReplacement(
         CharSourceRange::getTokenRange(SourceRange(Decl->getLocation())),
         llvm::StringRef(NewName));
+}
 
   return FixItHint();
 }

@@ -21,8 +21,9 @@ static const std::string ClangDocVersion =
 
 std::unique_ptr<Generator> getHTMLGenerator() {
   auto G = doc::findGeneratorByName("html");
-  if (!G)
+  if (!G) {
     return nullptr;
+}
   return std::move(G.get());
 }
 

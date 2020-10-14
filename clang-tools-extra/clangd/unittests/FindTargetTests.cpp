@@ -86,8 +86,9 @@ protected:
     EXPECT_EQ(N->kind(), NodeType) << Selection;
 
     std::vector<PrintedDecl> ActualDecls;
-    for (const auto &Entry : allTargetDecls(N->ASTNode))
+    for (const auto &Entry : allTargetDecls(N->ASTNode)) {
       ActualDecls.emplace_back(Entry.first, Entry.second);
+}
     return ActualDecls;
   }
 };
@@ -851,23 +852,26 @@ protected:
 
     auto AST = TU.build();
     auto *TestDecl = &findDecl(AST, "foo");
-    if (auto *T = llvm::dyn_cast<FunctionTemplateDecl>(TestDecl))
+    if (auto *T = llvm::dyn_cast<FunctionTemplateDecl>(TestDecl)) {
       TestDecl = T->getTemplatedDecl();
+}
 
     std::vector<ReferenceLoc> Refs;
-    if (const auto *Func = llvm::dyn_cast<FunctionDecl>(TestDecl))
+    if (const auto *Func = llvm::dyn_cast<FunctionDecl>(TestDecl)) {
       findExplicitReferences(Func->getBody(), [&Refs](ReferenceLoc R) {
         Refs.push_back(std::move(R));
       });
-    else if (const auto *NS = llvm::dyn_cast<NamespaceDecl>(TestDecl))
+    } else if (const auto *NS = llvm::dyn_cast<NamespaceDecl>(TestDecl)) {
       findExplicitReferences(NS, [&Refs, &NS](ReferenceLoc R) {
         // Avoid adding the namespace foo decl to the results.
-        if (R.Targets.size() == 1 && R.Targets.front() == NS)
+        if (R.Targets.size() == 1 && R.Targets.front() == NS) {
           return;
+}
         Refs.push_back(std::move(R));
       });
-    else
+    } else {
       ADD_FAILURE() << "Failed to find ::foo decl for test";
+}
 
     auto &SM = AST.getSourceManager();
     llvm::sort(Refs, [&](const ReferenceLoc &L, const ReferenceLoc &R) {
@@ -881,8 +885,9 @@ protected:
 
       SourceLocation Pos = R.NameLoc;
       assert(Pos.isValid());
-      if (Pos.isMacroID()) // FIXME: figure out how to show macro locations.
+      if (Pos.isMacroID()) { // FIXME: figure out how to show macro locations.
         Pos = SM.getExpansionLoc(Pos);
+}
       assert(Pos.isFileID());
 
       FileID File;
@@ -900,8 +905,9 @@ protected:
     AnnotatedCode += Code.substr(NextCodeChar);
 
     std::string DumpedReferences;
-    for (unsigned I = 0; I < Refs.size(); ++I)
+    for (unsigned I = 0; I < Refs.size(); ++I) {
       DumpedReferences += std::string(llvm::formatv("{0}: {1}\n", I, Refs[I]));
+}
 
     return AllRefs{std::move(AnnotatedCode), std::move(DumpedReferences)};
   }

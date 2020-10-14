@@ -34,8 +34,9 @@ public:
       const FunctionDecl *FD = nullptr;
       for (const Decl *D : TU->decls()) {
         FD = dyn_cast<FunctionDecl>(D);
-        if (FD && FD->getName() == "f")
+        if (FD && FD->getName() == "f") {
           break;
+}
       }
       return FD;
     };
@@ -125,11 +126,14 @@ public:
 
   static bool checkParentListsEq(const DynTypedNodeList &L1,
                                  const DynTypedNodeList &L2) {
-    if (L1.size() != L2.size())
+    if (L1.size() != L2.size()) {
       return false;
-    for (unsigned int I = 0; I < L1.size(); ++I)
-      if (L1[I] != L2[I])
+}
+    for (unsigned int I = 0; I < L1.size(); ++I) {
+      if (L1[I] != L2[I]) {
         return false;
+}
+}
     return true;
   }
 
@@ -195,8 +199,9 @@ TEST(CrossTranslationUnit, IndexFormatCanBeParsed) {
     EXPECT_TRUE(ParsedIndex.count(E.getKey()));
     EXPECT_EQ(ParsedIndex[E.getKey()], E.getValue());
   }
-  for (const auto &E : ParsedIndex)
+  for (const auto &E : ParsedIndex) {
     EXPECT_TRUE(Index.count(E.getKey()));
+}
 }
 
 TEST(CrossTranslationUnit, EmptyInvocationListIsNotValid) {

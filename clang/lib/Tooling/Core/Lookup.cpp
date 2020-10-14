@@ -32,13 +32,15 @@ getAllNamedNamespaces(const DeclContext *Context) {
   auto GetNextNamedNamespace = [](const DeclContext *Context) {
     // Look past non-namespaces and anonymous namespaces on FromContext.
     while (Context && (!isa<NamespaceDecl>(Context) ||
-                       cast<NamespaceDecl>(Context)->isAnonymousNamespace()))
+                       cast<NamespaceDecl>(Context)->isAnonymousNamespace())) {
       Context = Context->getParent();
+}
     return Context;
   };
   for (Context = GetNextNamedNamespace(Context); Context != nullptr;
-       Context = GetNextNamedNamespace(Context->getParent()))
+       Context = GetNextNamedNamespace(Context->getParent())) {
     Namespaces.push_back(cast<NamespaceDecl>(Context));
+}
   return Namespaces;
 }
 
@@ -59,8 +61,9 @@ usingFromDifferentCanonicalNamespace(const DeclContext *FromContext,
       getAllNamedNamespaces(UseContext);
   // If `UseContext` has fewer level of nested namespaces, it cannot be in the
   // same canonical namespace as the `FromContext`.
-  if (UseNamespaces.size() < FromNamespaces.size())
+  if (UseNamespaces.size() < FromNamespaces.size()) {
     return false;
+}
   unsigned Diff = UseNamespaces.size() - FromNamespaces.size();
   auto FromIter = FromNamespaces.begin();
   // Only compare `FromNamespaces` with namespaces in `UseNamespaces` that can
@@ -70,13 +73,15 @@ usingFromDifferentCanonicalNamespace(const DeclContext *FromContext,
   for (; FromIter != FromNamespaces.end() && UseIter != UseNamespaces.end();
        ++FromIter, ++UseIter) {
     // Literally the same namespace, not a collision.
-    if (*FromIter == *UseIter)
+    if (*FromIter == *UseIter) {
       return false;
+}
     // Now check the names. If they match we have a different canonical
     // namespace with the same name.
     if (cast<NamespaceDecl>(*FromIter)->getDeclName() ==
-        cast<NamespaceDecl>(*UseIter)->getDeclName())
+        cast<NamespaceDecl>(*UseIter)->getDeclName()) {
       return true;
+}
   }
   assert(FromIter == FromNamespaces.end() && UseIter == UseNamespaces.end());
   return false;
@@ -86,20 +91,23 @@ static StringRef getBestNamespaceSubstr(const DeclContext *DeclA,
                                         StringRef NewName,
                                         bool HadLeadingColonColon) {
   while (true) {
-    while (DeclA && !isa<NamespaceDecl>(DeclA))
+    while (DeclA && !isa<NamespaceDecl>(DeclA)) {
       DeclA = DeclA->getParent();
+}
 
     // Fully qualified it is! Leave :: in place if it's there already.
-    if (!DeclA)
+    if (!DeclA) {
       return HadLeadingColonColon ? NewName : NewName.substr(2);
+}
 
     // Otherwise strip off redundant namespace qualifications from the new name.
     // We use the fully qualified name of the namespace and remove that part
     // from NewName if it has an identical prefix.
     std::string NS =
         "::" + cast<NamespaceDecl>(DeclA)->getQualifiedNameAsString() + "::";
-    if (NewName.startswith(NS))
+    if (NewName.startswith(NS)) {
       return NewName.substr(NS.size());
+}
 
     // No match yet. Strip of a namespace from the end of the chain and try
     // again. This allows to get optimal qualifications even if the old and new
@@ -111,8 +119,9 @@ static StringRef getBestNamespaceSubstr(const DeclContext *DeclA,
 /// Check if the name specifier begins with a written "::".
 static bool isFullyQualified(const NestedNameSpecifier *NNS) {
   while (NNS) {
-    if (NNS->getKind() == NestedNameSpecifier::Global)
+    if (NNS->getKind() == NestedNameSpecifier::Global) {
       return true;
+}
     NNS = NNS->getPrefix();
   }
   return false;
@@ -130,8 +139,9 @@ static std::string disambiguateSpellingInScope(StringRef Spelling,
                                                SourceLocation UseLoc) {
   assert(QName.startswith("::"));
   assert(QName.endswith(Spelling));
-  if (Spelling.startswith("::"))
+  if (Spelling.startswith("::")) {
     return std::string(Spelling);
+}
 
   auto UnspelledSpecifier = QName.drop_back(Spelling.size());
   llvm::SmallVector<llvm::StringRef, 2> UnspelledScopes;
@@ -146,8 +156,9 @@ static std::string disambiguateSpellingInScope(StringRef Spelling,
   UseLoc = SM.getSpellingLoc(UseLoc);
 
   auto IsAmbiguousSpelling = [&](const llvm::StringRef CurSpelling) {
-    if (CurSpelling.startswith("::"))
+    if (CurSpelling.startswith("::")) {
       return false;
+}
     // Lookup the first component of Spelling in all enclosing namespaces
     // and check if there is any existing symbols with the same name but in
     // different scope.
@@ -155,15 +166,17 @@ static std::string disambiguateSpellingInScope(StringRef Spelling,
     for (const auto *NS : EnclosingNamespaces) {
       auto LookupRes = NS->lookup(DeclarationName(&AST.Idents.get(Head)));
       if (!LookupRes.empty()) {
-        for (const NamedDecl *Res : LookupRes)
+        for (const NamedDecl *Res : LookupRes) {
           // If `Res` is not visible in `UseLoc`, we don't consider it
           // ambiguous. For example, a reference in a header file should not be
           // affected by a potentially ambiguous name in some file that includes
           // the header.
           if (!TrimmedQName.startswith(Res->getQualifiedNameAsString()) &&
               SM.isBeforeInTranslationUnit(
-                  SM.getSpellingLoc(Res->getLocation()), UseLoc))
+                  SM.getSpellingLoc(Res->getLocation()), UseLoc)) {
             return true;
+}
+}
       }
     }
     return false;

@@ -32,8 +32,9 @@ void ARMTargetInfo::setABIAAPCS() {
 
   bool IsNetBSD = T.isOSNetBSD();
   bool IsOpenBSD = T.isOSOpenBSD();
-  if (!T.isOSWindows() && !IsNetBSD && !IsOpenBSD)
+  if (!T.isOSWindows() && !IsNetBSD && !IsOpenBSD) {
     WCharType = UnsignedInt;
+}
 
   UseBitFieldTypeAlignment = true;
 
@@ -73,10 +74,11 @@ void ARMTargetInfo::setABIAPCS(bool IsAAPCS16) {
 
   IsAAPCS = false;
 
-  if (IsAAPCS16)
+  if (IsAAPCS16) {
     DoubleAlign = LongLongAlign = LongDoubleAlign = SuitableAlign = 64;
-  else
+  } else {
     DoubleAlign = LongLongAlign = LongDoubleAlign = SuitableAlign = 32;
+}
   BFloat16Width = BFloat16Align = 16;
   BFloat16Format = &llvm::APFloat::BFloat();
 
@@ -94,16 +96,17 @@ void ARMTargetInfo::setABIAPCS(bool IsAAPCS16) {
   if (T.isOSBinFormatMachO() && IsAAPCS16) {
     assert(!BigEndian && "AAPCS16 does not support big-endian");
     resetDataLayout("e-m:o-p:32:32-Fi8-i64:64-a:0:32-n32-S128");
-  } else if (T.isOSBinFormatMachO())
+  } else if (T.isOSBinFormatMachO()) {
     resetDataLayout(
         BigEndian
             ? "E-m:o-p:32:32-Fi8-f64:32:64-v64:32:64-v128:32:128-a:0:32-n32-S32"
             : "e-m:o-p:32:32-Fi8-f64:32:64-v64:32:64-v128:32:128-a:0:32-n32-S32");
-  else
+  } else {
     resetDataLayout(
         BigEndian
             ? "E-m:e-p:32:32-Fi8-f64:32:64-v64:32:64-v128:32:128-a:0:32-n32-S32"
             : "e-m:e-p:32:32-Fi8-f64:32:64-v64:32:64-v128:32:128-a:0:32-n32-S32");
+}
 
   // FIXME: Override "preferred align" for double and long long.
 }
@@ -114,8 +117,9 @@ void ARMTargetInfo::setArchInfo() {
   ArchISA = llvm::ARM::parseArchISA(ArchName);
   CPU = std::string(llvm::ARM::getDefaultCPU(ArchName));
   llvm::ARM::ArchKind AK = llvm::ARM::parseArch(ArchName);
-  if (AK != llvm::ARM::ArchKind::INVALID)
+  if (AK != llvm::ARM::ArchKind::INVALID) {
     ArchKind = AK;
+}
   setArchInfo(ArchKind);
 }
 
@@ -142,12 +146,14 @@ void ARMTargetInfo::setAtomic() {
   // Cortex M does not support 8 byte atomics, while general Thumb2 does.
   if (ArchProfile == llvm::ARM::ProfileKind::M) {
     MaxAtomicPromoteWidth = 32;
-    if (ShouldUseInlineAtomic)
+    if (ShouldUseInlineAtomic) {
       MaxAtomicInlineWidth = 32;
+}
   } else {
     MaxAtomicPromoteWidth = 64;
-    if (ShouldUseInlineAtomic)
+    if (ShouldUseInlineAtomic) {
       MaxAtomicInlineWidth = 64;
+}
   }
 }
 
@@ -255,8 +261,9 @@ ARMTargetInfo::ARMTargetInfo(const llvm::Triple &Triple,
 
   // ptrdiff_t is inconsistent on Darwin
   if ((Triple.isOSDarwin() || Triple.isOSBinFormatMachO()) &&
-      !Triple.isWatchABI())
+      !Triple.isWatchABI()) {
     PtrDiffType = SignedInt;
+}
 
   // Cache arch related info.
   setArchInfo();
@@ -301,12 +308,13 @@ ARMTargetInfo::ARMTargetInfo(const llvm::Triple &Triple,
       setABI("apcs-gnu");
       break;
     default:
-      if (IsNetBSD)
+      if (IsNetBSD) {
         setABI("apcs-gnu");
-      else if (IsOpenBSD)
+      } else if (IsOpenBSD) {
         setABI("aapcs-linux");
-      else
+      } else {
         setABI("aapcs");
+}
       break;
     }
   }
@@ -319,8 +327,9 @@ ARMTargetInfo::ARMTargetInfo(const llvm::Triple &Triple,
 
   // Maximum alignment for ARM NEON data types should be 64-bits (AAPCS)
   // as well the default alignment
-  if (IsAAPCS && !Triple.isAndroid())
+  if (IsAAPCS && !Triple.isAndroid()) {
     DefaultAlignForAttributeAligned = MaxVectorAlign = 64;
+}
 
   // Do force alignment of members that follow zero length bitfields.  If
   // the alignment of the zero-length bitfield is greater than the member
@@ -329,10 +338,11 @@ ARMTargetInfo::ARMTargetInfo(const llvm::Triple &Triple,
   UseZeroLengthBitfieldAlignment = true;
 
   if (Triple.getOS() == llvm::Triple::Linux ||
-      Triple.getOS() == llvm::Triple::UnknownOS)
+      Triple.getOS() == llvm::Triple::UnknownOS) {
     this->MCountName = Opts.EABIVersion == llvm::EABI::GNU
                            ? "llvm.arm.gnu.eabi.mcount"
                            : "\01mcount";
+}
 
   SoftFloatABI = llvm::is_contained(Opts.FeaturesAsWritten, "+soft-float-abi");
 }
@@ -369,8 +379,9 @@ bool ARMTargetInfo::initFeatureMap(
   // Map the base architecture to an appropriate target feature, so we don't
   // rely on the target triple.
   llvm::ARM::ArchKind CPUArch = llvm::ARM::parseCPUArch(CPU);
-  if (CPUArch == llvm::ARM::ArchKind::INVALID)
+  if (CPUArch == llvm::ARM::ArchKind::INVALID) {
     CPUArch = Arch;
+}
   if (CPUArch != llvm::ARM::ArchKind::INVALID) {
     ArchFeature = ("+" + llvm::ARM::getArchName(CPUArch)).str();
     TargetFeatures.push_back(ArchFeature);
@@ -384,16 +395,19 @@ bool ARMTargetInfo::initFeatureMap(
   uint64_t Extensions = llvm::ARM::getDefaultExtensions(CPU, Arch);
   llvm::ARM::getExtensionFeatures(Extensions, TargetFeatures);
 
-  for (auto Feature : TargetFeatures)
-    if (Feature[0] == '+')
+  for (auto Feature : TargetFeatures) {
+    if (Feature[0] == '+') {
       Features[Feature.drop_front(1)] = true;
+}
+}
 
   // Enable or disable thumb-mode explicitly per function to enable mixed
   // ARM and Thumb code generation.
-  if (isThumb())
+  if (isThumb()) {
     Features["thumb-mode"] = true;
-  else
+  } else {
     Features["thumb-mode"] = false;
+}
 
   // Convert user-provided arm and thumb GNU target attributes to
   // [-|+]thumb-mode target features respectively.
@@ -401,16 +415,18 @@ bool ARMTargetInfo::initFeatureMap(
   for (const auto &Feature : FeaturesVec) {
     // Skip soft-float-abi; it's something we only use to initialize a bit of
     // class state, and is otherwise unrecognized.
-    if (Feature == "+soft-float-abi")
+    if (Feature == "+soft-float-abi") {
       continue;
+}
 
     StringRef FixedFeature;
-    if (Feature == "+arm")
+    if (Feature == "+arm") {
       FixedFeature = "-thumb-mode";
-    else if (Feature == "+thumb")
+    } else if (Feature == "+thumb") {
       FixedFeature = "+thumb-mode";
-    else
+    } else {
       FixedFeature = Feature;
+}
     UpdatedFeaturesVec.push_back(FixedFeature.str());
   }
 
@@ -443,26 +459,30 @@ bool ARMTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
     } else if (Feature == "+vfp2sp" || Feature == "+vfp2") {
       FPU |= VFP2FPU;
       HW_FP |= HW_FP_SP;
-      if (Feature == "+vfp2")
+      if (Feature == "+vfp2") {
           HW_FP |= HW_FP_DP;
+}
     } else if (Feature == "+vfp3sp" || Feature == "+vfp3d16sp" ||
                Feature == "+vfp3" || Feature == "+vfp3d16") {
       FPU |= VFP3FPU;
       HW_FP |= HW_FP_SP;
-      if (Feature == "+vfp3" || Feature == "+vfp3d16")
+      if (Feature == "+vfp3" || Feature == "+vfp3d16") {
           HW_FP |= HW_FP_DP;
+}
     } else if (Feature == "+vfp4sp" || Feature == "+vfp4d16sp" ||
                Feature == "+vfp4" || Feature == "+vfp4d16") {
       FPU |= VFP4FPU;
       HW_FP |= HW_FP_SP | HW_FP_HP;
-      if (Feature == "+vfp4" || Feature == "+vfp4d16")
+      if (Feature == "+vfp4" || Feature == "+vfp4d16") {
           HW_FP |= HW_FP_DP;
+}
     } else if (Feature == "+fp-armv8sp" || Feature == "+fp-armv8d16sp" ||
                Feature == "+fp-armv8" || Feature == "+fp-armv8d16") {
       FPU |= FPARMV8;
       HW_FP |= HW_FP_SP | HW_FP_HP;
-      if (Feature == "+fp-armv8" || Feature == "+fp-armv8d16")
+      if (Feature == "+fp-armv8" || Feature == "+fp-armv8d16") {
           HW_FP |= HW_FP_DP;
+}
     } else if (Feature == "+neon") {
       FPU |= NeonFPU;
       HW_FP |= HW_FP_SP;
@@ -511,18 +531,20 @@ bool ARMTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
 
   switch (ArchVersion) {
   case 6:
-    if (ArchProfile == llvm::ARM::ProfileKind::M)
+    if (ArchProfile == llvm::ARM::ProfileKind::M) {
       LDREX = 0;
-    else if (ArchKind == llvm::ARM::ArchKind::ARMV6K)
+    } else if (ArchKind == llvm::ARM::ArchKind::ARMV6K) {
       LDREX = LDREX_D | LDREX_W | LDREX_H | LDREX_B;
-    else
+    } else {
       LDREX = LDREX_W;
+}
     break;
   case 7:
-    if (ArchProfile == llvm::ARM::ProfileKind::M)
+    if (ArchProfile == llvm::ARM::ProfileKind::M) {
       LDREX = LDREX_W | LDREX_H | LDREX_B;
-    else
+    } else {
       LDREX = LDREX_D | LDREX_W | LDREX_H | LDREX_B;
+}
     break;
   case 8:
     LDREX = LDREX_D | LDREX_W | LDREX_H | LDREX_B;
@@ -533,10 +555,11 @@ bool ARMTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
     return false;
   }
 
-  if (FPMath == FP_Neon)
+  if (FPMath == FP_Neon) {
     Features.push_back("+neonfp");
-  else if (FPMath == FP_VFP)
+  } else if (FPMath == FP_VFP) {
     Features.push_back("-neonfp");
+}
 
   return true;
 }
@@ -569,11 +592,13 @@ void ARMTargetInfo::fillValidCPUList(SmallVectorImpl<StringRef> &Values) const {
 }
 
 bool ARMTargetInfo::setCPU(const std::string &Name) {
-  if (Name != "generic")
+  if (Name != "generic") {
     setArchInfo(llvm::ARM::parseCPUArch(Name));
+}
 
-  if (ArchKind == llvm::ARM::ArchKind::INVALID)
+  if (ArchKind == llvm::ARM::ArchKind::INVALID) {
     return false;
+}
   setAtomic();
   CPU = Name;
   return true;
@@ -617,19 +642,22 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   // For bare-metal none-eabi.
   if (getTriple().getOS() == llvm::Triple::UnknownOS &&
       (getTriple().getEnvironment() == llvm::Triple::EABI ||
-       getTriple().getEnvironment() == llvm::Triple::EABIHF))
+       getTriple().getEnvironment() == llvm::Triple::EABIHF)) {
     Builder.defineMacro("__ELF__");
+}
 
   // Target properties.
   Builder.defineMacro("__REGISTER_PREFIX__", "");
 
   // Unfortunately, __ARM_ARCH_7K__ is now more of an ABI descriptor. The CPU
   // happens to be Cortex-A7 though, so it should still get __ARM_ARCH_7A__.
-  if (getTriple().isWatchABI())
+  if (getTriple().isWatchABI()) {
     Builder.defineMacro("__ARM_ARCH_7K__", "2");
+}
 
-  if (!CPUAttr.empty())
+  if (!CPUAttr.empty()) {
     Builder.defineMacro("__ARM_ARCH_" + CPUAttr + "__");
+}
 
   // ACLE 6.4.1 ARM/Thumb instruction set architecture
   // __ARM_ARCH is defined as an integer value indicating the current ARM ISA
@@ -637,11 +665,13 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
 
   if (ArchVersion >= 8) {
     // ACLE 6.5.7 Crypto Extension
-    if (Crypto)
+    if (Crypto) {
       Builder.defineMacro("__ARM_FEATURE_CRYPTO", "1");
+}
     // ACLE 6.5.8 CRC32 Extension
-    if (CRC)
+    if (CRC) {
       Builder.defineMacro("__ARM_FEATURE_CRC32", "1");
+}
     // ACLE 6.5.10 Numeric Maximum and Minimum
     Builder.defineMacro("__ARM_FEATURE_NUMERIC_MAXMIN", "1");
     // ACLE 6.5.9 Directed Rounding
@@ -651,17 +681,19 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   // __ARM_ARCH_ISA_ARM is defined to 1 if the core supports the ARM ISA.  It
   // is not defined for the M-profile.
   // NOTE that the default profile is assumed to be 'A'
-  if (CPUProfile.empty() || ArchProfile != llvm::ARM::ProfileKind::M)
+  if (CPUProfile.empty() || ArchProfile != llvm::ARM::ProfileKind::M) {
     Builder.defineMacro("__ARM_ARCH_ISA_ARM", "1");
+}
 
   // __ARM_ARCH_ISA_THUMB is defined to 1 if the core supports the original
   // Thumb ISA (including v6-M and v8-M Baseline).  It is set to 2 if the
   // core supports the Thumb-2 ISA as found in the v6T2 architecture and all
   // v7 and v8 architectures excluding v8-M Baseline.
-  if (supportsThumb2())
+  if (supportsThumb2()) {
     Builder.defineMacro("__ARM_ARCH_ISA_THUMB", "2");
-  else if (supportsThumb())
+  } else if (supportsThumb()) {
     Builder.defineMacro("__ARM_ARCH_ISA_THUMB", "1");
+}
 
   // __ARM_32BIT_STATE is defined to 1 if code is being generated for a 32-bit
   // instruction set such as ARM or Thumb.
@@ -670,25 +702,30 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   // ACLE 6.4.2 Architectural Profile (A, R, M or pre-Cortex)
 
   // __ARM_ARCH_PROFILE is defined as 'A', 'R', 'M' or 'S', or unset.
-  if (!CPUProfile.empty())
+  if (!CPUProfile.empty()) {
     Builder.defineMacro("__ARM_ARCH_PROFILE", "'" + CPUProfile + "'");
+}
 
   // ACLE 6.4.3 Unaligned access supported in hardware
-  if (Unaligned)
+  if (Unaligned) {
     Builder.defineMacro("__ARM_FEATURE_UNALIGNED", "1");
+}
 
   // ACLE 6.4.4 LDREX/STREX
-  if (LDREX)
+  if (LDREX) {
     Builder.defineMacro("__ARM_FEATURE_LDREX", "0x" + Twine::utohexstr(LDREX));
+}
 
   // ACLE 6.4.5 CLZ
   if (ArchVersion == 5 || (ArchVersion == 6 && CPUProfile != "M") ||
-      ArchVersion > 6)
+      ArchVersion > 6) {
     Builder.defineMacro("__ARM_FEATURE_CLZ", "1");
+}
 
   // ACLE 6.5.1 Hardware Floating Point
-  if (HW_FP)
+  if (HW_FP) {
     Builder.defineMacro("__ARM_FP", "0x" + Twine::utohexstr(HW_FP));
+}
 
   // ACLE predefines.
   Builder.defineMacro("__ARM_ACLE", "200");
@@ -698,50 +735,60 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__ARM_FP16_ARGS", "1");
 
   // ACLE 6.5.3 Fused multiply-accumulate (FMA)
-  if (ArchVersion >= 7 && (FPU & VFP4FPU))
+  if (ArchVersion >= 7 && (FPU & VFP4FPU)) {
     Builder.defineMacro("__ARM_FEATURE_FMA", "1");
+}
 
   // Subtarget options.
 
   // FIXME: It's more complicated than this and we don't really support
   // interworking.
   // Windows on ARM does not "support" interworking
-  if (5 <= ArchVersion && ArchVersion <= 8 && !getTriple().isOSWindows())
+  if (5 <= ArchVersion && ArchVersion <= 8 && !getTriple().isOSWindows()) {
     Builder.defineMacro("__THUMB_INTERWORK__");
+}
 
   if (ABI == "aapcs" || ABI == "aapcs-linux" || ABI == "aapcs-vfp") {
     // Embedded targets on Darwin follow AAPCS, but not EABI.
     // Windows on ARM follows AAPCS VFP, but does not conform to EABI.
-    if (!getTriple().isOSBinFormatMachO() && !getTriple().isOSWindows())
+    if (!getTriple().isOSBinFormatMachO() && !getTriple().isOSWindows()) {
       Builder.defineMacro("__ARM_EABI__");
+}
     Builder.defineMacro("__ARM_PCS", "1");
   }
 
-  if ((!SoftFloat && !SoftFloatABI) || ABI == "aapcs-vfp" || ABI == "aapcs16")
+  if ((!SoftFloat && !SoftFloatABI) || ABI == "aapcs-vfp" || ABI == "aapcs16") {
     Builder.defineMacro("__ARM_PCS_VFP", "1");
+}
 
-  if (SoftFloat)
+  if (SoftFloat) {
     Builder.defineMacro("__SOFTFP__");
+}
 
   // ACLE position independent code macros.
-  if (Opts.ROPI)
+  if (Opts.ROPI) {
     Builder.defineMacro("__ARM_ROPI", "1");
-  if (Opts.RWPI)
+}
+  if (Opts.RWPI) {
     Builder.defineMacro("__ARM_RWPI", "1");
+}
 
-  if (ArchKind == llvm::ARM::ArchKind::XSCALE)
+  if (ArchKind == llvm::ARM::ArchKind::XSCALE) {
     Builder.defineMacro("__XSCALE__");
+}
 
   if (isThumb()) {
     Builder.defineMacro("__THUMBEL__");
     Builder.defineMacro("__thumb__");
-    if (supportsThumb2())
+    if (supportsThumb2()) {
       Builder.defineMacro("__thumb2__");
+}
   }
 
   // ACLE 6.4.9 32-bit SIMD instructions
-  if ((CPUProfile != "M" && ArchVersion >= 6) || (CPUProfile == "M" && DSP))
+  if ((CPUProfile != "M" && ArchVersion >= 6) || (CPUProfile == "M" && DSP)) {
     Builder.defineMacro("__ARM_FEATURE_SIMD32", "1");
+}
 
   // ACLE 6.4.10 Hardware Integer Divide
   if (((HWDiv & HWDivThumb) && isThumb()) ||
@@ -755,14 +802,18 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
 
   if (FPUModeIsVFP((FPUMode)FPU)) {
     Builder.defineMacro("__VFP_FP__");
-    if (FPU & VFP2FPU)
+    if (FPU & VFP2FPU) {
       Builder.defineMacro("__ARM_VFPV2__");
-    if (FPU & VFP3FPU)
+}
+    if (FPU & VFP3FPU) {
       Builder.defineMacro("__ARM_VFPV3__");
-    if (FPU & VFP4FPU)
+}
+    if (FPU & VFP4FPU) {
       Builder.defineMacro("__ARM_VFPV4__");
-    if (FPU & FPARMV8)
+}
+    if (FPU & FPARMV8) {
       Builder.defineMacro("__ARM_FPV5__");
+}
   }
 
   // This only gets set when Neon instructions are actually available, unlike
@@ -794,8 +845,9 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__ARM_SIZEOF_MINIMAL_ENUM", Opts.ShortEnums ? "1" : "4");
 
   // CMSE
-  if (ArchVersion == 8 && ArchProfile == llvm::ARM::ProfileKind::M)
+  if (ArchVersion == 8 && ArchProfile == llvm::ARM::ProfileKind::M) {
     Builder.defineMacro("__ARM_FEATURE_CMSE", Opts.Cmse ? "3" : "1");
+}
 
   if (ArchVersion >= 6 && CPUAttr != "6M" && CPUAttr != "8M_BASE") {
     Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1");
@@ -817,26 +869,32 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   }
 
   // ACLE 6.4.6 Q (saturation) flag
-  if (DSP || SAT)
+  if (DSP || SAT) {
     Builder.defineMacro("__ARM_FEATURE_QBIT", "1");
+}
 
-  if (Opts.UnsafeFPMath)
+  if (Opts.UnsafeFPMath) {
     Builder.defineMacro("__ARM_FP_FAST", "1");
+}
 
   // Armv8.2-A FP16 vector intrinsic
-  if ((FPU & NeonFPU) && HasLegalHalfType)
+  if ((FPU & NeonFPU) && HasLegalHalfType) {
     Builder.defineMacro("__ARM_FEATURE_FP16_VECTOR_ARITHMETIC", "1");
+}
 
   // Armv8.2-A FP16 scalar intrinsics
-  if (HasLegalHalfType)
+  if (HasLegalHalfType) {
     Builder.defineMacro("__ARM_FEATURE_FP16_SCALAR_ARITHMETIC", "1");
+}
 
   // Armv8.2-A dot product intrinsics
-  if (DotProd)
+  if (DotProd) {
     Builder.defineMacro("__ARM_FEATURE_DOTPROD", "1");
+}
 
-  if (HasMatMul)
+  if (HasMatMul) {
     Builder.defineMacro("__ARM_FEATURE_MATMUL_INT8", "1");
+}
 
   if (HasBFloat16) {
     Builder.defineMacro("__ARM_FEATURE_BF16", "1");
@@ -959,60 +1017,68 @@ bool ARMTargetInfo::validateAsmConstraint(
     break;
   case 'I':
     if (isThumb()) {
-      if (!supportsThumb2())
+      if (!supportsThumb2()) {
         Info.setRequiresImmediate(0, 255);
-      else
+      } else {
         // FIXME: should check if immediate value would be valid for a Thumb2
         // data-processing instruction
         Info.setRequiresImmediate();
-    } else
+}
+    } else {
       // FIXME: should check if immediate value would be valid for an ARM
       // data-processing instruction
       Info.setRequiresImmediate();
+}
     return true;
   case 'J':
-    if (isThumb() && !supportsThumb2())
+    if (isThumb() && !supportsThumb2()) {
       Info.setRequiresImmediate(-255, -1);
-    else
+    } else {
       Info.setRequiresImmediate(-4095, 4095);
+}
     return true;
   case 'K':
     if (isThumb()) {
-      if (!supportsThumb2())
+      if (!supportsThumb2()) {
         // FIXME: should check if immediate value can be obtained from shifting
         // a value between 0 and 255 left by any amount
         Info.setRequiresImmediate();
-      else
+      } else {
         // FIXME: should check if immediate value would be valid for a Thumb2
         // data-processing instruction when inverted
         Info.setRequiresImmediate();
-    } else
+}
+    } else {
       // FIXME: should check if immediate value would be valid for an ARM
       // data-processing instruction when inverted
       Info.setRequiresImmediate();
+}
     return true;
   case 'L':
     if (isThumb()) {
-      if (!supportsThumb2())
+      if (!supportsThumb2()) {
         Info.setRequiresImmediate(-7, 7);
-      else
+      } else {
         // FIXME: should check if immediate value would be valid for a Thumb2
         // data-processing instruction when negated
         Info.setRequiresImmediate();
-    } else
+}
+    } else {
       // FIXME: should check if immediate value  would be valid for an ARM
       // data-processing instruction when negated
       Info.setRequiresImmediate();
+}
     return true;
   case 'M':
-    if (isThumb() && !supportsThumb2())
+    if (isThumb() && !supportsThumb2()) {
       // FIXME: should check if immediate value is a multiple of 4 between 0 and
       // 1020
       Info.setRequiresImmediate();
-    else
+    } else {
       // FIXME: should check if immediate value is a power of two or a integer
       // between 0 and 32
       Info.setRequiresImmediate();
+}
     return true;
   case 'N':
     // Thumb1 only
@@ -1088,8 +1154,9 @@ bool ARMTargetInfo::validateConstraintModifier(
   bool isInOut = (Constraint[0] == '+');
 
   // Strip off constraint modifiers.
-  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&')
+  while (Constraint[0] == '=' || Constraint[0] == '+' || Constraint[0] == '&') {
     Constraint = Constraint.substr(1);
+}
 
   switch (Constraint[0]) {
   default:
@@ -1126,10 +1193,12 @@ ARMTargetInfo::checkCallingConvention(CallingConv CC) const {
 }
 
 int ARMTargetInfo::getEHDataRegisterNumber(unsigned RegNo) const {
-  if (RegNo == 0)
+  if (RegNo == 0) {
     return 0;
-  if (RegNo == 1)
+}
+  if (RegNo == 1) {
     return 1;
+}
   return -1;
 }
 
@@ -1214,8 +1283,9 @@ void ItaniumWindowsARMleTargetInfo::getTargetDefines(
     const LangOptions &Opts, MacroBuilder &Builder) const {
   WindowsARMTargetInfo::getTargetDefines(Opts, Builder);
 
-  if (Opts.MSVCCompat)
+  if (Opts.MSVCCompat) {
     WindowsARMTargetInfo::getVisualStudioDefines(Opts, Builder);
+}
 }
 
 // Windows ARM, MS (C++) ABI
@@ -1259,8 +1329,9 @@ void CygwinARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__CYGWIN__");
   Builder.defineMacro("__CYGWIN32__");
   DefineStd(Builder, "unix", Opts);
-  if (Opts.CPlusPlus)
+  if (Opts.CPlusPlus) {
     Builder.defineMacro("_GNU_SOURCE");
+}
 }
 
 DarwinARMTargetInfo::DarwinARMTargetInfo(const llvm::Triple &Triple,
@@ -1278,8 +1349,9 @@ DarwinARMTargetInfo::DarwinARMTargetInfo(const llvm::Triple &Triple,
 
     // BOOL should be a real boolean on the new ABI
     UseSignedCharForObjCBool = false;
-  } else
+  } else {
     TheCXXABI.set(TargetCXXABI::iOS);
+}
 }
 
 void DarwinARMTargetInfo::getOSDefines(const LangOptions &Opts,

@@ -91,12 +91,15 @@ AllocKind PointerArithChecker::getKindOfNewOp(const CXXNewExpr *NE,
                                               const FunctionDecl *FD) const {
   // This checker try not to assume anything about placement and overloaded
   // new to avoid false positives.
-  if (isa<CXXMethodDecl>(FD))
+  if (isa<CXXMethodDecl>(FD)) {
     return AllocKind::Unknown;
-  if (FD->getNumParams() != 1 || FD->isVariadic())
+}
+  if (FD->getNumParams() != 1 || FD->isVariadic()) {
     return AllocKind::Unknown;
-  if (NE->isArray())
+}
+  if (NE->isArray()) {
     return AllocKind::Array;
+}
 
   return AllocKind::SingleObject;
 }
@@ -130,15 +133,17 @@ const MemRegion *PointerArithChecker::getArrayRegion(const MemRegion *Region,
   ProgramStateRef State = C.getState();
   if (const AllocKind *Kind = State->get<RegionState>(Region)) {
     AKind = *Kind;
-    if (*Kind == AllocKind::Array)
+    if (*Kind == AllocKind::Array) {
       return Region;
-    else
+    } else {
       return nullptr;
+}
   }
   // When the region is symbolic and we do not have any information about it,
   // assume that this is an array to avoid false positives.
-  if (isa<SymbolicRegion>(Region))
+  if (isa<SymbolicRegion>(Region)) {
     return Region;
+}
 
   // No AllocKind stored and not symbolic, assume that it points to a single
   // object.
@@ -149,30 +154,36 @@ void PointerArithChecker::reportPointerArithMisuse(const Expr *E,
                                                    CheckerContext &C,
                                                    bool PointedNeeded) const {
   SourceRange SR = E->getSourceRange();
-  if (SR.isInvalid())
+  if (SR.isInvalid()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   const MemRegion *Region = C.getSVal(E).getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
-  if (PointedNeeded)
+}
+  if (PointedNeeded) {
     Region = getPointedRegion(Region, C);
-  if (!Region)
+}
+  if (!Region) {
     return;
+}
 
   bool IsPolymorphic = false;
   AllocKind Kind = AllocKind::Unknown;
   if (const MemRegion *ArrayRegion =
           getArrayRegion(Region, IsPolymorphic, Kind, C)) {
-    if (!IsPolymorphic)
+    if (!IsPolymorphic) {
       return;
+}
     if (ExplodedNode *N = C.generateNonFatalErrorNode()) {
-      if (!BT_polyArray)
+      if (!BT_polyArray) {
         BT_polyArray.reset(new BuiltinBug(
             this, "Dangerous pointer arithmetic",
             "Pointer arithmetic on a pointer to base class is dangerous "
             "because derived and base class may have different size."));
+}
       auto R = std::make_unique<PathSensitiveBugReport>(
           *BT_polyArray, BT_polyArray->getDescription(), N);
       R->addRange(E->getSourceRange());
@@ -182,20 +193,23 @@ void PointerArithChecker::reportPointerArithMisuse(const Expr *E,
     return;
   }
 
-  if (Kind == AllocKind::Reinterpreted)
+  if (Kind == AllocKind::Reinterpreted) {
     return;
+}
 
   // We might not have enough information about symbolic regions.
   if (Kind != AllocKind::SingleObject &&
-      Region->getKind() == MemRegion::Kind::SymbolicRegionKind)
+      Region->getKind() == MemRegion::Kind::SymbolicRegionKind) {
     return;
+}
 
   if (ExplodedNode *N = C.generateNonFatalErrorNode()) {
-    if (!BT_pointerArith)
+    if (!BT_pointerArith) {
       BT_pointerArith.reset(new BuiltinBug(this, "Dangerous pointer arithmetic",
                                            "Pointer arithmetic on non-array "
                                            "variables relies on memory layout, "
                                            "which is dangerous."));
+}
     auto R = std::make_unique<PathSensitiveBugReport>(
         *BT_pointerArith, BT_pointerArith->getDescription(), N);
     R->addRange(SR);
@@ -205,8 +219,9 @@ void PointerArithChecker::reportPointerArithMisuse(const Expr *E,
 }
 
 void PointerArithChecker::initAllocIdentifiers(ASTContext &C) const {
-  if (!AllocFunctions.empty())
+  if (!AllocFunctions.empty()) {
     return;
+}
   AllocFunctions.insert(&C.Idents.get("alloca"));
   AllocFunctions.insert(&C.Idents.get("malloc"));
   AllocFunctions.insert(&C.Idents.get("realloc"));
@@ -218,17 +233,20 @@ void PointerArithChecker::checkPostStmt(const CallExpr *CE,
                                         CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   const FunctionDecl *FD = C.getCalleeDecl(CE);
-  if (!FD)
+  if (!FD) {
     return;
+}
   IdentifierInfo *FunI = FD->getIdentifier();
   initAllocIdentifiers(C.getASTContext());
-  if (AllocFunctions.count(FunI) == 0)
+  if (AllocFunctions.count(FunI) == 0) {
     return;
+}
 
   SVal SV = C.getSVal(CE);
   const MemRegion *Region = SV.getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
+}
   // Assume that C allocation functions allocate arrays to avoid false
   // positives.
   // TODO: Add heuristics to distinguish alloc calls that allocates single
@@ -240,32 +258,36 @@ void PointerArithChecker::checkPostStmt(const CallExpr *CE,
 void PointerArithChecker::checkPostStmt(const CXXNewExpr *NE,
                                         CheckerContext &C) const {
   const FunctionDecl *FD = NE->getOperatorNew();
-  if (!FD)
+  if (!FD) {
     return;
+}
 
   AllocKind Kind = getKindOfNewOp(NE, FD);
 
   ProgramStateRef State = C.getState();
   SVal AllocedVal = C.getSVal(NE);
   const MemRegion *Region = AllocedVal.getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
+}
   State = State->set<RegionState>(Region, Kind);
   C.addTransition(State);
 }
 
 void PointerArithChecker::checkPostStmt(const CastExpr *CE,
                                         CheckerContext &C) const {
-  if (CE->getCastKind() != CastKind::CK_BitCast)
+  if (CE->getCastKind() != CastKind::CK_BitCast) {
     return;
+}
 
   const Expr *CastedExpr = CE->getSubExpr();
   ProgramStateRef State = C.getState();
   SVal CastedVal = C.getSVal(CastedExpr);
 
   const MemRegion *Region = CastedVal.getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
+}
 
   // Suppress reinterpret casted hits.
   State = State->set<RegionState>(Region, AllocKind::Reinterpreted);
@@ -274,20 +296,23 @@ void PointerArithChecker::checkPostStmt(const CastExpr *CE,
 
 void PointerArithChecker::checkPreStmt(const CastExpr *CE,
                                        CheckerContext &C) const {
-  if (CE->getCastKind() != CastKind::CK_ArrayToPointerDecay)
+  if (CE->getCastKind() != CastKind::CK_ArrayToPointerDecay) {
     return;
+}
 
   const Expr *CastedExpr = CE->getSubExpr();
   ProgramStateRef State = C.getState();
   SVal CastedVal = C.getSVal(CastedExpr);
 
   const MemRegion *Region = CastedVal.getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
+}
 
   if (const AllocKind *Kind = State->get<RegionState>(Region)) {
-    if (*Kind == AllocKind::Array || *Kind == AllocKind::Reinterpreted)
+    if (*Kind == AllocKind::Array || *Kind == AllocKind::Reinterpreted) {
       return;
+}
   }
   State = State->set<RegionState>(Region, AllocKind::Array);
   C.addTransition(State);
@@ -295,8 +320,9 @@ void PointerArithChecker::checkPreStmt(const CastExpr *CE,
 
 void PointerArithChecker::checkPreStmt(const UnaryOperator *UOp,
                                        CheckerContext &C) const {
-  if (!UOp->isIncrementDecrementOp() || !UOp->getType()->isPointerType())
+  if (!UOp->isIncrementDecrementOp() || !UOp->getType()->isPointerType()) {
     return;
+}
   reportPointerArithMisuse(UOp->getSubExpr(), C, true);
 }
 
@@ -305,20 +331,23 @@ void PointerArithChecker::checkPreStmt(const ArraySubscriptExpr *SubsExpr,
   SVal Idx = C.getSVal(SubsExpr->getIdx());
 
   // Indexing with 0 is OK.
-  if (Idx.isZeroConstant())
+  if (Idx.isZeroConstant()) {
     return;
+}
 
   // Indexing vector-type expressions is also OK.
-  if (SubsExpr->getBase()->getType()->isVectorType())
+  if (SubsExpr->getBase()->getType()->isVectorType()) {
     return;
+}
   reportPointerArithMisuse(SubsExpr->getBase(), C);
 }
 
 void PointerArithChecker::checkPreStmt(const BinaryOperator *BOp,
                                        CheckerContext &C) const {
   BinaryOperatorKind OpKind = BOp->getOpcode();
-  if (!BOp->isAdditiveOp() && OpKind != BO_AddAssign && OpKind != BO_SubAssign)
+  if (!BOp->isAdditiveOp() && OpKind != BO_AddAssign && OpKind != BO_SubAssign) {
     return;
+}
 
   const Expr *Lhs = BOp->getLHS();
   const Expr *Rhs = BOp->getRHS();
@@ -326,15 +355,17 @@ void PointerArithChecker::checkPreStmt(const BinaryOperator *BOp,
 
   if (Rhs->getType()->isIntegerType() && Lhs->getType()->isPointerType()) {
     SVal RHSVal = C.getSVal(Rhs);
-    if (State->isNull(RHSVal).isConstrainedTrue())
+    if (State->isNull(RHSVal).isConstrainedTrue()) {
       return;
+}
     reportPointerArithMisuse(Lhs, C, !BOp->isAdditiveOp());
   }
   // The int += ptr; case is not valid C++.
   if (Lhs->getType()->isIntegerType() && Rhs->getType()->isPointerType()) {
     SVal LHSVal = C.getSVal(Lhs);
-    if (State->isNull(LHSVal).isConstrainedTrue())
+    if (State->isNull(LHSVal).isConstrainedTrue()) {
       return;
+}
     reportPointerArithMisuse(Rhs, C);
   }
 }

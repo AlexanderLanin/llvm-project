@@ -73,15 +73,17 @@ decltype(auto) bindAssignmentToDecl(const char *DeclName) {
 static bool isTest(const Decl *D) {
   if (const auto* ND = dyn_cast<NamedDecl>(D)) {
     std::string DeclName = ND->getNameAsString();
-    if (StringRef(DeclName).startswith("test"))
+    if (StringRef(DeclName).startswith("test")) {
       return true;
+}
   }
   if (const auto *OD = dyn_cast<ObjCMethodDecl>(D)) {
     if (const auto *CD = dyn_cast<ObjCContainerDecl>(OD->getParent())) {
       std::string ContainerName = CD->getNameAsString();
       StringRef CN(ContainerName);
-      if (CN.contains_lower("test") || CN.contains_lower("mock"))
+      if (CN.contains_lower("test") || CN.contains_lower("mock")) {
         return true;
+}
     }
   }
   return false;
@@ -203,20 +205,23 @@ static void emitDiagnostics(const BoundNodes &Nodes,
 void GCDAntipatternChecker::checkASTCodeBody(const Decl *D,
                                              AnalysisManager &AM,
                                              BugReporter &BR) const {
-  if (isTest(D))
+  if (isTest(D)) {
     return;
+}
 
   AnalysisDeclContext *ADC = AM.getAnalysisDeclContext(D);
 
   auto SemaphoreMatcherM = findGCDAntiPatternWithSemaphore();
   auto Matches = match(SemaphoreMatcherM, *D->getBody(), AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, "semaphore", BR, ADC, this);
+}
 
   auto GroupMatcherM = findGCDAntiPatternWithGroup();
   Matches = match(GroupMatcherM, *D->getBody(), AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, "group", BR, ADC, this);
+}
 }
 
 } // end of anonymous namespace

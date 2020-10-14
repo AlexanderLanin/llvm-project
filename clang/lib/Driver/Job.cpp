@@ -41,12 +41,16 @@ Command::Command(const Action &Source, const Tool &Creator,
                  ArrayRef<InputInfo> Inputs, ArrayRef<InputInfo> Outputs)
     : Source(Source), Creator(Creator), ResponseSupport(ResponseSupport),
       Executable(Executable), Arguments(Arguments) {
-  for (const auto &II : Inputs)
-    if (II.isFilename())
+  for (const auto &II : Inputs) {
+    if (II.isFilename()) {
       InputFilenames.push_back(II.getFilename());
-  for (const auto &II : Outputs)
-    if (II.isFilename())
+}
+}
+  for (const auto &II : Outputs) {
+    if (II.isFilename()) {
       OutputFilenames.push_back(II.getFilename());
+}
+}
 }
 
 /// Check if the compiler flag in question should be skipped when
@@ -63,8 +67,9 @@ static bool skipArgs(const char *Flag, bool HaveCrashVFS, int &SkipNum,
     .Cases("-fdebug-compilation-dir", "-diagnostic-log-file", true)
     .Cases("-dwarf-debug-flags", "-ivfsoverlay", true)
     .Default(false);
-  if (ShouldSkip)
+  if (ShouldSkip) {
     return true;
+}
 
   // Some include flags shouldn't be skipped if we have a crash VFS
   IsInclude = llvm::StringSwitch<bool>(Flag)
@@ -75,8 +80,9 @@ static bool skipArgs(const char *Flag, bool HaveCrashVFS, int &SkipNum,
     .Cases("-isysroot", "-I", "-F", "-resource-dir", true)
     .Cases("-iframework", "-include-pch", true)
     .Default(false);
-  if (IsInclude)
+  if (IsInclude) {
     return !HaveCrashVFS;
+}
 
   // The remaining flags are treated as a single argument.
 
@@ -88,16 +94,19 @@ static bool skipArgs(const char *Flag, bool HaveCrashVFS, int &SkipNum,
 
   // Match found.
   SkipNum = 1;
-  if (ShouldSkip)
+  if (ShouldSkip) {
     return true;
+}
 
   // These flags are treated as a single argument (e.g., -F<Dir>).
   StringRef FlagRef(Flag);
   IsInclude = FlagRef.startswith("-F") || FlagRef.startswith("-I");
-  if (IsInclude)
+  if (IsInclude) {
     return !HaveCrashVFS;
-  if (FlagRef.startswith("-fmodules-cache-path="))
+}
+  if (FlagRef.startswith("-fmodules-cache-path=")) {
     return true;
+}
 
   SkipNum = 0;
   return false;
@@ -141,8 +150,9 @@ void Command::buildArgvForResponseFile(
   }
 
   llvm::StringSet<> Inputs;
-  for (const auto *InputName : InputFileList)
+  for (const auto *InputName : InputFileList) {
     Inputs.insert(InputName);
+}
   Out.push_back(Executable);
   // In a file list, build args vector ignoring parameters that will go in the
   // response file (elements of the InputFileList vector)
@@ -167,11 +177,13 @@ rewriteIncludes(const llvm::ArrayRef<const char *> &Args, size_t Idx,
   using namespace sys;
 
   auto getAbsPath = [](StringRef InInc, SmallVectorImpl<char> &OutInc) -> bool {
-    if (path::is_absolute(InInc)) // Nothing to do here...
+    if (path::is_absolute(InInc)) { // Nothing to do here...
       return false;
+}
     std::error_code EC = fs::current_path(OutInc);
-    if (EC)
+    if (EC) {
       return false;
+}
     path::append(OutInc, InInc);
     return true;
   };
@@ -192,8 +204,9 @@ rewriteIncludes(const llvm::ArrayRef<const char *> &Args, size_t Idx,
 
   assert(NumArgs == 2 && "Not expecting more than two arguments");
   StringRef Inc(Args[Idx + NumArgs - 1]);
-  if (!getAbsPath(Inc, NewInc))
+  if (!getAbsPath(Inc, NewInc)) {
     return;
+}
   IncFlags.push_back(SmallString<128>(Args[Idx]));
   IncFlags.push_back(std::move(NewInc));
 }
@@ -280,8 +293,9 @@ void Command::Print(raw_ostream &OS, const char *Terminator, bool Quote,
     writeResponseFile(OS);
     // Avoiding duplicated newline terminator, since FileLists are
     // newline-separated.
-    if (ResponseSupport.ResponseKind != ResponseFileSupport::RF_FileList)
+    if (ResponseSupport.ResponseKind != ResponseFileSupport::RF_FileList) {
       OS << "\n";
+}
     OS << " (end of response file)";
   }
 
@@ -302,8 +316,9 @@ void Command::setEnvironment(llvm::ArrayRef<const char *> NewEnvironment) {
 
 void Command::PrintFileNames() const {
   if (PrintInputFilenames) {
-    for (const char *Arg : InputFilenames)
+    for (const char *Arg : InputFilenames) {
       llvm::outs() << llvm::sys::path::filename(Arg) << "\n";
+}
     llvm::outs().flush();
   }
 }
@@ -331,10 +346,12 @@ int Command::Execute(ArrayRef<llvm::Optional<StringRef>> Redirects,
     // Save the response file in the appropriate encoding
     if (std::error_code EC = writeFileWithEncoding(
             ResponseFile, RespContents, ResponseSupport.ResponseEncoding)) {
-      if (ErrMsg)
+      if (ErrMsg) {
         *ErrMsg = EC.message();
-      if (ExecutionFailed)
+}
+      if (ExecutionFailed) {
         *ExecutionFailed = true;
+}
       // Return -1 by convention (see llvm/include/llvm/Support/Program.h) to
       // indicate the requested executable cannot be started.
       return -1;
@@ -368,8 +385,9 @@ CC1Command::CC1Command(const Action &Source, const Tool &Creator,
 
 void CC1Command::Print(raw_ostream &OS, const char *Terminator, bool Quote,
                        CrashReportInfo *CrashInfo) const {
-  if (InProcess)
+  if (InProcess) {
     OS << " (in-process)\n";
+}
   Command::Print(OS, Terminator, Quote, CrashInfo);
 }
 
@@ -378,8 +396,9 @@ int CC1Command::Execute(ArrayRef<llvm::Optional<StringRef>> Redirects,
   // FIXME: Currently, if there're more than one job, we disable
   // -fintegrate-cc1. If we're no longer a integrated-cc1 job, fallback to
   // out-of-process execution. See discussion in https://reviews.llvm.org/D74447
-  if (!InProcess)
+  if (!InProcess) {
     return Command::Execute(Redirects, ErrMsg, ExecutionFailed);
+}
 
   PrintFileNames();
 
@@ -390,8 +409,9 @@ int CC1Command::Execute(ArrayRef<llvm::Optional<StringRef>> Redirects,
 
   // This flag simply indicates that the program couldn't start, which isn't
   // applicable here.
-  if (ExecutionFailed)
+  if (ExecutionFailed) {
     *ExecutionFailed = false;
+}
 
   llvm::CrashRecoveryContext CRC;
   CRC.DumpStackAndCleanupOnFailure = true;
@@ -442,14 +462,17 @@ static bool ShouldFallback(int ExitCode) {
 int FallbackCommand::Execute(ArrayRef<llvm::Optional<StringRef>> Redirects,
                              std::string *ErrMsg, bool *ExecutionFailed) const {
   int PrimaryStatus = Command::Execute(Redirects, ErrMsg, ExecutionFailed);
-  if (!ShouldFallback(PrimaryStatus))
+  if (!ShouldFallback(PrimaryStatus)) {
     return PrimaryStatus;
+}
 
   // Clear ExecutionFailed and ErrMsg before falling back.
-  if (ErrMsg)
+  if (ErrMsg) {
     ErrMsg->clear();
-  if (ExecutionFailed)
+}
+  if (ExecutionFailed) {
     *ExecutionFailed = false;
+}
 
   const Driver &D = getCreator().getToolChain().getDriver();
   D.Diag(diag::warn_drv_invoking_fallback) << Fallback->getExecutable();
@@ -477,15 +500,17 @@ int ForceSuccessCommand::Execute(ArrayRef<llvm::Optional<StringRef>> Redirects,
                                  bool *ExecutionFailed) const {
   int Status = Command::Execute(Redirects, ErrMsg, ExecutionFailed);
   (void)Status;
-  if (ExecutionFailed)
+  if (ExecutionFailed) {
     *ExecutionFailed = false;
+}
   return 0;
 }
 
 void JobList::Print(raw_ostream &OS, const char *Terminator, bool Quote,
                     CrashReportInfo *CrashInfo) const {
-  for (const auto &Job : *this)
+  for (const auto &Job : *this) {
     Job.Print(OS, Terminator, Quote, CrashInfo);
+}
 }
 
 void JobList::clear() { Jobs.clear(); }

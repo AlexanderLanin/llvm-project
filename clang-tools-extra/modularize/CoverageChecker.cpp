@@ -175,15 +175,17 @@ std::error_code CoverageChecker::doChecks() {
   collectModuleHeaders();
 
   // Collect the file system headers.
-  if (!collectFileSystemHeaders())
+  if (!collectFileSystemHeaders()) {
     return std::error_code(2, std::generic_category());
+}
 
   // Do the checks.  These save the problematic file names.
   findUnaccountedForHeaders();
 
   // Check for warnings.
-  if (!UnaccountedForHeaders.empty())
+  if (!UnaccountedForHeaders.empty()) {
     returnValue = std::error_code(1, std::generic_category());
+}
 
   return returnValue;
 }
@@ -212,23 +214,28 @@ bool CoverageChecker::collectModuleHeaders(const Module &Mod) {
     ModuleMapHeadersSet.insert(ModularizeUtilities::getCanonicalPath(
       UmbrellaHeader->getName()));
     // Preprocess umbrella header and collect the headers it references.
-    if (!collectUmbrellaHeaderHeaders(UmbrellaHeader->getName()))
+    if (!collectUmbrellaHeaderHeaders(UmbrellaHeader->getName())) {
       return false;
+}
   }
   else if (const DirectoryEntry *UmbrellaDir = Mod.getUmbrellaDir().Entry) {
     // Collect headers in umbrella directory.
-    if (!collectUmbrellaHeaders(UmbrellaDir->getName()))
+    if (!collectUmbrellaHeaders(UmbrellaDir->getName())) {
       return false;
+}
   }
 
-  for (auto &HeaderKind : Mod.Headers)
-    for (auto &Header : HeaderKind)
+  for (auto &HeaderKind : Mod.Headers) {
+    for (auto &Header : HeaderKind) {
       ModuleMapHeadersSet.insert(ModularizeUtilities::getCanonicalPath(
         Header.Entry->getName()));
+}
+}
 
   for (auto MI = Mod.submodule_begin(), MIEnd = Mod.submodule_end();
-       MI != MIEnd; ++MI)
+       MI != MIEnd; ++MI) {
     collectModuleHeaders(**MI);
+}
 
   return true;
 }
@@ -237,30 +244,36 @@ bool CoverageChecker::collectModuleHeaders(const Module &Mod) {
 bool CoverageChecker::collectUmbrellaHeaders(StringRef UmbrellaDirName) {
   // Initialize directory name.
   SmallString<256> Directory(ModuleMapDirectory);
-  if (UmbrellaDirName.size())
+  if (UmbrellaDirName.size()) {
     sys::path::append(Directory, UmbrellaDirName);
-  if (Directory.size() == 0)
+}
+  if (Directory.size() == 0) {
     Directory = ".";
+}
   // Walk the directory.
   std::error_code EC;
   for (sys::fs::directory_iterator I(Directory.str(), EC), E; I != E;
     I.increment(EC)) {
-    if (EC)
+    if (EC) {
       return false;
+}
     std::string File(I->path());
     llvm::ErrorOr<sys::fs::basic_file_status> Status = I->status();
-    if (!Status)
+    if (!Status) {
       return false;
+}
     sys::fs::file_type Type = Status->type();
     // If the file is a directory, ignore the name and recurse.
     if (Type == sys::fs::file_type::directory_file) {
-      if (!collectUmbrellaHeaders(File))
+      if (!collectUmbrellaHeaders(File)) {
         return false;
+}
       continue;
     }
     // If the file does not have a common header extension, ignore it.
-    if (!ModularizeUtilities::isHeader(File))
+    if (!ModularizeUtilities::isHeader(File)) {
       continue;
+}
     // Save header name.
     ModuleMapHeadersSet.insert(ModularizeUtilities::getCanonicalPath(File));
   }
@@ -274,8 +287,9 @@ CoverageChecker::collectUmbrellaHeaderHeaders(StringRef UmbrellaHeaderName) {
   SmallString<256> PathBuf(ModuleMapDirectory);
 
   // If directory is empty, it's the current directory.
-  if (ModuleMapDirectory.length() == 0)
+  if (ModuleMapDirectory.length() == 0) {
     sys::fs::current_path(PathBuf);
+}
 
   // Create the compilation database.
   std::unique_ptr<CompilationDatabase> Compilations;
@@ -298,12 +312,14 @@ void CoverageChecker::collectUmbrellaHeaderHeader(StringRef HeaderName) {
 
   SmallString<256> PathBuf(ModuleMapDirectory);
   // If directory is empty, it's the current directory.
-  if (ModuleMapDirectory.length() == 0)
+  if (ModuleMapDirectory.length() == 0) {
     sys::fs::current_path(PathBuf);
+}
   // HeaderName will have an absolute path, so if it's the module map
   // directory, we remove it, also skipping trailing separator.
-  if (HeaderName.startswith(PathBuf))
+  if (HeaderName.startswith(PathBuf)) {
     HeaderName = HeaderName.substr(PathBuf.size() + 1);
+}
   // Save header name.
   ModuleMapHeadersSet.insert(ModularizeUtilities::getCanonicalPath(HeaderName));
 }
@@ -323,8 +339,9 @@ bool CoverageChecker::collectFileSystemHeaders() {
   // If no include paths specified, we do the whole tree starting
   // at the module.modulemap directory.
   if (IncludePaths.size() == 0) {
-    if (!collectFileSystemHeaders(StringRef("")))
+    if (!collectFileSystemHeaders(StringRef(""))) {
       return false;
+}
   }
   else {
     // Otherwise we only look at the sub-trees specified by the
@@ -332,8 +349,9 @@ bool CoverageChecker::collectFileSystemHeaders() {
     for (std::vector<std::string>::const_iterator I = IncludePaths.begin(),
       E = IncludePaths.end();
       I != E; ++I) {
-      if (!collectFileSystemHeaders(*I))
+      if (!collectFileSystemHeaders(*I)) {
         return false;
+}
     }
   }
 
@@ -352,10 +370,12 @@ bool CoverageChecker::collectFileSystemHeaders(StringRef IncludePath) {
 
   // Initialize directory name.
   SmallString<256> Directory(ModuleMapDirectory);
-  if (IncludePath.size())
+  if (IncludePath.size()) {
     sys::path::append(Directory, IncludePath);
-  if (Directory.size() == 0)
+}
+  if (Directory.size() == 0) {
     Directory = ".";
+}
   if (IncludePath.startswith("/") || IncludePath.startswith("\\") ||
     ((IncludePath.size() >= 2) && (IncludePath[1] == ':'))) {
     llvm::errs() << "error: Include path \"" << IncludePath
@@ -368,25 +388,30 @@ bool CoverageChecker::collectFileSystemHeaders(StringRef IncludePath) {
   int Count = 0;
   for (sys::fs::recursive_directory_iterator I(Directory.str(), EC), E; I != E;
     I.increment(EC)) {
-    if (EC)
+    if (EC) {
       return false;
+}
     //std::string file(I->path());
     StringRef file(I->path());
     llvm::ErrorOr<sys::fs::basic_file_status> Status = I->status();
-    if (!Status)
+    if (!Status) {
       return false;
+}
     sys::fs::file_type type = Status->type();
     // If the file is a directory, ignore the name (but still recurses).
-    if (type == sys::fs::file_type::directory_file)
+    if (type == sys::fs::file_type::directory_file) {
       continue;
+}
     // Assume directories or files starting with '.' are private and not to
     // be considered.
     if ((file.find("\\.") != StringRef::npos) ||
-        (file.find("/.") != StringRef::npos))
+        (file.find("/.") != StringRef::npos)) {
       continue;
+}
     // If the file does not have a common header extension, ignore it.
-    if (!ModularizeUtilities::isHeader(file))
+    if (!ModularizeUtilities::isHeader(file)) {
       continue;
+}
     // Save header name.
     FileSystemHeaders.push_back(ModularizeUtilities::getCanonicalPath(file));
     Count++;

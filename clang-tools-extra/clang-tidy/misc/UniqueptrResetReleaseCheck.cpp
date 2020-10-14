@@ -40,11 +40,13 @@ const Type *getDeleterForUniquePtr(const MatchFinder::MatchResult &Result,
                                    StringRef ID) {
   const auto *Class =
       Result.Nodes.getNodeAs<ClassTemplateSpecializationDecl>(ID);
-  if (!Class)
+  if (!Class) {
     return nullptr;
+}
   auto DeleterArgument = Class->getTemplateArgs()[1];
-  if (DeleterArgument.getKind() != TemplateArgument::Type)
+  if (DeleterArgument.getKind() != TemplateArgument::Type) {
     return nullptr;
+}
   return DeleterArgument.getAsType().getTypePtr();
 }
 
@@ -61,8 +63,9 @@ bool areDeletersCompatible(const MatchFinder::MatchResult &Result) {
 
   const CXXRecordDecl *LeftDeleter = LeftDeleterType->getAsCXXRecordDecl();
   const CXXRecordDecl *RightDeleter = RightDeleterType->getAsCXXRecordDecl();
-  if (!LeftDeleter || !RightDeleter)
+  if (!LeftDeleter || !RightDeleter) {
     return false;
+}
 
   if (LeftDeleter->getCanonicalDecl() == RightDeleter->getCanonicalDecl()) {
     // Same class. We assume they are compatible.
@@ -88,8 +91,9 @@ bool areDeletersCompatible(const MatchFinder::MatchResult &Result) {
 } // namespace
 
 void UniqueptrResetReleaseCheck::check(const MatchFinder::MatchResult &Result) {
-  if (!areDeletersCompatible(Result))
+  if (!areDeletersCompatible(Result)) {
     return;
+}
 
   const auto *ResetMember = Result.Nodes.getNodeAs<MemberExpr>("reset_member");
   const auto *ReleaseMember =
@@ -106,10 +110,12 @@ void UniqueptrResetReleaseCheck::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getTokenRange(Right->getSourceRange()),
       *Result.SourceManager, getLangOpts()));
 
-  if (ResetMember->isArrow())
+  if (ResetMember->isArrow()) {
     LeftText = "*" + LeftText;
-  if (ReleaseMember->isArrow())
+}
+  if (ReleaseMember->isArrow()) {
     RightText = "*" + RightText;
+}
   std::string DiagText;
   // Even if x was rvalue, *x is not rvalue anymore.
   if (!Right->isRValue() || ReleaseMember->isArrow()) {

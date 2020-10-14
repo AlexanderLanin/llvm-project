@@ -85,8 +85,9 @@ void PreferIsaOrDynCastInConditionalsCheck::check(
 
     StringRef Message =
         "cast<> in conditional will assert rather than return a null pointer";
-    if (Result.Nodes.getNodeAs<NamedDecl>("dyn_cast"))
+    if (Result.Nodes.getNodeAs<NamedDecl>("dyn_cast")) {
       Message = "return value from dyn_cast<> not used";
+}
 
     diag(MatchedDecl->getBeginLoc(), Message)
         << FixItHint::CreateReplacement(SourceRange(StartLoc, EndLoc), "isa");
@@ -110,8 +111,9 @@ void PreferIsaOrDynCastInConditionalsCheck::check(
         CharSourceRange::getTokenRange(Arg->getSourceRange()),
         *Result.SourceManager, getLangOpts()));
 
-    if (ArgString != LHSString)
+    if (ArgString != LHSString) {
       return;
+}
 
     StringRef RHSString(Lexer::getSourceText(
         CharSourceRange::getTokenRange(RHS->getSourceRange()),

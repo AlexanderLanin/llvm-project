@@ -75,15 +75,17 @@ Symbol ns(llvm::StringRef Name) {
 
 SymbolSlab generateSymbols(std::vector<std::string> QualifiedNames) {
   SymbolSlab::Builder Slab;
-  for (llvm::StringRef QName : QualifiedNames)
+  for (llvm::StringRef QName : QualifiedNames) {
     Slab.insert(symbol(QName));
+}
   return std::move(Slab).build();
 }
 
 SymbolSlab generateNumSymbols(int Begin, int End) {
   std::vector<std::string> Names;
-  for (int i = Begin; i <= End; i++)
+  for (int i = Begin; i <= End; i++) {
     Names.push_back(std::to_string(i));
+}
   return generateSymbols(Names);
 }
 
@@ -97,8 +99,9 @@ std::vector<std::string> match(const SymbolIndex &I,
   bool IsIncomplete = I.fuzzyFind(Req, [&](const Symbol &Sym) {
     Matches.push_back(clang::clangd::getQualifiedName(Sym));
   });
-  if (Incomplete)
+  if (Incomplete) {
     *Incomplete = IsIncomplete;
+}
   return Matches;
 }
 

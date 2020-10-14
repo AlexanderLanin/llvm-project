@@ -48,8 +48,9 @@ bool AffectedRangeManager::computeAffectedLines(
       continue;
     }
 
-    if (nonPPLineAffected(Line, PreviousLine, Lines))
+    if (nonPPLineAffected(Line, PreviousLine, Lines)) {
       SomeLineAffected = true;
+}
 
     PreviousLine = Line;
     ++I;
@@ -63,8 +64,9 @@ bool AffectedRangeManager::affectsCharSourceRange(
                                                         E = Ranges.end();
        I != E; ++I) {
     if (!SourceMgr.isBeforeInTranslationUnit(Range.getEnd(), I->getBegin()) &&
-        !SourceMgr.isBeforeInTranslationUnit(I->getEnd(), Range.getBegin()))
+        !SourceMgr.isBeforeInTranslationUnit(I->getEnd(), Range.getBegin())) {
       return true;
+}
   }
   return false;
 }
@@ -73,8 +75,9 @@ bool AffectedRangeManager::affectsTokenRange(const FormatToken &First,
                                              const FormatToken &Last,
                                              bool IncludeLeadingNewlines) {
   SourceLocation Start = First.WhitespaceRange.getBegin();
-  if (!IncludeLeadingNewlines)
+  if (!IncludeLeadingNewlines) {
     Start = Start.getLocWithOffset(First.LastNewlineOffset);
+}
   SourceLocation End = Last.getStartOfNonWhitespace();
   End = End.getLocWithOffset(Last.TokenText.size());
   CharSourceRange Range = CharSourceRange::getCharRange(Start, End);
@@ -103,8 +106,9 @@ bool AffectedRangeManager::nonPPLineAffected(
     SmallVectorImpl<AnnotatedLine *> &Lines) {
   bool SomeLineAffected = false;
   Line->ChildrenAffected = computeAffectedLines(Line->Children);
-  if (Line->ChildrenAffected)
+  if (Line->ChildrenAffected) {
     SomeLineAffected = true;
+}
 
   // Stores whether one of the line's tokens is directly affected.
   bool SomeTokenAffected = false;
@@ -118,12 +122,14 @@ bool AffectedRangeManager::nonPPLineAffected(
 
   for (FormatToken *Tok = Line->First; Tok; Tok = Tok->Next) {
     // Determine whether 'Tok' was affected.
-    if (affectsTokenRange(*Tok, *Tok, IncludeLeadingNewlines))
+    if (affectsTokenRange(*Tok, *Tok, IncludeLeadingNewlines)) {
       SomeTokenAffected = true;
+}
 
     // Determine whether the first child of 'Tok' was affected.
-    if (!Tok->Children.empty() && Tok->Children.front()->Affected)
+    if (!Tok->Children.empty() && Tok->Children.front()->Affected) {
       SomeFirstChildAffected = true;
+}
 
     IncludeLeadingNewlines = Tok->Children.empty();
   }

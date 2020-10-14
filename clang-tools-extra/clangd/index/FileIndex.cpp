@@ -75,8 +75,9 @@ SlabTuple indexSymbols(ASTContext &AST, std::shared_ptr<Preprocessor> PP,
 
   SymbolCollector Collector(std::move(CollectorOpts));
   Collector.setPreprocessor(PP);
-  if (MacroRefsToIndex)
+  if (MacroRefsToIndex) {
     Collector.handleMacros(*MacroRefsToIndex);
+}
   index::indexTopLevelDecls(AST, *PP, DeclsToIndex, Collector, IndexOpts);
 
   const auto &SM = AST.getSourceManager();
@@ -159,10 +160,12 @@ FileShardedIndex::FileShardedIndex(IndexFileIn Input)
       // FIXME: RelationSlab shouldn't contain dangling relations.
       FileShard *SubjectFile = SymbolIDToFile.lookup(R.Subject);
       FileShard *ObjectFile = SymbolIDToFile.lookup(R.Object);
-      if (SubjectFile)
+      if (SubjectFile) {
         SubjectFile->Relations.insert(&R);
-      if (ObjectFile && ObjectFile != SubjectFile)
+}
+      if (ObjectFile && ObjectFile != SubjectFile) {
         ObjectFile->Relations.insert(&R);
+}
     }
   }
   // Store only the direct includes of a file in a shard.
@@ -179,24 +182,27 @@ std::vector<llvm::StringRef> FileShardedIndex::getAllSources() const {
   // Shards.keys().end()} but MSVC fails to compile that.
   std::vector<PathRef> Result;
   Result.reserve(Shards.size());
-  for (auto Key : Shards.keys())
+  for (auto Key : Shards.keys()) {
     Result.push_back(Key);
+}
   return Result;
 }
 
 llvm::Optional<IndexFileIn>
 FileShardedIndex::getShard(llvm::StringRef Uri) const {
   auto It = Shards.find(Uri);
-  if (It == Shards.end())
+  if (It == Shards.end()) {
     return llvm::None;
+}
 
   IndexFileIn IF;
   IF.Sources = It->getValue().IG;
   IF.Cmd = Index.Cmd;
 
   SymbolSlab::Builder SymB;
-  for (const auto *S : It->getValue().Symbols)
+  for (const auto *S : It->getValue().Symbols) {
     SymB.insert(*S);
+}
   IF.Symbols = std::move(SymB).build();
 
   RefSlab::Builder RefB;
@@ -241,10 +247,11 @@ void FileSymbols::update(llvm::StringRef Key,
                          bool CountReferences) {
   std::lock_guard<std::mutex> Lock(Mutex);
   ++Version;
-  if (!Symbols)
+  if (!Symbols) {
     SymbolsSnapshot.erase(Key);
-  else
+  } else {
     SymbolsSnapshot[Key] = std::move(Symbols);
+}
   if (!Refs) {
     RefsSnapshot.erase(Key);
   } else {
@@ -253,10 +260,11 @@ void FileSymbols::update(llvm::StringRef Key,
     Item.Slab = std::move(Refs);
     RefsSnapshot[Key] = std::move(Item);
   }
-  if (!Relations)
+  if (!Relations) {
     RelationsSnapshot.erase(Key);
-  else
+  } else {
     RelationsSnapshot[Key] = std::move(Relations);
+}
 }
 
 std::unique_ptr<SymbolIndex>
@@ -268,18 +276,22 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
   std::vector<RefSlab *> MainFileRefs;
   {
     std::lock_guard<std::mutex> Lock(Mutex);
-    for (const auto &FileAndSymbols : SymbolsSnapshot)
+    for (const auto &FileAndSymbols : SymbolsSnapshot) {
       SymbolSlabs.push_back(FileAndSymbols.second);
+}
     for (const auto &FileAndRefs : RefsSnapshot) {
       RefSlabs.push_back(FileAndRefs.second.Slab);
-      if (FileAndRefs.second.CountReferences)
+      if (FileAndRefs.second.CountReferences) {
         MainFileRefs.push_back(RefSlabs.back().get());
+}
     }
-    for (const auto &FileAndRelations : RelationsSnapshot)
+    for (const auto &FileAndRelations : RelationsSnapshot) {
       RelationSlabs.push_back(FileAndRelations.second);
+}
 
-    if (Version)
+    if (Version) {
       *Version = this->Version;
+}
   }
   std::vector<const Symbol *> AllSymbols;
   std::vector<Symbol> SymsStorage;
@@ -291,18 +303,21 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
         assert(Sym.References == 0 &&
                "Symbol with non-zero references sent to FileSymbols");
         auto I = Merged.try_emplace(Sym.ID, Sym);
-        if (!I.second)
+        if (!I.second) {
           I.first->second = mergeSymbol(I.first->second, Sym);
+}
       }
     }
-    for (const RefSlab *Refs : MainFileRefs)
+    for (const RefSlab *Refs : MainFileRefs) {
       for (const auto &Sym : *Refs) {
         auto It = Merged.find(Sym.first);
         // This might happen while background-index is still running.
-        if (It == Merged.end())
+        if (It == Merged.end()) {
           continue;
+}
         It->getSecond().References += Sym.second.size();
       }
+}
     SymsStorage.reserve(Merged.size());
     for (auto &Sym : Merged) {
       SymsStorage.push_back(std::move(Sym.second));
@@ -312,13 +327,15 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
   }
   case DuplicateHandling::PickOne: {
     llvm::DenseSet<SymbolID> AddedSymbols;
-    for (const auto &Slab : SymbolSlabs)
+    for (const auto &Slab : SymbolSlabs) {
       for (const auto &Sym : *Slab) {
         assert(Sym.References == 0 &&
                "Symbol with non-zero references sent to FileSymbols");
-        if (AddedSymbols.insert(Sym.ID).second)
+        if (AddedSymbols.insert(Sym.ID).second) {
           AllSymbols.push_back(&Sym);
+}
       }
+}
     break;
   }
   }
@@ -328,11 +345,12 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
   {
     llvm::DenseMap<SymbolID, llvm::SmallVector<Ref, 4>> MergedRefs;
     size_t Count = 0;
-    for (const auto &RefSlab : RefSlabs)
+    for (const auto &RefSlab : RefSlabs) {
       for (const auto &Sym : *RefSlab) {
         MergedRefs[Sym.first].append(Sym.second.begin(), Sym.second.end());
         Count += Sym.second.size();
       }
+}
     RefsStorage.reserve(Count);
     AllRefs.reserve(MergedRefs.size());
     for (auto &Sym : MergedRefs) {
@@ -349,8 +367,9 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
 
   std::vector<Relation> AllRelations;
   for (const auto &RelationSlab : RelationSlabs) {
-    for (const auto &R : *RelationSlab)
+    for (const auto &R : *RelationSlab) {
       AllRelations.push_back(R);
+}
   }
   // Sort relations and remove duplicates that could arise due to
   // relations being stored in both the shards containing their
@@ -361,12 +380,15 @@ FileSymbols::buildIndex(IndexType Type, DuplicateHandling DuplicateHandle,
 
   size_t StorageSize =
       RefsStorage.size() * sizeof(Ref) + SymsStorage.size() * sizeof(Symbol);
-  for (const auto &Slab : SymbolSlabs)
+  for (const auto &Slab : SymbolSlabs) {
     StorageSize += Slab->bytes();
-  for (const auto &RefSlab : RefSlabs)
+}
+  for (const auto &RefSlab : RefSlabs) {
     StorageSize += RefSlab->bytes();
-  for (const auto &RelationSlab : RelationSlabs)
+}
+  for (const auto &RelationSlab : RelationSlabs) {
     StorageSize += RelationSlab->bytes();
+}
 
   // Index must keep the slabs and contiguous ranges alive.
   switch (Type) {

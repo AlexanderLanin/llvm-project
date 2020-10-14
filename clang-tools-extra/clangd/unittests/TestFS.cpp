@@ -47,8 +47,9 @@ MockCompilationDatabase::getProjectInfo(PathRef File) const {
 
 llvm::Optional<tooling::CompileCommand>
 MockCompilationDatabase::getCompileCommand(PathRef File) const {
-  if (ExtraClangFlags.empty())
+  if (ExtraClangFlags.empty()) {
     return None;
+}
 
   auto FileName = llvm::sys::path::filename(File);
 
@@ -99,10 +100,12 @@ public:
   llvm::Expected<std::string>
   getAbsolutePath(llvm::StringRef /*Authority*/, llvm::StringRef Body,
                   llvm::StringRef HintPath) const override {
-    if (!HintPath.startswith(testRoot()))
+    if (!HintPath.startswith(testRoot())) {
       return error("Hint path doesn't start with test root: {0}", HintPath);
-    if (!Body.consume_front("/"))
+}
+    if (!Body.consume_front("/")) {
       return error("Body of an unittest: URI must start with '/'");
+}
     llvm::SmallString<16> Path(Body.begin(), Body.end());
     llvm::sys::path::native(Path);
     return testPath(Path);
@@ -111,8 +114,9 @@ public:
   llvm::Expected<URI>
   uriFromAbsolutePath(llvm::StringRef AbsolutePath) const override {
     llvm::StringRef Body = AbsolutePath;
-    if (!Body.consume_front(testRoot()))
+    if (!Body.consume_front(testRoot())) {
       return error("{0} does not start with {1}", AbsolutePath, testRoot());
+}
 
     return URI(Scheme, /*Authority=*/"",
                llvm::sys::path::convert_to_slash(Body));

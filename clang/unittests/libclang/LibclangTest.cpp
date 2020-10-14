@@ -543,8 +543,9 @@ TEST_F(LibclangReparseTest, clang_parseTranslationUnit2FullArgv) {
                               "include/arm-linux-gnueabi/.keep",
                               "include/c++/99.9.9/vector"};
 
-  for (auto &Name : EmptyFiles)
+  for (auto &Name : EmptyFiles) {
     WriteFile(Name, "\n");
+}
 
   std::string Filename = "test.cc";
   WriteFile(Filename, "#include <vector>\n");
@@ -609,11 +610,13 @@ TEST_F(LibclangReparseTest, PreprocessorSkippedRanges) {
 
   for (int i = 0; i != 3; ++i) {
     unsigned flags = TUFlags | CXTranslationUnit_PrecompiledPreamble;
-    if (i == 2)
+    if (i == 2) {
       flags |= CXTranslationUnit_CreatePreambleOnFirstParse;
+}
 
-    if (i != 0)
+    if (i != 0) {
        clang_disposeTranslationUnit(ClangTU);  // dispose from previous iter
+}
 
     // parse once
     ClangTU = clang_parseTranslationUnit(Index, Main.c_str(), nullptr, 0,
@@ -869,9 +872,9 @@ static std::string getFileContent(const std::string& Filename) {
   std::string RewrittenFileContent;
   std::string Line;
   while (std::getline(RewrittenFile, Line)) {
-    if (RewrittenFileContent.empty())
+    if (RewrittenFileContent.empty()) {
       RewrittenFileContent = Line;
-    else {
+    } else {
       RewrittenFileContent += "\n" + Line;
     }
   }

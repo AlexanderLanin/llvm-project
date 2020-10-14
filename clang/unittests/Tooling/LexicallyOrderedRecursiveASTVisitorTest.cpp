@@ -78,15 +78,18 @@ bool LexicallyOrderedDeclVisitor::VisitNamedDecl(const NamedDecl *D) {
       OS << "/";
       continue;
     }
-    if (const auto *ND = dyn_cast<NamedDecl>(D))
+    if (const auto *ND = dyn_cast<NamedDecl>(D)) {
       OS << ND->getNameAsString();
-    else
+    } else {
       OS << "???";
-    if (isa<DeclContext>(D) || isa<TemplateDecl>(D))
+}
+    if (isa<DeclContext>(D) || isa<TemplateDecl>(D)) {
       OS << "/";
+}
   }
-  if (EmitDeclIndices)
+  if (EmitDeclIndices) {
     OS << "@" << Index++;
+}
   Matcher.match(OS.str(), D);
   return true;
 }
@@ -94,8 +97,9 @@ bool LexicallyOrderedDeclVisitor::VisitNamedDecl(const NamedDecl *D) {
 bool LexicallyOrderedDeclVisitor::VisitDeclRefExpr(const DeclRefExpr *D) {
   std::string Name = D->getFoundDecl()->getNameAsString();
   llvm::raw_string_ostream OS(Name);
-  if (EmitStmtIndices)
+  if (EmitStmtIndices) {
     OS << "@" << Index++;
+}
   Matcher.match(OS.str(), D);
   return true;
 }

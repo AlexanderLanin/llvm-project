@@ -36,20 +36,24 @@ public:
 }
 
 void WalkAST::VisitChildren(Stmt *S) {
-  for (Stmt *Child : S->children())
-    if (Child)
+  for (Stmt *Child : S->children()) {
+    if (Child) {
       Visit(Child);
+}
+}
 }
 
 // CWE-467: Use of sizeof() on a Pointer Type
 void WalkAST::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *E) {
-  if (E->getKind() != UETT_SizeOf)
+  if (E->getKind() != UETT_SizeOf) {
     return;
+}
 
   // If an explicit type is used in the code, usually the coder knows what they are
   // doing.
-  if (E->isArgumentType())
+  if (E->isArgumentType()) {
     return;
+}
 
   QualType T = E->getTypeOfArgument();
   if (T->isPointerType()) {
@@ -58,8 +62,9 @@ void WalkAST::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *E) {
     // because people know what they are doing when they intentionally
     // dereference the pointer.
     Expr *ArgEx = E->getArgumentExpr();
-    if (!isa<DeclRefExpr>(ArgEx->IgnoreParens()))
+    if (!isa<DeclRefExpr>(ArgEx->IgnoreParens())) {
       return;
+}
 
     PathDiagnosticLocation ELoc =
       PathDiagnosticLocation::createBegin(E, BR.getSourceManager(), AC);

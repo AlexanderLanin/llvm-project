@@ -107,16 +107,18 @@ private:
 } // end anonymous namespace
 
 bool Minimizer::reportError(const char *CurPtr, unsigned Err) {
-  if (!Diags)
+  if (!Diags) {
     return true;
+}
   assert(CurPtr >= Input.data() && "invalid buffer ptr");
   Diags->Report(InputSourceLoc.getLocWithOffset(CurPtr - Input.data()), Err);
   return true;
 }
 
 static void skipOverSpaces(const char *&First, const char *const End) {
-  while (First != End && isHorizontalWhitespace(*First))
+  while (First != End && isHorizontalWhitespace(*First)) {
     ++First;
+}
 }
 
 LLVM_NODISCARD static bool isRawStringLiteral(const char *First,
@@ -124,23 +126,28 @@ LLVM_NODISCARD static bool isRawStringLiteral(const char *First,
   assert(First <= Current);
 
   // Check if we can even back up.
-  if (*Current != '"' || First == Current)
+  if (*Current != '"' || First == Current) {
     return false;
+}
 
   // Check for an "R".
   --Current;
-  if (*Current != 'R')
+  if (*Current != 'R') {
     return false;
-  if (First == Current || !isIdentifierBody(*--Current))
+}
+  if (First == Current || !isIdentifierBody(*--Current)) {
     return true;
+}
 
   // Check for a prefix of "u", "U", or "L".
-  if (*Current == 'u' || *Current == 'U' || *Current == 'L')
+  if (*Current == 'u' || *Current == 'U' || *Current == 'L') {
     return First == Current || !isIdentifierBody(*--Current);
+}
 
   // Check for a prefix of "u8".
-  if (*Current != '8' || First == Current || *Current-- != 'u')
+  if (*Current != '8' || First == Current || *Current-- != 'u') {
     return false;
+}
   return First == Current || !isIdentifierBody(*--Current);
 }
 
@@ -149,8 +156,9 @@ static void skipRawString(const char *&First, const char *const End) {
   assert(First[-1] == 'R');
 
   const char *Last = ++First;
-  while (Last != End && *Last != '(')
+  while (Last != End && *Last != '(') {
     ++Last;
+}
   if (Last == End) {
     First = Last; // Hit the end... just give up.
     return;
@@ -160,27 +168,32 @@ static void skipRawString(const char *&First, const char *const End) {
   for (;;) {
     // Move First to just past the next ")".
     First = Last;
-    while (First != End && *First != ')')
+    while (First != End && *First != ')') {
       ++First;
-    if (First == End)
+}
+    if (First == End) {
       return;
+}
     ++First;
 
     // Look ahead for the terminator sequence.
     Last = First;
     while (Last != End && size_t(Last - First) < Terminator.size() &&
-           Terminator[Last - First] == *Last)
+           Terminator[Last - First] == *Last) {
       ++Last;
+}
 
     // Check if we hit it (or the end of the file).
     if (Last == End) {
       First = Last;
       return;
     }
-    if (size_t(Last - First) < Terminator.size())
+    if (size_t(Last - First) < Terminator.size()) {
       continue;
-    if (*Last != '"')
+}
+    if (*Last != '"') {
       continue;
+}
     First = Last + 1;
     return;
   }
@@ -188,11 +201,13 @@ static void skipRawString(const char *&First, const char *const End) {
 
 // Returns the length of EOL, either 0 (no end-of-line), 1 (\n) or 2 (\r\n)
 static unsigned isEOL(const char *First, const char *const End) {
-  if (First == End)
+  if (First == End) {
     return 0;
+}
   if (End - First > 1 && isVerticalWhitespace(First[0]) &&
-      isVerticalWhitespace(First[1]) && First[0] != First[1])
+      isVerticalWhitespace(First[1]) && First[0] != First[1]) {
     return 2;
+}
   return !!isVerticalWhitespace(First[0]);
 }
 
@@ -201,17 +216,21 @@ static void skipString(const char *&First, const char *const End) {
   const char Terminator = *First == '<' ? '>' : *First;
   for (++First; First != End && *First != Terminator; ++First) {
     // String and character literals don't extend past the end of the line.
-    if (isVerticalWhitespace(*First))
+    if (isVerticalWhitespace(*First)) {
       return;
-    if (*First != '\\')
+}
+    if (*First != '\\') {
       continue;
+}
     // Skip past backslash to the next character. This ensures that the
     // character right after it is skipped as well, which matters if it's
     // the terminator.
-    if (++First == End)
+    if (++First == End) {
       return;
-    if (!isWhitespace(*First))
+}
+    if (!isWhitespace(*First)) {
       continue;
+}
     // Whitespace after the backslash might indicate a line continuation.
     const char *FirstAfterBackslashPastSpace = First;
     skipOverSpaces(FirstAfterBackslashPastSpace, End);
@@ -221,14 +240,16 @@ static void skipString(const char *&First, const char *const End) {
       First = FirstAfterBackslashPastSpace + NLSize - 1;
     }
   }
-  if (First != End)
+  if (First != End) {
     ++First; // Finish off the string.
+}
 }
 
 // Returns the length of the skipped newline
 static unsigned skipNewline(const char *&First, const char *End) {
-  if (First == End)
+  if (First == End) {
     return 0;
+}
   assert(isVerticalWhitespace(*First));
   unsigned Len = isEOL(First, End);
   assert(Len && "expected newline");
@@ -242,21 +263,25 @@ static bool wasLineContinuation(const char *First, unsigned EOLLen) {
 
 static void skipToNewlineRaw(const char *&First, const char *const End) {
   for (;;) {
-    if (First == End)
+    if (First == End) {
       return;
+}
 
     unsigned Len = isEOL(First, End);
-    if (Len)
+    if (Len) {
       return;
+}
 
     do {
-      if (++First == End)
+      if (++First == End) {
         return;
+}
       Len = isEOL(First, End);
     } while (!Len);
 
-    if (First[-1] != '\\')
+    if (First[-1] != '\\') {
       return;
+}
 
     First += Len;
     // Keep skipping lines...
@@ -265,16 +290,18 @@ static void skipToNewlineRaw(const char *&First, const char *const End) {
 
 static const char *findLastNonSpace(const char *First, const char *Last) {
   assert(First <= Last);
-  while (First != Last && isHorizontalWhitespace(Last[-1]))
+  while (First != Last && isHorizontalWhitespace(Last[-1])) {
     --Last;
+}
   return Last;
 }
 
 static const char *findFirstTrailingSpace(const char *First,
                                           const char *Last) {
   const char *LastNonSpace = findLastNonSpace(First, Last);
-  if (Last == LastNonSpace)
+  if (Last == LastNonSpace) {
     return Last;
+}
   assert(isHorizontalWhitespace(LastNonSpace[0]));
   return LastNonSpace + 1;
 }
@@ -291,11 +318,12 @@ static void skipBlockComment(const char *&First, const char *const End) {
     First = End;
     return;
   }
-  for (First += 3; First != End; ++First)
+  for (First += 3; First != End; ++First) {
     if (First[-1] == '*' && First[0] == '/') {
       ++First;
       return;
     }
+}
 }
 
 /// \returns True if the current single quotation mark character is a C++ 14
@@ -306,18 +334,22 @@ static bool isQuoteCppDigitSeparator(const char *const Start,
   assert(*Cur == '\'' && "expected quotation character");
   // skipLine called in places where we don't expect a valid number
   // body before `start` on the same line, so always return false at the start.
-  if (Start == Cur)
+  if (Start == Cur) {
     return false;
+}
   // The previous character must be a valid PP number character.
   // Make sure that the L, u, U, u8 prefixes don't get marked as a
   // separator though.
   char Prev = *(Cur - 1);
-  if (Prev == 'L' || Prev == 'U' || Prev == 'u')
+  if (Prev == 'L' || Prev == 'U' || Prev == 'u') {
     return false;
-  if (Prev == '8' && (Cur - 1 != Start) && *(Cur - 2) == 'u')
+}
+  if (Prev == '8' && (Cur - 1 != Start) && *(Cur - 2) == 'u') {
     return false;
-  if (!isPreprocessingNumberBody(Prev))
+}
+  if (!isPreprocessingNumberBody(Prev)) {
     return false;
+}
   // The next character should be a valid identifier body character.
   return (Cur + 1) < End && isIdentifierBody(*(Cur + 1));
 }
@@ -325,8 +357,9 @@ static bool isQuoteCppDigitSeparator(const char *const Start,
 static void skipLine(const char *&First, const char *const End) {
   for (;;) {
     assert(First <= End);
-    if (First == End)
+    if (First == End) {
       return;
+}
 
     if (isVerticalWhitespace(*First)) {
       skipNewline(First, End);
@@ -337,10 +370,11 @@ static void skipLine(const char *&First, const char *const End) {
       // Iterate over strings correctly to avoid comments and newlines.
       if (*First == '"' ||
           (*First == '\'' && !isQuoteCppDigitSeparator(Start, First, End))) {
-        if (isRawStringLiteral(Start, First))
+        if (isRawStringLiteral(Start, First)) {
           skipRawString(First, End);
-        else
+        } else {
           skipString(First, End);
+}
         continue;
       }
 
@@ -364,13 +398,15 @@ static void skipLine(const char *&First, const char *const End) {
       // "/*...*/".
       skipBlockComment(First, End);
     }
-    if (First == End)
+    if (First == End) {
       return;
+}
 
     // Skip over the newline.
     unsigned Len = skipNewline(First, End);
-    if (!wasLineContinuation(First, Len)) // Continue past line-continuations.
+    if (!wasLineContinuation(First, Len)) { // Continue past line-continuations.
       break;
+}
   }
 }
 
@@ -379,11 +415,12 @@ static void skipDirective(StringRef Name, const char *&First,
   if (llvm::StringSwitch<bool>(Name)
           .Case("warning", true)
           .Case("error", true)
-          .Default(false))
+          .Default(false)) {
     // Do not process quotes or comments.
     skipToNewlineRaw(First, End);
-  else
+  } else {
     skipLine(First, End);
+}
 }
 
 void Minimizer::printToNewline(const char *&First, const char *const End) {
@@ -393,10 +430,11 @@ void Minimizer::printToNewline(const char *&First, const char *const End) {
       // Iterate over strings correctly to avoid comments and newlines.
       if (*Last == '"' || *Last == '\'' ||
           (*Last == '<' && top() == pp_include)) {
-        if (LLVM_UNLIKELY(isRawStringLiteral(First, Last)))
+        if (LLVM_UNLIKELY(isRawStringLiteral(First, Last))) {
           skipRawString(Last, End);
-        else
+        } else {
           skipString(Last, End);
+}
         continue;
       }
       if (*Last != '/' || End - Last < 2) {
@@ -451,8 +489,9 @@ static void skipWhitespace(const char *&First, const char *const End) {
     assert(First <= End);
     skipOverSpaces(First, End);
 
-    if (End - First < 2)
+    if (End - First < 2) {
       return;
+}
 
     if (First[0] == '\\' && isVerticalWhitespace(First[1])) {
       skipNewline(++First, End);
@@ -460,8 +499,9 @@ static void skipWhitespace(const char *&First, const char *const End) {
     }
 
     // Check for a non-comment character.
-    if (First[0] != '/')
+    if (First[0] != '/') {
       return;
+}
 
     // "// ...".
     if (First[1] == '/') {
@@ -470,8 +510,9 @@ static void skipWhitespace(const char *&First, const char *const End) {
     }
 
     // Cannot be a comment.
-    if (First[1] != '*')
+    if (First[1] != '*') {
       return;
+}
 
     // "/*...*/".
     skipBlockComment(First, End);
@@ -482,9 +523,9 @@ void Minimizer::printAdjacentModuleNameParts(const char *&First,
                                              const char *const End) {
   // Skip over parts of the body.
   const char *Last = First;
-  do
+  do {
     ++Last;
-  while (Last != End && (isIdentifierBody(*Last) || *Last == '.'));
+  } while (Last != End && (isIdentifierBody(*Last) || *Last == '.'));
   append(First, Last);
   First = Last;
 }
@@ -492,8 +533,9 @@ void Minimizer::printAdjacentModuleNameParts(const char *&First,
 bool Minimizer::printAtImportBody(const char *&First, const char *const End) {
   for (;;) {
     skipWhitespace(First, End);
-    if (First == End)
+    if (First == End) {
       return true;
+}
 
     if (isVerticalWhitespace(*First)) {
       skipNewline(First, End);
@@ -507,8 +549,9 @@ bool Minimizer::printAtImportBody(const char *&First, const char *const End) {
     }
 
     // Don't handle macro expansions inside @import for now.
-    if (!isIdentifierBody(*First) && *First != '.')
+    if (!isIdentifierBody(*First) && *First != '.') {
       return true;
+}
 
     printAdjacentModuleNameParts(First, End);
   }
@@ -517,8 +560,9 @@ bool Minimizer::printAtImportBody(const char *&First, const char *const End) {
 void Minimizer::printDirectiveBody(const char *&First, const char *const End) {
   skipWhitespace(First, End); // Skip initial whitespace.
   printToNewline(First, End);
-  while (Out.back() == ' ')
+  while (Out.back() == ' ') {
     Out.pop_back();
+}
   put('\n');
 }
 
@@ -526,20 +570,23 @@ LLVM_NODISCARD static const char *lexRawIdentifier(const char *First,
                                                    const char *const End) {
   assert(isIdentifierBody(*First) && "invalid identifer");
   const char *Last = First + 1;
-  while (Last != End && isIdentifierBody(*Last))
+  while (Last != End && isIdentifierBody(*Last)) {
     ++Last;
+}
   return Last;
 }
 
 LLVM_NODISCARD static const char *
 getIdentifierContinuation(const char *First, const char *const End) {
-  if (End - First < 3 || First[0] != '\\' || !isVerticalWhitespace(First[1]))
+  if (End - First < 3 || First[0] != '\\' || !isVerticalWhitespace(First[1])) {
     return nullptr;
+}
 
   ++First;
   skipNewline(First, End);
-  if (First == End)
+  if (First == End) {
     return nullptr;
+}
   return isIdentifierBody(First[0]) ? First : nullptr;
 }
 
@@ -547,8 +594,9 @@ Minimizer::IdInfo Minimizer::lexIdentifier(const char *First,
                                            const char *const End) {
   const char *Last = lexRawIdentifier(First, End);
   const char *Next = getIdentifierContinuation(Last, End);
-  if (LLVM_LIKELY(!Next))
+  if (LLVM_LIKELY(!Next)) {
     return IdInfo{Last, StringRef(First, Last - First)};
+}
 
   // Slow path, where identifiers are split over lines.
   SmallVector<char, 64> Id(First, Last);
@@ -566,9 +614,9 @@ void Minimizer::printAdjacentMacroArgs(const char *&First,
                                        const char *const End) {
   // Skip over parts of the body.
   const char *Last = First;
-  do
+  do {
     ++Last;
-  while (Last != End &&
+  } while (Last != End &&
          (isIdentifierBody(*Last) || *Last == '.' || *Last == ','));
   append(First, Last);
   First = Last;
@@ -579,8 +627,9 @@ bool Minimizer::printMacroArgs(const char *&First, const char *const End) {
   put(*First++);
   for (;;) {
     skipWhitespace(First, End);
-    if (First == End)
+    if (First == End) {
       return true;
+}
 
     if (*First == ')') {
       put(*First++);
@@ -588,8 +637,9 @@ bool Minimizer::printMacroArgs(const char *&First, const char *const End) {
     }
 
     // This is intentionally fairly liberal.
-    if (!(isIdentifierBody(*First) || *First == '.' || *First == ','))
+    if (!(isIdentifierBody(*First) || *First == '.' || *First == ',')) {
       return true;
+}
 
     printAdjacentMacroArgs(First, End);
   }
@@ -602,8 +652,9 @@ bool Minimizer::printMacroArgs(const char *&First, const char *const End) {
 bool Minimizer::isNextIdentifier(StringRef Id, const char *&First,
                                  const char *const End) {
   skipWhitespace(First, End);
-  if (First == End || !isIdentifierHead(*First))
+  if (First == End || !isIdentifierHead(*First)) {
     return false;
+}
 
   IdInfo FoundId = lexIdentifier(First, End);
   First = FoundId.Last;
@@ -619,15 +670,18 @@ bool Minimizer::lexAt(const char *&First, const char *const End) {
   }
   makeToken(decl_at_import);
   append("@import ");
-  if (printAtImportBody(First, End))
+  if (printAtImportBody(First, End)) {
     return reportError(
         ImportLoc, diag::err_dep_source_minimizer_missing_sema_after_at_import);
+}
   skipWhitespace(First, End);
-  if (First == End)
+  if (First == End) {
     return false;
-  if (!isVerticalWhitespace(*First))
+}
+  if (!isVerticalWhitespace(*First)) {
     return reportError(
         ImportLoc, diag::err_dep_source_minimizer_unexpected_tokens_at_import);
+}
   skipNewline(First, End);
   return false;
 }
@@ -674,10 +728,11 @@ bool Minimizer::lexModule(const char *&First, const char *const End) {
     append("export ");
   }
 
-  if (Id.Name == "module")
+  if (Id.Name == "module") {
     makeToken(cxx_module_decl);
-  else
+  } else {
     makeToken(cxx_import_decl);
+}
   append(Id.Name);
   append(" ");
   printToNewline(First, End);
@@ -690,14 +745,16 @@ bool Minimizer::lexDefine(const char *&First, const char *const End) {
   append("#define ");
   skipWhitespace(First, End);
 
-  if (!isIdentifierHead(*First))
+  if (!isIdentifierHead(*First)) {
     return reportError(First, diag::err_pp_macro_not_identifier);
+}
 
   IdInfo Id = lexIdentifier(First, End);
   const char *Last = Id.Last;
   append(Id.Name);
-  if (Last == End)
+  if (Last == End) {
     return false;
+}
   if (*Last == '(') {
     size_t Size = Out.size();
     if (printMacroArgs(Last, End)) {
@@ -710,10 +767,12 @@ bool Minimizer::lexDefine(const char *&First, const char *const End) {
     }
   }
   skipWhitespace(Last, End);
-  if (Last == End)
+  if (Last == End) {
     return false;
-  if (!isVerticalWhitespace(*Last))
+}
+  if (!isVerticalWhitespace(*Last)) {
     put(' ');
+}
   printDirectiveBody(Last, End);
   First = Last;
   return false;
@@ -722,8 +781,9 @@ bool Minimizer::lexDefine(const char *&First, const char *const End) {
 bool Minimizer::lexPragma(const char *&First, const char *const End) {
   // #pragma.
   skipWhitespace(First, End);
-  if (First == End || !isIdentifierHead(*First))
+  if (First == End || !isIdentifierHead(*First)) {
     return false;
+}
 
   IdInfo FoundId = lexIdentifier(First, End);
   First = FoundId.Last;
@@ -761,8 +821,9 @@ bool Minimizer::lexPragma(const char *&First, const char *const End) {
 
 bool Minimizer::lexEndif(const char *&First, const char *const End) {
   // Strip out "#else" if it's empty.
-  if (top() == pp_else)
+  if (top() == pp_else) {
     popToken();
+}
 
   // If "#ifdef" is empty, strip it and skip the "#endif".
   //
@@ -804,8 +865,9 @@ bool Minimizer::lexPPLine(const char *&First, const char *const End) {
 
   skipWhitespace(First, End);
   assert(First <= End);
-  if (First == End)
+  if (First == End) {
     return false;
+}
 
   if (!isStartOfRelevantLine(*First)) {
     skipLine(First, End);
@@ -814,18 +876,21 @@ bool Minimizer::lexPPLine(const char *&First, const char *const End) {
   }
 
   // Handle "@import".
-  if (*First == '@')
+  if (*First == '@') {
     return lexAt(First, End);
+}
 
-  if (*First == 'i' || *First == 'e' || *First == 'm')
+  if (*First == 'i' || *First == 'e' || *First == 'm') {
     return lexModule(First, End);
+}
 
   // Handle preprocessing directives.
   ++First; // Skip over '#'.
   skipWhitespace(First, End);
 
-  if (First == End)
+  if (First == End) {
     return reportError(First, diag::err_pp_expected_eol);
+}
 
   if (!isIdentifierHead(*First)) {
     skipLine(First, End);
@@ -855,14 +920,17 @@ bool Minimizer::lexPPLine(const char *&First, const char *const End) {
     return false;
   }
 
-  if (Kind == pp_endif)
+  if (Kind == pp_endif) {
     return lexEndif(First, End);
+}
 
-  if (Kind == pp_define)
+  if (Kind == pp_define) {
     return lexDefine(First, End);
+}
 
-  if (Kind == pp_pragma_import)
+  if (Kind == pp_pragma_import) {
     return lexPragma(First, End);
+}
 
   // Everything else.
   return lexDefault(Kind, Id.Name, First, End);
@@ -870,15 +938,18 @@ bool Minimizer::lexPPLine(const char *&First, const char *const End) {
 
 static void skipUTF8ByteOrderMark(const char *&First, const char *const End) {
   if ((End - First) >= 3 && First[0] == '\xef' && First[1] == '\xbb' &&
-      First[2] == '\xbf')
+      First[2] == '\xbf') {
     First += 3;
+}
 }
 
 bool Minimizer::minimizeImpl(const char *First, const char *const End) {
   skipUTF8ByteOrderMark(First, End);
-  while (First != End)
-    if (lexPPLine(First, End))
+  while (First != End) {
+    if (lexPPLine(First, End)) {
       return true;
+}
+}
   return false;
 }
 
@@ -887,8 +958,9 @@ bool Minimizer::minimize() {
 
   if (!Error) {
     // Add a trailing newline and an EOF on success.
-    if (!Out.empty() && Out.back() != '\n')
+    if (!Out.empty() && Out.back() != '\n') {
       Out.push_back('\n');
+}
     makeToken(pp_eof);
   }
 
@@ -920,8 +992,9 @@ bool clang::minimize_source_to_dependency_directives::computeSkippedRanges(
 
     case pp_elif:
     case pp_else: {
-      if (Offsets.empty())
+      if (Offsets.empty()) {
         return true;
+}
       int PreviousOffset = Offsets.back().Offset;
       Range.push_back({PreviousOffset, T.Offset - PreviousOffset});
       Offsets.push_back({T.Offset, Directive::Else});
@@ -929,14 +1002,16 @@ bool clang::minimize_source_to_dependency_directives::computeSkippedRanges(
     }
 
     case pp_endif: {
-      if (Offsets.empty())
+      if (Offsets.empty()) {
         return true;
+}
       int PreviousOffset = Offsets.back().Offset;
       Range.push_back({PreviousOffset, T.Offset - PreviousOffset});
       do {
         Directive::DirectiveKind Kind = Offsets.pop_back_val().Kind;
-        if (Kind == Directive::If)
+        if (Kind == Directive::If) {
           break;
+}
       } while (!Offsets.empty());
       break;
     }

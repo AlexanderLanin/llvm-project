@@ -17,8 +17,9 @@
 using namespace clang;
 
 QualType CXXCatchStmt::getCaughtType() const {
-  if (ExceptionDecl)
+  if (ExceptionDecl) {
     return ExceptionDecl->getType();
+}
   return QualType();
 }
 

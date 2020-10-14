@@ -63,8 +63,9 @@ template <> struct ScalarEnumerationTraits<InfoType> {
 template <unsigned U> struct ScalarTraits<SmallString<U>> {
 
   static void output(const SmallString<U> &S, void *, llvm::raw_ostream &OS) {
-    for (const auto &C : S)
+    for (const auto &C : S) {
       OS << C;
+}
   }
 
   static StringRef input(StringRef Scalar, void *, SmallString<U> &Value) {
@@ -84,8 +85,9 @@ template <> struct ScalarTraits<std::array<unsigned char, 20>> {
 
   static StringRef input(StringRef Scalar, void *,
                          std::array<unsigned char, 20> &Value) {
-    if (Scalar.size() != 40)
+    if (Scalar.size() != 40) {
       return "Error: Incorrect scalar size for USR.";
+}
     Value = StringToSymbol(Scalar);
     return StringRef();
   }
@@ -250,8 +252,9 @@ template <> struct MappingTraits<CommentInfo> {
 
 template <> struct MappingTraits<std::unique_ptr<CommentInfo>> {
   static void mapping(IO &IO, std::unique_ptr<CommentInfo> &I) {
-    if (I)
+    if (I) {
       CommentInfoMapping(IO, *I);
+}
   }
 };
 

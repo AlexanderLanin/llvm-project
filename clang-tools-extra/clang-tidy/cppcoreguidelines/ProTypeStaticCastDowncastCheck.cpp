@@ -25,25 +25,29 @@ void ProTypeStaticCastDowncastCheck::registerMatchers(MatchFinder *Finder) {
 void ProTypeStaticCastDowncastCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedCast = Result.Nodes.getNodeAs<CXXStaticCastExpr>("cast");
-  if (MatchedCast->getCastKind() != CK_BaseToDerived)
+  if (MatchedCast->getCastKind() != CK_BaseToDerived) {
     return;
+}
 
   QualType SourceType = MatchedCast->getSubExpr()->getType();
   const auto *SourceDecl = SourceType->getPointeeCXXRecordDecl();
-  if (!SourceDecl) // The cast is from object to reference
+  if (!SourceDecl) { // The cast is from object to reference
     SourceDecl = SourceType->getAsCXXRecordDecl();
-  if (!SourceDecl)
+}
+  if (!SourceDecl) {
     return;
+}
 
-  if (SourceDecl->isPolymorphic())
+  if (SourceDecl->isPolymorphic()) {
     diag(MatchedCast->getOperatorLoc(),
          "do not use static_cast to downcast from a base to a derived class; "
          "use dynamic_cast instead")
         << FixItHint::CreateReplacement(MatchedCast->getOperatorLoc(),
                                         "dynamic_cast");
-  else
+  } else {
     diag(MatchedCast->getOperatorLoc(),
          "do not use static_cast to downcast from a base to a derived class");
+}
 }
 
 } // namespace cppcoreguidelines

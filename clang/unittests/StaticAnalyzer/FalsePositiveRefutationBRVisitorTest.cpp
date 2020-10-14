@@ -44,8 +44,9 @@ class FalsePositiveGenerator : public Checker<eval::Call> {
   bool report(CheckerContext &C, ProgramStateRef State,
               StringRef Description) const {
     ExplodedNode *Node = C.generateNonFatalErrorNode(State);
-    if (!Node)
+    if (!Node) {
       return false;
+}
 
     auto Report = std::make_unique<PathSensitiveBugReport>(
         FalsePositiveGeneratorBug, Description, Node);
@@ -67,26 +68,30 @@ class FalsePositiveGenerator : public Checker<eval::Call> {
   bool reportIfCanBeTrue(const CallEvent &Call, CheckerContext &C) const {
     // A specific instantiation of an inlined function may have more constrained
     // values than can generally be assumed. Skip the check.
-    if (C.getPredecessor()->getLocationContext()->getStackFrame()->getParent())
+    if (C.getPredecessor()->getLocationContext()->getStackFrame()->getParent()) {
       return false;
+}
 
     SVal AssertionVal = Call.getArgSVal(0);
-    if (AssertionVal.isUndef())
+    if (AssertionVal.isUndef()) {
       return false;
+}
 
     ProgramStateRef State = C.getPredecessor()->getState();
     ProgramStateRef StTrue;
     std::tie(StTrue, std::ignore) =
         State->assume(AssertionVal.castAs<DefinedOrUnknownSVal>());
-    if (StTrue)
+    if (StTrue) {
       return report(C, StTrue, "CAN_BE_TRUE");
+}
     return false;
   }
 
 public:
   bool evalCall(const CallEvent &Call, CheckerContext &C) const {
-    if (const HandlerFn *Callback = Callbacks.lookup(Call))
+    if (const HandlerFn *Callback = Callbacks.lookup(Call)) {
       return (this->*(*Callback))(Call, C);
+}
     return false;
   }
 };

@@ -113,8 +113,9 @@ void DiagnosticsEngine::pushMappings(SourceLocation Loc) {
 }
 
 bool DiagnosticsEngine::popMappings(SourceLocation Loc) {
-  if (DiagStateOnPushStack.empty())
+  if (DiagStateOnPushStack.empty()) {
     return false;
+}
 
   if (DiagStateOnPushStack.back() != GetCurDiagState()) {
     // State changed at some point between push/pop.
@@ -152,8 +153,9 @@ void DiagnosticsEngine::Reset() {
 
 void DiagnosticsEngine::SetDelayedDiagnostic(unsigned DiagID, StringRef Arg1,
                                              StringRef Arg2, StringRef Arg3) {
-  if (DelayedDiagID)
+  if (DelayedDiagID) {
     return;
+}
 
   DelayedDiagID = DiagID;
   DelayedDiagArg1 = Arg1.str();
@@ -188,8 +190,9 @@ void DiagnosticsEngine::DiagStateMap::append(SourceManager &SrcMgr,
     assert(Last.Offset <= Offset && "state transitions added out of order");
 
     if (Last.Offset == Offset) {
-      if (Last.State == State)
+      if (Last.State == State) {
         break;
+}
       Last.State = State;
       continue;
     }
@@ -202,8 +205,9 @@ DiagnosticsEngine::DiagState *
 DiagnosticsEngine::DiagStateMap::lookup(SourceManager &SrcMgr,
                                         SourceLocation Loc) const {
   // Common case: we have not seen any diagnostic pragmas.
-  if (Files.empty())
+  if (Files.empty()) {
     return FirstDiagState;
+}
 
   std::pair<FileID, unsigned> Decomp = SrcMgr.getDecomposedLoc(Loc);
   const File *F = getFile(SrcMgr, Decomp.first);
@@ -225,8 +229,9 @@ DiagnosticsEngine::DiagStateMap::getFile(SourceManager &SrcMgr,
                                          FileID ID) const {
   // Get or insert the File for this ID.
   auto Range = Files.equal_range(ID);
-  if (Range.first != Range.second)
+  if (Range.first != Range.second) {
     return &Range.first->second;
+}
   auto &F = Files.insert(Range.first, std::make_pair(ID, File()))->second;
 
   // We created a new File; look up the diagnostic state at the start of it and
@@ -261,7 +266,8 @@ void DiagnosticsEngine::DiagStateMap::dump(SourceManager &SrcMgr,
 
     bool PrintedOuterHeading = false;
     auto PrintOuterHeading = [&] {
-      if (PrintedOuterHeading) return;
+      if (PrintedOuterHeading) { return;
+}
       PrintedOuterHeading = true;
 
       llvm::errs() << "File " << &File << " <FileID " << ID.getHashValue()
@@ -276,18 +282,21 @@ void DiagnosticsEngine::DiagStateMap::dump(SourceManager &SrcMgr,
               .getLocWithOffset(Decomp.second)
               .print(llvm::errs(), SrcMgr);
       }
-      if (File.HasLocalTransitions)
+      if (File.HasLocalTransitions) {
         llvm::errs() << " has_local_transitions";
+}
       llvm::errs() << "\n";
     };
 
-    if (DiagName.empty())
+    if (DiagName.empty()) {
       PrintOuterHeading();
+}
 
     for (DiagStatePoint &Transition : File.StateTransitions) {
       bool PrintedInnerHeading = false;
       auto PrintInnerHeading = [&] {
-        if (PrintedInnerHeading) return;
+        if (PrintedInnerHeading) { return;
+}
         PrintedInnerHeading = true;
 
         PrintOuterHeading();
@@ -298,21 +307,24 @@ void DiagnosticsEngine::DiagStateMap::dump(SourceManager &SrcMgr,
         llvm::errs() << ": state " << Transition.State << ":\n";
       };
 
-      if (DiagName.empty())
+      if (DiagName.empty()) {
         PrintInnerHeading();
+}
 
       for (auto &Mapping : *Transition.State) {
         StringRef Option =
             DiagnosticIDs::getWarningOptionForDiag(Mapping.first);
-        if (!DiagName.empty() && DiagName != Option)
+        if (!DiagName.empty() && DiagName != Option) {
           continue;
+}
 
         PrintInnerHeading();
         llvm::errs() << "    ";
-        if (Option.empty())
+        if (Option.empty()) {
           llvm::errs() << "<unknown " << Mapping.first << ">";
-        else
+        } else {
           llvm::errs() << Option;
+}
         llvm::errs() << ": ";
 
         switch (Mapping.second.getSeverity()) {
@@ -323,16 +335,21 @@ void DiagnosticsEngine::DiagStateMap::dump(SourceManager &SrcMgr,
         case diag::Severity::Fatal: llvm::errs() << "fatal"; break;
         }
 
-        if (!Mapping.second.isUser())
+        if (!Mapping.second.isUser()) {
           llvm::errs() << " default";
-        if (Mapping.second.isPragma())
+}
+        if (Mapping.second.isPragma()) {
           llvm::errs() << " pragma";
-        if (Mapping.second.hasNoWarningAsError())
+}
+        if (Mapping.second.hasNoWarningAsError()) {
           llvm::errs() << " no-error";
-        if (Mapping.second.hasNoErrorAsFatal())
+}
+        if (Mapping.second.hasNoErrorAsFatal()) {
           llvm::errs() << " no-fatal";
-        if (Mapping.second.wasUpgradedFromWarning())
+}
+        if (Mapping.second.wasUpgradedFromWarning()) {
           llvm::errs() << " overruled";
+}
         llvm::errs() << "\n";
       }
     }
@@ -391,12 +408,14 @@ bool DiagnosticsEngine::setSeverityForGroup(diag::Flavor Flavor,
                                             SourceLocation Loc) {
   // Get the diagnostics in this group.
   SmallVector<diag::kind, 256> GroupDiags;
-  if (Diags->getDiagnosticsInGroup(Flavor, Group, GroupDiags))
+  if (Diags->getDiagnosticsInGroup(Flavor, Group, GroupDiags)) {
     return true;
+}
 
   // Set the mapping.
-  for (diag::kind Diag : GroupDiags)
+  for (diag::kind Diag : GroupDiags) {
     setSeverity(Diag, Map, Loc);
+}
 
   return false;
 }
@@ -405,9 +424,10 @@ bool DiagnosticsEngine::setDiagnosticGroupWarningAsError(StringRef Group,
                                                          bool Enabled) {
   // If we are enabling this feature, just set the diagnostic mappings to map to
   // errors.
-  if (Enabled)
+  if (Enabled) {
     return setSeverityForGroup(diag::Flavor::WarningOrError, Group,
                                diag::Severity::Error);
+}
 
   // Otherwise, we want to set the diagnostic mapping's "no Werror" bit, and
   // potentially downgrade anything already mapped to be a warning.
@@ -415,16 +435,18 @@ bool DiagnosticsEngine::setDiagnosticGroupWarningAsError(StringRef Group,
   // Get the diagnostics in this group.
   SmallVector<diag::kind, 8> GroupDiags;
   if (Diags->getDiagnosticsInGroup(diag::Flavor::WarningOrError, Group,
-                                   GroupDiags))
+                                   GroupDiags)) {
     return true;
+}
 
   // Perform the mapping change.
   for (diag::kind Diag : GroupDiags) {
     DiagnosticMapping &Info = GetCurDiagState()->getOrAddMapping(Diag);
 
     if (Info.getSeverity() == diag::Severity::Error ||
-        Info.getSeverity() == diag::Severity::Fatal)
+        Info.getSeverity() == diag::Severity::Fatal) {
       Info.setSeverity(diag::Severity::Warning);
+}
 
     Info.setNoWarningAsError(true);
   }
@@ -436,9 +458,10 @@ bool DiagnosticsEngine::setDiagnosticGroupErrorAsFatal(StringRef Group,
                                                        bool Enabled) {
   // If we are enabling this feature, just set the diagnostic mappings to map to
   // fatal errors.
-  if (Enabled)
+  if (Enabled) {
     return setSeverityForGroup(diag::Flavor::WarningOrError, Group,
                                diag::Severity::Fatal);
+}
 
   // Otherwise, we want to set the diagnostic mapping's "no Wfatal-errors" bit,
   // and potentially downgrade anything already mapped to be a fatal error.
@@ -446,15 +469,17 @@ bool DiagnosticsEngine::setDiagnosticGroupErrorAsFatal(StringRef Group,
   // Get the diagnostics in this group.
   SmallVector<diag::kind, 8> GroupDiags;
   if (Diags->getDiagnosticsInGroup(diag::Flavor::WarningOrError, Group,
-                                   GroupDiags))
+                                   GroupDiags)) {
     return true;
+}
 
   // Perform the mapping change.
   for (diag::kind Diag : GroupDiags) {
     DiagnosticMapping &Info = GetCurDiagState()->getOrAddMapping(Diag);
 
-    if (Info.getSeverity() == diag::Severity::Fatal)
+    if (Info.getSeverity() == diag::Severity::Fatal) {
       Info.setSeverity(diag::Severity::Error);
+}
 
     Info.setNoErrorAsFatal(true);
   }
@@ -470,9 +495,11 @@ void DiagnosticsEngine::setSeverityForAll(diag::Flavor Flavor,
   DiagnosticIDs::getAllDiagnostics(Flavor, AllDiags);
 
   // Set the mapping.
-  for (diag::kind Diag : AllDiags)
-    if (Diags->isBuiltinWarningOrExtension(Diag))
+  for (diag::kind Diag : AllDiags) {
+    if (Diags->isBuiltinWarningOrExtension(Diag)) {
       setSeverity(Diag, Map, Loc);
+}
+}
 }
 
 void DiagnosticsEngine::Report(const StoredDiagnostic &storedDiag) {
@@ -494,8 +521,9 @@ void DiagnosticsEngine::Report(const StoredDiagnostic &storedDiag) {
   Diagnostic Info(this, storedDiag.getMessage());
   Client->HandleDiagnostic(DiagLevel, Info);
   if (Client->IncludeInDiagnosticCounts()) {
-    if (DiagLevel == DiagnosticsEngine::Warning)
+    if (DiagLevel == DiagnosticsEngine::Warning) {
       ++NumWarnings;
+}
   }
 
   CurDiagID = std::numeric_limits<unsigned>::max();
@@ -527,8 +555,9 @@ bool DiagnosticsEngine::EmitCurrentDiagnostic(bool Force) {
   Clear();
 
   // If there was a delayed diagnostic, emit it now.
-  if (!Force && DelayedDiagID)
+  if (!Force && DelayedDiagID) {
     ReportDelayed();
+}
 
   return Emitted;
 }
@@ -537,13 +566,15 @@ DiagnosticConsumer::~DiagnosticConsumer() = default;
 
 void DiagnosticConsumer::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
                                         const Diagnostic &Info) {
-  if (!IncludeInDiagnosticCounts())
+  if (!IncludeInDiagnosticCounts()) {
     return;
+}
 
-  if (DiagLevel == DiagnosticsEngine::Warning)
+  if (DiagLevel == DiagnosticsEngine::Warning) {
     ++NumWarnings;
-  else if (DiagLevel >= DiagnosticsEngine::Error)
+  } else if (DiagLevel >= DiagnosticsEngine::Error) {
     ++NumErrors;
+}
 }
 
 /// ModifierIs - Return true if the specified modifier matches specified string.
@@ -559,21 +590,27 @@ static const char *ScanFormat(const char *I, const char *E, char Target) {
   unsigned Depth = 0;
 
   for ( ; I != E; ++I) {
-    if (Depth == 0 && *I == Target) return I;
-    if (Depth != 0 && *I == '}') Depth--;
+    if (Depth == 0 && *I == Target) { return I;
+}
+    if (Depth != 0 && *I == '}') { Depth--;
+}
 
     if (*I == '%') {
       I++;
-      if (I == E) break;
+      if (I == E) { break;
+}
 
       // Escaped characters get implicitly skipped here.
 
       // Format specifier.
       if (!isDigit(*I) && !isPunctuation(*I)) {
-        for (I++; I != E && !isDigit(*I) && *I != '{'; I++) ;
-        if (I == E) break;
-        if (*I == '{')
+        for (I++; I != E && !isDigit(*I) && *I != '{'; I++) { ;
+}
+        if (I == E) { break;
+}
+        if (*I == '{') {
           Depth++;
+}
       }
     }
   }
@@ -611,8 +648,9 @@ static void HandleSelectModifier(const Diagnostic &DInfo, unsigned ValNo,
 /// this:  "you idiot, you have %4 parameter%s4!".
 static void HandleIntegerSModifier(unsigned ValNo,
                                    SmallVectorImpl<char> &OutStr) {
-  if (ValNo != 1)
+  if (ValNo != 1) {
     OutStr.push_back('s');
+}
 }
 
 /// HandleOrdinalModifier - Handle the integer 'ord' modifier.  This
@@ -662,8 +700,9 @@ static bool TestPluralRange(unsigned Val, const char *&Start, const char *End) {
 /// EvalPluralExpr - Actual expression evaluator for HandlePluralModifier.
 static bool EvalPluralExpr(unsigned ValNo, const char *Start, const char *End) {
   // Empty condition?
-  if (*Start == ':')
+  if (*Start == ':') {
     return true;
+}
 
   while (true) {
     char C = *Start;
@@ -674,20 +713,23 @@ static bool EvalPluralExpr(unsigned ValNo, const char *Start, const char *End) {
       assert(*Start == '=' && "Bad plural expression syntax: expected =");
       ++Start;
       unsigned ValMod = ValNo % Arg;
-      if (TestPluralRange(ValMod, Start, End))
+      if (TestPluralRange(ValMod, Start, End)) {
         return true;
+}
     } else {
       assert((C == '[' || (C >= '0' && C <= '9')) &&
              "Bad plural expression syntax: unexpected character");
       // Range expression
-      if (TestPluralRange(ValNo, Start, End))
+      if (TestPluralRange(ValNo, Start, End)) {
         return true;
+}
     }
 
     // Scan for next or-expr part.
     Start = std::find(Start, End, ',');
-    if (Start == End)
+    if (Start == End) {
       break;
+}
     ++Start;
   }
   return false;
@@ -807,9 +849,11 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
   SmallVector<intptr_t, 2> QualTypeVals;
   SmallVector<char, 64> Tree;
 
-  for (unsigned i = 0, e = getNumArgs(); i < e; ++i)
-    if (getArgKind(i) == DiagnosticsEngine::ak_qualtype)
+  for (unsigned i = 0, e = getNumArgs(); i < e; ++i) {
+    if (getArgKind(i) == DiagnosticsEngine::ak_qualtype) {
       QualTypeVals.push_back(getRawArg(i));
+}
+}
 
   while (DiagStr != DiagEnd) {
     if (DiagStr[0] != '%') {
@@ -839,8 +883,9 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
     if (!isDigit(DiagStr[0])) {
       Modifier = DiagStr;
       while (DiagStr[0] == '-' ||
-             (DiagStr[0] >= 'a' && DiagStr[0] <= 'z'))
+             (DiagStr[0] >= 'a' && DiagStr[0] <= 'z')) {
         ++DiagStr;
+}
       ModifierLen = DiagStr-Modifier;
 
       // If we have an argument, get it next.
@@ -869,9 +914,9 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       ArgNo2 = *DiagStr++ - '0';
       DiagnosticsEngine::ArgumentKind Kind2 = getArgKind(ArgNo2);
       if (Kind == DiagnosticsEngine::ak_qualtype &&
-          Kind2 == DiagnosticsEngine::ak_qualtype)
+          Kind2 == DiagnosticsEngine::ak_qualtype) {
         Kind = DiagnosticsEngine::ak_qualtype_pair;
-      else {
+      } else {
         // %diff only supports QualTypes.  For other kinds of arguments,
         // use the default printing.  For example, if the modifier is:
         //   "%diff{compare $ to $|other text}1,2"
@@ -907,8 +952,9 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       assert(ModifierLen == 0 && "No modifiers for strings yet");
 
       // Don't crash if get passed a null pointer by accident.
-      if (!S)
+      if (!S) {
         S = "(null)";
+}
 
       OutStr.append(S, S + strlen(S));
       break;
@@ -957,20 +1003,21 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       assert(ModifierLen == 0 && "No modifiers for token kinds yet");
 
       llvm::raw_svector_ostream Out(OutStr);
-      if (const char *S = tok::getPunctuatorSpelling(Kind))
+      if (const char *S = tok::getPunctuatorSpelling(Kind)) {
         // Quoted token spelling for punctuators.
         Out << '\'' << S << '\'';
-      else if (const char *S = tok::getKeywordSpelling(Kind))
+      } else if (const char *S = tok::getKeywordSpelling(Kind)) {
         // Unquoted token spelling for keywords.
         Out << S;
-      else if (const char *S = getTokenDescForDiagnostic(Kind))
+      } else if (const char *S = getTokenDescForDiagnostic(Kind)) {
         // Unquoted translatable token name.
         Out << S;
-      else if (const char *S = tok::getTokenName(Kind))
+      } else if (const char *S = tok::getTokenName(Kind)) {
         // Debug name, shouldn't appear in user-facing diagnostics.
         Out << '<' << S << '>';
-      else
+      } else {
         Out << "(null)";
+}
       break;
     }
     // ---- NAMES and TYPES ----
@@ -1048,9 +1095,10 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
                                      StringRef(Argument, ArgumentLen),
                                      FormattedArgs,
                                      OutStr, QualTypeVals);
-      if (!TDT.TemplateDiffUsed)
+      if (!TDT.TemplateDiffUsed) {
         FormattedArgs.push_back(std::make_pair(DiagnosticsEngine::ak_qualtype,
                                                TDT.FromType));
+}
 
       // Append middle text
       FormatDiagnostic(FirstDollar + 1, SecondDollar, OutStr);
@@ -1062,9 +1110,10 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
                                      StringRef(Argument, ArgumentLen),
                                      FormattedArgs,
                                      OutStr, QualTypeVals);
-      if (!TDT.TemplateDiffUsed)
+      if (!TDT.TemplateDiffUsed) {
         FormattedArgs.push_back(std::make_pair(DiagnosticsEngine::ak_qualtype,
                                                TDT.ToType));
+}
 
       // Append end text
       FormatDiagnostic(SecondDollar + 1, Pipe, OutStr);
@@ -1075,13 +1124,14 @@ FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
     // Remember this argument info for subsequent formatting operations.  Turn
     // std::strings into a null terminated string to make it be the same case as
     // all the other ones.
-    if (Kind == DiagnosticsEngine::ak_qualtype_pair)
+    if (Kind == DiagnosticsEngine::ak_qualtype_pair) {
       continue;
-    else if (Kind != DiagnosticsEngine::ak_std_string)
+    } else if (Kind != DiagnosticsEngine::ak_std_string) {
       FormattedArgs.push_back(std::make_pair(Kind, getRawArg(ArgNo)));
-    else
+    } else {
       FormattedArgs.push_back(std::make_pair(DiagnosticsEngine::ak_c_string,
                                         (intptr_t)getArgStdStr(ArgNo).c_str()));
+}
   }
 
   // Append the type tree to the end of the diagnostics.
@@ -1097,8 +1147,9 @@ StoredDiagnostic::StoredDiagnostic(DiagnosticsEngine::Level Level,
     : ID(Info.getID()), Level(Level) {
   assert((Info.getLocation().isInvalid() || Info.hasSourceManager()) &&
        "Valid source location without setting a source manager for diagnostic");
-  if (Info.getLocation().isValid())
+  if (Info.getLocation().isValid()) {
     Loc = FullSourceLoc(Info.getLocation(), Info.getSourceManager());
+}
   SmallString<64> Message;
   Info.FormatDiagnostic(Message);
   this->Message.assign(Message.begin(), Message.end());
@@ -1141,8 +1192,9 @@ bool ForwardingDiagnosticConsumer::IncludeInDiagnosticCounts() const {
 }
 
 PartialDiagnostic::StorageAllocator::StorageAllocator() {
-  for (unsigned I = 0; I != NumCached; ++I)
+  for (unsigned I = 0; I != NumCached; ++I) {
     FreeList[I] = Cached + I;
+}
   NumFreeListEntries = NumCached;
 }
 

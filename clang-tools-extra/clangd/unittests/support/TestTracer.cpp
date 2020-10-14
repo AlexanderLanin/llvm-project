@@ -24,12 +24,14 @@ std::vector<double> TestTracer::takeMetric(llvm::StringRef Metric,
                                            llvm::StringRef Label) {
   std::lock_guard<std::mutex> Lock(Mu);
   auto LabelsIt = Measurements.find(Metric);
-  if (LabelsIt == Measurements.end())
+  if (LabelsIt == Measurements.end()) {
     return {};
+}
   auto &Labels = LabelsIt->getValue();
   auto ValuesIt = Labels.find(Label);
-  if (ValuesIt == Labels.end())
+  if (ValuesIt == Labels.end()) {
     return {};
+}
   auto Res = std::move(ValuesIt->getValue());
   ValuesIt->getValue().clear();
   return Res;

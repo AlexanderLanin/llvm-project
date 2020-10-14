@@ -28,15 +28,17 @@ static bool isSameToken(Token &RawTok, Token &PPTok) {
   // If two tokens have the same kind and the same identifier info, they are
   // obviously the same.
   if (PPTok.getKind() == RawTok.getKind() &&
-      PPTok.getIdentifierInfo() == RawTok.getIdentifierInfo())
+      PPTok.getIdentifierInfo() == RawTok.getIdentifierInfo()) {
     return true;
+}
 
   // Otherwise, if they are different but have the same identifier info, they
   // are also considered to be the same.  This allows keywords and raw lexed
   // identifiers with the same name to be treated the same.
   if (PPTok.getIdentifierInfo() &&
-      PPTok.getIdentifierInfo() == RawTok.getIdentifierInfo())
+      PPTok.getIdentifierInfo() == RawTok.getIdentifierInfo()) {
     return true;
+}
 
   return false;
 }
@@ -49,8 +51,9 @@ static const Token &GetNextRawTok(const std::vector<Token> &RawTokens,
   assert(CurTok < RawTokens.size() && "Overran eof!");
 
   // If the client doesn't want comments and we have one, skip it.
-  if (!ReturnComment && RawTokens[CurTok].is(tok::comment))
+  if (!ReturnComment && RawTokens[CurTok].is(tok::comment)) {
     ++CurTok;
+}
 
   return RawTokens[CurTok++];
 }
@@ -77,8 +80,9 @@ static void LexRawTokensFromMainFile(Preprocessor &PP,
     // If we have an identifier with no identifier info for our raw token, look
     // up the identifier info.  This is important for equality comparison of
     // identifier tokens.
-    if (RawTok.is(tok::raw_identifier))
+    if (RawTok.is(tok::raw_identifier)) {
       PP.LookUpIdentifierInfo(RawTok);
+}
 
     RawTokens.push_back(RawTok);
   } while (RawTok.isNot(tok::eof));
@@ -143,8 +147,9 @@ void clang::RewriteMacrosInInput(Preprocessor &PP, raw_ostream *OS) {
       // Otherwise, if this is a #include or some other directive, just leave it
       // in the file by skipping over the line.
       RawTok = GetNextRawTok(RawTokens, CurRawTok, false);
-      while (!RawTok.isAtStartOfLine() && RawTok.isNot(tok::eof))
+      while (!RawTok.isAtStartOfLine() && RawTok.isNot(tok::eof)) {
         RawTok = GetNextRawTok(RawTokens, CurRawTok, false);
+}
       continue;
     }
 

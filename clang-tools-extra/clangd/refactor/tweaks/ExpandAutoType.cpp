@@ -59,8 +59,9 @@ bool ExpandAutoType::prepare(const Selection& Inputs) {
     if (auto *TypeNode = Node->ASTNode.get<TypeLoc>()) {
       if (const AutoTypeLoc Result = TypeNode->getAs<AutoTypeLoc>()) {
         // Code in apply() does handle 'decltype(auto)' yet.
-        if (!Result.getTypePtr()->isDecltypeAuto())
+        if (!Result.getTypePtr()->isDecltypeAuto()) {
           CachedLocation = Result;
+}
       }
     }
   }
@@ -74,8 +75,9 @@ Expected<Tweak::Effect> ExpandAutoType::apply(const Selection& Inputs) {
       Inputs.AST->getASTContext(), CachedLocation->getBeginLoc());
 
   // if we can't resolve the type, return an error message
-  if (DeducedType == llvm::None)
+  if (DeducedType == llvm::None) {
     return error("Could not deduce type for 'auto' type");
+}
 
   // if it's a lambda expression, return an error message
   if (isa<RecordType>(*DeducedType) &&

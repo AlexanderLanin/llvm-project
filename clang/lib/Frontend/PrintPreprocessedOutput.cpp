@@ -45,27 +45,31 @@ static void PrintMacroDefinition(const IdentifierInfo &II, const MacroInfo &MI,
       }
 
       // Last argument.
-      if ((*AI)->getName() == "__VA_ARGS__")
+      if ((*AI)->getName() == "__VA_ARGS__") {
         OS << "...";
-      else
+      } else {
         OS << (*AI)->getName();
+}
     }
 
-    if (MI.isGNUVarargs())
+    if (MI.isGNUVarargs()) {
       OS << "...";  // #define foo(x...)
+}
 
     OS << ')';
   }
 
   // GCC always emits a space, even if the macro body is empty.  However, do not
   // want to emit two spaces if the first token has a leading space.
-  if (MI.tokens_empty() || !MI.tokens_begin()->hasLeadingSpace())
+  if (MI.tokens_empty() || !MI.tokens_begin()->hasLeadingSpace()) {
     OS << ' ';
+}
 
   SmallString<128> SpellingBuffer;
   for (const auto &T : MI.tokens()) {
-    if (T.hasLeadingSpace())
+    if (T.hasLeadingSpace()) {
       OS << ' ';
+}
 
     OS << PP.getSpelling(T, SpellingBuffer);
   }
@@ -155,8 +159,9 @@ public:
   /// the requested location is on the first line.
   bool MoveToLine(SourceLocation Loc) {
     PresumedLoc PLoc = SM.getPresumedLoc(Loc);
-    if (PLoc.isInvalid())
+    if (PLoc.isInvalid()) {
       return false;
+}
     return MoveToLine(PLoc.getLine()) || (PLoc.getLine() == 1);
   }
   bool MoveToLine(unsigned LineNo);
@@ -199,13 +204,15 @@ void PrintPPOutputPPCallbacks::WriteLineInfo(unsigned LineNo,
     OS.write_escaped(CurFilename);
     OS << '"';
 
-    if (ExtraLen)
+    if (ExtraLen) {
       OS.write(Extra, ExtraLen);
+}
 
-    if (FileType == SrcMgr::C_System)
+    if (FileType == SrcMgr::C_System) {
       OS.write(" 3", 2);
-    else if (FileType == SrcMgr::C_ExternCSystem)
+    } else if (FileType == SrcMgr::C_ExternCSystem) {
       OS.write(" 3 4", 4);
+}
   }
   OS << '\n';
 }
@@ -218,11 +225,11 @@ bool PrintPPOutputPPCallbacks::MoveToLine(unsigned LineNo) {
   // If this line is "close enough" to the original line, just print newlines,
   // otherwise print a #line directive.
   if (LineNo-CurLine <= 8) {
-    if (LineNo-CurLine == 1)
+    if (LineNo-CurLine == 1) {
       OS << '\n';
-    else if (LineNo == CurLine)
+    } else if (LineNo == CurLine) {
       return false;    // Spelling line moved, but expansion line didn't.
-    else {
+    } else {
       const char *NewLines = "\n\n\n\n\n\n\n\n";
       OS.write(NewLines, LineNo-CurLine);
     }
@@ -245,8 +252,9 @@ PrintPPOutputPPCallbacks::startNewLineIfNeeded(bool ShouldUpdateCurrentLine) {
     OS << '\n';
     EmittedTokensOnThisLine = false;
     EmittedDirectiveOnThisLine = false;
-    if (ShouldUpdateCurrentLine)
+    if (ShouldUpdateCurrentLine) {
       ++CurLine;
+}
     return true;
   }
 
@@ -265,15 +273,17 @@ void PrintPPOutputPPCallbacks::FileChanged(SourceLocation Loc,
   SourceManager &SourceMgr = SM;
 
   PresumedLoc UserLoc = SourceMgr.getPresumedLoc(Loc);
-  if (UserLoc.isInvalid())
+  if (UserLoc.isInvalid()) {
     return;
+}
 
   unsigned NewLine = UserLoc.getLine();
 
   if (Reason == PPCallbacks::EnterFile) {
     SourceLocation IncludeLoc = UserLoc.getIncludeLoc();
-    if (IncludeLoc.isValid())
+    if (IncludeLoc.isValid()) {
       MoveToLine(IncludeLoc);
+}
   } else if (Reason == PPCallbacks::SystemHeaderPragma) {
     // GCC emits the # directive for this directive on the line AFTER the
     // directive and emits a bunch of spaces that aren't needed. This is because
@@ -412,7 +422,8 @@ void PrintPPOutputPPCallbacks::MacroDefined(const Token &MacroNameTok,
   // Only print out macro definitions in -dD mode.
   if (!DumpDefines ||
       // Ignore __FILE__ etc.
-      MI->isBuiltinMacro()) return;
+      MI->isBuiltinMacro()) { return;
+}
 
   MoveToLine(MI->getDefinitionLoc());
   PrintMacroDefinition(*MacroNameTok.getIdentifierInfo(), *MI, PP, OS);
@@ -423,7 +434,8 @@ void PrintPPOutputPPCallbacks::MacroUndefined(const Token &MacroNameTok,
                                               const MacroDefinition &MD,
                                               const MacroDirective *Undef) {
   // Only print out macro definitions in -dD mode.
-  if (!DumpDefines) return;
+  if (!DumpDefines) { return;
+}
 
   MoveToLine(MacroNameTok.getLocation());
   OS << "#undef " << MacroNameTok.getIdentifierInfo()->getName();
@@ -432,13 +444,14 @@ void PrintPPOutputPPCallbacks::MacroUndefined(const Token &MacroNameTok,
 
 static void outputPrintable(raw_ostream &OS, StringRef Str) {
   for (unsigned char Char : Str) {
-    if (isPrintable(Char) && Char != '\\' && Char != '"')
+    if (isPrintable(Char) && Char != '\\' && Char != '"') {
       OS << (char)Char;
-    else // Output anything hard as an octal escape.
+    } else { // Output anything hard as an octal escape.
       OS << '\\'
          << (char)('0' + ((Char >> 6) & 7))
          << (char)('0' + ((Char >> 3) & 7))
          << (char)('0' + ((Char >> 0) & 7));
+}
   }
 }
 
@@ -449,8 +462,9 @@ void PrintPPOutputPPCallbacks::PragmaMessage(SourceLocation Loc,
   startNewLineIfNeeded();
   MoveToLine(Loc);
   OS << "#pragma ";
-  if (!Namespace.empty())
+  if (!Namespace.empty()) {
     OS << Namespace << ' ';
+}
   switch (Kind) {
     case PMK_Message:
       OS << "message(\"";
@@ -465,8 +479,9 @@ void PrintPPOutputPPCallbacks::PragmaMessage(SourceLocation Loc,
 
   outputPrintable(OS, Str);
   OS << '"';
-  if (Kind == PMK_Message)
+  if (Kind == PMK_Message) {
     OS << ')';
+}
   setEmittedDirectiveOnThisLine();
 }
 
@@ -531,8 +546,9 @@ void PrintPPOutputPPCallbacks::PragmaWarning(SourceLocation Loc,
   startNewLineIfNeeded();
   MoveToLine(Loc);
   OS << "#pragma warning(" << WarningSpec << ':';
-  for (ArrayRef<int>::iterator I = Ids.begin(), E = Ids.end(); I != E; ++I)
+  for (ArrayRef<int>::iterator I = Ids.begin(), E = Ids.end(); I != E; ++I) {
     OS << ' ' << *I;
+}
   OS << ')';
   setEmittedDirectiveOnThisLine();
 }
@@ -542,8 +558,9 @@ void PrintPPOutputPPCallbacks::PragmaWarningPush(SourceLocation Loc,
   startNewLineIfNeeded();
   MoveToLine(Loc);
   OS << "#pragma warning(push";
-  if (Level >= 0)
+  if (Level >= 0) {
     OS << ", " << Level;
+}
   OS << ')';
   setEmittedDirectiveOnThisLine();
 }
@@ -560,8 +577,9 @@ void PrintPPOutputPPCallbacks::PragmaExecCharsetPush(SourceLocation Loc,
   startNewLineIfNeeded();
   MoveToLine(Loc);
   OS << "#pragma character_execution_set(push";
-  if (!Str.empty())
+  if (!Str.empty()) {
     OS << ", " << Str;
+}
   OS << ')';
   setEmittedDirectiveOnThisLine();
 }
@@ -597,8 +615,9 @@ PragmaAssumeNonNullEnd(SourceLocation Loc) {
 bool PrintPPOutputPPCallbacks::HandleFirstTokOnLine(Token &Tok) {
   // Figure out what line we went to and insert the appropriate number of
   // newline characters.
-  if (!MoveToLine(Tok.getLocation()))
+  if (!MoveToLine(Tok.getLocation())) {
     return false;
+}
 
   // Print out space characters so that the first token on a line is
   // indented for easy reading.
@@ -608,8 +627,9 @@ bool PrintPPOutputPPCallbacks::HandleFirstTokOnLine(Token &Tok) {
   // leading white space, if a macro expansion in column 1 starts with an empty
   // macro argument, or an empty nested macro expansion. In this case, move the
   // token to column 2.
-  if (ColNo == 1 && Tok.hasLeadingSpace())
+  if (ColNo == 1 && Tok.hasLeadingSpace()) {
     ColNo = 2;
+}
 
   // This hack prevents stuff like:
   // #define HASH #
@@ -617,12 +637,14 @@ bool PrintPPOutputPPCallbacks::HandleFirstTokOnLine(Token &Tok) {
   // From having the # character end up at column 1, which makes it so it
   // is not handled as a #define next time through the preprocessor if in
   // -fpreprocessed mode.
-  if (ColNo <= 1 && Tok.is(tok::hash))
+  if (ColNo <= 1 && Tok.is(tok::hash)) {
     OS << ' ';
+}
 
   // Otherwise, indent the appropriate number of spaces.
-  for (; ColNo > 1; --ColNo)
+  for (; ColNo > 1; --ColNo) {
     OS << ' ';
+}
 
   return true;
 }
@@ -632,8 +654,9 @@ void PrintPPOutputPPCallbacks::HandleNewlinesInToken(const char *TokStr,
   unsigned NumNewlines = 0;
   for (; Len; --Len, ++TokStr) {
     if (*TokStr != '\n' &&
-        *TokStr != '\r')
+        *TokStr != '\r') {
       continue;
+}
 
     ++NumNewlines;
 
@@ -646,7 +669,8 @@ void PrintPPOutputPPCallbacks::HandleNewlinesInToken(const char *TokStr,
     }
   }
 
-  if (NumNewlines == 0) return;
+  if (NumNewlines == 0) { return;
+}
 
   CurLine += NumNewlines;
 }
@@ -690,18 +714,20 @@ struct UnknownPragmaHandler : public PragmaHandler {
     // Read and print all of the pragma tokens.
     while (PragmaTok.isNot(tok::eod)) {
       if (PragmaTok.hasLeadingSpace() ||
-          Callbacks->AvoidConcat(PrevPrevToken, PrevToken, PragmaTok))
+          Callbacks->AvoidConcat(PrevPrevToken, PrevToken, PragmaTok)) {
         Callbacks->OS << ' ';
+}
       std::string TokSpell = PP.getSpelling(PragmaTok);
       Callbacks->OS.write(&TokSpell[0], TokSpell.size());
 
       PrevPrevToken = PrevToken;
       PrevToken = PragmaTok;
 
-      if (ShouldExpandTokens)
+      if (ShouldExpandTokens) {
         PP.Lex(PragmaTok);
-      else
+      } else {
         PP.LexUnexpandedToken(PragmaTok);
+}
     }
     Callbacks->setEmittedDirectiveOnThisLine();
   }
@@ -796,20 +822,23 @@ static void PrintPreprocessedTokens(Preprocessor &PP, Token &Tok,
 
       // Tokens that can contain embedded newlines need to adjust our current
       // line number.
-      if (Tok.getKind() == tok::comment || Tok.getKind() == tok::unknown)
+      if (Tok.getKind() == tok::comment || Tok.getKind() == tok::unknown) {
         Callbacks->HandleNewlinesInToken(TokPtr, Len);
+}
     } else {
       std::string S = PP.getSpelling(Tok);
       OS.write(S.data(), S.size());
 
       // Tokens that can contain embedded newlines need to adjust our current
       // line number.
-      if (Tok.getKind() == tok::comment || Tok.getKind() == tok::unknown)
+      if (Tok.getKind() == tok::comment || Tok.getKind() == tok::unknown) {
         Callbacks->HandleNewlinesInToken(S.data(), S.size());
+}
     }
     Callbacks->setEmittedTokensOnThisLine();
 
-    if (Tok.is(tok::eof)) break;
+    if (Tok.is(tok::eof)) { break;
+}
 
     PrevPrevTok = PrevTok;
     PrevTok = Tok;
@@ -831,22 +860,24 @@ static void DoPrintMacros(Preprocessor &PP, raw_ostream *OS) {
   PP.EnterMainSourceFile();
 
   Token Tok;
-  do PP.Lex(Tok);
-  while (Tok.isNot(tok::eof));
+  do { PP.Lex(Tok);
+  } while (Tok.isNot(tok::eof));
 
   SmallVector<id_macro_pair, 128> MacrosByID;
   for (Preprocessor::macro_iterator I = PP.macro_begin(), E = PP.macro_end();
        I != E; ++I) {
     auto *MD = I->second.getLatest();
-    if (MD && MD->isDefined())
+    if (MD && MD->isDefined()) {
       MacrosByID.push_back(id_macro_pair(I->first, MD->getMacroInfo()));
+}
   }
   llvm::array_pod_sort(MacrosByID.begin(), MacrosByID.end(), MacroIDCompare);
 
   for (unsigned i = 0, e = MacrosByID.size(); i != e; ++i) {
     MacroInfo &MI = *MacrosByID[i].second;
     // Ignore computed macros like __LINE__ and friends.
-    if (MI.isBuiltinMacro()) continue;
+    if (MI.isBuiltinMacro()) { continue;
+}
 
     PrintMacroDefinition(*MacrosByID[i].first, MI, PP, *OS);
     *OS << '\n';
@@ -914,15 +945,18 @@ void clang::DoPrintPreprocessedInput(Preprocessor &PP, raw_ostream *OS,
   Token Tok;
   do {
     PP.Lex(Tok);
-    if (Tok.is(tok::eof) || !Tok.getLocation().isFileID())
+    if (Tok.is(tok::eof) || !Tok.getLocation().isFileID()) {
       break;
+}
 
     PresumedLoc PLoc = SourceMgr.getPresumedLoc(Tok.getLocation());
-    if (PLoc.isInvalid())
+    if (PLoc.isInvalid()) {
       break;
+}
 
-    if (strcmp(PLoc.getFilename(), "<built-in>"))
+    if (strcmp(PLoc.getFilename(), "<built-in>")) {
       break;
+}
   } while (true);
 
   // Read all the preprocessed tokens, printing them out to the stream.

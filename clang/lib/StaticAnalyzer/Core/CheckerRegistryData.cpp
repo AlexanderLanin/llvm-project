@@ -82,16 +82,19 @@ static constexpr char PackageSeparator = '.';
 
 static bool isInPackage(const CheckerInfo &Checker, StringRef PackageName) {
   // Does the checker's full name have the package as a prefix?
-  if (!Checker.FullName.startswith(PackageName))
+  if (!Checker.FullName.startswith(PackageName)) {
     return false;
+}
 
   // Is the package actually just the name of a specific checker?
-  if (Checker.FullName.size() == PackageName.size())
+  if (Checker.FullName.size() == PackageName.size()) {
     return true;
+}
 
   // Is the checker in the package (or a subpackage)?
-  if (Checker.FullName[PackageName.size()] == PackageSeparator)
+  if (Checker.FullName[PackageName.size()] == PackageSeparator) {
     return true;
+}
 
   return false;
 }
@@ -100,8 +103,9 @@ CheckerInfoListRange
 CheckerRegistryData::getMutableCheckersForCmdLineArg(StringRef CmdLineArg) {
   auto It = checker_registry::binaryFind(Checkers, CmdLineArg);
 
-  if (!isInPackage(*It, CmdLineArg))
+  if (!isInPackage(*It, CmdLineArg)) {
     return {Checkers.end(), Checkers.end()};
+}
 
   // See how large the package is.
   // If the package doesn't exist, assume the option refers to a single
@@ -110,8 +114,9 @@ CheckerRegistryData::getMutableCheckersForCmdLineArg(StringRef CmdLineArg) {
   llvm::StringMap<size_t>::const_iterator PackageSize =
       PackageSizes.find(CmdLineArg);
 
-  if (PackageSize != PackageSizes.end())
+  if (PackageSize != PackageSizes.end()) {
     Size = PackageSize->getValue();
+}
 
   return {It, It + Size};
 }
@@ -132,8 +137,9 @@ void CheckerRegistryData::printCheckerWithDescList(
     // Limit the amount of padding we are willing to give up for alignment.
     //   Package.Name     Description  [Hidden]
     size_t NameLength = Checker.FullName.size();
-    if (NameLength <= MaxNameChars)
+    if (NameLength <= MaxNameChars) {
       OptionFieldWidth = std::max(OptionFieldWidth, NameLength);
+}
   }
 
   const size_t InitialPad = 2;
@@ -153,26 +159,30 @@ void CheckerRegistryData::printCheckerWithDescList(
     // checker) shouldn't normally tinker with whether they should be enabled.
 
     if (Checker.IsHidden) {
-      if (AnOpts.ShowCheckerHelpDeveloper)
+      if (AnOpts.ShowCheckerHelpDeveloper) {
         Print(Out, Checker, Checker.Desc);
+}
       continue;
     }
 
     if (Checker.FullName.startswith("alpha")) {
-      if (AnOpts.ShowCheckerHelpAlpha)
+      if (AnOpts.ShowCheckerHelpAlpha) {
         Print(Out, Checker,
               ("(Enable only for development!) " + Checker.Desc).str());
+}
       continue;
     }
 
-    if (AnOpts.ShowCheckerHelp)
+    if (AnOpts.ShowCheckerHelp) {
       Print(Out, Checker, Checker.Desc);
+}
   }
 }
 
 void CheckerRegistryData::printEnabledCheckerList(raw_ostream &Out) const {
-  for (const auto *i : EnabledCheckers)
+  for (const auto *i : EnabledCheckers) {
     Out << i->FullName << '\n';
+}
 }
 
 void CheckerRegistryData::printCheckerOptionList(const AnalyzerOptions &AnOpts,
@@ -222,20 +232,23 @@ void CheckerRegistryData::printCheckerOptionList(const AnalyzerOptions &AnOpts,
     // -analyzer-checker-option-help-alpha.
 
     if (Option.IsHidden) {
-      if (AnOpts.ShowCheckerOptionDeveloperList)
+      if (AnOpts.ShowCheckerOptionDeveloperList) {
         Print(Out, FullOption, Desc);
+}
       continue;
     }
 
     if (Option.DevelopmentStatus == "alpha" ||
         Entry.first.startswith("alpha")) {
-      if (AnOpts.ShowCheckerOptionAlphaList)
+      if (AnOpts.ShowCheckerOptionAlphaList) {
         Print(Out, FullOption,
               llvm::Twine("(Enable only for development!) " + Desc).str());
+}
       continue;
     }
 
-    if (AnOpts.ShowCheckerOptionList)
+    if (AnOpts.ShowCheckerOptionList) {
       Print(Out, FullOption, Desc);
+}
   }
 }

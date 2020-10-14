@@ -30,9 +30,11 @@ public:
     auto Tokens = tokenize(Query);
     llvm::Regex Pattern("^" + queryRegexp(Tokens));
     std::vector<SymbolAndSignals> Results;
-    for (const Entry &E : Symbols)
-      if (Pattern.match(E.first))
+    for (const Entry &E : Symbols) {
+      if (Pattern.match(E.first)) {
         Results.push_back(E.second);
+}
+}
     return Results;
   }
 
@@ -52,12 +54,15 @@ enum TokenizeState {
 
 enum CharType { UPPER, LOWER, DIGIT, MISC };
 CharType classify(char c) {
-  if (isupper(c))
+  if (isupper(c)) {
     return UPPER;
-  if (islower(c))
+}
+  if (islower(c)) {
     return LOWER;
-  if (isdigit(c))
+}
+  if (isdigit(c)) {
     return DIGIT;
+}
   return MISC;
 }
 
@@ -78,9 +83,9 @@ std::vector<std::string> FuzzySymbolIndex::tokenize(StringRef Text) {
   };
   for (size_t I = 0; I < Text.size(); ++I) {
     CharType Type = classify(Text[I]);
-    if (Type == MISC)
+    if (Type == MISC) {
       Flush(I);
-    else if (Type == LOWER)
+    } else if (Type == LOWER) {
       switch (State) {
       case BIG_WORD:
         Flush(I - 1); // FOOBar: first token is FOO, not FOOB.
@@ -94,7 +99,7 @@ std::vector<std::string> FuzzySymbolIndex::tokenize(StringRef Text) {
         Flush(I);
         State = SMALL_WORD;
       }
-    else if (Type == UPPER)
+    } else if (Type == UPPER) {
       switch (State) {
       case ONE_BIG:
         State = BIG_WORD;
@@ -105,7 +110,7 @@ std::vector<std::string> FuzzySymbolIndex::tokenize(StringRef Text) {
         Flush(I);
         State = ONE_BIG;
       }
-    else if (Type == DIGIT && State != NUMBER) {
+    } else if (Type == DIGIT && State != NUMBER) {
       Flush(I);
       State = NUMBER;
     }
@@ -118,11 +123,13 @@ std::string
 FuzzySymbolIndex::queryRegexp(const std::vector<std::string> &Tokens) {
   std::string Result;
   for (size_t I = 0; I < Tokens.size(); ++I) {
-    if (I)
+    if (I) {
       Result.append("[[:alnum:]]* ");
+}
     for (size_t J = 0; J < Tokens[I].size(); ++J) {
-      if (J)
+      if (J) {
         Result.append("([[:alnum:]]* )?");
+}
       Result.push_back(Tokens[I][J]);
     }
   }
@@ -132,8 +139,9 @@ FuzzySymbolIndex::queryRegexp(const std::vector<std::string> &Tokens) {
 llvm::Expected<std::unique_ptr<FuzzySymbolIndex>>
 FuzzySymbolIndex::createFromYAML(StringRef FilePath) {
   auto Buffer = llvm::MemoryBuffer::getFile(FilePath);
-  if (!Buffer)
+  if (!Buffer) {
     return llvm::errorCodeToError(Buffer.getError());
+}
   return std::make_unique<MemSymbolIndex>(
       find_all_symbols::ReadSymbolInfosFromYAML(Buffer.get()->getBuffer()));
 }

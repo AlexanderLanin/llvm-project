@@ -76,14 +76,16 @@ void DependencyGraphCallback::InclusionDirective(
     StringRef RelativePath,
     const Module *Imported,
     SrcMgr::CharacteristicKind FileType) {
-  if (!File)
+  if (!File) {
     return;
+}
 
   SourceManager &SM = PP->getSourceManager();
   const FileEntry *FromFile
     = SM.getFileEntryForID(SM.getFileID(SM.getExpansionLoc(HashLoc)));
-  if (!FromFile)
+  if (!FromFile) {
     return;
+}
 
   Dependencies[FromFile].push_back(File);
 
@@ -116,8 +118,9 @@ void DependencyGraphCallback::OutputGraphFile() {
     writeNodeReference(OS, AllFiles[I]);
     OS << " [ shape=\"box\", label=\"";
     StringRef FileName = AllFiles[I]->getName();
-    if (FileName.startswith(SysRoot))
+    if (FileName.startswith(SysRoot)) {
       FileName = FileName.substr(SysRoot.size());
+}
 
     OS << DOT::EscapeString(std::string(FileName)) << "\"];\n";
   }

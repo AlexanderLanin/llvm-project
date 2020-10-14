@@ -56,8 +56,9 @@ void AnalyzerStatsChecker::checkEndAnalysis(ExplodedGraph &G,
     const ProgramPoint &P = I->getLocation();
 
     // Only check the coverage in the top level function (optimization).
-    if (D != P.getLocationContext()->getDecl())
+    if (D != P.getLocationContext()->getDecl()) {
       continue;
+}
 
     if (Optional<BlockEntrance> BE = P.getAs<BlockEntrance>()) {
       const CFGBlock *CB = BE->getBlock();
@@ -90,8 +91,9 @@ void AnalyzerStatsChecker::checkEndAnalysis(ExplodedGraph &G,
   SmallString<128> buf;
   llvm::raw_svector_ostream output(buf);
   PresumedLoc Loc = SM.getPresumedLoc(D->getLocation());
-  if (!Loc.isValid())
+  if (!Loc.isValid()) {
     return;
+}
 
   if (isa<FunctionDecl>(D) || isa<ObjCMethodDecl>(D)) {
     const NamedDecl *ND = cast<NamedDecl>(D);
@@ -121,8 +123,9 @@ void AnalyzerStatsChecker::checkEndAnalysis(ExplodedGraph &G,
       E = CE.blocks_exhausted_end(); I != E; ++I) {
     const BlockEdge &BE =  I->first;
     const CFGBlock *Exit = BE.getDst();
-    if (Exit->empty())
+    if (Exit->empty()) {
       continue;
+}
     const CFGElement &CE = Exit->front();
     if (Optional<CFGStmt> CS = CE.getAs<CFGStmt>()) {
       SmallString<128> bufI;

@@ -44,36 +44,41 @@ static ProgramStateRef removeRefBinding(ProgramStateRef State, SymbolRef Sym) {
 }
 
 void RefVal::print(raw_ostream &Out) const {
-  if (!T.isNull())
+  if (!T.isNull()) {
     Out << "Tracked " << T.getAsString() << " | ";
+}
 
   switch (getKind()) {
     default: llvm_unreachable("Invalid RefVal kind");
     case Owned: {
       Out << "Owned";
       unsigned cnt = getCount();
-      if (cnt) Out << " (+ " << cnt << ")";
+      if (cnt) { Out << " (+ " << cnt << ")";
+}
       break;
     }
 
     case NotOwned: {
       Out << "NotOwned";
       unsigned cnt = getCount();
-      if (cnt) Out << " (+ " << cnt << ")";
+      if (cnt) { Out << " (+ " << cnt << ")";
+}
       break;
     }
 
     case ReturnedOwned: {
       Out << "ReturnedOwned";
       unsigned cnt = getCount();
-      if (cnt) Out << " (+ " << cnt << ")";
+      if (cnt) { Out << " (+ " << cnt << ")";
+}
       break;
     }
 
     case ReturnedNotOwned: {
       Out << "ReturnedNotOwned";
       unsigned cnt = getCount();
-      if (cnt) Out << " (+ " << cnt << ")";
+      if (cnt) { Out << " (+ " << cnt << ")";
+}
       break;
     }
 
@@ -148,8 +153,9 @@ void RetainCountChecker::checkPostStmt(const BlockExpr *BE,
 
   // Scan the BlockDecRefExprs for any object the retain count checker
   // may be tracking.
-  if (!BE->getBlockDecl()->hasCaptures())
+  if (!BE->getBlockDecl()->hasCaptures()) {
     return;
+}
 
   ProgramStateRef state = C.getState();
   auto *R = cast<BlockDataRegion>(C.getSVal(BE).getAsRegion());
@@ -157,8 +163,9 @@ void RetainCountChecker::checkPostStmt(const BlockExpr *BE,
   BlockDataRegion::referenced_vars_iterator I = R->referenced_vars_begin(),
                                             E = R->referenced_vars_end();
 
-  if (I == E)
+  if (I == E) {
     return;
+}
 
   // FIXME: For now we invalidate the tracking of all symbols passed to blocks
   // via captured variables, even though captured variables result in a copy
@@ -182,8 +189,9 @@ void RetainCountChecker::checkPostStmt(const BlockExpr *BE,
 void RetainCountChecker::checkPostStmt(const CastExpr *CE,
                                        CheckerContext &C) const {
   const ObjCBridgedCastExpr *BE = dyn_cast<ObjCBridgedCastExpr>(CE);
-  if (!BE)
+  if (!BE) {
     return;
+}
 
   QualType QT = CE->getType();
   ObjKind K;
@@ -209,11 +217,13 @@ void RetainCountChecker::checkPostStmt(const CastExpr *CE,
 
   ProgramStateRef state = C.getState();
   SymbolRef Sym = C.getSVal(CE).getAsLocSymbol();
-  if (!Sym)
+  if (!Sym) {
     return;
+}
   const RefVal* T = getRefBinding(state, Sym);
-  if (!T)
+  if (!T) {
     return;
+}
 
   RefVal::Kind hasErr = (RefVal::Kind) 0;
   state = updateSymbol(state, Sym, *T, AE, hasErr, C);
@@ -232,7 +242,7 @@ void RetainCountChecker::processObjCLiterals(CheckerContext &C,
   const ExplodedNode *pred = C.getPredecessor();
   for (const Stmt *Child : Ex->children()) {
     SVal V = pred->getSVal(Child);
-    if (SymbolRef sym = V.getAsSymbol())
+    if (SymbolRef sym = V.getAsSymbol()) {
       if (const RefVal* T = getRefBinding(state, sym)) {
         RefVal::Kind hasErr = (RefVal::Kind) 0;
         state = updateSymbol(state, sym, *T,
@@ -242,6 +252,7 @@ void RetainCountChecker::processObjCLiterals(CheckerContext &C,
           return;
         }
       }
+}
   }
 
   // Return the object as autoreleased.
@@ -285,30 +296,34 @@ void RetainCountChecker::checkPostStmt(const ObjCBoxedExpr *Ex,
 void RetainCountChecker::checkPostStmt(const ObjCIvarRefExpr *IRE,
                                        CheckerContext &C) const {
   Optional<Loc> IVarLoc = C.getSVal(IRE).getAs<Loc>();
-  if (!IVarLoc)
+  if (!IVarLoc) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   SymbolRef Sym = State->getSVal(*IVarLoc).getAsSymbol();
-  if (!Sym || !dyn_cast_or_null<ObjCIvarRegion>(Sym->getOriginRegion()))
+  if (!Sym || !dyn_cast_or_null<ObjCIvarRegion>(Sym->getOriginRegion())) {
     return;
+}
 
   // Accessing an ivar directly is unusual. If we've done that, be more
   // forgiving about what the surrounding code is allowed to do.
 
   QualType Ty = Sym->getType();
   ObjKind Kind;
-  if (Ty->isObjCRetainableType())
+  if (Ty->isObjCRetainableType()) {
     Kind = ObjKind::ObjC;
-  else if (coreFoundation::isCFObjectRef(Ty))
+  } else if (coreFoundation::isCFObjectRef(Ty)) {
     Kind = ObjKind::CF;
-  else
+  } else {
     return;
+}
 
   // If the value is already known to be nil, don't bother tracking it.
   ConstraintManager &CMgr = State->getConstraintManager();
-  if (CMgr.isNull(State, Sym).isConstrainedTrue())
+  if (CMgr.isNull(State, Sym).isConstrainedTrue()) {
     return;
+}
 
   if (const RefVal *RV = getRefBinding(State, Sym)) {
     // If we've seen this symbol before, or we're only seeing it now because
@@ -369,9 +384,11 @@ void RetainCountChecker::checkPostCall(const CallEvent &Call,
   if (const auto *MC = dyn_cast<ObjCMethodCall>(&Call)) {
     if (MC->isInstanceMessage()) {
       SVal ReceiverV = MC->getReceiverSVal();
-      if (SymbolRef Sym = ReceiverV.getAsLocSymbol())
-        if (const RefVal *T = getRefBinding(C.getState(), Sym))
+      if (SymbolRef Sym = ReceiverV.getAsLocSymbol()) {
+        if (const RefVal *T = getRefBinding(C.getState(), Sym)) {
           ReceiverType = T->getType();
+}
+}
     }
   }
 
@@ -396,8 +413,8 @@ static QualType GetReturnType(const Expr *RetE, ASTContext &Ctx) {
   // If RetE is not a message expression just return its type.
   // If RetE is a message expression, return its types if it is something
   /// more specific than id.
-  if (const ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(RetE))
-    if (const ObjCObjectPointerType *PT = RetTy->getAs<ObjCObjectPointerType>())
+  if (const ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(RetE)) {
+    if (const ObjCObjectPointerType *PT = RetTy->getAs<ObjCObjectPointerType>()) {
       if (PT->isObjCQualifiedIdType() || PT->isObjCIdType() ||
           PT->isObjCClassType()) {
         // At this point we know the return type of the message expression is
@@ -408,6 +425,8 @@ static QualType GetReturnType(const Expr *RetE, ASTContext &Ctx) {
         return !D ? RetTy :
                     Ctx.getObjCObjectPointerType(Ctx.getObjCInterfaceType(D));
       }
+}
+}
 
   return RetTy;
 }
@@ -425,9 +444,11 @@ static Optional<RefVal> refValFromRetEffect(RetEffect RE,
 
 static bool isPointerToObject(QualType QT) {
   QualType PT = QT->getPointeeType();
-  if (!PT.isNull())
-    if (PT->getAsCXXRecordDecl())
+  if (!PT.isNull()) {
+    if (PT->getAsCXXRecordDecl()) {
       return true;
+}
+}
   return false;
 }
 
@@ -435,10 +456,12 @@ static bool isPointerToObject(QualType QT) {
 /// OSObjects are escaped when passed to void * / etc.
 static bool shouldEscapeOSArgumentOnCall(const CallEvent &CE, unsigned ArgIdx,
                                        const RefVal *TrackedValue) {
-  if (TrackedValue->getObjKind() != ObjKind::OS)
+  if (TrackedValue->getObjKind() != ObjKind::OS) {
     return false;
-  if (ArgIdx >= CE.parameters().size())
+}
+  if (ArgIdx >= CE.parameters().size()) {
     return false;
+}
   return !isPointerToObject(CE.parameters()[ArgIdx]->getType());
 }
 
@@ -456,12 +479,15 @@ void RetainCountChecker::processSummaryOfInlined(const RetainSummary &Summ,
 
     if (SymbolRef Sym = V.getAsLocSymbol()) {
       bool ShouldRemoveBinding = Summ.getArg(idx).getKind() == StopTrackingHard;
-      if (const RefVal *T = getRefBinding(state, Sym))
-        if (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T))
+      if (const RefVal *T = getRefBinding(state, Sym)) {
+        if (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T)) {
           ShouldRemoveBinding = true;
+}
+}
 
-      if (ShouldRemoveBinding)
+      if (ShouldRemoveBinding) {
         state = removeRefBinding(state, Sym);
+}
     }
   }
 
@@ -478,8 +504,9 @@ void RetainCountChecker::processSummaryOfInlined(const RetainSummary &Summ,
   RetEffect RE = Summ.getRetEffect();
 
   if (SymbolRef Sym = CallOrMsg.getReturnValue().getAsSymbol()) {
-    if (RE.getKind() == RetEffect::NoRetHard)
+    if (RE.getKind() == RetEffect::NoRetHard) {
       state = removeRefBinding(state, Sym);
+}
   }
 
   C.addTransition(state);
@@ -503,17 +530,20 @@ static bool isSmartPtrField(const MemRegion *MR) {
 /// implementation, about which we know that it is inlined.
 /// FIXME: This could definitely be improved upon.
 static bool shouldEscapeRegion(const MemRegion *R) {
-  if (isSmartPtrField(R))
+  if (isSmartPtrField(R)) {
     return false;
+}
 
   const auto *VR = dyn_cast<VarRegion>(R);
 
-  if (!R->hasStackStorage() || !VR)
+  if (!R->hasStackStorage() || !VR) {
     return true;
+}
 
   const VarDecl *VD = VR->getDecl();
-  if (!VD->hasAttr<CleanupAttr>())
+  if (!VD->hasAttr<CleanupAttr>()) {
     return false; // CleanupAttr attaches destructors, which cause escaping.
+}
   return true;
 }
 
@@ -528,10 +558,12 @@ updateOutParameters(ProgramStateRef State, const RetainSummary &Summ,
   // We want to avoid eagerly splitting unless out parameters are actually
   // needed.
   bool SplitNecessary = false;
-  for (auto &P : Summ.getArgEffects())
+  for (auto &P : Summ.getArgEffects()) {
     if (P.second.getKind() == RetainedOutParameterOnNonZero ||
-        P.second.getKind() == RetainedOutParameterOnZero)
+        P.second.getKind() == RetainedOutParameterOnZero) {
       SplitNecessary = true;
+}
+}
 
   ProgramStateRef AssumeNonZeroReturn = State;
   ProgramStateRef AssumeZeroReturn = State;
@@ -553,17 +585,20 @@ updateOutParameters(ProgramStateRef State, const RetainSummary &Summ,
     ArgEffect AE = Summ.getArg(idx);
 
     auto *ArgRegion = dyn_cast_or_null<TypedValueRegion>(ArgVal.getAsRegion());
-    if (!ArgRegion)
+    if (!ArgRegion) {
       continue;
+}
 
     QualType PointeeTy = ArgRegion->getValueType();
     SVal PointeeVal = State->getSVal(ArgRegion);
     SymbolRef Pointee = PointeeVal.getAsLocSymbol();
-    if (!Pointee)
+    if (!Pointee) {
       continue;
+}
 
-    if (shouldEscapeRegion(ArgRegion))
+    if (shouldEscapeRegion(ArgRegion)) {
       continue;
+}
 
     auto makeNotOwnedParameter = [&](ProgramStateRef St) {
       return setRefBinding(St, Pointee,
@@ -623,8 +658,9 @@ void RetainCountChecker::checkSummary(const RetainSummary &Summ,
     if (SymbolRef Sym = V.getAsLocSymbol()) {
       if (const RefVal *T = getRefBinding(state, Sym)) {
 
-        if (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T))
+        if (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T)) {
           Effect = ArgEffect(StopTrackingHard, ObjKind::OS);
+}
 
         state = updateSymbol(state, Sym, *T, Effect, hasErr, C);
         if (hasErr) {
@@ -679,10 +715,11 @@ void RetainCountChecker::checkSummary(const RetainSummary &Summ,
   RetEffect RE = Summ.getRetEffect();
 
   if (RE.getKind() == RetEffect::OwnedWhenTrackedReceiver) {
-    if (ReceiverIsTracked)
+    if (ReceiverIsTracked) {
       RE = getSummaryManager(C).getObjAllocRetEffect();
-    else
+    } else {
       RE = RetEffect::MakeNoRet();
+}
   }
 
   if (SymbolRef Sym = CallOrMsg.getReturnValue().getAsSymbol()) {
@@ -692,8 +729,9 @@ void RetainCountChecker::checkSummary(const RetainSummary &Summ,
       assert(Ex);
       ResultTy = GetReturnType(Ex, C.getASTContext());
     }
-    if (Optional<RefVal> updatedRefVal = refValFromRetEffect(RE, ResultTy))
+    if (Optional<RefVal> updatedRefVal = refValFromRetEffect(RE, ResultTy)) {
       state = setRefBinding(state, Sym, *updatedRefVal);
+}
   }
 
   SmallVector<ProgramStateRef, 2> Out =
@@ -805,10 +843,11 @@ ProgramStateRef RetainCountChecker::updateSymbol(ProgramStateRef state,
           if (V.getCount() == 1) {
             if (AE.getKind() == DecRefBridgedTransferred ||
                 V.getIvarAccessHistory() ==
-                  RefVal::IvarAccessHistory::AccessedDirectly)
+                  RefVal::IvarAccessHistory::AccessedDirectly) {
               V = V ^ RefVal::NotOwned;
-            else
+            } else {
               V = V ^ RefVal::Released;
+}
           } else if (AE.getKind() == DecRefAndStopTrackingHard) {
             return removeRefBinding(state, sym);
           }
@@ -818,15 +857,17 @@ ProgramStateRef RetainCountChecker::updateSymbol(ProgramStateRef state,
 
         case RefVal::NotOwned:
           if (V.getCount() > 0) {
-            if (AE.getKind() == DecRefAndStopTrackingHard)
+            if (AE.getKind() == DecRefAndStopTrackingHard) {
               return removeRefBinding(state, sym);
+}
             V = V - 1;
           } else if (V.getIvarAccessHistory() ==
                        RefVal::IvarAccessHistory::AccessedDirectly) {
             // Assume that the instance variable was holding on the object at
             // +1, and we just didn't know.
-            if (AE.getKind() == DecRefAndStopTrackingHard)
+            if (AE.getKind() == DecRefAndStopTrackingHard) {
               return removeRefBinding(state, sym);
+}
             V = V.releaseViaIvar() ^ RefVal::Released;
           } else {
             V = V ^ RefVal::ErrorReleaseNotOwned;
@@ -848,8 +889,9 @@ RetainCountChecker::errorKindToBugKind(RefVal::Kind ErrorKind,
     case RefVal::ErrorReleaseNotOwned:
       return *ReleaseNotOwned;
     case RefVal::ErrorDeallocNotOwned:
-      if (Sym->getType()->getPointeeCXXRecordDecl())
+      if (Sym->getType()->getPointeeCXXRecordDecl()) {
         return *FreeNotOwned;
+}
       return *DeallocNotOwned;
     default:
       llvm_unreachable("Unhandled error.");
@@ -867,13 +909,16 @@ void RetainCountChecker::processNonLeakError(ProgramStateRef St,
   //   [_contentView removeFromSuperview];
   //   [self addSubview:_contentView]; // invalidates 'self'
   //   [_contentView release];
-  if (const RefVal *RV = getRefBinding(St, Sym))
-    if (RV->getIvarAccessHistory() != RefVal::IvarAccessHistory::None)
+  if (const RefVal *RV = getRefBinding(St, Sym)) {
+    if (RV->getIvarAccessHistory() != RefVal::IvarAccessHistory::None) {
       return;
+}
+}
 
   ExplodedNode *N = C.generateErrorNode(St);
-  if (!N)
+  if (!N) {
     return;
+}
 
   auto report = std::make_unique<RefCountReport>(
       errorKindToBugKind(ErrorKind, Sym),
@@ -890,12 +935,14 @@ bool RetainCountChecker::evalCall(const CallEvent &Call,
                                   CheckerContext &C) const {
   ProgramStateRef state = C.getState();
   const auto *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return false;
+}
 
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return false;
+}
 
   RetainSummaryManager &SmrMgr = getSummaryManager(C);
   QualType ResultTy = Call.getResultType();
@@ -911,8 +958,9 @@ bool RetainCountChecker::evalCall(const CallEvent &Call,
       SmrMgr.canEval(CE, FD, hasTrustedImplementationAnnotation);
 
   // See if it's one of the specific functions we know how to eval.
-  if (!BSmr)
+  if (!BSmr) {
     return false;
+}
 
   // Bind the return value.
   if (BSmr == BehaviorSummary::Identity ||
@@ -950,8 +998,9 @@ bool RetainCountChecker::evalCall(const CallEvent &Call,
 
       // And on the original branch assume that both input and
       // output are non-zero.
-      if (auto L = RetVal.getAs<DefinedOrUnknownSVal>())
+      if (auto L = RetVal.getAs<DefinedOrUnknownSVal>()) {
         state = state->assume(*L, /*assumption=*/true);
+}
 
     }
   }
@@ -969,28 +1018,33 @@ ExplodedNode * RetainCountChecker::processReturn(const ReturnStmt *S,
   // better checking even for inlined calls, and see if they match
   // with their expected semantics (e.g., the method should return a retained
   // object, etc.).
-  if (!C.inTopFrame())
+  if (!C.inTopFrame()) {
     return Pred;
+}
 
-  if (!S)
+  if (!S) {
     return Pred;
+}
 
   const Expr *RetE = S->getRetValue();
-  if (!RetE)
+  if (!RetE) {
     return Pred;
+}
 
   ProgramStateRef state = C.getState();
   // We need to dig down to the symbolic base here because various
   // custom allocators do sometimes return the symbol with an offset.
   SymbolRef Sym = state->getSValAsScalarOrLoc(RetE, C.getLocationContext())
                       .getAsLocSymbol(/*IncludeBaseRegions=*/true);
-  if (!Sym)
+  if (!Sym) {
     return Pred;
+}
 
   // Get the reference count binding (if any).
   const RefVal *T = getRefBinding(state, Sym);
-  if (!T)
+  if (!T) {
     return Pred;
+}
 
   // Change the reference count.
   RefVal X = *T;
@@ -1028,16 +1082,18 @@ ExplodedNode * RetainCountChecker::processReturn(const ReturnStmt *S,
   // been over- or under-retained.
 
   // Did we cache out?
-  if (!Pred)
+  if (!Pred) {
     return nullptr;
+}
 
   // Update the autorelease counts.
   static CheckerProgramPointTag AutoreleaseTag(this, "Autorelease");
   state = handleAutoreleaseCounts(state, Pred, &AutoreleaseTag, C, Sym, X, S);
 
   // Have we generated a sink node?
-  if (!state)
+  if (!state) {
     return nullptr;
+}
 
   // Get the updated binding.
   T = getRefBinding(state, Sym);
@@ -1075,8 +1131,9 @@ ExplodedNode * RetainCountChecker::checkReturnWithRetEffect(const ReturnStmt *S,
   //   [_contentView removeFromSuperview];
   //   [self addSubview:_contentView]; // invalidates 'self'
   //   [_contentView release];
-  if (X.getIvarAccessHistory() != RefVal::IvarAccessHistory::None)
+  if (X.getIvarAccessHistory() != RefVal::IvarAccessHistory::None) {
     return Pred;
+}
 
   // Any leaks or other errors?
   if (X.isReturnedOwned() && X.getCount() == 0) {
@@ -1158,8 +1215,9 @@ ProgramStateRef RetainCountChecker::evalAssume(ProgramStateRef state,
   //  other places.
   RefBindingsTy B = state->get<RefBindings>();
 
-  if (B.isEmpty())
+  if (B.isEmpty()) {
     return state;
+}
 
   bool changed = false;
   RefBindingsTy::Factory &RefBFactory = state->get_context<RefBindings>();
@@ -1174,8 +1232,9 @@ ProgramStateRef RetainCountChecker::evalAssume(ProgramStateRef state,
     }
   }
 
-  if (changed)
+  if (changed) {
     state = state->set<RefBindings>(B);
+}
 
   return state;
 }
@@ -1185,18 +1244,22 @@ ProgramStateRef RetainCountChecker::checkRegionChanges(
     ArrayRef<const MemRegion *> ExplicitRegions,
     ArrayRef<const MemRegion *> Regions, const LocationContext *LCtx,
     const CallEvent *Call) const {
-  if (!invalidated)
+  if (!invalidated) {
     return state;
+}
 
   llvm::SmallPtrSet<SymbolRef, 8> WhitelistedSymbols;
 
-  for (const MemRegion *I : ExplicitRegions)
-    if (const SymbolicRegion *SR = I->StripCasts()->getAs<SymbolicRegion>())
+  for (const MemRegion *I : ExplicitRegions) {
+    if (const SymbolicRegion *SR = I->StripCasts()->getAs<SymbolicRegion>()) {
       WhitelistedSymbols.insert(SR->getSymbol());
+}
+}
 
   for (SymbolRef sym : *invalidated) {
-    if (WhitelistedSymbols.count(sym))
+    if (WhitelistedSymbols.count(sym)) {
       continue;
+}
     // Remove any existing reference-count binding.
     state = removeRefBinding(state, sym);
   }
@@ -1214,15 +1277,17 @@ RetainCountChecker::handleAutoreleaseCounts(ProgramStateRef state,
   unsigned ACnt = V.getAutoreleaseCount();
 
   // No autorelease counts?  Nothing to be done.
-  if (!ACnt)
+  if (!ACnt) {
     return state;
+}
 
   unsigned Cnt = V.getCount();
 
   // FIXME: Handle sending 'autorelease' to already released object.
 
-  if (V.getKind() == RefVal::ReturnedOwned)
+  if (V.getKind() == RefVal::ReturnedOwned) {
     ++Cnt;
+}
 
   // If we would over-release here, but we know the value came from an ivar,
   // assume it was a strong ivar that's just been relinquished.
@@ -1253,8 +1318,9 @@ RetainCountChecker::handleAutoreleaseCounts(ProgramStateRef state,
   //   [_contentView removeFromSuperview];
   //   [self addSubview:_contentView]; // invalidates 'self'
   //   [_contentView release];
-  if (V.getIvarAccessHistory() != RefVal::IvarAccessHistory::None)
+  if (V.getIvarAccessHistory() != RefVal::IvarAccessHistory::None) {
     return state;
+}
 
   // Woah!  More autorelease counts then retain counts left.
   // Emit hard error.
@@ -1266,10 +1332,11 @@ RetainCountChecker::handleAutoreleaseCounts(ProgramStateRef state,
     SmallString<128> sbuf;
     llvm::raw_svector_ostream os(sbuf);
     os << "Object was autoreleased ";
-    if (V.getAutoreleaseCount() > 1)
+    if (V.getAutoreleaseCount() > 1) {
       os << V.getAutoreleaseCount() << " times but the object ";
-    else
+    } else {
       os << "but ";
+}
     os << "has a +" << V.getCount() << " retain count";
 
     const LangOptions &LOpts = Ctx.getASTContext().getLangOpts();
@@ -1293,17 +1360,19 @@ RetainCountChecker::handleSymbolDeath(ProgramStateRef state,
   //   [_contentView removeFromSuperview];
   //   [self addSubview:_contentView]; // invalidates 'self'
   //   [_contentView release];
-  if (V.getIvarAccessHistory() != RefVal::IvarAccessHistory::None)
+  if (V.getIvarAccessHistory() != RefVal::IvarAccessHistory::None) {
     hasLeak = false;
-  else if (V.isOwned())
+  } else if (V.isOwned()) {
     hasLeak = true;
-  else if (V.isNotOwned() || V.isReturnedOwned())
+  } else if (V.isNotOwned() || V.isReturnedOwned()) {
     hasLeak = (V.getCount() > 0);
-  else
+  } else {
     hasLeak = false;
+}
 
-  if (!hasLeak)
+  if (!hasLeak) {
     return removeRefBinding(state, sid);
+}
 
   Leaked.push_back(sid);
   return setRefBinding(state, sid, V ^ RefVal::ErrorLeak);
@@ -1329,16 +1398,18 @@ RetainCountChecker::processLeaks(ProgramStateRef state,
 }
 
 void RetainCountChecker::checkBeginFunction(CheckerContext &Ctx) const {
-  if (!Ctx.inTopFrame())
+  if (!Ctx.inTopFrame()) {
     return;
+}
 
   RetainSummaryManager &SmrMgr = getSummaryManager(Ctx);
   const LocationContext *LCtx = Ctx.getLocationContext();
   const Decl *D = LCtx->getDecl();
   Optional<AnyCall> C = AnyCall::forDecl(D);
 
-  if (!C || SmrMgr.isTrustedReferenceCountImplementation(D))
+  if (!C || SmrMgr.isTrustedReferenceCountImplementation(D)) {
     return;
+}
 
   ProgramStateRef state = Ctx.getState();
   const RetainSummary *FunctionSummary = SmrMgr.getSummary(*C);
@@ -1386,22 +1457,25 @@ void RetainCountChecker::checkEndFunction(const ReturnStmt *RS,
   for (auto &I : B) {
     state = handleAutoreleaseCounts(state, Pred, /*Tag=*/nullptr, Ctx,
                                     I.first, I.second);
-    if (!state)
+    if (!state) {
       return;
+}
   }
 
   // If the current LocationContext has a parent, don't check for leaks.
   // We will do that later.
   // FIXME: we should instead check for imbalances of the retain/releases,
   // and suggest annotations.
-  if (LCtx->getParent())
+  if (LCtx->getParent()) {
     return;
+}
 
   B = state->get<RefBindings>();
   SmallVector<SymbolRef, 10> Leaked;
 
-  for (auto &I : B)
+  for (auto &I : B) {
     state = handleSymbolDeath(state, I.first, I.second, Leaked);
+}
 
   processLeaks(state, Leaked, Ctx, Pred);
 }
@@ -1420,8 +1494,9 @@ void RetainCountChecker::checkDeadSymbols(SymbolReaper &SymReaper,
       static CheckerProgramPointTag Tag(this, "DeadSymbolAutorelease");
       const RefVal &V = I.second;
       state = handleAutoreleaseCounts(state, Pred, &Tag, C, Sym, V);
-      if (!state)
+      if (!state) {
         return;
+}
 
       // Fetch the new reference count from the state, and use it to handle
       // this symbol.
@@ -1437,16 +1512,18 @@ void RetainCountChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   Pred = processLeaks(state, Leaked, C, Pred);
 
   // Did we cache out?
-  if (!Pred)
+  if (!Pred) {
     return;
+}
 
   // Now generate a new node that nukes the old bindings.
   // The only bindings left at this point are the leaked symbols.
   RefBindingsTy::Factory &F = state->get_context<RefBindings>();
   RefBindingsTy B = state->get<RefBindings>();
 
-  for (SymbolRef L : Leaked)
+  for (SymbolRef L : Leaked) {
     B = F.remove(B, L);
+}
 
   state = state->set<RefBindings>(B);
   C.addTransition(state, Pred);
@@ -1457,8 +1534,9 @@ void RetainCountChecker::printState(raw_ostream &Out, ProgramStateRef State,
 
   RefBindingsTy B = State->get<RefBindings>();
 
-  if (B.isEmpty())
+  if (B.isEmpty()) {
     return;
+}
 
   Out << Sep << NL;
 

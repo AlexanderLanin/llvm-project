@@ -73,8 +73,9 @@ bool OptionallyVariadicOperator(const DynTypedNode &DynNode,
 bool matchesAnyBase(const CXXRecordDecl &Node,
                     const Matcher<CXXBaseSpecifier> &BaseSpecMatcher,
                     ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder) {
-  if (!Node.hasDefinition())
+  if (!Node.hasDefinition()) {
     return false;
+}
 
   CXXBasePaths Paths;
   Paths.setOrigin(&Node);
@@ -95,8 +96,9 @@ bool matchesAnyBase(const CXXRecordDecl &Node,
 }
 
 void BoundNodesTreeBuilder::visitMatches(Visitor *ResultVisitor) {
-  if (Bindings.empty())
+  if (Bindings.empty()) {
     Bindings.push_back(BoundNodesMap());
+}
   for (BoundNodesMap &Binding : Bindings) {
     ResultVisitor->visitMatch(BoundNodes(Binding));
   }
@@ -132,7 +134,8 @@ public:
   bool dynMatches(const DynTypedNode &DynNode, ASTMatchFinder *Finder,
                   BoundNodesTreeBuilder *Builder) const override {
     bool Result = InnerMatcher->dynMatches(DynNode, Finder, Builder);
-    if (Result) Builder->setBinding(ID, DynNode);
+    if (Result) { Builder->setBinding(ID, DynNode);
+}
     return Result;
   }
 
@@ -319,7 +322,8 @@ bool DynTypedMatcher::matchesNoKindCheck(const DynTypedNode &DynNode,
 }
 
 llvm::Optional<DynTypedMatcher> DynTypedMatcher::tryBind(StringRef ID) const {
-  if (!AllowBind) return llvm::None;
+  if (!AllowBind) { return llvm::None;
+}
   auto Result = *this;
   Result.Implementation =
       new IdDynMatcher(ID, std::move(Result.Implementation));
@@ -332,7 +336,8 @@ bool DynTypedMatcher::canConvertTo(ASTNodeKind To) const {
   auto TypeKind = ASTNodeKind::getFromNodeKind<Type>();
   /// Mimic the implicit conversions of Matcher<>.
   /// - From Matcher<Type> to Matcher<QualType>
-  if (From.isSame(TypeKind) && To.isSame(QualKind)) return true;
+  if (From.isSame(TypeKind) && To.isSame(QualKind)) { return true;
+}
   /// - From Matcher<Base> to Matcher<Derived>
   return From.isBaseOf(To);
 }
@@ -344,8 +349,9 @@ void BoundNodesTreeBuilder::addMatch(const BoundNodesTreeBuilder &Other) {
 bool NotUnaryOperator(const DynTypedNode &DynNode, ASTMatchFinder *Finder,
                       BoundNodesTreeBuilder *Builder,
                       ArrayRef<DynTypedMatcher> InnerMatchers) {
-  if (InnerMatchers.size() != 1)
+  if (InnerMatchers.size() != 1) {
     return false;
+}
 
   // The 'unless' matcher will always discard the result:
   // If the inner matcher doesn't match, unless returns true,
@@ -405,12 +411,14 @@ bool OptionallyVariadicOperator(const DynTypedNode &DynNode,
                                 ASTMatchFinder *Finder,
                                 BoundNodesTreeBuilder *Builder,
                                 ArrayRef<DynTypedMatcher> InnerMatchers) {
-  if (InnerMatchers.size() != 1)
+  if (InnerMatchers.size() != 1) {
     return false;
+}
 
   BoundNodesTreeBuilder Result(*Builder);
-  if (InnerMatchers[0].matches(DynNode, Finder, &Result))
+  if (InnerMatchers[0].matches(DynNode, Finder, &Result)) {
     *Builder = std::move(Result);
+}
   return true;
 }
 
@@ -418,8 +426,9 @@ inline static
 std::vector<std::string> vectorFromRefs(ArrayRef<const StringRef *> NameRefs) {
   std::vector<std::string> Names;
   Names.reserve(NameRefs.size());
-  for (auto *Name : NameRefs)
+  for (auto *Name : NameRefs) {
     Names.emplace_back(*Name);
+}
   return Names;
 }
 
@@ -454,12 +463,14 @@ HasNameMatcher::HasNameMatcher(std::vector<std::string> N)
 
 static bool consumeNameSuffix(StringRef &FullName, StringRef Suffix) {
   StringRef Name = FullName;
-  if (!Name.endswith(Suffix))
+  if (!Name.endswith(Suffix)) {
     return false;
+}
   Name = Name.drop_back(Suffix.size());
   if (!Name.empty()) {
-    if (!Name.endswith("::"))
+    if (!Name.endswith("::")) {
       return false;
+}
     Name = Name.drop_back(2);
   }
   FullName = Name;
@@ -469,8 +480,9 @@ static bool consumeNameSuffix(StringRef &FullName, StringRef Suffix) {
 static StringRef getNodeName(const NamedDecl &Node,
                              llvm::SmallString<128> &Scratch) {
   // Simple name.
-  if (Node.getIdentifier())
+  if (Node.getIdentifier()) {
     return Node.getName();
+}
 
   if (Node.getDeclName()) {
     // Name needs to be constructed.
@@ -503,8 +515,9 @@ class PatternSet {
 public:
   PatternSet(ArrayRef<std::string> Names) {
     Patterns.reserve(Names.size());
-    for (StringRef Name : Names)
+    for (StringRef Name : Names) {
       Patterns.push_back({Name, Name.startswith("::")});
+}
   }
 
   /// Consumes the name suffix from each pattern in the set and removes the ones
@@ -566,39 +579,46 @@ bool HasNameMatcher::matchesNodeFullFast(const NamedDecl &Node) const {
 
   // First, match the name.
   if (!Patterns.consumeNameSuffix(getNodeName(Node, Scratch),
-                                  /*CanSkip=*/false))
+                                  /*CanSkip=*/false)) {
     return false;
+}
 
   // Try to match each declaration context.
   // We are allowed to skip anonymous and inline namespaces if they don't match.
   const DeclContext *Ctx = Node.getDeclContext();
 
-  if (Ctx->isFunctionOrMethod())
+  if (Ctx->isFunctionOrMethod()) {
     return Patterns.foundMatch(/*AllowFullyQualified=*/false);
+}
 
   for (; Ctx; Ctx = Ctx->getParent()) {
     // Linkage Spec can just be ignored
     // FIXME: Any other DeclContext kinds that can be safely disregarded
-    if (isa<LinkageSpecDecl>(Ctx))
+    if (isa<LinkageSpecDecl>(Ctx)) {
       continue;
-    if (!isa<NamedDecl>(Ctx))
+}
+    if (!isa<NamedDecl>(Ctx)) {
       break;
-    if (Patterns.foundMatch(/*AllowFullyQualified=*/false))
+}
+    if (Patterns.foundMatch(/*AllowFullyQualified=*/false)) {
       return true;
+}
 
     if (const auto *ND = dyn_cast<NamespaceDecl>(Ctx)) {
       // If it matches (or we can skip it), continue.
       if (Patterns.consumeNameSuffix(getNodeName(*ND, Scratch),
                                      /*CanSkip=*/ND->isAnonymousNamespace() ||
-                                         ND->isInline()))
+                                         ND->isInline())) {
         continue;
+}
       return false;
     }
     if (const auto *RD = dyn_cast<RecordDecl>(Ctx)) {
       if (!isa<ClassTemplateSpecializationDecl>(Ctx)) {
         if (Patterns.consumeNameSuffix(getNodeName(*RD, Scratch),
-                                       /*CanSkip=*/false))
+                                       /*CanSkip=*/false)) {
           continue;
+}
 
         return false;
       }
@@ -630,8 +650,9 @@ bool HasNameMatcher::matchesNodeFullSlow(const NamedDecl &Node) const {
 
     for (const StringRef Pattern : Names) {
       if (Pattern.startswith("::")) {
-        if (FullName == Pattern)
+        if (FullName == Pattern) {
           return true;
+}
       } else if (FullName.endswith(Pattern) &&
                  FullName.drop_back(Pattern.size()).endswith("::")) {
         return true;
@@ -671,15 +692,18 @@ getExpansionLocOfMacro(StringRef MacroName, SourceLocation Loc,
   while (Loc.isMacroID()) {
     SrcMgr::ExpansionInfo Expansion =
         SM.getSLocEntry(SM.getFileID(Loc)).getExpansion();
-    if (Expansion.isMacroArgExpansion())
+    if (Expansion.isMacroArgExpansion()) {
       // Check macro argument for an expansion of the given macro. For example,
       // `F(G(3))`, where `MacroName` is `G`.
       if (llvm::Optional<SourceLocation> ArgLoc = getExpansionLocOfMacro(
-              MacroName, Expansion.getSpellingLoc(), Context))
+              MacroName, Expansion.getSpellingLoc(), Context)) {
         return ArgLoc;
+}
+}
     Loc = Expansion.getExpansionLocStart();
-    if (isTokenAtLoc(SM, LangOpts, MacroName, Loc))
+    if (isTokenAtLoc(SM, LangOpts, MacroName, Loc)) {
       return Loc;
+}
   }
   return llvm::None;
 }

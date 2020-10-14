@@ -26,12 +26,14 @@ public:
                          const SrcMgr::ContentCache &ContentCache,
                          llvm::vfs::InMemoryFileSystem &InMemoryFs) {
     // Return if we are not interested in the contents of this file.
-    if (!FilesToRecord.count(File))
+    if (!FilesToRecord.count(File)) {
       return;
+}
 
     // FIXME: Why is this happening? We might be losing contents here.
-    if (!ContentCache.getRawBuffer())
+    if (!ContentCache.getRawBuffer()) {
       return;
+}
 
     InMemoryFs.addFile(File->getName(), /*ModificationTime=*/0,
                        llvm::MemoryBuffer::getMemBufferCopy(
@@ -43,9 +45,10 @@ public:
   /// Makes sure we have contents for all the files we were interested in. Ideally
   /// `FilesToRecord` should be empty.
   void checkAllFilesRecorded() {
-    for (auto FileEntry : FilesToRecord)
+    for (auto FileEntry : FilesToRecord) {
       llvm::errs() << "Did not record contents for input file: "
                    << FileEntry->getName() << "\n";
+}
   }
 
 private:
@@ -99,11 +102,13 @@ Preprocessor *ExpandModularHeadersPPCallbacks::getPreprocessor() const {
 
 void ExpandModularHeadersPPCallbacks::handleModuleFile(
     serialization::ModuleFile *MF) {
-  if (!MF)
+  if (!MF) {
     return;
+}
   // Avoid processing a ModuleFile more than once.
-  if (VisitedModules.count(MF))
+  if (VisitedModules.count(MF)) {
     return;
+}
   VisitedModules.insert(MF);
 
   // Visit all the input files of this module and mark them to record their
@@ -114,8 +119,9 @@ void ExpandModularHeadersPPCallbacks::handleModuleFile(
         Recorder->addNecessaryFile(IF.getFile());
       });
   // Recursively handle all transitively imported modules.
-  for (auto Import : MF->Imports)
+  for (auto Import : MF->Imports) {
     handleModuleFile(Import);
+}
 }
 
 void ExpandModularHeadersPPCallbacks::parseToLocation(SourceLocation Loc) {
@@ -163,8 +169,9 @@ void ExpandModularHeadersPPCallbacks::InclusionDirective(
 }
 
 void ExpandModularHeadersPPCallbacks::EndOfMainFile() {
-  while (!CurrentToken.is(tok::eof))
+  while (!CurrentToken.is(tok::eof)) {
     PP->Lex(CurrentToken);
+}
 }
 
 // Handle all other callbacks.
@@ -254,8 +261,9 @@ void ExpandModularHeadersPPCallbacks::MacroDefined(const Token &MacroNameTok,
 }
 void ExpandModularHeadersPPCallbacks::MacroUndefined(
     const Token &, const MacroDefinition &, const MacroDirective *Undef) {
-  if (Undef)
+  if (Undef) {
     parseToLocation(Undef->getLocation());
+}
 }
 void ExpandModularHeadersPPCallbacks::Defined(const Token &MacroNameTok,
                                               const MacroDefinition &,

@@ -30,8 +30,9 @@ static bool translateCodePointToUTF8(unsigned CodePoint,
                                      SmallVectorImpl<char> &CLiteral) {
   char Translated[UNI_MAX_UTF8_BYTES_PER_CODE_POINT];
   char *TranslatedPtr = Translated;
-  if (!ConvertCodePointToUTF8(CodePoint, TranslatedPtr))
+  if (!ConvertCodePointToUTF8(CodePoint, TranslatedPtr)) {
     return false;
+}
 
   StringRef UTF8(Translated, TranslatedPtr - Translated);
 

@@ -103,8 +103,9 @@ void RedundantVoidArgCheck::processFunctionDecl(
     if (const Stmt *Body = Function->getBody()) {
       End = Body->getBeginLoc();
       if (End.isMacroID() &&
-          Result.SourceManager->isAtStartOfImmediateMacroExpansion(End))
+          Result.SourceManager->isAtStartOfImmediateMacroExpansion(End)) {
         End = Result.SourceManager->getExpansionLoc(End);
+}
       End = End.getLocWithOffset(-1);
     }
     removeVoidArgumentTokens(Result, SourceRange(Start, End),

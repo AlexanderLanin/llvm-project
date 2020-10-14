@@ -46,8 +46,9 @@ bool FuncletLayout::runOnMachineFunction(MachineFunction &F) {
   // are outlined at the end.
   DenseMap<const MachineBasicBlock *, int> FuncletMembership =
       getEHScopeMembership(F);
-  if (FuncletMembership.empty())
+  if (FuncletMembership.empty()) {
     return false;
+}
 
   F.sort([&](MachineBasicBlock &X, MachineBasicBlock &Y) {
     auto FuncletX = FuncletMembership.find(&X);

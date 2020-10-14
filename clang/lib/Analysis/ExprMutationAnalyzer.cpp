@@ -32,8 +32,9 @@ AST_MATCHER_P(Expr, maybeEvalCommaExpr, ast_matchers::internal::Matcher<Expr>,
   const Expr *Result = &Node;
   while (const auto *BOComma =
              dyn_cast_or_null<BinaryOperator>(Result->IgnoreParens())) {
-    if (!BOComma->isCommaOp())
+    if (!BOComma->isCommaOp()) {
       break;
+}
     Result = BOComma->getRHS();
   }
   return InnerMatcher.matches(*Result, Finder, Builder);
@@ -135,8 +136,9 @@ const Stmt *tryEachMatch(ArrayRef<ast_matchers::BoundNodes> Matches,
                          ExprMutationAnalyzer *Analyzer, F Finder) {
   const StringRef ID = NodeID<T>::value;
   for (const auto &Nodes : Matches) {
-    if (const Stmt *S = (Analyzer->*Finder)(Nodes.getNodeAs<T>(ID)))
+    if (const Stmt *S = (Analyzer->*Finder)(Nodes.getNodeAs<T>(ID))) {
       return S;
+}
   }
   return nullptr;
 }
@@ -171,15 +173,18 @@ const Stmt *ExprMutationAnalyzer::findMutationMemoized(
     const Expr *Exp, llvm::ArrayRef<MutationFinder> Finders,
     ResultMap &MemoizedResults) {
   const auto Memoized = MemoizedResults.find(Exp);
-  if (Memoized != MemoizedResults.end())
+  if (Memoized != MemoizedResults.end()) {
     return Memoized->second;
+}
 
-  if (isUnevaluated(Exp))
+  if (isUnevaluated(Exp)) {
     return MemoizedResults[Exp] = nullptr;
+}
 
   for (const auto &Finder : Finders) {
-    if (const Stmt *S = (this->*Finder)(Exp))
+    if (const Stmt *S = (this->*Finder)(Exp)) {
       return MemoizedResults[Exp] = S;
+}
   }
 
   return MemoizedResults[Exp] = nullptr;
@@ -192,8 +197,9 @@ const Stmt *ExprMutationAnalyzer::tryEachDeclRef(const Decl *Dec,
             Stm, Context);
   for (const auto &RefNodes : Refs) {
     const auto *E = RefNodes.getNodeAs<Expr>(NodeID<Expr>::value);
-    if ((this->*Finder)(E))
+    if ((this->*Finder)(E)) {
       return E;
+}
   }
   return nullptr;
 }
@@ -414,8 +420,9 @@ const Stmt *ExprMutationAnalyzer::findCastMutation(const Expr *Exp) {
               .bind("stmt")),
       Stm, Context);
 
-  if (const auto *CastStmt = selectFirst<Stmt>("stmt", ExplicitCast))
+  if (const auto *CastStmt = selectFirst<Stmt>("stmt", ExplicitCast)) {
     return CastStmt;
+}
 
   // If 'Exp' is casted to any non-const reference type, check the castExpr.
   const auto Casts = match(
@@ -428,8 +435,9 @@ const Stmt *ExprMutationAnalyzer::findCastMutation(const Expr *Exp) {
               .bind(NodeID<Expr>::value)),
       Stm, Context);
 
-  if (const Stmt *S = findExprMutation(Casts))
+  if (const Stmt *S = findExprMutation(Casts)) {
     return S;
+}
   // Treat std::{move,forward} as cast.
   const auto Calls =
       match(findAll(callExpr(callee(namedDecl(
@@ -459,8 +467,9 @@ const Stmt *ExprMutationAnalyzer::findRangeLoopMutation(const Expr *Exp) {
       Stm, Context);
 
   if (const auto *BadRangeInitFromArray =
-          selectFirst<Stmt>("stmt", RefToArrayRefToElements))
+          selectFirst<Stmt>("stmt", RefToArrayRefToElements)) {
     return BadRangeInitFromArray;
+}
 
   // Small helper to match special cases in range-for loops.
   //
@@ -487,8 +496,9 @@ const Stmt *ExprMutationAnalyzer::findRangeLoopMutation(const Expr *Exp) {
             Stm, Context);
 
   if (const auto *BadIteratorsContainer =
-          selectFirst<Stmt>("stmt", RefToContainerBadIterators))
+          selectFirst<Stmt>("stmt", RefToContainerBadIterators)) {
     return BadIteratorsContainer;
+}
 
   // If range for looping over 'Exp' with a non-const reference loop variable,
   // check all declRefExpr of the loop variable.
@@ -514,8 +524,9 @@ const Stmt *ExprMutationAnalyzer::findReferenceMutation(const Expr *Exp) {
                         hasArgument(0, canResolveToExpr(equalsNode(Exp))))
                         .bind(NodeID<Expr>::value)),
             Stm, Context);
-  if (const Stmt *S = findExprMutation(Ref))
+  if (const Stmt *S = findExprMutation(Ref)) {
     return S;
+}
 
   // If 'Exp' is bound to a non-const reference, check all declRefExpr to that.
   const auto Refs = match(
@@ -555,8 +566,9 @@ const Stmt *ExprMutationAnalyzer::findFunctionArgMutation(const Expr *Exp) {
   for (const auto &Nodes : Matches) {
     const auto *Exp = Nodes.getNodeAs<Expr>(NodeID<Expr>::value);
     const auto *Func = Nodes.getNodeAs<FunctionDecl>("func");
-    if (!Func->getBody() || !Func->getPrimaryTemplate())
+    if (!Func->getBody() || !Func->getPrimaryTemplate()) {
       return Exp;
+}
 
     const auto *Parm = Nodes.getNodeAs<ParmVarDecl>("parm");
     const ArrayRef<ParmVarDecl *> AllParams =
@@ -565,8 +577,9 @@ const Stmt *ExprMutationAnalyzer::findFunctionArgMutation(const Expr *Exp) {
         AllParams[std::min<size_t>(Parm->getFunctionScopeIndex(),
                                    AllParams.size() - 1)]
             ->getType();
-    if (const auto *T = ParmType->getAs<PackExpansionType>())
+    if (const auto *T = ParmType->getAs<PackExpansionType>()) {
       ParmType = T->getPattern();
+}
 
     // If param type is forwarding reference, follow into the function
     // definition and see whether the param is mutated inside.
@@ -575,10 +588,12 @@ const Stmt *ExprMutationAnalyzer::findFunctionArgMutation(const Expr *Exp) {
           RefType->getPointeeType()->getAs<TemplateTypeParmType>()) {
         std::unique_ptr<FunctionParmMutationAnalyzer> &Analyzer =
             FuncParmAnalyzer[Func];
-        if (!Analyzer)
+        if (!Analyzer) {
           Analyzer.reset(new FunctionParmMutationAnalyzer(*Func, Context));
-        if (Analyzer->findMutation(Parm))
+}
+        if (Analyzer->findMutation(Parm)) {
           return Exp;
+}
         continue;
       }
     }
@@ -597,10 +612,12 @@ FunctionParmMutationAnalyzer::FunctionParmMutationAnalyzer(
     for (const CXXCtorInitializer *Init : Ctor->inits()) {
       ExprMutationAnalyzer InitAnalyzer(*Init->getInit(), Context);
       for (const ParmVarDecl *Parm : Ctor->parameters()) {
-        if (Results.find(Parm) != Results.end())
+        if (Results.find(Parm) != Results.end()) {
           continue;
-        if (const Stmt *S = InitAnalyzer.findMutation(Parm))
+}
+        if (const Stmt *S = InitAnalyzer.findMutation(Parm)) {
           Results[Parm] = S;
+}
       }
     }
   }
@@ -609,11 +626,13 @@ FunctionParmMutationAnalyzer::FunctionParmMutationAnalyzer(
 const Stmt *
 FunctionParmMutationAnalyzer::findMutation(const ParmVarDecl *Parm) {
   const auto Memoized = Results.find(Parm);
-  if (Memoized != Results.end())
+  if (Memoized != Results.end()) {
     return Memoized->second;
+}
 
-  if (const Stmt *S = BodyAnalyzer.findMutation(Parm))
+  if (const Stmt *S = BodyAnalyzer.findMutation(Parm)) {
     return Results[Parm] = S;
+}
 
   return Results[Parm] = nullptr;
 }

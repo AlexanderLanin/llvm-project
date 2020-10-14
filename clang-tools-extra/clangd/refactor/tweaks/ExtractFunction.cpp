@@ -95,15 +95,18 @@ enum class ZoneRelative {
 // and it's parent is unselected.
 // Check if a node is a root statement.
 bool isRootStmt(const Node *N) {
-  if (!N->ASTNode.get<Stmt>())
+  if (!N->ASTNode.get<Stmt>()) {
     return false;
+}
   // Root statement cannot be partially selected.
-  if (N->Selected == SelectionTree::Partial)
+  if (N->Selected == SelectionTree::Partial) {
     return false;
+}
   // Only DeclStmt can be an unselected RootStmt since VarDecls claim the entire
   // selection range in selectionTree.
-  if (N->Selected == SelectionTree::Unselected && !N->ASTNode.get<DeclStmt>())
+  if (N->Selected == SelectionTree::Unselected && !N->ASTNode.get<DeclStmt>()) {
     return false;
+}
   return true;
 }
 
@@ -118,8 +121,9 @@ bool isRootStmt(const Node *N) {
 // begins in selection range, ends in selection range and any scope that begins
 // outside the selection range, ends outside as well.
 const Node *getParentOfRootStmts(const Node *CommonAnc) {
-  if (!CommonAnc)
+  if (!CommonAnc) {
     return nullptr;
+}
   const Node *Parent = nullptr;
   switch (CommonAnc->Selected) {
   case SelectionTree::Selection::Unselected:
@@ -138,8 +142,9 @@ const Node *getParentOfRootStmts(const Node *CommonAnc) {
     // root statement and return its parent. This is done because the VarDecls
     // claim the entire selection range of the Declaration and DeclStmt is
     // always unselected.
-    if (Parent->ASTNode.get<DeclStmt>())
+    if (Parent->ASTNode.get<DeclStmt>()) {
       Parent = Parent->Parent;
+}
     break;
   }
   // Ensure all Children are RootStmts.
@@ -177,31 +182,36 @@ struct ExtractionZone {
     for (auto *RootStmt : RootStmts) {
       findExplicitReferences(RootStmt,
                              [&DeclsInExtZone](const ReferenceLoc &Loc) {
-                               if (!Loc.IsDecl)
+                               if (!Loc.IsDecl) {
                                  return;
+}
                                DeclsInExtZone.insert(Loc.Targets.front());
                              });
     }
     // Early exit without performing expensive traversal below.
-    if (DeclsInExtZone.empty())
+    if (DeclsInExtZone.empty()) {
       return false;
+}
     // Then make sure they are not used outside the zone.
     for (const auto *S : EnclosingFunction->getBody()->children()) {
       if (SM.isBeforeInTranslationUnit(S->getSourceRange().getEnd(),
-                                       ZoneRange.getEnd()))
+                                       ZoneRange.getEnd())) {
         continue;
+}
       bool HasPostUse = false;
       findExplicitReferences(S, [&](const ReferenceLoc &Loc) {
         if (HasPostUse ||
-            SM.isBeforeInTranslationUnit(Loc.NameLoc, ZoneRange.getEnd()))
+            SM.isBeforeInTranslationUnit(Loc.NameLoc, ZoneRange.getEnd())) {
           return;
+}
         HasPostUse =
             llvm::any_of(Loc.Targets, [&DeclsInExtZone](const Decl *Target) {
               return DeclsInExtZone.contains(Target);
             });
       });
-      if (HasPostUse)
+      if (HasPostUse) {
         return true;
+}
     }
     return false;
   }
@@ -215,10 +225,11 @@ bool alwaysReturns(const ExtractionZone &EZ) {
   const Stmt *Last = EZ.getLastRootStmt()->ASTNode.get<Stmt>();
   // Unwrap enclosing (unconditional) compound statement.
   while (const auto *CS = llvm::dyn_cast<CompoundStmt>(Last)) {
-    if (CS->body_empty())
+    if (CS->body_empty()) {
       return false;
-    else
+    } else {
       Last = CS->body_back();
+}
   }
   return llvm::isa<ReturnStmt>(Last);
 }
@@ -232,15 +243,18 @@ const FunctionDecl *findEnclosingFunction(const Node *CommonAnc) {
   // Walk up the SelectionTree until we find a function Decl
   for (const Node *CurNode = CommonAnc; CurNode; CurNode = CurNode->Parent) {
     // Don't extract from lambdas
-    if (CurNode->ASTNode.get<LambdaExpr>())
+    if (CurNode->ASTNode.get<LambdaExpr>()) {
       return nullptr;
+}
     if (const FunctionDecl *Func = CurNode->ASTNode.get<FunctionDecl>()) {
       // FIXME: Support extraction from methods.
-      if (isa<CXXMethodDecl>(Func))
+      if (isa<CXXMethodDecl>(Func)) {
         return nullptr;
+}
       // FIXME: Support extraction from templated functions.
-      if (Func->isTemplated())
+      if (Func->isTemplated()) {
         return nullptr;
+}
       return Func;
     }
   }
@@ -254,15 +268,17 @@ llvm::Optional<SourceRange> findZoneRange(const Node *Parent,
                                           const LangOptions &LangOpts) {
   SourceRange SR;
   if (auto BeginFileRange = toHalfOpenFileRange(
-          SM, LangOpts, Parent->Children.front()->ASTNode.getSourceRange()))
+          SM, LangOpts, Parent->Children.front()->ASTNode.getSourceRange())) {
     SR.setBegin(BeginFileRange->getBegin());
-  else
+  } else {
     return llvm::None;
+}
   if (auto EndFileRange = toHalfOpenFileRange(
-          SM, LangOpts, Parent->Children.back()->ASTNode.getSourceRange()))
+          SM, LangOpts, Parent->Children.back()->ASTNode.getSourceRange())) {
     SR.setEnd(EndFileRange->getEnd());
-  else
+  } else {
     return llvm::None;
+}
   return SR;
 }
 
@@ -283,13 +299,15 @@ bool validSingleChild(const Node *Child, const FunctionDecl *EnclosingFunc) {
   // Don't extract expressions.
   // FIXME: We should extract expressions that are "statements" i.e. not
   // subexpressions
-  if (Child->ASTNode.get<Expr>())
+  if (Child->ASTNode.get<Expr>()) {
     return false;
+}
   // Extracting the body of EnclosingFunc would remove it's definition.
   assert(EnclosingFunc->hasBody() &&
          "We should always be extracting from a function body.");
-  if (Child->ASTNode.get<Stmt>() == EnclosingFunc->getBody())
+  if (Child->ASTNode.get<Stmt>() == EnclosingFunc->getBody()) {
     return false;
+}
   return true;
 }
 
@@ -300,26 +318,33 @@ llvm::Optional<ExtractionZone> findExtractionZone(const Node *CommonAnc,
                                                   const LangOptions &LangOpts) {
   ExtractionZone ExtZone;
   ExtZone.Parent = getParentOfRootStmts(CommonAnc);
-  if (!ExtZone.Parent || ExtZone.Parent->Children.empty())
+  if (!ExtZone.Parent || ExtZone.Parent->Children.empty()) {
     return llvm::None;
+}
   ExtZone.EnclosingFunction = findEnclosingFunction(ExtZone.Parent);
-  if (!ExtZone.EnclosingFunction)
+  if (!ExtZone.EnclosingFunction) {
     return llvm::None;
+}
   // When there is a single RootStmt, we must check if it's valid for
   // extraction.
   if (ExtZone.Parent->Children.size() == 1 &&
-      !validSingleChild(ExtZone.getLastRootStmt(), ExtZone.EnclosingFunction))
+      !validSingleChild(ExtZone.getLastRootStmt(), ExtZone.EnclosingFunction)) {
     return llvm::None;
+}
   if (auto FuncRange =
-          computeEnclosingFuncRange(ExtZone.EnclosingFunction, SM, LangOpts))
+          computeEnclosingFuncRange(ExtZone.EnclosingFunction, SM, LangOpts)) {
     ExtZone.EnclosingFuncRange = *FuncRange;
-  if (auto ZoneRange = findZoneRange(ExtZone.Parent, SM, LangOpts))
+}
+  if (auto ZoneRange = findZoneRange(ExtZone.Parent, SM, LangOpts)) {
     ExtZone.ZoneRange = *ZoneRange;
-  if (ExtZone.EnclosingFuncRange.isInvalid() || ExtZone.ZoneRange.isInvalid())
+}
+  if (ExtZone.EnclosingFuncRange.isInvalid() || ExtZone.ZoneRange.isInvalid()) {
     return llvm::None;
+}
 
-  for (const Node *Child : ExtZone.Parent->Children)
+  for (const Node *Child : ExtZone.Parent->Children) {
     ExtZone.RootStmts.insert(Child->ASTNode.get<Stmt>());
+}
 
   return ExtZone;
 }
@@ -365,8 +390,9 @@ std::string NewFunction::renderParametersForDefinition() const {
   std::string Result;
   bool NeedCommaBefore = false;
   for (const Parameter &P : Parameters) {
-    if (NeedCommaBefore)
+    if (NeedCommaBefore) {
       Result += ", ";
+}
     NeedCommaBefore = true;
     Result += P.render(EnclosingFuncContext);
   }
@@ -377,8 +403,9 @@ std::string NewFunction::renderParametersForCall() const {
   std::string Result;
   bool NeedCommaBefore = false;
   for (const Parameter &P : Parameters) {
-    if (NeedCommaBefore)
+    if (NeedCommaBefore) {
       Result += ", ";
+}
     NeedCommaBefore = true;
     Result += P.Name;
   }
@@ -453,8 +480,9 @@ CapturedZoneInfo::DeclInformation *
 CapturedZoneInfo::getDeclInfoFor(const Decl *D) {
   // If the Decl doesn't exist, we
   auto Iter = DeclInfoMap.find(D);
-  if (Iter == DeclInfoMap.end())
+  if (Iter == DeclInfoMap.end()) {
     return nullptr;
+}
   return &Iter->second;
 }
 
@@ -490,33 +518,38 @@ CapturedZoneInfo captureZoneInfo(const ExtractionZone &ExtZone) {
     }
 
     bool TraverseStmt(Stmt *S) {
-      if (!S)
+      if (!S) {
         return true;
+}
       bool IsRootStmt = ExtZone.isRootStmt(const_cast<const Stmt *>(S));
       // If we are starting traversal of a RootStmt, we are somewhere inside
       // ExtractionZone
-      if (IsRootStmt)
+      if (IsRootStmt) {
         CurrentLocation = ZoneRelative::Inside;
+}
       addToLoopSwitchCounters(S, 1);
       // Traverse using base class's TraverseStmt
       RecursiveASTVisitor::TraverseStmt(S);
       addToLoopSwitchCounters(S, -1);
       // We set the current location as after since next stmt will either be a
       // RootStmt (handled at the beginning) or after extractionZone
-      if (IsRootStmt)
+      if (IsRootStmt) {
         CurrentLocation = ZoneRelative::After;
+}
       return true;
     }
 
     // Add Increment to CurNumberOf{Loops,Switch} if statement is
     // {Loop,Switch} and inside Extraction Zone.
     void addToLoopSwitchCounters(Stmt *S, int Increment) {
-      if (CurrentLocation != ZoneRelative::Inside)
+      if (CurrentLocation != ZoneRelative::Inside) {
         return;
-      if (isLoop(S))
+}
+      if (isLoop(S)) {
         CurNumberOfNestedLoops += Increment;
-      else if (isa<SwitchStmt>(S))
+      } else if (isa<SwitchStmt>(S)) {
         CurNumberOfSwitch += Increment;
+}
     }
 
     bool VisitDecl(Decl *D) {
@@ -529,16 +562,18 @@ CapturedZoneInfo captureZoneInfo(const ExtractionZone &ExtZone) {
       const Decl *D = DRE->getDecl();
       auto *DeclInfo = Info.getDeclInfoFor(D);
       // If no Decl was found, the Decl must be outside the enclosingFunc.
-      if (!DeclInfo)
+      if (!DeclInfo) {
         DeclInfo = Info.createDeclInfo(D, ZoneRelative::OutsideFunc);
+}
       DeclInfo->markOccurence(CurrentLocation);
       // FIXME: check if reference mutates the Decl being referred.
       return true;
     }
 
     bool VisitReturnStmt(ReturnStmt *Return) {
-      if (CurrentLocation == ZoneRelative::Inside)
+      if (CurrentLocation == ZoneRelative::Inside) {
         Info.HasReturnStmt = true;
+}
       return true;
     }
 
@@ -546,16 +581,18 @@ CapturedZoneInfo captureZoneInfo(const ExtractionZone &ExtZone) {
       // Control flow is broken if break statement is selected without any
       // parent loop or switch statement.
       if (CurrentLocation == ZoneRelative::Inside &&
-          !(CurNumberOfNestedLoops || CurNumberOfSwitch))
+          !(CurNumberOfNestedLoops || CurNumberOfSwitch)) {
         Info.BrokenControlFlow = true;
+}
       return true;
     }
 
     bool VisitContinueStmt(ContinueStmt *Continue) {
       // Control flow is broken if Continue statement is selected without any
       // parent loop
-      if (CurrentLocation == ZoneRelative::Inside && !CurNumberOfNestedLoops)
+      if (CurrentLocation == ZoneRelative::Inside && !CurNumberOfNestedLoops) {
         Info.BrokenControlFlow = true;
+}
       return true;
     }
     CapturedZoneInfo Info;
@@ -584,19 +621,23 @@ bool createParameters(NewFunction &ExtractedFunc,
     // needs to be hoisted (we bail out in that case).
     // FIXME: Support Decl Hoisting.
     if (DeclInfo.DeclaredIn == ZoneRelative::Inside &&
-        DeclInfo.IsReferencedInPostZone)
+        DeclInfo.IsReferencedInPostZone) {
       return false;
-    if (!DeclInfo.IsReferencedInZone)
+}
+    if (!DeclInfo.IsReferencedInZone) {
       continue; // no need to pass as parameter, not referenced
+}
     if (DeclInfo.DeclaredIn == ZoneRelative::Inside ||
-        DeclInfo.DeclaredIn == ZoneRelative::OutsideFunc)
+        DeclInfo.DeclaredIn == ZoneRelative::OutsideFunc) {
       continue; // no need to pass as parameter, still accessible.
+}
     // Parameter specific checks.
     const ValueDecl *VD = dyn_cast_or_null<ValueDecl>(DeclInfo.TheDecl);
     // Can't parameterise if the Decl isn't a ValueDecl or is a FunctionDecl
     // (this includes the case of recursive call to EnclosingFunc in Zone).
-    if (!VD || isa<FunctionDecl>(DeclInfo.TheDecl))
+    if (!VD || isa<FunctionDecl>(DeclInfo.TheDecl)) {
       return false;
+}
     // Parameter qualifiers are same as the Decl's qualifiers.
     QualType TypeInfo = VD->getType().getNonReferenceType();
     // FIXME: Need better qualifier checks: check mutated status for
@@ -641,13 +682,15 @@ bool generateReturnProperties(NewFunction &ExtractedFunc,
   if (CapturedInfo.HasReturnStmt) {
     // If the return is conditional, neither replacing the code with
     // `extracted()` nor `return extracted()` is correct.
-    if (!CapturedInfo.AlwaysReturns)
+    if (!CapturedInfo.AlwaysReturns) {
       return false;
+}
     QualType Ret = EnclosingFunc.getReturnType();
     // Once we support members, it'd be nice to support e.g. extracting a method
     // of Foo<T> that returns T. But it's not clear when that's safe.
-    if (Ret->isDependentType())
+    if (Ret->isDependentType()) {
       return false;
+}
     ExtractedFunc.ReturnType = Ret;
     return true;
   }
@@ -663,9 +706,10 @@ llvm::Expected<NewFunction> getExtractedFunction(ExtractionZone &ExtZone,
                                                  const LangOptions &LangOpts) {
   CapturedZoneInfo CapturedInfo = captureZoneInfo(ExtZone);
   // Bail out if any break of continue exists
-  if (CapturedInfo.BrokenControlFlow)
+  if (CapturedInfo.BrokenControlFlow) {
     return error("Cannot extract break/continue without corresponding "
                  "loop/switch statement.");
+}
   NewFunction ExtractedFunc(getSemicolonPolicy(ExtZone, SM, LangOpts));
   ExtractedFunc.BodyRange = ExtZone.ZoneRange;
   ExtractedFunc.InsertionPoint = ExtZone.getInsertionPoint();
@@ -674,8 +718,9 @@ llvm::Expected<NewFunction> getExtractedFunction(ExtractionZone &ExtZone,
   ExtractedFunc.CallerReturnsValue = CapturedInfo.AlwaysReturns;
   if (!createParameters(ExtractedFunc, CapturedInfo) ||
       !generateReturnProperties(ExtractedFunc, *ExtZone.EnclosingFunction,
-                                CapturedInfo))
+                                CapturedInfo)) {
     return error("Too complex to extract.");
+}
   return ExtractedFunc;
 }
 
@@ -710,14 +755,16 @@ tooling::Replacement createFunctionDefinition(const NewFunction &ExtractedFunc,
 
 bool ExtractFunction::prepare(const Selection &Inputs) {
   const LangOptions &LangOpts = Inputs.AST->getLangOpts();
-  if (!LangOpts.CPlusPlus)
+  if (!LangOpts.CPlusPlus) {
     return false;
+}
   const Node *CommonAnc = Inputs.ASTSelection.commonAncestor();
   const SourceManager &SM = Inputs.AST->getSourceManager();
   auto MaybeExtZone = findExtractionZone(CommonAnc, SM, LangOpts);
   // FIXME: Get rid of this check once we support hoisting.
-  if (!MaybeExtZone || MaybeExtZone->requiresHoisting(SM))
+  if (!MaybeExtZone || MaybeExtZone->requiresHoisting(SM)) {
     return false;
+}
 
   ExtZone = std::move(*MaybeExtZone);
   return true;
@@ -728,13 +775,16 @@ Expected<Tweak::Effect> ExtractFunction::apply(const Selection &Inputs) {
   const LangOptions &LangOpts = Inputs.AST->getLangOpts();
   auto ExtractedFunc = getExtractedFunction(ExtZone, SM, LangOpts);
   // FIXME: Add more types of errors.
-  if (!ExtractedFunc)
+  if (!ExtractedFunc) {
     return ExtractedFunc.takeError();
+}
   tooling::Replacements Result;
-  if (auto Err = Result.add(createFunctionDefinition(*ExtractedFunc, SM)))
+  if (auto Err = Result.add(createFunctionDefinition(*ExtractedFunc, SM))) {
     return std::move(Err);
-  if (auto Err = Result.add(replaceWithFuncCall(*ExtractedFunc, SM, LangOpts)))
+}
+  if (auto Err = Result.add(replaceWithFuncCall(*ExtractedFunc, SM, LangOpts))) {
     return std::move(Err);
+}
   return Effect::mainFileEdit(SM, std::move(Result));
 }
 

@@ -31,20 +31,23 @@ std::error_code SerializedDiagnosticReader::readDiagnostics(StringRef File) {
   FileManager FileMgr(FO);
 
   auto Buffer = FileMgr.getBufferForFile(File);
-  if (!Buffer)
+  if (!Buffer) {
     return SDError::CouldNotLoad;
+}
 
   llvm::BitstreamCursor Stream(**Buffer);
   Optional<llvm::BitstreamBlockInfo> BlockInfo;
 
-  if (Stream.AtEndOfStream())
+  if (Stream.AtEndOfStream()) {
     return SDError::InvalidSignature;
+}
 
   // Sniff for the signature.
   for (unsigned char C : {'D', 'I', 'A', 'G'}) {
     if (Expected<llvm::SimpleBitstreamCursor::word_t> Res = Stream.Read(8)) {
-      if (Res.get() == C)
+      if (Res.get() == C) {
         continue;
+}
     } else {
       // FIXME this drops the error on the floor.
       consumeError(Res.takeError());
@@ -55,8 +58,9 @@ std::error_code SerializedDiagnosticReader::readDiagnostics(StringRef File) {
   // Read the top level blocks.
   while (!Stream.AtEndOfStream()) {
     if (Expected<unsigned> Res = Stream.ReadCode()) {
-      if (Res.get() != llvm::bitc::ENTER_SUBBLOCK)
+      if (Res.get() != llvm::bitc::ENTER_SUBBLOCK) {
         return SDError::InvalidDiagnostics;
+}
     } else {
       // FIXME this drops the error on the floor.
       consumeError(Res.takeError());
@@ -82,17 +86,20 @@ std::error_code SerializedDiagnosticReader::readDiagnostics(StringRef File) {
       }
       BlockInfo = std::move(MaybeBlockInfo.get());
     }
-      if (!BlockInfo)
+      if (!BlockInfo) {
         return SDError::MalformedBlockInfoBlock;
+}
       Stream.setBlockInfo(&*BlockInfo);
       continue;
     case BLOCK_META:
-      if ((EC = readMetaBlock(Stream)))
+      if ((EC = readMetaBlock(Stream))) {
         return EC;
+}
       continue;
     case BLOCK_DIAG:
-      if ((EC = readDiagnosticBlock(Stream)))
+      if ((EC = readDiagnosticBlock(Stream))) {
         return EC;
+}
       continue;
     default:
       if (llvm::Error Err = Stream.SkipBlock()) {
@@ -119,10 +126,11 @@ SerializedDiagnosticReader::skipUntilRecordOrBlock(
 
   while (!Stream.AtEndOfStream()) {
     unsigned Code;
-    if (Expected<unsigned> Res = Stream.ReadCode())
+    if (Expected<unsigned> Res = Stream.ReadCode()) {
       Code = Res.get();
-    else
+    } else {
       return llvm::errorToErrorCode(Res.takeError());
+}
 
     if (Code >= static_cast<unsigned>(llvm::bitc::FIRST_APPLICATION_ABBREV)) {
       // We found a record.
@@ -131,20 +139,23 @@ SerializedDiagnosticReader::skipUntilRecordOrBlock(
     }
     switch (static_cast<llvm::bitc::FixedAbbrevIDs>(Code)) {
     case llvm::bitc::ENTER_SUBBLOCK:
-      if (Expected<unsigned> Res = Stream.ReadSubBlockID())
+      if (Expected<unsigned> Res = Stream.ReadSubBlockID()) {
         BlockOrRecordID = Res.get();
-      else
+      } else {
         return llvm::errorToErrorCode(Res.takeError());
+}
       return Cursor::BlockBegin;
 
     case llvm::bitc::END_BLOCK:
-      if (Stream.ReadBlockEnd())
+      if (Stream.ReadBlockEnd()) {
         return SDError::InvalidDiagnostics;
+}
       return Cursor::BlockEnd;
 
     case llvm::bitc::DEFINE_ABBREV:
-      if (llvm::Error Err = Stream.ReadAbbrevRecord())
+      if (llvm::Error Err = Stream.ReadAbbrevRecord()) {
         return llvm::errorToErrorCode(std::move(Err));
+}
       continue;
 
     case llvm::bitc::UNABBREV_RECORD:
@@ -172,8 +183,9 @@ SerializedDiagnosticReader::readMetaBlock(llvm::BitstreamCursor &Stream) {
   while (true) {
     unsigned BlockOrCode = 0;
     llvm::ErrorOr<Cursor> Res = skipUntilRecordOrBlock(Stream, BlockOrCode);
-    if (!Res)
+    if (!Res) {
       Res.getError();
+}
 
     switch (Res.get()) {
     case Cursor::Record:
@@ -186,22 +198,26 @@ SerializedDiagnosticReader::readMetaBlock(llvm::BitstreamCursor &Stream) {
       }
       LLVM_FALLTHROUGH;
     case Cursor::BlockEnd:
-      if (!VersionChecked)
+      if (!VersionChecked) {
         return SDError::MissingVersion;
+}
       return {};
     }
 
     SmallVector<uint64_t, 1> Record;
     Expected<unsigned> MaybeRecordID = Stream.readRecord(BlockOrCode, Record);
-    if (!MaybeRecordID)
+    if (!MaybeRecordID) {
       return errorToErrorCode(MaybeRecordID.takeError());
+}
     unsigned RecordID = MaybeRecordID.get();
 
     if (RecordID == RECORD_VERSION) {
-      if (Record.size() < 1)
+      if (Record.size() < 1) {
         return SDError::MissingVersion;
-      if (Record[0] > VersionNumber)
+}
+      if (Record[0] > VersionNumber) {
         return SDError::VersionMismatch;
+}
       VersionChecked = true;
     }
   }
@@ -217,22 +233,25 @@ SerializedDiagnosticReader::readDiagnosticBlock(llvm::BitstreamCursor &Stream) {
   }
 
   std::error_code EC;
-  if ((EC = visitStartOfDiagnostic()))
+  if ((EC = visitStartOfDiagnostic())) {
     return EC;
+}
 
   SmallVector<uint64_t, 16> Record;
   while (true) {
     unsigned BlockOrCode = 0;
     llvm::ErrorOr<Cursor> Res = skipUntilRecordOrBlock(Stream, BlockOrCode);
-    if (!Res)
+    if (!Res) {
       Res.getError();
+}
 
     switch (Res.get()) {
     case Cursor::BlockBegin:
       // The only blocks we care about are subdiagnostics.
       if (BlockOrCode == serialized_diags::BLOCK_DIAG) {
-        if ((EC = readDiagnosticBlock(Stream)))
+        if ((EC = readDiagnosticBlock(Stream))) {
           return EC;
+}
       } else if (llvm::Error Err = Stream.SkipBlock()) {
         // FIXME this drops the error on the floor.
         consumeError(std::move(Err));
@@ -240,8 +259,9 @@ SerializedDiagnosticReader::readDiagnosticBlock(llvm::BitstreamCursor &Stream) {
       }
       continue;
     case Cursor::BlockEnd:
-      if ((EC = visitEndOfDiagnostic()))
+      if ((EC = visitEndOfDiagnostic())) {
         return EC;
+}
       return {};
     case Cursor::Record:
       break;
@@ -252,71 +272,87 @@ SerializedDiagnosticReader::readDiagnosticBlock(llvm::BitstreamCursor &Stream) {
     StringRef Blob;
     Expected<unsigned> MaybeRecID =
         Stream.readRecord(BlockOrCode, Record, &Blob);
-    if (!MaybeRecID)
+    if (!MaybeRecID) {
       return errorToErrorCode(MaybeRecID.takeError());
+}
     unsigned RecID = MaybeRecID.get();
 
     if (RecID < serialized_diags::RECORD_FIRST ||
-        RecID > serialized_diags::RECORD_LAST)
+        RecID > serialized_diags::RECORD_LAST) {
       continue;
+}
 
     switch ((RecordIDs)RecID) {
     case RECORD_CATEGORY:
       // A category has ID and name size.
-      if (Record.size() != 2)
+      if (Record.size() != 2) {
         return SDError::MalformedDiagnosticRecord;
-      if ((EC = visitCategoryRecord(Record[0], Blob)))
+}
+      if ((EC = visitCategoryRecord(Record[0], Blob))) {
         return EC;
+}
       continue;
     case RECORD_DIAG:
       // A diagnostic has severity, location (4), category, flag, and message
       // size.
-      if (Record.size() != 8)
+      if (Record.size() != 8) {
         return SDError::MalformedDiagnosticRecord;
+}
       if ((EC = visitDiagnosticRecord(
                Record[0], Location(Record[1], Record[2], Record[3], Record[4]),
-               Record[5], Record[6], Blob)))
+               Record[5], Record[6], Blob))) {
         return EC;
+}
       continue;
     case RECORD_DIAG_FLAG:
       // A diagnostic flag has ID and name size.
-      if (Record.size() != 2)
+      if (Record.size() != 2) {
         return SDError::MalformedDiagnosticRecord;
-      if ((EC = visitDiagFlagRecord(Record[0], Blob)))
+}
+      if ((EC = visitDiagFlagRecord(Record[0], Blob))) {
         return EC;
+}
       continue;
     case RECORD_FILENAME:
       // A filename has ID, size, timestamp, and name size. The size and
       // timestamp are legacy fields that are always zero these days.
-      if (Record.size() != 4)
+      if (Record.size() != 4) {
         return SDError::MalformedDiagnosticRecord;
-      if ((EC = visitFilenameRecord(Record[0], Record[1], Record[2], Blob)))
+}
+      if ((EC = visitFilenameRecord(Record[0], Record[1], Record[2], Blob))) {
         return EC;
+}
       continue;
     case RECORD_FIXIT:
       // A fixit has two locations (4 each) and message size.
-      if (Record.size() != 9)
+      if (Record.size() != 9) {
         return SDError::MalformedDiagnosticRecord;
+}
       if ((EC = visitFixitRecord(
                Location(Record[0], Record[1], Record[2], Record[3]),
-               Location(Record[4], Record[5], Record[6], Record[7]), Blob)))
+               Location(Record[4], Record[5], Record[6], Record[7]), Blob))) {
         return EC;
+}
       continue;
     case RECORD_SOURCE_RANGE:
       // A source range is two locations (4 each).
-      if (Record.size() != 8)
+      if (Record.size() != 8) {
         return SDError::MalformedDiagnosticRecord;
+}
       if ((EC = visitSourceRangeRecord(
                Location(Record[0], Record[1], Record[2], Record[3]),
-               Location(Record[4], Record[5], Record[6], Record[7]))))
+               Location(Record[4], Record[5], Record[6], Record[7])))) {
         return EC;
+}
       continue;
     case RECORD_VERSION:
       // A version is just a number.
-      if (Record.size() != 1)
+      if (Record.size() != 1) {
         return SDError::MalformedDiagnosticRecord;
-      if ((EC = visitVersionRecord(Record[0])))
+}
+      if ((EC = visitVersionRecord(Record[0]))) {
         return EC;
+}
       continue;
     }
   }

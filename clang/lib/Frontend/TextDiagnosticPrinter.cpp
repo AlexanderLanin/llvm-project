@@ -29,8 +29,9 @@ TextDiagnosticPrinter::TextDiagnosticPrinter(raw_ostream &os,
 }
 
 TextDiagnosticPrinter::~TextDiagnosticPrinter() {
-  if (OwnsOutputStream)
+  if (OwnsOutputStream) {
     delete &OS;
+}
 }
 
 void TextDiagnosticPrinter::BeginSourceFile(const LangOptions &LO,
@@ -81,8 +82,9 @@ static void printDiagnosticOptions(raw_ostream &OS,
       OS << (Started ? "," : " [")
          << (Level == DiagnosticsEngine::Remark ? "-R" : "-W") << Opt;
       StringRef OptValue = Info.getDiags()->getFlagValue();
-      if (!OptValue.empty())
+      if (!OptValue.empty()) {
         OS << "=" << OptValue;
+}
       Started = true;
     }
   }
@@ -94,16 +96,17 @@ static void printDiagnosticOptions(raw_ostream &OS,
     if (DiagCategory) {
       OS << (Started ? "," : " [");
       Started = true;
-      if (DiagOpts.ShowCategories == 1)
+      if (DiagOpts.ShowCategories == 1) {
         OS << DiagCategory;
-      else {
+      } else {
         assert(DiagOpts.ShowCategories == 2 && "Invalid ShowCategories value");
         OS << DiagnosticIDs::getCategoryNameFromID(DiagCategory);
       }
     }
   }
-  if (Started)
+  if (Started) {
     OS << ']';
+}
 }
 
 void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
@@ -125,8 +128,9 @@ void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
   // file+line+column number prefix is.
   uint64_t StartOfLocationInfo = OS.tell();
 
-  if (!Prefix.empty())
+  if (!Prefix.empty()) {
     OS << Prefix << ": ";
+}
 
   // Use a dedicated, simpler path for diagnostics without a valid location.
   // This is important as if the location is missing, we may be emitting

@@ -27,15 +27,17 @@ driver::parseDarwinSDKInfo(llvm::vfs::FileSystem &VFS, StringRef SDKRootPath) {
   }
   Expected<llvm::json::Value> Result =
       llvm::json::parse(File.get()->getBuffer());
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+}
 
   if (const auto *Obj = Result->getAsObject()) {
     auto VersionString = Obj->getString("Version");
     if (VersionString) {
       VersionTuple Version;
-      if (!Version.tryParse(*VersionString))
+      if (!Version.tryParse(*VersionString)) {
         return DarwinSDKInfo(Version);
+}
     }
   }
   return llvm::make_error<llvm::StringError>("invalid SDKSettings.json",

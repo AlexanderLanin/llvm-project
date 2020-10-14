@@ -67,9 +67,10 @@ RenameOccurrences::initiate(RefactoringRuleContext &Context,
                             SourceRange SelectionRange, std::string NewName) {
   const NamedDecl *ND =
       getNamedDeclAt(Context.getASTContext(), SelectionRange.getBegin());
-  if (!ND)
+  if (!ND) {
     return Context.createDiagnosticError(
         SelectionRange.getBegin(), diag::err_refactor_selection_no_symbol);
+}
   return RenameOccurrences(getCanonicalSymbolDeclaration(ND),
                            std::move(NewName));
 }
@@ -79,8 +80,9 @@ const NamedDecl *RenameOccurrences::getRenameDecl() const { return ND; }
 Expected<AtomicChanges>
 RenameOccurrences::createSourceReplacements(RefactoringRuleContext &Context) {
   Expected<SymbolOccurrences> Occurrences = findSymbolOccurrences(ND, Context);
-  if (!Occurrences)
+  if (!Occurrences) {
     return Occurrences.takeError();
+}
   // FIXME: Verify that the new name is valid.
   SymbolName Name(NewName);
   return createRenameReplacements(
@@ -93,10 +95,11 @@ QualifiedRenameRule::initiate(RefactoringRuleContext &Context,
                               std::string NewQualifiedName) {
   const NamedDecl *ND =
       getNamedDeclFor(Context.getASTContext(), OldQualifiedName);
-  if (!ND)
+  if (!ND) {
     return llvm::make_error<llvm::StringError>("Could not find symbol " +
                                                    OldQualifiedName,
                                                llvm::errc::invalid_argument);
+}
   return QualifiedRenameRule(ND, std::move(NewQualifiedName));
 }
 
@@ -155,8 +158,9 @@ createRenameReplacements(const SymbolOccurrences &Occurrences,
       auto Error =
           Change.replace(SM, CharSourceRange::getCharRange(Range.value()),
                          NewName.getNamePieces()[Range.index()]);
-      if (Error)
+      if (Error) {
         return std::move(Error);
+}
     }
     Changes.push_back(std::move(Change));
   }
@@ -194,8 +198,9 @@ public:
   void HandleTranslationUnit(ASTContext &Context) override {
     for (unsigned I = 0; I < NewNames.size(); ++I) {
       // If the previous name was not found, ignore this rename request.
-      if (PrevNames[I].empty())
+      if (PrevNames[I].empty()) {
         continue;
+}
 
       HandleOneRename(Context, NewNames[I], PrevNames[I], USRList[I]);
     }

@@ -77,34 +77,42 @@ FuzzyMatcher::FuzzyMatcher(llvm::StringRef Pattern)
     : PatN(std::min<int>(MaxPat, Pattern.size())),
       ScoreScale(PatN ? float{1} / (PerfectBonus * PatN) : 0), WordN(0) {
   std::copy(Pattern.begin(), Pattern.begin() + PatN, Pat);
-  for (int I = 0; I < PatN; ++I)
+  for (int I = 0; I < PatN; ++I) {
     LowPat[I] = lower(Pat[I]);
+}
   Scores[0][0][Miss] = {0, Miss};
   Scores[0][0][Match] = {AwfulScore, Miss};
-  for (int P = 0; P <= PatN; ++P)
-    for (int W = 0; W < P; ++W)
-      for (Action A : {Miss, Match})
+  for (int P = 0; P <= PatN; ++P) {
+    for (int W = 0; W < P; ++W) {
+      for (Action A : {Miss, Match}) {
         Scores[P][W][A] = {AwfulScore, Miss};
+}
+}
+}
   PatTypeSet = calculateRoles(llvm::StringRef(Pat, PatN),
                               llvm::makeMutableArrayRef(PatRole, PatN));
 }
 
 llvm::Optional<float> FuzzyMatcher::match(llvm::StringRef Word) {
-  if (!(WordContainsPattern = init(Word)))
+  if (!(WordContainsPattern = init(Word))) {
     return llvm::None;
-  if (!PatN)
+}
+  if (!PatN) {
     return 1;
+}
   buildGraph();
   auto Best = std::max(Scores[PatN][WordN][Miss].Score,
                        Scores[PatN][WordN][Match].Score);
-  if (isAwful(Best))
+  if (isAwful(Best)) {
     return llvm::None;
+}
   float Score =
       ScoreScale * std::min(PerfectBonus * PatN, std::max<int>(0, Best));
   // If the pattern is as long as the word, we have an exact string match,
   // since every pattern character must match something.
-  if (WordN == PatN)
+  if (WordN == PatN) {
     Score *= 2; // May not be perfect 2 if case differs in a significant way.
+}
   return Score;
 }
 
@@ -154,8 +162,9 @@ template <typename T> static T packedLookup(const uint8_t *Data, int I) {
 CharTypeSet calculateRoles(llvm::StringRef Text,
                            llvm::MutableArrayRef<CharRole> Roles) {
   assert(Text.size() == Roles.size());
-  if (Text.size() == 0)
+  if (Text.size() == 0) {
     return 0;
+}
   CharType Type = packedLookup<CharType>(CharTypes, Text[0]);
   CharTypeSet TypeSet = 1 << Type;
   // Types holds a sliding window of (Prev, Curr, Next) types.
@@ -180,20 +189,25 @@ CharTypeSet calculateRoles(llvm::StringRef Text,
 // Returns false if we can cheaply determine that no match is possible.
 bool FuzzyMatcher::init(llvm::StringRef NewWord) {
   WordN = std::min<int>(MaxWord, NewWord.size());
-  if (PatN > WordN)
+  if (PatN > WordN) {
     return false;
+}
   std::copy(NewWord.begin(), NewWord.begin() + WordN, Word);
-  if (PatN == 0)
+  if (PatN == 0) {
     return true;
-  for (int I = 0; I < WordN; ++I)
+}
+  for (int I = 0; I < WordN; ++I) {
     LowWord[I] = lower(Word[I]);
+}
 
   // Cheap subsequence check.
   for (int W = 0, P = 0; P != PatN; ++W) {
-    if (W == WordN)
+    if (W == WordN) {
       return false;
-    if (LowWord[W] == LowPat[P])
+}
+    if (LowWord[W] == LowPat[P]) {
       ++P;
+}
   }
 
   // FIXME: some words are hard to tokenize algorithmically.
@@ -249,8 +263,9 @@ void FuzzyMatcher::buildGraph() {
 }
 
 bool FuzzyMatcher::allowMatch(int P, int W, Action Last) const {
-  if (LowPat[P] != LowWord[W])
+  if (LowPat[P] != LowWord[W]) {
     return false;
+}
   // We require a "strong" match:
   // - for the first pattern character.  [foo] !~ "barefoot"
   // - after a gap.                      [pat] !~ "patnther"
@@ -260,17 +275,20 @@ bool FuzzyMatcher::allowMatch(int P, int W, Action Last) const {
     //  - allow matching B in ABCDef (but not in NDEBUG)
     //  - we'd like to accept print in sprintf, but too many false positives
     if (WordRole[W] == Tail &&
-        (Word[W] == LowWord[W] || !(WordTypeSet & 1 << Lower)))
+        (Word[W] == LowWord[W] || !(WordTypeSet & 1 << Lower))) {
       return false;
+}
   }
   return true;
 }
 
 int FuzzyMatcher::skipPenalty(int W, Action Last) const {
-  if (W == 0) // Skipping the first character.
+  if (W == 0) { // Skipping the first character.
     return 3;
-  if (WordRole[W] == Head) // Skipping a segment.
+}
+  if (WordRole[W] == Head) { // Skipping a segment.
     return 1; // We want to keep this lower than a consecutive match bonus.
+}
   // Instead of penalizing non-consecutive matches, we give a bonus to a
   // consecutive match in matchBonus. This produces a better score distribution
   // than penalties in case of small patterns, e.g. 'up' for 'unique_ptr'.
@@ -286,21 +304,26 @@ int FuzzyMatcher::matchBonus(int P, int W, Action Last) const {
   // Single-case patterns lack segmentation signals and we assume any character
   // can be a head of a segment.
   if (Pat[P] == Word[W] ||
-      (WordRole[W] == Head && (IsPatSingleCase || PatRole[P] == Head)))
+      (WordRole[W] == Head && (IsPatSingleCase || PatRole[P] == Head))) {
     ++S;
+}
   // Bonus: a consecutive match. First character match also gets a bonus to
   // ensure prefix final match score normalizes to 1.0.
-  if (W == 0 || Last == Match)
+  if (W == 0 || Last == Match) {
     S += 2;
+}
   // Penalty: matching inside a segment (and previous char wasn't matched).
-  if (WordRole[W] == Tail && P && Last == Miss)
+  if (WordRole[W] == Tail && P && Last == Miss) {
     S -= 3;
+}
   // Penalty: a Head in the pattern matches in the middle of a word segment.
-  if (PatRole[P] == Head && WordRole[W] == Tail)
+  if (PatRole[P] == Head && WordRole[W] == Tail) {
     --S;
+}
   // Penalty: matching the first pattern character in the middle of a segment.
-  if (P == 0 && WordRole[W] == Tail)
+  if (P == 0 && WordRole[W] == Tail) {
     S -= 4;
+}
   assert(S <= PerfectBonus);
   return S;
 }
@@ -324,8 +347,9 @@ llvm::SmallString<256> FuzzyMatcher::dumpLast(llvm::raw_ostream &OS) const {
                               Scores[PatN][WordN][Miss].Score))) {
     OS << "Substring check passed, but all matches are forbidden\n";
   }
-  if (!(PatTypeSet & 1 << Upper))
+  if (!(PatTypeSet & 1 << Upper)) {
     OS << "Lowercase query, so scoring ignores case\n";
+}
 
   // Traverse Matched table backwards to reconstruct the Pattern/Word mapping.
   // The Score table has cumulative scores, subtracting along this path gives
@@ -339,56 +363,67 @@ llvm::SmallString<256> FuzzyMatcher::dumpLast(llvm::raw_ostream &OS) const {
   for (int W = WordN - 1, P = PatN - 1; W >= 0; --W) {
     A[W] = Last;
     const auto &Cell = Scores[P + 1][W + 1][Last];
-    if (Last == Match)
+    if (Last == Match) {
       --P;
+}
     const auto &Prev = Scores[P + 1][W][Cell.Prev];
     S[W] = Cell.Score - Prev.Score;
     Last = Cell.Prev;
   }
   for (int I = 0; I < WordN; ++I) {
-    if (A[I] == Match && (I == 0 || A[I - 1] == Miss))
+    if (A[I] == Match && (I == 0 || A[I - 1] == Miss)) {
       Result.push_back('[');
-    if (A[I] == Miss && I > 0 && A[I - 1] == Match)
+}
+    if (A[I] == Miss && I > 0 && A[I - 1] == Match) {
       Result.push_back(']');
+}
     Result.push_back(Word[I]);
   }
-  if (A[WordN - 1] == Match)
+  if (A[WordN - 1] == Match) {
     Result.push_back(']');
+}
 
-  for (char C : llvm::StringRef(Word, WordN))
+  for (char C : llvm::StringRef(Word, WordN)) {
     OS << " " << C << " ";
+}
   OS << "\n";
-  for (int I = 0, J = 0; I < WordN; I++)
+  for (int I = 0, J = 0; I < WordN; I++) {
     OS << " " << (A[I] == Match ? Pat[J++] : ' ') << " ";
+}
   OS << "\n";
-  for (int I = 0; I < WordN; I++)
+  for (int I = 0; I < WordN; I++) {
     OS << llvm::format("%2d ", S[I]);
+}
   OS << "\n";
 
   OS << "\nSegmentation:";
   OS << "\n'" << llvm::StringRef(Word, WordN) << "'\n ";
-  for (int I = 0; I < WordN; ++I)
+  for (int I = 0; I < WordN; ++I) {
     OS << "?-+ "[static_cast<int>(WordRole[I])];
+}
   OS << "\n[" << llvm::StringRef(Pat, PatN) << "]\n ";
-  for (int I = 0; I < PatN; ++I)
+  for (int I = 0; I < PatN; ++I) {
     OS << "?-+ "[static_cast<int>(PatRole[I])];
+}
   OS << "\n";
 
   OS << "\nScoring table (last-Miss, last-Match):\n";
   OS << " |    ";
-  for (char C : llvm::StringRef(Word, WordN))
+  for (char C : llvm::StringRef(Word, WordN)) {
     OS << "  " << C << " ";
+}
   OS << "\n";
   OS << "-+----" << std::string(WordN * 4, '-') << "\n";
   for (int I = 0; I <= PatN; ++I) {
     for (Action A : {Miss, Match}) {
       OS << ((I && A == Miss) ? Pat[I - 1] : ' ') << "|";
       for (int J = 0; J <= WordN; ++J) {
-        if (!isAwful(Scores[I][J][A].Score))
+        if (!isAwful(Scores[I][J][A].Score)) {
           OS << llvm::format("%3d%c", Scores[I][J][A].Score,
                              Scores[I][J][A].Prev == Match ? '*' : ' ');
-        else
+        } else {
           OS << "    ";
+}
       }
       OS << "\n";
     }

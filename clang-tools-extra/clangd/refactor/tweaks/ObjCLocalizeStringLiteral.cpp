@@ -51,13 +51,15 @@ REGISTER_TWEAK(ObjCLocalizeStringLiteral)
 
 bool ObjCLocalizeStringLiteral::prepare(const Selection &Inputs) {
   const SelectionTree::Node *N = Inputs.ASTSelection.commonAncestor();
-  if (!N)
+  if (!N) {
     return false;
+}
   // Allow the refactoring even if the user selected only the C string part
   // of the expression.
   if (N->ASTNode.get<StringLiteral>()) {
-    if (N->Parent)
+    if (N->Parent) {
       N = N->Parent;
+}
   }
   Str = dyn_cast_or_null<ObjCStringLiteral>(N->ASTNode.get<Stmt>());
   return Str;
@@ -69,15 +71,17 @@ ObjCLocalizeStringLiteral::apply(const Selection &Inputs) {
   auto &SM = AST->getSourceManager();
   const auto &TB = AST->getTokens();
   auto Toks = TB.spelledForExpanded(TB.expandedTokens(Str->getSourceRange()));
-  if (!Toks || Toks->empty())
+  if (!Toks || Toks->empty()) {
     return error("Failed to find tokens to replace.");
+}
   // Insert `NSLocalizedString(` before the literal.
   auto Reps = tooling::Replacements(tooling::Replacement(
       SM, Toks->front().location(), 0, "NSLocalizedString("));
   // Insert `, @"")` after the literal.
   if (auto Err = Reps.add(
-          tooling::Replacement(SM, Toks->back().endLocation(), 0, ", @\"\")")))
+          tooling::Replacement(SM, Toks->back().endLocation(), 0, ", @\"\")"))) {
     return std::move(Err);
+}
   return Effect::mainFileEdit(SM, std::move(Reps));
 }
 

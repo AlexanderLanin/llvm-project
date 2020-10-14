@@ -36,17 +36,21 @@ class WalkAST: public StmtVisitor<WalkAST> {
 
   /// Check if two expressions refer to the same declaration.
   bool sameDecl(const Expr *A1, const Expr *A2) {
-    if (const auto *D1 = dyn_cast<DeclRefExpr>(A1->IgnoreParenCasts()))
-      if (const auto *D2 = dyn_cast<DeclRefExpr>(A2->IgnoreParenCasts()))
+    if (const auto *D1 = dyn_cast<DeclRefExpr>(A1->IgnoreParenCasts())) {
+      if (const auto *D2 = dyn_cast<DeclRefExpr>(A2->IgnoreParenCasts())) {
         return D1->getDecl() == D2->getDecl();
+}
+}
     return false;
   }
 
   /// Check if the expression E is a sizeof(WithArg).
   bool isSizeof(const Expr *E, const Expr *WithArg) {
-    if (const auto *UE = dyn_cast<UnaryExprOrTypeTraitExpr>(E))
-      if (UE->getKind() == UETT_SizeOf && !UE->isArgumentType())
+    if (const auto *UE = dyn_cast<UnaryExprOrTypeTraitExpr>(E)) {
+      if (UE->getKind() == UETT_SizeOf && !UE->isArgumentType()) {
         return sameDecl(UE->getArgumentExpr(), WithArg);
+}
+}
     return false;
   }
 
@@ -54,8 +58,9 @@ class WalkAST: public StmtVisitor<WalkAST> {
   bool isStrlen(const Expr *E, const Expr *WithArg) {
     if (const auto *CE = dyn_cast<CallExpr>(E)) {
       const FunctionDecl *FD = CE->getDirectCallee();
-      if (!FD)
+      if (!FD) {
         return false;
+}
       return (CheckerContext::isCLibraryFunction(FD, "strlen") &&
               sameDecl(CE->getArg(0), WithArg));
     }
@@ -64,14 +69,16 @@ class WalkAST: public StmtVisitor<WalkAST> {
 
   /// Check if the expression is an integer literal with value 1.
   bool isOne(const Expr *E) {
-    if (const auto *IL = dyn_cast<IntegerLiteral>(E))
+    if (const auto *IL = dyn_cast<IntegerLiteral>(E)) {
       return (IL->getValue().isIntN(1));
+}
     return false;
   }
 
   StringRef getPrintableName(const Expr *E) {
-    if (const auto *D = dyn_cast<DeclRefExpr>(E->IgnoreParenCasts()))
+    if (const auto *D = dyn_cast<DeclRefExpr>(E->IgnoreParenCasts())) {
       return D->getDecl()->getName();
+}
     return StringRef();
   }
 
@@ -120,8 +127,9 @@ public:
 //   - strncat(dst, src, sizeof(dst) - 1);
 //   - strncat(dst, src, sizeof(dst));
 bool WalkAST::containsBadStrncatPattern(const CallExpr *CE) {
-  if (CE->getNumArgs() != 3)
+  if (CE->getNumArgs() != 3) {
     return false;
+}
   const Expr *DstArg = CE->getArg(0);
   const Expr *SrcArg = CE->getArg(1);
   const Expr *LenArg = CE->getArg(2);
@@ -132,27 +140,32 @@ bool WalkAST::containsBadStrncatPattern(const CallExpr *CE) {
     if (BE->getOpcode() == BO_Sub) {
       const Expr *L = BE->getLHS();
       const Expr *R = BE->getRHS();
-      if (isSizeof(L, DstArg) && isStrlen(R, DstArg))
+      if (isSizeof(L, DstArg) && isStrlen(R, DstArg)) {
         return true;
+}
 
       // - sizeof(dst) - 1
-      if (isSizeof(L, DstArg) && isOne(R->IgnoreParenCasts()))
+      if (isSizeof(L, DstArg) && isOne(R->IgnoreParenCasts())) {
         return true;
+}
     }
   }
   // - sizeof(dst)
-  if (isSizeof(LenArg, DstArg))
+  if (isSizeof(LenArg, DstArg)) {
     return true;
+}
 
   // - sizeof(src)
-  if (isSizeof(LenArg, SrcArg))
+  if (isSizeof(LenArg, SrcArg)) {
     return true;
+}
   return false;
 }
 
 bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
-  if (CE->getNumArgs() != 3)
+  if (CE->getNumArgs() != 3) {
     return false;
+}
   const Expr *DstArg = CE->getArg(0);
   const Expr *LenArg = CE->getArg(2);
 
@@ -160,8 +173,9 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
   const auto *LenArgDRE =
       dyn_cast<DeclRefExpr>(LenArg->IgnoreParenLValueCasts());
   uint64_t DstOff = 0;
-  if (isSizeof(LenArg, DstArg))
+  if (isSizeof(LenArg, DstArg)) {
     return false;
+}
 
   // - size_t dstlen = sizeof(dst)
   if (LenArgDRE) {
@@ -171,8 +185,9 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
       assert(isa<EnumConstantDecl>(LenArgDRE->getDecl()));
       return false;
     }
-    if (LenArgVal->getInit())
+    if (LenArgVal->getInit()) {
       LenArg = LenArgVal->getInit();
+}
   }
 
   // - integral value
@@ -201,8 +216,9 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
         ASTContext &C = BR.getContext();
         uint64_t BufferLen = C.getTypeSize(Buffer) / 8;
         auto RemainingBufferLen = BufferLen - DstOff;
-        if (RemainingBufferLen < ILRawVal)
+        if (RemainingBufferLen < ILRawVal) {
           return true;
+}
       }
     }
   }
@@ -212,8 +228,9 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
 
 void WalkAST::VisitCallExpr(CallExpr *CE) {
   const FunctionDecl *FD = CE->getDirectCallee();
-  if (!FD)
+  if (!FD) {
     return;
+}
 
   if (CheckerContext::isCLibraryFunction(FD, "strncat")) {
     if (containsBadStrncatPattern(CE)) {
@@ -231,8 +248,9 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
         os << "Replace with 'sizeof(" << DstName << ") "
               "- strlen(" << DstName <<") - 1'";
         os << " or u";
-      } else
+      } else {
         os << "U";
+}
       os << "se a safer 'strlcat' API";
 
       BR.EmitBasicReport(FD, Checker, "Anti-pattern in the argument",
@@ -253,10 +271,11 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
       llvm::raw_svector_ostream os(S);
       os << "The third argument allows to potentially copy more bytes than it should. ";
       os << "Replace with the value ";
-      if (!DstName.empty())
+      if (!DstName.empty()) {
           os << "sizeof(" << DstName << ")";
-      else
+      } else {
           os << "sizeof(<destination buffer>)";
+}
       os << " or lower";
 
       BR.EmitBasicReport(FD, Checker, "Anti-pattern in the argument",
@@ -270,9 +289,11 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
 }
 
 void WalkAST::VisitChildren(Stmt *S) {
-  for (Stmt *Child : S->children())
-    if (Child)
+  for (Stmt *Child : S->children()) {
+    if (Child) {
       Visit(Child);
+}
+}
 }
 
 namespace {

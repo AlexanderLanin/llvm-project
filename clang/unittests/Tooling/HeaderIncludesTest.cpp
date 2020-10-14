@@ -24,8 +24,9 @@ protected:
     HeaderIncludes Includes(FileName, Code, Style);
     assert(Header.startswith("\"") || Header.startswith("<"));
     auto R = Includes.insert(Header.trim("\"<>"), Header.startswith("<"));
-    if (!R)
+    if (!R) {
       return std::string(Code);
+}
     auto Result = applyAllReplacements(Code, Replacements(*R));
     EXPECT_TRUE(static_cast<bool>(Result));
     return *Result;

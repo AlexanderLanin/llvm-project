@@ -21,8 +21,9 @@ std::vector<Position> Annotations::points(llvm::StringRef Name) const {
 
   std::vector<Position> Ps;
   Ps.reserve(Offsets.size());
-  for (size_t O : Offsets)
+  for (size_t O : Offsets) {
     Ps.push_back(offsetToPosition(code(), O));
+}
 
   return Ps;
 }
@@ -43,8 +44,9 @@ std::vector<clangd::Range> Annotations::ranges(llvm::StringRef Name) const {
 
   std::vector<clangd::Range> Rs;
   Rs.reserve(OffsetRanges.size());
-  for (Annotations::Range R : OffsetRanges)
+  for (Annotations::Range R : OffsetRanges) {
     Rs.push_back(toLSPRange(code(), R));
+}
 
   return Rs;
 }

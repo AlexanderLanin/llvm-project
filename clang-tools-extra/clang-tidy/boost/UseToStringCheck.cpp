@@ -44,21 +44,23 @@ void UseToStringCheck::check(const MatchFinder::MatchResult &Result) {
 
   StringRef StringType;
   if (CharType->isSpecificBuiltinType(BuiltinType::Char_S) ||
-      CharType->isSpecificBuiltinType(BuiltinType::Char_U))
+      CharType->isSpecificBuiltinType(BuiltinType::Char_U)) {
     StringType = "string";
-  else if (CharType->isSpecificBuiltinType(BuiltinType::WChar_S) ||
-           CharType->isSpecificBuiltinType(BuiltinType::WChar_U))
+  } else if (CharType->isSpecificBuiltinType(BuiltinType::WChar_S) ||
+           CharType->isSpecificBuiltinType(BuiltinType::WChar_U)) {
     StringType = "wstring";
-  else
+  } else {
     return;
+}
 
   auto Loc = Call->getBeginLoc();
   auto Diag =
       diag(Loc, "use std::to_%0 instead of boost::lexical_cast<std::%0>")
       << StringType;
 
-  if (Loc.isMacroID())
+  if (Loc.isMacroID()) {
     return;
+}
 
   Diag << FixItHint::CreateReplacement(
       CharSourceRange::getCharRange(Call->getBeginLoc(),

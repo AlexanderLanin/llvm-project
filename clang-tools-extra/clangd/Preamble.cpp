@@ -75,8 +75,9 @@ public:
   CanonicalIncludes takeCanonicalIncludes() { return std::move(CanonIncludes); }
 
   void AfterExecute(CompilerInstance &CI) override {
-    if (!ParsedCallback)
+    if (!ParsedCallback) {
       return;
+}
     trace::Span Tracer("Running PreambleCallback");
     ParsedCallback(CI.getASTContext(), CI.getPreprocessorPtr(), CanonIncludes);
   }
@@ -106,10 +107,12 @@ public:
     // We can make exceptions for functions that are cheap to parse and
     // instantiate, widely used, and valuable (e.g. commonly produce errors).
     if (const auto *FT = llvm::dyn_cast<clang::FunctionTemplateDecl>(D)) {
-      if (const auto *II = FT->getDeclName().getAsIdentifierInfo())
+      if (const auto *II = FT->getDeclName().getAsIdentifierInfo()) {
         // std::make_unique is trivial, and we diagnose bad constructor calls.
-        if (II->isStr("make_unique") && FT->isInStdNamespace())
+        if (II->isStr("make_unique") && FT->isInStdNamespace()) {
           return false;
+}
+}
     }
     return true;
   }
@@ -196,8 +199,9 @@ struct DirectiveCollector : public PPCallbacks {
 
   void MacroDefined(const Token &MacroNameTok,
                     const MacroDirective *MD) override {
-    if (!InMainFile)
+    if (!InMainFile) {
       return;
+}
     TextualDirectives.emplace_back();
     TextualPPDirective &TD = TextualDirectives.back();
 
@@ -242,8 +246,9 @@ scanPreamble(llvm::StringRef Contents, const tooling::CompileCommand &Cmd) {
   PI.CompileCommand = Cmd;
   IgnoringDiagConsumer IgnoreDiags;
   auto CI = buildCompilerInvocation(PI, IgnoreDiags);
-  if (!CI)
+  if (!CI) {
     return error("failed to create compiler invocation");
+}
   CI->getDiagnosticOpts().IgnoreWarnings = true;
   auto ContentsBuffer = llvm::MemoryBuffer::getMemBuffer(Contents);
   // This means we're scanning (though not preprocessing) the preamble section
@@ -258,13 +263,15 @@ scanPreamble(llvm::StringRef Contents, const tooling::CompileCommand &Cmd) {
       // Provide an empty FS to prevent preprocessor from performing IO. This
       // also implies missing resolved paths for includes.
       FS.view(llvm::None), IgnoreDiags);
-  if (Clang->getFrontendOpts().Inputs.empty())
+  if (Clang->getFrontendOpts().Inputs.empty()) {
     return error("compiler instance had no inputs");
+}
   // We are only interested in main file includes.
   Clang->getPreprocessorOpts().SingleFileParseMode = true;
   PreprocessOnlyAction Action;
-  if (!Action.BeginSourceFile(*Clang, Clang->getFrontendOpts().Inputs[0]))
+  if (!Action.BeginSourceFile(*Clang, Clang->getFrontendOpts().Inputs[0])) {
     return error("failed BeginSourceFile");
+}
   const auto &SM = Clang->getSourceManager();
   Preprocessor &PP = Clang->getPreprocessor();
   IncludeStructure Includes;
@@ -273,8 +280,9 @@ scanPreamble(llvm::StringRef Contents, const tooling::CompileCommand &Cmd) {
   SP.Bounds = Bounds;
   PP.addPPCallbacks(
       std::make_unique<DirectiveCollector>(PP, SP.TextualDirectives));
-  if (llvm::Error Err = Action.Execute())
+  if (llvm::Error Err = Action.Execute()) {
     return std::move(Err);
+}
   Action.EndSourceFile();
   SP.Includes = std::move(Includes.MainFileIncludes);
   return SP;
@@ -431,8 +439,9 @@ PreamblePatch PreamblePatch::create(llvm::StringRef FileName,
   bool IncludesChanged = BaselineScan->Includes != ModifiedScan->Includes;
   bool DirectivesChanged =
       BaselineScan->TextualDirectives != ModifiedScan->TextualDirectives;
-  if (!IncludesChanged && !DirectivesChanged)
+  if (!IncludesChanged && !DirectivesChanged) {
     return PreamblePatch::unmodified(Baseline);
+}
 
   PreamblePatch PP;
   // This shouldn't coincide with any real file name.
@@ -456,12 +465,14 @@ PreamblePatch PreamblePatch::create(llvm::StringRef FileName,
     llvm::DenseMap<std::pair<tok::PPKeywordKind, llvm::StringRef>,
                    /*Resolved=*/llvm::StringRef>
         ExistingIncludes;
-    for (const auto &Inc : Baseline.Includes.MainFileIncludes)
+    for (const auto &Inc : Baseline.Includes.MainFileIncludes) {
       ExistingIncludes[{Inc.Directive, Inc.Written}] = Inc.Resolved;
+}
     // There might be includes coming from disabled regions, record these for
     // exclusion too. note that we don't have resolved paths for those.
-    for (const auto &Inc : BaselineScan->Includes)
+    for (const auto &Inc : BaselineScan->Includes) {
       ExistingIncludes.try_emplace({Inc.Directive, Inc.Written});
+}
     // Calculate extra includes that needs to be inserted.
     for (auto &Inc : ModifiedScan->Includes) {
       auto It = ExistingIncludes.find({Inc.Directive, Inc.Written});
@@ -505,8 +516,9 @@ PreamblePatch PreamblePatch::create(llvm::StringRef FileName,
 
 void PreamblePatch::apply(CompilerInvocation &CI) const {
   // No need to map an empty file.
-  if (PatchContents.empty())
+  if (PatchContents.empty()) {
     return;
+}
   auto &PPOpts = CI.getPreprocessorOpts();
   auto PatchBuffer =
       // we copy here to ensure contents are still valid if CI outlives the

@@ -95,8 +95,9 @@ CodeGenVTables::EmitVTTDefinition(llvm::GlobalVariable *VTT,
   // Set the correct linkage.
   VTT->setLinkage(Linkage);
 
-  if (CGM.supportsCOMDAT() && VTT->isWeakForLinker())
+  if (CGM.supportsCOMDAT() && VTT->isWeakForLinker()) {
     VTT->setComdat(CGM.getModule().getOrInsertComdat(VTT->getName()));
+}
 
   // Set the right visibility.
   CGM.setGVProperties(VTT, RD);
@@ -131,8 +132,9 @@ uint64_t CodeGenVTables::getSubVTTIndex(const CXXRecordDecl *RD,
   BaseSubobjectPairTy ClassSubobjectPair(RD, Base);
 
   SubVTTIndiciesMapTy::iterator I = SubVTTIndicies.find(ClassSubobjectPair);
-  if (I != SubVTTIndicies.end())
+  if (I != SubVTTIndicies.end()) {
     return I->second;
+}
 
   VTTBuilder Builder(CGM.getContext(), RD, /*GenerateDefinition=*/false);
 
@@ -157,8 +159,9 @@ CodeGenVTables::getSecondaryVirtualPointerIndex(const CXXRecordDecl *RD,
   SecondaryVirtualPointerIndicesMapTy::iterator I =
     SecondaryVirtualPointerIndices.find(std::make_pair(RD, Base));
 
-  if (I != SecondaryVirtualPointerIndices.end())
+  if (I != SecondaryVirtualPointerIndices.end()) {
     return I->second;
+}
 
   VTTBuilder Builder(CGM.getContext(), RD, /*GenerateDefinition=*/false);
 

@@ -47,14 +47,17 @@ DefinedOrUnknownSVal getDynamicElementCount(ProgramStateRef State,
 SVal getDynamicSizeWithOffset(ProgramStateRef State, const SVal &BufV) {
   SValBuilder &SvalBuilder = State->getStateManager().getSValBuilder();
   const MemRegion *MRegion = BufV.getAsRegion();
-  if (!MRegion)
+  if (!MRegion) {
     return UnknownVal();
+}
   RegionOffset Offset = MRegion->getAsOffset();
-  if (Offset.hasSymbolicOffset())
+  if (Offset.hasSymbolicOffset()) {
     return UnknownVal();
+}
   const MemRegion *BaseRegion = MRegion->getBaseRegion();
-  if (!BaseRegion)
+  if (!BaseRegion) {
     return UnknownVal();
+}
 
   NonLoc OffsetInBytes = SvalBuilder.makeArrayIndex(
       Offset.getOffset() /

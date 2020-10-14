@@ -75,8 +75,9 @@ llvm::Optional<SourceLocation> getSemicolonForDecl(const FunctionDecl *FD) {
 
   SourceLocation CurLoc = FD->getEndLoc();
   auto NextTok = Lexer::findNextToken(CurLoc, SM, LangOpts);
-  if (!NextTok || !NextTok->is(tok::semi))
+  if (!NextTok || !NextTok->is(tok::semi)) {
     return llvm::None;
+}
   return NextTok->getLocation();
 }
 
@@ -85,12 +86,14 @@ llvm::Optional<SourceLocation> getSemicolonForDecl(const FunctionDecl *FD) {
 // criteria is met.
 const FunctionDecl *getSelectedFunction(const SelectionTree::Node *SelNode) {
   const ast_type_traits::DynTypedNode &AstNode = SelNode->ASTNode;
-  if (const FunctionDecl *FD = AstNode.get<FunctionDecl>())
+  if (const FunctionDecl *FD = AstNode.get<FunctionDecl>()) {
     return FD;
+}
   if (AstNode.get<CompoundStmt>() &&
       SelNode->Selected == SelectionTree::Complete) {
-    if (const SelectionTree::Node *P = SelNode->Parent)
+    if (const SelectionTree::Node *P = SelNode->Parent) {
       return P->ASTNode.get<FunctionDecl>();
+}
   }
   return nullptr;
 }
@@ -104,34 +107,41 @@ bool checkDeclsAreVisible(const llvm::DenseSet<const Decl *> &DeclRefs,
   // To be used in visibility check below, decls in a class are visible
   // independent of order.
   const RecordDecl *Class = nullptr;
-  if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(Target))
+  if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(Target)) {
     Class = MD->getParent();
+}
 
   for (const auto *DR : DeclRefs) {
     // Use canonical decl, since having one decl before target is enough.
     const Decl *D = DR->getCanonicalDecl();
-    if (D == Target)
+    if (D == Target) {
       continue;
+}
     SourceLocation DeclLoc = D->getLocation();
 
     // FIXME: Allow declarations from different files with include insertion.
-    if (!SM.isWrittenInSameFile(DeclLoc, TargetLoc))
+    if (!SM.isWrittenInSameFile(DeclLoc, TargetLoc)) {
       return false;
+}
 
     // If declaration is before target, then it is visible.
-    if (SM.isBeforeInTranslationUnit(DeclLoc, TargetLoc))
+    if (SM.isBeforeInTranslationUnit(DeclLoc, TargetLoc)) {
       continue;
+}
 
     // Otherwise they need to be in same class
-    if (!Class)
+    if (!Class) {
       return false;
+}
     const RecordDecl *Parent = nullptr;
-    if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(D))
+    if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(D)) {
       Parent = MD->getParent();
-    else if (const auto *FD = llvm::dyn_cast<FieldDecl>(D))
+    } else if (const auto *FD = llvm::dyn_cast<FieldDecl>(D)) {
       Parent = FD->getParent();
-    if (Parent != Class)
+}
+    if (Parent != Class) {
       return false;
+}
   }
   return true;
 }
@@ -165,15 +175,18 @@ llvm::Expected<std::string> qualifyAllDecls(const FunctionDecl *FD,
   findExplicitReferences(FD->getBody(), [&](ReferenceLoc Ref) {
     // Since we want to qualify only the first qualifier, skip names with a
     // qualifier.
-    if (Ref.Qualifier)
+    if (Ref.Qualifier) {
       return;
+}
     // There might be no decl in dependent contexts, there's nothing much we can
     // do in such cases.
-    if (Ref.Targets.empty())
+    if (Ref.Targets.empty()) {
       return;
+}
     // Do not qualify names introduced by macro expansions.
-    if (Ref.NameLoc.isMacroID())
+    if (Ref.NameLoc.isMacroID()) {
       return;
+}
 
     for (const NamedDecl *ND : Ref.Targets) {
       if (ND->getDeclContext() != Ref.Targets.front()->getDeclContext()) {
@@ -193,8 +206,9 @@ llvm::Expected<std::string> qualifyAllDecls(const FunctionDecl *FD,
     //   namespace a { class Bar { public: static int x; } }
     //   void foo() { Bar::x; }
     //                ~~~~~ -> we need to qualify Bar not x.
-    if (!ND->getDeclContext()->isNamespace())
+    if (!ND->getDeclContext()->isNamespace()) {
       return;
+}
 
     const std::string Qualifier = getQualification(
         FD->getASTContext(), TargetContext, Target->getBeginLoc(), ND);
@@ -205,15 +219,17 @@ llvm::Expected<std::string> qualifyAllDecls(const FunctionDecl *FD,
     }
   });
 
-  if (HadErrors)
+  if (HadErrors) {
     return error(
         "define inline: Failed to compute qualifiers. See logs for details.");
+}
 
   // Get new begin and end positions for the qualified body.
   auto OrigBodyRange = toHalfOpenFileRange(
       SM, FD->getASTContext().getLangOpts(), FD->getBody()->getSourceRange());
-  if (!OrigBodyRange)
+  if (!OrigBodyRange) {
     return error("Couldn't get range func body.");
+}
 
   unsigned BodyBegin = SM.getFileOffset(OrigBodyRange->getBegin());
   unsigned BodyEnd = Replacements.getShiftedCodePosition(
@@ -222,8 +238,9 @@ llvm::Expected<std::string> qualifyAllDecls(const FunctionDecl *FD,
   // Trim the result to function body.
   auto QualifiedFunc = tooling::applyAllReplacements(
       SM.getBufferData(SM.getFileID(OrigBodyRange->getBegin())), Replacements);
-  if (!QualifiedFunc)
+  if (!QualifiedFunc) {
     return QualifiedFunc.takeError();
+}
   return QualifiedFunc->substr(BodyBegin, BodyEnd - BodyBegin + 1);
 }
 
@@ -236,8 +253,9 @@ renameParameters(const FunctionDecl *Dest, const FunctionDecl *Source) {
   auto HandleParam = [&](const NamedDecl *DestParam,
                          const NamedDecl *SourceParam) {
     // No need to rename if parameters already have the same name.
-    if (DestParam->getName() == SourceParam->getName())
+    if (DestParam->getName() == SourceParam->getName()) {
       return;
+}
     std::string NewName;
     // Unnamed parameters won't be visited in findExplicitReferences. So add
     // them here.
@@ -260,14 +278,16 @@ renameParameters(const FunctionDecl *Dest, const FunctionDecl *Source) {
     const auto *SourceTPL = SourceTempl->getTemplateParameters();
     assert(DestTPL->size() == SourceTPL->size());
 
-    for (size_t I = 0, EP = DestTPL->size(); I != EP; ++I)
+    for (size_t I = 0, EP = DestTPL->size(); I != EP; ++I) {
       HandleParam(DestTPL->getParam(I), SourceTPL->getParam(I));
+}
   }
 
   // Populate mapping for function params.
   assert(Dest->param_size() == Source->param_size());
-  for (size_t I = 0, E = Dest->param_size(); I != E; ++I)
+  for (size_t I = 0, E = Dest->param_size(); I != E; ++I) {
     HandleParam(Dest->getParamDecl(I), Source->getParamDecl(I));
+}
 
   const SourceManager &SM = Dest->getASTContext().getSourceManager();
   const LangOptions &LangOpts = Dest->getASTContext().getLangOpts();
@@ -278,13 +298,15 @@ renameParameters(const FunctionDecl *Dest, const FunctionDecl *Source) {
       // parameters.
       DestTempl ? llvm::dyn_cast<Decl>(DestTempl) : llvm::dyn_cast<Decl>(Dest),
       [&](ReferenceLoc Ref) {
-        if (Ref.Targets.size() != 1)
+        if (Ref.Targets.size() != 1) {
           return;
+}
         const auto *Target =
             llvm::cast<NamedDecl>(Ref.Targets.front()->getCanonicalDecl());
         auto It = ParamToNewName.find(Target);
-        if (It == ParamToNewName.end())
+        if (It == ParamToNewName.end()) {
           return;
+}
         RefLocs[Target].push_back(Ref.NameLoc);
       });
 
@@ -298,10 +320,11 @@ renameParameters(const FunctionDecl *Dest, const FunctionDecl *Source) {
       CharSourceRange ReplaceRange;
       // In case of unnamed parameters, we have an empty char range, whereas we
       // have a tokenrange at RefLoc with named parameters.
-      if (OldName.empty())
+      if (OldName.empty()) {
         ReplaceRange = CharSourceRange::getCharRange(RefLoc, RefLoc);
-      else
+      } else {
         ReplaceRange = CharSourceRange::getTokenRange(RefLoc, RefLoc);
+}
       // If occurrence is coming from a macro expansion, try to get back to the
       // file range.
       if (RefLoc.isMacroID()) {
@@ -334,8 +357,9 @@ renameParameters(const FunctionDecl *Dest, const FunctionDecl *Source) {
 // specialization.
 const FunctionDecl *findTarget(const FunctionDecl *FD) {
   auto CanonDecl = FD->getCanonicalDecl();
-  if (!FD->isFunctionTemplateSpecialization() || CanonDecl == FD)
+  if (!FD->isFunctionTemplateSpecialization() || CanonDecl == FD) {
     return CanonDecl;
+}
   // For specializations CanonicalDecl is the TemplatedDecl, which is not the
   // target we want to inline into. Instead we traverse previous decls to find
   // the first forward decl for this specialization.
@@ -351,26 +375,30 @@ const FunctionDecl *findTarget(const FunctionDecl *FD) {
 // template keyword for templated functions.
 const SourceLocation getBeginLoc(const FunctionDecl *FD) {
   // Include template parameter list.
-  if (auto *FTD = FD->getDescribedFunctionTemplate())
+  if (auto *FTD = FD->getDescribedFunctionTemplate()) {
     return FTD->getBeginLoc();
+}
   return FD->getBeginLoc();
 }
 
 llvm::Optional<tooling::Replacement>
 addInlineIfInHeader(const FunctionDecl *FD) {
   // This includes inline functions and constexpr functions.
-  if (FD->isInlined() || llvm::isa<CXXMethodDecl>(FD))
+  if (FD->isInlined() || llvm::isa<CXXMethodDecl>(FD)) {
     return llvm::None;
+}
   // Primary template doesn't need inline.
-  if (FD->isTemplated() && !FD->isFunctionTemplateSpecialization())
+  if (FD->isTemplated() && !FD->isFunctionTemplateSpecialization()) {
     return llvm::None;
+}
 
   const SourceManager &SM = FD->getASTContext().getSourceManager();
   llvm::StringRef FileName = SM.getFilename(FD->getLocation());
 
   // If it is not a header we don't need to mark function as "inline".
-  if (!isHeaderFile(FileName, FD->getASTContext().getLangOpts()))
+  if (!isHeaderFile(FileName, FD->getASTContext().getLangOpts())) {
     return llvm::None;
+}
 
   return tooling::Replacement(SM, FD->getInnerLocStart(), 0, "inline ");
 }
@@ -405,23 +433,27 @@ public:
   // make use of any internal symbols.
   bool prepare(const Selection &Sel) override {
     const SelectionTree::Node *SelNode = Sel.ASTSelection.commonAncestor();
-    if (!SelNode)
+    if (!SelNode) {
       return false;
+}
     Source = getSelectedFunction(SelNode);
-    if (!Source || !Source->hasBody())
+    if (!Source || !Source->hasBody()) {
       return false;
+}
     // Only the last level of template parameter locations are not kept in AST,
     // so if we are inlining a method that is in a templated class, there is no
     // way to verify template parameter names. Therefore we bail out.
     if (auto *MD = llvm::dyn_cast<CXXMethodDecl>(Source)) {
-      if (MD->getParent()->isTemplated())
+      if (MD->getParent()->isTemplated()) {
         return false;
+}
     }
     // If function body starts or ends inside a macro, we refuse to move it into
     // declaration location.
     if (Source->getBody()->getBeginLoc().isMacroID() ||
-        Source->getBody()->getEndLoc().isMacroID())
+        Source->getBody()->getEndLoc().isMacroID()) {
       return false;
+}
 
     Target = findTarget(Source);
     if (Target == Source) {
@@ -436,8 +468,9 @@ public:
     // Check if the decls referenced in function body are visible in the
     // declaration location.
     if (!checkDeclsAreVisible(getNonLocalDeclRefs(*Sel.AST, Source), Target,
-                              Sel.AST->getSourceManager()))
+                              Sel.AST->getSourceManager())) {
       return false;
+}
 
     return true;
   }
@@ -447,25 +480,29 @@ public:
     const auto &SM = AST.getSourceManager();
 
     auto Semicolon = getSemicolonForDecl(Target);
-    if (!Semicolon)
+    if (!Semicolon) {
       return error("Couldn't find semicolon for target declaration.");
+}
 
     auto AddInlineIfNecessary = addInlineIfInHeader(Target);
     auto ParamReplacements = renameParameters(Target, Source);
-    if (!ParamReplacements)
+    if (!ParamReplacements) {
       return ParamReplacements.takeError();
+}
 
     auto QualifiedBody = qualifyAllDecls(Source, Target);
-    if (!QualifiedBody)
+    if (!QualifiedBody) {
       return QualifiedBody.takeError();
+}
 
     const tooling::Replacement SemicolonToFuncBody(SM, *Semicolon, 1,
                                                    *QualifiedBody);
     tooling::Replacements TargetFileReplacements(SemicolonToFuncBody);
     TargetFileReplacements = TargetFileReplacements.merge(*ParamReplacements);
     if (AddInlineIfNecessary) {
-      if (auto Err = TargetFileReplacements.add(*AddInlineIfNecessary))
+      if (auto Err = TargetFileReplacements.add(*AddInlineIfNecessary)) {
         return std::move(Err);
+}
     }
 
     auto DefRange = toHalfOpenFileRange(
@@ -473,8 +510,9 @@ public:
         SM.getExpansionRange(CharSourceRange::getCharRange(getBeginLoc(Source),
                                                            Source->getEndLoc()))
             .getAsRange());
-    if (!DefRange)
+    if (!DefRange) {
       return error("Couldn't get range for the source.");
+}
     unsigned int SourceLen = SM.getFileOffset(DefRange->getEnd()) -
                              SM.getFileOffset(DefRange->getBegin());
     const tooling::Replacement DeleteFuncBody(SM, DefRange->getBegin(),
@@ -484,8 +522,9 @@ public:
     // Edit for Target.
     auto FE = Effect::fileEdit(SM, SM.getFileID(*Semicolon),
                                std::move(TargetFileReplacements));
-    if (!FE)
+    if (!FE) {
       return FE.takeError();
+}
     Edits.push_back(std::move(*FE));
 
     // Edit for Source.
@@ -494,18 +533,21 @@ public:
       // Generate a new edit if the Source and Target are in different files.
       auto FE = Effect::fileEdit(SM, SM.getFileID(Sel.Cursor),
                                  tooling::Replacements(DeleteFuncBody));
-      if (!FE)
+      if (!FE) {
         return FE.takeError();
+}
       Edits.push_back(std::move(*FE));
     } else {
       // Merge with previous edit if they are in the same file.
-      if (auto Err = Edits.front().second.Replacements.add(DeleteFuncBody))
+      if (auto Err = Edits.front().second.Replacements.add(DeleteFuncBody)) {
         return std::move(Err);
+}
     }
 
     Effect E;
-    for (auto &Pair : Edits)
+    for (auto &Pair : Edits) {
       E.ApplyEdits.try_emplace(std::move(Pair.first), std::move(Pair.second));
+}
     return E;
   }
 

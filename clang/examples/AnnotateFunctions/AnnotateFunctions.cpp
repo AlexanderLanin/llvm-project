@@ -28,12 +28,15 @@ class AnnotateFunctionsConsumer : public ASTConsumer {
 public:
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
     HandledDecl = true;
-    if (!EnableAnnotate)
+    if (!EnableAnnotate) {
       return true;
-    for (auto D : DG)
-      if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
+}
+    for (auto D : DG) {
+      if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
         FD->addAttr(AnnotateAttr::CreateImplicit(FD->getASTContext(),
                                                  "example_annotation"));
+}
+}
     return true;
   }
 };
@@ -64,8 +67,9 @@ public:
 
     Token Tok;
     PP.LexUnexpandedToken(Tok);
-    if (Tok.isNot(tok::eod))
+    if (Tok.isNot(tok::eod)) {
       PP.Diag(Tok, diag::ext_pp_extra_tokens_at_eol) << "pragma";
+}
 
     if (HandledDecl) {
       DiagnosticsEngine &D = PP.getDiagnostics();

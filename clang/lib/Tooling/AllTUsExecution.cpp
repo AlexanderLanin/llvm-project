@@ -79,12 +79,14 @@ llvm::Error AllTUsToolExecutor::execute(
     llvm::ArrayRef<
         std::pair<std::unique_ptr<FrontendActionFactory>, ArgumentsAdjuster>>
         Actions) {
-  if (Actions.empty())
+  if (Actions.empty()) {
     return make_string_error("No action to execute.");
+}
 
-  if (Actions.size() != 1)
+  if (Actions.size() != 1) {
     return make_string_error(
         "Only support executing exactly 1 action at this point.");
+}
 
   std::string ErrorMsg;
   std::mutex TUMutex;
@@ -101,8 +103,9 @@ llvm::Error AllTUsToolExecutor::execute(
   std::vector<std::string> Files;
   llvm::Regex RegexFilter(Filter);
   for (const auto& File : Compilations.getAllFiles()) {
-    if (RegexFilter.match(File))
+    if (RegexFilter.match(File)) {
       Files.push_back(File);
+}
   }
   // Add a counter to track the progress.
   const std::string TotalNumStr = std::to_string(Files.size());
@@ -129,12 +132,14 @@ llvm::Error AllTUsToolExecutor::execute(
                            std::make_shared<PCHContainerOperations>(), FS);
             Tool.appendArgumentsAdjuster(Action.second);
             Tool.appendArgumentsAdjuster(getDefaultArgumentsAdjusters());
-            for (const auto &FileAndContent : OverlayFiles)
+            for (const auto &FileAndContent : OverlayFiles) {
               Tool.mapVirtualFile(FileAndContent.first(),
                                   FileAndContent.second);
-            if (Tool.run(Action.first.get()))
+}
+            if (Tool.run(Action.first.get())) {
               AppendError(llvm::Twine("Failed to run action on ") + Path +
                           "\n");
+}
           },
           File);
     }
@@ -142,8 +147,9 @@ llvm::Error AllTUsToolExecutor::execute(
     Pool.wait();
   }
 
-  if (!ErrorMsg.empty())
+  if (!ErrorMsg.empty()) {
     return make_string_error(ErrorMsg);
+}
 
   return llvm::Error::success();
 }
@@ -159,10 +165,11 @@ class AllTUsToolExecutorPlugin : public ToolExecutorPlugin {
 public:
   llvm::Expected<std::unique_ptr<ToolExecutor>>
   create(CommonOptionsParser &OptionsParser) override {
-    if (OptionsParser.getSourcePathList().empty())
+    if (OptionsParser.getSourcePathList().empty()) {
       return make_string_error(
           "[AllTUsToolExecutorPlugin] Please provide a directory/file path in "
           "the compilation database.");
+}
     return std::make_unique<AllTUsToolExecutor>(std::move(OptionsParser),
                                                  ExecutorConcurrency);
   }

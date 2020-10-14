@@ -54,8 +54,9 @@ bool SwapIfBranches::prepare(const Selection &Inputs) {
   for (const SelectionTree::Node *N = Inputs.ASTSelection.commonAncestor();
        N && !If; N = N->Parent) {
     // Stop once we hit a block, e.g. a lambda in the if condition.
-    if (dyn_cast_or_null<CompoundStmt>(N->ASTNode.get<Stmt>()))
+    if (dyn_cast_or_null<CompoundStmt>(N->ASTNode.get<Stmt>())) {
       return false;
+}
     If = dyn_cast_or_null<IfStmt>(N->ASTNode.get<Stmt>());
   }
   // avoid dealing with single-statement brances, they require careful handling
@@ -70,12 +71,14 @@ Expected<Tweak::Effect> SwapIfBranches::apply(const Selection &Inputs) {
 
   auto ThenRng = toHalfOpenFileRange(SrcMgr, Ctx.getLangOpts(),
                                      If->getThen()->getSourceRange());
-  if (!ThenRng)
+  if (!ThenRng) {
     return error("Could not obtain range of the 'then' branch. Macros?");
+}
   auto ElseRng = toHalfOpenFileRange(SrcMgr, Ctx.getLangOpts(),
                                      If->getElse()->getSourceRange());
-  if (!ElseRng)
+  if (!ElseRng) {
     return error("Could not obtain range of the 'else' branch. Macros?");
+}
 
   auto ThenCode = toSourceCode(SrcMgr, *ThenRng);
   auto ElseCode = toSourceCode(SrcMgr, *ElseRng);
@@ -83,12 +86,14 @@ Expected<Tweak::Effect> SwapIfBranches::apply(const Selection &Inputs) {
   tooling::Replacements Result;
   if (auto Err = Result.add(tooling::Replacement(Ctx.getSourceManager(),
                                                  ThenRng->getBegin(),
-                                                 ThenCode.size(), ElseCode)))
+                                                 ThenCode.size(), ElseCode))) {
     return std::move(Err);
+}
   if (auto Err = Result.add(tooling::Replacement(Ctx.getSourceManager(),
                                                  ElseRng->getBegin(),
-                                                 ElseCode.size(), ThenCode)))
+                                                 ElseCode.size(), ThenCode))) {
     return std::move(Err);
+}
   return Effect::mainFileEdit(SrcMgr, std::move(Result));
 }
 

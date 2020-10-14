@@ -46,8 +46,9 @@ public:
                         const std::string &File, unsigned Line) {
     EXPECT_EQ(Tokens.size(), Attributes.size()) << text(Tokens);
     for (size_t I = 0, E = Tokens.size(); I != E; ++I) {
-      if (I >= Attributes.size())
+      if (I >= Attributes.size()) {
         continue;
+}
       std::string Context =
           ("for token " + llvm::Twine(I) + ": " + Tokens[I]->Tok.getName() +
            " / " + Tokens[I]->TokenText)

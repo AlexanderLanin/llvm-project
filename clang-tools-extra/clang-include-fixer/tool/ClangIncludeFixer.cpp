@@ -176,13 +176,14 @@ createSymbolIndexManager(StringRef FilePath) {
       std::vector<std::string> Headers;
       SmallVector<StringRef, 4> CommaSplits;
       Split.second.split(CommaSplits, ",");
-      for (size_t I = 0, E = CommaSplits.size(); I != E; ++I)
+      for (size_t I = 0, E = CommaSplits.size(); I != E; ++I) {
         Symbols.push_back(
             {SymbolInfo(Split.first.trim(), SymbolInfo::SymbolKind::Unknown,
                         CommaSplits[I].trim(), {}),
              // Use fake "seen" signal for tests, so first header wins.
              SymbolInfo::Signals(/*Seen=*/static_cast<unsigned>(E - I),
                                  /*Used=*/0)});
+}
     }
     SymbolIndexMgr->addSymbolIndex([=]() {
       return std::make_unique<include_fixer::InMemorySymbolIndex>(Symbols);
@@ -245,8 +246,9 @@ void writeToJson(llvm::raw_ostream &OS, const IncludeFixerContext& Context) {
     OS << "      \"Range\":{";
     OS << "\"Offset\":" << Info.Range.getOffset() << ",";
     OS << "\"Length\":" << Info.Range.getLength() << "}}";
-    if (&Info != &Context.getQuerySymbolInfos().back())
+    if (&Info != &Context.getQuerySymbolInfos().back()) {
       OS << ",\n";
+}
   }
   OS << "\n  ],\n";
   OS << "  \"HeaderInfos\": [\n";
@@ -254,8 +256,9 @@ void writeToJson(llvm::raw_ostream &OS, const IncludeFixerContext& Context) {
   for (const auto &Info : HeaderInfos) {
     OS << "     {\"Header\": \"" << llvm::yaml::escape(Info.Header) << "\",\n"
        << "      \"QualifiedName\": \"" << Info.QualifiedName << "\"}";
-    if (&Info != &HeaderInfos.back())
+    if (&Info != &HeaderInfos.back()) {
       OS << ",\n";
+}
   }
   OS << "\n";
   OS << "  ]\n";
@@ -282,8 +285,9 @@ int includeFixerMain(int argc, const char **argv) {
       return 1;
     }
     Code = std::move(CodeOrErr.get());
-    if (Code->getBufferSize() == 0)
+    if (Code->getBufferSize() == 0) {
       return 0;  // Skip empty files.
+}
 
     tool.mapVirtualFile(SourceFilePath, Code->getBuffer());
   }
@@ -351,8 +355,9 @@ int includeFixerMain(int argc, const char **argv) {
   // Set up data source.
   std::unique_ptr<include_fixer::SymbolIndexManager> SymbolIndexMgr =
       createSymbolIndexManager(SourceFilePath);
-  if (!SymbolIndexMgr)
+  if (!SymbolIndexMgr) {
     return 1;
+}
 
   // Query symbol mode.
   if (!QuerySymbol.empty()) {

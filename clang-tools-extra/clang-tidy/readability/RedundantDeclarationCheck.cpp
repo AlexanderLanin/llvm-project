@@ -45,19 +45,25 @@ void RedundantDeclarationCheck::registerMatchers(MatchFinder *Finder) {
 void RedundantDeclarationCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *D = Result.Nodes.getNodeAs<NamedDecl>("Decl");
   const auto *Prev = D->getPreviousDecl();
-  if (!Prev)
+  if (!Prev) {
     return;
-  if (!Prev->getLocation().isValid())
+}
+  if (!Prev->getLocation().isValid()) {
     return;
-  if (Prev->getLocation() == D->getLocation())
+}
+  if (Prev->getLocation() == D->getLocation()) {
     return;
+}
   if (IgnoreMacros &&
-      (D->getLocation().isMacroID() || Prev->getLocation().isMacroID()))
+      (D->getLocation().isMacroID() || Prev->getLocation().isMacroID())) {
     return;
+}
   // Don't complain when the previous declaration is a friend declaration.
-  for (const auto &Parent : Result.Context->getParents(*Prev))
-    if (Parent.get<FriendDecl>())
+  for (const auto &Parent : Result.Context->getParents(*Prev)) {
+    if (Parent.get<FriendDecl>()) {
       return;
+}
+}
 
   const SourceManager &SM = *Result.SourceManager;
 
@@ -80,9 +86,10 @@ void RedundantDeclarationCheck::check(const MatchFinder::MatchResult &Result) {
       D->getSourceRange().getEnd(), 0, SM, Result.Context->getLangOpts());
   {
     auto Diag = diag(D->getLocation(), "redundant %0 declaration") << D;
-    if (!MultiVar && !DifferentHeaders)
+    if (!MultiVar && !DifferentHeaders) {
       Diag << FixItHint::CreateRemoval(
           SourceRange(D->getSourceRange().getBegin(), EndLoc));
+}
   }
   diag(Prev->getLocation(), "previously declared here", DiagnosticIDs::Note);
 }

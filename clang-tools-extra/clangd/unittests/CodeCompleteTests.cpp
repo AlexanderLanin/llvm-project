@@ -92,8 +92,9 @@ MATCHER(Deprecated, "") { return arg.Deprecated; }
 
 std::unique_ptr<SymbolIndex> memIndex(std::vector<Symbol> Symbols) {
   SymbolSlab::Builder Slab;
-  for (const auto &Sym : Symbols)
+  for (const auto &Sym : Symbols) {
     Slab.insert(Sym);
+}
   return MemIndex::build(std::move(Slab).build(), RefSlab(), RelationSlab());
 }
 
@@ -1093,8 +1094,9 @@ TEST(CompletionTest, RecordCCResultCallback) {
 SignatureHelp signatures(llvm::StringRef Text, Position Point,
                          std::vector<Symbol> IndexSymbols = {}) {
   std::unique_ptr<SymbolIndex> Index;
-  if (!IndexSymbols.empty())
+  if (!IndexSymbols.empty()) {
     Index = memIndex(IndexSymbols);
+}
 
   auto TU = TestTU::withCode(Text);
   MockFS FS;
@@ -1128,12 +1130,14 @@ struct ExpectedParameter {
   std::pair<unsigned, unsigned> Offsets;
 };
 MATCHER_P(ParamsAre, P, "") {
-  if (P.size() != arg.parameters.size())
+  if (P.size() != arg.parameters.size()) {
     return false;
+}
   for (unsigned I = 0; I < P.size(); ++I) {
     if (P[I].Text != arg.parameters[I].labelString ||
-        P[I].Offsets != arg.parameters[I].labelOffsets)
+        P[I].Offsets != arg.parameters[I].labelOffsets) {
       return false;
+}
   }
   return true;
 }

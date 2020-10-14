@@ -101,18 +101,21 @@ void AsyncTaskRunner::runAsync(const llvm::Twine &Name,
 
 Deadline timeoutSeconds(llvm::Optional<double> Seconds) {
   using namespace std::chrono;
-  if (!Seconds)
+  if (!Seconds) {
     return Deadline::infinity();
+}
   return steady_clock::now() +
          duration_cast<steady_clock::duration>(duration<double>(*Seconds));
 }
 
 void wait(std::unique_lock<std::mutex> &Lock, std::condition_variable &CV,
           Deadline D) {
-  if (D == Deadline::zero())
+  if (D == Deadline::zero()) {
     return;
-  if (D == Deadline::infinity())
+}
+  if (D == Deadline::infinity()) {
     return CV.wait(Lock);
+}
   CV.wait_until(Lock, D.time());
 }
 

@@ -60,32 +60,35 @@ public:
 
   bool onNotify(llvm::StringRef Method, llvm::json::Value Params) override {
     Log << "Notification " << Method << ": " << Params << "\n";
-    if (Method == "call")
+    if (Method == "call") {
       Target.call("echo call", std::move(Params), 42);
+}
     return Method != "exit";
   }
 
   bool onCall(llvm::StringRef Method, llvm::json::Value Params,
               llvm::json::Value ID) override {
     Log << "Call " << Method << "(" << ID << "): " << Params << "\n";
-    if (Method == "err")
+    if (Method == "err") {
       Target.reply(
           ID, llvm::make_error<LSPError>("trouble at mill", ErrorCode(88)));
-    else if (Method == "invalidated") // gone out skew on treadle
+    } else if (Method == "invalidated") { // gone out skew on treadle
       Target.reply(ID, llvm::make_error<CancelledError>(
                            static_cast<int>(ErrorCode::ContentModified)));
-    else
+    } else {
       Target.reply(ID, std::move(Params));
+}
     return true;
   }
 
   bool onReply(llvm::json::Value ID,
                llvm::Expected<llvm::json::Value> Params) override {
-    if (Params)
+    if (Params) {
       Log << "Reply(" << ID << "): " << *Params << "\n";
-    else
+    } else {
       Log << "Reply(" << ID
           << "): error = " << llvm::toString(Params.takeError()) << "\n";
+}
     return true;
   }
 };

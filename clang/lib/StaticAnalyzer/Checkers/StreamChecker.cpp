@@ -349,12 +349,14 @@ private:
   const FnDescription *lookupFn(const CallEvent &Call) const {
     // Recognize "global C functions" with only integral or pointer arguments
     // (and matching name) as stream functions.
-    if (!Call.isGlobalCFunction())
+    if (!Call.isGlobalCFunction()) {
       return nullptr;
+}
     for (auto P : Call.parameters()) {
       QualType T = P->getType();
-      if (!T->isIntegralOrEnumerationType() && !T->isPointerType())
+      if (!T->isIntegralOrEnumerationType() && !T->isPointerType()) {
         return nullptr;
+}
     }
 
     return FnDescriptions.lookup(Call);
@@ -369,8 +371,9 @@ private:
 
     std::string operator()(PathSensitiveBugReport &BR) const {
       if (BR.isInteresting(StreamSym) &&
-          CheckerName == BR.getBugType().getCheckerName())
+          CheckerName == BR.getBugType().getCheckerName()) {
         return Message;
+}
 
       return "";
     }
@@ -403,14 +406,16 @@ const ExplodedNode *StreamChecker::getAcquisitionSite(const ExplodedNode *N,
   ProgramStateRef State = N->getState();
   // When bug type is resource leak, exploded node N may not have state info
   // for leaked file descriptor, but predecessor should have it.
-  if (!State->get<StreamMap>(StreamSym))
+  if (!State->get<StreamMap>(StreamSym)) {
     N = N->getFirstPred();
+}
 
   const ExplodedNode *Pred = N;
   while (N) {
     State = N->getState();
-    if (!State->get<StreamMap>(StreamSym))
+    if (!State->get<StreamMap>(StreamSym)) {
       return Pred;
+}
     Pred = N;
     N = N->getFirstPred();
   }
@@ -421,18 +426,21 @@ const ExplodedNode *StreamChecker::getAcquisitionSite(const ExplodedNode *N,
 void StreamChecker::checkPreCall(const CallEvent &Call,
                                  CheckerContext &C) const {
   const FnDescription *Desc = lookupFn(Call);
-  if (!Desc || !Desc->PreFn)
+  if (!Desc || !Desc->PreFn) {
     return;
+}
 
   Desc->PreFn(this, Desc, Call, C);
 }
 
 bool StreamChecker::evalCall(const CallEvent &Call, CheckerContext &C) const {
   const FnDescription *Desc = lookupFn(Call);
-  if (!Desc && TestMode)
+  if (!Desc && TestMode) {
     Desc = FnTestDescriptions.lookup(Call);
-  if (!Desc || !Desc->EvalFn)
+}
+  if (!Desc || !Desc->EvalFn) {
     return false;
+}
 
   Desc->EvalFn(this, Desc, Call, C);
 
@@ -443,8 +451,9 @@ void StreamChecker::evalFopen(const FnDescription *Desc, const CallEvent &Call,
                               CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   const CallExpr *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
+}
 
   DefinedSVal RetVal = makeRetVal(C, CE);
   SymbolRef RetSym = RetVal.getAsSymbol();
@@ -473,8 +482,9 @@ void StreamChecker::preFreopen(const FnDescription *Desc, const CallEvent &Call,
   // Do not allow NULL as passed stream pointer but allow a closed stream.
   ProgramStateRef State = C.getState();
   State = ensureStreamNonNull(getStreamArg(Desc, Call), C, State);
-  if (!State)
+  if (!State) {
     return;
+}
 
   C.addTransition(State);
 }
@@ -485,23 +495,27 @@ void StreamChecker::evalFreopen(const FnDescription *Desc,
   ProgramStateRef State = C.getState();
 
   auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
+}
 
   Optional<DefinedSVal> StreamVal =
       getStreamArg(Desc, Call).getAs<DefinedSVal>();
-  if (!StreamVal)
+  if (!StreamVal) {
     return;
+}
 
   SymbolRef StreamSym = StreamVal->getAsSymbol();
   // Do not care about concrete values for stream ("(FILE *)0x12345"?).
   // FIXME: Can be stdin, stdout, stderr such values?
-  if (!StreamSym)
+  if (!StreamSym) {
     return;
+}
 
   // Do not handle untracked stream. It is probably escaped.
-  if (!State->get<StreamMap>(StreamSym))
+  if (!State->get<StreamMap>(StreamSym)) {
     return;
+}
 
   // Generate state for non-failed case.
   // Return value is the passed stream pointer.
@@ -528,12 +542,14 @@ void StreamChecker::evalFclose(const FnDescription *Desc, const CallEvent &Call,
                                CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   SymbolRef Sym = getStreamArg(Desc, Call).getAsSymbol();
-  if (!Sym)
+  if (!Sym) {
     return;
+}
 
   const StreamState *SS = State->get<StreamMap>(Sym);
-  if (!SS)
+  if (!SS) {
     return;
+}
 
   assertStreamStateOpened(SS);
 
@@ -550,20 +566,24 @@ void StreamChecker::preFread(const FnDescription *Desc, const CallEvent &Call,
   ProgramStateRef State = C.getState();
   SVal StreamVal = getStreamArg(Desc, Call);
   State = ensureStreamNonNull(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureStreamOpened(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureNoFilePositionIndeterminate(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
 
   SymbolRef Sym = StreamVal.getAsSymbol();
   if (Sym && State->get<StreamMap>(Sym)) {
     const StreamState *SS = State->get<StreamMap>(Sym);
-    if (SS->ErrorState & ErrorFEof)
+    if (SS->ErrorState & ErrorFEof) {
       reportFEofWarning(C, State);
+}
   } else {
     C.addTransition(State);
   }
@@ -574,14 +594,17 @@ void StreamChecker::preFwrite(const FnDescription *Desc, const CallEvent &Call,
   ProgramStateRef State = C.getState();
   SVal StreamVal = getStreamArg(Desc, Call);
   State = ensureStreamNonNull(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureStreamOpened(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureNoFilePositionIndeterminate(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
 
   C.addTransition(State);
 }
@@ -591,23 +614,28 @@ void StreamChecker::evalFreadFwrite(const FnDescription *Desc,
                                     bool IsFread) const {
   ProgramStateRef State = C.getState();
   SymbolRef StreamSym = getStreamArg(Desc, Call).getAsSymbol();
-  if (!StreamSym)
+  if (!StreamSym) {
     return;
+}
 
   const CallExpr *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
+}
 
   Optional<NonLoc> SizeVal = Call.getArgSVal(1).getAs<NonLoc>();
-  if (!SizeVal)
+  if (!SizeVal) {
     return;
+}
   Optional<NonLoc> NMembVal = Call.getArgSVal(2).getAs<NonLoc>();
-  if (!NMembVal)
+  if (!NMembVal) {
     return;
+}
 
   const StreamState *SS = State->get<StreamMap>(StreamSym);
-  if (!SS)
+  if (!SS) {
     return;
+}
 
   assertStreamStateOpened(SS);
 
@@ -643,23 +671,27 @@ void StreamChecker::evalFreadFwrite(const FnDescription *Desc,
   assert(RetVal && "Value should be NonLoc.");
   ProgramStateRef StateFailed =
       State->BindExpr(CE, C.getLocationContext(), *RetVal);
-  if (!StateFailed)
+  if (!StateFailed) {
     return;
+}
   auto Cond = C.getSValBuilder()
                   .evalBinOpNN(State, BO_LT, *RetVal, *NMembVal,
                                C.getASTContext().IntTy)
                   .getAs<DefinedOrUnknownSVal>();
-  if (!Cond)
+  if (!Cond) {
     return;
+}
   StateFailed = StateFailed->assume(*Cond, true);
-  if (!StateFailed)
+  if (!StateFailed) {
     return;
+}
 
   StreamErrorState NewES;
-  if (IsFread)
+  if (IsFread) {
     NewES = (SS->ErrorState == ErrorFEof) ? ErrorFEof : ErrorFEof | ErrorFError;
-  else
+  } else {
     NewES = ErrorFError;
+}
   // If a (non-EOF) error occurs, the resulting value of the file position
   // indicator for the stream is indeterminate.
   StreamState NewState = StreamState::getOpened(Desc, NewES, !NewES.isFEof());
@@ -672,14 +704,17 @@ void StreamChecker::preFseek(const FnDescription *Desc, const CallEvent &Call,
   ProgramStateRef State = C.getState();
   SVal StreamVal = getStreamArg(Desc, Call);
   State = ensureStreamNonNull(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureStreamOpened(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureFseekWhenceCorrect(Call.getArgSVal(2), C, State);
-  if (!State)
+  if (!State) {
     return;
+}
 
   C.addTransition(State);
 }
@@ -688,16 +723,19 @@ void StreamChecker::evalFseek(const FnDescription *Desc, const CallEvent &Call,
                               CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   SymbolRef StreamSym = getStreamArg(Desc, Call).getAsSymbol();
-  if (!StreamSym)
+  if (!StreamSym) {
     return;
+}
 
   const CallExpr *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
+}
 
   // Ignore the call if the stream is not tracked.
-  if (!State->get<StreamMap>(StreamSym))
+  if (!State->get<StreamMap>(StreamSym)) {
     return;
+}
 
   DefinedSVal RetVal = makeRetVal(C, CE);
 
@@ -730,12 +768,14 @@ void StreamChecker::evalClearerr(const FnDescription *Desc,
                                  CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   SymbolRef StreamSym = getStreamArg(Desc, Call).getAsSymbol();
-  if (!StreamSym)
+  if (!StreamSym) {
     return;
+}
 
   const StreamState *SS = State->get<StreamMap>(StreamSym);
-  if (!SS)
+  if (!SS) {
     return;
+}
 
   assertStreamStateOpened(SS);
 
@@ -751,16 +791,19 @@ void StreamChecker::evalFeofFerror(const FnDescription *Desc,
                                    const StreamErrorState &ErrorKind) const {
   ProgramStateRef State = C.getState();
   SymbolRef StreamSym = getStreamArg(Desc, Call).getAsSymbol();
-  if (!StreamSym)
+  if (!StreamSym) {
     return;
+}
 
   const CallExpr *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return;
+}
 
   const StreamState *SS = State->get<StreamMap>(StreamSym);
-  if (!SS)
+  if (!SS) {
     return;
+}
 
   assertStreamStateOpened(SS);
 
@@ -791,11 +834,13 @@ void StreamChecker::preDefault(const FnDescription *Desc, const CallEvent &Call,
   ProgramStateRef State = C.getState();
   SVal StreamVal = getStreamArg(Desc, Call);
   State = ensureStreamNonNull(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
   State = ensureStreamOpened(StreamVal, C, State);
-  if (!State)
+  if (!State) {
     return;
+}
 
   C.addTransition(State);
 }
@@ -817,8 +862,9 @@ ProgramStateRef
 StreamChecker::ensureStreamNonNull(SVal StreamVal, CheckerContext &C,
                                    ProgramStateRef State) const {
   auto Stream = StreamVal.getAs<DefinedSVal>();
-  if (!Stream)
+  if (!Stream) {
     return State;
+}
 
   ConstraintManager &CM = C.getConstraintManager();
 
@@ -840,12 +886,14 @@ ProgramStateRef StreamChecker::ensureStreamOpened(SVal StreamVal,
                                                   CheckerContext &C,
                                                   ProgramStateRef State) const {
   SymbolRef Sym = StreamVal.getAsSymbol();
-  if (!Sym)
+  if (!Sym) {
     return State;
+}
 
   const StreamState *SS = State->get<StreamMap>(Sym);
-  if (!SS)
+  if (!SS) {
     return State;
+}
 
   if (SS->isClosed()) {
     // Using a stream pointer after 'fclose' causes undefined behavior
@@ -890,12 +938,14 @@ ProgramStateRef StreamChecker::ensureNoFilePositionIndeterminate(
       "Can cause undefined behavior.";
 
   SymbolRef Sym = StreamVal.getAsSymbol();
-  if (!Sym)
+  if (!Sym) {
     return State;
+}
 
   const StreamState *SS = State->get<StreamMap>(Sym);
-  if (!SS)
+  if (!SS) {
     return State;
+}
 
   assert(SS->isOpened() && "First ensure that stream is opened.");
 
@@ -905,8 +955,9 @@ ProgramStateRef StreamChecker::ensureNoFilePositionIndeterminate(
       // Continue analysis with the FEOF error state.
       // Report warning because the other possible error states.
       ExplodedNode *N = C.generateNonFatalErrorNode(State);
-      if (!N)
+      if (!N) {
         return nullptr;
+}
 
       C.emitReport(std::make_unique<PathSensitiveBugReport>(
           BT_IndeterminatePosition, BugMessage, N));
@@ -917,9 +968,10 @@ ProgramStateRef StreamChecker::ensureNoFilePositionIndeterminate(
     // Known or unknown error state without FEOF possible.
     // Stop analysis, report error.
     ExplodedNode *N = C.generateErrorNode(State);
-    if (N)
+    if (N) {
       C.emitReport(std::make_unique<PathSensitiveBugReport>(
           BT_IndeterminatePosition, BugMessage, N));
+}
 
     return nullptr;
   }
@@ -931,12 +983,14 @@ ProgramStateRef
 StreamChecker::ensureFseekWhenceCorrect(SVal WhenceVal, CheckerContext &C,
                                         ProgramStateRef State) const {
   Optional<nonloc::ConcreteInt> CI = WhenceVal.getAs<nonloc::ConcreteInt>();
-  if (!CI)
+  if (!CI) {
     return State;
+}
 
   int64_t X = CI->getValue().getSExtValue();
-  if (X >= 0 && X <= 2)
+  if (X >= 0 && X <= 2) {
     return State;
+}
 
   if (ExplodedNode *N = C.generateNonFatalErrorNode(State)) {
     C.emitReport(std::make_unique<PathSensitiveBugReport>(
@@ -967,8 +1021,9 @@ ExplodedNode *
 StreamChecker::reportLeaks(const SmallVector<SymbolRef, 2> &LeakedSyms,
                            CheckerContext &C, ExplodedNode *Pred) const {
   ExplodedNode *Err = C.generateNonFatalErrorNode(C.getState(), Pred);
-  if (!Err)
+  if (!Err) {
     return Pred;
+}
 
   for (SymbolRef LeakSym : LeakedSyms) {
     // Resource leaks can result in multiple warning that describe the same kind
@@ -1012,16 +1067,19 @@ void StreamChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   for (const auto &I : Map) {
     SymbolRef Sym = I.first;
     const StreamState &SS = I.second;
-    if (!SymReaper.isDead(Sym))
+    if (!SymReaper.isDead(Sym)) {
       continue;
-    if (SS.isOpened())
+}
+    if (SS.isOpened()) {
       LeakedSyms.push_back(Sym);
+}
     State = State->remove<StreamMap>(Sym);
   }
 
   ExplodedNode *N = C.getPredecessor();
-  if (!LeakedSyms.empty())
+  if (!LeakedSyms.empty()) {
     N = reportLeaks(LeakedSyms, C, N);
+}
 
   C.addTransition(State, N);
 }
@@ -1032,8 +1090,9 @@ ProgramStateRef StreamChecker::checkPointerEscape(
   // Check for file-handling system call that is not handled by the checker.
   // FIXME: The checker should be updated to handle all system calls that take
   // 'FILE*' argument. These are now ignored.
-  if (Kind == PSK_DirectEscapeOnCall && Call->isInSystemHeader())
+  if (Kind == PSK_DirectEscapeOnCall && Call->isInSystemHeader()) {
     return State;
+}
 
   for (SymbolRef Sym : Escaped) {
     // The symbol escaped.

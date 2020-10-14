@@ -20,8 +20,9 @@ public:
   StoreTestConsumer(CompilerInstance &C) : ExprEngineConsumer(C) {}
 
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
-    for (const auto *D : DG)
+    for (const auto *D : DG) {
       performTest(D);
+}
     return true;
   }
 

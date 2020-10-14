@@ -107,12 +107,14 @@ CXString CXLoadedDiagnostic::getSpelling() const {
 }
 
 CXString CXLoadedDiagnostic::getDiagnosticOption(CXString *Disable) const {
-  if (DiagOption.empty())
+  if (DiagOption.empty()) {
     return cxstring::createEmpty();
+}
 
   // FIXME: possibly refactor with logic in CXStoredDiagnostic.
-  if (Disable)
+  if (Disable) {
     *Disable = cxstring::createDup((Twine("-Wno-") + DiagOption).str());
+}
   return cxstring::createDup((Twine("-W") + DiagOption).str());
 }
 
@@ -140,8 +142,9 @@ unsigned CXLoadedDiagnostic::getNumFixIts() const {
 CXString CXLoadedDiagnostic::getFixIt(unsigned FixIt,
                                       CXSourceRange *ReplacementRange) const {
   assert(FixIt < FixIts.size());
-  if (ReplacementRange)
+  if (ReplacementRange) {
     *ReplacementRange = FixIts[FixIt].first;
+}
   return cxstring::createRef(FixIts[FixIt].second);
 }
 
@@ -169,14 +172,18 @@ void CXLoadedDiagnostic::decodeLocation(CXSourceLocation location,
   
   const Location &Loc = *((Location*)V);
   
-  if (file)
+  if (file) {
     *file = Loc.file;  
-  if (line)
+}
+  if (line) {
     *line = Loc.line;
-  if (column)
+}
+  if (column) {
     *column = Loc.column;
-  if (offset)
+}
+  if (offset) {
     *offset = Loc.offset;
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -191,10 +198,12 @@ class DiagLoader : serialized_diags::SerializedDiagnosticReader {
   SmallVector<std::unique_ptr<CXLoadedDiagnostic>, 8> CurrentDiags;
 
   std::error_code reportBad(enum CXLoadDiag_Error code, llvm::StringRef err) {
-    if (error)
+    if (error) {
       *error = code;
-    if (errorString)
+}
+    if (errorString) {
       *errorString = cxstring::createDup(err);
+}
     return serialized_diags::SDError::HandlerFailed;
   }
   
@@ -236,10 +245,12 @@ protected:
 public:
   DiagLoader(enum CXLoadDiag_Error *e, CXString *es)
       : SerializedDiagnosticReader(), error(e), errorString(es) {
-    if (error)
+    if (error) {
       *error = CXLoadDiag_None;
-    if (errorString)
+}
+    if (errorString) {
       *errorString = cxstring::createEmpty();
+}
   }
 
   CXDiagnosticSet load(const char *file);
@@ -272,12 +283,13 @@ std::error_code
 DiagLoader::readLocation(const serialized_diags::Location &SDLoc,
                          CXLoadedDiagnostic::Location &LoadedLoc) {
   unsigned FileID = SDLoc.FileID;
-  if (FileID == 0)
+  if (FileID == 0) {
     LoadedLoc.file = nullptr;
-  else {
+  } else {
     LoadedLoc.file = const_cast<FileEntry *>(TopDiags->Files[FileID]);
-    if (!LoadedLoc.file)
+    if (!LoadedLoc.file) {
       return reportInvalidFile("Corrupted file entry in source location");
+}
   }
   LoadedLoc.line = SDLoc.Line;
   LoadedLoc.column = SDLoc.Col;
@@ -294,10 +306,12 @@ DiagLoader::readRange(const serialized_diags::Location &SDStart,
   End = TopDiags->Alloc.Allocate<CXLoadedDiagnostic::Location>();
 
   std::error_code EC;
-  if ((EC = readLocation(SDStart, *Start)))
+  if ((EC = readLocation(SDStart, *Start))) {
     return EC;
-  if ((EC = readLocation(SDEnd, *End)))
+}
+  if ((EC = readLocation(SDEnd, *End))) {
     return EC;
+}
   
   CXSourceLocation startLoc = makeLocation(Start);
   CXSourceLocation endLoc = makeLocation(End);
@@ -312,25 +326,28 @@ std::error_code DiagLoader::visitStartOfDiagnostic() {
 
 std::error_code DiagLoader::visitEndOfDiagnostic() {
   auto D = CurrentDiags.pop_back_val();
-  if (CurrentDiags.empty())
+  if (CurrentDiags.empty()) {
     TopDiags->appendDiagnostic(std::move(D));
-  else
+  } else {
     CurrentDiags.back()->getChildDiagnostics().appendDiagnostic(std::move(D));
+}
   return std::error_code();
 }
 
 std::error_code DiagLoader::visitCategoryRecord(unsigned ID, StringRef Name) {
   // FIXME: Why do we care about long strings?
-  if (Name.size() > 65536)
+  if (Name.size() > 65536) {
     return reportInvalidFile("Out-of-bounds string in category");
+}
   TopDiags->Categories[ID] = TopDiags->copyString(Name);
   return std::error_code();
 }
 
 std::error_code DiagLoader::visitDiagFlagRecord(unsigned ID, StringRef Name) {
   // FIXME: Why do we care about long strings?
-  if (Name.size() > 65536)
+  if (Name.size() > 65536) {
     return reportInvalidFile("Out-of-bounds string in warning flag");
+}
   TopDiags->WarningFlags[ID] = TopDiags->copyString(Name);
   return std::error_code();
 }
@@ -339,8 +356,9 @@ std::error_code DiagLoader::visitFilenameRecord(unsigned ID, unsigned Size,
                                                 unsigned Timestamp,
                                                 StringRef Name) {
   // FIXME: Why do we care about long strings?
-  if (Name.size() > 65536)
+  if (Name.size() > 65536) {
     return reportInvalidFile("Out-of-bounds string in filename");
+}
   TopDiags->FileNames[ID] = TopDiags->copyString(Name);
   TopDiags->Files[ID] =
       TopDiags->FakeFiles.getVirtualFile(Name, Size, Timestamp);
@@ -351,8 +369,9 @@ std::error_code
 DiagLoader::visitSourceRangeRecord(const serialized_diags::Location &Start,
                                    const serialized_diags::Location &End) {
   CXSourceRange SR;
-  if (std::error_code EC = readRange(Start, End, SR))
+  if (std::error_code EC = readRange(Start, End, SR)) {
     return EC;
+}
   CurrentDiags.back()->Ranges.push_back(SR);
   return std::error_code();
 }
@@ -362,11 +381,13 @@ DiagLoader::visitFixitRecord(const serialized_diags::Location &Start,
                              const serialized_diags::Location &End,
                              StringRef CodeToInsert) {
   CXSourceRange SR;
-  if (std::error_code EC = readRange(Start, End, SR))
+  if (std::error_code EC = readRange(Start, End, SR)) {
     return EC;
+}
   // FIXME: Why do we care about long strings?
-  if (CodeToInsert.size() > 65536)
+  if (CodeToInsert.size() > 65536) {
     return reportInvalidFile("Out-of-bounds string in FIXIT");
+}
   CurrentDiags.back()->FixIts.push_back(
       std::make_pair(SR, TopDiags->copyString(CodeToInsert)));
   return std::error_code();
@@ -377,8 +398,9 @@ std::error_code DiagLoader::visitDiagnosticRecord(
     unsigned Category, unsigned Flag, StringRef Message) {
   CXLoadedDiagnostic &D = *CurrentDiags.back();
   D.severity = Severity;
-  if (std::error_code EC = readLocation(Location, D.DiagLoc))
+  if (std::error_code EC = readLocation(Location, D.DiagLoc)) {
     return EC;
+}
   D.category = Category;
   D.DiagOption = Flag ? TopDiags->WarningFlags[Flag] : "";
   D.CategoryText = Category ? TopDiags->Categories[Category] : "";

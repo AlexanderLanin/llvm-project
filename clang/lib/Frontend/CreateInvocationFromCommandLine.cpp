@@ -47,8 +47,9 @@ std::unique_ptr<CompilerInvocation> clang::createInvocationFromCommandLine(
   TheDriver.setCheckInputsExist(false);
 
   std::unique_ptr<driver::Compilation> C(TheDriver.BuildCompilation(Args));
-  if (!C)
+  if (!C) {
     return nullptr;
+}
 
   // Just print the cc1 options if -### was present.
   if (C->getArgs().hasArg(driver::options::OPT__HASH_HASH_HASH)) {
@@ -66,8 +67,9 @@ std::unique_ptr<CompilerInvocation> clang::createInvocationFromCommandLine(
   if (Jobs.size() > 1) {
     for (auto &A : C->getActions()){
       // On MacOSX real actions may end up being wrapped in BindArchAction
-      if (isa<driver::BindArchAction>(A))
+      if (isa<driver::BindArchAction>(A)) {
         A = *A->input_begin();
+}
       if (isa<driver::OffloadAction>(A)) {
         OffloadCompilation = true;
         break;
@@ -90,11 +92,13 @@ std::unique_ptr<CompilerInvocation> clang::createInvocationFromCommandLine(
   }
 
   const ArgStringList &CCArgs = Cmd.getArguments();
-  if (CC1Args)
+  if (CC1Args) {
     *CC1Args = {CCArgs.begin(), CCArgs.end()};
+}
   auto CI = std::make_unique<CompilerInvocation>();
   if (!CompilerInvocation::CreateFromArgs(*CI, CCArgs, *Diags, Args[0]) &&
-      !ShouldRecoverOnErorrs)
+      !ShouldRecoverOnErorrs) {
     return nullptr;
+}
   return CI;
 }

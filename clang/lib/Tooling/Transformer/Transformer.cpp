@@ -22,13 +22,15 @@ using namespace tooling;
 using ast_matchers::MatchFinder;
 
 void Transformer::registerMatchers(MatchFinder *MatchFinder) {
-  for (auto &Matcher : transformer::detail::buildMatchers(Rule))
+  for (auto &Matcher : transformer::detail::buildMatchers(Rule)) {
     MatchFinder->addDynamicMatcher(Matcher, this);
+}
 }
 
 void Transformer::run(const MatchFinder::MatchResult &Result) {
-  if (Result.Context->getDiagnostics().hasErrorOccurred())
+  if (Result.Context->getDiagnostics().hasErrorOccurred()) {
     return;
+}
 
   transformer::RewriteRule::Case Case =
       transformer::detail::findSelectedCase(Result, Rule);
@@ -38,8 +40,9 @@ void Transformer::run(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  if (Transformations->empty())
+  if (Transformations->empty()) {
     return;
+}
 
   // Group the transformations, by file, into AtomicChanges, each anchored by
   // the location of the first change in that file.
@@ -65,6 +68,7 @@ void Transformer::run(const MatchFinder::MatchResult &Result) {
     }
   }
 
-  for (auto &IDChangePair : ChangesByFileID)
+  for (auto &IDChangePair : ChangesByFileID) {
     Consumer(std::move(IDChangePair.second));
+}
 }

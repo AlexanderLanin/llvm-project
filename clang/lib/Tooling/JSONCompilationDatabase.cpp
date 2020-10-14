@@ -70,40 +70,50 @@ class CommandLineArgumentParser {
   bool parseStringInto(std::string &String) {
     do {
       if (*Position == '"') {
-        if (!parseDoubleQuotedStringInto(String)) return false;
+        if (!parseDoubleQuotedStringInto(String)) { return false;
+}
       } else if (*Position == '\'') {
-        if (!parseSingleQuotedStringInto(String)) return false;
+        if (!parseSingleQuotedStringInto(String)) { return false;
+}
       } else {
-        if (!parseFreeStringInto(String)) return false;
+        if (!parseFreeStringInto(String)) { return false;
+}
       }
     } while (*Position != ' ');
     return true;
   }
 
   bool parseDoubleQuotedStringInto(std::string &String) {
-    if (!next()) return false;
+    if (!next()) { return false;
+}
     while (*Position != '"') {
-      if (!skipEscapeCharacter()) return false;
+      if (!skipEscapeCharacter()) { return false;
+}
       String.push_back(*Position);
-      if (!next()) return false;
+      if (!next()) { return false;
+}
     }
     return next();
   }
 
   bool parseSingleQuotedStringInto(std::string &String) {
-    if (!next()) return false;
+    if (!next()) { return false;
+}
     while (*Position != '\'') {
       String.push_back(*Position);
-      if (!next()) return false;
+      if (!next()) { return false;
+}
     }
     return next();
   }
 
   bool parseFreeStringInto(std::string &String) {
     do {
-      if (!skipEscapeCharacter()) return false;
+      if (!skipEscapeCharacter()) { return false;
+}
       String.push_back(*Position);
-      if (!next()) return false;
+      if (!next()) { return false;
+}
     } while (*Position != ' ' && *Position != '"' && *Position != '\'');
     return true;
   }
@@ -117,7 +127,8 @@ class CommandLineArgumentParser {
 
   bool nextNonWhitespace() {
     do {
-      if (!next()) return false;
+      if (!next()) { return false;
+}
     } while (*Position == ' ');
     return true;
   }
@@ -141,8 +152,9 @@ std::vector<std::string> unescapeCommandLine(JSONCommandLineSyntax Syntax,
       // Assume Windows command line parsing on Win32 unless the triple
       // explicitly tells us otherwise.
       if (!Triple.hasEnvironment() ||
-          Triple.getEnvironment() == llvm::Triple::EnvironmentType::MSVC)
+          Triple.getEnvironment() == llvm::Triple::EnvironmentType::MSVC) {
         Syntax = JSONCommandLineSyntax::Windows;
+}
     }
   }
 
@@ -207,8 +219,9 @@ JSONCompilationDatabase::loadFromFile(StringRef FilePath,
   }
   std::unique_ptr<JSONCompilationDatabase> Database(
       new JSONCompilationDatabase(std::move(*DatabaseBuffer), Syntax));
-  if (!Database->parse(ErrorMessage))
+  if (!Database->parse(ErrorMessage)) {
     return nullptr;
+}
   return Database;
 }
 
@@ -220,8 +233,9 @@ JSONCompilationDatabase::loadFromBuffer(StringRef DatabaseString,
       llvm::MemoryBuffer::getMemBuffer(DatabaseString));
   std::unique_ptr<JSONCompilationDatabase> Database(
       new JSONCompilationDatabase(std::move(DatabaseBuffer), Syntax));
-  if (!Database->parse(ErrorMessage))
+  if (!Database->parse(ErrorMessage)) {
     return nullptr;
+}
   return Database;
 }
 
@@ -233,11 +247,13 @@ JSONCompilationDatabase::getCompileCommands(StringRef FilePath) const {
   std::string Error;
   llvm::raw_string_ostream ES(Error);
   StringRef Match = MatchTrie.findEquivalent(NativeFilePath, ES);
-  if (Match.empty())
+  if (Match.empty()) {
     return {};
+}
   const auto CommandsRefI = IndexByFile.find(Match);
-  if (CommandsRefI == IndexByFile.end())
+  if (CommandsRefI == IndexByFile.end()) {
     return {};
+}
   std::vector<CompileCommand> Commands;
   getCommands(CommandsRefI->getValue(), Commands);
   return Commands;
@@ -246,8 +262,9 @@ JSONCompilationDatabase::getCompileCommands(StringRef FilePath) const {
 std::vector<std::string>
 JSONCompilationDatabase::getAllFiles() const {
   std::vector<std::string> Result;
-  for (const auto &CommandRef : IndexByFile)
+  for (const auto &CommandRef : IndexByFile) {
     Result.push_back(CommandRef.first().str());
+}
   return Result;
 }
 
@@ -268,8 +285,9 @@ static llvm::StringRef stripExecutableExtension(llvm::StringRef Name) {
 // These end up in compile_commands.json when people set CC="distcc gcc".
 // Clang's driver doesn't understand this, so we need to unwrap.
 static bool unwrapCommand(std::vector<std::string> &Args) {
-  if (Args.size() < 2)
+  if (Args.size() < 2) {
     return false;
+}
   StringRef Wrapper =
       stripExecutableExtension(llvm::sys::path::filename(Args.front()));
   if (Wrapper == "distcc" || Wrapper == "gomacc" || Wrapper == "ccache") {
@@ -301,14 +319,17 @@ nodeToCommandLine(JSONCommandLineSyntax Syntax,
                   const std::vector<llvm::yaml::ScalarNode *> &Nodes) {
   SmallString<1024> Storage;
   std::vector<std::string> Arguments;
-  if (Nodes.size() == 1)
+  if (Nodes.size() == 1) {
     Arguments = unescapeCommandLine(Syntax, Nodes[0]->getValue(Storage));
-  else
-    for (const auto *Node : Nodes)
+  } else {
+    for (const auto *Node : Nodes) {
       Arguments.push_back(std::string(Node->getValue(Storage)));
+}
+}
   // There may be multiple wrappers: using distcc and ccache together is common.
-  while (unwrapCommand(Arguments))
+  while (unwrapCommand(Arguments)) {
     ;
+}
   return Arguments;
 }
 
@@ -391,8 +412,9 @@ bool JSONCompilationDatabase::parse(std::string &ErrorMessage) {
         if (KeyValue == "directory") {
           Directory = ValueString;
         } else if (KeyValue == "command") {
-          if (!Command)
+          if (!Command) {
             Command = std::vector<llvm::yaml::ScalarNode *>(1, ValueString);
+}
         } else if (KeyValue == "file") {
           File = ValueString;
         } else if (KeyValue == "output") {

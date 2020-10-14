@@ -35,22 +35,24 @@ NamedDecl *Parser::ParseCXXInlineMethodDef(
       TemplateInfo.TemplateParams ? TemplateInfo.TemplateParams->size() : 0);
 
   NamedDecl *FnD;
-  if (D.getDeclSpec().isFriendSpecified())
+  if (D.getDeclSpec().isFriendSpecified()) {
     FnD = Actions.ActOnFriendFunctionDecl(getCurScope(), D,
                                           TemplateParams);
-  else {
+  } else {
     FnD = Actions.ActOnCXXMemberDeclarator(getCurScope(), AS, D,
                                            TemplateParams, nullptr,
                                            VS, ICIS_NoInit);
     if (FnD) {
       Actions.ProcessDeclAttributeList(getCurScope(), FnD, AccessAttrs);
-      if (PureSpecLoc.isValid())
+      if (PureSpecLoc.isValid()) {
         Actions.ActOnPureSpecifier(FnD, PureSpecLoc);
+}
     }
   }
 
-  if (FnD)
+  if (FnD) {
     HandleMemberFunctionDeclDelays(D, FnD);
+}
 
   D.complete(FnD);
 
@@ -297,8 +299,9 @@ struct Parser::ReenterClassScopeRAII : ReenterTemplateScopeRAII {
                                  /*Enter=*/!Class.TopLevelClass),
         Class(Class) {
     // If this is the top-level class, we're still within its scope.
-    if (Class.TopLevelClass)
+    if (Class.TopLevelClass) {
       return;
+}
 
     // Re-enter the class scope itself.
     Scopes.Enter(Scope::ClassScope|Scope::DeclScope);
@@ -306,8 +309,9 @@ struct Parser::ReenterClassScopeRAII : ReenterTemplateScopeRAII {
                                                   Class.TagOrTemplate);
   }
   ~ReenterClassScopeRAII() {
-    if (Class.TopLevelClass)
+    if (Class.TopLevelClass) {
       return;
+}
 
     P.Actions.ActOnFinishDelayedMemberDeclarations(P.getCurScope(),
                                                    Class.TagOrTemplate);
@@ -321,8 +325,9 @@ struct Parser::ReenterClassScopeRAII : ReenterTemplateScopeRAII {
 void Parser::ParseLexedMethodDeclarations(ParsingClass &Class) {
   ReenterClassScopeRAII InClassScope(*this, Class);
 
-  for (LateParsedDeclaration *LateD : Class.LateParsedDeclarations)
+  for (LateParsedDeclaration *LateD : Class.LateParsedDeclarations) {
     LateD->ParseLexedMethodDeclarations();
+}
 }
 
 void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
@@ -377,8 +382,9 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
       if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace)) {
         Diag(Tok, diag::warn_cxx98_compat_generalized_initializer_lists);
         DefArgResult = ParseBraceInitializer();
-      } else
+      } else {
         DefArgResult = ParseAssignmentExpression();
+}
       DefArgResult = Actions.CorrectDelayedTyposInExpr(DefArgResult);
       if (DefArgResult.isInvalid()) {
         Actions.ActOnParamDefaultArgumentError(Param, EqualLoc);
@@ -398,21 +404,24 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
 
       // There could be leftover tokens (e.g. because of an error).
       // Skip through until we reach the 'end of default argument' token.
-      while (Tok.isNot(tok::eof))
+      while (Tok.isNot(tok::eof)) {
         ConsumeAnyToken();
+}
 
-      if (Tok.is(tok::eof) && Tok.getEofData() == Param)
+      if (Tok.is(tok::eof) && Tok.getEofData() == Param) {
         ConsumeAnyToken();
+}
     } else if (HasUnparsed) {
       assert(Param->hasInheritedDefaultArg());
       FunctionDecl *Old = cast<FunctionDecl>(LM.Method)->getPreviousDecl();
       ParmVarDecl *OldParam = Old->getParamDecl(I);
       assert (!OldParam->hasUnparsedDefaultArg());
-      if (OldParam->hasUninstantiatedDefaultArg())
+      if (OldParam->hasUninstantiatedDefaultArg()) {
         Param->setUninstantiatedDefaultArg(
             OldParam->getUninstantiatedDefaultArg());
-      else
+      } else {
         Param->setDefaultArg(OldParam->getInit());
+}
     }
   }
 
@@ -444,10 +453,11 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
     //   declarator.
     CXXMethodDecl *Method;
     if (FunctionTemplateDecl *FunTmpl
-          = dyn_cast<FunctionTemplateDecl>(LM.Method))
+          = dyn_cast<FunctionTemplateDecl>(LM.Method)) {
       Method = cast<CXXMethodDecl>(FunTmpl->getTemplatedDecl());
-    else
+    } else {
       Method = cast<CXXMethodDecl>(LM.Method);
+}
 
     Sema::CXXThisScopeRAII ThisScope(Actions, Method->getParent(),
                                      Method->getMethodQualifiers(),
@@ -466,8 +476,9 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
                                        DynamicExceptionRanges, NoexceptExpr,
                                        ExceptionSpecTokens);
 
-    if (Tok.isNot(tok::eof) || Tok.getEofData() != LM.Method)
+    if (Tok.isNot(tok::eof) || Tok.getEofData() != LM.Method) {
       Diag(Tok.getLocation(), diag::err_except_spec_unparsed);
+}
 
     // Attach the exception-specification to the method.
     Actions.actOnDelayedExceptionSpecification(LM.Method, EST,
@@ -479,12 +490,14 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
 
     // There could be leftover tokens (e.g. because of an error).
     // Skip through until we reach the original token position.
-    while (Tok.isNot(tok::eof))
+    while (Tok.isNot(tok::eof)) {
       ConsumeAnyToken();
+}
 
     // Clean up the remaining EOF token.
-    if (Tok.is(tok::eof) && Tok.getEofData() == LM.Method)
+    if (Tok.is(tok::eof) && Tok.getEofData() == LM.Method) {
       ConsumeAnyToken();
+}
 
     delete Toks;
     LM.ExceptionSpecTokens = nullptr;
@@ -502,8 +515,9 @@ void Parser::ParseLexedMethodDeclaration(LateParsedMethodDeclaration &LM) {
 void Parser::ParseLexedMethodDefs(ParsingClass &Class) {
   ReenterClassScopeRAII InClassScope(*this, Class);
 
-  for (LateParsedDeclaration *D : Class.LateParsedDeclarations)
+  for (LateParsedDeclaration *D : Class.LateParsedDeclarations) {
     D->ParseLexedMethodDefs();
+}
 }
 
 void Parser::ParseLexedMethodDef(LexedMethod &LM) {
@@ -539,11 +553,13 @@ void Parser::ParseLexedMethodDef(LexedMethod &LM) {
   if (Tok.is(tok::kw_try)) {
     ParseFunctionTryBlock(LM.D, FnScope);
 
-    while (Tok.isNot(tok::eof))
+    while (Tok.isNot(tok::eof)) {
       ConsumeAnyToken();
+}
 
-    if (Tok.is(tok::eof) && Tok.getEofData() == LM.D)
+    if (Tok.is(tok::eof) && Tok.getEofData() == LM.D) {
       ConsumeAnyToken();
+}
     return;
   }
   if (Tok.is(tok::colon)) {
@@ -554,15 +570,18 @@ void Parser::ParseLexedMethodDef(LexedMethod &LM) {
       FnScope.Exit();
       Actions.ActOnFinishFunctionBody(LM.D, nullptr);
 
-      while (Tok.isNot(tok::eof))
+      while (Tok.isNot(tok::eof)) {
         ConsumeAnyToken();
+}
 
-      if (Tok.is(tok::eof) && Tok.getEofData() == LM.D)
+      if (Tok.is(tok::eof) && Tok.getEofData() == LM.D) {
         ConsumeAnyToken();
+}
       return;
     }
-  } else
+  } else {
     Actions.ActOnDefaultCtorInitializers(LM.D);
+}
 
   assert((Actions.getDiagnostics().hasErrorOccurred() ||
           !isa<FunctionTemplateDecl>(LM.D) ||
@@ -573,16 +592,20 @@ void Parser::ParseLexedMethodDef(LexedMethod &LM) {
 
   ParseFunctionStatementBody(LM.D, FnScope);
 
-  while (Tok.isNot(tok::eof))
+  while (Tok.isNot(tok::eof)) {
     ConsumeAnyToken();
+}
 
-  if (Tok.is(tok::eof) && Tok.getEofData() == LM.D)
+  if (Tok.is(tok::eof) && Tok.getEofData() == LM.D) {
     ConsumeAnyToken();
+}
 
-  if (auto *FD = dyn_cast_or_null<FunctionDecl>(LM.D))
+  if (auto *FD = dyn_cast_or_null<FunctionDecl>(LM.D)) {
     if (isa<CXXMethodDecl>(FD) ||
-        FD->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend))
+        FD->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend)) {
       Actions.ActOnFinishInlineFunctionDef(FD);
+}
+}
 }
 
 /// ParseLexedMemberInitializers - We finished parsing the member specification
@@ -601,16 +624,18 @@ void Parser::ParseLexedMemberInitializers(ParsingClass &Class) {
     Sema::CXXThisScopeRAII ThisScope(Actions, Class.TagOrTemplate,
                                      Qualifiers());
 
-    for (LateParsedDeclaration *D : Class.LateParsedDeclarations)
+    for (LateParsedDeclaration *D : Class.LateParsedDeclarations) {
       D->ParseLexedMemberInitializers();
+}
   }
 
   Actions.ActOnFinishDelayedMemberInitializers(Class.TagOrTemplate);
 }
 
 void Parser::ParseLexedMemberInitializer(LateParsedMemberInitializer &MI) {
-  if (!MI.Field || MI.Field->isInvalidDecl())
+  if (!MI.Field || MI.Field->isInvalidDecl()) {
     return;
+}
 
   ParenBraceBracketBalancer BalancerRAIIObj(*this);
 
@@ -636,19 +661,22 @@ void Parser::ParseLexedMemberInitializer(LateParsedMemberInitializer &MI) {
   if (Tok.isNot(tok::eof)) {
     if (!Init.isInvalid()) {
       SourceLocation EndLoc = PP.getLocForEndOfToken(PrevTokLocation);
-      if (!EndLoc.isValid())
+      if (!EndLoc.isValid()) {
         EndLoc = Tok.getLocation();
+}
       // No fixit; we can't recover as if there were a semicolon here.
       Diag(EndLoc, diag::err_expected_semi_decl_list);
     }
 
     // Consume tokens until we hit the artificial EOF.
-    while (Tok.isNot(tok::eof))
+    while (Tok.isNot(tok::eof)) {
       ConsumeAnyToken();
+}
   }
   // Make sure this is *our* artificial EOF token.
-  if (Tok.getEofData() == MI.Field)
+  if (Tok.getEofData() == MI.Field) {
     ConsumeAnyToken();
+}
 }
 
 /// Wrapper class which calls ParseLexedAttribute, after setting up the
@@ -656,8 +684,9 @@ void Parser::ParseLexedMemberInitializer(LateParsedMemberInitializer &MI) {
 void Parser::ParseLexedAttributes(ParsingClass &Class) {
   ReenterClassScopeRAII InClassScope(*this, Class);
 
-  for (LateParsedDeclaration *LateD : Class.LateParsedDeclarations)
+  for (LateParsedDeclaration *LateD : Class.LateParsedDeclarations) {
     LateD->ParseLexedAttributes();
+}
 }
 
 /// Parse all attributes in LAs, and attach them to Decl D.
@@ -666,8 +695,9 @@ void Parser::ParseLexedAttributeList(LateParsedAttrList &LAs, Decl *D,
   assert(LAs.parseSoon() &&
          "Attribute list should be marked for immediate parsing.");
   for (unsigned i = 0, ni = LAs.size(); i < ni; ++i) {
-    if (D)
+    if (D) {
       LAs[i]->addDecl(D);
+}
     ParseLexedAttribute(*LAs[i], EnterScope, OnDefinition);
     delete LAs[i];
   }
@@ -725,8 +755,9 @@ void Parser::ParseLexedAttribute(LateParsedAttribute &LA,
                             nullptr, SourceLocation(), ParsedAttr::AS_GNU,
                             nullptr);
 
-      if (HasFunScope)
+      if (HasFunScope) {
         Actions.ActOnExitFunctionContext();
+}
     } else {
       // If there are multiple decls, then the decl cannot be within the
       // function scope.
@@ -739,27 +770,32 @@ void Parser::ParseLexedAttribute(LateParsedAttribute &LA,
   }
 
   if (OnDefinition && !Attrs.empty() && !Attrs.begin()->isCXX11Attribute() &&
-      Attrs.begin()->isKnownToGCC())
+      Attrs.begin()->isKnownToGCC()) {
     Diag(Tok, diag::warn_attribute_on_function_definition)
       << &LA.AttrName;
+}
 
-  for (unsigned i = 0, ni = LA.Decls.size(); i < ni; ++i)
+  for (unsigned i = 0, ni = LA.Decls.size(); i < ni; ++i) {
     Actions.ActOnFinishDelayedAttribute(getCurScope(), LA.Decls[i], Attrs);
+}
 
   // Due to a parsing error, we either went over the cached tokens or
   // there are still cached tokens left, so we skip the leftover tokens.
-  while (Tok.isNot(tok::eof))
+  while (Tok.isNot(tok::eof)) {
     ConsumeAnyToken();
+}
 
-  if (Tok.is(tok::eof) && Tok.getEofData() == AttrEnd.getEofData())
+  if (Tok.is(tok::eof) && Tok.getEofData() == AttrEnd.getEofData()) {
     ConsumeAnyToken();
+}
 }
 
 void Parser::ParseLexedPragmas(ParsingClass &Class) {
   ReenterClassScopeRAII InClassScope(*this, Class);
 
-  for (LateParsedDeclaration *D : Class.LateParsedDeclarations)
+  for (LateParsedDeclaration *D : Class.LateParsedDeclarations) {
     D->ParseLexedPragmas();
+}
 }
 
 void Parser::ParseLexedPragma(LateParsedPragma &LP) {
@@ -837,27 +873,31 @@ bool Parser::ConsumeAndStoreUntil(tok::TokenKind T1, tok::TokenKind T2,
     // higher level, we will assume that this matches the unbalanced token
     // and return it.  Otherwise, this is a spurious RHS token, which we skip.
     case tok::r_paren:
-      if (ParenCount && !isFirstTokenConsumed)
+      if (ParenCount && !isFirstTokenConsumed) {
         return false;  // Matches something.
+}
       Toks.push_back(Tok);
       ConsumeParen();
       break;
     case tok::r_square:
-      if (BracketCount && !isFirstTokenConsumed)
+      if (BracketCount && !isFirstTokenConsumed) {
         return false;  // Matches something.
+}
       Toks.push_back(Tok);
       ConsumeBracket();
       break;
     case tok::r_brace:
-      if (BraceCount && !isFirstTokenConsumed)
+      if (BraceCount && !isFirstTokenConsumed) {
         return false;  // Matches something.
+}
       Toks.push_back(Tok);
       ConsumeBrace();
       break;
 
     case tok::semi:
-      if (StopAtSemi)
+      if (StopAtSemi) {
         return false;
+}
       LLVM_FALLTHROUGH;
     default:
       // consume this token.
@@ -890,8 +930,9 @@ bool Parser::ConsumeAndStoreFunctionPrologue(CachedTokens &Toks) {
     ConsumeAndStoreUntil(tok::l_brace, tok::r_brace, Toks,
                          /*StopAtSemi=*/true,
                          /*ConsumeFinalToken=*/false);
-    if (Tok.isNot(tok::l_brace))
+    if (Tok.isNot(tok::l_brace)) {
       return Diag(Tok.getLocation(), diag::err_expected) << tok::l_brace;
+}
 
     Toks.push_back(Tok);
     ConsumeBrace();
@@ -918,9 +959,10 @@ bool Parser::ConsumeAndStoreFunctionPrologue(CachedTokens &Toks) {
     if (Tok.is(tok::kw_decltype)) {
       Toks.push_back(Tok);
       SourceLocation OpenLoc = ConsumeToken();
-      if (Tok.isNot(tok::l_paren))
+      if (Tok.isNot(tok::l_paren)) {
         return Diag(Tok.getLocation(), diag::err_expected_lparen_after)
                  << "decltype";
+}
       Toks.push_back(Tok);
       ConsumeParen();
       if (!ConsumeAndStoreUntil(tok::r_paren, Toks, /*StopAtSemi=*/true)) {
@@ -965,8 +1007,9 @@ bool Parser::ConsumeAndStoreFunctionPrologue(CachedTokens &Toks) {
       ConsumeToken();
       continue;
     }
-    if (Tok.is(tok::less))
+    if (Tok.is(tok::less)) {
       MightBeTemplateArgument = true;
+}
 
     if (MightBeTemplateArgument) {
       // We may be inside a template argument list. Grab up to the start of the
@@ -984,11 +1027,12 @@ bool Parser::ConsumeAndStoreFunctionPrologue(CachedTokens &Toks) {
       }
     } else if (Tok.isNot(tok::l_paren) && Tok.isNot(tok::l_brace)) {
       // We found something weird in a mem-initializer-id.
-      if (getLangOpts().CPlusPlus11)
+      if (getLangOpts().CPlusPlus11) {
         return Diag(Tok.getLocation(), diag::err_expected_either)
                << tok::l_paren << tok::l_brace;
-      else
+      } else {
         return Diag(Tok.getLocation(), diag::err_expected) << tok::l_paren;
+}
     }
 
     tok::TokenKind kind = Tok.getKind();
@@ -1003,8 +1047,9 @@ bool Parser::ConsumeAndStoreFunctionPrologue(CachedTokens &Toks) {
       ConsumeBrace();
       // In C++03, this has to be the start of the function body, which
       // means the initializer is malformed; we'll diagnose it later.
-      if (!getLangOpts().CPlusPlus11)
+      if (!getLangOpts().CPlusPlus11) {
         return false;
+}
 
       const Token &PreviousToken = Toks[Toks.size() - 2];
       if (!MightBeTemplateArgument &&
@@ -1084,12 +1129,14 @@ bool Parser::ConsumeAndStoreConditional(CachedTokens &Toks) {
   while (Tok.isNot(tok::colon)) {
     if (!ConsumeAndStoreUntil(tok::question, tok::colon, Toks,
                               /*StopAtSemi=*/true,
-                              /*ConsumeFinalToken=*/false))
+                              /*ConsumeFinalToken=*/false)) {
       return false;
+}
 
     // If we found a nested conditional, consume it.
-    if (Tok.is(tok::question) && !ConsumeAndStoreConditional(Toks))
+    if (Tok.is(tok::question) && !ConsumeAndStoreConditional(Toks)) {
       return false;
+}
   }
 
   // Consume ':'.
@@ -1154,11 +1201,13 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
     switch (Tok.getKind()) {
     case tok::comma:
       // If we might be in a template, perform a tentative parse to check.
-      if (!AngleCount)
+      if (!AngleCount) {
         // Not a template argument: this is the end of the initializer.
         return true;
-      if (KnownTemplateCount)
+}
+      if (KnownTemplateCount) {
         goto consume_token;
+}
 
       // We hit a comma inside angle brackets. This is the hard case. The
       // rule we follow is:
@@ -1182,8 +1231,9 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
           Result = TryParseInitDeclaratorList();
           // If we parsed a complete, ambiguous init-declarator-list, this
           // is only syntactically-valid if it's followed by a semicolon.
-          if (Result == TPResult::Ambiguous && Tok.isNot(tok::semi))
+          if (Result == TPResult::Ambiguous && Tok.isNot(tok::semi)) {
             Result = TPResult::False;
+}
           break;
 
         case CIK_DefaultArgument:
@@ -1192,8 +1242,9 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
               &InvalidAsDeclaration, /*VersusTemplateArg=*/true);
           // If this is an expression or a declaration with a missing
           // 'typename', assume it's not a declaration.
-          if (Result == TPResult::Ambiguous && InvalidAsDeclaration)
+          if (Result == TPResult::Ambiguous && InvalidAsDeclaration) {
             Result = TPResult::False;
+}
           break;
         }
 
@@ -1203,8 +1254,9 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
         PA.RevertAnnotations();
 
         // If what follows could be a declaration, it is a declaration.
-        if (Result != TPResult::False && Result != TPResult::Error)
+        if (Result != TPResult::False && Result != TPResult::Error) {
           return true;
+}
       }
 
       // Keep going. We know we're inside a template argument list now.
@@ -1227,25 +1279,34 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
     case tok::question:
       // In 'a ? b : c', 'b' can contain an unparenthesized comma. If it does,
       // that is *never* the end of the initializer. Skip to the ':'.
-      if (!ConsumeAndStoreConditional(Toks))
+      if (!ConsumeAndStoreConditional(Toks)) {
         return false;
+}
       break;
 
     case tok::greatergreatergreater:
-      if (!getLangOpts().CPlusPlus11)
+      if (!getLangOpts().CPlusPlus11) {
         goto consume_token;
-      if (AngleCount) --AngleCount;
-      if (KnownTemplateCount) --KnownTemplateCount;
+}
+      if (AngleCount) { --AngleCount;
+}
+      if (KnownTemplateCount) { --KnownTemplateCount;
+}
       LLVM_FALLTHROUGH;
     case tok::greatergreater:
-      if (!getLangOpts().CPlusPlus11)
+      if (!getLangOpts().CPlusPlus11) {
         goto consume_token;
-      if (AngleCount) --AngleCount;
-      if (KnownTemplateCount) --KnownTemplateCount;
+}
+      if (AngleCount) { --AngleCount;
+}
+      if (KnownTemplateCount) { --KnownTemplateCount;
+}
       LLVM_FALLTHROUGH;
     case tok::greater:
-      if (AngleCount) --AngleCount;
-      if (KnownTemplateCount) --KnownTemplateCount;
+      if (AngleCount) { --AngleCount;
+}
+      if (KnownTemplateCount) { --KnownTemplateCount;
+}
       goto consume_token;
 
     case tok::kw_template:
@@ -1311,22 +1372,26 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
     // and return it.  Otherwise, this is a spurious RHS token, which we
     // consume and pass on to downstream code to diagnose.
     case tok::r_paren:
-      if (CIK == CIK_DefaultArgument)
+      if (CIK == CIK_DefaultArgument) {
         return true; // End of the default argument.
-      if (ParenCount && !IsFirstToken)
+}
+      if (ParenCount && !IsFirstToken) {
         return false;
+}
       Toks.push_back(Tok);
       ConsumeParen();
       continue;
     case tok::r_square:
-      if (BracketCount && !IsFirstToken)
+      if (BracketCount && !IsFirstToken) {
         return false;
+}
       Toks.push_back(Tok);
       ConsumeBracket();
       continue;
     case tok::r_brace:
-      if (BraceCount && !IsFirstToken)
+      if (BraceCount && !IsFirstToken) {
         return false;
+}
       Toks.push_back(Tok);
       ConsumeBrace();
       continue;
@@ -1345,8 +1410,9 @@ bool Parser::ConsumeAndStoreInitializer(CachedTokens &Toks,
       ConsumeStringToken();
       break;
     case tok::semi:
-      if (CIK == CIK_DefaultInitializer)
+      if (CIK == CIK_DefaultInitializer) {
         return true; // End of the default initializer.
+}
       LLVM_FALLTHROUGH;
     default:
     consume_token:

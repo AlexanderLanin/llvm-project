@@ -88,8 +88,9 @@ void ConstantInitBuilderBase::setGlobalInitializer(llvm::GlobalVariable *GV,
                                                    llvm::Constant *initializer){
   GV->setInitializer(initializer);
 
-  if (!SelfReferences.empty())
+  if (!SelfReferences.empty()) {
     resolveSelfReferences(GV);
+}
 }
 
 void ConstantInitBuilderBase::resolveSelfReferences(llvm::GlobalVariable *GV) {
@@ -208,9 +209,10 @@ ConstantAggregateBuilderBase::addPlaceholderWithSize(llvm::Type *type) {
 
   // Advance the offset past that field.
   auto &layout = Builder.CGM.getDataLayout();
-  if (!Packed)
+  if (!Packed) {
     offset = offset.alignTo(CharUnits::fromQuantity(
                                 layout.getABITypeAlignment(type)));
+}
   offset += CharUnits::fromQuantity(layout.getTypeStoreSize(type));
 
   CachedOffsetEnd = Builder.Buffer.size();
@@ -248,9 +250,10 @@ CharUnits ConstantAggregateBuilderBase::getOffsetFromGlobalTo(size_t end) const{
       assert(element != nullptr &&
              "cannot compute offset when a placeholder is present");
       llvm::Type *elementType = element->getType();
-      if (!Packed)
+      if (!Packed) {
         offset = offset.alignTo(CharUnits::fromQuantity(
                                   layout.getABITypeAlignment(elementType)));
+}
       offset += CharUnits::fromQuantity(layout.getTypeStoreSize(elementType));
     } while (++cacheEnd != end);
   }
@@ -269,7 +272,8 @@ llvm::Constant *ConstantAggregateBuilderBase::finishArray(llvm::Type *eltTy) {
           (Begin == buffer.size() && eltTy))
          && "didn't add any array elements without element type");
   auto elts = llvm::makeArrayRef(buffer).slice(Begin);
-  if (!eltTy) eltTy = elts[0]->getType();
+  if (!eltTy) { eltTy = elts[0]->getType();
+}
   auto type = llvm::ArrayType::get(eltTy, elts.size());
   auto constant = llvm::ConstantArray::get(type, elts);
   buffer.erase(buffer.begin() + Begin, buffer.end());
@@ -283,8 +287,9 @@ ConstantAggregateBuilderBase::finishStruct(llvm::StructType *ty) {
   auto &buffer = getBuffer();
   auto elts = llvm::makeArrayRef(buffer).slice(Begin);
 
-  if (ty == nullptr && elts.empty())
+  if (ty == nullptr && elts.empty()) {
     ty = llvm::StructType::get(Builder.CGM.getLLVMContext(), {}, Packed);
+}
 
   llvm::Constant *constant;
   if (ty) {

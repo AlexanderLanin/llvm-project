@@ -20,8 +20,9 @@ namespace llvm_libc {
 // Unit.
 const DeclContext *getOutermostNamespace(const DeclContext *Decl) {
   const DeclContext *Parent = Decl->getParent();
-  if (Parent && Parent->isTranslationUnit())
+  if (Parent && Parent->isTranslationUnit()) {
     return Decl;
+}
   return getOutermostNamespace(Parent);
 }
 
@@ -35,13 +36,15 @@ void CalleeNamespaceCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *FuncDecl = Result.Nodes.getNodeAs<FunctionDecl>("func");
 
   // Ignore compiler builtin functions.
-  if (FuncDecl->getBuiltinID() != 0)
+  if (FuncDecl->getBuiltinID() != 0) {
     return;
+}
 
   // If the outermost namespace of the function is __llvm_libc, we're good.
   const auto *NS = dyn_cast<NamespaceDecl>(getOutermostNamespace(FuncDecl));
-  if (NS && NS->getName() == "__llvm_libc")
+  if (NS && NS->getName() == "__llvm_libc") {
     return;
+}
 
   diag(UsageSiteExpr->getBeginLoc(), "%0 must resolve to a function declared "
                                      "within the '__llvm_libc' namespace")

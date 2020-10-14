@@ -268,10 +268,11 @@ const InclusionPathHandle InclusionPathHandleInvalid = -1;
 // Get a "file:line:column" source location string.
 static std::string getSourceLocationString(clang::Preprocessor &PP,
                                            clang::SourceLocation Loc) {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return std::string("(none)");
-  else
+  } else {
     return Loc.printToString(PP.getSourceManager());
+}
 }
 
 // Get just the file name from a source location.
@@ -279,8 +280,9 @@ static std::string getSourceLocationFile(clang::Preprocessor &PP,
                                          clang::SourceLocation Loc) {
   std::string Source(getSourceLocationString(PP, Loc));
   size_t Offset = Source.find(':', 2);
-  if (Offset == std::string::npos)
+  if (Offset == std::string::npos) {
     return Source;
+}
   return Source.substr(0, Offset);
 }
 
@@ -344,9 +346,9 @@ static std::string getSourceLine(clang::Preprocessor &PP, clang::FileID FileID,
   const char *BeginPtr = Buffer;
   const char *EndPtr = BufferEnd;
   int LineCounter = 1;
-  if (Line == 1)
+  if (Line == 1) {
     BeginPtr = Buffer;
-  else {
+  } else {
     while (Buffer < BufferEnd) {
       if (*Buffer == '\n') {
         if (++LineCounter == Line) {
@@ -385,8 +387,9 @@ static std::string getMacroUnexpandedString(clang::SourceRange Range,
     clang::SourceLocation EndLoc(Range.getEnd());
     const char *EndPtr = PP.getSourceManager().getCharacterData(EndLoc) + 1;
     Length = (EndPtr - BeginPtr) + 1; // +1 is ')' width.
-  } else
+  } else {
     Length = MacroName.size();
+}
   return llvm::StringRef(BeginPtr, Length).trim().str();
 }
 
@@ -409,46 +412,50 @@ static std::string getMacroExpandedString(clang::Preprocessor &PP,
     int ArgNo = (II && Args ? MI->getParameterNum(II) : -1);
     if (ArgNo == -1) {
       // This isn't an argument, just add it.
-      if (II == nullptr)
+      if (II == nullptr) {
         Expanded += PP.getSpelling(T); // Not an identifier.
-      else {
+      } else {
         // Token is for an identifier.
         std::string Name = II->getName().str();
         // Check for nexted macro references.
         clang::MacroInfo *MacroInfo = PP.getMacroInfo(II);
-        if (MacroInfo && (Name != MacroName))
+        if (MacroInfo && (Name != MacroName)) {
           Expanded += getMacroExpandedString(PP, Name, MacroInfo, nullptr);
-        else
+        } else {
           Expanded += Name;
+}
       }
       continue;
     }
     // We get here if it's a function-style macro with arguments.
     const clang::Token *ResultArgToks;
     const clang::Token *ArgTok = Args->getUnexpArgument(ArgNo);
-    if (Args->ArgNeedsPreexpansion(ArgTok, PP))
+    if (Args->ArgNeedsPreexpansion(ArgTok, PP)) {
       ResultArgToks = &(const_cast<clang::MacroArgs *>(Args))
           ->getPreExpArgument(ArgNo, PP)[0];
-    else
+    } else {
       ResultArgToks = ArgTok; // Use non-preexpanded Tokens.
+}
     // If the arg token didn't expand into anything, ignore it.
-    if (ResultArgToks->is(clang::tok::eof))
+    if (ResultArgToks->is(clang::tok::eof)) {
       continue;
+}
     unsigned NumToks = clang::MacroArgs::getArgLength(ResultArgToks);
     // Append the resulting argument expansions.
     for (unsigned ArgumentIndex = 0; ArgumentIndex < NumToks; ++ArgumentIndex) {
       const clang::Token &AT = ResultArgToks[ArgumentIndex];
       clang::IdentifierInfo *II = AT.getIdentifierInfo();
-      if (II == nullptr)
+      if (II == nullptr) {
         Expanded += PP.getSpelling(AT); // Not an identifier.
-      else {
+      } else {
         // It's an identifier.  Check for further expansion.
         std::string Name = II->getName().str();
         clang::MacroInfo *MacroInfo = PP.getMacroInfo(II);
-        if (MacroInfo)
+        if (MacroInfo) {
           Expanded += getMacroExpandedString(PP, Name, MacroInfo, nullptr);
-        else
+        } else {
           Expanded += Name;
+}
       }
     }
   }
@@ -485,27 +492,33 @@ public:
         Column(Other.Column) {}
   PPItemKey() : File(HeaderHandleInvalid), Line(0), Column(0) {}
   bool operator==(const PPItemKey &Other) const {
-    if (Name != Other.Name)
+    if (Name != Other.Name) {
       return false;
-    if (File != Other.File)
+}
+    if (File != Other.File) {
       return false;
-    if (Line != Other.Line)
+}
+    if (Line != Other.Line) {
       return false;
+}
     return Column == Other.Column;
   }
   bool operator<(const PPItemKey &Other) const {
-    if (Name < Other.Name)
+    if (Name < Other.Name) {
       return true;
-    else if (Name > Other.Name)
+    } else if (Name > Other.Name) {
       return false;
-    if (File < Other.File)
+}
+    if (File < Other.File) {
       return true;
-    else if (File > Other.File)
+    } else if (File > Other.File) {
       return false;
-    if (Line < Other.Line)
+}
+    if (Line < Other.Line) {
       return true;
-    else if (Line > Other.Line)
+    } else if (Line > Other.Line) {
       return false;
+}
     return Column < Other.Column;
   }
   StringHandle Name;
@@ -546,15 +559,17 @@ public:
   bool haveInclusionPathHandle(InclusionPathHandle H) {
     for (auto I = InclusionPathHandles.begin(), E = InclusionPathHandles.end();
          I != E; ++I) {
-      if (*I == H)
+      if (*I == H) {
         return true;
+}
     }
     return InclusionPathHandleInvalid;
   }
   // Add a new header inclusion path entry, if not already present.
   void addInclusionPathHandle(InclusionPathHandle H) {
-    if (!haveInclusionPathHandle(H))
+    if (!haveInclusionPathHandle(H)) {
       InclusionPathHandles.push_back(H);
+}
   }
 
   // A string representing the macro instance after preprocessing.
@@ -644,15 +659,17 @@ public:
   bool haveInclusionPathHandle(InclusionPathHandle H) {
     for (auto I = InclusionPathHandles.begin(), E = InclusionPathHandles.end();
          I != E; ++I) {
-      if (*I == H)
+      if (*I == H) {
         return true;
+}
     }
     return InclusionPathHandleInvalid;
   }
   // Add a new header inclusion path entry, if not already present.
   void addInclusionPathHandle(InclusionPathHandle H) {
-    if (!haveInclusionPathHandle(H))
+    if (!haveInclusionPathHandle(H)) {
       InclusionPathHandles.push_back(H);
+}
   }
 
   // A flag representing the evaluated condition value.
@@ -816,16 +833,18 @@ public:
                               llvm::StringRef TargetPath) override {
     // If it's not a header in the header list, ignore it with respect to
     // the check.
-    if (BlockCheckHeaderListOnly && !isHeaderListHeader(TargetPath))
+    if (BlockCheckHeaderListOnly && !isHeaderListHeader(TargetPath)) {
       return;
+}
     HeaderHandle CurrentHeaderHandle = findHeaderHandle(DirectivePath);
     StringHandle IncludeHeaderHandle = addString(TargetPath);
     for (std::vector<PPItemKey>::const_iterator I = IncludeDirectives.begin(),
                                                 E = IncludeDirectives.end();
          I != E; ++I) {
       // If we already have an entry for this directive, return now.
-      if ((I->File == CurrentHeaderHandle) && (I->Line == DirectiveLine))
+      if ((I->File == CurrentHeaderHandle) && (I->Line == DirectiveLine)) {
         return;
+}
     }
     PPItemKey IncludeDirectiveItem(IncludeHeaderHandle, CurrentHeaderHandle,
                                    DirectiveLine, DirectiveColumn);
@@ -847,8 +866,9 @@ public:
     std::string SourcePath = getSourceLocationFile(PP, BlockStartLoc);
     SourcePath = ModularizeUtilities::getCanonicalPath(SourcePath);
     HeaderHandle SourceHandle = findHeaderHandle(SourcePath);
-    if (SourceHandle == -1)
+    if (SourceHandle == -1) {
       return true;
+}
     int BlockStartLine, BlockStartColumn, BlockEndLine, BlockEndColumn;
     bool returnValue = true;
     getSourceLocationLineAndColumn(PP, BlockStartLoc, BlockStartLine,
@@ -864,15 +884,17 @@ public:
         returnValue = false;
         OS << SourcePath << ":" << I->Line << ":" << I->Column << ":\n";
         OS << getSourceLine(PP, FileID, I->Line) << "\n";
-        if (I->Column > 0)
+        if (I->Column > 0) {
           OS << std::string(I->Column - 1, ' ') << "^\n";
+}
         OS << "error: Include directive within " << BlockIdentifierMessage
            << ".\n";
         OS << SourcePath << ":" << BlockStartLine << ":" << BlockStartColumn
            << ":\n";
         OS << getSourceLine(PP, BlockStartLoc) << "\n";
-        if (BlockStartColumn > 0)
+        if (BlockStartColumn > 0) {
           OS << std::string(BlockStartColumn - 1, ' ') << "^\n";
+}
         OS << "The \"" << BlockIdentifierMessage << "\" block is here.\n";
       }
     }
@@ -882,21 +904,25 @@ public:
   // Handle entering a header source file.
   void handleHeaderEntry(clang::Preprocessor &PP, llvm::StringRef HeaderPath) {
     // Ignore <built-in> and <command-line> to reduce message clutter.
-    if (HeaderPath.startswith("<"))
+    if (HeaderPath.startswith("<")) {
       return;
+}
     HeaderHandle H = addHeader(HeaderPath);
-    if (H != getCurrentHeaderHandle())
+    if (H != getCurrentHeaderHandle()) {
       pushHeaderHandle(H);
+}
     // Check for nested header.
-    if (!InNestedHeader)
+    if (!InNestedHeader) {
       InNestedHeader = !HeadersInThisCompile.insert(H).second;
+}
   }
 
   // Handle exiting a header source file.
   void handleHeaderExit(llvm::StringRef HeaderPath) {
     // Ignore <built-in> and <command-line> to reduce message clutter.
-    if (HeaderPath.startswith("<"))
+    if (HeaderPath.startswith("<")) {
       return;
+}
     HeaderHandle H = findHeaderHandle(HeaderPath);
     HeaderHandle TH;
     if (isHeaderHandleInStack(H)) {
@@ -926,8 +952,9 @@ public:
     for (llvm::ArrayRef<std::string>::iterator I = HeaderList.begin(),
         E = HeaderList.end();
         I != E; ++I) {
-      if (*I == CanonicalPath)
+      if (*I == CanonicalPath) {
         return true;
+}
     }
     return false;
   }
@@ -939,8 +966,9 @@ public:
     HeaderHandle H = 0;
     for (auto I = HeaderPaths.begin(), E = HeaderPaths.end(); I != E;
          ++I, ++H) {
-      if (*I == CanonicalPath)
+      if (*I == CanonicalPath) {
         return H;
+}
     }
     return HeaderHandleInvalid;
   }
@@ -959,8 +987,9 @@ public:
 
   // Return a header file path string given its handle.
   StringHandle getHeaderFilePath(HeaderHandle H) const {
-    if ((H >= 0) && (H < (HeaderHandle)HeaderPaths.size()))
+    if ((H >= 0) && (H < (HeaderHandle)HeaderPaths.size())) {
       return HeaderPaths[H];
+}
     return StringHandle();
   }
 
@@ -979,16 +1008,18 @@ public:
   }
   // Get the top handle on the header stack.
   HeaderHandle getCurrentHeaderHandle() const {
-    if (HeaderStack.size() != 0)
+    if (HeaderStack.size() != 0) {
       return HeaderStack.back();
+}
     return HeaderHandleInvalid;
   }
 
   // Check for presence of header handle in the header stack.
   bool isHeaderHandleInStack(HeaderHandle H) const {
     for (auto I = HeaderStack.begin(), E = HeaderStack.end(); I != E; ++I) {
-      if (*I == H)
+      if (*I == H) {
         return true;
+}
     }
     return false;
   }
@@ -1000,8 +1031,9 @@ public:
     InclusionPathHandle H = 0;
     for (auto I = InclusionPaths.begin(), E = InclusionPaths.end(); I != E;
          ++I, ++H) {
-      if (I->Path == Path)
+      if (I->Path == Path) {
         return H;
+}
     }
     return HeaderHandleInvalid;
   }
@@ -1024,8 +1056,9 @@ public:
   // Return an inclusion path given its handle.
   const std::vector<HeaderHandle> &
   getInclusionPath(InclusionPathHandle H) const {
-    if ((H >= 0) && (H <= (InclusionPathHandle)InclusionPaths.size()))
+    if ((H >= 0) && (H <= (InclusionPathHandle)InclusionPaths.size())) {
       return InclusionPaths[H].Path;
+}
     static std::vector<HeaderHandle> Empty;
     return Empty;
   }
@@ -1038,8 +1071,9 @@ public:
                                  llvm::StringRef MacroUnexpanded,
                                  llvm::StringRef MacroExpanded,
                                  InclusionPathHandle InclusionPathHandle) {
-    if (InNestedHeader)
+    if (InNestedHeader) {
       return;
+}
     StringHandle MacroName = addString(II->getName());
     PPItemKey InstanceKey(PP, MacroName, H, InstanceLoc);
     PPItemKey DefinitionKey(PP, MacroName, H, DefinitionLoc);
@@ -1064,9 +1098,9 @@ public:
           CondTracker.findMacroExpansionInstance(addString(MacroExpanded),
                                                  DefinitionKey);
       // If found, just add the inclusion path to the instance.
-      if (MacroInfo)
+      if (MacroInfo) {
         MacroInfo->addInclusionPathHandle(InclusionPathHandle);
-      else {
+      } else {
         // Otherwise add a new instance with the unique value.
         std::string DefinitionSourceLine =
             getSourceLocationString(PP, DefinitionLoc) + ":\n" +
@@ -1087,8 +1121,9 @@ public:
                                   llvm::StringRef ConditionUnexpanded,
                                   InclusionPathHandle InclusionPathHandle) {
     // Ignore header guards, assuming the header guard is the only conditional.
-    if (InNestedHeader)
+    if (InNestedHeader) {
       return;
+}
     StringHandle ConditionUnexpandedHandle(addString(ConditionUnexpanded));
     PPItemKey InstanceKey(PP, ConditionUnexpandedHandle, H, InstanceLoc);
     auto I = ConditionalExpansions.find(InstanceKey);
@@ -1107,9 +1142,9 @@ public:
       ConditionalExpansionInstance *MacroInfo =
           CondTracker.findConditionalExpansionInstance(ConditionValue);
       // If found, just add the inclusion path to the instance.
-      if (MacroInfo)
+      if (MacroInfo) {
         MacroInfo->addInclusionPathHandle(InclusionPathHandle);
-      else {
+      } else {
         // Otherwise add a new instance with the unique value.
         CondTracker.addConditionalExpansionInstance(ConditionValue,
                                                     InclusionPathHandle);
@@ -1127,14 +1162,16 @@ public:
       const PPItemKey &ItemKey = I->first;
       MacroExpansionTracker &MacroExpTracker = I->second;
       // If no mismatch (only one instance value) continue.
-      if (!MacroExpTracker.hasMismatch())
+      if (!MacroExpTracker.hasMismatch()) {
         continue;
+}
       // Tell caller we found one or more errors.
       ReturnValue = true;
       // Start the error message.
       OS << MacroExpTracker.InstanceSourceLine;
-      if (ItemKey.Column > 0)
+      if (ItemKey.Column > 0) {
         OS << std::string(ItemKey.Column - 1, ' ') << "^\n";
+}
       OS << "error: Macro instance '" << MacroExpTracker.MacroUnexpanded
          << "' has different values in this header, depending on how it was "
             "included.\n";
@@ -1163,13 +1200,15 @@ public:
         // If there is a definition...
         if (MacroInfo.DefinitionLocation.Line != ItemKey.Line) {
           OS << MacroInfo.DefinitionSourceLine;
-          if (MacroInfo.DefinitionLocation.Column > 0)
+          if (MacroInfo.DefinitionLocation.Column > 0) {
             OS << std::string(MacroInfo.DefinitionLocation.Column - 1, ' ')
                << "^\n";
+}
           OS << "Macro defined here.\n";
-        } else
+        } else {
           OS << "(no macro definition)"
              << "\n";
+}
       }
     }
     return ReturnValue;
@@ -1185,8 +1224,9 @@ public:
          I != E; ++I) {
       const PPItemKey &ItemKey = I->first;
       ConditionalTracker &CondTracker = I->second;
-      if (!CondTracker.hasMismatch())
+      if (!CondTracker.hasMismatch()) {
         continue;
+}
       // Tell caller we found one or more errors.
       ReturnValue = true;
       // Start the error message.
@@ -1297,8 +1337,9 @@ void PreprocessorCallbacks::FileChanged(
   case ExitFile: {
     const clang::FileEntry *F =
         PP.getSourceManager().getFileEntryForID(PrevFID);
-    if (F)
+    if (F) {
       PPTracker.handleHeaderExit(F->getName());
+}
   } break;
   case SystemHeaderPragma:
   case RenameFile:
@@ -1313,8 +1354,9 @@ void PreprocessorCallbacks::MacroExpands(const clang::Token &MacroNameTok,
                                          const clang::MacroArgs *Args) {
   clang::SourceLocation Loc = Range.getBegin();
   // Ignore macro argument expansions.
-  if (!Loc.isFileID())
+  if (!Loc.isFileID()) {
     return;
+}
   clang::IdentifierInfo *II = MacroNameTok.getIdentifierInfo();
   const clang::MacroInfo *MI = MD.getMacroInfo();
   std::string MacroName = II->getName().str();

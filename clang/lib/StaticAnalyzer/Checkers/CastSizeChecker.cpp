@@ -50,15 +50,17 @@ public:
 static bool evenFlexibleArraySize(ASTContext &Ctx, CharUnits RegionSize,
                                   CharUnits TypeSize, QualType ToPointeeTy) {
   const RecordType *RT = ToPointeeTy->getAs<RecordType>();
-  if (!RT)
+  if (!RT) {
     return false;
+}
 
   const RecordDecl *RD = RT->getDecl();
   RecordDecl::field_iterator Iter(RD->field_begin());
   RecordDecl::field_iterator End(RD->field_end());
   const FieldDecl *Last = nullptr;
-  for (; Iter != End; ++Iter)
+  for (; Iter != End; ++Iter) {
     Last = *Iter;
+}
   assert(Last && "empty structs should already be handled");
 
   const Type *ElemType = Last->getType()->getArrayElementTypeNoTypeQual();
@@ -66,22 +68,25 @@ static bool evenFlexibleArraySize(ASTContext &Ctx, CharUnits RegionSize,
   if (const ConstantArrayType *ArrayTy =
         Ctx.getAsConstantArrayType(Last->getType())) {
     FlexSize = Ctx.getTypeSizeInChars(ElemType);
-    if (ArrayTy->getSize() == 1 && TypeSize > FlexSize)
+    if (ArrayTy->getSize() == 1 && TypeSize > FlexSize) {
       TypeSize -= FlexSize;
-    else if (ArrayTy->getSize() != 0)
+    } else if (ArrayTy->getSize() != 0) {
       return false;
+}
   } else if (RD->hasFlexibleArrayMember()) {
     FlexSize = Ctx.getTypeSizeInChars(ElemType);
   } else {
     return false;
   }
 
-  if (FlexSize.isZero())
+  if (FlexSize.isZero()) {
     return false;
+}
 
   CharUnits Left = RegionSize - TypeSize;
-  if (Left.isNegative())
+  if (Left.isNegative()) {
     return false;
+}
 
   return Left % FlexSize == 0;
 }
@@ -92,49 +97,58 @@ void CastSizeChecker::checkPreStmt(const CastExpr *CE,CheckerContext &C) const {
   QualType ToTy = Ctx.getCanonicalType(CE->getType());
   const PointerType *ToPTy = dyn_cast<PointerType>(ToTy.getTypePtr());
 
-  if (!ToPTy)
+  if (!ToPTy) {
     return;
+}
 
   QualType ToPointeeTy = ToPTy->getPointeeType();
 
   // Only perform the check if 'ToPointeeTy' is a complete type.
-  if (ToPointeeTy->isIncompleteType())
+  if (ToPointeeTy->isIncompleteType()) {
     return;
+}
 
   ProgramStateRef state = C.getState();
   const MemRegion *R = C.getSVal(E).getAsRegion();
-  if (!R)
+  if (!R) {
     return;
+}
 
   const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(R);
-  if (!SR)
+  if (!SR) {
     return;
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
 
   DefinedOrUnknownSVal Size = getDynamicSize(state, SR, svalBuilder);
   const llvm::APSInt *SizeInt = svalBuilder.getKnownValue(state, Size);
-  if (!SizeInt)
+  if (!SizeInt) {
     return;
+}
 
   CharUnits regionSize = CharUnits::fromQuantity(SizeInt->getZExtValue());
   CharUnits typeSize = C.getASTContext().getTypeSizeInChars(ToPointeeTy);
 
   // Ignore void, and a few other un-sizeable types.
-  if (typeSize.isZero())
+  if (typeSize.isZero()) {
     return;
+}
 
-  if (regionSize % typeSize == 0)
+  if (regionSize % typeSize == 0) {
     return;
+}
 
-  if (evenFlexibleArraySize(Ctx, regionSize, typeSize, ToPointeeTy))
+  if (evenFlexibleArraySize(Ctx, regionSize, typeSize, ToPointeeTy)) {
     return;
+}
 
   if (ExplodedNode *errorNode = C.generateErrorNode()) {
-    if (!BT)
+    if (!BT) {
       BT.reset(new BuiltinBug(this, "Cast region with wrong size.",
                                     "Cast a region whose size is not a multiple"
                                     " of the destination type size."));
+}
     auto R = std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(),
                                                       errorNode);
     R->addRange(CE->getSourceRange());

@@ -17,8 +17,9 @@ namespace doc {
 
 std::unique_ptr<Generator> getYAMLGenerator() {
   auto G = doc::findGeneratorByName("yaml");
-  if (!G)
+  if (!G) {
     return nullptr;
+}
   return std::move(G.get());
 }
 

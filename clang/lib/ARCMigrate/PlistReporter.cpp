@@ -71,8 +71,9 @@ void arcmt::writeARCDiagsToPlist(const std::string &outPath,
        " <key>files</key>\n"
        " <array>\n";
 
-  for (FileID FID : Fids)
+  for (FileID FID : Fids) {
     EmitString(o << "  ", SM.getFileEntryForID(FID)->getName()) << '\n';
+}
 
   o << " </array>\n"
        " <key>diagnostics</key>\n"
@@ -83,8 +84,9 @@ void arcmt::writeARCDiagsToPlist(const std::string &outPath,
 
     const StoredDiagnostic &D = *DI;
 
-    if (D.getLevel() == DiagnosticsEngine::Ignored)
+    if (D.getLevel() == DiagnosticsEngine::Ignored) {
       continue;
+}
 
     o << "  <dict>\n";
 

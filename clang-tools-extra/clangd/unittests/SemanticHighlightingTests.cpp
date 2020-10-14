@@ -117,8 +117,9 @@ void checkHighlightings(llvm::StringRef Code,
   TU.ExtraArgs.push_back("-fno-delayed-template-parsing");
   TU.ExtraArgs.push_back("-std=c++20");
 
-  for (auto File : AdditionalFiles)
+  for (auto File : AdditionalFiles) {
     TU.AdditionalFiles.insert({File.first, std::string(File.second)});
+}
   auto AST = TU.build();
 
   EXPECT_EQ(Code, annotate(Test.code(), getSemanticHighlightings(AST)));
@@ -143,12 +144,14 @@ void checkDiffedHighlights(llvm::StringRef OldCode, llvm::StringRef NewCode) {
   std::vector<LineHighlightings> ExpectedLinePairHighlighting;
   for (const HighlightingToken &Token : NewTokens) {
     auto It = ExpectedLines.find(Token.R.start.line);
-    if (It != ExpectedLines.end())
+    if (It != ExpectedLines.end()) {
       It->second.push_back(Token);
+}
   }
-  for (auto &LineTokens : ExpectedLines)
+  for (auto &LineTokens : ExpectedLines) {
     ExpectedLinePairHighlighting.push_back(
         {LineTokens.first, LineTokens.second, /*IsInactive = */ false});
+}
 
   std::vector<LineHighlightings> ActualDiffed =
       diffHighlightings(NewTokens, OldTokens);
@@ -752,12 +755,14 @@ TEST(SemanticHighlighting, GeneratesHighlightsWhenFileChange) {
 std::vector<HighlightingToken> tokens(llvm::StringRef MarkedText) {
   Annotations A(MarkedText);
   std::vector<HighlightingToken> Results;
-  for (const Range& R : A.ranges())
+  for (const Range& R : A.ranges()) {
     Results.push_back({HighlightingKind::Variable, R});
+}
   for (unsigned I = 0; I < static_cast<unsigned>(HighlightingKind::LastKind); ++I) {
     HighlightingKind Kind = static_cast<HighlightingKind>(I);
-    for (const Range& R : A.ranges(llvm::to_string(Kind)))
+    for (const Range& R : A.ranges(llvm::to_string(Kind))) {
       Results.push_back({Kind, R});
+}
   }
   llvm::sort(Results);
   return Results;
@@ -932,8 +937,9 @@ TEST(SemanticHighlighting, HighlightingDiffer) {
        ^$Class[[A]]
       )"}};
 
-  for (const auto &Test : TestCases)
+  for (const auto &Test : TestCases) {
     checkDiffedHighlights(Test.OldCode, Test.NewCode);
+}
 }
 
 TEST(SemanticHighlighting, DiffBeyondTheEndOfFile) {

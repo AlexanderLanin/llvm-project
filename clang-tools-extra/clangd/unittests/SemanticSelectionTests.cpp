@@ -34,8 +34,9 @@ using ::testing::UnorderedElementsAreArray;
 // front() is SR.range, back() is outermost range.
 std::vector<Range> gatherRanges(const SelectionRange &SR) {
   std::vector<Range> Ranges;
-  for (const SelectionRange *S = &SR; S; S = S->parent.get())
+  for (const SelectionRange *S = &SR; S; S = S->parent.get()) {
     Ranges.push_back(S->range);
+}
   return Ranges;
 }
 

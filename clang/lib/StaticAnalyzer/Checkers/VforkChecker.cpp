@@ -81,8 +81,9 @@ bool VforkChecker::isChildProcess(const ProgramStateRef State) {
 
 bool VforkChecker::isVforkCall(const Decl *D, CheckerContext &C) const {
   auto FD = dyn_cast_or_null<FunctionDecl>(D);
-  if (!FD || !C.isCLibraryFunction(FD))
+  if (!FD || !C.isCLibraryFunction(FD)) {
     return false;
+}
 
   if (!II_vfork) {
     ASTContext &AC = C.getASTContext();
@@ -111,8 +112,9 @@ bool VforkChecker::isCallWhitelisted(const IdentifierInfo *II,
     };
 
     ASTContext &AC = C.getASTContext();
-    for (const char **id = ids; *id; ++id)
+    for (const char **id = ids; *id; ++id) {
       VforkWhitelist.insert(&AC.Idents.get(*id));
+}
   }
 
   return VforkWhitelist.count(II);
@@ -121,17 +123,19 @@ bool VforkChecker::isCallWhitelisted(const IdentifierInfo *II,
 void VforkChecker::reportBug(const char *What, CheckerContext &C,
                              const char *Details) const {
   if (ExplodedNode *N = C.generateErrorNode(C.getState())) {
-    if (!BT)
+    if (!BT) {
       BT.reset(new BuiltinBug(this,
                               "Dangerous construct in a vforked process"));
+}
 
     SmallString<256> buf;
     llvm::raw_svector_ostream os(buf);
 
     os << What << " is prohibited after a successful vfork";
 
-    if (Details)
+    if (Details) {
       os << "; " << Details;
+}
 
     auto Report = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
     // TODO: mark vfork call in BugReportVisitor
@@ -145,18 +149,21 @@ void VforkChecker::checkPostCall(const CallEvent &Call,
   // We can't call vfork in child so don't bother
   // (corresponding warning has already been emitted in checkPreCall).
   ProgramStateRef State = C.getState();
-  if (isChildProcess(State))
+  if (isChildProcess(State)) {
     return;
+}
 
-  if (!isVforkCall(Call.getDecl(), C))
+  if (!isVforkCall(Call.getDecl(), C)) {
     return;
+}
 
   // Get return value of vfork.
   SVal VforkRetVal = Call.getReturnValue();
   Optional<DefinedOrUnknownSVal> DVal =
     VforkRetVal.getAs<DefinedOrUnknownSVal>();
-  if (!DVal)
+  if (!DVal) {
     return;
+}
 
   // Get assigned variable.
   const ParentMap &PM = C.getLocationContext()->getParentMap();
@@ -184,24 +191,27 @@ void VforkChecker::checkPreCall(const CallEvent &Call,
                                 CheckerContext &C) const {
   ProgramStateRef State = C.getState();
   if (isChildProcess(State)
-      && !isCallWhitelisted(Call.getCalleeIdentifier(), C))
+      && !isCallWhitelisted(Call.getCalleeIdentifier(), C)) {
     reportBug("This function call", C);
+}
 }
 
 // Prohibit writes in child process (except for vfork's lhs).
 void VforkChecker::checkBind(SVal L, SVal V, const Stmt *S,
                              CheckerContext &C) const {
   ProgramStateRef State = C.getState();
-  if (!isChildProcess(State))
+  if (!isChildProcess(State)) {
     return;
+}
 
   const MemRegion *VforkLhs =
     static_cast<const MemRegion *>(State->get<VforkResultRegion>());
   const MemRegion *MR = L.getAsRegion();
 
   // Child is allowed to modify only vfork's lhs.
-  if (!MR || MR == VforkLhs)
+  if (!MR || MR == VforkLhs) {
     return;
+}
 
   reportBug("This assignment", C);
 }
@@ -209,8 +219,9 @@ void VforkChecker::checkBind(SVal L, SVal V, const Stmt *S,
 // Prohibit return from function in child process.
 void VforkChecker::checkPreStmt(const ReturnStmt *RS, CheckerContext &C) const {
   ProgramStateRef State = C.getState();
-  if (isChildProcess(State))
+  if (isChildProcess(State)) {
     reportBug("Return", C, "call _exit() instead");
+}
 }
 
 void ento::registerVforkChecker(CheckerManager &mgr) {

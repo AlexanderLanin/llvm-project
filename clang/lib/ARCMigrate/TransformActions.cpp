@@ -78,20 +78,25 @@ class TransformActionsImpl {
     }
 
     RangeComparison compareWith(const CharRange &RHS) const {
-      if (End.isBeforeInTranslationUnitThan(RHS.Begin))
+      if (End.isBeforeInTranslationUnitThan(RHS.Begin)) {
         return Range_Before;
-      if (RHS.End.isBeforeInTranslationUnitThan(Begin))
+}
+      if (RHS.End.isBeforeInTranslationUnitThan(Begin)) {
         return Range_After;
+}
       if (!Begin.isBeforeInTranslationUnitThan(RHS.Begin) &&
-          !RHS.End.isBeforeInTranslationUnitThan(End))
+          !RHS.End.isBeforeInTranslationUnitThan(End)) {
         return Range_Contained;
+}
       if (Begin.isBeforeInTranslationUnitThan(RHS.Begin) &&
-          RHS.End.isBeforeInTranslationUnitThan(End))
+          RHS.End.isBeforeInTranslationUnitThan(End)) {
         return Range_Contains;
-      if (Begin.isBeforeInTranslationUnitThan(RHS.Begin))
+}
+      if (Begin.isBeforeInTranslationUnitThan(RHS.Begin)) {
         return Range_ExtendsBegin;
-      else
+      } else {
         return Range_ExtendsEnd;
+}
     }
 
     static RangeComparison compare(SourceRange LHS, SourceRange RHS,
@@ -200,29 +205,35 @@ bool TransformActionsImpl::commitTransaction() {
     ActionData &act = CachedActions[i];
     switch (act.Kind) {
     case Act_Insert:
-      if (!canInsert(act.Loc))
+      if (!canInsert(act.Loc)) {
         AllActionsPossible = false;
+}
       break;
     case Act_InsertAfterToken:
-      if (!canInsertAfterToken(act.Loc))
+      if (!canInsertAfterToken(act.Loc)) {
         AllActionsPossible = false;
+}
       break;
     case Act_Remove:
-      if (!canRemoveRange(act.R1))
+      if (!canRemoveRange(act.R1)) {
         AllActionsPossible = false;
+}
       break;
     case Act_RemoveStmt:
       assert(act.S);
-      if (!canRemoveRange(act.S->getSourceRange()))
+      if (!canRemoveRange(act.S->getSourceRange())) {
         AllActionsPossible = false;
+}
       break;
     case Act_Replace:
-      if (!canReplaceRange(act.R1, act.R2))
+      if (!canReplaceRange(act.R1, act.R2)) {
         AllActionsPossible = false;
+}
       break;
     case Act_ReplaceText:
-      if (!canReplaceText(act.Loc, act.Text1))
+      if (!canReplaceText(act.Loc, act.Text1)) {
         AllActionsPossible = false;
+}
       break;
     case Act_IncreaseIndentation:
       // This is not important, we don't care if it will fail.
@@ -231,8 +242,9 @@ bool TransformActionsImpl::commitTransaction() {
       // We are just checking source rewrites.
       break;
     }
-    if (!AllActionsPossible)
+    if (!AllActionsPossible) {
       break;
+}
   }
 
   if (!AllActionsPossible) {
@@ -313,8 +325,9 @@ void TransformActionsImpl::removeStmt(Stmt *S) {
   assert(IsInTransaction && "Actions only allowed during a transaction");
   ActionData data;
   data.Kind = Act_RemoveStmt;
-  if (auto *E = dyn_cast<Expr>(S))
+  if (auto *E = dyn_cast<Expr>(S)) {
     S = E->IgnoreImplicit(); // important for uniquing
+}
   data.S = S;
   CachedActions.push_back(data);
 }
@@ -357,7 +370,8 @@ void TransformActionsImpl::replaceStmt(Stmt *S, StringRef text) {
 
 void TransformActionsImpl::increaseIndentation(SourceRange range,
                                                SourceLocation parentIndent) {
-  if (range.isInvalid()) return;
+  if (range.isInvalid()) { return;
+}
   assert(IsInTransaction && "Actions only allowed during a transaction");
   ActionData data;
   data.Kind = Act_IncreaseIndentation;
@@ -369,8 +383,9 @@ void TransformActionsImpl::increaseIndentation(SourceRange range,
 bool TransformActionsImpl::clearDiagnostic(ArrayRef<unsigned> IDs,
                                            SourceRange range) {
   assert(IsInTransaction && "Actions only allowed during a transaction");
-  if (!CapturedDiags.hasDiagnostic(IDs, range))
+  if (!CapturedDiags.hasDiagnostic(IDs, range)) {
     return false;
+}
 
   ActionData data;
   data.Kind = Act_ClearDiagnostic;
@@ -381,28 +396,34 @@ bool TransformActionsImpl::clearDiagnostic(ArrayRef<unsigned> IDs,
 }
 
 bool TransformActionsImpl::canInsert(SourceLocation loc) {
-  if (loc.isInvalid())
+  if (loc.isInvalid()) {
     return false;
+}
 
   SourceManager &SM = Ctx.getSourceManager();
-  if (SM.isInSystemHeader(SM.getExpansionLoc(loc)))
+  if (SM.isInSystemHeader(SM.getExpansionLoc(loc))) {
     return false;
+}
 
-  if (loc.isFileID())
+  if (loc.isFileID()) {
     return true;
+}
   return PP.isAtStartOfMacroExpansion(loc);
 }
 
 bool TransformActionsImpl::canInsertAfterToken(SourceLocation loc) {
-  if (loc.isInvalid())
+  if (loc.isInvalid()) {
     return false;
+}
 
   SourceManager &SM = Ctx.getSourceManager();
-  if (SM.isInSystemHeader(SM.getExpansionLoc(loc)))
+  if (SM.isInSystemHeader(SM.getExpansionLoc(loc))) {
     return false;
+}
 
-  if (loc.isFileID())
+  if (loc.isFileID()) {
     return true;
+}
   return PP.isAtEndOfMacroExpansion(loc);
 }
 
@@ -416,8 +437,9 @@ bool TransformActionsImpl::canReplaceRange(SourceRange range,
 }
 
 bool TransformActionsImpl::canReplaceText(SourceLocation loc, StringRef text) {
-  if (!canInsert(loc))
+  if (!canInsert(loc)) {
     return false;
+}
 
   SourceManager &SM = Ctx.getSourceManager();
   loc = SM.getExpansionLoc(loc);
@@ -428,8 +450,9 @@ bool TransformActionsImpl::canReplaceText(SourceLocation loc, StringRef text) {
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
     return false;
+}
 
   return file.substr(locInfo.second).startswith(text);
 }
@@ -449,14 +472,16 @@ void TransformActionsImpl::commitRemove(SourceRange range) {
 
 void TransformActionsImpl::commitRemoveStmt(Stmt *S) {
   assert(S);
-  if (StmtRemovals.count(S))
+  if (StmtRemovals.count(S)) {
     return; // already removed.
+}
 
   if (Expr *E = dyn_cast<Expr>(S)) {
     commitRemove(E->getSourceRange());
     commitInsert(E->getSourceRange().getBegin(), getARCMTMacroName());
-  } else
+  } else {
     commitRemove(S->getSourceRange());
+}
 
   StmtRemovals.insert(S);
 }
@@ -466,16 +491,19 @@ void TransformActionsImpl::commitReplace(SourceRange range,
   RangeComparison comp = CharRange::compare(replacementRange, range,
                                                Ctx.getSourceManager(), PP);
   assert(comp == Range_Contained);
-  if (comp != Range_Contained)
+  if (comp != Range_Contained) {
     return; // Although we asserted, be extra safe for release build.
-  if (range.getBegin() != replacementRange.getBegin())
+}
+  if (range.getBegin() != replacementRange.getBegin()) {
     addRemoval(CharSourceRange::getCharRange(range.getBegin(),
                                              replacementRange.getBegin()));
-  if (replacementRange.getEnd() != range.getEnd())
+}
+  if (replacementRange.getEnd() != range.getEnd()) {
     addRemoval(CharSourceRange::getTokenRange(
                                   getLocForEndOfToken(replacementRange.getEnd(),
                                                       Ctx.getSourceManager(), PP),
                                   range.getEnd()));
+}
 }
 void TransformActionsImpl::commitReplaceText(SourceLocation loc,
                                              StringRef text,
@@ -507,10 +535,12 @@ void TransformActionsImpl::addInsertion(SourceLocation loc, StringRef text) {
   SourceManager &SM = Ctx.getSourceManager();
   loc = SM.getExpansionLoc(loc);
   for (const CharRange &I : llvm::reverse(Removals)) {
-    if (!SM.isBeforeInTranslationUnit(loc, I.End))
+    if (!SM.isBeforeInTranslationUnit(loc, I.End)) {
       break;
-    if (I.Begin.isBeforeInTranslationUnitThan(loc))
+}
+    if (I.Begin.isBeforeInTranslationUnitThan(loc)) {
       return;
+}
   }
 
   Inserts[FullSourceLoc(loc, SM)].push_back(text);
@@ -518,8 +548,9 @@ void TransformActionsImpl::addInsertion(SourceLocation loc, StringRef text) {
 
 void TransformActionsImpl::addRemoval(CharSourceRange range) {
   CharRange newRange(range, Ctx.getSourceManager(), PP);
-  if (newRange.Begin == newRange.End)
+  if (newRange.Begin == newRange.End) {
     return;
+}
 
   Inserts.erase(Inserts.upper_bound(newRange.Begin),
                 Inserts.lower_bound(newRange.End));
@@ -593,8 +624,9 @@ SourceLocation TransformActionsImpl::getLocForEndOfToken(SourceLocation loc,
                                                          Preprocessor &PP) {
   if (loc.isMacroID()) {
     CharSourceRange Exp = SM.getExpansionRange(loc);
-    if (Exp.isCharRange())
+    if (Exp.isCharRange()) {
       return Exp.getEnd();
+}
     loc = Exp.getEnd();
   }
   return PP.getLocForEndOfToken(loc);

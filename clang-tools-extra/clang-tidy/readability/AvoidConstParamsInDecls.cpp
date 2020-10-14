@@ -20,9 +20,10 @@ namespace readability {
 namespace {
 
 SourceRange getTypeRange(const ParmVarDecl &Param) {
-  if (Param.getIdentifier() != nullptr)
+  if (Param.getIdentifier() != nullptr) {
     return SourceRange(Param.getBeginLoc(),
                        Param.getEndLoc().getLocWithOffset(-1));
+}
   return Param.getSourceRange();
 }
 
@@ -60,16 +61,18 @@ static llvm::Optional<Token> ConstTok(CharSourceRange Range,
   Token Tok;
   llvm::Optional<Token> ConstTok;
   while (!RawLexer.LexFromRawLexer(Tok)) {
-    if (Sources.isBeforeInTranslationUnit(Range.getEnd(), Tok.getLocation()))
+    if (Sources.isBeforeInTranslationUnit(Range.getEnd(), Tok.getLocation())) {
       break;
+}
     if (Tok.is(tok::raw_identifier)) {
       IdentifierInfo &Info = Result.Context->Idents.get(StringRef(
           Sources.getCharacterData(Tok.getLocation()), Tok.getLength()));
       Tok.setIdentifierInfo(&Info);
       Tok.setKind(Info.getTokenID());
     }
-    if (Tok.is(tok::kw_const))
+    if (Tok.is(tok::kw_const)) {
       ConstTok = Tok;
+}
   }
   return ConstTok;
 }
@@ -78,8 +81,9 @@ void AvoidConstParamsInDecls::check(const MatchFinder::MatchResult &Result) {
   const auto *Func = Result.Nodes.getNodeAs<FunctionDecl>("func");
   const auto *Param = Result.Nodes.getNodeAs<ParmVarDecl>("param");
 
-  if (!Param->getType().isLocalConstQualified())
+  if (!Param->getType().isLocalConstQualified()) {
     return;
+}
 
   auto Diag = diag(Param->getBeginLoc(),
                    "parameter %0 is const-qualified in the function "
@@ -106,12 +110,14 @@ void AvoidConstParamsInDecls::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getTokenRange(getTypeRange(*Param)),
       *Result.SourceManager, getLangOpts());
 
-  if (!FileRange.isValid())
+  if (!FileRange.isValid()) {
     return;
+}
 
   auto Tok = ConstTok(FileRange, Result);
-  if (!Tok)
+  if (!Tok) {
     return;
+}
   Diag << FixItHint::CreateRemoval(
       CharSourceRange::getTokenRange(Tok->getLocation(), Tok->getLocation()));
 }

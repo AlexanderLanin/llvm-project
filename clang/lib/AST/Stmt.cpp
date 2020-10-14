@@ -55,8 +55,9 @@ static struct StmtClassNameTable {
 
 static StmtClassNameTable &getStmtInfoTableEntry(Stmt::StmtClass E) {
   static bool Initialized = false;
-  if (Initialized)
+  if (Initialized) {
     return StmtClassInfo[E];
+}
 
   // Initialize the table on the first use.
   Initialized = true;
@@ -103,14 +104,17 @@ void Stmt::PrintStats() {
   unsigned sum = 0;
   llvm::errs() << "\n*** Stmt/Expr Stats:\n";
   for (int i = 0; i != Stmt::lastStmtConstant+1; i++) {
-    if (StmtClassInfo[i].Name == nullptr) continue;
+    if (StmtClassInfo[i].Name == nullptr) { continue;
+}
     sum += StmtClassInfo[i].Counter;
   }
   llvm::errs() << "  " << sum << " stmts/exprs total.\n";
   sum = 0;
   for (int i = 0; i != Stmt::lastStmtConstant+1; i++) {
-    if (StmtClassInfo[i].Name == nullptr) continue;
-    if (StmtClassInfo[i].Counter == 0) continue;
+    if (StmtClassInfo[i].Name == nullptr) { continue;
+}
+    if (StmtClassInfo[i].Counter == 0) { continue;
+}
     llvm::errs() << "    " << StmtClassInfo[i].Counter << " "
                  << StmtClassInfo[i].Name << ", " << StmtClassInfo[i].Size
                  << " each (" << StmtClassInfo[i].Counter*StmtClassInfo[i].Size
@@ -131,14 +135,17 @@ void Stmt::EnableStatistics() {
 }
 
 static std::pair<Stmt::Likelihood, const Attr *> getLikelihood(const Stmt *S) {
-  if (const auto *AS = dyn_cast_or_null<AttributedStmt>(S))
+  if (const auto *AS = dyn_cast_or_null<AttributedStmt>(S)) {
     for (const auto *A : AS->getAttrs()) {
-      if (isa<LikelyAttr>(A))
+      if (isa<LikelyAttr>(A)) {
         return std::make_pair(Stmt::LH_Likely, A);
+}
 
-      if (isa<UnlikelyAttr>(A))
+      if (isa<UnlikelyAttr>(A)) {
         return std::make_pair(Stmt::LH_Unlikely, A);
+}
     }
+}
 
   return std::make_pair(Stmt::LH_None, nullptr);
 }
@@ -150,15 +157,18 @@ Stmt::Likelihood Stmt::getLikelihood(const Stmt *S) {
 Stmt::Likelihood Stmt::getLikelihood(const Stmt *Then, const Stmt *Else) {
   Likelihood LHT = ::getLikelihood(Then).first;
   Likelihood LHE = ::getLikelihood(Else).first;
-  if (LHE == LH_None)
+  if (LHE == LH_None) {
     return LHT;
+}
 
   // If the same attribute is used on both branches there's a conflict.
-  if (LHT == LHE)
+  if (LHT == LHE) {
     return LH_None;
+}
 
-  if (LHT != LH_None)
+  if (LHT != LH_None) {
     return LHT;
+}
 
   // Invert the value of Else to get the value for Then.
   return LHE == LH_Likely ? LH_Unlikely : LH_Likely;
@@ -169,8 +179,9 @@ Stmt::determineLikelihoodConflict(const Stmt *Then, const Stmt *Else) {
   std::pair<Likelihood, const Attr *> LHT = ::getLikelihood(Then);
   std::pair<Likelihood, const Attr *> LHE = ::getLikelihood(Else);
   // If the same attribute is used on both branches there's a conflict.
-  if (LHT.first != LH_None && LHT.first == LHE.first)
+  if (LHT.first != LH_None && LHT.first == LHE.first) {
     return std::make_tuple(true, LHT.second, LHE.second);
+}
 
   return std::make_tuple(false, nullptr, nullptr);
 }
@@ -179,18 +190,22 @@ Stmt::determineLikelihoodConflict(const Stmt *Then, const Stmt *Else) {
 /// stmt at the top, if \a IgnoreCaptured is true.
 Stmt *Stmt::IgnoreContainers(bool IgnoreCaptured) {
   Stmt *S = this;
-  if (IgnoreCaptured)
-    if (auto CapS = dyn_cast_or_null<CapturedStmt>(S))
+  if (IgnoreCaptured) {
+    if (auto CapS = dyn_cast_or_null<CapturedStmt>(S)) {
       S = CapS->getCapturedStmt();
+}
+}
   while (true) {
-    if (auto AS = dyn_cast_or_null<AttributedStmt>(S))
+    if (auto AS = dyn_cast_or_null<AttributedStmt>(S)) {
       S = AS->getSubStmt();
-    else if (auto CS = dyn_cast_or_null<CompoundStmt>(S)) {
-      if (CS->size() != 1)
+    } else if (auto CS = dyn_cast_or_null<CompoundStmt>(S)) {
+      if (CS->size() != 1) {
         break;
+}
       S = CS->body_back();
-    } else
+    } else {
       break;
+}
   }
   return S;
 }
@@ -202,14 +217,15 @@ Stmt *Stmt::IgnoreContainers(bool IgnoreCaptured) {
 const Stmt *Stmt::stripLabelLikeStatements() const {
   const Stmt *S = this;
   while (true) {
-    if (const auto *LS = dyn_cast<LabelStmt>(S))
+    if (const auto *LS = dyn_cast<LabelStmt>(S)) {
       S = LS->getSubStmt();
-    else if (const auto *SC = dyn_cast<SwitchCase>(S))
+    } else if (const auto *SC = dyn_cast<SwitchCase>(S)) {
       S = SC->getSubStmt();
-    else if (const auto *AS = dyn_cast<AttributedStmt>(S))
+    } else if (const auto *AS = dyn_cast<AttributedStmt>(S)) {
       S = AS->getSubStmt();
-    else
+    } else {
       return S;
+}
   }
 }
 
@@ -380,15 +396,17 @@ CompoundStmt *CompoundStmt::CreateEmpty(const ASTContext &C,
 const Expr *ValueStmt::getExprStmt() const {
   const Stmt *S = this;
   do {
-    if (const auto *E = dyn_cast<Expr>(S))
+    if (const auto *E = dyn_cast<Expr>(S)) {
       return E;
+}
 
-    if (const auto *LS = dyn_cast<LabelStmt>(S))
+    if (const auto *LS = dyn_cast<LabelStmt>(S)) {
       S = LS->getSubStmt();
-    else if (const auto *AS = dyn_cast<AttributedStmt>(S))
+    } else if (const auto *AS = dyn_cast<AttributedStmt>(S)) {
       S = AS->getSubStmt();
-    else
+    } else {
       llvm_unreachable("unknown kind of ValueStmt");
+}
   } while (isa<ValueStmt>(S));
 
   return nullptr;
@@ -416,50 +434,62 @@ AttributedStmt *AttributedStmt::CreateEmpty(const ASTContext &C,
 }
 
 std::string AsmStmt::generateAsmString(const ASTContext &C) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->generateAsmString(C);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->generateAsmString(C);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
 StringRef AsmStmt::getOutputConstraint(unsigned i) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->getOutputConstraint(i);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->getOutputConstraint(i);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
 const Expr *AsmStmt::getOutputExpr(unsigned i) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->getOutputExpr(i);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->getOutputExpr(i);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
 StringRef AsmStmt::getInputConstraint(unsigned i) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->getInputConstraint(i);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->getInputConstraint(i);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
 const Expr *AsmStmt::getInputExpr(unsigned i) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->getInputExpr(i);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->getInputExpr(i);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
 StringRef AsmStmt::getClobber(unsigned i) const {
-  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this))
+  if (const auto *gccAsmStmt = dyn_cast<GCCAsmStmt>(this)) {
     return gccAsmStmt->getClobber(i);
-  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this))
+}
+  if (const auto *msAsmStmt = dyn_cast<MSAsmStmt>(this)) {
     return msAsmStmt->getClobber(i);
+}
   llvm_unreachable("unknown asm statement kind!");
 }
 
@@ -467,9 +497,11 @@ StringRef AsmStmt::getClobber(unsigned i) const {
 /// constraint.
 unsigned AsmStmt::getNumPlusOperands() const {
   unsigned Res = 0;
-  for (unsigned i = 0, e = getNumOutputs(); i != e; ++i)
-    if (isOutputPlusConstraint(i))
+  for (unsigned i = 0, e = getNumOutputs(); i != e; ++i) {
+    if (isOutputPlusConstraint(i)) {
       ++Res;
+}
+}
   return Res;
 }
 
@@ -557,17 +589,22 @@ int GCCAsmStmt::getNamedOperand(StringRef SymbolicName) const {
 
   // Check if this is an output operand.
   for (unsigned i = 0, e = getNumOutputs(); i != e; ++i) {
-    if (getOutputName(i) == SymbolicName)
+    if (getOutputName(i) == SymbolicName) {
       return i;
+}
   }
 
-  for (unsigned i = 0, e = getNumInputs(); i != e; ++i)
-    if (getInputName(i) == SymbolicName)
+  for (unsigned i = 0, e = getNumInputs(); i != e; ++i) {
+    if (getInputName(i) == SymbolicName) {
       return getNumOutputs() + NumPlusOperands + i;
+}
+}
 
-  for (unsigned i = 0, e = getNumLabels(); i != e; ++i)
-    if (getLabelName(i) == SymbolicName)
+  for (unsigned i = 0, e = getNumLabels(); i != e; ++i) {
+    if (getLabelName(i) == SymbolicName) {
       return i + getNumOutputs() + getNumInputs();
+}
+}
 
   // Not found.
   return -1;
@@ -613,8 +650,9 @@ unsigned GCCAsmStmt::AnalyzeAsmString(SmallVectorImpl<AsmStringPiece>&Pieces,
   while (true) {
     // Done with the string?
     if (CurPtr == StrEnd) {
-      if (!CurStringPiece.empty())
+      if (!CurStringPiece.empty()) {
         Pieces.push_back(AsmStringPiece(CurStringPiece));
+}
       return 0;
     }
 
@@ -683,8 +721,9 @@ unsigned GCCAsmStmt::AnalyzeAsmString(SmallVectorImpl<AsmStringPiece>&Pieces,
       unsigned N = 0;
 
       --CurPtr;
-      while (CurPtr != StrEnd && isDigit(*CurPtr))
+      while (CurPtr != StrEnd && isDigit(*CurPtr)) {
         N = N*10 + ((*CurPtr++)-'0');
+}
 
       unsigned NumOperands = getNumOutputs() + getNumPlusOperands() +
                              getNumInputs() + getNumLabels();
@@ -715,10 +754,12 @@ unsigned GCCAsmStmt::AnalyzeAsmString(SmallVectorImpl<AsmStringPiece>&Pieces,
 
       // Find the ']'.
       const char *NameEnd = (const char*)memchr(CurPtr, ']', StrEnd-CurPtr);
-      if (NameEnd == nullptr)
+      if (NameEnd == nullptr) {
         return diag::err_asm_unterminated_symbolic_operand_name;
-      if (NameEnd == CurPtr)
+}
+      if (NameEnd == CurPtr) {
         return diag::err_asm_empty_symbolic_operand_name;
+}
 
       StringRef SymbolicName(CurPtr, NameEnd - CurPtr);
 
@@ -762,13 +803,14 @@ std::string GCCAsmStmt::generateAsmString(const ASTContext &C) const {
 
   std::string AsmString;
   for (const auto &Piece : Pieces) {
-    if (Piece.isString())
+    if (Piece.isString()) {
       AsmString += Piece.getString();
-    else if (Piece.getModifier() == '\0')
+    } else if (Piece.getModifier() == '\0') {
       AsmString += '$' + llvm::utostr(Piece.getOperandNo());
-    else
+    } else {
       AsmString += "${" + llvm::utostr(Piece.getOperandNo()) + ':' +
                    Piece.getModifier() + '}';
+}
   }
   return AsmString;
 }
@@ -886,16 +928,20 @@ IfStmt::IfStmt(const ASTContext &Ctx, SourceLocation IL, bool IsConstexpr,
 
   setCond(Cond);
   setThen(Then);
-  if (HasElse)
+  if (HasElse) {
     setElse(Else);
-  if (HasVar)
+}
+  if (HasVar) {
     setConditionVariable(Ctx, Var);
-  if (HasInit)
+}
+  if (HasInit) {
     setInit(Init);
+}
 
   setIfLoc(IL);
-  if (HasElse)
+  if (HasElse) {
     setElseLoc(EL);
+}
 }
 
 IfStmt::IfStmt(EmptyShell Empty, bool HasElse, bool HasVar, bool HasInit)
@@ -931,8 +977,9 @@ IfStmt *IfStmt::CreateEmpty(const ASTContext &Ctx, bool HasElse, bool HasVar,
 
 VarDecl *IfStmt::getConditionVariable() {
   auto *DS = getConditionVariableDeclStmt();
-  if (!DS)
+  if (!DS) {
     return nullptr;
+}
   return cast<VarDecl>(DS->getSingleDecl());
 }
 
@@ -955,8 +1002,9 @@ bool IfStmt::isObjCAvailabilityCheck() const {
 }
 
 Optional<const Stmt*> IfStmt::getNondiscardedCase(const ASTContext &Ctx) const {
-  if (!isConstexpr() || getCond()->isValueDependent())
+  if (!isConstexpr() || getCond()->isValueDependent()) {
     return None;
+}
   return !getCond()->EvaluateKnownConstInt(Ctx) ? getElse() : getThen();
 }
 
@@ -974,8 +1022,9 @@ ForStmt::ForStmt(const ASTContext &C, Stmt *Init, Expr *Cond, VarDecl *condVar,
 }
 
 VarDecl *ForStmt::getConditionVariable() const {
-  if (!SubExprs[CONDVAR])
+  if (!SubExprs[CONDVAR]) {
     return nullptr;
+}
 
   auto *DS = cast<DeclStmt>(SubExprs[CONDVAR]);
   return cast<VarDecl>(DS->getSingleDecl());
@@ -1005,10 +1054,12 @@ SwitchStmt::SwitchStmt(const ASTContext &Ctx, Stmt *Init, VarDecl *Var,
 
   setCond(Cond);
   setBody(nullptr);
-  if (HasInit)
+  if (HasInit) {
     setInit(Init);
-  if (HasVar)
+}
+  if (HasVar) {
     setConditionVariable(Ctx, Var);
+}
 
   setSwitchLoc(SourceLocation{});
 }
@@ -1041,8 +1092,9 @@ SwitchStmt *SwitchStmt::CreateEmpty(const ASTContext &Ctx, bool HasInit,
 
 VarDecl *SwitchStmt::getConditionVariable() {
   auto *DS = getConditionVariableDeclStmt();
-  if (!DS)
+  if (!DS) {
     return nullptr;
+}
   return cast<VarDecl>(DS->getSingleDecl());
 }
 
@@ -1069,8 +1121,9 @@ WhileStmt::WhileStmt(const ASTContext &Ctx, VarDecl *Var, Expr *Cond,
 
   setCond(Cond);
   setBody(Body);
-  if (HasVar)
+  if (HasVar) {
     setConditionVariable(Ctx, Var);
+}
 
   setWhileLoc(WL);
   setLParenLoc(LParenLoc);
@@ -1102,8 +1155,9 @@ WhileStmt *WhileStmt::CreateEmpty(const ASTContext &Ctx, bool HasVar) {
 
 VarDecl *WhileStmt::getConditionVariable() {
   auto *DS = getConditionVariableDeclStmt();
-  if (!DS)
+  if (!DS) {
     return nullptr;
+}
   return cast<VarDecl>(DS->getSingleDecl());
 }
 
@@ -1123,8 +1177,9 @@ void WhileStmt::setConditionVariable(const ASTContext &Ctx, VarDecl *V) {
 
 // IndirectGotoStmt
 LabelDecl *IndirectGotoStmt::getConstantTarget() {
-  if (auto *E = dyn_cast<AddrLabelExpr>(getTarget()->IgnoreParenImpCasts()))
+  if (auto *E = dyn_cast<AddrLabelExpr>(getTarget()->IgnoreParenImpCasts())) {
     return E->getLabel();
+}
   return nullptr;
 }
 
@@ -1133,8 +1188,9 @@ ReturnStmt::ReturnStmt(SourceLocation RL, Expr *E, const VarDecl *NRVOCandidate)
     : Stmt(ReturnStmtClass), RetExpr(E) {
   bool HasNRVOCandidate = NRVOCandidate != nullptr;
   ReturnStmtBits.HasNRVOCandidate = HasNRVOCandidate;
-  if (HasNRVOCandidate)
+  if (HasNRVOCandidate) {
     setNRVOCandidate(NRVOCandidate);
+}
   setReturnLoc(RL);
 }
 
@@ -1281,8 +1337,9 @@ CapturedStmt::CapturedStmt(Stmt *S, CapturedRegionKind Kind,
 
   // Copy initialization expressions.
   Stmt **Stored = getStoredStmts();
-  for (unsigned I = 0, N = NumCaptures; I != N; ++I)
+  for (unsigned I = 0, N = NumCaptures; I != N; ++I) {
     *Stored++ = CaptureInits[I];
+}
 
   // Copy the statement being captured.
   *Stored = S;
@@ -1374,10 +1431,12 @@ void CapturedStmt::setCapturedRegionKind(CapturedRegionKind Kind) {
 
 bool CapturedStmt::capturesVariable(const VarDecl *Var) const {
   for (const auto &I : captures()) {
-    if (!I.capturesVariable() && !I.capturesVariableByCopy())
+    if (!I.capturesVariable() && !I.capturesVariableByCopy()) {
       continue;
-    if (I.getCapturedVar()->getCanonicalDecl() == Var->getCanonicalDecl())
+}
+    if (I.getCapturedVar()->getCanonicalDecl() == Var->getCanonicalDecl()) {
       return true;
+}
   }
 
   return false;

@@ -33,8 +33,9 @@ genReferenceList(const llvm::SmallVectorImpl<Reference> &Refs) {
   std::string Buffer;
   llvm::raw_string_ostream Stream(Buffer);
   for (const auto &R : Refs) {
-    if (&R != Refs.begin())
+    if (&R != Refs.begin()) {
       Stream << ", ";
+}
     Stream << R.Name;
   }
   return Stream.str();
@@ -68,16 +69,19 @@ static void writeFileDefinition(const ClangDocContext &CDCtx, const Location &L,
 
 static void writeDescription(const CommentInfo &I, raw_ostream &OS) {
   if (I.Kind == "FullComment") {
-    for (const auto &Child : I.Children)
+    for (const auto &Child : I.Children) {
       writeDescription(*Child, OS);
+}
   } else if (I.Kind == "ParagraphComment") {
-    for (const auto &Child : I.Children)
+    for (const auto &Child : I.Children) {
       writeDescription(*Child, OS);
+}
     writeNewLine(OS);
   } else if (I.Kind == "BlockCommandComment") {
     OS << genEmphasis(I.Name);
-    for (const auto &Child : I.Children)
+    for (const auto &Child : I.Children) {
       writeDescription(*Child, OS);
+}
   } else if (I.Kind == "InlineCommandComment") {
     OS << genEmphasis(I.Name) << " " << I.Text;
   } else if (I.Kind == "ParamCommandComment") {
@@ -87,8 +91,9 @@ static void writeDescription(const CommentInfo &I, raw_ostream &OS) {
     std::string Direction = I.Explicit ? (" " + I.Direction).str() : "";
     OS << genEmphasis(I.ParamName) << I.Text << Direction << "\n\n";
   } else if (I.Kind == "VerbatimBlockComment") {
-    for (const auto &Child : I.Children)
+    for (const auto &Child : I.Children) {
       writeDescription(*Child, OS);
+}
   } else if (I.Kind == "VerbatimBlockLineComment") {
     OS << I.Text;
     writeNewLine(OS);
@@ -96,12 +101,14 @@ static void writeDescription(const CommentInfo &I, raw_ostream &OS) {
     OS << I.Text;
     writeNewLine(OS);
   } else if (I.Kind == "HTMLStartTagComment") {
-    if (I.AttrKeys.size() != I.AttrValues.size())
+    if (I.AttrKeys.size() != I.AttrValues.size()) {
       return;
+}
     std::string Buffer;
     llvm::raw_string_ostream Attrs(Buffer);
-    for (unsigned Idx = 0; Idx < I.AttrKeys.size(); ++Idx)
+    for (unsigned Idx = 0; Idx < I.AttrKeys.size(); ++Idx) {
       Attrs << " \"" << I.AttrKeys[Idx] << "=" << I.AttrValues[Idx] << "\"";
+}
 
     std::string CloseTag = I.SelfClosing ? "/>" : ">";
     writeLine("<" + I.Name + Attrs.str() + CloseTag, OS);
@@ -126,23 +133,28 @@ static void writeNameLink(const StringRef &CurrentPath, const Reference &R,
 
 static void genMarkdown(const ClangDocContext &CDCtx, const EnumInfo &I,
                         llvm::raw_ostream &OS) {
-  if (I.Scoped)
+  if (I.Scoped) {
     writeLine("| enum class " + I.Name + " |", OS);
-  else
+  } else {
     writeLine("| enum " + I.Name + " |", OS);
+}
   writeLine("--", OS);
 
   std::string Buffer;
   llvm::raw_string_ostream Members(Buffer);
-  if (!I.Members.empty())
-    for (const auto &N : I.Members)
+  if (!I.Members.empty()) {
+    for (const auto &N : I.Members) {
       Members << "| " << N << " |\n";
+}
+}
   writeLine(Members.str(), OS);
-  if (I.DefLoc)
+  if (I.DefLoc) {
     writeFileDefinition(CDCtx, I.DefLoc.getValue(), OS);
+}
 
-  for (const auto &C : I.Description)
+  for (const auto &C : I.Description) {
     writeDescription(C, OS);
+}
 }
 
 static void genMarkdown(const ClangDocContext &CDCtx, const FunctionInfo &I,
@@ -151,39 +163,45 @@ static void genMarkdown(const ClangDocContext &CDCtx, const FunctionInfo &I,
   llvm::raw_string_ostream Stream(Buffer);
   bool First = true;
   for (const auto &N : I.Params) {
-    if (!First)
+    if (!First) {
       Stream << ", ";
+}
     Stream << N.Type.Name + " " + N.Name;
     First = false;
   }
   writeHeader(I.Name, 3, OS);
   std::string Access = getAccessSpelling(I.Access).str();
-  if (Access != "")
+  if (Access != "") {
     writeLine(genItalic(Access + " " + I.ReturnType.Type.Name + " " + I.Name +
                         "(" + Stream.str() + ")"),
               OS);
-  else
+  } else {
     writeLine(genItalic(I.ReturnType.Type.Name + " " + I.Name + "(" +
                         Stream.str() + ")"),
               OS);
-  if (I.DefLoc)
+}
+  if (I.DefLoc) {
     writeFileDefinition(CDCtx, I.DefLoc.getValue(), OS);
+}
 
-  for (const auto &C : I.Description)
+  for (const auto &C : I.Description) {
     writeDescription(C, OS);
+}
 }
 
 static void genMarkdown(const ClangDocContext &CDCtx, const NamespaceInfo &I,
                         llvm::raw_ostream &OS) {
-  if (I.Name == "")
+  if (I.Name == "") {
     writeHeader("Global Namespace", 1, OS);
-  else
+  } else {
     writeHeader("namespace " + I.Name, 1, OS);
+}
   writeNewLine(OS);
 
   if (!I.Description.empty()) {
-    for (const auto &C : I.Description)
+    for (const auto &C : I.Description) {
       writeDescription(C, OS);
+}
     writeNewLine(OS);
   }
 
@@ -211,14 +229,16 @@ static void genMarkdown(const ClangDocContext &CDCtx, const NamespaceInfo &I,
 
   if (!I.ChildFunctions.empty()) {
     writeHeader("Functions", 2, OS);
-    for (const auto &F : I.ChildFunctions)
+    for (const auto &F : I.ChildFunctions) {
       genMarkdown(CDCtx, F, OS);
+}
     writeNewLine(OS);
   }
   if (!I.ChildEnums.empty()) {
     writeHeader("Enums", 2, OS);
-    for (const auto &E : I.ChildEnums)
+    for (const auto &E : I.ChildEnums) {
       genMarkdown(CDCtx, E, OS);
+}
     writeNewLine(OS);
   }
 }
@@ -226,24 +246,27 @@ static void genMarkdown(const ClangDocContext &CDCtx, const NamespaceInfo &I,
 static void genMarkdown(const ClangDocContext &CDCtx, const RecordInfo &I,
                         llvm::raw_ostream &OS) {
   writeHeader(getTagType(I.TagType) + " " + I.Name, 1, OS);
-  if (I.DefLoc)
+  if (I.DefLoc) {
     writeFileDefinition(CDCtx, I.DefLoc.getValue(), OS);
+}
 
   if (!I.Description.empty()) {
-    for (const auto &C : I.Description)
+    for (const auto &C : I.Description) {
       writeDescription(C, OS);
+}
     writeNewLine(OS);
   }
 
   std::string Parents = genReferenceList(I.Parents);
   std::string VParents = genReferenceList(I.VirtualParents);
   if (!Parents.empty() || !VParents.empty()) {
-    if (Parents.empty())
+    if (Parents.empty()) {
       writeLine("Inherits from " + VParents, OS);
-    else if (VParents.empty())
+    } else if (VParents.empty()) {
       writeLine("Inherits from " + Parents, OS);
-    else
+    } else {
       writeLine("Inherits from " + Parents + ", " + VParents, OS);
+}
     writeNewLine(OS);
   }
 
@@ -251,30 +274,34 @@ static void genMarkdown(const ClangDocContext &CDCtx, const RecordInfo &I,
     writeHeader("Members", 2, OS);
     for (const auto &Member : I.Members) {
       std::string Access = getAccessSpelling(Member.Access).str();
-      if (Access != "")
+      if (Access != "") {
         writeLine(Access + " " + Member.Type.Name + " " + Member.Name, OS);
-      else
+      } else {
         writeLine(Member.Type.Name + " " + Member.Name, OS);
+}
     }
     writeNewLine(OS);
   }
 
   if (!I.ChildRecords.empty()) {
     writeHeader("Records", 2, OS);
-    for (const auto &R : I.ChildRecords)
+    for (const auto &R : I.ChildRecords) {
       writeLine(R.Name, OS);
+}
     writeNewLine(OS);
   }
   if (!I.ChildFunctions.empty()) {
     writeHeader("Functions", 2, OS);
-    for (const auto &F : I.ChildFunctions)
+    for (const auto &F : I.ChildFunctions) {
       genMarkdown(CDCtx, F, OS);
+}
     writeNewLine(OS);
   }
   if (!I.ChildEnums.empty()) {
     writeHeader("Enums", 2, OS);
-    for (const auto &E : I.ChildEnums)
+    for (const auto &E : I.ChildEnums) {
       genMarkdown(CDCtx, E, OS);
+}
     writeNewLine(OS);
   }
 }
@@ -292,19 +319,22 @@ static llvm::Error serializeIndex(ClangDocContext &CDCtx) {
   llvm::sys::path::native(CDCtx.OutDirectory, FilePath);
   llvm::sys::path::append(FilePath, "all_files.md");
   llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_None);
-  if (FileErr)
+  if (FileErr) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "error creating index file: " +
                                        FileErr.message());
+}
 
   CDCtx.Idx.sort();
   OS << "# All Files";
-  if (!CDCtx.ProjectName.empty())
+  if (!CDCtx.ProjectName.empty()) {
     OS << " for " << CDCtx.ProjectName;
+}
   OS << "\n\n";
 
-  for (auto C : CDCtx.Idx.Children)
+  for (auto C : CDCtx.Idx.Children) {
     serializeReference(OS, C, 0);
+}
 
   return llvm::Error::success();
 }
@@ -315,10 +345,11 @@ static llvm::Error genIndex(ClangDocContext &CDCtx) {
   llvm::sys::path::native(CDCtx.OutDirectory, FilePath);
   llvm::sys::path::append(FilePath, "index.md");
   llvm::raw_fd_ostream OS(FilePath, FileErr, llvm::sys::fs::OF_None);
-  if (FileErr)
+  if (FileErr) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "error creating index file: " +
                                        FileErr.message());
+}
   CDCtx.Idx.sort();
   OS << "# " << CDCtx.ProjectName << " C/C++ Reference\n\n";
   for (auto C : CDCtx.Idx.Children) {
@@ -341,8 +372,9 @@ static llvm::Error genIndex(ClangDocContext &CDCtx) {
         Type = "Other";
       }
       OS << "* " << Type << ": [" << C.Name << "](";
-      if (!C.Path.empty())
+      if (!C.Path.empty()) {
         OS << C.Path << "/";
+}
       OS << C.Name << ")\n";
     }
   }
@@ -385,13 +417,15 @@ llvm::Error MDGenerator::generateDocForInfo(Info *I, llvm::raw_ostream &OS,
 llvm::Error MDGenerator::createResources(ClangDocContext &CDCtx) {
   // Write an all_files.md
   auto Err = serializeIndex(CDCtx);
-  if (Err)
+  if (Err) {
     return Err;
+}
 
   // Generate the index page.
   Err = genIndex(CDCtx);
-  if (Err)
+  if (Err) {
     return Err;
+}
 
   return llvm::Error::success();
 }

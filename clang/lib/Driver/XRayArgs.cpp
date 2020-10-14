@@ -33,8 +33,9 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
   const Driver &D = TC.getDriver();
   const llvm::Triple &Triple = TC.getTriple();
   if (!Args.hasFlag(options::OPT_fxray_instrument,
-                    options::OPT_fno_xray_instrument, false))
+                    options::OPT_fno_xray_instrument, false)) {
     return;
+}
   if (Triple.getOS() == llvm::Triple::Linux) {
     switch (Triple.getArch()) {
     case llvm::Triple::x86_64:
@@ -72,17 +73,19 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
 
   // Both XRay and -fpatchable-function-entry use
   // TargetOpcode::PATCHABLE_FUNCTION_ENTER.
-  if (Arg *A = Args.getLastArg(options::OPT_fpatchable_function_entry_EQ))
+  if (Arg *A = Args.getLastArg(options::OPT_fpatchable_function_entry_EQ)) {
     D.Diag(diag::err_drv_argument_not_allowed_with)
         << "-fxray-instrument" << A->getSpelling();
+}
 
   XRayInstrument = true;
   if (const Arg *A =
           Args.getLastArg(options::OPT_fxray_instruction_threshold_,
                           options::OPT_fxray_instruction_threshold_EQ)) {
     StringRef S = A->getValue();
-    if (S.getAsInteger(0, InstructionThreshold) || InstructionThreshold < 0)
+    if (S.getAsInteger(0, InstructionThreshold) || InstructionThreshold < 0) {
       D.Diag(clang::diag::err_drv_invalid_value) << A->getAsString(Args) << S;
+}
   }
 
   // By default, the back-end will not emit the lowering for XRay customevent
@@ -90,29 +93,33 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
   // this default to be the reverse, but in the meantime we're going to
   // introduce the new functionality behind a flag.
   if (Args.hasFlag(options::OPT_fxray_always_emit_customevents,
-                   options::OPT_fno_xray_always_emit_customevents, false))
+                   options::OPT_fno_xray_always_emit_customevents, false)) {
     XRayAlwaysEmitCustomEvents = true;
+}
 
   if (Args.hasFlag(options::OPT_fxray_always_emit_typedevents,
-                   options::OPT_fno_xray_always_emit_typedevents, false))
+                   options::OPT_fno_xray_always_emit_typedevents, false)) {
     XRayAlwaysEmitTypedEvents = true;
+}
 
   if (!Args.hasFlag(options::OPT_fxray_link_deps,
-                    options::OPT_fnoxray_link_deps, true))
+                    options::OPT_fnoxray_link_deps, true)) {
     XRayRT = false;
+}
 
   if (Args.hasFlag(options::OPT_fxray_ignore_loops,
-                   options::OPT_fno_xray_ignore_loops, false))
+                   options::OPT_fno_xray_ignore_loops, false)) {
     XRayIgnoreLoops = true;
+}
 
   XRayFunctionIndex = Args.hasFlag(options::OPT_fxray_function_index,
                                    options::OPT_fno_xray_function_index, true);
 
   auto Bundles =
       Args.getAllArgValues(options::OPT_fxray_instrumentation_bundle);
-  if (Bundles.empty())
+  if (Bundles.empty()) {
     InstrumentationBundle.Mask = XRayInstrKind::All;
-  else
+  } else {
     for (const auto &B : Bundles) {
       llvm::SmallVector<StringRef, 2> BundleParts;
       llvm::SplitString(B, BundleParts, ",");
@@ -138,6 +145,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
         InstrumentationBundle.Mask |= Mask;
       }
     }
+}
 
   // Validate the always/never attribute files. We also make sure that they
   // are treated as actual dependencies.
@@ -146,8 +154,9 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     if (D.getVFS().exists(Filename)) {
       AlwaysInstrumentFiles.push_back(Filename);
       ExtraDeps.push_back(Filename);
-    } else
+    } else {
       D.Diag(clang::diag::err_drv_no_such_file) << Filename;
+}
   }
 
   for (const auto &Filename :
@@ -155,8 +164,9 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     if (D.getVFS().exists(Filename)) {
       NeverInstrumentFiles.push_back(Filename);
       ExtraDeps.push_back(Filename);
-    } else
+    } else {
       D.Diag(clang::diag::err_drv_no_such_file) << Filename;
+}
   }
 
   for (const auto &Filename :
@@ -164,32 +174,37 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     if (D.getVFS().exists(Filename)) {
       AttrListFiles.push_back(Filename);
       ExtraDeps.push_back(Filename);
-    } else
+    } else {
       D.Diag(clang::diag::err_drv_no_such_file) << Filename;
+}
   }
 
   // Get the list of modes we want to support.
   auto SpecifiedModes = Args.getAllArgValues(options::OPT_fxray_modes);
-  if (SpecifiedModes.empty())
+  if (SpecifiedModes.empty()) {
     llvm::copy(XRaySupportedModes, std::back_inserter(Modes));
-  else
+  } else {
     for (const auto &Arg : SpecifiedModes) {
       // Parse CSV values for -fxray-modes=...
       llvm::SmallVector<StringRef, 2> ModeParts;
       llvm::SplitString(Arg, ModeParts, ",");
-      for (const auto &M : ModeParts)
-        if (M == "none")
+      for (const auto &M : ModeParts) {
+        if (M == "none") {
           Modes.clear();
-        else if (M == "all")
+        } else if (M == "all") {
           llvm::copy(XRaySupportedModes, std::back_inserter(Modes));
-        else
+        } else {
           Modes.push_back(std::string(M));
+}
+}
     }
+}
 
   if (const Arg *A = Args.getLastArg(options::OPT_fxray_function_groups)) {
     StringRef S = A->getValue();
-    if (S.getAsInteger(0, XRayFunctionGroups) || XRayFunctionGroups < 1)
+    if (S.getAsInteger(0, XRayFunctionGroups) || XRayFunctionGroups < 1) {
       D.Diag(clang::diag::err_drv_invalid_value) << A->getAsString(Args) << S;
+}
   }
 
   if (const Arg *A =
@@ -197,8 +212,9 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     StringRef S = A->getValue();
     if (S.getAsInteger(0, XRaySelectedFunctionGroup) ||
         XRaySelectedFunctionGroup < 0 ||
-        XRaySelectedFunctionGroup >= XRayFunctionGroups)
+        XRaySelectedFunctionGroup >= XRayFunctionGroups) {
       D.Diag(clang::diag::err_drv_invalid_value) << A->getAsString(Args) << S;
+}
   }
 
   // Then we want to sort and unique the modes we've collected.
@@ -208,22 +224,27 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
 
 void XRayArgs::addArgs(const ToolChain &TC, const ArgList &Args,
                        ArgStringList &CmdArgs, types::ID InputType) const {
-  if (!XRayInstrument)
+  if (!XRayInstrument) {
     return;
+}
 
   CmdArgs.push_back(XRayInstrumentOption);
 
-  if (XRayAlwaysEmitCustomEvents)
+  if (XRayAlwaysEmitCustomEvents) {
     CmdArgs.push_back("-fxray-always-emit-customevents");
+}
 
-  if (XRayAlwaysEmitTypedEvents)
+  if (XRayAlwaysEmitTypedEvents) {
     CmdArgs.push_back("-fxray-always-emit-typedevents");
+}
 
-  if (XRayIgnoreLoops)
+  if (XRayIgnoreLoops) {
     CmdArgs.push_back("-fxray-ignore-loops");
+}
 
-  if (!XRayFunctionIndex)
+  if (!XRayFunctionIndex) {
     CmdArgs.push_back("-fno-xray-function-index");
+}
 
   if (XRayFunctionGroups > 1) {
     CmdArgs.push_back(Args.MakeArgString(Twine("-fxray-function-groups=") +
@@ -276,17 +297,20 @@ void XRayArgs::addArgs(const ToolChain &TC, const ArgList &Args,
     Bundle += "none";
   } else {
     if (InstrumentationBundle.has(XRayInstrKind::FunctionEntry) &&
-        InstrumentationBundle.has(XRayInstrKind::FunctionExit))
+        InstrumentationBundle.has(XRayInstrKind::FunctionExit)) {
       Bundle += "function";
-    else if (InstrumentationBundle.has(XRayInstrKind::FunctionEntry))
+    } else if (InstrumentationBundle.has(XRayInstrKind::FunctionEntry)) {
       Bundle += "function-entry";
-    else if (InstrumentationBundle.has(XRayInstrKind::FunctionExit))
+    } else if (InstrumentationBundle.has(XRayInstrKind::FunctionExit)) {
       Bundle += "function-exit";
+}
 
-    if (InstrumentationBundle.has(XRayInstrKind::Custom))
+    if (InstrumentationBundle.has(XRayInstrKind::Custom)) {
       Bundle += "custom";
-    if (InstrumentationBundle.has(XRayInstrKind::Typed))
+}
+    if (InstrumentationBundle.has(XRayInstrKind::Typed)) {
       Bundle += "typed";
+}
   }
   CmdArgs.push_back(Args.MakeArgString(Bundle));
 }

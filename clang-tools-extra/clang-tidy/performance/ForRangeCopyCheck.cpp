@@ -60,10 +60,12 @@ void ForRangeCopyCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Var = Result.Nodes.getNodeAs<VarDecl>("loopVar");
 
   // Ignore code in macros since we can't place the fixes correctly.
-  if (Var->getBeginLoc().isMacroID())
+  if (Var->getBeginLoc().isMacroID()) {
     return;
-  if (handleConstValueCopy(*Var, *Result.Context))
+}
+  if (handleConstValueCopy(*Var, *Result.Context)) {
     return;
+}
   const auto *ForRange = Result.Nodes.getNodeAs<CXXForRangeStmt>("forRange");
   handleCopyIsOnlyConstReferenced(*Var, *ForRange, *Result.Context);
 }
@@ -72,15 +74,17 @@ bool ForRangeCopyCheck::handleConstValueCopy(const VarDecl &LoopVar,
                                              ASTContext &Context) {
   if (WarnOnAllAutoCopies) {
     // For aggressive check just test that loop variable has auto type.
-    if (!isa<AutoType>(LoopVar.getType()))
+    if (!isa<AutoType>(LoopVar.getType())) {
       return false;
+}
   } else if (!LoopVar.getType().isConstQualified()) {
     return false;
   }
   llvm::Optional<bool> Expensive =
       utils::type_traits::isExpensiveToCopy(LoopVar.getType(), Context);
-  if (!Expensive || !*Expensive)
+  if (!Expensive || !*Expensive) {
     return false;
+}
   auto Diagnostic =
       diag(LoopVar.getLocation(),
            "the loop variable's type is not a reference type; this creates a "
@@ -88,8 +92,9 @@ bool ForRangeCopyCheck::handleConstValueCopy(const VarDecl &LoopVar,
       << utils::fixit::changeVarDeclToReference(LoopVar, Context);
   if (!LoopVar.getType().isConstQualified()) {
     if (llvm::Optional<FixItHint> Fix = utils::fixit::addQualifierToVarDecl(
-            LoopVar, Context, DeclSpec::TQ::TQ_const))
+            LoopVar, Context, DeclSpec::TQ::TQ_const)) {
       Diagnostic << *Fix;
+}
   }
   return true;
 }
@@ -99,8 +104,9 @@ bool ForRangeCopyCheck::handleCopyIsOnlyConstReferenced(
     ASTContext &Context) {
   llvm::Optional<bool> Expensive =
       utils::type_traits::isExpensiveToCopy(LoopVar.getType(), Context);
-  if (LoopVar.getType().isConstQualified() || !Expensive || !*Expensive)
+  if (LoopVar.getType().isConstQualified() || !Expensive || !*Expensive) {
     return false;
+}
   // We omit the case where the loop variable is not used in the loop body. E.g.
   //
   // for (auto _ : benchmark_state) {
@@ -119,8 +125,9 @@ bool ForRangeCopyCheck::handleCopyIsOnlyConstReferenced(
         "making it a const reference");
 
     if (llvm::Optional<FixItHint> Fix = utils::fixit::addQualifierToVarDecl(
-            LoopVar, Context, DeclSpec::TQ::TQ_const))
+            LoopVar, Context, DeclSpec::TQ::TQ_const)) {
       Diag << *Fix << utils::fixit::changeVarDeclToReference(LoopVar, Context);
+}
 
     return true;
   }

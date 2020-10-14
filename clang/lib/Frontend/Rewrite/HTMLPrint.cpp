@@ -57,8 +57,9 @@ void HTMLPrinter::Initialize(ASTContext &context) {
 }
 
 void HTMLPrinter::HandleTranslationUnit(ASTContext &Ctx) {
-  if (PP.getDiagnostics().hasErrorOccurred())
+  if (PP.getDiagnostics().hasErrorOccurred()) {
     return;
+}
 
   // Format the file.
   FileID FID = R.getSourceMgr().getMainFileID();
@@ -67,10 +68,11 @@ void HTMLPrinter::HandleTranslationUnit(ASTContext &Ctx) {
   // In some cases, in particular the case where the input is from stdin,
   // there is no entry.  Fall back to the memory buffer for a name in those
   // cases.
-  if (Entry)
+  if (Entry) {
     Name = Entry->getName();
-  else
+  } else {
     Name = R.getSourceMgr().getBuffer(FID)->getBufferIdentifier();
+}
 
   html::AddLineNumbers(R, FID);
   html::AddHeaderFooterInternalBuiltinCSS(R, FID, Name);
@@ -79,8 +81,10 @@ void HTMLPrinter::HandleTranslationUnit(ASTContext &Ctx) {
   // We might not have a preprocessor if we come from a deserialized AST file,
   // for example.
 
-  if (SyntaxHighlight) html::SyntaxHighlight(R, FID, PP);
-  if (HighlightMacros) html::HighlightMacros(R, FID, PP);
+  if (SyntaxHighlight) { html::SyntaxHighlight(R, FID, PP);
+}
+  if (HighlightMacros) { html::HighlightMacros(R, FID, PP);
+}
   html::EscapeText(R, FID, false, true);
 
   // Emit the HTML.

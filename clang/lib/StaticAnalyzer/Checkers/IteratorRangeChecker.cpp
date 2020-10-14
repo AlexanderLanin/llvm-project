@@ -80,8 +80,9 @@ void IteratorRangeChecker::checkPreCall(const CallEvent &Call,
                                         CheckerContext &C) const {
   // Check for out of range access
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+}
 
   if (Func->isOverloadedOperator()) {
     if (isIncrementOperator(Func->getOverloadedOperator())) {
@@ -143,8 +144,9 @@ void IteratorRangeChecker::checkPreCall(const CallEvent &Call,
 
 void IteratorRangeChecker::checkPreStmt(const UnaryOperator *UO,
                                         CheckerContext &C) const {
-  if (isa<CXXThisExpr>(UO->getSubExpr()))
+  if (isa<CXXThisExpr>(UO->getSubExpr())) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   UnaryOperatorKind OK = UO->getOpcode();
@@ -169,8 +171,9 @@ void IteratorRangeChecker::checkPreStmt(const BinaryOperator *BO,
     verifyDereference(C, LVal);
   } else if (isRandomIncrOrDecrOperator(OK)) {
     SVal RVal = State->getSVal(BO->getRHS(), C.getLocationContext());
-    if (!BO->getRHS()->getType()->isIntegralOrEnumerationType())
+    if (!BO->getRHS()->getType()->isIntegralOrEnumerationType()) {
       return;
+}
     verifyRandomIncrOrDecr(C, BinaryOperator::getOverloadedOperator(OK), LVal,
                            RVal);
   }
@@ -185,8 +188,9 @@ void IteratorRangeChecker::checkPreStmt(const ArraySubscriptExpr *ASE,
 
 void IteratorRangeChecker::checkPreStmt(const MemberExpr *ME,
                                         CheckerContext &C) const {
-  if (!ME->isArrow() || ME->isImplicitAccess())
+  if (!ME->isArrow() || ME->isImplicitAccess()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   SVal BaseVal = State->getSVal(ME->getBase(), C.getLocationContext());
@@ -199,8 +203,9 @@ void IteratorRangeChecker::verifyDereference(CheckerContext &C,
   const auto *Pos = getIteratorPosition(State, Val);
   if (Pos && isPastTheEnd(State, *Pos)) {
     auto *N = C.generateErrorNode(State);
-    if (!N)
+    if (!N) {
       return;
+}
     reportBug("Past-the-end iterator dereferenced.", Val, C, N);
     return;
   }
@@ -228,33 +233,38 @@ void IteratorRangeChecker::verifyRandomIncrOrDecr(CheckerContext &C,
     Value = State->getRawSVal(*ValAsLoc);
   }
 
-  if (Value.isUnknown())
+  if (Value.isUnknown()) {
     return;
+}
 
   // Incremention or decremention by 0 is never a bug.
-  if (isZero(State, Value.castAs<NonLoc>()))
+  if (isZero(State, Value.castAs<NonLoc>())) {
     return;
+}
 
   // The result may be the past-end iterator of the container, but any other
   // out of range position is undefined behaviour
   auto StateAfter = advancePosition(State, LHS, Op, Value);
-  if (!StateAfter)
+  if (!StateAfter) {
     return;
+}
 
   const auto *PosAfter = getIteratorPosition(StateAfter, LHS);
   assert(PosAfter &&
          "Iterator should have position after successful advancement");
   if (isAheadOfRange(State, *PosAfter)) {
     auto *N = C.generateErrorNode(State);
-    if (!N)
+    if (!N) {
       return;
+}
     reportBug("Iterator decremented ahead of its valid range.", LHS,
                         C, N);
   }
   if (isBehindPastTheEnd(State, *PosAfter)) {
     auto *N = C.generateErrorNode(State);
-    if (!N)
+    if (!N) {
       return;
+}
     reportBug("Iterator incremented behind the past-the-end "
                         "iterator.", LHS, C, N);
   }
@@ -305,8 +315,9 @@ bool isZero(ProgramStateRef State, const NonLoc &Val) {
 bool isPastTheEnd(ProgramStateRef State, const IteratorPosition &Pos) {
   const auto *Cont = Pos.getContainer();
   const auto *CData = getContainerData(State, Cont);
-  if (!CData)
+  if (!CData) {
     return false;
+}
 
   const auto End = CData->getEnd();
   if (End) {
@@ -321,8 +332,9 @@ bool isPastTheEnd(ProgramStateRef State, const IteratorPosition &Pos) {
 bool isAheadOfRange(ProgramStateRef State, const IteratorPosition &Pos) {
   const auto *Cont = Pos.getContainer();
   const auto *CData = getContainerData(State, Cont);
-  if (!CData)
+  if (!CData) {
     return false;
+}
 
   const auto Beg = CData->getBegin();
   if (Beg) {
@@ -337,8 +349,9 @@ bool isAheadOfRange(ProgramStateRef State, const IteratorPosition &Pos) {
 bool isBehindPastTheEnd(ProgramStateRef State, const IteratorPosition &Pos) {
   const auto *Cont = Pos.getContainer();
   const auto *CData = getContainerData(State, Cont);
-  if (!CData)
+  if (!CData) {
     return false;
+}
 
   const auto End = CData->getEnd();
   if (End) {

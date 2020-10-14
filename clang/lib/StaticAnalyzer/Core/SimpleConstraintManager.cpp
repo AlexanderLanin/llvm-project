@@ -30,10 +30,11 @@ ProgramStateRef SimpleConstraintManager::assume(ProgramStateRef State,
     SValBuilder &SVB = State->getStateManager().getSValBuilder();
     QualType T;
     const MemRegion *MR = LV->getAsRegion();
-    if (const TypedRegion *TR = dyn_cast_or_null<TypedRegion>(MR))
+    if (const TypedRegion *TR = dyn_cast_or_null<TypedRegion>(MR)) {
       T = TR->getLocationType();
-    else
+    } else {
       T = SVB.getContext().VoidPtrTy;
+}
 
     Cond = SVB.evalCast(*LV, SVB.getContext().BoolTy, T).castAs<DefinedSVal>();
   }
@@ -44,8 +45,9 @@ ProgramStateRef SimpleConstraintManager::assume(ProgramStateRef State,
 ProgramStateRef SimpleConstraintManager::assume(ProgramStateRef State,
                                                 NonLoc Cond, bool Assumption) {
   State = assumeAux(State, Cond, Assumption);
-  if (NotifyAssumeClients && EE)
+  if (NotifyAssumeClients && EE) {
     return EE->processAssume(State, Cond, Assumption);
+}
   return State;
 }
 
@@ -113,8 +115,9 @@ ProgramStateRef SimpleConstraintManager::assumeInclusiveRange(
 
   case nonloc::LocAsIntegerKind:
   case nonloc::SymbolValKind: {
-    if (SymbolRef Sym = Value.getAsSymbol())
+    if (SymbolRef Sym = Value.getAsSymbol()) {
       return assumeSymInclusiveRange(State, Sym, From, To, InRange);
+}
     return State;
   } // end switch
 

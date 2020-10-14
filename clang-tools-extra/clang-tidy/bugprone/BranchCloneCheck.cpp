@@ -38,8 +38,9 @@ using SwitchBranch = llvm::SmallVector<const Stmt *, 2>;
 static bool areSwitchBranchesIdentical(const SwitchBranch LHS,
                                        const SwitchBranch RHS,
                                        const ASTContext &Context) {
-  if (LHS.size() != RHS.size())
+  if (LHS.size() != RHS.size()) {
     return false;
+}
 
   for (size_t i = 0, Size = LHS.size(); i < Size; i++) {
     // NOTE: We strip goto labels and annotations in addition to stripping
@@ -99,8 +100,9 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
 
       Else = Cur->getElse();
       // The chain ends if there is no `else` branch.
-      if (!Else)
+      if (!Else) {
         break;
+}
 
       // Check if there is another `else if`...
       Cur = dyn_cast<IfStmt>(Else);
@@ -116,16 +118,18 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
 
     for (size_t i = 0; i + 1 < N; i++) {
       // We have already seen Branches[i] as a clone of an earlier branch.
-      if (KnownAsClone[i])
+      if (KnownAsClone[i]) {
         continue;
+}
 
       int NumCopies = 1;
 
       for (size_t j = i + 1; j < N; j++) {
         if (KnownAsClone[j] ||
             !areStatementsIdentical(Branches[i]->IgnoreContainers(),
-                                    Branches[j]->IgnoreContainers(), Context))
+                                    Branches[j]->IgnoreContainers(), Context)) {
           continue;
+}
 
         NumCopies++;
         KnownAsClone[j] = true;
@@ -152,9 +156,10 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *CO = Result.Nodes.getNodeAs<ConditionalOperator>("condOp")) {
     // We do not try to detect chains of ?: operators.
-    if (areStatementsIdentical(CO->getTrueExpr(), CO->getFalseExpr(), Context))
+    if (areStatementsIdentical(CO->getTrueExpr(), CO->getFalseExpr(), Context)) {
       diag(CO->getQuestionLoc(),
            "conditional operator with identical true and false expressions");
+}
 
     return;
   }
@@ -166,8 +171,9 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
     //   switch (x) case 0: case 1: foobar();
     // is legal and calls foobar() if and only if x is either 0 or 1;
     // but we do not try to distinguish branches in such code.
-    if (!Body)
+    if (!Body) {
       return;
+}
 
     // We will first collect the branches of the switch statements. For the
     // sake of simplicity we say that branches are delimited by the SwitchCase
@@ -177,15 +183,17 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
     llvm::SmallVector<SwitchBranch, 4> Branches;
     for (const Stmt *S : Body->body()) {
       // If this is a `case` or `default`, we start a new, empty branch.
-      if (isa<SwitchCase>(S))
+      if (isa<SwitchCase>(S)) {
         Branches.emplace_back();
+}
 
       // There may be code before the first branch (which can be dead code
       // and can be code reached either through goto or through case labels
       // that are embedded inside e.g. inner compound statements); we do not
       // store those statements in branches.
-      if (!Branches.empty())
+      if (!Branches.empty()) {
         Branches.back().push_back(S);
+}
     }
 
     auto End = Branches.end();
@@ -208,11 +216,13 @@ void BranchCloneCheck::check(const MatchFinder::MatchResult &Result) {
         // may be invalid, resulting in an assertion failure down the line.
         // While not optimal, try the begin location in this case, it's still
         // better then nothing.
-        if (EndLoc.isInvalid())
+        if (EndLoc.isInvalid()) {
           EndLoc = (EndCurrent - 1)->back()->getBeginLoc();
+}
 
-        if (EndLoc.isMacroID())
+        if (EndLoc.isMacroID()) {
           EndLoc = Context.getSourceManager().getExpansionLoc(EndLoc);
+}
         EndLoc = Lexer::getLocForEndOfToken(EndLoc, 0, *Result.SourceManager,
                                             getLangOpts());
 

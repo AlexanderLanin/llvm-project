@@ -28,15 +28,18 @@ static const char WarnOnUnfixableStr[] = "WarnOnUnfixable";
 static const char WarnOnConditionVariablesStr[] = "WarnOnConditionVariables";
 
 static const DeclRefExpr *findUsage(const Stmt *Node, int64_t DeclIdentifier) {
-  if (!Node)
+  if (!Node) {
     return nullptr;
+}
   if (const auto *DeclRef = dyn_cast<DeclRefExpr>(Node)) {
-    if (DeclRef->getDecl()->getID() == DeclIdentifier)
+    if (DeclRef->getDecl()->getID() == DeclIdentifier) {
       return DeclRef;
+}
   } else {
     for (const Stmt *ChildNode : Node->children()) {
-      if (const DeclRefExpr *Result = findUsage(ChildNode, DeclIdentifier))
+      if (const DeclRefExpr *Result = findUsage(ChildNode, DeclIdentifier)) {
         return Result;
+}
     }
   }
   return nullptr;
@@ -45,16 +48,19 @@ static const DeclRefExpr *findUsage(const Stmt *Node, int64_t DeclIdentifier) {
 static const DeclRefExpr *
 findUsageRange(const Stmt *Node,
                const llvm::ArrayRef<int64_t> &DeclIdentifiers) {
-  if (!Node)
+  if (!Node) {
     return nullptr;
+}
   if (const auto *DeclRef = dyn_cast<DeclRefExpr>(Node)) {
-    if (llvm::is_contained(DeclIdentifiers, DeclRef->getDecl()->getID()))
+    if (llvm::is_contained(DeclIdentifiers, DeclRef->getDecl()->getID())) {
       return DeclRef;
+}
   } else {
     for (const Stmt *ChildNode : Node->children()) {
       if (const DeclRefExpr *Result =
-              findUsageRange(ChildNode, DeclIdentifiers))
+              findUsageRange(ChildNode, DeclIdentifiers)) {
         return Result;
+}
     }
   }
   return nullptr;
@@ -62,8 +68,9 @@ findUsageRange(const Stmt *Node,
 
 static const DeclRefExpr *checkInitDeclUsageInElse(const IfStmt *If) {
   const auto *InitDeclStmt = dyn_cast_or_null<DeclStmt>(If->getInit());
-  if (!InitDeclStmt)
+  if (!InitDeclStmt) {
     return nullptr;
+}
   if (InitDeclStmt->isSingleDecl()) {
     const Decl *InitDecl = InitDeclStmt->getSingleDecl();
     assert(isa<VarDecl>(InitDecl) && "SingleDecl must be a VarDecl");
@@ -78,18 +85,21 @@ static const DeclRefExpr *checkInitDeclUsageInElse(const IfStmt *If) {
 }
 
 static const DeclRefExpr *checkConditionVarUsageInElse(const IfStmt *If) {
-  if (const VarDecl *CondVar = If->getConditionVariable())
+  if (const VarDecl *CondVar = If->getConditionVariable()) {
     return findUsage(If->getElse(), CondVar->getID());
+}
   return nullptr;
 }
 
 static bool containsDeclInScope(const Stmt *Node) {
-  if (isa<DeclStmt>(Node))
+  if (isa<DeclStmt>(Node)) {
     return true;
-  if (const auto *Compound = dyn_cast<CompoundStmt>(Node))
+}
+  if (const auto *Compound = dyn_cast<CompoundStmt>(Node)) {
     return llvm::any_of(Compound->body(), [](const Stmt *SubNode) {
       return isa<DeclStmt>(SubNode);
     });
+}
   return false;
 }
 
@@ -167,9 +177,11 @@ void ElseAfterReturnCheck::check(const MatchFinder::MatchResult &Result) {
 
   auto ControlFlowInterruptor = [&]() -> llvm::StringRef {
     for (llvm::StringRef BindingName :
-         {ReturnStr, ContinueStr, BreakStr, ThrowStr})
-      if (Result.Nodes.getNodeAs<Stmt>(BindingName))
+         {ReturnStr, ContinueStr, BreakStr, ThrowStr}) {
+      if (Result.Nodes.getNodeAs<Stmt>(BindingName)) {
         return BindingName;
+}
+}
     return {};
   }();
 
@@ -182,8 +194,9 @@ void ElseAfterReturnCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   if (checkConditionVarUsageInElse(If) != nullptr) {
-    if (!WarnOnConditionVariables)
+    if (!WarnOnConditionVariables) {
       return;
+}
     if (IsLastInScope) {
       // If the if statement is the last statement its enclosing statements
       // scope, we can pull the decl out of the if statement.
@@ -217,8 +230,9 @@ void ElseAfterReturnCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   if (checkInitDeclUsageInElse(If) != nullptr) {
-    if (!WarnOnConditionVariables)
+    if (!WarnOnConditionVariables) {
       return;
+}
     if (IsLastInScope) {
       // If the if statement is the last statement its enclosing statements
       // scope, we can pull the decl out of the if statement.

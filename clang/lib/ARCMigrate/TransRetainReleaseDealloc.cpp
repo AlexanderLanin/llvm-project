@@ -60,8 +60,9 @@ public:
   bool VisitObjCMessageExpr(ObjCMessageExpr *E) {
     switch (E->getMethodFamily()) {
     default:
-      if (E->isInstanceMessage() && E->getSelector() == FinalizeSel)
+      if (E->isInstanceMessage() && E->getSelector() == FinalizeSel) {
         break;
+}
       return true;
     case OMF_autorelease:
       if (isRemovable(E)) {
@@ -81,7 +82,7 @@ public:
       LLVM_FALLTHROUGH;
     case OMF_retain:
     case OMF_release:
-      if (E->getReceiverKind() == ObjCMessageExpr::Instance)
+      if (E->getReceiverKind() == ObjCMessageExpr::Instance) {
         if (Expr *rec = E->getInstanceReceiver()) {
           rec = rec->IgnoreParenImpCasts();
           if (rec->getType().getObjCLifetime() == Qualifiers::OCL_ExplicitNone &&
@@ -112,6 +113,7 @@ public:
             return true;
           }
         }
+}
       break;
     case OMF_dealloc:
       break;
@@ -123,8 +125,9 @@ public:
     case ObjCMessageExpr::SuperInstance: {
       Transaction Trans(Pass.TA);
       clearDiagnostics(E->getSelectorLoc(0));
-      if (tryRemoving(E))
+      if (tryRemoving(E)) {
         return true;
+}
       Pass.TA.replace(E->getSourceRange(), "self");
       return true;
     }
@@ -133,7 +136,8 @@ public:
     }
 
     Expr *rec = E->getInstanceReceiver();
-    if (!rec) return true;
+    if (!rec) { return true;
+}
 
     Transaction Trans(Pass.TA);
     clearDiagnostics(E->getSelectorLoc(0));
@@ -154,8 +158,9 @@ public:
       return true;
     }
 
-    if (hasSideEffects(rec, Pass.Ctx) || !tryRemoving(RecContainer))
+    if (hasSideEffects(rec, Pass.Ctx) || !tryRemoving(RecContainer)) {
       Pass.TA.replace(RecContainer->getSourceRange(), RecRange);
+}
 
     return true;
   }
@@ -181,33 +186,39 @@ private:
 
   bool isReturnedAfterAutorelease(ObjCMessageExpr *E) {
     Expr *Rec = E->getInstanceReceiver();
-    if (!Rec)
+    if (!Rec) {
       return false;
+}
 
     Decl *RefD = getReferencedDecl(Rec);
-    if (!RefD)
+    if (!RefD) {
       return false;
+}
 
     Stmt *nextStmt = getNextStmt(E);
-    if (!nextStmt)
+    if (!nextStmt) {
       return false;
+}
 
     // Check for "return <variable>;".
 
-    if (ReturnStmt *RetS = dyn_cast<ReturnStmt>(nextStmt))
+    if (ReturnStmt *RetS = dyn_cast<ReturnStmt>(nextStmt)) {
       return RefD == getReferencedDecl(RetS->getRetValue());
+}
 
     return false;
   }
 
   bool isPlusOneAssignBeforeOrAfterAutorelease(ObjCMessageExpr *E) {
     Expr *Rec = E->getInstanceReceiver();
-    if (!Rec)
+    if (!Rec) {
       return false;
+}
 
     Decl *RefD = getReferencedDecl(Rec);
-    if (!RefD)
+    if (!RefD) {
       return false;
+}
 
     Stmt *prevStmt, *nextStmt;
     std::tie(prevStmt, nextStmt) = getPreviousAndNextStmt(E);
@@ -217,8 +228,9 @@ private:
   }
 
   bool isPlusOneAssignToVar(Stmt *S, Decl *RefD) {
-    if (!S)
+    if (!S) {
       return false;
+}
 
     // Check for "RefD = [+1 retained object];".
 
@@ -228,8 +240,9 @@ private:
 
     if (DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
       if (DS->isSingleDecl() && DS->getSingleDecl() == RefD) {
-        if (VarDecl *VD = dyn_cast<VarDecl>(RefD))
+        if (VarDecl *VD = dyn_cast<VarDecl>(RefD)) {
           return isPlusOne(VD->getInit());
+}
       }
       return false;
     }
@@ -243,8 +256,9 @@ private:
 
   std::pair<Stmt *, Stmt *> getPreviousAndNextStmt(Expr *E) {
     Stmt *prevStmt = nullptr, *nextStmt = nullptr;
-    if (!E)
+    if (!E) {
       return std::make_pair(prevStmt, nextStmt);
+}
 
     Stmt *OuterS = E, *InnerS;
     do {
@@ -255,40 +269,47 @@ private:
                       isa<CastExpr>(OuterS) ||
                       isa<FullExpr>(OuterS)));
 
-    if (!OuterS)
+    if (!OuterS) {
       return std::make_pair(prevStmt, nextStmt);
+}
 
     Stmt::child_iterator currChildS = OuterS->child_begin();
     Stmt::child_iterator childE = OuterS->child_end();
     Stmt::child_iterator prevChildS = childE;
     for (; currChildS != childE; ++currChildS) {
-      if (*currChildS == InnerS)
+      if (*currChildS == InnerS) {
         break;
+}
       prevChildS = currChildS;
     }
 
     if (prevChildS != childE) {
       prevStmt = *prevChildS;
-      if (auto *E = dyn_cast_or_null<Expr>(prevStmt))
+      if (auto *E = dyn_cast_or_null<Expr>(prevStmt)) {
         prevStmt = E->IgnoreImplicit();
+}
     }
 
-    if (currChildS == childE)
+    if (currChildS == childE) {
       return std::make_pair(prevStmt, nextStmt);
+}
     ++currChildS;
-    if (currChildS == childE)
+    if (currChildS == childE) {
       return std::make_pair(prevStmt, nextStmt);
+}
 
     nextStmt = *currChildS;
-    if (auto *E = dyn_cast_or_null<Expr>(nextStmt))
+    if (auto *E = dyn_cast_or_null<Expr>(nextStmt)) {
       nextStmt = E->IgnoreImplicit();
+}
 
     return std::make_pair(prevStmt, nextStmt);
   }
 
   Decl *getReferencedDecl(Expr *E) {
-    if (!E)
+    if (!E) {
       return nullptr;
+}
 
     E = E->IgnoreParenCasts();
     if (ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E)) {
@@ -302,12 +323,15 @@ private:
         return nullptr;
       }
     }
-    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E))
+    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
       return DRE->getDecl();
-    if (MemberExpr *ME = dyn_cast<MemberExpr>(E))
+}
+    if (MemberExpr *ME = dyn_cast<MemberExpr>(E)) {
       return ME->getMemberDecl();
-    if (ObjCIvarRefExpr *IRE = dyn_cast<ObjCIvarRefExpr>(E))
+}
+    if (ObjCIvarRefExpr *IRE = dyn_cast<ObjCIvarRefExpr>(E)) {
       return IRE->getDecl();
+}
 
     return nullptr;
   }
@@ -325,8 +349,9 @@ private:
   void checkForGCDOrXPC(ObjCMessageExpr *Msg, Expr *&RecContainer,
                         Expr *&Rec, SourceRange &RecRange) {
     SourceLocation Loc = Msg->getExprLoc();
-    if (!Loc.isMacroID())
+    if (!Loc.isMacroID()) {
       return;
+}
     SourceManager &SM = Pass.Ctx.getSourceManager();
     StringRef MacroName = Lexer::getImmediateMacroName(Loc, SM,
                                                      Pass.Ctx.getLangOpts());
@@ -336,8 +361,9 @@ private:
         .Case("xpc_retain", true)
         .Case("xpc_release", true)
         .Default(false);
-    if (!isGCDOrXPC)
+    if (!isGCDOrXPC) {
       return;
+}
 
     StmtExpr *StmtE = nullptr;
     Stmt *S = Msg;
@@ -349,40 +375,51 @@ private:
       S = StmtMap->getParent(S);
     }
 
-    if (!StmtE)
+    if (!StmtE) {
       return;
+}
 
     Stmt::child_range StmtExprChild = StmtE->children();
-    if (StmtExprChild.begin() == StmtExprChild.end())
+    if (StmtExprChild.begin() == StmtExprChild.end()) {
       return;
+}
     auto *CompS = dyn_cast_or_null<CompoundStmt>(*StmtExprChild.begin());
-    if (!CompS)
+    if (!CompS) {
       return;
+}
 
     Stmt::child_range CompStmtChild = CompS->children();
-    if (CompStmtChild.begin() == CompStmtChild.end())
+    if (CompStmtChild.begin() == CompStmtChild.end()) {
       return;
+}
     auto *DeclS = dyn_cast_or_null<DeclStmt>(*CompStmtChild.begin());
-    if (!DeclS)
+    if (!DeclS) {
       return;
-    if (!DeclS->isSingleDecl())
+}
+    if (!DeclS->isSingleDecl()) {
       return;
+}
     VarDecl *VD = dyn_cast_or_null<VarDecl>(DeclS->getSingleDecl());
-    if (!VD)
+    if (!VD) {
       return;
+}
     Expr *Init = VD->getInit();
-    if (!Init)
+    if (!Init) {
       return;
+}
 
     RecContainer = StmtE;
     Rec = Init->IgnoreParenImpCasts();
-    if (FullExpr *FE = dyn_cast<FullExpr>(Rec))
+    if (FullExpr *FE = dyn_cast<FullExpr>(Rec)) {
       Rec = FE->getSubExpr()->IgnoreParenImpCasts();
+}
     RecRange = Rec->getSourceRange();
-    if (SM.isMacroArgExpansion(RecRange.getBegin()))
+    if (SM.isMacroArgExpansion(RecRange.getBegin())) {
       RecRange.setBegin(SM.getImmediateSpellingLoc(RecRange.getBegin()));
-    if (SM.isMacroArgExpansion(RecRange.getEnd()))
+}
+    if (SM.isMacroArgExpansion(RecRange.getEnd())) {
       RecRange.setEnd(SM.getImmediateSpellingLoc(RecRange.getEnd()));
+}
   }
 
   void clearDiagnostics(SourceLocation loc) const {
@@ -393,16 +430,19 @@ private:
   }
 
   bool isDelegateMessage(Expr *E) const {
-    if (!E) return false;
+    if (!E) { return false;
+}
 
     E = E->IgnoreParenCasts();
 
     // Also look through property-getter sugar.
-    if (PseudoObjectExpr *pseudoOp = dyn_cast<PseudoObjectExpr>(E))
+    if (PseudoObjectExpr *pseudoOp = dyn_cast<PseudoObjectExpr>(E)) {
       E = pseudoOp->getResultExpr()->IgnoreImplicit();
+}
 
-    if (ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E))
+    if (ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E)) {
       return (ME->isInstanceMessage() && ME->getSelector() == DelegateSel);
+}
 
     return false;
   }
@@ -411,8 +451,9 @@ private:
     assert(E);
     Stmt *S = E;
     while (S) {
-      if (isa<ObjCAtFinallyStmt>(S))
+      if (isa<ObjCAtFinallyStmt>(S)) {
         return true;
+}
       S = StmtMap->getParent(S);
     }
 
@@ -431,11 +472,13 @@ private:
 
     Stmt *parent = StmtMap->getParent(E);
 
-    if (ImplicitCastExpr *castE = dyn_cast_or_null<ImplicitCastExpr>(parent))
+    if (ImplicitCastExpr *castE = dyn_cast_or_null<ImplicitCastExpr>(parent)) {
       return tryRemoving(castE);
+}
 
-    if (ParenExpr *parenE = dyn_cast_or_null<ParenExpr>(parent))
+    if (ParenExpr *parenE = dyn_cast_or_null<ParenExpr>(parent)) {
       return tryRemoving(parenE);
+}
 
     if (BinaryOperator *
           bopE = dyn_cast_or_null<BinaryOperator>(parent)) {

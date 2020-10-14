@@ -61,8 +61,9 @@ createExecutorFromCommandLineArgsImpl(int &argc, const char **argv,
   auto OptionsParser =
       CommonOptionsParser::create(argc, argv, Category, llvm::cl::ZeroOrMore,
                                   /*Overview=*/Overview);
-  if (!OptionsParser)
+  if (!OptionsParser) {
     return OptionsParser.takeError();
+}
   for (const auto &TEPlugin : ToolExecutorPluginRegistry::entries()) {
     if (TEPlugin.getName() != ExecutorName) {
       continue;

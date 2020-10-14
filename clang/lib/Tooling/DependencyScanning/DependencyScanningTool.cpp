@@ -35,8 +35,9 @@ llvm::Expected<std::string> DependencyScanningTool::getDependencyFile(
   public:
     void handleFileDependency(const DependencyOutputOptions &Opts,
                               StringRef File) override {
-      if (!this->Opts)
+      if (!this->Opts) {
         this->Opts = std::make_unique<DependencyOutputOptions>(Opts);
+}
       Dependencies.push_back(std::string(File));
     }
 
@@ -49,16 +50,18 @@ llvm::Expected<std::string> DependencyScanningTool::getDependencyFile(
     void handleContextHash(std::string Hash) override {}
 
     void printDependencies(std::string &S) {
-      if (!Opts)
+      if (!Opts) {
         return;
+}
 
       class DependencyPrinter : public DependencyFileGenerator {
       public:
         DependencyPrinter(DependencyOutputOptions &Opts,
                           ArrayRef<std::string> Dependencies)
             : DependencyFileGenerator(Opts) {
-          for (const auto &Dep : Dependencies)
+          for (const auto &Dep : Dependencies) {
             addDependency(Dep);
+}
         }
 
         void printDependencies(std::string &S) {
@@ -87,8 +90,9 @@ llvm::Expected<std::string> DependencyScanningTool::getDependencyFile(
 
   MakeDependencyPrinterConsumer Consumer;
   auto Result = Worker.computeDependencies(Input, CWD, Compilations, Consumer);
-  if (Result)
+  if (Result) {
     return std::move(Result);
+}
   std::string Output;
   Consumer.printDependencies(Output);
   return Output;
@@ -125,8 +129,9 @@ DependencyScanningTool::getFullDependencies(
 
       for (auto &&M : ClangModuleDeps) {
         auto &MD = M.second;
-        if (MD.ImportedByMainFile)
+        if (MD.ImportedByMainFile) {
           FD.ClangModuleDeps.push_back({MD.ModuleName, ContextHash});
+}
       }
 
       FullDependenciesResult FDR;
@@ -134,8 +139,9 @@ DependencyScanningTool::getFullDependencies(
       for (auto &&M : ClangModuleDeps) {
         // TODO: Avoid handleModuleDependency even being called for modules
         //   we've already seen.
-        if (AlreadySeen.count(M.first))
+        if (AlreadySeen.count(M.first)) {
           continue;
+}
         FDR.DiscoveredModules.push_back(std::move(M.second));
       }
 
@@ -163,8 +169,9 @@ DependencyScanningTool::getFullDependencies(
   FullDependencyPrinterConsumer Consumer(AlreadySeen);
   llvm::Error Result =
       Worker.computeDependencies(Input, CWD, Compilations, Consumer);
-  if (Result)
+  if (Result) {
     return std::move(Result);
+}
   return Consumer.getFullDependencies();
 }
 

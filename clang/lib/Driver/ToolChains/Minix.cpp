@@ -32,8 +32,9 @@ void tools::minix::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this,
@@ -73,15 +74,17 @@ void tools::minix::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     if (D.CCCIsCXX()) {
-      if (getToolChain().ShouldLinkCXXStdlib(Args))
+      if (getToolChain().ShouldLinkCXXStdlib(Args)) {
         getToolChain().AddCXXStdlibLibArgs(Args, CmdArgs);
+}
       CmdArgs.push_back("-lm");
     }
   }
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
-    if (Args.hasArg(options::OPT_pthread))
+    if (Args.hasArg(options::OPT_pthread)) {
       CmdArgs.push_back("-lpthread");
+}
     CmdArgs.push_back("-lc");
     CmdArgs.push_back("-lCompilerRT-Generic");
     CmdArgs.push_back("-L/usr/pkg/compiler-rt/lib");

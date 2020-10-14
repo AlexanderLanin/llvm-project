@@ -51,8 +51,9 @@ namespace {
       }
       ~HandlingTopLevelDeclRAII() {
         unsigned Level = --Self.HandlingTopLevelDecls;
-        if (Level == 0 && EmitDeferred)
+        if (Level == 0 && EmitDeferred) {
           Self.EmitDeferredDecls();
+}
       }
     };
 
@@ -67,8 +68,9 @@ namespace {
 
     static llvm::StringRef ExpandModuleName(llvm::StringRef ModuleName,
                                             const CodeGenOptions &CGO) {
-      if (ModuleName == "-" && !CGO.MainFileName.empty())
+      if (ModuleName == "-" && !CGO.MainFileName.empty()) {
         return CGO.MainFileName;
+}
       return ModuleName;
     }
 
@@ -109,15 +111,18 @@ namespace {
 
     const Decl *GetDeclForMangledName(StringRef MangledName) {
       GlobalDecl Result;
-      if (!Builder->lookupRepresentativeDecl(MangledName, Result))
+      if (!Builder->lookupRepresentativeDecl(MangledName, Result)) {
         return nullptr;
+}
       const Decl *D = Result.getCanonicalDecl().getDecl();
       if (auto FD = dyn_cast<FunctionDecl>(D)) {
-        if (FD->hasBody(FD))
+        if (FD->hasBody(FD)) {
           return FD;
+}
       } else if (auto TD = dyn_cast<TagDecl>(D)) {
-        if (auto Def = TD->getDefinition())
+        if (auto Def = TD->getDefinition()) {
           return Def;
+}
       }
       return D;
     }
@@ -140,54 +145,63 @@ namespace {
       M->setTargetTriple(Ctx->getTargetInfo().getTriple().getTriple());
       M->setDataLayout(Ctx->getTargetInfo().getDataLayout());
       const auto &SDKVersion = Ctx->getTargetInfo().getSDKVersion();
-      if (!SDKVersion.empty())
+      if (!SDKVersion.empty()) {
         M->setSDKVersion(SDKVersion);
+}
       Builder.reset(new CodeGen::CodeGenModule(Context, HeaderSearchOpts,
                                                PreprocessorOpts, CodeGenOpts,
                                                *M, Diags, CoverageInfo));
 
-      for (auto &&Lib : CodeGenOpts.DependentLibraries)
+      for (auto &&Lib : CodeGenOpts.DependentLibraries) {
         Builder->AddDependentLib(Lib);
-      for (auto &&Opt : CodeGenOpts.LinkerOptions)
+}
+      for (auto &&Opt : CodeGenOpts.LinkerOptions) {
         Builder->AppendLinkerOptions(Opt);
+}
     }
 
     void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       Builder->HandleCXXStaticMemberVarInstantiation(VD);
     }
 
     bool HandleTopLevelDecl(DeclGroupRef DG) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return true;
+}
 
       HandlingTopLevelDeclRAII HandlingDecl(*this);
 
       // Make sure to emit all elements of a Decl.
-      for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I)
+      for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
         Builder->EmitTopLevelDecl(*I);
+}
 
       return true;
     }
 
     void EmitDeferredDecls() {
-      if (DeferredInlineMemberFuncDefs.empty())
+      if (DeferredInlineMemberFuncDefs.empty()) {
         return;
+}
 
       // Emit any deferred inline method definitions. Note that more deferred
       // methods may be added during this loop, since ASTConsumer callbacks
       // can be invoked if AST inspection results in declarations being added.
       HandlingTopLevelDeclRAII HandlingDecl(*this);
-      for (unsigned I = 0; I != DeferredInlineMemberFuncDefs.size(); ++I)
+      for (unsigned I = 0; I != DeferredInlineMemberFuncDefs.size(); ++I) {
         Builder->EmitTopLevelDecl(DeferredInlineMemberFuncDefs[I]);
+}
       DeferredInlineMemberFuncDefs.clear();
     }
 
     void HandleInlineFunctionDefinition(FunctionDecl *D) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       assert(D->doesThisDeclarationHaveABody());
 
@@ -204,8 +218,9 @@ namespace {
       // Provide some coverage mapping even for methods that aren't emitted.
       // Don't do this for templated classes though, as they may not be
       // instantiable.
-      if (!D->getLexicalDeclContext()->isDependentContext())
+      if (!D->getLexicalDeclContext()->isDependentContext()) {
         Builder->AddDeferredUnusedCoverageMapping(D);
+}
     }
 
     /// HandleTagDeclDefinition - This callback is invoked each time a TagDecl
@@ -213,8 +228,9 @@ namespace {
     /// client hack on the type, which can occur at any point in the file
     /// (because these can be defined in declspecs).
     void HandleTagDeclDefinition(TagDecl *D) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       // Don't allow re-entrant calls to CodeGen triggered by PCH
       // deserialization to emit deferred decls.
@@ -238,54 +254,63 @@ namespace {
       if (Ctx->getLangOpts().OpenMP) {
         for (Decl *Member : D->decls()) {
           if (auto *DRD = dyn_cast<OMPDeclareReductionDecl>(Member)) {
-            if (Ctx->DeclMustBeEmitted(DRD))
+            if (Ctx->DeclMustBeEmitted(DRD)) {
               Builder->EmitGlobal(DRD);
+}
           } else if (auto *DMD = dyn_cast<OMPDeclareMapperDecl>(Member)) {
-            if (Ctx->DeclMustBeEmitted(DMD))
+            if (Ctx->DeclMustBeEmitted(DMD)) {
               Builder->EmitGlobal(DMD);
+}
           }
         }
       }
     }
 
     void HandleTagDeclRequiredDefinition(const TagDecl *D) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       // Don't allow re-entrant calls to CodeGen triggered by PCH
       // deserialization to emit deferred decls.
       HandlingTopLevelDeclRAII HandlingDecl(*this, /*EmitDeferred=*/false);
 
-      if (CodeGen::CGDebugInfo *DI = Builder->getModuleDebugInfo())
-        if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
+      if (CodeGen::CGDebugInfo *DI = Builder->getModuleDebugInfo()) {
+        if (const RecordDecl *RD = dyn_cast<RecordDecl>(D)) {
           DI->completeRequiredType(RD);
+}
+}
     }
 
     void HandleTranslationUnit(ASTContext &Ctx) override {
       // Release the Builder when there is no error.
-      if (!Diags.hasErrorOccurred() && Builder)
+      if (!Diags.hasErrorOccurred() && Builder) {
         Builder->Release();
+}
 
       // If there are errors before or when releasing the Builder, reset
       // the module to stop here before invoking the backend.
       if (Diags.hasErrorOccurred()) {
-        if (Builder)
+        if (Builder) {
           Builder->clear();
+}
         M.reset();
         return;
       }
     }
 
     void AssignInheritanceModel(CXXRecordDecl *RD) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       Builder->RefreshTypeCacheForClass(RD);
     }
 
     void CompleteTentativeDefinition(VarDecl *D) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       Builder->EmitTentativeDefinition(D);
     }
@@ -295,8 +320,9 @@ namespace {
     }
 
     void HandleVTable(CXXRecordDecl *RD) override {
-      if (Diags.hasErrorOccurred())
+      if (Diags.hasErrorOccurred()) {
         return;
+}
 
       Builder->EmitVTable(RD);
     }

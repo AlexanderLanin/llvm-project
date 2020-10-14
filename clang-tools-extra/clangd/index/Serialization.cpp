@@ -81,8 +81,9 @@ public:
   uint32_t consumeVar() {
     constexpr static uint8_t More = 1 << 7;
     uint8_t B = consume8();
-    if (LLVM_LIKELY(!(B & More)))
+    if (LLVM_LIKELY(!(B & More))) {
       return B;
+}
     uint32_t Val = B & ~More;
     for (int Shift = 7; B & More && Shift < 32; Shift += 7) {
       B = consume8();
@@ -160,8 +161,9 @@ public:
   void finalize(llvm::raw_ostream &OS) {
     Sorted = {Unique.begin(), Unique.end()};
     llvm::sort(Sorted);
-    for (unsigned I = 0; I < Sorted.size(); ++I)
+    for (unsigned I = 0; I < Sorted.size(); ++I) {
       Index.try_emplace({Sorted[I].data(), Sorted[I].size()}, I);
+}
 
     std::string RawTable;
     for (llvm::StringRef S : Sorted) {
@@ -194,33 +196,38 @@ struct StringTableIn {
 llvm::Expected<StringTableIn> readStringTable(llvm::StringRef Data) {
   Reader R(Data);
   size_t UncompressedSize = R.consume32();
-  if (R.err())
+  if (R.err()) {
     return error("Truncated string table");
+}
 
   llvm::StringRef Uncompressed;
   llvm::SmallString<1> UncompressedStorage;
-  if (UncompressedSize == 0) // No compression
+  if (UncompressedSize == 0) { // No compression
     Uncompressed = R.rest();
-  else if (llvm::zlib::isAvailable()) {
+  } else if (llvm::zlib::isAvailable()) {
     if (llvm::Error E = llvm::zlib::uncompress(R.rest(), UncompressedStorage,
-                                               UncompressedSize))
+                                               UncompressedSize)) {
       return std::move(E);
+}
     Uncompressed = UncompressedStorage;
-  } else
+  } else {
     return error("Compressed string table, but zlib is unavailable");
+}
 
   StringTableIn Table;
   llvm::StringSaver Saver(Table.Arena);
   R = Reader(Uncompressed);
   for (Reader R(Uncompressed); !R.eof();) {
     auto Len = R.rest().find(0);
-    if (Len == llvm::StringRef::npos)
+    if (Len == llvm::StringRef::npos) {
       return error("Bad string table: not null terminated");
+}
     Table.Strings.push_back(Saver.save(R.consume(Len)));
     R.consume8();
   }
-  if (R.err())
+  if (R.err()) {
     return error("Truncated string table");
+}
   return std::move(Table);
 }
 
@@ -258,8 +265,9 @@ IncludeGraphNode readIncludeGraphNode(Reader &Data,
   llvm::StringRef Digest = Data.consume(IGN.Digest.size());
   std::copy(Digest.bytes_begin(), Digest.bytes_end(), IGN.Digest.begin());
   IGN.DirectIncludes.resize(Data.consumeVar());
-  for (llvm::StringRef &Include : IGN.DirectIncludes)
+  for (llvm::StringRef &Include : IGN.DirectIncludes) {
     Include = Data.consumeString(Strings);
+}
   return IGN;
 }
 
@@ -272,8 +280,9 @@ void writeIncludeGraphNode(const IncludeGraphNode &IGN,
                        IGN.Digest.size());
   OS << Hash;
   writeVar(IGN.DirectIncludes.size(), OS);
-  for (llvm::StringRef Include : IGN.DirectIncludes)
+  for (llvm::StringRef Include : IGN.DirectIncludes) {
     writeVar(Strings.index(Include), OS);
+}
 }
 
 void writeSymbol(const Symbol &Sym, const StringTableOut &Strings,
@@ -301,8 +310,9 @@ void writeSymbol(const Symbol &Sym, const StringTableOut &Strings,
     writeVar(Include.References, OS);
   };
   writeVar(Sym.IncludeHeaders.size(), OS);
-  for (const auto &Include : Sym.IncludeHeaders)
+  for (const auto &Include : Sym.IncludeHeaders) {
     WriteInclude(Include);
+}
 }
 
 Symbol readSymbol(Reader &Data, llvm::ArrayRef<llvm::StringRef> Strings) {
@@ -390,8 +400,9 @@ void writeCompileCommand(const InternedCompileCommand &Cmd,
                          llvm::raw_ostream &CmdOS) {
   writeVar(Strings.index(Cmd.Directory), CmdOS);
   writeVar(Cmd.CommandLine.size(), CmdOS);
-  for (llvm::StringRef C : Cmd.CommandLine)
+  for (llvm::StringRef C : Cmd.CommandLine) {
     writeVar(Strings.index(C), CmdOS);
+}
 }
 
 InternedCompileCommand
@@ -399,8 +410,9 @@ readCompileCommand(Reader CmdReader, llvm::ArrayRef<llvm::StringRef> Strings) {
   InternedCompileCommand Cmd;
   Cmd.Directory = CmdReader.consumeString(Strings);
   Cmd.CommandLine.resize(CmdReader.consumeVar());
-  for (llvm::StringRef &C : Cmd.CommandLine)
+  for (llvm::StringRef &C : Cmd.CommandLine) {
     C = CmdReader.consumeString(Strings);
+}
   return Cmd;
 }
 
@@ -420,30 +432,38 @@ constexpr static uint32_t Version = 13;
 
 llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data) {
   auto RIFF = riff::readFile(Data);
-  if (!RIFF)
+  if (!RIFF) {
     return RIFF.takeError();
-  if (RIFF->Type != riff::fourCC("CdIx"))
+}
+  if (RIFF->Type != riff::fourCC("CdIx")) {
     return error("wrong RIFF filetype: {0}", riff::fourCCStr(RIFF->Type));
+}
   llvm::StringMap<llvm::StringRef> Chunks;
-  for (const auto &Chunk : RIFF->Chunks)
+  for (const auto &Chunk : RIFF->Chunks) {
     Chunks.try_emplace(llvm::StringRef(Chunk.ID.data(), Chunk.ID.size()),
                        Chunk.Data);
+}
 
-  if (!Chunks.count("meta"))
+  if (!Chunks.count("meta")) {
     return error("missing meta chunk");
+}
   Reader Meta(Chunks.lookup("meta"));
   auto SeenVersion = Meta.consume32();
-  if (SeenVersion != Version)
+  if (SeenVersion != Version) {
     return error("wrong version: want {0}, got {1}", Version, SeenVersion);
+}
 
   // meta chunk is checked above, as we prefer the "version mismatch" error.
-  for (llvm::StringRef RequiredChunk : {"stri"})
-    if (!Chunks.count(RequiredChunk))
+  for (llvm::StringRef RequiredChunk : {"stri"}) {
+    if (!Chunks.count(RequiredChunk)) {
       return error("missing required chunk {0}", RequiredChunk);
+}
+}
 
   auto Strings = readStringTable(Chunks.lookup("stri"));
-  if (!Strings)
+  if (!Strings) {
     return Strings.takeError();
+}
 
   IndexFileIn Result;
   if (Chunks.count("srcs")) {
@@ -456,20 +476,24 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data) {
       // We change all the strings inside the structure to point at the keys in
       // the map, since it is the only copy of the string that's going to live.
       Entry->getValue().URI = Entry->getKey();
-      for (auto &Include : Entry->getValue().DirectIncludes)
+      for (auto &Include : Entry->getValue().DirectIncludes) {
         Include = Result.Sources->try_emplace(Include).first->getKey();
+}
     }
-    if (SrcsReader.err())
+    if (SrcsReader.err()) {
       return error("malformed or truncated include uri");
+}
   }
 
   if (Chunks.count("symb")) {
     Reader SymbolReader(Chunks.lookup("symb"));
     SymbolSlab::Builder Symbols;
-    while (!SymbolReader.eof())
+    while (!SymbolReader.eof()) {
       Symbols.insert(readSymbol(SymbolReader, Strings->Strings));
-    if (SymbolReader.err())
+}
+    if (SymbolReader.err()) {
       return error("malformed or truncated symbol");
+}
     Result.Symbols = std::move(Symbols).build();
   }
   if (Chunks.count("refs")) {
@@ -477,11 +501,13 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data) {
     RefSlab::Builder Refs;
     while (!RefsReader.eof()) {
       auto RefsBundle = readRefs(RefsReader, Strings->Strings);
-      for (const auto &Ref : RefsBundle.second) // FIXME: bulk insert?
+      for (const auto &Ref : RefsBundle.second) { // FIXME: bulk insert?
         Refs.insert(RefsBundle.first, Ref);
+}
     }
-    if (RefsReader.err())
+    if (RefsReader.err()) {
       return error("malformed or truncated refs");
+}
     Result.Refs = std::move(Refs).build();
   }
   if (Chunks.count("rela")) {
@@ -491,21 +517,24 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data) {
       auto Relation = readRelation(RelationsReader);
       Relations.insert(Relation);
     }
-    if (RelationsReader.err())
+    if (RelationsReader.err()) {
       return error("malformed or truncated relations");
+}
     Result.Relations = std::move(Relations).build();
   }
   if (Chunks.count("cmdl")) {
     Reader CmdReader(Chunks.lookup("cmdl"));
-    if (CmdReader.err())
+    if (CmdReader.err()) {
       return error("malformed or truncated commandline section");
+}
     InternedCompileCommand Cmd =
         readCompileCommand(CmdReader, Strings->Strings);
     Result.Cmd.emplace();
     Result.Cmd->Directory = std::string(Cmd.Directory);
     Result.Cmd->CommandLine.reserve(Cmd.CommandLine.size());
-    for (llvm::StringRef C : Cmd.CommandLine)
+    for (llvm::StringRef C : Cmd.CommandLine) {
       Result.Cmd->CommandLine.emplace_back(C);
+}
   }
   return std::move(Result);
 }
@@ -513,8 +542,9 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data) {
 template <class Callback>
 void visitStrings(IncludeGraphNode &IGN, const Callback &CB) {
   CB(IGN.URI);
-  for (llvm::StringRef &Include : IGN.DirectIncludes)
+  for (llvm::StringRef &Include : IGN.DirectIncludes) {
     CB(Include);
+}
 }
 
 void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
@@ -537,12 +567,13 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
                  [&](llvm::StringRef &S) { Strings.intern(S); });
   }
   std::vector<IncludeGraphNode> Sources;
-  if (Data.Sources)
+  if (Data.Sources) {
     for (const auto &Source : *Data.Sources) {
       Sources.push_back(Source.getValue());
       visitStrings(Sources.back(),
                    [&](llvm::StringRef &S) { Strings.intern(S); });
     }
+}
 
   std::vector<std::pair<SymbolID, std::vector<Ref>>> Refs;
   if (Data.Refs) {
@@ -585,8 +616,9 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
   std::string SymbolSection;
   {
     llvm::raw_string_ostream SymbolOS(SymbolSection);
-    for (const auto &Sym : Symbols)
+    for (const auto &Sym : Symbols) {
       writeSymbol(Sym, Strings, SymbolOS);
+}
   }
   RIFF.Chunks.push_back({riff::fourCC("symb"), SymbolSection});
 
@@ -594,8 +626,9 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
   if (Data.Refs) {
     {
       llvm::raw_string_ostream RefsOS(RefsSection);
-      for (const auto &Sym : Refs)
+      for (const auto &Sym : Refs) {
         writeRefs(Sym.first, Sym.second, Strings, RefsOS);
+}
     }
     RIFF.Chunks.push_back({riff::fourCC("refs"), RefsSection});
   }
@@ -604,8 +637,9 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
   if (Data.Relations) {
     {
       llvm::raw_string_ostream RelationOS{RelationSection};
-      for (const auto &Relation : Relations)
+      for (const auto &Relation : Relations) {
         writeRelation(Relation, RelationOS);
+}
     }
     RIFF.Chunks.push_back({riff::fourCC("rela"), RelationSection});
   }
@@ -614,8 +648,9 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
   {
     {
       llvm::raw_string_ostream SrcsOS(SrcsSection);
-      for (const auto &SF : Sources)
+      for (const auto &SF : Sources) {
         writeIncludeGraphNode(SF, Strings, SrcsOS);
+}
     }
     RIFF.Chunks.push_back({riff::fourCC("srcs"), SrcsSection});
   }
@@ -676,12 +711,15 @@ std::unique_ptr<SymbolIndex> loadIndex(llvm::StringRef SymbolFilename,
   {
     trace::Span Tracer("ParseIndex");
     if (auto I = readIndexFile(Buffer->get()->getBuffer())) {
-      if (I->Symbols)
+      if (I->Symbols) {
         Symbols = std::move(*I->Symbols);
-      if (I->Refs)
+}
+      if (I->Refs) {
         Refs = std::move(*I->Refs);
-      if (I->Relations)
+}
+      if (I->Relations) {
         Relations = std::move(*I->Relations);
+}
     } else {
       elog("Bad index file: {0}", I.takeError());
       return nullptr;

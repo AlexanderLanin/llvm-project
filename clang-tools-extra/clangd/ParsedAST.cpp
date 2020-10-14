@@ -74,15 +74,19 @@ public:
   bool HandleTopLevelDecl(DeclGroupRef DG) override {
     for (Decl *D : DG) {
       auto &SM = D->getASTContext().getSourceManager();
-      if (!isInsideMainFile(D->getLocation(), SM))
+      if (!isInsideMainFile(D->getLocation(), SM)) {
         continue;
-      if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
-        if (isImplicitTemplateInstantiation(ND))
+}
+      if (const NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
+        if (isImplicitTemplateInstantiation(ND)) {
           continue;
+}
+}
 
       // ObjCMethodDecl are not actually top-level decls.
-      if (isa<ObjCMethodDecl>(D))
+      if (isa<ObjCMethodDecl>(D)) {
         continue;
+}
 
       TopLevelDecls.push_back(D);
     }
@@ -123,8 +127,9 @@ public:
     auto &PP = Clang.getPreprocessor();
     auto *ExistingCallbacks = PP.getPPCallbacks();
     // No need to replay events if nobody is listening.
-    if (!ExistingCallbacks)
+    if (!ExistingCallbacks) {
       return;
+}
     PP.addPPCallbacks(std::unique_ptr<PPCallbacks>(new ReplayPreamble(
         std::move(Includes), ExistingCallbacks, Clang.getSourceManager(), PP,
         Clang.getLangOpts(), PB)));
@@ -164,16 +169,19 @@ private:
                    SrcMgr::CharacteristicKind Kind, FileID PrevFID) override {
     // It'd be nice if there was a better way to identify built-in headers...
     if (Reason == FileChangeReason::ExitFile &&
-        SM.getBuffer(PrevFID)->getBufferIdentifier() == "<built-in>")
+        SM.getBuffer(PrevFID)->getBufferIdentifier() == "<built-in>") {
       replay();
+}
   }
 
   void replay() {
     for (const auto &Inc : Includes) {
       const FileEntry *File = nullptr;
-      if (Inc.Resolved != "")
-        if (auto FE = SM.getFileManager().getFile(Inc.Resolved))
+      if (Inc.Resolved != "") {
+        if (auto FE = SM.getFileManager().getFile(Inc.Resolved)) {
           File = *FE;
+}
+}
 
       // Re-lex the #include directive to find its interesting parts.
       auto HashLoc = SM.getComposedLoc(SM.getMainFileID(), Inc.HashOffset);
@@ -218,11 +226,11 @@ private:
                                    FileTok->range(SM).toCharRange(SM), File,
                                    "SearchPath", "RelPath",
                                    /*Imported=*/nullptr, Inc.FileKind);
-      if (File)
+      if (File) {
         // FIXME: Use correctly named FileEntryRef.
         Delegate->FileSkipped(FileEntryRef(File->getName(), *File),
                               SynthesizedFilenameTok, Inc.FileKind);
-      else {
+      } else {
         llvm::SmallString<1> UnusedRecovery;
         Delegate->FileNotFound(WrittenFilename, UnusedRecovery);
       }
@@ -247,8 +255,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
   SPAN_ATTACH(Tracer, "File", Filename);
 
   auto VFS = Inputs.TFS->view(Inputs.CompileCommand.Directory);
-  if (Preamble && Preamble->StatCache)
+  if (Preamble && Preamble->StatCache) {
     VFS = Preamble->StatCache->getConsumingFS(std::move(VFS));
+}
 
   assert(CI);
   // Command-line parsing sets DisableFree to true by default, but we don't want
@@ -272,8 +281,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
       std::move(CI), PreamblePCH,
       llvm::MemoryBuffer::getMemBufferCopy(Inputs.Contents, Filename), VFS,
       ASTDiags);
-  if (!Clang)
+  if (!Clang) {
     return None;
+}
 
   auto Action = std::make_unique<ClangdFrontendAction>();
   const FrontendInputFile &MainInput = Clang->getFrontendOpts().Inputs[0];
@@ -297,8 +307,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
     dlog("ClangTidy configuration for file {0}: {1}", Filename,
          tidy::configurationAsText(Inputs.Opts.ClangTidyOpts));
     tidy::ClangTidyCheckFactories CTFactories;
-    for (const auto &E : tidy::ClangTidyModuleRegistry::entries())
+    for (const auto &E : tidy::ClangTidyModuleRegistry::entries()) {
       E.instantiate()->addCheckFactories(CTFactories);
+}
     CTContext.emplace(std::make_unique<tidy::DefaultOptionsProvider>(
         tidy::ClangTidyGlobalOptions(), Inputs.Opts.ClangTidyOpts));
     CTContext->setDiagnosticsEngine(&Clang->getDiagnostics());
@@ -337,8 +348,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
     });
     Preprocessor *PP = &Clang->getPreprocessor();
     for (const auto &Check : CTChecks) {
-      if (!Check->isLanguageVersionSupported(CTContext->getLangOpts()))
+      if (!Check->isLanguageVersionSupported(CTContext->getLangOpts())) {
         continue;
+}
       // FIXME: the PP callbacks skip the entire preamble.
       // Checks that want to see #includes in the main file do not see them.
       Check->registerPPCallbacks(Clang->getSourceManager(), PP, PP);
@@ -357,8 +369,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
         Filename, Inputs.Contents, Style, BuildDir.get(),
         &Clang->getPreprocessor().getHeaderSearchInfo());
     if (Preamble) {
-      for (const auto &Inc : Preamble->Includes.MainFileIncludes)
+      for (const auto &Inc : Preamble->Includes.MainFileIncludes) {
         Inserter->addExisting(Inc);
+}
     }
     FixIncludes.emplace(Filename, Inserter, *Inputs.Index,
                         /*IndexRequestLimit=*/5);
@@ -386,8 +399,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
   // Copy over the macros in the preamble region of the main file, and combine
   // with non-preamble macros below.
   MainFileMacros Macros;
-  if (Preamble)
+  if (Preamble) {
     Macros = Preamble->Macros;
+}
   Clang->getPreprocessor().addPPCallbacks(
       std::make_unique<CollectMainFileMacros>(Clang->getSourceManager(),
                                               Macros));
@@ -395,10 +409,11 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
   // Copy over the includes from the preamble, then combine with the
   // non-preamble includes below.
   CanonicalIncludes CanonIncludes;
-  if (Preamble)
+  if (Preamble) {
     CanonIncludes = Preamble->CanonIncludes;
-  else
+  } else {
     CanonIncludes.addSystemHeadersMapping(Clang->getLangOpts());
+}
   std::unique_ptr<CommentHandler> IWYUHandler =
       collectIWYUHeaderMaps(&CanonIncludes);
   Clang->getPreprocessor().addCommentHandler(IWYUHandler.get());
@@ -406,9 +421,10 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
   // Collect tokens of the main file.
   syntax::TokenCollector CollectTokens(Clang->getPreprocessor());
 
-  if (llvm::Error Err = Action->Execute())
+  if (llvm::Error Err = Action->Execute()) {
     log("Execute() failed when building AST for {0}: {1}", MainInput.getFile(),
         toString(std::move(Err)));
+}
 
   // We have to consume the tokens before running clang-tidy to avoid collecting
   // tokens from running the preprocessor inside the checks (only
@@ -436,8 +452,9 @@ ParsedAST::build(llvm::StringRef Filename, const ParseInputs &Inputs,
 
   std::vector<Diag> Diags = CompilerInvocationDiags;
   // Add diagnostics from the preamble, if any.
-  if (Preamble)
+  if (Preamble) {
     Diags.insert(Diags.end(), Preamble->Diags.begin(), Preamble->Diags.end());
+}
   // Finally, add diagnostics coming from the AST.
   {
     std::vector<Diag> D = ASTDiags.take(CTContext.getPointer());
@@ -508,13 +525,15 @@ std::size_t ParsedAST::getUsedBytes() const {
   Total += AST.getSourceManager().getDataStructureSizes();
   Total += AST.getSourceManager().getMemoryBufferSizes().malloc_bytes;
 
-  if (ExternalASTSource *Ext = AST.getExternalSource())
+  if (ExternalASTSource *Ext = AST.getExternalSource()) {
     Total += Ext->getMemoryBufferSizes().malloc_bytes;
+}
 
   const Preprocessor &PP = getPreprocessor();
   Total += PP.getTotalMemory();
-  if (PreprocessingRecord *PRec = PP.getPreprocessingRecord())
+  if (PreprocessingRecord *PRec = PP.getPreprocessingRecord()) {
     Total += PRec->getTotalMemory();
+}
   Total += PP.getHeaderSearchInfo().getTotalMemory();
 
   return Total;
@@ -546,8 +565,9 @@ ParsedAST::ParsedAST(llvm::StringRef Version,
 }
 
 llvm::Optional<llvm::StringRef> ParsedAST::preambleVersion() const {
-  if (!Preamble)
+  if (!Preamble) {
     return llvm::None;
+}
   return llvm::StringRef(Preamble->Version);
 }
 } // namespace clangd

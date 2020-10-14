@@ -22,8 +22,9 @@ clang_CompilationDatabase_fromDirectory(const char *BuildDir,
     Err = CXCompilationDatabase_CanNotLoadDatabase;
   }
 
-  if (ErrorCode)
+  if (ErrorCode) {
     *ErrorCode = Err;
+}
 
   return db.release();
 }
@@ -48,8 +49,9 @@ clang_CompilationDatabase_getCompileCommands(CXCompilationDatabase CDb,
 {
   if (CompilationDatabase *db = static_cast<CompilationDatabase *>(CDb)) {
     std::vector<CompileCommand> CCmd(db->getCompileCommands(CompleteFileName));
-    if (!CCmd.empty())
+    if (!CCmd.empty()) {
       return new AllocatedCXCompileCommands(std::move(CCmd));
+}
   }
 
   return nullptr;
@@ -59,8 +61,9 @@ CXCompileCommands
 clang_CompilationDatabase_getAllCompileCommands(CXCompilationDatabase CDb) {
   if (CompilationDatabase *db = static_cast<CompilationDatabase *>(CDb)) {
     std::vector<CompileCommand> CCmd(db->getAllCompileCommands());
-    if (!CCmd.empty())
+    if (!CCmd.empty()) {
       return new AllocatedCXCompileCommands(std::move(CCmd));
+}
   }
 
   return nullptr;
@@ -75,8 +78,9 @@ clang_CompileCommands_dispose(CXCompileCommands Cmds)
 unsigned
 clang_CompileCommands_getSize(CXCompileCommands Cmds)
 {
-  if (!Cmds)
+  if (!Cmds) {
     return 0;
+}
 
   AllocatedCXCompileCommands *ACC =
     static_cast<AllocatedCXCompileCommands *>(Cmds);
@@ -87,14 +91,16 @@ clang_CompileCommands_getSize(CXCompileCommands Cmds)
 CXCompileCommand
 clang_CompileCommands_getCommand(CXCompileCommands Cmds, unsigned I)
 {
-  if (!Cmds)
+  if (!Cmds) {
     return nullptr;
+}
 
   AllocatedCXCompileCommands *ACC =
     static_cast<AllocatedCXCompileCommands *>(Cmds);
 
-  if (I >= ACC->CCmd.size())
+  if (I >= ACC->CCmd.size()) {
     return nullptr;
+}
 
   return &ACC->CCmd[I];
 }
@@ -102,8 +108,9 @@ clang_CompileCommands_getCommand(CXCompileCommands Cmds, unsigned I)
 CXString
 clang_CompileCommand_getDirectory(CXCompileCommand CCmd)
 {
-  if (!CCmd)
+  if (!CCmd) {
     return cxstring::createNull();
+}
 
   CompileCommand *cmd = static_cast<CompileCommand *>(CCmd);
   return cxstring::createRef(cmd->Directory.c_str());
@@ -112,8 +119,9 @@ clang_CompileCommand_getDirectory(CXCompileCommand CCmd)
 CXString
 clang_CompileCommand_getFilename(CXCompileCommand CCmd)
 {
-  if (!CCmd)
+  if (!CCmd) {
     return cxstring::createNull();
+}
 
   CompileCommand *cmd = static_cast<CompileCommand *>(CCmd);
   return cxstring::createRef(cmd->Filename.c_str());
@@ -122,8 +130,9 @@ clang_CompileCommand_getFilename(CXCompileCommand CCmd)
 unsigned
 clang_CompileCommand_getNumArgs(CXCompileCommand CCmd)
 {
-  if (!CCmd)
+  if (!CCmd) {
     return 0;
+}
 
   return static_cast<CompileCommand *>(CCmd)->CommandLine.size();
 }
@@ -131,13 +140,15 @@ clang_CompileCommand_getNumArgs(CXCompileCommand CCmd)
 CXString
 clang_CompileCommand_getArg(CXCompileCommand CCmd, unsigned Arg)
 {
-  if (!CCmd)
+  if (!CCmd) {
     return cxstring::createNull();
+}
 
   CompileCommand *Cmd = static_cast<CompileCommand *>(CCmd);
 
-  if (Arg >= Cmd->CommandLine.size())
+  if (Arg >= Cmd->CommandLine.size()) {
     return cxstring::createNull();
+}
 
   return cxstring::createRef(Cmd->CommandLine[Arg].c_str());
 }

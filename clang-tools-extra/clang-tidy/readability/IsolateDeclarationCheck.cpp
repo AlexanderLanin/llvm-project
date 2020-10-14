@@ -36,15 +36,17 @@ static SourceLocation findStartOfIndirection(SourceLocation Start,
                                              const SourceManager &SM,
                                              const LangOptions &LangOpts) {
   assert(Indirections >= 0 && "Indirections must be non-negative");
-  if (Indirections == 0)
+  if (Indirections == 0) {
     return Start;
+}
 
   // Note that the post-fix decrement is necessary to perform the correct
   // number of transformations.
   while (Indirections-- != 0) {
     Start = findPreviousAnyTokenKind(Start, SM, LangOpts, tok::star, tok::amp);
-    if (Start.isInvalid() || Start.isMacroID())
+    if (Start.isInvalid() || Start.isMacroID()) {
       return SourceLocation();
+}
   }
   return Start;
 }
@@ -67,24 +69,28 @@ static int countIndirections(const Type *T, int Indirections = 0) {
   // Note: Do not increment the 'Indirections' because it is not yet clear
   // if there is an indirection added in the source code of the array
   // declaration.
-  if (const auto *AT = dyn_cast<ArrayType>(T))
+  if (const auto *AT = dyn_cast<ArrayType>(T)) {
     return countIndirections(AT->getElementType().IgnoreParens().getTypePtr(),
                              Indirections);
+}
 
-  if (isa<PointerType>(T) || isa<ReferenceType>(T))
+  if (isa<PointerType>(T) || isa<ReferenceType>(T)) {
     return countIndirections(T->getPointeeType().IgnoreParens().getTypePtr(),
                              ++Indirections);
+}
 
   return Indirections;
 }
 
 static bool typeIsMemberPointer(const Type *T) {
-  if (isa<ArrayType>(T))
+  if (isa<ArrayType>(T)) {
     return typeIsMemberPointer(T->getArrayElementTypeNoTypeQual());
+}
 
   if ((isa<PointerType>(T) || isa<ReferenceType>(T)) &&
-      isa<PointerType>(T->getPointeeType()))
+      isa<PointerType>(T->getPointeeType())) {
     return typeIsMemberPointer(T->getPointeeType().getTypePtr());
+}
 
   return isa<MemberPointerType>(T);
 }
@@ -109,11 +115,13 @@ static Optional<std::vector<SourceRange>>
 declRanges(const DeclStmt *DS, const SourceManager &SM,
            const LangOptions &LangOpts) {
   std::size_t DeclCount = std::distance(DS->decl_begin(), DS->decl_end());
-  if (DeclCount < 2)
+  if (DeclCount < 2) {
     return None;
+}
 
-  if (rangeContainsExpansionsOrDirectives(DS->getSourceRange(), SM, LangOpts))
+  if (rangeContainsExpansionsOrDirectives(DS->getSourceRange(), SM, LangOpts)) {
     return None;
+}
 
   // The initial type of the declaration and each declaration has it's own
   // slice. This is necessary, because pointers and references bind only
@@ -126,13 +134,15 @@ declRanges(const DeclStmt *DS, const SourceManager &SM,
   // future this should be relaxed and support various kinds of declarations.
   const auto *FirstDecl = dyn_cast<VarDecl>(*DS->decl_begin());
 
-  if (FirstDecl == nullptr)
+  if (FirstDecl == nullptr) {
     return None;
+}
 
   // FIXME: Member pointers are not transformed correctly right now, that's
   // why they are treated as problematic here.
-  if (typeIsMemberPointer(FirstDecl->getType().IgnoreParens().getTypePtr()))
+  if (typeIsMemberPointer(FirstDecl->getType().IgnoreParens().getTypePtr())) {
     return None;
+}
 
   // Consider the following case: 'int * pointer, value = 42;'
   // Created slices (inclusive)    [  ][       ] [         ]
@@ -147,16 +157,18 @@ declRanges(const DeclStmt *DS, const SourceManager &SM,
   // pointer.
   // Example: 'void (*f2)(int), (*g2)(int, float) = gg;'
   // Slices:   [   ][        ] [                     ]
-  if (FirstDecl->getType()->isFunctionPointerType())
+  if (FirstDecl->getType()->isFunctionPointerType()) {
     Start = findPreviousTokenKind(Start, SM, LangOpts, tok::l_paren);
+}
 
   // It is possible that a declarator is wrapped with parens.
   // Example: 'float (((*f_ptr2)))[42], *f_ptr3, ((f_value2)) = 42.f;'
   // The slice for the type-part must not contain these parens. Consequently
   // 'Start' is moved to the most left paren if there are parens.
   while (true) {
-    if (Start.isInvalid() || Start.isMacroID())
+    if (Start.isInvalid() || Start.isMacroID()) {
       break;
+}
 
     Token T = getPreviousToken(Start, SM, LangOpts);
     if (T.is(tok::l_paren)) {
@@ -167,8 +179,9 @@ declRanges(const DeclStmt *DS, const SourceManager &SM,
   }
 
   SourceRange DeclRange(DS->getBeginLoc(), Start);
-  if (DeclRange.isInvalid() || isMacroID(DeclRange))
+  if (DeclRange.isInvalid() || isMacroID(DeclRange)) {
     return None;
+}
 
   // The first slice, that is prepended to every isolated declaration, is
   // created.
@@ -181,8 +194,9 @@ declRanges(const DeclStmt *DS, const SourceManager &SM,
 
     // FIXME: Member pointers are not transformed correctly right now, that's
     // why they are treated as problematic here.
-    if (typeIsMemberPointer(CurrentDecl->getType().IgnoreParens().getTypePtr()))
+    if (typeIsMemberPointer(CurrentDecl->getType().IgnoreParens().getTypePtr())) {
       return None;
+}
 
     SourceLocation DeclEnd =
         CurrentDecl->hasInit()
@@ -191,8 +205,9 @@ declRanges(const DeclStmt *DS, const SourceManager &SM,
             : findNextTerminator(CurrentDecl->getEndLoc(), SM, LangOpts);
 
     SourceRange VarNameRange(DeclBegin, DeclEnd);
-    if (VarNameRange.isInvalid() || isMacroID(VarNameRange))
+    if (VarNameRange.isInvalid() || isMacroID(VarNameRange)) {
       return None;
+}
 
     Slices.emplace_back(VarNameRange);
     DeclBegin = DeclEnd.getLocWithOffset(1);
@@ -211,15 +226,17 @@ collectSourceRanges(llvm::ArrayRef<SourceRange> Ranges, const SourceManager &SM,
         CharSourceRange::getCharRange(Range.getBegin(), Range.getEnd()), SM,
         LangOpts);
 
-    if (CharRange.isInvalid())
+    if (CharRange.isInvalid()) {
       return None;
+}
 
     bool InvalidText = false;
     StringRef Snippet =
         Lexer::getSourceText(CharRange, SM, LangOpts, &InvalidText);
 
-    if (InvalidText)
+    if (InvalidText) {
       return None;
+}
 
     Snippets.emplace_back(Snippet);
   }
@@ -234,12 +251,13 @@ createIsolatedDecls(llvm::ArrayRef<StringRef> Snippets) {
   assert(Snippets.size() > 2 && "Not enough snippets to create isolated decls");
   std::vector<std::string> Decls(Snippets.size() - 1);
 
-  for (std::size_t I = 1; I < Snippets.size(); ++I)
+  for (std::size_t I = 1; I < Snippets.size(); ++I) {
     Decls[I - 1] = Twine(Snippets[0])
                        .concat(Snippets[0].endswith(" ") ? "" : " ")
                        .concat(Snippets[I].ltrim())
                        .concat(";")
                        .str();
+}
 
   return Decls;
 }
@@ -253,14 +271,16 @@ void IsolateDeclarationCheck::check(const MatchFinder::MatchResult &Result) {
 
   Optional<std::vector<SourceRange>> PotentialRanges =
       declRanges(WholeDecl, *Result.SourceManager, getLangOpts());
-  if (!PotentialRanges)
+  if (!PotentialRanges) {
     return;
+}
 
   Optional<std::vector<StringRef>> PotentialSnippets = collectSourceRanges(
       *PotentialRanges, *Result.SourceManager, getLangOpts());
 
-  if (!PotentialSnippets)
+  if (!PotentialSnippets) {
     return;
+}
 
   std::vector<std::string> NewDecls = createIsolatedDecls(*PotentialSnippets);
   std::string Replacement = llvm::join(

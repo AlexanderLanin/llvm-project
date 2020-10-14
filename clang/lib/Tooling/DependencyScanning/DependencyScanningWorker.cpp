@@ -91,8 +91,9 @@ public:
     Compiler.getDiagnosticOpts().ShowCarets = false;
     // Create the compiler's actual diagnostics engine.
     Compiler.createDiagnostics(DiagConsumer, /*ShouldOwnClient=*/false);
-    if (!Compiler.hasDiagnostics())
+    if (!Compiler.hasDiagnostics()) {
       return false;
+}
 
     // Use the dependency scanning optimized file system if we can.
     if (DepFS) {
@@ -101,10 +102,12 @@ public:
       // that might be opened, as we want to ensure we don't run source
       // minimization on them.
       DepFS->IgnoredFiles.clear();
-      for (const auto &Entry : CI.getHeaderSearchOpts().UserEntries)
+      for (const auto &Entry : CI.getHeaderSearchOpts().UserEntries) {
         DepFS->IgnoredFiles.insert(Entry.Path);
-      for (const auto &Entry : CI.getHeaderSearchOpts().VFSOverlayFiles)
+}
+      for (const auto &Entry : CI.getHeaderSearchOpts().VFSOverlayFiles) {
         DepFS->IgnoredFiles.insert(Entry);
+}
 
       // Support for virtual file system overlays on top of the caching
       // filesystem.
@@ -113,9 +116,10 @@ public:
 
       // Pass the skip mappings which should speed up excluded conditional block
       // skipping in the preprocessor.
-      if (PPSkipMappings)
+      if (PPSkipMappings) {
         Compiler.getPreprocessorOpts()
             .ExcludedConditionalDirectiveSkipMappings = PPSkipMappings;
+}
     }
 
     FileMgr->getFileSystemOpts().WorkingDir = std::string(WorkingDirectory);
@@ -132,8 +136,9 @@ public:
     auto Opts = std::make_unique<DependencyOutputOptions>(
         std::move(Compiler.getInvocation().getDependencyOutputOpts()));
     // We need at least one -MT equivalent for the generator to work.
-    if (Opts->Targets.empty())
+    if (Opts->Targets.empty()) {
       Opts->Targets = {"clang-scan-deps dependency"};
+}
 
     switch (Format) {
     case ScanningOutputFormat::Make:
@@ -156,8 +161,9 @@ public:
 
     auto Action = std::make_unique<PreprocessOnlyAction>();
     const bool Result = Compiler.ExecuteAction(*Action);
-    if (!DepFS)
+    if (!DepFS) {
       FileMgr->clearStatCache();
+}
     return Result;
   }
 
@@ -177,14 +183,17 @@ DependencyScanningWorker::DependencyScanningWorker(
   DiagOpts = new DiagnosticOptions();
   PCHContainerOps = std::make_shared<PCHContainerOperations>();
   RealFS = new ProxyFileSystemWithoutChdir(llvm::vfs::getRealFileSystem());
-  if (Service.canSkipExcludedPPRanges())
+  if (Service.canSkipExcludedPPRanges()) {
     PPSkipMappings =
         std::make_unique<ExcludedPreprocessorDirectiveSkipMapping>();
-  if (Service.getMode() == ScanningMode::MinimizedSourcePreprocessing)
+}
+  if (Service.getMode() == ScanningMode::MinimizedSourcePreprocessing) {
     DepFS = new DependencyScanningWorkerFilesystem(
         Service.getSharedCache(), RealFS, PPSkipMappings.get());
-  if (Service.canReuseFileManager())
+}
+  if (Service.canReuseFileManager()) {
     Files = new FileManager(FileSystemOptions(), RealFS);
+}
 }
 
 static llvm::Error runWithDiags(
@@ -196,8 +205,9 @@ static llvm::Error runWithDiags(
   llvm::raw_string_ostream DiagnosticsOS(DiagnosticOutput);
   TextDiagnosticPrinter DiagPrinter(DiagnosticsOS, DiagOpts);
 
-  if (BodyShouldSucceed(DiagPrinter))
+  if (BodyShouldSucceed(DiagPrinter)) {
     return llvm::Error::success();
+}
   return llvm::make_error<llvm::StringError>(DiagnosticsOS.str(),
                                              llvm::inconvertibleErrorCode());
 }

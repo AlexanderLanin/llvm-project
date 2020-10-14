@@ -28,15 +28,17 @@ static std::string getPackageFullName(const Record *R);
 
 static std::string getParentPackageFullName(const Record *R) {
   std::string name;
-  if (DefInit *DI = dyn_cast<DefInit>(R->getValueInit("ParentPackage")))
+  if (DefInit *DI = dyn_cast<DefInit>(R->getValueInit("ParentPackage"))) {
     name = getPackageFullName(DI->getDef());
+}
   return name;
 }
 
 static std::string getPackageFullName(const Record *R) {
   std::string name = getParentPackageFullName(R);
-  if (!name.empty())
+  if (!name.empty()) {
     name += ".";
+}
   assert(!R->getValueAsString("PackageName").empty());
   name += R->getValueAsString("PackageName");
   return name;
@@ -44,16 +46,18 @@ static std::string getPackageFullName(const Record *R) {
 
 static std::string getCheckerFullName(const Record *R) {
   std::string name = getParentPackageFullName(R);
-  if (!name.empty())
+  if (!name.empty()) {
     name += ".";
+}
   assert(!R->getValueAsString("CheckerName").empty());
   name += R->getValueAsString("CheckerName");
   return name;
 }
 
 static std::string getStringValue(const Record &R, StringRef field) {
-  if (StringInit *SI = dyn_cast<StringInit>(R.getValueInit(field)))
+  if (StringInit *SI = dyn_cast<StringInit>(R.getValueInit(field))) {
     return std::string(SI->getValue());
+}
   return std::string();
 }
 
@@ -64,11 +68,12 @@ static inline uint64_t getValueFromBitsInit(const BitsInit *B, const Record &R) 
   uint64_t Value = 0;
   for (unsigned i = 0, e = B->getNumBits(); i != e; ++i) {
     const auto *Bit = dyn_cast<BitInit>(B->getBit(i));
-    if (Bit)
+    if (Bit) {
       Value |= uint64_t(Bit->getValue()) << i;
-    else
+    } else {
       PrintFatalError(R.getLoc(),
                       "missing Documentation for " + getCheckerFullName(&R));
+}
   }
   return Value;
 }
@@ -77,14 +82,16 @@ static std::string getCheckerDocs(const Record &R) {
   StringRef LandingPage;
   if (BitsInit *BI = R.getValueAsBitsInit("Documentation")) {
     uint64_t V = getValueFromBitsInit(BI, R);
-    if (V == 1)
+    if (V == 1) {
       LandingPage = "available_checks.html";
-    else if (V == 2)
+    } else if (V == 2) {
       LandingPage = "alpha_checks.html";
+}
   }
   
-  if (LandingPage.empty())
+  if (LandingPage.empty()) {
     return "";
+}
 
   return (llvm::Twine("https://clang-analyzer.llvm.org/") + LandingPage + "#" +
           getCheckerFullName(&R))
@@ -128,12 +135,14 @@ static std::string getDevelopmentStage(const Record &R) {
 }
 
 static bool isHidden(const Record *R) {
-  if (R->getValueAsBit("Hidden"))
+  if (R->getValueAsBit("Hidden")) {
     return true;
+}
 
   // Not declared as hidden, check the parent package if it is hidden.
-  if (DefInit *DI = dyn_cast<DefInit>(R->getValueInit("ParentPackage")))
+  if (DefInit *DI = dyn_cast<DefInit>(R->getValueInit("ParentPackage"))) {
     return isHidden(DI->getDef());
+}
 
   return false;
 }
@@ -148,10 +157,11 @@ static void printChecker(llvm::raw_ostream &OS, const Record &R) {
   OS.write_escaped(getCheckerDocs(R));
   OS << "\", ";
 
-  if (!isHidden(&R))
+  if (!isHidden(&R)) {
     OS << "false";
-  else
+  } else {
     OS << "true";
+}
 
   OS << ")\n";
 }
@@ -169,10 +179,11 @@ static void printOption(llvm::raw_ostream &OS, StringRef FullName,
   OS << '\"';
   OS << getDevelopmentStage(R) << "\", ";
 
-  if (!R.getValueAsBit("Hidden"))
+  if (!R.getValueAsBit("Hidden")) {
     OS << "false";
-  else
+  } else {
     OS << "true";
+}
 }
 
 void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
@@ -192,8 +203,9 @@ void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
         "#ifdef GET_PACKAGES\n";
   {
     SortedRecords sortedPackages;
-    for (unsigned i = 0, e = packages.size(); i != e; ++i)
+    for (unsigned i = 0, e = packages.size(); i != e; ++i) {
       sortedPackages[getPackageFullName(packages[i])] = packages[i];
+}
   
     for (SortedRecords::iterator
            I = sortedPackages.begin(), E = sortedPackages.end(); I != E; ++I) {
@@ -226,8 +238,9 @@ void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
         "#ifdef GET_PACKAGE_OPTIONS\n";
   for (const Record *Package : packages) {
 
-    if (Package->isValueUnset("PackageOptions"))
+    if (Package->isValueUnset("PackageOptions")) {
       continue;
+}
 
     std::vector<Record *> PackageOptions = Package
                                        ->getValueAsListOfDefs("PackageOptions");
@@ -266,8 +279,9 @@ void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
   OS << "\n"
         "#ifdef GET_CHECKER_DEPENDENCIES\n";
   for (const Record *Checker : checkers) {
-    if (Checker->isValueUnset("Dependencies"))
+    if (Checker->isValueUnset("Dependencies")) {
       continue;
+}
 
     for (const Record *Dependency :
                             Checker->getValueAsListOfDefs("Dependencies")) {
@@ -291,8 +305,9 @@ void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
   OS << "\n"
         "#ifdef GET_CHECKER_WEAK_DEPENDENCIES\n";
   for (const Record *Checker : checkers) {
-    if (Checker->isValueUnset("WeakDependencies"))
+    if (Checker->isValueUnset("WeakDependencies")) {
       continue;
+}
 
     for (const Record *Dependency :
          Checker->getValueAsListOfDefs("WeakDependencies")) {
@@ -326,8 +341,9 @@ void clang::EmitClangSACheckers(RecordKeeper &Records, raw_ostream &OS) {
         "#ifdef GET_CHECKER_OPTIONS\n";
   for (const Record *Checker : checkers) {
 
-    if (Checker->isValueUnset("CheckerOptions"))
+    if (Checker->isValueUnset("CheckerOptions")) {
       continue;
+}
 
     std::vector<Record *> CheckerOptions = Checker
                                        ->getValueAsListOfDefs("CheckerOptions");

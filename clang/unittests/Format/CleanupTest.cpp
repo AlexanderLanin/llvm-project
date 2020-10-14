@@ -38,8 +38,9 @@ protected:
                                    llvm::StringRef Code,
                                    const FormatStyle &Style = getLLVMStyle()) {
     std::vector<tooling::Range> Ranges;
-    for (auto Offset : Offsets)
+    for (auto Offset : Offsets) {
       Ranges.push_back(tooling::Range(Offset, 0));
+}
     return cleanup(Code, Ranges, Style);
   }
 };

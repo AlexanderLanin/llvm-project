@@ -43,8 +43,9 @@ static bool ParsePrecision(FormatStringHandler &H, PrintfSpecifier &FS,
   } else {
     const OptionalAmount Amt = ParsePositionAmount(H, Start, Beg, E,
                                            analyze_format_string::PrecisionPos);
-    if (Amt.isInvalid())
+    if (Amt.isInvalid()) {
       return true;
+}
     FS.setPrecision(Amt);
   }
   return false;
@@ -60,10 +61,11 @@ static bool ParseObjCFlags(FormatStringHandler &H, PrintfSpecifier &FS,
    }
    // Handle either the case of no flag or an invalid flag.
    if (Warn) {
-     if (Flag == "")
+     if (Flag == "") {
        H.HandleEmptyObjCModifierFlag(FlagBeg, E  - FlagBeg);
-     else
+     } else {
        H.HandleInvalidObjCModifierFlag(FlagBeg, E  - FlagBeg);
+}
    }
    return true;
 }
@@ -99,24 +101,28 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
   }
 
   // No format specifier found?
-  if (!Start)
+  if (!Start) {
     return false;
+}
 
   if (I == E) {
     // No more characters left?
-    if (Warn)
+    if (Warn) {
       H.HandleIncompleteSpecifier(Start, E - Start);
+}
     return true;
   }
 
   PrintfSpecifier FS;
-  if (ParseArgPosition(H, FS, Start, I, E))
+  if (ParseArgPosition(H, FS, Start, I, E)) {
     return true;
+}
 
   if (I == E) {
     // No more characters left?
-    if (Warn)
+    if (Warn) {
       H.HandleIncompleteSpecifier(Start, E - Start);
+}
     return true;
   }
 
@@ -143,25 +149,28 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
         if (MatchedStr.startswith("mask")) {
           StringRef MaskType = MatchedStr.substr(sizeof("mask.") - 1);
           unsigned Size = MaskType.size();
-          if (Warn && (Size == 0 || Size > 8))
+          if (Warn && (Size == 0 || Size > 8)) {
             H.handleInvalidMaskType(MaskType);
+}
           FS.setMaskType(MaskType);
-        } else if (MatchedStr.equals("sensitive"))
+        } else if (MatchedStr.equals("sensitive")) {
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsSensitive;
-        else if (PrivacyFlags !=
+        } else if (PrivacyFlags !=
                  clang::analyze_os_log::OSLogBufferItem::IsSensitive &&
-                 MatchedStr.equals("private"))
+                 MatchedStr.equals("private")) {
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsPrivate;
-        else if (PrivacyFlags == 0 && MatchedStr.equals("public"))
+        } else if (PrivacyFlags == 0 && MatchedStr.equals("public")) {
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsPublic;
+}
       } else {
         size_t CommaOrBracePos =
             Str.find_if([](char c) { return c == ',' || c == '}'; });
 
         if (CommaOrBracePos == StringRef::npos) {
           // Neither a comma nor the closing brace was found.
-          if (Warn)
+          if (Warn) {
             H.HandleIncompleteSpecifier(Start, E - Start);
+}
           return true;
         }
 
@@ -203,26 +212,30 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
       case '#': FS.setHasAlternativeForm(I); break;
       case '0': FS.setHasLeadingZeros(I); break;
     }
-    if (!hasMore)
+    if (!hasMore) {
       break;
+}
   }
 
   if (I == E) {
     // No more characters left?
-    if (Warn)
+    if (Warn) {
       H.HandleIncompleteSpecifier(Start, E - Start);
+}
     return true;
   }
 
   // Look for the field width (if any).
   if (ParseFieldWidth(H, FS, Start, I, E,
-                      FS.usesPositionalArg() ? nullptr : &argIndex))
+                      FS.usesPositionalArg() ? nullptr : &argIndex)) {
     return true;
+}
 
   if (I == E) {
     // No more characters left?
-    if (Warn)
+    if (Warn) {
       H.HandleIncompleteSpecifier(Start, E - Start);
+}
     return true;
   }
 
@@ -230,31 +243,36 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
   if (*I == '.') {
     ++I;
     if (I == E) {
-      if (Warn)
+      if (Warn) {
         H.HandleIncompleteSpecifier(Start, E - Start);
+}
       return true;
     }
 
     if (ParsePrecision(H, FS, Start, I, E,
-                       FS.usesPositionalArg() ? nullptr : &argIndex))
+                       FS.usesPositionalArg() ? nullptr : &argIndex)) {
       return true;
+}
 
     if (I == E) {
       // No more characters left?
-      if (Warn)
+      if (Warn) {
         H.HandleIncompleteSpecifier(Start, E - Start);
+}
       return true;
     }
   }
 
-  if (ParseVectorModifier(H, FS, I, E, LO))
+  if (ParseVectorModifier(H, FS, I, E, LO)) {
     return true;
+}
 
   // Look for the length modifier.
   if (ParseLengthModifier(FS, I, E, LO) && I == E) {
     // No more characters left?
-    if (Warn)
+    if (Warn) {
       H.HandleIncompleteSpecifier(Start, E - Start);
+}
     return true;
   }
 
@@ -273,14 +291,16 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     for (;; ++I) {
       ObjCModifierFlagsEnd = I;
       if (I == E) {
-        if (Warn)
+        if (Warn) {
           H.HandleIncompleteSpecifier(Start, E - Start);
+}
         return true;
       }
       // Did we find the closing ']'?
       if (*I == ']') {
-        if (ParseObjCFlags(H, FS, flagStart, I, Warn))
+        if (ParseObjCFlags(H, FS, flagStart, I, Warn)) {
           return true;
+}
         ++I;
         break;
       }
@@ -318,8 +338,9 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     case 'i': k = ConversionSpecifier::iArg; break;
     case 'n':
       // Not handled, but reserved in OpenCL.
-      if (!LO.OpenCL)
+      if (!LO.OpenCL) {
         k = ConversionSpecifier::nArg;
+}
       break;
     case 'o': k = ConversionSpecifier::oArg; break;
     case 'p': k = ConversionSpecifier::pArg; break;
@@ -339,36 +360,43 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     case 'm': k = ConversionSpecifier::PrintErrno; break;
     // FreeBSD kernel specific.
     case 'b':
-      if (isFreeBSDKPrintf)
+      if (isFreeBSDKPrintf) {
         k = ConversionSpecifier::FreeBSDbArg; // int followed by char *
+}
       break;
     case 'r':
-      if (isFreeBSDKPrintf)
+      if (isFreeBSDKPrintf) {
         k = ConversionSpecifier::FreeBSDrArg; // int
+}
       break;
     case 'y':
-      if (isFreeBSDKPrintf)
+      if (isFreeBSDKPrintf) {
         k = ConversionSpecifier::FreeBSDyArg; // int
+}
       break;
     // Apple-specific.
     case 'D':
-      if (isFreeBSDKPrintf)
+      if (isFreeBSDKPrintf) {
         k = ConversionSpecifier::FreeBSDDArg; // void * followed by char *
-      else if (Target.getTriple().isOSDarwin())
+      } else if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::DArg;
+}
       break;
     case 'O':
-      if (Target.getTriple().isOSDarwin())
+      if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::OArg;
+}
       break;
     case 'U':
-      if (Target.getTriple().isOSDarwin())
+      if (Target.getTriple().isOSDarwin()) {
         k = ConversionSpecifier::UArg;
+}
       break;
     // MS specific.
     case 'Z':
-      if (Target.getTriple().isOSMSVCRT())
+      if (Target.getTriple().isOSMSVCRT()) {
         k = ConversionSpecifier::ZArg;
+}
       break;
   }
 
@@ -385,12 +413,14 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
 
   PrintfConversionSpecifier CS(conversionPosition, k);
   FS.setConversionSpecifier(CS);
-  if (CS.consumesDataArgument() && !FS.usesPositionalArg())
+  if (CS.consumesDataArgument() && !FS.usesPositionalArg()) {
     FS.setArgIndex(argIndex++);
+}
   // FreeBSD kernel specific.
   if (k == ConversionSpecifier::FreeBSDbArg ||
-      k == ConversionSpecifier::FreeBSDDArg)
+      k == ConversionSpecifier::FreeBSDDArg) {
     argIndex++;
+}
 
   if (k == ConversionSpecifier::InvalidSpecifier) {
     unsigned Len = I - Start;
@@ -420,16 +450,19 @@ bool clang::analyze_format_string::ParsePrintfString(FormatStringHandler &H,
                                                             isFreeBSDKPrintf);
     // Did a fail-stop error of any kind occur when parsing the specifier?
     // If so, don't do any more processing.
-    if (FSR.shouldStop())
+    if (FSR.shouldStop()) {
       return true;
+}
     // Did we exhaust the string or encounter an error that
     // we can recover from?
-    if (!FSR.hasValue())
+    if (!FSR.hasValue()) {
       continue;
+}
     // We have a format specifier.  Pass it to the callback.
     if (!H.HandlePrintfSpecifier(FSR.getValue(), FSR.getStart(),
-                                 I - FSR.getStart()))
+                                 I - FSR.getStart())) {
       return true;
+}
   }
   assert(I == E && "Format string not exhausted");
   return false;
@@ -450,16 +483,19 @@ bool clang::analyze_format_string::ParseFormatStringHasSArg(const char *I,
                                                             false);
     // Did a fail-stop error of any kind occur when parsing the specifier?
     // If so, don't do any more processing.
-    if (FSR.shouldStop())
+    if (FSR.shouldStop()) {
       return false;
+}
     // Did we exhaust the string or encounter an error that
     // we can recover from?
-    if (!FSR.hasValue())
+    if (!FSR.hasValue()) {
       continue;
+}
     const analyze_printf::PrintfSpecifier &FS = FSR.getValue();
     // Return true if this a %s format specifier.
-    if (FS.getConversionSpecifier().getKind() == ConversionSpecifier::Kind::sArg)
+    if (FS.getConversionSpecifier().getKind() == ConversionSpecifier::Kind::sArg) {
       return true;
+}
   }
   return false;
 }
@@ -473,10 +509,12 @@ bool clang::analyze_format_string::parseFormatStringHasFormattingSpecifiers(
   while (Begin != End) {
     const PrintfSpecifierResult &FSR =
         ParsePrintfSpecifier(H, Begin, End, ArgIndex, LO, Target, false, false);
-    if (FSR.shouldStop())
+    if (FSR.shouldStop()) {
       break;
-    if (FSR.hasValue())
+}
+    if (FSR.hasValue()) {
       return true;
+}
   }
   return false;
 }
@@ -487,7 +525,7 @@ bool clang::analyze_format_string::parseFormatStringHasFormattingSpecifiers(
 
 ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
                                           bool IsObjCLiteral) const {
-  if (CS.getKind() == ConversionSpecifier::cArg)
+  if (CS.getKind() == ConversionSpecifier::cArg) {
     switch (LM.getKind()) {
       case LengthModifier::None:
         return Ctx.IntTy;
@@ -495,14 +533,16 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       case LengthModifier::AsWide:
         return ArgType(ArgType::WIntTy, "wint_t");
       case LengthModifier::AsShort:
-        if (Ctx.getTargetInfo().getTriple().isOSMSVCRT())
+        if (Ctx.getTargetInfo().getTriple().isOSMSVCRT()) {
           return Ctx.IntTy;
+}
         LLVM_FALLTHROUGH;
       default:
         return ArgType::Invalid();
     }
+}
 
-  if (CS.isIntArg())
+  if (CS.isIntArg()) {
     switch (LM.getKind()) {
       case LengthModifier::AsLongDouble:
         // GNU extension.
@@ -537,8 +577,9 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       case LengthModifier::AsWide:
         return ArgType::Invalid();
     }
+}
 
-  if (CS.isUIntArg())
+  if (CS.isUIntArg()) {
     switch (LM.getKind()) {
       case LengthModifier::AsLongDouble:
         // GNU extension.
@@ -572,6 +613,7 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       case LengthModifier::AsWide:
         return ArgType::Invalid();
     }
+}
 
   if (CS.isDoubleArg()) {
     if (!VectorNumElts.isInvalid()) {
@@ -586,8 +628,9 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       }
     }
 
-    if (LM.getKind() == LengthModifier::AsLongDouble)
+    if (LM.getKind() == LengthModifier::AsLongDouble) {
       return Ctx.LongDoubleTy;
+}
     return Ctx.DoubleTy;
   }
 
@@ -627,28 +670,34 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
   switch (CS.getKind()) {
     case ConversionSpecifier::sArg:
       if (LM.getKind() == LengthModifier::AsWideChar) {
-        if (IsObjCLiteral)
+        if (IsObjCLiteral) {
           return ArgType(Ctx.getPointerType(Ctx.UnsignedShortTy.withConst()),
                          "const unichar *");
+}
         return ArgType(ArgType::WCStrTy, "wchar_t *");
       }
-      if (LM.getKind() == LengthModifier::AsWide)
+      if (LM.getKind() == LengthModifier::AsWide) {
         return ArgType(ArgType::WCStrTy, "wchar_t *");
+}
       return ArgType::CStrTy;
     case ConversionSpecifier::SArg:
-      if (IsObjCLiteral)
+      if (IsObjCLiteral) {
         return ArgType(Ctx.getPointerType(Ctx.UnsignedShortTy.withConst()),
                        "const unichar *");
+}
       if (Ctx.getTargetInfo().getTriple().isOSMSVCRT() &&
-          LM.getKind() == LengthModifier::AsShort)
+          LM.getKind() == LengthModifier::AsShort) {
         return ArgType::CStrTy;
+}
       return ArgType(ArgType::WCStrTy, "wchar_t *");
     case ConversionSpecifier::CArg:
-      if (IsObjCLiteral)
+      if (IsObjCLiteral) {
         return ArgType(Ctx.UnsignedShortTy, "unichar");
+}
       if (Ctx.getTargetInfo().getTriple().isOSMSVCRT() &&
-          LM.getKind() == LengthModifier::AsShort)
+          LM.getKind() == LengthModifier::AsShort) {
         return Ctx.IntTy;
+}
       return ArgType(Ctx.WideCharTy, "wchar_t");
     case ConversionSpecifier::pArg:
     case ConversionSpecifier::PArg:
@@ -668,12 +717,14 @@ ArgType PrintfSpecifier::getArgType(ASTContext &Ctx,
                                     bool IsObjCLiteral) const {
   const PrintfConversionSpecifier &CS = getConversionSpecifier();
 
-  if (!CS.consumesDataArgument())
+  if (!CS.consumesDataArgument()) {
     return ArgType::Invalid();
+}
 
   ArgType ScalarTy = getScalarArgType(Ctx, IsObjCLiteral);
-  if (!ScalarTy.isValid() || VectorNumElts.isInvalid())
+  if (!ScalarTy.isValid() || VectorNumElts.isInvalid()) {
     return ScalarTy;
+}
 
   return ScalarTy.makeVectorType(Ctx, VectorNumElts.getConstantAmount());
 }
@@ -681,16 +732,18 @@ ArgType PrintfSpecifier::getArgType(ASTContext &Ctx,
 bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
                               ASTContext &Ctx, bool IsObjCLiteral) {
   // %n is different from other conversion specifiers; don't try to fix it.
-  if (CS.getKind() == ConversionSpecifier::nArg)
+  if (CS.getKind() == ConversionSpecifier::nArg) {
     return false;
+}
 
   // Handle Objective-C objects first. Note that while the '%@' specifier will
   // not warn for structure pointer or void pointer arguments (because that's
   // how CoreFoundation objects are implemented), we only show a fixit for '%@'
   // if we know it's an object (block, id, class, or __attribute__((NSObject))).
   if (QT->isObjCRetainableType()) {
-    if (!IsObjCLiteral)
+    if (!IsObjCLiteral) {
       return false;
+}
 
     CS.setKind(ConversionSpecifier::ObjCObjArg);
 
@@ -715,17 +768,19 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
     HasLeadingZeroes = 0;
 
     // Set the long length modifier for wide characters
-    if (QT->getPointeeType()->isWideCharType())
+    if (QT->getPointeeType()->isWideCharType()) {
       LM.setKind(LengthModifier::AsWideChar);
-    else
+    } else {
       LM.setKind(LengthModifier::None);
+}
 
     return true;
   }
 
   // If it's an enum, get its underlying type.
-  if (const EnumType *ETy = QT->getAs<EnumType>())
+  if (const EnumType *ETy = QT->getAs<EnumType>()) {
     QT = ETy->getDecl()->getIntegerType();
+}
 
   const BuiltinType *BT = QT->getAs<BuiltinType>();
   if (!BT) {
@@ -738,8 +793,9 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
   }
 
   // We can only work with builtin types.
-  if (!BT)
+  if (!BT) {
     return false;
+}
 
   // Set length modifier
   switch (BT->getKind()) {
@@ -838,8 +894,9 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
   }
 
   // Handle size_t, ptrdiff_t, etc. that have dedicated length modifiers in C99.
-  if (isa<TypedefType>(QT) && (LangOpt.C99 || LangOpt.CPlusPlus11))
+  if (isa<TypedefType>(QT) && (LangOpt.C99 || LangOpt.CPlusPlus11)) {
     namedTypeToLengthModifier(QT, LM);
+}
 
   // If fixing the length modifier was enough, we might be done.
   if (hasValidLengthModifier(Ctx.getTargetInfo(), LangOpt)) {
@@ -847,14 +904,16 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
     switch (CS.getKind()) {
     case ConversionSpecifier::uArg:
     case ConversionSpecifier::UArg:
-      if (QT->isSignedIntegerType())
+      if (QT->isSignedIntegerType()) {
         CS.setKind(clang::analyze_format_string::ConversionSpecifier::dArg);
+}
       break;
     case ConversionSpecifier::dArg:
     case ConversionSpecifier::DArg:
     case ConversionSpecifier::iArg:
-      if (QT->isUnsignedIntegerType() && !HasPlusPrefix)
+      if (QT->isUnsignedIntegerType() && !HasPlusPrefix) {
         CS.setKind(clang::analyze_format_string::ConversionSpecifier::uArg);
+}
       break;
     default:
       // Other specifiers do not have signed/unsigned variants.
@@ -862,8 +921,9 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
     }
 
     const analyze_printf::ArgType &ATR = getArgType(Ctx, IsObjCLiteral);
-    if (ATR.isValid() && ATR.matchesType(Ctx, QT))
+    if (ATR.isValid() && ATR.matchesType(Ctx, QT)) {
       return true;
+}
   }
 
   // Set conversion specifier and disable any flags which do not apply to it.
@@ -906,11 +966,16 @@ void PrintfSpecifier::toString(raw_ostream &os) const {
   }
 
   // Conversion flags
-  if (IsLeftJustified)    os << "-";
-  if (HasPlusPrefix)      os << "+";
-  if (HasSpacePrefix)     os << " ";
-  if (HasAlternativeForm) os << "#";
-  if (HasLeadingZeroes)   os << "0";
+  if (IsLeftJustified) {    os << "-";
+}
+  if (HasPlusPrefix) {      os << "+";
+}
+  if (HasSpacePrefix) {     os << " ";
+}
+  if (HasAlternativeForm) { os << "#";
+}
+  if (HasLeadingZeroes) {   os << "0";
+}
 
   // Minimum field width
   FieldWidth.toString(os);
@@ -918,8 +983,9 @@ void PrintfSpecifier::toString(raw_ostream &os) const {
   Precision.toString(os);
 
   // Vector modifier
-  if (!VectorNumElts.isInvalid())
+  if (!VectorNumElts.isInvalid()) {
     os << 'v' << VectorNumElts.getConstantAmount();
+}
 
   // Length modifier
   os << LM.toString();
@@ -928,8 +994,9 @@ void PrintfSpecifier::toString(raw_ostream &os) const {
 }
 
 bool PrintfSpecifier::hasValidPlusPrefix() const {
-  if (!HasPlusPrefix)
+  if (!HasPlusPrefix) {
     return true;
+}
 
   // The plus prefix only makes sense for signed conversions
   switch (CS.getKind()) {
@@ -954,8 +1021,9 @@ bool PrintfSpecifier::hasValidPlusPrefix() const {
 }
 
 bool PrintfSpecifier::hasValidAlternativeForm() const {
-  if (!HasAlternativeForm)
+  if (!HasAlternativeForm) {
     return true;
+}
 
   // Alternate form flag only valid with the oxXaAeEfFgG conversions
   switch (CS.getKind()) {
@@ -981,8 +1049,9 @@ bool PrintfSpecifier::hasValidAlternativeForm() const {
 }
 
 bool PrintfSpecifier::hasValidLeadingZeros() const {
-  if (!HasLeadingZeroes)
+  if (!HasLeadingZeroes) {
     return true;
+}
 
   // Leading zeroes flag only valid with the diouxXaAeEfFgG conversions
   switch (CS.getKind()) {
@@ -1013,8 +1082,9 @@ bool PrintfSpecifier::hasValidLeadingZeros() const {
 }
 
 bool PrintfSpecifier::hasValidSpacePrefix() const {
-  if (!HasSpacePrefix)
+  if (!HasSpacePrefix) {
     return true;
+}
 
   // The space prefix only makes sense for signed conversions
   switch (CS.getKind()) {
@@ -1039,8 +1109,9 @@ bool PrintfSpecifier::hasValidSpacePrefix() const {
 }
 
 bool PrintfSpecifier::hasValidLeftJustified() const {
-  if (!IsLeftJustified)
+  if (!IsLeftJustified) {
     return true;
+}
 
   // The left justified flag is valid for all conversions except n
   switch (CS.getKind()) {
@@ -1053,8 +1124,9 @@ bool PrintfSpecifier::hasValidLeftJustified() const {
 }
 
 bool PrintfSpecifier::hasValidThousandsGroupingPrefix() const {
-  if (!HasThousandsGrouping)
+  if (!HasThousandsGrouping) {
     return true;
+}
 
   switch (CS.getKind()) {
     case ConversionSpecifier::dArg:
@@ -1073,8 +1145,9 @@ bool PrintfSpecifier::hasValidThousandsGroupingPrefix() const {
 }
 
 bool PrintfSpecifier::hasValidPrecision() const {
-  if (Precision.getHowSpecified() == OptionalAmount::NotSpecified)
+  if (Precision.getHowSpecified() == OptionalAmount::NotSpecified) {
     return true;
+}
 
   // Precision is only valid with the diouxXaAeEfFgGsP conversions
   switch (CS.getKind()) {
@@ -1106,8 +1179,9 @@ bool PrintfSpecifier::hasValidPrecision() const {
   }
 }
 bool PrintfSpecifier::hasValidFieldWidth() const {
-  if (FieldWidth.getHowSpecified() == OptionalAmount::NotSpecified)
+  if (FieldWidth.getHowSpecified() == OptionalAmount::NotSpecified) {
       return true;
+}
 
   // The field width is valid for all conversions except n
   switch (CS.getKind()) {

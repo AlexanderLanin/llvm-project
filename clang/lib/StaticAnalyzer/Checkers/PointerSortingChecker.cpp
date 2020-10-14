@@ -99,8 +99,9 @@ void PointerSortingChecker::checkASTCodeBody(const Decl *D,
   auto MatcherM = matchSortWithPointers();
 
   auto Matches = match(MatcherM, *D, AM.getASTContext());
-  for (const auto &Match : Matches)
+  for (const auto &Match : Matches) {
     emitDiagnostics(Match, D, BR, AM, this);
+}
 }
 
 } // end of anonymous namespace

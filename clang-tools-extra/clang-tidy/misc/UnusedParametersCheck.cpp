@@ -24,8 +24,9 @@ namespace misc {
 
 namespace {
 bool isOverrideMethod(const FunctionDecl *Function) {
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(Function))
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(Function)) {
     return MD->size_overridden_methods() > 0 || MD->hasAttr<OverrideAttr>();
+}
   return false;
 }
 } // namespace
@@ -41,16 +42,18 @@ template <typename T>
 static CharSourceRange removeNode(const MatchFinder::MatchResult &Result,
                                   const T *PrevNode, const T *Node,
                                   const T *NextNode) {
-  if (NextNode)
+  if (NextNode) {
     return CharSourceRange::getCharRange(Node->getBeginLoc(),
                                          NextNode->getBeginLoc());
+}
 
-  if (PrevNode)
+  if (PrevNode) {
     return CharSourceRange::getTokenRange(
         Lexer::getLocForEndOfToken(PrevNode->getEndLoc(), 0,
                                    *Result.SourceManager,
                                    Result.Context->getLangOpts()),
         Node->getEndLoc());
+}
 
   return CharSourceRange::getTokenRange(Node->getSourceRange());
 }
@@ -147,8 +150,9 @@ void UnusedParametersCheck::warnOnUnusedParameter(
       isLambdaCallOperator(Function)) {
 
     // It is illegal to omit parameter name here in C code, so early-out.
-    if (!Result.Context->getLangOpts().CPlusPlus)
+    if (!Result.Context->getLangOpts().CPlusPlus) {
       return;
+}
 
     SourceRange RemovalRange(Param->getLocation());
     // Note: We always add a space before the '/*' to not accidentally create
@@ -160,28 +164,36 @@ void UnusedParametersCheck::warnOnUnusedParameter(
   }
 
   // Fix all redeclarations.
-  for (const FunctionDecl *FD : Function->redecls())
-    if (FD->param_size())
+  for (const FunctionDecl *FD : Function->redecls()) {
+    if (FD->param_size()) {
       MyDiag << removeParameter(Result, FD, ParamIndex);
+}
+}
 
   // Fix all call sites.
-  for (const CallExpr *Call : Indexer->getFnCalls(Function))
-    if (ParamIndex < Call->getNumArgs()) // See PR38055 for example.
+  for (const CallExpr *Call : Indexer->getFnCalls(Function)) {
+    if (ParamIndex < Call->getNumArgs()) { // See PR38055 for example.
       MyDiag << removeArgument(Result, Call, ParamIndex);
+}
+}
 }
 
 void UnusedParametersCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Function = Result.Nodes.getNodeAs<FunctionDecl>("function");
-  if (!Function->hasWrittenPrototype() || Function->isTemplateInstantiation())
+  if (!Function->hasWrittenPrototype() || Function->isTemplateInstantiation()) {
     return;
-  if (const auto *Method = dyn_cast<CXXMethodDecl>(Function))
-    if (Method->isLambdaStaticInvoker())
+}
+  if (const auto *Method = dyn_cast<CXXMethodDecl>(Function)) {
+    if (Method->isLambdaStaticInvoker()) {
       return;
+}
+}
   for (unsigned i = 0, e = Function->getNumParams(); i != e; ++i) {
     const auto *Param = Function->getParamDecl(i);
     if (Param->isUsed() || Param->isReferenced() || !Param->getDeclName() ||
-        Param->hasAttr<UnusedAttr>())
+        Param->hasAttr<UnusedAttr>()) {
       continue;
+}
 
     // In non-strict mode ignore function definitions with empty bodies
     // (constructor initializer counts for non-empty body).
@@ -189,8 +201,9 @@ void UnusedParametersCheck::check(const MatchFinder::MatchResult &Result) {
         (Function->getBody()->child_begin() !=
          Function->getBody()->child_end()) ||
         (isa<CXXConstructorDecl>(Function) &&
-         cast<CXXConstructorDecl>(Function)->getNumCtorInitializers() > 0))
+         cast<CXXConstructorDecl>(Function)->getNumCtorInitializers() > 0)) {
       warnOnUnusedParameter(Result, Function, i);
+}
   }
 }
 

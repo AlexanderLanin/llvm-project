@@ -17,14 +17,16 @@ struct GetDeclsVisitor : TestVisitor<GetDeclsVisitor> {
   SmallVector<Decl *, 4> DeclStack;
 
   bool VisitCallExpr(CallExpr *Expr) {
-    if (OnCall)
+    if (OnCall) {
       OnCall(Expr);
+}
     return true;
   }
 
   bool VisitRecordTypeLoc(RecordTypeLoc Loc) {
-    if (OnRecordTypeLoc)
+    if (OnRecordTypeLoc) {
       OnRecordTypeLoc(Loc);
+}
     return true;
   }
 

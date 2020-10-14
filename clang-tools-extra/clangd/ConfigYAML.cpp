@@ -50,12 +50,14 @@ private:
     Dict.unrecognized(
         [&](llvm::StringRef) { F.HasUnrecognizedCondition = true; });
     Dict.handle("PathMatch", [&](Node &N) {
-      if (auto Values = scalarValues(N))
+      if (auto Values = scalarValues(N)) {
         F.PathMatch = std::move(*Values);
+}
     });
     Dict.handle("PathExclude", [&](Node &N) {
-      if (auto Values = scalarValues(N))
+      if (auto Values = scalarValues(N)) {
         F.PathExclude = std::move(*Values);
+}
     });
     Dict.parse(N);
   }
@@ -63,12 +65,14 @@ private:
   void parse(Fragment::CompileFlagsBlock &F, Node &N) {
     DictParser Dict("CompileFlags", this);
     Dict.handle("Add", [&](Node &N) {
-      if (auto Values = scalarValues(N))
+      if (auto Values = scalarValues(N)) {
         F.Add = std::move(*Values);
+}
     });
     Dict.handle("Remove", [&](Node &N) {
-      if (auto Values = scalarValues(N))
+      if (auto Values = scalarValues(N)) {
         F.Remove = std::move(*Values);
+}
     });
     Dict.parse(N);
   }
@@ -76,8 +80,9 @@ private:
   void parse(Fragment::StyleBlock &F, Node &N) {
     DictParser Dict("Style", this);
     Dict.handle("FullyQualifiedNamespaces", [&](Node &N) {
-      if (auto Values = scalarValues(N))
+      if (auto Values = scalarValues(N)) {
         F.FullyQualifiedNamespaces = std::move(*Values);
+}
     });
     Dict.parse(N);
   }
@@ -128,18 +133,21 @@ private:
       // We *must* consume all items, even on error, or the parser will assert.
       for (auto &KV : llvm::cast<MappingNode>(N)) {
         auto *K = KV.getKey();
-        if (!K) // YAMLParser emitted an error.
+        if (!K) { // YAMLParser emitted an error.
           continue;
+}
         auto Key = Outer->scalarValue(*K, "Dictionary key");
-        if (!Key)
+        if (!Key) {
           continue;
+}
         if (!Seen.insert(**Key).second) {
           Outer->warning("Duplicate key " + **Key + " is ignored", *K);
           continue;
         }
         auto *Value = KV.getValue();
-        if (!Value) // YAMLParser emitted an error.
+        if (!Value) { // YAMLParser emitted an error.
           continue;
+}
         bool Matched = false;
         for (const auto &Handler : Keys) {
           if (Handler.first == **Key) {
@@ -150,8 +158,9 @@ private:
         }
         if (!Matched) {
           Outer->warning("Unknown " + Description + " key " + **Key, *K);
-          if (Unknown)
+          if (Unknown) {
             Unknown(**Key);
+}
         }
       }
     }
@@ -161,10 +170,12 @@ private:
   llvm::Optional<Located<std::string>> scalarValue(Node &N,
                                                    llvm::StringRef Desc) {
     llvm::SmallString<256> Buf;
-    if (auto *S = llvm::dyn_cast<ScalarNode>(&N))
+    if (auto *S = llvm::dyn_cast<ScalarNode>(&N)) {
       return Located<std::string>(S->getValue(Buf).str(), N.getSourceRange());
-    if (auto *BS = llvm::dyn_cast<BlockScalarNode>(&N))
+}
+    if (auto *BS = llvm::dyn_cast<BlockScalarNode>(&N)) {
       return Located<std::string>(BS->getValue().str(), N.getSourceRange());
+}
     warning(Desc + " should be scalar", N);
     return llvm::None;
   }
@@ -180,8 +191,9 @@ private:
     } else if (auto *S = llvm::dyn_cast<SequenceNode>(&N)) {
       // We *must* consume all items, even on error, or the parser will assert.
       for (auto &Child : *S) {
-        if (auto Value = scalarValue(Child, "List item"))
+        if (auto Value = scalarValue(Child, "List item")) {
           Result.push_back(std::move(*Value));
+}
       }
     } else {
       warning("Expected scalar or list of scalars", N);
@@ -226,8 +238,9 @@ std::vector<Fragment> Fragment::parseYAML(llvm::StringRef YAML,
       Fragment Fragment;
       Fragment.Source.Manager = SM;
       Fragment.Source.Location = N->getSourceRange().Start;
-      if (Parser(*SM).parse(Fragment, *N))
+      if (Parser(*SM).parse(Fragment, *N)) {
         Result.push_back(std::move(Fragment));
+}
     }
   }
   // Hack: stash the buffer in the SourceMgr to keep it alive.

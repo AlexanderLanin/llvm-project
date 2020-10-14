@@ -47,8 +47,9 @@ SerializablePathCollection::SerializablePathCollection(
 
 size_t SerializablePathCollection::tryStoreFilePath(const FileEntry &FE) {
   auto FileIt = UniqueFiles.find(&FE);
-  if (FileIt != UniqueFiles.end())
+  if (FileIt != UniqueFiles.end()) {
     return FileIt->second;
+}
 
   const auto Dir = tryStoreDirPath(sys::path::parent_path(FE.getName()));
   const auto FileIdx =
@@ -60,12 +61,14 @@ size_t SerializablePathCollection::tryStoreFilePath(const FileEntry &FE) {
 
 PathPool::DirPath SerializablePathCollection::tryStoreDirPath(StringRef Dir) {
   // We don't want to strip separator if Dir is "/" - so we check size > 1.
-  while (Dir.size() > 1 && llvm::sys::path::is_separator(Dir.back()))
+  while (Dir.size() > 1 && llvm::sys::path::is_separator(Dir.back())) {
     Dir = Dir.drop_back();
+}
 
   auto DirIt = UniqueDirs.find(Dir);
-  if (DirIt != UniqueDirs.end())
+  if (DirIt != UniqueDirs.end()) {
     return DirIt->second;
+}
 
   const std::string OrigDir = Dir.str();
 
@@ -81,8 +84,9 @@ PathPool::DirPath SerializablePathCollection::tryStoreDirPath(StringRef Dir) {
   }
 
   if (Root != PathPool::RootDirKind::Regular) {
-    while (!Dir.empty() && llvm::sys::path::is_separator(Dir.front()))
+    while (!Dir.empty() && llvm::sys::path::is_separator(Dir.front())) {
       Dir = Dir.drop_front();
+}
   }
 
   PathPool::DirPath Result(Root, Paths.addDirPath(Dir));

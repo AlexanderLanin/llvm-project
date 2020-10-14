@@ -31,26 +31,34 @@ struct RISCVExtensionVersion {
 } // end anonymous namespace
 
 static StringRef getExtensionTypeDesc(StringRef Ext) {
-  if (Ext.startswith("sx"))
+  if (Ext.startswith("sx")) {
     return "non-standard supervisor-level extension";
-  if (Ext.startswith("s"))
+}
+  if (Ext.startswith("s")) {
     return "standard supervisor-level extension";
-  if (Ext.startswith("x"))
+}
+  if (Ext.startswith("x")) {
     return "non-standard user-level extension";
-  if (Ext.startswith("z"))
+}
+  if (Ext.startswith("z")) {
     return "standard user-level extension";
+}
   return StringRef();
 }
 
 static StringRef getExtensionType(StringRef Ext) {
-  if (Ext.startswith("sx"))
+  if (Ext.startswith("sx")) {
     return "sx";
-  if (Ext.startswith("s"))
+}
+  if (Ext.startswith("s")) {
     return "s";
-  if (Ext.startswith("x"))
+}
+  if (Ext.startswith("x")) {
     return "x";
-  if (Ext.startswith("z"))
+}
+  if (Ext.startswith("z")) {
     return "z";
+}
   return StringRef();
 }
 
@@ -60,17 +68,20 @@ static Optional<RISCVExtensionVersion>
 isExperimentalExtension(StringRef Ext) {
   if (Ext == "b" || Ext == "zbb" || Ext == "zbc" || Ext == "zbe" ||
       Ext == "zbf" || Ext == "zbm" || Ext == "zbp" || Ext == "zbr" ||
-      Ext == "zbs" || Ext == "zbt" || Ext == "zbproposedc")
+      Ext == "zbs" || Ext == "zbt" || Ext == "zbproposedc") {
     return RISCVExtensionVersion{"0", "92"};
-  if (Ext == "v")
+}
+  if (Ext == "v") {
     return RISCVExtensionVersion{"0", "9"};
+}
   return None;
 }
 
 static bool isSupportedExtension(StringRef Ext) {
   // LLVM supports "z" extensions which are marked as experimental.
-  if (isExperimentalExtension(Ext))
+  if (isExperimentalExtension(Ext)) {
     return true;
+}
 
   // LLVM does not support "sx", "s" nor "x" extensions.
   return false;
@@ -130,8 +141,9 @@ static bool getExtensionVersion(const Driver &D, const ArgList &Args,
     if (Major != SupportedVers.Major || Minor != SupportedVers.Minor) {
       std::string Error =
           "unsupported version number " + Major;
-      if (!Minor.empty())
+      if (!Minor.empty()) {
         Error += "." + Minor;
+}
       Error += " for experimental extension (this compiler supports "
             + SupportedVers.Major.str() + "."
             + SupportedVers.Minor.str() + ")";
@@ -144,13 +156,15 @@ static bool getExtensionVersion(const Driver &D, const ArgList &Args,
   }
 
   // Allow extensions to declare no version number
-  if (Major.empty() && Minor.empty())
+  if (Major.empty() && Minor.empty()) {
     return true;
+}
 
   // TODO: Handle supported extensions with version number.
   std::string Error = "unsupported version number " + Major;
-  if (!Minor.empty())
+  if (!Minor.empty()) {
     Error += "." + Minor;
+}
   Error += " for extension";
   D.Diag(diag::err_drv_invalid_riscv_ext_arch_name) << MArch << Error << Ext;
 
@@ -170,8 +184,9 @@ static void getExtensionFeatures(const Driver &D,
                                  const ArgList &Args,
                                  std::vector<StringRef> &Features,
                                  StringRef &MArch, StringRef &Exts) {
-  if (Exts.empty())
+  if (Exts.empty()) {
     return;
+}
 
   // Multi-letter extensions are seperated by a single underscore
   // as described in RISC-V User-Level ISA V2.2.
@@ -204,8 +219,9 @@ static void getExtensionFeatures(const Driver &D,
     }
 
     // Check ISA extensions are specified in the canonical order.
-    while (I != E && *I != Type)
+    while (I != E && *I != Type) {
       ++I;
+}
 
     if (I == E) {
       std::string Error = std::string(Desc);
@@ -227,8 +243,9 @@ static void getExtensionFeatures(const Driver &D,
     }
 
     std::string Major, Minor;
-    if (!getExtensionVersion(D, Args, MArch, Name, Vers, Major, Minor))
+    if (!getExtensionVersion(D, Args, MArch, Name, Vers, Major, Minor)) {
       return;
+}
 
     // Check if duplicated extension.
     if (llvm::is_contained(AllExts, Name)) {
@@ -256,10 +273,11 @@ static void getExtensionFeatures(const Driver &D,
         << MArch << Error << Ext;
       return;
     }
-    if (isExperimentalExtension(Ext))
+    if (isExperimentalExtension(Ext)) {
       Features.push_back(Args.MakeArgString("+experimental-" + Ext));
-    else
+    } else {
       Features.push_back(Args.MakeArgString("+" + Ext));
+}
   }
 }
 
@@ -300,10 +318,11 @@ static bool getArchFeatures(const Driver &D, StringRef MArch,
     StringRef Error;
     // Currently LLVM does not support 'e'.
     // Extension 'e' is not allowed in rv64.
-    if (HasRV64)
+    if (HasRV64) {
       Error = "standard user-level extension 'e' requires 'rv32'";
-    else
+    } else {
       Error = "unsupported standard user-level extension 'e'";
+}
     D.Diag(diag::err_drv_invalid_riscv_arch_name) << MArch << Error;
     return false;
   }
@@ -337,14 +356,16 @@ static bool getArchFeatures(const Driver &D, StringRef MArch,
 
   std::string Major, Minor;
   if (!getExtensionVersion(D, Args, MArch, std::string(1, Baseline), Exts,
-                           Major, Minor))
+                           Major, Minor)) {
     return false;
+}
 
   // Consume the base ISA version number and any '_' between rvxxx and the
   // first extension
   Exts = Exts.drop_front(Major.size());
-  if (!Minor.empty())
+  if (!Minor.empty()) {
     Exts = Exts.drop_front(Minor.size() + 1 /*'p'*/);
+}
   Exts.consume_front("_");
 
   // TODO: Use version number when setting target features
@@ -356,17 +377,19 @@ static bool getArchFeatures(const Driver &D, StringRef MArch,
     char c = *I;
 
     // Check ISA extensions are specified in the canonical order.
-    while (StdExtsItr != StdExtsEnd && *StdExtsItr != c)
+    while (StdExtsItr != StdExtsEnd && *StdExtsItr != c) {
       ++StdExtsItr;
+}
 
     if (StdExtsItr == StdExtsEnd) {
       // Either c contains a valid extension but it was not given in
       // canonical order or it is an invalid extension.
       StringRef Error;
-      if (StdExts.contains(c))
+      if (StdExts.contains(c)) {
         Error = "standard user-level extension not given in canonical order";
-      else
+      } else {
         Error = "invalid standard user-level extension";
+}
       D.Diag(diag::err_drv_invalid_riscv_ext_arch_name)
           << MArch << Error << std::string(1, c);
       return false;
@@ -376,11 +399,13 @@ static bool getArchFeatures(const Driver &D, StringRef MArch,
     ++StdExtsItr;
 
     std::string Next, Major, Minor;
-    if (std::next(I) != E)
+    if (std::next(I) != E) {
       Next = std::string(std::next(I), E);
+}
     if (!getExtensionVersion(D, Args, MArch, std::string(1, c), Next, Major,
-                             Minor))
+                             Minor)) {
       return false;
+}
 
     // The order is OK, then push it into features.
     // TODO: Use version number when setting target features
@@ -420,10 +445,12 @@ static bool getArchFeatures(const Driver &D, StringRef MArch,
     // between this extension and the next
     ++I;
     I += Major.size();
-    if (Minor.size())
+    if (Minor.size()) {
       I += Minor.size() + 1 /*'p'*/;
-    if (*I == '_')
+}
+    if (*I == '_') {
       ++I;
+}
   }
 
   // Dependency check.
@@ -464,90 +491,125 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                                    std::vector<StringRef> &Features) {
   StringRef MArch = getRISCVArch(Args, Triple);
 
-  if (!getArchFeatures(D, MArch, Features, Args))
+  if (!getArchFeatures(D, MArch, Features, Args)) {
     return;
+}
 
   // If users give march and mcpu, get std extension feature from MArch
   // and other features (ex. mirco architecture feature) from mcpu
-  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ))
+  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ)) {
     getRISCFeaturesFromMcpu(D, Triple, Args, A, A->getValue(), Features);
+}
 
   // Handle features corresponding to "-ffixed-X" options
-  if (Args.hasArg(options::OPT_ffixed_x1))
+  if (Args.hasArg(options::OPT_ffixed_x1)) {
     Features.push_back("+reserve-x1");
-  if (Args.hasArg(options::OPT_ffixed_x2))
+}
+  if (Args.hasArg(options::OPT_ffixed_x2)) {
     Features.push_back("+reserve-x2");
-  if (Args.hasArg(options::OPT_ffixed_x3))
+}
+  if (Args.hasArg(options::OPT_ffixed_x3)) {
     Features.push_back("+reserve-x3");
-  if (Args.hasArg(options::OPT_ffixed_x4))
+}
+  if (Args.hasArg(options::OPT_ffixed_x4)) {
     Features.push_back("+reserve-x4");
-  if (Args.hasArg(options::OPT_ffixed_x5))
+}
+  if (Args.hasArg(options::OPT_ffixed_x5)) {
     Features.push_back("+reserve-x5");
-  if (Args.hasArg(options::OPT_ffixed_x6))
+}
+  if (Args.hasArg(options::OPT_ffixed_x6)) {
     Features.push_back("+reserve-x6");
-  if (Args.hasArg(options::OPT_ffixed_x7))
+}
+  if (Args.hasArg(options::OPT_ffixed_x7)) {
     Features.push_back("+reserve-x7");
-  if (Args.hasArg(options::OPT_ffixed_x8))
+}
+  if (Args.hasArg(options::OPT_ffixed_x8)) {
     Features.push_back("+reserve-x8");
-  if (Args.hasArg(options::OPT_ffixed_x9))
+}
+  if (Args.hasArg(options::OPT_ffixed_x9)) {
     Features.push_back("+reserve-x9");
-  if (Args.hasArg(options::OPT_ffixed_x10))
+}
+  if (Args.hasArg(options::OPT_ffixed_x10)) {
     Features.push_back("+reserve-x10");
-  if (Args.hasArg(options::OPT_ffixed_x11))
+}
+  if (Args.hasArg(options::OPT_ffixed_x11)) {
     Features.push_back("+reserve-x11");
-  if (Args.hasArg(options::OPT_ffixed_x12))
+}
+  if (Args.hasArg(options::OPT_ffixed_x12)) {
     Features.push_back("+reserve-x12");
-  if (Args.hasArg(options::OPT_ffixed_x13))
+}
+  if (Args.hasArg(options::OPT_ffixed_x13)) {
     Features.push_back("+reserve-x13");
-  if (Args.hasArg(options::OPT_ffixed_x14))
+}
+  if (Args.hasArg(options::OPT_ffixed_x14)) {
     Features.push_back("+reserve-x14");
-  if (Args.hasArg(options::OPT_ffixed_x15))
+}
+  if (Args.hasArg(options::OPT_ffixed_x15)) {
     Features.push_back("+reserve-x15");
-  if (Args.hasArg(options::OPT_ffixed_x16))
+}
+  if (Args.hasArg(options::OPT_ffixed_x16)) {
     Features.push_back("+reserve-x16");
-  if (Args.hasArg(options::OPT_ffixed_x17))
+}
+  if (Args.hasArg(options::OPT_ffixed_x17)) {
     Features.push_back("+reserve-x17");
-  if (Args.hasArg(options::OPT_ffixed_x18))
+}
+  if (Args.hasArg(options::OPT_ffixed_x18)) {
     Features.push_back("+reserve-x18");
-  if (Args.hasArg(options::OPT_ffixed_x19))
+}
+  if (Args.hasArg(options::OPT_ffixed_x19)) {
     Features.push_back("+reserve-x19");
-  if (Args.hasArg(options::OPT_ffixed_x20))
+}
+  if (Args.hasArg(options::OPT_ffixed_x20)) {
     Features.push_back("+reserve-x20");
-  if (Args.hasArg(options::OPT_ffixed_x21))
+}
+  if (Args.hasArg(options::OPT_ffixed_x21)) {
     Features.push_back("+reserve-x21");
-  if (Args.hasArg(options::OPT_ffixed_x22))
+}
+  if (Args.hasArg(options::OPT_ffixed_x22)) {
     Features.push_back("+reserve-x22");
-  if (Args.hasArg(options::OPT_ffixed_x23))
+}
+  if (Args.hasArg(options::OPT_ffixed_x23)) {
     Features.push_back("+reserve-x23");
-  if (Args.hasArg(options::OPT_ffixed_x24))
+}
+  if (Args.hasArg(options::OPT_ffixed_x24)) {
     Features.push_back("+reserve-x24");
-  if (Args.hasArg(options::OPT_ffixed_x25))
+}
+  if (Args.hasArg(options::OPT_ffixed_x25)) {
     Features.push_back("+reserve-x25");
-  if (Args.hasArg(options::OPT_ffixed_x26))
+}
+  if (Args.hasArg(options::OPT_ffixed_x26)) {
     Features.push_back("+reserve-x26");
-  if (Args.hasArg(options::OPT_ffixed_x27))
+}
+  if (Args.hasArg(options::OPT_ffixed_x27)) {
     Features.push_back("+reserve-x27");
-  if (Args.hasArg(options::OPT_ffixed_x28))
+}
+  if (Args.hasArg(options::OPT_ffixed_x28)) {
     Features.push_back("+reserve-x28");
-  if (Args.hasArg(options::OPT_ffixed_x29))
+}
+  if (Args.hasArg(options::OPT_ffixed_x29)) {
     Features.push_back("+reserve-x29");
-  if (Args.hasArg(options::OPT_ffixed_x30))
+}
+  if (Args.hasArg(options::OPT_ffixed_x30)) {
     Features.push_back("+reserve-x30");
-  if (Args.hasArg(options::OPT_ffixed_x31))
+}
+  if (Args.hasArg(options::OPT_ffixed_x31)) {
     Features.push_back("+reserve-x31");
+}
 
   // -mrelax is default, unless -mno-relax is specified.
-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true)) {
     Features.push_back("+relax");
-  else
+  } else {
     Features.push_back("-relax");
+}
 
   // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
   // specified.
-  if (Args.hasFlag(options::OPT_msave_restore, options::OPT_mno_save_restore, false))
+  if (Args.hasFlag(options::OPT_msave_restore, options::OPT_mno_save_restore, false)) {
     Features.push_back("+save-restore");
-  else
+  } else {
     Features.push_back("-save-restore");
+}
 
   // Now add any that the user explicitly requested on the command line,
   // which may override the defaults.
@@ -580,8 +642,9 @@ StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
   // 3. Choose a default based on the triple
 
   // 1. If `-mabi=` is specified, use it.
-  if (const Arg *A = Args.getLastArg(options::OPT_mabi_EQ))
+  if (const Arg *A = Args.getLastArg(options::OPT_mabi_EQ)) {
     return A->getValue();
+}
 
   // 2. Choose a default based on the target architecture.
   //
@@ -594,18 +657,20 @@ StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
 
   if (MArch.startswith_lower("rv32")) {
     // FIXME: parse `March` to find `D` extension properly
-    if (MArch.substr(4).contains_lower("d") || MArch.startswith_lower("rv32g"))
+    if (MArch.substr(4).contains_lower("d") || MArch.startswith_lower("rv32g")) {
       return "ilp32d";
-    else if (MArch.startswith_lower("rv32e"))
+    } else if (MArch.startswith_lower("rv32e")) {
       return "ilp32e";
-    else
+    } else {
       return "ilp32";
+}
   } else if (MArch.startswith_lower("rv64")) {
     // FIXME: parse `March` to find `D` extension properly
-    if (MArch.substr(4).contains_lower("d") || MArch.startswith_lower("rv64g"))
+    if (MArch.substr(4).contains_lower("d") || MArch.startswith_lower("rv64g")) {
       return "lp64d";
-    else
+    } else {
       return "lp64";
+}
   }
 
   // 3. Choose a default based on the triple
@@ -614,15 +679,17 @@ StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
   // - On `riscv{XLEN}-unknown-elf` we use the integer calling convention only.
   // - On all other OSs we use the double floating point calling convention.
   if (Triple.getArch() == llvm::Triple::riscv32) {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS) {
       return "ilp32";
-    else
+    } else {
       return "ilp32d";
+}
   } else {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS) {
       return "lp64";
-    else
+    } else {
       return "lp64d";
+}
   }
 }
 
@@ -659,15 +726,17 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   // instead of `rv{XLEN}gc` though they are (currently) equivalent.
 
   // 1. If `-march=` is specified, use it.
-  if (const Arg *A = Args.getLastArg(options::OPT_march_EQ))
+  if (const Arg *A = Args.getLastArg(options::OPT_march_EQ)) {
     return A->getValue();
+}
 
   // 2. Get march (isa string) based on `-mcpu=`
   if (const Arg *A = Args.getLastArg(options::OPT_mcpu_EQ)) {
     StringRef MArch = llvm::RISCV::getMArchFromMcpu(A->getValue());
     // Bypass if target cpu's default march is empty.
-    if (MArch != "")
+    if (MArch != "") {
       return MArch;
+}
   }
 
   // 3. Choose a default based on `-mabi=`
@@ -678,12 +747,13 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   if (const Arg *A = Args.getLastArg(options::OPT_mabi_EQ)) {
     StringRef MABI = A->getValue();
 
-    if (MABI.equals_lower("ilp32e"))
+    if (MABI.equals_lower("ilp32e")) {
       return "rv32e";
-    else if (MABI.startswith_lower("ilp32"))
+    } else if (MABI.startswith_lower("ilp32")) {
       return "rv32imafdc";
-    else if (MABI.startswith_lower("lp64"))
+    } else if (MABI.startswith_lower("lp64")) {
       return "rv64imafdc";
+}
   }
 
   // 4. Choose a default based on the triple
@@ -692,14 +762,16 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   // - On `riscv{XLEN}-unknown-elf` we default to `rv{XLEN}imac`
   // - On all other OSs we use `rv{XLEN}imafdc` (equivalent to `rv{XLEN}gc`)
   if (Triple.getArch() == llvm::Triple::riscv32) {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS) {
       return "rv32imac";
-    else
+    } else {
       return "rv32imafdc";
+}
   } else {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS) {
       return "rv64imac";
-    else
+    } else {
       return "rv64imafdc";
+}
   }
 }

@@ -31,8 +31,9 @@ BareMetal::BareMetal(const Driver &D, const llvm::Triple &Triple,
                            const ArgList &Args)
     : ToolChain(D, Triple, Args) {
   getProgramPaths().push_back(getDriver().getInstalledDir());
-  if (getDriver().getInstalledDir() != getDriver().Dir)
+  if (getDriver().getInstalledDir() != getDriver().Dir) {
     getProgramPaths().push_back(getDriver().Dir);
+}
 }
 
 BareMetal::~BareMetal() {}
@@ -40,18 +41,22 @@ BareMetal::~BareMetal() {}
 /// Is the triple {arm,thumb}-none-none-{eabi,eabihf} ?
 static bool isARMBareMetal(const llvm::Triple &Triple) {
   if (Triple.getArch() != llvm::Triple::arm &&
-      Triple.getArch() != llvm::Triple::thumb)
+      Triple.getArch() != llvm::Triple::thumb) {
     return false;
+}
 
-  if (Triple.getVendor() != llvm::Triple::UnknownVendor)
+  if (Triple.getVendor() != llvm::Triple::UnknownVendor) {
     return false;
+}
 
-  if (Triple.getOS() != llvm::Triple::UnknownOS)
+  if (Triple.getOS() != llvm::Triple::UnknownOS) {
     return false;
+}
 
   if (Triple.getEnvironment() != llvm::Triple::EABI &&
-      Triple.getEnvironment() != llvm::Triple::EABIHF)
+      Triple.getEnvironment() != llvm::Triple::EABIHF) {
     return false;
+}
 
   return true;
 }
@@ -72,8 +77,9 @@ std::string BareMetal::getRuntimesDir() const {
 
 void BareMetal::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                           ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> Dir(getDriver().ResourceDir);
@@ -98,12 +104,14 @@ void BareMetal::AddClangCXXStdlibIncludeArgs(
     const ArgList &DriverArgs, ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(options::OPT_nostdinc) ||
       DriverArgs.hasArg(options::OPT_nostdlibinc) ||
-      DriverArgs.hasArg(options::OPT_nostdincxx))
+      DriverArgs.hasArg(options::OPT_nostdincxx)) {
     return;
+}
 
   StringRef SysRoot = getDriver().SysRoot;
-  if (SysRoot.empty())
+  if (SysRoot.empty()) {
     return;
+}
 
   switch (GetCXXStdlibType(DriverArgs)) {
   case ToolChain::CST_Libcxx: {
@@ -124,14 +132,17 @@ void BareMetal::AddClangCXXStdlibIncludeArgs(
          !EC && LI != LE; LI = LI.increment(EC)) {
       StringRef VersionText = llvm::sys::path::filename(LI->path());
       auto CandidateVersion = Generic_GCC::GCCVersion::Parse(VersionText);
-      if (CandidateVersion.Major == -1)
+      if (CandidateVersion.Major == -1) {
         continue;
-      if (CandidateVersion <= Version)
+}
+      if (CandidateVersion <= Version) {
         continue;
+}
       Version = CandidateVersion;
     }
-    if (Version.Major == -1)
+    if (Version.Major == -1) {
       return;
+}
     llvm::sys::path::append(Dir, Version.Text);
     addSystemInclude(DriverArgs, CC1Args, Dir.str());
     break;
@@ -188,8 +199,9 @@ void baremetal::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                             options::OPT_e, options::OPT_s, options::OPT_t,
                             options::OPT_Z_Flag, options::OPT_r});
 
-  if (TC.ShouldLinkCXXStdlib(Args))
+  if (TC.ShouldLinkCXXStdlib(Args)) {
     TC.AddCXXStdlibLibArgs(Args, CmdArgs);
+}
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     CmdArgs.push_back("-lc");
     CmdArgs.push_back("-lm");

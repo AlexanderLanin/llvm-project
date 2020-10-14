@@ -88,13 +88,15 @@ template<typename T>
 Optional<bool> areDenseMapKeysEqualSpecialValues(T LHS, T RHS) {
   bool LHSEmpty = isDenseMapKeyEmpty(LHS);
   bool RHSEmpty = isDenseMapKeyEmpty(RHS);
-  if (LHSEmpty || RHSEmpty)
+  if (LHSEmpty || RHSEmpty) {
     return LHSEmpty && RHSEmpty;
+}
 
   bool LHSTombstone = isDenseMapKeyTombstone(LHS);
   bool RHSTombstone = isDenseMapKeyTombstone(RHS);
-  if (LHSTombstone || RHSTombstone)
+  if (LHSTombstone || RHSTombstone) {
     return LHSTombstone && RHSTombstone;
+}
 
   return None;
 }
@@ -114,8 +116,9 @@ struct DenseMapInfo<DecompositionDeclName> {
   }
   static bool isEqual(DecompositionDeclName LHS, DecompositionDeclName RHS) {
     if (Optional<bool> Result = areDenseMapKeysEqualSpecialValues(
-            LHS.Bindings, RHS.Bindings))
+            LHS.Bindings, RHS.Bindings)) {
       return *Result;
+}
 
     return LHS.Bindings.size() == RHS.Bindings.size() &&
            std::equal(LHS.begin(), LHS.end(), RHS.begin());
@@ -198,16 +201,18 @@ public:
     MPI.Width = Target.getTypeWidth(PtrDiff);
     MPI.Align = Target.getTypeAlign(PtrDiff);
     MPI.HasPadding = false;
-    if (MPT->isMemberFunctionPointer())
+    if (MPT->isMemberFunctionPointer()) {
       MPI.Width *= 2;
+}
     return MPI;
   }
 
   CallingConv getDefaultMethodCallConv(bool isVariadic) const override {
     const llvm::Triple &T = Context.getTargetInfo().getTriple();
     if (!isVariadic && T.isWindowsGNUEnvironment() &&
-        T.getArch() == llvm::Triple::x86)
+        T.getArch() == llvm::Triple::x86) {
       return CC_X86ThisCall;
+}
     return Context.getTargetInfo().getDefaultCallingConv();
   }
 
@@ -216,8 +221,9 @@ public:
   bool isNearlyEmpty(const CXXRecordDecl *RD) const override {
 
     // Check that the class has a vtable pointer.
-    if (!RD->isDynamicClass())
+    if (!RD->isDynamicClass()) {
       return false;
+}
 
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
     CharUnits PointerSize =

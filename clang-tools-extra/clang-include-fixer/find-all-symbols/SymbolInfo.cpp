@@ -88,8 +88,9 @@ bool SymbolInfo::operator<(const SymbolInfo &Symbol) const {
 std::string SymbolInfo::getQualifiedName() const {
   std::string QualifiedName = Name;
   for (const auto &Context : Contexts) {
-    if (Context.first == ContextType::EnumDecl)
+    if (Context.first == ContextType::EnumDecl) {
       continue;
+}
     QualifiedName = Context.second + "::" + QualifiedName;
   }
   return QualifiedName;

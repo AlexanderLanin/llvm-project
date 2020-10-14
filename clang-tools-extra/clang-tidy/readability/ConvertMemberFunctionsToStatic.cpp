@@ -97,8 +97,9 @@ static StringRef getStringFromRange(SourceManager &SourceMgr,
                                     const LangOptions &LangOpts,
                                     SourceRange Range) {
   if (SourceMgr.getFileID(Range.getBegin()) !=
-      SourceMgr.getFileID(Range.getEnd()))
+      SourceMgr.getFileID(Range.getEnd())) {
     return {};
+}
 
   return Lexer::getSourceText(CharSourceRange(Range, true), SourceMgr,
                               LangOpts);
@@ -117,8 +118,9 @@ static SourceRange getLocationOfConst(const TypeSourceInfo *TSI,
   // Find the exact position of "const".
   StringRef Text = getStringFromRange(SourceMgr, LangOpts, Range);
   size_t Offset = Text.find("const");
-  if (Offset == StringRef::npos)
+  if (Offset == StringRef::npos) {
     return {};
+}
 
   SourceLocation Start = Range.getBegin().getLocWithOffset(Offset);
   return {Start, Start.getLocWithOffset(strlen("const") - 1)};
@@ -137,8 +139,9 @@ void ConvertMemberFunctionsToStatic::check(
   // TODO: Would need to remove those in a fix-it.
   if (Definition->getMethodQualifiers().hasVolatile() ||
       Definition->getMethodQualifiers().hasRestrict() ||
-      Definition->getRefQualifier() != RQ_None)
+      Definition->getRefQualifier() != RQ_None) {
     return;
+}
 
   const CXXMethodDecl *Declaration = Definition->getCanonicalDecl();
 
@@ -149,16 +152,18 @@ void ConvertMemberFunctionsToStatic::check(
                                               *Result.SourceManager,
                                               Result.Context->getLangOpts());
 
-    if (DefConst.isInvalid())
+    if (DefConst.isInvalid()) {
       return;
+}
 
     if (Declaration != Definition) {
       SourceRange DeclConst = getLocationOfConst(
           Declaration->getTypeSourceInfo(), *Result.SourceManager,
           Result.Context->getLangOpts());
 
-      if (DeclConst.isInvalid())
+      if (DeclConst.isInvalid()) {
         return;
+}
       Diag << FixItHint::CreateRemoval(DeclConst);
     }
 

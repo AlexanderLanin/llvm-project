@@ -26,9 +26,11 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
                                   const Multilib &Multilib,
                                   StringRef InstallPath,
                                   ToolChain::path_list &Paths) {
-  if (const auto &PathsCallback = Multilibs.filePathsCallback())
-    for (const auto &Path : PathsCallback(Multilib))
+  if (const auto &PathsCallback = Multilibs.filePathsCallback()) {
+    for (const auto &Path : PathsCallback(Multilib)) {
       addPathIfExists(D, InstallPath + Path, Paths);
+}
+}
 }
 
 /// RISCV Toolchain
@@ -80,8 +82,9 @@ void RISCVToolChain::addClangTargetOptions(
 
 void RISCVToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+}
 
   if (!DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     SmallString<128> Dir(computeSysRoot());
@@ -101,8 +104,9 @@ void RISCVToolChain::addLibStdCxxIncludePaths(
 }
 
 std::string RISCVToolChain::computeSysRoot() const {
-  if (!getDriver().SysRoot.empty())
+  if (!getDriver().SysRoot.empty()) {
     return getDriver().SysRoot;
+}
 
   SmallString<128> SysRootDir;
   if (GCCInstallation.isValid()) {
@@ -116,8 +120,9 @@ std::string RISCVToolChain::computeSysRoot() const {
                             getDriver().getTargetTriple());
   }
 
-  if (!llvm::sys::fs::exists(SysRootDir))
+  if (!llvm::sys::fs::exists(SysRootDir)) {
     return std::string();
+}
 
   return std::string(SysRootDir.str());
 }
@@ -131,8 +136,9 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const Driver &D = ToolChain.getDriver();
   ArgStringList CmdArgs;
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+}
 
   bool IsRV64 = ToolChain.getArch() == llvm::Triple::riscv64;
   CmdArgs.push_back("-m");
@@ -177,8 +183,9 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib) &&
       !Args.hasArg(options::OPT_nodefaultlibs)) {
-    if (ToolChain.ShouldLinkCXXStdlib(Args))
+    if (ToolChain.ShouldLinkCXXStdlib(Args)) {
       ToolChain.AddCXXStdlibLibArgs(Args, CmdArgs);
+}
     CmdArgs.push_back("--start-group");
     CmdArgs.push_back("-lc");
     CmdArgs.push_back("-lgloss");
@@ -186,8 +193,9 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     AddRunTimeLibs(ToolChain, ToolChain.getDriver(), CmdArgs, Args);
   }
 
-  if (WantCRTs)
+  if (WantCRTs) {
     CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crtend)));
+}
 
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());

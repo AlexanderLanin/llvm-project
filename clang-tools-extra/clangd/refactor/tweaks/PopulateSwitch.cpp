@@ -68,49 +68,58 @@ REGISTER_TWEAK(PopulateSwitch)
 
 bool PopulateSwitch::prepare(const Selection &Sel) {
   const SelectionTree::Node *CA = Sel.ASTSelection.commonAncestor();
-  if (!CA)
+  if (!CA) {
     return false;
+}
 
   const Stmt *CAStmt = CA->ASTNode.get<Stmt>();
-  if (!CAStmt)
+  if (!CAStmt) {
     return false;
+}
 
   // Go up a level if we see a compound statement.
   // switch (value) {}
   //                ^^
   if (isa<CompoundStmt>(CAStmt)) {
     CA = CA->Parent;
-    if (!CA)
+    if (!CA) {
       return false;
+}
 
     CAStmt = CA->ASTNode.get<Stmt>();
-    if (!CAStmt)
+    if (!CAStmt) {
       return false;
+}
   }
 
   DeclCtx = &CA->getDeclContext();
   Switch = dyn_cast<SwitchStmt>(CAStmt);
-  if (!Switch)
+  if (!Switch) {
     return false;
+}
 
   Body = dyn_cast<CompoundStmt>(Switch->getBody());
-  if (!Body)
+  if (!Body) {
     return false;
+}
 
   const Expr *Cond = Switch->getCond();
-  if (!Cond)
+  if (!Cond) {
     return false;
+}
 
   // Ignore implicit casts, since enums implicitly cast to integer types.
   Cond = Cond->IgnoreParenImpCasts();
 
   EnumT = Cond->getType()->getAsAdjusted<EnumType>();
-  if (!EnumT)
+  if (!EnumT) {
     return false;
+}
 
   EnumD = EnumT->getDecl();
-  if (!EnumD)
+  if (!EnumD) {
     return false;
+}
 
   // We trigger if there are fewer cases than enum values (and no case covers
   // multiple values). This guarantees we'll have at least one case to insert.
@@ -122,19 +131,22 @@ bool PopulateSwitch::prepare(const Selection &Sel) {
   for (const SwitchCase *CaseList = Switch->getSwitchCaseList();
        CaseList && I != E; CaseList = CaseList->getNextSwitchCase(), I++) {
     // Default likely intends to cover cases we'd insert.
-    if (isa<DefaultStmt>(CaseList))
+    if (isa<DefaultStmt>(CaseList)) {
       return false;
+}
 
     const CaseStmt *CS = cast<CaseStmt>(CaseList);
     // Case statement covers multiple values, so just counting doesn't work.
-    if (CS->caseStmtIsGNURange())
+    if (CS->caseStmtIsGNURange()) {
       return false;
+}
 
     // Case expression is not a constant expression or is value-dependent,
     // so we may not be able to work out which cases are covered.
     const ConstantExpr *CE = dyn_cast<ConstantExpr>(CS->getLHS());
-    if (!CE || CE->isValueDependent())
+    if (!CE || CE->isValueDependent()) {
       return false;
+}
   }
 
   // Only suggest tweak if we have more enumerators than cases.
@@ -166,8 +178,9 @@ Expected<Tweak::Effect> PopulateSwitch::apply(const Selection &Sel) {
 
   std::string Text;
   for (EnumConstantDecl *Enumerator : EnumD->enumerators()) {
-    if (ExistingEnumerators.contains(Enumerator->getInitVal()))
+    if (ExistingEnumerators.contains(Enumerator->getInitVal())) {
       continue;
+}
 
     Text += "case ";
     Text += getQualification(DeclASTCtx, DeclCtx, Loc, EnumD);

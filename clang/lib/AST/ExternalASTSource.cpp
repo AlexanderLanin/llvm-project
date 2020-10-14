@@ -114,13 +114,14 @@ uint32_t ExternalASTSource::incrementGeneration(ASTContext &C) {
   // Make sure the generation of the topmost external source for the context is
   // incremented. That might not be us.
   auto *P = C.getExternalSource();
-  if (P && P != this)
+  if (P && P != this) {
     CurrentGeneration = P->incrementGeneration(C);
-  else {
+  } else {
     // FIXME: Only bump the generation counter if the current generation number
     // has been observed?
-    if (!++CurrentGeneration)
+    if (!++CurrentGeneration) {
       llvm::report_fatal_error("generation counter overflowed", false);
+}
   }
 
   return OldGeneration;

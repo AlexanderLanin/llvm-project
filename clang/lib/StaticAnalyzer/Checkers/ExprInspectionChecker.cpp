@@ -73,8 +73,9 @@ REGISTER_MAP_WITH_PROGRAMSTATE(DenotedSymbols, SymbolRef, const StringLiteral *)
 bool ExprInspectionChecker::evalCall(const CallEvent &Call,
                                      CheckerContext &C) const {
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return false;
+}
 
   // These checks should have no effect on the surrounding environment
   // (globals should not be invalidated, etc), hence the use of evalCall.
@@ -107,8 +108,9 @@ bool ExprInspectionChecker::evalCall(const CallEvent &Call,
                       &ExprInspectionChecker::analyzerIsTainted)
           .Default(nullptr);
 
-  if (!Handler)
+  if (!Handler) {
     return false;
+}
 
   (this->*Handler)(CE, C);
   return true;
@@ -116,8 +118,9 @@ bool ExprInspectionChecker::evalCall(const CallEvent &Call,
 
 static const char *getArgumentValueString(const CallExpr *CE,
                                           CheckerContext &C) {
-  if (CE->getNumArgs() == 0)
+  if (CE->getNumArgs() == 0) {
     return "Missing assertion argument";
+}
 
   ExplodedNode *N = C.getPredecessor();
   const LocationContext *LC = N->getLocationContext();
@@ -126,23 +129,26 @@ static const char *getArgumentValueString(const CallExpr *CE,
   const Expr *Assertion = CE->getArg(0);
   SVal AssertionVal = State->getSVal(Assertion, LC);
 
-  if (AssertionVal.isUndef())
+  if (AssertionVal.isUndef()) {
     return "UNDEFINED";
+}
 
   ProgramStateRef StTrue, StFalse;
   std::tie(StTrue, StFalse) =
     State->assume(AssertionVal.castAs<DefinedOrUnknownSVal>());
 
   if (StTrue) {
-    if (StFalse)
+    if (StFalse) {
       return "UNKNOWN";
-    else
+    } else {
       return "TRUE";
+}
   } else {
-    if (StFalse)
+    if (StFalse) {
       return "FALSE";
-    else
+    } else {
       llvm_unreachable("Invalid constraint; neither true or false.");
+}
   }
 }
 
@@ -158,11 +164,13 @@ ExplodedNode *ExprInspectionChecker::reportBug(llvm::StringRef Msg,
                                                BugReporter &BR,
                                                ExplodedNode *N,
                                                Optional<SVal> ExprVal) const {
-  if (!N)
+  if (!N) {
     return nullptr;
+}
 
-  if (!BT)
+  if (!BT) {
     BT.reset(new BugType(this, "Checking analyzer assumptions", "debug"));
+}
 
   auto R = std::make_unique<PathSensitiveBugReport>(*BT, Msg, N);
   if (ExprVal) {
@@ -178,8 +186,9 @@ void ExprInspectionChecker::analyzerEval(const CallExpr *CE,
 
   // A specific instantiation of an inlined function may have more constrained
   // values than can generally be assumed. Skip the check.
-  if (LC->getStackFrame()->getParent() != nullptr)
+  if (LC->getStackFrame()->getParent() != nullptr) {
     return;
+}
 
   reportBug(getArgumentValueString(CE, C), C);
 }
@@ -207,8 +216,9 @@ void ExprInspectionChecker::analyzerCheckInlined(const CallExpr *CE,
   // when we are analyzing it as an inlined function. This means that
   // clang_analyzer_checkInlined(true) should always print TRUE, but
   // clang_analyzer_checkInlined(false) should never actually print anything.
-  if (LC->getStackFrame()->getParent() == nullptr)
+  if (LC->getStackFrame()->getParent() == nullptr) {
     return;
+}
 
   reportBug(getArgumentValueString(CE, C), C);
 }
@@ -267,12 +277,14 @@ void ExprInspectionChecker::analyzerPrintState(const CallExpr *CE,
 
 void ExprInspectionChecker::analyzerWarnOnDeadSymbol(const CallExpr *CE,
                                                      CheckerContext &C) const {
-  if (CE->getNumArgs() == 0)
+  if (CE->getNumArgs() == 0) {
     return;
+}
   SVal Val = C.getSVal(CE->getArg(0));
   SymbolRef Sym = Val.getAsSymbol();
-  if (!Sym)
+  if (!Sym) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   State = State->add<MarkedSymbols>(Sym);
@@ -286,19 +298,22 @@ void ExprInspectionChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   ExplodedNode *N = C.getPredecessor();
   for (auto I = Syms.begin(), E = Syms.end(); I != E; ++I) {
     SymbolRef Sym = *I;
-    if (!SymReaper.isDead(Sym))
+    if (!SymReaper.isDead(Sym)) {
       continue;
+}
 
     // The non-fatal error node should be the same for all reports.
-    if (ExplodedNode *BugNode = reportBug("SYMBOL DEAD", C))
+    if (ExplodedNode *BugNode = reportBug("SYMBOL DEAD", C)) {
       N = BugNode;
+}
     State = State->remove<MarkedSymbols>(Sym);
   }
 
   for (auto I : State->get<DenotedSymbols>()) {
     SymbolRef Sym = I.first;
-    if (!SymReaper.isLive(Sym))
+    if (!SymReaper.isLive(Sym)) {
       State = State->remove<DenotedSymbols>(Sym);
+}
   }
 
   C.addTransition(State, N);
@@ -378,31 +393,38 @@ public:
   }
 
   Optional<std::string> VisitSymIntExpr(const SymIntExpr *S) {
-    if (Optional<std::string> Str = lookup(S))
+    if (Optional<std::string> Str = lookup(S)) {
       return Str;
-    if (Optional<std::string> Str = Visit(S->getLHS()))
+}
+    if (Optional<std::string> Str = Visit(S->getLHS())) {
       return (*Str + " " + BinaryOperator::getOpcodeStr(S->getOpcode()) + " " +
               std::to_string(S->getRHS().getLimitedValue()) +
               (S->getRHS().isUnsigned() ? "U" : ""))
           .str();
+}
     return None;
   }
 
   Optional<std::string> VisitSymSymExpr(const SymSymExpr *S) {
-    if (Optional<std::string> Str = lookup(S))
+    if (Optional<std::string> Str = lookup(S)) {
       return Str;
-    if (Optional<std::string> Str1 = Visit(S->getLHS()))
-      if (Optional<std::string> Str2 = Visit(S->getRHS()))
+}
+    if (Optional<std::string> Str1 = Visit(S->getLHS())) {
+      if (Optional<std::string> Str2 = Visit(S->getRHS())) {
         return (*Str1 + " " + BinaryOperator::getOpcodeStr(S->getOpcode()) +
                 " " + *Str2).str();
+}
+}
     return None;
   }
 
   Optional<std::string> VisitSymbolCast(const SymbolCast *S) {
-    if (Optional<std::string> Str = lookup(S))
+    if (Optional<std::string> Str = lookup(S)) {
       return Str;
-    if (Optional<std::string> Str = Visit(S->getOperand()))
+}
+    if (Optional<std::string> Str = Visit(S->getOperand())) {
       return (Twine("(") + S->getType().getAsString() + ")" + *Str).str();
+}
     return None;
   }
 };

@@ -26,12 +26,14 @@ void PreambleFileStatusCache::update(const llvm::vfs::FileSystem &FS,
                                      llvm::vfs::Status S) {
   // Canonicalize path for later lookup, which is usually by absolute path.
   llvm::SmallString<32> PathStore(S.getName());
-  if (FS.makeAbsolute(PathStore))
+  if (FS.makeAbsolute(PathStore)) {
     return;
+}
   llvm::sys::path::remove_dots(PathStore, /*remove_dot_dot=*/true);
   // Do not cache status for the main file.
-  if (PathStore == MainFilePath)
+  if (PathStore == MainFilePath) {
     return;
+}
   // Stores the latest status in cache as it can change in a preamble build.
   StatCache.insert({PathStore, std::move(S)});
 }
@@ -44,9 +46,10 @@ PreambleFileStatusCache::lookup(llvm::StringRef File) const {
   llvm::sys::path::remove_dots(PathLookup, /*remove_dot_dot=*/true);
 
   auto I = StatCache.find(PathLookup);
-  if (I != StatCache.end())
+  if (I != StatCache.end()) {
     // Returned Status name should always match the requested File.
     return llvm::vfs::Status::copyWithNewName(I->getValue(), File);
+}
   return None;
 }
 
@@ -64,22 +67,25 @@ PreambleFileStatusCache::getProducingFS(
     llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>>
     openFileForRead(const llvm::Twine &Path) override {
       auto File = getUnderlyingFS().openFileForRead(Path);
-      if (!File || !*File)
+      if (!File || !*File) {
         return File;
+}
       // Eagerly stat opened file, as the followup `status` call on the file
       // doesn't necessarily go through this FS. This puts some extra work on
       // preamble build, but it should be worth it as preamble can be reused
       // many times (e.g. code completion) and the repeated status call is
       // likely to be cached in the underlying file system anyway.
-      if (auto S = File->get()->status())
+      if (auto S = File->get()->status()) {
         StatCache.update(getUnderlyingFS(), std::move(*S));
+}
       return File;
     }
 
     llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine &Path) override {
       auto S = getUnderlyingFS().status(Path);
-      if (S)
+      if (S) {
         StatCache.update(getUnderlyingFS(), *S);
+}
       return S;
     }
 
@@ -100,8 +106,9 @@ PreambleFileStatusCache::getConsumingFS(
         : ProxyFileSystem(std::move(FS)), StatCache(StatCache) {}
 
     llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine &Path) override {
-      if (auto S = StatCache.lookup(Path.str()))
+      if (auto S = StatCache.lookup(Path.str())) {
         return *S;
+}
       return getUnderlyingFS().status(Path);
     }
 

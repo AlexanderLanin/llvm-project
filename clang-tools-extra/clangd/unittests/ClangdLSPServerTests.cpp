@@ -26,8 +26,9 @@ namespace {
 
 MATCHER_P(DiagMessage, M, "") {
   if (const auto *O = arg.getAsObject()) {
-    if (const auto Msg = O->getString("message"))
+    if (const auto Msg = O->getString("message")) {
       return *Msg == M;
+}
   }
   return false;
 }
@@ -58,8 +59,9 @@ protected:
   }
 
   ~LSPTest() {
-    if (Server)
+    if (Server) {
       stop();
+}
   }
 
   MockFS FS;

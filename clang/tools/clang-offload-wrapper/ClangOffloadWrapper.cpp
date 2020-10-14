@@ -88,10 +88,11 @@ private:
   //   int32_t reserved;
   // };
   StructType *getEntryTy() {
-    if (!EntryTy)
+    if (!EntryTy) {
       EntryTy = StructType::create("__tgt_offload_entry", Type::getInt8PtrTy(C),
                                    Type::getInt8PtrTy(C), getSizeTTy(),
                                    Type::getInt32Ty(C), Type::getInt32Ty(C));
+}
     return EntryTy;
   }
 
@@ -104,10 +105,11 @@ private:
   //   __tgt_offload_entry *EntriesEnd;
   // };
   StructType *getDeviceImageTy() {
-    if (!ImageTy)
+    if (!ImageTy) {
       ImageTy = StructType::create("__tgt_device_image", Type::getInt8PtrTy(C),
                                    Type::getInt8PtrTy(C), getEntryPtrTy(),
                                    getEntryPtrTy());
+}
     return ImageTy;
   }
 
@@ -122,10 +124,11 @@ private:
   //   __tgt_offload_entry *HostEntriesEnd;
   // };
   StructType *getBinDescTy() {
-    if (!DescTy)
+    if (!DescTy) {
       DescTy = StructType::create("__tgt_bin_desc", Type::getInt32Ty(C),
                                   getDeviceImagePtrTy(), getEntryPtrTy(),
                                   getEntryPtrTy());
+}
     return DescTy;
   }
 

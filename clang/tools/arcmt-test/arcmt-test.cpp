@@ -121,16 +121,18 @@ static bool checkForMigration(StringRef resourcesPath,
   }
 
   CompilerInvocation CI;
-  if (!CompilerInvocation::CreateFromArgs(CI, Args, *Diags))
+  if (!CompilerInvocation::CreateFromArgs(CI, Args, *Diags)) {
     return true;
+}
 
   if (CI.getFrontendOpts().Inputs.empty()) {
     llvm::errs() << "error: no input files\n";
     return true;
   }
 
-  if (!CI.getLangOpts()->ObjC)
+  if (!CI.getLangOpts()->ObjC) {
     return false;
+}
 
   arcmt::checkForManualIssues(CI, CI.getFrontendOpts().Inputs[0],
                               std::make_shared<PCHContainerOperations>(),
@@ -142,15 +144,17 @@ static void printResult(FileRemapper &remapper, raw_ostream &OS) {
   PreprocessorOptions PPOpts;
   remapper.applyMappings(PPOpts);
   // The changed files will be in memory buffers, print them.
-  for (const auto &RB : PPOpts.RemappedFileBuffers)
+  for (const auto &RB : PPOpts.RemappedFileBuffers) {
     OS << RB.second->getBuffer();
+}
 }
 
 static bool performTransformations(StringRef resourcesPath,
                                    ArrayRef<const char *> Args) {
   // Check first.
-  if (checkForMigration(resourcesPath, Args))
+  if (checkForMigration(resourcesPath, Args)) {
     return true;
+}
 
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   DiagnosticConsumer *DiagClient =
@@ -160,16 +164,18 @@ static bool performTransformations(StringRef resourcesPath,
       new DiagnosticsEngine(DiagID, &*DiagOpts, &*DiagClient));
 
   CompilerInvocation origCI;
-  if (!CompilerInvocation::CreateFromArgs(origCI, Args, *TopDiags))
+  if (!CompilerInvocation::CreateFromArgs(origCI, Args, *TopDiags)) {
     return true;
+}
 
   if (origCI.getFrontendOpts().Inputs.empty()) {
     llvm::errs() << "error: no input files\n";
     return true;
   }
 
-  if (!origCI.getLangOpts()->ObjC)
+  if (!origCI.getLangOpts()->ObjC) {
     return false;
+}
 
   MigrationProcess migration(origCI, std::make_shared<PCHContainerOperations>(),
                              DiagClient);
@@ -180,25 +186,29 @@ static bool performTransformations(StringRef resourcesPath,
   assert(!transforms.empty());
 
   std::unique_ptr<PrintTransforms> transformPrinter;
-  if (OutputTransformations)
+  if (OutputTransformations) {
     transformPrinter.reset(new PrintTransforms(llvm::outs()));
+}
 
   for (unsigned i=0, e = transforms.size(); i != e; ++i) {
     bool err = migration.applyTransform(transforms[i], transformPrinter.get());
-    if (err) return true;
+    if (err) { return true;
+}
 
     if (VerboseOpt) {
-      if (i == e-1)
+      if (i == e-1) {
         llvm::errs() << "\n##### FINAL RESULT #####\n";
-      else
+      } else {
         llvm::errs() << "\n##### OUTPUT AFTER "<< i+1 <<". TRANSFORMATION #####\n";
+}
       printResult(migration.getRemapper(), llvm::errs());
       llvm::errs() << "\n##########################\n\n";
     }
   }
 
-  if (!OutputTransformations)
+  if (!OutputTransformations) {
     printResult(migration.getRemapper(), llvm::outs());
+}
 
   // FIXME: TestResultForARC
 
@@ -209,12 +219,14 @@ static bool filesCompareEqual(StringRef fname1, StringRef fname2) {
   using namespace llvm;
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> file1 = MemoryBuffer::getFile(fname1);
-  if (!file1)
+  if (!file1) {
     return false;
+}
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> file2 = MemoryBuffer::getFile(fname2);
-  if (!file2)
+  if (!file2) {
     return false;
+}
 
   return file1.get()->getBuffer() == file2.get()->getBuffer();
 }
@@ -238,10 +250,11 @@ static bool verifyTransformedFiles(ArrayRef<std::string> resultFiles) {
   }
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> inputBuf = std::error_code();
-  if (RemappingsFile.empty())
+  if (RemappingsFile.empty()) {
     inputBuf = MemoryBuffer::getSTDIN();
-  else
+  } else {
     inputBuf = MemoryBuffer::getFile(RemappingsFile);
+}
   if (!inputBuf) {
     errs() << "error: could not read remappings input\n";
     return true;
@@ -292,8 +305,9 @@ static bool verifyTransformedFiles(ArrayRef<std::string> resultFiles) {
 
   if (!resultMap.empty()) {
     for (std::map<StringRef, StringRef>::iterator
-           I = resultMap.begin(), E = resultMap.end(); I != E; ++I)
+           I = resultMap.begin(), E = resultMap.end(); I != E; ++I) {
       errs() << "error: '" << I->second << "' was not verified!\n";
+}
     return true;
   }
 
@@ -330,8 +344,9 @@ static void printSourceRange(CharSourceRange range, ASTContext &Ctx,
   PL = SM.getPresumedLoc(end);
 
   unsigned endCol = PL.getColumn() - 1;
-  if (!range.isTokenRange())
+  if (!range.isTokenRange()) {
     endCol += Lexer::MeasureTokenLength(end, SM, langOpts);
+}
   OS << PL.getLine() << ":" << endCol << "]";
 }
 
@@ -348,8 +363,9 @@ int main(int argc, const char **argv) {
 
   int optargc = 0;
   for (; optargc != argc; ++optargc) {
-    if (StringRef(argv[optargc]) == "--args")
+    if (StringRef(argv[optargc]) == "--args") {
       break;
+}
   }
   llvm::cl::ParseCommandLineOptions(optargc, argv, "arcmt-test");
 
@@ -368,8 +384,9 @@ int main(int argc, const char **argv) {
 
   ArrayRef<const char*> Args(argv+optargc+1, argc-optargc-1);
 
-  if (CheckOnly)
+  if (CheckOnly) {
     return checkForMigration(resourcesPath, Args);
+}
 
   return performTransformations(resourcesPath, Args);
 }

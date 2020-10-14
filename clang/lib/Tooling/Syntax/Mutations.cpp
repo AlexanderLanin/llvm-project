@@ -70,12 +70,14 @@ public:
 
 private:
   static syntax::Node *findPrevious(syntax::Node *N) {
-    if (N->getParent()->getFirstChild() == N)
+    if (N->getParent()->getFirstChild() == N) {
       return nullptr;
+}
     for (syntax::Node *C = N->getParent()->getFirstChild(); C != nullptr;
          C = C->getNextSibling()) {
-      if (C->getNextSibling() == N)
+      if (C->getNextSibling() == N) {
         return C;
+}
     }
     llvm_unreachable("could not find a child node");
   }
@@ -91,8 +93,9 @@ void syntax::removeStatement(syntax::Arena &A, syntax::Statement *S) {
     return;
   }
   // For the rest, we have to replace with an empty statement.
-  if (isa<EmptyStatement>(S))
+  if (isa<EmptyStatement>(S)) {
     return; // already an empty statement, nothing to do.
+}
 
   MutationsImpl::replace(S, createEmptyStatement(A));
 }

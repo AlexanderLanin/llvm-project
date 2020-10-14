@@ -25,9 +25,10 @@ using namespace trans;
 ASTTraverser::~ASTTraverser() { }
 
 bool MigrationPass::CFBridgingFunctionsDefined() {
-  if (!EnableCFBridgeFns.hasValue())
+  if (!EnableCFBridgeFns.hasValue()) {
     EnableCFBridgeFns = SemaRef.isKnownName("CFBridgingRetain") &&
                         SemaRef.isKnownName("CFBridgingRelease");
+}
   return *EnableCFBridgeFns;
 }
 
@@ -37,56 +38,69 @@ bool MigrationPass::CFBridgingFunctionsDefined() {
 
 bool trans::canApplyWeak(ASTContext &Ctx, QualType type,
                          bool AllowOnUnknownClass) {
-  if (!Ctx.getLangOpts().ObjCWeakRuntime)
+  if (!Ctx.getLangOpts().ObjCWeakRuntime) {
     return false;
+}
 
   QualType T = type;
-  if (T.isNull())
+  if (T.isNull()) {
     return false;
+}
 
   // iOS is always safe to use 'weak'.
   if (Ctx.getTargetInfo().getTriple().isiOS() ||
-      Ctx.getTargetInfo().getTriple().isWatchOS())
+      Ctx.getTargetInfo().getTriple().isWatchOS()) {
     AllowOnUnknownClass = true;
+}
 
-  while (const PointerType *ptr = T->getAs<PointerType>())
+  while (const PointerType *ptr = T->getAs<PointerType>()) {
     T = ptr->getPointeeType();
+}
   if (const ObjCObjectPointerType *ObjT = T->getAs<ObjCObjectPointerType>()) {
     ObjCInterfaceDecl *Class = ObjT->getInterfaceDecl();
-    if (!AllowOnUnknownClass && (!Class || Class->getName() == "NSObject"))
+    if (!AllowOnUnknownClass && (!Class || Class->getName() == "NSObject")) {
       return false; // id/NSObject is not safe for weak.
-    if (!AllowOnUnknownClass && !Class->hasDefinition())
+}
+    if (!AllowOnUnknownClass && !Class->hasDefinition()) {
       return false; // forward classes are not verifiable, therefore not safe.
-    if (Class && Class->isArcWeakrefUnavailable())
+}
+    if (Class && Class->isArcWeakrefUnavailable()) {
       return false;
+}
   }
 
   return true;
 }
 
 bool trans::isPlusOneAssign(const BinaryOperator *E) {
-  if (E->getOpcode() != BO_Assign)
+  if (E->getOpcode() != BO_Assign) {
     return false;
+}
 
   return isPlusOne(E->getRHS());
 }
 
 bool trans::isPlusOne(const Expr *E) {
-  if (!E)
+  if (!E) {
     return false;
-  if (const FullExpr *FE = dyn_cast<FullExpr>(E))
+}
+  if (const FullExpr *FE = dyn_cast<FullExpr>(E)) {
     E = FE->getSubExpr();
+}
 
   if (const ObjCMessageExpr *
-        ME = dyn_cast<ObjCMessageExpr>(E->IgnoreParenCasts()))
-    if (ME->getMethodFamily() == OMF_retain)
+        ME = dyn_cast<ObjCMessageExpr>(E->IgnoreParenCasts())) {
+    if (ME->getMethodFamily() == OMF_retain) {
       return true;
+}
+}
 
   if (const CallExpr *
         callE = dyn_cast<CallExpr>(E->IgnoreParenCasts())) {
     if (const FunctionDecl *FD = callE->getDirectCallee()) {
-      if (FD->hasAttr<CFReturnsRetainedAttr>())
+      if (FD->hasAttr<CFReturnsRetainedAttr>()) {
         return true;
+}
 
       if (FD->isGlobal() &&
           FD->getIdentifier() &&
@@ -105,8 +119,9 @@ bool trans::isPlusOne(const Expr *E) {
   }
 
   const ImplicitCastExpr *implCE = dyn_cast<ImplicitCastExpr>(E);
-  while (implCE && implCE->getCastKind() ==  CK_BitCast)
+  while (implCE && implCE->getCastKind() ==  CK_BitCast) {
     implCE = dyn_cast<ImplicitCastExpr>(implCE->getSubExpr());
+}
 
   return implCE && implCE->getCastKind() == CK_ARCConsumeObject;
 }
@@ -118,8 +133,9 @@ bool trans::isPlusOne(const Expr *E) {
 SourceLocation trans::findLocationAfterSemi(SourceLocation loc,
                                             ASTContext &Ctx, bool IsDecl) {
   SourceLocation SemiLoc = findSemiAfterLocation(loc, Ctx, IsDecl);
-  if (SemiLoc.isInvalid())
+  if (SemiLoc.isInvalid()) {
     return SourceLocation();
+}
   return SemiLoc.getLocWithOffset(1);
 }
 
@@ -132,8 +148,9 @@ SourceLocation trans::findSemiAfterLocation(SourceLocation loc,
                                             bool IsDecl) {
   SourceManager &SM = Ctx.getSourceManager();
   if (loc.isMacroID()) {
-    if (!Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc))
+    if (!Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc)) {
       return SourceLocation();
+}
   }
   loc = Lexer::getLocForEndOfToken(loc, /*Offset=*/0, SM, Ctx.getLangOpts());
 
@@ -143,8 +160,9 @@ SourceLocation trans::findSemiAfterLocation(SourceLocation loc,
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
     return SourceLocation();
+}
 
   const char *tokenBegin = file.data() + locInfo.second;
 
@@ -155,8 +173,9 @@ SourceLocation trans::findSemiAfterLocation(SourceLocation loc,
   Token tok;
   lexer.LexFromRawLexer(tok);
   if (tok.isNot(tok::semi)) {
-    if (!IsDecl)
+    if (!IsDecl) {
       return SourceLocation();
+}
     // Declaration may be followed with other tokens; such as an __attribute,
     // before ending with a semicolon.
     return findSemiAfterLocation(tok.getLocation(), Ctx, /*IsDecl*/true);
@@ -166,13 +185,15 @@ SourceLocation trans::findSemiAfterLocation(SourceLocation loc,
 }
 
 bool trans::hasSideEffects(Expr *E, ASTContext &Ctx) {
-  if (!E || !E->HasSideEffects(Ctx))
+  if (!E || !E->HasSideEffects(Ctx)) {
     return false;
+}
 
   E = E->IgnoreParenCasts();
   ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E);
-  if (!ME)
+  if (!ME) {
     return true;
+}
   switch (ME->getMethodFamily()) {
   case OMF_autorelease:
   case OMF_dealloc:
@@ -196,12 +217,14 @@ bool trans::hasSideEffects(Expr *E, ASTContext &Ctx) {
 
 bool trans::isGlobalVar(Expr *E) {
   E = E->IgnoreParenCasts();
-  if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E))
+  if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
     return DRE->getDecl()->getDeclContext()->isFileContext() &&
            DRE->getDecl()->isExternallyVisible();
-  if (ConditionalOperator *condOp = dyn_cast<ConditionalOperator>(E))
+}
+  if (ConditionalOperator *condOp = dyn_cast<ConditionalOperator>(E)) {
     return isGlobalVar(condOp->getTrueExpr()) &&
            isGlobalVar(condOp->getFalseExpr());
+}
 
   return false;
 }
@@ -228,8 +251,9 @@ public:
     : Dcl(D), Refs(refs) { }
 
   bool VisitDeclRefExpr(DeclRefExpr *E) {
-    if (E->getDecl() == Dcl)
+    if (E->getDecl() == Dcl) {
       Refs.insert(E);
+}
     return true;
   }
 };
@@ -247,16 +271,18 @@ public:
     CompoundStmt *S = E->getSubStmt();
     for (CompoundStmt::body_iterator
         I = S->body_begin(), E = S->body_end(); I != E; ++I) {
-      if (I != E - 1)
+      if (I != E - 1) {
         mark(*I);
+}
       TraverseStmt(*I);
     }
     return true;
   }
 
   bool VisitCompoundStmt(CompoundStmt *S) {
-    for (auto *I : S->body())
+    for (auto *I : S->body()) {
       mark(I);
+}
     return true;
   }
 
@@ -285,14 +311,18 @@ public:
 
 private:
   void mark(Stmt *S) {
-    if (!S) return;
+    if (!S) { return;
+}
 
-    while (auto *Label = dyn_cast<LabelStmt>(S))
+    while (auto *Label = dyn_cast<LabelStmt>(S)) {
       S = Label->getSubStmt();
-    if (auto *E = dyn_cast<Expr>(S))
+}
+    if (auto *E = dyn_cast<Expr>(S)) {
       S = E->IgnoreImplicit();
-    if (auto *E = dyn_cast<Expr>(S))
+}
+    if (auto *E = dyn_cast<Expr>(S)) {
       Removables.insert(E);
+}
   }
 };
 
@@ -329,21 +359,24 @@ public:
     ObjCImplementationContext ImplCtx(MigrateCtx, D);
     for (MigrationContext::traverser_iterator
            I = MigrateCtx.traversers_begin(),
-           E = MigrateCtx.traversers_end(); I != E; ++I)
+           E = MigrateCtx.traversers_end(); I != E; ++I) {
       (*I)->traverseObjCImplementation(ImplCtx);
+}
 
     return base::TraverseObjCImplementationDecl(D);
   }
 
   bool TraverseStmt(Stmt *rootS) {
-    if (!rootS)
+    if (!rootS) {
       return true;
+}
 
     BodyContext BodyCtx(MigrateCtx, rootS);
     for (MigrationContext::traverser_iterator
            I = MigrateCtx.traversers_begin(),
-           E = MigrateCtx.traversers_end(); I != E; ++I)
+           E = MigrateCtx.traversers_end(); I != E; ++I) {
       (*I)->traverseBody(BodyCtx);
+}
 
     return true;
   }
@@ -353,25 +386,28 @@ public:
 
 MigrationContext::~MigrationContext() {
   for (traverser_iterator
-         I = traversers_begin(), E = traversers_end(); I != E; ++I)
+         I = traversers_begin(), E = traversers_end(); I != E; ++I) {
     delete *I;
+}
 }
 
 bool MigrationContext::isGCOwnedNonObjC(QualType T) {
   while (!T.isNull()) {
     if (const AttributedType *AttrT = T->getAs<AttributedType>()) {
-      if (AttrT->getAttrKind() == attr::ObjCOwnership)
+      if (AttrT->getAttrKind() == attr::ObjCOwnership) {
         return !AttrT->getModifiedType()->isObjCRetainableType();
+}
     }
 
-    if (T->isArrayType())
+    if (T->isArrayType()) {
       T = Pass.Ctx.getBaseElementType(T);
-    else if (const PointerType *PT = T->getAs<PointerType>())
+    } else if (const PointerType *PT = T->getAs<PointerType>()) {
       T = PT->getPointeeType();
-    else if (const ReferenceType *RT = T->getAs<ReferenceType>())
+    } else if (const ReferenceType *RT = T->getAs<ReferenceType>()) {
       T = RT->getPointeeType();
-    else
+    } else {
       break;
+}
   }
 
   return false;
@@ -380,8 +416,9 @@ bool MigrationContext::isGCOwnedNonObjC(QualType T) {
 bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
                                                 StringRef toAttr,
                                                 SourceLocation atLoc) {
-  if (atLoc.isMacroID())
+  if (atLoc.isMacroID()) {
     return false;
+}
 
   SourceManager &SM = Pass.Ctx.getSourceManager();
 
@@ -391,8 +428,9 @@ bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
     return false;
+}
 
   const char *tokenBegin = file.data() + locInfo.second;
 
@@ -402,13 +440,17 @@ bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
               file.begin(), tokenBegin, file.end());
   Token tok;
   lexer.LexFromRawLexer(tok);
-  if (tok.isNot(tok::at)) return false;
+  if (tok.isNot(tok::at)) { return false;
+}
   lexer.LexFromRawLexer(tok);
-  if (tok.isNot(tok::raw_identifier)) return false;
-  if (tok.getRawIdentifier() != "property")
+  if (tok.isNot(tok::raw_identifier)) { return false;
+}
+  if (tok.getRawIdentifier() != "property") {
     return false;
+}
   lexer.LexFromRawLexer(tok);
-  if (tok.isNot(tok::l_paren)) return false;
+  if (tok.isNot(tok::l_paren)) { return false;
+}
 
   Token BeforeTok = tok;
   Token AfterTok;
@@ -416,11 +458,13 @@ bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
   SourceLocation AttrLoc;
 
   lexer.LexFromRawLexer(tok);
-  if (tok.is(tok::r_paren))
+  if (tok.is(tok::r_paren)) {
     return false;
+}
 
   while (1) {
-    if (tok.isNot(tok::raw_identifier)) return false;
+    if (tok.isNot(tok::raw_identifier)) { return false;
+}
     if (tok.getRawIdentifier() == fromAttr) {
       if (!toAttr.empty()) {
         Pass.TA.replaceText(tok.getLocation(), fromAttr, toAttr);
@@ -432,13 +476,16 @@ bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
 
     do {
       lexer.LexFromRawLexer(tok);
-      if (AttrLoc.isValid() && AfterTok.is(tok::unknown))
+      if (AttrLoc.isValid() && AfterTok.is(tok::unknown)) {
         AfterTok = tok;
+}
     } while (tok.isNot(tok::comma) && tok.isNot(tok::r_paren));
-    if (tok.is(tok::r_paren))
+    if (tok.is(tok::r_paren)) {
       break;
-    if (AttrLoc.isInvalid())
+}
+    if (AttrLoc.isInvalid()) {
       BeforeTok = tok;
+}
     lexer.LexFromRawLexer(tok);
   }
 
@@ -461,8 +508,9 @@ bool MigrationContext::rewritePropertyAttribute(StringRef fromAttr,
 
 bool MigrationContext::addPropertyAttribute(StringRef attr,
                                             SourceLocation atLoc) {
-  if (atLoc.isMacroID())
+  if (atLoc.isMacroID()) {
     return false;
+}
 
   SourceManager &SM = Pass.Ctx.getSourceManager();
 
@@ -472,8 +520,9 @@ bool MigrationContext::addPropertyAttribute(StringRef attr,
   // Try to load the file buffer.
   bool invalidTemp = false;
   StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
     return false;
+}
 
   const char *tokenBegin = file.data() + locInfo.second;
 
@@ -483,11 +532,14 @@ bool MigrationContext::addPropertyAttribute(StringRef attr,
               file.begin(), tokenBegin, file.end());
   Token tok;
   lexer.LexFromRawLexer(tok);
-  if (tok.isNot(tok::at)) return false;
+  if (tok.isNot(tok::at)) { return false;
+}
   lexer.LexFromRawLexer(tok);
-  if (tok.isNot(tok::raw_identifier)) return false;
-  if (tok.getRawIdentifier() != "property")
+  if (tok.isNot(tok::raw_identifier)) { return false;
+}
+  if (tok.getRawIdentifier() != "property") {
     return false;
+}
   lexer.LexFromRawLexer(tok);
 
   if (tok.isNot(tok::l_paren)) {
@@ -501,7 +553,8 @@ bool MigrationContext::addPropertyAttribute(StringRef attr,
     return true;
   }
 
-  if (tok.isNot(tok::raw_identifier)) return false;
+  if (tok.isNot(tok::raw_identifier)) { return false;
+}
 
   Pass.TA.insert(tok.getLocation(), std::string(attr) + ", ");
   return true;
@@ -509,8 +562,9 @@ bool MigrationContext::addPropertyAttribute(StringRef attr,
 
 void MigrationContext::traverse(TranslationUnitDecl *TU) {
   for (traverser_iterator
-         I = traversers_begin(), E = traversers_end(); I != E; ++I)
+         I = traversers_begin(), E = traversers_end(); I != E; ++I) {
     (*I)->traverseTU(*this);
+}
 
   ASTTransform(*this).TraverseDecl(TU);
 }
@@ -527,8 +581,9 @@ static void GCRewriteFinalize(MigrationPass &pass) {
   for (impl_iterator I = impl_iterator(DC->decls_begin()),
        E = impl_iterator(DC->decls_end()); I != E; ++I) {
     for (const auto *MD : I->instance_methods()) {
-      if (!MD->hasBody())
+      if (!MD->hasBody()) {
         continue;
+}
 
       if (MD->isInstanceMethod() && MD->getSelector() == FinalizeSel) {
         const ObjCMethodDecl *FinalizeM = MD;
@@ -585,8 +640,9 @@ std::vector<TransformFn> arcmt::getAllTransformations(
                                                bool NoFinalizeRemoval) {
   std::vector<TransformFn> transforms;
 
-  if (OrigGCMode ==  LangOptions::GCOnly && NoFinalizeRemoval)
+  if (OrigGCMode ==  LangOptions::GCOnly && NoFinalizeRemoval) {
     transforms.push_back(GCRewriteFinalize);
+}
   transforms.push_back(independentTransforms);
   // This depends on previous transformations removing various expressions.
   transforms.push_back(removeEmptyStatementsAndDeallocFinalize);

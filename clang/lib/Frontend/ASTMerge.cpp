@@ -50,8 +50,9 @@ void ASTMergeAction::ExecuteAction() {
         ASTFiles[I], CI.getPCHContainerReader(), ASTUnit::LoadEverything, Diags,
         CI.getFileSystemOpts(), false);
 
-    if (!Unit)
+    if (!Unit) {
       continue;
+}
 
     ASTImporter Importer(CI.getASTContext(), CI.getFileManager(),
                          Unit->getASTContext(), Unit->getFileManager(),
@@ -60,10 +61,13 @@ void ASTMergeAction::ExecuteAction() {
     TranslationUnitDecl *TU = Unit->getASTContext().getTranslationUnitDecl();
     for (auto *D : TU->decls()) {
       // Don't re-import __va_list_tag, __builtin_va_list.
-      if (const auto *ND = dyn_cast<NamedDecl>(D))
-        if (IdentifierInfo *II = ND->getIdentifier())
-          if (II->isStr("__va_list_tag") || II->isStr("__builtin_va_list"))
+      if (const auto *ND = dyn_cast<NamedDecl>(D)) {
+        if (IdentifierInfo *II = ND->getIdentifier()) {
+          if (II->isStr("__va_list_tag") || II->isStr("__builtin_va_list")) {
             continue;
+}
+}
+}
 
       llvm::Expected<Decl *> ToDOrError = Importer.Import(D);
 

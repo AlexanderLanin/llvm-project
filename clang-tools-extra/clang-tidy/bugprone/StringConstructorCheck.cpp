@@ -126,8 +126,9 @@ void StringConstructorCheck::check(const MatchFinder::MatchResult &Result) {
   } else if (Result.Nodes.getNodeAs<Expr>("negative-length")) {
     diag(Loc, "negative value used as length parameter");
   } else if (Result.Nodes.getNodeAs<Expr>("large-length")) {
-    if (WarnOnLargeLength)
+    if (WarnOnLargeLength) {
       diag(Loc, "suspicious large length parameter");
+}
   } else if (Result.Nodes.getNodeAs<Expr>("literal-with-length")) {
     const auto *Str = Result.Nodes.getNodeAs<StringLiteral>("str");
     const auto *Lit = Result.Nodes.getNodeAs<IntegerLiteral>("int");

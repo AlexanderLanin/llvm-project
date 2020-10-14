@@ -74,22 +74,25 @@ TEST_F(ThreadingTest, Memoize) {
   std::fill(std::begin(ComputeResult), std::end(ComputeResult), -1);
 
   AsyncTaskRunner Tasks;
-  for (unsigned I = 0; I < NumThreads; ++I)
+  for (unsigned I = 0; I < NumThreads; ++I) {
     Tasks.runAsync("worker" + std::to_string(I), [&] {
-      for (unsigned J = 0; J < NumIterations; J++)
+      for (unsigned J = 0; J < NumIterations; J++) {
         for (unsigned K = 0; K < NumKeys; K++) {
           int Result = Cache.get(K, [&] { return ++ComputeCount; });
           EXPECT_THAT(ComputeResult[K].exchange(Result),
                       testing::AnyOf(-1, Result))
               << "Got inconsistent results from memoize";
         }
+}
     });
+}
   Tasks.wait();
   EXPECT_GE(ComputeCount, NumKeys) << "Computed each key once";
   EXPECT_LE(ComputeCount, NumThreads * NumKeys)
       << "Worst case, computed each key in every thread";
-  for (int Result : ComputeResult)
+  for (int Result : ComputeResult) {
     EXPECT_GT(Result, 0) << "All results in expected domain";
+}
 }
 
 TEST_F(ThreadingTest, MemoizeDeterministic) {

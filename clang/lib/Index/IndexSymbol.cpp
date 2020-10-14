@@ -19,11 +19,13 @@ using namespace clang::index;
 
 /// \returns true if \c D is a subclass of 'XCTestCase'.
 static bool isUnitTestCase(const ObjCInterfaceDecl *D) {
-  if (!D)
+  if (!D) {
     return false;
+}
   while (const ObjCInterfaceDecl *SuperD = D->getSuperClass()) {
-    if (SuperD->getName() == "XCTestCase")
+    if (SuperD->getName() == "XCTestCase") {
       return true;
+}
     D = SuperD;
   }
   return false;
@@ -32,12 +34,15 @@ static bool isUnitTestCase(const ObjCInterfaceDecl *D) {
 /// \returns true if \c D is in a subclass of 'XCTestCase', returns void, has
 /// no parameters, and its name starts with 'test'.
 static bool isUnitTest(const ObjCMethodDecl *D) {
-  if (!D->parameters().empty())
+  if (!D->parameters().empty()) {
     return false;
-  if (!D->getReturnType()->isVoidType())
+}
+  if (!D->getReturnType()->isVoidType()) {
     return false;
-  if (!D->getSelector().getNameForSlot(0).startswith("test"))
+}
+  if (!D->getSelector().getNameForSlot(0).startswith("test")) {
     return false;
+}
   return isUnitTestCase(D->getClassInterface());
 }
 
@@ -53,16 +58,20 @@ static void checkForIBOutlets(const Decl *D, SymbolPropertySet &PropSet) {
 bool index::isFunctionLocalSymbol(const Decl *D) {
   assert(D);
 
-  if (isa<ParmVarDecl>(D))
+  if (isa<ParmVarDecl>(D)) {
     return true;
+}
 
-  if (isa<ObjCTypeParamDecl>(D))
+  if (isa<ObjCTypeParamDecl>(D)) {
     return true;
+}
 
-  if (isa<UsingDirectiveDecl>(D))
+  if (isa<UsingDirectiveDecl>(D)) {
     return false;
-  if (!D->getParentFunctionOrMethod())
+}
+  if (!D->getParentFunctionOrMethod()) {
     return false;
+}
 
   if (const NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
     switch (ND->getFormalLinkage()) {
@@ -180,8 +189,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Field;
       if (const CXXRecordDecl *
             CXXRec = dyn_cast<CXXRecordDecl>(D->getDeclContext())) {
-        if (!CXXRec->isCLike())
+        if (!CXXRec->isCLike()) {
           Info.Lang = SymbolLanguage::CXX;
+}
       }
       break;
     case Decl::EnumConstant:
@@ -191,10 +201,12 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Class;
       Info.Lang = SymbolLanguage::ObjC;
       const ObjCInterfaceDecl *ClsD = dyn_cast<ObjCInterfaceDecl>(D);
-      if (!ClsD)
+      if (!ClsD) {
         ClsD = cast<ObjCImplementationDecl>(D)->getClassInterface();
-      if (isUnitTestCase(ClsD))
+}
+      if (isUnitTestCase(ClsD)) {
         Info.Properties |= (SymbolPropertySet)SymbolProperty::UnitTest;
+}
       break;
     }
     case Decl::ObjCProtocol:
@@ -206,28 +218,33 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Extension;
       Info.Lang = SymbolLanguage::ObjC;
       const ObjCInterfaceDecl *ClsD = nullptr;
-      if (auto *CatD = dyn_cast<ObjCCategoryDecl>(D))
+      if (auto *CatD = dyn_cast<ObjCCategoryDecl>(D)) {
         ClsD = CatD->getClassInterface();
-      else
+      } else {
         ClsD = cast<ObjCCategoryImplDecl>(D)->getClassInterface();
-      if (isUnitTestCase(ClsD))
+}
+      if (isUnitTestCase(ClsD)) {
         Info.Properties |= (SymbolPropertySet)SymbolProperty::UnitTest;
+}
       break;
     }
     case Decl::ObjCMethod: {
       const ObjCMethodDecl *MD = cast<ObjCMethodDecl>(D);
       Info.Kind = MD->isInstanceMethod() ? SymbolKind::InstanceMethod : SymbolKind::ClassMethod;
       if (MD->isPropertyAccessor()) {
-        if (MD->param_size())
+        if (MD->param_size()) {
           Info.SubKind = SymbolSubKind::AccessorSetter;
-        else
+        } else {
           Info.SubKind = SymbolSubKind::AccessorGetter;
+}
       }
       Info.Lang = SymbolLanguage::ObjC;
-      if (isUnitTest(MD))
+      if (isUnitTest(MD)) {
         Info.Properties |= (SymbolPropertySet)SymbolProperty::UnitTest;
-      if (D->hasAttr<IBActionAttr>())
+}
+      if (D->hasAttr<IBActionAttr>()) {
         Info.Properties |= (SymbolPropertySet)SymbolProperty::IBAnnotated;
+}
       break;
     }
     case Decl::ObjCProperty:
@@ -235,8 +252,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Lang = SymbolLanguage::ObjC;
       checkForIBOutlets(D, Info.Properties);
       if (auto *Annot = D->getAttr<AnnotateAttr>()) {
-        if (Annot->getAnnotation() == "gk_inspectable")
+        if (Annot->getAnnotation() == "gk_inspectable") {
           Info.Properties |= (SymbolPropertySet)SymbolProperty::GKInspectable;
+}
       }
       break;
     case Decl::ObjCIvar:
@@ -256,10 +274,11 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Constructor;
       Info.Lang = SymbolLanguage::CXX;
       auto *CD = cast<CXXConstructorDecl>(D);
-      if (CD->isCopyConstructor())
+      if (CD->isCopyConstructor()) {
         Info.SubKind = SymbolSubKind::CXXCopyConstructor;
-      else if (CD->isMoveConstructor())
+      } else if (CD->isMoveConstructor()) {
         Info.SubKind = SymbolSubKind::CXXMoveConstructor;
+}
       break;
     }
     case Decl::CXXDestructor:
@@ -272,10 +291,11 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       break;
     case Decl::CXXMethod: {
       const CXXMethodDecl *MD = cast<CXXMethodDecl>(D);
-      if (MD->isStatic())
+      if (MD->isStatic()) {
         Info.Kind = SymbolKind::StaticMethod;
-      else
+      } else {
         Info.Kind = SymbolKind::InstanceMethod;
+}
       Info.Lang = SymbolLanguage::CXX;
       break;
     }
@@ -290,17 +310,18 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Lang = SymbolLanguage::CXX;
       if (const CXXMethodDecl *MD = dyn_cast_or_null<CXXMethodDecl>(
                            cast<FunctionTemplateDecl>(D)->getTemplatedDecl())) {
-        if (isa<CXXConstructorDecl>(MD))
+        if (isa<CXXConstructorDecl>(MD)) {
           Info.Kind = SymbolKind::Constructor;
-        else if (isa<CXXDestructorDecl>(MD))
+        } else if (isa<CXXDestructorDecl>(MD)) {
           Info.Kind = SymbolKind::Destructor;
-        else if (isa<CXXConversionDecl>(MD))
+        } else if (isa<CXXConversionDecl>(MD)) {
           Info.Kind = SymbolKind::ConversionFunction;
-        else {
-          if (MD->isStatic())
+        } else {
+          if (MD->isStatic()) {
             Info.Kind = SymbolKind::StaticMethod;
-          else
+          } else {
             Info.Kind = SymbolKind::InstanceMethod;
+}
         }
       }
       break;
@@ -337,8 +358,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::InstanceProperty;
       if (const CXXRecordDecl *CXXRec =
               dyn_cast<CXXRecordDecl>(D->getDeclContext())) {
-        if (!CXXRec->isCLike())
+        if (!CXXRec->isCLike()) {
           Info.Lang = SymbolLanguage::CXX;
+}
       }
       break;
     case Decl::ClassTemplatePartialSpecialization:
@@ -372,8 +394,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
     }
   }
 
-  if (Info.Kind == SymbolKind::Unknown)
+  if (Info.Kind == SymbolKind::Unknown) {
     return Info;
+}
 
   if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
     if (FD->getTemplatedKind() ==
@@ -384,12 +407,14 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
     }
   }
 
-  if (Info.Properties & (SymbolPropertySet)SymbolProperty::Generic)
+  if (Info.Properties & (SymbolPropertySet)SymbolProperty::Generic) {
     Info.Lang = SymbolLanguage::CXX;
+}
 
   if (auto *attr = D->getExternalSourceSymbolAttr()) {
-    if (attr->getLanguage() == "Swift")
+    if (attr->getLanguage() == "Swift") {
       Info.Lang = SymbolLanguage::Swift;
+}
   }
 
   return Info;
@@ -449,10 +474,11 @@ void index::applyForEachSymbolRole(SymbolRoleSet Roles,
 void index::printSymbolRoles(SymbolRoleSet Roles, raw_ostream &OS) {
   bool VisitedOnce = false;
   applyForEachSymbolRole(Roles, [&](SymbolRole Role) {
-    if (VisitedOnce)
+    if (VisitedOnce) {
       OS << ',';
-    else
+    } else {
       VisitedOnce = true;
+}
     switch (Role) {
     case SymbolRole::Declaration: OS << "Decl"; break;
     case SymbolRole::Definition: OS << "Def"; break;
@@ -488,8 +514,9 @@ bool index::printSymbolName(const Decl *D, const LangOptions &LO,
     // stable.
     Policy.SuppressTemplateArgsInCXXConstructors = true;
     DeclarationName DeclName = ND->getDeclName();
-    if (DeclName.isEmpty())
+    if (DeclName.isEmpty()) {
       return true;
+}
     DeclName.print(OS, Policy);
     return false;
   } else {
@@ -578,10 +605,11 @@ void index::applyForEachSymbolProperty(SymbolPropertySet Props,
 void index::printSymbolProperties(SymbolPropertySet Props, raw_ostream &OS) {
   bool VisitedOnce = false;
   applyForEachSymbolProperty(Props, [&](SymbolProperty Prop) {
-    if (VisitedOnce)
+    if (VisitedOnce) {
       OS << ',';
-    else
+    } else {
       VisitedOnce = true;
+}
     switch (Prop) {
     case SymbolProperty::Generic: OS << "Gen"; break;
     case SymbolProperty::TemplatePartialSpecialization: OS << "TPS"; break;

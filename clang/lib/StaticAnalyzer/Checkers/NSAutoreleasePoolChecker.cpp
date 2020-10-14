@@ -42,24 +42,30 @@ public:
 
 void NSAutoreleasePoolChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
                                                    CheckerContext &C) const {
-  if (!msg.isInstanceMessage())
+  if (!msg.isInstanceMessage()) {
     return;
+}
 
   const ObjCInterfaceDecl *OD = msg.getReceiverInterface();
-  if (!OD)
+  if (!OD) {
     return;
-  if (!OD->getIdentifier()->isStr("NSAutoreleasePool"))
+}
+  if (!OD->getIdentifier()->isStr("NSAutoreleasePool")) {
     return;
+}
 
-  if (releaseS.isNull())
+  if (releaseS.isNull()) {
     releaseS = GetNullarySelector("release", C.getASTContext());
+}
   // Sending 'release' message?
-  if (msg.getSelector() != releaseS)
+  if (msg.getSelector() != releaseS) {
     return;
+}
 
-  if (!BT)
+  if (!BT) {
     BT.reset(new BugType(this, "Use -drain instead of -release",
                          "API Upgrade (Apple)"));
+}
 
   ExplodedNode *N = C.generateNonFatalErrorNode();
   if (!N) {

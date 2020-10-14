@@ -63,8 +63,9 @@ static const Expr *ignoreTransparentExprs(const Expr *E) {
 }
 
 static const Stmt *ignoreTransparentExprs(const Stmt *S) {
-  if (const auto *E = dyn_cast<Expr>(S))
+  if (const auto *E = dyn_cast<Expr>(S)) {
     return ignoreTransparentExprs(E);
+}
   return S;
 }
 
@@ -122,8 +123,9 @@ SVal Environment::getSVal(const EnvironmentEntry &Entry,
 
   case Stmt::ReturnStmtClass: {
     const auto *RS = cast<ReturnStmt>(S);
-    if (const Expr *RE = RS->getRetValue())
+    if (const Expr *RE = RS->getRetValue()) {
       return getSVal(EnvironmentEntry(RE, LCtx), svalBuilder);
+}
     return UndefinedVal();
   }
 
@@ -138,10 +140,11 @@ Environment EnvironmentManager::bindExpr(Environment Env,
                                          SVal V,
                                          bool Invalidate) {
   if (V.isUnknown()) {
-    if (Invalidate)
+    if (Invalidate) {
       return Environment(F.remove(Env.ExprBindings, E));
-    else
+    } else {
       return Env;
+}
   }
   return Environment(F.add(Env.ExprBindings, E, V));
 }
@@ -196,8 +199,9 @@ EnvironmentManager::removeDeadBindings(Environment Env,
     const SVal &X = I.getData();
 
     const Expr *E = dyn_cast<Expr>(BlkExpr.getStmt());
-    if (!E)
+    if (!E) {
       continue;
+}
 
     if (SymReaper.isLive(E, BlkExpr.getLocationContext())) {
       // Copy the binding to the new map.
@@ -231,8 +235,9 @@ void Environment::printJson(raw_ostream &Out, const ASTContext &Ctx,
       if (FoundContexts.count(LC) == 0) {
         // This context is fresher than all other contexts so far.
         LCtx = LC;
-        for (const LocationContext *LCI = LC; LCI; LCI = LCI->getParent())
+        for (const LocationContext *LCI = LC; LCI; LCI = LCI->getParent()) {
           FoundContexts.insert(LCI);
+}
       }
     }
   }
@@ -252,8 +257,9 @@ void Environment::printJson(raw_ostream &Out, const ASTContext &Ctx,
     BindingsTy::iterator LastI = ExprBindings.end();
     for (BindingsTy::iterator I = ExprBindings.begin(); I != ExprBindings.end();
          ++I) {
-      if (I->first.getLocationContext() != LC)
+      if (I->first.getLocationContext() != LC) {
         continue;
+}
 
       if (!HasItem) {
         HasItem = true;
@@ -269,8 +275,9 @@ void Environment::printJson(raw_ostream &Out, const ASTContext &Ctx,
 
     for (BindingsTy::iterator I = ExprBindings.begin(); I != ExprBindings.end();
          ++I) {
-      if (I->first.getLocationContext() != LC)
+      if (I->first.getLocationContext() != LC) {
         continue;
+}
 
       const Stmt *S = I->first.getStmt();
       Indent(Out, InnerSpace, IsDot)
@@ -282,15 +289,17 @@ void Environment::printJson(raw_ostream &Out, const ASTContext &Ctx,
 
       Out << " }";
 
-      if (I != LastI)
+      if (I != LastI) {
         Out << ',';
+}
       Out << NL;
     }
 
-    if (HasItem)
+    if (HasItem) {
       Indent(Out, --InnerSpace, IsDot) << ']';
-    else
+    } else {
       Out << "null ";
+}
   });
 
   Indent(Out, --Space, IsDot) << "]}," << NL;

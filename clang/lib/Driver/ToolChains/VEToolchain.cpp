@@ -63,12 +63,14 @@ bool VEToolChain::hasBlocksRuntime() const { return false; }
 
 void VEToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                             ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     return;
+}
 
   if (DriverArgs.hasArg(options::OPT_nobuiltininc) &&
-      DriverArgs.hasArg(options::OPT_nostdlibinc))
+      DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> P(getDriver().ResourceDir);
@@ -96,8 +98,9 @@ void VEToolChain::addClangTargetOptions(const ArgList &DriverArgs,
   CC1Args.push_back("-nostdsysteminc");
   bool UseInitArrayDefault = true;
   if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
-                          options::OPT_fno_use_init_array, UseInitArrayDefault))
+                          options::OPT_fno_use_init_array, UseInitArrayDefault)) {
     CC1Args.push_back("-fno-use-init-array");
+}
 }
 
 void VEToolChain::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,

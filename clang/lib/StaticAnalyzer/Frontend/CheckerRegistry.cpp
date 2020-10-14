@@ -34,8 +34,9 @@ using llvm::sys::DynamicLibrary;
 
 static bool isCompatibleAPIVersion(const char *VersionString) {
   // If the version string is null, its not an analyzer plugin.
-  if (!VersionString)
+  if (!VersionString) {
     return false;
+}
 
   // For now, none of the static analyzer API is considered stable.
   // Versions must match exactly.
@@ -97,16 +98,18 @@ CheckerRegistry::CheckerRegistry(
     RegisterPluginCheckerFn RegisterPluginCheckers =
         reinterpret_cast<RegisterPluginCheckerFn>(
             Lib.getAddressOfSymbol("clang_registerCheckers"));
-    if (RegisterPluginCheckers)
+    if (RegisterPluginCheckers) {
       RegisterPluginCheckers(*this);
+}
   }
 
   // Register statically linked checkers, that aren't generated from the tblgen
   // file, but rather passed their registry function as a parameter in
   // checkerRegistrationFns.
 
-  for (const auto &Fn : CheckerRegistrationFns)
+  for (const auto &Fn : CheckerRegistrationFns) {
     Fn(*this);
+}
 
   // Sort checkers for efficient collection.
   // FIXME: Alphabetical sort puts 'experimental' in the middle.
@@ -213,8 +216,9 @@ void CheckerRegistry::initializeRegistry(const CheckerManager &Mgr) {
     return !Checker->isDisabled(Mgr);
   };
   for (const CheckerInfo &Checker : Data.Checkers) {
-    if (!Checker.isEnabled(Mgr))
+    if (!Checker.isEnabled(Mgr)) {
       continue;
+}
 
     CheckerInfoSet Deps;
     if (!collectStrongDependencies(Checker.Dependencies, Mgr, Deps,
@@ -237,8 +241,9 @@ void CheckerRegistry::initializeRegistry(const CheckerManager &Mgr) {
     return llvm::is_contained(Tmp, Checker);
   };
   for (const CheckerInfo &Checker : Data.Checkers) {
-    if (!Checker.isEnabled(Mgr))
+    if (!Checker.isEnabled(Mgr)) {
       continue;
+}
 
     CheckerInfoSet Deps;
 
@@ -264,13 +269,15 @@ static bool collectStrongDependencies(const ConstCheckerInfoList &Deps,
                                       IsEnabledFn IsEnabled) {
 
   for (const CheckerInfo *Dependency : Deps) {
-    if (!IsEnabled(Dependency))
+    if (!IsEnabled(Dependency)) {
       return false;
+}
 
     // Collect dependencies recursively.
     if (!collectStrongDependencies(Dependency->Dependencies, Mgr, Ret,
-                                   IsEnabled))
+                                   IsEnabled)) {
       return false;
+}
     Ret.insert(Dependency);
   }
 
@@ -290,8 +297,9 @@ static void collectWeakDependencies(const ConstCheckerInfoList &WeakDeps,
 
     if (IsEnabled(Dependency) &&
         collectStrongDependencies(Dependency->Dependencies, Mgr, Ret,
-                                  IsEnabled))
+                                  IsEnabled)) {
       Ret.insert(Dependency);
+}
   }
 }
 
@@ -317,10 +325,11 @@ template <bool IsWeak> void CheckerRegistry::resolveDependencies() {
            "Strong dependencies are modeling checkers, and as such "
            "non-user facing! Mark them hidden in Checkers.td!");
 
-    if (IsWeak)
+    if (IsWeak) {
       CheckerIt->WeakDependencies.emplace_back(&*DependencyIt);
-    else
+    } else {
       CheckerIt->Dependencies.emplace_back(&*DependencyIt);
+}
   }
 }
 
@@ -350,8 +359,9 @@ static void insertAndValidate(StringRef FullName, const CmdLineOption &Option,
 
   // Insertation was successful -- CmdLineOption's constructor will validate
   // whether values received from plugins or TableGen files are correct.
-  if (It.second)
+  if (It.second) {
     return;
+}
 
   // Insertion failed, the user supplied this package/checker option on the
   // command line. If the supplied value is invalid, we'll restore the option
@@ -473,8 +483,9 @@ static void isOptionContainedIn(const CmdLineOptionList &OptionList,
                                 const AnalyzerOptions &AnOpts,
                                 DiagnosticsEngine &Diags) {
 
-  if (!AnOpts.ShouldEmitErrorsOnInvalidConfigValue)
+  if (!AnOpts.ShouldEmitErrorsOnInvalidConfigValue) {
     return;
+}
 
   auto SameOptName = [SuppliedOption](const CmdLineOption &Opt) {
     return Opt.OptionName == SuppliedOption;
@@ -497,8 +508,9 @@ void CheckerRegistry::validateCheckerOptions() const {
     std::tie(SuppliedCheckerOrPackage, SuppliedOption) =
         Config.getKey().split(':');
 
-    if (SuppliedOption.empty())
+    if (SuppliedOption.empty()) {
       continue;
+}
 
     // AnalyzerOptions' config table contains the user input, so an entry could
     // look like this:

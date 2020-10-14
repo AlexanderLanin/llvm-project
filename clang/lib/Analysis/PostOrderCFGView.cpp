@@ -32,8 +32,9 @@ PostOrderCFGView::PostOrderCFGView(const CFG *cfg) {
 std::unique_ptr<PostOrderCFGView>
 PostOrderCFGView::create(AnalysisDeclContext &ctx) {
   const CFG *cfg = ctx.getCFG();
-  if (!cfg)
+  if (!cfg) {
     return nullptr;
+}
   return std::make_unique<PostOrderCFGView>(cfg);
 }
 

@@ -283,8 +283,9 @@ std::pair<ProgramStateRef , ProgramStateRef >
 CStringChecker::assumeZero(CheckerContext &C, ProgramStateRef state, SVal V,
                            QualType Ty) {
   Optional<DefinedSVal> val = V.getAs<DefinedSVal>();
-  if (!val)
+  if (!val) {
     return std::pair<ProgramStateRef , ProgramStateRef >(state, state);
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
   DefinedOrUnknownSVal zero = svalBuilder.makeZeroVal(Ty);
@@ -295,8 +296,9 @@ ProgramStateRef CStringChecker::checkNonNull(CheckerContext &C,
                                              ProgramStateRef State,
                                              AnyArgExpr Arg, SVal l) const {
   // If a previous check has failed, propagate the failure.
-  if (!State)
+  if (!State) {
     return nullptr;
+}
 
   ProgramStateRef stateNull, stateNonNull;
   std::tie(stateNull, stateNonNull) =
@@ -328,20 +330,24 @@ ProgramStateRef CStringChecker::CheckLocation(CheckerContext &C,
                                               AccessKind Access) const {
 
   // If a previous check has failed, propagate the failure.
-  if (!state)
+  if (!state) {
     return nullptr;
+}
 
   // Check for out of bound array element access.
   const MemRegion *R = Element.getAsRegion();
-  if (!R)
+  if (!R) {
     return state;
+}
 
   const auto *ER = dyn_cast<ElementRegion>(R);
-  if (!ER)
+  if (!ER) {
     return state;
+}
 
-  if (ER->getValueType() != C.getASTContext().CharTy)
+  if (ER->getValueType() != C.getASTContext().CharTy) {
     return state;
+}
 
   // Get the size of the array.
   const auto *superReg = cast<SubRegion>(ER->getSuperRegion());
@@ -357,8 +363,9 @@ ProgramStateRef CStringChecker::CheckLocation(CheckerContext &C,
     // These checks are either enabled by the CString out-of-bounds checker
     // explicitly or implicitly by the Malloc checker.
     // In the latter case we only do modeling but do not emit warning.
-    if (!Filter.CheckCStringOutOfBounds)
+    if (!Filter.CheckCStringOutOfBounds) {
       return nullptr;
+}
 
     // Emit a bug report.
     ErrorMessage Message =
@@ -378,8 +385,9 @@ ProgramStateRef CStringChecker::CheckBufferAccess(CheckerContext &C,
                                                   SizeArgExpr Size,
                                                   AccessKind Access) const {
   // If a previous check has failed, propagate the failure.
-  if (!State)
+  if (!State) {
     return nullptr;
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
   ASTContext &Ctx = svalBuilder.getContext();
@@ -390,26 +398,30 @@ ProgramStateRef CStringChecker::CheckBufferAccess(CheckerContext &C,
   // Check that the first buffer is non-null.
   SVal BufVal = C.getSVal(Buffer.Expression);
   State = checkNonNull(C, State, Buffer, BufVal);
-  if (!State)
+  if (!State) {
     return nullptr;
+}
 
   // If out-of-bounds checking is turned off, skip the rest.
-  if (!Filter.CheckCStringOutOfBounds)
+  if (!Filter.CheckCStringOutOfBounds) {
     return State;
+}
 
   // Get the access length and make sure it is known.
   // FIXME: This assumes the caller has already checked that the access length
   // is positive. And that it's unsigned.
   SVal LengthVal = C.getSVal(Size.Expression);
   Optional<NonLoc> Length = LengthVal.getAs<NonLoc>();
-  if (!Length)
+  if (!Length) {
     return State;
+}
 
   // Compute the offset of the last element to be accessed: size-1.
   NonLoc One = svalBuilder.makeIntVal(1, SizeTy).castAs<NonLoc>();
   SVal Offset = svalBuilder.evalBinOpNN(State, BO_Sub, *Length, One, SizeTy);
-  if (Offset.isUnknown())
+  if (Offset.isUnknown()) {
     return nullptr;
+}
   NonLoc LastOffset = Offset.castAs<NonLoc>();
 
   // Check that the first buffer is sufficiently long.
@@ -423,8 +435,9 @@ ProgramStateRef CStringChecker::CheckBufferAccess(CheckerContext &C,
     State = CheckLocation(C, State, Buffer, BufEnd, Access);
 
     // If the buffer isn't large enough, abort.
-    if (!State)
+    if (!State) {
       return nullptr;
+}
   }
 
   // Large enough or not, return this state!
@@ -435,16 +448,18 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
                                              ProgramStateRef state,
                                              SizeArgExpr Size, AnyArgExpr First,
                                              AnyArgExpr Second) const {
-  if (!Filter.CheckCStringBufferOverlap)
+  if (!Filter.CheckCStringBufferOverlap) {
     return state;
+}
 
   // Do a simple check for overlap: if the two arguments are from the same
   // buffer, see if the end of the first is greater than the start of the second
   // or vice versa.
 
   // If a previous check has failed, propagate the failure.
-  if (!state)
+  if (!state) {
     return nullptr;
+}
 
   ProgramStateRef stateTrue, stateFalse;
 
@@ -454,12 +469,14 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
   SVal secondVal = state->getSVal(Second.Expression, LCtx);
 
   Optional<Loc> firstLoc = firstVal.getAs<Loc>();
-  if (!firstLoc)
+  if (!firstLoc) {
     return state;
+}
 
   Optional<Loc> secondLoc = secondVal.getAs<Loc>();
-  if (!secondLoc)
+  if (!secondLoc) {
     return state;
+}
 
   // Are the two values the same?
   SValBuilder &svalBuilder = C.getSValBuilder();
@@ -482,8 +499,9 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
       svalBuilder.evalBinOpLL(state, BO_GT, *firstLoc, *secondLoc, cmpTy);
   Optional<DefinedOrUnknownSVal> reverseTest =
       reverse.getAs<DefinedOrUnknownSVal>();
-  if (!reverseTest)
+  if (!reverseTest) {
     return state;
+}
 
   std::tie(stateTrue, stateFalse) = state->assume(*reverseTest);
   if (stateTrue) {
@@ -502,8 +520,9 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
   // Get the length, and make sure it too is known.
   SVal LengthVal = state->getSVal(Size.Expression, LCtx);
   Optional<NonLoc> Length = LengthVal.getAs<NonLoc>();
-  if (!Length)
+  if (!Length) {
     return state;
+}
 
   // Convert the first buffer's start address to char*.
   // Bail out if the cast fails.
@@ -512,23 +531,26 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
   SVal FirstStart =
       svalBuilder.evalCast(*firstLoc, CharPtrTy, First.Expression->getType());
   Optional<Loc> FirstStartLoc = FirstStart.getAs<Loc>();
-  if (!FirstStartLoc)
+  if (!FirstStartLoc) {
     return state;
+}
 
   // Compute the end of the first buffer. Bail out if THAT fails.
   SVal FirstEnd = svalBuilder.evalBinOpLN(state, BO_Add, *FirstStartLoc,
                                           *Length, CharPtrTy);
   Optional<Loc> FirstEndLoc = FirstEnd.getAs<Loc>();
-  if (!FirstEndLoc)
+  if (!FirstEndLoc) {
     return state;
+}
 
   // Is the end of the first buffer past the start of the second buffer?
   SVal Overlap =
       svalBuilder.evalBinOpLL(state, BO_GT, *FirstEndLoc, *secondLoc, cmpTy);
   Optional<DefinedOrUnknownSVal> OverlapTest =
       Overlap.getAs<DefinedOrUnknownSVal>();
-  if (!OverlapTest)
+  if (!OverlapTest) {
     return state;
+}
 
   std::tie(stateTrue, stateFalse) = state->assume(*OverlapTest);
 
@@ -546,12 +568,14 @@ ProgramStateRef CStringChecker::CheckOverlap(CheckerContext &C,
 void CStringChecker::emitOverlapBug(CheckerContext &C, ProgramStateRef state,
                                   const Stmt *First, const Stmt *Second) const {
   ExplodedNode *N = C.generateErrorNode(state);
-  if (!N)
+  if (!N) {
     return;
+}
 
-  if (!BT_Overlap)
+  if (!BT_Overlap) {
     BT_Overlap.reset(new BugType(Filter.CheckNameCStringBufferOverlap,
                                  categories::UnixAPI, "Improper arguments"));
+}
 
   // Generate a report for this bug.
   auto report = std::make_unique<PathSensitiveBugReport>(
@@ -565,16 +589,18 @@ void CStringChecker::emitOverlapBug(CheckerContext &C, ProgramStateRef state,
 void CStringChecker::emitNullArgBug(CheckerContext &C, ProgramStateRef State,
                                     const Stmt *S, StringRef WarningMsg) const {
   if (ExplodedNode *N = C.generateErrorNode(State)) {
-    if (!BT_Null)
+    if (!BT_Null) {
       BT_Null.reset(new BuiltinBug(
           Filter.CheckNameCStringNullArg, categories::UnixAPI,
           "Null pointer argument in call to byte string function"));
+}
 
     BuiltinBug *BT = static_cast<BuiltinBug *>(BT_Null.get());
     auto Report = std::make_unique<PathSensitiveBugReport>(*BT, WarningMsg, N);
     Report->addRange(S->getSourceRange());
-    if (const auto *Ex = dyn_cast<Expr>(S))
+    if (const auto *Ex = dyn_cast<Expr>(S)) {
       bugreporter::trackExpressionValue(N, Ex, *Report);
+}
     C.emitReport(std::move(Report));
   }
 }
@@ -583,12 +609,13 @@ void CStringChecker::emitOutOfBoundsBug(CheckerContext &C,
                                         ProgramStateRef State, const Stmt *S,
                                         StringRef WarningMsg) const {
   if (ExplodedNode *N = C.generateErrorNode(State)) {
-    if (!BT_Bounds)
+    if (!BT_Bounds) {
       BT_Bounds.reset(new BuiltinBug(
           Filter.CheckCStringOutOfBounds ? Filter.CheckNameCStringOutOfBounds
                                          : Filter.CheckNameCStringNullArg,
           "Out-of-bound array access",
           "Byte string function accesses out-of-bound array element"));
+}
 
     BuiltinBug *BT = static_cast<BuiltinBug *>(BT_Bounds.get());
 
@@ -605,10 +632,11 @@ void CStringChecker::emitNotCStringBug(CheckerContext &C, ProgramStateRef State,
                                        const Stmt *S,
                                        StringRef WarningMsg) const {
   if (ExplodedNode *N = C.generateNonFatalErrorNode(State)) {
-    if (!BT_NotCString)
+    if (!BT_NotCString) {
       BT_NotCString.reset(new BuiltinBug(
           Filter.CheckNameCStringNotNullTerm, categories::UnixAPI,
           "Argument is not a null-terminated string."));
+}
 
     auto Report =
         std::make_unique<PathSensitiveBugReport>(*BT_NotCString, WarningMsg, N);
@@ -621,10 +649,11 @@ void CStringChecker::emitNotCStringBug(CheckerContext &C, ProgramStateRef State,
 void CStringChecker::emitAdditionOverflowBug(CheckerContext &C,
                                              ProgramStateRef State) const {
   if (ExplodedNode *N = C.generateErrorNode(State)) {
-    if (!BT_NotCString)
+    if (!BT_NotCString) {
       BT_NotCString.reset(
           new BuiltinBug(Filter.CheckNameCStringOutOfBounds, "API",
                          "Sum of expressions causes overflow."));
+}
 
     // This isn't a great error message, but this should never occur in real
     // code anyway -- you'd have to create a buffer longer than a size_t can
@@ -644,12 +673,14 @@ ProgramStateRef CStringChecker::checkAdditionOverflow(CheckerContext &C,
                                                      NonLoc left,
                                                      NonLoc right) const {
   // If out-of-bounds checking is turned off, skip the rest.
-  if (!Filter.CheckCStringOutOfBounds)
+  if (!Filter.CheckCStringOutOfBounds) {
     return state;
+}
 
   // If a previous check has failed, propagate the failure.
-  if (!state)
+  if (!state) {
     return nullptr;
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
   BasicValueFactory &BVF = svalBuilder.getBasicValueFactory();
@@ -729,8 +760,9 @@ ProgramStateRef CStringChecker::setCStringLength(ProgramStateRef state,
     return state;
   }
 
-  if (strLength.isUnknown())
+  if (strLength.isUnknown()) {
     return state->remove<CStringLength>(MR);
+}
 
   return state->set<CStringLength>(MR, strLength);
 }
@@ -743,8 +775,9 @@ SVal CStringChecker::getCStringLengthForRegion(CheckerContext &C,
   if (!hypothetical) {
     // If there's a recorded length, go ahead and return it.
     const SVal *Recorded = state->get<CStringLength>(MR);
-    if (Recorded)
+    if (Recorded) {
       return *Recorded;
+}
   }
 
   // Otherwise, get a new symbol and update the state.
@@ -838,10 +871,11 @@ SVal CStringChecker::getCStringLength(CheckerContext &C, ProgramStateRef &state,
       assert(CurrentFunctionDescription);
       os << "Argument to " << CurrentFunctionDescription << " is ";
 
-      if (SummarizeRegion(os, C.getASTContext(), MR))
+      if (SummarizeRegion(os, C.getASTContext(), MR)) {
         os << ", which is not a null-terminated string";
-      else
+      } else {
         os << "not a null-terminated string";
+}
 
       emitNotCStringBug(C, state, Ex, os.str());
     }
@@ -854,16 +888,18 @@ const StringLiteral *CStringChecker::getCStringLiteral(CheckerContext &C,
 
   // Get the memory region pointed to by the val.
   const MemRegion *bufRegion = val.getAsRegion();
-  if (!bufRegion)
+  if (!bufRegion) {
     return nullptr;
+}
 
   // Strip casts off the memory region.
   bufRegion = bufRegion->StripCasts();
 
   // Cast the memory region to a string region.
   const StringRegion *strRegion= dyn_cast<StringRegion>(bufRegion);
-  if (!strRegion)
+  if (!strRegion) {
     return nullptr;
+}
 
   // Return the actual string in the string region.
   return strRegion->getStringLiteral();
@@ -888,33 +924,38 @@ bool CStringChecker::IsFirstBufInBound(CheckerContext &C,
 
   SVal LengthVal = state->getSVal(Size, LCtx);
   Optional<NonLoc> Length = LengthVal.getAs<NonLoc>();
-  if (!Length)
+  if (!Length) {
     return true; // cf top comment.
+}
 
   // Compute the offset of the last element to be accessed: size-1.
   NonLoc One = svalBuilder.makeIntVal(1, sizeTy).castAs<NonLoc>();
   SVal Offset = svalBuilder.evalBinOpNN(state, BO_Sub, *Length, One, sizeTy);
-  if (Offset.isUnknown())
+  if (Offset.isUnknown()) {
     return true; // cf top comment
+}
   NonLoc LastOffset = Offset.castAs<NonLoc>();
 
   // Check that the first buffer is sufficiently long.
   SVal BufStart = svalBuilder.evalCast(BufVal, PtrTy, FirstBuf->getType());
   Optional<Loc> BufLoc = BufStart.getAs<Loc>();
-  if (!BufLoc)
+  if (!BufLoc) {
     return true; // cf top comment.
+}
 
   SVal BufEnd =
       svalBuilder.evalBinOpLN(state, BO_Add, *BufLoc, LastOffset, PtrTy);
 
   // Check for out of bound array element access.
   const MemRegion *R = BufEnd.getAsRegion();
-  if (!R)
+  if (!R) {
     return true; // cf top comment.
+}
 
   const ElementRegion *ER = dyn_cast<ElementRegion>(R);
-  if (!ER)
+  if (!ER) {
     return true; // cf top comment.
+}
 
   // FIXME: Does this crash when a non-standard definition
   // of a library function is encountered?
@@ -939,8 +980,9 @@ ProgramStateRef CStringChecker::InvalidateBuffer(CheckerContext &C,
                                                  bool IsSourceBuffer,
                                                  const Expr *Size) {
   Optional<Loc> L = V.getAs<Loc>();
-  if (!L)
+  if (!L) {
     return state;
+}
 
   // FIXME: This is a simplified version of what's in CFRefCount.cpp -- it makes
   // some assumptions about the value that CFRefCount can't. Even so, it should
@@ -969,7 +1011,7 @@ ProgramStateRef CStringChecker::InvalidateBuffer(CheckerContext &C,
       CausesPointerEscape = true;
     } else {
       const MemRegion::Kind& K = R->getKind();
-      if (K == MemRegion::FieldRegionKind)
+      if (K == MemRegion::FieldRegionKind) {
         if (Size && IsFirstBufInBound(C, state, E, Size)) {
           // If destination buffer is a field region and access is in bound,
           // do not invalidate its super region.
@@ -977,6 +1019,7 @@ ProgramStateRef CStringChecker::InvalidateBuffer(CheckerContext &C,
               R,
               RegionAndSymbolInvalidationTraits::TK_DoNotInvalidateSuperRegion);
         }
+}
     }
 
     return state->invalidateRegions(R, E, C.blockCount(), LCtx,
@@ -994,10 +1037,11 @@ bool CStringChecker::SummarizeRegion(raw_ostream &os, ASTContext &Ctx,
                                      const MemRegion *MR) {
   switch (MR->getKind()) {
   case MemRegion::FunctionCodeRegionKind: {
-    if (const auto *FD = cast<FunctionCodeRegion>(MR)->getDecl())
+    if (const auto *FD = cast<FunctionCodeRegion>(MR)->getDecl()) {
       os << "the address of the function '" << *FD << '\'';
-    else
+    } else {
       os << "the address of a function";
+}
     return true;
   }
   case MemRegion::BlockCodeRegionKind:
@@ -1038,8 +1082,9 @@ bool CStringChecker::memsetAux(const Expr *DstBuffer, SVal CharVal,
   SVal MemVal = C.getSVal(DstBuffer);
   SVal SizeVal = C.getSVal(Size);
   const MemRegion *MR = MemVal.getAsRegion();
-  if (!MR)
+  if (!MR) {
     return false;
+}
 
   // We're about to model memset by producing a "default binding" in the Store.
   // Our current implementation - RegionStore - doesn't support default bindings
@@ -1049,8 +1094,9 @@ bool CStringChecker::memsetAux(const Expr *DstBuffer, SVal CharVal,
   const MemRegion *BR = Offset.getRegion();
 
   Optional<NonLoc> SizeNL = SizeVal.getAs<NonLoc>();
-  if (!SizeNL)
+  if (!SizeNL) {
     return false;
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
   ASTContext &Ctx = C.getASTContext();
@@ -1157,8 +1203,9 @@ void CStringChecker::evalCopyCommon(CheckerContext &C, const CallExpr *CE,
     // Ensure the destination is not null. If it is NULL there will be a
     // NULL pointer dereference.
     state = checkNonNull(C, state, Dest, destVal);
-    if (!state)
+    if (!state) {
       return;
+}
 
     // Get the value of the Src.
     SVal srcVal = state->getSVal(Source.Expression, LCtx);
@@ -1166,18 +1213,21 @@ void CStringChecker::evalCopyCommon(CheckerContext &C, const CallExpr *CE,
     // Ensure the source is not null. If it is NULL there will be a
     // NULL pointer dereference.
     state = checkNonNull(C, state, Source, srcVal);
-    if (!state)
+    if (!state) {
       return;
+}
 
     // Ensure the accesses are valid and that the buffers do not overlap.
     state = CheckBufferAccess(C, state, Dest, Size, AccessKind::write);
     state = CheckBufferAccess(C, state, Source, Size, AccessKind::read);
 
-    if (Restricted)
+    if (Restricted) {
       state = CheckOverlap(C, state, Size, Dest, Source);
+}
 
-    if (!state)
+    if (!state) {
       return;
+}
 
     // If this is mempcpy, get the byte after the last byte copied and
     // bind the expr.
@@ -1192,9 +1242,10 @@ void CStringChecker::evalCopyCommon(CheckerContext &C, const CallExpr *CE,
           state, BO_Add, DestRegCharVal, sizeVal, Dest.Expression->getType());
       // If we don't know how much we copied, we can at least
       // conjure a return value for later.
-      if (lastElement.isUnknown())
+      if (lastElement.isUnknown()) {
         lastElement = C.getSValBuilder().conjureSymbolVal(nullptr, CE, LCtx,
                                                           C.blockCount());
+}
 
       // The byte after the last byte copied is the return value.
       state = state->BindExpr(CE, LCtx, lastElement);
@@ -1379,8 +1430,9 @@ void CStringChecker::evalstrLengthCommon(CheckerContext &C, const CallExpr *CE,
     }
 
     // If the size is GUARANTEED to be zero, we're done!
-    if (!stateNonZeroSize)
+    if (!stateNonZeroSize) {
       return;
+}
 
     // Otherwise, record the assumption that the size is nonzero.
     state = stateNonZeroSize;
@@ -1391,15 +1443,17 @@ void CStringChecker::evalstrLengthCommon(CheckerContext &C, const CallExpr *CE,
   SVal ArgVal = state->getSVal(Arg.Expression, LCtx);
   state = checkNonNull(C, state, Arg, ArgVal);
 
-  if (!state)
+  if (!state) {
     return;
+}
 
   SVal strLength = getCStringLength(C, state, Arg.Expression, ArgVal);
 
   // If the argument isn't a valid C string, there's no valid state to
   // transition to.
-  if (strLength.isUndef())
+  if (strLength.isUndef()) {
     return;
+}
 
   DefinedOrUnknownSVal result = UnknownVal();
 
@@ -1538,10 +1592,11 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
                                       bool ReturnEnd, bool IsBounded,
                                       ConcatFnKind appendK,
                                       bool returnPtr) const {
-  if (appendK == ConcatFnKind::none)
+  if (appendK == ConcatFnKind::none) {
     CurrentFunctionDescription = "string copy function";
-  else
+  } else {
     CurrentFunctionDescription = "string concatenation function";
+}
 
   ProgramStateRef state = C.getState();
   const LocationContext *LCtx = C.getLocationContext();
@@ -1550,15 +1605,17 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
   DestinationArgExpr Dst = {CE->getArg(0), 0};
   SVal DstVal = state->getSVal(Dst.Expression, LCtx);
   state = checkNonNull(C, state, Dst, DstVal);
-  if (!state)
+  if (!state) {
     return;
+}
 
   // Check that the source is non-null.
   SourceArgExpr srcExpr = {CE->getArg(1), 1};
   SVal srcVal = state->getSVal(srcExpr.Expression, LCtx);
   state = checkNonNull(C, state, srcExpr, srcVal);
-  if (!state)
+  if (!state) {
     return;
+}
 
   // Get the string length of the source.
   SVal strLength = getCStringLength(C, state, srcExpr.Expression, srcVal);
@@ -1569,8 +1626,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
   Optional<NonLoc> dstStrLengthNL = dstStrLength.getAs<NonLoc>();
 
   // If the source isn't a valid C string, give up.
-  if (strLength.isUndef())
+  if (strLength.isUndef()) {
     return;
+}
 
   SValBuilder &svalBuilder = C.getSValBuilder();
   QualType cmpTy = svalBuilder.getConditionType();
@@ -1591,8 +1649,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
       (IsBounded ? SizeArgExpr{CE->getArg(2), 2} : SrcExprAsSizeDummy), Dst,
       srcExpr);
 
-  if (!state)
+  if (!state) {
     return;
+}
 
   // If the function is strncpy, strncat, etc... it is bounded.
   if (IsBounded) {
@@ -1635,14 +1694,16 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
         break;
       }
       case ConcatFnKind::strlcat:
-        if (!dstStrLengthNL)
+        if (!dstStrLengthNL) {
           return;
+}
 
         // amountCopied = min (size - dstLen - 1 , srcLen)
         SVal freeSpace = svalBuilder.evalBinOpNN(state, BO_Sub, *lenValNL,
                                                  *dstStrLengthNL, sizeTy);
-        if (!freeSpace.getAs<NonLoc>())
+        if (!freeSpace.getAs<NonLoc>()) {
           return;
+}
         freeSpace =
             svalBuilder.evalBinOp(state, BO_Sub, freeSpace,
                                   svalBuilder.makeIntVal(1, sizeTy), sizeTy);
@@ -1650,8 +1711,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
 
         // While unlikely, it is possible that the subtraction is
         // too complex to compute, let's check whether it succeeded.
-        if (!freeSpaceNL)
+        if (!freeSpaceNL) {
           return;
+}
         SVal hasEnoughSpace = svalBuilder.evalBinOpNN(
             state, BO_LE, *strLengthNL, *freeSpaceNL, cmpTy);
 
@@ -1669,8 +1731,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
           amountCopied = freeSpace;
         }
 
-        if (TrueState && FalseState)
+        if (TrueState && FalseState) {
           amountCopied = UnknownVal();
+}
         break;
       }
     }
@@ -1683,8 +1746,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
         // Get the string length of the destination. If the destination is
         // memory that can't have a string length, we shouldn't be copying
         // into it anyway.
-        if (dstStrLength.isUndef())
+        if (dstStrLength.isUndef()) {
           return;
+}
 
         if (dstStrLengthNL) {
           maxLastElementIndex = svalBuilder.evalBinOpNN(
@@ -1763,8 +1827,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
   if (appendK != ConcatFnKind::none) {
     // Get the string length of the destination. If the destination is memory
     // that can't have a string length, we shouldn't be copying into it anyway.
-    if (dstStrLength.isUndef())
+    if (dstStrLength.isUndef()) {
       return;
+}
 
     if (appendK == ConcatFnKind::strlcat && dstStrLengthNL && strLengthNL) {
       strlRetVal = svalBuilder.evalBinOpNN(state, BO_Add, *strLengthNL,
@@ -1777,8 +1842,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
     if (amountCopiedNL && dstStrLengthNL) {
       // Make sure the two lengths together don't overflow a size_t.
       state = checkAdditionOverflow(C, state, *amountCopiedNL, *dstStrLengthNL);
-      if (!state)
+      if (!state) {
         return;
+}
 
       finalStrLength = svalBuilder.evalBinOpNN(state, BO_Add, *amountCopiedNL,
                                                *dstStrLengthNL, sizeTy);
@@ -1800,8 +1866,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
               state, BO_GE, *finalStrLengthNL, *amountCopiedNL, cmpTy);
           state = state->assume(sourceInResult.castAs<DefinedOrUnknownSVal>(),
                                 true);
-          if (!state)
+          if (!state) {
             return;
+}
         }
 
         if (dstStrLengthNL && appendK != ConcatFnKind::none) {
@@ -1813,8 +1880,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
                                                       cmpTy);
           state =
               state->assume(destInResult.castAs<DefinedOrUnknownSVal>(), true);
-          if (!state)
+          if (!state) {
             return;
+}
         }
       }
     }
@@ -1832,11 +1900,12 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
     // copied element, or a pointer to the start of the destination buffer.
     Result = (ReturnEnd ? UnknownVal() : DstVal);
   } else {
-    if (appendK == ConcatFnKind::strlcat || appendK == ConcatFnKind::none)
+    if (appendK == ConcatFnKind::strlcat || appendK == ConcatFnKind::none) {
       //strlcpy, strlcat
       Result = strlRetVal;
-    else
+    } else {
       Result = finalStrLength;
+}
   }
 
   assert(state);
@@ -1854,8 +1923,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
           svalBuilder.evalBinOpLN(state, BO_Add, *dstRegVal, *maxLastNL, ptrTy);
 
       state = CheckLocation(C, state, Dst, maxLastElement, AccessKind::write);
-      if (!state)
+      if (!state) {
         return;
+}
     }
 
     // Then, if the final length is known...
@@ -1866,13 +1936,15 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
       // ...and we haven't checked the bound, we'll check the actual copy.
       if (!boundWarning) {
         state = CheckLocation(C, state, Dst, lastElement, AccessKind::write);
-        if (!state)
+        if (!state) {
           return;
+}
       }
 
       // If this is a stpcpy-style copy, the last element is the return value.
-      if (returnPtr && ReturnEnd)
+      if (returnPtr && ReturnEnd) {
         Result = lastElement;
+}
     }
 
     // Invalidate the destination (regular invalidation without pointer-escaping
@@ -1896,8 +1968,9 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallExpr *CE,
       // the result string. If the original string didn't fit entirely inside
       // the bound (including the null-terminator), we don't know how long the
       // result is.
-      if (amountCopied != strLength)
+      if (amountCopied != strLength) {
         finalStrLength = UnknownVal();
+}
     }
     state = setCStringLength(state, dstRegVal->getRegion(), finalStrLength);
   }
@@ -1948,25 +2021,29 @@ void CStringChecker::evalStrcmpCommon(CheckerContext &C, const CallExpr *CE,
   AnyArgExpr Left = {CE->getArg(0), 0};
   SVal LeftVal = state->getSVal(Left.Expression, LCtx);
   state = checkNonNull(C, state, Left, LeftVal);
-  if (!state)
+  if (!state) {
     return;
+}
 
   // Check that the second string is non-null.
   AnyArgExpr Right = {CE->getArg(1), 1};
   SVal RightVal = state->getSVal(Right.Expression, LCtx);
   state = checkNonNull(C, state, Right, RightVal);
-  if (!state)
+  if (!state) {
     return;
+}
 
   // Get the string length of the first string or give up.
   SVal LeftLength = getCStringLength(C, state, Left.Expression, LeftVal);
-  if (LeftLength.isUndef())
+  if (LeftLength.isUndef()) {
     return;
+}
 
   // Get the string length of the second string or give up.
   SVal RightLength = getCStringLength(C, state, Right.Expression, RightVal);
-  if (RightLength.isUndef())
+  if (RightLength.isUndef()) {
     return;
+}
 
   // If we know the two buffers are the same, we know the result is 0.
   // First, get the two buffers' addresses. Another checker will have already
@@ -1988,8 +2065,9 @@ void CStringChecker::evalStrcmpCommon(CheckerContext &C, const CallExpr *CE,
     C.addTransition(StSameBuf);
 
     // If the two arguments are GUARANTEED to be the same, we're done!
-    if (!StNotSameBuf)
+    if (!StNotSameBuf) {
       return;
+}
   }
 
   assert(StNotSameBuf);
@@ -2031,12 +2109,14 @@ void CStringChecker::evalStrcmpCommon(CheckerContext &C, const CallExpr *CE,
     if (canComputeResult) {
       // Real strcmp stops at null characters.
       size_t s1Term = LeftStrRef.find('\0');
-      if (s1Term != StringRef::npos)
+      if (s1Term != StringRef::npos) {
         LeftStrRef = LeftStrRef.substr(0, s1Term);
+}
 
       size_t s2Term = RightStrRef.find('\0');
-      if (s2Term != StringRef::npos)
+      if (s2Term != StringRef::npos) {
         RightStrRef = RightStrRef.substr(0, s2Term);
+}
 
       // Use StringRef's comparison methods to compute the actual result.
       int compareRes = IgnoreCase ? LeftStrRef.compare_lower(RightStrRef)
@@ -2074,8 +2154,9 @@ void CStringChecker::evalStrsep(CheckerContext &C, const CallExpr *CE) const {
 
   QualType CharPtrTy = SearchStrPtr.Expression->getType()->getPointeeType();
   if (CharPtrTy.isNull() ||
-      CE->getType().getUnqualifiedType() != CharPtrTy.getUnqualifiedType())
+      CE->getType().getUnqualifiedType() != CharPtrTy.getUnqualifiedType()) {
     return;
+}
 
   CurrentFunctionDescription = "strsep()";
   ProgramStateRef State = C.getState();
@@ -2085,15 +2166,17 @@ void CStringChecker::evalStrsep(CheckerContext &C, const CallExpr *CE) const {
   // a null string).
   SVal SearchStrVal = State->getSVal(SearchStrPtr.Expression, LCtx);
   State = checkNonNull(C, State, SearchStrPtr, SearchStrVal);
-  if (!State)
+  if (!State) {
     return;
+}
 
   // Check that the delimiter string is non-null.
   AnyArgExpr DelimStr = {CE->getArg(1), 1};
   SVal DelimStrVal = State->getSVal(DelimStr.Expression, LCtx);
   State = checkNonNull(C, State, DelimStr, DelimStrVal);
-  if (!State)
+  if (!State) {
     return;
+}
 
   SValBuilder &SVB = C.getSValBuilder();
   SVal Result;
@@ -2138,8 +2221,9 @@ void CStringChecker::evalStdCopyBackward(CheckerContext &C,
 
 void CStringChecker::evalStdCopyCommon(CheckerContext &C,
     const CallExpr *CE) const {
-  if (!CE->getArg(2)->getType()->isPointerType())
+  if (!CE->getArg(2)->getType()->isPointerType()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
 
@@ -2196,19 +2280,22 @@ void CStringChecker::evalMemset(CheckerContext &C, const CallExpr *CE) const {
   // Ensure the memory area is not null.
   // If it is NULL there will be a NULL pointer dereference.
   State = checkNonNull(C, NonZeroSize, Buffer, BufferPtrVal);
-  if (!State)
+  if (!State) {
     return;
+}
 
   State = CheckBufferAccess(C, State, Buffer, Size, AccessKind::write);
-  if (!State)
+  if (!State) {
     return;
+}
 
   // According to the values of the arguments, bind the value of the second
   // argument to the destination buffer and set string length, or just
   // invalidate the destination buffer.
   if (!memsetAux(Buffer.Expression, C.getSVal(CharE.Expression),
-                 Size.Expression, C, State))
+                 Size.Expression, C, State)) {
     return;
+}
 
   State = State->BindExpr(CE, LCtx, BufferPtrVal);
   C.addTransition(State);
@@ -2244,15 +2331,18 @@ void CStringChecker::evalBzero(CheckerContext &C, const CallExpr *CE) const {
   // Ensure the memory area is not null.
   // If it is NULL there will be a NULL pointer dereference.
   State = checkNonNull(C, StateNonZeroSize, Buffer, MemVal);
-  if (!State)
+  if (!State) {
     return;
+}
 
   State = CheckBufferAccess(C, State, Buffer, Size, AccessKind::write);
-  if (!State)
+  if (!State) {
     return;
+}
 
-  if (!memsetAux(Buffer.Expression, Zero, Size.Expression, C, State))
+  if (!memsetAux(Buffer.Expression, Zero, Size.Expression, C, State)) {
     return;
+}
 
   C.addTransition(State);
 }
@@ -2264,12 +2354,14 @@ void CStringChecker::evalBzero(CheckerContext &C, const CallExpr *CE) const {
 CStringChecker::FnCheck CStringChecker::identifyCall(const CallEvent &Call,
                                                      CheckerContext &C) const {
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return nullptr;
+}
 
   const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return nullptr;
+}
 
   if (Call.isCalled(StdCopy)) {
     return &CStringChecker::evalStdCopy;
@@ -2283,13 +2375,15 @@ CStringChecker::FnCheck CStringChecker::identifyCall(const CallEvent &Call,
   // that for std::copy because they may have arguments of other types.
   for (auto I : CE->arguments()) {
     QualType T = I->getType();
-    if (!T->isIntegralOrEnumerationType() && !T->isPointerType())
+    if (!T->isIntegralOrEnumerationType() && !T->isPointerType()) {
       return nullptr;
+}
   }
 
   const FnCheck *Callback = Callbacks.lookup(Call);
-  if (Callback)
+  if (Callback) {
     return *Callback;
+}
 
   return nullptr;
 }
@@ -2298,8 +2392,9 @@ bool CStringChecker::evalCall(const CallEvent &Call, CheckerContext &C) const {
   FnCheck Callback = identifyCall(Call, C);
 
   // If the callee isn't a string function, let another checker handle it.
-  if (!Callback)
+  if (!Callback) {
     return false;
+}
 
   // Check and evaluate the call.
   const auto *CE = cast<CallExpr>(Call.getOriginExpr());
@@ -2320,23 +2415,28 @@ void CStringChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
 
   for (const auto *I : DS->decls()) {
     const VarDecl *D = dyn_cast<VarDecl>(I);
-    if (!D)
+    if (!D) {
       continue;
+}
 
     // FIXME: Handle array fields of structs.
-    if (!D->getType()->isArrayType())
+    if (!D->getType()->isArrayType()) {
       continue;
+}
 
     const Expr *Init = D->getInit();
-    if (!Init)
+    if (!Init) {
       continue;
-    if (!isa<StringLiteral>(Init))
+}
+    if (!isa<StringLiteral>(Init)) {
       continue;
+}
 
     Loc VarLoc = state->getLValue(D, C.getLocationContext());
     const MemRegion *MR = VarLoc.getAsRegion();
-    if (!MR)
+    if (!MR) {
       continue;
+}
 
     SVal StrVal = C.getSVal(Init);
     assert(StrVal.isValid() && "Initializer string is unknown or undefined");
@@ -2357,8 +2457,9 @@ CStringChecker::checkRegionChanges(ProgramStateRef state,
     const LocationContext *LCtx,
     const CallEvent *Call) const {
   CStringLengthTy Entries = state->get<CStringLength>();
-  if (Entries.isEmpty())
+  if (Entries.isEmpty()) {
     return state;
+}
 
   llvm::SmallPtrSet<const MemRegion *, 8> Invalidated;
   llvm::SmallPtrSet<const MemRegion *, 32> SuperRegions;
@@ -2413,8 +2514,9 @@ void CStringChecker::checkLiveSymbols(ProgramStateRef state,
     SVal Len = I.getData();
 
     for (SymExpr::symbol_iterator si = Len.symbol_begin(),
-        se = Len.symbol_end(); si != se; ++si)
+        se = Len.symbol_end(); si != se; ++si) {
       SR.markInUse(*si);
+}
   }
 }
 
@@ -2422,16 +2524,18 @@ void CStringChecker::checkDeadSymbols(SymbolReaper &SR,
     CheckerContext &C) const {
   ProgramStateRef state = C.getState();
   CStringLengthTy Entries = state->get<CStringLength>();
-  if (Entries.isEmpty())
+  if (Entries.isEmpty()) {
     return;
+}
 
   CStringLengthTy::Factory &F = state->get_context<CStringLength>();
   for (CStringLengthTy::iterator I = Entries.begin(), E = Entries.end();
       I != E; ++I) {
     SVal Len = I.getData();
     if (SymbolRef Sym = Len.getAsSymbol()) {
-      if (SR.isDead(Sym))
+      if (SR.isDead(Sym)) {
         Entries = F.remove(Entries, I.getKey());
+}
     }
   }
 

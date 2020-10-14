@@ -134,17 +134,20 @@ public:
 class ClangCheckActionFactory {
 public:
   std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
-    if (ASTList)
+    if (ASTList) {
       return clang::CreateASTDeclNodeLister();
-    if (ASTDump)
+}
+    if (ASTDump) {
       return clang::CreateASTDumper(nullptr /*Dump to stdout.*/, ASTDumpFilter,
                                     /*DumpDecls=*/true,
                                     /*Deserialize=*/false,
                                     /*DumpLookups=*/false,
                                     /*DumpDeclTypes=*/false,
                                     clang::ADOF_Default);
-    if (ASTPrint)
+}
+    if (ASTPrint) {
       return clang::CreateASTPrinter(nullptr, ASTDumpFilter);
+}
     return std::make_unique<clang::ASTConsumer>();
   }
 };
@@ -178,12 +181,13 @@ int main(int argc, const char **argv) {
   std::unique_ptr<FrontendActionFactory> FrontendFactory;
 
   // Choose the correct factory based on the selected mode.
-  if (Analyze)
+  if (Analyze) {
     FrontendFactory = newFrontendActionFactory<clang::ento::AnalysisAction>();
-  else if (Fixit)
+  } else if (Fixit) {
     FrontendFactory = newFrontendActionFactory<ClangCheckFixItAction>();
-  else
+  } else {
     FrontendFactory = newFrontendActionFactory(&CheckFactory);
+}
 
   return Tool.run(FrontendFactory.get());
 }

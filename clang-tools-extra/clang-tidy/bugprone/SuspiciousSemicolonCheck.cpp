@@ -30,14 +30,16 @@ void SuspiciousSemicolonCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void SuspiciousSemicolonCheck::check(const MatchFinder::MatchResult &Result) {
-  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred())
+  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred()) {
     return;
+}
 
   const auto *Semicolon = Result.Nodes.getNodeAs<NullStmt>("semi");
   SourceLocation LocStart = Semicolon->getBeginLoc();
 
-  if (LocStart.isMacroID())
+  if (LocStart.isMacroID()) {
     return;
+}
 
   ASTContext &Ctxt = *Result.Context;
   auto Token = utils::lexer::getPreviousToken(LocStart, Ctxt.getSourceManager(),
@@ -49,8 +51,9 @@ void SuspiciousSemicolonCheck::check(const MatchFinder::MatchResult &Result) {
   const bool IsIfStmt = isa<IfStmt>(Statement);
 
   if (!IsIfStmt &&
-      SM.getSpellingLineNumber(Token.getLocation()) != SemicolonLine)
+      SM.getSpellingLineNumber(Token.getLocation()) != SemicolonLine) {
     return;
+}
 
   SourceLocation LocEnd = Semicolon->getEndLoc();
   FileID FID = SM.getFileID(LocEnd);
@@ -58,16 +61,18 @@ void SuspiciousSemicolonCheck::check(const MatchFinder::MatchResult &Result) {
   Lexer Lexer(SM.getLocForStartOfFile(FID), Ctxt.getLangOpts(),
               Buffer->getBufferStart(), SM.getCharacterData(LocEnd) + 1,
               Buffer->getBufferEnd());
-  if (Lexer.LexFromRawLexer(Token))
+  if (Lexer.LexFromRawLexer(Token)) {
     return;
+}
 
   unsigned BaseIndent = SM.getSpellingColumnNumber(Statement->getBeginLoc());
   unsigned NewTokenIndent = SM.getSpellingColumnNumber(Token.getLocation());
   unsigned NewTokenLine = SM.getSpellingLineNumber(Token.getLocation());
 
   if (!IsIfStmt && NewTokenIndent <= BaseIndent &&
-      Token.getKind() != tok::l_brace && NewTokenLine != SemicolonLine)
+      Token.getKind() != tok::l_brace && NewTokenLine != SemicolonLine) {
     return;
+}
 
   diag(LocStart, "potentially unintended semicolon")
       << FixItHint::CreateRemoval(SourceRange(LocStart, LocEnd));

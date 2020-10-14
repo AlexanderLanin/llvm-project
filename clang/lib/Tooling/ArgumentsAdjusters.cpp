@@ -46,23 +46,27 @@ ArgumentsAdjuster getClangSyntaxOnlyAdjuster() {
       // Skip output commands.
       if (llvm::any_of(OutputCommands, [&Arg](llvm::StringRef OutputCommand) {
             return Arg.startswith(OutputCommand);
-          }))
+          })) {
         continue;
+}
 
       if (!Arg.startswith("-fcolor-diagnostics") &&
-          !Arg.startswith("-fdiagnostics-color"))
+          !Arg.startswith("-fdiagnostics-color")) {
         AdjustedArgs.push_back(Args[i]);
       // If we strip a color option, make sure we strip any preceeding `-Xclang`
       // option as well.
       // FIXME: This should be added to most argument adjusters!
-      else if (!AdjustedArgs.empty() && AdjustedArgs.back() == "-Xclang")
+      } else if (!AdjustedArgs.empty() && AdjustedArgs.back() == "-Xclang") {
         AdjustedArgs.pop_back();
+}
 
-      if (Arg == "-fsyntax-only")
+      if (Arg == "-fsyntax-only") {
         HasSyntaxOnly = true;
+}
     }
-    if (!HasSyntaxOnly)
+    if (!HasSyntaxOnly) {
       AdjustedArgs.push_back("-fsyntax-only");
+}
     return AdjustedArgs;
   };
 }
@@ -72,8 +76,9 @@ ArgumentsAdjuster getClangStripOutputAdjuster() {
     CommandLineArguments AdjustedArgs;
     for (size_t i = 0, e = Args.size(); i < e; ++i) {
       StringRef Arg = Args[i];
-      if (!Arg.startswith("-o"))
+      if (!Arg.startswith("-o")) {
         AdjustedArgs.push_back(Args[i]);
+}
 
       if (Arg == "-o") {
         // Output is specified as -o foo. Skip the next argument too.
@@ -117,12 +122,14 @@ ArgumentsAdjuster getClangStripDependencyFileAdjuster() {
       // When not using the cl driver mode, dependency file generation options
       // begin with -M. These include -MM, -MF, -MG, -MP, -MT, -MQ, -MD, and
       // -MMD.
-      if (!UsingClDriver && Arg.startswith("-M"))
+      if (!UsingClDriver && Arg.startswith("-M")) {
         continue;
+}
       // Under MSVC's cl driver mode, dependency file generation is controlled
       // using /showIncludes
-      if (Arg.startswith("/showIncludes") || Arg.startswith("-showIncludes"))
+      if (Arg.startswith("/showIncludes") || Arg.startswith("-showIncludes")) {
         continue;
+}
 
       AdjustedArgs.push_back(Args[i]);
     }
@@ -155,10 +162,12 @@ ArgumentsAdjuster getInsertArgumentAdjuster(const char *Extra,
 
 ArgumentsAdjuster combineAdjusters(ArgumentsAdjuster First,
                                    ArgumentsAdjuster Second) {
-  if (!First)
+  if (!First) {
     return Second;
-  if (!Second)
+}
+  if (!Second) {
     return First;
+}
   return [First, Second](const CommandLineArguments &Args, StringRef File) {
     return Second(First(Args, File), File);
   };

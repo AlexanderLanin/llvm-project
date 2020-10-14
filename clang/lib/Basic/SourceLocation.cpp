@@ -158,8 +158,9 @@ FullSourceLoc FullSourceLoc::getFileLoc() const {
 }
 
 PresumedLoc FullSourceLoc::getPresumedLoc(bool UseLineDirectives) const {
-  if (!isValid())
+  if (!isValid()) {
     return PresumedLoc();
+}
 
   return SrcMgr->getPresumedLoc(*this, UseLineDirectives);
 }
@@ -175,8 +176,9 @@ FullSourceLoc FullSourceLoc::getImmediateMacroCallerLoc() const {
 }
 
 std::pair<FullSourceLoc, StringRef> FullSourceLoc::getModuleImportLoc() const {
-  if (!isValid())
+  if (!isValid()) {
     return std::make_pair(FullSourceLoc(), StringRef());
+}
 
   std::pair<SourceLocation, StringRef> ImportLoc =
       SrcMgr->getModuleImportLoc(*this);

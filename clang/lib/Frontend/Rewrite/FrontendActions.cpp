@@ -40,8 +40,9 @@ using namespace clang;
 std::unique_ptr<ASTConsumer>
 HTMLPrintAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
   if (std::unique_ptr<raw_ostream> OS =
-          CI.createDefaultOutputFile(false, InFile))
+          CI.createDefaultOutputFile(false, InFile)) {
     return CreateHTMLPrinter(std::move(OS), CI.getPreprocessor());
+}
   return nullptr;
 }
 
@@ -121,10 +122,11 @@ bool FixItRecompile::BeginInvocation(CompilerInstance &CI) {
     std::unique_ptr<FrontendAction> FixAction(new SyntaxOnlyAction());
     if (FixAction->BeginSourceFile(CI, FEOpts.Inputs[0])) {
       std::unique_ptr<FixItOptions> FixItOpts;
-      if (FEOpts.FixToTemporaries)
+      if (FEOpts.FixToTemporaries) {
         FixItOpts.reset(new FixItRewriteToTemp());
-      else
+      } else {
         FixItOpts.reset(new FixItRewriteInPlace());
+}
       FixItOpts->Silent = true;
       FixItOpts->FixWhatYouCan = FEOpts.FixWhatYouCan;
       FixItOpts->FixOnlyWarnings = FEOpts.FixOnlyWarnings;
@@ -145,8 +147,9 @@ bool FixItRecompile::BeginInvocation(CompilerInstance &CI) {
       err = true;
     }
   }
-  if (err)
+  if (err) {
     return false;
+}
   CI.getDiagnosticClient().clear();
   CI.getDiagnostics().Reset();
 
@@ -164,11 +167,12 @@ std::unique_ptr<ASTConsumer>
 RewriteObjCAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
   if (std::unique_ptr<raw_ostream> OS =
           CI.createDefaultOutputFile(false, InFile, "cpp")) {
-    if (CI.getLangOpts().ObjCRuntime.isNonFragile())
+    if (CI.getLangOpts().ObjCRuntime.isNonFragile()) {
       return CreateModernObjCRewriter(
           std::string(InFile), std::move(OS), CI.getDiagnostics(),
           CI.getLangOpts(), CI.getDiagnosticOpts().NoRewriteMacros,
           (CI.getCodeGenOpts().getDebugInfo() != codegenoptions::NoDebugInfo));
+}
     return CreateObjCRewriter(std::string(InFile), std::move(OS),
                               CI.getDiagnostics(), CI.getLangOpts(),
                               CI.getDiagnosticOpts().NoRewriteMacros);
@@ -186,7 +190,8 @@ void RewriteMacrosAction::ExecuteAction() {
   CompilerInstance &CI = getCompilerInstance();
   std::unique_ptr<raw_ostream> OS =
       CI.createDefaultOutputFile(true, getCurrentFileOrBufferName());
-  if (!OS) return;
+  if (!OS) { return;
+}
 
   RewriteMacrosInInput(CI.getPreprocessor(), OS.get());
 }
@@ -195,7 +200,8 @@ void RewriteTestAction::ExecuteAction() {
   CompilerInstance &CI = getCompilerInstance();
   std::unique_ptr<raw_ostream> OS =
       CI.createDefaultOutputFile(false, getCurrentFileOrBufferName());
-  if (!OS) return;
+  if (!OS) { return;
+}
 
   DoRewriteTest(CI.getPreprocessor(), OS.get());
 }
@@ -216,24 +222,26 @@ public:
     assert(File && "missing file for loaded module?");
 
     // Only rewrite each module file once.
-    if (!Rewritten.insert(*File).second)
+    if (!Rewritten.insert(*File).second) {
       return;
+}
 
     serialization::ModuleFile *MF =
         CI.getASTReader()->getModuleManager().lookup(*File);
     assert(MF && "missing module file for loaded module?");
 
     // Not interested in PCH / preambles.
-    if (!MF->isModule())
+    if (!MF->isModule()) {
       return;
+}
 
     auto OS = Out.lock();
     assert(OS && "loaded module file after finishing rewrite action?");
 
     (*OS) << "#pragma clang module build ";
-    if (isValidIdentifier(MF->ModuleName))
+    if (isValidIdentifier(MF->ModuleName)) {
       (*OS) << MF->ModuleName;
-    else {
+    } else {
       (*OS) << '"';
       OS->write_escaped(MF->ModuleName);
       (*OS) << '"';
@@ -271,8 +279,9 @@ bool RewriteIncludesAction::BeginSourceFileAction(CompilerInstance &CI) {
   if (!OutputStream) {
     OutputStream =
         CI.createDefaultOutputFile(true, getCurrentFileOrBufferName());
-    if (!OutputStream)
+    if (!OutputStream) {
       return false;
+}
   }
 
   auto &OS = *OutputStream;

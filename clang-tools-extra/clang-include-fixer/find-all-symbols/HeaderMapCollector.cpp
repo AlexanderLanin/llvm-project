@@ -25,8 +25,9 @@ HeaderMapCollector::HeaderMapCollector(
 llvm::StringRef
 HeaderMapCollector::getMappedHeader(llvm::StringRef Header) const {
   auto Iter = HeaderMappingTable.find(Header);
-  if (Iter != HeaderMappingTable.end())
+  if (Iter != HeaderMappingTable.end()) {
     return Iter->second;
+}
   // If there is no complete header name mapping for this header, check the
   // regex header mapping.
   for (auto &Entry : RegexHeaderMappingTable) {
@@ -34,8 +35,9 @@ HeaderMapCollector::getMappedHeader(llvm::StringRef Header) const {
     std::string Dummy;
     assert(Entry.first.isValid(Dummy) && "Regex should never be invalid!");
 #endif
-    if (Entry.first.match(Header))
+    if (Entry.first.match(Header)) {
       return Entry.second;
+}
   }
   return Header;
 }

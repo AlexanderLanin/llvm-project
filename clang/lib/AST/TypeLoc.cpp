@@ -51,7 +51,8 @@ public:
 } // namespace
 
 SourceRange TypeLoc::getLocalSourceRangeImpl(TypeLoc TL) {
-  if (TL.isNull()) return SourceRange();
+  if (TL.isNull()) { return SourceRange();
+}
   return TypeLocRanger().Visit(TL);
 }
 
@@ -71,7 +72,8 @@ public:
 
 /// Returns the alignment of the type source info data block.
 unsigned TypeLoc::getLocalAlignmentForType(QualType Ty) {
-  if (Ty.isNull()) return 1;
+  if (Ty.isNull()) { return 1;
+}
   return TypeAligner().Visit(TypeLoc(Ty, nullptr));
 }
 
@@ -213,11 +215,13 @@ SourceLocation TypeLoc::getBeginLoc() const {
       Cur = Cur.getNextTypeLoc();
       continue;
     default:
-      if (Cur.getLocalSourceRange().getBegin().isValid())
+      if (Cur.getLocalSourceRange().getBegin().isValid()) {
         LeftMost = Cur;
+}
       Cur = Cur.getNextTypeLoc();
-      if (Cur.isNull())
+      if (Cur.isNull()) {
         break;
+}
       continue;
     } // switch
     break;
@@ -231,8 +235,9 @@ SourceLocation TypeLoc::getEndLoc() const {
   while (true) {
     switch (Cur.getTypeLocClass()) {
     default:
-      if (!Last)
+      if (!Last) {
         Last = Cur;
+}
       return Last.getLocalSourceRange().getEnd();
     case Paren:
     case ConstantArray:
@@ -243,10 +248,11 @@ SourceLocation TypeLoc::getEndLoc() const {
       Last = Cur;
       break;
     case FunctionProto:
-      if (Cur.castAs<FunctionProtoTypeLoc>().getTypePtr()->hasTrailingReturn())
+      if (Cur.castAs<FunctionProtoTypeLoc>().getTypePtr()->hasTrailingReturn()) {
         Last = TypeLoc();
-      else
+      } else {
         Last = Cur;
+}
       break;
     case Pointer:
     case BlockPointer:
@@ -254,8 +260,9 @@ SourceLocation TypeLoc::getEndLoc() const {
     case LValueReference:
     case RValueReference:
     case PackExpansion:
-      if (!Last)
+      if (!Last) {
         Last = Cur;
+}
       break;
     case Qualified:
     case Elaborated:
@@ -291,7 +298,8 @@ struct TSTChecker : public TypeLocVisitor<TSTChecker, bool> {
 /// those here, but ideally we would have better implementations for
 /// them.
 bool TypeSpecTypeLoc::isKind(const TypeLoc &TL) {
-  if (TL.getType().hasLocalQualifiers()) return false;
+  if (TL.getType().hasLocalQualifiers()) { return false;
+}
   return TSTChecker().Visit(TL);
 }
 
@@ -305,17 +313,19 @@ bool TagTypeLoc::isDefinition() const {
 //     typeof unary-expression
 // where there are no parentheses.
 SourceRange TypeOfExprTypeLoc::getLocalSourceRange() const {
-  if (getRParenLoc().isValid())
+  if (getRParenLoc().isValid()) {
     return SourceRange(getTypeofLoc(), getRParenLoc());
-  else
+  } else {
     return SourceRange(getTypeofLoc(),
                        getUnderlyingExpr()->getSourceRange().getEnd());
+}
 }
 
 
 TypeSpecifierType BuiltinTypeLoc::getWrittenTypeSpec() const {
-  if (needsExtraLocalData())
+  if (needsExtraLocalData()) {
     return static_cast<TypeSpecifierType>(getWrittenBuiltinSpecs().Type);
+}
   switch (getTypePtr()->getKind()) {
   case BuiltinType::Void:
     return TST_void;
@@ -415,8 +425,9 @@ TypeSpecifierType BuiltinTypeLoc::getWrittenTypeSpec() const {
 }
 
 TypeLoc TypeLoc::IgnoreParensImpl(TypeLoc TL) {
-  while (ParenTypeLoc PTL = TL.getAs<ParenTypeLoc>())
+  while (ParenTypeLoc PTL = TL.getAs<ParenTypeLoc>()) {
     TL = PTL.getInnerLoc();
+}
   return TL;
 }
 
@@ -424,8 +435,9 @@ SourceLocation TypeLoc::findNullabilityLoc() const {
   if (auto ATL = getAs<AttributedTypeLoc>()) {
     const Attr *A = ATL.getAttr();
     if (A && (isa<TypeNullableAttr>(A) || isa<TypeNonNullAttr>(A) ||
-              isa<TypeNullUnspecifiedAttr>(A)))
+              isa<TypeNullUnspecifiedAttr>(A))) {
       return A->getLocation();
+}
   }
 
   return {};
@@ -433,14 +445,16 @@ SourceLocation TypeLoc::findNullabilityLoc() const {
 
 TypeLoc TypeLoc::findExplicitQualifierLoc() const {
   // Qualified types.
-  if (auto qual = getAs<QualifiedTypeLoc>())
+  if (auto qual = getAs<QualifiedTypeLoc>()) {
     return qual;
+}
 
   TypeLoc loc = IgnoreParens();
 
   // Attributed types.
   if (auto attr = loc.getAs<AttributedTypeLoc>()) {
-    if (attr.isQualifier()) return attr;
+    if (attr.isQualifier()) { return attr;
+}
     return attr.getModifiedLoc().findExplicitQualifierLoc();
   }
 
@@ -455,12 +469,14 @@ TypeLoc TypeLoc::findExplicitQualifierLoc() const {
 void ObjCTypeParamTypeLoc::initializeLocal(ASTContext &Context,
                                            SourceLocation Loc) {
   setNameLoc(Loc);
-  if (!getNumProtocols()) return;
+  if (!getNumProtocols()) { return;
+}
 
   setProtocolLAngleLoc(Loc);
   setProtocolRAngleLoc(Loc);
-  for (unsigned i = 0, e = getNumProtocols(); i != e; ++i)
+  for (unsigned i = 0, e = getNumProtocols(); i != e; ++i) {
     setProtocolLoc(i, Loc);
+}
 }
 
 void ObjCObjectTypeLoc::initializeLocal(ASTContext &Context,
@@ -475,8 +491,9 @@ void ObjCObjectTypeLoc::initializeLocal(ASTContext &Context,
   }
   setProtocolLAngleLoc(Loc);
   setProtocolRAngleLoc(Loc);
-  for (unsigned i = 0, e = getNumProtocols(); i != e; ++i)
+  for (unsigned i = 0, e = getNumProtocols(); i != e; ++i) {
     setProtocolLoc(i, Loc);
+}
 }
 
 SourceRange AttributedTypeLoc::getLocalSourceRange() const {
@@ -576,10 +593,11 @@ void TemplateSpecializationTypeLoc::initializeArgLocs(ASTContext &Context,
     case TemplateArgument::TemplateExpansion: {
       NestedNameSpecifierLocBuilder Builder;
       TemplateName Template = Args[i].getAsTemplateOrTemplatePattern();
-      if (DependentTemplateName *DTN = Template.getAsDependentTemplateName())
+      if (DependentTemplateName *DTN = Template.getAsDependentTemplateName()) {
         Builder.MakeTrivial(Context, DTN->getQualifier(), Loc);
-      else if (QualifiedTemplateName *QTN = Template.getAsQualifiedTemplateName())
+      } else if (QualifiedTemplateName *QTN = Template.getAsQualifiedTemplateName()) {
         Builder.MakeTrivial(Context, QTN->getQualifier(), Loc);
+}
 
       ArgInfos[i] = TemplateArgumentLocInfo(
           Context, Builder.getWithLocInContext(Context), Loc,
@@ -684,7 +702,8 @@ namespace {
 
 AutoTypeLoc TypeLoc::getContainedAutoTypeLoc() const {
   TypeLoc Res = GetContainedAutoTypeLocVisitor().Visit(*this);
-  if (Res.isNull())
+  if (Res.isNull()) {
     return AutoTypeLoc();
+}
   return Res.getAs<AutoTypeLoc>();
 }

@@ -62,38 +62,46 @@ void DeleteWithNonVirtualDtorChecker::checkPreStmt(const CXXDeleteExpr *DE,
                                                    CheckerContext &C) const {
   const Expr *DeletedObj = DE->getArgument();
   const MemRegion *MR = C.getSVal(DeletedObj).getAsRegion();
-  if (!MR)
+  if (!MR) {
     return;
+}
 
   const auto *BaseClassRegion = MR->getAs<TypedValueRegion>();
   const auto *DerivedClassRegion = MR->getBaseRegion()->getAs<SymbolicRegion>();
-  if (!BaseClassRegion || !DerivedClassRegion)
+  if (!BaseClassRegion || !DerivedClassRegion) {
     return;
+}
 
   const auto *BaseClass = BaseClassRegion->getValueType()->getAsCXXRecordDecl();
   const auto *DerivedClass =
       DerivedClassRegion->getSymbol()->getType()->getPointeeCXXRecordDecl();
-  if (!BaseClass || !DerivedClass)
+  if (!BaseClass || !DerivedClass) {
     return;
+}
 
-  if (!BaseClass->hasDefinition() || !DerivedClass->hasDefinition())
+  if (!BaseClass->hasDefinition() || !DerivedClass->hasDefinition()) {
     return;
+}
 
-  if (BaseClass->getDestructor()->isVirtual())
+  if (BaseClass->getDestructor()->isVirtual()) {
     return;
+}
 
-  if (!DerivedClass->isDerivedFrom(BaseClass))
+  if (!DerivedClass->isDerivedFrom(BaseClass)) {
     return;
+}
 
-  if (!BT)
+  if (!BT) {
     BT.reset(new BugType(this,
                          "Destruction of a polymorphic object with no "
                          "virtual destructor",
                          "Logic error"));
+}
 
   ExplodedNode *N = C.generateNonFatalErrorNode();
-  if (!N)
+  if (!N) {
     return;
+}
   auto R = std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);
 
   // Mark region of problematic base class for later use in the BugVisitor.
@@ -107,32 +115,38 @@ DeleteWithNonVirtualDtorChecker::DeleteBugVisitor::VisitNode(
     const ExplodedNode *N, BugReporterContext &BRC,
     PathSensitiveBugReport &BR) {
   // Stop traversal after the first conversion was found on a path.
-  if (Satisfied)
+  if (Satisfied) {
     return nullptr;
+}
 
   const Stmt *S = N->getStmtForDiagnostics();
-  if (!S)
+  if (!S) {
     return nullptr;
+}
 
   const auto *CastE = dyn_cast<CastExpr>(S);
-  if (!CastE)
+  if (!CastE) {
     return nullptr;
+}
 
   // Only interested in DerivedToBase implicit casts.
   // Explicit casts can have different CastKinds.
   if (const auto *ImplCastE = dyn_cast<ImplicitCastExpr>(CastE)) {
-    if (ImplCastE->getCastKind() != CK_DerivedToBase)
+    if (ImplCastE->getCastKind() != CK_DerivedToBase) {
       return nullptr;
+}
   }
 
   // Region associated with the current cast expression.
   const MemRegion *M = N->getSVal(CastE).getAsRegion();
-  if (!M)
+  if (!M) {
     return nullptr;
+}
 
   // Check if target region was marked as problematic previously.
-  if (!BR.isInteresting(M))
+  if (!BR.isInteresting(M)) {
     return nullptr;
+}
 
   // Stop traversal on this path.
   Satisfied = true;

@@ -59,8 +59,9 @@ bool IndexingContext::handleDecl(const Decl *D, SourceLocation Loc,
                                  SymbolRoleSet Roles,
                                  ArrayRef<SymbolRelation> Relations,
                                  const DeclContext *DC) {
-  if (!DC)
+  if (!DC) {
     DC = D->getDeclContext();
+}
 
   const Decl *OrigD = D;
   if (isa<ObjCPropertyImplDecl>(D)) {
@@ -78,8 +79,9 @@ bool IndexingContext::handleReference(const NamedDecl *D, SourceLocation Loc,
                                       ArrayRef<SymbolRelation> Relations,
                                       const Expr *RefE,
                                       const Decl *RefD) {
-  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalSymbol(D))
+  if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalSymbol(D)) {
     return true;
+}
 
   if (!shouldIndexTemplateParameters() &&
       (isa<NonTypeTemplateParmDecl>(D) || isa<TemplateTypeParmDecl>(D) ||
@@ -95,8 +97,9 @@ static void reportModuleReferences(const Module *Mod,
                                    ArrayRef<SourceLocation> IdLocs,
                                    const ImportDecl *ImportD,
                                    IndexDataConsumer &DataConsumer) {
-  if (!Mod)
+  if (!Mod) {
     return;
+}
   reportModuleReferences(Mod->Parent, IdLocs.drop_back(), ImportD,
                          DataConsumer);
   DataConsumer.handleModuleOccurrence(
@@ -104,25 +107,29 @@ static void reportModuleReferences(const Module *Mod,
 }
 
 bool IndexingContext::importedModule(const ImportDecl *ImportD) {
-  if (ImportD->isInvalidDecl())
+  if (ImportD->isInvalidDecl()) {
     return true;
+}
 
   SourceLocation Loc;
   auto IdLocs = ImportD->getIdentifierLocs();
-  if (!IdLocs.empty())
+  if (!IdLocs.empty()) {
     Loc = IdLocs.back();
-  else
+  } else {
     Loc = ImportD->getLocation();
+}
 
   SourceManager &SM = Ctx->getSourceManager();
   FileID FID = SM.getFileID(SM.getFileLoc(Loc));
-  if (FID.isInvalid())
+  if (FID.isInvalid()) {
     return true;
+}
 
   bool Invalid = false;
   const SrcMgr::SLocEntry &SEntry = SM.getSLocEntry(FID, &Invalid);
-  if (Invalid || !SEntry.isFile())
+  if (Invalid || !SEntry.isFile()) {
     return true;
+}
 
   if (SEntry.getFile().getFileCharacteristic() != SrcMgr::C_User) {
     switch (IndexOpts.SystemSymbolFilter) {
@@ -141,8 +148,9 @@ bool IndexingContext::importedModule(const ImportDecl *ImportD) {
   }
 
   SymbolRoleSet Roles = (unsigned)SymbolRole::Declaration;
-  if (ImportD->isImplicit())
+  if (ImportD->isImplicit()) {
     Roles |= (unsigned)SymbolRole::Implicit;
+}
 
   return DataConsumer.handleModuleOccurrence(ImportD, Mod, Roles, Loc);
 }
@@ -157,15 +165,18 @@ bool IndexingContext::isTemplateImplicitInstantiation(const Decl *D) {
   } else if (auto *VD = dyn_cast<VarDecl>(D)) {
     TKind = VD->getTemplateSpecializationKind();
   } else if (const auto *RD = dyn_cast<CXXRecordDecl>(D)) {
-    if (RD->getInstantiatedFromMemberClass())
+    if (RD->getInstantiatedFromMemberClass()) {
       TKind = RD->getTemplateSpecializationKind();
+}
   } else if (const auto *ED = dyn_cast<EnumDecl>(D)) {
-    if (ED->getInstantiatedFromMemberEnum())
+    if (ED->getInstantiatedFromMemberEnum()) {
       TKind = ED->getTemplateSpecializationKind();
+}
   } else if (isa<FieldDecl>(D) || isa<TypedefNameDecl>(D) ||
              isa<EnumConstantDecl>(D)) {
-    if (const auto *Parent = dyn_cast<Decl>(D->getDeclContext()))
+    if (const auto *Parent = dyn_cast<Decl>(D->getDeclContext())) {
       return isTemplateImplicitInstantiation(Parent);
+}
   }
   switch (TKind) {
     case TSK_Undeclared:
@@ -184,26 +195,32 @@ bool IndexingContext::isTemplateImplicitInstantiation(const Decl *D) {
 }
 
 bool IndexingContext::shouldIgnoreIfImplicit(const Decl *D) {
-  if (isa<ObjCInterfaceDecl>(D))
+  if (isa<ObjCInterfaceDecl>(D)) {
     return false;
-  if (isa<ObjCCategoryDecl>(D))
+}
+  if (isa<ObjCCategoryDecl>(D)) {
     return false;
-  if (isa<ObjCIvarDecl>(D))
+}
+  if (isa<ObjCIvarDecl>(D)) {
     return false;
-  if (isa<ObjCMethodDecl>(D))
+}
+  if (isa<ObjCMethodDecl>(D)) {
     return false;
-  if (isa<ImportDecl>(D))
+}
+  if (isa<ImportDecl>(D)) {
     return false;
+}
   return true;
 }
 
 static const CXXRecordDecl *
 getDeclContextForTemplateInstationPattern(const Decl *D) {
   if (const auto *CTSD =
-          dyn_cast<ClassTemplateSpecializationDecl>(D->getDeclContext()))
+          dyn_cast<ClassTemplateSpecializationDecl>(D->getDeclContext())) {
     return CTSD->getTemplateInstantiationPattern();
-  else if (const auto *RD = dyn_cast<CXXRecordDecl>(D->getDeclContext()))
+  } else if (const auto *RD = dyn_cast<CXXRecordDecl>(D->getDeclContext())) {
     return RD->getInstantiatedFromMemberClass();
+}
   return nullptr;
 }
 
@@ -211,8 +228,9 @@ static const Decl *adjustTemplateImplicitInstantiation(const Decl *D) {
   if (const ClassTemplateSpecializationDecl *
       SD = dyn_cast<ClassTemplateSpecializationDecl>(D)) {
     const auto *Template = SD->getTemplateInstantiationPattern();
-    if (Template)
+    if (Template) {
       return Template;
+}
     // Fallback to primary template if no instantiation is available yet (e.g.
     // the type doesn't need to be complete).
     return SD->getSpecializedTemplate()->getTemplatedDecl();
@@ -229,17 +247,20 @@ static const Decl *adjustTemplateImplicitInstantiation(const Decl *D) {
     if (const CXXRecordDecl *Pattern =
             getDeclContextForTemplateInstationPattern(ND)) {
       for (const NamedDecl *BaseND : Pattern->lookup(ND->getDeclName())) {
-        if (BaseND->isImplicit())
+        if (BaseND->isImplicit()) {
           continue;
-        if (BaseND->getKind() == ND->getKind())
+}
+        if (BaseND->getKind() == ND->getKind()) {
           return BaseND;
+}
       }
     }
   } else if (const auto *ECD = dyn_cast<EnumConstantDecl>(D)) {
     if (const auto *ED = dyn_cast<EnumDecl>(ECD->getDeclContext())) {
       if (const EnumDecl *Pattern = ED->getInstantiatedFromMemberEnum()) {
-        for (const NamedDecl *BaseECD : Pattern->lookup(ECD->getDeclName()))
+        for (const NamedDecl *BaseECD : Pattern->lookup(ECD->getDeclName())) {
           return BaseECD;
+}
       }
     }
   }
@@ -247,25 +268,30 @@ static const Decl *adjustTemplateImplicitInstantiation(const Decl *D) {
 }
 
 static bool isDeclADefinition(const Decl *D, const DeclContext *ContainerDC, ASTContext &Ctx) {
-  if (auto VD = dyn_cast<VarDecl>(D))
+  if (auto VD = dyn_cast<VarDecl>(D)) {
     return VD->isThisDeclarationADefinition(Ctx);
+}
 
-  if (auto FD = dyn_cast<FunctionDecl>(D))
+  if (auto FD = dyn_cast<FunctionDecl>(D)) {
     return FD->isThisDeclarationADefinition();
+}
 
-  if (auto TD = dyn_cast<TagDecl>(D))
+  if (auto TD = dyn_cast<TagDecl>(D)) {
     return TD->isThisDeclarationADefinition();
+}
 
-  if (auto MD = dyn_cast<ObjCMethodDecl>(D))
+  if (auto MD = dyn_cast<ObjCMethodDecl>(D)) {
     return MD->isThisDeclarationADefinition() || isa<ObjCImplDecl>(ContainerDC);
+}
 
   if (isa<TypedefNameDecl>(D) ||
       isa<EnumConstantDecl>(D) ||
       isa<FieldDecl>(D) ||
       isa<MSPropertyDecl>(D) ||
       isa<ObjCImplDecl>(D) ||
-      isa<ObjCPropertyImplDecl>(D))
+      isa<ObjCPropertyImplDecl>(D)) {
     return true;
+}
 
   return false;
 }
@@ -277,22 +303,28 @@ static bool shouldSkipNamelessDecl(const NamedDecl *ND) {
 }
 
 static const Decl *adjustParent(const Decl *Parent) {
-  if (!Parent)
+  if (!Parent) {
     return nullptr;
+}
   for (;; Parent = cast<Decl>(Parent->getDeclContext())) {
-    if (isa<TranslationUnitDecl>(Parent))
+    if (isa<TranslationUnitDecl>(Parent)) {
       return nullptr;
-    if (isa<LinkageSpecDecl>(Parent) || isa<BlockDecl>(Parent))
+}
+    if (isa<LinkageSpecDecl>(Parent) || isa<BlockDecl>(Parent)) {
       continue;
+}
     if (auto NS = dyn_cast<NamespaceDecl>(Parent)) {
-      if (NS->isAnonymousNamespace())
+      if (NS->isAnonymousNamespace()) {
         continue;
+}
     } else if (auto RD = dyn_cast<RecordDecl>(Parent)) {
-      if (RD->isAnonymousStructOrUnion())
+      if (RD->isAnonymousStructOrUnion()) {
         continue;
+}
     } else if (auto ND = dyn_cast<NamedDecl>(Parent)) {
-      if (shouldSkipNamelessDecl(ND))
+      if (shouldSkipNamelessDecl(ND)) {
         continue;
+}
     }
     return Parent;
   }
@@ -312,8 +344,9 @@ static const Decl *getCanonicalDecl(const Decl *D) {
 
 static bool shouldReportOccurrenceForSystemDeclOnlyMode(
     bool IsRef, SymbolRoleSet Roles, ArrayRef<SymbolRelation> Relations) {
-  if (!IsRef)
+  if (!IsRef) {
     return true;
+}
 
   auto acceptForRelation = [](SymbolRoleSet roles) -> bool {
     bool accept = false;
@@ -350,8 +383,9 @@ static bool shouldReportOccurrenceForSystemDeclOnlyMode(
   };
 
   for (auto &Rel : Relations) {
-    if (acceptForRelation(Rel.Roles))
+    if (acceptForRelation(Rel.Roles)) {
       return true;
+}
   }
 
   return false;
@@ -364,57 +398,67 @@ bool IndexingContext::handleDeclOccurrence(const Decl *D, SourceLocation Loc,
                                            const Expr *OrigE,
                                            const Decl *OrigD,
                                            const DeclContext *ContainerDC) {
-  if (D->isImplicit() && !isa<ObjCMethodDecl>(D))
+  if (D->isImplicit() && !isa<ObjCMethodDecl>(D)) {
     return true;
-  if (!isa<NamedDecl>(D) || shouldSkipNamelessDecl(cast<NamedDecl>(D)))
+}
+  if (!isa<NamedDecl>(D) || shouldSkipNamelessDecl(cast<NamedDecl>(D))) {
     return true;
+}
 
   SourceManager &SM = Ctx->getSourceManager();
   FileID FID = SM.getFileID(SM.getFileLoc(Loc));
-  if (FID.isInvalid())
+  if (FID.isInvalid()) {
     return true;
+}
 
   bool Invalid = false;
   const SrcMgr::SLocEntry &SEntry = SM.getSLocEntry(FID, &Invalid);
-  if (Invalid || !SEntry.isFile())
+  if (Invalid || !SEntry.isFile()) {
     return true;
+}
 
   if (SEntry.getFile().getFileCharacteristic() != SrcMgr::C_User) {
     switch (IndexOpts.SystemSymbolFilter) {
     case IndexingOptions::SystemSymbolFilterKind::None:
       return true;
     case IndexingOptions::SystemSymbolFilterKind::DeclarationsOnly:
-      if (!shouldReportOccurrenceForSystemDeclOnlyMode(IsRef, Roles, Relations))
+      if (!shouldReportOccurrenceForSystemDeclOnlyMode(IsRef, Roles, Relations)) {
         return true;
+}
       break;
     case IndexingOptions::SystemSymbolFilterKind::All:
       break;
     }
   }
 
-  if (!OrigD)
+  if (!OrigD) {
     OrigD = D;
+}
 
   if (isTemplateImplicitInstantiation(D)) {
-    if (!IsRef)
+    if (!IsRef) {
       return true;
+}
     D = adjustTemplateImplicitInstantiation(D);
-    if (!D)
+    if (!D) {
       return true;
+}
     assert(!isTemplateImplicitInstantiation(D));
   }
 
-  if (IsRef)
+  if (IsRef) {
     Roles |= (unsigned)SymbolRole::Reference;
-  else if (isDeclADefinition(OrigD, ContainerDC, *Ctx))
+  } else if (isDeclADefinition(OrigD, ContainerDC, *Ctx)) {
     Roles |= (unsigned)SymbolRole::Definition;
-  else
+  } else {
     Roles |= (unsigned)SymbolRole::Declaration;
+}
 
   D = getCanonicalDecl(D);
   Parent = adjustParent(Parent);
-  if (Parent)
+  if (Parent) {
     Parent = getCanonicalDecl(Parent);
+}
 
   SmallVector<SymbolRelation, 6> FinalRelations;
   FinalRelations.reserve(Relations.size()+1);

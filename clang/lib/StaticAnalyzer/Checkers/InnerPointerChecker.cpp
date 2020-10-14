@@ -63,8 +63,9 @@ public:
     bool isSymbolTracked(ProgramStateRef State, SymbolRef Sym) {
       RawPtrMapTy Map = State->get<RawPtrMap>();
       for (const auto &Entry : Map) {
-        if (Entry.second.contains(Sym))
+        if (Entry.second.contains(Sym)) {
           return true;
+}
       }
       return false;
     }
@@ -117,8 +118,9 @@ bool InnerPointerChecker::isInvalidatingMemberFunction(
         const CallEvent &Call) const {
   if (const auto *MemOpCall = dyn_cast<CXXMemberOperatorCall>(&Call)) {
     OverloadedOperatorKind Opc = MemOpCall->getOriginExpr()->getOperator();
-    if (Opc == OO_Equal || Opc == OO_PlusEqual)
+    if (Opc == OO_Equal || Opc == OO_PlusEqual) {
       return true;
+}
     return false;
   }
   return (isa<CXXDestructorCall>(Call) || Call.isCalled(AppendFn) ||
@@ -152,14 +154,16 @@ void InnerPointerChecker::checkFunctionArguments(const CallEvent &Call,
                                                  CheckerContext &C) const {
   if (const auto *FC = dyn_cast<AnyFunctionCall>(&Call)) {
     const FunctionDecl *FD = FC->getDecl();
-    if (!FD || !FD->isInStdNamespace())
+    if (!FD || !FD->isInStdNamespace()) {
       return;
+}
 
     for (unsigned I = 0, E = FD->getNumParams(); I != E; ++I) {
       QualType ParamTy = FD->getParamDecl(I)->getType();
       if (!ParamTy->isReferenceType() ||
-          ParamTy->getPointeeType().isConstQualified())
+          ParamTy->getPointeeType().isConstQualified()) {
         continue;
+}
 
       // In case of member operator calls, `this` is counted as an
       // argument but not as a parameter.
@@ -169,8 +173,9 @@ void InnerPointerChecker::checkFunctionArguments(const CallEvent &Call,
       SVal Arg = FC->getArgSVal(ArgI);
       const auto *ArgRegion =
           dyn_cast_or_null<TypedValueRegion>(Arg.getAsRegion());
-      if (!ArgRegion)
+      if (!ArgRegion) {
         continue;
+}
 
       markPtrSymbolsReleased(Call, State, ArgRegion, C);
     }
@@ -199,8 +204,9 @@ void InnerPointerChecker::checkPostCall(const CallEvent &Call,
     // TODO: Do we need these to be typed?
     const auto *ObjRegion = dyn_cast_or_null<TypedValueRegion>(
         ICall->getCXXThisVal().getAsRegion());
-    if (!ObjRegion)
+    if (!ObjRegion) {
       return;
+}
 
     if (Call.isCalled(CStrFn) || Call.isCalled(DataFn)) {
       SVal RawPtr = Call.getReturnValue();
@@ -245,8 +251,9 @@ void InnerPointerChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     if (const PtrSet *OldSet = State->get<RawPtrMap>(Entry.first)) {
       PtrSet CleanedUpSet = *OldSet;
       for (const auto Symbol : Entry.second) {
-        if (!SymReaper.isLive(Symbol))
+        if (!SymReaper.isLive(Symbol)) {
           CleanedUpSet = F.remove(CleanedUpSet, Symbol);
+}
       }
       State = CleanedUpSet.isEmpty()
                   ? State->remove<RawPtrMap>(Entry.first)
@@ -281,12 +288,14 @@ const MemRegion *getContainerObjRegion(ProgramStateRef State, SymbolRef Sym) {
 PathDiagnosticPieceRef InnerPointerChecker::InnerPointerBRVisitor::VisitNode(
     const ExplodedNode *N, BugReporterContext &BRC, PathSensitiveBugReport &) {
   if (!isSymbolTracked(N->getState(), PtrToBuf) ||
-      isSymbolTracked(N->getFirstPred()->getState(), PtrToBuf))
+      isSymbolTracked(N->getFirstPred()->getState(), PtrToBuf)) {
     return nullptr;
+}
 
   const Stmt *S = N->getStmtForDiagnostics();
-  if (!S)
+  if (!S) {
     return nullptr;
+}
 
   const MemRegion *ObjRegion =
       allocation_state::getContainerObjRegion(N->getState(), PtrToBuf);

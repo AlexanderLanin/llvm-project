@@ -54,8 +54,9 @@ static Expected<DynTypedNode> getNode(const ast_matchers::BoundNodes &Nodes,
                                       StringRef ID) {
   auto &NodesMap = Nodes.getMap();
   auto It = NodesMap.find(ID);
-  if (It == NodesMap.end())
+  if (It == NodesMap.end()) {
     return invalidArgumentError("ID not bound: " + ID);
+}
   return It->second;
 }
 
@@ -63,12 +64,14 @@ static Expected<DynTypedNode> getNode(const ast_matchers::BoundNodes &Nodes,
 static SourceLocation findPreviousTokenStart(SourceLocation Start,
                                              const SourceManager &SM,
                                              const LangOptions &LangOpts) {
-  if (Start.isInvalid() || Start.isMacroID())
+  if (Start.isInvalid() || Start.isMacroID()) {
     return SourceLocation();
+}
 
   SourceLocation BeforeStart = Start.getLocWithOffset(-1);
-  if (BeforeStart.isInvalid() || BeforeStart.isMacroID())
+  if (BeforeStart.isInvalid() || BeforeStart.isMacroID()) {
     return SourceLocation();
+}
 
   return Lexer::GetBeginningOfToken(BeforeStart, SM, LangOpts);
 }
@@ -81,15 +84,18 @@ static SourceLocation findPreviousTokenKind(SourceLocation Start,
                                             tok::TokenKind TK) {
   while (true) {
     SourceLocation L = findPreviousTokenStart(Start, SM, LangOpts);
-    if (L.isInvalid() || L.isMacroID())
+    if (L.isInvalid() || L.isMacroID()) {
       return SourceLocation();
+}
 
     Token T;
-    if (Lexer::getRawToken(L, T, SM, LangOpts, /*IgnoreWhiteSpace=*/true))
+    if (Lexer::getRawToken(L, T, SM, LangOpts, /*IgnoreWhiteSpace=*/true)) {
       return SourceLocation();
+}
 
-    if (T.is(TK))
+    if (T.is(TK)) {
       return T.getLocation();
+}
 
     Start = L;
   }
@@ -105,8 +111,9 @@ static SourceLocation findOpenParen(const CallExpr &E, const SourceManager &SM,
 RangeSelector transformer::before(RangeSelector Selector) {
   return [Selector](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<CharSourceRange> SelectedRange = Selector(Result);
-    if (!SelectedRange)
+    if (!SelectedRange) {
       return SelectedRange.takeError();
+}
     return CharSourceRange::getCharRange(SelectedRange->getBegin());
   };
 }
@@ -114,10 +121,12 @@ RangeSelector transformer::before(RangeSelector Selector) {
 RangeSelector transformer::after(RangeSelector Selector) {
   return [Selector](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<CharSourceRange> SelectedRange = Selector(Result);
-    if (!SelectedRange)
+    if (!SelectedRange) {
       return SelectedRange.takeError();
-    if (SelectedRange->isCharRange())
+}
+    if (SelectedRange->isCharRange()) {
       return CharSourceRange::getCharRange(SelectedRange->getEnd());
+}
     return CharSourceRange::getCharRange(Lexer::getLocForEndOfToken(
         SelectedRange->getEnd(), 0, Result.Context->getSourceManager(),
         Result.Context->getLangOpts()));
@@ -127,8 +136,9 @@ RangeSelector transformer::after(RangeSelector Selector) {
 RangeSelector transformer::node(std::string ID) {
   return [ID](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<DynTypedNode> Node = getNode(Result.Nodes, ID);
-    if (!Node)
+    if (!Node) {
       return Node.takeError();
+}
     return Node->get<Stmt>() != nullptr && Node->get<Expr>() == nullptr
                ? tooling::getExtendedRange(*Node, tok::TokenKind::semi,
                                            *Result.Context)
@@ -139,8 +149,9 @@ RangeSelector transformer::node(std::string ID) {
 RangeSelector transformer::statement(std::string ID) {
   return [ID](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<DynTypedNode> Node = getNode(Result.Nodes, ID);
-    if (!Node)
+    if (!Node) {
       return Node.takeError();
+}
     return tooling::getExtendedRange(*Node, tok::TokenKind::semi,
                                      *Result.Context);
   };
@@ -149,11 +160,13 @@ RangeSelector transformer::statement(std::string ID) {
 RangeSelector transformer::enclose(RangeSelector Begin, RangeSelector End) {
   return [Begin, End](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<CharSourceRange> BeginRange = Begin(Result);
-    if (!BeginRange)
+    if (!BeginRange) {
       return BeginRange.takeError();
+}
     Expected<CharSourceRange> EndRange = End(Result);
-    if (!EndRange)
+    if (!EndRange) {
       return EndRange.takeError();
+}
     SourceLocation B = BeginRange->getBegin();
     SourceLocation E = EndRange->getEnd();
     // Note: we are precluding the possibility of sub-token ranges in the case
@@ -173,11 +186,13 @@ RangeSelector transformer::encloseNodes(std::string BeginID,
 RangeSelector transformer::member(std::string ID) {
   return [ID](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<DynTypedNode> Node = getNode(Result.Nodes, ID);
-    if (!Node)
+    if (!Node) {
       return Node.takeError();
-    if (auto *M = Node->get<clang::MemberExpr>())
+}
+    if (auto *M = Node->get<clang::MemberExpr>()) {
       return CharSourceRange::getTokenRange(
           M->getMemberNameInfo().getSourceRange());
+}
     return typeError(ID, Node->getNodeKind(), "MemberExpr");
   };
 }
@@ -185,12 +200,14 @@ RangeSelector transformer::member(std::string ID) {
 RangeSelector transformer::name(std::string ID) {
   return [ID](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<DynTypedNode> N = getNode(Result.Nodes, ID);
-    if (!N)
+    if (!N) {
       return N.takeError();
+}
     auto &Node = *N;
     if (const auto *D = Node.get<NamedDecl>()) {
-      if (!D->getDeclName().isIdentifier())
+      if (!D->getDeclName().isIdentifier()) {
         return missingPropertyError(ID, "name", "identifier");
+}
       SourceLocation L = D->getLocation();
       auto R = CharSourceRange::getTokenRange(L, L);
       // Verify that the range covers exactly the name.
@@ -198,19 +215,22 @@ RangeSelector transformer::name(std::string ID) {
       // `foo<int>` for which this range will be too short.  Doing so will
       // require subcasing `NamedDecl`, because it doesn't provide virtual
       // access to the \c DeclarationNameInfo.
-      if (tooling::getText(R, *Result.Context) != D->getName())
+      if (tooling::getText(R, *Result.Context) != D->getName()) {
         return CharSourceRange();
+}
       return R;
     }
     if (const auto *E = Node.get<DeclRefExpr>()) {
-      if (!E->getNameInfo().getName().isIdentifier())
+      if (!E->getNameInfo().getName().isIdentifier()) {
         return missingPropertyError(ID, "name", "identifier");
+}
       SourceLocation L = E->getLocation();
       return CharSourceRange::getTokenRange(L, L);
     }
     if (const auto *I = Node.get<CXXCtorInitializer>()) {
-      if (!I->isMemberInitializer() && I->isWritten())
+      if (!I->isMemberInitializer() && I->isWritten()) {
         return missingPropertyError(ID, "name", "explicit member initializer");
+}
       SourceLocation L = I->getMemberLocation();
       return CharSourceRange::getTokenRange(L, L);
     }
@@ -235,10 +255,12 @@ public:
 
   Expected<CharSourceRange> operator()(const MatchResult &Result) {
     Expected<DynTypedNode> N = getNode(Result.Nodes, ID);
-    if (!N)
+    if (!N) {
       return N.takeError();
-    if (const auto *Arg = N->get<T>())
+}
+    if (const auto *Arg = N->get<T>()) {
       return Func(Result, *Arg);
+}
     return typeError(ID, N->getNodeKind());
   }
 };
@@ -306,8 +328,9 @@ RangeSelector transformer::elseBranch(std::string ID) {
 RangeSelector transformer::expansion(RangeSelector S) {
   return [S](const MatchResult &Result) -> Expected<CharSourceRange> {
     Expected<CharSourceRange> SRange = S(Result);
-    if (!SRange)
+    if (!SRange) {
       return SRange.takeError();
+}
     return Result.SourceManager->getExpansionRange(*SRange);
   };
 }

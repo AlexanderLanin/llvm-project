@@ -62,8 +62,9 @@ static void rank(std::vector<SymbolAndSignals> &Symbols,
             [&](const SymbolAndSignals &A, const SymbolAndSignals &B) {
               auto AS = Score[A.Symbol.getFilePath()];
               auto BS = Score[B.Symbol.getFilePath()];
-              if (AS != BS)
+              if (AS != BS) {
                 return AS > BS;
+}
               return A.Symbol.getFilePath() < B.Symbol.getFilePath();
             });
 }
@@ -123,8 +124,9 @@ SymbolIndexManager::search(llvm::StringRef Identifier,
 
       // If the name was qualified we only want to add results if we evaluated
       // all contexts.
-      if (IsFullyQualified)
+      if (IsFullyQualified) {
         IsMatched &= (SymbolContext == Symbol.getContexts().end());
+}
 
       // FIXME: Support full match. At this point, we only find symbols in
       // database which end with the same contexts with the identifier.
@@ -136,8 +138,9 @@ SymbolIndexManager::search(llvm::StringRef Identifier,
              Symbol.getSymbolKind() == SymbolInfo::SymbolKind::Variable ||
              Symbol.getSymbolKind() ==
                  SymbolInfo::SymbolKind::EnumConstantDecl ||
-             Symbol.getSymbolKind() == SymbolInfo::SymbolKind::Macro))
+             Symbol.getSymbolKind() == SymbolInfo::SymbolKind::Macro)) {
           continue;
+}
 
         MatchedSymbols.push_back(std::move(SymAndSig));
       }
@@ -149,8 +152,9 @@ SymbolIndexManager::search(llvm::StringRef Identifier,
   rank(MatchedSymbols, FileName);
   // Strip signals, they are no longer needed.
   std::vector<SymbolInfo> Res;
-  for (auto &SymAndSig : MatchedSymbols)
+  for (auto &SymAndSig : MatchedSymbols) {
     Res.push_back(std::move(SymAndSig.Symbol));
+}
   return Res;
 }
 

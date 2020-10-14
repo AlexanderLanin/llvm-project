@@ -139,10 +139,12 @@ TEST(QualityTests, SymbolRelevanceSignalExtraction) {
   auto constructShadowDeclCompletionResult = [&](const std::string DeclName) {
     auto *Shadow =
         *dyn_cast<UsingDecl>(&findDecl(AST, [&](const NamedDecl &ND) {
-           if (const UsingDecl *Using = dyn_cast<UsingDecl>(&ND))
+           if (const UsingDecl *Using = dyn_cast<UsingDecl>(&ND)) {
              if (Using->shadow_size() &&
-                 Using->getQualifiedNameAsString() == DeclName)
+                 Using->getQualifiedNameAsString() == DeclName) {
                return true;
+}
+}
            return false;
          }))->shadow_begin();
     CodeCompletionResult Result(Shadow->getTargetDecl(), 42);
@@ -464,9 +466,11 @@ TEST(QualityTests, Operator) {
   auto AST = Header.build();
 
   const NamedDecl *Operator = &findDecl(AST, [](const NamedDecl &ND) {
-    if (const auto *OD = dyn_cast<FunctionDecl>(&ND))
-      if (OD->isOverloadedOperator())
+    if (const auto *OD = dyn_cast<FunctionDecl>(&ND)) {
+      if (OD->isOverloadedOperator()) {
         return true;
+}
+}
     return false;
   });
   SymbolQualitySignals Q;

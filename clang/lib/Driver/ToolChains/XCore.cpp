@@ -35,21 +35,26 @@ void tools::XCore::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
 
   CmdArgs.push_back("-c");
 
-  if (Args.hasArg(options::OPT_v))
+  if (Args.hasArg(options::OPT_v)) {
     CmdArgs.push_back("-v");
+}
 
-  if (Arg *A = Args.getLastArg(options::OPT_g_Group))
-    if (!A->getOption().matches(options::OPT_g0))
+  if (Arg *A = Args.getLastArg(options::OPT_g_Group)) {
+    if (!A->getOption().matches(options::OPT_g0)) {
       CmdArgs.push_back("-g");
+}
+}
 
   if (Args.hasFlag(options::OPT_fverbose_asm, options::OPT_fno_verbose_asm,
-                   false))
+                   false)) {
     CmdArgs.push_back("-fverbose-asm");
+}
 
   Args.AddAllArgValues(CmdArgs, options::OPT_Wa_COMMA, options::OPT_Xassembler);
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("xcc"));
   C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
@@ -70,13 +75,15 @@ void tools::XCore::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     assert(Output.isNothing() && "Invalid output.");
   }
 
-  if (Args.hasArg(options::OPT_v))
+  if (Args.hasArg(options::OPT_v)) {
     CmdArgs.push_back("-v");
+}
 
   // Pass -fexceptions through to the linker if it was present.
   if (Args.hasFlag(options::OPT_fexceptions, options::OPT_fno_exceptions,
-                   false))
+                   false)) {
     CmdArgs.push_back("-fexceptions");
+}
 
   AddLinkerInputs(getToolChain(), Inputs, Args, CmdArgs, JA);
 
@@ -113,8 +120,9 @@ bool XCoreToolChain::hasBlocksRuntime() const { return false; }
 void XCoreToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc) ||
-      DriverArgs.hasArg(options::OPT_nostdlibinc))
+      DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
   if (const char *cl_include_dir = getenv("XCC_C_INCLUDE_PATH")) {
     SmallVector<StringRef, 4> Dirs;
     const char EnvPathSeparatorStr[] = {llvm::sys::EnvPathSeparator, '\0'};
@@ -134,8 +142,9 @@ void XCoreToolChain::AddClangCXXStdlibIncludeArgs(
     const ArgList &DriverArgs, ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc) ||
       DriverArgs.hasArg(options::OPT_nostdlibinc) ||
-      DriverArgs.hasArg(options::OPT_nostdincxx))
+      DriverArgs.hasArg(options::OPT_nostdincxx)) {
     return;
+}
   if (const char *cl_include_dir = getenv("XCC_CPLUS_INCLUDE_PATH")) {
     SmallVector<StringRef, 4> Dirs;
     const char EnvPathSeparatorStr[] = {llvm::sys::EnvPathSeparator, '\0'};

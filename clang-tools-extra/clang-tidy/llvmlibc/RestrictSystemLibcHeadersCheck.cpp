@@ -50,8 +50,9 @@ void RestrictedIncludesPPCallbacks::InclusionDirective(
     StringRef SearchPath, StringRef RelativePath, const Module *Imported,
     SrcMgr::CharacteristicKind FileType) {
   // Compiler provided headers are allowed (e.g stddef.h).
-  if (SrcMgr::isSystem(FileType) && SearchPath == CompilerIncudeDir)
+  if (SrcMgr::isSystem(FileType) && SearchPath == CompilerIncudeDir) {
     return;
+}
   portability::RestrictedIncludesPPCallbacks::InclusionDirective(
       HashLoc, IncludeTok, FileName, IsAngled, FilenameRange, File, SearchPath,
       RelativePath, Imported, FileType);

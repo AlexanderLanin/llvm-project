@@ -95,8 +95,9 @@ TEST_F(ConfigCompileTests, CompileCommands) {
   std::vector<std::string> Argv = {"clang", "-I", "bar/", "a.cc"};
   EXPECT_TRUE(compileAndApply());
   EXPECT_THAT(Conf.CompileFlags.Edits, SizeIs(2));
-  for (auto &Edit : Conf.CompileFlags.Edits)
+  for (auto &Edit : Conf.CompileFlags.Edits) {
     Edit(Argv);
+}
   EXPECT_THAT(Argv, ElementsAre("clang", "a.cc", "-foo"));
 }
 

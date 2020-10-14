@@ -31,10 +31,12 @@ bool ConstructionContextLayer::isStrictlyMoreSpecificThan(
     const ConstructionContextLayer *Other) const {
   const ConstructionContextLayer *Self = this;
   while (true) {
-    if (!Other)
+    if (!Other) {
       return Self;
-    if (!Self || !(Self->Item == Other->Item))
+}
+    if (!Self || !(Self->Item == Other->Item)) {
       return false;
+}
     Self = Self->getParent();
     Other = Other->getParent();
   }

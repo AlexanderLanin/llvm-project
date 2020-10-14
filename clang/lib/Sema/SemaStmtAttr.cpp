@@ -44,8 +44,9 @@ static Attr *handleFallThroughAttr(Sema &S, Stmt *St, const ParsedAttr &A,
   // If this is spelled as the standard C++17 attribute, but not in C++17, warn
   // about using it as an extension.
   if (!S.getLangOpts().CPlusPlus17 && A.isCXX11Attribute() &&
-      !A.getScopeName())
+      !A.getScopeName()) {
     S.Diag(A.getLoc(), diag::ext_cxx17_attr) << A;
+}
 
   FnScope->setHasFallthroughStmt();
   return ::new (S.Context) FallThroughAttr(S.Context, A);
@@ -62,8 +63,9 @@ static Attr *handleSuppressAttr(Sema &S, Stmt *St, const ParsedAttr &A,
   for (unsigned I = 0, E = A.getNumArgs(); I != E; ++I) {
     StringRef RuleName;
 
-    if (!S.checkStringLiteralArgumentAttr(A, I, RuleName, nullptr))
+    if (!S.checkStringLiteralArgumentAttr(A, I, RuleName, nullptr)) {
       return nullptr;
+}
 
     // FIXME: Warn if the rule name is unknown. This is tricky because only
     // clang-tidy knows about available rules.
@@ -109,18 +111,20 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
     SetHints(LoopHintAttr::Unroll, LoopHintAttr::Disable);
   } else if (PragmaName == "unroll") {
     // #pragma unroll N
-    if (ValueExpr)
+    if (ValueExpr) {
       SetHints(LoopHintAttr::UnrollCount, LoopHintAttr::Numeric);
-    else
+    } else {
       SetHints(LoopHintAttr::Unroll, LoopHintAttr::Enable);
+}
   } else if (PragmaName == "nounroll_and_jam") {
     SetHints(LoopHintAttr::UnrollAndJam, LoopHintAttr::Disable);
   } else if (PragmaName == "unroll_and_jam") {
     // #pragma unroll_and_jam N
-    if (ValueExpr)
+    if (ValueExpr) {
       SetHints(LoopHintAttr::UnrollAndJamCount, LoopHintAttr::Numeric);
-    else
+    } else {
       SetHints(LoopHintAttr::UnrollAndJam, LoopHintAttr::Enable);
+}
   } else {
     // #pragma clang loop ...
     assert(OptionLoc && OptionLoc->Ident &&
@@ -144,8 +148,9 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
         Option == LoopHintAttr::UnrollCount ||
         Option == LoopHintAttr::PipelineInitiationInterval) {
       assert(ValueExpr && "Attribute must have a valid value expression.");
-      if (S.CheckLoopHintExpr(ValueExpr, St->getBeginLoc()))
+      if (S.CheckLoopHintExpr(ValueExpr, St->getBeginLoc())) {
         return nullptr;
+}
       State = LoopHintAttr::Numeric;
     } else if (Option == LoopHintAttr::Vectorize ||
                Option == LoopHintAttr::Interleave ||
@@ -154,18 +159,20 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
                Option == LoopHintAttr::Distribute ||
                Option == LoopHintAttr::PipelineDisabled) {
       assert(StateLoc && StateLoc->Ident && "Loop hint must have an argument");
-      if (StateLoc->Ident->isStr("disable"))
+      if (StateLoc->Ident->isStr("disable")) {
         State = LoopHintAttr::Disable;
-      else if (StateLoc->Ident->isStr("assume_safety"))
+      } else if (StateLoc->Ident->isStr("assume_safety")) {
         State = LoopHintAttr::AssumeSafety;
-      else if (StateLoc->Ident->isStr("full"))
+      } else if (StateLoc->Ident->isStr("full")) {
         State = LoopHintAttr::Full;
-      else if (StateLoc->Ident->isStr("enable"))
+      } else if (StateLoc->Ident->isStr("enable")) {
         State = LoopHintAttr::Enable;
-      else
+      } else {
         llvm_unreachable("bad loop hint argument");
-    } else
+}
+    } else {
       llvm_unreachable("bad loop hint");
+}
   }
 
   return LoopHintAttr::CreateImplicit(S.Context, Option, State, ValueExpr, A);
@@ -186,8 +193,9 @@ public:
   void VisitAsmStmt(const AsmStmt *S) { FoundCallExpr = true; }
 
   void Visit(const Stmt *St) {
-    if (!St)
+    if (!St) {
       return;
+}
     ConstEvaluatedExprVisitor<CallExprFinder>::Visit(St);
   }
 };
@@ -196,8 +204,9 @@ public:
 static Attr *handleNoMergeAttr(Sema &S, Stmt *St, const ParsedAttr &A,
                                SourceRange Range) {
   NoMergeAttr NMA(S.Context, A);
-  if (S.CheckAttrNoArgs(A))
+  if (S.CheckAttrNoArgs(A)) {
     return nullptr;
+}
 
   CallExprFinder CEF(S, St);
 
@@ -213,8 +222,9 @@ static Attr *handleNoMergeAttr(Sema &S, Stmt *St, const ParsedAttr &A,
 static Attr *handleLikely(Sema &S, Stmt *St, const ParsedAttr &A,
                           SourceRange Range) {
 
-  if (!S.getLangOpts().CPlusPlus20 && A.isCXX11Attribute() && !A.getScopeName())
+  if (!S.getLangOpts().CPlusPlus20 && A.isCXX11Attribute() && !A.getScopeName()) {
     S.Diag(A.getLoc(), diag::ext_cxx20_attr) << A << Range;
+}
 
   return ::new (S.Context) LikelyAttr(S.Context, A);
 }
@@ -222,8 +232,9 @@ static Attr *handleLikely(Sema &S, Stmt *St, const ParsedAttr &A,
 static Attr *handleUnlikely(Sema &S, Stmt *St, const ParsedAttr &A,
                             SourceRange Range) {
 
-  if (!S.getLangOpts().CPlusPlus20 && A.isCXX11Attribute() && !A.getScopeName())
+  if (!S.getLangOpts().CPlusPlus20 && A.isCXX11Attribute() && !A.getScopeName()) {
     S.Diag(A.getLoc(), diag::ext_cxx20_attr) << A << Range;
+}
 
   return ::new (S.Context) UnlikelyAttr(S.Context, A);
 }
@@ -251,8 +262,9 @@ CheckForIncompatibleAttributes(Sema &S,
     const LoopHintAttr *LH = dyn_cast<LoopHintAttr>(I);
 
     // Skip non loop hint attributes
-    if (!LH)
+    if (!LH) {
       continue;
+}
 
     LoopHintAttr::OptionType Option = LH->getOption();
     enum {
@@ -314,11 +326,12 @@ CheckForIncompatibleAttributes(Sema &S,
 
     PrintingPolicy Policy(S.Context.getLangOpts());
     SourceLocation OptionLoc = LH->getRange().getBegin();
-    if (PrevAttr)
+    if (PrevAttr) {
       // Cannot specify same type of attribute twice.
       S.Diag(OptionLoc, diag::err_pragma_loop_compatibility)
           << /*Duplicate=*/true << PrevAttr->getDiagnosticName(Policy)
           << LH->getDiagnosticName(Policy);
+}
 
     if (CategoryState.StateAttr && CategoryState.NumericAttr &&
         (Category == Unroll || Category == UnrollAndJam ||
@@ -439,14 +452,16 @@ StmtResult Sema::ProcessStmtAttributes(Stmt *S,
                                        SourceRange Range) {
   SmallVector<const Attr*, 8> Attrs;
   for (const ParsedAttr &AL : AttrList) {
-    if (Attr *a = ProcessStmtAttribute(*this, S, AL, Range))
+    if (Attr *a = ProcessStmtAttribute(*this, S, AL, Range)) {
       Attrs.push_back(a);
+}
   }
 
   CheckForIncompatibleAttributes(*this, Attrs);
 
-  if (Attrs.empty())
+  if (Attrs.empty()) {
     return S;
+}
 
   return ActOnAttributedStmt(Range.getBegin(), Attrs, S);
 }

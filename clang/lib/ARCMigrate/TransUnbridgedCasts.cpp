@@ -87,46 +87,54 @@ public:
   bool VisitCastExpr(CastExpr *E) {
     if (E->getCastKind() != CK_CPointerToObjCPointerCast &&
         E->getCastKind() != CK_BitCast &&
-        E->getCastKind() != CK_AnyPointerToBlockPointerCast)
+        E->getCastKind() != CK_AnyPointerToBlockPointerCast) {
       return true;
+}
 
     QualType castType = E->getType();
     Expr *castExpr = E->getSubExpr();
     QualType castExprType = castExpr->getType();
 
-    if (castType->isObjCRetainableType() == castExprType->isObjCRetainableType())
+    if (castType->isObjCRetainableType() == castExprType->isObjCRetainableType()) {
       return true;
+}
 
     bool exprRetainable = castExprType->isObjCIndirectLifetimeType();
     bool castRetainable = castType->isObjCIndirectLifetimeType();
-    if (exprRetainable == castRetainable) return true;
+    if (exprRetainable == castRetainable) { return true;
+}
 
     if (castExpr->isNullPointerConstant(Pass.Ctx,
-                                        Expr::NPC_ValueDependentIsNull))
+                                        Expr::NPC_ValueDependentIsNull)) {
       return true;
+}
 
     SourceLocation loc = castExpr->getExprLoc();
-    if (loc.isValid() && Pass.Ctx.getSourceManager().isInSystemHeader(loc))
+    if (loc.isValid() && Pass.Ctx.getSourceManager().isInSystemHeader(loc)) {
       return true;
+}
 
-    if (castType->isObjCRetainableType())
+    if (castType->isObjCRetainableType()) {
       transformNonObjCToObjCCast(E);
-    else
+    } else {
       transformObjCToNonObjCCast(E);
+}
 
     return true;
   }
 
 private:
   void transformNonObjCToObjCCast(CastExpr *E) {
-    if (!E) return;
+    if (!E) { return;
+}
 
     // Global vars are assumed that are cast as unretained.
-    if (isGlobalVar(E))
+    if (isGlobalVar(E)) {
       if (E->getSubExpr()->getType()->isPointerType()) {
         castToObjCObject(E, /*retained=*/false);
         return;
       }
+}
 
     // If the cast is directly over the result of a Core Foundation function
     // try to figure out whether it should be cast as retained or unretained.
@@ -160,8 +168,9 @@ private:
               if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(Arg)) {
                 const Expr *sub = ICE->getSubExpr();
                 QualType T = sub->getType();
-                if (T->isObjCObjectPointerType())
+                if (T->isObjCObjectPointerType()) {
                   return;
+}
               }
             }
             castToObjCObject(E, /*retained=*/true);
@@ -179,8 +188,9 @@ private:
     // If returning an ivar or a member of an ivar from a +0 method, use
     // a __bridge cast.
     Expr *base = inner->IgnoreParenImpCasts();
-    while (isa<MemberExpr>(base))
+    while (isa<MemberExpr>(base)) {
       base = cast<MemberExpr>(base)->getBase()->IgnoreParenImpCasts();
+}
     if (isa<ObjCIvarRefExpr>(base) &&
         isa<ReturnStmt>(StmtMap->getParentIgnoreParenCasts(E))) {
       if (ObjCMethodDecl *method = dyn_cast_or_null<ObjCMethodDecl>(ParentD)) {
@@ -253,13 +263,15 @@ private:
 
       SourceManager &SM = Pass.Ctx.getSourceManager();
       char PrevChar = *SM.getCharacterData(InsertLoc.getLocWithOffset(-1));
-      if (Lexer::isIdentifierBodyChar(PrevChar, Pass.Ctx.getLangOpts()))
+      if (Lexer::isIdentifierBodyChar(PrevChar, Pass.Ctx.getLangOpts())) {
         BridgeCall += ' ';
+}
 
-      if (Kind == OBC_BridgeTransfer)
+      if (Kind == OBC_BridgeTransfer) {
         BridgeCall += "CFBridgingRelease";
-      else
+      } else {
         BridgeCall += "CFBridgingRetain";
+}
 
       if (isa<ParenExpr>(WrapE)) {
         TA.insert(InsertLoc, BridgeCall);
@@ -312,8 +324,9 @@ private:
                             diag::err_arc_cast_requires_bridge,
                             OuterRange);
     if (!hasSideEffects(E, Pass.Ctx)) {
-      if (tryRemoving(cast<Expr>(StmtMap->getParentIgnoreParenCasts(E))))
+      if (tryRemoving(cast<Expr>(StmtMap->getParentIgnoreParenCasts(E)))) {
         return;
+}
     }
     Pass.TA.replace(OuterRange, InnerRange);
   }
@@ -348,16 +361,19 @@ private:
       }
     }
 
-    if (isSelf(E->getSubExpr()))
+    if (isSelf(E->getSubExpr())) {
       return rewriteToBridgedCast(E, OBC_Bridge);
+}
 
     CallExpr *callE;
-    if (isPassedToCFRetain(E, callE))
+    if (isPassedToCFRetain(E, callE)) {
       return rewriteCastForCFRetain(E, callE);
+}
 
     ObjCMethodFamily family = getFamilyOfMessage(E->getSubExpr());
-    if (family == OMF_retain)
+    if (family == OMF_retain) {
       return rewriteToBridgedCast(E, OBC_BridgeRetained);
+}
 
     if (family == OMF_autorelease || family == OMF_release) {
       std::string err = "it is not safe to cast to '";
@@ -391,49 +407,57 @@ private:
     }
 
     if (ImplicitCastExpr *implCE = dyn_cast<ImplicitCastExpr>(subExpr)) {
-      if (implCE->getCastKind() == CK_ARCConsumeObject)
+      if (implCE->getCastKind() == CK_ARCConsumeObject) {
         return rewriteToBridgedCast(E, OBC_BridgeRetained);
-      if (implCE->getCastKind() == CK_ARCReclaimReturnedObject)
+}
+      if (implCE->getCastKind() == CK_ARCReclaimReturnedObject) {
         return rewriteToBridgedCast(E, OBC_Bridge);
+}
     }
 
     bool isConsumed = false;
-    if (isPassedToCParamWithKnownOwnership(E, isConsumed))
+    if (isPassedToCParamWithKnownOwnership(E, isConsumed)) {
       return rewriteToBridgedCast(E, isConsumed ? OBC_BridgeRetained
                                                 : OBC_Bridge);
+}
   }
 
   static ObjCMethodFamily getFamilyOfMessage(Expr *E) {
     E = E->IgnoreParenCasts();
-    if (ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E))
+    if (ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E)) {
       return ME->getMethodFamily();
+}
 
     return OMF_None;
   }
 
   bool isPassedToCFRetain(Expr *E, CallExpr *&callE) const {
     if ((callE = dyn_cast_or_null<CallExpr>(
-                                     StmtMap->getParentIgnoreParenImpCasts(E))))
+                                     StmtMap->getParentIgnoreParenImpCasts(E)))) {
       if (FunctionDecl *
-            FD = dyn_cast_or_null<FunctionDecl>(callE->getCalleeDecl()))
+            FD = dyn_cast_or_null<FunctionDecl>(callE->getCalleeDecl())) {
         if (FD->getName() == "CFRetain" && FD->getNumParams() == 1 &&
             FD->getParent()->isTranslationUnit() &&
-            FD->isExternallyVisible())
+            FD->isExternallyVisible()) {
           return true;
+}
+}
+}
 
     return false;
   }
 
   bool isPassedToCParamWithKnownOwnership(Expr *E, bool &isConsumed) const {
     if (CallExpr *callE = dyn_cast_or_null<CallExpr>(
-                                     StmtMap->getParentIgnoreParenImpCasts(E)))
+                                     StmtMap->getParentIgnoreParenImpCasts(E))) {
       if (FunctionDecl *
             FD = dyn_cast_or_null<FunctionDecl>(callE->getCalleeDecl())) {
         unsigned i = 0;
         for (unsigned e = callE->getNumArgs(); i != e; ++i) {
           Expr *arg = callE->getArg(i);
-          if (arg == E || arg->IgnoreParenImpCasts() == E)
+          if (arg == E || arg->IgnoreParenImpCasts() == E) {
             break;
+}
         }
         if (i < callE->getNumArgs() && i < FD->getNumParams()) {
           ParmVarDecl *PD = FD->getParamDecl(i);
@@ -443,16 +467,20 @@ private:
           }
         }
       }
+}
 
     return false;
   }
 
   bool isSelf(Expr *E) const {
     E = E->IgnoreParenLValueCasts();
-    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E))
-      if (ImplicitParamDecl *IPD = dyn_cast<ImplicitParamDecl>(DRE->getDecl()))
-        if (IPD->getIdentifier() == SelfII)
+    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
+      if (ImplicitParamDecl *IPD = dyn_cast<ImplicitParamDecl>(DRE->getDecl())) {
+        if (IPD->getIdentifier() == SelfII) {
           return true;
+}
+}
+}
 
     return false;
   }

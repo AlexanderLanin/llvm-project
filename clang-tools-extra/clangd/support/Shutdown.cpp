@@ -26,9 +26,10 @@ void abortAfterTimeout(std::chrono::seconds Timeout) {
 static std::atomic<bool> ShutdownRequested = {false};
 
 void requestShutdown() {
-  if (ShutdownRequested.exchange(true))
+  if (ShutdownRequested.exchange(true)) {
     // This is the second shutdown request. Exit hard.
     std::abort();
+}
 }
 
 bool shutdownRequested() { return ShutdownRequested; }

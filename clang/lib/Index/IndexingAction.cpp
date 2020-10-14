@@ -45,8 +45,9 @@ public:
 
   void MacroUndefined(const Token &MacroNameTok, const MacroDefinition &MD,
                       const MacroDirective *Undef) override {
-    if (!MD.getMacroInfo())  // Ignore noop #undef.
+    if (!MD.getMacroInfo()) {  // Ignore noop #undef.
       return;
+}
     IndexCtx->handleMacroUndefined(*MacroNameTok.getIdentifierInfo(),
                                    MacroNameTok.getLocation(),
                                    *MD.getMacroInfo());
@@ -137,11 +138,12 @@ std::unique_ptr<ASTConsumer> clang::index::createIndexingASTConsumer(
   std::function<bool(const Decl *)> ShouldSkipFunctionBody = [](const Decl *) {
     return false;
   };
-  if (Opts.ShouldTraverseDecl)
+  if (Opts.ShouldTraverseDecl) {
     ShouldSkipFunctionBody =
         [ShouldTraverseDecl(Opts.ShouldTraverseDecl)](const Decl *D) {
           return !ShouldTraverseDecl(D);
         };
+}
   return createIndexingASTConsumer(std::move(DataConsumer), Opts, std::move(PP),
                                    std::move(ShouldSkipFunctionBody));
 }
@@ -164,21 +166,23 @@ static void indexTranslationUnit(ASTUnit &Unit, IndexingContext &IndexCtx) {
 
 static void indexPreprocessorMacros(const Preprocessor &PP,
                                     IndexDataConsumer &DataConsumer) {
-  for (const auto &M : PP.macros())
+  for (const auto &M : PP.macros()) {
     if (MacroDirective *MD = M.second.getLatest()) {
       auto *MI = MD->getMacroInfo();
       // When using modules, it may happen that we find #undef of a macro that
       // was defined in another module. In such case, MI may be nullptr, since
       // we only look for macro definitions in the current TU. In that case,
       // there is nothing to index.
-      if (!MI)
+      if (!MI) {
         continue;
+}
 
       DataConsumer.handleMacroOccurrence(
           M.first, MD->getMacroInfo(),
           static_cast<unsigned>(index::SymbolRole::Definition),
           MD->getLocation());
     }
+}
 }
 
 void index::indexASTUnit(ASTUnit &Unit, IndexDataConsumer &DataConsumer,
@@ -188,8 +192,9 @@ void index::indexASTUnit(ASTUnit &Unit, IndexDataConsumer &DataConsumer,
   DataConsumer.initialize(Unit.getASTContext());
   DataConsumer.setPreprocessor(Unit.getPreprocessorPtr());
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(Unit.getPreprocessor(), DataConsumer);
+}
   indexTranslationUnit(Unit, IndexCtx);
   DataConsumer.finish();
 }
@@ -203,11 +208,13 @@ void index::indexTopLevelDecls(ASTContext &Ctx, Preprocessor &PP,
 
   DataConsumer.initialize(Ctx);
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(PP, DataConsumer);
+}
 
-  for (const Decl *D : Decls)
+  for (const Decl *D : Decls) {
     IndexCtx.indexTopLevelDecl(D);
+}
   DataConsumer.finish();
 }
 
@@ -225,8 +232,9 @@ void index::indexModuleFile(serialization::ModuleFile &Mod, ASTReader &Reader,
   IndexCtx.setASTContext(Ctx);
   DataConsumer.initialize(Ctx);
 
-  if (Opts.IndexMacrosInPreprocessor)
+  if (Opts.IndexMacrosInPreprocessor) {
     indexPreprocessorMacros(Reader.getPreprocessor(), DataConsumer);
+}
 
   for (const Decl *D : Reader.getModuleFileLevelDecls(Mod)) {
     IndexCtx.indexTopLevelDecl(D);

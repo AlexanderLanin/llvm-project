@@ -59,8 +59,9 @@ public:
   void insert(StringRef NewPath, unsigned ConsumedLength = 0) {
     // We cannot put relative paths into the FileMatchTrie as then a path can be
     // a postfix of another path, violating a core assumption of the trie.
-    if (llvm::sys::path::is_relative(NewPath))
+    if (llvm::sys::path::is_relative(NewPath)) {
       return;
+}
     if (Path.empty()) {
       // This is an empty leaf. Store NewPath and return.
       Path = std::string(NewPath);
@@ -68,8 +69,9 @@ public:
     }
     if (Children.empty()) {
       // This is a leaf, ignore duplicate entry if 'Path' equals 'NewPath'.
-      if (NewPath == Path)
+      if (NewPath == Path) {
           return;
+}
       // Make this a node and create a child-leaf with 'Path'.
       StringRef Element(llvm::sys::path::filename(
           StringRef(Path).drop_back(ConsumedLength)));
@@ -111,8 +113,9 @@ public:
       // basenames here to avoid request to file system.
       if (llvm::sys::path::filename(Path) ==
               llvm::sys::path::filename(FileName) &&
-          Comparator.equivalent(StringRef(Path), FileName))
+          Comparator.equivalent(StringRef(Path), FileName)) {
         return StringRef(Path);
+}
       return {};
     }
     StringRef Element(llvm::sys::path::filename(FileName.drop_back(
@@ -123,15 +126,17 @@ public:
       StringRef Result = MatchingChild->getValue().findEquivalent(
           Comparator, FileName, IsAmbiguous,
           ConsumedLength + Element.size() + 1);
-      if (!Result.empty() || IsAmbiguous)
+      if (!Result.empty() || IsAmbiguous) {
         return Result;
+}
     }
 
     // If `ConsumedLength` is zero, this is the root and we have no filename
     // match. Give up in this case, we don't try to find symlinks with
     // different names.
-    if (ConsumedLength == 0)
+    if (ConsumedLength == 0) {
       return {};
+}
 
     std::vector<StringRef> AllChildren;
     getAll(AllChildren, MatchingChild);
@@ -153,8 +158,9 @@ private:
   /// Gets all paths under this FileMatchTrieNode.
   void getAll(std::vector<StringRef> &Results,
               llvm::StringMap<FileMatchTrieNode>::const_iterator Except) const {
-    if (Path.empty())
+    if (Path.empty()) {
       return;
+}
     if (Children.empty()) {
       Results.push_back(StringRef(Path));
       return;
@@ -162,8 +168,9 @@ private:
     for (llvm::StringMap<FileMatchTrieNode>::const_iterator
          It = Children.begin(), E = Children.end();
          It != E; ++It) {
-      if (It == Except)
+      if (It == Except) {
         continue;
+}
       It->getValue().getAll(Results, Children.end());
     }
   }
@@ -201,7 +208,8 @@ StringRef FileMatchTrie::findEquivalent(StringRef FileName,
   }
   bool IsAmbiguous = false;
   StringRef Result = Root->findEquivalent(*Comparator, FileName, IsAmbiguous);
-  if (IsAmbiguous)
+  if (IsAmbiguous) {
     Error << "Path is ambiguous";
+}
   return Result;
 }

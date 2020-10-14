@@ -55,8 +55,9 @@ const ObjCIvarRegion *
 MacOSXAPIChecker::getParentIvarRegion(const MemRegion *R) {
   const SubRegion *SR = dyn_cast<SubRegion>(R);
   while (SR) {
-    if (const ObjCIvarRegion *IR = dyn_cast<ObjCIvarRegion>(SR))
+    if (const ObjCIvarRegion *IR = dyn_cast<ObjCIvarRegion>(SR)) {
       return IR;
+}
     SR = dyn_cast<SubRegion>(SR->getSuperRegion());
   }
   return nullptr;
@@ -64,20 +65,23 @@ MacOSXAPIChecker::getParentIvarRegion(const MemRegion *R) {
 
 void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
                                          StringRef FName) const {
-  if (CE->getNumArgs() < 1)
+  if (CE->getNumArgs() < 1) {
     return;
+}
 
   // Check if the first argument is improperly allocated.  If so, issue a
   // warning because that's likely to be bad news.
   const MemRegion *R = C.getSVal(CE->getArg(0)).getAsRegion();
-  if (!R)
+  if (!R) {
     return;
+}
 
   // Global variables are fine.
   const MemRegion *RB = R->getBaseRegion();
   const MemSpaceRegion *RS = RB->getMemorySpace();
-  if (isa<GlobalsSpaceRegion>(RS))
+  if (isa<GlobalsSpaceRegion>(RS)) {
     return;
+}
 
   // Handle _dispatch_once.  In some versions of the OS X SDK we have the case
   // that dispatch_once is a macro that wraps a call to _dispatch_once.
@@ -85,8 +89,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
   // Users do not care; they just want the warning at the top-level call.
   if (CE->getBeginLoc().isMacroID()) {
     StringRef TrimmedFName = FName.ltrim('_');
-    if (TrimmedFName != FName)
+    if (TrimmedFName != FName) {
       FName = TrimmedFName;
+}
   }
 
   SmallString<256> S;
@@ -99,21 +104,25 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     // out earlier. This branch only fires when we're looking from a block,
     // which we analyze as a top-level declaration, onto a static local
     // in a function that contains the block.
-    if (VD->isStaticLocal())
+    if (VD->isStaticLocal()) {
       return;
+}
     // We filtered out globals earlier, so it must be a local variable
     // or a block variable which is under UnknownSpaceRegion.
-    if (VR != R)
+    if (VR != R) {
       os << " memory within";
-    if (VD->hasAttr<BlocksAttr>())
+}
+    if (VD->hasAttr<BlocksAttr>()) {
       os << " the block variable '";
-    else
+    } else {
       os << " the local variable '";
+}
     os << VR->getDecl()->getName() << '\'';
     SuggestStatic = true;
   } else if (const ObjCIvarRegion *IVR = getParentIvarRegion(R)) {
-    if (IVR != R)
+    if (IVR != R) {
       os << " memory within";
+}
     os << " the instance variable '" << IVR->getDecl()->getName() << '\'';
   } else if (isa<HeapSpaceRegion>(RS)) {
     os << " heap-allocated memory";
@@ -129,16 +138,19 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
   }
   os << " for the predicate value.  Using such transient memory for "
         "the predicate is potentially dangerous.";
-  if (SuggestStatic)
+  if (SuggestStatic) {
     os << "  Perhaps you intended to declare the variable as 'static'?";
+}
 
   ExplodedNode *N = C.generateErrorNode();
-  if (!N)
+  if (!N) {
     return;
+}
 
-  if (!BT_dispatchOnce)
+  if (!BT_dispatchOnce) {
     BT_dispatchOnce.reset(new BugType(this, "Improper use of 'dispatch_once'",
                                       "API Misuse (Apple)"));
+}
 
   auto report =
       std::make_unique<PathSensitiveBugReport>(*BT_dispatchOnce, os.str(), N);
@@ -153,8 +165,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
 void MacOSXAPIChecker::checkPreStmt(const CallExpr *CE,
                                     CheckerContext &C) const {
   StringRef Name = C.getCalleeName(CE);
-  if (Name.empty())
+  if (Name.empty()) {
     return;
+}
 
   SubChecker SC =
     llvm::StringSwitch<SubChecker>(Name)
@@ -164,8 +177,9 @@ void MacOSXAPIChecker::checkPreStmt(const CallExpr *CE,
              &MacOSXAPIChecker::CheckDispatchOnce)
       .Default(nullptr);
 
-  if (SC)
+  if (SC) {
     (this->*SC)(C, CE, Name);
+}
 }
 
 //===----------------------------------------------------------------------===//

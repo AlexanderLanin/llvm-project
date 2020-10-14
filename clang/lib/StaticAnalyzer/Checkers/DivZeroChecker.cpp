@@ -35,8 +35,9 @@ public:
 
 static const Expr *getDenomExpr(const ExplodedNode *N) {
   const Stmt *S = N->getLocationAs<PreStmt>()->getStmt();
-  if (const auto *BE = dyn_cast<BinaryOperator>(S))
+  if (const auto *BE = dyn_cast<BinaryOperator>(S)) {
     return BE->getRHS();
+}
   return nullptr;
 }
 
@@ -44,8 +45,9 @@ void DivZeroChecker::reportBug(
     const char *Msg, ProgramStateRef StateZero, CheckerContext &C,
     std::unique_ptr<BugReporterVisitor> Visitor) const {
   if (ExplodedNode *N = C.generateErrorNode(StateZero)) {
-    if (!BT)
+    if (!BT) {
       BT.reset(new BuiltinBug(this, "Division by zero"));
+}
 
     auto R = std::make_unique<PathSensitiveBugReport>(*BT, Msg, N);
     R->addVisitor(std::move(Visitor));
@@ -60,19 +62,22 @@ void DivZeroChecker::checkPreStmt(const BinaryOperator *B,
   if (Op != BO_Div &&
       Op != BO_Rem &&
       Op != BO_DivAssign &&
-      Op != BO_RemAssign)
+      Op != BO_RemAssign) {
     return;
+}
 
-  if (!B->getRHS()->getType()->isScalarType())
+  if (!B->getRHS()->getType()->isScalarType()) {
     return;
+}
 
   SVal Denom = C.getSVal(B->getRHS());
   Optional<DefinedSVal> DV = Denom.getAs<DefinedSVal>();
 
   // Divide-by-undefined handled in the generic checking for uses of
   // undefined values.
-  if (!DV)
+  if (!DV) {
     return;
+}
 
   // Check for divide by zero.
   ConstraintManager &CM = C.getConstraintManager();

@@ -59,12 +59,13 @@ void NoMallocCheck::check(const MatchFinder::MatchResult &Result) {
   const CallExpr *Call = nullptr;
   StringRef Recommendation;
 
-  if ((Call = Result.Nodes.getNodeAs<CallExpr>("allocation")))
+  if ((Call = Result.Nodes.getNodeAs<CallExpr>("allocation"))) {
     Recommendation = "consider a container or a smart pointer";
-  else if ((Call = Result.Nodes.getNodeAs<CallExpr>("realloc")))
+  } else if ((Call = Result.Nodes.getNodeAs<CallExpr>("realloc"))) {
     Recommendation = "consider std::vector or std::string";
-  else if ((Call = Result.Nodes.getNodeAs<CallExpr>("free")))
+  } else if ((Call = Result.Nodes.getNodeAs<CallExpr>("free"))) {
     Recommendation = "use RAII";
+}
 
   assert(Call && "Unhandled binding in the Matcher");
 

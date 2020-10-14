@@ -23,8 +23,9 @@ tryToFindPtrOrigin(const Expr *E, bool StopAtFirstRefCountedObj) {
       if (StopAtFirstRefCountedObj) {
         if (auto *ConversionFunc =
                 dyn_cast_or_null<FunctionDecl>(cast->getConversionFunction())) {
-          if (isCtorOfRefCounted(ConversionFunc))
+          if (isCtorOfRefCounted(ConversionFunc)) {
             return {E, true};
+}
         }
       }
       // FIXME: This can give false "origin" that would lead to false negatives
@@ -54,8 +55,9 @@ tryToFindPtrOrigin(const Expr *E, bool StopAtFirstRefCountedObj) {
 
       if (auto *callee = call->getDirectCallee()) {
         if (isCtorOfRefCounted(callee)) {
-          if (StopAtFirstRefCountedObj)
+          if (StopAtFirstRefCountedObj) {
             return {E, true};
+}
 
           E = call->getArg(0);
           continue;
@@ -83,8 +85,9 @@ bool isASafeCallArg(const Expr *E) {
   assert(E);
   if (auto *Ref = dyn_cast<DeclRefExpr>(E)) {
     if (auto *D = dyn_cast_or_null<VarDecl>(Ref->getFoundDecl())) {
-      if (isa<ParmVarDecl>(D) || D->isLocalVarDecl())
+      if (isa<ParmVarDecl>(D) || D->isLocalVarDecl()) {
         return true;
+}
     }
   }
 

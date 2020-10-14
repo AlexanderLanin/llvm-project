@@ -104,8 +104,9 @@ struct PragmaSTDC_FENV_ACCESSHandler : public PragmaHandler {
   void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
                     Token &Tok) override {
     tok::OnOffSwitch OOS;
-    if (PP.LexOnOffSwitch(OOS))
+    if (PP.LexOnOffSwitch(OOS)) {
      return;
+}
     if (OOS == tok::OOS_ON) {
       PP.Diag(Tok, diag::warn_stdc_fenv_access_not_supported);
       return;
@@ -341,10 +342,11 @@ void Parser::initializePragmaHandlers() {
 
     PP.AddPragmaHandler("OPENCL", FPContractHandler.get());
   }
-  if (getLangOpts().OpenMP)
+  if (getLangOpts().OpenMP) {
     OpenMPHandler = std::make_unique<PragmaOpenMPHandler>();
-  else
+  } else {
     OpenMPHandler = std::make_unique<PragmaNoOpenMPHandler>();
+}
   PP.AddPragmaHandler(OpenMPHandler.get());
 
   if (getLangOpts().MicrosoftExt ||
@@ -781,17 +783,19 @@ void Parser::HandlePragmaOpenCLExtension() {
     }
     Actions.setCurrentOpenCLExtension(Name);
   } else if (State == End) {
-    if (Name != Actions.getCurrentOpenCLExtension())
+    if (Name != Actions.getCurrentOpenCLExtension()) {
       PP.Diag(NameLoc, diag::warn_pragma_begin_end_mismatch);
+}
     Actions.setCurrentOpenCLExtension("");
-  } else if (!Opt.isKnown(Name))
+  } else if (!Opt.isKnown(Name)) {
     PP.Diag(NameLoc, diag::warn_pragma_unknown_extension) << Ident;
-  else if (Opt.isSupportedExtension(Name, getLangOpts()))
+  } else if (Opt.isSupportedExtension(Name, getLangOpts())) {
     Opt.enable(Name, State == Enable);
-  else if (Opt.isSupportedCore(Name, getLangOpts()))
+  } else if (Opt.isSupportedCore(Name, getLangOpts())) {
     PP.Diag(NameLoc, diag::warn_pragma_extension_is_core) << Ident;
-  else
+  } else {
     PP.Diag(NameLoc, diag::warn_pragma_unsupported_extension) << Ident;
+}
 }
 
 void Parser::HandlePragmaMSPointersToMembers() {
@@ -839,8 +843,9 @@ void Parser::HandlePragmaMSPragma() {
   if (!(this->*Handler)(PragmaName, PragmaLocation)) {
     // Pragma handling failed, and has been diagnosed.  Slurp up the tokens
     // until eof (really end of line) to prevent follow-on errors.
-    while (Tok.isNot(tok::eof))
+    while (Tok.isNot(tok::eof)) {
       PP.Lex(Tok);
+}
     PP.Lex(Tok);
   }
 }
@@ -859,8 +864,9 @@ bool Parser::HandlePragmaMSSection(StringRef PragmaName,
     return false;
   }
   ExprResult StringResult = ParseStringLiteralExpression();
-  if (StringResult.isInvalid())
+  if (StringResult.isInvalid()) {
     return false; // Already diagnosed.
+}
   StringLiteral *SegmentName = cast<StringLiteral>(StringResult.get());
   if (SegmentName->getCharByteWidth() != 1) {
     PP.Diag(PragmaLocation, diag::warn_pragma_expected_non_wide_string)
@@ -909,8 +915,9 @@ bool Parser::HandlePragmaMSSection(StringRef PragmaName,
   }
   // If no section attributes are specified, the section will be marked as
   // read/write.
-  if (SectionFlagsAreDefault)
+  if (SectionFlagsAreDefault) {
     SectionFlags |= ASTContext::PSF_Write;
+}
   if (Tok.isNot(tok::r_paren)) {
     PP.Diag(PragmaLocation, diag::warn_pragma_expected_rparen) << PragmaName;
     return false;
@@ -937,11 +944,11 @@ bool Parser::HandlePragmaMSSegment(StringRef PragmaName,
   StringRef SlotLabel;
   if (Tok.isAnyIdentifier()) {
     StringRef PushPop = Tok.getIdentifierInfo()->getName();
-    if (PushPop == "push")
+    if (PushPop == "push") {
       Action = Sema::PSK_Push;
-    else if (PushPop == "pop")
+    } else if (PushPop == "pop") {
       Action = Sema::PSK_Pop;
-    else {
+    } else {
       PP.Diag(PragmaLocation,
               diag::warn_pragma_expected_section_push_pop_or_name)
           << PragmaName;
@@ -955,9 +962,9 @@ bool Parser::HandlePragmaMSSegment(StringRef PragmaName,
         if (Tok.isAnyIdentifier()) {
           SlotLabel = Tok.getIdentifierInfo()->getName();
           PP.Lex(Tok); // identifier
-          if (Tok.is(tok::comma))
+          if (Tok.is(tok::comma)) {
             PP.Lex(Tok);
-          else if (Tok.isNot(tok::r_paren)) {
+          } else if (Tok.isNot(tok::r_paren)) {
             PP.Diag(PragmaLocation, diag::warn_pragma_expected_punc)
                 << PragmaName;
             return false;
@@ -981,8 +988,9 @@ bool Parser::HandlePragmaMSSegment(StringRef PragmaName,
       return false;
     }
     ExprResult StringResult = ParseStringLiteralExpression();
-    if (StringResult.isInvalid())
+    if (StringResult.isInvalid()) {
       return false; // Already diagnosed.
+}
     SegmentName = cast<StringLiteral>(StringResult.get());
     if (SegmentName->getCharByteWidth() != 1) {
       PP.Diag(PragmaLocation, diag::warn_pragma_expected_non_wide_string)
@@ -990,8 +998,9 @@ bool Parser::HandlePragmaMSSegment(StringRef PragmaName,
       return false;
     }
     // Setting section "" has no effect
-    if (SegmentName->getLength())
+    if (SegmentName->getLength()) {
       Action = (Sema::PragmaMsStackAction)(Action | Sema::PSK_Set);
+}
   }
   if (Tok.isNot(tok::r_paren)) {
     PP.Diag(PragmaLocation, diag::warn_pragma_expected_rparen) << PragmaName;
@@ -1018,8 +1027,9 @@ bool Parser::HandlePragmaMSInitSeg(StringRef PragmaName,
   }
 
   if (ExpectAndConsume(tok::l_paren, diag::warn_pragma_expected_lparen,
-                       PragmaName))
+                       PragmaName)) {
     return false;
+}
 
   // Parse either the known section names or the string section name.
   StringLiteral *SegmentName = nullptr;
@@ -1045,8 +1055,9 @@ bool Parser::HandlePragmaMSInitSeg(StringRef PragmaName,
     }
   } else if (Tok.is(tok::string_literal)) {
     ExprResult StringResult = ParseStringLiteralExpression();
-    if (StringResult.isInvalid())
+    if (StringResult.isInvalid()) {
       return false;
+}
     SegmentName = cast<StringLiteral>(StringResult.get());
     if (SegmentName->getCharByteWidth() != 1) {
       PP.Diag(PragmaLocation, diag::warn_pragma_expected_non_wide_string)
@@ -1064,8 +1075,9 @@ bool Parser::HandlePragmaMSInitSeg(StringRef PragmaName,
   if (ExpectAndConsume(tok::r_paren, diag::warn_pragma_expected_rparen,
                        PragmaName) ||
       ExpectAndConsume(tok::eof, diag::warn_pragma_extra_tokens_at_eol,
-                       PragmaName))
+                       PragmaName)) {
     return false;
+}
 
   Actions.ActOnPragmaMSInitSeg(PragmaLocation, SegmentName);
   return true;
@@ -1181,9 +1193,10 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
       }
       return false;
     }
-    if (Toks.size() > 2)
+    if (Toks.size() > 2) {
       Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
           << PragmaLoopHintString(Info->PragmaName, Info->Option);
+}
     Hint.StateLoc = IdentifierLoc::create(Actions.Context, StateLoc, StateInfo);
   } else {
     // Enter constant expression including eof terminator into token stream.
@@ -1198,15 +1211,17 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
     if (Tok.isNot(tok::eof)) {
       Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
           << PragmaLoopHintString(Info->PragmaName, Info->Option);
-      while (Tok.isNot(tok::eof))
+      while (Tok.isNot(tok::eof)) {
         ConsumeAnyToken();
+}
     }
 
     ConsumeToken(); // Consume the constant expression eof terminator.
 
     if (R.isInvalid() ||
-        Actions.CheckLoopHintExpr(R.get(), Toks[0].getLocation()))
+        Actions.CheckLoopHintExpr(R.get(), Toks[0].getLocation())) {
       return false;
+}
 
     // Argument is a constant expression with an integer type.
     Hint.ValueExpr = R.get();
@@ -1233,11 +1248,13 @@ struct PragmaAttributeInfo {
 } // end anonymous namespace
 
 static StringRef getIdentifier(const Token &Tok) {
-  if (Tok.is(tok::identifier))
+  if (Tok.is(tok::identifier)) {
     return Tok.getIdentifierInfo()->getName();
+}
   const char *S = tok::getKeywordSpelling(Tok.getKind());
-  if (!S)
+  if (!S) {
     return "";
+}
   return S;
 }
 
@@ -1260,10 +1277,11 @@ static void diagnoseExpectedAttributeSubjectSubRule(
       PRef.Diag(SubRuleLoc,
                 diag::err_pragma_attribute_expected_subject_sub_identifier)
       << PrimaryRuleName;
-  if (const char *SubRules = validAttributeSubjectMatchSubRules(PrimaryRule))
+  if (const char *SubRules = validAttributeSubjectMatchSubRules(PrimaryRule)) {
     Diagnostic << /*SubRulesSupported=*/1 << SubRules;
-  else
+  } else {
     Diagnostic << /*SubRulesSupported=*/0;
+}
 }
 
 static void diagnoseUnknownAttributeSubjectSubRule(
@@ -1273,10 +1291,11 @@ static void diagnoseUnknownAttributeSubjectSubRule(
   auto Diagnostic =
       PRef.Diag(SubRuleLoc, diag::err_pragma_attribute_unknown_subject_sub_rule)
       << SubRuleName << PrimaryRuleName;
-  if (const char *SubRules = validAttributeSubjectMatchSubRules(PrimaryRule))
+  if (const char *SubRules = validAttributeSubjectMatchSubRules(PrimaryRule)) {
     Diagnostic << /*SubRulesSupported=*/1 << SubRules;
-  else
+  } else {
     Diagnostic << /*SubRulesSupported=*/0;
+}
 }
 
 bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
@@ -1287,8 +1306,9 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
   if (getIdentifier(Tok) == "any") {
     AnyLoc = ConsumeToken();
     IsAny = true;
-    if (AnyParens.expectAndConsume())
+    if (AnyParens.expectAndConsume()) {
       return true;
+}
   }
 
   do {
@@ -1310,17 +1330,19 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
 
     BalancedDelimiterTracker Parens(*this, tok::l_paren);
     if (isAbstractAttrMatcherRule(PrimaryRule)) {
-      if (Parens.expectAndConsume())
+      if (Parens.expectAndConsume()) {
         return true;
+}
     } else if (Parens.consumeOpen()) {
       if (!SubjectMatchRules
                .insert(
                    std::make_pair(PrimaryRule, SourceRange(RuleLoc, RuleLoc)))
-               .second)
+               .second) {
         Diag(RuleLoc, diag::err_pragma_attribute_duplicate_subject)
             << Name
             << FixItHint::CreateRemoval(SourceRange(
                    RuleLoc, Tok.is(tok::comma) ? Tok.getLocation() : RuleLoc));
+}
       LastMatchRuleEndLoc = RuleLoc;
       continue;
     }
@@ -1336,8 +1358,9 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
     if (SubRuleName == "unless") {
       SourceLocation SubRuleLoc = ConsumeToken();
       BalancedDelimiterTracker Parens(*this, tok::l_paren);
-      if (Parens.expectAndConsume())
+      if (Parens.expectAndConsume()) {
         return true;
+}
       SubRuleName = getIdentifier(Tok);
       if (SubRuleName.empty()) {
         diagnoseExpectedAttributeSubjectSubRule(*this, PrimaryRule, Name,
@@ -1353,8 +1376,9 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
       }
       SubRule = *SubRuleOrNone;
       ConsumeToken();
-      if (Parens.consumeClose())
+      if (Parens.consumeClose()) {
         return true;
+}
     } else {
       auto SubRuleOrNone = Rule.second(SubRuleName, /*IsUnless=*/false);
       if (!SubRuleOrNone) {
@@ -1367,8 +1391,9 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
     }
     SourceLocation RuleEndLoc = Tok.getLocation();
     LastMatchRuleEndLoc = RuleEndLoc;
-    if (Parens.consumeClose())
+    if (Parens.consumeClose()) {
       return true;
+}
     if (!SubjectMatchRules
              .insert(std::make_pair(SubRule, SourceRange(RuleLoc, RuleEndLoc)))
              .second) {
@@ -1380,9 +1405,11 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
     }
   } while (IsAny && TryConsumeToken(tok::comma));
 
-  if (IsAny)
-    if (AnyParens.consumeClose())
+  if (IsAny) {
+    if (AnyParens.consumeClose()) {
       return true;
+}
+}
 
   return false;
 }
@@ -1401,13 +1428,16 @@ enum class MissingAttributeSubjectRulesRecoveryPoint {
 MissingAttributeSubjectRulesRecoveryPoint
 getAttributeSubjectRulesRecoveryPointForToken(const Token &Tok) {
   if (const auto *II = Tok.getIdentifierInfo()) {
-    if (II->isStr("apply_to"))
+    if (II->isStr("apply_to")) {
       return MissingAttributeSubjectRulesRecoveryPoint::ApplyTo;
-    if (II->isStr("any"))
+}
+    if (II->isStr("any")) {
       return MissingAttributeSubjectRulesRecoveryPoint::Any;
+}
   }
-  if (Tok.is(tok::equal))
+  if (Tok.is(tok::equal)) {
     return MissingAttributeSubjectRulesRecoveryPoint::Equals;
+}
   return MissingAttributeSubjectRulesRecoveryPoint::None;
 }
 
@@ -1418,20 +1448,24 @@ DiagnosticBuilder createExpectedAttributeSubjectRulesTokenDiagnostic(
     unsigned DiagID, ParsedAttr &Attribute,
     MissingAttributeSubjectRulesRecoveryPoint Point, Parser &PRef) {
   SourceLocation Loc = PRef.getEndOfPreviousToken();
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     Loc = PRef.getCurToken().getLocation();
+}
   auto Diagnostic = PRef.Diag(Loc, DiagID);
   std::string FixIt;
   MissingAttributeSubjectRulesRecoveryPoint EndPoint =
       getAttributeSubjectRulesRecoveryPointForToken(PRef.getCurToken());
-  if (Point == MissingAttributeSubjectRulesRecoveryPoint::Comma)
+  if (Point == MissingAttributeSubjectRulesRecoveryPoint::Comma) {
     FixIt = ", ";
+}
   if (Point <= MissingAttributeSubjectRulesRecoveryPoint::ApplyTo &&
-      EndPoint > MissingAttributeSubjectRulesRecoveryPoint::ApplyTo)
+      EndPoint > MissingAttributeSubjectRulesRecoveryPoint::ApplyTo) {
     FixIt += "apply_to";
+}
   if (Point <= MissingAttributeSubjectRulesRecoveryPoint::Equals &&
-      EndPoint > MissingAttributeSubjectRulesRecoveryPoint::Equals)
+      EndPoint > MissingAttributeSubjectRulesRecoveryPoint::Equals) {
     FixIt += " = ";
+}
   SourceRange FixItRange(Loc);
   if (EndPoint == MissingAttributeSubjectRulesRecoveryPoint::None) {
     // Gather the subject match rules that are supported by the attribute.
@@ -1447,12 +1481,14 @@ DiagnosticBuilder createExpectedAttributeSubjectRulesTokenDiagnostic(
     for (const auto &I : SubjectMatchRuleSet) {
       // Ensure that the missing rule is reported in the fix-it only when it's
       // supported in the current language mode.
-      if (!I.second)
+      if (!I.second) {
         continue;
-      if (NeedsComma)
+}
+      if (NeedsComma) {
         FixIt += ", ";
-      else
+      } else {
         NeedsComma = true;
+}
       FixIt += attr::getSubjectMatchRuleSpelling(I.first);
     }
     FixIt += ")";
@@ -1460,11 +1496,12 @@ DiagnosticBuilder createExpectedAttributeSubjectRulesTokenDiagnostic(
     PRef.SkipUntil(tok::eof, Parser::StopBeforeMatch);
     FixItRange.setEnd(PRef.getCurToken().getLocation());
   }
-  if (FixItRange.getBegin() == FixItRange.getEnd())
+  if (FixItRange.getBegin() == FixItRange.getEnd()) {
     Diagnostic << FixItHint::CreateInsertion(FixItRange.getBegin(), FixIt);
-  else
+  } else {
     Diagnostic << FixItHint::CreateReplacement(
         CharSourceRange::getCharRange(FixItRange), FixIt);
+}
   return Diagnostic;
 }
 
@@ -1509,10 +1546,12 @@ void Parser::HandlePragmaAttribute() {
   } else if (Tok.is(tok::kw___attribute)) {
     ConsumeToken();
     if (ExpectAndConsume(tok::l_paren, diag::err_expected_lparen_after,
-                         "attribute"))
+                         "attribute")) {
       return SkipToEnd();
-    if (ExpectAndConsume(tok::l_paren, diag::err_expected_lparen_after, "("))
+}
+    if (ExpectAndConsume(tok::l_paren, diag::err_expected_lparen_after, "(")) {
       return SkipToEnd();
+}
 
     if (Tok.isNot(tok::identifier)) {
       Diag(Tok, diag::err_pragma_attribute_expected_attribute_name);
@@ -1522,19 +1561,22 @@ void Parser::HandlePragmaAttribute() {
     IdentifierInfo *AttrName = Tok.getIdentifierInfo();
     SourceLocation AttrNameLoc = ConsumeToken();
 
-    if (Tok.isNot(tok::l_paren))
+    if (Tok.isNot(tok::l_paren)) {
       Attrs.addNew(AttrName, AttrNameLoc, nullptr, AttrNameLoc, nullptr, 0,
                    ParsedAttr::AS_GNU);
-    else
+    } else {
       ParseGNUAttributeArgs(AttrName, AttrNameLoc, Attrs, /*EndLoc=*/nullptr,
                             /*ScopeName=*/nullptr,
                             /*ScopeLoc=*/SourceLocation(), ParsedAttr::AS_GNU,
                             /*Declarator=*/nullptr);
+}
 
-    if (ExpectAndConsume(tok::r_paren))
+    if (ExpectAndConsume(tok::r_paren)) {
       return SkipToEnd();
-    if (ExpectAndConsume(tok::r_paren))
+}
+    if (ExpectAndConsume(tok::r_paren)) {
       return SkipToEnd();
+}
   } else if (Tok.is(tok::kw___declspec)) {
     ParseMicrosoftDeclSpecs(Attrs);
   } else {
@@ -1550,8 +1592,9 @@ void Parser::HandlePragmaAttribute() {
         if (Tok.is(tok::l_paren)) {
           ConsumeAnyToken();
           SkipUntil(tok::r_paren, StopBeforeMatch);
-          if (Tok.isNot(tok::r_paren))
+          if (Tok.isNot(tok::r_paren)) {
             return SkipToEnd();
+}
         }
         Diag(Tok, diag::note_pragma_attribute_use_attribute_kw)
             << FixItHint::CreateInsertion(InsertStartLoc, "__attribute__((")
@@ -1639,8 +1682,9 @@ void Parser::HandlePragmaAttribute() {
   ConsumeToken();
 
   // Handle a mixed push/attribute by desurging to a push, then an attribute.
-  if (Info->Action == PragmaAttributeInfo::Push)
+  if (Info->Action == PragmaAttributeInfo::Push) {
     Actions.ActOnPragmaAttributeEmptyPush(PragmaLoc, Info->Namespace);
+}
 
   Actions.ActOnPragmaAttributeAttribute(Attribute, PragmaLoc,
                                         std::move(SubjectMatchRules));
@@ -1839,9 +1883,9 @@ void PragmaMSStructHandler::HandlePragma(Preprocessor &PP,
     Kind = PMSST_ON;
     PP.Lex(Tok);
   }
-  else if (II->isStr("off") || II->isStr("reset"))
+  else if (II->isStr("off") || II->isStr("reset")) {
     PP.Lex(Tok);
-  else {
+  } else {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_ms_struct);
     return;
   }
@@ -1880,17 +1924,17 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
     }
 
     const IdentifierInfo *SecType = Tok.getIdentifierInfo();
-    if (SecType->isStr("bss"))
+    if (SecType->isStr("bss")) {
       SecKind = Sema::PragmaClangSectionKind::PCSK_BSS;
-    else if (SecType->isStr("data"))
+    } else if (SecType->isStr("data")) {
       SecKind = Sema::PragmaClangSectionKind::PCSK_Data;
-    else if (SecType->isStr("rodata"))
+    } else if (SecType->isStr("rodata")) {
       SecKind = Sema::PragmaClangSectionKind::PCSK_Rodata;
-    else if (SecType->isStr("relro"))
+    } else if (SecType->isStr("relro")) {
       SecKind = Sema::PragmaClangSectionKind::PCSK_Relro;
-    else if (SecType->isStr("text"))
+    } else if (SecType->isStr("text")) {
       SecKind = Sema::PragmaClangSectionKind::PCSK_Text;
-    else {
+    } else {
       PP.Diag(Tok.getLocation(), diag::err_pragma_expected_clang_section_name) << "clang section";
       return;
     }
@@ -1903,8 +1947,9 @@ void PragmaClangSectionHandler::HandlePragma(Preprocessor &PP,
     }
 
     std::string SecName;
-    if (!PP.LexStringLiteral(Tok, SecName, "pragma clang section", false))
+    if (!PP.LexStringLiteral(Tok, SecName, "pragma clang section", false)) {
       return;
+}
 
     Actions.ActOnPragmaClangSection(
         PragmaLocation,
@@ -1945,19 +1990,19 @@ static void ParseAlignPragma(Preprocessor &PP, Token &FirstTok,
 
   Sema::PragmaOptionsAlignKind Kind = Sema::POAK_Natural;
   const IdentifierInfo *II = Tok.getIdentifierInfo();
-  if (II->isStr("native"))
+  if (II->isStr("native")) {
     Kind = Sema::POAK_Native;
-  else if (II->isStr("natural"))
+  } else if (II->isStr("natural")) {
     Kind = Sema::POAK_Natural;
-  else if (II->isStr("packed"))
+  } else if (II->isStr("packed")) {
     Kind = Sema::POAK_Packed;
-  else if (II->isStr("power"))
+  } else if (II->isStr("power")) {
     Kind = Sema::POAK_Power;
-  else if (II->isStr("mac68k"))
+  } else if (II->isStr("mac68k")) {
     Kind = Sema::POAK_Mac68k;
-  else if (II->isStr("reset"))
+  } else if (II->isStr("reset")) {
     Kind = Sema::POAK_Reset;
-  else {
+  } else {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_align_invalid_option)
       << IsOptions;
     return;
@@ -2187,8 +2232,9 @@ void PragmaFPContractHandler::HandlePragma(Preprocessor &PP,
                                            PragmaIntroducer Introducer,
                                            Token &Tok) {
   tok::OnOffSwitch OOS;
-  if (PP.LexOnOffSwitch(OOS))
+  if (PP.LexOnOffSwitch(OOS)) {
     return;
+}
 
   MutableArrayRef<Token> Toks(PP.getPreprocessorAllocator().Allocate<Token>(1),
                               1);
@@ -2232,11 +2278,11 @@ void PragmaOpenCLExtensionHandler::HandlePragma(Preprocessor &PP,
     State = Enable;
   } else if (Pred->isStr("disable")) {
     State = Disable;
-  } else if (Pred->isStr("begin"))
+  } else if (Pred->isStr("begin")) {
     State = Begin;
-  else if (Pred->isStr("end"))
+  } else if (Pred->isStr("end")) {
     State = End;
-  else {
+  } else {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_expected_predicate)
       << Ext->isStr("all");
     return;
@@ -2263,9 +2309,10 @@ void PragmaOpenCLExtensionHandler::HandlePragma(Preprocessor &PP,
   PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/true,
                       /*IsReinject=*/false);
 
-  if (PP.getPPCallbacks())
+  if (PP.getPPCallbacks()) {
     PP.getPPCallbacks()->PragmaOpenCLExtension(NameLoc, Ext,
                                                StateLoc, State);
+}
 }
 
 /// Handle '#pragma omp ...' when OpenMP is disabled.
@@ -2301,10 +2348,11 @@ void PragmaOpenMPHandler::HandlePragma(Preprocessor &PP,
       unsigned InnerPragmaCnt = 1;
       while (InnerPragmaCnt != 0) {
         PP.Lex(Tok);
-        if (Tok.is(tok::annot_pragma_openmp))
+        if (Tok.is(tok::annot_pragma_openmp)) {
           ++InnerPragmaCnt;
-        else if (Tok.is(tok::annot_pragma_openmp_end))
+        } else if (Tok.is(tok::annot_pragma_openmp_end)) {
           --InnerPragmaCnt;
+}
       }
       PP.Lex(Tok);
     }
@@ -2591,10 +2639,10 @@ void PragmaFloatControlHandler::HandlePragma(Preprocessor &PP,
     PP.Lex(Tok); // Eat the r_paren
     Action = (Kind == PFC_Pop) ? Sema::PSK_Pop : Sema::PSK_Push;
   } else {
-    if (Tok.is(tok::r_paren))
+    if (Tok.is(tok::r_paren)) {
       // Selecting Precise or Except
       PP.Lex(Tok); // the r_paren
-    else if (Tok.isNot(tok::comma)) {
+    } else if (Tok.isNot(tok::comma)) {
       PP.Diag(Tok.getLocation(), diag::err_pragma_float_control_malformed);
       return;
     } else {
@@ -2604,14 +2652,16 @@ void PragmaFloatControlHandler::HandlePragma(Preprocessor &PP,
         return;
       }
       StringRef PushOnOff = Tok.getIdentifierInfo()->getName();
-      if (PushOnOff == "on")
+      if (PushOnOff == "on") {
         // Kind is set correctly
         ;
-      else if (PushOnOff == "off") {
-        if (Kind == PFC_Precise)
+      } else if (PushOnOff == "off") {
+        if (Kind == PFC_Precise) {
           Kind = PFC_NoPrecise;
-        if (Kind == PFC_Except)
+}
+        if (Kind == PFC_Except) {
           Kind = PFC_NoExcept;
+}
       } else if (PushOnOff == "push") {
         Action = Sema::PSK_Push_Set;
       } else {
@@ -2688,8 +2738,9 @@ void PragmaDetectMismatchHandler::HandlePragma(Preprocessor &PP,
   std::string NameString;
   if (!PP.LexStringLiteral(Tok, NameString,
                            "pragma detect_mismatch",
-                           /*AllowMacroExpansion=*/true))
+                           /*AllowMacroExpansion=*/true)) {
     return;
+}
 
   // Read the comma followed by a second string literal.
   std::string ValueString;
@@ -2699,8 +2750,9 @@ void PragmaDetectMismatchHandler::HandlePragma(Preprocessor &PP,
   }
 
   if (!PP.LexStringLiteral(Tok, ValueString, "pragma detect_mismatch",
-                           /*AllowMacroExpansion=*/true))
+                           /*AllowMacroExpansion=*/true)) {
     return;
+}
 
   if (Tok.isNot(tok::r_paren)) {
     PP.Diag(Tok.getLocation(), diag::err_expected) << tok::r_paren;
@@ -2714,9 +2766,10 @@ void PragmaDetectMismatchHandler::HandlePragma(Preprocessor &PP,
   }
 
   // If the pragma is lexically sound, notify any interested PPCallbacks.
-  if (PP.getPPCallbacks())
+  if (PP.getPPCallbacks()) {
     PP.getPPCallbacks()->PragmaDetectMismatch(DetectMismatchLoc, NameString,
                                               ValueString);
+}
 
   Actions.ActOnPragmaDetectMismatch(DetectMismatchLoc, NameString, ValueString);
 }
@@ -2781,8 +2834,9 @@ void PragmaCommentHandler::HandlePragma(Preprocessor &PP,
   std::string ArgumentString;
   if (Tok.is(tok::comma) && !PP.LexStringLiteral(Tok, ArgumentString,
                                                  "pragma comment",
-                                                 /*AllowMacroExpansion=*/true))
+                                                 /*AllowMacroExpansion=*/true)) {
     return;
+}
 
   // FIXME: warn that 'exestr' is deprecated.
   // FIXME: If the kind is "compiler" warn if the string is present (it is
@@ -2803,8 +2857,9 @@ void PragmaCommentHandler::HandlePragma(Preprocessor &PP,
   }
 
   // If the pragma is lexically sound, notify any interested PPCallbacks.
-  if (PP.getPPCallbacks())
+  if (PP.getPPCallbacks()) {
     PP.getPPCallbacks()->PragmaComment(CommentLoc, II, ArgumentString);
+}
 
   Actions.ActOnPragmaMSComment(CommentLoc, Kind, ArgumentString);
 }
@@ -3006,10 +3061,10 @@ void Parser::HandlePragmaFP() {
   auto *AnnotValue =
       reinterpret_cast<TokFPAnnotValue *>(Tok.getAnnotationValue());
 
-  if (AnnotValue->FlagKind == TokFPAnnotValue::Reassociate)
+  if (AnnotValue->FlagKind == TokFPAnnotValue::Reassociate) {
     Actions.ActOnPragmaFPReassociate(
         Tok.getLocation(), AnnotValue->FlagValue == TokFPAnnotValue::On);
-  else {
+  } else {
     LangOptions::FPModeKind FPC;
     switch (AnnotValue->FlagValue) {
     case TokFPAnnotValue::Off:
@@ -3035,12 +3090,13 @@ static bool ParseLoopHintValue(Preprocessor &PP, Token &Tok, Token PragmaName,
   int OpenParens = ValueInParens ? 1 : 0;
   // Read constant expression.
   while (Tok.isNot(tok::eod)) {
-    if (Tok.is(tok::l_paren))
+    if (Tok.is(tok::l_paren)) {
       OpenParens++;
-    else if (Tok.is(tok::r_paren)) {
+    } else if (Tok.is(tok::r_paren)) {
       OpenParens--;
-      if (OpenParens == 0 && ValueInParens)
+      if (OpenParens == 0 && ValueInParens) {
         break;
+}
     }
 
     ValueList.push_back(Tok);
@@ -3164,8 +3220,9 @@ void PragmaLoopHintHandler::HandlePragma(Preprocessor &PP,
 
     auto *Info = new (PP.getPreprocessorAllocator()) PragmaLoopHintInfo;
     if (ParseLoopHintValue(PP, Tok, PragmaName, Option, /*ValueInParens=*/true,
-                           *Info))
+                           *Info)) {
       return;
+}
 
     // Generate the loop hint token.
     Token LoopHintTok;
@@ -3233,19 +3290,22 @@ void PragmaUnrollHintHandler::HandlePragma(Preprocessor &PP,
     // "#pragma unroll(N)".
     // Read '(' if it exists.
     bool ValueInParens = Tok.is(tok::l_paren);
-    if (ValueInParens)
+    if (ValueInParens) {
       PP.Lex(Tok);
+}
 
     Token Option;
     Option.startToken();
-    if (ParseLoopHintValue(PP, Tok, PragmaName, Option, ValueInParens, *Info))
+    if (ParseLoopHintValue(PP, Tok, PragmaName, Option, ValueInParens, *Info)) {
       return;
+}
 
     // In CUDA, the argument to '#pragma unroll' should not be contained in
     // parentheses.
-    if (PP.getLangOpts().CUDA && ValueInParens)
+    if (PP.getLangOpts().CUDA && ValueInParens) {
       PP.Diag(Info->Toks[0].getLocation(),
               diag::warn_pragma_unroll_cuda_value_in_parens);
+}
 
     if (Tok.isNot(tok::eod)) {
       PP.Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
@@ -3293,13 +3353,15 @@ void PragmaMSIntrinsicHandler::HandlePragma(Preprocessor &PP,
 
   while (Tok.is(tok::identifier)) {
     IdentifierInfo *II = Tok.getIdentifierInfo();
-    if (!II->getBuiltinID())
+    if (!II->getBuiltinID()) {
       PP.Diag(Tok.getLocation(), diag::warn_pragma_intrinsic_builtin)
           << II << SuggestIntrinH;
+}
 
     PP.Lex(Tok);
-    if (Tok.isNot(tok::comma))
+    if (Tok.isNot(tok::comma)) {
       break;
+}
     PP.Lex(Tok);
   }
 
@@ -3310,9 +3372,10 @@ void PragmaMSIntrinsicHandler::HandlePragma(Preprocessor &PP,
   }
   PP.Lex(Tok);
 
-  if (Tok.isNot(tok::eod))
+  if (Tok.isNot(tok::eod)) {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
         << "intrinsic";
+}
 }
 
 // #pragma optimize("gsty", on|off)
@@ -3381,16 +3444,18 @@ void PragmaForceCUDAHostDeviceHandler::HandlePragma(
     return;
   }
 
-  if (Info->isStr("begin"))
+  if (Info->isStr("begin")) {
     Actions.PushForceCUDAHostDevice();
-  else if (!Actions.PopForceCUDAHostDevice())
+  } else if (!Actions.PopForceCUDAHostDevice()) {
     PP.Diag(FirstTok.getLocation(),
             diag::err_pragma_cannot_end_force_cuda_host_device);
+}
 
   PP.Lex(Tok);
-  if (!Tok.is(tok::eod))
+  if (!Tok.is(tok::eod)) {
     PP.Diag(FirstTok.getLocation(),
             diag::warn_pragma_force_cuda_host_device_bad_arg);
+}
 }
 
 /// Handle the #pragma clang attribute directive.
@@ -3462,11 +3527,11 @@ void PragmaAttributeHandler::HandlePragma(Preprocessor &PP,
     Info->Action = PragmaAttributeInfo::Attribute;
   } else {
     const IdentifierInfo *II = Tok.getIdentifierInfo();
-    if (II->isStr("push"))
+    if (II->isStr("push")) {
       Info->Action = PragmaAttributeInfo::Push;
-    else if (II->isStr("pop"))
+    } else if (II->isStr("pop")) {
       Info->Action = PragmaAttributeInfo::Pop;
-    else {
+    } else {
       PP.Diag(Tok.getLocation(), diag::err_pragma_attribute_invalid_argument)
           << PP.getSpelling(Tok);
       return;
@@ -3488,12 +3553,13 @@ void PragmaAttributeHandler::HandlePragma(Preprocessor &PP,
     SmallVector<Token, 16> AttributeTokens;
     int OpenParens = 1;
     while (Tok.isNot(tok::eod)) {
-      if (Tok.is(tok::l_paren))
+      if (Tok.is(tok::l_paren)) {
         OpenParens++;
-      else if (Tok.is(tok::r_paren)) {
+      } else if (Tok.is(tok::r_paren)) {
         OpenParens--;
-        if (OpenParens == 0)
+        if (OpenParens == 0) {
           break;
+}
       }
 
       AttributeTokens.push_back(Tok);
@@ -3522,9 +3588,10 @@ void PragmaAttributeHandler::HandlePragma(Preprocessor &PP,
         llvm::makeArrayRef(AttributeTokens).copy(PP.getPreprocessorAllocator());
   }
 
-  if (Tok.isNot(tok::eod))
+  if (Tok.isNot(tok::eod)) {
     PP.Diag(Tok.getLocation(), diag::warn_pragma_extra_tokens_at_eol)
         << "clang attribute";
+}
 
   // Generate the annotated pragma token.
   auto TokenArray = std::make_unique<Token[]>(1);

@@ -66,55 +66,65 @@ public:
   }
 
   void visitRecordDecl(const RecordDecl *RD) const {
-    if (shouldSkipDecl(RD))
+    if (shouldSkipDecl(RD)) {
       return;
+}
 
     for (auto Member : RD->fields()) {
       const Type *MemberType = Member->getType().getTypePtrOrNull();
-      if (!MemberType)
+      if (!MemberType) {
         continue;
+}
 
       if (auto *MemberCXXRD = MemberType->getPointeeCXXRecordDecl()) {
         // If we don't see the definition we just don't know.
         if (MemberCXXRD->hasDefinition()) {
           llvm::Optional<bool> isRCAble = isRefCountable(MemberCXXRD);
-          if (isRCAble && *isRCAble)
+          if (isRCAble && *isRCAble) {
             reportBug(Member, MemberType, MemberCXXRD, RD);
+}
         }
       }
     }
   }
 
   bool shouldSkipDecl(const RecordDecl *RD) const {
-    if (!RD->isThisDeclarationADefinition())
+    if (!RD->isThisDeclarationADefinition()) {
       return true;
+}
 
-    if (RD->isImplicit())
+    if (RD->isImplicit()) {
       return true;
+}
 
-    if (RD->isLambda())
+    if (RD->isLambda()) {
       return true;
+}
 
     // If the construct doesn't have a source file, then it's not something
     // we want to diagnose.
     const auto RDLocation = RD->getLocation();
-    if (!RDLocation.isValid())
+    if (!RDLocation.isValid()) {
       return true;
+}
 
     const auto Kind = RD->getTagKind();
     // FIMXE: Should we check union members too?
-    if (Kind != TTK_Struct && Kind != TTK_Class)
+    if (Kind != TTK_Struct && Kind != TTK_Class) {
       return true;
+}
 
     // Ignore CXXRecords that come from system headers.
-    if (BR->getSourceManager().isInSystemHeader(RDLocation))
+    if (BR->getSourceManager().isInSystemHeader(RDLocation)) {
       return true;
+}
 
     // Ref-counted smartpointers actually have raw-pointer to uncounted type as
     // a member but we trust them to handle it correctly.
     auto CXXRD = llvm::dyn_cast_or_null<CXXRecordDecl>(RD);
-    if (CXXRD)
+    if (CXXRD) {
       return isRefCounted(CXXRD);
+}
 
     return false;
   }

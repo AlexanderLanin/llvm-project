@@ -24,8 +24,9 @@ using namespace CodeGen;
 // Return the size of a field in number of bits.
 static uint64_t getFieldSize(const FieldDecl *FD, QualType FT,
                              ASTContext &Ctx) {
-  if (FD && FD->isBitField())
+  if (FD && FD->isBitField()) {
     return FD->getBitWidthValue(Ctx);
+}
   return Ctx.getTypeSize(FT);
 }
 
@@ -85,8 +86,9 @@ struct CopyStructVisitor : StructVisitor<Derived>,
   template <class... Ts>
   void preVisit(QualType::PrimitiveCopyKind PCK, QualType FT,
                 const FieldDecl *FD, CharUnits CurStructOffset, Ts &&... Args) {
-    if (PCK)
+    if (PCK) {
       asDerived().flushTrivialFields(std::forward<Ts>(Args)...);
+}
   }
 
   template <class... Ts>
@@ -111,16 +113,18 @@ struct CopyStructVisitor : StructVisitor<Derived>,
     uint64_t FieldSize = getFieldSize(FD, FT, Ctx);
 
     // Ignore zero-sized fields.
-    if (FieldSize == 0)
+    if (FieldSize == 0) {
       return;
+}
 
     uint64_t FStartInBits = asDerived().getFieldOffsetInBits(FD);
     uint64_t FEndInBits = FStartInBits + FieldSize;
     uint64_t RoundedFEnd = llvm::alignTo(FEndInBits, Ctx.getCharWidth());
 
     // Set Start if this is the first field of a sequence of trivial fields.
-    if (Start == End)
+    if (Start == End) {
       Start = CurStructOffset + Ctx.toCharUnitsFromBits(FStartInBits);
+}
     End = CurStructOffset + Ctx.toCharUnitsFromBits(RoundedFEnd);
   }
 
@@ -150,8 +154,9 @@ struct CopyStructVisitor : StructVisitor<Derived>,
 template <class Derived> struct GenFuncNameBase {
   std::string getVolatileOffsetStr(bool IsVolatile, CharUnits Offset) {
     std::string S;
-    if (IsVolatile)
+    if (IsVolatile) {
       S = "v";
+}
     S += llvm::to_string(Offset.getQuantity());
     return S;
   }
@@ -159,8 +164,9 @@ template <class Derived> struct GenFuncNameBase {
   void visitARCStrong(QualType FT, const FieldDecl *FD,
                       CharUnits CurStructOffset) {
     appendStr("_s");
-    if (FT->isBlockPointerType())
+    if (FT->isBlockPointerType()) {
       appendStr("b");
+}
     CharUnits FieldOffset = CurStructOffset + asDerived().getFieldOffset(FD);
     appendStr(getVolatileOffsetStr(FT.isVolatileQualified(), FieldOffset));
   }
@@ -184,8 +190,9 @@ template <class Derived> struct GenFuncNameBase {
                   const FieldDecl *FD, CharUnits CurStructOffset) {
     // String for non-volatile trivial fields is emitted when
     // flushTrivialFields is called.
-    if (!FK)
+    if (!FK) {
       return asDerived().visitTrivial(QualType(AT, 0), FD, CurStructOffset);
+}
 
     asDerived().flushTrivialFields();
     CharUnits FieldOffset = CurStructOffset + asDerived().getFieldOffset(FD);
@@ -243,8 +250,9 @@ struct GenBinaryFuncName : CopyStructVisitor<GenBinaryFuncName<IsMove>, IsMove>,
   }
 
   void flushTrivialFields() {
-    if (this->Start == this->End)
+    if (this->Start == this->End) {
       return;
+}
 
     this->appendStr("_t" + llvm::to_string(this->Start.getQuantity()) + "w" +
                     llvm::to_string((this->End - this->Start).getQuantity()));
@@ -255,8 +263,9 @@ struct GenBinaryFuncName : CopyStructVisitor<GenBinaryFuncName<IsMove>, IsMove>,
   void visitVolatileTrivial(QualType FT, const FieldDecl *FD,
                             CharUnits CurStructOffset) {
     // Zero-length bit-fields don't need to be copied/assigned.
-    if (FD && FD->isZeroLengthBitField(this->Ctx))
+    if (FD && FD->isZeroLengthBitField(this->Ctx)) {
       return;
+}
 
     // Because volatile fields can be bit-fields and are individually copied,
     // their offset and width are in bits.
@@ -310,13 +319,15 @@ static const CGFunctionInfo &getFunctionInfo(CodeGenModule &CGM,
   llvm::SmallVector<ImplicitParamDecl *, N> Params;
   QualType ParamTy = Ctx.getPointerType(Ctx.VoidPtrTy);
 
-  for (unsigned I = 0; I < N; ++I)
+  for (unsigned I = 0; I < N; ++I) {
     Params.push_back(ImplicitParamDecl::Create(
         Ctx, nullptr, SourceLocation(), &Ctx.Idents.get(ValNameStr[I]), ParamTy,
         ImplicitParamDecl::Other));
+}
 
-  for (auto &P : Params)
+  for (auto &P : Params) {
     Args.push_back(P);
+}
 
   return CGM.getTypes().arrangeBuiltinFunctionDeclaration(Ctx.VoidTy, Args);
 }
@@ -346,9 +357,10 @@ template <class Derived> struct GenFuncBase {
                   const FieldDecl *FD, CharUnits CurStructOffset,
                   std::array<Address, N> Addrs) {
     // Non-volatile trivial fields are copied when flushTrivialFields is called.
-    if (!FK)
+    if (!FK) {
       return asDerived().visitTrivial(QualType(AT, 0), FD, CurStructOffset,
                                       Addrs);
+}
 
     asDerived().flushTrivialFields(Addrs);
     CodeGenFunction &CGF = *this->CGF;
@@ -357,8 +369,9 @@ template <class Derived> struct GenFuncBase {
     // Compute the end address.
     QualType BaseEltQT;
     std::array<Address, N> StartAddrs = Addrs;
-    for (unsigned I = 0; I < N; ++I)
+    for (unsigned I = 0; I < N; ++I) {
       StartAddrs[I] = getAddrWithOffset(Addrs[I], CurStructOffset, FD);
+}
     Address DstAddr = StartAddrs[DstIdx];
     llvm::Value *NumElts = CGF.emitArrayLength(AT, BaseEltQT, DstAddr);
     unsigned BaseEltSize = Ctx.getTypeSizeInChars(BaseEltQT).getQuantity();
@@ -399,9 +412,10 @@ template <class Derived> struct GenFuncBase {
     CharUnits EltSize = Ctx.getTypeSizeInChars(EltQT);
     std::array<Address, N> NewAddrs = Addrs;
 
-    for (unsigned I = 0; I < N; ++I)
+    for (unsigned I = 0; I < N; ++I) {
       NewAddrs[I] = Address(
           PHIs[I], StartAddrs[I].getAlignment().alignmentAtOffset(EltSize));
+}
 
     EltQT = IsVolatile ? EltQT.withVolatile() : EltQT;
     this->asDerived().visitWithKind(FK, EltQT, nullptr, CharUnits::Zero(),
@@ -424,8 +438,9 @@ template <class Derived> struct GenFuncBase {
   /// Return an address with the specified offset from the passed address.
   Address getAddrWithOffset(Address Addr, CharUnits Offset) {
     assert(Addr.isValid() && "invalid address");
-    if (Offset.getQuantity() == 0)
+    if (Offset.getQuantity() == 0) {
       return Addr;
+}
     Addr = CGF->Builder.CreateBitCast(Addr, CGF->CGM.Int8PtrTy);
     Addr = CGF->Builder.CreateConstInBoundsGEP(Addr, Offset.getQuantity());
     return CGF->Builder.CreateBitCast(Addr, CGF->CGM.Int8PtrPtrTy);
@@ -444,12 +459,14 @@ template <class Derived> struct GenFuncBase {
     // If the special function already exists in the module, return it.
     if (llvm::Function *F = CGM.getModule().getFunction(FuncName)) {
       bool WrongType = false;
-      if (!F->getReturnType()->isVoidTy())
+      if (!F->getReturnType()->isVoidTy()) {
         WrongType = true;
-      else {
-        for (const llvm::Argument &Arg : F->args())
-          if (Arg.getType() != CGM.Int8PtrPtrTy)
+      } else {
+        for (const llvm::Argument &Arg : F->args()) {
+          if (Arg.getType() != CGM.Int8PtrPtrTy) {
             WrongType = true;
+}
+}
       }
 
       if (WrongType) {
@@ -501,8 +518,9 @@ template <class Derived> struct GenFuncBase {
     }
 
     if (llvm::Function *F =
-            getFunction(FuncName, QT, Alignments, CallerCGF.CGM))
+            getFunction(FuncName, QT, Alignments, CallerCGF.CGM)) {
       CallerCGF.EmitNounwindRuntimeCall(F, Ptrs);
+}
   }
 
   Derived &asDerived() { return static_cast<Derived &>(*this); }
@@ -520,8 +538,9 @@ struct GenBinaryFunc : CopyStructVisitor<Derived, IsMove>,
   void flushTrivialFields(std::array<Address, 2> Addrs) {
     CharUnits Size = this->End - this->Start;
 
-    if (Size.getQuantity() == 0)
+    if (Size.getQuantity() == 0) {
       return;
+}
 
     Address DstAddr = this->getAddrWithOffset(Addrs[DstIdx], this->Start);
     Address SrcAddr = this->getAddrWithOffset(Addrs[SrcIdx], this->Start);
@@ -554,8 +573,9 @@ struct GenBinaryFunc : CopyStructVisitor<Derived, IsMove>,
     LValue DstLV, SrcLV;
     if (FD) {
       // No need to copy zero-length bit-fields.
-      if (FD->isZeroLengthBitField(this->CGF->getContext()))
+      if (FD->isZeroLengthBitField(this->CGF->getContext())) {
         return;
+}
 
       QualType RT = QualType(FD->getParent()->getTypeForDecl(), 0);
       llvm::PointerType *PtrTy = this->CGF->ConvertType(RT)->getPointerTo();
@@ -654,8 +674,9 @@ struct GenDefaultInitialize
   void visitArray(FieldKind FK, const ArrayType *AT, bool IsVolatile,
                   const FieldDecl *FD, CharUnits CurStructOffset,
                   std::array<Address, 1> Addrs) {
-    if (!FK)
+    if (!FK) {
       return visitTrivial(QualType(AT, 0), FD, CurStructOffset, Addrs);
+}
 
     ASTContext &Ctx = getContext();
     CharUnits Size = Ctx.getTypeSizeInChars(QualType(AT, 0));
@@ -833,8 +854,9 @@ static void callSpecialFunction(G &&Gen, StringRef FuncName, QualType QT,
                                 bool IsVolatile, CodeGenFunction &CGF,
                                 std::array<Address, N> Addrs) {
   auto SetArtificialLoc = ApplyDebugLocation::CreateArtificial(CGF);
-  for (unsigned I = 0; I < N; ++I)
+  for (unsigned I = 0; I < N; ++I) {
     Addrs[I] = CGF.Builder.CreateBitCast(Addrs[I], CGF.CGM.Int8PtrPtrTy);
+}
   QT = IsVolatile ? QT.withVolatile() : QT;
   Gen.callFunc(FuncName, QT, Addrs, CGF);
 }

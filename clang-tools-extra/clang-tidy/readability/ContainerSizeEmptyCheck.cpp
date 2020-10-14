@@ -114,10 +114,11 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     // Not just a DeclRefExpr, so parenthesize to be on the safe side.
     ReplacementText = "(" + ReplacementText + ")";
   }
-  if (E->getType()->isPointerType())
+  if (E->getType()->isPointerType()) {
     ReplacementText += "->empty()";
-  else
+  } else {
     ReplacementText += ".empty()";
+}
 
   if (BinCmp) {
     if (BinCmp->getOperator() == OO_ExclaimEqual) {
@@ -133,10 +134,11 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     uint64_t Value = 0;
     if (ContainerIsLHS) {
       if (const auto *Literal = llvm::dyn_cast<IntegerLiteral>(
-              BinaryOp->getRHS()->IgnoreImpCasts()))
+              BinaryOp->getRHS()->IgnoreImpCasts())) {
         Value = Literal->getValue().getLimitedValue();
-      else
+      } else {
         return;
+}
     } else {
       Value =
           llvm::dyn_cast<IntegerLiteral>(BinaryOp->getLHS()->IgnoreImpCasts())
@@ -145,41 +147,50 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     }
 
     // Constant that is not handled.
-    if (Value > 1)
+    if (Value > 1) {
       return;
+}
 
     if (Value == 1 && (OpCode == BinaryOperatorKind::BO_EQ ||
-                       OpCode == BinaryOperatorKind::BO_NE))
+                       OpCode == BinaryOperatorKind::BO_NE)) {
       return;
+}
 
     // Always true, no warnings for that.
     if ((OpCode == BinaryOperatorKind::BO_GE && Value == 0 && ContainerIsLHS) ||
-        (OpCode == BinaryOperatorKind::BO_LE && Value == 0 && !ContainerIsLHS))
+        (OpCode == BinaryOperatorKind::BO_LE && Value == 0 && !ContainerIsLHS)) {
       return;
+}
 
     // Do not warn for size > 1, 1 < size, size <= 1, 1 >= size.
     if (Value == 1) {
       if ((OpCode == BinaryOperatorKind::BO_GT && ContainerIsLHS) ||
-          (OpCode == BinaryOperatorKind::BO_LT && !ContainerIsLHS))
+          (OpCode == BinaryOperatorKind::BO_LT && !ContainerIsLHS)) {
         return;
+}
       if ((OpCode == BinaryOperatorKind::BO_LE && ContainerIsLHS) ||
-          (OpCode == BinaryOperatorKind::BO_GE && !ContainerIsLHS))
+          (OpCode == BinaryOperatorKind::BO_GE && !ContainerIsLHS)) {
         return;
+}
     }
 
-    if (OpCode == BinaryOperatorKind::BO_NE && Value == 0)
+    if (OpCode == BinaryOperatorKind::BO_NE && Value == 0) {
       Negation = true;
+}
     if ((OpCode == BinaryOperatorKind::BO_GT ||
          OpCode == BinaryOperatorKind::BO_GE) &&
-        ContainerIsLHS)
+        ContainerIsLHS) {
       Negation = true;
+}
     if ((OpCode == BinaryOperatorKind::BO_LT ||
          OpCode == BinaryOperatorKind::BO_LE) &&
-        !ContainerIsLHS)
+        !ContainerIsLHS) {
       Negation = true;
+}
 
-    if (Negation)
+    if (Negation) {
       ReplacementText = "!" + ReplacementText;
+}
     Hint = FixItHint::CreateReplacement(BinaryOp->getSourceRange(),
                                         ReplacementText);
 
@@ -187,12 +198,13 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     // If there is a conversion above the size call to bool, it is safe to just
     // replace size with empty.
     if (const auto *UnaryOp =
-            Result.Nodes.getNodeAs<UnaryOperator>("NegOnSize"))
+            Result.Nodes.getNodeAs<UnaryOperator>("NegOnSize")) {
       Hint = FixItHint::CreateReplacement(UnaryOp->getSourceRange(),
                                           ReplacementText);
-    else
+    } else {
       Hint = FixItHint::CreateReplacement(MemberCall->getSourceRange(),
                                           "!" + ReplacementText);
+}
   }
 
   if (MemberCall) {
@@ -213,8 +225,9 @@ void ContainerSizeEmptyCheck::check(const MatchFinder::MatchResult &Result) {
     // instantiations. In order to avoid duplicate or inconsistent warnings
     // (depending on how deduplication is done), we use the same class name
     // for all implicit instantiations of a template.
-    if (CTS->getSpecializationKind() == TSK_ImplicitInstantiation)
+    if (CTS->getSpecializationKind() == TSK_ImplicitInstantiation) {
       Container = CTS->getSpecializedTemplate();
+}
   }
   const auto *Empty = Result.Nodes.getNodeAs<FunctionDecl>("empty");
 

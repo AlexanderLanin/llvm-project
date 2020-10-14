@@ -16,15 +16,19 @@ Record::Record(const RecordDecl *Decl, BaseList &&SrcBases,
                unsigned VirtualSize, unsigned BaseSize)
     : Decl(Decl), Bases(std::move(SrcBases)), Fields(std::move(SrcFields)),
       BaseSize(BaseSize), VirtualSize(VirtualSize) {
-  for (Base &V : SrcVirtualBases)
+  for (Base &V : SrcVirtualBases) {
     VirtualBases.push_back({ V.Decl, V.Offset + BaseSize, V.Desc, V.R });
+}
 
-  for (Base &B : Bases)
+  for (Base &B : Bases) {
     BaseMap[B.Decl] = &B;
-  for (Field &F : Fields)
+}
+  for (Field &F : Fields) {
     FieldMap[F.Decl] = &F;
-  for (Base &V : VirtualBases)
+}
+  for (Base &V : VirtualBases) {
     VirtualBaseMap[V.Decl] = &V;
+}
 }
 
 const Record::Field *Record::getField(const FieldDecl *FD) const {

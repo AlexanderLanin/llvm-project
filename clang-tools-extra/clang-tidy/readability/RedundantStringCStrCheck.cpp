@@ -52,8 +52,9 @@ formatDereference(const ast_matchers::MatchFinder::MatchResult &Result,
   }
   StringRef Text = tooling::fixit::getText(ExprNode, *Result.Context);
 
-  if (Text.empty())
+  if (Text.empty()) {
     return std::string();
+}
   // Add leading '*'.
   if (needParensAfterUnaryOperator(ExprNode)) {
     return (llvm::Twine("*(") + Text + ")").str();
@@ -186,8 +187,9 @@ void RedundantStringCStrCheck::check(const MatchFinder::MatchResult &Result) {
   std::string ArgText =
       Arrow ? formatDereference(Result, *Arg)
             : tooling::fixit::getText(*Arg, *Result.Context).str();
-  if (ArgText.empty())
+  if (ArgText.empty()) {
     return;
+}
 
   diag(Call->getBeginLoc(), "redundant call to %0")
       << Member->getMemberDecl()

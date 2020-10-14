@@ -89,15 +89,17 @@ public:
   }
 
   TokenInfo SkipNewlines() {
-    while (NextToken.Kind == TokenInfo::TK_NewLine)
+    while (NextToken.Kind == TokenInfo::TK_NewLine) {
       NextToken = getNextToken();
+}
     return NextToken;
   }
 
   TokenInfo consumeNextTokenIgnoreNewlines() {
     SkipNewlines();
-    if (NextToken.Kind == TokenInfo::TK_Eof)
+    if (NextToken.Kind == TokenInfo::TK_Eof) {
       return NextToken;
+}
     return consumeNextToken();
   }
 
@@ -181,8 +183,9 @@ private:
             Code = Code.drop_front(TokenLength);
             return Result;
           }
-          if (TokenLength == Code.size() || !isAlphanumeric(Code[TokenLength]))
+          if (TokenLength == Code.size() || !isAlphanumeric(Code[TokenLength])) {
             break;
+}
           ++TokenLength;
         }
         if (TokenLength == 4 && Code.startswith("true")) {
@@ -218,8 +221,9 @@ private:
       case 'x': case 'b': Length = 2;
       }
     }
-    while (Length < Code.size() && isHexDigit(Code[Length]))
+    while (Length < Code.size() && isHexDigit(Code[Length])) {
       ++Length;
+}
 
     // Try to recognize a floating point literal.
     while (Length < Code.size()) {
@@ -366,8 +370,9 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *Value) {
       }
 
       std::string BindID;
-      if (!parseBindID(BindID))
+      if (!parseBindID(BindID)) {
         return false;
+}
 
       assert(NamedValue.isMatcher());
       llvm::Optional<DynTypedMatcher> Result =
@@ -516,12 +521,14 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
 
   std::string BindID;
   if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
-    if (!parseBindID(BindID))
+    if (!parseBindID(BindID)) {
       return false;
+}
   }
 
-  if (!Ctor)
+  if (!Ctor) {
     return false;
+}
 
   // Merge the start and end infos.
   Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
@@ -530,7 +537,8 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
   MatcherRange.End = EndToken.Range.End;
   VariantMatcher Result = S->actOnMatcherExpression(
       *Ctor, MatcherRange, BindID, Args, Error);
-  if (Result.isNull()) return false;
+  if (Result.isNull()) { return false;
+}
 
   *Value = Result;
   return true;
@@ -549,7 +557,8 @@ void Parser::addCompletion(const TokenInfo &CompToken,
 
 std::vector<MatcherCompletion> Parser::getNamedValueCompletions(
     ArrayRef<ArgKind> AcceptedTypes) {
-  if (!NamedValues) return std::vector<MatcherCompletion>();
+  if (!NamedValues) { return std::vector<MatcherCompletion>();
+}
   std::vector<MatcherCompletion> Result;
   for (const auto &Entry : *NamedValues) {
     unsigned Specificity;
@@ -571,8 +580,9 @@ void Parser::addExpressionCompletions() {
   for (ContextStackTy::iterator I = ContextStack.begin(),
                                 E = ContextStack.end();
        I != E; ++I) {
-    if (!I->first)
+    if (!I->first) {
       return;
+}
   }
 
   auto AcceptedTypes = S->getAcceptedCompletionTypes(ContextStack);
@@ -661,8 +671,9 @@ bool Parser::parseExpression(StringRef &Code, Sema *S,
                              const NamedValueMap *NamedValues,
                              VariantValue *Value, Diagnostics *Error) {
   CodeTokenizer Tokenizer(Code, Error);
-  if (!Parser(&Tokenizer, S, NamedValues, Error).parseExpressionImpl(Value))
+  if (!Parser(&Tokenizer, S, NamedValues, Error).parseExpressionImpl(Value)) {
     return false;
+}
   auto NT = Tokenizer.peekNextToken();
   if (NT.Kind != TokenInfo::TK_Eof && NT.Kind != TokenInfo::TK_NewLine) {
     Error->addError(Tokenizer.peekNextToken().Range,
@@ -684,8 +695,9 @@ Parser::completeExpression(StringRef &Code, unsigned CompletionOffset, Sema *S,
   // Sort by specificity, then by name.
   llvm::sort(P.Completions,
              [](const MatcherCompletion &A, const MatcherCompletion &B) {
-               if (A.Specificity != B.Specificity)
+               if (A.Specificity != B.Specificity) {
                  return A.Specificity > B.Specificity;
+}
                return A.TypedText < B.TypedText;
              });
 
@@ -697,8 +709,9 @@ Parser::parseMatcherExpression(StringRef &Code, Sema *S,
                                const NamedValueMap *NamedValues,
                                Diagnostics *Error) {
   VariantValue Value;
-  if (!parseExpression(Code, S, NamedValues, &Value, Error))
+  if (!parseExpression(Code, S, NamedValues, &Value, Error)) {
     return llvm::Optional<DynTypedMatcher>();
+}
   if (!Value.isMatcher()) {
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
     return llvm::Optional<DynTypedMatcher>();

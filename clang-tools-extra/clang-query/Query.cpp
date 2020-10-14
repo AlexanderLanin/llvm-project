@@ -99,8 +99,9 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     DynTypedMatcher MaybeBoundMatcher = Matcher;
     if (QS.BindRoot) {
       llvm::Optional<DynTypedMatcher> M = Matcher.tryBind("root");
-      if (M)
+      if (M) {
         MaybeBoundMatcher = *M;
+}
     }
     CollectBoundNodes Collect(Matches);
     if (!Finder.addDynamicMatcher(MaybeBoundMatcher, &Collect)) {
@@ -164,8 +165,9 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
         }
       }
 
-      if (MI->getMap().empty())
+      if (MI->getMap().empty()) {
         OS << "No bindings.\n";
+}
     }
   }
 

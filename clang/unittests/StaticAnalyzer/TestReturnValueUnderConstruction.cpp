@@ -25,8 +25,9 @@ public:
   void checkPostCall(const CallEvent &Call, CheckerContext &C) const {
     // Only calls with origin expression are checked. These are `returnC()`,
     // `returnD()`, C::C() and D::D().
-    if (!Call.getOriginExpr())
+    if (!Call.getOriginExpr()) {
       return;
+}
 
     // Since `returnC` returns an object by value, the invocation results
     // in an object of type `C` constructed into variable `c`. Thus the

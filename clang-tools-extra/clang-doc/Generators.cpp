@@ -16,8 +16,9 @@ namespace doc {
 llvm::Expected<std::unique_ptr<Generator>>
 findGeneratorByName(llvm::StringRef Format) {
   for (const auto &Generator : GeneratorRegistry::entries()) {
-    if (Generator.getName() != Format)
+    if (Generator.getName() != Format) {
       continue;
+}
     return Generator.instantiate();
   }
   return createStringError(llvm::inconvertibleErrorCode(),
@@ -88,10 +89,12 @@ void Generator::addInfoToIndex(Index &Idx, const doc::Info *Info) {
     // If it not in the vector we only check if Path and Name are not empty
     // because if the Info was included by a namespace it may not have those
     // values.
-    if (It->Path.empty())
+    if (It->Path.empty()) {
       It->Path = Info->Path;
-    if (It->Name.empty())
+}
+    if (It->Name.empty()) {
       It->Name = Info->extractName();
+}
   }
 }
 

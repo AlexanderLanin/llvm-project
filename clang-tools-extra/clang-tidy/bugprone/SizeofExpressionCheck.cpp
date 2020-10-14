@@ -25,12 +25,14 @@ AST_MATCHER_P(IntegerLiteral, isBiggerThan, unsigned, N) {
 
 AST_MATCHER_P2(Expr, hasSizeOfDescendant, int, Depth,
                ast_matchers::internal::Matcher<Expr>, InnerMatcher) {
-  if (Depth < 0)
+  if (Depth < 0) {
     return false;
+}
 
   const Expr *E = Node.IgnoreParenImpCasts();
-  if (InnerMatcher.matches(*E, Finder, Builder))
+  if (InnerMatcher.matches(*E, Finder, Builder)) {
     return true;
+}
 
   if (const auto *CE = dyn_cast<CastExpr>(E)) {
     const auto M = hasSizeOfDescendant(Depth - 1, InnerMatcher);
@@ -50,8 +52,9 @@ AST_MATCHER_P2(Expr, hasSizeOfDescendant, int, Depth,
 
 CharUnits getSizeOfType(const ASTContext &Ctx, const Type *Ty) {
   if (!Ty || Ty->isIncompleteType() || Ty->isDependentType() ||
-      isa<DependentSizedArrayType>(Ty) || !Ty->isConstantSizeType())
+      isa<DependentSizedArrayType>(Ty) || !Ty->isConstantSizeType()) {
     return CharUnits::Zero();
+}
   return Ctx.getTypeSizeInChars(Ty);
 }
 

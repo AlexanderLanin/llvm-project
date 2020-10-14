@@ -38,8 +38,9 @@ public:
 void ReturnUndefChecker::checkPreStmt(const ReturnStmt *RS,
                                       CheckerContext &C) const {
   const Expr *RetE = RS->getRetValue();
-  if (!RetE)
+  if (!RetE) {
     return;
+}
   SVal RetVal = C.getSVal(RetE);
 
   const StackFrameContext *SFC = C.getStackFrame();
@@ -54,22 +55,25 @@ void ReturnUndefChecker::checkPreStmt(const ReturnStmt *RS,
     //   void test() {
     //     return foo();
     //   }
-    if (!RT.isNull() && RT->isVoidType())
+    if (!RT.isNull() && RT->isVoidType()) {
       return;
+}
 
     // Not all blocks have explicitly-specified return types; if the return type
     // is not available, but the return value expression has 'void' type, assume
     // Sema already checked it.
     if (RT.isNull() && isa<BlockDecl>(SFC->getDecl()) &&
-        RetE->getType()->isVoidType())
+        RetE->getType()->isVoidType()) {
       return;
+}
 
     emitUndef(C, RetE);
     return;
   }
 
-  if (RT.isNull())
+  if (RT.isNull()) {
     return;
+}
 
   if (RT->isReferenceType()) {
     checkReference(C, RetE, RetVal.castAs<DefinedOrUnknownSVal>());
@@ -80,8 +84,9 @@ void ReturnUndefChecker::checkPreStmt(const ReturnStmt *RS,
 static void emitBug(CheckerContext &C, BuiltinBug &BT, const Expr *RetE,
                     const Expr *TrackingE = nullptr) {
   ExplodedNode *N = C.generateErrorNode();
-  if (!N)
+  if (!N) {
     return;
+}
 
   auto Report =
       std::make_unique<PathSensitiveBugReport>(BT, BT.getDescription(), N);
@@ -93,10 +98,11 @@ static void emitBug(CheckerContext &C, BuiltinBug &BT, const Expr *RetE,
 }
 
 void ReturnUndefChecker::emitUndef(CheckerContext &C, const Expr *RetE) const {
-  if (!BT_Undef)
+  if (!BT_Undef) {
     BT_Undef.reset(
         new BuiltinBug(this, "Garbage return value",
                        "Undefined or garbage value returned to caller"));
+}
   emitBug(C, *BT_Undef, RetE);
 }
 
@@ -112,8 +118,9 @@ void ReturnUndefChecker::checkReference(CheckerContext &C, const Expr *RetE,
   }
 
   // The return value is known to be null. Emit a bug report.
-  if (!BT_NullReference)
+  if (!BT_NullReference) {
     BT_NullReference.reset(new BuiltinBug(this, "Returning null reference"));
+}
 
   emitBug(C, *BT_NullReference, RetE, bugreporter::getDerefExpr(RetE));
 }

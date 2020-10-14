@@ -95,8 +95,9 @@ public:
   // Helper for tests of `getAssociatedRange`.
   bool VisitDeclHelper(Decl *Decl) {
     // Only consider explicit declarations.
-    if (Decl->isImplicit())
+    if (Decl->isImplicit()) {
       return true;
+}
 
     ++MatchCount;
     EXPECT_THAT(getAssociatedRange(*Decl, *this->Context),

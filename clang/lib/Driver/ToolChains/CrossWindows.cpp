@@ -51,8 +51,9 @@ void tools::CrossWindows::Assembler::ConstructJob(
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &Input : Inputs)
+  for (const auto &Input : Inputs) {
     CmdArgs.push_back(Input.getFilename());
+}
 
   const std::string Assembler = TC.GetProgramPath("as");
   Exec = Args.MakeArgString(Assembler);
@@ -81,15 +82,19 @@ void tools::CrossWindows::Linker::ConstructJob(
   Args.ClaimAllArgs(options::OPT_w);
   // Other warning options are already handled somewhere else.
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+}
 
-  if (Args.hasArg(options::OPT_pie))
+  if (Args.hasArg(options::OPT_pie)) {
     CmdArgs.push_back("-pie");
-  if (Args.hasArg(options::OPT_rdynamic))
+}
+  if (Args.hasArg(options::OPT_rdynamic)) {
     CmdArgs.push_back("-export-dynamic");
-  if (Args.hasArg(options::OPT_s))
+}
+  if (Args.hasArg(options::OPT_s)) {
     CmdArgs.push_back("--strip-all");
+}
 
   CmdArgs.push_back("-m");
   switch (TC.getArch()) {
@@ -170,11 +175,13 @@ void tools::CrossWindows::Linker::ConstructJob(
   if (TC.ShouldLinkCXXStdlib(Args)) {
     bool StaticCXX = Args.hasArg(options::OPT_static_libstdcxx) &&
                      !Args.hasArg(options::OPT_static);
-    if (StaticCXX)
+    if (StaticCXX) {
       CmdArgs.push_back("-Bstatic");
+}
     TC.AddCXXStdlibLibArgs(Args, CmdArgs);
-    if (StaticCXX)
+    if (StaticCXX) {
       CmdArgs.push_back("-Bdynamic");
+}
   }
 
   if (!Args.hasArg(options::OPT_nostdlib)) {
@@ -190,8 +197,9 @@ void tools::CrossWindows::Linker::ConstructJob(
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back(TC.getCompilerRTArgString(Args, "asan_dll_thunk"));
     } else {
-      for (const auto &Lib : {"asan_dynamic", "asan_dynamic_runtime_thunk"})
+      for (const auto &Lib : {"asan_dynamic", "asan_dynamic_runtime_thunk"}) {
         CmdArgs.push_back(TC.getCompilerRTArgString(Args, Lib));
+}
       // Make sure the dynamic runtime thunk is not optimized out at link time
       // to ensure proper SEH handling.
       CmdArgs.push_back(Args.MakeArgString("--undefined"));
@@ -238,8 +246,9 @@ AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   const std::string &SysRoot = D.SysRoot;
 
   auto AddSystemAfterIncludes = [&]() {
-    for (const auto &P : DriverArgs.getAllArgValues(options::OPT_isystem_after))
+    for (const auto &P : DriverArgs.getAllArgValues(options::OPT_isystem_after)) {
       addSystemInclude(DriverArgs, CC1Args, P);
+}
   };
 
   if (DriverArgs.hasArg(options::OPT_nostdinc)) {
@@ -263,18 +272,21 @@ AddClangCXXStdlibIncludeArgs(const llvm::opt::ArgList &DriverArgs,
   const std::string &SysRoot = getDriver().SysRoot;
 
   if (DriverArgs.hasArg(options::OPT_nostdinc) ||
-      DriverArgs.hasArg(options::OPT_nostdincxx))
+      DriverArgs.hasArg(options::OPT_nostdincxx)) {
     return;
+}
 
-  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx)
+  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx) {
     addSystemInclude(DriverArgs, CC1Args, SysRoot + "/usr/include/c++/v1");
+}
 }
 
 void CrossWindowsToolChain::
 AddCXXStdlibLibArgs(const llvm::opt::ArgList &DriverArgs,
                     llvm::opt::ArgStringList &CC1Args) const {
-  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx)
+  if (GetCXXStdlibType(DriverArgs) == ToolChain::CST_Libcxx) {
     CC1Args.push_back("-lc++");
+}
 }
 
 clang::SanitizerMask CrossWindowsToolChain::getSupportedSanitizers() const {

@@ -46,8 +46,9 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
   }
 
   // MIPS3 is the default for mips64*-unknown-openbsd.
-  if (Triple.isOSOpenBSD())
+  if (Triple.isOSOpenBSD()) {
     DefMips64CPU = "mips3";
+}
 
   // MIPS2 is the default for mips(el)?-unknown-freebsd.
   // MIPS3 is the default for mips64(el)?-unknown-freebsd.
@@ -57,8 +58,9 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
   }
 
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ,
-                               options::OPT_mcpu_EQ))
+                               options::OPT_mcpu_EQ)) {
     CPUName = A->getValue();
+}
 
   if (Arg *A = Args.getLastArg(options::OPT_mabi_EQ)) {
     ABIName = A->getValue();
@@ -86,8 +88,9 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     }
   }
 
-  if (ABIName.empty() && (Triple.getEnvironment() == llvm::Triple::GNUABIN32))
+  if (ABIName.empty() && (Triple.getEnvironment() == llvm::Triple::GNUABIN32)) {
     ABIName = "n32";
+}
 
   if (ABIName.empty() &&
       (Triple.getVendor() == llvm::Triple::MipsTechnologies ||
@@ -155,11 +158,11 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
   if (Arg *A =
           Args.getLastArg(options::OPT_msoft_float, options::OPT_mhard_float,
                           options::OPT_mfloat_abi_EQ)) {
-    if (A->getOption().matches(options::OPT_msoft_float))
+    if (A->getOption().matches(options::OPT_msoft_float)) {
       ABI = mips::FloatABI::Soft;
-    else if (A->getOption().matches(options::OPT_mhard_float))
+    } else if (A->getOption().matches(options::OPT_mhard_float)) {
       ABI = mips::FloatABI::Hard;
-    else {
+    } else {
       ABI = llvm::StringSwitch<mips::FloatABI>(A->getValue())
                 .Case("soft", mips::FloatABI::Soft)
                 .Case("hard", mips::FloatABI::Hard)
@@ -258,26 +261,29 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
     D.Diag(diag::err_drv_unsupported_noabicalls_pic);
   }
 
-  if (!UseAbiCalls)
+  if (!UseAbiCalls) {
     Features.push_back("+noabicalls");
-  else
+  } else {
     Features.push_back("-noabicalls");
+}
 
   if (Arg *A = Args.getLastArg(options::OPT_mlong_calls,
                                options::OPT_mno_long_calls)) {
-    if (A->getOption().matches(options::OPT_mno_long_calls))
+    if (A->getOption().matches(options::OPT_mno_long_calls)) {
       Features.push_back("-long-calls");
-    else if (!UseAbiCalls)
+    } else if (!UseAbiCalls) {
       Features.push_back("+long-calls");
-    else
+    } else {
       D.Diag(diag::warn_drv_unsupported_longcalls) << (ABICallsArg ? 0 : 1);
+}
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mxgot, options::OPT_mno_xgot)) {
-    if (A->getOption().matches(options::OPT_mxgot))
+    if (A->getOption().matches(options::OPT_mxgot)) {
       Features.push_back("+xgot");
-    else
+    } else {
       Features.push_back("-xgot");
+}
   }
 
   mips::FloatABI FloatABI = mips::getMipsFloatABI(D, Args, Triple);
@@ -291,22 +297,23 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   if (Arg *A = Args.getLastArg(options::OPT_mnan_EQ)) {
     StringRef Val = StringRef(A->getValue());
     if (Val == "2008") {
-      if (mips::getIEEE754Standard(CPUName) & mips::Std2008)
+      if (mips::getIEEE754Standard(CPUName) & mips::Std2008) {
         Features.push_back("+nan2008");
-      else {
+      } else {
         Features.push_back("-nan2008");
         D.Diag(diag::warn_target_unsupported_nan2008) << CPUName;
       }
     } else if (Val == "legacy") {
-      if (mips::getIEEE754Standard(CPUName) & mips::Legacy)
+      if (mips::getIEEE754Standard(CPUName) & mips::Legacy) {
         Features.push_back("-nan2008");
-      else {
+      } else {
         Features.push_back("+nan2008");
         D.Diag(diag::warn_target_unsupported_nanlegacy) << CPUName;
       }
-    } else
+    } else {
       D.Diag(diag::err_drv_unsupported_option_argument)
           << A->getOption().getName() << Val;
+}
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mabs_EQ)) {
@@ -349,13 +356,14 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   // nooddspreg.
   if (Arg *A = Args.getLastArg(options::OPT_mfp32, options::OPT_mfpxx,
                                options::OPT_mfp64)) {
-    if (A->getOption().matches(options::OPT_mfp32))
+    if (A->getOption().matches(options::OPT_mfp32)) {
       Features.push_back("-fp64");
-    else if (A->getOption().matches(options::OPT_mfpxx)) {
+    } else if (A->getOption().matches(options::OPT_mfpxx)) {
       Features.push_back("+fpxx");
       Features.push_back("+nooddspreg");
-    } else
+    } else {
       Features.push_back("+fp64");
+}
   } else if (mips::shouldUseFPXX(Args, Triple, CPUName, ABIName, FloatABI)) {
     Features.push_back("+fpxx");
     Features.push_back("+nooddspreg");
@@ -383,19 +391,21 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
           Args.getLastArg(options::OPT_mmicromips, options::OPT_mno_micromips);
       Arg *C = Args.getLastArg(options::OPT_mips16, options::OPT_mno_mips16);
 
-      if (B && B->getOption().matches(options::OPT_mmicromips))
+      if (B && B->getOption().matches(options::OPT_mmicromips)) {
         D.Diag(diag::err_drv_unsupported_indirect_jump_opt)
             << "hazard" << "micromips";
-      else if (C && C->getOption().matches(options::OPT_mips16))
+      } else if (C && C->getOption().matches(options::OPT_mips16)) {
         D.Diag(diag::err_drv_unsupported_indirect_jump_opt)
             << "hazard" << "mips16";
-      else if (mips::supportsIndirectJumpHazardBarrier(CPUName))
+      } else if (mips::supportsIndirectJumpHazardBarrier(CPUName)) {
         Features.push_back("+use-indirect-jump-hazard");
-      else
+      } else {
         D.Diag(diag::err_drv_unsupported_indirect_jump_opt)
             << "hazard" << CPUName;
-    } else
+}
+    } else {
       D.Diag(diag::err_drv_unknown_indirect_jump_opt) << Val;
+}
   }
 }
 
@@ -442,11 +452,12 @@ bool mips::isUCLibc(const ArgList &Args) {
 }
 
 bool mips::isNaN2008(const ArgList &Args, const llvm::Triple &Triple) {
-  if (Arg *NaNArg = Args.getLastArg(options::OPT_mnan_EQ))
+  if (Arg *NaNArg = Args.getLastArg(options::OPT_mnan_EQ)) {
     return llvm::StringSwitch<bool>(NaNArg->getValue())
         .Case("2008", true)
         .Case("legacy", false)
         .Default(false);
+}
 
   // NaN2008 is the default for MIPS32r6/MIPS64r6.
   return llvm::StringSwitch<bool>(getCPUName(Args, Triple))
@@ -455,8 +466,9 @@ bool mips::isNaN2008(const ArgList &Args, const llvm::Triple &Triple) {
 }
 
 bool mips::isFP64ADefault(const llvm::Triple &Triple, StringRef CPUName) {
-  if (!Triple.isAndroid())
+  if (!Triple.isAndroid()) {
     return false;
+}
 
   // Android MIPS32R6 defaults to FP64A.
   return llvm::StringSwitch<bool>(CPUName)
@@ -468,16 +480,19 @@ bool mips::isFPXXDefault(const llvm::Triple &Triple, StringRef CPUName,
                          StringRef ABIName, mips::FloatABI FloatABI) {
   if (Triple.getVendor() != llvm::Triple::ImaginationTechnologies &&
       Triple.getVendor() != llvm::Triple::MipsTechnologies &&
-      !Triple.isAndroid())
+      !Triple.isAndroid()) {
     return false;
+}
 
-  if (ABIName != "32")
+  if (ABIName != "32") {
     return false;
+}
 
   // FPXX shouldn't be used if either -msoft-float or -mfloat-abi=soft is
   // present.
-  if (FloatABI == mips::FloatABI::Soft)
+  if (FloatABI == mips::FloatABI::Soft) {
     return false;
+}
 
   return llvm::StringSwitch<bool>(CPUName)
       .Cases("mips2", "mips3", "mips4", "mips5", true)
@@ -493,9 +508,11 @@ bool mips::shouldUseFPXX(const ArgList &Args, const llvm::Triple &Triple,
 
   // FPXX shouldn't be used if -msingle-float is present.
   if (Arg *A = Args.getLastArg(options::OPT_msingle_float,
-                               options::OPT_mdouble_float))
-    if (A->getOption().matches(options::OPT_msingle_float))
+                               options::OPT_mdouble_float)) {
+    if (A->getOption().matches(options::OPT_msingle_float)) {
       UseFPXX = false;
+}
+}
 
   return UseFPXX;
 }

@@ -33,8 +33,9 @@ namespace {
 
 llvm::Optional<std::string> filePath(const SymbolLocation &Loc,
                                      llvm::StringRef HintFilePath) {
-  if (!Loc)
+  if (!Loc) {
     return None;
+}
   auto Path = URI::resolve(Loc.FileURI, HintFilePath);
   if (!Path) {
     elog("Could not resolve URI {0}: {1}", Loc.FileURI, Path.takeError());
@@ -47,8 +48,9 @@ llvm::Optional<std::string> filePath(const SymbolLocation &Loc,
 // Returns true if the given location is expanded from any macro body.
 bool isInMacroBody(const SourceManager &SM, SourceLocation Loc) {
   while (Loc.isMacroID()) {
-    if (SM.isMacroBodyExpansion(Loc))
+    if (SM.isMacroBodyExpansion(Loc)) {
       return true;
+}
     Loc = SM.getImmediateMacroCallerLoc(Loc);
   }
 
@@ -66,11 +68,13 @@ llvm::Optional<std::string> getOtherRefFile(const Decl &D, StringRef MainFile,
   Req.IDs.insert(*getSymbolID(&D));
   llvm::Optional<std::string> OtherFile;
   Index.refs(Req, [&](const Ref &R) {
-    if (OtherFile)
+    if (OtherFile) {
       return;
+}
     if (auto RefFilePath = filePath(R.Location, /*HintFilePath=*/MainFile)) {
-      if (*RefFilePath != MainFile)
+      if (*RefFilePath != MainFile) {
         OtherFile = *RefFilePath;
+}
     }
   });
   return OtherFile;
@@ -84,8 +88,9 @@ llvm::DenseSet<const NamedDecl *> locateDeclAt(ParsedAST &AST,
   SelectionTree Selection = SelectionTree::createRight(
       AST.getASTContext(), AST.getTokens(), Offset, Offset);
   const SelectionTree::Node *SelectedNode = Selection.commonAncestor();
-  if (!SelectedNode)
+  if (!SelectedNode) {
     return {};
+}
 
   llvm::DenseSet<const NamedDecl *> Result;
   for (const NamedDecl *D :
@@ -103,8 +108,9 @@ llvm::DenseSet<const NamedDecl *> locateDeclAt(ParsedAST &AST,
 // modified.
 bool isExcluded(const NamedDecl &RenameDecl) {
   if (isProtoFile(RenameDecl.getLocation(),
-                  RenameDecl.getASTContext().getSourceManager()))
+                  RenameDecl.getASTContext().getSourceManager())) {
     return true;
+}
   static const auto *StdSymbols = new llvm::DenseSet<llvm::StringRef>({
 #define SYMBOL(Name, NameSpace, Header) {#NameSpace #Name},
 #include "StdSymbolMap.inc"
@@ -131,18 +137,22 @@ llvm::Optional<ReasonToReject> renameable(const NamedDecl &RenameDecl,
                                           bool CrossFile) {
   trace::Span Tracer("Renameable");
   // Filter out symbols that are unsupported in both rename modes.
-  if (llvm::isa<NamespaceDecl>(&RenameDecl))
+  if (llvm::isa<NamespaceDecl>(&RenameDecl)) {
     return ReasonToReject::UnsupportedSymbol;
+}
   if (const auto *FD = llvm::dyn_cast<FunctionDecl>(&RenameDecl)) {
-    if (FD->isOverloadedOperator())
+    if (FD->isOverloadedOperator()) {
       return ReasonToReject::UnsupportedSymbol;
+}
   }
   // function-local symbols is safe to rename.
-  if (RenameDecl.getParentFunctionOrMethod())
+  if (RenameDecl.getParentFunctionOrMethod()) {
     return None;
+}
 
-  if (isExcluded(RenameDecl))
+  if (isExcluded(RenameDecl)) {
     return ReasonToReject::UnsupportedSymbol;
+}
 
   // Check whether the symbol being rename is indexable.
   auto &ASTCtx = RenameDecl.getASTContext();
@@ -150,35 +160,41 @@ llvm::Optional<ReasonToReject> renameable(const NamedDecl &RenameDecl,
   bool DeclaredInMainFile =
       isInsideMainFile(RenameDecl.getBeginLoc(), ASTCtx.getSourceManager());
   bool IsMainFileOnly = true;
-  if (MainFileIsHeader)
+  if (MainFileIsHeader) {
     // main file is a header, the symbol can't be main file only.
     IsMainFileOnly = false;
-  else if (!DeclaredInMainFile)
+  } else if (!DeclaredInMainFile) {
     IsMainFileOnly = false;
+}
   // If the symbol is not indexable, we disallow rename.
   if (!SymbolCollector::shouldCollectSymbol(
           RenameDecl, RenameDecl.getASTContext(), SymbolCollector::Options(),
-          IsMainFileOnly))
+          IsMainFileOnly)) {
     return ReasonToReject::NonIndexable;
+}
 
   if (!CrossFile) {
-    if (!DeclaredInMainFile)
+    if (!DeclaredInMainFile) {
       // We are sure the symbol is used externally, bail out early.
       return ReasonToReject::UsedOutsideFile;
+}
 
     // If the symbol is declared in the main file (which is not a header), we
     // rename it.
-    if (!MainFileIsHeader)
+    if (!MainFileIsHeader) {
       return None;
+}
 
-    if (!Index)
+    if (!Index) {
       return ReasonToReject::NoIndexProvided;
+}
 
     auto OtherFile = getOtherRefFile(RenameDecl, MainFilePath, *Index);
     // If the symbol is indexable and has no refs from other files in the index,
     // we rename it.
-    if (!OtherFile)
+    if (!OtherFile) {
       return None;
+}
     // If the symbol is indexable and has refs from other files in the index,
     // we disallow rename.
     return ReasonToReject::UsedOutsideFile;
@@ -190,8 +206,9 @@ llvm::Optional<ReasonToReject> renameable(const NamedDecl &RenameDecl,
   // subclasses, our index doesn't have this information.
   // Note: Within-file rename does support this through the AST.
   if (const auto *S = llvm::dyn_cast<CXXMethodDecl>(&RenameDecl)) {
-    if (S->isVirtual())
+    if (S->isVirtual()) {
       return ReasonToReject::UnsupportedSymbol;
+}
   }
   return None;
 }
@@ -234,18 +251,21 @@ std::vector<SourceLocation> findOccurrencesWithinFile(ParsedAST &AST,
   std::vector<std::string> RenameUSRs =
       tooling::getUSRsForDeclaration(RenameDecl, AST.getASTContext());
   llvm::DenseSet<SymbolID> TargetIDs;
-  for (auto &USR : RenameUSRs)
+  for (auto &USR : RenameUSRs) {
     TargetIDs.insert(SymbolID(USR));
+}
 
   std::vector<SourceLocation> Results;
   for (Decl *TopLevelDecl : AST.getLocalTopLevelDecls()) {
     findExplicitReferences(TopLevelDecl, [&](ReferenceLoc Ref) {
-      if (Ref.Targets.empty())
+      if (Ref.Targets.empty()) {
         return;
+}
       for (const auto *Target : Ref.Targets) {
         auto ID = getSymbolID(Target);
-        if (!ID || TargetIDs.find(*ID) == TargetIDs.end())
+        if (!ID || TargetIDs.find(*ID) == TargetIDs.end()) {
           return;
+}
       }
       Results.push_back(Ref.NameLoc);
     });
@@ -267,8 +287,9 @@ renameWithinFile(ParsedAST &AST, const NamedDecl &RenameDecl,
     // We don't rename in any macro bodies, but we allow rename the symbol
     // spelled in a top-level macro argument in the main file.
     if (RenameLoc.isMacroID()) {
-      if (isInMacroBody(SM, RenameLoc))
+      if (isInMacroBody(SM, RenameLoc)) {
         continue;
+}
       RenameLoc = SM.getSpellingLoc(Loc);
     }
     // Filter out locations not from main file.
@@ -278,11 +299,13 @@ renameWithinFile(ParsedAST &AST, const NamedDecl &RenameDecl,
     //     int f^oo;
     //     #include "use_foo.inc"
     //   }
-    if (!isInsideMainFile(RenameLoc, SM))
+    if (!isInsideMainFile(RenameLoc, SM)) {
       continue;
+}
     if (auto Err = FilteredChanges.add(tooling::Replacement(
-            SM, CharSourceRange::getTokenRange(RenameLoc), NewName)))
+            SM, CharSourceRange::getTokenRange(RenameLoc), NewName))) {
       return std::move(Err);
+}
   }
   return FilteredChanges;
 }
@@ -309,22 +332,27 @@ findOccurrencesOutsideFile(const NamedDecl &RenameDecl,
   // Absolute file path => rename occurrences in that file.
   llvm::StringMap<std::vector<Range>> AffectedFiles;
   bool HasMore = Index.refs(RQuest, [&](const Ref &R) {
-    if (AffectedFiles.size() >= MaxLimitFiles)
+    if (AffectedFiles.size() >= MaxLimitFiles) {
       return;
-    if ((R.Kind & RefKind::Spelled) == RefKind::Unknown)
+}
+    if ((R.Kind & RefKind::Spelled) == RefKind::Unknown) {
       return;
+}
     if (auto RefFilePath = filePath(R.Location, /*HintFilePath=*/MainFile)) {
-      if (*RefFilePath != MainFile)
+      if (*RefFilePath != MainFile) {
         AffectedFiles[*RefFilePath].push_back(toRange(R.Location));
+}
     }
   });
 
-  if (AffectedFiles.size() >= MaxLimitFiles)
+  if (AffectedFiles.size() >= MaxLimitFiles) {
     return error("The number of affected files exceeds the max limit {0}",
                  MaxLimitFiles);
-  if (HasMore)
+}
+  if (HasMore) {
     return error("The symbol {0} has too many occurrences",
                  RenameDecl.getQualifiedNameAsString());
+}
   // Sort and deduplicate the results, in case that index returns duplications.
   for (auto &FileAndOccurrences : AffectedFiles) {
     auto &Ranges = FileAndOccurrences.getValue();
@@ -356,8 +384,9 @@ llvm::Expected<FileEdits> renameOutsideFile(
   trace::Span Tracer("RenameOutsideFile");
   auto AffectedFiles = findOccurrencesOutsideFile(RenameDecl, MainFilePath,
                                                   Index, MaxLimitFiles);
-  if (!AffectedFiles)
+  if (!AffectedFiles) {
     return AffectedFiles.takeError();
+}
   FileEdits Results;
   for (auto &FileAndOccurrences : *AffectedFiles) {
     llvm::StringRef FilePath = FileAndOccurrences.first();
@@ -381,11 +410,13 @@ llvm::Expected<FileEdits> renameOutsideFile(
     }
     auto RenameEdit =
         buildRenameEdit(FilePath, *AffectedFileCode, *RenameRanges, NewName);
-    if (!RenameEdit)
+    if (!RenameEdit) {
       return error("failed to rename in file {0}: {1}", FilePath,
                    RenameEdit.takeError());
-    if (!RenameEdit->Replacements.empty())
+}
+    if (!RenameEdit->Replacements.empty()) {
       Results.insert({FilePath, std::move(*RenameEdit)});
+}
   }
   return Results;
 }
@@ -410,10 +441,12 @@ void findNearMiss(
     std::vector<size_t> &PartialMatch, ArrayRef<Range> IndexedRest,
     ArrayRef<Range> LexedRest, int LexedIndex, int &Fuel,
     llvm::function_ref<void(const std::vector<size_t> &)> MatchedCB) {
-  if (--Fuel < 0)
+  if (--Fuel < 0) {
     return;
-  if (IndexedRest.size() > LexedRest.size())
+}
+  if (IndexedRest.size() > LexedRest.size()) {
     return;
+}
   if (IndexedRest.empty()) {
     MatchedCB(PartialMatch);
     return;
@@ -440,51 +473,61 @@ llvm::Expected<RenameResult> rename(const RenameInputs &RInputs) {
                          &SM](PathRef AbsPath) -> llvm::Expected<std::string> {
     llvm::Optional<std::string> DirtyBuffer;
     if (RInputs.GetDirtyBuffer &&
-        (DirtyBuffer = RInputs.GetDirtyBuffer(AbsPath)))
+        (DirtyBuffer = RInputs.GetDirtyBuffer(AbsPath))) {
       return std::move(*DirtyBuffer);
+}
 
     auto Content =
         SM.getFileManager().getVirtualFileSystem().getBufferForFile(AbsPath);
-    if (!Content)
+    if (!Content) {
       return error("Fail to open file {0}: {1}", AbsPath,
                    Content.getError().message());
-    if (!*Content)
+}
+    if (!*Content) {
       return error("Got no buffer for file {0}", AbsPath);
+}
 
     return (*Content)->getBuffer().str();
   };
   // Try to find the tokens adjacent to the cursor position.
   auto Loc = sourceLocationInMainFile(SM, RInputs.Pos);
-  if (!Loc)
+  if (!Loc) {
     return Loc.takeError();
+}
   const syntax::Token *IdentifierToken =
       spelledIdentifierTouching(*Loc, AST.getTokens());
 
   // Renames should only triggered on identifiers.
-  if (!IdentifierToken)
+  if (!IdentifierToken) {
     return makeError(ReasonToReject::NoSymbolFound);
+}
   Range CurrentIdentifier = halfOpenToRange(
       SM, CharSourceRange::getCharRange(IdentifierToken->location(),
                                         IdentifierToken->endLocation()));
   // FIXME: Renaming macros is not supported yet, the macro-handling code should
   // be moved to rename tooling library.
-  if (locateMacroAt(*IdentifierToken, AST.getPreprocessor()))
+  if (locateMacroAt(*IdentifierToken, AST.getPreprocessor())) {
     return makeError(ReasonToReject::UnsupportedSymbol);
+}
 
   auto DeclsUnderCursor = locateDeclAt(AST, IdentifierToken->location());
-  if (DeclsUnderCursor.empty())
+  if (DeclsUnderCursor.empty()) {
     return makeError(ReasonToReject::NoSymbolFound);
-  if (DeclsUnderCursor.size() > 1)
+}
+  if (DeclsUnderCursor.size() > 1) {
     return makeError(ReasonToReject::AmbiguousSymbol);
-  if (isKeyword(RInputs.NewName, AST.getLangOpts()))
+}
+  if (isKeyword(RInputs.NewName, AST.getLangOpts())) {
     return makeError(ReasonToReject::RenameToKeywords);
+}
 
   const auto &RenameDecl =
       llvm::cast<NamedDecl>(*(*DeclsUnderCursor.begin())->getCanonicalDecl());
   auto Reject = renameable(RenameDecl, RInputs.MainFilePath, RInputs.Index,
                            Opts.AllowCrossFile);
-  if (Reject)
+  if (Reject) {
     return makeError(*Reject);
+}
 
   // We have two implementations of the rename:
   //   - AST-based rename: used for renaming local symbols, e.g. variables
@@ -496,8 +539,9 @@ llvm::Expected<RenameResult> rename(const RenameInputs &RInputs) {
   //   - run AST-based rename on the main file;
   //   - run index-based rename on other affected files;
   auto MainFileRenameEdit = renameWithinFile(AST, RenameDecl, RInputs.NewName);
-  if (!MainFileRenameEdit)
+  if (!MainFileRenameEdit) {
     return MainFileRenameEdit.takeError();
+}
   RenameResult Result;
   Result.Target = CurrentIdentifier;
   Edit MainFileEdits = Edit(MainFileCode, std::move(*MainFileRenameEdit));
@@ -525,8 +569,9 @@ llvm::Expected<RenameResult> rename(const RenameInputs &RInputs) {
       Opts.LimitFiles == 0 ? std::numeric_limits<size_t>::max()
                            : Opts.LimitFiles,
       GetFileContent);
-  if (!OtherFilesEdits)
+  if (!OtherFilesEdits) {
     return OtherFilesEdits.takeError();
+}
   Result.GlobalChanges = *OtherFilesEdits;
   // Attach the rename edits for the main file.
   Result.GlobalChanges.try_emplace(RInputs.MainFilePath,
@@ -559,9 +604,10 @@ llvm::Expected<Edit> buildRenameEdit(llvm::StringRef AbsFilePath,
         P.line > LastPos.line ? P.character : P.character - LastPos.character};
     auto ShiftedOffset =
         positionToOffset(InitialCode.substr(LastOffset), Shifted);
-    if (!ShiftedOffset)
+    if (!ShiftedOffset) {
       return error("fail to convert the position {0} to offset ({1})", P,
                    ShiftedOffset.takeError());
+}
     LastPos = P;
     LastOffset += *ShiftedOffset;
     return LastOffset;
@@ -570,11 +616,13 @@ llvm::Expected<Edit> buildRenameEdit(llvm::StringRef AbsFilePath,
   std::vector<std::pair</*start*/ size_t, /*end*/ size_t>> OccurrencesOffsets;
   for (const auto &R : Occurrences) {
     auto StartOffset = Offset(R.start);
-    if (!StartOffset)
+    if (!StartOffset) {
       return StartOffset.takeError();
+}
     auto EndOffset = Offset(R.end);
-    if (!EndOffset)
+    if (!EndOffset) {
       return EndOffset.takeError();
+}
     OccurrencesOffsets.push_back({*StartOffset, *EndOffset});
   }
 
@@ -582,8 +630,9 @@ llvm::Expected<Edit> buildRenameEdit(llvm::StringRef AbsFilePath,
   for (const auto &R : OccurrencesOffsets) {
     auto ByteLength = R.second - R.first;
     if (auto Err = RenameEdit.add(
-            tooling::Replacement(AbsFilePath, R.first, ByteLength, NewName)))
+            tooling::Replacement(AbsFilePath, R.first, ByteLength, NewName))) {
       return std::move(Err);
+}
   }
   return Edit(InitialCode, std::move(RenameEdit));
 }
@@ -628,8 +677,9 @@ llvm::Optional<std::vector<Range>> getMappedRanges(ArrayRef<Range> Indexed,
     return llvm::None;
   }
   // Fast check for the special subset case.
-  if (std::includes(Indexed.begin(), Indexed.end(), Lexed.begin(), Lexed.end()))
+  if (std::includes(Indexed.begin(), Indexed.end(), Lexed.begin(), Lexed.end())) {
     return Indexed.vec();
+}
 
   std::vector<size_t> Best;
   size_t BestCost = std::numeric_limits<size_t>::max();
@@ -646,8 +696,9 @@ llvm::Optional<std::vector<Range>> getMappedRanges(ArrayRef<Range> Indexed,
                    HasMultiple = false; // reset
                    return;
                  }
-                 if (MCost == BestCost)
+                 if (MCost == BestCost) {
                    HasMultiple = true;
+}
                });
   if (HasMultiple) {
     vlog("The best near miss is not unique.");
@@ -660,8 +711,9 @@ llvm::Optional<std::vector<Range>> getMappedRanges(ArrayRef<Range> Indexed,
     return llvm::None;
   }
   std::vector<Range> Mapped;
-  for (auto I : Best)
+  for (auto I : Best) {
     Mapped.push_back(Lexed[I]);
+}
   SPAN_ATTACH(Tracer, "mapped_ranges", static_cast<int64_t>(Mapped.size()));
   return Mapped;
 }
@@ -695,8 +747,9 @@ size_t renameRangeAdjustmentCost(ArrayRef<Range> Indexed, ArrayRef<Range> Lexed,
     int DColumn =
         Indexed[I].start.character - Lexed[MappedIndex[I]].start.character;
     int Line = Indexed[I].start.line;
-    if (Line != LastLine)
+    if (Line != LastLine) {
       LastDColumn = 0; // column offsets don't carry cross lines.
+}
     Cost += abs(DLine - LastDLine) + abs(DColumn - LastDColumn);
     std::tie(LastLine, LastDLine, LastDColumn) = std::tie(Line, DLine, DColumn);
   }

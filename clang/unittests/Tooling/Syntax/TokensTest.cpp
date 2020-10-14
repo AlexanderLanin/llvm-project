@@ -121,8 +121,9 @@ public:
     constexpr const char *FileName = "./input.cpp";
     FS->addFile(FileName, time_t(), llvm::MemoryBuffer::getMemBufferCopy(""));
     // Prepare to run a compiler.
-    if (!Diags->getClient())
+    if (!Diags->getClient()) {
       Diags->setClient(new IgnoringDiagConsumer);
+}
     std::vector<const char *> Args = {"tok-test", "-std=c++03", "-fsyntax-only",
                                       FileName};
     auto CI = createInvocationFromCommandLine(Args, Diags, FS);
@@ -163,8 +164,9 @@ public:
     auto FID = SourceMgr->createFileID(
         llvm::MemoryBuffer::getMemBufferCopy(Annot.code()));
     // FIXME: pass proper LangOptions.
-    if (Annot.ranges().empty())
+    if (Annot.ranges().empty()) {
       return syntax::tokenize(FID, *SourceMgr, LangOptions());
+}
     return syntax::tokenize(
         syntax::FileRange(FID, Annot.range().Begin, Annot.range().End),
         *SourceMgr, LangOptions());
@@ -188,15 +190,17 @@ public:
   llvm::ArrayRef<T> findSubrange(llvm::ArrayRef<U> Subrange,
                                  llvm::ArrayRef<T> Range, Eq F) {
     assert(Subrange.size() >= 1);
-    if (Range.size() < Subrange.size())
+    if (Range.size() < Subrange.size()) {
       return llvm::makeArrayRef(Range.end(), Range.end());
+}
     for (auto Begin = Range.begin(), Last = Range.end() - Subrange.size();
          Begin <= Last; ++Begin) {
       auto It = Begin;
       for (auto ItSub = Subrange.begin(); ItSub != Subrange.end();
            ++ItSub, ++It) {
-        if (!F(*ItSub, *It))
+        if (!F(*ItSub, *It)) {
           goto continue_outer;
+}
       }
       return llvm::makeArrayRef(Begin, It);
     continue_outer:;
@@ -242,8 +246,9 @@ public:
   }
   llvm::ArrayRef<syntax::Token> findSpelled(llvm::StringRef Query,
                                             FileID File = FileID()) {
-    if (!File.isValid())
+    if (!File.isValid()) {
       File = SourceMgr->getMainFileID();
+}
     return findTokenRange(Query, Buffer.spelledTokens(File));
   }
 
@@ -342,9 +347,10 @@ file './input.cpp'
   mappings:
     ['#'_1, '<eof>'_9) => ['<eof>'_1, '<eof>'_1)
 )"}};
-  for (auto &Test : TestCases)
+  for (auto &Test : TestCases) {
     EXPECT_EQ(collectAndDump(Test.first), Test.second)
         << collectAndDump(Test.first);
+}
 }
 
 TEST_F(TokenCollectorTest, Locations) {
@@ -796,16 +802,18 @@ TEST_F(TokenBufferTest, ExpansionsOverlapping) {
               ValueIs(IsExpansion(SameRange(ID1),
                                   SameRange(findExpanded("1 + 2 + 3")))));
   // Only the first spelled token should be found.
-  for (const auto &T : ID1.drop_front())
+  for (const auto &T : ID1.drop_front()) {
     EXPECT_EQ(Buffer.expansionStartingAt(&T), llvm::None);
+}
 
   llvm::ArrayRef<syntax::Token> ID2 = findSpelled("ID ( ID ( 2 + 3 + 4 ) )");
   EXPECT_THAT(Buffer.expansionStartingAt(&ID2.front()),
               ValueIs(IsExpansion(SameRange(ID2),
                                   SameRange(findExpanded("2 + 3 + 4")))));
   // Only the first spelled token should be found.
-  for (const auto &T : ID2.drop_front())
+  for (const auto &T : ID2.drop_front()) {
     EXPECT_EQ(Buffer.expansionStartingAt(&T), llvm::None);
+}
 
   EXPECT_THAT(Buffer.expansionsOverlapping(llvm::makeArrayRef(
                   findSpelled("1 + 2").data(), findSpelled("4").data())),
@@ -826,8 +834,9 @@ int b = 1;
       ValueIs(IsExpansion(SameRange(DefineFoo),
                           SameRange(findExpanded("int a").take_front(0)))));
   // Only the first spelled token should be found.
-  for (const auto &T : DefineFoo.drop_front())
+  for (const auto &T : DefineFoo.drop_front()) {
     EXPECT_EQ(Buffer.expansionStartingAt(&T), llvm::None);
+}
 
   llvm::ArrayRef<syntax::Token> PragmaOnce = findSpelled("# pragma once");
   EXPECT_THAT(
@@ -835,8 +844,9 @@ int b = 1;
       ValueIs(IsExpansion(SameRange(PragmaOnce),
                           SameRange(findExpanded("int b").take_front(0)))));
   // Only the first spelled token should be found.
-  for (const auto &T : PragmaOnce.drop_front())
+  for (const auto &T : PragmaOnce.drop_front()) {
     EXPECT_EQ(Buffer.expansionStartingAt(&T), llvm::None);
+}
 
   EXPECT_THAT(
       Buffer.expansionsOverlapping(findSpelled("FOO ; # pragma")),
@@ -881,12 +891,14 @@ TEST_F(TokenBufferTest, MacroExpansions) {
   auto &SM = *SourceMgr;
   auto Expansions = Buffer.macroExpansions(SM.getMainFileID());
   std::vector<FileRange> ExpectedMacroRanges;
-  for (auto Range : Code.ranges("macro"))
+  for (auto Range : Code.ranges("macro")) {
     ExpectedMacroRanges.push_back(
         FileRange(SM.getMainFileID(), Range.Begin, Range.End));
+}
   std::vector<FileRange> ActualMacroRanges;
-  for (auto Expansion : Expansions)
+  for (auto Expansion : Expansions) {
     ActualMacroRanges.push_back(Expansion->range(SM));
+}
   EXPECT_EQ(ExpectedMacroRanges, ActualMacroRanges);
 }
 

@@ -131,11 +131,12 @@ getNamingStyles(const ClangTidyCheck::OptionsView &Options) {
     auto Prefix = Options.get((StyleName + "Prefix").str(), "");
     auto Postfix = Options.get((StyleName + "Suffix").str(), "");
 
-    if (CaseOptional || !Prefix.empty() || !Postfix.empty())
+    if (CaseOptional || !Prefix.empty() || !Postfix.empty()) {
       Styles.emplace_back(IdentifierNamingCheck::NamingStyle{
           std::move(CaseOptional), std::move(Prefix), std::move(Postfix)});
-    else
+    } else {
       Styles.emplace_back(llvm::None);
+}
   }
   return Styles;
 }
@@ -163,11 +164,13 @@ void IdentifierNamingCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
   ArrayRef<llvm::Optional<NamingStyle>> NamingStyles =
       getStyleForFile(Context->getCurrentFile());
   for (size_t I = 0; I < SK_Count; ++I) {
-    if (!NamingStyles[I])
+    if (!NamingStyles[I]) {
       continue;
-    if (NamingStyles[I]->Case)
+}
+    if (NamingStyles[I]->Case) {
       Options.store(Opts, (StyleNames[I] + "Case").str(),
                     *NamingStyles[I]->Case);
+}
     Options.store(Opts, (StyleNames[I] + "Prefix").str(),
                   NamingStyles[I]->Prefix);
     Options.store(Opts, (StyleNames[I] + "Suffix").str(),
@@ -190,18 +193,22 @@ static bool matchesStyle(StringRef Name,
       llvm::Regex("^[a-z]([a-z0-9]*(_[A-Z])?)*"),
   };
 
-  if (!Name.consume_front(Style.Prefix))
+  if (!Name.consume_front(Style.Prefix)) {
     return false;
-  if (!Name.consume_back(Style.Suffix))
+}
+  if (!Name.consume_back(Style.Suffix)) {
     return false;
+}
 
   // Ensure the name doesn't have any extra underscores beyond those specified
   // in the prefix and suffix.
-  if (Name.startswith("_") || Name.endswith("_"))
+  if (Name.startswith("_") || Name.endswith("_")) {
     return false;
+}
 
-  if (Style.Case && !Matchers[static_cast<size_t>(*Style.Case)].match(Name))
+  if (Style.Case && !Matchers[static_cast<size_t>(*Style.Case)].match(Name)) {
     return false;
+}
 
   return true;
 }
@@ -219,8 +226,9 @@ static std::string fixupWithCase(StringRef Name,
   for (auto Substr : Substrs) {
     while (!Substr.empty()) {
       Groups.clear();
-      if (!Splitter.match(Substr, &Groups))
+      if (!Splitter.match(Substr, &Groups)) {
         break;
+}
 
       if (Groups[2].size() > 0) {
         Words.push_back(Groups[1]);
@@ -235,8 +243,9 @@ static std::string fixupWithCase(StringRef Name,
     }
   }
 
-  if (Words.empty())
+  if (Words.empty()) {
     return Name.str();
+}
 
   SmallString<128> Fixup;
   switch (Case) {
@@ -246,16 +255,18 @@ static std::string fixupWithCase(StringRef Name,
 
   case IdentifierNamingCheck::CT_LowerCase:
     for (auto const &Word : Words) {
-      if (&Word != &Words.front())
+      if (&Word != &Words.front()) {
         Fixup += "_";
+}
       Fixup += Word.lower();
     }
     break;
 
   case IdentifierNamingCheck::CT_UpperCase:
     for (auto const &Word : Words) {
-      if (&Word != &Words.front())
+      if (&Word != &Words.front()) {
         Fixup += "_";
+}
       Fixup += Word.upper();
     }
     break;
@@ -280,8 +291,9 @@ static std::string fixupWithCase(StringRef Name,
 
   case IdentifierNamingCheck::CT_CamelSnakeCase:
     for (auto const &Word : Words) {
-      if (&Word != &Words.front())
+      if (&Word != &Words.front()) {
         Fixup += "_";
+}
       Fixup += toupper(Word.front());
       Fixup += Word.substr(1).lower();
     }
@@ -307,49 +319,64 @@ static bool isParamInMainLikeFunction(const ParmVarDecl &ParmDecl,
                                       bool IncludeMainLike) {
   const auto *FDecl =
       dyn_cast_or_null<FunctionDecl>(ParmDecl.getParentFunctionOrMethod());
-  if (!FDecl)
+  if (!FDecl) {
     return false;
-  if (FDecl->isMain())
+}
+  if (FDecl->isMain()) {
     return true;
-  if (!IncludeMainLike)
+}
+  if (!IncludeMainLike) {
     return false;
-  if (FDecl->getAccess() != AS_public && FDecl->getAccess() != AS_none)
+}
+  if (FDecl->getAccess() != AS_public && FDecl->getAccess() != AS_none) {
     return false;
+}
   enum MainType { None, Main, WMain };
   auto IsCharPtrPtr = [](QualType QType) -> MainType {
-    if (QType.isNull())
+    if (QType.isNull()) {
       return None;
-    if (QType = QType->getPointeeType(), QType.isNull())
+}
+    if (QType = QType->getPointeeType(), QType.isNull()) {
       return None;
-    if (QType = QType->getPointeeType(), QType.isNull())
+}
+    if (QType = QType->getPointeeType(), QType.isNull()) {
       return None;
-    if (QType->isCharType())
+}
+    if (QType->isCharType()) {
       return Main;
-    if (QType->isWideCharType())
+}
+    if (QType->isWideCharType()) {
       return WMain;
+}
     return None;
   };
   auto IsIntType = [](QualType QType) {
-    if (QType.isNull())
+    if (QType.isNull()) {
       return false;
+}
     if (const auto *Builtin =
             dyn_cast<BuiltinType>(QType->getUnqualifiedDesugaredType())) {
       return Builtin->getKind() == BuiltinType::Int;
     }
     return false;
   };
-  if (!IsIntType(FDecl->getReturnType()))
+  if (!IsIntType(FDecl->getReturnType())) {
     return false;
-  if (FDecl->getNumParams() < 2 || FDecl->getNumParams() > 3)
+}
+  if (FDecl->getNumParams() < 2 || FDecl->getNumParams() > 3) {
     return false;
-  if (!IsIntType(FDecl->parameters()[0]->getType()))
+}
+  if (!IsIntType(FDecl->parameters()[0]->getType())) {
     return false;
+}
   MainType Type = IsCharPtrPtr(FDecl->parameters()[1]->getType());
-  if (Type == None)
+  if (Type == None) {
     return false;
+}
   if (FDecl->getNumParams() == 3 &&
-      IsCharPtrPtr(FDecl->parameters()[2]->getType()) != Type)
+      IsCharPtrPtr(FDecl->parameters()[2]->getType()) != Type) {
     return false;
+}
 
   if (Type == Main) {
     static llvm::Regex Matcher(
@@ -370,8 +397,9 @@ fixupWithStyle(StringRef Name,
   const std::string Fixed = fixupWithCase(
       Name, Style.Case.getValueOr(IdentifierNamingCheck::CaseType::CT_AnyCase));
   StringRef Mid = StringRef(Fixed).trim("_");
-  if (Mid.empty())
+  if (Mid.empty()) {
     Mid = "_";
+}
   return (Style.Prefix + Mid + Style.Suffix).str();
 }
 
@@ -382,67 +410,85 @@ static StyleKind findStyleKind(
   assert(D && D->getIdentifier() && !D->getName().empty() && !D->isImplicit() &&
          "Decl must be an explicit identifier with a name.");
 
-  if (isa<ObjCIvarDecl>(D) && NamingStyles[SK_ObjcIvar])
+  if (isa<ObjCIvarDecl>(D) && NamingStyles[SK_ObjcIvar]) {
     return SK_ObjcIvar;
+}
   
-  if (isa<TypedefDecl>(D) && NamingStyles[SK_Typedef])
+  if (isa<TypedefDecl>(D) && NamingStyles[SK_Typedef]) {
     return SK_Typedef;
+}
 
-  if (isa<TypeAliasDecl>(D) && NamingStyles[SK_TypeAlias])
+  if (isa<TypeAliasDecl>(D) && NamingStyles[SK_TypeAlias]) {
     return SK_TypeAlias;
+}
 
   if (const auto *Decl = dyn_cast<NamespaceDecl>(D)) {
-    if (Decl->isAnonymousNamespace())
+    if (Decl->isAnonymousNamespace()) {
       return SK_Invalid;
+}
 
-    if (Decl->isInline() && NamingStyles[SK_InlineNamespace])
+    if (Decl->isInline() && NamingStyles[SK_InlineNamespace]) {
       return SK_InlineNamespace;
+}
 
-    if (NamingStyles[SK_Namespace])
+    if (NamingStyles[SK_Namespace]) {
       return SK_Namespace;
+}
   }
 
-  if (isa<EnumDecl>(D) && NamingStyles[SK_Enum])
+  if (isa<EnumDecl>(D) && NamingStyles[SK_Enum]) {
     return SK_Enum;
+}
 
   if (isa<EnumConstantDecl>(D)) {
-    if (NamingStyles[SK_EnumConstant])
+    if (NamingStyles[SK_EnumConstant]) {
       return SK_EnumConstant;
+}
 
-    if (NamingStyles[SK_Constant])
+    if (NamingStyles[SK_Constant]) {
       return SK_Constant;
+}
 
     return SK_Invalid;
   }
 
   if (const auto *Decl = dyn_cast<CXXRecordDecl>(D)) {
-    if (Decl->isAnonymousStructOrUnion())
+    if (Decl->isAnonymousStructOrUnion()) {
       return SK_Invalid;
+}
 
-    if (!Decl->getCanonicalDecl()->isThisDeclarationADefinition())
+    if (!Decl->getCanonicalDecl()->isThisDeclarationADefinition()) {
       return SK_Invalid;
+}
 
     if (Decl->hasDefinition() && Decl->isAbstract() &&
-        NamingStyles[SK_AbstractClass])
+        NamingStyles[SK_AbstractClass]) {
       return SK_AbstractClass;
+}
 
-    if (Decl->isStruct() && NamingStyles[SK_Struct])
+    if (Decl->isStruct() && NamingStyles[SK_Struct]) {
       return SK_Struct;
+}
 
-    if (Decl->isStruct() && NamingStyles[SK_Class])
+    if (Decl->isStruct() && NamingStyles[SK_Class]) {
       return SK_Class;
+}
 
-    if (Decl->isClass() && NamingStyles[SK_Class])
+    if (Decl->isClass() && NamingStyles[SK_Class]) {
       return SK_Class;
+}
 
-    if (Decl->isClass() && NamingStyles[SK_Struct])
+    if (Decl->isClass() && NamingStyles[SK_Struct]) {
       return SK_Struct;
+}
 
-    if (Decl->isUnion() && NamingStyles[SK_Union])
+    if (Decl->isUnion() && NamingStyles[SK_Union]) {
       return SK_Union;
+}
 
-    if (Decl->isEnum() && NamingStyles[SK_Enum])
+    if (Decl->isEnum() && NamingStyles[SK_Enum]) {
       return SK_Enum;
+}
 
     return SK_Invalid;
   }
@@ -451,55 +497,69 @@ static StyleKind findStyleKind(
     QualType Type = Decl->getType();
 
     if (!Type.isNull() && Type.isConstQualified()) {
-      if (NamingStyles[SK_ConstantMember])
+      if (NamingStyles[SK_ConstantMember]) {
         return SK_ConstantMember;
+}
 
-      if (NamingStyles[SK_Constant])
+      if (NamingStyles[SK_Constant]) {
         return SK_Constant;
+}
     }
 
-    if (Decl->getAccess() == AS_private && NamingStyles[SK_PrivateMember])
+    if (Decl->getAccess() == AS_private && NamingStyles[SK_PrivateMember]) {
       return SK_PrivateMember;
+}
 
-    if (Decl->getAccess() == AS_protected && NamingStyles[SK_ProtectedMember])
+    if (Decl->getAccess() == AS_protected && NamingStyles[SK_ProtectedMember]) {
       return SK_ProtectedMember;
+}
 
-    if (Decl->getAccess() == AS_public && NamingStyles[SK_PublicMember])
+    if (Decl->getAccess() == AS_public && NamingStyles[SK_PublicMember]) {
       return SK_PublicMember;
+}
 
-    if (NamingStyles[SK_Member])
+    if (NamingStyles[SK_Member]) {
       return SK_Member;
+}
 
     return SK_Invalid;
   }
 
   if (const auto *Decl = dyn_cast<ParmVarDecl>(D)) {
-    if (isParamInMainLikeFunction(*Decl, IgnoreMainLikeFunctions))
+    if (isParamInMainLikeFunction(*Decl, IgnoreMainLikeFunctions)) {
       return SK_Invalid;
+}
     QualType Type = Decl->getType();
 
-    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprVariable])
+    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprVariable]) {
       return SK_ConstexprVariable;
+}
 
     if (!Type.isNull() && Type.isConstQualified()) {
-      if (Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_ConstantPointerParameter])
+      if (Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_ConstantPointerParameter]) {
         return SK_ConstantPointerParameter;
+}
 
-      if (NamingStyles[SK_ConstantParameter])
+      if (NamingStyles[SK_ConstantParameter]) {
         return SK_ConstantParameter;
+}
 
-      if (NamingStyles[SK_Constant])
+      if (NamingStyles[SK_Constant]) {
         return SK_Constant;
+}
     }
 
-    if (Decl->isParameterPack() && NamingStyles[SK_ParameterPack])
+    if (Decl->isParameterPack() && NamingStyles[SK_ParameterPack]) {
       return SK_ParameterPack;
+}
 
-    if (!Type.isNull() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_PointerParameter])
+    if (!Type.isNull() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_PointerParameter]) {
         return SK_PointerParameter;
+}
 
-    if (NamingStyles[SK_Parameter])
+    if (NamingStyles[SK_Parameter]) {
       return SK_Parameter;
+}
 
     return SK_Invalid;
   }
@@ -507,66 +567,84 @@ static StyleKind findStyleKind(
   if (const auto *Decl = dyn_cast<VarDecl>(D)) {
     QualType Type = Decl->getType();
 
-    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprVariable])
+    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprVariable]) {
       return SK_ConstexprVariable;
+}
 
     if (!Type.isNull() && Type.isConstQualified()) {
-      if (Decl->isStaticDataMember() && NamingStyles[SK_ClassConstant])
+      if (Decl->isStaticDataMember() && NamingStyles[SK_ClassConstant]) {
         return SK_ClassConstant;
+}
 
-      if (Decl->isFileVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_GlobalConstantPointer])
+      if (Decl->isFileVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_GlobalConstantPointer]) {
         return SK_GlobalConstantPointer;
+}
 
-      if (Decl->isFileVarDecl() && NamingStyles[SK_GlobalConstant])
+      if (Decl->isFileVarDecl() && NamingStyles[SK_GlobalConstant]) {
         return SK_GlobalConstant;
+}
 
-      if (Decl->isStaticLocal() && NamingStyles[SK_StaticConstant])
+      if (Decl->isStaticLocal() && NamingStyles[SK_StaticConstant]) {
         return SK_StaticConstant;
+}
 
-      if (Decl->isLocalVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_LocalConstantPointer])
+      if (Decl->isLocalVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_LocalConstantPointer]) {
         return SK_LocalConstantPointer;
+}
 
-      if (Decl->isLocalVarDecl() && NamingStyles[SK_LocalConstant])
+      if (Decl->isLocalVarDecl() && NamingStyles[SK_LocalConstant]) {
         return SK_LocalConstant;
+}
 
-      if (Decl->isFunctionOrMethodVarDecl() && NamingStyles[SK_LocalConstant])
+      if (Decl->isFunctionOrMethodVarDecl() && NamingStyles[SK_LocalConstant]) {
         return SK_LocalConstant;
+}
 
-      if (NamingStyles[SK_Constant])
+      if (NamingStyles[SK_Constant]) {
         return SK_Constant;
+}
     }
 
-    if (Decl->isStaticDataMember() && NamingStyles[SK_ClassMember])
+    if (Decl->isStaticDataMember() && NamingStyles[SK_ClassMember]) {
       return SK_ClassMember;
+}
 
-    if (Decl->isFileVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_GlobalPointer])
+    if (Decl->isFileVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_GlobalPointer]) {
       return SK_GlobalPointer;
+}
 
-    if (Decl->isFileVarDecl() && NamingStyles[SK_GlobalVariable])
+    if (Decl->isFileVarDecl() && NamingStyles[SK_GlobalVariable]) {
       return SK_GlobalVariable;
+}
 
-    if (Decl->isStaticLocal() && NamingStyles[SK_StaticVariable])
+    if (Decl->isStaticLocal() && NamingStyles[SK_StaticVariable]) {
       return SK_StaticVariable;
+}
  
-    if (Decl->isLocalVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_LocalPointer])
+    if (Decl->isLocalVarDecl() && Type.getTypePtr()->isAnyPointerType() && NamingStyles[SK_LocalPointer]) {
       return SK_LocalPointer;
+}
 
-    if (Decl->isLocalVarDecl() && NamingStyles[SK_LocalVariable])
+    if (Decl->isLocalVarDecl() && NamingStyles[SK_LocalVariable]) {
       return SK_LocalVariable;
+}
 
-    if (Decl->isFunctionOrMethodVarDecl() && NamingStyles[SK_LocalVariable])
+    if (Decl->isFunctionOrMethodVarDecl() && NamingStyles[SK_LocalVariable]) {
       return SK_LocalVariable;
+}
 
-    if (NamingStyles[SK_Variable])
+    if (NamingStyles[SK_Variable]) {
       return SK_Variable;
+}
 
     return SK_Invalid;
   }
 
   if (const auto *Decl = dyn_cast<CXXMethodDecl>(D)) {
     if (Decl->isMain() || !Decl->isUserProvided() ||
-        Decl->size_overridden_methods() > 0)
+        Decl->size_overridden_methods() > 0) {
       return SK_Invalid;
+}
 
     // If this method has the same name as any base method, this is likely
     // necessary even if it's not an override. e.g. CRTP.
@@ -574,79 +652,99 @@ static StyleKind findStyleKind(
       return CXXRecordDecl::FindOrdinaryMember(S, P, Decl->getDeclName());
     };
     CXXBasePaths UnusedPaths;
-    if (Decl->getParent()->lookupInBases(FindHidden, UnusedPaths))
+    if (Decl->getParent()->lookupInBases(FindHidden, UnusedPaths)) {
       return SK_Invalid;
+}
 
-    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprMethod])
+    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprMethod]) {
       return SK_ConstexprMethod;
+}
 
-    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprFunction])
+    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprFunction]) {
       return SK_ConstexprFunction;
+}
 
-    if (Decl->isStatic() && NamingStyles[SK_ClassMethod])
+    if (Decl->isStatic() && NamingStyles[SK_ClassMethod]) {
       return SK_ClassMethod;
+}
 
-    if (Decl->isVirtual() && NamingStyles[SK_VirtualMethod])
+    if (Decl->isVirtual() && NamingStyles[SK_VirtualMethod]) {
       return SK_VirtualMethod;
+}
 
-    if (Decl->getAccess() == AS_private && NamingStyles[SK_PrivateMethod])
+    if (Decl->getAccess() == AS_private && NamingStyles[SK_PrivateMethod]) {
       return SK_PrivateMethod;
+}
 
-    if (Decl->getAccess() == AS_protected && NamingStyles[SK_ProtectedMethod])
+    if (Decl->getAccess() == AS_protected && NamingStyles[SK_ProtectedMethod]) {
       return SK_ProtectedMethod;
+}
 
-    if (Decl->getAccess() == AS_public && NamingStyles[SK_PublicMethod])
+    if (Decl->getAccess() == AS_public && NamingStyles[SK_PublicMethod]) {
       return SK_PublicMethod;
+}
 
-    if (NamingStyles[SK_Method])
+    if (NamingStyles[SK_Method]) {
       return SK_Method;
+}
 
-    if (NamingStyles[SK_Function])
+    if (NamingStyles[SK_Function]) {
       return SK_Function;
+}
 
     return SK_Invalid;
   }
 
   if (const auto *Decl = dyn_cast<FunctionDecl>(D)) {
-    if (Decl->isMain())
+    if (Decl->isMain()) {
       return SK_Invalid;
+}
 
-    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprFunction])
+    if (Decl->isConstexpr() && NamingStyles[SK_ConstexprFunction]) {
       return SK_ConstexprFunction;
+}
 
-    if (Decl->isGlobal() && NamingStyles[SK_GlobalFunction])
+    if (Decl->isGlobal() && NamingStyles[SK_GlobalFunction]) {
       return SK_GlobalFunction;
+}
 
-    if (NamingStyles[SK_Function])
+    if (NamingStyles[SK_Function]) {
       return SK_Function;
+}
   }
 
   if (isa<TemplateTypeParmDecl>(D)) {
-    if (NamingStyles[SK_TypeTemplateParameter])
+    if (NamingStyles[SK_TypeTemplateParameter]) {
       return SK_TypeTemplateParameter;
+}
 
-    if (NamingStyles[SK_TemplateParameter])
+    if (NamingStyles[SK_TemplateParameter]) {
       return SK_TemplateParameter;
+}
 
     return SK_Invalid;
   }
 
   if (isa<NonTypeTemplateParmDecl>(D)) {
-    if (NamingStyles[SK_ValueTemplateParameter])
+    if (NamingStyles[SK_ValueTemplateParameter]) {
       return SK_ValueTemplateParameter;
+}
 
-    if (NamingStyles[SK_TemplateParameter])
+    if (NamingStyles[SK_TemplateParameter]) {
       return SK_TemplateParameter;
+}
 
     return SK_Invalid;
   }
 
   if (isa<TemplateTemplateParmDecl>(D)) {
-    if (NamingStyles[SK_TemplateTemplateParameter])
+    if (NamingStyles[SK_TemplateTemplateParameter]) {
       return SK_TemplateTemplateParameter;
+}
 
-    if (NamingStyles[SK_TemplateParameter])
+    if (NamingStyles[SK_TemplateParameter]) {
       return SK_TemplateParameter;
+}
 
     return SK_Invalid;
   }
@@ -658,12 +756,14 @@ static llvm::Optional<RenamerClangTidyCheck::FailureInfo> getFailureInfo(
     StringRef Name, SourceLocation Location,
     ArrayRef<llvm::Optional<IdentifierNamingCheck::NamingStyle>> NamingStyles,
     StyleKind SK, const SourceManager &SM, bool IgnoreFailedSplit) {
-  if (SK == SK_Invalid || !NamingStyles[SK])
+  if (SK == SK_Invalid || !NamingStyles[SK]) {
     return None;
+}
 
   const IdentifierNamingCheck::NamingStyle &Style = *NamingStyles[SK];
-  if (matchesStyle(Name, Style))
+  if (matchesStyle(Name, Style)) {
     return None;
+}
 
   std::string KindName =
       fixupWithCase(StyleNames[SK], IdentifierNamingCheck::CT_LowerCase);
@@ -717,15 +817,17 @@ IdentifierNamingCheck::GetDiagInfo(const NamingCheckId &ID,
 
 ArrayRef<llvm::Optional<IdentifierNamingCheck::NamingStyle>>
 IdentifierNamingCheck::getStyleForFile(StringRef FileName) const {
-  if (!GetConfigPerFile)
+  if (!GetConfigPerFile) {
     return MainFileStyle;
+}
   auto &Styles = NamingStylesCache[llvm::sys::path::parent_path(FileName)];
   if (Styles.empty()) {
     ClangTidyOptions Options = Context->getOptionsForFile(FileName);
-    if (Options.Checks && GlobList(*Options.Checks).contains(CheckName))
+    if (Options.Checks && GlobList(*Options.Checks).contains(CheckName)) {
       Styles = getNamingStyles({CheckName, Options.CheckOptions});
-    else
+    } else {
       Styles.resize(SK_Count, None);
+}
   }
   return Styles;
 }

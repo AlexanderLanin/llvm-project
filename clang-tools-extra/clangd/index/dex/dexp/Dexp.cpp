@@ -66,19 +66,21 @@ std::vector<SymbolID> getSymbolIDsFromIndex(llvm::StringRef QualifiedName,
   // qualifier for global scope.
   bool IsGlobalScope = QualifiedName.consume_front("::");
   auto Names = splitQualifiedName(QualifiedName);
-  if (IsGlobalScope || !Names.first.empty())
+  if (IsGlobalScope || !Names.first.empty()) {
     Request.Scopes = {std::string(Names.first)};
-  else
+  } else {
     // QualifiedName refers to a symbol in global scope (e.g. "GlobalSymbol"),
     // add the global scope to the request.
     Request.Scopes = {""};
+}
 
   Request.Query = std::string(Names.second);
   std::vector<SymbolID> SymIDs;
   Index->fuzzyFind(Request, [&](const Symbol &Sym) {
     std::string SymQualifiedName = (Sym.Scope + Sym.Name).str();
-    if (QualifiedName == SymQualifiedName)
+    if (QualifiedName == SymQualifiedName) {
       SymIDs.push_back(Sym.ID);
+}
   });
   return SymIDs;
 }
@@ -206,8 +208,9 @@ class Lookup : public Command {
       FoundSymbol = true;
       llvm::outs() << toYAML(Sym);
     });
-    if (!FoundSymbol)
+    if (!FoundSymbol) {
       llvm::errs() << "not found\n";
+}
   }
 };
 
@@ -261,8 +264,9 @@ class Refs : public Command {
         llvm::errs() << U.takeError();
         return;
       }
-      if (RegexFilter.match(U->body()))
+      if (RegexFilter.match(U->body())) {
         llvm::outs() << R << "\n";
+}
     });
   }
 };
@@ -342,23 +346,27 @@ bool runCommand(std::string Request, const SymbolIndex &Index) {
   llvm::SmallVector<llvm::StringRef, 8> Args;
   llvm::StringRef(Request).split(Args, '\0', /*MaxSplit=*/-1,
                                  /*KeepEmpty=*/false);
-  if (Args.empty())
+  if (Args.empty()) {
     return false;
+}
   if (Args.front() == "help") {
     llvm::outs() << "dexp - Index explorer\nCommands:\n";
-    for (const auto &C : CommandInfo)
+    for (const auto &C : CommandInfo) {
       llvm::outs() << llvm::formatv("{0,16} - {1}\n", C.Name, C.Description);
+}
     llvm::outs() << "Get detailed command help with e.g. `find -help`.\n";
     return true;
   }
   llvm::SmallVector<const char *, 8> FakeArgv;
-  for (llvm::StringRef S : Args)
+  for (llvm::StringRef S : Args) {
     FakeArgv.push_back(S.data()); // Terminated by separator or end of string.
+}
 
   for (const auto &Cmd : CommandInfo) {
-    if (Cmd.Name == Args.front())
+    if (Cmd.Name == Args.front()) {
       return Cmd.Implementation()->parseAndRun(FakeArgv, Cmd.Description,
                                                Index);
+}
   }
   llvm::errs() << "Unknown command. Try 'help'.\n";
   return false;
@@ -390,10 +398,12 @@ int main(int argc, const char *argv[]) {
     return -1;
   }
 
-  if (!ExecCommand.empty())
+  if (!ExecCommand.empty()) {
     return runCommand(ExecCommand, *Index) ? 0 : 1;
+}
 
   llvm::LineEditor LE("dexp");
-  while (llvm::Optional<std::string> Request = LE.readLine())
+  while (llvm::Optional<std::string> Request = LE.readLine()) {
     runCommand(std::move(*Request), *Index);
+}
 }

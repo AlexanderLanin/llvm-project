@@ -53,11 +53,13 @@ static SmallVector<const Stmt *, 1> getParentStmts(const Stmt *S,
 namespace {
 bool isDescendantOrEqual(const Stmt *Descendant, const Stmt *Ancestor,
                          ASTContext *Context) {
-  if (Descendant == Ancestor)
+  if (Descendant == Ancestor) {
     return true;
+}
   for (const Stmt *Parent : getParentStmts(Descendant, Context)) {
-    if (isDescendantOrEqual(Parent, Ancestor, Context))
+    if (isDescendantOrEqual(Parent, Ancestor, Context)) {
       return true;
+}
   }
 
   return false;
@@ -80,15 +82,17 @@ bool ExprSequence::inSequence(const Stmt *Before, const Stmt *After) const {
   // chain of successors, we know that 'After' is sequenced after 'Before'.
   for (const Stmt *Successor = getSequenceSuccessor(Before); Successor;
        Successor = getSequenceSuccessor(Successor)) {
-    if (isDescendantOrEqual(After, Successor, Context))
+    if (isDescendantOrEqual(After, Successor, Context)) {
       return true;
+}
   }
 
   // If 'After' is a parent of 'Before' or is sequenced after one of these
   // parents, we know that it is sequenced after 'Before'.
   for (const Stmt *Parent : getParentStmts(Before, Context)) {
-    if (Parent == After || inSequence(Parent, After))
+    if (Parent == After || inSequence(Parent, After)) {
       return true;
+}
   }
 
   return false;
@@ -103,27 +107,31 @@ const Stmt *ExprSequence::getSequenceSuccessor(const Stmt *S) const {
   for (const Stmt *Parent : getParentStmts(S, Context)) {
     // If a statement has multiple parents, make sure we're using the parent
     // that lies within the sub-tree under Root.
-    if (!isDescendantOrEqual(Parent, Root, Context))
+    if (!isDescendantOrEqual(Parent, Root, Context)) {
       continue;
+}
 
     if (const auto *BO = dyn_cast<BinaryOperator>(Parent)) {
       // Comma operator: Right-hand side is sequenced after the left-hand side.
-      if (BO->getLHS() == S && BO->getOpcode() == BO_Comma)
+      if (BO->getLHS() == S && BO->getOpcode() == BO_Comma) {
         return BO->getRHS();
+}
     } else if (const auto *InitList = dyn_cast<InitListExpr>(Parent)) {
       // Initializer list: Each initializer clause is sequenced after the
       // clauses that precede it.
       for (unsigned I = 1; I < InitList->getNumInits(); ++I) {
-        if (InitList->getInit(I - 1) == S)
+        if (InitList->getInit(I - 1) == S) {
           return InitList->getInit(I);
+}
       }
     } else if (const auto *Compound = dyn_cast<CompoundStmt>(Parent)) {
       // Compound statement: Each sub-statement is sequenced after the
       // statements that precede it.
       const Stmt *Previous = nullptr;
       for (const auto *Child : Compound->body()) {
-        if (Previous == S)
+        if (Previous == S) {
           return Child;
+}
         Previous = Child;
       }
     } else if (const auto *TheDeclStmt = dyn_cast<DeclStmt>(Parent)) {
@@ -133,8 +141,9 @@ const Stmt *ExprSequence::getSequenceSuccessor(const Stmt *S) const {
       for (const Decl *TheDecl : TheDeclStmt->decls()) {
         if (const auto *TheVarDecl = dyn_cast<VarDecl>(TheDecl)) {
           if (const Expr *Init = TheVarDecl->getInit()) {
-            if (PreviousInit == S)
+            if (PreviousInit == S) {
               return Init;
+}
             PreviousInit = Init;
           }
         }
@@ -143,8 +152,9 @@ const Stmt *ExprSequence::getSequenceSuccessor(const Stmt *S) const {
       // Range-based for: Loop variable declaration is sequenced before the
       // body. (We need this rule because these get placed in the same
       // CFGBlock.)
-      if (S == ForRange->getLoopVarStmt())
+      if (S == ForRange->getLoopVarStmt()) {
         return ForRange->getBody();
+}
     } else if (const auto *TheIfStmt = dyn_cast<IfStmt>(Parent)) {
       // If statement:
       // - Sequence init statement before variable declaration, if present;
@@ -152,27 +162,32 @@ const Stmt *ExprSequence::getSequenceSuccessor(const Stmt *S) const {
       // - Sequence variable declaration (along with the expression used to
       //   initialize it) before the evaluation of the condition.
       if (S == TheIfStmt->getInit()) {
-        if (TheIfStmt->getConditionVariableDeclStmt() != nullptr)
+        if (TheIfStmt->getConditionVariableDeclStmt() != nullptr) {
           return TheIfStmt->getConditionVariableDeclStmt();
+}
         return TheIfStmt->getCond();
       }
-      if (S == TheIfStmt->getConditionVariableDeclStmt())
+      if (S == TheIfStmt->getConditionVariableDeclStmt()) {
         return TheIfStmt->getCond();
+}
     } else if (const auto *TheSwitchStmt = dyn_cast<SwitchStmt>(Parent)) {
       // Ditto for switch statements.
       if (S == TheSwitchStmt->getInit()) {
-        if (TheSwitchStmt->getConditionVariableDeclStmt() != nullptr)
+        if (TheSwitchStmt->getConditionVariableDeclStmt() != nullptr) {
           return TheSwitchStmt->getConditionVariableDeclStmt();
+}
         return TheSwitchStmt->getCond();
       }
-      if (S == TheSwitchStmt->getConditionVariableDeclStmt())
+      if (S == TheSwitchStmt->getConditionVariableDeclStmt()) {
         return TheSwitchStmt->getCond();
+}
     } else if (const auto *TheWhileStmt = dyn_cast<WhileStmt>(Parent)) {
       // While statement: Sequence variable declaration (along with the
       // expression used to initialize it) before the evaluation of the
       // condition.
-      if (S == TheWhileStmt->getConditionVariableDeclStmt())
+      if (S == TheWhileStmt->getConditionVariableDeclStmt()) {
         return TheWhileStmt->getCond();
+}
     }
   }
 
@@ -180,8 +195,9 @@ const Stmt *ExprSequence::getSequenceSuccessor(const Stmt *S) const {
 }
 
 const Stmt *ExprSequence::resolveSyntheticStmt(const Stmt *S) const {
-  if (SyntheticStmtSourceMap.count(S))
+  if (SyntheticStmtSourceMap.count(S)) {
     return SyntheticStmtSourceMap.lookup(S);
+}
   return S;
 }
 
@@ -189,8 +205,9 @@ StmtToBlockMap::StmtToBlockMap(const CFG *TheCFG, ASTContext *TheContext)
     : Context(TheContext) {
   for (const auto *B : *TheCFG) {
     for (const auto &Elem : *B) {
-      if (Optional<CFGStmt> S = Elem.getAs<CFGStmt>())
+      if (Optional<CFGStmt> S = Elem.getAs<CFGStmt>()) {
         Map[S->getStmt()] = B;
+}
     }
   }
 }
@@ -198,8 +215,9 @@ StmtToBlockMap::StmtToBlockMap(const CFG *TheCFG, ASTContext *TheContext)
 const CFGBlock *StmtToBlockMap::blockContainingStmt(const Stmt *S) const {
   while (!Map.count(S)) {
     SmallVector<const Stmt *, 1> Parents = getParentStmts(S, Context);
-    if (Parents.empty())
+    if (Parents.empty()) {
       return nullptr;
+}
     S = Parents[0];
   }
 

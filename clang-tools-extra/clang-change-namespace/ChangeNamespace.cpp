@@ -37,8 +37,9 @@ SourceLocation startLocationForType(TypeLoc TLoc) {
   if (TLoc.getTypeLocClass() == TypeLoc::Elaborated) {
     NestedNameSpecifierLoc NestedNameSpecifier =
         TLoc.castAs<ElaboratedTypeLoc>().getQualifierLoc();
-    if (NestedNameSpecifier.getNestedNameSpecifier())
+    if (NestedNameSpecifier.getNestedNameSpecifier()) {
       return NestedNameSpecifier.getBeginLoc();
+}
     TLoc = TLoc.getNextTypeLoc();
   }
   return TLoc.getBeginLoc();
@@ -47,16 +48,18 @@ SourceLocation startLocationForType(TypeLoc TLoc) {
 SourceLocation endLocationForType(TypeLoc TLoc) {
   // Dig past any namespace or keyword qualifications.
   while (TLoc.getTypeLocClass() == TypeLoc::Elaborated ||
-         TLoc.getTypeLocClass() == TypeLoc::Qualified)
+         TLoc.getTypeLocClass() == TypeLoc::Qualified) {
     TLoc = TLoc.getNextTypeLoc();
+}
 
   // The location for template specializations (e.g. Foo<int>) includes the
   // templated types in its location range.  We want to restrict this to just
   // before the `<` character.
-  if (TLoc.getTypeLocClass() == TypeLoc::TemplateSpecialization)
+  if (TLoc.getTypeLocClass() == TypeLoc::TemplateSpecialization) {
     return TLoc.castAs<TemplateSpecializationTypeLoc>()
         .getLAngleLoc()
         .getLocWithOffset(-1);
+}
   return TLoc.getEndLoc();
 }
 
@@ -67,20 +70,24 @@ SourceLocation endLocationForType(TypeLoc TLoc) {
 // the NamespaceDecl of namespace "a" will be returned.
 const NamespaceDecl *getOuterNamespace(const NamespaceDecl *InnerNs,
                                        llvm::StringRef PartialNsName) {
-  if (!InnerNs || PartialNsName.empty())
+  if (!InnerNs || PartialNsName.empty()) {
     return nullptr;
+}
   const auto *CurrentContext = llvm::cast<DeclContext>(InnerNs);
   const auto *CurrentNs = InnerNs;
   auto PartialNsNameSplitted = splitSymbolName(PartialNsName);
   while (!PartialNsNameSplitted.empty()) {
     // Get the inner-most namespace in CurrentContext.
-    while (CurrentContext && !llvm::isa<NamespaceDecl>(CurrentContext))
+    while (CurrentContext && !llvm::isa<NamespaceDecl>(CurrentContext)) {
       CurrentContext = CurrentContext->getParent();
-    if (!CurrentContext)
+}
+    if (!CurrentContext) {
       return nullptr;
+}
     CurrentNs = llvm::cast<NamespaceDecl>(CurrentContext);
-    if (PartialNsNameSplitted.back() != CurrentNs->getNameAsString())
+    if (PartialNsNameSplitted.back() != CurrentNs->getNameAsString()) {
       return nullptr;
+}
     PartialNsNameSplitted.pop_back();
     CurrentContext = CurrentContext->getParent();
   }
@@ -91,15 +98,17 @@ static std::unique_ptr<Lexer>
 getLexerStartingFromLoc(SourceLocation Loc, const SourceManager &SM,
                         const LangOptions &LangOpts) {
   if (Loc.isMacroID() &&
-      !Lexer::isAtEndOfMacroExpansion(Loc, SM, LangOpts, &Loc))
+      !Lexer::isAtEndOfMacroExpansion(Loc, SM, LangOpts, &Loc)) {
     return nullptr;
+}
   // Break down the source location.
   std::pair<FileID, unsigned> LocInfo = SM.getDecomposedLoc(Loc);
   // Try to load the file buffer.
   bool InvalidTemp = false;
   llvm::StringRef File = SM.getBufferData(LocInfo.first, &InvalidTemp);
-  if (InvalidTemp)
+  if (InvalidTemp) {
     return nullptr;
+}
 
   const char *TokBegin = File.data() + LocInfo.second;
   // Lex from the start of the given location.
@@ -113,8 +122,9 @@ static SourceLocation getStartOfNextLine(SourceLocation Loc,
                                          const SourceManager &SM,
                                          const LangOptions &LangOpts) {
   std::unique_ptr<Lexer> Lex = getLexerStartingFromLoc(Loc, SM, LangOpts);
-  if (!Lex.get())
+  if (!Lex.get()) {
     return SourceLocation();
+}
   llvm::SmallVector<char, 16> Line;
   // FIXME: this is a bit hacky to get ReadToEndOfLine work.
   Lex->setParsingPreprocessorDirective(true);
@@ -179,8 +189,9 @@ void addReplacementOrDie(
     std::map<std::string, tooling::Replacements> *FileToReplacements) {
   const auto R = createReplacement(Start, End, ReplacementText, SM);
   auto Err = (*FileToReplacements)[std::string(R.getFilePath())].add(R);
-  if (Err)
+  if (Err) {
     llvm_unreachable(llvm::toString(std::move(Err)).c_str());
+}
 }
 
 tooling::Replacement createInsertion(SourceLocation Loc,
@@ -206,27 +217,31 @@ std::string getShortestQualifiedNameInNamespace(llvm::StringRef DeclName,
                                                 llvm::StringRef NsName) {
   DeclName = DeclName.ltrim(':');
   NsName = NsName.ltrim(':');
-  if (DeclName.find(':') == llvm::StringRef::npos)
+  if (DeclName.find(':') == llvm::StringRef::npos) {
     return std::string(DeclName);
+}
 
   auto NsNameSplitted = splitSymbolName(NsName);
   auto DeclNsSplitted = splitSymbolName(DeclName);
   llvm::StringRef UnqualifiedDeclName = DeclNsSplitted.pop_back_val();
   // If the Decl is in global namespace, there is no need to shorten it.
-  if (DeclNsSplitted.empty())
+  if (DeclNsSplitted.empty()) {
     return std::string(UnqualifiedDeclName);
+}
   // If NsName is the global namespace, we can simply use the DeclName sans
   // leading "::".
-  if (NsNameSplitted.empty())
+  if (NsNameSplitted.empty()) {
     return std::string(DeclName);
+}
 
   if (NsNameSplitted.front() != DeclNsSplitted.front()) {
     // The DeclName must be fully-qualified, but we still need to decide if a
     // leading "::" is necessary. For example, if `NsName` is "a::b::c" and the
     // `DeclName` is "b::X", then the reference must be qualified as "::b::X"
     // to avoid conflict.
-    if (llvm::is_contained(NsNameSplitted, DeclNsSplitted.front()))
+    if (llvm::is_contained(NsNameSplitted, DeclNsSplitted.front())) {
       return ("::" + DeclName).str();
+}
     return std::string(DeclName);
   }
   // Since there is already an overlap namespace, we know that `DeclName` can be
@@ -244,8 +259,9 @@ std::string getShortestQualifiedNameInNamespace(llvm::StringRef DeclName,
 }
 
 std::string wrapCodeInNamespace(StringRef NestedNs, std::string Code) {
-  if (Code.back() != '\n')
+  if (Code.back() != '\n') {
     Code += "\n";
+}
   auto NsSplitted = splitSymbolName(NestedNs);
   while (!NsSplitted.empty()) {
     // FIXME: consider code style for comments.
@@ -260,8 +276,9 @@ std::string wrapCodeInNamespace(StringRef NestedNs, std::string Code) {
 // Returns true if \p D is a nested DeclContext in \p Context
 bool isNestedDeclContext(const DeclContext *D, const DeclContext *Context) {
   while (D) {
-    if (D == Context)
+    if (D == Context) {
       return true;
+}
     D = D->getParent();
   }
   return false;
@@ -296,11 +313,13 @@ bool conflictInNamespace(const ASTContext &AST, llvm::StringRef QualifiedSymbol,
     auto LookupDecl = [&AST](const Decl &Scope,
                              llvm::StringRef Name) -> const NamedDecl * {
       const auto *DC = llvm::dyn_cast<DeclContext>(&Scope);
-      if (!DC)
+      if (!DC) {
         return nullptr;
+}
       auto LookupRes = DC->lookup(DeclarationName(&AST.Idents.get(Name)));
-      if (LookupRes.empty())
+      if (LookupRes.empty()) {
         return nullptr;
+}
       return LookupRes.front();
     };
     // We do not check the outermost namespace since it would not be a
@@ -309,17 +328,20 @@ bool conflictInNamespace(const ASTContext &AST, llvm::StringRef QualifiedSymbol,
     const NamedDecl *Scope =
         LookupDecl(*AST.getTranslationUnitDecl(), NsSplitted.front());
     for (auto I = NsSplitted.begin() + 1, E = NsSplitted.end(); I != E; ++I) {
-      if (*I == SymbolTopNs) // Handles "::ny" in "::nx::ny" case.
+      if (*I == SymbolTopNs) { // Handles "::ny" in "::nx::ny" case.
         return true;
+}
       // Handles "::util" and "::nx::util" conflicts.
       if (Scope) {
-        if (LookupDecl(*Scope, SymbolTopNs))
+        if (LookupDecl(*Scope, SymbolTopNs)) {
           return true;
+}
         Scope = LookupDecl(*Scope, *I);
       }
     }
-    if (Scope && LookupDecl(*Scope, SymbolTopNs))
+    if (Scope && LookupDecl(*Scope, SymbolTopNs)) {
       return true;
+}
   }
   return false;
 }
@@ -330,8 +352,9 @@ AST_MATCHER(EnumDecl, isScoped) {
 
 bool isTemplateParameter(TypeLoc Type) {
   while (!Type.isNull()) {
-    if (Type.getTypeLocClass() == TypeLoc::SubstTemplateTypeParm)
+    if (Type.getTypeLocClass() == TypeLoc::SubstTemplateTypeParm) {
       return true;
+}
     Type = Type.getNextTypeLoc();
   }
   return false;
@@ -359,8 +382,9 @@ ChangeNamespaceTool::ChangeNamespaceTool(
   DiffOldNamespace = joinNamespaces(OldNsSplitted);
   DiffNewNamespace = joinNamespaces(NewNsSplitted);
 
-  for (const auto &Pattern : AllowedSymbolPatterns)
+  for (const auto &Pattern : AllowedSymbolPatterns) {
     AllowedSymbolRegexes.emplace_back(Pattern);
+}
 }
 
 void ChangeNamespaceTool::registerMatchers(ast_matchers::MatchFinder *Finder) {
@@ -374,10 +398,11 @@ void ChangeNamespaceTool::registerMatchers(ast_matchers::MatchFinder *Finder) {
       .split(DiffOldNsSplitted, "::", /*MaxSplit=*/-1,
              /*KeepEmpty=*/false);
   std::string Prefix = "-";
-  if (!DiffOldNsSplitted.empty())
+  if (!DiffOldNsSplitted.empty()) {
     Prefix = (StringRef(FullOldNs).drop_back(DiffOldNamespace.size()) +
               DiffOldNsSplitted.front())
                  .str();
+}
   auto IsInMovedNs =
       allOf(hasAncestor(namespaceDecl(hasName(FullOldNs)).bind("ns_decl")),
             isExpansionInFileMatching(FilePattern));
@@ -566,27 +591,31 @@ void ChangeNamespaceTool::run(
     // filtered by matchers in some cases, e.g. the type is templated. We should
     // handle the record type qualifier instead.
     TypeLoc Loc = *TLoc;
-    while (Loc.getTypeLocClass() == TypeLoc::Qualified)
+    while (Loc.getTypeLocClass() == TypeLoc::Qualified) {
       Loc = Loc.getNextTypeLoc();
+}
     if (Loc.getTypeLocClass() == TypeLoc::Elaborated) {
       NestedNameSpecifierLoc NestedNameSpecifier =
           Loc.castAs<ElaboratedTypeLoc>().getQualifierLoc();
       // This happens for friend declaration of a base class with injected class
       // name.
-      if (!NestedNameSpecifier.getNestedNameSpecifier())
+      if (!NestedNameSpecifier.getNestedNameSpecifier()) {
         return;
+}
       const Type *SpecifierType =
           NestedNameSpecifier.getNestedNameSpecifier()->getAsType();
-      if (SpecifierType && SpecifierType->isRecordType())
+      if (SpecifierType && SpecifierType->isRecordType()) {
         return;
+}
     }
     fixTypeLoc(Result, startLocationForType(Loc), endLocationForType(Loc), Loc);
   } else if (const auto *VarRef =
                  Result.Nodes.getNodeAs<DeclRefExpr>("var_ref")) {
     const auto *Var = Result.Nodes.getNodeAs<VarDecl>("var_decl");
     assert(Var);
-    if (Var->getCanonicalDecl()->isStaticDataMember())
+    if (Var->getCanonicalDecl()->isStaticDataMember()) {
       return;
+}
     const auto *Context = Result.Nodes.getNodeAs<Decl>("dc");
     assert(Context && "Empty decl context.");
     fixDeclRefExpr(Result, Context->getDeclContext(),
@@ -597,8 +626,9 @@ void ChangeNamespaceTool::run(
     if (EnumConstRef->hasQualifier() &&
         EnumConstRef->getQualifier()->getKind() ==
             NestedNameSpecifier::SpecifierKind::TypeSpec &&
-        EnumConstRef->getQualifier()->getAsType()->isEnumeralType())
+        EnumConstRef->getQualifier()->getAsType()->isEnumeralType()) {
       return;
+}
     const auto *EnumConstDecl =
         Result.Nodes.getNodeAs<EnumConstantDecl>("enum_const_decl");
     assert(EnumConstDecl);
@@ -612,8 +642,9 @@ void ChangeNamespaceTool::run(
                  Result.Nodes.getNodeAs<DeclRefExpr>("func_ref")) {
     // If this reference has been processed as a function call, we do not
     // process it again.
-    if (ProcessedFuncRefs.count(FuncRef))
+    if (ProcessedFuncRefs.count(FuncRef)) {
       return;
+}
     ProcessedFuncRefs.insert(FuncRef);
     const auto *Func = Result.Nodes.getNodeAs<FunctionDecl>("func_decl");
     assert(Func);
@@ -632,14 +663,16 @@ void ChangeNamespaceTool::run(
     // FIXME: ignore overloaded operators. This would miss cases where operators
     // are called by qualified names (i.e. "ns::operator <"). Ignore such
     // cases for now.
-    if (Func->isOverloadedOperator())
+    if (Func->isOverloadedOperator()) {
       return;
+}
     // Ignore out-of-line static methods since they will be handled by nested
     // name specifiers.
     if (Func->getCanonicalDecl()->getStorageClass() ==
             StorageClass::SC_Static &&
-        Func->isOutOfLine())
+        Func->isOutOfLine()) {
       return;
+}
     const auto *Context = Result.Nodes.getNodeAs<Decl>("dc");
     assert(Context && "Empty decl context.");
     SourceRange CalleeRange = Call->getCallee()->getSourceRange();
@@ -656,8 +689,9 @@ static SourceLocation getLocAfterNamespaceLBrace(const NamespaceDecl *NsDecl,
       getLexerStartingFromLoc(NsDecl->getBeginLoc(), SM, LangOpts);
   assert(Lex.get() &&
          "Failed to create lexer from the beginning of namespace.");
-  if (!Lex.get())
+  if (!Lex.get()) {
     return SourceLocation();
+}
   Token Tok;
   while (!Lex->LexFromRawLexer(Tok) && Tok.isNot(tok::TokenKind::l_brace)) {
   }
@@ -672,8 +706,9 @@ void ChangeNamespaceTool::moveOldNamespace(
     const ast_matchers::MatchFinder::MatchResult &Result,
     const NamespaceDecl *NsDecl) {
   // If the namespace is empty, do nothing.
-  if (Decl::castToDeclContext(NsDecl)->decls_empty())
+  if (Decl::castToDeclContext(NsDecl)->decls_empty()) {
     return;
+}
 
   const SourceManager &SM = *Result.SourceManager;
   // Get the range of the code in the old namespace.
@@ -734,8 +769,9 @@ void ChangeNamespaceTool::moveClassForwardDeclaration(
   SourceLocation AfterSemi = Lexer::findLocationAfterToken(
       End, tok::semi, SM, Result.Context->getLangOpts(),
       /*SkipTrailingWhitespaceAndNewLine=*/true);
-  if (AfterSemi.isValid())
+  if (AfterSemi.isValid()) {
     End = AfterSemi.getLocWithOffset(-1);
+}
   // Delete the forward declaration from the code to be moved.
   addReplacementOrDie(Start, End, "", SM, &FileToReplacements);
   llvm::StringRef Code = Lexer::getSourceText(
@@ -794,31 +830,36 @@ void ChangeNamespaceTool::replaceQualifiedSymbolInDeclContext(
           Result.SourceManager->getSpellingLoc(End)),
       *Result.SourceManager, Result.Context->getLangOpts());
   std::string FromDeclName = FromDecl->getQualifiedNameAsString();
-  for (llvm::Regex &RE : AllowedSymbolRegexes)
-    if (RE.match(FromDeclName))
+  for (llvm::Regex &RE : AllowedSymbolRegexes) {
+    if (RE.match(FromDeclName)) {
       return;
+}
+}
   std::string ReplaceName =
       getShortestQualifiedNameInNamespace(FromDeclName, NewNs);
   // Checks if there is any using namespace declarations that can shorten the
   // qualified name.
   for (const auto *UsingNamespace : UsingNamespaceDecls) {
     if (!isDeclVisibleAtLocation(*Result.SourceManager, UsingNamespace, DeclCtx,
-                                 Start))
+                                 Start)) {
       continue;
+}
     StringRef FromDeclNameRef = FromDeclName;
     if (FromDeclNameRef.consume_front(UsingNamespace->getNominatedNamespace()
                                           ->getQualifiedNameAsString())) {
       FromDeclNameRef = FromDeclNameRef.drop_front(2);
-      if (FromDeclNameRef.size() < ReplaceName.size())
+      if (FromDeclNameRef.size() < ReplaceName.size()) {
         ReplaceName = std::string(FromDeclNameRef);
+}
     }
   }
   // Checks if there is any namespace alias declarations that can shorten the
   // qualified name.
   for (const auto *NamespaceAlias : NamespaceAliasDecls) {
     if (!isDeclVisibleAtLocation(*Result.SourceManager, NamespaceAlias, DeclCtx,
-                                 Start))
+                                 Start)) {
       continue;
+}
     StringRef FromDeclNameRef = FromDeclName;
     if (FromDeclNameRef.consume_front(
             NamespaceAlias->getNamespace()->getQualifiedNameAsString() +
@@ -836,21 +877,24 @@ void ChangeNamespaceTool::replaceQualifiedSymbolInDeclContext(
         assert(StringRef(AliasQualifiedName).endswith("::" + AliasName));
         llvm::StringRef AliasNs =
             StringRef(AliasQualifiedName).drop_back(AliasName.size() + 2);
-        if (!llvm::StringRef(OldNs).startswith(AliasNs))
+        if (!llvm::StringRef(OldNs).startswith(AliasNs)) {
           continue;
+}
       }
       std::string NameWithAliasNamespace =
           (AliasName + "::" + FromDeclNameRef).str();
-      if (NameWithAliasNamespace.size() < ReplaceName.size())
+      if (NameWithAliasNamespace.size() < ReplaceName.size()) {
         ReplaceName = NameWithAliasNamespace;
+}
     }
   }
   // Checks if there is any using shadow declarations that can shorten the
   // qualified name.
   bool Matched = false;
   for (const UsingDecl *Using : UsingDecls) {
-    if (Matched)
+    if (Matched) {
       break;
+}
     if (isDeclVisibleAtLocation(*Result.SourceManager, Using, DeclCtx, Start)) {
       for (const auto *UsingShadow : Using->shadows()) {
         const auto *TargetDecl = UsingShadow->getTargetDecl();
@@ -868,12 +912,14 @@ void ChangeNamespaceTool::replaceQualifiedSymbolInDeclContext(
   // If the new nested name in the new namespace is the same as it was in the
   // old namespace, we don't create replacement unless there can be ambiguity.
   if ((NestedName == ReplaceName && !Conflict) ||
-      (NestedName.startswith("::") && NestedName.drop_front(2) == ReplaceName))
+      (NestedName.startswith("::") && NestedName.drop_front(2) == ReplaceName)) {
     return;
+}
   // If the reference need to be fully-qualified, add a leading "::" unless
   // NewNamespace is the global namespace.
-  if (ReplaceName == FromDeclName && !NewNamespace.empty() && Conflict)
+  if (ReplaceName == FromDeclName && !NewNamespace.empty() && Conflict) {
     ReplaceName = "::" + ReplaceName;
+}
   addReplacementOrDie(Start, End, ReplaceName, *Result.SourceManager,
                       &FileToReplacements);
 }
@@ -884,24 +930,29 @@ void ChangeNamespaceTool::fixTypeLoc(
     const ast_matchers::MatchFinder::MatchResult &Result, SourceLocation Start,
     SourceLocation End, TypeLoc Type) {
   // FIXME: do not rename template parameter.
-  if (Start.isInvalid() || End.isInvalid())
+  if (Start.isInvalid() || End.isInvalid()) {
     return;
+}
   // Types of CXXCtorInitializers do not need to be fixed.
-  if (llvm::is_contained(BaseCtorInitializerTypeLocs, Type))
+  if (llvm::is_contained(BaseCtorInitializerTypeLocs, Type)) {
     return;
-  if (isTemplateParameter(Type))
+}
+  if (isTemplateParameter(Type)) {
     return;
+}
   // The declaration which this TypeLoc refers to.
   const auto *FromDecl = Result.Nodes.getNodeAs<NamedDecl>("from_decl");
   // `hasDeclaration` gives underlying declaration, but if the type is
   // a typedef type, we need to use the typedef type instead.
   auto IsInMovedNs = [&](const NamedDecl *D) {
     if (!llvm::StringRef(D->getQualifiedNameAsString())
-             .startswith(OldNamespace + "::"))
+             .startswith(OldNamespace + "::")) {
       return false;
+}
     auto ExpansionLoc = Result.SourceManager->getExpansionLoc(D->getBeginLoc());
-    if (ExpansionLoc.isInvalid())
+    if (ExpansionLoc.isInvalid()) {
       return false;
+}
     llvm::StringRef Filename = Result.SourceManager->getFilename(ExpansionLoc);
     return FilePatternRE.match(Filename);
   };
@@ -911,14 +962,16 @@ void ChangeNamespaceTool::fixTypeLoc(
   // namespace since the alias decl will be moved along with the type reference.
   if (auto *Typedef = Type.getType()->getAs<TypedefType>()) {
     FromDecl = Typedef->getDecl();
-    if (IsInMovedNs(FromDecl))
+    if (IsInMovedNs(FromDecl)) {
       return;
+}
   } else if (auto *TemplateType =
                  Type.getType()->getAs<TemplateSpecializationType>()) {
     if (TemplateType->isTypeAlias()) {
       FromDecl = TemplateType->getTemplateName().getAsTemplateDecl();
-      if (IsInMovedNs(FromDecl))
+      if (IsInMovedNs(FromDecl)) {
         return;
+}
     }
   }
   const auto *DeclCtx = Result.Nodes.getNodeAs<Decl>("dc");
@@ -932,8 +985,9 @@ void ChangeNamespaceTool::fixUsingShadowDecl(
     const UsingDecl *UsingDeclaration) {
   SourceLocation Start = UsingDeclaration->getBeginLoc();
   SourceLocation End = UsingDeclaration->getEndLoc();
-  if (Start.isInvalid() || End.isInvalid())
+  if (Start.isInvalid() || End.isInvalid()) {
     return;
+}
 
   assert(UsingDeclaration->shadow_size() > 0);
   // FIXME: it might not be always accurate to use the first using-decl.
@@ -960,8 +1014,9 @@ void ChangeNamespaceTool::onEndOfTranslationUnit() {
   // Move namespace blocks and insert forward declaration to old namespace.
   for (const auto &FileAndNsMoves : MoveNamespaces) {
     auto &NsMoves = FileAndNsMoves.second;
-    if (NsMoves.empty())
+    if (NsMoves.empty()) {
       continue;
+}
     const std::string &FilePath = FileAndNsMoves.first;
     auto &Replaces = FileToReplacements[FilePath];
     auto &SM = *NsMoves.begin()->SourceMgr;
@@ -1027,9 +1082,11 @@ void ChangeNamespaceTool::onEndOfTranslationUnit() {
 
   // Make sure we don't generate replacements for files that do not match
   // FilePattern.
-  for (auto &Entry : FileToReplacements)
-    if (!FilePatternRE.match(Entry.first))
+  for (auto &Entry : FileToReplacements) {
+    if (!FilePatternRE.match(Entry.first)) {
       Entry.second.clear();
+}
+}
 }
 
 } // namespace change_namespace

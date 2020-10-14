@@ -27,18 +27,22 @@ EvalEmitter::EvalEmitter(Context &Ctx, Program &P, State &Parent,
 }
 
 llvm::Expected<bool> EvalEmitter::interpretExpr(const Expr *E) {
-  if (this->visitExpr(E))
+  if (this->visitExpr(E)) {
     return true;
-  if (BailLocation)
+}
+  if (BailLocation) {
     return llvm::make_error<ByteCodeGenError>(*BailLocation);
+}
   return false;
 }
 
 llvm::Expected<bool> EvalEmitter::interpretDecl(const VarDecl *VD) {
-  if (this->visitDecl(VD))
+  if (this->visitDecl(VD)) {
     return true;
-  if (BailLocation)
+}
+  if (BailLocation) {
     return llvm::make_error<ByteCodeGenError>(*BailLocation);
+}
   return false;
 }
 
@@ -61,43 +65,49 @@ Scope::Local EvalEmitter::createLocal(Descriptor *D) {
 }
 
 bool EvalEmitter::bail(const SourceLocation &Loc) {
-  if (!BailLocation)
+  if (!BailLocation) {
     BailLocation = Loc;
+}
   return false;
 }
 
 bool EvalEmitter::jumpTrue(const LabelTy &Label) {
   if (isActive()) {
-    if (S.Stk.pop<bool>())
+    if (S.Stk.pop<bool>()) {
       ActiveLabel = Label;
+}
   }
   return true;
 }
 
 bool EvalEmitter::jumpFalse(const LabelTy &Label) {
   if (isActive()) {
-    if (!S.Stk.pop<bool>())
+    if (!S.Stk.pop<bool>()) {
       ActiveLabel = Label;
+}
   }
   return true;
 }
 
 bool EvalEmitter::jump(const LabelTy &Label) {
-  if (isActive())
+  if (isActive()) {
     CurrentLabel = ActiveLabel = Label;
+}
   return true;
 }
 
 bool EvalEmitter::fallthrough(const LabelTy &Label) {
-  if (isActive())
+  if (isActive()) {
     ActiveLabel = Label;
+}
   CurrentLabel = Label;
   return true;
 }
 
 template <PrimType OpType> bool EvalEmitter::emitRet(const SourceInfo &Info) {
-  if (!isActive())
+  if (!isActive()) {
     return true;
+}
   using T = typename PrimConv<OpType>::T;
   return ReturnValue<T>(S.Stk.pop<T>(), Result);
 }
@@ -108,8 +118,9 @@ bool EvalEmitter::emitRetValue(const SourceInfo &Info) {
   // Method to recursively traverse composites.
   std::function<bool(QualType, const Pointer &, APValue &)> Composite;
   Composite = [this, &Composite](QualType Ty, const Pointer &Ptr, APValue &R) {
-    if (auto *AT = Ty->getAs<AtomicType>())
+    if (auto *AT = Ty->getAs<AtomicType>()) {
       Ty = AT->getValueType();
+}
 
     if (auto *RT = Ty->getAs<RecordType>()) {
       auto *Record = Ptr.getRecord();
@@ -194,8 +205,9 @@ bool EvalEmitter::emitRetValue(const SourceInfo &Info) {
 }
 
 bool EvalEmitter::emitGetPtrLocal(uint32_t I, const SourceInfo &Info) {
-  if (!isActive())
+  if (!isActive()) {
     return true;
+}
 
   auto It = Locals.find(I);
   assert(It != Locals.end() && "Missing local variable");
@@ -205,8 +217,9 @@ bool EvalEmitter::emitGetPtrLocal(uint32_t I, const SourceInfo &Info) {
 
 template <PrimType OpType>
 bool EvalEmitter::emitGetLocal(uint32_t I, const SourceInfo &Info) {
-  if (!isActive())
+  if (!isActive()) {
     return true;
+}
 
   using T = typename PrimConv<OpType>::T;
 
@@ -219,8 +232,9 @@ bool EvalEmitter::emitGetLocal(uint32_t I, const SourceInfo &Info) {
 
 template <PrimType OpType>
 bool EvalEmitter::emitSetLocal(uint32_t I, const SourceInfo &Info) {
-  if (!isActive())
+  if (!isActive()) {
     return true;
+}
 
   using T = typename PrimConv<OpType>::T;
 
@@ -232,8 +246,9 @@ bool EvalEmitter::emitSetLocal(uint32_t I, const SourceInfo &Info) {
 }
 
 bool EvalEmitter::emitDestroy(uint32_t I, const SourceInfo &Info) {
-  if (!isActive())
+  if (!isActive()) {
     return true;
+}
 
   for (auto &Local : Descriptors[I]) {
     auto It = Locals.find(Local.Offset);

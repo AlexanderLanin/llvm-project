@@ -36,9 +36,10 @@ void TrailingReturnCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void TrailingReturnCheck::check(const MatchFinder::MatchResult &Result) {
-  if (const auto *D = Result.Nodes.getNodeAs<Decl>("decl"))
+  if (const auto *D = Result.Nodes.getNodeAs<Decl>("decl")) {
     diag(D->getBeginLoc(),
          "a trailing return type is disallowed for this type of declaration");
+}
 }
 
 } // namespace fuchsia

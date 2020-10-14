@@ -28,8 +28,9 @@ const char *getTokenTypeName(TokenType Type) {
 #undef TYPE
       nullptr};
 
-  if (Type < NUM_TOKEN_TYPES)
+  if (Type < NUM_TOKEN_TYPES) {
     return TokNames[Type];
+}
   llvm_unreachable("unknown TokenType");
   return nullptr;
 }
@@ -76,19 +77,22 @@ void TokenRole::precomputeFormattingInfos(const FormatToken *Token) {}
 unsigned CommaSeparatedList::formatAfterToken(LineState &State,
                                               ContinuationIndenter *Indenter,
                                               bool DryRun) {
-  if (State.NextToken == nullptr || !State.NextToken->Previous)
+  if (State.NextToken == nullptr || !State.NextToken->Previous) {
     return 0;
+}
 
-  if (Formats.size() == 1)
+  if (Formats.size() == 1) {
     return 0; // Handled by formatFromToken
+}
 
   // Ensure that we start on the opening brace.
   const FormatToken *LBrace =
       State.NextToken->Previous->getPreviousNonComment();
   if (!LBrace || !LBrace->isOneOf(tok::l_brace, TT_ArrayInitializerLSquare) ||
       LBrace->is(BK_Block) || LBrace->is(TT_DictLiteral) ||
-      LBrace->Next->is(TT_DesignatedInitializerPeriod))
+      LBrace->Next->is(TT_DesignatedInitializerPeriod)) {
     return 0;
+}
 
   // Calculate the number of code points we have to format this list. As the
   // first token is already placed, we have to subtract it.
@@ -101,8 +105,9 @@ unsigned CommaSeparatedList::formatAfterToken(LineState &State,
   // If no ColumnFormat can be used, the braced list would generally be
   // bin-packed. Add a severe penalty to this so that column layouts are
   // preferred if possible.
-  if (!Format)
+  if (!Format) {
     return 10000;
+}
 
   // Format the entire list.
   unsigned Penalty = 0;
@@ -137,8 +142,9 @@ unsigned CommaSeparatedList::formatFromToken(LineState &State,
                                              bool DryRun) {
   // Formatting with 1 Column isn't really a column layout, so we don't need the
   // special logic here. We can just avoid bin packing any of the parameters.
-  if (Formats.size() == 1 || HasNestedBracedList)
+  if (Formats.size() == 1 || HasNestedBracedList) {
     State.Stack.back().AvoidBinPacking = true;
+}
   return 0;
 }
 
@@ -153,29 +159,34 @@ static unsigned CodePointsBetween(const FormatToken *Begin,
 void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
   // FIXME: At some point we might want to do this for other lists, too.
   if (!Token->MatchingParen ||
-      !Token->isOneOf(tok::l_brace, TT_ArrayInitializerLSquare))
+      !Token->isOneOf(tok::l_brace, TT_ArrayInitializerLSquare)) {
     return;
+}
 
   // In C++11 braced list style, we should not format in columns unless they
   // have many items (20 or more) or we allow bin-packing of function call
   // arguments.
   if (Style.Cpp11BracedListStyle && !Style.BinPackArguments &&
-      Commas.size() < 19)
+      Commas.size() < 19) {
     return;
+}
 
   // Limit column layout for JavaScript array initializers to 20 or more items
   // for now to introduce it carefully. We can become more aggressive if this
   // necessary.
-  if (Token->is(TT_ArrayInitializerLSquare) && Commas.size() < 19)
+  if (Token->is(TT_ArrayInitializerLSquare) && Commas.size() < 19) {
     return;
+}
 
   // Column format doesn't really make sense if we don't align after brackets.
-  if (Style.AlignAfterOpenBracket == FormatStyle::BAS_DontAlign)
+  if (Style.AlignAfterOpenBracket == FormatStyle::BAS_DontAlign) {
     return;
+}
 
   FormatToken *ItemBegin = Token->Next;
-  while (ItemBegin->isTrailingComment())
+  while (ItemBegin->isTrailingComment()) {
     ItemBegin = ItemBegin->Next;
+}
   SmallVector<bool, 8> MustBreakBeforeItem;
 
   // The lengths of an item if it is put at the end of the line. This includes
@@ -191,8 +202,9 @@ void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
     }
 
     MustBreakBeforeItem.push_back(ItemBegin->MustBreakBefore);
-    if (ItemBegin->is(tok::l_brace))
+    if (ItemBegin->is(tok::l_brace)) {
       HasNestedBracedList = true;
+}
     const FormatToken *ItemEnd = nullptr;
     if (i == Commas.size()) {
       ItemEnd = Token->MatchingParen;
@@ -202,8 +214,9 @@ void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
           !ItemEnd->Previous->isTrailingComment()) {
         // In Cpp11 braced list style, the } and possibly other subsequent
         // tokens will need to stay on a line with the last element.
-        while (ItemEnd->Next && !ItemEnd->Next->CanBreakBefore)
+        while (ItemEnd->Next && !ItemEnd->Next->CanBreakBefore) {
           ItemEnd = ItemEnd->Next;
+}
       } else {
         // In other braced lists styles, the "}" can be wrapped to the new line.
         ItemEnd = Token->MatchingParen->Previous;
@@ -215,24 +228,28 @@ void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
 
       // Consume trailing comments so the are included in EndOfLineItemLength.
       if (ItemEnd->Next && !ItemEnd->Next->HasUnescapedNewline &&
-          ItemEnd->Next->isTrailingComment())
+          ItemEnd->Next->isTrailingComment()) {
         ItemEnd = ItemEnd->Next;
+}
     }
     EndOfLineItemLength.push_back(CodePointsBetween(ItemBegin, ItemEnd));
     // If there is a trailing comma in the list, the next item will start at the
     // closing brace. Don't create an extra item for this.
-    if (ItemEnd->getNextNonComment() == Token->MatchingParen)
+    if (ItemEnd->getNextNonComment() == Token->MatchingParen) {
       break;
+}
     ItemBegin = ItemEnd->Next;
   }
 
   // Don't use column layout for lists with few elements and in presence of
   // separating comments.
-  if (Commas.size() < 5 || HasSeparatingComment)
+  if (Commas.size() < 5 || HasSeparatingComment) {
     return;
+}
 
-  if (Token->NestingLevel != 0 && Token->is(tok::l_brace) && Commas.size() < 19)
+  if (Token->NestingLevel != 0 && Token->is(tok::l_brace) && Commas.size() < 19) {
     return;
+}
 
   // We can never place more than ColumnLimit / 3 items in a row (because of the
   // spaces and the comma).
@@ -253,8 +270,9 @@ void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
         ++Format.LineCount;
         Column = 0;
       }
-      if (Column == Columns - 1)
+      if (Column == Columns - 1) {
         HasRowWithSufficientColumns = true;
+}
       unsigned Length =
           (Column == Columns - 1) ? EndOfLineItemLength[i] : ItemLengths[i];
       Format.ColumnSizes[Column] = std::max(Format.ColumnSizes[Column], Length);
@@ -263,26 +281,32 @@ void CommaSeparatedList::precomputeFormattingInfos(const FormatToken *Token) {
     }
     // If all rows are terminated early (e.g. by trailing comments), we don't
     // need to look further.
-    if (!HasRowWithSufficientColumns)
+    if (!HasRowWithSufficientColumns) {
       break;
+}
     Format.TotalWidth = Columns - 1; // Width of the N-1 spaces.
 
-    for (unsigned i = 0; i < Columns; ++i)
+    for (unsigned i = 0; i < Columns; ++i) {
       Format.TotalWidth += Format.ColumnSizes[i];
+}
 
     // Don't use this Format, if the difference between the longest and shortest
     // element in a column exceeds a threshold to avoid excessive spaces.
     if ([&] {
-          for (unsigned i = 0; i < Columns - 1; ++i)
-            if (Format.ColumnSizes[i] - MinSizeInColumn[i] > 10)
+          for (unsigned i = 0; i < Columns - 1; ++i) {
+            if (Format.ColumnSizes[i] - MinSizeInColumn[i] > 10) {
               return true;
+}
+}
           return false;
-        }())
+        }()) {
       continue;
+}
 
     // Ignore layouts that are bound to violate the column limit.
-    if (Format.TotalWidth > Style.ColumnLimit && Columns > 1)
+    if (Format.TotalWidth > Style.ColumnLimit && Columns > 1) {
       continue;
+}
 
     Formats.push_back(Format);
   }
@@ -296,8 +320,9 @@ CommaSeparatedList::getColumnFormat(unsigned RemainingCharacters) const {
            E = Formats.rend();
        I != E; ++I) {
     if (I->TotalWidth <= RemainingCharacters || I->Columns == 1) {
-      if (BestFormat && I->LineCount > BestFormat->LineCount)
+      if (BestFormat && I->LineCount > BestFormat->LineCount) {
         break;
+}
       BestFormat = &*I;
     }
   }

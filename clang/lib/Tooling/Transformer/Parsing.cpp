@@ -124,8 +124,9 @@ template <typename Element>
 llvm::Optional<Element> findOptional(const llvm::StringMap<Element> &Map,
                                      llvm::StringRef Key) {
   auto it = Map.find(Key);
-  if (it == Map.end())
+  if (it == Map.end()) {
     return llvm::None;
+}
   return it->second;
 }
 
@@ -155,9 +156,10 @@ static StringRef consumeWhitespace(StringRef S) {
 // whitespace.  Error if the expected character isn't found.
 static ExpectedProgress<llvm::NoneType> parseChar(char c, ParseState State) {
   State.Input = consumeWhitespace(State.Input);
-  if (State.Input.empty() || State.Input.front() != c)
+  if (State.Input.empty() || State.Input.front() != c) {
     return makeParseError(State,
                           ("expected char not found: " + llvm::Twine(c)).str());
+}
   return makeParseProgress(advance(State, 1), llvm::None);
 }
 
@@ -166,8 +168,9 @@ static ExpectedProgress<std::string> parseId(ParseState State) {
   State.Input = consumeWhitespace(State.Input);
   auto Id = State.Input.take_while(
       [](char c) { return isASCII(c) && isIdentifierBody(c); });
-  if (Id.empty())
+  if (Id.empty()) {
     return makeParseError(State, "failed to parse name");
+}
   return makeParseProgress(advance(State, Id.size()), Id.str());
 }
 
@@ -175,16 +178,19 @@ static ExpectedProgress<std::string> parseId(ParseState State) {
 // written as strings. However, we do not support escaping in the string.
 static ExpectedProgress<std::string> parseStringId(ParseState State) {
   State.Input = consumeWhitespace(State.Input);
-  if (State.Input.empty())
+  if (State.Input.empty()) {
     return makeParseError(State, "unexpected end of input");
-  if (!State.Input.consume_front("\""))
+}
+  if (!State.Input.consume_front("\"")) {
     return makeParseError(
         State,
         "expecting string, but encountered other character or end of input");
+}
 
   StringRef Id = State.Input.take_until([](char c) { return c == '"'; });
-  if (State.Input.size() == Id.size())
+  if (State.Input.size() == Id.size()) {
     return makeParseError(State, "unterminated string");
+}
   // Advance past the trailing quote as well.
   return makeParseProgress(advance(State, Id.size() + 1), Id.str());
 }
@@ -196,16 +202,19 @@ ExpectedProgress<RangeSelector> parseSingle(ParseFunction<T> ParseElement,
                                             RangeSelectorOp<T> Op,
                                             ParseState State) {
   auto P = parseChar('(', State);
-  if (!P)
+  if (!P) {
     return P.takeError();
+}
 
   auto E = ParseElement(P->State);
-  if (!E)
+  if (!E) {
     return E.takeError();
+}
 
   P = parseChar(')', E->State);
-  if (!P)
+  if (!P) {
     return P.takeError();
+}
 
   return makeParseProgress(P->State, Op(std::move(E->Value)));
 }
@@ -217,24 +226,29 @@ ExpectedProgress<RangeSelector> parsePair(ParseFunction<T> ParseElement,
                                           RangeSelectorOp<T, T> Op,
                                           ParseState State) {
   auto P = parseChar('(', State);
-  if (!P)
+  if (!P) {
     return P.takeError();
+}
 
   auto Left = ParseElement(P->State);
-  if (!Left)
+  if (!Left) {
     return Left.takeError();
+}
 
   P = parseChar(',', Left->State);
-  if (!P)
+  if (!P) {
     return P.takeError();
+}
 
   auto Right = ParseElement(P->State);
-  if (!Right)
+  if (!Right) {
     return Right.takeError();
+}
 
   P = parseChar(')', Right->State);
-  if (!P)
+  if (!P) {
     return P.takeError();
+}
 
   return makeParseProgress(P->State,
                            Op(std::move(Left->Value), std::move(Right->Value)));
@@ -246,21 +260,26 @@ ExpectedProgress<RangeSelector> parsePair(ParseFunction<T> ParseElement,
 static ExpectedProgress<RangeSelector>
 parseRangeSelectorImpl(ParseState State) {
   auto Id = parseId(State);
-  if (!Id)
+  if (!Id) {
     return Id.takeError();
+}
 
   std::string OpName = std::move(Id->Value);
-  if (auto Op = findOptional(getUnaryStringSelectors(), OpName))
+  if (auto Op = findOptional(getUnaryStringSelectors(), OpName)) {
     return parseSingle(parseStringId, *Op, Id->State);
+}
 
-  if (auto Op = findOptional(getUnaryRangeSelectors(), OpName))
+  if (auto Op = findOptional(getUnaryRangeSelectors(), OpName)) {
     return parseSingle(parseRangeSelectorImpl, *Op, Id->State);
+}
 
-  if (auto Op = findOptional(getBinaryStringSelectors(), OpName))
+  if (auto Op = findOptional(getBinaryStringSelectors(), OpName)) {
     return parsePair(parseStringId, *Op, Id->State);
+}
 
-  if (auto Op = findOptional(getBinaryRangeSelectors(), OpName))
+  if (auto Op = findOptional(getBinaryRangeSelectors(), OpName)) {
     return parsePair(parseRangeSelectorImpl, *Op, Id->State);
+}
 
   return makeParseError(State, "unknown selector name: " + OpName);
 }
@@ -268,12 +287,14 @@ parseRangeSelectorImpl(ParseState State) {
 Expected<RangeSelector> transformer::parseRangeSelector(llvm::StringRef Input) {
   ParseState State = {Input, Input};
   ExpectedProgress<RangeSelector> Result = parseRangeSelectorImpl(State);
-  if (!Result)
+  if (!Result) {
     return Result.takeError();
+}
   State = Result->State;
   // Discard any potentially trailing whitespace.
   State.Input = consumeWhitespace(State.Input);
-  if (State.Input.empty())
+  if (State.Input.empty()) {
     return Result->Value;
+}
   return makeParseError(State, "unexpected input after selector");
 }

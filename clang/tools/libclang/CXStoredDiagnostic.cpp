@@ -38,8 +38,9 @@ CXDiagnosticSeverity CXStoredDiagnostic::getSeverity() const {
 }
 
 CXSourceLocation CXStoredDiagnostic::getLocation() const {
-  if (Diag.getLocation().isInvalid())
+  if (Diag.getLocation().isInvalid()) {
     return clang_getNullLocation();
+}
   
   return translateSourceLocation(Diag.getLocation().getManager(),
                                  LangOpts, Diag.getLocation());
@@ -53,14 +54,16 @@ CXString CXStoredDiagnostic::getDiagnosticOption(CXString *Disable) const {
   unsigned ID = Diag.getID();
   StringRef Option = DiagnosticIDs::getWarningOptionForDiag(ID);
   if (!Option.empty()) {
-    if (Disable)
+    if (Disable) {
       *Disable = cxstring::createDup((Twine("-Wno-") + Option).str());
+}
     return cxstring::createDup((Twine("-W") + Option).str());
   }
   
   if (ID == diag::fatal_too_many_errors) {
-    if (Disable)
+    if (Disable) {
       *Disable = cxstring::createRef("-ferror-limit=0");
+}
     return cxstring::createRef("-ferror-limit=");
   }
 
@@ -77,8 +80,9 @@ CXString CXStoredDiagnostic::getCategoryText() const {
 }
 
 unsigned CXStoredDiagnostic::getNumRanges() const {
-  if (Diag.getLocation().isInvalid())
+  if (Diag.getLocation().isInvalid()) {
     return 0;
+}
   
   return Diag.range_size();
 }
@@ -91,8 +95,9 @@ CXSourceRange CXStoredDiagnostic::getRange(unsigned int Range) const {
 }
 
 unsigned CXStoredDiagnostic::getNumFixIts() const {
-  if (Diag.getLocation().isInvalid())
+  if (Diag.getLocation().isInvalid()) {
     return 0;    
+}
   return Diag.fixit_size();
 }
 

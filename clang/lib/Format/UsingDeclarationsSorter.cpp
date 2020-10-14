@@ -44,8 +44,9 @@ int compareLabels(StringRef A, StringRef B) {
       // I is the last index of NamesA and NamesA[I] is a non-namespace name.
 
       // Non-namespace names come before all namespace names.
-      if (SizeB > SizeA)
+      if (SizeB > SizeA) {
         return -1;
+}
 
       // Two names within a group compare case-insensitively.
       return NamesA[I].compare_lower(NamesB[I]);
@@ -53,13 +54,15 @@ int compareLabels(StringRef A, StringRef B) {
 
     // I is the last index of NamesB and NamesB[I] is a non-namespace name.
     // Non-namespace names come before all namespace names.
-    if (I + 1 == SizeB)
+    if (I + 1 == SizeB) {
       return 1;
+}
 
     // Two namespaces names within a group compare case-insensitively.
     int C = NamesA[I].compare_lower(NamesB[I]);
-    if (C != 0)
+    if (C != 0) {
       return C;
+}
   }
   return 0;
 }
@@ -101,13 +104,15 @@ std::string computeUsingDeclarationLabel(const FormatToken *UsingTok) {
     HasIdentifier = true;
     Label.append(Tok->TokenText.str());
     Tok = Tok->Next;
-    if (!Tok || Tok->isNot(tok::coloncolon))
+    if (!Tok || Tok->isNot(tok::coloncolon)) {
       break;
+}
     Label.append("::");
     Tok = Tok->Next;
   }
-  if (HasIdentifier && Tok && Tok->isOneOf(tok::semi, tok::comma))
+  if (HasIdentifier && Tok && Tok->isOneOf(tok::semi, tok::comma)) {
     return Label;
+}
   return "";
 }
 
@@ -149,8 +154,9 @@ void endUsingDeclarationBlock(
       }
       continue;
     }
-    if ((*UsingDeclarations)[I].Line == SortedUsingDeclarations[I].Line)
+    if ((*UsingDeclarations)[I].Line == SortedUsingDeclarations[I].Line) {
       continue;
+}
     auto Begin = (*UsingDeclarations)[I].Line->First->Tok.getLocation();
     auto End = (*UsingDeclarations)[I].Line->Last->Tok.getEndLoc();
     auto SortedBegin =
@@ -195,8 +201,9 @@ std::pair<tooling::Replacements, unsigned> UsingDeclarationsSorter::analyze(
       endUsingDeclarationBlock(&UsingDeclarations, SourceMgr, &Fixes);
       continue;
     }
-    if (FirstTok->NewlinesBefore > 1)
+    if (FirstTok->NewlinesBefore > 1) {
       endUsingDeclarationBlock(&UsingDeclarations, SourceMgr, &Fixes);
+}
     const auto *UsingTok =
         FirstTok->is(tok::comment) ? FirstTok->getNextNonComment() : FirstTok;
     std::string Label = computeUsingDeclarationLabel(UsingTok);

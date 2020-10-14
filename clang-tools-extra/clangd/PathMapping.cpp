@@ -23,8 +23,9 @@ llvm::Optional<std::string> doPathMapping(llvm::StringRef S,
                                           PathMapping::Direction Dir,
                                           const PathMappings &Mappings) {
   // Return early to optimize for the common case, wherein S is not a file URI
-  if (!S.startswith("file://"))
+  if (!S.startswith("file://")) {
     return llvm::None;
+}
   auto Uri = URI::parse(S);
   if (!Uri) {
     llvm::consumeError(Uri.takeError());
@@ -65,15 +66,18 @@ void applyPathMappings(llvm::json::Value &V, PathMapping::Direction Dir,
     }
     *Obj = std::move(MappedObj);
     // 2. Map all the values
-    for (auto &KV : *Obj)
+    for (auto &KV : *Obj) {
       applyPathMappings(KV.second, Dir, Mappings);
+}
   } else if (K == Kind::Array) {
-    for (llvm::json::Value &Val : *V.getAsArray())
+    for (llvm::json::Value &Val : *V.getAsArray()) {
       applyPathMappings(Val, Dir, Mappings);
+}
   } else if (K == Kind::String) {
     if (llvm::Optional<std::string> Mapped =
-            doPathMapping(*V.getAsString(), Dir, Mappings))
+            doPathMapping(*V.getAsString(), Dir, Mappings)) {
       V = std::move(*Mapped);
+}
   }
 }
 
@@ -98,9 +102,10 @@ public:
 
   bool onReply(llvm::json::Value ID,
                llvm::Expected<llvm::json::Value> Result) override {
-    if (Result)
+    if (Result) {
       applyPathMappings(*Result, PathMapping::Direction::ClientToServer,
                         Mappings);
+}
     return WrappedHandler.onReply(std::move(ID), std::move(Result));
   }
 
@@ -129,9 +134,10 @@ public:
 
   void reply(llvm::json::Value ID,
              llvm::Expected<llvm::json::Value> Result) override {
-    if (Result)
+    if (Result) {
       applyPathMappings(*Result, PathMapping::Direction::ServerToClient,
                         Mappings);
+}
     WrappedTransport->reply(std::move(ID), std::move(Result));
   }
 
@@ -153,8 +159,9 @@ llvm::Expected<std::string> parsePath(llvm::StringRef Path) {
     return std::string(Path);
   } else if (path::is_absolute(Path, path::Style::windows)) {
     std::string Converted = path::convert_to_slash(Path, path::Style::windows);
-    if (Converted.front() != '/')
+    if (Converted.front() != '/') {
       Converted = "/" + Converted;
+}
     return Converted;
   }
   return error("Path not absolute: {0}", Path);
@@ -173,14 +180,17 @@ parsePathMappings(llvm::StringRef RawPathMappings) {
   while (!Rest.empty()) {
     std::tie(PathPair, Rest) = Rest.split(",");
     std::tie(ClientPath, ServerPath) = PathPair.split("=");
-    if (ClientPath.empty() || ServerPath.empty())
+    if (ClientPath.empty() || ServerPath.empty()) {
       return error("Not a valid path mapping pair: {0}", PathPair);
+}
     llvm::Expected<std::string> ParsedClientPath = parsePath(ClientPath);
-    if (!ParsedClientPath)
+    if (!ParsedClientPath) {
       return ParsedClientPath.takeError();
+}
     llvm::Expected<std::string> ParsedServerPath = parsePath(ServerPath);
-    if (!ParsedServerPath)
+    if (!ParsedServerPath) {
       return ParsedServerPath.takeError();
+}
     ParsedMappings.push_back(
         {std::move(*ParsedClientPath), std::move(*ParsedServerPath)});
   }

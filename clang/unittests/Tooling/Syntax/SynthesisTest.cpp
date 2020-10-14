@@ -23,9 +23,10 @@ namespace {
 class SynthesisTest : public SyntaxTreeTest {
 protected:
   ::testing::AssertionResult treeDumpEqual(syntax::Node *Root, StringRef Dump) {
-    if (!Root)
+    if (!Root) {
       return ::testing::AssertionFailure()
              << "Root was not built successfully.";
+}
 
     auto Actual = StringRef(Root->dump(Arena->getSourceManager())).trim().str();
     auto Expected = Dump.trim().str();
@@ -52,8 +53,9 @@ TEST_P(SynthesisTest, Leaf_Punctuation) {
 }
 
 TEST_P(SynthesisTest, Leaf_Punctuation_CXX) {
-  if (!GetParam().isCXX())
+  if (!GetParam().isCXX()) {
     return;
+}
 
   buildTree("", GetParam());
 
@@ -75,8 +77,9 @@ TEST_P(SynthesisTest, Leaf_Keyword) {
 }
 
 TEST_P(SynthesisTest, Leaf_Keyword_CXX11) {
-  if (!GetParam().isCXX11OrLater())
+  if (!GetParam().isCXX11OrLater()) {
     return;
+}
 
   buildTree("", GetParam());
 

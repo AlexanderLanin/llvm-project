@@ -30,15 +30,17 @@ MATCHER_P(Body, B, "") { return arg.body() == B; }
 std::string createOrDie(llvm::StringRef AbsolutePath,
                         llvm::StringRef Scheme = "file") {
   auto Uri = URI::create(AbsolutePath, Scheme);
-  if (!Uri)
+  if (!Uri) {
     llvm_unreachable(toString(Uri.takeError()).c_str());
+}
   return Uri->toString();
 }
 
 URI parseOrDie(llvm::StringRef Uri) {
   auto U = URI::parse(Uri);
-  if (!U)
+  if (!U) {
     llvm_unreachable(toString(U.takeError()).c_str());
+}
   return *U;
 }
 
@@ -62,8 +64,9 @@ TEST(PercentEncodingTest, Decode) {
 
 std::string resolveOrDie(const URI &U, llvm::StringRef HintPath = "") {
   auto Path = URI::resolve(U, HintPath);
-  if (!Path)
+  if (!Path) {
     llvm_unreachable(toString(Path.takeError()).c_str());
+}
   return *Path;
 }
 
@@ -166,8 +169,9 @@ TEST(URITest, ResolveUNC) {
 std::string resolvePathOrDie(llvm::StringRef AbsPath,
                              llvm::StringRef HintPath = "") {
   auto Path = URI::resolvePath(AbsPath, HintPath);
-  if (!Path)
+  if (!Path) {
     llvm_unreachable(toString(Path.takeError()).c_str());
+}
   return *Path;
 }
 

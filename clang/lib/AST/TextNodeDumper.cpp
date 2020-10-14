@@ -32,15 +32,17 @@ static void dumpPreviousDeclImpl(raw_ostream &OS, ...) {}
 template <typename T>
 static void dumpPreviousDeclImpl(raw_ostream &OS, const Mergeable<T> *D) {
   const T *First = D->getFirstDecl();
-  if (First != D)
+  if (First != D) {
     OS << " first " << First;
+}
 }
 
 template <typename T>
 static void dumpPreviousDeclImpl(raw_ostream &OS, const Redeclarable<T> *D) {
   const T *Prev = D->getPreviousDecl();
-  if (Prev)
+  if (Prev) {
     OS << " prev " << Prev;
+}
 }
 
 /// Dump the previous declaration in the redeclaration chain for a declaration,
@@ -100,10 +102,12 @@ void TextNodeDumper::Visit(const Attr *A) {
   }
   dumpPointer(A);
   dumpSourceRange(A->getRange());
-  if (A->isInherited())
+  if (A->isInherited()) {
     OS << " Inherited";
-  if (A->isImplicit())
+}
+  if (A->isImplicit()) {
     OS << " Implicit";
+}
 
   ConstAttrVisitor<TextNodeDumper>::Visit(A);
 }
@@ -111,11 +115,13 @@ void TextNodeDumper::Visit(const Attr *A) {
 void TextNodeDumper::Visit(const TemplateArgument &TA, SourceRange R,
                            const Decl *From, StringRef Label) {
   OS << "TemplateArgument";
-  if (R.isValid())
+  if (R.isValid()) {
     dumpSourceRange(R);
+}
 
-  if (From)
+  if (From) {
     dumpDeclRef(From, Label);
+}
 
   ConstTemplateArgumentVisitor<TextNodeDumper>::Visit(TA);
 }
@@ -207,25 +213,30 @@ void TextNodeDumper::Visit(const Type *T) {
 
   QualType SingleStepDesugar =
       T->getLocallyUnqualifiedSingleStepDesugaredType();
-  if (SingleStepDesugar != QualType(T, 0))
+  if (SingleStepDesugar != QualType(T, 0)) {
     OS << " sugar";
+}
 
   if (T->containsErrors()) {
     ColorScope Color(OS, ShowColors, ErrorsColor);
     OS << " contains-errors";
   }
 
-  if (T->isDependentType())
+  if (T->isDependentType()) {
     OS << " dependent";
-  else if (T->isInstantiationDependentType())
+  } else if (T->isInstantiationDependentType()) {
     OS << " instantiation_dependent";
+}
 
-  if (T->isVariablyModifiedType())
+  if (T->isVariablyModifiedType()) {
     OS << " variably_modified";
-  if (T->containsUnexpandedParameterPack())
+}
+  if (T->containsUnexpandedParameterPack()) {
     OS << " contains_unexpanded_pack";
-  if (T->isFromAST())
+}
+  if (T->isFromAST()) {
     OS << " imported";
+}
 
   TypeVisitor<TextNodeDumper>::Visit(T);
 }
@@ -250,38 +261,50 @@ void TextNodeDumper::Visit(const Decl *D) {
     OS << D->getDeclKindName() << "Decl";
   }
   dumpPointer(D);
-  if (D->getLexicalDeclContext() != D->getDeclContext())
+  if (D->getLexicalDeclContext() != D->getDeclContext()) {
     OS << " parent " << cast<Decl>(D->getDeclContext());
+}
   dumpPreviousDecl(OS, D);
   dumpSourceRange(D->getSourceRange());
   OS << ' ';
   dumpLocation(D->getLocation());
-  if (D->isFromASTFile())
+  if (D->isFromASTFile()) {
     OS << " imported";
-  if (Module *M = D->getOwningModule())
+}
+  if (Module *M = D->getOwningModule()) {
     OS << " in " << M->getFullModuleName();
-  if (auto *ND = dyn_cast<NamedDecl>(D))
+}
+  if (auto *ND = dyn_cast<NamedDecl>(D)) {
     for (Module *M : D->getASTContext().getModulesWithMergedDefinition(
-             const_cast<NamedDecl *>(ND)))
+             const_cast<NamedDecl *>(ND))) {
       AddChild([=] { OS << "also in " << M->getFullModuleName(); });
-  if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
-    if (!ND->isUnconditionallyVisible())
+}
+}
+  if (const NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
+    if (!ND->isUnconditionallyVisible()) {
       OS << " hidden";
-  if (D->isImplicit())
+}
+}
+  if (D->isImplicit()) {
     OS << " implicit";
+}
 
-  if (D->isUsed())
+  if (D->isUsed()) {
     OS << " used";
-  else if (D->isThisDeclarationReferenced())
+  } else if (D->isThisDeclarationReferenced()) {
     OS << " referenced";
+}
 
-  if (D->isInvalidDecl())
+  if (D->isInvalidDecl()) {
     OS << " invalid";
+}
   if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-    if (FD->isConstexprSpecified())
+    if (FD->isConstexprSpecified()) {
       OS << " constexpr";
-    if (FD->isConsteval())
+}
+    if (FD->isConsteval()) {
       OS << " consteval";
+}
   }
 
   if (!isa<FunctionDecl>(*D)) {
@@ -314,10 +337,12 @@ void TextNodeDumper::Visit(const CXXCtorInitializer *Init) {
 
 void TextNodeDumper::Visit(const BlockDecl::Capture &C) {
   OS << "capture";
-  if (C.isByRef())
+  if (C.isByRef()) {
     OS << " byref";
-  if (C.isNested())
+}
+  if (C.isNested()) {
     OS << " nested";
+}
   if (C.getVariable()) {
     OS << ' ';
     dumpBareDeclRef(C.getVariable());
@@ -338,8 +363,9 @@ void TextNodeDumper::Visit(const OMPClause *C) {
   }
   dumpPointer(C);
   dumpSourceRange(SourceRange(C->getBeginLoc(), C->getEndLoc()));
-  if (C->isImplicit())
+  if (C->isImplicit()) {
     OS << " <implicit>";
+}
 }
 
 void TextNodeDumper::Visit(const GenericSelectionExpr::ConstAssociation &A) {
@@ -351,8 +377,9 @@ void TextNodeDumper::Visit(const GenericSelectionExpr::ConstAssociation &A) {
     OS << "default";
   }
 
-  if (A.isSelected())
+  if (A.isSelected()) {
     OS << " selected";
+}
 }
 
 static double GetApproxValue(const llvm::APFloat &F) {
@@ -425,8 +452,9 @@ void TextNodeDumper::dumpAPValueChildren(
     AddChild(J - I > 1 ? LabelPlurial : LabelSingular, [=]() {
       for (unsigned X = I; X < J; ++X) {
         Visit(IdxToChildFun(Value, X), Ty);
-        if (X + 1 != J)
+        if (X + 1 != J) {
           OS << ", ";
+}
       }
     });
     I = J;
@@ -542,8 +570,9 @@ void TextNodeDumper::Visit(const APValue &Value, QualType Ty) {
     OS << "Union";
     {
       ColorScope Color(OS, ShowColors, ValueColor);
-      if (const FieldDecl *FD = Value.getUnionField())
+      if (const FieldDecl *FD = Value.getUnionField()) {
         OS << " ." << *cast<NamedDecl>(FD);
+}
     }
     // If the union value is considered to be simple, fold it into the
     // current line to save some vertical space.
@@ -573,8 +602,9 @@ void TextNodeDumper::dumpPointer(const void *Ptr) {
 }
 
 void TextNodeDumper::dumpLocation(SourceLocation Loc) {
-  if (!SM)
+  if (!SM) {
     return;
+}
 
   ColorScope Color(OS, ShowColors, LocationColor);
   SourceLocation SpellingLoc = SM->getSpellingLoc(Loc);
@@ -603,8 +633,9 @@ void TextNodeDumper::dumpLocation(SourceLocation Loc) {
 
 void TextNodeDumper::dumpSourceRange(SourceRange R) {
   // Can't translate locations if a SourceManager isn't available.
-  if (!SM)
+  if (!SM) {
     return;
+}
 
   OS << " <";
   dumpLocation(R.getBegin());
@@ -626,8 +657,9 @@ void TextNodeDumper::dumpBareType(QualType T, bool Desugar) {
   if (Desugar && !T.isNull()) {
     // If the type is sugared, also dump a (shallow) desugared type.
     SplitQualType D_split = T.getSplitDesugaredType();
-    if (T_split != D_split)
+    if (T_split != D_split) {
       OS << ":'" << QualType::getAsString(D_split, PrintPolicy) << "'";
+}
   }
 }
 
@@ -654,8 +686,9 @@ void TextNodeDumper::dumpBareDeclRef(const Decl *D) {
     OS << " '" << ND->getDeclName() << '\'';
   }
 
-  if (const ValueDecl *VD = dyn_cast<ValueDecl>(D))
+  if (const ValueDecl *VD = dyn_cast<ValueDecl>(D)) {
     dumpType(VD->getType());
+}
 }
 
 void TextNodeDumper::dumpName(const NamedDecl *ND) {
@@ -667,16 +700,17 @@ void TextNodeDumper::dumpName(const NamedDecl *ND) {
 
 void TextNodeDumper::dumpAccessSpecifier(AccessSpecifier AS) {
   const auto AccessSpelling = getAccessSpelling(AS);
-  if (AccessSpelling.empty())
+  if (AccessSpelling.empty()) {
     return;
+}
   OS << AccessSpelling;
 }
 
 void TextNodeDumper::dumpCleanupObject(
     const ExprWithCleanups::CleanupObject &C) {
-  if (auto *BD = C.dyn_cast<BlockDecl *>())
+  if (auto *BD = C.dyn_cast<BlockDecl *>()) {
     dumpDeclRef(BD, "cleanup");
-  else if (auto *CLE = C.dyn_cast<CompoundLiteralExpr *>())
+  } else if (auto *CLE = C.dyn_cast<CompoundLiteralExpr *>()) {
     AddChild([=] {
       OS << "cleanup ";
       {
@@ -685,28 +719,33 @@ void TextNodeDumper::dumpCleanupObject(
       }
       dumpPointer(CLE);
     });
-  else
+  } else {
     llvm_unreachable("unexpected cleanup type");
+}
 }
 
 void TextNodeDumper::dumpDeclRef(const Decl *D, StringRef Label) {
-  if (!D)
+  if (!D) {
     return;
+}
 
   AddChild([=] {
-    if (!Label.empty())
+    if (!Label.empty()) {
       OS << Label << ' ';
+}
     dumpBareDeclRef(D);
   });
 }
 
 const char *TextNodeDumper::getCommandName(unsigned CommandID) {
-  if (Traits)
+  if (Traits) {
     return Traits->getCommandInfo(CommandID)->Name;
+}
   const comments::CommandInfo *Info =
       comments::CommandTraits::getBuiltinCommandInfo(CommandID);
-  if (Info)
+  if (Info) {
     return Info->Name;
+}
   return "<not a builtin command>";
 }
 
@@ -743,8 +782,9 @@ void TextNodeDumper::visitInlineCommandComment(
     break;
   }
 
-  for (unsigned i = 0, e = C->getNumArgs(); i != e; ++i)
+  for (unsigned i = 0, e = C->getNumArgs(); i != e; ++i) {
     OS << " Arg[" << i << "]=\"" << C->getArgText(i) << "\"";
+}
 }
 
 void TextNodeDumper::visitHTMLStartTagComment(
@@ -757,8 +797,9 @@ void TextNodeDumper::visitHTMLStartTagComment(
       OS << " \"" << Attr.Name << "=\"" << Attr.Value << "\"";
     }
   }
-  if (C->isSelfClosing())
+  if (C->isSelfClosing()) {
     OS << " SelfClosing";
+}
 }
 
 void TextNodeDumper::visitHTMLEndTagComment(
@@ -769,8 +810,9 @@ void TextNodeDumper::visitHTMLEndTagComment(
 void TextNodeDumper::visitBlockCommandComment(
     const comments::BlockCommandComment *C, const comments::FullComment *) {
   OS << " Name=\"" << getCommandName(C->getCommandID()) << "\"";
-  for (unsigned i = 0, e = C->getNumArgs(); i != e; ++i)
+  for (unsigned i = 0, e = C->getNumArgs(); i != e; ++i) {
     OS << " Arg[" << i << "]=\"" << C->getArgText(i) << "\"";
+}
 }
 
 void TextNodeDumper::visitParamCommandComment(
@@ -778,37 +820,42 @@ void TextNodeDumper::visitParamCommandComment(
   OS << " "
      << comments::ParamCommandComment::getDirectionAsString(C->getDirection());
 
-  if (C->isDirectionExplicit())
+  if (C->isDirectionExplicit()) {
     OS << " explicitly";
-  else
+  } else {
     OS << " implicitly";
+}
 
   if (C->hasParamName()) {
-    if (C->isParamIndexValid())
+    if (C->isParamIndexValid()) {
       OS << " Param=\"" << C->getParamName(FC) << "\"";
-    else
+    } else {
       OS << " Param=\"" << C->getParamNameAsWritten() << "\"";
+}
   }
 
-  if (C->isParamIndexValid() && !C->isVarArgParam())
+  if (C->isParamIndexValid() && !C->isVarArgParam()) {
     OS << " ParamIndex=" << C->getParamIndex();
+}
 }
 
 void TextNodeDumper::visitTParamCommandComment(
     const comments::TParamCommandComment *C, const comments::FullComment *FC) {
   if (C->hasParamName()) {
-    if (C->isPositionValid())
+    if (C->isPositionValid()) {
       OS << " Param=\"" << C->getParamName(FC) << "\"";
-    else
+    } else {
       OS << " Param=\"" << C->getParamNameAsWritten() << "\"";
+}
   }
 
   if (C->isPositionValid()) {
     OS << " Position=<";
     for (unsigned i = 0, e = C->getDepth(); i != e; ++i) {
       OS << C->getIndex(i);
-      if (i != e - 1)
+      if (i != e - 1) {
         OS << ", ";
+}
     }
     OS << ">";
   }
@@ -876,8 +923,9 @@ void TextNodeDumper::VisitPackTemplateArgument(const TemplateArgument &) {
 }
 
 static void dumpBasePath(raw_ostream &OS, const CastExpr *Node) {
-  if (Node->path_empty())
+  if (Node->path_empty()) {
     return;
+}
 
   OS << " (";
   bool First = true;
@@ -885,14 +933,16 @@ static void dumpBasePath(raw_ostream &OS, const CastExpr *Node) {
                                      E = Node->path_end();
        I != E; ++I) {
     const CXXBaseSpecifier *Base = *I;
-    if (!First)
+    if (!First) {
       OS << " -> ";
+}
 
     const auto *RD =
         cast<CXXRecordDecl>(Base->getType()->castAs<RecordType>()->getDecl());
 
-    if (Base->isVirtual())
+    if (Base->isVirtual()) {
       OS << "virtual ";
+}
     OS << RD->getName();
     First = false;
   }
@@ -901,24 +951,30 @@ static void dumpBasePath(raw_ostream &OS, const CastExpr *Node) {
 }
 
 void TextNodeDumper::VisitIfStmt(const IfStmt *Node) {
-  if (Node->hasInitStorage())
+  if (Node->hasInitStorage()) {
     OS << " has_init";
-  if (Node->hasVarStorage())
+}
+  if (Node->hasVarStorage()) {
     OS << " has_var";
-  if (Node->hasElseStorage())
+}
+  if (Node->hasElseStorage()) {
     OS << " has_else";
+}
 }
 
 void TextNodeDumper::VisitSwitchStmt(const SwitchStmt *Node) {
-  if (Node->hasInitStorage())
+  if (Node->hasInitStorage()) {
     OS << " has_init";
-  if (Node->hasVarStorage())
+}
+  if (Node->hasVarStorage()) {
     OS << " has_var";
+}
 }
 
 void TextNodeDumper::VisitWhileStmt(const WhileStmt *Node) {
-  if (Node->hasVarStorage())
+  if (Node->hasVarStorage()) {
     OS << " has_var";
+}
 }
 
 void TextNodeDumper::VisitLabelStmt(const LabelStmt *Node) {
@@ -931,27 +987,32 @@ void TextNodeDumper::VisitGotoStmt(const GotoStmt *Node) {
 }
 
 void TextNodeDumper::VisitCaseStmt(const CaseStmt *Node) {
-  if (Node->caseStmtIsGNURange())
+  if (Node->caseStmtIsGNURange()) {
     OS << " gnu_range";
+}
 }
 
 void TextNodeDumper::VisitConstantExpr(const ConstantExpr *Node) {
-  if (Node->hasAPValueResult())
+  if (Node->hasAPValueResult()) {
     AddChild("value",
              [=] { Visit(Node->getAPValueResult(), Node->getType()); });
 }
+}
 
 void TextNodeDumper::VisitCallExpr(const CallExpr *Node) {
-  if (Node->usesADL())
+  if (Node->usesADL()) {
     OS << " adl";
-  if (Node->hasStoredFPFeatures())
+}
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitCXXOperatorCallExpr(const CXXOperatorCallExpr *Node) {
   const char *OperatorSpelling = clang::getOperatorSpelling(Node->getOperator());
-  if (OperatorSpelling)
+  if (OperatorSpelling) {
     OS << " '" << OperatorSpelling << "'";
+}
 
   VisitCallExpr(Node);
 }
@@ -964,14 +1025,16 @@ void TextNodeDumper::VisitCastExpr(const CastExpr *Node) {
   }
   dumpBasePath(OS, Node);
   OS << ">";
-  if (Node->hasStoredFPFeatures())
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitImplicitCastExpr(const ImplicitCastExpr *Node) {
   VisitCastExpr(Node);
-  if (Node->isPartOfExplicitCast())
+  if (Node->isPartOfExplicitCast()) {
     OS << " part_of_explicit_cast";
+}
 }
 
 void TextNodeDumper::VisitDeclRefExpr(const DeclRefExpr *Node) {
@@ -993,16 +1056,19 @@ void TextNodeDumper::VisitDeclRefExpr(const DeclRefExpr *Node) {
 void TextNodeDumper::VisitUnresolvedLookupExpr(
     const UnresolvedLookupExpr *Node) {
   OS << " (";
-  if (!Node->requiresADL())
+  if (!Node->requiresADL()) {
     OS << "no ";
+}
   OS << "ADL) = '" << Node->getName() << '\'';
 
   UnresolvedLookupExpr::decls_iterator I = Node->decls_begin(),
                                        E = Node->decls_end();
-  if (I == E)
+  if (I == E) {
     OS << " empty";
-  for (; I != E; ++I)
+}
+  for (; I != E; ++I) {
     dumpPointer(*I);
+}
 }
 
 void TextNodeDumper::VisitObjCIvarRefExpr(const ObjCIvarRefExpr *Node) {
@@ -1012,8 +1078,9 @@ void TextNodeDumper::VisitObjCIvarRefExpr(const ObjCIvarRefExpr *Node) {
   }
   OS << "='" << *Node->getDecl() << "'";
   dumpPointer(Node->getDecl());
-  if (Node->isFreeIvar())
+  if (Node->isFreeIvar()) {
     OS << " isFreeIvar";
+}
 }
 
 void TextNodeDumper::VisitPredefinedExpr(const PredefinedExpr *Node) {
@@ -1055,25 +1122,29 @@ void TextNodeDumper::VisitInitListExpr(const InitListExpr *ILE) {
 }
 
 void TextNodeDumper::VisitGenericSelectionExpr(const GenericSelectionExpr *E) {
-  if (E->isResultDependent())
+  if (E->isResultDependent()) {
     OS << " result_dependent";
+}
 }
 
 void TextNodeDumper::VisitUnaryOperator(const UnaryOperator *Node) {
   OS << " " << (Node->isPostfix() ? "postfix" : "prefix") << " '"
      << UnaryOperator::getOpcodeStr(Node->getOpcode()) << "'";
-  if (!Node->canOverflow())
+  if (!Node->canOverflow()) {
     OS << " cannot overflow";
-  if (Node->hasStoredFPFeatures())
+}
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getStoredFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitUnaryExprOrTypeTraitExpr(
     const UnaryExprOrTypeTraitExpr *Node) {
   OS << " " << getTraitSpelling(Node->getKind());
 
-  if (Node->isArgumentType())
+  if (Node->isArgumentType()) {
     dumpType(Node->getArgumentType());
+}
 }
 
 void TextNodeDumper::VisitMemberExpr(const MemberExpr *Node) {
@@ -1094,8 +1165,9 @@ void TextNodeDumper::VisitExtVectorElementExpr(
 
 void TextNodeDumper::VisitBinaryOperator(const BinaryOperator *Node) {
   OS << " '" << BinaryOperator::getOpcodeStr(Node->getOpcode()) << "'";
-  if (Node->hasStoredFPFeatures())
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getStoredFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitCompoundAssignOperator(
@@ -1105,8 +1177,9 @@ void TextNodeDumper::VisitCompoundAssignOperator(
   dumpBareType(Node->getComputationLHSType());
   OS << " ComputeResultTy=";
   dumpBareType(Node->getComputationResultType());
-  if (Node->hasStoredFPFeatures())
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getStoredFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitAddrLabelExpr(const AddrLabelExpr *Node) {
@@ -1127,8 +1200,9 @@ void TextNodeDumper::VisitCXXBoolLiteralExpr(const CXXBoolLiteralExpr *Node) {
 }
 
 void TextNodeDumper::VisitCXXThisExpr(const CXXThisExpr *Node) {
-  if (Node->isImplicit())
+  if (Node->isImplicit()) {
     OS << " implicit";
+}
   OS << " this";
 }
 
@@ -1136,34 +1210,41 @@ void TextNodeDumper::VisitCXXFunctionalCastExpr(
     const CXXFunctionalCastExpr *Node) {
   OS << " functional cast to " << Node->getTypeAsWritten().getAsString() << " <"
      << Node->getCastKindName() << ">";
-  if (Node->hasStoredFPFeatures())
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitCXXStaticCastExpr(const CXXStaticCastExpr *Node) {
   VisitCXXNamedCastExpr(Node);
-  if (Node->hasStoredFPFeatures())
+  if (Node->hasStoredFPFeatures()) {
     printFPOptions(Node->getFPFeatures());
+}
 }
 
 void TextNodeDumper::VisitCXXUnresolvedConstructExpr(
     const CXXUnresolvedConstructExpr *Node) {
   dumpType(Node->getTypeAsWritten());
-  if (Node->isListInitialization())
+  if (Node->isListInitialization()) {
     OS << " list";
+}
 }
 
 void TextNodeDumper::VisitCXXConstructExpr(const CXXConstructExpr *Node) {
   CXXConstructorDecl *Ctor = Node->getConstructor();
   dumpType(Ctor->getType());
-  if (Node->isElidable())
+  if (Node->isElidable()) {
     OS << " elidable";
-  if (Node->isListInitialization())
+}
+  if (Node->isListInitialization()) {
     OS << " list";
-  if (Node->isStdInitListInitialization())
+}
+  if (Node->isStdInitListInitialization()) {
     OS << " std::initializer_list";
-  if (Node->requiresZeroInitialization())
+}
+  if (Node->requiresZeroInitialization()) {
     OS << " zeroing";
+}
 }
 
 void TextNodeDumper::VisitCXXBindTemporaryExpr(
@@ -1174,10 +1255,12 @@ void TextNodeDumper::VisitCXXBindTemporaryExpr(
 }
 
 void TextNodeDumper::VisitCXXNewExpr(const CXXNewExpr *Node) {
-  if (Node->isGlobalNew())
+  if (Node->isGlobalNew()) {
     OS << " global";
-  if (Node->isArray())
+}
+  if (Node->isArray()) {
     OS << " array";
+}
   if (Node->getOperatorNew()) {
     OS << ' ';
     dumpBareDeclRef(Node->getOperatorNew());
@@ -1187,10 +1270,12 @@ void TextNodeDumper::VisitCXXNewExpr(const CXXNewExpr *Node) {
 }
 
 void TextNodeDumper::VisitCXXDeleteExpr(const CXXDeleteExpr *Node) {
-  if (Node->isGlobalDelete())
+  if (Node->isGlobalDelete()) {
     OS << " global";
-  if (Node->isArrayForm())
+}
+  if (Node->isArrayForm()) {
     OS << " array";
+}
   if (Node->getOperatorDelete()) {
     OS << ' ';
     dumpBareDeclRef(Node->getOperatorDelete());
@@ -1218,8 +1303,9 @@ void TextNodeDumper::VisitMaterializeTemporaryExpr(
 }
 
 void TextNodeDumper::VisitExprWithCleanups(const ExprWithCleanups *Node) {
-  for (unsigned i = 0, e = Node->getNumObjects(); i != e; ++i)
+  for (unsigned i = 0, e = Node->getNumObjects(); i != e; ++i) {
     dumpCleanupObject(Node->getObject(i));
+}
 }
 
 void TextNodeDumper::VisitSizeOfPackExpr(const SizeOfPackExpr *Node) {
@@ -1262,8 +1348,9 @@ void TextNodeDumper::VisitObjCBoxedExpr(const ObjCBoxedExpr *Node) {
 }
 
 void TextNodeDumper::VisitObjCAtCatchStmt(const ObjCAtCatchStmt *Node) {
-  if (!Node->getCatchParamDecl())
+  if (!Node->getCatchParamDecl()) {
     OS << " catch all";
+}
 }
 
 void TextNodeDumper::VisitObjCEncodeExpr(const ObjCEncodeExpr *Node) {
@@ -1282,53 +1369,61 @@ void TextNodeDumper::VisitObjCProtocolExpr(const ObjCProtocolExpr *Node) {
 void TextNodeDumper::VisitObjCPropertyRefExpr(const ObjCPropertyRefExpr *Node) {
   if (Node->isImplicitProperty()) {
     OS << " Kind=MethodRef Getter=\"";
-    if (Node->getImplicitPropertyGetter())
+    if (Node->getImplicitPropertyGetter()) {
       Node->getImplicitPropertyGetter()->getSelector().print(OS);
-    else
+    } else {
       OS << "(null)";
+}
 
     OS << "\" Setter=\"";
-    if (ObjCMethodDecl *Setter = Node->getImplicitPropertySetter())
+    if (ObjCMethodDecl *Setter = Node->getImplicitPropertySetter()) {
       Setter->getSelector().print(OS);
-    else
+    } else {
       OS << "(null)";
+}
     OS << "\"";
   } else {
     OS << " Kind=PropertyRef Property=\"" << *Node->getExplicitProperty()
        << '"';
   }
 
-  if (Node->isSuperReceiver())
+  if (Node->isSuperReceiver()) {
     OS << " super";
+}
 
   OS << " Messaging=";
-  if (Node->isMessagingGetter() && Node->isMessagingSetter())
+  if (Node->isMessagingGetter() && Node->isMessagingSetter()) {
     OS << "Getter&Setter";
-  else if (Node->isMessagingGetter())
+  } else if (Node->isMessagingGetter()) {
     OS << "Getter";
-  else if (Node->isMessagingSetter())
+  } else if (Node->isMessagingSetter()) {
     OS << "Setter";
+}
 }
 
 void TextNodeDumper::VisitObjCSubscriptRefExpr(
     const ObjCSubscriptRefExpr *Node) {
-  if (Node->isArraySubscriptRefExpr())
+  if (Node->isArraySubscriptRefExpr()) {
     OS << " Kind=ArraySubscript GetterForArray=\"";
-  else
+  } else {
     OS << " Kind=DictionarySubscript GetterForDictionary=\"";
-  if (Node->getAtIndexMethodDecl())
+}
+  if (Node->getAtIndexMethodDecl()) {
     Node->getAtIndexMethodDecl()->getSelector().print(OS);
-  else
+  } else {
     OS << "(null)";
+}
 
-  if (Node->isArraySubscriptRefExpr())
+  if (Node->isArraySubscriptRefExpr()) {
     OS << "\" SetterForArray=\"";
-  else
+  } else {
     OS << "\" SetterForDictionary=\"";
-  if (Node->setAtIndexMethodDecl())
+}
+  if (Node->setAtIndexMethodDecl()) {
     Node->setAtIndexMethodDecl()->getSelector().print(OS);
-  else
+  } else {
     OS << "(null)";
+}
 }
 
 void TextNodeDumper::VisitObjCBoolLiteralExpr(const ObjCBoolLiteralExpr *Node) {
@@ -1359,8 +1454,9 @@ void TextNodeDumper::VisitConceptSpecializationExpr(
 }
 
 void TextNodeDumper::VisitRValueReferenceType(const ReferenceType *T) {
-  if (T->isSpelledAsLValue())
+  if (T->isSpelledAsLValue()) {
     OS << " written as lvalue reference";
+}
 }
 
 void TextNodeDumper::VisitArrayType(const ArrayType *T) {
@@ -1432,27 +1528,35 @@ void TextNodeDumper::VisitVectorType(const VectorType *T) {
 
 void TextNodeDumper::VisitFunctionType(const FunctionType *T) {
   auto EI = T->getExtInfo();
-  if (EI.getNoReturn())
+  if (EI.getNoReturn()) {
     OS << " noreturn";
-  if (EI.getProducesResult())
+}
+  if (EI.getProducesResult()) {
     OS << " produces_result";
-  if (EI.getHasRegParm())
+}
+  if (EI.getHasRegParm()) {
     OS << " regparm " << EI.getRegParm();
+}
   OS << " " << FunctionType::getNameForCallConv(EI.getCC());
 }
 
 void TextNodeDumper::VisitFunctionProtoType(const FunctionProtoType *T) {
   auto EPI = T->getExtProtoInfo();
-  if (EPI.HasTrailingReturn)
+  if (EPI.HasTrailingReturn) {
     OS << " trailing_return";
-  if (T->isConst())
+}
+  if (T->isConst()) {
     OS << " const";
-  if (T->isVolatile())
+}
+  if (T->isVolatile()) {
     OS << " volatile";
-  if (T->isRestrict())
+}
+  if (T->isRestrict()) {
     OS << " restrict";
-  if (T->getExtProtoInfo().Variadic)
+}
+  if (T->getExtProtoInfo().Variadic) {
     OS << " variadic";
+}
   switch (EPI.RefQualifier) {
   case RQ_None:
     break;
@@ -1490,27 +1594,32 @@ void TextNodeDumper::VisitTagType(const TagType *T) {
 
 void TextNodeDumper::VisitTemplateTypeParmType(const TemplateTypeParmType *T) {
   OS << " depth " << T->getDepth() << " index " << T->getIndex();
-  if (T->isParameterPack())
+  if (T->isParameterPack()) {
     OS << " pack";
+}
   dumpDeclRef(T->getDecl());
 }
 
 void TextNodeDumper::VisitAutoType(const AutoType *T) {
-  if (T->isDecltypeAuto())
+  if (T->isDecltypeAuto()) {
     OS << " decltype(auto)";
-  if (!T->isDeduced())
+}
+  if (!T->isDeduced()) {
     OS << " undeduced";
+}
   if (T->isConstrained()) {
     dumpDeclRef(T->getTypeConstraintConcept());
-    for (const auto &Arg : T->getTypeConstraintArguments())
+    for (const auto &Arg : T->getTypeConstraintArguments()) {
       VisitTemplateArgument(Arg);
+}
   }
 }
 
 void TextNodeDumper::VisitTemplateSpecializationType(
     const TemplateSpecializationType *T) {
-  if (T->isTypeAlias())
+  if (T->isTypeAlias()) {
     OS << " alias";
+}
   OS << " ";
   T->getTemplateName().dump(OS);
 }
@@ -1525,8 +1634,9 @@ void TextNodeDumper::VisitObjCInterfaceType(const ObjCInterfaceType *T) {
 }
 
 void TextNodeDumper::VisitPackExpansionType(const PackExpansionType *T) {
-  if (auto N = T->getNumExpansions())
+  if (auto N = T->getNumExpansions()) {
     OS << " expansions " << *N;
+}
 }
 
 void TextNodeDumper::VisitLabelDecl(const LabelDecl *D) { dumpName(D); }
@@ -1534,31 +1644,37 @@ void TextNodeDumper::VisitLabelDecl(const LabelDecl *D) { dumpName(D); }
 void TextNodeDumper::VisitTypedefDecl(const TypedefDecl *D) {
   dumpName(D);
   dumpType(D->getUnderlyingType());
-  if (D->isModulePrivate())
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
+}
 }
 
 void TextNodeDumper::VisitEnumDecl(const EnumDecl *D) {
   if (D->isScoped()) {
-    if (D->isScopedUsingClassTag())
+    if (D->isScopedUsingClassTag()) {
       OS << " class";
-    else
+    } else {
       OS << " struct";
+}
   }
   dumpName(D);
-  if (D->isModulePrivate())
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
-  if (D->isFixed())
+}
+  if (D->isFixed()) {
     dumpType(D->getIntegerType());
+}
 }
 
 void TextNodeDumper::VisitRecordDecl(const RecordDecl *D) {
   OS << ' ' << D->getKindName();
   dumpName(D);
-  if (D->isModulePrivate())
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
-  if (D->isCompleteDefinition())
+}
+  if (D->isCompleteDefinition()) {
     OS << " definition";
+}
 }
 
 void TextNodeDumper::VisitEnumConstantDecl(const EnumConstantDecl *D) {
@@ -1570,8 +1686,9 @@ void TextNodeDumper::VisitIndirectFieldDecl(const IndirectFieldDecl *D) {
   dumpName(D);
   dumpType(D->getType());
 
-  for (const auto *Child : D->chain())
+  for (const auto *Child : D->chain()) {
     dumpDeclRef(Child);
+}
 }
 
 void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
@@ -1579,26 +1696,34 @@ void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
   dumpType(D->getType());
 
   StorageClass SC = D->getStorageClass();
-  if (SC != SC_None)
+  if (SC != SC_None) {
     OS << ' ' << VarDecl::getStorageClassSpecifierString(SC);
-  if (D->isInlineSpecified())
+}
+  if (D->isInlineSpecified()) {
     OS << " inline";
-  if (D->isVirtualAsWritten())
+}
+  if (D->isVirtualAsWritten()) {
     OS << " virtual";
-  if (D->isModulePrivate())
+}
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
+}
 
-  if (D->isPure())
+  if (D->isPure()) {
     OS << " pure";
+}
   if (D->isDefaulted()) {
     OS << " default";
-    if (D->isDeleted())
+    if (D->isDeleted()) {
       OS << "_delete";
+}
   }
-  if (D->isDeletedAsWritten())
+  if (D->isDeletedAsWritten()) {
     OS << " delete";
-  if (D->isTrivial())
+}
+  if (D->isTrivial()) {
     OS << " trivial";
+}
 
   if (const auto *FPT = D->getType()->getAs<FunctionProtoType>()) {
     FunctionProtoType::ExtProtoInfo EPI = FPT->getExtProtoInfo();
@@ -1640,8 +1765,9 @@ void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
   // the Params are set later, it is possible for a dump during debugging to
   // encounter a FunctionDecl that has been created but hasn't been assigned
   // ParmVarDecls yet.
-  if (!D->param_empty() && !D->param_begin())
+  if (!D->param_empty() && !D->param_begin()) {
     OS << " <<<NULL params x " << D->getNumParams() << ">>>";
+}
 }
 
 void TextNodeDumper::VisitLifetimeExtendedTemporaryDecl(
@@ -1658,18 +1784,21 @@ void TextNodeDumper::VisitLifetimeExtendedTemporaryDecl(
 void TextNodeDumper::VisitFieldDecl(const FieldDecl *D) {
   dumpName(D);
   dumpType(D->getType());
-  if (D->isMutable())
+  if (D->isMutable()) {
     OS << " mutable";
-  if (D->isModulePrivate())
+}
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
+}
 }
 
 void TextNodeDumper::VisitVarDecl(const VarDecl *D) {
   dumpName(D);
   dumpType(D->getType());
   StorageClass SC = D->getStorageClass();
-  if (SC != SC_None)
+  if (SC != SC_None) {
     OS << ' ' << VarDecl::getStorageClassSpecifierString(SC);
+}
   switch (D->getTLSKind()) {
   case VarDecl::TLS_None:
     break;
@@ -1680,14 +1809,18 @@ void TextNodeDumper::VisitVarDecl(const VarDecl *D) {
     OS << " tls_dynamic";
     break;
   }
-  if (D->isModulePrivate())
+  if (D->isModulePrivate()) {
     OS << " __module_private__";
-  if (D->isNRVOVariable())
+}
+  if (D->isNRVOVariable()) {
     OS << " nrvo";
-  if (D->isInline())
+}
+  if (D->isInline()) {
     OS << " inline";
-  if (D->isConstexpr())
+}
+  if (D->isConstexpr()) {
     OS << " constexpr";
+}
   if (D->hasInit()) {
     switch (D->getInitStyle()) {
     case VarDecl::CInit:
@@ -1701,18 +1834,21 @@ void TextNodeDumper::VisitVarDecl(const VarDecl *D) {
       break;
     }
   }
-  if (D->needsDestruction(D->getASTContext()))
+  if (D->needsDestruction(D->getASTContext())) {
     OS << " destroyed";
-  if (D->isParameterPack())
+}
+  if (D->isParameterPack()) {
     OS << " pack";
+}
 
   if (D->hasInit()) {
     const Expr *E = D->getInit();
     // Only dump the value of constexpr VarDecls for now.
     if (E && !E->isValueDependent() && D->isConstexpr()) {
       const APValue *Value = D->evaluateValue();
-      if (Value)
+      if (Value) {
         AddChild("value", [=] { Visit(*Value, E->getType()); });
+}
     }
   }
 }
@@ -1723,16 +1859,18 @@ void TextNodeDumper::VisitBindingDecl(const BindingDecl *D) {
 }
 
 void TextNodeDumper::VisitCapturedDecl(const CapturedDecl *D) {
-  if (D->isNothrow())
+  if (D->isNothrow()) {
     OS << " nothrow";
+}
 }
 
 void TextNodeDumper::VisitImportDecl(const ImportDecl *D) {
   OS << ' ' << D->getImportedModule()->getFullModuleName();
 
   for (Decl *InitD :
-       D->getASTContext().getModuleInitializers(D->getImportedModule()))
+       D->getASTContext().getModuleInitializers(D->getImportedModule())) {
     dumpDeclRef(InitD, "initializer");
+}
 }
 
 void TextNodeDumper::VisitPragmaCommentDecl(const PragmaCommentDecl *D) {
@@ -1757,8 +1895,9 @@ void TextNodeDumper::VisitPragmaCommentDecl(const PragmaCommentDecl *D) {
     break;
   }
   StringRef Arg = D->getArg();
-  if (!Arg.empty())
+  if (!Arg.empty()) {
     OS << " \"" << Arg << "\"";
+}
 }
 
 void TextNodeDumper::VisitPragmaDetectMismatchDecl(
@@ -1768,8 +1907,9 @@ void TextNodeDumper::VisitPragmaDetectMismatchDecl(
 
 void TextNodeDumper::VisitOMPExecutableDirective(
     const OMPExecutableDirective *D) {
-  if (D->isStandaloneDirective())
+  if (D->isStandaloneDirective()) {
     OS << " openmp_standalone_directive";
+}
 }
 
 void TextNodeDumper::VisitOMPDeclareReductionDecl(
@@ -1822,10 +1962,12 @@ void TextNodeDumper::VisitOMPCapturedExprDecl(const OMPCapturedExprDecl *D) {
 
 void TextNodeDumper::VisitNamespaceDecl(const NamespaceDecl *D) {
   dumpName(D);
-  if (D->isInline())
+  if (D->isInline()) {
     OS << " inline";
-  if (!D->isOriginalNamespace())
+}
+  if (!D->isOriginalNamespace()) {
     dumpDeclRef(D->getOriginalNamespace(), "original");
+}
 }
 
 void TextNodeDumper::VisitUsingDirectiveDecl(const UsingDirectiveDecl *D) {
@@ -1850,8 +1992,9 @@ void TextNodeDumper::VisitTypeAliasTemplateDecl(
 
 void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
   VisitRecordDecl(D);
-  if (!D->isCompleteDefinition())
+  if (!D->isCompleteDefinition()) {
     return;
+}
 
   AddChild([=] {
     {
@@ -1982,12 +2125,14 @@ void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
 
   for (const auto &I : D->bases()) {
     AddChild([=] {
-      if (I.isVirtual())
+      if (I.isVirtual()) {
         OS << "virtual ";
+}
       dumpAccessSpecifier(I.getAccessSpecifier());
       dumpType(I.getType());
-      if (I.isPackExpansion())
+      if (I.isPackExpansion()) {
         OS << "...";
+}
     });
   }
 }
@@ -2017,13 +2162,15 @@ void TextNodeDumper::VisitTemplateTypeParmDecl(const TemplateTypeParmDecl *D) {
       dumpBareDeclRef(TC->getFoundDecl());
       OS << ")";
     }
-  } else if (D->wasDeclaredWithTypename())
+  } else if (D->wasDeclaredWithTypename()) {
     OS << " typename";
-  else
+  } else {
     OS << " class";
+}
   OS << " depth " << D->getDepth() << " index " << D->getIndex();
-  if (D->isParameterPack())
+  if (D->isParameterPack()) {
     OS << " ...";
+}
   dumpName(D);
 }
 
@@ -2031,39 +2178,44 @@ void TextNodeDumper::VisitNonTypeTemplateParmDecl(
     const NonTypeTemplateParmDecl *D) {
   dumpType(D->getType());
   OS << " depth " << D->getDepth() << " index " << D->getIndex();
-  if (D->isParameterPack())
+  if (D->isParameterPack()) {
     OS << " ...";
+}
   dumpName(D);
 }
 
 void TextNodeDumper::VisitTemplateTemplateParmDecl(
     const TemplateTemplateParmDecl *D) {
   OS << " depth " << D->getDepth() << " index " << D->getIndex();
-  if (D->isParameterPack())
+  if (D->isParameterPack()) {
     OS << " ...";
+}
   dumpName(D);
 }
 
 void TextNodeDumper::VisitUsingDecl(const UsingDecl *D) {
   OS << ' ';
-  if (D->getQualifier())
+  if (D->getQualifier()) {
     D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+}
   OS << D->getDeclName();
 }
 
 void TextNodeDumper::VisitUnresolvedUsingTypenameDecl(
     const UnresolvedUsingTypenameDecl *D) {
   OS << ' ';
-  if (D->getQualifier())
+  if (D->getQualifier()) {
     D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+}
   OS << D->getDeclName();
 }
 
 void TextNodeDumper::VisitUnresolvedUsingValueDecl(
     const UnresolvedUsingValueDecl *D) {
   OS << ' ';
-  if (D->getQualifier())
+  if (D->getQualifier()) {
     D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+}
   OS << D->getDeclName();
   dumpType(D->getType());
 }
@@ -2075,8 +2227,9 @@ void TextNodeDumper::VisitUsingShadowDecl(const UsingShadowDecl *D) {
 
 void TextNodeDumper::VisitConstructorUsingShadowDecl(
     const ConstructorUsingShadowDecl *D) {
-  if (D->constructsVirtualBase())
+  if (D->constructsVirtualBase()) {
     OS << " virtual";
+}
 
   AddChild([=] {
     OS << "target ";
@@ -2115,15 +2268,17 @@ void TextNodeDumper::VisitAccessSpecDecl(const AccessSpecDecl *D) {
 }
 
 void TextNodeDumper::VisitFriendDecl(const FriendDecl *D) {
-  if (TypeSourceInfo *T = D->getFriendType())
+  if (TypeSourceInfo *T = D->getFriendType()) {
     dumpType(T->getType());
+}
 }
 
 void TextNodeDumper::VisitObjCIvarDecl(const ObjCIvarDecl *D) {
   dumpName(D);
   dumpType(D->getType());
-  if (D->getSynthesize())
+  if (D->getSynthesize()) {
     OS << " synthesize";
+}
 
   switch (D->getAccessControl()) {
   case ObjCIvarDecl::None:
@@ -2145,15 +2300,17 @@ void TextNodeDumper::VisitObjCIvarDecl(const ObjCIvarDecl *D) {
 }
 
 void TextNodeDumper::VisitObjCMethodDecl(const ObjCMethodDecl *D) {
-  if (D->isInstanceMethod())
+  if (D->isInstanceMethod()) {
     OS << " -";
-  else
+  } else {
     OS << " +";
+}
   dumpName(D);
   dumpType(D->getReturnType());
 
-  if (D->isVariadic())
+  if (D->isVariadic()) {
     OS << " variadic";
+}
 }
 
 void TextNodeDumper::VisitObjCTypeParamDecl(const ObjCTypeParamDecl *D) {
@@ -2171,8 +2328,9 @@ void TextNodeDumper::VisitObjCTypeParamDecl(const ObjCTypeParamDecl *D) {
     break;
   }
 
-  if (D->hasExplicitBound())
+  if (D->hasExplicitBound()) {
     OS << " bounded";
+}
   dumpType(D->getUnderlyingType());
 }
 
@@ -2180,8 +2338,9 @@ void TextNodeDumper::VisitObjCCategoryDecl(const ObjCCategoryDecl *D) {
   dumpName(D);
   dumpDeclRef(D->getClassInterface());
   dumpDeclRef(D->getImplementation());
-  for (const auto *P : D->protocols())
+  for (const auto *P : D->protocols()) {
     dumpDeclRef(P);
+}
 }
 
 void TextNodeDumper::VisitObjCCategoryImplDecl(const ObjCCategoryImplDecl *D) {
@@ -2193,8 +2352,9 @@ void TextNodeDumper::VisitObjCCategoryImplDecl(const ObjCCategoryImplDecl *D) {
 void TextNodeDumper::VisitObjCProtocolDecl(const ObjCProtocolDecl *D) {
   dumpName(D);
 
-  for (const auto *Child : D->protocols())
+  for (const auto *Child : D->protocols()) {
     dumpDeclRef(Child);
+}
 }
 
 void TextNodeDumper::VisitObjCInterfaceDecl(const ObjCInterfaceDecl *D) {
@@ -2202,8 +2362,9 @@ void TextNodeDumper::VisitObjCInterfaceDecl(const ObjCInterfaceDecl *D) {
   dumpDeclRef(D->getSuperClass(), "super");
 
   dumpDeclRef(D->getImplementation());
-  for (const auto *Child : D->protocols())
+  for (const auto *Child : D->protocols()) {
     dumpDeclRef(Child);
+}
 }
 
 void TextNodeDumper::VisitObjCImplementationDecl(
@@ -2223,60 +2384,78 @@ void TextNodeDumper::VisitObjCPropertyDecl(const ObjCPropertyDecl *D) {
   dumpName(D);
   dumpType(D->getType());
 
-  if (D->getPropertyImplementation() == ObjCPropertyDecl::Required)
+  if (D->getPropertyImplementation() == ObjCPropertyDecl::Required) {
     OS << " required";
-  else if (D->getPropertyImplementation() == ObjCPropertyDecl::Optional)
+  } else if (D->getPropertyImplementation() == ObjCPropertyDecl::Optional) {
     OS << " optional";
+}
 
   ObjCPropertyAttribute::Kind Attrs = D->getPropertyAttributes();
   if (Attrs != ObjCPropertyAttribute::kind_noattr) {
-    if (Attrs & ObjCPropertyAttribute::kind_readonly)
+    if (Attrs & ObjCPropertyAttribute::kind_readonly) {
       OS << " readonly";
-    if (Attrs & ObjCPropertyAttribute::kind_assign)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_assign) {
       OS << " assign";
-    if (Attrs & ObjCPropertyAttribute::kind_readwrite)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_readwrite) {
       OS << " readwrite";
-    if (Attrs & ObjCPropertyAttribute::kind_retain)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_retain) {
       OS << " retain";
-    if (Attrs & ObjCPropertyAttribute::kind_copy)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_copy) {
       OS << " copy";
-    if (Attrs & ObjCPropertyAttribute::kind_nonatomic)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_nonatomic) {
       OS << " nonatomic";
-    if (Attrs & ObjCPropertyAttribute::kind_atomic)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_atomic) {
       OS << " atomic";
-    if (Attrs & ObjCPropertyAttribute::kind_weak)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_weak) {
       OS << " weak";
-    if (Attrs & ObjCPropertyAttribute::kind_strong)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_strong) {
       OS << " strong";
-    if (Attrs & ObjCPropertyAttribute::kind_unsafe_unretained)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_unsafe_unretained) {
       OS << " unsafe_unretained";
-    if (Attrs & ObjCPropertyAttribute::kind_class)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_class) {
       OS << " class";
-    if (Attrs & ObjCPropertyAttribute::kind_direct)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_direct) {
       OS << " direct";
-    if (Attrs & ObjCPropertyAttribute::kind_getter)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_getter) {
       dumpDeclRef(D->getGetterMethodDecl(), "getter");
-    if (Attrs & ObjCPropertyAttribute::kind_setter)
+}
+    if (Attrs & ObjCPropertyAttribute::kind_setter) {
       dumpDeclRef(D->getSetterMethodDecl(), "setter");
+}
   }
 }
 
 void TextNodeDumper::VisitObjCPropertyImplDecl(const ObjCPropertyImplDecl *D) {
   dumpName(D->getPropertyDecl());
-  if (D->getPropertyImplementation() == ObjCPropertyImplDecl::Synthesize)
+  if (D->getPropertyImplementation() == ObjCPropertyImplDecl::Synthesize) {
     OS << " synthesize";
-  else
+  } else {
     OS << " dynamic";
+}
   dumpDeclRef(D->getPropertyDecl());
   dumpDeclRef(D->getPropertyIvarDecl());
 }
 
 void TextNodeDumper::VisitBlockDecl(const BlockDecl *D) {
-  if (D->isVariadic())
+  if (D->isVariadic()) {
     OS << " variadic";
+}
 
-  if (D->capturesCXXThis())
+  if (D->capturesCXXThis()) {
     OS << " captures_this";
+}
 }
 
 void TextNodeDumper::VisitConceptDecl(const ConceptDecl *D) {

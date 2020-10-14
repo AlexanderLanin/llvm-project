@@ -18,10 +18,12 @@ namespace {
 AST_MATCHER(FunctionDecl, isFuchsiaOverloadedOperator) {
   if (const auto *CXXMethodNode = dyn_cast<CXXMethodDecl>(&Node)) {
     if (CXXMethodNode->isCopyAssignmentOperator() ||
-        CXXMethodNode->isMoveAssignmentOperator())
+        CXXMethodNode->isMoveAssignmentOperator()) {
       return false;
-    if (CXXMethodNode->getParent()->isLambda())
+}
+    if (CXXMethodNode->getParent()->isLambda()) {
       return false;
+}
   }
   return Node.isOverloadedOperator();
 }
@@ -37,8 +39,9 @@ void OverloadedOperatorCheck::check(const MatchFinder::MatchResult &Result) {
   assert(D && "No FunctionDecl captured!");
 
   SourceLocation Loc = D->getBeginLoc();
-  if (Loc.isValid())
+  if (Loc.isValid()) {
     diag(Loc, "overloading %0 is disallowed") << D;
+}
 }
 
 } // namespace fuchsia

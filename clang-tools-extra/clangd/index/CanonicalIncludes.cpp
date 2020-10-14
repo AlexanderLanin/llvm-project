@@ -34,16 +34,19 @@ CanonicalIncludes::mapHeader(llvm::StringRef Header,
   assert(!Header.empty());
   if (StdSymbolMapping) {
     auto SE = StdSymbolMapping->find(QualifiedName);
-    if (SE != StdSymbolMapping->end())
+    if (SE != StdSymbolMapping->end()) {
       return SE->second;
+}
   }
 
   auto MapIt = FullPathMapping.find(Header);
-  if (MapIt != FullPathMapping.end())
+  if (MapIt != FullPathMapping.end()) {
     return MapIt->second;
+}
 
-  if (!StdSuffixHeaderMapping)
+  if (!StdSuffixHeaderMapping) {
     return Header;
+}
 
   int Components = 1;
 
@@ -53,8 +56,9 @@ CanonicalIncludes::mapHeader(llvm::StringRef Header,
        It != End && Components <= MaxSuffixComponents; ++It, ++Components) {
     auto SubPath = Header.substr(It->data() - Header.begin());
     auto MappingIt = StdSuffixHeaderMapping->find(SubPath);
-    if (MappingIt != StdSuffixHeaderMapping->end())
+    if (MappingIt != StdSuffixHeaderMapping->end()) {
       return MappingIt->second;
+}
   }
   return Header;
 }
@@ -69,8 +73,9 @@ collectIWYUHeaderMaps(CanonicalIncludes *Includes) {
       llvm::StringRef Text =
           Lexer::getSourceText(CharSourceRange::getCharRange(Range),
                                PP.getSourceManager(), PP.getLangOpts());
-      if (!Text.consume_front(IWYUPragma))
+      if (!Text.consume_front(IWYUPragma)) {
         return false;
+}
       // FIXME(ioeric): resolve the header and store actual file path. For now,
       // we simply assume the written header is suitable to be #included.
       Includes->addMapping(PP.getSourceManager().getFilename(Range.getBegin()),
@@ -778,8 +783,9 @@ void CanonicalIncludes::addSystemHeadersMapping(const LangOptions &Language) {
 
   // FIXME: Suffix mapping contains invalid entries for C, so only enable it for
   // CPP.
-  if (Language.CPlusPlus)
+  if (Language.CPlusPlus) {
     StdSuffixHeaderMapping = SystemHeaderMap;
+}
 }
 
 } // namespace clangd

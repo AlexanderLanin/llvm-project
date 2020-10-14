@@ -64,8 +64,9 @@ MATCHER_P2(DeclAt, File, Range, "") {
 bool diagsContainErrors(const std::vector<Diag> &Diagnostics) {
   for (auto D : Diagnostics) {
     if (D.Severity == DiagnosticsEngine::Error ||
-        D.Severity == DiagnosticsEngine::Fatal)
+        D.Severity == DiagnosticsEngine::Fatal) {
       return true;
+}
   }
   return false;
 }
@@ -107,8 +108,9 @@ public:
   std::vector<std::pair<Path, bool>> filesWithDiags() const {
     std::vector<std::pair<Path, bool>> Result;
     std::lock_guard<std::mutex> Lock(Mutex);
-    for (const auto &It : LastDiagsHadError)
+    for (const auto &It : LastDiagsHadError) {
       Result.emplace_back(std::string(It.first()), It.second);
+}
     return Result;
   }
 
@@ -170,9 +172,10 @@ std::string parseSourceAndDumpAST(
   ErrorCheckingCallbacks DiagConsumer;
   MockCompilationDatabase CDB;
   ClangdServer Server(CDB, FS, ClangdServer::optsForTest(), &DiagConsumer);
-  for (const auto &FileWithContents : ExtraFiles)
+  for (const auto &FileWithContents : ExtraFiles) {
     FS.Files[testPath(FileWithContents.first)] =
         std::string(FileWithContents.second);
+}
 
   auto SourceFilename = testPath(SourceFileRelPath);
   Server.addDocument(SourceFilename, SourceContents);
@@ -693,10 +696,11 @@ int d;
       bool HadError = diagsContainErrors(Diagnostics);
 
       std::lock_guard<std::mutex> Lock(Mutex);
-      if (HadError)
+      if (HadError) {
         Stats[FileIndex].HitsWithErrors++;
-      else
+      } else {
         Stats[FileIndex].HitsWithoutErrors++;
+}
       Stats[FileIndex].HadErrorsInLastDiags = HadError;
     }
 
@@ -719,8 +723,9 @@ int d;
 
   std::vector<RequestStats> ReqStats;
   ReqStats.reserve(FilesCount);
-  for (unsigned FileIndex = 0; FileIndex < FilesCount; ++FileIndex)
+  for (unsigned FileIndex = 0; FileIndex < FilesCount; ++FileIndex) {
     ReqStats.emplace_back();
+}
 
   TestDiagConsumer DiagConsumer;
   {
@@ -742,10 +747,11 @@ int d;
     auto UpdateStatsOnAddDocument = [&](unsigned FileIndex, bool HadErrors) {
       auto &Stats = ReqStats[FileIndex];
 
-      if (HadErrors)
+      if (HadErrors) {
         ++Stats.RequestsWithErrors;
-      else
+      } else {
         ++Stats.RequestsWithoutErrors;
+}
       Stats.LastContentsHadErrors = HadErrors;
       Stats.FileIsRemoved = false;
     };
@@ -778,8 +784,9 @@ int d;
     auto RemoveDocumentRequest = [&]() {
       unsigned FileIndex = FileIndexDist(RandGen);
       // Make sure we don't violate the ClangdServer's contract.
-      if (ReqStats[FileIndex].FileIsRemoved)
+      if (ReqStats[FileIndex].FileIsRemoved) {
         AddDocument(FileIndex, /*SkipCache=*/false);
+}
 
       Server.removeDocument(FilePaths[FileIndex]);
       UpdateStatsOnRemoveDocument(FileIndex);
@@ -788,8 +795,9 @@ int d;
     auto CodeCompletionRequest = [&]() {
       unsigned FileIndex = FileIndexDist(RandGen);
       // Make sure we don't violate the ClangdServer's contract.
-      if (ReqStats[FileIndex].FileIsRemoved)
+      if (ReqStats[FileIndex].FileIsRemoved) {
         AddDocument(FileIndex, /*SkipCache=*/false);
+}
 
       Position Pos;
       Pos.line = LineDist(RandGen);
@@ -807,8 +815,9 @@ int d;
     auto LocateSymbolRequest = [&]() {
       unsigned FileIndex = FileIndexDist(RandGen);
       // Make sure we don't violate the ClangdServer's contract.
-      if (ReqStats[FileIndex].FileIsRemoved)
+      if (ReqStats[FileIndex].FileIsRemoved) {
         AddDocument(FileIndex, /*SkipCache=*/false);
+}
 
       Position Pos;
       Pos.line = LineDist(RandGen);

@@ -44,10 +44,12 @@ void IncludeInserter::registerPreprocessor(Preprocessor *PP) {
   SourceMgr = &PP->getSourceManager();
 
   // If this gets registered multiple times, clear the maps
-  if (!IncludeSorterByFile.empty())
+  if (!IncludeSorterByFile.empty()) {
     IncludeSorterByFile.clear();
-  if (!InsertedHeaders.empty())
+}
+  if (!InsertedHeaders.empty()) {
     InsertedHeaders.clear();
+}
   PP->addPPCallbacks(std::make_unique<IncludeInserterCallback>(this));
 }
 
@@ -69,12 +71,14 @@ IncludeSorter &IncludeInserter::getOrCreate(FileID FileID) {
 llvm::Optional<FixItHint>
 IncludeInserter::createIncludeInsertion(FileID FileID, llvm::StringRef Header) {
   bool IsAngled = Header.consume_front("<");
-  if (IsAngled != Header.consume_back(">"))
+  if (IsAngled != Header.consume_back(">")) {
     return llvm::None;
+}
   // We assume the same Header will never be included both angled and not
   // angled.
-  if (!InsertedHeaders[FileID].insert(Header).second)
+  if (!InsertedHeaders[FileID].insert(Header).second) {
     return llvm::None;
+}
 
   return getOrCreate(FileID).CreateIncludeInsertion(Header, IsAngled);
 }

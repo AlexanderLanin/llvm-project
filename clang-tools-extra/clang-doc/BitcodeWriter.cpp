@@ -32,8 +32,9 @@ using AbbrevDsc = void (*)(std::shared_ptr<llvm::BitCodeAbbrev> &Abbrev);
 
 static void AbbrevGen(std::shared_ptr<llvm::BitCodeAbbrev> &Abbrev,
                       const std::initializer_list<llvm::BitCodeAbbrevOp> Ops) {
-  for (const auto &Op : Ops)
+  for (const auto &Op : Ops) {
     Abbrev->Add(Op);
+}
 }
 
 static void BoolAbbrev(std::shared_ptr<llvm::BitCodeAbbrev> &Abbrev) {
@@ -121,8 +122,9 @@ static const llvm::IndexedMap<llvm::StringRef, BlockIdToIndexFunctor>
           {BI_COMMENT_BLOCK_ID, "CommentBlock"},
           {BI_REFERENCE_BLOCK_ID, "ReferenceBlock"}};
       assert(Inits.size() == BlockIdCount);
-      for (const auto &Init : Inits)
+      for (const auto &Init : Inits) {
         BlockIdNameMap[Init.first] = Init.second;
+}
       assert(BlockIdNameMap.size() == BlockIdCount);
       return BlockIdNameMap;
     }();
@@ -257,8 +259,9 @@ unsigned ClangDocBitcodeWriter::AbbreviationMap::get(RecordId RID) const {
 /// Emits the magic number header to check that its the right format,
 /// in this case, 'DOCS'.
 void ClangDocBitcodeWriter::emitHeader() {
-  for (char C : BitCodeConstants::Signature)
+  for (char C : BitCodeConstants::Signature) {
     Stream.Emit((unsigned)C, BitCodeConstants::SignatureBitSize);
+}
 }
 
 void ClangDocBitcodeWriter::emitVersionBlock() {
@@ -304,8 +307,9 @@ void ClangDocBitcodeWriter::emitRecord(const SymbolID &Sym, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &SymbolIDAbbrev &&
          "Abbrev type mismatch.");
-  if (!prepRecordData(ID, Sym != EmptySID))
+  if (!prepRecordData(ID, Sym != EmptySID)) {
     return;
+}
   assert(Sym.size() == 20);
   Record.push_back(Sym.size());
   Record.append(Sym.begin(), Sym.end());
@@ -316,8 +320,9 @@ void ClangDocBitcodeWriter::emitRecord(llvm::StringRef Str, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &StringAbbrev &&
          "Abbrev type mismatch.");
-  if (!prepRecordData(ID, !Str.empty()))
+  if (!prepRecordData(ID, !Str.empty())) {
     return;
+}
   assert(Str.size() < (1U << BitCodeConstants::StringLengthSize));
   Record.push_back(Str.size());
   Stream.EmitRecordWithBlob(Abbrevs.get(ID), Record, Str);
@@ -327,8 +332,9 @@ void ClangDocBitcodeWriter::emitRecord(const Location &Loc, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &LocationAbbrev &&
          "Abbrev type mismatch.");
-  if (!prepRecordData(ID, true))
+  if (!prepRecordData(ID, true)) {
     return;
+}
   // FIXME: Assert that the line number is of the appropriate size.
   Record.push_back(Loc.LineNumber);
   assert(Loc.Filename.size() < (1U << BitCodeConstants::StringLengthSize));
@@ -340,8 +346,9 @@ void ClangDocBitcodeWriter::emitRecord(const Location &Loc, RecordId ID) {
 void ClangDocBitcodeWriter::emitRecord(bool Val, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &BoolAbbrev && "Abbrev type mismatch.");
-  if (!prepRecordData(ID, Val))
+  if (!prepRecordData(ID, Val)) {
     return;
+}
   Record.push_back(Val);
   Stream.EmitRecordWithAbbrev(Abbrevs.get(ID), Record);
 }
@@ -349,8 +356,9 @@ void ClangDocBitcodeWriter::emitRecord(bool Val, RecordId ID) {
 void ClangDocBitcodeWriter::emitRecord(int Val, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &IntAbbrev && "Abbrev type mismatch.");
-  if (!prepRecordData(ID, Val))
+  if (!prepRecordData(ID, Val)) {
     return;
+}
   // FIXME: Assert that the integer is of the appropriate size.
   Record.push_back(Val);
   Stream.EmitRecordWithAbbrev(Abbrevs.get(ID), Record);
@@ -359,8 +367,9 @@ void ClangDocBitcodeWriter::emitRecord(int Val, RecordId ID) {
 void ClangDocBitcodeWriter::emitRecord(unsigned Val, RecordId ID) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
   assert(RecordIdNameMap[ID].Abbrev == &IntAbbrev && "Abbrev type mismatch.");
-  if (!prepRecordData(ID, Val))
+  if (!prepRecordData(ID, Val)) {
     return;
+}
   assert(Val < (1U << BitCodeConstants::IntSize));
   Record.push_back(Val);
   Stream.EmitRecordWithAbbrev(Abbrevs.get(ID), Record);
@@ -368,8 +377,9 @@ void ClangDocBitcodeWriter::emitRecord(unsigned Val, RecordId ID) {
 
 bool ClangDocBitcodeWriter::prepRecordData(RecordId ID, bool ShouldEmit) {
   assert(RecordIdNameMap[ID] && "Unknown RecordId.");
-  if (!ShouldEmit)
+  if (!ShouldEmit) {
     return false;
+}
   Record.clear();
   Record.push_back(ID);
   return true;
@@ -399,8 +409,9 @@ void ClangDocBitcodeWriter::emitBlockInfo(BlockId BID,
 // Block emission
 
 void ClangDocBitcodeWriter::emitBlock(const Reference &R, FieldId Field) {
-  if (R.USR == EmptySID && R.Name.empty())
+  if (R.USR == EmptySID && R.Name.empty()) {
     return;
+}
   StreamSubBlockGuard Block(Stream, BI_REFERENCE_BLOCK_ID);
   emitRecord(R.USR, REFERENCE_USR);
   emitRecord(R.Name, REFERENCE_NAME);
@@ -436,18 +447,23 @@ void ClangDocBitcodeWriter::emitBlock(const CommentInfo &I) {
            {I.Name, COMMENT_NAME},
            {I.Direction, COMMENT_DIRECTION},
            {I.ParamName, COMMENT_PARAMNAME},
-           {I.CloseName, COMMENT_CLOSENAME}})
+           {I.CloseName, COMMENT_CLOSENAME}}) {
     emitRecord(L.first, L.second);
+}
   emitRecord(I.SelfClosing, COMMENT_SELFCLOSING);
   emitRecord(I.Explicit, COMMENT_EXPLICIT);
-  for (const auto &A : I.AttrKeys)
+  for (const auto &A : I.AttrKeys) {
     emitRecord(A, COMMENT_ATTRKEY);
-  for (const auto &A : I.AttrValues)
+}
+  for (const auto &A : I.AttrValues) {
     emitRecord(A, COMMENT_ATTRVAL);
-  for (const auto &A : I.Args)
+}
+  for (const auto &A : I.Args) {
     emitRecord(A, COMMENT_ARG);
-  for (const auto &C : I.Children)
+}
+  for (const auto &C : I.Children) {
     emitBlock(*C);
+}
 }
 
 void ClangDocBitcodeWriter::emitBlock(const NamespaceInfo &I) {
@@ -455,35 +471,46 @@ void ClangDocBitcodeWriter::emitBlock(const NamespaceInfo &I) {
   emitRecord(I.USR, NAMESPACE_USR);
   emitRecord(I.Name, NAMESPACE_NAME);
   emitRecord(I.Path, NAMESPACE_PATH);
-  for (const auto &N : I.Namespace)
+  for (const auto &N : I.Namespace) {
     emitBlock(N, FieldId::F_namespace);
-  for (const auto &CI : I.Description)
+}
+  for (const auto &CI : I.Description) {
     emitBlock(CI);
-  for (const auto &C : I.ChildNamespaces)
+}
+  for (const auto &C : I.ChildNamespaces) {
     emitBlock(C, FieldId::F_child_namespace);
-  for (const auto &C : I.ChildRecords)
+}
+  for (const auto &C : I.ChildRecords) {
     emitBlock(C, FieldId::F_child_record);
-  for (const auto &C : I.ChildFunctions)
+}
+  for (const auto &C : I.ChildFunctions) {
     emitBlock(C);
-  for (const auto &C : I.ChildEnums)
+}
+  for (const auto &C : I.ChildEnums) {
     emitBlock(C);
+}
 }
 
 void ClangDocBitcodeWriter::emitBlock(const EnumInfo &I) {
   StreamSubBlockGuard Block(Stream, BI_ENUM_BLOCK_ID);
   emitRecord(I.USR, ENUM_USR);
   emitRecord(I.Name, ENUM_NAME);
-  for (const auto &N : I.Namespace)
+  for (const auto &N : I.Namespace) {
     emitBlock(N, FieldId::F_namespace);
-  for (const auto &CI : I.Description)
+}
+  for (const auto &CI : I.Description) {
     emitBlock(CI);
-  if (I.DefLoc)
+}
+  if (I.DefLoc) {
     emitRecord(I.DefLoc.getValue(), ENUM_DEFLOCATION);
-  for (const auto &L : I.Loc)
+}
+  for (const auto &L : I.Loc) {
     emitRecord(L, ENUM_LOCATION);
+}
   emitRecord(I.Scoped, ENUM_SCOPED);
-  for (const auto &N : I.Members)
+  for (const auto &N : I.Members) {
     emitRecord(N, ENUM_MEMBER);
+}
 }
 
 void ClangDocBitcodeWriter::emitBlock(const RecordInfo &I) {
@@ -491,30 +518,41 @@ void ClangDocBitcodeWriter::emitBlock(const RecordInfo &I) {
   emitRecord(I.USR, RECORD_USR);
   emitRecord(I.Name, RECORD_NAME);
   emitRecord(I.Path, RECORD_PATH);
-  for (const auto &N : I.Namespace)
+  for (const auto &N : I.Namespace) {
     emitBlock(N, FieldId::F_namespace);
-  for (const auto &CI : I.Description)
+}
+  for (const auto &CI : I.Description) {
     emitBlock(CI);
-  if (I.DefLoc)
+}
+  if (I.DefLoc) {
     emitRecord(I.DefLoc.getValue(), RECORD_DEFLOCATION);
-  for (const auto &L : I.Loc)
+}
+  for (const auto &L : I.Loc) {
     emitRecord(L, RECORD_LOCATION);
+}
   emitRecord(I.TagType, RECORD_TAG_TYPE);
   emitRecord(I.IsTypeDef, RECORD_IS_TYPE_DEF);
-  for (const auto &N : I.Members)
+  for (const auto &N : I.Members) {
     emitBlock(N);
-  for (const auto &P : I.Parents)
+}
+  for (const auto &P : I.Parents) {
     emitBlock(P, FieldId::F_parent);
-  for (const auto &P : I.VirtualParents)
+}
+  for (const auto &P : I.VirtualParents) {
     emitBlock(P, FieldId::F_vparent);
-  for (const auto &PB : I.Bases)
+}
+  for (const auto &PB : I.Bases) {
     emitBlock(PB);
-  for (const auto &C : I.ChildRecords)
+}
+  for (const auto &C : I.ChildRecords) {
     emitBlock(C, FieldId::F_child_record);
-  for (const auto &C : I.ChildFunctions)
+}
+  for (const auto &C : I.ChildFunctions) {
     emitBlock(C);
-  for (const auto &C : I.ChildEnums)
+}
+  for (const auto &C : I.ChildEnums) {
     emitBlock(C);
+}
 }
 
 void ClangDocBitcodeWriter::emitBlock(const BaseRecordInfo &I) {
@@ -526,30 +564,37 @@ void ClangDocBitcodeWriter::emitBlock(const BaseRecordInfo &I) {
   emitRecord(I.IsVirtual, BASE_RECORD_IS_VIRTUAL);
   emitRecord(I.Access, BASE_RECORD_ACCESS);
   emitRecord(I.IsParent, BASE_RECORD_IS_PARENT);
-  for (const auto &M : I.Members)
+  for (const auto &M : I.Members) {
     emitBlock(M);
-  for (const auto &C : I.ChildFunctions)
+}
+  for (const auto &C : I.ChildFunctions) {
     emitBlock(C);
+}
 }
 
 void ClangDocBitcodeWriter::emitBlock(const FunctionInfo &I) {
   StreamSubBlockGuard Block(Stream, BI_FUNCTION_BLOCK_ID);
   emitRecord(I.USR, FUNCTION_USR);
   emitRecord(I.Name, FUNCTION_NAME);
-  for (const auto &N : I.Namespace)
+  for (const auto &N : I.Namespace) {
     emitBlock(N, FieldId::F_namespace);
-  for (const auto &CI : I.Description)
+}
+  for (const auto &CI : I.Description) {
     emitBlock(CI);
+}
   emitRecord(I.Access, FUNCTION_ACCESS);
   emitRecord(I.IsMethod, FUNCTION_IS_METHOD);
-  if (I.DefLoc)
+  if (I.DefLoc) {
     emitRecord(I.DefLoc.getValue(), FUNCTION_DEFLOCATION);
-  for (const auto &L : I.Loc)
+}
+  for (const auto &L : I.Loc) {
     emitRecord(L, FUNCTION_LOCATION);
+}
   emitBlock(I.Parent, FieldId::F_parent);
   emitBlock(I.ReturnType);
-  for (const auto &N : I.Params)
+  for (const auto &N : I.Params) {
     emitBlock(N);
+}
 }
 
 bool ClangDocBitcodeWriter::dispatchInfoForWrite(Info *I) {

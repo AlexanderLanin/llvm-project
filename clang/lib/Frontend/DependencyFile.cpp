@@ -40,16 +40,18 @@ struct DepCollectorPPCallbacks : public PPCallbacks {
   void FileChanged(SourceLocation Loc, FileChangeReason Reason,
                    SrcMgr::CharacteristicKind FileType,
                    FileID PrevFID) override {
-    if (Reason != PPCallbacks::EnterFile)
+    if (Reason != PPCallbacks::EnterFile) {
       return;
+}
 
     // Dependency generation really does want to go all the way to the
     // file entry for a source location to find out what is depended on.
     // We do not want #line markers to affect dependency generation!
     Optional<FileEntryRef> File =
         SM.getFileEntryRefForID(SM.getFileID(SM.getExpansionLoc(Loc)));
-    if (!File)
+    if (!File) {
       return;
+}
 
     StringRef Filename =
         llvm::sys::path::remove_leading_dotslash(File->getName());
@@ -75,18 +77,20 @@ struct DepCollectorPPCallbacks : public PPCallbacks {
                           StringRef SearchPath, StringRef RelativePath,
                           const Module *Imported,
                           SrcMgr::CharacteristicKind FileType) override {
-    if (!File)
+    if (!File) {
       DepCollector.maybeAddDependency(FileName, /*FromModule*/false,
                                      /*IsSystem*/false, /*IsModuleFile*/false,
                                      /*IsMissing*/true);
+}
     // Files that actually exist are handled by FileChanged.
   }
 
   void HasInclude(SourceLocation Loc, StringRef SpelledFilename, bool IsAngled,
                   Optional<FileEntryRef> File,
                   SrcMgr::CharacteristicKind FileType) override {
-    if (!File)
+    if (!File) {
       return;
+}
     StringRef Filename =
         llvm::sys::path::remove_leading_dotslash(File->getName());
     DepCollector.maybeAddDependency(Filename, /*FromModule=*/false,
@@ -127,8 +131,9 @@ struct DepCollectorASTListener : public ASTReaderListener {
   }
   bool visitInputFile(StringRef Filename, bool IsSystem,
                       bool IsOverridden, bool IsExplicitModule) override {
-    if (IsOverridden || IsExplicitModule)
+    if (IsOverridden || IsExplicitModule) {
       return true;
+}
 
     DepCollector.maybeAddDependency(Filename, /*FromModule*/true, IsSystem,
                                    /*IsModuleFile*/false, /*IsMissing*/false);
@@ -141,8 +146,9 @@ void DependencyCollector::maybeAddDependency(StringRef Filename,
                                              bool FromModule, bool IsSystem,
                                              bool IsModuleFile,
                                              bool IsMissing) {
-  if (sawDependency(Filename, FromModule, IsSystem, IsModuleFile, IsMissing))
+  if (sawDependency(Filename, FromModule, IsSystem, IsModuleFile, IsMissing)) {
     addDependency(Filename);
+}
 }
 
 bool DependencyCollector::addDependency(StringRef Filename) {
@@ -187,15 +193,17 @@ DependencyFileGenerator::DependencyFileGenerator(
       IncludeModuleFiles(Opts.IncludeModuleFiles),
       OutputFormat(Opts.OutputFormat), InputFileIndex(0) {
   for (const auto &ExtraDep : Opts.ExtraDeps) {
-    if (addDependency(ExtraDep))
+    if (addDependency(ExtraDep)) {
       ++InputFileIndex;
+}
   }
 }
 
 void DependencyFileGenerator::attachToPreprocessor(Preprocessor &PP) {
   // Disable the "file not found" diagnostic if the -MG option was given.
-  if (AddMissingHeaderDeps)
+  if (AddMissingHeaderDeps) {
     PP.SetSuppressIncludeNotFoundError(true);
+}
 
   DependencyCollector::attachToPreprocessor(PP);
 }
@@ -205,19 +213,23 @@ bool DependencyFileGenerator::sawDependency(StringRef Filename, bool FromModule,
                                             bool IsMissing) {
   if (IsMissing) {
     // Handle the case of missing file from an inclusion directive.
-    if (AddMissingHeaderDeps)
+    if (AddMissingHeaderDeps) {
       return true;
+}
     SeenMissingHeader = true;
     return false;
   }
-  if (IsModuleFile && !IncludeModuleFiles)
+  if (IsModuleFile && !IncludeModuleFiles) {
     return false;
+}
 
-  if (isSpecialFilename(Filename))
+  if (isSpecialFilename(Filename)) {
     return false;
+}
 
-  if (IncludeSystemHeaders)
+  if (IncludeSystemHeaders) {
     return true;
+}
 
   return !IsSystem;
 }
@@ -284,23 +296,26 @@ static void PrintFilename(raw_ostream &OS, StringRef Filename,
     // Add quotes if needed. These are the characters listed as "special" to
     // NMake, that are legal in a Windows filespec, and that could cause
     // misinterpretation of the dependency string.
-    if (NativePath.find_first_of(" #${}^!") != StringRef::npos)
+    if (NativePath.find_first_of(" #${}^!") != StringRef::npos) {
       OS << '\"' << NativePath << '\"';
-    else
+    } else {
       OS << NativePath;
+}
     return;
   }
   assert(OutputFormat == DependencyOutputFormat::Make);
   for (unsigned i = 0, e = NativePath.size(); i != e; ++i) {
-    if (NativePath[i] == '#') // Handle '#' the broken gcc way.
+    if (NativePath[i] == '#') { // Handle '#' the broken gcc way.
       OS << '\\';
-    else if (NativePath[i] == ' ') { // Handle space correctly.
+    } else if (NativePath[i] == ' ') { // Handle space correctly.
       OS << '\\';
       unsigned j = i;
-      while (j > 0 && NativePath[--j] == '\\')
+      while (j > 0 && NativePath[--j] == '\\') {
         OS << '\\';
-    } else if (NativePath[i] == '$') // $ is escaped by $$.
+}
+    } else if (NativePath[i] == '$') { // $ is escaped by $$.
       OS << '$';
+}
     OS << NativePath[i];
   }
 }
@@ -369,8 +384,9 @@ void DependencyFileGenerator::outputDependencyFile(llvm::raw_ostream &OS) {
   if (PhonyTarget && !Files.empty()) {
     unsigned Index = 0;
     for (auto I = Files.begin(), E = Files.end(); I != E; ++I) {
-      if (Index++ == InputFileIndex)
+      if (Index++ == InputFileIndex) {
         continue;
+}
       OS << '\n';
       PrintFilename(OS, *I, OutputFormat);
       OS << ":\n";

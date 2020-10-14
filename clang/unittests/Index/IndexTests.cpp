@@ -78,8 +78,9 @@ public:
                             ArrayRef<SymbolRelation>, SourceLocation Loc,
                             ASTNodeInfo) override {
     const auto *ND = llvm::dyn_cast<NamedDecl>(D);
-    if (!ND)
+    if (!ND) {
       return true;
+}
     TestSymbol S;
     S.SymInfo = getSymbolInfo(D);
     S.QName = ND->getQualifiedNameAsString();

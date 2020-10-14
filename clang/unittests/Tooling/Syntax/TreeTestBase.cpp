@@ -37,8 +37,9 @@ using namespace clang::syntax;
 namespace {
 ArrayRef<syntax::Token> tokens(syntax::Node *N) {
   assert(N->isOriginal() && "tokens of modified nodes are not well-defined");
-  if (auto *L = dyn_cast<syntax::Leaf>(N))
+  if (auto *L = dyn_cast<syntax::Leaf>(N)) {
     return llvm::makeArrayRef(L->getToken(), 1);
+}
   auto *T = cast<syntax::Tree>(N);
   return llvm::makeArrayRef(T->findFirstLeaf()->getToken(),
                             T->findLastLeaf()->getToken() + 1);
@@ -116,8 +117,9 @@ SyntaxTreeTest::buildTree(StringRef Code, const TestClangConfig &ClangConfig) {
   constexpr const char *FileName = "./input.cpp";
   FS->addFile(FileName, time_t(), llvm::MemoryBuffer::getMemBufferCopy(""));
 
-  if (!Diags->getClient())
+  if (!Diags->getClient()) {
     Diags->setClient(new TextDiagnosticPrinter(llvm::errs(), DiagOpts.get()));
+}
   Diags->setSeverityForGroup(diag::Flavor::WarningOrError, "unused-value",
                              diag::Severity::Ignored, SourceLocation());
 
@@ -164,15 +166,18 @@ syntax::Node *SyntaxTreeTest::nodeByRange(llvm::Annotations::Range R,
 
   if (Toks.front().location().isFileID() && Toks.back().location().isFileID() &&
       syntax::Token::range(*SourceMgr, Toks.front(), Toks.back()) ==
-          syntax::FileRange(SourceMgr->getMainFileID(), R.Begin, R.End))
+          syntax::FileRange(SourceMgr->getMainFileID(), R.Begin, R.End)) {
     return Root;
+}
 
   auto *T = dyn_cast<syntax::Tree>(Root);
-  if (!T)
+  if (!T) {
     return nullptr;
+}
   for (auto *C = T->getFirstChild(); C != nullptr; C = C->getNextSibling()) {
-    if (auto *Result = nodeByRange(R, C))
+    if (auto *Result = nodeByRange(R, C)) {
       return Result;
+}
   }
   return nullptr;
 }

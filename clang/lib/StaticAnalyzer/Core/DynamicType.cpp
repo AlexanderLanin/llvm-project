@@ -45,12 +45,14 @@ DynamicTypeInfo getDynamicTypeInfo(ProgramStateRef State, const MemRegion *MR) {
   MR = MR->StripCasts();
 
   // Look up the dynamic type in the GDM.
-  if (const DynamicTypeInfo *DTI = State->get<DynamicTypeMap>(MR))
+  if (const DynamicTypeInfo *DTI = State->get<DynamicTypeMap>(MR)) {
     return *DTI;
+}
 
   // Otherwise, fall back to what we know about the region.
-  if (const auto *TR = dyn_cast<TypedRegion>(MR))
+  if (const auto *TR = dyn_cast<TypedRegion>(MR)) {
     return DynamicTypeInfo(TR->getLocationType(), /*CanBeSub=*/false);
+}
 
   if (const auto *SR = dyn_cast<SymbolicRegion>(MR)) {
     SymbolRef Sym = SR->getSymbol();
@@ -67,8 +69,9 @@ const DynamicTypeInfo *getRawDynamicTypeInfo(ProgramStateRef State,
 
 static void unbox(QualType &Ty) {
   // FIXME: Why are we being fed references to pointers in the first place?
-  while (Ty->isReferenceType() || Ty->isPointerType())
+  while (Ty->isReferenceType() || Ty->isPointerType()) {
     Ty = Ty->getPointeeType();
+}
   Ty = Ty.getCanonicalType().getUnqualifiedType();
 }
 
@@ -77,15 +80,18 @@ const DynamicCastInfo *getDynamicCastInfo(ProgramStateRef State,
                                           QualType CastFromTy,
                                           QualType CastToTy) {
   const auto *Lookup = State->get<DynamicCastMap>().lookup(MR);
-  if (!Lookup)
+  if (!Lookup) {
     return nullptr;
+}
 
   unbox(CastFromTy);
   unbox(CastToTy);
 
-  for (const DynamicCastInfo &Cast : *Lookup)
-    if (Cast.equals(CastFromTy, CastToTy))
+  for (const DynamicCastInfo &Cast : *Lookup) {
+    if (Cast.equals(CastFromTy, CastToTy)) {
       return &Cast;
+}
+}
 
   return nullptr;
 }
@@ -113,8 +119,9 @@ ProgramStateRef setDynamicTypeAndCastInfo(ProgramStateRef State,
                                           QualType CastFromTy,
                                           QualType CastToTy,
                                           bool CastSucceeds) {
-  if (!MR)
+  if (!MR) {
     return State;
+}
 
   if (CastSucceeds) {
     assert((CastToTy->isAnyPointerType() || CastToTy->isReferenceType()) &&
@@ -165,9 +172,11 @@ template <typename MapTy>
 static ProgramStateRef removeDeadImpl(ProgramStateRef State, SymbolReaper &SR) {
   const auto &Map = State->get<MapTy>();
 
-  for (const auto &Elem : Map)
-    if (!isLive(SR, Elem.first))
+  for (const auto &Elem : Map) {
+    if (!isLive(SR, Elem.first)) {
       State = State->remove<MapTy>(Elem.first);
+}
+}
 
   return State;
 }
@@ -206,8 +215,9 @@ static raw_ostream &printJson(const DynamicTypeInfo &DTI, raw_ostream &Out,
     Out << "null";
   } else {
     QualType ToPrint = DTI.getType();
-    if (ToPrint->isAnyPointerType())
+    if (ToPrint->isAnyPointerType()) {
       ToPrint = ToPrint->getPointeeType();
+}
 
     Out << '\"' << ToPrint.getAsString() << "\", \"sub_classable\": "
         << (DTI.canBeASubClass() ? "true" : "false");
@@ -245,8 +255,9 @@ static raw_ostream &printJsonContainer(const ContainerTy &Container,
     Indent(Out, Space, IsDot) << "{ ";
     printJson(Element, Out, NL, Space, IsDot) << " }";
 
-    if (std::next(I) != Container.end())
+    if (std::next(I) != Container.end()) {
       Out << ',';
+}
     Out << NL;
   }
 
@@ -265,8 +276,9 @@ static void printJsonImpl(raw_ostream &Out, ProgramStateRef State,
                           const char *Name, const char *NL, unsigned int Space,
                           bool IsDot, bool PrintEvenIfEmpty = true) {
   const auto &Map = State->get<MapTy>();
-  if (Map.isEmpty() && !PrintEvenIfEmpty)
+  if (Map.isEmpty() && !PrintEvenIfEmpty) {
     return;
+}
 
   Indent(Out, Space, IsDot) << "\"" << Name << "\": ";
   printJsonContainer(Map, Out, NL, Space, IsDot) << "," << NL;

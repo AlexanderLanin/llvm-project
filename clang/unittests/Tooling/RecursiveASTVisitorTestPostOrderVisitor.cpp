@@ -61,8 +61,9 @@ public:
   }
 
   bool VisitCXXRecordDecl(CXXRecordDecl *D) {
-    if (!D->isImplicit())
+    if (!D->isImplicit()) {
       VisitedNodes.push_back(D->getQualifiedNameAsString());
+}
     return true;
   }
 

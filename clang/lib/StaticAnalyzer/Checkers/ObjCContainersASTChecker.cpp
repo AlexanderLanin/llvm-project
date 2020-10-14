@@ -33,10 +33,12 @@ class WalkAST : public StmtVisitor<WalkAST> {
 
   /// Check if the type has pointer size (very conservative).
   inline bool isPointerSize(const Type *T) {
-    if (!T)
+    if (!T) {
       return true;
-    if (T->isIncompleteType())
+}
+    if (T->isIncompleteType()) {
       return true;
+}
     return (ASTC.getTypeSize(T) == PtrWidth);
   }
 
@@ -51,16 +53,19 @@ class WalkAST : public StmtVisitor<WalkAST> {
       // If the type is a pointer to an array, check the size of the array
       // elements. To avoid false positives coming from assumption that the
       // values x and &x are equal when x is an array.
-      if (const Type *TElem = PointeeT->getArrayElementTypeNoTypeQual())
-        if (isPointerSize(TElem))
+      if (const Type *TElem = PointeeT->getArrayElementTypeNoTypeQual()) {
+        if (isPointerSize(TElem)) {
           return true;
+}
+}
 
       // Else, check the pointee size.
       return isPointerSize(PointeeT.getTypePtr());
     }
 
-    if (const Type *TElem = TP->getArrayElementTypeNoTypeQual())
+    if (const Type *TElem = TP->getArrayElementTypeNoTypeQual()) {
       return isPointerSize(TElem);
+}
 
     // The type must be an array/pointer type.
 
@@ -83,34 +88,40 @@ public:
 
 static StringRef getCalleeName(CallExpr *CE) {
   const FunctionDecl *FD = CE->getDirectCallee();
-  if (!FD)
+  if (!FD) {
     return StringRef();
+}
 
   IdentifierInfo *II = FD->getIdentifier();
-  if (!II)   // if no identifier, not a simple C function
+  if (!II) {   // if no identifier, not a simple C function
     return StringRef();
+}
 
   return II->getName();
 }
 
 void WalkAST::VisitCallExpr(CallExpr *CE) {
   StringRef Name = getCalleeName(CE);
-  if (Name.empty())
+  if (Name.empty()) {
     return;
+}
 
   const Expr *Arg = nullptr;
   unsigned ArgNum;
 
   if (Name.equals("CFArrayCreate") || Name.equals("CFSetCreate")) {
-    if (CE->getNumArgs() != 4)
+    if (CE->getNumArgs() != 4) {
       return;
+}
     ArgNum = 1;
     Arg = CE->getArg(ArgNum)->IgnoreParenCasts();
-    if (hasPointerToPointerSizedType(Arg))
+    if (hasPointerToPointerSizedType(Arg)) {
         return;
+}
   } else if (Name.equals("CFDictionaryCreate")) {
-    if (CE->getNumArgs() != 6)
+    if (CE->getNumArgs() != 6) {
       return;
+}
     // Check first argument.
     ArgNum = 1;
     Arg = CE->getArg(ArgNum)->IgnoreParenCasts();
@@ -118,9 +129,10 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
       // Check second argument.
       ArgNum = 2;
       Arg = CE->getArg(ArgNum)->IgnoreParenCasts();
-      if (hasPointerToPointerSizedType(Arg))
+      if (hasPointerToPointerSizedType(Arg)) {
         // Both are good, return.
         return;
+}
     }
   }
 
@@ -151,9 +163,11 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
 }
 
 void WalkAST::VisitChildren(Stmt *S) {
-  for (Stmt *Child : S->children())
-    if (Child)
+  for (Stmt *Child : S->children()) {
+    if (Child) {
       Visit(Child);
+}
+}
 }
 
 namespace {

@@ -196,9 +196,10 @@ public:
             .Case("All", AK_All)
             .Default(AK_Invalid);
 
-    if (Aggressiveness == AK_Invalid)
+    if (Aggressiveness == AK_Invalid) {
       Mgr.reportInvalidCheckerOptionValue(this, "WarnOn",
           "either \"KnownsOnly\", \"KnownsAndLocals\" or \"All\" string value");
+}
   };
 
 private:
@@ -243,11 +244,13 @@ bool isMovedFrom(ProgramStateRef State, const MemRegion *Region) {
 // If a region is removed all of the subregions needs to be removed too.
 static ProgramStateRef removeFromState(ProgramStateRef State,
                                        const MemRegion *Region) {
-  if (!Region)
+  if (!Region) {
     return State;
+}
   for (auto &E : State->get<TrackedRegionMap>()) {
-    if (E.first->isSubRegionOf(Region))
+    if (E.first->isSubRegionOf(Region)) {
       State = State->remove<TrackedRegionMap>(E.first);
+}
   }
   return State;
 }
@@ -255,8 +258,9 @@ static ProgramStateRef removeFromState(ProgramStateRef State,
 static bool isAnyBaseRegionReported(ProgramStateRef State,
                                     const MemRegion *Region) {
   for (auto &E : State->get<TrackedRegionMap>()) {
-    if (Region->isSubRegionOf(E.first) && E.second.isReported())
+    if (Region->isSubRegionOf(E.first) && E.second.isReported()) {
       return true;
+}
   }
   return false;
 }
@@ -264,9 +268,11 @@ static bool isAnyBaseRegionReported(ProgramStateRef State,
 static const MemRegion *unwrapRValueReferenceIndirection(const MemRegion *MR) {
   if (const auto *SR = dyn_cast_or_null<SymbolicRegion>(MR)) {
     SymbolRef Sym = SR->getSymbol();
-    if (Sym->getType()->isRValueReferenceType())
-      if (const MemRegion *OriginMR = Sym->getOriginRegion())
+    if (Sym->getType()->isRValueReferenceType()) {
+      if (const MemRegion *OriginMR = Sym->getOriginRegion()) {
         return OriginMR;
+}
+}
   }
   return MR;
 }
@@ -277,22 +283,26 @@ MoveChecker::MovedBugVisitor::VisitNode(const ExplodedNode *N,
                                         PathSensitiveBugReport &BR) {
   // We need only the last move of the reported object's region.
   // The visitor walks the ExplodedGraph backwards.
-  if (Found)
+  if (Found) {
     return nullptr;
+}
   ProgramStateRef State = N->getState();
   ProgramStateRef StatePrev = N->getFirstPred()->getState();
   const RegionState *TrackedObject = State->get<TrackedRegionMap>(Region);
   const RegionState *TrackedObjectPrev =
       StatePrev->get<TrackedRegionMap>(Region);
-  if (!TrackedObject)
+  if (!TrackedObject) {
     return nullptr;
-  if (TrackedObjectPrev && TrackedObject)
+}
+  if (TrackedObjectPrev && TrackedObject) {
     return nullptr;
+}
 
   // Retrieve the associated statement.
   const Stmt *S = N->getStmtForDiagnostics();
-  if (!S)
+  if (!S) {
     return nullptr;
+}
   Found = true;
 
   SmallString<128> Str;
@@ -339,8 +349,9 @@ const ExplodedNode *MoveChecker::getMoveLocation(const ExplodedNode *N,
 
   while (N) {
     ProgramStateRef State = N->getState();
-    if (!State->get<TrackedRegionMap>(Region))
+    if (!State->get<TrackedRegionMap>(Region)) {
       break;
+}
     MoveNode = N;
     N = N->pred_empty() ? nullptr : *(N->pred_begin());
   }
@@ -356,8 +367,9 @@ void MoveChecker::modelUse(ProgramStateRef State, const MemRegion *Region,
 
   // Just in case: if it's not a smart pointer but it does have operator *,
   // we shouldn't call the bug a dereference.
-  if (MK == MK_Dereference && OK.StdKind != SK_SmartPtr)
+  if (MK == MK_Dereference && OK.StdKind != SK_SmartPtr) {
     MK = MK_FunCall;
+}
 
   if (!RS || !shouldWarnAbout(OK, MK)
           || isInMoveSafeContext(C.getLocationContext())) {
@@ -381,8 +393,9 @@ void MoveChecker::modelUse(ProgramStateRef State, const MemRegion *Region,
   ExplodedNode *N = reportBug(Region, RD, C, MK);
 
   // If the program has already crashed on this path, don't bother.
-  if (N->isSink())
+  if (N->isSink()) {
     return;
+}
 
   State = State->set<TrackedRegionMap>(Region, RegionState::getReported());
   C.addTransition(State, N);
@@ -394,17 +407,19 @@ ExplodedNode *MoveChecker::reportBug(const MemRegion *Region,
   if (ExplodedNode *N = misuseCausesCrash(MK) ? C.generateErrorNode()
                                               : C.generateNonFatalErrorNode()) {
 
-    if (!BT)
+    if (!BT) {
       BT.reset(new BugType(this, "Use-after-move",
                            "C++ move semantics"));
+}
 
     // Uniqueing report to the same object.
     PathDiagnosticLocation LocUsedForUniqueing;
     const ExplodedNode *MoveNode = getMoveLocation(N, Region, C);
 
-    if (const Stmt *MoveStmt = MoveNode->getStmtForDiagnostics())
+    if (const Stmt *MoveStmt = MoveNode->getStmtForDiagnostics()) {
       LocUsedForUniqueing = PathDiagnosticLocation::createBegin(
           MoveStmt, C.getSourceManager(), MoveNode->getLocationContext());
+}
 
     // Creating the error message.
     llvm::SmallString<128> Str;
@@ -443,46 +458,56 @@ ExplodedNode *MoveChecker::reportBug(const MemRegion *Region,
 void MoveChecker::checkPostCall(const CallEvent &Call,
                                 CheckerContext &C) const {
   const auto *AFC = dyn_cast<AnyFunctionCall>(&Call);
-  if (!AFC)
+  if (!AFC) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   const auto MethodDecl = dyn_cast_or_null<CXXMethodDecl>(AFC->getDecl());
-  if (!MethodDecl)
+  if (!MethodDecl) {
     return;
+}
 
   // Check if an object became moved-from.
   // Object can become moved from after a call to move assignment operator or
   // move constructor .
   const auto *ConstructorDecl = dyn_cast<CXXConstructorDecl>(MethodDecl);
-  if (ConstructorDecl && !ConstructorDecl->isMoveConstructor())
+  if (ConstructorDecl && !ConstructorDecl->isMoveConstructor()) {
     return;
+}
 
-  if (!ConstructorDecl && !MethodDecl->isMoveAssignmentOperator())
+  if (!ConstructorDecl && !MethodDecl->isMoveAssignmentOperator()) {
     return;
+}
 
   const auto ArgRegion = AFC->getArgSVal(0).getAsRegion();
-  if (!ArgRegion)
+  if (!ArgRegion) {
     return;
+}
 
   // Skip moving the object to itself.
   const auto *CC = dyn_cast_or_null<CXXConstructorCall>(&Call);
-  if (CC && CC->getCXXThisVal().getAsRegion() == ArgRegion)
+  if (CC && CC->getCXXThisVal().getAsRegion() == ArgRegion) {
     return;
+}
 
-  if (const auto *IC = dyn_cast<CXXInstanceCall>(AFC))
-    if (IC->getCXXThisVal().getAsRegion() == ArgRegion)
+  if (const auto *IC = dyn_cast<CXXInstanceCall>(AFC)) {
+    if (IC->getCXXThisVal().getAsRegion() == ArgRegion) {
       return;
+}
+}
 
   const MemRegion *BaseRegion = ArgRegion->getBaseRegion();
   // Skip temp objects because of their short lifetime.
   if (BaseRegion->getAs<CXXTempObjectRegion>() ||
-      AFC->getArgExpr(0)->isRValue())
+      AFC->getArgExpr(0)->isRValue()) {
     return;
+}
   // If it has already been reported do not need to modify the state.
 
-  if (State->get<TrackedRegionMap>(ArgRegion))
+  if (State->get<TrackedRegionMap>(ArgRegion)) {
     return;
+}
 
   const CXXRecordDecl *RD = MethodDecl->getParent();
   ObjectKind OK = classifyObject(ArgRegion, RD);
@@ -500,10 +525,12 @@ bool MoveChecker::isMoveSafeMethod(const CXXMethodDecl *MethodDec) const {
   if (const auto *ConversionDec =
           dyn_cast_or_null<CXXConversionDecl>(MethodDec)) {
     const Type *Tp = ConversionDec->getConversionType().getTypePtrOrNull();
-    if (!Tp)
+    if (!Tp) {
       return false;
-    if (Tp->isBooleanType() || Tp->isVoidType() || Tp->isVoidPointerType())
+}
+    if (Tp->isBooleanType() || Tp->isVoidType() || Tp->isVoidPointerType()) {
       return true;
+}
   }
   // Function call `empty` can be skipped.
   return (MethodDec && MethodDec->getDeclName().isIdentifier() &&
@@ -512,18 +539,21 @@ bool MoveChecker::isMoveSafeMethod(const CXXMethodDecl *MethodDec) const {
 }
 
 bool MoveChecker::isStateResetMethod(const CXXMethodDecl *MethodDec) const {
-  if (!MethodDec)
+  if (!MethodDec) {
       return false;
-  if (MethodDec->hasAttr<ReinitializesAttr>())
+}
+  if (MethodDec->hasAttr<ReinitializesAttr>()) {
       return true;
+}
   if (MethodDec->getDeclName().isIdentifier()) {
     std::string MethodName = MethodDec->getName().lower();
     // TODO: Some of these methods (eg., resize) are not always resetting
     // the state, so we should consider looking at the arguments.
     if (MethodName == "assign" || MethodName == "clear" ||
         MethodName == "destroy" || MethodName == "reset" ||
-        MethodName == "resize" || MethodName == "shrink")
+        MethodName == "resize" || MethodName == "shrink") {
       return true;
+}
   }
   return false;
 }
@@ -539,8 +569,9 @@ bool MoveChecker::isInMoveSafeContext(const LocationContext *LC) const {
     if (DtorDec || (CtorDec && CtorDec->isCopyOrMoveConstructor()) ||
         (MethodDec && MethodDec->isOverloadedOperator() &&
          MethodDec->getOverloadedOperator() == OO_Equal) ||
-        isStateResetMethod(MethodDec) || isMoveSafeMethod(MethodDec))
+        isStateResetMethod(MethodDec) || isMoveSafeMethod(MethodDec)) {
       return true;
+}
   } while ((LC = LC->getParent()));
   return false;
 }
@@ -561,14 +592,17 @@ MoveChecker::classifyObject(const MemRegion *MR,
   bool IsLocal =
       MR && isa<VarRegion>(MR) && isa<StackSpaceRegion>(MR->getMemorySpace());
 
-  if (!RD || !RD->getDeclContext()->isStdNamespace())
+  if (!RD || !RD->getDeclContext()->isStdNamespace()) {
     return { IsLocal, SK_NonStd };
+}
 
-  if (belongsTo(RD, StdSmartPtrClasses))
+  if (belongsTo(RD, StdSmartPtrClasses)) {
     return { IsLocal, SK_SmartPtr };
+}
 
-  if (belongsTo(RD, StdSafeClasses))
+  if (belongsTo(RD, StdSafeClasses)) {
     return { IsLocal, SK_Safe };
+}
 
   return { IsLocal, SK_Unsafe };
 }
@@ -589,8 +623,9 @@ void MoveChecker::explainObject(llvm::raw_ostream &OS, const MemRegion *MR,
     case SK_Safe:
       break;
     case SK_SmartPtr:
-      if (MK != MK_Dereference)
+      if (MK != MK_Dereference) {
         break;
+}
 
       // We only care about the type if it's a dereference.
       LLVM_FALLTHROUGH;
@@ -621,21 +656,25 @@ void MoveChecker::checkPreCall(const CallEvent &Call, CheckerContext &C) const {
   }
 
   const auto IC = dyn_cast<CXXInstanceCall>(&Call);
-  if (!IC)
+  if (!IC) {
     return;
+}
 
   // Calling a destructor on a moved object is fine.
-  if (isa<CXXDestructorCall>(IC))
+  if (isa<CXXDestructorCall>(IC)) {
     return;
+}
 
   const MemRegion *ThisRegion = IC->getCXXThisVal().getAsRegion();
-  if (!ThisRegion)
+  if (!ThisRegion) {
     return;
+}
 
   // The remaining part is check only for method call on a moved-from object.
   const auto MethodDecl = dyn_cast_or_null<CXXMethodDecl>(IC->getDecl());
-  if (!MethodDecl)
+  if (!MethodDecl) {
     return;
+}
 
   // We want to investigate the whole object, not only sub-object of a parent
   // class in which the encountered method defined.
@@ -647,8 +686,9 @@ void MoveChecker::checkPreCall(const CallEvent &Call, CheckerContext &C) const {
     return;
   }
 
-  if (isMoveSafeMethod(MethodDecl))
+  if (isMoveSafeMethod(MethodDecl)) {
     return;
+}
 
   // Store class declaration as well, for bug reporting purposes.
   const CXXRecordDecl *RD = MethodDecl->getParent();
@@ -710,8 +750,9 @@ ProgramStateRef MoveChecker::checkRegionChanges(
     // In case of an InstanceCall don't invalidate the this-region since
     // it is fully handled in checkPreCall and checkPostCall.
     const MemRegion *ThisRegion = nullptr;
-    if (const auto *IC = dyn_cast<CXXInstanceCall>(Call))
+    if (const auto *IC = dyn_cast<CXXInstanceCall>(Call)) {
       ThisRegion = IC->getCXXThisVal().getAsRegion();
+}
 
     // Requested ("explicit") regions are the regions passed into the call
     // directly, but not all of them end up being invalidated.
@@ -727,8 +768,9 @@ ProgramStateRef MoveChecker::checkRegionChanges(
   } else {
     // For invalidations that aren't caused by calls, assume nothing. In
     // particular, direct write into an object's field invalidates the status.
-    for (const auto *Region : InvalidatedRegions)
+    for (const auto *Region : InvalidatedRegions) {
       State = removeFromState(State, Region->getBaseRegion());
+}
   }
 
   return State;
@@ -743,10 +785,11 @@ void MoveChecker::printState(raw_ostream &Out, ProgramStateRef State,
     Out << Sep << "Moved-from objects :" << NL;
     for (auto I: RS) {
       I.first->dumpToStream(Out);
-      if (I.second.isMoved())
+      if (I.second.isMoved()) {
         Out << ": moved";
-      else
+      } else {
         Out << ": moved and reported";
+}
       Out << NL;
     }
   }

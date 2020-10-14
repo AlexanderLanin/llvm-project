@@ -29,8 +29,9 @@ struct TypeInfo {
 
   public:
     constexpr PhasesBitSet(std::initializer_list<phases::ID> Phases) {
-      for (auto Id : Phases)
+      for (auto Id : Phases) {
         Bits |= 1 << Id;
+}
     }
     bool contains(phases::ID Id) const { return Bits & (1 << Id); }
   } Phases;
@@ -66,10 +67,12 @@ static bool isPreprocessedModuleType(ID Id) {
 }
 
 types::ID types::getPrecompiledType(ID Id) {
-  if (isPreprocessedModuleType(Id))
+  if (isPreprocessedModuleType(Id)) {
     return TY_ModuleFile;
-  if (onlyPrecompileType(Id))
+}
+  if (onlyPrecompileType(Id)) {
     return TY_PCH;
+}
   return TY_INVALID;
 }
 
@@ -296,8 +299,9 @@ types::ID types::lookupTypeForTypeSpecifier(const char *Name) {
   for (unsigned i=0; i<numTypes; ++i) {
     types::ID Id = (types::ID) (i + 1);
     if (canTypeBeUserSpecified(Id) &&
-        strcmp(Name, getInfo(Id).Name) == 0)
+        strcmp(Name, getInfo(Id).Name) == 0) {
       return Id;
+}
   }
   // Accept "cu" as an alias for "cuda" for NVCC compatibility
   if (strcmp(Name, "cu") == 0) {
@@ -310,9 +314,11 @@ llvm::SmallVector<phases::ID, phases::MaxNumberOfPhases>
 types::getCompilationPhases(ID Id, phases::ID LastPhase) {
   llvm::SmallVector<phases::ID, phases::MaxNumberOfPhases> P;
   const auto &Info = getInfo(Id);
-  for (int I = 0; I <= LastPhase; ++I)
-    if (Info.Phases.contains(static_cast<phases::ID>(I)))
+  for (int I = 0; I <= LastPhase; ++I) {
+    if (Info.Phases.contains(static_cast<phases::ID>(I))) {
       P.push_back(static_cast<phases::ID>(I));
+}
+}
   assert(P.size() <= phases::MaxNumberOfPhases && "Too many phases in list");
   return P;
 }
@@ -328,16 +334,16 @@ types::getCompilationPhases(const clang::driver::Driver &Driver,
   if (Driver.CCCIsCPP() || DAL.getLastArg(options::OPT_E) ||
       DAL.getLastArg(options::OPT__SLASH_EP) ||
       DAL.getLastArg(options::OPT_M, options::OPT_MM) ||
-      DAL.getLastArg(options::OPT__SLASH_P))
+      DAL.getLastArg(options::OPT__SLASH_P)) {
     LastPhase = phases::Preprocess;
 
   // --precompile only runs up to precompilation.
   // This is a clang extension and is not compatible with GCC.
-  else if (DAL.getLastArg(options::OPT__precompile))
+  } else if (DAL.getLastArg(options::OPT__precompile)) {
     LastPhase = phases::Precompile;
 
   // -{fsyntax-only,-analyze,emit-ast} only run up to the compiler.
-  else if (DAL.getLastArg(options::OPT_fsyntax_only) ||
+  } else if (DAL.getLastArg(options::OPT_fsyntax_only) ||
            DAL.getLastArg(options::OPT_print_supported_cpus) ||
            DAL.getLastArg(options::OPT_module_file_info) ||
            DAL.getLastArg(options::OPT_verify_pch) ||
@@ -345,19 +351,20 @@ types::getCompilationPhases(const clang::driver::Driver &Driver,
            DAL.getLastArg(options::OPT_rewrite_legacy_objc) ||
            DAL.getLastArg(options::OPT__migrate) ||
            DAL.getLastArg(options::OPT__analyze) ||
-           DAL.getLastArg(options::OPT_emit_ast))
+           DAL.getLastArg(options::OPT_emit_ast)) {
     LastPhase = phases::Compile;
 
-  else if (DAL.getLastArg(options::OPT_S) ||
-           DAL.getLastArg(options::OPT_emit_llvm))
+  } else if (DAL.getLastArg(options::OPT_S) ||
+           DAL.getLastArg(options::OPT_emit_llvm)) {
     LastPhase = phases::Backend;
 
-  else if (DAL.getLastArg(options::OPT_c))
+  } else if (DAL.getLastArg(options::OPT_c)) {
     LastPhase = phases::Assemble;
 
   // Generally means, do every phase until Link.
-  else
+  } else {
     LastPhase = phases::LastPhase;
+}
 
   return types::getCompilationPhases(Id, LastPhase);
 }

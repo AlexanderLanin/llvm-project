@@ -41,8 +41,9 @@ static constexpr const char *InputFile = "/sources/foo.c";
 
 std::string concatPaths(llvm::ArrayRef<StringRef> Components) {
   llvm::SmallString<128> P;
-  for (StringRef C : Components)
+  for (StringRef C : Components) {
     llvm::sys::path::append(P, C);
+}
   return std::string(P);
 }
 
@@ -60,16 +61,18 @@ protected:
                            "clang LLVM compiler", prepareFS(ExtraFiles));
 
     std::vector<const char *> Args = {ClangBinary};
-    for (const auto &A : ExtraArgs)
+    for (const auto &A : ExtraArgs) {
       Args.push_back(A.c_str());
+}
     Args.push_back("-c");
     Args.push_back(InputFile);
 
     CompilationJob.reset(DriverInstance->BuildCompilation(Args));
 
-    if (Diags.hasErrorOccurred())
+    if (Diags.hasErrorOccurred()) {
       ADD_FAILURE() << "Error occurred while parsing compilation arguments. "
                        "See stderr for details.";
+}
 
     const auto &Commands = CompilationJob->getJobs().getJobs();
     assert(Commands.size() == 1);
@@ -83,8 +86,9 @@ private:
         new llvm::vfs::InMemoryFileSystem;
     FS->addFile(ClangBinary, time_t(), llvm::MemoryBuffer::getMemBuffer(""));
     FS->addFile(InputFile, time_t(), llvm::MemoryBuffer::getMemBuffer(""));
-    for (llvm::StringRef F : ExtraFiles)
+    for (llvm::StringRef F : ExtraFiles) {
       FS->addFile(F, time_t(), llvm::MemoryBuffer::getMemBuffer(""));
+}
     return FS;
   }
 

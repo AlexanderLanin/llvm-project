@@ -34,11 +34,12 @@ void Merger::ConstructJob(Compilation &C, const JobAction &JA,
   // output.
   SmallString<128> OutputFilename(Output.getFilename());
   if (OutputFilename != "-") {
-    if (Args.hasArg(options::OPT_shared))
+    if (Args.hasArg(options::OPT_shared)) {
       llvm::sys::path::replace_extension(OutputFilename,
                                          (WriteBin ? "ifso" : "ifs"));
-    else
+    } else {
       OutputFilename += (WriteBin ? ".ifso" : ".ifs");
+}
   }
 
   CmdArgs.push_back(Args.MakeArgString(OutputFilename.c_str()));
@@ -46,11 +47,13 @@ void Merger::ConstructJob(Compilation &C, const JobAction &JA,
   // Here we append the input files. If the input files are object files, then
   // we look for .ifs files present in the same location as the object files.
   for (const auto &Input : Inputs) {
-    if (!Input.isFilename())
+    if (!Input.isFilename()) {
       continue;
+}
     SmallString<128> InputFilename(Input.getFilename());
-    if (Input.getType() == types::TY_Object)
+    if (Input.getType() == types::TY_Object) {
       llvm::sys::path::replace_extension(InputFilename, ".ifs");
+}
     CmdArgs.push_back(Args.MakeArgString(InputFilename.c_str()));
   }
 

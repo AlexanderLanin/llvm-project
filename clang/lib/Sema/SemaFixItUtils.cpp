@@ -24,8 +24,9 @@ bool ConversionFixItGenerator::compareTypesSimple(CanQualType From,
                                                   Sema &S,
                                                   SourceLocation Loc,
                                                   ExprValueKind FromVK) {
-  if (!To.isAtLeastAsQualifiedAs(From))
+  if (!To.isAtLeastAsQualifiedAs(From)) {
     return false;
+}
 
   From = From.getNonReferenceType();
   To = To.getNonReferenceType();
@@ -42,8 +43,9 @@ bool ConversionFixItGenerator::compareTypesSimple(CanQualType From,
   const CanQualType ToUnq = To.getUnqualifiedType();
 
   if ((FromUnq == ToUnq || (S.IsDerivedFrom(Loc, FromUnq, ToUnq)) ) &&
-      To.isAtLeastAsQualifiedAs(From))
+      To.isAtLeastAsQualifiedAs(From)) {
     return true;
+}
   return false;
 }
 
@@ -51,8 +53,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
                                                   const QualType FromTy,
                                                   const QualType ToTy,
                                                   Sema &S) {
-  if (!FullExpr)
+  if (!FullExpr) {
     return false;
+}
 
   const CanQualType FromQTy = S.Context.getCanonicalType(FromTy);
   const CanQualType ToQTy = S.Context.getCanonicalType(ToTy);
@@ -85,8 +88,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
       isa<ParenExpr>(FullExpr) ||
       isa<ParenListExpr>(Expr) ||
       isa<SizeOfPackExpr>(Expr) ||
-      isa<UnaryOperator>(Expr))
+      isa<UnaryOperator>(Expr)) {
     NeedParen = false;
+}
 
   // Check if the argument needs to be dereferenced:
   //   (type * -> type) or (type * -> type &).
@@ -99,8 +103,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
     if (CanConvert) {
       // Do not suggest dereferencing a Null pointer.
       if (Expr->IgnoreParenCasts()->
-          isNullPointerConstant(S.Context, Expr::NPC_ValueDependentIsNotNull))
+          isNullPointerConstant(S.Context, Expr::NPC_ValueDependentIsNotNull)) {
         return false;
+}
 
       if (const UnaryOperator *UO = dyn_cast<UnaryOperator>(Expr)) {
         if (UO->getOpcode() == UO_AddrOf) {
@@ -116,8 +121,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
       }
 
       NumConversionsFixed++;
-      if (NumConversionsFixed == 1)
+      if (NumConversionsFixed == 1) {
         Kind = FixKind;
+}
       return true;
     }
   }
@@ -129,8 +135,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
     OverloadFixItKind FixKind = OFIK_TakeAddress;
 
     // Only suggest taking address of L-values.
-    if (!Expr->isLValue() || Expr->getObjectKind() != OK_Ordinary)
+    if (!Expr->isLValue() || Expr->getObjectKind() != OK_Ordinary) {
       return false;
+}
 
     CanConvert = CompareTypes(S.Context.getPointerType(FromQTy), ToQTy,
                               S, Begin, VK_RValue);
@@ -150,8 +157,9 @@ bool ConversionFixItGenerator::tryToFixConversion(const Expr *FullExpr,
       }
 
       NumConversionsFixed++;
-      if (NumConversionsFixed == 1)
+      if (NumConversionsFixed == 1) {
         Kind = FixKind;
+}
       return true;
     }
   }
@@ -169,30 +177,40 @@ static std::string getScalarZeroExpressionForType(
   assert(T.isScalarType() && "use scalar types only");
   // Suggest "0" for non-enumeration scalar types, unless we can find a
   // better initializer.
-  if (T.isEnumeralType())
+  if (T.isEnumeralType()) {
     return std::string();
+}
   if ((T.isObjCObjectPointerType() || T.isBlockPointerType()) &&
-      isMacroDefined(S, Loc, "nil"))
+      isMacroDefined(S, Loc, "nil")) {
     return "nil";
-  if (T.isRealFloatingType())
+}
+  if (T.isRealFloatingType()) {
     return "0.0";
+}
   if (T.isBooleanType() &&
-      (S.LangOpts.CPlusPlus || isMacroDefined(S, Loc, "false")))
+      (S.LangOpts.CPlusPlus || isMacroDefined(S, Loc, "false"))) {
     return "false";
+}
   if (T.isPointerType() || T.isMemberPointerType()) {
-    if (S.LangOpts.CPlusPlus11)
+    if (S.LangOpts.CPlusPlus11) {
       return "nullptr";
-    if (isMacroDefined(S, Loc, "NULL"))
+}
+    if (isMacroDefined(S, Loc, "NULL")) {
       return "NULL";
+}
   }
-  if (T.isCharType())
+  if (T.isCharType()) {
     return "'\\0'";
-  if (T.isWideCharType())
+}
+  if (T.isWideCharType()) {
     return "L'\\0'";
-  if (T.isChar16Type())
+}
+  if (T.isChar16Type()) {
     return "u'\\0'";
-  if (T.isChar32Type())
+}
+  if (T.isChar32Type()) {
     return "U'\\0'";
+}
   return "0";
 }
 
@@ -200,18 +218,22 @@ std::string
 Sema::getFixItZeroInitializerForType(QualType T, SourceLocation Loc) const {
   if (T->isScalarType()) {
     std::string s = getScalarZeroExpressionForType(*T, Loc, *this);
-    if (!s.empty())
+    if (!s.empty()) {
       s = " = " + s;
+}
     return s;
   }
 
   const CXXRecordDecl *RD = T->getAsCXXRecordDecl();
-  if (!RD || !RD->hasDefinition())
+  if (!RD || !RD->hasDefinition()) {
     return std::string();
-  if (LangOpts.CPlusPlus11 && !RD->hasUserProvidedDefaultConstructor())
+}
+  if (LangOpts.CPlusPlus11 && !RD->hasUserProvidedDefaultConstructor()) {
     return "{}";
-  if (RD->isAggregate())
+}
+  if (RD->isAggregate()) {
     return " = {}";
+}
   return std::string();
 }
 

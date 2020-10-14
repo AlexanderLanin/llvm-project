@@ -65,11 +65,12 @@ void ExceptionEscapeCheck::registerMatchers(MatchFinder *Finder) {
 void ExceptionEscapeCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<FunctionDecl>("thrower");
 
-  if (!MatchedDecl)
+  if (!MatchedDecl) {
     return;
+}
 
   if (Tracer.analyze(MatchedDecl).getBehaviour() ==
-      utils::ExceptionAnalyzer::State::Throwing)
+      utils::ExceptionAnalyzer::State::Throwing) {
     // FIXME: We should provide more information about the exact location where
     // the exception is thrown, maybe the full path the exception escapes
     diag(MatchedDecl->getLocation(),
@@ -77,6 +78,7 @@ void ExceptionEscapeCheck::check(const MatchFinder::MatchResult &Result) {
 
          "which should not throw exceptions")
         << MatchedDecl;
+}
 }
 
 } // namespace bugprone

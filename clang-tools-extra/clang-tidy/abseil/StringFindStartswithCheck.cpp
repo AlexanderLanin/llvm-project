@@ -70,8 +70,9 @@ void StringFindStartswithCheck::check(const MatchFinder::MatchResult &Result) {
                              ->getImplicitObjectArgument();
   assert(Haystack != nullptr);
 
-  if (ComparisonExpr->getBeginLoc().isMacroID())
+  if (ComparisonExpr->getBeginLoc().isMacroID()) {
     return;
+}
 
   // Get the source code blocks (as characters) for both the string object
   // and the search expression

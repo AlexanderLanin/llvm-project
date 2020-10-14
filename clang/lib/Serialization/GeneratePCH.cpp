@@ -40,12 +40,14 @@ PCHGenerator::~PCHGenerator() {
 
 void PCHGenerator::HandleTranslationUnit(ASTContext &Ctx) {
   // Don't create a PCH if there were fatal failures during module loading.
-  if (PP.getModuleLoader().HadFatalFailure)
+  if (PP.getModuleLoader().HadFatalFailure) {
     return;
+}
 
   bool hasErrors = PP.getDiagnostics().hasErrorOccurred();
-  if (hasErrors && !AllowASTWithErrors)
+  if (hasErrors && !AllowASTWithErrors) {
     return;
+}
 
   Module *Module = nullptr;
   if (PP.getLangOpts().isCompilingModule()) {
@@ -59,8 +61,9 @@ void PCHGenerator::HandleTranslationUnit(ASTContext &Ctx) {
 
   // Errors that do not prevent the PCH from being written should not cause the
   // overall compilation to fail either.
-  if (AllowASTWithErrors)
+  if (AllowASTWithErrors) {
     PP.getDiagnostics().getClient()->clear();
+}
 
   // Emit the PCH file to the Buffer.
   assert(SemaPtr && "No Sema?");

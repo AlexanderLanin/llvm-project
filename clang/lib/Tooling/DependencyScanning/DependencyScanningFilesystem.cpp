@@ -20,17 +20,20 @@ CachedFileSystemEntry CachedFileSystemEntry::createFileEntry(
   // Load the file and its content from the file system.
   llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> MaybeFile =
       FS.openFileForRead(Filename);
-  if (!MaybeFile)
+  if (!MaybeFile) {
     return MaybeFile.getError();
+}
   llvm::ErrorOr<llvm::vfs::Status> Stat = (*MaybeFile)->status();
-  if (!Stat)
+  if (!Stat) {
     return Stat.getError();
+}
 
   llvm::vfs::File &F = **MaybeFile;
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> MaybeBuffer =
       F.getBuffer(Stat->getName());
-  if (!MaybeBuffer)
+  if (!MaybeBuffer) {
     return MaybeBuffer.getError();
+}
 
   llvm::SmallString<1024> MinimizedFileContents;
   // Minimize the file down to directives that might affect the dependencies.
@@ -130,8 +133,9 @@ DependencyScanningFilesystemSharedCache::get(StringRef Key) {
 /// was expecting instead.
 static bool shouldMinimize(StringRef Filename) {
   StringRef Ext = llvm::sys::path::extension(Filename);
-  if (Ext.empty())
+  if (Ext.empty()) {
     return true; // C++ standard library
+}
   return llvm::StringSwitch<bool>(Ext)
     .CasesLower(".c", ".cc", ".cpp", ".c++", ".cxx", true)
     .CasesLower(".h", ".hh", ".hpp", ".h++", ".hxx", true)
@@ -144,8 +148,9 @@ static bool shouldMinimize(StringRef Filename) {
 
 static bool shouldCacheStatFailures(StringRef Filename) {
   StringRef Ext = llvm::sys::path::extension(Filename);
-  if (Ext.empty())
+  if (Ext.empty()) {
     return false; // This may be the module cache directory.
+}
   return shouldMinimize(Filename); // Only cache stat failures on source files.
 }
 
@@ -172,20 +177,22 @@ DependencyScanningWorkerFilesystem::getOrCreateFileSystemEntry(
       llvm::vfs::FileSystem &FS = getUnderlyingFS();
       auto MaybeStatus = FS.status(Filename);
       if (!MaybeStatus) {
-        if (!shouldCacheStatFailures(Filename))
+        if (!shouldCacheStatFailures(Filename)) {
           // HACK: We need to always restat non source files if the stat fails.
           //   This is because Clang first looks up the module cache and module
           //   files before building them, and then looks for them again. If we
           //   cache the stat failure, it won't see them the second time.
           return MaybeStatus.getError();
-        else
+        } else {
           CacheEntry = CachedFileSystemEntry(MaybeStatus.getError());
-      } else if (MaybeStatus->isDirectory())
+}
+      } else if (MaybeStatus->isDirectory()) {
         CacheEntry = CachedFileSystemEntry::createDirectoryEntry(
             std::move(*MaybeStatus));
-      else
+      } else {
         CacheEntry = CachedFileSystemEntry::createFileEntry(
             Filename, FS, !KeepOriginalSource);
+}
     }
 
     Result = &CacheEntry;
@@ -202,8 +209,9 @@ DependencyScanningWorkerFilesystem::status(const Twine &Path) {
   StringRef Filename = Path.toStringRef(OwnedFilename);
   const llvm::ErrorOr<const CachedFileSystemEntry *> Result =
       getOrCreateFileSystemEntry(Filename);
-  if (!Result)
+  if (!Result) {
     return Result.getError();
+}
   return (*Result)->getStatus();
 }
 
@@ -237,19 +245,22 @@ private:
 llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>>
 createFile(const CachedFileSystemEntry *Entry,
            ExcludedPreprocessorDirectiveSkipMapping *PPSkipMappings) {
-  if (Entry->isDirectory())
+  if (Entry->isDirectory()) {
     return llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>>(
         std::make_error_code(std::errc::is_a_directory));
+}
   llvm::ErrorOr<StringRef> Contents = Entry->getContents();
-  if (!Contents)
+  if (!Contents) {
     return Contents.getError();
+}
   auto Result = std::make_unique<MinimizedVFSFile>(
       llvm::MemoryBuffer::getMemBuffer(*Contents, Entry->getName(),
                                        /*RequiresNullTerminator=*/false),
       *Entry->getStatus());
-  if (!Entry->getPPSkippedRangeMapping().empty() && PPSkipMappings)
+  if (!Entry->getPPSkippedRangeMapping().empty() && PPSkipMappings) {
     (*PPSkipMappings)[Result->getBufferPtr()] =
         &Entry->getPPSkippedRangeMapping();
+}
   return llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>>(
       std::unique_ptr<llvm::vfs::File>(std::move(Result)));
 }
@@ -263,7 +274,8 @@ DependencyScanningWorkerFilesystem::openFileForRead(const Twine &Path) {
 
   const llvm::ErrorOr<const CachedFileSystemEntry *> Result =
       getOrCreateFileSystemEntry(Filename);
-  if (!Result)
+  if (!Result) {
     return Result.getError();
+}
   return createFile(Result.get(), PPSkipMappings);
 }

@@ -18,8 +18,9 @@ llvm::Optional<DraftStore::Draft> DraftStore::getDraft(PathRef File) const {
   std::lock_guard<std::mutex> Lock(Mutex);
 
   auto It = Drafts.find(File);
-  if (It == Drafts.end())
+  if (It == Drafts.end()) {
     return None;
+}
 
   return It->second;
 }
@@ -28,8 +29,9 @@ std::vector<Path> DraftStore::getActiveFiles() const {
   std::lock_guard<std::mutex> Lock(Mutex);
   std::vector<Path> ResultVector;
 
-  for (auto DraftIt = Drafts.begin(); DraftIt != Drafts.end(); DraftIt++)
+  for (auto DraftIt = Drafts.begin(); DraftIt != Drafts.end(); DraftIt++) {
     ResultVector.push_back(std::string(DraftIt->getKey()));
+}
 
   return ResultVector;
 }
@@ -38,8 +40,9 @@ static void updateVersion(DraftStore::Draft &D,
                           llvm::Optional<int64_t> Version) {
   if (Version) {
     // We treat versions as opaque, but the protocol says they increase.
-    if (*Version <= D.Version)
+    if (*Version <= D.Version) {
       log("File version went from {0} to {1}", D.Version, Version);
+}
     D.Version = *Version;
   } else {
     // Note that if D was newly-created, this will bump D.Version from -1 to 0.
@@ -80,18 +83,21 @@ llvm::Expected<DraftStore::Draft> DraftStore::updateDraft(
     const Position &Start = Change.range->start;
     llvm::Expected<size_t> StartIndex =
         positionToOffset(Contents, Start, false);
-    if (!StartIndex)
+    if (!StartIndex) {
       return StartIndex.takeError();
+}
 
     const Position &End = Change.range->end;
     llvm::Expected<size_t> EndIndex = positionToOffset(Contents, End, false);
-    if (!EndIndex)
+    if (!EndIndex) {
       return EndIndex.takeError();
+}
 
-    if (*EndIndex < *StartIndex)
+    if (*EndIndex < *StartIndex) {
       return error(llvm::errc::invalid_argument,
                    "Range's end position ({0}) is before start position ({1})",
                    End, Start);
+}
 
     // Since the range length between two LSP positions is dependent on the
     // contents of the buffer we compute the range length between the start and
@@ -103,11 +109,12 @@ llvm::Expected<DraftStore::Draft> DraftStore::updateDraft(
     ssize_t ComputedRangeLength =
         lspLength(Contents.substr(*StartIndex, *EndIndex - *StartIndex));
 
-    if (Change.rangeLength && ComputedRangeLength != *Change.rangeLength)
+    if (Change.rangeLength && ComputedRangeLength != *Change.rangeLength) {
       return error(llvm::errc::invalid_argument,
                    "Change's rangeLength ({0}) doesn't match the "
                    "computed range length ({1}).",
                    *Change.rangeLength, ComputedRangeLength);
+}
 
     std::string NewContents;
     NewContents.reserve(*StartIndex + Change.text.length() +

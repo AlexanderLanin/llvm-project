@@ -68,9 +68,11 @@ namespace path = llvm::sys::path;
 // The length of the prefix these two strings have in common.
 size_t matchingPrefix(StringRef L, StringRef R) {
   size_t Limit = std::min(L.size(), R.size());
-  for (size_t I = 0; I < Limit; ++I)
-    if (L[I] != R[I])
+  for (size_t I = 0; I < Limit; ++I) {
+    if (L[I] != R[I]) {
       return I;
+}
+}
   return Limit;
 }
 
@@ -93,8 +95,9 @@ types::ID guessType(StringRef Filename, bool *Certain = nullptr) {
   // path::extension is ".cpp", lookupTypeForExtension wants "cpp".
   auto Lang =
       types::lookupTypeForExtension(path::extension(Filename).substr(1));
-  if (Certain)
+  if (Certain) {
     *Certain = Lang != types::TY_CHeader && Lang != types::TY_INVALID;
+}
   return Lang;
 }
 
@@ -143,8 +146,9 @@ struct TransferableCommand {
     llvm::opt::InputArgList ArgList;
     {
       SmallVector<const char *, 16> TmpArgv;
-      for (const std::string &S : OldArgs)
+      for (const std::string &S : OldArgs) {
         TmpArgv.push_back(S.c_str());
+}
       ArgList = {TmpArgv.begin(), TmpArgv.end()};
     }
 
@@ -153,8 +157,9 @@ struct TransferableCommand {
     // spelling of each argument; re-rendering is lossy for aliased flags.
     // E.g. in CL mode, /W4 maps to -Wall.
     auto &OptTable = clang::driver::getDriverOptTable();
-    if (!OldArgs.empty())
+    if (!OldArgs.empty()) {
       Cmd.CommandLine.emplace_back(OldArgs.front());
+}
     for (unsigned Pos = 1; Pos < OldArgs.size();) {
       using namespace driver::options;
 
@@ -164,8 +169,9 @@ struct TransferableCommand {
           /* Include */ ClangCLMode ? CoreOption | CLOption : 0,
           /* Exclude */ ClangCLMode ? 0 : CLOption));
 
-      if (!Arg)
+      if (!Arg) {
         continue;
+}
 
       const llvm::opt::Option &Opt = Arg->getOption();
 
@@ -174,8 +180,9 @@ struct TransferableCommand {
           (ClangCLMode && (Opt.matches(OPT__SLASH_Fa) ||
                            Opt.matches(OPT__SLASH_Fe) ||
                            Opt.matches(OPT__SLASH_Fi) ||
-                           Opt.matches(OPT__SLASH_Fo))))
+                           Opt.matches(OPT__SLASH_Fo)))) {
         continue;
+}
 
       // Strip -x, but record the overridden language.
       if (const auto GivenType = tryParseTypeArg(*Arg)) {
@@ -185,8 +192,9 @@ struct TransferableCommand {
 
       // Strip -std, but record the value.
       if (const auto GivenStd = tryParseStdArg(*Arg)) {
-        if (*GivenStd != LangStandard::lang_unspecified)
+        if (*GivenStd != LangStandard::lang_unspecified) {
           Std = *GivenStd;
+}
         continue;
       }
 
@@ -195,12 +203,14 @@ struct TransferableCommand {
     }
 
     // Make use of -std iff -x was missing.
-    if (Type == types::TY_INVALID && Std != LangStandard::lang_unspecified)
+    if (Type == types::TY_INVALID && Std != LangStandard::lang_unspecified) {
       Type = toType(LangStandard::getLangStandardForKind(Std).getLanguage());
+}
     Type = foldType(*Type);
     // The contract is to store None instead of TY_INVALID.
-    if (Type == types::TY_INVALID)
+    if (Type == types::TY_INVALID) {
       Type = llvm::None;
+}
   }
 
   // Produce a CompileCommand for \p filename, based on this one.
@@ -219,8 +229,9 @@ struct TransferableCommand {
               : *Type;
       if (ClangCLMode) {
         const StringRef Flag = toCLFlag(TargetType);
-        if (!Flag.empty())
+        if (!Flag.empty()) {
           Result.CommandLine.push_back(std::string(Flag));
+}
       } else {
         Result.CommandLine.push_back("-x");
         Result.CommandLine.push_back(types::getTypeName(TargetType));
@@ -243,8 +254,9 @@ private:
   static bool checkIsCLMode(ArrayRef<std::string> CmdLine) {
     // First look for --driver-mode.
     for (StringRef S : llvm::reverse(CmdLine)) {
-      if (S.consume_front("--driver-mode="))
+      if (S.consume_front("--driver-mode=")) {
         return S == "cl";
+}
     }
 
     // Otherwise just check the clang executable file name.
@@ -287,13 +299,16 @@ private:
     const llvm::opt::Option &Opt = Arg.getOption();
     using namespace driver::options;
     if (ClangCLMode) {
-      if (Opt.matches(OPT__SLASH_TC) || Opt.matches(OPT__SLASH_Tc))
+      if (Opt.matches(OPT__SLASH_TC) || Opt.matches(OPT__SLASH_Tc)) {
         return types::TY_C;
-      if (Opt.matches(OPT__SLASH_TP) || Opt.matches(OPT__SLASH_Tp))
+}
+      if (Opt.matches(OPT__SLASH_TP) || Opt.matches(OPT__SLASH_Tp)) {
         return types::TY_CXX;
+}
     } else {
-      if (Opt.matches(driver::options::OPT_x))
+      if (Opt.matches(driver::options::OPT_x)) {
         return types::lookupTypeForTypeSpecifier(Arg.getValue());
+}
     }
     return None;
   }
@@ -301,8 +316,9 @@ private:
   // Try to interpret the argument as '-std='.
   Optional<LangStandard::Kind> tryParseStdArg(const llvm::opt::Arg &Arg) {
     using namespace driver::options;
-    if (Arg.getOption().matches(ClangCLMode ? OPT__SLASH_std : OPT_std_EQ))
+    if (Arg.getOption().matches(ClangCLMode ? OPT__SLASH_std : OPT_std_EQ)) {
       return LangStandard::getLangKind(Arg.getValue());
+}
     return None;
   }
 };
@@ -334,9 +350,11 @@ public:
       Types.push_back(foldType(guessType(Path)));
       Stems.emplace_back(sys::path::stem(Path), I);
       auto Dir = ++sys::path::rbegin(Path), DirEnd = sys::path::rend(Path);
-      for (int J = 0; J < DirectorySegmentsIndexed && Dir != DirEnd; ++J, ++Dir)
-        if (Dir->size() > ShortDirectorySegment) // not trivial ones
+      for (int J = 0; J < DirectorySegmentsIndexed && Dir != DirEnd; ++J, ++Dir) {
+        if (Dir->size() > ShortDirectorySegment) { // not trivial ones
           Components.emplace_back(*Dir, I);
+}
+}
     }
     llvm::sort(Paths);
     llvm::sort(Stems);
@@ -388,16 +406,18 @@ private:
     auto Dir = ++sys::path::rbegin(Filename),
          DirEnd = sys::path::rend(Filename);
     for (int I = 0; I < DirectorySegmentsQueried && Dir != DirEnd; ++I, ++Dir) {
-      if (Dir->size() > ShortDirectorySegment)
+      if (Dir->size() > ShortDirectorySegment) {
         Dirs.push_back(*Dir);
+}
       Prefix = Filename.substr(0, Dir - DirEnd);
     }
 
     // Now award points based on lookups into our various indexes.
     DenseMap<size_t, int> Candidates; // Index -> score.
     auto Award = [&](int Points, ArrayRef<SubstringAndIndex> Range) {
-      for (const auto &Entry : Range)
+      for (const auto &Entry : Range) {
         Candidates[Entry.second] += Points;
+}
     };
     // Award one point if the file's basename is a prefix of the candidate,
     // and another if it's an exact match (so exact matches get two points).
@@ -405,11 +425,13 @@ private:
     Award(1, indexLookup</*Prefix=*/false>(Stem, Stems));
     // For each of the last few directories in the Filename, award a point
     // if it's present in the candidate.
-    for (StringRef Dir : Dirs)
+    for (StringRef Dir : Dirs) {
       Award(1, indexLookup</*Prefix=*/false>(Dir, Components));
+}
     // Award one more point if the whole rest of the path matches.
-    if (sys::path::root_directory(Prefix) != Prefix)
+    if (sys::path::root_directory(Prefix) != Prefix) {
       Award(1, indexLookup</*Prefix=*/true>(Prefix, Paths));
+}
     return Candidates;
   }
 
@@ -432,19 +454,24 @@ private:
       S.Preferred = PreferredLanguage == types::TY_INVALID ||
                     PreferredLanguage == Types[S.Index];
       S.Points = Candidate.second;
-      if (!S.Preferred && Best.Preferred)
+      if (!S.Preferred && Best.Preferred) {
         continue;
+}
       if (S.Preferred == Best.Preferred) {
-        if (S.Points < Best.Points)
+        if (S.Points < Best.Points) {
           continue;
+}
         if (S.Points == Best.Points) {
           S.PrefixLength = matchingPrefix(Filename, Paths[S.Index].first);
-          if (S.PrefixLength < Best.PrefixLength)
+          if (S.PrefixLength < Best.PrefixLength) {
             continue;
+}
           // hidden heuristics should at least be deterministic!
-          if (S.PrefixLength == Best.PrefixLength)
-            if (S.Index > Best.Index)
+          if (S.PrefixLength == Best.PrefixLength) {
+            if (S.Index > Best.Index) {
               continue;
+}
+}
         }
       }
       // PrefixLength was only set above if actually needed for a tiebreak.
@@ -454,8 +481,9 @@ private:
     }
     // Edge case: no candidate got any points.
     // We ignore PreferredLanguage at this point (not ideal).
-    if (Best.Index == size_t(-1))
+    if (Best.Index == size_t(-1)) {
       return {longestMatch(Filename, Paths).second, 0};
+}
     return {Best.Index, Best.Points};
   }
 
@@ -476,10 +504,12 @@ private:
     assert(!Idx.empty());
     // Longest substring match will be adjacent to a direct lookup.
     auto It = llvm::lower_bound(Idx, SubstringAndIndex{Key, 0});
-    if (It == Idx.begin())
+    if (It == Idx.begin()) {
       return *It;
-    if (It == Idx.end())
+}
+    if (It == Idx.end()) {
       return *--It;
+}
     // Have to choose between It and It-1
     size_t Prefix = matchingPrefix(Key, It->first);
     size_t PrevPrefix = matchingPrefix(Key, (It - 1)->first);
@@ -511,16 +541,19 @@ public:
   std::vector<CompileCommand>
   getCompileCommands(StringRef Filename) const override {
     auto Known = Inner->getCompileCommands(Filename);
-    if (Index.empty() || !Known.empty())
+    if (Index.empty() || !Known.empty()) {
       return Known;
+}
     bool TypeCertain;
     auto Lang = guessType(Filename, &TypeCertain);
-    if (!TypeCertain)
+    if (!TypeCertain) {
       Lang = types::TY_INVALID;
+}
     auto ProxyCommands =
         Inner->getCompileCommands(Index.chooseProxy(Filename, foldType(Lang)));
-    if (ProxyCommands.empty())
+    if (ProxyCommands.empty()) {
       return {};
+}
     return {TransferableCommand(ProxyCommands[0]).transferTo(Filename)};
   }
 

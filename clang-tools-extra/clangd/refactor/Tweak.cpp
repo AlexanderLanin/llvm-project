@@ -63,8 +63,9 @@ prepareTweaks(const Tweak::Selection &S,
   std::vector<std::unique_ptr<Tweak>> Available;
   for (const auto &E : TweakRegistry::entries()) {
     std::unique_ptr<Tweak> T = E.instantiate();
-    if (!Filter(*T) || !T->prepare(S))
+    if (!Filter(*T) || !T->prepare(S)) {
       continue;
+}
     Available.push_back(std::move(T));
   }
   // Ensure deterministic order of the results.
@@ -79,11 +80,13 @@ llvm::Expected<std::unique_ptr<Tweak>> prepareTweak(StringRef ID,
   auto It = llvm::find_if(
       TweakRegistry::entries(),
       [ID](const TweakRegistry::entry &E) { return E.getName() == ID; });
-  if (It == TweakRegistry::end())
+  if (It == TweakRegistry::end()) {
     return error("tweak ID {0} is invalid", ID);
+}
   std::unique_ptr<Tweak> T = It->instantiate();
-  if (!T->prepare(S))
+  if (!T->prepare(S)) {
     return error("failed to prepare() tweak {0}", ID);
+}
   return std::move(T);
 }
 
@@ -91,8 +94,9 @@ llvm::Expected<std::pair<Path, Edit>>
 Tweak::Effect::fileEdit(const SourceManager &SM, FileID FID,
                         tooling::Replacements Replacements) {
   Edit Ed(SM.getBufferData(FID), std::move(Replacements));
-  if (auto FilePath = getCanonicalPath(SM.getFileEntryForID(FID), SM))
+  if (auto FilePath = getCanonicalPath(SM.getFileEntryForID(FID), SM)) {
     return std::make_pair(*FilePath, std::move(Ed));
+}
   return error("Failed to get absolute path for edited file: {0}",
                SM.getFileEntryForID(FID)->getName());
 }
@@ -101,8 +105,9 @@ llvm::Expected<Tweak::Effect>
 Tweak::Effect::mainFileEdit(const SourceManager &SM,
                             tooling::Replacements Replacements) {
   auto PathAndEdit = fileEdit(SM, SM.getMainFileID(), std::move(Replacements));
-  if (!PathAndEdit)
+  if (!PathAndEdit) {
     return PathAndEdit.takeError();
+}
   Tweak::Effect E;
   E.ApplyEdits.try_emplace(PathAndEdit->first, PathAndEdit->second);
   return E;

@@ -101,8 +101,9 @@ private:
 }
 
 void TypeNodeEmitter::emit() {
-  if (Types.empty())
+  if (Types.empty()) {
     PrintFatalError("no Type records in input!");
+}
 
   emitSourceFileHeader("An x-macro database of Clang type nodes", Out);
 
@@ -140,28 +141,35 @@ void TypeNodeEmitter::emitNodeInvocations() {
   visitASTNodeHierarchy<TypeNode>(Records, [&](TypeNode type, TypeNode base) {
     // If this is the Type node itself, skip it; it can't be handled
     // uniformly by metaprograms because it doesn't have a base.
-    if (!base) return;
+    if (!base) { return;
+}
 
     // Figure out which macro to use.
     StringRef macroName;
     auto setMacroName = [&](StringRef newName) {
-      if (!macroName.empty())
+      if (!macroName.empty()) {
         PrintFatalError(type.getLoc(),
                         Twine("conflict when computing macro name for "
                               "Type node: trying to use both \"")
                           + macroName + "\" and \"" + newName + "\"");
+}
       macroName = newName;
     };
-    if (type.isSubClassOf(AlwaysDependentClassName))
+    if (type.isSubClassOf(AlwaysDependentClassName)) {
       setMacroName(DependentTypeMacroName);
-    if (type.isSubClassOf(NeverCanonicalClassName))
+}
+    if (type.isSubClassOf(NeverCanonicalClassName)) {
       setMacroName(NonCanonicalTypeMacroName);
-    if (type.isSubClassOf(NeverCanonicalUnlessDependentClassName))
+}
+    if (type.isSubClassOf(NeverCanonicalUnlessDependentClassName)) {
       setMacroName(NonCanonicalUnlessDependentTypeMacroName);
-    if (type.isAbstract())
+}
+    if (type.isAbstract()) {
       setMacroName(AbstractTypeMacroName);
-    if (macroName.empty())
+}
+    if (macroName.empty()) {
       macroName = TypeMacroName;
+}
 
     // Generate the invocation line.
     Out << macroName << "(" << type.getId() << ", "
@@ -185,7 +193,8 @@ void TypeNodeEmitter::emitLeafNodeInvocations() {
   Out << "#ifdef " LeafTypeMacroName "\n";
 
   for (TypeNode type : Types) {
-    if (!type.isSubClassOf(LeafTypeClassName)) continue;
+    if (!type.isSubClassOf(LeafTypeClassName)) { continue;
+}
     Out << LeafTypeMacroName "(" << type.getId() << ")\n";
   }
 

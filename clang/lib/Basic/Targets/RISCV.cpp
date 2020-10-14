@@ -90,24 +90,28 @@ void RISCVTargetInfo::getTargetDefines(const LangOptions &Opts,
   bool Is64Bit = getTriple().getArch() == llvm::Triple::riscv64;
   Builder.defineMacro("__riscv_xlen", Is64Bit ? "64" : "32");
   StringRef CodeModel = getTargetOpts().CodeModel;
-  if (CodeModel == "default")
+  if (CodeModel == "default") {
     CodeModel = "small";
+}
 
-  if (CodeModel == "small")
+  if (CodeModel == "small") {
     Builder.defineMacro("__riscv_cmodel_medlow");
-  else if (CodeModel == "medium")
+  } else if (CodeModel == "medium") {
     Builder.defineMacro("__riscv_cmodel_medany");
+}
 
   StringRef ABIName = getABI();
-  if (ABIName == "ilp32f" || ABIName == "lp64f")
+  if (ABIName == "ilp32f" || ABIName == "lp64f") {
     Builder.defineMacro("__riscv_float_abi_single");
-  else if (ABIName == "ilp32d" || ABIName == "lp64d")
+  } else if (ABIName == "ilp32d" || ABIName == "lp64d") {
     Builder.defineMacro("__riscv_float_abi_double");
-  else
+  } else {
     Builder.defineMacro("__riscv_float_abi_soft");
+}
 
-  if (ABIName == "ilp32e")
+  if (ABIName == "ilp32e") {
     Builder.defineMacro("__riscv_abi_rve");
+}
 
   if (HasM) {
     Builder.defineMacro("__riscv_mul");
@@ -115,8 +119,9 @@ void RISCVTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__riscv_muldiv");
   }
 
-  if (HasA)
+  if (HasA) {
     Builder.defineMacro("__riscv_atomic");
+}
 
   if (HasF || HasD) {
     Builder.defineMacro("__riscv_flen", HasD ? "64" : "32");
@@ -124,11 +129,13 @@ void RISCVTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__riscv_fsqrt");
   }
 
-  if (HasC)
+  if (HasC) {
     Builder.defineMacro("__riscv_compressed");
+}
 
-  if (HasB)
+  if (HasB) {
     Builder.defineMacro("__riscv_bitmanip");
+}
 }
 
 /// Return true if has this feature, need to sync with handleTargetFeatures.
@@ -151,18 +158,19 @@ bool RISCVTargetInfo::hasFeature(StringRef Feature) const {
 bool RISCVTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
                                            DiagnosticsEngine &Diags) {
   for (const auto &Feature : Features) {
-    if (Feature == "+m")
+    if (Feature == "+m") {
       HasM = true;
-    else if (Feature == "+a")
+    } else if (Feature == "+a") {
       HasA = true;
-    else if (Feature == "+f")
+    } else if (Feature == "+f") {
       HasF = true;
-    else if (Feature == "+d")
+    } else if (Feature == "+d") {
       HasD = true;
-    else if (Feature == "+c")
+    } else if (Feature == "+c") {
       HasC = true;
-    else if (Feature == "+experimental-b")
+    } else if (Feature == "+experimental-b") {
       HasB = true;
+}
   }
 
   return true;

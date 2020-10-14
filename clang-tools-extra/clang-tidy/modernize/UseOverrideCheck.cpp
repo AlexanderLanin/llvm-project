@@ -32,12 +32,13 @@ void UseOverrideCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
 }
 
 void UseOverrideCheck::registerMatchers(MatchFinder *Finder) {
-  if (IgnoreDestructors)
+  if (IgnoreDestructors) {
     Finder->addMatcher(
         cxxMethodDecl(isOverride(), unless(cxxDestructorDecl())).bind("method"),
         this);
-  else
+  } else {
     Finder->addMatcher(cxxMethodDecl(isOverride()).bind("method"), this);
+}
 }
 
 // Re-lex the tokens to get precise locations to insert 'override' and remove
@@ -56,14 +57,17 @@ ParseTokens(CharSourceRange Range, const MatchFinder::MatchResult &Result) {
   Token Tok;
   int NestedParens = 0;
   while (!RawLexer.LexFromRawLexer(Tok)) {
-    if ((Tok.is(tok::semi) || Tok.is(tok::l_brace)) && NestedParens == 0)
+    if ((Tok.is(tok::semi) || Tok.is(tok::l_brace)) && NestedParens == 0) {
       break;
-    if (Sources.isBeforeInTranslationUnit(Range.getEnd(), Tok.getLocation()))
+}
+    if (Sources.isBeforeInTranslationUnit(Range.getEnd(), Tok.getLocation())) {
       break;
-    if (Tok.is(tok::l_paren))
+}
+    if (Tok.is(tok::l_paren)) {
       ++NestedParens;
-    else if (Tok.is(tok::r_paren))
+    } else if (Tok.is(tok::r_paren)) {
       --NestedParens;
+}
     if (Tok.is(tok::raw_identifier)) {
       IdentifierInfo &Info = Result.Context->Idents.get(StringRef(
           Sources.getCharacterData(Tok.getLocation()), Tok.getLength()));
@@ -87,12 +91,14 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
   ASTContext &Context = *Result.Context;
 
   assert(Method != nullptr);
-  if (Method->getInstantiatedFromMemberFunction() != nullptr)
+  if (Method->getInstantiatedFromMemberFunction() != nullptr) {
     Method = Method->getInstantiatedFromMemberFunction();
+}
 
   if (Method->isImplicit() || Method->getLocation().isMacroID() ||
-      Method->isOutOfLine())
+      Method->isOutOfLine()) {
     return;
+}
 
   bool HasVirtual = Method->isVirtualAsWritten();
   bool HasOverride = Method->getAttr<OverrideAttr>();
@@ -102,8 +108,9 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
   unsigned KeywordCount = HasVirtual + HasOverride + HasFinal;
 
   if ((!OnlyVirtualSpecified && KeywordCount == 1) ||
-      (!HasVirtual && HasOverride && HasFinal && AllowOverrideAndFinal))
+      (!HasVirtual && HasOverride && HasFinal && AllowOverrideAndFinal)) {
     return; // Nothing to do.
+}
 
   std::string Message;
   if (OnlyVirtualSpecified) {
@@ -130,8 +137,9 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getTokenRange(Method->getSourceRange()), Sources,
       getLangOpts());
 
-  if (!FileRange.isValid())
+  if (!FileRange.isValid()) {
     return;
+}
 
   // FIXME: Instead of re-lexing and looking for specific macros such as
   // 'ABSTRACT', properly store the location of 'virtual' and '= 0' in each
@@ -159,8 +167,9 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
               Sources.getExpansionLoc(A->getRange().getBegin());
           if ((!InsertLoc.isValid() ||
                Sources.isBeforeInTranslationUnit(Loc, InsertLoc)) &&
-              !Sources.isBeforeInTranslationUnit(Loc, MethodLoc))
+              !Sources.isBeforeInTranslationUnit(Loc, MethodLoc)) {
             InsertLoc = Loc;
+}
         }
       }
     }
@@ -175,8 +184,9 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
       auto LastTokenIter = std::prev(Tokens.end());
       // When try statement is used instead of compound statement as
       // method body - insert override keyword before it.
-      if (LastTokenIter->is(tok::kw_try))
+      if (LastTokenIter->is(tok::kw_try)) {
         LastTokenIter = std::prev(LastTokenIter);
+}
       InsertLoc = LastTokenIter->getEndLoc();
     }
 
@@ -191,10 +201,12 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
           GetText(Tokens[Tokens.size() - 2], Sources) == "=") {
         InsertLoc = Tokens[Tokens.size() - 2].getLocation();
         // Check if we need to insert a space.
-        if ((Tokens[Tokens.size() - 2].getFlags() & Token::LeadingSpace) == 0)
+        if ((Tokens[Tokens.size() - 2].getFlags() & Token::LeadingSpace) == 0) {
           ReplacementText = " " + OverrideSpelling + " ";
-      } else if (GetText(Tokens.back(), Sources) == "ABSTRACT")
+}
+      } else if (GetText(Tokens.back(), Sources) == "ABSTRACT") {
         InsertLoc = Tokens.back().getLocation();
+}
     }
 
     if (!InsertLoc.isValid()) {
@@ -205,8 +217,9 @@ void UseOverrideCheck::check(const MatchFinder::MatchResult &Result) {
     // If the override macro has been specified just ensure it exists,
     // if not don't apply a fixit but keep the warning.
     if (OverrideSpelling != "override" &&
-        !Context.Idents.get(OverrideSpelling).hasMacroDefinition())
+        !Context.Idents.get(OverrideSpelling).hasMacroDefinition()) {
       return;
+}
 
     Diag << FixItHint::CreateInsertion(InsertLoc, ReplacementText);
   }

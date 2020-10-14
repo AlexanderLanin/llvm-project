@@ -70,30 +70,35 @@ public:
   /// PadMultiplier is used to share code with the array padding
   /// checker.
   void visitRecord(const RecordDecl *RD, uint64_t PadMultiplier = 1) const {
-    if (shouldSkipDecl(RD))
+    if (shouldSkipDecl(RD)) {
       return;
+}
 
     // TODO: Figure out why we are going through declarations and not only
     // definitions.
-    if (!(RD = RD->getDefinition()))
+    if (!(RD = RD->getDefinition())) {
       return;
+}
 
     // This is the simplest correct case: a class with no fields and one base
     // class. Other cases are more complicated because of how the base classes
     // & fields might interact, so we don't bother dealing with them.
     // TODO: Support other combinations of base classes and fields.
-    if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-      if (CXXRD->field_empty() && CXXRD->getNumBases() == 1)
+    if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD)) {
+      if (CXXRD->field_empty() && CXXRD->getNumBases() == 1) {
         return visitRecord(CXXRD->bases().begin()->getType()->getAsRecordDecl(),
                            PadMultiplier);
+}
+}
 
     auto &ASTContext = RD->getASTContext();
     const ASTRecordLayout &RL = ASTContext.getASTRecordLayout(RD);
     assert(llvm::isPowerOf2_64(RL.getAlignment().getQuantity()));
 
     CharUnits BaselinePad = calculateBaselinePad(RD, ASTContext, RL);
-    if (BaselinePad.isZero())
+    if (BaselinePad.isZero()) {
       return;
+}
 
     CharUnits OptimalPad;
     SmallVector<const FieldDecl *, 20> OptimalFieldsOrder;
@@ -113,16 +118,20 @@ public:
   /// array type exceeds AllowedPad, then generate a report.
   void visitVariable(const VarDecl *VD) const {
     const ArrayType *ArrTy = VD->getType()->getAsArrayTypeUnsafe();
-    if (ArrTy == nullptr)
+    if (ArrTy == nullptr) {
       return;
+}
     uint64_t Elts = 0;
-    if (const ConstantArrayType *CArrTy = dyn_cast<ConstantArrayType>(ArrTy))
+    if (const ConstantArrayType *CArrTy = dyn_cast<ConstantArrayType>(ArrTy)) {
       Elts = CArrTy->getSize().getZExtValue();
-    if (Elts == 0)
+}
+    if (Elts == 0) {
       return;
+}
     const RecordType *RT = ArrTy->getElementType()->getAs<RecordType>();
-    if (RT == nullptr)
+    if (RT == nullptr) {
       return;
+}
 
     // TODO: Recurse into the fields to see if they have excess padding.
     visitRecord(RT->getDecl(), Elts);
@@ -131,59 +140,72 @@ public:
   bool shouldSkipDecl(const RecordDecl *RD) const {
     // TODO: Figure out why we are going through declarations and not only
     // definitions.
-    if (!(RD = RD->getDefinition()))
+    if (!(RD = RD->getDefinition())) {
       return true;
+}
     auto Location = RD->getLocation();
     // If the construct doesn't have a source file, then it's not something
     // we want to diagnose.
-    if (!Location.isValid())
+    if (!Location.isValid()) {
       return true;
+}
     SrcMgr::CharacteristicKind Kind =
         BR->getSourceManager().getFileCharacteristic(Location);
     // Throw out all records that come from system headers.
-    if (Kind != SrcMgr::C_User)
+    if (Kind != SrcMgr::C_User) {
       return true;
+}
 
     // Not going to attempt to optimize unions.
-    if (RD->isUnion())
+    if (RD->isUnion()) {
       return true;
+}
     if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD)) {
       // Tail padding with base classes ends up being very complicated.
       // We will skip objects with base classes for now, unless they do not
       // have fields.
       // TODO: Handle more base class scenarios.
-      if (!CXXRD->field_empty() && CXXRD->getNumBases() != 0)
+      if (!CXXRD->field_empty() && CXXRD->getNumBases() != 0) {
         return true;
-      if (CXXRD->field_empty() && CXXRD->getNumBases() != 1)
+}
+      if (CXXRD->field_empty() && CXXRD->getNumBases() != 1) {
         return true;
+}
       // Virtual bases are complicated, skipping those for now.
-      if (CXXRD->getNumVBases() != 0)
+      if (CXXRD->getNumVBases() != 0) {
         return true;
+}
       // Can't layout a template, so skip it. We do still layout the
       // instantiations though.
-      if (CXXRD->getTypeForDecl()->isDependentType())
+      if (CXXRD->getTypeForDecl()->isDependentType()) {
         return true;
-      if (CXXRD->getTypeForDecl()->isInstantiationDependentType())
+}
+      if (CXXRD->getTypeForDecl()->isInstantiationDependentType()) {
         return true;
+}
     }
     // How do you reorder fields if you haven't got any?
-    else if (RD->field_empty())
+    else if (RD->field_empty()) {
       return true;
+}
 
     auto IsTrickyField = [](const FieldDecl *FD) -> bool {
       // Bitfield layout is hard.
-      if (FD->isBitField())
+      if (FD->isBitField()) {
         return true;
+}
 
       // Variable length arrays are tricky too.
       QualType Ty = FD->getType();
-      if (Ty->isIncompleteArrayType())
+      if (Ty->isIncompleteArrayType()) {
         return true;
+}
       return false;
     };
 
-    if (std::any_of(RD->field_begin(), RD->field_end(), IsTrickyField))
+    if (std::any_of(RD->field_begin(), RD->field_end(), IsTrickyField)) {
       return true;
+}
     return false;
   }
 
@@ -251,8 +273,9 @@ public:
       std::tie(RetVal.Size, RetVal.Align) =
           Ctx.getTypeInfoInChars(FD->getType());
       assert(llvm::isPowerOf2_64(RetVal.Align.getQuantity()));
-      if (auto Max = FD->getMaxAlignment())
+      if (auto Max = FD->getMaxAlignment()) {
         RetVal.Align = std::max(Ctx.toCharUnitsFromBits(Max), RetVal.Align);
+}
       return RetVal;
     };
     std::transform(RD->field_begin(), RD->field_end(),
@@ -304,9 +327,10 @@ public:
   void reportRecord(
       const RecordDecl *RD, CharUnits BaselinePad, CharUnits OptimalPad,
       const SmallVector<const FieldDecl *, 20> &OptimalFieldsOrder) const {
-    if (!PaddingBug)
+    if (!PaddingBug) {
       PaddingBug =
           std::make_unique<BugType>(this, "Excessive Padding", "Performance");
+}
 
     SmallString<100> Buf;
     llvm::raw_svector_ostream Os(Buf);
@@ -320,16 +344,18 @@ public:
       // the HTML. Maybe just make it show up in HTML like the path
       // diagnostics show.
       SourceLocation ILoc = TSD->getPointOfInstantiation();
-      if (ILoc.isValid())
+      if (ILoc.isValid()) {
         Os << " instantiated here: "
            << ILoc.printToString(BR->getSourceManager());
+}
     }
 
     Os << " (" << BaselinePad.getQuantity() << " padding bytes, where "
        << OptimalPad.getQuantity() << " is optimal). \n"
        << "Optimal fields order: \n";
-    for (const auto *FD : OptimalFieldsOrder)
+    for (const auto *FD : OptimalFieldsOrder) {
       Os << FD->getName() << ", \n";
+}
     Os << "consider reordering the fields or adding explicit padding "
           "members.";
 
@@ -348,9 +374,10 @@ void ento::registerPaddingChecker(CheckerManager &Mgr) {
   auto *Checker = Mgr.registerChecker<PaddingChecker>();
   Checker->AllowedPad = Mgr.getAnalyzerOptions()
           .getCheckerIntegerOption(Checker, "AllowedPad");
-  if (Checker->AllowedPad < 0)
+  if (Checker->AllowedPad < 0) {
     Mgr.reportInvalidCheckerOptionValue(
         Checker, "AllowedPad", "a non-negative value");
+}
 }
 
 bool ento::shouldRegisterPaddingChecker(const CheckerManager &mgr) {

@@ -24,9 +24,11 @@ using namespace clang;
 // Does it even make sense to build a CFG for an uninstantiated template?
 static inline const VariableArrayType *FindVA(const Type* t) {
   while (const ArrayType *vt = dyn_cast<ArrayType>(t)) {
-    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt))
-      if (vat->getSizeExpr())
+    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt)) {
+      if (vat->getSizeExpr()) {
         return vat;
+}
+}
 
     t = vt->getElementType().getTypePtr();
   }
@@ -41,13 +43,16 @@ void StmtIteratorBase::NextVA() {
   p = FindVA(p->getElementType().getTypePtr());
   setVAPtr(p);
 
-  if (p)
+  if (p) {
     return;
+}
 
   if (inDeclGroup()) {
-    if (VarDecl* VD = dyn_cast<VarDecl>(*DGI))
-      if (VD->hasInit())
+    if (VarDecl* VD = dyn_cast<VarDecl>(*DGI)) {
+      if (VD->hasInit()) {
         return;
+}
+}
 
     NextDecl();
   }
@@ -61,12 +66,15 @@ void StmtIteratorBase::NextDecl(bool ImmediateAdvance) {
   assert(getVAPtr() == nullptr);
   assert(inDeclGroup());
 
-  if (ImmediateAdvance)
+  if (ImmediateAdvance) {
     ++DGI;
+}
 
-  for ( ; DGI != DGE; ++DGI)
-    if (HandleDecl(*DGI))
+  for ( ; DGI != DGE; ++DGI) {
+    if (HandleDecl(*DGI)) {
       return;
+}
+}
 
   RawVAPtr = 0;
 }
@@ -78,8 +86,9 @@ bool StmtIteratorBase::HandleDecl(Decl* D) {
       return true;
     }
 
-    if (VD->getInit())
+    if (VD->getInit()) {
       return true;
+}
   }
   else if (TypedefNameDecl* TD = dyn_cast<TypedefNameDecl>(D)) {
     if (const VariableArrayType* VAPtr =
@@ -89,8 +98,9 @@ bool StmtIteratorBase::HandleDecl(Decl* D) {
     }
   }
   else if (EnumConstantDecl* ECD = dyn_cast<EnumConstantDecl>(D)) {
-    if (ECD->getInitExpr())
+    if (ECD->getInitExpr()) {
       return true;
+}
   }
 
   return false;

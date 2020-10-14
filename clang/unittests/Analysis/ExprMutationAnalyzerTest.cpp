@@ -65,8 +65,9 @@ mutatedBy(const SmallVectorImpl<BoundNodes> &Results, ASTUnit *AST) {
 
   for (const auto *E = selectFirst<Expr>("expr", Results); E != nullptr;) {
     const Stmt *By = Analyzer.findMutation(E);
-    if (!By)
+    if (!By) {
       break;
+}
 
     std::string Buffer;
     llvm::raw_string_ostream Stream(Buffer);

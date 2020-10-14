@@ -82,10 +82,11 @@ ClangTidyProfiling::ClangTidyProfiling(llvm::Optional<StorageParams> Storage)
 ClangTidyProfiling::~ClangTidyProfiling() {
   TG.emplace("clang-tidy", "clang-tidy checks profiling", Records);
 
-  if (!Storage.hasValue())
+  if (!Storage.hasValue()) {
     printUserFriendlyTable(llvm::errs());
-  else
+  } else {
     storeProfileData();
+}
 }
 
 } // namespace tidy

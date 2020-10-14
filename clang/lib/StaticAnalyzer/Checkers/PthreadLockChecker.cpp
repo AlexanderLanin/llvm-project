@@ -230,8 +230,9 @@ private:
   mutable std::unique_ptr<BugType> BT_lor[CK_NumCheckKinds];
 
   void initBugType(CheckerKind CheckKind) const {
-    if (BT_doublelock[CheckKind])
+    if (BT_doublelock[CheckKind]) {
       return;
+}
     BT_doublelock[CheckKind].reset(
         new BugType{CheckNames[CheckKind], "Double locking", "Lock checker"});
     BT_doubleunlock[CheckKind].reset(
@@ -263,15 +264,17 @@ void PthreadLockChecker::checkPostCall(const CallEvent &Call,
   // with exactly one identifier?
   // FIXME: Try to handle cases when the implementation was inlined rather
   // than just giving up.
-  if (!Call.isGlobalCFunction() || C.wasInlined)
+  if (!Call.isGlobalCFunction() || C.wasInlined) {
     return;
+}
 
-  if (const FnCheck *Callback = PThreadCallbacks.lookup(Call))
+  if (const FnCheck *Callback = PThreadCallbacks.lookup(Call)) {
     (this->**Callback)(Call, C, CK_PthreadLockChecker);
-  else if (const FnCheck *Callback = FuchsiaCallbacks.lookup(Call))
+  } else if (const FnCheck *Callback = FuchsiaCallbacks.lookup(Call)) {
     (this->**Callback)(Call, C, CK_FuchsiaLockChecker);
-  else if (const FnCheck *Callback = C11Callbacks.lookup(Call))
+  } else if (const FnCheck *Callback = C11Callbacks.lookup(Call)) {
     (this->**Callback)(Call, C, CK_C11LockChecker);
+}
 }
 
 // When a lock is destroyed, in some semantics(like PthreadSemantics) we are not
@@ -296,12 +299,14 @@ ProgramStateRef PthreadLockChecker::resolvePossiblyDestroyedMutex(
   ConstraintManager &CMgr = state->getConstraintManager();
   ConditionTruthVal retZero = CMgr.isNull(state, *sym);
   if (retZero.isConstrainedFalse()) {
-    if (lstate->isUntouchedAndPossiblyDestroyed())
+    if (lstate->isUntouchedAndPossiblyDestroyed()) {
       state = state->remove<LockMap>(lockR);
-    else if (lstate->isUnlockedAndPossiblyDestroyed())
+    } else if (lstate->isUnlockedAndPossiblyDestroyed()) {
       state = state->set<LockMap>(lockR, LockState::getUnlocked());
-  } else
+}
+  } else {
     state = state->set<LockMap>(lockR, LockState::getDestroyed());
+}
 
   // Removing the map entry (lockR, sym) from DestroyRetVal as the lock state is
   // now resolved.
@@ -316,16 +321,17 @@ void PthreadLockChecker::printState(raw_ostream &Out, ProgramStateRef State,
     Out << Sep << "Mutex states:" << NL;
     for (auto I : LM) {
       I.first->dumpToStream(Out);
-      if (I.second.isLocked())
+      if (I.second.isLocked()) {
         Out << ": locked";
-      else if (I.second.isUnlocked())
+      } else if (I.second.isUnlocked()) {
         Out << ": unlocked";
-      else if (I.second.isDestroyed())
+      } else if (I.second.isDestroyed()) {
         Out << ": destroyed";
-      else if (I.second.isUntouchedAndPossiblyDestroyed())
+      } else if (I.second.isUntouchedAndPossiblyDestroyed()) {
         Out << ": not tracked, possibly destroyed";
-      else if (I.second.isUnlockedAndPossiblyDestroyed())
+      } else if (I.second.isUnlockedAndPossiblyDestroyed()) {
         Out << ": unlocked, possibly destroyed";
+}
       Out << NL;
     }
   }
@@ -387,17 +393,20 @@ void PthreadLockChecker::AcquireLockAux(const CallEvent &Call,
                                         SVal MtxVal, bool IsTryLock,
                                         enum LockingSemantics Semantics,
                                         CheckerKind CheckKind) const {
-  if (!ChecksEnabled[CheckKind])
+  if (!ChecksEnabled[CheckKind]) {
     return;
+}
 
   const MemRegion *lockR = MtxVal.getAsRegion();
-  if (!lockR)
+  if (!lockR) {
     return;
+}
 
   ProgramStateRef state = C.getState();
   const SymbolRef *sym = state->get<DestroyRetVal>(lockR);
-  if (sym)
+  if (sym) {
     state = resolvePossiblyDestroyedMutex(state, lockR, sym);
+}
 
   if (const LockState *LState = state->get<LockMap>(lockR)) {
     if (LState->isLocked()) {
@@ -465,17 +474,20 @@ void PthreadLockChecker::ReleaseLockAux(const CallEvent &Call,
                                         CheckerContext &C, const Expr *MtxExpr,
                                         SVal MtxVal,
                                         CheckerKind CheckKind) const {
-  if (!ChecksEnabled[CheckKind])
+  if (!ChecksEnabled[CheckKind]) {
     return;
+}
 
   const MemRegion *lockR = MtxVal.getAsRegion();
-  if (!lockR)
+  if (!lockR) {
     return;
+}
 
   ProgramStateRef state = C.getState();
   const SymbolRef *sym = state->get<DestroyRetVal>(lockR);
-  if (sym)
+  if (sym) {
     state = resolvePossiblyDestroyedMutex(state, lockR, sym);
+}
 
   if (const LockState *LState = state->get<LockMap>(lockR)) {
     if (LState->isUnlocked()) {
@@ -526,18 +538,21 @@ void PthreadLockChecker::DestroyLockAux(const CallEvent &Call,
                                         SVal MtxVal,
                                         enum LockingSemantics Semantics,
                                         CheckerKind CheckKind) const {
-  if (!ChecksEnabled[CheckKind])
+  if (!ChecksEnabled[CheckKind]) {
     return;
+}
 
   const MemRegion *LockR = MtxVal.getAsRegion();
-  if (!LockR)
+  if (!LockR) {
     return;
+}
 
   ProgramStateRef State = C.getState();
 
   const SymbolRef *sym = State->get<DestroyRetVal>(LockR);
-  if (sym)
+  if (sym) {
     State = resolvePossiblyDestroyedMutex(State, LockR, sym);
+}
 
   const LockState *LState = State->get<LockMap>(LockR);
   // Checking the return value of the destroy method only in the case of
@@ -551,12 +566,13 @@ void PthreadLockChecker::DestroyLockAux(const CallEvent &Call,
         return;
       }
       State = State->set<DestroyRetVal>(LockR, sym);
-      if (LState && LState->isUnlocked())
+      if (LState && LState->isUnlocked()) {
         State = State->set<LockMap>(
             LockR, LockState::getUnlockedAndPossiblyDestroyed());
-      else
+      } else {
         State = State->set<LockMap>(
             LockR, LockState::getUntouchedAndPossiblyDestroyed());
+}
       C.addTransition(State);
       return;
     }
@@ -583,18 +599,21 @@ void PthreadLockChecker::InitAnyLock(const CallEvent &Call, CheckerContext &C,
 void PthreadLockChecker::InitLockAux(const CallEvent &Call, CheckerContext &C,
                                      const Expr *MtxExpr, SVal MtxVal,
                                      CheckerKind CheckKind) const {
-  if (!ChecksEnabled[CheckKind])
+  if (!ChecksEnabled[CheckKind]) {
     return;
+}
 
   const MemRegion *LockR = MtxVal.getAsRegion();
-  if (!LockR)
+  if (!LockR) {
     return;
+}
 
   ProgramStateRef State = C.getState();
 
   const SymbolRef *sym = State->get<DestroyRetVal>(LockR);
-  if (sym)
+  if (sym) {
     State = resolvePossiblyDestroyedMutex(State, LockR, sym);
+}
 
   const struct LockState *LState = State->get<LockMap>(LockR);
   if (!LState || LState->isDestroyed()) {
@@ -615,8 +634,9 @@ void PthreadLockChecker::reportBug(CheckerContext &C,
                                    const Expr *MtxExpr, CheckerKind CheckKind,
                                    StringRef Desc) const {
   ExplodedNode *N = C.generateErrorNode();
-  if (!N)
+  if (!N) {
     return;
+}
   initBugType(CheckKind);
   auto Report =
       std::make_unique<PathSensitiveBugReport>(*BT[CheckKind], Desc, N);
@@ -632,14 +652,16 @@ void PthreadLockChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     // Once the return value symbol dies, no more checks can be performed
     // against it. See if the return value was checked before this point.
     // This would remove the symbol from the map as well.
-    if (SymReaper.isDead(I.second))
+    if (SymReaper.isDead(I.second)) {
       State = resolvePossiblyDestroyedMutex(State, I.first, &I.second);
+}
   }
 
   for (auto I : State->get<LockMap>()) {
     // Stop tracking dead mutex regions as well.
-    if (!SymReaper.isLiveRegion(I.first))
+    if (!SymReaper.isLiveRegion(I.first)) {
       State = State->remove<LockMap>(I.first);
+}
   }
 
   // TODO: We probably need to clean up the lock stack as well.
@@ -659,11 +681,13 @@ ProgramStateRef PthreadLockChecker::checkRegionChanges(
   if (Call && Call->isGlobalCFunction()) {
     // Avoid invalidating mutex state when a known supported function is called.
     if (PThreadCallbacks.lookup(*Call) || FuchsiaCallbacks.lookup(*Call) ||
-        C11Callbacks.lookup(*Call))
+        C11Callbacks.lookup(*Call)) {
       return State;
+}
 
-    if (Call->isInSystemHeader())
+    if (Call->isInSystemHeader()) {
       IsLibraryFunction = true;
+}
   }
 
   for (auto R : Regions) {
@@ -672,8 +696,9 @@ ProgramStateRef PthreadLockChecker::checkRegionChanges(
     // FIXME: This is a bit quadratic.
     if (IsLibraryFunction &&
         std::find(ExplicitRegions.begin(), ExplicitRegions.end(), R) ==
-            ExplicitRegions.end())
+            ExplicitRegions.end()) {
       continue;
+}
 
     State = State->remove<LockMap>(R);
     State = State->remove<DestroyRetVal>(R);

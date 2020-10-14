@@ -57,27 +57,30 @@ public:
         E->getReceiverInterface() &&
         E->getReceiverInterface()->getName() == "NSInvocation") {
       StringRef selName;
-      if (E->getSelector() == getReturnValueSel)
+      if (E->getSelector() == getReturnValueSel) {
         selName = "getReturnValue";
-      else if (E->getSelector() == setReturnValueSel)
+      } else if (E->getSelector() == setReturnValueSel) {
         selName = "setReturnValue";
-      else if (E->getSelector() == getArgumentSel)
+      } else if (E->getSelector() == getArgumentSel) {
         selName = "getArgument";
-      else if (E->getSelector() == setArgumentSel)
+      } else if (E->getSelector() == setArgumentSel) {
         selName = "setArgument";
-      else
+      } else {
         return true;
+}
 
       Expr *parm = E->getArg(0)->IgnoreParenCasts();
       QualType pointee = parm->getType()->getPointeeType();
-      if (pointee.isNull())
+      if (pointee.isNull()) {
         return true;
+}
 
-      if (pointee.getObjCLifetime() > Qualifiers::OCL_ExplicitNone)
+      if (pointee.getObjCLifetime() > Qualifiers::OCL_ExplicitNone) {
         Pass.TA.report(parm->getBeginLoc(),
                        diag::err_arcmt_nsinvocation_ownership,
                        parm->getSourceRange())
             << selName;
+}
 
       return true;
     }

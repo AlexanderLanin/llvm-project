@@ -38,8 +38,9 @@ static void checkImpl(const MatchFinder::MatchResult &Result, const Expr *Ref,
                       const ast_matchers::internal::Matcher<Expr> &RefMatcher,
                       ClangTidyCheck &Check) {
   // Ignore macros.
-  if (Ref->getBeginLoc().isMacroID())
+  if (Ref->getBeginLoc().isMacroID()) {
     return;
+}
 
   // Only allow variable accesses and member exprs for now, no function calls.
   // Check that we don't dereference the variable anywhere within the if. This
@@ -62,8 +63,9 @@ static void checkImpl(const MatchFinder::MatchResult &Result, const Expr *Ref,
       !match(
            findAll(cxxDeleteExpr(has(ignoringParenImpCasts(expr(RefMatcher))))),
            *If, *Result.Context)
-           .empty())
+           .empty()) {
     return;
+}
 
   Check.diag(Ref->getBeginLoc(),
              "dubious check of 'bool *' against 'nullptr', did "

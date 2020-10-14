@@ -43,9 +43,10 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
   // Uninitialized value used for the mutex?
   if (V.getAs<UndefinedVal>()) {
     if (ExplodedNode *N = C.generateErrorNode()) {
-      if (!BT_undef)
+      if (!BT_undef) {
         BT_undef.reset(new BuiltinBug(this, "Uninitialized value used as mutex "
                                             "for @synchronized"));
+}
       auto report = std::make_unique<PathSensitiveBugReport>(
           *BT_undef, BT_undef->getDescription(), N);
       bugreporter::trackExpressionValue(N, Ex, *report);
@@ -54,8 +55,9 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
     return;
   }
 
-  if (V.isUnknown())
+  if (V.isUnknown()) {
     return;
+}
 
   // Check for null mutexes.
   ProgramStateRef notNullState, nullState;
@@ -66,10 +68,11 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
       // Generate an error node.  This isn't a sink since
       // a null mutex just means no synchronization occurs.
       if (ExplodedNode *N = C.generateNonFatalErrorNode(nullState)) {
-        if (!BT_null)
+        if (!BT_null) {
           BT_null.reset(new BuiltinBug(
               this, "Nil value used as mutex for @synchronized() "
                     "(no synchronization will occur)"));
+}
         auto report = std::make_unique<PathSensitiveBugReport>(
             *BT_null, BT_null->getDescription(), N);
         bugreporter::trackExpressionValue(N, Ex, *report);
@@ -83,8 +86,9 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
     // afterwards.
   }
 
-  if (notNullState)
+  if (notNullState) {
     C.addTransition(notNullState);
+}
 }
 
 void ento::registerObjCAtSyncChecker(CheckerManager &mgr) {

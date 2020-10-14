@@ -24,17 +24,20 @@ Optional<ComparisonCategoryType>
 clang::getComparisonCategoryForBuiltinCmp(QualType T) {
   using CCT = ComparisonCategoryType;
 
-  if (T->isIntegralOrEnumerationType())
+  if (T->isIntegralOrEnumerationType()) {
     return CCT::StrongOrdering;
+}
 
-  if (T->isRealFloatingType())
+  if (T->isRealFloatingType()) {
     return CCT::PartialOrdering;
+}
 
   // C++2a [expr.spaceship]p8: If the composite pointer type is an object
   // pointer type, p <=> q is of type std::strong_ordering.
   // Note: this assumes neither operand is a null pointer constant.
-  if (T->isObjectPointerType())
+  if (T->isObjectPointerType()) {
     return CCT::StrongOrdering;
+}
 
   // TODO: Extend support for operator<=> to ObjC types.
   return llvm::None;
@@ -42,15 +45,17 @@ clang::getComparisonCategoryForBuiltinCmp(QualType T) {
 
 bool ComparisonCategoryInfo::ValueInfo::hasValidIntValue() const {
   assert(VD && "must have var decl");
-  if (!VD->checkInitIsICE())
+  if (!VD->checkInitIsICE()) {
     return false;
+}
 
   // Before we attempt to get the value of the first field, ensure that we
   // actually have one (and only one) field.
   auto *Record = VD->getType()->getAsCXXRecordDecl();
   if (std::distance(Record->field_begin(), Record->field_end()) != 1 ||
-      !Record->field_begin()->getType()->isIntegralOrEnumerationType())
+      !Record->field_begin()->getType()->isIntegralOrEnumerationType()) {
     return false;
+}
 
   return true;
 }
@@ -73,15 +78,17 @@ ComparisonCategoryInfo::ValueInfo *ComparisonCategoryInfo::lookupValueInfo(
   // Check if we already have a cache entry for this value.
   auto It = llvm::find_if(
       Objects, [&](ValueInfo const &Info) { return Info.Kind == ValueKind; });
-  if (It != Objects.end())
+  if (It != Objects.end()) {
     return &(*It);
+}
 
   // We don't have a cached result. Lookup the variable declaration and create
   // a new entry representing it.
   DeclContextLookupResult Lookup = Record->getCanonicalDecl()->lookup(
       &Ctx.Idents.get(ComparisonCategories::getResultString(ValueKind)));
-  if (Lookup.empty() || !isa<VarDecl>(Lookup.front()))
+  if (Lookup.empty() || !isa<VarDecl>(Lookup.front())) {
     return nullptr;
+}
   Objects.emplace_back(ValueKind, cast<VarDecl>(Lookup.front()));
   return &Objects.back();
 }
@@ -91,8 +98,9 @@ static const NamespaceDecl *lookupStdNamespace(const ASTContext &Ctx,
   if (!StdNS) {
     DeclContextLookupResult Lookup =
         Ctx.getTranslationUnitDecl()->lookup(&Ctx.Idents.get("std"));
-    if (!Lookup.empty())
+    if (!Lookup.empty()) {
       StdNS = dyn_cast<NamespaceDecl>(Lookup.front());
+}
   }
   return StdNS;
 }
@@ -102,21 +110,26 @@ static CXXRecordDecl *lookupCXXRecordDecl(const ASTContext &Ctx,
                                           ComparisonCategoryType Kind) {
   StringRef Name = ComparisonCategories::getCategoryString(Kind);
   DeclContextLookupResult Lookup = StdNS->lookup(&Ctx.Idents.get(Name));
-  if (!Lookup.empty())
-    if (CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(Lookup.front()))
+  if (!Lookup.empty()) {
+    if (CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(Lookup.front())) {
       return RD;
+}
+}
   return nullptr;
 }
 
 const ComparisonCategoryInfo *
 ComparisonCategories::lookupInfo(ComparisonCategoryType Kind) const {
   auto It = Data.find(static_cast<char>(Kind));
-  if (It != Data.end())
+  if (It != Data.end()) {
     return &It->second;
+}
 
-  if (const NamespaceDecl *NS = lookupStdNamespace(Ctx, StdNS))
-    if (CXXRecordDecl *RD = lookupCXXRecordDecl(Ctx, NS, Kind))
+  if (const NamespaceDecl *NS = lookupStdNamespace(Ctx, StdNS)) {
+    if (CXXRecordDecl *RD = lookupCXXRecordDecl(Ctx, NS, Kind)) {
       return &Data.try_emplace((char)Kind, Ctx, RD, Kind).first->second;
+}
+}
 
   return nullptr;
 }
@@ -126,19 +139,22 @@ ComparisonCategories::lookupInfoForType(QualType Ty) const {
   assert(!Ty.isNull() && "type must be non-null");
   using CCT = ComparisonCategoryType;
   auto *RD = Ty->getAsCXXRecordDecl();
-  if (!RD)
+  if (!RD) {
     return nullptr;
+}
 
   // Check to see if we have information for the specified type cached.
   const auto *CanonRD = RD->getCanonicalDecl();
   for (auto &KV : Data) {
     const ComparisonCategoryInfo &Info = KV.second;
-    if (CanonRD == Info.Record->getCanonicalDecl())
+    if (CanonRD == Info.Record->getCanonicalDecl()) {
       return &Info;
+}
   }
 
-  if (!RD->getEnclosingNamespaceContext()->isStdNamespace())
+  if (!RD->getEnclosingNamespaceContext()->isStdNamespace()) {
     return nullptr;
+}
 
   // If not, check to see if the decl names a type in namespace std with a name
   // matching one of the comparison category types.
@@ -149,8 +165,9 @@ ComparisonCategories::lookupInfoForType(QualType Ty) const {
 
     // We've found the comparison category type. Build a new cache entry for
     // it.
-    if (getCategoryString(Kind) == RD->getName())
+    if (getCategoryString(Kind) == RD->getName()) {
       return &Data.try_emplace((char)Kind, Ctx, RD, Kind).first->second;
+}
   }
 
   // We've found nothing. This isn't a comparison category type.
@@ -208,7 +225,8 @@ ComparisonCategories::getPossibleResultsForType(ComparisonCategoryType Type) {
   Values.push_back(IsStrong ? CCR::Equal : CCR::Equivalent);
   Values.push_back(CCR::Less);
   Values.push_back(CCR::Greater);
-  if (Type == CCT::PartialOrdering)
+  if (Type == CCT::PartialOrdering) {
     Values.push_back(CCR::Unordered);
+}
   return Values;
 }

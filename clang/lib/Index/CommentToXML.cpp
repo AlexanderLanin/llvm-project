@@ -35,16 +35,18 @@ public:
     unsigned RHSIndex = UINT_MAX;
 
     if (LHS->isParamIndexValid()) {
-      if (LHS->isVarArgParam())
+      if (LHS->isVarArgParam()) {
         LHSIndex = UINT_MAX - 1;
-      else
+      } else {
         LHSIndex = LHS->getParamIndex();
+}
     }
     if (RHS->isParamIndexValid()) {
-      if (RHS->isVarArgParam())
+      if (RHS->isVarArgParam()) {
         RHSIndex = UINT_MAX - 1;
-      else
+      } else {
         RHSIndex = RHS->getParamIndex();
+}
     }
     return LHSIndex < RHSIndex;
   }
@@ -59,19 +61,24 @@ public:
   bool operator()(const TParamCommandComment *LHS,
                   const TParamCommandComment *RHS) const {
     // Sort unresolved names last.
-    if (!LHS->isPositionValid())
+    if (!LHS->isPositionValid()) {
       return false;
-    if (!RHS->isPositionValid())
+}
+    if (!RHS->isPositionValid()) {
       return true;
+}
 
-    if (LHS->getDepth() > 1)
+    if (LHS->getDepth() > 1) {
       return false;
-    if (RHS->getDepth() > 1)
+}
+    if (RHS->getDepth() > 1) {
       return true;
+}
 
     // Sort template parameters in index order.
-    if (LHS->getDepth() == 1 && RHS->getDepth() == 1)
+    if (LHS->getDepth() == 1 && RHS->getDepth() == 1) {
       return LHS->getIndex(0) < RHS->getIndex(0);
+}
 
     // Leave all other names in source order.
     return true;
@@ -100,18 +107,21 @@ FullCommentParts::FullCommentParts(const FullComment *C,
   for (Comment::child_iterator I = C->child_begin(), E = C->child_end();
        I != E; ++I) {
     const Comment *Child = *I;
-    if (!Child)
+    if (!Child) {
       continue;
+}
     switch (Child->getCommentKind()) {
     case Comment::NoCommentKind:
       continue;
 
     case Comment::ParagraphCommentKind: {
       const ParagraphComment *PC = cast<ParagraphComment>(Child);
-      if (PC->isWhitespace())
+      if (PC->isWhitespace()) {
         break;
-      if (!FirstParagraph)
+}
+      if (!FirstParagraph) {
         FirstParagraph = PC;
+}
 
       MiscBlocks.push_back(PC);
       break;
@@ -142,11 +152,13 @@ FullCommentParts::FullCommentParts(const FullComment *C,
 
     case Comment::ParamCommandCommentKind: {
       const ParamCommandComment *PCC = cast<ParamCommandComment>(Child);
-      if (!PCC->hasParamName())
+      if (!PCC->hasParamName()) {
         break;
+}
 
-      if (!PCC->isDirectionExplicit() && !PCC->hasNonWhitespaceParagraph())
+      if (!PCC->isDirectionExplicit() && !PCC->hasNonWhitespaceParagraph()) {
         break;
+}
 
       Params.push_back(PCC);
       break;
@@ -154,11 +166,13 @@ FullCommentParts::FullCommentParts(const FullComment *C,
 
     case Comment::TParamCommandCommentKind: {
       const TParamCommandComment *TPCC = cast<TParamCommandComment>(Child);
-      if (!TPCC->hasParamName())
+      if (!TPCC->hasParamName()) {
         break;
+}
 
-      if (!TPCC->hasNonWhitespaceParagraph())
+      if (!TPCC->hasNonWhitespaceParagraph()) {
         break;
+}
 
       TParams.push_back(TPCC);
       break;
@@ -171,8 +185,9 @@ FullCommentParts::FullCommentParts(const FullComment *C,
     case Comment::VerbatimLineCommentKind: {
       const VerbatimLineComment *VLC = cast<VerbatimLineComment>(Child);
       const CommandInfo *Info = Traits.getCommandInfo(VLC->getCommandID());
-      if (!Info->IsDeclarationCommand)
+      if (!Info->IsDeclarationCommand) {
         MiscBlocks.push_back(VLC);
+}
       break;
     }
 
@@ -203,15 +218,17 @@ void printHTMLStartTagComment(const HTMLStartTagComment *C,
       Result << " ";
       const HTMLStartTagComment::Attribute &Attr = C->getAttr(i);
       Result << Attr.Name;
-      if (!Attr.Value.empty())
+      if (!Attr.Value.empty()) {
         Result << "=\"" << Attr.Value << "\"";
+}
     }
   }
 
-  if (!C->isSelfClosing())
+  if (!C->isSelfClosing()) {
     Result << ">";
-  else
+  } else {
     Result << "/>";
+}
 }
 
 class CommentASTToHTMLConverter :
@@ -265,13 +282,15 @@ void CommentASTToHTMLConverter::visitTextComment(const TextComment *C) {
 void CommentASTToHTMLConverter::visitInlineCommandComment(
                                   const InlineCommandComment *C) {
   // Nothing to render if no arguments supplied.
-  if (C->getNumArgs() == 0)
+  if (C->getNumArgs() == 0) {
     return;
+}
 
   // Nothing to render if argument is empty.
   StringRef Arg0 = C->getArgText(0);
-  if (Arg0.empty())
+  if (Arg0.empty()) {
     return;
+}
 
   switch (C->getRenderKind()) {
   case InlineCommandComment::RenderNormal:
@@ -318,8 +337,9 @@ void CommentASTToHTMLConverter::visitHTMLEndTagComment(
 
 void CommentASTToHTMLConverter::visitParagraphComment(
                                   const ParagraphComment *C) {
-  if (C->isWhitespace())
+  if (C->isWhitespace()) {
     return;
+}
 
   Result << "<p>";
   for (Comment::child_iterator I = C->child_begin(), E = C->child_end();
@@ -368,14 +388,16 @@ void CommentASTToHTMLConverter::visitParamCommandComment(
   Result << "</dt>";
 
   if (C->isParamIndexValid()) {
-    if (C->isVarArgParam())
+    if (C->isVarArgParam()) {
       Result << "<dd class=\"param-descr-index-vararg\">";
-    else
+    } else {
       Result << "<dd class=\"param-descr-index-"
              << C->getParamIndex()
              << "\">";
-  } else
+}
+  } else {
     Result << "<dd class=\"param-descr-index-invalid\">";
+}
 
   visitNonStandaloneParagraphComment(C->getParagraph());
   Result << "</dd>";
@@ -384,12 +406,13 @@ void CommentASTToHTMLConverter::visitParamCommandComment(
 void CommentASTToHTMLConverter::visitTParamCommandComment(
                                   const TParamCommandComment *C) {
   if (C->isPositionValid()) {
-    if (C->getDepth() == 1)
+    if (C->getDepth() == 1) {
       Result << "<dt class=\"tparam-name-index-"
              << C->getIndex(0)
              << "\">";
-    else
+    } else {
       Result << "<dt class=\"tparam-name-index-other\">";
+}
     appendToResultWithHTMLEscaping(C->getParamName(FC));
   } else {
     Result << "<dt class=\"tparam-name-index-invalid\">";
@@ -399,14 +422,16 @@ void CommentASTToHTMLConverter::visitTParamCommandComment(
   Result << "</dt>";
 
   if (C->isPositionValid()) {
-    if (C->getDepth() == 1)
+    if (C->getDepth() == 1) {
       Result << "<dd class=\"tparam-descr-index-"
              << C->getIndex(0)
              << "\">";
-    else
+    } else {
       Result << "<dd class=\"tparam-descr-index-other\">";
-  } else
+}
+  } else {
     Result << "<dd class=\"tparam-descr-index-invalid\">";
+}
 
   visitNonStandaloneParagraphComment(C->getParagraph());
   Result << "</dd>";
@@ -415,14 +440,16 @@ void CommentASTToHTMLConverter::visitTParamCommandComment(
 void CommentASTToHTMLConverter::visitVerbatimBlockComment(
                                   const VerbatimBlockComment *C) {
   unsigned NumLines = C->getNumLines();
-  if (NumLines == 0)
+  if (NumLines == 0) {
     return;
+}
 
   Result << "<pre>";
   for (unsigned i = 0; i != NumLines; ++i) {
     appendToResultWithHTMLEscaping(C->getText(i));
-    if (i + 1 != NumLines)
+    if (i + 1 != NumLines) {
       Result << '\n';
+}
   }
   Result << "</pre>";
 }
@@ -443,11 +470,12 @@ void CommentASTToHTMLConverter::visitFullComment(const FullComment *C) {
   FullCommentParts Parts(C, Traits);
 
   bool FirstParagraphIsBrief = false;
-  if (Parts.Headerfile)
+  if (Parts.Headerfile) {
     visit(Parts.Headerfile);
-  if (Parts.Brief)
+}
+  if (Parts.Brief) {
     visit(Parts.Brief);
-  else if (Parts.FirstParagraph) {
+  } else if (Parts.FirstParagraph) {
     Result << "<p class=\"para-brief\">";
     visitNonStandaloneParagraphComment(Parts.FirstParagraph);
     Result << "</p>";
@@ -456,29 +484,33 @@ void CommentASTToHTMLConverter::visitFullComment(const FullComment *C) {
 
   for (unsigned i = 0, e = Parts.MiscBlocks.size(); i != e; ++i) {
     const Comment *C = Parts.MiscBlocks[i];
-    if (FirstParagraphIsBrief && C == Parts.FirstParagraph)
+    if (FirstParagraphIsBrief && C == Parts.FirstParagraph) {
       continue;
+}
     visit(C);
   }
 
   if (Parts.TParams.size() != 0) {
     Result << "<dl>";
-    for (unsigned i = 0, e = Parts.TParams.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.TParams.size(); i != e; ++i) {
       visit(Parts.TParams[i]);
+}
     Result << "</dl>";
   }
 
   if (Parts.Params.size() != 0) {
     Result << "<dl>";
-    for (unsigned i = 0, e = Parts.Params.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.Params.size(); i != e; ++i) {
       visit(Parts.Params[i]);
+}
     Result << "</dl>";
   }
 
   if (Parts.Returns.size() != 0) {
     Result << "<div class=\"result-discussion\">";
-    for (unsigned i = 0, e = Parts.Returns.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.Returns.size(); i != e; ++i) {
       visit(Parts.Returns[i]);
+}
     Result << "</div>";
   }
 
@@ -486,8 +518,9 @@ void CommentASTToHTMLConverter::visitFullComment(const FullComment *C) {
 
 void CommentASTToHTMLConverter::visitNonStandaloneParagraphComment(
                                   const ParagraphComment *C) {
-  if (!C)
+  if (!C) {
     return;
+}
 
   for (Comment::child_iterator I = C->child_begin(), E = C->child_end();
        I != E; ++I) {
@@ -614,13 +647,15 @@ void CommentASTToXMLConverter::visitTextComment(const TextComment *C) {
 void CommentASTToXMLConverter::visitInlineCommandComment(
     const InlineCommandComment *C) {
   // Nothing to render if no arguments supplied.
-  if (C->getNumArgs() == 0)
+  if (C->getNumArgs() == 0) {
     return;
+}
 
   // Nothing to render if argument is empty.
   StringRef Arg0 = C->getArgText(0);
-  if (Arg0.empty())
+  if (Arg0.empty()) {
     return;
+}
 
   switch (C->getRenderKind()) {
   case InlineCommandComment::RenderNormal:
@@ -657,8 +692,9 @@ void CommentASTToXMLConverter::visitInlineCommandComment(
 void CommentASTToXMLConverter::visitHTMLStartTagComment(
     const HTMLStartTagComment *C) {
   Result << "<rawHTML";
-  if (C->isMalformed())
+  if (C->isMalformed()) {
     Result << " isMalformed=\"1\"";
+}
   Result << ">";
   {
     SmallString<32> Tag;
@@ -674,8 +710,9 @@ void CommentASTToXMLConverter::visitHTMLStartTagComment(
 void
 CommentASTToXMLConverter::visitHTMLEndTagComment(const HTMLEndTagComment *C) {
   Result << "<rawHTML";
-  if (C->isMalformed())
+  if (C->isMalformed()) {
     Result << " isMalformed=\"1\"";
+}
   Result << ">&lt;/" << C->getTagName() << "&gt;</rawHTML>";
 }
 
@@ -687,13 +724,15 @@ CommentASTToXMLConverter::visitParagraphComment(const ParagraphComment *C) {
 void CommentASTToXMLConverter::appendParagraphCommentWithKind(
                                   const ParagraphComment *C,
                                   StringRef ParagraphKind) {
-  if (C->isWhitespace())
+  if (C->isWhitespace()) {
     return;
+}
 
-  if (ParagraphKind.empty())
+  if (ParagraphKind.empty()) {
     Result << "<Para>";
-  else
+  } else {
     Result << "<Para kind=\"" << ParagraphKind << "\">";
+}
 
   for (Comment::child_iterator I = C->child_begin(), E = C->child_end();
        I != E; ++I) {
@@ -743,10 +782,11 @@ void CommentASTToXMLConverter::visitParamCommandComment(
   Result << "</Name>";
 
   if (C->isParamIndexValid()) {
-    if (C->isVarArgParam())
+    if (C->isVarArgParam()) {
       Result << "<IsVarArg />";
-    else
+    } else {
       Result << "<Index>" << C->getParamIndex() << "</Index>";
+}
   }
 
   Result << "<Direction isExplicit=\"" << C->isDirectionExplicit() << "\">";
@@ -785,8 +825,9 @@ void CommentASTToXMLConverter::visitTParamCommandComment(
 void CommentASTToXMLConverter::visitVerbatimBlockComment(
                                   const VerbatimBlockComment *C) {
   unsigned NumLines = C->getNumLines();
-  if (NumLines == 0)
+  if (NumLines == 0) {
     return;
+}
 
   switch (C->getCommandID()) {
   case CommandTraits::KCI_code:
@@ -798,8 +839,9 @@ void CommentASTToXMLConverter::visitVerbatimBlockComment(
   }
   for (unsigned i = 0; i != NumLines; ++i) {
     appendToResultWithXMLEscaping(C->getText(i));
-    if (i + 1 != NumLines)
+    if (i + 1 != NumLines) {
       Result << '\n';
+}
   }
   Result << "</Verbatim>";
 }
@@ -843,10 +885,12 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
         llvm_unreachable("partial specializations of functions "
                          "are not allowed in C++");
       }
-      if (DI->IsInstanceMethod)
+      if (DI->IsInstanceMethod) {
         Result << " isInstanceMethod=\"1\"";
-      if (DI->IsClassMethod)
+}
+      if (DI->IsClassMethod) {
         Result << " isClassMethod=\"1\"";
+}
       break;
     case DeclInfo::ClassKind:
       RootEndTag = "</Class>";
@@ -915,8 +959,9 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
         Result << "</Name>";
       }
     }
-    if (!FoundName)
+    if (!FoundName) {
       Result << "<Name>&lt;anonymous&gt;</Name>";
+}
 
     {
       // Print USR.
@@ -964,29 +1009,33 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
 
   if (Parts.TParams.size() != 0) {
     Result << "<TemplateParameters>";
-    for (unsigned i = 0, e = Parts.TParams.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.TParams.size(); i != e; ++i) {
       visit(Parts.TParams[i]);
+}
     Result << "</TemplateParameters>";
   }
 
   if (Parts.Params.size() != 0) {
     Result << "<Parameters>";
-    for (unsigned i = 0, e = Parts.Params.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.Params.size(); i != e; ++i) {
       visit(Parts.Params[i]);
+}
     Result << "</Parameters>";
   }
 
   if (Parts.Exceptions.size() != 0) {
     Result << "<Exceptions>";
-    for (unsigned i = 0, e = Parts.Exceptions.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.Exceptions.size(); i != e; ++i) {
       visit(Parts.Exceptions[i]);
+}
     Result << "</Exceptions>";
   }
 
   if (Parts.Returns.size() != 0) {
     Result << "<ResultDiscussion>";
-    for (unsigned i = 0, e = Parts.Returns.size(); i != e; ++i)
+    for (unsigned i = 0, e = Parts.Returns.size(); i != e; ++i) {
       visit(Parts.Returns[i]);
+}
     Result << "</ResultDiscussion>";
   }
 
@@ -996,18 +1045,18 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
       const AvailabilityAttr *AA = dyn_cast<AvailabilityAttr>(Attrs[i]);
       if (!AA) {
         if (const DeprecatedAttr *DA = dyn_cast<DeprecatedAttr>(Attrs[i])) {
-          if (DA->getMessage().empty())
+          if (DA->getMessage().empty()) {
             Result << "<Deprecated/>";
-          else {
+          } else {
             Result << "<Deprecated>";
             appendToResultWithXMLEscaping(DA->getMessage());
             Result << "</Deprecated>";
           }
         }
         else if (const UnavailableAttr *UA = dyn_cast<UnavailableAttr>(Attrs[i])) {
-          if (UA->getMessage().empty())
+          if (UA->getMessage().empty()) {
             Result << "<Unavailable/>";
-          else {
+          } else {
             Result << "<Unavailable>";
             appendToResultWithXMLEscaping(UA->getMessage());
             Result << "</Unavailable>";
@@ -1022,8 +1071,9 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
       if (AA->getPlatform()) {
         Distribution = AvailabilityAttr::getPrettyPlatformName(
                                         AA->getPlatform()->getName());
-        if (Distribution.empty())
+        if (Distribution.empty()) {
           Distribution = AA->getPlatform()->getName();
+}
       }
       Result << " distribution=\"" << Distribution << "\">";
       VersionTuple IntroducedInVersion = AA->getIntroduced();
@@ -1050,8 +1100,9 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
         appendToResultWithXMLEscaping(DeprecationSummary);
         Result << "</DeprecationSummary>";
       }
-      if (AA->getUnavailable())
+      if (AA->getUnavailable()) {
         Result << "<Unavailable/>";
+}
       Result << "</Availability>";
     }
   }
@@ -1060,16 +1111,18 @@ void CommentASTToXMLConverter::visitFullComment(const FullComment *C) {
     bool StartTagEmitted = false;
     for (unsigned i = 0, e = Parts.MiscBlocks.size(); i != e; ++i) {
       const Comment *C = Parts.MiscBlocks[i];
-      if (FirstParagraphIsBrief && C == Parts.FirstParagraph)
+      if (FirstParagraphIsBrief && C == Parts.FirstParagraph) {
         continue;
+}
       if (!StartTagEmitted) {
         Result << "<Discussion>";
         StartTagEmitted = true;
       }
       visit(C);
     }
-    if (StartTagEmitted)
+    if (StartTagEmitted) {
       Result << "</Discussion>";
+}
   }
 
   Result << RootEndTag;
@@ -1102,8 +1155,9 @@ void CommentASTToXMLConverter::appendToResultWithXMLEscaping(StringRef S) {
 }
 
 void CommentASTToXMLConverter::appendToResultWithCDATAEscaping(StringRef S) {
-  if (S.empty())
+  if (S.empty()) {
     return;
+}
 
   Result << "<![CDATA[";
   while (!S.empty()) {
@@ -1113,8 +1167,9 @@ void CommentASTToXMLConverter::appendToResultWithCDATAEscaping(StringRef S) {
       S = S.drop_front(3);
       continue;
     }
-    if (Pos == StringRef::npos)
+    if (Pos == StringRef::npos) {
       Pos = S.size();
+}
 
     Result << S.substr(0, Pos);
 

@@ -31,8 +31,9 @@ static bool isSupportedMCU(const StringRef MCU) {
 }
 
 static StringRef getSupportedHWMult(const Arg *MCU) {
-  if (!MCU)
+  if (!MCU) {
     return "none";
+}
 
   return llvm::StringSwitch<StringRef>(MCU->getValue())
 #define MSP430_MCU_FEAT(NAME, HWMULT) .Case(NAME, HWMULT)
@@ -62,8 +63,9 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
   }
 
   const Arg *HWMultArg = Args.getLastArg(options::OPT_mhwmult_EQ);
-  if (!MCU && !HWMultArg)
+  if (!MCU && !HWMultArg) {
     return;
+}
 
   StringRef HWMult = HWMultArg ? HWMultArg->getValue() : "auto";
   StringRef SupportedHWMult = getSupportedHWMult(MCU);
@@ -71,8 +73,9 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
   if (HWMult == "auto") {
     // 'auto' - deduce hw multiplier support based on mcu name provided.
     // If no mcu name is provided, assume no hw multiplier is supported.
-    if (!MCU)
+    if (!MCU) {
       D.Diag(clang::diag::warn_drv_msp430_hwmult_no_device);
+}
     HWMult = SupportedHWMult;
   }
 
@@ -84,11 +87,13 @@ void msp430::getMSP430TargetFeatures(const Driver &D, const ArgList &Args,
     return;
   }
 
-  if (MCU && SupportedHWMult == "none")
+  if (MCU && SupportedHWMult == "none") {
     D.Diag(clang::diag::warn_drv_msp430_hwmult_unsupported) << HWMult;
-  if (MCU && HWMult != SupportedHWMult)
+}
+  if (MCU && HWMult != SupportedHWMult) {
     D.Diag(clang::diag::warn_drv_msp430_hwmult_mismatch)
         << SupportedHWMult << HWMult;
+}
 
   if (HWMult == "16bit") {
     // '16bit' - for 16-bit only hw multiplier.
@@ -133,14 +138,16 @@ MSP430ToolChain::MSP430ToolChain(const Driver &D, const llvm::Triple &Triple,
 }
 
 std::string MSP430ToolChain::computeSysRoot() const {
-  if (!getDriver().SysRoot.empty())
+  if (!getDriver().SysRoot.empty()) {
     return getDriver().SysRoot;
+}
 
   SmallString<128> Dir;
-  if (GCCInstallation.isValid())
+  if (GCCInstallation.isValid()) {
     llvm::sys::path::append(Dir, GCCInstallation.getParentLibPath(), "..");
-  else
+  } else {
     llvm::sys::path::append(Dir, getDriver().Dir, "..");
+}
 
   return std::string(Dir.str());
 }
@@ -148,8 +155,9 @@ std::string MSP430ToolChain::computeSysRoot() const {
 void MSP430ToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                 ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(options::OPT_nostdinc) ||
-      DriverArgs.hasArg(options::OPT_nostdlibinc))
+      DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
 
   SmallString<128> Dir(computeSysRoot());
   llvm::sys::path::append(Dir, "msp430-elf", "include");
@@ -162,8 +170,9 @@ void MSP430ToolChain::addClangTargetOptions(const ArgList &DriverArgs,
   CC1Args.push_back("-nostdsysteminc");
 
   const auto *MCUArg = DriverArgs.getLastArg(options::OPT_mmcu_EQ);
-  if (!MCUArg)
+  if (!MCUArg) {
     return;
+}
 
   const StringRef MCU = MCUArg->getValue();
   if (MCU.startswith("msp430i")) {
@@ -208,8 +217,9 @@ void msp430::Linker::AddDefaultLibs(const llvm::opt::ArgList &Args,
     // contains main() is compiled by clang and then passed to
     // gcc compiler driver for linkage.
     CmdArgs.push_back("--undefined=__crt0_call_exit");
-  } else
+  } else {
     CmdArgs.push_back("-lnosys");
+}
 
   CmdArgs.push_back("--end-group");
   AddRunTimeLibs(ToolChain, D, CmdArgs, Args);
@@ -240,8 +250,9 @@ static void AddSspArgs(const ArgList &Args, ArgStringList &CmdArgs) {
 static void AddImplicitLinkerScript(const std::string SysRoot,
                                     const ArgList &Args,
                                     ArgStringList &CmdArgs) {
-  if (Args.hasArg(options::OPT_T))
+  if (Args.hasArg(options::OPT_T)) {
     return;
+}
 
   if (Args.hasArg(options::OPT_msim)) {
     CmdArgs.push_back("-Tmsp430-sim.ld");
@@ -249,8 +260,9 @@ static void AddImplicitLinkerScript(const std::string SysRoot,
   }
 
   const Arg *MCUArg = Args.getLastArg(options::OPT_mmcu_EQ);
-  if (!MCUArg)
+  if (!MCUArg) {
     return;
+}
 
   SmallString<128> MCULinkerScriptPath(SysRoot);
   llvm::sys::path::append(MCULinkerScriptPath, "include");
@@ -274,10 +286,12 @@ void msp430::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   bool UseStartAndEndFiles = !Args.hasArg(options::OPT_nostdlib, options::OPT_r,
                                           options::OPT_nostartfiles);
 
-  if (Args.hasArg(options::OPT_mrelax))
+  if (Args.hasArg(options::OPT_mrelax)) {
     CmdArgs.push_back("--relax");
-  if (!Args.hasArg(options::OPT_r, options::OPT_g_Group))
+}
+  if (!Args.hasArg(options::OPT_r, options::OPT_g_Group)) {
     CmdArgs.push_back("--gc-sections");
+}
 
   Args.AddAllArgs(CmdArgs, {
                                options::OPT_e,
@@ -287,8 +301,9 @@ void msp430::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                options::OPT_u,
                            });
 
-  if (UseStartAndEndFiles)
+  if (UseStartAndEndFiles) {
     AddStartFiles(UseExceptions, Args, CmdArgs);
+}
 
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
@@ -304,8 +319,9 @@ void msp430::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     }
   }
 
-  if (UseStartAndEndFiles)
+  if (UseStartAndEndFiles) {
     AddEndFiles(UseExceptions, Args, CmdArgs);
+}
 
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());

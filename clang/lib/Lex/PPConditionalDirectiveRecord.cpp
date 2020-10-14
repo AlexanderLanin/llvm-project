@@ -22,37 +22,44 @@ PPConditionalDirectiveRecord::PPConditionalDirectiveRecord(SourceManager &SM)
 
 bool PPConditionalDirectiveRecord::rangeIntersectsConditionalDirective(
                                                       SourceRange Range) const {
-  if (Range.isInvalid())
+  if (Range.isInvalid()) {
     return false;
+}
 
   CondDirectiveLocsTy::const_iterator low = llvm::lower_bound(
       CondDirectiveLocs, Range.getBegin(), CondDirectiveLoc::Comp(SourceMgr));
-  if (low == CondDirectiveLocs.end())
+  if (low == CondDirectiveLocs.end()) {
     return false;
+}
 
-  if (SourceMgr.isBeforeInTranslationUnit(Range.getEnd(), low->getLoc()))
+  if (SourceMgr.isBeforeInTranslationUnit(Range.getEnd(), low->getLoc())) {
     return false;
+}
 
   CondDirectiveLocsTy::const_iterator
     upp = std::upper_bound(low, CondDirectiveLocs.end(),
                            Range.getEnd(), CondDirectiveLoc::Comp(SourceMgr));
   SourceLocation uppRegion;
-  if (upp != CondDirectiveLocs.end())
+  if (upp != CondDirectiveLocs.end()) {
     uppRegion = upp->getRegionLoc();
+}
 
   return low->getRegionLoc() != uppRegion;
 }
 
 SourceLocation PPConditionalDirectiveRecord::findConditionalDirectiveRegionLoc(
                                                      SourceLocation Loc) const {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return SourceLocation();
-  if (CondDirectiveLocs.empty())
+}
+  if (CondDirectiveLocs.empty()) {
     return SourceLocation();
+}
 
   if (SourceMgr.isBeforeInTranslationUnit(CondDirectiveLocs.back().getLoc(),
-                                          Loc))
+                                          Loc)) {
     return CondDirectiveStack.back();
+}
 
   CondDirectiveLocsTy::const_iterator low = llvm::lower_bound(
       CondDirectiveLocs, Loc, CondDirectiveLoc::Comp(SourceMgr));
@@ -63,8 +70,9 @@ SourceLocation PPConditionalDirectiveRecord::findConditionalDirectiveRegionLoc(
 void PPConditionalDirectiveRecord::addCondDirectiveLoc(
                                                       CondDirectiveLoc DirLoc) {
   // Ignore directives in system headers.
-  if (SourceMgr.isInSystemHeader(DirLoc.getLoc()))
+  if (SourceMgr.isInSystemHeader(DirLoc.getLoc())) {
     return;
+}
 
   assert(CondDirectiveLocs.empty() ||
          SourceMgr.isBeforeInTranslationUnit(CondDirectiveLocs.back().getLoc(),

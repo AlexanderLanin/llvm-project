@@ -173,8 +173,9 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
                                      CheckerContext &C) const {
   // Record new iterator positions and iterator position changes
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+}
 
   if (Func->isOverloadedOperator()) {
     const auto Op = Func->getOverloadedOperator();
@@ -183,8 +184,9 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
   }
 
   const auto *OrigExpr = Call.getOriginExpr();
-  if (!OrigExpr)
+  if (!OrigExpr) {
     return;
+}
 
   const AdvanceFn *Handler = AdvanceLikeFunctions.lookup(Call);
   if (Handler) {
@@ -192,14 +194,16 @@ void IteratorModeling::checkPostCall(const CallEvent &Call,
     return;
   }
 
-  if (!isIteratorType(Call.getResultType()))
+  if (!isIteratorType(Call.getResultType())) {
     return;
+}
 
   auto State = C.getState();
 
   // Already bound to container?
-  if (getIteratorPosition(State, Call.getReturnValue()))
+  if (getIteratorPosition(State, Call.getReturnValue())) {
     return;
+}
 
   // Copy-like and move constructors
   if (isa<CXXConstructorCall>(&Call) && Call.getNumArgs() == 1) {
@@ -251,8 +255,9 @@ void IteratorModeling::checkBind(SVal Loc, SVal Val, const Stmt *S,
 void IteratorModeling::checkPostStmt(const UnaryOperator *UO,
                                      CheckerContext &C) const {
   UnaryOperatorKind OK = UO->getOpcode();
-  if (!isIncrementOperator(OK) && !isDecrementOperator(OK))
+  if (!isIncrementOperator(OK) && !isDecrementOperator(OK)) {
     return;
+}
 
   auto &SVB = C.getSValBuilder();
   handlePtrIncrOrDecr(C, UO->getSubExpr(),
@@ -281,8 +286,9 @@ void IteratorModeling::checkPostStmt(const BinaryOperator *BO,
     const Expr *const &AmountExpr = IsIterOnLHS ? RHS : LHS;
 
     // The non-iterator side must have an integral or enumeration type.
-    if (!AmountExpr->getType()->isIntegralOrEnumerationType())
+    if (!AmountExpr->getType()->isIntegralOrEnumerationType()) {
       return;
+}
     const SVal &AmountVal = IsIterOnLHS ? RVal : LVal;
     handlePtrIncrOrDecr(C, IterExpr, BinaryOperator::getOverloadedOperator(OK),
                         AmountVal);
@@ -294,8 +300,9 @@ void IteratorModeling::checkPostStmt(const MaterializeTemporaryExpr *MTE,
   /* Transfer iterator state to temporary objects */
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, C.getSVal(MTE->getSubExpr()));
-  if (!Pos)
+  if (!Pos) {
     return;
+}
   State = setIteratorPosition(State, C.getSVal(MTE), *Pos);
   C.addTransition(State);
 }
@@ -306,17 +313,21 @@ void IteratorModeling::checkLiveSymbols(ProgramStateRef State,
   auto RegionMap = State->get<IteratorRegionMap>();
   for (const auto &Reg : RegionMap) {
     const auto Offset = Reg.second.getOffset();
-    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i)
-      if (isa<SymbolData>(*i))
+    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i) {
+      if (isa<SymbolData>(*i)) {
         SR.markLive(*i);
+}
+}
   }
 
   auto SymbolMap = State->get<IteratorSymbolMap>();
   for (const auto &Sym : SymbolMap) {
     const auto Offset = Sym.second.getOffset();
-    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i)
-      if (isa<SymbolData>(*i))
+    for (auto i = Offset->symbol_begin(); i != Offset->symbol_end(); ++i) {
+      if (isa<SymbolData>(*i)) {
         SR.markLive(*i);
+}
+}
   }
 
 }
@@ -354,8 +365,9 @@ IteratorModeling::handleOverloadedOperator(CheckerContext &C,
                                            OverloadedOperatorKind Op) const {
     if (isSimpleComparisonOperator(Op)) {
       const auto *OrigExpr = Call.getOriginExpr();
-      if (!OrigExpr)
+      if (!OrigExpr) {
         return;
+}
 
       if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
         handleComparison(C, OrigExpr, Call.getReturnValue(),
@@ -368,8 +380,9 @@ IteratorModeling::handleOverloadedOperator(CheckerContext &C,
       return;
     } else if (isRandomIncrOrDecrOperator(Op)) {
       const auto *OrigExpr = Call.getOriginExpr();
-      if (!OrigExpr)
+      if (!OrigExpr) {
         return;
+}
 
       if (const auto *InstCall = dyn_cast<CXXInstanceCall>(&Call)) {
         if (Call.getNumArgs() >= 1 &&
@@ -463,8 +476,9 @@ void IteratorModeling::handleComparison(CheckerContext &C, const Expr *CE,
   } else if (RPos) {
     Cont = RPos->getContainer();
   }
-  if (!Cont)
+  if (!Cont) {
     return;
+}
 
   // At least one of the iterators has recorded positions. If one of them does
   // not then create a new symbol for the offset.
@@ -489,8 +503,9 @@ void IteratorModeling::handleComparison(CheckerContext &C, const Expr *CE,
   // If the value for which we just tried to set a new iterator position is
   // an `SVal`for which no iterator position can be set then the setting was
   // unsuccessful. We cannot handle the comparison in this case.
-  if (!LPos || !RPos)
+  if (!LPos || !RPos) {
     return;
+}
 
   // We cannot make assumptions on `UnknownVal`. Let us conjure a symbol
   // instead.
@@ -521,8 +536,9 @@ void IteratorModeling::processComparison(CheckerContext &C,
   }
 
   const auto ConditionVal = RetVal.getAs<DefinedSVal>();
-  if (!ConditionVal)
+  if (!ConditionVal) {
     return;
+}
 
   if (auto StateTrue = relateSymbols(State, Sym1, Sym2, Op == OO_EqualEqual)) {
     StateTrue = StateTrue->assume(*ConditionVal, true);
@@ -543,8 +559,9 @@ void IteratorModeling::handleIncrement(CheckerContext &C, const SVal &RetVal,
   auto &BVF = C.getSymbolManager().getBasicVals();
 
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   auto NewState =
     advancePosition(State, Iter, OO_Plus,
@@ -569,8 +586,9 @@ void IteratorModeling::handleDecrement(CheckerContext &C, const SVal &RetVal,
   auto &BVF = C.getSymbolManager().getBasicVals();
 
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   auto NewState =
     advancePosition(State, Iter, OO_Minus,
@@ -597,8 +615,9 @@ void IteratorModeling::handleRandomIncrOrDecr(CheckerContext &C, const Expr *CE,
   auto State = C.getState();
 
   const auto *Pos = getIteratorPosition(State, Iterator);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   const auto *Value = &Amount;
   SVal Val;
@@ -630,20 +649,23 @@ void IteratorModeling::handlePtrIncrOrDecr(CheckerContext &C,
                                            const Expr *Iterator,
                                            OverloadedOperatorKind OK,
                                            SVal Offset) const {
-  if (!Offset.getAs<DefinedSVal>())
+  if (!Offset.getAs<DefinedSVal>()) {
     return;
+}
 
   QualType PtrType = Iterator->getType();
-  if (!PtrType->isPointerType())
+  if (!PtrType->isPointerType()) {
     return;
+}
   QualType ElementType = PtrType->getPointeeType();
 
   ProgramStateRef State = C.getState();
   SVal OldVal = State->getSVal(Iterator, C.getLocationContext());
 
   const IteratorPosition *OldPos = getIteratorPosition(State, OldVal);
-  if (!OldPos)
+  if (!OldPos) {
     return;
+}
 
   SVal NewVal;
   if (OK == OO_Plus || OK == OO_PlusEqual) {
@@ -708,8 +730,9 @@ bool IteratorModeling::noChangeInAdvance(CheckerContext &C, SVal Iter,
   // If we have no position after the call of `std::advance`, then we are not
   // interested. (Modeling of an inlined `std::advance()` should not remove the
   // position in any case.)
-  if (!PosAfter)
+  if (!PosAfter) {
     return false;
+}
 
   const ExplodedNode *N = findCallEnter(C.getPredecessor(), CE);
   assert(N && "Any call should have a `CallEnter` node.");
@@ -722,8 +745,9 @@ bool IteratorModeling::noChangeInAdvance(CheckerContext &C, SVal Iter,
   //        functions is still incomplete which may result in cases where
   //        the new position is assigned to the wrong pointer. This causes
   //        crash if we use an assertion here.
-  if (!PosBefore)
+  if (!PosBefore) {
     return false;
+}
 
   return PosBefore->getOffset() == PosAfter->getOffset();
 }
@@ -738,8 +762,9 @@ void IteratorModeling::printState(raw_ostream &Out, ProgramStateRef State,
   if (!SymbolMap.isEmpty() || !RegionMap.isEmpty()) {
     Out << Sep << "Iterator Positions :" << NL;
     for (const auto &Sym : SymbolMap) {
-      if (Count++)
+      if (Count++) {
         Out << NL;
+}
 
       Sym.first->dumpToStream(Out);
       Out << " : ";
@@ -751,8 +776,9 @@ void IteratorModeling::printState(raw_ostream &Out, ProgramStateRef State,
     }
 
     for (const auto &Reg : RegionMap) {
-      if (Count++)
+      if (Count++) {
         Out << NL;
+}
 
       Reg.first->dumpToStream(Out);
       Out << " : ";
@@ -804,8 +830,9 @@ ProgramStateRef relateSymbols(ProgramStateRef State, SymbolRef Sym1,
     "Symbol comparison must be a `DefinedSVal`");
 
   auto NewState = State->assume(comparison.castAs<DefinedSVal>(), Equal);
-  if (!NewState)
+  if (!NewState) {
     return nullptr;
+}
 
   if (const auto CompSym = comparison.getAsSymbol()) {
     assert(isa<SymIntExpr>(CompSym) &&
@@ -823,8 +850,9 @@ bool isBoundThroughLazyCompoundVal(const Environment &Env,
                                    const MemRegion *Reg) {
   for (const auto &Binding : Env) {
     if (const auto LCVal = Binding.second.getAs<nonloc::LazyCompoundVal>()) {
-      if (LCVal->getRegion() == Reg)
+      if (LCVal->getRegion() == Reg) {
         return true;
+}
     }
   }
 
@@ -835,8 +863,9 @@ const ExplodedNode *findCallEnter(const ExplodedNode *Node, const Expr *Call) {
   while (Node) {
     ProgramPoint PP = Node->getLocation();
     if (auto Enter = PP.getAs<CallEnter>()) {
-      if (Enter->getCallExpr() == Call)
+      if (Enter->getCallExpr() == Call) {
         break;
+}
     }
 
     Node = Node->getFirstPred();

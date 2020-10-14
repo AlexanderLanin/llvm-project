@@ -113,13 +113,15 @@ private:
   }
 
   bool setInsert(const T &V) {
-    if (count(V) != 0)
+    if (count(V) != 0) {
       return false; // Already exists.
+}
     // Does not exist, Can/need to record it.
     if (isSmall()) { // Are we still using Vector for uniqness tracking?
       // Will one more entry fit within small-sized Vector?
-      if (!entiretyOfVectorSmallSizeIsOccupied())
+      if (!entiretyOfVectorSmallSizeIsOccupied()) {
         return true; // We'll insert into vector right afterwards anyway.
+}
       // Time to switch to Set.
       populateSet();
     }
@@ -136,8 +138,9 @@ public:
   /// \returns true if the element was inserted into the SmartSmallSetVector.
   bool insert(const T &X) {
     bool result = setInsert(X);
-    if (result)
+    if (result) {
       Vector.push_back(X);
+}
     return result;
   }
 
@@ -178,8 +181,9 @@ CallStackTy PathfindSomeCycle(ArrayRef<CallGraphNode *> SCC) {
   CallGraphNode::CallRecord *Node = &EntryNode;
   while (true) {
     // Did we see this node before?
-    if (!CallStackSet.insert(*Node))
+    if (!CallStackSet.insert(*Node)) {
       break; // Cycle completed! Note that didn't insert the node into stack!
+}
     // Else, perform depth-first traversal: out of all callees, pick first one
     // that is part of this SCC. This is not guaranteed to yield shortest cycle.
     Node = llvm::find_if(Node->Callee->callees(), NodeIsPartOfSCC);
@@ -264,8 +268,9 @@ void NoRecursionCheck::check(const MatchFinder::MatchResult &Result) {
   for (llvm::scc_iterator<CallGraph *> SCCI = llvm::scc_begin(&CG),
                                        SCCE = llvm::scc_end(&CG);
        SCCI != SCCE; ++SCCI) {
-    if (!SCCI.hasCycle()) // We only care about cycles, not standalone nodes.
+    if (!SCCI.hasCycle()) { // We only care about cycles, not standalone nodes.
       continue;
+}
     handleSCC(*SCCI);
   }
 }

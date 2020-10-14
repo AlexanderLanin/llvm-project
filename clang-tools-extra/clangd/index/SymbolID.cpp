@@ -34,11 +34,14 @@ SymbolID SymbolID::fromRaw(llvm::StringRef Raw) {
 std::string SymbolID::str() const { return llvm::toHex(raw()); }
 
 llvm::Expected<SymbolID> SymbolID::fromStr(llvm::StringRef Str) {
-  if (Str.size() != RawSize * 2)
+  if (Str.size() != RawSize * 2) {
     return error("Bad ID length");
-  for (char C : Str)
-    if (!llvm::isHexDigit(C))
+}
+  for (char C : Str) {
+    if (!llvm::isHexDigit(C)) {
       return error("Bad hex ID");
+}
+}
   return fromRaw(llvm::fromHex(Str));
 }
 

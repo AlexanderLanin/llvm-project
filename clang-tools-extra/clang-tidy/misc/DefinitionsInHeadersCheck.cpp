@@ -70,8 +70,9 @@ void DefinitionsInHeadersCheck::registerMatchers(MatchFinder *Finder) {
 
 void DefinitionsInHeadersCheck::check(const MatchFinder::MatchResult &Result) {
   // Don't run the check in failing TUs.
-  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred())
+  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred()) {
     return;
+}
 
   // C++ [basic.def.odr] p6:
   // There can be more than one definition of a class type, enumeration type,
@@ -83,8 +84,9 @@ void DefinitionsInHeadersCheck::check(const MatchFinder::MatchResult &Result) {
   // satisfy the following requirements.
   const auto *ND = Result.Nodes.getNodeAs<NamedDecl>("name-decl");
   assert(ND);
-  if (ND->isInvalidDecl())
+  if (ND->isInvalidDecl()) {
     return;
+}
 
   // Internal linkage variable definitions are ignored for now:
   //   const int a = 1;
@@ -95,29 +97,35 @@ void DefinitionsInHeadersCheck::check(const MatchFinder::MatchResult &Result) {
   //
   // FIXME: Should declarations in anonymous namespaces get the same treatment
   // as static / const declarations?
-  if (!ND->hasExternalFormalLinkage() && !ND->isInAnonymousNamespace())
+  if (!ND->hasExternalFormalLinkage() && !ND->isInAnonymousNamespace()) {
     return;
+}
 
   if (const auto *FD = dyn_cast<FunctionDecl>(ND)) {
     // Inline functions are allowed.
-    if (FD->isInlined())
+    if (FD->isInlined()) {
       return;
+}
     // Function templates are allowed.
-    if (FD->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate)
+    if (FD->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
       return;
+}
     // Ignore instantiated functions.
-    if (FD->isTemplateInstantiation())
+    if (FD->isTemplateInstantiation()) {
       return;
+}
     // Member function of a class template and member function of a nested class
     // in a class template are allowed.
     if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
       const auto *DC = MD->getDeclContext();
       while (DC->isRecord()) {
         if (const auto *RD = dyn_cast<CXXRecordDecl>(DC)) {
-          if (isa<ClassTemplatePartialSpecializationDecl>(RD))
+          if (isa<ClassTemplatePartialSpecializationDecl>(RD)) {
             return;
-          if (RD->getDescribedClassTemplate())
+}
+          if (RD->getDescribedClassTemplate()) {
             return;
+}
         }
         DC = DC->getParent();
       }
@@ -134,20 +142,25 @@ void DefinitionsInHeadersCheck::check(const MatchFinder::MatchResult &Result) {
         << FixItHint::CreateInsertion(FD->getInnerLocStart(), "inline ");
   } else if (const auto *VD = dyn_cast<VarDecl>(ND)) {
     // C++14 variable templates are allowed.
-    if (VD->getDescribedVarTemplate())
+    if (VD->getDescribedVarTemplate()) {
       return;
+}
     // Static data members of a class template are allowed.
-    if (VD->getDeclContext()->isDependentContext() && VD->isStaticDataMember())
+    if (VD->getDeclContext()->isDependentContext() && VD->isStaticDataMember()) {
       return;
+}
     // Ignore instantiated static data members of classes.
-    if (isTemplateInstantiation(VD->getTemplateSpecializationKind()))
+    if (isTemplateInstantiation(VD->getTemplateSpecializationKind())) {
       return;
+}
     // Ignore variable definition within function scope.
-    if (VD->hasLocalStorage() || VD->isStaticLocal())
+    if (VD->hasLocalStorage() || VD->isStaticLocal()) {
       return;
+}
     // Ignore inline variables.
-    if (VD->isInline())
+    if (VD->isInline()) {
       return;
+}
 
     diag(VD->getLocation(),
          "variable %0 defined in a header file; "

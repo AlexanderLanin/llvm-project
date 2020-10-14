@@ -105,11 +105,13 @@ bool PlacementNewChecker::checkPlaceCapacityIsSufficient(
   SVal SizeOfTarget = getExtentSizeOfNewTarget(NE, C, IsArrayTypeAllocated);
   SVal SizeOfPlace = getExtentSizeOfPlace(NE, C);
   const auto SizeOfTargetCI = SizeOfTarget.getAs<nonloc::ConcreteInt>();
-  if (!SizeOfTargetCI)
+  if (!SizeOfTargetCI) {
     return true;
+}
   const auto SizeOfPlaceCI = SizeOfPlace.getAs<nonloc::ConcreteInt>();
-  if (!SizeOfPlaceCI)
+  if (!SizeOfPlaceCI) {
     return true;
+}
 
   if ((SizeOfPlaceCI->getValue() < SizeOfTargetCI->getValue()) ||
       (IsArrayTypeAllocated &&
@@ -118,25 +120,26 @@ bool PlacementNewChecker::checkPlaceCapacityIsSufficient(
       std::string Msg;
       // TODO: use clang constant
       if (IsArrayTypeAllocated &&
-          SizeOfPlaceCI->getValue() > SizeOfTargetCI->getValue())
+          SizeOfPlaceCI->getValue() > SizeOfTargetCI->getValue()) {
         Msg = std::string(llvm::formatv(
             "{0} bytes is possibly not enough for array allocation which "
             "requires {1} bytes. Current overhead requires the size of {2} "
             "bytes",
             SizeOfPlaceCI->getValue(), SizeOfTargetCI->getValue(),
             SizeOfPlaceCI->getValue() - SizeOfTargetCI->getValue()));
-      else if (IsArrayTypeAllocated &&
-               SizeOfPlaceCI->getValue() == SizeOfTargetCI->getValue())
+      } else if (IsArrayTypeAllocated &&
+               SizeOfPlaceCI->getValue() == SizeOfTargetCI->getValue()) {
         Msg = std::string(llvm::formatv(
             "Storage provided to placement new is only {0} bytes, "
             "whereas the allocated array type requires more space for "
             "internal needs",
             SizeOfPlaceCI->getValue(), SizeOfTargetCI->getValue()));
-      else
+      } else {
         Msg = std::string(llvm::formatv(
             "Storage provided to placement new is only {0} bytes, "
             "whereas the allocated type requires {1} bytes",
             SizeOfPlaceCI->getValue(), SizeOfTargetCI->getValue()));
+}
 
       auto R = std::make_unique<PathSensitiveBugReport>(SBT, Msg, N);
       bugreporter::trackExpressionValue(N, NE->getPlacementArg(0), *R);
@@ -167,8 +170,9 @@ void PlacementNewChecker::emitBadAlignReport(const Expr *P, CheckerContext &C,
 unsigned PlacementNewChecker::getStorageAlign(CheckerContext &C,
                                               const ValueDecl *VD) const {
   unsigned StorageTAlign = C.getASTContext().getTypeAlign(VD->getType());
-  if (unsigned SpecifiedAlignment = VD->getMaxAlignment())
+  if (unsigned SpecifiedAlignment = VD->getMaxAlignment()) {
     StorageTAlign = SpecifiedAlignment;
+}
 
   return StorageTAlign / C.getASTContext().getCharWidth();
 }
@@ -190,20 +194,23 @@ void PlacementNewChecker::checkElementRegionAlign(
     }
 
     const DeclRegion *TheElementDeclRegion = SuperRegion->getAs<DeclRegion>();
-    if (!TheElementDeclRegion)
+    if (!TheElementDeclRegion) {
       return false;
+}
 
     const DeclRegion *BaseDeclRegion = R->getBaseRegion()->getAs<DeclRegion>();
-    if (!BaseDeclRegion)
+    if (!BaseDeclRegion) {
       return false;
+}
 
     unsigned BaseRegionAlign = 0;
     // We must use alignment TheElementDeclRegion if it has its own alignment
     // specifier
-    if (TheElementDeclRegion->getDecl()->getMaxAlignment())
+    if (TheElementDeclRegion->getDecl()->getMaxAlignment()) {
       BaseRegionAlign = getStorageAlign(C, TheElementDeclRegion->getDecl());
-    else
+    } else {
       BaseRegionAlign = getStorageAlign(C, BaseDeclRegion->getDecl());
+}
 
     if (AllocatedTAlign > BaseRegionAlign) {
       emitBadAlignReport(P, C, AllocatedTAlign, BaseRegionAlign);
@@ -215,8 +222,9 @@ void PlacementNewChecker::checkElementRegionAlign(
 
   auto CheckElementRegionOffset = [this, R, &C, P, AllocatedTAlign]() -> void {
     RegionOffset TheOffsetRegion = R->getAsOffset();
-    if (TheOffsetRegion.hasSymbolicOffset())
+    if (TheOffsetRegion.hasSymbolicOffset()) {
       return;
+}
 
     unsigned Offset =
         TheOffsetRegion.getOffset() / C.getASTContext().getCharWidth();
@@ -236,8 +244,9 @@ void PlacementNewChecker::checkFieldRegionAlign(
     const FieldRegion *R, CheckerContext &C, const Expr *P,
     unsigned AllocatedTAlign) const {
   const MemRegion *BaseRegion = R->getBaseRegion();
-  if (!BaseRegion)
+  if (!BaseRegion) {
     return;
+}
 
   if (const VarRegion *TheVarRegion = BaseRegion->getAs<VarRegion>()) {
     if (isVarRegionAlignedProperly(TheVarRegion, C, P, AllocatedTAlign)) {
@@ -245,14 +254,16 @@ void PlacementNewChecker::checkFieldRegionAlign(
       // offset is zero, we also need to check its own
       // align.
       RegionOffset Offset = R->getAsOffset();
-      if (Offset.hasSymbolicOffset())
+      if (Offset.hasSymbolicOffset()) {
         return;
+}
 
       int64_t OffsetValue =
           Offset.getOffset() / C.getASTContext().getCharWidth();
       unsigned AddressAlign = OffsetValue % AllocatedTAlign;
-      if (AddressAlign != 0)
+      if (AddressAlign != 0) {
         emitBadAlignReport(P, C, AllocatedTAlign, AddressAlign);
+}
     }
   }
 }
@@ -281,12 +292,13 @@ bool PlacementNewChecker::checkPlaceIsAlignedProperly(const CXXNewExpr *NE,
 
   SVal PlaceVal = C.getSVal(Place);
   if (const MemRegion *MRegion = PlaceVal.getAsRegion()) {
-    if (const ElementRegion *TheElementRegion = MRegion->getAs<ElementRegion>())
+    if (const ElementRegion *TheElementRegion = MRegion->getAs<ElementRegion>()) {
       checkElementRegionAlign(TheElementRegion, C, Place, AllocatedTAlign);
-    else if (const FieldRegion *TheFieldRegion = MRegion->getAs<FieldRegion>())
+    } else if (const FieldRegion *TheFieldRegion = MRegion->getAs<FieldRegion>()) {
       checkFieldRegionAlign(TheFieldRegion, C, Place, AllocatedTAlign);
-    else if (const VarRegion *TheVarRegion = MRegion->getAs<VarRegion>())
+    } else if (const VarRegion *TheVarRegion = MRegion->getAs<VarRegion>()) {
       isVarRegionAlignedProperly(TheVarRegion, C, Place, AllocatedTAlign);
+}
   }
 
   return true;
@@ -295,14 +307,17 @@ bool PlacementNewChecker::checkPlaceIsAlignedProperly(const CXXNewExpr *NE,
 void PlacementNewChecker::checkPreStmt(const CXXNewExpr *NE,
                                        CheckerContext &C) const {
   // Check only the default placement new.
-  if (!NE->getOperatorNew()->isReservedGlobalPlacementOperator())
+  if (!NE->getOperatorNew()->isReservedGlobalPlacementOperator()) {
     return;
+}
 
-  if (NE->getNumPlacementArgs() == 0)
+  if (NE->getNumPlacementArgs() == 0) {
     return;
+}
 
-  if (!checkPlaceCapacityIsSufficient(NE, C))
+  if (!checkPlaceCapacityIsSufficient(NE, C)) {
     return;
+}
 
   checkPlaceIsAlignedProperly(NE, C);
 }

@@ -27,15 +27,17 @@ public:
     Finder->addMatcher(ast_matchers::callExpr().bind("foo"), this);
   }
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override {
-    if (!Aliaser)
+    if (!Aliaser) {
       Aliaser.reset(new NamespaceAliaser(*Result.SourceManager));
+}
 
     const auto *Call = Result.Nodes.getNodeAs<CallExpr>("foo");
     assert(Call != nullptr && "Did not find node \"foo\"");
     auto Hint = Aliaser->createAlias(*Result.Context, *Call, "::foo::bar",
                                      {"b", "some_alias"});
-    if (Hint.hasValue())
+    if (Hint.hasValue()) {
       diag(Call->getBeginLoc(), "Fix for testing") << Hint.getValue();
+}
 
     diag(Call->getBeginLoc(), "insert call") << FixItHint::CreateInsertion(
         Call->getBeginLoc(),

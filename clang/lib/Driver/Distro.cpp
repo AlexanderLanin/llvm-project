@@ -23,18 +23,20 @@ using namespace clang;
 static Distro::DistroType DetectOsRelease(llvm::vfs::FileSystem &VFS) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> File =
       VFS.getBufferForFile("/etc/os-release");
-  if (!File)
+  if (!File) {
     File = VFS.getBufferForFile("/usr/lib/os-release");
-  if (!File)
+}
+  if (!File) {
     return Distro::UnknownDistro;
+}
 
   SmallVector<StringRef, 16> Lines;
   File.get()->getBuffer().split(Lines, "\n");
   Distro::DistroType Version = Distro::UnknownDistro;
 
   // Obviously this can be improved a lot.
-  for (StringRef Line : Lines)
-    if (Version == Distro::UnknownDistro && Line.startswith("ID="))
+  for (StringRef Line : Lines) {
+    if (Version == Distro::UnknownDistro && Line.startswith("ID=")) {
       Version = llvm::StringSwitch<Distro::DistroType>(Line.substr(3))
                     .Case("fedora", Distro::Fedora)
                     .Case("gentoo", Distro::Gentoo)
@@ -44,22 +46,25 @@ static Distro::DistroType DetectOsRelease(llvm::vfs::FileSystem &VFS) {
                     .Case("opensuse", Distro::OpenSUSE)
                     .Case("exherbo", Distro::Exherbo)
                     .Default(Distro::UnknownDistro);
+}
+}
   return Version;
 }
 
 static Distro::DistroType DetectLsbRelease(llvm::vfs::FileSystem &VFS) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> File =
       VFS.getBufferForFile("/etc/lsb-release");
-  if (!File)
+  if (!File) {
     return Distro::UnknownDistro;
+}
 
   SmallVector<StringRef, 16> Lines;
   File.get()->getBuffer().split(Lines, "\n");
   Distro::DistroType Version = Distro::UnknownDistro;
 
-  for (StringRef Line : Lines)
+  for (StringRef Line : Lines) {
     if (Version == Distro::UnknownDistro &&
-        Line.startswith("DISTRIB_CODENAME="))
+        Line.startswith("DISTRIB_CODENAME=")) {
       Version = llvm::StringSwitch<Distro::DistroType>(Line.substr(17))
                     .Case("hardy", Distro::UbuntuHardy)
                     .Case("intrepid", Distro::UbuntuIntrepid)
@@ -88,6 +93,8 @@ static Distro::DistroType DetectLsbRelease(llvm::vfs::FileSystem &VFS) {
                     .Case("focal", Distro::UbuntuFocal)
                     .Case("groovy", Distro::UbuntuGroovy)
                     .Default(Distro::UnknownDistro);
+}
+}
   return Version;
 }
 
@@ -97,13 +104,15 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
   // Newer freedesktop.org's compilant systemd-based systems
   // should provide /etc/os-release or /usr/lib/os-release.
   Version = DetectOsRelease(VFS);
-  if (Version != Distro::UnknownDistro)
+  if (Version != Distro::UnknownDistro) {
     return Version;
+}
 
   // Older systems might provide /etc/lsb-release.
   Version = DetectLsbRelease(VFS);
-  if (Version != Distro::UnknownDistro)
+  if (Version != Distro::UnknownDistro) {
     return Version;
+}
 
   // Otherwise try some distro-specific quirks for RedHat...
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> File =
@@ -111,16 +120,18 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
 
   if (File) {
     StringRef Data = File.get()->getBuffer();
-    if (Data.startswith("Fedora release"))
+    if (Data.startswith("Fedora release")) {
       return Distro::Fedora;
+}
     if (Data.startswith("Red Hat Enterprise Linux") ||
         Data.startswith("CentOS") || Data.startswith("Scientific Linux")) {
-      if (Data.find("release 7") != StringRef::npos)
+      if (Data.find("release 7") != StringRef::npos) {
         return Distro::RHEL7;
-      else if (Data.find("release 6") != StringRef::npos)
+      } else if (Data.find("release 6") != StringRef::npos) {
         return Distro::RHEL6;
-      else if (Data.find("release 5") != StringRef::npos)
+      } else if (Data.find("release 5") != StringRef::npos) {
         return Distro::RHEL5;
+}
     }
     return Distro::UnknownDistro;
   }
@@ -168,8 +179,9 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
     SmallVector<StringRef, 8> Lines;
     Data.split(Lines, "\n");
     for (const StringRef &Line : Lines) {
-      if (!Line.trim().startswith("VERSION"))
+      if (!Line.trim().startswith("VERSION")) {
         continue;
+}
       std::pair<StringRef, StringRef> SplitLine = Line.split('=');
       // Old versions have split VERSION and PATCHLEVEL
       // Newer versions use VERSION = x.y
@@ -179,25 +191,30 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
 
       // OpenSUSE/SLES 10 and older are not supported and not compatible
       // with our rules, so just treat them as Distro::UnknownDistro.
-      if (!SplitVer.first.getAsInteger(10, Version) && Version > 10)
+      if (!SplitVer.first.getAsInteger(10, Version) && Version > 10) {
         return Distro::OpenSUSE;
+}
       return Distro::UnknownDistro;
     }
     return Distro::UnknownDistro;
   }
 
   // ...and others.
-  if (VFS.exists("/etc/exherbo-release"))
+  if (VFS.exists("/etc/exherbo-release")) {
     return Distro::Exherbo;
+}
 
-  if (VFS.exists("/etc/alpine-release"))
+  if (VFS.exists("/etc/alpine-release")) {
     return Distro::AlpineLinux;
+}
 
-  if (VFS.exists("/etc/arch-release"))
+  if (VFS.exists("/etc/arch-release")) {
     return Distro::ArchLinux;
+}
 
-  if (VFS.exists("/etc/gentoo-release"))
+  if (VFS.exists("/etc/gentoo-release")) {
     return Distro::Gentoo;
+}
 
   return Distro::UnknownDistro;
 }
@@ -206,8 +223,9 @@ static Distro::DistroType GetDistro(llvm::vfs::FileSystem &VFS,
                                     const llvm::Triple &TargetOrHost) {
   // If we don't target Linux, no need to check the distro. This saves a few
   // OS calls.
-  if (!TargetOrHost.isOSLinux())
+  if (!TargetOrHost.isOSLinux()) {
     return Distro::UnknownDistro;
+}
 
   // True if we're backed by a real file system.
   const bool onRealFS = (llvm::vfs::getRealFileSystem() == &VFS);
@@ -217,8 +235,9 @@ static Distro::DistroType GetDistro(llvm::vfs::FileSystem &VFS,
   // is cross-compiling from BSD or Windows to Linux, and it would be
   // meaningless to try to figure out the "distro" of the non-Linux host.
   llvm::Triple HostTriple(llvm::sys::getProcessTriple());
-  if (!HostTriple.isOSLinux() && onRealFS)
+  if (!HostTriple.isOSLinux() && onRealFS) {
     return Distro::UnknownDistro;
+}
 
   if (onRealFS) {
     // If we're backed by a real file system, perform

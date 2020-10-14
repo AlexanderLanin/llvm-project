@@ -91,8 +91,9 @@ static bool implies(const LExpr *LHS, bool LNeg, const LExpr *RHS, bool RNeg) {
 
   // A => A
   // !A => !A
-  if (LNeg != RNeg)
+  if (LNeg != RNeg) {
     return false;
+}
 
   // FIXME -- this should compare SExprs for equality, not pointer equality.
   return cast<Terminal>(LHS)->expr() == cast<Terminal>(RHS)->expr();

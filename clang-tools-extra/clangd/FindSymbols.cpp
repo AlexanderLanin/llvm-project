@@ -36,8 +36,9 @@ namespace {
 using ScoredSymbolInfo = std::pair<float, SymbolInformation>;
 struct ScoredSymbolGreater {
   bool operator()(const ScoredSymbolInfo &L, const ScoredSymbolInfo &R) {
-    if (L.first != R.first)
+    if (L.first != R.first) {
       return L.first > R.first;
+}
     return L.second.name < R.second.name; // Earlier name is better.
   }
 };
@@ -62,9 +63,10 @@ bool approximateScopeMatch(llvm::StringRef Scope, llvm::StringRef Query) {
 llvm::Expected<Location> indexToLSPLocation(const SymbolLocation &Loc,
                                             llvm::StringRef TUPath) {
   auto Path = URI::resolve(Loc.FileURI, TUPath);
-  if (!Path)
+  if (!Path) {
     return error("Could not resolve path for file '{0}': {1}", Loc.FileURI,
                  Path.takeError());
+}
   Location L;
   L.uri = URIForFile::canonicalize(*Path, TUPath);
   Position Start, End;
@@ -87,8 +89,9 @@ llvm::Expected<std::vector<SymbolInformation>>
 getWorkspaceSymbols(llvm::StringRef Query, int Limit,
                     const SymbolIndex *const Index, llvm::StringRef HintPath) {
   std::vector<SymbolInformation> Result;
-  if (Query.empty() || !Index)
+  if (Query.empty() || !Index) {
     return Result;
+}
 
   // Lookup for qualified names are performed as:
   // - Exact namespaces are boosted by the index.
@@ -104,14 +107,16 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
   // Limit the query to specific namespace if it is fully-qualified.
   Req.AnyScope = !HasLeadingColons;
   // Boost symbols from desired namespace.
-  if (HasLeadingColons || !Names.first.empty())
+  if (HasLeadingColons || !Names.first.empty()) {
     Req.Scopes = {std::string(Names.first)};
+}
   if (Limit) {
     Req.Limit = Limit;
     // If we are boosting a specific scope allow more results to be retrieved,
     // since some symbols from preferred namespaces might not make the cut.
-    if (Req.AnyScope && !Req.Scopes.empty())
+    if (Req.AnyScope && !Req.Scopes.empty()) {
       *Req.Limit *= 5;
+}
   }
   TopN<ScoredSymbolInfo, ScoredSymbolGreater> Top(
       Req.Limit ? *Req.Limit : std::numeric_limits<size_t>::max());
@@ -122,8 +127,9 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
     llvm::StringRef Scope = Sym.Scope;
     // Fuzzyfind might return symbols from irrelevant namespaces if query was
     // not fully-qualified, drop those.
-    if (AnyScope && !approximateScopeMatch(Scope, ReqScope))
+    if (AnyScope && !approximateScopeMatch(Scope, ReqScope)) {
       return;
+}
 
     auto Loc = symbolToLocation(Sym, HintPath);
     if (!Loc) {
@@ -138,9 +144,9 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
     Relevance.Query = SymbolRelevanceSignals::Generic;
     // If symbol and request scopes do not match exactly, apply a penalty.
     Relevance.InBaseClass = AnyScope && Scope != ReqScope;
-    if (auto NameMatch = Filter.match(Sym.Name))
+    if (auto NameMatch = Filter.match(Sym.Name)) {
       Relevance.NameMatch = *NameMatch;
-    else {
+    } else {
       log("Workspace symbol: {0} didn't match query {1}", Sym.Name,
           Filter.pattern());
       return;
@@ -162,8 +168,9 @@ getWorkspaceSymbols(llvm::StringRef Query, int Limit,
     Info.score = Score / Relevance.NameMatch;
     Top.push({Score, std::move(Info)});
   });
-  for (auto &R : std::move(Top).items())
+  for (auto &R : std::move(Top).items()) {
     Result.push_back(std::move(R.second));
+}
   return Result;
 }
 
@@ -176,8 +183,9 @@ llvm::Optional<DocumentSymbol> declToSym(ASTContext &Ctx, const NamedDecl &ND) {
   SourceLocation EndLoc = SM.getSpellingLoc(SM.getFileLoc(ND.getEndLoc()));
   const auto SymbolRange =
       toHalfOpenFileRange(SM, Ctx.getLangOpts(), {BeginLoc, EndLoc});
-  if (!SymbolRange)
+  if (!SymbolRange) {
     return llvm::None;
+}
 
   Position NameBegin = sourceLocToPosition(SM, NameLoc);
   Position NameEnd = sourceLocToPosition(
@@ -218,8 +226,9 @@ public:
   /// Builds the document outline for the generated AST.
   std::vector<DocumentSymbol> build() {
     std::vector<DocumentSymbol> Results;
-    for (auto &TopLevel : AST.getLocalTopLevelDecls())
+    for (auto &TopLevel : AST.getLocalTopLevelDecls()) {
       traverseDecl(TopLevel, Results);
+}
     return Results;
   }
 
@@ -229,25 +238,30 @@ private:
   void traverseDecl(Decl *D, std::vector<DocumentSymbol> &Results) {
     if (auto *Templ = llvm::dyn_cast<TemplateDecl>(D)) {
       // TemplatedDecl might be null, e.g. concepts.
-      if (auto *TD = Templ->getTemplatedDecl())
+      if (auto *TD = Templ->getTemplatedDecl()) {
         D = TD;
+}
     }
 
     VisitKind Visit = shouldVisit(D);
-    if (Visit == VisitKind::No)
+    if (Visit == VisitKind::No) {
       return;
+}
 
-    if (Visit == VisitKind::OnlyChildren)
+    if (Visit == VisitKind::OnlyChildren) {
       return traverseChildren(D, Results);
+}
 
     auto *ND = llvm::cast<NamedDecl>(D);
     auto Sym = declToSym(AST.getASTContext(), *ND);
-    if (!Sym)
+    if (!Sym) {
       return;
+}
     Results.push_back(std::move(*Sym));
 
-    if (Visit == VisitKind::OnlyDecl)
+    if (Visit == VisitKind::OnlyDecl) {
       return;
+}
 
     assert(Visit == VisitKind::DeclAndChildren && "Unexpected VisitKind");
     traverseChildren(ND, Results.back().children);
@@ -255,28 +269,34 @@ private:
 
   void traverseChildren(Decl *D, std::vector<DocumentSymbol> &Results) {
     auto *Scope = llvm::dyn_cast<DeclContext>(D);
-    if (!Scope)
+    if (!Scope) {
       return;
-    for (auto *C : Scope->decls())
+}
+    for (auto *C : Scope->decls()) {
       traverseDecl(C, Results);
+}
   }
 
   VisitKind shouldVisit(Decl *D) {
-    if (D->isImplicit())
+    if (D->isImplicit()) {
       return VisitKind::No;
+}
 
-    if (llvm::isa<LinkageSpecDecl>(D) || llvm::isa<ExportDecl>(D))
+    if (llvm::isa<LinkageSpecDecl>(D) || llvm::isa<ExportDecl>(D)) {
       return VisitKind::OnlyChildren;
+}
 
-    if (!llvm::isa<NamedDecl>(D))
+    if (!llvm::isa<NamedDecl>(D)) {
       return VisitKind::No;
+}
 
     if (auto Func = llvm::dyn_cast<FunctionDecl>(D)) {
       // Some functions are implicit template instantiations, those should be
       // ignored.
       if (auto *Info = Func->getTemplateSpecializationInfo()) {
-        if (!Info->isExplicitInstantiationOrSpecialization())
+        if (!Info->isExplicitInstantiationOrSpecialization()) {
           return VisitKind::No;
+}
       }
       // Only visit the function itself, do not visit the children (i.e.
       // function parameters, etc.)
@@ -291,17 +311,19 @@ private:
     //   - explicit specialization, e.g. 'template <> class vector<bool> {};'
     //     Visit both the decl and its children, both are written in the code.
     if (auto *TemplSpec = llvm::dyn_cast<ClassTemplateSpecializationDecl>(D)) {
-      if (TemplSpec->isExplicitInstantiationOrSpecialization())
+      if (TemplSpec->isExplicitInstantiationOrSpecialization()) {
         return TemplSpec->isExplicitSpecialization()
                    ? VisitKind::DeclAndChildren
                    : VisitKind::OnlyDecl;
+}
       return VisitKind::No;
     }
     if (auto *TemplSpec = llvm::dyn_cast<VarTemplateSpecializationDecl>(D)) {
-      if (TemplSpec->isExplicitInstantiationOrSpecialization())
+      if (TemplSpec->isExplicitInstantiationOrSpecialization()) {
         return TemplSpec->isExplicitSpecialization()
                    ? VisitKind::DeclAndChildren
                    : VisitKind::OnlyDecl;
+}
       return VisitKind::No;
     }
     // For all other cases, visit both the children and the decl.

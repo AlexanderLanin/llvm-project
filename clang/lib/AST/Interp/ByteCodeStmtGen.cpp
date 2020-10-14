@@ -95,18 +95,22 @@ bool ByteCodeStmtGen<Emitter>::visitFunc(const FunctionDecl *F) {
   ReturnType = this->classify(F->getReturnType());
 
   // Set up fields and context if a constructor.
-  if (auto *MD = dyn_cast<CXXMethodDecl>(F))
+  if (auto *MD = dyn_cast<CXXMethodDecl>(F)) {
     return this->bail(MD);
+}
 
-  if (auto *Body = F->getBody())
-    if (!visitStmt(Body))
+  if (auto *Body = F->getBody()) {
+    if (!visitStmt(Body)) {
       return false;
+}
+}
 
   // Emit a guard return to protect against a code path missing one.
-  if (F->getReturnType()->isVoidType())
+  if (F->getReturnType()->isVoidType()) {
     return this->emitRetVoid(SourceInfo{});
-  else
+  } else {
     return this->emitNoRet(SourceInfo{});
+}
 }
 
 template <class Emitter>
@@ -123,8 +127,9 @@ bool ByteCodeStmtGen<Emitter>::visitStmt(const Stmt *S) {
   case Stmt::NullStmtClass:
     return true;
   default: {
-    if (auto *Exp = dyn_cast<Expr>(S))
+    if (auto *Exp = dyn_cast<Expr>(S)) {
       return this->discard(Exp);
+}
     return this->bail(S);
   }
   }
@@ -134,9 +139,11 @@ template <class Emitter>
 bool ByteCodeStmtGen<Emitter>::visitCompoundStmt(
     const CompoundStmt *CompoundStmt) {
   BlockScope<Emitter> Scope(this);
-  for (auto *InnerStmt : CompoundStmt->body())
-    if (!visitStmt(InnerStmt))
+  for (auto *InnerStmt : CompoundStmt->body()) {
+    if (!visitStmt(InnerStmt)) {
       return false;
+}
+}
   return true;
 }
 
@@ -145,8 +152,9 @@ bool ByteCodeStmtGen<Emitter>::visitDeclStmt(const DeclStmt *DS) {
   for (auto *D : DS->decls()) {
     // Variable declarator.
     if (auto *VD = dyn_cast<VarDecl>(D)) {
-      if (!visitVarDecl(VD))
+      if (!visitVarDecl(VD)) {
         return false;
+}
       continue;
     }
 
@@ -165,22 +173,25 @@ bool ByteCodeStmtGen<Emitter>::visitReturnStmt(const ReturnStmt *RS) {
     ExprScope<Emitter> RetScope(this);
     if (ReturnType) {
       // Primitive types are simply returned.
-      if (!this->visit(RE))
+      if (!this->visit(RE)) {
         return false;
+}
       this->emitCleanup();
       return this->emitRet(*ReturnType, RS);
     } else {
       // RVO - construct the value in the return location.
       auto ReturnLocation = [this, RE] { return this->emitGetParamPtr(0, RE); };
-      if (!this->visitInitializer(RE, ReturnLocation))
+      if (!this->visitInitializer(RE, ReturnLocation)) {
         return false;
+}
       this->emitCleanup();
       return this->emitRetVoid(RS);
     }
   } else {
     this->emitCleanup();
-    if (!this->emitRetVoid(RS))
+    if (!this->emitRetVoid(RS)) {
       return false;
+}
     return true;
   }
 }
@@ -188,36 +199,47 @@ bool ByteCodeStmtGen<Emitter>::visitReturnStmt(const ReturnStmt *RS) {
 template <class Emitter>
 bool ByteCodeStmtGen<Emitter>::visitIfStmt(const IfStmt *IS) {
   BlockScope<Emitter> IfScope(this);
-  if (auto *CondInit = IS->getInit())
-    if (!visitStmt(IS->getInit()))
+  if (auto *CondInit = IS->getInit()) {
+    if (!visitStmt(IS->getInit())) {
       return false;
+}
+}
 
-  if (const DeclStmt *CondDecl = IS->getConditionVariableDeclStmt())
-    if (!visitDeclStmt(CondDecl))
+  if (const DeclStmt *CondDecl = IS->getConditionVariableDeclStmt()) {
+    if (!visitDeclStmt(CondDecl)) {
       return false;
+}
+}
 
-  if (!this->visitBool(IS->getCond()))
+  if (!this->visitBool(IS->getCond())) {
     return false;
+}
 
   if (const Stmt *Else = IS->getElse()) {
     LabelTy LabelElse = this->getLabel();
     LabelTy LabelEnd = this->getLabel();
-    if (!this->jumpFalse(LabelElse))
+    if (!this->jumpFalse(LabelElse)) {
       return false;
-    if (!visitStmt(IS->getThen()))
+}
+    if (!visitStmt(IS->getThen())) {
       return false;
-    if (!this->jump(LabelEnd))
+}
+    if (!this->jump(LabelEnd)) {
       return false;
+}
     this->emitLabel(LabelElse);
-    if (!visitStmt(Else))
+    if (!visitStmt(Else)) {
       return false;
+}
     this->emitLabel(LabelEnd);
   } else {
     LabelTy LabelEnd = this->getLabel();
-    if (!this->jumpFalse(LabelEnd))
+    if (!this->jumpFalse(LabelEnd)) {
       return false;
-    if (!visitStmt(IS->getThen()))
+}
+    if (!visitStmt(IS->getThen())) {
       return false;
+}
     this->emitLabel(LabelEnd);
   }
 
@@ -239,8 +261,9 @@ bool ByteCodeStmtGen<Emitter>::visitVarDecl(const VarDecl *VD) {
     // Compile the initialiser in its own scope.
     {
       ExprScope<Emitter> Scope(this);
-      if (!this->visit(VD->getInit()))
+      if (!this->visit(VD->getInit())) {
         return false;
+}
     }
     // Set the value.
     return this->emitSetLocal(*T, Off, VD);

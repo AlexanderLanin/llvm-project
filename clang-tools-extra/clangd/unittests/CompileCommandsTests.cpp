@@ -73,8 +73,9 @@ TEST(CommandMangler, StripPlugins) {
   std::vector<std::string> Cmd = {"clang++", "-Xclang", "-load",
                                   "-Xclang", "plugin",  "foo.cc"};
   Mangler.adjust(Cmd);
-  for (const char* Stripped : {"-Xclang", "-load", "plugin"})
+  for (const char* Stripped : {"-Xclang", "-load", "plugin"}) {
     EXPECT_THAT(Cmd, Not(Contains(Stripped)));
+}
 }
 
 TEST(CommandMangler, StripOutput) {
@@ -82,8 +83,9 @@ TEST(CommandMangler, StripOutput) {
   std::vector<std::string> Cmd = {"clang++", "-MF", "dependency", "-c",
                                   "foo.cc"};
   Mangler.adjust(Cmd);
-  for (const char* Stripped : {"-MF", "dependency"})
+  for (const char* Stripped : {"-MF", "dependency"}) {
     EXPECT_THAT(Cmd, Not(Contains(Stripped)));
+}
 }
 
 TEST(CommandMangler, StripShowIncludes) {
@@ -194,9 +196,11 @@ TEST(CommandMangler, ConfigEdits) {
   {
     Config Cfg;
     Cfg.CompileFlags.Edits.push_back([](std::vector<std::string> &Argv) {
-      for (auto &Arg : Argv)
-        for (char &C : Arg)
+      for (auto &Arg : Argv) {
+        for (char &C : Arg) {
           C = llvm::toUpper(C);
+}
+}
     });
     Cfg.CompileFlags.Edits.push_back(
         [](std::vector<std::string> &Argv) { Argv.push_back("--hello"); });

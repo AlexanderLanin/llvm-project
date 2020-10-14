@@ -57,12 +57,14 @@ void ComparisonInTempFailureRetryCheck::check(
     const MatchFinder::MatchResult &Result) {
   StringRef RetryMacroName;
   const auto &Node = *Result.Nodes.getNodeAs<BinaryOperator>("outer");
-  if (!Node.getBeginLoc().isMacroID())
+  if (!Node.getBeginLoc().isMacroID()) {
     return;
+}
 
   const SourceManager &SM = *Result.SourceManager;
-  if (!SM.isMacroArgExpansion(Node.getRHS()->IgnoreParenCasts()->getBeginLoc()))
+  if (!SM.isMacroArgExpansion(Node.getRHS()->IgnoreParenCasts()->getBeginLoc())) {
     return;
+}
 
   const LangOptions &Opts = Result.Context->getLangOpts();
   SourceLocation LocStart = Node.getBeginLoc();
@@ -80,8 +82,9 @@ void ComparisonInTempFailureRetryCheck::check(
 
     LocStart = Invocation;
   }
-  if (RetryMacroName.empty())
+  if (RetryMacroName.empty()) {
     return;
+}
 
   const auto &Inner = *Result.Nodes.getNodeAs<BinaryOperator>("inner");
   diag(Inner.getOperatorLoc(), "top-level comparison in %0") << RetryMacroName;

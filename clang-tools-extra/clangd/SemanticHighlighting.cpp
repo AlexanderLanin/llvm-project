@@ -39,8 +39,9 @@ namespace {
 /// e.g. anonymous classes. This function detects those cases.
 bool canHighlightName(DeclarationName Name) {
   if (Name.getNameKind() == DeclarationName::CXXConstructorName ||
-      Name.getNameKind() == DeclarationName::CXXUsingDirective)
+      Name.getNameKind() == DeclarationName::CXXUsingDirective) {
     return true;
+}
   auto *II = Name.getAsIdentifierInfo();
   return II && !II->getName().empty();
 }
@@ -48,17 +49,20 @@ bool canHighlightName(DeclarationName Name) {
 llvm::Optional<HighlightingKind> kindForType(const Type *TP);
 llvm::Optional<HighlightingKind> kindForDecl(const NamedDecl *D) {
   if (auto *USD = dyn_cast<UsingShadowDecl>(D)) {
-    if (auto *Target = USD->getTargetDecl())
+    if (auto *Target = USD->getTargetDecl()) {
       D = Target;
+}
   }
   if (auto *TD = dyn_cast<TemplateDecl>(D)) {
-    if (auto *Templated = TD->getTemplatedDecl())
+    if (auto *Templated = TD->getTemplatedDecl()) {
       D = Templated;
+}
   }
   if (auto *TD = dyn_cast<TypedefNameDecl>(D)) {
     // We try to highlight typedefs as their underlying type.
-    if (auto K = kindForType(TD->getUnderlyingType().getTypePtrOrNull()))
+    if (auto K = kindForType(TD->getUnderlyingType().getTypePtrOrNull())) {
       return K;
+}
     // And fallback to a generic kind if this fails.
     return HighlightingKind::Typedef;
   }
@@ -67,65 +71,84 @@ llvm::Optional<HighlightingKind> kindForDecl(const NamedDecl *D) {
   // will visit a TypeLoc where the underlying Type is a CXXRecordDecl).
   if (auto *RD = llvm::dyn_cast<RecordDecl>(D)) {
     // We don't want to highlight lambdas like classes.
-    if (RD->isLambda())
+    if (RD->isLambda()) {
       return llvm::None;
+}
     return HighlightingKind::Class;
   }
   if (isa<ClassTemplateDecl>(D) || isa<RecordDecl>(D) ||
-      isa<CXXConstructorDecl>(D))
+      isa<CXXConstructorDecl>(D)) {
     return HighlightingKind::Class;
-  if (auto *MD = dyn_cast<CXXMethodDecl>(D))
+}
+  if (auto *MD = dyn_cast<CXXMethodDecl>(D)) {
     return MD->isStatic() ? HighlightingKind::StaticMethod
                           : HighlightingKind::Method;
-  if (isa<FieldDecl>(D))
+}
+  if (isa<FieldDecl>(D)) {
     return HighlightingKind::Field;
-  if (isa<EnumDecl>(D))
+}
+  if (isa<EnumDecl>(D)) {
     return HighlightingKind::Enum;
-  if (isa<EnumConstantDecl>(D))
+}
+  if (isa<EnumConstantDecl>(D)) {
     return HighlightingKind::EnumConstant;
-  if (isa<ParmVarDecl>(D))
+}
+  if (isa<ParmVarDecl>(D)) {
     return HighlightingKind::Parameter;
-  if (auto *VD = dyn_cast<VarDecl>(D))
+}
+  if (auto *VD = dyn_cast<VarDecl>(D)) {
     return VD->isStaticDataMember()
                ? HighlightingKind::StaticField
                : VD->isLocalVarDecl() ? HighlightingKind::LocalVariable
                                       : HighlightingKind::Variable;
-  if (const auto *BD = dyn_cast<BindingDecl>(D))
+}
+  if (const auto *BD = dyn_cast<BindingDecl>(D)) {
     return BD->getDeclContext()->isFunctionOrMethod()
                ? HighlightingKind::LocalVariable
                : HighlightingKind::Variable;
-  if (isa<FunctionDecl>(D))
+}
+  if (isa<FunctionDecl>(D)) {
     return HighlightingKind::Function;
+}
   if (isa<NamespaceDecl>(D) || isa<NamespaceAliasDecl>(D) ||
-      isa<UsingDirectiveDecl>(D))
+      isa<UsingDirectiveDecl>(D)) {
     return HighlightingKind::Namespace;
+}
   if (isa<TemplateTemplateParmDecl>(D) || isa<TemplateTypeParmDecl>(D) ||
-      isa<NonTypeTemplateParmDecl>(D))
+      isa<NonTypeTemplateParmDecl>(D)) {
     return HighlightingKind::TemplateParameter;
-  if (isa<ConceptDecl>(D))
+}
+  if (isa<ConceptDecl>(D)) {
     return HighlightingKind::Concept;
+}
   return llvm::None;
 }
 llvm::Optional<HighlightingKind> kindForType(const Type *TP) {
-  if (!TP)
+  if (!TP) {
     return llvm::None;
-  if (TP->isBuiltinType()) // Builtins are special, they do not have decls.
+}
+  if (TP->isBuiltinType()) { // Builtins are special, they do not have decls.
     return HighlightingKind::Primitive;
-  if (auto *TD = dyn_cast<TemplateTypeParmType>(TP))
+}
+  if (auto *TD = dyn_cast<TemplateTypeParmType>(TP)) {
     return kindForDecl(TD->getDecl());
-  if (auto *TD = TP->getAsTagDecl())
+}
+  if (auto *TD = TP->getAsTagDecl()) {
     return kindForDecl(TD);
+}
   return llvm::None;
 }
 
 llvm::Optional<HighlightingKind> kindForReference(const ReferenceLoc &R) {
   llvm::Optional<HighlightingKind> Result;
   for (const NamedDecl *Decl : R.Targets) {
-    if (!canHighlightName(Decl->getDeclName()))
+    if (!canHighlightName(Decl->getDeclName())) {
       return llvm::None;
+}
     auto Kind = kindForDecl(Decl);
-    if (!Kind || (Result && Kind != Result))
+    if (!Kind || (Result && Kind != Result)) {
       return llvm::None;
+}
     Result = Kind;
   }
   return Result;
@@ -136,11 +159,13 @@ llvm::Optional<HighlightingKind> kindForReference(const ReferenceLoc &R) {
 //  - foo --> "variable".
 SourceLocation getHighlightableSpellingToken(SourceLocation L,
                                              const SourceManager &SM) {
-  if (L.isFileID())
+  if (L.isFileID()) {
     return SM.isWrittenInMainFile(L) ? L : SourceLocation{};
+}
   // Tokens expanded from the macro body contribute no highlightings.
-  if (!SM.isMacroArgExpansion(L))
+  if (!SM.isMacroArgExpansion(L)) {
     return {};
+}
   // Tokens expanded from macro args are potentially highlightable.
   return getHighlightableSpellingToken(SM.getImmediateSpellingLoc(L), SM);
 }
@@ -162,16 +187,19 @@ unsigned evaluateHighlightPriority(HighlightingKind Kind) {
 // expansions with different token types) which we can't usefully resolve.
 llvm::Optional<HighlightingToken>
 resolveConflict(ArrayRef<HighlightingToken> Tokens) {
-  if (Tokens.size() == 1)
+  if (Tokens.size() == 1) {
     return Tokens[0];
+}
 
-  if (Tokens.size() != 2)
+  if (Tokens.size() != 2) {
     return llvm::None;
+}
 
   unsigned Priority1 = evaluateHighlightPriority(Tokens[0].Kind);
   unsigned Priority2 = evaluateHighlightPriority(Tokens[1].Kind);
-  if (Priority1 == Priority2)
+  if (Priority1 == Priority2) {
     return llvm::None;
+}
   return Priority1 > Priority2 ? Tokens[0] : Tokens[1];
 }
 
@@ -186,8 +214,9 @@ public:
 
   void addToken(SourceLocation Loc, HighlightingKind Kind) {
     Loc = getHighlightableSpellingToken(Loc, SourceMgr);
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       return;
+}
     const auto *Tok = TB.spelledTokenAt(Loc);
     assert(Tok);
 
@@ -215,8 +244,9 @@ public:
             // this predicate would never fire.
             return T.R == TokRef.front().R;
           });
-      if (auto Resolved = resolveConflict(Conflicting))
+      if (auto Resolved = resolveConflict(Conflicting)) {
         NonConflicting.push_back(*Resolved);
+}
       // TokRef[Conflicting.size()] is the next token with a different range (or
       // the end of the Tokens).
       TokRef = TokRef.drop_front(Conflicting.size());
@@ -235,8 +265,9 @@ public:
       assert(R.start.line <= R.end.line);
       for (int Line = R.start.line; Line <= R.end.line; ++Line) {
         // Copy tokens before the inactive line
-        for (; It != NonConflicting.end() && It->R.start.line < Line; ++It)
+        for (; It != NonConflicting.end() && It->R.start.line < Line; ++It) {
           WithInactiveLines.push_back(std::move(*It));
+}
         // Add a token for the inactive line itself.
         auto StartOfLine = positionToOffset(MainCode, Position{Line, 0});
         if (StartOfLine) {
@@ -258,13 +289,15 @@ public:
         // defined, and there is a Foo macro token.
         // FIXME: we should reduce the scope of the inactive region to not
         // include the directive itself.
-        while (It != NonConflicting.end() && It->R.start.line == Line)
+        while (It != NonConflicting.end() && It->R.start.line == Line) {
           ++It;
+}
       }
     }
     // Copy tokens after the last inactive line
-    for (; It != NonConflicting.end(); ++It)
+    for (; It != NonConflicting.end(); ++It) {
       WithInactiveLines.push_back(std::move(*It));
+}
     return WithInactiveLines;
   }
 
@@ -283,23 +316,27 @@ public:
   CollectExtraHighlightings(HighlightingsBuilder &H) : H(H) {}
 
   bool VisitDecltypeTypeLoc(DecltypeTypeLoc L) {
-    if (auto K = kindForType(L.getTypePtr()))
+    if (auto K = kindForType(L.getTypePtr())) {
       H.addToken(L.getBeginLoc(), *K);
+}
     return true;
   }
 
   bool VisitDeclaratorDecl(DeclaratorDecl *D) {
     auto *AT = D->getType()->getContainedAutoType();
-    if (!AT)
+    if (!AT) {
       return true;
-    if (auto K = kindForType(AT->getDeducedType().getTypePtrOrNull()))
+}
+    if (auto K = kindForType(AT->getDeducedType().getTypePtrOrNull())) {
       H.addToken(D->getTypeSpecStartLoc(), *K);
+}
     return true;
   }
 
   bool VisitOverloadExpr(OverloadExpr *E) {
-    if (!E->decls().empty())
+    if (!E->decls().empty()) {
       return true; // handled by findExplicitReferences.
+}
     H.addToken(E->getNameLoc(), HighlightingKind::DependentName);
     return true;
   }
@@ -345,8 +382,9 @@ public:
   // them here.
   bool TraverseNestedNameSpecifierLoc(NestedNameSpecifierLoc Q) {
     if (NestedNameSpecifier *NNS = Q.getNestedNameSpecifier()) {
-      if (NNS->getKind() == NestedNameSpecifier::Identifier)
+      if (NNS->getKind() == NestedNameSpecifier::Identifier) {
         H.addToken(Q.getLocalBeginLoc(), HighlightingKind::DependentType);
+}
     }
     return RecursiveASTVisitor::TraverseNestedNameSpecifierLoc(Q);
   }
@@ -387,16 +425,19 @@ std::vector<HighlightingToken> getSemanticHighlightings(ParsedAST &AST) {
   CollectExtraHighlightings(Builder).TraverseAST(C);
   // Highlight all decls and references coming from the AST.
   findExplicitReferences(C, [&](ReferenceLoc R) {
-    if (auto Kind = kindForReference(R))
+    if (auto Kind = kindForReference(R)) {
       Builder.addToken(R.NameLoc, *Kind);
+}
   });
   // Add highlightings for macro references.
   for (const auto &SIDToRefs : AST.getMacros().MacroRefs) {
-    for (const auto &M : SIDToRefs.second)
+    for (const auto &M : SIDToRefs.second) {
       Builder.addToken({HighlightingKind::Macro, M});
+}
   }
-  for (const auto &M : AST.getMacros().UnknownMacros)
+  for (const auto &M : AST.getMacros().UnknownMacros) {
     Builder.addToken({HighlightingKind::Macro, M});
+}
 
   return std::move(Builder).collect(AST);
 }
@@ -593,8 +634,9 @@ llvm::StringRef toSemanticTokenType(HighlightingKind Kind) {
 std::vector<TheiaSemanticHighlightingInformation>
 toTheiaSemanticHighlightingInformation(
     llvm::ArrayRef<LineHighlightings> Tokens) {
-  if (Tokens.size() == 0)
+  if (Tokens.size() == 0) {
     return {};
+}
 
   // FIXME: Tokens might be multiple lines long (block comments) in this case
   // this needs to add multiple lines for those tokens.
@@ -684,8 +726,9 @@ diffTokens(llvm::ArrayRef<SemanticToken> Old,
     New = New.drop_back();
   }
 
-  if (Old.empty() && New.empty())
+  if (Old.empty() && New.empty()) {
     return {};
+}
   SemanticTokensEdit Edit;
   Edit.startToken = Offset;
   Edit.deleteTokens = Old.size();

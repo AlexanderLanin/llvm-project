@@ -66,21 +66,24 @@ static bool isVirtualCall(const CallExpr *CE) {
   if (const MemberExpr *CME = dyn_cast<MemberExpr>(CE->getCallee())) {
     // The member access is fully qualified (i.e., X::F).
     // Treat this as a non-virtual call and do not warn.
-    if (CME->getQualifier())
+    if (CME->getQualifier()) {
       CallIsNonVirtual = true;
+}
 
     if (const Expr *Base = CME->getBase()) {
       // The most derived class is marked final.
-      if (Base->getBestDynamicClassType()->hasAttr<FinalAttr>())
+      if (Base->getBestDynamicClassType()->hasAttr<FinalAttr>()) {
         CallIsNonVirtual = true;
+}
     }
   }
 
   const CXXMethodDecl *MD =
       dyn_cast_or_null<CXXMethodDecl>(CE->getDirectCallee());
   if (MD && MD->isVirtual() && !CallIsNonVirtual && !MD->hasAttr<FinalAttr>() &&
-      !MD->getParent()->hasAttr<FinalAttr>())
+      !MD->getParent()->hasAttr<FinalAttr>()) {
     return true;
+}
   return false;
 }
 
@@ -98,23 +101,27 @@ void VirtualCallChecker::checkEndFunction(const ReturnStmt *RS,
 void VirtualCallChecker::checkPreCall(const CallEvent &Call,
                                       CheckerContext &C) const {
   const auto MC = dyn_cast<CXXMemberCall>(&Call);
-  if (!MC)
+  if (!MC) {
     return;
+}
 
   const CXXMethodDecl *MD = dyn_cast_or_null<CXXMethodDecl>(Call.getDecl());
-  if (!MD)
+  if (!MD) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   // Member calls are always represented by a call-expression.
   const auto *CE = cast<CallExpr>(Call.getOriginExpr());
-  if (!isVirtualCall(CE))
+  if (!isVirtualCall(CE)) {
     return;
+}
 
   const MemRegion *Reg = MC->getCXXThisVal().getAsRegion();
   const ObjectState *ObState = State->get<CtorDtorMap>(Reg);
-  if (!ObState)
+  if (!ObState) {
     return;
+}
 
   bool IsPure = MD->isPure();
 
@@ -123,23 +130,27 @@ void VirtualCallChecker::checkPreCall(const CallEvent &Call,
   SmallString<128> Msg;
   llvm::raw_svector_ostream OS(Msg);
   OS << "Call to ";
-  if (IsPure)
+  if (IsPure) {
     OS << "pure ";
+}
   OS << "virtual method '" << MD->getParent()->getDeclName()
      << "::" << MD->getDeclName() << "' during ";
-  if (*ObState == ObjectState::CtorCalled)
+  if (*ObState == ObjectState::CtorCalled) {
     OS << "construction ";
-  else
+  } else {
     OS << "destruction ";
-  if (IsPure)
+}
+  if (IsPure) {
     OS << "has undefined behavior";
-  else
+  } else {
     OS << "bypasses virtual dispatch";
+}
 
   ExplodedNode *N =
       IsPure ? C.generateErrorNode() : C.generateNonFatalErrorNode();
-  if (!N)
+  if (!N) {
     return;
+}
 
   const std::unique_ptr<BugType> &BT = IsPure ? BT_Pure : BT_Impure;
   if (!BT) {
@@ -166,8 +177,9 @@ void VirtualCallChecker::registerCtorDtorCallInState(bool IsBeginFunction,
                                                      CheckerContext &C) const {
   const auto *LCtx = C.getLocationContext();
   const auto *MD = dyn_cast_or_null<CXXMethodDecl>(LCtx->getDecl());
-  if (!MD)
+  if (!MD) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   auto &SVB = C.getSValBuilder();
@@ -177,10 +189,11 @@ void VirtualCallChecker::registerCtorDtorCallInState(bool IsBeginFunction,
     auto ThiSVal =
         State->getSVal(SVB.getCXXThis(MD, LCtx->getStackFrame()));
     const MemRegion *Reg = ThiSVal.getAsRegion();
-    if (IsBeginFunction)
+    if (IsBeginFunction) {
       State = State->set<CtorDtorMap>(Reg, ObjectState::CtorCalled);
-    else
+    } else {
       State = State->remove<CtorDtorMap>(Reg);
+}
 
     C.addTransition(State);
     return;
@@ -191,10 +204,11 @@ void VirtualCallChecker::registerCtorDtorCallInState(bool IsBeginFunction,
     auto ThiSVal =
         State->getSVal(SVB.getCXXThis(MD, LCtx->getStackFrame()));
     const MemRegion *Reg = ThiSVal.getAsRegion();
-    if (IsBeginFunction)
+    if (IsBeginFunction) {
       State = State->set<CtorDtorMap>(Reg, ObjectState::DtorCalled);
-    else
+    } else {
       State = State->remove<CtorDtorMap>(Reg);
+}
 
     C.addTransition(State);
     return;

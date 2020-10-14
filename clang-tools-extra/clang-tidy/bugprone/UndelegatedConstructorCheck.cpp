@@ -22,16 +22,17 @@ AST_MATCHER_P(Stmt, ignoringTemporaryExpr,
   const Stmt *E = &Node;
   for (;;) {
     // Temporaries with non-trivial dtors.
-    if (const auto *EWC = dyn_cast<ExprWithCleanups>(E))
+    if (const auto *EWC = dyn_cast<ExprWithCleanups>(E)) {
       E = EWC->getSubExpr();
     // Temporaries with zero or more than two ctor arguments.
-    else if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E))
+    } else if (const auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E)) {
       E = BTE->getSubExpr();
     // Temporaries with exactly one ctor argument.
-    else if (const auto *FCE = dyn_cast<CXXFunctionalCastExpr>(E))
+    } else if (const auto *FCE = dyn_cast<CXXFunctionalCastExpr>(E)) {
       E = FCE->getSubExpr();
-    else
+    } else {
       break;
+}
   }
 
   return InnerMatcher.matches(*E, Finder, Builder);

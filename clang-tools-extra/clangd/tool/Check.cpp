@@ -98,8 +98,9 @@ public:
     BaseCDB = getQueryDriverDatabase(llvm::makeArrayRef(Opts.QueryDriverGlobs),
                                      std::move(BaseCDB));
     auto Mangler = CommandMangler::detect();
-    if (Opts.ResourceDir)
+    if (Opts.ResourceDir) {
       Mangler.ResourceDir = *Opts.ResourceDir;
+}
     auto CDB = std::make_unique<OverlayCDB>(
         BaseCDB.get(), std::vector<std::string>{},
         tooling::ArgumentsAdjuster(std::move(Mangler)));
@@ -160,8 +161,9 @@ public:
         buildPreamble(File, *Invocation, Inputs, /*StoreInMemory=*/true,
                       [&](ASTContext &Ctx, std::shared_ptr<Preprocessor> PP,
                           const CanonicalIncludes &Includes) {
-                        if (!Opts.BuildDynamicSymbolIndex)
+                        if (!Opts.BuildDynamicSymbolIndex) {
                           return;
+}
                         log("Indexing headers...");
                         Index.updatePreamble(File, /*Version=*/"null", Ctx,
                                              std::move(PP), Includes);
@@ -246,8 +248,9 @@ bool check(llvm::StringRef File, const ThreadsafeFS &TFS,
   log("Testing on source file {0}", File);
 
   Checker C(File, Opts);
-  if (!C.buildCommand() || !C.buildInvocation(TFS, Contents) || !C.buildAST())
+  if (!C.buildCommand() || !C.buildInvocation(TFS, Contents) || !C.buildAST()) {
     return false;
+}
   C.testLocationFeatures();
 
   log("All checks completed, {0} errors", C.ErrCount);

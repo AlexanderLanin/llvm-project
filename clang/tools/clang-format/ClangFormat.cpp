@@ -221,8 +221,9 @@ static bool fillRanges(MemoryBuffer *Code,
       }
       SourceLocation Start = Sources.translateLineCol(ID, FromLine, 1);
       SourceLocation End = Sources.translateLineCol(ID, ToLine, UINT_MAX);
-      if (Start.isInvalid() || End.isInvalid())
+      if (Start.isInvalid() || End.isInvalid()) {
         return true;
+}
       unsigned Offset = Sources.getFileOffset(Start);
       unsigned Length = Sources.getFileOffset(End) - Offset;
       Ranges.push_back(tooling::Range(Offset, Length));
@@ -230,8 +231,9 @@ static bool fillRanges(MemoryBuffer *Code,
     return false;
   }
 
-  if (Offsets.empty())
+  if (Offsets.empty()) {
     Offsets.push_back(0);
+}
   if (Offsets.size() != Lengths.size() &&
       !(Offsets.size() == 1 && Lengths.empty())) {
     errs() << "error: number of -offset and -length arguments must match.\n";
@@ -304,8 +306,9 @@ static void outputReplacementsXML(const Replacements &Replaces) {
 static bool
 emitReplacementWarnings(const Replacements &Replaces, StringRef AssumedFileName,
                         const std::unique_ptr<llvm::MemoryBuffer> &Code) {
-  if (Replaces.empty())
+  if (Replaces.empty()) {
     return false;
+}
 
   unsigned Errors = 0;
   if (WarnFormat && !NoWarnFormat) {
@@ -322,8 +325,9 @@ emitReplacementWarnings(const Replacements &Replaces, StringRef AssumedFileName,
           "code should be clang-formatted [-Wclang-format-violations]");
 
       Diag.print(nullptr, llvm::errs(), (ShowColors && !NoShowColors));
-      if (ErrorLimit && ++Errors >= ErrorLimit)
+      if (ErrorLimit && ++Errors >= ErrorLimit) {
         break;
+}
     }
   }
   return WarningsAsErrors;
@@ -337,12 +341,14 @@ static void outputXML(const Replacements &Replaces,
   outs() << "<?xml version='1.0'?>\n<replacements "
             "xml:space='preserve' incomplete_format='"
          << (Status.FormatComplete ? "false" : "true") << "'";
-  if (!Status.FormatComplete)
+  if (!Status.FormatComplete) {
     outs() << " line='" << Status.Line << "'";
+}
   outs() << ">\n";
-  if (Cursor.getNumOccurrences() != 0)
+  if (Cursor.getNumOccurrences() != 0) {
     outs() << "<cursor>" << FormatChanges.getShiftedCodePosition(CursorPosition)
            << "</cursor>\n";
+}
 
   outputReplacementsXML(Replaces);
   outs() << "</replacements>\n";
@@ -364,8 +370,9 @@ static bool format(StringRef FileName) {
     return true;
   }
   std::unique_ptr<llvm::MemoryBuffer> Code = std::move(CodeOrErr.get());
-  if (Code->getBufferSize() == 0)
+  if (Code->getBufferSize() == 0) {
     return false; // Empty files are formatted correctly.
+}
 
   StringRef BufStr = Code->getBuffer();
 
@@ -374,15 +381,17 @@ static bool format(StringRef FileName) {
   if (InvalidBOM) {
     errs() << "error: encoding with unsupported byte order mark \""
            << InvalidBOM << "\" detected";
-    if (FileName != "-")
+    if (FileName != "-") {
       errs() << " in file '" << FileName << "'";
+}
     errs() << ".\n";
     return true;
   }
 
   std::vector<tooling::Range> Ranges;
-  if (fillRanges(Code.get(), Ranges))
+  if (fillRanges(Code.get(), Ranges)) {
     return true;
+}
   StringRef AssumedFileName = (FileName == "-") ? AssumeFileName : FileName;
   if (AssumedFileName.empty()) {
     llvm::errs() << "error: empty filenames are not allowed\n";
@@ -397,8 +406,9 @@ static bool format(StringRef FileName) {
     return true;
   }
 
-  if (SortIncludes.getNumOccurrences() != 0)
+  if (SortIncludes.getNumOccurrences() != 0) {
     FormatStyle->SortIncludes = SortIncludes;
+}
   unsigned CursorPosition = Cursor;
   Replacements Replaces = sortIncludes(*FormatStyle, Code->getBuffer(), Ranges,
                                        AssumedFileName, &CursorPosition);
@@ -432,16 +442,18 @@ static bool format(StringRef FileName) {
     Rewriter Rewrite(Sources, LangOptions());
     tooling::applyAllReplacements(Replaces, Rewrite);
     if (Inplace) {
-      if (Rewrite.overwriteChangedFiles())
+      if (Rewrite.overwriteChangedFiles()) {
         return true;
+}
     } else {
       if (Cursor.getNumOccurrences() != 0) {
         outs() << "{ \"Cursor\": "
                << FormatChanges.getShiftedCodePosition(CursorPosition)
                << ", \"IncompleteFormat\": "
                << (Status.FormatComplete ? "false" : "true");
-        if (!Status.FormatComplete)
+        if (!Status.FormatComplete) {
           outs() << ", \"Line\": " << Status.Line;
+}
         outs() << " }\n";
       }
       Rewrite.getEditBuffer(ID).write(outs());
@@ -525,8 +537,9 @@ int main(int argc, const char **argv) {
     return 1;
   }
   for (const auto &FileName : FileNames) {
-    if (Verbose)
+    if (Verbose) {
       errs() << "Formatting " << FileName << "\n";
+}
     Error |= clang::format::format(FileName);
   }
   return Error ? 1 : 0;

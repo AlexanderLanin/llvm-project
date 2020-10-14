@@ -24,8 +24,9 @@ std::string x86::getX86TargetCPU(const ArgList &Args,
                                  const llvm::Triple &Triple) {
   if (const Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ)) {
     StringRef CPU = A->getValue();
-    if (CPU != "native")
+    if (CPU != "native") {
       return std::string(CPU);
+}
 
     // FIXME: Reject attempts to use -march=native unless the target matches
     // the host.
@@ -33,8 +34,9 @@ std::string x86::getX86TargetCPU(const ArgList &Args,
     // FIXME: We should also incorporate the detected target features for use
     // with -native.
     CPU = llvm::sys::getHostCPUName();
-    if (!CPU.empty() && CPU != "generic")
+    if (!CPU.empty() && CPU != "generic") {
       return std::string(CPU);
+}
   }
 
   if (const Arg *A = Args.getLastArgNoClaim(options::OPT__SLASH_arch)) {
@@ -64,34 +66,40 @@ std::string x86::getX86TargetCPU(const ArgList &Args,
 
   // Select the default CPU if none was given (or detection failed).
 
-  if (!Triple.isX86())
+  if (!Triple.isX86()) {
     return ""; // This routine is only handling x86 targets.
+}
 
   bool Is64Bit = Triple.getArch() == llvm::Triple::x86_64;
 
   // FIXME: Need target hooks.
   if (Triple.isOSDarwin()) {
-    if (Triple.getArchName() == "x86_64h")
+    if (Triple.getArchName() == "x86_64h") {
       return "core-avx2";
+}
     // macosx10.12 drops support for all pre-Penryn Macs.
     // Simulators can still run on 10.11 though, like Xcode.
-    if (Triple.isMacOSX() && !Triple.isOSVersionLT(10, 12))
+    if (Triple.isMacOSX() && !Triple.isOSVersionLT(10, 12)) {
       return "penryn";
+}
     // The oldest x86_64 Macs have core2/Merom; the oldest x86 Macs have Yonah.
     return Is64Bit ? "core2" : "yonah";
   }
 
   // Set up default CPU name for PS4 compilers.
-  if (Triple.isPS4CPU())
+  if (Triple.isPS4CPU()) {
     return "btver2";
+}
 
   // On Android use targets compatible with gcc
-  if (Triple.isAndroid())
+  if (Triple.isAndroid()) {
     return Is64Bit ? "x86-64" : "i686";
+}
 
   // Everything else goes to x86-64 in 64-bit mode.
-  if (Is64Bit)
+  if (Is64Bit) {
     return "x86-64";
+}
 
   switch (Triple.getOS()) {
   case llvm::Triple::NetBSD:
@@ -114,10 +122,12 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
   if (const Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ)) {
     if (StringRef(A->getValue()) == "native") {
       llvm::StringMap<bool> HostFeatures;
-      if (llvm::sys::getHostCPUFeatures(HostFeatures))
-        for (auto &F : HostFeatures)
+      if (llvm::sys::getHostCPUFeatures(HostFeatures)) {
+        for (auto &F : HostFeatures) {
           Features.push_back(
               Args.MakeArgString((F.second ? "+" : "-") + F.first()));
+}
+}
     }
   }
 
@@ -138,8 +148,9 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("+sse4.2");
       Features.push_back("+popcnt");
       Features.push_back("+cx16");
-    } else
+    } else {
       Features.push_back("+ssse3");
+}
   }
 
   // Translate the high level `-mretpoline` flag to the specific target feature
@@ -187,15 +198,17 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
   }
 
   if (Args.hasFlag(options::OPT_m_seses, options::OPT_mno_seses, false)) {
-    if (LVIOpt == options::OPT_mlvi_hardening)
+    if (LVIOpt == options::OPT_mlvi_hardening) {
       D.Diag(diag::err_drv_argument_not_allowed_with)
           << D.getOpts().getOptionName(options::OPT_mlvi_hardening)
           << D.getOpts().getOptionName(options::OPT_m_seses);
+}
 
-    if (SpectreOpt != clang::driver::options::ID::OPT_INVALID)
+    if (SpectreOpt != clang::driver::options::ID::OPT_INVALID) {
       D.Diag(diag::err_drv_argument_not_allowed_with)
           << D.getOpts().getOptionName(SpectreOpt)
           << D.getOpts().getOptionName(options::OPT_m_seses);
+}
 
     Features.push_back("+seses");
     if (!Args.hasArg(options::OPT_mno_lvi_cfi)) {

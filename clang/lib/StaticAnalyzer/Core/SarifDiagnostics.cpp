@@ -53,8 +53,9 @@ void ento::createSarifDiagnosticConsumer(
     const cross_tu::CrossTranslationUnitContext &CTU) {
 
   // TODO: Emit an error here.
-  if (Output.empty())
+  if (Output.empty()) {
     return;
+}
 
   C.push_back(new SarifDiagnostics(AnalyzerOpts, Output, PP.getLangOpts()));
   createTextMinimalPathDiagnosticConsumer(AnalyzerOpts, C, Output, PP, CTU);
@@ -62,8 +63,9 @@ void ento::createSarifDiagnosticConsumer(
 
 static StringRef getFileName(const FileEntry &FE) {
   StringRef Filename = FE.tryGetRealPathName();
-  if (Filename.empty())
+  if (Filename.empty()) {
     Filename = FE.getName();
+}
   return Filename;
 }
 
@@ -74,8 +76,9 @@ static std::string percentEncodeURICharacter(char C) {
   // encode the character and write that out instead of the
   // reserved character.
   if (llvm::isAlnum(C) ||
-      StringRef::npos != StringRef("-._~:@!$&'()*+,;=").find(C))
+      StringRef::npos != StringRef("-._~:@!$&'()*+,;=").find(C)) {
     return std::string(&C, 1);
+}
   return "%" + llvm::toHex(StringRef(&C, 1));
 }
 
@@ -100,8 +103,9 @@ static std::string fileNameToURI(StringRef Filename) {
     // For reasons unknown to me, we may get a backslash with Windows native
     // paths for the initial backslash following the drive component, which
     // we need to ignore as a URI path part.
-    if (Component == "\\")
+    if (Component == "\\") {
       return;
+}
 
     // Add the separator between the previous path part and the one being
     // currently processed.
@@ -146,8 +150,9 @@ static json::Object createArtifactLocation(const FileEntry &FE,
   // Calculate the index within the artifact array so it can be stored in
   // the JSON object.
   auto Index = static_cast<unsigned>(std::distance(Artifacts.begin(), I));
-  if (I == Artifacts.end())
+  if (I == Artifacts.end()) {
     Artifacts.push_back(createArtifact(FE));
+}
 
   return json::Object{{"uri", FileURI}, {"index", Index}};
 }
@@ -231,8 +236,9 @@ static json::Object createMessage(StringRef Text) {
 static json::Object createLocation(json::Object &&PhysicalLocation,
                                    StringRef Message = "") {
   json::Object Ret{{"physicalLocation", std::move(PhysicalLocation)}};
-  if (!Message.empty())
+  if (!Message.empty()) {
     Ret.insert({"message", createMessage(Message)});
+}
   return Ret;
 }
 
@@ -330,8 +336,9 @@ static json::Object createRule(const PathDiagnostic &Diag) {
       {"id", CheckName}};
 
   std::string RuleURI = std::string(getRuleHelpURIStr(CheckName));
-  if (!RuleURI.empty())
+  if (!RuleURI.empty()) {
     Ret["helpUri"] = RuleURI;
+}
 
   return Ret;
 }

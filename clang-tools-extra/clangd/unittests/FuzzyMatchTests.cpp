@@ -20,10 +20,12 @@ using ::testing::Not;
 struct ExpectedMatch {
   // Annotations are optional, and will not be asserted if absent.
   ExpectedMatch(llvm::StringRef Match) : Word(Match), Annotated(Match) {
-    for (char C : "[]")
+    for (char C : "[]") {
       Word.erase(std::remove(Word.begin(), Word.end(), C), Word.end());
-    if (Word.size() == Annotated->size())
+}
+    if (Word.size() == Annotated->size()) {
       Annotated = llvm::None;
+}
   }
   bool accepts(llvm::StringRef ActualAnnotated) const {
     return !Annotated || ActualAnnotated == *Annotated;
@@ -32,8 +34,9 @@ struct ExpectedMatch {
   friend llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
                                        const ExpectedMatch &M) {
     OS << "'" << M.Word;
-    if (M.Annotated)
+    if (M.Annotated) {
       OS << "' as " << *M.Annotated;
+}
     return OS;
   }
 
@@ -51,8 +54,9 @@ struct MatchesMatcher : public ::testing::MatcherInterface<llvm::StringRef> {
 
   void DescribeTo(::std::ostream *OS) const override {
     llvm::raw_os_ostream(*OS) << "Matches " << Candidate;
-    if (Score)
+    if (Score) {
       *OS << " with score " << *Score;
+}
   }
 
   bool MatchAndExplain(llvm::StringRef Pattern,
@@ -187,8 +191,9 @@ struct RankMatcher : public ::testing::MatcherInterface<llvm::StringRef> {
   void DescribeTo(::std::ostream *OS) const override {
     llvm::raw_os_ostream O(*OS);
     O << "Ranks strings in order: [";
-    for (const auto &Str : RankedStrings)
+    for (const auto &Str : RankedStrings) {
       O << "\n\t" << Str;
+}
     O << "\n]";
   }
 
@@ -290,8 +295,9 @@ std::string segment(llvm::StringRef Text) {
   std::vector<CharRole> Roles(Text.size());
   calculateRoles(Text, Roles);
   std::string Printed;
-  for (unsigned I = 0; I < Text.size(); ++I)
+  for (unsigned I = 0; I < Text.size(); ++I) {
     Printed.push_back("?-+ "[static_cast<unsigned>(Roles[I])]);
+}
   return Printed;
 }
 

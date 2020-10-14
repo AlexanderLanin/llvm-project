@@ -59,12 +59,14 @@ static constexpr llvm::StringRef ComparisonOperators[] = {
 static std::vector<std::string> parseStringListPair(StringRef LHS,
                                                     StringRef RHS) {
   if (LHS.empty()) {
-    if (RHS.empty())
+    if (RHS.empty()) {
       return {};
+}
     return utils::options::parseStringList(RHS);
   }
-  if (RHS.empty())
+  if (RHS.empty()) {
     return utils::options::parseStringList(LHS);
+}
   llvm::SmallString<512> Buffer;
   return utils::options::parseStringList((LHS + RHS).toStringRef(Buffer));
 }

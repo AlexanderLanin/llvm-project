@@ -171,9 +171,10 @@ llvm::Expected<llvm::SmallString<128>> getInfoOutputFile(StringRef Root,
   llvm::SmallString<128> Path;
   llvm::sys::path::native(Root, Path);
   llvm::sys::path::append(Path, RelativePath);
-  if (CreateDirectory(Path))
+  if (CreateDirectory(Path)) {
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
                                    "failed to create directory");
+}
   llvm::sys::path::append(Path, Name + Ext);
   return Path;
 }
@@ -201,11 +202,12 @@ int main(int argc, const char **argv) {
   }
 
   ArgumentsAdjuster ArgAdjuster;
-  if (!DoxygenOnly)
+  if (!DoxygenOnly) {
     ArgAdjuster = combineAdjusters(
         getInsertArgumentAdjuster("-fparse-all-comments",
                                   tooling::ArgumentInsertPosition::END),
         ArgAdjuster);
+}
 
   clang::doc::ClangDocContext CDCtx = {
       Exec->get()->getExecutionContext(),
@@ -241,11 +243,11 @@ int main(int argc, const char **argv) {
   auto Err =
       Exec->get()->execute(doc::newMapperActionFactory(CDCtx), ArgAdjuster);
   if (Err) {
-    if (IgnoreMappingFailures)
+    if (IgnoreMappingFailures) {
       llvm::errs() << "Error mapping decls in files. Clang-doc will ignore "
                       "these files and continue:\n"
                    << toString(std::move(Err)) << "\n";
-    else {
+    } else {
       llvm::errs() << toString(std::move(Err)) << "\n";
       return 1;
     }
@@ -315,15 +317,17 @@ int main(int argc, const char **argv) {
       clang::doc::Generator::addInfoToIndex(CDCtx.Idx, I);
       IndexMutex.unlock();
 
-      if (auto Err = G->get()->generateDocForInfo(I, InfoOS, CDCtx))
+      if (auto Err = G->get()->generateDocForInfo(I, InfoOS, CDCtx)) {
         llvm::errs() << toString(std::move(Err)) << "\n";
+}
     });
   }
 
   Pool.wait();
 
-  if (Error)
+  if (Error) {
     return 1;
+}
 
   llvm::outs() << "Generating assets for docs...\n";
   Err = G->get()->createResources(CDCtx);

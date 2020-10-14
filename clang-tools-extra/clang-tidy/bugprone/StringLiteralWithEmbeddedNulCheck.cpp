@@ -18,9 +18,11 @@ namespace bugprone {
 
 namespace {
 AST_MATCHER(StringLiteral, containsNul) {
-  for (size_t i = 0; i < Node.getLength(); ++i)
-    if (Node.getCodeUnit(i) == '\0')
+  for (size_t i = 0; i < Node.getLength(); ++i) {
+    if (Node.getCodeUnit(i) == '\0') {
       return true;
+}
+}
   return false;
 }
 } // namespace
@@ -31,8 +33,9 @@ void StringLiteralWithEmbeddedNulCheck::registerMatchers(MatchFinder *Finder) {
   Finder->addMatcher(stringLiteral(containsNul()).bind("strlit"), this);
 
   // The remaining checks only apply to C++.
-  if (!getLangOpts().CPlusPlus)
+  if (!getLangOpts().CPlusPlus) {
     return;
+}
 
   const auto StrLitWithNul =
       ignoringParenImpCasts(stringLiteral(containsNul()).bind("truncated"));

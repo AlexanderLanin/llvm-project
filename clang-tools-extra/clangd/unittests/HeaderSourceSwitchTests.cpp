@@ -75,9 +75,11 @@ TEST(HeaderSourceSwitchTest, FileHeuristic) {
 }
 
 MATCHER_P(DeclNamed, Name, "") {
-  if (const NamedDecl *ND = dyn_cast<NamedDecl>(arg))
-    if (ND->getQualifiedNameAsString() == Name)
+  if (const NamedDecl *ND = dyn_cast<NamedDecl>(arg)) {
+    if (ND->getQualifiedNameAsString() == Name) {
       return true;
+}
+}
   return false;
 }
 
@@ -120,8 +122,9 @@ TEST(HeaderSourceSwitchTest, FromHeaderToSource) {
   Testing.HeaderCode = "void A_Sym1();";
   Testing.Filename = "a.cpp";
   Testing.Code = "void A_Sym1() {};";
-  for (auto &Sym : Testing.headerSymbols())
+  for (auto &Sym : Testing.headerSymbols()) {
     AllSymbols.insert(Sym);
+}
 
   Testing.HeaderCode = R"cpp(
   void B_Sym1();
@@ -133,8 +136,9 @@ TEST(HeaderSourceSwitchTest, FromHeaderToSource) {
   void B_Sym1() {}
   void B_Sym2() {}
   )cpp";
-  for (auto &Sym : Testing.headerSymbols())
+  for (auto &Sym : Testing.headerSymbols()) {
     AllSymbols.insert(Sym);
+}
   auto Index = MemIndex::build(std::move(AllSymbols).build(), {}, {});
 
   // Test for switch from .h header to .cc source

@@ -106,8 +106,9 @@ TemplateArgument::TemplateArgument(ASTContext &Ctx, const llvm::APSInt &Value,
 TemplateArgument
 TemplateArgument::CreatePackCopy(ASTContext &Context,
                                  ArrayRef<TemplateArgument> Args) {
-  if (Args.empty())
+  if (Args.empty()) {
     return getEmptyPack();
+}
 
   return TemplateArgument(Args.copy(Context));
 }
@@ -120,8 +121,9 @@ TemplateArgumentDependence TemplateArgument::getDependence() const {
 
   case Type:
     Deps = toTemplateArgumentDependence(getAsType()->getDependence());
-    if (isa<PackExpansionType>(getAsType()))
+    if (isa<PackExpansionType>(getAsType())) {
       Deps |= TemplateArgumentDependence::Dependent;
+}
     return Deps;
 
   case Template:
@@ -133,11 +135,13 @@ TemplateArgumentDependence TemplateArgument::getDependence() const {
 
   case Declaration: {
     auto *DC = dyn_cast<DeclContext>(getAsDecl());
-    if (!DC)
+    if (!DC) {
       DC = getAsDecl()->getDeclContext();
-    if (DC->isDependentContext())
+}
+    if (DC->isDependentContext()) {
       Deps = TemplateArgumentDependence::Dependent |
              TemplateArgumentDependence::Instantiation;
+}
     return Deps;
   }
 
@@ -147,14 +151,16 @@ TemplateArgumentDependence TemplateArgument::getDependence() const {
 
   case Expression:
     Deps = toTemplateArgumentDependence(getAsExpr()->getDependence());
-    if (isa<PackExpansionExpr>(getAsExpr()))
+    if (isa<PackExpansionExpr>(getAsExpr())) {
       Deps |= TemplateArgumentDependence::Dependent |
               TemplateArgumentDependence::Instantiation;
+}
     return Deps;
 
   case Pack:
-    for (const auto &P : pack_elements())
+    for (const auto &P : pack_elements()) {
       Deps |= P.getDependence();
+}
     return Deps;
   }
   llvm_unreachable("unhandled ArgKind");
@@ -197,8 +203,9 @@ bool TemplateArgument::containsUnexpandedParameterPack() const {
 
 Optional<unsigned> TemplateArgument::getNumTemplateExpansions() const {
   assert(getKind() == TemplateExpansion);
-  if (TemplateArg.NumExpansions)
+  if (TemplateArg.NumExpansions) {
     return TemplateArg.NumExpansions - 1;
+}
 
   return None;
 }
@@ -276,13 +283,15 @@ void TemplateArgument::Profile(llvm::FoldingSetNodeID &ID,
 
   case Pack:
     ID.AddInteger(Args.NumArgs);
-    for (unsigned I = 0; I != Args.NumArgs; ++I)
+    for (unsigned I = 0; I != Args.NumArgs; ++I) {
       Args.Args[I].Profile(ID, Context);
+}
   }
 }
 
 bool TemplateArgument::structurallyEquals(const TemplateArgument &Other) const {
-  if (getKind() != Other.getKind()) return false;
+  if (getKind() != Other.getKind()) { return false;
+}
 
   switch (getKind()) {
   case Null:
@@ -301,10 +310,13 @@ bool TemplateArgument::structurallyEquals(const TemplateArgument &Other) const {
            getAsIntegral() == Other.getAsIntegral();
 
   case Pack:
-    if (Args.NumArgs != Other.Args.NumArgs) return false;
-    for (unsigned I = 0, E = Args.NumArgs; I != E; ++I)
-      if (!Args.Args[I].structurallyEquals(Other.Args.Args[I]))
+    if (Args.NumArgs != Other.Args.NumArgs) { return false;
+}
+    for (unsigned I = 0, E = Args.NumArgs; I != E; ++I) {
+      if (!Args.Args[I].structurallyEquals(Other.Args.Args[I])) {
         return false;
+}
+}
     return true;
   }
 
@@ -352,8 +364,9 @@ void TemplateArgument::print(const PrintingPolicy &Policy,
 
   case Declaration: {
     NamedDecl *ND = getAsDecl();
-    if (!getParamTypeForDecl()->isReferenceType())
+    if (!getParamTypeForDecl()->isReferenceType()) {
       Out << '&';
+}
     ND->printQualifiedName(Out);
     break;
   }
@@ -383,10 +396,11 @@ void TemplateArgument::print(const PrintingPolicy &Policy,
     Out << "<";
     bool First = true;
     for (const auto &P : pack_elements()) {
-      if (First)
+      if (First) {
         First = false;
-      else
+      } else {
         Out << ", ";
+}
 
       P.print(Policy, Out);
     }
@@ -420,21 +434,24 @@ SourceRange TemplateArgumentLoc::getSourceRange() const {
     return getSourceNullPtrExpression()->getSourceRange();
 
   case TemplateArgument::Type:
-    if (TypeSourceInfo *TSI = getTypeSourceInfo())
+    if (TypeSourceInfo *TSI = getTypeSourceInfo()) {
       return TSI->getTypeLoc().getSourceRange();
-    else
+    } else {
       return SourceRange();
+}
 
   case TemplateArgument::Template:
-    if (getTemplateQualifierLoc())
+    if (getTemplateQualifierLoc()) {
       return SourceRange(getTemplateQualifierLoc().getBeginLoc(),
                          getTemplateNameLoc());
+}
     return SourceRange(getTemplateNameLoc());
 
   case TemplateArgument::TemplateExpansion:
-    if (getTemplateQualifierLoc())
+    if (getTemplateQualifierLoc()) {
       return SourceRange(getTemplateQualifierLoc().getBeginLoc(),
                          getTemplateEllipsisLoc());
+}
     return SourceRange(getTemplateNameLoc(), getTemplateEllipsisLoc());
 
   case TemplateArgument::Integral:
@@ -528,8 +545,9 @@ ASTTemplateArgumentListInfo::ASTTemplateArgumentListInfo(
   NumTemplateArgs = Info.size();
 
   TemplateArgumentLoc *ArgBuffer = getTrailingObjects<TemplateArgumentLoc>();
-  for (unsigned i = 0; i != NumTemplateArgs; ++i)
+  for (unsigned i = 0; i != NumTemplateArgs; ++i) {
     new (&ArgBuffer[i]) TemplateArgumentLoc(Info[i]);
+}
 }
 
 void ASTTemplateKWAndArgsInfo::initializeFrom(
@@ -540,8 +558,9 @@ void ASTTemplateKWAndArgsInfo::initializeFrom(
   RAngleLoc = Info.getRAngleLoc();
   NumTemplateArgs = Info.size();
 
-  for (unsigned i = 0; i != NumTemplateArgs; ++i)
+  for (unsigned i = 0; i != NumTemplateArgs; ++i) {
     new (&OutArgArray[i]) TemplateArgumentLoc(Info[i]);
+}
 }
 
 void ASTTemplateKWAndArgsInfo::initializeFrom(SourceLocation TemplateKWLoc) {
@@ -571,6 +590,7 @@ void ASTTemplateKWAndArgsInfo::copyInto(const TemplateArgumentLoc *ArgArray,
                                         TemplateArgumentListInfo &Info) const {
   Info.setLAngleLoc(LAngleLoc);
   Info.setRAngleLoc(RAngleLoc);
-  for (unsigned I = 0; I != NumTemplateArgs; ++I)
+  for (unsigned I = 0; I != NumTemplateArgs; ++I) {
     Info.addArgument(ArgArray[I]);
+}
 }

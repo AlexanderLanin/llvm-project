@@ -15,19 +15,22 @@ constexpr uint32_t SymbolLocation::Position::MaxLine;
 constexpr uint32_t SymbolLocation::Position::MaxColumn;
 
 void SymbolLocation::Position::setLine(uint32_t L) {
-  if (L > MaxLine)
+  if (L > MaxLine) {
     L = MaxLine;
+}
   LineColumnPacked = (L << ColumnBits) | column();
 }
 void SymbolLocation::Position::setColumn(uint32_t Col) {
-  if (Col > MaxColumn)
+  if (Col > MaxColumn) {
     Col = MaxColumn;
+}
   LineColumnPacked = (LineColumnPacked & ~MaxColumn) | Col;
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const SymbolLocation &L) {
-  if (!L)
+  if (!L) {
     return OS << "(none)";
+}
   return OS << L.FileURI << "[" << L.Start.line() << ":" << L.Start.column()
             << "-" << L.End.line() << ":" << L.End.column() << ")";
 }

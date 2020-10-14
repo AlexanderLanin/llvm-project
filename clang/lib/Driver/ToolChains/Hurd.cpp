@@ -35,8 +35,9 @@ std::string Hurd::getMultiarchTriple(const Driver &D,
     // common hurd triples that don't quite match the Clang triple for both
     // 32-bit and 64-bit targets. Multiarch fixes its install triples to these
     // regardless of what the actual target triple is.
-    if (D.getVFS().exists(SysRoot + "/lib/i386-gnu"))
+    if (D.getVFS().exists(SysRoot + "/lib/i386-gnu")) {
       return "i386-gnu";
+}
   }
 
   // For most architectures, just use whatever we have rather than trying to be
@@ -55,8 +56,9 @@ static StringRef getOSLibDir(const llvm::Triple &Triple, const ArgList &Args) {
   // reasoning about oslibdir spellings with the lib dir spellings in the
   // GCCInstallationDetector, but that is a more significant refactoring.
 
-  if (Triple.getArch() == llvm::Triple::x86)
+  if (Triple.getArch() == llvm::Triple::x86) {
     return "lib32";
+}
 
   return Triple.isArch32Bit() ? "lib" : "lib64";
 }
@@ -110,8 +112,9 @@ Hurd::Hurd(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
   // searched.
   // FIXME: It's not clear whether we should use the driver's installed
   // directory ('Dir' below) or the ResourceDir.
-  if (StringRef(D.Dir).startswith(SysRoot))
+  if (StringRef(D.Dir).startswith(SysRoot)) {
     addPathIfExists(D, D.Dir + "/../lib", Paths);
+}
 
   addPathIfExists(D, SysRoot + "/lib", Paths);
   addPathIfExists(D, SysRoot + "/usr/lib", Paths);
@@ -126,8 +129,9 @@ Tool *Hurd::buildAssembler() const {
 }
 
 std::string Hurd::getDynamicLinker(const ArgList &Args) const {
-  if (getArch() == llvm::Triple::x86)
+  if (getArch() == llvm::Triple::x86) {
     return "/lib/ld.so";
+}
 
   llvm_unreachable("unsupported architecture");
 }
@@ -137,11 +141,13 @@ void Hurd::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
   const Driver &D = getDriver();
   std::string SysRoot = computeSysRoot();
 
-  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc))
+  if (DriverArgs.hasArg(clang::driver::options::OPT_nostdinc)) {
     return;
+}
 
-  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (!DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     addSystemInclude(DriverArgs, CC1Args, SysRoot + "/usr/local/include");
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<128> P(D.ResourceDir);
@@ -149,8 +155,9 @@ void Hurd::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, P);
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
 
   // Check for configure-time C include directories.
   StringRef CIncludeDirs(C_INCLUDE_DIRS);
@@ -172,8 +179,9 @@ void Hurd::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
 
   if (getTriple().getArch() == llvm::Triple::x86) {
     std::string Path = SysRoot + "/usr/include/i386-gnu";
-    if (D.getVFS().exists(Path))
+    if (D.getVFS().exists(Path)) {
       addExternCSystemInclude(DriverArgs, CC1Args, Path);
+}
   }
 
   // Add an include of '/include' directly. This isn't provided by default by
@@ -185,6 +193,7 @@ void Hurd::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
 }
 
 void Hurd::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
-  for (const auto &Opt : ExtraOpts)
+  for (const auto &Opt : ExtraOpts) {
     CmdArgs.push_back(Opt.c_str());
+}
 }

@@ -43,7 +43,8 @@ void HelperDeclRefGraph::addEdge(const Decl *Caller, const Decl *Callee) {
   // class member definitions in global namespace like "int CLASS::static_var =
   // 1;", its DC is a VarDel whose outmost enclosing declaration is the "CLASS"
   // CXXRecordDecl.
-  if (Caller == Callee) return;
+  if (Caller == Callee) { return;
+}
 
   // Allocate a new node, mark it as root, and process it's calls.
   CallGraphNode *CallerNode = getOrInsertNode(const_cast<Decl *>(Caller));
@@ -56,8 +57,9 @@ void HelperDeclRefGraph::dump() const { print(llvm::errs()); }
 CallGraphNode *HelperDeclRefGraph::getOrInsertNode(Decl *F) {
   F = F->getCanonicalDecl();
   std::unique_ptr<CallGraphNode> &Node = DeclMap[F];
-  if (Node)
+  if (Node) {
     return Node.get();
+}
 
   Node = std::make_unique<CallGraphNode>(F);
   return Node.get();
@@ -71,16 +73,19 @@ CallGraphNode *HelperDeclRefGraph::getNode(const Decl *D) const {
 llvm::DenseSet<const CallGraphNode *>
 HelperDeclRefGraph::getReachableNodes(const Decl *Root) const {
   const auto *RootNode = getNode(Root);
-  if (!RootNode)
+  if (!RootNode) {
     return {};
+}
   llvm::DenseSet<const CallGraphNode *> ConnectedNodes;
   std::function<void(const CallGraphNode *)> VisitNode =
       [&](const CallGraphNode *Node) {
-        if (ConnectedNodes.count(Node))
+        if (ConnectedNodes.count(Node)) {
           return;
+}
         ConnectedNodes.insert(Node);
-        for (auto It = Node->begin(), End = Node->end(); It != End; ++It)
+        for (auto It = Node->begin(), End = Node->end(); It != End; ++It) {
           VisitNode(*It);
+}
       };
 
   VisitNode(RootNode);
@@ -91,10 +96,11 @@ const Decl *HelperDeclRGBuilder::getOutmostClassOrFunDecl(const Decl *D) {
   const auto *DC = D->getDeclContext();
   const auto *Result = D;
   while (DC) {
-    if (const auto *RD = dyn_cast<CXXRecordDecl>(DC))
+    if (const auto *RD = dyn_cast<CXXRecordDecl>(DC)) {
       Result = RD;
-    else if (const auto *FD = dyn_cast<FunctionDecl>(DC))
+    } else if (const auto *FD = dyn_cast<FunctionDecl>(DC)) {
       Result = FD;
+}
     DC = DC->getParent();
   }
   return Result;

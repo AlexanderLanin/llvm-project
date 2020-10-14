@@ -124,16 +124,18 @@ void UseEmplaceCheck::check(const MatchFinder::MatchResult &Result) {
   assert((CtorCall || MakeCall) && "No push_back parameter matched");
 
   if (IgnoreImplicitConstructors && CtorCall && CtorCall->getNumArgs() >= 1 &&
-      CtorCall->getArg(0)->getSourceRange() == CtorCall->getSourceRange())
+      CtorCall->getArg(0)->getSourceRange() == CtorCall->getSourceRange()) {
     return;
+}
 
   const auto FunctionNameSourceRange = CharSourceRange::getCharRange(
       Call->getExprLoc(), Call->getArg(0)->getExprLoc());
 
   auto Diag = diag(Call->getExprLoc(), "use emplace_back instead of push_back");
 
-  if (FunctionNameSourceRange.getBegin().isMacroID())
+  if (FunctionNameSourceRange.getBegin().isMacroID()) {
     return;
+}
 
   const auto *EmplacePrefix = MakeCall ? "emplace_back" : "emplace_back(";
   Diag << FixItHint::CreateReplacement(FunctionNameSourceRange, EmplacePrefix);
@@ -144,8 +146,9 @@ void UseEmplaceCheck::check(const MatchFinder::MatchResult &Result) {
                : CtorCall->getParenOrBraceRange();
 
   // Finish if there is no explicit constructor call.
-  if (CallParensRange.getBegin().isInvalid())
+  if (CallParensRange.getBegin().isInvalid()) {
     return;
+}
 
   const SourceLocation ExprBegin =
       MakeCall ? MakeCall->getExprLoc() : CtorCall->getExprLoc();

@@ -37,21 +37,24 @@ void ReturnPointerRangeChecker::checkPreStmt(const ReturnStmt *RS,
   ProgramStateRef state = C.getState();
 
   const Expr *RetE = RS->getRetValue();
-  if (!RetE)
+  if (!RetE) {
     return;
+}
 
   SVal V = C.getSVal(RetE);
   const MemRegion *R = V.getAsRegion();
 
   const ElementRegion *ER = dyn_cast_or_null<ElementRegion>(R);
-  if (!ER)
+  if (!ER) {
     return;
+}
 
   DefinedOrUnknownSVal Idx = ER->getIndex().castAs<DefinedOrUnknownSVal>();
   // Zero index is always in bound, this also passes ElementRegions created for
   // pointer casts.
-  if (Idx.isZeroConstant())
+  if (Idx.isZeroConstant()) {
     return;
+}
 
   // FIXME: All of this out-of-bounds checking should eventually be refactored
   // into a common place.
@@ -63,16 +66,18 @@ void ReturnPointerRangeChecker::checkPreStmt(const ReturnStmt *RS,
   if (StOutBound && !StInBound) {
     ExplodedNode *N = C.generateErrorNode(StOutBound);
 
-    if (!N)
+    if (!N) {
       return;
+}
 
     // FIXME: This bug correspond to CWE-466.  Eventually we should have bug
     // types explicitly reference such exploit categories (when applicable).
-    if (!BT)
+    if (!BT) {
       BT.reset(new BuiltinBug(
           this, "Return of pointer value outside of expected range",
           "Returned pointer value points outside the original object "
           "(potential buffer overflow)"));
+}
 
     // FIXME: It would be nice to eventually make this diagnostic more clear,
     // e.g., by referencing the original declaration or by saying *why* this

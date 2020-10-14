@@ -61,27 +61,33 @@ STATISTIC(NumASTLoadThresholdReached,
 bool hasEqualKnownFields(const llvm::Triple &Lhs, const llvm::Triple &Rhs) {
   using llvm::Triple;
   if (Lhs.getArch() != Triple::UnknownArch &&
-      Rhs.getArch() != Triple::UnknownArch && Lhs.getArch() != Rhs.getArch())
+      Rhs.getArch() != Triple::UnknownArch && Lhs.getArch() != Rhs.getArch()) {
     return false;
+}
   if (Lhs.getSubArch() != Triple::NoSubArch &&
       Rhs.getSubArch() != Triple::NoSubArch &&
-      Lhs.getSubArch() != Rhs.getSubArch())
+      Lhs.getSubArch() != Rhs.getSubArch()) {
     return false;
+}
   if (Lhs.getVendor() != Triple::UnknownVendor &&
       Rhs.getVendor() != Triple::UnknownVendor &&
-      Lhs.getVendor() != Rhs.getVendor())
+      Lhs.getVendor() != Rhs.getVendor()) {
     return false;
+}
   if (!Lhs.isOSUnknown() && !Rhs.isOSUnknown() &&
-      Lhs.getOS() != Rhs.getOS())
+      Lhs.getOS() != Rhs.getOS()) {
     return false;
+}
   if (Lhs.getEnvironment() != Triple::UnknownEnvironment &&
       Rhs.getEnvironment() != Triple::UnknownEnvironment &&
-      Lhs.getEnvironment() != Rhs.getEnvironment())
+      Lhs.getEnvironment() != Rhs.getEnvironment()) {
     return false;
+}
   if (Lhs.getObjectFormat() != Triple::UnknownObjectFormat &&
       Rhs.getObjectFormat() != Triple::UnknownObjectFormat &&
-      Lhs.getObjectFormat() != Rhs.getObjectFormat())
+      Lhs.getObjectFormat() != Rhs.getObjectFormat()) {
     return false;
+}
   return true;
 }
 
@@ -148,9 +154,10 @@ std::error_code IndexError::convertToErrorCode() const {
 llvm::Expected<llvm::StringMap<std::string>>
 parseCrossTUIndex(StringRef IndexPath) {
   std::ifstream ExternalMapFile{std::string(IndexPath)};
-  if (!ExternalMapFile)
+  if (!ExternalMapFile) {
     return llvm::make_error<IndexError>(index_error_code::missing_index_file,
                                         IndexPath.str());
+}
 
   llvm::StringMap<std::string> Result;
   std::string Line;
@@ -169,12 +176,14 @@ parseCrossTUIndex(StringRef IndexPath) {
       bool InsertionOccured;
       std::tie(std::ignore, InsertionOccured) =
           Result.try_emplace(LookupName, FilePath.begin(), FilePath.end());
-      if (!InsertionOccured)
+      if (!InsertionOccured) {
         return llvm::make_error<IndexError>(
             index_error_code::multiple_definitions, IndexPath.str(), LineNo);
-    } else
+}
+    } else {
       return llvm::make_error<IndexError>(
           index_error_code::invalid_index_format, IndexPath.str(), LineNo);
+}
     ++LineNo;
   }
   return Result;
@@ -183,8 +192,9 @@ parseCrossTUIndex(StringRef IndexPath) {
 std::string
 createCrossTUIndexString(const llvm::StringMap<std::string> &Index) {
   std::ostringstream Result;
-  for (const auto &E : Index)
+  for (const auto &E : Index) {
     Result << E.getKey().str() << " " << E.getValue() << '\n';
+}
   return Result.str();
 }
 
@@ -192,8 +202,9 @@ bool containsConst(const VarDecl *VD, const ASTContext &ACtx) {
   CanQualType CT = ACtx.getCanonicalType(VD->getType());
   if (!CT.isConstQualified()) {
     const RecordType *RTy = CT->getAs<RecordType>();
-    if (!RTy || !RTy->hasConstFields())
+    if (!RTy || !RTy->hasConstFields()) {
       return false;
+}
   }
   return true;
 }
@@ -218,8 +229,9 @@ llvm::Optional<std::string>
 CrossTranslationUnitContext::getLookupName(const NamedDecl *ND) {
   SmallString<128> DeclUSR;
   bool Ret = index::generateUSRForDecl(ND, DeclUSR);
-  if (Ret)
+  if (Ret) {
     return {};
+}
   return std::string(DeclUSR.str());
 }
 
@@ -232,17 +244,21 @@ CrossTranslationUnitContext::findDefInDeclContext(const DeclContext *DC,
   assert(DC && "Declaration Context must not be null");
   for (const Decl *D : DC->decls()) {
     const auto *SubDC = dyn_cast<DeclContext>(D);
-    if (SubDC)
-      if (const auto *ND = findDefInDeclContext<T>(SubDC, LookupName))
+    if (SubDC) {
+      if (const auto *ND = findDefInDeclContext<T>(SubDC, LookupName)) {
         return ND;
+}
+}
 
     const auto *ND = dyn_cast<T>(D);
     const T *ResultDecl;
-    if (!ND || !hasBodyOrInit(ND, ResultDecl))
+    if (!ND || !hasBodyOrInit(ND, ResultDecl)) {
       continue;
+}
     llvm::Optional<std::string> ResultLookupName = getLookupName(ResultDecl);
-    if (!ResultLookupName || *ResultLookupName != LookupName)
+    if (!ResultLookupName || *ResultLookupName != LookupName) {
       continue;
+}
     return ResultDecl;
   }
   return nullptr;
@@ -257,13 +273,15 @@ llvm::Expected<const T *> CrossTranslationUnitContext::getCrossTUDefinitionImpl(
          "D has a body or init in current translation unit!");
   ++NumGetCTUCalled;
   const llvm::Optional<std::string> LookupName = getLookupName(D);
-  if (!LookupName)
+  if (!LookupName) {
     return llvm::make_error<IndexError>(
         index_error_code::failed_to_generate_usr);
+}
   llvm::Expected<ASTUnit *> ASTUnitOrError =
       loadExternalAST(*LookupName, CrossTUDir, IndexName, DisplayCTUProgress);
-  if (!ASTUnitOrError)
+  if (!ASTUnitOrError) {
     return ASTUnitOrError.takeError();
+}
   ASTUnit *Unit = *ASTUnitOrError;
   assert(&Unit->getFileManager() ==
          &Unit->getASTContext().getSourceManager().getFileManager());
@@ -317,8 +335,9 @@ llvm::Expected<const T *> CrossTranslationUnitContext::getCrossTUDefinitionImpl(
   }
 
   TranslationUnitDecl *TU = Unit->getASTContext().getTranslationUnitDecl();
-  if (const T *ResultDecl = findDefInDeclContext<T>(TU, *LookupName))
+  if (const T *ResultDecl = findDefInDeclContext<T>(TU, *LookupName)) {
     return importDefinition(ResultDecl, Unit);
+}
   return llvm::make_error<IndexError>(index_error_code::failed_import);
 }
 
@@ -387,8 +406,9 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFile(
 
     auto LoadAttempt = Loader.load(FileName);
 
-    if (!LoadAttempt)
+    if (!LoadAttempt) {
       return LoadAttempt.takeError();
+}
 
     std::unique_ptr<ASTUnit> LoadedUnit = std::move(LoadAttempt.get());
 
@@ -400,8 +420,9 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFile(
 
     LoadGuard.indicateLoadSuccess();
 
-    if (DisplayCTUProgress)
+    if (DisplayCTUProgress) {
       llvm::errs() << "CTU loaded AST file: " << FileName << "\n";
+}
 
     return Unit;
 
@@ -422,8 +443,9 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFunction(
 
     // Ensure that the Index is loaded, as we need to search in it.
     if (llvm::Error IndexLoadError =
-            ensureCTUIndexLoaded(CrossTUDir, IndexName))
+            ensureCTUIndexLoaded(CrossTUDir, IndexName)) {
       return std::move(IndexLoadError);
+}
 
     // Check if there is and entry in the index for the function.
     if (!NameFileMap.count(FunctionName)) {
@@ -452,23 +474,26 @@ CrossTranslationUnitContext::ASTUnitStorage::getASTUnitForFunction(
 llvm::Expected<std::string>
 CrossTranslationUnitContext::ASTUnitStorage::getFileForFunction(
     StringRef FunctionName, StringRef CrossTUDir, StringRef IndexName) {
-  if (llvm::Error IndexLoadError = ensureCTUIndexLoaded(CrossTUDir, IndexName))
+  if (llvm::Error IndexLoadError = ensureCTUIndexLoaded(CrossTUDir, IndexName)) {
     return std::move(IndexLoadError);
+}
   return NameFileMap[FunctionName];
 }
 
 llvm::Error CrossTranslationUnitContext::ASTUnitStorage::ensureCTUIndexLoaded(
     StringRef CrossTUDir, StringRef IndexName) {
   // Dont initialize if the map is filled.
-  if (!NameFileMap.empty())
+  if (!NameFileMap.empty()) {
     return llvm::Error::success();
+}
 
   // Get the absolute path to the index file.
   SmallString<256> IndexFile = CrossTUDir;
-  if (llvm::sys::path::is_absolute(IndexName))
+  if (llvm::sys::path::is_absolute(IndexName)) {
     IndexFile = IndexName;
-  else
+  } else {
     llvm::sys::path::append(IndexFile, IndexName);
+}
 
   if (auto IndexMapping = parseCrossTUIndex(IndexFile)) {
     // Initialize member map.
@@ -492,13 +517,15 @@ llvm::Expected<ASTUnit *> CrossTranslationUnitContext::loadExternalAST(
   llvm::Expected<ASTUnit *> Unit = ASTStorage.getASTUnitForFunction(
       LookupName, CrossTUDir, IndexName, DisplayCTUProgress);
 
-  if (!Unit)
+  if (!Unit) {
     return Unit.takeError();
+}
 
   // Check whether the backing pointer of the Expected is a nullptr.
-  if (!*Unit)
+  if (!*Unit) {
     return llvm::make_error<IndexError>(
         index_error_code::failed_to_get_external_ast);
+}
 
   return Unit;
 }
@@ -524,10 +551,11 @@ CrossTranslationUnitContext::ASTLoader::load(StringRef Identifier) {
   // Normalize by removing relative path components.
   llvm::sys::path::remove_dots(Path, /*remove_dot_dot*/ true, PathStyle);
 
-  if (Path.endswith(".ast"))
+  if (Path.endswith(".ast")) {
     return loadFromDump(Path);
-  else
+  } else {
     return loadFromSource(Path);
+}
 }
 
 CrossTranslationUnitContext::LoadResultTy
@@ -559,14 +587,16 @@ CrossTranslationUnitContext::LoadResultTy
 CrossTranslationUnitContext::ASTLoader::loadFromSource(
     StringRef SourceFilePath) {
 
-  if (llvm::Error InitError = lazyInitInvocationList())
+  if (llvm::Error InitError = lazyInitInvocationList()) {
     return std::move(InitError);
+}
   assert(InvocationList);
 
   auto Invocation = InvocationList->find(SourceFilePath);
-  if (Invocation == InvocationList->end())
+  if (Invocation == InvocationList->end()) {
     return llvm::make_error<IndexError>(
         index_error_code::invocation_list_lookup_unsuccessful);
+}
 
   const InvocationListTy::mapped_type &InvocationCommand = Invocation->second;
 
@@ -600,29 +630,33 @@ parseInvocationList(StringRef FileContent, llvm::sys::path::Style PathStyle) {
   llvm::yaml::document_iterator FirstInvocationFile = InvocationFile.begin();
 
   /// There has to be at least one document available.
-  if (FirstInvocationFile == InvocationFile.end())
+  if (FirstInvocationFile == InvocationFile.end()) {
     return llvm::make_error<IndexError>(
         index_error_code::invocation_list_empty);
+}
 
   llvm::yaml::Node *DocumentRoot = FirstInvocationFile->getRoot();
-  if (!DocumentRoot)
+  if (!DocumentRoot) {
     return llvm::make_error<IndexError>(
         index_error_code::invocation_list_wrong_format);
+}
 
   /// According to the format specified the document must be a mapping, where
   /// the keys are paths to source files, and values are sequences of invocation
   /// parts.
   auto *Mappings = dyn_cast<llvm::yaml::MappingNode>(DocumentRoot);
-  if (!Mappings)
+  if (!Mappings) {
     return llvm::make_error<IndexError>(
         index_error_code::invocation_list_wrong_format);
+}
 
   for (auto &NextMapping : *Mappings) {
     /// The keys should be strings, which represent a source-file path.
     auto *Key = dyn_cast<llvm::yaml::ScalarNode>(NextMapping.getKey());
-    if (!Key)
+    if (!Key) {
       return llvm::make_error<IndexError>(
           index_error_code::invocation_list_wrong_format);
+}
 
     SmallVector<char, 32> ValueStorage;
     StringRef SourcePath = Key->getValue(ValueStorage);
@@ -634,22 +668,25 @@ parseInvocationList(StringRef FileContent, llvm::sys::path::Style PathStyle) {
 
     StringRef InvocationKey{NativeSourcePath.begin(), NativeSourcePath.size()};
 
-    if (InvocationList.find(InvocationKey) != InvocationList.end())
+    if (InvocationList.find(InvocationKey) != InvocationList.end()) {
       return llvm::make_error<IndexError>(
           index_error_code::invocation_list_ambiguous);
+}
 
     /// The values should be sequences of strings, each representing a part of
     /// the invocation.
     auto *Args = dyn_cast<llvm::yaml::SequenceNode>(NextMapping.getValue());
-    if (!Args)
+    if (!Args) {
       return llvm::make_error<IndexError>(
           index_error_code::invocation_list_wrong_format);
+}
 
     for (auto &Arg : *Args) {
       auto *CmdString = dyn_cast<llvm::yaml::ScalarNode>(&Arg);
-      if (!CmdString)
+      if (!CmdString) {
         return llvm::make_error<IndexError>(
             index_error_code::invocation_list_wrong_format);
+}
       /// Every conversion starts with an empty working storage, as it is not
       /// clear if this is a requirement of the YAML parser.
       ValueStorage.clear();
@@ -657,9 +694,10 @@ parseInvocationList(StringRef FileContent, llvm::sys::path::Style PathStyle) {
           CmdString->getValue(ValueStorage));
     }
 
-    if (InvocationList[InvocationKey].empty())
+    if (InvocationList[InvocationKey].empty()) {
       return llvm::make_error<IndexError>(
           index_error_code::invocation_list_wrong_format);
+}
   }
 
   return InvocationList;
@@ -667,14 +705,16 @@ parseInvocationList(StringRef FileContent, llvm::sys::path::Style PathStyle) {
 
 llvm::Error CrossTranslationUnitContext::ASTLoader::lazyInitInvocationList() {
   /// Lazily initialize the invocation list member used for on-demand parsing.
-  if (InvocationList)
+  if (InvocationList) {
     return llvm::Error::success();
+}
 
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> FileContent =
       llvm::MemoryBuffer::getFile(InvocationListFilePath);
-  if (!FileContent)
+  if (!FileContent) {
     return llvm::make_error<IndexError>(
         index_error_code::invocation_list_file_not_found);
+}
   std::unique_ptr<llvm::MemoryBuffer> ContentBuffer = std::move(*FileContent);
   assert(ContentBuffer && "If no error was produced after loading, the pointer "
                           "should not be nullptr.");
@@ -682,8 +722,9 @@ llvm::Error CrossTranslationUnitContext::ASTLoader::lazyInitInvocationList() {
   llvm::Expected<InvocationListTy> ExpectedInvocationList =
       parseInvocationList(ContentBuffer->getBuffer(), PathStyle);
 
-  if (!ExpectedInvocationList)
+  if (!ExpectedInvocationList) {
     return ExpectedInvocationList.takeError();
+}
 
   InvocationList = *ExpectedInvocationList;
 
@@ -741,8 +782,9 @@ CrossTranslationUnitContext::importDefinition(const VarDecl *VD,
 
 void CrossTranslationUnitContext::lazyInitImporterSharedSt(
     TranslationUnitDecl *ToTU) {
-  if (!ImporterSharedSt)
+  if (!ImporterSharedSt) {
     ImporterSharedSt = std::make_shared<ASTImporterSharedState>(*ToTU);
+}
 }
 
 ASTImporter &
@@ -750,8 +792,9 @@ CrossTranslationUnitContext::getOrCreateASTImporter(ASTUnit *Unit) {
   ASTContext &From = Unit->getASTContext();
 
   auto I = ASTUnitImporterMap.find(From.getTranslationUnitDecl());
-  if (I != ASTUnitImporterMap.end())
+  if (I != ASTUnitImporterMap.end()) {
     return *I->second;
+}
   lazyInitImporterSharedSt(Context.getTranslationUnitDecl());
   ASTImporter *NewImporter = new ASTImporter(
       Context, Context.getSourceManager().getFileManager(), From,
@@ -772,8 +815,9 @@ CrossTranslationUnitContext::getImportedFromSourceLocation(
   auto DecToLoc = SM.getDecomposedLoc(ToLoc);
 
   auto I = ImportedFileIDs.find(DecToLoc.first);
-  if (I == ImportedFileIDs.end())
+  if (I == ImportedFileIDs.end()) {
     return {};
+}
 
   FileID FromID = I->second.first;
   clang::ASTUnit *Unit = I->second.second;

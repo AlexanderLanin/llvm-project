@@ -24,20 +24,23 @@ static SourceLocation getStandardSelLoc(unsigned Index,
   unsigned NumSelArgs = Sel.getNumArgs();
   if (NumSelArgs == 0) {
     assert(Index == 0);
-    if (EndLoc.isInvalid())
+    if (EndLoc.isInvalid()) {
       return SourceLocation();
+}
     IdentifierInfo *II = Sel.getIdentifierInfoForSlot(0);
     unsigned Len = II ? II->getLength() : 0;
     return EndLoc.getLocWithOffset(-Len);
   }
 
   assert(Index < NumSelArgs);
-  if (ArgLoc.isInvalid())
+  if (ArgLoc.isInvalid()) {
     return SourceLocation();
+}
   IdentifierInfo *II = Sel.getIdentifierInfoForSlot(Index);
   unsigned Len = /* selector id */ (II ? II->getLength() : 0) + /* ':' */ 1;
-  if (WithArgSpace)
+  if (WithArgSpace) {
     ++Len;
+}
   return ArgLoc.getLocWithOffset(-Len);
 }
 
@@ -54,8 +57,9 @@ SourceLocation getArgLoc<Expr>(Expr *Arg) {
 template <>
 SourceLocation getArgLoc<ParmVarDecl>(ParmVarDecl *Arg) {
   SourceLocation Loc = Arg->getBeginLoc();
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return Loc;
+}
   // -1 to point to left paren of the method parameter's type.
   return Loc.getLocWithOffset(-1);
 }
@@ -74,17 +78,20 @@ SelectorLocationsKind hasStandardSelLocs(Selector Sel,
   unsigned i;
   for (i = 0; i != SelLocs.size(); ++i) {
     if (SelLocs[i] != getStandardSelectorLoc(i, Sel, /*WithArgSpace=*/false,
-                                             Args, EndLoc))
+                                             Args, EndLoc)) {
       break;
+}
   }
-  if (i == SelLocs.size())
+  if (i == SelLocs.size()) {
     return SelLoc_StandardNoSpace;
+}
 
   // Are selector locations in standard position with space between args ?
   for (i = 0; i != SelLocs.size(); ++i) {
     if (SelLocs[i] != getStandardSelectorLoc(i, Sel, /*WithArgSpace=*/true,
-                                             Args, EndLoc))
+                                             Args, EndLoc)) {
       return SelLoc_NonStandard;
+}
   }
 
   return SelLoc_StandardWithSpace;

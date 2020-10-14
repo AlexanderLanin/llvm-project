@@ -117,8 +117,9 @@ struct CognitiveComplexity final {
       } else if (C == Criteria::IncrementNesting) {
         Increment = 0; // Unused in this message.
         MsgId = 3;
-      } else
+      } else {
         llvm_unreachable("should not get to here.");
+}
 
       return std::make_pair(MsgId, Increment);
     }
@@ -238,8 +239,9 @@ public:
   }
 
   bool TraverseIfStmt(IfStmt *Node, bool InElseIf = false) {
-    if (!Node)
+    if (!Node) {
       return Base::TraverseIfStmt(Node);
+}
 
     {
       CognitiveComplexity::Criteria Reasons;
@@ -266,28 +268,35 @@ public:
     // for the whole IfStmt (i.e. for "Init", "Cond", "Then" and "Else").
 
     if (!InElseIf) {
-      if (!TraverseStmt(Node->getInit()))
+      if (!TraverseStmt(Node->getInit())) {
         return false;
+}
 
-      if (!TraverseStmt(Node->getCond()))
+      if (!TraverseStmt(Node->getCond())) {
         return false;
+}
     } else {
-      if (!TraverseStmtWithIncreasedNestingLevel(Node->getInit()))
+      if (!TraverseStmtWithIncreasedNestingLevel(Node->getInit())) {
         return false;
+}
 
-      if (!TraverseStmtWithIncreasedNestingLevel(Node->getCond()))
+      if (!TraverseStmtWithIncreasedNestingLevel(Node->getCond())) {
         return false;
+}
     }
 
     // "Then" always increases nesting level.
-    if (!TraverseStmtWithIncreasedNestingLevel(Node->getThen()))
+    if (!TraverseStmtWithIncreasedNestingLevel(Node->getThen())) {
       return false;
+}
 
-    if (!Node->getElse())
+    if (!Node->getElse()) {
       return true;
+}
 
-    if (auto *E = dyn_cast<IfStmt>(Node->getElse()))
+    if (auto *E = dyn_cast<IfStmt>(Node->getElse())) {
       return TraverseIfStmt(E, true);
+}
 
     {
       CognitiveComplexity::Criteria Reasons;
@@ -314,18 +323,21 @@ public:
   // In a sequence of binary logical operators, if the new operator is different
   // from the previous one, then the cognitive complexity is increased.
   bool TraverseBinaryOperator(BinaryOperator *Op) {
-    if (!Op || !Op->isLogicalOp())
+    if (!Op || !Op->isLogicalOp()) {
       return Base::TraverseBinaryOperator(Op);
+}
 
     // Make sure that there is always at least one frame in the stack.
-    if (BinaryOperatorsStack.empty())
+    if (BinaryOperatorsStack.empty()) {
       BinaryOperatorsStack.emplace();
+}
 
     // If this is the first binary operator that we are processing, or the
     // previous binary operator was different, there is an increment.
-    if (!CurrentBinaryOperator || Op->getOpcode() != CurrentBinaryOperator)
+    if (!CurrentBinaryOperator || Op->getOpcode() != CurrentBinaryOperator) {
       CC.account(Op->getOperatorLoc(), CurrentNestingLevel,
                  CognitiveComplexity::Criteria::Increment);
+}
 
     // We might encounter a function call, which starts a new sequence, thus
     // we need to save the current previous binary operator.
@@ -346,8 +358,9 @@ public:
   bool TraverseCallExpr(CallExpr *Node) {
     // If we are not currently processing any binary operator sequence, then
     // no Node-handling is needed.
-    if (!Node || BinaryOperatorsStack.empty() || !CurrentBinaryOperator)
+    if (!Node || BinaryOperatorsStack.empty() || !CurrentBinaryOperator) {
       return Base::TraverseCallExpr(Node);
+}
 
     // Else, do add [uninitialized] frame to the stack, and traverse call.
     BinaryOperatorsStack.emplace();
@@ -361,8 +374,9 @@ public:
 #undef CurrentBinaryOperator
 
   bool TraverseStmt(Stmt *Node) {
-    if (!Node)
+    if (!Node) {
       return Base::TraverseStmt(Node);
+}
 
     // Three following switch()'es have huge duplication, but it is better to
     // keep them separate, to simplify comparing them with the Specification.
@@ -440,12 +454,14 @@ public:
     }
 
     // If we have found any reasons, let's account it.
-    if (Reasons & CognitiveComplexity::Criteria::All)
+    if (Reasons & CognitiveComplexity::Criteria::All) {
       CC.account(Location, CurrentNestingLevel, Reasons);
+}
 
     // Did we decide that the nesting level should be increased?
-    if (!(Reasons & CognitiveComplexity::Criteria::IncrementNesting))
+    if (!(Reasons & CognitiveComplexity::Criteria::IncrementNesting)) {
       return Base::TraverseStmt(Node);
+}
 
     return TraverseStmtWithIncreasedNestingLevel(Node);
   }
@@ -460,8 +476,9 @@ public:
   // increased. Thus that parameter is there and is used to fall-through
   // directly to traversing if this is the main function that is being analyzed.
   bool TraverseDecl(Decl *Node, bool MainAnalyzedFunction = false) {
-    if (!Node || MainAnalyzedFunction)
+    if (!Node || MainAnalyzedFunction) {
       return Base::TraverseDecl(Node);
+}
 
     // B2. Nesting level
     // The following structures increment the nesting level:
@@ -517,8 +534,9 @@ void FunctionCognitiveComplexityCheck::check(
   FunctionASTVisitor Visitor;
   Visitor.TraverseDecl(const_cast<FunctionDecl *>(Func), true);
 
-  if (Visitor.CC.Total <= Threshold)
+  if (Visitor.CC.Total <= Threshold) {
     return;
+}
 
   diag(Func->getLocation(),
        "function %0 has cognitive complexity of %1 (threshold %2)")

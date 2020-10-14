@@ -61,10 +61,11 @@ namespace {
 static Record *CurrentRecord = nullptr;
 static void assert_with_loc(bool Assertion, const std::string &Str) {
   if (!Assertion) {
-    if (CurrentRecord)
+    if (CurrentRecord) {
       PrintFatalError(CurrentRecord->getLoc(), Str);
-    else
+    } else {
       PrintFatalError(Str);
+}
   }
 }
 
@@ -355,12 +356,14 @@ class Intrinsic {
   std::stringstream OS;
 
   bool isBigEndianSafe() const {
-    if (BigEndianSafe)
+    if (BigEndianSafe) {
       return true;
+}
 
     for (const auto &T : Types){
-      if (T.isVector() && T.getNumElements() > 1)
+      if (T.isVector() && T.getNumElements() > 1) {
         return false;
+}
     }
     return true;
   }
@@ -382,8 +385,9 @@ public:
     StringRef Mods = getNextModifiers(Proto, Pos);
     while (!Mods.empty()) {
       Types.emplace_back(InTS, Mods);
-      if (Mods.find("!") != StringRef::npos)
+      if (Mods.find("!") != StringRef::npos) {
         PolymorphicKeyType = Types.size() - 1;
+}
 
       Mods = getNextModifiers(Proto, Pos);
     }
@@ -399,8 +403,9 @@ public:
       // It is not permitted to pass or return an __fp16 by value, so intrinsics
       // taking a scalar float16_t must be implemented as macros.
       if (Type.isImmediate() || Type.isPointer() ||
-          (Type.isScalar() && Type.isHalf()))
+          (Type.isScalar() && Type.isHalf())) {
         UseMacro = true;
+}
     }
   }
 
@@ -423,9 +428,11 @@ public:
 
   /// Return the parameter index of the immediate operand.
   unsigned getImmediateIdx() const {
-    for (unsigned Idx = 0; Idx < Types.size(); ++Idx)
-      if (Types[Idx].isImmediate())
+    for (unsigned Idx = 0; Idx < Types.size(); ++Idx) {
+      if (Types[Idx].isImmediate()) {
         return Idx - 1;
+}
+}
     llvm_unreachable("Intrinsic has no immediate");
   }
 
@@ -445,12 +452,14 @@ public:
   /// and sret parameters need to be taken into accont.
   unsigned getGeneratedParamIdx(unsigned PIndex) {
     unsigned Idx = 0;
-    if (getReturnType().getNumVectors() > 1)
+    if (getReturnType().getNumVectors() > 1) {
       // Multiple vectors are passed as sret.
       ++Idx;
+}
 
-    for (unsigned I = 0; I < PIndex; ++I)
+    for (unsigned I = 0; I < PIndex; ++I) {
       Idx += std::max(1U, getParamType(I).getNumVectors());
+}
 
     return Idx;
   }
@@ -461,14 +470,16 @@ public:
 
   bool operator<(const Intrinsic &Other) const {
     // Sort lexicographically on a two-tuple (Guard, Name)
-    if (Guard != Other.Guard)
+    if (Guard != Other.Guard) {
       return Guard < Other.Guard;
+}
     return Name < Other.Name;
   }
 
   ClassKind getClassKind(bool UseClassBIfScalar = false) {
-    if (UseClassBIfScalar && !protoHasScalar())
+    if (UseClassBIfScalar && !protoHasScalar()) {
       return ClassB;
+}
     return CK;
   }
 
@@ -604,50 +615,59 @@ public:
 //===----------------------------------------------------------------------===//
 
 std::string Type::str() const {
-  if (isVoid())
+  if (isVoid()) {
     return "void";
+}
   std::string S;
 
-  if (isInteger() && !isSigned())
+  if (isInteger() && !isSigned()) {
     S += "u";
+}
 
-  if (isPoly())
+  if (isPoly()) {
     S += "poly";
-  else if (isFloating())
+  } else if (isFloating()) {
     S += "float";
-  else if (isBFloat16())
+  } else if (isBFloat16()) {
     S += "bfloat";
-  else
+  } else {
     S += "int";
+}
 
   S += utostr(ElementBitwidth);
-  if (isVector())
+  if (isVector()) {
     S += "x" + utostr(getNumElements());
-  if (NumVectors > 1)
+}
+  if (NumVectors > 1) {
     S += "x" + utostr(NumVectors);
+}
   S += "_t";
 
-  if (Constant)
+  if (Constant) {
     S += " const";
-  if (Pointer)
+}
+  if (Pointer) {
     S += " *";
+}
 
   return S;
 }
 
 std::string Type::builtin_str() const {
   std::string S;
-  if (isVoid())
+  if (isVoid()) {
     return "v";
+}
 
   if (isPointer()) {
     // All pointers are void pointers.
     S = "v";
-    if (isConstPointer())
+    if (isConstPointer()) {
       S += "C";
+}
     S += "*";
     return S;
-  } else if (isInteger())
+  } else if (isInteger()) {
     switch (ElementBitwidth) {
     case 8: S += "c"; break;
     case 16: S += "s"; break;
@@ -656,23 +676,25 @@ std::string Type::builtin_str() const {
     case 128: S += "LLLi"; break;
     default: llvm_unreachable("Unhandled case!");
     }
-  else if (isBFloat16()) {
+  } else if (isBFloat16()) {
     assert(ElementBitwidth == 16 && "BFloat16 can only be 16 bits");
     S += "y";
-  } else
+  } else {
     switch (ElementBitwidth) {
     case 16: S += "h"; break;
     case 32: S += "f"; break;
     case 64: S += "d"; break;
     default: llvm_unreachable("Unhandled case!");
     }
+}
 
   // FIXME: NECESSARY???????????????????????????????????????????????????????????????????????
-  if (isChar() && !isPointer() && isSigned())
+  if (isChar() && !isPointer() && isSigned()) {
     // Make chars explicitly signed.
     S = "S" + S;
-  else if (isInteger() && !isSigned())
+  } else if (isInteger() && !isSigned()) {
     S = "U" + S;
+}
 
   // Constant indices are "int", but have the "constant expression" modifier.
   if (isImmediate()) {
@@ -680,12 +702,14 @@ std::string Type::builtin_str() const {
     S = "I" + S;
   }
 
-  if (isScalar())
+  if (isScalar()) {
     return S;
+}
 
   std::string Ret;
-  for (unsigned I = 0; I < NumVectors; ++I)
+  for (unsigned I = 0; I < NumVectors; ++I) {
     Ret += "V" + utostr(getNumElements()) + S;
+}
 
   return Ret;
 }
@@ -704,8 +728,9 @@ unsigned Type::getNeonEnum() const {
   unsigned Base = (unsigned)NeonTypeFlags::Int8 + Addend;
   if (isPoly()) {
     // Adjustment needed because Poly32 doesn't exist.
-    if (Addend >= 2)
+    if (Addend >= 2) {
       --Addend;
+}
     Base = (unsigned)NeonTypeFlags::Poly8 + Addend;
   }
   if (isFloating()) {
@@ -718,10 +743,12 @@ unsigned Type::getNeonEnum() const {
     Base = (unsigned)NeonTypeFlags::BFloat16;
   }
 
-  if (Bitwidth == 128)
+  if (Bitwidth == 128) {
     Base |= (unsigned)NeonTypeFlags::QuadFlag;
-  if (isInteger() && !isSigned())
+}
+  if (isInteger() && !isSigned()) {
     Base |= (unsigned)NeonTypeFlags::UnsignedFlag;
+}
 
   return Base;
 }
@@ -751,8 +778,9 @@ Type Type::fromTypedefName(StringRef Name) {
 
   unsigned I = 0;
   for (I = 0; I < Name.size(); ++I) {
-    if (!isdigit(Name[I]))
+    if (!isdigit(Name[I])) {
       break;
+}
   }
   Name.substr(0, I).getAsInteger(10, T.ElementBitwidth);
   Name = Name.drop_front(I);
@@ -764,8 +792,9 @@ Type Type::fromTypedefName(StringRef Name) {
     Name = Name.drop_front();
     unsigned I = 0;
     for (I = 0; I < Name.size(); ++I) {
-      if (!isdigit(Name[I]))
+      if (!isdigit(Name[I])) {
         break;
+}
     }
     unsigned NumLanes;
     Name.substr(0, I).getAsInteger(10, NumLanes);
@@ -779,8 +808,9 @@ Type Type::fromTypedefName(StringRef Name) {
     Name = Name.drop_front();
     unsigned I = 0;
     for (I = 0; I < Name.size(); ++I) {
-      if (!isdigit(Name[I]))
+      if (!isdigit(Name[I])) {
         break;
+}
     }
     Name.substr(0, I).getAsInteger(10, T.NumVectors);
     Name = Name.drop_front(I);
@@ -839,8 +869,9 @@ void Type::applyTypespec(bool &Quad) {
     case 'k':
       ElementBitwidth = 128;
       // Poly doesn't have a 128x1 type.
-      if (isPoly())
+      if (isPoly()) {
         NumVectors = 0;
+}
       break;
     case 'b':
       Kind = BFloat16;
@@ -921,8 +952,9 @@ void Type::applyModifiers(StringRef Mods) {
       Immediate = true;
       break;
     case 'p':
-      if (isPoly())
+      if (isPoly()) {
         Kind = UInt;
+}
       break;
     case '!':
       // Key type, handled elsewhere.
@@ -938,10 +970,11 @@ void Type::applyModifiers(StringRef Mods) {
 //===----------------------------------------------------------------------===//
 
 StringRef Intrinsic::getNextModifiers(StringRef Proto, unsigned &Pos) const {
-  if (Proto.size() == Pos)
+  if (Proto.size() == Pos) {
     return StringRef();
-  else if (Proto[Pos] != '(')
+  } else if (Proto[Pos] != '(') {
     return Proto.substr(Pos++, 1);
+}
 
   size_t Start = Pos + 1;
   size_t End = Proto.find(')', Start);
@@ -954,18 +987,21 @@ std::string Intrinsic::getInstTypeCode(Type T, ClassKind CK) const {
   char typeCode = '\0';
   bool printNumber = true;
 
-  if (CK == ClassB)
+  if (CK == ClassB) {
     return "";
+}
 
-  if (T.isBFloat16())
+  if (T.isBFloat16()) {
     return "bf16";
+}
 
-  if (T.isPoly())
+  if (T.isPoly()) {
     typeCode = 'p';
-  else if (T.isInteger())
+  } else if (T.isInteger()) {
     typeCode = T.isSigned() ? 's' : 'u';
-  else
+  } else {
     typeCode = 'f';
+}
 
   if (CK == ClassI) {
     switch (typeCode) {
@@ -983,10 +1019,12 @@ std::string Intrinsic::getInstTypeCode(Type T, ClassKind CK) const {
   }
 
   std::string S;
-  if (typeCode != '\0')
+  if (typeCode != '\0') {
     S.push_back(typeCode);
-  if (printNumber)
+}
+  if (printNumber) {
     S += utostr(T.getElementSizeInBits());
+}
 
   return S;
 }
@@ -997,8 +1035,9 @@ std::string Intrinsic::getBuiltinTypeStr() {
 
   Type RetT = getReturnType();
   if ((LocalCK == ClassI || LocalCK == ClassW) && RetT.isScalar() &&
-      !RetT.isFloating() && !RetT.isBFloat16())
+      !RetT.isFloating() && !RetT.isBFloat16()) {
     RetT.makeInteger(RetT.getElementSizeInBits(), false);
+}
 
   // Since the return value must be one type, return a vector type of the
   // appropriate width which we will bitcast.  An exception is made for
@@ -1007,41 +1046,50 @@ std::string Intrinsic::getBuiltinTypeStr() {
   if (RetT.getNumVectors() > 1) {
     S += "vv*"; // void result with void* first argument
   } else {
-    if (RetT.isPoly())
+    if (RetT.isPoly()) {
       RetT.makeInteger(RetT.getElementSizeInBits(), false);
-    if (!RetT.isScalar() && RetT.isInteger() && !RetT.isSigned())
+}
+    if (!RetT.isScalar() && RetT.isInteger() && !RetT.isSigned()) {
       RetT.makeSigned();
+}
 
-    if (LocalCK == ClassB && RetT.isValue() && !RetT.isScalar())
+    if (LocalCK == ClassB && RetT.isValue() && !RetT.isScalar()) {
       // Cast to vector of 8-bit elements.
       RetT.makeInteger(8, true);
+}
 
     S += RetT.builtin_str();
   }
 
   for (unsigned I = 0; I < getNumParams(); ++I) {
     Type T = getParamType(I);
-    if (T.isPoly())
+    if (T.isPoly()) {
       T.makeInteger(T.getElementSizeInBits(), false);
+}
 
-    if (LocalCK == ClassB && !T.isScalar())
+    if (LocalCK == ClassB && !T.isScalar()) {
       T.makeInteger(8, true);
+}
     // Halves always get converted to 8-bit elements.
-    if (T.isHalf() && T.isVector() && !T.isScalarForMangling())
+    if (T.isHalf() && T.isVector() && !T.isScalarForMangling()) {
       T.makeInteger(8, true);
+}
 
-    if (LocalCK == ClassI && T.isInteger())
+    if (LocalCK == ClassI && T.isInteger()) {
       T.makeSigned();
+}
 
-    if (hasImmediate() && getImmediateIdx() == I)
+    if (hasImmediate() && getImmediateIdx() == I) {
       T.makeImmediate(32);
+}
 
     S += T.builtin_str();
   }
 
   // Extra constant integer to hold type class enum for this function, e.g. s8
-  if (LocalCK == ClassB)
+  if (LocalCK == ClassB) {
     S += "i";
+}
 
   return S;
 }
@@ -1051,8 +1099,9 @@ std::string Intrinsic::getMangledName(bool ForceClassS) const {
   // elements.  If not, bitcasting the args will take care of arg checking.
   // The actual signedness etc. will be taken care of with special enums.
   ClassKind LocalCK = CK;
-  if (!protoHasScalar())
+  if (!protoHasScalar()) {
     LocalCK = ClassB;
+}
 
   return mangleName(Name, ForceClassS ? ClassS : LocalCK);
 }
@@ -1063,16 +1112,18 @@ std::string Intrinsic::mangleName(std::string Name, ClassKind LocalCK) const {
 
   if (Name == "vcvt_f16_f32" || Name == "vcvt_f32_f16" ||
       Name == "vcvt_f32_f64" || Name == "vcvt_f64_f32" ||
-      Name == "vcvt_f32_bf16")
+      Name == "vcvt_f32_bf16") {
     return Name;
+}
 
   if (!typeCode.empty()) {
     // If the name ends with _xN (N = 2,3,4), insert the typeCode before _xN.
     if (Name.size() >= 3 && isdigit(Name.back()) &&
-        Name[Name.length() - 2] == 'x' && Name[Name.length() - 3] == '_')
+        Name[Name.length() - 2] == 'x' && Name[Name.length() - 3] == '_') {
       S.insert(S.length() - 3, "_" + typeCode);
-    else
+    } else {
       S += "_" + typeCode;
+}
   }
 
   if (BaseType != InBaseType) {
@@ -1080,8 +1131,9 @@ std::string Intrinsic::mangleName(std::string Name, ClassKind LocalCK) const {
     S += "_" + getInstTypeCode(InBaseType, LocalCK);
   }
 
-  if (LocalCK == ClassB)
+  if (LocalCK == ClassB) {
     S += "_v";
+}
 
   // Insert a 'q' before the first '_' character so that it ends up before
   // _lane or _n on vector-scalar operations.
@@ -1112,8 +1164,9 @@ std::string Intrinsic::replaceParamsIn(std::string S) {
   while (S.find('$') != std::string::npos) {
     size_t Pos = S.find('$');
     size_t End = Pos + 1;
-    while (isalpha(S[End]))
+    while (isalpha(S[End])) {
       ++End;
+}
 
     std::string VarName = S.substr(Pos + 1, End - Pos - 1);
     assert_with_loc(Variables.find(VarName) != Variables.end(),
@@ -1140,16 +1193,18 @@ void Intrinsic::initVariables() {
 }
 
 void Intrinsic::emitPrototype(StringRef NamePrefix) {
-  if (UseMacro)
+  if (UseMacro) {
     OS << "#define ";
-  else
+  } else {
     OS << "__ai " << Types[0].str() << " ";
+}
 
   OS << NamePrefix.str() << mangleName(Name, ClassS) << "(";
 
   for (unsigned I = 0; I < getNumParams(); ++I) {
-    if (I != 0)
+    if (I != 0) {
       OS << ", ";
+}
 
     char NameC = '0' + I;
     std::string Name = "p";
@@ -1157,8 +1212,9 @@ void Intrinsic::emitPrototype(StringRef NamePrefix) {
     assert(Variables.find(Name) != Variables.end());
     Variable &V = Variables[Name];
 
-    if (!UseMacro)
+    if (!UseMacro) {
       OS << V.getType().str() << " ";
+}
     OS << V.getName();
   }
 
@@ -1166,25 +1222,28 @@ void Intrinsic::emitPrototype(StringRef NamePrefix) {
 }
 
 void Intrinsic::emitOpeningBrace() {
-  if (UseMacro)
+  if (UseMacro) {
     OS << " __extension__ ({";
-  else
+  } else {
     OS << " {";
+}
   emitNewLine();
 }
 
 void Intrinsic::emitClosingBrace() {
-  if (UseMacro)
+  if (UseMacro) {
     OS << "})";
-  else
+  } else {
     OS << "}";
+}
 }
 
 void Intrinsic::emitNewLine() {
-  if (UseMacro)
+  if (UseMacro) {
     OS << " \\\n";
-  else
+  } else {
     OS << "\n";
+}
 }
 
 void Intrinsic::emitReverseVariable(Variable &Dest, Variable &Src) {
@@ -1196,24 +1255,27 @@ void Intrinsic::emitReverseVariable(Variable &Dest, Variable &Src) {
          << "__builtin_shufflevector("
          << Src.getName() << ".val[" << K << "], "
          << Src.getName() << ".val[" << K << "]";
-      for (int J = Dest.getType().getNumElements() - 1; J >= 0; --J)
+      for (int J = Dest.getType().getNumElements() - 1; J >= 0; --J) {
         OS << ", " << J;
+}
       OS << ");";
       emitNewLine();
     }
   } else {
     OS << "  " << Dest.getName()
        << " = __builtin_shufflevector(" << Src.getName() << ", " << Src.getName();
-    for (int J = Dest.getType().getNumElements() - 1; J >= 0; --J)
+    for (int J = Dest.getType().getNumElements() - 1; J >= 0; --J) {
       OS << ", " << J;
+}
     OS << ");";
     emitNewLine();
   }
 }
 
 void Intrinsic::emitArgumentReversal() {
-  if (isBigEndianSafe())
+  if (isBigEndianSafe()) {
     return;
+}
 
   // Reverse all vector arguments.
   for (unsigned I = 0; I < getNumParams(); ++I) {
@@ -1223,8 +1285,9 @@ void Intrinsic::emitArgumentReversal() {
     Variable &V = Variables[Name];
     Variable NewV(V.getType(), NewName + VariablePostfix);
 
-    if (!NewV.getType().isVector() || NewV.getType().getNumElements() == 1)
+    if (!NewV.getType().isVector() || NewV.getType().getNumElements() == 1) {
       continue;
+}
 
     OS << "  " << NewV.getType().str() << " " << NewV.getName() << ";";
     emitReverseVariable(NewV, V);
@@ -1233,29 +1296,34 @@ void Intrinsic::emitArgumentReversal() {
 }
 
 void Intrinsic::emitReturnReversal() {
-  if (isBigEndianSafe())
+  if (isBigEndianSafe()) {
     return;
+}
   if (!getReturnType().isVector() || getReturnType().isVoid() ||
-      getReturnType().getNumElements() == 1)
+      getReturnType().getNumElements() == 1) {
     return;
+}
   emitReverseVariable(RetVar, RetVar);
 }
 
 void Intrinsic::emitShadowedArgs() {
   // Macro arguments are not type-checked like inline function arguments,
   // so assign them to local temporaries to get the right type checking.
-  if (!UseMacro)
+  if (!UseMacro) {
     return;
+}
 
   for (unsigned I = 0; I < getNumParams(); ++I) {
     // Do not create a temporary for an immediate argument.
     // That would defeat the whole point of using a macro!
-    if (getParamType(I).isImmediate())
+    if (getParamType(I).isImmediate()) {
       continue;
+}
     // Do not create a temporary for pointer arguments. The input
     // pointer may have an alignment hint.
-    if (getParamType(I).isPointer())
+    if (getParamType(I).isPointer()) {
       continue;
+}
 
     std::string Name = "p" + utostr(I);
 
@@ -1288,16 +1356,19 @@ void Intrinsic::emitBodyAsBuiltinCall() {
 
   StringRef N = Name;
   ClassKind LocalCK = CK;
-  if (!protoHasScalar())
+  if (!protoHasScalar()) {
     LocalCK = ClassB;
+}
 
-  if (!getReturnType().isVoid() && !SRet)
+  if (!getReturnType().isVoid() && !SRet) {
     S += "(" + RetVar.getType().str() + ") ";
+}
 
   S += "__builtin_neon_" + mangleName(std::string(N), LocalCK) + "(";
 
-  if (SRet)
+  if (SRet) {
     S += "&" + RetVar.getName() + ", ";
+}
 
   for (unsigned I = 0; I < getNumParams(); ++I) {
     Variable &V = Variables["p" + utostr(I)];
@@ -1315,8 +1386,9 @@ void Intrinsic::emitBodyAsBuiltinCall() {
         Cast = "(" + T2.str() + ")";
       }
 
-      for (unsigned J = 0; J < T.getNumVectors(); ++J)
+      for (unsigned J = 0; J < T.getNumVectors(); ++J) {
         S += Cast + V.getName() + ".val[" + utostr(J) + "], ";
+}
       continue;
     }
 
@@ -1329,8 +1401,9 @@ void Intrinsic::emitBodyAsBuiltinCall() {
       CastToType.makeInteger(8, true);
       Arg = "(" + CastToType.str() + ")" + Arg;
     } else if (CastToType.isVector() && LocalCK == ClassI) {
-      if (CastToType.isInteger())
+      if (CastToType.isInteger()) {
         CastToType.makeSigned();
+}
       Arg = "(" + CastToType.str() + ")" + Arg;
     }
 
@@ -1348,8 +1421,9 @@ void Intrinsic::emitBodyAsBuiltinCall() {
   S += ");";
 
   std::string RetExpr;
-  if (!SRet && !RetVar.getType().isVoid())
+  if (!SRet && !RetVar.getType().isVoid()) {
     RetExpr = RetVar.getName() + " = ";
+}
 
   OS << "  " << RetExpr << S;
   emitNewLine();
@@ -1382,8 +1456,9 @@ void Intrinsic::emitBody(StringRef CallPrefix) {
   }
 
   assert(!Lines.empty() && "Empty def?");
-  if (!RetVar.getType().isVoid())
+  if (!RetVar.getType().isVoid()) {
     Lines.back().insert(0, RetVar.getName() + " = ");
+}
 
   for (auto &L : Lines) {
     OS << "  " << L;
@@ -1392,12 +1467,14 @@ void Intrinsic::emitBody(StringRef CallPrefix) {
 }
 
 void Intrinsic::emitReturn() {
-  if (RetVar.getType().isVoid())
+  if (RetVar.getType().isVoid()) {
     return;
-  if (UseMacro)
+}
+  if (UseMacro) {
     OS << "  " << RetVar.getName() << ";";
-  else
+  } else {
     OS << "  return " << RetVar.getName() << ";";
+}
   emitNewLine();
 }
 
@@ -1406,26 +1483,36 @@ std::pair<Type, std::string> Intrinsic::DagEmitter::emitDag(DagInit *DI) {
   DefInit *DefI = cast<DefInit>(DI->getOperator());
   std::string Op = DefI->getAsString();
 
-  if (Op == "cast" || Op == "bitcast")
+  if (Op == "cast" || Op == "bitcast") {
     return emitDagCast(DI, Op == "bitcast");
-  if (Op == "shuffle")
+}
+  if (Op == "shuffle") {
     return emitDagShuffle(DI);
-  if (Op == "dup")
+}
+  if (Op == "dup") {
     return emitDagDup(DI);
-  if (Op == "dup_typed")
+}
+  if (Op == "dup_typed") {
     return emitDagDupTyped(DI);
-  if (Op == "splat")
+}
+  if (Op == "splat") {
     return emitDagSplat(DI);
-  if (Op == "save_temp")
+}
+  if (Op == "save_temp") {
     return emitDagSaveTemp(DI);
-  if (Op == "op")
+}
+  if (Op == "op") {
     return emitDagOp(DI);
-  if (Op == "call" || Op == "call_mangled")
+}
+  if (Op == "call" || Op == "call_mangled") {
     return emitDagCall(DI, Op == "call_mangled");
-  if (Op == "name_replace")
+}
+  if (Op == "name_replace") {
     return emitDagNameReplace(DI);
-  if (Op == "literal")
+}
+  if (Op == "literal") {
     return emitDagLiteral(DI);
+}
   assert_with_loc(false, "Unknown operation!");
   return std::make_pair(Type::getVoid(), "");
 }
@@ -1461,14 +1548,16 @@ Intrinsic::DagEmitter::emitDagCall(DagInit *DI, bool MatchMangledName) {
 
   // Look up the called intrinsic.
   std::string N;
-  if (StringInit *SI = dyn_cast<StringInit>(DI->getArg(0)))
+  if (StringInit *SI = dyn_cast<StringInit>(DI->getArg(0))) {
     N = SI->getAsUnquotedString();
-  else
+  } else {
     N = emitDagArg(DI->getArg(0), "").second;
+}
   Optional<std::string> MangledName;
   if (MatchMangledName) {
-    if (Intr.getRecord()->getValueAsBit("isLaneQ"))
+    if (Intr.getRecord()->getValueAsBit("isLaneQ")) {
       N += "q";
+}
     MangledName = Intr.mangleName(N, ClassS);
   }
   Intrinsic &Callee = Intr.Emitter.getIntrinsic(N, Types, MangledName);
@@ -1479,12 +1568,14 @@ Intrinsic::DagEmitter::emitDagCall(DagInit *DI, bool MatchMangledName) {
 
   // Now create the call itself.
   std::string S = "";
-  if (!Callee.isBigEndianSafe())
+  if (!Callee.isBigEndianSafe()) {
     S += CallPrefix.str();
+}
   S += Callee.getMangledName(true) + "(";
   for (unsigned I = 0; I < DI->getNumArgs() - 1; ++I) {
-    if (I != 0)
+    if (I != 0) {
       S += ", ";
+}
     S += Values[I];
   }
   S += ")";
@@ -1545,8 +1636,9 @@ std::pair<Type, std::string> Intrinsic::DagEmitter::emitDagCast(DagInit *DI,
     // a temporary.
     std::string N = "reint";
     unsigned I = 0;
-    while (Intr.Variables.find(N) != Intr.Variables.end())
+    while (Intr.Variables.find(N) != Intr.Variables.end()) {
       N = "reint" + utostr(++I);
+}
     Intr.Variables[N] = Variable(R.first, N + Intr.VariablePostfix);
 
     Intr.OS << R.first.str() << " " << Intr.Variables[N].getName() << " = "
@@ -1617,14 +1709,16 @@ std::pair<Type, std::string> Intrinsic::DagEmitter::emitDagShuffle(DagInit *DI){
 
     void expand(SetTheory &ST, Record *R, SetTheory::RecSet &Elts) override {
       unsigned Addend = 0;
-      if (R->getName() == "mask0")
+      if (R->getName() == "mask0") {
         Addend = 0;
-      else if (R->getName() == "mask1")
+      } else if (R->getName() == "mask1") {
         Addend = N;
-      else
+      } else {
         return;
-      for (unsigned I = 0; I < N; ++I)
+}
+      for (unsigned I = 0; I < N; ++I) {
         Elts.insert(R->getRecords().getDef("sv" + utostr(I + Addend)));
+}
     }
   };
 
@@ -1682,8 +1776,9 @@ std::pair<Type, std::string> Intrinsic::DagEmitter::emitDagDup(DagInit *DI) {
   assert_with_loc(T.isVector(), "dup() used but default type is scalar!");
   std::string S = "(" + T.str() + ") {";
   for (unsigned I = 0; I < T.getNumElements(); ++I) {
-    if (I != 0)
+    if (I != 0) {
       S += ", ";
+}
     S += A.second;
   }
   S += "}";
@@ -1704,8 +1799,9 @@ std::pair<Type, std::string> Intrinsic::DagEmitter::emitDagDupTyped(DagInit *DI)
   assert_with_loc(T.isVector(), "dup_typed() used but target type is scalar!");
   std::string S = "(" + T.str() + ") {";
   for (unsigned I = 0; I < T.getNumElements(); ++I) {
-    if (I != 0)
+    if (I != 0) {
       S += ", ";
+}
     S += B.second;
   }
   S += "}";
@@ -1836,11 +1932,12 @@ void Intrinsic::generateImpl(bool ReverseArguments,
   // to every variable.
   //
   // indexBody() should have set up the Dependencies set by now.
-  for (auto *I : Dependencies)
+  for (auto *I : Dependencies) {
     if (I->UseMacro) {
       VariablePostfix = "_" + utostr(Emitter.getUniqueNumber());
       break;
     }
+}
 
   initVariables();
 
@@ -1851,11 +1948,13 @@ void Intrinsic::generateImpl(bool ReverseArguments,
   } else {
     emitOpeningBrace();
     emitShadowedArgs();
-    if (ReverseArguments)
+    if (ReverseArguments) {
       emitArgumentReversal();
+}
     emitBody(CallPrefix);
-    if (ReverseArguments)
+    if (ReverseArguments) {
       emitReturnReversal();
+}
     emitReturn();
     emitClosingBrace();
   }
@@ -1889,8 +1988,9 @@ Intrinsic &NeonEmitter::getIntrinsic(StringRef Name, ArrayRef<Type> Types,
   // Create a string to print if we end up failing.
   std::string ErrMsg = "looking up intrinsic '" + Name.str() + "(";
   for (unsigned I = 0; I < Types.size(); ++I) {
-    if (I != 0)
+    if (I != 0) {
       ErrMsg += ", ";
+}
     ErrMsg += Types[I].str();
   }
   ErrMsg += ")'\n";
@@ -1902,17 +2002,20 @@ Intrinsic &NeonEmitter::getIntrinsic(StringRef Name, ArrayRef<Type> Types,
     ErrMsg += "  - " + I.getReturnType().str() + " " + I.getMangledName();
     ErrMsg += "(";
     for (unsigned A = 0; A < I.getNumParams(); ++A) {
-      if (A != 0)
+      if (A != 0) {
         ErrMsg += ", ";
+}
       ErrMsg += I.getParamType(A).str();
     }
     ErrMsg += ")\n";
 
-    if (MangledName && MangledName != I.getMangledName(true))
+    if (MangledName && MangledName != I.getMangledName(true)) {
       continue;
+}
 
-    if (I.getNumParams() != Types.size())
+    if (I.getNumParams() != Types.size()) {
       continue;
+}
 
     unsigned ArgNum = 0;
     bool MatchingArgumentTypes =
@@ -1920,8 +2023,9 @@ Intrinsic &NeonEmitter::getIntrinsic(StringRef Name, ArrayRef<Type> Types,
           return Type == I.getParamType(ArgNum++);
         });
 
-    if (MatchingArgumentTypes)
+    if (MatchingArgumentTypes) {
       GoodVec.push_back(&I);
+}
   }
 
   assert_with_loc(!GoodVec.empty(),
@@ -1951,8 +2055,9 @@ void NeonEmitter::createIntrinsic(Record *R,
   std::vector<TypeSpec> TypeSpecs = TypeSpec::fromTypeSpecs(Types);
 
   ClassKind CK = ClassNone;
-  if (R->getSuperClasses().size() >= 2)
+  if (R->getSuperClasses().size() >= 2) {
     CK = ClassMap[R->getSuperClasses()[1].first];
+}
 
   std::vector<std::pair<TypeSpec, TypeSpec>> NewTypeSpecs;
   if (!CartesianProductWith.empty()) {
@@ -1962,8 +2067,9 @@ void NeonEmitter::createIntrinsic(Record *R,
       for (auto SrcTS : ProductTypeSpecs) {
         Type DefaultSrcT(SrcTS, ".");
         if (TS == SrcTS ||
-            DefaultSrcT.getSizeInBits() != DefaultT.getSizeInBits())
+            DefaultSrcT.getSizeInBits() != DefaultT.getSizeInBits()) {
           continue;
+}
         NewTypeSpecs.push_back(std::make_pair(TS, SrcTS));
       }
     }
@@ -1998,8 +2104,9 @@ void NeonEmitter::genBuiltinsDef(raw_ostream &OS,
   std::set<std::string> Builtins;
 
   for (auto *Def : Defs) {
-    if (Def->hasBody())
+    if (Def->hasBody()) {
       continue;
+}
 
     std::string S = "BUILTIN(__builtin_neon_" + Def->getMangledName() + ", \"";
 
@@ -2009,8 +2116,9 @@ void NeonEmitter::genBuiltinsDef(raw_ostream &OS,
     Builtins.insert(S);
   }
 
-  for (auto &S : Builtins)
+  for (auto &S : Builtins) {
     OS << S << "\n";
+}
   OS << "#endif\n\n";
 }
 
@@ -2034,12 +2142,14 @@ void NeonEmitter::genOverloadTypeCheckCode(raw_ostream &OS,
   for (auto *Def : Defs) {
     // If the def has a body (that is, it has Operation DAGs), it won't call
     // __builtin_neon_* so we don't need to generate a definition for it.
-    if (Def->hasBody())
+    if (Def->hasBody()) {
       continue;
+}
     // Functions which have a scalar argument cannot be overloaded, no need to
     // check them if we are emitting the type checking code.
-    if (Def->protoHasScalar())
+    if (Def->protoHasScalar()) {
       continue;
+}
 
     uint64_t Mask = 0ULL;
     Mask |= 1ULL << Def->getPolymorphicKeyType().getNeonEnum();
@@ -2056,8 +2166,9 @@ void NeonEmitter::genOverloadTypeCheckCode(raw_ostream &OS,
     }
 
     // For sret builtins, adjust the pointer argument index.
-    if (PtrArgNum >= 0 && Def->getReturnType().getNumVectors() > 1)
+    if (PtrArgNum >= 0 && Def->getReturnType().getNumVectors() > 1) {
       PtrArgNum += 1;
+}
 
     std::string Name = Def->getName();
     // Omit type checking for the pointer arguments of vld1_lane, vld1_dup,
@@ -2086,10 +2197,12 @@ void NeonEmitter::genOverloadTypeCheckCode(raw_ostream &OS,
 
     OS << "case NEON::BI__builtin_neon_" << I.first << ": ";
     OS << "mask = 0x" << Twine::utohexstr(OI.Mask) << "ULL";
-    if (OI.PtrArgNum >= 0)
+    if (OI.PtrArgNum >= 0) {
       OS << "; PtrArgNum = " << OI.PtrArgNum;
-    if (OI.HasConstPtr)
+}
+    if (OI.HasConstPtr) {
       OS << "; HasConstPtr = true";
+}
     OS << "; break;\n";
   }
   OS << "#endif\n\n";
@@ -2102,14 +2215,17 @@ void NeonEmitter::genIntrinsicRangeCheckCode(raw_ostream &OS,
   std::set<std::string> Emitted;
 
   for (auto *Def : Defs) {
-    if (Def->hasBody())
+    if (Def->hasBody()) {
       continue;
+}
     // Functions which do not have an immediate do not need to have range
     // checking code emitted.
-    if (!Def->hasImmediate())
+    if (!Def->hasImmediate()) {
       continue;
-    if (Emitted.find(Def->getMangledName()) != Emitted.end())
+}
+    if (Emitted.find(Def->getMangledName()) != Emitted.end()) {
       continue;
+}
 
     std::string LowerBound, UpperBound;
 
@@ -2119,19 +2235,21 @@ void NeonEmitter::genIntrinsicRangeCheckCode(raw_ostream &OS,
       // in the range [1, 32) for f32 or [1, 64) for f64 or [1, 16) for f16.
       LowerBound = "1";
 	  if (Def->getBaseType().getElementSizeInBits() == 16 ||
-		  Def->getName().find('h') != std::string::npos)
+		  Def->getName().find('h') != std::string::npos) {
 		// VCVTh operating on FP16 intrinsics in range [1, 16)
 		UpperBound = "15";
-	  else if (Def->getBaseType().getElementSizeInBits() == 32)
+	  } else if (Def->getBaseType().getElementSizeInBits() == 32) {
         UpperBound = "31";
-	  else
+	  } else {
         UpperBound = "63";
+}
     } else if (R->getValueAsBit("isScalarShift")) {
       // Right shifts have an 'r' in the name, left shifts do not. Convert
       // instructions have the same bounds and right shifts.
       if (Def->getName().find('r') != std::string::npos ||
-          Def->getName().find("cvt") != std::string::npos)
+          Def->getName().find("cvt") != std::string::npos) {
         LowerBound = "1";
+}
 
       UpperBound = utostr(Def->getReturnType().getElementSizeInBits() - 1);
     } else if (R->getValueAsBit("isShift")) {
@@ -2139,16 +2257,18 @@ void NeonEmitter::genIntrinsicRangeCheckCode(raw_ostream &OS,
       // bound computed at Sema time based on the type constant.
 
       // Right shifts have an 'r' in the name, left shifts do not.
-      if (Def->getName().find('r') != std::string::npos)
+      if (Def->getName().find('r') != std::string::npos) {
         LowerBound = "1";
+}
       UpperBound = "RFT(TV, true)";
     } else if (Def->getClassKind(true) == ClassB) {
       // ClassB intrinsics have a type (and hence lane number) that is only
       // known at runtime.
-      if (R->getValueAsBit("isLaneQ"))
+      if (R->getValueAsBit("isLaneQ")) {
         UpperBound = "RFT(TV, false, true)";
-      else
+      } else {
         UpperBound = "RFT(TV, false, false)";
+}
     } else {
       // The immediate generally refers to a lane in the preceding argument.
       assert(Def->getImmediateIdx() > 0);
@@ -2158,15 +2278,18 @@ void NeonEmitter::genIntrinsicRangeCheckCode(raw_ostream &OS,
 
     // Calculate the index of the immediate that should be range checked.
     unsigned Idx = Def->getNumParams();
-    if (Def->hasImmediate())
+    if (Def->hasImmediate()) {
       Idx = Def->getGeneratedParamIdx(Def->getImmediateIdx());
+}
 
     OS << "case NEON::BI__builtin_neon_" << Def->getMangledName() << ": "
        << "i = " << Idx << ";";
-    if (!LowerBound.empty())
+    if (!LowerBound.empty()) {
       OS << " l = " << LowerBound << ";";
-    if (!UpperBound.empty())
+}
+    if (!UpperBound.empty()) {
       OS << " u = " << UpperBound << ";";
+}
     OS << " break;\n";
 
     Emitted.insert(Def->getMangledName());
@@ -2183,8 +2306,9 @@ void NeonEmitter::runHeader(raw_ostream &OS) {
   std::vector<Record *> RV = Records.getAllDerivedDefinitions("Inst");
 
   SmallVector<Intrinsic *, 128> Defs;
-  for (auto *R : RV)
+  for (auto *R : RV) {
     createIntrinsic(R, Defs);
+}
 
   // Generate shared BuiltinsXXX.def
   genBuiltinsDef(OS, Defs);
@@ -2205,8 +2329,9 @@ static void emitNeonTypeDefs(const std::string& types, raw_ostream &OS) {
   for (auto &TS : TDTypeVec) {
     bool IsA64 = false;
     Type T(TS, ".");
-    if (T.isDouble())
+    if (T.isDouble()) {
       IsA64 = true;
+}
 
     if (InIfdef && !IsA64) {
       OS << "#endif\n";
@@ -2217,10 +2342,11 @@ static void emitNeonTypeDefs(const std::string& types, raw_ostream &OS) {
       InIfdef = true;
     }
 
-    if (T.isPoly())
+    if (T.isPoly()) {
       OS << "typedef __attribute__((neon_polyvector_type(";
-    else
+    } else {
       OS << "typedef __attribute__((neon_vector_type(";
+}
 
     Type T2 = T;
     T2.makeScalar();
@@ -2228,8 +2354,9 @@ static void emitNeonTypeDefs(const std::string& types, raw_ostream &OS) {
     OS << T2.str();
     OS << " " << T.str() << ";\n";
   }
-  if (InIfdef)
+  if (InIfdef) {
     OS << "#endif\n";
+}
   OS << "\n";
 
   // Emit struct typedefs.
@@ -2238,8 +2365,9 @@ static void emitNeonTypeDefs(const std::string& types, raw_ostream &OS) {
     for (auto &TS : TDTypeVec) {
       bool IsA64 = false;
       Type T(TS, ".");
-      if (T.isDouble())
+      if (T.isDouble()) {
         IsA64 = true;
+}
 
       if (InIfdef && !IsA64) {
         OS << "#endif\n";
@@ -2260,8 +2388,9 @@ static void emitNeonTypeDefs(const std::string& types, raw_ostream &OS) {
       OS << "\n";
     }
   }
-  if (InIfdef)
+  if (InIfdef) {
     OS << "#endif\n";
+}
 }
 
 /// run - Read the records in arm_neon.td and output arm_neon.h.  arm_neon.h
@@ -2359,11 +2488,13 @@ void NeonEmitter::run(raw_ostream &OS) {
 
   SmallVector<Intrinsic *, 128> Defs;
   std::vector<Record *> RV = Records.getAllDerivedDefinitions("Inst");
-  for (auto *R : RV)
+  for (auto *R : RV) {
     createIntrinsic(R, Defs);
+}
 
-  for (auto *I : Defs)
+  for (auto *I : Defs) {
     I->indexBody();
+}
 
   llvm::stable_sort(Defs, llvm::deref<std::less<>>());
 
@@ -2378,8 +2509,9 @@ void NeonEmitter::run(raw_ostream &OS) {
          I != Defs.end(); /*No step*/) {
       bool DependenciesSatisfied = true;
       for (auto *II : (*I)->getDependencies()) {
-        if (llvm::is_contained(Defs, II))
+        if (llvm::is_contained(Defs, II)) {
           DependenciesSatisfied = false;
+}
       }
       if (!DependenciesSatisfied) {
         // Try the next one.
@@ -2389,11 +2521,13 @@ void NeonEmitter::run(raw_ostream &OS) {
 
       // Emit #endif/#if pair if needed.
       if ((*I)->getGuard() != InGuard) {
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#endif\n";
+}
         InGuard = (*I)->getGuard();
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#if " << InGuard << "\n";
+}
       }
 
       // Actually generate the intrinsic code.
@@ -2404,8 +2538,9 @@ void NeonEmitter::run(raw_ostream &OS) {
     }
   }
   assert(Defs.empty() && "Some requirements were not satisfied!");
-  if (!InGuard.empty())
+  if (!InGuard.empty()) {
     OS << "#endif\n";
+}
 
   OS << "\n";
   OS << "#undef __ai\n\n";
@@ -2468,11 +2603,13 @@ void NeonEmitter::runFP16(raw_ostream &OS) {
 
   SmallVector<Intrinsic *, 128> Defs;
   std::vector<Record *> RV = Records.getAllDerivedDefinitions("Inst");
-  for (auto *R : RV)
+  for (auto *R : RV) {
     createIntrinsic(R, Defs);
+}
 
-  for (auto *I : Defs)
+  for (auto *I : Defs) {
     I->indexBody();
+}
 
   llvm::stable_sort(Defs, llvm::deref<std::less<>>());
 
@@ -2487,8 +2624,9 @@ void NeonEmitter::runFP16(raw_ostream &OS) {
          I != Defs.end(); /*No step*/) {
       bool DependenciesSatisfied = true;
       for (auto *II : (*I)->getDependencies()) {
-        if (llvm::is_contained(Defs, II))
+        if (llvm::is_contained(Defs, II)) {
           DependenciesSatisfied = false;
+}
       }
       if (!DependenciesSatisfied) {
         // Try the next one.
@@ -2498,11 +2636,13 @@ void NeonEmitter::runFP16(raw_ostream &OS) {
 
       // Emit #endif/#if pair if needed.
       if ((*I)->getGuard() != InGuard) {
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#endif\n";
+}
         InGuard = (*I)->getGuard();
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#if " << InGuard << "\n";
+}
       }
 
       // Actually generate the intrinsic code.
@@ -2513,8 +2653,9 @@ void NeonEmitter::runFP16(raw_ostream &OS) {
     }
   }
   assert(Defs.empty() && "Some requirements were not satisfied!");
-  if (!InGuard.empty())
+  if (!InGuard.empty()) {
     OS << "#endif\n";
+}
 
   OS << "\n";
   OS << "#undef __ai\n\n";
@@ -2545,11 +2686,13 @@ void NeonEmitter::runBF16(raw_ostream &OS) {
 
   SmallVector<Intrinsic *, 128> Defs;
   std::vector<Record *> RV = Records.getAllDerivedDefinitions("Inst");
-  for (auto *R : RV)
+  for (auto *R : RV) {
     createIntrinsic(R, Defs);
+}
 
-  for (auto *I : Defs)
+  for (auto *I : Defs) {
     I->indexBody();
+}
 
   llvm::stable_sort(Defs, llvm::deref<std::less<>>());
 
@@ -2564,8 +2707,9 @@ void NeonEmitter::runBF16(raw_ostream &OS) {
          I != Defs.end(); /*No step*/) {
       bool DependenciesSatisfied = true;
       for (auto *II : (*I)->getDependencies()) {
-        if (llvm::is_contained(Defs, II))
+        if (llvm::is_contained(Defs, II)) {
           DependenciesSatisfied = false;
+}
       }
       if (!DependenciesSatisfied) {
         // Try the next one.
@@ -2575,11 +2719,13 @@ void NeonEmitter::runBF16(raw_ostream &OS) {
 
       // Emit #endif/#if pair if needed.
       if ((*I)->getGuard() != InGuard) {
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#endif\n";
+}
         InGuard = (*I)->getGuard();
-        if (!InGuard.empty())
+        if (!InGuard.empty()) {
           OS << "#if " << InGuard << "\n";
+}
       }
 
       // Actually generate the intrinsic code.
@@ -2590,8 +2736,9 @@ void NeonEmitter::runBF16(raw_ostream &OS) {
     }
   }
   assert(Defs.empty() && "Some requirements were not satisfied!");
-  if (!InGuard.empty())
+  if (!InGuard.empty()) {
     OS << "#endif\n";
+}
 
   OS << "\n";
   OS << "#undef __ai\n\n";

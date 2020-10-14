@@ -25,23 +25,27 @@ public:
     // Do not count function params.
     // Do not count decomposition declarations (C++17's structured bindings).
     if (StructNesting == 0 &&
-        !(isa<ParmVarDecl>(VD) || isa<DecompositionDecl>(VD)))
+        !(isa<ParmVarDecl>(VD) || isa<DecompositionDecl>(VD))) {
       ++Info.Variables;
+}
     return true;
   }
   bool VisitBindingDecl(BindingDecl *BD) {
     // Do count each of the bindings (in the decomposition declaration).
-    if (StructNesting == 0)
+    if (StructNesting == 0) {
       ++Info.Variables;
+}
     return true;
   }
 
   bool TraverseStmt(Stmt *Node) {
-    if (!Node)
+    if (!Node) {
       return Base::TraverseStmt(Node);
+}
 
-    if (TrackedParent.back() && !isa<CompoundStmt>(Node))
+    if (TrackedParent.back() && !isa<CompoundStmt>(Node)) {
       ++Info.Statements;
+}
 
     switch (Node->getStmtClass()) {
     case Stmt::IfStmtClass:
@@ -71,8 +75,9 @@ public:
     // If this new compound statement is located in a compound statement, which
     // is already nested NestingThreshold levels deep, record the start location
     // of this new compound statement.
-    if (CurrentNestingLevel == Info.NestingThreshold)
+    if (CurrentNestingLevel == Info.NestingThreshold) {
       Info.NestingThresholders.push_back(Node->getBeginLoc());
+}
 
     ++CurrentNestingLevel;
     Base::TraverseCompoundStmt(Node);
@@ -160,8 +165,9 @@ void FunctionSizeCheck::check(const MatchFinder::MatchResult &Result) {
   Visitor.TraverseDecl(const_cast<FunctionDecl *>(Func));
   auto &FI = Visitor.Info;
 
-  if (FI.Statements == 0)
+  if (FI.Statements == 0) {
     return;
+}
 
   // Count the lines including whitespace and comments. Really simple.
   if (const Stmt *Body = Func->getBody()) {

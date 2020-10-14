@@ -29,10 +29,12 @@ AST_MATCHER(FunctionDecl, isVectorFunction) {
   bool IsVector = Node.getReturnType()->isVectorType();
   for (const ParmVarDecl *Parm : Node.parameters()) {
     QualType Type = Parm->getType();
-    if (Type->isPointerType())
+    if (Type->isPointerType()) {
       Type = Type->getPointeeType();
-    if (Type->isVectorType())
+}
+    if (Type->isVectorType()) {
       IsVector = true;
+}
   }
   return IsVector;
 }
@@ -40,8 +42,9 @@ AST_MATCHER(FunctionDecl, isVectorFunction) {
 } // namespace
 
 static StringRef TrySuggestPPC(StringRef Name) {
-  if (!Name.consume_front("vec_"))
+  if (!Name.consume_front("vec_")) {
     return {};
+}
 
   return llvm::StringSwitch<StringRef>(Name)
       // [simd.alg]
@@ -56,22 +59,28 @@ static StringRef TrySuggestPPC(StringRef Name) {
 
 static StringRef TrySuggestX86(StringRef Name) {
   if (!(Name.consume_front("_mm_") || Name.consume_front("_mm256_") ||
-        Name.consume_front("_mm512_")))
+        Name.consume_front("_mm512_"))) {
     return {};
+}
 
   // [simd.alg]
-  if (Name.startswith("max_"))
+  if (Name.startswith("max_")) {
     return "$simd::max";
-  if (Name.startswith("min_"))
+}
+  if (Name.startswith("min_")) {
     return "$simd::min";
+}
 
   // [simd.binary]
-  if (Name.startswith("add_"))
+  if (Name.startswith("add_")) {
     return "operator+ on $simd objects";
-  if (Name.startswith("sub_"))
+}
+  if (Name.startswith("sub_")) {
     return "operator- on $simd objects";
-  if (Name.startswith("mul_"))
+}
+  if (Name.startswith("mul_")) {
     return "operator* on $simd objects";
+}
 
   return {};
 }
@@ -89,8 +98,9 @@ void SIMDIntrinsicsCheck::storeOptions(ClangTidyOptions::OptionMap &Opts) {
 void SIMDIntrinsicsCheck::registerMatchers(MatchFinder *Finder) {
   // If Std is not specified, infer it from the language options.
   // libcxx implementation backports it to C++11 std::experimental::simd.
-  if (Std.empty())
+  if (Std.empty()) {
     Std = getLangOpts().CPlusPlus20 ? "std" : "std::experimental";
+}
 
   Finder->addMatcher(callExpr(callee(functionDecl(
                                   matchesName("^::(_mm_|_mm256_|_mm512_|vec_)"),
@@ -104,8 +114,9 @@ void SIMDIntrinsicsCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Call = Result.Nodes.getNodeAs<CallExpr>("call");
   assert(Call != nullptr);
   const FunctionDecl *Callee = Call->getDirectCallee();
-  if (!Callee)
+  if (!Callee) {
     return;
+}
 
   StringRef Old = Callee->getName();
   StringRef New;

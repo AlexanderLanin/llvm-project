@@ -126,8 +126,9 @@ namespace {
     DeltaTreeNode *Children[2*WidthFactor];
 
     ~DeltaTreeInteriorNode() {
-      for (unsigned i = 0, e = NumValuesUsed+1; i != e; ++i)
+      for (unsigned i = 0, e = NumValuesUsed+1; i != e; ++i) {
         Children[i]->Destroy();
+}
     }
 
   public:
@@ -159,21 +160,25 @@ namespace {
 
 /// Destroy - A 'virtual' destructor.
 void DeltaTreeNode::Destroy() {
-  if (isLeaf())
+  if (isLeaf()) {
     delete this;
-  else
+  } else {
     delete cast<DeltaTreeInteriorNode>(this);
+}
 }
 
 /// RecomputeFullDeltaLocally - Recompute the FullDelta field by doing a
 /// local walk over our contained deltas.
 void DeltaTreeNode::RecomputeFullDeltaLocally() {
   int NewFullDelta = 0;
-  for (unsigned i = 0, e = getNumValuesUsed(); i != e; ++i)
+  for (unsigned i = 0, e = getNumValuesUsed(); i != e; ++i) {
     NewFullDelta += Values[i].Delta;
-  if (auto *IN = dyn_cast<DeltaTreeInteriorNode>(this))
-    for (unsigned i = 0, e = getNumValuesUsed()+1; i != e; ++i)
+}
+  if (auto *IN = dyn_cast<DeltaTreeInteriorNode>(this)) {
+    for (unsigned i = 0, e = getNumValuesUsed()+1; i != e; ++i) {
       NewFullDelta += IN->getChild(i)->getFullDelta();
+}
+}
   FullDelta = NewFullDelta;
 }
 
@@ -188,8 +193,9 @@ bool DeltaTreeNode::DoInsertion(unsigned FileIndex, int Delta,
 
   // Find the insertion point, the first delta whose index is >= FileIndex.
   unsigned i = 0, e = getNumValuesUsed();
-  while (i != e && FileIndex > getValue(i).FileLoc)
+  while (i != e && FileIndex > getValue(i).FileLoc) {
     ++i;
+}
 
   // If we found an a record for exactly this file index, just merge this
   // value into the pre-existing record and finish early.
@@ -208,8 +214,9 @@ bool DeltaTreeNode::DoInsertion(unsigned FileIndex, int Delta,
     if (!isFull()) {
       // For an insertion into a non-full leaf node, just insert the value in
       // its sorted position.  This requires moving later values over.
-      if (i != e)
+      if (i != e) {
         memmove(&Values[i+1], &Values[i], sizeof(Values[0])*(e-i));
+}
       Values[i] = SourceDelta::get(FileIndex, Delta);
       ++NumValuesUsed;
       return false;
@@ -220,17 +227,19 @@ bool DeltaTreeNode::DoInsertion(unsigned FileIndex, int Delta,
     assert(InsertRes && "No result location specified");
     DoSplit(*InsertRes);
 
-    if (InsertRes->Split.FileLoc > FileIndex)
+    if (InsertRes->Split.FileLoc > FileIndex) {
       InsertRes->LHS->DoInsertion(FileIndex, Delta, nullptr /*can't fail*/);
-    else
+    } else {
       InsertRes->RHS->DoInsertion(FileIndex, Delta, nullptr /*can't fail*/);
+}
     return true;
   }
 
   // Otherwise, this is an interior node.  Send the request down the tree.
   auto *IN = cast<DeltaTreeInteriorNode>(this);
-  if (!IN->Children[i]->DoInsertion(FileIndex, Delta, InsertRes))
+  if (!IN->Children[i]->DoInsertion(FileIndex, Delta, InsertRes)) {
     return false; // If there was space in the child, just return.
+}
 
   // Okay, this split the subtree, producing a new value and two children to
   // insert here.  If this node is non-full, we can just insert it directly.
@@ -238,14 +247,16 @@ bool DeltaTreeNode::DoInsertion(unsigned FileIndex, int Delta,
     // Now that we have two nodes and a new element, insert the perclated value
     // into ourself by moving all the later values/children down, then inserting
     // the new one.
-    if (i != e)
+    if (i != e) {
       memmove(&IN->Children[i+2], &IN->Children[i+1],
               (e-i)*sizeof(IN->Children[0]));
+}
     IN->Children[i] = InsertRes->LHS;
     IN->Children[i+1] = InsertRes->RHS;
 
-    if (e != i)
+    if (e != i) {
       memmove(&Values[i+1], &Values[i], (e-i)*sizeof(Values[0]));
+}
     Values[i] = InsertRes->Split;
     ++NumValuesUsed;
     return false;
@@ -263,29 +274,33 @@ bool DeltaTreeNode::DoInsertion(unsigned FileIndex, int Delta,
 
   // Figure out where to insert SubRHS/NewSplit.
   DeltaTreeInteriorNode *InsertSide;
-  if (SubSplit.FileLoc < InsertRes->Split.FileLoc)
+  if (SubSplit.FileLoc < InsertRes->Split.FileLoc) {
     InsertSide = cast<DeltaTreeInteriorNode>(InsertRes->LHS);
-  else
+  } else {
     InsertSide = cast<DeltaTreeInteriorNode>(InsertRes->RHS);
+}
 
   // We now have a non-empty interior node 'InsertSide' to insert
   // SubRHS/SubSplit into.  Find out where to insert SubSplit.
 
   // Find the insertion point, the first delta whose index is >SubSplit.FileLoc.
   i = 0; e = InsertSide->getNumValuesUsed();
-  while (i != e && SubSplit.FileLoc > InsertSide->getValue(i).FileLoc)
+  while (i != e && SubSplit.FileLoc > InsertSide->getValue(i).FileLoc) {
     ++i;
+}
 
   // Now we know that i is the place to insert the split value into.  Insert it
   // and the child right after it.
-  if (i != e)
+  if (i != e) {
     memmove(&InsertSide->Children[i+2], &InsertSide->Children[i+1],
             (e-i)*sizeof(IN->Children[0]));
+}
   InsertSide->Children[i+1] = SubRHS;
 
-  if (e != i)
+  if (e != i) {
     memmove(&InsertSide->Values[i+1], &InsertSide->Values[i],
             (e-i)*sizeof(Values[0]));
+}
   InsertSide->Values[i] = SubSplit;
   ++InsertSide->NumValuesUsed;
   InsertSide->FullDelta += SubSplit.Delta + SubRHS->getFullDelta();
@@ -420,27 +435,31 @@ int DeltaTree::getDeltaAt(unsigned FileIndex) const {
          ++NumValsGreater) {
       const SourceDelta &Val = Node->getValue(NumValsGreater);
 
-      if (Val.FileLoc >= FileIndex)
+      if (Val.FileLoc >= FileIndex) {
         break;
+}
       Result += Val.Delta;
     }
 
     // If we have an interior node, include information about children and
     // recurse.  Otherwise, if we have a leaf, we're done.
     const auto *IN = dyn_cast<DeltaTreeInteriorNode>(Node);
-    if (!IN) return Result;
+    if (!IN) { return Result;
+}
 
     // Include any children to the left of the values we skipped, all of
     // their deltas should be included as well.
-    for (unsigned i = 0; i != NumValsGreater; ++i)
+    for (unsigned i = 0; i != NumValsGreater; ++i) {
       Result += IN->getChild(i)->getFullDelta();
+}
 
     // If we found exactly the value we were looking for, break off the
     // search early.  There is no need to search the RHS of the value for
     // partial results.
     if (NumValsGreater != Node->getNumValuesUsed() &&
-        Node->getValue(NumValsGreater).FileLoc == FileIndex)
+        Node->getValue(NumValsGreater).FileLoc == FileIndex) {
       return Result+IN->getChild(NumValsGreater)->getFullDelta();
+}
 
     // Otherwise, traverse down the tree.  The selected subtree may be
     // partially included in the range.

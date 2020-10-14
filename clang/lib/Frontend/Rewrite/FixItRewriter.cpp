@@ -50,7 +50,8 @@ FixItRewriter::~FixItRewriter() {
 
 bool FixItRewriter::WriteFixedFile(FileID ID, raw_ostream &OS) {
   const RewriteBuffer *RewriteBuf = Rewrite.getRewriteBufferFor(ID);
-  if (!RewriteBuf) return true;
+  if (!RewriteBuf) { return true;
+}
   RewriteBuf->write(OS);
   OS.flush();
   return false;
@@ -113,9 +114,10 @@ bool FixItRewriter::WriteFixedFiles(
     RewriteBuf.write(*OS);
     OS->flush();
 
-    if (RewrittenFiles)
+    if (RewrittenFiles) {
       RewrittenFiles->push_back(
           std::make_pair(std::string(Entry->getName()), Filename));
+}
   }
 
   return false;
@@ -141,8 +143,9 @@ void FixItRewriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
   }
 
   // Skip over any diagnostics that are ignored or notes.
-  if (DiagLevel <= DiagnosticsEngine::Note)
+  if (DiagLevel <= DiagnosticsEngine::Note) {
     return;
+}
   // Skip over errors if we are only fixing warnings.
   if (DiagLevel >= DiagnosticsEngine::Error && FixItOpts->FixOnlyWarnings) {
     ++NumFailures;
@@ -157,31 +160,35 @@ void FixItRewriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
     const FixItHint &Hint = Info.getFixItHint(Idx);
 
     if (Hint.CodeToInsert.empty()) {
-      if (Hint.InsertFromRange.isValid())
+      if (Hint.InsertFromRange.isValid()) {
         commit.insertFromRange(Hint.RemoveRange.getBegin(),
                            Hint.InsertFromRange, /*afterToken=*/false,
                            Hint.BeforePreviousInsertions);
-      else
+      } else {
         commit.remove(Hint.RemoveRange);
+}
     } else {
       if (Hint.RemoveRange.isTokenRange() ||
-          Hint.RemoveRange.getBegin() != Hint.RemoveRange.getEnd())
+          Hint.RemoveRange.getBegin() != Hint.RemoveRange.getEnd()) {
         commit.replace(Hint.RemoveRange, Hint.CodeToInsert);
-      else
+      } else {
         commit.insert(Hint.RemoveRange.getBegin(), Hint.CodeToInsert,
                     /*afterToken=*/false, Hint.BeforePreviousInsertions);
+}
     }
   }
   bool CanRewrite = Info.getNumFixItHints() > 0 && commit.isCommitable();
 
   if (!CanRewrite) {
-    if (Info.getNumFixItHints() > 0)
+    if (Info.getNumFixItHints() > 0) {
       Diag(Info.getLocation(), diag::note_fixit_in_macro);
+}
 
     // If this was an error, refuse to perform any rewriting.
     if (DiagLevel >= DiagnosticsEngine::Error) {
-      if (++NumFailures == 1)
+      if (++NumFailures == 1) {
         Diag(Info.getLocation(), diag::note_fixit_unfixed_error);
+}
     }
     return;
   }

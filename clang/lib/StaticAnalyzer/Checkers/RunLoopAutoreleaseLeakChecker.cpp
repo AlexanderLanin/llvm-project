@@ -64,13 +64,16 @@ public:
 /// but useful enough in this case.
 static bool seenBefore(const Stmt *Parent, const Stmt *A, const Stmt *B) {
   for (const Stmt *C : Parent->children()) {
-    if (!C) continue;
+    if (!C) { continue;
+}
 
-    if (C == A)
+    if (C == A) {
       return true;
+}
 
-    if (C == B)
+    if (C == B) {
       return false;
+}
 
     return seenBefore(C, A, B);
   }
@@ -103,11 +106,13 @@ static void emitDiagnostics(BoundNodes &Match,
   assert(ME != RLR);
 
   // Launch of run loop occurs before the message-sent expression is seen.
-  if (seenBefore(DeclBody, RLR, ME))
+  if (seenBefore(DeclBody, RLR, ME)) {
     return;
+}
 
-  if (HasAutoreleasePool && (OAP != AP))
+  if (HasAutoreleasePool && (OAP != AP)) {
     return;
+}
 
   PathDiagnosticLocation Location = PathDiagnosticLocation::createBegin(
     ME, BR.getSourceManager(), ADC);
@@ -166,8 +171,9 @@ checkTempObjectsInSamePool(const Decl *D, AnalysisManager &AM, BugReporter &BR,
   DeclarationMatcher GroupM = decl(hasDescendant(RunLoopInAutorelease));
 
   auto Matches = match(GroupM, *D, AM.getASTContext());
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, D, BR, AM, Chkr);
+}
 }
 
 static void
@@ -187,8 +193,9 @@ checkTempObjectsInNoPool(const Decl *D, AnalysisManager &AM, BugReporter &BR,
 
   auto Matches = match(GroupM, *D, AM.getASTContext());
 
-  for (BoundNodes Match : Matches)
+  for (BoundNodes Match : Matches) {
     emitDiagnostics(Match, D, BR, AM, Chkr);
+}
 
 }
 

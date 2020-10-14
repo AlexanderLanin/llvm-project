@@ -56,8 +56,9 @@ std::unique_ptr<RefSlab> buildRefSlab(const Annotations &Code,
   auto Symbols = TU.headerSymbols();
   const auto &SymbolID = findSymbol(Symbols, SymbolName).ID;
   std::string PathURI = URI::create(Path).toString();
-  for (const auto &Range : Code.ranges())
+  for (const auto &Range : Code.ranges()) {
     Builder.insert(SymbolID, refWithRange(Range, PathURI));
+}
 
   return std::make_unique<RefSlab>(std::move(Builder).build());
 }
@@ -66,11 +67,12 @@ std::vector<
     std::pair</*FilePath*/ std::string, /*CodeAfterRename*/ std::string>>
 applyEdits(FileEdits FE) {
   std::vector<std::pair<std::string, std::string>> Results;
-  for (auto &It : FE)
+  for (auto &It : FE) {
     Results.emplace_back(
         It.first().str(),
         llvm::cantFail(tooling::applyAllReplacements(
             It.getValue().InitialCode, It.getValue().Replacements)));
+}
   return Results;
 }
 
@@ -649,8 +651,9 @@ TEST(RenameTest, Renameable) {
     auto Results =
         rename({T.point(), NewName, AST, testPath(TU.Filename), Case.Index});
     bool WantRename = true;
-    if (T.ranges().empty())
+    if (T.ranges().empty()) {
       WantRename = false;
+}
     if (!WantRename) {
       assert(Case.ErrorMessage && "Error message must be set!");
       EXPECT_FALSE(Results)
@@ -775,8 +778,9 @@ TEST(CrossFileRenameTests, DirtyBuffer) {
   auto MainFilePath = testPath("main.cc");
   // Dirty buffer for foo.cc.
   auto GetDirtyBuffer = [&](PathRef Path) -> llvm::Optional<std::string> {
-    if (Path == FooPath)
+    if (Path == FooPath) {
       return FooDirtyBuffer.code().str();
+}
     return llvm::None;
   };
 
@@ -1206,11 +1210,12 @@ TEST(CrossFileRenameTests, adjustRenameRanges) {
     Annotations Draft(T.DraftCode);
     auto ActualRanges = adjustRenameRanges(
         Draft.code(), "x", Annotations(T.IndexedCode).ranges(), LangOpts);
-    if (!ActualRanges)
+    if (!ActualRanges) {
        EXPECT_THAT(Draft.ranges(), testing::IsEmpty());
-    else
+    } else {
       EXPECT_THAT(Draft.ranges(),
                   testing::UnorderedElementsAreArray(*ActualRanges));
+}
   }
 }
 
@@ -1331,10 +1336,11 @@ TEST(RangePatchingHeuristic, GetMappedRanges) {
 
     auto Mapped =
         getMappedRanges(Annotations(T.IndexedCode).ranges(), LexedRanges);
-    if (!Mapped)
+    if (!Mapped) {
       EXPECT_THAT(ExpectedMatches, IsEmpty());
-    else
+    } else {
       EXPECT_THAT(ExpectedMatches, UnorderedElementsAreArray(*Mapped));
+}
   }
 }
 
@@ -1440,8 +1446,9 @@ TEST(CrossFileRenameTests, adjustmentCost) {
     SCOPED_TRACE(T.RangeCode);
     Annotations C(T.RangeCode);
     std::vector<size_t> MappedIndex;
-    for (size_t I = 0; I < C.ranges("lex").size(); ++I)
+    for (size_t I = 0; I < C.ranges("lex").size(); ++I) {
       MappedIndex.push_back(I);
+}
     EXPECT_EQ(renameRangeAdjustmentCost(C.ranges("idx"), C.ranges("lex"),
                                         MappedIndex),
               T.ExpectedCost);

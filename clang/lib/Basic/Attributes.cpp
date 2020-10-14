@@ -10,15 +10,17 @@ int clang::hasAttribute(AttrSyntax Syntax, const IdentifierInfo *Scope,
                         const LangOptions &LangOpts) {
   StringRef Name = Attr->getName();
   // Normalize the attribute name, __foo__ becomes foo.
-  if (Name.size() >= 4 && Name.startswith("__") && Name.endswith("__"))
+  if (Name.size() >= 4 && Name.startswith("__") && Name.endswith("__")) {
     Name = Name.substr(2, Name.size() - 4);
+}
 
   // Normalize the scope name, but only for gnu and clang attributes.
   StringRef ScopeName = Scope ? Scope->getName() : "";
-  if (ScopeName == "__gnu__")
+  if (ScopeName == "__gnu__") {
     ScopeName = "gnu";
-  else if (ScopeName == "_Clang")
+  } else if (ScopeName == "_Clang") {
     ScopeName = "clang";
+}
 
 #include "clang/Basic/AttrHasAttributeImpl.inc"
 
@@ -38,18 +40,20 @@ const char *attr::getSubjectMatchRuleSpelling(attr::SubjectMatchRule Rule) {
 static StringRef
 normalizeAttrScopeName(const IdentifierInfo *Scope,
                        AttributeCommonInfo::Syntax SyntaxUsed) {
-  if (!Scope)
+  if (!Scope) {
     return "";
+}
 
   // Normalize the "__gnu__" scope name to be "gnu" and the "_Clang" scope name
   // to be "clang".
   StringRef ScopeName = Scope->getName();
   if (SyntaxUsed == AttributeCommonInfo::AS_CXX11 ||
       SyntaxUsed == AttributeCommonInfo::AS_C2x) {
-    if (ScopeName == "__gnu__")
+    if (ScopeName == "__gnu__") {
       ScopeName = "gnu";
-    else if (ScopeName == "_Clang")
+    } else if (ScopeName == "_Clang") {
       ScopeName = "clang";
+}
   }
   return ScopeName;
 }
@@ -67,8 +71,9 @@ static StringRef normalizeAttrName(const IdentifierInfo *Name,
         NormalizedScopeName == "clang"));
   StringRef AttrName = Name->getName();
   if (ShouldNormalize && AttrName.size() >= 4 && AttrName.startswith("__") &&
-      AttrName.endswith("__"))
+      AttrName.endswith("__")) {
     AttrName = AttrName.slice(2, AttrName.size() - 2);
+}
 
   return AttrName;
 }

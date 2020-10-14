@@ -68,8 +68,9 @@ bool Replacement::isApplicable() const {
 bool Replacement::apply(Rewriter &Rewrite) const {
   SourceManager &SM = Rewrite.getSourceMgr();
   auto Entry = SM.getFileManager().getFile(FilePath);
-  if (!Entry)
+  if (!Entry) {
     return false;
+}
 
   FileID ID = SM.getOrCreateFileID(*Entry, SrcMgr::C_User);
   const SourceLocation Start =
@@ -96,14 +97,17 @@ namespace clang {
 namespace tooling {
 
 bool operator<(const Replacement &LHS, const Replacement &RHS) {
-  if (LHS.getOffset() != RHS.getOffset())
+  if (LHS.getOffset() != RHS.getOffset()) {
     return LHS.getOffset() < RHS.getOffset();
+}
 
-  if (LHS.getLength() != RHS.getLength())
+  if (LHS.getLength() != RHS.getLength()) {
     return LHS.getLength() < RHS.getLength();
+}
 
-  if (LHS.getFilePath() != RHS.getFilePath())
+  if (LHS.getFilePath() != RHS.getFilePath()) {
     return LHS.getFilePath() < RHS.getFilePath();
+}
   return LHS.getReplacementText() < RHS.getReplacementText();
 }
 
@@ -138,9 +142,11 @@ static int getRangeSize(const SourceManager &Sources,
   SourceLocation SpellingEnd = Sources.getSpellingLoc(Range.getEnd());
   std::pair<FileID, unsigned> Start = Sources.getDecomposedLoc(SpellingBegin);
   std::pair<FileID, unsigned> End = Sources.getDecomposedLoc(SpellingEnd);
-  if (Start.first != End.first) return -1;
-  if (Range.isTokenRange())
+  if (Start.first != End.first) { return -1;
+}
+  if (Range.isTokenRange()) {
     End.second += Lexer::MeasureTokenLength(SpellingEnd, Sources, LangOpts);
+}
   return End.second - Start.second;
 }
 
@@ -179,10 +185,12 @@ static std::string getReplacementErrString(replacement_error Err) {
 
 std::string ReplacementError::message() const {
   std::string Message = getReplacementErrString(Err);
-  if (NewReplacement.hasValue())
+  if (NewReplacement.hasValue()) {
     Message += "\nNew replacement: " + NewReplacement->toString();
-  if (ExistingReplacement.hasValue())
+}
+  if (ExistingReplacement.hasValue()) {
     Message += "\nExisting replacement: " + ExistingReplacement->toString();
+}
   return Message;
 }
 
@@ -225,9 +233,10 @@ Replacements::mergeIfOrderIndependent(const Replacement &R) const {
   // A Replacements set that is `Replaces` referring to the code after `R` is
   // applied.
   Replacements ReplacesShiftedByRs;
-  for (const auto &Replace : Replaces)
+  for (const auto &Replace : Replaces) {
     ReplacesShiftedByRs.Replaces.insert(
         Rs.getReplacementInChangedCode(Replace));
+}
   // This is equivalent to applying `Replaces` first and then `R`.
   auto MergeShiftedRs = merge(RsShiftedByReplaces);
   // This is equivalent to applying `R` first and then `Replaces`.
@@ -236,17 +245,19 @@ Replacements::mergeIfOrderIndependent(const Replacement &R) const {
   // Since empty or segmented replacements around existing replacements might be
   // produced above, we need to compare replacements in canonical forms.
   if (MergeShiftedRs.getCanonicalReplacements() ==
-      MergeShiftedReplaces.getCanonicalReplacements())
+      MergeShiftedReplaces.getCanonicalReplacements()) {
     return MergeShiftedRs;
+}
   return llvm::make_error<ReplacementError>(replacement_error::overlap_conflict,
                                             R, *Replaces.begin());
 }
 
 llvm::Error Replacements::add(const Replacement &R) {
   // Check the file path.
-  if (!Replaces.empty() && R.getFilePath() != Replaces.begin()->getFilePath())
+  if (!Replaces.empty() && R.getFilePath() != Replaces.begin()->getFilePath()) {
     return llvm::make_error<ReplacementError>(
         replacement_error::wrong_file_path, R, *Replaces.begin());
+}
 
   // Special-case header insertions.
   if (R.getOffset() == std::numeric_limits<unsigned>::max()) {
@@ -273,9 +284,10 @@ llvm::Error Replacements::add(const Replacement &R) {
       // Check if two insertions are order-indepedent: if inserting them in
       // either order produces the same text, they are order-independent.
       if ((R.getReplacementText() + I->getReplacementText()).str() !=
-          (I->getReplacementText() + R.getReplacementText()).str())
+          (I->getReplacementText() + R.getReplacementText()).str()) {
         return llvm::make_error<ReplacementError>(
             replacement_error::insert_conflict, R, *I);
+}
       // If insertions are order-independent, we can merge them.
       Replacement NewR(
           R.getFilePath(), R.getOffset(), 0,
@@ -326,15 +338,17 @@ llvm::Error Replacements::add(const Replacement &R) {
     while (I != Replaces.begin()) {
       --I;
       // If `I` doesn't overlap with `R`, don't merge it.
-      if (!Overlap(R, *I))
+      if (!Overlap(R, *I)) {
         break;
+}
       MergeBegin = I;
     }
     Replacements OverlapReplaces(MergeBegin, MergeEnd);
     llvm::Expected<Replacements> Merged =
         OverlapReplaces.mergeIfOrderIndependent(R);
-    if (!Merged)
+    if (!Merged) {
       return Merged.takeError();
+}
     Replaces.erase(MergeBegin, MergeEnd);
     Replaces.insert(Merged->begin(), Merged->end());
   }
@@ -407,8 +421,9 @@ public:
   // Returns 'true' if 'R' starts strictly after the MergedReplacement and thus
   // doesn't need to be merged.
   bool endsBefore(const Replacement &R) const {
-    if (MergeSecond)
+    if (MergeSecond) {
       return Offset + Text.size() < R.getOffset() + Delta;
+}
     return Offset + Length < R.getOffset();
   }
 
@@ -441,8 +456,9 @@ private:
 } // namespace
 
 Replacements Replacements::merge(const Replacements &ReplacesToMerge) const {
-  if (empty() || ReplacesToMerge.empty())
+  if (empty() || ReplacesToMerge.empty()) {
     return empty() ? ReplacesToMerge : *this;
+}
 
   auto &First = Replaces;
   auto &Second = ReplacesToMerge.Replaces;
@@ -467,8 +483,9 @@ Replacements Replacements::merge(const Replacements &ReplacesToMerge) const {
     while ((Merged.mergeSecond() && SecondI != Second.end()) ||
            (!Merged.mergeSecond() && FirstI != First.end())) {
       auto &I = Merged.mergeSecond() ? SecondI : FirstI;
-      if (Merged.endsBefore(*I))
+      if (Merged.endsBefore(*I)) {
         break;
+}
       Merged.merge(*I);
       ++I;
     }
@@ -483,8 +500,9 @@ Replacements Replacements::merge(const Replacements &ReplacesToMerge) const {
 // \p Ranges.
 static std::vector<Range> combineAndSortRanges(std::vector<Range> Ranges) {
   llvm::sort(Ranges, [](const Range &LHS, const Range &RHS) {
-    if (LHS.getOffset() != RHS.getOffset())
+    if (LHS.getOffset() != RHS.getOffset()) {
       return LHS.getOffset() < RHS.getOffset();
+}
     return LHS.getLength() < RHS.getLength();
   });
   std::vector<Range> Result;
@@ -515,8 +533,9 @@ calculateRangesAfterReplacements(const Replacements &Replaces,
   //   - Merge with \p Replaces.
   //   - The new ranges will be the affected ranges of the merged replacements.
   auto MergedRanges = combineAndSortRanges(Ranges);
-  if (Replaces.empty())
+  if (Replaces.empty()) {
     return MergedRanges;
+}
   tooling::Replacements FakeReplaces;
   for (const auto &R : MergedRanges) {
     llvm::cantFail(
@@ -553,8 +572,9 @@ unsigned Replacements::getShiftedCodePosition(unsigned Position) const {
     if (R.getOffset() < Position &&
         R.getOffset() + R.getReplacementText().size() <= Position) {
       Position = R.getOffset() + R.getReplacementText().size();
-      if (!R.getReplacementText().empty())
+      if (!R.getReplacementText().empty()) {
         Position--;
+}
     }
     break;
   }
@@ -578,8 +598,9 @@ bool applyAllReplacements(const Replacements &Replaces, Rewriter &Rewrite) {
 
 llvm::Expected<std::string> applyAllReplacements(StringRef Code,
                                                 const Replacements &Replaces) {
-  if (Replaces.empty())
+  if (Replaces.empty()) {
     return Code.str();
+}
 
   IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
       new llvm::vfs::InMemoryFileSystem);
@@ -597,9 +618,10 @@ llvm::Expected<std::string> applyAllReplacements(StringRef Code,
   for (auto I = Replaces.rbegin(), E = Replaces.rend(); I != E; ++I) {
     Replacement Replace("<stdin>", I->getOffset(), I->getLength(),
                         I->getReplacementText());
-    if (!Replace.apply(Rewrite))
+    if (!Replace.apply(Rewrite)) {
       return llvm::make_error<ReplacementError>(
           replacement_error::fail_to_apply, Replace);
+}
   }
   std::string Result;
   llvm::raw_string_ostream OS(Result);
@@ -615,10 +637,11 @@ std::map<std::string, Replacements> groupReplacementsByFile(
   llvm::SmallPtrSet<const FileEntry *, 16> ProcessedFileEntries;
   for (const auto &Entry : FileToReplaces) {
     auto FE = FileMgr.getFile(Entry.first);
-    if (!FE)
+    if (!FE) {
       llvm::errs() << "File path " << Entry.first << " is invalid.\n";
-    else if (ProcessedFileEntries.insert(*FE).second)
+    } else if (ProcessedFileEntries.insert(*FE).second) {
       Result[Entry.first] = std::move(Entry.second);
+}
   }
   return Result;
 }

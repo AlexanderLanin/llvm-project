@@ -61,8 +61,9 @@ int main(int argc, const char **argv) {
 
   auto Factory = tooling::newFrontendActionFactory(&Action);
 
-  if (Inplace)
+  if (Inplace) {
     return Tool.runAndSave(Factory.get());
+}
 
   int ExitCode = Tool.run(Factory.get());
   LangOptions DefaultLangOptions;

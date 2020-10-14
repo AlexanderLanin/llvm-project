@@ -18,10 +18,12 @@
 using namespace clang;
 
 static bool isSubclass(const ObjCInterfaceDecl *Class, IdentifierInfo *II) {
-  if (!Class)
+  if (!Class) {
     return false;
-  if (Class->getIdentifier() == II)
+}
+  if (Class->getIdentifier() == II) {
     return true;
+}
   return isSubclass(Class->getSuperClass(), II);
 }
 
@@ -56,8 +58,9 @@ bool ObjCNoReturn::isImplicitNoReturn(const ObjCMessageExpr *ME) {
   if (const ObjCInterfaceDecl *ID = ME->getReceiverInterface()) {
     if (isSubclass(ID, NSExceptionII)) {
       for (unsigned i = 0; i < NUM_RAISE_SELECTORS; ++i) {
-        if (S == NSExceptionInstanceRaiseSelectors[i])
+        if (S == NSExceptionInstanceRaiseSelectors[i]) {
           return true;
+}
       }
     }
   }

@@ -28,8 +28,9 @@ using namespace llvm::omp;
 
 CGOpenMPRuntimeAMDGCN::CGOpenMPRuntimeAMDGCN(CodeGenModule &CGM)
     : CGOpenMPRuntimeGPU(CGM) {
-  if (!CGM.getLangOpts().OpenMPIsDevice)
+  if (!CGM.getLangOpts().OpenMPIsDevice) {
     llvm_unreachable("OpenMP AMDGCN can only handle device code.");
+}
 }
 
 llvm::Value *CGOpenMPRuntimeAMDGCN::getGPUWarpSize(CodeGenFunction &CGF) {

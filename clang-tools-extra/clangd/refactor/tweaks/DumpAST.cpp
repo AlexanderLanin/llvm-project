@@ -35,9 +35,11 @@ public:
 
   bool prepare(const Selection &Inputs) override {
     for (auto N = Inputs.ASTSelection.commonAncestor(); N && !Node;
-         N = N->Parent)
-      if (dumpable(N->ASTNode))
+         N = N->Parent) {
+      if (dumpable(N->ASTNode)) {
         Node = N->ASTNode;
+}
+}
     return Node.hasValue();
   }
   Expected<Effect> apply(const Selection &Inputs) override;
@@ -112,8 +114,9 @@ class DumpSymbol : public Tweak {
 
     for (auto &Sym : getSymbolInfo(
              *Inputs.AST, sourceLocToPosition(Inputs.AST->getSourceManager(),
-                                              Inputs.Cursor)))
+                                              Inputs.Cursor))) {
       Out << Sym;
+}
     return Effect::showMessage(Out.str());
   }
   std::string title() const override { return "Dump symbol under the cursor"; }
@@ -136,9 +139,11 @@ public:
   const char *id() const override final;
 
   bool prepare(const Selection &Inputs) override {
-    if (auto *Node = Inputs.ASTSelection.commonAncestor())
-      if (auto *D = Node->ASTNode.get<Decl>())
+    if (auto *Node = Inputs.ASTSelection.commonAncestor()) {
+      if (auto *D = Node->ASTNode.get<Decl>()) {
         Record = dyn_cast<RecordDecl>(D);
+}
+}
     return Record && Record->isThisDeclarationADefinition() &&
            !Record->isDependentType();
   }

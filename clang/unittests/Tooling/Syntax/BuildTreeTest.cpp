@@ -71,8 +71,9 @@ protected:
           << "Dumps diverged for the code:\n"
           << AnnotatedCode.code().slice(AnnotatedRanges[i].Begin,
                                         AnnotatedRanges[i].End);
-      if (AnnotatedNodeDump != TreeDumps[i].trim().str())
+      if (AnnotatedNodeDump != TreeDumps[i].trim().str()) {
         Failed = true;
+}
     }
     return Failed ? ::testing::AssertionFailure()
                   : ::testing::AssertionSuccess();

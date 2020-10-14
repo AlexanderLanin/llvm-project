@@ -46,22 +46,25 @@ void tools::MinGW::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  for (const auto &II : Inputs)
+  for (const auto &II : Inputs) {
     CmdArgs.push_back(II.getFilename());
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
                                          Exec, CmdArgs, Inputs, Output));
 
-  if (Args.hasArg(options::OPT_gsplit_dwarf))
+  if (Args.hasArg(options::OPT_gsplit_dwarf)) {
     SplitDebugInfo(getToolChain(), C, *this, JA, Args, Output,
                    SplitDebugName(JA, Args, Inputs[0], Output));
+}
 }
 
 void tools::MinGW::Linker::AddLibGCC(const ArgList &Args,
                                      ArgStringList &CmdArgs) const {
-  if (Args.hasArg(options::OPT_mthreads))
+  if (Args.hasArg(options::OPT_mthreads)) {
     CmdArgs.push_back("-lmingwthrd");
+}
   CmdArgs.push_back("-lmingw32");
 
   // Make use of compiler-rt if --rtlib option is used
@@ -85,9 +88,11 @@ void tools::MinGW::Linker::AddLibGCC(const ArgList &Args,
 
   CmdArgs.push_back("-lmoldname");
   CmdArgs.push_back("-lmingwex");
-  for (auto Lib : Args.getAllArgValues(options::OPT_l))
-    if (StringRef(Lib).startswith("msvcr") || StringRef(Lib).startswith("ucrt"))
+  for (auto Lib : Args.getAllArgValues(options::OPT_l)) {
+    if (StringRef(Lib).startswith("msvcr") || StringRef(Lib).startswith("ucrt")) {
       return;
+}
+}
   CmdArgs.push_back("-lmsvcrt");
 }
 
@@ -110,11 +115,13 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
-  if (!D.SysRoot.empty())
+  if (!D.SysRoot.empty()) {
     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+}
 
-  if (Args.hasArg(options::OPT_s))
+  if (Args.hasArg(options::OPT_s)) {
     CmdArgs.push_back("-s");
+}
 
   CmdArgs.push_back("-m");
   switch (TC.getArch()) {
@@ -144,20 +151,23 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("console");
   }
 
-  if (Args.hasArg(options::OPT_mdll))
+  if (Args.hasArg(options::OPT_mdll)) {
     CmdArgs.push_back("--dll");
-  else if (Args.hasArg(options::OPT_shared))
+  } else if (Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("--shared");
-  if (Args.hasArg(options::OPT_static))
+}
+  if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-Bstatic");
-  else
+  } else {
     CmdArgs.push_back("-Bdynamic");
+}
   if (Args.hasArg(options::OPT_mdll) || Args.hasArg(options::OPT_shared)) {
     CmdArgs.push_back("-e");
-    if (TC.getArch() == llvm::Triple::x86)
+    if (TC.getArch() == llvm::Triple::x86) {
       CmdArgs.push_back("_DllMainCRTStartup@12");
-    else
+    } else {
       CmdArgs.push_back("DllMainCRTStartup");
+}
     CmdArgs.push_back("--enable-auto-image-base");
   }
 
@@ -170,8 +180,9 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (!llvm::sys::path::has_extension(OutputFile)) {
     CmdArgs.push_back(Args.MakeArgString(Twine(OutputFile) + ".exe"));
     OutputFile = CmdArgs.back();
-  } else
+  } else {
     CmdArgs.push_back(OutputFile);
+}
 
   Args.AddAllArgs(CmdArgs, options::OPT_e);
   // FIXME: add -N, -n flags
@@ -185,13 +196,15 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_mdll)) {
       CmdArgs.push_back(Args.MakeArgString(TC.GetFilePath("dllcrt2.o")));
     } else {
-      if (Args.hasArg(options::OPT_municode))
+      if (Args.hasArg(options::OPT_municode)) {
         CmdArgs.push_back(Args.MakeArgString(TC.GetFilePath("crt2u.o")));
-      else
+      } else {
         CmdArgs.push_back(Args.MakeArgString(TC.GetFilePath("crt2.o")));
+}
     }
-    if (Args.hasArg(options::OPT_pg))
+    if (Args.hasArg(options::OPT_pg)) {
       CmdArgs.push_back(Args.MakeArgString(TC.GetFilePath("gcrt2.o")));
+}
     CmdArgs.push_back(Args.MakeArgString(TC.GetFilePath("crtbegin.o")));
   }
 
@@ -201,12 +214,14 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // Add the compiler-rt library directories if they exist to help
   // the linker find the various sanitizer, builtin, and profiling runtimes.
   for (const auto &LibPath : TC.getLibraryPaths()) {
-    if (TC.getVFS().exists(LibPath))
+    if (TC.getVFS().exists(LibPath)) {
       CmdArgs.push_back(Args.MakeArgString("-L" + LibPath));
+}
   }
   auto CRTPath = TC.getCompilerRTPath();
-  if (TC.getVFS().exists(CRTPath))
+  if (TC.getVFS().exists(CRTPath)) {
     CmdArgs.push_back(Args.MakeArgString("-L" + CRTPath));
+}
 
   AddLinkerInputs(TC, Inputs, Args, CmdArgs, JA);
 
@@ -215,11 +230,13 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (TC.ShouldLinkCXXStdlib(Args)) {
     bool OnlyLibstdcxxStatic = Args.hasArg(options::OPT_static_libstdcxx) &&
                                !Args.hasArg(options::OPT_static);
-    if (OnlyLibstdcxxStatic)
+    if (OnlyLibstdcxxStatic) {
       CmdArgs.push_back("-Bstatic");
+}
     TC.AddCXXStdlibLibArgs(Args, CmdArgs);
-    if (OnlyLibstdcxxStatic)
+    if (OnlyLibstdcxxStatic) {
       CmdArgs.push_back("-Bdynamic");
+}
   }
 
   bool HasWindowsApp = false;
@@ -232,8 +249,9 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib)) {
     if (!Args.hasArg(options::OPT_nodefaultlibs)) {
-      if (Args.hasArg(options::OPT_static))
+      if (Args.hasArg(options::OPT_static)) {
         CmdArgs.push_back("--start-group");
+}
 
       if (Args.hasArg(options::OPT_fstack_protector) ||
           Args.hasArg(options::OPT_fstack_protector_strong) ||
@@ -262,11 +280,13 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
       AddLibGCC(Args, CmdArgs);
 
-      if (Args.hasArg(options::OPT_pg))
+      if (Args.hasArg(options::OPT_pg)) {
         CmdArgs.push_back("-lgmon");
+}
 
-      if (Args.hasArg(options::OPT_pthread))
+      if (Args.hasArg(options::OPT_pthread)) {
         CmdArgs.push_back("-lpthread");
+}
 
       if (Sanitize.needsAsanRt()) {
         // MinGW always links against a shared MSVCRT.
@@ -306,8 +326,9 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         CmdArgs.push_back("--end-group");
       } else {
         AddLibGCC(Args, CmdArgs);
-        if (!HasWindowsApp)
+        if (!HasWindowsApp) {
           CmdArgs.push_back("-lkernel32");
+}
       }
     }
 
@@ -334,10 +355,12 @@ static bool findGccVersion(StringRef LibDir, std::string &GccLibDir,
     StringRef VersionText = llvm::sys::path::filename(LI->path());
     auto CandidateVersion =
         toolchains::Generic_GCC::GCCVersion::Parse(VersionText);
-    if (CandidateVersion.Major == -1)
+    if (CandidateVersion.Major == -1) {
       continue;
-    if (CandidateVersion <= Version)
+}
+    if (CandidateVersion <= Version) {
       continue;
+}
     Ver = std::string(VersionText);
     GccLibDir = LI->path();
   }
@@ -349,8 +372,9 @@ void toolchains::MinGW::findGccLibDir() {
   Archs.emplace_back(getTriple().getArchName());
   Archs[0] += "-w64-mingw32";
   Archs.emplace_back("mingw32");
-  if (Arch.empty())
+  if (Arch.empty()) {
     Arch = std::string(Archs[0].str());
+}
   // lib: Arch Linux, Ubuntu, Windows
   // lib64: openSUSE Linux
   for (StringRef CandidateLib : {"lib", "lib64"}) {
@@ -371,9 +395,11 @@ llvm::ErrorOr<std::string> toolchains::MinGW::findGcc() {
   Gccs[0] += "-w64-mingw32-gcc";
   Gccs.emplace_back("mingw32-gcc");
   // Please do not add "gcc" here
-  for (StringRef CandidateGcc : Gccs)
-    if (llvm::ErrorOr<std::string> GPPName = llvm::sys::findProgramByName(CandidateGcc))
+  for (StringRef CandidateGcc : Gccs) {
+    if (llvm::ErrorOr<std::string> GPPName = llvm::sys::findProgramByName(CandidateGcc)) {
       return GPPName;
+}
+}
   return make_error_code(std::errc::no_such_file_or_directory);
 }
 
@@ -400,18 +426,19 @@ toolchains::MinGW::MinGW(const Driver &D, const llvm::Triple &Triple,
       RocmInstallation(D, Triple, Args) {
   getProgramPaths().push_back(getDriver().getInstalledDir());
 
-  if (getDriver().SysRoot.size())
+  if (getDriver().SysRoot.size()) {
     Base = getDriver().SysRoot;
   // Look for <clang-bin>/../<triplet>; if found, use <clang-bin>/.. as the
   // base as it could still be a base for a gcc setup with libgcc.
-  else if (llvm::ErrorOr<std::string> TargetSubdir = findClangRelativeSysroot())
+  } else if (llvm::ErrorOr<std::string> TargetSubdir = findClangRelativeSysroot()) {
     Base = std::string(llvm::sys::path::parent_path(TargetSubdir.get()));
-  else if (llvm::ErrorOr<std::string> GPPName = findGcc())
+  } else if (llvm::ErrorOr<std::string> GPPName = findGcc()) {
     Base = std::string(llvm::sys::path::parent_path(
         llvm::sys::path::parent_path(GPPName.get())));
-  else
+  } else {
     Base = std::string(
         llvm::sys::path::parent_path(getDriver().getInstalledDir()));
+}
 
   Base += llvm::sys::path::get_separator();
   findGccLibDir();
@@ -434,12 +461,14 @@ bool toolchains::MinGW::IsIntegratedAssemblerDefault() const { return true; }
 Tool *toolchains::MinGW::getTool(Action::ActionClass AC) const {
   switch (AC) {
   case Action::PreprocessJobClass:
-    if (!Preprocessor)
+    if (!Preprocessor) {
       Preprocessor.reset(new tools::gcc::Preprocessor(*this));
+}
     return Preprocessor.get();
   case Action::CompileJobClass:
-    if (!Compiler)
+    if (!Compiler) {
       Compiler.reset(new tools::gcc::Compiler(*this));
+}
     return Compiler.get();
   default:
     return ToolChain::getTool(AC);
@@ -463,8 +492,9 @@ bool toolchains::MinGW::IsUnwindTablesDefault(const ArgList &Args) const {
                                       options::OPT_fseh_exceptions,
                                       options::OPT_fdwarf_exceptions);
   if (ExceptionArg &&
-      ExceptionArg->getOption().matches(options::OPT_fseh_exceptions))
+      ExceptionArg->getOption().matches(options::OPT_fseh_exceptions)) {
     return true;
+}
   return getArch() == llvm::Triple::x86_64 ||
          getArch() == llvm::Triple::aarch64;
 }
@@ -481,8 +511,9 @@ bool toolchains::MinGW::isPICDefaultForced() const {
 
 llvm::ExceptionHandling
 toolchains::MinGW::GetExceptionModel(const ArgList &Args) const {
-  if (getArch() == llvm::Triple::x86_64 || getArch() == llvm::Triple::aarch64)
+  if (getArch() == llvm::Triple::x86_64 || getArch() == llvm::Triple::aarch64) {
     return llvm::ExceptionHandling::WinEH;
+}
   return llvm::ExceptionHandling::DwarfCFI;
 }
 
@@ -551,8 +582,9 @@ void toolchains::MinGW::printVerboseInfo(raw_ostream &OS) const {
 
 void toolchains::MinGW::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                                   ArgStringList &CC1Args) const {
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+}
 
   if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
     SmallString<1024> P(getDriver().ResourceDir);
@@ -560,8 +592,9 @@ void toolchains::MinGW::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     addSystemInclude(DriverArgs, CC1Args, P.str());
   }
 
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
 
   if (GetRuntimeLibType(DriverArgs) == ToolChain::RLT_Libgcc) {
     // openSUSE
@@ -577,8 +610,9 @@ void toolchains::MinGW::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
 void toolchains::MinGW::AddClangCXXStdlibIncludeArgs(
     const ArgList &DriverArgs, ArgStringList &CC1Args) const {
   if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
-      DriverArgs.hasArg(options::OPT_nostdincxx))
+      DriverArgs.hasArg(options::OPT_nostdincxx)) {
     return;
+}
 
   StringRef Slash = llvm::sys::path::get_separator();
 

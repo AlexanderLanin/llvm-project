@@ -262,12 +262,15 @@ serialization::TypeIdxFromBuiltin(const BuiltinType *BT) {
 
 unsigned serialization::ComputeHash(Selector Sel) {
   unsigned N = Sel.getNumArgs();
-  if (N == 0)
+  if (N == 0) {
     ++N;
+}
   unsigned R = 5381;
-  for (unsigned I = 0; I != N; ++I)
-    if (IdentifierInfo *II = Sel.getIdentifierInfoForSlot(I))
+  for (unsigned I = 0; I != N; ++I) {
+    if (IdentifierInfo *II = Sel.getIdentifierInfoForSlot(I)) {
       R = llvm::djbHash(II->getName(), R);
+}
+}
   return R;
 }
 
@@ -285,8 +288,9 @@ serialization::getDefinitiveDeclContext(const DeclContext *DC) {
   // C/C++ tag types can only be defined in one place.
   case Decl::Enum:
   case Decl::Record:
-    if (const TagDecl *Def = cast<TagDecl>(DC)->getDefinition())
+    if (const TagDecl *Def = cast<TagDecl>(DC)->getDefinition()) {
       return Def;
+}
     return nullptr;
 
   // FIXME: These can be defined in one place... except special member
@@ -314,8 +318,9 @@ serialization::getDefinitiveDeclContext(const DeclContext *DC) {
 
   case Decl::ObjCProtocol:
     if (const ObjCProtocolDecl *Def
-          = cast<ObjCProtocolDecl>(DC)->getDefinition())
+          = cast<ObjCProtocolDecl>(DC)->getDefinition()) {
       return Def;
+}
     return nullptr;
 
   // FIXME: These are defined in one place, but properties in class extensions
@@ -440,10 +445,12 @@ bool serialization::needsAnonymousDeclarationNumber(const NamedDecl *D) {
       D->getLexicalDeclContext()->isDependentContext() && !isa<TagDecl>(D)) {
     // For function templates and class templates, the template is numbered and
     // not its pattern.
-    if (auto *FD = dyn_cast<FunctionDecl>(D))
+    if (auto *FD = dyn_cast<FunctionDecl>(D)) {
       return !FD->getDescribedFunctionTemplate();
-    if (auto *RD = dyn_cast<CXXRecordDecl>(D))
+}
+    if (auto *RD = dyn_cast<CXXRecordDecl>(D)) {
       return !RD->getDescribedClassTemplate();
+}
     return true;
   }
 
@@ -452,8 +459,9 @@ bool serialization::needsAnonymousDeclarationNumber(const NamedDecl *D) {
   // FIXME: This is only necessary for an inline function or a template or
   // similar.
   if (D->getLexicalDeclContext()->isFunctionOrMethod()) {
-    if (auto *VD = dyn_cast<VarDecl>(D))
+    if (auto *VD = dyn_cast<VarDecl>(D)) {
       return VD->isStaticLocal();
+}
     // FIXME: What about CapturedDecls (and declarations nested within them)?
     return isa<TagDecl>(D) || isa<BlockDecl>(D);
   }
@@ -461,7 +469,8 @@ bool serialization::needsAnonymousDeclarationNumber(const NamedDecl *D) {
   // Otherwise, we only care about anonymous class members / block-scope decls.
   // FIXME: We need to handle lambdas and blocks within inline / templated
   // variables too.
-  if (D->getDeclName() || !isa<CXXRecordDecl>(D->getLexicalDeclContext()))
+  if (D->getDeclName() || !isa<CXXRecordDecl>(D->getLexicalDeclContext())) {
     return false;
+}
   return isa<TagDecl>(D) || isa<FieldDecl>(D);
 }

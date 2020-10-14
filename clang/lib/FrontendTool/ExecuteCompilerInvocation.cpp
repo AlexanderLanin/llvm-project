@@ -82,8 +82,9 @@ CreateFrontendBaseAction(CompilerInstance &CI) {
              P->getActionType() != PluginASTAction::Cmdline) ||
             !P->ParseArgs(
                 CI,
-                CI.getFrontendOpts().PluginArgs[std::string(Plugin.getName())]))
+                CI.getFrontendOpts().PluginArgs[std::string(Plugin.getName())])) {
           return nullptr;
+}
         return std::move(P);
       }
     }
@@ -96,8 +97,9 @@ CreateFrontendBaseAction(CompilerInstance &CI) {
   case PrintPreamble:          return std::make_unique<PrintPreambleAction>();
   case PrintPreprocessedInput: {
     if (CI.getPreprocessorOutputOpts().RewriteIncludes ||
-        CI.getPreprocessorOutputOpts().RewriteImports)
+        CI.getPreprocessorOutputOpts().RewriteImports) {
       return std::make_unique<RewriteIncludesAction>();
+}
     return std::make_unique<PrintPreprocessedAction>();
   }
 
@@ -137,8 +139,9 @@ std::unique_ptr<FrontendAction>
 CreateFrontendAction(CompilerInstance &CI) {
   // Create the underlying action.
   std::unique_ptr<FrontendAction> Act = CreateFrontendBaseAction(CI);
-  if (!Act)
+  if (!Act) {
     return nullptr;
+}
 
   const FrontendOptions &FEOpts = CI.getFrontendOpts();
 
@@ -177,9 +180,10 @@ CreateFrontendAction(CompilerInstance &CI) {
 
   // If there are any AST files to merge, create a frontend action
   // adaptor to perform the merge.
-  if (!FEOpts.ASTMergeFiles.empty())
+  if (!FEOpts.ASTMergeFiles.empty()) {
     Act = std::make_unique<ASTMergeAction>(std::move(Act),
                                             FEOpts.ASTMergeFiles);
+}
 
   return Act;
 }
@@ -206,9 +210,10 @@ bool ExecuteCompilerInvocation(CompilerInstance *Clang) {
   // Load any requested plugins.
   for (const std::string &Path : Clang->getFrontendOpts().Plugins) {
     std::string Error;
-    if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path.c_str(), &Error))
+    if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path.c_str(), &Error)) {
       Clang->getDiagnostics().Report(diag::err_fe_unable_to_load_plugin)
         << Path << Error;
+}
   }
 
   // Check if any of the loaded plugins replaces the main AST action
@@ -230,8 +235,9 @@ bool ExecuteCompilerInvocation(CompilerInstance *Clang) {
     unsigned NumArgs = Clang->getFrontendOpts().LLVMArgs.size();
     auto Args = std::make_unique<const char*[]>(NumArgs + 2);
     Args[0] = "clang (LLVM option parsing)";
-    for (unsigned i = 0; i != NumArgs; ++i)
+    for (unsigned i = 0; i != NumArgs; ++i) {
       Args[i + 1] = Clang->getFrontendOpts().LLVMArgs[i].c_str();
+}
     Args[NumArgs + 1] = nullptr;
     llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get());
   }
@@ -269,15 +275,18 @@ bool ExecuteCompilerInvocation(CompilerInstance *Clang) {
 #endif
 
   // If there were errors in processing arguments, don't do anything else.
-  if (Clang->getDiagnostics().hasErrorOccurred())
+  if (Clang->getDiagnostics().hasErrorOccurred()) {
     return false;
+}
   // Create and execute the frontend action.
   std::unique_ptr<FrontendAction> Act(CreateFrontendAction(*Clang));
-  if (!Act)
+  if (!Act) {
     return false;
+}
   bool Success = Clang->ExecuteAction(*Act);
-  if (Clang->getFrontendOpts().DisableFree)
+  if (Clang->getFrontendOpts().DisableFree) {
     llvm::BuryPointer(std::move(Act));
+}
   return Success;
 }
 

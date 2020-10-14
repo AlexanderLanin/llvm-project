@@ -61,8 +61,9 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
     // Do not unique anything inside CU local functions.
     if ((Context.getTag() == dwarf::DW_TAG_namespace ||
          Context.getTag() == dwarf::DW_TAG_compile_unit) &&
-        !dwarf::toUnsigned(DIE.find(dwarf::DW_AT_external), 0))
+        !dwarf::toUnsigned(DIE.find(dwarf::DW_AT_external), 0)) {
       return PointerIntPair<DeclContext *, 1>(nullptr);
+}
     LLVM_FALLTHROUGH;
   case dwarf::DW_TAG_member:
   case dwarf::DW_TAG_namespace:
@@ -75,37 +76,42 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
     // demand. For example implicitly defined constructors are ambiguous
     // because of the way we identify contexts, and they won't be generated
     // every time everywhere.
-    if (dwarf::toUnsigned(DIE.find(dwarf::DW_AT_artificial), 0))
+    if (dwarf::toUnsigned(DIE.find(dwarf::DW_AT_artificial), 0)) {
       return PointerIntPair<DeclContext *, 1>(nullptr);
+}
     break;
   }
 
   const char *Name = DIE.getLinkageName();
   const char *ShortName = DIE.getShortName();
 
-  if (!Name)
+  if (!Name) {
     Name = ShortName;
+}
 
   StringRef NameRef;
   StringRef ShortNameRef;
   StringRef FileRef;
 
-  if (Name)
+  if (Name) {
     NameRef = StringPool.internString(Name);
-  else if (Tag == dwarf::DW_TAG_namespace)
+  } else if (Tag == dwarf::DW_TAG_namespace) {
     // FIXME: For dsymutil-classic compatibility. I think uniquing within
     // anonymous namespaces is wrong. There is no ODR guarantee there.
     NameRef = StringPool.internString("(anonymous namespace)");
+}
 
-  if (ShortName && ShortName != Name)
+  if (ShortName && ShortName != Name) {
     ShortNameRef = StringPool.internString(ShortName);
-  else
+  } else {
     ShortNameRef = NameRef;
+}
 
   if (Tag != dwarf::DW_TAG_class_type && Tag != dwarf::DW_TAG_structure_type &&
       Tag != dwarf::DW_TAG_union_type &&
-      Tag != dwarf::DW_TAG_enumeration_type && NameRef.empty())
+      Tag != dwarf::DW_TAG_enumeration_type && NameRef.empty()) {
     return PointerIntPair<DeclContext *, 1>(nullptr);
+}
 
   unsigned Line = 0;
   unsigned ByteSize = std::numeric_limits<uint32_t>::max();
@@ -129,8 +135,9 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
           // FIXME: dsymutil-classic compatibility. I'd rather not
           // unique anything in anonymous namespaces, but if we do, then
           // verify that the file and line correspond.
-          if (!Name && Tag == dwarf::DW_TAG_namespace)
+          if (!Name && Tag == dwarf::DW_TAG_namespace) {
             FileNum = 1;
+}
 
           if (LT->hasFileAtIndex(FileNum)) {
             Line = dwarf::toUnsigned(DIE.find(dwarf::DW_AT_decl_line), 0);
@@ -158,8 +165,9 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
     }
   }
 
-  if (!Line && NameRef.empty())
+  if (!Line && NameRef.empty()) {
     return PointerIntPair<DeclContext *, 1>(nullptr);
+}
 
   // We hash NameRef, which is the mangled name, in order to get most
   // overloaded functions resolve correctly.
@@ -175,8 +183,9 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
 
   // FIXME: dsymutil-classic compatibility: when we don't have a name,
   // use the filename.
-  if (Tag == dwarf::DW_TAG_namespace && NameRef == "(anonymous namespace)")
+  if (Tag == dwarf::DW_TAG_namespace && NameRef == "(anonymous namespace)") {
     Hash = hash_combine(Hash, FileRef);
+}
 
   // Now look if this context already exists.
   DeclContext Key(Hash, Line, ByteSize, Tag, NameRef, FileRef, Context);
@@ -204,8 +213,9 @@ PointerIntPair<DeclContext *, 1> DeclContextTree::getChildDeclContext(
   if ((Tag == dwarf::DW_TAG_subprogram &&
        Context.getTag() != dwarf::DW_TAG_structure_type &&
        Context.getTag() != dwarf::DW_TAG_class_type) ||
-      (Tag == dwarf::DW_TAG_union_type))
+      (Tag == dwarf::DW_TAG_union_type)) {
     return PointerIntPair<DeclContext *, 1>(*ContextIter, /* Invalid= */ 1);
+}
 
   return PointerIntPair<DeclContext *, 1>(*ContextIter);
 }

@@ -48,16 +48,18 @@ void GlobalNamesInHeadersCheck::registerMatchers(
 void GlobalNamesInHeadersCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *D = Result.Nodes.getNodeAs<Decl>("using_decl");
   // If it comes from a macro, we'll assume it is fine.
-  if (D->getBeginLoc().isMacroID())
+  if (D->getBeginLoc().isMacroID()) {
     return;
+}
 
   // Ignore if it comes from the "main" file ...
   if (Result.SourceManager->isInMainFile(
           Result.SourceManager->getExpansionLoc(D->getBeginLoc()))) {
     // unless that file is a header.
     if (!utils::isSpellingLocInHeaderFile(
-            D->getBeginLoc(), *Result.SourceManager, HeaderFileExtensions))
+            D->getBeginLoc(), *Result.SourceManager, HeaderFileExtensions)) {
       return;
+}
   }
 
   if (const auto *UsingDirective = dyn_cast<UsingDirectiveDecl>(D)) {

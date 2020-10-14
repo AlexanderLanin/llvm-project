@@ -44,22 +44,25 @@ void CopyConstructorInitCheck::check(const MatchFinder::MatchResult &Result) {
   for (const auto *Init : Ctor->inits()) {
     bool CtorInitIsWritten = Init->isWritten();
     HasWrittenInitializer = HasWrittenInitializer || CtorInitIsWritten;
-    if (!Init->isBaseInitializer())
+    if (!Init->isBaseInitializer()) {
       continue;
+}
     const Type *BaseType = Init->getBaseClass();
     // Do not do fixits if there is a type alias involved or one of the bases
     // are explicitly initialized. In the latter case we not do fixits to avoid
     // -Wreorder warnings.
-    if (const auto *TempSpecTy = dyn_cast<TemplateSpecializationType>(BaseType))
+    if (const auto *TempSpecTy = dyn_cast<TemplateSpecializationType>(BaseType)) {
       ShouldNotDoFixit = ShouldNotDoFixit || TempSpecTy->isTypeAlias();
+}
     ShouldNotDoFixit = ShouldNotDoFixit || isa<TypedefType>(BaseType);
     ShouldNotDoFixit = ShouldNotDoFixit || CtorInitIsWritten;
     const CXXRecordDecl *BaseClass =
         BaseType->getAsCXXRecordDecl()->getDefinition();
     if (BaseClass->field_empty() &&
         BaseClass->forallBases(
-            [](const CXXRecordDecl *Class) { return Class->field_empty(); }))
+            [](const CXXRecordDecl *Class) { return Class->field_empty(); })) {
       continue;
+}
     bool NonCopyableBase = false;
     for (const auto *Ctor : BaseClass->ctors()) {
       if (Ctor->isCopyConstructor() &&
@@ -68,33 +71,39 @@ void CopyConstructorInitCheck::check(const MatchFinder::MatchResult &Result) {
         break;
       }
     }
-    if (NonCopyableBase)
+    if (NonCopyableBase) {
       continue;
+}
     const auto *CExpr = dyn_cast<CXXConstructExpr>(Init->getInit());
-    if (!CExpr || !CExpr->getConstructor()->isDefaultConstructor())
+    if (!CExpr || !CExpr->getConstructor()->isDefaultConstructor()) {
       continue;
+}
     HasRelevantBaseInit = true;
     if (CtorInitIsWritten) {
-      if (!ParamName.empty())
+      if (!ParamName.empty()) {
         SafeFixIts.push_back(
             FixItHint::CreateInsertion(CExpr->getEndLoc(), ParamName));
+}
     } else {
       if (Init->getSourceLocation().isMacroID() ||
-          Ctor->getLocation().isMacroID() || ShouldNotDoFixit)
+          Ctor->getLocation().isMacroID() || ShouldNotDoFixit) {
         break;
+}
       FixItInitList += BaseClass->getNameAsString();
       FixItInitList += "(" + ParamName + "), ";
     }
   }
-  if (!HasRelevantBaseInit)
+  if (!HasRelevantBaseInit) {
     return;
+}
 
   auto Diag = diag(Ctor->getLocation(),
                    "calling a base constructor other than the copy constructor")
               << SafeFixIts;
 
-  if (FixItInitList.empty() || ParamName.empty() || ShouldNotDoFixit)
+  if (FixItInitList.empty() || ParamName.empty() || ShouldNotDoFixit) {
     return;
+}
 
   std::string FixItMsg{FixItInitList.substr(0, FixItInitList.size() - 2)};
   SourceLocation FixItLoc;

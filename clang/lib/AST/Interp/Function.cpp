@@ -36,13 +36,15 @@ SourceInfo Function::getSource(CodePtr PC) const {
   using Elem = std::pair<unsigned, SourceInfo>;
   auto It = std::lower_bound(SrcMap.begin(), SrcMap.end(), Elem{Offset, {}},
                              [](Elem A, Elem B) { return A.first < B.first; });
-  if (It == SrcMap.end() || It->first != Offset)
+  if (It == SrcMap.end() || It->first != Offset) {
     llvm::report_fatal_error("missing source location");
+}
   return It->second;
 }
 
 bool Function::isVirtual() const {
-  if (auto *M = dyn_cast<CXXMethodDecl>(F))
+  if (auto *M = dyn_cast<CXXMethodDecl>(F)) {
     return M->isVirtual();
+}
   return false;
 }

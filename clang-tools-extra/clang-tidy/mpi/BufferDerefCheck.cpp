@@ -25,12 +25,14 @@ void BufferDerefCheck::registerMatchers(MatchFinder *Finder) {
 void BufferDerefCheck::check(const MatchFinder::MatchResult &Result) {
   static ento::mpi::MPIFunctionClassifier FuncClassifier(*Result.Context);
   const auto *CE = Result.Nodes.getNodeAs<CallExpr>("CE");
-  if (!CE->getDirectCallee())
+  if (!CE->getDirectCallee()) {
     return;
+}
 
   const IdentifierInfo *Identifier = CE->getDirectCallee()->getIdentifier();
-  if (!Identifier || !FuncClassifier.isMPIType(Identifier))
+  if (!Identifier || !FuncClassifier.isMPIType(Identifier)) {
     return;
+}
 
   // These containers are used, to capture the type and expression of a buffer.
   SmallVector<const Type *, 1> BufferTypes;
@@ -44,15 +46,18 @@ void BufferDerefCheck::check(const MatchFinder::MatchResult &Result) {
     if (CE->getArg(BufferIdx)->isNullPointerConstant(
             *Result.Context, Expr::NPC_ValueDependentIsNull) ||
         tooling::fixit::getText(*CE->getArg(BufferIdx), *Result.Context) ==
-            "MPI_IN_PLACE")
+            "MPI_IN_PLACE") {
       return;
+}
 
     const Expr *ArgExpr = CE->getArg(BufferIdx);
-    if (!ArgExpr)
+    if (!ArgExpr) {
       return;
+}
     const Type *ArgType = ArgExpr->IgnoreImpCasts()->getType().getTypePtr();
-    if (!ArgType)
+    if (!ArgType) {
       return;
+}
     BufferExprs.push_back(ArgExpr);
     BufferTypes.push_back(ArgType);
   };
@@ -105,14 +110,16 @@ void BufferDerefCheck::checkBuffers(ArrayRef<const Type *> BufferTypes,
       // beginning of the array.
       if (IndirectionCount == 2 &&
           Indirections[0] == IndirectionType::Pointer &&
-          Indirections[1] == IndirectionType::Array)
+          Indirections[1] == IndirectionType::Array) {
         return;
+}
 
       // Build the indirection description in reverse order of discovery.
       std::string IndirectionDesc;
       for (auto It = Indirections.rbegin(); It != Indirections.rend(); ++It) {
-        if (!IndirectionDesc.empty())
+        if (!IndirectionDesc.empty()) {
           IndirectionDesc += "->";
+}
         if (*It == IndirectionType::Pointer) {
           IndirectionDesc += "pointer";
         } else {

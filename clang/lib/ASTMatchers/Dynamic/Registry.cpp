@@ -567,8 +567,9 @@ static llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
   unsigned Count = 0;
   for (std::set<ASTNodeKind>::const_iterator I = KS.begin(), E = KS.end();
        I != E; ++I) {
-    if (I != KS.begin())
+    if (I != KS.begin()) {
       OS << "|";
+}
     if (Count++ == 3) {
       OS << "...";
       break;
@@ -599,8 +600,9 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
     for (const ArgKind &Kind : TypeSet) {
       if (Kind.getArgKind() == Kind.AK_Matcher &&
           Ctor->isConvertibleTo(Kind.getMatcherKind()) &&
-          (Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs()))
+          (Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs())) {
         Ctor->getArgKinds(Kind.getMatcherKind(), ArgNumber, NextTypeSet);
+}
     }
     TypeSet.clear();
     TypeSet.insert(NextTypeSet.begin(), NextTypeSet.end());
@@ -623,19 +625,23 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
     std::vector<std::vector<ArgKind>> ArgsKinds(NumArgs);
     unsigned MaxSpecificity = 0;
     for (const ArgKind& Kind : AcceptedTypes) {
-      if (Kind.getArgKind() != Kind.AK_Matcher)
+      if (Kind.getArgKind() != Kind.AK_Matcher) {
         continue;
+}
       unsigned Specificity;
       ASTNodeKind LeastDerivedKind;
       if (Matcher.isConvertibleTo(Kind.getMatcherKind(), &Specificity,
                                   &LeastDerivedKind)) {
-        if (MaxSpecificity < Specificity)
+        if (MaxSpecificity < Specificity) {
           MaxSpecificity = Specificity;
+}
         RetKinds.insert(LeastDerivedKind);
-        for (unsigned Arg = 0; Arg != NumArgs; ++Arg)
+        for (unsigned Arg = 0; Arg != NumArgs; ++Arg) {
           Matcher.getArgKinds(Kind.getMatcherKind(), Arg, ArgsKinds[Arg]);
-        if (IsPolymorphic)
+}
+        if (IsPolymorphic) {
           break;
+}
       }
     }
 
@@ -648,8 +654,9 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
       } else {
         OS << "Matcher<" << RetKinds << "> " << Name << "(";
         for (const std::vector<ArgKind> &Arg : ArgsKinds) {
-          if (&Arg != &ArgsKinds[0])
+          if (&Arg != &ArgsKinds[0]) {
             OS << ", ";
+}
 
           bool FirstArgKind = true;
           std::set<ASTNodeKind> MatcherKinds;
@@ -658,27 +665,31 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
             if (AK.getArgKind() == ArgKind::AK_Matcher) {
               MatcherKinds.insert(AK.getMatcherKind());
             } else {
-              if (!FirstArgKind) OS << "|";
+              if (!FirstArgKind) { OS << "|";
+}
               FirstArgKind = false;
               OS << AK.asString();
             }
           }
           if (!MatcherKinds.empty()) {
-            if (!FirstArgKind) OS << "|";
+            if (!FirstArgKind) { OS << "|";
+}
             OS << "Matcher<" << MatcherKinds << ">";
           }
         }
       }
-      if (Matcher.isVariadic())
+      if (Matcher.isVariadic()) {
         OS << "...";
+}
       OS << ")";
 
       std::string TypedText = std::string(Name);
       TypedText += "(";
-      if (ArgsKinds.empty())
+      if (ArgsKinds.empty()) {
         TypedText += ")";
-      else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
+      } else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String) {
         TypedText += "\"";
+}
 
       Completions.emplace_back(TypedText, OS.str(), MaxSpecificity);
     }
@@ -700,7 +711,8 @@ VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
                                                ArrayRef<ParserValue> Args,
                                                Diagnostics *Error) {
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
-  if (Out.isNull()) return Out;
+  if (Out.isNull()) { return Out;
+}
 
   llvm::Optional<DynTypedMatcher> Result = Out.getSingleMatcher();
   if (Result.hasValue()) {

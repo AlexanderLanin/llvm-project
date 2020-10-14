@@ -28,8 +28,9 @@ static bool anonymousOrInlineNamespace(const NamespaceDecl &ND) {
 
 static bool singleNamedNamespaceChild(const NamespaceDecl &ND) {
   NamespaceDecl::decl_range Decls = ND.decls();
-  if (std::distance(Decls.begin(), Decls.end()) != 1)
+  if (std::distance(Decls.begin(), Decls.end()) != 1) {
     return false;
+}
 
   const auto *ChildNamespace = dyn_cast<const NamespaceDecl>(*Decls.begin());
   return ChildNamespace && !anonymousOrInlineNamespace(*ChildNamespace);
@@ -79,19 +80,23 @@ void ConcatNestedNamespacesCheck::check(
   const NamespaceDecl &ND = *Result.Nodes.getNodeAs<NamespaceDecl>("namespace");
   const SourceManager &Sources = *Result.SourceManager;
 
-  if (!locationsInSameFile(Sources, ND.getBeginLoc(), ND.getRBraceLoc()))
+  if (!locationsInSameFile(Sources, ND.getBeginLoc(), ND.getRBraceLoc())) {
     return;
+}
 
-  if (!Sources.isInMainFile(ND.getBeginLoc()))
+  if (!Sources.isInMainFile(ND.getBeginLoc())) {
     return;
+}
 
-  if (anonymousOrInlineNamespace(ND))
+  if (anonymousOrInlineNamespace(ND)) {
     return;
+}
 
   Namespaces.push_back(&ND);
 
-  if (singleNamedNamespaceChild(ND))
+  if (singleNamedNamespaceChild(ND)) {
     return;
+}
 
   SourceRange FrontReplacement(Namespaces.front()->getBeginLoc(),
                                Namespaces.back()->getLocation());
@@ -99,8 +104,9 @@ void ConcatNestedNamespacesCheck::check(
                               Namespaces.front()->getRBraceLoc());
 
   if (!alreadyConcatenated(Namespaces.size(), FrontReplacement, Sources,
-                           getLangOpts()))
+                           getLangOpts())) {
     reportDiagnostic(FrontReplacement, BackReplacement);
+}
 
   Namespaces.clear();
 }

@@ -70,28 +70,31 @@ llvm::Type *CGOpenCLRuntime::convertOpenCLSpecificType(const Type *T) {
 }
 
 llvm::Type *CGOpenCLRuntime::getPipeType(const PipeType *T) {
-  if (T->isReadOnly())
+  if (T->isReadOnly()) {
     return getPipeType(T, "opencl.pipe_ro_t", PipeROTy);
-  else
+  } else {
     return getPipeType(T, "opencl.pipe_wo_t", PipeWOTy);
+}
 }
 
 llvm::Type *CGOpenCLRuntime::getPipeType(const PipeType *T, StringRef Name,
                                          llvm::Type *&PipeTy) {
-  if (!PipeTy)
+  if (!PipeTy) {
     PipeTy = llvm::PointerType::get(llvm::StructType::create(
       CGM.getLLVMContext(), Name),
       CGM.getContext().getTargetAddressSpace(
           CGM.getContext().getOpenCLTypeAddrSpace(T)));
+}
   return PipeTy;
 }
 
 llvm::PointerType *CGOpenCLRuntime::getSamplerType(const Type *T) {
-  if (!SamplerTy)
+  if (!SamplerTy) {
     SamplerTy = llvm::PointerType::get(llvm::StructType::create(
       CGM.getLLVMContext(), "opencl.sampler_t"),
       CGM.getContext().getTargetAddressSpace(
           CGM.getContext().getOpenCLTypeAddrSpace(T)));
+}
   return SamplerTy;
 }
 

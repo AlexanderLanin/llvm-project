@@ -13,15 +13,17 @@ namespace clang {
 namespace clangd {
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, RefKind K) {
-  if (K == RefKind::Unknown)
+  if (K == RefKind::Unknown) {
     return OS << "Unknown";
+}
   static constexpr std::array<const char *, 4> Messages = {"Decl", "Def", "Ref",
                                                            "Spelled"};
   bool VisitedOnce = false;
   for (unsigned I = 0; I < Messages.size(); ++I) {
     if (static_cast<uint8_t>(K) & 1u << I) {
-      if (VisitedOnce)
+      if (VisitedOnce) {
         OS << ", ";
+}
       OS << Messages[I];
       VisitedOnce = true;
     }
@@ -45,8 +47,9 @@ RefSlab RefSlab::Builder::build() && {
   // We need to group refs by symbol and form contiguous arrays on the arena.
   std::vector<std::pair<SymbolID, const Ref *>> Flat;
   Flat.reserve(Entries.size());
-  for (const Entry &E : Entries)
+  for (const Entry &E : Entries) {
     Flat.emplace_back(E.Symbol, &E.Reference);
+}
   // Group by SymbolID.
   llvm::sort(Flat, llvm::less_first());
   std::vector<Ref> Refs;

@@ -23,13 +23,15 @@ void DefaultArgumentsDeclarationsCheck::registerMatchers(MatchFinder *Finder) {
 void DefaultArgumentsDeclarationsCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *D = Result.Nodes.getNodeAs<ParmVarDecl>("decl");
-  if (!D)
+  if (!D) {
     return;
+}
 
   SourceRange DefaultArgRange = D->getDefaultArgRange();
 
-  if (DefaultArgRange.getEnd() != D->getEndLoc())
+  if (DefaultArgRange.getEnd() != D->getEndLoc()) {
     return;
+}
 
   if (DefaultArgRange.getBegin().isMacroID()) {
     diag(D->getBeginLoc(),

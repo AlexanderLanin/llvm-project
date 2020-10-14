@@ -95,8 +95,9 @@ public:
   }
   ~ExecutionRuntimeModesRAII() {
     ExecMode = SavedExecMode;
-    if (RuntimeMode)
+    if (RuntimeMode) {
       *RuntimeMode = SavedRuntimeMode;
+}
   }
 };
 
@@ -120,20 +121,24 @@ static const ValueDecl *getPrivateItem(const Expr *RefExpr) {
   RefExpr = RefExpr->IgnoreParens();
   if (const auto *ASE = dyn_cast<ArraySubscriptExpr>(RefExpr)) {
     const Expr *Base = ASE->getBase()->IgnoreParenImpCasts();
-    while (const auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base))
+    while (const auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base)) {
       Base = TempASE->getBase()->IgnoreParenImpCasts();
+}
     RefExpr = Base;
   } else if (auto *OASE = dyn_cast<OMPArraySectionExpr>(RefExpr)) {
     const Expr *Base = OASE->getBase()->IgnoreParenImpCasts();
-    while (const auto *TempOASE = dyn_cast<OMPArraySectionExpr>(Base))
+    while (const auto *TempOASE = dyn_cast<OMPArraySectionExpr>(Base)) {
       Base = TempOASE->getBase()->IgnoreParenImpCasts();
-    while (const auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base))
+}
+    while (const auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base)) {
       Base = TempASE->getBase()->IgnoreParenImpCasts();
+}
     RefExpr = Base;
   }
   RefExpr = RefExpr->IgnoreParenImpCasts();
-  if (const auto *DE = dyn_cast<DeclRefExpr>(RefExpr))
+  if (const auto *DE = dyn_cast<DeclRefExpr>(RefExpr)) {
     return cast<ValueDecl>(DE->getDecl()->getCanonicalDecl());
+}
   const auto *ME = cast<MemberExpr>(RefExpr);
   return cast<ValueDecl>(ME->getMemberDecl()->getCanonicalDecl());
 }
@@ -145,17 +150,20 @@ static RecordDecl *buildRecordForGlobalizedVars(
     llvm::SmallDenseMap<const ValueDecl *, const FieldDecl *>
         &MappedDeclsFields, int BufSize) {
   using VarsDataTy = std::pair<CharUnits /*Align*/, const ValueDecl *>;
-  if (EscapedDecls.empty() && EscapedDeclsForTeams.empty())
+  if (EscapedDecls.empty() && EscapedDeclsForTeams.empty()) {
     return nullptr;
+}
   SmallVector<VarsDataTy, 4> GlobalizedVars;
-  for (const ValueDecl *D : EscapedDecls)
+  for (const ValueDecl *D : EscapedDecls) {
     GlobalizedVars.emplace_back(
         CharUnits::fromQuantity(std::max(
             C.getDeclAlign(D).getQuantity(),
             static_cast<CharUnits::QuantityType>(GlobalMemoryAlignment))),
         D);
-  for (const ValueDecl *D : EscapedDeclsForTeams)
+}
+  for (const ValueDecl *D : EscapedDeclsForTeams) {
     GlobalizedVars.emplace_back(C.getDeclAlign(D), D);
+}
   llvm::stable_sort(GlobalizedVars, [](VarsDataTy L, VarsDataTy R) {
     return L.first > R.first;
   });
@@ -172,10 +180,11 @@ static RecordDecl *buildRecordForGlobalizedVars(
   for (const auto &Pair : GlobalizedVars) {
     const ValueDecl *VD = Pair.second;
     QualType Type = VD->getType();
-    if (Type->isLValueReferenceType())
+    if (Type->isLValueReferenceType()) {
       Type = C.getPointerType(Type.getNonReferenceType());
-    else
+    } else {
       Type = Type.getNonReferenceType();
+}
     SourceLocation Loc = VD->getLocation();
     FieldDecl *Field;
     if (SingleEscaped.count(VD)) {
@@ -188,8 +197,9 @@ static RecordDecl *buildRecordForGlobalizedVars(
       if (VD->hasAttrs()) {
         for (specific_attr_iterator<AlignedAttr> I(VD->getAttrs().begin()),
              E(VD->getAttrs().end());
-             I != E; ++I)
+             I != E; ++I) {
           Field->addAttr(*I);
+}
       }
     } else {
       llvm::APInt ArraySize(32, BufSize);
@@ -233,28 +243,33 @@ class CheckVarsEscapingDeclContext final
   void markAsEscaped(const ValueDecl *VD) {
     // Do not globalize declare target variables.
     if (!isa<VarDecl>(VD) ||
-        OMPDeclareTargetDeclAttr::isDeclareTargetDeclaration(VD))
+        OMPDeclareTargetDeclAttr::isDeclareTargetDeclaration(VD)) {
       return;
+}
     VD = cast<ValueDecl>(VD->getCanonicalDecl());
     // Use user-specified allocation.
-    if (VD->hasAttrs() && VD->hasAttr<OMPAllocateDeclAttr>())
+    if (VD->hasAttrs() && VD->hasAttr<OMPAllocateDeclAttr>()) {
       return;
+}
     // Variables captured by value must be globalized.
     if (auto *CSI = CGF.CapturedStmtInfo) {
       if (const FieldDecl *FD = CSI->lookup(cast<VarDecl>(VD))) {
         // Check if need to capture the variable that was already captured by
         // value in the outer region.
         if (!IsForCombinedParallelRegion) {
-          if (!FD->hasAttrs())
+          if (!FD->hasAttrs()) {
             return;
+}
           const auto *Attr = FD->getAttr<OMPCaptureKindAttr>();
-          if (!Attr)
+          if (!Attr) {
             return;
+}
           if (((Attr->getCaptureKind() != OMPC_map) &&
                !isOpenMPPrivate(Attr->getCaptureKind())) ||
               ((Attr->getCaptureKind() == OMPC_map) &&
-               !FD->getType()->isAnyPointerType()))
+               !FD->getType()->isAnyPointerType())) {
             return;
+}
         }
         if (!FD->getType()->isReferenceType()) {
           assert(!VD->getType()->isVariablyModifiedType() &&
@@ -267,18 +282,21 @@ class CheckVarsEscapingDeclContext final
     }
     if ((!CGF.CapturedStmtInfo ||
          (IsForCombinedParallelRegion && CGF.CapturedStmtInfo)) &&
-        VD->getType()->isReferenceType())
+        VD->getType()->isReferenceType()) {
       // Do not globalize variables with reference type.
       return;
-    if (VD->getType()->isVariablyModifiedType())
+}
+    if (VD->getType()->isVariablyModifiedType()) {
       EscapedVariableLengthDecls.insert(VD);
-    else
+    } else {
       EscapedDecls.insert(VD);
+}
   }
 
   void VisitValueDecl(const ValueDecl *VD) {
-    if (VD->getType()->isLValueReferenceType())
+    if (VD->getType()->isLValueReferenceType()) {
       markAsEscaped(VD);
+}
     if (const auto *VarD = dyn_cast<VarDecl>(VD)) {
       if (!isa<ParmVarDecl>(VarD) && VarD->hasInit()) {
         const bool SavedAllEscaped = AllEscaped;
@@ -291,8 +309,9 @@ class CheckVarsEscapingDeclContext final
   void VisitOpenMPCapturedStmt(const CapturedStmt *S,
                                ArrayRef<OMPClause *> Clauses,
                                bool IsCombinedParallelRegion) {
-    if (!S)
+    if (!S) {
       return;
+}
     for (const CapturedStmt::Capture &C : S->captures()) {
       if (C.capturesVariable() && !C.capturesVariableByCopy()) {
         const ValueDecl *VD = C.getCapturedVar();
@@ -306,15 +325,17 @@ class CheckVarsEscapingDeclContext final
             if (!isOpenMPPrivate(C->getClauseKind()) ||
                 C->getClauseKind() == OMPC_reduction ||
                 C->getClauseKind() == OMPC_linear ||
-                C->getClauseKind() == OMPC_private)
+                C->getClauseKind() == OMPC_private) {
               continue;
+}
             ArrayRef<const Expr *> Vars;
-            if (const auto *PC = dyn_cast<OMPFirstprivateClause>(C))
+            if (const auto *PC = dyn_cast<OMPFirstprivateClause>(C)) {
               Vars = PC->getVarRefs();
-            else if (const auto *PC = dyn_cast<OMPLastprivateClause>(C))
+            } else if (const auto *PC = dyn_cast<OMPLastprivateClause>(C)) {
               Vars = PC->getVarRefs();
-            else
+            } else {
               llvm_unreachable("Unexpected clause.");
+}
             for (const auto *E : Vars) {
               const Decl *D =
                   cast<DeclRefExpr>(E)->getDecl()->getCanonicalDecl();
@@ -323,13 +344,15 @@ class CheckVarsEscapingDeclContext final
                 break;
               }
             }
-            if (IsForCombinedParallelRegion)
+            if (IsForCombinedParallelRegion) {
               break;
+}
           }
         }
         markAsEscaped(VD);
-        if (isa<OMPCapturedExprDecl>(VD))
+        if (isa<OMPCapturedExprDecl>(VD)) {
           VisitValueDecl(VD);
+}
         IsForCombinedParallelRegion = SavedIsForCombinedParallelRegion;
       }
     }
@@ -340,10 +363,11 @@ class CheckVarsEscapingDeclContext final
            "Record for globalized variables is built already.");
     ArrayRef<const ValueDecl *> EscapedDeclsForParallel, EscapedDeclsForTeams;
     unsigned WarpSize = CGF.getTarget().getGridValue(llvm::omp::GV_Warp_Size);
-    if (IsInTTDRegion)
+    if (IsInTTDRegion) {
       EscapedDeclsForTeams = EscapedDecls.getArrayRef();
-    else
+    } else {
       EscapedDeclsForParallel = EscapedDecls.getArrayRef();
+}
     GlobalizedRD = ::buildRecordForGlobalizedVars(
         CGF.getContext(), EscapedDeclsForParallel, EscapedDeclsForTeams,
         MappedDeclsFields, WarpSize);
@@ -356,17 +380,22 @@ public:
   }
   virtual ~CheckVarsEscapingDeclContext() = default;
   void VisitDeclStmt(const DeclStmt *S) {
-    if (!S)
+    if (!S) {
       return;
-    for (const Decl *D : S->decls())
-      if (const auto *VD = dyn_cast_or_null<ValueDecl>(D))
+}
+    for (const Decl *D : S->decls()) {
+      if (const auto *VD = dyn_cast_or_null<ValueDecl>(D)) {
         VisitValueDecl(VD);
+}
+}
   }
   void VisitOMPExecutableDirective(const OMPExecutableDirective *D) {
-    if (!D)
+    if (!D) {
       return;
-    if (!D->hasAssociatedStmt())
+}
+    if (!D->hasAssociatedStmt()) {
       return;
+}
     if (const auto *S =
             dyn_cast_or_null<CapturedStmt>(D->getAssociatedStmt())) {
       // Do not analyze directives that do not actually require capturing,
@@ -384,49 +413,57 @@ public:
     }
   }
   void VisitCapturedStmt(const CapturedStmt *S) {
-    if (!S)
+    if (!S) {
       return;
+}
     for (const CapturedStmt::Capture &C : S->captures()) {
       if (C.capturesVariable() && !C.capturesVariableByCopy()) {
         const ValueDecl *VD = C.getCapturedVar();
         markAsEscaped(VD);
-        if (isa<OMPCapturedExprDecl>(VD))
+        if (isa<OMPCapturedExprDecl>(VD)) {
           VisitValueDecl(VD);
+}
       }
     }
   }
   void VisitLambdaExpr(const LambdaExpr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     for (const LambdaCapture &C : E->captures()) {
       if (C.capturesVariable()) {
         if (C.getCaptureKind() == LCK_ByRef) {
           const ValueDecl *VD = C.getCapturedVar();
           markAsEscaped(VD);
-          if (E->isInitCapture(&C) || isa<OMPCapturedExprDecl>(VD))
+          if (E->isInitCapture(&C) || isa<OMPCapturedExprDecl>(VD)) {
             VisitValueDecl(VD);
+}
         }
       }
     }
   }
   void VisitBlockExpr(const BlockExpr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     for (const BlockDecl::Capture &C : E->getBlockDecl()->captures()) {
       if (C.isByRef()) {
         const VarDecl *VD = C.getVariable();
         markAsEscaped(VD);
-        if (isa<OMPCapturedExprDecl>(VD) || VD->isInitCapture())
+        if (isa<OMPCapturedExprDecl>(VD) || VD->isInitCapture()) {
           VisitValueDecl(VD);
+}
       }
     }
   }
   void VisitCallExpr(const CallExpr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     for (const Expr *Arg : E->arguments()) {
-      if (!Arg)
+      if (!Arg) {
         continue;
+}
       if (Arg->isLValue()) {
         const bool SavedAllEscaped = AllEscaped;
         AllEscaped = true;
@@ -439,20 +476,25 @@ public:
     Visit(E->getCallee());
   }
   void VisitDeclRefExpr(const DeclRefExpr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     const ValueDecl *VD = E->getDecl();
-    if (AllEscaped)
+    if (AllEscaped) {
       markAsEscaped(VD);
-    if (isa<OMPCapturedExprDecl>(VD))
+}
+    if (isa<OMPCapturedExprDecl>(VD)) {
       VisitValueDecl(VD);
-    else if (const auto *VarD = dyn_cast<VarDecl>(VD))
-      if (VarD->isInitCapture())
+    } else if (const auto *VarD = dyn_cast<VarDecl>(VD)) {
+      if (VarD->isInitCapture()) {
         VisitValueDecl(VD);
+}
+}
   }
   void VisitUnaryOperator(const UnaryOperator *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     if (E->getOpcode() == UO_AddrOf) {
       const bool SavedAllEscaped = AllEscaped;
       AllEscaped = true;
@@ -463,8 +505,9 @@ public:
     }
   }
   void VisitImplicitCastExpr(const ImplicitCastExpr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     if (E->getCastKind() == CK_ArrayToPointerDecay) {
       const bool SavedAllEscaped = AllEscaped;
       AllEscaped = true;
@@ -475,29 +518,37 @@ public:
     }
   }
   void VisitExpr(const Expr *E) {
-    if (!E)
+    if (!E) {
       return;
+}
     bool SavedAllEscaped = AllEscaped;
-    if (!E->isLValue())
+    if (!E->isLValue()) {
       AllEscaped = false;
-    for (const Stmt *Child : E->children())
-      if (Child)
+}
+    for (const Stmt *Child : E->children()) {
+      if (Child) {
         Visit(Child);
+}
+}
     AllEscaped = SavedAllEscaped;
   }
   void VisitStmt(const Stmt *S) {
-    if (!S)
+    if (!S) {
       return;
-    for (const Stmt *Child : S->children())
-      if (Child)
+}
+    for (const Stmt *Child : S->children()) {
+      if (Child) {
         Visit(Child);
+}
+}
   }
 
   /// Returns the record that handles all the escaped local variables and used
   /// instead of their original storage.
   const RecordDecl *getGlobalizedRecord(bool IsInTTDRegion) {
-    if (!GlobalizedRD)
+    if (!GlobalizedRD) {
       buildRecordForGlobalizedVars(IsInTTDRegion);
+}
     return GlobalizedRD;
   }
 
@@ -506,8 +557,9 @@ public:
     assert(GlobalizedRD &&
            "Record for globalized variables must be generated already.");
     auto I = MappedDeclsFields.find(VD);
-    if (I == MappedDeclsFields.end())
+    if (I == MappedDeclsFields.end()) {
       return nullptr;
+}
     return I->getSecond();
   }
 
@@ -628,19 +680,22 @@ static bool hasNestedSPMDDirective(ASTContext &Ctx,
     OpenMPDirectiveKind DKind = NestedDir->getDirectiveKind();
     switch (D.getDirectiveKind()) {
     case OMPD_target:
-      if (isOpenMPParallelDirective(DKind))
+      if (isOpenMPParallelDirective(DKind)) {
         return true;
+}
       if (DKind == OMPD_teams) {
         Body = NestedDir->getInnermostCapturedStmt()->IgnoreContainers(
             /*IgnoreCaptured=*/true);
-        if (!Body)
+        if (!Body) {
           return false;
+}
         ChildStmt = CGOpenMPRuntime::getSingleCompoundChild(Ctx, Body);
         if (const auto *NND =
                 dyn_cast_or_null<OMPExecutableDirective>(ChildStmt)) {
           DKind = NND->getDirectiveKind();
-          if (isOpenMPParallelDirective(DKind))
+          if (isOpenMPParallelDirective(DKind)) {
             return true;
+}
         }
       }
       return false;
@@ -828,48 +883,56 @@ static bool hasNestedLightweightDirective(ASTContext &Ctx,
     case OMPD_target:
       if (isOpenMPParallelDirective(DKind) &&
           isOpenMPWorksharingDirective(DKind) && isOpenMPLoopDirective(DKind) &&
-          hasStaticScheduling(*NestedDir))
+          hasStaticScheduling(*NestedDir)) {
         return true;
-      if (DKind == OMPD_teams_distribute_simd || DKind == OMPD_simd)
+}
+      if (DKind == OMPD_teams_distribute_simd || DKind == OMPD_simd) {
         return true;
+}
       if (DKind == OMPD_parallel) {
         Body = NestedDir->getInnermostCapturedStmt()->IgnoreContainers(
             /*IgnoreCaptured=*/true);
-        if (!Body)
+        if (!Body) {
           return false;
+}
         ChildStmt = CGOpenMPRuntime::getSingleCompoundChild(Ctx, Body);
         if (const auto *NND =
                 dyn_cast_or_null<OMPExecutableDirective>(ChildStmt)) {
           DKind = NND->getDirectiveKind();
           if (isOpenMPWorksharingDirective(DKind) &&
-              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND))
+              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND)) {
             return true;
+}
         }
       } else if (DKind == OMPD_teams) {
         Body = NestedDir->getInnermostCapturedStmt()->IgnoreContainers(
             /*IgnoreCaptured=*/true);
-        if (!Body)
+        if (!Body) {
           return false;
+}
         ChildStmt = CGOpenMPRuntime::getSingleCompoundChild(Ctx, Body);
         if (const auto *NND =
                 dyn_cast_or_null<OMPExecutableDirective>(ChildStmt)) {
           DKind = NND->getDirectiveKind();
           if (isOpenMPParallelDirective(DKind) &&
               isOpenMPWorksharingDirective(DKind) &&
-              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND))
+              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND)) {
             return true;
+}
           if (DKind == OMPD_parallel) {
             Body = NND->getInnermostCapturedStmt()->IgnoreContainers(
                 /*IgnoreCaptured=*/true);
-            if (!Body)
+            if (!Body) {
               return false;
+}
             ChildStmt = CGOpenMPRuntime::getSingleCompoundChild(Ctx, Body);
             if (const auto *NND =
                     dyn_cast_or_null<OMPExecutableDirective>(ChildStmt)) {
               DKind = NND->getDirectiveKind();
               if (isOpenMPWorksharingDirective(DKind) &&
-                  isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND))
+                  isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND)) {
                 return true;
+}
             }
           }
         }
@@ -878,28 +941,33 @@ static bool hasNestedLightweightDirective(ASTContext &Ctx,
     case OMPD_target_teams:
       if (isOpenMPParallelDirective(DKind) &&
           isOpenMPWorksharingDirective(DKind) && isOpenMPLoopDirective(DKind) &&
-          hasStaticScheduling(*NestedDir))
+          hasStaticScheduling(*NestedDir)) {
         return true;
-      if (DKind == OMPD_distribute_simd || DKind == OMPD_simd)
+}
+      if (DKind == OMPD_distribute_simd || DKind == OMPD_simd) {
         return true;
+}
       if (DKind == OMPD_parallel) {
         Body = NestedDir->getInnermostCapturedStmt()->IgnoreContainers(
             /*IgnoreCaptured=*/true);
-        if (!Body)
+        if (!Body) {
           return false;
+}
         ChildStmt = CGOpenMPRuntime::getSingleCompoundChild(Ctx, Body);
         if (const auto *NND =
                 dyn_cast_or_null<OMPExecutableDirective>(ChildStmt)) {
           DKind = NND->getDirectiveKind();
           if (isOpenMPWorksharingDirective(DKind) &&
-              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND))
+              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NND)) {
             return true;
+}
         }
       }
       return false;
     case OMPD_target_parallel:
-      if (DKind == OMPD_simd)
+      if (DKind == OMPD_simd) {
         return true;
+}
       return isOpenMPWorksharingDirective(DKind) &&
              isOpenMPLoopDirective(DKind) && hasStaticScheduling(*NestedDir);
     case OMPD_target_teams_distribute:
@@ -977,8 +1045,9 @@ static bool hasNestedLightweightDirective(ASTContext &Ctx,
 /// construct + inner loop-based construct with static scheduling.
 static bool supportsLightweightRuntime(ASTContext &Ctx,
                                        const OMPExecutableDirective &D) {
-  if (!supportsSPMDExecutionMode(Ctx, D))
+  if (!supportsSPMDExecutionMode(Ctx, D)) {
     return false;
+}
   OpenMPDirectiveKind DirectiveKind = D.getDirectiveKind();
   switch (DirectiveKind) {
   case OMPD_target:
@@ -1166,13 +1235,15 @@ void CGOpenMPRuntimeGPU::emitNonSPMDEntryHeader(CodeGenFunction &CGF,
 void CGOpenMPRuntimeGPU::emitNonSPMDEntryFooter(CodeGenFunction &CGF,
                                                   EntryFunctionState &EST) {
   IsInTargetMasterThreadRegion = false;
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
 
   emitGenericVarsEpilog(CGF);
 
-  if (!EST.ExitBB)
+  if (!EST.ExitBB) {
     EST.ExitBB = CGF.createBasicBlock(".exit");
+}
 
   llvm::BasicBlock *TerminateBB = CGF.createBasicBlock(".termination.notifier");
   CGF.EmitBranch(TerminateBB);
@@ -1276,11 +1347,13 @@ void CGOpenMPRuntimeGPU::emitSPMDEntryHeader(
 void CGOpenMPRuntimeGPU::emitSPMDEntryFooter(CodeGenFunction &CGF,
                                                EntryFunctionState &EST) {
   IsInTargetMasterThreadRegion = false;
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
 
-  if (!EST.ExitBB)
+  if (!EST.ExitBB) {
     EST.ExitBB = CGF.createBasicBlock(".exit");
+}
 
   llvm::BasicBlock *OMPDeInitBB = CGF.createBasicBlock(".omp.deinit");
   CGF.EmitBranch(OMPDeInitBB);
@@ -1451,8 +1524,9 @@ void CGOpenMPRuntimeGPU::createOffloadEntry(llvm::Constant *ID,
                                               llvm::GlobalValue::LinkageTypes) {
   // TODO: Add support for global variables on the device after declare target
   // support.
-  if (!isa<llvm::Function>(Addr))
+  if (!isa<llvm::Function>(Addr)) {
     return;
+}
   llvm::Module &M = CGM.getModule();
   llvm::LLVMContext &Ctx = CGM.getLLVMContext();
 
@@ -1471,18 +1545,20 @@ void CGOpenMPRuntimeGPU::emitTargetOutlinedFunction(
     const OMPExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
     bool IsOffloadEntry, const RegionCodeGenTy &CodeGen) {
-  if (!IsOffloadEntry) // Nothing to do.
+  if (!IsOffloadEntry) { // Nothing to do.
     return;
+}
 
   assert(!ParentName.empty() && "Invalid target region parent name!");
 
   bool Mode = supportsSPMDExecutionMode(CGM.getContext(), D);
-  if (Mode)
+  if (Mode) {
     emitSPMDKernel(D, ParentName, OutlinedFn, OutlinedFnID, IsOffloadEntry,
                    CodeGen);
-  else
+  } else {
     emitNonSPMDKernel(D, ParentName, OutlinedFn, OutlinedFnID, IsOffloadEntry,
                       CodeGen);
+}
 
   setPropertyExecutionMode(CGM, OutlinedFn->getName(), Mode);
 }
@@ -1506,8 +1582,9 @@ static const ModeFlagsTy UndefinedMode =
 unsigned CGOpenMPRuntimeGPU::getDefaultLocationReserved2Flags() const {
   switch (getExecutionMode()) {
   case EM_SPMD:
-    if (requiresFullRuntime())
+    if (requiresFullRuntime()) {
       return KMP_IDENT_SPMD_MODE & (~KMP_IDENT_SIMPLE_RT_MODE);
+}
     return KMP_IDENT_SPMD_MODE | KMP_IDENT_SIMPLE_RT_MODE;
   case EM_NonSPMD:
     assert(requiresFullRuntime() && "Expected full runtime.");
@@ -1520,16 +1597,18 @@ unsigned CGOpenMPRuntimeGPU::getDefaultLocationReserved2Flags() const {
 
 CGOpenMPRuntimeGPU::CGOpenMPRuntimeGPU(CodeGenModule &CGM)
     : CGOpenMPRuntime(CGM, "_", "$") {
-  if (!CGM.getLangOpts().OpenMPIsDevice)
+  if (!CGM.getLangOpts().OpenMPIsDevice) {
     llvm_unreachable("OpenMP NVPTX can only handle device code.");
+}
 }
 
 void CGOpenMPRuntimeGPU::emitProcBindClause(CodeGenFunction &CGF,
                                               ProcBindKind ProcBind,
                                               SourceLocation Loc) {
   // Do nothing in case of SPMD mode and L0 parallel.
-  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD)
+  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD) {
     return;
+}
 
   CGOpenMPRuntime::emitProcBindClause(CGF, ProcBind, Loc);
 }
@@ -1538,8 +1617,9 @@ void CGOpenMPRuntimeGPU::emitNumThreadsClause(CodeGenFunction &CGF,
                                                 llvm::Value *NumThreads,
                                                 SourceLocation Loc) {
   // Do nothing in case of SPMD mode and L0 parallel.
-  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD)
+  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD) {
     return;
+}
 
   CGOpenMPRuntime::emitNumThreadsClause(CGF, NumThreads, Loc);
 }
@@ -1607,15 +1687,18 @@ getDistributeLastprivateVars(ASTContext &Ctx, const OMPExecutableDirective &D,
             D.getInnermostCapturedStmt()->getCapturedStmt()->IgnoreContainers(
                 /*IgnoreCaptured=*/true))) {
       Dir = dyn_cast_or_null<OMPExecutableDirective>(S);
-      if (Dir && !isOpenMPDistributeDirective(Dir->getDirectiveKind()))
+      if (Dir && !isOpenMPDistributeDirective(Dir->getDirectiveKind())) {
         Dir = nullptr;
+}
     }
   }
-  if (!Dir)
+  if (!Dir) {
     return;
+}
   for (const auto *C : Dir->getClausesOfKind<OMPLastprivateClause>()) {
-    for (const Expr *E : C->getVarRefs())
+    for (const Expr *E : C->getVarRefs()) {
       Vars.push_back(getPrivateItem(E));
+}
   }
 }
 
@@ -1626,8 +1709,9 @@ getTeamsReductionVars(ASTContext &Ctx, const OMPExecutableDirective &D,
   assert(isOpenMPTeamsDirective(D.getDirectiveKind()) &&
          "expected teams directive.");
   for (const auto *C : D.getClausesOfKind<OMPReductionClause>()) {
-    for (const Expr *E : C->privates())
+    for (const Expr *E : C->privates()) {
       Vars.push_back(getPrivateItem(E));
+}
   }
 }
 
@@ -1641,8 +1725,9 @@ llvm::Function *CGOpenMPRuntimeGPU::emitTeamsOutlinedFunction(
   llvm::SmallDenseMap<const ValueDecl *, const FieldDecl *> MappedDeclsFields;
   unsigned WarpSize = CGM.getTarget().getGridValue(llvm::omp::GV_Warp_Size);
   // Globalize team reductions variable unconditionally in all modes.
-  if (getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD)
+  if (getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD) {
     getTeamsReductionVars(CGM.getContext(), D, LastPrivatesReductions);
+}
   if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD) {
     getDistributeLastprivateVars(CGM.getContext(), D, LastPrivatesReductions);
     if (!LastPrivatesReductions.empty()) {
@@ -1711,14 +1796,16 @@ void CGOpenMPRuntimeGPU::emitGenericVarsProlog(CodeGenFunction &CGF,
                                                  SourceLocation Loc,
                                                  bool WithSPMDCheck) {
   if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic &&
-      getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD)
+      getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD) {
     return;
+}
 
   CGBuilderTy &Bld = CGF.Builder;
 
   const auto I = FunctionGlobalizedDecls.find(CGF.CurFn);
-  if (I == FunctionGlobalizedDecls.end())
+  if (I == FunctionGlobalizedDecls.end()) {
     return;
+}
   if (const RecordDecl *GlobalizedVarsRecord = I->getSecond().GlobalRecord) {
     QualType GlobalRecTy = CGM.getContext().getRecordType(GlobalizedVarsRecord);
     QualType SecGlobalRecTy;
@@ -1960,8 +2047,9 @@ void CGOpenMPRuntimeGPU::emitGenericVarsProlog(CodeGenFunction &CGF,
         I->getSecond().MappedParams->setVarAddr(CGF, VD,
                                                 VarAddr.getAddress(CGF));
       }
-      if (IsTTD)
+      if (IsTTD) {
         ++SecIt;
+}
     }
   }
   for (const ValueDecl *VD : I->getSecond().EscapedVariableLengthDecls) {
@@ -2001,14 +2089,16 @@ void CGOpenMPRuntimeGPU::emitGenericVarsProlog(CodeGenFunction &CGF,
 void CGOpenMPRuntimeGPU::emitGenericVarsEpilog(CodeGenFunction &CGF,
                                                  bool WithSPMDCheck) {
   if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic &&
-      getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD)
+      getExecutionMode() != CGOpenMPRuntimeGPU::EM_SPMD) {
     return;
+}
 
   const auto I = FunctionGlobalizedDecls.find(CGF.CurFn);
   if (I != FunctionGlobalizedDecls.end()) {
     I->getSecond().MappedParams->restore(CGF);
-    if (!CGF.HaveInsertPoint())
+    if (!CGF.HaveInsertPoint()) {
       return;
+}
     for (llvm::Value *Addr :
          llvm::reverse(I->getSecond().EscapedVariableLengthDeclsAddrs)) {
       CGF.EmitRuntimeCall(
@@ -2069,8 +2159,9 @@ void CGOpenMPRuntimeGPU::emitTeamsCall(CodeGenFunction &CGF,
                                          SourceLocation Loc,
                                          llvm::Function *OutlinedFn,
                                          ArrayRef<llvm::Value *> CapturedVars) {
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
 
   Address ZeroAddr = CGF.CreateDefaultAlignTempAlloca(CGF.Int32Ty,
                                                       /*Name=*/".zero.addr");
@@ -2085,13 +2176,15 @@ void CGOpenMPRuntimeGPU::emitTeamsCall(CodeGenFunction &CGF,
 void CGOpenMPRuntimeGPU::emitParallelCall(
     CodeGenFunction &CGF, SourceLocation Loc, llvm::Function *OutlinedFn,
     ArrayRef<llvm::Value *> CapturedVars, const Expr *IfCond) {
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
 
-  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD)
+  if (getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD) {
     emitSPMDParallelCall(CGF, Loc, OutlinedFn, CapturedVars, IfCond);
-  else
+  } else {
     emitNonSPMDParallelCall(CGF, Loc, OutlinedFn, CapturedVars, IfCond);
+}
 }
 
 void CGOpenMPRuntimeGPU::emitNonSPMDParallelCall(
@@ -2182,10 +2275,11 @@ void CGOpenMPRuntimeGPU::emitNonSPMDParallelCall(
       for (llvm::Value *V : CapturedVars) {
         Address Dst = Bld.CreateConstInBoundsGEP(SharedArgListAddress, Idx);
         llvm::Value *PtrV;
-        if (V->getType()->isIntegerTy())
+        if (V->getType()->isIntegerTy()) {
           PtrV = Bld.CreateIntToPtr(V, CGF.VoidPtrTy);
-        else
+        } else {
           PtrV = Bld.CreatePointerBitCastOrAddrSpaceCast(V, CGF.VoidPtrTy);
+}
         CGF.EmitStoreOfScalar(PtrV, Dst, /*Volatile=*/false,
                               Ctx.getPointerType(Ctx.VoidPtrTy));
         ++Idx;
@@ -2204,9 +2298,10 @@ void CGOpenMPRuntimeGPU::emitNonSPMDParallelCall(
     // The master waits at this barrier until all workers are done.
     syncCTAThreads(CGF);
 
-    if (!CapturedVars.empty())
+    if (!CapturedVars.empty()) {
       CGF.EmitRuntimeCall(OMPBuilder.getOrCreateRuntimeFunction(
           CGM.getModule(), OMPRTL___kmpc_end_sharing_variables));
+}
 
     // Remember for post-processing in worker loop.
     Work.emplace_back(WFn);
@@ -2331,8 +2426,9 @@ void CGOpenMPRuntimeGPU::emitSPMDParallelCall(
 
 void CGOpenMPRuntimeGPU::syncCTAThreads(CodeGenFunction &CGF) {
   // Always emit simple barriers!
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
   // Build call __kmpc_barrier_simple_spmd(nullptr, 0);
   // This function does not use parameters, so we can emit just default values.
   llvm::Value *Args[] = {
@@ -2349,8 +2445,9 @@ void CGOpenMPRuntimeGPU::emitBarrierCall(CodeGenFunction &CGF,
                                            OpenMPDirectiveKind Kind, bool,
                                            bool) {
   // Always emit simple barriers!
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
   // Build call __kmpc_cancel_barrier(loc, thread_id);
   unsigned Flags = getDefaultFlagsForBarriers(Kind);
   llvm::Value *Args[] = {emitUpdateLocation(CGF, Loc, Flags),
@@ -2439,14 +2536,17 @@ static llvm::Value *castValueToType(CodeGenFunction &CGF, llvm::Value *Val,
   assert(!CGF.getContext().getTypeSizeInChars(ValTy).isZero() &&
          "Val type must sized.");
   llvm::Type *LLVMCastTy = CGF.ConvertTypeForMem(CastTy);
-  if (ValTy == CastTy)
+  if (ValTy == CastTy) {
     return Val;
+}
   if (CGF.getContext().getTypeSizeInChars(ValTy) ==
-      CGF.getContext().getTypeSizeInChars(CastTy))
+      CGF.getContext().getTypeSizeInChars(CastTy)) {
     return CGF.Builder.CreateBitCast(Val, LLVMCastTy);
-  if (CastTy->isIntegerType() && ValTy->isIntegerType())
+}
+  if (CastTy->isIntegerType() && ValTy->isIntegerType()) {
     return CGF.Builder.CreateIntCast(Val, LLVMCastTy,
                                      CastTy->hasSignedIntegerRepresentation());
+}
   Address CastItem = CGF.CreateMemTemp(CastTy);
   Address ValCastItem = CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(
       CastItem, Val->getType()->getPointerTo(CastItem.getAddressSpace()));
@@ -2514,8 +2614,9 @@ static void shuffleAndStore(CodeGenFunction &CGF, Address SrcAddr,
   Address PtrEnd = Bld.CreatePointerBitCastOrAddrSpaceCast(
       Bld.CreateConstGEP(SrcAddr, 1), CGF.VoidPtrTy);
   for (int IntSize = 8; IntSize >= 1; IntSize /= 2) {
-    if (Size < CharUnits::fromQuantity(IntSize))
+    if (Size < CharUnits::fromQuantity(IntSize)) {
       continue;
+}
     QualType IntType = CGF.getContext().getIntTypeForBitwidth(
         CGF.getContext().toBits(CharUnits::fromQuantity(IntSize)),
         /*Signed=*/1);
@@ -2784,10 +2885,11 @@ static void emitReductionListCopy(
           ScratchpadBasePtr,
           llvm::ConstantInt::get(CGM.SizeTy, GlobalMemoryAlignment));
 
-      if (IncrScratchpadDest)
+      if (IncrScratchpadDest) {
         DestBase = Address(ScratchpadBasePtr, CGF.getPointerAlign());
-      else /* IncrScratchpadSrc = true */
+      } else { /* IncrScratchpadSrc = true */
         SrcBase = Address(ScratchpadBasePtr, CGF.getPointerAlign());
+}
     }
 
     ++Idx;
@@ -2891,8 +2993,9 @@ static llvm::Value *emitInterWarpCopyFunction(CodeGenModule &CGM,
             .getQuantity();
     for (unsigned TySize = 4; TySize > 0 && RealTySize > 0; TySize /=2) {
       unsigned NumIters = RealTySize / TySize;
-      if (NumIters == 0)
+      if (NumIters == 0) {
         continue;
+}
       QualType CType = C.getIntTypeForBitwidth(
           C.toBits(CharUnits::fromQuantity(TySize)), /*Signed=*/1);
       llvm::Type *CopyType = CGF.ConvertTypeForMem(CType);
@@ -3913,8 +4016,9 @@ void CGOpenMPRuntimeGPU::emitReduction(
     CodeGenFunction &CGF, SourceLocation Loc, ArrayRef<const Expr *> Privates,
     ArrayRef<const Expr *> LHSExprs, ArrayRef<const Expr *> RHSExprs,
     ArrayRef<const Expr *> ReductionOps, ReductionOptionsTy Options) {
-  if (!CGF.HaveInsertPoint())
+  if (!CGF.HaveInsertPoint()) {
     return;
+}
 
   bool ParallelReduction = isOpenMPParallelDirective(Options.ReductionKind);
 #ifndef NDEBUG
@@ -3945,9 +4049,10 @@ void CGOpenMPRuntimeGPU::emitReduction(
   // void *RedList[<n>] = {<ReductionVars>[0], ..., <ReductionVars>[<n>-1]};
   auto Size = RHSExprs.size();
   for (const Expr *E : Privates) {
-    if (E->getType()->isVariablyModifiedType())
+    if (E->getType()->isVariablyModifiedType()) {
       // Reserve place for array size.
       ++Size;
+}
   }
   llvm::APInt ArraySize(/*unsigned int numBits=*/32, Size);
   QualType ReductionArrayTy =
@@ -4097,8 +4202,9 @@ void CGOpenMPRuntimeGPU::emitReduction(
 const VarDecl *
 CGOpenMPRuntimeGPU::translateParameter(const FieldDecl *FD,
                                        const VarDecl *NativeParam) const {
-  if (!NativeParam->getType()->isReferenceType())
+  if (!NativeParam->getType()->isReferenceType()) {
     return NativeParam;
+}
   QualType ArgType = NativeParam->getType();
   QualifierCollector QC;
   const Type *NonQualTy = QC.strip(ArgType);
@@ -4118,10 +4224,11 @@ CGOpenMPRuntimeGPU::translateParameter(const FieldDecl *FD,
   enum { NVPTX_local_addr = 5 };
   QC.addAddressSpace(getLangASFromTargetAS(NVPTX_local_addr));
   ArgType = QC.apply(CGM.getContext(), ArgType);
-  if (isa<ImplicitParamDecl>(NativeParam))
+  if (isa<ImplicitParamDecl>(NativeParam)) {
     return ImplicitParamDecl::Create(
         CGM.getContext(), /*DC=*/nullptr, NativeParam->getLocation(),
         NativeParam->getIdentifier(), ArgType, ImplicitParamDecl::Other);
+}
   return ParmVarDecl::Create(
       CGM.getContext(),
       const_cast<DeclContext *>(NativeParam->getDeclContext()),
@@ -4311,8 +4418,9 @@ llvm::Function *CGOpenMPRuntimeGPU::createParallelDataSharingWrapper(
 
 void CGOpenMPRuntimeGPU::emitFunctionProlog(CodeGenFunction &CGF,
                                               const Decl *D) {
-  if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic)
+  if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic) {
     return;
+}
 
   assert(D && "Expected function or captured|block decl.");
   assert(FunctionGlobalizedDecls.count(CGF.CurFn) == 0 &&
@@ -4329,11 +4437,13 @@ void CGOpenMPRuntimeGPU::emitFunctionProlog(CodeGenFunction &CGF,
     Body = CD->getBody();
     NeedToDelayGlobalization = CGF.CapturedStmtInfo->getKind() == CR_OpenMP;
     if (NeedToDelayGlobalization &&
-        getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD)
+        getExecutionMode() == CGOpenMPRuntimeGPU::EM_SPMD) {
       return;
+}
   }
-  if (!Body)
+  if (!Body) {
     return;
+}
   CheckVarsEscapingDeclContext VarChecker(CGF, TeamAndReductions.second);
   VarChecker.Visit(Body);
   const RecordDecl *GlobalizedVarsRecord =
@@ -4342,8 +4452,9 @@ void CGOpenMPRuntimeGPU::emitFunctionProlog(CodeGenFunction &CGF,
   TeamAndReductions.second.clear();
   ArrayRef<const ValueDecl *> EscapedVariableLengthDecls =
       VarChecker.getEscapedVariableLengthDecls();
-  if (!GlobalizedVarsRecord && EscapedVariableLengthDecls.empty())
+  if (!GlobalizedVarsRecord && EscapedVariableLengthDecls.empty()) {
     return;
+}
   auto I = FunctionGlobalizedDecls.try_emplace(CGF.CurFn).first;
   I->getSecond().MappedParams =
       std::make_unique<CodeGenFunction::OMPMapVars>();
@@ -4431,16 +4542,19 @@ Address CGOpenMPRuntimeGPU::getAddressOfLocalVariable(CodeGenFunction &CGF,
         Align);
   }
 
-  if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic)
+  if (getDataSharingMode(CGM) != CGOpenMPRuntimeGPU::Generic) {
     return Address::invalid();
+}
 
   VD = VD->getCanonicalDecl();
   auto I = FunctionGlobalizedDecls.find(CGF.CurFn);
-  if (I == FunctionGlobalizedDecls.end())
+  if (I == FunctionGlobalizedDecls.end()) {
     return Address::invalid();
+}
   auto VDI = I->getSecond().LocalVarData.find(VD);
-  if (VDI != I->getSecond().LocalVarData.end())
+  if (VDI != I->getSecond().LocalVarData.end()) {
     return VDI->second.PrivateAddr;
+}
   if (VD->hasAttrs()) {
     for (specific_attr_iterator<OMPReferencedVarAttr> IT(VD->attr_begin()),
          E(VD->attr_end());
@@ -4448,8 +4562,9 @@ Address CGOpenMPRuntimeGPU::getAddressOfLocalVariable(CodeGenFunction &CGF,
       auto VDI = I->getSecond().LocalVarData.find(
           cast<VarDecl>(cast<DeclRefExpr>(IT->getRef())->getDecl())
               ->getCanonicalDecl());
-      if (VDI != I->getSecond().LocalVarData.end())
+      if (VDI != I->getSecond().LocalVarData.end()) {
         return VDI->second.PrivateAddr;
+}
     }
   }
 
@@ -4498,22 +4613,25 @@ void CGOpenMPRuntimeGPU::adjustTargetSpecificDataForLambdas(
   for (const CapturedStmt::Capture &C : CS->captures()) {
     // Capture variables captured by reference in lambdas for target-based
     // directives.
-    if (!C.capturesVariable())
+    if (!C.capturesVariable()) {
       continue;
+}
     const VarDecl *VD = C.getCapturedVar();
     const auto *RD = VD->getType()
                          .getCanonicalType()
                          .getNonReferenceType()
                          ->getAsCXXRecordDecl();
-    if (!RD || !RD->isLambda())
+    if (!RD || !RD->isLambda()) {
       continue;
+}
     Address VDAddr = CGF.GetAddrOfLocalVar(VD);
     LValue VDLVal;
-    if (VD->getType().getCanonicalType()->isReferenceType())
+    if (VD->getType().getCanonicalType()->isReferenceType()) {
       VDLVal = CGF.EmitLoadOfReferenceLValue(VDAddr, VD->getType());
-    else
+    } else {
       VDLVal = CGF.MakeAddrLValue(
           VDAddr, VD->getType().getCanonicalType().getNonReferenceType());
+}
     llvm::DenseMap<const VarDecl *, FieldDecl *> Captures;
     FieldDecl *ThisCapture = nullptr;
     RD->getCaptureFields(Captures, ThisCapture);
@@ -4524,19 +4642,22 @@ void CGOpenMPRuntimeGPU::adjustTargetSpecificDataForLambdas(
       CGF.EmitStoreOfScalar(CXXThis, ThisLVal);
     }
     for (const LambdaCapture &LC : RD->captures()) {
-      if (LC.getCaptureKind() != LCK_ByRef)
+      if (LC.getCaptureKind() != LCK_ByRef) {
         continue;
+}
       const VarDecl *VD = LC.getCapturedVar();
-      if (!CS->capturesVariable(VD))
+      if (!CS->capturesVariable(VD)) {
         continue;
+}
       auto It = Captures.find(VD);
       assert(It != Captures.end() && "Found lambda capture without field.");
       LValue VarLVal = CGF.EmitLValueForFieldInitialization(VDLVal, It->second);
       Address VDAddr = CGF.GetAddrOfLocalVar(VD);
-      if (VD->getType().getCanonicalType()->isReferenceType())
+      if (VD->getType().getCanonicalType()->isReferenceType()) {
         VDAddr = CGF.EmitLoadOfReferenceLValue(VDAddr,
                                                VD->getType().getCanonicalType())
                      .getAddress(CGF);
+}
       CGF.EmitStoreOfScalar(VDAddr.getPointer(), VarLVal);
     }
   }
@@ -4548,8 +4669,9 @@ unsigned CGOpenMPRuntimeGPU::getDefaultFirstprivateAddressSpace() const {
 
 bool CGOpenMPRuntimeGPU::hasAllocateAttributeForGlobalVar(const VarDecl *VD,
                                                             LangAS &AS) {
-  if (!VD || !VD->hasAttr<OMPAllocateDeclAttr>())
+  if (!VD || !VD->hasAttr<OMPAllocateDeclAttr>()) {
     return false;
+}
   const auto *A = VD->getAttr<OMPAllocateDeclAttr>();
   switch(A->getAllocatorType()) {
   case OMPAllocateDeclAttr::OMPNullMemAlloc:
@@ -4577,13 +4699,15 @@ bool CGOpenMPRuntimeGPU::hasAllocateAttributeForGlobalVar(const VarDecl *VD,
 
 // Get current CudaArch and ignore any unknown values
 static CudaArch getCudaArch(CodeGenModule &CGM) {
-  if (!CGM.getTarget().hasFeature("ptx"))
+  if (!CGM.getTarget().hasFeature("ptx")) {
     return CudaArch::UNKNOWN;
+}
   for (const auto &Feature : CGM.getTarget().getTargetOpts().FeatureMap) {
     if (Feature.getValue()) {
       CudaArch Arch = StringToCudaArch(Feature.getKey());
-      if (Arch != CudaArch::UNKNOWN)
+      if (Arch != CudaArch::UNKNOWN) {
         return Arch;
+}
     }
   }
   return CudaArch::UNKNOWN;
@@ -4659,12 +4783,15 @@ void CGOpenMPRuntimeGPU::processRequiresDirective(
 /// Get number of SMs and number of blocks per SM.
 static std::pair<unsigned, unsigned> getSMsBlocksPerSM(CodeGenModule &CGM) {
   std::pair<unsigned, unsigned> Data;
-  if (CGM.getLangOpts().OpenMPCUDANumSMs)
+  if (CGM.getLangOpts().OpenMPCUDANumSMs) {
     Data.first = CGM.getLangOpts().OpenMPCUDANumSMs;
-  if (CGM.getLangOpts().OpenMPCUDABlocksPerSM)
+}
+  if (CGM.getLangOpts().OpenMPCUDABlocksPerSM) {
     Data.second = CGM.getLangOpts().OpenMPCUDABlocksPerSM;
-  if (Data.first && Data.second)
+}
+  if (Data.first && Data.second) {
     return Data;
+}
   switch (getCudaArch(CGM)) {
   case CudaArch::SM_20:
   case CudaArch::SM_21:
@@ -4732,8 +4859,9 @@ void CGOpenMPRuntimeGPU::clear() {
         "_shared_openmp_static_memory_type_$_", RecordDecl::TagKind::TTK_Union);
     SharedStaticRD->startDefinition();
     for (const GlobalPtrSizeRecsTy &Records : GlobalizedRecords) {
-      if (Records.Records.empty())
+      if (Records.Records.empty()) {
         continue;
+}
       unsigned Size = 0;
       unsigned RecAlignment = 0;
       for (const RecordDecl *RD : Records.Records) {

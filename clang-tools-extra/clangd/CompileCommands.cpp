@@ -92,9 +92,11 @@ std::string detectClangPath() {
     return resolve(std::move(*MacClang));
 #endif
   // On other platforms, just look for compilers on the PATH.
-  for (const char *Name : {"clang", "gcc", "cc"})
-    if (auto PathCC = llvm::sys::findProgramByName(Name))
+  for (const char *Name : {"clang", "gcc", "cc"}) {
+    if (auto PathCC = llvm::sys::findProgramByName(Name)) {
       return resolve(std::move(*PathCC));
+}
+}
   // Fallback: a nonexistent 'clang' binary next to clangd.
   static int Dummy;
   std::string ClangdExecutable =
@@ -113,8 +115,9 @@ const llvm::Optional<std::string> detectSysroot() {
 #endif
 
   // SDKROOT overridden in environment, respect it. Driver will set isysroot.
-  if (::getenv("SDKROOT"))
+  if (::getenv("SDKROOT")) {
     return llvm::None;
+}
   return queryXcrun({"xcrun", "--show-sdk-path"});
   return llvm::None;
 }
@@ -144,8 +147,9 @@ static std::string resolveDriver(llvm::StringRef Driver, bool FollowSymlink,
     // FIXME: we could if we had the working directory here.
     // Let's hope it's not a symlink.
     if (llvm::any_of(Driver,
-                     [](char C) { return llvm::sys::path::is_separator(C); }))
+                     [](char C) { return llvm::sys::path::is_separator(C); })) {
       return Driver.str();
+}
     // If the driver is a generic like "g++" with no path, add clang dir.
     if (ClangPath &&
         (Driver == "clang" || Driver == "clang++" || Driver == "gcc" ||
@@ -154,20 +158,22 @@ static std::string resolveDriver(llvm::StringRef Driver, bool FollowSymlink,
     }
     // Otherwise try to look it up on PATH. This won't change basename.
     auto Absolute = llvm::sys::findProgramByName(Driver);
-    if (Absolute && llvm::sys::path::is_absolute(*Absolute))
+    if (Absolute && llvm::sys::path::is_absolute(*Absolute)) {
       Driver = Storage = std::move(*Absolute);
-    else if (ClangPath) // If we don't find it, use clang dir again.
+    } else if (ClangPath) { // If we don't find it, use clang dir again.
       return SiblingOf(*ClangPath);
-    else // Nothing to do: can't find the command and no detected dir.
+    } else { // Nothing to do: can't find the command and no detected dir.
       return Driver.str();
+}
   }
 
   // Now we have an absolute path, but it may be a symlink.
   assert(llvm::sys::path::is_absolute(Driver));
   if (FollowSymlink) {
     llvm::SmallString<256> Resolved;
-    if (!llvm::sys::fs::real_path(Driver, Resolved))
+    if (!llvm::sys::fs::real_path(Driver, Resolved)) {
       return SiblingOf(Resolved);
+}
   }
   return Driver.str();
 }
@@ -187,14 +193,16 @@ CommandMangler CommandMangler::forTests() {
 }
 
 void CommandMangler::adjust(std::vector<std::string> &Cmd) const {
-  for (auto &Edit : Config::current().CompileFlags.Edits)
+  for (auto &Edit : Config::current().CompileFlags.Edits) {
     Edit(Cmd);
+}
 
   // Check whether the flag exists, either as -flag or -flag=*
   auto Has = [&](llvm::StringRef Flag) {
     for (llvm::StringRef Arg : Cmd) {
-      if (Arg.consume_front(Flag) && (Arg.empty() || Arg[0] == '='))
+      if (Arg.consume_front(Flag) && (Arg.empty() || Arg[0] == '=')) {
         return true;
+}
     }
     return false;
   };
@@ -208,8 +216,9 @@ void CommandMangler::adjust(std::vector<std::string> &Cmd) const {
   Cmd = tooling::getStripPluginsAdjuster()(Cmd, "");
   Cmd = tooling::getClangSyntaxOnlyAdjuster()(Cmd, "");
 
-  if (ResourceDir && !Has("-resource-dir"))
+  if (ResourceDir && !Has("-resource-dir")) {
     Cmd.push_back(("-resource-dir=" + *ResourceDir));
+}
 
   // Don't set `-isysroot` if it is already set or if `--sysroot` is set.
   // `--sysroot` is a superset of the `-isysroot` argument.
@@ -287,10 +296,12 @@ enum DriverMode : unsigned char {
 DriverMode getDriverMode(const std::vector<std::string> &Args) {
   DriverMode Mode = DM_GCC;
   llvm::StringRef Argv0 = Args.front();
-  if (Argv0.endswith_lower(".exe"))
+  if (Argv0.endswith_lower(".exe")) {
     Argv0 = Argv0.drop_back(strlen(".exe"));
-  if (Argv0.endswith_lower("cl"))
+}
+  if (Argv0.endswith_lower("cl")) {
     Mode = DM_CL;
+}
   for (const llvm::StringRef Arg : Args) {
     if (Arg == "--driver-mode=cl") {
       Mode = DM_CL;
@@ -309,8 +320,9 @@ unsigned char getModes(const llvm::opt::Option &Opt) {
   // Why is this so complicated?!
   // Reference is clang::driver::Driver::getIncludeExcludeOptionFlagMasks()
   unsigned char Result = DM_None;
-  if (Opt.hasFlag(driver::options::CC1Option))
+  if (Opt.hasFlag(driver::options::CC1Option)) {
     Result |= DM_CC1;
+}
   if (!Opt.hasFlag(driver::options::NoDriverOption)) {
     if (Opt.hasFlag(driver::options::CLOption)) {
       Result |= DM_CL;
@@ -365,17 +377,20 @@ llvm::ArrayRef<ArgStripper::Rule> ArgStripper::rulesFor(llvm::StringRef Arg) {
     // Iterate over distinct options (represented by the canonical alias).
     // Every spelling of this option will get the same set of rules.
     for (unsigned ID = 1 /*Skip INVALID */; ID < DriverID::LastOption; ++ID) {
-      if (PrevAlias[ID] || ID == DriverID::OPT_Xclang)
+      if (PrevAlias[ID] || ID == DriverID::OPT_Xclang) {
         continue; // Not canonical, or specially handled.
+}
       llvm::SmallVector<Rule, 8> Rules;
       // Iterate over each alias, to add rules for parsing it.
       for (unsigned A = ID; A != DriverID::OPT_INVALID; A = NextAlias[A]) {
-        if (Prefixes[A] == nullptr) // option groups.
+        if (Prefixes[A] == nullptr) { // option groups.
           continue;
+}
         auto Opt = DriverTable.getOption(A);
         // Exclude - and -foo pseudo-options.
-        if (Opt.getName().empty())
+        if (Opt.getName().empty()) {
           continue;
+}
         auto Modes = getModes(Opt);
         std::pair<unsigned, unsigned> ArgCount = getArgCount(Opt);
         // Iterate over each spelling of the alias, e.g. -foo vs --foo.
@@ -397,8 +412,9 @@ llvm::ArrayRef<ArgStripper::Rule> ArgStripper::rulesFor(llvm::StringRef Arg) {
         }
       }
       // Register the set of rules under each possible name.
-      for (const auto &R : Rules)
+      for (const auto &R : Rules) {
         Result->find(R.Text)->second.append(Rules.begin(), Rules.end());
+}
     }
 #ifndef NDEBUG
     // Dump the table and various measures of its size.
@@ -430,8 +446,9 @@ void ArgStripper::strip(llvm::StringRef Arg) {
     Rules.emplace_back();
     Rules.back().Text = Storage.back();
     Rules.back().ExactArgs = 1;
-    if (Rules.back().Text.consume_back("*"))
+    if (Rules.back().Text.consume_back("*")) {
       Rules.back().PrefixArgs = 1;
+}
     Rules.back().Modes = DM_All;
     Rules.back().Priority = -1; // Max unsigned = lowest priority.
   } else {
@@ -445,12 +462,15 @@ const ArgStripper::Rule *ArgStripper::matchingRule(llvm::StringRef Arg,
   const ArgStripper::Rule *BestRule = nullptr;
   for (const Rule &R : Rules) {
     // Rule can fail to match if...
-    if (!(R.Modes & Mode))
+    if (!(R.Modes & Mode)) {
       continue; // not applicable to current driver mode
-    if (BestRule && BestRule->Priority < R.Priority)
+}
+    if (BestRule && BestRule->Priority < R.Priority) {
       continue; // lower-priority than best candidate.
-    if (!Arg.startswith(R.Text))
+}
+    if (!Arg.startswith(R.Text)) {
       continue; // current arg doesn't match the prefix string
+}
     bool PrefixMatch = Arg.size() > R.Text.size();
     // Can rule apply as an exact/prefix match?
     if (unsigned Count = PrefixMatch ? R.PrefixArgs : R.ExactArgs) {
@@ -463,8 +483,9 @@ const ArgStripper::Rule *ArgStripper::matchingRule(llvm::StringRef Arg,
 }
 
 void ArgStripper::process(std::vector<std::string> &Args) const {
-  if (Args.empty())
+  if (Args.empty()) {
     return;
+}
 
   // We're parsing the args list in some mode (e.g. gcc-compatible) but may
   // temporarily switch to another mode with the -Xclang flag.
@@ -487,15 +508,17 @@ void ArgStripper::process(std::vector<std::string> &Args) const {
       // Advance to last arg. An arg may be foo or -Xclang foo.
       for (unsigned I = 1; Read < Args.size() && I < ArgCount; ++I) {
         ++Read;
-        if (Read < Args.size() && Args[Read] == "-Xclang")
+        if (Read < Args.size() && Args[Read] == "-Xclang") {
           ++Read;
+}
       }
     } else {
       // No match, just copy the arg through.
       WasXclang = Args[Read] == "-Xclang";
       CurrentMode = WasXclang ? DM_CC1 : MainMode;
-      if (Write != Read)
+      if (Write != Read) {
         Args[Write] = std::move(Args[Read]);
+}
       ++Write;
     }
     ++Read;

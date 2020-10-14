@@ -63,11 +63,13 @@ static bool hasDisjointValueRange(const EnumDecl *Enum1,
 
 static bool isNonPowerOf2NorNullLiteral(const EnumConstantDecl *EnumConst) {
   llvm::APSInt Val = EnumConst->getInitVal();
-  if (Val.isPowerOf2() || !Val.getBoolValue())
+  if (Val.isPowerOf2() || !Val.getBoolValue()) {
     return false;
+}
   const Expr *InitExpr = EnumConst->getInitExpr();
-  if (!InitExpr)
+  if (!InitExpr) {
     return true;
+}
   return isa<IntegerLiteral>(InitExpr->IgnoreImpCasts());
 }
 
@@ -178,22 +180,26 @@ void SuspiciousEnumUsageCheck::check(const MatchFinder::MatchResult &Result) {
     // hasDisjointValueRange function could not decide the values properly in
     // case of an empty enum.
     if (EnumDec->enumerator_begin() == EnumDec->enumerator_end() ||
-        OtherEnumDec->enumerator_begin() == OtherEnumDec->enumerator_end())
+        OtherEnumDec->enumerator_begin() == OtherEnumDec->enumerator_end()) {
       return;
+}
 
-    if (!hasDisjointValueRange(EnumDec, OtherEnumDec))
+    if (!hasDisjointValueRange(EnumDec, OtherEnumDec)) {
       diag(DiffEnumOp->getOperatorLoc(), DifferentEnumErrorMessage);
+}
     return;
   }
 
   // Case 2 and 3 only checked in strict mode. The checker tries to detect
   // suspicious bitmasks which contains values initialized by non power-of-2
   // literals.
-  if (!StrictMode)
+  if (!StrictMode) {
     return;
+}
   const auto *EnumDec = Result.Nodes.getNodeAs<EnumDecl>("enumDecl");
-  if (!isPossiblyBitMask(EnumDec))
+  if (!isPossiblyBitMask(EnumDec)) {
     return;
+}
 
   // Case 2:
   //   a. Investigating the right hand side of `+=` or `|=` operator.

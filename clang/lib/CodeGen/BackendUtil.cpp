@@ -108,8 +108,9 @@ class EmitAssemblyHelper {
   std::unique_ptr<raw_pwrite_stream> OS;
 
   TargetIRAnalysis getTargetIRAnalysis() const {
-    if (TM)
+    if (TM) {
       return TM->getTargetIRAnalysis();
+}
 
     return TargetIRAnalysis();
   }
@@ -154,8 +155,9 @@ public:
         CodeGenerationTime("codegen", "Code Generation Time") {}
 
   ~EmitAssemblyHelper() {
-    if (CodeGenOpts.DisableFree)
+    if (CodeGenOpts.DisableFree) {
       BuryPointer(std::move(TM));
+}
   }
 
   std::unique_ptr<TargetMachine> TM;
@@ -188,18 +190,21 @@ private:
 }
 
 static void addObjCARCAPElimPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
+  if (Builder.OptLevel > 0) {
     PM.add(createObjCARCAPElimPass());
+}
 }
 
 static void addObjCARCExpandPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
+  if (Builder.OptLevel > 0) {
     PM.add(createObjCARCExpandPass());
+}
 }
 
 static void addObjCARCOptPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
+  if (Builder.OptLevel > 0) {
     PM.add(createObjCARCOptPass());
+}
 }
 
 static void addAddDiscriminatorsPass(const PassManagerBuilder &Builder,
@@ -249,8 +254,9 @@ static void addSanitizerCoveragePass(const PassManagerBuilder &Builder,
 // where this is not a factor). Also, on ELF this feature requires an assembler
 // extension that only works with -integrated-as at the moment.
 static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
-  if (!CGOpts.SanitizeAddressGlobalsDeadStripping)
+  if (!CGOpts.SanitizeAddressGlobalsDeadStripping) {
     return false;
+}
   switch (T.getObjectFormat()) {
   case Triple::MachO:
   case Triple::COFF:
@@ -388,8 +394,9 @@ static void addSymbolRewriterPass(const CodeGenOptions &Opts,
   llvm::SymbolRewriter::RewriteDescriptorList DL;
 
   llvm::SymbolRewriter::RewriteMapParser MapParser;
-  for (const auto &MapFile : Opts.RewriteMapFiles)
+  for (const auto &MapFile : Opts.RewriteMapFiles) {
     MapParser.parse(MapFile, &DL);
+}
 
   MPM->add(createRewriteSymbolsPass(DL));
 }
@@ -420,17 +427,18 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
                            .Case("default", ~1u)
                            .Default(~0u);
   assert(CodeModel != ~0u && "invalid code model!");
-  if (CodeModel == ~1u)
+  if (CodeModel == ~1u) {
     return None;
+}
   return static_cast<llvm::CodeModel::Model>(CodeModel);
 }
 
 static CodeGenFileType getCodeGenFileType(BackendAction Action) {
-  if (Action == Backend_EmitObj)
+  if (Action == Backend_EmitObj) {
     return CGFT_ObjectFile;
-  else if (Action == Backend_EmitMCNull)
+  } else if (Action == Backend_EmitMCNull) {
     return CGFT_Null;
-  else {
+  } else {
     assert(Action == Backend_EmitAssembly && "Invalid action!");
     return CGFT_AssemblyFile;
   }
@@ -481,14 +489,18 @@ static void initTargetOptions(DiagnosticsEngine &Diags,
   // Set EABI version.
   Options.EABIVersion = TargetOpts.EABIVersion;
 
-  if (LangOpts.SjLjExceptions)
+  if (LangOpts.SjLjExceptions) {
     Options.ExceptionModel = llvm::ExceptionHandling::SjLj;
-  if (LangOpts.SEHExceptions)
+}
+  if (LangOpts.SEHExceptions) {
     Options.ExceptionModel = llvm::ExceptionHandling::WinEH;
-  if (LangOpts.DWARFExceptions)
+}
+  if (LangOpts.DWARFExceptions) {
     Options.ExceptionModel = llvm::ExceptionHandling::DwarfCFI;
-  if (LangOpts.WasmExceptions)
+}
+  if (LangOpts.WasmExceptions) {
     Options.ExceptionModel = llvm::ExceptionHandling::Wasm;
+}
 
   Options.NoInfsFPMath = LangOpts.NoHonorInfs;
   Options.NoNaNsFPMath = LangOpts.NoHonorNaNs;
@@ -507,11 +519,12 @@ static void initTargetOptions(DiagnosticsEngine &Diags,
   if (Options.BBSections == llvm::BasicBlockSection::List) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> MBOrErr =
         MemoryBuffer::getFile(CodeGenOpts.BBSections.substr(5));
-    if (!MBOrErr)
+    if (!MBOrErr) {
       Diags.Report(diag::err_fe_unable_to_load_basic_block_sections_file)
           << MBOrErr.getError().message();
-    else
+    } else {
       Options.BBSectionsFuncListBuf = std::move(*MBOrErr);
+}
   }
 
   Options.EnableMachineFunctionSplitter = CodeGenOpts.SplitMachineFunctions;
@@ -545,23 +558,27 @@ static void initTargetOptions(DiagnosticsEngine &Diags,
   Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
   Options.MCOptions.PreserveAsmComments = CodeGenOpts.PreserveAsmComments;
   Options.MCOptions.ABIName = TargetOpts.ABI;
-  for (const auto &Entry : HSOpts.UserEntries)
+  for (const auto &Entry : HSOpts.UserEntries) {
     if (!Entry.IsFramework &&
         (Entry.Group == frontend::IncludeDirGroup::Quoted ||
          Entry.Group == frontend::IncludeDirGroup::Angled ||
-         Entry.Group == frontend::IncludeDirGroup::System))
+         Entry.Group == frontend::IncludeDirGroup::System)) {
       Options.MCOptions.IASSearchPaths.push_back(
           Entry.IgnoreSysRoot ? Entry.Path : HSOpts.Sysroot + Entry.Path);
+}
+}
   Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
 }
 
 static Optional<GCOVOptions> getGCOVOptions(const CodeGenOptions &CodeGenOpts,
                                             const LangOptions &LangOpts) {
-  if (CodeGenOpts.DisableGCov)
+  if (CodeGenOpts.DisableGCov) {
     return None;
-  if (!CodeGenOpts.EmitGcovArcs && !CodeGenOpts.EmitGcovNotes)
+}
+  if (!CodeGenOpts.EmitGcovArcs && !CodeGenOpts.EmitGcovNotes) {
     return None;
+}
   // Not using 'GCOVOptions::getDefault' allows us to avoid exiting if
   // LLVM's -default-gcov-version flag is set to something invalid.
   GCOVOptions Options;
@@ -578,8 +595,9 @@ static Optional<GCOVOptions> getGCOVOptions(const CodeGenOptions &CodeGenOpts,
 static Optional<InstrProfOptions>
 getInstrProfOptions(const CodeGenOptions &CodeGenOpts,
                     const LangOptions &LangOpts) {
-  if (!CodeGenOpts.hasProfileClangInstr())
+  if (!CodeGenOpts.hasProfileClangInstr()) {
     return None;
+}
   InstrProfOptions Options;
   Options.NoRedZone = CodeGenOpts.DisableRedZone;
   Options.InstrProfileOutput = CodeGenOpts.InstrProfileOutput;
@@ -591,8 +609,9 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
                                       legacy::FunctionPassManager &FPM) {
   // Handle disabling of all LLVM passes, where we want to preserve the
   // internal module before any optimization.
-  if (CodeGenOpts.DisableLLVMPasses)
+  if (CodeGenOpts.DisableLLVMPasses) {
     return;
+}
 
   // Figure out TargetLibraryInfo.  This needs to be added to MPM and FPM
   // manually (and not via PMBuilder), since some passes (eg. InstrProfiling)
@@ -607,10 +626,11 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
   // testing in a distributed build environment). Drop any the type test
   // assume sequences inserted for whole program vtables so that codegen doesn't
   // complain.
-  if (!CodeGenOpts.ThinLTOIndexFile.empty())
+  if (!CodeGenOpts.ThinLTOIndexFile.empty()) {
     MPM.add(createLowerTypeTestsPass(/*ExportSummary=*/nullptr,
                                      /*ImportSummary=*/nullptr,
                                      /*DropTypeTests=*/true));
+}
 
   PassManagerBuilderWrapper PMBuilder(TargetTriple, CodeGenOpts, LangOpts);
 
@@ -650,13 +670,15 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
 
   MPM.add(new TargetLibraryInfoWrapperPass(*TLII));
 
-  if (TM)
+  if (TM) {
     TM->adjustPassManager(PMBuilder);
+}
 
   if (CodeGenOpts.DebugInfoForProfiling ||
-      !CodeGenOpts.SampleProfileFile.empty())
+      !CodeGenOpts.SampleProfileFile.empty()) {
     PMBuilder.addExtension(PassManagerBuilder::EP_EarlyAsPossible,
                            addAddDiscriminatorsPass);
+}
 
   // In ObjC ARC mode, add the main ARC optimization passes.
   if (LangOpts.ObjCAutoRefCount) {
@@ -668,8 +690,9 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
                            addObjCARCOptPass);
   }
 
-  if (LangOpts.Coroutines)
+  if (LangOpts.Coroutines) {
     addCoroutinePassesToExtensionPoints(PMBuilder);
+}
 
   if (CodeGenOpts.MemProf) {
     PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast,
@@ -752,12 +775,14 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
 
   // Set up the per-function pass manager.
   FPM.add(new TargetLibraryInfoWrapperPass(*TLII));
-  if (CodeGenOpts.VerifyModule)
+  if (CodeGenOpts.VerifyModule) {
     FPM.add(createVerifierPass());
+}
 
   // Set up the per-module pass manager.
-  if (!CodeGenOpts.RewriteMapFiles.empty())
+  if (!CodeGenOpts.RewriteMapFiles.empty()) {
     addSymbolRewriterPass(CodeGenOpts, &MPM);
+}
 
   // Add UniqueInternalLinkageNames Pass which renames internal linkage symbols
   // with unique names.
@@ -767,13 +792,15 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
 
   if (Optional<GCOVOptions> Options = getGCOVOptions(CodeGenOpts, LangOpts)) {
     MPM.add(createGCOVProfilerPass(*Options));
-    if (CodeGenOpts.getDebugInfo() == codegenoptions::NoDebugInfo)
+    if (CodeGenOpts.getDebugInfo() == codegenoptions::NoDebugInfo) {
       MPM.add(createStripSymbolsPass(true));
+}
   }
 
   if (Optional<InstrProfOptions> Options =
-          getInstrProfOptions(CodeGenOpts, LangOpts))
+          getInstrProfOptions(CodeGenOpts, LangOpts)) {
     MPM.add(createInstrProfilingLegacyPass(*Options, false));
+}
 
   bool hasIRInstr = false;
   if (CodeGenOpts.hasProfileIRInstr()) {
@@ -791,18 +818,20 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
     hasIRInstr = true;
   }
   if (hasIRInstr) {
-    if (!CodeGenOpts.InstrProfileOutput.empty())
+    if (!CodeGenOpts.InstrProfileOutput.empty()) {
       PMBuilder.PGOInstrGen = CodeGenOpts.InstrProfileOutput;
-    else
+    } else {
       PMBuilder.PGOInstrGen = std::string(DefaultProfileGenName);
+}
   }
   if (CodeGenOpts.hasProfileIRUse()) {
     PMBuilder.PGOInstrUse = CodeGenOpts.ProfileInstrumentUsePath;
     PMBuilder.EnablePGOCSInstrUse = CodeGenOpts.hasProfileCSIRUse();
   }
 
-  if (!CodeGenOpts.SampleProfileFile.empty())
+  if (!CodeGenOpts.SampleProfileFile.empty()) {
     PMBuilder.PGOSampleUse = CodeGenOpts.SampleProfileFile;
+}
 
   PMBuilder.populateFunctionPassManager(FPM);
   PMBuilder.populateModulePassManager(MPM);
@@ -830,8 +859,9 @@ void EmitAssemblyHelper::CreateTargetMachine(bool MustCreateTM) {
   std::string Triple = TheModule->getTargetTriple();
   const llvm::Target *TheTarget = TargetRegistry::lookupTarget(Triple, Error);
   if (!TheTarget) {
-    if (MustCreateTM)
+    if (MustCreateTM) {
       Diags.Report(diag::err_fe_unable_to_create_target) << Error;
+}
     return;
   }
 
@@ -864,8 +894,9 @@ bool EmitAssemblyHelper::AddEmitPasses(legacy::PassManager &CodeGenPasses,
   // Add ObjC ARC final-cleanup optimizations. This is done as part of the
   // "codegen" passes so that it isn't run multiple times when there is
   // inlining happening.
-  if (CodeGenOpts.OptimizationLevel > 0)
+  if (CodeGenOpts.OptimizationLevel > 0) {
     CodeGenPasses.add(createObjCARCContractPass());
+}
 
   if (TM->addPassesToEmitFile(CodeGenPasses, OS, DwoOS, CGFT,
                               /*DisableVerify=*/!CodeGenOpts.VerifyModule)) {
@@ -887,10 +918,12 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
                       Action != Backend_EmitLL);
   CreateTargetMachine(UsesCodeGen);
 
-  if (UsesCodeGen && !TM)
+  if (UsesCodeGen && !TM) {
     return;
-  if (TM)
+}
+  if (TM) {
     TheModule->setDataLayout(TM->createDataLayout());
+}
 
   legacy::PassManager PerModulePasses;
   PerModulePasses.add(
@@ -916,8 +949,9 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
     if (CodeGenOpts.PrepareForThinLTO && !CodeGenOpts.DisableLLVMPasses) {
       if (!CodeGenOpts.ThinLinkBitcodeFile.empty()) {
         ThinLinkOS = openOutputFile(CodeGenOpts.ThinLinkBitcodeFile);
-        if (!ThinLinkOS)
+        if (!ThinLinkOS) {
           return;
+}
       }
       TheModule->addModuleFlag(Module::Error, "EnableSplitLTOUnit",
                                CodeGenOpts.EnableSplitLTOUnit);
@@ -932,8 +966,9 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
            llvm::Triple(TheModule->getTargetTriple()).getVendor() !=
                llvm::Triple::Apple);
       if (EmitLTOSummary) {
-        if (!TheModule->getModuleFlag("ThinLTO"))
+        if (!TheModule->getModuleFlag("ThinLTO")) {
           TheModule->addModuleFlag(Module::Error, "ThinLTO", uint32_t(0));
+}
         TheModule->addModuleFlag(Module::Error, "EnableSplitLTOUnit",
                                  uint32_t(1));
       }
@@ -951,12 +986,14 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
   default:
     if (!CodeGenOpts.SplitDwarfOutput.empty()) {
       DwoOS = openOutputFile(CodeGenOpts.SplitDwarfOutput);
-      if (!DwoOS)
+      if (!DwoOS) {
         return;
+}
     }
     if (!AddEmitPasses(CodeGenPasses, Action, *OS,
-                       DwoOS ? &DwoOS->os() : nullptr))
+                       DwoOS ? &DwoOS->os() : nullptr)) {
       return;
+}
   }
 
   // Before executing passes, print the final values of the LLVM options.
@@ -970,9 +1007,11 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
     llvm::TimeTraceScope TimeScope("PerFunctionPasses");
 
     PerFunctionPasses.doInitialization();
-    for (Function &F : *TheModule)
-      if (!F.isDeclaration())
+    for (Function &F : *TheModule) {
+      if (!F.isDeclaration()) {
         PerFunctionPasses.run(F);
+}
+}
     PerFunctionPasses.doFinalization();
   }
 
@@ -988,10 +1027,12 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
     CodeGenPasses.run(*TheModule);
   }
 
-  if (ThinLinkOS)
+  if (ThinLinkOS) {
     ThinLinkOS->keep();
-  if (DwoOS)
+}
+  if (DwoOS) {
     DwoOS->keep();
+}
 }
 
 static PassBuilder::OptimizationLevel mapToLevel(const CodeGenOptions &Opts) {
@@ -1025,8 +1066,9 @@ static PassBuilder::OptimizationLevel mapToLevel(const CodeGenOptions &Opts) {
 static void addCoroutinePassesAtO0(ModulePassManager &MPM,
                                    const LangOptions &LangOpts,
                                    const CodeGenOptions &CodeGenOpts) {
-  if (!LangOpts.Coroutines)
+  if (!LangOpts.Coroutines) {
     return;
+}
 
   MPM.addPass(createModuleToFunctionPassAdaptor(CoroEarlyPass()));
 
@@ -1117,37 +1159,40 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
                           Action != Backend_EmitLL);
   CreateTargetMachine(RequiresCodeGen);
 
-  if (RequiresCodeGen && !TM)
+  if (RequiresCodeGen && !TM) {
     return;
-  if (TM)
+}
+  if (TM) {
     TheModule->setDataLayout(TM->createDataLayout());
+}
 
   Optional<PGOOptions> PGOOpt;
 
-  if (CodeGenOpts.hasProfileIRInstr())
+  if (CodeGenOpts.hasProfileIRInstr()) {
     // -fprofile-generate.
     PGOOpt = PGOOptions(CodeGenOpts.InstrProfileOutput.empty()
                             ? std::string(DefaultProfileGenName)
                             : CodeGenOpts.InstrProfileOutput,
                         "", "", PGOOptions::IRInstr, PGOOptions::NoCSAction,
                         CodeGenOpts.DebugInfoForProfiling);
-  else if (CodeGenOpts.hasProfileIRUse()) {
+  } else if (CodeGenOpts.hasProfileIRUse()) {
     // -fprofile-use.
     auto CSAction = CodeGenOpts.hasProfileCSIRUse() ? PGOOptions::CSIRUse
                                                     : PGOOptions::NoCSAction;
     PGOOpt = PGOOptions(CodeGenOpts.ProfileInstrumentUsePath, "",
                         CodeGenOpts.ProfileRemappingFile, PGOOptions::IRUse,
                         CSAction, CodeGenOpts.DebugInfoForProfiling);
-  } else if (!CodeGenOpts.SampleProfileFile.empty())
+  } else if (!CodeGenOpts.SampleProfileFile.empty()) {
     // -fprofile-sample-use
     PGOOpt =
         PGOOptions(CodeGenOpts.SampleProfileFile, "",
                    CodeGenOpts.ProfileRemappingFile, PGOOptions::SampleUse,
                    PGOOptions::NoCSAction, CodeGenOpts.DebugInfoForProfiling);
-  else if (CodeGenOpts.DebugInfoForProfiling)
+  } else if (CodeGenOpts.DebugInfoForProfiling) {
     // -fdebug-info-for-profiling
     PGOOpt = PGOOptions("", "", "", PGOOptions::NoAction,
                         PGOOptions::NoCSAction, true);
+}
 
   // Check to see if we want to generate a CS profile.
   if (CodeGenOpts.hasProfileCSIRInstr()) {
@@ -1163,13 +1208,14 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
                                      ? std::string(DefaultProfileGenName)
                                      : CodeGenOpts.InstrProfileOutput;
       PGOOpt->CSAction = PGOOptions::CSIRInstr;
-    } else
+    } else {
       PGOOpt = PGOOptions("",
                           CodeGenOpts.InstrProfileOutput.empty()
                               ? std::string(DefaultProfileGenName)
                               : CodeGenOpts.InstrProfileOutput,
                           "", PGOOptions::NoAction, PGOOptions::CSIRInstr,
                           CodeGenOpts.DebugInfoForProfiling);
+}
   }
 
   PipelineTuningOptions PTO;
@@ -1225,8 +1271,9 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
   PB.registerLoopAnalyses(LAM);
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  if (TM)
+  if (TM) {
     TM->registerPassBuilderCallbacks(PB, CodeGenOpts.DebugPassManager);
+}
 
   ModulePassManager MPM(CodeGenOpts.DebugPassManager);
 
@@ -1240,15 +1287,18 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
       // (used in testing in a distributed build environment). Drop any the type
       // test assume sequences inserted for whole program vtables so that
       // codegen doesn't complain.
-      if (!CodeGenOpts.ThinLTOIndexFile.empty())
+      if (!CodeGenOpts.ThinLTOIndexFile.empty()) {
         MPM.addPass(LowerTypeTestsPass(/*ExportSummary=*/nullptr,
                                        /*ImportSummary=*/nullptr,
                                        /*DropTypeTests=*/true));
-      if (Optional<GCOVOptions> Options = getGCOVOptions(CodeGenOpts, LangOpts))
+}
+      if (Optional<GCOVOptions> Options = getGCOVOptions(CodeGenOpts, LangOpts)) {
         MPM.addPass(GCOVProfilerPass(*Options));
+}
       if (Optional<InstrProfOptions> Options =
-              getInstrProfOptions(CodeGenOpts, LangOpts))
+              getInstrProfOptions(CodeGenOpts, LangOpts)) {
         MPM.addPass(InstrProfiling(*Options, false));
+}
 
       // Build a minimal pipeline based on the semantics required by Clang,
       // which is just that always inlining occurs. Further, disable generating
@@ -1262,16 +1312,18 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
       // At -O0, we can still do PGO. Add all the requested passes for
       // instrumentation PGO, if requested.
       if (PGOOpt && (PGOOpt->Action == PGOOptions::IRInstr ||
-                     PGOOpt->Action == PGOOptions::IRUse))
+                     PGOOpt->Action == PGOOptions::IRUse)) {
         PB.addPGOInstrPassesForO0(
             MPM, CodeGenOpts.DebugPassManager,
             /* RunProfileGen */ (PGOOpt->Action == PGOOptions::IRInstr),
             /* IsCS */ false, PGOOpt->ProfileFile,
             PGOOpt->ProfileRemappingFile);
+}
 
       // At -O0 we directly run necessary sanitizer passes.
-      if (LangOpts.Sanitize.has(SanitizerKind::LocalBounds))
+      if (LangOpts.Sanitize.has(SanitizerKind::LocalBounds)) {
         MPM.addPass(createModuleToFunctionPassAdaptor(BoundsCheckingPass()));
+}
 
       // Lastly, add semantically necessary passes for LTO.
       if (IsLTO || IsThinLTO) {
@@ -1288,12 +1340,13 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
       // (used in testing in a distributed build environment). Drop any the type
       // test assume sequences inserted for whole program vtables so that
       // codegen doesn't complain.
-      if (!CodeGenOpts.ThinLTOIndexFile.empty())
+      if (!CodeGenOpts.ThinLTOIndexFile.empty()) {
         PB.registerPipelineStartEPCallback([](ModulePassManager &MPM) {
           MPM.addPass(LowerTypeTestsPass(/*ExportSummary=*/nullptr,
                                          /*ImportSummary=*/nullptr,
                                          /*DropTypeTests=*/true));
         });
+}
 
       PB.registerPipelineStartEPCallback([](ModulePassManager &MPM) {
         MPM.addPass(createModuleToFunctionPassAdaptor(
@@ -1302,11 +1355,12 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
 
       // Register callbacks to schedule sanitizer passes at the appropriate part of
       // the pipeline.
-      if (LangOpts.Sanitize.has(SanitizerKind::LocalBounds))
+      if (LangOpts.Sanitize.has(SanitizerKind::LocalBounds)) {
         PB.registerScalarOptimizerLateEPCallback(
             [](FunctionPassManager &FPM, PassBuilder::OptimizationLevel Level) {
               FPM.addPass(BoundsCheckingPass());
             });
+}
 
       if (CodeGenOpts.SanitizeCoverageType ||
           CodeGenOpts.SanitizeCoverageIndirectCalls ||
@@ -1380,15 +1434,17 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
             });
       }
 
-      if (Optional<GCOVOptions> Options = getGCOVOptions(CodeGenOpts, LangOpts))
+      if (Optional<GCOVOptions> Options = getGCOVOptions(CodeGenOpts, LangOpts)) {
         PB.registerPipelineStartEPCallback([Options](ModulePassManager &MPM) {
           MPM.addPass(GCOVProfilerPass(*Options));
         });
+}
       if (Optional<InstrProfOptions> Options =
-              getInstrProfOptions(CodeGenOpts, LangOpts))
+              getInstrProfOptions(CodeGenOpts, LangOpts)) {
         PB.registerPipelineStartEPCallback([Options](ModulePassManager &MPM) {
           MPM.addPass(InstrProfiling(*Options, false));
         });
+}
 
       if (IsThinLTO) {
         MPM = PB.buildThinLTOPreLinkDefaultPipeline(
@@ -1408,8 +1464,9 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
 
     // Add UniqueInternalLinkageNames Pass which renames internal linkage
     // symbols with unique names.
-    if (CodeGenOpts.UniqueInternalLinkageNames)
+    if (CodeGenOpts.UniqueInternalLinkageNames) {
       MPM.addPass(UniqueInternalLinkageNamesPass());
+}
 
     if (CodeGenOpts.MemProf) {
       MPM.addPass(createModuleToFunctionPassAdaptor(MemProfilerPass()));
@@ -1420,9 +1477,10 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
       // FIXME: the backends do not handle matrix intrinsics currently. Make
       // sure they are also lowered in O0. A lightweight version of the pass
       // should run in the backend pipeline on demand.
-      if (LangOpts.MatrixTypes)
+      if (LangOpts.MatrixTypes) {
         MPM.addPass(
             createModuleToFunctionPassAdaptor(LowerMatrixIntrinsicsPass()));
+}
 
       addCoroutinePassesAtO0(MPM, LangOpts, CodeGenOpts);
       addSanitizersAtO0(MPM, TargetTriple, LangOpts, CodeGenOpts);
@@ -1444,8 +1502,9 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
     if (CodeGenOpts.PrepareForThinLTO && !CodeGenOpts.DisableLLVMPasses) {
       if (!CodeGenOpts.ThinLinkBitcodeFile.empty()) {
         ThinLinkOS = openOutputFile(CodeGenOpts.ThinLinkBitcodeFile);
-        if (!ThinLinkOS)
+        if (!ThinLinkOS) {
           return;
+}
       }
       TheModule->addModuleFlag(Module::Error, "EnableSplitLTOUnit",
                                CodeGenOpts.EnableSplitLTOUnit);
@@ -1460,8 +1519,9 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
            llvm::Triple(TheModule->getTargetTriple()).getVendor() !=
                llvm::Triple::Apple);
       if (EmitLTOSummary) {
-        if (!TheModule->getModuleFlag("ThinLTO"))
+        if (!TheModule->getModuleFlag("ThinLTO")) {
           TheModule->addModuleFlag(Module::Error, "ThinLTO", uint32_t(0));
+}
         TheModule->addModuleFlag(Module::Error, "EnableSplitLTOUnit",
                                  uint32_t(1));
       }
@@ -1482,13 +1542,15 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
         createTargetTransformInfoWrapperPass(getTargetIRAnalysis()));
     if (!CodeGenOpts.SplitDwarfOutput.empty()) {
       DwoOS = openOutputFile(CodeGenOpts.SplitDwarfOutput);
-      if (!DwoOS)
+      if (!DwoOS) {
         return;
+}
     }
     if (!AddEmitPasses(CodeGenPasses, Action, *OS,
-                       DwoOS ? &DwoOS->os() : nullptr))
+                       DwoOS ? &DwoOS->os() : nullptr)) {
       // FIXME: Should we handle this error differently?
       return;
+}
     break;
   }
 
@@ -1507,10 +1569,12 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
     CodeGenPasses.run(*TheModule);
   }
 
-  if (ThinLinkOS)
+  if (ThinLinkOS) {
     ThinLinkOS->keep();
-  if (DwoOS)
+}
+  if (DwoOS) {
     DwoOS->keep();
+}
 }
 
 static void runThinLTOBackend(
@@ -1532,8 +1596,9 @@ static void runThinLTOBackend(
   std::vector<std::unique_ptr<llvm::MemoryBuffer>> OwnedImports;
   MapVector<llvm::StringRef, llvm::BitcodeModule> ModuleMap;
   if (!lto::loadReferencedModules(*M, *CombinedIndex, ImportList, ModuleMap,
-                                  OwnedImports))
+                                  OwnedImports)) {
     return;
+}
 
   auto AddStream = [&](size_t Task) {
     return std::make_unique<lto::NativeObjectStream>(std::move(OS));
@@ -1666,10 +1731,11 @@ void clang::EmitBackendOutput(DiagnosticsEngine &Diags,
 
   EmitAssemblyHelper AsmHelper(Diags, HeaderOpts, CGOpts, TOpts, LOpts, M);
 
-  if (CGOpts.ExperimentalNewPassManager)
+  if (CGOpts.ExperimentalNewPassManager) {
     AsmHelper.EmitAssemblyWithNewPassManager(Action, std::move(OS));
-  else
+  } else {
     AsmHelper.EmitAssembly(Action, std::move(OS));
+}
 
   // Verify clang's TargetInfo DataLayout against the LLVM TargetMachine's
   // DataLayout.
@@ -1688,8 +1754,9 @@ void clang::EmitBackendOutput(DiagnosticsEngine &Diags,
 // __LLVM,__bitcode section.
 void clang::EmbedBitcode(llvm::Module *M, const CodeGenOptions &CGOpts,
                          llvm::MemoryBufferRef Buf) {
-  if (CGOpts.getEmbedBitcode() == CodeGenOptions::Embed_Off)
+  if (CGOpts.getEmbedBitcode() == CodeGenOptions::Embed_Off) {
     return;
+}
   llvm::EmbedBitcodeInModule(
       *M, Buf, CGOpts.getEmbedBitcode() != CodeGenOptions::Embed_Marker,
       CGOpts.getEmbedBitcode() != CodeGenOptions::Embed_Bitcode,

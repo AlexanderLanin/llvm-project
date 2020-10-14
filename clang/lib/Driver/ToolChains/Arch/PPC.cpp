@@ -27,10 +27,11 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
 
     if (CPUName == "native") {
       std::string CPU = std::string(llvm::sys::getHostCPUName());
-      if (!CPU.empty() && CPU != "generic")
+      if (!CPU.empty() && CPU != "generic") {
         return CPU;
-      else
+      } else {
         return "";
+}
     }
 
     return llvm::StringSwitch<const char *>(CPUName)
@@ -107,29 +108,34 @@ const char *ppc::getPPCAsmModeForCPU(StringRef Name) {
 void ppc::getPPCTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                                const ArgList &Args,
                                std::vector<StringRef> &Features) {
-  if (Triple.getSubArch() == llvm::Triple::PPCSubArch_spe)
+  if (Triple.getSubArch() == llvm::Triple::PPCSubArch_spe) {
     Features.push_back("+spe");
+}
 
   handleTargetFeaturesGroup(Args, Features, options::OPT_m_ppc_Features_Group);
 
   ppc::FloatABI FloatABI = ppc::getPPCFloatABI(D, Args);
-  if (FloatABI == ppc::FloatABI::Soft)
+  if (FloatABI == ppc::FloatABI::Soft) {
     Features.push_back("-hard-float");
+}
 
   ppc::ReadGOTPtrMode ReadGOT = ppc::getPPCReadGOTPtrMode(D, Triple, Args);
-  if (ReadGOT == ppc::ReadGOTPtrMode::SecurePlt)
+  if (ReadGOT == ppc::ReadGOTPtrMode::SecurePlt) {
     Features.push_back("+secure-plt");
+}
 }
 
 ppc::ReadGOTPtrMode ppc::getPPCReadGOTPtrMode(const Driver &D, const llvm::Triple &Triple,
                                               const ArgList &Args) {
-  if (Args.getLastArg(options::OPT_msecure_plt))
+  if (Args.getLastArg(options::OPT_msecure_plt)) {
     return ppc::ReadGOTPtrMode::SecurePlt;
+}
   if ((Triple.isOSFreeBSD() && Triple.getOSMajorVersion() >= 13) ||
-      Triple.isOSNetBSD() || Triple.isOSOpenBSD() || Triple.isMusl())
+      Triple.isOSNetBSD() || Triple.isOSOpenBSD() || Triple.isMusl()) {
     return ppc::ReadGOTPtrMode::SecurePlt;
-  else
+  } else {
     return ppc::ReadGOTPtrMode::Bss;
+}
 }
 
 ppc::FloatABI ppc::getPPCFloatABI(const Driver &D, const ArgList &Args) {
@@ -137,11 +143,11 @@ ppc::FloatABI ppc::getPPCFloatABI(const Driver &D, const ArgList &Args) {
   if (Arg *A =
           Args.getLastArg(options::OPT_msoft_float, options::OPT_mhard_float,
                           options::OPT_mfloat_abi_EQ)) {
-    if (A->getOption().matches(options::OPT_msoft_float))
+    if (A->getOption().matches(options::OPT_msoft_float)) {
       ABI = ppc::FloatABI::Soft;
-    else if (A->getOption().matches(options::OPT_mhard_float))
+    } else if (A->getOption().matches(options::OPT_mhard_float)) {
       ABI = ppc::FloatABI::Hard;
-    else {
+    } else {
       ABI = llvm::StringSwitch<ppc::FloatABI>(A->getValue())
                 .Case("soft", ppc::FloatABI::Soft)
                 .Case("hard", ppc::FloatABI::Hard)

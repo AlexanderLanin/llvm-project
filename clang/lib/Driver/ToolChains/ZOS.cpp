@@ -28,6 +28,7 @@ void ZOS::addClangTargetOptions(const ArgList &DriverArgs,
   // Pass "-faligned-alloc-unavailable" only when the user hasn't manually
   // enabled or disabled aligned allocations.
   if (!DriverArgs.hasArgNoClaim(options::OPT_faligned_allocation,
-                                options::OPT_fno_aligned_allocation))
+                                options::OPT_fno_aligned_allocation)) {
     CC1Args.push_back("-faligned-alloc-unavailable");
+}
 }

@@ -37,8 +37,9 @@ void cleanupBrief(std::string &S) {
       PrevWasSpace = false;
     }
   }
-  if (O != S.begin() && *(O - 1) == ' ')
+  if (O != S.begin() && *(O - 1) == ' ') {
     --O;
+}
 
   S.resize(O - S.begin());
 }
@@ -46,8 +47,9 @@ void cleanupBrief(std::string &S) {
 bool isWhitespace(StringRef Text) {
   for (StringRef::const_iterator I = Text.begin(), E = Text.end();
        I != E; ++I) {
-    if (!isWhitespace(*I))
+    if (!isWhitespace(*I)) {
       return false;
+}
   }
   return true;
 }
@@ -68,10 +70,11 @@ std::string BriefParser::Parse() {
 
   while (Tok.isNot(tok::eof)) {
     if (Tok.is(tok::text)) {
-      if (InFirstParagraph || InBrief)
+      if (InFirstParagraph || InBrief) {
         FirstParagraphOrBrief += Tok.getText();
-      else if (InReturns)
+      } else if (InReturns) {
         ReturnsParagraph += Tok.getText();
+}
       ConsumeToken();
       continue;
     }
@@ -96,16 +99,18 @@ std::string BriefParser::Parse() {
       if (Info->IsBlockCommand) {
         // We found an implicit paragraph end.
         InFirstParagraph = false;
-        if (InBrief)
+        if (InBrief) {
           break;
+}
       }
     }
 
     if (Tok.is(tok::newline)) {
-      if (InFirstParagraph || InBrief)
+      if (InFirstParagraph || InBrief) {
         FirstParagraphOrBrief += ' ';
-      else if (InReturns)
+      } else if (InReturns) {
         ReturnsParagraph += ' ';
+}
       ConsumeToken();
 
       // If the next token is a whitespace only text, ignore it.  Thus we allow
@@ -114,8 +119,9 @@ std::string BriefParser::Parse() {
       // We don't need to add a space to the parsed text because we just added
       // a space for the newline.
       if (Tok.is(tok::text)) {
-        if (isWhitespace(Tok.getText()))
+        if (isWhitespace(Tok.getText())) {
           ConsumeToken();
+}
       }
 
       if (Tok.is(tok::newline)) {
@@ -124,11 +130,13 @@ std::string BriefParser::Parse() {
         // \command or its equivalent was explicitly used.
         // Stop scanning text because an explicit \paragraph is the
         // preffered one.
-        if (InBrief)
+        if (InBrief) {
           break;
+}
         // End first paragraph if we found some non-whitespace text.
-        if (InFirstParagraph && !isWhitespace(FirstParagraphOrBrief))
+        if (InFirstParagraph && !isWhitespace(FirstParagraphOrBrief)) {
           InFirstParagraph = false;
+}
         // End the \\returns paragraph because we found the paragraph end.
         InReturns = false;
       }
@@ -140,8 +148,9 @@ std::string BriefParser::Parse() {
   }
 
   cleanupBrief(FirstParagraphOrBrief);
-  if (!FirstParagraphOrBrief.empty())
+  if (!FirstParagraphOrBrief.empty()) {
     return FirstParagraphOrBrief;
+}
 
   cleanupBrief(ReturnsParagraph);
   return ReturnsParagraph;

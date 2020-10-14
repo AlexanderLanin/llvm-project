@@ -31,17 +31,19 @@ StringRef QueryParser::lexWord() {
     return StringRef(" \t\v\f\r").contains(c);
   });
 
-  if (Line.empty())
+  if (Line.empty()) {
     // Even though the Line is empty, it contains a pointer and
     // a (zero) length. The pointer is used in the LexOrCompleteWord
     // code completion.
     return Line;
+}
 
   StringRef Word;
-  if (Line.front() == '#')
+  if (Line.front() == '#') {
     Word = Line.substr(0, 1);
-  else
+  } else {
     Word = Line.take_until(isWhitespace);
+}
 
   Line = Line.drop_front(Word.size());
   return Word;
@@ -66,24 +68,26 @@ template <typename T> struct QueryParser::LexOrCompleteWord {
         WordCompletionPos(StringRef::npos) {
     OutWord = Word;
     if (P->CompletionPos && P->CompletionPos <= Word.data() + Word.size()) {
-      if (P->CompletionPos < Word.data())
+      if (P->CompletionPos < Word.data()) {
         WordCompletionPos = 0;
-      else
+      } else {
         WordCompletionPos = P->CompletionPos - Word.data();
+}
     }
   }
 
   LexOrCompleteWord &Case(llvm::StringLiteral CaseStr, const T &Value,
                           bool IsCompletion = true) {
 
-    if (WordCompletionPos == StringRef::npos)
+    if (WordCompletionPos == StringRef::npos) {
       Switch.Case(CaseStr, Value);
-    else if (CaseStr.size() != 0 && IsCompletion && WordCompletionPos <= CaseStr.size() &&
+    } else if (CaseStr.size() != 0 && IsCompletion && WordCompletionPos <= CaseStr.size() &&
              CaseStr.substr(0, WordCompletionPos) ==
-                 Word.substr(0, WordCompletionPos))
+                 Word.substr(0, WordCompletionPos)) {
       P->Completions.push_back(LineEditor::Completion(
           (CaseStr.substr(WordCompletionPos) + " ").str(),
           std::string(CaseStr)));
+}
     return *this;
   }
 
@@ -153,9 +157,9 @@ QueryRef QueryParser::endQuery(QueryRef Q) {
 
   if ((!ExtraTrimmed.empty() && ExtraTrimmed[0] == '\n') ||
       (ExtraTrimmed.size() >= 2 && ExtraTrimmed[0] == '\r' &&
-       ExtraTrimmed[1] == '\n'))
+       ExtraTrimmed[1] == '\n')) {
     Q->RemainingContent = Extra;
-  else {
+  } else {
     StringRef TrailingWord = lexWord();
     if (!TrailingWord.empty() && TrailingWord.front() == '#') {
       Line = Line.drop_until([](char c) { return c == '\n'; });
@@ -234,8 +238,9 @@ QueryRef QueryParser::doParse() {
   case PQK_NoOp:
     Line = Line.drop_until([](char c) { return c == '\n'; });
     Line = Line.drop_while([](char c) { return c == '\n'; });
-    if (Line.empty())
+    if (Line.empty()) {
       return new NoOpQuery;
+}
     return doParse();
 
   case PQK_Help:
@@ -247,11 +252,13 @@ QueryRef QueryParser::doParse() {
   case PQK_Let: {
     StringRef Name = lexWord();
 
-    if (Name.empty())
+    if (Name.empty()) {
       return new InvalidQuery("expected variable name");
+}
 
-    if (CompletionPos)
+    if (CompletionPos) {
       return completeMatcherExpression();
+}
 
     Diagnostics Diag;
     ast_matchers::dynamic::VariantValue Value;
@@ -266,8 +273,9 @@ QueryRef QueryParser::doParse() {
   }
 
   case PQK_Match: {
-    if (CompletionPos)
+    if (CompletionPos) {
       return completeMatcherExpression();
+}
 
     Diagnostics Diag;
     auto MatcherSource = Line.ltrim();
@@ -293,10 +301,12 @@ QueryRef QueryParser::doParse() {
             .Case("print-matcher", PQV_PrintMatcher)
             .Case("traversal", PQV_Traversal)
             .Default(PQV_Invalid);
-    if (VarStr.empty())
+    if (VarStr.empty()) {
       return new InvalidQuery("expected variable name");
-    if (Var == PQV_Invalid)
+}
+    if (Var == PQV_Invalid) {
       return new InvalidQuery("unknown variable: '" + VarStr + "'");
+}
 
     QueryRef Q;
     switch (Var) {
@@ -325,27 +335,31 @@ QueryRef QueryParser::doParse() {
         LexOrCompleteWord<ParsedQueryVariable>(this, VarStr)
             .Case("output", PQV_Output)
             .Default(PQV_Invalid);
-    if (VarStr.empty())
+    if (VarStr.empty()) {
       return new InvalidQuery("expected variable name");
-    if (Var == PQV_Invalid)
+}
+    if (Var == PQV_Invalid) {
       return new InvalidQuery("unknown variable: '" + VarStr + "'");
+}
 
     QueryRef Q;
 
-    if (QKind == PQK_Enable)
+    if (QKind == PQK_Enable) {
       Q = parseSetOutputKind<EnableOutputQuery>();
-    else if (QKind == PQK_Disable)
+    } else if (QKind == PQK_Disable) {
       Q = parseSetOutputKind<DisableOutputQuery>();
-    else
+    } else {
       llvm_unreachable("Invalid query kind");
+}
     return endQuery(Q);
   }
 
   case PQK_Unlet: {
     StringRef Name = lexWord();
 
-    if (Name.empty())
+    if (Name.empty()) {
       return new InvalidQuery("expected variable name");
+}
 
     return endQuery(new LetQuery(Name, VariantValue()));
   }

@@ -141,8 +141,9 @@ extractSystemIncludes(PathRef Driver, llvm::StringRef Lang,
           llvm::find_if(ArgsToPreserve, [&Arg](llvm::StringRef S) {
             return Arg.startswith(S);
           });
-      if (Found == std::end(ArgsToPreserve))
+      if (Found == std::end(ArgsToPreserve)) {
         continue;
+}
       Arg = Arg.drop_front(Found->size());
       if (Arg.empty() && I + 1 < E) {
         Args.push_back(CommandLine[I]);
@@ -216,8 +217,9 @@ llvm::Regex convertGlobsToRegex(llvm::ArrayRef<std::string> Globs) {
   assert(!Globs.empty() && "Globs cannot be empty!");
   std::vector<std::string> RegTexts;
   RegTexts.reserve(Globs.size());
-  for (llvm::StringRef Glob : Globs)
+  for (llvm::StringRef Glob : Globs) {
     RegTexts.push_back(convertGlobToRegex(Glob));
+}
 
   llvm::Regex Reg(llvm::join(RegTexts, "|"));
   assert(Reg.isValid(RegTexts.front()) &&
@@ -244,16 +246,18 @@ public:
   llvm::Optional<tooling::CompileCommand>
   getCompileCommand(PathRef File) const override {
     auto Cmd = Base->getCompileCommand(File);
-    if (!Cmd || Cmd->CommandLine.empty())
+    if (!Cmd || Cmd->CommandLine.empty()) {
       return Cmd;
+}
 
     llvm::StringRef Lang;
     for (size_t I = 0, E = Cmd->CommandLine.size(); I < E; ++I) {
       llvm::StringRef Arg = Cmd->CommandLine[I];
-      if (Arg == "-x" && I + 1 < E)
+      if (Arg == "-x" && I + 1 < E) {
         Lang = Cmd->CommandLine[I + 1];
-      else if (Arg.startswith("-x"))
+      } else if (Arg.startswith("-x")) {
         Lang = Arg.drop_front(2).trim();
+}
     }
     if (Lang.empty()) {
       llvm::StringRef Ext = llvm::sys::path::extension(File).trim('.');
@@ -295,8 +299,9 @@ std::unique_ptr<GlobalCompilationDatabase>
 getQueryDriverDatabase(llvm::ArrayRef<std::string> QueryDriverGlobs,
                        std::unique_ptr<GlobalCompilationDatabase> Base) {
   assert(Base && "Null base to SystemIncludeExtractor");
-  if (QueryDriverGlobs.empty())
+  if (QueryDriverGlobs.empty()) {
     return Base;
+}
   return std::make_unique<QueryDriverDatabase>(QueryDriverGlobs,
                                                std::move(Base));
 }

@@ -74,10 +74,11 @@ void ExprEngine::performTrivialCopy(NodeBuilder &Bldr, ExplodedNode *Pred,
 
   // If the value being copied is not unknown, load from its location to get
   // an aggregate rvalue.
-  if (Optional<Loc> L = V.getAs<Loc>())
+  if (Optional<Loc> L = V.getAs<Loc>()) {
     V = Pred->getState()->getSVal(*L);
-  else
+  } else {
     assert(V.isUnknownOrUndef());
+}
 
   const Expr *CallExpr = Call.getOriginExpr();
   evalBind(Dst, CallExpr, Pred, ThisVal, V, true);
@@ -86,10 +87,11 @@ void ExprEngine::performTrivialCopy(NodeBuilder &Bldr, ExplodedNode *Pred,
   for (ExplodedNodeSet::iterator I = Dst.begin(), E = Dst.end();
        I != E; ++I) {
     ProgramStateRef State = (*I)->getState();
-    if (AlwaysReturnsLValue)
+    if (AlwaysReturnsLValue) {
       State = State->BindExpr(CallExpr, LCtx, ThisVal);
-    else
+    } else {
       State = bindReturnValue(Call, LCtx, State);
+}
     Bldr.generateNode(PS, State, *I);
   }
 }
@@ -144,8 +146,9 @@ SVal ExprEngine::computeObjectUnderConstruction(
                                        Init->isBaseVirtual());
         return SVB.makeLoc(BaseReg);
       }
-      if (Init->isDelegatingInitializer())
+      if (Init->isDelegatingInitializer()) {
         return ThisVal;
+}
 
       const ValueDecl *Field;
       SVal FieldVal;
@@ -250,8 +253,9 @@ SVal ExprEngine::computeObjectUnderConstruction(
       // FIXME: This definition of "copy elision has not failed" is unreliable.
       // It doesn't indicate that the constructor will actually be inlined
       // later; this is still up to evalCall() to decide.
-      if (!CallOpts.IsCtorOrDtorWithImproperlyModeledTargetRegion)
+      if (!CallOpts.IsCtorOrDtorWithImproperlyModeledTargetRegion) {
         return V;
+}
 
       // Copy elision failed. Revert the changes and proceed as if we have
       // a simple temporary.
@@ -278,8 +282,9 @@ SVal ExprEngine::computeObjectUnderConstruction(
         }
 
         if (MTE->getStorageDuration() == SD_Static ||
-            MTE->getStorageDuration() == SD_Thread)
+            MTE->getStorageDuration() == SD_Thread) {
           return loc::MemRegionVal(MRMgr.getCXXStaticTempObjectRegion(E));
+}
       }
 
       return loc::MemRegionVal(MRMgr.getCXXTempObjectRegion(E, LCtx));
@@ -298,8 +303,9 @@ SVal ExprEngine::computeObjectUnderConstruction(
             Caller->getCalleeStackFrame(currBldrCtx->blockCount());
         // Return early if we are unable to reliably foresee
         // the future stack frame.
-        if (!FutureSFC)
+        if (!FutureSFC) {
           return None;
+}
 
         // This should be equivalent to Caller->getDecl() for now, but
         // FutureSFC->getDecl() is likely to support better stuff (like
@@ -307,41 +313,46 @@ SVal ExprEngine::computeObjectUnderConstruction(
         const Decl *CalleeD = FutureSFC->getDecl();
 
         // FIXME: Support for variadic arguments is not implemented here yet.
-        if (CallEvent::isVariadic(CalleeD))
+        if (CallEvent::isVariadic(CalleeD)) {
           return None;
+}
 
         // Operator arguments do not correspond to operator parameters
         // because this-argument is implemented as a normal argument in
         // operator call expressions but not in operator declarations.
         const TypedValueRegion *TVR = Caller->getParameterLocation(
             *Caller->getAdjustedParameterIndex(Idx), currBldrCtx->blockCount());
-        if (!TVR)
+        if (!TVR) {
           return None;
+}
 
         return loc::MemRegionVal(TVR);
       };
 
       if (const auto *CE = dyn_cast<CallExpr>(E)) {
         CallEventRef<> Caller = CEMgr.getSimpleCall(CE, State, LCtx);
-        if (Optional<SVal> V = getArgLoc(Caller))
+        if (Optional<SVal> V = getArgLoc(Caller)) {
           return *V;
-        else
+        } else {
           break;
+}
       } else if (const auto *CCE = dyn_cast<CXXConstructExpr>(E)) {
         // Don't bother figuring out the target region for the future
         // constructor because we won't need it.
         CallEventRef<> Caller =
             CEMgr.getCXXConstructorCall(CCE, /*Target=*/nullptr, State, LCtx);
-        if (Optional<SVal> V = getArgLoc(Caller))
+        if (Optional<SVal> V = getArgLoc(Caller)) {
           return *V;
-        else
+        } else {
           break;
+}
       } else if (const auto *ME = dyn_cast<ObjCMessageExpr>(E)) {
         CallEventRef<> Caller = CEMgr.getObjCMethodCall(ME, State, LCtx);
-        if (Optional<SVal> V = getArgLoc(Caller))
+        if (Optional<SVal> V = getArgLoc(Caller)) {
           return *V;
-        else
+        } else {
           break;
+}
       }
     }
     } // switch (CC->getKind())
@@ -420,13 +431,15 @@ ProgramStateRef ExprEngine::updateObjectsUnderConstruction(
             State, TCC->getConstructorAfterElision(), LCtx, V);
 
         // Remember that we've elided the destructor.
-        if (const auto *BTE = TCC->getCXXBindTemporaryExpr())
+        if (const auto *BTE = TCC->getCXXBindTemporaryExpr()) {
           State = elideDestructor(State, BTE, LCtx);
+}
 
         // Instead of materialization, shamelessly return
         // the final object destination.
-        if (const auto *MTE = TCC->getMaterializedTemporaryExpr())
+        if (const auto *MTE = TCC->getMaterializedTemporaryExpr()) {
           State = addObjectUnderConstruction(State, MTE, LCtx, V);
+}
 
         return State;
       }
@@ -436,18 +449,21 @@ ProgramStateRef ExprEngine::updateObjectsUnderConstruction(
     }
     case ConstructionContext::SimpleTemporaryObjectKind: {
       const auto *TCC = cast<TemporaryObjectConstructionContext>(CC);
-      if (const auto *BTE = TCC->getCXXBindTemporaryExpr())
+      if (const auto *BTE = TCC->getCXXBindTemporaryExpr()) {
         State = addObjectUnderConstruction(State, BTE, LCtx, V);
+}
 
-      if (const auto *MTE = TCC->getMaterializedTemporaryExpr())
+      if (const auto *MTE = TCC->getMaterializedTemporaryExpr()) {
         State = addObjectUnderConstruction(State, MTE, LCtx, V);
+}
 
       return State;
     }
     case ConstructionContext::ArgumentKind: {
       const auto *ACC = cast<ArgumentConstructionContext>(CC);
-      if (const auto *BTE = ACC->getCXXBindTemporaryExpr())
+      if (const auto *BTE = ACC->getCXXBindTemporaryExpr()) {
         State = addObjectUnderConstruction(State, BTE, LCtx, V);
+}
 
       return addObjectUnderConstruction(
           State, {ACC->getCallLikeExpr(), ACC->getIndex()}, LCtx, V);
@@ -477,8 +493,9 @@ void ExprEngine::handleConstructor(const Expr *E,
       Target = *ElidedTarget;
       StmtNodeBuilder Bldr(Pred, destNodes, *currBldrCtx);
       State = finishObjectConstruction(State, CE, LCtx);
-      if (auto L = Target.getAs<Loc>())
+      if (auto L = Target.getAs<Loc>()) {
         State = State->BindExpr(CE, LCtx, State->getSVal(*L, CE->getType()));
+}
       Bldr.generateNode(CE, Pred, State);
       return;
     }
@@ -564,8 +581,9 @@ void ExprEngine::handleConstructor(const Expr *E,
     StmtNodeBuilder BldrPrepare(Pred, DstPrepare, *currBldrCtx);
     BldrPrepare.generateNode(E, Pred, State, &T, ProgramPoint::PreStmtKind);
     assert(DstPrepare.size() <= 1);
-    if (DstPrepare.size() == 0)
+    if (DstPrepare.size() == 0) {
       return;
+}
     Pred = *BldrPrepare.begin();
   }
 
@@ -623,14 +641,16 @@ void ExprEngine::handleConstructor(const Expr *E,
     StmtNodeBuilder Bldr(DstPreCall, DstEvaluated, *currBldrCtx);
     // FIXME: Handle other kinds of trivial constructors as well.
     for (ExplodedNodeSet::iterator I = DstPreCall.begin(), E = DstPreCall.end();
-         I != E; ++I)
+         I != E; ++I) {
       performTrivialCopy(Bldr, *I, *Call);
+}
 
   } else {
     for (ExplodedNodeSet::iterator I = DstPreCall.begin(), E = DstPreCall.end();
-         I != E; ++I)
+         I != E; ++I) {
       getCheckerManager().runCheckersForEvalCall(DstEvaluated, *I, *Call, *this,
                                                  CallOpts);
+}
   }
 
   // If the CFG was constructed without elements for temporary destructors
@@ -671,8 +691,9 @@ void ExprEngine::handleConstructor(const Expr *E,
   }
 
   ExplodedNodeSet DstPostArgumentCleanup;
-  for (ExplodedNode *I : DstEvaluatedPostProcessed)
+  for (ExplodedNode *I : DstEvaluatedPostProcessed) {
     finishArgumentConstruction(DstPostArgumentCleanup, I, *Call);
+}
 
   // If there were other constructors called for object-type arguments
   // of this constructor, clean them up.
@@ -755,8 +776,9 @@ void ExprEngine::VisitCXXDestructor(QualType ObjectType,
   ExplodedNodeSet DstInvalidated;
   StmtNodeBuilder Bldr(DstPreCall, DstInvalidated, *currBldrCtx);
   for (ExplodedNodeSet::iterator I = DstPreCall.begin(), E = DstPreCall.end();
-       I != E; ++I)
+       I != E; ++I) {
     defaultEvalCall(Bldr, *I, *Call, CallOpts);
+}
 
   getCheckerManager().runCheckersForPostCall(Dst, DstInvalidated,
                                              *Call, *this);
@@ -812,9 +834,11 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
     // C++11 [basic.stc.dynamic.allocation]p3.
     if (const FunctionDecl *FD = CNE->getOperatorNew()) {
       QualType Ty = FD->getType();
-      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>())
-        if (!ProtoType->isNothrow())
+      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>()) {
+        if (!ProtoType->isNothrow()) {
           State = State->assume(RetVal.castAs<DefinedOrUnknownSVal>(), true);
+}
+}
     }
 
     ValueBldr.generateNode(
@@ -856,11 +880,12 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   // heap. We realize this is an approximation that might not correctly model
   // a custom global allocator.
   if (symVal.isUnknown()) {
-    if (IsStandardGlobalOpNewFunction)
+    if (IsStandardGlobalOpNewFunction) {
       symVal = svalBuilder.getConjuredHeapSymbolVal(CNE, LCtx, blockCount);
-    else
+    } else {
       symVal = svalBuilder.conjureSymbolVal(nullptr, CNE, LCtx, CNE->getType(),
                                             blockCount);
+}
   }
 
   CallEventManager &CEMgr = getStateManager().getCallEventManager();
@@ -873,8 +898,9 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     // we should be using the usual pre-/(default-)eval-/post-call checkers
     // here.
     State = Call->invalidateRegions(blockCount);
-    if (!State)
+    if (!State) {
       return;
+}
 
     // If this allocation function is not declared as non-throwing, failures
     // /must/ be signalled by exceptions, and thus the return value will never
@@ -885,10 +911,13 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     // C++11 [basic.stc.dynamic.allocation]p3.
     if (FD) {
       QualType Ty = FD->getType();
-      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>())
-        if (!ProtoType->isNothrow())
-          if (auto dSymVal = symVal.getAs<DefinedOrUnknownSVal>())
+      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>()) {
+        if (!ProtoType->isNothrow()) {
+          if (auto dSymVal = symVal.getAs<DefinedOrUnknownSVal>()) {
             State = State->assume(*dSymVal, true);
+}
+}
+}
     }
   }
 
@@ -924,8 +953,9 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   // Bind the address of the object, then check to see if we cached out.
   State = State->BindExpr(CNE, LCtx, Result);
   ExplodedNode *NewN = Bldr.generateNode(CNE, Pred, State);
-  if (!NewN)
+  if (!NewN) {
     return;
+}
 
   // If the type is not a record, we won't have a CXXConstructExpr as an
   // initializer. Copy the value over.

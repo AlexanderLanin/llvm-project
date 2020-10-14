@@ -31,15 +31,16 @@ void NoAssemblerCheck::registerMatchers(MatchFinder *Finder) {
 
 void NoAssemblerCheck::check(const MatchFinder::MatchResult &Result) {
   SourceLocation ASMLocation;
-  if (const auto *ASM = Result.Nodes.getNodeAs<AsmStmt>("asm-stmt"))
+  if (const auto *ASM = Result.Nodes.getNodeAs<AsmStmt>("asm-stmt")) {
     ASMLocation = ASM->getAsmLoc();
-  else if (const auto *ASM =
-               Result.Nodes.getNodeAs<FileScopeAsmDecl>("asm-file-scope"))
+  } else if (const auto *ASM =
+               Result.Nodes.getNodeAs<FileScopeAsmDecl>("asm-file-scope")) {
     ASMLocation = ASM->getAsmLoc();
-  else if (const auto *ASM = Result.Nodes.getNodeAs<VarDecl>("asm-var"))
+  } else if (const auto *ASM = Result.Nodes.getNodeAs<VarDecl>("asm-var")) {
     ASMLocation = ASM->getLocation();
-  else
+  } else {
     llvm_unreachable("Unhandled case in matcher.");
+}
 
   diag(ASMLocation, "do not use inline assembler in safety-critical code");
 }

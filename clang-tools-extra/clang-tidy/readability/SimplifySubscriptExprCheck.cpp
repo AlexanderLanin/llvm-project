@@ -47,17 +47,19 @@ void SimplifySubscriptExprCheck::registerMatchers(MatchFinder *Finder) {
 void SimplifySubscriptExprCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Call = Result.Nodes.getNodeAs<CXXMemberCallExpr>("call");
   if (Result.Context->getSourceManager().isMacroBodyExpansion(
-          Call->getExprLoc()))
+          Call->getExprLoc())) {
     return;
+}
 
   const auto *Member = Result.Nodes.getNodeAs<MemberExpr>("member");
   auto DiagBuilder =
       diag(Member->getMemberLoc(),
            "accessing an element of the container does not require a call to "
            "'data()'; did you mean to use 'operator[]'?");
-  if (Member->isArrow())
+  if (Member->isArrow()) {
     DiagBuilder << FixItHint::CreateInsertion(Member->getBeginLoc(), "(*")
                 << FixItHint::CreateInsertion(Member->getOperatorLoc(), ")");
+}
   DiagBuilder << FixItHint::CreateRemoval(
       {Member->getOperatorLoc(), Call->getEndLoc()});
 }

@@ -36,8 +36,9 @@ static constexpr llvm::StringLiteral ValidCPUNames[] = {
 StringRef WebAssemblyTargetInfo::getABI() const { return ABI; }
 
 bool WebAssemblyTargetInfo::setABI(const std::string &Name) {
-  if (Name != "mvp" && Name != "experimental-mv")
+  if (Name != "mvp" && Name != "experimental-mv") {
     return false;
+}
 
   ABI = Name;
   return true;
@@ -71,28 +72,39 @@ void WebAssemblyTargetInfo::fillValidCPUList(
 void WebAssemblyTargetInfo::getTargetDefines(const LangOptions &Opts,
                                              MacroBuilder &Builder) const {
   defineCPUMacros(Builder, "wasm", /*Tuning=*/false);
-  if (SIMDLevel >= SIMD128)
+  if (SIMDLevel >= SIMD128) {
     Builder.defineMacro("__wasm_simd128__");
-  if (SIMDLevel >= UnimplementedSIMD128)
+}
+  if (SIMDLevel >= UnimplementedSIMD128) {
     Builder.defineMacro("__wasm_unimplemented_simd128__");
-  if (HasNontrappingFPToInt)
+}
+  if (HasNontrappingFPToInt) {
     Builder.defineMacro("__wasm_nontrapping_fptoint__");
-  if (HasSignExt)
+}
+  if (HasSignExt) {
     Builder.defineMacro("__wasm_sign_ext__");
-  if (HasExceptionHandling)
+}
+  if (HasExceptionHandling) {
     Builder.defineMacro("__wasm_exception_handling__");
-  if (HasBulkMemory)
+}
+  if (HasBulkMemory) {
     Builder.defineMacro("__wasm_bulk_memory__");
-  if (HasAtomics)
+}
+  if (HasAtomics) {
     Builder.defineMacro("__wasm_atomics__");
-  if (HasMutableGlobals)
+}
+  if (HasMutableGlobals) {
     Builder.defineMacro("__wasm_mutable_globals__");
-  if (HasMultivalue)
+}
+  if (HasMultivalue) {
     Builder.defineMacro("__wasm_multivalue__");
-  if (HasTailCall)
+}
+  if (HasTailCall) {
     Builder.defineMacro("__wasm_tail_call__");
-  if (HasReferenceTypes)
+}
+  if (HasReferenceTypes) {
     Builder.defineMacro("__wasm_reference_types__");
+}
 }
 
 void WebAssemblyTargetInfo::setSIMDLevel(llvm::StringMap<bool> &Features,
@@ -125,12 +137,13 @@ void WebAssemblyTargetInfo::setSIMDLevel(llvm::StringMap<bool> &Features,
 void WebAssemblyTargetInfo::setFeatureEnabled(llvm::StringMap<bool> &Features,
                                               StringRef Name,
                                               bool Enabled) const {
-  if (Name == "simd128")
+  if (Name == "simd128") {
     setSIMDLevel(Features, SIMD128, Enabled);
-  else if (Name == "unimplemented-simd128")
+  } else if (Name == "unimplemented-simd128") {
     setSIMDLevel(Features, UnimplementedSIMD128, Enabled);
-  else
+  } else {
     Features[Name] = Enabled;
+}
 }
 
 bool WebAssemblyTargetInfo::initFeatureMap(

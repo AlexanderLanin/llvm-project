@@ -25,8 +25,9 @@ using BasesVector = llvm::SmallVector<const CXXRecordDecl *, 5>;
 
 static bool isParentOf(const CXXRecordDecl &Parent,
                        const CXXRecordDecl &ThisClass) {
-  if (Parent.getCanonicalDecl() == ThisClass.getCanonicalDecl())
+  if (Parent.getCanonicalDecl() == ThisClass.getCanonicalDecl()) {
     return true;
+}
   const CXXRecordDecl *ParentCanonicalDecl = Parent.getCanonicalDecl();
   return ThisClass.bases_end() !=
          llvm::find_if(ThisClass.bases(), [=](const CXXBaseSpecifier &Base) {
@@ -44,16 +45,18 @@ static BasesVector getParentsByGrandParent(const CXXRecordDecl &GrandParent,
     const auto *BaseDecl = Base.getType()->getAsCXXRecordDecl();
     const CXXMethodDecl *ActualMemberDecl =
         MemberDecl.getCorrespondingMethodInClass(BaseDecl);
-    if (!ActualMemberDecl)
+    if (!ActualMemberDecl) {
       continue;
+}
     // TypePtr is the nearest base class to ThisClass between ThisClass and
     // GrandParent, where MemberDecl is overridden. TypePtr is the class the
     // check proposes to fix to.
     const Type *TypePtr = ActualMemberDecl->getThisType().getTypePtr();
     const CXXRecordDecl *RecordDeclType = TypePtr->getPointeeCXXRecordDecl();
     assert(RecordDeclType && "TypePtr is not a pointer to CXXRecordDecl!");
-    if (RecordDeclType->getCanonicalDecl()->isDerivedFrom(&GrandParent))
+    if (RecordDeclType->getCanonicalDecl()->isDerivedFrom(&GrandParent)) {
       Result.emplace_back(RecordDeclType);
+}
   }
 
   return Result;
@@ -100,8 +103,9 @@ void ParentVirtualCallCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Member = Result.Nodes.getNodeAs<MemberExpr>("member");
   assert(Member);
 
-  if (!Member->getQualifier())
+  if (!Member->getQualifier()) {
     return;
+}
 
   const auto *MemberDecl = cast<CXXMethodDecl>(Member->getMemberDecl());
 
@@ -117,20 +121,23 @@ void ParentVirtualCallCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *CastToType = CastToTypePtr->getAsCXXRecordDecl();
   assert(CastToType);
 
-  if (isParentOf(*CastToType, *ThisType))
+  if (isParentOf(*CastToType, *ThisType)) {
     return;
+}
 
   const BasesVector Parents =
       getParentsByGrandParent(*CastToType, *ThisType, *MemberDecl);
 
-  if (Parents.empty())
+  if (Parents.empty()) {
     return;
+}
 
   std::string ParentsStr;
   ParentsStr.reserve(30 * Parents.size());
   for (const CXXRecordDecl *Parent : Parents) {
-    if (!ParentsStr.empty())
+    if (!ParentsStr.empty()) {
       ParentsStr.append(" or ");
+}
     ParentsStr.append("'").append(getNameAsString(Parent)).append("'");
   }
 
@@ -144,10 +151,11 @@ void ParentVirtualCallCheck::check(const MatchFinder::MatchResult &Result) {
   // Propose a fix if there's only one parent class...
   if (Parents.size() == 1 &&
       // ...unless parent class is templated
-      !isa<ClassTemplateSpecializationDecl>(Parents.front()))
+      !isa<ClassTemplateSpecializationDecl>(Parents.front())) {
     Diag << FixItHint::CreateReplacement(
         Member->getQualifierLoc().getSourceRange(),
         getNameAsString(Parents.front()) + "::");
+}
 }
 
 } // namespace bugprone

@@ -45,8 +45,9 @@ llvm::StringRef unwrap(Context Ctx, llvm::StringRef Outer) {
   // Unwrap only if the code matches the expected wrapping.
   // Don't allow the begin/end wrapping to overlap!
   if (Outer.startswith(Wrapping.first) && Outer.endswith(Wrapping.second) &&
-      Outer.size() >= Wrapping.first.size() + Wrapping.second.size())
+      Outer.size() >= Wrapping.first.size() + Wrapping.second.size()) {
     return Outer.drop_front(Wrapping.first.size()).drop_back(Wrapping.second.size());
+}
   return Outer;
 }
 
@@ -99,8 +100,9 @@ MATCHER_P7(TweakIsAvailable, TweakID, Ctx, Header, ExtraArgs, ExtraFiles, Index,
   ParsedAST AST = TU.build();
   auto Result = applyTweak(AST, Input, TweakID, Index);
   // We only care if prepare() succeeded, but must handle Errors.
-  if (Result && !*Result)
+  if (Result && !*Result) {
     consumeError(Result->takeError());
+}
   return Result.hasValue();
 }
 
@@ -119,30 +121,36 @@ std::string TweakTest::apply(llvm::StringRef MarkedCode,
   ParsedAST AST = TU.build();
 
   auto Result = applyTweak(AST, Input, TweakID, Index.get());
-  if (!Result)
+  if (!Result) {
     return "unavailable";
-  if (!*Result)
+}
+  if (!*Result) {
     return "fail: " + llvm::toString(Result->takeError());
+}
   const auto &Effect = **Result;
-  if ((*Result)->ShowMessage)
+  if ((*Result)->ShowMessage) {
     return "message:\n" + *Effect.ShowMessage;
-  if (Effect.ApplyEdits.empty())
+}
+  if (Effect.ApplyEdits.empty()) {
     return "no effect";
+}
 
   std::string EditedMainFile;
   for (auto &It : Effect.ApplyEdits) {
     auto NewText = It.second.apply();
-    if (!NewText)
+    if (!NewText) {
       return "bad edits: " + llvm::toString(NewText.takeError());
+}
     llvm::StringRef Unwrapped = unwrap(Context, *NewText);
-    if (It.first() == testPath(TU.Filename))
+    if (It.first() == testPath(TU.Filename)) {
       EditedMainFile = std::string(Unwrapped);
-    else {
-      if (!EditedFiles)
+    } else {
+      if (!EditedFiles) {
         ADD_FAILURE() << "There were changes to additional files, but client "
                          "provided a nullptr for EditedFiles.";
-      else
+      } else {
         EditedFiles->insert_or_assign(It.first(), Unwrapped.str());
+}
     }
   }
   return EditedMainFile;

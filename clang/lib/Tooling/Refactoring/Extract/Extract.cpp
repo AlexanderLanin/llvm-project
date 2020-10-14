@@ -28,8 +28,9 @@ namespace {
 /// Returns true if \c E is a simple literal or a reference expression that
 /// should not be extracted.
 bool isSimpleExpression(const Expr *E) {
-  if (!E)
+  if (!E) {
     return false;
+}
   switch (E->IgnoreParenCasts()->getStmtClass()) {
   case Stmt::DeclRefExprClass:
   case Stmt::PredefinedExprClass:
@@ -48,8 +49,9 @@ SourceLocation computeFunctionExtractionLocation(const Decl *D) {
   if (isa<CXXMethodDecl>(D)) {
     // Code from method that is defined in class body should be extracted to a
     // function defined just before the class.
-    while (const auto *RD = dyn_cast<CXXRecordDecl>(D->getLexicalDeclContext()))
+    while (const auto *RD = dyn_cast<CXXRecordDecl>(D->getLexicalDeclContext())) {
       D = RD;
+}
   }
   return D->getBeginLoc();
 }
@@ -72,21 +74,24 @@ ExtractFunction::initiate(RefactoringRuleContext &Context,
   // We would like to extract code out of functions/methods/blocks.
   // Prohibit extraction from things like global variable / field
   // initializers and other top-level expressions.
-  if (!Code.isInFunctionLikeBodyOfCode())
+  if (!Code.isInFunctionLikeBodyOfCode()) {
     return Context.createDiagnosticError(
         diag::err_refactor_code_outside_of_function);
+}
 
   if (Code.size() == 1) {
     // Avoid extraction of simple literals and references.
-    if (isSimpleExpression(dyn_cast<Expr>(Code[0])))
+    if (isSimpleExpression(dyn_cast<Expr>(Code[0]))) {
       return Context.createDiagnosticError(
           diag::err_refactor_extract_simple_expression);
+}
 
     // Property setters can't be extracted.
     if (const auto *PRE = dyn_cast<ObjCPropertyRefExpr>(Code[0])) {
-      if (!PRE->isMessagingGetter())
+      if (!PRE->isMessagingGetter()) {
         return Context.createDiagnosticError(
             diag::err_refactor_extract_prohibited_expression);
+}
     }
   }
 
@@ -161,15 +166,18 @@ ExtractFunction::createSourceReplacements(RefactoringRuleContext &Context) {
 
     // Function body.
     OS << " {\n";
-    if (IsExpr && !ReturnType->isVoidType())
+    if (IsExpr && !ReturnType->isVoidType()) {
       OS << "return ";
+}
     OS << ExtractedCodeRewriter.getRewrittenText(ExtractedRange);
-    if (Semicolons.isNeededInExtractedFunction())
+    if (Semicolons.isNeededInExtractedFunction()) {
       OS << ';';
+}
     OS << "\n}\n\n";
     auto Err = Change.insert(SM, ExtractedDeclLocation, OS.str());
-    if (Err)
+    if (Err) {
       return std::move(Err);
+}
   }
 
   // Create the replacement for the call to the extracted declaration.
@@ -180,13 +188,15 @@ ExtractFunction::createSourceReplacements(RefactoringRuleContext &Context) {
     OS << DeclName << '(';
     // FIXME: Forward arguments.
     OS << ')';
-    if (Semicolons.isNeededInOriginalFunction())
+    if (Semicolons.isNeededInOriginalFunction()) {
       OS << ';';
+}
 
     auto Err = Change.replace(
         SM, CharSourceRange::getTokenRange(ExtractedRange), OS.str());
-    if (Err)
+    if (Err) {
       return std::move(Err);
+}
   }
 
   // FIXME: Add support for assocciated symbol location to AtomicChange to mark

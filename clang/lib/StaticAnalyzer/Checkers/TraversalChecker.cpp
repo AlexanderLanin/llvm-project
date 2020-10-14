@@ -82,8 +82,9 @@ public:
 void CallDumper::checkPreCall(const CallEvent &Call, CheckerContext &C) const {
   unsigned Indentation = 0;
   for (const LocationContext *LC = C.getLocationContext()->getParent();
-       LC != nullptr; LC = LC->getParent())
+       LC != nullptr; LC = LC->getParent()) {
     ++Indentation;
+}
 
   // It is mildly evil to print directly to llvm::outs() rather than emitting
   // warnings, but this ensures things do not get filtered out by the rest of
@@ -94,22 +95,25 @@ void CallDumper::checkPreCall(const CallEvent &Call, CheckerContext &C) const {
 
 void CallDumper::checkPostCall(const CallEvent &Call, CheckerContext &C) const {
   const Expr *CallE = Call.getOriginExpr();
-  if (!CallE)
+  if (!CallE) {
     return;
+}
 
   unsigned Indentation = 0;
   for (const LocationContext *LC = C.getLocationContext()->getParent();
-       LC != nullptr; LC = LC->getParent())
+       LC != nullptr; LC = LC->getParent()) {
     ++Indentation;
+}
 
   // It is mildly evil to print directly to llvm::outs() rather than emitting
   // warnings, but this ensures things do not get filtered out by the rest of
   // the static analyzer machinery.
   llvm::outs().indent(Indentation);
-  if (Call.getResultType()->isVoidType())
+  if (Call.getResultType()->isVoidType()) {
     llvm::outs() << "Returning void\n";
-  else
+  } else {
     llvm::outs() << "Returning " << C.getSVal(CallE) << "\n";
+}
 }
 
 void ento::registerCallDumper(CheckerManager &mgr) {

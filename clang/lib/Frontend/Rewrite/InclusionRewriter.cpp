@@ -120,8 +120,9 @@ InclusionRewriter::InclusionRewriter(Preprocessor &PP, raw_ostream &OS,
 void InclusionRewriter::WriteLineInfo(StringRef Filename, int Line,
                                       SrcMgr::CharacteristicKind FileType,
                                       StringRef Extra) {
-  if (!ShowLineMarkers)
+  if (!ShowLineMarkers) {
     return;
+}
   if (UseLineDirectives) {
     OS << "#line" << ' ' << Line << ' ' << '"';
     OS.write_escaped(Filename);
@@ -132,16 +133,18 @@ void InclusionRewriter::WriteLineInfo(StringRef Filename, int Line,
     OS << '#' << ' ' << Line << ' ' << '"';
     OS.write_escaped(Filename);
     OS << '"';
-    if (!Extra.empty())
+    if (!Extra.empty()) {
       OS << Extra;
-    if (FileType == SrcMgr::C_System)
+}
+    if (FileType == SrcMgr::C_System) {
       // "`3' This indicates that the following text comes from a system header
       // file, so certain warnings should be suppressed."
       OS << " 3";
-    else if (FileType == SrcMgr::C_ExternCSystem)
+    } else if (FileType == SrcMgr::C_ExternCSystem) {
       // as above for `3', plus "`4' This indicates that the following text
       // should be treated as being wrapped in an implicit extern "C" block."
       OS << " 3 4";
+}
   }
   OS << MainEOL;
 }
@@ -157,11 +160,13 @@ void InclusionRewriter::FileChanged(SourceLocation Loc,
                                     FileChangeReason Reason,
                                     SrcMgr::CharacteristicKind NewFileType,
                                     FileID) {
-  if (Reason != EnterFile)
+  if (Reason != EnterFile) {
     return;
-  if (LastInclusionLocation.isInvalid())
+}
+  if (LastInclusionLocation.isInvalid()) {
     // we didn't reach this file (eg: the main file) via an inclusion directive
     return;
+}
   FileID Id = FullSourceLoc(Loc, SM).getFileID();
   auto P = FileIncludes.insert(
       std::make_pair(LastInclusionLocation.getRawEncoding(),
@@ -203,8 +208,9 @@ void InclusionRewriter::InclusionDirective(SourceLocation HashLoc,
         std::make_pair(HashLoc.getRawEncoding(), Imported));
     (void)P;
     assert(P.second && "Unexpected revisitation of the same include directive");
-  } else
+  } else {
     LastInclusionLocation = HashLoc;
+}
 }
 
 void InclusionRewriter::If(SourceLocation Loc, SourceRange ConditionRange,
@@ -229,8 +235,9 @@ void InclusionRewriter::Elif(SourceLocation Loc, SourceRange ConditionRange,
 const InclusionRewriter::IncludedFile *
 InclusionRewriter::FindIncludeAtLocation(SourceLocation Loc) const {
   const auto I = FileIncludes.find(Loc.getRawEncoding());
-  if (I != FileIncludes.end())
+  if (I != FileIncludes.end()) {
     return &I->second;
+}
   return nullptr;
 }
 
@@ -239,8 +246,9 @@ InclusionRewriter::FindIncludeAtLocation(SourceLocation Loc) const {
 const Module *
 InclusionRewriter::FindModuleAtLocation(SourceLocation Loc) const {
   const auto I = ModuleIncludes.find(Loc.getRawEncoding());
-  if (I != ModuleIncludes.end())
+  if (I != ModuleIncludes.end()) {
     return I->second;
+}
   return nullptr;
 }
 
@@ -249,15 +257,17 @@ InclusionRewriter::FindModuleAtLocation(SourceLocation Loc) const {
 const Module *
 InclusionRewriter::FindEnteredModule(SourceLocation Loc) const {
   const auto I = ModuleEntryIncludes.find(Loc.getRawEncoding());
-  if (I != ModuleEntryIncludes.end())
+  if (I != ModuleEntryIncludes.end()) {
     return I->second;
+}
   return nullptr;
 }
 
 bool InclusionRewriter::IsIfAtLocationTrue(SourceLocation Loc) const {
   const auto I = IfConditions.find(Loc.getRawEncoding());
-  if (I != IfConditions.end())
+  if (I != IfConditions.end()) {
     return I->second;
+}
   return false;
 }
 
@@ -268,12 +278,15 @@ static StringRef DetectEOL(const MemoryBuffer &FromFile) {
   // the style. We need to check for "\r\n" first because "\n\r" will match
   // "\r\n\r\n".
   const char *Pos = strchr(FromFile.getBufferStart(), '\n');
-  if (!Pos)
+  if (!Pos) {
     return "\n";
-  if (Pos - 1 >= FromFile.getBufferStart() && Pos[-1] == '\r')
+}
+  if (Pos - 1 >= FromFile.getBufferStart() && Pos[-1] == '\r') {
     return "\r\n";
-  if (Pos + 1 < FromFile.getBufferEnd() && Pos[1] == '\r')
+}
+  if (Pos + 1 < FromFile.getBufferEnd() && Pos[1] == '\r') {
     return "\n\r";
+}
   return "\n";
 }
 
@@ -281,8 +294,9 @@ void InclusionRewriter::detectMainFileEOL() {
   bool Invalid;
   const MemoryBuffer &FromFile = *SM.getBuffer(SM.getMainFileID(), &Invalid);
   assert(!Invalid);
-  if (Invalid)
+  if (Invalid) {
     return; // Should never happen, but whatever.
+}
   MainEOL = DetectEOL(FromFile);
 }
 
@@ -292,8 +306,9 @@ void InclusionRewriter::OutputContentUpTo(const MemoryBuffer &FromFile,
                                           unsigned &WriteFrom, unsigned WriteTo,
                                           StringRef LocalEOL, int &Line,
                                           bool EnsureNewline) {
-  if (WriteTo <= WriteFrom)
+  if (WriteTo <= WriteFrom) {
     return;
+}
   if (&FromFile == PredefinesBuffer) {
     // Ignore the #defines of the predefines buffer.
     WriteFrom = WriteTo;
@@ -305,8 +320,9 @@ void InclusionRewriter::OutputContentUpTo(const MemoryBuffer &FromFile,
   // one byte is safe.
   if (LocalEOL.size() == 2 &&
       LocalEOL[0] == (FromFile.getBufferStart() + WriteTo)[-1] &&
-      LocalEOL[1] == (FromFile.getBufferStart() + WriteTo)[0])
+      LocalEOL[1] == (FromFile.getBufferStart() + WriteTo)[0]) {
     WriteTo++;
+}
 
   StringRef TextToWrite(FromFile.getBufferStart() + WriteFrom,
                         WriteTo - WriteFrom);
@@ -315,8 +331,9 @@ void InclusionRewriter::OutputContentUpTo(const MemoryBuffer &FromFile,
     OS << TextToWrite;
     // count lines manually, it's faster than getPresumedLoc()
     Line += TextToWrite.count(LocalEOL);
-    if (EnsureNewline && !TextToWrite.endswith(LocalEOL))
+    if (EnsureNewline && !TextToWrite.endswith(LocalEOL)) {
       OS << MainEOL;
+}
   } else {
     // Output the file one line at a time, rewriting the line endings as we go.
     StringRef Rest = TextToWrite;
@@ -325,11 +342,13 @@ void InclusionRewriter::OutputContentUpTo(const MemoryBuffer &FromFile,
       std::tie(LineText, Rest) = Rest.split(LocalEOL);
       OS << LineText;
       Line++;
-      if (!Rest.empty())
+      if (!Rest.empty()) {
         OS << MainEOL;
+}
     }
-    if (TextToWrite.endswith(LocalEOL) || EnsureNewline)
+    if (TextToWrite.endswith(LocalEOL) || EnsureNewline) {
       OS << MainEOL;
+}
   }
   WriteFrom = WriteTo;
 }
@@ -367,10 +386,12 @@ void InclusionRewriter::CommentOutDirective(Lexer &DirectiveLex,
 StringRef InclusionRewriter::NextIdentifierName(Lexer &RawLex,
                                                 Token &RawToken) {
   RawLex.LexFromRawLexer(RawToken);
-  if (RawToken.is(tok::raw_identifier))
+  if (RawToken.is(tok::raw_identifier)) {
     PP.LookUpIdentifierInfo(RawToken);
-  if (RawToken.is(tok::identifier))
+}
+  if (RawToken.is(tok::identifier)) {
     return RawToken.getIdentifierInfo()->getName();
+}
   return StringRef();
 }
 
@@ -389,13 +410,15 @@ void InclusionRewriter::Process(FileID FileId,
   StringRef LocalEOL = DetectEOL(FromFile);
 
   // Per the GNU docs: "1" indicates entering a new file.
-  if (FileId == SM.getMainFileID() || FileId == PP.getPredefinesFileID())
+  if (FileId == SM.getMainFileID() || FileId == PP.getPredefinesFileID()) {
     WriteLineInfo(FileName, 1, FileType, "");
-  else
+  } else {
     WriteLineInfo(FileName, 1, FileType, " 1");
+}
 
-  if (SM.getFileIDSize(FileId) == 0)
+  if (SM.getFileIDSize(FileId) == 0) {
     return;
+}
 
   // The next byte to be copied from the source file, which may be non-zero if
   // the lexer handled a BOM.
@@ -413,8 +436,9 @@ void InclusionRewriter::Process(FileID FileId,
       RawLex.setParsingPreprocessorDirective(true);
       Token HashToken = RawToken;
       RawLex.LexFromRawLexer(RawToken);
-      if (RawToken.is(tok::raw_identifier))
+      if (RawToken.is(tok::raw_identifier)) {
         PP.LookUpIdentifierInfo(RawToken);
+}
       if (RawToken.getIdentifierInfo() != nullptr) {
         switch (RawToken.getIdentifierInfo()->getPPKeywordID()) {
           case tok::pp_include:
@@ -422,24 +446,27 @@ void InclusionRewriter::Process(FileID FileId,
           case tok::pp_import: {
             CommentOutDirective(RawLex, HashToken, FromFile, LocalEOL, NextToWrite,
               Line);
-            if (FileId != PP.getPredefinesFileID())
+            if (FileId != PP.getPredefinesFileID()) {
               WriteLineInfo(FileName, Line - 1, FileType, "");
+}
             StringRef LineInfoExtra;
             SourceLocation Loc = HashToken.getLocation();
-            if (const Module *Mod = FindModuleAtLocation(Loc))
+            if (const Module *Mod = FindModuleAtLocation(Loc)) {
               WriteImplicitModuleImport(Mod);
-            else if (const IncludedFile *Inc = FindIncludeAtLocation(Loc)) {
+            } else if (const IncludedFile *Inc = FindIncludeAtLocation(Loc)) {
               const Module *Mod = FindEnteredModule(Loc);
-              if (Mod)
+              if (Mod) {
                 OS << "#pragma clang module begin "
                    << Mod->getFullModuleName(true) << "\n";
+}
 
               // Include and recursively process the file.
               Process(Inc->Id, Inc->FileType, Inc->DirLookup);
 
-              if (Mod)
+              if (Mod) {
                 OS << "#pragma clang module end /*"
                    << Mod->getFullModuleName(true) << "*/\n";
+}
 
               // Add line marker to indicate we're returning from an included
               // file.
@@ -557,8 +584,9 @@ void clang::RewriteIncludesInInput(Preprocessor &PP, raw_ostream *OS,
   PP.SetMacroExpansionOnlyInDirectives();
   do {
     PP.Lex(Tok);
-    if (Tok.is(tok::annot_module_begin))
+    if (Tok.is(tok::annot_module_begin)) {
       Rewrite->handleModuleBegin(Tok);
+}
   } while (Tok.isNot(tok::eof));
   Rewrite->setPredefinesBuffer(SM.getBuffer(PP.getPredefinesFileID()));
   Rewrite->Process(PP.getPredefinesFileID(), SrcMgr::C_User, nullptr);

@@ -41,8 +41,9 @@ void AnalyzerOptions::printFormattedEntry(
 
   FOut.PadToColumn(InitialPad) << EntryDescPair.first;
   // If the buffer's length is greater than PadForDesc, print a newline.
-  if (FOut.getColumn() > PadForDesc)
+  if (FOut.getColumn() > PadForDesc) {
     FOut << '\n';
+}
 
   FOut.PadToColumn(PadForDesc);
 
@@ -97,8 +98,9 @@ IPAKind AnalyzerOptions::getIPAMode() const {
 bool
 AnalyzerOptions::mayInlineCXXMemberFunction(
                                           CXXInlineableMemberKind Param) const {
-  if (getIPAMode() < IPAK_Inlining)
+  if (getIPAMode() < IPAK_Inlining) {
     return false;
+}
 
   auto K =
     llvm::StringSwitch<llvm::Optional<CXXInlineableMemberKind>>(
@@ -125,11 +127,13 @@ StringRef AnalyzerOptions::getCheckerStringOption(StringRef CheckerName,
   do {
     ConfigTable::const_iterator I =
         Config.find((Twine(CheckerName) + ":" + OptionName).str());
-    if (I != E)
+    if (I != E) {
       return StringRef(I->getValue());
+}
     size_t Pos = CheckerName.rfind('.');
-    if (Pos == StringRef::npos)
+    if (Pos == StringRef::npos) {
       break;
+}
 
     CheckerName = CheckerName.substr(0, Pos);
   } while (!CheckerName.empty() && SearchInParents);

@@ -62,8 +62,9 @@ public:
   }
 
   void visitCallExpr(const CallExpr *CE) const {
-    if (shouldSkipCall(CE))
+    if (shouldSkipCall(CE)) {
       return;
+}
 
     if (auto *F = CE->getDirectCallee()) {
       // Skip the first argument for overloaded member operators (e. g. lambda
@@ -82,13 +83,15 @@ public:
         //  continue;
 
         const auto *ArgType = (*P)->getType().getTypePtrOrNull();
-        if (!ArgType)
+        if (!ArgType) {
           continue; // FIXME? Should we bail?
+}
 
         // FIXME: more complex types (arrays, references to raw pointers, etc)
         Optional<bool> IsUncounted = isUncountedPtr(ArgType);
-        if (!IsUncounted || !(*IsUncounted))
+        if (!IsUncounted || !(*IsUncounted)) {
           continue;
+}
 
         const auto *Arg = CE->getArg(ArgIdx);
 
@@ -97,8 +100,9 @@ public:
 
         // Temporary ref-counted object created as part of the call argument
         // would outlive the call.
-        if (ArgOrigin.second)
+        if (ArgOrigin.second) {
           continue;
+}
 
         if (isa<CXXNullPtrLiteralExpr>(ArgOrigin.first)) {
           // foo(nullptr)
@@ -110,8 +114,9 @@ public:
           continue;
         }
 
-        if (isASafeCallArg(ArgOrigin.first))
+        if (isASafeCallArg(ArgOrigin.first)) {
           continue;
+}
 
         reportBug(Arg, *P);
       }
@@ -119,20 +124,23 @@ public:
   }
 
   bool shouldSkipCall(const CallExpr *CE) const {
-    if (CE->getNumArgs() == 0)
+    if (CE->getNumArgs() == 0) {
       return false;
+}
 
     // If an assignment is problematic we should warn about the sole existence
     // of object on LHS.
     if (auto *MemberOp = dyn_cast<CXXOperatorCallExpr>(CE)) {
       // Note: assignemnt to built-in type isn't derived from CallExpr.
-      if (MemberOp->isAssignmentOp())
+      if (MemberOp->isAssignmentOp()) {
         return false;
+}
     }
 
     const auto *Callee = CE->getDirectCallee();
-    if (!Callee)
+    if (!Callee) {
       return false;
+}
 
     auto overloadedOperatorType = Callee->getOverloadedOperator();
     if (overloadedOperatorType == OO_EqualEqual ||
@@ -141,11 +149,13 @@ public:
         overloadedOperatorType == OO_GreaterEqual ||
         overloadedOperatorType == OO_Spaceship ||
         overloadedOperatorType == OO_AmpAmp ||
-        overloadedOperatorType == OO_PipePipe)
+        overloadedOperatorType == OO_PipePipe) {
       return true;
+}
 
-    if (isCtorOfRefCounted(Callee))
+    if (isCtorOfRefCounted(Callee)) {
       return true;
+}
 
     auto name = safeGetName(Callee);
     if (name == "adoptRef" || name == "getPtr" || name == "WeakPtr" ||
@@ -155,8 +165,9 @@ public:
         // FIXME: Most/all of these should be implemented via attributes.
         || name == "equalIgnoringASCIICase" ||
         name == "equalIgnoringASCIICaseCommon" ||
-        name == "equalIgnoringNullity")
+        name == "equalIgnoringNullity") {
       return true;
+}
 
     return false;
   }

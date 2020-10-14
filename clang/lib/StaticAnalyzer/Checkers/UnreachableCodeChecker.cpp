@@ -50,8 +50,9 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
                                               ExprEngine &Eng) const {
   CFGBlocksSet reachable, visited;
 
-  if (Eng.hasWorkRemaining())
+  if (Eng.hasWorkRemaining()) {
     return;
+}
 
   const Decl *D = nullptr;
   CFG *C = nullptr;
@@ -62,17 +63,21 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
       I != E; ++I) {
     const ProgramPoint &P = I->getLocation();
     LC = P.getLocationContext();
-    if (!LC->inTopFrame())
+    if (!LC->inTopFrame()) {
       continue;
+}
 
-    if (!D)
+    if (!D) {
       D = LC->getAnalysisDeclContext()->getDecl();
+}
 
     // Save the CFG if we don't have it already
-    if (!C)
+    if (!C) {
       C = LC->getAnalysisDeclContext()->getUnoptimizedCFG();
-    if (!PM)
+}
+    if (!PM) {
       PM = &LC->getParentMap();
+}
 
     if (Optional<BlockEntrance> BE = P.getAs<BlockEntrance>()) {
       const CFGBlock *CB = BE->getBlock();
@@ -81,46 +86,56 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
   }
 
   // Bail out if we didn't get the CFG or the ParentMap.
-  if (!D || !C || !PM)
+  if (!D || !C || !PM) {
     return;
+}
 
   // Don't do anything for template instantiations.  Proving that code
   // in a template instantiation is unreachable means proving that it is
   // unreachable in all instantiations.
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isTemplateInstantiation())
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
+    if (FD->isTemplateInstantiation()) {
       return;
+}
+}
 
   // Find CFGBlocks that were not covered by any node
   for (CFG::const_iterator I = C->begin(), E = C->end(); I != E; ++I) {
     const CFGBlock *CB = *I;
     // Check if the block is unreachable
-    if (reachable.count(CB->getBlockID()))
+    if (reachable.count(CB->getBlockID())) {
       continue;
+}
 
     // Check if the block is empty (an artificial block)
-    if (isEmptyCFGBlock(CB))
+    if (isEmptyCFGBlock(CB)) {
       continue;
+}
 
     // Find the entry points for this block
-    if (!visited.count(CB->getBlockID()))
+    if (!visited.count(CB->getBlockID())) {
       FindUnreachableEntryPoints(CB, reachable, visited);
+}
 
     // This block may have been pruned; check if we still want to report it
-    if (reachable.count(CB->getBlockID()))
+    if (reachable.count(CB->getBlockID())) {
       continue;
+}
 
     // Check for false positives
-    if (isInvalidPath(CB, *PM))
+    if (isInvalidPath(CB, *PM)) {
       continue;
+}
 
     // It is good practice to always have a "default" label in a "switch", even
     // if we should never get there. It can be used to detect errors, for
     // instance. Unreachable code directly under a "default" label is therefore
     // likely to be a false positive.
-    if (const Stmt *label = CB->getLabel())
-      if (label->getStmtClass() == Stmt::DefaultStmtClass)
+    if (const Stmt *label = CB->getLabel()) {
+      if (label->getStmtClass() == Stmt::DefaultStmtClass) {
         continue;
+}
+}
 
     // Special case for __builtin_unreachable.
     // FIXME: This should be extended to include other unreachable markers,
@@ -129,7 +144,7 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
       bool foundUnreachable = false;
       for (CFGBlock::const_iterator ci = CB->begin(), ce = CB->end();
            ci != ce; ++ci) {
-        if (Optional<CFGStmt> S = (*ci).getAs<CFGStmt>())
+        if (Optional<CFGStmt> S = (*ci).getAs<CFGStmt>()) {
           if (const CallExpr *CE = dyn_cast<CallExpr>(S->getStmt())) {
             if (CE->getBuiltinCallee() == Builtin::BI__builtin_unreachable ||
                 CE->isBuiltinAssumeFalse(Eng.getContext())) {
@@ -137,9 +152,11 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
               break;
             }
           }
+}
       }
-      if (foundUnreachable)
+      if (foundUnreachable) {
         continue;
+}
     }
 
     // We found a block that wasn't covered - find the statement to report
@@ -149,25 +166,33 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
     if (const Stmt *S = getUnreachableStmt(CB)) {
       // In macros, 'do {...} while (0)' is often used. Don't warn about the
       // condition 0 when it is unreachable.
-      if (S->getBeginLoc().isMacroID())
-        if (const auto *I = dyn_cast<IntegerLiteral>(S))
-          if (I->getValue() == 0ULL)
-            if (const Stmt *Parent = PM->getParent(S))
-              if (isa<DoStmt>(Parent))
+      if (S->getBeginLoc().isMacroID()) {
+        if (const auto *I = dyn_cast<IntegerLiteral>(S)) {
+          if (I->getValue() == 0ULL) {
+            if (const Stmt *Parent = PM->getParent(S)) {
+              if (isa<DoStmt>(Parent)) {
                 continue;
+}
+}
+}
+}
+}
       SR = S->getSourceRange();
       DL = PathDiagnosticLocation::createBegin(S, B.getSourceManager(), LC);
       SL = DL.asLocation();
-      if (SR.isInvalid() || !SL.isValid())
+      if (SR.isInvalid() || !SL.isValid()) {
         continue;
+}
     }
-    else
+    else {
       continue;
+}
 
     // Check if the SourceLocation is in a system header
     const SourceManager &SM = B.getSourceManager();
-    if (SM.isInSystemHeader(SL) || SM.isInExternCSystemHeader(SL))
+    if (SM.isInSystemHeader(SL) || SM.isInExternCSystemHeader(SL)) {
       continue;
+}
 
     B.EmitBasicReport(D, this, "Unreachable code", "Dead code",
                       "This statement is never executed", DL, SR);
@@ -182,16 +207,18 @@ void UnreachableCodeChecker::FindUnreachableEntryPoints(const CFGBlock *CB,
 
   for (CFGBlock::const_pred_iterator I = CB->pred_begin(), E = CB->pred_end();
       I != E; ++I) {
-    if (!*I)
+    if (!*I) {
       continue;
+}
 
     if (!reachable.count((*I)->getBlockID())) {
       // If we find an unreachable predecessor, mark this block as reachable so
       // we don't report this block
       reachable.insert(CB->getBlockID());
-      if (!visited.count((*I)->getBlockID()))
+      if (!visited.count((*I)->getBlockID())) {
         // If we haven't previously visited the unreachable predecessor, recurse
         FindUnreachableEntryPoints(*I, reachable, visited);
+}
     }
   }
 }
@@ -200,14 +227,16 @@ void UnreachableCodeChecker::FindUnreachableEntryPoints(const CFGBlock *CB,
 const Stmt *UnreachableCodeChecker::getUnreachableStmt(const CFGBlock *CB) {
   for (CFGBlock::const_iterator I = CB->begin(), E = CB->end(); I != E; ++I) {
     if (Optional<CFGStmt> S = I->getAs<CFGStmt>()) {
-      if (!isa<DeclStmt>(S->getStmt()))
+      if (!isa<DeclStmt>(S->getStmt())) {
         return S->getStmt();
+}
     }
   }
-  if (const Stmt *S = CB->getTerminatorStmt())
+  if (const Stmt *S = CB->getTerminatorStmt()) {
     return S;
-  else
+  } else {
     return nullptr;
+}
 }
 
 // Determines if the path to this CFGBlock contained an element that infers this
@@ -220,16 +249,19 @@ bool UnreachableCodeChecker::isInvalidPath(const CFGBlock *CB,
   // We only expect a predecessor size of 0 or 1. If it is >1, then an external
   // condition has broken our assumption (for example, a sink being placed by
   // another check). In these cases, we choose not to report.
-  if (CB->pred_size() > 1)
+  if (CB->pred_size() > 1) {
     return true;
+}
 
   // If there are no predecessors, then this block is trivially unreachable
-  if (CB->pred_size() == 0)
+  if (CB->pred_size() == 0) {
     return false;
+}
 
   const CFGBlock *pred = *CB->pred_begin();
-  if (!pred)
+  if (!pred) {
     return false;
+}
 
   // Get the predecessor block's terminator condition
   const Stmt *cond = pred->getTerminatorCondition();
@@ -237,8 +269,9 @@ bool UnreachableCodeChecker::isInvalidPath(const CFGBlock *CB,
   //assert(cond && "CFGBlock's predecessor has a terminator condition");
   // The previous assertion is invalid in some cases (eg do/while). Leaving
   // reporting of these situations on at the moment to help triage these cases.
-  if (!cond)
+  if (!cond) {
     return false;
+}
 
   // Run each of the checks on the conditions
   return containsMacro(cond) || containsEnum(cond) ||

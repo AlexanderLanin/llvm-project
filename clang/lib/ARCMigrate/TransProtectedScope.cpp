@@ -31,9 +31,11 @@ public:
     : Refs(refs) { }
 
   bool VisitDeclRefExpr(DeclRefExpr *E) {
-    if (ValueDecl *D = E->getDecl())
-      if (D->getDeclContext()->getRedeclContext()->isFunctionOrMethod())
+    if (ValueDecl *D = E->getDecl()) {
+      if (D->getDeclContext()->getRedeclContext()->isFunctionOrMethod()) {
         Refs.push_back(E);
+}
+}
     return true;
   }
 };
@@ -62,14 +64,16 @@ public:
 
   bool VisitSwitchStmt(SwitchStmt *S) {
     SwitchCase *Curr = S->getSwitchCaseList();
-    if (!Curr)
+    if (!Curr) {
       return true;
+}
     Stmt *Parent = getCaseParent(Curr);
     Curr = Curr->getNextSwitchCase();
     // Make sure all case statements are in the same scope.
     while (Curr) {
-      if (getCaseParent(Curr) != Parent)
+      if (getCaseParent(Curr) != Parent) {
         return true;
+}
       Curr = Curr->getNextSwitchCase();
     }
 
@@ -87,8 +91,9 @@ public:
 
   Stmt *getCaseParent(SwitchCase *S) {
     Stmt *Parent = PMap.getParent(S);
-    while (Parent && (isa<SwitchCase>(Parent) || isa<LabelStmt>(Parent)))
+    while (Parent && (isa<SwitchCase>(Parent) || isa<LabelStmt>(Parent))) {
       Parent = PMap.getParent(Parent);
+}
     return Parent;
   }
 };
@@ -136,12 +141,14 @@ public:
     ++DiagI;
     for (; DiagI != DiagE && DiagI->getLevel() == DiagnosticsEngine::Note;
          ++DiagI) {
-      if (!handleProtectedNote(*DiagI))
+      if (!handleProtectedNote(*DiagI)) {
         handledAllNotes = false;
+}
     }
 
-    if (handledAllNotes)
+    if (handledAllNotes) {
       Pass.TA.clearDiagnostic(diag::err_switch_into_protected_scope, ErrLoc);
+}
   }
 
   bool handleProtectedNote(const StoredDiagnostic &Diag) {
@@ -151,8 +158,9 @@ public:
       CaseInfo &info = Cases[i];
       if (isInRange(Diag.getLocation(), info.Range)) {
 
-        if (info.State == CaseInfo::St_Unchecked)
+        if (info.State == CaseInfo::St_Unchecked) {
           tryFixing(info);
+}
         assert(info.State != CaseInfo::St_Unchecked);
 
         if (info.State == CaseInfo::St_Fixed) {
@@ -182,15 +190,17 @@ public:
     for (unsigned i = 0, e = LocalRefs.size(); i != e; ++i) {
       DeclRefExpr *DRE = LocalRefs[i];
       if (isInRange(DRE->getDecl()->getLocation(), info.Range) &&
-          !isInRange(DRE->getLocation(), info.Range))
+          !isInRange(DRE->getLocation(), info.Range)) {
         return true;
+}
     }
     return false;
   }
 
   bool isInRange(SourceLocation Loc, SourceRange R) {
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       return false;
+}
     return !SM.isBeforeInTranslationUnit(Loc, R.getBegin()) &&
             SM.isBeforeInTranslationUnit(Loc, R.getEnd());
   }

@@ -629,8 +629,9 @@ TEST(ClangMove, DumpDecls) {
       {"a::b::kGlobalStr", "Variable", false}};
   runClangMoveOnCode(Spec, TestHeader, TestCode, &Reporter);
   std::vector<DeclarationReporter::Declaration> Results;
-  for (const auto &DelPair : Reporter.getDeclarationList())
+  for (const auto &DelPair : Reporter.getDeclarationList()) {
     Results.push_back(DelPair);
+}
   EXPECT_THAT(ExpectedDeclarations,
               testing::UnorderedElementsAreArray(Results));
 }

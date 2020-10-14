@@ -63,12 +63,14 @@ DebugContainerModeling::DebugContainerModeling() {
 bool DebugContainerModeling::evalCall(const CallEvent &Call,
                                       CheckerContext &C) const {
   const auto *CE = dyn_cast_or_null<CallExpr>(Call.getOriginExpr());
-  if (!CE)
+  if (!CE) {
     return false;
+}
 
   const FnCheck *Handler = Callbacks.lookup(Call);
-  if (!Handler)
+  if (!Handler) {
     return false;
+}
 
   (this->**Handler)(CE, C);
   return true;
@@ -132,8 +134,9 @@ void DebugContainerModeling::analyzerContainerEnd(const CallExpr *CE,
 ExplodedNode *DebugContainerModeling::reportDebugMsg(llvm::StringRef Msg,
                                                      CheckerContext &C) const {
   ExplodedNode *N = C.generateNonFatalErrorNode();
-  if (!N)
+  if (!N) {
     return nullptr;
+}
 
   auto &BR = C.getBugReporter();
   BR.emitReport(std::make_unique<PathSensitiveBugReport>(*DebugMsgBugType,

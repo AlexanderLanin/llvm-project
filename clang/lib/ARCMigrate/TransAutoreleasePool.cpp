@@ -48,14 +48,17 @@ public:
     : Dcl(D), Releases(releases) { }
 
   bool VisitObjCMessageExpr(ObjCMessageExpr *E) {
-    if (!E->isInstanceMessage())
+    if (!E->isInstanceMessage()) {
       return true;
-    if (E->getMethodFamily() != OMF_release)
+}
+    if (E->getMethodFamily() != OMF_release) {
       return true;
+}
     Expr *instance = E->getInstanceReceiver()->IgnoreParenCasts();
     if (DeclRefExpr *DE = dyn_cast<DeclRefExpr>(instance)) {
-      if (DE->getDecl() == Dcl)
+      if (DE->getDecl() == Dcl) {
         Releases.push_back(E);
+}
     }
     return true;
   }
@@ -102,8 +105,9 @@ public:
 
       // Even if one reference is not handled we will not do anything about that
       // pool variable.
-      if (info.Refs.empty())
+      if (info.Refs.empty()) {
         VarsToHandle.push_back(var);
+}
     }
 
     for (unsigned i = 0, e = VarsToHandle.size(); i != e; ++i) {
@@ -200,8 +204,9 @@ public:
         }
       }
 
-      if (Scopes.empty())
+      if (Scopes.empty()) {
         continue;
+}
 
       if (isPoolDrain(Scopes.back().PoolVar, child)) {
         PoolScope &scope = Scopes.back();
@@ -215,10 +220,11 @@ public:
 
 private:
   void clearUnavailableDiags(Stmt *S) {
-    if (S)
+    if (S) {
       Pass.TA.clearDiagnostic(diag::err_unavailable,
                               diag::err_unavailable_message,
                               S->getSourceRange());
+}
   }
 
   struct PoolScope {
@@ -235,11 +241,13 @@ private:
     SourceRange getIndentedRange() const {
       Stmt::child_iterator rangeS = Begin;
       ++rangeS;
-      if (rangeS == End)
+      if (rangeS == End) {
         return SourceRange();
+}
       Stmt::child_iterator rangeE = Begin;
-      for (Stmt::child_iterator I = rangeS; I != End; ++I)
+      for (Stmt::child_iterator I = rangeS; I != End; ++I) {
         ++rangeE;
+}
       return SourceRange((*rangeS)->getBeginLoc(), (*rangeE)->getEndLoc());
     }
   };
@@ -282,12 +290,14 @@ private:
     }
 
     bool isInScope(SourceLocation loc) {
-      if (loc.isInvalid())
+      if (loc.isInvalid()) {
         return false;
+}
 
       SourceManager &SM = Ctx.getSourceManager();
-      if (SM.isBeforeInTranslationUnit(loc, ScopeRange.getBegin()))
+      if (SM.isBeforeInTranslationUnit(loc, ScopeRange.getBegin())) {
         return false;
+}
       return SM.isBeforeInTranslationUnit(loc, ScopeRange.getEnd());
     }
   };
@@ -302,21 +312,24 @@ private:
       ++SI;
       // Check if the autoreleasepool scope is followed by a simple return
       // statement, in which case we will include the return in the scope.
-      if (SI != SE)
-        if (ReturnStmt *retS = dyn_cast<ReturnStmt>(*SI))
+      if (SI != SE) {
+        if (ReturnStmt *retS = dyn_cast<ReturnStmt>(*SI)) {
           if ((retS->getRetValue() == nullptr ||
                isa<DeclRefExpr>(retS->getRetValue()->IgnoreParenCasts())) &&
               findLocationAfterSemi(retS->getEndLoc(), Pass.Ctx).isValid()) {
             scope.IsFollowedBySimpleReturnStmt = true;
             ++SI; // the return will be included in scope, don't check it.
           }
+}
+}
 
       for (; SI != SE; ++SI) {
         nameUsedOutsideScope = !NameReferenceChecker(Pass.Ctx, scope,
                                                      referenceLoc,
                                               declarationLoc).TraverseStmt(*SI);
-        if (nameUsedOutsideScope)
+        if (nameUsedOutsideScope) {
           break;
+}
       }
 
       // If not all references were cleared it means some variables/typenames/etc
@@ -339,30 +352,35 @@ private:
       ReleaseCollector releaseColl(scope.PoolVar, scope.Releases);
       Stmt::child_iterator I = scope.Begin;
       ++I;
-      for (; I != scope.End; ++I)
+      for (; I != scope.End; ++I) {
         releaseColl.TraverseStmt(*I);
+}
     }
 
     PoolVars[scope.PoolVar].Scopes.push_back(scope);
   }
 
   bool isPoolCreation(Expr *E) {
-    if (!E) return false;
+    if (!E) { return false;
+}
     E = getEssential(E);
     ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(E);
-    if (!ME) return false;
+    if (!ME) { return false;
+}
     if (ME->getMethodFamily() == OMF_new &&
         ME->getReceiverKind() == ObjCMessageExpr::Class &&
-        isNSAutoreleasePool(ME->getReceiverInterface()))
+        isNSAutoreleasePool(ME->getReceiverInterface())) {
       return true;
+}
     if (ME->getReceiverKind() == ObjCMessageExpr::Instance &&
         ME->getMethodFamily() == OMF_init) {
       Expr *rec = getEssential(ME->getInstanceReceiver());
       if (ObjCMessageExpr *recME = dyn_cast_or_null<ObjCMessageExpr>(rec)) {
         if (recME->getMethodFamily() == OMF_alloc &&
             recME->getReceiverKind() == ObjCMessageExpr::Class &&
-            isNSAutoreleasePool(recME->getReceiverInterface()))
+            isNSAutoreleasePool(recME->getReceiverInterface())) {
           return true;
+}
       }
     }
 
@@ -370,16 +388,20 @@ private:
   }
 
   bool isPoolDrain(VarDecl *poolVar, Stmt *S) {
-    if (!S) return false;
+    if (!S) { return false;
+}
     S = getEssential(S);
     ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(S);
-    if (!ME) return false;
+    if (!ME) { return false;
+}
     if (ME->getReceiverKind() == ObjCMessageExpr::Instance) {
       Expr *rec = getEssential(ME->getInstanceReceiver());
-      if (DeclRefExpr *dref = dyn_cast<DeclRefExpr>(rec))
-        if (dref->getDecl() == poolVar)
+      if (DeclRefExpr *dref = dyn_cast<DeclRefExpr>(rec)) {
+        if (dref->getDecl() == poolVar) {
           return ME->getMethodFamily() == OMF_release ||
                  ME->getSelector() == DrainSel;
+}
+}
     }
 
     return false;
@@ -391,10 +413,12 @@ private:
 
   bool isNSAutoreleasePool(QualType Ty) {
     QualType pointee = Ty->getPointeeType();
-    if (pointee.isNull())
+    if (pointee.isNull()) {
       return false;
-    if (const ObjCInterfaceType *interT = pointee->getAs<ObjCInterfaceType>())
+}
+    if (const ObjCInterfaceType *interT = pointee->getAs<ObjCInterfaceType>()) {
       return isNSAutoreleasePool(interT->getDecl());
+}
     return false;
   }
 
@@ -402,10 +426,12 @@ private:
     return cast<Expr>(getEssential((Stmt*)E));
   }
   static Stmt *getEssential(Stmt *S) {
-    if (FullExpr *FE = dyn_cast<FullExpr>(S))
+    if (FullExpr *FE = dyn_cast<FullExpr>(S)) {
       S = FE->getSubExpr();
-    if (Expr *E = dyn_cast<Expr>(S))
+}
+    if (Expr *E = dyn_cast<Expr>(S)) {
       S = E->IgnoreParenCasts();
+}
     return S;
   }
 

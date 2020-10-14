@@ -29,8 +29,9 @@ using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 
 MATCHER_P(Val, Value, "") {
-  if (*arg == Value)
+  if (*arg == Value) {
     return true;
+}
   *result_listener << "value is " << *arg;
   return false;
 }

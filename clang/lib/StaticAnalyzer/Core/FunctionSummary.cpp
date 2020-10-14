@@ -17,14 +17,16 @@ using namespace ento;
 
 unsigned FunctionSummariesTy::getTotalNumBasicBlocks() {
   unsigned Total = 0;
-  for (const auto &I : Map)
+  for (const auto &I : Map) {
     Total += I.second.TotalBasicBlocks;
+}
   return Total;
 }
 
 unsigned FunctionSummariesTy::getTotalNumVisitedBasicBlocks() {
   unsigned Total = 0;
-  for (const auto &I : Map)
+  for (const auto &I : Map) {
     Total += I.second.VisitedBasicBlocks.count();
+}
   return Total;
 }

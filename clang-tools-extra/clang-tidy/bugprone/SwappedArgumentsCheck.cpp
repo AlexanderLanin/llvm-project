@@ -26,10 +26,12 @@ void SwappedArgumentsCheck::registerMatchers(MatchFinder *Finder) {
 /// implicit conversions that have no effect on the input but block our view for
 /// other implicit casts.
 static const Expr *ignoreNoOpCasts(const Expr *E) {
-  if (auto *Cast = dyn_cast<CastExpr>(E))
+  if (auto *Cast = dyn_cast<CastExpr>(E)) {
     if (Cast->getCastKind() == CK_LValueToRValue ||
-        Cast->getCastKind() == CK_NoOp)
+        Cast->getCastKind() == CK_NoOp) {
       return ignoreNoOpCasts(Cast->getSubExpr());
+}
+}
   return E;
 }
 
@@ -57,8 +59,9 @@ void SwappedArgumentsCheck::check(const MatchFinder::MatchResult &Result) {
 
     // Only need to check RHS, as LHS has already been covered. We don't want to
     // emit two warnings for a single argument.
-    if (UsedArgs.count(RHS))
+    if (UsedArgs.count(RHS)) {
       continue;
+}
 
     const auto *LHSCast = dyn_cast<ImplicitCastExpr>(ignoreNoOpCasts(LHS));
     const auto *RHSCast = dyn_cast<ImplicitCastExpr>(ignoreNoOpCasts(RHS));
@@ -66,8 +69,9 @@ void SwappedArgumentsCheck::check(const MatchFinder::MatchResult &Result) {
     // Look if this is a potentially swapped argument pair. First look for
     // implicit casts.
     if (!LHSCast || !RHSCast || !isImplicitCastCandidate(LHSCast) ||
-        !isImplicitCastCandidate(RHSCast))
+        !isImplicitCastCandidate(RHSCast)) {
       continue;
+}
 
     // If the types that go into the implicit casts match the types of the other
     // argument in the declaration there is a high probability that the
@@ -79,8 +83,9 @@ void SwappedArgumentsCheck::check(const MatchFinder::MatchResult &Result) {
     const Expr *RHSFrom = ignoreNoOpCasts(RHSCast->getSubExpr());
     if (LHS->getType() == RHS->getType() ||
         LHS->getType() != RHSFrom->getType() ||
-        RHS->getType() != LHSFrom->getType())
+        RHS->getType() != LHSFrom->getType()) {
       continue;
+}
 
     // Emit a warning and fix-its that swap the arguments.
     diag(Call->getBeginLoc(), "argument with implicit conversion from %0 "

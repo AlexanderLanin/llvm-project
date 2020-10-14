@@ -213,8 +213,9 @@ public:
 
       std::unique_ptr<ASTConsumer>
       CreateASTConsumer(CompilerInstance &CI, llvm::StringRef InFile) override {
-        if (PragmaHandler)
+        if (PragmaHandler) {
           CI.getPreprocessor().addCommentHandler(PragmaHandler);
+}
         return createIndexingASTConsumer(DataConsumer, Opts,
                                          CI.getPreprocessorPtr());
       }
@@ -854,13 +855,16 @@ TEST_F(SymbolCollectorTest, SpelledReferences) {
     const auto TargetID = findSymbol(Symbols, T.TargetSymbolName).ID;
     for (const auto &SymbolAndRefs : Refs) {
       const auto ID = SymbolAndRefs.first;
-      if (ID != TargetID)
+      if (ID != TargetID) {
         continue;
-      for (const auto &Ref : SymbolAndRefs.second)
-        if ((Ref.Kind & RefKind::Spelled) != RefKind::Unknown)
+}
+      for (const auto &Ref : SymbolAndRefs.second) {
+        if ((Ref.Kind & RefKind::Spelled) != RefKind::Unknown) {
           SpelledSlabBuilder.insert(ID, Ref);
-        else
+        } else {
           ImplicitSlabBuilder.insert(ID, Ref);
+}
+}
     }
     const auto SpelledRefs = std::move(SpelledSlabBuilder).build(),
                ImplicitRefs = std::move(ImplicitSlabBuilder).build();
@@ -1290,9 +1294,10 @@ TEST_F(SymbolCollectorTest, CanonicalSTLHeader) {
       }
       )cpp",
       /*Main=*/"");
-  for (const auto &S : Symbols)
+  for (const auto &S : Symbols) {
     llvm::errs() << S.Scope << S.Name << " in " << S.IncludeHeaders.size()
                  << "\n";
+}
   EXPECT_THAT(
       Symbols,
       UnorderedElementsAre(

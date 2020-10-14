@@ -60,18 +60,20 @@ void ProBoundsConstantArrayIndexCheck::check(
   const auto *Matched = Result.Nodes.getNodeAs<Expr>("expr");
   const auto *IndexExpr = Result.Nodes.getNodeAs<Expr>("index");
 
-  if (IndexExpr->isValueDependent())
+  if (IndexExpr->isValueDependent()) {
     return; // We check in the specialization.
+}
 
   Optional<llvm::APSInt> Index =
       IndexExpr->getIntegerConstantExpr(*Result.Context);
   if (!Index) {
     SourceRange BaseRange;
-    if (const auto *ArraySubscriptE = dyn_cast<ArraySubscriptExpr>(Matched))
+    if (const auto *ArraySubscriptE = dyn_cast<ArraySubscriptExpr>(Matched)) {
       BaseRange = ArraySubscriptE->getBase()->getSourceRange();
-    else
+    } else {
       BaseRange =
           dyn_cast<CXXOperatorCallExpr>(Matched)->getArg(0)->getSourceRange();
+}
     SourceRange IndexRange = IndexExpr->getSourceRange();
 
     auto Diag = diag(Matched->getExprLoc(),
@@ -94,8 +96,9 @@ void ProBoundsConstantArrayIndexCheck::check(
       Result.Nodes.getNodeAs<ClassTemplateSpecializationDecl>("type");
 
   // For static arrays, this is handled in clang-diagnostic-array-bounds.
-  if (!StdArrayDecl)
+  if (!StdArrayDecl) {
     return;
+}
 
   if (Index->isSigned() && Index->isNegative()) {
     diag(Matched->getExprLoc(), "std::array<> index %0 is negative")
@@ -104,12 +107,14 @@ void ProBoundsConstantArrayIndexCheck::check(
   }
 
   const TemplateArgumentList &TemplateArgs = StdArrayDecl->getTemplateArgs();
-  if (TemplateArgs.size() < 2)
+  if (TemplateArgs.size() < 2) {
     return;
+}
   // First template arg of std::array is the type, second arg is the size.
   const auto &SizeArg = TemplateArgs[1];
-  if (SizeArg.getKind() != TemplateArgument::Integral)
+  if (SizeArg.getKind() != TemplateArgument::Integral) {
     return;
+}
   llvm::APInt ArraySize = SizeArg.getAsIntegral();
 
   // Get uint64_t values, because different bitwidths would lead to an assertion

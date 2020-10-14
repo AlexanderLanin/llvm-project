@@ -43,8 +43,9 @@ public:
   }
 
   bool TraverseDecl(Decl *D) {
-    if (!D || D->isImplicit())
+    if (!D || D->isImplicit()) {
       return true;
+}
 
     SaveAndRestore<bool> Save(FullyMigratable, isMigratable(D));
 
@@ -58,15 +59,17 @@ public:
   }
 
   void lookForAttribute(Decl *D, TypeSourceInfo *TInfo) {
-    if (!TInfo)
+    if (!TInfo) {
       return;
+}
     TypeLoc TL = TInfo->getTypeLoc();
     while (TL) {
       if (QualifiedTypeLoc QL = TL.getAs<QualifiedTypeLoc>()) {
         TL = QL.getUnqualifiedLoc();
       } else if (AttributedTypeLoc Attr = TL.getAs<AttributedTypeLoc>()) {
-        if (handleAttr(Attr, D))
+        if (handleAttr(Attr, D)) {
           break;
+}
         TL = Attr.getModifiedLoc();
       } else if (MacroQualifiedTypeLoc MDTL =
                      TL.getAs<MacroQualifiedTypeLoc>()) {
@@ -75,35 +78,40 @@ public:
         TL = Arr.getElementLoc();
       } else if (PointerTypeLoc PT = TL.getAs<PointerTypeLoc>()) {
         TL = PT.getPointeeLoc();
-      } else if (ReferenceTypeLoc RT = TL.getAs<ReferenceTypeLoc>())
+      } else if (ReferenceTypeLoc RT = TL.getAs<ReferenceTypeLoc>()) {
         TL = RT.getPointeeLoc();
-      else
+      } else {
         break;
+}
     }
   }
 
   bool handleAttr(AttributedTypeLoc TL, Decl *D = nullptr) {
     auto *OwnershipAttr = TL.getAttrAs<ObjCOwnershipAttr>();
-    if (!OwnershipAttr)
+    if (!OwnershipAttr) {
       return false;
+}
 
     SourceLocation Loc = OwnershipAttr->getLocation();
     unsigned RawLoc = Loc.getRawEncoding();
-    if (MigrateCtx.AttrSet.count(RawLoc))
+    if (MigrateCtx.AttrSet.count(RawLoc)) {
       return true;
+}
 
     ASTContext &Ctx = MigrateCtx.Pass.Ctx;
     SourceManager &SM = Ctx.getSourceManager();
-    if (Loc.isMacroID())
+    if (Loc.isMacroID()) {
       Loc = SM.getImmediateExpansionRange(Loc).getBegin();
+}
     StringRef Spell = OwnershipAttr->getKind()->getName();
     MigrationContext::GCAttrOccurrence::AttrKind Kind;
-    if (Spell == "strong")
+    if (Spell == "strong") {
       Kind = MigrationContext::GCAttrOccurrence::Strong;
-    else if (Spell == "weak")
+    } else if (Spell == "weak") {
       Kind = MigrationContext::GCAttrOccurrence::Weak;
-    else
+    } else {
       return false;
+}
 
     MigrateCtx.AttrSet.insert(RawLoc);
     MigrateCtx.GCAttrs.push_back(MigrationContext::GCAttrOccurrence());
@@ -118,22 +126,27 @@ public:
   }
 
   bool isMigratable(Decl *D) {
-    if (isa<TranslationUnitDecl>(D))
+    if (isa<TranslationUnitDecl>(D)) {
       return false;
+}
 
-    if (isInMainFile(D))
+    if (isInMainFile(D)) {
       return true;
+}
 
-    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
+    if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
       return FD->hasBody();
+}
 
-    if (ObjCContainerDecl *ContD = dyn_cast<ObjCContainerDecl>(D))
+    if (ObjCContainerDecl *ContD = dyn_cast<ObjCContainerDecl>(D)) {
       return hasObjCImpl(ContD);
+}
 
     if (CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D)) {
       for (const auto *MI : RD->methods()) {
-        if (MI->isOutOfLine())
+        if (MI->isOutOfLine()) {
           return true;
+}
       }
       return false;
     }
@@ -142,32 +155,39 @@ public:
   }
 
   static bool hasObjCImpl(Decl *D) {
-    if (!D)
+    if (!D) {
       return false;
+}
     if (ObjCContainerDecl *ContD = dyn_cast<ObjCContainerDecl>(D)) {
-      if (ObjCInterfaceDecl *ID = dyn_cast<ObjCInterfaceDecl>(ContD))
+      if (ObjCInterfaceDecl *ID = dyn_cast<ObjCInterfaceDecl>(ContD)) {
         return ID->getImplementation() != nullptr;
-      if (ObjCCategoryDecl *CD = dyn_cast<ObjCCategoryDecl>(ContD))
+}
+      if (ObjCCategoryDecl *CD = dyn_cast<ObjCCategoryDecl>(ContD)) {
         return CD->getImplementation() != nullptr;
+}
       return isa<ObjCImplDecl>(ContD);
     }
     return false;
   }
 
   bool isInMainFile(Decl *D) {
-    if (!D)
+    if (!D) {
       return false;
+}
 
-    for (auto I : D->redecls())
-      if (!isInMainFile(I->getLocation()))
+    for (auto I : D->redecls()) {
+      if (!isInMainFile(I->getLocation())) {
         return false;
+}
+}
 
     return true;
   }
 
   bool isInMainFile(SourceLocation Loc) {
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       return false;
+}
 
     SourceManager &SM = MigrateCtx.Pass.Ctx.getSourceManager();
     return SM.isInFileID(SM.getExpansionLoc(Loc), SM.getMainFileID());
@@ -182,8 +202,9 @@ static void errorForGCAttrsOnNonObjC(MigrationContext &MigrateCtx) {
   for (unsigned i = 0, e = MigrateCtx.GCAttrs.size(); i != e; ++i) {
     MigrationContext::GCAttrOccurrence &Attr = MigrateCtx.GCAttrs[i];
     if (Attr.FullyMigratable && Attr.Dcl) {
-      if (Attr.ModifiedType.isNull())
+      if (Attr.ModifiedType.isNull()) {
         continue;
+}
       if (!Attr.ModifiedType->isObjCRetainableType()) {
         TA.reportError("GC managed memory will become unmanaged in ARC",
                        Attr.Loc);
@@ -199,13 +220,15 @@ static void checkWeakGCAttrs(MigrationContext &MigrateCtx) {
     MigrationContext::GCAttrOccurrence &Attr = MigrateCtx.GCAttrs[i];
     if (Attr.Kind == MigrationContext::GCAttrOccurrence::Weak) {
       if (Attr.ModifiedType.isNull() ||
-          !Attr.ModifiedType->isObjCRetainableType())
+          !Attr.ModifiedType->isObjCRetainableType()) {
         continue;
+}
       if (!canApplyWeak(MigrateCtx.Pass.Ctx, Attr.ModifiedType,
                         /*AllowOnUnknownClass=*/true)) {
         Transaction Trans(TA);
-        if (!MigrateCtx.RemovedAttrSet.count(Attr.Loc.getRawEncoding()))
+        if (!MigrateCtx.RemovedAttrSet.count(Attr.Loc.getRawEncoding())) {
           TA.replaceText(Attr.Loc, "__weak", "__unsafe_unretained");
+}
         TA.clearDiagnostic(diag::err_arc_weak_no_runtime,
                            diag::err_arc_unsupported_weak_class,
                            Attr.Loc);
@@ -219,14 +242,16 @@ typedef llvm::TinyPtrVector<ObjCPropertyDecl *> IndivPropsTy;
 static void checkAllAtProps(MigrationContext &MigrateCtx,
                             SourceLocation AtLoc,
                             IndivPropsTy &IndProps) {
-  if (IndProps.empty())
+  if (IndProps.empty()) {
     return;
+}
 
   for (IndivPropsTy::iterator
          PI = IndProps.begin(), PE = IndProps.end(); PI != PE; ++PI) {
     QualType T = (*PI)->getType();
-    if (T.isNull() || !T->isObjCRetainableType())
+    if (T.isNull() || !T->isObjCRetainableType()) {
       return;
+}
   }
 
   SmallVector<std::pair<AttributedTypeLoc, ObjCPropertyDecl *>, 4> ATLs;
@@ -237,54 +262,62 @@ static void checkAllAtProps(MigrationContext &MigrateCtx,
     ObjCPropertyDecl *PD = *PI;
     Attrs = PD->getPropertyAttributesAsWritten();
     TypeSourceInfo *TInfo = PD->getTypeSourceInfo();
-    if (!TInfo)
+    if (!TInfo) {
       return;
+}
     TypeLoc TL = TInfo->getTypeLoc();
     if (AttributedTypeLoc ATL =
             TL.getAs<AttributedTypeLoc>()) {
       ATLs.push_back(std::make_pair(ATL, PD));
       if (TInfo->getType().getObjCLifetime() == Qualifiers::OCL_Weak) {
         hasWeak = true;
-      } else if (TInfo->getType().getObjCLifetime() == Qualifiers::OCL_Strong)
+      } else if (TInfo->getType().getObjCLifetime() == Qualifiers::OCL_Strong) {
         hasStrong = true;
-      else
+      } else {
         return;
+}
     }
   }
-  if (ATLs.empty())
+  if (ATLs.empty()) {
     return;
-  if (hasWeak && hasStrong)
+}
+  if (hasWeak && hasStrong) {
     return;
+}
 
   TransformActions &TA = MigrateCtx.Pass.TA;
   Transaction Trans(TA);
 
   if (GCAttrsCollector::hasObjCImpl(
                               cast<Decl>(IndProps.front()->getDeclContext()))) {
-    if (hasWeak)
+    if (hasWeak) {
       MigrateCtx.AtPropsWeak.insert(AtLoc.getRawEncoding());
+}
 
   } else {
     StringRef toAttr = "strong";
     if (hasWeak) {
       if (canApplyWeak(MigrateCtx.Pass.Ctx, IndProps.front()->getType(),
-                       /*AllowOnUnknownClass=*/true))
+                       /*AllowOnUnknownClass=*/true)) {
         toAttr = "weak";
-      else
+      } else {
         toAttr = "unsafe_unretained";
+}
     }
-    if (Attrs & ObjCPropertyAttribute::kind_assign)
+    if (Attrs & ObjCPropertyAttribute::kind_assign) {
       MigrateCtx.rewritePropertyAttribute("assign", toAttr, AtLoc);
-    else
+    } else {
       MigrateCtx.addPropertyAttribute(toAttr, AtLoc);
+}
   }
 
   for (unsigned i = 0, e = ATLs.size(); i != e; ++i) {
     SourceLocation Loc = ATLs[i].first.getAttr()->getLocation();
-    if (Loc.isMacroID())
+    if (Loc.isMacroID()) {
       Loc = MigrateCtx.Pass.Ctx.getSourceManager()
                 .getImmediateExpansionRange(Loc)
                 .getBegin();
+}
     TA.remove(Loc);
     TA.clearDiagnostic(diag::err_objc_property_attr_mutually_exclusive, AtLoc);
     TA.clearDiagnostic(diag::err_arc_inconsistent_property_ownership,
@@ -304,8 +337,9 @@ static void checkAllProps(MigrationContext &MigrateCtx,
         (ObjCPropertyAttribute::kind_assign |
          ObjCPropertyAttribute::kind_readonly)) {
       SourceLocation AtLoc = PD->getAtLoc();
-      if (AtLoc.isInvalid())
+      if (AtLoc.isInvalid()) {
         continue;
+}
       unsigned RawAt = AtLoc.getRawEncoding();
       AtProps[RawAt].push_back(PD);
     }

@@ -29,16 +29,18 @@ public:
   }
   void
   check(const clang::ast_matchers::MatchFinder::MatchResult &Result) override {
-    if (!Inserter)
+    if (!Inserter) {
       Inserter.reset(new UsingInserter(*Result.SourceManager));
+}
 
     const auto *Call = Result.Nodes.getNodeAs<clang::CallExpr>("foo");
     assert(Call != nullptr && "Did not find node \"foo\"");
     auto Hint =
         Inserter->createUsingDeclaration(*Result.Context, *Call, "::foo::func");
 
-    if (Hint.hasValue())
+    if (Hint.hasValue()) {
       diag(Call->getBeginLoc(), "Fix for testing") << Hint.getValue();
+}
 
     diag(Call->getBeginLoc(), "insert call")
         << clang::FixItHint::CreateReplacement(

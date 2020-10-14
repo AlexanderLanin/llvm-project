@@ -51,8 +51,9 @@ class FileConfigCache {
 
     // Finally parse and compile the actual fragments.
     for (auto &Fragment :
-         Fragment::parseYAML(Buf->get()->getBuffer(), Path, DC))
+         Fragment::parseYAML(Buf->get()->getBuffer(), Path, DC)) {
       CachedValue.push_back(std::move(Fragment).compile(DC));
+}
   }
 
 public:
@@ -75,8 +76,9 @@ public:
         [&] { llvm::copy(CachedValue, std::back_inserter(Out)); });
 
     // Return any sufficiently recent result without doing any further work.
-    if (FreshTime && ValidTime >= FreshTime)
+    if (FreshTime && ValidTime >= FreshTime) {
       return;
+}
 
     // Ensure we bump the ValidTime at the end to allow for reuse.
     auto MarkTime = llvm::make_scope_exit(
@@ -94,8 +96,9 @@ public:
       return;
     }
     // If the modified-time and size match, assume the content does too.
-    if (Size == Stat->getSize() && MTime == Stat->getLastModificationTime())
+    if (Size == Stat->getSize() && MTime == Stat->getLastModificationTime()) {
       return;
+}
 
     // OK, the file has actually changed. Update cache key, compute new value.
     Size = Stat->getSize();
@@ -144,8 +147,9 @@ Provider::fromAncestorRelativeYAMLFiles(llvm::StringRef RelPath,
     getFragments(const Params &P, DiagnosticCallback DC) const override {
       namespace path = llvm::sys::path;
 
-      if (P.Path.empty())
+      if (P.Path.empty()) {
         return {};
+}
 
       // Compute absolute paths to all ancestors (substrings of P.Path).
       llvm::StringRef Parent = path::parent_path(P.Path);
@@ -155,8 +159,9 @@ Provider::fromAncestorRelativeYAMLFiles(llvm::StringRef RelPath,
            I != E; ++I) {
         // Avoid weird non-substring cases like phantom "." components.
         // In practice, Component is a substring for all "normal" ancestors.
-        if (I->end() < Parent.begin() && I->end() > Parent.end())
+        if (I->end() < Parent.begin() && I->end() > Parent.end()) {
           continue;
+}
         Ancestors.emplace_back(Parent.begin(), I->end() - Parent.begin());
       }
       // Ensure corresponding cache entries exist in the map.
@@ -177,8 +182,9 @@ Provider::fromAncestorRelativeYAMLFiles(llvm::StringRef RelPath,
       // Finally query each individual file.
       // This will take a (per-file) lock for each file that actually exists.
       std::vector<CompiledFragment> Result;
-      for (FileConfigCache *Cache : Caches)
+      for (FileConfigCache *Cache : Caches) {
         Cache->read(FS, DC, P.FreshTime, Result);
+}
       return Result;
     };
 
@@ -201,8 +207,9 @@ Provider::combine(std::vector<const Provider *> Providers) {
     getFragments(const Params &P, DiagnosticCallback DC) const override {
       std::vector<CompiledFragment> Result;
       for (const auto &Provider : Providers) {
-        for (auto &Fragment : Provider->getFragments(P, DC))
+        for (auto &Fragment : Provider->getFragments(P, DC)) {
           Result.push_back(std::move(Fragment));
+}
       }
       return Result;
     }
@@ -218,11 +225,13 @@ Provider::combine(std::vector<const Provider *> Providers) {
 
 Config Provider::getConfig(const Params &P, DiagnosticCallback DC) const {
   trace::Span Tracer("getConfig");
-  if (!P.Path.empty())
+  if (!P.Path.empty()) {
     SPAN_ATTACH(Tracer, "path", P.Path);
+}
   Config C;
-  for (const auto &Fragment : getFragments(P, DC))
+  for (const auto &Fragment : getFragments(P, DC)) {
     Fragment(P, C);
+}
   return C;
 }
 

@@ -32,9 +32,10 @@ namespace {
 class DynamicTypeChecker : public Checker<check::PostStmt<ImplicitCastExpr>> {
   mutable std::unique_ptr<BugType> BT;
   void initBugType() const {
-    if (!BT)
+    if (!BT) {
       BT.reset(
           new BugType(this, "Dynamic and static type mismatch", "Type Error"));
+}
   }
 
   class DynamicTypeBugVisitor : public BugReporterVisitor {
@@ -95,17 +96,20 @@ PathDiagnosticPieceRef DynamicTypeChecker::DynamicTypeBugVisitor::VisitNode(
 
   DynamicTypeInfo TrackedType = getDynamicTypeInfo(State, Reg);
   DynamicTypeInfo TrackedTypePrev = getDynamicTypeInfo(StatePrev, Reg);
-  if (!TrackedType.isValid())
+  if (!TrackedType.isValid()) {
     return nullptr;
+}
 
   if (TrackedTypePrev.isValid() &&
-      TrackedTypePrev.getType() == TrackedType.getType())
+      TrackedTypePrev.getType() == TrackedType.getType()) {
     return nullptr;
+}
 
   // Retrieve the associated statement.
   const Stmt *S = N->getStmtForDiagnostics();
-  if (!S)
+  if (!S) {
     return nullptr;
+}
 
   const LangOptions &LangOpts = BRC.getASTContext().getLangOpts();
 
@@ -144,8 +148,9 @@ PathDiagnosticPieceRef DynamicTypeChecker::DynamicTypeBugVisitor::VisitNode(
 
 static bool hasDefinition(const ObjCObjectPointerType *ObjPtr) {
   const ObjCInterfaceDecl *Decl = ObjPtr->getInterfaceDecl();
-  if (!Decl)
+  if (!Decl) {
     return false;
+}
 
   return Decl->getDefinition();
 }
@@ -154,18 +159,21 @@ static bool hasDefinition(const ObjCObjectPointerType *ObjPtr) {
 void DynamicTypeChecker::checkPostStmt(const ImplicitCastExpr *CE,
                                        CheckerContext &C) const {
   // TODO: C++ support.
-  if (CE->getCastKind() != CK_BitCast)
+  if (CE->getCastKind() != CK_BitCast) {
     return;
+}
 
   const MemRegion *Region = C.getSVal(CE).getAsRegion();
-  if (!Region)
+  if (!Region) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   DynamicTypeInfo DynTypeInfo = getDynamicTypeInfo(State, Region);
 
-  if (!DynTypeInfo.isValid())
+  if (!DynTypeInfo.isValid()) {
     return;
+}
 
   QualType DynType = DynTypeInfo.getType();
   QualType StaticType = CE->getType();
@@ -173,11 +181,13 @@ void DynamicTypeChecker::checkPostStmt(const ImplicitCastExpr *CE,
   const auto *DynObjCType = DynType->getAs<ObjCObjectPointerType>();
   const auto *StaticObjCType = StaticType->getAs<ObjCObjectPointerType>();
 
-  if (!DynObjCType || !StaticObjCType)
+  if (!DynObjCType || !StaticObjCType) {
     return;
+}
 
-  if (!hasDefinition(DynObjCType) || !hasDefinition(StaticObjCType))
+  if (!hasDefinition(DynObjCType) || !hasDefinition(StaticObjCType)) {
     return;
+}
 
   ASTContext &ASTCtxt = C.getASTContext();
 
@@ -186,15 +196,18 @@ void DynamicTypeChecker::checkPostStmt(const ImplicitCastExpr *CE,
   StaticObjCType = StaticObjCType->stripObjCKindOfTypeAndQuals(ASTCtxt);
 
   // Specialized objects are handled by the generics checker.
-  if (StaticObjCType->isSpecialized())
+  if (StaticObjCType->isSpecialized()) {
     return;
+}
 
-  if (ASTCtxt.canAssignObjCInterfaces(StaticObjCType, DynObjCType))
+  if (ASTCtxt.canAssignObjCInterfaces(StaticObjCType, DynObjCType)) {
     return;
+}
 
   if (DynTypeInfo.canBeASubClass() &&
-      ASTCtxt.canAssignObjCInterfaces(DynObjCType, StaticObjCType))
+      ASTCtxt.canAssignObjCInterfaces(DynObjCType, StaticObjCType)) {
     return;
+}
 
   reportTypeError(DynType, StaticType, Region, CE, C);
 }

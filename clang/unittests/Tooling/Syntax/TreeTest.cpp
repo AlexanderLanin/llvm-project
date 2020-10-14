@@ -39,8 +39,9 @@ private:
     assert(ParentCount > 0);
     // If there is only one Parent node, then combine `Children` under
     // this Parent.
-    if (ParentCount == 1)
+    if (ParentCount == 1) {
       return {{createTree(Children)}};
+}
 
     // Otherwise, combine `ChildrenCount` children under the last parent and
     // solve the smaller problem without these children and this parent. Do this
@@ -89,13 +90,15 @@ protected:
     };
 
     std::vector<std::vector<const Node *>> Layer = {Base};
-    for (auto NodeCount : NodeCountPerLayer)
+    for (auto NodeCount : NodeCountPerLayer) {
       Layer = GenerateNextLayer(Layer, NodeCount);
+}
 
     std::vector<const Tree *> AllTrees;
     AllTrees.reserve(Layer.size());
-    for (const auto &Base : Layer)
+    for (const auto &Base : Layer) {
       AllTrees.push_back(createTree(Base));
+}
 
     return AllTrees;
   }

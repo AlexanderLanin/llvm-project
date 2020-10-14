@@ -58,8 +58,9 @@ void InvalidatedIteratorChecker::checkPreCall(const CallEvent &Call,
                                               CheckerContext &C) const {
   // Check for access of invalidated position
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+}
 
   if (Func->isOverloadedOperator() &&
       isAccessOperator(Func->getOverloadedOperator())) {
@@ -74,8 +75,9 @@ void InvalidatedIteratorChecker::checkPreCall(const CallEvent &Call,
 
 void InvalidatedIteratorChecker::checkPreStmt(const UnaryOperator *UO,
                                               CheckerContext &C) const {
-  if (isa<CXXThisExpr>(UO->getSubExpr()))
+  if (isa<CXXThisExpr>(UO->getSubExpr())) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   UnaryOperatorKind OK = UO->getOpcode();
@@ -106,8 +108,9 @@ void InvalidatedIteratorChecker::checkPreStmt(const ArraySubscriptExpr *ASE,
 
 void InvalidatedIteratorChecker::checkPreStmt(const MemberExpr *ME,
                                               CheckerContext &C) const {
-  if (!ME->isArrow() || ME->isImplicitAccess())
+  if (!ME->isArrow() || ME->isImplicitAccess()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   SVal BaseVal = State->getSVal(ME->getBase(), C.getLocationContext());

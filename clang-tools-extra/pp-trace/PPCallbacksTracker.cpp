@@ -24,8 +24,9 @@ namespace pp_trace {
 // Get a "file:line:column" source location string.
 static std::string getSourceLocationString(Preprocessor &PP,
                                            SourceLocation Loc) {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return std::string("(none)");
+}
 
   if (Loc.isFileID()) {
     PresumedLoc PLoc = PP.getSourceManager().getPresumedLoc(Loc);
@@ -277,8 +278,9 @@ void PPCallbacksTracker::PragmaWarning(SourceLocation Loc,
   llvm::raw_string_ostream SS(Str);
   SS << "[";
   for (int i = 0, e = Ids.size(); i != e; ++i) {
-    if (i)
+    if (i) {
       SS << ", ";
+}
     SS << Ids[i];
   }
   SS << "]";
@@ -420,13 +422,16 @@ void PPCallbacksTracker::beginCallback(const char *Name) {
   auto R = CallbackIsEnabled.try_emplace(Name, false);
   if (R.second) {
     llvm::StringRef N(Name);
-    for (const std::pair<llvm::GlobPattern, bool> &Filter : Filters)
-      if (Filter.first.match(N))
+    for (const std::pair<llvm::GlobPattern, bool> &Filter : Filters) {
+      if (Filter.first.match(N)) {
         R.first->second = Filter.second;
+}
+}
   }
   DisableTrace = !R.first->second;
-  if (DisableTrace)
+  if (DisableTrace) {
     return;
+}
   CallbackCalls.push_back(CallbackCall(Name));
 }
 
@@ -445,8 +450,9 @@ void PPCallbacksTracker::appendArgument(const char *Name, int Value) {
 
 // Append a string argument to the top trace item.
 void PPCallbacksTracker::appendArgument(const char *Name, const char *Value) {
-  if (DisableTrace)
+  if (DisableTrace) {
     return;
+}
   CallbackCalls.back().Arguments.push_back(Argument{Name, Value});
 }
 
@@ -509,8 +515,9 @@ void PPCallbacksTracker::appendArgument(const char *Name,
 
 // Append a SourceRange argument to the top trace item.
 void PPCallbacksTracker::appendArgument(const char *Name, SourceRange Value) {
-  if (DisableTrace)
+  if (DisableTrace) {
     return;
+}
   if (Value.isInvalid()) {
     appendArgument(Name, "(invalid)");
     return;
@@ -534,14 +541,16 @@ void PPCallbacksTracker::appendArgument(const char *Name,
 
 // Append a SourceLocation argument to the top trace item.
 void PPCallbacksTracker::appendArgument(const char *Name, ModuleIdPath Value) {
-  if (DisableTrace)
+  if (DisableTrace) {
     return;
+}
   std::string Str;
   llvm::raw_string_ostream SS(Str);
   SS << "[";
   for (int I = 0, E = Value.size(); I != E; ++I) {
-    if (I)
+    if (I) {
       SS << ", ";
+}
     SS << "{"
        << "Name: " << Value[I].first->getName() << ", "
        << "Loc: " << getSourceLocationString(PP, Value[I].second) << "}";
@@ -582,7 +591,8 @@ void PPCallbacksTracker::appendArgument(const char *Name,
     Any = true;
   }
   for (auto *MM : Value.getModuleMacros()) {
-    if (Any) SS << ", ";
+    if (Any) { SS << ", ";
+}
     SS << MM->getOwningModule()->getFullModuleName();
   }
   SS << "]";
@@ -604,12 +614,14 @@ void PPCallbacksTracker::appendArgument(const char *Name,
   // Go through each argument printing tokens until we reach eof.
   for (unsigned I = 0; I < Value->getNumMacroArguments(); ++I) {
     const Token *Current = Value->getUnexpArgument(I);
-    if (I)
+    if (I) {
       SS << ", ";
+}
     bool First = true;
     while (Current->isNot(tok::eof)) {
-      if (!First)
+      if (!First) {
         SS << " ";
+}
       // We need to be careful here because the arguments might not be legal in
       // YAML, so we use the token name for anything but identifiers and
       // numeric literals.

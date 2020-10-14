@@ -50,14 +50,16 @@ void StaticAccessedThroughInstanceCheck::check(
   const auto *MemberExpression =
       Result.Nodes.getNodeAs<MemberExpr>("memberExpression");
 
-  if (MemberExpression->getBeginLoc().isMacroID())
+  if (MemberExpression->getBeginLoc().isMacroID()) {
     return;
+}
 
   const Expr *BaseExpr = MemberExpression->getBase();
 
   // Do not warn for overlaoded -> operators.
-  if (isa<CXXOperatorCallExpr>(BaseExpr))
+  if (isa<CXXOperatorCallExpr>(BaseExpr)) {
     return;
+}
 
   QualType BaseType =
       BaseExpr->getType()->isPointerType()
@@ -76,8 +78,9 @@ void StaticAccessedThroughInstanceCheck::check(
       diag(MemberExprStartLoc, "static member accessed through instance");
 
   if (BaseExpr->HasSideEffects(*AstContext) ||
-      getNameSpecifierNestingLevel(BaseType) > NameSpecifierNestingThreshold)
+      getNameSpecifierNestingLevel(BaseType) > NameSpecifierNestingThreshold) {
     return;
+}
 
   Diag << FixItHint::CreateReplacement(
       CharSourceRange::getCharRange(MemberExprStartLoc,

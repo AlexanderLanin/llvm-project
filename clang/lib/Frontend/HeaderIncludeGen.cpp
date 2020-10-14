@@ -38,8 +38,9 @@ public:
         ShowDepth(ShowDepth_), MSStyle(MSStyle_) {}
 
   ~HeaderIncludesCallback() override {
-    if (OwnsOutputFile)
+    if (OwnsOutputFile) {
       delete OutputFile;
+}
   }
 
   void FileChanged(SourceLocation Loc, FileChangeReason Reason,
@@ -53,20 +54,24 @@ static void PrintHeaderInfo(raw_ostream *OutputFile, StringRef Filename,
                             bool MSStyle) {
   // Write to a temporary string to avoid unnecessary flushing on errs().
   SmallString<512> Pathname(Filename);
-  if (!MSStyle)
+  if (!MSStyle) {
     Lexer::Stringify(Pathname);
+}
 
   SmallString<256> Msg;
-  if (MSStyle)
+  if (MSStyle) {
     Msg += "Note: including file:";
+}
 
   if (ShowDepth) {
     // The main source file is at depth 1, so skip one dot.
-    for (unsigned i = 1; i != CurrentIncludeDepth; ++i)
+    for (unsigned i = 1; i != CurrentIncludeDepth; ++i) {
       Msg += MSStyle ? ' ' : '.';
+}
 
-    if (!MSStyle)
+    if (!MSStyle) {
       Msg += ' ';
+}
   }
   Msg += Pathname;
   Msg += '\n';
@@ -118,8 +123,9 @@ void clang::AttachHeaderIncludeGen(Preprocessor &PP,
   // generation of Make / Ninja file dependencies for implicit includes, such
   // as sanitizer blacklists. It's only important for cl.exe compatibility,
   // the GNU way to generate rules is -M / -MM / -MD / -MMD.
-  for (const auto &Header : DepOpts.ExtraDeps)
+  for (const auto &Header : DepOpts.ExtraDeps) {
     PrintHeaderInfo(OutputFile, Header, ShowDepth, 2, MSStyle);
+}
   PP.addPPCallbacks(std::make_unique<HeaderIncludesCallback>(
       &PP, ShowAllHeaders, OutputFile, DepOpts, OwnsOutputFile, ShowDepth,
       MSStyle));
@@ -132,15 +138,17 @@ void HeaderIncludesCallback::FileChanged(SourceLocation Loc,
   // Unless we are exiting a #include, make sure to skip ahead to the line the
   // #include directive was at.
   PresumedLoc UserLoc = SM.getPresumedLoc(Loc);
-  if (UserLoc.isInvalid())
+  if (UserLoc.isInvalid()) {
     return;
+}
 
   // Adjust the current include depth.
   if (Reason == PPCallbacks::EnterFile) {
     ++CurrentIncludeDepth;
   } else if (Reason == PPCallbacks::ExitFile) {
-    if (CurrentIncludeDepth)
+    if (CurrentIncludeDepth) {
       --CurrentIncludeDepth;
+}
 
     // We track when we are done with the predefines by watching for the first
     // place where we drop back to a nesting depth of 1.
@@ -153,8 +161,9 @@ void HeaderIncludesCallback::FileChanged(SourceLocation Loc,
     }
 
     return;
-  } else
+  } else {
     return;
+}
 
   // Show the header if we are (a) past the predefines, or (b) showing all
   // headers and in the predefines at a depth past the initial file and command
@@ -162,13 +171,15 @@ void HeaderIncludesCallback::FileChanged(SourceLocation Loc,
   bool ShowHeader = (HasProcessedPredefines ||
                      (ShowAllHeaders && CurrentIncludeDepth > 2));
   unsigned IncludeDepth = CurrentIncludeDepth;
-  if (!HasProcessedPredefines)
+  if (!HasProcessedPredefines) {
     --IncludeDepth; // Ignore indent from <built-in>.
-  else if (!DepOpts.ShowIncludesPretendHeader.empty())
+  } else if (!DepOpts.ShowIncludesPretendHeader.empty()) {
     ++IncludeDepth; // Pretend inclusion by ShowIncludesPretendHeader.
+}
 
-  if (!DepOpts.IncludeSystemHeaders && isSystem(NewFileType))
+  if (!DepOpts.IncludeSystemHeaders && isSystem(NewFileType)) {
     ShowHeader = false;
+}
 
   // Dump the header include information we are past the predefines buffer or
   // are showing all headers and this isn't the magic implicit <command line>

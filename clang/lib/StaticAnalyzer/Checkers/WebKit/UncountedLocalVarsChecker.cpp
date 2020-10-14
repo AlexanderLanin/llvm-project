@@ -58,13 +58,15 @@ bool isRefcountedStringsHack(const VarDecl *V) {
   QualType QT = V->getType();
   auto *T = QT.getTypePtr();
   if (auto *CXXRD = T->getAsCXXRecordDecl()) {
-    if (safeClass(safeGetName(CXXRD)))
+    if (safeClass(safeGetName(CXXRD))) {
       return true;
+}
   }
   if (T->isPointerType() || T->isReferenceType()) {
     if (auto *CXXRD = T->getPointeeCXXRecordDecl()) {
-      if (safeClass(safeGetName(CXXRD)))
+      if (safeClass(safeGetName(CXXRD))) {
         return true;
+}
     }
   }
   return false;
@@ -75,8 +77,9 @@ bool isGuardedScopeEmbeddedInGuardianScope(const VarDecl *Guarded,
   assert(Guarded);
   assert(MaybeGuardian);
 
-  if (!MaybeGuardian->isLocalVarDecl())
+  if (!MaybeGuardian->isLocalVarDecl()) {
     return false;
+}
 
   const CompoundStmt *guardiansClosestCompStmtAncestor = nullptr;
 
@@ -94,12 +97,14 @@ bool isGuardedScopeEmbeddedInGuardianScope(const VarDecl *Guarded,
         break;
       }
     }
-    if (guardiansClosestCompStmtAncestor)
+    if (guardiansClosestCompStmtAncestor) {
       break;
+}
   }
 
-  if (!guardiansClosestCompStmtAncestor)
+  if (!guardiansClosestCompStmtAncestor) {
     return false;
+}
 
   // We need to skip the first CompoundStmt to avoid situation when guardian is
   // defined in the same scope as guarded variable.
@@ -116,8 +121,9 @@ bool isGuardedScopeEmbeddedInGuardianScope(const VarDecl *Guarded,
           HaveSkippedFirstCompoundStmt = true;
           continue;
         }
-        if (CStmtAncestor == guardiansClosestCompStmtAncestor)
+        if (CStmtAncestor == guardiansClosestCompStmtAncestor) {
           return true;
+}
       }
     }
   }
@@ -162,39 +168,46 @@ public:
   }
 
   void visitVarDecl(const VarDecl *V) const {
-    if (shouldSkipVarDecl(V))
+    if (shouldSkipVarDecl(V)) {
       return;
+}
 
     const auto *ArgType = V->getType().getTypePtr();
-    if (!ArgType)
+    if (!ArgType) {
       return;
+}
 
     Optional<bool> IsUncountedPtr = isUncountedPtr(ArgType);
     if (IsUncountedPtr && *IsUncountedPtr) {
       const Expr *const InitExpr = V->getInit();
-      if (!InitExpr)
+      if (!InitExpr) {
         return; // FIXME: later on we might warn on uninitialized vars too
+}
 
       const clang::Expr *const InitArgOrigin =
           tryToFindPtrOrigin(InitExpr, /*StopAtFirstRefCountedObj=*/false)
               .first;
-      if (!InitArgOrigin)
+      if (!InitArgOrigin) {
         return;
+}
 
-      if (isa<CXXThisExpr>(InitArgOrigin))
+      if (isa<CXXThisExpr>(InitArgOrigin)) {
         return;
+}
 
       if (auto *Ref = llvm::dyn_cast<DeclRefExpr>(InitArgOrigin)) {
         if (auto *MaybeGuardian =
                 dyn_cast_or_null<VarDecl>(Ref->getFoundDecl())) {
           const auto *MaybeGuardianArgType =
               MaybeGuardian->getType().getTypePtr();
-          if (!MaybeGuardianArgType)
+          if (!MaybeGuardianArgType) {
             return;
+}
           const CXXRecordDecl *const MaybeGuardianArgCXXRecord =
               MaybeGuardianArgType->getAsCXXRecordDecl();
-          if (!MaybeGuardianArgCXXRecord)
+          if (!MaybeGuardianArgCXXRecord) {
             return;
+}
 
           if (MaybeGuardian->isLocalVarDecl() &&
               (isRefCounted(MaybeGuardianArgCXXRecord) ||
@@ -205,8 +218,9 @@ public:
 
           // Parameters are guaranteed to be safe for the duration of the call
           // by another checker.
-          if (isa<ParmVarDecl>(MaybeGuardian))
+          if (isa<ParmVarDecl>(MaybeGuardian)) {
             return;
+}
         }
       }
 
@@ -216,11 +230,13 @@ public:
 
   bool shouldSkipVarDecl(const VarDecl *V) const {
     assert(V);
-    if (!V->isLocalVarDecl())
+    if (!V->isLocalVarDecl()) {
       return true;
+}
 
-    if (isDeclaredInForOrIf(V))
+    if (isDeclaredInForOrIf(V)) {
       return true;
+}
 
     return false;
   }

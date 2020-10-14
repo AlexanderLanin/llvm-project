@@ -25,17 +25,20 @@ void MapASTVisitor::HandleTranslationUnit(ASTContext &Context) {
 
 template <typename T> bool MapASTVisitor::mapDecl(const T *D) {
   // If we're looking a decl not in user files, skip this decl.
-  if (D->getASTContext().getSourceManager().isInSystemHeader(D->getLocation()))
+  if (D->getASTContext().getSourceManager().isInSystemHeader(D->getLocation())) {
     return true;
+}
 
   // Skip function-internal decls.
-  if (D->getParentFunctionOrMethod())
+  if (D->getParentFunctionOrMethod()) {
     return true;
+}
 
   llvm::SmallString<128> USR;
   // If there is an error generating a USR for the decl, skip this decl.
-  if (index::generateUSRForDecl(D, USR))
+  if (index::generateUSRForDecl(D, USR)) {
     return true;
+}
   bool IsFileInRootDir;
   llvm::SmallString<128> File =
       getFile(D, D->getASTContext(), CDCtx.SourceRoot, IsFileInRootDir);
@@ -45,12 +48,14 @@ template <typename T> bool MapASTVisitor::mapDecl(const T *D) {
 
   // A null in place of I indicates that the serializer is skipping this decl
   // for some reason (e.g. we're only reporting public decls).
-  if (I.first)
+  if (I.first) {
     CDCtx.ECtx->reportResult(llvm::toHex(llvm::toStringRef(I.first->USR)),
                              serialize::serialize(I.first));
-  if (I.second)
+}
+  if (I.second) {
     CDCtx.ECtx->reportResult(llvm::toHex(llvm::toStringRef(I.second->USR)),
                              serialize::serialize(I.second));
+}
   return true;
 }
 
@@ -68,8 +73,9 @@ bool MapASTVisitor::VisitCXXMethodDecl(const CXXMethodDecl *D) {
 
 bool MapASTVisitor::VisitFunctionDecl(const FunctionDecl *D) {
   // Don't visit CXXMethodDecls twice
-  if (dyn_cast<CXXMethodDecl>(D))
+  if (dyn_cast<CXXMethodDecl>(D)) {
     return true;
+}
   return mapDecl(D);
 }
 
@@ -97,16 +103,18 @@ llvm::SmallString<128> MapASTVisitor::getFile(const NamedDecl *D,
                                   .getPresumedLoc(D->getBeginLoc())
                                   .getFilename());
   IsFileInRootDir = false;
-  if (RootDir.empty() || !File.startswith(RootDir))
+  if (RootDir.empty() || !File.startswith(RootDir)) {
     return File;
+}
   IsFileInRootDir = true;
   llvm::SmallString<128> Prefix(RootDir);
   // replace_path_prefix removes the exact prefix provided. The result of
   // calling that function on ("A/B/C.c", "A/B", "") would be "/C.c", which
   // starts with a / that is not needed. This is why we fix Prefix so it always
   // ends with a / and the result has the desired format.
-  if (!llvm::sys::path::is_separator(Prefix.back()))
+  if (!llvm::sys::path::is_separator(Prefix.back())) {
     Prefix += llvm::sys::path::get_separator();
+}
   llvm::sys::path::replace_path_prefix(File, Prefix, "");
   return File;
 }

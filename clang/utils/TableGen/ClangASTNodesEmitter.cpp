@@ -42,16 +42,18 @@ class ClangASTNodesEmitter {
 
   // Create a macro-ized version of a name
   static std::string macroName(std::string S) {
-    for (unsigned i = 0; i < S.size(); ++i)
+    for (unsigned i = 0; i < S.size(); ++i) {
       S[i] = std::toupper(S[i]);
+}
 
     return S;
   }
 
   const std::string &macroHierarchyName() {
     assert(Root && "root node not yet derived!");
-    if (MacroHierarchyName.empty())
+    if (MacroHierarchyName.empty()) {
       MacroHierarchyName = macroName(std::string(Root.getName()));
+}
     return MacroHierarchyName;
   }
 
@@ -59,8 +61,9 @@ class ClangASTNodesEmitter {
   // the record's name plus the base suffix, but if it is the root node and
   // the suffix is non-empty, it's just the suffix.
   std::string baseName(ASTNode node) {
-    if (node == Root && !BaseSuffix.empty())
+    if (node == Root && !BaseSuffix.empty()) {
       return BaseSuffix;
+}
 
     return node.getName().str() + BaseSuffix;
   }
@@ -92,8 +95,9 @@ std::pair<ASTNode, ASTNode> ClangASTNodesEmitter::EmitNode(raw_ostream &OS,
   bool HasChildren = (i != e);
 
   ASTNode First, Last;
-  if (!Base.isAbstract())
+  if (!Base.isAbstract()) {
     First = Last = Base;
+}
 
   for (; i != e; ++i) {
     ASTNode Child = i->second;
@@ -105,16 +109,19 @@ std::pair<ASTNode, ASTNode> ClangASTNodesEmitter::EmitNode(raw_ostream &OS,
         << BaseName << "(Type, Base)\n";
     OS << "#endif\n";
 
-    if (Abstract) OS << "ABSTRACT_" << macroHierarchyName() << "(";
+    if (Abstract) { OS << "ABSTRACT_" << macroHierarchyName() << "(";
+}
     OS << NodeName << "(" << Child.getName() << ", " << baseName(Base) << ")";
-    if (Abstract) OS << ")";
+    if (Abstract) { OS << ")";
+}
     OS << "\n";
 
     auto Result = EmitNode(OS, Child);
     assert(Result.first && Result.second && "node didn't have children?");
 
     // Update the range of Base.
-    if (!First) First = Result.first;
+    if (!First) { First = Result.first;
+}
     Last = Result.second;
 
     OS << "#undef " << NodeName << "\n\n";
@@ -130,10 +137,11 @@ std::pair<ASTNode, ASTNode> ClangASTNodesEmitter::EmitNode(raw_ostream &OS,
   if (HasChildren) {
     // Use FOO_RANGE unless this is the last of the ranges, in which case
     // use LAST_FOO_RANGE.
-    if (Base == Root)
+    if (Base == Root) {
       OS << "LAST_" << macroHierarchyName() << "_RANGE(";
-    else
+    } else {
       OS << macroHierarchyName() << "_RANGE(";
+}
     OS << Base.getName() << ", " << First.getName() << ", "
        << Last.getName() << ")\n\n";
   }
@@ -151,19 +159,21 @@ void ClangASTNodesEmitter::deriveChildTree() {
   for (unsigned i = 0, e = Stmts.size(); i != e; ++i) {
     Record *R = Stmts[i];
 
-    if (auto B = R->getValueAsOptionalDef(BaseFieldName))
+    if (auto B = R->getValueAsOptionalDef(BaseFieldName)) {
       Tree.insert(std::make_pair(B, R));
-    else if (Root)
+    } else if (Root) {
       PrintFatalError(R->getLoc(),
                       Twine("multiple root nodes in \"") + NodeClassName
                         + "\" hierarchy");
-    else
+    } else {
       Root = R;
+}
   }
 
-  if (!Root)
+  if (!Root) {
     PrintFatalError(Twine("didn't find root node in \"") + NodeClassName
                       + "\" hierarchy");
+}
 }
 
 void ClangASTNodesEmitter::run(raw_ostream &OS) {
@@ -238,9 +248,11 @@ void clang::EmitClangDeclContext(RecordKeeper &Records, raw_ostream &OS) {
   // instead of RecordSet.
   for (RecordVector::iterator
          i = DeclContextsVector.begin(), e = DeclContextsVector.end();
-       i != e; ++i)
-    if (DeclContexts.find(*i) != DeclContexts.end())
+       i != e; ++i) {
+    if (DeclContexts.find(*i) != DeclContexts.end()) {
       OS << "DECL_CONTEXT(" << (*i)->getName() << ")\n";
+}
+}
 
   OS << "#undef DECL_CONTEXT\n";
   OS << "#undef DECL_CONTEXT_BASE\n";

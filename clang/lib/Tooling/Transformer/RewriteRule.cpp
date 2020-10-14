@@ -37,20 +37,24 @@ translateEdits(const MatchResult &Result, ArrayRef<ASTEdit> ASTEdits) {
   SmallVector<transformer::Edit, 1> Edits;
   for (const auto &E : ASTEdits) {
     Expected<CharSourceRange> Range = E.TargetRange(Result);
-    if (!Range)
+    if (!Range) {
       return Range.takeError();
+}
     llvm::Optional<CharSourceRange> EditRange =
         tooling::getRangeForEdit(*Range, *Result.Context);
     // FIXME: let user specify whether to treat this case as an error or ignore
     // it as is currently done.
-    if (!EditRange)
+    if (!EditRange) {
       return SmallVector<Edit, 0>();
+}
     auto Replacement = E.Replacement->eval(Result);
-    if (!Replacement)
+    if (!Replacement) {
       return Replacement.takeError();
+}
     auto Metadata = E.Metadata(Result);
-    if (!Metadata)
+    if (!Metadata) {
       return Metadata.takeError();
+}
     transformer::Edit T;
     T.Kind = E.Kind;
     T.Range = *EditRange;
@@ -75,16 +79,18 @@ EditGenerator transformer::edit(ASTEdit Edit) {
 
 EditGenerator
 transformer::flattenVector(SmallVector<EditGenerator, 2> Generators) {
-  if (Generators.size() == 1)
+  if (Generators.size() == 1) {
     return std::move(Generators[0]);
+}
   return
       [Gs = std::move(Generators)](
           const MatchResult &Result) -> llvm::Expected<SmallVector<Edit, 1>> {
         SmallVector<Edit, 1> AllEdits;
         for (const auto &G : Gs) {
           llvm::Expected<SmallVector<Edit, 1>> Edits = G(Result);
-          if (!Edits)
+          if (!Edits) {
             return Edits.takeError();
+}
           AllEdits.append(Edits->begin(), Edits->end());
         }
         return AllEdits;
@@ -167,8 +173,9 @@ public:
       const T &Node, ast_matchers::internal::ASTMatchFinder *Finder,
       ast_matchers::internal::BoundNodesTreeBuilder *Builder) const override {
     ast_matchers::internal::BoundNodesTreeBuilder Result(*Builder);
-    for (const auto &N : Nodes.getMap())
+    for (const auto &N : Nodes.getMap()) {
       Result.setBinding(N.first, N.second);
+}
     if (InnerMatcher.matches(Node, Finder, &Result)) {
       *Builder = std::move(Result);
       return true;
@@ -217,13 +224,15 @@ public:
   template <typename T>
   void registerMatchers(const ast_matchers::BoundNodes &Nodes,
                         MatchFinder *MF) {
-    for (auto &Matcher : transformer::detail::buildMatchers(Rule))
+    for (auto &Matcher : transformer::detail::buildMatchers(Rule)) {
       MF->addMatcher(forEachDescendantDynamically<T>(Nodes, Matcher), this);
+}
   }
 
   void run(const MatchFinder::MatchResult &Result) override {
-    if (!Edits)
+    if (!Edits) {
       return;
+}
     transformer::RewriteRule::Case Case =
         transformer::detail::findSelectedCase(Result, Rule);
     auto Transformations = Case.Edits(Result);
@@ -274,12 +283,15 @@ llvm::Expected<SmallVector<clang::transformer::Edit, 1>>
 transformer::detail::rewriteDescendants(const DynTypedNode &DNode,
                                         RewriteRule Rule,
                                         const MatchResult &Result) {
-  if (const auto *Node = DNode.get<Decl>())
+  if (const auto *Node = DNode.get<Decl>()) {
     return rewriteDescendantsImpl(*Node, std::move(Rule), Result);
-  if (const auto *Node = DNode.get<Stmt>())
+}
+  if (const auto *Node = DNode.get<Stmt>()) {
     return rewriteDescendantsImpl(*Node, std::move(Rule), Result);
-  if (const auto *Node = DNode.get<TypeLoc>())
+}
+  if (const auto *Node = DNode.get<TypeLoc>()) {
     return rewriteDescendantsImpl(*Node, std::move(Rule), Result);
+}
 
   return llvm::make_error<llvm::StringError>(
       llvm::errc::invalid_argument,
@@ -295,17 +307,19 @@ EditGenerator transformer::rewriteDescendants(std::string NodeId,
     const ast_matchers::BoundNodes::IDToNodeMap &NodesMap =
         Result.Nodes.getMap();
     auto It = NodesMap.find(NodeId);
-    if (It == NodesMap.end())
+    if (It == NodesMap.end()) {
       return llvm::make_error<llvm::StringError>(llvm::errc::invalid_argument,
                                                  "ID not bound: " + NodeId);
+}
     return detail::rewriteDescendants(It->second, std::move(Rule), Result);
   };
 }
 
 void transformer::addInclude(RewriteRule &Rule, StringRef Header,
                              IncludeFormat Format) {
-  for (auto &Case : Rule.Cases)
+  for (auto &Case : Rule.Cases) {
     Case.Edits = flatten(std::move(Case.Edits), addInclude(Header, Format));
+}
 }
 
 #ifndef NDEBUG
@@ -345,8 +359,9 @@ static std::vector<DynTypedMatcher> taggedMatchers(
 // registration.
 RewriteRule transformer::applyFirst(ArrayRef<RewriteRule> Rules) {
   RewriteRule R;
-  for (auto &Rule : Rules)
+  for (auto &Rule : Rules) {
     R.Cases.append(Rule.Cases.begin(), Rule.Cases.end());
+}
   return R;
 }
 
@@ -395,8 +410,9 @@ SourceLocation transformer::detail::getRuleMatchLoc(const MatchResult &Result) {
   llvm::Optional<CharSourceRange> RootRange = tooling::getRangeForEdit(
       CharSourceRange::getTokenRange(Root->second.getSourceRange()),
       *Result.Context);
-  if (RootRange)
+  if (RootRange) {
     return RootRange->getBegin();
+}
   // The match doesn't have a coherent range, so fall back to the expansion
   // location as the "beginning" of the match.
   return Result.SourceManager->getExpansionLoc(
@@ -408,14 +424,16 @@ SourceLocation transformer::detail::getRuleMatchLoc(const MatchResult &Result) {
 const RewriteRule::Case &
 transformer::detail::findSelectedCase(const MatchResult &Result,
                                   const RewriteRule &Rule) {
-  if (Rule.Cases.size() == 1)
+  if (Rule.Cases.size() == 1) {
     return Rule.Cases[0];
+}
 
   auto &NodesMap = Result.Nodes.getMap();
   for (size_t i = 0, N = Rule.Cases.size(); i < N; ++i) {
     std::string Tag = ("Tag" + Twine(i)).str();
-    if (NodesMap.find(Tag) != NodesMap.end())
+    if (NodesMap.find(Tag) != NodesMap.end()) {
       return Rule.Cases[i];
+}
   }
   llvm_unreachable("No tag found for this rule.");
 }

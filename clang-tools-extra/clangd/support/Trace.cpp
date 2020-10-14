@@ -101,8 +101,9 @@ private:
         // If the parent span ended already, then show this as "following" it.
         // Otherwise show us as "parallel".
         double OriginTime = (*Parent)->EndTime;
-        if (!OriginTime)
+        if (!OriginTime) {
           OriginTime = (*Parent)->StartTime;
+}
 
         auto FlowID = nextID();
         Tracer->jsonEvent(
@@ -156,8 +157,9 @@ private:
     Out.object([&] {
       Out.attribute("pid", 0);
       Out.attribute("ph", Phase);
-      for (const auto &KV : Event)
+      for (const auto &KV : Event) {
         Out.attribute(KV.first, KV.second);
+}
     });
   }
 
@@ -204,8 +206,9 @@ public:
               llvm::StringRef Label) override {
     assert(!needsQuote(Metric.Name));
     std::string QuotedLabel;
-    if (needsQuote(Label))
+    if (needsQuote(Label)) {
       Label = QuotedLabel = quote(Label);
+}
     uint64_t Micros = std::chrono::duration_cast<std::chrono::microseconds>(
                           std::chrono::steady_clock::now() - Start)
                           .count();
@@ -237,8 +240,9 @@ private:
     std::string Result = "\"";
     for (char C : Text) {
       Result.push_back(C);
-      if (C == '"')
+      if (C == '"') {
         Result.push_back('"');
+}
     }
     Result.push_back('"');
     return Result;
@@ -272,16 +276,18 @@ std::unique_ptr<EventTracer> createCSVMetricTracer(llvm::raw_ostream &OS) {
 }
 
 void log(const llvm::Twine &Message) {
-  if (!T)
+  if (!T) {
     return;
+}
   T->instant("Log", llvm::json::Object{{"Message", Message.str()}});
 }
 
 // Returned context owns Args.
 static Context makeSpanContext(llvm::Twine Name, llvm::json::Object *Args,
                                const Metric &LatencyMetric) {
-  if (!T)
+  if (!T) {
     return Context::current().clone();
+}
   WithContextValue WithArgs{std::unique_ptr<llvm::json::Object>(Args)};
   llvm::Optional<WithContextValue> WithLatency;
   using Clock = std::chrono::high_resolution_clock;
@@ -311,13 +317,15 @@ Span::Span(llvm::Twine Name, const Metric &LatencyMetric)
       RestoreCtx(makeSpanContext(Name, Args, LatencyMetric)) {}
 
 Span::~Span() {
-  if (T)
+  if (T) {
     T->endSpan();
+}
 }
 
 void Metric::record(double Value, llvm::StringRef Label) const {
-  if (!T)
+  if (!T) {
     return;
+}
   assert((LabelName.empty() == Label.empty()) &&
          "recording a measurement with inconsistent labeling");
   T->record(*this, Value, Label);

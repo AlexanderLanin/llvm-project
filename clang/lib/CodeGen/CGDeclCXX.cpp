@@ -41,14 +41,15 @@ static void EmitDeclInit(CodeGenFunction &CGF, const VarDecl &D,
   switch (CGF.getEvaluationKind(type)) {
   case TEK_Scalar: {
     CodeGenModule &CGM = CGF.CGM;
-    if (lv.isObjCStrong())
+    if (lv.isObjCStrong()) {
       CGM.getObjCRuntime().EmitObjCGlobalAssign(CGF, CGF.EmitScalarExpr(Init),
                                                 DeclPtr, D.getTLSKind());
-    else if (lv.isObjCWeak())
+    } else if (lv.isObjCWeak()) {
       CGM.getObjCRuntime().EmitObjCWeakAssign(CGF, CGF.EmitScalarExpr(Init),
                                               DeclPtr);
-    else
+    } else {
       CGF.EmitScalarInit(Init, &D, lv, false);
+}
     return;
   }
   case TEK_Complex:
@@ -124,12 +125,13 @@ static void EmitDeclDestroy(CodeGenFunction &CGF, const VarDecl &D,
       auto DestTy = CGF.getTypes().ConvertType(Type)->getPointerTo(
           CGM.getContext().getTargetAddressSpace(DestAS));
       auto SrcAS = D.getType().getQualifiers().getAddressSpace();
-      if (DestAS == SrcAS)
+      if (DestAS == SrcAS) {
         Argument = llvm::ConstantExpr::getBitCast(Addr.getPointer(), DestTy);
-      else
+      } else {
         // FIXME: On addr space mismatch we are passing NULL. The generation
         // of the global destructor function should be adjusted accordingly.
         Argument = llvm::ConstantPointerNull::get(DestTy);
+}
     } else {
       Argument = llvm::ConstantExpr::getBitCast(
           Addr.getPointer(), CGF.getTypes().ConvertType(Type)->getPointerTo());
@@ -155,8 +157,9 @@ static void EmitDeclInvariant(CodeGenFunction &CGF, const VarDecl &D,
 
 void CodeGenFunction::EmitInvariantStart(llvm::Constant *Addr, CharUnits Size) {
   // Do not emit the intrinsic if we're not optimizing.
-  if (!CGM.getCodeGenOpts().OptimizationLevel)
+  if (!CGM.getCodeGenOpts().OptimizationLevel) {
     return;
+}
 
   // Grab the llvm.invariant.start intrinsic.
   llvm::Intrinsic::ID InvStartID = llvm::Intrinsic::invariant_start;
@@ -210,12 +213,14 @@ void CodeGenFunction::EmitCXXGlobalVarDeclInit(const VarDecl &D,
           &D, DeclAddr, D.getAttr<OMPThreadPrivateDeclAttr>()->getLocation(),
           PerformInit, this);
     }
-    if (PerformInit)
+    if (PerformInit) {
       EmitDeclInit(*this, D, DeclAddr);
-    if (CGM.isTypeConstant(D.getType(), true))
+}
+    if (CGM.isTypeConstant(D.getType(), true)) {
       EmitDeclInvariant(*this, D, DeclPtr);
-    else
+    } else {
       EmitDeclDestroy(*this, D, DeclAddr);
+}
     return;
   }
 
@@ -254,8 +259,9 @@ llvm::Function *CodeGenFunction::createAtExitStub(const VarDecl &VD,
 
   // Make sure the call and the callee agree on calling convention.
   if (auto *dtorFn = dyn_cast<llvm::Function>(
-          dtor.getCallee()->stripPointerCastsAndAliases()))
+          dtor.getCallee()->stripPointerCastsAndAliases())) {
     call->setCallingConv(dtorFn->getCallingConv());
+}
 
   CGF.FinishFunction();
 
@@ -283,8 +289,9 @@ void CodeGenFunction::registerGlobalDtorWithAtExit(llvm::Constant *dtorStub) {
   llvm::FunctionCallee atexit =
       CGM.CreateRuntimeFunction(atexitTy, "atexit", llvm::AttributeList(),
                                 /*Local=*/true);
-  if (llvm::Function *atexitFn = dyn_cast<llvm::Function>(atexit.getCallee()))
+  if (llvm::Function *atexitFn = dyn_cast<llvm::Function>(atexit.getCallee())) {
     atexitFn->setDoesNotThrow();
+}
 
   EmitNounwindRuntimeCall(atexit, dtorStub);
 }
@@ -319,10 +326,11 @@ void CodeGenFunction::EmitCXXGuardedInit(const VarDecl &D,
   // If we've been asked to forbid guard variables, emit an error now.
   // This diagnostic is hard-coded for Darwin's use case;  we can find
   // better phrasing if someone else needs it.
-  if (CGM.getCodeGenOpts().ForbidGuardVariables)
+  if (CGM.getCodeGenOpts().ForbidGuardVariables) {
     CGM.Error(D.getLocation(),
               "this initialization requires a guard variable, which "
               "the kernel does not support");
+}
 
   CGM.getCXXABI().EmitGuardedInit(*this, D, DeclPtr, PerformInit);
 }
@@ -350,10 +358,11 @@ void CodeGenFunction::EmitCXXGuardedInitBranch(llvm::Value *NeedsInit,
     uint64_t NumInits;
     // FIXME: For the TLS case, collect and use profiling information to
     // determine a more accurate brach weight.
-    if (Kind == GuardKind::TlsGuard || D->getTLSKind())
+    if (Kind == GuardKind::TlsGuard || D->getTLSKind()) {
       NumInits = InitsPerTLSVar;
-    else
+    } else {
       NumInits = InitsPerLocalVar;
+}
 
     // The probability of us entering the initializer is
     //   1 / (total number of times we attempt to initialize the variable).
@@ -372,56 +381,68 @@ llvm::Function *CodeGenModule::CreateGlobalInitOrCleanUpFunction(
 
   if (!getLangOpts().AppleKext && !TLS) {
     // Set the section if needed.
-    if (const char *Section = getTarget().getStaticInitSectionSpecifier())
+    if (const char *Section = getTarget().getStaticInitSectionSpecifier()) {
       Fn->setSection(Section);
+}
   }
 
   SetInternalFunctionAttributes(GlobalDecl(), Fn, FI);
 
   Fn->setCallingConv(getRuntimeCC());
 
-  if (!getLangOpts().Exceptions)
+  if (!getLangOpts().Exceptions) {
     Fn->setDoesNotThrow();
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::Address) &&
-      !isInSanitizerBlacklist(SanitizerKind::Address, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::Address, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeAddress);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::KernelAddress) &&
-      !isInSanitizerBlacklist(SanitizerKind::KernelAddress, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::KernelAddress, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeAddress);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::HWAddress) &&
-      !isInSanitizerBlacklist(SanitizerKind::HWAddress, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::HWAddress, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeHWAddress);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::KernelHWAddress) &&
-      !isInSanitizerBlacklist(SanitizerKind::KernelHWAddress, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::KernelHWAddress, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeHWAddress);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::MemTag) &&
-      !isInSanitizerBlacklist(SanitizerKind::MemTag, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::MemTag, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeMemTag);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::Thread) &&
-      !isInSanitizerBlacklist(SanitizerKind::Thread, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::Thread, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeThread);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::Memory) &&
-      !isInSanitizerBlacklist(SanitizerKind::Memory, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::Memory, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeMemory);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::KernelMemory) &&
-      !isInSanitizerBlacklist(SanitizerKind::KernelMemory, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::KernelMemory, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SanitizeMemory);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::SafeStack) &&
-      !isInSanitizerBlacklist(SanitizerKind::SafeStack, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::SafeStack, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::SafeStack);
+}
 
   if (getLangOpts().Sanitize.has(SanitizerKind::ShadowCallStack) &&
-      !isInSanitizerBlacklist(SanitizerKind::ShadowCallStack, Fn, Loc))
+      !isInSanitizerBlacklist(SanitizerKind::ShadowCallStack, Fn, Loc)) {
     Fn->addFnAttr(llvm::Attribute::ShadowCallStack);
+}
 
   return Fn;
 }
@@ -440,8 +461,9 @@ void CodeGenModule::EmitPointerToInitFunc(const VarDecl *D,
   addUsedGlobal(PtrArray);
 
   // If the GV is already in a comdat group, then we have to join it.
-  if (llvm::Comdat *C = GV->getComdat())
+  if (llvm::Comdat *C = GV->getComdat()) {
     PtrArray->setComdat(C);
+}
 }
 
 void
@@ -456,17 +478,20 @@ CodeGenModule::EmitCXXGlobalVarDeclInitFunc(const VarDecl *D,
   // are allowed are empty and we just need to ignore them here.
   if (getLangOpts().CUDAIsDevice && !getLangOpts().GPUAllowDeviceInit &&
       (D->hasAttr<CUDADeviceAttr>() || D->hasAttr<CUDAConstantAttr>() ||
-       D->hasAttr<CUDASharedAttr>()))
+       D->hasAttr<CUDASharedAttr>())) {
     return;
+}
 
   if (getLangOpts().OpenMP &&
-      getOpenMPRuntime().emitDeclareTargetVarDefinition(D, Addr, PerformInit))
+      getOpenMPRuntime().emitDeclareTargetVarDefinition(D, Addr, PerformInit)) {
     return;
+}
 
   // Check if we've already initialized this decl.
   auto I = DelayedCXXInitPosition.find(D);
-  if (I != DelayedCXXInitPosition.end() && I->second == ~0U)
+  if (I != DelayedCXXInitPosition.end() && I->second == ~0U) {
     return;
+}
 
   llvm::FunctionType *FTy = llvm::FunctionType::get(VoidTy, false);
   SmallString<256> FnName;
@@ -549,14 +574,16 @@ void CodeGenModule::EmitCXXThreadLocalInitFunc() {
 static SmallString<128> getTransformedFileName(llvm::Module &M) {
   SmallString<128> FileName = llvm::sys::path::filename(M.getName());
 
-  if (FileName.empty())
+  if (FileName.empty()) {
     FileName = "<null>";
+}
 
   for (size_t i = 0; i < FileName.size(); ++i) {
     // Replace everything that's not [a-zA-Z0-9._] with a _. This set happens
     // to be the set of C preprocessing numbers.
-    if (!isPreprocessingNumberBody(FileName[i]))
+    if (!isPreprocessingNumberBody(FileName[i])) {
       FileName[i] = '_';
+}
   }
 
   return FileName;
@@ -564,11 +591,13 @@ static SmallString<128> getTransformedFileName(llvm::Module &M) {
 
 void
 CodeGenModule::EmitCXXGlobalInitFunc() {
-  while (!CXXGlobalInits.empty() && !CXXGlobalInits.back())
+  while (!CXXGlobalInits.empty() && !CXXGlobalInits.back()) {
     CXXGlobalInits.pop_back();
+}
 
-  if (CXXGlobalInits.empty() && PrioritizedCXXGlobalInits.empty())
+  if (CXXGlobalInits.empty() && PrioritizedCXXGlobalInits.empty()) {
     return;
+}
 
   llvm::FunctionType *FTy = llvm::FunctionType::get(VoidTy, false);
   const CGFunctionInfo &FI = getTypes().arrangeNullaryFunction();
@@ -601,8 +630,9 @@ CodeGenModule::EmitCXXGlobalInitFunc() {
       llvm::Function *Fn = CreateGlobalInitOrCleanUpFunction(
           FTy, "_GLOBAL__I_" + PrioritySuffix, FI);
 
-      for (; I < PrioE; ++I)
+      for (; I < PrioE; ++I) {
         LocalCXXGlobalInits.push_back(I->second);
+}
 
       CodeGenFunction(*this).GenerateCXXGlobalInitFunc(Fn, LocalCXXGlobalInits);
       AddGlobalCtor(Fn, Priority);
@@ -610,8 +640,9 @@ CodeGenModule::EmitCXXGlobalInitFunc() {
     PrioritizedCXXGlobalInits.clear();
   }
 
-  if (UseSinitAndSterm && CXXGlobalInits.empty())
+  if (UseSinitAndSterm && CXXGlobalInits.empty()) {
     return;
+}
 
   // Include the filename in the symbol name. Including "sub_" matches gcc
   // and makes sure these symbols appear lexicographically behind the symbols
@@ -645,8 +676,9 @@ CodeGenModule::EmitCXXGlobalInitFunc() {
 }
 
 void CodeGenModule::EmitCXXGlobalCleanUpFunc() {
-  if (CXXGlobalDtorsOrStermFinalizers.empty())
+  if (CXXGlobalDtorsOrStermFinalizers.empty()) {
     return;
+}
 
   llvm::FunctionType *FTy = llvm::FunctionType::get(VoidTy, false);
   const CGFunctionInfo &FI = getTypes().arrangeNullaryFunction();
@@ -667,8 +699,9 @@ void CodeGenFunction::GenerateCXXGlobalVarDeclInitFunc(llvm::Function *Fn,
                                                  llvm::GlobalVariable *Addr,
                                                        bool PerformInit) {
   // Check if we need to emit debug info for variable initializer.
-  if (D->hasAttr<NoDebugAttr>())
+  if (D->hasAttr<NoDebugAttr>()) {
     DebugInfo = nullptr; // disable debug info indefinitely for this function
+}
 
   CurEHLocation = D->getBeginLoc();
 
@@ -740,9 +773,11 @@ CodeGenFunction::GenerateCXXGlobalInitFunc(llvm::Function *Fn,
       EmitObjCAutoreleasePoolCleanup(token);
     }
 
-    for (unsigned i = 0, e = Decls.size(); i != e; ++i)
-      if (Decls[i])
+    for (unsigned i = 0, e = Decls.size(); i != e; ++i) {
+      if (Decls[i]) {
         EmitRuntimeCall(Decls[i]);
+}
+}
 
     Scope.ForceCleanup();
 
@@ -779,12 +814,14 @@ void CodeGenFunction::GenerateCXXGlobalCleanUpFunc(
             CGM.getCXXABI().useSinitAndSterm() &&
             "Arg could not be nullptr unless using sinit and sterm functions.");
         CI = Builder.CreateCall(CalleeTy, Callee);
-      } else
+      } else {
         CI = Builder.CreateCall(CalleeTy, Callee, Arg);
+}
 
       // Make sure the call and the callee agree on calling convention.
-      if (llvm::Function *F = dyn_cast<llvm::Function>(Callee))
+      if (llvm::Function *F = dyn_cast<llvm::Function>(Callee)) {
         CI->setCallingConv(F->getCallingConv());
+}
     }
   }
 

@@ -74,9 +74,11 @@ ArgumentsAdjustingCompilations::getAllCompileCommands() const {
 
 std::vector<CompileCommand> ArgumentsAdjustingCompilations::adjustCommands(
     std::vector<CompileCommand> Commands) const {
-  for (CompileCommand &Command : Commands)
-    for (const auto &Adjuster : Adjusters)
+  for (CompileCommand &Command : Commands) {
+    for (const auto &Adjuster : Adjusters) {
       Command.CommandLine = Adjuster(Command.CommandLine, Command.Filename);
+}
+}
   return Commands;
 }
 
@@ -109,8 +111,9 @@ llvm::Error CommonOptionsParser::init(
   std::string ErrorMessage;
   Compilations =
       FixedCompilationDatabase::loadFromCommandLine(argc, argv, ErrorMessage);
-  if (!ErrorMessage.empty())
+  if (!ErrorMessage.empty()) {
     ErrorMessage.append("\n");
+}
   llvm::raw_string_ostream OS(ErrorMessage);
   // Stop initializing if command-line option parsing failed.
   if (!cl::ParseCommandLineOptions(argc, argv, Overview, &OS)) {
@@ -124,8 +127,9 @@ llvm::Error CommonOptionsParser::init(
 
   SourcePathList = SourcePaths;
   if ((OccurrencesFlag == cl::ZeroOrMore || OccurrencesFlag == cl::Optional) &&
-      SourcePathList.empty())
+      SourcePathList.empty()) {
     return llvm::Error::success();
+}
   if (!Compilations) {
     if (!BuildPath.empty()) {
       Compilations =
@@ -160,8 +164,9 @@ llvm::Expected<CommonOptionsParser> CommonOptionsParser::create(
   CommonOptionsParser Parser;
   llvm::Error Err =
       Parser.init(argc, argv, Category, OccurrencesFlag, Overview);
-  if (Err)
+  if (Err) {
     return std::move(Err);
+}
   return std::move(Parser);
 }
 

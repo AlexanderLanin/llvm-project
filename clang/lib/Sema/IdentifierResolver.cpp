@@ -102,11 +102,13 @@ bool IdentifierResolver::isDeclInScope(Decl *D, DeclContext *Ctx, Scope *S,
 
   if (Ctx->isFunctionOrMethod() || (S && S->isFunctionPrototypeScope())) {
     // Ignore the scopes associated within transparent declaration contexts.
-    while (S->getEntity() && S->getEntity()->isTransparentContext())
+    while (S->getEntity() && S->getEntity()->isTransparentContext()) {
       S = S->getParent();
+}
 
-    if (S->isDeclScope(D))
+    if (S->isDeclScope(D)) {
       return true;
+}
     if (LangOpt.CPlusPlus) {
       // C++ 3.3.2p3:
       // The name declared in a catch exception-declaration is local to the
@@ -123,11 +125,13 @@ bool IdentifierResolver::isDeclInScope(Decl *D, DeclContext *Ctx, Scope *S,
       assert(S->getParent() && "No TUScope?");
       if (S->getParent()->getFlags() & Scope::ControlScope) {
         S = S->getParent();
-        if (S->isDeclScope(D))
+        if (S->isDeclScope(D)) {
           return true;
+}
       }
-      if (S->getFlags() & Scope::FnTryCatchScope)
+      if (S->getFlags() & Scope::FnTryCatchScope) {
         return S->getParent()->isDeclScope(D);
+}
     }
     return false;
   }
@@ -143,8 +147,9 @@ bool IdentifierResolver::isDeclInScope(Decl *D, DeclContext *Ctx, Scope *S,
 /// AddDecl - Link the decl to its shadowed decl chain.
 void IdentifierResolver::AddDecl(NamedDecl *D) {
   DeclarationName Name = D->getDeclName();
-  if (IdentifierInfo *II = Name.getAsIdentifierInfo())
+  if (IdentifierInfo *II = Name.getAsIdentifierInfo()) {
     updatingIdentifier(*II);
+}
 
   void *Ptr = Name.getFETokenInfo();
 
@@ -160,16 +165,18 @@ void IdentifierResolver::AddDecl(NamedDecl *D) {
     IDI = &(*IdDeclInfos)[Name];
     NamedDecl *PrevD = static_cast<NamedDecl*>(Ptr);
     IDI->AddDecl(PrevD);
-  } else
+  } else {
     IDI = toIdDeclInfo(Ptr);
+}
 
   IDI->AddDecl(D);
 }
 
 void IdentifierResolver::InsertDeclAfter(iterator Pos, NamedDecl *D) {
   DeclarationName Name = D->getDeclName();
-  if (IdentifierInfo *II = Name.getAsIdentifierInfo())
+  if (IdentifierInfo *II = Name.getAsIdentifierInfo()) {
     updatingIdentifier(*II);
+}
 
   void *Ptr = Name.getFETokenInfo();
 
@@ -200,8 +207,9 @@ void IdentifierResolver::InsertDeclAfter(iterator Pos, NamedDecl *D) {
   IdDeclInfo *IDI = toIdDeclInfo(Ptr);
   if (Pos.isIterator()) {
     IDI->InsertDecl(Pos.getIterator() + 1, D);
-  } else
+  } else {
     IDI->InsertDecl(IDI->decls_begin(), D);
+}
 }
 
 /// RemoveDecl - Unlink the decl from its shadowed decl chain.
@@ -209,8 +217,9 @@ void IdentifierResolver::InsertDeclAfter(iterator Pos, NamedDecl *D) {
 void IdentifierResolver::RemoveDecl(NamedDecl *D) {
   assert(D && "null param passed");
   DeclarationName Name = D->getDeclName();
-  if (IdentifierInfo *II = Name.getAsIdentifierInfo())
+  if (IdentifierInfo *II = Name.getAsIdentifierInfo()) {
     updatingIdentifier(*II);
+}
 
   void *Ptr = Name.getFETokenInfo();
 
@@ -228,20 +237,24 @@ void IdentifierResolver::RemoveDecl(NamedDecl *D) {
 /// begin - Returns an iterator for decls with name 'Name'.
 IdentifierResolver::iterator
 IdentifierResolver::begin(DeclarationName Name) {
-  if (IdentifierInfo *II = Name.getAsIdentifierInfo())
+  if (IdentifierInfo *II = Name.getAsIdentifierInfo()) {
     readingIdentifier(*II);
+}
 
   void *Ptr = Name.getFETokenInfo();
-  if (!Ptr) return end();
+  if (!Ptr) { return end();
+}
 
-  if (isDeclPtr(Ptr))
+  if (isDeclPtr(Ptr)) {
     return iterator(static_cast<NamedDecl*>(Ptr));
+}
 
   IdDeclInfo *IDI = toIdDeclInfo(Ptr);
 
   IdDeclInfo::DeclsTy::iterator I = IDI->decls_end();
-  if (I != IDI->decls_begin())
+  if (I != IDI->decls_begin()) {
     return iterator(I-1);
+}
   // No decls found.
   return end();
 }
@@ -261,36 +274,43 @@ enum DeclMatchKind {
 /// existing declaration.
 static DeclMatchKind compareDeclarations(NamedDecl *Existing, NamedDecl *New) {
   // If the declarations are identical, ignore the new one.
-  if (Existing == New)
+  if (Existing == New) {
     return DMK_Ignore;
+}
 
   // If the declarations have different kinds, they're obviously different.
-  if (Existing->getKind() != New->getKind())
+  if (Existing->getKind() != New->getKind()) {
     return DMK_Different;
+}
 
   // If the declarations are redeclarations of each other, keep the newest one.
   if (Existing->getCanonicalDecl() == New->getCanonicalDecl()) {
     // If we're adding an imported declaration, don't replace another imported
     // declaration.
-    if (Existing->isFromASTFile() && New->isFromASTFile())
+    if (Existing->isFromASTFile() && New->isFromASTFile()) {
       return DMK_Different;
+}
 
     // If either of these is the most recent declaration, use it.
     Decl *MostRecent = Existing->getMostRecentDecl();
-    if (Existing == MostRecent)
+    if (Existing == MostRecent) {
       return DMK_Ignore;
+}
 
-    if (New == MostRecent)
+    if (New == MostRecent) {
       return DMK_Replace;
+}
 
     // If the existing declaration is somewhere in the previous declaration
     // chain of the new declaration, then prefer the new declaration.
     for (auto RD : New->redecls()) {
-      if (RD == Existing)
+      if (RD == Existing) {
         return DMK_Replace;
+}
 
-      if (RD->isCanonicalDecl())
+      if (RD->isCanonicalDecl()) {
         break;
+}
     }
 
     return DMK_Ignore;
@@ -300,8 +320,9 @@ static DeclMatchKind compareDeclarations(NamedDecl *Existing, NamedDecl *New) {
 }
 
 bool IdentifierResolver::tryAddTopLevelDecl(NamedDecl *D, DeclarationName Name){
-  if (IdentifierInfo *II = Name.getAsIdentifierInfo())
+  if (IdentifierInfo *II = Name.getAsIdentifierInfo()) {
     readingIdentifier(*II);
+}
 
   void *Ptr = Name.getFETokenInfo();
 
@@ -376,16 +397,19 @@ bool IdentifierResolver::tryAddTopLevelDecl(NamedDecl *D, DeclarationName Name){
 }
 
 void IdentifierResolver::readingIdentifier(IdentifierInfo &II) {
-  if (II.isOutOfDate())
+  if (II.isOutOfDate()) {
     PP.getExternalSource()->updateOutOfDateIdentifier(II);
+}
 }
 
 void IdentifierResolver::updatingIdentifier(IdentifierInfo &II) {
-  if (II.isOutOfDate())
+  if (II.isOutOfDate()) {
     PP.getExternalSource()->updateOutOfDateIdentifier(II);
+}
 
-  if (II.isFromAST())
+  if (II.isFromAST()) {
     II.setFETokenInfoChangedSinceDeserialization();
+}
 }
 
 //===----------------------------------------------------------------------===//
@@ -398,7 +422,8 @@ IdentifierResolver::IdDeclInfo &
 IdentifierResolver::IdDeclInfoMap::operator[](DeclarationName Name) {
   void *Ptr = Name.getFETokenInfo();
 
-  if (Ptr) return *toIdDeclInfo(Ptr);
+  if (Ptr) { return *toIdDeclInfo(Ptr);
+}
 
   if (CurIndex == POOL_SIZE) {
     CurPool = new IdDeclInfoPool(CurPool);
@@ -419,8 +444,9 @@ void IdentifierResolver::iterator::incrementSlowCase() {
   IdDeclInfo *Info = toIdDeclInfo(InfoPtr);
 
   BaseIter I = getIterator();
-  if (I != Info->decls_begin())
+  if (I != Info->decls_begin()) {
     *this = iterator(I-1);
-  else // No more decls.
+  } else { // No more decls.
     *this = iterator();
+}
 }

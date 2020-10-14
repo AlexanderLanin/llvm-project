@@ -21,8 +21,9 @@ class SortImportsTestJS : public ::testing::Test {
 protected:
   std::string sort(StringRef Code, unsigned Offset = 0, unsigned Length = 0) {
     StringRef FileName = "input.js";
-    if (Length == 0U)
+    if (Length == 0U) {
       Length = Code.size() - Offset;
+}
     std::vector<tooling::Range> Ranges(1, tooling::Range(Offset, Length));
     auto Sorted =
         applyAllReplacements(Code, sortIncludes(Style, Code, Ranges, FileName));

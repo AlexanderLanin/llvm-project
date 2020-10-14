@@ -33,8 +33,9 @@ ProgramStateRef RangedConstraintManager::assumeSym(ProgramStateRef State,
 
     BinaryOperator::Opcode op = SIE->getOpcode();
     if (BinaryOperator::isComparisonOp(op) && op != BO_Cmp) {
-      if (!Assumption)
+      if (!Assumption) {
         op = BinaryOperator::negateComparisonOp(op);
+}
 
       return assumeSymRel(State, SIE->getLHS(), op, SIE->getRHS());
     }
@@ -60,8 +61,9 @@ ProgramStateRef RangedConstraintManager::assumeSym(ProgramStateRef State,
 
       const llvm::APSInt &Zero = getBasicVals().getValue(0, DiffTy);
       Op = BinaryOperator::reverseComparisonOp(Op);
-      if (!Assumption)
+      if (!Assumption) {
         Op = BinaryOperator::negateComparisonOp(Op);
+}
       return assumeSymRel(State, Subtraction, Op, Zero);
     }
 
@@ -108,12 +110,14 @@ ProgramStateRef RangedConstraintManager::assumeSymInclusiveRange(
 
   // Prefer unsigned comparisons.
   if (ComparisonType.getBitWidth() == WraparoundType.getBitWidth() &&
-      ComparisonType.isUnsigned() && !WraparoundType.isUnsigned())
+      ComparisonType.isUnsigned() && !WraparoundType.isUnsigned()) {
     Adjustment.setIsSigned(false);
+}
 
-  if (InRange)
+  if (InRange) {
     return assumeSymWithinInclusiveRange(State, AdjustedSym, ConvertedFrom,
                                          ConvertedTo, Adjustment);
+}
   return assumeSymOutsideInclusiveRange(State, AdjustedSym, ConvertedFrom,
                                         ConvertedTo, Adjustment);
 }
@@ -125,15 +129,17 @@ RangedConstraintManager::assumeSymUnsupported(ProgramStateRef State,
   QualType T = Sym->getType();
 
   // Non-integer types are not supported.
-  if (!T->isIntegralOrEnumerationType())
+  if (!T->isIntegralOrEnumerationType()) {
     return State;
+}
 
   // Reverse the operation and add directly to state.
   const llvm::APSInt &Zero = BVF.getValue(0, T);
-  if (Assumption)
+  if (Assumption) {
     return assumeSymNE(State, Sym, Zero, Zero);
-  else
+  } else {
     return assumeSymEQ(State, Sym, Zero, Zero);
+}
 }
 
 ProgramStateRef RangedConstraintManager::assumeSymRel(ProgramStateRef State,
@@ -149,9 +155,11 @@ ProgramStateRef RangedConstraintManager::assumeSymRel(ProgramStateRef State,
   // "(exp comparison_op expr) == 0" to true into an assume of
   // "exp comparison_op expr" to false.)
   if (Int == 0 && (Op == BO_EQ || Op == BO_NE)) {
-    if (const BinarySymExpr *SE = dyn_cast<BinarySymExpr>(Sym))
-      if (BinaryOperator::isComparisonOp(SE->getOpcode()))
+    if (const BinarySymExpr *SE = dyn_cast<BinarySymExpr>(Sym)) {
+      if (BinaryOperator::isComparisonOp(SE->getOpcode())) {
         return assumeSym(State, Sym, (Op == BO_NE ? true : false));
+}
+}
   }
 
   // Get the type used for calculating wraparound.
@@ -174,8 +182,9 @@ ProgramStateRef RangedConstraintManager::assumeSymRel(ProgramStateRef State,
 
   // Prefer unsigned comparisons.
   if (ComparisonType.getBitWidth() == WraparoundType.getBitWidth() &&
-      ComparisonType.isUnsigned() && !WraparoundType.isUnsigned())
+      ComparisonType.isUnsigned() && !WraparoundType.isUnsigned()) {
     Adjustment.setIsSigned(false);
+}
 
   switch (Op) {
   default:
@@ -213,8 +222,9 @@ void RangedConstraintManager::computeAdjustment(SymbolRef &Sym,
       // Don't forget to negate the adjustment if it's being subtracted.
       // This should happen /after/ promotion, in case the value being
       // subtracted is, say, CHAR_MIN, and the promoted type is 'int'.
-      if (Op == BO_Sub)
+      if (Op == BO_Sub) {
         Adjustment = -Adjustment;
+}
     }
   }
 }

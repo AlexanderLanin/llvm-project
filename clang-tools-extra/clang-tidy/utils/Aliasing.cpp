@@ -16,8 +16,9 @@ namespace utils {
 
 /// Return whether \p S is a reference to the declaration of \p Var.
 static bool isAccessForVar(const Stmt *S, const VarDecl *Var) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(S))
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(S)) {
     return DRE->getDecl() == Var;
+}
 
   return false;
 }
@@ -33,8 +34,9 @@ static bool isPtrOrReferenceForVar(const Stmt *S, const VarDecl *Var) {
       }
     }
   } else if (const auto *UnOp = dyn_cast<UnaryOperator>(S)) {
-    if (UnOp->getOpcode() == UO_AddrOf)
+    if (UnOp->getOpcode() == UO_AddrOf) {
       return isAccessForVar(UnOp->getSubExpr(), Var);
+}
   }
 
   return false;
@@ -42,15 +44,18 @@ static bool isPtrOrReferenceForVar(const Stmt *S, const VarDecl *Var) {
 
 /// Return whether \p Var has a pointer or reference in \p S.
 static bool hasPtrOrReferenceInStmt(const Stmt *S, const VarDecl *Var) {
-  if (isPtrOrReferenceForVar(S, Var))
+  if (isPtrOrReferenceForVar(S, Var)) {
     return true;
+}
 
   for (const Stmt *Child : S->children()) {
-    if (!Child)
+    if (!Child) {
       continue;
+}
 
-    if (hasPtrOrReferenceInStmt(Child, Var))
+    if (hasPtrOrReferenceInStmt(Child, Var)) {
       return true;
+}
   }
 
   return false;

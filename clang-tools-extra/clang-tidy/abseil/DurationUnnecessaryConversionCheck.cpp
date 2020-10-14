@@ -77,8 +77,9 @@ void DurationUnnecessaryConversionCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *OuterCall = Result.Nodes.getNodeAs<Expr>("call");
 
-  if (isInMacro(Result, OuterCall))
+  if (isInMacro(Result, OuterCall)) {
     return;
+}
 
   FixItHint Hint;
   if (const auto *Binop = Result.Nodes.getNodeAs<BinaryOperator>("binop")) {

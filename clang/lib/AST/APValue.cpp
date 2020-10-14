@@ -79,8 +79,9 @@ QualType APValue::LValueBase::getDynamicAllocType() const {
 
 void APValue::LValueBase::profile(llvm::FoldingSetNodeID &ID) const {
   ID.AddPointer(Ptr.getOpaqueValue());
-  if (is<TypeInfoLValue>() || is<DynamicAllocLValue>())
+  if (is<TypeInfoLValue>() || is<DynamicAllocLValue>()) {
     return;
+}
   ID.AddInteger(Local.CallIndex);
   ID.AddInteger(Local.Version);
 }
@@ -88,18 +89,21 @@ void APValue::LValueBase::profile(llvm::FoldingSetNodeID &ID) const {
 namespace clang {
 bool operator==(const APValue::LValueBase &LHS,
                 const APValue::LValueBase &RHS) {
-  if (LHS.Ptr != RHS.Ptr)
+  if (LHS.Ptr != RHS.Ptr) {
     return false;
-  if (LHS.is<TypeInfoLValue>() || LHS.is<DynamicAllocLValue>())
+}
+  if (LHS.is<TypeInfoLValue>() || LHS.is<DynamicAllocLValue>()) {
     return true;
+}
   return LHS.Local.CallIndex == RHS.Local.CallIndex &&
          LHS.Local.Version == RHS.Local.Version;
 }
 }
 
 APValue::LValuePathEntry::LValuePathEntry(BaseOrMemberType BaseOrMember) {
-  if (const Decl *D = BaseOrMember.getPointer())
+  if (const Decl *D = BaseOrMember.getPointer()) {
     BaseOrMember.setPointer(D->getCanonicalDecl());
+}
   Value = reinterpret_cast<uintptr_t>(BaseOrMember.getOpaqueValue());
 }
 
@@ -145,8 +149,9 @@ llvm::DenseMapInfo<clang::APValue::LValueBase>::getTombstoneKey() {
 
 namespace clang {
 llvm::hash_code hash_value(const APValue::LValueBase &Base) {
-  if (Base.is<TypeInfoLValue>() || Base.is<DynamicAllocLValue>())
+  if (Base.is<TypeInfoLValue>() || Base.is<DynamicAllocLValue>()) {
     return llvm::hash_value(Base.getOpaqueValue());
+}
   return llvm::hash_combine(Base.getOpaqueValue(), Base.getCallIndex(),
                             Base.getVersion());
 }
@@ -179,13 +184,16 @@ struct APValue::LV : LVBase {
   ~LV() { resizePath(0); }
 
   void resizePath(unsigned Length) {
-    if (Length == PathLength)
+    if (Length == PathLength) {
       return;
-    if (hasPathPtr())
+}
+    if (hasPathPtr()) {
       delete [] PathPtr;
+}
     PathLength = Length;
-    if (hasPathPtr())
+    if (hasPathPtr()) {
       PathPtr = new LValuePathEntry[Length];
+}
   }
 
   bool hasPath() const { return PathLength != (unsigned)-1; }
@@ -217,13 +225,16 @@ struct APValue::MemberPointerData : MemberPointerBase {
   ~MemberPointerData() { resizePath(0); }
 
   void resizePath(unsigned Length) {
-    if (Length == PathLength)
+    if (Length == PathLength) {
       return;
-    if (hasPathPtr())
+}
+    if (hasPathPtr()) {
       delete [] PathPtr;
+}
     PathLength = Length;
-    if (hasPathPtr())
+    if (hasPathPtr()) {
       PathPtr = new PathElem[Length];
+}
   }
 
   bool hasPathPtr() const { return PathLength > InlinePathSpace; }
@@ -287,26 +298,31 @@ APValue::APValue(const APValue &RHS) : Kind(None) {
     break;
   case LValue:
     MakeLValue();
-    if (RHS.hasLValuePath())
+    if (RHS.hasLValuePath()) {
       setLValue(RHS.getLValueBase(), RHS.getLValueOffset(), RHS.getLValuePath(),
                 RHS.isLValueOnePastTheEnd(), RHS.isNullPointer());
-    else
+    } else {
       setLValue(RHS.getLValueBase(), RHS.getLValueOffset(), NoLValuePath(),
                 RHS.isNullPointer());
+}
     break;
   case Array:
     MakeArray(RHS.getArrayInitializedElts(), RHS.getArraySize());
-    for (unsigned I = 0, N = RHS.getArrayInitializedElts(); I != N; ++I)
+    for (unsigned I = 0, N = RHS.getArrayInitializedElts(); I != N; ++I) {
       getArrayInitializedElt(I) = RHS.getArrayInitializedElt(I);
-    if (RHS.hasArrayFiller())
+}
+    if (RHS.hasArrayFiller()) {
       getArrayFiller() = RHS.getArrayFiller();
+}
     break;
   case Struct:
     MakeStruct(RHS.getStructNumBases(), RHS.getStructNumFields());
-    for (unsigned I = 0, N = RHS.getStructNumBases(); I != N; ++I)
+    for (unsigned I = 0, N = RHS.getStructNumBases(); I != N; ++I) {
       getStructBase(I) = RHS.getStructBase(I);
-    for (unsigned I = 0, N = RHS.getStructNumFields(); I != N; ++I)
+}
+    for (unsigned I = 0, N = RHS.getStructNumFields(); I != N; ++I) {
       getStructField(I) = RHS.getStructField(I);
+}
     break;
   case Union:
     MakeUnion();
@@ -329,14 +345,16 @@ APValue::APValue(APValue &&RHS) : Kind(RHS.Kind), Data(RHS.Data) {
 }
 
 APValue &APValue::operator=(const APValue &RHS) {
-  if (this != &RHS)
+  if (this != &RHS) {
     *this = APValue(RHS);
+}
   return *this;
 }
 
 APValue &APValue::operator=(APValue &&RHS) {
-  if (Kind != None && Kind != Indeterminate)
+  if (Kind != None && Kind != Indeterminate) {
     DestroyDataAndMakeUninit();
+}
   Kind = RHS.Kind;
   Data = RHS.Data;
   RHS.Kind = None;
@@ -344,30 +362,31 @@ APValue &APValue::operator=(APValue &&RHS) {
 }
 
 void APValue::DestroyDataAndMakeUninit() {
-  if (Kind == Int)
+  if (Kind == Int) {
     ((APSInt*)(char*)Data.buffer)->~APSInt();
-  else if (Kind == Float)
+  } else if (Kind == Float) {
     ((APFloat*)(char*)Data.buffer)->~APFloat();
-  else if (Kind == FixedPoint)
+  } else if (Kind == FixedPoint) {
     ((APFixedPoint *)(char *)Data.buffer)->~APFixedPoint();
-  else if (Kind == Vector)
+  } else if (Kind == Vector) {
     ((Vec*)(char*)Data.buffer)->~Vec();
-  else if (Kind == ComplexInt)
+  } else if (Kind == ComplexInt) {
     ((ComplexAPSInt*)(char*)Data.buffer)->~ComplexAPSInt();
-  else if (Kind == ComplexFloat)
+  } else if (Kind == ComplexFloat) {
     ((ComplexAPFloat*)(char*)Data.buffer)->~ComplexAPFloat();
-  else if (Kind == LValue)
+  } else if (Kind == LValue) {
     ((LV*)(char*)Data.buffer)->~LV();
-  else if (Kind == Array)
+  } else if (Kind == Array) {
     ((Arr*)(char*)Data.buffer)->~Arr();
-  else if (Kind == Struct)
+  } else if (Kind == Struct) {
     ((StructData*)(char*)Data.buffer)->~StructData();
-  else if (Kind == Union)
+  } else if (Kind == Union) {
     ((UnionData*)(char*)Data.buffer)->~UnionData();
-  else if (Kind == MemberPointer)
+  } else if (Kind == MemberPointer) {
     ((MemberPointerData*)(char*)Data.buffer)->~MemberPointerData();
-  else if (Kind == AddrLabelDiff)
+  } else if (Kind == AddrLabelDiff) {
     ((AddrLabelDiffData*)(char*)Data.buffer)->~AddrLabelDiffData();
+}
   Kind = None;
 }
 
@@ -429,11 +448,13 @@ void APValue::profile(llvm::FoldingSetNodeID &ID) const {
 
   case Struct:
     ID.AddInteger(getStructNumBases());
-    for (unsigned I = 0, N = getStructNumBases(); I != N; ++I)
+    for (unsigned I = 0, N = getStructNumBases(); I != N; ++I) {
       getStructBase(I).profile(ID);
+}
     ID.AddInteger(getStructNumFields());
-    for (unsigned I = 0, N = getStructNumFields(); I != N; ++I)
+    for (unsigned I = 0, N = getStructNumFields(); I != N; ++I) {
       getStructField(I).profile(ID);
+}
     return;
 
   case Union:
@@ -447,8 +468,9 @@ void APValue::profile(llvm::FoldingSetNodeID &ID) const {
 
   case Array: {
     ID.AddInteger(getArraySize());
-    if (getArraySize() == 0)
+    if (getArraySize() == 0) {
       return;
+}
 
     // The profile should not depend on whether the array is expanded or
     // not, but we don't want to profile the array filler many times for
@@ -496,15 +518,17 @@ void APValue::profile(llvm::FoldingSetNodeID &ID) const {
     }
 
     // Emit the remaining elements.
-    for (; N != 0; --N)
+    for (; N != 0; --N) {
       getArrayInitializedElt(N - 1).profile(ID);
+}
     return;
   }
 
   case Vector:
     ID.AddInteger(getVectorLength());
-    for (unsigned I = 0, N = getVectorLength(); I != N; ++I)
+    for (unsigned I = 0, N = getVectorLength(); I != N; ++I) {
       getVectorElt(I).profile(ID);
+}
     return;
 
   case Int:
@@ -540,15 +564,17 @@ void APValue::profile(llvm::FoldingSetNodeID &ID) const {
     // For uniqueness, we only need to profile the entries corresponding
     // to union members, but we don't have the type here so we don't know
     // how to interpret the entries.
-    for (LValuePathEntry E : getLValuePath())
+    for (LValuePathEntry E : getLValuePath()) {
       E.profile(ID);
+}
     return;
 
   case MemberPointer:
     ID.AddPointer(getMemberPointerDecl());
     ID.AddInteger(isMemberPointerToDerivedMember());
-    for (const CXXRecordDecl *D : getMemberPointerPath())
+    for (const CXXRecordDecl *D : getMemberPointerPath()) {
       ID.AddPointer(D);
+}
     return;
   }
 
@@ -580,10 +606,11 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
     Out << "<uninitialized>";
     return;
   case APValue::Int:
-    if (Ty->isBooleanType())
+    if (Ty->isBooleanType()) {
       Out << (getInt().getBoolValue() ? "true" : "false");
-    else
+    } else {
       Out << getInt();
+}
     return;
   case APValue::Float:
     Out << GetApproxValue(getFloat());
@@ -613,8 +640,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
     bool IsReference = Ty->isReferenceType();
     QualType InnerTy
       = IsReference ? Ty.getNonReferenceType() : Ty->getPointeeType();
-    if (InnerTy.isNull())
+    if (InnerTy.isNull()) {
       InnerTy = Ty;
+}
 
     LValueBase Base = getLValueBase();
     if (!Base) {
@@ -635,8 +663,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       CharUnits O = getLValueOffset();
       CharUnits S = Ctx.getTypeSizeInChars(InnerTy);
       if (!O.isZero()) {
-        if (IsReference)
+        if (IsReference) {
           Out << "*(";
+}
         if (O % S) {
           Out << "(char*)";
           S = CharUnits::One();
@@ -646,9 +675,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
         Out << '&';
       }
 
-      if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>())
+      if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>()) {
         Out << *VD;
-      else if (TypeInfoLValue TI = Base.dyn_cast<TypeInfoLValue>()) {
+      } else if (TypeInfoLValue TI = Base.dyn_cast<TypeInfoLValue>()) {
         TI.print(Out, Ctx.getPrintingPolicy());
       } else if (DynamicAllocLValue DA = Base.dyn_cast<DynamicAllocLValue>()) {
         Out << "{*new "
@@ -663,17 +692,19 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
 
       if (!O.isZero()) {
         Out << " + " << (O / S);
-        if (IsReference)
+        if (IsReference) {
           Out << ')';
+}
       }
       return;
     }
 
     // We have an lvalue path. Print it out nicely.
-    if (!IsReference)
+    if (!IsReference) {
       Out << '&';
-    else if (isLValueOnePastTheEnd())
+    } else if (isLValueOnePastTheEnd()) {
       Out << "*(&";
+}
 
     QualType ElemTy;
     if (const ValueDecl *VD = Base.dyn_cast<const ValueDecl*>()) {
@@ -709,8 +740,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
         } else {
           const ValueDecl *VD = cast<ValueDecl>(BaseOrMember);
           Out << ".";
-          if (CastToBase)
+          if (CastToBase) {
             Out << *CastToBase << "::";
+}
           Out << *VD;
           ElemTy = VD->getType();
         }
@@ -726,8 +758,9 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       // FIXME: If CastToBase is non-0, we should prefix the output with
       // "(CastToBase*)".
       Out << " + 1";
-      if (IsReference)
+      if (IsReference) {
         Out << ')';
+}
     }
     return;
   }
@@ -759,16 +792,19 @@ void APValue::printPretty(raw_ostream &Out, const ASTContext &Ctx,
       CXXRecordDecl::base_class_const_iterator BI = CD->bases_begin();
       for (unsigned I = 0; I != N; ++I, ++BI) {
         assert(BI != CD->bases_end());
-        if (!First)
+        if (!First) {
           Out << ", ";
+}
         getStructBase(I).printPretty(Out, Ctx, BI->getType());
         First = false;
       }
     }
     for (const auto *FI : RD->fields()) {
-      if (!First)
+      if (!First) {
         Out << ", ";
-      if (FI->isUnnamedBitfield()) continue;
+}
+      if (FI->isUnnamedBitfield()) { continue;
+}
       getStructField(FI->getFieldIndex()).
         printPretty(Out, Ctx, FI->getType());
       First = false;
@@ -938,6 +974,7 @@ void APValue::MakeMemberPointer(const ValueDecl *Member, bool IsDerivedMember,
       Member ? cast<ValueDecl>(Member->getCanonicalDecl()) : nullptr);
   MPD->MemberAndIsDerivedMember.setInt(IsDerivedMember);
   MPD->resizePath(Path.size());
-  for (unsigned I = 0; I != Path.size(); ++I)
+  for (unsigned I = 0; I != Path.size(); ++I) {
     MPD->getPath()[I] = Path[I]->getCanonicalDecl();
+}
 }

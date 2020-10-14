@@ -55,10 +55,11 @@ AST_MATCHER_P(Expr, hasSideEffect, bool, CheckFunctionCalls) {
     bool Result = CheckFunctionCalls;
     if (const auto *FuncDecl = CExpr->getDirectCallee()) {
       if (FuncDecl->getDeclName().isIdentifier() &&
-          FuncDecl->getName() == "__builtin_expect") // exceptions come here
+          FuncDecl->getName() == "__builtin_expect") { // exceptions come here
         Result = false;
-      else if (const auto *MethodDecl = dyn_cast<CXXMethodDecl>(FuncDecl))
+      } else if (const auto *MethodDecl = dyn_cast<CXXMethodDecl>(FuncDecl)) {
         Result &= !MethodDecl->isConst();
+}
     }
     return Result;
   }
@@ -115,8 +116,9 @@ void AssertSideEffectCheck::check(const MatchFinder::MatchResult &Result) {
     }
     Loc = SM.getImmediateMacroCallerLoc(Loc);
   }
-  if (AssertMacroName.empty())
+  if (AssertMacroName.empty()) {
     return;
+}
 
   diag(Loc, "found %0() with side effect") << AssertMacroName;
 }

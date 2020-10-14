@@ -42,13 +42,14 @@ Cl Expr::ClassifyImpl(ASTContext &Ctx, SourceLocation *Loc) const {
   //   incomplete type other than void.
   if (!Ctx.getLangOpts().CPlusPlus) {
     // Thus, no functions.
-    if (TR->isFunctionType() || TR == Ctx.OverloadTy)
+    if (TR->isFunctionType() || TR == Ctx.OverloadTy) {
       kind = Cl::CL_Function;
     // No void either, but qualified void is OK because it is "other than void".
     // Void "lvalues" are classified as addressable void values, which are void
     // expressions whose address can be taken.
-    else if (TR->isVoidType() && !TR.hasQualifiers())
+    } else if (TR->isVoidType() && !TR.hasQualifiers()) {
       kind = (kind == Cl::CL_LValue ? Cl::CL_AddressableVoid : Cl::CL_Void);
+}
   }
 
   // Enable this assertion for testing.
@@ -68,17 +69,20 @@ Cl Expr::ClassifyImpl(ASTContext &Ctx, SourceLocation *Loc) const {
   }
 
   Cl::ModifiableType modifiable = Cl::CM_Untested;
-  if (Loc)
+  if (Loc) {
     modifiable = IsModifiable(Ctx, this, kind, *Loc);
+}
   return Classification(kind, modifiable);
 }
 
 /// Classify an expression which creates a temporary, based on its type.
 static Cl::Kinds ClassifyTemporary(QualType T) {
-  if (T->isRecordType())
+  if (T->isRecordType()) {
     return Cl::CL_ClassTemporary;
-  if (T->isArrayType())
+}
+  if (T->isArrayType()) {
     return Cl::CL_ArrayTemporary;
+}
 
   // No special classification: these don't behave differently from normal
   // prvalues.
@@ -212,14 +216,16 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     //                 if that operand is an lvalue and an xvalue otherwise.
     // Subscripting vector types is more like member access.
   case Expr::ArraySubscriptExprClass:
-    if (cast<ArraySubscriptExpr>(E)->getBase()->getType()->isVectorType())
+    if (cast<ArraySubscriptExpr>(E)->getBase()->getType()->isVectorType()) {
       return ClassifyInternal(Ctx, cast<ArraySubscriptExpr>(E)->getBase());
+}
     if (Lang.CPlusPlus11) {
       // Step over the array-to-pointer decay if present, but not over the
       // temporary materialization.
       auto *Base = cast<ArraySubscriptExpr>(E)->getBase()->IgnoreImpCasts();
-      if (Base->getType()->isArrayType())
+      if (Base->getType()->isArrayType()) {
         return ClassifyInternal(Ctx, Base);
+}
     }
     return Cl::CL_LValue;
 
@@ -230,9 +236,10 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     // C++ [expr.prim.general]p3: The result is an lvalue if the entity is a
     //   function or variable and a prvalue otherwise.
   case Expr::DeclRefExprClass:
-    if (E->getType() == Ctx.UnknownAnyTy)
+    if (E->getType() == Ctx.UnknownAnyTy) {
       return isa<FunctionDecl>(cast<DeclRefExpr>(E)->getDecl())
                ? Cl::CL_PRValue : Cl::CL_LValue;
+}
     return ClassifyDecl(Ctx, cast<DeclRefExpr>(E)->getDecl());
 
     // Member access is complex.
@@ -257,10 +264,12 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     case UO_Imag: {
       const Expr *Op = cast<UnaryOperator>(E)->getSubExpr()->IgnoreParens();
       Cl::Kinds K = ClassifyInternal(Ctx, Op);
-      if (K != Cl::CL_LValue) return K;
+      if (K != Cl::CL_LValue) { return K;
+}
 
-      if (isa<ObjCPropertyRefExpr>(Op))
+      if (isa<ObjCPropertyRefExpr>(Op)) {
         return Cl::CL_SubObjCPropertySetting;
+}
       return Cl::CL_LValue;
     }
 
@@ -298,15 +307,17 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     // or a void expression if its result expression is, respectively, an
     // lvalue, a function designator, or a void expression.
   case Expr::GenericSelectionExprClass:
-    if (cast<GenericSelectionExpr>(E)->isResultDependent())
+    if (cast<GenericSelectionExpr>(E)->isResultDependent()) {
       return Cl::CL_PRValue;
+}
     return ClassifyInternal(Ctx,cast<GenericSelectionExpr>(E)->getResultExpr());
 
   case Expr::BinaryOperatorClass:
   case Expr::CompoundAssignOperatorClass:
     // C doesn't have any binary expressions that are lvalues.
-    if (Lang.CPlusPlus)
+    if (Lang.CPlusPlus) {
       return ClassifyBinaryOp(Ctx, cast<BinaryOperator>(E));
+}
     return Cl::CL_PRValue;
 
   case Expr::CallExprClass:
@@ -327,10 +338,12 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     // Extended vector element access is an lvalue unless there are duplicates
     // in the shuffle expression.
   case Expr::ExtVectorElementExprClass:
-    if (cast<ExtVectorElementExpr>(E)->containsDuplicateElements())
+    if (cast<ExtVectorElementExpr>(E)->containsDuplicateElements()) {
       return Cl::CL_DuplicateVectorComponents;
-    if (cast<ExtVectorElementExpr>(E)->isArrow())
+}
+    if (cast<ExtVectorElementExpr>(E)->isArrow()) {
       return Cl::CL_LValue;
+}
     return ClassifyInternal(Ctx, cast<ExtVectorElementExpr>(E)->getBase());
 
     // Simply look at the actual default argument.
@@ -360,7 +373,8 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::ObjCBridgedCastExprClass:
   case Expr::BuiltinBitCastExprClass:
     // Only in C++ can casts be interesting at all.
-    if (!Lang.CPlusPlus) return Cl::CL_PRValue;
+    if (!Lang.CPlusPlus) { return Cl::CL_PRValue;
+}
     return ClassifyUnnamed(Ctx, cast<ExplicitCastExpr>(E)->getTypeAsWritten());
 
   case Expr::CXXUnresolvedConstructExprClass:
@@ -368,14 +382,16 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
                       cast<CXXUnresolvedConstructExpr>(E)->getTypeAsWritten());
 
   case Expr::BinaryConditionalOperatorClass: {
-    if (!Lang.CPlusPlus) return Cl::CL_PRValue;
+    if (!Lang.CPlusPlus) { return Cl::CL_PRValue;
+}
     const auto *co = cast<BinaryConditionalOperator>(E);
     return ClassifyConditional(Ctx, co->getTrueExpr(), co->getFalseExpr());
   }
 
   case Expr::ConditionalOperatorClass: {
     // Once again, only C++ is interesting.
-    if (!Lang.CPlusPlus) return Cl::CL_PRValue;
+    if (!Lang.CPlusPlus) { return Cl::CL_PRValue;
+}
     const auto *co = cast<ConditionalOperator>(E);
     return ClassifyConditional(Ctx, co->getTrueExpr(), co->getFalseExpr());
   }
@@ -406,8 +422,9 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
 
   case Expr::StmtExprClass: {
     const CompoundStmt *S = cast<StmtExpr>(E)->getSubStmt();
-    if (const auto *LastExpr = dyn_cast_or_null<Expr>(S->body_back()))
+    if (const auto *LastExpr = dyn_cast_or_null<Expr>(S->body_back())) {
       return ClassifyUnnamed(Ctx, LastExpr->getType());
+}
     return Cl::CL_PRValue;
   }
 
@@ -424,8 +441,9 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
     // contains only one element. In that case, we look at that element
     // for an exact classification. Init list creation takes care of the
     // value kind for us, so we only need to fine-tune.
-    if (E->isRValue())
+    if (E->isRValue()) {
       return ClassifyExprValueKind(Lang, E, E->getValueKind());
+}
     assert(cast<InitListExpr>(E)->getNumInits() == 1 &&
            "Only 1-element init lists can be glvalues.");
     return ClassifyInternal(Ctx, cast<InitListExpr>(E)->getInit(0));
@@ -448,13 +466,14 @@ static Cl::Kinds ClassifyDecl(ASTContext &Ctx, const Decl *D) {
   // lvalue unless it's a reference type (C++ [temp.param]p6), so we need to
   // special-case this.
 
-  if (isa<CXXMethodDecl>(D) && cast<CXXMethodDecl>(D)->isInstance())
+  if (isa<CXXMethodDecl>(D) && cast<CXXMethodDecl>(D)->isInstance()) {
     return Cl::CL_MemberFunction;
+}
 
   bool islvalue;
-  if (const auto *NTTParm = dyn_cast<NonTypeTemplateParmDecl>(D))
+  if (const auto *NTTParm = dyn_cast<NonTypeTemplateParmDecl>(D)) {
     islvalue = NTTParm->getType()->isReferenceType();
-  else
+  } else {
     islvalue = isa<VarDecl>(D) || isa<FieldDecl>(D) ||
                isa<IndirectFieldDecl>(D) ||
                isa<BindingDecl>(D) ||
@@ -462,6 +481,7 @@ static Cl::Kinds ClassifyDecl(ASTContext &Ctx, const Decl *D) {
                (Ctx.getLangOpts().CPlusPlus &&
                 (isa<FunctionDecl>(D) || isa<MSPropertyDecl>(D) ||
                  isa<FunctionTemplateDecl>(D)));
+}
 
   return islvalue ? Cl::CL_LValue : Cl::CL_PRValue;
 }
@@ -471,37 +491,43 @@ static Cl::Kinds ClassifyDecl(ASTContext &Ctx, const Decl *D) {
 /// calls and casts.
 static Cl::Kinds ClassifyUnnamed(ASTContext &Ctx, QualType T) {
   // In C, function calls are always rvalues.
-  if (!Ctx.getLangOpts().CPlusPlus) return Cl::CL_PRValue;
+  if (!Ctx.getLangOpts().CPlusPlus) { return Cl::CL_PRValue;
+}
 
   // C++ [expr.call]p10: A function call is an lvalue if the result type is an
   //   lvalue reference type or an rvalue reference to function type, an xvalue
   //   if the result type is an rvalue reference to object type, and a prvalue
   //   otherwise.
-  if (T->isLValueReferenceType())
+  if (T->isLValueReferenceType()) {
     return Cl::CL_LValue;
+}
   const auto *RV = T->getAs<RValueReferenceType>();
-  if (!RV) // Could still be a class temporary, though.
+  if (!RV) { // Could still be a class temporary, though.
     return ClassifyTemporary(T);
+}
 
   return RV->getPointeeType()->isFunctionType() ? Cl::CL_LValue : Cl::CL_XValue;
 }
 
 static Cl::Kinds ClassifyMemberExpr(ASTContext &Ctx, const MemberExpr *E) {
-  if (E->getType() == Ctx.UnknownAnyTy)
+  if (E->getType() == Ctx.UnknownAnyTy) {
     return (isa<FunctionDecl>(E->getMemberDecl())
               ? Cl::CL_PRValue : Cl::CL_LValue);
+}
 
   // Handle C first, it's easier.
   if (!Ctx.getLangOpts().CPlusPlus) {
     // C99 6.5.2.3p3
     // For dot access, the expression is an lvalue if the first part is. For
     // arrow access, it always is an lvalue.
-    if (E->isArrow())
+    if (E->isArrow()) {
       return Cl::CL_LValue;
+}
     // ObjC property accesses are not lvalues, but get special treatment.
     Expr *Base = E->getBase()->IgnoreParens();
-    if (isa<ObjCPropertyRefExpr>(Base))
+    if (isa<ObjCPropertyRefExpr>(Base)) {
       return Cl::CL_SubObjCPropertySetting;
+}
     return ClassifyInternal(Ctx, Base);
   }
 
@@ -509,25 +535,30 @@ static Cl::Kinds ClassifyMemberExpr(ASTContext &Ctx, const MemberExpr *E) {
   // C++ [expr.ref]p3: E1->E2 is converted to the equivalent form (*(E1)).E2.
   // C++ [expr.ref]p4: If E2 is declared to have type "reference to T", then
   //   E1.E2 is an lvalue.
-  if (const auto *Value = dyn_cast<ValueDecl>(Member))
-    if (Value->getType()->isReferenceType())
+  if (const auto *Value = dyn_cast<ValueDecl>(Member)) {
+    if (Value->getType()->isReferenceType()) {
       return Cl::CL_LValue;
+}
+}
 
   //   Otherwise, one of the following rules applies.
   //   -- If E2 is a static member [...] then E1.E2 is an lvalue.
-  if (isa<VarDecl>(Member) && Member->getDeclContext()->isRecord())
+  if (isa<VarDecl>(Member) && Member->getDeclContext()->isRecord()) {
     return Cl::CL_LValue;
+}
 
   //   -- If E2 is a non-static data member [...]. If E1 is an lvalue, then
   //      E1.E2 is an lvalue; if E1 is an xvalue, then E1.E2 is an xvalue;
   //      otherwise, it is a prvalue.
   if (isa<FieldDecl>(Member)) {
     // *E1 is an lvalue
-    if (E->isArrow())
+    if (E->isArrow()) {
       return Cl::CL_LValue;
+}
     Expr *Base = E->getBase()->IgnoreParenImpCasts();
-    if (isa<ObjCPropertyRefExpr>(Base))
+    if (isa<ObjCPropertyRefExpr>(Base)) {
       return Cl::CL_SubObjCPropertySetting;
+}
     return ClassifyInternal(Ctx, E->getBase());
   }
 
@@ -535,8 +566,9 @@ static Cl::Kinds ClassifyMemberExpr(ASTContext &Ctx, const MemberExpr *E) {
   //      -- If it refers to a static member function [...], then E1.E2 is an
   //         lvalue; [...]
   //      -- Otherwise [...] E1.E2 is a prvalue.
-  if (const auto *Method = dyn_cast<CXXMethodDecl>(Member))
+  if (const auto *Method = dyn_cast<CXXMethodDecl>(Member)) {
     return Method->isStatic() ? Cl::CL_LValue : Cl::CL_MemberFunction;
+}
 
   //   -- If E2 is a member enumerator [...], the expression E1.E2 is a prvalue.
   // So is everything else we haven't handled yet.
@@ -548,31 +580,35 @@ static Cl::Kinds ClassifyBinaryOp(ASTContext &Ctx, const BinaryOperator *E) {
          "This is only relevant for C++.");
   // C++ [expr.ass]p1: All [...] return an lvalue referring to the left operand.
   // Except we override this for writes to ObjC properties.
-  if (E->isAssignmentOp())
+  if (E->isAssignmentOp()) {
     return (E->getLHS()->getObjectKind() == OK_ObjCProperty
               ? Cl::CL_PRValue : Cl::CL_LValue);
+}
 
   // C++ [expr.comma]p1: the result is of the same value category as its right
   //   operand, [...].
-  if (E->getOpcode() == BO_Comma)
+  if (E->getOpcode() == BO_Comma) {
     return ClassifyInternal(Ctx, E->getRHS());
+}
 
   // C++ [expr.mptr.oper]p6: The result of a .* expression whose second operand
   //   is a pointer to a data member is of the same value category as its first
   //   operand.
-  if (E->getOpcode() == BO_PtrMemD)
+  if (E->getOpcode() == BO_PtrMemD) {
     return (E->getType()->isFunctionType() ||
             E->hasPlaceholderType(BuiltinType::BoundMember))
              ? Cl::CL_MemberFunction
              : ClassifyInternal(Ctx, E->getLHS());
+}
 
   // C++ [expr.mptr.oper]p6: The result of an ->* expression is an lvalue if its
   //   second operand is a pointer to data member and a prvalue otherwise.
-  if (E->getOpcode() == BO_PtrMemI)
+  if (E->getOpcode() == BO_PtrMemI) {
     return (E->getType()->isFunctionType() ||
             E->hasPlaceholderType(BuiltinType::BoundMember))
              ? Cl::CL_MemberFunction
              : Cl::CL_LValue;
+}
 
   // All other binary operations are prvalues.
   return Cl::CL_PRValue;
@@ -593,8 +629,9 @@ static Cl::Kinds ClassifyConditional(ASTContext &Ctx, const Expr *True,
     bool TrueIsThrow = isa<CXXThrowExpr>(True->IgnoreParenImpCasts());
     bool FalseIsThrow = isa<CXXThrowExpr>(False->IgnoreParenImpCasts());
     if (const Expr *NonThrow = TrueIsThrow ? (FalseIsThrow ? nullptr : False)
-                                           : (FalseIsThrow ? True : nullptr))
+                                           : (FalseIsThrow ? True : nullptr)) {
       return ClassifyInternal(Ctx, NonThrow);
+}
 
     //   [Otherwise] the result [...] is a prvalue.
     return Cl::CL_PRValue;
@@ -624,41 +661,50 @@ static Cl::ModifiableType IsModifiable(ASTContext &Ctx, const Expr *E,
       }
     }
   }
-  if (Kind != Cl::CL_LValue)
+  if (Kind != Cl::CL_LValue) {
     return Cl::CM_RValue;
+}
 
   // This is the lvalue case.
   // Functions are lvalues in C++, but not modifiable. (C++ [basic.lval]p6)
-  if (Ctx.getLangOpts().CPlusPlus && E->getType()->isFunctionType())
+  if (Ctx.getLangOpts().CPlusPlus && E->getType()->isFunctionType()) {
     return Cl::CM_Function;
+}
 
   // Assignment to a property in ObjC is an implicit setter access. But a
   // setter might not exist.
   if (const auto *Expr = dyn_cast<ObjCPropertyRefExpr>(E)) {
     if (Expr->isImplicitProperty() &&
-        Expr->getImplicitPropertySetter() == nullptr)
+        Expr->getImplicitPropertySetter() == nullptr) {
       return Cl::CM_NoSetterProperty;
+}
   }
 
   CanQualType CT = Ctx.getCanonicalType(E->getType());
   // Const stuff is obviously not modifiable.
-  if (CT.isConstQualified())
+  if (CT.isConstQualified()) {
     return Cl::CM_ConstQualified;
+}
   if (Ctx.getLangOpts().OpenCL &&
-      CT.getQualifiers().getAddressSpace() == LangAS::opencl_constant)
+      CT.getQualifiers().getAddressSpace() == LangAS::opencl_constant) {
     return Cl::CM_ConstAddrSpace;
+}
 
   // Arrays are not modifiable, only their elements are.
-  if (CT->isArrayType())
+  if (CT->isArrayType()) {
     return Cl::CM_ArrayType;
+}
   // Incomplete types are not modifiable.
-  if (CT->isIncompleteType())
+  if (CT->isIncompleteType()) {
     return Cl::CM_IncompleteType;
+}
 
   // Records with any const fields (recursively) are not modifiable.
-  if (const RecordType *R = CT->getAs<RecordType>())
-    if (R->hasConstFields())
+  if (const RecordType *R = CT->getAs<RecordType>()) {
+    if (R->hasConstFields()) {
       return Cl::CM_ConstQualifiedField;
+}
+}
 
   return Cl::CM_Modifiable;
 }

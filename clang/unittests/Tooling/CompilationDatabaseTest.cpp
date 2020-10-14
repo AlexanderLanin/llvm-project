@@ -177,12 +177,14 @@ static CompileCommand findCompileArgsInJsonDatabase(StringRef FileName,
   std::unique_ptr<CompilationDatabase> Database(
       JSONCompilationDatabase::loadFromBuffer(JSONDatabase, ErrorMessage,
                                               JSONCommandLineSyntax::Gnu));
-  if (!Database)
+  if (!Database) {
     return CompileCommand();
+}
   std::vector<CompileCommand> Commands = Database->getCompileCommands(FileName);
   EXPECT_LE(Commands.size(), 1u);
-  if (Commands.empty())
+  if (Commands.empty()) {
     return CompileCommand();
+}
   return Commands[0];
 }
 
@@ -364,7 +366,8 @@ TEST(findCompileArgsInJsonDatabase, FindsEntry) {
   StringRef Command("command");
   std::string JsonDatabase = "[";
   for (int I = 0; I < 10; ++I) {
-    if (I > 0) JsonDatabase += ",";
+    if (I > 0) { JsonDatabase += ",";
+}
     JsonDatabase +=
       ("{\"directory\":\"" + Directory + Twine(I) + "\"," +
         "\"command\":\"" + Command + Twine(I) + "\","
@@ -662,8 +665,9 @@ struct MemCDB : public CompilationDatabase {
 
   std::vector<std::string> getAllFiles() const override {
     std::vector<std::string> Result;
-    for (const auto &Entry : Entries)
+    for (const auto &Entry : Entries) {
       Result.push_back(std::string(Entry.first()));
+}
     return Result;
   }
 };
@@ -705,8 +709,9 @@ protected:
     auto Results =
         inferMissingCompileCommands(std::make_unique<MemCDB>(Entries))
             ->getCompileCommands(path(F));
-    if (Results.empty())
+    if (Results.empty()) {
       return "none";
+}
     // drop the input file argument, so tests don't have to deal with path().
     EXPECT_EQ(Results[0].CommandLine.back(), path(F))
         << "Last arg should be the file";
@@ -719,11 +724,13 @@ protected:
     auto Results =
         inferMissingCompileCommands(std::make_unique<MemCDB>(Entries))
             ->getCompileCommands(path(F));
-    if (Results.empty())
+    if (Results.empty()) {
       return "none";
+}
     StringRef Proxy = Results.front().Heuristic;
-    if (!Proxy.consume_front("inferred from "))
+    if (!Proxy.consume_front("inferred from ")) {
       return "";
+}
     // We have a proxy file, convert back to a unix relative path.
     // This is a bit messy, but we do need to test these strings somehow...
     llvm::SmallString<32> TempDir;
@@ -856,8 +863,9 @@ protected:
   std::string getCommand(llvm::StringRef F) {
     auto Results = inferTargetAndDriverMode(std::make_unique<MemCDB>(Entries))
                        ->getCompileCommands(path(F));
-    if (Results.empty())
+    if (Results.empty()) {
       return "none";
+}
     return llvm::join(Results[0].CommandLine, " ");
   }
 };
@@ -885,8 +893,9 @@ protected:
   std::string getCommand(llvm::StringRef F) {
     auto Results = expandResponseFiles(std::make_unique<MemCDB>(Entries), FS)
                        ->getCompileCommands(path(F));
-    if (Results.empty())
+    if (Results.empty()) {
       return "none";
+}
     return llvm::join(Results[0].CommandLine, " ");
   }
 

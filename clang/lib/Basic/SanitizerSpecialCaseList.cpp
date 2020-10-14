@@ -31,8 +31,9 @@ std::unique_ptr<SanitizerSpecialCaseList>
 SanitizerSpecialCaseList::createOrDie(const std::vector<std::string> &Paths,
                                       llvm::vfs::FileSystem &VFS) {
   std::string Error;
-  if (auto SSCL = create(Paths, VFS, Error))
+  if (auto SSCL = create(Paths, VFS, Error)) {
     return SSCL;
+}
   llvm::report_fatal_error(Error);
 }
 
@@ -56,10 +57,12 @@ void SanitizerSpecialCaseList::createSanitizerSections() {
 bool SanitizerSpecialCaseList::inSection(SanitizerMask Mask, StringRef Prefix,
                                          StringRef Query,
                                          StringRef Category) const {
-  for (auto &S : SanitizerSections)
+  for (auto &S : SanitizerSections) {
     if ((S.Mask & Mask) &&
-        SpecialCaseList::inSectionBlame(S.Entries, Prefix, Query, Category))
+        SpecialCaseList::inSectionBlame(S.Entries, Prefix, Query, Category)) {
       return true;
+}
+}
 
   return false;
 }

@@ -42,14 +42,16 @@ public:
 
   bool visitSymbolOccurrence(const NamedDecl *ND,
                              ArrayRef<SourceRange> NameRanges) {
-    if (!ND)
+    if (!ND) {
       return true;
+}
     for (const auto &Range : NameRanges) {
       SourceLocation Start = Range.getBegin();
       SourceLocation End = Range.getEnd();
       if (!Start.isValid() || !Start.isFileID() || !End.isValid() ||
-          !End.isFileID() || !isPointWithin(Start, End))
+          !End.isFileID() || !isPointWithin(Start, End)) {
         return true;
+}
     }
     Result = ND;
     return false;
@@ -87,8 +89,9 @@ const NamedDecl *getNamedDeclAt(const ASTContext &Context,
     SourceLocation EndLoc = CurrDecl->getEndLoc();
     if (StartLoc.isValid() && EndLoc.isValid() &&
         SM.isBeforeInTranslationUnit(StartLoc, Point) !=
-            SM.isBeforeInTranslationUnit(EndLoc, Point))
+            SM.isBeforeInTranslationUnit(EndLoc, Point)) {
       Visitor.TraverseDecl(CurrDecl);
+}
   }
 
   return Visitor.getNamedDecl();
@@ -106,12 +109,14 @@ public:
   // We don't have to traverse the uses to find some declaration with a
   // specific name, so just visit the named declarations.
   bool VisitNamedDecl(const NamedDecl *ND) {
-    if (!ND)
+    if (!ND) {
       return true;
+}
     // Fully qualified name is used to find the declaration.
     if (Name != ND->getQualifiedNameAsString() &&
-        Name != "::" + ND->getQualifiedNameAsString())
+        Name != "::" + ND->getQualifiedNameAsString()) {
       return true;
+}
     Result = ND;
     return false;
   }
@@ -136,8 +141,9 @@ std::string getUSRForDecl(const Decl *Decl) {
   llvm::SmallVector<char, 128> Buff;
 
   // FIXME: Add test for the nullptr case.
-  if (Decl == nullptr || index::generateUSRForDecl(Decl, Buff))
+  if (Decl == nullptr || index::generateUSRForDecl(Decl, Buff)) {
     return "";
+}
 
   return std::string(Buff.data(), Buff.size());
 }

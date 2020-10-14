@@ -34,8 +34,9 @@ bool Parser::MayBeDesignationStart() {
     return true;
 
   case tok::l_square: {  // designator: array-designator
-    if (!PP.getLangOpts().CPlusPlus11)
+    if (!PP.getLangOpts().CPlusPlus11) {
       return true;
+}
 
     // C++11 lambda expressions and C99 designators can be ambiguous all the
     // way through the closing ']' and to the next character. Handle the easy
@@ -110,10 +111,11 @@ static void CheckArrayDesignatorSyntax(Parser &P, SourceLocation Loc,
   // designators at all!
   if (Desig.getNumDesignators() == 1 &&
       (Desig.getDesignator(0).isArrayDesignator() ||
-       Desig.getDesignator(0).isArrayRangeDesignator()))
+       Desig.getDesignator(0).isArrayRangeDesignator())) {
     P.Diag(Loc, diag::ext_gnu_missing_equal_designator);
-  else if (Desig.getNumDesignators() > 0)
+  } else if (Desig.getNumDesignators() > 0) {
     P.Diag(Loc, diag::err_expected_equal_designator);
+}
 }
 
 /// ParseInitializerWithPotentialDesignator - Parse the 'initializer' production
@@ -442,8 +444,9 @@ ExprResult Parser::ParseBraceInitializer() {
 
   if (Tok.is(tok::r_brace)) {
     // Empty initializers are a C++ feature and a GNU extension to C.
-    if (!getLangOpts().CPlusPlus)
+    if (!getLangOpts().CPlusPlus) {
       Diag(LBraceLoc, diag::ext_gnu_empty_initializer);
+}
     // Match the '}'.
     return Actions.ActOnInitList(LBraceLoc, None, ConsumeBrace());
   }
@@ -463,10 +466,12 @@ ExprResult Parser::ParseBraceInitializer() {
     if (getLangOpts().MicrosoftExt && (Tok.is(tok::kw___if_exists) ||
         Tok.is(tok::kw___if_not_exists))) {
       if (ParseMicrosoftIfExistsBraceInitializer(InitExprs, InitExprsOk)) {
-        if (Tok.isNot(tok::comma)) break;
+        if (Tok.isNot(tok::comma)) { break;
+}
         ConsumeToken();
       }
-      if (Tok.is(tok::r_brace)) break;
+      if (Tok.is(tok::r_brace)) { break;
+}
       continue;
     }
 
@@ -475,13 +480,15 @@ ExprResult Parser::ParseBraceInitializer() {
     // If we know that this cannot be a designation, just parse the nested
     // initializer directly.
     ExprResult SubElt;
-    if (MayBeDesignationStart())
+    if (MayBeDesignationStart()) {
       SubElt = ParseInitializerWithPotentialDesignator(CodeCompleteDesignation);
-    else
+    } else {
       SubElt = ParseInitializer();
+}
 
-    if (Tok.is(tok::ellipsis))
+    if (Tok.is(tok::ellipsis)) {
       SubElt = Actions.ActOnPackExpansion(SubElt.get(), ConsumeToken());
+}
 
     SubElt = Actions.CorrectDelayedTyposInExpr(SubElt.get());
 
@@ -506,20 +513,23 @@ ExprResult Parser::ParseBraceInitializer() {
     }
 
     // If we don't have a comma continued list, we're done.
-    if (Tok.isNot(tok::comma)) break;
+    if (Tok.isNot(tok::comma)) { break;
+}
 
     // TODO: save comma locations if some client cares.
     ConsumeToken();
 
     // Handle trailing comma.
-    if (Tok.is(tok::r_brace)) break;
+    if (Tok.is(tok::r_brace)) { break;
+}
   }
 
   bool closed = !T.consumeClose();
 
-  if (InitExprsOk && closed)
+  if (InitExprsOk && closed) {
     return Actions.ActOnInitList(LBraceLoc, InitExprs,
                                  T.getCloseLocation());
+}
 
   return ExprError(); // an error occurred.
 }
@@ -531,8 +541,9 @@ bool Parser::ParseMicrosoftIfExistsBraceInitializer(ExprVector &InitExprs,
                                                     bool &InitExprsOk) {
   bool trailingComma = false;
   IfExistsCondition Result;
-  if (ParseMicrosoftIfExistsCondition(Result))
+  if (ParseMicrosoftIfExistsCondition(Result)) {
     return false;
+}
 
   BalancedDelimiterTracker Braces(*this, tok::l_brace);
   if (Braces.consumeOpen()) {
@@ -565,27 +576,31 @@ bool Parser::ParseMicrosoftIfExistsBraceInitializer(ExprVector &InitExprs,
     // If we know that this cannot be a designation, just parse the nested
     // initializer directly.
     ExprResult SubElt;
-    if (MayBeDesignationStart())
+    if (MayBeDesignationStart()) {
       SubElt = ParseInitializerWithPotentialDesignator(CodeCompleteDesignation);
-    else
+    } else {
       SubElt = ParseInitializer();
+}
 
-    if (Tok.is(tok::ellipsis))
+    if (Tok.is(tok::ellipsis)) {
       SubElt = Actions.ActOnPackExpansion(SubElt.get(), ConsumeToken());
+}
 
     // If we couldn't parse the subelement, bail out.
-    if (!SubElt.isInvalid())
+    if (!SubElt.isInvalid()) {
       InitExprs.push_back(SubElt.get());
-    else
+    } else {
       InitExprsOk = false;
+}
 
     if (Tok.is(tok::comma)) {
       ConsumeToken();
       trailingComma = true;
     }
 
-    if (Tok.is(tok::r_brace))
+    if (Tok.is(tok::r_brace)) {
       break;
+}
   }
 
   Braces.consumeClose();

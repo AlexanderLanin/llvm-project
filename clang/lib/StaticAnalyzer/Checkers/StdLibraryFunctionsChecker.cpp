@@ -119,8 +119,9 @@ class StdLibraryFunctionsChecker
     bool checkValidity(const FunctionDecl *FD) const {
       const bool ValidArg = ArgN == Ret || ArgN < FD->getNumParams();
       assert(ValidArg && "Arg out of range!");
-      if (!ValidArg)
+      if (!ValidArg) {
         return false;
+}
       // Subclasses may further refine the validation.
       return checkSpecificValidity(FD);
     }
@@ -230,12 +231,14 @@ class StdLibraryFunctionsChecker
                           const Summary &Summary,
                           CheckerContext &C) const override {
       SVal V = getArgSVal(Call, getArgNo());
-      if (V.isUndef())
+      if (V.isUndef()) {
         return State;
+}
 
       DefinedOrUnknownSVal L = V.castAs<DefinedOrUnknownSVal>();
-      if (!L.getAs<Loc>())
+      if (!L.getAs<Loc>()) {
         return State;
+}
 
       return State->assume(L, CannotBeNull);
     }
@@ -318,8 +321,9 @@ class StdLibraryFunctionsChecker
 
       SVal Feasible = SvalBuilder.evalBinOp(State, Op, SizeV, BufDynSize,
                                             SvalBuilder.getContext().BoolTy);
-      if (auto F = Feasible.getAs<DefinedOrUnknownSVal>())
+      if (auto F = Feasible.getAs<DefinedOrUnknownSVal>()) {
         return State->assume(*F, true);
+}
 
       // We can get here only if the size argument or the dynamic size is
       // undefined. But the dynamic size should never be undefined, only
@@ -487,13 +491,18 @@ class StdLibraryFunctionsChecker
     // Once we know the exact type of the function then do sanity check on all
     // the given constraints.
     bool validateByConstraints(const FunctionDecl *FD) const {
-      for (const ConstraintSet &Case : CaseConstraints)
-        for (const ValueConstraintPtr &Constraint : Case)
-          if (!Constraint->checkValidity(FD))
+      for (const ConstraintSet &Case : CaseConstraints) {
+        for (const ValueConstraintPtr &Constraint : Case) {
+          if (!Constraint->checkValidity(FD)) {
             return false;
-      for (const ValueConstraintPtr &Constraint : ArgConstraints)
-        if (!Constraint->checkValidity(FD))
+}
+}
+}
+      for (const ValueConstraintPtr &Constraint : ArgConstraints) {
+        if (!Constraint->checkValidity(FD)) {
           return false;
+}
+}
       return true;
     }
   };
@@ -535,17 +544,19 @@ private:
 
   void reportBug(const CallEvent &Call, ExplodedNode *N,
                  const ValueConstraint *VC, CheckerContext &C) const {
-    if (!ChecksEnabled[CK_StdCLibraryFunctionArgsChecker])
+    if (!ChecksEnabled[CK_StdCLibraryFunctionArgsChecker]) {
       return;
+}
     // TODO Add more detailed diagnostic.
     std::string Msg =
         (Twine("Function argument constraint is not satisfied, constraint: ") +
          VC->getName().data() + ", ArgN: " + Twine(VC->getArgNo()))
             .str();
-    if (!BT_InvalidArg)
+    if (!BT_InvalidArg) {
       BT_InvalidArg = std::make_unique<BugType>(
           CheckNames[CK_StdCLibraryFunctionArgsChecker],
           "Unsatisfied argument constraints", categories::LogicError);
+}
     auto R = std::make_unique<PathSensitiveBugReport>(*BT_InvalidArg, Msg, N);
     bugreporter::trackExpressionValue(N, Call.getArgExpr(VC->getArgNo()), *R);
 
@@ -564,8 +575,9 @@ const StdLibraryFunctionsChecker::ArgNo StdLibraryFunctionsChecker::Ret =
 ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsOutOfRange(
     ProgramStateRef State, const CallEvent &Call,
     const Summary &Summary) const {
-  if (Ranges.empty())
+  if (Ranges.empty()) {
     return State;
+}
 
   ProgramStateManager &Mgr = State->getStateManager();
   SValBuilder &SVB = Mgr.getSValBuilder();
@@ -582,8 +594,9 @@ ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsOutOfRange(
       const llvm::APSInt &Max = BVF.getValue(R[I].second, T);
       assert(Min <= Max);
       State = CM.assumeInclusiveRange(State, *N, Min, Max, false);
-      if (!State)
+      if (!State) {
         break;
+}
     }
   }
 
@@ -593,8 +606,9 @@ ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsOutOfRange(
 ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsWithinRange(
     ProgramStateRef State, const CallEvent &Call,
     const Summary &Summary) const {
-  if (Ranges.empty())
+  if (Ranges.empty()) {
     return State;
+}
 
   ProgramStateManager &Mgr = State->getStateManager();
   SValBuilder &SVB = Mgr.getSValBuilder();
@@ -623,16 +637,18 @@ ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsWithinRange(
     if (Left != PlusInf) {
       assert(MinusInf <= Left);
       State = CM.assumeInclusiveRange(State, *N, MinusInf, Left, false);
-      if (!State)
+      if (!State) {
         return nullptr;
+}
     }
 
     const llvm::APSInt &Right = BVF.getValue(R[E - 1].second + 1ULL, T);
     if (Right != MinusInf) {
       assert(Right <= PlusInf);
       State = CM.assumeInclusiveRange(State, *N, Right, PlusInf, false);
-      if (!State)
+      if (!State) {
         return nullptr;
+}
     }
 
     for (size_t I = 1; I != E; ++I) {
@@ -640,8 +656,9 @@ ProgramStateRef StdLibraryFunctionsChecker::RangeConstraint::applyAsWithinRange(
       const llvm::APSInt &Max = BVF.getValue(R[I].first - 1ULL, T);
       if (Min <= Max) {
         State = CM.assumeInclusiveRange(State, *N, Min, Max, false);
-        if (!State)
+        if (!State) {
           return nullptr;
+}
       }
     }
   }
@@ -666,16 +683,18 @@ ProgramStateRef StdLibraryFunctionsChecker::ComparisonConstraint::apply(
   // Note: we avoid integral promotion for comparison.
   OtherV = SVB.evalCast(OtherV, T, OtherT);
   if (auto CompV = SVB.evalBinOp(State, Op, V, OtherV, CondT)
-                       .getAs<DefinedOrUnknownSVal>())
+                       .getAs<DefinedOrUnknownSVal>()) {
     State = State->assume(*CompV, true);
+}
   return State;
 }
 
 void StdLibraryFunctionsChecker::checkPreCall(const CallEvent &Call,
                                               CheckerContext &C) const {
   Optional<Summary> FoundSummary = findFunctionSummary(Call, C);
-  if (!FoundSummary)
+  if (!FoundSummary) {
     return;
+}
 
   const Summary &Summary = *FoundSummary;
   ProgramStateRef State = C.getState();
@@ -687,8 +706,9 @@ void StdLibraryFunctionsChecker::checkPreCall(const CallEvent &Call,
         Constraint->negate()->apply(NewState, Call, Summary, C);
     // The argument constraint is not satisfied.
     if (FailureSt && !SuccessSt) {
-      if (ExplodedNode *N = C.generateErrorNode(NewState))
+      if (ExplodedNode *N = C.generateErrorNode(NewState)) {
         reportBug(Call, N, Constraint.get(), C);
+}
       break;
     } else {
       // We will apply the constraint even if we cannot reason about the
@@ -699,15 +719,17 @@ void StdLibraryFunctionsChecker::checkPreCall(const CallEvent &Call,
       NewState = SuccessSt;
     }
   }
-  if (NewState && NewState != State)
+  if (NewState && NewState != State) {
     C.addTransition(NewState);
+}
 }
 
 void StdLibraryFunctionsChecker::checkPostCall(const CallEvent &Call,
                                                CheckerContext &C) const {
   Optional<Summary> FoundSummary = findFunctionSummary(Call, C);
-  if (!FoundSummary)
+  if (!FoundSummary) {
     return;
+}
 
   // Now apply the constraints.
   const Summary &Summary = *FoundSummary;
@@ -718,20 +740,23 @@ void StdLibraryFunctionsChecker::checkPostCall(const CallEvent &Call,
     ProgramStateRef NewState = State;
     for (const ValueConstraintPtr &Constraint : Case) {
       NewState = Constraint->apply(NewState, Call, Summary, C);
-      if (!NewState)
+      if (!NewState) {
         break;
+}
     }
 
-    if (NewState && NewState != State)
+    if (NewState && NewState != State) {
       C.addTransition(NewState);
+}
   }
 }
 
 bool StdLibraryFunctionsChecker::evalCall(const CallEvent &Call,
                                           CheckerContext &C) const {
   Optional<Summary> FoundSummary = findFunctionSummary(Call, C);
-  if (!FoundSummary)
+  if (!FoundSummary) {
     return false;
+}
 
   const Summary &Summary = *FoundSummary;
   switch (Summary.getInvalidationKd()) {
@@ -757,8 +782,9 @@ bool StdLibraryFunctionsChecker::Signature::matches(
     const FunctionDecl *FD) const {
   assert(!isInvalid());
   // Check the number of arguments.
-  if (FD->param_size() != ArgTys.size())
+  if (FD->param_size() != ArgTys.size()) {
     return false;
+}
 
   // The "restrict" keyword is illegal in C++, however, many libc
   // implementations use the "__restrict" compiler intrinsic in functions
@@ -768,27 +794,31 @@ bool StdLibraryFunctionsChecker::Signature::matches(
   // restrict qualifier because we cannot know if the given libc implementation
   // qualifies the paramter type or not.
   auto RemoveRestrict = [&FD](QualType T) {
-    if (!FD->getASTContext().getLangOpts().C99)
+    if (!FD->getASTContext().getLangOpts().C99) {
       T.removeLocalRestrict();
+}
     return T;
   };
 
   // Check the return type.
   if (!isIrrelevant(RetTy)) {
     QualType FDRetTy = RemoveRestrict(FD->getReturnType().getCanonicalType());
-    if (RetTy != FDRetTy)
+    if (RetTy != FDRetTy) {
       return false;
+}
   }
 
   // Check the argument types.
   for (size_t I = 0, E = ArgTys.size(); I != E; ++I) {
     QualType ArgTy = ArgTys[I];
-    if (isIrrelevant(ArgTy))
+    if (isIrrelevant(ArgTy)) {
       continue;
+}
     QualType FDArgTy =
         RemoveRestrict(FD->getParamDecl(I)->getType().getCanonicalType());
-    if (ArgTy != FDArgTy)
+    if (ArgTy != FDArgTy) {
       return false;
+}
   }
 
   return true;
@@ -797,14 +827,16 @@ bool StdLibraryFunctionsChecker::Signature::matches(
 Optional<StdLibraryFunctionsChecker::Summary>
 StdLibraryFunctionsChecker::findFunctionSummary(const FunctionDecl *FD,
                                                 CheckerContext &C) const {
-  if (!FD)
+  if (!FD) {
     return None;
+}
 
   initFunctionSummaries(C);
 
   auto FSMI = FunctionSummaryMap.find(FD->getCanonicalDecl());
-  if (FSMI == FunctionSummaryMap.end())
+  if (FSMI == FunctionSummaryMap.end()) {
     return None;
+}
   return FSMI->second;
 }
 
@@ -812,15 +844,17 @@ Optional<StdLibraryFunctionsChecker::Summary>
 StdLibraryFunctionsChecker::findFunctionSummary(const CallEvent &Call,
                                                 CheckerContext &C) const {
   const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!FD)
+  if (!FD) {
     return None;
+}
   return findFunctionSummary(FD, C);
 }
 
 void StdLibraryFunctionsChecker::initFunctionSummaries(
     CheckerContext &C) const {
-  if (!FunctionSummaryMap.empty())
+  if (!FunctionSummaryMap.empty()) {
     return;
+}
 
   SValBuilder &SVB = C.getSValBuilder();
   BasicValueFactory &BVF = SVB.getBasicValueFactory();
@@ -837,25 +871,30 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     llvm::Optional<QualType> operator()(StringRef Name) {
       IdentifierInfo &II = ACtx.Idents.get(Name);
       auto LookupRes = ACtx.getTranslationUnitDecl()->lookup(&II);
-      if (LookupRes.size() == 0)
+      if (LookupRes.size() == 0) {
         return None;
+}
 
       // Prioritze typedef declarations.
       // This is needed in case of C struct typedefs. E.g.:
       //   typedef struct FILE FILE;
       // In this case, we have a RecordDecl 'struct FILE' with the name 'FILE'
       // and we have a TypedefDecl with the name 'FILE'.
-      for (Decl *D : LookupRes)
-        if (auto *TD = dyn_cast<TypedefNameDecl>(D))
+      for (Decl *D : LookupRes) {
+        if (auto *TD = dyn_cast<TypedefNameDecl>(D)) {
           return ACtx.getTypeDeclType(TD).getCanonicalType();
+}
+}
 
       // Find the first TypeDecl.
       // There maybe cases when a function has the same name as a struct.
       // E.g. in POSIX: `struct stat` and the function `stat()`:
       //   int stat(const char *restrict path, struct stat *restrict buf);
-      for (Decl *D : LookupRes)
-        if (auto *TD = dyn_cast<TypeDecl>(D))
+      for (Decl *D : LookupRes) {
+        if (auto *TD = dyn_cast<TypeDecl>(D)) {
           return ACtx.getTypeDeclType(TD).getCanonicalType();
+}
+}
       return None;
     }
   } lookupTy(ACtx);
@@ -871,8 +910,9 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
       return ACtx.getLangOpts().C99 ? ACtx.getRestrictType(Ty) : Ty;
     }
     Optional<QualType> operator()(Optional<QualType> Ty) {
-      if (Ty)
+      if (Ty) {
         return operator()(*Ty);
+}
       return None;
     }
   } getRestrictTy(ACtx);
@@ -883,8 +923,9 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     GetPointerTy(const ASTContext &ACtx) : ACtx(ACtx) {}
     QualType operator()(QualType Ty) { return ACtx.getPointerType(Ty); }
     Optional<QualType> operator()(Optional<QualType> Ty) {
-      if (Ty)
+      if (Ty) {
         return operator()(*Ty);
+}
       return None;
     }
   } getPointerTy(ACtx);
@@ -964,8 +1005,9 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
   // Try our best to parse this from the Preprocessor, otherwise fallback to -1.
   const auto EOFv = [&C]() -> RangeInt {
     if (const llvm::Optional<int> OptInt =
-            tryExpandAsInteger("EOF", C.getPreprocessor()))
+            tryExpandAsInteger("EOF", C.getPreprocessor())) {
       return *OptInt;
+}
     return -1;
   }();
 
@@ -985,12 +1027,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     //
     // Returns true if the summary has been added, false otherwise.
     bool operator()(StringRef Name, Signature Sign, Summary Sum) {
-      if (Sign.isInvalid())
+      if (Sign.isInvalid()) {
         return false;
+}
       IdentifierInfo &II = ACtx.Idents.get(Name);
       auto LookupRes = ACtx.getTranslationUnitDecl()->lookup(&II);
-      if (LookupRes.size() == 0)
+      if (LookupRes.size() == 0) {
         return false;
+}
       for (Decl *D : LookupRes) {
         if (auto *FD = dyn_cast<FunctionDecl>(D)) {
           if (Sum.matchesAndSet(Sign, FD)) {
@@ -1011,8 +1055,9 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // Add the same summary for different names with the Signature explicitly
     // given.
     void operator()(std::vector<StringRef> Names, Signature Sign, Summary Sum) {
-      for (StringRef Name : Names)
+      for (StringRef Name : Names) {
         operator()(Name, Sign, Sum);
+}
     }
   } addToFunctionSummaryMap(ACtx, FunctionSummaryMap, DisplayLoadedSummaries);
 
@@ -1037,14 +1082,16 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
       return IntRangeVector{std::pair<RangeInt, RangeInt>{b, e}};
     }
     auto operator()(RangeInt b, Optional<RangeInt> e) {
-      if (e)
+      if (e) {
         return IntRangeVector{std::pair<RangeInt, RangeInt>{b, *e}};
+}
       return IntRangeVector{};
     }
     auto operator()(std::pair<RangeInt, RangeInt> i0,
                     std::pair<RangeInt, Optional<RangeInt>> i1) {
-      if (i1.second)
+      if (i1.second) {
         return IntRangeVector{i0, {i1.first, *(i1.second)}};
+}
       return IntRangeVector{i0};
     }
   } Range;
@@ -1860,12 +1907,13 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             Signature(ArgTypes{IntTy, StructSockaddrPtrRestrictTy,
                                Socklen_tPtrRestrictTy},
                       RetType{IntTy}),
-            Accept))
+            Accept)) {
       addToFunctionSummaryMap(
           "accept",
           Signature(ArgTypes{IntTy, Irrelevant, Socklen_tPtrRestrictTy},
                     RetType{IntTy}),
           Accept);
+}
 
     // int bind(int socket, const struct sockaddr *address, socklen_t
     //          address_len);
@@ -1880,7 +1928,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
                 .ArgConstraint(
                     BufferSize(/*Buffer=*/ArgNo(1), /*BufSize=*/ArgNo(2)))
                 .ArgConstraint(
-                    ArgumentCondition(2, WithinRange, Range(0, Socklen_tMax)))))
+                    ArgumentCondition(2, WithinRange, Range(0, Socklen_tMax))))) {
       // Do not add constraints on sockaddr.
       addToFunctionSummaryMap(
           "bind",
@@ -1890,6 +1938,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
                   ArgumentCondition(0, WithinRange, Range(0, IntMax)))
               .ArgConstraint(
                   ArgumentCondition(2, WithinRange, Range(0, Socklen_tMax))));
+}
 
     // int getpeername(int socket, struct sockaddr *restrict address,
     //                 socklen_t *restrict address_len);
@@ -1902,7 +1951,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
                 .ArgConstraint(
                     ArgumentCondition(0, WithinRange, Range(0, IntMax)))
                 .ArgConstraint(NotNull(ArgNo(1)))
-                .ArgConstraint(NotNull(ArgNo(2)))))
+                .ArgConstraint(NotNull(ArgNo(2))))) {
       addToFunctionSummaryMap(
           "getpeername",
           Signature(ArgTypes{IntTy, Irrelevant, Socklen_tPtrRestrictTy},
@@ -1910,6 +1959,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
           Summary(NoEvalCall)
               .ArgConstraint(
                   ArgumentCondition(0, WithinRange, Range(0, IntMax))));
+}
 
     // int getsockname(int socket, struct sockaddr *restrict address,
     //                 socklen_t *restrict address_len);
@@ -1922,7 +1972,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
                 .ArgConstraint(
                     ArgumentCondition(0, WithinRange, Range(0, IntMax)))
                 .ArgConstraint(NotNull(ArgNo(1)))
-                .ArgConstraint(NotNull(ArgNo(2)))))
+                .ArgConstraint(NotNull(ArgNo(2))))) {
       addToFunctionSummaryMap(
           "getsockname",
           Signature(ArgTypes{IntTy, Irrelevant, Socklen_tPtrRestrictTy},
@@ -1930,6 +1980,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
           Summary(NoEvalCall)
               .ArgConstraint(
                   ArgumentCondition(0, WithinRange, Range(0, IntMax))));
+}
 
     // int connect(int socket, const struct sockaddr *address, socklen_t
     //             address_len);
@@ -1940,13 +1991,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             Summary(NoEvalCall)
                 .ArgConstraint(
                     ArgumentCondition(0, WithinRange, Range(0, IntMax)))
-                .ArgConstraint(NotNull(ArgNo(1)))))
+                .ArgConstraint(NotNull(ArgNo(1))))) {
       addToFunctionSummaryMap(
           "connect",
           Signature(ArgTypes{IntTy, Irrelevant, Socklen_tTy}, RetType{IntTy}),
           Summary(NoEvalCall)
               .ArgConstraint(
                   ArgumentCondition(0, WithinRange, Range(0, IntMax))));
+}
 
     auto Recvfrom =
         Summary(NoEvalCall)
@@ -1963,13 +2015,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
                                StructSockaddrPtrRestrictTy,
                                Socklen_tPtrRestrictTy},
                       RetType{Ssize_tTy}),
-            Recvfrom))
+            Recvfrom)) {
       addToFunctionSummaryMap(
           "recvfrom",
           Signature(ArgTypes{IntTy, VoidPtrRestrictTy, SizeTy, IntTy,
                              Irrelevant, Socklen_tPtrRestrictTy},
                     RetType{Ssize_tTy}),
           Recvfrom);
+}
 
     auto Sendto =
         Summary(NoEvalCall)
@@ -1984,13 +2037,14 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy, IntTy,
                                ConstStructSockaddrPtrTy, Socklen_tTy},
                       RetType{Ssize_tTy}),
-            Sendto))
+            Sendto)) {
       addToFunctionSummaryMap(
           "sendto",
           Signature(ArgTypes{IntTy, ConstVoidPtrTy, SizeTy, IntTy, Irrelevant,
                              Socklen_tTy},
                     RetType{Ssize_tTy}),
           Sendto);
+}
 
     // int listen(int sockfd, int backlog);
     addToFunctionSummaryMap("listen",

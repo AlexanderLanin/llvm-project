@@ -47,8 +47,9 @@ syntax::Leaf *clang::syntax::createLeaf(syntax::Arena &A, tok::TokenKind K,
 
 syntax::Leaf *clang::syntax::createLeaf(syntax::Arena &A, tok::TokenKind K) {
   const auto *Spelling = tok::getPunctuatorSpelling(K);
-  if (!Spelling)
+  if (!Spelling) {
     Spelling = tok::getKeywordSpelling(K);
+}
   assert(Spelling &&
          "Cannot infer the spelling of the token from its token kind.");
   return createLeaf(A, K, Spelling);
@@ -196,8 +197,9 @@ syntax::Tree *clang::syntax::createTree(
     syntax::NodeKind K) {
   auto *T = allocateTree(A, K);
   FactoryImpl::setCanModify(T);
-  for (auto ChildIt = Children.rbegin(); ChildIt != Children.rend(); ++ChildIt)
+  for (auto ChildIt = Children.rbegin(); ChildIt != Children.rend(); ++ChildIt) {
     FactoryImpl::prependChildLowLevel(T, ChildIt->first, ChildIt->second);
+}
 
   T->assertInvariants();
   return T;
@@ -205,17 +207,19 @@ syntax::Tree *clang::syntax::createTree(
 
 syntax::Node *clang::syntax::deepCopyExpandingMacros(syntax::Arena &A,
                                                      const syntax::Node *N) {
-  if (const auto *L = dyn_cast<syntax::Leaf>(N))
+  if (const auto *L = dyn_cast<syntax::Leaf>(N)) {
     // `L->getToken()` gives us the expanded token, thus we implicitly expand
     // any macros here.
     return createLeaf(A, L->getToken()->kind(),
                       L->getToken()->text(A.getSourceManager()));
+}
 
   const auto *T = cast<syntax::Tree>(N);
   std::vector<std::pair<syntax::Node *, syntax::NodeRole>> Children;
   for (const auto *Child = T->getFirstChild(); Child;
-       Child = Child->getNextSibling())
+       Child = Child->getNextSibling()) {
     Children.push_back({deepCopyExpandingMacros(A, Child), Child->getRole()});
+}
 
   return createTree(A, Children, N->getKind());
 }

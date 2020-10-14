@@ -77,8 +77,9 @@ std::error_code ModularizeUtilities::loadAllHeaderListsAndDependencies() {
     // If it's a module map.
     if (InputPath.endswith(".modulemap")) {
       // Load the module map.
-      if (std::error_code EC = loadModuleMap(InputPath))
+      if (std::error_code EC = loadModuleMap(InputPath)) {
         return EC;
+}
     }
     else {
       // Else we assume it's a header list and load it.
@@ -123,8 +124,9 @@ std::error_code ModularizeUtilities::doCoverageCheck(
         InputFilePaths[ModuleMapIndex], IncludePaths, CommandLine,
         ModMap.get());
     std::error_code LocalEC = Checker->doChecks();
-    if (LocalEC.value() > 0)
+    if (LocalEC.value() > 0) {
       EC = LocalEC;
+}
   }
   return EC;
 }
@@ -140,14 +142,16 @@ std::error_code ModularizeUtilities::loadSingleHeaderListsAndDependencies(
   llvm::sys::fs::current_path(CurrentDirectory);
 
   // Get the prefix if we have one.
-  if (HeaderPrefix.size() != 0)
+  if (HeaderPrefix.size() != 0) {
     HeaderDirectory = HeaderPrefix;
+}
 
   // Read the header list file into a buffer.
   ErrorOr<std::unique_ptr<MemoryBuffer>> listBuffer =
     MemoryBuffer::getFile(InputPath);
-  if (std::error_code EC = listBuffer.getError())
+  if (std::error_code EC = listBuffer.getError()) {
     return EC;
+}
 
   // Parse the header list into strings.
   SmallVector<StringRef, 32> Strings;
@@ -159,18 +163,20 @@ std::error_code ModularizeUtilities::loadSingleHeaderListsAndDependencies(
     I != E; ++I) {
     StringRef Line = I->trim();
     // Ignore comments and empty lines.
-    if (Line.empty() || (Line[0] == '#'))
+    if (Line.empty() || (Line[0] == '#')) {
       continue;
+}
     std::pair<StringRef, StringRef> TargetAndDependents = Line.split(':');
     SmallString<256> HeaderFileName;
     // Prepend header file name prefix if it's not absolute.
-    if (llvm::sys::path::is_absolute(TargetAndDependents.first))
+    if (llvm::sys::path::is_absolute(TargetAndDependents.first)) {
       llvm::sys::path::native(TargetAndDependents.first, HeaderFileName);
-    else {
-      if (HeaderDirectory.size() != 0)
+    } else {
+      if (HeaderDirectory.size() != 0) {
         HeaderFileName = HeaderDirectory;
-      else
+      } else {
         HeaderFileName = CurrentDirectory;
+}
       llvm::sys::path::append(HeaderFileName, TargetAndDependents.first);
       llvm::sys::path::native(HeaderFileName);
     }
@@ -181,13 +187,14 @@ std::error_code ModularizeUtilities::loadSingleHeaderListsAndDependencies(
     int Count = DependentsList.size();
     for (int Index = 0; Index < Count; ++Index) {
       SmallString<256> Dependent;
-      if (llvm::sys::path::is_absolute(DependentsList[Index]))
+      if (llvm::sys::path::is_absolute(DependentsList[Index])) {
         Dependent = DependentsList[Index];
-      else {
-        if (HeaderDirectory.size() != 0)
+      } else {
+        if (HeaderDirectory.size() != 0) {
           Dependent = HeaderDirectory;
-        else
+        } else {
           Dependent = CurrentDirectory;
+}
         llvm::sys::path::append(Dependent, DependentsList[Index]);
       }
       llvm::sys::path::native(Dependent);
@@ -213,14 +220,16 @@ std::error_code ModularizeUtilities::loadProblemHeaderList(
   llvm::sys::fs::current_path(CurrentDirectory);
 
   // Get the prefix if we have one.
-  if (HeaderPrefix.size() != 0)
+  if (HeaderPrefix.size() != 0) {
     HeaderDirectory = HeaderPrefix;
+}
 
   // Read the header list file into a buffer.
   ErrorOr<std::unique_ptr<MemoryBuffer>> listBuffer =
     MemoryBuffer::getFile(InputPath);
-  if (std::error_code EC = listBuffer.getError())
+  if (std::error_code EC = listBuffer.getError()) {
     return EC;
+}
 
   // Parse the header list into strings.
   SmallVector<StringRef, 32> Strings;
@@ -232,17 +241,19 @@ std::error_code ModularizeUtilities::loadProblemHeaderList(
     I != E; ++I) {
     StringRef Line = I->trim();
     // Ignore comments and empty lines.
-    if (Line.empty() || (Line[0] == '#'))
+    if (Line.empty() || (Line[0] == '#')) {
       continue;
+}
     SmallString<256> HeaderFileName;
     // Prepend header file name prefix if it's not absolute.
-    if (llvm::sys::path::is_absolute(Line))
+    if (llvm::sys::path::is_absolute(Line)) {
       llvm::sys::path::native(Line, HeaderFileName);
-    else {
-      if (HeaderDirectory.size() != 0)
+    } else {
+      if (HeaderDirectory.size() != 0) {
         HeaderFileName = HeaderDirectory;
-      else
+      } else {
         HeaderFileName = CurrentDirectory;
+}
       llvm::sys::path::append(HeaderFileName, Line);
       llvm::sys::path::native(HeaderFileName);
     }
@@ -278,10 +289,11 @@ std::error_code ModularizeUtilities::loadModuleMap(
   if (llvm::sys::path::filename(DirName) == "Modules") {
     DirName = llvm::sys::path::parent_path(DirName);
     if (DirName.endswith(".framework")) {
-      if (auto DirEntry = FileMgr->getDirectory(DirName))
+      if (auto DirEntry = FileMgr->getDirectory(DirName)) {
         Dir = *DirEntry;
-      else
+      } else {
         Dir = nullptr;
+}
     }
     // FIXME: This assert can fail if there's a race between the above check
     // and the removal of the directory.
@@ -303,8 +315,9 @@ std::error_code ModularizeUtilities::loadModuleMap(
   // Reset missing header count.
   MissingHeaderCount = 0;
 
-  if (!collectModuleMapHeaders(ModMap.get()))
+  if (!collectModuleMapHeaders(ModMap.get())) {
     return std::error_code(1, std::generic_category());
+}
 
   // Save module map.
   ModuleMaps.push_back(std::move(ModMap));
@@ -313,8 +326,9 @@ std::error_code ModularizeUtilities::loadModuleMap(
   HasModuleMap = true;
 
   // Return code of 1 for missing headers.
-  if (MissingHeaderCount)
+  if (MissingHeaderCount) {
     return std::error_code(1, std::generic_category());
+}
 
   return std::error_code();
 }
@@ -326,8 +340,9 @@ bool ModularizeUtilities::collectModuleMapHeaders(clang::ModuleMap *ModMap) {
   for (ModuleMap::module_iterator I = ModMap->module_begin(),
     E = ModMap->module_end();
     I != E; ++I) {
-    if (!collectModuleHeaders(*I->second))
+    if (!collectModuleHeaders(*I->second)) {
       return false;
+}
   }
   return true;
 }
@@ -339,16 +354,18 @@ bool ModularizeUtilities::collectModuleHeaders(const clang::Module &Mod) {
 
   // Ignore explicit modules because they often have dependencies
   // we can't know.
-  if (Mod.IsExplicit)
+  if (Mod.IsExplicit) {
     return true;
+}
 
   // Treat headers in umbrella directory as dependencies.
   DependentsVector UmbrellaDependents;
 
   // Recursively do submodules.
   for (auto MI = Mod.submodule_begin(), MIEnd = Mod.submodule_end();
-       MI != MIEnd; ++MI)
+       MI != MIEnd; ++MI) {
     collectModuleHeaders(**MI);
+}
 
   if (const FileEntry *UmbrellaHeader = Mod.getUmbrellaHeader().Entry) {
     std::string HeaderPath = getCanonicalPath(UmbrellaHeader->getName());
@@ -361,8 +378,9 @@ bool ModularizeUtilities::collectModuleHeaders(const clang::Module &Mod) {
     // If there normal headers, assume these are umbrellas and skip collection.
     if (Mod.Headers->size() == 0) {
       // Collect headers in umbrella directory.
-      if (!collectUmbrellaHeaders(UmbrellaDir->getName(), UmbrellaDependents))
+      if (!collectUmbrellaHeaders(UmbrellaDir->getName(), UmbrellaDependents)) {
         return false;
+}
     }
   }
 
@@ -405,22 +423,26 @@ bool ModularizeUtilities::collectUmbrellaHeaders(StringRef UmbrellaDirName,
   std::error_code EC;
   for (llvm::sys::fs::directory_iterator I(Directory.str(), EC), E; I != E;
     I.increment(EC)) {
-    if (EC)
+    if (EC) {
       return false;
+}
     std::string File(I->path());
     llvm::ErrorOr<llvm::sys::fs::basic_file_status> Status = I->status();
-    if (!Status)
+    if (!Status) {
       return false;
+}
     llvm::sys::fs::file_type Type = Status->type();
     // If the file is a directory, ignore the name and recurse.
     if (Type == llvm::sys::fs::file_type::directory_file) {
-      if (!collectUmbrellaHeaders(File, Dependents))
+      if (!collectUmbrellaHeaders(File, Dependents)) {
         return false;
+}
       continue;
     }
     // If the file does not have a common header extension, ignore it.
-    if (!isHeader(File))
+    if (!isHeader(File)) {
       continue;
+}
     // Save header name.
     std::string HeaderPath = getCanonicalPath(File);
     Dependents.push_back(HeaderPath);
@@ -437,14 +459,16 @@ static std::string replaceDotDot(StringRef Path) {
   while (B != E) {
     if (B->compare(".") == 0) {
     }
-    else if (B->compare("..") == 0)
+    else if (B->compare("..") == 0) {
       llvm::sys::path::remove_filename(Buffer);
-    else
+    } else {
       llvm::sys::path::append(Buffer, *B);
+}
     ++B;
   }
-  if (Path.endswith("/") || Path.endswith("\\"))
+  if (Path.endswith("/") || Path.endswith("\\")) {
     Buffer.append(1, Path.back());
+}
   return Buffer.c_str();
 }
 
@@ -456,8 +480,9 @@ std::string ModularizeUtilities::getCanonicalPath(StringRef FilePath) {
   std::string Tmp(replaceDotDot(FilePath));
   std::replace(Tmp.begin(), Tmp.end(), '\\', '/');
   StringRef Tmp2(Tmp);
-  if (Tmp2.startswith("./"))
+  if (Tmp2.startswith("./")) {
     Tmp = std::string(Tmp2.substr(2));
+}
   return Tmp;
 }
 
@@ -468,12 +493,15 @@ std::string ModularizeUtilities::getCanonicalPath(StringRef FilePath) {
 // \returns true if it has a header extension or no extension.
 bool ModularizeUtilities::isHeader(StringRef FileName) {
   StringRef Extension = llvm::sys::path::extension(FileName);
-  if (Extension.size() == 0)
+  if (Extension.size() == 0) {
     return true;
-  if (Extension.equals_lower(".h"))
+}
+  if (Extension.equals_lower(".h")) {
     return true;
-  if (Extension.equals_lower(".inc"))
+}
+  if (Extension.equals_lower(".inc")) {
     return true;
+}
   return false;
 }
 
@@ -485,8 +513,9 @@ bool ModularizeUtilities::isHeader(StringRef FileName) {
 std::string ModularizeUtilities::getDirectoryFromPath(StringRef Path) {
   SmallString<256> Directory(Path);
   sys::path::remove_filename(Directory);
-  if (Directory.size() == 0)
+  if (Directory.size() == 0) {
     return ".";
+}
   return std::string(Directory.str());
 }
 
@@ -496,8 +525,9 @@ void ModularizeUtilities::addUniqueProblemFile(std::string FilePath) {
   FilePath = getCanonicalPath(FilePath);
   // Don't add if already present.
   for(auto &TestFilePath : ProblemFileNames) {
-    if (TestFilePath == FilePath)
+    if (TestFilePath == FilePath) {
       return;
+}
   }
   ProblemFileNames.push_back(FilePath);
 }
@@ -528,8 +558,9 @@ void ModularizeUtilities::displayGoodFiles() {
         break;
       }
     }
-    if (Good)
+    if (Good) {
       errs() << GoodFile << "\n";
+}
   }
 }
 

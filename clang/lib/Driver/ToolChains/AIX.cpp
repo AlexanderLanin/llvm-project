@@ -33,8 +33,9 @@ void aix::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   const bool IsArch32Bit = getToolChain().getTriple().isArch32Bit();
   const bool IsArch64Bit = getToolChain().getTriple().isArch64Bit();
   // Only support 32 and 64 bit.
-  if (!IsArch32Bit && !IsArch64Bit)
+  if (!IsArch32Bit && !IsArch64Bit) {
     llvm_unreachable("Unsupported bit width value.");
+}
 
   // Specify the mode in which the as(1) command operates.
   if (IsArch32Bit) {
@@ -62,12 +63,14 @@ void aix::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   // Specify assembler input file.
   // The system assembler on AIX takes exactly one input file. The driver is
   // expected to invoke as(1) separately for each assembler source input file.
-  if (Inputs.size() != 1)
+  if (Inputs.size() != 1) {
     llvm_unreachable("Invalid number of input files.");
+}
   const InputInfo &II = Inputs[0];
   assert((II.isFilename() || II.isNothing()) && "Invalid input.");
-  if (II.isFilename())
+  if (II.isFilename()) {
     CmdArgs.push_back(II.getFilename());
+}
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
   C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
@@ -85,12 +88,14 @@ void aix::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const bool IsArch32Bit = ToolChain.getTriple().isArch32Bit();
   const bool IsArch64Bit = ToolChain.getTriple().isArch64Bit();
   // Only support 32 and 64 bit.
-  if (!(IsArch32Bit || IsArch64Bit))
+  if (!(IsArch32Bit || IsArch64Bit)) {
     llvm_unreachable("Unsupported bit width value.");
+}
 
   // Force static linking when "-static" is present.
-  if (Args.hasArg(options::OPT_static))
+  if (Args.hasArg(options::OPT_static)) {
     CmdArgs.push_back("-bnso");
+}
 
   // Add options for shared libraries.
   if (Args.hasArg(options::OPT_shared)) {
@@ -120,13 +125,14 @@ void aix::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   auto getCrt0Basename = [&Args, IsArch32Bit] {
     // Enable gprofiling when "-pg" is specified.
-    if (Args.hasArg(options::OPT_pg))
+    if (Args.hasArg(options::OPT_pg)) {
       return IsArch32Bit ? "gcrt0.o" : "gcrt0_64.o";
     // Enable profiling when "-p" is specified.
-    else if (Args.hasArg(options::OPT_p))
+    } else if (Args.hasArg(options::OPT_p)) {
       return IsArch32Bit ? "mcrt0.o" : "mcrt0_64.o";
-    else
+    } else {
       return IsArch32Bit ? "crt0.o" : "crt0_64.o";
+}
   };
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles,
@@ -134,16 +140,18 @@ void aix::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(
         Args.MakeArgString(ToolChain.GetFilePath(getCrt0Basename())));
 
-    if (D.CCCIsCXX())
+    if (D.CCCIsCXX()) {
       CmdArgs.push_back(Args.MakeArgString(
           ToolChain.GetFilePath(IsArch32Bit ? "crti.o" : "crti_64.o")));
+}
   }
 
   // Collect all static constructor and destructor functions in CXX mode. This
   // has to come before AddLinkerInputs as the implied option needs to precede
   // any other '-bcdtors' settings or '-bnocdtors' that '-Wl' might forward.
-  if (D.CCCIsCXX())
+  if (D.CCCIsCXX()) {
     CmdArgs.push_back("-bcdtors:all:0:s");
+}
 
   // Specify linker input file(s).
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
@@ -152,18 +160,21 @@ void aix::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
 
-  if (getToolChain().ShouldLinkCXXStdlib(Args))
+  if (getToolChain().ShouldLinkCXXStdlib(Args)) {
     getToolChain().AddCXXStdlibLibArgs(Args, CmdArgs);
+}
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
     AddRunTimeLibs(ToolChain, D, CmdArgs, Args);
 
     // Support POSIX threads if "-pthreads" or "-pthread" is present.
-    if (Args.hasArg(options::OPT_pthreads, options::OPT_pthread))
+    if (Args.hasArg(options::OPT_pthreads, options::OPT_pthread)) {
       CmdArgs.push_back("-lpthreads");
+}
 
-    if (D.CCCIsCXX())
+    if (D.CCCIsCXX()) {
       CmdArgs.push_back("-lm");
+}
 
     CmdArgs.push_back("-lc");
   }
@@ -183,18 +194,21 @@ AIX::AIX(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
 // This comes from either -isysroot or --sysroot.
 llvm::StringRef
 AIX::GetHeaderSysroot(const llvm::opt::ArgList &DriverArgs) const {
-  if (DriverArgs.hasArg(options::OPT_isysroot))
+  if (DriverArgs.hasArg(options::OPT_isysroot)) {
     return DriverArgs.getLastArgValue(options::OPT_isysroot);
-  if (!getDriver().SysRoot.empty())
+}
+  if (!getDriver().SysRoot.empty()) {
     return getDriver().SysRoot;
+}
   return "/";
 }
 
 void AIX::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                     ArgStringList &CC1Args) const {
   // Return if -nostdinc is specified as a driver option.
-  if (DriverArgs.hasArg(options::OPT_nostdinc))
+  if (DriverArgs.hasArg(options::OPT_nostdinc)) {
     return;
+}
 
   llvm::StringRef Sysroot = GetHeaderSysroot(DriverArgs);
   const Driver &D = getDriver();
@@ -207,8 +221,9 @@ void AIX::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
   }
 
   // Return if -nostdlibinc is specified as a driver option.
-  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
     return;
+}
 
   // Add <sysroot>/usr/include.
   SmallString<128> UP(Sysroot);

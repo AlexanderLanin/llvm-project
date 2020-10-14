@@ -25,19 +25,23 @@ const FunctionDecl *CheckerContext::getCalleeDecl(const CallExpr *CE) const {
 }
 
 StringRef CheckerContext::getCalleeName(const FunctionDecl *FunDecl) const {
-  if (!FunDecl)
+  if (!FunDecl) {
     return StringRef();
+}
   IdentifierInfo *funI = FunDecl->getIdentifier();
-  if (!funI)
+  if (!funI) {
     return StringRef();
+}
   return funI->getName();
 }
 
 StringRef CheckerContext::getDeclDescription(const Decl *D) {
-  if (isa<ObjCMethodDecl>(D) || isa<CXXMethodDecl>(D))
+  if (isa<ObjCMethodDecl>(D) || isa<CXXMethodDecl>(D)) {
     return "method";
-  if (isa<BlockDecl>(D))
+}
+  if (isa<BlockDecl>(D)) {
     return "anonymous block";
+}
   return "function";
 }
 
@@ -48,51 +52,61 @@ bool CheckerContext::isCLibraryFunction(const FunctionDecl *FD,
   // Using a string compare is slow, we might want to switch on BuiltinID here.
   unsigned BId = FD->getBuiltinID();
   if (BId != 0) {
-    if (Name.empty())
+    if (Name.empty()) {
       return true;
+}
     StringRef BName = FD->getASTContext().BuiltinInfo.getName(BId);
-    if (BName.find(Name) != StringRef::npos)
+    if (BName.find(Name) != StringRef::npos) {
       return true;
+}
   }
 
   const IdentifierInfo *II = FD->getIdentifier();
   // If this is a special C++ name without IdentifierInfo, it can't be a
   // C library function.
-  if (!II)
+  if (!II) {
     return false;
+}
 
   // Look through 'extern "C"' and anything similar invented in the future.
   // If this function is not in TU directly, it is not a C library function.
-  if (!FD->getDeclContext()->getRedeclContext()->isTranslationUnit())
+  if (!FD->getDeclContext()->getRedeclContext()->isTranslationUnit()) {
     return false;
+}
 
   // If this function is not externally visible, it is not a C library function.
   // Note that we make an exception for inline functions, which may be
   // declared in header files without external linkage.
-  if (!FD->isInlined() && !FD->isExternallyVisible())
+  if (!FD->isInlined() && !FD->isExternallyVisible()) {
     return false;
+}
 
-  if (Name.empty())
+  if (Name.empty()) {
     return true;
+}
 
   StringRef FName = II->getName();
-  if (FName.equals(Name))
+  if (FName.equals(Name)) {
     return true;
+}
 
-  if (FName.startswith("__inline") && (FName.find(Name) != StringRef::npos))
+  if (FName.startswith("__inline") && (FName.find(Name) != StringRef::npos)) {
     return true;
+}
 
   if (FName.startswith("__") && FName.endswith("_chk") &&
-      FName.find(Name) != StringRef::npos)
+      FName.find(Name) != StringRef::npos) {
     return true;
+}
 
   return false;
 }
 
 StringRef CheckerContext::getMacroNameOrSpelling(SourceLocation &Loc) {
-  if (Loc.isMacroID())
+  if (Loc.isMacroID()) {
     return Lexer::getImmediateMacroName(Loc, getSourceManager(),
                                              getLangOpts());
+}
   SmallVector<char, 16> buf;
   return Lexer::getSpelling(Loc, buf, getSourceManager(), getLangOpts());
 }
@@ -100,21 +114,24 @@ StringRef CheckerContext::getMacroNameOrSpelling(SourceLocation &Loc) {
 /// Evaluate comparison and return true if it's known that condition is true
 static bool evalComparison(SVal LHSVal, BinaryOperatorKind ComparisonOp,
                            SVal RHSVal, ProgramStateRef State) {
-  if (LHSVal.isUnknownOrUndef())
+  if (LHSVal.isUnknownOrUndef()) {
     return false;
+}
   ProgramStateManager &Mgr = State->getStateManager();
   if (!LHSVal.getAs<NonLoc>()) {
     LHSVal = Mgr.getStoreManager().getBinding(State->getStore(),
                                               LHSVal.castAs<Loc>());
-    if (LHSVal.isUnknownOrUndef() || !LHSVal.getAs<NonLoc>())
+    if (LHSVal.isUnknownOrUndef() || !LHSVal.getAs<NonLoc>()) {
       return false;
+}
   }
 
   SValBuilder &Bldr = Mgr.getSValBuilder();
   SVal Eval = Bldr.evalBinOp(State, ComparisonOp, LHSVal, RHSVal,
                              Bldr.getConditionType());
-  if (Eval.isUnknownOrUndef())
+  if (Eval.isUnknownOrUndef()) {
     return false;
+}
   ProgramStateRef StTrue, StFalse;
   std::tie(StTrue, StFalse) = State->assume(Eval.castAs<DefinedSVal>());
   return StTrue && !StFalse;

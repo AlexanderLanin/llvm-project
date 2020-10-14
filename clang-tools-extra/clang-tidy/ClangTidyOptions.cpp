@@ -36,8 +36,9 @@ template <> struct SequenceTraits<FileFilter::LineRange> {
     return Range.first == 0 ? 0 : Range.second == 0 ? 1 : 2;
   }
   static unsigned &element(IO &IO, FileFilter::LineRange &Range, size_t Index) {
-    if (Index > 1)
+    if (Index > 1) {
       IO.setError("Too many elements in line range.");
+}
     return Index == 0 ? Range.first : Range.second;
   }
 };
@@ -48,11 +49,13 @@ template <> struct MappingTraits<FileFilter> {
     IO.mapOptional("lines", File.LineRanges);
   }
   static StringRef validate(IO &io, FileFilter &File) {
-    if (File.Name.empty())
+    if (File.Name.empty()) {
       return "No file name specified";
+}
     for (const FileFilter::LineRange &Range : File.LineRanges) {
-      if (Range.first <= 0 || Range.second <= 0)
+      if (Range.first <= 0 || Range.second <= 0) {
         return "Invalid line range";
+}
     }
     return StringRef();
   }
@@ -69,13 +72,15 @@ struct NOptionMap {
   NOptionMap(IO &) {}
   NOptionMap(IO &, const ClangTidyOptions::OptionMap &OptionMap) {
     Options.reserve(OptionMap.size());
-    for (const auto &KeyValue : OptionMap)
+    for (const auto &KeyValue : OptionMap) {
       Options.emplace_back(std::string(KeyValue.getKey()), KeyValue.getValue().Value);
+}
   }
   ClangTidyOptions::OptionMap denormalize(IO &) {
     ClangTidyOptions::OptionMap Map;
-    for (const auto &KeyValue : Options)
+    for (const auto &KeyValue : Options) {
       Map[KeyValue.first] = ClangTidyOptions::ClangTidyValue(KeyValue.second);
+}
     return Map;
   }
   std::vector<ClangTidyOptions::StringPair> Options;
@@ -115,31 +120,35 @@ ClangTidyOptions ClangTidyOptions::getDefaults() {
   Options.FormatStyle = "none";
   Options.User = llvm::None;
   for (const ClangTidyModuleRegistry::entry &Module :
-       ClangTidyModuleRegistry::entries())
+       ClangTidyModuleRegistry::entries()) {
     Options = Options.mergeWith(Module.instantiate()->getModuleOptions(), 0);
+}
   return Options;
 }
 
 template <typename T>
 static void mergeVectors(Optional<T> &Dest, const Optional<T> &Src) {
   if (Src) {
-    if (Dest)
+    if (Dest) {
       Dest->insert(Dest->end(), Src->begin(), Src->end());
-    else
+    } else {
       Dest = Src;
+}
   }
 }
 
 static void mergeCommaSeparatedLists(Optional<std::string> &Dest,
                                      const Optional<std::string> &Src) {
-  if (Src)
+  if (Src) {
     Dest = (Dest && !Dest->empty() ? *Dest + "," : "") + *Src;
+}
 }
 
 template <typename T>
 static void overrideValue(Optional<T> &Dest, const Optional<T> &Src) {
-  if (Src)
+  if (Src) {
     Dest = Src;
+}
 }
 
 ClangTidyOptions ClangTidyOptions::mergeWith(const ClangTidyOptions &Other,
@@ -178,8 +187,9 @@ ClangTidyOptions
 ClangTidyOptionsProvider::getOptions(llvm::StringRef FileName) {
   ClangTidyOptions Result;
   unsigned Priority = 0;
-  for (const auto &Source : getRawOptions(FileName))
+  for (const auto &Source : getRawOptions(FileName)) {
     Result = Result.mergeWith(Source.first, ++Priority);
+}
   return Result;
 }
 
@@ -229,8 +239,9 @@ FileOptionsBaseProvider::FileOptionsBaseProvider(
     llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS)
     : DefaultOptionsProvider(GlobalOptions, DefaultOptions),
       OverrideOptions(OverrideOptions), FS(std::move(VFS)) {
-  if (!FS)
+  if (!FS) {
     FS = llvm::vfs::getRealFileSystem();
+}
   ConfigHandlers.emplace_back(".clang-tidy", parseConfiguration);
 }
 
@@ -254,26 +265,30 @@ void FileOptionsBaseProvider::addRawFileOptions(
     llvm::Optional<OptionsSource> Result;
 
     auto Iter = CachedOptions.find(CurrentPath);
-    if (Iter != CachedOptions.end())
+    if (Iter != CachedOptions.end()) {
       Result = Iter->second;
+}
 
-    if (!Result)
+    if (!Result) {
       Result = tryReadConfigFile(CurrentPath);
+}
 
     if (Result) {
       // Store cached value for all intermediate directories.
       while (Path != CurrentPath) {
         LLVM_DEBUG(llvm::dbgs()
                    << "Caching configuration for path " << Path << ".\n");
-        if (!CachedOptions.count(Path))
+        if (!CachedOptions.count(Path)) {
           CachedOptions[Path] = *Result;
+}
         Path = llvm::sys::path::parent_path(Path);
       }
       CachedOptions[Path] = *Result;
 
       CurOptions.push_back(*Result);
-      if (!Result->first.InheritParentConfig.getValueOr(false))
+      if (!Result->first.InheritParentConfig.getValueOr(false)) {
         break;
+}
     }
   }
   // Reverse order of file configs because closer configs should have higher
@@ -308,8 +323,9 @@ FileOptionsProvider::getRawOptions(StringRef FileName) {
 
   llvm::SmallString<128> AbsoluteFilePath(FileName);
 
-  if (FS->makeAbsolute(AbsoluteFilePath))
+  if (FS->makeAbsolute(AbsoluteFilePath)) {
     return {};
+}
 
   std::vector<OptionsSource> RawOptions =
       DefaultOptionsProvider::getRawOptions(AbsoluteFilePath.str());
@@ -340,8 +356,9 @@ FileOptionsBaseProvider::tryReadConfigFile(StringRef Directory) {
     // Ignore errors from is_regular_file: we only need to know if we can read
     // the file or not.
     llvm::sys::fs::is_regular_file(Twine(ConfigFile), IsFile);
-    if (!IsFile)
+    if (!IsFile) {
       continue;
+}
 
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Text =
         llvm::MemoryBuffer::getFile(ConfigFile.c_str());
@@ -353,14 +370,16 @@ FileOptionsBaseProvider::tryReadConfigFile(StringRef Directory) {
 
     // Skip empty files, e.g. files opened for writing via shell output
     // redirection.
-    if ((*Text)->getBuffer().empty())
+    if ((*Text)->getBuffer().empty()) {
       continue;
+}
     llvm::ErrorOr<ClangTidyOptions> ParsedOptions =
         ConfigHandler.second((*Text)->getBuffer());
     if (!ParsedOptions) {
-      if (ParsedOptions.getError())
+      if (ParsedOptions.getError()) {
         llvm::errs() << "Error parsing " << ConfigFile << ": "
                      << ParsedOptions.getError().message() << "\n";
+}
       continue;
     }
     return OptionsSource(*ParsedOptions, ConfigFile.c_str());
@@ -380,8 +399,9 @@ llvm::ErrorOr<ClangTidyOptions> parseConfiguration(StringRef Config) {
   llvm::yaml::Input Input(Config);
   ClangTidyOptions Options;
   Input >> Options;
-  if (Input.error())
+  if (Input.error()) {
     return Input.error();
+}
   return Options;
 }
 

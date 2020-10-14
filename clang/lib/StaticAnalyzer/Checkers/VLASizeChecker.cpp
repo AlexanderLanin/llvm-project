@@ -83,8 +83,9 @@ ProgramStateRef VLASizeChecker::checkVLA(CheckerContext &C,
   while (VLA) {
     const Expr *SizeE = VLA->getSizeExpr();
     State = checkVLAIndexSize(C, State, SizeE);
-    if (!State)
+    if (!State) {
       return nullptr;
+}
     VLASizes.push_back(SizeE);
     VLALast = VLA;
     VLA = C.getASTContext().getAsVariableArrayType(VLA->getElementType());
@@ -105,8 +106,9 @@ ProgramStateRef VLASizeChecker::checkVLA(CheckerContext &C,
 
   // Try to calculate the known real size of the array in KnownSize.
   uint64_t KnownSize = 0;
-  if (const llvm::APSInt *KV = SVB.getKnownValue(State, ArrSize))
+  if (const llvm::APSInt *KV = SVB.getKnownValue(State, ArrSize)) {
     KnownSize = KV->getZExtValue();
+}
 
   for (const Expr *SizeE : VLASizes) {
     auto SizeD = C.getSVal(SizeE).castAs<DefinedSVal>();
@@ -115,11 +117,12 @@ ProgramStateRef VLASizeChecker::checkVLA(CheckerContext &C,
         SVB.evalCast(SizeD, SizeTy, SizeE->getType()).castAs<NonLoc>();
     // Multiply the array length by the element size.
     SVal Mul = SVB.evalBinOpNN(State, BO_Mul, ArrSize, IndexLength, SizeTy);
-    if (auto MulNonLoc = Mul.getAs<NonLoc>())
+    if (auto MulNonLoc = Mul.getAs<NonLoc>()) {
       ArrSize = *MulNonLoc;
-    else
+    } else {
       // Extent could not be determined.
       return State;
+}
 
     if (const llvm::APSInt *IndexLVal = SVB.getKnownValue(State, IndexLength)) {
       // Check if the array size will overflow.
@@ -129,8 +132,9 @@ ProgramStateRef VLASizeChecker::checkVLA(CheckerContext &C,
       // FIXME: See https://reviews.llvm.org/D80903 for discussion of
       // some difference in assume and getKnownValue that leads to
       // unexpected behavior. Just bail on IndexL == 0 at this point.
-      if (IndexL == 0)
+      if (IndexL == 0) {
         return nullptr;
+}
 
       if (KnownSize <= SizeMax / IndexL) {
         KnownSize *= IndexL;
@@ -161,8 +165,9 @@ ProgramStateRef VLASizeChecker::checkVLAIndexSize(CheckerContext &C,
 
   // See if the size value is known. It can't be undefined because we would have
   // warned about that already.
-  if (SizeV.isUnknown())
+  if (SizeV.isUnknown()) {
     return nullptr;
+}
 
   // Check if the size is tainted.
   if (isTainted(State, SizeV)) {
@@ -213,12 +218,14 @@ void VLASizeChecker::reportBug(
     CheckerContext &C, std::unique_ptr<BugReporterVisitor> Visitor) const {
   // Generate an error node.
   ExplodedNode *N = C.generateErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
+}
 
-  if (!BT)
+  if (!BT) {
     BT.reset(new BuiltinBug(
         this, "Dangerous variable-length array (VLA) declaration"));
+}
 
   SmallString<256> buf;
   llvm::raw_svector_ostream os(buf);
@@ -249,8 +256,9 @@ void VLASizeChecker::reportBug(
 }
 
 void VLASizeChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
-  if (!DS->isSingleDecl())
+  if (!DS->isSingleDecl()) {
     return;
+}
 
   ASTContext &Ctx = C.getASTContext();
   SValBuilder &SVB = C.getSValBuilder();
@@ -259,24 +267,27 @@ void VLASizeChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
 
   const VarDecl *VD = dyn_cast<VarDecl>(DS->getSingleDecl());
 
-  if (VD)
+  if (VD) {
     TypeToCheck = VD->getType().getCanonicalType();
-  else if (const auto *TND = dyn_cast<TypedefNameDecl>(DS->getSingleDecl()))
+  } else if (const auto *TND = dyn_cast<TypedefNameDecl>(DS->getSingleDecl())) {
     TypeToCheck = TND->getUnderlyingType().getCanonicalType();
-  else
+  } else {
     return;
+}
 
   const VariableArrayType *VLA = Ctx.getAsVariableArrayType(TypeToCheck);
-  if (!VLA)
+  if (!VLA) {
     return;
+}
 
   // Check the VLA sizes for validity.
 
   SVal ArraySize;
 
   State = checkVLA(C, State, VLA, ArraySize);
-  if (!State)
+  if (!State) {
     return;
+}
 
   auto ArraySizeNL = ArraySize.getAs<NonLoc>();
   if (!ArraySizeNL) {
@@ -309,24 +320,28 @@ void VLASizeChecker::checkPreStmt(const DeclStmt *DS, CheckerContext &C) const {
 void VLASizeChecker::checkPreStmt(const UnaryExprOrTypeTraitExpr *UETTE,
                                   CheckerContext &C) const {
   // Want to check for sizeof.
-  if (UETTE->getKind() != UETT_SizeOf)
+  if (UETTE->getKind() != UETT_SizeOf) {
     return;
+}
 
   // Ensure a type argument.
-  if (!UETTE->isArgumentType())
+  if (!UETTE->isArgumentType()) {
     return;
+}
 
   const VariableArrayType *VLA = C.getASTContext().getAsVariableArrayType(
       UETTE->getTypeOfArgument().getCanonicalType());
   // Ensure that the type is a VLA.
-  if (!VLA)
+  if (!VLA) {
     return;
+}
 
   ProgramStateRef State = C.getState();
   SVal ArraySize;
   State = checkVLA(C, State, VLA, ArraySize);
-  if (!State)
+  if (!State) {
     return;
+}
 
   C.addTransition(State);
 }

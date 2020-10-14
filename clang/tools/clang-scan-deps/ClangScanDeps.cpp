@@ -50,20 +50,23 @@ public:
   /// associated with the given invocation command or empty string if the
   /// compiler path is NOT an absolute path.
   StringRef findResourceDir(const tooling::CommandLineArguments &Args) {
-    if (Args.size() < 1)
+    if (Args.size() < 1) {
       return "";
+}
 
     const std::string &ClangBinaryPath = Args[0];
-    if (!llvm::sys::path::is_absolute(ClangBinaryPath))
+    if (!llvm::sys::path::is_absolute(ClangBinaryPath)) {
       return "";
+}
 
     const std::string &ClangBinaryName =
         std::string(llvm::sys::path::filename(ClangBinaryPath));
 
     std::unique_lock<std::mutex> LockGuard(CacheLock);
     const auto &CachedResourceDir = Cache.find(ClangBinaryPath);
-    if (CachedResourceDir != Cache.end())
+    if (CachedResourceDir != Cache.end()) {
       return CachedResourceDir->second;
+}
 
     std::vector<StringRef> PrintResourceDirArgs{ClangBinaryName,
                                                 "-print-resource-dir"};
@@ -87,8 +90,9 @@ public:
     }
 
     auto OutputBuf = llvm::MemoryBuffer::getFile(OutputFile.c_str());
-    if (!OutputBuf)
+    if (!OutputBuf) {
       return "";
+}
     StringRef Output = OutputBuf.get()->getBuffer().rtrim('\n');
 
     Cache[ClangBinaryPath] = Output.str();
@@ -216,8 +220,9 @@ handleMakeDependencyToolResult(const std::string &Input,
 
 static llvm::json::Array toJSONSorted(const llvm::StringSet<> &Set) {
   std::vector<llvm::StringRef> Strings;
-  for (auto &&I : Set)
+  for (auto &&I : Set) {
     Strings.push_back(I.getKey());
+}
   llvm::sort(Strings);
   return llvm::json::Array(Strings);
 }
@@ -229,9 +234,10 @@ static llvm::json::Array toJSONSorted(std::vector<ClangModuleDep> V) {
   });
 
   llvm::json::Array Ret;
-  for (const ClangModuleDep &CMD : V)
+  for (const ClangModuleDep &CMD : V) {
     Ret.push_back(llvm::json::Object(
         {{"module-name", CMD.ModuleName}, {"context-hash", CMD.ContextHash}}));
+}
   return Ret;
 }
 
@@ -259,12 +265,13 @@ public:
           I, {{MD.ContextHash, MD.ModuleName, InputIndex}, std::move(MD)});
     }
 
-    if (FullCommandLine)
+    if (FullCommandLine) {
       ID.AdditonalCommandLine = FD.getAdditionalCommandLine(
           [&](ClangModuleDep CMD) { return lookupPCMPath(CMD); },
           [&](ClangModuleDep CMD) -> const ModuleDeps & {
             return lookupModuleDeps(CMD);
           });
+}
 
     Inputs.push_back(std::move(ID));
   }
@@ -272,8 +279,9 @@ public:
   void printFullOutput(raw_ostream &OS) {
     // Sort the modules by name to get a deterministic order.
     std::vector<ContextModulePair> ModuleNames;
-    for (auto &&M : Modules)
+    for (auto &&M : Modules) {
       ModuleNames.push_back(M.first);
+}
     llvm::sort(ModuleNames,
                [](const ContextModulePair &A, const ContextModulePair &B) {
                  return std::tie(A.ModuleName, A.InputIndex) <
@@ -393,8 +401,9 @@ static bool handleFullDependencyToolResult(
 int main(int argc, const char **argv) {
   llvm::InitLLVM X(argc, argv);
   llvm::cl::HideUnrelatedOptions(DependencyScannerCategory);
-  if (!llvm::cl::ParseCommandLineOptions(argc, argv))
+  if (!llvm::cl::ParseCommandLineOptions(argc, argv)) {
     return 1;
+}
 
   std::string ErrorMessage;
   std::unique_ptr<tooling::JSONCompilationDatabase> Compilations =
@@ -426,16 +435,21 @@ int main(int argc, const char **argv) {
           std::size_t Idx = Args.size() - 1;
           for (auto It = Args.rbegin(); It != Args.rend(); ++It) {
             if (It != Args.rbegin()) {
-              if (Args[Idx] == "-o")
+              if (Args[Idx] == "-o") {
                 LastO = Args[Idx + 1];
-              if (Args[Idx] == "-MT")
+}
+              if (Args[Idx] == "-MT") {
                 HasMT = true;
-              if (Args[Idx] == "-MQ")
+}
+              if (Args[Idx] == "-MQ") {
                 HasMQ = true;
-              if (Args[Idx] == "-MD")
+}
+              if (Args[Idx] == "-MD") {
                 HasMD = true;
-              if (Args[Idx] == "-resource-dir")
+}
+              if (Args[Idx] == "-resource-dir") {
                 HasResourceDir = true;
+}
             }
             --Idx;
           }
@@ -485,13 +499,15 @@ int main(int argc, const char **argv) {
                                     SkipExcludedPPRanges);
   llvm::ThreadPool Pool(llvm::hardware_concurrency(NumThreads));
   std::vector<std::unique_ptr<DependencyScanningTool>> WorkerTools;
-  for (unsigned I = 0; I < Pool.getThreadCount(); ++I)
+  for (unsigned I = 0; I < Pool.getThreadCount(); ++I) {
     WorkerTools.push_back(std::make_unique<DependencyScanningTool>(Service));
+}
 
   std::vector<SingleCommandCompilationDatabase> Inputs;
   for (tooling::CompileCommand Cmd :
-       AdjustingCompilations->getAllCompileCommands())
+       AdjustingCompilations->getAllCompileCommands()) {
     Inputs.emplace_back(Cmd);
+}
 
   std::atomic<bool> HadErrors(false);
   FullDeps FD;
@@ -514,8 +530,9 @@ int main(int argc, const char **argv) {
         // Take the next input.
         {
           std::unique_lock<std::mutex> LockGuard(Lock);
-          if (Index >= Inputs.size())
+          if (Index >= Inputs.size()) {
             return;
+}
           LocalIndex = Index;
           Input = &Inputs[Index++];
           tooling::CompileCommand Cmd = Input->getAllCompileCommands()[0];
@@ -526,22 +543,25 @@ int main(int argc, const char **argv) {
         if (Format == ScanningOutputFormat::Make) {
           auto MaybeFile = WorkerTools[I]->getDependencyFile(*Input, CWD);
           if (handleMakeDependencyToolResult(Filename, MaybeFile, DependencyOS,
-                                             Errs))
+                                             Errs)) {
             HadErrors = true;
+}
         } else {
           auto MaybeFullDeps = WorkerTools[I]->getFullDependencies(
               *Input, CWD, AlreadySeenModules);
           if (handleFullDependencyToolResult(Filename, MaybeFullDeps, FD,
-                                             LocalIndex, DependencyOS, Errs))
+                                             LocalIndex, DependencyOS, Errs)) {
             HadErrors = true;
+}
         }
       }
     });
   }
   Pool.wait();
 
-  if (Format == ScanningOutputFormat::Full)
+  if (Format == ScanningOutputFormat::Full) {
     FD.printFullOutput(llvm::outs());
+}
 
   return HadErrors;
 }

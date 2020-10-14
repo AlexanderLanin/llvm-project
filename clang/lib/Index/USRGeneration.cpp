@@ -48,8 +48,9 @@ static bool printLoc(llvm::raw_ostream &OS, SourceLocation Loc,
 }
 
 static StringRef GetExternalSourceContainer(const NamedDecl *D) {
-  if (!D)
+  if (!D) {
     return StringRef();
+}
   if (auto *attr = D->getExternalSourceSymbolAttr()) {
     return attr->getDefinedIn();
   }
@@ -185,31 +186,36 @@ bool USRGenerator::EmitDeclName(const NamedDecl *D) {
 }
 
 bool USRGenerator::ShouldGenerateLocation(const NamedDecl *D) {
-  if (D->isExternallyVisible())
+  if (D->isExternallyVisible()) {
     return false;
-  if (D->getParentFunctionOrMethod())
+}
+  if (D->getParentFunctionOrMethod()) {
     return true;
+}
   SourceLocation Loc = D->getLocation();
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return false;
+}
   const SourceManager &SM = Context->getSourceManager();
   return !SM.isInSystemHeader(Loc);
 }
 
 void USRGenerator::VisitDeclContext(const DeclContext *DC) {
-  if (const NamedDecl *D = dyn_cast<NamedDecl>(DC))
+  if (const NamedDecl *D = dyn_cast<NamedDecl>(DC)) {
     Visit(D);
-  else if (isa<LinkageSpecDecl>(DC)) // Linkage specs are transparent in USRs.
+  } else if (isa<LinkageSpecDecl>(DC)) { // Linkage specs are transparent in USRs.
     VisitDeclContext(DC->getParent());
+}
 }
 
 void USRGenerator::VisitFieldDecl(const FieldDecl *D) {
   // The USR for an ivar declared in a class extension is based on the
   // ObjCInterfaceDecl, not the ObjCCategoryDecl.
-  if (const ObjCInterfaceDecl *ID = Context->getObjContainingInterface(D))
+  if (const ObjCInterfaceDecl *ID = Context->getObjContainingInterface(D)) {
     Visit(ID);
-  else
+  } else {
     VisitDeclContext(D->getDeclContext());
+}
   Out << (isa<ObjCIvarDecl>(D) ? "@" : "@FI@");
   if (EmitDeclName(D)) {
     // Bit fields can be anonymous.
@@ -219,21 +225,24 @@ void USRGenerator::VisitFieldDecl(const FieldDecl *D) {
 }
 
 void USRGenerator::VisitFunctionDecl(const FunctionDecl *D) {
-  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
 
   const unsigned StartSize = Buf.size();
   VisitDeclContext(D->getDeclContext());
-  if (Buf.size() == StartSize)
+  if (Buf.size() == StartSize) {
     GenExtSymbolContainer(D);
+}
 
   bool IsTemplate = false;
   if (FunctionTemplateDecl *FunTmpl = D->getDescribedFunctionTemplate()) {
     IsTemplate = true;
     Out << "@FT@";
     VisitTemplateParameterList(FunTmpl->getTemplateParameters());
-  } else
+  } else {
     Out << "@F@";
+}
 
   PrintingPolicy Policy(Context->getLangOpts());
   // Forward references can have different template argument names. Suppress the
@@ -243,8 +252,9 @@ void USRGenerator::VisitFunctionDecl(const FunctionDecl *D) {
 
   ASTContext &Ctx = *Context;
   if ((!Ctx.getLangOpts().CPlusPlus || D->isExternC()) &&
-      !D->hasAttr<OverloadableAttr>())
+      !D->hasAttr<OverloadableAttr>()) {
     return;
+}
 
   if (const TemplateArgumentList *
         SpecArgs = D->getTemplateSpecializationArgs()) {
@@ -261,8 +271,9 @@ void USRGenerator::VisitFunctionDecl(const FunctionDecl *D) {
     Out << '#';
     VisitType(PD->getType());
   }
-  if (D->isVariadic())
+  if (D->isVariadic()) {
     Out << '.';
+}
   if (IsTemplate) {
     // Function templates can be overloaded by return type, for example:
     // \code
@@ -274,11 +285,13 @@ void USRGenerator::VisitFunctionDecl(const FunctionDecl *D) {
   }
   Out << '#';
   if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(D)) {
-    if (MD->isStatic())
+    if (MD->isStatic()) {
       Out << 'S';
+}
     // FIXME: OpenCL: Need to consider address spaces
-    if (unsigned quals = MD->getMethodQualifiers().getCVRUQualifiers())
+    if (unsigned quals = MD->getMethodQualifiers().getCVRUQualifiers()) {
       Out << (char)('0' + quals);
+}
     switch (MD->getRefQualifier()) {
     case RQ_None: break;
     case RQ_LValue: Out << '&'; break;
@@ -304,8 +317,9 @@ void USRGenerator::VisitVarDecl(const VarDecl *D) {
   // VarDecls can be declared 'extern' within a function or method body,
   // but their enclosing DeclContext is the function, not the TU.  We need
   // to check the storage class to correctly generate the USR.
-  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
 
   VisitDeclContext(D->getDeclContext());
 
@@ -325,10 +339,11 @@ void USRGenerator::VisitVarDecl(const VarDecl *D) {
   // the ParmDecl with no name for declaration of a function pointer type, e.g.:
   //    void  (*f)(void *);
   // In this case, don't generate a USR.
-  if (s.empty())
+  if (s.empty()) {
     IgnoreResults = true;
-  else
+  } else {
     Out << '@' << s;
+}
 
   // For a template specialization, mangle the template arguments.
   if (const VarTemplateSpecializationDecl *Spec
@@ -343,8 +358,9 @@ void USRGenerator::VisitVarDecl(const VarDecl *D) {
 }
 
 void USRGenerator::VisitBindingDecl(const BindingDecl *D) {
-  if (isLocal(D) && GenLoc(D, /*IncludeOffset=*/true))
+  if (isLocal(D) && GenLoc(D, /*IncludeOffset=*/true)) {
     return;
+}
   VisitNamedDecl(D);
 }
 
@@ -365,8 +381,9 @@ void USRGenerator::VisitNamespaceDecl(const NamespaceDecl *D) {
   }
 
   VisitDeclContext(D->getDeclContext());
-  if (!IgnoreResults)
+  if (!IgnoreResults) {
     Out << "@N@" << D->getName();
+}
 }
 
 void USRGenerator::VisitFunctionTemplateDecl(const FunctionTemplateDecl *D) {
@@ -379,15 +396,18 @@ void USRGenerator::VisitClassTemplateDecl(const ClassTemplateDecl *D) {
 
 void USRGenerator::VisitNamespaceAliasDecl(const NamespaceAliasDecl *D) {
   VisitDeclContext(D->getDeclContext());
-  if (!IgnoreResults)
+  if (!IgnoreResults) {
     Out << "@NA@" << D->getName();
+}
 }
 
 static const ObjCCategoryDecl *getCategoryContext(const NamedDecl *D) {
-  if (auto *CD = dyn_cast<ObjCCategoryDecl>(D->getDeclContext()))
+  if (auto *CD = dyn_cast<ObjCCategoryDecl>(D->getDeclContext())) {
     return CD;
-  if (auto *ICD = dyn_cast<ObjCCategoryImplDecl>(D->getDeclContext()))
+}
+  if (auto *ICD = dyn_cast<ObjCCategoryImplDecl>(D->getDeclContext())) {
     return ICD->getCategoryDecl();
+}
   return nullptr;
 }
 
@@ -441,10 +461,11 @@ void USRGenerator::VisitObjCContainerDecl(const ObjCContainerDecl *D,
         Out << "objc(ext)" << ID->getName() << '@';
         GenLoc(CD, /*IncludeOffset=*/true);
       }
-      else
+      else {
         GenObjCCategory(ID->getName(), CD->getName(),
                         GetExternalSourceContainer(ID),
                         GetExternalSourceContainer(CD));
+}
 
       break;
     }
@@ -475,10 +496,11 @@ void USRGenerator::VisitObjCContainerDecl(const ObjCContainerDecl *D,
 void USRGenerator::VisitObjCPropertyDecl(const ObjCPropertyDecl *D) {
   // The USR for a property declared in a class extension or category is based
   // on the ObjCInterfaceDecl, not the ObjCCategoryDecl.
-  if (const ObjCInterfaceDecl *ID = Context->getObjContainingInterface(D))
+  if (const ObjCInterfaceDecl *ID = Context->getObjContainingInterface(D)) {
     VisitObjCContainerDecl(ID, getCategoryContext(D));
-  else
+  } else {
     Visit(cast<Decl>(D->getDeclContext()));
+}
   GenObjCProperty(D->getName(), D->isClassProperty());
 }
 
@@ -495,8 +517,9 @@ void USRGenerator::VisitTagDecl(const TagDecl *D) {
   // Add the location of the tag decl to handle resolution across
   // translation units.
   if (!isa<EnumDecl>(D) &&
-      ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+      ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
 
   GenExtSymbolContainer(D);
 
@@ -579,11 +602,13 @@ void USRGenerator::VisitTagDecl(const TagDecl *D) {
 }
 
 void USRGenerator::VisitTypedefDecl(const TypedefDecl *D) {
-  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
   const DeclContext *DC = D->getDeclContext();
-  if (const NamedDecl *DCN = dyn_cast<NamedDecl>(DC))
+  if (const NamedDecl *DCN = dyn_cast<NamedDecl>(DC)) {
     Visit(DCN);
+}
   Out << "@T@";
   Out << D->getName();
 }
@@ -594,13 +619,15 @@ void USRGenerator::VisitTemplateTypeParmDecl(const TemplateTypeParmDecl *D) {
 
 void USRGenerator::GenExtSymbolContainer(const NamedDecl *D) {
   StringRef Container = GetExternalSourceContainer(D);
-  if (!Container.empty())
+  if (!Container.empty()) {
     Out << "@M@" << Container;
+}
 }
 
 bool USRGenerator::GenLoc(const Decl *D, bool IncludeOffset) {
-  if (generatedLoc)
+  if (generatedLoc) {
     return IgnoreResults;
+}
   generatedLoc = true;
 
   // Guard against null declarations in invalid code.
@@ -639,14 +666,18 @@ void USRGenerator::VisitType(QualType T) {
     T = Ctx.getCanonicalType(T);
     Qualifiers Q = T.getQualifiers();
     unsigned qVal = 0;
-    if (Q.hasConst())
+    if (Q.hasConst()) {
       qVal |= 0x1;
-    if (Q.hasVolatile())
+}
+    if (Q.hasVolatile()) {
       qVal |= 0x2;
-    if (Q.hasRestrict())
+}
+    if (Q.hasRestrict()) {
       qVal |= 0x4;
-    if(qVal)
+}
+    if(qVal) {
       Out << ((char) ('0' + qVal));
+}
 
     // Mangle in ObjC GC qualifiers?
 
@@ -809,8 +840,9 @@ void USRGenerator::VisitType(QualType T) {
         VisitType(I);
       }
       Out << ')';
-      if (FT->isVariadic())
+      if (FT->isVariadic()) {
         Out << '.';
+}
       return;
     }
     if (const BlockPointerType *BT = T->getAs<BlockPointerType>()) {
@@ -836,8 +868,9 @@ void USRGenerator::VisitType(QualType T) {
     if (const ObjCObjectType *OIT = T->getAs<ObjCObjectType>()) {
       Out << 'Q';
       VisitType(OIT->getBaseType());
-      for (auto *Prot : OIT->getProtocols())
+      for (auto *Prot : OIT->getProtocols()) {
         VisitObjCProtocolDecl(Prot);
+}
       return;
     }
     if (const TemplateTypeParmType *TTP = T->getAs<TemplateTypeParmType>()) {
@@ -849,8 +882,9 @@ void USRGenerator::VisitType(QualType T) {
       Out << '>';
       VisitTemplateName(Spec->getTemplateName());
       Out << Spec->getNumArgs();
-      for (unsigned I = 0, N = Spec->getNumArgs(); I != N; ++I)
+      for (unsigned I = 0, N = Spec->getNumArgs(); I != N; ++I) {
         VisitTemplateArgument(Spec->getArg(I));
+}
       return;
     }
     if (const DependentNameType *DNT = T->getAs<DependentNameType>()) {
@@ -882,8 +916,9 @@ void USRGenerator::VisitType(QualType T) {
         Out << 'n';
         break;
       }
-      if (const auto *const CAT = dyn_cast<ConstantArrayType>(T))
+      if (const auto *const CAT = dyn_cast<ConstantArrayType>(T)) {
         Out << CAT->getSize();
+}
 
       T = AT->getElementType();
       continue;
@@ -897,31 +932,35 @@ void USRGenerator::VisitType(QualType T) {
 
 void USRGenerator::VisitTemplateParameterList(
                                          const TemplateParameterList *Params) {
-  if (!Params)
+  if (!Params) {
     return;
+}
   Out << '>' << Params->size();
   for (TemplateParameterList::const_iterator P = Params->begin(),
                                           PEnd = Params->end();
        P != PEnd; ++P) {
     Out << '#';
     if (isa<TemplateTypeParmDecl>(*P)) {
-      if (cast<TemplateTypeParmDecl>(*P)->isParameterPack())
+      if (cast<TemplateTypeParmDecl>(*P)->isParameterPack()) {
         Out<< 'p';
+}
       Out << 'T';
       continue;
     }
 
     if (NonTypeTemplateParmDecl *NTTP = dyn_cast<NonTypeTemplateParmDecl>(*P)) {
-      if (NTTP->isParameterPack())
+      if (NTTP->isParameterPack()) {
         Out << 'p';
+}
       Out << 'N';
       VisitType(NTTP->getType());
       continue;
     }
 
     TemplateTemplateParmDecl *TTP = cast<TemplateTemplateParmDecl>(*P);
-    if (TTP->isParameterPack())
+    if (TTP->isParameterPack()) {
       Out << 'p';
+}
     Out << 't';
     VisitTemplateParameterList(TTP->getTemplateParameters());
   }
@@ -967,8 +1006,9 @@ void USRGenerator::VisitTemplateArgument(const TemplateArgument &Arg) {
 
   case TemplateArgument::Pack:
     Out << 'p' << Arg.pack_size();
-    for (const auto &P : Arg.pack_elements())
+    for (const auto &P : Arg.pack_elements()) {
       VisitTemplateArgument(P);
+}
     break;
 
   case TemplateArgument::Type:
@@ -984,8 +1024,9 @@ void USRGenerator::VisitTemplateArgument(const TemplateArgument &Arg) {
 }
 
 void USRGenerator::VisitUnresolvedUsingValueDecl(const UnresolvedUsingValueDecl *D) {
-  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
   VisitDeclContext(D->getDeclContext());
   Out << "@UUV@";
   printQualifier(Out, D->getASTContext(), D->getQualifier());
@@ -993,8 +1034,9 @@ void USRGenerator::VisitUnresolvedUsingValueDecl(const UnresolvedUsingValueDecl 
 }
 
 void USRGenerator::VisitUnresolvedUsingTypenameDecl(const UnresolvedUsingTypenameDecl *D) {
-  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D)))
+  if (ShouldGenerateLocation(D) && GenLoc(D, /*IncludeOffset=*/isLocal(D))) {
     return;
+}
   VisitDeclContext(D->getDeclContext());
   Out << "@UUT@";
   printQualifier(Out, D->getASTContext(), D->getQualifier());
@@ -1010,8 +1052,9 @@ void USRGenerator::VisitUnresolvedUsingTypenameDecl(const UnresolvedUsingTypenam
 static void combineClassAndCategoryExtContainers(StringRef ClsSymDefinedIn,
                                                  StringRef CatSymDefinedIn,
                                                  raw_ostream &OS) {
-  if (ClsSymDefinedIn.empty() && CatSymDefinedIn.empty())
+  if (ClsSymDefinedIn.empty() && CatSymDefinedIn.empty()) {
     return;
+}
   if (CatSymDefinedIn.empty()) {
     OS << "@M@" << ClsSymDefinedIn << '@';
     return;
@@ -1055,15 +1098,17 @@ void clang::index::generateUSRForObjCProperty(StringRef Prop, bool isClassProp,
 
 void clang::index::generateUSRForObjCProtocol(StringRef Prot, raw_ostream &OS,
                                               StringRef ExtSymDefinedIn) {
-  if (!ExtSymDefinedIn.empty())
+  if (!ExtSymDefinedIn.empty()) {
     OS << "@M@" << ExtSymDefinedIn << '@';
+}
   OS << "objc(pl)" << Prot;
 }
 
 void clang::index::generateUSRForGlobalEnum(StringRef EnumName, raw_ostream &OS,
                                             StringRef ExtSymDefinedIn) {
-  if (!ExtSymDefinedIn.empty())
+  if (!ExtSymDefinedIn.empty()) {
     OS << "@M@" << ExtSymDefinedIn;
+}
   OS << "@E@" << EnumName;
 }
 
@@ -1074,8 +1119,9 @@ void clang::index::generateUSRForEnumConstant(StringRef EnumConstantName,
 
 bool clang::index::generateUSRForDecl(const Decl *D,
                                       SmallVectorImpl<char> &Buf) {
-  if (!D)
+  if (!D) {
     return true;
+}
   // We don't ignore decls with invalid source locations. Implicit decls, like
   // C++'s operator new function, can have invalid locations but it is fine to
   // create USRs that can identify them.
@@ -1088,8 +1134,9 @@ bool clang::index::generateUSRForDecl(const Decl *D,
 bool clang::index::generateUSRForMacro(const MacroDefinitionRecord *MD,
                                        const SourceManager &SM,
                                        SmallVectorImpl<char> &Buf) {
-  if (!MD)
+  if (!MD) {
     return true;
+}
   return generateUSRForMacro(MD->getName()->getName(), MD->getLocation(),
                              SM, Buf);
 
@@ -1099,8 +1146,9 @@ bool clang::index::generateUSRForMacro(StringRef MacroName, SourceLocation Loc,
                                        const SourceManager &SM,
                                        SmallVectorImpl<char> &Buf) {
   // Don't generate USRs for things with invalid locations.
-  if (MacroName.empty() || Loc.isInvalid())
+  if (MacroName.empty() || Loc.isInvalid()) {
     return true;
+}
 
   llvm::raw_svector_ostream Out(Buf);
 
@@ -1109,8 +1157,9 @@ bool clang::index::generateUSRForMacro(StringRef MacroName, SourceLocation Loc,
   bool ShouldGenerateLocation = !SM.isInSystemHeader(Loc);
 
   Out << getUSRSpacePrefix();
-  if (ShouldGenerateLocation)
+  if (ShouldGenerateLocation) {
     printLoc(Out, Loc, SM, /*IncludeOffset=*/true);
+}
   Out << "@macro@";
   Out << MacroName;
   return false;
@@ -1118,8 +1167,9 @@ bool clang::index::generateUSRForMacro(StringRef MacroName, SourceLocation Loc,
 
 bool clang::index::generateUSRForType(QualType T, ASTContext &Ctx,
                                       SmallVectorImpl<char> &Buf) {
-  if (T.isNull())
+  if (T.isNull()) {
     return true;
+}
   T = T.getCanonicalType();
 
   USRGenerator UG(&Ctx, Buf);
@@ -1129,10 +1179,12 @@ bool clang::index::generateUSRForType(QualType T, ASTContext &Ctx,
 
 bool clang::index::generateFullUSRForModule(const Module *Mod,
                                             raw_ostream &OS) {
-  if (!Mod->Parent)
+  if (!Mod->Parent) {
     return generateFullUSRForTopLevelModuleName(Mod->Name, OS);
-  if (generateFullUSRForModule(Mod->Parent, OS))
+}
+  if (generateFullUSRForModule(Mod->Parent, OS)) {
     return true;
+}
   return generateUSRFragmentForModule(Mod, OS);
 }
 

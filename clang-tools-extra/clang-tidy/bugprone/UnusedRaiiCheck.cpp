@@ -49,14 +49,16 @@ void UnusedRaiiCheck::check(const MatchFinder::MatchResult &Result) {
 
   // We ignore code expanded from macros to reduce the number of false
   // positives.
-  if (E->getBeginLoc().isMacroID())
+  if (E->getBeginLoc().isMacroID()) {
     return;
+}
 
   // Don't emit a warning for the last statement in the surrounding compound
   // statement.
   const auto *CS = Result.Nodes.getNodeAs<CompoundStmt>("compound");
-  if (E == CS->body_back())
+  if (E == CS->body_back()) {
     return;
+}
 
   // Emit a warning.
   auto D = diag(E->getBeginLoc(), "object destroyed immediately after "
@@ -66,13 +68,14 @@ void UnusedRaiiCheck::check(const MatchFinder::MatchResult &Result) {
   // If this is a default ctor we have to remove the parens or we'll introduce a
   // most vexing parse.
   const auto *BTE = Result.Nodes.getNodeAs<CXXBindTemporaryExpr>("temp");
-  if (const auto *TOE = dyn_cast<CXXTemporaryObjectExpr>(BTE->getSubExpr()))
+  if (const auto *TOE = dyn_cast<CXXTemporaryObjectExpr>(BTE->getSubExpr())) {
     if (TOE->getNumArgs() == 0) {
       D << FixItHint::CreateReplacement(
           CharSourceRange::getTokenRange(TOE->getParenOrBraceRange()),
           Replacement);
       return;
     }
+}
 
   // Otherwise just suggest adding a name. To find the place to insert the name
   // find the first TypeLoc in the children of E, which always points to the

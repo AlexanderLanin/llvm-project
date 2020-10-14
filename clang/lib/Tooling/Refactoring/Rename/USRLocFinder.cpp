@@ -42,8 +42,9 @@ namespace {
 // Returns true if the given Loc is valid for edit. We don't edit the
 // SourceLocations that are valid or in temporary buffer.
 bool IsValidEditLoc(const clang::SourceManager& SM, clang::SourceLocation Loc) {
-  if (Loc.isInvalid())
+  if (Loc.isInvalid()) {
     return false;
+}
   const clang::FullSourceLoc FullLoc(Loc, SM);
   std::pair<clang::FileID, unsigned> FileIdAndOffset =
       FullLoc.getSpellingLoc().getDecomposedLoc();
@@ -71,8 +72,9 @@ public:
       SourceLocation Loc = NameRanges[0].getBegin();
       const SourceManager &SM = Context.getSourceManager();
       // TODO: Deal with macro occurrences correctly.
-      if (Loc.isMacroID())
+      if (Loc.isMacroID()) {
         Loc = SM.getSpellingLoc(Loc);
+}
       checkAndAddLocation(Loc);
     }
     return true;
@@ -96,9 +98,10 @@ private:
 
     // The token of the source location we find actually has the old
     // name.
-    if (Offset != StringRef::npos)
+    if (Offset != StringRef::npos) {
       Occurrences.emplace_back(PrevName, SymbolOccurrence::MatchingSymbol,
                                BeginLoc.getLocWithOffset(Offset));
+}
   }
 
   const std::set<std::string> USRSet;
@@ -113,8 +116,9 @@ SourceLocation StartLocationForType(TypeLoc TL) {
   if (auto ElaboratedTypeLoc = TL.getAs<clang::ElaboratedTypeLoc>()) {
     NestedNameSpecifierLoc NestedNameSpecifier =
         ElaboratedTypeLoc.getQualifierLoc();
-    if (NestedNameSpecifier.getNestedNameSpecifier())
+    if (NestedNameSpecifier.getNestedNameSpecifier()) {
       return NestedNameSpecifier.getBeginLoc();
+}
     TL = TL.getNextTypeLoc();
   }
   return TL.getBeginLoc();
@@ -123,8 +127,9 @@ SourceLocation StartLocationForType(TypeLoc TL) {
 SourceLocation EndLocationForType(TypeLoc TL) {
   // Dig past any namespace or keyword qualifications.
   while (TL.getTypeLocClass() == TypeLoc::Elaborated ||
-         TL.getTypeLocClass() == TypeLoc::Qualified)
+         TL.getTypeLocClass() == TypeLoc::Qualified) {
     TL = TL.getNextTypeLoc();
+}
 
   // The location for template specializations (e.g. Foo<int>) includes the
   // templated types in its location range.  We want to restrict this to just
@@ -139,13 +144,15 @@ SourceLocation EndLocationForType(TypeLoc TL) {
 
 NestedNameSpecifier *GetNestedNameForType(TypeLoc TL) {
   // Dig past any keyword qualifications.
-  while (TL.getTypeLocClass() == TypeLoc::Qualified)
+  while (TL.getTypeLocClass() == TypeLoc::Qualified) {
     TL = TL.getNextTypeLoc();
+}
 
   // For elaborated types (e.g. `struct a::A`) we want the portion after the
   // `struct` but including the namespace qualifier, `a::`.
-  if (auto ElaboratedTypeLoc = TL.getAs<clang::ElaboratedTypeLoc>())
+  if (auto ElaboratedTypeLoc = TL.getAs<clang::ElaboratedTypeLoc>()) {
     return ElaboratedTypeLoc.getQualifierLoc().getNestedNameSpecifier();
+}
   return nullptr;
 }
 
@@ -181,21 +188,25 @@ public:
 
   bool VisitNamedDecl(const NamedDecl *Decl) {
     // UsingDecl has been handled in other place.
-    if (llvm::isa<UsingDecl>(Decl))
+    if (llvm::isa<UsingDecl>(Decl)) {
       return true;
+}
 
     // DestructorDecl has been handled in Typeloc.
-    if (llvm::isa<CXXDestructorDecl>(Decl))
+    if (llvm::isa<CXXDestructorDecl>(Decl)) {
       return true;
+}
 
-    if (Decl->isImplicit())
+    if (Decl->isImplicit()) {
       return true;
+}
 
     if (isInUSRSet(Decl)) {
       // For the case of renaming an alias template, we actually rename the
       // underlying alias declaration of the template.
-      if (const auto* TAT = dyn_cast<TypeAliasTemplateDecl>(Decl))
+      if (const auto* TAT = dyn_cast<TypeAliasTemplateDecl>(Decl)) {
         Decl = TAT->getTemplatedDecl();
+}
 
       auto StartLoc = Decl->getLocation();
       auto EndLoc = StartLoc;
@@ -230,8 +241,9 @@ public:
     // Fix the constructor initializer when renaming class members.
     for (const auto *Initializer : CD->inits()) {
       // Ignore implicit initializers.
-      if (!Initializer->isWritten())
+      if (!Initializer->isWritten()) {
         continue;
+}
 
       if (const FieldDecl *FD = Initializer->getMember()) {
         if (isInUSRSet(FD)) {
@@ -284,13 +296,15 @@ public:
     if (const auto *T = llvm::dyn_cast<EnumConstantDecl>(Decl)) {
       // FIXME: Handle the enum constant without prefix qualifiers (`a = Green`)
       // when renaming an unscoped enum declaration with a new namespace.
-      if (!Expr->hasQualifier())
+      if (!Expr->hasQualifier()) {
         return true;
+}
 
       if (const auto *ED =
               llvm::dyn_cast_or_null<EnumDecl>(getClosestAncestorDecl(*T))) {
-        if (ED->isScoped())
+        if (ED->isScoped()) {
           return true;
+}
         Decl = ED;
       }
       // The current fix would qualify "ns1::ns2::Green" as
@@ -332,8 +346,9 @@ public:
   }
 
   bool VisitNestedNameSpecifierLocations(NestedNameSpecifierLoc NestedLoc) {
-    if (!NestedLoc.getNestedNameSpecifier()->getAsType())
+    if (!NestedLoc.getNestedNameSpecifier()->getAsType()) {
       return true;
+}
 
     if (const auto *TargetDecl =
             getSupportedDeclFromTypeLoc(NestedLoc.getTypeLoc())) {
@@ -363,8 +378,9 @@ public:
         return true;
       }
 
-      if (const auto *TL = Parents[0].get<TypeLoc>())
+      if (const auto *TL = Parents[0].get<TypeLoc>()) {
         ParentTypeLoc = *TL;
+}
     }
 
     // Handle the outermost TypeLoc which is directly linked to the interesting
@@ -382,8 +398,9 @@ public:
         //
         // Skip if this is an inner typeLoc.
         if (!ParentTypeLoc.isNull() &&
-            isInUSRSet(getSupportedDeclFromTypeLoc(ParentTypeLoc)))
+            isInUSRSet(getSupportedDeclFromTypeLoc(ParentTypeLoc))) {
           return true;
+}
 
         auto StartLoc = StartLocationForType(Loc);
         auto EndLoc = EndLocationForType(Loc);
@@ -405,8 +422,9 @@ public:
             dyn_cast<TemplateSpecializationType>(Loc.getType())) {
       TypeLoc TargetLoc = Loc;
       if (!ParentTypeLoc.isNull()) {
-        if (llvm::isa<ElaboratedType>(ParentTypeLoc.getType()))
+        if (llvm::isa<ElaboratedType>(ParentTypeLoc.getType())) {
           TargetLoc = ParentTypeLoc;
+}
       }
 
       if (isInUSRSet(TemplateSpecType->getTemplateName().getAsTemplateDecl())) {
@@ -417,8 +435,9 @@ public:
         // (ElaboratedType) of the TemplateSpecializationType in order to
         // catch the prefix qualifiers "ns::".
         if (!ParentTypeLoc.isNull() &&
-            llvm::isa<ElaboratedType>(ParentTypeLoc.getType()))
+            llvm::isa<ElaboratedType>(ParentTypeLoc.getType())) {
           TargetLoc = ParentTypeLoc;
+}
 
         auto StartLoc = StartLocationForType(TargetLoc);
         auto EndLoc = EndLocationForType(TargetLoc);
@@ -449,13 +468,16 @@ private:
   // Get the supported declaration from a given typeLoc. If the declaration type
   // is not supported, returns nullptr.
   const NamedDecl *getSupportedDeclFromTypeLoc(TypeLoc Loc) {
-    if (const auto* TT = Loc.getType()->getAs<clang::TypedefType>())
+    if (const auto* TT = Loc.getType()->getAs<clang::TypedefType>()) {
       return TT->getDecl();
-    if (const auto *RD = Loc.getType()->getAsCXXRecordDecl())
+}
+    if (const auto *RD = Loc.getType()->getAsCXXRecordDecl()) {
       return RD;
+}
     if (const auto *ED =
-            llvm::dyn_cast_or_null<EnumDecl>(Loc.getType()->getAsTagDecl()))
+            llvm::dyn_cast_or_null<EnumDecl>(Loc.getType()->getAsTagDecl())) {
       return ED;
+}
     return nullptr;
   }
 
@@ -464,10 +486,12 @@ private:
   const Decl *getClosestAncestorDecl(const ASTNodeType &Node) {
     auto Parents = Context.getParents(Node);
     // FIXME: figure out how to handle it when there are multiple parents.
-    if (Parents.size() != 1)
+    if (Parents.size() != 1) {
       return nullptr;
-    if (ASTNodeKind::getFromNodeKind<Decl>().isBaseOf(Parents[0].getNodeKind()))
+}
+    if (ASTNodeKind::getFromNodeKind<Decl>().isBaseOf(Parents[0].getNodeKind())) {
       return Parents[0].template get<Decl>();
+}
     return getClosestAncestorDecl(Parents[0]);
   }
 
@@ -476,16 +500,18 @@ private:
   const TypeLoc *getParentTypeLoc(TypeLoc Loc) const {
     auto Parents = Context.getParents(Loc);
     // FIXME: figure out how to handle it when there are multiple parents.
-    if (Parents.size() != 1)
+    if (Parents.size() != 1) {
       return nullptr;
+}
     return Parents[0].get<TypeLoc>();
   }
 
   // Check whether the USR of a given Decl is in the USRSet.
   bool isInUSRSet(const Decl *Decl) const {
     auto USR = getUSRForDecl(Decl);
-    if (USR.empty())
+    if (USR.empty()) {
       return false;
+}
     return llvm::is_contained(USRSet, USR);
   }
 
@@ -534,8 +560,9 @@ createRenameAtomicChanges(llvm::ArrayRef<std::string> USRs,
     if (RenameInfo.IgnorePrefixQualifers) {
       // Get the name without prefix qualifiers from NewName.
       size_t LastColonPos = NewName.find_last_of(':');
-      if (LastColonPos != std::string::npos)
+      if (LastColonPos != std::string::npos) {
         ReplacedName = std::string(NewName.substr(LastColonPos + 1));
+}
     } else {
       if (RenameInfo.FromDecl && RenameInfo.Context) {
         if (!llvm::isa<clang::TranslationUnitDecl>(
@@ -565,16 +592,18 @@ createRenameAtomicChanges(llvm::ArrayRef<std::string> USRs,
         }
       }
       // If the NewName contains leading "::", add it back.
-      if (NewName.startswith("::") && NewName.substr(2) == ReplacedName)
+      if (NewName.startswith("::") && NewName.substr(2) == ReplacedName) {
         ReplacedName = NewName.str();
+}
     }
     Replace(RenameInfo.Begin, RenameInfo.End, ReplacedName);
   }
 
   // Hanlde using declarations explicitly as "using a::Foo" don't trigger
   // typeLoc for "a::Foo".
-  for (const auto *Using : Finder.getUsingDecls())
+  for (const auto *Using : Finder.getUsingDecls()) {
     Replace(Using->getBeginLoc(), Using->getEndLoc(), "using " + NewName.str());
+}
 
   return AtomicChanges;
 }

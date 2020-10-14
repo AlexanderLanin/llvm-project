@@ -134,8 +134,9 @@ TEST(PreamblePatchTest, IncludeParsing) {
         collectPatchedIncludes(Code, /*BaselineContents=*/"").MainFileIncludes;
     auto Points = Test.points();
     ASSERT_EQ(Includes.size(), Points.size());
-    for (size_t I = 0, E = Includes.size(); I != E; ++I)
+    for (size_t I = 0, E = Includes.size(); I != E; ++I) {
       EXPECT_EQ(Includes[I].HashLine, Points[I].line);
+}
   }
 }
 
@@ -451,8 +452,9 @@ TEST(PreamblePatchTest, RefsToMacros) {
 
     const auto &SM = AST->getSourceManager();
     std::vector<Matcher<Location>> ExpectedLocations;
-    for (const auto &R : Modified.ranges())
+    for (const auto &R : Modified.ranges()) {
       ExpectedLocations.push_back(Field(&Location::range, R));
+}
 
     for (const auto &P : Modified.points()) {
       auto *MacroTok = AST->getTokens().spelledTokenAt(SM.getComposedLoc(

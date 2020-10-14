@@ -127,8 +127,9 @@ TEST(ClangdAST, GetQualification) {
         return true;
       }
 
-      if (ND.getNameAsString() == "insert")
+      if (ND.getNameAsString() == "insert") {
         InsertionPoints.push_back(&ND);
+}
       return false;
     });
 
@@ -193,8 +194,9 @@ TEST(ClangdAST, PrintType) {
           TargetDecl = TD;
           return true;
         }
-      } else if (ND.getNameAsString() == "insert")
+      } else if (ND.getNameAsString() == "insert") {
         InsertionPoints.push_back(ND.getDeclContext());
+}
       return false;
     });
 

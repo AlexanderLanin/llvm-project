@@ -91,25 +91,32 @@ struct JsModuleReference {
 };
 
 bool operator<(const JsModuleReference &LHS, const JsModuleReference &RHS) {
-  if (LHS.IsExport != RHS.IsExport)
+  if (LHS.IsExport != RHS.IsExport) {
     return LHS.IsExport < RHS.IsExport;
-  if (LHS.Category != RHS.Category)
+}
+  if (LHS.Category != RHS.Category) {
     return LHS.Category < RHS.Category;
-  if (LHS.Category == JsModuleReference::ReferenceCategory::SIDE_EFFECT)
+}
+  if (LHS.Category == JsModuleReference::ReferenceCategory::SIDE_EFFECT) {
     // Side effect imports might be ordering sensitive. Consider them equal so
     // that they maintain their relative order in the stable sort below.
     // This retains transitivity because LHS.Category == RHS.Category here.
     return false;
+}
   // Empty URLs sort *last* (for export {...};).
-  if (LHS.URL.empty() != RHS.URL.empty())
+  if (LHS.URL.empty() != RHS.URL.empty()) {
     return LHS.URL.empty() < RHS.URL.empty();
-  if (int Res = LHS.URL.compare_lower(RHS.URL))
+}
+  if (int Res = LHS.URL.compare_lower(RHS.URL)) {
     return Res < 0;
+}
   // '*' imports (with prefix) sort before {a, b, ...} imports.
-  if (LHS.Prefix.empty() != RHS.Prefix.empty())
+  if (LHS.Prefix.empty() != RHS.Prefix.empty()) {
     return LHS.Prefix.empty() < RHS.Prefix.empty();
-  if (LHS.Prefix != RHS.Prefix)
+}
+  if (LHS.Prefix != RHS.Prefix) {
     return LHS.Prefix > RHS.Prefix;
+}
   return false;
 }
 
@@ -135,12 +142,14 @@ public:
     std::tie(References, FirstNonImportLine) =
         parseModuleReferences(Keywords, AnnotatedLines);
 
-    if (References.empty())
+    if (References.empty()) {
       return {Result, 0};
+}
 
     SmallVector<unsigned, 16> Indices;
-    for (unsigned i = 0, e = References.size(); i != e; ++i)
+    for (unsigned i = 0, e = References.size(); i != e; ++i) {
       Indices.push_back(i);
+}
     llvm::stable_sort(Indices, [&](unsigned LHSI, unsigned RHSI) {
       return References[LHSI] < References[RHSI];
     });
@@ -150,8 +159,9 @@ public:
     bool SymbolsInOrder = true;
     for (unsigned i = 0, e = Indices.size(); i != e; ++i) {
       JsModuleReference Reference = References[Indices[i]];
-      if (appendReference(ReferencesText, Reference))
+      if (appendReference(ReferencesText, Reference)) {
         SymbolsInOrder = false;
+}
       if (i + 1 < e) {
         // Insert breaks between imports and exports.
         ReferencesText += "\n";
@@ -159,13 +169,15 @@ public:
         // in a single group.
         if (!Reference.IsExport &&
             (Reference.IsExport != References[Indices[i + 1]].IsExport ||
-             Reference.Category != References[Indices[i + 1]].Category))
+             Reference.Category != References[Indices[i + 1]].Category)) {
           ReferencesText += "\n";
+}
       }
     }
 
-    if (ReferencesInOrder && SymbolsInOrder)
+    if (ReferencesInOrder && SymbolsInOrder) {
       return {Result, 0};
+}
 
     SourceRange InsertionPoint = References[0].Range;
     InsertionPoint.setEnd(References[References.size() - 1].Range.getEnd());
@@ -183,8 +195,9 @@ public:
     }
 
     // Separate references from the main code body of the file.
-    if (FirstNonImportLine && FirstNonImportLine->First->NewlinesBefore < 2)
+    if (FirstNonImportLine && FirstNonImportLine->First->NewlinesBefore < 2) {
       ReferencesText += "\n";
+}
 
     LLVM_DEBUG(llvm::dbgs() << "Replacing imports:\n"
                             << getSourceText(InsertionPoint) << "\nwith:\n"
@@ -213,8 +226,9 @@ private:
   void skipComments() { Current = skipComments(Current); }
 
   FormatToken *skipComments(FormatToken *Tok) {
-    while (Tok && Tok->is(tok::comment))
+    while (Tok && Tok->is(tok::comment)) {
       Tok = Tok->Next;
+}
     return Tok;
   }
 
@@ -261,8 +275,9 @@ private:
     Buffer += getSourceText(Reference.Range.getBegin(), SymbolsStart);
     // ... then the references in order ...
     for (auto I = Symbols.begin(), E = Symbols.end(); I != E; ++I) {
-      if (I != Symbols.begin())
+      if (I != Symbols.begin()) {
         Buffer += ",";
+}
       Buffer += getSourceText(I->Range);
     }
     // ... followed by the module reference end.
@@ -284,11 +299,12 @@ private:
       Current = Line->First;
       LineEnd = Line->Last;
       skipComments();
-      if (Start.isInvalid() || References.empty())
+      if (Start.isInvalid() || References.empty()) {
         // After the first file level comment, consider line comments to be part
         // of the import that immediately follows them by using the previously
         // set Start.
         Start = Line->First->Tok.getLocation();
+}
       if (!Current) {
         // Only comments on this line. Could be the first non-import line.
         FirstNonImportLine = Line;
@@ -297,8 +313,9 @@ private:
       JsModuleReference Reference;
       Reference.Range.setBegin(Start);
       if (!parseModuleReference(Keywords, Reference)) {
-        if (!FirstNonImportLine)
+        if (!FirstNonImportLine) {
           FirstNonImportLine = Line; // if no comment before.
+}
         break;
       }
       FirstNonImportLine = nullptr;
@@ -320,8 +337,9 @@ private:
       Start = SourceLocation();
     }
     // Sort imports if any import line was affected.
-    if (!AnyImportAffected)
+    if (!AnyImportAffected) {
       References.clear();
+}
     return std::make_pair(References, FirstNonImportLine);
   }
 
@@ -330,8 +348,9 @@ private:
   // for grammar EBNF (production ModuleItem).
   bool parseModuleReference(const AdditionalKeywords &Keywords,
                             JsModuleReference &Reference) {
-    if (!Current || !Current->isOneOf(Keywords.kw_import, tok::kw_export))
+    if (!Current || !Current->isOneOf(Keywords.kw_import, tok::kw_export)) {
       return false;
+}
     Reference.IsExport = Current->is(tok::kw_export);
 
     nextToken();
@@ -343,24 +362,27 @@ private:
       return true;
     }
 
-    if (!parseModuleBindings(Keywords, Reference))
+    if (!parseModuleBindings(Keywords, Reference)) {
       return false;
+}
 
     if (Current->is(Keywords.kw_from)) {
       // imports have a 'from' clause, exports might not.
       nextToken();
-      if (!Current->isStringLiteral())
+      if (!Current->isStringLiteral()) {
         return false;
+}
       // URL = TokenText without the quotes.
       Reference.URL =
           Current->TokenText.substr(1, Current->TokenText.size() - 2);
-      if (Reference.URL.startswith(".."))
+      if (Reference.URL.startswith("..")) {
         Reference.Category =
             JsModuleReference::ReferenceCategory::RELATIVE_PARENT;
-      else if (Reference.URL.startswith("."))
+      } else if (Reference.URL.startswith(".")) {
         Reference.Category = JsModuleReference::ReferenceCategory::RELATIVE;
-      else
+      } else {
         Reference.Category = JsModuleReference::ReferenceCategory::ABSOLUTE;
+}
     } else {
       // w/o URL groups with "empty".
       Reference.Category = JsModuleReference::ReferenceCategory::RELATIVE;
@@ -370,22 +392,26 @@ private:
 
   bool parseModuleBindings(const AdditionalKeywords &Keywords,
                            JsModuleReference &Reference) {
-    if (parseStarBinding(Keywords, Reference))
+    if (parseStarBinding(Keywords, Reference)) {
       return true;
+}
     return parseNamedBindings(Keywords, Reference);
   }
 
   bool parseStarBinding(const AdditionalKeywords &Keywords,
                         JsModuleReference &Reference) {
     // * as prefix from '...';
-    if (Current->isNot(tok::star))
+    if (Current->isNot(tok::star)) {
       return false;
+}
     nextToken();
-    if (Current->isNot(Keywords.kw_as))
+    if (Current->isNot(Keywords.kw_as)) {
       return false;
+}
     nextToken();
-    if (Current->isNot(tok::identifier))
+    if (Current->isNot(tok::identifier)) {
       return false;
+}
     Reference.Prefix = Current->TokenText;
     nextToken();
     return true;
@@ -395,22 +421,27 @@ private:
                           JsModuleReference &Reference) {
     if (Current->is(tok::identifier)) {
       nextToken();
-      if (Current->is(Keywords.kw_from))
+      if (Current->is(Keywords.kw_from)) {
         return true;
-      if (Current->isNot(tok::comma))
+}
+      if (Current->isNot(tok::comma)) {
         return false;
+}
       nextToken(); // eat comma.
     }
-    if (Current->isNot(tok::l_brace))
+    if (Current->isNot(tok::l_brace)) {
       return false;
+}
 
     // {sym as alias, sym2 as ...} from '...';
     while (Current->isNot(tok::r_brace)) {
       nextToken();
-      if (Current->is(tok::r_brace))
+      if (Current->is(tok::r_brace)) {
         break;
-      if (!Current->isOneOf(tok::identifier, tok::kw_default))
+}
+      if (!Current->isOneOf(tok::identifier, tok::kw_default)) {
         return false;
+}
 
       JsImportedSymbol Symbol;
       Symbol.Symbol = Current->TokenText;
@@ -421,16 +452,18 @@ private:
 
       if (Current->is(Keywords.kw_as)) {
         nextToken();
-        if (!Current->isOneOf(tok::identifier, tok::kw_default))
+        if (!Current->isOneOf(tok::identifier, tok::kw_default)) {
           return false;
+}
         Symbol.Alias = Current->TokenText;
         nextToken();
       }
       Symbol.Range.setEnd(Current->Tok.getLocation());
       Reference.Symbols.push_back(Symbol);
 
-      if (!Current->isOneOf(tok::r_brace, tok::comma))
+      if (!Current->isOneOf(tok::r_brace, tok::comma)) {
         return false;
+}
     }
     nextToken(); // consume r_brace
     return true;

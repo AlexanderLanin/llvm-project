@@ -135,8 +135,9 @@ static void ensureStackAddressSpace() {}
 /// Attempt to ensure that we have at least 8MiB of usable stack space.
 static void ensureSufficientStack() {
   struct rlimit rlim;
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+  if (getrlimit(RLIMIT_STACK, &rlim) != 0) {
     return;
+}
 
   // Increase the soft stack limit to our desired level, if necessary and
   // possible.
@@ -144,16 +145,18 @@ static void ensureSufficientStack() {
       rlim.rlim_cur < rlim_t(DesiredStackSize)) {
     // Try to allocate sufficient stack.
     if (rlim.rlim_max == RLIM_INFINITY ||
-        rlim.rlim_max >= rlim_t(DesiredStackSize))
+        rlim.rlim_max >= rlim_t(DesiredStackSize)) {
       rlim.rlim_cur = DesiredStackSize;
-    else if (rlim.rlim_cur == rlim.rlim_max)
+    } else if (rlim.rlim_cur == rlim.rlim_max) {
       return;
-    else
+    } else {
       rlim.rlim_cur = rlim.rlim_max;
+}
 
     if (setrlimit(RLIMIT_STACK, &rlim) != 0 ||
-        rlim.rlim_cur != DesiredStackSize)
+        rlim.rlim_cur != DesiredStackSize) {
       return;
+}
   }
 
   // We should now have a stack of size at least DesiredStackSize. Ensure
@@ -211,19 +214,22 @@ int cc1_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
         Clang->getFrontendOpts().TimeTraceGranularity, Argv0);
   }
   // --print-supported-cpus takes priority over the actual compilation.
-  if (Clang->getFrontendOpts().PrintSupportedCPUs)
+  if (Clang->getFrontendOpts().PrintSupportedCPUs) {
     return PrintSupportedCPUs(Clang->getTargetOpts().Triple);
+}
 
   // Infer the builtin include path if unspecified.
   if (Clang->getHeaderSearchOpts().UseBuiltinIncludes &&
-      Clang->getHeaderSearchOpts().ResourceDir.empty())
+      Clang->getHeaderSearchOpts().ResourceDir.empty()) {
     Clang->getHeaderSearchOpts().ResourceDir =
       CompilerInvocation::GetResourcesPath(Argv0, MainAddr);
+}
 
   // Create the actual diagnostics engine.
   Clang->createDiagnostics();
-  if (!Clang->hasDiagnostics())
+  if (!Clang->hasDiagnostics()) {
     return 1;
+}
 
   // Set an error handler, so that any LLVM backend diagnostics go through our
   // error handler.
@@ -231,8 +237,9 @@ int cc1_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
                                   static_cast<void*>(&Clang->getDiagnostics()));
 
   DiagsBuffer->FlushDiagnostics(Clang->getDiagnostics());
-  if (!Success)
+  if (!Success) {
     return 1;
+}
 
   // Execute the frontend actions.
   {

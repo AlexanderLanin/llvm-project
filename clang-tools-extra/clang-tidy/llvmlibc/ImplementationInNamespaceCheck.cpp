@@ -28,8 +28,9 @@ void ImplementationInNamespaceCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl =
       Result.Nodes.getNodeAs<Decl>("child_of_translation_unit");
-  if (!Result.SourceManager->isInMainFile(MatchedDecl->getLocation()))
+  if (!Result.SourceManager->isInMainFile(MatchedDecl->getLocation())) {
     return;
+}
 
   if (const auto *NS = dyn_cast<NamespaceDecl>(MatchedDecl)) {
     if (NS->getName() != RequiredNamespace) {

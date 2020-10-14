@@ -37,15 +37,17 @@ static const AvailabilityAttr *getAttrForPlatform(ASTContext &Context,
       StringRef RealizedPlatform = ActualPlatform;
       if (Context.getLangOpts().AppExt) {
         size_t suffix = RealizedPlatform.rfind("_app_extension");
-        if (suffix != StringRef::npos)
+        if (suffix != StringRef::npos) {
           RealizedPlatform = RealizedPlatform.slice(0, suffix);
+}
       }
 
       StringRef TargetPlatform = Context.getTargetInfo().getPlatformName();
 
       // Match the platform name.
-      if (RealizedPlatform == TargetPlatform)
+      if (RealizedPlatform == TargetPlatform) {
         return Avail;
+}
     }
   }
   return nullptr;
@@ -86,7 +88,7 @@ ShouldDiagnoseAvailabilityOfDecl(Sema &S, const NamedDecl *D,
     }
   }
 
-  if (const auto *ECD = dyn_cast<EnumConstantDecl>(D))
+  if (const auto *ECD = dyn_cast<EnumConstantDecl>(D)) {
     if (Result == AR_Available) {
       const DeclContext *DC = ECD->getDeclContext();
       if (const auto *TheEnumDecl = dyn_cast<EnumDecl>(DC)) {
@@ -94,6 +96,7 @@ ShouldDiagnoseAvailabilityOfDecl(Sema &S, const NamedDecl *D,
         D = TheEnumDecl;
       }
     }
+}
 
   // For +new, infer availability from -init.
   if (const auto *MD = dyn_cast<ObjCMethodDecl>(D)) {
@@ -125,50 +128,63 @@ ShouldDiagnoseAvailabilityInContext(Sema &S, AvailabilityResult K,
   // Checks if we should emit the availability diagnostic in the context of C.
   auto CheckContext = [&](const Decl *C) {
     if (K == AR_NotYetIntroduced) {
-      if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, C))
-        if (AA->getIntroduced() >= DeclVersion)
+      if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, C)) {
+        if (AA->getIntroduced() >= DeclVersion) {
           return true;
+}
+}
     } else if (K == AR_Deprecated) {
-      if (C->isDeprecated())
+      if (C->isDeprecated()) {
         return true;
+}
     } else if (K == AR_Unavailable) {
       // It is perfectly fine to refer to an 'unavailable' Objective-C method
       // when it is referenced from within the @implementation itself. In this
       // context, we interpret unavailable as a form of access control.
       if (const auto *MD = dyn_cast<ObjCMethodDecl>(OffendingDecl)) {
         if (const auto *Impl = dyn_cast<ObjCImplDecl>(C)) {
-          if (MD->getClassInterface() == Impl->getClassInterface())
+          if (MD->getClassInterface() == Impl->getClassInterface()) {
             return true;
+}
         }
       }
     }
 
-    if (C->isUnavailable())
+    if (C->isUnavailable()) {
       return true;
+}
     return false;
   };
 
   do {
-    if (CheckContext(Ctx))
+    if (CheckContext(Ctx)) {
       return false;
+}
 
     // An implementation implicitly has the availability of the interface.
     // Unless it is "+load" method.
-    if (const auto *MethodD = dyn_cast<ObjCMethodDecl>(Ctx))
+    if (const auto *MethodD = dyn_cast<ObjCMethodDecl>(Ctx)) {
       if (MethodD->isClassMethod() &&
-          MethodD->getSelector().getAsString() == "load")
+          MethodD->getSelector().getAsString() == "load") {
         return true;
+}
+}
 
     if (const auto *CatOrImpl = dyn_cast<ObjCImplDecl>(Ctx)) {
-      if (const ObjCInterfaceDecl *Interface = CatOrImpl->getClassInterface())
-        if (CheckContext(Interface))
+      if (const ObjCInterfaceDecl *Interface = CatOrImpl->getClassInterface()) {
+        if (CheckContext(Interface)) {
           return false;
+}
+}
     }
     // A category implicitly has the availability of the interface.
-    else if (const auto *CatD = dyn_cast<ObjCCategoryDecl>(Ctx))
-      if (const ObjCInterfaceDecl *Interface = CatD->getClassInterface())
-        if (CheckContext(Interface))
+    else if (const auto *CatD = dyn_cast<ObjCCategoryDecl>(Ctx)) {
+      if (const ObjCInterfaceDecl *Interface = CatD->getClassInterface()) {
+        if (CheckContext(Interface)) {
           return false;
+}
+}
+}
   } while ((Ctx = cast_or_null<Decl>(Ctx->getDeclContext())));
 
   return true;
@@ -203,11 +219,13 @@ shouldDiagnoseAvailabilityByDefault(const ASTContext &Context,
 static NamedDecl *findEnclosingDeclToAnnotate(Decl *OrigCtx) {
   for (Decl *Ctx = OrigCtx; Ctx;
        Ctx = cast_or_null<Decl>(Ctx->getDeclContext())) {
-    if (isa<TagDecl>(Ctx) || isa<FunctionDecl>(Ctx) || isa<ObjCMethodDecl>(Ctx))
+    if (isa<TagDecl>(Ctx) || isa<FunctionDecl>(Ctx) || isa<ObjCMethodDecl>(Ctx)) {
       return cast<NamedDecl>(Ctx);
+}
     if (auto *CD = dyn_cast<ObjCContainerDecl>(Ctx)) {
-      if (auto *Imp = dyn_cast<ObjCImplDecl>(Ctx))
+      if (auto *Imp = dyn_cast<ObjCImplDecl>(Ctx)) {
         return Imp->getClassInterface();
+}
       return CD;
     }
   }
@@ -247,10 +265,12 @@ static Optional<unsigned>
 tryParseObjCMethodName(StringRef Name, SmallVectorImpl<StringRef> &SlotNames,
                        const LangOptions &LangOpts) {
   // Accept replacements starting with - or + as valid ObjC method names.
-  if (!Name.empty() && (Name.front() == '-' || Name.front() == '+'))
+  if (!Name.empty() && (Name.front() == '-' || Name.front() == '+')) {
     Name = Name.drop_front(1);
-  if (Name.empty())
+}
+  if (Name.empty()) {
     return None;
+}
   Name.split(SlotNames, ':');
   unsigned NumParams;
   if (Name.back() == ':') {
@@ -258,18 +278,21 @@ tryParseObjCMethodName(StringRef Name, SmallVectorImpl<StringRef> &SlotNames,
     SlotNames.pop_back();
     NumParams = SlotNames.size();
   } else {
-    if (SlotNames.size() != 1)
+    if (SlotNames.size() != 1) {
       // Not a valid method name, just a colon-separated string.
       return None;
+}
     NumParams = 0;
   }
   // Verify all slot names are valid.
   bool AllowDollar = LangOpts.DollarIdents;
   for (StringRef S : SlotNames) {
-    if (S.empty())
+    if (S.empty()) {
       continue;
-    if (!isValidIdentifier(S, AllowDollar))
+}
+    if (!isValidIdentifier(S, AllowDollar)) {
       return None;
+}
   }
   return NumParams;
 }
@@ -279,18 +302,21 @@ tryParseObjCMethodName(StringRef Name, SmallVectorImpl<StringRef> &SlotNames,
 static Optional<AttributeInsertion>
 createAttributeInsertion(const NamedDecl *D, const SourceManager &SM,
                          const LangOptions &LangOpts) {
-  if (isa<ObjCPropertyDecl>(D))
+  if (isa<ObjCPropertyDecl>(D)) {
     return AttributeInsertion::createInsertionAfter(D);
+}
   if (const auto *MD = dyn_cast<ObjCMethodDecl>(D)) {
-    if (MD->hasBody())
+    if (MD->hasBody()) {
       return None;
+}
     return AttributeInsertion::createInsertionAfter(D);
   }
   if (const auto *TD = dyn_cast<TagDecl>(D)) {
     SourceLocation Loc =
         Lexer::getLocForEndOfToken(TD->getInnerLocStart(), 0, SM, LangOpts);
-    if (Loc.isInvalid())
+    if (Loc.isInvalid()) {
       return None;
+}
     // Insert after the 'struct'/whatever keyword.
     return AttributeInsertion::createInsertionAfter(Loc);
   }
@@ -327,12 +353,14 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
   unsigned available_here_select_kind;
 
   VersionTuple DeclVersion;
-  if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, OffendingDecl))
+  if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, OffendingDecl)) {
     DeclVersion = AA->getIntroduced();
+}
 
   if (!ShouldDiagnoseAvailabilityInContext(S, K, DeclVersion, Ctx,
-                                           OffendingDecl))
+                                           OffendingDecl)) {
     return;
+}
 
   SourceLocation Loc = Locs.front();
 
@@ -381,26 +409,30 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
         << S.Context.getTargetInfo().getPlatformMinVersion().getAsString();
 
     if (const auto *Enclosing = findEnclosingDeclToAnnotate(Ctx)) {
-      if (const auto *TD = dyn_cast<TagDecl>(Enclosing))
+      if (const auto *TD = dyn_cast<TagDecl>(Enclosing)) {
         if (TD->getDeclName().isEmpty()) {
           S.Diag(TD->getLocation(),
                  diag::note_decl_unguarded_availability_silence)
               << /*Anonymous*/ 1 << TD->getKindName();
           return;
         }
+}
       auto FixitNoteDiag =
           S.Diag(Enclosing->getLocation(),
                  diag::note_decl_unguarded_availability_silence)
           << /*Named*/ 0 << Enclosing;
       // Don't offer a fixit for declarations with availability attributes.
-      if (Enclosing->hasAttr<AvailabilityAttr>())
+      if (Enclosing->hasAttr<AvailabilityAttr>()) {
         return;
-      if (!S.getPreprocessor().isMacroDefined("API_AVAILABLE"))
+}
+      if (!S.getPreprocessor().isMacroDefined("API_AVAILABLE")) {
         return;
+}
       Optional<AttributeInsertion> Insertion = createAttributeInsertion(
           Enclosing, S.getSourceManager(), S.getLangOpts());
-      if (!Insertion)
+      if (!Insertion) {
         return;
+}
       std::string PlatformName =
           AvailabilityAttr::getPlatformNameSourceSpelling(
               S.getASTContext().getTargetInfo().getPlatformName())
@@ -422,8 +454,9 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
     diag_fwdclass_message = diag::warn_deprecated_fwdclass_message;
     property_note_select = /* deprecated */ 0;
     available_here_select_kind = /* deprecated */ 2;
-    if (const auto *AL = OffendingDecl->getAttr<DeprecatedAttr>())
+    if (const auto *AL = OffendingDecl->getAttr<DeprecatedAttr>()) {
       NoteLocation = AL->getLocation();
+}
     break;
 
   case AR_Unavailable:
@@ -441,8 +474,9 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
         auto flagARCError = [&] {
           if (S.getLangOpts().ObjCAutoRefCount &&
               S.getSourceManager().isInSystemHeader(
-                  OffendingDecl->getLocation()))
+                  OffendingDecl->getLocation())) {
             diag = diag::err_unavailable_in_arc;
+}
         };
 
         switch (AL->getImplicitReason()) {
@@ -454,10 +488,11 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
           break;
 
         case UnavailableAttr::IR_ForbiddenWeak:
-          if (S.getLangOpts().ObjCWeakRuntime)
+          if (S.getLangOpts().ObjCWeakRuntime) {
             diag_available_here = diag::note_arc_weak_disabled;
-          else
+          } else {
             diag_available_here = diag::note_arc_weak_no_runtime;
+}
           break;
 
         case UnavailableAttr::IR_ARCForbiddenConversion:
@@ -486,15 +521,18 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
   SmallVector<FixItHint, 12> FixIts;
   if (K == AR_Deprecated) {
     StringRef Replacement;
-    if (auto AL = OffendingDecl->getAttr<DeprecatedAttr>())
+    if (auto AL = OffendingDecl->getAttr<DeprecatedAttr>()) {
       Replacement = AL->getReplacement();
-    if (auto AL = getAttrForPlatform(S.Context, OffendingDecl))
+}
+    if (auto AL = getAttrForPlatform(S.Context, OffendingDecl)) {
       Replacement = AL->getReplacement();
+}
 
     CharSourceRange UseRange;
-    if (!Replacement.empty())
+    if (!Replacement.empty()) {
       UseRange =
           CharSourceRange::getCharRange(Loc, S.getLocForEndOfToken(Loc));
+}
     if (UseRange.isValid()) {
       if (const auto *MethodDecl = dyn_cast<ObjCMethodDecl>(ReferringDecl)) {
         Selector Sel = MethodDecl->getSelector();
@@ -509,27 +547,32 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
                   Locs[I], S.getLocForEndOfToken(Locs[I]));
               FixIts.push_back(FixItHint::CreateReplacement(
                   NameRange, SelectorSlotNames[I]));
-            } else
+            } else {
               FixIts.push_back(
                   FixItHint::CreateInsertion(Locs[I], SelectorSlotNames[I]));
+}
           }
-        } else
+        } else {
           FixIts.push_back(FixItHint::CreateReplacement(UseRange, Replacement));
-      } else
+}
+      } else {
         FixIts.push_back(FixItHint::CreateReplacement(UseRange, Replacement));
+}
     }
   }
 
   if (!Message.empty()) {
     S.Diag(Loc, diag_message) << ReferringDecl << Message << FixIts;
-    if (ObjCProperty)
+    if (ObjCProperty) {
       S.Diag(ObjCProperty->getLocation(), diag::note_property_attribute)
           << ObjCProperty->getDeclName() << property_note_select;
+}
   } else if (!UnknownObjCClass) {
     S.Diag(Loc, diag) << ReferringDecl << FixIts;
-    if (ObjCProperty)
+    if (ObjCProperty) {
       S.Diag(ObjCProperty->getLocation(), diag::note_property_attribute)
           << ObjCProperty->getDeclName() << property_note_select;
+}
   } else {
     S.Diag(Loc, diag_fwdclass_message) << ReferringDecl << FixIts;
     S.Diag(UnknownObjCClass->getLocation(), diag::note_forward_class);
@@ -621,8 +664,9 @@ class LastDeclUSEFinder : public RecursiveASTVisitor<LastDeclUSEFinder> {
 
 public:
   bool VisitDeclRefExpr(DeclRefExpr *DRE) {
-    if (DRE->getDecl() == D)
+    if (DRE->getDecl() == D) {
       return false;
+}
     return true;
   }
 
@@ -632,8 +676,9 @@ public:
     Visitor.D = D;
     for (auto I = Scope->body_rbegin(), E = Scope->body_rend(); I != E; ++I) {
       const Stmt *S = *I;
-      if (!Visitor.TraverseStmt(const_cast<Stmt *>(S)))
+      if (!Visitor.TraverseStmt(const_cast<Stmt *>(S))) {
         return S;
+}
     }
     return nullptr;
   }
@@ -668,14 +713,16 @@ public:
 
   bool TraverseDecl(Decl *D) {
     // Avoid visiting nested functions to prevent duplicate warnings.
-    if (!D || isa<FunctionDecl>(D))
+    if (!D || isa<FunctionDecl>(D)) {
       return true;
+}
     return Base::TraverseDecl(D);
   }
 
   bool TraverseStmt(Stmt *S) {
-    if (!S)
+    if (!S) {
       return true;
+}
     StmtStack.push_back(S);
     bool Result = Base::TraverseStmt(S);
     StmtStack.pop_back();
@@ -693,8 +740,9 @@ public:
   bool TraverseCaseStmt(CaseStmt *CS) { return TraverseStmt(CS->getSubStmt()); }
 
   bool VisitObjCPropertyRefExpr(ObjCPropertyRefExpr *PRE) {
-    if (PRE->isClassReceiver())
+    if (PRE->isClassReceiver()) {
       DiagnoseDeclAvailability(PRE->getClassReceiver(), PRE->getReceiverLocation());
+}
     return true;
   }
 
@@ -702,8 +750,9 @@ public:
     if (ObjCMethodDecl *D = Msg->getMethodDecl()) {
       ObjCInterfaceDecl *ID = nullptr;
       QualType ReceiverTy = Msg->getClassReceiver();
-      if (!ReceiverTy.isNull() && ReceiverTy->getAsObjCInterfaceType())
+      if (!ReceiverTy.isNull() && ReceiverTy->getAsObjCInterfaceType()) {
         ID = ReceiverTy->getAsObjCInterfaceType()->getInterface();
+}
 
       DiagnoseDeclAvailability(
           D, SourceRange(Msg->getSelectorStartLoc(), Msg->getEndLoc()), ID);
@@ -741,21 +790,24 @@ void DiagnoseUnguardedAvailability::DiagnoseDeclAvailability(
   if (Result != AR_Available) {
     // All other diagnostic kinds have already been handled in
     // DiagnoseAvailabilityOfDecl.
-    if (Result != AR_NotYetIntroduced)
+    if (Result != AR_NotYetIntroduced) {
       return;
+}
 
     const AvailabilityAttr *AA =
       getAttrForPlatform(SemaRef.getASTContext(), OffendingDecl);
     VersionTuple Introduced = AA->getIntroduced();
 
-    if (AvailabilityStack.back() >= Introduced)
+    if (AvailabilityStack.back() >= Introduced) {
       return;
+}
 
     // If the context of this function is less available than D, we should not
     // emit a diagnostic.
     if (!ShouldDiagnoseAvailabilityInContext(SemaRef, Result, Introduced, Ctx,
-                                             OffendingDecl))
+                                             OffendingDecl)) {
       return;
+}
 
     // We would like to emit the diagnostic even if -Wunguarded-availability is
     // not specified for deployment targets >= to iOS 11 or equivalent or
@@ -788,8 +840,9 @@ void DiagnoseUnguardedAvailability::DiagnoseDeclAvailability(
                                        : /*__builtin_available*/ 1);
 
     // Find the statement which should be enclosed in the if @available check.
-    if (StmtStack.empty())
+    if (StmtStack.empty()) {
       return;
+}
     const Stmt *StmtOfUse = StmtStack.back();
     const CompoundStmt *Scope = nullptr;
     for (const Stmt *S : llvm::reverse(StmtStack)) {
@@ -822,8 +875,9 @@ void DiagnoseUnguardedAvailability::DiagnoseDeclAvailability(
         SM.getExpansionRange(
               (LastStmtOfUse ? LastStmtOfUse : StmtOfUse)->getEndLoc())
             .getEnd();
-    if (SM.getFileID(IfInsertionLoc) != SM.getFileID(StmtEndLoc))
+    if (SM.getFileID(IfInsertionLoc) != SM.getFileID(StmtEndLoc)) {
       return;
+}
 
     StringRef Indentation = Lexer::getIndentationForLine(IfInsertionLoc, SM);
     const char *ExtraIndentation = "    ";
@@ -840,9 +894,10 @@ void DiagnoseUnguardedAvailability::DiagnoseDeclAvailability(
     SourceLocation ElseInsertionLoc = Lexer::findLocationAfterToken(
         StmtEndLoc, tok::semi, SM, SemaRef.getLangOpts(),
         /*SkipTrailingWhitespaceAndNewLine=*/false);
-    if (ElseInsertionLoc.isInvalid())
+    if (ElseInsertionLoc.isInvalid()) {
       ElseInsertionLoc =
           Lexer::getLocForEndOfToken(StmtEndLoc, 0, SM, SemaRef.getLangOpts());
+}
     FixItOS.str().clear();
     FixItOS << "\n"
             << Indentation << "} else {\n"
@@ -857,8 +912,9 @@ bool DiagnoseUnguardedAvailability::VisitTypeLoc(TypeLoc Ty) {
   const Type *TyPtr = Ty.getTypePtr();
   SourceRange Range{Ty.getBeginLoc(), Ty.getEndLoc()};
 
-  if (Range.isInvalid())
+  if (Range.isInvalid()) {
     return true;
+}
 
   if (const auto *TT = dyn_cast<TagType>(TyPtr)) {
     TagDecl *TD = TT->getDecl();
@@ -869,8 +925,9 @@ bool DiagnoseUnguardedAvailability::VisitTypeLoc(TypeLoc Ty) {
     DiagnoseDeclAvailability(D, Range);
 
   } else if (const auto *ObjCO = dyn_cast<ObjCObjectType>(TyPtr)) {
-    if (NamedDecl *D = ObjCO->getInterface())
+    if (NamedDecl *D = ObjCO->getInterface()) {
       DiagnoseDeclAvailability(D, Range);
+}
   }
 
   return true;
@@ -883,8 +940,9 @@ bool DiagnoseUnguardedAvailability::TraverseIfStmt(IfStmt *If) {
 
     // If we're using the '*' case here or if this check is redundant, then we
     // use the enclosing version to check both branches.
-    if (CondVersion.empty() || CondVersion <= AvailabilityStack.back())
+    if (CondVersion.empty() || CondVersion <= AvailabilityStack.back()) {
       return TraverseStmt(If->getThen()) && TraverseStmt(If->getElse());
+}
   } else {
     // This isn't an availability checking 'if', we can just continue.
     return Base::TraverseIfStmt(If);
@@ -905,14 +963,16 @@ void Sema::DiagnoseUnguardedAvailabilityViolations(Decl *D) {
   if (auto *FD = D->getAsFunction()) {
     // FIXME: We only examine the pattern decl for availability violations now,
     // but we should also examine instantiated templates.
-    if (FD->isTemplateInstantiation())
+    if (FD->isTemplateInstantiation()) {
       return;
+}
 
     Body = FD->getBody();
-  } else if (auto *MD = dyn_cast<ObjCMethodDecl>(D))
+  } else if (auto *MD = dyn_cast<ObjCMethodDecl>(D)) {
     Body = MD->getBody();
-  else if (auto *BD = dyn_cast<BlockDecl>(D))
+  } else if (auto *BD = dyn_cast<BlockDecl>(D)) {
     Body = BD->getBody();
+}
 
   assert(Body && "Need a body here!");
 
@@ -931,12 +991,14 @@ void Sema::DiagnoseAvailabilityOfDecl(NamedDecl *D,
   // See if this declaration is unavailable, deprecated, or partial.
   std::tie(Result, OffendingDecl) =
       ShouldDiagnoseAvailabilityOfDecl(*this, D, &Message, ClassReceiver);
-  if (Result == AR_Available)
+  if (Result == AR_Available) {
     return;
+}
 
   if (Result == AR_NotYetIntroduced) {
-    if (AvoidPartialAvailabilityChecks)
+    if (AvoidPartialAvailabilityChecks) {
       return;
+}
 
     // We need to know the @available context in the current function to
     // diagnose this use, let DiagnoseUnguardedAvailabilityViolations do that
@@ -954,8 +1016,9 @@ void Sema::DiagnoseAvailabilityOfDecl(NamedDecl *D,
   if (const auto *MD = dyn_cast<ObjCMethodDecl>(D)) {
     if (const ObjCPropertyDecl *PD = MD->findPropertyDecl()) {
       AvailabilityResult PDeclResult = PD->getAvailability(nullptr);
-      if (PDeclResult == Result)
+      if (PDeclResult == Result) {
         ObjCPDecl = PD;
+}
     }
   }
 

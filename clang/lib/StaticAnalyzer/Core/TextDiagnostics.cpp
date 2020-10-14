@@ -102,22 +102,25 @@ public:
 
       // First, add extra notes, even if paths should not be included.
       for (const auto &Piece : PD->path) {
-        if (!isa<PathDiagnosticNotePiece>(Piece.get()))
+        if (!isa<PathDiagnosticNotePiece>(Piece.get())) {
           continue;
+}
 
         reportPiece(NoteID, Piece->getLocation().asLocation(),
                     Piece->getString(), Piece->getRanges(),
                     Piece->getFixits());
       }
 
-      if (!IncludePath)
+      if (!IncludePath) {
         continue;
+}
 
       // Then, add the path notes if necessary.
       PathPieces FlatPath = PD->path.flatten(/*ShouldFlattenMacros=*/true);
       for (const auto &Piece : FlatPath) {
-        if (isa<PathDiagnosticNotePiece>(Piece.get()))
+        if (isa<PathDiagnosticNotePiece>(Piece.get())) {
           continue;
+}
 
         reportPiece(NoteID, Piece->getLocation().asLocation(),
                     Piece->getString(), Piece->getRanges(),
@@ -125,8 +128,9 @@ public:
       }
     }
 
-    if (!ApplyFixIts || Repls.empty())
+    if (!ApplyFixIts || Repls.empty()) {
       return;
+}
 
     Rewriter Rewrite(SM, LO);
     if (!applyAllReplacements(Repls, Rewrite)) {

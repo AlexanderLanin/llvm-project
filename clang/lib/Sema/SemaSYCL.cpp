@@ -23,10 +23,12 @@ Sema::DeviceDiagBuilder Sema::SYCLDiagIfDeviceCode(SourceLocation Loc,
          "Should only be called during SYCL compilation");
   FunctionDecl *FD = dyn_cast<FunctionDecl>(getCurLexicalContext());
   DeviceDiagBuilder::Kind DiagKind = [this, FD] {
-    if (!FD)
+    if (!FD) {
       return DeviceDiagBuilder::K_Nop;
-    if (getEmissionStatus(FD) == Sema::FunctionEmissionStatus::Emitted)
+}
+    if (getEmissionStatus(FD) == Sema::FunctionEmissionStatus::Emitted) {
       return DeviceDiagBuilder::K_ImmediateWithCallStack;
+}
     return DeviceDiagBuilder::K_Deferred;
   }();
   return DeviceDiagBuilder(DiagKind, Loc, DiagID, FD, *this);
@@ -39,8 +41,9 @@ bool Sema::checkSYCLDeviceFunction(SourceLocation Loc, FunctionDecl *Callee) {
 
   // Errors in unevaluated context don't need to be generated,
   // so we can safely skip them.
-  if (isUnevaluatedContext() || isConstantEvaluated())
+  if (isUnevaluatedContext() || isConstantEvaluated()) {
     return true;
+}
 
   DeviceDiagBuilder::Kind DiagKind = DeviceDiagBuilder::K_Nop;
 

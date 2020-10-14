@@ -48,8 +48,9 @@ public:
   }
 
   unsigned getStaticLocalNumber(const VarDecl *VD) override {
-    if (VD->getTLSKind())
+    if (VD->getTLSKind()) {
       return ++StaticThreadlocalNumber;
+}
     return ++StaticLocalNumber;
   }
 
@@ -81,8 +82,9 @@ public:
 
   CallingConv getDefaultMethodCallConv(bool isVariadic) const override {
     if (!isVariadic &&
-        Context.getTargetInfo().getTriple().getArch() == llvm::Triple::x86)
+        Context.getTargetInfo().getTriple().getArch() == llvm::Triple::x86) {
       return CC_X86ThisCall;
+}
     return Context.getTargetInfo().getDefaultCallingConv();
   }
 
@@ -108,8 +110,9 @@ public:
     TD = TD->getCanonicalDecl();
     DD = DD->getCanonicalDecl();
     TypedefNameDecl *&I = UnnamedTagDeclToTypedefNameDecl[TD];
-    if (!I)
+    if (!I) {
       I = DD;
+}
   }
 
   TypedefNameDecl *getTypedefNameForUnnamedTagDecl(const TagDecl *TD) override {
@@ -122,8 +125,9 @@ public:
     TD = TD->getCanonicalDecl();
     DD = cast<DeclaratorDecl>(DD->getCanonicalDecl());
     DeclaratorDecl *&I = UnnamedTagDeclToDeclaratorDecl[TD];
-    if (!I)
+    if (!I) {
       I = DD;
+}
   }
 
   DeclaratorDecl *getDeclaratorForUnnamedTagDecl(const TagDecl *TD) override {
@@ -143,25 +147,30 @@ public:
 // we have a non-primary base class, which uses the multiple inheritance model.
 static bool usesMultipleInheritanceModel(const CXXRecordDecl *RD) {
   while (RD->getNumBases() > 0) {
-    if (RD->getNumBases() > 1)
+    if (RD->getNumBases() > 1) {
       return true;
+}
     assert(RD->getNumBases() == 1);
     const CXXRecordDecl *Base =
         RD->bases_begin()->getType()->getAsCXXRecordDecl();
-    if (RD->isPolymorphic() && !Base->isPolymorphic())
+    if (RD->isPolymorphic() && !Base->isPolymorphic()) {
       return true;
+}
     RD = Base;
   }
   return false;
 }
 
 MSInheritanceModel CXXRecordDecl::calculateInheritanceModel() const {
-  if (!hasDefinition() || isParsingBaseSpecifiers())
+  if (!hasDefinition() || isParsingBaseSpecifiers()) {
     return MSInheritanceModel::Unspecified;
-  if (getNumVBases() > 0)
+}
+  if (getNumVBases() > 0) {
     return MSInheritanceModel::Virtual;
-  if (usesMultipleInheritanceModel(this))
+}
+  if (usesMultipleInheritanceModel(this)) {
     return MSInheritanceModel::Multiple;
+}
   return MSInheritanceModel::Single;
 }
 
@@ -178,8 +187,9 @@ bool CXXRecordDecl::nullFieldOffsetIsZero() const {
 }
 
 MSVtorDispMode CXXRecordDecl::getMSVtorDispMode() const {
-  if (MSVtorDispAttr *VDA = getAttr<MSVtorDispAttr>())
+  if (MSVtorDispAttr *VDA = getAttr<MSVtorDispAttr>()) {
     return VDA->getVtorDispMode();
+}
   return getASTContext().getLangOpts().getVtorDispMode();
 }
 
@@ -218,17 +228,21 @@ getMSMemberPointerSlots(const MemberPointerType *MPT) {
   MSInheritanceModel Inheritance = RD->getMSInheritanceModel();
   unsigned Ptrs = 0;
   unsigned Ints = 0;
-  if (MPT->isMemberFunctionPointer())
+  if (MPT->isMemberFunctionPointer()) {
     Ptrs = 1;
-  else
+  } else {
     Ints = 1;
+}
   if (inheritanceModelHasNVOffsetField(MPT->isMemberFunctionPointer(),
-                                          Inheritance))
+                                          Inheritance)) {
     Ints++;
-  if (inheritanceModelHasVBPtrOffsetField(Inheritance))
+}
+  if (inheritanceModelHasVBPtrOffsetField(Inheritance)) {
     Ints++;
-  if (inheritanceModelHasVBTableOffsetField(Inheritance))
+}
+  if (inheritanceModelHasVBTableOffsetField(Inheritance)) {
     Ints++;
+}
   return std::make_pair(Ptrs, Ints);
 }
 
@@ -249,12 +263,13 @@ CXXABI::MemberPointerInfo MicrosoftCXXABI::getMemberPointerInfo(
   // When MSVC does x86_32 record layout, it aligns aggregate member pointers to
   // 8 bytes.  However, __alignof usually returns 4 for data memptrs and 8 for
   // function memptrs.
-  if (Ptrs + Ints > 1 && Target.getTriple().isArch32Bit())
+  if (Ptrs + Ints > 1 && Target.getTriple().isArch32Bit()) {
     MPI.Align = 64;
-  else if (Ptrs)
+  } else if (Ptrs) {
     MPI.Align = Target.getPointerAlign(0);
-  else
+  } else {
     MPI.Align = Target.getIntAlign();
+}
 
   if (Target.getTriple().isArch64Bit()) {
     MPI.Width = llvm::alignTo(MPI.Width, MPI.Align);

@@ -41,8 +41,9 @@ AST_POLYMORPHIC_MATCHER_P(
 
 AST_MATCHER_P(DeducedTemplateSpecializationType, refsToTemplatedDecl,
               clang::ast_matchers::internal::Matcher<NamedDecl>, DeclMatcher) {
-  if (const auto *TD = Node.getTemplateName().getAsTemplateDecl())
+  if (const auto *TD = Node.getTemplateName().getAsTemplateDecl()) {
     return DeclMatcher.matches(*TD, Finder, Builder);
+}
   return false;
 }
 } // namespace
@@ -79,23 +80,27 @@ void UnusedUsingDeclsCheck::registerMatchers(MatchFinder *Finder) {
 }
 
 void UnusedUsingDeclsCheck::check(const MatchFinder::MatchResult &Result) {
-  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred())
+  if (Result.Context->getDiagnostics().hasUncompilableErrorOccurred()) {
     return;
+}
 
   if (const auto *Using = Result.Nodes.getNodeAs<UsingDecl>("using")) {
     // Ignores using-declarations defined in macros.
-    if (Using->getLocation().isMacroID())
+    if (Using->getLocation().isMacroID()) {
       return;
+}
 
     // Ignores using-declarations defined in class definition.
-    if (isa<CXXRecordDecl>(Using->getDeclContext()))
+    if (isa<CXXRecordDecl>(Using->getDeclContext())) {
       return;
+}
 
     // FIXME: We ignore using-decls defined in function definitions at the
     // moment because of false positives caused by ADL and different function
     // scopes.
-    if (isa<FunctionDecl>(Using->getDeclContext()))
+    if (isa<FunctionDecl>(Using->getDeclContext())) {
       return;
+}
 
     UsingDeclContext Context(Using);
     Context.UsingDeclRange = CharSourceRange::getCharRange(
@@ -105,11 +110,13 @@ void UnusedUsingDeclsCheck::check(const MatchFinder::MatchResult &Result) {
             /*SkipTrailingWhitespaceAndNewLine=*/true));
     for (const auto *UsingShadow : Using->shadows()) {
       const auto *TargetDecl = UsingShadow->getTargetDecl()->getCanonicalDecl();
-      if (ShouldCheckDecl(TargetDecl))
+      if (ShouldCheckDecl(TargetDecl)) {
         Context.UsingTargetDecls.insert(TargetDecl);
+}
     }
-    if (!Context.UsingTargetDecls.empty())
+    if (!Context.UsingTargetDecls.empty()) {
       Contexts.push_back(Context);
+}
     return;
   }
 
@@ -123,11 +130,13 @@ void UnusedUsingDeclsCheck::check(const MatchFinder::MatchResult &Result) {
                    dyn_cast<ClassTemplateSpecializationDecl>(Used)) {
       removeFromFoundDecls(Specialization->getSpecializedTemplate());
     } else if (const auto *FD = dyn_cast<FunctionDecl>(Used)) {
-      if (const auto *FDT = FD->getPrimaryTemplate())
+      if (const auto *FDT = FD->getPrimaryTemplate()) {
         removeFromFoundDecls(FDT);
+}
     } else if (const auto *ECD = dyn_cast<EnumConstantDecl>(Used)) {
-      if (const auto *ET = ECD->getType()->getAs<EnumType>())
+      if (const auto *ET = ECD->getType()->getAs<EnumType>()) {
         removeFromFoundDecls(ET->getDecl());
+}
     }
   };
   // We rely on the fact that the clang AST is walked in order, usages are only
@@ -139,11 +148,13 @@ void UnusedUsingDeclsCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *Used = Result.Nodes.getNodeAs<TemplateArgument>("used")) {
     if (Used->getKind() == TemplateArgument::Template) {
-      if (const auto *TD = Used->getAsTemplate().getAsTemplateDecl())
+      if (const auto *TD = Used->getAsTemplate().getAsTemplateDecl()) {
         removeFromFoundDecls(TD);
+}
     } else if (Used->getKind() == TemplateArgument::Type) {
-      if (auto *RD = Used->getAsType()->getAsCXXRecordDecl())
+      if (auto *RD = Used->getAsType()->getAsCXXRecordDecl()) {
         removeFromFoundDecls(RD);
+}
     } else if (Used->getKind() == TemplateArgument::Declaration) {
       RemoveNamedDecl(Used->getAsDecl());
     }
@@ -157,23 +168,26 @@ void UnusedUsingDeclsCheck::check(const MatchFinder::MatchResult &Result) {
   // Check the uninstantiated template function usage.
   if (const auto *ULE = Result.Nodes.getNodeAs<UnresolvedLookupExpr>("used")) {
     for (const NamedDecl *ND : ULE->decls()) {
-      if (const auto *USD = dyn_cast<UsingShadowDecl>(ND))
+      if (const auto *USD = dyn_cast<UsingShadowDecl>(ND)) {
         removeFromFoundDecls(USD->getTargetDecl()->getCanonicalDecl());
+}
     }
   }
 }
 
 void UnusedUsingDeclsCheck::removeFromFoundDecls(const Decl *D) {
-  if (!D)
+  if (!D) {
     return;
+}
   // FIXME: Currently, we don't handle the using-decls being used in different
   // scopes (such as different namespaces, different functions). Instead of
   // giving an incorrect message, we mark all of them as used.
   //
   // FIXME: Use a more efficient way to find a matching context.
   for (auto &Context : Contexts) {
-    if (Context.UsingTargetDecls.count(D->getCanonicalDecl()) > 0)
+    if (Context.UsingTargetDecls.count(D->getCanonicalDecl()) > 0) {
       Context.IsUsed = true;
+}
   }
 }
 

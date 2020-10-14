@@ -81,35 +81,42 @@ void MallocOverflowSecurityChecker::CheckMallocArgument(
     if (const BinaryOperator *binop = dyn_cast<BinaryOperator>(e)) {
       BinaryOperatorKind opc = binop->getOpcode();
       // TODO: ignore multiplications by 1, reject if multiplied by 0.
-      if (mulop == nullptr && opc == BO_Mul)
+      if (mulop == nullptr && opc == BO_Mul) {
         mulop = binop;
-      if (opc != BO_Mul && opc != BO_Add && opc != BO_Sub && opc != BO_Shl)
+}
+      if (opc != BO_Mul && opc != BO_Add && opc != BO_Sub && opc != BO_Shl) {
         return;
+}
 
       const Expr *lhs = binop->getLHS();
       const Expr *rhs = binop->getRHS();
       if (rhs->isEvaluatable(Context)) {
         e = lhs;
         maxVal = rhs->EvaluateKnownConstInt(Context);
-        if (EvaluatesToZero(maxVal, opc))
+        if (EvaluatesToZero(maxVal, opc)) {
           return;
+}
       } else if ((opc == BO_Add || opc == BO_Mul) &&
                  lhs->isEvaluatable(Context)) {
         maxVal = lhs->EvaluateKnownConstInt(Context);
-        if (EvaluatesToZero(maxVal, opc))
+        if (EvaluatesToZero(maxVal, opc)) {
           return;
+}
         e = rhs;
-      } else
+      } else {
         return;
+}
     }
-    else if (isa<DeclRefExpr>(e) || isa<MemberExpr>(e))
+    else if (isa<DeclRefExpr>(e) || isa<MemberExpr>(e)) {
       break;
-    else
+    } else {
       return;
+}
   }
 
-  if (mulop == nullptr)
+  if (mulop == nullptr) {
     return;
+}
 
   //  We've found the right structure of malloc argument, now save
   // the data so when the body of the function is completely available
@@ -132,11 +139,13 @@ private:
     ASTContext &Context;
 
     bool isIntZeroExpr(const Expr *E) const {
-      if (!E->getType()->isIntegralOrEnumerationType())
+      if (!E->getType()->isIntegralOrEnumerationType()) {
         return false;
+}
       Expr::EvalResult Result;
-      if (E->EvaluateAsInt(Result, Context))
+      if (E->EvaluateAsInt(Result, Context)) {
         return Result.Val.getInt() == 0;
+}
       return false;
     }
 
@@ -149,8 +158,9 @@ private:
     void Erase(const T1 *DR,
                llvm::function_ref<bool(const MallocOverflowCheck &)> Pred) {
       auto P = [DR, Pred](const MallocOverflowCheck &Check) {
-        if (const auto *CheckDR = dyn_cast<T1>(Check.variable))
+        if (const auto *CheckDR = dyn_cast<T1>(Check.variable)) {
           return getDecl(CheckDR) == getDecl(DR) && Pred(Check);
+}
         return false;
       };
       toScanFor.erase(std::remove_if(toScanFor.begin(), toScanFor.end(), P),
@@ -160,9 +170,9 @@ private:
     void CheckExpr(const Expr *E_p) {
       auto PredTrue = [](const MallocOverflowCheck &) { return true; };
       const Expr *E = E_p->IgnoreParenImpCasts();
-      if (const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(E))
+      if (const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(E)) {
         Erase<DeclRefExpr>(DR, PredTrue);
-      else if (const auto *ME = dyn_cast<MemberExpr>(E)) {
+      } else if (const auto *ME = dyn_cast<MemberExpr>(E)) {
         Erase<MemberExpr>(ME, PredTrue);
       }
     }
@@ -180,8 +190,9 @@ private:
 
       // Erase if the multiplicand was assigned a constant value.
       const Expr *rhs = AssignEx->getRHS();
-      if (rhs->isEvaluatable(Context))
+      if (rhs->isEvaluatable(Context)) {
         assignKnown = true;
+}
 
       // Discard the report if the multiplicand was assigned a value,
       // that can never overflow after multiplication. e.g., the assignment
@@ -196,17 +207,20 @@ private:
             denomKnown = true;
           }
           const Expr *numerator = BOp->getLHS()->IgnoreParenImpCasts();
-          if (numerator->isEvaluatable(Context))
+          if (numerator->isEvaluatable(Context)) {
             numeratorKnown = true;
+}
         }
       }
-      if (!assignKnown && !denomKnown)
+      if (!assignKnown && !denomKnown) {
         return;
+}
       auto denomExtVal = denomVal.getExtValue();
 
       // Ignore negative denominator.
-      if (denomExtVal < 0)
+      if (denomExtVal < 0) {
         return;
+}
 
       const Expr *lhs = AssignEx->getLHS();
       const Expr *E = lhs->IgnoreParenImpCasts();
@@ -217,10 +231,11 @@ private:
                (numeratorKnown && (denomExtVal >= Check.maxVal.getExtValue()));
       };
 
-      if (const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(E))
+      if (const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(E)) {
         Erase<DeclRefExpr>(DR, pred);
-      else if (const auto *ME = dyn_cast<MemberExpr>(E))
+      } else if (const auto *ME = dyn_cast<MemberExpr>(E)) {
         Erase<MemberExpr>(ME, pred);
+}
     }
 
   public:
@@ -235,8 +250,9 @@ private:
           CheckExpr(rhs);
         }
       }
-      if (E->isAssignmentOp())
+      if (E->isAssignmentOp()) {
         CheckAssignmentExpr(E);
+}
       EvaluatedExprVisitor<CheckOverflowOps>::VisitBinaryOperator(E);
     }
 
@@ -270,8 +286,9 @@ void MallocOverflowSecurityChecker::OutputPossibleOverflows(
   SmallVectorImpl<MallocOverflowCheck> &PossibleMallocOverflows,
   const Decl *D, BugReporter &BR, AnalysisManager &mgr) const {
   // By far the most common case: nothing to check.
-  if (PossibleMallocOverflows.empty())
+  if (PossibleMallocOverflows.empty()) {
     return;
+}
 
   // Delete any possible overflows which have a comparison.
   CheckOverflowOps c(PossibleMallocOverflows, BR.getContext());
@@ -297,8 +314,9 @@ void MallocOverflowSecurityChecker::checkASTCodeBody(const Decl *D,
                                              BugReporter &BR) const {
 
   CFG *cfg = mgr.getCFG(D);
-  if (!cfg)
+  if (!cfg) {
     return;
+}
 
   // A list of variables referenced in possibly overflowing malloc operands.
   SmallVector<MallocOverflowCheck, 2> PossibleMallocOverflows;
@@ -312,18 +330,21 @@ void MallocOverflowSecurityChecker::checkASTCodeBody(const Decl *D,
           // Get the callee.
           const FunctionDecl *FD = TheCall->getDirectCallee();
 
-          if (!FD)
+          if (!FD) {
             continue;
+}
 
           // Get the name of the callee. If it's a builtin, strip off the prefix.
           IdentifierInfo *FnInfo = FD->getIdentifier();
-          if (!FnInfo)
+          if (!FnInfo) {
             continue;
+}
 
           if (FnInfo->isStr ("malloc") || FnInfo->isStr ("_MALLOC")) {
-            if (TheCall->getNumArgs() == 1)
+            if (TheCall->getNumArgs() == 1) {
               CheckMallocArgument(PossibleMallocOverflows, TheCall->getArg(0),
                                   mgr.getASTContext());
+}
           }
         }
       }

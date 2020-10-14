@@ -58,6 +58,7 @@ void clang_CXRewriter_writeMainFileToStdOut(CXRewriter Rew) {
 }
 
 void clang_CXRewriter_dispose(CXRewriter Rew) {
-  if (Rew)
+  if (Rew) {
     delete reinterpret_cast<clang::Rewriter *>(Rew);
+}
 }

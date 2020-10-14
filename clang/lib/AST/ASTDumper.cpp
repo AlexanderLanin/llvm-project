@@ -54,15 +54,17 @@ void ASTDumper::dumpLookups(const DeclContext *DC, bool DumpDecls) {
           NodeDumper.AddChild([=] {
             NodeDumper.dumpBareDeclRef(*RI);
 
-            if (!(*RI)->isUnconditionallyVisible())
+            if (!(*RI)->isUnconditionallyVisible()) {
               OS << " hidden";
+}
 
             // If requested, dump the redecl chain for this lookup.
             if (DumpDecls) {
               // Dump earliest decl first.
               std::function<void(Decl *)> DumpWithPrev = [&](Decl *D) {
-                if (Decl *Prev = D->getPreviousDecl())
+                if (Decl *Prev = D->getPreviousDecl()) {
                   DumpWithPrev(Prev);
+}
                 Visit(D);
               };
               DumpWithPrev(*RI);
@@ -102,15 +104,17 @@ void ASTDumper::dumpTemplateDeclSpecialization(const SpecializationDecl *D,
     switch (Redecl->getTemplateSpecializationKind()) {
     case TSK_ExplicitInstantiationDeclaration:
     case TSK_ExplicitInstantiationDefinition:
-      if (!DumpExplicitInst)
+      if (!DumpExplicitInst) {
         break;
+}
       LLVM_FALLTHROUGH;
     case TSK_Undeclared:
     case TSK_ImplicitInstantiation:
-      if (DumpRefOnly)
+      if (DumpRefOnly) {
         NodeDumper.dumpDeclRef(Redecl);
-      else
+      } else {
         Visit(Redecl);
+}
       DumpedAny = true;
       break;
     case TSK_ExplicitSpecialization:
@@ -119,8 +123,9 @@ void ASTDumper::dumpTemplateDeclSpecialization(const SpecializationDecl *D,
   }
 
   // Ensure we dump at least one decl for each specialization.
-  if (!DumpedAny)
+  if (!DumpedAny) {
     NodeDumper.dumpDeclRef(D);
+}
 }
 
 template <typename TemplateDecl>
@@ -129,9 +134,10 @@ void ASTDumper::dumpTemplateDecl(const TemplateDecl *D, bool DumpExplicitInst) {
 
   Visit(D->getTemplatedDecl());
 
-  for (const auto *Child : D->specializations())
+  for (const auto *Child : D->specializations()) {
     dumpTemplateDeclSpecialization(Child, DumpExplicitInst,
                                    !D->isCanonicalDecl());
+}
 }
 
 void ASTDumper::VisitFunctionTemplateDecl(const FunctionTemplateDecl *D) {
@@ -154,8 +160,9 @@ void ASTDumper::VisitVarTemplateDecl(const VarTemplateDecl *D) {
 //===----------------------------------------------------------------------===//
 
 void QualType::dump(const char *msg) const {
-  if (msg)
+  if (msg) {
     llvm::errs() << msg << ": ";
+}
   dump();
 }
 
@@ -214,8 +221,9 @@ LLVM_DUMP_METHOD void DeclContext::dumpLookups(raw_ostream &OS,
                                                bool DumpDecls,
                                                bool Deserialize) const {
   const DeclContext *DC = this;
-  while (!DC->isTranslationUnit())
+  while (!DC->isTranslationUnit()) {
     DC = DC->getParent();
+}
   const ASTContext &Ctx = cast<TranslationUnitDecl>(DC)->getASTContext();
   ASTDumper P(OS, Ctx, Ctx.getDiagnostics().getShowColors());
   P.setDeserialize(Deserialize);
@@ -248,8 +256,9 @@ LLVM_DUMP_METHOD void Stmt::dumpColor() const {
 
 LLVM_DUMP_METHOD void Comment::dump() const {
   const auto *FC = dyn_cast<FullComment>(this);
-  if (!FC)
+  if (!FC) {
     return;
+}
   ASTDumper Dumper(llvm::errs(), /*ShowColors=*/false);
   Dumper.Visit(FC, FC);
 }
@@ -257,16 +266,18 @@ LLVM_DUMP_METHOD void Comment::dump() const {
 LLVM_DUMP_METHOD void Comment::dump(raw_ostream &OS,
                                     const ASTContext &Context) const {
   const auto *FC = dyn_cast<FullComment>(this);
-  if (!FC)
+  if (!FC) {
     return;
+}
   ASTDumper Dumper(OS, Context, Context.getDiagnostics().getShowColors());
   Dumper.Visit(FC, FC);
 }
 
 LLVM_DUMP_METHOD void Comment::dumpColor() const {
   const auto *FC = dyn_cast<FullComment>(this);
-  if (!FC)
+  if (!FC) {
     return;
+}
   ASTDumper Dumper(llvm::errs(), /*ShowColors=*/true);
   Dumper.Visit(FC, FC);
 }

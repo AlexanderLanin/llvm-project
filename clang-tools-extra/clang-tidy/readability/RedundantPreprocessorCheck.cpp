@@ -61,12 +61,15 @@ public:
   }
 
   void Endif(SourceLocation Loc, SourceLocation IfLoc) override {
-    if (!IfStack.empty() && IfLoc == IfStack.back().Loc)
+    if (!IfStack.empty() && IfLoc == IfStack.back().Loc) {
       IfStack.pop_back();
-    if (!IfdefStack.empty() && IfLoc == IfdefStack.back().Loc)
+}
+    if (!IfdefStack.empty() && IfLoc == IfdefStack.back().Loc) {
       IfdefStack.pop_back();
-    if (!IfndefStack.empty() && IfLoc == IfndefStack.back().Loc)
+}
+    if (!IfndefStack.empty() && IfLoc == IfndefStack.back().Loc) {
       IfndefStack.pop_back();
+}
   }
 
 private:
@@ -84,9 +87,10 @@ private:
       }
     }
 
-    if (Store)
+    if (Store) {
       // This is an actual directive to be remembered.
       Stack.push_back({Loc, std::string(MacroName)});
+}
   }
 
   ClangTidyCheck &Check;

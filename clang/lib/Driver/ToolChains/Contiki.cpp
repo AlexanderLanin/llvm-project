@@ -21,7 +21,8 @@ Contiki::Contiki(const Driver &D, const llvm::Triple &Triple,
 SanitizerMask Contiki::getSupportedSanitizers() const {
   const bool IsX86 = getTriple().getArch() == llvm::Triple::x86;
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
-  if (IsX86)
+  if (IsX86) {
     Res |= SanitizerKind::SafeStack;
+}
   return Res;
 }

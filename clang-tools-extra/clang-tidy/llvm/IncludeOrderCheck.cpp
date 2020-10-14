@@ -58,17 +58,20 @@ void IncludeOrderCheck::registerPPCallbacks(const SourceManager &SM,
 
 static int getPriority(StringRef Filename, bool IsAngled, bool IsMainModule) {
   // We leave the main module header at the top.
-  if (IsMainModule)
+  if (IsMainModule) {
     return 0;
+}
 
   // LLVM and clang headers are in the penultimate position.
   if (Filename.startswith("llvm/") || Filename.startswith("llvm-c/") ||
-      Filename.startswith("clang/") || Filename.startswith("clang-c/"))
+      Filename.startswith("clang/") || Filename.startswith("clang-c/")) {
     return 2;
+}
 
   // System headers are sorted to the end.
-  if (IsAngled || Filename.startswith("gtest/"))
+  if (IsAngled || Filename.startswith("gtest/")) {
     return 3;
+}
 
   // Other headers are inserted between the main module header and LLVM headers.
   return 1;
@@ -94,8 +97,9 @@ void IncludeOrderPPCallbacks::InclusionDirective(
 
 void IncludeOrderPPCallbacks::EndOfMainFile() {
   LookForMainModule = true;
-  if (IncludeDirectives.empty())
+  if (IncludeDirectives.empty()) {
     return;
+}
 
   // TODO: find duplicated includes.
 
@@ -107,19 +111,22 @@ void IncludeOrderPPCallbacks::EndOfMainFile() {
   for (auto &Bucket : IncludeDirectives) {
     auto &FileDirectives = Bucket.second;
     std::vector<unsigned> Blocks(1, 0);
-    for (unsigned I = 1, E = FileDirectives.size(); I != E; ++I)
+    for (unsigned I = 1, E = FileDirectives.size(); I != E; ++I) {
       if (SM.getExpansionLineNumber(FileDirectives[I].Loc) !=
-          SM.getExpansionLineNumber(FileDirectives[I - 1].Loc) + 1)
+          SM.getExpansionLineNumber(FileDirectives[I - 1].Loc) + 1) {
         Blocks.push_back(I);
+}
+}
     Blocks.push_back(FileDirectives.size()); // Sentinel value.
 
     // Get a vector of indices.
     std::vector<unsigned> IncludeIndices;
-    for (unsigned I = 0, E = FileDirectives.size(); I != E; ++I)
+    for (unsigned I = 0, E = FileDirectives.size(); I != E; ++I) {
       IncludeIndices.push_back(I);
+}
 
     // Sort the includes. We first sort by priority, then lexicographically.
-    for (unsigned BI = 0, BE = Blocks.size() - 1; BI != BE; ++BI)
+    for (unsigned BI = 0, BE = Blocks.size() - 1; BI != BE; ++BI) {
       std::sort(IncludeIndices.begin() + Blocks[BI],
                 IncludeIndices.begin() + Blocks[BI + 1],
                 [&FileDirectives](unsigned LHSI, unsigned RHSI) {
@@ -134,18 +141,22 @@ void IncludeOrderPPCallbacks::EndOfMainFile() {
                   return std::tie(PriorityLHS, LHS.Filename) <
                          std::tie(PriorityRHS, RHS.Filename);
                 });
+}
 
     // Emit a warning for each block and fixits for all changes within that
     // block.
     for (unsigned BI = 0, BE = Blocks.size() - 1; BI != BE; ++BI) {
       // Find the first include that's not in the right position.
       unsigned I, E;
-      for (I = Blocks[BI], E = Blocks[BI + 1]; I != E; ++I)
-        if (IncludeIndices[I] != I)
+      for (I = Blocks[BI], E = Blocks[BI + 1]; I != E; ++I) {
+        if (IncludeIndices[I] != I) {
           break;
+}
+}
 
-      if (I == E)
+      if (I == E) {
         continue;
+}
 
       // Emit a warning.
       auto D = Check.diag(FileDirectives[I].Loc,
@@ -153,8 +164,9 @@ void IncludeOrderPPCallbacks::EndOfMainFile() {
 
       // Emit fix-its for all following includes in this block.
       for (; I != E; ++I) {
-        if (IncludeIndices[I] == I)
+        if (IncludeIndices[I] == I) {
           continue;
+}
         const IncludeDirective &CopyFrom = FileDirectives[IncludeIndices[I]];
 
         SourceLocation FromLoc = CopyFrom.Range.getBegin();

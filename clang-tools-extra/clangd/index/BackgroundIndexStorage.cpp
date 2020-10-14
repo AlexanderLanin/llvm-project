@@ -56,13 +56,15 @@ public:
     const std::string ShardPath =
         getShardPathFromFilePath(DiskShardRoot, ShardIdentifier);
     auto Buffer = llvm::MemoryBuffer::getFile(ShardPath);
-    if (!Buffer)
+    if (!Buffer) {
       return nullptr;
-    if (auto I = readIndexFile(Buffer->get()->getBuffer()))
+}
+    if (auto I = readIndexFile(Buffer->get()->getBuffer())) {
       return std::make_unique<IndexFileIn>(std::move(*I));
-    else
+    } else {
       elog("Error while reading shard {0}: {1}", ShardIdentifier,
            I.takeError());
+}
     return nullptr;
   }
 
@@ -104,8 +106,9 @@ public:
       : IndexStorageMapMu(std::make_unique<std::mutex>()),
         GetProjectInfo(std::move(GetProjectInfo)) {
     llvm::SmallString<128> FallbackDir;
-    if (llvm::sys::path::cache_directory(FallbackDir))
+    if (llvm::sys::path::cache_directory(FallbackDir)) {
       llvm::sys::path::append(FallbackDir, "clangd", "index");
+}
     this->FallbackDir = FallbackDir.str().str();
   }
 
@@ -118,8 +121,9 @@ public:
       llvm::sys::path::append(StorageDir, ".cache", "clangd", "index");
     }
     auto &IndexStorage = IndexStorageMap[StorageDir];
-    if (!IndexStorage)
+    if (!IndexStorage) {
       IndexStorage = create(StorageDir);
+}
     return IndexStorage.get();
   }
 

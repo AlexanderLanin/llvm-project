@@ -38,10 +38,11 @@ static void mangleFunctionBlock(MangleContext &Context,
                                 const BlockDecl *BD,
                                 raw_ostream &Out) {
   unsigned discriminator = Context.getBlockId(BD, true);
-  if (discriminator == 0)
+  if (discriminator == 0) {
     Out << "__" << Outer << "_block_invoke";
-  else
+  } else {
     Out << "__" << Outer << "_block_invoke_" << discriminator+1;
+}
 }
 
 void MangleContext::anchor() { }
@@ -56,10 +57,12 @@ enum CCMangling {
 };
 
 static bool isExternC(const NamedDecl *ND) {
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND))
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND)) {
     return FD->isExternC();
-  if (const VarDecl *VD = dyn_cast<VarDecl>(ND))
+}
+  if (const VarDecl *VD = dyn_cast<VarDecl>(ND)) {
     return VD->isExternC();
+}
   return false;
 }
 
@@ -72,21 +75,27 @@ static CCMangling getCallingConvMangling(const ASTContext &Context,
   // can call it with the correct function signature.
   // On Emscripten, users may be exporting "main" and expecting to call it
   // themselves, so we can't mangle it.
-  if (Triple.isWasm() && !Triple.isOSEmscripten())
-    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND))
-      if (FD->isMain() && FD->hasPrototype() && FD->param_size() == 2)
+  if (Triple.isWasm() && !Triple.isOSEmscripten()) {
+    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND)) {
+      if (FD->isMain() && FD->hasPrototype() && FD->param_size() == 2) {
         return CCM_WasmMainArgcArgv;
+}
+}
+}
 
-  if (!Triple.isOSWindows() || !Triple.isX86())
+  if (!Triple.isOSWindows() || !Triple.isX86()) {
     return CCM_Other;
+}
 
   if (Context.getLangOpts().CPlusPlus && !isExternC(ND) &&
-      TI.getCXXABI() == TargetCXXABI::Microsoft)
+      TI.getCXXABI() == TargetCXXABI::Microsoft) {
     return CCM_Other;
+}
 
   const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND);
-  if (!FD)
+  if (!FD) {
     return CCM_Other;
+}
   QualType T = FD->getType();
 
   const FunctionType *FT = T->castAs<FunctionType>();
@@ -108,26 +117,31 @@ bool MangleContext::shouldMangleDeclName(const NamedDecl *D) {
   const ASTContext &ASTContext = getASTContext();
 
   CCMangling CC = getCallingConvMangling(ASTContext, D);
-  if (CC != CCM_Other)
+  if (CC != CCM_Other) {
     return true;
+}
 
   // If the declaration has an owning module for linkage purposes that needs to
   // be mangled, we must mangle its name.
-  if (!D->hasExternalFormalLinkage() && D->getOwningModuleForLinkage())
+  if (!D->hasExternalFormalLinkage() && D->getOwningModuleForLinkage()) {
     return true;
+}
 
   // In C, functions with no attributes never need to be mangled. Fastpath them.
-  if (!getASTContext().getLangOpts().CPlusPlus && !D->hasAttrs())
+  if (!getASTContext().getLangOpts().CPlusPlus && !D->hasAttrs()) {
     return false;
+}
 
   // Any decl can be declared with __asm("foo") on it, and this takes precedence
   // over all other naming in the .o file.
-  if (D->hasAttr<AsmLabelAttr>())
+  if (D->hasAttr<AsmLabelAttr>()) {
     return true;
+}
 
   // Declarations that don't have identifier names always need to be mangled.
-  if (isa<MSGuidDecl>(D))
+  if (isa<MSGuidDecl>(D)) {
     return true;
+}
 
   return shouldMangleCXXName(D);
 }
@@ -153,15 +167,17 @@ void MangleContext::mangleName(GlobalDecl GD, raw_ostream &Out) {
     // marker.
     char GlobalPrefix =
         getASTContext().getTargetInfo().getDataLayout().getGlobalPrefix();
-    if (GlobalPrefix)
+    if (GlobalPrefix) {
       Out << '\01'; // LLVM IR Marker for __asm("foo")
+}
 
     Out << ALA->getLabel();
     return;
   }
 
-  if (auto *GD = dyn_cast<MSGuidDecl>(D))
+  if (auto *GD = dyn_cast<MSGuidDecl>(D)) {
     return mangleMSGuidDecl(GD, Out);
+}
 
   const ASTContext &ASTContext = getASTContext();
   CCMangling CC = getCallingConvMangling(ASTContext, D);
@@ -174,33 +190,37 @@ void MangleContext::mangleName(GlobalDecl GD, raw_ostream &Out) {
   bool MCXX = shouldMangleCXXName(D);
   const TargetInfo &TI = Context.getTargetInfo();
   if (CC == CCM_Other || (MCXX && TI.getCXXABI() == TargetCXXABI::Microsoft)) {
-    if (const ObjCMethodDecl *OMD = dyn_cast<ObjCMethodDecl>(D))
+    if (const ObjCMethodDecl *OMD = dyn_cast<ObjCMethodDecl>(D)) {
       mangleObjCMethodNameAsSourceName(OMD, Out);
-    else
+    } else {
       mangleCXXName(GD, Out);
+}
     return;
   }
 
   Out << '\01';
-  if (CC == CCM_Std)
+  if (CC == CCM_Std) {
     Out << '_';
-  else if (CC == CCM_Fast)
+  } else if (CC == CCM_Fast) {
     Out << '@';
-  else if (CC == CCM_RegCall)
+  } else if (CC == CCM_RegCall) {
     Out << "__regcall3__";
+}
 
-  if (!MCXX)
+  if (!MCXX) {
     Out << D->getIdentifier()->getName();
-  else if (const ObjCMethodDecl *OMD = dyn_cast<ObjCMethodDecl>(D))
+  } else if (const ObjCMethodDecl *OMD = dyn_cast<ObjCMethodDecl>(D)) {
     mangleObjCMethodNameAsSourceName(OMD, Out);
-  else
+  } else {
     mangleCXXName(GD, Out);
+}
 
   const FunctionDecl *FD = cast<FunctionDecl>(D);
   const FunctionType *FT = FD->getType()->castAs<FunctionType>();
   const FunctionProtoType *Proto = dyn_cast<FunctionProtoType>(FT);
-  if (CC == CCM_Vector)
+  if (CC == CCM_Vector) {
     Out << '@';
+}
   Out << '@';
   if (!Proto) {
     Out << '0';
@@ -208,14 +228,17 @@ void MangleContext::mangleName(GlobalDecl GD, raw_ostream &Out) {
   }
   assert(!Proto->isVariadic());
   unsigned ArgWords = 0;
-  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD))
-    if (!MD->isStatic())
+  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD)) {
+    if (!MD->isStatic()) {
       ++ArgWords;
-  for (const auto &AT : Proto->param_types())
+}
+}
+  for (const auto &AT : Proto->param_types()) {
     // Size should be aligned to pointer size.
     ArgWords +=
         llvm::alignTo(ASTContext.getTypeSize(AT), TI.getPointerWidth(0)) /
         TI.getPointerWidth(0);
+}
   Out << ((TI.getPointerWidth(0) / 8) * ArgWords);
 }
 
@@ -228,8 +251,9 @@ void MangleContext::mangleMSGuidDecl(const MSGuidDecl *GD, raw_ostream &Out) {
   unsigned I = 0;
   for (uint8_t C : P.Part4And5) {
     Out << llvm::format("%02" PRIx8, C);
-    if (++I == 2)
+    if (++I == 2) {
       Out << "_";
+}
   }
 }
 
@@ -238,16 +262,17 @@ void MangleContext::mangleGlobalBlock(const BlockDecl *BD,
                                       raw_ostream &Out) {
   unsigned discriminator = getBlockId(BD, false);
   if (ID) {
-    if (shouldMangleDeclName(ID))
+    if (shouldMangleDeclName(ID)) {
       mangleName(ID, Out);
-    else {
+    } else {
       Out << ID->getIdentifier()->getName();
     }
   }
-  if (discriminator == 0)
+  if (discriminator == 0) {
     Out << "_block_invoke";
-  else
+  } else {
     Out << "_block_invoke_" << discriminator+1;
+}
 }
 
 void MangleContext::mangleCtorBlock(const CXXConstructorDecl *CD,
@@ -279,19 +304,21 @@ void MangleContext::mangleBlock(const DeclContext *DC, const BlockDecl *BD,
   } else {
     assert((isa<NamedDecl>(DC) || isa<BlockDecl>(DC)) &&
            "expected a NamedDecl or BlockDecl");
-    if (isa<BlockDecl>(DC))
-      for (; DC && isa<BlockDecl>(DC); DC = DC->getParent())
+    if (isa<BlockDecl>(DC)) {
+      for (; DC && isa<BlockDecl>(DC); DC = DC->getParent()) {
         (void) getBlockId(cast<BlockDecl>(DC), true);
+}
+}
     assert((isa<TranslationUnitDecl>(DC) || isa<NamedDecl>(DC)) &&
            "expected a TranslationUnitDecl or a NamedDecl");
-    if (const auto *CD = dyn_cast<CXXConstructorDecl>(DC))
+    if (const auto *CD = dyn_cast<CXXConstructorDecl>(DC)) {
       mangleCtorBlock(CD, /*CT*/ Ctor_Complete, BD, Out);
-    else if (const auto *DD = dyn_cast<CXXDestructorDecl>(DC))
+    } else if (const auto *DD = dyn_cast<CXXDestructorDecl>(DC)) {
       mangleDtorBlock(DD, /*DT*/ Dtor_Complete, BD, Out);
-    else if (auto ND = dyn_cast<NamedDecl>(DC)) {
-      if (!shouldMangleDeclName(ND) && ND->getIdentifier())
+    } else if (auto ND = dyn_cast<NamedDecl>(DC)) {
+      if (!shouldMangleDeclName(ND) && ND->getIdentifier()) {
         Stream << ND->getIdentifier()->getName();
-      else {
+      } else {
         // FIXME: We were doing a mangleUnqualifiedName() before, but that's
         // a private member of a class that will soon itself be private to the
         // Itanium C++ ABI object. What should we do now? Right now, I'm just
@@ -317,8 +344,9 @@ void MangleContext::mangleObjCMethodName(const ObjCMethodDecl *MD,
        << MD->getClassInterface()->getName() << '_';
 
     if (includeCategoryNamespace) {
-      if (auto category = MD->getCategory())
+      if (auto category = MD->getCategory()) {
         OS << category->getName();
+}
     }
     OS << '_';
 
@@ -327,14 +355,16 @@ void MangleContext::mangleObjCMethodName(const ObjCMethodDecl *MD,
                   numArgs = selector.getNumArgs(),
                   slotEnd = std::max(numArgs, 1U);
            slotIndex != slotEnd; ++slotIndex) {
-      if (auto name = selector.getIdentifierInfoForSlot(slotIndex))
+      if (auto name = selector.getIdentifierInfoForSlot(slotIndex)) {
         OS << name->getName();
+}
 
       // Replace all the positions that would've been ':' with '_'.
       // That's after each slot except that a unary selector doesn't
       // end in ':'.
-      if (numArgs)
+      if (numArgs) {
         OS << '_';
+}
     }
 
     return;
@@ -385,13 +415,16 @@ public:
     SmallString<128> FrontendBuf;
     llvm::raw_svector_ostream FrontendBufOS(FrontendBuf);
     if (auto *FD = dyn_cast<FunctionDecl>(D)) {
-      if (FD->isDependentContext())
+      if (FD->isDependentContext()) {
         return true;
-      if (writeFuncOrVarName(FD, FrontendBufOS))
+}
+      if (writeFuncOrVarName(FD, FrontendBufOS)) {
         return true;
+}
     } else if (auto *VD = dyn_cast<VarDecl>(D)) {
-      if (writeFuncOrVarName(VD, FrontendBufOS))
+      if (writeFuncOrVarName(VD, FrontendBufOS)) {
         return true;
+}
     } else if (auto *MD = dyn_cast<ObjCMethodDecl>(D)) {
       MC->mangleObjCMethodName(MD, OS, /*includePrefixByte=*/false,
                                /*includeCategoryNamespace=*/true);
@@ -423,20 +456,23 @@ public:
 
   static StringRef getClassSymbolPrefix(ObjCKind Kind,
                                         const ASTContext &Context) {
-    if (Context.getLangOpts().ObjCRuntime.isGNUFamily())
+    if (Context.getLangOpts().ObjCRuntime.isGNUFamily()) {
       return Kind == ObjCMetaclass ? "_OBJC_METACLASS_" : "_OBJC_CLASS_";
+}
     return Kind == ObjCMetaclass ? "OBJC_METACLASS_$_" : "OBJC_CLASS_$_";
   }
 
   std::vector<std::string> getAllManglings(const ObjCContainerDecl *OCD) {
     StringRef ClassName;
-    if (const auto *OID = dyn_cast<ObjCInterfaceDecl>(OCD))
+    if (const auto *OID = dyn_cast<ObjCInterfaceDecl>(OCD)) {
       ClassName = OID->getObjCRuntimeNameAsString();
-    else if (const auto *OID = dyn_cast<ObjCImplementationDecl>(OCD))
+    } else if (const auto *OID = dyn_cast<ObjCImplementationDecl>(OCD)) {
       ClassName = OID->getObjCRuntimeNameAsString();
+}
 
-    if (ClassName.empty())
+    if (ClassName.empty()) {
       return {};
+}
 
     auto Mangle = [&](ObjCKind Kind, StringRef ClassName) -> std::string {
       SmallString<40> Mangled;
@@ -452,11 +488,13 @@ public:
   }
 
   std::vector<std::string> getAllManglings(const Decl *D) {
-    if (const auto *OCD = dyn_cast<ObjCContainerDecl>(D))
+    if (const auto *OCD = dyn_cast<ObjCContainerDecl>(D)) {
       return getAllManglings(OCD);
+}
 
-    if (!(isa<CXXRecordDecl>(D) || isa<CXXMethodDecl>(D)))
+    if (!(isa<CXXRecordDecl>(D) || isa<CXXMethodDecl>(D))) {
       return {};
+}
 
     const NamedDecl *ND = cast<NamedDecl>(D);
 
@@ -475,27 +513,36 @@ public:
     if (const auto *CD = dyn_cast_or_null<CXXConstructorDecl>(ND)) {
       Manglings.emplace_back(getMangledStructor(CD, Ctor_Base));
 
-      if (Ctx.getTargetInfo().getCXXABI().isItaniumFamily())
-        if (!CD->getParent()->isAbstract())
+      if (Ctx.getTargetInfo().getCXXABI().isItaniumFamily()) {
+        if (!CD->getParent()->isAbstract()) {
           Manglings.emplace_back(getMangledStructor(CD, Ctor_Complete));
+}
+}
 
-      if (Ctx.getTargetInfo().getCXXABI().isMicrosoft())
-        if (CD->hasAttr<DLLExportAttr>() && CD->isDefaultConstructor())
-          if (!(hasDefaultCXXMethodCC(Ctx, CD) && CD->getNumParams() == 0))
+      if (Ctx.getTargetInfo().getCXXABI().isMicrosoft()) {
+        if (CD->hasAttr<DLLExportAttr>() && CD->isDefaultConstructor()) {
+          if (!(hasDefaultCXXMethodCC(Ctx, CD) && CD->getNumParams() == 0)) {
             Manglings.emplace_back(getMangledStructor(CD, Ctor_DefaultClosure));
+}
+}
+}
     } else if (const auto *DD = dyn_cast_or_null<CXXDestructorDecl>(ND)) {
       Manglings.emplace_back(getMangledStructor(DD, Dtor_Base));
       if (Ctx.getTargetInfo().getCXXABI().isItaniumFamily()) {
         Manglings.emplace_back(getMangledStructor(DD, Dtor_Complete));
-        if (DD->isVirtual())
+        if (DD->isVirtual()) {
           Manglings.emplace_back(getMangledStructor(DD, Dtor_Deleting));
+}
       }
     } else if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(ND)) {
       Manglings.emplace_back(getName(ND));
-      if (MD->isVirtual())
-        if (const auto *TIV = Ctx.getVTableContext()->getThunkInfo(MD))
-          for (const auto &T : *TIV)
+      if (MD->isVirtual()) {
+        if (const auto *TIV = Ctx.getVTableContext()->getThunkInfo(MD)) {
+          for (const auto &T : *TIV) {
             Manglings.emplace_back(getMangledThunk(MD, T));
+}
+}
+}
     }
 
     return Manglings;
@@ -505,20 +552,22 @@ private:
   bool writeFuncOrVarName(const NamedDecl *D, raw_ostream &OS) {
     if (MC->shouldMangleDeclName(D)) {
       GlobalDecl GD;
-      if (const auto *CtorD = dyn_cast<CXXConstructorDecl>(D))
+      if (const auto *CtorD = dyn_cast<CXXConstructorDecl>(D)) {
         GD = GlobalDecl(CtorD, Ctor_Complete);
-      else if (const auto *DtorD = dyn_cast<CXXDestructorDecl>(D))
+      } else if (const auto *DtorD = dyn_cast<CXXDestructorDecl>(D)) {
         GD = GlobalDecl(DtorD, Dtor_Complete);
-      else if (D->hasAttr<CUDAGlobalAttr>())
+      } else if (D->hasAttr<CUDAGlobalAttr>()) {
         GD = GlobalDecl(cast<FunctionDecl>(D));
-      else
+      } else {
         GD = GlobalDecl(D);
+}
       MC->mangleName(GD, OS);
       return false;
     } else {
       IdentifierInfo *II = D->getIdentifier();
-      if (!II)
+      if (!II) {
         return true;
+}
       OS << II->getName();
       return false;
     }
@@ -534,10 +583,11 @@ private:
     llvm::raw_string_ostream FOS(FrontendBuf);
 
     GlobalDecl GD;
-    if (const auto *CD = dyn_cast_or_null<CXXConstructorDecl>(ND))
+    if (const auto *CD = dyn_cast_or_null<CXXConstructorDecl>(ND)) {
       GD = GlobalDecl(CD, static_cast<CXXCtorType>(StructorType));
-    else if (const auto *DD = dyn_cast_or_null<CXXDestructorDecl>(ND))
+    } else if (const auto *DD = dyn_cast_or_null<CXXDestructorDecl>(ND)) {
       GD = GlobalDecl(DD, static_cast<CXXDtorType>(StructorType));
+}
     MC->mangleName(GD, FOS);
 
     std::string BackendBuf;

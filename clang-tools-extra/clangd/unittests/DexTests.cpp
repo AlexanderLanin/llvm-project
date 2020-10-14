@@ -40,8 +40,9 @@ namespace {
 std::vector<DocID> consumeIDs(Iterator &It) {
   auto IDAndScore = consume(It);
   std::vector<DocID> IDs(IDAndScore.size());
-  for (size_t I = 0; I < IDAndScore.size(); ++I)
+  for (size_t I = 0; I < IDAndScore.size(); ++I) {
     IDs[I] = IDAndScore[I].first;
+}
   return IDs;
 }
 
@@ -370,8 +371,9 @@ std::vector<Token> identifierTrigramTokens(llvm::StringRef S) {
   std::vector<Trigram> Trigrams;
   generateIdentifierTrigrams(S, Trigrams);
   std::vector<Token> Tokens;
-  for (Trigram T : Trigrams)
+  for (Trigram T : Trigrams) {
     Tokens.emplace_back(Token::Kind::Trigram, T.str());
+}
   return Tokens;
 }
 

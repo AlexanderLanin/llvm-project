@@ -48,8 +48,9 @@ public:
 
 std::vector<std::string> getAddedArgs(Config &C) {
   std::vector<std::string> Argv;
-  for (auto &Edit : C.CompileFlags.Edits)
+  for (auto &Edit : C.CompileFlags.Edits) {
     Edit(Argv);
+}
   return Argv;
 }
 

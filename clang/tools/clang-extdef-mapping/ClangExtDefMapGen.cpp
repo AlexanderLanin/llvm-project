@@ -56,45 +56,55 @@ private:
 };
 
 void MapExtDefNamesConsumer::handleDecl(const Decl *D) {
-  if (!D)
+  if (!D) {
     return;
+}
 
   if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
-    if (FD->isThisDeclarationADefinition())
-      if (const Stmt *Body = FD->getBody())
+    if (FD->isThisDeclarationADefinition()) {
+      if (const Stmt *Body = FD->getBody()) {
         addIfInMain(FD, Body->getBeginLoc());
+}
+}
   } else if (const auto *VD = dyn_cast<VarDecl>(D)) {
-    if (cross_tu::containsConst(VD, Ctx) && VD->hasInit())
-      if (const Expr *Init = VD->getInit())
+    if (cross_tu::containsConst(VD, Ctx) && VD->hasInit()) {
+      if (const Expr *Init = VD->getInit()) {
         addIfInMain(VD, Init->getBeginLoc());
+}
+}
   }
 
-  if (const auto *DC = dyn_cast<DeclContext>(D))
-    for (const Decl *D : DC->decls())
+  if (const auto *DC = dyn_cast<DeclContext>(D)) {
+    for (const Decl *D : DC->decls()) {
       handleDecl(D);
+}
+}
 }
 
 void MapExtDefNamesConsumer::addIfInMain(const DeclaratorDecl *DD,
                                          SourceLocation defStart) {
   llvm::Optional<std::string> LookupName =
       CrossTranslationUnitContext::getLookupName(DD);
-  if (!LookupName)
+  if (!LookupName) {
     return;
+}
   assert(!LookupName->empty() && "Lookup name should be non-empty.");
 
   if (CurrentFileName.empty()) {
     CurrentFileName = std::string(
         SM.getFileEntryForID(SM.getMainFileID())->tryGetRealPathName());
-    if (CurrentFileName.empty())
+    if (CurrentFileName.empty()) {
       CurrentFileName = "invalid_file";
+}
   }
 
   switch (DD->getLinkageInternal()) {
   case ExternalLinkage:
   case VisibleNoLinkage:
   case UniqueExternalLinkage:
-    if (SM.isInMainFile(defStart))
+    if (SM.isInMainFile(defStart)) {
       Index[*LookupName] = CurrentFileName;
+}
     break;
   default:
     break;

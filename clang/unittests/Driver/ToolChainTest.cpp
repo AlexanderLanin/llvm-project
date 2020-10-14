@@ -55,9 +55,10 @@ TEST(ToolChainTest, VFSGCCInstallation) {
       "/lib/arm-linux-gnueabi/.keep",
       "/lib/arm-linux-gnueabihf/.keep"};
 
-  for (const char *Path : EmptyFiles)
+  for (const char *Path : EmptyFiles) {
     InMemoryFileSystem->addFile(Path, 0,
                                 llvm::MemoryBuffer::getMemBuffer("\n"));
+}
 
   std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
       {"-fsyntax-only", "--gcc-toolchain=", "--sysroot=", "foo.cpp"}));
@@ -95,9 +96,10 @@ TEST(ToolChainTest, VFSGCCInstallationRelativeDir) {
       "foo.cpp", "/home/test/lib/gcc/arm-linux-gnueabi/4.6.1/crtbegin.o",
       "/home/test/include/arm-linux-gnueabi/.keep"};
 
-  for (const char *Path : EmptyFiles)
+  for (const char *Path : EmptyFiles) {
     InMemoryFileSystem->addFile(Path, 0,
                                 llvm::MemoryBuffer::getMemBuffer("\n"));
+}
 
   std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
       {"-fsyntax-only", "--gcc-toolchain=", "foo.cpp"}));
@@ -194,8 +196,9 @@ TEST(ToolChainTest, ParsedClangName) {
 TEST(ToolChainTest, GetTargetAndMode) {
   llvm::InitializeAllTargets();
   std::string IgnoredError;
-  if (!llvm::TargetRegistry::lookupTarget("x86_64", IgnoredError))
+  if (!llvm::TargetRegistry::lookupTarget("x86_64", IgnoredError)) {
     return;
+}
 
   ParsedClangName Res = ToolChain::getTargetAndModeFromProgramName("clang");
   EXPECT_TRUE(Res.TargetPrefix.empty());

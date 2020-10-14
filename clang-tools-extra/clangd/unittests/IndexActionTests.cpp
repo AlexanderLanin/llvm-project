@@ -59,8 +59,9 @@ void checkNodesAreInitialized(const IndexFileIn &IndexFile,
 
 std::map<std::string, const IncludeGraphNode &> toMap(const IncludeGraph &IG) {
   std::map<std::string, const IncludeGraphNode &> Nodes;
-  for (auto &I : IG)
+  for (auto &I : IG) {
     Nodes.emplace(std::string(I.getKey()), I.getValue());
+}
   return Nodes;
 }
 
@@ -276,9 +277,11 @@ TEST_F(IndexActionTest, SkipFiles) {
   EXPECT_THAT(*IndexFile.Symbols,
               UnorderedElementsAre(HasName("S"), HasName("s"), HasName("f1"),
                                    HasName("unskippable1")));
-  for (const auto &Pair : *IndexFile.Refs)
-    for (const auto &Ref : Pair.second)
+  for (const auto &Pair : *IndexFile.Refs) {
+    for (const auto &Ref : Pair.second) {
       EXPECT_THAT(Ref.Location.FileURI, EndsWith("good.h"));
+}
+}
 }
 
 } // namespace

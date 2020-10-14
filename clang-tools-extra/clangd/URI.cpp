@@ -40,10 +40,11 @@ public:
   llvm::Expected<std::string>
   getAbsolutePath(llvm::StringRef Authority, llvm::StringRef Body,
                   llvm::StringRef /*HintPath*/) const override {
-    if (!Body.startswith("/"))
+    if (!Body.startswith("/")) {
       return error("File scheme: expect body to be an absolute path starting "
                    "with '/': {0}",
                    Body);
+}
     llvm::SmallString<128> Path;
     if (!Authority.empty()) {
       // Windows UNC paths e.g. file://server/share => \\server\share
@@ -77,12 +78,14 @@ public:
 
 llvm::Expected<std::unique_ptr<URIScheme>>
 findSchemeByName(llvm::StringRef Scheme) {
-  if (Scheme == "file")
+  if (Scheme == "file") {
     return std::make_unique<FileSystemScheme>();
+}
 
   for (const auto &URIScheme : URISchemeRegistry::entries()) {
-    if (URIScheme.getName() != Scheme)
+    if (URIScheme.getName() != Scheme) {
       continue;
+}
     return URIScheme.instantiate();
   }
   return error("Can't find scheme: {0}", Scheme);
@@ -91,8 +94,9 @@ findSchemeByName(llvm::StringRef Scheme) {
 bool shouldEscape(unsigned char C) {
   // Unreserved characters.
   if ((C >= 'a' && C <= 'z') || (C >= 'A' && C <= 'Z') ||
-      (C >= '0' && C <= '9'))
+      (C >= '0' && C <= '9')) {
     return false;
+}
   switch (C) {
   case '-':
   case '_':
@@ -111,7 +115,7 @@ bool shouldEscape(unsigned char C) {
 /// - Reserved characters always escaped with exceptions like '/'.
 /// - All other characters are escaped.
 void percentEncode(llvm::StringRef Content, std::string &Out) {
-  for (unsigned char C : Content)
+  for (unsigned char C : Content) {
     if (shouldEscape(C)) {
       Out.push_back('%');
       Out.push_back(llvm::hexdigit(C / 16));
@@ -119,6 +123,7 @@ void percentEncode(llvm::StringRef Content, std::string &Out) {
     } else {
       Out.push_back(C);
     }
+}
 }
 
 /// Decodes a string according to percent-encoding.
@@ -133,17 +138,20 @@ std::string percentDecode(llvm::StringRef Content) {
         llvm::isHexDigit(*(I + 2))) {
       Result.push_back(llvm::hexFromNibbles(*(I + 1), *(I + 2)));
       I += 2;
-    } else
+    } else {
       Result.push_back(*I);
+}
   }
   return Result;
 }
 
 bool isValidScheme(llvm::StringRef Scheme) {
-  if (Scheme.empty())
+  if (Scheme.empty()) {
     return false;
-  if (!llvm::isAlpha(Scheme[0]))
+}
+  if (!llvm::isAlpha(Scheme[0])) {
     return false;
+}
   return std::all_of(Scheme.begin() + 1, Scheme.end(), [](char C) {
     return llvm::isAlnum(C) || C == '+' || C == '.' || C == '-';
   });
@@ -163,8 +171,9 @@ std::string URI::toString() const {
   std::string Result;
   percentEncode(Scheme, Result);
   Result.push_back(':');
-  if (Authority.empty() && Body.empty())
+  if (Authority.empty() && Body.empty()) {
     return Result;
+}
   // If authority if empty, we only print body if it starts with "/"; otherwise,
   // the URI is invalid.
   if (!Authority.empty() || llvm::StringRef(Body).startswith("/"))
@@ -181,12 +190,14 @@ llvm::Expected<URI> URI::parse(llvm::StringRef OrigUri) {
   llvm::StringRef Uri = OrigUri;
 
   auto Pos = Uri.find(':');
-  if (Pos == llvm::StringRef::npos)
+  if (Pos == llvm::StringRef::npos) {
     return error("Scheme must be provided in URI: {0}", OrigUri);
+}
   auto SchemeStr = Uri.substr(0, Pos);
   U.Scheme = percentDecode(SchemeStr);
-  if (!isValidScheme(U.Scheme))
+  if (!isValidScheme(U.Scheme)) {
     return error("Invalid scheme: {0} (decoded: {1})", SchemeStr, U.Scheme);
+}
   Uri = Uri.substr(Pos + 1);
   if (Uri.consume_front("//")) {
     Pos = Uri.find('/');
@@ -200,28 +211,33 @@ llvm::Expected<URI> URI::parse(llvm::StringRef OrigUri) {
 llvm::Expected<std::string> URI::resolve(llvm::StringRef FileURI,
                                          llvm::StringRef HintPath) {
   auto Uri = URI::parse(FileURI);
-  if (!Uri)
+  if (!Uri) {
     return Uri.takeError();
+}
   auto Path = URI::resolve(*Uri, HintPath);
-  if (!Path)
+  if (!Path) {
     return Path.takeError();
+}
   return *Path;
 }
 
 llvm::Expected<URI> URI::create(llvm::StringRef AbsolutePath,
                                 llvm::StringRef Scheme) {
-  if (!llvm::sys::path::is_absolute(AbsolutePath))
+  if (!llvm::sys::path::is_absolute(AbsolutePath)) {
     return error("Not a valid absolute path: {0}", AbsolutePath);
+}
   auto S = findSchemeByName(Scheme);
-  if (!S)
+  if (!S) {
     return S.takeError();
+}
   return S->get()->uriFromAbsolutePath(AbsolutePath);
 }
 
 URI URI::create(llvm::StringRef AbsolutePath) {
-  if (!llvm::sys::path::is_absolute(AbsolutePath))
+  if (!llvm::sys::path::is_absolute(AbsolutePath)) {
     llvm_unreachable(
         ("Not a valid absolute path: " + AbsolutePath).str().c_str());
+}
   for (auto &Entry : URISchemeRegistry::entries()) {
     auto URI = Entry.instantiate()->uriFromAbsolutePath(AbsolutePath);
     // For some paths, conversion to different URI schemes is impossible. These
@@ -239,23 +255,26 @@ URI URI::create(llvm::StringRef AbsolutePath) {
 
 URI URI::createFile(llvm::StringRef AbsolutePath) {
   auto U = FileSystemScheme().uriFromAbsolutePath(AbsolutePath);
-  if (!U)
+  if (!U) {
     llvm_unreachable(llvm::toString(U.takeError()).c_str());
+}
   return std::move(*U);
 }
 
 llvm::Expected<std::string> URI::resolve(const URI &Uri,
                                          llvm::StringRef HintPath) {
   auto S = findSchemeByName(Uri.Scheme);
-  if (!S)
+  if (!S) {
     return S.takeError();
+}
   return S->get()->getAbsolutePath(Uri.Authority, Uri.Body, HintPath);
 }
 
 llvm::Expected<std::string> URI::resolvePath(llvm::StringRef AbsPath,
                                              llvm::StringRef HintPath) {
-  if (!llvm::sys::path::is_absolute(AbsPath))
+  if (!llvm::sys::path::is_absolute(AbsPath)) {
     llvm_unreachable(("Not a valid absolute path: " + AbsPath).str().c_str());
+}
   for (auto &Entry : URISchemeRegistry::entries()) {
     auto S = Entry.instantiate();
     auto U = S->uriFromAbsolutePath(AbsPath);
@@ -274,8 +293,9 @@ llvm::Expected<std::string> URI::resolvePath(llvm::StringRef AbsPath,
 
 llvm::Expected<std::string> URI::includeSpelling(const URI &Uri) {
   auto S = findSchemeByName(Uri.Scheme);
-  if (!S)
+  if (!S) {
     return S.takeError();
+}
   return S->get()->getIncludeSpelling(Uri);
 }
 

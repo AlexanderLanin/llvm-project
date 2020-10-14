@@ -46,17 +46,20 @@ void DurationFactoryFloatCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedCall = Result.Nodes.getNodeAs<CallExpr>("call");
 
   // Don't try and replace things inside of macro definitions.
-  if (InsideMacroDefinition(Result, MatchedCall->getSourceRange()))
+  if (InsideMacroDefinition(Result, MatchedCall->getSourceRange())) {
     return;
+}
 
   const Expr *Arg = MatchedCall->getArg(0)->IgnoreImpCasts();
   // Arguments which are macros are ignored.
-  if (Arg->getBeginLoc().isMacroID())
+  if (Arg->getBeginLoc().isMacroID()) {
     return;
+}
 
   llvm::Optional<std::string> SimpleArg = stripFloatCast(Result, *Arg);
-  if (!SimpleArg)
+  if (!SimpleArg) {
     SimpleArg = stripFloatLiteralFraction(Result, *Arg);
+}
 
   if (SimpleArg) {
     diag(MatchedCall->getBeginLoc(),

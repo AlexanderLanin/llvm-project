@@ -48,21 +48,23 @@ struct Builder : RecursiveASTVisitor<Builder> {
   bool VisitFriendDecl(FriendDecl *D) {
     if (D->getFriendType()) {
       QualType Ty = D->getFriendType()->getType();
-      if (isa<ElaboratedType>(Ty))
+      if (isa<ElaboratedType>(Ty)) {
         Ty = cast<ElaboratedType>(Ty)->getNamedType();
+}
       // A FriendDecl with a dependent type (e.g. ClassTemplateSpecialization)
       // always has that decl as child node.
       // However, there are non-dependent cases which does not have the
       // type as a child node. We have to dig up that type now.
       if (!Ty->isDependentType()) {
-        if (const auto *RTy = dyn_cast<RecordType>(Ty))
+        if (const auto *RTy = dyn_cast<RecordType>(Ty)) {
           LT.add(RTy->getAsCXXRecordDecl());
-        else if (const auto *SpecTy = dyn_cast<TemplateSpecializationType>(Ty))
+        } else if (const auto *SpecTy = dyn_cast<TemplateSpecializationType>(Ty)) {
           LT.add(SpecTy->getAsCXXRecordDecl());
-        else if (const auto *SubstTy =
+        } else if (const auto *SubstTy =
                      dyn_cast<SubstTemplateTypeParmType>(Ty)) {
-          if (SubstTy->getAsCXXRecordDecl())
+          if (SubstTy->getAsCXXRecordDecl()) {
             LT.add(SubstTy->getAsCXXRecordDecl());
+}
         } else if (isa<TypedefType>(Ty)) {
           // We do not put friend typedefs to the lookup table because
           // ASTImporter does not organize typedefs into redecl chains.
@@ -104,8 +106,9 @@ void ASTImporterLookupTable::add(NamedDecl *ND) {
   DeclContext *DC = ND->getDeclContext()->getPrimaryContext();
   add(DC, ND);
   DeclContext *ReDC = DC->getRedeclContext()->getPrimaryContext();
-  if (DC != ReDC)
+  if (DC != ReDC) {
     add(ReDC, ND);
+}
 }
 
 void ASTImporterLookupTable::remove(NamedDecl *ND) {
@@ -113,28 +116,32 @@ void ASTImporterLookupTable::remove(NamedDecl *ND) {
   DeclContext *DC = ND->getDeclContext()->getPrimaryContext();
   remove(DC, ND);
   DeclContext *ReDC = DC->getRedeclContext()->getPrimaryContext();
-  if (DC != ReDC)
+  if (DC != ReDC) {
     remove(ReDC, ND);
+}
 }
 
 ASTImporterLookupTable::LookupResult
 ASTImporterLookupTable::lookup(DeclContext *DC, DeclarationName Name) const {
   auto DCI = LookupTable.find(DC->getPrimaryContext());
-  if (DCI == LookupTable.end())
+  if (DCI == LookupTable.end()) {
     return {};
+}
 
   const auto &FoundNameMap = DCI->second;
   auto NamesI = FoundNameMap.find(Name);
-  if (NamesI == FoundNameMap.end())
+  if (NamesI == FoundNameMap.end()) {
     return {};
+}
 
   return NamesI->second;
 }
 
 void ASTImporterLookupTable::dump(DeclContext *DC) const {
   auto DCI = LookupTable.find(DC->getPrimaryContext());
-  if (DCI == LookupTable.end())
+  if (DCI == LookupTable.end()) {
     llvm::errs() << "empty\n";
+}
   const auto &FoundNameMap = DCI->second;
   for (const auto &Entry : FoundNameMap) {
     DeclarationName Name = Entry.first;

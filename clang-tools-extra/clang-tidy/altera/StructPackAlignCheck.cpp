@@ -35,8 +35,9 @@ StructPackAlignCheck::computeRecommendedAlignment(CharUnits MinByteSize) {
       NewAlign = NewAlign.alignTo(
           CharUnits::fromQuantity(((int)NewAlign.getQuantity()) * 2));
       // Abort if the computed alignment meets the maximum configured alignment.
-      if (NewAlign.getQuantity() >= MaxConfiguredAlignment)
+      if (NewAlign.getQuantity() >= MaxConfiguredAlignment) {
         break;
+}
     }
   } else {
     NewAlign = MinByteSize;
@@ -49,8 +50,9 @@ void StructPackAlignCheck::check(const MatchFinder::MatchResult &Result) {
 
   // Do not trigger on templated struct declarations because the packing and
   // alignment requirements are unknown.
-  if (Struct->isTemplated())
+  if (Struct->isTemplated()) {
      return;
+}
 
   // Get sizing info for the struct.
   llvm::SmallVector<std::pair<unsigned int, unsigned int>, 10> FieldSizes;
@@ -84,8 +86,9 @@ void StructPackAlignCheck::check(const MatchFinder::MatchResult &Result) {
                       (CurrSize != NewAlign);
   bool NeedsAlignment = CurrAlign.getQuantity() != NewAlign.getQuantity();
 
-  if (!NeedsAlignment && !NeedsPacking)
+  if (!NeedsAlignment && !NeedsPacking) {
     return;
+}
 
   // If it's using much more space than it needs, suggest packing.
   // (Do not suggest packing if it is currently explicitly aligned to what the

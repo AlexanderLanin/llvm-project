@@ -39,8 +39,9 @@ void MisplacedArrayIndexCheck::check(const MatchFinder::MatchResult &Result) {
   // the logic.
   const Expr *RHSE = ArraySubscriptE->getRHS()->IgnoreParenImpCasts();
   if (!isa<StringLiteral>(RHSE) && !isa<DeclRefExpr>(RHSE) &&
-      !isa<MemberExpr>(RHSE))
+      !isa<MemberExpr>(RHSE)) {
     return;
+}
 
   const StringRef LText = tooling::fixit::getText(
       ArraySubscriptE->getLHS()->getSourceRange(), *Result.Context);

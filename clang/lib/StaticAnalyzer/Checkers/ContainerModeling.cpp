@@ -160,8 +160,9 @@ bool hasLiveIterators(ProgramStateRef State, const MemRegion *Cont);
 void ContainerModeling::checkPostCall(const CallEvent &Call,
                                      CheckerContext &C) const {
   const auto *Func = dyn_cast_or_null<FunctionDecl>(Call.getDecl());
-  if (!Func)
+  if (!Func) {
     return;
+}
 
   if (Func->isOverloadedOperator()) {
     const auto Op = Func->getOverloadedOperator();
@@ -200,8 +201,9 @@ void ContainerModeling::checkPostCall(const CallEvent &Call,
       }
 
       const auto *OrigExpr = Call.getOriginExpr();
-      if (!OrigExpr)
+      if (!OrigExpr) {
         return;
+}
 
       if (isBeginCall(Func)) {
         handleBegin(C, OrigExpr, Call.getReturnValue(),
@@ -226,13 +228,15 @@ void ContainerModeling::checkLiveSymbols(ProgramStateRef State,
     const auto CData = Cont.second;
     if (CData.getBegin()) {
       SR.markLive(CData.getBegin());
-      if(const auto *SIE = dyn_cast<SymIntExpr>(CData.getBegin()))
+      if(const auto *SIE = dyn_cast<SymIntExpr>(CData.getBegin())) {
         SR.markLive(SIE->getLHS());
+}
     }
     if (CData.getEnd()) {
       SR.markLive(CData.getEnd());
-      if(const auto *SIE = dyn_cast<SymIntExpr>(CData.getEnd()))
+      if(const auto *SIE = dyn_cast<SymIntExpr>(CData.getEnd())) {
         SR.markLive(SIE->getLHS());
+}
     }
   }
 }
@@ -259,8 +263,9 @@ void ContainerModeling::checkDeadSymbols(SymbolReaper &SR,
 void ContainerModeling::handleBegin(CheckerContext &C, const Expr *CE,
                                    SVal RetVal, SVal Cont) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -281,8 +286,9 @@ void ContainerModeling::handleBegin(CheckerContext &C, const Expr *CE,
 void ContainerModeling::handleEnd(CheckerContext &C, const Expr *CE,
                                  SVal RetVal, SVal Cont) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -303,8 +309,9 @@ void ContainerModeling::handleEnd(CheckerContext &C, const Expr *CE,
 void ContainerModeling::handleAssignment(CheckerContext &C, SVal Cont,
                                          const Expr *CE, SVal OldCont) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -379,8 +386,9 @@ void ContainerModeling::handleAssignment(CheckerContext &C, SVal Cont,
 void ContainerModeling::handleAssign(CheckerContext &C, SVal Cont,
                                      const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -393,8 +401,9 @@ void ContainerModeling::handleAssign(CheckerContext &C, SVal Cont,
 void ContainerModeling::handleClear(CheckerContext &C, SVal Cont,
                                     const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -422,8 +431,9 @@ void ContainerModeling::handleClear(CheckerContext &C, SVal Cont,
 void ContainerModeling::handlePushBack(CheckerContext &C, SVal Cont,
                                        const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -436,8 +446,9 @@ void ContainerModeling::handlePushBack(CheckerContext &C, SVal Cont,
   }
 
   const auto CData = getContainerData(State, ContReg);
-  if (!CData)
+  if (!CData) {
     return;
+}
 
   // For vector-like containers invalidate the past-end iterator positions
   if (const auto EndSym = CData->getEnd()) {
@@ -462,15 +473,17 @@ void ContainerModeling::handlePushBack(CheckerContext &C, SVal Cont,
 void ContainerModeling::handlePopBack(CheckerContext &C, SVal Cont,
                                       const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
   auto State = C.getState();
   const auto CData = getContainerData(State, ContReg);
-  if (!CData)
+  if (!CData) {
     return;
+}
 
   if (const auto EndSym = CData->getEnd()) {
     auto &SymMgr = C.getSymbolManager();
@@ -502,8 +515,9 @@ void ContainerModeling::handlePopBack(CheckerContext &C, SVal Cont,
 void ContainerModeling::handlePushFront(CheckerContext &C, SVal Cont,
                                         const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
@@ -514,8 +528,9 @@ void ContainerModeling::handlePushFront(CheckerContext &C, SVal Cont,
     C.addTransition(State);
   } else {
     const auto CData = getContainerData(State, ContReg);
-    if (!CData)
+    if (!CData) {
       return;
+}
 
     if (const auto BeginSym = CData->getBegin()) {
       auto &SymMgr = C.getSymbolManager();
@@ -537,15 +552,17 @@ void ContainerModeling::handlePushFront(CheckerContext &C, SVal Cont,
 void ContainerModeling::handlePopFront(CheckerContext &C, SVal Cont,
                                        const Expr *ContE) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
   auto State = C.getState();
   const auto CData = getContainerData(State, ContReg);
-  if (!CData)
+  if (!CData) {
     return;
+}
 
   // For deque-like containers invalidate all iterator positions. For list-like
   // iterators only invalidate the first position
@@ -573,15 +590,17 @@ void ContainerModeling::handlePopFront(CheckerContext &C, SVal Cont,
 void ContainerModeling::handleInsert(CheckerContext &C, SVal Cont,
                                      SVal Iter) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   // For deque-like containers invalidate all iterator positions. For
   // vector-like containers invalidate iterator positions after the insertion.
@@ -604,15 +623,17 @@ void ContainerModeling::handleInsert(CheckerContext &C, SVal Cont,
 void ContainerModeling::handleErase(CheckerContext &C, SVal Cont,
                                     SVal Iter) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
 
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   // For deque-like containers invalidate all iterator positions. For
   // vector-like containers invalidate iterator positions at and after the
@@ -638,15 +659,17 @@ void ContainerModeling::handleErase(CheckerContext &C, SVal Cont,
 void ContainerModeling::handleErase(CheckerContext &C, SVal Cont, SVal Iter1,
                                     SVal Iter2) const {
   const auto *ContReg = Cont.getAsRegion();
-  if (!ContReg)
+  if (!ContReg) {
     return;
+}
 
   ContReg = ContReg->getMostDerivedObjectRegion();
   auto State = C.getState();
   const auto *Pos1 = getIteratorPosition(State, Iter1);
   const auto *Pos2 = getIteratorPosition(State, Iter2);
-  if (!Pos1 || !Pos2)
+  if (!Pos1 || !Pos2) {
     return;
+}
 
   // For deque-like containers invalidate all iterator positions. For
   // vector-like containers invalidate iterator positions at and after the
@@ -675,8 +698,9 @@ void ContainerModeling::handleEraseAfter(CheckerContext &C, SVal Cont,
                                         SVal Iter) const {
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, Iter);
-  if (!Pos)
+  if (!Pos) {
     return;
+}
 
   // Invalidate the deleted iterator position, which is the position of the
   // parameter plus one.
@@ -697,8 +721,9 @@ void ContainerModeling::handleEraseAfter(CheckerContext &C, SVal Cont,
   auto State = C.getState();
   const auto *Pos1 = getIteratorPosition(State, Iter1);
   const auto *Pos2 = getIteratorPosition(State, Iter2);
-  if (!Pos1 || !Pos2)
+  if (!Pos1 || !Pos2) {
     return;
+}
 
   // Invalidate the deleted iterator position range (first..last)
   State = invalidateIteratorPositions(State, Pos1->getOffset(), BO_GT,
@@ -722,8 +747,9 @@ const NoteTag *ContainerModeling::getChangeTag(CheckerContext &C,
 
   return C.getNoteTag(
       [Text, Name, ContReg](PathSensitiveBugReport &BR) -> std::string {
-        if (!BR.isInteresting(ContReg))
+        if (!BR.isInteresting(ContReg)) {
           return "";
+}
 
         SmallString<256> Msg;
         llvm::raw_svector_ostream Out(Msg);
@@ -743,15 +769,17 @@ void ContainerModeling::printState(raw_ostream &Out, ProgramStateRef State,
       Cont.first->dumpToStream(Out);
       Out << " : [ ";
       const auto CData = Cont.second;
-      if (CData.getBegin())
+      if (CData.getBegin()) {
         CData.getBegin()->dumpToStream(Out);
-      else
+      } else {
         Out << "<Unknown>";
+}
       Out << " .. ";
-      if (CData.getEnd())
+      if (CData.getEnd()) {
         CData.getEnd()->dumpToStream(Out);
-      else
+      } else {
         Out << "<Unknown>";
+}
       Out << " ]";
     }
   }
@@ -761,23 +789,26 @@ namespace {
 
 bool isBeginCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
+}
   return IdInfo->getName().endswith_lower("begin");
 }
 
 bool isEndCall(const FunctionDecl *Func) {
   const auto *IdInfo = Func->getIdentifier();
-  if (!IdInfo)
+  if (!IdInfo) {
     return false;
+}
   return IdInfo->getName().endswith_lower("end");
 }
 
 const CXXRecordDecl *getCXXRecordDecl(ProgramStateRef State,
                                       const MemRegion *Reg) {
   auto TI = getDynamicTypeInfo(State, Reg);
-  if (!TI.isValid())
+  if (!TI.isValid()) {
     return nullptr;
+}
 
   auto Type = TI.getType();
   if (const auto *RefT = Type->getAs<ReferenceType>()) {
@@ -789,12 +820,14 @@ const CXXRecordDecl *getCXXRecordDecl(ProgramStateRef State,
 
 bool hasSubscriptOperator(ProgramStateRef State, const MemRegion *Reg) {
   const auto *CRD = getCXXRecordDecl(State, Reg);
-  if (!CRD)
+  if (!CRD) {
     return false;
+}
 
   for (const auto *Method : CRD->methods()) {
-    if (!Method->isOverloadedOperator())
+    if (!Method->isOverloadedOperator()) {
       continue;
+}
     const auto OPK = Method->getOverloadedOperator();
     if (OPK == OO_Subscript) {
       return true;
@@ -805,12 +838,14 @@ bool hasSubscriptOperator(ProgramStateRef State, const MemRegion *Reg) {
 
 bool frontModifiable(ProgramStateRef State, const MemRegion *Reg) {
   const auto *CRD = getCXXRecordDecl(State, Reg);
-  if (!CRD)
+  if (!CRD) {
     return false;
+}
 
   for (const auto *Method : CRD->methods()) {
-    if (!Method->getDeclName().isIdentifier())
+    if (!Method->getDeclName().isIdentifier()) {
       continue;
+}
     if (Method->getName() == "push_front" || Method->getName() == "pop_front") {
       return true;
     }
@@ -820,12 +855,14 @@ bool frontModifiable(ProgramStateRef State, const MemRegion *Reg) {
 
 bool backModifiable(ProgramStateRef State, const MemRegion *Reg) {
   const auto *CRD = getCXXRecordDecl(State, Reg);
-  if (!CRD)
+  if (!CRD) {
     return false;
+}
 
   for (const auto *Method : CRD->methods()) {
-    if (!Method->getDeclName().isIdentifier())
+    if (!Method->getDeclName().isIdentifier()) {
       continue;
+}
     if (Method->getName() == "push_back" || Method->getName() == "pop_back") {
       return true;
     }
@@ -835,16 +872,18 @@ bool backModifiable(ProgramStateRef State, const MemRegion *Reg) {
 
 SymbolRef getContainerBegin(ProgramStateRef State, const MemRegion *Cont) {
   const auto *CDataPtr = getContainerData(State, Cont);
-  if (!CDataPtr)
+  if (!CDataPtr) {
     return nullptr;
+}
 
   return CDataPtr->getBegin();
 }
 
 SymbolRef getContainerEnd(ProgramStateRef State, const MemRegion *Cont) {
   const auto *CDataPtr = getContainerData(State, Cont);
-  if (!CDataPtr)
+  if (!CDataPtr) {
     return nullptr;
+}
 
   return CDataPtr->getEnd();
 }
@@ -855,8 +894,9 @@ ProgramStateRef createContainerBegin(ProgramStateRef State,
                                      unsigned BlockCount) {
   // Only create if it does not exist
   const auto *CDataPtr = getContainerData(State, Cont);
-  if (CDataPtr && CDataPtr->getBegin())
+  if (CDataPtr && CDataPtr->getBegin()) {
     return State;
+}
 
   auto &SymMgr = State->getSymbolManager();
   const SymbolConjured *Sym = SymMgr.conjureSymbol(E, LCtx, T, BlockCount,
@@ -878,8 +918,9 @@ ProgramStateRef createContainerEnd(ProgramStateRef State, const MemRegion *Cont,
                                    unsigned BlockCount) {
   // Only create if it does not exist
   const auto *CDataPtr = getContainerData(State, Cont);
-  if (CDataPtr && CDataPtr->getEnd())
+  if (CDataPtr && CDataPtr->getEnd()) {
     return State;
+}
 
   auto &SymMgr = State->getSymbolManager();
   const SymbolConjured *Sym = SymMgr.conjureSymbol(E, LCtx, T, BlockCount,
@@ -913,8 +954,9 @@ ProgramStateRef processIteratorPositions(ProgramStateRef State, Condition Cond,
     }
   }
 
-  if (Changed)
+  if (Changed) {
     State = State->set<IteratorRegionMap>(RegionMap);
+}
 
   auto &SymbolMapFactory = State->get_context<IteratorSymbolMap>();
   auto SymbolMap = State->get<IteratorSymbolMap>();
@@ -926,8 +968,9 @@ ProgramStateRef processIteratorPositions(ProgramStateRef State, Condition Cond,
     }
   }
 
-  if (Changed)
+  if (Changed) {
     State = State->set<IteratorSymbolMap>(SymbolMap);
+}
 
   return State;
 }
@@ -1039,8 +1082,9 @@ SymbolRef rebaseSymbol(ProgramStateRef State, SValBuilder &SVB,
                               SymMgr.getType(OrigExpr));
 
   const auto DiffInt = Diff.getAs<nonloc::ConcreteInt>();
-  if (!DiffInt)
+  if (!DiffInt) {
     return OrigExpr;
+}
 
   return SVB.evalBinOpNN(State, BO_Add, *DiffInt, nonloc::SymbolVal(NewSym),
                          SymMgr.getType(OrigExpr)).getAsSymbol();
@@ -1049,14 +1093,16 @@ SymbolRef rebaseSymbol(ProgramStateRef State, SValBuilder &SVB,
 bool hasLiveIterators(ProgramStateRef State, const MemRegion *Cont) {
   auto RegionMap = State->get<IteratorRegionMap>();
   for (const auto &Reg : RegionMap) {
-    if (Reg.second.getContainer() == Cont)
+    if (Reg.second.getContainer() == Cont) {
       return true;
+}
   }
 
   auto SymbolMap = State->get<IteratorSymbolMap>();
   for (const auto &Sym : SymbolMap) {
-    if (Sym.second.getContainer() == Cont)
+    if (Sym.second.getContainer() == Cont) {
       return true;
+}
   }
 
   return false;
@@ -1069,8 +1115,9 @@ void ento::registerContainerModeling(CheckerManager &mgr) {
 }
 
 bool ento::shouldRegisterContainerModeling(const CheckerManager &mgr) {
-  if (!mgr.getLangOpts().CPlusPlus)
+  if (!mgr.getLangOpts().CPlusPlus) {
     return false;
+}
 
   if (!mgr.getAnalyzerOptions().ShouldAggressivelySimplifyBinaryOperation) {
     mgr.getASTContext().getDiagnostics().Report(

@@ -96,15 +96,17 @@ static const Expr *getDereferenceExpr(const Stmt *S, bool IsBind=false){
 
   // Walk through lvalue casts to get the original expression
   // that syntactically caused the load.
-  if (const Expr *expr = dyn_cast<Expr>(S))
+  if (const Expr *expr = dyn_cast<Expr>(S)) {
     E = expr->IgnoreParenLValueCasts();
+}
 
   if (IsBind) {
     const VarDecl *VD;
     const Expr *Init;
     std::tie(VD, Init) = parseAssignment(S);
-    if (VD && Init)
+    if (VD && Init) {
       E = Init;
+}
   }
   return E;
 }
@@ -115,8 +117,9 @@ static bool suppressReport(const Expr *E) {
 }
 
 static bool isDeclRefExprToReference(const Expr *E) {
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(E))
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(E)) {
     return DRE->getDecl()->getType()->isReferenceType();
+}
   return false;
 }
 
@@ -140,8 +143,9 @@ void DereferenceChecker::reportBug(DerefKind K, ProgramStateRef State,
 
   // Generate an error node.
   ExplodedNode *N = C.generateErrorNode(State);
-  if (!N)
+  if (!N) {
     return;
+}
 
   SmallString<100> buf;
   llvm::raw_svector_ostream os(buf);
@@ -198,8 +202,9 @@ void DereferenceChecker::reportBug(DerefKind K, ProgramStateRef State,
   bugreporter::trackExpressionValue(N, bugreporter::getDerefExpr(S), *report);
 
   for (SmallVectorImpl<SourceRange>::iterator
-       I = Ranges.begin(), E = Ranges.end(); I!=E; ++I)
+       I = Ranges.begin(), E = Ranges.end(); I!=E; ++I) {
     report->addRange(*I);
+}
 
   C.emitReport(std::move(report));
 }
@@ -209,16 +214,18 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
   // Check for dereference of an undefined value.
   if (l.isUndef()) {
     const Expr *DerefExpr = getDereferenceExpr(S);
-    if (!suppressReport(DerefExpr))
+    if (!suppressReport(DerefExpr)) {
       reportBug(DerefKind::UndefinedPointerValue, C.getState(), DerefExpr, C);
+}
     return;
   }
 
   DefinedOrUnknownSVal location = l.castAs<DefinedOrUnknownSVal>();
 
   // Check for null dereferences.
-  if (!location.getAs<Loc>())
+  if (!location.getAs<Loc>()) {
     return;
+}
 
   ProgramStateRef state = C.getState();
 
@@ -253,16 +260,19 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
 void DereferenceChecker::checkBind(SVal L, SVal V, const Stmt *S,
                                    CheckerContext &C) const {
   // If we're binding to a reference, check if the value is known to be null.
-  if (V.isUndef())
+  if (V.isUndef()) {
     return;
+}
 
   const MemRegion *MR = L.getAsRegion();
   const TypedValueRegion *TVR = dyn_cast_or_null<TypedValueRegion>(MR);
-  if (!TVR)
+  if (!TVR) {
     return;
+}
 
-  if (!TVR->getValueType()->isReferenceType())
+  if (!TVR->getValueType()->isReferenceType()) {
     return;
+}
 
   ProgramStateRef State = C.getState();
 

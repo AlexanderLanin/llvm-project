@@ -60,8 +60,9 @@ using namespace clang;
 
 MacroDirective *
 Preprocessor::getLocalMacroDirectiveHistory(const IdentifierInfo *II) const {
-  if (!II->hadMacroDefinition())
+  if (!II->hadMacroDefinition()) {
     return nullptr;
+}
   auto Pos = CurSubmoduleState->Macros.find(II);
   return Pos == CurSubmoduleState->Macros.end() ? nullptr
                                                 : Pos->second.getLatest();
@@ -86,10 +87,12 @@ void Preprocessor::appendMacroDirective(IdentifierInfo *II, MacroDirective *MD){
 
   // Set up the identifier as having associated macro history.
   II->setHasMacroDefinition(true);
-  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end())
+  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end()) {
     II->setHasMacroDefinition(false);
-  if (II->isFromAST())
+}
+  if (II->isFromAST()) {
     II->setChangedSinceDeserialization();
+}
 }
 
 void Preprocessor::setLoadedMacroDirective(IdentifierInfo *II,
@@ -124,8 +127,9 @@ void Preprocessor::setLoadedMacroDirective(IdentifierInfo *II,
 
   // Setup the identifier as having associated macro history.
   II->setHasMacroDefinition(true);
-  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end())
+  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end()) {
     II->setHasMacroDefinition(false);
+}
 }
 
 ModuleMacro *Preprocessor::addModuleMacro(Module *Mod, IdentifierInfo *II,
@@ -196,27 +200,32 @@ void Preprocessor::updateModuleMacroInfo(const IdentifierInfo *II,
 
   // Every macro that's locally overridden is overridden by a visible macro.
   llvm::DenseMap<ModuleMacro *, int> NumHiddenOverrides;
-  for (auto *O : Info.OverriddenMacros)
+  for (auto *O : Info.OverriddenMacros) {
     NumHiddenOverrides[O] = -1;
+}
 
   // Collect all macros that are not overridden by a visible macro.
   llvm::SmallVector<ModuleMacro *, 16> Worklist;
   for (auto *LeafMM : Leaf->second) {
     assert(LeafMM->getNumOverridingMacros() == 0 && "leaf macro overridden");
-    if (NumHiddenOverrides.lookup(LeafMM) == 0)
+    if (NumHiddenOverrides.lookup(LeafMM) == 0) {
       Worklist.push_back(LeafMM);
+}
   }
   while (!Worklist.empty()) {
     auto *MM = Worklist.pop_back_val();
     if (CurSubmoduleState->VisibleModules.isVisible(MM->getOwningModule())) {
       // We only care about collecting definitions; undefinitions only act
       // to override other definitions.
-      if (MM->getMacroInfo())
+      if (MM->getMacroInfo()) {
         Info.ActiveModuleMacros.push_back(MM);
+}
     } else {
-      for (auto *O : MM->overrides())
-        if ((unsigned)++NumHiddenOverrides[O] == O->getNumOverridingMacros())
+      for (auto *O : MM->overrides()) {
+        if ((unsigned)++NumHiddenOverrides[O] == O->getNumOverridingMacros()) {
           Worklist.push_back(O);
+}
+}
     }
   }
   // Our reverse postorder walk found the macros in reverse order.
@@ -227,8 +236,9 @@ void Preprocessor::updateModuleMacroInfo(const IdentifierInfo *II,
   bool IsSystemMacro = true;
   bool IsAmbiguous = false;
   if (auto *MD = Info.MD) {
-    while (MD && isa<VisibilityMacroDirective>(MD))
+    while (MD && isa<VisibilityMacroDirective>(MD)) {
       MD = MD->getPrevious();
+}
     if (auto *DMD = dyn_cast_or_null<DefMacroDirective>(MD)) {
       MI = DMD->getInfo();
       IsSystemMacro &= SourceMgr.isInSystemHeader(DMD->getLocation());
@@ -247,8 +257,9 @@ void Preprocessor::updateModuleMacroInfo(const IdentifierInfo *II,
     // FIXME: Remove the defined-in-system-headers check. clang's limits.h
     // overrides the system limits.h's macros, so there's no conflict here.
     if (MI && NewMI != MI &&
-        !MI->isIdenticalTo(*NewMI, *this, /*Syntactically=*/true))
+        !MI->isIdenticalTo(*NewMI, *this, /*Syntactically=*/true)) {
       IsAmbiguous = true;
+}
     IsSystemMacro &= Active->getOwningModule()->IsSystem ||
                      SourceMgr.isInSystemHeader(NewMI->getDefinitionLoc());
     MI = NewMI;
@@ -259,20 +270,24 @@ void Preprocessor::updateModuleMacroInfo(const IdentifierInfo *II,
 void Preprocessor::dumpMacroInfo(const IdentifierInfo *II) {
   ArrayRef<ModuleMacro*> Leaf;
   auto LeafIt = LeafModuleMacros.find(II);
-  if (LeafIt != LeafModuleMacros.end())
+  if (LeafIt != LeafModuleMacros.end()) {
     Leaf = LeafIt->second;
+}
   const MacroState *State = nullptr;
   auto Pos = CurSubmoduleState->Macros.find(II);
-  if (Pos != CurSubmoduleState->Macros.end())
+  if (Pos != CurSubmoduleState->Macros.end()) {
     State = &Pos->second;
+}
 
   llvm::errs() << "MacroState " << State << " " << II->getNameStart();
-  if (State && State->isAmbiguous(*this, II))
+  if (State && State->isAmbiguous(*this, II)) {
     llvm::errs() << " ambiguous";
+}
   if (State && !State->getOverriddenMacros().empty()) {
     llvm::errs() << " overrides";
-    for (auto *O : State->getOverriddenMacros())
+    for (auto *O : State->getOverriddenMacros()) {
       llvm::errs() << " " << O->getOwningModule()->getFullModuleName();
+}
   }
   llvm::errs() << "\n";
 
@@ -285,31 +300,35 @@ void Preprocessor::dumpMacroInfo(const IdentifierInfo *II) {
 
   // Dump module macros.
   llvm::DenseSet<ModuleMacro*> Active;
-  for (auto *MM : State ? State->getActiveModuleMacros(*this, II) : None)
+  for (auto *MM : State ? State->getActiveModuleMacros(*this, II) : None) {
     Active.insert(MM);
+}
   llvm::DenseSet<ModuleMacro*> Visited;
   llvm::SmallVector<ModuleMacro *, 16> Worklist(Leaf.begin(), Leaf.end());
   while (!Worklist.empty()) {
     auto *MM = Worklist.pop_back_val();
     llvm::errs() << " ModuleMacro " << MM << " "
                  << MM->getOwningModule()->getFullModuleName();
-    if (!MM->getMacroInfo())
+    if (!MM->getMacroInfo()) {
       llvm::errs() << " undef";
+}
 
-    if (Active.count(MM))
+    if (Active.count(MM)) {
       llvm::errs() << " active";
-    else if (!CurSubmoduleState->VisibleModules.isVisible(
-                 MM->getOwningModule()))
+    } else if (!CurSubmoduleState->VisibleModules.isVisible(
+                 MM->getOwningModule())) {
       llvm::errs() << " hidden";
-    else if (MM->getMacroInfo())
+    } else if (MM->getMacroInfo()) {
       llvm::errs() << " overridden";
+}
 
     if (!MM->overrides().empty()) {
       llvm::errs() << " overrides";
       for (auto *O : MM->overrides()) {
         llvm::errs() << " " << O->getOwningModule()->getFullModuleName();
-        if (Visited.insert(O).second)
+        if (Visited.insert(O).second) {
           Worklist.push_back(O);
+}
       }
     }
     llvm::errs() << "\n";
@@ -345,11 +364,12 @@ void Preprocessor::RegisterBuiltinMacros() {
   Ident_Pragma  = RegisterBuiltinMacro(*this, "_Pragma");
 
   // C++ Standing Document Extensions.
-  if (getLangOpts().CPlusPlus)
+  if (getLangOpts().CPlusPlus) {
     Ident__has_cpp_attribute =
         RegisterBuiltinMacro(*this, "__has_cpp_attribute");
-  else
+  } else {
     Ident__has_cpp_attribute = nullptr;
+}
 
   // GCC Extensions.
   Ident__BASE_FILE__     = RegisterBuiltinMacro(*this, "__BASE_FILE__");
@@ -371,10 +391,11 @@ void Preprocessor::RegisterBuiltinMacros() {
   Ident__has_extension    = RegisterBuiltinMacro(*this, "__has_extension");
   Ident__has_builtin      = RegisterBuiltinMacro(*this, "__has_builtin");
   Ident__has_attribute    = RegisterBuiltinMacro(*this, "__has_attribute");
-  if (!getLangOpts().CPlusPlus)
+  if (!getLangOpts().CPlusPlus) {
     Ident__has_c_attribute = RegisterBuiltinMacro(*this, "__has_c_attribute");
-  else
+  } else {
     Ident__has_c_attribute = nullptr;
+}
 
   Ident__has_declspec = RegisterBuiltinMacro(*this, "__has_declspec_attribute");
   Ident__has_include      = RegisterBuiltinMacro(*this, "__has_include");
@@ -389,10 +410,11 @@ void Preprocessor::RegisterBuiltinMacros() {
 
   // Modules.
   Ident__building_module  = RegisterBuiltinMacro(*this, "__building_module");
-  if (!getLangOpts().CurrentModule.empty())
+  if (!getLangOpts().CurrentModule.empty()) {
     Ident__MODULE__ = RegisterBuiltinMacro(*this, "__MODULE__");
-  else
+  } else {
     Ident__MODULE__ = nullptr;
+}
 }
 
 /// isTrivialSingleTokenExpansion - Return true if MI, which has a single token
@@ -403,24 +425,29 @@ static bool isTrivialSingleTokenExpansion(const MacroInfo *MI,
   IdentifierInfo *II = MI->getReplacementToken(0).getIdentifierInfo();
 
   // If the token isn't an identifier, it's always literally expanded.
-  if (!II) return true;
+  if (!II) { return true;
+}
 
   // If the information about this identifier is out of date, update it from
   // the external source.
-  if (II->isOutOfDate())
+  if (II->isOutOfDate()) {
     PP.getExternalSource()->updateOutOfDateIdentifier(*II);
+}
 
   // If the identifier is a macro, and if that macro is enabled, it may be
   // expanded so it's not a trivial expansion.
-  if (auto *ExpansionMI = PP.getMacroInfo(II))
+  if (auto *ExpansionMI = PP.getMacroInfo(II)) {
     if (ExpansionMI->isEnabled() &&
         // Fast expanding "#define X X" is ok, because X would be disabled.
-        II != MacroIdent)
+        II != MacroIdent) {
       return false;
+}
+}
 
   // If this is an object-like macro invocation, it is safe to trivially expand
   // it.
-  if (MI->isObjectLike()) return true;
+  if (MI->isObjectLike()) { return true;
+}
 
   // If this is a function-like macro invocation, it's safe to trivially expand
   // as long as the identifier is not a macro argument.
@@ -433,29 +460,34 @@ static bool isTrivialSingleTokenExpansion(const MacroInfo *MI,
 bool Preprocessor::isNextPPTokenLParen() {
   // Do some quick tests for rejection cases.
   unsigned Val;
-  if (CurLexer)
+  if (CurLexer) {
     Val = CurLexer->isNextPPTokenLParen();
-  else
+  } else {
     Val = CurTokenLexer->isNextTokenLParen();
+}
 
   if (Val == 2) {
     // We have run off the end.  If it's a source file we don't
     // examine enclosing ones (C99 5.1.1.2p4).  Otherwise walk up the
     // macro stack.
-    if (CurPPLexer)
+    if (CurPPLexer) {
       return false;
+}
     for (const IncludeStackInfo &Entry : llvm::reverse(IncludeMacroStack)) {
-      if (Entry.TheLexer)
+      if (Entry.TheLexer) {
         Val = Entry.TheLexer->isNextPPTokenLParen();
-      else
+      } else {
         Val = Entry.TheTokenLexer->isNextTokenLParen();
+}
 
-      if (Val != 2)
+      if (Val != 2) {
         break;
+}
 
       // Ran off the end of a source file?
-      if (Entry.ThePPLexer)
+      if (Entry.ThePPLexer) {
         return false;
+}
     }
   }
 
@@ -474,13 +506,15 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
   // If this is a macro expansion in the "#if !defined(x)" line for the file,
   // then the macro could expand to different things in other contexts, we need
   // to disable the optimization in this case.
-  if (CurPPLexer) CurPPLexer->MIOpt.ExpandedMacro();
+  if (CurPPLexer) { CurPPLexer->MIOpt.ExpandedMacro();
+}
 
   // If this is a builtin macro, like __LINE__ or _Pragma, handle it specially.
   if (MI->isBuiltinMacro()) {
-    if (Callbacks)
+    if (Callbacks) {
       Callbacks->MacroExpands(Identifier, M, Identifier.getLocation(),
                               /*Args=*/nullptr);
+}
     ExpandBuiltinMacro(Identifier);
     return true;
   }
@@ -509,7 +543,8 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
     ArgMacro = nullptr;
 
     // If there was an error parsing the arguments, bail out.
-    if (!Args) return true;
+    if (!Args) { return true;
+}
 
     ++NumFnMacroExpanded;
   } else {
@@ -551,9 +586,10 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
     Diag(MI->getDefinitionLoc(), diag::note_pp_ambiguous_macro_chosen)
       << Identifier.getIdentifierInfo();
     M.forAllDefinitions([&](const MacroInfo *OtherMI) {
-      if (OtherMI != MI)
+      if (OtherMI != MI) {
         Diag(OtherMI->getDefinitionLoc(), diag::note_pp_ambiguous_macro_other)
           << Identifier.getIdentifierInfo();
+}
     });
   }
 
@@ -563,7 +599,8 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
   // expansion stack, only to take it right back off.
   if (MI->getNumTokens() == 0) {
     // No need for arg info.
-    if (Args) Args->destroy(*this);
+    if (Args) { Args->destroy(*this);
+}
 
     // Propagate whitespace info as if we had pushed, then popped,
     // a macro context.
@@ -579,7 +616,8 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
     // "#define VAL 42".
 
     // No need for arg info.
-    if (Args) Args->destroy(*this);
+    if (Args) { Args->destroy(*this);
+}
 
     // Propagate the isAtStartOfLine/hasLeadingSpace markers of the macro
     // identifier to the expanded token.
@@ -603,14 +641,16 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
     // If this is a disabled macro or #define X X, we must mark the result as
     // unexpandable.
     if (IdentifierInfo *NewII = Identifier.getIdentifierInfo()) {
-      if (MacroInfo *NewMI = getMacroInfo(NewII))
+      if (MacroInfo *NewMI = getMacroInfo(NewII)) {
         if (!NewMI->isEnabled() || NewMI == MI) {
           Identifier.setFlag(Token::DisableExpand);
           // Don't warn for "#define X X" like "#define bool bool" from
           // stdbool.h.
-          if (NewMI != MI || MI->isFunctionLike())
+          if (NewMI != MI || MI->isFunctionLike()) {
             Diag(Identifier, diag::pp_disabled_macro_expansion);
+}
         }
+}
     }
 
     // Since this is not an identifier token, it can't be macro expanded, so
@@ -639,14 +679,16 @@ static bool CheckMatchedBrackets(const SmallVectorImpl<Token> &Tokens) {
     if (I->is(tok::l_paren)) {
       Brackets.push_back(Paren);
     } else if (I->is(tok::r_paren)) {
-      if (Brackets.empty() || Brackets.back() == Brace)
+      if (Brackets.empty() || Brackets.back() == Brace) {
         return false;
+}
       Brackets.pop_back();
     } else if (I->is(tok::l_brace)) {
       Brackets.push_back(Brace);
     } else if (I->is(tok::r_brace)) {
-      if (Brackets.empty() || Brackets.back() == Paren)
+      if (Brackets.empty() || Brackets.back() == Paren) {
         return false;
+}
       Brackets.pop_back();
     }
   }
@@ -666,8 +708,9 @@ static bool GenerateNewArgTokens(Preprocessor &PP,
                                  unsigned &NumArgs,
                                  SmallVectorImpl<SourceRange> &ParenHints,
                                  SmallVectorImpl<SourceRange> &InitLists) {
-  if (!CheckMatchedBrackets(OldTokens))
+  if (!CheckMatchedBrackets(OldTokens)) {
     return false;
+}
 
   // Once it is known that the brackets are matched, only a simple count of the
   // braces is needed.
@@ -692,8 +735,9 @@ static bool GenerateNewArgTokens(Preprocessor &PP,
       ++Braces;
     } else if (I->is(tok::r_brace)) {
       --Braces;
-      if (Braces == 0 && ClosingBrace == E && FoundSeparatorToken)
+      if (Braces == 0 && ClosingBrace == E && FoundSeparatorToken) {
         ClosingBrace = I;
+}
     } else if (I->is(tok::eof)) {
       // EOF token is used to separate macro arguments
       if (Braces != 0) {
@@ -782,8 +826,9 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
 
   unsigned NumActuals = 0;
   while (Tok.isNot(tok::r_paren)) {
-    if (ContainsCodeCompletionTok && Tok.isOneOf(tok::eof, tok::eod))
+    if (ContainsCodeCompletionTok && Tok.isOneOf(tok::eof, tok::eod)) {
       break;
+}
 
     assert(Tok.isOneOf(tok::l_paren, tok::comma) &&
            "only expect argument separators here");
@@ -841,10 +886,12 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
           // Comma ends this argument if there are more fixed arguments
           // expected. However, if this is a variadic macro, and this is part of
           // the variadic part, then the comma is just an argument token.
-          if (!isVariadic)
+          if (!isVariadic) {
             break;
-          if (NumFixedArgsLeft > 1)
+}
+          if (NumFixedArgsLeft > 1) {
             break;
+}
         }
       } else if (Tok.is(tok::comment) && !KeepMacroComments) {
         // If this is a comment token in the argument list and we're just in
@@ -857,14 +904,17 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
         // identifiers we lex as macro arguments correspond to disabled macros.
         // If so, we mark the token as noexpand.  This is a subtle aspect of
         // C99 6.10.3.4p2.
-        if (MacroInfo *MI = getMacroInfo(Tok.getIdentifierInfo()))
-          if (!MI->isEnabled())
+        if (MacroInfo *MI = getMacroInfo(Tok.getIdentifierInfo())) {
+          if (!MI->isEnabled()) {
             Tok.setFlag(Token::DisableExpand);
+}
+}
       } else if (Tok.is(tok::code_completion)) {
         ContainsCodeCompletionTok = true;
-        if (CodeComplete)
+        if (CodeComplete) {
           CodeComplete->CodeCompleteMacroArgument(MacroName.getIdentifierInfo(),
                                                   MI, NumActuals);
+}
         // Don't mark that we reached the code-completion point because the
         // parser is going to handle the token and there will be another
         // code-completion callback.
@@ -875,24 +925,27 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
 
     // If this was an empty argument list foo(), don't add this as an empty
     // argument.
-    if (ArgTokens.empty() && Tok.getKind() == tok::r_paren)
+    if (ArgTokens.empty() && Tok.getKind() == tok::r_paren) {
       break;
+}
 
     // If this is not a variadic macro, and too many args were specified, emit
     // an error.
     if (!isVariadic && NumFixedArgsLeft == 0 && TooManyArgsLoc.isInvalid()) {
-      if (ArgTokens.size() != ArgTokenStart)
+      if (ArgTokens.size() != ArgTokenStart) {
         TooManyArgsLoc = ArgTokens[ArgTokenStart].getLocation();
-      else
+      } else {
         TooManyArgsLoc = ArgStartLoc;
+}
     }
 
     // Empty arguments are standard in C99 and C++0x, and are supported as an
     // extension in other modes.
-    if (ArgTokens.size() == ArgTokenStart && !getLangOpts().C99)
+    if (ArgTokens.size() == ArgTokenStart && !getLangOpts().C99) {
       Diag(Tok, getLangOpts().CPlusPlus11
                     ? diag::warn_cxx98_compat_empty_fnmacro_arg
                     : diag::ext_empty_fnmacro_arg);
+}
 
     // Add a marker EOF token to the end of the token list for this argument.
     Token EOFTok;
@@ -902,8 +955,9 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
     EOFTok.setLength(0);
     ArgTokens.push_back(EOFTok);
     ++NumActuals;
-    if (!ContainsCodeCompletionTok && NumFixedArgsLeft != 0)
+    if (!ContainsCodeCompletionTok && NumFixedArgsLeft != 0) {
       --NumFixedArgsLeft;
+}
   }
 
   // Okay, we either found the r_paren.  Check to see if we parsed too few
@@ -934,13 +988,15 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
         DiagnosticBuilder DB =
             Diag(MacroName,
                  diag::note_init_list_at_beginning_of_macro_argument);
-        for (SourceRange Range : InitLists)
+        for (SourceRange Range : InitLists) {
           DB << Range;
+}
       }
       return nullptr;
     }
-    if (FixedNumArgs != MinArgsExpected)
+    if (FixedNumArgs != MinArgsExpected) {
       return nullptr;
+}
 
     DiagnosticBuilder DB = Diag(MacroName, diag::note_suggest_parens_for_macro);
     for (SourceRange ParenLocation : ParenHints) {
@@ -961,8 +1017,9 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
     EOFTok.setKind(tok::eof);
     EOFTok.setLocation(Tok.getLocation());
     EOFTok.setLength(0);
-    for (; NumActuals < MinArgsExpected; ++NumActuals)
+    for (; NumActuals < MinArgsExpected; ++NumActuals) {
       ArgTokens.push_back(EOFTok);
+}
   }
 
   if (NumActuals < MinArgsExpected) {
@@ -1013,8 +1070,9 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
     ArgTokens.push_back(Tok);
 
     // If we expect two arguments, add both as empty.
-    if (NumActuals == 0 && MinArgsExpected == 2)
+    if (NumActuals == 0 && MinArgsExpected == 2) {
       ArgTokens.push_back(Tok);
+}
 
   } else if (NumActuals > MinArgsExpected && !MI->isVariadic() &&
              !ContainsCodeCompletionTok) {
@@ -1037,8 +1095,9 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
 Token *Preprocessor::cacheMacroExpandedTokens(TokenLexer *tokLexer,
                                               ArrayRef<Token> tokens) {
   assert(tokLexer);
-  if (tokens.empty())
+  if (tokens.empty()) {
     return nullptr;
+}
 
   size_t newIndex = MacroExpandedTokens.size();
   bool cacheNeedsToGrow = tokens.size() >
@@ -1110,8 +1169,9 @@ static bool HasFeature(const Preprocessor &PP, StringRef Feature) {
   const LangOptions &LangOpts = PP.getLangOpts();
 
   // Normalize the feature name, __foo__ becomes foo.
-  if (Feature.startswith("__") && Feature.endswith("__") && Feature.size() >= 4)
+  if (Feature.startswith("__") && Feature.endswith("__") && Feature.size() >= 4) {
     Feature = Feature.substr(2, Feature.size() - 4);
+}
 
 #define FEATURE(Name, Predicate) .Case(#Name, Predicate)
   return llvm::StringSwitch<bool>(Feature)
@@ -1124,21 +1184,24 @@ static bool HasFeature(const Preprocessor &PP, StringRef Feature) {
 /// specified by the identifier, either as an extension or a standard language
 /// feature.
 static bool HasExtension(const Preprocessor &PP, StringRef Extension) {
-  if (HasFeature(PP, Extension))
+  if (HasFeature(PP, Extension)) {
     return true;
+}
 
   // If the use of an extension results in an error diagnostic, extensions are
   // effectively unavailable, so just return false here.
   if (PP.getDiagnostics().getExtensionHandlingBehavior() >=
-      diag::Severity::Error)
+      diag::Severity::Error) {
     return false;
+}
 
   const LangOptions &LangOpts = PP.getLangOpts();
 
   // Normalize the extension name, __foo__ becomes foo.
   if (Extension.startswith("__") && Extension.endswith("__") &&
-      Extension.size() >= 4)
+      Extension.size() >= 4) {
     Extension = Extension.substr(2, Extension.size() - 4);
+}
 
     // Because we inherit the feature list from HasFeature, this string switch
     // must be less restrictive than HasFeature's.
@@ -1171,8 +1234,9 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
 
   // Get '('. If we don't have a '(', try to form a header-name token.
   do {
-    if (PP.LexHeaderName(Tok))
+    if (PP.LexHeaderName(Tok)) {
       return false;
+}
   } while (Tok.getKind() == tok::comment);
 
   // Ensure we have a '('.
@@ -1182,13 +1246,15 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
     PP.Diag(LParenLoc, diag::err_pp_expected_after) << II << tok::l_paren;
     // If the next token looks like a filename or the start of one,
     // assume it is and process it as such.
-    if (Tok.isNot(tok::header_name))
+    if (Tok.isNot(tok::header_name)) {
       return false;
+}
   } else {
     // Save '(' location for possible missing ')' message.
     LParenLoc = Tok.getLocation();
-    if (PP.LexHeaderName(Tok))
+    if (PP.LexHeaderName(Tok)) {
       return false;
+}
   }
 
   if (Tok.isNot(tok::header_name)) {
@@ -1200,8 +1266,9 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
   SmallString<128> FilenameBuffer;
   bool Invalid = false;
   StringRef Filename = PP.getSpelling(Tok, FilenameBuffer, &Invalid);
-  if (Invalid)
+  if (Invalid) {
     return false;
+}
 
   SourceLocation FilenameLoc = Tok.getLocation();
 
@@ -1219,8 +1286,9 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
   bool isAngled = PP.GetIncludeFilenameSpelling(Tok.getLocation(), Filename);
   // If GetIncludeFilenameSpelling set the start ptr to null, there was an
   // error.
-  if (Filename.empty())
+  if (Filename.empty()) {
     return false;
+}
 
   // Search include directories.
   const DirectoryLookup *CurDir;
@@ -1230,9 +1298,10 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
 
   if (PPCallbacks *Callbacks = PP.getPPCallbacks()) {
     SrcMgr::CharacteristicKind FileType = SrcMgr::C_User;
-    if (File)
+    if (File) {
       FileType =
           PP.getHeaderSearchInfo().getFileDirFlavor(&File->getFileEntry());
+}
     Callbacks->HasInclude(FilenameLoc, Filename, isAngled, File, FileType);
   }
 
@@ -1331,8 +1400,9 @@ already_lexed:
 
       case tok::l_paren:
         ++ParenDepth;
-        if (Result.hasValue())
+        if (Result.hasValue()) {
           break;
+}
         if (!SuppressDiagnostic) {
           PP.Diag(Tok.getLocation(), diag::err_pp_nested_paren) << II;
           SuppressDiagnostic = true;
@@ -1340,8 +1410,9 @@ already_lexed:
         continue;
 
       case tok::r_paren:
-        if (--ParenDepth > 0)
+        if (--ParenDepth > 0) {
           continue;
+}
 
         // The last ')' has been reached; return the value if one found or
         // a diagnostic and a dummy value.
@@ -1349,26 +1420,30 @@ already_lexed:
           OS << Result.getValue();
           // For strict conformance to __has_cpp_attribute rules, use 'L'
           // suffix for dated literals.
-          if (Result.getValue() > 1)
+          if (Result.getValue() > 1) {
             OS << 'L';
+}
         } else {
           OS << 0;
-          if (!SuppressDiagnostic)
+          if (!SuppressDiagnostic) {
             PP.Diag(Tok.getLocation(), diag::err_too_few_args_in_macro_invoc);
+}
         }
         Tok.setKind(tok::numeric_constant);
         return;
 
       default: {
         // Parse the macro argument, if one not found so far.
-        if (Result.hasValue())
+        if (Result.hasValue()) {
           break;
+}
 
         bool HasLexedNextToken = false;
         Result = Op(Tok, HasLexedNextToken);
         ResultTok = Tok;
-        if (HasLexedNextToken)
+        if (HasLexedNextToken) {
           goto already_lexed;
+}
         continue;
       }
     }
@@ -1376,10 +1451,11 @@ already_lexed:
     // Diagnose missing ')'.
     if (!SuppressDiagnostic) {
       if (auto Diag = PP.Diag(Tok.getLocation(), diag::err_pp_expected_after)) {
-        if (IdentifierInfo *LastII = ResultTok.getIdentifierInfo())
+        if (IdentifierInfo *LastII = ResultTok.getIdentifierInfo()) {
           Diag << LastII;
-        else
+        } else {
           Diag << ResultTok.getKind();
+}
         Diag << tok::r_paren << ResultTok.getLocation();
       }
       PP.Diag(LParenLoc, diag::note_matching) << tok::l_paren;
@@ -1394,8 +1470,9 @@ static IdentifierInfo *ExpectFeatureIdentifierInfo(Token &Tok,
                                                    Preprocessor &PP,
                                                    signed DiagID) {
   IdentifierInfo *II;
-  if (!Tok.isAnnotation() && (II = Tok.getIdentifierInfo()))
+  if (!Tok.isAnnotation() && (II = Tok.getIdentifierInfo())) {
     return II;
+}
 
   PP.Diag(Tok.getLocation(), DiagID);
   return nullptr;
@@ -1413,8 +1490,9 @@ static bool isTargetArch(const TargetInfo &TI, const IdentifierInfo *II) {
         ((TT.getArch() == llvm::Triple::thumb &&
           Arch.getArch() == llvm::Triple::arm) ||
          (TT.getArch() == llvm::Triple::thumbeb &&
-          Arch.getArch() == llvm::Triple::armeb)))
+          Arch.getArch() == llvm::Triple::armeb))) {
       return true;
+}
   }
   // Check the parsed arch when it has no sub arch to allow Clang to
   // match thumb to thumbv7 but to prohibit matching thumbv6 to thumbv7.
@@ -1426,8 +1504,9 @@ static bool isTargetArch(const TargetInfo &TI, const IdentifierInfo *II) {
 /// Implements the __is_target_vendor builtin macro.
 static bool isTargetVendor(const TargetInfo &TI, const IdentifierInfo *II) {
   StringRef VendorName = TI.getTriple().getVendorName();
-  if (VendorName.empty())
+  if (VendorName.empty()) {
     VendorName = "unknown";
+}
   return VendorName.equals_lower(II->getName());
 }
 
@@ -1455,9 +1534,11 @@ static void remapMacroPath(
     SmallString<256> &Path,
     const std::map<std::string, std::string, std::greater<std::string>>
         &MacroPrefixMap) {
-  for (const auto &Entry : MacroPrefixMap)
-    if (llvm::sys::path::replace_path_prefix(Path, Entry.first, Entry.second))
+  for (const auto &Entry : MacroPrefixMap) {
+    if (llvm::sys::path::replace_path_prefix(Path, Entry.first, Entry.second)) {
       break;
+}
+}
 }
 
 /// ExpandBuiltinMacro - If an identifier token is read that is to be expanded
@@ -1469,10 +1550,11 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
 
   // If this is an _Pragma or Microsoft __pragma directive, expand it,
   // invoke the pragma handler, then lex the token after it.
-  if (II == Ident_Pragma)
+  if (II == Ident_Pragma) {
     return Handle_Pragma(Tok);
-  else if (II == Ident__pragma) // in non-MS mode this is null
+  } else if (II == Ident__pragma) { // in non-MS mode this is null
     return HandleMicrosoft__pragma(Tok);
+}
 
   ++NumBuiltinMacroExpanded;
 
@@ -1518,8 +1600,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       SourceLocation NextLoc = PLoc.getIncludeLoc();
       while (NextLoc.isValid()) {
         PLoc = SourceMgr.getPresumedLoc(NextLoc);
-        if (PLoc.isInvalid())
+        if (PLoc.isInvalid()) {
           break;
+}
 
         NextLoc = PLoc.getIncludeLoc();
       }
@@ -1534,10 +1617,11 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
         // Try to get the last path component, failing that return the original
         // presumed location.
         StringRef PLFileName = llvm::sys::path::filename(PLoc.getFilename());
-        if (PLFileName != "")
+        if (PLFileName != "") {
           FN += PLFileName;
-        else
+        } else {
           FN += PLoc.getFilename();
+}
       } else {
         FN += PLoc.getFilename();
       }
@@ -1548,8 +1632,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     Tok.setKind(tok::string_literal);
   } else if (II == Ident__DATE__) {
     Diag(Tok.getLocation(), diag::warn_pp_date_time);
-    if (!DATELoc.isValid())
+    if (!DATELoc.isValid()) {
       ComputeDATE_TIME(DATELoc, TIMELoc, *this);
+}
     Tok.setKind(tok::string_literal);
     Tok.setLength(strlen("\"Mmm dd yyyy\""));
     Tok.setLocation(SourceMgr.createExpansionLoc(DATELoc, Tok.getLocation(),
@@ -1558,8 +1643,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     return;
   } else if (II == Ident__TIME__) {
     Diag(Tok.getLocation(), diag::warn_pp_date_time);
-    if (!TIMELoc.isValid())
+    if (!TIMELoc.isValid()) {
       ComputeDATE_TIME(DATELoc, TIMELoc, *this);
+}
     Tok.setKind(tok::string_literal);
     Tok.setLength(strlen("\"hh:mm:ss\""));
     Tok.setLocation(SourceMgr.createExpansionLoc(TIMELoc, Tok.getLocation(),
@@ -1574,8 +1660,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     PresumedLoc PLoc = SourceMgr.getPresumedLoc(Tok.getLocation());
     if (PLoc.isValid()) {
       PLoc = SourceMgr.getPresumedLoc(PLoc.getIncludeLoc());
-      for (; PLoc.isValid(); ++Depth)
+      for (; PLoc.isValid(); ++Depth) {
         PLoc = SourceMgr.getPresumedLoc(PLoc.getIncludeLoc());
+}
     }
 
     // __INCLUDE_LEVEL__ expands to a simple numeric value.
@@ -1591,8 +1678,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     const FileEntry *CurFile = nullptr;
     PreprocessorLexer *TheLexer = getCurrentFileLexer();
 
-    if (TheLexer)
+    if (TheLexer) {
       CurFile = SourceMgr.getFileEntryForID(TheLexer->getFileID());
+}
 
     const char *Result;
     if (CurFile) {
@@ -1628,9 +1716,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       [this](Token &Tok, bool &HasLexedNextToken) -> int {
         IdentifierInfo *II = ExpectFeatureIdentifierInfo(Tok, *this,
                                            diag::err_feature_check_malformed);
-        if (!II)
+        if (!II) {
           return false;
-        else if (II->getBuiltinID() != 0) {
+        } else if (II->getBuiltinID() != 0) {
           switch (II->getBuiltinID()) {
           case Builtin::BI__builtin_operator_new:
           case Builtin::BI__builtin_operator_delete:
@@ -1652,8 +1740,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
           // argument).
           if (II->getName().startswith("__builtin_") ||
               II->getName().startswith("__is_") ||
-              II->getName().startswith("__has_"))
+              II->getName().startswith("__has_")) {
             return true;
+}
           return llvm::StringSwitch<bool>(II->getName())
               .Case("__array_rank", true)
               .Case("__array_extent", true)
@@ -1704,15 +1793,16 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
           IdentifierInfo *ScopeII = nullptr;
           IdentifierInfo *II = ExpectFeatureIdentifierInfo(
               Tok, *this, diag::err_feature_check_malformed);
-          if (!II)
+          if (!II) {
             return false;
+}
 
           // It is possible to receive a scope token.  Read the "::", if it is
           // available, and the subsequent identifier.
           LexUnexpandedToken(Tok);
-          if (Tok.isNot(tok::coloncolon))
+          if (Tok.isNot(tok::coloncolon)) {
             HasLexedNextToken = true;
-          else {
+          } else {
             ScopeII = II;
             LexUnexpandedToken(Tok);
             II = ExpectFeatureIdentifierInfo(Tok, *this,
@@ -1730,13 +1820,15 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     // file name string literal using angle brackets (<>) or
     // double-quotes ("").
     bool Value;
-    if (II == Ident__has_include)
+    if (II == Ident__has_include) {
       Value = EvaluateHasInclude(Tok, II, *this);
-    else
+    } else {
       Value = EvaluateHasIncludeNext(Tok, II, *this);
+}
 
-    if (Tok.isNot(tok::r_paren))
+    if (Tok.isNot(tok::r_paren)) {
       return;
+}
     OS << (int)Value;
     Tok.setKind(tok::numeric_constant);
   } else if (II == Ident__has_warning) {
@@ -1748,8 +1840,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
 
         HasLexedNextToken = Tok.is(tok::string_literal);
         if (!FinishLexStringLiteral(Tok, WarningName, "'__has_warning'",
-                                    /*AllowMacroExpansion=*/false))
+                                    /*AllowMacroExpansion=*/false)) {
           return false;
+}
 
         // FIXME: Should we accept "-R..." flags here, or should that be
         // handled by a separate __has_remark?
@@ -1796,22 +1889,24 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       Diag(getLocForEndOfToken(Loc), diag::err_pp_expected_after)
         << II << tok::l_paren;
       // If the next token isn't valid as our argument, we can't recover.
-      if (!Tok.isAnnotation() && Tok.getIdentifierInfo())
+      if (!Tok.isAnnotation() && Tok.getIdentifierInfo()) {
         Tok.setKind(tok::identifier);
+}
       return;
     }
 
     SourceLocation LParenLoc = Tok.getLocation();
     LexNonComment(Tok);
 
-    if (!Tok.isAnnotation() && Tok.getIdentifierInfo())
+    if (!Tok.isAnnotation() && Tok.getIdentifierInfo()) {
       Tok.setKind(tok::identifier);
-    else {
+    } else {
       Diag(Tok.getLocation(), diag::err_pp_identifier_arg_not_identifier)
         << Tok.getKind();
       // Don't walk past anything that's not a real token.
-      if (Tok.isOneOf(tok::eof, tok::eod) || Tok.isAnnotation())
+      if (Tok.isOneOf(tok::eof, tok::eod) || Tok.isAnnotation()) {
         return;
+}
     }
 
     // Discard the ')', preserving 'Tok' as our result.
@@ -1862,7 +1957,8 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
 void Preprocessor::markMacroAsUsed(MacroInfo *MI) {
   // If the 'used' status changed, and the macro requires 'unused' warning,
   // remove its SourceLocation from the warn-for-unused-macro locations.
-  if (MI->isWarnIfUnused() && !MI->isUsed())
+  if (MI->isWarnIfUnused() && !MI->isUsed()) {
     WarnUnusedMacroLocs.erase(MI->getDefinitionLoc());
+}
   MI->setIsUsed(true);
 }

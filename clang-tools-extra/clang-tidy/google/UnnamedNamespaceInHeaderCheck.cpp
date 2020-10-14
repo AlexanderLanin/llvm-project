@@ -46,12 +46,14 @@ void UnnamedNamespaceInHeaderCheck::check(
     const MatchFinder::MatchResult &Result) {
   const auto *N = Result.Nodes.getNodeAs<NamespaceDecl>("anonymousNamespace");
   SourceLocation Loc = N->getBeginLoc();
-  if (!Loc.isValid())
+  if (!Loc.isValid()) {
     return;
+}
 
   if (utils::isPresumedLocInHeaderFile(Loc, *Result.SourceManager,
-                                       HeaderFileExtensions))
+                                       HeaderFileExtensions)) {
     diag(Loc, "do not use unnamed namespaces in header files");
+}
 }
 
 } // namespace build

@@ -84,8 +84,9 @@ TEST(CollectMainFileMacros, SelectedMacros) {
     // Known macros.
     for (int I = 1;; I++) {
       const auto ExpectedRefs = T.ranges(llvm::to_string(I));
-      if (ExpectedRefs.empty())
+      if (ExpectedRefs.empty()) {
         break;
+}
 
       auto Loc = sourceLocationInMainFile(SM, ExpectedRefs.begin()->start);
       ASSERT_TRUE(bool(Loc));

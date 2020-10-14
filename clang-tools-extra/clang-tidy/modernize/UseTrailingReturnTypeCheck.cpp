@@ -33,43 +33,50 @@ public:
 
   bool VisitUnqualName(StringRef UnqualName) {
     // Check for collisions with function arguments.
-    for (ParmVarDecl *Param : F.parameters())
-      if (const IdentifierInfo *Ident = Param->getIdentifier())
+    for (ParmVarDecl *Param : F.parameters()) {
+      if (const IdentifierInfo *Ident = Param->getIdentifier()) {
         if (Ident->getName() == UnqualName) {
           Collision = true;
           return true;
         }
+}
+}
     return false;
   }
 
   bool TraverseTypeLoc(TypeLoc TL, bool Elaborated = false) {
-    if (TL.isNull())
+    if (TL.isNull()) {
       return true;
+}
 
     if (!Elaborated) {
       switch (TL.getTypeLocClass()) {
       case TypeLoc::Record:
         if (VisitUnqualName(
-                TL.getAs<RecordTypeLoc>().getTypePtr()->getDecl()->getName()))
+                TL.getAs<RecordTypeLoc>().getTypePtr()->getDecl()->getName())) {
           return false;
+}
         break;
       case TypeLoc::Enum:
         if (VisitUnqualName(
-                TL.getAs<EnumTypeLoc>().getTypePtr()->getDecl()->getName()))
+                TL.getAs<EnumTypeLoc>().getTypePtr()->getDecl()->getName())) {
           return false;
+}
         break;
       case TypeLoc::TemplateSpecialization:
         if (VisitUnqualName(TL.getAs<TemplateSpecializationTypeLoc>()
                                 .getTypePtr()
                                 ->getTemplateName()
                                 .getAsTemplateDecl()
-                                ->getName()))
+                                ->getName())) {
           return false;
+}
         break;
       case TypeLoc::Typedef:
         if (VisitUnqualName(
-                TL.getAs<TypedefTypeLoc>().getTypePtr()->getDecl()->getName()))
+                TL.getAs<TypedefTypeLoc>().getTypePtr()->getDecl()->getName())) {
           return false;
+}
         break;
       default:
         break;
@@ -89,8 +96,9 @@ public:
   // elaborated.
   bool TraverseElaboratedTypeLoc(ElaboratedTypeLoc TL) {
     if (TL.getQualifierLoc() &&
-        !TraverseNestedNameSpecifierLoc(TL.getQualifierLoc()))
+        !TraverseNestedNameSpecifierLoc(TL.getQualifierLoc())) {
       return false;
+}
     return TraverseTypeLoc(TL.getNamedTypeLoc(), true);
   }
 
@@ -110,8 +118,9 @@ constexpr llvm::StringLiteral Message =
 
 static SourceLocation expandIfMacroId(SourceLocation Loc,
                                       const SourceManager &SM) {
-  if (Loc.isMacroID())
+  if (Loc.isMacroID()) {
     Loc = expandIfMacroId(SM.getImmediateExpansionRange(Loc).getBegin(), SM);
+}
   assert(!Loc.isMacroID() &&
          "SourceLocation must not be a macro ID after recursive expansion");
   return Loc;
@@ -122,15 +131,17 @@ SourceLocation UseTrailingReturnTypeCheck::findTrailingReturnTypeSourceLocation(
     const SourceManager &SM, const LangOptions &LangOpts) {
   // We start with the location of the closing parenthesis.
   SourceRange ExceptionSpecRange = F.getExceptionSpecSourceRange();
-  if (ExceptionSpecRange.isValid())
+  if (ExceptionSpecRange.isValid()) {
     return Lexer::getLocForEndOfToken(ExceptionSpecRange.getEnd(), 0, SM,
                                       LangOpts);
+}
 
   // If the function argument list ends inside of a macro, it is dangerous to
   // start lexing from here - bail out.
   SourceLocation ClosingParen = FTL.getRParenLoc();
-  if (ClosingParen.isMacroID())
+  if (ClosingParen.isMacroID()) {
     return {};
+}
 
   SourceLocation Result =
       Lexer::getLocForEndOfToken(ClosingParen, 0, SM, LangOpts);
@@ -189,8 +200,9 @@ classifyToken(const FunctionDecl &F, Preprocessor &PP, Token Tok) {
   while (true) {
     Token T;
     PP.Lex(T);
-    if (T.is(tok::eof))
+    if (T.is(tok::eof)) {
       break;
+}
 
     bool Qual = IsCVR(T);
     bool Spec = IsSpecifier(T);
@@ -203,8 +215,9 @@ classifyToken(const FunctionDecl &F, Preprocessor &PP, Token Tok) {
 
   // If the Token/Macro contains more than one type of tokens, we would need
   // to split the macro in order to move parts to the trailing return type.
-  if (ContainsQualifiers + ContainsSpecifiers + ContainsSomethingElse > 1)
+  if (ContainsQualifiers + ContainsSpecifiers + ContainsSomethingElse > 1) {
     return llvm::None;
+}
 
   return CT;
 }
@@ -243,9 +256,9 @@ UseTrailingReturnTypeCheck::classifyTokensBeforeFunctionName(
       T.setKind(Info.getTokenID());
     }
 
-    if (llvm::Optional<ClassifiedToken> CT = classifyToken(F, *PP, T))
+    if (llvm::Optional<ClassifiedToken> CT = classifyToken(F, *PP, T)) {
       ClassifiedTokens.push_back(*CT);
-    else {
+    } else {
       diag(F.getLocation(), Message);
       return llvm::None;
     }
@@ -256,12 +269,14 @@ UseTrailingReturnTypeCheck::classifyTokensBeforeFunctionName(
 
 static bool hasAnyNestedLocalQualifiers(QualType Type) {
   bool Result = Type.hasLocalQualifiers();
-  if (Type->isPointerType())
+  if (Type->isPointerType()) {
     Result = Result || hasAnyNestedLocalQualifiers(
                            Type->castAs<PointerType>()->getPointeeType());
-  if (Type->isReferenceType())
+}
+  if (Type->isReferenceType()) {
     Result = Result || hasAnyNestedLocalQualifiers(
                            Type->castAs<ReferenceType>()->getPointeeType());
+}
   return Result;
 }
 
@@ -309,14 +324,16 @@ SourceRange UseTrailingReturnTypeCheck::findReturnTypeAndCVSourceRange(
   }
 
   // If the return type has no local qualifiers, it's source range is accurate.
-  if (!hasAnyNestedLocalQualifiers(F.getReturnType()))
+  if (!hasAnyNestedLocalQualifiers(F.getReturnType())) {
     return ReturnTypeRange;
+}
 
   // Include qualifiers to the left and right of the return type.
   llvm::Optional<SmallVector<ClassifiedToken, 8>> MaybeTokens =
       classifyTokensBeforeFunctionName(F, Ctx, SM, LangOpts);
-  if (!MaybeTokens)
+  if (!MaybeTokens) {
     return {};
+}
   const SmallVector<ClassifiedToken, 8> &Tokens = *MaybeTokens;
 
   ReturnTypeRange.setBegin(expandIfMacroId(ReturnTypeRange.getBegin(), SM));
@@ -331,15 +348,17 @@ SourceRange UseTrailingReturnTypeCheck::findReturnTypeAndCVSourceRange(
       assert(I <= size_t(std::numeric_limits<int>::max()) &&
              "Integer overflow detected");
       for (int J = static_cast<int>(I) - 1; J >= 0 && Tokens[J].isQualifier;
-           J--)
+           J--) {
         ReturnTypeRange.setBegin(Tokens[J].T.getLocation());
+}
       ExtendedLeft = true;
     }
     // If we found the end of the return type, include right qualifiers.
     if (SM.isBeforeInTranslationUnit(ReturnTypeRange.getEnd(),
                                      Tokens[I].T.getLocation())) {
-      for (size_t J = I; J < Tokens.size() && Tokens[J].isQualifier; J++)
+      for (size_t J = I; J < Tokens.size() && Tokens[J].isQualifier; J++) {
         ReturnTypeRange.setEnd(Tokens[J].T.getLocation());
+}
       break;
     }
   }
@@ -360,15 +379,17 @@ void UseTrailingReturnTypeCheck::keepSpecifiers(
   const auto *M = dyn_cast<CXXMethodDecl>(&F);
   if (!F.isConstexpr() && !F.isInlineSpecified() &&
       F.getStorageClass() != SC_Extern && F.getStorageClass() != SC_Static &&
-      !Fr && !(M && M->isVirtualAsWritten()))
+      !Fr && !(M && M->isVirtualAsWritten())) {
     return;
+}
 
   // Tokenize return type. If it contains macros which contain a mix of
   // qualifiers, specifiers and types, give up.
   llvm::Optional<SmallVector<ClassifiedToken, 8>> MaybeTokens =
       classifyTokensBeforeFunctionName(F, Ctx, SM, LangOpts);
-  if (!MaybeTokens)
+  if (!MaybeTokens) {
     return;
+}
 
   // Find specifiers, remove them from the return type, add them to 'auto'.
   unsigned int ReturnTypeBeginOffset =
@@ -379,10 +400,12 @@ void UseTrailingReturnTypeCheck::keepSpecifiers(
     if (SM.isBeforeInTranslationUnit(CT.T.getLocation(),
                                      ReturnTypeCVRange.getBegin()) ||
         SM.isBeforeInTranslationUnit(ReturnTypeCVRange.getEnd(),
-                                     CT.T.getLocation()))
+                                     CT.T.getLocation())) {
       continue;
-    if (!CT.isSpecifier)
+}
+    if (!CT.isSpecifier) {
       continue;
+}
 
     // Add the token to 'auto' and remove it from the return type, including
     // any whitespace following the token.
@@ -392,11 +415,13 @@ void UseTrailingReturnTypeCheck::keepSpecifiers(
     unsigned int TOffsetInRT = TOffset - ReturnTypeBeginOffset - DeletedChars;
     unsigned int TLengthWithWS = CT.T.getLength();
     while (TOffsetInRT + TLengthWithWS < ReturnType.size() &&
-           llvm::isSpace(ReturnType[TOffsetInRT + TLengthWithWS]))
+           llvm::isSpace(ReturnType[TOffsetInRT + TLengthWithWS])) {
       TLengthWithWS++;
+}
     std::string Specifier = ReturnType.substr(TOffsetInRT, TLengthWithWS);
-    if (!llvm::isSpace(Specifier.back()))
+    if (!llvm::isSpace(Specifier.back())) {
       Specifier.push_back(' ');
+}
     Auto.insert(Auto.size() - InitialAutoLength, Specifier);
     ReturnType.erase(TOffsetInRT, TLengthWithWS);
     DeletedChars += TLengthWithWS;
@@ -426,15 +451,17 @@ void UseTrailingReturnTypeCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *Fr = Result.Nodes.getNodeAs<FriendDecl>("Friend");
   assert(F && "Matcher is expected to find only FunctionDecls");
 
-  if (F->getLocation().isInvalid())
+  if (F->getLocation().isInvalid()) {
     return;
+}
 
   // Skip functions which return just 'auto'.
   const auto *AT = F->getDeclaredReturnType()->getAs<AutoType>();
   if (AT != nullptr && !AT->isConstrained() &&
       AT->getKeyword() == AutoTypeKeyword::Auto &&
-      !hasAnyNestedLocalQualifiers(F->getDeclaredReturnType()))
+      !hasAnyNestedLocalQualifiers(F->getDeclaredReturnType())) {
     return;
+}
 
   // TODO: implement those
   if (F->getDeclaredReturnType()->isFunctionPointerType() ||
@@ -449,8 +476,9 @@ void UseTrailingReturnTypeCheck::check(const MatchFinder::MatchResult &Result) {
   const LangOptions &LangOpts = getLangOpts();
 
   const TypeSourceInfo *TSI = F->getTypeSourceInfo();
-  if (!TSI)
+  if (!TSI) {
     return;
+}
 
   FunctionTypeLoc FTL =
       TSI->getTypeLoc().IgnoreParens().getAs<FunctionTypeLoc>();
@@ -474,8 +502,9 @@ void UseTrailingReturnTypeCheck::check(const MatchFinder::MatchResult &Result) {
   // space before & ... .
   SourceRange ReturnTypeCVRange =
       findReturnTypeAndCVSourceRange(*F, FTL.getReturnLoc(), Ctx, SM, LangOpts);
-  if (ReturnTypeCVRange.isInvalid())
+  if (ReturnTypeCVRange.isInvalid()) {
     return;
+}
 
   // Check if unqualified names in the return type conflict with other entities
   // after the rewrite.

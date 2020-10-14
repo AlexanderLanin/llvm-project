@@ -37,8 +37,9 @@ void NoInternalDependenciesCheck::check(const MatchFinder::MatchResult &Result) 
   SourceLocation LocAtFault =
       Result.SourceManager->getSpellingLoc(InternalDependency->getBeginLoc());
 
-  if (!LocAtFault.isValid())
+  if (!LocAtFault.isValid()) {
     return;
+}
 
   diag(LocAtFault,
        "do not reference any 'internal' namespaces; those implementation "

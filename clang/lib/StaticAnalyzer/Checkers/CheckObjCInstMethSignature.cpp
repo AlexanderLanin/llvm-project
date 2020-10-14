@@ -30,8 +30,9 @@ static bool AreTypesCompatible(QualType Derived, QualType Ancestor,
 
   // Right now don't compare the compatibility of pointers.  That involves
   // looking at subtyping relationships.  FIXME: Future patch.
-  if (Derived->isAnyPointerType() &&  Ancestor->isAnyPointerType())
+  if (Derived->isAnyPointerType() &&  Ancestor->isAnyPointerType()) {
     return true;
+}
 
   return C.typesAreCompatible(Derived, Ancestor);
 }
@@ -82,8 +83,9 @@ static void CheckObjCInstMethSignature(const ObjCImplementationDecl *ID,
   const ObjCInterfaceDecl *D = ID->getClassInterface();
   const ObjCInterfaceDecl *C = D->getSuperClass();
 
-  if (!C)
+  if (!C) {
     return;
+}
 
   ASTContext &Ctx = BR.getContext();
 
@@ -105,8 +107,9 @@ static void CheckObjCInstMethSignature(const ObjCImplementationDecl *ID,
 
       MapTy::iterator MI = IMeths.find(S);
 
-      if (MI == IMeths.end() || MI->second == nullptr)
+      if (MI == IMeths.end() || MI->second == nullptr) {
         continue;
+}
 
       --NumMethods;
       ObjCMethodDecl *MethDerived = MI->second;
