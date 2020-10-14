@@ -242,6 +242,11 @@ bool BracesAroundStatementsCheck::checkStmt(
   auto Diag = diag(StartLoc, "statement should be inside braces");
 
   // Change only if StartLoc and EndLoc are on the same macro expansion level.
+  // This will also catch invalid EndLoc.
+  // Example: LLVM_DEBUG( for(...) do_something() );
+  // In this case fix-it cannot be provided as the semicolon which is not
+  // visible here is part of the macro. Adding braces here would require adding
+  // another semicolon.
   if (Lexer::makeFileCharRange(
           CharSourceRange::getTokenRange(SourceRange(
               SM.getSpellingLoc(StartLoc), SM.getSpellingLoc(EndLoc))),

@@ -263,6 +263,62 @@ void test() {
   // CHECK-FIXES-NEXT: }
 }
 
+void test_whitespace() {
+  while(cond("preserve empty lines"))
+    if(cond("using continue within if"))
+      continue;
+
+
+  test();
+
+  // CHECK-MESSAGES: :[[@LINE-7]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-7]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: {{^}}  while(cond("preserve empty lines")) {{{$}}
+  // CHECK-FIXES-NEXT: {{^}}    if(cond("using continue within if")) {{{$}}
+  // CHECK-FIXES-NEXT: {{^      continue;$}}
+  // The closing brace is added at beginning of line, clang-format can be
+  // applied afterwards.
+  // CHECK-FIXES-NEXT: {{^}$}}
+  // CHECK-FIXES-NEXT: {{^}$}}
+  // Following whitespace is assumed to not to belong to the else branch.
+  // However the check is not possible with CHECK-FIXES-NEXT.
+  // CHECK-FIXES: {{^}}  test();{{$}}
+
+  if (cond("preserve empty lines"))
+ 
+  
+    int s;
+   
+    
+  else
+ 
+  
+    int t;
+   
+    
+  test();
+
+  // CHECK-MESSAGES: :[[@LINE-14]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-MESSAGES: :[[@LINE-9]]:{{[0-9]+}}: warning: statement should be inside braces
+  // CHECK-FIXES: {{^}}  if (cond("preserve empty lines")) {{{$}}
+  // CHECK-FIXES-NEXT: {{^ $}}
+  // CHECK-FIXES-NEXT: {{^  $}}
+  // CHECK-FIXES-NEXT: {{^    int s;$}}
+  // CHECK-FIXES-NEXT: {{^   $}}
+  // CHECK-FIXES-NEXT: {{^    $}}
+  // CHECK-FIXES-NEXT: {{^  } else {$}}
+  // CHECK-FIXES-NEXT: {{^ $}}
+  // CHECK-FIXES-NEXT: {{^  $}}
+  // CHECK-FIXES-NEXT: {{^    int t;$}}
+  // The closing brace is added at beginning of line, clang-format can be
+  // applied afterwards.
+  // CHECK-FIXES-NEXT: {{^}$}}
+  // Following whitespace is assumed to not to belong to the else branch.
+  // CHECK-FIXES-NEXT: {{^   $}}
+  // CHECK-FIXES-NEXT: {{^    $}}
+  // CHECK-FIXES-NEXT: {{^}}  test();{{$}}
+}
+
 int test_return_int() {
   if (cond("return5"))
     return 5;
