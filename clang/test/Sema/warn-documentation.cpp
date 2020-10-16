@@ -1041,8 +1041,9 @@ class test_attach33 {
 
 template<typename T>
 class test_attach35 {
-  // expected-warning@+2 {{empty paragraph passed to '\brief' command}}
-  // expected-warning@+2 {{template parameter 'T' not found in the template declaration}}
+  // expected-warning@+3 {{empty paragraph passed to '\brief' command}}
+  // expected-warning@+3 {{template parameter 'T' not found in the template declaration}}
+  // expected-note@+2 {{did you mean 'TT'?}}
   /// \brief\author Aaa
   /// \tparam T Aaa
   template<typename TT, typename UU>
