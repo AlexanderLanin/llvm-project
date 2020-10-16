@@ -2,6 +2,9 @@
 // - .clang-tidy read from file & treat warnings as errors
 // - return code of run-clang-tidy on those errors
 
+// First make sure clang-tidy is executable and can print help without crashing:
+// RUN: %run_clang_tidy --help
+
 // use %t as directory instead of file:
 // RUN: rm -rf %t
 // RUN: mkdir %t
