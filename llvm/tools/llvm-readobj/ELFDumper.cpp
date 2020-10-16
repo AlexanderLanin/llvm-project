@@ -1781,6 +1781,7 @@ static const EnumEntry<unsigned> ElfHeaderAMDGPUFlags[] = {
   LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_MACH_AMDGCN_GFX1012),
   LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_MACH_AMDGCN_GFX1030),
   LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_MACH_AMDGCN_GFX1031),
+  LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_MACH_AMDGCN_GFX1032),
   LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_XNACK),
   LLVM_READOBJ_ENUM_ENT(ELF, EF_AMDGPU_SRAM_ECC)
 };
@@ -5108,10 +5109,10 @@ static AMDGPUNote getAMDGPUNote(uint32_t NoteType, ArrayRef<uint8_t> Desc) {
       return {"AMDGPU Metadata", "Invalid AMDGPU Metadata"};
 
     AMDGPU::HSAMD::V3::MetadataVerifier Verifier(true);
-    if (!Verifier.verify(MsgPackDoc.getRoot()))
-      return {"AMDGPU Metadata", "Invalid AMDGPU Metadata"};
-
     std::string HSAMetadataString;
+    if (!Verifier.verify(MsgPackDoc.getRoot()))
+      HSAMetadataString = "Invalid AMDGPU Metadata\n";
+
     raw_string_ostream StrOS(HSAMetadataString);
     MsgPackDoc.toYAML(StrOS);
 
