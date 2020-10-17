@@ -751,13 +751,13 @@ static unsigned resolveParmVarReference(StringRef Name,
 
 // Extracts all ParamCommandComments while setting IsVarArgParam and ParamIndex
 static SmallVector<const ParamCommandComment *, 8>
-extractParamCommandComments(const FullComment *const FC,
+extractParamCommandComments(const FullComment *FC,
                             ArrayRef<const ParmVarDecl *> ParamVars,
-                            const bool IsFunctionOrMethodVariadic) {
+                            bool IsFunctionOrMethodVariadic) {
   SmallVector<const ParamCommandComment *, 8> PCCs;
 
-  for (BlockContentComment *const Block : FC->getBlocks()) {
-    ParamCommandComment *const PCC = dyn_cast<ParamCommandComment>(Block);
+  for (auto *Block : FC->getBlocks()) {
+    auto *const PCC = dyn_cast<ParamCommandComment>(Block);
     if (PCC && PCC->hasParamName()) {
       StringRef ParamName = PCC->getParamNameAsWritten();
       const unsigned Index = resolveParmVarReference(
@@ -776,18 +776,19 @@ extractParamCommandComments(const FullComment *const FC,
 
 /// Returns all ParmVarDecl without a comment. Diagnosis is emitted in case of
 /// mapping issues (no matching ParmVar or duplicate Comment).
-static SmallVector<const ParmVarDecl *, 8> mapParamCommentsToParmVars(
-    const SmallVector<const ParamCommandComment *, 8> &PCCs,
-    const ArrayRef<const ParmVarDecl *> &ParmVars, DiagnosticsEngine &Diags) {
+static SmallVector<const ParmVarDecl *, 8>
+findUndocumentedParams(const SmallVector<const ParamCommandComment *, 8> &PCCs,
+                       const ArrayRef<const ParmVarDecl *> &ParmVars,
+                       DiagnosticsEngine &Diags) {
   // Matching ParamCommandComment by index of ParmVars.
   // It's basically a map<ParmVarDecl, ParamCommandComment> in terms of
   // readability, but vector is faster, as it usually contains only very few
   // elements and the index is known on access. Downside is no support for
   // VarArg.
-  SmallVector<const ParamCommandComment *, 8> ParmVarDeclToParamCommandComment(
-      ParmVars.size(), nullptr);
+  SmallVector<const ParamCommandComment *, 8> ParamIndexToPCC(ParmVars.size(),
+                                                              nullptr);
 
-  for (const ParamCommandComment *const PCC : PCCs) {
+  for (const auto *PCC : PCCs) {
     if (PCC->isVarArgParam()) {
       // No additional diagnostic supported yet.
     } else if (PCC->isParamIndexValid()) {
@@ -796,7 +797,7 @@ static SmallVector<const ParmVarDecl *, 8> mapParamCommentsToParmVars(
       // If there is a previous comment for the same ParmVarDecl, this is a
       // duplicate.
       if (const ParamCommandComment *const PrevPCC =
-              ParmVarDeclToParamCommandComment[PCC->getParamIndex()]) {
+              ParamIndexToPCC[PCC->getParamIndex()]) {
         Diags.Report(PCC->getLocation(), diag::warn_doc_param_duplicate)
             << PCC->getParamNameAsWritten() << PCC->getParamNameRange();
         Diags.Report(PrevPCC->getLocation(), diag::note_doc_param_previous)
@@ -805,7 +806,7 @@ static SmallVector<const ParmVarDecl *, 8> mapParamCommentsToParmVars(
       // Store mapping of ParmVarDecl[index] to ParamCommandComment to detect
       // duplicates (above) and to detect unmapped parameters (below).
       // Overwrite in case of duplicate, it does not matter.
-      ParmVarDeclToParamCommandComment[PCC->getParamIndex()] = PCC;
+      ParamIndexToPCC[PCC->getParamIndex()] = PCC;
     } else
       Diags.Report(PCC->getLocation(), diag::warn_doc_param_not_found)
           << PCC->getParamNameAsWritten() << PCC->getParamNameRange();
@@ -814,7 +815,7 @@ static SmallVector<const ParmVarDecl *, 8> mapParamCommentsToParmVars(
   SmallVector<const ParmVarDecl *, 8> ParmVarsWithoutComment;
 
   for (unsigned I = 0, E = ParmVars.size(); I != E; ++I)
-    if (!ParmVarDeclToParamCommandComment[I])
+    if (!ParamIndexToPCC[I])
       ParmVarsWithoutComment.push_back(ParmVars[I]);
 
   return ParmVarsWithoutComment;
@@ -825,7 +826,7 @@ extractUnresolvedParamComments(
     const SmallVector<const ParamCommandComment *, 8> &ParamComments) {
   SmallVector<const ParamCommandComment *, 8> UnresolvedParamComments;
 
-  for (const ParamCommandComment *const PCC : ParamComments)
+  for (const auto *PCC : ParamComments)
     if (!PCC->isParamIndexValid())
       UnresolvedParamComments.push_back(PCC);
 
@@ -857,15 +858,11 @@ void attemptToMatchUnresolvedComments(
     ParmVarForComment[0] = OrphanedParmVars.front();
   else {
     for (unsigned I = 0, E = UnresolvedParamComments.size(); I != E; ++I) {
-
       StringRef ParamName = UnresolvedParamComments[I]->getParamNameAsWritten();
-
       unsigned CorrectedParmVarIndex =
           Sema::correctTypoInParmVarReference(ParamName, OrphanedParmVars);
-
+      // Correction suggestion exists (close match by name).
       if (CorrectedParmVarIndex != ParamCommandComment::InvalidParamIndex) {
-        // Correction suggestion exists (close match by name).
-
         if (CommentToParmVar[CorrectedParmVarIndex] !=
             ParamCommandComment::InvalidParamIndex) {
           // There was already a suggestion to match a different comment to this
@@ -910,18 +907,17 @@ void attemptToMatchUnresolvedComments(
 }
 
 void Sema::resolveParamCommandIndexes(const FullComment *FC) {
-  if (!isFunctionDecl()) {
-    // We already warned that \\param commands are not attached to a function
-    // decl.
+  // Warning about \\param commands not attached to a function decl has already
+  // been issued. Skip those comments here.
+  if (!isFunctionDecl())
     return;
-  }
 
   const ArrayRef<const ParmVarDecl *> ParmVars = getParamVars();
   const SmallVector<const ParamCommandComment *, 8> ParamComments =
       extractParamCommandComments(FC, ParmVars, isFunctionOrMethodVariadic());
 
   const SmallVector<const ParmVarDecl *, 8> ParmVarsWithoutComment =
-      mapParamCommentsToParmVars(ParamComments, ParmVars, Diags);
+      findUndocumentedParams(ParamComments, ParmVars, Diags);
 
   const SmallVector<const ParamCommandComment *, 8> UnresolvedParamComments =
       extractUnresolvedParamComments(ParamComments);
@@ -1051,8 +1047,8 @@ bool Sema::isUnionDecl() {
   return false;
 }
 static bool isClassOrStructDeclImpl(const Decl *D) {
-  if (const auto *Record = dyn_cast_or_null<RecordDecl>(D))
-    return !Record->isUnion();
+  if (auto *record = dyn_cast_or_null<RecordDecl>(D))
+    return !record->isUnion();
 
   return false;
 }
@@ -1081,15 +1077,12 @@ bool Sema::isClassOrStructOrTagTypedefDecl() {
   if (isClassOrStructDeclImpl(ThisDeclInfo->CurrentDecl))
     return true;
 
-  if (const auto *ThisTypedefDecl =
-          dyn_cast<TypedefDecl>(ThisDeclInfo->CurrentDecl)) {
+  if (auto *ThisTypedefDecl = dyn_cast<TypedefDecl>(ThisDeclInfo->CurrentDecl)) {
     auto UnderlyingType = ThisTypedefDecl->getUnderlyingType();
-    if (const auto *ThisElaboratedType =
-            dyn_cast<ElaboratedType>(UnderlyingType)) {
+    if (auto *ThisElaboratedType = dyn_cast<ElaboratedType>(UnderlyingType)) {
       auto DesugaredType = ThisElaboratedType->desugar();
-      if (const auto *DesugaredTypePtr = DesugaredType.getTypePtrOrNull()) {
-        if (const auto *ThisRecordType =
-                dyn_cast<RecordType>(DesugaredTypePtr)) {
+      if (auto *DesugaredTypePtr = DesugaredType.getTypePtrOrNull()) {
+        if (auto *ThisRecordType = dyn_cast<RecordType>(DesugaredTypePtr)) {
           return isClassOrStructDeclImpl(ThisRecordType->getAsRecordDecl());
         }
       }
@@ -1183,14 +1176,14 @@ public:
 };
 
 void SimpleTypoCorrector::addDecl(const NamedDecl *ND) {
-  const unsigned CurrIndex = NextIndex++;
+  unsigned CurrIndex = NextIndex++;
 
-  const IdentifierInfo *const II = ND->getIdentifier();
+  const IdentifierInfo *II = ND->getIdentifier();
   if (!II)
     return;
 
   StringRef Name = II->getName();
-  const unsigned EditDistance = Typo.edit_distance(Name, true, MaxEditDistance);
+  unsigned EditDistance = Typo.edit_distance(Name, true, MaxEditDistance);
   if (EditDistance < BestEditDistance) {
     BestEditDistance = EditDistance;
     BestDecl = ND;
@@ -1203,8 +1196,8 @@ unsigned Sema::correctTypoInParmVarReference(
                                     StringRef Typo,
                                     ArrayRef<const ParmVarDecl *> ParamVars) {
   SimpleTypoCorrector Corrector(Typo);
-  for (unsigned I = 0, E = ParamVars.size(); I != E; ++I)
-    Corrector.addDecl(ParamVars[I]);
+  for (unsigned i = 0, e = ParamVars.size(); i != e; ++i)
+    Corrector.addDecl(ParamVars[i]);
   if (Corrector.getBestDecl())
     return Corrector.getBestDeclIndex();
   else
@@ -1212,21 +1205,21 @@ unsigned Sema::correctTypoInParmVarReference(
 }
 
 namespace {
-bool resolveTParamReferenceHelper(
+bool ResolveTParamReferenceHelper(
     StringRef Name, const TemplateParameterList *TemplateParameters,
     SmallVectorImpl<unsigned> *Position) {
-  for (unsigned I = 0, E = TemplateParameters->size(); I != E; ++I) {
-    const NamedDecl *Param = TemplateParameters->getParam(I);
+  for (unsigned i = 0, e = TemplateParameters->size(); i != e; ++i) {
+    const NamedDecl *Param = TemplateParameters->getParam(i);
     const IdentifierInfo *II = Param->getIdentifier();
     if (II && II->getName() == Name) {
-      Position->push_back(I);
+      Position->push_back(i);
       return true;
     }
 
     if (const TemplateTemplateParmDecl *TTP =
             dyn_cast<TemplateTemplateParmDecl>(Param)) {
-      Position->push_back(I);
-      if (resolveTParamReferenceHelper(Name, TTP->getTemplateParameters(),
+      Position->push_back(i);
+      if (ResolveTParamReferenceHelper(Name, TTP->getTemplateParameters(),
                                        Position))
         return true;
       Position->pop_back();
@@ -1244,20 +1237,20 @@ bool Sema::resolveTParamReference(
   if (!TemplateParameters)
     return false;
 
-  return resolveTParamReferenceHelper(Name, TemplateParameters, Position);
+  return ResolveTParamReferenceHelper(Name, TemplateParameters, Position);
 }
 
 namespace {
-void correctTypoInTParamReferenceHelper(
-    const TemplateParameterList *TemplateParameters,
-    SimpleTypoCorrector &Corrector) {
-  for (unsigned I = 0, E = TemplateParameters->size(); I != E; ++I) {
-    const NamedDecl *Param = TemplateParameters->getParam(I);
+void CorrectTypoInTParamReferenceHelper(
+                            const TemplateParameterList *TemplateParameters,
+                            SimpleTypoCorrector &Corrector) {
+  for (unsigned i = 0, e = TemplateParameters->size(); i != e; ++i) {
+    const NamedDecl *Param = TemplateParameters->getParam(i);
     Corrector.addDecl(Param);
 
     if (const TemplateTemplateParmDecl *TTP =
             dyn_cast<TemplateTemplateParmDecl>(Param))
-      correctTypoInTParamReferenceHelper(TTP->getTemplateParameters(),
+      CorrectTypoInTParamReferenceHelper(TTP->getTemplateParameters(),
                                          Corrector);
   }
 }
@@ -1267,7 +1260,7 @@ StringRef Sema::correctTypoInTParamReference(
                             StringRef Typo,
                             const TemplateParameterList *TemplateParameters) {
   SimpleTypoCorrector Corrector(Typo);
-  correctTypoInTParamReferenceHelper(TemplateParameters, Corrector);
+  CorrectTypoInTParamReferenceHelper(TemplateParameters, Corrector);
   if (const NamedDecl *ND = Corrector.getBestDecl()) {
     const IdentifierInfo *II = ND->getIdentifier();
     assert(II && "SimpleTypoCorrector should not return this decl");

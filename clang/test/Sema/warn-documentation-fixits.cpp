@@ -7,6 +7,12 @@
 /// \param ZZZZZZZZZZ Blah blah.
 int fixSinceThereIsOnlyOneOption(int a);
 
+// expected-warning@+3 {{parameter 'c' not found in the function declaration}} expected-note@+3 {{did you mean 'b'?}}
+// CHECK: fix-it:"{{.*}}":{[[@LINE+2]]:12-[[@LINE+2]]:13}:"b"
+/// \param a This one is correctly documented.
+/// \param c Total mismatch. Fix it since it's only one comment to only one parameter.
+int fixSinceThereIsOnlyOneUnmatchedOneOption(int a, int b);
+
 // expected-warning@+2 {{parameter 'aab' not found in the function declaration}} expected-note@+2 {{did you mean 'aaa'?}}
 // CHECK: fix-it:"{{.*}}":{[[@LINE+1]]:12-[[@LINE+1]]:15}:"aaa"
 /// \param aab Blah blah.
@@ -92,8 +98,7 @@ int test2to2_oneAlmost(int argc, int argv);
 
 // Note: first parameter is the same as above, bug gets auto fixed here since
 // the other is already ok.
-// expected-warning@+4 {{parameter 'ArgC' not found in the function declaration}} expected-note@+4 {{did you mean}}
-// expected-warning-NOT@+4 {{parameter 'ZZZZZZ' not found in the function declaration}} expected-note-NOT@+4 {{did you mean}}
+// expected-warning@+3 {{parameter 'ArgC' not found in the function declaration}} expected-note@+3 {{did you mean}}
 // CHECK: fix-it:"{{.*}}":{[[@LINE+2]]:
 // CHECK-NOT: fix-it:"{{.*}}":{[[@LINE+2]]:
 /// \param ArgC Almost matches.
@@ -134,9 +139,6 @@ void test3to3_allAlmost(int aab, int aac, int aad);
  */
 void test3to3_allAlmost_rev(int aad, int aac, int aab);
 
-
-
-
 // Test data and expectations from https://bugs.llvm.org/show_bug.cgi?id=43808
 // expected-warning@+5 {{parameter 'arg[]' not found in the function declaration}} expected-note@+5 {{did you mean 'arg'?}}
 // expected-warning@+5 {{parameter 'cnt' not found in the function declaration}} expected-note-NOT@+5 {{did you mean 'argc'?}}
@@ -159,9 +161,6 @@ void run(const char *const arg[], int argc);
   *  @param[in] cnt         Docu_2
   */
 void run(const char *const arg[], int argc);
-
-
-
 
 // expected-warning@+2 {{template parameter 'ZZZZZZZZZZ' not found in the template declaration}} expected-note@+2 {{did you mean 'T'?}}
 // CHECK: fix-it:"{{.*}}":{[[@LINE+1]]:13-[[@LINE+1]]:23}:"T"
